@@ -2863,6 +2863,15 @@ void	R_ShaderList_f (void) {
 }
 
 
+static char *stradd( char *dst, const char *src ) 
+{
+	char c;
+	while ( (c = *src++) != '\0' ) 
+		*dst++ = c;
+	*dst = '\0';
+	return dst;
+}
+
 /*
 ====================
 ScanAndLoadShaderFiles
@@ -2879,7 +2888,7 @@ static void ScanAndLoadShaderFiles( void )
 	char *p;
 	int numShaderFiles;
 	int i;
-	char *oldp, *token, *hashMem;
+	char *oldp, *token, *hashMem, *textEnd;
 	int shaderTextHashTableSizes[MAX_SHADERTEXT_HASH], hash, size;
 
 	long sum = 0, summand;
@@ -2938,9 +2947,10 @@ static void ScanAndLoadShaderFiles( void )
 	}
 
 	// build single large buffer
-	s_shaderText = ri.Hunk_Alloc( sum + numShaderFiles*2, h_low );
+	s_shaderText = ri.Hunk_Alloc( sum + numShaderFiles*2 + 1, h_low );
 	s_shaderText[ 0 ] = '\0';
 
+#if 0
 	// free in reverse order, so the temp files are all dumped
 	for ( i = numShaderFiles - 1; i >= 0 ; i-- )
 	{
@@ -2953,6 +2963,21 @@ static void ScanAndLoadShaderFiles( void )
 		strcat( s_shaderText, "\n" );
 	}
 	}
+#else
+	textEnd = s_shaderText;
+
+	// free in reverse order, so the temp files are all dumped
+	for ( i = numShaderFiles - 1; i >= 0 ; i-- )
+	{
+		if ( !buffers[i] )
+			continue;
+		textEnd = stradd( textEnd, buffers[i] );
+		textEnd = stradd( textEnd, "\n" );
+		ri.FS_FreeFile( buffers[i] );
+	}
+	COM_Compress( s_shaderText );
+
+#endif
 
 	// free up memory
 	ri.FS_FreeFileList( shaderFiles );
