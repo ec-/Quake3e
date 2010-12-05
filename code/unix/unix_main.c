@@ -670,8 +670,10 @@ char *Sys_ConsoleInput( void )
 								tty_FlushIn();
 								return NULL;
 								break;
-							case 'C':
-							case 'D':
+							case 'C': // right
+							case 'D': // left
+							//case 'H': // home
+							//case 'F': // end
 				                return NULL;
 							}
 						}
@@ -1243,7 +1245,15 @@ sysEvent_t Sys_GetEvent( void ) {
 
     len = strlen( s ) + 1;
     b = Z_Malloc( len );
-    strcpy( b, s );
+	if ( len > 1 && (*s == '/' || *s == '\\') )
+	{
+		strcpy( b, s+1 );
+		len--;
+	}
+	else
+	{
+	    strcpy( b, s );
+	}
     Sys_QueEvent( 0, SE_CONSOLE, 0, 0, len, b );
   }
 
