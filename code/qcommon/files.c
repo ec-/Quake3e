@@ -2847,18 +2847,31 @@ static void FS_ReorderPurePaks( void )
 
 /*
 ================
+FS_OwnerName
+================
+*/
+static const char *FS_OwnerName( handleOwner_t owner ) 
+{
+	static const char *s[4]= { "SY", "QA", "CG", "UI" };
+	if ( owner < H_SYSTEM || owner > H_Q3UI )
+		return "??";
+	return s[owner];
+}
+
+
+/*
+================
 FS_ListOpenFiles
 ================
 */
 static void FS_ListOpenFiles_f( void ) {
 	int i;
 	fileHandleData_t *fh;
-	char *s[5]= { "SY", "QA", "CG", "UI" };
 	fh = fsh;
 	for ( i = 0; i < MAX_FILE_HANDLES; i++, fh++ ) {
 		if ( !fh->used || !fh->name )
 			continue;
-		Com_Printf( "%2i %2s %s %s\n", i, s[ fh->owner ], fh->name,
+		Com_Printf( "%2i %2s %s %s\n", i, FS_OwnerName(fh->owner), fh->name,
 			fh->pak ? fh->pak->pakFilename : "" );
 	}
 }
@@ -3722,6 +3735,8 @@ void FS_VM_CloseFiles( handleOwner_t owner ) {
 	for ( i = 1; i < MAX_FILE_HANDLES; i++ ) {
 		if ( fsh[i].owner != owner )
 			continue;
+		Com_Printf( "^3%s:%i:%s leaked filehandle\n", 
+			FS_OwnerName(owner), i, fsh[i].name );
 		FS_FCloseFile( i );
 	}
 }
