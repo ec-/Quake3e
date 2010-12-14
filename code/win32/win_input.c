@@ -847,223 +847,20 @@ void IN_MouseMove ( void ) {
 	in_minimize processing
 */
 
-#define SKIPS(S) while(*(S)&&*(S)==' ')S++
-#define SKIPP(S) while(*(S)&&(*(S)=='+'))S++
-
 extern int HotKey;
 extern void Win_RemoveHotkey( void );
 extern void Win_AddHotkey( void );
 
-struct hk_token {
-	const unsigned int vkode;
-	const char *value;
-} ;
-
-static struct hk_token tokens[] = {
-	{ VK_BACK,		"BS"  },
-	{ VK_BACK,		"BACK"  },
-	{ VK_BACK,		"BACKSPACE"  },
-	{ VK_UP,		"UP"  },
-	{ VK_ESCAPE,	"ESC" },
-	{ VK_ESCAPE,	"ESCAPE" },
-	{ VK_TAB,		"TAB" },
-	{ VK_CONTROL,	"CTL" },
-	{ VK_CONTROL,	"CTRL" },
-	{ VK_CONTROL,	"CONTROL" },
-	{ VK_LCONTROL,	"LCTL" },
-	{ VK_LCONTROL,	"LCTRL" },
-	{ VK_LCONTROL,	"LCONTROL" },
-	{ VK_RCONTROL,	"RCTL" },
-	{ VK_RCONTROL,	"RCTRL" },
-	{ VK_RCONTROL,	"RCONTROL" },
-	{ VK_MENU,		"ALT" },
-	{ VK_LMENU,		"LALT" },
-	{ VK_RMENU,		"RALT" },
-	{ VK_SHIFT,		"SHIFT" },
-	{ VK_LSHIFT,	"LSHIFT" },
-	{ VK_RSHIFT,	"RSHIFT" },
-	{ VK_LWIN,		"WIN" },
-	{ VK_END,		"END" },
-	{ VK_INSERT,	"INS" },
-	{ VK_INSERT,	"INSERT" },
-	{ VK_DELETE,	"DEL" },
-	{ VK_DELETE,	"DELELE" },
-	{ VK_ADD,		"ADD" },
-	{ VK_ADD,		"PLUS" },
-	{ VK_SUBTRACT,	"SUB" },
-	{ VK_SUBTRACT,	"SUBTRACT" },
-	{ VK_SUBTRACT,	"MINUS" },
-	{ VK_DIVIDE,	"DIV" },
-	{ VK_DIVIDE,	"DIVIDE" },
-	{ VK_MULTIPLY,  "MUL" },
-	{ VK_MULTIPLY,  "MULTIPLY" },
-//	{ VK_MULTIPLY,  "STAR" },
-	{ VK_NUMLOCK,	"NUM" },
-	{ VK_NUMLOCK,	"NUMLOCK" },
-	{ VK_NUMLOCK,	"NUM_LOCK" },
-	{ VK_CLEAR,		"DOT" },
-	{ VK_CLEAR,		"CLEAR" },
-	{ VK_CAPITAL,	"CAPS" },
-	{ VK_CAPITAL,	"CAPITAL" },
-	{ VK_CAPITAL,	"CAPSLOCK" },
-	{ VK_CAPITAL,	"CAPS_LOCK" },
-	{ VK_HOME,		"HOME" },
-	{ VK_APPS,		"MENU" },
-	{ VK_PRIOR,	    "PGUP" },
-	{ VK_PRIOR,	    "PAGEUP" },
-	{ VK_PRIOR,	    "PAGE_UP" },
-	{ VK_NEXT,		"PGDN" },
-	{ VK_NEXT,		"PAGEDOWN" },
-	{ VK_NEXT,		"PAGE_DOWN" },
-	{ VK_LEFT,		"LEFT" },
-	{ VK_RIGHT,		"RIGHT" },
-	{ VK_DOWN,		"DOWN" },
-	{ VK_LWIN|HK_MOD_LWIN, "LWIN" },
-	{ VK_RWIN|HK_MOD_RWIN, "RWIN" },
-	{ VK_SPACE,		"SPACE" },
-	{ VK_PAUSE,		"PAUSE" },
-//	{ VK_CANCEL,	"BREAK" },
-	{ VK_RETURN,	"ENTER" },
-	{ VK_RETURN,	"RETURN" },
-	{ VK_PRINT,		"PRINT" },
-	{ VK_PRINT,		"SYSRQ" },
-	{ VK_SCROLL,	"SCROLL" },
-	{ 0,			"" }
-};
-
-static int findtok( const char *tok ) {
-    int i, n;
-
-	n = strlen( tok );
-	if ( !n )
-		return -1;
-
-    for ( i = 0; i < (sizeof(tokens)/sizeof(tokens[0]))-1; i++ )
-          if ( !Q_strncmp( tok, tokens[i].value, n ) )
-            return tokens[i].vkode;
-
-    return -1;
-}
-
+extern int Win32_GetKey( char **s, char *buf, int buflen );
 
 /*
 =========================================================================
 
 =========================================================================
 */
-static int gettok( char **s ) {
-
-#define COMP3(S,C0,C1,C2)          ( S[0]==C0 && S[1]==C1 && S[2]==C2)
-
-	char	buf[16], *t;
-    int		cnt, i;
-
-	t = *s;
-    if ( !*t )
-        return 0;
-
-    while( *t && *t != '+' && *t != ' ') t++;
-    cnt = t-*s;
-
-    if ( cnt ) {
-
-        if ( cnt >= sizeof( buf ) ) //too long
-            return -1;
-
-        memcpy( buf, *s, cnt );
-        buf[ cnt ] = '\0';
-
-        for ( i = 0; i < cnt ; i++ ) //uppercase
-           if ( buf[i] >= 'a' && buf[i] <= 'z' )
-                buf[i] += 'A'-'a';
-		//Com_Printf("string: -%s- len:%i\n", buf, cnt);
-        *s = t;
-		// signle  char
-        if ( cnt == 1 ) {
-			switch( buf[0] ) {
-				case '-':
-				case '_':
-					return VK_OEM_MINUS;
-				case '=':
-					return VK_OEM_PLUS;
-				case '\\':
-				case '|':
-					return VK_OEM_5;
-				case '[':
-				case '{':
-					return VK_OEM_4;
-				case ']':
-				case '}':
-					return VK_OEM_6;
-				case ';':
-				case ':':
-					return VK_OEM_1;
-				case '\'':
-				case '"':
-					return VK_OEM_7;
-				case ',':
-				case '<':
-					return VK_OEM_COMMA;
-				case '.':
-				case '>':
-					return VK_OEM_PERIOD;
-				case '?':
-				case '/':
-					return VK_OEM_2;
-				case '`':
-				case '~':
-					return VK_OEM_3;
-				case '!':
-					return '1';
-				case '@':
-					return '2';
-				case '#':
-					return '3';
-				case '$':
-					return '4';
-				case '%':
-					return '5';
-				case '^':
-					return '6';
-				case '&':
-					return '7';
-				case '*':
-					return '8';
-				case '(':
-					return '9';
-				case ')':
-					return '0';
-				default:
-					return (int)buf[0];
-			};
-        }
-		// F1-F9
-		if (cnt == 2 && buf[0] == 'F' && buf[1] >= '1' && buf[1] <= '9' )
-               return VK_F1+(*buf-'1');
-            // F10-F19
-		if (cnt == 3 && buf[0] == 'F' && buf[1] == '1' && buf[2] >= '0' && buf[2] <= '9' )
-               return VK_F10+(buf[2]-'0');
-		// KP0 - KP9
-		if (cnt == 3 && buf[0] == 'K' && buf[1] == 'P' && buf[2] >= '0' && buf[2] <= '9' )
-               return VK_NUMPAD0+(buf[2]-'0');
-		// KP_[0..9]/NUM[0..9]
-		if ( cnt == 4 && (COMP3(buf,'K','P','_') || COMP3(buf,'N','U','M') ) && buf[3] >='0' && buf[3] <= '9' )
-               return VK_NUMPAD0+(buf[3]-'0');
-
-		return findtok( buf );
-    }
-    return 0;
-}
-
-
-/*
-=========================================================================
-
-=========================================================================
-*/
-
 static void IN_GetHotkey( cvar_t *var, int *HotKey ) {
-	char	kset[256], *s, *s0;
+
+	char	kset[256], buf[64], *s;
 	int		i, code;
 
 	if ( !HotKey )
@@ -1076,24 +873,16 @@ static void IN_GetHotkey( cvar_t *var, int *HotKey ) {
 
 	s = var->string;
 
-	if ( !s || !*s ) {
-		Win_RemoveHotkey();
-		return;
-	}
-
-	SKIPS( s );
-
-	if ( !*s ) {
+	if ( !s ) {
 		Win_RemoveHotkey();
 		return;
 	}
 
 	memset( kset, 0, sizeof( kset ) );
 
-	for ( i = 0; i < 4; i++ ) {
-        s0 = s;
-		SKIPP(s);
-		code = gettok( &s );
+	for ( i = 0; i < 4; i++ ) 
+	{
+		code = Win32_GetKey( &s, buf, sizeof( buf ) );
 		if ( code == 0 ) // no more tokens
 			break;
 		if ( code < 0 || kset[code & 0xFF ] ||
@@ -1102,7 +891,7 @@ static void IN_GetHotkey( cvar_t *var, int *HotKey ) {
 				&& code != VK_SHIFT && code != VK_LSHIFT && code != VK_RSHIFT
 				&& code != (VK_LWIN|HK_MOD_LWIN) && code != (VK_RWIN|HK_MOD_RWIN)
 				&& *HotKey & 0xFF )) {
-			Com_Printf( "%s:"S_COLOR_YELLOW" invalid token %s\n", var->name, s0 );
+			Com_Printf( "%s:"S_COLOR_YELLOW" invalid token %s\n", var->name, buf );
 			*HotKey = 0;
 			break;
 		}
@@ -1123,6 +912,13 @@ static void IN_GetHotkey( cvar_t *var, int *HotKey ) {
 			default:		 *HotKey |= (code & 0xFF); break;
 		};
     }
+
+	if ( i == 0 ) 
+	{
+		Win_RemoveHotkey();
+		return;
+	}
+
 	if ( *HotKey == VK_OEM_3 // '~'
 			|| *HotKey == VK_RETURN
 			|| *HotKey == HK_MOD_WIN

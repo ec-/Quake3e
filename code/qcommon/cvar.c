@@ -337,7 +337,7 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 		{
 			var->flags &= ~CVAR_USER_CREATED;
 			Z_Free( var->resetString );
-			var->resetString = CopyString( var_value );
+			var->resetString = CopyCvarString( var_value );
 
 			if(flags & CVAR_ROM)
 			{
@@ -347,7 +347,7 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 				if(var->latchedString)
 					Z_Free(var->latchedString);
 
-				var->latchedString = CopyString(var_value);
+				var->latchedString = CopyCvarString(var_value);
 			}
 		}
 
@@ -368,7 +368,7 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 		if ( !var->resetString[0] ) {
 			// we don't have a reset string yet
 			Z_Free( var->resetString );
-			var->resetString = CopyString( var_value );
+			var->resetString = CopyCvarString( var_value );
 		} else if ( var_value[0] && strcmp( var->resetString, var_value ) ) {
 			Com_DPrintf( "Warning: cvar \"%s\" given initial values: \"%s\" and \"%s\"\n",
 				var_name, var->resetString, var_value );
@@ -414,13 +414,13 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 	if(index >= cvar_numIndexes)
 		cvar_numIndexes = index + 1;
 
-	var->name = CopyString (var_name);
-	var->string = CopyString (var_value);
+	var->name = CopyCvarString (var_name);
+	var->string = CopyCvarString (var_value);
 	var->modified = qtrue;
 	var->modificationCount = 1;
 	var->value = atof (var->string);
 	var->integer = atoi(var->string);
-	var->resetString = CopyString( var_value );
+	var->resetString = CopyCvarString( var_value );
 	var->validate = qfalse;
 
 	// link the variable in
@@ -559,7 +559,7 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 			}
 
 			Com_Printf ("%s will be changed upon restarting.\n", var_name);
-			var->latchedString = CopyString(value);
+			var->latchedString = CopyCvarString(value);
 			var->modified = qtrue;
 			var->modificationCount++;
 			return var;
@@ -589,7 +589,7 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 	
 	Z_Free (var->string);	// free the old value string
 	
-	var->string = CopyString(value);
+	var->string = CopyCvarString(value);
 	var->value = atof (var->string);
 	var->integer = atoi (var->string);
 
@@ -1185,6 +1185,7 @@ updates an interpreted modules' version of a cvar
 =====================
 */
 void	Cvar_Update( vmCvar_t *vmCvar ) {
+	size_t	len;
 	cvar_t	*cv = NULL;
 	assert(vmCvar);
 
@@ -1201,10 +1202,13 @@ void	Cvar_Update( vmCvar_t *vmCvar ) {
 		return;		// variable might have been cleared by a cvar_restart
 	}
 	vmCvar->modificationCount = cv->modificationCount;
-	if ( strlen(cv->string)+1 > MAX_CVAR_VALUE_STRING ) 
-	  Com_Error( ERR_DROP, "Cvar_Update: src %s length %zd exceeds MAX_CVAR_VALUE_STRING",
-		     cv->string, 
-		     strlen(cv->string));
+
+	len = strlen( cv->string );
+	if ( len + 1 > MAX_CVAR_VALUE_STRING ) {
+		Com_Printf( S_COLOR_YELLOW "Cvar_Update: src %s length %d exceeds MAX_CVAR_VALUE_STRING - truncate\n",
+			cv->string, len );
+	}
+
 	Q_strncpyz( vmCvar->string, cv->string,  MAX_CVAR_VALUE_STRING ); 
 
 	vmCvar->value = cv->value;

@@ -1182,6 +1182,41 @@ char *CopyString( const char *in ) {
 	return out;
 }
 
+
+/*
+========================
+CopyStringN
+
+========================
+*/
+char *CopyCvarString( const char *in ) {
+	char	*out;
+	size_t	len;
+
+	if (!in[0]) {
+		return ((char *)&emptystring) + sizeof(memblock_t);
+	}
+	else if (!in[1]) {
+		if (in[0] >= '0' && in[0] <= '9') {
+			return ((char *)&numberstring[in[0]-'0']) + sizeof(memblock_t);
+		}
+	}
+
+	len = strlen(in) + 1;
+	// truncate length if exceeds
+	if ( len > MAX_CVAR_VALUE_STRING ) {
+		Com_Printf( S_COLOR_YELLOW "cvar value %s length %d exceeds MAX_CVAR_VALUE_STRING - truncate\n",
+			in, len - 1 );
+		out = S_Malloc( MAX_CVAR_VALUE_STRING );
+		strncpy( out, in, MAX_CVAR_VALUE_STRING-1 );
+		out[MAX_CVAR_VALUE_STRING-1] = '\0';
+	} else {
+		out = S_Malloc( len );
+		strcpy( out, in );
+	}
+	return out;
+}
+
 /*
 ==============================================================================
 

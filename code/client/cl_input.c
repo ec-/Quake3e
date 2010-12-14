@@ -466,7 +466,7 @@ void CL_MouseMove(usercmd_t *cmd)
 			// clip at a small positive number to avoid division
 			// by zero (or indeed going backwards!)
 			if (offset < 0.001) {
-				offset = 0.001;
+				offset = 0.001f;
 			}
 
 			// sensitivity remains pretty much unchanged at low speeds
