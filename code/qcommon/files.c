@@ -269,6 +269,7 @@ static	int			fs_readCount;			// total bytes read
 static	int			fs_loadCount;			// total files read
 static	int			fs_loadStack;			// total files in memory
 static	int			fs_packFiles = 0;			// total number of files in packs
+static	int			fs_packCount = 0;			// total number of packs
 
 static int fs_checksumFeed;
 
@@ -2587,6 +2588,7 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 		strcpy(pak->pakGamename, dir);
 
 		fs_packFiles += pak->numfiles;
+		fs_packCount++;
 
 		search = Z_Malloc (sizeof(searchpath_t));
 		search->pack = pak;
@@ -2889,6 +2891,7 @@ static void FS_Startup( const char *gameName ) {
 	Com_Printf( "----- FS_Startup -----\n" );
 
 	fs_packFiles = 0;
+	fs_packCount = 0;
 
 	fs_debug = Cvar_Get( "fs_debug", "0", 0 );
 	fs_copyfiles = Cvar_Get( "fs_copyfiles", "0", CVAR_INIT );
@@ -2971,7 +2974,7 @@ static void FS_Startup( const char *gameName ) {
 		missingFiles = fopen( "\\missing.txt", "ab" );
 	}
 #endif
-	Com_Printf( "%d files in pk3 files\n", fs_packFiles );
+	Com_Printf( "%d files in %d pk3 files\n", fs_packFiles, fs_packCount );
 }
 
 /*
