@@ -925,7 +925,7 @@ void Key_SetBinding( int keynum, const char *binding ) {
 	}
 		
 	// allocate memory for new binding
-	keys[keynum].binding = CopyCvarString( binding );
+	keys[keynum].binding = CopyString( binding );
 
 	// consider this like modifying an archived cvar, so the
 	// file write will be triggered at the next oportunity
