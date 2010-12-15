@@ -1019,6 +1019,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	unz_s			*zfi;
 	FILE			*temp;
 	int				l;
+	fileHandleData_t *f;
 	char demoExt[16];
 
 	hash = 0;
@@ -1092,8 +1093,10 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	//
 
 	*file = FS_HandleForFile();
-	fsh[*file].handleFiles.unique = uniqueFILE;
-	fsh[*file].used = qfalse;
+	f = &fsh[*file];
+
+	f->handleFiles.unique = uniqueFILE;
+	f->used = qfalse;
 
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		//
@@ -1145,17 +1148,17 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 
 					if ( uniqueFILE ) {
 						// open a new file on the pakfile
-						fsh[*file].handleFiles.file.z = unzReOpen (pak->pakFilename, pak->handle);
-						if (fsh[*file].handleFiles.file.z == NULL) {
+						f->handleFiles.file.z = unzReOpen( pak->pakFilename, pak->handle );
+						if ( f->handleFiles.file.z == NULL ) {
 							Com_Error (ERR_FATAL, "Couldn't reopen %s", pak->pakFilename);
 						}
 					} else {
-						fsh[*file].handleFiles.file.z = pak->handle;
+						f->handleFiles.file.z = pak->handle;
 					}
-					Q_strncpyz( fsh[*file].name, filename, sizeof( fsh[*file].name ) );
-					fsh[*file].zipFile = qtrue;
-					fsh[*file].pak = pak;
-					zfi = (unz_s *)fsh[*file].handleFiles.file.z;
+					Q_strncpyz( f->name, filename, sizeof( f->name ) );
+					f->zipFile = qtrue;
+					f->pak = pak;
+					zfi = (unz_s *)f->handleFiles.file.z;
 					// in case the file was new
 					temp = zfi->file;
 					// set the file position in the zip file (also sets the current file info)
@@ -1165,9 +1168,9 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					// we copy this back into the structure
 					zfi->file = temp;
 					// open the file in the zip
-					unzOpenCurrentFile( fsh[*file].handleFiles.file.z );
-					fsh[*file].zipFilePos = pakFile->pos;
-					fsh[*file].used = qtrue;
+					unzOpenCurrentFile( f->handleFiles.file.z );
+					f->zipFilePos = pakFile->pos;
+					f->used = qtrue;
 
 					if ( fs_debug->integer ) {
 						Com_Printf( "FS_FOpenFileRead: %s (found in '%s')\n", 
@@ -1205,15 +1208,15 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 			dir = search->dir;
 			
 			netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
-			fsh[*file].handleFiles.file.o = fopen (netpath, "rb");
-			if ( !fsh[*file].handleFiles.file.o ) {
+			f->handleFiles.file.o = fopen( netpath, "rb" );
+			if ( f->handleFiles.file.o == NULL ) {
 				continue;
 			}
 
-			Q_strncpyz( fsh[*file].name, filename, sizeof( fsh[*file].name ) );
-			fsh[*file].zipFile = qfalse;
-			fsh[*file].used = qtrue;
-			fsh[*file].pak = NULL;
+			Q_strncpyz( f->name, filename, sizeof( f->name ) );
+			f->zipFile = qfalse;
+			f->used = qtrue;
+			f->pak = NULL;
 
 			if ( fs_debug->integer ) {
 				Com_Printf( "FS_FOpenFileRead: %s (found in '%s/%s')\n", filename,
