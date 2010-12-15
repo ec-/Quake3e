@@ -2704,10 +2704,11 @@ int inflate_blocks(inflate_blocks_statef *s, z_streamp z, int r)
                              &s->sub.trees.tb, s->hufts, z);
       if (t != Z_OK)
       {
-        ZFREE(z, s->sub.trees.blens);
         r = t;
-        if (r == Z_DATA_ERROR)
-          s->mode = BAD;
+		if (r == Z_DATA_ERROR) {
+			ZFREE(z, s->sub.trees.blens);
+			s->mode = BAD;
+		}
         LEAVE
       }
       s->sub.trees.index = 0;
@@ -2770,11 +2771,12 @@ int inflate_blocks(inflate_blocks_statef *s, z_streamp z, int r)
         t = inflate_trees_dynamic(257 + (t & 0x1f), 1 + ((t >> 5) & 0x1f),
                                   s->sub.trees.blens, &bl, &bd, &tl, &td,
                                   s->hufts, z);
-        ZFREE(z, s->sub.trees.blens);
         if (t != Z_OK)
         {
-          if (t == (uInt)Z_DATA_ERROR)
-            s->mode = BAD;
+			if (t == (uInt)Z_DATA_ERROR) {
+				ZFREE(z, s->sub.trees.blens);
+				s->mode = BAD;
+			}
           r = t;
           LEAVE
         }
@@ -2786,6 +2788,7 @@ int inflate_blocks(inflate_blocks_statef *s, z_streamp z, int r)
         }
         s->sub.decode.codes = c;
       }
+	  ZFREE(z, s->sub.trees.blens);
       s->mode = CODES;
     case CODES:
       UPDATE
@@ -3144,7 +3147,7 @@ static int huft_build(uInt *b, uInt n, uInt s, const uInt *d, const uInt *e, inf
 
         /* allocate new table */
         if (*hn + z > MANY)     /* (note: doesn't matter for fixed) */
-          return Z_MEM_ERROR;   /* not enough memory */
+          return Z_DATA_ERROR;  /* overflow of MANY */
         u[h] = q = hp + *hn;
         *hn += z;
 
@@ -3536,28 +3539,41 @@ static int inflate_fast(uInt bl, uInt bd, inflate_huft *tl, inflate_huft *td, in
 
             /* do the copy */
             m -= c;
-            if ((uInt)(q - s->window) >= d)     /* offset before dest */
-            {                                   /*  just copy */
-              r = q - d;
-              *q++ = *r++;  c--;        /* minimum count is three, */
-              *q++ = *r++;  c--;        /*  so unroll loop a little */
-            }
-            else                        /* else offset after destination */
+			r = q - d;
+            if (r < s->window)                  /* wrap if needed */
             {
-              e = d - (uInt)(q - s->window); /* bytes from offset to end */
-              r = s->end - e;           /* pointer to offset */
-              if (c > e)                /* if source crosses, */
+              do {
+                r += s->end - s->window;        /* force pointer in window */
+              } while (r < s->window);          /* covers invalid distances */
+              e = s->end - r;
+              if (c > e)
               {
-                c -= e;                 /* copy to end of window */
+                c -= e;                         /* wrapped copy */
                 do {
-                  *q++ = *r++;
+                    *q++ = *r++;
                 } while (--e);
-                r = s->window;          /* copy rest from start of window */
+                r = s->window;
+                do {
+                    *q++ = *r++;
+                } while (--c);
+              }
+              else                              /* normal copy */
+              {
+                *q++ = *r++;  c--;
+                *q++ = *r++;  c--;
+                do {
+                    *q++ = *r++;
+                } while (--c);
               }
             }
-            do {                        /* copy all or what's left */
-              *q++ = *r++;
-            } while (--c);
+            else                                /* normal copy */
+            {
+              *q++ = *r++;  c--;
+              *q++ = *r++;  c--;
+              do {
+                *q++ = *r++;
+              } while (--c);
+            }
             break;
           }
           else if ((e & 64) == 0)
@@ -3796,15 +3812,9 @@ int inflate_codes(inflate_blocks_statef *s, z_streamp z, int r)
       Tracevv(("inflate:         distance %u\n", c->sub.copy.dist));
       c->mode = COPY;
     case COPY:          /* o: copying bytes in window, waiting for space */
-#ifndef __TURBOC__ /* Turbo C bug for following expression */
-      f = (uInt)(q - s->window) < c->sub.copy.dist ?
-          s->end - (c->sub.copy.dist - (q - s->window)) :
-          q - c->sub.copy.dist;
-#else
       f = q - c->sub.copy.dist;
-      if ((uInt)(q - s->window) < c->sub.copy.dist)
-        f = s->end - (c->sub.copy.dist - (uInt)(q - s->window));
-#endif
+      while (f < s->window)             /* modulo window size-"while" instead */
+        f += s->end - s->window;        /* of "if" handles invalid distances */
       while (c->len)
       {
         NEEDOUT
