@@ -248,11 +248,11 @@ static BOOL IN_InitRawMouse( void ) {
 	RRID  = NULL;
 	GRID  = NULL;
 
-	dll = GetModuleHandle( "user32" ); // should always success
+	dll = GetModuleHandle( TEXT("user32") ); // should always success
 
-	GRRID = (PGRRID) GetProcAddress( dll, TEXT( "GetRegisteredRawInputDevices" ) );
-	RRID  = (PRRID) GetProcAddress( dll, TEXT( "RegisterRawInputDevices" ) );
-	GRID  = (PGRID) GetProcAddress( dll, TEXT( "GetRawInputData" ) );
+	GRRID = (PGRRID) GetProcAddress( dll, "GetRegisteredRawInputDevices" );
+	RRID  = (PRRID) GetProcAddress( dll, "RegisterRawInputDevices" );
+	GRID  = (PGRID) GetProcAddress( dll, "GetRawInputData" );
 
 	CloseHandle( dll );
 
@@ -451,7 +451,7 @@ qboolean IN_InitDIMouse( void ) {
 	Com_DPrintf( "Initializing DirectInput...\n");
 
 	if (!hInstDI) {
-		hInstDI = LoadLibrary("dinput.dll");
+		hInstDI = LoadLibrary( TEXT( "dinput.dll" ) );
 		
 		if (hInstDI == NULL) {
 			Com_DPrintf ("Couldn't load dinput.dll\n");
