@@ -385,9 +385,9 @@ void Sys_Exit( int ex )
 
 void Sys_Quit (void) 
 {
-	CL_Shutdown ();
-	fcntl( 0, F_SETFL, fcntl (0, F_GETFL, 0) & ~FNDELAY );
-	Sys_Exit(0);
+	CL_Shutdown();
+	fcntl( STDIN_FILENO, F_SETFL, fcntl( STDIN_FILENO, F_GETFL, 0 ) & ~FNDELAY );
+	Sys_Exit( 0 );
 }
 
 
@@ -521,6 +521,7 @@ void floating_point_exception_handler( int whatever )
 void Sys_ConsoleInputInit( void )
 {
 	struct termios tc;
+	const char* term;
 
 	// TTimo 
 	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=390
@@ -537,16 +538,18 @@ void Sys_ConsoleInputInit( void )
 	if ( !ttycon || !ttycon->integer )
 	{
 	    ttycon_on = qfalse;
-		//stdin_active = qfalse; // -EC-
+		stdin_active = qfalse; // -EC-
 		return;
 	}
+	term = getenv( "TERM" );
 
-	if ( isatty( STDIN_FILENO ) != 1 )
+	if ( isatty( STDIN_FILENO ) != 1 || !term  
+		|| !strcmp( term, "dumb" ) || !strcmp( term, "raw" ) )
 	{
 		Com_Printf( "stdin is not a tty, tty console mode failed\n" );
 		Cvar_Set( "ttycon", "0" );
 		ttycon_on = qfalse;
-		//stdin_active = qfalse; // -EC-
+		stdin_active = qfalse; // -EC-
 		return;
 	}
 
@@ -772,21 +775,29 @@ Block execution for msec or until input is recieved.
 extern cvar_t *com_yieldCPU;
 
 void Sys_Sleep( int msec ) {
+	struct timeval timeout;
 	fd_set fdset;
 
 	if ( msec == 0 )
 		return;
-	if ( com_dedicated->integer ) {
-		FD_ZERO(&fdset);
-		FD_SET(fileno(stdin), &fdset);
-		if( msec < 0 ) {
-			select((fileno(stdin) + 1), &fdset, NULL, NULL, NULL);
-		} else {
-			struct timeval timeout;
 
-			timeout.tv_sec = msec/1000;
-			timeout.tv_usec = (msec%1000)*1000;
-			select((fileno(stdin) + 1), &fdset, NULL, NULL, &timeout);
+	if ( com_dedicated->integer ) {
+		if ( ttycon_on == qtrue ) {
+			FD_ZERO( &fdset );
+			FD_SET( STDIN_FILENO, &fdset );
+			if ( msec < 0 ) {
+				select( STDIN_FILENO + 1, &fdset, NULL, NULL, NULL );
+			} else {
+				timeout.tv_sec = msec/1000;
+				timeout.tv_usec = (msec%1000)*1000;
+				select( STDIN_FILENO + 1, &fdset, NULL, NULL, &timeout );
+			}
+		} else {
+			if ( msec < 0 ) { 
+				// can happen only if no map loaded	
+				// which means we totally stuck as stdin is also disabled :P
+				usleep( 10000 );
+			}
 		}
 	} else {
 		if ( msec <= 0 )

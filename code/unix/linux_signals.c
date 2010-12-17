@@ -52,6 +52,7 @@ static void signal_handler(int sig) // bk010104 - replace this... (NOTE TTimo hu
 
 void InitSig(void)
 {
+  signal(SIGINT, signal_handler);
   signal(SIGHUP, signal_handler);
   signal(SIGQUIT, signal_handler);
   signal(SIGILL, signal_handler);
