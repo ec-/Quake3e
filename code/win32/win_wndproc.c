@@ -686,7 +686,12 @@ LONG WINAPI MainWndProc (
 			Con_CheckResize();
 		}
 		break;
-   }
+
+	case WM_ERASEBKGND: 
+		// avoid GDI clearing the OpenGL window background in Vista/7
+		if ( g_wv.osversion.dwMajorVersion >= 6 )
+			return 1;
+	}
 
     return DefWindowProc( hWnd, uMsg, wParam, lParam );
 }

@@ -312,6 +312,10 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 	return bestMatch;
 }
 
+#ifndef PFD_SUPPORT_COMPOSITION
+#define PFD_SUPPORT_COMPOSITION 0x00008000
+#endif
+
 /*
 ** void GLW_CreatePFD
 **
@@ -344,6 +348,9 @@ static void GLW_CreatePFD( PIXELFORMATDESCRIPTOR *pPFD, int colorbits, int depth
 	src.cColorBits = colorbits;
 	src.cDepthBits = depthbits;
 	src.cStencilBits = stencilbits;
+
+	if ( g_wv.osversion.dwMajorVersion >= 6 )
+		src.dwFlags |= PFD_SUPPORT_COMPOSITION;
 
 	if ( stereo )
 	{
@@ -571,7 +578,7 @@ static qboolean GLW_InitDriver( const char *drivername, int colorbits )
 **
 ** Responsible for creating the Win32 window and initializing the OpenGL driver.
 */
-#define	WINDOW_STYLE	(WS_OVERLAPPED|WS_BORDER|WS_CAPTION|WS_VISIBLE)
+#define	WINDOW_STYLE	(WS_OVERLAPPED|WS_BORDER|WS_CAPTION|WS_VISIBLE|WS_CLIPCHILDREN)
 static qboolean GLW_CreateWindow( const char *drivername, int width, int height, int colorbits, qboolean cdsFullscreen )
 {
 	RECT			r;
@@ -624,7 +631,7 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		if ( cdsFullscreen || !Q_stricmp( _3DFX_DRIVER_NAME, drivername ) )
 		{
 			exstyle = WS_EX_TOPMOST;
-			stylebits = WS_POPUP|WS_VISIBLE|WS_SYSMENU;
+			stylebits = WS_POPUP|WS_VISIBLE|WS_SYSMENU|WS_CLIPCHILDREN;
 		}
 		else
 		{
