@@ -752,7 +752,8 @@ extern char cl_cdkey[34];
 
 // TTimo
 // centralized and cleaned, that's the max string you can send to a Com_Printf / Com_DPrintf (above gets truncated)
-#define	MAXPRINTMSG	4096
+// bump to 8192 as 4096 may be not enough to print some data like gl extensions - CE
+#define	MAXPRINTMSG	8192
 
 char		*CopyString( const char *in );
 void		Info_Print( const char *s );
