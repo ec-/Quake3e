@@ -1020,22 +1020,6 @@ void RB_CalcRotateTexCoords( float degsPerSecond, float *st )
 }
 
 
-
-
-
-#if 0
-#if id386 && !defined(__GNUC__)
-
-long myftol( float f ) {
-	static int tmp;
-	__asm fld f
-	__asm fistp tmp
-	__asm mov eax, tmp
-}
-
-#endif
-#endif
-
 /*
 ** RB_CalcSpecularAlpha
 **
