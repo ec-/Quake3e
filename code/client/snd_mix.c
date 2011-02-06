@@ -37,7 +37,7 @@ short*   snd_out;
 
 #if !defined(__GNUC__)
 
-#if defined( _MSC_VER )
+#if defined( _MSC_VER ) && defined ( _M_IX86 )
 
 #include "../win32/win_local.h"
 
@@ -286,7 +286,7 @@ void S_TransferStereo16 (unsigned long *pbuf, int endtime)
 		snd_linear_count <<= 1;
 
 	// write a linear blast of samples
-#if defined( _MSC_VER )
+#if defined( _MSC_VER )&& defined ( _M_IX86 )
 		//if ( g_wv.haveSSE )
 		//	S_WriteLinearBlastStereo16_SSE();
 		//else
