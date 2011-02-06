@@ -1140,9 +1140,9 @@ This function is called directly by the generated code
 */
 int	VM_CallCompiled( vm_t *vm, int *args ) {
 	int		stack[1024];
-	int		programCounter;
-	int		programStack;
-	int		stackOnEntry;
+	//int		programCounter;
+	size_t	programStack;
+	size_t	stackOnEntry;
 	byte	*image;
 	void	*opStack;
 	int		*oldInstructionPointers;
@@ -1164,7 +1164,7 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 	// set up the stack frame 
 	image = vm->dataBase;
 
-	programCounter = 0;
+	//programCounter = 0;
 
 	programStack -= 48;
 
@@ -1190,7 +1190,7 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 
 	__asm  {
 		pushad
-			mov    esi, programStack
+		mov		esi, programStack
 		mov		edi, opStack
 		call	entryPoint
 		mov		programStack, esi

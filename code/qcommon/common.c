@@ -344,8 +344,8 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
     	com_errorEntered = qfalse;
 		longjmp (abortframe, -1);
 	} else {
-		CL_Shutdown ();
-		SV_Shutdown (va("Server fatal crashed: %s", com_errorMessage));
+		CL_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ) );
+		SV_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ) );
 	}
 
 	Com_Shutdown ();
@@ -365,13 +365,14 @@ do the apropriate things.
 */
 void Com_Quit_f( void ) {
 	// don't try to shutdown if we are in a recursive error
+	char *p = Cmd_Args( );
 	if ( !com_errorEntered ) {
-		SV_Shutdown ("Server quit");
-		CL_Shutdown ();
-		Com_Shutdown ();
-		FS_Shutdown(qtrue);
+		SV_Shutdown( p[0] ? p : "Server quit" );
+		CL_Shutdown( p[0] ? p : "Client quit" );
+		Com_Shutdown();
+		FS_Shutdown( qtrue );
 	}
-	Sys_Quit ();
+	Sys_Quit();
 }
 
 
@@ -2920,7 +2921,7 @@ void Com_Frame( void ) {
 			CL_StartHunkUsers( );
 #endif
 		} else {
-			CL_Shutdown();
+			CL_Shutdown( "" );
 #ifndef DEDICATED
 			if ( !com_sv_running->integer ) {
 				// clear the whole hunk

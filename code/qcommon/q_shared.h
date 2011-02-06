@@ -36,7 +36,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define BASEGAME              "baseq3"
 
-#define MAX_TEAMNAME 32
+#define MAX_TEAMNAME            32
+#define MAX_MASTER_SERVERS      5	// number of supported master servers
+
+#define GAMENAME_FOR_MASTER     "Quake3Arena"
+#define HEARTBEAT_FOR_MASTER    "QuakeArena-1"
 
 #ifdef _MSC_VER
 
@@ -138,6 +142,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 typedef unsigned char 		byte;
 
 typedef enum {qfalse, qtrue}	qboolean;
+
+typedef union {
+	float f;
+	int i;
+	unsigned int ui;
+} floatint_t;
 
 typedef int		qhandle_t;
 typedef int		sfxHandle_t;
@@ -696,6 +706,8 @@ void	Q_strcat( char *dest, int size, const char *src );
 int Q_PrintStrlen( const char *string );
 // removes color sequences from string
 char *Q_CleanStr( char *string );
+// Count the number of char tocount encountered in string
+int Q_CountChar(const char *string, char tocount);
 
 //=============================================
 

@@ -41,12 +41,20 @@ to be sent to the authorize server.
 
 When an authorizeip is returned, a challenge response will be
 sent to that ip.
+
+ioquake3: we added a possibility for clients to add a challenge
+to their packets, to make it more difficult for malicious servers
+to hi-jack client connections.
+Also, the auth stuff is completely disabled for com_standalone games
+as well as IPv6 connections, since there is no way to use the
+v4-only auth server for these new types of connections.
 =================
 */
 void SV_GetChallenge( netadr_t from ) {
 	int		i;
 	int		oldest;
 	int		oldestTime;
+	const char *clientChallenge = Cmd_Argv(1);
 	challenge_t	*challenge;
 
 	// ignore if we are in single player
@@ -69,72 +77,85 @@ void SV_GetChallenge( netadr_t from ) {
 		}
 	}
 
-	if (i == MAX_CHALLENGES) {
+	if (i == MAX_CHALLENGES)
+	{
 		// this is the first time this client has asked for a challenge
 		challenge = &svs.challenges[oldest];
-
-		challenge->challenge = ( (rand() << 16) ^ rand() ) ^ svs.time;
+		challenge->clientChallenge = 0;
 		challenge->adr = from;
 		challenge->firstTime = svs.time;
 		challenge->time = svs.time;
 		challenge->connected = qfalse;
-		i = oldest;
 	}
 
-	// if they are on a lan address, send the challengeResponse immediately
-	if ( Sys_IsLANAddress( from ) ) {
-		challenge->pingTime = svs.time;
-		NET_OutOfBandPrint( NS_SERVER, from, "challengeResponse %i", challenge->challenge );
-		return;
-	}
+	// always generate a new challenge number, so the client cannot circumvent sv_maxping
+	challenge->challenge = ( (rand() << 16) ^ rand() ) ^ svs.time;
+	challenge->wasrefused = qfalse;
 
-	// look up the authorize server's IP
-	if ( !svs.authorizeAddress.ip[0] && svs.authorizeAddress.type != NA_BAD ) {
-		Com_Printf( "Resolving %s\n", AUTHORIZE_SERVER_NAME );
-		if ( !NET_StringToAdr( AUTHORIZE_SERVER_NAME, &svs.authorizeAddress ) ) {
-			Com_Printf( "Couldn't resolve address\n" );
+
+#ifndef STANDALONE
+	// Drop the authorize stuff if this client is coming in via v6 as the auth server does not support ipv6.
+	// Drop also for addresses coming in on local LAN and for stand-alone games independent from id's assets.
+	if(challenge->adr.type == NA_IP && !Cvar_VariableIntegerValue("com_standalone") && !Sys_IsLANAddress(from))
+	{
+		// look up the authorize server's IP
+		if (svs.authorizeAddress.type == NA_BAD)
+		{
+			Com_Printf( "Resolving %s\n", AUTHORIZE_SERVER_NAME );
+			
+			if (NET_StringToAdr(AUTHORIZE_SERVER_NAME, &svs.authorizeAddress, NA_IP))
+			{
+				svs.authorizeAddress.port = BigShort( PORT_AUTHORIZE );
+				Com_Printf( "%s resolved to %i.%i.%i.%i:%i\n", AUTHORIZE_SERVER_NAME,
+					svs.authorizeAddress.ip[0], svs.authorizeAddress.ip[1],
+					svs.authorizeAddress.ip[2], svs.authorizeAddress.ip[3],
+					BigShort( svs.authorizeAddress.port ) );
+			}
+		}
+
+		// we couldn't contact the auth server, let them in.
+		if(svs.authorizeAddress.type == NA_BAD)
+			Com_Printf("Couldn't resolve auth server address\n");
+
+		// if they have been challenging for a long time and we
+		// haven't heard anything from the authorize server, go ahead and
+		// let them in, assuming the id server is down
+		else if(svs.time - challenge->firstTime > AUTHORIZE_TIMEOUT)
+			Com_DPrintf( "authorize server timed out\n" );
+		else
+		{
+			// otherwise send their ip to the authorize server
+			cvar_t	*fs;
+			char	game[1024];
+
+			// If the client provided us with a client challenge, store it...
+			if(*clientChallenge)
+				challenge->clientChallenge = atoi(clientChallenge);
+			
+			Com_DPrintf( "sending getIpAuthorize for %s\n", NET_AdrToString( from ));
+		
+			strcpy(game, BASEGAME);
+			fs = Cvar_Get ("fs_game", "", CVAR_INIT|CVAR_SYSTEMINFO );
+			if (fs && fs->string[0] != 0) {
+				strcpy(game, fs->string);
+			}
+			
+			// the 0 is for backwards compatibility with obsolete sv_allowanonymous flags
+			// getIpAuthorize <challenge> <IP> <game> 0 <auth-flag>
+			NET_OutOfBandPrint( NS_SERVER, svs.authorizeAddress,
+				"getIpAuthorize %i %i.%i.%i.%i %s 0 %s",  challenge->challenge,
+				from.ip[0], from.ip[1], from.ip[2], from.ip[3], game, sv_strictAuth->string );
+			
 			return;
 		}
-		svs.authorizeAddress.port = BigShort( PORT_AUTHORIZE );
-		Com_Printf( "%s resolved to %i.%i.%i.%i:%i\n", AUTHORIZE_SERVER_NAME,
-			svs.authorizeAddress.ip[0], svs.authorizeAddress.ip[1],
-			svs.authorizeAddress.ip[2], svs.authorizeAddress.ip[3],
-			BigShort( svs.authorizeAddress.port ) );
 	}
+#endif
 
-	// if they have been challenging for a long time and we
-	// haven't heard anything from the authorize server, go ahead and
-	// let them in, assuming the id server is down
-	if ( svs.time - challenge->firstTime > AUTHORIZE_TIMEOUT ) {
-		Com_DPrintf( "authorize server timed out\n" );
-
-		challenge->pingTime = svs.time;
-		NET_OutOfBandPrint( NS_SERVER, challenge->adr, 
-			"challengeResponse %i", challenge->challenge );
-		return;
-	}
-
-	// otherwise send their ip to the authorize server
-	if ( svs.authorizeAddress.type != NA_BAD ) {
-		cvar_t	*fs;
-		char	game[1024];
-
-		Com_DPrintf( "sending getIpAuthorize for %s\n", NET_AdrToString( from ));
-		
-		strcpy(game, BASEGAME);
-		fs = Cvar_Get ("fs_game", "", CVAR_INIT|CVAR_SYSTEMINFO );
-		if (fs && fs->string[0] != 0) {
-			strcpy(game, fs->string);
-		}
-		
-		// the 0 is for backwards compatibility with obsolete sv_allowanonymous flags
-		// getIpAuthorize <challenge> <IP> <game> 0 <auth-flag>
-		NET_OutOfBandPrint( NS_SERVER, svs.authorizeAddress,
-			"getIpAuthorize %i %i.%i.%i.%i %s 0 %s",  svs.challenges[i].challenge,
-			from.ip[0], from.ip[1], from.ip[2], from.ip[3], game, sv_strictAuth->string );
-	}
+	challenge->pingTime = svs.time;
+	NET_OutOfBandPrint( NS_SERVER, challenge->adr, "challengeResponse %i %s", challenge->challenge, clientChallenge);
 }
 
+#ifndef STANDALONE
 /*
 ====================
 SV_AuthorizeIpPacket
@@ -149,6 +170,7 @@ void SV_AuthorizeIpPacket( netadr_t from ) {
 	int		i;
 	char	*s;
 	char	*r;
+	challenge_t *challengeptr;
 
 	if ( !NET_CompareBaseAdr( from, svs.authorizeAddress ) ) {
 		Com_Printf( "SV_AuthorizeIpPacket: not from authorize server\n" );
@@ -166,50 +188,81 @@ void SV_AuthorizeIpPacket( netadr_t from ) {
 		Com_Printf( "SV_AuthorizeIpPacket: challenge not found\n" );
 		return;
 	}
+	
+	challengeptr = &svs.challenges[i];
 
 	// send a packet back to the original client
-	svs.challenges[i].pingTime = svs.time;
+	challengeptr->pingTime = svs.time;
 	s = Cmd_Argv( 2 );
 	r = Cmd_Argv( 3 );			// reason
 
 	if ( !Q_stricmp( s, "demo" ) ) {
-		if ( Cvar_VariableValue( "fs_restrict" ) ) {
-			// a demo client connecting to a demo server
-			NET_OutOfBandPrint( NS_SERVER, svs.challenges[i].adr, 
-				"challengeResponse %i", svs.challenges[i].challenge );
-			return;
-		}
 		// they are a demo client trying to connect to a real server
-		NET_OutOfBandPrint( NS_SERVER, svs.challenges[i].adr, "print\nServer is not a demo server\n" );
+		NET_OutOfBandPrint( NS_SERVER, challengeptr->adr, "print\nServer is not a demo server\n" );
 		// clear the challenge record so it won't timeout and let them through
-		Com_Memset( &svs.challenges[i], 0, sizeof( svs.challenges[i] ) );
+		Com_Memset( challengeptr, 0, sizeof( *challengeptr ) );
 		return;
 	}
 	if ( !Q_stricmp( s, "accept" ) ) {
-		NET_OutOfBandPrint( NS_SERVER, svs.challenges[i].adr, 
-			"challengeResponse %i", svs.challenges[i].challenge );
+		NET_OutOfBandPrint(NS_SERVER, challengeptr->adr,
+			"challengeResponse %d %d", challengeptr->challenge, challengeptr->clientChallenge);
 		return;
 	}
 	if ( !Q_stricmp( s, "unknown" ) ) {
 		if (!r) {
-			NET_OutOfBandPrint( NS_SERVER, svs.challenges[i].adr, "print\nAwaiting CD key authorization\n" );
+			NET_OutOfBandPrint( NS_SERVER, challengeptr->adr, "print\nAwaiting CD key authorization\n" );
 		} else {
-			NET_OutOfBandPrint( NS_SERVER, svs.challenges[i].adr, "print\n%s\n", r);
+			NET_OutOfBandPrint( NS_SERVER, challengeptr->adr, "print\n%s\n", r);
 		}
 		// clear the challenge record so it won't timeout and let them through
-		Com_Memset( &svs.challenges[i], 0, sizeof( svs.challenges[i] ) );
+		Com_Memset( challengeptr, 0, sizeof( *challengeptr ) );
 		return;
 	}
 
 	// authorization failed
 	if (!r) {
-		NET_OutOfBandPrint( NS_SERVER, svs.challenges[i].adr, "print\nSomeone is using this CD Key\n" );
+		NET_OutOfBandPrint( NS_SERVER, challengeptr->adr, "print\nSomeone is using this CD Key\n" );
 	} else {
-		NET_OutOfBandPrint( NS_SERVER, svs.challenges[i].adr, "print\n%s\n", r );
+		NET_OutOfBandPrint( NS_SERVER, challengeptr->adr, "print\n%s\n", r );
 	}
 
 	// clear the challenge record so it won't timeout and let them through
-	Com_Memset( &svs.challenges[i], 0, sizeof( svs.challenges[i] ) );
+	Com_Memset( challengeptr, 0, sizeof(*challengeptr) );
+}
+#endif
+
+/*
+==================
+SV_IsBanned
+
+Check whether a certain address is banned
+==================
+*/
+
+static qboolean SV_IsBanned(netadr_t *from, qboolean isexception)
+{
+	int index;
+	serverBan_t *curban;
+	
+	if(!isexception)
+	{
+		// If this is a query for a ban, first check whether the client is excepted
+		if(SV_IsBanned(from, qtrue))
+			return qfalse;
+	}
+	
+	for(index = 0; index < serverBansCount; index++)
+	{
+		curban = &serverBans[index];
+		
+		if(curban->isexception == isexception)
+		{
+			if(NET_CompareBaseAdrMask(curban->ip, *from, curban->subnet))
+				return qtrue;
+		}
+	}
+	
+	return qfalse;
 }
 
 /*
@@ -219,10 +272,6 @@ SV_DirectConnect
 A "connect" OOB command has been received
 ==================
 */
-
-#define PB_MESSAGE "PunkBuster Anti-Cheat software must be installed " \
-				"and Enabled in order to join this server. An updated game patch can be downloaded from " \
-				"www.idsoftware.com"
 
 void SV_DirectConnect( netadr_t from ) {
 	char		userinfo[MAX_INFO_STRING];
@@ -241,6 +290,13 @@ void SV_DirectConnect( netadr_t from ) {
 	char		*ip;
 
 	Com_DPrintf ("SVC_DirectConnect ()\n");
+	
+	// Check whether this client is banned.
+	if(SV_IsBanned(&from, qfalse))
+	{
+		NET_OutOfBandPrint(NS_SERVER, from, "print\nYou are banned from this server.\n");
+		return;
+	}
 
 	Q_strncpyz( userinfo, Cmd_Argv(1), sizeof(userinfo) );
 
@@ -285,42 +341,54 @@ void SV_DirectConnect( netadr_t from ) {
 	Info_SetValueForKey( userinfo, "ip", ip );
 
 	// see if the challenge is valid (LAN clients don't need to challenge)
-	if ( !NET_IsLocalAddress (from) ) {
-		int		ping;
+	if (!NET_IsLocalAddress(from))
+	{
+		int ping;
+		challenge_t *challengeptr;
 
-		for (i=0 ; i<MAX_CHALLENGES ; i++) {
-			if (NET_CompareAdr(from, svs.challenges[i].adr)) {
-				if ( challenge == svs.challenges[i].challenge ) {
-					break;		// good
-				}
+		for (i=0; i<MAX_CHALLENGES; i++)
+		{
+			if (NET_CompareAdr(from, svs.challenges[i].adr))
+			{
+				if(challenge == svs.challenges[i].challenge)
+					break;
 			}
 		}
-		if (i == MAX_CHALLENGES) {
-			NET_OutOfBandPrint( NS_SERVER, from, "print\nNo or bad challenge for address.\n" );
+
+		if (i == MAX_CHALLENGES)
+		{
+			NET_OutOfBandPrint( NS_SERVER, from, "print\nNo or bad challenge for your address.\n" );
+			return;
+		}
+	
+		challengeptr = &svs.challenges[i];
+		
+		if(challengeptr->wasrefused)
+		{
+			// Return silently, so that error messages written by the server keep being displayed.
 			return;
 		}
 
-		ping = svs.time - svs.challenges[i].pingTime;
-		Com_Printf( "Client %i connecting with %i challenge ping\n", i, ping );
-		svs.challenges[i].connected = qtrue;
+		ping = svs.time - challengeptr->pingTime;
 
 		// never reject a LAN client based on ping
 		if ( !Sys_IsLANAddress( from ) ) {
 			if ( sv_minPing->value && ping < sv_minPing->value ) {
-				// don't let them keep trying until they get a big delay
 				NET_OutOfBandPrint( NS_SERVER, from, "print\nServer is for high pings only\n" );
 				Com_DPrintf ("Client %i rejected on a too low ping\n", i);
-				// reset the address otherwise their ping will keep increasing
-				// with each connect message and they'd eventually be able to connect
-				svs.challenges[i].adr.port = 0;
+				challengeptr->wasrefused = qtrue;
 				return;
 			}
 			if ( sv_maxPing->value && ping > sv_maxPing->value ) {
 				NET_OutOfBandPrint( NS_SERVER, from, "print\nServer is for low pings only\n" );
 				Com_DPrintf ("Client %i rejected on a too high ping\n", i);
+				challengeptr->wasrefused = qtrue;
 				return;
 			}
 		}
+
+		Com_Printf("Client %i connecting with %i challenge ping\n", i, ping);
+		challengeptr->connected = qtrue;
 	}
 
 	newcl = &temp;
@@ -489,9 +557,11 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 		// see if we already have a challenge for this ip
 		challenge = &svs.challenges[0];
 
-		for (i = 0 ; i < MAX_CHALLENGES ; i++, challenge++) {
-			if ( NET_CompareAdr( drop->netchan.remoteAddress, challenge->adr ) ) {
-				challenge->connected = qfalse;
+		for (i = 0 ; i < MAX_CHALLENGES ; i++, challenge++)
+		{
+			if(NET_CompareAdr(drop->netchan.remoteAddress, challenge->adr))
+			{
+				Com_Memset(challenge, 0, sizeof(*challenge));
 				break;
 			}
 		}
@@ -502,7 +572,6 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 
 	// tell everyone why they got dropped
 	SV_SendServerCommand( NULL, "print \"%s" S_COLOR_WHITE " %s\n\"", drop->name, reason );
-
 
 	if (drop->download)	{
 		FS_FCloseFile( drop->download );
@@ -527,8 +596,8 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 		// bots shouldn't go zombie, as there's no real net connection.
 		drop->state = CS_FREE;
 	} else {
-	Com_DPrintf( "Going to CS_ZOMBIE for %s\n", drop->name );
-	drop->state = CS_ZOMBIE;		// become free in a few seconds
+		Com_DPrintf( "Going to CS_ZOMBIE for %s\n", drop->name );
+		drop->state = CS_ZOMBIE;		// become free in a few seconds
 	}
 
 	// if this was the last client on the server, send a heartbeat
@@ -820,11 +889,13 @@ void SV_WriteDownloadToClient( client_t *cl , msg_t *msg )
 			}
 		}
 
+		cl->download = 0;
+
 		// We open the file here
 		if ( !(sv_allowDownload->integer & DLF_ENABLE) ||
 			(sv_allowDownload->integer & DLF_NO_UDP) ||
 			idPack || unreferenced ||
-			( cl->downloadSize = FS_SV_FOpenFileRead( cl->downloadName, &cl->download ) ) <= 0 ) {
+			( cl->downloadSize = FS_SV_FOpenFileRead( cl->downloadName, &cl->download ) ) < 0 ) {
 			// cannot auto-download file
 			if(unreferenced)
 			{
@@ -867,6 +938,10 @@ void SV_WriteDownloadToClient( client_t *cl , msg_t *msg )
 			MSG_WriteString( msg, errorMessage );
 
 			*cl->downloadName = 0;
+			
+			if(cl->download)
+				FS_FCloseFile(cl->download);
+			
 			return;
 		}
  
@@ -1590,6 +1665,7 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 		if ( c == clc_EOF ) {
 			break;
 		}
+
 		if ( c != clc_clientCommand ) {
 			break;
 		}

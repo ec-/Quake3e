@@ -121,21 +121,25 @@ typedef struct vmSymbol_s {
 } vmSymbol_t;
 
 #define	VM_OFFSET_PROGRAM_STACK		0
-#define	VM_OFFSET_SYSTEM_CALL		4
+#define	VM_OFFSET_SYSTEM_CALL		4 //  8 for x86_64
+#define	VM_OFFSET_DATA_BASE			8 // 16 for x86_64
 
 struct vm_s {
     // DO NOT MOVE OR CHANGE THESE WITHOUT CHANGING THE VM_OFFSET_* DEFINES
     // USED BY THE ASM CODE
-    int			programStack;		// the vm may be recursively entered
-    intptr_t			(*systemCall)( intptr_t *parms );
+    size_t		programStack;		// the vm may be recursively entered // FIXME: int? 
+    intptr_t	(*systemCall)( intptr_t *parms );
+	byte		*dataBase;
 
 	//------------------------------------
+
+	size_t		dataMask; // FIXME: int?
    
     char		name[MAX_QPATH];
 
 	// for dynamic linked modules
 	void		*dllHandle;
-	intptr_t			(QDECL *entryPoint)( int callNum, ... );
+	intptr_t	(QDECL *entryPoint)( int callNum, ... );
 	void (*destroy)(vm_t* self);
 
 	// for interpreted modules
@@ -148,10 +152,7 @@ struct vm_s {
 	int			*instructionPointers;
 	int			instructionCount;
 
-	byte		*dataBase;
-	int			dataMask;
-
-	int			stackBottom;		// if programStack < stackBottom, error
+	size_t		stackBottom;		// if programStack < stackBottom, error
 
 	int			numSymbols;
 	struct vmSymbol_s	*symbols;

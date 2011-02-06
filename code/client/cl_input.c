@@ -476,8 +476,8 @@ void CL_MouseMove(usercmd_t *cmd)
 
 			rate[0] = fabs(mx) / (float) frame_msec;
 			rate[1] = fabs(my) / (float) frame_msec;
-			power[0] = powf(rate[0] / offset, cl_mouseAccel->value);
-			power[1] = powf(rate[1] / offset, cl_mouseAccel->value);
+			power[0] = pow( rate[0] / offset, cl_mouseAccel->value );
+			power[1] = pow( rate[1] / offset, cl_mouseAccel->value );
 
 			mx = cl_sensitivity->value * (mx + ((mx < 0) ? -power[0] : power[0]) * offset);
 			my = cl_sensitivity->value * (my + ((my < 0) ? -power[1] : power[1]) * offset);
