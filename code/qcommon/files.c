@@ -3746,3 +3746,11 @@ void FS_VM_CloseFiles( handleOwner_t owner ) {
 		FS_FCloseFile( i );
 	}
 }
+
+const char *FS_GetCurrentGameDir( void )
+{
+	if( fs_gamedirvar->string[0] )
+		return fs_gamedirvar->string;
+
+    return BASEGAME;
+}

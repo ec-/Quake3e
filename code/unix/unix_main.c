@@ -350,7 +350,7 @@ void Sys_Printf (char *fmt, ...)
   va_end (argptr);
 
   if (strlen(text) > sizeof(text))
-    Sys_Error("memory overwrite in Sys_Printf");
+    Sys_Error( "memory overwrite in Sys_Printf" );
 
   for (p = (unsigned char *)text; *p; p++)
   {
@@ -383,9 +383,9 @@ void Sys_Exit( int ex )
 }
 
 
-void Sys_Quit (void) 
+void Sys_Quit( void )
 {
-	CL_Shutdown();
+	CL_Shutdown( "" );
 	fcntl( STDIN_FILENO, F_SETFL, fcntl( STDIN_FILENO, F_GETFL, 0 ) & ~FNDELAY );
 	Sys_Exit( 0 );
 }
@@ -463,15 +463,16 @@ void  Sys_Error( const char *error, ...)
     tty_Hide();
   }
 
-  CL_Shutdown ();
+  va_start( argptr,error );
+  Q_vsnprintf( string, sizeof(string), error, argptr );
+  va_end( argptr );
 
-  va_start (argptr,error);
-  Q_vsnprintf (string, sizeof(string), error, argptr);
-  va_end (argptr);
-  fprintf(stderr, "Sys_Error: %s\n", string);
+  CL_Shutdown( string );
+
+  fprintf( stderr, "Sys_Error: %s\n", string );
 
   Sys_Exit( 1 ); // bk010104 - use single exit point.
-} 
+}
 
 void Sys_Warn (char *warning, ...)
 { 
