@@ -1871,6 +1871,7 @@ void CL_ServersResponsePacket( const netadr_t* from, msg_t *msg, qboolean extend
 	int				numservers;
 	byte*			buffptr;
 	byte*			buffend;
+	serverInfo_t	*server;
 	
 	Com_Printf("CL_ServersResponsePacket\n");
 
@@ -1944,20 +1945,23 @@ void CL_ServersResponsePacket( const netadr_t* from, msg_t *msg, qboolean extend
 	count = cls.numglobalservers;
 
 	for (i = 0; i < numservers && count < MAX_GLOBAL_SERVERS; i++) {
-		// build net address
-		serverInfo_t *server = &cls.globalServers[count];
 
 		// Tequila: It's possible to have sent many master server requests. Then
 		// we may receive many times the same addresses from the master server.
 		// We just avoid to add a server if it is still in the global servers list.
-		for (j = 0; j < count; j++)
+#if 0	// works too slow -EC-
+		for ( j = 0; j < count; j++ )
 		{
-			if (NET_CompareAdr(cls.globalServers[j].adr, addresses[i]))
+			if ( NET_CompareAdr(cls.globalServers[j].adr, addresses[i]) )
 				break;
 		}
 
-		if (j < count)
+		if ( j < count )
 			continue;
+#endif
+
+		// build net address
+		server = &cls.globalServers[count];
 
 		CL_InitServerInfo( server, &addresses[i] );
 		// advance to next slot

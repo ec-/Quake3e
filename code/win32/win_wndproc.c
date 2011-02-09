@@ -668,6 +668,7 @@ LONG WINAPI MainWndProc (
 		Sys_QueEvent( g_wv.sysMsgTime, SE_CHAR, wParam, 0, 0, NULL );
 		break;
 
+#if 0 // looks like people have troubles with it
 	case WM_SIZE:
 
 		if ( LOWORD(lParam) > 0 && HIWORD(lParam) > 0 )
@@ -686,6 +687,7 @@ LONG WINAPI MainWndProc (
 			Con_CheckResize();
 		}
 		break;
+#endif
 
 	case WM_ERASEBKGND: 
 		// avoid GDI clearing the OpenGL window background in Vista/7
