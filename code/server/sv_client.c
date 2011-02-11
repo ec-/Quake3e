@@ -1316,7 +1316,7 @@ void SV_UserinfoChanged( client_t *cl ) {
 		ip = (char*)NET_AdrToString( cl->netchan.remoteAddress );
 
 	val = Info_ValueForKey( cl->userinfo, "ip" );
-	len = strlen( ip ) - strlen( val ) + strlen( cl->userinfo ) + 4;
+	len = strlen( ip ) - strlen( val ) + strlen( cl->userinfo ) + 14;
 
 	if( len >= MAX_INFO_STRING )
 		SV_DropClient( cl, "userinfo string length exceeded" );
