@@ -1261,21 +1261,25 @@ void Info_SetValueForKey( char *s, const char *key, const char *value ) {
 			return;
 		}
 	}
-	
-	Info_RemoveKey (s, key);
-	if (!value || !strlen(value))
-		return;
 
-	Com_sprintf (newi, sizeof(newi), "\\%s\\%s", key, value);
-
-	if (strlen(newi) + strlen(s) >= MAX_INFO_STRING)
+	// empty value -> delete key
+	if ( !value || !*value ) 
 	{
-		Com_Printf ("Info string length exceeded\n");
+		Info_RemoveKey( s, key );
 		return;
 	}
 
-	strcat (newi, s);
-	strcpy (s, newi);
+	Com_sprintf( newi, sizeof( newi ), "\\%s\\%s", key, value );
+
+	if ( strlen( newi ) + strlen( s ) >= MAX_INFO_STRING )
+	{
+		Com_Printf( "Info string length exceeded\n" );
+		return;
+	}
+
+	Info_RemoveKey( s, key );
+	strcat( newi, s );
+	strcpy( s, newi );
 }
 
 /*
