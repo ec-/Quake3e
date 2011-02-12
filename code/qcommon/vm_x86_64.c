@@ -23,17 +23,27 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // vm_x86_64.c -- load time compiler and execution environment for x86-64
 
 #include "vm_local.h"
-
-#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <sys/time.h>
 #include <time.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
 #include <stdarg.h>
+
+#include <inttypes.h>
+
+#ifdef __WIN64__
+	#include <windows.h>
+	#define CROSSCALL __attribute__ ((sysv_abi))//fool the vm we're SYSV ABI
+	//#define __USE_MINGW_ANSI_STDIO 1 //very slow - avoid if possible
+#else
+	#include <sys/mman.h>
+	#include <sys/wait.h>
+	#define VM_X86_64_MMAP
+	#define CROSSCALL
+#endif
 
 //#define DEBUG_VM
 
@@ -44,7 +54,7 @@ static FILE* qdasmout;
 #define Dfprintf(args...)
 #endif
 
-#define VM_X86_64_MMAP
+#define VM_FREEBUFFERS(vm) do {assembler_init(0); VM_Destroy_Compiled(vm);} while(0)
 
 void assembler_set_output(char* buf);
 size_t assembler_get_code_size(void);
@@ -71,11 +81,11 @@ static void VM_Destroy_Compiled(vm_t* self);
 */
 
 
-static long callAsmCall(long callProgramStack, long callSyscallNum)
+static int64_t CROSSCALL callAsmCall(int64_t callProgramStack, int64_t callSyscallNum)
 {
 	vm_t *savedVM;
-	long ret = 0x77;
-	long args[11];
+	int64_t ret = 0x77;
+	int64_t args[11];
 //	int iargs[11];
 	int i;
 
@@ -102,7 +112,7 @@ static long callAsmCall(long callProgramStack, long callSyscallNum)
 	return ret;
 }
 
-#ifdef DEBUG_VM // bk001204
+#ifdef DEBUG_VM
 static char	*opnames[256] = {
 	"OP_UNDEF", 
 
@@ -223,24 +233,53 @@ void emit(const char* fmt, ...)
 	va_list ap;
 	char line[4096];
 	va_start(ap, fmt);
-	vsnprintf(line, sizeof(line), fmt, ap);
+	Q_vsnprintf(line, sizeof(line), fmt, ap);
 	va_end(ap);
 	assemble_line(line, strlen(line));
 }
 
-#define CHECK_IARG \
-	do { if(iarg < 0 || iarg >= header->instructionCount) { \
+#define CHECK_INSTR_REG(reg) \
+	emit("cmpl $%u, %%"#reg, header->instructionCount); \
+	emit("jb jmp_ok_i_%08x", instruction); \
+	emit("movq $%"PRIu64", %%rax", (uint64_t)jmpviolation); \
+	emit("callq *%%rax"); \
+	emit("jmp_ok_i_%08x:", instruction);
+
+#define PREPARE_JMP(reg) \
+	CHECK_INSTR_REG(reg) \
+	emit("movq $%"PRIu64", %%rbx", (uint64_t)vm->instructionPointers); \
+	emit("movl (%%rbx, %%rax, 4), %%eax"); \
+	emit("addq %%r10, %%rax");
+
+#define CHECK_INSTR(nr) \
+	do { if(nr < 0 || nr >= header->instructionCount) { \
+		VM_FREEBUFFERS(vm); \
 		Com_Error( ERR_DROP, \
-			"%s: jump target out of range at offset %d", __func__, pc ); \
+			"%s: jump target 0x%x out of range at offset %d", __func__, nr, pc ); \
 	} } while(0)
 
 #define JMPIARG \
-	CHECK_IARG; \
-	emit("movq $%lu, %%rax", vm->codeBase+vm->instructionPointers[iarg]); \
-	emit("jmpq *%rax");
+	CHECK_INSTR(iarg); \
+	emit("movq $%"PRIu64", %%rax", vm->codeBase+vm->instructionPointers[iarg]); \
+	emit("jmpq *%%rax");
  
+#define CONST_OPTIMIZE
+#ifdef CONST_OPTIMIZE
+#define MAYBE_EMIT_CONST() \
+	if (got_const) \
+	{ \
+		got_const = 0; \
+		vm->instructionPointers[instruction-1] = assembler_get_code_size(); \
+		emit("addq $4, %%rsi"); \
+		emit("movl $%d, 0(%%rsi)", const_value); \
+	}
+#else
+#define MAYBE_EMIT_CONST()
+#endif
+
 // integer compare and jump
 #define IJ(op) \
+	MAYBE_EMIT_CONST(); \
 	emit("subq $8, %%rsi"); \
 	emit("movl 4(%%rsi), %%eax"); \
 	emit("cmpl 8(%%rsi), %%eax"); \
@@ -250,6 +289,7 @@ void emit(const char* fmt, ...)
 
 #ifdef USE_X87
 #define FJ(bits, op) \
+	MAYBE_EMIT_CONST(); \
 	emit("subq $8, %%rsi");\
 	emit("flds 4(%%rsi)");\
 	emit("fcomps 8(%%rsi)");\
@@ -262,6 +302,7 @@ void emit(const char* fmt, ...)
 #else
 #define FJ(x, y)
 #define XJ(op) \
+	MAYBE_EMIT_CONST(); \
 	emit("subq $8, %%rsi");\
 	emit("movss 4(%%rsi), %%xmm0");\
 	emit("ucomiss 8(%%rsi), %%xmm0");\
@@ -272,12 +313,14 @@ void emit(const char* fmt, ...)
 #endif
 
 #define SIMPLE(op) \
+	MAYBE_EMIT_CONST(); \
 	emit("subq $4, %%rsi"); \
 	emit("movl 4(%%rsi), %%eax"); \
 	emit(op " %%eax, 0(%%rsi)");
 
 #ifdef USE_X87
 #define FSIMPLE(op) \
+	MAYBE_EMIT_CONST(); \
 	emit("subq $4, %%rsi"); \
 	emit("flds 0(%%rsi)"); \
 	emit(op " 4(%%rsi)"); \
@@ -286,6 +329,7 @@ void emit(const char* fmt, ...)
 #else
 #define FSIMPLE(op)
 #define XSIMPLE(op) \
+	MAYBE_EMIT_CONST(); \
 	emit("subq $4, %%rsi"); \
 	emit("movss 0(%%rsi), %%xmm0"); \
 	emit(op " 4(%%rsi), %%xmm0"); \
@@ -293,26 +337,28 @@ void emit(const char* fmt, ...)
 #endif
 
 #define SHIFT(op) \
+	MAYBE_EMIT_CONST(); \
 	emit("subq $4, %%rsi"); \
 	emit("movl 4(%%rsi), %%ecx"); \
 	emit("movl 0(%%rsi), %%eax"); \
 	emit(op " %%cl, %%eax"); \
 	emit("movl %%eax, 0(%%rsi)");
 
-#if 1
-#define RANGECHECK(reg) \
-	emit("andl $0x%x, %%" #reg, vm->dataMask);
-#elif 0
-#define RANGECHECK(reg) \
-	emit("pushl %%" #reg); \
-	emit("andl $0x%x, %%" #reg, ~vm->dataMask); \
-	emit("jz rangecheck_ok_i_%08x", instruction); \
-	emit("int3"); \
-	emit("rangecheck_ok_i_%08x:", instruction); \
-	emit("popl %%" #reg); \
-	emit("andl $0x%x, %%" #reg, vm->dataMask);
+#ifdef DEBUG_VM
+#define RANGECHECK(reg, bytes) \
+	emit("movl %%" #reg ", %%ecx"); \
+	emit("andl $0x%x, %%ecx", vm->dataMask &~(bytes-1)); \
+	emit("cmpl %%" #reg ", %%ecx"); \
+	emit("jz rc_ok_i_%08x", instruction); \
+	emit("movq $%"PRIu64", %%rax", (uint64_t)memviolation); \
+	emit("callq *%%rax"); \
+	emit("rc_ok_i_%08x:", instruction);
+#elif 1
+// check is too expensive, so just confine memory access
+#define RANGECHECK(reg, bytes) \
+	emit("andl $0x%x, %%" #reg, vm->dataMask &~(bytes-1));
 #else
-#define RANGECHECK(reg)
+#define RANGECHECK(reg, bytes)
 #endif
 
 #ifdef DEBUG_VM
@@ -328,7 +374,7 @@ static void* getentrypoint(vm_t* vm)
        return vm->codeBase;
 }
 
-static void block_copy_vm(unsigned dest, unsigned src, unsigned count)
+static void CROSSCALL block_copy_vm(unsigned dest, unsigned src, unsigned count)
 {
 	unsigned dataMask = currentVM->dataMask;
 
@@ -342,6 +388,26 @@ static void block_copy_vm(unsigned dest, unsigned src, unsigned count)
 
 	memcpy(currentVM->dataBase+dest, currentVM->dataBase+src, count);
 }
+
+static void CROSSCALL eop(void)
+{
+	Com_Error(ERR_DROP, "end of program reached without return!\n");
+	exit(1);
+}
+
+static void CROSSCALL jmpviolation(void)
+{
+	Com_Error(ERR_DROP, "program tried to execute code outside VM\n");
+	exit(1);
+}
+
+#ifdef DEBUG_VM
+static void CROSSCALL memviolation(void)
+{
+	Com_Error(ERR_DROP, "program tried to access memory outside VM\n");
+	exit(1);
+}
+#endif
 
 /*
 =================
@@ -364,6 +430,11 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int pass;
 	size_t compiledOfs = 0;
 
+	// const optimization
+	unsigned got_const = 0, const_value = 0;
+	
+	vm->codeBase = NULL;
+
 	gettimeofday(&tvstart, NULL);
 
 	for (pass = 0; pass < 2; ++pass) {
@@ -372,9 +443,21 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	{
 		compiledOfs = assembler_get_code_size();
 		vm->codeLength = compiledOfs;
-		vm->codeBase = mmap(NULL, compiledOfs, PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-		if(vm->codeBase == (void*)-1)
-			Com_Error(ERR_DROP, "VM_CompileX86: can't mmap memory");
+
+		#ifdef VM_X86_64_MMAP
+			vm->codeBase = mmap(NULL, compiledOfs, PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+			if(vm->codeBase == MAP_FAILED)
+				Com_Error(ERR_FATAL, "VM_CompileX86_64: can't mmap memory");
+		#elif __WIN64__
+			// allocate memory with write permissions under windows.
+			vm->codeBase = VirtualAlloc(NULL, compiledOfs, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+			if(!vm->codeBase)
+				Com_Error(ERR_FATAL, "VM_CompileX86_64: VirtualAlloc failed");
+		#else
+			vm->codeBase = malloc(compiledOfs);
+			if(!vm_codeBase)
+				Com_Error(ERR_FATAL, "VM_CompileX86_64: Failed to allocate memory");
+		#endif
 
 		assembler_set_output((char*)vm->codeBase);
 	}
@@ -400,7 +483,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 		vm->instructionPointers[instruction] = assembler_get_code_size();
 
 		/* store current instruction number in r15 for debugging */
-#if DEBUG_VM
+#if DEBUG_VM0
 		emit("nop");
 		emit("movq $%d, %%r15", instruction);
 		emit("nop");
@@ -415,7 +498,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 		else if(op_argsize[op] == 1)
 		{
 			barg = code[pc++];
-			Dfprintf(qdasmout, "%s %8hhu\n", opnames[op], barg);
+			Dfprintf(qdasmout, "%s %8hu\n", opnames[op], barg);
 		}
 		else
 		{
@@ -434,31 +517,52 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				NOTIMPL(op);
 				break;
 			case OP_IGNORE:
+				MAYBE_EMIT_CONST();
 				emit("nop");
 				break;
 			case OP_BREAK:
+				MAYBE_EMIT_CONST();
 				emit("int3");
 				break;
 			case OP_ENTER:
+				MAYBE_EMIT_CONST();
 				emit("subl $%d, %%edi", iarg);
-				RANGECHECK(edi);
 				break;
 			case OP_LEAVE:
+				MAYBE_EMIT_CONST();
 				emit("addl $%d, %%edi", iarg);          // get rid of stack frame
 				emit("ret");
 				break;
 			case OP_CALL:
-				emit("movl 0(%%rsi), %%eax");  // get instr from stack
-				emit("subq $4, %%rsi");
+				RANGECHECK(edi, 4);
 				emit("movl $%d, 0(%%r8, %%rdi, 1)", instruction+1);  // save next instruction
-				emit("orl %%eax, %%eax");
-				emit("jl callSyscall%d", instruction);
-				emit("movq $%lu, %%rbx", (unsigned long)vm->instructionPointers);
-				emit("movl (%%rbx, %%rax, 4), %%eax"); // load new relative jump address
-				emit("addq %%r10, %%rax");
-				emit("callq *%%rax");
-				emit("jmp i_%08x", instruction+1);
-				emit("callSyscall%d:", instruction);
+				if(got_const)
+				{
+					if ((int)const_value < 0)
+						goto emit_do_syscall;
+
+					CHECK_INSTR(const_value);
+					emit("movq $%"PRIu64", %%rax", vm->codeBase+vm->instructionPointers[const_value]);
+					emit("callq *%%rax");
+					got_const = 0;
+					break;
+				}
+				else
+				{
+					MAYBE_EMIT_CONST();
+					emit("movl 0(%%rsi), %%eax");  // get instr from stack
+					emit("subq $4, %%rsi");
+
+					emit("orl %%eax, %%eax");
+					emit("jl callSyscall%d", instruction);
+
+					PREPARE_JMP(eax);
+					emit("callq *%%rax");
+
+					emit("jmp i_%08x", instruction+1);
+					emit("callSyscall%d:", instruction);
+				}
+emit_do_syscall:
 //				emit("fnsave 4(%%rsi)");
 				emit("push %%rsi");
 				emit("push %%rdi");
@@ -470,11 +574,16 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				emit("andq $127, %%rbx");  //   |
 				emit("subq %%rbx, %%rsp"); // <-+
 				emit("push %%rbx");
-				emit("negl %%eax");        // convert to actual number
-				emit("decl %%eax");
-				                           // first argument already in rdi
-				emit("movq %%rax, %%rsi"); // second argument in rsi
-				emit("movq $%lu, %%rax", (unsigned long)callAsmCall);
+				if(got_const) {
+					got_const = 0;
+					emit("movq $%u, %%rsi", -1-const_value); // second argument in rsi
+				} else {
+					emit("negl %%eax");        // convert to actual number
+					emit("decl %%eax");
+					// first argument already in rdi
+					emit("movq %%rax, %%rsi"); // second argument in rsi
+				}
+				emit("movq $%"PRIu64", %%rax", (uint64_t)callAsmCall);
 				emit("callq *%%rax");
 				emit("pop %%rbx");
 				emit("addq %%rbx, %%rsp");
@@ -489,31 +598,42 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				neednilabel = 1;
 				break;
 			case OP_PUSH:
+				MAYBE_EMIT_CONST();
 				emit("addq $4, %%rsi");
 				break;
 			case OP_POP:
+				MAYBE_EMIT_CONST();
 				emit("subq $4, %%rsi");
 				break;
 			case OP_CONST:
-				if(code[pc] == OP_JUMP) {
-					CHECK_IARG;
-				}
+				MAYBE_EMIT_CONST();
+#ifdef CONST_OPTIMIZE
+				got_const = 1;
+				const_value = iarg;
+#else
 				emit("addq $4, %%rsi");
 				emit("movl $%d, 0(%%rsi)", iarg);
+#endif
 				break;
 			case OP_LOCAL:
+				MAYBE_EMIT_CONST();
 				emit("movl %%edi, %%ebx");
 				emit("addl $%d,%%ebx", iarg);
 				emit("addq $4, %%rsi");
 				emit("movl %%ebx, 0(%%rsi)");
 				break;
 			case OP_JUMP:
-				emit("movl 0(%%rsi), %%eax"); // get instr from stack
-				emit("subq $4, %%rsi");
-				emit("movq $%lu, %%rbx", (unsigned long)vm->instructionPointers);
-				emit("movl (%%rbx, %%rax, 4), %%eax"); // load new relative jump address
-				emit("addq %%r10, %%rax");
-				emit("jmp *%%rax");
+				if(got_const) {
+					iarg = const_value;
+					got_const = 0;
+					JMPIARG;
+				} else {
+					emit("movl 0(%%rsi), %%eax"); // get instr from stack
+					emit("subq $4, %%rsi");
+
+					PREPARE_JMP(eax);
+					emit("jmp *%%rax");
+				}
 				break;
 			case OP_EQ:
 				IJ("jne");
@@ -552,6 +672,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			case OP_NEF:
 				FJ(0x40, "jnz");
 #ifndef USE_X87
+				MAYBE_EMIT_CONST();
 				emit("subq $8, %%rsi");
 				emit("movss 4(%%rsi), %%xmm0");
 				emit("ucomiss 8(%%rsi), %%xmm0");
@@ -579,67 +700,82 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				XJ("jb");
 				break;
 			case OP_LOAD1:
+				MAYBE_EMIT_CONST();
 				emit("movl 0(%%rsi), %%eax"); // get value from stack
-				RANGECHECK(eax);
+				RANGECHECK(eax, 1);
 				emit("movb 0(%%r8, %%rax, 1), %%al"); // deref into eax
 				emit("andq $255, %%rax");
 				emit("movl %%eax, 0(%%rsi)"); // store on stack
 				break;
 			case OP_LOAD2:
+				MAYBE_EMIT_CONST();
 				emit("movl 0(%%rsi), %%eax"); // get value from stack
-				RANGECHECK(eax);
+				RANGECHECK(eax, 2);
 				emit("movw 0(%%r8, %%rax, 1), %%ax"); // deref into eax
 				emit("movl %%eax, 0(%%rsi)"); // store on stack
 				break;
 			case OP_LOAD4:
+				MAYBE_EMIT_CONST();
 				emit("movl 0(%%rsi), %%eax"); // get value from stack
-				RANGECHECK(eax); // not a pointer!?
+				RANGECHECK(eax, 4); // not a pointer!?
 				emit("movl 0(%%r8, %%rax, 1), %%eax"); // deref into eax
 				emit("movl %%eax, 0(%%rsi)"); // store on stack
 				break;
 			case OP_STORE1:
+				MAYBE_EMIT_CONST();
 				emit("movl 0(%%rsi), %%eax"); // get value from stack
 				emit("andq $255, %%rax");
 				emit("movl -4(%%rsi), %%ebx"); // get pointer from stack
-				RANGECHECK(ebx);
+				RANGECHECK(ebx, 1);
 				emit("movb %%al, 0(%%r8, %%rbx, 1)"); // store in memory
 				emit("subq $8, %%rsi");
 				break;
 			case OP_STORE2:
+				MAYBE_EMIT_CONST();
 				emit("movl 0(%%rsi), %%eax"); // get value from stack
 				emit("movl -4(%%rsi), %%ebx"); // get pointer from stack
-				RANGECHECK(ebx);
+				RANGECHECK(ebx, 2);
 				emit("movw %%ax, 0(%%r8, %%rbx, 1)"); // store in memory
 				emit("subq $8, %%rsi");
 				break;
 			case OP_STORE4:
+				MAYBE_EMIT_CONST();
 				emit("movl -4(%%rsi), %%ebx"); // get pointer from stack
-				RANGECHECK(ebx);
+				RANGECHECK(ebx, 4);
 				emit("movl 0(%%rsi), %%ecx"); // get value from stack
 				emit("movl %%ecx, 0(%%r8, %%rbx, 1)"); // store in memory
 				emit("subq $8, %%rsi");
 				break;
 			case OP_ARG:
+				MAYBE_EMIT_CONST();
 				emit("subq $4, %%rsi");
 				emit("movl 4(%%rsi), %%eax"); // get value from stack
-				emit("movl $0x%hhx, %%ebx", barg);
+				emit("movl $0x%hx, %%ebx", barg);
 				emit("addl %%edi, %%ebx");
-				RANGECHECK(ebx);
+				RANGECHECK(ebx, 4);
 				emit("movl %%eax, 0(%%r8,%%rbx, 1)"); // store in args space
 				break;
 			case OP_BLOCK_COPY:
 
+				MAYBE_EMIT_CONST();
 				emit("subq $8, %%rsi");
 				emit("push %%rsi");
 				emit("push %%rdi");
 				emit("push %%r8");
 				emit("push %%r9");
 				emit("push %%r10");
+				emit("movq %%rsp, %%rbx"); // we need to align the stack pointer
+				emit("subq $8, %%rbx");    //   |
+				emit("andq $127, %%rbx");  //   |
+				emit("subq %%rbx, %%rsp"); // <-+
+				emit("push %%rbx");
 				emit("movl 4(%%rsi), %%edi");  // 1st argument dest
 				emit("movl 8(%%rsi), %%esi");  // 2nd argument src
 				emit("movl $%d, %%edx", iarg); // 3rd argument count
-				emit("movq $%lu, %%rax", (unsigned long)block_copy_vm);
+				emit("movq $%"PRIu64", %%rax", (uint64_t)block_copy_vm);
 				emit("callq *%%rax");
+				emit("pop %%rbx");
+				emit("addq %%rbx, %%rsp");
 				emit("pop %%r10");
 				emit("pop %%r9");
 				emit("pop %%r8");
@@ -648,6 +784,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 
 				break;
 			case OP_SEX8:
+				MAYBE_EMIT_CONST();
 				emit("movw 0(%%rsi), %%ax");
 				emit("andq $255, %%rax");
 				emit("cbw");
@@ -655,11 +792,13 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				emit("movl %%eax, 0(%%rsi)");
 				break;
 			case OP_SEX16:
+				MAYBE_EMIT_CONST();
 				emit("movw 0(%%rsi), %%ax");
 				emit("cwde");
 				emit("movl %%eax, 0(%%rsi)");
 				break;
 			case OP_NEGI:
+				MAYBE_EMIT_CONST();
 				emit("negl 0(%%rsi)");
 				break;
 			case OP_ADD:
@@ -669,6 +808,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				SIMPLE("subl");
 				break;
 			case OP_DIVI:
+				MAYBE_EMIT_CONST();
 				emit("subq $4, %%rsi");
 				emit("movl 0(%%rsi), %%eax");
 				emit("cdq");
@@ -676,6 +816,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				emit("movl %%eax, 0(%%rsi)");
 				break;
 			case OP_DIVU:
+				MAYBE_EMIT_CONST();
 				emit("subq $4, %%rsi");
 				emit("movl 0(%%rsi), %%eax");
 				emit("xorq %%rdx, %%rdx");
@@ -683,6 +824,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				emit("movl %%eax, 0(%%rsi)");
 				break;
 			case OP_MODI:
+				MAYBE_EMIT_CONST();
 				emit("subq $4, %%rsi");
 				emit("movl 0(%%rsi), %%eax");
 				emit("xorl %%edx, %%edx");
@@ -691,6 +833,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				emit("movl %%edx, 0(%%rsi)");
 				break;
 			case OP_MODU:
+				MAYBE_EMIT_CONST();
 				emit("subq $4, %%rsi");
 				emit("movl 0(%%rsi), %%eax");
 				emit("xorl %%edx, %%edx");
@@ -698,12 +841,14 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				emit("movl %%edx, 0(%%rsi)");
 				break;
 			case OP_MULI:
+				MAYBE_EMIT_CONST();
 				emit("subq $4, %%rsi");
 				emit("movl 0(%%rsi), %%eax");
 				emit("imull 4(%%rsi)");
 				emit("movl %%eax, 0(%%rsi)");
 				break;
 			case OP_MULU:
+				MAYBE_EMIT_CONST();
 				emit("subq $4, %%rsi");
 				emit("movl 0(%%rsi), %%eax");
 				emit("mull 4(%%rsi)");
@@ -719,6 +864,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				SIMPLE("xorl");
 				break;
 			case OP_BCOM:
+				MAYBE_EMIT_CONST();
 				emit("notl 0(%%rsi)");
 				break;
 			case OP_LSH:
@@ -731,6 +877,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				SHIFT("shrl");
 				break;
 			case OP_NEGF:
+				MAYBE_EMIT_CONST();
 #ifdef USE_X87
 				emit("flds 0(%%rsi)");
 				emit("fchs");
@@ -757,6 +904,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				XSIMPLE("mulss");
 				break;
 			case OP_CVIF:
+				MAYBE_EMIT_CONST();
 #ifdef USE_X87
 				emit("filds 0(%%rsi)");
 				emit("fstps 0(%%rsi)");
@@ -767,6 +915,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 #endif
 				break;
 			case OP_CVFI:
+				MAYBE_EMIT_CONST();
 #ifdef USE_X87
 				emit("flds 0(%%rsi)");
 				emit("fnstcw 4(%%rsi)");
@@ -784,42 +933,79 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				NOTIMPL(op);
 				break;
 		}
+
+
 	}
+
+	if(got_const)
+	{
+		VM_FREEBUFFERS(vm);
+		Com_Error(ERR_DROP, "leftover const\n");
+	}
+
+	emit("movq $%"PRIu64", %%rax", (uint64_t)eop);
+	emit("callq *%%rax");
 
 	} // pass loop
 
 	assembler_init(0);
 
-	if(mprotect(vm->codeBase, compiledOfs, PROT_READ|PROT_EXEC))
-		Com_Error(ERR_DROP, "VM_CompileX86: mprotect failed");
+	#ifdef VM_X86_64_MMAP
+		if(mprotect(vm->codeBase, compiledOfs, PROT_READ|PROT_EXEC))
+			Com_Error(ERR_FATAL, "VM_CompileX86_64: mprotect failed");
+	#elif __WIN64__
+		{
+			DWORD oldProtect = 0;
+			
+			// remove write permissions; give exec permision
+			if(!VirtualProtect(vm->codeBase, compiledOfs, PAGE_EXECUTE_READ, &oldProtect))
+				Com_Error(ERR_FATAL, "VM_CompileX86_64: VirtualProtect failed");
+		}
+	#endif
 
 	vm->destroy = VM_Destroy_Compiled;
-	
+
 #ifdef DEBUG_VM
 	fflush(qdasmout);
 	fclose(qdasmout);
+
+#if 0
+	strcpy(fn_d,vm->name);
+	strcat(fn_d, ".bin");
+	qdasmout = fopen(fn_d, "w");
+	fwrite(vm->codeBase, compiledOfs, 1, qdasmout);
+	fflush(qdasmout);
+	fclose(qdasmout);
+#endif
 #endif
 
-	if(vm->compiled)
-	{
-		struct timeval tvdone =  {0, 0};
-		struct timeval dur =  {0, 0};
-		Com_Printf( "VM file %s compiled to %i bytes of code (%p - %p)\n", vm->name, vm->codeLength, vm->codeBase, vm->codeBase+vm->codeLength );
+	#ifndef __WIN64__ //timersub and gettimeofday
+		if(vm->compiled)
+		{
+			struct timeval tvdone =  {0, 0};
+			struct timeval dur =  {0, 0};
+			Com_Printf( "VM file %s compiled to %i bytes of code (%p - %p)\n", vm->name, vm->codeLength, vm->codeBase, vm->codeBase+vm->codeLength );
 
-		gettimeofday(&tvdone, NULL);
-		timersub(&tvdone, &tvstart, &dur);
-		Com_Printf( "compilation took %lu.%06lu seconds\n", dur.tv_sec, dur.tv_usec );
-	}
+			gettimeofday(&tvdone, NULL);
+			timersub(&tvdone, &tvstart, &dur);
+			Com_Printf( "compilation took %"PRIu64".%06"PRIu64" seconds\n", dur.tv_sec, dur.tv_usec );
+		}
+	#endif
 }
 
 
 void VM_Destroy_Compiled(vm_t* self)
 {
-#ifdef _WIN32
-	VirtualFree(self->codeBase, 0, MEM_RELEASE);
+	if(self && self->codeBase)
+	{
+#ifdef VM_X86_64_MMAP
+		munmap(self->codeBase, self->codeLength);
+#elif __WIN64__
+		VirtualFree(self->codeBase, 0, MEM_RELEASE);
 #else
-	munmap(self->codeBase, self->codeLength);
+		free(self->codeBase);
 #endif
+	}
 }
 
 /*
@@ -899,7 +1085,7 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 	);
 
 	if ( opStack != &stack[1] ) {
-		Com_Error( ERR_DROP, "opStack corrupted in compiled code (offset %ld)\n", (long int) ((void *) &stack[1] - opStack));
+		Com_Error( ERR_DROP, "opStack corrupted in compiled code (offset %"PRId64")\n", (int64_t) ((void *) &stack[1] - opStack));
 	}
 	if ( programStack != stackOnEntry - 48 ) {
 		Com_Error( ERR_DROP, "programStack corrupted in compiled code\n" );

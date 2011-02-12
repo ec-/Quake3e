@@ -350,7 +350,7 @@ qboolean FS_PakIsPure( pack_t *pack ) {
 		for ( i = 0 ; i < fs_numServerPaks ; i++ ) {
 			// FIXME: also use hashed file names
 			// NOTE TTimo: a pk3 with same checksum but different name would be validated too
-			//   I don't see this as allowing for any exploit, it would only happen if the client does manips of it's file names 'not a bug'
+			//   I don't see this as allowing for any exploit, it would only happen if the client does manips of its file names 'not a bug'
 			if ( pack->checksum == fs_serverPaks[i] ) {
 				return qtrue;		// on the aproved list
 			}
@@ -1921,7 +1921,7 @@ Returns a uniqued list of files that match the given criteria
 from all search paths
 ===============
 */
-char **FS_ListFilteredFiles( const char *path, const char *extension, char *filter, int *numfiles ) {
+char **FS_ListFilteredFiles( const char *path, const char *extension, char *filter, int *numfiles, qboolean allowNonPureFilesOnDisk ) {
 	int				nfiles;
 	char			**listCopy;
 	char			*list[MAX_FOUND_FILES];
@@ -2017,7 +2017,7 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, char *filt
 			char	*name;
 
 			// don't scan directories for files if we are pure or restricted
-			if ( fs_restrict->integer || fs_numServerPaks ) {
+			if ( fs_restrict->integer || fs_numServerPaks || !allowNonPureFilesOnDisk ) {
 		        continue;
 		    } else {
 				netpath = FS_BuildOSPath( search->dir->path, search->dir->gamedir, path );
@@ -2054,7 +2054,7 @@ FS_ListFiles
 =================
 */
 char **FS_ListFiles( const char *path, const char *extension, int *numfiles ) {
-	return FS_ListFilteredFiles( path, extension, NULL, numfiles );
+	return FS_ListFilteredFiles( path, extension, NULL, numfiles, qfalse );
 }
 
 /*
@@ -2450,7 +2450,7 @@ void FS_NewDir_f( void ) {
 
 	Com_Printf( "---------------\n" );
 
-	dirnames = FS_ListFilteredFiles( "", "", filter, &ndirs );
+	dirnames = FS_ListFilteredFiles( "", "", filter, &ndirs, qfalse );
 
 	FS_SortFileList(dirnames, ndirs);
 
@@ -2518,6 +2518,74 @@ void FS_TouchFile_f( void ) {
 		FS_FCloseFile( f );
 	}
 }
+
+/*
+============
+FS_Which_f
+============
+*/
+void FS_Which_f( void ) {
+	searchpath_t	*search;
+	char			*netpath;
+	pack_t			*pak;
+	fileInPack_t	*pakFile;
+	directory_t		*dir;
+	long			hash;
+	FILE			*temp;
+	char			*filename;
+	char			buf[ MAX_OSPATH ];
+
+	hash = 0;
+	filename = Cmd_Argv(1);
+
+	if ( !filename[0] ) {
+		Com_Printf( "Usage: which <file>\n" );
+		return;
+	}
+
+	// qpaths are not supposed to have a leading slash
+	if ( filename[0] == '/' || filename[0] == '\\' ) {
+		filename++;
+	}
+
+	// just wants to see if file is there
+	for ( search = fs_searchpaths ; search ; search = search->next ) {
+		if ( search->pack ) {
+			hash = FS_HashFileName(filename, search->pack->hashSize);
+		}
+		// is the element a pak file?
+		if ( search->pack && search->pack->hashTable[hash] ) {
+			// look through all the pak file elements
+			pak = search->pack;
+			pakFile = pak->hashTable[hash];
+			do {
+				// case and separator insensitive comparisons
+				if ( !FS_FilenameCompare( pakFile->name, filename ) ) {
+					// found it!
+					Com_Printf( "File \"%s\" found in \"%s\"\n", filename, pak->pakFilename );
+					return;
+				}
+				pakFile = pakFile->next;
+			} while(pakFile != NULL);
+		} else if ( search->dir ) {
+			dir = search->dir;
+
+			netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
+			temp = fopen (netpath, "rb");
+			if ( !temp ) {
+				continue;
+			}
+			fclose(temp);
+			Com_sprintf( buf, sizeof( buf ), "%s/%s", dir->path, dir->gamedir );
+			FS_ReplaceSeparators( buf );
+			Com_Printf( "File \"%s\" found at \"%s\"\n", filename, buf );
+			return;
+		}
+	}
+	Com_Printf( "File not found: \"%s\"\n", filename );
+	return;
+}
+
 
 //===========================================================================
 
@@ -2797,6 +2865,7 @@ void FS_Shutdown( qboolean closemfp ) {
 	Cmd_RemoveCommand( "dir" );
 	Cmd_RemoveCommand( "fdir" );
 	Cmd_RemoveCommand( "touchFile" );
+ 	Cmd_RemoveCommand( "which" );
 	Cmd_RemoveCommand( "lsof" );
 
 #ifdef FS_MISSING
@@ -2959,6 +3028,7 @@ static void FS_Startup( const char *gameName ) {
 	Cmd_AddCommand ("dir", FS_Dir_f );
 	Cmd_AddCommand ("fdir", FS_NewDir_f );
 	Cmd_AddCommand ("touchFile", FS_TouchFile_f );
+ 	Cmd_AddCommand ("which", FS_Which_f );
 	Cmd_AddCommand ("lsof", FS_ListOpenFiles_f );
 
 	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=506
@@ -3654,13 +3724,13 @@ void	FS_Flush( fileHandle_t f ) {
 }
 
 void	FS_FilenameCompletion( const char *dir, const char *ext,
-		qboolean stripExt, void(*callback)(const char *s) ) {
+		qboolean stripExt, void(*callback)(const char *s), qboolean allowNonPureFilesOnDisk ) {
 	char	**filenames;
 	int		nfiles;
 	int		i;
 	char	filename[ MAX_STRING_CHARS ];
 
-	filenames = FS_ListFilteredFiles( dir, ext, NULL, &nfiles );
+	filenames = FS_ListFilteredFiles( dir, ext, NULL, &nfiles, allowNonPureFilesOnDisk );
 
 	FS_SortFileList( filenames, nfiles );
 

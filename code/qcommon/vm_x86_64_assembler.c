@@ -28,10 +28,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <string.h>
 #include <stdarg.h>
 
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef unsigned int u32;
-typedef unsigned long u64;
+#include <inttypes.h>
+
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
 
 static char* out;
 static unsigned compiledOfs;
@@ -71,11 +73,16 @@ static void _crap(const char* func, const char* fmt, ...)
 
 static void emit1(unsigned char v)
 {
+	int writecnt;
+	
 	if(assembler_pass)
 	{
 		out[compiledOfs++] = v;
-		if(fout) fwrite(&v, 1, 1, fout);
-		debug("%02hhx ", v);
+
+		if(fout)
+			writecnt = fwrite(&v, 1, 1, fout);
+			
+		debug("%02hx ", v);
 	}
 	else
 	{
@@ -237,10 +244,10 @@ static void hash_add_label(const char* label, unsigned address)
 	int labellen;
 	
 	i %= sizeof(labelhash)/sizeof(labelhash[0]);
-	h = malloc(sizeof(struct hashentry));
+	h = Z_Malloc(sizeof(struct hashentry));
 	
 	labellen = strlen(label) + 1;
-	h->label = malloc(labellen);
+	h->label = Z_Malloc(labellen);
 	memcpy(h->label, label, labellen);
 	
 	h->address = address;
@@ -275,8 +282,8 @@ static void labelhash_free(void)
 		while(h)
 		{
 			struct hashentry* next = h->next;
-			free(h->label);
-			free(h);
+			Z_Free(h->label);
+			Z_Free(h);
 			h = next;
 			++n;
 		}
@@ -286,7 +293,7 @@ static void labelhash_free(void)
 		min = MIN(min, n);
 		max = MAX(max, n);
 	}
-	printf("total %u, hsize %lu, zero %u, min %u, max %u\n", t, sizeof(labelhash)/sizeof(labelhash[0]), z, min, max);
+	printf("total %u, hsize %"PRIu64", zero %u, min %u, max %u\n", t, sizeof(labelhash)/sizeof(labelhash[0]), z, min, max);
 	memset(labelhash, 0, sizeof(labelhash));
 }
 
@@ -312,7 +319,7 @@ static const char* argtype2str(argtype_t t)
 
 static inline int iss8(u64 v)
 {
-	return (labs(v) <= 0x80);
+	return (llabs(v) <= 0x80); //llabs instead of labs required for __WIN64
 }
 
 static inline int isu8(u64 v)
@@ -322,7 +329,7 @@ static inline int isu8(u64 v)
 
 static inline int iss16(u64 v)
 {
-	return (labs(v) <= 0x8000);
+	return (llabs(v) <= 0x8000);
 }
 
 static inline int isu16(u64 v)
@@ -332,7 +339,7 @@ static inline int isu16(u64 v)
 
 static inline int iss32(u64 v)
 {
-	return (labs(v) <= 0x80000000);
+	return (llabs(v) <= 0x80000000);
 }
 
 static inline int isu32(u64 v)
@@ -342,7 +349,7 @@ static inline int isu32(u64 v)
 
 static void emit_opsingle(const char* mnemonic, arg_t arg1, arg_t arg2, void* data)
 {
-	u8 op = (u8)((unsigned long) data);
+	u8 op = (u8)((uint64_t) data);
 
 	if(arg1.type != T_NONE || arg2.type != T_NONE)
 		CRAP_INVALID_ARGS;
@@ -505,7 +512,7 @@ static void maybe_emit_displacement(arg_t* arg)
 /* one byte operator with register added to operator */
 static void emit_opreg(const char* mnemonic, arg_t arg1, arg_t arg2, void* data)
 {
-	u8 op = (u8)((unsigned long) data);
+	u8 op = (u8)((uint64_t) data);
 
 	if(arg1.type != T_REGISTER || arg2.type != T_NONE)
 		CRAP_INVALID_ARGS;
@@ -758,7 +765,7 @@ static void emit_condjump(const char* mnemonic, arg_t arg1, arg_t arg2, void* da
 {
 	unsigned off;
 	int disp;
-	unsigned char opcode = (unsigned char)(((unsigned long)data)&0xFF);
+	unsigned char opcode = (unsigned char)(((uint64_t)data)&0xFF);
 
 	if(arg1.type != T_LABEL || arg2.type != T_NONE)
 		crap("%s: argument must be label", mnemonic);
@@ -820,24 +827,34 @@ static void emit_call(const char* mnemonic, arg_t arg1, arg_t arg2, void* data)
 {
 	u8 rex, modrm, sib;
 
-	if(arg1.type != T_REGISTER || arg2.type != T_NONE)
+	if((arg1.type != T_REGISTER && arg1.type != T_IMMEDIATE) || arg2.type != T_NONE)
 		CRAP_INVALID_ARGS;
 
-	if(!arg1.absolute)
-		crap("call must be absolute");
+	if(arg1.type == T_REGISTER)
+	{
+		if(!arg1.absolute)
+			crap("call must be absolute");
 
-	if((arg1.v.reg & R_64) != R_64)
-		crap("register must be 64bit");
+		if((arg1.v.reg & R_64) != R_64)
+			crap("register must be 64bit");
 
-	arg1.v.reg ^= R_64; // no rex required for call
+		arg1.v.reg ^= R_64; // no rex required for call
 
-	compute_rexmodrmsib(&rex, &modrm, &sib, &arg2, &arg1);
+		compute_rexmodrmsib(&rex, &modrm, &sib, &arg2, &arg1);
 
-	modrm |= 0x2 << 3;
+		modrm |= 0x2 << 3;
 
-	if(rex) emit1(rex);
-	emit1(0xff);
-	emit1(modrm);
+		if(rex) emit1(rex);
+		emit1(0xff);
+		emit1(modrm);
+	}
+	else 
+	{
+		if(!isu32(arg1.v.imm))
+			crap("must be 32bit argument");
+		emit1(0xe8);
+		emit4(arg1.v.imm);
+	}
 }
 
 
@@ -884,7 +901,7 @@ static opparam_t params_or = { subcode: 1, rmcode: 0x09, };
 static opparam_t params_and = { subcode: 4, rmcode: 0x21, };
 static opparam_t params_sub = { subcode: 5, rmcode: 0x29, };
 static opparam_t params_xor = { subcode: 6, rmcode: 0x31, };
-static opparam_t params_cmp = { subcode: 6, rmcode: 0x39, mrcode: 0x3b, };
+static opparam_t params_cmp = { subcode: 7, rmcode: 0x39, mrcode: 0x3b, };
 static opparam_t params_dec = { subcode: 1, rcode: 0xff, rcode8: 0xfe, };
 static opparam_t params_sar = { subcode: 7, rcode: 0xd3, rcode8: 0xd2, };
 static opparam_t params_shl = { subcode: 4, rcode: 0xd3, rcode8: 0xd2, };
@@ -1145,7 +1162,7 @@ static unsigned char nexttok(const char** str, char* label, u64* val)
 	else if(*s >= '0' && *s <= '9')
 	{
 		char* endptr = NULL;
-		u64 v = strtol(s, &endptr, 0);
+		u64 v = strtoull(s, &endptr, 0);
 		if(endptr && (endptr-s == 0))
 			crap("invalid integer %s", s);
 		if(val) *val = v;
@@ -1266,7 +1283,7 @@ tok_memory:
 			}
 			break;
 		default:
-			crap("invalid token %hhu in %s", *(unsigned char*)s, *str);
+			crap("invalid token %hu in %s", *(unsigned char*)s, *str);
 			break;
 	}
 

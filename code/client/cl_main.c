@@ -514,7 +514,7 @@ static void CL_CompleteDemoName( char *args, int argNum )
 		char demoExt[ 16 ];
 
 		Com_sprintf( demoExt, sizeof( demoExt ), ".dm_%d", PROTOCOL_VERSION );
-		Field_CompleteFilename( "demos", demoExt, qtrue );
+		Field_CompleteFilename( "demos", demoExt, qtrue, qtrue );
 	}
 }
 
