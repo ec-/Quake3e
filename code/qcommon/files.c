@@ -2521,6 +2521,17 @@ void FS_TouchFile_f( void ) {
 
 /*
 ============
+FS_CompleteFileName
+============
+*/
+void FS_CompleteFileName( char *args, int argNum ) {
+	if( argNum == 2 ) {
+		Field_CompleteFilename( "", "", qfalse, qtrue );
+	}
+}
+
+/*
+============
 FS_Which_f
 ============
 */
@@ -2945,8 +2956,7 @@ static void FS_ListOpenFiles_f( void ) {
 	for ( i = 0; i < MAX_FILE_HANDLES; i++, fh++ ) {
 		if ( !fh->used || !fh->name )
 			continue;
-		Com_Printf( "%2i %2s %s %s\n", i, FS_OwnerName(fh->owner), fh->name,
-			fh->pak ? fh->pak->pakFilename : "" );
+		Com_Printf( "%2i %2s %s\n", i, FS_OwnerName(fh->owner), fh->name );
 	}
 }
 
@@ -3028,8 +3038,9 @@ static void FS_Startup( const char *gameName ) {
 	Cmd_AddCommand ("dir", FS_Dir_f );
 	Cmd_AddCommand ("fdir", FS_NewDir_f );
 	Cmd_AddCommand ("touchFile", FS_TouchFile_f );
- 	Cmd_AddCommand ("which", FS_Which_f );
 	Cmd_AddCommand ("lsof", FS_ListOpenFiles_f );
+ 	Cmd_AddCommand ("which", FS_Which_f );
+	Cmd_SetCommandCompletionFunc( "which", FS_CompleteFileName );
 
 	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=506
 	// reorder the pure pk3 files according to server order
