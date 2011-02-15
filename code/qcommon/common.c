@@ -153,12 +153,13 @@ A raw string should NEVER be passed as fmt, because of "%f" type crashers.
 void QDECL Com_Printf( const char *fmt, ... ) {
 	va_list		argptr;
 	char		msg[MAXPRINTMSG];
-  static qboolean opening_qconsole = qfalse;
-
+	static qboolean opening_qconsole = qfalse;
 
 	va_start (argptr,fmt);
 	Q_vsnprintf (msg, sizeof(msg), fmt, argptr);
 	va_end (argptr);
+
+	LASTCHAR(msg) = '\0';
 
 	if ( rd_buffer ) {
 		if ((strlen (msg) + strlen(rd_buffer)) > (rd_buffersize - 1)) {
@@ -240,7 +241,9 @@ void QDECL Com_DPrintf( const char *fmt, ...) {
 	va_start (argptr,fmt);	
 	Q_vsnprintf (msg, sizeof(msg), fmt, argptr);
 	va_end (argptr);
-	
+
+	LASTCHAR(msg) = '\0';
+
 	Com_Printf ("%s", msg);
 }
 

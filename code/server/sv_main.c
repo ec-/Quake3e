@@ -183,6 +183,8 @@ void QDECL SV_SendServerCommand(client_t *cl, const char *fmt, ...) {
 	Q_vsnprintf ((char *)message, sizeof(message), fmt,argptr);
 	va_end (argptr);
 
+	LASTCHAR(message) = '\0';
+
 	// Fix to http://aluigi.altervista.org/adv/q3msgboom-adv.txt
 	// The actual cause of the bug is probably further downstream
 	// and should maybe be addressed later, but this certainly
