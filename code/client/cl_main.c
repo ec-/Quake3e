@@ -2477,8 +2477,7 @@ void QDECL CL_RefPrintf( int print_level, const char *fmt, ...) {
 	va_start (argptr,fmt);
 	Q_vsnprintf (msg, sizeof(msg), fmt, argptr);
 	va_end (argptr);
-
-	LASTCHAR(msg) = '\0';
+	ZLASTCHAR(msg);
 
 	if ( print_level == PRINT_ALL ) {
 		Com_Printf ("%s", msg);
