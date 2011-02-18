@@ -1305,6 +1305,12 @@ doesn't know what graphics to reload
 */
 void CL_Vid_Restart_f( void ) {
 
+	if ( cls.lastVidRestart ) 
+	{
+		if ( abs(cls.lastVidRestart - Sys_Milliseconds()) < 500 )
+			return; // do not allow vid restart righ after cgame init
+	}
+
 	// Settings may have changed so stop recording now
 #ifdef USE_VIDEO
 	if( CL_VideoRecording( ) ) {
@@ -2948,7 +2954,7 @@ void CL_Init( void ) {
 
 	SCR_Init ();
 
-//	Cbuf_Execute (); // FIXME
+	Cbuf_Execute ();
 
 	Cvar_Set( "cl_running", "1" );
 #ifdef USE_MD5

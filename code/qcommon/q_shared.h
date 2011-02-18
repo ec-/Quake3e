@@ -117,7 +117,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define Q_snprintf snprintf
 #endif
 
-#define ZLASTCHAR(s) (s)[sizeof(s)-1]='\0'
+#define ZLASTCHAR(xXx) (xXx)[sizeof(xXx)-1]='\0'
 
 #include "q_platform.h"
 

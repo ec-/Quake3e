@@ -775,6 +775,9 @@ void CL_InitCGame( void ) {
 
 	// clear anything that got printed
 	Con_ClearNotify ();
+
+	// do not allow vid_restart for first time
+	cls.lastVidRestart = Sys_Milliseconds();
 }
 
 

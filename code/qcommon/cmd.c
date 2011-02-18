@@ -91,7 +91,7 @@ void Cbuf_AddText( const char *text ) {
 	int		l;
 	
 	l = strlen (text);
-
+	
 	if (cmd_text.cursize + l >= cmd_text.maxsize)
 	{
 		Com_Printf ("Cbuf_AddText: overflow\n");
@@ -115,6 +115,7 @@ void Cbuf_InsertText( const char *text ) {
 	int		i;
 
 	len = strlen( text ) + 1;
+
 	if ( len + cmd_text.cursize > cmd_text.maxsize ) {
 		Com_Printf( "Cbuf_InsertText overflowed\n" );
 		return;
@@ -241,7 +242,10 @@ Cmd_Exec_f
 ===============
 */
 void Cmd_Exec_f( void ) {
-	char	*f;
+	union {
+		char	*c;
+		void	*v;
+	} f;
 	int		len;
 	char	filename[MAX_QPATH];
 
@@ -251,17 +255,17 @@ void Cmd_Exec_f( void ) {
 	}
 
 	Q_strncpyz( filename, Cmd_Argv(1), sizeof( filename ) );
-	COM_DefaultExtension( filename, sizeof( filename ), ".cfg" ); 
-	len = FS_ReadFile( filename, (void **)&f);
-	if (!f) {
+	COM_DefaultExtension( filename, sizeof( filename ), ".cfg" );
+	len = FS_ReadFile( filename, &f.v);
+	if (!f.c) {
 		Com_Printf ("couldn't exec %s\n",Cmd_Argv(1));
 		return;
 	}
 	Com_Printf ("execing %s\n",Cmd_Argv(1));
 	
-	Cbuf_InsertText (f);
+	Cbuf_InsertText (f.c);
 
-	FS_FreeFile (f);
+	FS_FreeFile (f.v);
 }
 
 
@@ -434,13 +438,19 @@ char *Cmd_Cmd(void)
    https://bugzilla.icculus.org/show_bug.cgi?id=3593
    https://bugzilla.icculus.org/show_bug.cgi?id=4769
 */
-void Cmd_Args_Sanitize( void ) {
+
+void Cmd_Args_Sanitize(void)
+{
 	int i;
-	for ( i = 1 ; i < cmd_argc ; i++ ) {
-		char* c = cmd_argv[i];
- 		if ( strlen( c ) > MAX_CVAR_VALUE_STRING - 1 )
+
+	for(i = 1; i < cmd_argc; i++)
+	{
+		char *c = cmd_argv[i];
+		
+		if(strlen(c) > MAX_CVAR_VALUE_STRING - 1)
 			c[MAX_CVAR_VALUE_STRING - 1] = '\0';
-		while ( (c = strpbrk(c, "\n\r;")) != NULL ) {
+		
+		while ((c = strpbrk(c, "\n\r;"))) {
 			*c = ' ';
 			++c;
 		}

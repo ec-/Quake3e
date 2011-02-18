@@ -305,6 +305,8 @@ typedef struct {
 	qhandle_t	charSetShader;
 	qhandle_t	whiteShader;
 	qhandle_t	consoleShader;
+
+	int			lastVidRestart;
 } clientStatic_t;
 
 extern	clientStatic_t		cls;
