@@ -321,6 +321,7 @@ Con_Init
 */
 void Con_Init (void) {
 	int		i;
+	static qboolean inited = qfalse;
 
 	con_notifytime = Cvar_Get ("con_notifytime", "3", 0);
 	con_conspeed = Cvar_Get ("scr_conspeed", "3", 0);
@@ -332,6 +333,11 @@ void Con_Init (void) {
 		historyEditLines[i].widthInChars = g_console_field_width;
 	}
 	CL_LoadConsoleHistory( );
+
+	// don't try to add commands twice when switching back from dedicated
+	if ( inited == qtrue )
+		return;
+	inited = qtrue;
 
 	Cmd_AddCommand ("toggleconsole", Con_ToggleConsole_f);
 	Cmd_AddCommand ("messagemode", Con_MessageMode_f);

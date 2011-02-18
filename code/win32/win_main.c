@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../client/client.h"
 #include "../qcommon/qcommon.h"
 #include "win_local.h"
+#include "glw_win.h"
 #include "resource.h"
 #include <errno.h>
 #include <float.h>
@@ -1087,6 +1088,8 @@ are initialized
 #define OSR2_BUILD_NUMBER 1111
 #define WIN98_BUILD_NUMBER 1998
 
+extern glwstate_t glw_state;
+
 void Sys_Init( void ) {
 	int cpuid;
 
@@ -1130,9 +1133,7 @@ void Sys_Init( void ) {
 		Cvar_Set( "arch", "unknown Windows variant" );
 	}
 
-	// save out a couple things in rom cvars for the renderer to access
-	Cvar_Get( "win_hinstance", va("%i", (int)g_wv.hInstance), CVAR_ROM );
-	Cvar_Get( "win_wndproc", va("%i", (int)MainWndProc), CVAR_ROM );
+	glw_state.wndproc = MainWndProc;
 
 	//
 	// figure out our CPU
