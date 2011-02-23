@@ -96,6 +96,10 @@ static int scrnum;
 static Window win = 0;
 static GLXContext ctx = NULL;
 
+static int desktop_width = 0;
+static int desktop_height = 0;
+static qboolean desktop_ok = qfalse;
+
 // bk001206 - not needed anymore
 // static qboolean autorepeaton = qtrue;
 
@@ -936,17 +940,31 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
   int i;
   const char*   glstring; // bk001130 - from cvs1.17 (mkv)
 
+  dpy = XOpenDisplay( NULL );
+
+  if ( dpy == NULL )
+  {
+    fprintf( stderr, "Error couldn't open the X display\n" );
+    return RSERR_INVALID_MODE;
+  }
+  
+  scrnum = DefaultScreen(dpy);
+  root = RootWindow(dpy, scrnum);
+
+/* - moved down
   ri.Printf( PRINT_ALL, "Initializing OpenGL display\n");
 
   ri.Printf (PRINT_ALL, "...setting mode %d:", mode );
 
-  if ( !R_GetModeInfo( &glConfig.vidWidth, &glConfig.vidHeight, &glConfig.windowAspect, mode ) )
+  if ( !R_GetModeInfo( &glConfig.vidWidth, &glConfig.vidHeight, &glConfig.windowAspect, mode, 0, 0 ) )
   {
     ri.Printf( PRINT_ALL, " invalid mode\n" );
     return RSERR_INVALID_MODE;
   }
   ri.Printf( PRINT_ALL, " %d %d\n", glConfig.vidWidth, glConfig.vidHeight);
+*/
 
+/* - moved up
   if (!(dpy = XOpenDisplay(NULL)))
   {
     fprintf(stderr, "Error couldn't open the X display\n");
@@ -955,9 +973,11 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
   
   scrnum = DefaultScreen(dpy);
   root = RootWindow(dpy, scrnum);
-
+*/
+/*
   actualWidth = glConfig.vidWidth;
   actualHeight = glConfig.vidHeight;
+*/
 
   // Get video mode list
 #ifdef HAVE_XF86DGA
@@ -991,6 +1011,36 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
     }
   }
 #endif /* HAVE_XF86DGA */
+
+#ifdef HAVE_XF86DGA
+  if ( vidmode_ext ) {
+	if ( desktop_ok == qfalse )
+	{
+	  XF86VidModeModeLine c;
+	  int n;
+	  XF86VidModeGetModeLine( dpy, scrnum, &n, &c );
+	  desktop_width = c.hdisplay;
+	  desktop_height = c.vdisplay;
+	  desktop_ok = qtrue;
+	}
+	ri.Printf( PRINT_ALL, "w:%i h:%i\n", desktop_width, desktop_height );
+  }
+#endif
+
+  ri.Printf( PRINT_ALL, "Initializing OpenGL display\n");
+
+  ri.Printf (PRINT_ALL, "...setting mode %d:", mode );
+
+  if ( !R_GetModeInfo( &glConfig.vidWidth, &glConfig.vidHeight, &glConfig.windowAspect,
+	  mode, desktop_width, desktop_height ) )
+  {
+    ri.Printf( PRINT_ALL, " invalid mode\n" );
+    return RSERR_INVALID_MODE;
+  }
+  ri.Printf( PRINT_ALL, " %d %d\n", glConfig.vidWidth, glConfig.vidHeight);
+
+  actualWidth = glConfig.vidWidth;
+  actualHeight = glConfig.vidHeight;
 
 #ifdef HAVE_XF86DGA
   if (vidmode_ext)
@@ -1037,7 +1087,7 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
 			XMoveWindow( dpy, win, 0, 0 );
 
         // Move the viewport to top left
-        XF86VidModeSetViewPort(dpy, scrnum, 0, 0);
+        XF86VidModeSetViewPort( dpy, scrnum, 0, 0 );
 
         ri.Printf(PRINT_ALL, "XFree86-VidModeExtension Activated at %dx%d\n",
                   actualWidth, actualHeight);

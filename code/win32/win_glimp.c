@@ -814,20 +814,10 @@ static rserr_t GLW_SetMode( const char *drivername,
 	int		cdsRet;
 	DEVMODE dm;
 		
-	if (dm_desktop.dmSize == 0) {
+	if ( dm_desktop.dmSize == 0 ) 
+	{
 		ResetToDesktopDisplaySettings( );
 	}
-
-	//
-	// print out informational messages
-	//
-	ri.Printf( PRINT_ALL, "...setting mode %d:", mode );
-	if ( !R_GetModeInfo( &glConfig.vidWidth, &glConfig.vidHeight, &glConfig.windowAspect, mode ) )
-	{
-		ri.Printf( PRINT_ALL, " invalid mode\n" );
-		return RSERR_INVALID_MODE;
-	}
-	ri.Printf( PRINT_ALL, " %d %d %s\n", glConfig.vidWidth, glConfig.vidHeight, win_fs[cdsFullscreen] );
 
 	//
 	// check our desktop attributes
@@ -837,6 +827,18 @@ static rserr_t GLW_SetMode( const char *drivername,
 	glw_state.desktopWidth = GetDeviceCaps( hDC, HORZRES );
 	glw_state.desktopHeight = GetDeviceCaps( hDC, VERTRES );
 	ReleaseDC( GetDesktopWindow(), hDC );
+
+	//
+	// print out informational messages
+	//
+	ri.Printf( PRINT_ALL, "...setting mode %d:", mode );
+	if ( !R_GetModeInfo( &glConfig.vidWidth, &glConfig.vidHeight, &glConfig.windowAspect, 
+		mode, glw_state.desktopWidth, glw_state.desktopHeight ) )
+	{
+		ri.Printf( PRINT_ALL, " invalid mode\n" );
+		return RSERR_INVALID_MODE;
+	}
+	ri.Printf( PRINT_ALL, " %d %d %s\n", glConfig.vidWidth, glConfig.vidHeight, win_fs[cdsFullscreen] );
 
 	//
 	// verify desktop bit depth

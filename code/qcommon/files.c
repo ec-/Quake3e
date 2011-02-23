@@ -1964,7 +1964,7 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, char *filt
 
 			//ZOID:  If we are pure, don't search for files on paks that
 			// aren't on the pure list
-			if ( !FS_PakIsPure(search->pack) ) {
+			if ( FS_PakIsPure(search->pack) == qfalse && allowNonPureFilesOnDisk == qfalse ) {
 				continue;
 			}
 
@@ -2018,7 +2018,8 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, char *filt
 			char	*name;
 
 			// don't scan directories for files if we are pure or restricted
-			if ( fs_restrict->integer || fs_numServerPaks || !allowNonPureFilesOnDisk ) {
+			if ( fs_restrict->integer || 
+				( fs_numServerPaks && allowNonPureFilesOnDisk  == qfalse ) ) {
 		        continue;
 		    } else {
 				netpath = FS_BuildOSPath( search->dir->path, search->dir->gamedir, path );

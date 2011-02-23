@@ -1938,7 +1938,7 @@ CL_ServersResponsePacket
 ===================
 */
 void CL_ServersResponsePacket( const netadr_t* from, msg_t *msg, qboolean extended ) {
-	int				i, j, count, total;
+	int				i, count, total;
 	netadr_t addresses[MAX_SERVERSPERPACKET];
 	int				numservers;
 	byte*			buffptr;
@@ -2021,22 +2021,10 @@ void CL_ServersResponsePacket( const netadr_t* from, msg_t *msg, qboolean extend
 		// Tequila: It's possible to have sent many master server requests. Then
 		// we may receive many times the same addresses from the master server.
 		// We just avoid to add a server if it is still in the global servers list.
-	
-
-#if 0	// works too slow -EC-
-		for ( j = 0; j < count; j++ )
-		{
-			if ( NET_CompareAdr(cls.globalServers[j].adr, addresses[i]) )
-				break;
-		}
-
-		if ( j < count )
-			continue;
-#else
 		if ( hash_find( &addresses[i] ) )
 			continue;
+
 		hash_insert( &addresses[i] );
-#endif
 
 		// build net address
 		server = &cls.globalServers[count];

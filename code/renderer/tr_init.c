@@ -310,18 +310,28 @@ vidmode_t r_vidModes[] =
 };
 static int	s_numVidModes = ( sizeof( r_vidModes ) / sizeof( r_vidModes[0] ) );
 
-qboolean R_GetModeInfo( int *width, int *height, float *windowAspect, int mode ) {
+qboolean R_GetModeInfo( int *width, int *height, float *windowAspect, int mode, int dw, int dh ) {
 	vidmode_t	*vm;
 	float			pixelAspect;
 
-    if ( mode < -1 ) {
+    if ( mode < -2 ) {
         return qfalse;
 	}
 	if ( mode >= s_numVidModes ) {
 		return qfalse;
 	}
 
-	if ( mode == -1 ) {
+	// fix unknown desktop resolution
+	if ( mode == -2 && (dw == 0 || dh == 0) ) 
+	{
+		mode = 3;
+	}
+
+	if ( mode == -2 ) {
+		*width = dw;
+		*height = dh;
+		pixelAspect = r_customPixelAspect->value;
+	} else if ( mode == -1 ) {
 		*width = r_customwidth->integer;
 		*height = r_customheight->integer;
 		pixelAspect = r_customPixelAspect->value;

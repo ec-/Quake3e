@@ -1,5 +1,5 @@
 Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
+# Visual C++ Express 2005
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "botlib", "botlib.vcproj", "{A410161F-AE9F-485D-A01F-5294891430A6}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "quake3", "quake3.vcproj", "{81CB51C4-B434-4E12-B69B-BAEE102F2852}"
