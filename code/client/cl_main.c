@@ -1305,7 +1305,7 @@ doesn't know what graphics to reload
 */
 void CL_Vid_Restart_f( void ) {
 
-	if ( cls.lastVidRestart ) 
+	if ( cls.lastVidRestart ) // hack for OSP mod
 	{
 		if ( abs(cls.lastVidRestart - Sys_Milliseconds()) < 500 )
 			return; // do not allow vid restart righ after cgame init
