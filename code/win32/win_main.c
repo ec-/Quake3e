@@ -558,36 +558,11 @@ void * QDECL Sys_LoadDll( const char *name, char *fqpath , intptr_t (QDECL **ent
 	char	*cdpath;
 	char	*gamedir;
 	char	*fn;
-#ifdef NDEBUG
-	static int	lastWarning = 0;
-	int		timestamp;
-  int   ret;
-#endif
 	char	filename[MAX_QPATH];
 
 	*fqpath = 0 ;		// added 7/20/02 by T.Ray
 
 	Com_sprintf( filename, sizeof( filename ), "%sx86.dll", name );
-
-#ifdef NDEBUG
-	timestamp = Sys_Milliseconds();
-	if( ((timestamp - lastWarning) > (5 * 60000)) && !Cvar_VariableIntegerValue( "dedicated" )
-		&& !Cvar_VariableIntegerValue( "com_blindlyLoadDLLs" ) ) {
-		if (FS_FileExists(filename)) {
-			lastWarning = timestamp;
-			ret = MessageBoxEx( NULL, "You are about to load a .DLL executable that\n"
-				  "has not been verified for use with Quake III Arena.\n"
-				  "This type of file can compromise the security of\n"
-				  "your computer.\n\n"
-				  "Select 'OK' if you choose to load it anyway.",
-				  "Security Warning", MB_OKCANCEL | MB_ICONEXCLAMATION | MB_DEFBUTTON2 | MB_TOPMOST | MB_SETFOREGROUND,
-				  MAKELANGID( LANG_NEUTRAL, SUBLANG_DEFAULT ) );
-			if( ret != IDOK ) {
-				return NULL;
-			}
-		}
-	}
-#endif
 
 #ifndef NDEBUG
 	libHandle = LoadLibrary( filename );
