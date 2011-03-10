@@ -2602,14 +2602,26 @@ void FS_Which_f( void ) {
 
 //===========================================================================
 
-
-static int QDECL paksort( const void *a, const void *b ) {
-	char	*aa, *bb;
-
-	aa = *(char **)a;
-	bb = *(char **)b;
-
-	return FS_PathCmp( aa, bb );
+static void PakSort( char **a, int n ) {
+	char *temp;
+	char *m;
+	int	i, j; 
+	i = 0;
+	j = n;
+	m = a[ n>>1 ];
+	do {
+		while ( FS_PathCmp( a[i], m ) < 0 )i++;
+		while ( FS_PathCmp( a[j], m ) > 0 ) j--;
+		if ( i <= j ) {
+			temp = a[i]; 
+			a[i] = a[j]; 
+			a[j] = temp;
+			i++; 
+			j--;
+		}
+  } while ( i <= j );
+  if ( j > 0 ) PakSort( a, j );
+  if ( n > i ) PakSort( a+i, n-i );
 }
 
 /*
@@ -2656,7 +2668,9 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 
 	pakfiles = Sys_ListFiles( pakfile, ".pk3", NULL, &numfiles, qfalse );
 
-	qsort( pakfiles, numfiles, sizeof(char*), paksort );
+	if ( numfiles >= 2 )
+		PakSort( pakfiles, numfiles - 1 );
+	//qsort( pakfiles, numfiles, sizeof(char*), paksort );
 
 	for ( i = 0 ; i < numfiles ; i++ ) {
 
