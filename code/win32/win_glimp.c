@@ -578,8 +578,6 @@ static qboolean GLW_InitDriver( const char *drivername, int colorbits )
 **
 ** Responsible for creating the Win32 window and initializing the OpenGL driver.
 */
-#define	WINDOW_STYLE	(WS_OVERLAPPED|WS_BORDER|WS_CAPTION|WS_VISIBLE|WS_CLIPCHILDREN)
-
 static qboolean GLW_CreateWindow( const char *drivername, int width, int height, int colorbits, qboolean cdsFullscreen )
 {
 	RECT			r;
@@ -631,14 +629,13 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 
 		if ( cdsFullscreen || !Q_stricmp( _3DFX_DRIVER_NAME, drivername ) )
 		{
-			exstyle = WS_EX_TOPMOST;
-			stylebits = WS_POPUP|WS_VISIBLE|WS_SYSMENU|WS_CLIPCHILDREN;
+			exstyle = WINDOW_ESTYLE_FULLSCREEN;
+			stylebits = WINDOW_STYLE_FULLSCREEN;
 		}
 		else
 		{
-			exstyle = 0;
-			//stylebits = WINDOW_STYLE|WS_SYSMENU|WS_MINIMIZEBOX|WS_SIZEBOX;
-			stylebits = WINDOW_STYLE|WS_SYSMENU|WS_MINIMIZEBOX;
+			exstyle = WINDOW_ESTYLE_NORMAL;
+			stylebits = WINDOW_STYLE_NORMAL;
 			AdjustWindowRect (&r, stylebits, FALSE);
 		}
 

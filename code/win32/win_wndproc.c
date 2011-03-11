@@ -477,22 +477,30 @@ LONG WINAPI MainWndProc (
 			if ( glw_state.cdsFullscreen )
 				if ( fActive == WA_ACTIVE ) {
 					//Com_Printf( S_COLOR_BLUE "set game ");
-					SetFocus( hWnd );
-					SetForegroundWindow( hWnd );
+					SetFocus( hWnd );			 // ATI Catalyst may require this
+					SetForegroundWindow( hWnd ); // ATI Catalyst may require this
 					SetGameDisplaySettings();
 					R_SetColorMappings();
 					WIN_DisableAltTab();
+					SetWindowLong( hWnd, GWL_STYLE, WINDOW_STYLE_FULLSCREEN );
+					SetWindowLong( hWnd, GWL_EXSTYLE, WINDOW_ESTYLE_FULLSCREEN );
+					UpdateWindow( hWnd );
 				} else {
 					//Com_Printf(S_COLOR_BLUE "set desk ");
+					SetWindowLong( hWnd, GWL_STYLE,  WINDOW_STYLE_FULLSCREEN_MIN );
+					SetWindowLong( hWnd, GWL_EXSTYLE, WINDOW_ESTYLE_FULLSCREEN_MIN );
 					WG_RestoreGamma();
 					ShowWindow( hWnd, SW_MINIMIZE );
+					UpdateWindow( hWnd );
 					ResetToDesktopDisplaySettings();
 					WIN_EnableAltTab();
 			} else {
 				if ( fActive ) {
 					WIN_DisableAltTab();
 					WIN_EnableHook();
+					R_SetColorMappings();
 				} else {
+					WG_RestoreGamma();
 					WIN_EnableAltTab();
 					WIN_DisableHook();
 				}

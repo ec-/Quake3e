@@ -795,6 +795,7 @@ default values.
 
 #define CVAR_SERVER_CREATED	2048	// cvar was created by a server the client connected to.
 #define CVAR_VM_CREATED		4096	// cvar was created exclusively in one of the VMs.
+#define CVAR_PROTECTED		8192	// prevent modifying this var from VMs or the server
 #define CVAR_NONEXISTENT	0xFFFFFFFF	// Cvar doesn't exist.
 
 // nothing outside the Cvar_*() functions should modify these fields!
