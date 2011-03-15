@@ -449,7 +449,7 @@ void CL_ConsolePrint( char *txt ) {
 			break;
 		default:	// display character and advance
 			y = con.current % con.totallines;
-			con.text[y*con.linewidth+con.x] = (color << 8) | c;
+			con.text[y*con.linewidth+con.x] = (color << 8) | (c & 255);
 			con.x++;
 			if (con.x >= con.linewidth) {
 				Con_Linefeed(skipnotify);
