@@ -28,7 +28,7 @@ cvar_t		*cvar_vars = NULL;
 cvar_t		*cvar_cheats;
 int			cvar_modifiedFlags;
 
-#define	MAX_CVARS	1024
+#define	MAX_CVARS	2048
 cvar_t		cvar_indexes[MAX_CVARS];
 int			cvar_numIndexes;
 
@@ -46,7 +46,7 @@ static long generateHashValue( const char *fname ) {
 	int		i;
 	long	hash;
 	char	letter;
-
+	
 	hash = 0;
 	i = 0;
 	while (fname[i] != '\0') {
@@ -87,6 +87,9 @@ Cvar_FindVar
 static cvar_t *Cvar_FindVar( const char *var_name ) {
 	cvar_t	*var;
 	long hash;
+
+	if ( !var_name )
+		return NULL;
 
 	hash = generateHashValue(var_name);
 	
