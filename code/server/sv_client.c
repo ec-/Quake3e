@@ -571,7 +571,7 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 	SV_CloseDownload( drop );
 
 	// tell everyone why they got dropped
-	SV_SendServerCommand( NULL, "print \"%s" S_COLOR_WHITE " %s\n\"", drop->name, reason );
+	SV_SendServerCommand( NULL, "print \"%s " S_COLOR_WHITE "%s\n\"", drop->name, reason );
 
 	if (drop->download)	{
 		FS_FCloseFile( drop->download );
