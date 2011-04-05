@@ -692,6 +692,12 @@ static void HandleEvents( void )
 				case 5:	Sys_QueEvent( t, SE_KEY, K_MWHEELDOWN, qtrue, 0, NULL ); break;
 				case 6: b = 3; break; // K_MOUSE4
 				case 7: b = 4; break; // K_MOUSE5
+				case 8:	case 9:       // K_AUX1..K_AUX8
+				case 10: case 11:
+				case 12: case 13:
+				case 14: case 15:
+						Sys_QueEvent( t, SE_KEY, event.xbutton.button - 8 + K_AUX1, 
+							qtrue, 0, NULL ); break;
 			}
 			if ( b != -1 )
 				Sys_QueEvent( t, SE_KEY, K_MOUSE1 + b, qtrue, 0, NULL );
@@ -708,6 +714,12 @@ static void HandleEvents( void )
 				case 5:	Sys_QueEvent( t, SE_KEY, K_MWHEELDOWN, qfalse, 0, NULL ); break;
 				case 6: b = 3; break; // K_MOUSE4
 				case 7: b = 4; break; // K_MOUSE5
+				case 8:	case 9:       // K_AUX1..K_AUX8
+				case 10: case 11:
+				case 12: case 13:
+				case 14: case 15:
+						Sys_QueEvent( t, SE_KEY, event.xbutton.button - 8 + K_AUX1, 
+							qfalse, 0, NULL ); break;
 			}
 			if ( b != -1 )
 				Sys_QueEvent( t, SE_KEY, K_MOUSE1 + b, qfalse, 0, NULL );
@@ -1078,7 +1090,7 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
 
         // change to the mode
         XF86VidModeSwitchToMode(dpy, scrnum, vidmodes[best_fit]);
-//		XFlush( dpy );  // drakkar - man 3 XF86VidModeSwitchToMode
+		XFlush( dpy );  // drakkar - man 3 XF86VidModeSwitchToMode
         vidmode_active = qtrue;
 
 		// drakkar - XF86VidModeSetViewPort problems
