@@ -2300,16 +2300,17 @@ CL_CheckUserinfo
 ==================
 */
 void CL_CheckUserinfo( void ) {
+
 	// don't add reliable commands when not yet connected
-	if(cls.state < CA_CHALLENGING)
+	if( cls.state < CA_CONNECTED )
 		return;
 
 	// don't overflow the reliable command buffer when paused
-	if(CL_CheckPaused())
+	if( CL_CheckPaused() )
 		return;
 
 	// send a reliable userinfo update if needed
-	if(cvar_modifiedFlags & CVAR_USERINFO)
+	if( cvar_modifiedFlags & CVAR_USERINFO )
 	{
 		cvar_modifiedFlags &= ~CVAR_USERINFO;
 		CL_AddReliableCommand( va("userinfo \"%s\"", Cvar_InfoString( CVAR_USERINFO ) ), qfalse );
