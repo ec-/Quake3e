@@ -230,7 +230,6 @@ void SV_AuthorizeIpPacket( netadr_t from ) {
 	Com_Memset( challengeptr, 0, sizeof(*challengeptr) );
 }
 #endif
-
 /*
 ==================
 SV_IsBanned
@@ -238,6 +237,7 @@ SV_IsBanned
 Check whether a certain address is banned
 ==================
 */
+#ifdef USE_BANS
 
 static qboolean SV_IsBanned(netadr_t *from, qboolean isexception)
 {
@@ -264,6 +264,7 @@ static qboolean SV_IsBanned(netadr_t *from, qboolean isexception)
 	
 	return qfalse;
 }
+#endif
 
 /*
 ==================
@@ -290,13 +291,15 @@ void SV_DirectConnect( netadr_t from ) {
 	char		*ip;
 
 	Com_DPrintf ("SVC_DirectConnect ()\n");
-	
+
+#ifdef USE_BANS
 	// Check whether this client is banned.
 	if(SV_IsBanned(&from, qfalse))
 	{
 		NET_OutOfBandPrint(NS_SERVER, from, "print\nYou are banned from this server.\n");
 		return;
 	}
+#endif
 
 	Q_strncpyz( userinfo, Cmd_Argv(1), sizeof(userinfo) );
 
@@ -1381,7 +1384,7 @@ void SV_ExecuteClientCommand( client_t *cl, const char *s, qboolean clientOK ) {
 
 	if (clientOK) {
 		// pass unknown strings to the game
-		if (!u->name && sv.state == SS_GAME /* && cl->state == CS_ACTIVE*/ ) {
+		if (!u->name && sv.state == SS_GAME && cl->state >= CS_PRIMED ) {
 			Cmd_Args_Sanitize();
 			VM_Call( gvm, GAME_CLIENT_COMMAND, cl - svs.clients );
 		}

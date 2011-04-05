@@ -418,6 +418,7 @@ static void SV_Kick_f( void ) {
 #ifndef STANDALONE
 // these functions require the auth server which of course is not available anymore for stand-alone games.
 
+#ifdef USE_BANS
 /*
 ==================
 SV_Ban_f
@@ -527,8 +528,11 @@ static void SV_BanNum_f( void ) {
 		Com_Printf("%s was banned from coming back\n", cl->name);
 	}
 }
-#endif
 
+#endif // USE_BANS
+#endif // !COM_STANDALONE
+
+#ifdef USE_BANS
 /*
 ==================
 SV_RehashBans_f
@@ -1021,6 +1025,8 @@ static void SV_ExceptDel_f(void)
 	SV_DelBanFromList(qtrue);
 }
 
+#endif // USE_BANS
+
 /*
 ==================
 SV_KickNum_f
@@ -1272,11 +1278,13 @@ void SV_AddOperatorCommands( void ) {
 	Cmd_AddCommand ("heartbeat", SV_Heartbeat_f);
 	Cmd_AddCommand ("kick", SV_Kick_f);
 #ifndef STANDALONE
+#ifdef USE_BANS
 	if(!Cvar_VariableIntegerValue("com_standalone"))
 	{
 		Cmd_AddCommand ("banUser", SV_Ban_f);
 		Cmd_AddCommand ("banClient", SV_BanNum_f);
 	}
+#endif
 #endif
 	Cmd_AddCommand ("clientkick", SV_KickNum_f);
 	Cmd_AddCommand ("status", SV_Status_f);
@@ -1299,7 +1307,7 @@ void SV_AddOperatorCommands( void ) {
 	if( com_dedicated->integer ) {
 		Cmd_AddCommand ("say", SV_ConSay_f);
 	}
-	
+#ifdef USE_BANS	
 	Cmd_AddCommand("rehashbans", SV_RehashBans_f);
 	Cmd_AddCommand("listbans", SV_ListBans_f);
 	Cmd_AddCommand("banaddr", SV_BanAddr_f);
@@ -1307,6 +1315,7 @@ void SV_AddOperatorCommands( void ) {
 	Cmd_AddCommand("bandel", SV_BanDel_f);
 	Cmd_AddCommand("exceptdel", SV_ExceptDel_f);
 	Cmd_AddCommand("flushbans", SV_FlushBans_f);
+#endif
 }
 
 /*

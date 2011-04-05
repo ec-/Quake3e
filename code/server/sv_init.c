@@ -698,9 +698,10 @@ void SV_Init (void)
 
 	// init the botlib here because we need the pre-compiler in the UI
 	SV_BotInitBotLib();
-	
+#ifdef USE_BANS	
 	// Load saved bans
 	Cbuf_AddText("rehashbans\n");
+#endif
 }
 
 
