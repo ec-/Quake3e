@@ -1094,6 +1094,7 @@ extern	cvar_t	*r_showSmp;
 extern	cvar_t	*r_skipBackEnd;
 
 extern	cvar_t	*r_ignoreGLErrors;
+extern	cvar_t	*r_greyscale;
 
 extern	cvar_t	*r_overBrightBits;
 extern	cvar_t	*r_mapOverBrightBits;

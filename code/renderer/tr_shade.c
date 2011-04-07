@@ -460,9 +460,29 @@ static void ProjectDlightTexture_altivec( void ) {
 		radius = dl->radius;
 		scale = 1.0f / radius;
 
-		floatColor[0] = dl->color[0] * 255.0f;
-		floatColor[1] = dl->color[1] * 255.0f;
-		floatColor[2] = dl->color[2] * 255.0f;
+		if(r_greyscale->integer)
+		{
+			float luminance;
+			
+			luminance = LUMA(dl->color[0], dl->color[1], dl->color[2]) * 255.0f;
+			floatColor[0] = floatColor[1] = floatColor[2] = luminance;
+		}
+		else if(r_greyscale->value)
+		{
+			float luminance;
+			
+			luminance = LUMA(dl->color[0], dl->color[1], dl->color[2]) * 255.0f;
+			floatColor[0] = LERP(dl->color[0] * 255.0f, luminance, r_greyscale->value);
+			floatColor[1] = LERP(dl->color[1] * 255.0f, luminance, r_greyscale->value);
+			floatColor[2] = LERP(dl->color[2] * 255.0f, luminance, r_greyscale->value);
+		}
+		else
+		{
+			floatColor[0] = dl->color[0] * 255.0f;
+			floatColor[1] = dl->color[1] * 255.0f;
+			floatColor[2] = dl->color[2] * 255.0f;
+		}
+
 		floatColorVec0 = vec_ld(0, floatColor);
 		floatColorVec1 = vec_ld(11, floatColor);
 		floatColorVec0 = vec_perm(floatColorVec0,floatColorVec0,floatColorVecPerm);
@@ -604,9 +624,28 @@ static void ProjectDlightTexture_scalar( void ) {
 		radius = dl->radius;
 		scale = 1.0f / radius;
 
-		floatColor[0] = dl->color[0];
-		floatColor[1] = dl->color[1];
-		floatColor[2] = dl->color[2];
+		if( r_greyscale->integer )
+		{
+			float luminance;
+
+			luminance = LUMA( dl->color[0], dl->color[1], dl->color[2] );
+			floatColor[0] = floatColor[1] = floatColor[2] = luminance;
+		}
+		else if( r_greyscale->value )
+		{
+			float luminance;
+			
+			luminance = LUMA( dl->color[0], dl->color[1], dl->color[2] );
+			floatColor[0] = LERP( dl->color[0], luminance, r_greyscale->value );
+			floatColor[1] = LERP( dl->color[1], luminance, r_greyscale->value );
+			floatColor[2] = LERP( dl->color[2], luminance, r_greyscale->value );
+		}
+		else
+		{
+			floatColor[0] = dl->color[0];
+			floatColor[1] = dl->color[1];
+			floatColor[2] = dl->color[2];
+		}
 
 		for ( i = 0 ; i < tess.numVertexes ; i++, texCoords += 2, colors += 4 ) {
 			int		clip = 0;
@@ -941,6 +980,29 @@ static void ComputeColors( shaderStage_t *pStage )
 			break;
 		case ACFF_NONE:
 			break;
+		}
+	}
+	
+	// if in greyscale rendering mode turn all color values into greyscale.
+	if(r_greyscale->integer)
+	{
+		int scale;
+		for(i = 0; i < tess.numVertexes; i++)
+		{
+			scale = LUMA(tess.svars.colors[i][0], tess.svars.colors[i][1], tess.svars.colors[i][2]);
+ 			tess.svars.colors[i][0] = tess.svars.colors[i][1] = tess.svars.colors[i][2] = scale;
+		}
+	}
+	else if(r_greyscale->value)
+	{
+		float scale;
+		
+		for(i = 0; i < tess.numVertexes; i++)
+		{
+			scale = LUMA(tess.svars.colors[i][0], tess.svars.colors[i][1], tess.svars.colors[i][2]);
+			tess.svars.colors[i][0] = LERP(tess.svars.colors[i][0], scale, r_greyscale->value);
+			tess.svars.colors[i][1] = LERP(tess.svars.colors[i][1], scale, r_greyscale->value);
+			tess.svars.colors[i][2] = LERP(tess.svars.colors[i][2], scale, r_greyscale->value);
 		}
 	}
 }

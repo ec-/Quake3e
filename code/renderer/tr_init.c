@@ -54,6 +54,8 @@ cvar_t	*r_smp;
 cvar_t	*r_showSmp;
 cvar_t	*r_skipBackEnd;
 
+cvar_t	*r_greyscale;
+
 cvar_t	*r_ignorehwgamma;
 cvar_t	*r_measureOverdraw;
 
@@ -965,6 +967,8 @@ void R_Register( void )
 	r_subdivisions = ri.Cvar_Get ("r_subdivisions", "4", CVAR_ARCHIVE | CVAR_LATCH);
 	r_smp = ri.Cvar_Get( "r_smp", "0", CVAR_ARCHIVE | CVAR_LATCH);
 	r_ignoreFastPath = ri.Cvar_Get( "r_ignoreFastPath", "1", CVAR_ARCHIVE | CVAR_LATCH );
+	r_greyscale = ri.Cvar_Get( "r_greyscale", "0", CVAR_ARCHIVE | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_greyscale, 0, 1, qfalse );
 
 	//
 	// temporary latched variables that can only change over a restart
