@@ -153,7 +153,9 @@ cvar_t	*r_saveFontData;
 
 cvar_t	*r_GLlibCoolDownMsec;
 
+#ifdef USE_VIDEO
 cvar_t	*r_aviMotionJpegQuality;
+#endif
 cvar_t	*r_screenshotJpegQuality;
 
 cvar_t	*r_maxpolys;
@@ -1156,7 +1158,9 @@ void R_Register( void )
 	r_noportals = ri.Cvar_Get ("r_noportals", "0", CVAR_CHEAT);
 	r_shadows = ri.Cvar_Get( "cg_shadows", "1", 0 );
 
+#ifdef USE_VIDEO
 	r_aviMotionJpegQuality = ri.Cvar_Get("r_aviMotionJpegQuality", "90", CVAR_ARCHIVE);
+#endif
 	r_screenshotJpegQuality = ri.Cvar_Get("r_screenshotJpegQuality", "90", CVAR_ARCHIVE);
 
 	r_maxpolys = ri.Cvar_Get( "r_maxpolys", va("%d", MAX_POLYS), 0);
