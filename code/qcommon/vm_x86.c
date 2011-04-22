@@ -245,6 +245,11 @@ static int	Constant4( void ) {
 	return v;
 }
 
+static int	NextConstant4( void ) {
+	return (code[pc] | (code[pc+1]<<8) | (code[pc+2]<<16) | (code[pc+3]<<24));
+}
+
+
 static int	Constant1( void ) {
 	int		v;
 
@@ -420,6 +425,7 @@ VM_Compile
 */
 void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int		op;
+	int		op1;
 	int		maxLength;
 	int		v;
 	int		i;
@@ -483,7 +489,8 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			Emit4( Constant4() );
 			break;
 		case OP_CONST:
-			if (code[pc+4] == OP_LOAD4) {
+			op1 = code[pc+4];
+			if ( op1 == OP_LOAD4 ) {
 				EmitAddEDI4(vm);
 				EmitString( "BB" );		// mov	ebx, 0x12345678
 				Emit4( (Constant4()&vm->dataMask) + (int)vm->dataBase);
@@ -493,7 +500,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				instruction += 1;
 				break;
 			}
-			if (code[pc+4] == OP_LOAD2) {
+			if ( op1 == OP_LOAD2 ) {
 				EmitAddEDI4(vm);
 				EmitString( "BB" );		// mov	ebx, 0x12345678
 				Emit4( (Constant4()&vm->dataMask) + (int)vm->dataBase);
@@ -503,7 +510,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				instruction += 1;
 				break;
 			}
-			if (code[pc+4] == OP_LOAD1) {
+			if ( op1 == OP_LOAD1 ) {
 				EmitAddEDI4(vm);
 				EmitString( "BB" );		// mov	ebx, 0x12345678
 				Emit4( (Constant4()&vm->dataMask) + (int)vm->dataBase);
@@ -513,7 +520,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				instruction += 1;
 				break;
 			}
-			if (code[pc+4] == OP_STORE4) {
+			if ( op1 == OP_STORE4 ) {
 				opt = EmitMovEBXEDI(vm, (vm->dataMask & ~3));
 				EmitString( "B8" );			// mov	eax, 0x12345678
 				Emit4( Constant4() );
@@ -528,7 +535,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				instruction += 1;
 				break;
 			}
-			if (code[pc+4] == OP_STORE2) {
+			if ( op1 == OP_STORE2 ) {
 				opt = EmitMovEBXEDI(vm, (vm->dataMask & ~1));
 				EmitString( "B8" );			// mov	eax, 0x12345678
 				Emit4( Constant4() );
@@ -543,7 +550,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				instruction += 1;
 				break;
 			}
-			if (code[pc+4] == OP_STORE1) {
+			if ( op1 == OP_STORE1 ) {
 				opt = EmitMovEBXEDI(vm, vm->dataMask);
 				EmitString( "B8" );			// mov	eax, 0x12345678
 				Emit4( Constant4() );
@@ -558,20 +565,65 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				instruction += 1;
 				break;
 			}
-			if (code[pc+4] == OP_ADD) {
+			if ( op1 == OP_ADD ) {
+				v = NextConstant4();
+				if ( v == 1 ) {
+					EmitString( "FF 07" );	// inc dword ptr [edi]
+					pc += 5;				// OP_CONST + OP_ADD
+					instruction += 1;
+					break;
+				}
 				EmitString( "81 07" );		// add dword ptr [edi], 0x1234567
 				Emit4( Constant4() );
 				pc++;						// OP_ADD
 				instruction += 1;
 				break;
 			}
-			if (code[pc+4] == OP_SUB) {
+			if ( op1 == OP_SUB ) {
+				v = NextConstant4();
+				if ( v == 1 ) {
+					EmitString( "FF 0F" );	// dec dword ptr [edi]
+					pc += 5;				// OP_CONST + OP_SUB
+					instruction += 1;
+					break;
+				}
 				EmitString( "81 2F" );		// sub dword ptr [edi], 0x1234567
 				Emit4( Constant4() );
 				pc++;						// OP_ADD
 				instruction += 1;
 				break;
 			}
+			if ( op1 == OP_LSH ) {
+				v = NextConstant4();
+				if ( v >=1 && v <= 31 ) {
+					EmitString( "C1 27" );	// shl dword ptr [edi], 0x12
+					Emit1( v );
+					pc += 5;				// OP_CONST + OP_RSHI
+					instruction += 1;
+					break;
+				}
+			}
+			if ( op1 == OP_RSHI ) {
+				v = NextConstant4();
+				if ( v >=1 && v <= 31 ) {
+					EmitString( "C1 3F" );	// sar dword ptr [edi], 0x12
+					Emit1( v );
+					pc += 5;				// OP_CONST + OP_RSHI
+					instruction += 1;
+					break;
+				}
+			}
+			if ( op1 == OP_RSHU ) {
+				v = NextConstant4();
+				if ( v >=1 && v <= 31 ) {
+					EmitString( "C1 2F" );	// shr dword ptr [edi], 0x12
+					Emit1( v );
+					pc += 5;				// OP_CONST + OP_RSHI
+					instruction += 1;
+					break;
+				}
+			}
+
 			EmitAddEDI4(vm);
 			EmitString( "C7 07" );		// mov	dword ptr [edi], 0x12345678
 			lastConst = Constant4();
@@ -1079,7 +1131,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			Emit4( (int)vm->instructionPointers );
 			break;
 		default:
-		        VMFREE_BUFFERS();
+		    VMFREE_BUFFERS();
 			Com_Error(ERR_DROP, "VM_CompileX86: bad opcode %i at offset %i", op, pc);
 		}
 		pop0 = pop1;
