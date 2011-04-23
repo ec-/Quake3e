@@ -1200,6 +1200,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					&& Q_stricmp( filename + l - 4, ".png" )	// hud files
 					&& Q_stricmp( filename + l - 2, ".c" )		// bot files
 					&& Q_stricmp( filename + l - 4, ".bot" )	// bot files
+					&& Q_stricmp( filename + l - 4, ".txt" )	// text files
 					&& Q_stricmp( filename + l - strlen(demoExt), demoExt ) // demo files
 					&& Q_stricmp( filename + l - 4, ".dat" ) ) {	// for journal files
 					continue;
@@ -1930,6 +1931,9 @@ static qboolean FS_AllowExternal( const char *extension )
 		return qtrue;
 
 	if ( Q_stricmp( extension, ".cfg" ) )
+		return qtrue;
+
+	if ( Q_stricmp( extension, ".txt" ) )
 		return qtrue;
 	
 	if ( Q_stricmp( extension, ".dat" ) )
