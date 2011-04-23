@@ -263,7 +263,6 @@ static	cvar_t		*fs_basegame;
 static	cvar_t		*fs_cdpath;
 static	cvar_t		*fs_copyfiles;
 static	cvar_t		*fs_gamedirvar;
-static	cvar_t		*fs_restrict;
 static	searchpath_t	*fs_searchpaths;
 static	int			fs_readCount;			// total bytes read
 static	int			fs_loadCount;			// total files read
@@ -1191,7 +1190,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
       //   this test can make the search fail although the file is in the directory
       // I had the problem on https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=8
       // turned out I used FS_FileExists instead
-			if ( fs_restrict->integer || fs_numServerPaks ) {
+			if ( fs_numServerPaks ) {
 
 				if ( Q_stricmp( filename + l - 4, ".cfg" )		// for config files
 					&& Q_stricmp( filename + l - 5, ".menu" )	// menu files
@@ -1199,7 +1198,9 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					&& Q_stricmp( filename + l - 4, ".jpg" )	// hud files
 					&& Q_stricmp( filename + l - 4, ".tga" )	// hud files
 					&& Q_stricmp( filename + l - 4, ".png" )	// hud files
-					&& Q_stricmp( filename + l - strlen(demoExt), demoExt )	// menu files
+					&& Q_stricmp( filename + l - 2, ".c" )		// bot files
+					&& Q_stricmp( filename + l - 4, ".bot" )	// bot files
+					&& Q_stricmp( filename + l - strlen(demoExt), demoExt ) // demo files
 					&& Q_stricmp( filename + l - 4, ".dat" ) ) {	// for journal files
 					continue;
 				}
@@ -1916,6 +1917,35 @@ static int FS_AddFileToList( char *name, char *list[MAX_FOUND_FILES], int nfiles
 
 /*
 ===============
+FS_AllowUnpure
+===============
+*/
+static qboolean FS_AllowExternal( const char *extension ) 
+{
+	if ( !extension )
+		return qfalse;
+
+	// allow scanning directories
+	if ( strcmp( extension, "/" ) )
+		return qtrue;
+
+	if ( Q_stricmp( extension, ".cfg" ) )
+		return qtrue;
+	
+	if ( Q_stricmp( extension, ".dat" ) )
+		return qtrue;
+
+	if ( Q_stricmp( extension, ".menu" ) )
+		return qtrue;
+
+	if ( Q_stricmp( extension, ".game" ) )
+		return qtrue;
+
+	return qfalse;
+}
+
+/*
+===============
 FS_ListFilteredFiles
 
 Returns a uniqued list of files that match the given criteria
@@ -1934,10 +1964,13 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, char *filt
 	pack_t			*pak;
 	fileInPack_t	*buildBuffer;
 	char			zpath[MAX_ZPATH];
+	qboolean		allowExternal;
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization\n" );
 	}
+
+	allowExternal = FS_AllowExternal( extension );
 
 	if ( !path ) {
 		*numfiles = 0;
@@ -2017,9 +2050,8 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, char *filt
 			char	**sysFiles;
 			char	*name;
 
-			// don't scan directories for files if we are pure or restricted
-			if ( fs_restrict->integer || 
-				( fs_numServerPaks && allowNonPureFilesOnDisk  == qfalse ) ) {
+			// don't scan directories for files if we are pure
+			if ( fs_numServerPaks && allowNonPureFilesOnDisk == qfalse && allowExternal == qfalse ) {
 		        continue;
 		    } else {
 				netpath = FS_BuildOSPath( search->dir->path, search->dir->gamedir, path );
@@ -3002,7 +3034,6 @@ static void FS_Startup( const char *gameName ) {
 	}
 	fs_homepath = Cvar_Get ("fs_homepath", homePath, CVAR_INIT | CVAR_PROTECTED );
 	fs_gamedirvar = Cvar_Get ("fs_game", "", CVAR_INIT|CVAR_SYSTEMINFO );
-	fs_restrict = Cvar_Get ("fs_restrict", "", CVAR_INIT );
 
 	// add search path elements in reverse priority order
 	if (fs_cdpath->string[0]) {
