@@ -42,6 +42,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define GAMENAME_FOR_MASTER     "Quake3Arena"
 #define HEARTBEAT_FOR_MASTER    "QuakeArena-1"
 
+#define DEMOEXT	"dm_"			// standard demo extension
+
 #ifdef _MSC_VER
 
 #pragma warning(disable : 4018)     // signed/unsigned mismatch
@@ -172,6 +174,7 @@ typedef int		clipHandle_t;
 #define	MAX_QINT			0x7fffffff
 #define	MIN_QINT			(-MAX_QINT-1)
 
+#define ARRAY_LEN(x)			(sizeof(x) / sizeof(*(x)))
 
 // angle indexes
 #define	PITCH				0		// up / down

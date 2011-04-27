@@ -37,7 +37,6 @@ static DWORD	locksize;
 static LPDIRECTSOUND pDS;
 static LPDIRECTSOUNDBUFFER pDSBuf, pDSPBuf;
 static HINSTANCE hInstDS;
-static qboolean	locked = qfalse;
 extern cvar_t	*s_khz;
 
 static const char *DSoundError( int error ) {
@@ -209,7 +208,7 @@ int SNDDMA_InitDS ()
 	dsbuf.dwSize = sizeof(DSBUFFERDESC);
 
 	// Micah: take advantage of 2D hardware.if available.
-	dsbuf.dwFlags = DSBCAPS_LOCHARDWARE | DSBCAPS_STATIC;
+	dsbuf.dwFlags = DSBCAPS_LOCHARDWARE;
 	if (use8) {
 		dsbuf.dwFlags |= DSBCAPS_GETCURRENTPOSITION2;
 	}
@@ -225,7 +224,7 @@ int SNDDMA_InitDS ()
 	}
 	else {
 		// Couldn't get hardware, fallback to software.
-		dsbuf.dwFlags = DSBCAPS_LOCSOFTWARE | DSBCAPS_STATIC;
+		dsbuf.dwFlags = DSBCAPS_LOCSOFTWARE;
 		if (use8) {
 			dsbuf.dwFlags |= DSBCAPS_GETCURRENTPOSITION2;
 		}
@@ -327,11 +326,9 @@ void SNDDMA_BeginPainting( void ) {
 	if (!(dwStatus & DSBSTATUS_PLAYING))
 		pDSBuf->lpVtbl->Play(pDSBuf, 0, 0, DSBPLAY_LOOPING);
 
-	if ( dma.buffer )
-		return;
-
 	// lock the dsound buffer
 	reps = 0;
+	dma.buffer = NULL;
 
 	while ((hresult = pDSBuf->lpVtbl->Lock(pDSBuf, 0, gSndBufSize, (LPVOID)&pbuf, &locksize, 
 								   (LPVOID)&pbuf2, &dwSize2, 0)) != DS_OK)
@@ -350,7 +347,6 @@ void SNDDMA_BeginPainting( void ) {
 		if (++reps > 2)
 			return;
 	}
-	locked = qtrue;
 	dma.buffer = (unsigned char *)pbuf;
 }
 
@@ -364,7 +360,7 @@ Also unlocks the dsound buffer
 */
 void SNDDMA_Submit( void ) {
     // unlock the dsound buffer
-	if ( pDSBuf && locked ) {
+	if ( pDSBuf ) {
 		pDSBuf->lpVtbl->Unlock(pDSBuf, dma.buffer, locksize, NULL, 0);
 	}
 }

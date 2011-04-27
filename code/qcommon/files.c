@@ -761,7 +761,7 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
   }
   
 	if( fsh[f].handleFiles.file.o ) {
-	*fp = f;
+		*fp = f;
 		return FS_filelength( f );
 	}
 
@@ -996,6 +996,61 @@ qboolean FS_FilenameCompare( const char *s1, const char *s2 ) {
 	return qfalse;		// strings are equal
 }
 
+
+/*
+===========
+FS_IsExt
+
+Return qtrue if ext matches file extension filename
+===========
+*/
+qboolean FS_IsExt( const char *filename, const char *ext, int namelen )
+{
+	int extlen;
+
+	extlen = strlen( ext );
+
+	if ( extlen > namelen )
+		return qfalse;
+
+	filename += namelen - extlen;
+
+	return !Q_stricmp( filename, ext );
+}
+
+
+/*
+===========
+FS_IsDemoExt
+
+Return qtrue if filename has a demo extension
+===========
+*/
+qboolean FS_IsDemoExt( const char *filename, int namelen )
+{
+	char *ext_test;
+	int index, protocol;
+
+	ext_test = Q_strrchr( filename, '.' );
+
+	if ( !ext_test )
+		return qfalse;
+
+	if ( !Q_stricmpn( ext_test + 1, DEMOEXT, ARRAY_LEN( DEMOEXT ) - 1 ) )
+	{
+		protocol = atoi( ext_test + ARRAY_LEN( DEMOEXT ) );
+
+		for( index = 0; demo_protocols[index]; index++ )
+		{
+			if ( demo_protocols[index] == protocol )
+				return qtrue;
+		}
+	}
+
+	return qfalse;
+}
+
+
 /*
 ===========
 FS_FOpenFileRead
@@ -1122,17 +1177,17 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					// these are loaded from all pk3s 
 					// from every pk3 file.. 
 					l = strlen( filename );
-					if ( !(pak->referenced & FS_GENERAL_REF)) {
-						if ( Q_stricmp(filename + l - 7, ".shader") != 0 &&
-							Q_stricmp(filename + l - 4, ".txt") != 0 &&
-							Q_stricmp(filename + l - 4, ".cfg") != 0 &&
-							Q_stricmp(filename + l - 7, ".config") != 0 &&
-							strstr(filename, "levelshots") == NULL &&
-							Q_stricmp(filename + l - 4, ".bot") != 0 &&
-							Q_stricmp(filename + l - 6, ".arena") != 0 &&
-							Q_stricmp(filename + l - 5, ".menu") != 0) {
-							pak->referenced |= FS_GENERAL_REF;
-						}
+					if ( !( pak->referenced & FS_GENERAL_REF ) ) {
+						if ( !FS_IsExt( filename, ".config", l ) &&
+							!FS_IsExt( filename, ".shader", l ) &&
+							!FS_IsExt( filename, ".arena", l ) &&
+							!FS_IsExt( filename, ".menu", l ) &&
+							!FS_IsExt( filename, ".bot", l ) &&
+							!FS_IsExt( filename, ".cfg", l ) &&
+							!FS_IsExt( filename, ".txt", l ) &&
+							strstr( filename, "levelshots" ) == NULL ) {
+								 pak->referenced |= FS_GENERAL_REF;
+							}
 					}
 
 					if (!(pak->referenced & FS_QAGAME_REF) && strstr(filename, "qagame.qvm")) {
@@ -1191,20 +1246,20 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
       // I had the problem on https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=8
       // turned out I used FS_FileExists instead
 			if ( fs_numServerPaks ) {
-
-				if ( Q_stricmp( filename + l - 4, ".cfg" )		// for config files
-					&& Q_stricmp( filename + l - 5, ".menu" )	// menu files
-					&& Q_stricmp( filename + l - 5, ".game" )	// menu files
-					&& Q_stricmp( filename + l - 4, ".jpg" )	// hud files
-					&& Q_stricmp( filename + l - 4, ".tga" )	// hud files
-					&& Q_stricmp( filename + l - 4, ".png" )	// hud files
-					&& Q_stricmp( filename + l - 2, ".c" )		// bot files
-					&& Q_stricmp( filename + l - 4, ".bot" )	// bot files
-					&& Q_stricmp( filename + l - 4, ".txt" )	// text files
-					&& Q_stricmp( filename + l - strlen(demoExt), demoExt ) // demo files
-					&& Q_stricmp( filename + l - 4, ".dat" ) ) {	// for journal files
+				if ( !FS_IsExt( filename, ".cfg", l ) &&	// config files
+					!FS_IsExt( filename, ".txt", l ) &&		// config/text files
+					!FS_IsExt( filename, ".dat", l ) &&		// misc. data files
+					!FS_IsExt( filename, ".bot", l ) &&		// bot files
+					!FS_IsExt( filename, ".c", l ) &&		// bot files
+					!FS_IsExt( filename, ".add", l ) &&		// custom entities
+					!FS_IsExt( filename, ".set", l ) &&		// custom entities
+					!FS_IsExt( filename, ".jpg", l ) &&		// external hud images
+					!FS_IsExt( filename, ".tga", l ) &&		// external hud images
+					!FS_IsExt( filename, ".png", l ) &&		// external hud images
+					!FS_IsExt( filename, ".menu", l ) &&	// menu files
+					!FS_IsExt( filename, ".game", l ) &&	// menu files
+					!FS_IsDemoExt( filename, l ) )
 					continue;
-				}
 			}
 
 			dir = search->dir;
