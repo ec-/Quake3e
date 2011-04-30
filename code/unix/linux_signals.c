@@ -29,37 +29,38 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 static qboolean signalcaught = qfalse;
 
-void Sys_Exit(int); // bk010104 - abstraction
+void Sys_Exit( int ); // bk010104 - abstraction
 
-static void signal_handler(int sig) // bk010104 - replace this... (NOTE TTimo huh?)
+static void signal_handler( int sig )
 {
-  if (signalcaught)
-  {
-    printf("DOUBLE SIGNAL FAULT: Received signal %d, exiting...\n", sig);
-    Sys_Exit(1); // bk010104 - abstraction
-  }
+	char msg[32];
 
-  signalcaught = qtrue;
-  printf("Received signal %d, exiting...\n", sig);
+	if ( signalcaught == qtrue )
+	{
+		printf( "DOUBLE SIGNAL FAULT: Received signal %d, exiting...\n", sig );
+		Sys_Exit( 1 ); // abstraction
+	}
+
+	signalcaught = qtrue;
+	sprintf( msg, "Signal caught (%d)", sig );
+	printf( "Received signal %d, exiting...\n", sig );
 #ifndef DEDICATED
-  //GLimp_Shutdown(); // bk010104 - shouldn't this be CL_Shutdown
-  // rcg08312005 Agreed: changed to CL_Shutdown...  --ryan.
-  CL_Shutdown( "Signal caught" );
+	CL_Shutdown( msg );
 #endif
-  SV_Shutdown( "Signal caught" );
-  Sys_Exit( 0 ); // bk010104 - abstraction NOTE TTimo send a 0 to avoid DOUBLE SIGNAL FAULT
+	SV_Shutdown( msg );
+	Sys_Exit( 0 ); // send a 0 to avoid DOUBLE SIGNAL FAULT
 }
 
-void InitSig(void)
+void InitSig( void )
 {
-  signal(SIGINT, signal_handler);
-  signal(SIGHUP, signal_handler);
-  signal(SIGQUIT, signal_handler);
-  signal(SIGILL, signal_handler);
-  signal(SIGTRAP, signal_handler);
-  signal(SIGIOT, signal_handler);
-  signal(SIGBUS, signal_handler);
-  signal(SIGFPE, signal_handler);
-  signal(SIGSEGV, signal_handler);
-  signal(SIGTERM, signal_handler);
+	signal( SIGINT, SIG_IGN );
+	signal( SIGHUP, signal_handler );
+	signal( SIGQUIT, signal_handler );
+	signal( SIGILL, signal_handler );
+	signal( SIGTRAP, signal_handler );
+	signal( SIGIOT, signal_handler );
+	signal( SIGBUS, signal_handler );
+	signal( SIGFPE, signal_handler );
+	signal( SIGSEGV, signal_handler );
+	signal( SIGTERM, signal_handler );
 }
