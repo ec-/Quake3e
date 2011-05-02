@@ -623,6 +623,34 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 					break;
 				}
 			}
+			if ( op1 == OP_BAND ) {
+				v = NextConstant4();
+				// try to generate shorter version
+				if ( v >= 0 && v <= 127 ) {
+					EmitString( "83 27" ); // and dword ptr[edi], 0x7F
+					Emit1( v );
+				} else {
+					EmitString( "81 27" ); // and dword ptr[edi], 0x7FFFF
+					Emit4( v );
+				}
+				pc += 5;				   // OP_CONST + OP_BAND
+				instruction += 1;
+				break;
+			}
+			if ( op1 == OP_BOR ) {
+				v = NextConstant4();
+				// try to generate shorter version
+				if ( v >= 0 && v <= 127 ) {
+					EmitString( "83 0F" ); // or dword ptr[edi], 0x7F
+					Emit1( v );
+				} else {
+					EmitString( "81 0F" ); // or dword ptr[edi], 0x7FFFF
+					Emit4( v );
+				}
+				pc += 5;				   // OP_CONST + OP_BOR
+				instruction += 1;
+				break;
+			}
 
 			EmitAddEDI4(vm);
 			EmitString( "C7 07" );		// mov	dword ptr [edi], 0x12345678
