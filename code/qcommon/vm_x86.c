@@ -98,6 +98,10 @@ static	int	instruction, pass;
 static	int	lastConst = 0;
 static	int	oc0, oc1, pop0, pop1;
 
+#ifdef _DEBUG
+static	char msg[] = { S_COLOR_YELLOW "%08x jump-out\n" };
+#endif
+
 typedef enum 
 {
 	LAST_COMMAND_NONE	= 0,
@@ -127,11 +131,25 @@ __asm {
 	jl		systemCall
 	// calling another vm function
 	shl		eax,2
+	cmp		eax, [callMask]
+	jae		badAddr
 	add		eax, dword ptr [instructionPointers]
 	call	dword ptr [eax]
 	mov		eax, dword ptr [edi]
-	and		eax, [callMask]
 	ret
+badAddr:
+	// leave something on the opstack
+	add		edi, 4
+	mov		dword ptr [edi], 0
+#ifdef _DEBUG
+	// print warning
+	push	eax
+	push	offset msg
+	call	Com_Printf
+	add		esp, 8
+#endif
+	ret
+
 systemCall:
 
 	// convert negative num to system call number
@@ -1207,6 +1225,8 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	for ( i = 0 ; i < header->instructionCount ; i++ ) {
 		vm->instructionPointers[i] += (int)vm->codeBase;
 	}
+
+	callMask = vm->dataMask;
 }
 
 void VM_Destroy_Compiled(vm_t* self)
