@@ -254,6 +254,11 @@ S_RegisterSound
 */
 sfxHandle_t	S_RegisterSound( const char *sample, qboolean compressed )
 {
+	if ( !sample || !*sample ) {
+		Com_Printf( "NULL sound\n" );
+		return 0;
+	}
+
 	if( si.RegisterSound ) {
 		return si.RegisterSound( sample, compressed );
 	} else {
