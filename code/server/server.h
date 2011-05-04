@@ -254,7 +254,9 @@ extern	cvar_t	*sv_gametype;
 extern	cvar_t	*sv_pure;
 extern	cvar_t	*sv_floodProtect;
 extern	cvar_t	*sv_lanForceRate;
+#ifndef STANDALONE
 extern	cvar_t	*sv_strictAuth;
+#endif
 extern	cvar_t	*sv_banFile;
 
 extern	serverBan_t serverBans[SERVER_MAXBANS];
