@@ -92,15 +92,11 @@ static	int		ftolPtr = (int)qftol0F7F;
 void AsmCall(void);
 static void (*const asmCallPtr)(void) = AsmCall;
 
-static	int		callMask = 0; // bk001213 - init
+static	int	callMask = 0; // init
 
 static	int	instruction, pass;
 static	int	lastConst = 0;
 static	int	oc0, oc1, pop0, pop1;
-
-#ifdef _DEBUG
-static	char msg[] = { S_COLOR_YELLOW "%08x jump-out\n" };
-#endif
 
 typedef enum 
 {
@@ -141,13 +137,6 @@ badAddr:
 	// leave something on the opstack
 	add		edi, 4
 	mov		dword ptr [edi], 0
-#ifdef _DEBUG
-	// print warning
-	push	eax
-	push	offset msg
-	call	Com_Printf
-	add		esp, 8
-#endif
 	ret
 
 systemCall:
@@ -232,11 +221,16 @@ __asm__(
 	"testl %eax, %eax\n\t"
 	"jl    0f\n\t"
 	"shll  $2, %eax\n\t"
+	"cmpl  " CMANGVAR(callMask) ", %eax\n\t"
+	"jae   1f\n\t"
 	"addl  " CMANGVAR(instructionPointers) ", %eax\n\t"
 	"call  *(%eax)\n\t"
 	"movl  (%edi), %eax\n\t"
-	"andl  " CMANGVAR(callMask) ", %eax\n\t"
 	"ret\n"
+	"1:\n\t" // bad address, leave something on the opstack
+	"addl  $4, %edi\n\t"
+	"movl  $0, (%edi)\n\t"
+	"ret\n\t"
 	"0:\n\t" // system call
 	"notl  %eax\n\t"
 	"pushl %ecx\n\t"
@@ -1225,8 +1219,6 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	for ( i = 0 ; i < header->instructionCount ; i++ ) {
 		vm->instructionPointers[i] += (int)vm->codeBase;
 	}
-
-	callMask = vm->dataMask;
 }
 
 void VM_Destroy_Compiled(vm_t* self)
@@ -1264,7 +1256,7 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 	// interpret the code
 	vm->currentlyInterpreting = qtrue;
 
-	callMask = vm->dataMask;
+	callMask = vm->codeLength;
 
 	// we might be called recursively, so this might not be the very top
 	programStack = vm->programStack;
