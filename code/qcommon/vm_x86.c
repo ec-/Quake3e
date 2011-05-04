@@ -1256,8 +1256,10 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 	byte	*image;
 	void	*opStack;
 	int		*oldInstructionPointers;
+	int		oldCallMask;
 
 	oldInstructionPointers = instructionPointers;
+	oldCallMask	= callMask;
 
 	currentVM = vm;
 	instructionPointers = vm->instructionPointers;
@@ -1336,6 +1338,7 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 
 	// in case we were recursively called by another vm
 	instructionPointers = oldInstructionPointers;
+	callMask = oldCallMask;
 
 	return *(int *)opStack;
 }
