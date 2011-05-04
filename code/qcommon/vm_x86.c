@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <windows.h>
 #endif
 
-#ifdef __FreeBSD__ // rb0101023
+#ifdef __FreeBSD__
 #include <sys/types.h>
 #endif
 
@@ -53,7 +53,7 @@ static void VM_Destroy_Compiled(vm_t* self);
 
 */
 
-#define VMFREE_BUFFERS() {Z_Free(buf); Z_Free(jused);}
+#define VMFREE_BUFFERS() do {Z_Free(buf); Z_Free(jused);} while(0)
 static	byte	*buf = NULL;
 static	byte	*jused = NULL;
 static	int		compiledOfs = 0;
@@ -233,6 +233,11 @@ __asm__(
 	"ret\n\t"
 	"0:\n\t" // system call
 	"notl  %eax\n\t"
+#ifdef USE_SSE
+	"pushl %ebp\n\t"
+	"movl  %esp, %ebp\n\t"
+	"andl $-16, %esp\n\t" // align the stack so engine can use sse
+#endif
 	"pushl %ecx\n\t"
 	"pushl %edi\n\t" // opStack
 	"pushl %esi\n\t" // programStack
@@ -240,6 +245,10 @@ __asm__(
 	"call  " CMANGFUNC(CallAsmCall) "\n\t"
 	"addl  $12, %esp\n\t"
 	"popl  %ecx\n\t"
+#ifdef USE_SSE
+	"movl  %ebp, %esp\n\t"
+	"popl  %ebp\n\t"
+#endif
 	"addl  $4, %edi\n\t"
 	"ret\n\t"
 #if defined __ELF__
