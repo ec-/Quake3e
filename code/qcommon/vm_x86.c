@@ -1183,16 +1183,15 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			break;
 
 		case OP_JUMP:
-			if ( cjump == qtrue ) {
+			if ( cjump == qtrue && !jused[pc] ) {
 				// we don't need any checks there because jump target 
 				// is known and already validated by JUSED macro
 				EmitCommand(LAST_COMMAND_SUB_DI_4); // sub edi, 4
 				EmitString( "8B 47 04" );           // mov eax,dword ptr [edi+4]
 				EmitString( "FF 24 85" );           // jmp dword ptr [instructionPointers + eax * 4]
 				Emit4( (int)vm->instructionPointers );
-				cjump = qfalse;
 			} else {
-				// add runtime range checks
+				// perform runtime range checks
 				EmitCommand(LAST_COMMAND_SUB_DI_4); // sub edi, 4
 				EmitString( "8B 47 04" );           // mov eax,dword ptr [edi+4]
 				EmitString( "3B 05" );              // cmp eax,[callMask]
@@ -1203,6 +1202,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				EmitString( "FF 15" );              // call errJumpPtr
 				Emit4( (int)&errJumpPtr );
 			}
+			cjump = qfalse;
 			break;
 		default:
 		    VMFREE_BUFFERS();
