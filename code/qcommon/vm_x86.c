@@ -1183,7 +1183,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			break;
 
 		case OP_JUMP:
-			if ( cjump == qtrue && !jused[pc] ) {
+			if ( cjump == qtrue && !jused[pc-1] ) {
 				// we don't need any checks there because jump target 
 				// is known and already validated by JUSED macro
 				EmitCommand(LAST_COMMAND_SUB_DI_4); // sub edi, 4
