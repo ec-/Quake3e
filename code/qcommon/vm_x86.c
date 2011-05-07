@@ -108,6 +108,10 @@ typedef enum
 
 static	ELastCommand	LastCommand;
 
+static void ErrJump( void ) { Com_Error( ERR_DROP, "program tried to execute code outside VM\n" ); }
+
+static void (*const errJumpPtr)(void) = ErrJump;
+
 /*
 =================
 AsmCall
@@ -125,16 +129,17 @@ __asm {
 	sub		edi, 4
 	test	eax,eax
 	jl		systemCall
-	// calling another vm function
-	shl		eax,2
 	cmp		eax, [callMask]
 	jae		badAddr
+	// calling another vm function
+	shl		eax,2
 	add		eax, dword ptr [instructionPointers]
 	call	dword ptr [eax]
 	mov		eax, dword ptr [edi]
 	ret
 badAddr:
 	// leave something on the opstack
+	call	ErrJump
 	add		edi, 4
 	mov		dword ptr [edi], 0
 	ret
@@ -220,14 +225,15 @@ __asm__(
 	"subl  $4, %edi\n\t"
 	"testl %eax, %eax\n\t"
 	"jl    0f\n\t"
-	"shll  $2, %eax\n\t"
 	"cmpl  " CMANGVAR(callMask) ", %eax\n\t"
 	"jae   1f\n\t"
+	"shll  $2, %eax\n\t"
 	"addl  " CMANGVAR(instructionPointers) ", %eax\n\t"
 	"call  *(%eax)\n\t"
 	"movl  (%edi), %eax\n\t"
 	"ret\n"
 	"1:\n\t" // bad address, leave something on the opstack
+	"call  " CMANGFUNC(ErrJump) "\n\t"
 	"addl  $4, %edi\n\t"
 	"movl  $0, (%edi)\n\t"
 	"ret\n\t"
@@ -451,6 +457,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int		v;
 	int		i;
 	qboolean opt;
+	qboolean cjump;
 	int jusedSize = header->instructionCount + 2;
 
 	// allocate a very large temp buffer, we will shrink it later
@@ -477,6 +484,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	instruction = 0;
 	code = (byte *)header + header->codeOffset;
 	compiledOfs = 0;
+	cjump = qfalse;
 
 	LastCommand = LAST_COMMAND_NONE;
 
@@ -679,6 +687,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			Emit4( lastConst );
 			if (code[pc] == OP_JUMP) {
 				JUSED(lastConst);
+				cjump = qtrue;
 			}
 			break;
 		case OP_LOCAL:
@@ -1173,11 +1182,26 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			break;
 
 		case OP_JUMP:
-			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
-			EmitString( "8B 47 04" );	// mov eax,dword ptr [edi+4]
-			// FIXME: range check
-			EmitString( "FF 24 85" );	// jmp dword ptr [instructionPointers + eax * 4]
-			Emit4( (int)vm->instructionPointers );
+			if ( cjump == qtrue ) {
+				// we don't need any checks there because jump target 
+				// is known and already validated by JUSED macro
+				EmitCommand(LAST_COMMAND_SUB_DI_4); // sub edi, 4
+				EmitString( "8B 47 04" );           // mov eax,dword ptr [edi+4]
+				EmitString( "FF 24 85" );           // jmp dword ptr [instructionPointers + eax * 4]
+				Emit4( (int)vm->instructionPointers );
+				cjump = qfalse;
+			} else {
+				// add runtime range checks
+				EmitCommand(LAST_COMMAND_SUB_DI_4); // sub edi, 4
+				EmitString( "8B 47 04" );           // mov eax,dword ptr [edi+4]
+				EmitString( "3B 05" );              // cmp eax,[callMask]
+				Emit4( (int)&callMask );
+				EmitString( "73 07" );              // jae +7
+				EmitString( "FF 24 85" );           // jmp dword ptr [instructionPointers + eax * 4]
+				Emit4( (int)vm->instructionPointers );
+				EmitString( "FF 15" );              // call errJumpPtr
+				Emit4( (int)&errJumpPtr );
+			}
 			break;
 		default:
 		    VMFREE_BUFFERS();
@@ -1267,7 +1291,7 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 	// interpret the code
 	vm->currentlyInterpreting = qtrue;
 
-	callMask = vm->codeLength;
+	callMask = vm->instructionCount;
 
 	// we might be called recursively, so this might not be the very top
 	programStack = vm->programStack;
