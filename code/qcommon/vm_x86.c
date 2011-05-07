@@ -519,7 +519,10 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			Emit4( Constant4() );
 			break;
 		case OP_CONST:
-			op1 = code[pc+4];
+			if ( !jused[pc+4] )
+				op1 = code[pc+4];
+			else
+				op1 = OP_UNDEF;
 			if ( op1 == OP_LOAD4 ) {
 				EmitAddEDI4(vm);
 				EmitString( "BB" );		// mov	ebx, 0x12345678
