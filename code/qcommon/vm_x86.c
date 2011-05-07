@@ -92,7 +92,8 @@ static	int		ftolPtr = (int)qftol0F7F;
 void AsmCall(void);
 static void (*const asmCallPtr)(void) = AsmCall;
 
-static	int	callMask = 0; // init
+
+static	int		callMask = 0;
 
 static	int	instruction, pass;
 static	int	lastConst = 0;
@@ -138,11 +139,11 @@ __asm {
 	mov		eax, dword ptr [edi]
 	ret
 badAddr:
-	// leave something on the opstack
 	call	ErrJump
-	add		edi, 4
-	mov		dword ptr [edi], 0
-	ret
+	// leave something on the opstack
+	//add		edi, 4
+	//mov		dword ptr [edi], 0
+	//ret
 
 systemCall:
 
@@ -234,9 +235,9 @@ __asm__(
 	"ret\n"
 	"1:\n\t" // bad address, leave something on the opstack
 	"call  " CMANGFUNC(ErrJump) "\n\t"
-	"addl  $4, %edi\n\t"
-	"movl  $0, (%edi)\n\t"
-	"ret\n\t"
+	//"addl  $4, %edi\n\t"
+	//"movl  $0, (%edi)\n\t"
+	//"ret\n\t"
 	"0:\n\t" // system call
 	"notl  %eax\n\t"
 #ifdef USE_SSE
@@ -627,7 +628,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				if ( v >=1 && v <= 31 ) {
 					EmitString( "C1 27" );	// shl dword ptr [edi], 0x12
 					Emit1( v );
-					pc += 5;				// OP_CONST + OP_RSHI
+					pc += 5;				// OP_CONST + OP_LSH
 					instruction += 1;
 					break;
 				}
@@ -647,7 +648,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				if ( v >=1 && v <= 31 ) {
 					EmitString( "C1 2F" );	// shr dword ptr [edi], 0x12
 					Emit1( v );
-					pc += 5;				// OP_CONST + OP_RSHI
+					pc += 5;				// OP_CONST + OP_RSHU
 					instruction += 1;
 					break;
 				}
@@ -1138,7 +1139,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			EmitString( "D9 1F" );		// fstp dword ptr [edi]
 			break;
 		case OP_CVFI:
-#ifndef FTOL_PTR // WHENHELLISFROZENOVER  // bk001213 - was used in 1.17
+#ifndef FTOL_PTR // WHENHELLISFROZENOVER
 			// not IEEE complient, but simple and fast
 			EmitString( "D9 07" );		// fld dword ptr [edi]
 			EmitString( "DB 1F" );		// fistp dword ptr [edi]
