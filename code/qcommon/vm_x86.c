@@ -684,6 +684,15 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				instruction += 1;
 				break;
 			}
+			if ( op1 == OP_JUMP ) {
+				v = Constant4();
+				JUSED(v);
+				EmitString( "FF 25" );    // jmp dword ptr [instructionPointers + 0x12345678]
+				Emit4( (int)vm->instructionPointers + v*4 );
+				pc += 1;                  // OP_JUMP
+				instruction += 1;
+				break;
+			}
 
 			EmitAddEDI4(vm);
 			EmitString( "C7 07" );		// mov	dword ptr [edi], 0x12345678
