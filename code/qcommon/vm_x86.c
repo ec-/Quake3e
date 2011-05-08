@@ -458,7 +458,6 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int		v;
 	int		i;
 	qboolean opt;
-	qboolean cjump;
 	int jusedSize = header->instructionCount + 2;
 
 	// allocate a very large temp buffer, we will shrink it later
@@ -485,7 +484,6 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	instruction = 0;
 	code = (byte *)header + header->codeOffset;
 	compiledOfs = 0;
-	cjump = qfalse;
 
 	LastCommand = LAST_COMMAND_NONE;
 
@@ -700,7 +698,6 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			Emit4( lastConst );
 			if (code[pc] == OP_JUMP) {
 				JUSED(lastConst);
-				cjump = qtrue;
 			}
 			break;
 		case OP_LOCAL:
@@ -1195,26 +1192,15 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			break;
 
 		case OP_JUMP:
-			if ( cjump == qtrue && !jused[pc-1] ) {
-				// we don't need any checks there because jump target 
-				// is known and already validated by JUSED macro
-				EmitCommand(LAST_COMMAND_SUB_DI_4); // sub edi, 4
-				EmitString( "8B 47 04" );           // mov eax,dword ptr [edi+4]
-				EmitString( "FF 24 85" );           // jmp dword ptr [instructionPointers + eax * 4]
-				Emit4( (int)vm->instructionPointers );
-			} else {
-				// perform runtime range checks
-				EmitCommand(LAST_COMMAND_SUB_DI_4); // sub edi, 4
-				EmitString( "8B 47 04" );           // mov eax,dword ptr [edi+4]
-				EmitString( "3B 05" );              // cmp eax,[callMask]
-				Emit4( (int)&callMask );
-				EmitString( "73 07" );              // jae +7
-				EmitString( "FF 24 85" );           // jmp dword ptr [instructionPointers + eax * 4]
-				Emit4( (int)vm->instructionPointers );
-				EmitString( "FF 15" );              // call errJumpPtr
-				Emit4( (int)&errJumpPtr );
-			}
-			cjump = qfalse;
+			EmitCommand(LAST_COMMAND_SUB_DI_4); // sub edi, 4
+			EmitString( "8B 47 04" );           // mov eax,dword ptr [edi+4]
+			EmitString( "3B 05" );              // cmp eax,[callMask]
+			Emit4( (int)&callMask );
+			EmitString( "73 07" );              // jae +7
+			EmitString( "FF 24 85" );           // jmp dword ptr [instructionPointers + eax * 4]
+			Emit4( (int)vm->instructionPointers );
+			EmitString( "FF 15" );              // call errJumpPtr
+			Emit4( (int)&errJumpPtr );
 			break;
 		default:
 		    VMFREE_BUFFERS();
