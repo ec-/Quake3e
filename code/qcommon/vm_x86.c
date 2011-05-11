@@ -464,8 +464,16 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	maxLength = header->codeLength * 8;
 	buf = Z_Malloc(maxLength);
 	jused = Z_Malloc(jusedSize);
+	code = Z_Malloc(header->codeLength+32);
 	
 	Com_Memset(jused, 0, jusedSize);
+	Com_Memset(buf, 0, maxLength);
+
+	// copy code in larger buffer and put some zeros at the end
+	// so we can safely look ahead for a few instructions in it
+	// without a chance go get false-positive because of some garbage bytes
+	Com_Memset(code, 0, header->codeLength+32);
+	Com_Memcpy(code, (byte *)header + header->codeOffset, header->codeLength );
 
 	// ensure that the optimisation pass knows about all the jump
 	// table targets
@@ -482,7 +490,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	// translate all instructions
 	pc = 0;
 	instruction = 0;
-	code = (byte *)header + header->codeOffset;
+	//code = (byte *)header + header->codeOffset;
 	compiledOfs = 0;
 
 	LastCommand = LAST_COMMAND_NONE;
@@ -517,10 +525,13 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			Emit4( Constant4() );
 			break;
 		case OP_CONST:
-			if ( !jused[pc+4] )
+			// we can safely perform optimizations only in case if 
+			// we are 100% sure that next instruction is not a jump label
+			if ( !jused[instruction] && vm->jumpTableTargets )
 				op1 = code[pc+4];
 			else
 				op1 = OP_UNDEF;
+
 			if ( op1 == OP_LOAD4 ) {
 				EmitAddEDI4(vm);
 				EmitString( "BB" );		// mov	ebx, 0x12345678
@@ -688,6 +699,21 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				EmitString( "FF 25" );    // jmp dword ptr [instructionPointers + 0x12345678]
 				Emit4( (int)vm->instructionPointers + v*4 );
 				pc += 1;                  // OP_JUMP
+				instruction += 1;
+				break;
+			}
+
+			if ( op1 == OP_CALL && NextConstant4() >= 0 ) {
+				v = Constant4();
+				JUSED(v);
+				// FIXME: not needed?
+				//EmitString( "C7 86" );    // mov dword ptr [esi+database],0x12345678
+				//Emit4( (int)vm->dataBase );
+				//Emit4( pc );
+				EmitString( "FF 15" );    // call dword ptr [instructionPointers + 0x12345678]
+				Emit4( (int)vm->instructionPointers + v*4 );
+				EmitString( "8B 07" );    // mov eax, dword ptr [edi]
+				pc += 1;                  // OP_CALL
 				instruction += 1;
 				break;
 			}
@@ -1241,6 +1267,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	}
 #endif
 
+	Z_Free( code );
 	Z_Free( buf );
 	Z_Free( jused );
 	Com_Printf( "VM file %s compiled to %i bytes of code\n", vm->name, compiledOfs );

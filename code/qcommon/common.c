@@ -2512,8 +2512,8 @@ void Com_Init( char *commandLine ) {
 		Sys_Error ("Error during initialization");
 	}
 
-  // bk001129 - do this before anything else decides to push events
-  Com_InitPushEvent();
+	// bk001129 - do this before anything else decides to push events
+	Com_InitPushEvent();
 
 	Com_InitSmallZoneMemory();
 	Cvar_Init ();
@@ -2916,6 +2916,7 @@ void Com_Frame( void ) {
 		Cvar_Get( "dedicated", "0", 0 );
 		com_dedicated->modified = qfalse;
 		if ( !com_dedicated->integer ) {
+			SV_Shutdown( "" );
 			CL_Init();
 			Sys_ShowConsole( com_viewlog->integer, qfalse );
 #ifndef DEDICATED
