@@ -22,6 +22,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "q_shared.h"
 #include "qcommon.h"
 
+#define	OPSTACK_SIZE	1024
+#define	OPSTACK_MASK	(OPSTACK_SIZE-1)
+
+// don't change
+// Hardcoded in q3asm an reserved at end of bss
+#define	PROGRAM_STACK_SIZE	0x10000
+#define	PROGRAM_STACK_MASK	(PROGRAM_STACK_SIZE-1)
+
 typedef enum {
 	OP_UNDEF, 
 
@@ -121,25 +129,21 @@ typedef struct vmSymbol_s {
 } vmSymbol_t;
 
 #define	VM_OFFSET_PROGRAM_STACK		0
-#define	VM_OFFSET_SYSTEM_CALL		4 //  8 for x86_64
-#define	VM_OFFSET_DATA_BASE			8 // 16 for x86_64
+#define	VM_OFFSET_SYSTEM_CALL		4
 
 struct vm_s {
     // DO NOT MOVE OR CHANGE THESE WITHOUT CHANGING THE VM_OFFSET_* DEFINES
     // USED BY THE ASM CODE
-    size_t		programStack;		// the vm may be recursively entered // FIXME: int? 
-    intptr_t	(*systemCall)( intptr_t *parms );
-	byte		*dataBase;
+    int			programStack;		// the vm may be recursively entered
+    intptr_t			(*systemCall)( intptr_t *parms );
 
 	//------------------------------------
-
-	size_t		dataMask; // FIXME: int?
    
     char		name[MAX_QPATH];
 
 	// for dynamic linked modules
 	void		*dllHandle;
-	intptr_t	(QDECL *entryPoint)( int callNum, ... );
+	intptr_t			(QDECL *entryPoint)( int callNum, ... );
 	void (*destroy)(vm_t* self);
 
 	// for interpreted modules
@@ -152,7 +156,10 @@ struct vm_s {
 	int			*instructionPointers;
 	int			instructionCount;
 
-	size_t		stackBottom;		// if programStack < stackBottom, error
+	byte		*dataBase;
+	int			dataMask;
+
+	int			stackBottom;		// if programStack < stackBottom, error
 
 	int			numSymbols;
 	struct vmSymbol_s	*symbols;
@@ -160,9 +167,6 @@ struct vm_s {
 	int			callLevel;		// counts recursive VM_Call
 	int			breakFunction;		// increment breakCount on function entry to this
 	int			breakCount;
-
-// fqpath member added 7/20/02 by T.Ray
-	char		fqpath[MAX_QPATH+1] ;
 
 	byte		*jumpTableTargets;
 	int			numJumpTableTargets;
@@ -182,4 +186,3 @@ vmSymbol_t *VM_ValueToFunctionSymbol( vm_t *vm, int value );
 int VM_SymbolToValue( vm_t *vm, const char *symbol );
 const char *VM_ValueToSymbol( vm_t *vm, int value );
 void VM_LogSyscalls( int *args );
-

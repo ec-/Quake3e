@@ -1072,6 +1072,8 @@ void RB_ExecuteRenderCommands( const void *data ) {
 	}
 
 	while ( 1 ) {
+		data = PADP(data, sizeof(void *));
+
 		switch ( *(const int *)data ) {
 		case RC_SET_COLOR:
 			data = RB_SetColor( data );

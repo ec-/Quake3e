@@ -831,12 +831,10 @@ changed the load procedure to match VFS logic, and allow developer use
 =================
 */
 
-static void* try_dlopen(const char* base, const char* gamedir, const char* fname, char* fqpath )
+static void* try_dlopen(const char* base, const char* gamedir, const char* fname )
 {
   void* libHandle;
   char* fn;
-
-  *fqpath = 0;
 
 // bk001129 - was RTLD_LAZY 
 #define Q_RTLD    RTLD_NOW
@@ -852,13 +850,11 @@ static void* try_dlopen(const char* base, const char* gamedir, const char* fname
   }
 
   Com_Printf ( "Sys_LoadDll(%s): succeeded ...\n", fn );
-  Q_strncpyz ( fqpath , fn , MAX_QPATH ) ;		// added 7/20/02 by T.Ray
 
   return libHandle;
 }
 
-void *Sys_LoadDll( const char *name, char *fqpath ,
-                   intptr_t (**entryPoint)(int, ...),
+void *Sys_LoadDll( const char *name, intptr_t (**entryPoint)(int, ...),
                    intptr_t (*systemcalls)(intptr_t, ...) ) 
 {
   void *libHandle;
@@ -885,16 +881,16 @@ void *Sys_LoadDll( const char *name, char *fqpath ,
   cdpath = Cvar_VariableString( "fs_cdpath" );
   gamedir = Cvar_VariableString( "fs_game" );
 
-  libHandle = try_dlopen(pwdpath, gamedir, fname, fqpath);
+  libHandle = try_dlopen( pwdpath, gamedir, fname );
 
-  if(!libHandle && homepath)
-    libHandle = try_dlopen(homepath, gamedir, fname, fqpath);
+  if( !libHandle && homepath )
+     libHandle = try_dlopen( homepath, gamedir, fname );
 
-  if(!libHandle && basepath)
-    libHandle = try_dlopen(basepath, gamedir, fname, fqpath);
+  if( !libHandle && basepath )
+     libHandle = try_dlopen( basepath, gamedir, fname );
 
   if(!libHandle && cdpath)
-    libHandle = try_dlopen(cdpath, gamedir, fname, fqpath);
+     libHandle = try_dlopen( cdpath, gamedir, fname );
 
   if(!libHandle) {
 #if 0 // don't abort -- ln
