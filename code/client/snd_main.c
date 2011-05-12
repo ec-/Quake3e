@@ -392,7 +392,7 @@ void S_Init( void )
 
 		if( started ) {
 			if( !S_ValidSoundInterface( &si ) ) {
-				Com_Error( ERR_FATAL, "Sound interface invalid." );
+				Com_Error( ERR_FATAL, "Sound interface invalid" );
 			}
 
 			S_SoundInfo( );
