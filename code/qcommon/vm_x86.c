@@ -450,6 +450,341 @@ qboolean EmitMovEBXEDI(vm_t *vm, int andit) {
 		jused[x] = 1; \
 	} while(0)
 
+
+/*
+=================
+ConstOptimize
+=================
+*/
+qboolean ConstOptimize( vm_t *vm, int jusedSize  ) {
+	int v, opt;
+	int op1;
+
+	// we can safely perform optimizations only in case if 
+	// we are 100% sure that next instruction is not a jump label
+	if ( !jused[instruction] && vm->jumpTableTargets )
+		op1 = code[pc+4];
+	else
+		return qfalse;
+
+	switch ( op1 ) {
+
+	case OP_LOAD4:
+		EmitAddEDI4(vm);
+		EmitString( "BB" );         // mov ebx, 0x12345678
+		Emit4( (Constant4()&vm->dataMask) + (int)vm->dataBase);
+		EmitString( "8B 03" );      // mov eax, dword ptr [ebx]
+		EmitCommand(LAST_COMMAND_MOV_EDI_EAX); // mov dword ptr [edi], eax
+		pc++;						// OP_LOAD4
+		instruction += 1;
+		return qtrue;
+
+	case OP_LOAD2:
+		EmitAddEDI4(vm);
+		EmitString( "BB" );         // mov ebx, 0x12345678
+		Emit4( (Constant4()&vm->dataMask) + (int)vm->dataBase);
+		EmitString( "0F B7 03" );   // movzx eax, word ptr [ebx]
+		EmitCommand(LAST_COMMAND_MOV_EDI_EAX); // mov dword ptr [edi], eax
+		pc++;						// OP_LOAD2
+		instruction += 1;
+		return qtrue;
+
+	case OP_LOAD1:
+		EmitAddEDI4(vm);
+		EmitString( "BB" );         // mov ebx, 0x12345678
+		Emit4( (Constant4()&vm->dataMask) + (int)vm->dataBase);
+		EmitString( "0F B6 03" );	// movzx eax, byte ptr [ebx]
+		EmitCommand(LAST_COMMAND_MOV_EDI_EAX); // mov dword ptr [edi], eax
+		pc++;						// OP_LOAD1
+		instruction += 1;
+		return qtrue;
+
+	case OP_STORE4:
+		opt = EmitMovEBXEDI(vm, (vm->dataMask & ~3));
+		EmitString( "B8" );			// mov	eax, 0x12345678
+		Emit4( Constant4() );
+//		if (!opt) {
+//			EmitString( "81 E3" );  // and ebx, 0x12345678
+//			Emit4( vm->dataMask & ~3 );
+//		}
+		EmitString( "89 83" );      // mov dword ptr [ebx+0x12345678], eax
+		Emit4( (int)vm->dataBase );
+		EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
+		pc++;						// OP_STORE4
+		instruction += 1;
+		return qtrue;
+
+	case OP_STORE2:
+		opt = EmitMovEBXEDI(vm, (vm->dataMask & ~1));
+		EmitString( "B8" );			// mov	eax, 0x12345678
+		Emit4( Constant4() );
+//		if (!opt) {
+//			EmitString( "81 E3" );  // and ebx, 0x12345678
+//			Emit4( vm->dataMask & ~1 );
+//		}
+		EmitString( "66 89 83" );   // mov word ptr [ebx+0x12345678], eax
+		Emit4( (int)vm->dataBase );
+		EmitCommand(LAST_COMMAND_SUB_DI_4); // sub edi, 4
+		pc++;                       // OP_STORE2
+		instruction += 1;
+		return qtrue;
+
+	case OP_STORE1:
+		opt = EmitMovEBXEDI(vm, vm->dataMask);
+		EmitString( "B8" );			// mov	eax, 0x12345678
+		Emit4( Constant4() );
+//		if (!opt) {
+//			EmitString( "81 E3" );	// and ebx, 0x12345678
+//			Emit4( vm->dataMask );
+//		}
+		EmitString( "88 83" );		// mov byte ptr [ebx+0x12345678], eax
+		Emit4( (int)vm->dataBase );
+		EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
+		pc++;						// OP_STORE4
+		instruction += 1;
+		return qtrue;
+
+	case OP_ADD:
+		v = Constant4();
+		EmitMovEAXEDI( vm ); 
+		if ( v >= 0 && v <= 127 ) {
+			EmitString( "83 C0" );	// add eax, 0x7F
+			Emit1( v );
+		} else {
+			EmitString( "05" );	    // add eax, 0x12345678
+			Emit4( v );
+		}
+		EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
+		pc++;						// OP_ADD
+		instruction += 1;
+		return qtrue;
+
+	case OP_SUB:
+		v = Constant4();
+		EmitMovEAXEDI( vm );
+		if ( v >= 0 && v <= 127 ) {
+			EmitString( "83 E8" );	// sub eax, 0x7F
+			Emit1( v );
+		} else {
+			EmitString( "2D" );		// sub eax, 0x12345678
+			Emit4( v );
+		}
+		EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
+		pc++;						// OP_SUB
+		instruction += 1;
+		return qtrue;
+
+	case OP_MULI:
+		v = Constant4();
+		EmitMovEAXEDI( vm );
+		if ( v >= 0 && v <= 127 ) {
+			EmitString( "6B C0" );	// imul eax, 0x7F
+			Emit1( v );
+		} else {
+			EmitString( "69 C0" );	// imul eax, 0x12345678
+			Emit4( v );
+		}
+		EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
+		pc++;						// OP_MULI
+		instruction += 1;
+		return qtrue;
+
+	case OP_LSH:
+		v = NextConstant4();
+		if ( v < 0 || v > 31 )
+			break;
+		EmitMovEAXEDI( vm );
+		EmitString( "C1 E0" );	// shl dword ptr [edi], 0x12
+		Emit1( v );
+		EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
+		pc += 5;				// CONST + OP_LSH
+		instruction += 1;
+		return qtrue;
+
+	case OP_RSHI:
+		v = NextConstant4();
+		if ( v < 0 || v > 31 )
+			break;
+		EmitMovEAXEDI( vm );
+		EmitString( "C1 F8" );	// sar eax, 0x12
+		Emit1( v );
+		EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
+		pc += 5;				// CONST + OP_RSHI
+		instruction += 1;
+		return qtrue;
+
+	case OP_RSHU:
+		v = NextConstant4();
+		if ( v < 0 || v > 31 )
+			break;
+		EmitMovEAXEDI( vm );
+		EmitString( "C1 E8" );	// shr eax, 0x12
+		Emit1( v );
+		EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
+		pc += 5;				// CONST + OP_RSHU
+		instruction += 1;
+		return qtrue;
+	
+	case OP_BAND:
+		v = Constant4();
+		EmitMovEAXEDI( vm );
+		if ( v >= 0 && v <= 127 ) {
+			EmitString( "83 E0" ); // and eax, 0x7F
+			Emit1( v );
+		} else {
+			EmitString( "25" ); // and eax, 0x12345678
+			Emit4( v );
+		}
+		EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
+		pc += 1;				   // OP_BAND
+		instruction += 1;
+		return qtrue;
+
+	case OP_BOR:
+		v = Constant4();
+		EmitMovEAXEDI( vm );
+		if ( v >= 0 && v <= 127 ) {
+			EmitString( "83 C8" ); // or eax, 0x7F
+			Emit1( v );
+		} else {
+			EmitString( "0D" );    // or eax, 0x12345678
+			Emit4( v );
+		}
+		EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
+		pc += 1;				   // OP_BOR
+		instruction += 1;
+		return qtrue;
+
+	case OP_BXOR:
+		v = Constant4();
+		EmitMovEAXEDI( vm );
+		if ( v >= 0 && v <= 127 ) {
+			EmitString( "83 F0" ); // xor eax, 0x7F
+			Emit1( v );
+		} else {
+			EmitString( "35" );    // xor eax, 0x12345678
+			Emit4( v );
+		}
+		EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
+		pc += 1;				   // OP_BXOR
+		instruction += 1;
+		return qtrue;
+
+	case OP_EQF:
+	case OP_NEF:
+		if ( NextConstant4() != 0 )
+			break;
+		pc += 5;				   // CONST + OP_EQF|OP_NEF
+		EmitMovEAXEDI( vm );
+		EmitCommand(LAST_COMMAND_SUB_DI_4);
+		// floating point hack :)
+		EmitString( "25" );        // and eax, 0x7FFFFFFF
+		Emit4( 0x7FFFFFFF );
+		if ( op1 == OP_EQF )
+			EmitString( "75 06" ); // jnz +6
+		else
+			EmitString( "74 06" ); // jz +6
+		EmitString( "FF 25" );	   // jmp [0x12345678]
+		v = Constant4();
+		JUSED(v);
+		Emit4( (int)vm->instructionPointers + v*4 );
+		instruction += 1;
+		return qtrue;
+
+	case OP_EQ:
+	case OP_NE:
+		v = Constant4();
+		EmitMovEAXEDI( vm );
+		EmitCommand(LAST_COMMAND_SUB_DI_4);
+		if ( v == 0 ) {
+			EmitString( "85 C0" ); // test eax, eax
+		} else {
+			EmitString( "3D" );    // cmd eax, 0x12345678
+			Emit4( v );
+		}
+		pc += 1;				   // OP_EQ/OP_NE
+		if ( op1 == OP_EQ )
+			EmitString( "75 06" ); // jne +6
+		else
+			EmitString( "74 06" ); // je +6
+		EmitString( "FF 25" );	   // jmp [0x12345678]
+		v = Constant4();
+		JUSED(v);
+		Emit4( (int)vm->instructionPointers + v*4 );
+		instruction += 1;
+		return qtrue;
+
+	case OP_GEI:
+	case OP_GTI:
+		v = Constant4();
+		EmitMovEAXEDI( vm );
+		EmitCommand( LAST_COMMAND_SUB_DI_4 );
+		EmitString( "3D" );        // cmp eax, 0x12345678
+		Emit4( v );
+		pc += 1;			       // OP_GEI|OP_GTI
+		if ( op1 == OP_GEI )
+			EmitString( "7C 06" ); // jl +6
+		else
+			EmitString( "7E 06" ); // jle +6
+		EmitString( "FF 25" );     // jmp [0x12345678]
+		v = Constant4();
+		JUSED(v);
+		Emit4( (int)vm->instructionPointers + v*4 );
+		instruction += 1;
+		return qtrue;
+
+	case OP_LEI:
+	case OP_LTI:
+		v = Constant4();
+		EmitMovEAXEDI( vm );
+		EmitCommand( LAST_COMMAND_SUB_DI_4 );
+		EmitString( "3D" );        // cmp eax, 0x12345678
+		Emit4( v );
+		pc += 1;			       // OP_GEI|OP_GTI
+		if ( op1 == OP_LEI )
+			EmitString( "7F 06" ); // jg +6
+		else
+			EmitString( "7D 06" ); // jge +6
+		EmitString( "FF 25" );     // jmp [0x12345678]
+		v = Constant4();
+		JUSED(v);
+		Emit4( (int)vm->instructionPointers + v*4 );
+		instruction += 1;
+		return qtrue;
+
+	case OP_JUMP:
+		v = Constant4();
+		JUSED(v);
+		EmitString( "FF 25" );    // jmp dword ptr [instructionPointers + 0x12345678]
+		Emit4( (int)vm->instructionPointers + v*4 );
+		pc += 1;                  // OP_JUMP
+		instruction += 1;
+		return qtrue;
+
+	case OP_CALL:
+		if ( NextConstant4() < 0 )
+			break;
+		v = Constant4();
+		JUSED(v);
+		// FIXME: not needed?
+		//EmitString( "C7 86" );    // mov dword ptr [esi+database],0x12345678
+		//Emit4( (int)vm->dataBase );
+		//Emit4( pc );
+		EmitString( "FF 15" );    // call dword ptr [instructionPointers + 0x12345678]
+		Emit4( (int)vm->instructionPointers + v*4 );
+		EmitString( "8B 07" );    // mov eax, dword ptr [edi]
+		pc += 1;                  // OP_CALL
+		instruction += 1;
+		return qtrue;
+
+	default:
+		break;
+	}
+
+	return qfalse;
+}
+
+
 /*
 =================
 VM_Compile
@@ -457,7 +792,6 @@ VM_Compile
 */
 void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int		op;
-	int		op1;
 	int		maxLength;
 	int		v;
 	int		i;
@@ -529,199 +863,8 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			Emit4( Constant4() );
 			break;
 		case OP_CONST:
-			// we can safely perform optimizations only in case if 
-			// we are 100% sure that next instruction is not a jump label
-			if ( !jused[instruction] && vm->jumpTableTargets )
-				op1 = code[pc+4];
-			else
-				op1 = OP_UNDEF;
-
-			if ( op1 == OP_LOAD4 ) {
-				EmitAddEDI4(vm);
-				EmitString( "BB" );		// mov	ebx, 0x12345678
-				Emit4( (Constant4()&vm->dataMask) + (int)vm->dataBase);
-				EmitString( "8B 03" );		// mov	eax, dword ptr [ebx]
-				EmitCommand(LAST_COMMAND_MOV_EDI_EAX);		// mov dword ptr [edi], eax
-				pc++;						// OP_LOAD4
-				instruction += 1;
+			if ( ConstOptimize( vm, jusedSize ) )
 				break;
-			}
-			if ( op1 == OP_LOAD2 ) {
-				EmitAddEDI4(vm);
-				EmitString( "BB" );		// mov	ebx, 0x12345678
-				Emit4( (Constant4()&vm->dataMask) + (int)vm->dataBase);
-				EmitString( "0F B7 03" );	// movzx	eax, word ptr [ebx]
-				EmitCommand(LAST_COMMAND_MOV_EDI_EAX);		// mov dword ptr [edi], eax
-				pc++;						// OP_LOAD4
-				instruction += 1;
-				break;
-			}
-			if ( op1 == OP_LOAD1 ) {
-				EmitAddEDI4(vm);
-				EmitString( "BB" );		// mov	ebx, 0x12345678
-				Emit4( (Constant4()&vm->dataMask) + (int)vm->dataBase);
-				EmitString( "0F B6 03" );	// movzx	eax, byte ptr [ebx]
-				EmitCommand(LAST_COMMAND_MOV_EDI_EAX);		// mov dword ptr [edi], eax
-				pc++;						// OP_LOAD4
-				instruction += 1;
-				break;
-			}
-			if ( op1 == OP_STORE4 ) {
-				opt = EmitMovEBXEDI(vm, (vm->dataMask & ~3));
-				EmitString( "B8" );			// mov	eax, 0x12345678
-				Emit4( Constant4() );
-//				if (!opt) {
-//					EmitString( "81 E3" );		// and ebx, 0x12345678
-//					Emit4( vm->dataMask & ~3 );
-//				}
-				EmitString( "89 83" );		// mov dword ptr [ebx+0x12345678], eax
-				Emit4( (int)vm->dataBase );
-				EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
-				pc++;						// OP_STORE4
-				instruction += 1;
-				break;
-			}
-			if ( op1 == OP_STORE2 ) {
-				opt = EmitMovEBXEDI(vm, (vm->dataMask & ~1));
-				EmitString( "B8" );			// mov	eax, 0x12345678
-				Emit4( Constant4() );
-//				if (!opt) {
-//					EmitString( "81 E3" );		// and ebx, 0x12345678
-//					Emit4( vm->dataMask & ~1 );
-//				}
-				EmitString( "66 89 83" );	// mov word ptr [ebx+0x12345678], eax
-				Emit4( (int)vm->dataBase );
-				EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
-				pc++;						// OP_STORE4
-				instruction += 1;
-				break;
-			}
-			if ( op1 == OP_STORE1 ) {
-				opt = EmitMovEBXEDI(vm, vm->dataMask);
-				EmitString( "B8" );			// mov	eax, 0x12345678
-				Emit4( Constant4() );
-//				if (!opt) {
-//					EmitString( "81 E3" );	// and ebx, 0x12345678
-//					Emit4( vm->dataMask );
-//				}
-				EmitString( "88 83" );		// mov byte ptr [ebx+0x12345678], eax
-				Emit4( (int)vm->dataBase );
-				EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
-				pc++;						// OP_STORE4
-				instruction += 1;
-				break;
-			}
-			if ( op1 == OP_ADD ) {
-				v = NextConstant4();
-				if ( v == 1 ) {
-					EmitString( "FF 07" );	// inc dword ptr [edi]
-					pc += 5;				// OP_CONST + OP_ADD
-					instruction += 1;
-					break;
-				}
-				EmitString( "81 07" );		// add dword ptr [edi], 0x1234567
-				Emit4( Constant4() );
-				pc++;						// OP_ADD
-				instruction += 1;
-				break;
-			}
-			if ( op1 == OP_SUB ) {
-				v = NextConstant4();
-				if ( v == 1 ) {
-					EmitString( "FF 0F" );	// dec dword ptr [edi]
-					pc += 5;				// OP_CONST + OP_SUB
-					instruction += 1;
-					break;
-				}
-				EmitString( "81 2F" );		// sub dword ptr [edi], 0x1234567
-				Emit4( Constant4() );
-				pc++;						// OP_ADD
-				instruction += 1;
-				break;
-			}
-			if ( op1 == OP_LSH ) {
-				v = NextConstant4();
-				if ( v >=1 && v <= 31 ) {
-					EmitString( "C1 27" );	// shl dword ptr [edi], 0x12
-					Emit1( v );
-					pc += 5;				// OP_CONST + OP_LSH
-					instruction += 1;
-					break;
-				}
-			}
-			if ( op1 == OP_RSHI ) {
-				v = NextConstant4();
-				if ( v >=1 && v <= 31 ) {
-					EmitString( "C1 3F" );	// sar dword ptr [edi], 0x12
-					Emit1( v );
-					pc += 5;				// OP_CONST + OP_RSHI
-					instruction += 1;
-					break;
-				}
-			}
-			if ( op1 == OP_RSHU ) {
-				v = NextConstant4();
-				if ( v >=1 && v <= 31 ) {
-					EmitString( "C1 2F" );	// shr dword ptr [edi], 0x12
-					Emit1( v );
-					pc += 5;				// OP_CONST + OP_RSHU
-					instruction += 1;
-					break;
-				}
-			}
-			if ( op1 == OP_BAND ) {
-				v = NextConstant4();
-				// try to generate shorter version
-				if ( v >= 0 && v <= 127 ) {
-					EmitString( "83 27" ); // and dword ptr[edi], 0x7F
-					Emit1( v );
-				} else {
-					EmitString( "81 27" ); // and dword ptr[edi], 0x7FFFF
-					Emit4( v );
-				}
-				pc += 5;				   // OP_CONST + OP_BAND
-				instruction += 1;
-				break;
-			}
-			if ( op1 == OP_BOR ) {
-				v = NextConstant4();
-				// try to generate shorter version
-				if ( v >= 0 && v <= 127 ) {
-					EmitString( "83 0F" ); // or dword ptr[edi], 0x7F
-					Emit1( v );
-				} else {
-					EmitString( "81 0F" ); // or dword ptr[edi], 0x7FFFF
-					Emit4( v );
-				}
-				pc += 5;				   // OP_CONST + OP_BOR
-				instruction += 1;
-				break;
-			}
-			if ( op1 == OP_JUMP ) {
-				v = Constant4();
-				JUSED(v);
-				EmitString( "FF 25" );    // jmp dword ptr [instructionPointers + 0x12345678]
-				Emit4( (int)vm->instructionPointers + v*4 );
-				pc += 1;                  // OP_JUMP
-				instruction += 1;
-				break;
-			}
-
-			if ( op1 == OP_CALL && NextConstant4() >= 0 ) {
-				v = Constant4();
-				JUSED(v);
-				// FIXME: not needed?
-				//EmitString( "C7 86" );    // mov dword ptr [esi+database],0x12345678
-				//Emit4( (int)vm->dataBase );
-				//Emit4( pc );
-				EmitString( "FF 15" );    // call dword ptr [instructionPointers + 0x12345678]
-				Emit4( (int)vm->instructionPointers + v*4 );
-				EmitString( "8B 07" );    // mov eax, dword ptr [edi]
-				pc += 1;                  // OP_CALL
-				instruction += 1;
-				break;
-			}
-
 			EmitAddEDI4(vm);
 			EmitString( "C7 07" );		// mov	dword ptr [edi], 0x12345678
 			lastConst = Constant4();
