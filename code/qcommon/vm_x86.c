@@ -735,7 +735,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 		if ( v == 0 ) {
 			EmitString( "85 C0" ); // test eax, eax
 		} else {
-			EmitString( "3D" );    // cmd eax, 0x12345678
+			EmitString( "3D" );    // cmp eax, 0x12345678
 			Emit4( v );
 		}
 		pc += 1;				   // OP_EQ/OP_NE
@@ -1114,7 +1114,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 		case OP_GTI:
 			EmitMovEAXEDI( vm );
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			EmitString( "39 47 04" );	// cmp	eax, dword ptr [edi+8]
+			EmitString( "39 47 04" );	// cmp	eax, dword ptr [edi+4]
 			EmitString( "7E 06" );		// jng +6
 			EmitString( "FF 25" );		// jmp	[0x12345678]
 			v = Constant4();
