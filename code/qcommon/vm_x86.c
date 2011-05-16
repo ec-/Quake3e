@@ -53,7 +53,7 @@ static void VM_Destroy_Compiled(vm_t* self);
 
 */
 
-#define VMFREE_BUFFERS() do {Z_Free(buf); Z_Free(jused);} while(0)
+#define VMFREE_BUFFERS() do {Z_Free(code); Z_Free(buf); Z_Free(jused);} while(0)
 static	byte	*buf = NULL;
 static	byte	*jused = NULL;
 static	int		compiledOfs = 0;
@@ -107,6 +107,7 @@ typedef enum
 	LAST_COMMAND_MOV_EDI_EAX,
 	LAST_COMMAND_SUB_DI_4,
 	LAST_COMMAND_SUB_DI_8,
+	LAST_COMMAND_FSTP_EDI
 } ELastCommand;
 
 static	ELastCommand	LastCommand;
@@ -175,7 +176,7 @@ systemCall:
 	// save the stack to allow recursive VM entry
 	currentVM->programStack = programStack - 4;
 	*(int *)((byte *)currentVM->dataBase + programStack + 4) = syscallNum;
-//VM_LogSyscalls(  (int *)((byte *)currentVM->dataBase + programStack + 4) );
+	//VM_LogSyscalls(  (int *)((byte *)currentVM->dataBase + programStack + 4) );
 	*(opStack+1) = currentVM->systemCall( (int *)((byte *)currentVM->dataBase + programStack + 4) );
 
 	currentVM = savedVM;
@@ -365,6 +366,11 @@ static void EmitCommand(ELastCommand command)
 		case LAST_COMMAND_SUB_DI_8:
 			EmitString( "83 EF 08" );	// sub edi, 8
 			break;
+
+		case LAST_COMMAND_FSTP_EDI:
+			EmitString( "D9 1F" );		// fstp dword ptr [edi]
+			break;
+
 		default:
 			break;
 	}
@@ -476,6 +482,19 @@ qboolean EmitMovEBXEDI(vm_t *vm, int andit) {
 	return qfalse;
 }
 
+void EmitFldEDI( vm_t *vm ) {
+	if ( jlabel ) {
+		EmitString( "D9 07" );		// fld dword ptr [edi]
+		return;
+	}
+	if ( LastCommand == LAST_COMMAND_FSTP_EDI ) {
+		compiledOfs -= 2;
+		vm->instructionPointers[ instruction-1 ] = compiledOfs;
+		return;
+	}
+	EmitString( "D9 07" );		// fld dword ptr [edi]
+}
+
 #define JUSED(x) \
 	do { \
 		if (x < 0 || x >= jusedSize) { \
@@ -486,14 +505,13 @@ qboolean EmitMovEBXEDI(vm_t *vm, int andit) {
 		jused[x] = 1; \
 	} while(0)
 
-
 /*
 =================
 ConstOptimize
 =================
 */
 qboolean ConstOptimize( vm_t *vm ) {
-	int v, opt;
+	int n, v, opt;
 	int op1;
 
 	// we can safely perform optimizations only in case if 
@@ -716,14 +734,14 @@ qboolean ConstOptimize( vm_t *vm ) {
 		// floating point hack :)
 		EmitString( "25" );        // and eax, 0x7FFFFFFF
 		Emit4( 0x7FFFFFFF );
-		if ( op1 == OP_EQF )
-			EmitString( "75 06" ); // jnz +6
-		else
-			EmitString( "74 06" ); // jz +6
-		EmitString( "FF 25" );	   // jmp [0x12345678]
 		v = Constant4();
 		JUSED(v);
-		Emit4( (int)vm->instructionPointers + v*4 );
+		n = vm->instructionPointers[v] - compiledOfs - 6;
+		if ( op1 == OP_EQF )
+			EmitString( "0F 84" ); // jz +offset
+		else
+			EmitString( "0F 85" ); // jnz +offset
+		Emit4( n );
 		instruction += 1;
 		return qtrue;
 
@@ -739,14 +757,14 @@ qboolean ConstOptimize( vm_t *vm ) {
 			Emit4( v );
 		}
 		pc += 1;				   // OP_EQ/OP_NE
-		if ( op1 == OP_EQ )
-			EmitString( "75 06" ); // jne +6
-		else
-			EmitString( "74 06" ); // je +6
-		EmitString( "FF 25" );	   // jmp [0x12345678]
 		v = Constant4();
-		JUSED(v);
-		Emit4( (int)vm->instructionPointers + v*4 );
+		JUSED(v); 
+		n = vm->instructionPointers[v] - compiledOfs - 6;
+		if ( op1 == OP_EQ )
+			EmitString( "0F 84" );    // je +offset
+		else
+			EmitString( "0F 85" );    // jne +offset
+		Emit4( n );
 		instruction += 1;
 		return qtrue;
 
@@ -758,14 +776,14 @@ qboolean ConstOptimize( vm_t *vm ) {
 		EmitString( "3D" );        // cmp eax, 0x12345678
 		Emit4( v );
 		pc += 1;			       // OP_GEI|OP_GTI
-		if ( op1 == OP_GEI )
-			EmitString( "7C 06" ); // jl +6
-		else
-			EmitString( "7E 06" ); // jle +6
-		EmitString( "FF 25" );     // jmp [0x12345678]
 		v = Constant4();
 		JUSED(v);
-		Emit4( (int)vm->instructionPointers + v*4 );
+		n = vm->instructionPointers[v] - compiledOfs - 6;		
+		if ( op1 == OP_GEI )
+			EmitString( "0F 8D" ); // jge +offset
+		else
+			EmitString( "0F 8F" ); // jg +offset
+		Emit4( n );
 		instruction += 1;
 		return qtrue;
 
@@ -777,22 +795,61 @@ qboolean ConstOptimize( vm_t *vm ) {
 		EmitString( "3D" );        // cmp eax, 0x12345678
 		Emit4( v );
 		pc += 1;			       // OP_GEI|OP_GTI
-		if ( op1 == OP_LEI )
-			EmitString( "7F 06" ); // jg +6
-		else
-			EmitString( "7D 06" ); // jge +6
-		EmitString( "FF 25" );     // jmp [0x12345678]
 		v = Constant4();
 		JUSED(v);
-		Emit4( (int)vm->instructionPointers + v*4 );
+		n = vm->instructionPointers[v] - compiledOfs - 6;		
+		if ( op1 == OP_LEI )
+			EmitString( "0F 8E" ); // jle +offset
+		else
+			EmitString( "0F 8C" ); // jl +offset
+		Emit4( n );
+		instruction += 1;
+		return qtrue;
+
+	case OP_GTU:
+	case OP_GEU:
+		v = Constant4();
+		EmitMovEAXEDI( vm );
+		EmitCommand( LAST_COMMAND_SUB_DI_4 );
+		EmitString( "3D" );        // cmp eax, 0x12345678
+		Emit4( v );
+		pc += 1;			       // OP_GTU|OP_GEU
+		v = Constant4();
+		JUSED(v);
+		n = vm->instructionPointers[v] - compiledOfs - 6;
+		if ( op1 == OP_GTU )
+			EmitString( "0F 87" ); // ja +offset
+		else
+			EmitString( "0F 83" ); // jae +offset
+		Emit4( n );
+		instruction += 1;
+		return qtrue;
+
+	case OP_LTU:
+	case OP_LEU:
+		v = Constant4();
+		EmitMovEAXEDI( vm );
+		EmitCommand( LAST_COMMAND_SUB_DI_4 );
+		EmitString( "3D" );        // cmp eax, 0x12345678
+		Emit4( v );
+		pc += 1;			       // OP_LTU|OP_LEU
+		v = Constant4();
+		JUSED(v);
+		n = vm->instructionPointers[v] - compiledOfs - 6;
+		if ( op1 == OP_LTU )
+			EmitString( "0F 82" ); // jb +offset
+		else
+			EmitString( "0F 86" ); // jbe +offset
+		Emit4( n );
 		instruction += 1;
 		return qtrue;
 
 	case OP_JUMP:
 		v = Constant4();
 		JUSED(v);
-		EmitString( "FF 25" );    // jmp dword ptr [instructionPointers + 0x12345678]
-		Emit4( (int)vm->instructionPointers + v*4 );
+		n = vm->instructionPointers[v] - compiledOfs - 5;
+		EmitString( "E9" );			// jmp +offset
+		Emit4( n );
 		pc += 1;                  // OP_JUMP
 		instruction += 1;
 		return qtrue;
@@ -806,9 +863,9 @@ qboolean ConstOptimize( vm_t *vm ) {
 		//EmitString( "C7 86" );    // mov dword ptr [esi+database],0x12345678
 		//Emit4( (int)vm->dataBase );
 		//Emit4( pc );
-		EmitString( "FF 15" );    // call dword ptr [instructionPointers + 0x12345678]
-		Emit4( (int)vm->instructionPointers + v*4 );
-		EmitString( "8B 07" );    // mov eax, dword ptr [edi]
+		EmitString( "E8" );			// call +offset
+		Emit4( vm->instructionPointers[v] - compiledOfs - 6 );
+		EmitString( "8B 07" );      // mov eax, dword ptr [edi]
 		pc += 1;                  // OP_CALL
 		instruction += 1;
 		return qtrue;
@@ -829,15 +886,15 @@ VM_Compile
 void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int		op;
 	int		maxLength;
-	int		v;
+	int		v, n;
 	int		i;
 	qboolean opt;
 	jusedSize = header->instructionCount + 2;
 
 	// allocate a very large temp buffer, we will shrink it later
 	maxLength = header->codeLength * 8;
-	buf = Z_Malloc(maxLength);
 	jused = Z_Malloc(jusedSize);
+	buf = Z_Malloc(maxLength);
 	code = Z_Malloc(header->codeLength+32);
 	
 	Com_Memset(jused, 0, jusedSize);
@@ -854,8 +911,11 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	for( i = 0; i < vm->numJumpTableTargets; i++ ) {
 		jused[ *(int *)(vm->jumpTableTargets + ( i * sizeof( int ) ) ) ] = 1;
 	}
+	if ( !vm->jumpTableTargets ) {
+		Com_Memset( jused, 1, jusedSize );
+	}
 
-	for(pass=0;pass<2;pass++) {
+	for(pass=0;pass<3;pass++) {
 	oc0 = -23423;
 	oc1 = -234354;
 	pop0 = -43435;
@@ -931,9 +991,9 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
 			break;
 		case OP_CALL:
-			EmitString( "C7 86" );		// mov dword ptr [esi+database],0x12345678
-			Emit4( (int)vm->dataBase );
-			Emit4( pc );
+			//EmitString( "C7 86" );		// mov dword ptr [esi+database],0x12345678
+			//Emit4( (int)vm->dataBase );
+			//Emit4( pc );
 			EmitString( "FF 15" );		// call asmCallPtr
 			Emit4( (int)&asmCallPtr );
 			break;
@@ -1075,131 +1135,147 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			EmitMovEAXEDI( vm );
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
 			EmitString( "3B 47 04" );				// cmp	eax, dword ptr [edi+4]
-			EmitString( "75 06" );		// jne +6
-			EmitString( "FF 25" );		// jmp	[0x12345678]
 			v = Constant4();
 			JUSED(v);
-			Emit4( (int)vm->instructionPointers + v*4 );
+			EmitString( "0F 84" );			// je +offset
+			Emit4( vm->instructionPointers[v] - compiledOfs - 6 + 2 );
 			break;
 		case OP_NE:
 			EmitMovEAXEDI( vm );
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
 			EmitString( "3B 47 04" );	// cmp	eax, dword ptr [edi+4]
-			EmitString( "74 06" );		// je +6
-			EmitString( "FF 25" );		// jmp	[0x12345678]
 			v = Constant4();
 			JUSED(v);
-			Emit4( (int)vm->instructionPointers + v*4 );
+			EmitString( "0F 85" );			// jne +offset
+			Emit4( vm->instructionPointers[v] - compiledOfs - 6 + 2 );
 			break;
 		case OP_LTI:
 			EmitMovEAXEDI( vm );	
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
 			EmitString( "39 47 04" );	// cmp	dword ptr [edi+4], eax
-			EmitString( "7D 06" );		// jnl +6
-			EmitString( "FF 25" );		// jmp	[0x12345678]
 			v = Constant4();
 			JUSED(v);
-			Emit4( (int)vm->instructionPointers + v*4 );
+			EmitString( "0F 8C" );			// jl +offset
+			Emit4( vm->instructionPointers[v] - compiledOfs - 6 + 2 );
 			break;
 		case OP_LEI:
 			EmitMovEAXEDI( vm );
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
 			EmitString( "39 47 04" );	// cmp	dword ptr [edi+4], eax
-			EmitString( "7F 06" );		// jnle +6
-			EmitString( "FF 25" );		// jmp	[0x12345678]
 			v = Constant4();
 			JUSED(v);
-			Emit4( (int)vm->instructionPointers + v*4 );
+			n = vm->instructionPointers[v] - compiledOfs - 6;
+			EmitString( "0F 8E" );			// jle +offset
+			Emit4( n );
 			break;
 		case OP_GTI:
 			EmitMovEAXEDI( vm );
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
 			EmitString( "39 47 04" );	// cmp	eax, dword ptr [edi+4]
-			EmitString( "7E 06" );		// jng +6
-			EmitString( "FF 25" );		// jmp	[0x12345678]
 			v = Constant4();
 			JUSED(v);
-			Emit4( (int)vm->instructionPointers + v*4 );
+			n = vm->instructionPointers[v] - compiledOfs - 6;
+			EmitString( "0F 8F" );			// jg +offset
+			Emit4( n );
 			break;
 		case OP_GEI:
 			EmitMovEAXEDI( vm );	
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
 			EmitString( "39 47 04" );	// cmp	eax, dword ptr [edi+4]
-			EmitString( "7C 06" );		// jnge +6
-			EmitString( "FF 25" );		// jmp	[0x12345678]
 			v = Constant4();
 			JUSED(v);
-			Emit4( (int)vm->instructionPointers + v*4 );
+			n = vm->instructionPointers[v] - compiledOfs - 6;
+			EmitString( "0F 8D" );			// jge +offset
+			Emit4( n );
 			break;
 		case OP_LTU:
 			EmitMovEAXEDI( vm );	
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
 			EmitString( "39 47 04" );	// cmp	eax, dword ptr [edi+4]
-			EmitString( "73 06" );		// jnb +6
-			EmitString( "FF 25" );		// jmp	[0x12345678]
 			v = Constant4();
 			JUSED(v);
-			Emit4( (int)vm->instructionPointers + v*4 );
+			n = vm->instructionPointers[v] - compiledOfs - 6;
+			EmitString( "0F 82" );			// jb +offset
+			Emit4( n );
 			break;
 		case OP_LEU:
 			EmitMovEAXEDI( vm );	
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
 			EmitString( "39 47 04" );	// cmp	eax, dword ptr [edi+4]
-			EmitString( "77 06" );		// jnbe +6
-			EmitString( "FF 25" );		// jmp	[0x12345678]
 			v = Constant4();
 			JUSED(v);
-			Emit4( (int)vm->instructionPointers + v*4 );
+			n = vm->instructionPointers[v] - compiledOfs - 6;
+			EmitString( "0F 86" );			// jbe +offset
+			Emit4( n );
 			break;
 		case OP_GTU:
 			EmitMovEAXEDI( vm );	
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
 			EmitString( "39 47 04" );	// cmp	eax, dword ptr [edi+4]
-			EmitString( "76 06" );		// jna +6
-			EmitString( "FF 25" );		// jmp	[0x12345678]
 			v = Constant4();
 			JUSED(v);
-			Emit4( (int)vm->instructionPointers + v*4 );
+			n = vm->instructionPointers[v] - compiledOfs - 6;
+			EmitString( "0F 87" );			// ja +offset
+			Emit4( n );
 			break;
 		case OP_GEU:
 			EmitMovEAXEDI( vm );	
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
 			EmitString( "39 47 04" );	// cmp	eax, dword ptr [edi+4]
-			EmitString( "72 06" );		// jnae +6
-			EmitString( "FF 25" );		// jmp	[0x12345678]
 			v = Constant4();
 			JUSED(v);
-			Emit4( (int)vm->instructionPointers + v*4 );
+			n = vm->instructionPointers[v] - compiledOfs - 6;
+			EmitString( "0F 83" );			// jae +offset
+			Emit4( n );
 			break;
 		case OP_EQF:
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
 			EmitString( "D9 47 04" );	// fld dword ptr [edi+4]
 			EmitString( "D8 5F 08" );	// fcomp dword ptr [edi+8]
 			EmitString( "DF E0" );		// fnstsw ax
+			EmitString( "9B" );			// fwait
 			EmitString( "F6 C4 40" );	// test	ah,0x40
+#if 1
+			v = Constant4();
+			JUSED(v);
+			n = vm->instructionPointers[v] - compiledOfs - 6;
+			EmitString( "0F 85" );		// jne +offset
+			Emit4( n );
+#else
 			EmitString( "74 06" );		// je +6
 			EmitString( "FF 25" );		// jmp	[0x12345678]
 			v = Constant4();
 			JUSED(v);
 			Emit4( (int)vm->instructionPointers + v*4 );
+#endif
 			break;			
 		case OP_NEF:
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
 			EmitString( "D9 47 04" );	// fld dword ptr [edi+4]
 			EmitString( "D8 5F 08" );	// fcomp dword ptr [edi+8]
 			EmitString( "DF E0" );		// fnstsw ax
+			EmitString( "9B" );			// fwait
 			EmitString( "F6 C4 40" );	// test	ah,0x40
+#if 1
+			v = Constant4();
+			JUSED(v);
+			n = vm->instructionPointers[v] - compiledOfs - 6;
+			EmitString( "0F 84" );			// je +offset
+			Emit4( n );
+#else
 			EmitString( "75 06" );		// jne +6
 			EmitString( "FF 25" );		// jmp	[0x12345678]
 			v = Constant4();
 			JUSED(v);
 			Emit4( (int)vm->instructionPointers + v*4 );
+#endif
 			break;			
 		case OP_LTF:
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
 			EmitString( "D9 47 04" );	// fld dword ptr [edi+4]
 			EmitString( "D8 5F 08" );	// fcomp dword ptr [edi+8]
 			EmitString( "DF E0" );		// fnstsw ax
+			EmitString( "9B" );			// fwait
 			EmitString( "F6 C4 01" );	// test	ah,0x01
 			EmitString( "74 06" );		// je +6
 			EmitString( "FF 25" );		// jmp	[0x12345678]
@@ -1212,6 +1288,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			EmitString( "D9 47 04" );	// fld dword ptr [edi+4]
 			EmitString( "D8 5F 08" );	// fcomp dword ptr [edi+8]
 			EmitString( "DF E0" );		// fnstsw ax
+			EmitString( "9B" );			// fwait
 			EmitString( "F6 C4 41" );	// test	ah,0x41
 			EmitString( "74 06" );		// je +6
 			EmitString( "FF 25" );		// jmp	[0x12345678]
@@ -1224,6 +1301,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			EmitString( "D9 47 04" );	// fld dword ptr [edi+4]
 			EmitString( "D8 5F 08" );	// fcomp dword ptr [edi+8]
 			EmitString( "DF E0" );		// fnstsw ax
+			EmitString( "9B" );			// fwait
 			EmitString( "F6 C4 41" );	// test	ah,0x41
 			EmitString( "75 06" );		// jne +6
 			EmitString( "FF 25" );		// jmp	[0x12345678]
@@ -1236,6 +1314,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			EmitString( "D9 47 04" );	// fld dword ptr [edi+4]
 			EmitString( "D8 5F 08" );	// fcomp dword ptr [edi+8]
 			EmitString( "DF E0" );		// fnstsw ax
+			EmitString( "9B" );			// fwait
 			EmitString( "F6 C4 01" );	// test	ah,0x01
 			EmitString( "75 06" );		// jne +6
 			EmitString( "FF 25" );		// jmp	[0x12345678]
@@ -1317,19 +1396,16 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			EmitString( "F7 17" );		// not dword ptr [edi]
 			break;
 		case OP_LSH:
-			//EmitString( "8B 0F" );				// mov ecx, dword ptr [edi]
 			EmitMovECXEDI( vm );
 			EmitString( "D3 67 FC" );				// shl dword ptr [edi-4], cl
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
 			break;
 		case OP_RSHI:
-			//EmitString( "8B 0F" );				// mov ecx, dword ptr [edi]
 			EmitMovECXEDI( vm );
 			EmitString( "D3 7F FC" );				// sar dword ptr [edi-4], cl
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
 			break;
 		case OP_RSHU:
-			//EmitString( "8B 0F" );				// mov ecx, dword ptr [edi]
 			EmitMovECXEDI( vm );
 			EmitString( "D3 6F FC" );				// shr dword ptr [edi-4], cl
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
@@ -1414,8 +1490,8 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 		case OP_JUMP:
 			EmitCommand(LAST_COMMAND_SUB_DI_4); // sub edi, 4
 			EmitString( "8B 47 04" );           // mov eax,dword ptr [edi+4]
-			EmitString( "3B 05" );              // cmp eax,[callMask]
-			Emit4( (int)&callMask );
+			EmitString( "3D" );		            // cmp eax, 0x12345678
+			Emit4( vm->instructionCount );
 			EmitString( "73 07" );              // jae +7
 			EmitString( "FF 24 85" );           // jmp dword ptr [instructionPointers + eax * 4]
 			Emit4( (int)vm->instructionPointers );
