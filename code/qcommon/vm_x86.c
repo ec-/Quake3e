@@ -54,6 +54,8 @@ static void VM_Destroy_Compiled(vm_t* self);
 */
 
 #define VMFREE_BUFFERS() do {Z_Free(code); Z_Free(buf); Z_Free(jused);} while(0)
+//#define VM_LOG_SYSCALLS
+
 static	byte	*buf = NULL;
 static	byte	*jused = NULL;
 static	int		compiledOfs = 0;
@@ -105,6 +107,7 @@ typedef enum
 {
 	LAST_COMMAND_NONE	= 0,
 	LAST_COMMAND_MOV_EDI_EAX,
+	LAST_COMMAND_MOV_EAX_EDI,
 	LAST_COMMAND_SUB_DI_4,
 	LAST_COMMAND_SUB_DI_8,
 	LAST_COMMAND_FSTP_EDI
@@ -176,7 +179,9 @@ systemCall:
 	// save the stack to allow recursive VM entry
 	currentVM->programStack = programStack - 4;
 	*(int *)((byte *)currentVM->dataBase + programStack + 4) = syscallNum;
-	//VM_LogSyscalls(  (int *)((byte *)currentVM->dataBase + programStack + 4) );
+#ifdef VM_LOG_SYSCALLS
+	VM_LogSyscalls(  (int *)((byte *)currentVM->dataBase + programStack + 4) );
+#endif
 	*(opStack+1) = currentVM->systemCall( (int *)((byte *)currentVM->dataBase + programStack + 4) );
 
 	currentVM = savedVM;
@@ -359,6 +364,10 @@ static void EmitCommand(ELastCommand command)
 			EmitString( "89 07" );		// mov dword ptr [edi], eax
 			break;
 
+		case LAST_COMMAND_MOV_EAX_EDI:
+			EmitString( "8B 07" );		// mov eax, dword ptr [edi]
+			break;
+
 		case LAST_COMMAND_SUB_DI_4:
 			EmitString( "83 EF 04" );	// sub edi, 4
 			break;
@@ -403,6 +412,9 @@ static void EmitMovEAXEDI(vm_t *vm) {
 		EmitString( "8B 07" );		// mov eax, dword ptr [edi]
 		return;
 	}
+	if (LastCommand == LAST_COMMAND_MOV_EAX_EDI)  {
+		return;
+	}
 	if (LastCommand == LAST_COMMAND_MOV_EDI_EAX) 
 	{	// mov [edi], eax
 		compiledOfs -= 2;
@@ -428,6 +440,10 @@ static void EmitMovEAXEDI(vm_t *vm) {
 void EmitMovECXEDI( vm_t *vm ) {
 	if ( jlabel ) {
 		EmitString( "8B 0F" );		// mov ecx, dword ptr [edi]
+		return;
+	}
+	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI )  {
+		EmitString( "89 C1" );		// mov ecx, eax // FIXME: mov ecx, dword ptr [edi]
 		return;
 	}
 	if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) // mov [edi], eax
@@ -859,13 +875,14 @@ qboolean ConstOptimize( vm_t *vm ) {
 			break;
 		v = Constant4();
 		JUSED(v);
-		// FIXME: not needed?
-		//EmitString( "C7 86" );    // mov dword ptr [esi+database],0x12345678
-		//Emit4( (int)vm->dataBase );
-		//Emit4( pc );
+#ifdef VM_LOG_SYSCALLS
+		EmitString( "C7 86" );    // mov dword ptr [esi+database],0x12345678
+		Emit4( (int)vm->dataBase );
+		Emit4( pc );
+#endif
 		EmitString( "E8" );			// call +offset
 		Emit4( vm->instructionPointers[v] - compiledOfs - 6 );
-		EmitString( "8B 07" );      // mov eax, dword ptr [edi]
+		EmitCommand( LAST_COMMAND_MOV_EAX_EDI );
 		pc += 1;                  // OP_CALL
 		instruction += 1;
 		return qtrue;
@@ -877,6 +894,11 @@ qboolean ConstOptimize( vm_t *vm ) {
 	return qfalse;
 }
 
+#define LOCALOP(OP) ( code[pc+4] == OP_LOCAL && !memcmp( code+pc, code+pc+5, 4 ) && \
+	code[pc+9] == OP_LOAD4 && code[pc+10] == OP_CONST && \
+	code[pc+15] == (OP) && code[pc+16] == OP_STORE4 && \
+	!jused[instruction+0] && !jused[instruction+1] && !jused[instruction+2] && \
+	!jused[instruction+3] && !jused[instruction+4] )
 
 /*
 =================
@@ -939,10 +961,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 
 		vm->instructionPointers[ instruction ] = compiledOfs;
 
-		if ( !vm->jumpTableTargets )
-			jlabel = 1;
-		else 
-			jlabel = jused[ instruction ];
+		jlabel = jused[ instruction ];
 
 		instruction++;
 
@@ -976,6 +995,63 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			}
 			break;
 		case OP_LOCAL:
+#if 0
+			if ( code[pc+4] == OP_CONST && code[pc+9] == OP_STORE4 && !jlabel && !jused[instruction] && !jused[instruction+1] ) {
+#if 0
+				EmitString( "8D 86" );		// lea eax, [esi+0x12345678]
+				Emit4( Constant4() + (int)vm->dataBase );
+				pc++;						// OP_CONST
+				EmitString( "C7 00" );		// mov dword ptr [eax], 0x12345678
+				Emit4( Constant4() );
+				pc++;						// OP_STORE4
+				instruction += 2;
+#else
+				EmitString( "C7 86" );		// mov dword[esi+0x12345678], 0x12345678
+				Emit4( Constant4() + (int)vm->dataBase );
+				pc++;						// OP_CONST
+				Emit4( Constant4() );
+				pc++;						// OP_STORE4
+				instruction += 2;
+#endif
+				break;
+			}
+#endif
+			if ( LOCALOP( OP_ADD ) ) {
+				v = Constant4() + (int) vm->dataBase; 
+				pc += 1 + 4 + 1 + 1;		// OP_LOCAL + CONST + OP_LOAD4 + OP_CONST
+				if ( abs( NextConstant4() ) <= 127 ){
+					EmitString( "83 86" );		// add dword ptr[esi+0x12345678],0x12
+					Emit4( v );
+					Emit1( Constant4() );
+				} else {
+					EmitString( "81 86" );		// add dword ptr[esi+0x12345678],0x12345678
+					Emit4( v );
+					Emit4( Constant4() );
+				}
+				pc++;						// OP_ADD
+				pc++;						// OP_STORE4
+				instruction	+= 5;
+				break;
+			}
+
+			if ( LOCALOP( OP_SUB ) ) {
+				v = Constant4() + (int) vm->dataBase; 
+				pc += 1 + 4 + 1 + 1;		// OP_LOCAL + CONST + OP_LOAD4 + OP_CONST
+				if ( abs( NextConstant4() ) <= 127 ) {
+					EmitString( "83 AE" );		// sub dword ptr[esi+0x12345678],0x12
+					Emit4( v );
+					Emit1( Constant4() );
+				} else {
+					EmitString( "81 AE" );		// sub dword ptr[esi+0x12345678],0x12345678
+					Emit4( v );
+					Emit4( Constant4() );
+				}
+				pc++;						// OP_SUB
+				pc++;						// OP_STORE4
+				instruction	+= 5;
+				break;
+			}
+
 			EmitAddEDI4(vm);
 			EmitString( "8D 86" );		// lea eax, [0x12345678 + esi]
 			oc0 = oc1;
@@ -991,9 +1067,11 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
 			break;
 		case OP_CALL:
-			//EmitString( "C7 86" );		// mov dword ptr [esi+database],0x12345678
-			//Emit4( (int)vm->dataBase );
-			//Emit4( pc );
+#ifdef VM_LOG_SYSCALLS
+			EmitString( "C7 86" );		// mov dword ptr [esi+database],0x12345678
+			Emit4( (int)vm->dataBase );
+			Emit4( pc );
+#endif
 			EmitString( "FF 15" );		// call asmCallPtr
 			Emit4( (int)&asmCallPtr );
 			break;
@@ -1010,6 +1088,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			EmitString( "C3" );			// ret
 			break;
 		case OP_LOAD4:
+#if 0
 			if (code[pc] == OP_CONST && code[pc+5] == OP_ADD && code[pc+6] == OP_STORE4) {
 				if (oc0 == oc1 && pop0 == OP_LOCAL && pop1 == OP_LOCAL) {
 					compiledOfs -= 11;
@@ -1075,11 +1154,11 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 				instruction += 3;
 				break;
 			}
-
-			if (buf[compiledOfs-2] == 0x89 && buf[compiledOfs-1] == 0x07) {
+#endif
+			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX && !jlabel ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ instruction-1 ] = compiledOfs;
-				EmitString( "8B 80");	// mov eax, dword ptr [eax + 0x1234567]
+				EmitString( "8B 80");						// mov eax, dword ptr [eax + 0x1234567]
 				Emit4( (int)vm->dataBase );
 				EmitCommand(LAST_COMMAND_MOV_EDI_EAX);		// mov dword ptr [edi], eax
 				break;
@@ -1087,17 +1166,33 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			EmitMovEBXEDI(vm, vm->dataMask);
 			EmitString( "8B 83" );		// mov	eax, dword ptr [ebx + 0x12345678]
 			Emit4( (int)vm->dataBase );
-			EmitCommand(LAST_COMMAND_MOV_EDI_EAX);		// mov dword ptr [edi], eax
+			EmitCommand(LAST_COMMAND_MOV_EDI_EAX);			// mov dword ptr [edi], eax
 			break;
 		case OP_LOAD2:
+			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX && !jlabel ) {
+				compiledOfs -= 2;
+				vm->instructionPointers[ instruction-1 ] = compiledOfs;
+				EmitString( "0F B7 80" );					// movzx eax, word ptr [eax + 0x12345678]
+				Emit4( (int)vm->dataBase );
+				EmitCommand(LAST_COMMAND_MOV_EDI_EAX);		// mov dword ptr [edi], eax
+				break;
+			}
 			EmitMovEBXEDI(vm, vm->dataMask);
-			EmitString( "0F B7 83" );	// movzx	eax, word ptr [ebx + 0x12345678]
+			EmitString( "0F B7 83" );						// movzx	eax, word ptr [ebx + 0x12345678]
 			Emit4( (int)vm->dataBase );
-			EmitCommand(LAST_COMMAND_MOV_EDI_EAX);		// mov dword ptr [edi], eax
+			EmitCommand(LAST_COMMAND_MOV_EDI_EAX);			// mov dword ptr [edi], eax
 			break;
 		case OP_LOAD1:
+			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX && !jlabel ) {
+				compiledOfs -= 2;
+				vm->instructionPointers[ instruction-1 ] = compiledOfs;
+				EmitString( "0F B6 80" );					// movzx eax, byte ptr [eax + 0x12345678]
+				Emit4( (int)vm->dataBase );
+				EmitCommand(LAST_COMMAND_MOV_EDI_EAX);		// mov dword ptr [edi], eax
+				break;
+			}
 			EmitMovEBXEDI(vm, vm->dataMask);
-			EmitString( "0F B6 83" );	// movzx eax, byte ptr [ebx + 0x12345678]
+			EmitString( "0F B6 83" );					// movzx eax, byte ptr [ebx + 0x12345678]
 			Emit4( (int)vm->dataBase );
 			EmitCommand(LAST_COMMAND_MOV_EDI_EAX);		// mov dword ptr [edi], eax
 			break;
