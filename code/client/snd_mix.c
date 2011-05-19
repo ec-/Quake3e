@@ -287,10 +287,10 @@ void S_TransferStereo16 (unsigned long *pbuf, int endtime)
 
 	// write a linear blast of samples
 #if defined( _MSC_VER )&& defined ( _M_IX86 )
-		//if ( g_wv.haveSSE )
-		//	S_WriteLinearBlastStereo16_SSE();
-		//else
-		if ( g_wv.haveMMX )
+		if ( CPU_Flags & CPU_SSE )
+			S_WriteLinearBlastStereo16_SSE();
+		else 
+		if ( CPU_Flags & CPU_MMX )
 			S_WriteLinearBlastStereo16_MMX();
 		else
 #endif

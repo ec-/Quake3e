@@ -245,8 +245,9 @@ __asm__(
 	"call  *(%eax)\n\t"
 	"movl  (%edi), %eax\n\t"
 	"ret\n"
-	"1:\n\t" // bad address, leave something on the opstack
+	"1:\n\t"
 	"call  " CMANGFUNC(ErrJump) "\n\t"
+	// bad address, leave something on the opstack
 	//"addl  $4, %edi\n\t"
 	//"movl  $0, (%edi)\n\t"
 	//"ret\n\t"
@@ -520,6 +521,50 @@ void EmitFldEDI( vm_t *vm ) {
 		} \
 		jused[x] = 1; \
 	} while(0)
+
+#define EMITJMP(S,N) \
+	do { \
+		v = Constant4(); \
+		JUSED(v); \
+		n = vm->instructionPointers[v] - compiledOfs - (N); \
+		EmitString( S ); \
+		Emit4( n ); \
+	} while(0) \
+
+#define JE()   EMITJMP( "0F 84", 6 );
+#define JNE()  EMITJMP( "0F 85", 6 );
+#define JL()   EMITJMP( "0F 8C", 6 );
+#define JLE()  EMITJMP( "0F 8E", 6 );
+#define JG()   EMITJMP( "0F 8F", 6 );
+#define JGE()  EMITJMP( "0F 8D", 6 );
+#define JB()   EMITJMP( "0F 82", 6 );
+#define JBE()  EMITJMP( "0F 86", 6 );
+#define JA()   EMITJMP( "0F 87", 6 );
+#define JAE()  EMITJMP( "0F 83", 6 );
+
+#define JMP()  EMITJMP( "E9", 5 );
+
+#define CMPI() \
+	do { \
+		EmitMovEAXEDI( vm ); \
+		EmitCommand(LAST_COMMAND_SUB_DI_8); /* sub edi, 8 */ \
+		EmitString( "39 47 04" );	/* cmp dword ptr [edi+4], eax */ \
+	} while(0)
+
+#define FCOMFF() \
+	do { \
+		EmitString( "D9 47 08" );	/* fld dword ptr [edi+8] */ \
+		EmitString( "D9 47 04" );	/* fld dword ptr [edi+4] */ \
+		EmitString( "DF E9" );		/* fucomip */ \
+		EmitString( "DD D8" );		/* fstp st(0) */ \
+	} while (0)
+
+#define FCOMSF() \
+	do { \
+	EmitString( "D9 47 04" );	/* fld dword ptr [edi+4] */ \
+	EmitString( "D8 5F 08" );	/* fcomp dword ptr [edi+8] */ \
+	EmitString( "DF E0" );		/* fnstsw ax */ \
+	} while (0)
 
 /*
 =================
@@ -894,25 +939,6 @@ qboolean ConstOptimize( vm_t *vm ) {
 	return qfalse;
 }
 
-
-#define JE() \
-	do { v = Constant4(); \
-			JUSED(v); \
-			n = vm->instructionPointers[v] - compiledOfs - 6; \
-			EmitString( "0F 84" ); \
-			Emit4( n ); \
-	} while(0)
-
-
-#define JNE() \
-	do { v = Constant4(); \
-		JUSED(v); \
-		n = vm->instructionPointers[v] - compiledOfs - 6; \
-		EmitString( "0F 85" ); \
-		Emit4( n ); \
-	} while(0)
-
-
 #define LOCALOP(OP) ( code[pc+4] == OP_LOCAL && !memcmp( code+pc, code+pc+5, 4 ) && \
 	code[pc+9] == OP_LOAD4 && code[pc+10] == OP_CONST && \
 	code[pc+15] == (OP) && code[pc+16] == OP_STORE4 && \
@@ -1186,161 +1212,110 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			break;
 
 		case OP_EQ:
-			EmitMovEAXEDI( vm );
-			EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
-			EmitString( "3B 47 04" );				// cmp	eax, dword ptr [edi+4]
-			v = Constant4();
-			JUSED(v);
-			EmitString( "0F 84" );			// je +offset
-			Emit4( vm->instructionPointers[v] - compiledOfs - 6 + 2 );
+			CMPI();
+			JE();
 			break;
 		case OP_NE:
-			EmitMovEAXEDI( vm );
-			EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
-			EmitString( "3B 47 04" );	// cmp	eax, dword ptr [edi+4]
-			v = Constant4();
-			JUSED(v);
-			EmitString( "0F 85" );			// jne +offset
-			Emit4( vm->instructionPointers[v] - compiledOfs - 6 + 2 );
+			CMPI();
+			JNE();
 			break;
 		case OP_LTI:
-			EmitMovEAXEDI( vm );	
-			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			EmitString( "39 47 04" );	// cmp	dword ptr [edi+4], eax
-			v = Constant4();
-			JUSED(v);
-			EmitString( "0F 8C" );			// jl +offset
-			Emit4( vm->instructionPointers[v] - compiledOfs - 6 + 2 );
+			CMPI();
+			JL();
 			break;
 		case OP_LEI:
-			EmitMovEAXEDI( vm );
-			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			EmitString( "39 47 04" );	// cmp	dword ptr [edi+4], eax
-			v = Constant4();
-			JUSED(v);
-			n = vm->instructionPointers[v] - compiledOfs - 6;
-			EmitString( "0F 8E" );			// jle +offset
-			Emit4( n );
+			CMPI();
+			JLE();
 			break;
 		case OP_GTI:
-			EmitMovEAXEDI( vm );
-			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			EmitString( "39 47 04" );	// cmp	eax, dword ptr [edi+4]
-			v = Constant4();
-			JUSED(v);
-			n = vm->instructionPointers[v] - compiledOfs - 6;
-			EmitString( "0F 8F" );			// jg +offset
-			Emit4( n );
+			CMPI();
+			JG();
 			break;
 		case OP_GEI:
-			EmitMovEAXEDI( vm );	
-			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			EmitString( "39 47 04" );	// cmp	eax, dword ptr [edi+4]
-			v = Constant4();
-			JUSED(v);
-			n = vm->instructionPointers[v] - compiledOfs - 6;
-			EmitString( "0F 8D" );			// jge +offset
-			Emit4( n );
+			CMPI();
+			JGE();
 			break;
 		case OP_LTU:
-			EmitMovEAXEDI( vm );	
-			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			EmitString( "39 47 04" );		// cmp	eax, dword ptr [edi+4]
-			v = Constant4();
-			JUSED(v);
-			n = vm->instructionPointers[v] - compiledOfs - 6;
-			EmitString( "0F 82" );			// jb +offset
-			Emit4( n );
+			CMPI();
+			JB();
 			break;
 		case OP_LEU:
-			EmitMovEAXEDI( vm );	
-			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			EmitString( "39 47 04" );	// cmp	eax, dword ptr [edi+4]
-			v = Constant4();
-			JUSED(v);
-			n = vm->instructionPointers[v] - compiledOfs - 6;
-			EmitString( "0F 86" );			// jbe +offset
-			Emit4( n );
+			CMPI();
+			JBE();
 			break;
 		case OP_GTU:
-			EmitMovEAXEDI( vm );	
-			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			EmitString( "39 47 04" );		// cmp	eax, dword ptr [edi+4]
-			v = Constant4();
-			JUSED(v);
-			n = vm->instructionPointers[v] - compiledOfs - 6;
-			EmitString( "0F 87" );			// ja +offset
-			Emit4( n );
+			CMPI();
+			JA();
 			break;
 		case OP_GEU:
-			EmitMovEAXEDI( vm );	
-			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			EmitString( "39 47 04" );	// cmp	eax, dword ptr [edi+4]
-			v = Constant4();
-			JUSED(v);
-			n = vm->instructionPointers[v] - compiledOfs - 6;
-			EmitString( "0F 83" );			// jae +offset
-			Emit4( n );
+			CMPI();
+			JAE();
 			break;
 		case OP_EQF:
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			EmitString( "D9 47 04" );	// fld dword ptr [edi+4]
-			EmitString( "D8 5F 08" );	// fcomp dword ptr [edi+8]
-			EmitString( "DF E0" );		// fnstsw ax
-			//EmitString( "9B" );			// fwait
-			//EmitString( "F6 C4 40" );	// test	ah,0x40
-			EmitString( "80 E4 40" );	// and ah,0x40
-			JNE();
+			if ( CPU_Flags & CPU_FCOM ) {
+				FCOMFF();
+				JE();
+			} else  {
+				FCOMSF();
+				EmitString( "80 E4 40" );	// and ah,0x40
+				JNE();
+			}
 			break;			
 		case OP_NEF:
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			EmitString( "D9 47 04" );	// fld dword ptr [edi+4]
-			EmitString( "D8 5F 08" );	// fcomp dword ptr [edi+8]
-			EmitString( "DF E0" );		// fnstsw ax
-			//EmitString( "9B" );			// fwait
-			//EmitString( "F6 C4 40" );	// test	ah,0x40
-			EmitString( "80 E4 40" );	// and ah,0x40
-			JE();
+			if ( CPU_Flags & CPU_FCOM ) {
+				FCOMFF();
+				JNE();
+			} else  {
+				FCOMSF();
+				EmitString( "80 E4 40" );	// and ah,0x40
+				JE();
+			}
 			break;			
 		case OP_LTF:
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			EmitString( "D9 47 04" );	// fld dword ptr [edi+4]
-			EmitString( "D8 5F 08" );	// fcomp dword ptr [edi+8]
-			EmitString( "DF E0" );		// fnstsw ax
-			//EmitString( "9B" );			// fwait
-			//EmitString( "F6 C4 01" );	// test	ah,0x01
-			EmitString( "80 E4 01" );	// and ah,0x01
-			JNE();
+			if ( CPU_Flags & CPU_FCOM ) {
+				FCOMFF();
+				JB();
+			} else  {
+				FCOMSF();
+				EmitString( "80 E4 01" );	// and ah,0x01
+				JNE();
+			}
 			break;			
 		case OP_LEF:
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			EmitString( "D9 47 04" );	// fld dword ptr [edi+4]
-			EmitString( "D8 5F 08" );	// fcomp dword ptr [edi+8]
-			EmitString( "DF E0" );		// fnstsw ax
-			//EmitString( "9B" );			// fwait
-			//EmitString( "F6 C4 41" );	// test	ah,0x41
-			EmitString( "80 E4 41" );	// and ah,0x41
-			JNE();
+			if ( CPU_Flags & CPU_FCOM ) {
+				FCOMFF();
+				JBE();
+			} else  {
+				FCOMSF();
+				EmitString( "80 E4 41" );	// and ah,0x41
+				JNE();
+			}
 			break;			
 		case OP_GTF:
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			EmitString( "D9 47 04" );	// fld dword ptr [edi+4]
-			EmitString( "D8 5F 08" );	// fcomp dword ptr [edi+8]
-			EmitString( "DF E0" );		// fnstsw ax
-			//EmitString( "9B" );			// fwait
-			//EmitString( "F6 C4 41" );	// test	ah,0x41
-			EmitString( "80 E4 41" );	// and ah,0x41
-			JE();
+			if ( CPU_Flags & CPU_FCOM ) {
+				FCOMFF();
+				JA();
+			} else  {
+				FCOMSF();
+				EmitString( "80 E4 41" );	// and ah,0x41
+				JE();
+			}
 			break;			
 		case OP_GEF:
 			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			EmitString( "D9 47 04" );	// fld dword ptr [edi+4]
-			EmitString( "D8 5F 08" );	// fcomp dword ptr [edi+8]
-			EmitString( "DF E0" );		// fnstsw ax
-			//EmitString( "9B" );			// fwait
-			//EmitString( "F6 C4 01" );	// test	ah,0x01
-			EmitString( "80 E4 01" );	// and ah,0x01
-			JE();
+			if ( CPU_Flags & CPU_FCOM ) {
+				FCOMFF();
+				JAE();
+			} else  {
+				FCOMSF();
+				EmitString( "80 E4 01" );	// and ah,0x01
+				JE();
+			}
 			break;			
 		case OP_NEGI:
 			EmitMovEAXEDI( vm );

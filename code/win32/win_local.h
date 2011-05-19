@@ -140,8 +140,6 @@ typedef struct
 	// can know the exact time of an event
 	unsigned		sysMsgTime;
 
-	qboolean		haveMMX;
-	qboolean		haveSSE;
 } WinVars_t;
 
 extern WinVars_t	g_wv;

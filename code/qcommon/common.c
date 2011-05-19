@@ -51,6 +51,7 @@ char	*com_argv[MAX_NUM_ARGVS+1];
 
 jmp_buf abortframe;		// an ERR_DROP occured, exit the entire frame
 
+int		CPU_Flags = 0;
 
 FILE *debuglogfile;
 static fileHandle_t logfile;
@@ -2479,6 +2480,81 @@ out:
 #endif
 
 
+/*
+** --------------------------------------------------------------------------------
+**
+** PROCESSOR STUFF
+**
+** --------------------------------------------------------------------------------
+*/
+
+#if defined _MSC_VER
+static void CPUID( int func, unsigned int *regs )
+{
+	__cpuid( regs, func );
+}
+#else
+static void CPUID( int func, unsigned int *regs )
+{
+	__asm__ __volatile__( "cpuid" :
+		"=a"(regs[0]),
+		"=b"(regs[1]),
+		"=c"(regs[2]),
+		"=d"(regs[3]) :
+		"a"(func) );
+}
+#endif
+
+int Sys_GetProcessorId( char *vendor )
+{
+	unsigned int regs[4];
+
+	CPU_Flags = 0;
+
+#if defined	_M_AMD64
+	CPU_Flags |= CPU_MMX | CPU_SSE | CPU_FCOM;
+	if ( vendor )
+		strcpy( vendor, "Generic x86_64 CPU" );
+	return 1;
+#endif
+
+	// get CPU feature bits
+	CPUID( 1, regs );
+
+	// bit 23 of EDX denotes MMX existence
+	if ( regs[3] & ( 1 << 23 ) )
+		CPU_Flags |= CPU_MMX;
+
+	// bit 25 of EDX denotes SSE existence
+	if ( regs[3] & ( 1 << 25 ) )
+		CPU_Flags |= CPU_SSE;
+
+	// bit 15 of EDX denotes CMOV/FCMOV/FCOMI existence
+	if ( regs[3] & ( 1 << 15 ) )
+		CPU_Flags |= CPU_FCOM;
+
+	if ( vendor ) {
+		// get CPU vendor string
+		CPUID( 0, regs );
+		memcpy( vendor+0, (char*) &regs[1], 4 );
+		memcpy( vendor+4, (char*) &regs[3], 4 );
+		memcpy( vendor+8, (char*) &regs[2], 4 );
+		vendor[12] = '\0';
+		if ( CPU_Flags ) {
+			// add features
+			strcat( vendor, " w/" );
+			if ( CPU_Flags & CPU_MMX )
+				strcat( vendor, "MMX " );
+			if ( CPU_Flags & CPU_SSE )
+				strcat( vendor, "SSE " );
+			if ( CPU_Flags & CPU_FCOM )
+				strcat( vendor, "CMOV " );
+		}
+	}
+	return 1;
+}
+
+
 static void Com_DetectAltivec(void)
 {
 	// Only detect if user hasn't forcibly disabled it.
@@ -2621,6 +2697,19 @@ void Com_Init( char *commandLine ) {
 	com_version = Cvar_Get ("version", s, CVAR_ROM | CVAR_SERVERINFO );
 
 	Sys_Init();
+
+#if defined id386
+	// CPU detection
+	Cvar_Get( "sys_cpustring", "detect", 0 );
+	if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring"), "detect" ) )
+	{
+		char vendor[64];
+		Com_Printf( "...detecting CPU, found " );
+		Sys_GetProcessorId( vendor );
+		Cvar_Set( "sys_cpustring", vendor );
+	}
+	Com_Printf( "%s\n", Cvar_VariableString( "sys_cpustring" ) );
+#endif
 
 	// Pick a random port value
 	Com_RandomBytes( (byte*)&qport, sizeof(int) );

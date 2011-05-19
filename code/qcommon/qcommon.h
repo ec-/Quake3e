@@ -770,17 +770,11 @@ MISC
 // https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=470
 extern char cl_cdkey[34];
 
-// returnbed by Sys_GetProcessorId
-#define CPUID_GENERIC			0			// any unrecognized processor
+extern	int	CPU_Flags;
 
-#define CPUID_AXP				0x10
-
-#define CPUID_INTEL_UNSUPPORTED	0x20			// Intel 386/486
-#define CPUID_INTEL_PENTIUM		0x21			// Intel Pentium or PPro
-#define CPUID_INTEL_MMX			0x22			// Intel Pentium/MMX or P2/MMX
-#define CPUID_INTEL_KATMAI		0x23			// Intel Katmai
-
-#define CPUID_AMD_3DNOW			0x30			// AMD K6 3DNOW!
+#define CPU_MMX    0x01
+#define CPU_SSE    0x02
+#define CPU_FCOM   0x04
 
 // TTimo
 // centralized and cleaned, that's the max string you can send to a Com_Printf / Com_DPrintf (above gets truncated)
@@ -1084,7 +1078,7 @@ qboolean Sys_RandomBytes( byte *string, int len );
 // the system console is shown when a dedicated server is running
 void	Sys_DisplaySystemConsole( qboolean show );
 
-int		Sys_GetProcessorId( void );
+int		Sys_GetProcessorId( char *vendor );
 
 void	Sys_BeginStreamedFile( fileHandle_t f, int readahead );
 void	Sys_EndStreamedFile( fileHandle_t f );
