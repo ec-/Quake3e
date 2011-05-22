@@ -107,6 +107,7 @@ typedef enum
 {
 	LAST_COMMAND_NONE	= 0,
 	LAST_COMMAND_MOV_EDI_EAX,
+	LAST_COMMAND_MOV_EDI_CONST,
 	LAST_COMMAND_MOV_EAX_EDI,
 	LAST_COMMAND_SUB_DI_4,
 	LAST_COMMAND_SUB_DI_8,
@@ -396,13 +397,14 @@ static void EmitAddEDI4( vm_t *vm ) {
 	{	// sub edi, 4
 		compiledOfs -= 3;
 		vm->instructionPointers[ instruction-1 ] = compiledOfs;
+		LastCommand = LAST_COMMAND_NONE;
 		return;
 	}
 	if ( LastCommand == LAST_COMMAND_SUB_DI_8 ) 
 	{	// sub edi, 8
 		compiledOfs -= 3;
 		vm->instructionPointers[ instruction-1 ] = compiledOfs;
-		EmitString( "83 EF 04" );	//	sub edi,4
+		EmitCommand(LAST_COMMAND_SUB_DI_4);
 		return;
 	}
 	EmitString( "83 C7 04" );	//	add edi,4
@@ -420,6 +422,7 @@ static void EmitMovEAXEDI(vm_t *vm) {
 	{	// mov [edi], eax
 		compiledOfs -= 2;
 		vm->instructionPointers[ instruction-1 ] = compiledOfs;
+		LastCommand = LAST_COMMAND_NONE; 
 		return;
 	}
 	if (pop1 == OP_DIVI || pop1 == OP_DIVU || pop1 == OP_MULI || pop1 == OP_MULU ||
@@ -427,8 +430,8 @@ static void EmitMovEAXEDI(vm_t *vm) {
 	{	
 		return;
 	}
-	if (pop1 == OP_CONST && buf[compiledOfs-6] == 0xC7 && buf[compiledOfs-5] == 0x07 ) 
-	{	// mov edi, 0x123456
+	if ( LastCommand == LAST_COMMAND_MOV_EDI_CONST ) 
+	{	// mov dword ptr [edi], 0x12345678
 		compiledOfs -= 6;
 		vm->instructionPointers[ instruction-1 ] = compiledOfs;
 		EmitString( "B8" );			// mov	eax, 0x12345678
@@ -473,16 +476,16 @@ qboolean EmitMovEBXEDI(vm_t *vm, int andit) {
 	{	// mov dword ptr [edi], eax
 		compiledOfs -= 2;
 		vm->instructionPointers[ instruction-1 ] = compiledOfs;
-		EmitString( "8B D8");		// mov bx, eax
+		EmitString( "89 C3");		// mov ebx, eax
 		return qfalse;
 	}
 	if ( pop1 == OP_DIVI || pop1 == OP_DIVU || pop1 == OP_MULI || pop1 == OP_MULU ||
 		pop1 == OP_STORE4 || pop1 == OP_STORE2 || pop1 == OP_STORE1 ) 
 	{	
-		EmitString( "8B D8");		// mov bx, eax
+		EmitString( "89 C3");		// mov ebx, eax
 		return qfalse;
 	}
-	if ( pop1 == OP_CONST && buf[compiledOfs-6] == 0xC7 && buf[compiledOfs-5] == 0x07 ) 
+	if ( LastCommand == LAST_COMMAND_MOV_EDI_CONST ) 
 	{	// mov dword ptr [edi], 0x12345678
 		compiledOfs -= 6;
 		vm->instructionPointers[ instruction-1 ] = compiledOfs;
@@ -1036,6 +1039,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			if (code[pc] == OP_JUMP) {
 				JUSED(lastConst);
 			}
+			LastCommand = LAST_COMMAND_MOV_EDI_CONST;
 			break;
 		case OP_LOCAL:
 #if 0
@@ -1062,14 +1066,6 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			if ( LOCALOP( OP_ADD ) ) {
 				v = Constant4() + (int) vm->dataBase; 
 				pc += 1 + 4 + 1 + 1;           // OP_LOCAL + CONST + OP_LOAD4 + OP_CONST
-				// EmitString( "8D 9E" );      // lea ebx, [esi+0x12345678]
-				// Emit4( Constant4() + (int) vm->dataBase );
-				// v = Constant4(); 
-				// EmitString( "8B 03" );      // mov eax, [ebx]
-				// EmitString( "05" );         // add eax, 0x12345678
-				// Emit4( v );			  
-				// EmitString( "89 03" )       // mov [ebx], eax
-				// op = OP_STORE4;
 				if ( abs( NextConstant4() ) <= 127 ){
 					EmitString( "83 86" );		// add dword ptr[esi+0x12345678],0x12
 					Emit4( v );
@@ -1105,6 +1101,42 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 
 			// TODO: i = j + k;
 			// TODO: i = j - k;
+
+			// merge OP_LOCAL + OP_LOAD4
+			if ( code[pc+4] == OP_LOAD4 && !jused[instruction] ) {
+				EmitAddEDI4( vm );
+				EmitString( "8B 86" );	// mov eax, dword ptr [esi + LOCAL + vm->dataBase ]
+				v = Constant4() + (int)vm->dataBase;
+				pc++;					// OP_LOAD4
+				Emit4( v );
+				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
+				instruction++;
+				break;
+			}
+
+			// merge OP_LOCAL + OP_LOAD2
+			if ( code[pc+4] == OP_LOAD2 && !jused[instruction] ) {
+				EmitAddEDI4( vm );
+				EmitString( "0F B7 86" );	// movzx eax, word ptr[esi + LOCAL + vm->dataBase ]
+				v = Constant4() + (int)vm->dataBase;
+				pc++;						// OP_LOAD2
+				Emit4( v );
+				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
+				instruction++;
+				break;
+			}
+
+			// merge OP_LOCAL + OP_LOAD1
+			if ( code[pc+4] == OP_LOAD1 && !jused[instruction] ) {
+				EmitAddEDI4( vm );
+				EmitString( "0F B6 86" );	// movzx eax, byte ptr[esi + LOCAL + vm->dataBase ]
+				v = Constant4() + (int)vm->dataBase;
+				pc++;						// OP_LOAD1
+				Emit4( v );
+				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
+				instruction++;
+				break;
+			}
 
 			EmitAddEDI4(vm);
 			EmitString( "8D 86" );		// lea eax, [0x12345678 + esi]
