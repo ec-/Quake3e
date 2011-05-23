@@ -118,7 +118,7 @@ static	ELastCommand	LastCommand;
 
 static void ErrJump( void ) 
 { 
-	Com_Error( ERR_DROP, "program tried to execute code outside VM\n" ); 
+	Com_Error( ERR_DROP, "program tried to execute code outside VM" ); 
 	exit(1);
 }
 
@@ -580,7 +580,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 
 	// we can safely perform optimizations only in case if 
 	// we are 100% sure that next instruction is not a jump label
-	if ( !jused[instruction] && vm->jumpTableTargets )
+	if ( !jused[instruction] )
 		op1 = code[pc+4];
 	else
 		return qfalse;
@@ -665,7 +665,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 	case OP_ADD:
 		v = Constant4();
 		EmitMovEAXEDI( vm ); 
-		if ( v >= 0 && v <= 127 ) {
+		if ( abs(v) <= 127 ) {
 			EmitString( "83 C0" );	// add eax, 0x7F
 			Emit1( v );
 		} else {
@@ -680,7 +680,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 	case OP_SUB:
 		v = Constant4();
 		EmitMovEAXEDI( vm );
-		if ( v >= 0 && v <= 127 ) {
+		if ( abs(v) <= 127 ) {
 			EmitString( "83 E8" );	// sub eax, 0x7F
 			Emit1( v );
 		} else {
@@ -695,7 +695,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 	case OP_MULI:
 		v = Constant4();
 		EmitMovEAXEDI( vm );
-		if ( v >= 0 && v <= 127 ) {
+		if ( abs(v) <= 127 ) {
 			EmitString( "6B C0" );	// imul eax, 0x7F
 			Emit1( v );
 		} else {
@@ -958,8 +958,8 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int		maxLength;
 	int		v, n;
 	int		i;
-	qboolean opt;
-	jusedSize = header->instructionCount + 2;
+	//qboolean opt;
+	jusedSize = header->instructionCount;
 
 	// allocate a very large temp buffer, we will shrink it later
 	maxLength = header->codeLength * 8;
@@ -979,20 +979,22 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	// ensure that the optimisation pass knows about all the jump
 	// table targets
 	for( i = 0; i < vm->numJumpTableTargets; i++ ) {
-		jused[ *(int *)(vm->jumpTableTargets + ( i * sizeof( int ) ) ) ] = 1;
+		n = *(int *)(vm->jumpTableTargets + ( i * sizeof( int ) ) );
+		if ( n >= jusedSize )
+			continue;
+		jused[ n ] = 1;
 	}
 	if ( !vm->jumpTableTargets ) {
 		Com_Memset( jused, 1, jusedSize );
 	}
 
-	for(pass=0;pass<3;pass++) {
+	for( pass = 0; pass < 3; pass++ ) {
 
 	pop1 = OP_UNDEF;
 
 	// translate all instructions
 	pc = 0;
 	instruction = 0;
-	//code = (byte *)header + header->codeOffset;
 	compiledOfs = 0;
 
 	LastCommand = LAST_COMMAND_NONE;
