@@ -82,10 +82,12 @@ CM_ProjectPointOntoVector
 void CM_ProjectPointOntoVector( vec3_t point, vec3_t vStart, vec3_t vDir, vec3_t vProj )
 {
 	vec3_t pVec;
+	vec_t  s;
 
 	VectorSubtract( point, vStart, pVec );
 	// project onto the directional vector for this segment
-	VectorMA( vStart, DotProduct( pVec, vDir ), vDir, vProj );
+	s = DotProduct( pVec, vDir );
+	VectorMA( vStart, s, vDir, vProj );
 }
 
 /*
