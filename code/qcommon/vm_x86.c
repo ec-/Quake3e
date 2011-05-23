@@ -534,18 +534,21 @@ void EmitFldEDI( vm_t *vm ) {
 		Emit4( n ); \
 	} while(0) \
 
-#define JE()   EMITJMP( "0F 84", 6 );
-#define JNE()  EMITJMP( "0F 85", 6 );
-#define JL()   EMITJMP( "0F 8C", 6 );
-#define JLE()  EMITJMP( "0F 8E", 6 );
-#define JG()   EMITJMP( "0F 8F", 6 );
-#define JGE()  EMITJMP( "0F 8D", 6 );
-#define JB()   EMITJMP( "0F 82", 6 );
-#define JBE()  EMITJMP( "0F 86", 6 );
-#define JA()   EMITJMP( "0F 87", 6 );
-#define JAE()  EMITJMP( "0F 83", 6 );
+#define JE()   EMITJMP( "0F 84", 6 )
+#define JNE()  EMITJMP( "0F 85", 6 )
+#define JL()   EMITJMP( "0F 8C", 6 )
+#define JLE()  EMITJMP( "0F 8E", 6 )
+#define JG()   EMITJMP( "0F 8F", 6 )
+#define JGE()  EMITJMP( "0F 8D", 6 )
+#define JB()   EMITJMP( "0F 82", 6 )
+#define JBE()  EMITJMP( "0F 86", 6 )
+#define JA()   EMITJMP( "0F 87", 6 )
+#define JAE()  EMITJMP( "0F 83", 6 )
 
-#define JMP()  EMITJMP( "E9", 5 );
+#define JZ()   EMITJMP( "0F 84", 6 )
+#define JNZ()  EMITJMP( "0F 85", 6 )
+
+#define JMP()  EMITJMP( "E9", 5 )
 
 #define CMPI() \
 	do { \
@@ -798,14 +801,10 @@ qboolean ConstOptimize( vm_t *vm ) {
 		// floating point hack :)
 		EmitString( "25" );        // and eax, 0x7FFFFFFF
 		Emit4( 0x7FFFFFFF );
-		v = Constant4();
-		JUSED(v);
-		n = vm->instructionPointers[v] - compiledOfs - 6;
 		if ( op1 == OP_EQF )
-			EmitString( "0F 84" ); // jz +offset
+			JZ();
 		else
-			EmitString( "0F 85" ); // jnz +offset
-		Emit4( n );
+			JNZ();
 		instruction += 1;
 		return qtrue;
 
@@ -821,14 +820,10 @@ qboolean ConstOptimize( vm_t *vm ) {
 			Emit4( v );
 		}
 		pc += 1;				   // OP_EQ/OP_NE
-		v = Constant4();
-		JUSED(v); 
-		n = vm->instructionPointers[v] - compiledOfs - 6;
 		if ( op1 == OP_EQ )
-			EmitString( "0F 84" );    // je +offset
+			JE();
 		else
-			EmitString( "0F 85" );    // jne +offset
-		Emit4( n );
+			JNE();
 		instruction += 1;
 		return qtrue;
 
@@ -840,14 +835,10 @@ qboolean ConstOptimize( vm_t *vm ) {
 		EmitString( "3D" );        // cmp eax, 0x12345678
 		Emit4( v );
 		pc += 1;			       // OP_GEI|OP_GTI
-		v = Constant4();
-		JUSED(v);
-		n = vm->instructionPointers[v] - compiledOfs - 6;		
 		if ( op1 == OP_GEI )
-			EmitString( "0F 8D" ); // jge +offset
+			JGE();
 		else
-			EmitString( "0F 8F" ); // jg +offset
-		Emit4( n );
+			JG();
 		instruction += 1;
 		return qtrue;
 
@@ -859,14 +850,10 @@ qboolean ConstOptimize( vm_t *vm ) {
 		EmitString( "3D" );        // cmp eax, 0x12345678
 		Emit4( v );
 		pc += 1;			       // OP_GEI|OP_GTI
-		v = Constant4();
-		JUSED(v);
-		n = vm->instructionPointers[v] - compiledOfs - 6;		
 		if ( op1 == OP_LEI )
-			EmitString( "0F 8E" ); // jle +offset
+			JLE();
 		else
-			EmitString( "0F 8C" ); // jl +offset
-		Emit4( n );
+			JL();
 		instruction += 1;
 		return qtrue;
 
@@ -878,14 +865,10 @@ qboolean ConstOptimize( vm_t *vm ) {
 		EmitString( "3D" );        // cmp eax, 0x12345678
 		Emit4( v );
 		pc += 1;			       // OP_GTU|OP_GEU
-		v = Constant4();
-		JUSED(v);
-		n = vm->instructionPointers[v] - compiledOfs - 6;
 		if ( op1 == OP_GTU )
-			EmitString( "0F 87" ); // ja +offset
+			JA();
 		else
-			EmitString( "0F 83" ); // jae +offset
-		Emit4( n );
+			JAE();
 		instruction += 1;
 		return qtrue;
 
@@ -897,23 +880,15 @@ qboolean ConstOptimize( vm_t *vm ) {
 		EmitString( "3D" );        // cmp eax, 0x12345678
 		Emit4( v );
 		pc += 1;			       // OP_LTU|OP_LEU
-		v = Constant4();
-		JUSED(v);
-		n = vm->instructionPointers[v] - compiledOfs - 6;
 		if ( op1 == OP_LTU )
-			EmitString( "0F 82" ); // jb +offset
+			JB();
 		else
-			EmitString( "0F 86" ); // jbe +offset
-		Emit4( n );
+			JBE();
 		instruction += 1;
 		return qtrue;
 
 	case OP_JUMP:
-		v = Constant4();
-		JUSED(v);
-		n = vm->instructionPointers[v] - compiledOfs - 5;
-		EmitString( "E9" );			// jmp +offset
-		Emit4( n );
+		JMP();
 		pc += 1;                  // OP_JUMP
 		instruction += 1;
 		return qtrue;
