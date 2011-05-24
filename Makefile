@@ -26,11 +26,13 @@ ifeq ($(COMPILE_PLATFORM),mingw32)
 endif
 
 BUILD_CLIENT     = 1
-BUILD_CLIENT_SMP = 0
 BUILD_SERVER     = 1
 
 USE_CURL		 = 1
 USE_LOCAL_HEADERS= 0
+
+CNAME			 = quake3e
+DNAME 			 = quake3e.ded
 
 #USE_ALSA_STATIC	 = 1
 
@@ -137,16 +139,16 @@ VERSION=$(shell grep "\#define Q3_VERSION" $(CMDIR)/q_shared.h | \
   sed -e 's/.*".* \([^ ]*\)"/\1/')
 
 USE_SVN=
-ifeq ($(wildcard .svn),.svn)
-  SVN_REV=$(shell LANG=C svnversion .)
-  ifneq ($(SVN_REV),)
-    SVN_VERSION=$(VERSION)_SVN$(SVN_REV)
-    USE_SVN=1
-  endif
-endif
-ifneq ($(USE_SVN),1)
-    SVN_VERSION=$(VERSION)
-endif
+#ifeq ($(wildcard .svn),.svn)
+#  SVN_REV=$(shell LANG=C svnversion .)
+#  ifneq ($(SVN_REV),)
+#    SVN_VERSION=$(VERSION)_SVN$(SVN_REV)
+#    USE_SVN=1
+#  endif
+#endif
+#ifneq ($(USE_SVN),1)
+#    SVN_VERSION=$(VERSION)
+#endif
 
 
 #############################################################################
@@ -248,7 +250,7 @@ ifeq ($(PLATFORM),darwin)
   OPTIMIZE=
   ifeq ($(BUILD_MACOSX_UB),ppc)
     CC=gcc-3.3
-    BASE_CFLAGS += -arch ppc -DSMP \
+    BASE_CFLAGS += -arch ppc \
       -DMAC_OS_X_VERSION_MIN_REQUIRED=1020 -nostdinc \
       -F/Developer/SDKs/MacOSX10.2.8.sdk/System/Library/Frameworks \
       -I/Developer/SDKs/MacOSX10.2.8.sdk/usr/include/gcc/darwin/3.3 \
@@ -272,7 +274,7 @@ ifeq ($(PLATFORM),darwin)
   else
   ifeq ($(BUILD_MACOSX_UB),i386)
     CC=gcc-4.0
-    BASE_CFLAGS += -arch i386 -DSMP \
+    BASE_CFLAGS += -arch i386 \
       -mmacosx-version-min=10.4 \
       -DMAC_OS_X_VERSION_MIN_REQUIRED=1040 -nostdinc \
       -F/Developer/SDKs/MacOSX10.4u.sdk/System/Library/Frameworks \
@@ -382,7 +384,6 @@ endif
   endif
 
   BUILD_SERVER = 0
-  BUILD_CLIENT_SMP = 0
 
 else # ifeq mingw32
 
@@ -577,17 +578,20 @@ endif #NetBSD
 endif #IRIX
 endif #SunOS
 
+#TARGET_CLIENT=$(CNAME).$(ARCH)$(BINEXT)
+#TARGET_SERVER=$(DNAME).$(ARCH)$(BINEXT)
+
+TARGET_CLIENT=$(CNAME)$(BINEXT)
+TARGET_SERVER=$(DNAME)$(BINEXT)
+
 TARGETS =
 
 ifneq ($(BUILD_SERVER),0)
-  TARGETS += $(B)/quake3ded.$(ARCH)$(BINEXT)
+  TARGETS += $(B)/$(TARGET_SERVER)
 endif
 
 ifneq ($(BUILD_CLIENT),0)
-  TARGETS += $(B)/quake3.$(ARCH)$(BINEXT)
-  ifneq ($(BUILD_CLIENT_SMP),0)
-    TARGETS += $(B)/quake3-smp.$(ARCH)$(BINEXT)
-  endif
+  TARGETS += $(B)/$(TARGET_CLIENT)
 endif
 
 ifeq ($(USE_CCACHE),1)
@@ -622,11 +626,6 @@ endif
 define DO_CC
 $(echo_cmd) "CC $<"
 $(Q)$(CC) $(NOTSHLIBCFLAGS) $(CFLAGS) -o $@ -c $<
-endef
-
-define DO_SMP_CC
-$(echo_cmd) "SMP_CC $<"
-$(Q)$(CC) $(NOTSHLIBCFLAGS) $(CFLAGS) -DSMP -o $@ -c $<
 endef
 
 define DO_BOT_CC
@@ -684,6 +683,8 @@ release:
 targets: makedirs tools
 	@echo ""
 	@echo "Building quake3 in $(B):"
+	@echo ""
+	@echo "  VERSION: $(VERSION)"
 	@echo "  PLATFORM: $(PLATFORM)"
 	@echo "  ARCH: $(ARCH)"
 	@echo "  COMPILE_PLATFORM: $(COMPILE_PLATFORM)"
@@ -710,7 +711,6 @@ makedirs:
 	@if [ ! -d $(BUILD_DIR) ];then $(MKDIR) $(BUILD_DIR);fi
 	@if [ ! -d $(B) ];then $(MKDIR) $(B);fi
 	@if [ ! -d $(B)/client ];then $(MKDIR) $(B)/client;fi
-	@if [ ! -d $(B)/clientsmp ];then $(MKDIR) $(B)/clientsmp;fi
 	@if [ ! -d $(B)/ded ];then $(MKDIR) $(B)/ded;fi
 
 #############################################################################
@@ -942,19 +942,12 @@ else
   Q3POBJ = \
     $(B)/client/linux_glimp.o
 
-  Q3POBJ_SMP = \
-    $(B)/clientsmp/linux_glimp.o
 endif
 
-$(B)/quake3.$(ARCH)$(BINEXT): $(Q3OBJ) $(Q3POBJ)
+$(B)/$(TARGET_CLIENT): $(Q3OBJ) $(Q3POBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) -o $@ $(Q3OBJ) $(Q3POBJ) $(CLIENT_LDFLAGS) \
 		$(LDFLAGS)
-
-$(B)/quake3-smp.$(ARCH)$(BINEXT): $(Q3OBJ) $(Q3POBJ_SMP)
-	$(echo_cmd) "LD $@"
-	$(Q)$(CC) -o $@ $(Q3OBJ) $(Q3POBJ_SMP) $(CLIENT_LDFLAGS) \
-		$(THREAD_LDFLAGS) $(LDFLAGS)
 
 
 
@@ -1061,7 +1054,7 @@ ifeq ($(HAVE_VM_COMPILED),true)
   endif
 endif
 
-$(B)/quake3ded.$(ARCH)$(BINEXT): $(Q3DOBJ)
+$(B)/$(TARGET_SERVER): $(Q3DOBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) -o $@ $(Q3DOBJ) $(LDFLAGS)
 
@@ -1093,9 +1086,6 @@ $(B)/client/%.o: $(RDIR)/%.c
 
 $(B)/client/%.o: $(UDIR)/%.c
 	$(DO_CC)
-
-$(B)/clientsmp/%.o: $(UDIR)/%.c
-	$(DO_SMP_CC)
 
 $(B)/client/%.o: $(W32DIR)/%.c
 	$(DO_CC)
@@ -1140,12 +1130,12 @@ copyfiles: release
 	-$(MKDIR) -p -m 0755 $(COPYDIR)/missionpack
 
 ifneq ($(BUILD_CLIENT),0)
-	$(INSTALL) -s -m 0755 $(BR)/quake3.$(ARCH)$(BINEXT) $(COPYDIR)/quake3.$(ARCH)$(BINEXT)
+	$(INSTALL) -s -m 0755 $(BR)/$(TARGET_CLIENT) $(COPYDIR)/$(TARGET_CLIENT)
 endif
 
 ifneq ($(BUILD_SERVER),0)
-	@if [ -f $(BR)/quake3ded.$(ARCH)$(BINEXT) ]; then \
-		$(INSTALL) -s -m 0755 $(BR)/quake3ded.$(ARCH)$(BINEXT) $(COPYDIR)/quake3ded.$(ARCH)$(BINEXT); \
+	@if [ -f $(BR)/$(TARGET_SERVER) ]; then \
+		$(INSTALL) -s -m 0755 $(BR)/$(TARGET_SERVER) $(COPYDIR)/$(TARGET_SERVER); \
 	fi
 endif
 
@@ -1155,7 +1145,7 @@ clean: clean-debug clean-release
 clean2:
 	@echo "CLEAN $(B)"
 	@if [ -d $(B) ];then (find $(B) -name '*.d' -exec rm {} \;)fi
-	@rm -f $(Q3OBJ) $(Q3POBJ) $(Q3POBJ_SMP) $(Q3DOBJ)
+	@rm -f $(Q3OBJ) $(Q3POBJ) $(Q3DOBJ)
 	@rm -f $(TARGETS)
 
 clean-debug:
@@ -1179,6 +1169,12 @@ dist:
 	svn export . quake3-$(SVN_VERSION)
 	tar --owner=root --group=root --force-local -cjf quake3-$(SVN_VERSION).tar.bz2 quake3-$(SVN_VERSION)
 	rm -rf quake3-$(SVN_VERSION)
+
+dist2:
+	rm -rf quake3-1.32e-src
+	svn export . quake3-1.32e-src
+	zip -9 -r quake3-1.32e-src.zip quake3-1.32e-src/*
+	rm -rf quake3-1.32e-src
 
 #############################################################################
 # DEPENDENCIES

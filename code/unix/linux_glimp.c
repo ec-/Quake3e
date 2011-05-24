@@ -1552,15 +1552,6 @@ void GLimp_Init( void )
   char  buf[1024];
   cvar_t *lastValidRenderer = ri.Cvar_Get( "r_lastValidRenderer", "(uninitialized)", CVAR_ARCHIVE );
 
-  // guarded, as this is only relevant to SMP renderer thread
-#ifdef SMP
-  if (!XInitThreads())
-  {
-    Com_Printf("GLimp_Init() - XInitThreads() failed, disabling r_smp\n");
-    ri.Cvar_Set( "r_smp", "0" );
-  }
-#endif
-
   r_allowSoftwareGL = ri.Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
 
   r_previousglDriver = ri.Cvar_Get( "r_previousglDriver", "", CVAR_ROM );
@@ -1730,137 +1721,22 @@ void GLimp_EndFrame (void)
   QGL_EnableLogging( (qboolean)r_logFile->integer ); // bk001205 - was ->value
 }
 
-#ifdef SMP
-/*
-===========================================================
+void GLimp_RenderThreadWrapper( void *stub ) {
 
-SMP acceleration
-
-===========================================================
-*/
-
-static pthread_mutex_t	smpMutex = PTHREAD_MUTEX_INITIALIZER;
-
-static pthread_cond_t		renderCommandsEvent = PTHREAD_COND_INITIALIZER;
-static pthread_cond_t		renderCompletedEvent = PTHREAD_COND_INITIALIZER;
-
-static void (*glimpRenderThread)( void );
-
-static void *GLimp_RenderThreadWrapper( void *arg )
-{
-	Com_Printf( "Render thread starting\n" );
-
-  glimpRenderThread();
-
-	qglXMakeCurrent( dpy, None, NULL );
-
-	Com_Printf( "Render thread terminating\n" );
-
-	return arg;
 }
 
-qboolean GLimp_SpawnRenderThread( void (*function)( void ) )
-{
-	pthread_t renderThread;
-	int ret;
-
-	pthread_mutex_init( &smpMutex, NULL );
-
-	pthread_cond_init( &renderCommandsEvent, NULL );
-	pthread_cond_init( &renderCompletedEvent, NULL );
-
-  glimpRenderThread = function;
-
-	ret = pthread_create( &renderThread,
-						  NULL,			// attributes
-						  GLimp_RenderThreadWrapper,
-						  NULL );		// argument
-	if ( ret ) {
-		ri.Printf( PRINT_ALL, "pthread_create returned %d: %s", ret, strerror( ret ) );
-    return qfalse;
-	} else {
-		ret = pthread_detach( renderThread );
-		if ( ret ) {
-			ri.Printf( PRINT_ALL, "pthread_detach returned %d: %s", ret, strerror( ret ) );
-		}
-  }
-
-  return qtrue;
-}
-
-static volatile void    *smpData = NULL;
-static volatile qboolean smpDataReady;
-
-void *GLimp_RendererSleep( void )
-{
-	void  *data;
-
-	qglXMakeCurrent( dpy, None, NULL );
-
-	pthread_mutex_lock( &smpMutex );
-	{
-		smpData = NULL;
-		smpDataReady = qfalse;
-
-		// after this, the front end can exit GLimp_FrontEndSleep
-		pthread_cond_signal( &renderCompletedEvent );
-
-		while ( !smpDataReady ) {
-			pthread_cond_wait( &renderCommandsEvent, &smpMutex );
-		}
-
-		data = (void *)smpData;
-	}
-	pthread_mutex_unlock( &smpMutex );
-
-	qglXMakeCurrent( dpy, win, ctx );
-
-  return data;
-}
-
-void GLimp_FrontEndSleep( void )
-{
-	pthread_mutex_lock( &smpMutex );
-	{
-		while ( smpData ) {
-			pthread_cond_wait( &renderCompletedEvent, &smpMutex );
-		}
-	}
-	pthread_mutex_unlock( &smpMutex );
-
-	qglXMakeCurrent( dpy, win, ctx );
-}
-
-void GLimp_WakeRenderer( void *data )
-{
-	qglXMakeCurrent( dpy, None, NULL );
-
-	pthread_mutex_lock( &smpMutex );
-	{
-		assert( smpData == NULL );
-		smpData = data;
-		smpDataReady = qtrue;
-
-		// after this, the renderer can continue through GLimp_RendererSleep
-		pthread_cond_signal( &renderCommandsEvent );
-	}
-	pthread_mutex_unlock( &smpMutex );
-}
-
-#else
-
-void GLimp_RenderThreadWrapper( void *stub ) {}
-qboolean GLimp_SpawnRenderThread( void (*function)( void ) ) {
-	ri.Printf( PRINT_WARNING, "ERROR: SMP support was disabled at compile time\n");
-  return qfalse;
-}
 void *GLimp_RendererSleep( void ) {
-  return NULL;
+	return NULL;
 }
-void GLimp_FrontEndSleep( void ) {}
-void GLimp_WakeRenderer( void *data ) {}
 
-#endif
+void GLimp_FrontEndSleep( void ) { 
+
+}
+
+void GLimp_WakeRenderer( void *data ) {
+
+}
+
 
 /*****************************************************************************/
 /* MOUSE                                                                     */
