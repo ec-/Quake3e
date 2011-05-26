@@ -80,8 +80,9 @@ glwstate_t glw_state;
 cvar_t	*r_allowSoftwareGL;		// don't abort out if the pixelformat claims software
 cvar_t	*r_maskMinidriver;		// allow a different dll name to be treated as if it were opengl32.dll
 
+char	gl_extensions[16384];	// to store full extension string
 
-
+#define HAVE_EXT(S) (strstr(gl_extensions,(S)))
 /*
 ** GLW_StartDriverAndSetMode
 */
@@ -1051,8 +1052,8 @@ static void GLW_InitExtensions( void )
 
 	// GL_EXT_texture_compression_s3tc
 	glConfig.textureCompression = TC_NONE;
-	if ( strstr( glConfig.extensions_string, "GL_ARB_texture_compression" ) &&
-		 strstr( glConfig.extensions_string, "GL_EXT_texture_compression_s3tc" ) )
+	if ( HAVE_EXT("GL_ARB_texture_compression") &&
+		 HAVE_EXT("GL_EXT_texture_compression_s3tc") )
 	{
 		if ( r_ext_compressed_textures->value ){ 
 			glConfig.textureCompression = TC_S3TC_ARB;
@@ -1066,7 +1067,7 @@ static void GLW_InitExtensions( void )
 
 	// GL_S3_s3tc
 	if (glConfig.textureCompression == TC_NONE && r_ext_compressed_textures->integer) {
-	if ( strstr( glConfig.extensions_string, "GL_S3_s3tc" ) )
+	if ( HAVE_EXT("GL_S3_s3tc") )
 	{
 		if ( r_ext_compressed_textures->integer )
 		{
@@ -1086,7 +1087,7 @@ static void GLW_InitExtensions( void )
 	}
 	// GL_EXT_texture_env_add
 	glConfig.textureEnvAddAvailable = qfalse;
-	if ( strstr( glConfig.extensions_string, "EXT_texture_env_add" ) )
+	if ( HAVE_EXT("EXT_texture_env_add") )
 	{
 		if ( r_ext_texture_env_add->integer )
 		{
@@ -1120,7 +1121,7 @@ static void GLW_InitExtensions( void )
 	qglMultiTexCoord2fARB = NULL;
 	qglActiveTextureARB = NULL;
 	qglClientActiveTextureARB = NULL;
-	if ( strstr( glConfig.extensions_string, "GL_ARB_multitexture" )  )
+	if ( HAVE_EXT("GL_ARB_multitexture")  )
 	{
 		if ( r_ext_multitexture->integer )
 		{
@@ -1158,7 +1159,7 @@ static void GLW_InitExtensions( void )
 	// GL_EXT_compiled_vertex_array
 	qglLockArraysEXT = NULL;
 	qglUnlockArraysEXT = NULL;
-	if ( strstr( glConfig.extensions_string, "GL_EXT_compiled_vertex_array" ) && ( glConfig.hardwareType != GLHW_RIVA128 ) )
+	if ( HAVE_EXT("GL_EXT_compiled_vertex_array") && ( glConfig.hardwareType != GLHW_RIVA128 ) )
 	{
 		if ( r_ext_compiled_vertex_array->integer )
 		{
@@ -1183,7 +1184,7 @@ static void GLW_InitExtensions( void )
 	qwglGetDeviceGammaRamp3DFX = NULL;
 	qwglSetDeviceGammaRamp3DFX = NULL;
 
-	if ( strstr( glConfig.extensions_string, "WGL_3DFX_gamma_control" ) )
+	if ( HAVE_EXT("WGL_3DFX_gamma_control") )
 	{
 		if ( !r_ignorehwgamma->integer && r_ext_gamma_control->integer )
 		{
@@ -1211,7 +1212,7 @@ static void GLW_InitExtensions( void )
 	}
 
 	textureFilterAnisotropic = qfalse;
-	if ( strstr( glConfig.extensions_string, "GL_EXT_texture_filter_anisotropic" ) )
+	if ( HAVE_EXT("GL_EXT_texture_filter_anisotropic") )
 	{
 		if ( r_ext_texture_filter_anisotropic->integer ) {
 			qglGetIntegerv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy );
@@ -1493,7 +1494,9 @@ void GLimp_Init( void )
 	Q_strncpyz( glConfig.vendor_string, qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
 	Q_strncpyz( glConfig.renderer_string, qglGetString (GL_RENDERER), sizeof( glConfig.renderer_string ) );
 	Q_strncpyz( glConfig.version_string, qglGetString (GL_VERSION), sizeof( glConfig.version_string ) );
-	Q_strncpyz( glConfig.extensions_string, qglGetString (GL_EXTENSIONS), sizeof( glConfig.extensions_string ) );
+
+	Q_strncpyz( gl_extensions, qglGetString (GL_EXTENSIONS), sizeof( gl_extensions ) );
+	Q_strncpyz( glConfig.extensions_string, gl_extensions, sizeof( glConfig.extensions_string ) );
 
 	//
 	// chipset specific configuration

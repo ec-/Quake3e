@@ -152,6 +152,10 @@ static int mouse_accel_numerator;
 static int mouse_accel_denominator;
 static int mouse_threshold;
 
+char gl_extensions[16384]; // to store full extension string
+
+#define HAVE_EXT(S) (Q_stristr(gl_extensions,(S)))
+
 /*
 * Find the first occurrence of find in s.
 */
@@ -1312,8 +1316,8 @@ static void GLW_InitExtensions( void )
 
 	// GL_EXT_texture_compression_s3tc
   glConfig.textureCompression = TC_NONE;
-  if ( Q_stristr( glConfig.extensions_string, "GL_ARB_texture_compression" ) &&
-       Q_stristr( glConfig.extensions_string, "GL_EXT_texture_compression_s3tc" ) )
+  if ( HAVE_EXT("GL_ARB_texture_compression") &&
+       HAVE_EXT("GL_EXT_texture_compression_s3tc") )
   {
     if ( r_ext_compressed_textures->value ) { 
         glConfig.textureCompression = TC_S3TC_ARB;
@@ -1327,7 +1331,7 @@ static void GLW_InitExtensions( void )
 
   // GL_S3_s3tc
   if (glConfig.textureCompression == TC_NONE) {
-  if ( Q_stristr( glConfig.extensions_string, "GL_S3_s3tc" ) )
+  if ( HAVE_EXT("GL_S3_s3tc") )
   {
     if ( r_ext_compressed_textures->value )
     {
@@ -1346,7 +1350,7 @@ static void GLW_InitExtensions( void )
   }
   // GL_EXT_texture_env_add
   glConfig.textureEnvAddAvailable = qfalse;
-  if ( Q_stristr( glConfig.extensions_string, "EXT_texture_env_add" ) )
+  if ( HAVE_EXT("EXT_texture_env_add") )
   {
     if ( r_ext_texture_env_add->integer )
     {
@@ -1366,7 +1370,7 @@ static void GLW_InitExtensions( void )
   qglMultiTexCoord2fARB = NULL;
   qglActiveTextureARB = NULL;
   qglClientActiveTextureARB = NULL;
-  if ( Q_stristr( glConfig.extensions_string, "GL_ARB_multitexture" ) )
+  if ( HAVE_EXT("GL_ARB_multitexture") )
   {
     if ( r_ext_multitexture->value )
     {
@@ -1401,7 +1405,7 @@ static void GLW_InitExtensions( void )
   }
 
   // GL_EXT_compiled_vertex_array
-  if ( Q_stristr( glConfig.extensions_string, "GL_EXT_compiled_vertex_array" ) )
+  if ( HAVE_EXT("GL_EXT_compiled_vertex_array") )
   {
     if ( r_ext_compiled_vertex_array->value )
     {
@@ -1422,7 +1426,7 @@ static void GLW_InitExtensions( void )
   }
 
   textureFilterAnisotropic = qfalse;
-  if ( strstr( glConfig.extensions_string, "GL_EXT_texture_filter_anisotropic" ) )
+  if ( HAVE_EXT("GL_EXT_texture_filter_anisotropic") )
   {
     if ( r_ext_texture_filter_anisotropic->integer ) {
       qglGetIntegerv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy );
@@ -1630,7 +1634,9 @@ void GLimp_Init( void )
   if (*glConfig.renderer_string && glConfig.renderer_string[strlen(glConfig.renderer_string) - 1] == '\n')
     glConfig.renderer_string[strlen(glConfig.renderer_string) - 1] = 0;
   Q_strncpyz( glConfig.version_string, (char *)qglGetString (GL_VERSION), sizeof( glConfig.version_string ) );
-  Q_strncpyz( glConfig.extensions_string, (char *)qglGetString (GL_EXTENSIONS), sizeof( glConfig.extensions_string ) );
+
+  Q_strncpyz( gl_extensions, (char *)qglGetString (GL_EXTENSIONS), sizeof( gl_extensions ) );
+  Q_strncpyz( glConfig.extensions_string, gl_extensions, sizeof( glConfig.extensions_string ) );
 
   //
   // chipset specific configuration
