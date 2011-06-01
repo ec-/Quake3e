@@ -557,6 +557,18 @@ void EmitFldEDI( vm_t *vm ) {
 		EmitString( "39 47 04" );	/* cmp dword ptr [edi+4], eax */ \
 	} while(0)
 
+#define CMPCI() \
+	do { \
+		v = Constant4(); \
+		if ( abs(v) <= 127 ) { \
+			EmitString( "83 F8" ); \
+			Emit1( v ); \
+		} else { \
+			EmitString( "3D" ); \
+			Emit4( v ); \
+		} \
+	} while(0)
+
 #define FCOMFF() \
 	do { \
 		EmitString( "D9 47 08" );	/* fld dword ptr [edi+8] */ \
@@ -810,14 +822,13 @@ qboolean ConstOptimize( vm_t *vm ) {
 
 	case OP_EQ:
 	case OP_NE:
-		v = Constant4();
 		EmitMovEAXEDI( vm );
 		EmitCommand(LAST_COMMAND_SUB_DI_4);
-		if ( v == 0 ) {
+		if ( NextConstant4() == 0 ) {
 			EmitString( "85 C0" ); // test eax, eax
+			pc += 4;
 		} else {
-			EmitString( "3D" );    // cmp eax, 0x12345678
-			Emit4( v );
+			CMPCI();
 		}
 		pc += 1;				   // OP_EQ/OP_NE
 		if ( op1 == OP_EQ )
@@ -829,11 +840,9 @@ qboolean ConstOptimize( vm_t *vm ) {
 
 	case OP_GEI:
 	case OP_GTI:
-		v = Constant4();
 		EmitMovEAXEDI( vm );
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );
-		EmitString( "3D" );        // cmp eax, 0x12345678
-		Emit4( v );
+		CMPCI();
 		pc += 1;			       // OP_GEI|OP_GTI
 		if ( op1 == OP_GEI )
 			JGE();
@@ -844,11 +853,9 @@ qboolean ConstOptimize( vm_t *vm ) {
 
 	case OP_LEI:
 	case OP_LTI:
-		v = Constant4();
 		EmitMovEAXEDI( vm );
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );
-		EmitString( "3D" );        // cmp eax, 0x12345678
-		Emit4( v );
+		CMPCI();
 		pc += 1;			       // OP_GEI|OP_GTI
 		if ( op1 == OP_LEI )
 			JLE();
@@ -859,11 +866,9 @@ qboolean ConstOptimize( vm_t *vm ) {
 
 	case OP_GTU:
 	case OP_GEU:
-		v = Constant4();
 		EmitMovEAXEDI( vm );
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );
-		EmitString( "3D" );        // cmp eax, 0x12345678
-		Emit4( v );
+		CMPCI();
 		pc += 1;			       // OP_GTU|OP_GEU
 		if ( op1 == OP_GTU )
 			JA();
@@ -874,11 +879,9 @@ qboolean ConstOptimize( vm_t *vm ) {
 
 	case OP_LTU:
 	case OP_LEU:
-		v = Constant4();
 		EmitMovEAXEDI( vm );
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );
-		EmitString( "3D" );        // cmp eax, 0x12345678
-		Emit4( v );
+		CMPCI();
 		pc += 1;			       // OP_LTU|OP_LEU
 		if ( op1 == OP_LTU )
 			JB();
