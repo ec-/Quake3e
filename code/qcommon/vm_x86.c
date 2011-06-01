@@ -1116,8 +1116,14 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			}
 
 			EmitAddEDI4(vm);
-			EmitString( "8D 86" );		// lea eax, [0x12345678 + esi]
-			Emit4( Constant4() );
+			v = Constant4();
+			if ( abs(v) <= 127 ) {
+				EmitString( "8D 46" );		// lea eax, [0x7F + esi]
+				Emit1( v );
+			} else {
+				EmitString( "8D 86" );		// lea eax, [0x12345678 + esi]
+				Emit4( v );
+			}
 			EmitCommand(LAST_COMMAND_MOV_EDI_EAX);		// mov dword ptr [edi], eax
 			break;
 		case OP_ARG:
