@@ -1690,7 +1690,7 @@ R_LoadEntities
 void R_LoadEntities( lump_t *l ) {
 	char *p, *token, *s;
 	char keyname[MAX_TOKEN_CHARS];
-	char value[MAX_TOKEN_CHARS];
+	char value[MAX_TOKEN_CHARS], *v[3];
 	world_t	*w;
 
 	w = &s_worldData;
@@ -1756,7 +1756,11 @@ void R_LoadEntities( lump_t *l ) {
 		}
 		// check for a different grid size
 		if (!Q_stricmp(keyname, "gridsize")) {
-			sscanf(value, "%f %f %f", &w->lightGridSize[0], &w->lightGridSize[1], &w->lightGridSize[2] );
+			//sscanf(value, "%f %f %f", &w->lightGridSize[0], &w->lightGridSize[1], &w->lightGridSize[2] );
+			Com_Split( value, v, 3, ' ' );
+			w->lightGridSize[0] = atof( v[0] );
+			w->lightGridSize[1] = atof( v[1] );
+			w->lightGridSize[2] = atof( v[2] );
 			continue;
 		}
 	}

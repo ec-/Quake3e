@@ -676,6 +676,53 @@ int Com_Filter(char *filter, char *name, int casesensitive)
 	return qtrue;
 }
 
+
+/*
+============
+Com_Split
+============
+*/
+int Com_Split( char *in, char **out, int outsz, int delim ) 
+{
+	int c;
+	char **o = out, **end = out + outsz;
+	// skip leading spaces
+	if ( delim >= ' ' ) {
+		while( (c = *in) != '\0' && c <= ' ' ) 
+			in++; 
+	}
+	*out = in; out++;
+	while( out < end ) {
+		while( (c = *in) != '\0' && c != delim ) 
+			in++; 
+		*in = '\0';
+		if ( !c ) {
+			// don't count last null value
+			if ( out[-1][0] == '\0' ) 
+				out--;
+			break;
+		}
+		in++;
+		// skip leading spaces
+		if ( delim >= ' ' ) {
+			while( (c = *in) != '\0' && c <= ' ' ) 
+				in++; 
+		}
+		*out = in; out++;
+	}
+	// sanitize last value
+	while( (c = *in) != '\0' && c != delim ) 
+		in++; 
+	*in = '\0';
+	c = out - o;
+	// set remaining out poiters
+	while( out < end ) {
+		*out = in; out++;
+	}
+	return c;
+}
+
+
 /*
 ============
 Com_FilterPath
@@ -2596,6 +2643,8 @@ void Com_Init( char *commandLine ) {
 
 	Com_InitSmallZoneMemory();
 	Cvar_Init ();
+
+	Cvar_Set( "fs_game", "edawn" );
 
 	// prepare enough of the subsystems to handle
 	// cvar and command buffer management

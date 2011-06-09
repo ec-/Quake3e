@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *****************************************************************************/
 
 #include "../qcommon/q_shared.h"
+#include "../qcommon/qcommon.h"
 #include "l_memory.h"
 #include "l_script.h"
 #include "l_precomp.h"
@@ -301,17 +302,15 @@ int AAS_ValueForBSPEpairKey(int ent, char *key, char *value, int size)
 //===========================================================================
 int AAS_VectorForBSPEpairKey(int ent, char *key, vec3_t v)
 {
-	char buf[MAX_EPAIRKEY];
-	double v1, v2, v3;
+	char buf[MAX_EPAIRKEY], *s[3];
 
 	VectorClear(v);
 	if (!AAS_ValueForBSPEpairKey(ent, key, buf, MAX_EPAIRKEY)) return qfalse;
 	//scanf into doubles, then assign, so it is vec_t size independent
-	v1 = v2 = v3 = 0;
-	sscanf(buf, "%lf %lf %lf", &v1, &v2, &v3);
-	v[0] = v1;
-	v[1] = v2;
-	v[2] = v3;
+	Com_Split( buf, s, 3, ' ' );
+	v[0] = atof( s[0] );
+	v[1] = atof( s[1] );
+	v[2] = atof( s[2] );
 	return qtrue;
 } //end of the function AAS_VectorForBSPEpairKey
 //===========================================================================

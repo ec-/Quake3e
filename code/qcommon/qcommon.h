@@ -801,6 +801,7 @@ int			Com_Filter(char *filter, char *name, int casesensitive);
 int			Com_FilterPath(char *filter, char *name, int casesensitive);
 int			Com_RealTime(qtime_t *qtime);
 qboolean	Com_SafeMode( void );
+int			Com_Split( char *in, char **out, int outsz, int delim );
 
 void		Com_StartupVariable( const char *match );
 // checks for and removes command line "+set var arg" constructs

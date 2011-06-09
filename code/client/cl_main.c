@@ -3274,6 +3274,7 @@ CL_ServerStatusResponse
 void CL_ServerStatusResponse( netadr_t from, msg_t *msg ) {
 	char	*s;
 	char	info[MAX_INFO_STRING];
+	char	buf[64], *v[2];
 	int		i, l, score, ping;
 	int		len;
 	serverStatus_t *serverStatus;
@@ -3336,8 +3337,12 @@ void CL_ServerStatusResponse( netadr_t from, msg_t *msg ) {
 		Com_sprintf(&serverStatus->string[len], sizeof(serverStatus->string)-len, "\\%s", s);
 
 		if (serverStatus->print) {
-			score = ping = 0;
-			sscanf(s, "%d %d", &score, &ping);
+			//score = ping = 0;
+			//sscanf(s, "%d %d", &score, &ping);
+			Q_strncpyz( buf, s, sizeof (buf) );
+			Com_Split( buf, v, 2, ' ' );
+			score = atoi( v[0] );
+			ping = atoi( v[1] );
 			s = strchr(s, ' ');
 			if (s)
 				s = strchr(s+1, ' ');
