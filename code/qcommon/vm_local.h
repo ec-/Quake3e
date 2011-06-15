@@ -128,14 +128,24 @@ typedef struct vmSymbol_s {
 	char	symName[1];		// variable sized
 } vmSymbol_t;
 
-#define	VM_OFFSET_PROGRAM_STACK		0
-#define	VM_OFFSET_SYSTEM_CALL		4
+#define	VM_OFFSET_PROGRAM_STACK			0
+#define	VM_OFFSET_SYSTEM_CALL			4
+#define	VM_OFFSET_DATA_BASE				8
+
+#define	VM_OFFSET_INSTRUCTON_COUNT		12
+#define	VM_OFFSET_INSTRUCTON_POINTERS	16
 
 struct vm_s {
     // DO NOT MOVE OR CHANGE THESE WITHOUT CHANGING THE VM_OFFSET_* DEFINES
     // USED BY THE ASM CODE
     int			programStack;		// the vm may be recursively entered
-    intptr_t			(*systemCall)( intptr_t *parms );
+    intptr_t	(*systemCall)( intptr_t *parms );
+	byte		*dataBase;
+
+	int			instructionCount;
+	int			*instructionPointers;
+
+	void		*asmCall;
 
 	//------------------------------------
    
@@ -153,10 +163,6 @@ struct vm_s {
 	byte		*codeBase;
 	int			codeLength;
 
-	int			*instructionPointers;
-	int			instructionCount;
-
-	byte		*dataBase;
 	int			dataMask;
 
 	int			stackBottom;		// if programStack < stackBottom, error

@@ -31,209 +31,9 @@ static portable_samplepair_t paintbuffer[PAINTBUFFER_SIZE];
 static int snd_vol;
 
 // bk001119 - these not static, required by unix/snd_mixa.s
-int*     snd_p;  
+int*     snd_p;
 int      snd_linear_count;
 short*   snd_out;
-
-#if !defined(__GNUC__)
-
-#if defined( _MSC_VER ) && defined ( _M_IX86 )
-
-#include "../win32/win_local.h"
-
-void S_WriteLinearBlastStereo16_MMX( void )
-{
-__asm {
-	push ebx
-	push esi
-	push edi
-	mov esi,snd_p
-	mov edi,snd_out
-	mov ebx,snd_linear_count
-	mov eax,esi
-	and eax,63
-	shr eax,2
-	test eax,eax
-	jz LMain
-	mov ecx,16
-	sub ecx,eax
-LClamp1:
-	mov eax,[esi]
-	sar eax,8
-	cmp eax,32767
-	jg	LClampHigh1
-	cmp eax,-32768
-	jnl LClampDone1
-	mov eax,-32768
-LClampHigh1:
-	mov eax,32767
-LClampDone1:
-	mov [edi],ax
-	add esi,4
-	add edi,2
-	dec ebx
-	jz	LExit
-	dec ecx
-	jnz	LClamp1
-LMain:
-    mov ecx,ebx
-    shr ecx,4
-    test ecx,ecx
-	jz  LTail
-LAgain:
-	movq mm0, qword ptr [esi+ 0]
-	movq mm1, qword ptr [esi+ 8]
-	movq mm2, qword ptr [esi+16]
-	movq mm3, qword ptr [esi+24]
-	movq mm4, qword ptr [esi+32]
-	movq mm5, qword ptr [esi+40]
-	movq mm6, qword ptr [esi+48]
-	movq mm7, qword ptr [esi+56]
-	psrad mm0,8
-	psrad mm1,8
-	psrad mm2,8
-	psrad mm3,8
-	psrad mm4,8
-	psrad mm5,8
-	psrad mm6,8
-	psrad mm7,8
-	packssdw mm0, mm1
-	packssdw mm2, mm3
-	packssdw mm4, mm5
-	packssdw mm6, mm7
-	movq qword ptr [edi+ 0], mm0
-	movq qword ptr [edi+ 8], mm2
-	movq qword ptr [edi+16], mm4
-	movq qword ptr [edi+24], mm6
-	add esi, 64
-	add edi, 32
-	dec ecx
-	jnz LAgain
-LTail:
-	and ebx, 15
-	jz	LEnd
-LClamp2:
-	mov eax,[esi]
-	sar eax,8
-	cmp eax,32767
-	jg	LClampHigh2
-	cmp eax,-32768
-	jnl LClampDone2
-	mov eax,-32768
-LClampHigh2:
-	mov eax,32767
-LClampDone2:
-	mov [edi],ax
-	add esi,4
-	add edi,2
-	dec ebx
-	jnz	LClamp2
-LEnd:
-    emms
-LExit:
-	pop edi
-	pop esi
-	pop ebx
-	}
-}
-
-void S_WriteLinearBlastStereo16_SSE( void )
-{
-__asm {
-	push ebx
-	push esi
-	push edi
-	mov esi,snd_p
-	mov edi,snd_out
-	mov ebx,snd_linear_count
-	mov eax,esi
-	and eax,63
-	shr eax,2
-	test eax,eax
-	jz LMain
-	mov ecx,16
-	sub ecx,eax
-LClamp1:
-	mov eax,[esi]
-	sar eax,8
-	cmp eax,32767
-	jg	LClampHigh1
-	cmp eax,-32768
-	jnl LClampDone1
-	mov eax,-32768
-LClampHigh1:
-	mov eax,32767
-LClampDone1:
-	mov [edi], ax
-	add esi,4
-	add edi,2
-	dec ebx
-	jz	LExit
-	dec ecx
-	jnz	LClamp1
-LMain:
-	mov ecx,ebx
-	shr ecx,4
-	test ecx,ecx
-	jz  LTail
-LAgain:
-	movq mm0, qword ptr [esi+ 0]
-	movq mm1, qword ptr [esi+ 8]
-	movq mm2, qword ptr [esi+16]
-	movq mm3, qword ptr [esi+24]
-	movq mm4, qword ptr [esi+32]
-	movq mm5, qword ptr [esi+40]
-	movq mm6, qword ptr [esi+48]
-	movq mm7, qword ptr [esi+56]
-	psrad mm0,8
-	psrad mm1,8
-	psrad mm2,8
-	psrad mm3,8
-	psrad mm4,8
-	psrad mm5,8
-	psrad mm6,8
-	psrad mm7,8
-	packssdw mm0, mm1
-	packssdw mm2, mm3
-	packssdw mm4, mm5
-	packssdw mm6, mm7
-	movntq qword ptr [edi+ 0], mm0
-	movntq qword ptr [edi+ 8], mm2
-	movntq qword ptr [edi+16], mm4
-	movntq qword ptr [edi+24], mm6
-	add esi, 64
-	add edi, 32
-	dec ecx
-	jnz LAgain
-LTail:
-	and ebx, 15
-	jz	LEnd
-LClamp2:
-	mov eax,[esi]
-	sar eax,8
-	cmp eax,32767
-	jg	LClampHigh2
-	cmp eax,-32768
-	jnl LClampDone2
-	mov eax,-32768
-LClampHigh2:
-	mov eax,32767
-LClampDone2:
-	mov [edi],ax
-	add esi,4
-	add edi,2
-	dec ebx
-	jnz	LClamp2
-LEnd:
-	sfence
-	emms
-LExit:
-	pop edi
-	pop esi
-	pop ebx
-	}
-}
-#endif
 
 void S_WriteLinearBlastStereo16 (void)
 {
@@ -259,16 +59,19 @@ void S_WriteLinearBlastStereo16 (void)
 			snd_out[i+1] = val;
 	}
 }
-#else
-// uses snd_mixa.s
-void S_WriteLinearBlastStereo16 (void);
+
+#if id386
+
+void S_WriteLinearBlastStereo16_MMX( void );
+void S_WriteLinearBlastStereo16_SSE( void );
+
 #endif
 
 void S_TransferStereo16 (unsigned long *pbuf, int endtime)
 {
 	int		lpos;
 	int		ls_paintedtime;
-	
+
 	snd_p = (int *) paintbuffer;
 	ls_paintedtime = s_paintedtime;
 
@@ -286,7 +89,7 @@ void S_TransferStereo16 (unsigned long *pbuf, int endtime)
 		snd_linear_count <<= 1;
 
 	// write a linear blast of samples
-#if defined( _MSC_VER )&& defined ( _M_IX86 )
+#if id386// && defined( _MSC_VER ) && defined ( _M_IX86 ) || defined(__GNUC__)
 		if ( CPU_Flags & CPU_SSE )
 			S_WriteLinearBlastStereo16_SSE();
 		else 
@@ -454,34 +257,34 @@ static void S_PaintChannelFrom16_altivec( channel_t *ch, const sfx_t *sc, int co
 			chunkSamplesLeft = SND_CHUNK_SIZE - sampleOffset;
 			if(samplesLeft > chunkSamplesLeft)
 				samplesLeft = chunkSamplesLeft;
-			
+
 			vectorCount = samplesLeft / 8;
-			
+
 			if(vectorCount)
 			{
 				vector unsigned char tmp;
 				vector short s0, s1, sampleData0, sampleData1;
 				vector signed int merge0, merge1;
-				vector signed int d0, d1, d2, d3;				
+				vector signed int d0, d1, d2, d3;
 				vector unsigned char samplePermute0 =
 					VECCONST_UINT8(0, 1, 4, 5, 0, 1, 4, 5, 2, 3, 6, 7, 2, 3, 6, 7);
 				vector unsigned char samplePermute1 = 
 					VECCONST_UINT8(8, 9, 12, 13, 8, 9, 12, 13, 10, 11, 14, 15, 10, 11, 14, 15);
 				vector unsigned char loadPermute0, loadPermute1;
-				
+
 				// Rather than permute the vectors after we load them to do the sample
 				// replication and rearrangement, we permute the alignment vector so
 				// we do everything in one step below and avoid data shuffling.
-				tmp = vec_lvsl(0,&samples[sampleOffset]);								
+				tmp = vec_lvsl(0,&samples[sampleOffset]);
 				loadPermute0 = vec_perm(tmp,tmp,samplePermute0);
 				loadPermute1 = vec_perm(tmp,tmp,samplePermute1);
-				
+
 				s0 = *(vector short *)&samples[sampleOffset];
 				while(vectorCount)
 				{
 					/* Load up source (16-bit) sample data */
 					s1 = *(vector short *)&samples[sampleOffset+7];
-					
+
 					/* Load up destination sample data */
 					d0 = *(vector signed int *)&samp[i];
 					d1 = *(vector signed int *)&samp[i+2];
@@ -490,21 +293,21 @@ static void S_PaintChannelFrom16_altivec( channel_t *ch, const sfx_t *sc, int co
 
 					sampleData0 = vec_perm(s0,s1,loadPermute0);
 					sampleData1 = vec_perm(s0,s1,loadPermute1);
-					
+
 					merge0 = vec_mule(sampleData0,volume_vec);
 					merge0 = vec_sra(merge0,volume_shift);	/* Shift down to proper range */
-					
+
 					merge1 = vec_mulo(sampleData0,volume_vec);
 					merge1 = vec_sra(merge1,volume_shift);
-					
+
 					d0 = vec_add(merge0,d0);
 					d1 = vec_add(merge1,d1);
-					
+
 					merge0 = vec_mule(sampleData1,volume_vec);
 					merge0 = vec_sra(merge0,volume_shift);	/* Shift down to proper range */
-					
+
 					merge1 = vec_mulo(sampleData1,volume_vec);
-					merge1 = vec_sra(merge1,volume_shift);					
+					merge1 = vec_sra(merge1,volume_shift);
 
 					d2 = vec_add(merge0,d2);
 					d3 = vec_add(merge1,d3);
@@ -533,7 +336,7 @@ static void S_PaintChannelFrom16_altivec( channel_t *ch, const sfx_t *sc, int co
 
 		ooff = sampleOffset;
 		samples = chunk->sndChunk;
-		
+
 		for ( i=0 ; i<count ; i++ ) {
 
 			aoff = ooff;
@@ -604,9 +407,6 @@ static void S_PaintChannelFrom16_scalar( channel_t *ch, const sfx_t *sc, int cou
 
 		ooff = sampleOffset;
 		samples = chunk->sndChunk;
-		
-
-
 
 		for ( i=0 ; i<count ; i++ ) {
 

@@ -266,9 +266,7 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 #if defined(_WIN32) && defined(_DEBUG)
 	if ( code != ERR_DISCONNECT && code != ERR_NEED_CD ) {
 		if (!com_noErrorInterrupt->integer) {
-			__asm {
-				int 0x03
-			}
+			__debugbreak();
 		}
 	}
 #endif

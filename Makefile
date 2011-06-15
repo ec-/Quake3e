@@ -120,6 +120,7 @@ endif
 
 BD=$(BUILD_DIR)/debug-$(PLATFORM)-$(ARCH)
 BR=$(BUILD_DIR)/release-$(PLATFORM)-$(ARCH)
+ADIR=$(MOUNT_DIR)/asm
 CDIR=$(MOUNT_DIR)/client
 SDIR=$(MOUNT_DIR)/server
 RDIR=$(MOUNT_DIR)/renderer
@@ -883,17 +884,15 @@ Q3OBJ = \
 
 ifeq ($(ARCH),i386)
   Q3OBJ += \
-    $(B)/client/snd_mixa.o \
-    $(B)/client/matha.o \
-    $(B)/client/ftola.o \
-    $(B)/client/snapvectora.o
+    $(B)/client/linux_asm.o \
+    $(B)/client/snd_mix_mmx.o \
+    $(B)/client/snd_mix_sse.o
 endif
 ifeq ($(ARCH),x86)
   Q3OBJ += \
-    $(B)/client/snd_mixa.o \
-    $(B)/client/matha.o \
-    $(B)/client/ftola.o \
-    $(B)/client/snapvectora.o
+    $(B)/client/linux_asm.o \
+    $(B)/client/snd_mix_mmx.o \
+    $(B)/client/snd_mix_sse.o
 endif
 
 ifeq ($(HAVE_VM_COMPILED),true)
@@ -1028,15 +1027,11 @@ Q3DOBJ = \
 
 ifeq ($(ARCH),i386)
   Q3DOBJ += \
-      $(B)/ded/ftola.o \
-      $(B)/ded/snapvectora.o \
-      $(B)/ded/matha.o
+      $(B)/ded/linux_asm.o
 endif
 ifeq ($(ARCH),x86)
   Q3DOBJ += \
-      $(B)/ded/ftola.o \
-      $(B)/ded/snapvectora.o \
-      $(B)/ded/matha.o
+      $(B)/ded/linux_asm.o
 endif
 
 ifeq ($(HAVE_VM_COMPILED),true)
@@ -1063,7 +1058,7 @@ $(B)/$(TARGET_SERVER): $(Q3DOBJ)
 ## CLIENT/SERVER RULES
 #############################################################################
 
-$(B)/client/%.o: $(UDIR)/%.s
+$(B)/client/%.o: $(ADIR)/%.s
 	$(DO_AS)
 
 $(B)/client/%.o: $(CDIR)/%.c
@@ -1094,7 +1089,7 @@ $(B)/client/%.o: $(W32DIR)/%.rc
 	$(DO_WINDRES)
 
 
-$(B)/ded/%.o: $(UDIR)/%.s
+$(B)/ded/%.o: $(ADIR)/%.s
 	$(DO_AS)
 
 $(B)/ded/%.o: $(SDIR)/%.c

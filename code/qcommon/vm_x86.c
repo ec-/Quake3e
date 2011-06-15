@@ -45,8 +45,8 @@ static void VM_Destroy_Compiled(vm_t* self);
 /*
 
   eax	scratch
-  ebx	scratch
-  ecx	scratch (required for shifts)
+  ebx	scratch 
+  ecx	scratch (required for shifts) | currentVM
   edx	scratch (required for divisions)
   esi	program stack
   edi	opstack
@@ -67,34 +67,19 @@ static	int		*instructionPointers = NULL;
 
 #define FTOL_PTR
 
-#ifdef _MSC_VER
-
 #if defined( FTOL_PTR )
-int _ftol( float );
-static	int		ftolPtr = (int)_ftol;
-#endif
 
-#else // _MSC_VER
-
-#if defined( FTOL_PTR )
-// bk001213 - BEWARE: does not work! UI menu etc. broken - stack!
-// bk001119 - added: int gftol( float x ) { return (int)x; }
-
-int qftol( void );     // bk001213 - label, see unix/ftol.nasm
-int qftol027F( void ); // bk001215 - fixed FPU control variants
-int qftol037F( void );
-int qftol0E7F( void ); // bk010102 - fixed bogus bits (duh)
 int qftol0F7F( void );
-
-
 static	int		ftolPtr = (int)qftol0F7F;
-#endif // FTOL_PTR
+
+#else
+
+int cw0F7F = 0x0F7F;
+int cwCurr = 0;
 
 #endif
 
-void AsmCall(void);
-static void (*const asmCallPtr)(void) = AsmCall;
-
+void AsmCall( void );
 
 static	int		callMask = 0;
 
@@ -116,8 +101,8 @@ typedef enum
 
 static	ELastCommand	LastCommand;
 
-static void ErrJump( void ) 
-{ 
+void ErrJump( void )
+{
 	Com_Error( ERR_DROP, "program tried to execute code outside VM" ); 
 	exit(1);
 }
@@ -130,152 +115,12 @@ AsmCall
 =================
 */
 #ifdef _MSC_VER
-__declspec( naked ) void AsmCall( void ) {
-int		programStack;
-int		*opStack;
-int		syscallNum;
-vm_t*	savedVM;
 
-__asm {
-	mov		eax, dword ptr [edi]
-	sub		edi, 4
-	test	eax,eax
-	jl		systemCall
-	cmp		eax, [callMask]
-	jae		badAddr
-	// calling another vm function
-	shl		eax,2
-	add		eax, dword ptr [instructionPointers]
-	call	dword ptr [eax]
-	mov		eax, dword ptr [edi]
-	ret
-badAddr:
-	call	ErrJump
-	// leave something on the opstack
-	//add		edi, 4
-	//mov		dword ptr [edi], 0
-	//ret
+void AsmCall( void ); // see win32_asm.asm
 
-systemCall:
-
-	// convert negative num to system call number
-	// and store right before the first arg
-	not		eax
-
-	push    ebp
-	mov     ebp, esp
-	sub     esp, __LOCAL_SIZE
-
-	mov		dword ptr syscallNum, eax	// so C code can get at it
-	mov		dword ptr programStack, esi	// so C code can get at it
-	mov		dword ptr opStack, edi
-
-	push	ecx
-	push	esi							// we may call recursively, so the
-	push	edi							// statics aren't guaranteed to be around
-}
-
-	savedVM = currentVM;
-
-	// save the stack to allow recursive VM entry
-	currentVM->programStack = programStack - 4;
-	*(int *)((byte *)currentVM->dataBase + programStack + 4) = syscallNum;
-#ifdef VM_LOG_SYSCALLS
-	VM_LogSyscalls(  (int *)((byte *)currentVM->dataBase + programStack + 4) );
-#endif
-	*(opStack+1) = currentVM->systemCall( (int *)((byte *)currentVM->dataBase + programStack + 4) );
-
-	currentVM = savedVM;
-
-_asm {
-	pop		edi
-	pop		esi
-	pop		ecx
-	add		edi, 4		// we added the return value
-
-	mov     esp, ebp
-	pop     ebp
-
-	ret
-}
-
-}
-
-#else //!_MSC_VER
-
-#if defined(__MINGW32__) || defined(MACOS_X) // _ is prepended to compiled symbols
-#define CMANGVAR(sym) "_"#sym
-#define CMANGFUNC(sym) "_"#sym
-#elif defined(__ICC) && (__ICC >= 1000)
-#define CMANGVAR(sym) #sym".0"
-#define CMANGFUNC(sym) #sym
 #else
-#define CMANGVAR(sym) #sym
-#define CMANGFUNC(sym) #sym
-#endif
 
-static void __attribute__((cdecl, used)) CallAsmCall(int const syscallNum,
-		int const programStack, int* const opStack)
-{
-	vm_t     *const vm   = currentVM;
-	intptr_t *const data = (intptr_t*)(vm->dataBase + programStack + 4);
-
-	// save the stack to allow recursive VM entry
-	vm->programStack = programStack - 4;
-	*data = syscallNum;
-	opStack[1] = vm->systemCall(data);
-
-	currentVM = vm;
-}
-
-__asm__(
-	".text\n\t"
-	".p2align 4,,15\n\t"
-#if defined __ELF__
-	".type " CMANGFUNC(AsmCall) ", @function\n"
-#endif
-	CMANGFUNC(AsmCall) ":\n\t"
-	"movl  (%edi), %eax\n\t"
-	"subl  $4, %edi\n\t"
-	"testl %eax, %eax\n\t"
-	"jl    0f\n\t"
-	"cmpl  " CMANGVAR(callMask) ", %eax\n\t"
-	"jae   1f\n\t"
-	"shll  $2, %eax\n\t"
-	"addl  " CMANGVAR(instructionPointers) ", %eax\n\t"
-	"call  *(%eax)\n\t"
-	"movl  (%edi), %eax\n\t"
-	"ret\n"
-	"1:\n\t"
-	"call  " CMANGFUNC(ErrJump) "\n\t"
-	// bad address, leave something on the opstack
-	//"addl  $4, %edi\n\t"
-	//"movl  $0, (%edi)\n\t"
-	//"ret\n\t"
-	"0:\n\t" // system call
-	"notl  %eax\n\t"
-#ifdef USE_SSE
-	"pushl %ebp\n\t"
-	"movl  %esp, %ebp\n\t"
-	"andl $-16, %esp\n\t" // align the stack so engine can use sse
-#endif
-	"pushl %ecx\n\t"
-	"pushl %edi\n\t" // opStack
-	"pushl %esi\n\t" // programStack
-	"pushl %eax\n\t" // syscallNum
-	"call  " CMANGFUNC(CallAsmCall) "\n\t"
-	"addl  $12, %esp\n\t"
-	"popl  %ecx\n\t"
-#ifdef USE_SSE
-	"movl  %ebp, %esp\n\t"
-	"popl  %ebp\n\t"
-#endif
-	"addl  $4, %edi\n\t"
-	"ret\n\t"
-#if defined __ELF__
-	".size " CMANGFUNC(AsmCall)", .-" CMANGFUNC(AsmCall)
-#endif
-);
+void AsmCall( void ); // see linux_asm.S
 
 #endif
 
@@ -966,6 +811,8 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 		Com_Memset( jused, 1, jusedSize );
 	}
 
+	vm->asmCall = AsmCall;
+
 	for( pass = 0; pass < 3; pass++ ) {
 
 	pop1 = OP_UNDEF;
@@ -1142,8 +989,13 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			Emit4( (int)vm->dataBase );
 			Emit4( pc );
 #endif
-			EmitString( "FF 15" );		// call asmCallPtr
-			Emit4( (int)&asmCallPtr );
+			EmitString( "B9" );			// mov ecx, currentVM
+			Emit4( (int)vm );
+			//EmitString( "FF 15" );		// call asmCallPtr
+			//Emit4( (int)&asmCallPtr );
+			EmitString( "8B 41" );		// mov eax [ecx+VM_OFFSET_ASM_CALL]
+			Emit1( offsetof( vm_t, asmCall ) );		
+			EmitString( "FF D0" );		// call eax
 			break;
 		case OP_PUSH:
 			EmitAddEDI4(vm);
@@ -1457,16 +1309,20 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			EmitString( "D9 1F" );		// fstp dword ptr [edi]
 			break;
 		case OP_CVFI:
-#ifndef FTOL_PTR // WHENHELLISFROZENOVER
-			// not IEEE complient, but simple and fast
+#ifndef FTOL_PTR
+			EmitString( "9B D9 3D" );	// fnstcw word ptr [cwCurr]
+			Emit4( (int)&cwCurr );
 			EmitString( "D9 07" );		// fld dword ptr [edi]
+			EmitString( "D9 2D" );		// fldcw word ptr [cw0F7F]
+			Emit4( (int)&cw0F7F );
 			EmitString( "DB 1F" );		// fistp dword ptr [edi]
-#else // FTOL_PTR
+			EmitString( "D9 2D" );		// fldcw word ptr [cwCurr]
+			Emit4( (int)&cwCurr );
+#else
 			// call the library conversion function
 			EmitString( "D9 07" );		// fld dword ptr [edi]
-			EmitString( "FF 15" );		// call ftolPtr
+			EmitString( "FF 15" );		// call dword ptr [ftolPtr]
 			Emit4( (int)&ftolPtr );
-			EmitCommand(LAST_COMMAND_MOV_EDI_EAX);		// mov dword ptr [edi], eax
 #endif
 			break;
 		case OP_SEX8:
@@ -1641,19 +1497,11 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 		popad
 	}
 #else
-		/* These registers are used as scratch registers and are destroyed after the
-		 * call.  Do not use clobber, so they can be used as input for the asm. */
-		unsigned eax;
-		unsigned ebx;
-		unsigned ecx;
-		unsigned edx;
-
 		__asm__ volatile(
-			"call *%6"
-			: "+S" (programStack), "+D" (opStack),
-			  "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx)
+			"call *%2"
+			: "+S" (programStack), "+D" (opStack)
 			: "mr" (vm->codeBase)
-			: "cc", "memory"
+			: "cc", "memory", "%eax", "%ecx", "%edx"
 		);
 #endif
 	}
