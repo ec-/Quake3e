@@ -466,7 +466,7 @@ static int FloatMerge( void )
 		case OP_ADDF: EmitString( "DE C1" ); break; // faddp
 		case OP_SUBF: EmitString( "DE E9" ); break; // fsubp
 		case OP_MULF: EmitString( "DE C9" ); break; // fmulp
-		case OP_DIVF: EmitString( "D8 F9" ); break; // fdivp
+		case OP_DIVF: EmitString( "DE F9" ); break; // fdivp
 	}
 	EmitString( "D9 5F F8" );				// fstp dword ptr [edi-8]
 	EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
