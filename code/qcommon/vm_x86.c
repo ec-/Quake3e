@@ -63,7 +63,8 @@ static	byte	*code = NULL;
 static	int		pc = 0;
 static	int     jusedSize = 0;
 
-static	int		*instructionPointers = NULL;
+int		*instructionPointers = NULL;
+int		instructionCount = 0;
 
 #define FTOL_PTR
 
@@ -78,10 +79,6 @@ int cw0F7F = 0x0F7F;
 int cwCurr = 0;
 
 #endif
-
-void AsmCall( void );
-
-static	int		callMask = 0;
 
 static	int	instruction, pass;
 static	int	lastConst = 0;
@@ -112,6 +109,7 @@ static void (*const errJumpPtr)(void) = ErrJump;
 
 void AsmCall( void ); // see corresponding asm files
 
+static void (*const AsmCallPtr)(void) = AsmCall;
 
 static int	Constant4( void ) {
 	int		v;
@@ -857,8 +855,6 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 		Com_Memset( jused, 1, jusedSize );
 	}
 
-	vm->asmCall = AsmCall;
-
 	for( pass = 0; pass < 3; pass++ ) {
 
 	pop1 = OP_UNDEF;
@@ -1046,11 +1042,8 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 #endif
 			EmitString( "B9" );			// mov ecx, currentVM
 			Emit4( (int)vm );
-			//EmitString( "FF 15" );		// call asmCallPtr
-			//Emit4( (int)&asmCallPtr );
-			EmitString( "8B 41" );		// mov eax [ecx+VM_OFFSET_ASM_CALL]
-			Emit1( offsetof( vm_t, asmCall ) );		
-			EmitString( "FF D0" );		// call eax
+			EmitString( "FF 15" );		// call asmCallPtr
+			Emit4( (int)&AsmCallPtr );
 			LastCommand = LAST_COMMAND_MOV_EAX_EDI_CALL;
 			break;
 		case OP_PUSH:
@@ -1514,18 +1507,19 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 	byte	*image;
 	void	*opStack;
 	int		*oldInstructionPointers;
-	int		oldCallMask;
+	int		oldInstructionCount;
+	vm_t	*oldVM;
 
+	oldVM = currentVM;
 	oldInstructionPointers = instructionPointers;
-	oldCallMask	= callMask;
+	oldInstructionCount	= instructionCount;
 
 	currentVM = vm;
 	instructionPointers = vm->instructionPointers;
+	instructionCount = vm->instructionCount;
 
 	// interpret the code
 	vm->currentlyInterpreting = qtrue;
-
-	callMask = vm->instructionCount;
 
 	// we might be called recursively, so this might not be the very top
 	programStack = vm->programStack;
@@ -1585,8 +1579,9 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 	vm->programStack = stackOnEntry;
 
 	// in case we were recursively called by another vm
+	currentVM = oldVM;
 	instructionPointers = oldInstructionPointers;
-	callMask = oldCallMask;
+	instructionCount = oldInstructionCount;
 
 	return *(int *)opStack;
 }

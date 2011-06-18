@@ -145,8 +145,6 @@ struct vm_s {
 	int			instructionCount;
 	int			*instructionPointers;
 
-	void		*asmCall;
-
 	//------------------------------------
    
     char		name[MAX_QPATH];
