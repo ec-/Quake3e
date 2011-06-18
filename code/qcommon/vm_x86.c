@@ -94,6 +94,7 @@ typedef enum
 	LAST_COMMAND_MOV_EDI_EAX,
 	LAST_COMMAND_MOV_EDI_CONST,
 	LAST_COMMAND_MOV_EAX_EDI,
+	LAST_COMMAND_MOV_EAX_EDI_CALL,
 	LAST_COMMAND_SUB_DI_4,
 	LAST_COMMAND_SUB_DI_8,
 	LAST_COMMAND_FSTP_EDI
@@ -109,20 +110,8 @@ void ErrJump( void )
 
 static void (*const errJumpPtr)(void) = ErrJump;
 
-/*
-=================
-AsmCall
-=================
-*/
-#ifdef _MSC_VER
+void AsmCall( void ); // see corresponding asm files
 
-void AsmCall( void ); // see win32_asm.asm
-
-#else
-
-void AsmCall( void ); // see linux_asm.S
-
-#endif
 
 static int	Constant4( void ) {
 	int		v;
@@ -255,40 +244,52 @@ static void EmitAddEDI4( vm_t *vm ) {
 	EmitString( "83 C7 04" );	//	add edi,4
 }
 
-static void EmitMovEAXEDI(vm_t *vm) {
+static int EmitMovEAXEDI(vm_t *vm) {
 	if ( jlabel ) {
 		EmitString( "8B 07" );		// mov eax, dword ptr [edi]
-		return;
+		return 0;
 	}
-	if (LastCommand == LAST_COMMAND_MOV_EAX_EDI)  {
-		return;
+	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI )  {
+		return 1;
+	}
+	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI_CALL ) {
+		return 1;
 	}
 	if (LastCommand == LAST_COMMAND_MOV_EDI_EAX) 
 	{	// mov [edi], eax
+		if ( !vm )
+			return 1;
 		compiledOfs -= 2;
 		vm->instructionPointers[ instruction-1 ] = compiledOfs;
 		LastCommand = LAST_COMMAND_NONE; 
-		return;
+		return 1;
 	}
 	if (pop1 == OP_DIVI || pop1 == OP_DIVU || pop1 == OP_MULI || pop1 == OP_MULU ||
 		pop1 == OP_STORE4 || pop1 == OP_STORE2 || pop1 == OP_STORE1 ) 
 	{	
-		return;
+		return 1;
 	}
 	if ( LastCommand == LAST_COMMAND_MOV_EDI_CONST ) 
 	{	// mov dword ptr [edi], 0x12345678
+		if ( !vm )
+			return 2;
 		compiledOfs -= 6;
 		vm->instructionPointers[ instruction-1 ] = compiledOfs;
 		EmitString( "B8" );			// mov	eax, 0x12345678
 		Emit4( lastConst );
-		return;
+		return 2;
 	}
 	EmitString( "8B 07" );		    // mov eax, dword ptr [edi]
+	return 1;
 }
 
 void EmitMovECXEDI( vm_t *vm ) {
 	if ( jlabel ) {
 		EmitString( "8B 0F" );		// mov ecx, dword ptr [edi]
+		return;
+	}
+	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI_CALL ) {
+		EmitString( "89 C1" );		// mov ecx, eax
 		return;
 	}
 	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI )  {
@@ -312,22 +313,26 @@ void EmitMovECXEDI( vm_t *vm ) {
 }
 
 
-qboolean EmitMovEBXEDI(vm_t *vm, int andit) {
+static qboolean EmitMovEBXEDI(vm_t *vm, int andit) {
 	if ( jlabel ) {
 		EmitString( "8B 1F" );		// mov ebx, dword ptr [edi]
+		return qfalse;
+	}
+	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI_CALL ) {
+		EmitString( "89 C3" );		// mov ebx, eax
 		return qfalse;
 	}
 	if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) 
 	{	// mov dword ptr [edi], eax
 		compiledOfs -= 2;
 		vm->instructionPointers[ instruction-1 ] = compiledOfs;
-		EmitString( "89 C3");		// mov ebx, eax
+		EmitString( "89 C3" );		// mov ebx, eax
 		return qfalse;
 	}
 	if ( pop1 == OP_DIVI || pop1 == OP_DIVU || pop1 == OP_MULI || pop1 == OP_MULU ||
 		pop1 == OP_STORE4 || pop1 == OP_STORE2 || pop1 == OP_STORE1 ) 
 	{	
-		EmitString( "89 C3");		// mov ebx, eax
+		EmitString( "89 C3" );		// mov ebx, eax
 		return qfalse;
 	}
 	if ( LastCommand == LAST_COMMAND_MOV_EDI_CONST ) 
@@ -347,18 +352,24 @@ qboolean EmitMovEBXEDI(vm_t *vm, int andit) {
 	return qfalse;
 }
 
-void EmitFldEDI( vm_t *vm ) {
+static int EmitFldEDI( vm_t *vm ) {
 	if ( jlabel ) {
 		EmitString( "D9 07" );		// fld dword ptr [edi]
-		return;
+		return 0;
 	}
-	if ( LastCommand == LAST_COMMAND_FSTP_EDI ) {
+	if ( LastCommand == LAST_COMMAND_FSTP_EDI ) { 	
+		// fstp dword ptr [edi]
+		if ( !vm )
+			return 1;				// just report
 		compiledOfs -= 2;
 		vm->instructionPointers[ instruction-1 ] = compiledOfs;
-		return;
+		LastCommand = LAST_COMMAND_NONE;
+		return 1;
 	}
-	EmitString( "D9 07" );		// fld dword ptr [edi]
+	EmitString( "D9 07" );			// fld dword ptr [edi]
+	return 0;
 }
+
 
 #define JUSED(x) \
 	do { \
@@ -428,6 +439,41 @@ void EmitFldEDI( vm_t *vm ) {
 	EmitString( "D8 5F 08" );	/* fcomp dword ptr [edi+8] */ \
 	EmitString( "DF E0" );		/* fnstsw ax */ \
 	} while (0)
+
+/*
+=================
+FloatMerge
+=================
+*/
+static int FloatMerge( void ) 
+{
+	int nextOp = code[pc];
+	int currOp = code[pc-1];
+	if ( nextOp != OP_ADDF && nextOp != OP_SUBF && nextOp != OP_MULF && nextOp != OP_DIVF )
+		return 0;
+	if ( jused[ instruction ] )
+		return 0;
+
+	EmitString( "D9 47 F8" );				// fld dword ptr [edi-8]
+	EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
+	switch ( currOp ) {
+		case OP_ADDF: EmitString( "D8 07" ); break; // fadd dword ptr [edi]
+		case OP_SUBF: EmitString( "D8 27" ); break; // fsub dword ptr [edi]
+		case OP_MULF: EmitString( "D8 0F" ); break; // fmul dword ptr [edi]
+		case OP_DIVF: EmitString( "D8 37" ); break; // fdiv dword ptr [edi]
+	}
+	switch ( nextOp ) {
+		case OP_ADDF: EmitString( "DE C1" ); break; // faddp
+		case OP_SUBF: EmitString( "DE E9" ); break; // fsubp
+		case OP_MULF: EmitString( "DE C9" ); break; // fmulp
+		case OP_DIVF: EmitString( "D8 F9" ); break; // fdivp
+	}
+	EmitString( "D9 5F F8" );				// fstp dword ptr [edi-8]
+	EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
+	instruction += 1;
+	pc += 1;
+	return 1;
+}
 
 /*
 =================
@@ -836,6 +882,9 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 
 		jlabel = jused[ instruction ];
 
+		if ( jlabel )
+			pop1 = OP_UNDEF;
+
 		instruction++;
 
 		if(pc > header->codeLength)
@@ -853,8 +902,14 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			EmitString( "CC" );			// int 3
 			break;
 		case OP_ENTER:
-			EmitString( "81 EE" );		// sub	esi, 0x12345678
-			Emit4( Constant4() );
+			v = Constant4();
+			if ( abs(v) <= 127 ) {
+				EmitString( "83 EE" );		// sub	esi, 0x12345678
+				Emit1( v );
+			} else {
+				EmitString( "81 EE" );		// sub	esi, 0x12345678
+				Emit4( v );
+			}
 			break;
 		case OP_CONST:
 			if ( ConstOptimize( vm ) )
@@ -996,6 +1051,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			EmitString( "8B 41" );		// mov eax [ecx+VM_OFFSET_ASM_CALL]
 			Emit1( offsetof( vm_t, asmCall ) );		
 			EmitString( "FF D0" );		// call eax
+			LastCommand = LAST_COMMAND_MOV_EAX_EDI_CALL;
 			break;
 		case OP_PUSH:
 			EmitAddEDI4(vm);
@@ -1005,8 +1061,13 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			break;
 		case OP_LEAVE:
 			v = Constant4();
-			EmitString( "81 C6" );		// add	esi, 0x12345678
-			Emit4( v );
+			if ( abs(v) < 64 ) {
+				EmitString( "83 C6" );		// add	esi, 0x12
+				Emit1( v );
+			} else {
+				EmitString( "81 C6" );		// add	esi, 0x12345678
+				Emit4( v );
+			}
 			EmitString( "C3" );			// ret
 			break;
 		case OP_LOAD4:
@@ -1276,37 +1337,45 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
 			break;
 		case OP_NEGF:
-			EmitString( "D9 07" );		// fld dword ptr [edi]
-			EmitString( "D9 E0" );		// fchs
-			EmitString( "D9 1F" );		// fstp dword ptr [edi]
+			EmitFldEDI( vm );						// fld dword ptr [edi]
+			EmitString( "D9 E0" );					// fchs
+			EmitCommand( LAST_COMMAND_FSTP_EDI );	// fstp dword ptr [edi]
 			break;
 		case OP_ADDF:
-			EmitString( "D9 47 FC" );	// fld dword ptr [edi-4]
-			EmitString( "D8 07" );		// fadd dword ptr [edi]
-			EmitString( "D9 5F FC" );	// fstp dword ptr [edi-4]
-			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
+			if ( FloatMerge() )
+				break;
+			EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
+			EmitString( "D8 07" );					// fadd dword ptr [edi]
+			EmitString( "D9 5F FC" );				// fstp dword ptr [edi-4]
+			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 			break;
 		case OP_SUBF:
-			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
-			EmitString( "D9 07" );		// fld dword ptr [edi]
-			EmitString( "D8 67 04" );	// fsub dword ptr [edi+4]
-			EmitString( "D9 1F" );		// fstp dword ptr [edi]
+			if ( FloatMerge() )
+				break;
+			EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
+			EmitString( "D8 27" );					// fsub dword ptr [edi]
+			EmitString( "D9 5F FC" );				// fstp dword ptr [edi-4]
+			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 			break;
 		case OP_DIVF:
-			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
-			EmitString( "D9 07" );		// fld dword ptr [edi]
-			EmitString( "D8 77 04" );	// fdiv dword ptr [edi+4]
-			EmitString( "D9 1F" );		// fstp dword ptr [edi]
+			if ( FloatMerge() )
+				break;
+			EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
+			EmitString( "D8 37" );					// fdiv dword ptr [edi]
+			EmitString( "D9 5F FC" );				// fstp dword ptr [edi-4]
+			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 			break;
 		case OP_MULF:
-			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
-			EmitString( "D9 07" );		// fld dword ptr [edi]
-			EmitString( "D8 4f 04" );	// fmul dword ptr [edi+4]
-			EmitString( "D9 1F" );		// fstp dword ptr [edi]
+			if ( FloatMerge() )
+				break;
+			EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
+			EmitString( "D8 0F" );					// fmul dword ptr [edi]
+			EmitString( "D9 5F FC" );				// fstp dword ptr [edi-4]
+			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 			break;
 		case OP_CVIF:
-			EmitString( "DB 07" );		// fild dword ptr [edi]
-			EmitString( "D9 1F" );		// fstp dword ptr [edi]
+			EmitString( "DB 07" );					// fild dword ptr [edi]
+			EmitCommand( LAST_COMMAND_FSTP_EDI );	// fstp dword ptr [edi]
 			break;
 		case OP_CVFI:
 #ifndef FTOL_PTR
@@ -1481,7 +1550,7 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 	*(int *)&image[ programStack ] = -1;	// will terminate the loop on return
 
 	// off we go into generated code...
-	opStack = &stack;
+	opStack = &stack[256];
 
 	{
 #ifdef _MSC_VER
@@ -1506,7 +1575,7 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 #endif
 	}
 
-	if ( opStack != &stack[1] ) {
+	if ( opStack != &stack[257] ) {
 		Com_Error( ERR_DROP, "opStack corrupted in compiled code" );
 	}
 	if ( programStack != stackOnEntry - 48 ) {
