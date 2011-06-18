@@ -98,6 +98,7 @@ typedef enum
 } ELastCommand;
 
 static	ELastCommand	LastCommand;
+static	int lastArg;
 
 void ErrJump( void )
 {
@@ -786,9 +787,26 @@ qboolean ConstOptimize( vm_t *vm ) {
 		return qtrue;
 
 	case OP_CALL:
-		if ( NextConstant4() < 0 )
+		v = NextConstant4();
+		// try to inline some syscalls
+		if ( v == -TRAP_SIN-1 || v == -TRAP_COS-1 || v == TRAP_SQRT-1 ) {
+			EmitString( "D9 86" );			// fld dword ptr[esi+database]
+			Emit4( lastArg + (int)vm->dataBase );
+			switch ( v ) {
+				case -TRAP_SQRT-1: EmitString( "D9 FA" ); break; // fsqrt
+				case -TRAP_SIN-1: EmitString( "D9 FE" ); break;  // fsin
+				case -TRAP_COS-1: EmitString( "D9 FF" ); break;  // fcos
+			}
+			EmitAddEDI4( vm );				// add edi, 4
+			EmitString( "D9 1F" );			// fstp dword ptr[edi]
+			EmitCommand( LAST_COMMAND_MOV_EAX_EDI );
+			pc += 4 + 1;					// CONST + OP_CALL
+			instruction += 1;
+			return qtrue;
+		}
+		if ( v < 0 )
 			break;
-		v = Constant4();
+		pc += 4;						// constant
 		JUSED(v);
 #ifdef VM_LOG_SYSCALLS
 		EmitString( "C7 86" );    // mov dword ptr [esi+database],0x12345678
@@ -858,6 +876,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	for( pass = 0; pass < 3; pass++ ) {
 
 	pop1 = OP_UNDEF;
+	lastArg = 0;
 
 	// translate all instructions
 	pc = 0;
@@ -1031,7 +1050,8 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			EmitMovEAXEDI(vm);			// mov	eax,dword ptr [edi]
 			EmitString( "89 86" );		// mov	dword ptr [esi+database],eax
 			// FIXME: range check
-			Emit4( Constant1() + (int)vm->dataBase );
+			lastArg = Constant1();
+			Emit4( lastArg + (int)vm->dataBase );
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
 			break;
 		case OP_CALL:
