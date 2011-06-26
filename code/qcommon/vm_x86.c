@@ -789,13 +789,13 @@ qboolean ConstOptimize( vm_t *vm ) {
 	case OP_CALL:
 		v = NextConstant4();
 		// try to inline some syscalls
-		if ( v == -TRAP_SIN-1 || v == -TRAP_COS-1 || v == TRAP_SQRT-1 ) {
+		if ( v == ~TRAP_SIN || v == ~TRAP_COS || v == ~TRAP_SQRT ) {
 			EmitString( "D9 86" );			// fld dword ptr[esi+database]
 			Emit4( lastArg + (int)vm->dataBase );
 			switch ( v ) {
-				case -TRAP_SQRT-1: EmitString( "D9 FA" ); break; // fsqrt
-				case -TRAP_SIN-1: EmitString( "D9 FE" ); break;  // fsin
-				case -TRAP_COS-1: EmitString( "D9 FF" ); break;  // fcos
+				case ~TRAP_SQRT: EmitString( "D9 FA" ); break; // fsqrt
+				case ~TRAP_SIN: EmitString( "D9 FE" ); break;  // fsin
+				case ~TRAP_COS: EmitString( "D9 FF" ); break;  // fcos
 			}
 			EmitAddEDI4( vm );				// add edi, 4
 			EmitString( "D9 1F" );			// fstp dword ptr[edi]
