@@ -36,7 +36,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #			include <wspiapi.h>
 #		endif
 #	else
+
+#if	1	// Windows2000 compatibility 
+#		include <ws2tcpip.h>
+#		include <Wspiapi.h>
+#	else
 #		include <ws2spi.h>
+#	endif	
+
 #	endif
 
 typedef int socklen_t;
