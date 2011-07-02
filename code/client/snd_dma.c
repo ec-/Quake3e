@@ -567,7 +567,7 @@ void S_Base_StartSound( vec3_t origin, int entityNum, int entchannel, sfxHandle_
 					}
 				}
 				if (chosen == -1) {
-					Com_Printf("dropping sound\n");
+					Com_Printf( "dropping sound %s\n", sfx->soundName );
 					return;
 				}
 			}
