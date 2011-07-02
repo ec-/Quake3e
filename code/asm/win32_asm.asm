@@ -183,9 +183,9 @@ S_WriteLinearBlastStereo16_MMX proc
 	mov ebx,snd_linear_count
 	mov eax,esi
 	and eax,63
-	shr eax,2
-	test eax,eax
 	jz LMain
+	shr eax,2
+	jc LTail
 	mov ecx,16
 	sub ecx,eax
 LClamp1:
@@ -196,6 +196,7 @@ LClamp1:
 	cmp eax,-32768
 	jnl LClampDone1
 	mov eax,-32768
+	jmp LClampDone1
 LClampHigh1:
 	mov eax,32767
 LClampDone1:
@@ -211,6 +212,7 @@ LMain:
     shr ecx,4
     test ecx,ecx
 	jz  LTail
+	and ebx, 15
 LAgain:
 	movq mm0, qword ptr [esi+ 0]
 	movq mm1, qword ptr [esi+ 8]
@@ -241,7 +243,7 @@ LAgain:
 	dec ecx
 	jnz LAgain
 LTail:
-	and ebx, 15
+	test ebx, ebx
 	jz	LEnd
 LClamp2:
 	mov eax,[esi]
@@ -279,9 +281,9 @@ S_WriteLinearBlastStereo16_SSE proc
 	mov ebx,snd_linear_count
 	mov eax,esi
 	and eax,63
-	shr eax,2
-	test eax,eax
 	jz LMain
+	shr eax,2
+	jc LTail
 	mov ecx,16
 	sub ecx,eax
 LClamp1:
@@ -292,6 +294,7 @@ LClamp1:
 	cmp eax,-32768
 	jnl LClampDone1
 	mov eax,-32768
+	jmp LClampDone1
 LClampHigh1:
 	mov eax,32767
 LClampDone1:
@@ -307,6 +310,7 @@ LMain:
 	shr ecx,4
 	test ecx,ecx
 	jz  LTail
+	and ebx, 15
 LAgain:
 	movq mm0, qword ptr [esi+ 0]
 	movq mm1, qword ptr [esi+ 8]
@@ -337,7 +341,7 @@ LAgain:
 	dec ecx
 	jnz LAgain
 LTail:
-	and ebx, 15
+	test ebx, ebx
 	jz	LEnd
 LClamp2:
 	mov eax,[esi]
@@ -347,6 +351,7 @@ LClamp2:
 	cmp eax,-32768
 	jnl LClampDone2
 	mov eax,-32768
+	jmp LClampDone2
 LClampHigh2:
 	mov eax,32767
 LClampDone2:

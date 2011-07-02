@@ -55,6 +55,8 @@ static char		s_backgroundLoop[MAX_QPATH];
 
 #define		SOUND_ATTENUATE		0.0008f
 
+#define		MASTER_VOL			127
+
 channel_t   s_channels[MAX_CHANNELS];
 channel_t   loop_channels[MAX_CHANNELS];
 int			numLoopChannels;
@@ -451,11 +453,11 @@ if pos is NULL, the sound will be dynamically sourced from the entity
 Entchannel 0 will never override a playing sound
 ====================
 */
-void S_Base_StartSound(vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfxHandle ) {
+void S_Base_StartSound( vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfxHandle ) {
 	channel_t	*ch;
 	sfx_t		*sfx;
-  int i, oldest, chosen, time;
-  int	inplay, allowed;
+	int i, oldest, chosen, time;
+	int	inplay, allowed;
 
 	if ( !s_soundStarted || s_soundMuted ) {
 		return;
@@ -482,21 +484,44 @@ void S_Base_StartSound(vec3_t origin, int entityNum, int entchannel, sfxHandle_t
 
 	time = Com_Milliseconds();
 
+	// borrowed from cnq3
+	// a UNIQUE entity starting the same sound twice in a frame is either a bug,
+	// a timedemo, or a shitmap (eg q3ctf4) giving multiple items on spawn.
+	// even if you can create a case where it IS "valid", it's still pointless
+	// because you implicitly can't DISTINGUISH between the sounds:
+	// all that happens is the sound plays at double volume, which is just annoying
+
+	if ( entityNum != ENTITYNUM_WORLD ) {
+		ch = s_channels;
+		for ( i = 0; i < MAX_CHANNELS; i++, ch++ ) {
+			if ( ch->entnum != entityNum )
+				continue;
+			if ( ch->allocTime != time )
+				continue;
+			if ( ch->thesfx != sfx )
+				continue;
+			sfx->lastTimeUsed = time;
+			//Com_Printf( S_COLOR_YELLOW "double sound start: %d %s\n", entityNum, sfx->soundName);
+			return;
+		}
+	}
+
 //	Com_Printf("playing %s\n", sfx->soundName);
 	// pick a channel to play on
 
-	allowed = 4;
-	if (entityNum == listener_number) {
+	// try to limit sound duplication
+	if ( entityNum == listener_number )
+		allowed = 16;
+	else
 		allowed = 8;
-	}
 
 	ch = s_channels;
 	inplay = 0;
 	for ( i = 0; i < MAX_CHANNELS ; i++, ch++ ) {		
-		if (ch->entnum == entityNum && ch->thesfx == sfx) {
-			if (time - ch->allocTime < 50) {
+		if ( ch->entnum == entityNum && ch->thesfx == sfx ) {
+			if ( time - ch->allocTime < 20 ) {
 //				if (Cvar_VariableValue( "cg_showmiss" )) {
-//					Com_Printf("double sound start\n");
+//					Com_Printf( "double sound start: %d %s\n", entityNum, sfx->soundName);
 //				}
 				return;
 			}
@@ -504,7 +529,8 @@ void S_Base_StartSound(vec3_t origin, int entityNum, int entchannel, sfxHandle_t
 		}
 	}
 
-	if (inplay>allowed) {
+	// too much duplicated sounds, ignore
+	if ( inplay > allowed ) {
 		return;
 	}
 
@@ -557,7 +583,7 @@ void S_Base_StartSound(vec3_t origin, int entityNum, int entchannel, sfxHandle_t
 		ch->fixed_origin = qfalse;
 	}
 
-	ch->master_vol = 127;
+	ch->master_vol = MASTER_VOL;
 	ch->entnum = entityNum;
 	ch->thesfx = sfx;
 	ch->startSample = START_SAMPLE_IMMEDIATE;
@@ -841,7 +867,7 @@ void S_AddLoopSounds (void) {
 			right_total = 255;
 		}
 		
-		ch->master_vol = 127;
+		ch->master_vol = MASTER_VOL;
 		ch->leftvol = left_total;
 		ch->rightvol = right_total;
 		ch->thesfx = loop->sfx;
