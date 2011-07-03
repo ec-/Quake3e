@@ -269,6 +269,8 @@ extern cvar_t *in_minimize;
 extern UINT (WINAPI *GRID)(HRAWINPUT hRawInput, UINT uiCommand, LPVOID pData, PUINT pcbSize, UINT cbSizeHeader);
 extern int raw_activated;
 
+extern void IN_UpdateWindow( RECT * window_rect );
+
 int			HotKey = 0;
 int			hkinstalled = 0;
 
@@ -514,6 +516,8 @@ LONG WINAPI MainWndProc (
 			int		xPos, yPos;
 			RECT r;
 			int		style;
+
+			IN_UpdateWindow( NULL );
 
 			if ( !glw_state.cdsFullscreen )
 			{
