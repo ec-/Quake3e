@@ -327,6 +327,7 @@ void IN_ActivateRawMouse( void ) {
 		ClipCursor ( &window_rect );
 		while ( ShowCursor (FALSE) >= 0 )
 		;
+		SetCursorPos( window_center_x, window_center_y );
         raw_activated = 1;
 		return;
     }
@@ -346,6 +347,7 @@ void IN_ActivateRawMouse( void ) {
 	ClipCursor( &window_rect );
 	while( ShowCursor( FALSE ) >= 0 )
         ;
+	SetCursorPos( window_center_x, window_center_y );
 	raw_activated = 1;
 	//Com_Printf(S_COLOR_BLUE "Raw input device activated\n");
 }
@@ -826,13 +828,10 @@ void IN_MouseMove ( void ) {
 	if ( g_pMouse ) {
 		IN_DIMouse( &mx, &my );
 	} else {
-		if ( raw_activated ) {
-			if ( !glw_state.cdsFullscreen )
-				SetCursorPos ( window_center_x, window_center_y );
+		if ( raw_activated )
 			return;
-		}
         else
-		IN_Win32Mouse( &mx, &my );
+			IN_Win32Mouse( &mx, &my );
 	}
 
 	if ( !mx && !my ) {
