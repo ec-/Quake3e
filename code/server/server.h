@@ -168,7 +168,7 @@ typedef struct client_s {
 	netchan_buffer_t **netchan_end_queue;
 
 	int				oldServerTime;
-	qboolean			csUpdated[MAX_CONFIGSTRINGS+1];	
+	qboolean		csUpdated[MAX_CONFIGSTRINGS+1];	
 } client_t;
 
 //=============================================================================
@@ -177,7 +177,11 @@ typedef struct client_s {
 // MAX_CHALLENGES is made large to prevent a denial
 // of service attack that could cycle all of them
 // out before legitimate users connected
-#define	MAX_CHALLENGES	1024
+#define	MAX_CHALLENGES	2048
+// Allow a certain amount of challenges to have the same IP address
+// to make it a bit harder to DOS one single IP address from connecting
+// while not allowing a single ip to grab all challenge resources
+#define MAX_CHALLENGES_MULTI (MAX_CHALLENGES / 2)
 
 #define	AUTHORIZE_TIMEOUT	5000
 

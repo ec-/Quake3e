@@ -177,7 +177,8 @@ typedef int		clipHandle_t;
 #define	MAX_QINT			0x7fffffff
 #define	MIN_QINT			(-MAX_QINT-1)
 
-#define ARRAY_LEN(x)			(sizeof(x) / sizeof(*(x)))
+#define ARRAY_LEN(x)		(sizeof(x) / sizeof(*(x)))
+#define STRARRAY_LEN(x)		(ARRAY_LEN(x) - 1)
 
 // angle indexes
 #define	PITCH				0		// up / down
@@ -626,6 +627,7 @@ float Com_Clamp( float min, float max, float value );
 char	*COM_SkipPath( char *pathname );
 const char	*COM_GetExtension( const char *name );
 void	COM_StripExtension(const char *in, char *out, int destsize);
+qboolean COM_CompareExtension(const char *in, const char *ext);
 void	COM_DefaultExtension( char *path, int maxSize, const char *extension );
 
 void	COM_BeginParseSession( const char *name );

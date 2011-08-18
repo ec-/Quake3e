@@ -144,7 +144,7 @@ void SV_AddServerCommand( client_t *client, const char *cmd ) {
 //	}
 
 	// do not send commands until the gamestate has been sent
-	if( client->state < CS_PRIMED )
+	if ( client->state < CS_PRIMED )
 		return;
 
 	client->reliableSequence++;

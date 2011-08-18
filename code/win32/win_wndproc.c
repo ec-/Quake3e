@@ -457,6 +457,7 @@ LONG WINAPI MainWndProc (
 		// let sound and input know about this?
 		Win_RemoveHotkey();
 		g_wv.hWnd = NULL;
+		g_wv.isMinimized = qfalse;
 		if ( glw_state.cdsFullscreen )
 		{
 			WIN_EnableAltTab();

@@ -573,12 +573,32 @@ static void FS_CopyFile( char *fromOSPath, char *toOSPath ) {
 }
 
 /*
+=================
+FS_CheckFilenameIsNotExecutable
+
+ERR_FATAL if trying to maniuplate a file with the platform library extension
+=================
+ */
+static void FS_CheckFilenameIsNotExecutable( const char *filename,
+		const char *function )
+{
+	// Check if the filename ends with the library extension
+	if(COM_CompareExtension(filename, DLL_EXT))
+	{
+		Com_Error( ERR_FATAL, "%s: Not allowed to manipulate '%s' due "
+			"to %s extension", function, filename, DLL_EXT );
+	}
+}
+
+/*
 ===========
 FS_Remove
 
 ===========
 */
 void FS_Remove( const char *osPath ) {
+	FS_CheckFilenameIsNotExecutable( osPath, __func__ );
+
 	remove( osPath );
 }
 
@@ -588,9 +608,11 @@ FS_HomeRemove
 
 ===========
 */
-void FS_HomeRemove( const char *homePath ) {
+void FS_HomeRemove( const char *osPath ) {
+	FS_CheckFilenameIsNotExecutable( osPath, __func__ );
+
 	remove( FS_BuildOSPath( fs_homepath->string,
-			fs_gamedir, homePath ) );
+			fs_gamedir, osPath ) );
 }
 
 /*
@@ -669,6 +691,8 @@ fileHandle_t FS_SV_FOpenFileWrite( const char *filename ) {
 	if ( fs_debug->integer ) {
 		Com_Printf( "FS_SV_FOpenFileWrite: %s\n", ospath );
 	}
+
+	FS_CheckFilenameIsNotExecutable( ospath, __func__ );
 
 	if( FS_CreatePath( ospath ) ) {
 		return 0;
@@ -942,6 +966,8 @@ fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 	if ( fs_debug->integer ) {
 		Com_Printf( "FS_FOpenFileAppend: %s\n", ospath );
 	}
+
+	FS_CheckFilenameIsNotExecutable( ospath, __func__ );
 
 	if( FS_CreatePath( ospath ) ) {
 		return 0;

@@ -54,8 +54,10 @@ void SV_GetChallenge( netadr_t from ) {
 	int		i;
 	int		oldest;
 	int		oldestTime;
-	const char *clientChallenge = Cmd_Argv(1);
+	int		oldestClientTime;
+	int		clientChallenge;
 	challenge_t	*challenge;
+	qboolean wasfound = qfalse;
 
 	// ignore if we are in single player
 	if ( Cvar_VariableValue( "g_gametype" ) == GT_SINGLE_PLAYER || Cvar_VariableValue("ui_singlePlayerActive")) {
@@ -63,35 +65,49 @@ void SV_GetChallenge( netadr_t from ) {
 	}
 
 	oldest = 0;
-	oldestTime = 0x7fffffff;
+ 	oldestClientTime = oldestTime = 0x7fffffff;
 
 	// see if we already have a challenge for this ip
 	challenge = &svs.challenges[0];
-	for (i = 0 ; i < MAX_CHALLENGES ; i++, challenge++) {
-		if ( !challenge->connected && NET_CompareAdr( from, challenge->adr ) ) {
-			break;
-		}
-		if ( challenge->time < oldestTime ) {
-			oldestTime = challenge->time;
-			oldest = i;
-		}
+ 	clientChallenge = atoi( Cmd_Argv( 1 ) );
+
+ 	for (i = 0 ; i < MAX_CHALLENGES ; i++, challenge++ )
+ 	{
+ 		if ( !challenge->connected && NET_CompareAdr( from, challenge->adr ) )
+ 		{
+ 			wasfound = qtrue;
+
+ 			if ( challenge->time < oldestClientTime )
+ 				oldestClientTime = challenge->time;
+ 		}
+
+ 		if ( wasfound && i >= MAX_CHALLENGES_MULTI )
+ 		{
+ 			i = MAX_CHALLENGES;
+  			break;
+  		}
+
+ 		if ( challenge->time < oldestTime )
+ 		{
+  			oldestTime = challenge->time;
+  			oldest = i;
+  		}
 	}
 
 	if (i == MAX_CHALLENGES)
 	{
 		// this is the first time this client has asked for a challenge
 		challenge = &svs.challenges[oldest];
-		challenge->clientChallenge = 0;
+		challenge->clientChallenge = clientChallenge;
 		challenge->adr = from;
 		challenge->firstTime = svs.time;
-		challenge->time = svs.time;
 		challenge->connected = qfalse;
 	}
 
 	// always generate a new challenge number, so the client cannot circumvent sv_maxping
 	challenge->challenge = ( (rand() << 16) ^ rand() ) ^ svs.time;
 	challenge->wasrefused = qfalse;
-
+	challenge->time = svs.time;
 
 #ifndef STANDALONE
 	// Drop the authorize stuff if this client is coming in via v6 as the auth server does not support ipv6.
@@ -120,7 +136,7 @@ void SV_GetChallenge( netadr_t from ) {
 		// if they have been challenging for a long time and we
 		// haven't heard anything from the authorize server, go ahead and
 		// let them in, assuming the id server is down
-		else if(svs.time - challenge->firstTime > AUTHORIZE_TIMEOUT)
+		else if(svs.time - oldestClientTime > AUTHORIZE_TIMEOUT)
 			Com_DPrintf( "authorize server timed out\n" );
 		else
 		{
@@ -128,10 +144,6 @@ void SV_GetChallenge( netadr_t from ) {
 			cvar_t	*fs;
 			char	game[1024];
 
-			// If the client provided us with a client challenge, store it...
-			if(*clientChallenge)
-				challenge->clientChallenge = atoi(clientChallenge);
-			
 			Com_DPrintf( "sending getIpAuthorize for %s\n", NET_AdrToString( from ));
 		
 			strcpy(game, BASEGAME);
@@ -152,7 +164,8 @@ void SV_GetChallenge( netadr_t from ) {
 #endif
 
 	challenge->pingTime = svs.time;
-	NET_OutOfBandPrint( NS_SERVER, challenge->adr, "challengeResponse %i %s", challenge->challenge, clientChallenge);
+	NET_OutOfBandPrint(NS_SERVER, challenge->adr, "challengeResponse %d %d",
+			   challenge->challenge, clientChallenge);
 }
 
 #ifndef STANDALONE
@@ -576,7 +589,7 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 	// tell everyone why they got dropped
 	SV_SendServerCommand( NULL, "print \"%s " S_COLOR_WHITE "%s\n\"", drop->name, reason );
 
-	if (drop->download)	{
+	if ( drop->download ) {
 		FS_FCloseFile( drop->download );
 		drop->download = 0;
 	}
@@ -586,7 +599,7 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 	VM_Call( gvm, GAME_CLIENT_DISCONNECT, drop - svs.clients );
 
 	// add the disconnect command
-	SV_SendServerCommand( drop, "disconnect \"%s\"", reason);
+	SV_SendServerCommand( drop, "disconnect \"%s\"", reason );
 
 	if ( isBot ) {
 		SV_BotFreeClient( drop - svs.clients );

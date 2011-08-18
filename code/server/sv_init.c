@@ -724,7 +724,7 @@ void SV_FinalMessage( char *message ) {
 	// send it twice, ignoring rate
 	for ( j = 0 ; j < 2 ; j++ ) {
 		for (i=0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++) {
-			if (cl->state >= CS_CONNECTED) {
+			if (cl->state >= CS_CONNECTED || cl->downloadName[0] ) {
 				// don't send a disconnect to a local client
 				if ( cl->netchan.remoteAddress.type != NA_LOOPBACK ) {
 					SV_SendServerCommand( cl, "print \"%s\n\"\n", message );

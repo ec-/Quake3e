@@ -645,7 +645,9 @@ void SV_SendClientSnapshot( client_t *client ) {
 
 	// send over all the relevant entityState_t
 	// and the playerState_t
-	SV_WriteSnapshotToClient( client, &msg );
+	// also don't send snapshots when downloading
+	if ( !client->downloadName[0] )
+		SV_WriteSnapshotToClient( client, &msg );
 
 	// Add any download data if the client is downloading
 	SV_WriteDownloadToClient( client, &msg );
@@ -671,8 +673,8 @@ void SV_SendClientMessages( void ) {
 
 	// send a message to each connected client
 	for (i=0, c = svs.clients ; i < sv_maxclients->integer ; i++, c++) {
-		if (!c->state) {
-			continue;		// not connected
+		if ( c->state == CS_FREE ) {
+			continue;	// not connected
 		}
 
 		if ( svs.time < c->nextSnapshotTime ) {
