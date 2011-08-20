@@ -3204,7 +3204,6 @@ Q3 media pak0.pk3, you'll want to remove this function
 */
 static void FS_CheckPak0( void )
 {
-#if USE_CHECKPAK0
 	searchpath_t	*path;
 	qboolean founddemo = qfalse;
 	unsigned foundPak = 0;
@@ -3291,7 +3290,6 @@ static void FS_CheckPak0( void )
 		|| !Q_stricmp( fs_gamedirvar->string, "missionpack" ))
 			Com_Error(ERR_FATAL, "\n*** you need to install Quake III Arena in order to play ***");
 	}
-#endif
 }
 
 /*
