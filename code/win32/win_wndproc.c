@@ -515,10 +515,8 @@ LONG WINAPI MainWndProc (
 	case WM_MOVE:
 		{
 			int		xPos, yPos;
-			RECT r;
 			int		style;
-
-			IN_UpdateWindow( NULL );
+			RECT	r;
 
 			if ( !glw_state.cdsFullscreen )
 			{
@@ -535,12 +533,19 @@ LONG WINAPI MainWndProc (
 
 				Cvar_SetValue( "vid_xpos", xPos + r.left );
 				Cvar_SetValue( "vid_ypos", yPos + r.top );
+
 				vid_xpos->modified = qfalse;
 				vid_ypos->modified = qfalse;
+
+				IN_UpdateWindow( &r );
+
 				if ( g_wv.activeApp )
 				{
+					ClipCursor( &r ); // don't forget to clip cursor
 					IN_Activate( qtrue );
 				}
+			} else {
+				IN_UpdateWindow( NULL );			
 			}
 		}
 		break;
@@ -651,7 +656,7 @@ LONG WINAPI MainWndProc (
 			else
 			{
 				SetFocus( hWnd );
-				SetForegroundWindow ( hWnd );
+				SetForegroundWindow( hWnd );
 				ShowWindow( hWnd, SW_RESTORE );
 			}
 		}

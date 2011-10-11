@@ -491,7 +491,7 @@ void SV_BotInitCvars(void) {
 	Cvar_Get("bot_forcewrite", "0", 0);					//force writing aas file
 	Cvar_Get("bot_aasoptimize", "0", 0);				//no aas file optimisation
 	Cvar_Get("bot_saveroutingcache", "0", 0);			//save routing cache
-	Cvar_Get("bot_thinktime", "100", CVAR_CHEAT);		//msec the bots thinks
+	Cvar_Get("bot_thinktime", "100", 0);				//msec the bots thinks
 	Cvar_Get("bot_reloadcharacters", "0", 0);			//reload the bot characters each time
 	Cvar_Get("bot_testichat", "0", 0);					//test ichats
 	Cvar_Get("bot_testrchat", "0", 0);					//test rchats

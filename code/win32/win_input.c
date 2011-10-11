@@ -126,7 +126,7 @@ IN_UpdateWindow
 */
 void IN_UpdateWindow( RECT *window_rect ) 
 {
-	int width,height;
+	int width, height;
 	RECT		rect;
 
 	if ( !window_rect ) 
@@ -134,10 +134,11 @@ void IN_UpdateWindow( RECT *window_rect )
 		window_rect = &rect;
 	}
 
+	if ( !GetWindowRect( g_wv.hWnd, window_rect ) ) 
+		return;
+
 	width = GetSystemMetrics( SM_CXSCREEN );
 	height = GetSystemMetrics( SM_CYSCREEN );
-
-	GetWindowRect( g_wv.hWnd, window_rect );
 
 	if ( window_rect->left < 0 )
 		window_rect->left = 0;
@@ -331,7 +332,7 @@ void IN_ActivateRawMouse( void )
 		// device already exists
 		SetCapture( g_wv.hWnd );
 		ClipCursor( &window_rect );
-		while ( ShowCursor (FALSE) >= 0 )
+		while ( ShowCursor( FALSE ) >= 0 )
 		;
 		SetCursorPos( window_center[0], window_center[1] );
         raw_activated = 1;
