@@ -261,9 +261,9 @@ void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 		return;
 	}
 	FS_LockHandle( clc.download ); // -EC-
-	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_WRITEDATA, clc.download);
-	if(com_developer->integer)
-		qcurl_easy_setopt(clc.downloadCURL, CURLOPT_VERBOSE, 1);
+
+	if ( com_developer->integer )
+		qcurl_easy_setopt( clc.downloadCURL, CURLOPT_VERBOSE, 1 );
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_URL, clc.downloadURL);
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_TRANSFERTEXT, 0);
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_REFERER, va("ioQ3://%s",
