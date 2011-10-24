@@ -2574,6 +2574,10 @@ int Sys_GetProcessorId( char *vendor )
 	// get CPU feature bits
 	CPUID( 1, regs );
 
+	// bit 15 of EDX denotes CMOV/FCMOV/FCOMI existence
+	if ( regs[3] & ( 1 << 15 ) )
+		CPU_Flags |= CPU_FCOM;
+
 	// bit 23 of EDX denotes MMX existence
 	if ( regs[3] & ( 1 << 23 ) )
 		CPU_Flags |= CPU_MMX;
@@ -2582,9 +2586,9 @@ int Sys_GetProcessorId( char *vendor )
 	if ( regs[3] & ( 1 << 25 ) )
 		CPU_Flags |= CPU_SSE;
 
-	// bit 15 of EDX denotes CMOV/FCMOV/FCOMI existence
-	if ( regs[3] & ( 1 << 15 ) )
-		CPU_Flags |= CPU_FCOM;
+	// bit 26 of EDX denotes SSE existence
+	if ( regs[3] & ( 1 << 26 ) )
+		CPU_Flags |= CPU_SSE2;
 
 	if ( vendor ) {
 		// get CPU vendor string
@@ -2596,12 +2600,14 @@ int Sys_GetProcessorId( char *vendor )
 		if ( CPU_Flags ) {
 			// add features
 			strcat( vendor, " w/" );
+			if ( CPU_Flags & CPU_FCOM )
+				strcat( vendor, "CMOV " );
 			if ( CPU_Flags & CPU_MMX )
 				strcat( vendor, "MMX " );
 			if ( CPU_Flags & CPU_SSE )
 				strcat( vendor, "SSE " );
-			if ( CPU_Flags & CPU_FCOM )
-				strcat( vendor, "CMOV " );
+			if ( CPU_Flags & CPU_SSE2 )
+				strcat( vendor, "SSE2 " );
 		}
 	}
 	return 1;
@@ -2761,7 +2767,7 @@ void Com_Init( char *commandLine ) {
 	Cvar_Get( "sys_cpustring", "detect", 0 );
 	if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring"), "detect" ) )
 	{
-		char vendor[64];
+		char vendor[128];
 		Com_Printf( "...detecting CPU, found " );
 		Sys_GetProcessorId( vendor );
 		Cvar_Set( "sys_cpustring", vendor );

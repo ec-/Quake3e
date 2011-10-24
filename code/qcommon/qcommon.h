@@ -772,9 +772,11 @@ extern char cl_cdkey[34];
 
 extern	int	CPU_Flags;
 
-#define CPU_MMX    0x01
-#define CPU_SSE    0x02
-#define CPU_FCOM   0x04
+#define CPU_FCOM   0x01
+#define CPU_MMX    0x02
+#define CPU_SSE    0x04
+#define CPU_SSE2   0x08
+
 
 // TTimo
 // centralized and cleaned, that's the max string you can send to a Com_Printf / Com_DPrintf (above gets truncated)
