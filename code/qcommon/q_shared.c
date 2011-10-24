@@ -442,7 +442,7 @@ char *COM_ParseExt( char **data_p, qboolean allowLineBreaks )
 
 	data = *data_p;
 	len = 0;
-	com_token[0] = 0;
+	com_token[0] = '\0';
 
 	// make sure incoming data is valid
 	if ( !data )
@@ -472,7 +472,7 @@ char *COM_ParseExt( char **data_p, qboolean allowLineBreaks )
 		if ( c == '/' && data[1] == '/' )
 		{
 			data += 2;
-			while (*data && *data != '\n') {
+			while ( *data != '\0' && *data != '\n') {
 				data++;
 			}
 		}
