@@ -2785,7 +2785,7 @@ void Com_Init( char *commandLine ) {
 	com_dedicated->modified = qfalse;
 	if ( !com_dedicated->integer ) {
 		CL_Init();
-		Sys_ShowConsole( com_viewlog->integer, qfalse );
+		// Sys_ShowConsole( com_viewlog->integer, qfalse ); // moved down
 	}
 
 	// set com_frameTime so that if a map is started on the
@@ -2812,6 +2812,9 @@ void Com_Init( char *commandLine ) {
 	Cvar_Set("r_uiFullScreen", "1");
 
 	CL_StartHunkUsers( );
+
+	if ( !com_errorEntered )
+		Sys_ShowConsole( com_viewlog->integer, qfalse );
 
 	// make sure single player is off by default
 	Cvar_Set("ui_singlePlayerActive", "0");

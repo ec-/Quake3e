@@ -691,15 +691,14 @@ void RB_CalcWaveColor( const waveForm_t *wf, unsigned char *dstColors )
 	} else {
 		glow = EvalWaveForm( wf ) * tr.identityLight;
 	}
-	
-	if ( glow < 0 ) {
-		glow = 0;
-	}
-	else if ( glow > 1 ) {
-		glow = 1;
-	}
 
-	v = myftol( 255 * glow );
+  	v = myftol( 255 * glow );
+
+	if ( v < 0 )
+		v = 0;
+	else if ( v > 255 )
+		v = 255;
+
 	color[0] = color[1] = color[2] = v;
 	color[3] = 255;
 	v = *(int *)color;

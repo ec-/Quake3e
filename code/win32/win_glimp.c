@@ -687,9 +687,8 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		{
 			ri.Error (ERR_FATAL, "GLW_CreateWindow() - Couldn't create window");
 		}
-	
-		ShowWindow( g_wv.hWnd, SW_SHOW );
-		UpdateWindow( g_wv.hWnd );
+		//ShowWindow( g_wv.hWnd, SW_SHOW );
+		//UpdateWindow( g_wv.hWnd );
 		ri.Printf( PRINT_ALL, "...created window@%d,%d (%dx%d)\n", x, y, w, h );
 	}
 	else
@@ -708,6 +707,9 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 
 	SetForegroundWindow( g_wv.hWnd );
 	SetFocus( g_wv.hWnd );
+
+	ShowWindow( g_wv.hWnd, SW_SHOW );
+	//UpdateWindow( g_wv.hWnd );
 
 	return qtrue;
 }
