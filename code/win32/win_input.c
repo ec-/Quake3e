@@ -834,10 +834,12 @@ void IN_MouseMove ( void ) {
 	if ( g_pMouse ) {
 		IN_DIMouse( &mx, &my );
 	} else {
-		if ( raw_activated )
+		if ( raw_activated ) {
+			SetCursorPos( window_center[0], window_center[1] );
 			return;
-        else
+		} else {
 			IN_Win32Mouse( &mx, &my );
+		}
 	}
 
 	if ( !mx && !my ) {
