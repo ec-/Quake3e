@@ -495,6 +495,7 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 			|| header->litLength < 0
 			|| header->codeLength <= 0 ) {
 			VM_Free( vm );
+			FS_FreeFile( header );
 			Com_Error( ERR_FATAL, "%s has bad header", filename );
 		}
 	} else if( LittleLong( header->vmMagic ) == VM_MAGIC ) {
@@ -516,10 +517,12 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 			|| header->litLength < 0
 			|| header->codeLength <= 0 ) {
 			VM_Free( vm );
+			FS_FreeFile( header );
 			Com_Error( ERR_FATAL, "%s has bad header", filename );
 		}
 	} else {
 		VM_Free( vm );
+		FS_FreeFile( header );
 		Com_Error( ERR_FATAL, "%s does not have a recognisable "
 				"magic number in its header", filename );
 	}
@@ -536,7 +539,14 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 		vm->dataBase = Hunk_Alloc( dataLength, h_high );
 		vm->dataMask = dataLength - 1;
 	} else {
-		// clear the data
+		// clear the data, but make sure we're not clearing more than allocated
+		if( vm->dataMask + 1 != dataLength ) {
+			VM_Free( vm );
+			FS_FreeFile( header );
+			Com_Printf( S_COLOR_YELLOW "Warning: Data region size of %s not matching after"
+					"VM_Restart()\n", filename );
+			return NULL;
+		}
 		Com_Memset( vm->dataBase, 0, dataLength );
 	}
 
