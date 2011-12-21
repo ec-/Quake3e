@@ -855,6 +855,7 @@ Q3OBJ = \
   \
   $(B)/client/tr_animation.o \
   $(B)/client/tr_backend.o \
+  $(B)/client/tr_bloom.o \
   $(B)/client/tr_bsp.o \
   $(B)/client/tr_cmds.o \
   $(B)/client/tr_curve.o \
