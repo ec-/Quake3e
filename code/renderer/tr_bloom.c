@@ -24,7 +24,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 static cvar_t *r_bloom;
 static cvar_t *r_bloom_sample_size;
-static cvar_t *r_bloom_fast_sample;
 static cvar_t *r_bloom_alpha;
 static cvar_t *r_bloom_darken;
 static cvar_t *r_bloom_intensity;
@@ -83,6 +82,7 @@ static struct {
 		int		width, height;
 	} work;
 	qboolean started;
+	qboolean disabled;
 } bloom;
 
 
@@ -148,8 +148,9 @@ static void R_Bloom_InitTextures( void )
 		bloom.work.width > glConfig.vidWidth ||
 		bloom.work.height > glConfig.vidHeight
 	) {
-		ri.Cvar_Set( "r_bloom", "0" );
-		Com_Printf( S_COLOR_YELLOW"WARNING: 'R_InitBloomTextures' too high resolution for light bloom, effect disabled\n" );
+		Com_Printf( S_COLOR_YELLOW "WARNING: 'R_InitBloomTextures' too high resolution for light bloom, effect disabled\n" );
+		bloom.started = qfalse;
+		bloom.disabled = qtrue;
 		return;
 	}
 
@@ -217,8 +218,7 @@ static void R_Bloom_WarsowEffect( void )
 		GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO );
 
 		for( i = 0; i < r_bloom_darken->integer; i++ ) {
-			R_Bloom_Quad( bloom.work.width, bloom.work.height, 
-				0, 0, 
+			R_Bloom_Quad( bloom.work.width, bloom.work.height, 0, 0, 
 				bloom.effect.readW, bloom.effect.readH );
 		}
 		qglCopyTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 0, 0, bloom.work.width, bloom.work.height );
@@ -300,89 +300,7 @@ static void R_Bloom_RestoreScreen( void ) {
 		bloom.work.width / (float)bloom.screen.width,
 		bloom.work.height / (float)bloom.screen.height );
 }
- 
 
-/*
-=================
-R_Bloom_DownsampleView
-Scale the copied screen back to the sample size used for subsequent passes
-=================
-*/
-#if 0
-static void R_Bloom_DownsampleView( void )
-{
-	/* TODO, Provide option to control the color strength here */
-//	qglColor4f( r_bloom_darken->value, r_bloom_darken->value, r_bloom_darken->value, 1.0f );
-	qglColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-	GL_Bind( bloom.screen.texture );
-	GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
-	//Downscale it
-	R_Bloom_Quad( bloom.work.width, bloom.work.height, 0, 0, bloom.screen.readW, bloom.screen.readH );
-#if 1
-	GL_Bind( bloom.effect.texture );
-	qglCopyTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 0, 0, bloom.work.width, bloom.work.height );
-	// darkening passes
-	if( r_bloom_darken->integer ) {
-		int i;
-		GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO );
-
-		for( i = 0; i < r_bloom_darken->integer; i++ ) {
-			R_Bloom_Quad( bloom.work.width, bloom.work.height, 
-				0, 0, 
-				bloom.effect.readW, bloom.effect.readH );
-		}
-		qglCopyTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 0, 0, bloom.work.width, bloom.work.height );
-	}
-#endif
-	/* Copy the result to the effect texture */
-	GL_Bind( bloom.effect.texture );
-	qglCopyTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 0, 0, bloom.work.width, bloom.work.height );
-}
-
-static void R_Bloom_CreateEffect( void ) {
-	int dir, x;
-	int range;
-
-	//First step will zero dst, rest will one add
-	GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
-//	GL_Bind( bloom.screen.texture );
-	GL_Bind( bloom.effect.texture );
-	range = 4;
-	for (dir = 0;dir < 2;dir++)
-	{
-		// blend on at multiple vertical offsets to achieve a vertical blur
-		// TODO: do offset blends using GLSL
-		for (x = -range;x <= range;x++)
-		{
-			float xoffset, yoffset, r;
-			if (!dir){
-				xoffset = 0;
-				yoffset = x*1.5;
-			} else {
-				xoffset = x*1.5;
-				yoffset = 0;
-			}
-			xoffset /= bloom.work.width;
-			yoffset /= bloom.work.height;
-			// this r value looks like a 'dot' particle, fading sharply to
-			// black at the edges
-			// (probably not realistic but looks good enough)
-			//r = ((range*range+1)/((float)(x*x+1)))/(range*2+1);
-			//r = (dir ? 1.0f : brighten)/(range*2+1);
-			r = 2.0f /(range*2+1)*(1 - x*x/(float)(range*range));
-//			r *= r_bloom_darken->value;
-			qglColor4f(r, r, r, 1);
-			R_Bloom_Quad( bloom.work.width, bloom.work.height, 
-				xoffset, yoffset, 
-				bloom.effect.readW, bloom.effect.readH );
-//				bloom.screen.readW, bloom.screen.readH );
-			GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE );
-		}
-	}
-	GL_Bind( bloom.effect.texture );
-	qglCopyTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 0, 0, bloom.work.width, bloom.work.height );
-}
-#endif
 
 /*
 =================
@@ -398,7 +316,10 @@ void R_BloomScreen( void )
 	if ( !backEnd.doneSurfaces )
 		return;
 	backEnd.doneBloom = qtrue;
+
 	if( !bloom.started ) {
+		if ( bloom.disabled )
+			return;
 		R_Bloom_InitTextures();
 		if( !bloom.started )
 			return;
@@ -406,43 +327,32 @@ void R_BloomScreen( void )
 
 	if ( !backEnd.projection2D )
 		RB_SetGL2D();
-#if 0
-	// set up full screen workspace
-	GL_TexEnv( GL_MODULATE );
-	qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
-	qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
-	qglMatrixMode( GL_PROJECTION );
-    qglLoadIdentity ();
-	qglOrtho( 0, glConfig.vidWidth, glConfig.vidHeight, 0, 0, 1 );
-	qglMatrixMode( GL_MODELVIEW );
-    qglLoadIdentity ();
-
-	GL_Cull( CT_TWO_SIDED );
-#endif
 
 	qglColor4f( 1, 1, 1, 1 );
 
 	//Backup the old screen in a texture
 	R_Bloom_BackupScreen();
+
 	// create the bloom texture using one of a few methods
-	R_Bloom_WarsowEffect ();
-//	R_Bloom_CreateEffect();
+	R_Bloom_WarsowEffect();
+
 	// restore the screen-backup to the screen
 	R_Bloom_RestoreScreen();
+
 	// Do the final pass using the bloom texture for the final effect
 	R_Bloom_DrawEffect ();
 }
 
 
-void R_BloomInit( void ) {
+void R_BloomInit( void ) 
+{
 	memset( &bloom, 0, sizeof( bloom ));
 
 	r_bloom = ri.Cvar_Get( "r_bloom", "0", CVAR_ARCHIVE );
-	r_bloom_alpha = ri.Cvar_Get( "r_bloom_alpha", "0.3", CVAR_ARCHIVE );
+	r_bloom_alpha = ri.Cvar_Get( "r_bloom_alpha", "0.5", CVAR_ARCHIVE );
 	r_bloom_diamond_size = ri.Cvar_Get( "r_bloom_diamond_size", "8", CVAR_ARCHIVE );
-	r_bloom_intensity = ri.Cvar_Get( "r_bloom_intensity", "1.3", CVAR_ARCHIVE );
-	r_bloom_darken = ri.Cvar_Get( "r_bloom_darken", "4", CVAR_ARCHIVE );
-	r_bloom_sample_size = ri.Cvar_Get( "r_bloom_sample_size", "128", CVAR_ARCHIVE|CVAR_LATCH );
-//	r_bloom_fast_sample = ri.Cvar_Get( "r_bloom_fast_sample", "0", CVAR_ARCHIVE|CVAR_LATCH );
+	r_bloom_intensity = ri.Cvar_Get( "r_bloom_intensity", "2.0", CVAR_ARCHIVE );
+	r_bloom_darken = ri.Cvar_Get( "r_bloom_darken", "2", CVAR_ARCHIVE );
+	r_bloom_sample_size = ri.Cvar_Get( "r_bloom_sample_size", "128", CVAR_ARCHIVE | CVAR_LATCH );
 }
 
