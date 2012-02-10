@@ -609,6 +609,13 @@ void SVC_Info( netadr_t from ) {
 		return;
 	}
 
+	// Prevent using getinfo as an amplifier
+	if ( SVC_RateLimitAddress( from, 10, 1000 ) ) {
+		Com_DPrintf( "SVC_Info: rate limit from %s exceeded, dropping request\n",
+			NET_AdrToString( from ) );
+		return;
+	}
+
 	/*
 	 * Check whether Cmd_Argv(1) has a sane length. This was not done in the original Quake3 version which led
 	 * to the Infostring bug discovered by Luigi Auriemma. See http://aluigi.altervista.org/ for the advisory.
