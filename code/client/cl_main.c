@@ -916,6 +916,7 @@ CL_RequestMotd
 
 ===================
 */
+#if 0
 void CL_RequestMotd( void ) {
 	char		info[MAX_INFO_STRING];
 
@@ -947,6 +948,7 @@ void CL_RequestMotd( void ) {
 
 	NET_OutOfBandPrint( NS_CLIENT, cls.updateServer, "getmotd \"%s\"\n", info );
 }
+#endif
 
 /*
 ===================
