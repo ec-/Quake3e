@@ -2586,9 +2586,13 @@ int Sys_GetProcessorId( char *vendor )
 	if ( regs[3] & ( 1 << 25 ) )
 		CPU_Flags |= CPU_SSE;
 
-	// bit 26 of EDX denotes SSE existence
+	// bit 26 of EDX denotes SSE2 existence
 	if ( regs[3] & ( 1 << 26 ) )
 		CPU_Flags |= CPU_SSE2;
+
+	// bit 0 of ECX denotes SSE3 existence
+	if ( regs[2] & ( 1 << 0 ) )
+		CPU_Flags |= CPU_SSE3;
 
 	if ( vendor ) {
 		// get CPU vendor string
@@ -2608,6 +2612,8 @@ int Sys_GetProcessorId( char *vendor )
 				strcat( vendor, "SSE " );
 			if ( CPU_Flags & CPU_SSE2 )
 				strcat( vendor, "SSE2 " );
+			if ( CPU_Flags & CPU_SSE3 )
+				strcat( vendor, "SSE3 " );
 		}
 	}
 	return 1;

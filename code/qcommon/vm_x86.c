@@ -1401,10 +1401,16 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 			EmitString( "D9 2D" );		// fldcw word ptr [cwCurr]
 			Emit4( (int)&cwCurr );
 #else
-			// call the library conversion function
-			EmitString( "D9 07" );		// fld dword ptr [edi]
-			EmitString( "FF 15" );		// call dword ptr [ftolPtr]
-			Emit4( (int)&ftolPtr );
+			if ( CPU_Flags & CPU_SSE3 ) {
+				// fast sse3 truncation
+				EmitString( "D9 07" );    // fld dword ptr [edi]
+				EmitString( "DB 0F" );    // fisttp dword ptr [edi]
+			} else {
+				// call the library conversion function
+				EmitString( "D9 07" );    // fld dword ptr [edi]
+				EmitString( "FF 15" );    // call dword ptr [ftolPtr]
+				Emit4( (int)&ftolPtr );
+			}
 #endif
 			break;
 		case OP_SEX8:

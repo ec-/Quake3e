@@ -776,6 +776,7 @@ extern	int	CPU_Flags;
 #define CPU_MMX    0x02
 #define CPU_SSE    0x04
 #define CPU_SSE2   0x08
+#define CPU_SSE3   0x10
 
 
 // TTimo
