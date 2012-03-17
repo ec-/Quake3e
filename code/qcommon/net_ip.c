@@ -443,71 +443,6 @@ qboolean NET_CompareBaseAdrMask(netadr_t a, netadr_t b, int netmask)
 	return qfalse;
 }
 
-qboolean NET_CompareBaseAdrMaskP( netadr_t *a, netadr_t *b, int netmask )
-{
-	qboolean differed;
-	byte cmpmask, *addra, *addrb;
-	int curbyte;
-	
-	if ( a->type != b->type )
-		return qfalse;
-
-	if ( a->type == NA_LOOPBACK )
-		return qtrue;
-
-	if( a->type == NA_IP )
-	{
-		addra = (byte *) &a->ip;
-		addrb = (byte *) &b->ip;
-		if( netmask < 0 || netmask > 32)
-			netmask = 32;
-	}
-	else 
-	if( a->type == NA_IP6 )
-	{
-		addra = (byte *) &a->ip6;
-		addrb = (byte *) &b->ip6;
-		if( netmask < 0 || netmask > 128 )
-			netmask = 128;
-	}
-	else
-	{
-		Com_Printf( "NET_CompareBaseAdr: bad address type\n" );
-		return qfalse;
-	}
-
-	differed = qfalse;
-	curbyte = 0;
-
-	while( netmask > 7 )
-	{
-		if(addra[curbyte] != addrb[curbyte])
-		{
-			differed = qtrue;
-			break;
-		}
-
-		curbyte++;
-		netmask -= 8;
-	}
-
-	if( differed )
-		return qfalse;
-
-	if( netmask )
-	{
-		cmpmask = (1 << netmask) - 1;
-		cmpmask <<= 8 - netmask;
-
-		if( (addra[curbyte] & cmpmask) == (addrb[curbyte] & cmpmask) )
-			return qtrue;
-	}
-	else
-		return qtrue;
-	
-	return qfalse;
-}
-
 
 /*
 ===================
@@ -521,10 +456,6 @@ qboolean NET_CompareBaseAdr (netadr_t a, netadr_t b)
 	return NET_CompareBaseAdrMask(a, b, -1);
 }
 
-qboolean NET_CompareBaseAdrP( netadr_t *a, netadr_t *b )
-{
-	return NET_CompareBaseAdrMaskP( a, b, -1 );
-}
 
 const char	*NET_AdrToString (netadr_t a)
 {
@@ -578,22 +509,6 @@ qboolean	NET_CompareAdr (netadr_t a, netadr_t b)
 		
 	return qfalse;
 }
-
-qboolean NET_CompareAdrP( netadr_t *a, netadr_t *b )
-{
-	if( !NET_CompareBaseAdrP( a, b ) )
-		return qfalse;
-	
-	if ( a->type == NA_IP || a->type == NA_IP6 )
-	{
-		if ( a->port == b->port )
-			return qtrue;
-	} else
-		return qtrue;
-		
-	return qfalse;
-}
-
 
 
 qboolean	NET_IsLocalAddress( netadr_t adr ) {

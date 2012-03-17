@@ -1871,7 +1871,7 @@ void CL_InitServerInfo( serverInfo_t *server, netadr_t *address ) {
 #define MAX_SERVERSPERPACKET	256
 
 typedef struct hash_chain_s {
-	netadr_t*			addr;
+	netadr_t             addr;
 	struct hash_chain_s *next;
 } hash_chain_t;
 
@@ -1893,20 +1893,20 @@ unsigned int hash_func( netadr_t *addr ) {
 	}
 
 	for ( i = 0; i < size; i++ )
-		hash += (int)( ip[ i ] ) * ( i + 119 );
+		hash = hash * 101 + (int)( *ip++ );
 
-	hash = ( hash ^ ( hash >> 10 ) ^ ( hash >> 20 ) );
-	hash &= 1023;
-	return hash;
+	hash = hash ^ ( hash >> 16 );
+
+	return (hash & 1023);
 }
 
-void hash_insert( netadr_t *addr ) 
+void hash_insert( netadr_t addr ) 
 {
 	hash_chain_t **tab, *cur;
 	unsigned int hash;
 	if ( hash_count >= MAX_GLOBAL_SERVERS )
 		return;
-	hash = hash_func( addr );
+	hash = hash_func( &addr );
 	tab = &hash_table[ hash ];
 	cur = &hash_list[ hash_count++ ];
 	cur->addr = addr;
@@ -1924,12 +1924,12 @@ void hash_reset( void )
 	memset( hash_table, 0, sizeof( hash_table ) );
 }
 
-hash_chain_t *hash_find( netadr_t *addr ) 
+hash_chain_t *hash_find( netadr_t addr ) 
 {
 	hash_chain_t *cur;
-	cur = hash_table[ hash_func( addr ) ];
+	cur = hash_table[ hash_func( &addr ) ];
 	while ( cur != NULL ) {
-		if ( NET_CompareAdrP( addr, cur->addr ) )
+		if ( NET_CompareAdr( addr, cur->addr ) )
 			return cur;
 		cur = cur->next;
 	}
@@ -1955,6 +1955,7 @@ void CL_ServersResponsePacket( const netadr_t* from, msg_t *msg, qboolean extend
 		// state to detect lack of servers or lack of response
 		cls.numglobalservers = 0;
 		cls.numGlobalServerAddresses = 0;
+		hash_reset();
 	}
 
 	// parse through server response string
@@ -2025,10 +2026,10 @@ void CL_ServersResponsePacket( const netadr_t* from, msg_t *msg, qboolean extend
 		// Tequila: It's possible to have sent many master server requests. Then
 		// we may receive many times the same addresses from the master server.
 		// We just avoid to add a server if it is still in the global servers list.
-		if ( hash_find( &addresses[i] ) )
+		if ( hash_find( addresses[i] ) )
 			continue;
 
-		hash_insert( &addresses[i] );
+		hash_insert( addresses[i] );
 
 		// build net address
 		server = &cls.globalServers[count];
@@ -3453,8 +3454,6 @@ void CL_GlobalServers_f( void ) {
 
 	cls.numglobalservers = -1;
 	cls.pingUpdateSource = AS_GLOBAL;
-
-	hash_reset();
 
 	// Use the extended query for IPv6 masters
 	if (to.type == NA_IP6 || to.type == NA_MULTICAST6)

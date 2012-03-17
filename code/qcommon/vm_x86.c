@@ -45,7 +45,7 @@ static void VM_Destroy_Compiled(vm_t* self);
 /*
 
   eax	scratch
-  ebx	scratch 
+  ebx	scratch
   ecx	scratch (required for shifts) | currentVM
   edx	scratch (required for divisions)
   esi	program stack
@@ -1545,7 +1545,7 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 	instructionCount = vm->instructionCount;
 
 	// interpret the code
-	vm->currentlyInterpreting = qtrue;
+	//vm->currentlyInterpreting = qtrue;
 
 	// we might be called recursively, so this might not be the very top
 	programStack = vm->programStack;
