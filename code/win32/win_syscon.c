@@ -41,6 +41,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define EDIT_ID			100
 #define INPUT_ID		101
 
+#define BORDERW			4
+
 typedef struct
 {
 	HWND		hWnd;
@@ -242,6 +244,37 @@ static LONG WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		return 1;
 #endif
 	    return DefWindowProc( hWnd, uMsg, wParam, lParam );
+	case WM_SIZE:
+		{
+			RECT rect;
+			GetClientRect( hWnd, &rect );
+
+			SetWindowPos( s_wcd.hwndBuffer, HWND_TOP, BORDERW, 5+35, rect.right - BORDERW*2, rect.bottom - 99, SWP_NOZORDER );
+			SetWindowPos( s_wcd.hwndButtonCopy, HWND_TOP, BORDERW, rect.bottom-28, 72, 24, SWP_NOZORDER );
+			SetWindowPos( s_wcd.hwndButtonClear, HWND_TOP, BORDERW + 77, rect.bottom-28, 72, 24, SWP_NOZORDER );
+			SetWindowPos( s_wcd.hwndButtonQuit, HWND_TOP, rect.right - 72 - BORDERW, rect.bottom-28, 72, 24, SWP_NOZORDER );
+
+			if ( s_wcd.hwndErrorBox ) {
+				SetWindowPos( s_wcd.hwndErrorBox, HWND_TOP, BORDERW, 5, rect.right - BORDERW*2, 30, SWP_NOZORDER );
+				InvalidateRect( s_wcd.hwndErrorBox, NULL, FALSE );
+			}
+
+			if ( s_wcd.hwndInputLine ) {
+				SetWindowPos( s_wcd.hwndInputLine, HWND_TOP, BORDERW, rect.bottom - 53, rect.right - BORDERW*2, 20, SWP_NOZORDER );
+				InvalidateRect( s_wcd.hwndInputLine, NULL, FALSE );
+			}
+
+			return 0;
+		}
+	case WM_WINDOWPOSCHANGING:
+		{
+			LPWINDOWPOS w = (LPWINDOWPOS)lParam;
+			if ( w->cy < 172 )
+				w->cy = 172;
+			if ( w->cx < 242 )
+				w->cx = 242;
+			return 0;
+		}
 	case WM_TIMER:
 		if ( wParam == 1 )
 		{
@@ -300,7 +333,7 @@ void Sys_CreateConsole( void )
 	const char *DEDCLASS = "Q3 WinConsole";
 	int nHeight;
 	int swidth, sheight;
-	int DEDSTYLE = WS_POPUPWINDOW | WS_CAPTION | WS_MINIMIZEBOX;
+	int DEDSTYLE = WS_POPUPWINDOW | WS_CAPTION | WS_MINIMIZEBOX | WS_SIZEBOX;
 
 	memset( &wc, 0, sizeof( wc ) );
 
@@ -321,7 +354,8 @@ void Sys_CreateConsole( void )
 	rect.left = 0;
 	rect.right = 540;
 	rect.top = 0;
-	rect.bottom = 450;
+	rect.bottom = 452;
+
 	AdjustWindowRect( &rect, DEDSTYLE, FALSE );
 
 	hDC = GetDC( GetDesktopWindow() );
@@ -332,20 +366,19 @@ void Sys_CreateConsole( void )
 	s_wcd.windowWidth = rect.right - rect.left + 1;
 	s_wcd.windowHeight = rect.bottom - rect.top + 1;
 
-	s_wcd.hWnd = CreateWindowEx( 0,
-							   DEDCLASS,
-							   CONSOLE_WINDOW_TITLE,
-							   DEDSTYLE,
-							   ( swidth - 600 ) / 2, ( sheight - 450 ) / 2 , rect.right - rect.left + 1, rect.bottom - rect.top + 1,
-							   NULL,
-							   NULL,
-							   g_wv.hInstance,
-							   NULL );
+	s_wcd.hWnd = CreateWindowEx( 0, DEDCLASS,
+							   CONSOLE_WINDOW_TITLE, DEDSTYLE,
+							   ( swidth - s_wcd.windowWidth ) / 2, 
+							   ( sheight - s_wcd.windowHeight ) / 2 , 
+							   s_wcd.windowWidth, s_wcd.windowHeight,
+							   NULL, NULL, g_wv.hInstance, NULL );
 
 	if ( s_wcd.hWnd == NULL )
 	{
 		return;
 	}
+
+	GetClientRect( s_wcd.hWnd, &rect );
 
 	//
 	// create fonts
@@ -357,7 +390,7 @@ void Sys_CreateConsole( void )
 									  0,
 									  0,
 									  0,
-									  FW_LIGHT,
+									  FW_NORMAL,
 									  0,
 									  0,
 									  0,
@@ -375,7 +408,7 @@ void Sys_CreateConsole( void )
 	//
 	s_wcd.hwndInputLine = CreateWindow( "edit", NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | 
 												ES_LEFT | ES_AUTOHSCROLL,
-												6, 400, 528, 20,
+												BORDERW, rect. bottom - 53, rect.right - BORDERW*2, 20,
 												s_wcd.hWnd, 
 												( HMENU ) INPUT_ID,	// child window ID
 												g_wv.hInstance, NULL );
@@ -383,26 +416,26 @@ void Sys_CreateConsole( void )
 	//
 	// create the buttons
 	//
-	s_wcd.hwndButtonCopy = CreateWindow( "button", NULL, BS_PUSHBUTTON | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-												5, 425, 72, 24,
+	s_wcd.hwndButtonCopy = CreateWindow( "button", "copy", BS_PUSHBUTTON | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+												BORDERW, rect.bottom-28, 72, 24,
 												s_wcd.hWnd, 
 												( HMENU ) COPY_ID,	// child window ID
 												g_wv.hInstance, NULL );
-	SendMessage( s_wcd.hwndButtonCopy, WM_SETTEXT, 0, ( LPARAM ) "copy" );
+	//SendMessage( s_wcd.hwndButtonCopy, WM_SETTEXT, 0, ( LPARAM ) "copy" );
 
-	s_wcd.hwndButtonClear = CreateWindow( "button", NULL, BS_PUSHBUTTON | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-												82, 425, 72, 24,
+	s_wcd.hwndButtonClear = CreateWindow( "button", "clear", BS_PUSHBUTTON | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+												BORDERW + 77, rect.bottom-28, 72, 24,
 												s_wcd.hWnd, 
 												( HMENU ) CLEAR_ID,	// child window ID
 												g_wv.hInstance, NULL );
-	SendMessage( s_wcd.hwndButtonClear, WM_SETTEXT, 0, ( LPARAM ) "clear" );
+	//SendMessage( s_wcd.hwndButtonClear, WM_SETTEXT, 0, ( LPARAM ) "clear" );
 
-	s_wcd.hwndButtonQuit = CreateWindow( "button", NULL, BS_PUSHBUTTON | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-												462, 425, 72, 24,
+	s_wcd.hwndButtonQuit = CreateWindow( "button", "quit", BS_PUSHBUTTON | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+												rect.right - 72 - BORDERW, rect.bottom-28, 72, 24,
 												s_wcd.hWnd, 
 												( HMENU ) QUIT_ID,	// child window ID
 												g_wv.hInstance, NULL );
-	SendMessage( s_wcd.hwndButtonQuit, WM_SETTEXT, 0, ( LPARAM ) "quit" );
+	//SendMessage( s_wcd.hwndButtonQuit, WM_SETTEXT, 0, ( LPARAM ) "quit" );
 
 
 	//
@@ -410,7 +443,7 @@ void Sys_CreateConsole( void )
 	//
 	s_wcd.hwndBuffer = CreateWindow( "edit", NULL, WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_BORDER | 
 												ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY,
-												6, 40, 526, 354,
+												BORDERW, 40, rect.right - 2*BORDERW, rect.bottom - 99,
 												s_wcd.hWnd, 
 												( HMENU ) EDIT_ID,	// child window ID
 												g_wv.hInstance, NULL );
@@ -578,12 +611,14 @@ void Conbuf_AppendText( const char *pMsg )
 */
 void Sys_SetErrorText( const char *buf )
 {
+	RECT rect;
 	Q_strncpyz( s_wcd.errorString, buf, sizeof( s_wcd.errorString ) );
 
 	if ( !s_wcd.hwndErrorBox )
 	{
+		GetClientRect( s_wcd.hWnd, &rect );
 		s_wcd.hwndErrorBox = CreateWindow( "static", NULL, WS_CHILD | WS_VISIBLE | SS_SUNKEN,
-													6, 5, 526, 30,
+													BORDERW, 5, rect.right - BORDERW*2, 30,
 													s_wcd.hWnd, 
 													( HMENU ) ERRORBOX_ID,	// child window ID
 													g_wv.hInstance, NULL );
