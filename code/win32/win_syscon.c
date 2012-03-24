@@ -333,7 +333,7 @@ void Sys_CreateConsole( char *title )
 	const char *DEDCLASS = "Q3 WinConsole";
 	int nHeight;
 	int swidth, sheight;
-	int DEDSTYLE = WS_POPUPWINDOW | WS_CAPTION | WS_MINIMIZEBOX | WS_SIZEBOX;
+	int DEDSTYLE = WS_POPUPWINDOW | WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SIZEBOX;
 
 	memset( &wc, 0, sizeof( wc ) );
 
