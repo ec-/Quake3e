@@ -91,7 +91,7 @@ void	IN_MouseEvent( int mstate );
 
 void Sys_QueEvent( int time, sysEventType_t type, int value, int value2, int ptrLength, void *ptr );
 
-void	Sys_CreateConsole( void );
+void	Sys_CreateConsole( char *title );
 void	Sys_DestroyConsole( void );
 
 char	*Sys_ConsoleInput (void);

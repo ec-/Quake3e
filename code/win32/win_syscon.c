@@ -325,7 +325,7 @@ LONG WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 /*
 ** Sys_CreateConsole
 */
-void Sys_CreateConsole( void )
+void Sys_CreateConsole( char *title )
 {
 	HDC hDC;
 	WNDCLASS wc;
@@ -451,6 +451,9 @@ void Sys_CreateConsole( void )
 
 	s_wcd.SysInputLineWndProc = ( WNDPROC ) SetWindowLong( s_wcd.hwndInputLine, GWL_WNDPROC, ( long ) InputLineWndProc );
 	SendMessage( s_wcd.hwndInputLine, WM_SETFONT, ( WPARAM ) s_wcd.hfBufferFont, 0 );
+
+	if ( title && *title )
+		SetWindowText( s_wcd.hWnd, title );
 
 	ShowWindow( s_wcd.hWnd, SW_SHOWDEFAULT);
 	UpdateWindow( s_wcd.hWnd );

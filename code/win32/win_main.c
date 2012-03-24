@@ -1130,6 +1130,7 @@ WinMain
 ==================
 */
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+
 	char		cwd[MAX_OSPATH];
 	int			startTime, endTime;
 
@@ -1142,7 +1143,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	Q_strncpyz( sys_cmdline, lpCmdLine, sizeof( sys_cmdline ) );
 
 	// done before Com/Sys_Init since we need this for error output
-	Sys_CreateConsole();
+	Sys_CreateConsole( Com_ConsoleTitle( sys_cmdline ) );
 
 	// no abort/retry/fail errors
 	SetErrorMode( SEM_FAILCRITICALERRORS );

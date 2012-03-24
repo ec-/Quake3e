@@ -414,9 +414,14 @@ Break it up into multiple console lines
 ==================
 */
 void Com_ParseCommandLine( char *commandLine ) {
-    int inq = 0;
-    com_consoleLines[0] = commandLine;
-    com_numConsoleLines = 1;
+	static int parsed = 0;
+    int inq;
+
+	if ( parsed )
+		return;
+
+	inq = 0;
+	com_consoleLines[0] = commandLine;
 
     while ( *commandLine ) {
         if (*commandLine == '"') {
@@ -426,7 +431,7 @@ void Com_ParseCommandLine( char *commandLine ) {
         // if commandLine came from a file, we might have real line seperators
         if ( (*commandLine == '+' && !inq) || *commandLine == '\n'  || *commandLine == '\r' ) {
             if ( com_numConsoleLines == MAX_CONSOLE_LINES ) {
-                return;
+				break;
             }
             com_consoleLines[com_numConsoleLines] = commandLine + 1;
             com_numConsoleLines++;
@@ -434,6 +439,32 @@ void Com_ParseCommandLine( char *commandLine ) {
         }
         commandLine++;
     }
+	parsed = 1;
+}
+
+
+/*
+===================
+Com_ConsoleTitle
+===================
+*/
+char *Com_ConsoleTitle( char *commandLine ) {
+	int		i;
+	
+	Com_ParseCommandLine( commandLine );
+
+	for ( i = 0 ; i < com_numConsoleLines ; i++ ) {
+		Cmd_TokenizeString( com_consoleLines[i] );
+		if ( !Q_stricmpn( Cmd_Argv(0), "set", 3 ) && !Q_stricmp( Cmd_Argv(1), "con_title" ) ) {
+			com_consoleLines[i][0] = '\0';
+			return Cmd_Argv(2);
+		}
+		if ( !Q_stricmp( Cmd_Argv(0), "con_title" ) ) {
+			com_consoleLines[i][0] = '\0';
+			return Cmd_Argv(1);
+		}
+	}
+	return NULL;
 }
 
 

@@ -801,6 +801,7 @@ char		*Com_MD5Buf( const char *data, int length, const char *data2, int length2 
 int			Com_Filter(char *filter, char *name, int casesensitive);
 int			Com_FilterPath(char *filter, char *name, int casesensitive);
 int			Com_RealTime(qtime_t *qtime);
+char		*Com_ConsoleTitle( char *commandline );
 qboolean	Com_SafeMode( void );
 int			Com_Split( char *in, char **out, int outsz, int delim );
 
