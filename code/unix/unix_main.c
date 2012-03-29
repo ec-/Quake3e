@@ -1410,6 +1410,15 @@ void  Sys_Print( const char *msg )
   }
 }
 
+void Sys_BeginPrint( void ) 
+{
+  return;
+}
+
+void Sys_EndPrint( void ) 
+{
+  return;
+}
 
 void    Sys_ConfigureFPU( void ) { // bk001213 - divide by zero
 #ifdef __linux__

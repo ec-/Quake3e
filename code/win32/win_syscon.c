@@ -42,6 +42,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define INPUT_ID		101
 
 #define BORDERW			4
+#define MAX_CONSIZE		65536
+
+field_t console;
 
 typedef struct
 {
@@ -78,6 +81,21 @@ typedef struct
 } WinConData;
 
 static WinConData s_wcd;
+
+static int maxConSize; // up to MAX_CONSIZE
+static int curConSize; // up to MAX_CONSIZE
+static int conCache = 0;
+
+void Conbuf_BeginPrint( void );
+void Conbuf_EndPrint( void );
+
+static void ConClear() 
+{
+	SendMessage( s_wcd.hwndBuffer, EM_SETSEL, 0, -1 );
+	SendMessage( s_wcd.hwndBuffer, EM_REPLACESEL, FALSE, ( LPARAM ) "" );
+	UpdateWindow( s_wcd.hwndBuffer );
+	curConSize = 0;
+}
 
 static LONG WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -169,6 +187,7 @@ static LONG WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		{
 			SendMessage( s_wcd.hwndBuffer, EM_SETSEL, 0, -1 );
 			SendMessage( s_wcd.hwndBuffer, WM_COPY, 0, 0 );
+			SetFocus( s_wcd.hwndInputLine );
 		}
 		else if ( wParam == QUIT_ID )
 		{
@@ -184,9 +203,8 @@ static LONG WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		}
 		else if ( wParam == CLEAR_ID )
 		{
-			SendMessage( s_wcd.hwndBuffer, EM_SETSEL, 0, -1 );
-			SendMessage( s_wcd.hwndBuffer, EM_REPLACESEL, FALSE, ( LPARAM ) "" );
-			UpdateWindow( s_wcd.hwndBuffer );
+			ConClear();
+			SetFocus( s_wcd.hwndInputLine );
 		}
 		break;
 	case WM_CREATE:
@@ -308,15 +326,37 @@ LONG WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 	case WM_CHAR:
 		if ( wParam == VK_RETURN )
 		{
-			GetWindowText( s_wcd.hwndInputLine, inputBuffer, sizeof( inputBuffer ) );
-			strncat( s_wcd.consoleText, inputBuffer, sizeof( s_wcd.consoleText ) - strlen( s_wcd.consoleText ) - 5 );
+			char *s;
+
+			GetWindowText( hWnd, inputBuffer, sizeof( inputBuffer ) );
+			s = inputBuffer;
+			if ( *s == '\\' || *s == '/' )
+				s++;
+
+			strncat( s_wcd.consoleText, s, sizeof( s_wcd.consoleText ) - strlen( s_wcd.consoleText ) - 2 );
 			strcat( s_wcd.consoleText, "\n" );
+			
 			SetWindowText( s_wcd.hwndInputLine, "" );
+			Field_Clear( &console );
 
 			Sys_Print( va( "]%s\n", inputBuffer ) );
 
 			return 0;
 		}
+
+		if ( wParam == VK_TAB ) {
+			DWORD pos;
+			GetWindowText( hWnd, console.buffer, sizeof( console.buffer ) );
+			SendMessage( hWnd, EM_GETSEL, (WPARAM) &pos, (LPARAM) 0 );
+			console.cursor = pos;
+			Sys_BeginPrint();
+			Field_AutoComplete( &console );
+			Sys_EndPrint();
+			SetWindowText( hWnd, console.buffer );
+			SendMessage( hWnd, EM_SETSEL, console.cursor, console.cursor );
+			return 0;
+		}
+		break;
 	}
 
 	return CallWindowProc( s_wcd.SysInputLineWndProc, hWnd, uMsg, wParam, lParam );
@@ -421,22 +461,18 @@ void Sys_CreateConsole( char *title )
 												s_wcd.hWnd, 
 												( HMENU ) COPY_ID,	// child window ID
 												g_wv.hInstance, NULL );
-	//SendMessage( s_wcd.hwndButtonCopy, WM_SETTEXT, 0, ( LPARAM ) "copy" );
 
 	s_wcd.hwndButtonClear = CreateWindow( "button", "clear", BS_PUSHBUTTON | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
 												BORDERW + 77, rect.bottom-28, 72, 24,
 												s_wcd.hWnd, 
 												( HMENU ) CLEAR_ID,	// child window ID
 												g_wv.hInstance, NULL );
-	//SendMessage( s_wcd.hwndButtonClear, WM_SETTEXT, 0, ( LPARAM ) "clear" );
 
 	s_wcd.hwndButtonQuit = CreateWindow( "button", "quit", BS_PUSHBUTTON | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
 												rect.right - 72 - BORDERW, rect.bottom-28, 72, 24,
 												s_wcd.hWnd, 
 												( HMENU ) QUIT_ID,	// child window ID
 												g_wv.hInstance, NULL );
-	//SendMessage( s_wcd.hwndButtonQuit, WM_SETTEXT, 0, ( LPARAM ) "quit" );
-
 
 	//
 	// create the scrollbuffer
@@ -458,22 +494,33 @@ void Sys_CreateConsole( char *title )
 	ShowWindow( s_wcd.hWnd, SW_SHOWDEFAULT);
 	UpdateWindow( s_wcd.hWnd );
 	SetForegroundWindow( s_wcd.hWnd );
+	
+	SendMessage( s_wcd.hwndBuffer, EM_SETLIMITTEXT, MAX_CONSIZE, 0 );
+	maxConSize = SendMessage( s_wcd.hwndBuffer, EM_GETLIMITTEXT, 0, 0 );
+	ConClear();
+
+	SendMessage( s_wcd.hwndInputLine, EM_SETLIMITTEXT, MAX_EDIT_LINE, 0 );
 	SetFocus( s_wcd.hwndInputLine );
+	Field_Clear( &console );
 
 	s_wcd.visLevel = 1;
 }
 
+
 /*
 ** Sys_DestroyConsole
 */
-void Sys_DestroyConsole( void ) {
-	if ( s_wcd.hWnd ) {
+void Sys_DestroyConsole( void ) 
+{
+	if ( s_wcd.hWnd ) 
+	{
 		ShowWindow( s_wcd.hWnd, SW_HIDE );
 		CloseWindow( s_wcd.hWnd );
 		DestroyWindow( s_wcd.hWnd );
-		s_wcd.hWnd = 0;
+		s_wcd.hWnd = NULL;
 	}
 }
+
 
 /*
 ** Sys_ShowConsole
@@ -499,7 +546,10 @@ void Sys_ShowConsole( int visLevel, qboolean quitOnClose )
 		break;
 	case 1:
 		ShowWindow( s_wcd.hWnd, SW_SHOWNORMAL );
-		SendMessage( s_wcd.hwndBuffer, EM_LINESCROLL, 0, 0xffff );
+		curConSize = GetWindowTextLength( s_wcd.hwndBuffer );	
+		SendMessage( s_wcd.hwndBuffer, EM_SETSEL, curConSize, curConSize );
+		SendMessage( s_wcd.hwndBuffer, EM_SCROLLCARET, 0, 0 );
+		//SendMessage( s_wcd.hwndBuffer, EM_LINESCROLL, 0, 0xffff );
 		break;
 	case 2:
 		ShowWindow( s_wcd.hWnd, SW_MINIMIZE );
@@ -515,99 +565,113 @@ void Sys_ShowConsole( int visLevel, qboolean quitOnClose )
 */
 char *Sys_ConsoleInput( void )
 {
-	if ( s_wcd.consoleText[0] == 0 )
+	if ( s_wcd.consoleText[0] == '\0' )
 	{
 		return NULL;
 	}
 		
 	strcpy( s_wcd.returnedText, s_wcd.consoleText );
-	s_wcd.consoleText[0] = 0;
+	s_wcd.consoleText[0] = '\0';
 	
 	return s_wcd.returnedText;
 }
 
-/*
-** Conbuf_AppendText
+char conBuffer[MAXPRINTMSG];
+int  conBufPos;
+
+/* 
+ =================
+ Conbuf_AppendText
+ =================
 */
-void Conbuf_AppendText( const char *pMsg )
+void Conbuf_AppendText( const char *msg )
 {
-#define CONSOLE_BUFFER_SIZE		16384*4
-
-	char buffer[CONSOLE_BUFFER_SIZE*2];
+	char buffer[MAXPRINTMSG*2]; // reserve space for CR-LF expansion
 	char *b = buffer;
-	const char *msg;
-	int bufLen;
-	int i = 0;
-	static unsigned long s_totalChars;
+	int bufLen, n, pos;
 
-	//
+	n = strlen( msg );
+
+	if ( conCache && n + conBufPos < MAXPRINTMSG-1 && msg != conBuffer ) {
+		strcpy( conBuffer + conBufPos, msg );
+		conBufPos += n;
+		return;
+	}
+
+	if ( conBufPos ) {
+		conBufPos = 0;
+		Conbuf_AppendText( conBuffer );
+	}
+
 	// if the message is REALLY long, use just the last portion of it
-	//
-	if ( strlen( pMsg ) > CONSOLE_BUFFER_SIZE - 1 )
+	if ( n > (MAXPRINTMSG - 1) ) 
 	{
-		msg = pMsg + strlen( pMsg ) - CONSOLE_BUFFER_SIZE + 1;
-	}
-	else
-	{
-		msg = pMsg;
+		msg += n - (MAXPRINTMSG - 1);		
 	}
 
-	//
 	// copy into an intermediate buffer
-	//
-	while ( msg[i] && ( ( b - buffer ) < sizeof( buffer ) - 1 ) )
+	while ( *msg )
 	{
-		if ( msg[i] == '\n' && msg[i+1] == '\r' )
+		if ( *msg == '\n' )
 		{
-			b[0] = '\r';
-			b[1] = '\n';
-			b += 2;
-			i++;
+			*b++ = '\r';
+			*b++ = '\n';
+			msg++;
 		}
-		else if ( msg[i] == '\r' )
+		else if ( *msg == '\r' )
 		{
-			b[0] = '\r';
-			b[1] = '\n';
-			b += 2;
+			*b++ = '\r';
+			*b++ = '\n';
+			msg++;
+			if ( *msg == '\n' )
+				msg++;
 		}
-		else if ( msg[i] == '\n' )
+		else if ( Q_IsColorString( msg ) )
 		{
-			b[0] = '\r';
-			b[1] = '\n';
-			b += 2;
-		}
-		else if ( Q_IsColorString( &msg[i] ) )
-		{
-			i++;
+			msg += 2;
 		}
 		else
 		{
-			*b= msg[i];
-			b++;
+			*b++ = *msg++;
 		}
-		i++;
 	}
-	*b = 0;
+
+	*b = '\0';
 	bufLen = b - buffer;
 
-	s_totalChars += bufLen;
-
-	//
-	// replace selection instead of appending if we're overflowing
-	//
-	if ( s_totalChars > 0x7fff )
-	{
-		SendMessage( s_wcd.hwndBuffer, EM_SETSEL, 0, -1 );
-		s_totalChars = bufLen;
+	// FIXME: check for maxConSize < MAX_PRINTMSG*2
+	if ( bufLen + curConSize >= maxConSize ) {
+		n = SendMessage( s_wcd.hwndBuffer, EM_GETLINECOUNT, 0, 0 );
+		// cut off half from total lines count
+		n = n / 2;
+		if ( n <= 0 ) 
+			n = 1;
+		pos = SendMessage( s_wcd.hwndBuffer, EM_LINEINDEX, n, 0 );
+		SendMessage( s_wcd.hwndBuffer, EM_SETSEL, 0, pos );
+		SendMessage( s_wcd.hwndBuffer, EM_REPLACESEL, FALSE, (LPARAM) "" );
 	}
 
-	//
+	curConSize = GetWindowTextLength( s_wcd.hwndBuffer );	
+	SendMessage( s_wcd.hwndBuffer, EM_SETSEL, curConSize, curConSize );
+
 	// put this text into the windows console
-	//
-	SendMessage( s_wcd.hwndBuffer, EM_LINESCROLL, 0, 0xffff );
+	//SendMessage( s_wcd.hwndBuffer, EM_LINESCROLL, 0, 0xffff );
 	SendMessage( s_wcd.hwndBuffer, EM_SCROLLCARET, 0, 0 );
 	SendMessage( s_wcd.hwndBuffer, EM_REPLACESEL, 0, (LPARAM) buffer );
+	curConSize += bufLen;
 }
+
+void Conbuf_BeginPrint( void ) {
+	conCache = 1;
+}
+
+void Conbuf_EndPrint( void ) {
+	conCache = 0;
+	if ( conBufPos ) {
+		Conbuf_AppendText( "" );
+	}
+}
+
 
 /*
 ** Sys_SetErrorText
@@ -616,6 +680,8 @@ void Sys_SetErrorText( const char *buf )
 {
 	RECT rect;
 	Q_strncpyz( s_wcd.errorString, buf, sizeof( s_wcd.errorString ) );
+
+	Sys_EndPrint(); // flush any pending messages
 
 	if ( !s_wcd.hwndErrorBox )
 	{

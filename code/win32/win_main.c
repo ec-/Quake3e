@@ -165,6 +165,13 @@ void Sys_Print( const char *msg ) {
 	Conbuf_AppendText( msg );
 }
 
+void Sys_BeginPrint( void ) {
+	Conbuf_BeginPrint();
+}
+
+void Sys_EndPrint( void ) {
+	Conbuf_EndPrint();
+}
 
 /*
 ==============

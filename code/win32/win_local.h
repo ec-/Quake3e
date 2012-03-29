@@ -120,6 +120,8 @@ LONG WINAPI MainWndProc (
     LPARAM  lParam);
 
 void Conbuf_AppendText( const char *msg );
+void Conbuf_BeginPrint( void );
+void Conbuf_EndPrint( void );
 
 void SNDDMA_Activate( void );
 int  SNDDMA_InitDS (void);
