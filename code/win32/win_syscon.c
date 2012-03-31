@@ -23,13 +23,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../client/client.h"
 #include "win_local.h"
 #include "resource.h"
-#include <errno.h>
-#include <float.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <direct.h>
-#include <io.h>
-#include <conio.h>
 
 #define COPY_ID			1
 #define QUIT_ID			2
