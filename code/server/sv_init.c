@@ -421,12 +421,14 @@ void SV_SpawnServer( char *server, qboolean killBots ) {
 	Com_Printf ("------ Server Initialization ------\n");
 	Com_Printf ("Server: %s\n",server);
 
+#ifndef DEDICATED
 	// if not running a dedicated server CL_MapLoading will connect the client to the server
 	// also print some status stuff
 	CL_MapLoading();
 
 	// make sure all the client stuff is unloaded
 	CL_ShutdownAll();
+#endif
 
 	// clear the whole hunk because we're (re)loading the server
 	Hunk_Clear();
@@ -781,8 +783,11 @@ void SV_Shutdown( char *finalmsg ) {
 
 	Com_Printf( "---------------------------\n" );
 
+#ifndef DEDICATED
 	// disconnect any local clients
 	if( sv_killserver->integer != 2 )
 		CL_Disconnect( qfalse );
+#endif
+
 }
 

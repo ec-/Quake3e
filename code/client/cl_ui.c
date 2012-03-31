@@ -1058,7 +1058,7 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_VERIFY_CDKEY:
-		return CL_CDKeyValidate(VMA(1), VMA(2));
+		return Com_CDKeyValidate(VMA(1), VMA(2));
 		
 	default:
 		Com_Error( ERR_DROP, "Bad UI system trap: %ld", (long int) args[0] );

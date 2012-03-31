@@ -175,10 +175,12 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 		return;
 	}
 
+#ifndef DEDICATED
 	// echo to console if we're not a dedicated server
 	if ( com_dedicated && !com_dedicated->integer ) {
 		CL_ConsolePrint( msg );
 	}
+#endif
 
 	// echo to dedicated console and early console
 	Sys_Print( msg );
@@ -311,9 +313,13 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 
 	if (code == ERR_DISCONNECT || code == ERR_SERVERDISCONNECT) {
 		SV_Shutdown( "Server disconnected" );
+#ifndef DEDICATED
 		CL_Disconnect( qtrue );
+#endif
 		VM_Forced_Unload_Start();
+#ifndef DEDICATED
 		CL_FlushMemory( );
+#endif
 		VM_Forced_Unload_Done();
 		// make sure we can get at our local stuff
 		FS_PureServerSetLoadedPaks("", "");
@@ -322,15 +328,20 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 	} else if (code == ERR_DROP) {
 		Com_Printf ("********************\nERROR: %s\n********************\n", com_errorMessage);
 		SV_Shutdown (va("Server crashed: %s",  com_errorMessage));
+#ifndef DEDICATED
 		CL_Disconnect( qtrue );
+#endif
 		VM_Forced_Unload_Start();
+#ifndef DEDICATED
 		CL_FlushMemory( );
+#endif
 		VM_Forced_Unload_Done();
 		FS_PureServerSetLoadedPaks("", "");
 		com_errorEntered = qfalse;
 		longjmp (abortframe, -1);
 	} else if ( code == ERR_NEED_CD ) {
 		SV_Shutdown( "Server didn't have CD" );
+#ifndef DEDICATED
 		if ( com_cl_running && com_cl_running->integer ) {
 			CL_Disconnect( qtrue );
 			VM_Forced_Unload_Start();
@@ -341,12 +352,15 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 		} else {
 			Com_Printf("Server didn't have CD\n" );
 		}
+#endif
 		FS_PureServerSetLoadedPaks("", "");
 
     	com_errorEntered = qfalse;
 		longjmp (abortframe, -1);
 	} else {
+#ifndef DEDICATED
 		CL_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ) );
+#endif
 		SV_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ) );
 	}
 
@@ -375,7 +389,9 @@ void Com_Quit_f( void ) {
 		// a corrupt call stack makes no difference
 		VM_Forced_Unload_Start();
 		SV_Shutdown( p[0] ? p : "Server quit" );
+#ifndef DEDICATED
 		CL_Shutdown( p[0] ? p : "Client quit" );
+#endif
 		VM_Forced_Unload_Done();
 		Com_Shutdown();
 		FS_Shutdown( qtrue );
@@ -2205,10 +2221,11 @@ int Com_EventLoop( void ) {
 		// if no more events are available
 		if ( ev.evType == SE_NONE ) {
 			// manually send packet events for the loopback channel
+#ifndef DEDICATED
 			while ( NET_GetLoopPacket( NS_CLIENT, &evFrom, &buf ) ) {
 				CL_PacketEvent( evFrom, &buf );
 			}
-
+#endif
 			while ( NET_GetLoopPacket( NS_SERVER, &evFrom, &buf ) ) {
 				// if the server just shut down, flush the events
 				if ( com_sv_running->integer ) {
@@ -2227,6 +2244,7 @@ int Com_EventLoop( void ) {
 			break;
         case SE_NONE:
             break;
+#ifndef DEDICATED
 		case SE_KEY:
 			CL_KeyEvent( ev.evValue, ev.evValue2, ev.evTime );
 			break;
@@ -2239,6 +2257,7 @@ int Com_EventLoop( void ) {
 		case SE_JOYSTICK_AXIS:
 			CL_JoystickEvent( ev.evValue, ev.evValue2, ev.evTime );
 			break;
+#endif
 		case SE_CONSOLE:
 			Cbuf_AddText( (char *)ev.evPtr );
 			Cbuf_AddText( "\n" );
@@ -2270,7 +2289,9 @@ int Com_EventLoop( void ) {
 			if ( com_sv_running->integer ) {
 				Com_RunAndTimeServerPacket( &evFrom, &buf );
 			} else {
+#ifndef DEDICATED
 				CL_PacketEvent( evFrom, &buf );
+#endif
 			}
 			break;
 		}
@@ -2401,13 +2422,15 @@ void Com_GameRestart(int checksumFeed, qboolean clientRestart)
 	if(!com_gameRestarting && com_fullyInitialized)
 	{
 		com_gameRestarting = qtrue;
-		
+
+#ifndef DEDICATED		
 		if( clientRestart )
 		{
 			CL_Disconnect( qfalse );
 			CL_ShutdownAll();
 			Hunk_Clear(); // -EC- 
 		}
+#endif
 
 		// Kill server if we have one
 		if( com_sv_running->integer )
@@ -2419,12 +2442,13 @@ void Com_GameRestart(int checksumFeed, qboolean clientRestart)
 		Cvar_Restart(qtrue);
 		Com_ExecuteCfg();
 		
-    	// Restart sound subsystem so old handles are flushed
+#ifndef DEDICATED
+		// Restart sound subsystem so old handles are flushed
 		//CL_Snd_Restart();
-
 		if ( clientRestart )
 			CL_StartHunkUsers();
 //			CL_StartHunkUsers(qfalse);
+#endif
 		
 		com_gameRestarting = qfalse;
 	}
@@ -2456,10 +2480,77 @@ char	cl_cdkey[34] = "123456789";
 
 /*
 =================
+bool CL_CDKeyValidate
+=================
+*/
+qboolean Com_CDKeyValidate( const char *key, const char *checksum ) {
+#ifdef STANDALONE
+	return qtrue;
+#else
+	char	ch;
+	byte	sum;
+	char	chs[3];
+	int i, len;
+
+	len = strlen(key);
+	if( len != CDKEY_LEN ) {
+		return qfalse;
+	}
+
+	if( checksum && strlen( checksum ) != CDCHKSUM_LEN ) {
+		return qfalse;
+	}
+
+	sum = 0;
+	// for loop gets rid of conditional assignment warning
+	for (i = 0; i < len; i++) {
+		ch = *key++;
+		if (ch>='a' && ch<='z') {
+			ch -= 32;
+		}
+		switch( ch ) {
+		case '2':
+		case '3':
+		case '7':
+		case 'A':
+		case 'B':
+		case 'C':
+		case 'D':
+		case 'G':
+		case 'H':
+		case 'J':
+		case 'L':
+		case 'P':
+		case 'R':
+		case 'S':
+		case 'T':
+		case 'W':
+			sum += ch;
+			continue;
+		default:
+			return qfalse;
+		}
+	}
+
+	sprintf(chs, "%02x", sum);
+	
+	if (checksum && !Q_stricmp(chs, checksum)) {
+		return qtrue;
+	}
+
+	if (!checksum) {
+		return qtrue;
+	}
+
+	return qfalse;
+#endif
+}
+
+/*
+=================
 Com_ReadCDKey
 =================
 */
-qboolean CL_CDKeyValidate( const char *key, const char *checksum );
 void Com_ReadCDKey( const char *filename ) {
 	fileHandle_t	f;
 	char			buffer[33];
@@ -2478,7 +2569,7 @@ void Com_ReadCDKey( const char *filename ) {
 	FS_Read( buffer, 16, f );
 	FS_FCloseFile( f );
 
-	if (CL_CDKeyValidate(buffer, NULL)) {
+	if ( Com_CDKeyValidate(buffer, NULL) ) {
 		Q_strncpyz( cl_cdkey, buffer, 17 );
 	} else {
 		Q_strncpyz( cl_cdkey, "                ", 17 );
@@ -2508,7 +2599,7 @@ void Com_AppendCDKey( const char *filename ) {
 	FS_Read( buffer, 16, f );
 	FS_FCloseFile( f );
 
-	if (CL_CDKeyValidate(buffer, NULL)) {
+	if ( Com_CDKeyValidate(buffer, NULL)) {
 		strcat( &cl_cdkey[16], buffer );
 	} else {
 		Q_strncpyz( &cl_cdkey[16], "                ", 17 );
@@ -2535,7 +2626,7 @@ static void Com_WriteCDKey( const char *filename, const char *ikey ) {
 
 	Q_strncpyz( key, ikey, 17 );
 
-	if(!CL_CDKeyValidate(key, NULL) ) {
+	if( !Com_CDKeyValidate(key, NULL) ) {
 		return;
 	}
 
@@ -2710,8 +2801,10 @@ void Com_Init( char *commandLine ) {
 	Com_StartupVariable( "developer" );
 	com_developer = Cvar_Get( "developer", "0", CVAR_TEMP );
 
+#ifndef DEDICATED
 	// done early so bind command exists
 	CL_InitKeyCommands();
+#endif
 
 	FS_InitFilesystem ();
 
@@ -2820,10 +2913,13 @@ void Com_Init( char *commandLine ) {
 	SV_Init();
 
 	com_dedicated->modified = qfalse;
+
+#ifndef DEDICATED
 	if ( !com_dedicated->integer ) {
 		CL_Init();
 		// Sys_ShowConsole( com_viewlog->integer, qfalse ); // moved down
 	}
+#endif
 
 	// set com_frameTime so that if a map is started on the
 	// command line it will still be able to count on com_frameTime
@@ -2848,7 +2944,9 @@ void Com_Init( char *commandLine ) {
 	// start in full screen ui mode
 	Cvar_Set("r_uiFullScreen", "1");
 
+#ifndef DEDICATED
 	CL_StartHunkUsers( );
+#endif
 
 	if ( !com_errorEntered )
 		Sys_ShowConsole( com_viewlog->integer, qfalse );
@@ -2881,7 +2979,9 @@ void Com_WriteConfigToFile( const char *filename ) {
 	}
 
 	FS_Printf (f, "// generated by quake, do not modify\n");
+#ifndef DEDICATED
 	Key_WriteBindings (f);
+#endif
 	Cvar_WriteVariables (f);
 	FS_FCloseFile( f );
 }
@@ -3059,6 +3159,7 @@ void Com_Frame( void ) {
 	}
 #else
 	minMsec = 1;
+#ifndef DEDICATED
 	if ( !com_dedicated->integer && !com_timedemo->integer ) {
 		if ( g_wv.isMinimized && com_maxfpsMinimized->integer > 0 )
 			minMsec = 1000 / com_maxfpsMinimized->integer;
@@ -3069,6 +3170,7 @@ void Com_Frame( void ) {
 		if ( com_maxfps->integer > 0 )
 			minMsec = 1000 / com_maxfps->integer;
 	}
+#endif
 #endif
 	msec = minMsec;
 	do {
@@ -3114,14 +3216,16 @@ void Com_Frame( void ) {
 		com_dedicated->modified = qfalse;
 		if ( !com_dedicated->integer ) {
 			SV_Shutdown( "" );
+#ifndef DEDICATED
 			CL_Init();
+#endif
 			Sys_ShowConsole( com_viewlog->integer, qfalse );
 #ifndef DEDICATED
 			CL_StartHunkUsers( );
 #endif
 		} else {
-			CL_Shutdown( "" );
 #ifndef DEDICATED
+			CL_Shutdown( "" );
 			if ( !com_sv_running->integer ) {
 				// clear the whole hunk
 				Hunk_Clear( );
@@ -3156,7 +3260,9 @@ void Com_Frame( void ) {
 			timeBeforeClient = Sys_Milliseconds ();
 		}
 
+#ifndef DEDICATED
 		CL_Frame( msec );
+#endif
 
 		if ( com_speeds->integer ) {
 			timeAfter = Sys_Milliseconds ();

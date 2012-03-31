@@ -42,6 +42,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 static char		sys_cmdline[MAX_STRING_CHARS];
 
+WinVars_t	g_wv;
+
 // define this to use alternate spanking method
 // I found out that the regular way doesn't work on my box for some reason
 // see the associated spank.sh script
@@ -128,7 +130,9 @@ void QDECL Sys_Error( const char *error, ... ) {
 
 	timeEndPeriod( 1 );
 
+#ifndef DEDICATED
 	IN_Shutdown();
+#endif
 
 	// wait for the user to quit
 	while ( 1 ) {
@@ -149,10 +153,14 @@ Sys_Quit
 ==============
 */
 void Sys_Quit( void ) {
-	timeEndPeriod( 1 );
-	IN_Shutdown();
-	Sys_DestroyConsole();
 
+	timeEndPeriod( 1 );
+
+#ifndef DEDICATED
+	IN_Shutdown();
+#endif
+
+	Sys_DestroyConsole();
 	exit (0);
 }
 
@@ -303,6 +311,7 @@ void Sys_Sleep( int msec ) {
 		else
 			WaitForSingleObject( GetStdHandle( STD_INPUT_HANDLE ), msec );
 	} */
+#ifndef DEDICATED
 	if ( com_yieldCPU && com_yieldCPU->integer > 0 ) {
 		if ( g_wv.activeApp ) {
 			if ( com_yieldCPU->integer == 1 && msec > 2 ) 
@@ -313,6 +322,9 @@ void Sys_Sleep( int msec ) {
 			Sleep ( msec );
 		}
 	}
+#else
+	Sleep ( msec );
+#endif
 }
 
 char **Sys_ListFiles( const char *directory, const char *extension, char *filter, int *numfiles, qboolean wantsubs ) {
@@ -993,7 +1005,9 @@ sysEvent_t Sys_GetEvent( void ) {
 
 		// save the msg time, because wndprocs don't have access to the timestamp
 		//g_wv.sysMsgTime = msg.time;
+#ifndef DEDICATED
 		g_wv.sysMsgTime = Sys_Milliseconds();
+#endif
 
 		TranslateMessage (&msg);
       	DispatchMessage (&msg);
@@ -1050,10 +1064,14 @@ Sys_In_Restart_f
 Restart the input subsystem
 =================
 */
+#ifndef DEDICATED
+
 void Sys_In_Restart_f( void ) {
 	IN_Shutdown();
 	IN_Init();
 }
+
+#endif
 
 
 /*
@@ -1067,7 +1085,9 @@ are initialized
 #define OSR2_BUILD_NUMBER 1111
 #define WIN98_BUILD_NUMBER 1998
 
+#ifndef DEDICATED
 extern glwstate_t glw_state;
+#endif
 
 void Sys_Init( void ) {
 
@@ -1075,7 +1095,9 @@ void Sys_Init( void ) {
 	// NT gets 18ms resolution
 	timeBeginPeriod( 1 );
 
+#ifndef DEDICATED
 	Cmd_AddCommand ("in_restart", Sys_In_Restart_f);
+#endif
 
 	g_wv.osversion.dwOSVersionInfoSize = sizeof( g_wv.osversion );
 
@@ -1111,11 +1133,16 @@ void Sys_Init( void ) {
 		Cvar_Set( "arch", "unknown Windows variant" );
 	}
 
+#ifndef DEDICATED
 	glw_state.wndproc = MainWndProc;
+#endif
 
 	Cvar_Set( "username", Sys_GetCurrentUser() );
 
+#ifndef DEDICATED
 	IN_Init();		// FIXME: not in dedicated?
+#endif
+
 }
 
 
@@ -1191,8 +1218,10 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 		startTime = Sys_Milliseconds();
 
+#ifndef DEDICATED
 		// make sure mouse and joystick are only called once a frame
 		IN_Frame();
+#endif
 
 		// run the game
 		Com_Frame();

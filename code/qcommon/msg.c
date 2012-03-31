@@ -546,9 +546,12 @@ delta functions
 =============================================================================
 */
 
+#ifndef DEDICATED
 extern cvar_t *cl_shownet;
-
 #define	LOG(x) if( cl_shownet->integer == 4 ) { Com_Printf("%s ", x ); };
+#else
+#define	LOG(x)
+#endif
 
 void MSG_WriteDelta( msg_t *msg, int oldV, int newV, int bits ) {
 	if ( oldV == newV ) {
@@ -1020,9 +1023,11 @@ void MSG_ReadDeltaEntity( msg_t *msg, entityState_t *from, entityState_t *to,
 	if ( MSG_ReadBits( msg, 1 ) == 1 ) {
 		Com_Memset( to, 0, sizeof( *to ) );	
 		to->number = MAX_GENTITIES - 1;
+#ifndef DEDICATED
 		if ( cl_shownet->integer >= 2 || cl_shownet->integer == -1 ) {
 			Com_Printf( "%3i: #%-3i remove\n", msg->readcount, number );
 		}
+#endif
 		return;
 	}
 
@@ -1040,6 +1045,7 @@ void MSG_ReadDeltaEntity( msg_t *msg, entityState_t *from, entityState_t *to,
 		Com_Error( ERR_DROP, "invalid entityState field count" );
 	}
 
+#ifndef DEDICATED
 	// shownet 2/3 will interleave with other printed info, -1 will
 	// just print the delta records`
 	if ( cl_shownet->integer >= 2 || cl_shownet->integer == -1 ) {
@@ -1048,6 +1054,9 @@ void MSG_ReadDeltaEntity( msg_t *msg, entityState_t *from, entityState_t *to,
 	} else {
 		print = 0;
 	}
+#else
+		print = 0;
+#endif
 
 	to->number = number;
 
@@ -1361,6 +1370,7 @@ void MSG_ReadDeltaPlayerstate (msg_t *msg, playerState_t *from, playerState_t *t
 		startBit = ( msg->readcount - 1 ) * 8 + msg->bit - GENTITYNUM_BITS;
 	}
 
+#ifndef DEDICATED	
 	// shownet 2/3 will interleave with other printed info, -2 will
 	// just print the delta records
 	if ( cl_shownet->integer >= 2 || cl_shownet->integer == -2 ) {
@@ -1369,6 +1379,9 @@ void MSG_ReadDeltaPlayerstate (msg_t *msg, playerState_t *from, playerState_t *t
 	} else {
 		print = 0;
 	}
+#else
+		print = 0;
+#endif
 
 	numFields = sizeof( playerStateFields ) / sizeof( playerStateFields[0] );
 	lc = MSG_ReadByte(msg);
