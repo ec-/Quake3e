@@ -590,6 +590,7 @@ void Conbuf_AppendText( const char *msg )
 	char buffer[MAXPRINTMSG*2]; // reserve space for CR-LF expansion
 	char *b = buffer;
 	int bufLen, n, pos;
+	static qboolean newline = qfalse;
 
 	n = strlen( msg );
 
@@ -608,6 +609,13 @@ void Conbuf_AppendText( const char *msg )
 	if ( n > (MAXPRINTMSG - 1) ) 
 	{
 		msg += n - (MAXPRINTMSG - 1);		
+	}
+
+	// insert skipped newline from previous message
+	if ( newline ) {
+		newline = qfalse;
+		*b++ = '\r';
+		*b++ = '\n';
 	}
 
 	// copy into an intermediate buffer
@@ -635,6 +643,12 @@ void Conbuf_AppendText( const char *msg )
 		{
 			*b++ = *msg++;
 		}
+	}
+
+	// try to skip ending newline to avoid inserting empty line in edit control
+	if ( b - buffer >= 2 && b[-1] == '\n' && b[-2] == '\r' ) {
+		newline = qtrue;
+		b -= 2;
 	}
 
 	*b = '\0';
