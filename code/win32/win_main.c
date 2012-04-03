@@ -998,16 +998,14 @@ sysEvent_t Sys_GetEvent( void ) {
 	}
 
 	// pump the message loop
-	while (PeekMessage (&msg, NULL, 0, 0, PM_NOREMOVE)) {
-		if ( GetMessage (&msg, NULL, 0, 0) <= 0 ) {
+	while ( PeekMessage( &msg, NULL, 0, 0, PM_NOREMOVE ) ) {
+		if ( GetMessage( &msg, NULL, 0, 0 ) <= 0 ) {
 			Com_Quit_f();
 		}
 
 		// save the msg time, because wndprocs don't have access to the timestamp
 		//g_wv.sysMsgTime = msg.time;
-#ifndef DEDICATED
 		g_wv.sysMsgTime = Sys_Milliseconds();
-#endif
 
 		TranslateMessage (&msg);
       	DispatchMessage (&msg);

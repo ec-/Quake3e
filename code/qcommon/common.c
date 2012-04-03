@@ -2933,11 +2933,13 @@ void Com_Init( char *commandLine ) {
 #ifdef USE_SKIPIDLOGO
             if ( !com_skipIdLogo->integer )
 #endif            
-			Cbuf_AddText ("cinematic idlogo.RoQ\n");
+#ifndef DEDICATED
+			Cbuf_AddText( "cinematic idlogo.RoQ\n" );
 			if( !com_introPlayed->integer ) {
 				Cvar_Set( com_introPlayed->name, "1" );
 				Cvar_Set( "nextmap", "cinematic intro.RoQ" );
 			}
+#endif
 		}
 	}
 

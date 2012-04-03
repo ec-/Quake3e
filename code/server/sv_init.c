@@ -421,6 +421,8 @@ void SV_SpawnServer( char *server, qboolean killBots ) {
 	Com_Printf ("------ Server Initialization ------\n");
 	Com_Printf ("Server: %s\n",server);
 
+	Sys_SetStatus( "Initializing server..." );
+
 #ifndef DEDICATED
 	// if not running a dedicated server CL_MapLoading will connect the client to the server
 	// also print some status stuff
@@ -625,6 +627,8 @@ void SV_SpawnServer( char *server, qboolean killBots ) {
 	Hunk_SetMark();
 
 	Com_Printf ("-----------------------------------\n");
+
+	Sys_SetStatus( "Running map %s", server );
 }
 
 /*
@@ -789,5 +793,6 @@ void SV_Shutdown( char *finalmsg ) {
 		CL_Disconnect( qfalse );
 #endif
 
+	Sys_SetStatus( "Server is not running" );
 }
 

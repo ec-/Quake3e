@@ -1078,6 +1078,8 @@ void	Sys_Print( const char *msg );
 void	Sys_BeginPrint( void );
 void	Sys_EndPrint( void );
 
+// dedicated console status, win32-only at the moment
+void	QDECL Sys_SetStatus( const char *format, ...) __attribute__ ((format (printf, 1, 2)));
 
 // Sys_Milliseconds should only be used for profiling purposes,
 // any game related timing information should come from event timestamps
