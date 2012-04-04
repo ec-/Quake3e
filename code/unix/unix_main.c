@@ -1425,7 +1425,7 @@ void Sys_EndPrint( void )
 
 void QDECL Sys_SetStatus( const char *format, ... )
 {
-  retrn;
+  return;
 }
 
 

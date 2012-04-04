@@ -741,6 +741,7 @@ Q3OBJ = \
   $(B)/client/common.o \
   $(B)/client/cvar.o \
   $(B)/client/files.o \
+  $(B)/client/history.o \
   $(B)/client/md4.o \
   $(B)/client/md5.o \
   $(B)/client/msg.o \

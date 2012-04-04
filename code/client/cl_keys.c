@@ -27,12 +27,6 @@ key up events are sent even if in console mode
 
 */
 
-field_t	historyEditLines[COMMAND_HISTORY];
-
-int			nextHistoryLine;		// the last line in the history buffer, not masked
-int			historyLine;	// the line being displayed from history buffer
-							// will be <= nextHistoryLine
-
 field_t		g_consoleField;
 field_t		chatField;
 qboolean	chat_team;
@@ -615,15 +609,10 @@ void Console_Key (int key) {
 		}
 
 		// copy line to history buffer
-		historyEditLines[nextHistoryLine % COMMAND_HISTORY] = g_consoleField;
-		nextHistoryLine++;
-		historyLine = nextHistoryLine;
+		Con_SaveField( &g_consoleField );
 
 		Field_Clear( &g_consoleField );
-
 		g_consoleField.widthInChars = g_console_field_width;
-
-		CL_SaveConsoleHistory( );
 
 		if ( cls.state == CA_DISCONNECTED ) {
 			SCR_UpdateScreen ();	// force an update, because the command
@@ -642,24 +631,15 @@ void Console_Key (int key) {
 
 	if ( (key == K_MWHEELUP && keys[K_SHIFT].down) || ( key == K_UPARROW ) || ( key == K_KP_UPARROW ) ||
 		 ( ( tolower(key) == 'p' ) && keys[K_CTRL].down ) ) {
-		if ( nextHistoryLine - historyLine < COMMAND_HISTORY 
-			&& historyLine > 0 ) {
-			historyLine--;
-		}
-		g_consoleField = historyEditLines[ historyLine % COMMAND_HISTORY ];
+		Con_HistoryGetPrev( &g_consoleField );
+		g_consoleField.widthInChars = g_console_field_width;
 		return;
 	}
 
 	if ( (key == K_MWHEELDOWN && keys[K_SHIFT].down) || ( key == K_DOWNARROW ) || ( key == K_KP_DOWNARROW ) ||
 		 ( ( tolower(key) == 'n' ) && keys[K_CTRL].down ) ) {
-		historyLine++;
-		if (historyLine >= nextHistoryLine) {
-			historyLine = nextHistoryLine;
-			Field_Clear( &g_consoleField );
-			g_consoleField.widthInChars = g_console_field_width;
-			return;
-		}
-		g_consoleField = historyEditLines[ historyLine % COMMAND_HISTORY ];
+		Con_HistoryGetNext( &g_consoleField );
+		g_consoleField.widthInChars = g_console_field_width;
 		return;
 	}
 
@@ -1431,134 +1411,4 @@ void Key_SetCatcher( int catcher ) {
 	keyCatchers = catcher;
 }
 
-// This must not exceed MAX_CMD_LINE
-#define			MAX_CONSOLE_SAVE_BUFFER	1024
-#define			CONSOLE_HISTORY_FILE    "q3history"
-static char	consoleSaveBuffer[ MAX_CONSOLE_SAVE_BUFFER ];
-static int	consoleSaveBufferSize = 0;
 
-/*
-================
-CL_LoadConsoleHistory
-
-Load the console history from cl_consoleHistory
-================
-*/
-void CL_LoadConsoleHistory( void )
-{
-	char					*token, *text_p;
-	int						i, numChars, numLines = 0;
-	fileHandle_t	f;
-
-	consoleSaveBufferSize = FS_FOpenFileRead( CONSOLE_HISTORY_FILE, &f, qfalse );
-	if( !f )
-	{
-		Com_Printf( "Couldn't read %s.\n", CONSOLE_HISTORY_FILE );
-		return;
-	}
-
-	if( consoleSaveBufferSize <= MAX_CONSOLE_SAVE_BUFFER &&
-			FS_Read( consoleSaveBuffer, consoleSaveBufferSize, f ) == consoleSaveBufferSize )
-	{
-		text_p = consoleSaveBuffer;
-
-		for( i = COMMAND_HISTORY - 1; i >= 0; i-- )
-		{
-			if( !*( token = COM_Parse( &text_p ) ) )
-				break;
-
-			historyEditLines[ i ].cursor = atoi( token );
-
-			if( !*( token = COM_Parse( &text_p ) ) )
-				break;
-
-			historyEditLines[ i ].scroll = atoi( token );
-
-			if( !*( token = COM_Parse( &text_p ) ) )
-				break;
-
-			numChars = atoi( token );
-			text_p++;
-			if( numChars > ( strlen( consoleSaveBuffer ) -	( text_p - consoleSaveBuffer ) ) )
-			{
-				Com_DPrintf( S_COLOR_YELLOW "WARNING: probable corrupt history\n" );
-				break;
-			}
-			Com_Memcpy( historyEditLines[ i ].buffer,
-					text_p, numChars );
-			historyEditLines[ i ].buffer[ numChars ] = '\0';
-			text_p += numChars;
-
-			numLines++;
-		}
-
-		memmove( &historyEditLines[ 0 ], &historyEditLines[ i + 1 ],
-				numLines * sizeof( field_t ) );
-		for( i = numLines; i < COMMAND_HISTORY; i++ )
-			Field_Clear( &historyEditLines[ i ] );
-
-		historyLine = nextHistoryLine = numLines;
-	}
-	else
-		Com_Printf( "Couldn't read %s.\n", CONSOLE_HISTORY_FILE );
-
-	FS_FCloseFile( f );
-}
-
-/*
-================
-CL_SaveConsoleHistory
-
-Save the console history into the cvar cl_consoleHistory
-so that it persists across invocations of q3
-================
-*/
-void CL_SaveConsoleHistory( void )
-{
-	int						i;
-	int						lineLength, saveBufferLength, additionalLength;
-	fileHandle_t	f;
-
-	consoleSaveBuffer[ 0 ] = '\0';
-
-	i = ( nextHistoryLine - 1 ) % COMMAND_HISTORY;
-	do
-	{
-		if( historyEditLines[ i ].buffer[ 0 ] )
-		{
-			lineLength = strlen( historyEditLines[ i ].buffer );
-			saveBufferLength = strlen( consoleSaveBuffer );
-
-			//ICK
-			additionalLength = lineLength + strlen( "999 999 999  " );
-
-			if( saveBufferLength + additionalLength < MAX_CONSOLE_SAVE_BUFFER )
-			{
-				Q_strcat( consoleSaveBuffer, MAX_CONSOLE_SAVE_BUFFER,
-						va( "%d %d %d %s ",
-						historyEditLines[ i ].cursor,
-						historyEditLines[ i ].scroll,
-						lineLength,
-						historyEditLines[ i ].buffer ) );
-			}
-			else
-				break;
-		}
-		i = ( i - 1 + COMMAND_HISTORY ) % COMMAND_HISTORY;
-	}
-	while( i != ( nextHistoryLine - 1 ) % COMMAND_HISTORY );
-
-	consoleSaveBufferSize = strlen( consoleSaveBuffer );
-
-	f = FS_FOpenFileWrite( CONSOLE_HISTORY_FILE );
-	if( !f )
-	{
-		Com_Printf( "Couldn't write %s.\n", CONSOLE_HISTORY_FILE );
-		return;
-	}
-
-	if( FS_Write( consoleSaveBuffer, consoleSaveBufferSize, f ) < consoleSaveBufferSize )
-		Com_Printf( "Couldn't write %s.\n", CONSOLE_HISTORY_FILE );
-
-	FS_FCloseFile( f );
-}

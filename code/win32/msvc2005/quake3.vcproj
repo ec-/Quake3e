@@ -299,6 +299,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\qcommon\history.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\qcommon\huffman.c"
 				>
 			</File>

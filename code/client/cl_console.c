@@ -23,13 +23,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "client.h"
 
+#define  DEFAULT_CONSOLE_WIDTH 78
 
-int g_console_field_width = 78;
+#define  NUM_CON_TIMES  4
 
+#define  CON_TEXTSIZE   32768*2
 
-#define	NUM_CON_TIMES 4
-
-#define		CON_TEXTSIZE	32768*4
 typedef struct {
 	qboolean	initialized;
 
@@ -60,8 +59,7 @@ console_t	con;
 cvar_t		*con_conspeed;
 cvar_t		*con_notifytime;
 
-#define	DEFAULT_CONSOLE_WIDTH	78
-
+int         g_console_field_width = DEFAULT_CONSOLE_WIDTH;
 
 /*
 ================
@@ -234,7 +232,6 @@ void Con_ClearNotify( void ) {
 }
 
 						
-
 /*
 ================
 Con_CheckResize
@@ -242,24 +239,25 @@ Con_CheckResize
 If the line width has changed, reformat the buffer.
 ================
 */
-void Con_CheckResize (void)
+void Con_CheckResize( void )
 {
 	int		i, j, width, oldwidth, oldtotallines, numlines, numchars;
 	short	tbuf[CON_TEXTSIZE];
 
-	width = (SCREEN_WIDTH / SMALLCHAR_WIDTH) - 2;
+	width = (cls.glconfig.vidWidth / SMALLCHAR_WIDTH) - 2;
 
-	if (width == con.linewidth)
+	if ( width == con.linewidth )
 		return;
 
-	if (width < 1)			// video hasn't been initialized yet
+	if ( width < 1 )			// video hasn't been initialized yet
 	{
 		width = DEFAULT_CONSOLE_WIDTH;
 		con.linewidth = width;
 		con.totallines = CON_TEXTSIZE / con.linewidth;
-		for(i=0; i<CON_TEXTSIZE; i++)
-
+		for ( i = 0; i < CON_TEXTSIZE; i++ ) 
+		{
 			con.text[i] = (ColorIndex(COLOR_WHITE)<<8) | ' ';
+		}
 	}
 	else
 	{
@@ -277,11 +275,12 @@ void Con_CheckResize (void)
 		if (con.linewidth < numchars)
 			numchars = con.linewidth;
 
-		Com_Memcpy (tbuf, con.text, CON_TEXTSIZE * sizeof(short));
-		for(i=0; i<CON_TEXTSIZE; i++)
+		Com_Memcpy( tbuf, con.text, CON_TEXTSIZE * sizeof(short) );
 
+		for ( i = 0; i < CON_TEXTSIZE; i++ ) 
+		{
 			con.text[i] = (ColorIndex(COLOR_WHITE)<<8) | ' ';
-
+		}
 
 		for (i=0 ; i<numlines ; i++)
 		{
@@ -317,8 +316,8 @@ void Cmd_CompleteTxtName( char *args, int argNum ) {
 Con_Init
 ================
 */
-void Con_Init (void) {
-	int		i;
+void Con_Init( void ) 
+{
 	static qboolean inited = qfalse;
 
 	con_notifytime = Cvar_Get ("con_notifytime", "3", 0);
@@ -326,11 +325,6 @@ void Con_Init (void) {
 
 	Field_Clear( &g_consoleField );
 	g_consoleField.widthInChars = g_console_field_width;
-	for ( i = 0 ; i < COMMAND_HISTORY ; i++ ) {
-		Field_Clear( &historyEditLines[i] );
-		historyEditLines[i].widthInChars = g_console_field_width;
-	}
-	CL_LoadConsoleHistory( );
 
 	// don't try to add commands twice when switching back from dedicated
 	if ( inited == qtrue )

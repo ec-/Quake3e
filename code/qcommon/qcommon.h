@@ -746,6 +746,10 @@ void Field_CompleteFilename( const char *dir,
 void Field_CompleteCommand( char *cmd,
 		qboolean doCommands, qboolean doCvars );
 
+void Con_SaveField( const field_t *field );
+void Con_HistoryGetPrev( field_t *field );
+void Con_HistoryGetNext( field_t *field );
+
 /*
 ==============================================================
 
