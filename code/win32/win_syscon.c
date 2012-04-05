@@ -73,11 +73,9 @@ typedef struct
 	HFONT		hfBufferFont;
 	HFONT		hfStatusFont;
 
+	char		consoleText[512];
+	char		returnedText[512];
 
-
-	char		errorString[80];
-
-	char		consoleText[512], returnedText[512];
 	int			visLevel;
 	qboolean	quitOnClose;
 	int			windowWidth, windowHeight;
@@ -127,11 +125,15 @@ static LONG WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 	switch (uMsg)
 	{
-	case WM_ACTIVATE:
-		if ( LOWORD( wParam ) != WA_INACTIVE )
+
+	case WM_SETFOCUS:
+		if ( s_wcd.hwndInputLine ) 
 		{
 			SetFocus( s_wcd.hwndInputLine );
 		}
+		break;
+
+	case WM_ACTIVATE:
 
 		if ( com_viewlog && ( com_dedicated && !com_dedicated->integer ) )
 		{
@@ -264,6 +266,7 @@ LONG WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 	switch (uMsg)
 	{
+
 	case WM_COMMAND:
 		if ( wParam == COPY_ID )
 		{
@@ -280,17 +283,23 @@ LONG WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 				}
 				CloseClipboard();
 			}
-			SetFocus( s_wcd.hwndInputLine );
+			if ( s_wcd.hwndInputLine ) {
+				SetFocus( s_wcd.hwndInputLine );
+			}
 		}
 		else if ( wParam == CLEAR_ID )
 		{
 			ConClear();
-			SetFocus( s_wcd.hwndInputLine );
+			if ( s_wcd.hwndInputLine ) {
+				SetFocus( s_wcd.hwndInputLine );
+			}
 		}
 		break;
 	case WM_LBUTTONDBLCLK:
 	case WM_LBUTTONDOWN:
-		SetFocus( s_wcd.hwndInputLine );
+		if ( s_wcd.hwndInputLine ) {
+			SetFocus( s_wcd.hwndInputLine );
+		}
 		break;
     }
 
@@ -303,14 +312,6 @@ LONG WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 	switch ( uMsg )
 	{
-
-	case WM_KILLFOCUS:
-		if ( ( HWND )wParam == s_wcd.hWnd || ( s_wcd.hwndErrorBox && ( HWND )wParam == s_wcd.hwndErrorBox ) )
-		{
-			SetFocus( hWnd );
-			return 0;
-		}
-		break;
 
 	case WM_KEYDOWN:
 	{
@@ -412,7 +413,7 @@ void Sys_CreateConsole( char *title )
 	int swidth, sheight, sth;
 	int DEDSTYLE = WS_POPUPWINDOW | WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SIZEBOX;
 	int	fontWidth, fontHeight, statusFontHeight;
-	int widths[2] = { 128, -1 };
+	int widths[2] = { 140, -1 };
 	int borders[3];
 	int x, w, h;
 
@@ -459,9 +460,10 @@ void Sys_CreateConsole( char *title )
 							   s_wcd.windowWidth, s_wcd.windowHeight,
 							   NULL, NULL, g_wv.hInstance, NULL );
 
-	if ( s_wcd.hWnd == NULL ) {
+	if ( s_wcd.hWnd == NULL ) 
 		return;
-	}
+
+	InitCommonControls();
 
 	s_wcd.hfBufferFont = CreateFont( fontHeight, fontWidth,
 									  0,
@@ -489,7 +491,7 @@ void Sys_CreateConsole( char *title )
 	s_wcd.hwndStatusBar = CreateWindow( STATUSCLASSNAME, NULL, WS_VISIBLE | WS_CHILD,
 		1,1,32,32, s_wcd.hWnd, NULL, g_wv.hInstance, NULL );
 
-	// slpit statusbar into parts and set styles
+	// split statusbar into parts and set styles
 	SendMessage( s_wcd.hwndStatusBar, WM_SETFONT, ( WPARAM ) s_wcd.hfStatusFont, 0 );
 	SendMessage( s_wcd.hwndStatusBar, SB_GETBORDERS, 0, (LPARAM)&borders );
 	widths[0] += borders[1]*2; // count vertical borders
@@ -504,11 +506,11 @@ void Sys_CreateConsole( char *title )
 	w = (rect.right - rect.left - 4) / 2;
 
 	// create the buttons 
-	s_wcd.hwndButtonCopy = CreateWindow( "button", "copy", WS_VISIBLE | WS_CHILD|BS_FLAT,
+	s_wcd.hwndButtonCopy = CreateWindow( "button", "copy", WS_VISIBLE | WS_CHILD,
 		x, rect.top, w, h, s_wcd.hwndStatusBar, ( HMENU ) COPY_ID, g_wv.hInstance, NULL );
 	x += w + 4;
 
-	s_wcd.hwndButtonClear = CreateWindow( "button", "clear", WS_VISIBLE | WS_CHILD|BS_FLAT,
+	s_wcd.hwndButtonClear = CreateWindow( "button", "clear", WS_VISIBLE | WS_CHILD,
 		x, rect.top, w, h, s_wcd.hwndStatusBar, ( HMENU ) CLEAR_ID,	g_wv.hInstance, NULL );
 
 	SendMessage( s_wcd.hwndButtonCopy, WM_SETFONT, ( WPARAM ) s_wcd.hfStatusFont, 0 );
@@ -792,8 +794,6 @@ void Sys_SetErrorText( const char *buf )
 	RECT rect;
 	int sth;
 
-	Q_strncpyz( s_wcd.errorString, buf, sizeof( s_wcd.errorString ) );
-
 	Sys_EndPrint(); // flush any pending messages
 
 	if ( s_wcd.hwndErrorBox ) // already created
@@ -821,7 +821,7 @@ void Sys_SetErrorText( const char *buf )
 												g_wv.hInstance, NULL );
 
 	SendMessage( s_wcd.hwndErrorBox, WM_SETFONT, ( WPARAM ) s_wcd.hfBufferFont, 0 );
-	SetWindowText( s_wcd.hwndErrorBox, s_wcd.errorString );
+	SetWindowText( s_wcd.hwndErrorBox, buf );
 
 	Sys_SetStatus( "Fatal error occured" );
 }

@@ -168,7 +168,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib ole32.lib winmm.lib wsock32.lib ws2_32.lib"
+				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib"
 				OutputFile="$(OutDir)\quake3e.ded.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
