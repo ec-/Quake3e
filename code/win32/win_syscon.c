@@ -258,13 +258,28 @@ static LONG WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 LONG WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
+	HGLOBAL hMem;
+	char *text;
+	int len;
+
 	switch (uMsg)
 	{
 	case WM_COMMAND:
 		if ( wParam == COPY_ID )
 		{
-			SendMessage( s_wcd.hwndBuffer, EM_SETSEL, 0, -1 );
-			SendMessage( s_wcd.hwndBuffer, WM_COPY, 0, 0 );
+			if ( OpenClipboard( s_wcd.hWnd ) )
+			{
+				EmptyClipboard();
+				len = GetWindowTextLength( s_wcd.hwndBuffer );
+				if ( len > 0 ) {
+					hMem = GlobalAlloc( GMEM_MOVEABLE | GMEM_DDESHARE, len );
+					text = ( char *)GlobalLock( hMem );
+					GetWindowText( s_wcd.hwndBuffer, text, len );
+					SetClipboardData( CF_TEXT, hMem );
+					GlobalUnlock( hMem );
+				}
+				CloseClipboard();
+			}
 			SetFocus( s_wcd.hwndInputLine );
 		}
 		else if ( wParam == CLEAR_ID )
@@ -403,7 +418,7 @@ void Sys_CreateConsole( char *title )
 
 	memset( &wc, 0, sizeof( wc ) );
 
-	wc.style         = CS_OWNDC;
+	wc.style         = 0;
 	wc.lpfnWndProc   = (WNDPROC) ConWndProc;
 	wc.cbClsExtra    = 0;
 	wc.cbWndExtra    = 0;
@@ -752,14 +767,17 @@ void Conbuf_AppendText( const char *msg )
 
 void Conbuf_BeginPrint( void ) 
 {
-	conCache = 1;
+	conCache++;
 }
 
 
 void Conbuf_EndPrint( void ) 
 {
-	conCache = 0;
-	if ( conBufPos ) 
+	if ( conCache > 0 ) 
+	{
+		conCache--;
+	}
+	if ( !conCache && conBufPos ) 
 	{
 		Conbuf_AppendText( "" );
 	}

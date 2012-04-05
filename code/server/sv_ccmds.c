@@ -299,6 +299,7 @@ static void SV_MapRestart_f( void ) {
 
 	SV_RestartGameProgs();
 
+	Sys_BeginPrint();
 	// run a few frames to allow everything to settle
 	for (i = 0; i < 3; i++)
 	{
@@ -306,6 +307,7 @@ static void SV_MapRestart_f( void ) {
 		sv.time += 100;
 		svs.time += 100;
 	}
+	Sys_EndPrint();
 
 	sv.state = SS_GAME;
 	sv.restarting = qfalse;
