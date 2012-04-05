@@ -233,14 +233,30 @@ static LONG WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			return 0;
 		}
 
-	case WM_WINDOWPOSCHANGING:
+	case WM_SIZING:
 		{
-			LPWINDOWPOS w = (LPWINDOWPOS)lParam;
-			if ( w->cy < 152 )
-				w->cy = 152;
-			if ( w->cx < 234 + BORDERW*2 )
-				w->cx = 234 + BORDERW*2;
-			return 0;
+			int w, h;
+			RECT *r;
+			r = (LPRECT) lParam;		
+			w = r->right - r->left - 280+BORDERW*2 + 1;
+			h = r->bottom - r->top - 155+BORDERH*3 + 1;
+			if ( w < 0 ) {
+				if ( wParam == WMSZ_RIGHT || wParam == WMSZ_TOPRIGHT || wParam == WMSZ_BOTTOMRIGHT ) {
+					r->right -= w;
+				}
+				if ( wParam == WMSZ_LEFT || wParam == WMSZ_TOPLEFT || wParam == WMSZ_BOTTOMLEFT ) {
+					r->left += w;
+				}
+			}
+			if ( h < 0 ) {
+				if ( wParam == WMSZ_BOTTOM || wParam == WMSZ_BOTTOMLEFT || wParam == WMSZ_BOTTOMRIGHT ) {
+					r->bottom -= h;
+				}
+				if ( wParam == WMSZ_TOP || wParam == WMSZ_TOPLEFT || wParam == WMSZ_TOPRIGHT ) {
+					r->top += h;
+				}
+			}
+			return TRUE;
 		}
 
 	case WM_TIMER:
@@ -558,7 +574,7 @@ void Sys_CreateConsole( char *title )
 	maxConSize = SendMessage( s_wcd.hwndBuffer, EM_GETLIMITTEXT, 0, 0 );
 
 	SendMessage( s_wcd.hwndInputLine, EM_SETLIMITTEXT, MAX_EDIT_LINE, 0 );
-	SetFocus( s_wcd.hwndInputLine );
+
 	Field_Clear( &console );
 
 	ConClear();
