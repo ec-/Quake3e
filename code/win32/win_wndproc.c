@@ -466,17 +466,24 @@ LONG WINAPI MainWndProc (
 		Cbuf_ExecuteText( EXEC_APPEND, "quit" );
 		break;
 
-	case WM_ACTIVATE:
+	case WM_SETFOCUS:
+	case WM_KILLFOCUS:
 		{
 			int	fActive, fMinimized;
+			WINDOWPLACEMENT wp;
 
-			fActive = LOWORD( wParam );
-			fMinimized = (BOOL)HIWORD( wParam );
-			VID_AppActivate( fActive != WA_INACTIVE, fMinimized );
+			memset( &wp, 0, sizeof( wp ) );
+			wp.length = sizeof( wp );
+			GetWindowPlacement( hWnd, &wp );
+
+			fActive = ( uMsg == WM_SETFOCUS );
+			fMinimized = ( wp.showCmd == SW_SHOWMINIMIZED );
+
+			VID_AppActivate( fActive, fMinimized );
 			//Key_ClearStates();
 			Win_AddHotkey();
 			if ( glw_state.cdsFullscreen )
-				if ( fActive == WA_ACTIVE ) {
+				if ( fActive ) {
 					//Com_Printf( S_COLOR_BLUE "set game ");
 					//SetForegroundWindow( hWnd ); // ATI Catalyst may require this
 					//SetFocus( hWnd );			 // ATI Catalyst may require this
