@@ -275,9 +275,9 @@ LONG WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 				EmptyClipboard();
 				len = GetWindowTextLength( s_wcd.hwndBuffer );
 				if ( len > 0 ) {
-					hMem = GlobalAlloc( GMEM_MOVEABLE | GMEM_DDESHARE, len );
+					hMem = GlobalAlloc( GMEM_MOVEABLE | GMEM_DDESHARE, len + 1);
 					text = ( char* )GlobalLock( hMem );
-					GetWindowText( s_wcd.hwndBuffer, text, len );
+					GetWindowText( s_wcd.hwndBuffer, text, len + 1 );
 					SetClipboardData( CF_TEXT, hMem );
 					GlobalUnlock( hMem );
 				}
