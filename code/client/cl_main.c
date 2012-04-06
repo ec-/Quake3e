@@ -1095,7 +1095,9 @@ CL_Connect_f
 */
 void CL_Connect_f( void ) {
 	netadrtype_t family;
-	char	*server, buf[128];
+	netadr_t	addr;
+	char	buffer[MAX_OSPATH];  // same length as cls.servername
+	char	*server;	
 	const char	*serverString;
 	int		len;
 	int		argc;
@@ -1121,40 +1123,46 @@ void CL_Connect_f( void ) {
 		server = Cmd_Argv(2);
 	}
 
-	Q_strncpyz( buf, server, sizeof( buf ) );
-	server = buf;
+	Q_strncpyz( buffer, server, sizeof( buffer ) );
+	server = buffer;
 
-	// skip leading "q3a:/[/]" in connection string
+	// skip leading "q3a:/" in connection string
 	if ( !Q_stricmpn( server, "q3a:/", 5 ) ) {
 		server += 5;
-		if ( *server == '/' ) {
-			server++;
-		}
 	}
+
+	// skip all slash prefixes
+	while ( *server == '/' ) {
+		server++;
+	}
+
 	len = strlen( server );
 	if ( len <= 0 ) {
 		return;
 	}
+
 	// some programs may add ending slash
-	if ( server[len-1] == '/' )
-		server[len-1] = 0;
+	if ( server[len-1] == '/' ) {
+		server[len-1] = '\0';
+	}
 
 	if ( !*server ) {
 		return;
 	}
 
-	Cvar_Set("ui_singlePlayerActive", "0");
+	// try resolve remote server first
+	if ( !NET_StringToAdr( server, &addr, family ) ) {
+		Com_Printf( "Bad server address - %s\n", server );
+		return;
+	}
 
-#if 0
-	// fire a message off to the motd server
-	CL_RequestMotd();
-#endif
+	Cvar_Set( "ui_singlePlayerActive", "0" );
 
 	// clear any previous "server full" type messages
-	clc.serverMessage[0] = 0;
+	clc.serverMessage[0] = '\0';
 
+	// if running a local server, kill it
 	if ( com_sv_running->integer && !strcmp( server, "localhost" ) ) {
-		// if running a local server, kill it
 		SV_Shutdown( "Server quit" );
 	}
 
@@ -1165,13 +1173,11 @@ void CL_Connect_f( void ) {
 	CL_Disconnect( qtrue );
 	Con_Close();
 
-	Q_strncpyz( cls.servername, server, sizeof(cls.servername) );
+	Q_strncpyz( cls.servername, server, sizeof( cls.servername ) );
 
-	if (!NET_StringToAdr(cls.servername, &clc.serverAddress, family) ) {
-		Com_Printf ("Bad server address\n");
-		cls.state = CA_DISCONNECTED;
-		return;
-	}
+	// copy resolved address 
+	clc.serverAddress = addr;
+
 	if (clc.serverAddress.port == 0) {
 		clc.serverAddress.port = BigShort( PORT_SERVER );
 	}
