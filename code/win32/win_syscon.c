@@ -41,6 +41,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define BORDERW			1
 #define BORDERH			2
+
+#define INPUT_HEIGHT    16
+#define ERROR_HEIGHT    27
+
 #define MAX_CONSIZE		65536
 
 #define EDIT_COLOR		RGB(0x00,0x00,0x10)
@@ -49,7 +53,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define ERROR_BG_COLOR	RGB(0x90,0x80,0x80)
 
 #define ERROR_COLOR_1   RGB(0xFF,0xFF,0x00)
-#define ERROR_COLOR_2   RGB(0x00,0x00,0x00)
+#define ERROR_COLOR_2   RGB(0xF0,0x00,0x00)
 
 field_t console;
 
@@ -210,18 +214,18 @@ static LONG WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			s_wcd.windowHeight = rect.bottom - rect.top + 1;
 
 			if ( s_wcd.hwndErrorBox ) {
-				SetWindowPos( s_wcd.hwndBuffer, HWND_TOP, BORDERW, BORDERH+31, rect.right - BORDERW*2, rect.bottom - sth - BORDERH*2 - 31, SWP_NOZORDER );
+				SetWindowPos( s_wcd.hwndBuffer, HWND_TOP, BORDERW, ERROR_HEIGHT + BORDERH*2, rect.right - BORDERW*2, rect.bottom - sth - ERROR_HEIGHT - BORDERH*3 + 1, SWP_NOZORDER );
 			} else {
-				SetWindowPos( s_wcd.hwndBuffer, HWND_TOP, BORDERW, BORDERH, rect.right - BORDERW*2, rect.bottom - sth - 16 - BORDERH*2 - 4, SWP_NOZORDER );
+				SetWindowPos( s_wcd.hwndBuffer, HWND_TOP, BORDERW, BORDERH, rect.right - BORDERW*2, rect.bottom - sth - INPUT_HEIGHT - BORDERH*3 - 2, SWP_NOZORDER );
 			}
 
 			if ( s_wcd.hwndErrorBox ) {
-				SetWindowPos( s_wcd.hwndErrorBox, HWND_TOP, BORDERW, BORDERH+1, rect.right - BORDERW*2, 26, SWP_NOZORDER );
+				SetWindowPos( s_wcd.hwndErrorBox, HWND_TOP, BORDERW, BORDERH, rect.right - BORDERW*2, ERROR_HEIGHT, SWP_NOZORDER );
 				InvalidateRect( s_wcd.hwndErrorBox, NULL, FALSE );
 			}
 
 			if ( s_wcd.hwndInputLine ) {
-				SetWindowPos( s_wcd.hwndInputLine, HWND_TOP, BORDERW, rect.bottom - sth - 16 - BORDERH, rect.right - BORDERW*2, 16, SWP_NOZORDER );
+				SetWindowPos( s_wcd.hwndInputLine, HWND_TOP, BORDERW, rect.bottom - sth - INPUT_HEIGHT - BORDERH, rect.right - BORDERW*2, INPUT_HEIGHT, SWP_NOZORDER );
 				InvalidateRect( s_wcd.hwndInputLine, NULL, FALSE );
 			}
 
@@ -543,7 +547,7 @@ void Sys_CreateConsole( char *title )
 	// create the input line
 	s_wcd.hwndInputLine = CreateWindow( "edit", NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | 
 												ES_LEFT | ES_AUTOHSCROLL,
-												BORDERW, rect.bottom - sth - 16 - BORDERH, rect.right - BORDERW*2, 16,
+												BORDERW, rect.bottom - sth - INPUT_HEIGHT - BORDERH, rect.right - BORDERW*2, INPUT_HEIGHT,
 												s_wcd.hWnd, 
 												( HMENU ) INPUT_ID,	// child window ID
 												g_wv.hInstance, NULL );
@@ -551,7 +555,7 @@ void Sys_CreateConsole( char *title )
 	// create the scrollbuffer
 	s_wcd.hwndBuffer = CreateWindow( "edit", NULL, WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_BORDER | 
 												ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | ES_NOHIDESEL,
-												BORDERW, BORDERH, rect.right - BORDERW*2, rect.bottom - sth - 16 - BORDERH*2 - 4,
+												BORDERW, BORDERH, rect.right - BORDERW*2, rect.bottom - sth - INPUT_HEIGHT - BORDERH*3 - 2,
 												s_wcd.hWnd, 
 												( HMENU ) EDIT_ID,	// child window ID
 												g_wv.hInstance, NULL );
@@ -828,10 +832,10 @@ void Sys_SetErrorText( const char *buf )
 	GetClientRect( s_wcd.hWnd, &rect );
 
 	// shift buffer position
-	SetWindowPos( s_wcd.hwndBuffer, HWND_TOP, BORDERW, BORDERH+31, rect.right - BORDERW*2, rect.bottom - sth - BORDERH*2 - 31, SWP_NOZORDER );
+	SetWindowPos( s_wcd.hwndBuffer, HWND_TOP, BORDERW, ERROR_HEIGHT + BORDERH*2, rect.right - BORDERW*2, rect.bottom - sth - ERROR_HEIGHT - BORDERH*3+1, SWP_NOZORDER );
 
 	s_wcd.hwndErrorBox = CreateWindow( "static", NULL, WS_CHILD | WS_VISIBLE | SS_SUNKEN,
-												BORDERW, BORDERH+1, rect.right - BORDERW*2, 26,
+												BORDERW, BORDERH, rect.right - BORDERW*2, ERROR_HEIGHT,
 												s_wcd.hWnd, 
 												( HMENU ) ERRORBOX_ID,	// child window ID
 												g_wv.hInstance, NULL );
