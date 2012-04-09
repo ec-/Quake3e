@@ -82,7 +82,7 @@ cvar_t	*com_version;
 cvar_t	*com_blood;
 cvar_t	*com_buildScript;	// for automated data building scripts
 cvar_t	*com_introPlayed;
-#ifdef USE_SKIPIDLOGO
+#ifndef DEDICATED
 cvar_t	*com_skipIdLogo;
 #endif
 cvar_t	*cl_paused;
@@ -2862,7 +2862,8 @@ void Com_Init( char *commandLine ) {
 	com_buildScript = Cvar_Get( "com_buildScript", "0", 0 );
 
 	com_introPlayed = Cvar_Get( "com_introplayed", "0", CVAR_ARCHIVE);
-#ifdef USE_SKIPIDLOGO
+
+#ifndef DEDICATED
 	com_skipIdLogo  = Cvar_Get( "com_skipIdLogo", "0", CVAR_ARCHIVE);
 #endif
 
@@ -2930,11 +2931,9 @@ void Com_Init( char *commandLine ) {
 	if ( !Com_AddStartupCommands() ) {
 		// if the user didn't give any commands, run default action
 		if ( !com_dedicated->integer ) {
-#ifdef USE_SKIPIDLOGO
-            if ( !com_skipIdLogo->integer )
-#endif            
 #ifndef DEDICATED
-			Cbuf_AddText( "cinematic idlogo.RoQ\n" );
+			if ( !com_skipIdLogo || !com_skipIdLogo->integer )
+				Cbuf_AddText( "cinematic idlogo.RoQ\n" );
 			if( !com_introPlayed->integer ) {
 				Cvar_Set( com_introPlayed->name, "1" );
 				Cvar_Set( "nextmap", "cinematic intro.RoQ" );
