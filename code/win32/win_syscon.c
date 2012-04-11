@@ -159,6 +159,18 @@ static LONG WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		}
 		break;
 
+	case WM_QUERYENDSESSION:
+		if ( com_dedicated && com_dedicated->integer && !com_errorEntered )
+		{
+			cmdString = CopyString( "quit" );
+			Sys_QueEvent( 0, SE_CONSOLE, 0, 0, strlen( cmdString ) + 1, cmdString );
+		}
+		else
+		{
+			PostQuitMessage( 0 );
+		}
+		return TRUE;
+
 	case WM_CLOSE:
 		if ( com_dedicated && com_dedicated->integer && !com_errorEntered )
 		{
@@ -175,6 +187,7 @@ static LONG WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			Cvar_Set( "viewlog", "0" );
 		}
 		return 0;
+
 	case WM_CTLCOLORSTATIC:
 		if ( ( HWND ) lParam == s_wcd.hwndBuffer )
 		{
@@ -332,7 +345,12 @@ LONG WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 	switch ( uMsg )
 	{
-
+	case WM_KILLFOCUS:
+		if ( (HWND)wParam == s_wcd.hwndBuffer ) {
+			SetFocus( s_wcd.hwndInputLine );
+			return 0;
+		}
+		break;
 	case WM_KEYDOWN:
 	{
 		if ( wParam == 'L' && ( GetAsyncKeyState( VK_LCONTROL ) & 0x8000 || GetAsyncKeyState( VK_RCONTROL ) & 0x8000 ) ) {
