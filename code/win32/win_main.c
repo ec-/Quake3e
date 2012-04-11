@@ -136,8 +136,8 @@ void QDECL Sys_Error( const char *error, ... ) {
 
 	// wait for the user to quit
 	while ( 1 ) {
-		if ( GetMessage (&msg, NULL, 0, 0) <= 0 )
-			Com_Quit_f ();
+		if ( GetMessage( &msg, NULL, 0, 0 ) <= 0 )
+			Com_Quit_f();
 		TranslateMessage (&msg);
       	DispatchMessage (&msg);
 	}

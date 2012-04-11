@@ -160,7 +160,7 @@ static LONG WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		break;
 
 	case WM_CLOSE:
-		if ( ( com_dedicated && com_dedicated->integer ) )
+		if ( com_dedicated && com_dedicated->integer && !com_errorEntered )
 		{
 			cmdString = CopyString( "quit" );
 			Sys_QueEvent( 0, SE_CONSOLE, 0, 0, strlen( cmdString ) + 1, cmdString );
