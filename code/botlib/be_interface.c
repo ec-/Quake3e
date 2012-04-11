@@ -30,7 +30,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *****************************************************************************/
 
 #include "../qcommon/q_shared.h"
-#include "../qcommon/qcommon.h"
 #include "l_memory.h"
 #include "l_log.h"
 #include "l_libvar.h"
@@ -164,8 +163,6 @@ int Export_BotLibSetup(void)
 	Log_Open(logfilename);
   	}
 
-	Sys_BeginPrint();
-
 	botimport.Print(PRT_MESSAGE, "------- BotLib Initialization -------\n");
 
 	botlibglobals.maxclients = (int) LibVarValue("maxclients", "128");
@@ -186,8 +183,6 @@ int Export_BotLibSetup(void)
 
 	botlibsetup = qtrue;
 	botlibglobals.botlibsetup = qtrue;
-
-	Sys_EndPrint();
 
 	return BLERR_NOERROR;
 } //end of the function Export_BotLibSetup
@@ -284,8 +279,6 @@ int Export_BotLibLoadMap(const char *mapname)
 #endif
 	int errnum;
 
-	Sys_BeginPrint();
-
 	if (!BotLibSetup("BotLoadMap")) return BLERR_LIBRARYNOTSETUP;
 	//
 	botimport.Print(PRT_MESSAGE, "------------ Map Loading ------------\n");
@@ -301,9 +294,6 @@ int Export_BotLibLoadMap(const char *mapname)
 	botimport.Print(PRT_MESSAGE, "map loaded in %d msec\n", Sys_MilliSeconds() - starttime);
 #endif
 	//
-
-	Sys_EndPrint();
-
 	return BLERR_NOERROR;
 } //end of the function Export_BotLibLoadMap
 //===========================================================================
