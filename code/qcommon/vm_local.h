@@ -114,7 +114,9 @@ typedef enum {
 	OP_MULF,
 
 	OP_CVIF,
-	OP_CVFI
+	OP_CVFI,
+
+	OP_MAX
 } opcode_t;
 
 
