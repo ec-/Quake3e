@@ -40,7 +40,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define VM_X86_MMAP
 #endif
 
-static void VM_Destroy_Compiled(vm_t* self);
+static void *VM_Alloc_Compiled( vm_t *vm, int codeLength );
+static void VM_Destroy_Compiled( vm_t *vm );
 
 /*
 
@@ -156,10 +157,9 @@ typedef struct {
 
 //#define VM_LOG_SYSCALLS
 
-static	byte	*buf = NULL;
-
-static	int		compiledOfs = 0;
-static	int     instructionCount = 0;
+static	byte    *code;
+static	int     compiledOfs;
+static	int     instructionCount;
 
 static  instruction_t *inst = NULL;
 static  instruction_t *ci;
@@ -202,23 +202,19 @@ static void VM_FreeBuffers( void )
 {
 	// should be freed in reversed allocation order
 	Z_Free( inst ); 
-	Z_Free( buf );
 }
 
 static void Emit1( int v ) 
 {
-	buf[ compiledOfs ] = v;
+	if ( code ) 
+	{
+		code[ compiledOfs ] = v;
+	}
 	compiledOfs++;
 
 	LastCommand = LAST_COMMAND_NONE;
 }
 
-#if 0
-static void Emit2( int v ) {
-	Emit1( v & 255 );
-	Emit1( ( v >> 8 ) & 255 );
-}
-#endif
 
 static void Emit4( int v ) 
 {
@@ -621,21 +617,8 @@ void EmitFTOL( vm_t *vm )
 
 #define JE()   EMITJMP( "0F 84", 6 )
 #define JNE()  EMITJMP( "0F 85", 6 )
-#define JL()   EMITJMP( "0F 8C", 6 )
-#define JLE()  EMITJMP( "0F 8E", 6 )
-#define JG()   EMITJMP( "0F 8F", 6 )
-#define JGE()  EMITJMP( "0F 8D", 6 )
-#define JB()   EMITJMP( "0F 82", 6 )
-#define JBE()  EMITJMP( "0F 86", 6 )
-
-#define JA()   EMITJMP( "0F 87", 6 )
-#define JAE()  EMITJMP( "0F 83", 6 )
-
 #define JZ()   EMITJMP( "0F 84", 6 )
 #define JNZ()  EMITJMP( "0F 85", 6 )
-
-#define JMP()  EMITJMP( "E9", 5 )
-
 
 #define CMPCI(V) \
 	do { \
@@ -1047,6 +1030,7 @@ enum {
 	FUNC_LAST
 };
 
+
 /*
 =================
 VM_Compile
@@ -1054,7 +1038,6 @@ VM_Compile
 */
 void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int		op;
-	int		maxLength;
 	int		v, n;
 	int		i;
 	int		codeOffset[FUNC_LAST];
@@ -1063,11 +1046,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 
 	instructionCount = header->instructionCount;
 
-	// allocate a very large temp buffer, we will shrink it later
-	maxLength = header->codeLength * 8;
-
-	buf = Z_Malloc( maxLength );
-	Com_Memset( buf, 0, maxLength );
+	code = NULL; // we will allocate memory later, after last defined pass
 
 	inst = Z_Malloc( (instructionCount + 8 ) * sizeof( instruction_t ) );
 	Com_Memset( inst, 0, (instructionCount + 8 ) * sizeof( instruction_t ) );
@@ -1089,8 +1068,9 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 		}
 	}
 
-	for( pass = 0; pass < 3; pass++ ) {
-
+	for( pass = 0; pass < 3; pass++ ) 
+	{
+__compile:
 	pop1 = OP_UNDEF;
 	lastArg = 0;
 	lastConst = 0;
@@ -1103,12 +1083,6 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 
 	while( ip < instructionCount )
 	{
-		if ( compiledOfs > maxLength - 16 )
-		{
-	        VM_FreeBuffers();
-			Com_Error( ERR_DROP, "VM_CompileX86: maxLength exceeded" );
-		}
-
 		vm->instructionPointers[ ip ] = compiledOfs;
 
 		ci = &inst[ ip++ ];
@@ -1656,35 +1630,22 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 
 	} // for( pass = 0; pass < n; pass++ )
 
-	// copy to an exact size buffer on the hunk
-	vm->codeLength = compiledOfs;
-#ifdef VM_X86_MMAP
-	vm->codeBase = mmap(NULL, compiledOfs, PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-	if(vm->codeBase == MAP_FAILED)
-		Com_Error(ERR_FATAL, "VM_CompileX86: can't mmap memory");
-#elif _WIN32
-	// allocate memory with EXECUTE permissions under windows.
-	vm->codeBase = VirtualAlloc(NULL, compiledOfs, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-	if(!vm->codeBase)
-		Com_Error(ERR_FATAL, "VM_CompileX86: VirtualAlloc failed");
-#else
-	vm->codeBase = malloc(compiledOfs);
-	if(!vm->codeBase)
-	        Com_Error(ERR_FATAL, "VM_CompileX86: malloc failed");
-#endif
-
-	Com_Memcpy( vm->codeBase, buf, compiledOfs );
+	if ( code == NULL ) 
+	{
+		code = VM_Alloc_Compiled( vm, compiledOfs );
+		goto __compile;
+	}
 
 #ifdef VM_X86_MMAP
-	if(mprotect(vm->codeBase, compiledOfs, PROT_READ|PROT_EXEC))
-		Com_Error(ERR_FATAL, "VM_CompileX86: mprotect failed");
+	if ( mprotect( vm->codeBase, compiledOfs, PROT_READ|PROT_EXEC ) )
+		Com_Error( ERR_FATAL, "VM_CompileX86: mprotect failed" );
 #elif _WIN32
 	{
 		DWORD oldProtect = 0;
 		
 		// remove write permissions.
-		if(!VirtualProtect(vm->codeBase, compiledOfs, PAGE_EXECUTE_READ, &oldProtect))
-			Com_Error(ERR_FATAL, "VM_CompileX86: VirtualProtect failed");
+		if ( !VirtualProtect(vm->codeBase, compiledOfs, PAGE_EXECUTE_READ, &oldProtect ) )
+			Com_Error( ERR_FATAL, "VM_CompileX86: VirtualProtect failed" );
 	}
 #endif
 
@@ -1700,14 +1661,41 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	}
 }
 
-void VM_Destroy_Compiled(vm_t* self)
+
+/*
+=================
+VM_Alloc_Compiled
+=================
+*/
+void *VM_Alloc_Compiled( vm_t *vm, int codeLength ) 
+{
+	vm->codeLength = codeLength;
+#ifdef VM_X86_MMAP
+	vm->codeBase = mmap( NULL, vm->codeLength, PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0 );
+	if ( vm->codeBase == MAP_FAILED )
+		Com_Error( ERR_FATAL, "VM_CompileX86: can't mmap memory" );
+#elif _WIN32
+	// allocate memory with EXECUTE permissions under windows.
+	vm->codeBase = VirtualAlloc( NULL, vm->codeLength, MEM_COMMIT, PAGE_EXECUTE_READWRITE );
+	if ( !vm->codeBase )
+		Com_Error( ERR_FATAL, "VM_CompileX86: VirtualAlloc failed" );
+#else
+	vm->codeBase = malloc( vm->codeLength );
+	if ( !vm->codeBase )
+	        Com_Error( ERR_FATAL, "VM_CompileX86: malloc failed" );
+#endif
+	return vm->codeBase;
+}
+
+
+void VM_Destroy_Compiled( vm_t* vm )
 {
 #ifdef VM_X86_MMAP
-	munmap(self->codeBase, self->codeLength);
+	munmap( vm->codeBase, vm->codeLength );
 #elif _WIN32
-	VirtualFree(self->codeBase, 0, MEM_RELEASE);
+	VirtualFree( vm->codeBase, 0, MEM_RELEASE );
 #else
-	free(self->codeBase);
+	free( vm->codeBase );
 #endif
 }
 
