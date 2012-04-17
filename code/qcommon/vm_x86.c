@@ -157,15 +157,13 @@ typedef struct {
 //#define VM_LOG_SYSCALLS
 
 static	byte	*buf = NULL;
-static	byte	*code = NULL;
 
 static	int		compiledOfs = 0;
-static	int     jusedSize = 0;
+static	int     instructionCount = 0;
 
 static  instruction_t *inst = NULL;
 static  instruction_t *ci;
 static  instruction_t *ni;
-static  instruction_t null_inst;
 
 #define FTOL_PTR
 
@@ -204,7 +202,6 @@ static void VM_FreeBuffers( void )
 {
 	// should be freed in reversed allocation order
 	Z_Free( inst ); 
-	Z_Free( code ); 
 	Z_Free( buf );
 }
 
@@ -459,7 +456,7 @@ static int EmitFldEDI( vm_t *vm ) {
 
 void JumpUsed( int position ) 
 {
-	if ( position < 0 || position >= jusedSize ) {
+	if ( position < 0 || position >= instructionCount ) {
 		VM_FreeBuffers();
 		Com_Error( ERR_DROP, "VM_CompileX86: jump target %i is out of range", position );
 	}
@@ -650,14 +647,6 @@ void EmitFTOL( vm_t *vm )
 			Emit4((V)); \
 		} \
 	} while(0)
-
-#define FCOMFF() \
-	do { \
-		EmitString( "D9 47 08" );	/* fld dword ptr [edi+8] */ \
-		EmitString( "D9 47 04" );	/* fld dword ptr [edi+4] */ \
-		EmitString( "DF E9" );		/* fucomip */ \
-		EmitString( "DD D8" );		/* fstp st(0) */ \
-	} while (0)
 
 #define FCOMSF() \
 	do { \
@@ -1070,30 +1059,20 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int		i;
 	int		codeOffset[FUNC_LAST];
 
-	memset( codeOffset,0, sizeof( codeOffset ) );
-	memset( &null_inst, 0, sizeof( null_inst ) );
+	memset( codeOffset, 0, sizeof( codeOffset ) );
 
-	//qboolean opt;
-	jusedSize = header->instructionCount;
+	instructionCount = header->instructionCount;
 
 	// allocate a very large temp buffer, we will shrink it later
 	maxLength = header->codeLength * 8;
 
-	//jused = Z_Malloc(jusedSize);
-	buf = Z_Malloc(maxLength);
-	code = Z_Malloc( header->codeLength+32 );
-	inst = Z_Malloc( header->instructionCount * sizeof( instruction_t ) );
+	buf = Z_Malloc( maxLength );
+	Com_Memset( buf, 0, maxLength );
+
+	inst = Z_Malloc( (instructionCount + 8 ) * sizeof( instruction_t ) );
+	Com_Memset( inst, 0, (instructionCount + 8 ) * sizeof( instruction_t ) );
 	
 	VM_LoadInstructions( header, inst );
-
-	//Com_Memset(jused, 0, jusedSize);
-	Com_Memset(buf, 0, maxLength);
-
-	// copy code in larger buffer and put some zeros at the end
-	// so we can safely look ahead for a few instructions in it
-	// without a chance to get false-positive because of some garbage bytes
-	Com_Memset(code, 0, header->codeLength+32);
-	Com_Memcpy(code, (byte *)header + header->codeOffset, header->codeLength );
 
 	// ensure that the optimisation pass knows about all the jump
 	// table targets
@@ -1122,7 +1101,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 
 	LastCommand = LAST_COMMAND_NONE;
 
-	while( ip < header->instructionCount )
+	while( ip < instructionCount )
 	{
 		if ( compiledOfs > maxLength - 16 )
 		{
@@ -1133,11 +1112,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 		vm->instructionPointers[ ip ] = compiledOfs;
 
 		ci = &inst[ ip++ ];
-
-		if ( ip < header->instructionCount )
-			ni = &inst[ ip ];
-		else
-			ni = &null_inst;
+		ni = &inst[ ip ];
 
 		jlabel = ci->jused;
 
