@@ -60,6 +60,8 @@ static void VM_Destroy_Compiled( vm_t *vm );
 #define OPF_CALC       8
 #define OPF_FLOAT      16
 
+#define ISS8(V) ( (V) >= -128 && (V) <= 127 )
+
 typedef struct {
 	const char *name;
 	int   size;
@@ -149,10 +151,9 @@ typedef struct {
 	int value;   
 	int op:8;    
 	int jused:1;
-	int jump:1;
 	int shrt:1;
-	int calc:1;
-	int fpt:1;
+	int fp_calc:1;
+	int fp_jump:1;
 } instruction_t;
 
 //#define VM_LOG_SYSCALLS
@@ -620,17 +621,6 @@ void EmitFTOL( vm_t *vm )
 #define JZ()   EMITJMP( "0F 84", 6 )
 #define JNZ()  EMITJMP( "0F 85", 6 )
 
-#define CMPCI(V) \
-	do { \
-		if ( abs((V)) <= 127 ) { \
-			EmitString( "83 F8" ); /* cmp eax, im8 */ \
-			Emit1((V)); \
-		} else { \
-			EmitString( "3D" ); /* cmp eax, im32 */ \
-			Emit4((V)); \
-		} \
-	} while(0)
-
 #define FCOMSF() \
 	do { \
 		EmitString( "D9 47 04" );	/* fld dword ptr [edi+4] */ \
@@ -645,8 +635,7 @@ FloatMerge
 */
 static int FloatMerge( instruction_t *curr, instruction_t *next ) 
 {
-//	if ( next->jused || (ops[ next->op ].flags & (OPF_FLOAT|OPF_CALC)) != (OPF_FLOAT|OPF_CALC)  ) 
-	if ( next->jused || !next->fpt || !next->calc ) 
+	if ( next->jused || !next->fp_calc ) 
 		return 0;
 
 	EmitString( "D9 47 F8" );				// fld dword ptr [edi-8]
@@ -761,7 +750,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 	case OP_ADD:
 		v = ci->value;
 		EmitMovEAXEDI( vm ); 
-		if ( abs(v) <= 127 ) {
+		if ( ISS8( v ) ) {
 			EmitString( "83 C0" );	// add eax, 0x7F
 			Emit1( v );
 		} else {
@@ -775,7 +764,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 	case OP_SUB:
 		v = ci->value;
 		EmitMovEAXEDI( vm );
-		if ( abs(v) <= 127 ) {
+		if ( ISS8( v ) ) {
 			EmitString( "83 E8" );	// sub eax, 0x7F
 			Emit1( v );
 		} else {
@@ -789,7 +778,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 	case OP_MULI:
 		v = ci->value;
 		EmitMovEAXEDI( vm );
-		if ( abs(v) <= 127 ) {
+		if ( ISS8( v ) ) {
 			EmitString( "6B C0" );	// imul eax, 0x7F
 			Emit1( v );
 		} else {
@@ -928,31 +917,21 @@ qboolean ConstOptimize( vm_t *vm ) {
 	case OP_LTI:
 		EmitMovEAXEDI( vm );
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );
-		if ( ci->value == 0 && ( ni->op == OP_EQ || ni->op == OP_NE ) ) {
-			EmitString( "85 C0" ); // test eax, eax
+		v = ci->value;
+		if ( v == 0 && ( op1 == OP_EQ || op1 == OP_NE ) ) {
+			EmitString( "85 C0" );       // test eax, eax
 		} else {
-			CMPCI( ci->value );
+			if ( ISS8( v ) ) {
+				EmitString( "83 F8" );   // cmp eax, 0x7F
+				Emit1( v );
+			} else {
+				EmitString( "3D" );      // cmp eax, 0xFFFFFFFF
+				Emit4( v );
+			}
 		}
 		EmitJump( vm, ni, ni->value );
 		ip += 1; 
 		return qtrue;
-#if 0
-	case OP_EQF:
-	case OP_NEF:
-		if ( ci->value != 0 )
-			break;
-		EmitMovEAXEDI( vm );
-		EmitCommand( LAST_COMMAND_SUB_DI_4 );
-		// floating point hack :)
-		EmitString( "25" );   // and eax, 0x7FFFFFFF
-		Emit4( 0x7FFFFFFF );
-		if ( op1 == OP_EQF )
-			EmitJump( vm, OP_EQ, ni->value );
-		else
-			EmitJump( vm, OP_NE, ni->value );
-		ip += 1;
-		return qtrue;
-#endif
 
 	default:
 		break;
@@ -999,21 +978,16 @@ void VM_LoadInstructions( vmHeader_t *header, instruction_t *out )
 			out->value = 0;
 		}
 
-		if ( ops[ opcode ].flags & OPF_JUMP )
-			out->jump = 1;
+		if ( (ops[ opcode ].flags & (OPF_FLOAT|OPF_JUMP)) == (OPF_FLOAT|OPF_JUMP) )
+			out->fp_jump = 1;
 		else
-			out->jump = 0;
+			out->fp_jump = 0;
 
-		if ( ops[ opcode].flags & OPF_FLOAT )
-			out->fpt = 1;
+		if ( (ops[ opcode].flags & (OPF_FLOAT|OPF_CALC)) == (OPF_FLOAT|OPF_CALC) )
+			out->fp_calc = 1;
 		else
-			out->fpt = 0;
+			out->fp_calc = 0;
 			
-		if ( ops[ opcode].flags & OPF_CALC )
-			out->calc = 1;
-		else
-			out->calc = 0;
-
 		out++;
 	}
 #if 0
@@ -1097,22 +1071,22 @@ __compile:
 
 		op = ci->op;
 
-		if ( ci->fpt ) {
-			if ( ci->calc && FloatMerge( ci, ni ) ) {
-				pop1 = op;
-				continue;
-			}
-			if ( ci->jump && CPU_Flags & CPU_FCOM ) {
-				EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
+		if ( ci->fp_calc && FloatMerge( ci, ni) ) {
+			pop1 = op;
+			continue;
+		}
 
-				EmitString( "D9 47 08" );					// fld dword ptr [edi+8]
-				EmitString( "D9 47 04" );					// fld dword ptr [edi+4]
-				EmitString( "DF E9" );						// fucomip
-				EmitString( "DD D8" );						// fstp st(0)
+		if ( ci->fp_jump && CPU_Flags & CPU_FCOM ) {
+			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
 
-				EmitJump( vm, ci, ci->value );
-				continue;
-			}
+			EmitString( "D9 47 08" );					// fld dword ptr [edi+8]
+			EmitString( "D9 47 04" );					// fld dword ptr [edi+4]
+			EmitString( "DF E9" );						// fucomip
+			EmitString( "DD D8" );						// fstp st(0)
+
+			EmitJump( vm, ci, ci->value );
+			pop1 = OP_UNDEF;
+			continue;
 		}
 
 		switch ( op ) {
@@ -1125,7 +1099,7 @@ __compile:
 			break;
 
 		case OP_ENTER:
-			if ( abs( ci->value ) <= 127 ) {
+			if ( ISS8( ci->value ) ) {
 				EmitString( "83 EE" );		// sub	esi, 0x12345678
 				Emit1( ci->value );
 			} else {
@@ -1152,7 +1126,7 @@ __compile:
 			// [local]++
 			if ( LOCALOP( OP_ADD ) ) {
 				v = ci->value + (int) vm->dataBase; // local variable address
-				if ( abs( inst[ip+2].value ) <= 127 ){
+				if ( ISS8( inst[ip+2].value ) ){
 					EmitString( "83 86" );		// add dword ptr[esi+0x12345678],0x12
 					Emit4( v );
 					Emit1( inst[ip+2].value );
@@ -1168,7 +1142,7 @@ __compile:
 			// [local]--
 			if ( LOCALOP( OP_SUB ) ) {
 				v = ci->value + (int) vm->dataBase; // local variable address
-				if ( abs( inst[ip+2].value ) <= 127 ){
+				if ( ISS8( inst[ip+2].value ) ){
 					EmitString( "83 AE" );		// add dword ptr[esi+0x12345678],0x12
 					Emit4( v );
 					Emit1( inst[ip+2].value );
@@ -1216,7 +1190,7 @@ __compile:
 
 			EmitAddEDI4(vm);
 			v = ci->value;
-			if ( abs( v ) <= 127 ) {
+			if ( ISS8( v ) ) {
 				EmitString( "8D 46" );		// lea eax, [0x7F + esi]
 				Emit1( v );
 			} else {
