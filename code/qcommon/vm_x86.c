@@ -433,6 +433,7 @@ static qboolean EmitMovEBXEDI(vm_t *vm, int andit) {
 	return qfalse;
 }
 
+
 static int EmitFldEDI( vm_t *vm ) {
 	if ( jlabel ) {
 		EmitString( "D9 07" );		// fld dword ptr [edi]
@@ -450,6 +451,7 @@ static int EmitFldEDI( vm_t *vm ) {
 	EmitString( "D9 07" );			// fld dword ptr [edi]
 	return 0;
 }
+
 
 void JumpUsed( int position ) 
 {
@@ -615,6 +617,7 @@ void EmitFTOL( vm_t *vm )
 		EmitString( S ); \
 		Emit4( n ); \
 	} while(0) \
+
 
 #define JE()   EMITJMP( "0F 84", 6 )
 #define JNE()  EMITJMP( "0F 85", 6 )
@@ -881,8 +884,8 @@ qboolean ConstOptimize( vm_t *vm ) {
 				case ~TRAP_SIN: EmitString( "D9 FE" ); break;  // fsin
 				case ~TRAP_COS: EmitString( "D9 FF" ); break;  // fcos
 			}
-			EmitAddEDI4( vm );				// add edi, 4
-			EmitString( "D9 1F" );			// fstp dword ptr[edi]
+			EmitAddEDI4( vm );						// add edi, 4
+			EmitCommand( LAST_COMMAND_FSTP_EDI ); 	// fstp dword ptr[edi]
 			EmitCommand( LAST_COMMAND_MOV_EAX_EDI );
 			ip += 1;
 			return qtrue;
@@ -1126,14 +1129,15 @@ __compile:
 			// [local]++
 			if ( LOCALOP( OP_ADD ) ) {
 				v = ci->value + (int) vm->dataBase; // local variable address
-				if ( ISS8( inst[ip+2].value ) ){
+				n = inst[ip+2].value;
+				if ( ISS8( n ) ) {
 					EmitString( "83 86" );		// add dword ptr[esi+0x12345678],0x12
 					Emit4( v );
-					Emit1( inst[ip+2].value );
+					Emit1( n );
 				} else {
 					EmitString( "81 86" );		// add dword ptr[esi+0x12345678],0x12345678
 					Emit4( v );
-					Emit4( inst[ip+2].value );
+					Emit4( n );
 				}
 				ip += 5;
 				break;
@@ -1142,14 +1146,15 @@ __compile:
 			// [local]--
 			if ( LOCALOP( OP_SUB ) ) {
 				v = ci->value + (int) vm->dataBase; // local variable address
-				if ( ISS8( inst[ip+2].value ) ){
+				n = inst[ip+2].value;
+				if ( ISS8( n ) ){
 					EmitString( "83 AE" );		// add dword ptr[esi+0x12345678],0x12
 					Emit4( v );
-					Emit1( inst[ip+2].value );
+					Emit1( n );
 				} else {
 					EmitString( "81 AE" );		// add dword ptr[esi+0x12345678],0x12345678
 					Emit4( v );
-					Emit4( inst[ip+2].value );
+					Emit4( n );
 				}
 				ip += 5;
 				break;
@@ -1532,19 +1537,13 @@ __compile:
 #else
 			if ( CPU_Flags & CPU_SSE3 ) {
 				// fast sse3 truncation
-				EmitString( "D9 07" );    // fld dword ptr [edi]
+				EmitFldEDI( vm );         // fld dword ptr [edi]
 				EmitString( "DB 0F" );    // fisttp dword ptr [edi]
 			} else {
 				// call the library conversion function
-#if 1
 				n = codeOffset[FUNC_FTOL] - compiledOfs;
 				EmitString( "E8" );		  // call +codeOffset[FUNC_FTOL]
 				Emit4( n - 5 );
-#else
-				EmitString( "D9 07" );    // fld dword ptr [edi]
-				EmitString( "FF 15" );    // call dword ptr [ftolPtr]
-				Emit4( (int)&ftolPtr );
-#endif
 			}
 #endif
 			break;
