@@ -1181,7 +1181,7 @@ __compile:
 			}
 
 			// merge OP_LOCAL + OP_LOAD1
-			if ( ni->op == OP_LOAD2 && !ni->jused ) {
+			if ( ni->op == OP_LOAD1 && !ni->jused ) {
 				EmitAddEDI4( vm );
 				EmitString( "0F B6 86" );	// movzx eax, byte ptr[esi + LOCAL + vm->dataBase ]
 				Emit4( ci->value + (int)vm->dataBase );
