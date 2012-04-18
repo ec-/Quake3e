@@ -44,46 +44,6 @@ static char		sys_cmdline[MAX_STRING_CHARS];
 
 WinVars_t	g_wv;
 
-// define this to use alternate spanking method
-// I found out that the regular way doesn't work on my box for some reason
-// see the associated spank.sh script
-#define ALT_SPANK
-#ifdef ALT_SPANK
-#include <stdio.h>
-#include <sys/stat.h>
-
-int fh = 0;
-
-void Spk_Open(char *name)
-{
-  fh = open( name, O_TRUNC | O_CREAT | O_WRONLY, S_IREAD | S_IWRITE );
-};
-
-void Spk_Close(void)
-{
-  if (!fh)
-    return;
-
-  close( fh );
-  fh = 0;
-}
-
-void Spk_Printf (const char *text, ...)
-{
-  va_list argptr;
-  char buf[32768];
-
-  if (!fh)
-    return;
-
-  va_start (argptr,text);
-  vsprintf (buf, text, argptr);
-  write(fh, buf, strlen(buf));
-  _commit(fh);
-  va_end (argptr);
-
-};
-#endif
 
 /*
 ==================

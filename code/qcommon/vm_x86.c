@@ -1207,9 +1207,9 @@ __compile:
 
 		case OP_ARG:
 			EmitMovEAXEDI(vm);			// mov	eax,dword ptr [edi]
-			EmitString( "89 86" );		// mov	dword ptr [esi+database],eax
-			// FIXME: range check
 			lastArg = ci->value;
+			// FIXME: range check
+			EmitString( "89 86" );		// mov	dword ptr [esi+database],eax
 			Emit4( lastArg + (int)vm->dataBase );
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
 			break;
@@ -1236,7 +1236,7 @@ __compile:
 
 		case OP_LEAVE:
 			v = ci->value;
-			if ( abs( v ) < 64 ) {
+			if ( ISS8( v ) ) {
 				EmitString( "83 C6" );		// add	esi, 0x12
 				Emit1( v );
 			} else {
@@ -1250,7 +1250,7 @@ __compile:
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
-				EmitString( "8B 80");						// mov eax, dword ptr [eax + 0x1234567]
+				EmitString( "8B 80" );						// mov eax, dword ptr [eax + 0x1234567]
 				Emit4( (int)vm->dataBase );
 				EmitCommand(LAST_COMMAND_MOV_EDI_EAX);		// mov dword ptr [edi], eax
 				break;
