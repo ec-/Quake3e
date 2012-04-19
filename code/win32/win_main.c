@@ -554,7 +554,7 @@ void * QDECL Sys_LoadDll( const char *name, intptr_t (QDECL **entryPoint)(intptr
 	gamedir = Cvar_VariableString( "fs_game" );
 
 	fn = FS_BuildOSPath( basepath, gamedir, filename );
-	libHandle = LoadLibrary( fn );
+	libHandle = LoadLibrary( AtoW( fn ) );
 #ifndef NDEBUG
   if (libHandle)
     Com_Printf("LoadLibrary '%s' ok\n", fn);
@@ -565,7 +565,7 @@ void * QDECL Sys_LoadDll( const char *name, intptr_t (QDECL **entryPoint)(intptr
 	if ( !libHandle ) {
 		if( cdpath[0] ) {
 			fn = FS_BuildOSPath( cdpath, gamedir, filename );
-			libHandle = LoadLibrary( fn );
+			libHandle = LoadLibrary( AtoW( fn ) );
 #ifndef NDEBUG
       if (libHandle)
         Com_Printf("LoadLibrary '%s' ok\n", fn);

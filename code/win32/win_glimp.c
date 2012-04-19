@@ -605,7 +605,7 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
 		wc.hbrBackground = (void *)COLOR_GRAYTEXT;
 		wc.lpszMenuName  = 0;
-		wc.lpszClassName = CLIENT_WINDOW_TITLE;
+		wc.lpszClassName = T(CLIENT_WINDOW_TITLE);
 
 		if ( !RegisterClass( &wc ) )
 		{
@@ -850,14 +850,13 @@ static rserr_t GLW_SetMode( const char *drivername,
 			if ( colorbits == 0 || ( !cdsFullscreen && colorbits >= 15 ) )
 			{
 				if ( MessageBox( NULL,
-							"It is highly unlikely that a correct\n"
-							"windowed display can be initialized with\n"
-							"the current desktop display depth.  Select\n"
-							"'OK' to try anyway.  Press 'Cancel' if you\n"
-							"have a 3Dfx Voodoo, Voodoo-2, or Voodoo Rush\n"
-							"3D accelerator installed, or if you otherwise\n"
-							"wish to quit.",
-							"Low Desktop Color Depth",
+							T("It is highly unlikely that a correct\n") \
+							T("windowed display can be initialized with\n") \
+							T("the current desktop display depth.  Select\n") \
+							T("'OK' to try anyway.  Press 'Cancel' if you\n") \
+							T("have a 3Dfx Voodoo, Voodoo-2, or Voodoo Rush\n") \
+							T("3D accelerator installed, or if you otherwise\n") \
+							T("wish to quit."),	T("Low Desktop Color Depth"),
 							MB_OKCANCEL | MB_ICONEXCLAMATION ) != IDOK )
 				{
 					return RSERR_INVALID_MODE;
@@ -1308,15 +1307,18 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 		glConfig.driverType = GLDRV_STANDALONE;
 
 		ri.Printf( PRINT_ALL, "...assuming '%s' is a standalone driver\n", drivername );
-
+#if 0
 		if ( strstr( buffer, _3DFX_DRIVER_NAME ) )
 		{
 			glConfig.driverType = GLDRV_VOODOO;
 		}
+#endif
 	}
 
 	// disable the 3Dfx splash screen
+#if 0
 	_putenv("FX_GLIDE_NO_SPLASH=0");
+#endif
 
 	//
 	// load the driver and bind our function pointers to it
@@ -1332,9 +1334,7 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 			// try it again but with a 16-bit desktop
 			if ( glConfig.driverType == GLDRV_ICD )
 			{
-				if ( r_colorbits->integer != 16 ||
-					 cdsFullscreen != qtrue ||
-					 r_mode->integer != 3 )
+				if ( r_colorbits->integer != 16 || cdsFullscreen != qtrue || r_mode->integer != 3 )
 				{
 					if ( !GLW_StartDriverAndSetMode( drivername, 3, 16, qtrue ) )
 					{
@@ -1347,12 +1347,12 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 				goto fail;
 			}
 		}
-
+#if 0
 		if ( glConfig.driverType == GLDRV_VOODOO )
 		{
 			glConfig.isFullscreen = qtrue;
 		}
-
+#endif
 		return qtrue;
 	}
 fail:
@@ -1404,7 +1404,10 @@ void GLimp_EndFrame (void)
 static void GLW_StartOpenGL( void )
 {
 	qboolean attemptedOpenGL32 = qfalse;
+
+#if 0
 	qboolean attempted3Dfx = qfalse;
+#endif
 
 	//
 	// load and initialize the specific OpenGL driver
@@ -1413,8 +1416,10 @@ static void GLW_StartOpenGL( void )
 	{
 		if ( !Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) )
 		{
+			ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
 			attemptedOpenGL32 = qtrue;
 		}
+#if 0
 		else if ( !Q_stricmp( r_glDriver->string, _3DFX_DRIVER_NAME ) )
 		{
 			attempted3Dfx = qtrue;
@@ -1445,6 +1450,7 @@ static void GLW_StartOpenGL( void )
 				}
 			}
 		}
+#endif
 		else if ( !attemptedOpenGL32 )
 		{
 			attemptedOpenGL32 = qtrue;

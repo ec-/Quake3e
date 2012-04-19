@@ -103,29 +103,6 @@ void Conbuf_BeginPrint( void );
 void Conbuf_EndPrint( void );
 
 
-#ifdef UNICODE
-
-LPWSTR AtoW( const char *s ) 
-{
-	static WCHAR buffer[MAXPRINTMSG*2];
-	MultiByteToWideChar( CP_OEMCP, 0, s, strlen( s ) + 1, (LPWSTR) buffer, sizeof( buffer ) );
-	return buffer;
-}
-
-const char *WtoA( const LPWSTR s ) 
-{
-	static char buffer[MAXPRINTMSG*2];
-	WideCharToMultiByte( CP_OEMCP, 0, s, -1, buffer, sizeof( buffer ), NULL, NULL );
-	return buffer;
-}
-
-#else
-
-#define AtoW(S) (S)
-#define WtoA(S) (S)
-
-#endif
-
 static void ConClear( void ) 
 {
 	//SendMessage( s_wcd.hwndBuffer, EM_SETSEL, 0, -1 );
@@ -711,8 +688,6 @@ void QDECL Sys_SetStatus( const char *format, ... )
 	va_end( argptr );
 
 	SendMessage( s_wcd.hwndStatusBar, SB_SETTEXT, (WPARAM) 1 | 0, (LPARAM) AtoW( text ) );
-
-	//SetWindowText( s_wcd.hwndStatusBar, text );
 }
 
 

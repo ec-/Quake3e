@@ -87,6 +87,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define	WINDOW_STYLE_FULLSCREEN_MIN  (WS_VISIBLE|WS_CLIPCHILDREN)
 #define	WINDOW_ESTYLE_FULLSCREEN_MIN (0)
 
+#define T TEXT
+#ifdef UNICODE
+LPWSTR AtoW( const char *s );
+const char *WtoA( const LPWSTR s ); 
+#else
+#define AtoW(S) (S)
+#define WtoA(S) (S)
+#endif
+
+
 void	IN_MouseEvent( int mstate );
 
 void Sys_QueEvent( int time, sysEventType_t type, int value, int value2, int ptrLength, void *ptr );

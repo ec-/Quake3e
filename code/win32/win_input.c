@@ -267,7 +267,7 @@ static BOOL IN_InitRawMouse( void ) {
 	RRID  = NULL;
 	GRID  = NULL;
 
-	dll = GetModuleHandle( TEXT("user32") ); // should always success
+	dll = GetModuleHandle( T("user32") ); // should always success
 
 	GRRID = (PGRRID) GetProcAddress( dll, "GetRegisteredRawInputDevices" );
 	RRID  = (PRRID) GetProcAddress( dll, "RegisterRawInputDevices" );

@@ -32,6 +32,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <float.h>
 #include "../renderer/tr_local.h"
 #include "glw_win.h"
+#include "win_local.h"
 
 void QGL_EnableLogging( qboolean enable );
 
@@ -3186,6 +3187,7 @@ void QGL_Shutdown( void )
 
 #define GR_NUM_BOARDS 0x0f
 
+#if 0
 static qboolean GlideIsValid( void )
 {
 	HMODULE hGlide;
@@ -3225,6 +3227,7 @@ static qboolean GlideIsValid( void )
 
 	return qfalse;
 } 
+#endif
 
 #ifdef _MSC_VER
 #	pragma warning (disable : 4113 4133 4047 )
@@ -3247,13 +3250,20 @@ qboolean QGL_Init( const char *dllname )
 	char systemDir[1024];
 	char libName[1024];
 
+#ifdef UNICODE
+	TCHAR buffer[1024];
+	GetSystemDirectory( buffer, ARRAYSIZE( buffer ) );
+	strcpy( systemDir, WtoA( buffer ) );
+#else
 	GetSystemDirectory( systemDir, sizeof( systemDir ) );
+#endif
 
 	assert( glw_state.hinstOpenGL == 0 );
 
 	ri.Printf( PRINT_ALL, "...initializing QGL\n" );
 
 	// NOTE: this assumes that 'dllname' is lower case (and it should be)!
+#if 0
 	if ( strstr( dllname, _3DFX_DRIVER_NAME ) )
 	{
 		if ( !GlideIsValid() )
@@ -3262,6 +3272,7 @@ qboolean QGL_Init( const char *dllname )
 			return qfalse;
 		}
 	}
+#endif
 
 	if ( dllname[0] != '!' )
 	{
@@ -3274,11 +3285,14 @@ qboolean QGL_Init( const char *dllname )
 
 	ri.Printf( PRINT_ALL, "...calling LoadLibrary( '%s.dll' ): ", libName );
 
-	if ( ( glw_state.hinstOpenGL = LoadLibrary( dllname ) ) == 0 )
+	glw_state.hinstOpenGL = LoadLibrary( AtoW( libName ) );
+
+	if ( glw_state.hinstOpenGL == NULL )
 	{
 		ri.Printf( PRINT_ALL, "failed\n" );
 		return qfalse;
 	}
+
 	ri.Printf( PRINT_ALL, "succeeded\n" );
 
 	qglAccum                     = dllAccum = GPA( "glAccum" );
