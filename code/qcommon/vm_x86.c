@@ -993,12 +993,6 @@ void VM_LoadInstructions( vmHeader_t *header, instruction_t *out )
 			
 		out++;
 	}
-#if 0
-	if ( code != code_end ) {
-		Com_Printf( S_COLOR_YELLOW "VM_CompileX86: unused space in code segment starting at %i\n", 
-			code_end - code );
-	}
-#endif
 }
 
 enum {
@@ -1080,9 +1074,10 @@ __compile:
 		}
 
 		if ( ci->fp_jump && CPU_Flags & CPU_FCOM ) {
+			EmitFldEDI( vm );							// fld dword ptr [edi]
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
 
-			EmitString( "D9 47 08" );					// fld dword ptr [edi+8]
+			//EmitString( "D9 47 08" );					// fld dword ptr [edi+8]
 			EmitString( "D9 47 04" );					// fld dword ptr [edi+4]
 			EmitString( "DF E9" );						// fucomip
 			EmitString( "DD D8" );						// fstp st(0)
