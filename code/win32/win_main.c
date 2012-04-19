@@ -407,6 +407,7 @@ Search all the drives to see if there is a valid CD to grab
 the cddir from
 ================
 */
+#if 0
 qboolean Sys_ScanForCD( void ) {
 	static char	cddir[MAX_OSPATH];
 	char		drive[4];
@@ -449,6 +450,7 @@ qboolean Sys_ScanForCD( void ) {
 
 	return qfalse;
 }
+#endif
 
 /*
 ================
