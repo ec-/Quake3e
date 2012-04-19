@@ -674,8 +674,8 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 
 		g_wv.hWnd = CreateWindowEx (
 			 exstyle, 
-			 CLIENT_WINDOW_TITLE,
-			 CLIENT_WINDOW_TITLE,
+			 TEXT(CLIENT_WINDOW_TITLE),
+			 TEXT(CLIENT_WINDOW_TITLE),
 			 stylebits & ~WS_VISIBLE,
 			 x, y, w, h,
 			 NULL,

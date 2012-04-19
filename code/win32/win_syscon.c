@@ -47,6 +47,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define MAX_CONSIZE		65536
 
+#define T TEXT
+
 #define EDIT_COLOR		RGB(0x00,0x00,0x10)
 #define TEXT_COLOR		RGB(0x40,0xEE,0x20)
 
@@ -100,11 +102,35 @@ static int conCache = 0;
 void Conbuf_BeginPrint( void );
 void Conbuf_EndPrint( void );
 
+
+#ifdef UNICODE
+
+LPWSTR AtoW( const char *s ) 
+{
+	static WCHAR buffer[MAXPRINTMSG*2];
+	MultiByteToWideChar( CP_OEMCP, 0, s, strlen( s ) + 1, (LPWSTR) buffer, sizeof( buffer ) );
+	return buffer;
+}
+
+const char *WtoA( const LPWSTR s ) 
+{
+	static char buffer[MAXPRINTMSG*2];
+	WideCharToMultiByte( CP_OEMCP, 0, s, -1, buffer, sizeof( buffer ), NULL, NULL );
+	return buffer;
+}
+
+#else
+
+#define AtoW(S) (S)
+#define WtoA(S) (S)
+
+#endif
+
 static void ConClear( void ) 
 {
 	//SendMessage( s_wcd.hwndBuffer, EM_SETSEL, 0, -1 );
 	//SendMessage( s_wcd.hwndBuffer, EM_REPLACESEL, FALSE, ( LPARAM ) "" );
-	SetWindowText( s_wcd.hwndBuffer, "" );
+	SetWindowText( s_wcd.hwndBuffer, T("") );
 	UpdateWindow( s_wcd.hwndBuffer );
 	s_wcd.newline = qfalse;
 	curConSize = 0;
@@ -294,7 +320,7 @@ static LONG WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 LONG WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	HGLOBAL hMem;
-	char *text;
+	TCHAR *text;
 	int len;
 
 	switch (uMsg)
@@ -309,7 +335,7 @@ LONG WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 				len = GetWindowTextLength( s_wcd.hwndBuffer );
 				if ( len > 0 ) {
 					hMem = GlobalAlloc( GMEM_MOVEABLE | GMEM_DDESHARE, len + 1);
-					text = ( char* )GlobalLock( hMem );
+					text = ( TCHAR* )GlobalLock( hMem );
 					GetWindowText( s_wcd.hwndBuffer, text, len + 1 );
 					SetClipboardData( CF_TEXT, hMem );
 					GlobalUnlock( hMem );
@@ -341,7 +367,7 @@ LONG WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 LONG WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	char inputBuffer[1024];
+	TCHAR inputBuffer[1024];
 
 	switch ( uMsg )
 	{
@@ -376,14 +402,14 @@ LONG WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 		if ( wParam == VK_UP ) {
 			Con_HistoryGetPrev( &console );
-			SetWindowText( hWnd, console.buffer );
+			SetWindowText( hWnd, AtoW( console.buffer ) );
 			SendMessage( hWnd, EM_SETSEL, (WPARAM) console.cursor, console.cursor );
 			return 0;
 		}
 
 		if ( wParam == VK_DOWN ) {
 			Con_HistoryGetNext( &console );
-			SetWindowText( hWnd, console.buffer );
+			SetWindowText( hWnd, AtoW( console.buffer ) );
 			SendMessage( hWnd, EM_SETSEL, (WPARAM) console.cursor, console.cursor );
 			return 0;
 		}
@@ -392,42 +418,47 @@ LONG WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 	}
 
 	case WM_CHAR:
+		if ( wParam > 255 )
+			return 0;
 		if ( wParam == VK_RETURN )
 		{
 			DWORD pos;
 			char *s;
 
 			GetWindowText( hWnd, inputBuffer, sizeof( inputBuffer ) );
-			s = inputBuffer;
-			
-			strncpy( console.buffer, inputBuffer, sizeof( console.buffer ) );
+			strncpy( console.buffer, WtoA( inputBuffer ), sizeof( console.buffer ) );
 			SendMessage( hWnd, EM_GETSEL, (WPARAM) &pos, (LPARAM) 0 );
 			console.cursor = pos;
 			Con_SaveField( &console );
 
+			s = console.buffer;
 			if ( *s == '\\' || *s == '/' )
 				s++;
 
 			strncat( s_wcd.consoleText, s, sizeof( s_wcd.consoleText ) - strlen( s_wcd.consoleText ) - 2 );
 			strcat( s_wcd.consoleText, "\n" );
 			
-			SetWindowText( s_wcd.hwndInputLine, "" );
+			SetWindowText( s_wcd.hwndInputLine, T("") );
 			Field_Clear( &console );
 
-			Sys_Print( va( "]%s\n", inputBuffer ) );
+			Sys_Print( va( "]%s\n", WtoA( inputBuffer ) ) );
 
 			return 0;
 		}
 
 		if ( wParam == VK_TAB ) {
 			DWORD pos;
-			GetWindowText( hWnd, console.buffer, sizeof( console.buffer ) );
+
+			GetWindowText( hWnd, inputBuffer, sizeof( inputBuffer ) );
+			strncpy( console.buffer, WtoA( inputBuffer ), sizeof( console.buffer ) );
 			SendMessage( hWnd, EM_GETSEL, (WPARAM) &pos, (LPARAM) 0 );
 			console.cursor = pos;
+			
 			Sys_BeginPrint();
 			Field_AutoComplete( &console );
 			Sys_EndPrint();
-			SetWindowText( hWnd, console.buffer );
+
+			SetWindowText( hWnd, AtoW( console.buffer ) );
 			SendMessage( hWnd, EM_SETSEL, console.cursor, console.cursor );
 			return 0;
 		}
@@ -446,7 +477,7 @@ void Sys_CreateConsole( char *title )
 	HDC hDC;
 	WNDCLASS wc;
 	RECT rect;
-	const char *DEDCLASS = "Q3 WinConsole";
+	const TCHAR *DEDCLASS = T("Q3 WinConsole");
 
 	int swidth, sheight, sth;
 	int DEDSTYLE = WS_POPUPWINDOW | WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SIZEBOX;
@@ -492,7 +523,7 @@ void Sys_CreateConsole( char *title )
 	s_wcd.windowHeight = rect.bottom - rect.top + 1;
 
 	s_wcd.hWnd = CreateWindowEx( 0, DEDCLASS,
-							   CONSOLE_WINDOW_TITLE, DEDSTYLE,
+							   T(CONSOLE_WINDOW_TITLE), DEDSTYLE,
 							   ( swidth - s_wcd.windowWidth ) / 2, 
 							   ( sheight - s_wcd.windowHeight ) / 2 , 
 							   s_wcd.windowWidth, s_wcd.windowHeight,
@@ -515,7 +546,7 @@ void Sys_CreateConsole( char *title )
 									  CLIP_DEFAULT_PRECIS,
 									  NONANTIALIASED_QUALITY,
 									  FIXED_PITCH | FF_MODERN,
-									  "Terminal" );
+									  T("Terminal") );
 
 	s_wcd.hfStatusFont = CreateFont( statusFontHeight, 0, 
                                       0, 0, FW_NORMAL, 0, 0, 0,
@@ -524,7 +555,7 @@ void Sys_CreateConsole( char *title )
 									  CLIP_DEFAULT_PRECIS,
 									  DEFAULT_QUALITY,
 									  DEFAULT_PITCH,
-									  "Tahoma" );
+									  T("Tahoma") );
 
 	s_wcd.hwndStatusBar = CreateWindow( STATUSCLASSNAME, NULL, WS_VISIBLE | WS_CHILD,
 		1,1,32,32, s_wcd.hWnd, NULL, g_wv.hInstance, NULL );
@@ -544,11 +575,11 @@ void Sys_CreateConsole( char *title )
 	w = (rect.right - rect.left - 4) / 2;
 
 	// create the buttons 
-	s_wcd.hwndButtonCopy = CreateWindow( "button", "copy", WS_VISIBLE | WS_CHILD,
+	s_wcd.hwndButtonCopy = CreateWindow( T("button"), T("copy"), WS_VISIBLE | WS_CHILD,
 		x, rect.top, w, h, s_wcd.hwndStatusBar, ( HMENU ) COPY_ID, g_wv.hInstance, NULL );
 	x += w + 4;
 
-	s_wcd.hwndButtonClear = CreateWindow( "button", "clear", WS_VISIBLE | WS_CHILD,
+	s_wcd.hwndButtonClear = CreateWindow( T("button"), T("clear"), WS_VISIBLE | WS_CHILD,
 		x, rect.top, w, h, s_wcd.hwndStatusBar, ( HMENU ) CLEAR_ID,	g_wv.hInstance, NULL );
 
 	SendMessage( s_wcd.hwndButtonCopy, WM_SETFONT, ( WPARAM ) s_wcd.hfStatusFont, 0 );
@@ -563,7 +594,7 @@ void Sys_CreateConsole( char *title )
 	//ReleaseDC( s_wcd.hWnd, hDC );
 
 	// create the input line
-	s_wcd.hwndInputLine = CreateWindow( "edit", NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | 
+	s_wcd.hwndInputLine = CreateWindow( T("edit"), NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | 
 												ES_LEFT | ES_AUTOHSCROLL,
 												BORDERW, rect.bottom - sth - INPUT_HEIGHT - BORDERH, rect.right - BORDERW*2, INPUT_HEIGHT,
 												s_wcd.hWnd, 
@@ -571,7 +602,7 @@ void Sys_CreateConsole( char *title )
 												g_wv.hInstance, NULL );
 
 	// create the scrollbuffer
-	s_wcd.hwndBuffer = CreateWindow( "edit", NULL, WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_BORDER | 
+	s_wcd.hwndBuffer = CreateWindow( T("edit"), NULL, WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_BORDER | 
 												ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | ES_NOHIDESEL,
 												BORDERW, BORDERH, rect.right - BORDERW*2, rect.bottom - sth - INPUT_HEIGHT - BORDERH*3 - 2,
 												s_wcd.hWnd, 
@@ -581,11 +612,11 @@ void Sys_CreateConsole( char *title )
 	SendMessage( s_wcd.hwndBuffer, WM_SETFONT, ( WPARAM ) s_wcd.hfBufferFont, 0 );
 	SendMessage( s_wcd.hwndInputLine, WM_SETFONT, ( WPARAM ) s_wcd.hfBufferFont, 0 );
 
-	s_wcd.SysInputLineWndProc = ( WNDPROC ) SetWindowLong( s_wcd.hwndInputLine, GWL_WNDPROC, ( long ) InputLineWndProc );
-	s_wcd.SysStatusWndProc = ( WNDPROC ) SetWindowLong( s_wcd.hwndStatusBar, GWL_WNDPROC, ( long ) StatusWndProc );
+	s_wcd.SysInputLineWndProc = ( WNDPROC ) SetWindowLongPtr( s_wcd.hwndInputLine, GWLP_WNDPROC, ( LONG_PTR ) InputLineWndProc );
+	s_wcd.SysStatusWndProc = ( WNDPROC ) SetWindowLongPtr( s_wcd.hwndStatusBar, GWLP_WNDPROC, ( LONG_PTR ) StatusWndProc );
 
 	if ( title && *title ) {
-		SetWindowText( s_wcd.hWnd, title );
+		SetWindowText( s_wcd.hWnd, AtoW( title ) );
 	}
 
 	ShowWindow( s_wcd.hWnd, SW_SHOWDEFAULT );
@@ -669,7 +700,7 @@ Sys_SetStatus
 void QDECL Sys_SetStatus( const char *format, ... ) 
 {
 	va_list		argptr;
-	char		text[4096];
+	char		text[256];
 
 	if ( s_wcd.hwndStatusBar == NULL )
 		return;
@@ -679,7 +710,8 @@ void QDECL Sys_SetStatus( const char *format, ... )
 	vsprintf( text+1, format, argptr);
 	va_end( argptr );
 
-	SendMessage( s_wcd.hwndStatusBar, SB_SETTEXT, (WPARAM) 1 | 0, (LPARAM) text );
+	SendMessage( s_wcd.hwndStatusBar, SB_SETTEXT, (WPARAM) 1 | 0, (LPARAM) AtoW( text ) );
+
 	//SetWindowText( s_wcd.hwndStatusBar, text );
 }
 
@@ -783,7 +815,7 @@ void Conbuf_AppendText( const char *msg )
 		// cut off half from total lines count
 		n = n / 2;
 		if ( n <= 1 ) {
-			SetWindowText( s_wcd.hwndBuffer, "" );
+			SetWindowText( s_wcd.hwndBuffer, T("") );
 		} else {
 			pos = SendMessage( s_wcd.hwndBuffer, EM_LINEINDEX, n, 0 );
 			SendMessage( s_wcd.hwndBuffer, EM_SETSEL, 0, pos );
@@ -800,7 +832,7 @@ void Conbuf_AppendText( const char *msg )
 	// put this text into the windows console
 	//SendMessage( s_wcd.hwndBuffer, EM_LINESCROLL, 0, 0xffff );
 	SendMessage( s_wcd.hwndBuffer, EM_SCROLLCARET, 0, 0 );
-	SendMessage( s_wcd.hwndBuffer, EM_REPLACESEL, 0, (LPARAM) buffer );
+	SendMessage( s_wcd.hwndBuffer, EM_REPLACESEL, 0, (LPARAM) AtoW( buffer ) );
 	curConSize += bufLen;
 }
 
@@ -852,14 +884,14 @@ void Sys_SetErrorText( const char *buf )
 	// shift buffer position
 	SetWindowPos( s_wcd.hwndBuffer, HWND_TOP, BORDERW, ERROR_HEIGHT + BORDERH*2, rect.right - BORDERW*2, rect.bottom - sth - ERROR_HEIGHT - BORDERH*3+1, SWP_NOZORDER );
 
-	s_wcd.hwndErrorBox = CreateWindow( "static", NULL, WS_CHILD | WS_VISIBLE | SS_SUNKEN,
+	s_wcd.hwndErrorBox = CreateWindow( T("static"), NULL, WS_CHILD | WS_VISIBLE | SS_SUNKEN,
 												BORDERW, BORDERH, rect.right - BORDERW*2, ERROR_HEIGHT,
 												s_wcd.hWnd, 
 												( HMENU ) ERRORBOX_ID,	// child window ID
 												g_wv.hInstance, NULL );
 
 	SendMessage( s_wcd.hwndErrorBox, WM_SETFONT, ( WPARAM ) s_wcd.hfBufferFont, 0 );
-	SetWindowText( s_wcd.hwndErrorBox, buf );
+	SetWindowText( s_wcd.hwndErrorBox, AtoW( buf ) );
 
 	Sys_SetStatus( "Fatal error occured" );
 }
