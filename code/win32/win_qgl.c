@@ -3280,7 +3280,7 @@ qboolean QGL_Init( const char *dllname )
 	}
 	else
 	{
-		Q_strncpyz( libName, dllname, sizeof( libName ) );
+		Q_strncpyz( libName, dllname+1, sizeof( libName ) );
 	}
 
 	ri.Printf( PRINT_ALL, "...calling LoadLibrary( '%s.dll' ): ", libName );
