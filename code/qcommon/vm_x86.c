@@ -40,6 +40,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define VM_X86_MMAP
 #endif
 
+//#define VM_DEBUG
+
 static void *VM_Alloc_Compiled( vm_t *vm, int codeLength );
 static void VM_Destroy_Compiled( vm_t *vm );
 
@@ -64,96 +66,98 @@ static void VM_Destroy_Compiled( vm_t *vm );
 
 typedef struct {
 	const char *name;
-	int   size;
+	int   size; 
+	int	  stack;
 	int   flags;
-} ops_t ;
+} opcode_info_t ;
 
-ops_t ops[OP_MAX] = 
+opcode_info_t ops[OP_MAX] = 
 {
-	{ "undef",  0, 0 },
-	{ "ignore", 0, 0 },
-	{ "break",  0, 0 },
+	{ "undef",  0, 0, 0 },
+	{ "ignore", 0, 0, 0 },
+	{ "break",  0, 0, 0 },
 
-	{ "enter",  4, 0 },
-	{ "leave",  4, 0 },
-	{ "call",   0, 0 },
-	{ "push",   0, 0 },
-	{ "pop",    0, 0 },
+	{ "enter",  4, 0, 0 },
+	{ "leave",  4,-4, 0 },
+	{ "call",   0, 0, 0 },
+	{ "push",   0, 4, 0 },
+	{ "pop",    0,-4, 0 },
 
-	{ "const",  4, 0 },
-	{ "local",  4, OPF_LOCAL },
-	{ "jump",   0, 0 },
+	{ "const",  4, 4, 0 },
+	{ "local",  4, 4, OPF_LOCAL },
+	{ "jump",   0,-4, 0 },
 
-	{ "eq",     4, OPF_JUMP },
-	{ "ne",     4, OPF_JUMP },
+	{ "eq",     4,-8, OPF_JUMP },
+	{ "ne",     4,-8, OPF_JUMP },
 
-	{ "lti",    4, OPF_JUMP },
-	{ "lei",    4, OPF_JUMP },
-	{ "gti",    4, OPF_JUMP },
-	{ "gei",    4, OPF_JUMP },
+	{ "lti",    4,-8, OPF_JUMP },
+	{ "lei",    4,-8, OPF_JUMP },
+	{ "gti",    4,-8, OPF_JUMP },
+	{ "gei",    4,-8, OPF_JUMP },
 
-	{ "ltu",    4, OPF_JUMP },
-	{ "leu",    4, OPF_JUMP },
-	{ "gtu",    4, OPF_JUMP },
-	{ "geu",    4, OPF_JUMP },
+	{ "ltu",    4,-8, OPF_JUMP },
+	{ "leu",    4,-8, OPF_JUMP },
+	{ "gtu",    4,-8, OPF_JUMP },
+	{ "geu",    4,-8, OPF_JUMP },
 
-	{ "eqf",    4, OPF_JUMP | OPF_FLOAT },
-	{ "nef",    4, OPF_JUMP | OPF_FLOAT },
+	{ "eqf",    4,-8, OPF_JUMP | OPF_FLOAT },
+	{ "nef",    4,-8, OPF_JUMP | OPF_FLOAT },
 
-	{ "ltf",    4, OPF_JUMP | OPF_FLOAT },
-	{ "lef",    4, OPF_JUMP | OPF_FLOAT },
-	{ "gtf",    4, OPF_JUMP | OPF_FLOAT },
-	{ "gef",    4, OPF_JUMP | OPF_FLOAT },
+	{ "ltf",    4,-8, OPF_JUMP | OPF_FLOAT },
+	{ "lef",    4,-8, OPF_JUMP | OPF_FLOAT },
+	{ "gtf",    4,-8, OPF_JUMP | OPF_FLOAT },
+	{ "gef",    4,-8, OPF_JUMP | OPF_FLOAT },
 
-	{ "load1",  0, 0 },
-	{ "load2",  0, 0 },
-	{ "load4",  0, 0 },
-	{ "store1", 0, 0 },
-	{ "store2", 0, 0 },
-	{ "store4", 0, 0 },
-	{ "arg",    1, OPF_ARGV },
-	{ "bcopy",  4, 0 },
+	{ "load1",  0, 0, 0 },
+	{ "load2",  0, 0, 0 },
+	{ "load4",  0, 0, 0 },
+	{ "store1", 0,-8, 0 },
+	{ "store2", 0,-8, 0 },
+	{ "store4", 0,-8, 0 },
+	{ "arg",    1,-4, OPF_ARGV },
+	{ "bcopy",  4,-8, 0 },
 
-	{ "sex8",   0, 0 },
-	{ "sex16",  0, 0 },
+	{ "sex8",   0, 0, 0 },
+	{ "sex16",  0, 0, 0 },
 
-	{ "negi",  0, 0 },
-	{ "add",   0, 0 },
-	{ "sub",   0, 0 },
-	{ "divi",  0, 0 },
-	{ "divu",  0, 0 },
-	{ "modi",  0, 0 },
-	{ "modu",  0, 0 },
-	{ "muli",  0, 0 },
-	{ "mulu",  0, 0 },
+	{ "negi",  0, 0, 0 },
+	{ "add",   0,-4, 0 },
+	{ "sub",   0,-4, 0 },
+	{ "divi",  0,-4, 0 },
+	{ "divu",  0,-4, 0 },
+	{ "modi",  0,-4, 0 },
+	{ "modu",  0,-4, 0 },
+	{ "muli",  0,-4, 0 },
+	{ "mulu",  0,-4, 0 },
 
-	{ "band",  0, 0 },
-	{ "bor",   0, 0 },
-	{ "bxor",  0, 0 },
-	{ "bcom",  0, 0 },
+	{ "band",  0,-4, 0 },
+	{ "bor",   0,-4, 0 },
+	{ "bxor",  0,-4, 0 },
+	{ "bcom",  0, 0, 0 },
 
-	{ "lsh",   0, 0 },
-	{ "rshi",  0, 0 },
-	{ "rshu",  0, 0 },
+	{ "lsh",   0,-4, 0 },
+	{ "rshi",  0,-4, 0 },
+	{ "rshu",  0,-4, 0 },
 
-	{ "negf",  0, 0 },
-	{ "addf",  0, OPF_CALC | OPF_FLOAT },
-	{ "subf",  0, OPF_CALC | OPF_FLOAT },
-	{ "divf",  0, OPF_CALC | OPF_FLOAT },
-	{ "mulf",  0, OPF_CALC | OPF_FLOAT },
+	{ "negf",  0, 0, 0 },
+	{ "addf",  0,-4, OPF_CALC | OPF_FLOAT },
+	{ "subf",  0,-4, OPF_CALC | OPF_FLOAT },
+	{ "divf",  0,-4, OPF_CALC | OPF_FLOAT },
+	{ "mulf",  0,-4, OPF_CALC | OPF_FLOAT },
 
-	{ "cvif",  0, 0 },
-	{ "cvfi",  0, 0 }
+	{ "cvif",  0, 0, 0 },
+	{ "cvfi",  0, 0, 0 }
 };
 
 
 typedef struct {
-	int value;   
-	int op:8;    
+	int   value;    // 32
+	byte  op;	 	// 8
+	byte  opStack;  // 8
 	int jused:1;
-	int shrt:1;
 	int fp_calc:1;
-	int fp_jump:1;
+	int fjump:1;
+	int jump:1;
 } instruction_t;
 
 //#define VM_LOG_SYSCALLS
@@ -197,7 +201,14 @@ void ErrJump( void )
 	exit(1);
 }
 
+void BadJump( void )
+{
+	Com_Error( ERR_DROP, "program tried to execute code at bad location inside VM" ); 
+	exit(1);
+}
+
 static void (*const errJumpPtr)(void) = ErrJump;
+static void (*const badJumpPtr)(void) = BadJump;
 
 static void VM_FreeBuffers( void ) 
 {
@@ -948,50 +959,189 @@ qboolean ConstOptimize( vm_t *vm ) {
 	&& !ni->jused && !inst[ip+1].jused && !inst[ip+2].jused && !inst[ip+3].jused )
 
 
-void VM_LoadInstructions( vmHeader_t *header, instruction_t *out ) 
+void VM_LoadInstructions( vm_t *vm, vmHeader_t *header ) 
 {
 	byte *code, *code_start, *code_end;
-	int i, n, opcode;
+	int i, n, op0, op1, opStack, pstack;
+	instruction_t *ci;
+#ifdef VM_DEBUG
+	fileHandle_t fh;
+	char buf[128];
+#endif
 
 	code = (byte *) header + header->codeOffset;
 	code_start = code; // for printing
 	code_end =  (byte *) header + header->codeOffset + header->codeLength;
 
+	ci = inst;
+	opStack = 0;
+
+	// load instructions and perform some initial calculations/checks
 	for ( i = 0; i < header->instructionCount; i++ ) {
-		opcode = *code;
-		if ( opcode < 0 || opcode >= OP_MAX ) 
+		op0 = *code;
+		if ( op0 < 0 || op0 >= OP_MAX ) 
 		{
 			VM_FreeBuffers();
 			Com_Error( ERR_DROP, "VM_CompileX86: bad opcode %02X at offset %i", 
-				opcode,  code - code_start );
+				op0,  code - code_start );
 			break;
 		}
-		n = ops[ opcode ].size;
+		n = ops[ op0 ].size;
 		if ( code + 1 + n  > code_end ) {
 			VM_FreeBuffers();
 			Com_Error( ERR_DROP, "VM_CompileX86: code > code_end" );
 			break;
 		}
 		code++;
-		out->op = opcode;
+		ci->op = op0;
 		if ( n == 1 || n == 4 ) {
-			memcpy( &out->value, code, n ); // FIXME: endianess
+			memcpy( &ci->value, code, n ); // FIXME: endianess
 			code += n;
 		} else {
-			out->value = 0;
+			ci->value = 0;
 		}
 
-		if ( (ops[ opcode ].flags & (OPF_FLOAT|OPF_JUMP)) == (OPF_FLOAT|OPF_JUMP) )
-			out->fp_jump = 1;
-		else
-			out->fp_jump = 0;
+		ci->opStack = opStack;
+		opStack += ops[ op0 ].stack;
 
-		if ( (ops[ opcode].flags & (OPF_FLOAT|OPF_CALC)) == (OPF_FLOAT|OPF_CALC) )
-			out->fp_calc = 1;
+		// check opstack bounds
+		if ( opStack < 0 ) {
+			VM_FreeBuffers();
+			Com_Error( ERR_DROP, "VM_CompileX86: opStack underflow at %i", i ); 
+		}
+		if ( opStack >= 256 ) {
+			VM_FreeBuffers();
+			Com_Error( ERR_DROP, "VM_CompileX86: opStack overflow at %i", i ); 
+		}
+
+		// set some bits for easy access
+		if ( ops[ op0 ].flags & OPF_JUMP ) 
+			ci->jump = 1;
 		else
-			out->fp_calc = 0;
-			
-		out++;
+			ci->jump = 0;
+
+		if ( (ops[ op0 ].flags & (OPF_FLOAT|OPF_JUMP)) == (OPF_FLOAT|OPF_JUMP) )
+			ci->fjump = 1;
+		else
+			ci->fjump = 0;
+
+		if ( (ops[ op0 ].flags & (OPF_FLOAT|OPF_CALC)) == (OPF_FLOAT|OPF_CALC) )
+			ci->fp_calc = 1;
+		else
+			ci->fp_calc = 0;
+
+		ci++;
+	}
+
+	ci = inst;
+
+#ifdef VM_DEBUG
+	fh = FS_FOpenFileWrite( va( "%s_vm.txt", vm->name ) );
+
+	for ( i = 0; i < header->instructionCount; i++ ) {
+		op0 = ci->op;
+		if ( op0 == OP_ENTER ) {
+			sprintf( buf, "====================\n" );
+			FS_Write( buf, strlen( buf ), fh );
+			//Com_Printf( "====================\n" );
+		}
+		if ( ops[op0].size ) {
+			sprintf( buf, "%2i %2i %5s %i\n", i, ci->opStack, ops[op0].name, inst[i].value );
+		} else {
+			sprintf( buf, "%2i %2i %5s\n", i, ci->opStack, ops[op0].name );
+		}
+		FS_Write( buf, strlen( buf ), fh );
+
+		if ( op0 == OP_LEAVE ) {
+			sprintf( buf, "--------------------\n" );
+			FS_Write( buf, strlen( buf ), fh );
+		}
+		ci++;
+	}
+	FS_FCloseFile( fh );
+#endif
+
+	// ensure that the optimisation pass knows about all the jump table targets
+	if ( vm->jumpTableTargets ) {
+		for( i = 0; i < vm->numJumpTableTargets; i++ ) {
+			n = *(int *)(vm->jumpTableTargets + ( i * sizeof( int ) ) );
+			if ( (unsigned)n >= header->instructionCount )
+				continue;
+			if ( inst[n].opStack != 0 ) {
+				opStack = inst[n].opStack;
+				VM_FreeBuffers();
+				Com_Error( ERR_DROP, "VM_CompileX86: jump target set on instruction %i with bad opStack %i\n", 
+					n, opStack ); 
+			}
+			inst[n].jused = 1;
+		}
+	} else {
+		// instruction with opStack > 0 can't be jump lables so its safe to optimize/merge
+		for ( i = 0; i < header->instructionCount; i++ ) {
+			if ( inst[i].opStack > 0 )
+				inst[i].jused = 0;
+			else
+				inst[i].jused = 1;
+		}
+	}
+
+	ci = inst;
+	pstack = 0;
+	op1 = OP_UNDEF;
+
+	// Additional security checks
+
+	for ( i = 0; i < header->instructionCount; i++ ) {
+		op0 = ci->op;
+
+		// missing block end
+		if ( op0 == OP_ENTER ) {
+			if ( pstack && op1 != OP_LEAVE ) {
+				VM_FreeBuffers();
+				Com_Error( ERR_DROP, "VM_CompileX86: missing return instruction before %i", i ); 
+			}
+			pstack = ci->value;
+		}
+
+		if ( op0 == OP_LEAVE ) {
+			// bad return programStack stack
+			if ( pstack != ci->value ) {
+				VM_FreeBuffers();
+				Com_Error( ERR_DROP, "VM_CompileX86: bad programStack %i at %i", ci->value, i ); 
+			}
+			// bad opStack before return
+			if ( ci->opStack != 4 ) {
+				VM_FreeBuffers();
+				Com_Error( ERR_DROP, "VM_CompileX86: bad opStack %i at %i", ci->value, i ); 
+			}
+		}
+
+		// jumps should have opStack == 4
+		if ( op0 == OP_JUMP && ci->opStack != 4 ) {
+			VM_FreeBuffers();
+			Com_Error( ERR_DROP, "VM_CompileX86: bad jump opStack at %i", i ); 
+		}
+
+		// same as for jump target(s)
+		if ( ci->jump ) {
+			if ( (unsigned)(ci->value) >= vm->instructionCount ) {
+				VM_FreeBuffers();
+				Com_Error( ERR_DROP, "VM_CompileX86: jump target %i is out of range", ci->value ); 
+			}
+			if ( inst[ci->value].opStack != 0 ) {
+				VM_FreeBuffers();
+				Com_Error( ERR_DROP, "VM_CompileX86: jump target %i has bad opStack %i", 
+					ci->value, inst[ci->value].opStack ); 
+			}
+		}
+
+		if ( op0 == OP_CALL && ci->opStack < 4 ) {
+			VM_FreeBuffers();
+			Com_Error( ERR_DROP, "VM_CompileX86: bad call opStack at %i", i ); 
+		}
+
+		op1 = op0;
+		ci++;
 	}
 }
 
@@ -1022,22 +1172,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	inst = Z_Malloc( (instructionCount + 8 ) * sizeof( instruction_t ) );
 	Com_Memset( inst, 0, (instructionCount + 8 ) * sizeof( instruction_t ) );
 	
-	VM_LoadInstructions( header, inst );
-
-	// ensure that the optimisation pass knows about all the jump
-	// table targets
-	for( i = 0; i < vm->numJumpTableTargets; i++ ) {
-		n = *(int *)(vm->jumpTableTargets + ( i * sizeof( int ) ) );
-		if ( n >= header->instructionCount )
-			continue;
-		inst[n].jused = 1;
-	}
-
-	if ( !vm->jumpTableTargets ) {
-		for ( i = 0; i < header->instructionCount; i++ ) {
-			inst[i].jused = 1;
-		}
-	}
+	VM_LoadInstructions( vm, header );
 
 	for( pass = 0; pass < 3; pass++ ) 
 	{
@@ -1073,7 +1208,7 @@ __compile:
 			continue;
 		}
 
-		if ( ci->fp_jump && CPU_Flags & CPU_FCOM ) {
+		if ( ci->fjump && CPU_Flags & CPU_FCOM ) {
 			EmitFldEDI( vm );							// fld dword ptr [edi]
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
 
@@ -1616,17 +1751,21 @@ __compile:
 			Com_Error( ERR_FATAL, "VM_CompileX86: VirtualProtect failed" );
 	}
 #endif
+	
+	// offset all the instruction pointers for the new location
+	for ( i = 0 ; i < header->instructionCount ; i++ ) {
+		if ( inst[i].opStack != 0 ) {
+			vm->instructionPointers[i] = (int)badJumpPtr;
+			continue;
+		}
+		vm->instructionPointers[i] += (int)vm->codeBase;
+	}
 
 	VM_FreeBuffers();
 
-	Com_Printf( "VM file %s compiled to %i bytes of code\n", vm->name, compiledOfs );
-
 	vm->destroy = VM_Destroy_Compiled;
 
-	// offset all the instruction pointers for the new location
-	for ( i = 0 ; i < header->instructionCount ; i++ ) {
-		vm->instructionPointers[i] += (int)vm->codeBase;
-	}
+	Com_Printf( "VM file %s compiled to %i bytes of code\n", vm->name, compiledOfs );
 }
 
 
@@ -1675,7 +1814,7 @@ This function is called directly by the generated code
 ==============
 */
 int	VM_CallCompiled( vm_t *vm, int *args ) {
-	int		stack[1024];
+	int		stack[128];
 	size_t	programStack;
 	size_t	stackOnEntry;
 	byte	*image;
@@ -1712,7 +1851,7 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 	//*(int *)&image[ programStack ] = -1;	// will terminate the loop on return
 
 	// off we go into generated code...
-	opStack = &stack[256];
+	opStack = &stack[64];
 
 	{
 #ifdef _MSC_VER
@@ -1737,7 +1876,7 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 #endif
 	}
 
-	if ( opStack != &stack[257] ) {
+	if ( opStack != &stack[65] ) {
 		Com_Error( ERR_DROP, "opStack corrupted in compiled code" );
 	}
 	if ( programStack != stackOnEntry - 48 ) {
