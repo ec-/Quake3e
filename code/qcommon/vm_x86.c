@@ -962,7 +962,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 void VM_LoadInstructions( vm_t *vm, vmHeader_t *header ) 
 {
 	byte *code, *code_start, *code_end;
-	int i, n, op0, op1, opStack, pstack;
+	int i, n, v, op0, op1, opStack, pstack;
 	instruction_t *ci;
 #ifdef VM_DEBUG
 	fileHandle_t fh;
@@ -1076,7 +1076,7 @@ void VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 			inst[n].jused = 1;
 		}
 	} else {
-		// instruction with opStack > 0 can't be jump lables so its safe to optimize/merge
+		// instruction with opStack > 0 can't be jump labels so its safe to optimize/merge
 		for ( i = 0; i < header->instructionCount; i++ ) {
 			if ( inst[i].opStack > 0 )
 				inst[i].jused = 0;
@@ -1104,15 +1104,17 @@ void VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 		}
 
 		if ( op0 == OP_LEAVE ) {
-			// bad return programStack stack
+			// bad return programStack
 			if ( pstack != ci->value ) {
+				v = ci->value;
 				VM_FreeBuffers();
-				Com_Error( ERR_DROP, "VM_CompileX86: bad programStack %i at %i", ci->value, i ); 
+				Com_Error( ERR_DROP, "VM_CompileX86: bad programStack %i at %i", v, i ); 
 			}
 			// bad opStack before return
 			if ( ci->opStack != 4 ) {
+				v = ci->opStack;
 				VM_FreeBuffers();
-				Com_Error( ERR_DROP, "VM_CompileX86: bad opStack %i at %i", ci->value, i ); 
+				Com_Error( ERR_DROP, "VM_CompileX86: bad opStack %i at %i", v, i ); 
 			}
 		}
 
@@ -1122,22 +1124,37 @@ void VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 			Com_Error( ERR_DROP, "VM_CompileX86: bad jump opStack at %i", i ); 
 		}
 
-		// same as for jump target(s)
 		if ( ci->jump ) {
 			if ( (unsigned)(ci->value) >= vm->instructionCount ) {
+				v = ci->value;
 				VM_FreeBuffers();
-				Com_Error( ERR_DROP, "VM_CompileX86: jump target %i is out of range", ci->value ); 
+				Com_Error( ERR_DROP, "VM_CompileX86: jump target %i is out of range", v ); 
 			}
 			if ( inst[ci->value].opStack != 0 ) {
+				v = ci->value;
+				n = inst[v].opStack;
 				VM_FreeBuffers();
-				Com_Error( ERR_DROP, "VM_CompileX86: jump target %i has bad opStack %i", 
-					ci->value, inst[ci->value].opStack ); 
+				Com_Error( ERR_DROP, "VM_CompileX86: jump target %i has bad opStack %i", v, n ); 
 			}
 		}
 
-		if ( op0 == OP_CALL && ci->opStack < 4 ) {
-			VM_FreeBuffers();
-			Com_Error( ERR_DROP, "VM_CompileX86: bad call opStack at %i", i ); 
+		if ( op0 == OP_CALL ) {
+			if ( ci->opStack < 4 ) {
+				VM_FreeBuffers();
+				Com_Error( ERR_DROP, "VM_CompileX86: bad call opStack at %i", i ); 
+			}
+			if ( op1 == OP_CONST ) {
+				v = inst[i-1].value;
+				if ( v >= 0 && v >= vm->instructionCount ) {
+					VM_FreeBuffers();
+					Com_Error( ERR_DROP, "VM_CompileX86: call target %i is out of range", v ); 
+				}
+				if ( v >= 0 && inst[v].opStack != 0 ) {
+					n = inst[v].opStack;
+					VM_FreeBuffers();
+					Com_Error( ERR_DROP, "VM_CompileX86: call target %i has bad opStack %i", v, n ); 
+				}
+			}
 		}
 
 		op1 = op0;
@@ -1562,8 +1579,13 @@ __compile:
 			break;
 
 		case OP_MULI:
+#if 0
 			EmitString( "8B 47 FC" );	// mov eax,dword ptr [edi-4]
 			EmitString( "F7 2F" );		// imul dword ptr [edi]
+#else
+			EmitMovEAXEDI( vm );		// mov eax, dword ptr [edi]
+			EmitString( "F7 6F FC" );	// imul eax, dword ptr [edi-4]
+#endif
 			EmitString( "89 47 FC" );	// mov dword ptr [edi-4],eax
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
 			break;

@@ -658,7 +658,7 @@ it will attempt to load as a system dll
 ================
 */
 
-#define	STACK_SIZE	0x20000
+#define	STACK_SIZE	0x10000
 
 vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *), 
 				vmInterpret_t interpret ) {
