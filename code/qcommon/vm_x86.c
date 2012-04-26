@@ -42,6 +42,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 //#define VM_DEBUG
 
+#define MAX_OPSTACK 64
+
 static void *VM_Alloc_Compiled( vm_t *vm, int codeLength );
 static void VM_Destroy_Compiled( vm_t *vm );
 
@@ -468,16 +470,6 @@ static int EmitFldEDI( vm_t *vm ) {
 }
 
 
-void JumpUsed( int position ) 
-{
-	if ( position < 0 || position >= instructionCount ) {
-		VM_FreeBuffers();
-		Com_Error( ERR_DROP, "VM_CompileX86: jump target %i is out of range", position );
-	}
-	inst[position].jused = 1;
-}
-
-
 const char *JumpStr( int op, int *n ) 
 {
 	switch ( op )
@@ -517,7 +509,6 @@ void EmitJump( vm_t *vm, instruction_t *i, int addr )
 	const char *str;
 	int v, jump_size;
 
-	JumpUsed( addr );	
 	v = vm->instructionPointers[ addr ] - compiledOfs;
 	
 	str = JumpStr( i->op, &jump_size );	
@@ -627,7 +618,6 @@ void EmitFTOL( vm_t *vm )
 #define EMITJMP(S,N) \
 	do { \
 		v = ci->value; \
-		JumpUsed(v); \
 		n = vm->instructionPointers[v] - compiledOfs - (N); \
 		EmitString( S ); \
 		Emit4( n ); \
@@ -963,7 +953,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 	&& !ni->jused && !inst[ip+1].jused && !inst[ip+2].jused && !inst[ip+3].jused )
 
 
-void VM_LoadInstructions( vm_t *vm, vmHeader_t *header ) 
+int VM_LoadInstructions( vm_t *vm, vmHeader_t *header ) 
 {
 	byte *code, *code_start, *code_end;
 	int i, n, v, op0, op1, opStack, pstack;
@@ -988,13 +978,13 @@ void VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 			VM_FreeBuffers();
 			Com_Error( ERR_DROP, "VM_CompileX86: bad opcode %02X at offset %i", 
 				op0,  code - code_start );
-			return;
+			return 0;
 		}
 		n = ops[ op0 ].size;
 		if ( code + 1 + n  > code_end ) {
 			VM_FreeBuffers();
 			Com_Error( ERR_DROP, "VM_CompileX86: code > code_end" );
-			return;
+			return 0;
 		}
 		code++;
 		ci->op = op0;
@@ -1012,12 +1002,12 @@ void VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 		if ( opStack < 0 ) {
 			VM_FreeBuffers();
 			Com_Error( ERR_DROP, "VM_CompileX86: opStack underflow at %i", i ); 
-			return;
+			return 0;
 		}
-		if ( opStack >= 256 ) {
+		if ( opStack >= MAX_OPSTACK * 4 ) {
 			VM_FreeBuffers();
 			Com_Error( ERR_DROP, "VM_CompileX86: opStack overflow at %i", i ); 
-			return;
+			return 0;
 		}
 
 		// set some bits for easy access
@@ -1078,7 +1068,7 @@ void VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 				VM_FreeBuffers();
 				Com_Error( ERR_DROP, "VM_CompileX86: jump target set on instruction %i with bad opStack %i", 
 					n, opStack ); 
-				return;
+				return 0;
 			}
 			inst[n].jused = 1;
 		}
@@ -1107,10 +1097,17 @@ void VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 			if ( pstack && op1 != OP_LEAVE ) {
 				VM_FreeBuffers();
 				Com_Error( ERR_DROP, "VM_CompileX86: missing return instruction before %i", i ); 
-				return;
+				return 0;
+			}
+			if ( ci->opStack != 0 ) {
+				v = ci->opStack;
+				VM_FreeBuffers();
+				Com_Error( ERR_DROP, "VM_CompileX86: bad entry opstack %i at %i", v, i ); 
+				return 0;
 			}
 			pstack = ci->value;
-			//ci->jused = 1;
+			// mark jump target
+			ci->jused = 1;
 		}
 
 		// function return
@@ -1120,14 +1117,14 @@ void VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 				v = ci->value;
 				VM_FreeBuffers();
 				Com_Error( ERR_DROP, "VM_CompileX86: bad programStack %i at %i", v, i ); 
-				return;
+				return 0;
 			}
 			// bad opStack before return
 			if ( ci->opStack != 4 ) {
 				v = ci->opStack;
 				VM_FreeBuffers();
 				Com_Error( ERR_DROP, "VM_CompileX86: bad opStack %i at %i", v, i ); 
-				return;
+				return 0;
 			}
 		}
 
@@ -1137,16 +1134,17 @@ void VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 				v = ci->value;
 				VM_FreeBuffers();
 				Com_Error( ERR_DROP, "VM_CompileX86: jump target %i is out of range", v ); 
-				return;
+				return 0;
 			}
 			if ( inst[ci->value].opStack != 0 ) {
 				v = ci->value;
 				n = inst[v].opStack;
 				VM_FreeBuffers();
 				Com_Error( ERR_DROP, "VM_CompileX86: jump target %i has bad opStack %i", v, n ); 
-				return;
+				return 0;
 			}
-			//ci->jused = 1;
+			// mark jump target
+			inst[ci->value].jused = 1;
 		}
 
 		// unconditional jumps
@@ -1155,28 +1153,29 @@ void VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 			if ( ci->opStack != 4 ) {
 				VM_FreeBuffers();
 				Com_Error( ERR_DROP, "VM_CompileX86: bad jump opStack at %i", i ); 
-				return;
+				return 0;
 			}
 			if ( op1 == OP_CONST ) {
 				v = inst[i-1].value;
 				if ( (unsigned)v >= vm->instructionCount ) {
 					VM_FreeBuffers();
 					Com_Error( ERR_DROP, "VM_CompileX86: jump target %i is out of range", v );
-					return;
+					return 0;
 				}
 				if ( inst[v].opStack != 0 ) {
 					n = inst[v].opStack;
 					VM_FreeBuffers();
 					Com_Error( ERR_DROP, "VM_CompileX86: jump target %i has bad opStack %i", v, n ); 
-					return;
+					return 0;
 				}
 				if ( inst[v].op == OP_ENTER ) {
 					n = inst[v].op;
 					VM_FreeBuffers();
 					Com_Error( ERR_DROP, "VM_CompileX86: jump target %i has bad opcode %i", v, n ); 
-					return;
+					return 0;
 				}
-				//inst[v].jused = 1;
+				// mark jump target
+				inst[v].jused = 1;
 			}
 		}
 
@@ -1187,30 +1186,32 @@ void VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 			}
 			if ( op1 == OP_CONST ) {
 				v = inst[i-1].value;
+				// analyse only local function calls
 				if ( v >= 0 ) {
 					if ( v >= vm->instructionCount ) {
 						VM_FreeBuffers();
 						Com_Error( ERR_DROP, "VM_CompileX86: call target %i is out of range", v ); 
-						return;
+						return 0;
 					}
 					if ( inst[v].opStack != 0 ) {
 						n = inst[v].opStack;
 						VM_FreeBuffers();
 						Com_Error( ERR_DROP, "VM_CompileX86: call target %i has bad opStack %i", v, n ); 
-						return;
+						return 0;
 					}
 					if ( inst[v].op != OP_ENTER ) {
 						n = inst[v].op;
 						VM_FreeBuffers();
 						Com_Error( ERR_DROP, "VM_CompileX86: call target %i has bad opcode %i", v, n ); 
-						return;
+						return 0;
 					}
 					if ( v == 0 ) {
 						VM_FreeBuffers();
 						Com_Error( ERR_DROP, "VM_CompileX86: explicit vmMain call inside VM", v ); 
-						return;
+						return 0;
 					}
-					//inst[v].jused = 1;
+					// mark jump target
+					inst[v].jused = 1;
 				}
 			}
 		}
@@ -1218,6 +1219,8 @@ void VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 		op1 = op0;
 		ci++;
 	}
+
+	return 1;
 }
 
 enum {
@@ -1323,9 +1326,6 @@ __compile:
 			EmitString( "C7 07" );		// mov	dword ptr [edi], 0x12345678
 			lastConst = ci->value;
 			Emit4( lastConst );
-			if ( ni->op == OP_JUMP ) {
-				JumpUsed( lastConst );
-			}
 			LastCommand = LAST_COMMAND_MOV_EDI_CONST;
 			break;
 
@@ -1894,7 +1894,7 @@ This function is called directly by the generated code
 ==============
 */
 int	VM_CallCompiled( vm_t *vm, int *args ) {
-	int		stack[128];
+	int		stack[MAX_OPSTACK+2];
 	size_t	programStack;
 	size_t	stackOnEntry;
 	byte	*image;
@@ -1931,7 +1931,7 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 	//*(int *)&image[ programStack ] = -1;	// will terminate the loop on return
 
 	// off we go into generated code...
-	opStack = &stack[64];
+	opStack = &stack[1];
 
 	{
 #ifdef _MSC_VER
@@ -1956,7 +1956,7 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 #endif
 	}
 
-	if ( opStack != &stack[65] ) {
+	if ( opStack != &stack[2] ) {
 		Com_Error( ERR_DROP, "opStack corrupted in compiled code" );
 	}
 	if ( programStack != stackOnEntry - 48 ) {
