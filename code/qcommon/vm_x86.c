@@ -332,6 +332,8 @@ static void EmitAddEDI4( vm_t *vm ) {
 static int EmitMovEAXEDI(vm_t *vm) 
 {
 	if ( jlabel ) {
+		if ( !vm )
+			return 0;
 		EmitString( "8B 07" );		// mov eax, dword ptr [edi]
 		return 0;
 	}
@@ -369,6 +371,8 @@ static int EmitMovEAXEDI(vm_t *vm)
 		}
 		return 2;
 	}
+	if ( !vm )
+		return 1;
 	EmitString( "8B 07" );		    // mov eax, dword ptr [edi]
 	return 1;
 }
