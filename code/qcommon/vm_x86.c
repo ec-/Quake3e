@@ -41,6 +41,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 
 //#define VM_DEBUG
+//#define VM_LOG_SYSCALLS
 
 #define MAX_OPSTACK 64
 
@@ -162,7 +163,6 @@ typedef struct {
 	int jump:1;
 } instruction_t;
 
-//#define VM_LOG_SYSCALLS
 
 static	byte    *code;
 static	int     compiledOfs;
@@ -391,7 +391,13 @@ void EmitMovECXEDI( vm_t *vm )
 		return;
 	}
 	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI )  {
+#if 1
 		EmitString( "89 C1" );		// mov ecx, eax // FIXME: mov ecx, dword ptr [edi]
+#else
+		compiledOfs -= 2;			// mov eax, dword ptr [edi]
+		vm->instructionPointers[ ip-1 ] = compiledOfs;
+		EmitString( "8B 0F" );		// mov ecx, dword ptr [edi]
+#endif
 		return;
 	}
 	if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) // mov [edi], eax
@@ -900,15 +906,9 @@ qboolean ConstOptimize( vm_t *vm ) {
 #ifdef VM_LOG_SYSCALLS
 		EmitString( "C7 86" );    // mov dword ptr [esi+database],0x12345678
 		Emit4( (int)vm->dataBase );
-		Emit4( pc );
+		Emit4( ip );
 #endif
-#if 1
 		EmitJump( vm, ni, ci->value );
-#else
-		JumpUsed( v );
-		EmitString( "E8" );			// call +offset
-		Emit4( vm->instructionPointers[v] - compiledOfs - 6 );
-#endif
 		EmitCommand( LAST_COMMAND_MOV_EAX_EDI );
 		ip += 1; // OP_CALL
 		return qtrue;
@@ -1421,9 +1421,9 @@ __compile:
 
 		case OP_CALL:
 #ifdef VM_LOG_SYSCALLS
-			EmitString( "C7 86" );		// mov dword ptr [esi+database],0x12345678
+			EmitString( "C7 86" );		// mov dword ptr [esi + dataBase + 0 ],0x12345678
 			Emit4( (int)vm->dataBase );
-			Emit4( pc );
+			Emit4( ip-1 );
 #endif
 			n = codeOffset[FUNC_CALL] - compiledOfs;
 			EmitString( "E8" );			// call +codeOffset[FUNC_CALL]
@@ -1796,6 +1796,7 @@ __compile:
 			EmitString( "3D" );		            // cmp eax, 0x12345678
 			Emit4( vm->instructionCount );
 			EmitString( "73 07" );              // jae +7
+			// FIXME: allow jump withing local function scope only
 			EmitString( "FF 24 85" );           // jmp dword ptr [instructionPointers + eax * 4]
 			Emit4( (int)vm->instructionPointers );
 			EmitString( "FF 15" );              // call errJumpPtr
