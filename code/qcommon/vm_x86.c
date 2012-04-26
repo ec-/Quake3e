@@ -533,6 +533,7 @@ void EmitCall( vm_t *vm )
 	EmitString( "3D" );				// cmp eax, [vm->instructionCount]
 	Emit4( vm->instructionCount );
 	EmitString( "73 0D" );			// jae badAddr (+13)
+
 	// calling another vm function
 	EmitString( "C1 E0 02" );		// shl eax, 2
 	EmitString( "05" );				// add eax, [vm->instructionPointers]
@@ -540,11 +541,12 @@ void EmitCall( vm_t *vm )
 	EmitString( "FF 10" );			// call dword ptr [eax]
 	EmitString( "8B 07" );			// mov eax, dword ptr [edi]
 	EmitString( "C3" );				// ret
+
 	// badAddr:
 	EmitString( "FF 15" );          // call errJumpPtr
 	Emit4( (int)&errJumpPtr );
-	// systemCall:
 
+	// systemCall:
 	// convert negative num to system call number
 	// and store right before the first arg
 	EmitString( "F7 D0" );          // not eax
@@ -559,24 +561,13 @@ void EmitCall( vm_t *vm )
 
 	// currentVM->programStack = programStack - 4;
 	EmitString( "8D 46 FC" );		// lea eax, [esi-4]
-#if 0
-	EmitString( "89 41" );			// mov	[ecx+VM_OFFSET_PROGRAM_STACK], eax 
-	Emit1( VM_OFFSET_PROGRAM_STACK );
-#else
 	EmitString( "A3" );				// mov [currentVM->programStack], eax 
 	Emit4( (int)&vm->programStack );
-#endif
 
 	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
-#if 0
-	EmitString( "8B 41" );			// mov	[ecx+VM_OFFSET_DATA_BASE], eax  
-	Emit1( VM_OFFSET_DATA_BASE );
-	EmitString( "8D 44 30 04" );	// lea eax, [eax+esi+4]
-#else
 	EmitString( "B8" );				// mov eax, [currentVM->dataBase] (+ 4)  
 	Emit4( (int)vm->dataBase + 4 );
 	EmitString( "01 F0" );			// add eax, esi 
-#endif
 
 	// params[0] = syscallNum
 	EmitString( "89 18" );			// mov [eax], ebx
@@ -603,7 +594,6 @@ void EmitCall( vm_t *vm )
 	EmitString( "89 EC" );			// mov esp, ebp
 	EmitString( "5D" );				// pop ebp
 	EmitString( "C3" );				// ret
-	// - 85 bytes total
 }
 
 
