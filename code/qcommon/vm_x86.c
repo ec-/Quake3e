@@ -611,7 +611,7 @@ void EmitFTOL( vm_t *vm )
 {
 	EmitString( "9B D9 3D" );	// fnstcw word ptr [cwCurr]
 	Emit4( (int)&cwCurr );
-	EmitString( "D9 07" );		// fld dword ptr [edi]
+	//EmitString( "D9 07" );		// fld dword ptr [edi]
 	EmitString( "D9 2D" );		// fldcw word ptr [cw0F7F]
 	Emit4( (int)&cw0F7F );
 	EmitString( "DB 1F" );		// fistp dword ptr [edi]
@@ -1745,14 +1745,14 @@ __compile:
 			EmitString( "D9 2D" );		// fldcw word ptr [cwCurr]
 			Emit4( (int)&cwCurr );
 #else
+			EmitFldEDI( vm );			// fld dword ptr [edi]
 			if ( CPU_Flags & CPU_SSE3 ) {
 				// fast sse3 truncation
-				EmitFldEDI( vm );         // fld dword ptr [edi]
-				EmitString( "DB 0F" );    // fisttp dword ptr [edi]
+				EmitString( "DB 0F" );	// fisttp dword ptr [edi]
 			} else {
 				// call the library conversion function
 				n = codeOffset[FUNC_FTOL] - compiledOfs;
-				EmitString( "E8" );		  // call +codeOffset[FUNC_FTOL]
+				EmitString( "E8" );		// call +codeOffset[FUNC_FTOL]
 				Emit4( n - 5 );
 			}
 #endif
