@@ -380,7 +380,7 @@ static int EmitMovEAXEDI(vm_t *vm)
 }
 
 
-void EmitMovECXEDI( vm_t *vm ) 
+void EmitMovECXEDI( vm_t *vm, int andit ) 
 {
 	if ( jlabel ) {
 		EmitString( "8B 0F" );		// mov ecx, dword ptr [edi]
@@ -391,13 +391,9 @@ void EmitMovECXEDI( vm_t *vm )
 		return;
 	}
 	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI )  {
-#if 1
-		EmitString( "89 C1" );		// mov ecx, eax // FIXME: mov ecx, dword ptr [edi]
-#else
 		compiledOfs -= 2;			// mov eax, dword ptr [edi]
 		vm->instructionPointers[ ip-1 ] = compiledOfs;
 		EmitString( "8B 0F" );		// mov ecx, dword ptr [edi]
-#endif
 		return;
 	}
 	if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) // mov [edi], eax
@@ -413,6 +409,19 @@ void EmitMovECXEDI( vm_t *vm )
 		EmitString( "89 C1" );		// mov ecx, eax
 		return;
 	}
+	if ( LastCommand == LAST_COMMAND_MOV_EDI_CONST ) 
+	{	
+		compiledOfs -= 6;			// mov dword ptr [edi], 0x12345678
+		vm->instructionPointers[ ip-1 ] = compiledOfs;
+		EmitString( "B9" );			// mov ecx, 0x12345678
+		if ( andit ) {
+			Emit4( lastConst & andit );
+		} else {
+			Emit4( lastConst );
+		}
+		return;
+	}
+
 	EmitString( "8B 0F" );		    // mov ecx, dword ptr [edi]
 }
 
@@ -1668,19 +1677,19 @@ __compile:
 			break;
 
 		case OP_LSH:
-			EmitMovECXEDI( vm );
+			EmitMovECXEDI( vm, 0 );
 			EmitString( "D3 67 FC" );				// shl dword ptr [edi-4], cl
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
 			break;
 
 		case OP_RSHI:
-			EmitMovECXEDI( vm );
+			EmitMovECXEDI( vm, 0 );
 			EmitString( "D3 7F FC" );				// sar dword ptr [edi-4], cl
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
 			break;
 
 		case OP_RSHU:
-			EmitMovECXEDI( vm );
+			EmitMovECXEDI( vm, 0 );
 			EmitString( "D3 6F FC" );				// shr dword ptr [edi-4], cl
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
 			break;
