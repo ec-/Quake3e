@@ -55,6 +55,35 @@ static void VM_Destroy_Compiled( vm_t *vm );
   esi	program stack
   edi	opstack
 
+  Example how data segment will look like during vmMain execution:
+
+  |------| vm->programStack -=36 // set by vmMain
+  | ???? | +0 - unused
+  | ???? | +4 - unused
+  |-------
+  | arg0 | +8  \
+  | arg4 | +12  | - passed arguments, accessible from subroutines
+  | arg8 | +16 /
+  |-------
+  | loc0 | +20 \
+  | loc4 | +24  \ - locals, accessible only from local scope
+  | loc8 | +28  /
+  | lc12 | +32 /
+  |------| vm->programStack -= 48 // set by VM_CallCompiled()
+  | ???? | +0 - unused
+  | ???? | +4 - unused
+  | arg0 | +8
+  | arg1 | +12
+  | arg2 | +16
+  | arg3 | +20
+  | arg4 | +24
+  | arg5 | +28
+  | arg6 | +32
+  | arg7 | +36
+  | arg8 | +40
+  | arg9 | +44
+  |------| vm->programStack = vm->dataBase + 1 // set by VM_Create()
+
 */
 
 #define OPF_LOCAL      1
@@ -1239,10 +1268,20 @@ int VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 				}
 			}
 		}
-		// pstack + [8..44+] - program arguments 
+
+		if ( ci->op == OP_ARG ) {
+			v = ci->value;
+			// argument can't exceed programStack frame
+			if ( v > pstack - 4 ) {
+				VM_FreeBuffers();
+				Com_Error( ERR_DROP, "VM_CompileX86: bad argument address %i at %i", v, i );
+				return 0;
+			}
+		}
+
 		if ( ci->op == OP_LOCAL ) {
 			v = ci->value;
-			if ( v < 0 ) {
+			if ( v < 8 ) {
 				VM_FreeBuffers();
 				Com_Error( ERR_DROP, "VM_CompileX86: bad local address %i at %i", v, i );
 				return 0;
@@ -1961,8 +2000,8 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 	*(int *)&image[ programStack + 16] = args[2];
 	*(int *)&image[ programStack + 12] = args[1];
 	*(int *)&image[ programStack + 8 ] = args[0];
-	*(int *)&image[ programStack + 4 ] = 0;	// return stack
-	//*(int *)&image[ programStack ] = -1;	// will terminate the loop on return
+	//*(int *)&image[ programStack + 4 ] = 0;	// return stack
+	//*(int *)&image[ programStack ] = -1;		// will terminate the loop on return
 
 	// off we go into generated code...
 	opStack = &stack[1];
