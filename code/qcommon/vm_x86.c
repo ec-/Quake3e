@@ -1239,6 +1239,15 @@ int VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 				}
 			}
 		}
+		// pstack + [8..44+] - program arguments 
+		if ( ci->op == OP_LOCAL ) {
+			v = ci->value;
+			if ( v < 0 ) {
+				VM_FreeBuffers();
+				Com_Error( ERR_DROP, "VM_CompileX86: bad local address %i at %i", v, i );
+				return 0;
+			}
+		}
 
 		op1 = op0;
 		ci++;
