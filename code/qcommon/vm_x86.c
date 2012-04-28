@@ -518,7 +518,6 @@ const char *JumpStr( int op, int *n )
 		case OP_GEU: *n = 2; return "0F 83"; // jae
 
 		case OP_JUMP: *n = 1; return "E9";   // jmp
-		case OP_CALL: *n = 1; return "E8";   // call
 	};
 	return NULL;
 }
@@ -537,8 +536,15 @@ void EmitJump( vm_t *vm, instruction_t *i, int addr )
 	Emit4( v ); 
 }
 
+void EmitCall( vm_t *vm, instruction_t *i, int addr ) 
+{
+	int v;
+	v = vm->instructionPointers[ addr ] - compiledOfs;
+	EmitString( "E8" );
+	Emit4( v - 5 ); 
+}
 
-void EmitCall( vm_t *vm ) 
+void EmitCallFunc( vm_t *vm ) 
 {
 	EmitString( "8B 07" );			// mov eax, dword ptr [edi]
 	EmitString( "83 EF 04" );		// sub edi, 4
@@ -613,7 +619,7 @@ void EmitCall( vm_t *vm )
 }
 
 
-void EmitFTOL( vm_t *vm ) 
+void EmitFTOLFunc( vm_t *vm ) 
 {
 	EmitString( "9B D9 3D" );	// fnstcw word ptr [cwCurr]
 	Emit4( (int)&cwCurr );
@@ -914,7 +920,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 		Emit4( (int)vm->dataBase );
 		Emit4( ip );
 #endif
-		EmitJump( vm, ni, ci->value );
+		EmitCall( vm, ni, ci->value );
 		EmitCommand( LAST_COMMAND_MOV_EAX_EDI );
 		ip += 1; // OP_CALL
 		return qtrue;
@@ -1826,9 +1832,9 @@ __compile:
 	} // while( ip < header->instructionCount )
 
 		codeOffset[FUNC_CALL] = compiledOfs;
-		EmitCall( vm );
+		EmitCallFunc( vm );
 		codeOffset[FUNC_FTOL] = compiledOfs;
-		EmitFTOL( vm );
+		EmitFTOLFunc( vm );
 
 	} // for( pass = 0; pass < n; pass++ )
 
