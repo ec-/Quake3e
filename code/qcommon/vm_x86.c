@@ -42,9 +42,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 //#define VM_DEBUG
 //#define VM_LOG_SYSCALLS
-#define BASE_OPTIMIZE 1
+//#define BASE_OPTIMIZE 1
 
-#define MAX_OPSTACK 64
 
 static void *VM_Alloc_Compiled( vm_t *vm, int codeLength );
 static void VM_Destroy_Compiled( vm_t *vm );
@@ -1059,7 +1058,7 @@ int VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 			Com_Error( ERR_DROP, "VM_CompileX86: opStack underflow at %i", i ); 
 			return 0;
 		}
-		if ( opStack >= MAX_OPSTACK * 4 ) {
+		if ( opStack >= VM_MAX_OPSTACK * 4 ) {
 			VM_FreeBuffers();
 			Com_Error( ERR_DROP, "VM_CompileX86: opStack overflow at %i", i ); 
 			return 0;
@@ -1160,6 +1159,12 @@ int VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 				Com_Error( ERR_DROP, "VM_CompileX86: bad entry opstack %i at %i", v, i ); 
 				return 0;
 			}
+			if ( ci->value < 0 || ci->value >= VM_STACK_SIZE ) {
+				v = ci->value;
+				VM_FreeBuffers();
+				Com_Error( ERR_DROP, "VM_CompileX86: bad entry programStack %i at %i", v, i ); 
+				return 0;
+			}
 			pstack = ci->value;
 			// mark jump target
 			ci->jused = 1;
@@ -1179,6 +1184,12 @@ int VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 				v = ci->opStack;
 				VM_FreeBuffers();
 				Com_Error( ERR_DROP, "VM_CompileX86: bad opStack %i at %i", v, i ); 
+				return 0;
+			}
+			if ( ci->value < 0 || ci->value >= VM_STACK_SIZE ) {
+				v = ci->value;
+				VM_FreeBuffers();
+				Com_Error( ERR_DROP, "VM_CompileX86: bad return programStack %i at %i", v, i ); 
 				return 0;
 			}
 		}
@@ -1987,7 +1998,7 @@ This function is called directly by the generated code
 ==============
 */
 int	VM_CallCompiled( vm_t *vm, int *args ) {
-	int		stack[MAX_OPSTACK+2];
+	int		stack[VM_MAX_OPSTACK+2];
 	size_t	programStack;
 	size_t	stackOnEntry;
 	byte	*image;

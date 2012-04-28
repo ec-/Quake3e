@@ -309,6 +309,9 @@ VIRTUAL MACHINE
 ==============================================================
 */
 
+#define VM_STACK_SIZE 0x10000
+#define VM_MAX_OPSTACK 64
+
 typedef struct vm_s vm_t;
 
 typedef enum {

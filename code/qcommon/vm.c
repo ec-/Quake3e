@@ -657,9 +657,6 @@ If image ends in .qvm it will be interpreted, otherwise
 it will attempt to load as a system dll
 ================
 */
-
-#define	STACK_SIZE	0x10000
-
 vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *), 
 				vmInterpret_t interpret ) {
 	vm_t		*vm;
@@ -754,7 +751,7 @@ vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *),
 
 	// the stack is implicitly at the end of the image
 	vm->programStack = vm->dataMask + 1;
-	vm->stackBottom = vm->programStack - STACK_SIZE;
+	vm->stackBottom = vm->programStack - VM_STACK_SIZE;
 
 	Com_Printf("%s loaded in %d bytes on the hunk\n", module, remaining - Hunk_MemoryRemaining());
 
