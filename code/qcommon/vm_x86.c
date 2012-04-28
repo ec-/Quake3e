@@ -42,8 +42,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 //#define VM_DEBUG
 //#define VM_LOG_SYSCALLS
-//#define BASE_OPTIMIZE 1
-
 
 static void *VM_Alloc_Compiled( vm_t *vm, int codeLength );
 static void VM_Destroy_Compiled( vm_t *vm );
@@ -432,7 +430,7 @@ void EmitMovECXEDI( vm_t *vm, int andit )
 	EmitString( "8B 0F" );		    // mov ecx, dword ptr [edi]
 }
 
-#if !BASE_OPTIMIZE
+
 static qboolean EmitMovEBXEDI(vm_t *vm, int andit) {
 	if ( jlabel ) {
 		EmitString( "8B 1F" );		// mov ebx, dword ptr [edi]
@@ -471,7 +469,6 @@ static qboolean EmitMovEBXEDI(vm_t *vm, int andit) {
 	EmitString( "8B 1F" );		    // mov ebx, dword ptr [edi]
 	return qfalse;
 }
-#endif
 
 
 static int EmitFldEDI( vm_t *vm ) {
@@ -573,12 +570,10 @@ void EmitCall( vm_t *vm )
 
 	EmitString( "56" );				// push esi
 	EmitString( "57" );				// push edi
+
 	// save syscallNum
-#if BASE_OPTIMIZE
-	EmitString( "89 C1" );			// mov ecx, eax
-#else
 	EmitString( "89 C3" );			// mov ebx, eax
-#endif
+
 	// currentVM->programStack = programStack - 4;
 	EmitString( "8D 46 FC" );		// lea eax, [esi-4]
 	EmitString( "A3" );				// mov [currentVM->programStack], eax 
@@ -590,11 +585,7 @@ void EmitCall( vm_t *vm )
 	EmitString( "01 F0" );			// add eax, esi 
 
 	// params[0] = syscallNum
-#if BASE_OPTIMIZE
-	EmitString( "89 08" );			// mov [eax], ecx
-#else
 	EmitString( "89 18" );			// mov [eax], ebx
-#endif
 
 	// cdecl - push params
 	EmitString( "50" );				// push eax
@@ -709,58 +700,32 @@ qboolean ConstOptimize( vm_t *vm ) {
 
 	case OP_LOAD4:
 		EmitAddEDI4(vm);
-#if BASE_OPTIMIZE
-		EmitString( "8B 83" );      // mov eax, dword ptr [ebx + 0x12345678]
-		Emit4( ci->value & vm->dataMask );
-#else
 		EmitString( "BB" );         // mov ebx, 0x12345678
 		Emit4( ( ci->value & vm->dataMask ) + (int)vm->dataBase );
 		EmitString( "8B 03" );      // mov eax, dword ptr [ebx]
-#endif
 		EmitCommand( LAST_COMMAND_MOV_EDI_EAX ); // mov dword ptr [edi], eax
 		ip += 1;
 		return qtrue;
 
 	case OP_LOAD2:
 		EmitAddEDI4( vm );
-#if BASE_OPTIMIZE
-		EmitString( "0F B7 83" );   // movzx eax, word ptr [ebx + 0x12345678]
-		Emit4( ci->value & vm->dataMask );
-#else
 		EmitString( "BB" );         // mov ebx, 0x12345678
 		Emit4( (  ci->value & vm->dataMask ) + (int)vm->dataBase );
 		EmitString( "0F B7 03" );   // movzx eax, word ptr [ebx]
-#endif
 		EmitCommand( LAST_COMMAND_MOV_EDI_EAX ); // mov dword ptr [edi], eax
 		ip += 1;
 		return qtrue;
 
 	case OP_LOAD1:
 		EmitAddEDI4( vm );
-#if BASE_OPTIMIZE
-		if ( ISS8( ci->value ) ) {
-			EmitString( "0F B6 43" );	// movzx eax, byte ptr [ebx + 0x7F]
-			Emit4( ci->value & vm->dataMask );
-		} else {
-			EmitString( "0F B6 83" );	// movzx eax, byte ptr [ebx + 0x12345678]
-			Emit4( ci->value & vm->dataMask );
-		}
-#else
 		EmitString( "BB" );         // mov ebx, 0x12345678
 		Emit4( ( ci->value & vm->dataMask ) + (int)vm->dataBase );
 		EmitString( "0F B6 03" );	// movzx eax, byte ptr [ebx]
-#endif
 		EmitCommand( LAST_COMMAND_MOV_EDI_EAX ); // mov dword ptr [edi], eax
 		ip += 1;
 		return qtrue;
 
 	case OP_STORE4:
-#if BASE_OPTIMIZE
-		EmitMovECXEDI( vm, ( vm->dataMask & ~3 ) );	// mov ecx, dword ptr [edi]
-		// TODO: and eax, [vm->dataMask & ~3]
-		EmitString( "C7 04 0B" );					// mov [ebx + ecx], 0x12345678
-		Emit4( ci->value );
-#else
 		opt = EmitMovEBXEDI( vm, ( vm->dataMask & ~3 ) );
 		EmitString( "B8" );			// mov	eax, 0x12345678
 		Emit4( ci->value );
@@ -770,17 +735,11 @@ qboolean ConstOptimize( vm_t *vm ) {
 //		}
 		EmitString( "89 83" );      // mov dword ptr [ebx+0x12345678], eax
 		Emit4( (int)vm->dataBase );
-#endif
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );		// sub edi, 4
 		ip += 1;
 		return qtrue;
 
 	case OP_STORE2:
-#if BASE_OPTIMIZE
-		EmitMovECXEDI( vm, ( vm->dataMask & ~1 ) );
-		EmitString( "66 C7 04 0B" );				// mov word ptr [ebx+ecx], 0x1234
-		Emit2( ci->value );							// FIXME: is this correct?
-#else
 		opt = EmitMovEBXEDI(vm, (vm->dataMask & ~1));
 		EmitString( "B8" );			// mov	eax, 0x12345678
 		Emit4( ci->value );
@@ -790,17 +749,11 @@ qboolean ConstOptimize( vm_t *vm ) {
 //		}
 		EmitString( "66 89 83" );   // mov word ptr [ebx+0x12345678], eax
 		Emit4( (int)vm->dataBase );
-#endif
 		EmitCommand( LAST_COMMAND_SUB_DI_4 ); // sub edi, 4
 		ip += 1;
 		return qtrue;
 
 	case OP_STORE1:
-#if BASE_OPTIMIZE
-		EmitMovECXEDI( vm, vm->dataMask );
-		EmitString( "C6 04 0B" );		// mov byte ptr [ebx + ecx], 0x7F
-		Emit1( ci->value );
-#else
 		opt = EmitMovEBXEDI(vm, vm->dataMask);
 		EmitString( "B8" );			// mov	eax, 0x12345678
 		Emit4( ci->value );
@@ -810,7 +763,6 @@ qboolean ConstOptimize( vm_t *vm ) {
 //		}
 		EmitString( "88 83" );		// mov byte ptr [ebx+0x12345678], eax
 		Emit4( (int)vm->dataBase );
-#endif
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 		ip += 1;
 		return qtrue;
@@ -1331,11 +1283,6 @@ __compile:
 
 	LastCommand = LAST_COMMAND_NONE;
 
-#if BASE_OPTIMIZE
-	EmitString( "BB" );
-	Emit4( (int)vm->dataBase );
-#endif
-
 	while( ip < instructionCount )
 	{
 		vm->instructionPointers[ ip ] = compiledOfs;
@@ -1531,14 +1478,9 @@ __compile:
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov dword ptr [edi], eax
 				break;
 			}
-#if BASE_OPTIMIZE
-			EmitMovECXEDI( vm, vm->dataMask );				// mov ecx, dword ptr [edi]
-			EmitString( "8B 04 0B" );						// mov eax, dword ptr [ebx + ecx]
-#else
 			EmitMovEBXEDI(vm, vm->dataMask);
 			EmitString( "8B 83" );		// mov	eax, dword ptr [ebx + 0x12345678]
 			Emit4( (int)vm->dataBase );
-#endif
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );		// mov dword ptr [edi], eax
 			break;
 
@@ -1551,14 +1493,9 @@ __compile:
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov dword ptr [edi], eax
 				break;
 			}
-#if BASE_OPTIMIZE
-			EmitMovECXEDI( vm, vm->dataMask );				// mov ecx, dword ptr [edi]
-			EmitString( "0F B7 04 0B" );					// movzx eax, word ptr [ebx + ecx]
-#else
 			EmitMovEBXEDI(vm, vm->dataMask);
 			EmitString( "0F B7 83" );						// movzx	eax, word ptr [ebx + 0x12345678]
 			Emit4( (int)vm->dataBase );
-#endif
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );		// mov dword ptr [edi], eax
 			break;
 
@@ -1571,23 +1508,14 @@ __compile:
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov dword ptr [edi], eax
 				break;
 			}
-#if BASE_OPTIMIZE
-			EmitMovECXEDI( vm, vm->dataMask );				// mov ecx, dword ptr [edi]
-			EmitString( "0F B6 04 0B" );					// movzx eax, byte ptr [ebx + ecx]
-#else
 			EmitMovEBXEDI(vm, vm->dataMask);
 			EmitString( "0F B6 83" );					// movzx eax, byte ptr [ebx + 0x12345678]
 			Emit4( (int)vm->dataBase );
-#endif
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov dword ptr [edi], eax
 			break;
 
 		case OP_STORE4:
 			EmitMovEAXEDI( vm );
-#if BASE_OPTIMIZE
-			EmitString( "8B 4F FC" );	// mov	ecx, dword ptr [edi-4]
-			EmitString( "89 04 0B" );	// mov dword ptr [ebx + ecx], eax
-#else
 			EmitString( "8B 5F FC" );	// mov	ebx, dword ptr [edi-4]
 //			if (pop1 != OP_CALL) {
 //				EmitString( "81 E3" );		// and ebx, 0x12345678
@@ -1595,37 +1523,26 @@ __compile:
 //			}
 			EmitString( "89 83" );		// mov dword ptr [ebx+0x12345678], eax
 			Emit4( (int)vm->dataBase );
-#endif
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
 			break;
 
 		case OP_STORE2:
 			EmitMovEAXEDI( vm );
-#if BASE_OPTIMIZE
-			EmitString( "8B 4F FC" );	// mov	ecx, dword ptr [edi-4]
-			EmitString( "66 89 04 0B" );// mov word ptr [ebx + ecx], ax
-#else
 			EmitString( "8B 5F FC" );	// mov	ebx, dword ptr [edi-4]
 //			EmitString( "81 E3" );		// and ebx, 0x12345678
 //			Emit4( vm->dataMask & ~1 );
 			EmitString( "66 89 83" );	// mov word ptr [ebx+0x12345678], eax
 			Emit4( (int)vm->dataBase );
-#endif
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
 			break;
 
 		case OP_STORE1:
 			EmitMovEAXEDI( vm );	
-#if BASE_OPTIMIZE
-			EmitString( "8B 4F FC" );	// mov	ecx, dword ptr [edi-4]
-			EmitString( "88 04 0B" );	// mov byte ptr [ebx + ecx], al
-#else
 			EmitString( "8B 5F FC" );	// mov	ebx, dword ptr [edi-4]
 //			EmitString( "81 E3" );		// and ebx, 0x12345678
 //			Emit4( vm->dataMask );
 			EmitString( "88 83" );		// mov byte ptr [ebx+0x12345678], eax
 			Emit4( (int)vm->dataBase );
-#endif
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
 			break;
 
@@ -1878,10 +1795,8 @@ __compile:
 			EmitString( "B9" );			// mov ecx,0x12345678
 			Emit4( ci->value >> 2 );
 			EmitString( "B8" );			// mov eax, datamask
-#if !BASE_OPTIMIZE
 			Emit4( vm->dataMask );
 			EmitString( "BB" );			// mov ebx, database
-#endif
 			Emit4( (int)vm->dataBase );
 			EmitString( "23 F0" );		// and esi, eax
 			EmitString( "03 F3" );		// add esi, ebx
@@ -2055,11 +1970,7 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 			"call *%2"
 			: "+S" (programStack), "+D" (opStack)
 			: "mr" (vm->codeBase)
-#if BASE_OPTIMIZE
-			: "cc", "memory", "%ebx", "%ecx", "%edx"
-#else
 			: "cc", "memory", "%eax", "%ecx", "%edx"
-#endif
 		);
 #endif
 	}
