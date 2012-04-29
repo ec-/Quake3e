@@ -2683,7 +2683,7 @@ int Sys_GetProcessorId( char *vendor )
 
 	CPU_Flags = 0;
 
-#if defined	_M_AMD64
+#if defined	(_M_AMD64)
 	CPU_Flags |= CPU_MMX | CPU_SSE | CPU_FCOM;
 	if ( vendor )
 		strcpy( vendor, "Generic x86_64 CPU" );
@@ -2868,7 +2868,7 @@ void Com_Init( char *commandLine ) {
 
 	Sys_Init();
 
-#if defined id386
+#if defined (id386) || defined (idx64)
 	// CPU detection
 	Cvar_Get( "sys_cpustring", "detect", 0 );
 	if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring"), "detect" ) )
