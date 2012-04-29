@@ -40,7 +40,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define VM_X86_MMAP
 #endif
 
-//#define VM_DEBUG
+#define NUM_PASSES 7
+
 //#define VM_LOG_SYSCALLS
 
 static void *VM_Alloc_Compiled( vm_t *vm, int codeLength );
@@ -56,20 +57,20 @@ static void VM_Destroy_Compiled( vm_t *vm );
   edi	opstack
 
   Example how data segment will look like during vmMain execution:
-
-  |------| vm->programStack -=36 // set by vmMain
+  | .... |
+  |------| vm->programStack -=36 (8+12+16) // set by vmMain
   | ???? | +0 - unused
   | ???? | +4 - unused
   |-------
   | arg0 | +8  \
   | arg4 | +12  | - passed arguments, accessible from subroutines
   | arg8 | +16 /
-  |-------
+  |------|
   | loc0 | +20 \
   | loc4 | +24  \ - locals, accessible only from local scope
   | loc8 | +28  /
   | lc12 | +32 /
-  |------| vm->programStack -= 48 // set by VM_CallCompiled()
+  |------| vm->programStack -= 48 (8+40) // set by VM_CallCompiled()
   | ???? | +0 - unused
   | ???? | +4 - unused
   | arg0 | +8
@@ -82,7 +83,7 @@ static void VM_Destroy_Compiled( vm_t *vm );
   | arg7 | +36
   | arg8 | +40
   | arg9 | +44
-  |------| vm->programStack = vm->dataBase + 1 // set by VM_Create()
+  |------| vm->programStack = vm->dataMask + 1 // set by VM_Create()
 
 */
 
@@ -185,9 +186,10 @@ typedef struct {
 	byte  op;	 	// 8
 	byte  opStack;  // 8
 	int jused:1;
-	int fp_calc:1;
+	int fcalc:1;
 	int fjump:1;
 	int jump:1;
+	int njump:1;
 } instruction_t;
 
 
@@ -519,7 +521,43 @@ static int EmitFldEDI( vm_t *vm ) {
 }
 
 
-const char *JumpStr( int op, int *n ) 
+const char *NearJumpStr( int op ) 
+{
+	switch ( op )
+	{
+		case OP_EQF:
+		case OP_EQ:  return "74"; // je
+		
+		case OP_NEF:
+		case OP_NE:  return "75"; // jne
+		
+		case OP_LTI: return "7C"; // jl
+		case OP_LEI: return "7E"; // jle
+		case OP_GTI: return "7F"; // jg
+		case OP_GEI: return "7D"; // jge
+
+		case OP_LTF:
+		case OP_LTU: return "72"; // jb
+		
+		case OP_LEF:
+		case OP_LEU: return "76"; // jbe
+		
+		case OP_GTF:
+		case OP_GTU: return "77"; // ja 
+		
+		case OP_GEF:
+		case OP_GEU: return "73"; // jae
+
+		case OP_JUMP: return "EB";   // jmp
+
+		//default:
+		//	Com_Error( ERR_DROP, "Bad opcode %i", op );
+	};
+	return NULL;
+}
+
+
+const char *FarJumpStr( int op, int *n ) 
 {
 	switch ( op )
 	{
@@ -551,18 +589,39 @@ const char *JumpStr( int op, int *n )
 	return NULL;
 }
 
-
 void EmitJump( vm_t *vm, instruction_t *i, int addr ) 
 {
 	const char *str;
 	int v, jump_size;
 
 	v = vm->instructionPointers[ addr ] - compiledOfs;
-	
-	str = JumpStr( i->op, &jump_size );	
-	v -= ( jump_size + 4 );
+
+	if ( i->njump ) {
+		// can happen
+		if ( v < -126 || v > 129 ) {
+			str = FarJumpStr( i->op, &jump_size );	
+			EmitString( str );
+			Emit4( v - 4 - jump_size ); 
+			i->njump = 0;
+			return;
+		}
+		EmitString( NearJumpStr( i->op ) );
+		Emit1( v - 2 );
+		return;
+	}
+
+	if ( pass >= 2 && pass < NUM_PASSES-2 ) {
+		if ( v >= -126 && v <= 129 ) {
+			EmitString( NearJumpStr( i->op ) );
+			Emit1( v - 2 ); 
+			i->njump = 1;
+			return;
+		}
+	}
+
+	str = FarJumpStr( i->op, &jump_size );	
 	EmitString( str );
-	Emit4( v ); 
+	Emit4( v - 4 - jump_size );
 }
 
 void EmitCall( vm_t *vm, instruction_t *i, int addr ) 
@@ -690,7 +749,7 @@ FloatMerge
 */
 static int FloatMerge( instruction_t *curr, instruction_t *next ) 
 {
-	if ( next->jused || !next->fp_calc ) 
+	if ( next->jused || !next->fcalc ) 
 		return 0;
 
 	EmitString( "D9 47 F8" );				// fld dword ptr [edi-8]
@@ -999,10 +1058,6 @@ int VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 	byte *code, *code_start, *code_end;
 	int i, n, v, op0, op1, opStack, pstack;
 	instruction_t *ci;
-#ifdef VM_DEBUG
-	fileHandle_t fh;
-	char buf[128];
-#endif
 
 	code = (byte *) header + header->codeOffset;
 	code_start = code; // for printing
@@ -1010,6 +1065,7 @@ int VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 
 	ci = inst;
 	opStack = 0;
+	op1 = OP_UNDEF;
 
 	// load instructions and perform some initial calculations/checks
 	for ( i = 0; i < header->instructionCount; i++ ) {
@@ -1029,11 +1085,19 @@ int VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 		}
 		code++;
 		ci->op = op0;
-		if ( n == 1 || n == 4 ) {
-			memcpy( &ci->value, code, n ); // FIXME: endianess
-			code += n;
+		if ( n == 4 ) {
+			ci->value = LittleLong( *((int*)code) );
+			code += 4;
+		} else if ( n == 1 ) { 
+			ci->value = *((char*)code);
+			code += 1;
 		} else {
 			ci->value = 0;
+		}
+
+		// setup jump value from previous const
+		if ( op0 == OP_JUMP && op1 == OP_CONST ) {
+			ci->value = (ci-1)->value;
 		}
 
 		ci->opStack = opStack;
@@ -1063,40 +1127,14 @@ int VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 			ci->fjump = 0;
 
 		if ( (ops[ op0 ].flags & (OPF_FLOAT|OPF_CALC)) == (OPF_FLOAT|OPF_CALC) )
-			ci->fp_calc = 1;
+			ci->fcalc = 1;
 		else
-			ci->fp_calc = 0;
+			ci->fcalc = 0;
 
+		op1 = op0;
 		ci++;
 	}
 
-	ci = inst;
-
-#ifdef VM_DEBUG
-	fh = FS_FOpenFileWrite( va( "%s_vm.txt", vm->name ) );
-
-	for ( i = 0; i < header->instructionCount; i++ ) {
-		op0 = ci->op;
-		if ( op0 == OP_ENTER ) {
-			sprintf( buf, "====================\n" );
-			FS_Write( buf, strlen( buf ), fh );
-			//Com_Printf( "====================\n" );
-		}
-		if ( ops[op0].size ) {
-			sprintf( buf, "%2i %2i %5s %i\n", i, ci->opStack, ops[op0].name, inst[i].value );
-		} else {
-			sprintf( buf, "%2i %2i %5s\n", i, ci->opStack, ops[op0].name );
-		}
-		FS_Write( buf, strlen( buf ), fh );
-
-		if ( op0 == OP_LEAVE ) {
-			sprintf( buf, "--------------------\n" );
-			FS_Write( buf, strlen( buf ), fh );
-		}
-		ci++;
-	}
-	FS_FCloseFile( fh );
-#endif
 
 	// ensure that the optimisation pass knows about all the jump table targets
 	if ( vm->jumpTableTargets ) {
@@ -1278,8 +1316,8 @@ int VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 				return 0;
 			}
 		}
-
-		if ( ci->op == OP_LOCAL ) {
+#if 0  // FIXME: runtime checks?
+		if ( ci->op == OP_LOCAL && (ci+1)->op != OP_ADD ) {
 			v = ci->value;
 			if ( v < 8 ) {
 				VM_FreeBuffers();
@@ -1287,7 +1325,7 @@ int VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 				return 0;
 			}
 		}
-
+#endif
 		op1 = op0;
 		ci++;
 	}
@@ -1324,7 +1362,7 @@ void VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	
 	VM_LoadInstructions( vm, header );
 
-	for( pass = 0; pass < 3; pass++ ) 
+	for( pass = 0; pass < NUM_PASSES; pass++ ) 
 	{
 __compile:
 	pop1 = OP_UNDEF;
@@ -1353,7 +1391,7 @@ __compile:
 
 		op = ci->op;
 
-		if ( ci->fp_calc && FloatMerge( ci, ni) ) {
+		if ( ci->fcalc && FloatMerge( ci, ni ) ) {
 			pop1 = op;
 			continue;
 		}
@@ -1889,6 +1927,7 @@ __compile:
 	if ( code == NULL ) 
 	{
 		code = VM_Alloc_Compiled( vm, compiledOfs );
+		pass = NUM_PASSES-1;
 		goto __compile;
 	}
 
