@@ -1108,13 +1108,6 @@ void Sys_Init( void ) {
 }
 
 
-qboolean Sys_DetectAltivec( void )
-{
-    return qfalse;  // never altivec on Windows...at least for now.  :)
-}
-
-
-
 //=======================================================================
 
 int	totalMsec, countMsec;

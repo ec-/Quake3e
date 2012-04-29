@@ -832,9 +832,6 @@ extern	cvar_t	*com_blood;
 extern	cvar_t	*com_buildScript;		// for building release pak files
 extern	cvar_t	*com_journal;
 extern	cvar_t	*com_cameraMode;
-#if idppc_altivec
-extern	cvar_t	*com_altivec;
-#endif
 
 // both client and server must agree to pause
 extern	cvar_t	*cl_paused;
@@ -1143,8 +1140,6 @@ void *Sys_LoadLibrary( const char *name );
 void *Sys_LoadFunction( void *handle, const char *name );
 void  Sys_UnloadLibrary( void *handle );
 /* char *Sys_LibraryError( void ); - unused */
-
-qboolean Sys_DetectAltivec( void );
 
 /* This is based on the Adaptive Huffman algorithm described in Sayood's Data
  * Compression book.  The ranks are not actually stored, but implicitly defined

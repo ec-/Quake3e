@@ -399,34 +399,8 @@ extern	vec3_t	axisDefault[3];
 
 #define	IS_NAN(x) (((*(int *)&x)&nanmask)==nanmask)
 
-#if idppc
-
-static ID_INLINE float Q_rsqrt( float number ) {
-		float x = 0.5f * number;
-                float y;
-#ifdef __GNUC__            
-                asm("frsqrte %0,%1" : "=f" (y) : "f" (number));
-#else
-		y = __frsqrte( number );
-#endif
-		return y * (1.5f - (x * y * y));
-	}
-
-#ifdef __GNUC__            
-static ID_INLINE float Q_fabs(float x) {
-    float abs_x;
-    
-    asm("fabs %0,%1" : "=f" (abs_x) : "f" (x));
-    return abs_x;
-}
-#else
-#define Q_fabs __fabsf
-#endif
-
-#else
 float Q_fabs( float f );
 float Q_rsqrt( float f );		// reciprocal square root
-#endif
 
 #define SQRTFAST( x ) ( (x) * Q_rsqrt( x ) )
 

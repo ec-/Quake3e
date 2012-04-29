@@ -27,8 +27,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifdef Q3_VM
 
 #define id386 0
-#define idppc 0
-#define idppc_altivec 0
 
 #else
 
@@ -36,26 +34,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define id386 1
 #else
 #define id386 0
-#endif
-
-#if (defined(powerc) || defined(powerpc) || defined(ppc) || \
-	defined(__ppc) || defined(__ppc__)) && !defined(C_ONLY)
-#define idppc 1
-#if defined(__VEC__)
-#define idppc_altivec 1
-#ifdef MACOS_X  // Apple's GCC does this differently than the FSF.
-#define VECCONST_UINT8(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) \
-	(vector unsigned char) (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p)
-#else
-#define VECCONST_UINT8(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) \
-	(vector unsigned char) {a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p}
-#endif
-#else
-#define idppc_altivec 0
-#endif
-#else
-#define idppc 0
-#define idppc_altivec 0
 #endif
 
 #endif
@@ -113,10 +91,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define ID_INLINE inline
 #define PATH_SEP '/'
 
-#ifdef __ppc__
-#define ARCH_STRING "ppc"
-#define Q3_BIG_ENDIAN
-#elif defined __i386__
+#ifdef __i386__
 #define ARCH_STRING "i386"
 #define Q3_LITTLE_ENDIAN
 #endif
