@@ -410,7 +410,7 @@ static fileHandle_t	FS_HandleForFile(void) {
 }
 
 static FILE	*FS_FileForHandle( fileHandle_t f ) {
-	if ( f < 0 || f > MAX_FILE_HANDLES ) {
+	if ( f <= 0 || f >= MAX_FILE_HANDLES ) {
 		Com_Error( ERR_DROP, "FS_FileForHandle: out of range" );
 	}
 	if (fsh[f].zipFile == qtrue) {
@@ -1349,7 +1349,7 @@ int FS_Read2( void *buffer, int len, fileHandle_t f ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
 
-	if ( !f ) {
+	if ( f <= 0 || f >= MAX_FILE_HANDLES ) {
 		return 0;
 	}
 	if (fsh[f].streamed) {
@@ -1373,7 +1373,7 @@ int FS_Read( void *buffer, int len, fileHandle_t f ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
 
-	if ( !f ) {
+	if ( f <= 0 || f >= MAX_FILE_HANDLES ) {
 		return 0;
 	}
 
@@ -1427,7 +1427,7 @@ int FS_Write( const void *buffer, int len, fileHandle_t h ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
 
-	if ( !h ) {
+	if ( h <= 0 || h >= MAX_FILE_HANDLES ) {
 		return 0;
 	}
 
