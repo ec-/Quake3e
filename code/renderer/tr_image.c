@@ -782,7 +782,7 @@ image_t *R_CreateImage( const char *name, const byte *pic, int width, int height
 		isLightmap = qtrue;
 	}
 
-	if ( tr.numImages == MAX_DRAWIMAGES ) {
+	if ( tr.numImages >= MAX_DRAWIMAGES ) {
 		ri.Error( ERR_DROP, "R_CreateImage: MAX_DRAWIMAGES hit\n");
 	}
 

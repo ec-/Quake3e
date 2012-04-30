@@ -1982,7 +1982,7 @@ static shader_t *GeneratePermanentShader( void ) {
 	int			i, b;
 	int			size, hash;
 
-	if ( tr.numShaders == MAX_SHADERS ) {
+	if ( tr.numShaders >= MAX_SHADERS ) {
 		ri.Printf( PRINT_WARNING, "WARNING: GeneratePermanentShader - MAX_SHADERS hit\n");
 		return tr.defaultShader;
 	}
