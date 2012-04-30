@@ -1184,8 +1184,8 @@ int VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 				Com_Error( ERR_DROP, "VM_CompileX86: bad entry opstack %i at %i", v, i ); 
 				return 0;
 			}
-			if ( ci->value < 0 || ci->value >= VM_STACK_SIZE ) {
-				v = ci->value;
+			v = ci->value;
+			if ( v < 0 || v >= VM_STACK_SIZE || (v & 3) ) {
 				VM_FreeBuffers();
 				Com_Error( ERR_DROP, "VM_CompileX86: bad entry programStack %i at %i", v, i ); 
 				return 0;
@@ -1211,8 +1211,8 @@ int VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 				Com_Error( ERR_DROP, "VM_CompileX86: bad opStack %i at %i", v, i ); 
 				return 0;
 			}
-			if ( ci->value < 0 || ci->value >= VM_STACK_SIZE ) {
-				v = ci->value;
+			v = ci->value;
+			if ( v < 0 || v >= VM_STACK_SIZE || (v & 3) ) {
 				VM_FreeBuffers();
 				Com_Error( ERR_DROP, "VM_CompileX86: bad return programStack %i at %i", v, i ); 
 				return 0;
@@ -1310,7 +1310,7 @@ int VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 		if ( ci->op == OP_ARG ) {
 			v = ci->value;
 			// argument can't exceed programStack frame
-			if ( v > pstack - 4 ) {
+			if ( v > pstack - 4 || (v & 3) ) {
 				VM_FreeBuffers();
 				Com_Error( ERR_DROP, "VM_CompileX86: bad argument address %i at %i", v, i );
 				return 0;
