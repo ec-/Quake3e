@@ -40,9 +40,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define VM_X86_MMAP
 #endif
 
-#define NUM_PASSES 7
-
 //#define VM_LOG_SYSCALLS
+#define JUMP_OPTIMIZE 0
+
+#if JUMP_OPTIMIZE
+#define NUM_PASSES 7
+#else
+#define NUM_PASSES 3
+#endif
+
 
 static void *VM_Alloc_Compiled( vm_t *vm, int codeLength );
 static void VM_Destroy_Compiled( vm_t *vm );
@@ -596,6 +602,7 @@ void EmitJump( vm_t *vm, instruction_t *i, int addr )
 
 	v = vm->instructionPointers[ addr ] - compiledOfs;
 
+#if JUMP_OPTIMIZE
 	if ( i->njump ) {
 		// can happen
 		if ( v < -126 || v > 129 ) {
@@ -618,6 +625,7 @@ void EmitJump( vm_t *vm, instruction_t *i, int addr )
 			return;
 		}
 	}
+#endif
 
 	str = FarJumpStr( i->op, &jump_size );	
 	EmitString( str );
