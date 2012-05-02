@@ -595,7 +595,7 @@ const char *FarJumpStr( int op, int *n )
 	return NULL;
 }
 
-void EmitJump( vm_t *vm, instruction_t *i, int addr ) 
+void EmitJump( vm_t *vm, instruction_t *i, int op, int addr ) 
 {
 	const char *str;
 	int v, jump_size;
@@ -606,20 +606,20 @@ void EmitJump( vm_t *vm, instruction_t *i, int addr )
 	if ( i->njump ) {
 		// can happen
 		if ( v < -126 || v > 129 ) {
-			str = FarJumpStr( i->op, &jump_size );	
+			str = FarJumpStr( op, &jump_size );	
 			EmitString( str );
 			Emit4( v - 4 - jump_size ); 
 			i->njump = 0;
 			return;
 		}
-		EmitString( NearJumpStr( i->op ) );
+		EmitString( NearJumpStr( op ) );
 		Emit1( v - 2 );
 		return;
 	}
 
 	if ( pass >= 2 && pass < NUM_PASSES-2 ) {
 		if ( v >= -126 && v <= 129 ) {
-			EmitString( NearJumpStr( i->op ) );
+			EmitString( NearJumpStr( op ) );
 			Emit1( v - 2 ); 
 			i->njump = 1;
 			return;
@@ -627,9 +627,45 @@ void EmitJump( vm_t *vm, instruction_t *i, int addr )
 	}
 #endif
 
-	str = FarJumpStr( i->op, &jump_size );	
+	str = FarJumpStr( op, &jump_size );	
 	EmitString( str );
 	Emit4( v - 4 - jump_size );
+}
+
+void EmitFloatJump( vm_t *vm, instruction_t *i, int op, int addr ) 
+{
+	switch ( op ) {
+		case OP_EQF:
+			EmitString( "80 E4 40" );	// and ah,0x40
+			EmitJump( vm, i, OP_NE, addr );
+			break;			
+
+		case OP_NEF:
+			EmitString( "80 E4 40" );	// and ah,0x40
+			EmitJump( vm, i, OP_EQ, addr );
+			break;			
+
+		case OP_LTF:
+			EmitString( "80 E4 01" );	// and ah,0x01
+			EmitJump( vm, i, OP_NE, addr );
+			break;			
+
+		case OP_LEF:
+			EmitString( "80 E4 41" );	// and ah,0x41
+			EmitJump( vm, i, OP_NE, addr );
+			break;			
+
+		case OP_GTF:
+			EmitString( "80 E4 41" );	// and ah,0x41
+			EmitJump( vm, i, OP_EQ, addr );
+			break;			
+
+		case OP_GEF:
+			EmitString( "80 E4 01" );	// and ah,0x01
+			EmitJump( vm, i, OP_EQ, addr );
+			break;			
+	};
+
 }
 
 void EmitCall( vm_t *vm, instruction_t *i, int addr ) 
@@ -757,9 +793,6 @@ FloatMerge
 */
 static int FloatMerge( instruction_t *curr, instruction_t *next ) 
 {
-	if ( next->jused || !next->fcalc ) 
-		return 0;
-
 	EmitString( "D9 47 F8" );				// fld dword ptr [edi-8]
 	EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
 	switch ( curr->op ) {
@@ -988,7 +1021,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 
 	case OP_JUMP:
 		//JMP();
-		EmitJump( vm, ni, ci->value );
+		EmitJump( vm, ni, ni->op, ci->value );
 		ip += 1; // OP_JUMP
 		return qtrue;
 
@@ -1045,7 +1078,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 				Emit4( v );
 			}
 		}
-		EmitJump( vm, ni, ni->value );
+		EmitJump( vm, ni, ni->op, ni->value );
 		ip += 1; 
 		return qtrue;
 
@@ -1399,22 +1432,8 @@ __compile:
 
 		op = ci->op;
 
-		if ( ci->fcalc && FloatMerge( ci, ni ) ) {
-			pop1 = op;
-			continue;
-		}
-
-		if ( ci->fjump && CPU_Flags & CPU_FCOM ) {
-			EmitFldEDI( vm );							// fld dword ptr [edi]
-			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
-
-			//EmitString( "D9 47 08" );					// fld dword ptr [edi+8]
-			EmitString( "D9 47 04" );					// fld dword ptr [edi+4]
-			EmitString( "DF E9" );						// fucomip
-			EmitString( "DD D8" );						// fstp st(0)
-
-			EmitJump( vm, ci, ci->value );
-			pop1 = OP_UNDEF;
+		if ( ci->fcalc && ni->fcalc && !ni->jused && FloatMerge( ci, ni ) ) {
+			pop1 = ni->op;
 			continue;
 		}
 
@@ -1659,49 +1678,31 @@ __compile:
 			EmitMovEAXEDI( vm );
 			EmitCommand( LAST_COMMAND_SUB_DI_8 ); // sub edi, 8
 			EmitString( "39 47 04" );			  // cmp dword ptr [edi+4], eax
-			EmitJump( vm, ci, ci->value );
+			EmitJump( vm, ci, ci->op, ci->value );
 			break;
 
 		case OP_EQF:
-			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			FCOMSF();
-			EmitString( "80 E4 40" );	// and ah,0x40
-			JNE();
-			break;			
-
 		case OP_NEF:
-			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			FCOMSF();
-			EmitString( "80 E4 40" );	// and ah,0x40
-			JE();
-			break;			
-
 		case OP_LTF:
-			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			FCOMSF();
-			EmitString( "80 E4 01" );	// and ah,0x01
-			JNE();
-			break;			
-
 		case OP_LEF:
-			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			FCOMSF();
-			EmitString( "80 E4 41" );	// and ah,0x41
-			JNE();
-			break;			
-
 		case OP_GTF:
-			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			FCOMSF();
-			EmitString( "80 E4 41" );	// and ah,0x41
-			JE();
-			break;			
-
 		case OP_GEF:
-			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
-			FCOMSF();
-			EmitString( "80 E4 01" );	// and ah,0x01
-			JE();
+			if ( CPU_Flags & CPU_FCOM ) {
+				EmitFldEDI( vm );							// fld dword ptr [edi]
+				EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
+				//EmitString( "D9 47 08" );					// fld dword ptr [edi+8]
+				EmitString( "D9 47 04" );					// fld dword ptr [edi+4]
+				EmitString( "DF E9" );						// fucomip
+				EmitString( "DD D8" );						// fstp st(0)
+				EmitJump( vm, ci, ci->op, ci->value );
+			} else {
+				EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
+				EmitString( "D9 47 04" );				// fld dword ptr [edi+4]
+				EmitString( "D8 5F 08" );				// fcomp dword ptr [edi+8]
+				EmitString( "DF E0" );					// fnstsw ax
+				EmitFloatJump( vm, ci, ci->op, ci->value );
+			}
+			pop1 = OP_UNDEF;
 			break;			
 
 		case OP_NEGI:
