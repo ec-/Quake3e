@@ -631,7 +631,7 @@ void EmitCall( vm_t *vm, instruction_t *i, int addr )
 
 void EmitCallFunc( vm_t *vm ) 
 {
-	EmitString( "8B 07" );			// mov eax, dword ptr [edi]
+	//EmitString( "8B 07" );			// mov eax, dword ptr [edi]
 	EmitString( "83 EF 04" );		// sub edi, 4
 	EmitString( "85 C0" );			// test eax, eax
 	EmitString( "7C 1A" );			// jl (SystemCall) +26
@@ -1544,6 +1544,7 @@ __compile:
 			Emit4( (int)vm->dataBase );
 			Emit4( ip-1 );
 #endif
+			EmitMovEAXEDI( vm );
 			n = codeOffset[FUNC_CALL] - compiledOfs;
 			EmitString( "E8" );			// call +codeOffset[FUNC_CALL]
 			Emit4( n - 5 );
