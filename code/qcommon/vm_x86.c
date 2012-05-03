@@ -49,6 +49,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define NUM_PASSES 3
 #endif
 
+#define FTOL_PTR 1
+#define BCPY_PTR 1
 
 static void *VM_Alloc_Compiled( vm_t *vm, int codeLength );
 static void VM_Destroy_Compiled( vm_t *vm );
@@ -207,8 +209,6 @@ static  instruction_t *inst = NULL;
 static  instruction_t *ci;
 static  instruction_t *ni;
 
-#define FTOL_PTR
-
 static int cw0F7F = 0x0F7F; // round towards zero
 static int cwCurr = 0;
 
@@ -263,12 +263,6 @@ static void Emit1( int v )
 	LastCommand = LAST_COMMAND_NONE;
 }
 
-
-static void Emit2( int v ) 
-{
-	Emit1( v & 255 );
-	Emit1( ( v >> 8 ) & 255 );
-}
 
 static void Emit4( int v ) 
 {
@@ -464,46 +458,6 @@ void EmitMovECXEDI( vm_t *vm, int andit )
 	}
 
 	EmitString( "8B 0F" );		    // mov ecx, dword ptr [edi]
-}
-
-
-static qboolean EmitMovEBXEDI(vm_t *vm, int andit) {
-	if ( jlabel ) {
-		EmitString( "8B 1F" );		// mov ebx, dword ptr [edi]
-		return qfalse;
-	}
-	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI_CALL ) {
-		EmitString( "89 C3" );		// mov ebx, eax
-		return qfalse;
-	}
-	if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) 
-	{	// mov dword ptr [edi], eax
-		compiledOfs -= 2;
-		vm->instructionPointers[ ip-1 ] = compiledOfs;
-		EmitString( "89 C3" );		// mov ebx, eax
-		return qfalse;
-	}
-	if ( pop1 == OP_DIVI || pop1 == OP_DIVU || pop1 == OP_MULI || pop1 == OP_MULU ||
-		pop1 == OP_STORE4 || pop1 == OP_STORE2 || pop1 == OP_STORE1 ) 
-	{	
-		EmitString( "89 C3" );		// mov ebx, eax
-		return qfalse;
-	}
-	if ( LastCommand == LAST_COMMAND_MOV_EDI_CONST ) 
-	{	// mov dword ptr [edi], 0x12345678
-		compiledOfs -= 6;
-		vm->instructionPointers[ ip-1 ] = compiledOfs;
-		EmitString( "BB" );			// mov	ebx, 0x12345678
-		if (andit) {
-			Emit4( lastConst & andit );
-		} else {
-			Emit4( lastConst );
-		}
-		return qtrue;
-	}
-
-	EmitString( "8B 1F" );		    // mov ebx, dword ptr [edi]
-	return qfalse;
 }
 
 
@@ -747,12 +701,12 @@ void EmitCallFunc( vm_t *vm )
 	EmitString( "C3" );				// ret
 }
 
-
+#if FTOL_PTR
 void EmitFTOLFunc( vm_t *vm ) 
 {
 	EmitString( "9B D9 3D" );	// fnstcw word ptr [cwCurr]
 	Emit4( (int)&cwCurr );
-	//EmitString( "D9 07" );		// fld dword ptr [edi]
+	//EmitString( "D9 07" );	// fld dword ptr [edi]
 	EmitString( "D9 2D" );		// fldcw word ptr [cw0F7F]
 	Emit4( (int)&cw0F7F );
 	EmitString( "DB 1F" );		// fistp dword ptr [edi]
@@ -760,28 +714,34 @@ void EmitFTOLFunc( vm_t *vm )
 	Emit4( (int)&cwCurr );
 	EmitString( "C3" );			// ret
 }
+#endif
 
+#if BCPY_PTR
+void EmitBCPYFunc( vm_t *vm ) 
+{
+	// FIXME: range check
+	EmitString( "56" );			// push esi
+	EmitString( "57" );			// push edi
+	EmitString( "8B 37" );		// mov esi,[edi] 
+	EmitString( "8B 7F FC" );	// mov edi,[edi-4] 
+	//EmitString( "B9" );			// mov ecx,0x12345678
+	//Emit4( ci->value >> 2 );
+	EmitString( "B8" );			// mov eax, datamask
+	Emit4( vm->dataMask );
+	//EmitString( "BB" );			// mov ebx, database
+	//Emit4( (int)vm->dataBase );
+	EmitString( "23 F0" );		// and esi, eax
+	EmitString( "03 F3" );		// add esi, ebx
+	EmitString( "23 F8" );		// and edi, eax
+	EmitString( "03 FB" );		// add edi, ebx
+	EmitString( "F3 A5" );		// rep movsd
+	EmitString( "5F" );			// pop edi
+	EmitString( "5E" );			// pop esi
+	EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
+	EmitString( "C3" );			// ret
+}
+#endif
 
-#define EMITJMP(S,N) \
-	do { \
-		v = ci->value; \
-		n = vm->instructionPointers[v] - compiledOfs - (N); \
-		EmitString( S ); \
-		Emit4( n ); \
-	} while(0) \
-
-
-#define JE()   EMITJMP( "0F 84", 6 )
-#define JNE()  EMITJMP( "0F 85", 6 )
-#define JZ()   EMITJMP( "0F 84", 6 )
-#define JNZ()  EMITJMP( "0F 85", 6 )
-
-#define FCOMSF() \
-	do { \
-		EmitString( "D9 47 04" );	/* fld dword ptr [edi+4] */ \
-		EmitString( "D8 5F 08" );	/* fcomp dword ptr [edi+8] */ \
-		EmitString( "DF E0" );		/* fnstsw ax */ \
-	} while (0)
 
 /*
 =================
@@ -1382,6 +1342,7 @@ int VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 enum {
 	FUNC_CALL = 0,
 	FUNC_FTOL,
+	FUNC_BCPY,
 	FUNC_LAST
 };
 
@@ -1872,7 +1833,7 @@ __compile:
 			break;
 
 		case OP_CVFI:
-#ifndef FTOL_PTR
+#if !FTOL_PTR
 			EmitString( "9B D9 3D" );	// fnstcw word ptr [cwCurr]
 			Emit4( (int)&cwCurr );
 			EmitString( "D9 07" );		// fld dword ptr [edi]
@@ -1906,6 +1867,13 @@ __compile:
 			break;
 
 		case OP_BLOCK_COPY:
+#if	BCPY_PTR
+			EmitString( "B9" );			// mov ecx, 0x12345678
+			Emit4( ci->value >> 2 );
+			n = codeOffset[FUNC_BCPY] - compiledOfs;
+			EmitString( "E8" );			// call +codeOffset[FUNC_BCPY]
+			Emit4( n - 5 );
+#else
 			// FIXME: range check
 			EmitString( "56" );			// push esi
 			EmitString( "57" );			// push edi
@@ -1924,13 +1892,13 @@ __compile:
 			EmitString( "F3 A5" );		// rep movsd
 			EmitString( "5F" );			// pop edi
 			EmitString( "5E" );			// pop esi
-			EmitCommand(LAST_COMMAND_SUB_DI_8);		// sub edi, 8
+			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
+#endif
 			break;
 
 		case OP_JUMP:
-			EmitMovEAXEDI( vm );
 			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
-			//EmitString( "8B 47 04" );				// mov eax,dword ptr [edi+4]
+			EmitString( "8B 47 04" );				// mov eax,dword ptr [edi+4]
 			EmitString( "3D" );						// cmp eax, 0x12345678
 			Emit4( vm->instructionCount );
 			EmitString( "73 07" );					// jae +7
@@ -1948,7 +1916,13 @@ __compile:
 		codeOffset[FUNC_CALL] = compiledOfs;
 		EmitCallFunc( vm );
 		codeOffset[FUNC_FTOL] = compiledOfs;
+#if FTOL_PTR
 		EmitFTOLFunc( vm );
+#endif
+		codeOffset[FUNC_BCPY] = compiledOfs;
+#if BCPY_PTR
+		EmitBCPYFunc( vm );
+#endif
 
 	} // for( pass = 0; pass < n; pass++ )
 
