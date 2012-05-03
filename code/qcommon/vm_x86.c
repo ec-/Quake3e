@@ -1928,15 +1928,16 @@ __compile:
 			break;
 
 		case OP_JUMP:
-			EmitCommand(LAST_COMMAND_SUB_DI_4); // sub edi, 4
-			EmitString( "8B 47 04" );           // mov eax,dword ptr [edi+4]
-			EmitString( "3D" );		            // cmp eax, 0x12345678
+			EmitMovEAXEDI( vm );
+			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+			//EmitString( "8B 47 04" );				// mov eax,dword ptr [edi+4]
+			EmitString( "3D" );						// cmp eax, 0x12345678
 			Emit4( vm->instructionCount );
-			EmitString( "73 07" );              // jae +7
+			EmitString( "73 07" );					// jae +7
 			// FIXME: allow jump withing local function scope only
-			EmitString( "FF 24 85" );           // jmp dword ptr [instructionPointers + eax * 4]
+			EmitString( "FF 24 85" );				// jmp dword ptr [instructionPointers + eax * 4]
 			Emit4( (int)vm->instructionPointers );
-			EmitString( "FF 15" );              // call errJumpPtr
+			EmitString( "FF 15" );					// call errJumpPtr
 			Emit4( (int)&errJumpPtr );
 			break;
 		}
