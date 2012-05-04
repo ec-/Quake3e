@@ -274,14 +274,14 @@ static void Emit4( int v )
 
 static int Hex( int c ) 
 {
-	if ( c >= 'a' && c <= 'f' ) {
-		return 10 + c - 'a';
+	if ( c >= '0' && c <= '9' ) {
+		return c - '0';
 	}
 	if ( c >= 'A' && c <= 'F' ) {
 		return 10 + c - 'A';
 	}
-	if ( c >= '0' && c <= '9' ) {
-		return c - '0';
+	if ( c >= 'a' && c <= 'f' ) {
+		return 10 + c - 'a';
 	}
 
 	VM_FreeBuffers();
@@ -825,8 +825,12 @@ qboolean ConstOptimize( vm_t *vm ) {
 
 	case OP_STORE4:
 		EmitMovECXEDI( vm, ( vm->dataMask & ~3 ) );
-		EmitString( "B8" );			// mov	eax, 0x12345678
-		Emit4( ci->value );
+		if ( !ci->value ) {
+			EmitString( "31 C0" );		// xor eax, eax
+		} else {
+			EmitString( "B8" );			// mov	eax, 0x12345678
+			Emit4( ci->value );
+		}
 //		if (!opt) {
 //			EmitString( "81 E3" );  // and ebx, 0x12345678
 //			Emit4( vm->dataMask & ~3 );
@@ -838,8 +842,12 @@ qboolean ConstOptimize( vm_t *vm ) {
 
 	case OP_STORE2:
 		EmitMovECXEDI(vm, (vm->dataMask & ~1));
-		EmitString( "B8" );			// mov	eax, 0x12345678
-		Emit4( ci->value );
+		if ( !ci->value ) {
+			EmitString( "31 C0" );		// xor eax, eax
+		} else {
+			EmitString( "B8" );			// mov	eax, 0x12345678
+			Emit4( ci->value );
+		}
 //		if (!opt) {
 //			EmitString( "81 E3" );  // and ebx, 0x12345678
 //			Emit4( vm->dataMask & ~1 );
@@ -851,8 +859,12 @@ qboolean ConstOptimize( vm_t *vm ) {
 
 	case OP_STORE1:
 		EmitMovECXEDI(vm, vm->dataMask);
-		EmitString( "B8" );			// mov	eax, 0x12345678
-		Emit4( ci->value );
+		if ( !ci->value ) {
+			EmitString( "31 C0" );		// xor eax, eax
+		} else {
+			EmitString( "B8" );			// mov	eax, 0x12345678
+			Emit4( ci->value );
+		}
 //		if (!opt) {
 //			EmitString( "81 E3" );	// and ebx, 0x12345678
 //			Emit4( vm->dataMask );
@@ -909,7 +921,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 		if ( v < 0 || v > 31 )
 			break;
 		EmitMovEAXEDI( vm );
-		EmitString( "C1 E0" );	// shl dword ptr [edi], 0x12
+		EmitString( "C1 E0" );	// shl eax, 0x12
 		Emit1( v );
 		EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
 		ip += 1; // OP_LSH
@@ -1936,8 +1948,9 @@ __compile:
 			break;
 
 		case OP_JUMP:
+			EmitMovEAXEDI( vm );
 			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
-			EmitString( "8B 47 04" );				// mov eax,dword ptr [edi+4]
+			//EmitString( "8B 47 04" );				// mov eax,dword ptr [edi+4]
 			EmitString( "3D" );						// cmp eax, 0x12345678
 			Emit4( vm->instructionCount );
 			EmitString( "73 07" );					// jae +7
