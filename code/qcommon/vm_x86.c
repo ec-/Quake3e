@@ -195,7 +195,6 @@ typedef struct {
 	byte  opStack;  // 8
 	int jused:1;
 	int fcalc:1;
-	int fjump:1;
 	int jump:1;
 	int njump:1;
 } instruction_t;
@@ -1128,11 +1127,6 @@ instruction_t *VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 			ci->jump = 1;
 		else
 			ci->jump = 0;
-
-		if ( (ops[ op0 ].flags & (OPF_FLOAT|OPF_JUMP)) == (OPF_FLOAT|OPF_JUMP) )
-			ci->fjump = 1;
-		else
-			ci->fjump = 0;
 
 		if ( (ops[ op0 ].flags & (OPF_FLOAT|OPF_CALC)) == (OPF_FLOAT|OPF_CALC) )
 			ci->fcalc = 1;
