@@ -779,12 +779,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 	int v;
 	int op1;
 
-	// we can safely perform optimizations only in case if 
-	// we are 100% sure that next instruction is not a jump label
-	if ( !ni->jused )
-		op1 = ni->op;
-	else
-		return qfalse;
+	op1 = ni->op;
 
 	switch ( op1 ) {
 
@@ -1154,7 +1149,7 @@ instruction_t *VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 			buf[n].jused = 1;
 		}
 	} else {
-		// instruction with opStack > 0 can't be jump labels so its safe to optimize/merge
+		// instructions with opStack > 0 can't be jump labels so its safe to optimize/merge
 		for ( i = 0; i < header->instructionCount; i++ ) {
 			if ( buf[i].opStack > 0 )
 				buf[i].jused = 0;
@@ -1433,9 +1428,11 @@ __compile:
 			break;
 
 		case OP_CONST:
-			if ( ConstOptimize( vm ) )
+			// we can safely perform optimizations only in case if 
+			// we are 100% sure that next instruction is not a jump label
+			if ( !ni->jused && ConstOptimize( vm ) )
 				break;
-			EmitAddEDI4(vm);
+			EmitAddEDI4( vm );
 			EmitString( "C7 07" );		// mov	dword ptr [edi], 0x12345678
 			lastConst = ci->value;
 			Emit4( lastConst );
