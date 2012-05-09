@@ -686,6 +686,7 @@ vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *),
 
 	if ( i == MAX_VM ) {
 		Com_Error( ERR_FATAL, "VM_Create: no free vm_t" );
+		return NULL;
 	}
 
 	vm = &vmTable[i];
@@ -734,7 +735,11 @@ vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *),
 #else
 	if ( interpret >= VMI_COMPILED ) {
 		vm->compiled = qtrue;
-		VM_Compile( vm, header );
+		if ( !VM_Compile( vm, header ) ) {
+			FS_FreeFile( header );	// free the original file
+			VM_Free( vm );
+			return NULL;
+		}
 	}
 #endif
 	// VM_Compile may have reset vm->compiled if compilation failed

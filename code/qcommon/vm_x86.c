@@ -1065,15 +1065,13 @@ qboolean ConstOptimize( vm_t *vm ) {
 	&& !ni->jused && !inst[ip+1].jused && !inst[ip+2].jused && !inst[ip+3].jused )
 
 
-instruction_t *VM_LoadInstructions( vm_t *vm, vmHeader_t *header ) 
+char *VM_LoadInstructions( vm_t *vm, vmHeader_t *header, instruction_t *buf ) 
 {
+	static char errBuf[128];
 	byte *code, *code_start, *code_end;
 	int i, n, v, op0, op1, opStack, pstack;
-	instruction_t *ci, *buf;
-
-	buf = Z_Malloc( (header->instructionCount + 8 ) * sizeof( instruction_t ) );
-	//Com_Memset( buf, 0, (instructionCount + 8 ) * sizeof( instruction_t ) );
-
+	instruction_t *ci;
+	
 	code = (byte *) header + header->codeOffset;
 	code_start = code; // for printing
 	code_end =  (byte *) header + header->codeOffset + header->codeLength;
@@ -1085,18 +1083,14 @@ instruction_t *VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 	// load instructions and perform some initial calculations/checks
 	for ( i = 0; i < header->instructionCount; i++, ci++, op1 = op0 ) {
 		op0 = *code;
-		if ( op0 < 0 || op0 >= OP_MAX ) 
-		{
-			Z_Free( buf );
-			Com_Error( ERR_DROP, "VM_CompileX86: bad opcode %02X at offset %i", 
-				op0,  code - code_start );
-			return NULL;
+		if ( op0 < 0 || op0 >= OP_MAX ) {
+			sprintf( errBuf, "bad opcode %02X at offset %i", op0,  code - code_start );
+			return errBuf;
 		}
 		n = ops[ op0 ].size;
 		if ( code + 1 + n  > code_end ) {
-			Z_Free( buf );
-			Com_Error( ERR_DROP, "VM_CompileX86: code > code_end" );
-			return NULL;
+			sprintf( errBuf, "code > code_end" );
+			return errBuf;
 		}
 		code++;
 		ci->op = op0;
@@ -1120,14 +1114,12 @@ instruction_t *VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 
 		// check opstack bounds
 		if ( opStack < 0 ) {
-			Z_Free( buf );
-			Com_Error( ERR_DROP, "VM_CompileX86: opStack underflow at %i", i ); 
-			return NULL;
+			sprintf( errBuf, "opStack underflow at %i", i ); 
+			return errBuf;
 		}
 		if ( opStack >= VM_MAX_OPSTACK * 4 ) {
-			Z_Free( buf );
-			Com_Error( ERR_DROP, "VM_CompileX86: opStack overflow at %i", i ); 
-			return NULL;
+			sprintf( errBuf, "opStack overflow at %i", i ); 
+			return errBuf;
 		}
 
 		// set some bits for easy access
@@ -1154,10 +1146,8 @@ instruction_t *VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 				continue;
 			if ( buf[n].opStack != 0 ) {
 				opStack = buf[n].opStack;
-				Z_Free( buf );
-				Com_Error( ERR_DROP, "VM_CompileX86: jump target set on instruction %i with bad opStack %i", 
-					n, opStack ); 
-				return NULL;
+				sprintf( errBuf, "jump target set on instruction %i with bad opStack %i", n, opStack ); 
+				return errBuf;
 			}
 			buf[n].jused = 1;
 		}
@@ -1184,21 +1174,18 @@ instruction_t *VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 		if ( op0 == OP_ENTER ) {
 			// missing block end
 			if ( pstack && op1 != OP_LEAVE ) {
-				Z_Free( buf );
-				Com_Error( ERR_DROP, "VM_CompileX86: missing return instruction before %i", i ); 
-				return NULL;
+				sprintf( errBuf, "missing return instruction before %i", i ); 
+				return errBuf;
 			}
 			if ( ci->opStack != 0 ) {
 				v = ci->opStack;
-				Z_Free( buf );
-				Com_Error( ERR_DROP, "VM_CompileX86: bad entry opstack %i at %i", v, i ); 
-				return NULL;
+				sprintf( errBuf, "bad entry opstack %i at %i", v, i ); 
+				return errBuf;
 			}
 			v = ci->value;
 			if ( v < 0 || v >= VM_STACK_SIZE || (v & 3) ) {
-				Z_Free( buf );
-				Com_Error( ERR_DROP, "VM_CompileX86: bad entry programStack %i at %i", v, i ); 
-				return NULL;
+				sprintf( errBuf, "bad entry programStack %i at %i", v, i ); 
+				return errBuf;
 			}
 			pstack = ci->value;
 			// mark jump target
@@ -1211,22 +1198,19 @@ instruction_t *VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 			// bad return programStack
 			if ( pstack != ci->value ) {
 				v = ci->value;
-				Z_Free( buf );
-				Com_Error( ERR_DROP, "VM_CompileX86: bad programStack %i at %i", v, i ); 
-				return NULL;
+				sprintf( errBuf, "bad programStack %i at %i", v, i ); 
+				return errBuf;
 			}
 			// bad opStack before return
 			if ( ci->opStack != 4 ) {
 				v = ci->opStack;
-				Z_Free( buf );
-				Com_Error( ERR_DROP, "VM_CompileX86: bad opStack %i at %i", v, i ); 
-				return NULL;
+				sprintf( errBuf, "bad opStack %i at %i", v, i );
+				return errBuf;
 			}
 			v = ci->value;
 			if ( v < 0 || v >= VM_STACK_SIZE || (v & 3) ) {
-				Z_Free( buf );
-				Com_Error( ERR_DROP, "VM_CompileX86: bad return programStack %i at %i", v, i ); 
-				return NULL;
+				sprintf( errBuf, "bad return programStack %i at %i", v, i ); 
+				return errBuf;
 			}
 			continue;
 		}
@@ -1235,15 +1219,13 @@ instruction_t *VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 		if ( ci->jump ) {
 			v = ci->value;
 			if ( (unsigned)(v) >= vm->instructionCount ) {
-				Z_Free( buf );
-				Com_Error( ERR_DROP, "VM_CompileX86: jump target %i is out of range", v ); 
-				return NULL;
+				sprintf( errBuf, "jump target %i is out of range", v ); 
+				return errBuf;
 			}
 			if ( buf[v].opStack != 0 ) {
 				n = buf[v].opStack;
-				Z_Free( buf );
-				Com_Error( ERR_DROP, "VM_CompileX86: jump target %i has bad opStack %i", v, n ); 
-				return NULL;
+				sprintf( errBuf, "jump target %i has bad opStack %i", v, n ); 
+				return errBuf;
 			}
 			// mark jump target
 			buf[v].jused = 1;
@@ -1254,28 +1236,24 @@ instruction_t *VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 		if ( op0 == OP_JUMP ) {
 			// jumps should have opStack == 4
 			if ( ci->opStack != 4 ) {
-				Z_Free( buf );
-				Com_Error( ERR_DROP, "VM_CompileX86: bad jump opStack at %i", i ); 
-				return NULL;
+				sprintf( errBuf, "bad jump opStack at %i", i ); 
+				return errBuf;
 			}
 			if ( op1 == OP_CONST ) {
 				v = buf[i-1].value;
 				if ( (unsigned)v >= vm->instructionCount ) {
-					Z_Free( buf );
-					Com_Error( ERR_DROP, "VM_CompileX86: jump target %i is out of range", v );
-					return NULL;
+					sprintf( errBuf, "jump target %i is out of range", v );
+					return errBuf;
 				}
 				if ( buf[v].opStack != 0 ) {
 					n = buf[v].opStack;
-					Z_Free( buf );
-					Com_Error( ERR_DROP, "VM_CompileX86: jump target %i has bad opStack %i", v, n ); 
-					return NULL;
+					sprintf( errBuf, "jump target %i has bad opStack %i", v, n ); 
+					return errBuf;
 				}
 				if ( buf[v].op == OP_ENTER ) {
 					n = buf[v].op;
-					Z_Free( buf );
-					Com_Error( ERR_DROP, "VM_CompileX86: jump target %i has bad opcode %i", v, n ); 
-					return NULL;
+					sprintf( errBuf, "jump target %i has bad opcode %i", v, n ); 
+					return errBuf;
 				}
 				// mark jump target
 				buf[v].jused = 1;
@@ -1285,35 +1263,30 @@ instruction_t *VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 
 		if ( op0 == OP_CALL ) {
 			if ( ci->opStack < 4 ) {
-				Z_Free( buf );
-				Com_Error( ERR_DROP, "VM_CompileX86: bad call opStack at %i", i ); 
-				return NULL;
+				sprintf( errBuf, "bad call opStack at %i", i ); 
+				return errBuf;
 			}
 			if ( op1 == OP_CONST ) {
 				v = buf[i-1].value;
 				// analyse only local function calls
 				if ( v >= 0 ) {
 					if ( v >= vm->instructionCount ) {
-						Z_Free( buf );
-						Com_Error( ERR_DROP, "VM_CompileX86: call target %i is out of range", v ); 
-						return NULL;
+						sprintf( errBuf, "call target %i is out of range", v ); 
+						return errBuf;
 					}
 					if ( buf[v].opStack != 0 ) {
 						n = buf[v].opStack;
-						Z_Free( buf );
-						Com_Error( ERR_DROP, "VM_CompileX86: call target %i has bad opStack %i", v, n );
-						return NULL;
+						sprintf( errBuf, "call target %i has bad opStack %i", v, n );
+						return errBuf;
 					}
 					if ( buf[v].op != OP_ENTER ) {
 						n = buf[v].op;
-						Z_Free( buf );
-						Com_Error( ERR_DROP, "VM_CompileX86: call target %i has bad opcode %i", v, n );
-						return NULL;
+						sprintf( errBuf, "call target %i has bad opcode %i", v, n );
+						return errBuf;
 					}
 					if ( v == 0 ) {
-						Z_Free( buf );
-						Com_Error( ERR_DROP, "VM_CompileX86: explicit vmMain call inside VM" );
-						return NULL;
+						sprintf( errBuf, "explicit vmMain call inside VM" );
+						return errBuf;
 					}
 					// mark jump target
 					buf[v].jused = 1;
@@ -1326,9 +1299,8 @@ instruction_t *VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 			v = ci->value;
 			// argument can't exceed programStack frame
 			if ( v > pstack - 4 || (v & 3) ) {
-				Z_Free( buf );
-				Com_Error( ERR_DROP, "VM_CompileX86: bad argument address %i at %i", v, i );
-				return NULL;
+				sprintf( errBuf, "bad argument address %i at %i", v, i );
+				return errBuf;
 			}
 			continue;
 		}
@@ -1347,12 +1319,11 @@ instruction_t *VM_LoadInstructions( vm_t *vm, vmHeader_t *header )
 	}
 
 	if ( op1 != OP_UNDEF && op1 != OP_LEAVE ) {
-		Z_Free( buf );
-		Com_Error( ERR_DROP, "VM_CompileX86: missing return instruction at the end of the image" );
-		return NULL;
+		sprintf( errBuf, "missing return instruction at the end of the image" );
+		return errBuf;
 	}
 
-	return buf;
+	return NULL;
 }
 
 enum {
@@ -1368,16 +1339,22 @@ enum {
 VM_Compile
 =================
 */
-void VM_Compile( vm_t *vm, vmHeader_t *header ) {
+qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int		op;
 	int		v, n;
 	int		i;
 	int		codeOffset[FUNC_LAST];
 	int     instructionCount;
+	char	*errMsg;
 
-	inst = VM_LoadInstructions( vm, header );
-	if ( inst == NULL ) {
-		return;
+	inst = Z_Malloc( (header->instructionCount + 8 ) * sizeof( instruction_t ) );
+
+	errMsg = VM_LoadInstructions( vm, header, inst );
+
+	if ( errMsg ) {
+		Z_Free( inst );
+		Com_Printf( "VM_CompileX86 error: %s\n", errMsg );
+		return qfalse;
 	}
 
 	code = NULL; // we will allocate memory later, after last defined pass
@@ -1978,23 +1955,31 @@ __compile:
 
 	} // for( pass = 0; pass < n; pass++ )
 
-	if ( code == NULL ) 
-	{
+	if ( code == NULL ) {
 		code = VM_Alloc_Compiled( vm, compiledOfs );
+		if ( code == NULL ) {
+			return qfalse;
+		}
 		pass = NUM_PASSES-1;
 		goto __compile;
 	}
 
 #ifdef VM_X86_MMAP
-	if ( mprotect( vm->codeBase, compiledOfs, PROT_READ|PROT_EXEC ) )
+	if ( mprotect( vm->codeBase, compiledOfs, PROT_READ|PROT_EXEC ) ) {
+		VM_Destroy_Compiled( vm );
 		Com_Error( ERR_FATAL, "VM_CompileX86: mprotect failed" );
+		return qfalse;
+	}
 #elif _WIN32
 	{
 		DWORD oldProtect = 0;
 		
 		// remove write permissions.
-		if ( !VirtualProtect(vm->codeBase, compiledOfs, PAGE_EXECUTE_READ, &oldProtect ) )
+		if ( !VirtualProtect(vm->codeBase, compiledOfs, PAGE_EXECUTE_READ, &oldProtect ) ) {
+			VM_Destroy_Compiled( vm );
 			Com_Error( ERR_FATAL, "VM_CompileX86: VirtualProtect failed" );
+			return qfalse;
+		}
 	}
 #endif
 	
@@ -2012,6 +1997,8 @@ __compile:
 	vm->destroy = VM_Destroy_Compiled;
 
 	Com_Printf( "VM file %s compiled to %i bytes of code\n", vm->name, compiledOfs );
+
+	return qtrue;
 }
 
 
@@ -2025,17 +2012,23 @@ void *VM_Alloc_Compiled( vm_t *vm, int codeLength )
 	vm->codeLength = codeLength;
 #ifdef VM_X86_MMAP
 	vm->codeBase = mmap( NULL, vm->codeLength, PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0 );
-	if ( vm->codeBase == MAP_FAILED )
+	if ( vm->codeBase == MAP_FAILED ) {
 		Com_Error( ERR_FATAL, "VM_CompileX86: can't mmap memory" );
+		return NULL;
+	}
 #elif _WIN32
 	// allocate memory with EXECUTE permissions under windows.
 	vm->codeBase = VirtualAlloc( NULL, vm->codeLength, MEM_COMMIT, PAGE_EXECUTE_READWRITE );
-	if ( !vm->codeBase )
+	if ( !vm->codeBase ) {
 		Com_Error( ERR_FATAL, "VM_CompileX86: VirtualAlloc failed" );
+		return NULL;
+	}
 #else
 	vm->codeBase = malloc( vm->codeLength );
-	if ( !vm->codeBase )
-	        Com_Error( ERR_FATAL, "VM_CompileX86: malloc failed" );
+	if ( !vm->codeBase ) {
+		Com_Error( ERR_FATAL, "VM_CompileX86: malloc failed" );
+		return NULL;
+	}
 #endif
 	return vm->codeBase;
 }
