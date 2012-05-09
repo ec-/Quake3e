@@ -204,6 +204,7 @@ void RE_AddRefEntityToScene( const refEntity_t *ent ) {
 	if ( r_numentities >= MAX_ENTITIES ) {
 		return;
 	}
+#ifdef DEBUG
 	if ( Q_isnan(ent->origin[0]) || Q_isnan(ent->origin[1]) || Q_isnan(ent->origin[2]) ) {
 		static qboolean first_time = qtrue;
 		if (first_time) {
@@ -212,6 +213,7 @@ void RE_AddRefEntityToScene( const refEntity_t *ent ) {
 		}
 		return;
 	}
+#endif
 	if ( ent->reType < 0 || ent->reType >= RT_MAX_REF_ENTITY_TYPE ) {
 		ri.Error( ERR_DROP, "RE_AddRefEntityToScene: bad reType %i", ent->reType );
 	}
