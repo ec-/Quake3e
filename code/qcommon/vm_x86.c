@@ -1512,6 +1512,12 @@ __compile:
 				break;
 			}
 
+			// lcc can generate such useless sequences
+			if ( ni->op == OP_LOCAL && ci->value == ni->value && inst[ip+1].op == OP_LOAD4 && inst[ip+2].op == OP_STORE4 ) {
+				ip += 3;
+				break;
+			}
+
 			// TODO: i = j + k;
 			// TODO: i = j - k;
 
