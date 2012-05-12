@@ -190,9 +190,19 @@ opcode_info_t ops[OP_MAX] =
 };
 
 
+// macro opcode sequences
+typedef enum {
+	MOP_UNDEF = OP_MAX,
+	MOP_IGNORE4,
+	MOP_ADD4,
+	MOP_SUB4,
+} macro_op_t;
+
+
 typedef struct {
 	int   value;    // 32
 	byte  op;	 	// 8
+	byte  mop;		// 8
 	byte  opStack;  // 8
 	int jused:1;
 	int fcalc:1;
@@ -1061,10 +1071,6 @@ qboolean ConstOptimize( vm_t *vm ) {
 }
 
 
-#define LOCALOP(OP) ( ni->op == OP_LOCAL && ci->value == ni->value && inst[ip+1].op == OP_LOAD4 && inst[ip+2].op == OP_CONST && inst[ip+3].op == (OP) && inst[ip+4].op == OP_STORE4 \
-	&& !ni->jused && !inst[ip+1].jused && !inst[ip+2].jused && !inst[ip+3].jused )
-
-
 char *VM_LoadInstructions( vm_t *vm, vmHeader_t *header, instruction_t *buf ) 
 {
 	static char errBuf[128];
@@ -1323,6 +1329,39 @@ char *VM_LoadInstructions( vm_t *vm, vmHeader_t *header, instruction_t *buf )
 		return errBuf;
 	}
 
+	ci = buf;
+	op1 = OP_UNDEF;
+
+	// Detect known macro-op sequences
+	for ( i = 0; i < header->instructionCount; i++, ci++, op1 = op0  ) 
+	{
+		op0 = ci->op;
+		if ( op0 == OP_LOCAL ) {
+			// OP_LOCAL + OP_LOCAL + OP_LOAD4 + OP_CONST + OP_XXX + OP_STORE4
+			if ( (ci+1)->op == OP_LOCAL && ci->value == (ci+1)->value && (ci+2)->op == OP_LOAD4 && (ci+3)->op == OP_CONST && (ci+4)->op != OP_UNDEF && (ci+5)->op == OP_STORE4 ) {
+				v = (ci+4)->op;
+				if ( v == OP_ADD ) {
+					ci->mop = MOP_ADD4;
+					ci += 5; i += 5;
+					continue;
+				}
+				if ( v == OP_SUB ) {
+					ci->mop = MOP_SUB4;
+					ci += 5; i += 5;
+					continue;
+				}
+			}
+
+			// skip useless sequences
+			if ( (ci+1)->op == OP_LOCAL && (ci+0)->value == (ci+1)->value && (ci+2)->op == OP_LOAD4 && (ci+3)->op == OP_STORE4 ) {
+				ci->mop = MOP_IGNORE4;
+				ci += 4; i += 4;
+				break;
+			}
+		}
+	}
+
+
 	return NULL;
 }
 
@@ -1433,7 +1472,7 @@ __compile:
 		case OP_LOCAL:
 
 			// [local]++
-			if ( LOCALOP( OP_ADD ) ) {
+			if ( ci->mop == MOP_ADD4 ) {
 				v = ci->value + (int) vm->dataBase; // local variable address
 				n = inst[ip+2].value;
 				if ( ISS8( n ) ) {
@@ -1455,24 +1494,42 @@ __compile:
 			}
 
 			// [local]--
-			if ( LOCALOP( OP_SUB ) ) {
+			if ( ci->mop == MOP_SUB4 ) {
 				v = ci->value + (int) vm->dataBase; // local variable address
 				n = inst[ip+2].value;
-				if ( ISS8( n ) ){
-					EmitString( "83 AE" );		// add dword ptr[esi+0x12345678],0x12
-					Emit4( v );
-					Emit1( n );
+				if ( ISS8( n ) ) {
+					if ( ISU8( ci->value ) ) {
+						EmitString( "83 6C 33" );		// sub dword ptr [ebx + esi + 0x7F], 0x12
+						Emit1( ci->value );
+						Emit1( n );
+					} else {
+						EmitString( "83 AE" );			// sub dword ptr [esi + 0x12345678], 0x12
+						Emit4( v );
+						Emit1( n );
+					}
 				} else {
-					EmitString( "81 AE" );		// add dword ptr[esi+0x12345678],0x12345678
-					Emit4( v );
-					Emit4( n );
+					if ( ISU8( ci->value ) ) {
+						EmitString( "81 6C 33" );			// sub dword ptr [ebx + esi + 0x7F], 0x12345678
+						Emit1( ci->value );
+						Emit4( n );
+					} else {
+						EmitString( "81 AE" );				// sub dword ptr [esi + 0x12345678], 0x12345678
+						Emit4( v );
+						Emit4( n );
+					}
 				}
 				ip += 5;
 				break;
 			}
 
+			// local = local
+			if ( ci->mop == MOP_IGNORE4 ) {
+				ip += 3;
+				break;
+			}
+
 			// merge OP_LOCAL + OP_LOAD4
-			if ( ni->op == OP_LOAD4 && !ni->jused ) {
+			if ( ni->op == OP_LOAD4 ) {
 				EmitAddEDI4( vm );
 				v = ci->value;
 				if ( ISS8( v ) ) {
@@ -1488,7 +1545,7 @@ __compile:
 			}
 
 			// merge OP_LOCAL + OP_LOAD2
-			if ( ni->op == OP_LOAD2 && !ni->jused ) {
+			if ( ni->op == OP_LOAD2 ) {
 				EmitAddEDI4( vm );
 				EmitString( "0F B7 86" );	// movzx eax, word ptr[esi + LOCAL + vm->dataBase ]
 				Emit4( ci->value + (int)vm->dataBase );
@@ -1498,7 +1555,7 @@ __compile:
 			}
 
 			// merge OP_LOCAL + OP_LOAD1
-			if ( ni->op == OP_LOAD1 && !ni->jused ) {
+			if ( ni->op == OP_LOAD1 ) {
 				EmitAddEDI4( vm );
 				if ( ISS8( ci->value ) ) {
 					EmitString( "0F B6 44 1E" );	// movzx eax, byte ptr [esi + ebx + 0x7F]
@@ -1509,12 +1566,6 @@ __compile:
 				}
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
 				ip++;
-				break;
-			}
-
-			// lcc can generate such useless sequences
-			if ( ni->op == OP_LOCAL && ci->value == ni->value && inst[ip+1].op == OP_LOAD4 && inst[ip+2].op == OP_STORE4 ) {
-				ip += 3;
 				break;
 			}
 
@@ -1584,68 +1635,38 @@ __compile:
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
-#if 0
-				EmitString( "8B 80" );						// mov eax, dword ptr [eax + 0x1234567]
-				Emit4( (int)vm->dataBase );
-#else
 				EmitString( "8B 04 03" );						// mov	eax, dword ptr [ebx + eax]
-#endif
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );		// mov dword ptr [edi], eax
 				break;
 			}
 			EmitMovECXEDI(vm, vm->dataMask);
-#if 0
-			EmitString( "8B 81" );		// mov	eax, dword ptr [ecx + 0x12345678]
-			Emit4( (int)vm->dataBase );
-#else
-			EmitString( "8B 04 0B" );		// mov	eax, dword ptr [ebx + ecx]
-#endif
-			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );		// mov dword ptr [edi], eax
+			EmitString( "8B 04 0B" );							// mov	eax, dword ptr [ebx + ecx]
+			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );			// mov dword ptr [edi], eax
 			break;
 
 		case OP_LOAD2:
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
-#if 0
-				EmitString( "0F B7 80" );					// movzx eax, word ptr [eax + 0x12345678]
-				Emit4( (int)vm->dataBase );
-#else
-				EmitString( "0F B7 04 03" );				// movzx eax, word ptr [ebx + eax]
-#endif
-				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov dword ptr [edi], eax
+				EmitString( "0F B7 04 03" );					// movzx eax, word ptr [ebx + eax]
+				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );		// mov dword ptr [edi], eax
 				break;
 			}
 			EmitMovECXEDI(vm, vm->dataMask);
-#if 0 
-			EmitString( "0F B7 81" );						// movzx eax, word ptr [ecx + 0x12345678]
-			Emit4( (int)vm->dataBase );
-#else
-			EmitString( "0F B7 04 0B" );					// movzx eax, word ptr [ebx + ecx]
-#endif
-			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );		// mov dword ptr [edi], eax
+			EmitString( "0F B7 04 0B" );						// movzx eax, word ptr [ebx + ecx]
+			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );			// mov dword ptr [edi], eax
 			break;
 
 		case OP_LOAD1:
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
-#if 0
-				EmitString( "0F B6 80" );					// movzx eax, byte ptr [eax + 0x12345678]
-				Emit4( (int)vm->dataBase );
-#else
 				EmitString( "0F B6 04 03" );				// movzx eax, byte ptr [ebx + eax]
-#endif
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov dword ptr [edi], eax
 				break;
 			}
 			EmitMovECXEDI(vm, vm->dataMask);
-#if 0
-			EmitString( "0F B6 81" );					// movzx eax, byte ptr [ecx + 0x12345678]
-			Emit4( (int)vm->dataBase );
-#else
 			EmitString( "0F B6 04 0B" );				// movzx eax, byte ptr [ebx + ecx]
-#endif
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov dword ptr [edi], eax
 			break;
 
