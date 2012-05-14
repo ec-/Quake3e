@@ -1484,8 +1484,8 @@ __compile:
 					EmitString( "8B 44 1E" );	// mov eax, dword ptr [esi + ebx + 0x7F]
 					Emit1( v );
 				} else {
-					EmitString( "8B 84 1E" );	// mov eax, dword ptr [esi + ebx + 0x12345678]
-					Emit4( v );
+					EmitString( "8B 86" );		// mov eax, dword ptr [esi + LOCAL + vm->dataBase]
+					Emit4( v + (int)vm->dataBase );
 				}
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
 				ip++;
@@ -1495,8 +1495,14 @@ __compile:
 			// merge OP_LOCAL + OP_LOAD2
 			if ( ni->op == OP_LOAD2 ) {
 				EmitAddEDI4( vm );
-				EmitString( "0F B7 86" );	// movzx eax, word ptr[esi + LOCAL + vm->dataBase ]
-				Emit4( ci->value + (int)vm->dataBase );
+				v = ci->value;
+				if ( ISS8( v ) ) {
+					EmitString( "0F B7 44 33" );	// movzx eax, word ptr [ebx + esi + 0x7F]
+					Emit1( v );
+				} else {
+					EmitString( "0F B7 86" );		// movzx eax, word ptr [esi + LOCAL + vm->dataBase]
+					Emit4( v + (int)vm->dataBase );
+				}
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
 				ip++;
 				break;
@@ -1505,12 +1511,13 @@ __compile:
 			// merge OP_LOCAL + OP_LOAD1
 			if ( ni->op == OP_LOAD1 ) {
 				EmitAddEDI4( vm );
-				if ( ISS8( ci->value ) ) {
-					EmitString( "0F B6 44 1E" );	// movzx eax, byte ptr [esi + ebx + 0x7F]
-					Emit1( ci->value );
+				v = ci->value;
+				if ( ISS8( v ) ) {
+					EmitString( "0F B6 44 33" );	// movzx eax, byte ptr [ebx + esi + 0x7F]
+					Emit1( v );
 				} else {
-					EmitString( "0F B6 86" );	// movzx eax, byte ptr[esi + LOCAL + vm->dataBase ]
-					Emit4( ci->value + (int)vm->dataBase );
+					EmitString( "0F B6 86" );		// movzx eax, byte ptr [esi + LOCAL + vm->dataBase ]
+					Emit4( v + (int)vm->dataBase );
 				}
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
 				ip++;
