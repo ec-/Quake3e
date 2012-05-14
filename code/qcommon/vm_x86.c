@@ -201,6 +201,7 @@ typedef enum {
 typedef struct {
 	int   value;    // 32
 	byte  op;	 	// 8
+	byte  mop;		// 8
 	byte  opStack;  // 8
 	int jused:1;
 	int jump:1;
@@ -1327,14 +1328,15 @@ char *VM_LoadInstructions( vm_t *vm, vmHeader_t *header, instruction_t *buf )
 
 void VM_FindMOps(  vm_t *vm, vmHeader_t *header, instruction_t *buf ) 
 {
-	int i, v, op0, op1;
+	int i, v, op0;
 	instruction_t *ci;
 	
 	ci = buf;
-	op1 = OP_UNDEF;
 
 	// Search for known macro-op sequences
-	for ( i = 0; i < header->instructionCount; i++, ci++, op1 = op0  ) 
+	i = 0;
+
+	while ( i < header->instructionCount )
 	{
 		op0 = ci->op;
 		if ( op0 == OP_LOCAL ) {
@@ -1342,29 +1344,33 @@ void VM_FindMOps(  vm_t *vm, vmHeader_t *header, instruction_t *buf )
 			if ( (ci+1)->op == OP_LOCAL && ci->value == (ci+1)->value && (ci+2)->op == OP_LOAD4 && (ci+3)->op == OP_CONST && (ci+4)->op != OP_UNDEF && (ci+5)->op == OP_STORE4 ) {
 				v = (ci+4)->op;
 				if ( v == OP_ADD ) {
-					ci->op = MOP_ADD4;
-					ci += 5; i += 5;
+					ci->mop = MOP_ADD4;
+					ci += 6; i += 6;
 					continue;
 				}
 				if ( v == OP_SUB ) {
-					ci->op = MOP_SUB4;
-					ci += 5; i += 5;
+					ci->mop = MOP_SUB4;
+					ci += 6; i += 6;
 					continue;
 				}
 			}
 
 			// skip useless sequences
 			if ( (ci+1)->op == OP_LOCAL && (ci+0)->value == (ci+1)->value && (ci+2)->op == OP_LOAD4 && (ci+3)->op == OP_STORE4 ) {
-				ci->op = MOP_IGNORE4;
+				ci->mop = MOP_IGNORE4;
 				ci += 4; i += 4;
 				continue;
 			}
 		}
 
-		if ( (ops[op1].flags&(OPF_FLOAT|OPF_CALC))==(OPF_FLOAT|OPF_CALC) && (ops[op0].flags&(OPF_FLOAT|OPF_CALC))==(OPF_FLOAT|OPF_CALC) ) {
-			(ci-1)->op = MOP_CALCF4;
+		if ( (ops[ ci->op ].flags & (OPF_FLOAT|OPF_CALC))==(OPF_FLOAT|OPF_CALC) && (ops[(ci+1)->op].flags&(OPF_FLOAT|OPF_CALC))==(OPF_FLOAT|OPF_CALC) && !(ci+1)->jused ) {
+			ci->mop = MOP_CALCF4;
+			ci += 2; i += 2;
 			continue;
 		}
+
+		ci++;
+		i++;
 	}
 }
 
@@ -1508,6 +1514,63 @@ __compile:
 				}
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
 				ip++;
+				break;
+			}
+
+			// [local]++
+			if ( ci->mop == MOP_ADD4 ) {
+				v = ci->value + (int) vm->dataBase; // local variable address
+				n = inst[ip+2].value;
+				if ( ISS8( n ) ) {
+					if ( ISU8( ci->value ) ) {
+						EmitString( "83 44 1E" );	// add dword ptr [ebx + esi + 0x7F], 0x12
+						Emit1( ci->value );
+					} else {
+						EmitString( "83 86" );		// add dword ptr[esi+0x12345678],0x12
+						Emit4( v );
+					}
+					Emit1( n );
+				} else {
+					EmitString( "81 86" );			// add dword ptr[esi+0x12345678],0x12345678
+					Emit4( v );
+					Emit4( n );
+				}
+				ip += 5;
+				break;
+			}
+
+			// [local]--
+			if ( ci->mop == MOP_SUB4 ) {
+				v = ci->value + (int) vm->dataBase;	// local variable address
+				n = inst[ip+2].value;
+				if ( ISS8( n ) ) {
+					if ( ISU8( ci->value ) ) {
+						EmitString( "83 6C 33" );	// sub dword ptr [ebx + esi + 0x7F], 0x12
+						Emit1( ci->value );
+						Emit1( n );
+					} else {
+						EmitString( "83 AE" );		// sub dword ptr [esi + 0x12345678], 0x12
+						Emit4( v );
+						Emit1( n );
+					}
+				} else {
+					if ( ISU8( ci->value ) ) {
+						EmitString( "81 6C 33" );	// sub dword ptr [ebx + esi + 0x7F], 0x12345678
+						Emit1( ci->value );
+						Emit4( n );
+					} else {
+						EmitString( "81 AE" );		// sub dword ptr [esi + 0x12345678], 0x12345678
+						Emit4( v );
+						Emit4( n );
+					}
+				}
+				ip += 5;
+				break;
+			}
+
+			// [local] = [local]
+			if ( ci-> mop ==  MOP_IGNORE4 ) {
+				ip += 3;
 				break;
 			}
 
@@ -1797,6 +1860,10 @@ __compile:
 			break;
 
 		case OP_ADDF:
+			if ( ci->mop == MOP_CALCF4 ) {
+				FloatMerge( ci, ni );
+				break;
+			}
 			EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
 			EmitString( "D8 07" );					// fadd dword ptr [edi]
 			EmitString( "D9 5F FC" );				// fstp dword ptr [edi-4]
@@ -1804,6 +1871,10 @@ __compile:
 			break;
 
 		case OP_SUBF:
+			if ( ci->mop == MOP_CALCF4 ) {
+				FloatMerge( ci, ni );
+				break;
+			}
 			EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
 			EmitString( "D8 27" );					// fsub dword ptr [edi]
 			EmitString( "D9 5F FC" );				// fstp dword ptr [edi-4]
@@ -1811,6 +1882,10 @@ __compile:
 			break;
 
 		case OP_DIVF:
+			if ( ci->mop == MOP_CALCF4 ) {
+				FloatMerge( ci, ni );
+				break;
+			}
 			EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
 			EmitString( "D8 37" );					// fdiv dword ptr [edi]
 			EmitString( "D9 5F FC" );				// fstp dword ptr [edi-4]
@@ -1818,6 +1893,10 @@ __compile:
 			break;
 
 		case OP_MULF:
+			if ( ci->mop == MOP_CALCF4 ) {
+				FloatMerge( ci, ni );
+				break;
+			}
 			EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
 			EmitString( "D8 0F" );					// fmul dword ptr [edi]
 			EmitString( "D9 5F FC" );				// fstp dword ptr [edi-4]
@@ -1905,64 +1984,6 @@ __compile:
 			Emit4( (int)vm->instructionPointers );
 			EmitString( "FF 15" );					// call errJumpPtr
 			Emit4( (int)&errJumpPtr );
-			break;
-
-		// [local] = [local]
-		case MOP_IGNORE4:
-			ip += 3;
-			break;
-
-		// [local]++
-		case MOP_ADD4:
-			v = ci->value + (int) vm->dataBase; // local variable address
-			n = inst[ip+2].value;
-			if ( ISS8( n ) ) {
-				if ( ISU8( ci->value ) ) {
-					EmitString( "83 44 1E" );	// add dword ptr [ebx + esi + 0x7F], 0x12
-					Emit1( ci->value );
-				} else {
-					EmitString( "83 86" );		// add dword ptr[esi+0x12345678],0x12
-					Emit4( v );
-				}
-				Emit1( n );
-			} else {
-				EmitString( "81 86" );			// add dword ptr[esi+0x12345678],0x12345678
-				Emit4( v );
-				Emit4( n );
-			}
-			ip += 5;
-			break;
-
-		// [local]--
-		case MOP_SUB4:
-			v = ci->value + (int) vm->dataBase;	// local variable address
-			n = inst[ip+2].value;
-			if ( ISS8( n ) ) {
-				if ( ISU8( ci->value ) ) {
-					EmitString( "83 6C 33" );	// sub dword ptr [ebx + esi + 0x7F], 0x12
-					Emit1( ci->value );
-					Emit1( n );
-				} else {
-					EmitString( "83 AE" );		// sub dword ptr [esi + 0x12345678], 0x12
-					Emit4( v );
-					Emit1( n );
-				}
-			} else {
-				if ( ISU8( ci->value ) ) {
-					EmitString( "81 6C 33" );	// sub dword ptr [ebx + esi + 0x7F], 0x12345678
-					Emit1( ci->value );
-					Emit4( n );
-				} else {
-					EmitString( "81 AE" );		// sub dword ptr [esi + 0x12345678], 0x12345678
-					Emit4( v );
-					Emit4( n );
-				}
-			}
-			ip += 5;
-			break;
-		
-		case MOP_CALCF4:
-			FloatMerge( ci, ni );
 			break;
 
 		default:
