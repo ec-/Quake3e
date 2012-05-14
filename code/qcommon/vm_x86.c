@@ -1481,7 +1481,7 @@ __compile:
 				EmitAddEDI4( vm );
 				v = ci->value;
 				if ( ISS8( v ) ) {
-					EmitString( "8B 44 1E" );	// mov eax, dword ptr [esi + ebx + 0x7F]
+					EmitString( "8B 44 33" );	// mov eax, dword ptr [esi + ebx + 0x7F]
 					Emit1( v );
 				} else {
 					EmitString( "8B 86" );		// mov eax, dword ptr [esi + LOCAL + vm->dataBase]
@@ -1551,7 +1551,7 @@ __compile:
 				v = ci->value + (int) vm->dataBase;	// local variable address
 				n = inst[ip+2].value;
 				if ( ISS8( n ) ) {
-					if ( ISU8( ci->value ) ) {
+					if ( ISS8( ci->value ) ) {
 						EmitString( "83 6C 33" );	// sub dword ptr [ebx + esi + 0x7F], 0x12
 						Emit1( ci->value );
 						Emit1( n );
@@ -1561,7 +1561,7 @@ __compile:
 						Emit1( n );
 					}
 				} else {
-					if ( ISU8( ci->value ) ) {
+					if ( ISS8( ci->value ) ) {
 						EmitString( "81 6C 33" );	// sub dword ptr [ebx + esi + 0x7F], 0x12345678
 						Emit1( ci->value );
 						Emit4( n );
