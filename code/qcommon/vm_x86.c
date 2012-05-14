@@ -1685,10 +1685,10 @@ __compile:
 		case OP_STORE4:
 			EmitMovEAXEDI( vm );
 			EmitString( "8B 4F FC" );					// mov	ecx, dword ptr [edi-4]
-//			if (pop1 != OP_CALL) {
-//				EmitString( "81 E3" );					// and ebx, 0x12345678
-//				Emit4( vm->dataMask & ~3 );
-//			}
+			//if ( pop1 != OP_CALL ) {
+				//EmitString( "81 E1" );						// and ecx, 0x12345678
+				//Emit4( vm->dataMask & ~3 );	
+			//}
 			EmitString( "89 04 0B" );					// mov dword ptr [ebx + ecx], eax
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
 			break;
@@ -1696,8 +1696,8 @@ __compile:
 		case OP_STORE2:
 			EmitMovEAXEDI( vm );
 			EmitString( "8B 4F FC" );					// mov ecx, dword ptr [edi-4]
-//			EmitString( "81 E3" );						// and ebx, 0x12345678
-//			Emit4( vm->dataMask & ~1 );
+			//EmitString( "81 E1" );						// and ecx, 0x12345678
+			//Emit4( vm->dataMask & ~1 );	
 			EmitString( "66 89 04 0B" );				// mov word ptr [ebx + ecx], ax
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
 			break;
@@ -1705,8 +1705,8 @@ __compile:
 		case OP_STORE1:
 			EmitMovEAXEDI( vm );	
 			EmitString( "8B 4F FC" );					// mov	ecx, dword ptr [edi-4]
-//			EmitString( "81 E3" );						// and ebx, 0x12345678
-//			Emit4( vm->dataMask );
+			//EmitString( "81 E1" );						// and ecx, 0x12345678
+			//Emit4( vm->dataMask );	
 			EmitString( "88 04 0B" );					// mov byte ptr [ebx + ecx], eax
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
 			break;
@@ -1839,7 +1839,9 @@ __compile:
 			break;
 
 		case OP_BCOM:
-			EmitString( "F7 17" );		// not dword ptr [edi]
+			EmitMovEAXEDI( vm );					// mov eax, dword ptr [edi]
+			EmitString( "F7 D0" );					// not eax
+			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov dword ptr [edi], eax
 			break;
 
 		case OP_LSH:
