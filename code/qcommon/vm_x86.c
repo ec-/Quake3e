@@ -95,11 +95,9 @@ static void VM_Destroy_Compiled( vm_t *vm );
 
 */
 
-#define OPF_LOCAL      1
-#define OPF_JUMP       2
-#define OPF_ARGV       4
-#define OPF_CALC       8
-#define OPF_FLOAT      16
+#define OPF_JUMP      (1<<0)
+#define OPF_CALC      (1<<1)
+#define OPF_FLOAT     (1<<2)
 
 #define ISS8(V) ( (V) >= -128 && (V) <= 127 )
 #define ISU8(V) ( (V) >= 0 && (V) <= 127 )
@@ -124,7 +122,7 @@ opcode_info_t ops[OP_MAX] =
 	{ "pop",    0,-4, 0 },
 
 	{ "const",  4, 4, 0 },
-	{ "local",  4, 4, OPF_LOCAL },
+	{ "local",  4, 4, 0 },
 	{ "jump",   0,-4, 0 },
 
 	{ "eq",     4,-8, OPF_JUMP },
@@ -154,7 +152,7 @@ opcode_info_t ops[OP_MAX] =
 	{ "store1", 0,-8, 0 },
 	{ "store2", 0,-8, 0 },
 	{ "store4", 0,-8, 0 },
-	{ "arg",    1,-4, OPF_ARGV },
+	{ "arg",    1,-4, 0 },
 	{ "bcopy",  4,-8, 0 },
 
 	{ "sex8",   0, 0, 0 },
@@ -196,16 +194,15 @@ typedef enum {
 	MOP_IGNORE4,
 	MOP_ADD4,
 	MOP_SUB4,
+	MOP_CALCF4,
 } macro_op_t;
 
 
 typedef struct {
 	int   value;    // 32
 	byte  op;	 	// 8
-	byte  mop;		// 8
 	byte  opStack;  // 8
 	int jused:1;
-	int fcalc:1;
 	int jump:1;
 	int njump:1;
 } instruction_t;
@@ -488,7 +485,7 @@ static int EmitFldEDI( vm_t *vm ) {
 	return 0;
 }
 
-
+#if JUMP_OPTIMIZE
 const char *NearJumpStr( int op ) 
 {
 	switch ( op )
@@ -523,7 +520,7 @@ const char *NearJumpStr( int op )
 	};
 	return NULL;
 }
-
+#endif
 
 const char *FarJumpStr( int op, int *n ) 
 {
@@ -1134,11 +1131,6 @@ char *VM_LoadInstructions( vm_t *vm, vmHeader_t *header, instruction_t *buf )
 		else
 			ci->jump = 0;
 
-		if ( (ops[ op0 ].flags & (OPF_FLOAT|OPF_CALC)) == (OPF_FLOAT|OPF_CALC) )
-			ci->fcalc = 1;
-		else
-			ci->fcalc = 0;
-
 	//	op1 = op0;
 	//	ci++;
 	}
@@ -1329,10 +1321,19 @@ char *VM_LoadInstructions( vm_t *vm, vmHeader_t *header, instruction_t *buf )
 		return errBuf;
 	}
 
+	return NULL;
+}
+
+
+void VM_FindMOps(  vm_t *vm, vmHeader_t *header, instruction_t *buf ) 
+{
+	int i, v, op0, op1;
+	instruction_t *ci;
+	
 	ci = buf;
 	op1 = OP_UNDEF;
 
-	// Detect known macro-op sequences
+	// Search for known macro-op sequences
 	for ( i = 0; i < header->instructionCount; i++, ci++, op1 = op0  ) 
 	{
 		op0 = ci->op;
@@ -1341,12 +1342,12 @@ char *VM_LoadInstructions( vm_t *vm, vmHeader_t *header, instruction_t *buf )
 			if ( (ci+1)->op == OP_LOCAL && ci->value == (ci+1)->value && (ci+2)->op == OP_LOAD4 && (ci+3)->op == OP_CONST && (ci+4)->op != OP_UNDEF && (ci+5)->op == OP_STORE4 ) {
 				v = (ci+4)->op;
 				if ( v == OP_ADD ) {
-					ci->mop = MOP_ADD4;
+					ci->op = MOP_ADD4;
 					ci += 5; i += 5;
 					continue;
 				}
 				if ( v == OP_SUB ) {
-					ci->mop = MOP_SUB4;
+					ci->op = MOP_SUB4;
 					ci += 5; i += 5;
 					continue;
 				}
@@ -1354,16 +1355,19 @@ char *VM_LoadInstructions( vm_t *vm, vmHeader_t *header, instruction_t *buf )
 
 			// skip useless sequences
 			if ( (ci+1)->op == OP_LOCAL && (ci+0)->value == (ci+1)->value && (ci+2)->op == OP_LOAD4 && (ci+3)->op == OP_STORE4 ) {
-				ci->mop = MOP_IGNORE4;
+				ci->op = MOP_IGNORE4;
 				ci += 4; i += 4;
-				break;
+				continue;
 			}
 		}
+
+		if ( (ops[op1].flags&(OPF_FLOAT|OPF_CALC))==(OPF_FLOAT|OPF_CALC) && (ops[op0].flags&(OPF_FLOAT|OPF_CALC))==(OPF_FLOAT|OPF_CALC) ) {
+			(ci-1)->op = MOP_CALCF4;
+			continue;
+		}
 	}
-
-
-	return NULL;
 }
+
 
 enum {
 	FUNC_CALL = 0,
@@ -1379,7 +1383,6 @@ VM_Compile
 =================
 */
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
-	int		op;
 	int		v, n;
 	int		i;
 	int		codeOffset[FUNC_LAST];
@@ -1395,6 +1398,8 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 		Com_Printf( "VM_CompileX86 error: %s\n", errMsg );
 		return qfalse;
 	}
+
+	VM_FindMOps( vm, header, inst );
 
 	code = NULL; // we will allocate memory later, after last defined pass
 
@@ -1430,15 +1435,8 @@ __compile:
 			pop1 = OP_UNDEF;
 			LastCommand = LAST_COMMAND_NONE;
 		}
-
-		op = ci->op;
-
-		if ( ci->fcalc && ni->fcalc && !ni->jused && FloatMerge( ci, ni ) ) {
-			pop1 = ni->op;
-			continue;
-		}
-
-		switch ( op ) {
+		
+		switch ( ci->op ) {
 
 		case OP_UNDEF:
 			break;
@@ -1448,12 +1446,13 @@ __compile:
 			break;
 
 		case OP_ENTER:
-			if ( ISS8( ci->value ) ) {
+			v = ci->value;
+			if ( ISS8( v ) ) {
 				EmitString( "83 EE" );		// sub	esi, 0x12345678
-				Emit1( ci->value );
+				Emit1( v );
 			} else {
 				EmitString( "81 EE" );		// sub	esi, 0x12345678
-				Emit4( ci->value );
+				Emit4( v );
 			}
 			break;
 
@@ -1470,63 +1469,6 @@ __compile:
 			break;
 
 		case OP_LOCAL:
-
-			// [local]++
-			if ( ci->mop == MOP_ADD4 ) {
-				v = ci->value + (int) vm->dataBase; // local variable address
-				n = inst[ip+2].value;
-				if ( ISS8( n ) ) {
-					if ( ISU8( ci->value ) ) {
-						EmitString( "83 44 1E" );	// add dword ptr [ebx + esi + 0x7F], 0x12
-						Emit1( ci->value );
-					} else {
-						EmitString( "83 86" );		// add dword ptr[esi+0x12345678],0x12
-						Emit4( v );
-					}
-					Emit1( n );
-				} else {
-					EmitString( "81 86" );		// add dword ptr[esi+0x12345678],0x12345678
-					Emit4( v );
-					Emit4( n );
-				}
-				ip += 5;
-				break;
-			}
-
-			// [local]--
-			if ( ci->mop == MOP_SUB4 ) {
-				v = ci->value + (int) vm->dataBase; // local variable address
-				n = inst[ip+2].value;
-				if ( ISS8( n ) ) {
-					if ( ISU8( ci->value ) ) {
-						EmitString( "83 6C 33" );		// sub dword ptr [ebx + esi + 0x7F], 0x12
-						Emit1( ci->value );
-						Emit1( n );
-					} else {
-						EmitString( "83 AE" );			// sub dword ptr [esi + 0x12345678], 0x12
-						Emit4( v );
-						Emit1( n );
-					}
-				} else {
-					if ( ISU8( ci->value ) ) {
-						EmitString( "81 6C 33" );			// sub dword ptr [ebx + esi + 0x7F], 0x12345678
-						Emit1( ci->value );
-						Emit4( n );
-					} else {
-						EmitString( "81 AE" );				// sub dword ptr [esi + 0x12345678], 0x12345678
-						Emit4( v );
-						Emit4( n );
-					}
-				}
-				ip += 5;
-				break;
-			}
-
-			// local = local
-			if ( ci->mop == MOP_IGNORE4 ) {
-				ip += 3;
-				break;
-			}
 
 			// merge OP_LOCAL + OP_LOAD4
 			if ( ni->op == OP_LOAD4 ) {
@@ -1964,9 +1906,72 @@ __compile:
 			EmitString( "FF 15" );					// call errJumpPtr
 			Emit4( (int)&errJumpPtr );
 			break;
+
+		// [local] = [local]
+		case MOP_IGNORE4:
+			ip += 3;
+			break;
+
+		// [local]++
+		case MOP_ADD4:
+			v = ci->value + (int) vm->dataBase; // local variable address
+			n = inst[ip+2].value;
+			if ( ISS8( n ) ) {
+				if ( ISU8( ci->value ) ) {
+					EmitString( "83 44 1E" );	// add dword ptr [ebx + esi + 0x7F], 0x12
+					Emit1( ci->value );
+				} else {
+					EmitString( "83 86" );		// add dword ptr[esi+0x12345678],0x12
+					Emit4( v );
+				}
+				Emit1( n );
+			} else {
+				EmitString( "81 86" );			// add dword ptr[esi+0x12345678],0x12345678
+				Emit4( v );
+				Emit4( n );
+			}
+			ip += 5;
+			break;
+
+		// [local]--
+		case MOP_SUB4:
+			v = ci->value + (int) vm->dataBase;	// local variable address
+			n = inst[ip+2].value;
+			if ( ISS8( n ) ) {
+				if ( ISU8( ci->value ) ) {
+					EmitString( "83 6C 33" );	// sub dword ptr [ebx + esi + 0x7F], 0x12
+					Emit1( ci->value );
+					Emit1( n );
+				} else {
+					EmitString( "83 AE" );		// sub dword ptr [esi + 0x12345678], 0x12
+					Emit4( v );
+					Emit1( n );
+				}
+			} else {
+				if ( ISU8( ci->value ) ) {
+					EmitString( "81 6C 33" );	// sub dword ptr [ebx + esi + 0x7F], 0x12345678
+					Emit1( ci->value );
+					Emit4( n );
+				} else {
+					EmitString( "81 AE" );		// sub dword ptr [esi + 0x12345678], 0x12345678
+					Emit4( v );
+					Emit4( n );
+				}
+			}
+			ip += 5;
+			break;
+		
+		case MOP_CALCF4:
+			FloatMerge( ci, ni );
+			break;
+
+		default:
+			Com_Error( ERR_FATAL, "VM_CompileX86: bad opcode %02X", ci->op );
+			VM_FreeBuffers();
+			return qfalse;
 		}
 
-		pop1 = op;
+		pop1 = ci->op;
 	} // while( ip < header->instructionCount )
 
 		codeOffset[FUNC_CALL] = compiledOfs;
