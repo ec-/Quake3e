@@ -1524,29 +1524,36 @@ __compile:
 				break;
 			}
 
-			// [local]++
+			// [local]+=CONST
 			if ( ci->mop == MOP_ADD4 ) {
 				v = ci->value + (int) vm->dataBase; // local variable address
 				n = inst[ip+2].value;
 				if ( ISS8( n ) ) {
-					if ( ISU8( ci->value ) ) {
-						EmitString( "83 44 1E" );	// add dword ptr [ebx + esi + 0x7F], 0x12
+					if ( ISS8( ci->value ) ) {
+						EmitString( "83 44 33" );	// add dword ptr [ebx + esi + 0x7F], 0x12
 						Emit1( ci->value );
+						Emit1( n );
 					} else {
-						EmitString( "83 86" );		// add dword ptr[esi+0x12345678],0x12
+						EmitString( "83 86" );		// add dword ptr [esi + 0x12345678], 0x12
 						Emit4( v );
+						Emit1( n );
 					}
-					Emit1( n );
 				} else {
-					EmitString( "81 86" );			// add dword ptr[esi+0x12345678],0x12345678
-					Emit4( v );
-					Emit4( n );
+					if ( ISS8( ci->value ) ) {
+						EmitString( "81 44 33" );	// add dword ptr [ebx + esi + 0x7F], 0x12345678
+						Emit1( ci->value );
+						Emit4( n );
+					} else {
+						EmitString( "81 86" );		// add dword ptr[esi+0x12345678], 0x12345678
+						Emit4( v );
+						Emit4( n );
+					}
 				}
 				ip += 5;
 				break;
 			}
 
-			// [local]--
+			// [local]-=CONST
 			if ( ci->mop == MOP_SUB4 ) {
 				v = ci->value + (int) vm->dataBase;	// local variable address
 				n = inst[ip+2].value;
@@ -1599,11 +1606,11 @@ __compile:
 		case OP_ARG:
 			EmitMovEAXEDI( vm );			// mov	eax, dword ptr [edi]
 			v = ci->value;
-			if ( ISU8( v ) ) {
-				EmitString( "89 44 1E" );	// mov	dword ptr [ebx + esi + 0x7F], eax
+			if ( ISS8( v ) ) {
+				EmitString( "89 44 33" );	// mov	dword ptr [ebx + esi + 0x7F], eax
 				Emit1( v );
 			} else {
-				EmitString( "89 86" );		// mov	dword ptr [esi+database],eax
+				EmitString( "89 86" );		// mov	dword ptr [esi + 0x12345678], eax
 				Emit4( v + (int)vm->dataBase );
 			}
 			
