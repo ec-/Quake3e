@@ -832,52 +832,40 @@ qboolean ConstOptimize( vm_t *vm ) {
 		return qtrue;
 
 	case OP_STORE4:
-		EmitMovECXEDI( vm, ( vm->dataMask & ~3 ) );
+		EmitMovEAXEDI( vm ); // FIXME: and eax, (vm->dataMask & ~3)
 		if ( !ci->value ) {
-			EmitString( "31 C0" );		// xor eax, eax
+			EmitString( "31 C9" );		// xor ecx, ecx
 		} else {
-			EmitString( "B8" );			// mov	eax, 0x12345678
+			EmitString( "B9" );			// mov	ecx, 0x12345678
 			Emit4( ci->value );
 		}
-//		if (!opt) {
-//			EmitString( "81 E3" );  // and ebx, 0x12345678
-//			Emit4( vm->dataMask & ~3 );
-//		}
-		EmitString( "89 04 0B" );     // mov dword ptr [ebx + ecx], eax
+		EmitString( "89 0C 03" );     // mov dword ptr [ebx + eax], ecx
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );		// sub edi, 4
 		ip += 1;
 		return qtrue;
 
 	case OP_STORE2:
-		EmitMovECXEDI(vm, (vm->dataMask & ~1));
+		EmitMovEAXEDI( vm ); // FIXME: and eax, (vm->dataMask & ~1)
 		if ( !ci->value ) {
-			EmitString( "31 C0" );		// xor eax, eax
+			EmitString( "31 C9" );		// xor ecx, ecx
 		} else {
-			EmitString( "B8" );			// mov	eax, 0x12345678
+			EmitString( "B9" );			// mov	ecx, 0x12345678
 			Emit4( ci->value );
 		}
-//		if (!opt) {
-//			EmitString( "81 E3" );  // and ebx, 0x12345678
-//			Emit4( vm->dataMask & ~1 );
-//		}
-		EmitString( "66 89 04 0B" );   // mov word ptr [ebx + ecx], ax
+		EmitString( "66 89 0C 03" );   // mov word ptr [ebx + eax], cx
 		EmitCommand( LAST_COMMAND_SUB_DI_4 ); // sub edi, 4
 		ip += 1;
 		return qtrue;
 
 	case OP_STORE1:
-		EmitMovECXEDI(vm, vm->dataMask);
+		EmitMovEAXEDI( vm ); // FIXME: and eax, (vm->dataMask)
 		if ( !ci->value ) {
-			EmitString( "31 C0" );		// xor eax, eax
+			EmitString( "31 C9" );		// xor ecx, ecx
 		} else {
-			EmitString( "B8" );			// mov	eax, 0x12345678
+			EmitString( "B9" );			// mov	ecx, 0x12345678
 			Emit4( ci->value );
 		}
-//		if (!opt) {
-//			EmitString( "81 E3" );	// and ebx, 0x12345678
-//			Emit4( vm->dataMask );
-//		}
-		EmitString( "88 04 0B" );		// mov byte ptr [ebx + ecx], al
+		EmitString( "88 0C 03" );		// mov byte ptr [ebx + eax], cl
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 		ip += 1;
 		return qtrue;
