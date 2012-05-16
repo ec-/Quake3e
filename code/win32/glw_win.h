@@ -38,8 +38,14 @@ typedef struct
 	qboolean allowdisplaydepthchange;
 	qboolean pixelFormatSet;
 
-	int		 desktopBitsPixel;
-	int		 desktopWidth, desktopHeight;
+	int			desktopBitsPixel;
+	int			desktopWidth; 
+	int			desktopHeight;
+	int			desktopX;		// can be negative
+	int			desktopY;		// can be negative
+	HMONITOR	hMonitor;		// current monitor
+	TCHAR		displayName[CCHDEVICENAME];
+	TCHAR		*displayNamePtr;
 
 	qboolean	cdsFullscreen;
 

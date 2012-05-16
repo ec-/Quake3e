@@ -216,6 +216,11 @@ static LONG WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 	case WM_CREATE:
 		s_wcd.hbrEditBackground = CreateSolidBrush( EDIT_COLOR );
+		GetWindowRect( hWnd, &g_wv.conRect );
+		break;
+
+	case WM_MOVE:
+		GetWindowRect( hWnd, &g_wv.conRect );
 		break;
 
 	case WM_SIZE:
@@ -249,6 +254,8 @@ static LONG WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				SetWindowPos( s_wcd.hwndStatusBar, HWND_TOP, BORDERW, rect.bottom, rect.right - BORDERW*2, 26, SWP_NOZORDER );
 				InvalidateRect( s_wcd.hwndStatusBar, NULL, FALSE );
 			}
+
+			GetWindowRect( hWnd, &g_wv.conRect );
 
 			return 0;
 		}
@@ -456,12 +463,15 @@ void Sys_CreateConsole( char *title )
 	RECT rect;
 	const TCHAR *DEDCLASS = T("Q3 WinConsole");
 
-	int swidth, sheight, sth;
 	int DEDSTYLE = WS_POPUPWINDOW | WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SIZEBOX;
 	int	fontWidth, fontHeight, statusFontHeight;
 	int widths[2] = { 140, -1 };
 	int borders[3];
-	int x, w, h;
+	int x, y, w, h, sth;
+
+	HMONITOR hMonitor;
+	MONITORINFO mInfo;
+	POINT		p;
 
 	memset( &wc, 0, sizeof( wc ) );
 
@@ -486,23 +496,38 @@ void Sys_CreateConsole( char *title )
 
 	AdjustWindowRect( &rect, DEDSTYLE, FALSE );
 
-	hDC = GetDC( GetDesktopWindow() );
-	swidth = GetDeviceCaps( hDC, HORZRES );
-	sheight = GetDeviceCaps( hDC, VERTRES );
+	GetCursorPos( &p );
+	memset( &mInfo, 0, sizeof( mInfo ) );
+	mInfo.cbSize = sizeof( MONITORINFO );
+	// Query display dimensions
+	hMonitor = MonitorFromPoint( p, MONITOR_DEFAULTTONEAREST );
+	if ( hMonitor && GetMonitorInfo( hMonitor, &mInfo ) ) {
+		// current monitor info
+		w = mInfo.rcMonitor.right - mInfo.rcMonitor.left;
+		h = mInfo.rcMonitor.bottom - mInfo.rcMonitor.top;
+		x = mInfo.rcMonitor.left;
+		y = mInfo.rcMonitor.top;
+	} else {
+		// primary display info
+		hDC = GetDC( GetDesktopWindow() );
+		w = GetDeviceCaps( hDC, HORZRES );
+		h = GetDeviceCaps( hDC, VERTRES );
+		x = 0;
+		y = 0;
+		ReleaseDC( GetDesktopWindow(), hDC );
+	}
 
 	fontWidth = -8;
 	fontHeight = -12;
 	statusFontHeight = -11;
-
-	ReleaseDC( GetDesktopWindow(), hDC );
 
 	s_wcd.windowWidth = rect.right - rect.left + 1;
 	s_wcd.windowHeight = rect.bottom - rect.top + 1;
 
 	s_wcd.hWnd = CreateWindowEx( 0, DEDCLASS,
 							   T(CONSOLE_WINDOW_TITLE), DEDSTYLE,
-							   ( swidth - s_wcd.windowWidth ) / 2, 
-							   ( sheight - s_wcd.windowHeight ) / 2 , 
+							   x + ( w - s_wcd.windowWidth ) / 2, 
+							   y + ( h - s_wcd.windowHeight ) / 2 , 
 							   s_wcd.windowWidth, s_wcd.windowHeight,
 							   NULL, NULL, g_wv.hInstance, NULL );
 

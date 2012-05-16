@@ -610,6 +610,7 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		if ( !RegisterClass( &wc ) )
 		{
 			ri.Error( ERR_FATAL, "GLW_CreateWindow: could not register window class" );
+			return qfalse;
 		}
 		s_classRegistered = qtrue;
 		ri.Printf( PRINT_ALL, "...registered window class\n" );
@@ -645,8 +646,8 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 
 		if ( cdsFullscreen || !Q_stricmp( _3DFX_DRIVER_NAME, drivername ) )
 		{
-			x = 0;
-			y = 0;
+			x = glw_state.desktopX;
+			y = glw_state.desktopY;
 		}
 		else
 		{
@@ -657,13 +658,12 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 
 			// adjust window coordinates if necessary 
 			// so that the window is completely on screen
-			if ( x < 0 )
-				x = 0;
-			if ( y < 0 )
-				y = 0;
+			if ( x < glw_state.desktopX )
+				x = glw_state.desktopX;
+			if ( y < glw_state.desktopY )
+				y = glw_state.desktopY;
 
-			if ( w < glw_state.desktopWidth &&
-				 h < glw_state.desktopHeight )
+			if ( w < glw_state.desktopWidth && h < glw_state.desktopHeight )
 			{
 				if ( x + w > glw_state.desktopWidth )
 					x = ( glw_state.desktopWidth - w );
@@ -686,6 +686,7 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		if ( !g_wv.hWnd )
 		{
 			ri.Error (ERR_FATAL, "GLW_CreateWindow() - Couldn't create window");
+			return qfalse;
 		}
 		//ShowWindow( g_wv.hWnd, SW_SHOW );
 		//UpdateWindow( g_wv.hWnd );
@@ -698,15 +699,15 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 
 	if ( !GLW_InitDriver( drivername, colorbits ) )
 	{
-		ShowWindow( g_wv.hWnd, SW_HIDE );
+		//ShowWindow( g_wv.hWnd, SW_HIDE );
 		DestroyWindow( g_wv.hWnd );
 		g_wv.hWnd = NULL;
 
 		return qfalse;
 	}
 
-	SetForegroundWindow( g_wv.hWnd );
-	SetFocus( g_wv.hWnd );
+	//SetForegroundWindow( g_wv.hWnd );
+	//SetFocus( g_wv.hWnd );
 
 	ShowWindow( g_wv.hWnd, SW_SHOW );
 	//UpdateWindow( g_wv.hWnd );
@@ -742,7 +743,6 @@ static void PrintCDSError( int value )
 	}
 }
 
-static DEVMODE dm_desktop, dm_current;
 #if 0
 void dmprint(DEVMODE *dm){
 Com_Printf(S_COLOR_YELLOW"%ix%i-%ibpp@%iHz",
@@ -759,55 +759,103 @@ void glprint() {
 		glConfig.displayFrequency);
 }
 #endif
-long ApplyDisplaySettings(DEVMODE *dm){
+
+static DEVMODE dm_desktop, dm_current;
+
+long ApplyDisplaySettings( DEVMODE *dm ) 
+{
 	int result;
 	DEVMODE curr;
-	// get current display mode
-	EnumDisplaySettings( NULL, ENUM_CURRENT_SETTINGS, &curr );
-	//glprint(); //dmprint(&dm_desktop);
-	//dmprint(&curr); //Com_Printf("->");//dmprint(dm);
-	if (dm && curr.dmDisplayFrequency &&
+
+	// Get current display mode on current monitor
+	EnumDisplaySettings( glw_state.displayNamePtr, ENUM_CURRENT_SETTINGS, &curr );
+
+	// Check if current resolution is the same as we want to set
+	if ( curr.dmDisplayFrequency &&
 		curr.dmPelsWidth == dm->dmPelsWidth &&
 		curr.dmPelsHeight == dm->dmPelsHeight &&
 		(curr.dmBitsPerPel == dm->dmBitsPerPel || dm->dmBitsPerPel == 0 ) &&
-		(curr.dmDisplayFrequency == dm->dmDisplayFrequency || dm->dmDisplayFrequency ==0)) {
-		memcpy(&dm_current, &curr, sizeof(dm_current));
-		//Com_Printf(S_COLOR_CYAN" skip\n");
-		return DISP_CHANGE_SUCCESSFUL;
+		(curr.dmDisplayFrequency == dm->dmDisplayFrequency || dm->dmDisplayFrequency ==0)) 
+	{
+		memcpy( &dm_current, &curr, sizeof( dm_current ) );
+		return DISP_CHANGE_SUCCESSFUL; // simulate success
 	}
-	if ( dm && dm->dmDisplayFrequency == 0 && dm->dmPelsWidth == 0 
-			&& dm->dmPelsHeight == 0 && dm->dmBitsPerPel == 0 )	{
-		//Com_Printf(S_COLOR_GREEN " => ");
-		if ( dm_desktop.dmPelsWidth && dm_desktop.dmPelsHeight )
+
+	// Uninitialized?
+	if ( dm->dmDisplayFrequency == 0 && dm->dmPelsWidth == 0 && 
+		dm->dmPelsHeight == 0 && dm->dmBitsPerPel == 0 ) {
+		if ( dm_desktop.dmPelsWidth && dm_desktop.dmPelsHeight ) {
 			return ApplyDisplaySettings( &dm_desktop );
+		}
 	}
-	//Com_Printf(S_COLOR_MAGENTA" apply\n");
+
+	// Apply requested mode
 	result = ChangeDisplaySettings( dm, CDS_FULLSCREEN );
-	if ( result == DISP_CHANGE_SUCCESSFUL) {
-		memcpy( &dm_current, dm, sizeof(dm_current) );
+	if ( result == DISP_CHANGE_SUCCESSFUL ) {
+		memcpy( &dm_current, dm, sizeof( dm_current ) );
 	}
+
 	return result;
 }
 
-void SetGameDisplaySettings() {
+
+void SetGameDisplaySettings( void ) 
+{
 	ApplyDisplaySettings( &dm_current );
 }
 
-void ResetToDesktopDisplaySettings() {
-	ChangeDisplaySettings( 0, 0 );
-	memset( &dm_desktop, 0, sizeof(dm_desktop) );
-	dm_desktop.dmSize = sizeof (DEVMODE);
-	EnumDisplaySettings( NULL, ENUM_CURRENT_SETTINGS, &dm_desktop );
+
+void ResetToDesktopDisplaySettings( void ) 
+{
+	ChangeDisplaySettings( NULL, 0 );
+	memset( &dm_desktop, 0, sizeof( dm_desktop ) );
+	dm_desktop.dmSize = sizeof( DEVMODE );
+	EnumDisplaySettings( glw_state.displayNamePtr, ENUM_CURRENT_SETTINGS, &dm_desktop );
+}
+
+
+void UpdateMonitorInfo( void ) 
+{
+	MONITORINFOEX mInfo;
+	HMONITOR hMon;
+	RECT *Rect;
+	int w, h, x ,y;
+
+	if ( g_wv.winRectValid )
+		Rect = &g_wv.winRect;
+	else
+		Rect = &g_wv.conRect;
+
+	// try to get more correct data
+	hMon = MonitorFromRect( Rect, MONITOR_DEFAULTTONEAREST );
+	memset( &mInfo, 0, sizeof( mInfo ) );
+	mInfo.cbSize = sizeof( MONITORINFOEX );
+	if ( GetMonitorInfo( hMon, (LPMONITORINFO)&mInfo ) ) {
+		w = mInfo.rcMonitor.right - mInfo.rcMonitor.left;
+		h = mInfo.rcMonitor.bottom - mInfo.rcMonitor.top;
+		x = mInfo.rcMonitor.left;
+		y = mInfo.rcMonitor.top;
+		if ( glw_state.desktopWidth != w || glw_state.desktopHeight != h || 
+			glw_state.desktopX != x || glw_state.desktopY != y || 
+			glw_state.hMonitor != hMon ) {
+			glw_state.desktopWidth = w;
+			glw_state.desktopHeight = h;
+			glw_state.desktopX = x;
+			glw_state.desktopY = y;
+			glw_state.hMonitor = hMon;
+			glw_state.displayNamePtr = glw_state.displayName;
+			memcpy( glw_state.displayName, mInfo.szDevice, sizeof( glw_state.displayName ) );
+			ri.Printf( PRINT_ALL, "...current monitor: %ix%i@%i,%i %s\n", 
+				w, h, x, y, mInfo.szDevice );
+		}
+	}
 }
 
 
 /*
 ** GLW_SetMode
 */
-static rserr_t GLW_SetMode( const char *drivername, 
-						    int mode, 
-							int colorbits, 
-							qboolean cdsFullscreen )
+static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qboolean cdsFullscreen )
 {
 	HDC hDC;
 	const char *win_fs[] = { "W", "FS" };
@@ -826,7 +874,11 @@ static rserr_t GLW_SetMode( const char *drivername,
 	glw_state.desktopBitsPixel = GetDeviceCaps( hDC, BITSPIXEL );
 	glw_state.desktopWidth = GetDeviceCaps( hDC, HORZRES );
 	glw_state.desktopHeight = GetDeviceCaps( hDC, VERTRES );
+	glw_state.desktopX = 0;
+	glw_state.desktopY = 0;
 	ReleaseDC( GetDesktopWindow(), hDC );
+	
+	UpdateMonitorInfo();
 
 	//
 	// print out informational messages
@@ -965,11 +1017,11 @@ static rserr_t GLW_SetMode( const char *drivername,
 				
 				// we could do a better matching job here...
 				for ( modeNum = 0 ; ; modeNum++ ) {
-					if ( !EnumDisplaySettings( NULL, modeNum, &devmode ) ) {
+					if ( !EnumDisplaySettings( glw_state.displayNamePtr, modeNum, &devmode ) ) {
 						modeNum = -1;
 						break;
 					}
-					if ( devmode.dmPelsWidth >= glConfig.vidWidth
+					if ( devmode.dmPelsWidth >= glConfig.vidWidth 
 						&& devmode.dmPelsHeight >= glConfig.vidHeight
 						&& devmode.dmBitsPerPel >= 15 ) {
 						break;
@@ -982,7 +1034,7 @@ static rserr_t GLW_SetMode( const char *drivername,
 					if ( !GLW_CreateWindow( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qtrue) )
 					{
 						ri.Printf( PRINT_ALL, "...restoring display settings\n" );
-						ChangeDisplaySettings( 0, 0 );
+						ChangeDisplaySettings( NULL, 0 );
 						return RSERR_INVALID_MODE;
 					}
 					
@@ -995,7 +1047,7 @@ static rserr_t GLW_SetMode( const char *drivername,
 					PrintCDSError( cdsRet );
 					
 					ri.Printf( PRINT_ALL, "...restoring display settings\n" );
-					ChangeDisplaySettings( 0, 0 );
+					ChangeDisplaySettings( NULL, 0 );
 					
 					glw_state.cdsFullscreen = qfalse;
 					glConfig.isFullscreen = qfalse;
@@ -1008,11 +1060,11 @@ static rserr_t GLW_SetMode( const char *drivername,
 			}
 		}
 	}
-	else
+	else // !cdsFullscreen
 	{
 		if ( glw_state.cdsFullscreen )
 		{
-			ChangeDisplaySettings( 0, 0 );
+			ChangeDisplaySettings( NULL, 0 );
 		}
 
 		glw_state.cdsFullscreen = qfalse;
@@ -1027,7 +1079,7 @@ static rserr_t GLW_SetMode( const char *drivername,
 	//
 	memset( &dm, 0, sizeof( dm ) );
 	dm.dmSize = sizeof( dm );
-	if ( EnumDisplaySettings( NULL, ENUM_CURRENT_SETTINGS, &dm ) )
+	if ( EnumDisplaySettings( glw_state.displayNamePtr, ENUM_CURRENT_SETTINGS, &dm ) ) 
 	{
 		glConfig.displayFrequency = dm.dmDisplayFrequency;
 	}
@@ -1067,54 +1119,40 @@ static void GLW_InitExtensions( void )
 	}
 
 	// GL_S3_s3tc
-	if (glConfig.textureCompression == TC_NONE && r_ext_compressed_textures->integer) {
-	if ( HAVE_EXT("GL_S3_s3tc") )
-	{
-		if ( r_ext_compressed_textures->integer )
-		{
-			glConfig.textureCompression = TC_S3TC;
-			ri.Printf( PRINT_ALL, "...using GL_S3_s3tc\n" );
+	if ( glConfig.textureCompression == TC_NONE && r_ext_compressed_textures->integer ) {
+		if ( HAVE_EXT( "GL_S3_s3tc" ) ) {
+			if ( r_ext_compressed_textures->integer ) {
+				glConfig.textureCompression = TC_S3TC;
+				ri.Printf( PRINT_ALL, "...using GL_S3_s3tc\n" );
+			} else {
+				glConfig.textureCompression = TC_NONE;
+				ri.Printf( PRINT_ALL, "...ignoring GL_S3_s3tc\n" );
+			}
+		} else {
+			ri.Printf( PRINT_ALL, "...GL_S3_s3tc not found\n" );
 		}
-		else
-		{
-			glConfig.textureCompression = TC_NONE;
-			ri.Printf( PRINT_ALL, "...ignoring GL_S3_s3tc\n" );
-		}
 	}
-	else
-	{
-		ri.Printf( PRINT_ALL, "...GL_S3_s3tc not found\n" );
-	}
-	}
+
 	// GL_EXT_texture_env_add
 	glConfig.textureEnvAddAvailable = qfalse;
-	if ( HAVE_EXT("EXT_texture_env_add") )
-	{
-		if ( r_ext_texture_env_add->integer )
-		{
+	if ( HAVE_EXT( "EXT_texture_env_add" ) ) {
+		if ( r_ext_texture_env_add->integer ) {
 			glConfig.textureEnvAddAvailable = qtrue;
 			ri.Printf( PRINT_ALL, "...using GL_EXT_texture_env_add\n" );
-		}
-		else
-		{
+		} else {
 			glConfig.textureEnvAddAvailable = qfalse;
 			ri.Printf( PRINT_ALL, "...ignoring GL_EXT_texture_env_add\n" );
 		}
-	}
-	else
-	{
+	} else {
 		ri.Printf( PRINT_ALL, "...GL_EXT_texture_env_add not found\n" );
 	}
 
 	// WGL_EXT_swap_control
 	qwglSwapIntervalEXT = ( BOOL (WINAPI *)(int)) qwglGetProcAddress( "wglSwapIntervalEXT" );
-	if ( qwglSwapIntervalEXT )
-	{
+	if ( qwglSwapIntervalEXT ) {
 		ri.Printf( PRINT_ALL, "...using WGL_EXT_swap_control\n" );
 		r_swapInterval->modified = qtrue;	// force a set next frame
-	}
-	else
-	{
+	} else {
 		ri.Printf( PRINT_ALL, "...WGL_EXT_swap_control not found\n" );
 	}
 
@@ -1251,7 +1289,7 @@ static qboolean GLW_CheckOSVersion( void )
 
 	glw_state.allowdisplaydepthchange = qfalse;
 
-	if ( GetVersionEx( &vinfo) )
+	if ( GetVersionEx( &vinfo ) )
 	{
 		if ( vinfo.dwMajorVersion > 4 )
 		{

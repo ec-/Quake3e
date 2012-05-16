@@ -152,6 +152,11 @@ typedef struct
 	// can know the exact time of an event
 	unsigned		sysMsgTime;
 
+	// Multi-monitor tracking
+	RECT			conRect;
+	RECT			winRect;
+	qboolean		winRectValid;
+
 } WinVars_t;
 
 extern WinVars_t	g_wv;

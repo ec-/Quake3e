@@ -126,28 +126,29 @@ IN_UpdateWindow
 */
 void IN_UpdateWindow( RECT *window_rect ) 
 {
-	int width, height;
 	RECT		rect;
 
 	if ( !window_rect ) 
-	{ 
 		window_rect = &rect;
-	}
 
-	if ( !GetWindowRect( g_wv.hWnd, window_rect ) ) 
+	if ( !GetWindowRect( g_wv.hWnd, window_rect ) )
 		return;
 
-	width = GetSystemMetrics( SM_CXSCREEN );
-	height = GetSystemMetrics( SM_CYSCREEN );
+	//width = GetSystemMetrics( SM_CXSCREEN );
+	//height = GetSystemMetrics( SM_CYSCREEN );
 
-	if ( window_rect->left < 0 )
-		window_rect->left = 0;
-	if ( window_rect->top < 0 )
-		window_rect->top = 0;
-	if ( window_rect->right >= width )
-		window_rect->right = width-1;
-	if ( window_rect->bottom >= height-1 )
-		window_rect->bottom = height-1;
+	//Com_Printf( S_COLOR_CYAN "Screen: %i %i\n", width, height );
+
+	// glw_state should be previously updated via UpdateMonitorInfo()
+
+	if ( window_rect->left < glw_state.desktopX )
+		window_rect->left = glw_state.desktopX;
+	if ( window_rect->top < glw_state.desktopY )
+		window_rect->top = glw_state.desktopY;
+	if ( window_rect->right >= glw_state.desktopWidth )
+		window_rect->right = glw_state.desktopWidth-1;
+	if ( window_rect->bottom >= glw_state.desktopHeight )
+		window_rect->bottom = glw_state.desktopHeight-1;
 
 	window_center[0] = ( window_rect->right + window_rect->left )/2;
 	window_center[1] = ( window_rect->top + window_rect->bottom )/2;

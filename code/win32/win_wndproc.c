@@ -268,6 +268,7 @@ extern UINT (WINAPI *GRID)(HRAWINPUT hRawInput, UINT uiCommand, LPVOID pData, PU
 extern int raw_activated;
 
 extern void IN_UpdateWindow( RECT * window_rect );
+extern void UpdateMonitorInfo( void ); 
 
 int			HotKey = 0;
 int			hkinstalled = 0;
@@ -436,6 +437,9 @@ LONG WINAPI MainWndProc (
 
 		WIN_EnableHook();
 
+		GetWindowRect( hWnd, &g_wv.winRect );
+		g_wv.winRectValid = qtrue;
+
 		break;
 #if 0
 	case WM_DISPLAYCHANGE:
@@ -522,24 +526,30 @@ LONG WINAPI MainWndProc (
 	case WM_MOVE:
 		{
 			int		xPos, yPos;
-			int		style;
+			//int		style;
 			RECT	r;
+
+			GetWindowRect( hWnd, &g_wv.winRect );
+			g_wv.winRectValid = qtrue;
+			UpdateMonitorInfo();
 
 			if ( !glw_state.cdsFullscreen )
 			{
 				xPos = (short) LOWORD(lParam);    // horizontal position 
 				yPos = (short) HIWORD(lParam);    // vertical position 
 
-				r.left   = 0;
-				r.top    = 0;
-				r.right  = 1;
-				r.bottom = 1;
+				//r.left   = 0;
+				//r.top    = 0;
+				//r.right  = 1;
+				//r.bottom = 1;
 
-				style = GetWindowLong( hWnd, GWL_STYLE );
-				AdjustWindowRect( &r, style, FALSE );
+				//style = GetWindowLong( hWnd, GWL_STYLE );
+				//AdjustWindowRect( &r, style, FALSE );
+				
+				GetWindowRect( hWnd, &r );
 
-				Cvar_SetValue( "vid_xpos", xPos + r.left );
-				Cvar_SetValue( "vid_ypos", yPos + r.top );
+				Cvar_SetValue( "vid_xpos", xPos );
+				Cvar_SetValue( "vid_ypos", yPos );
 
 				vid_xpos->modified = qfalse;
 				vid_ypos->modified = qfalse;
@@ -691,6 +701,13 @@ LONG WINAPI MainWndProc (
 	case WM_CHAR:
 		if ( (lParam & 0xFF0000) != 0x290000 /* '`' */ )
 		Sys_QueEvent( g_wv.sysMsgTime, SE_CHAR, wParam, 0, 0, NULL );
+		break;
+
+	case WM_SIZE:
+		GetWindowRect( hWnd, &g_wv.winRect );
+		g_wv.winRectValid = qtrue;
+		UpdateMonitorInfo();
+		IN_UpdateWindow( NULL );
 		break;
 
 #if 0 // looks like people have troubles with it
