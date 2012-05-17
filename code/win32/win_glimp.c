@@ -616,6 +616,8 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		ri.Printf( PRINT_ALL, "...registered window class\n" );
 	}
 
+	UpdateMonitorInfo();
+
 	//
 	// create the HWND if one does not already exist
 	//
