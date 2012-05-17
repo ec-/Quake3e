@@ -629,7 +629,7 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		r.right  = width;
 		r.bottom = height;
 
-		if ( cdsFullscreen || !Q_stricmp( _3DFX_DRIVER_NAME, drivername ) )
+		if ( cdsFullscreen )
 		{
 			exstyle = WINDOW_ESTYLE_FULLSCREEN;
 			stylebits = WINDOW_STYLE_FULLSCREEN;
@@ -638,58 +638,49 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		{
 			exstyle = WINDOW_ESTYLE_NORMAL;
 			stylebits = WINDOW_STYLE_NORMAL;
-			AdjustWindowRect (&r, stylebits, FALSE);
+			AdjustWindowRect( &r, stylebits, FALSE );
 		}
 
 		w = r.right - r.left;
 		h = r.bottom - r.top;
 
-		if ( cdsFullscreen || !Q_stricmp( _3DFX_DRIVER_NAME, drivername ) )
+		if ( cdsFullscreen )
 		{
 			x = glw_state.desktopX;
 			y = glw_state.desktopY;
 		}
 		else
 		{
-			vid_xpos = ri.Cvar_Get ("vid_xpos", "", 0);
-			vid_ypos = ri.Cvar_Get ("vid_ypos", "", 0);
+			vid_xpos = ri.Cvar_Get( "vid_xpos", "", 0 );
+			vid_ypos = ri.Cvar_Get( "vid_ypos", "", 0 );
 			x = vid_xpos->integer;
 			y = vid_ypos->integer;
 
 			// adjust window coordinates if necessary 
 			// so that the window is completely on screen
+
+			if ( w < glw_state.desktopWidth && (x + w) > glw_state.desktopWidth )
+				x = ( glw_state.desktopWidth - w );
+			if ( h < glw_state.desktopHeight && (y + h) > glw_state.desktopHeight )
+				y = ( glw_state.desktopHeight - h );
+
 			if ( x < glw_state.desktopX )
 				x = glw_state.desktopX;
 			if ( y < glw_state.desktopY )
 				y = glw_state.desktopY;
-
-			if ( w < glw_state.desktopWidth && h < glw_state.desktopHeight )
-			{
-				if ( x + w > glw_state.desktopWidth )
-					x = ( glw_state.desktopWidth - w );
-				if ( y + h > glw_state.desktopHeight )
-					y = ( glw_state.desktopHeight - h );
-			}
 		}
 
-		g_wv.hWnd = CreateWindowEx (
-			 exstyle, 
-			 TEXT(CLIENT_WINDOW_TITLE),
-			 TEXT(CLIENT_WINDOW_TITLE),
-			 stylebits & ~WS_VISIBLE,
-			 x, y, w, h,
-			 NULL,
-			 NULL,
-			 g_wv.hInstance,
-			 NULL);
+		stylebits &= ~WS_VISIBLE; // show window only after successive OpenGL initialization
+
+		g_wv.hWnd = CreateWindowEx( exstyle, TEXT(CLIENT_WINDOW_TITLE), TEXT(CLIENT_WINDOW_TITLE),
+			 stylebits, x, y, w, h, NULL, NULL, g_wv.hInstance,  NULL );
 
 		if ( !g_wv.hWnd )
 		{
-			ri.Error (ERR_FATAL, "GLW_CreateWindow() - Couldn't create window");
+			ri.Error( ERR_FATAL, "GLW_CreateWindow() - Couldn't create window" );
 			return qfalse;
 		}
-		//ShowWindow( g_wv.hWnd, SW_SHOW );
-		//UpdateWindow( g_wv.hWnd );
+
 		ri.Printf( PRINT_ALL, "...created window@%d,%d (%dx%d)\n", x, y, w, h );
 	}
 	else
@@ -702,14 +693,13 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		//ShowWindow( g_wv.hWnd, SW_HIDE );
 		DestroyWindow( g_wv.hWnd );
 		g_wv.hWnd = NULL;
-
 		return qfalse;
 	}
 
 	//SetForegroundWindow( g_wv.hWnd );
 	//SetFocus( g_wv.hWnd );
 
-	ShowWindow( g_wv.hWnd, SW_SHOW );
+	//ShowWindow( g_wv.hWnd, SW_SHOW );
 	//UpdateWindow( g_wv.hWnd );
 
 	return qtrue;
@@ -762,13 +752,21 @@ void glprint() {
 
 static DEVMODE dm_desktop, dm_current;
 
+void ResetDisplaySettings( void ) 
+{
+	if ( glw_state.displayName[0] )
+		ChangeDisplaySettingsEx( glw_state.displayName, NULL, NULL, 0, NULL );
+	else
+		ChangeDisplaySettingsEx( NULL, NULL, NULL, 0, NULL );
+}
+
 long ApplyDisplaySettings( DEVMODE *dm ) 
 {
 	int result;
 	DEVMODE curr;
 
 	// Get current display mode on current monitor
-	EnumDisplaySettings( glw_state.displayNamePtr, ENUM_CURRENT_SETTINGS, &curr );
+	EnumDisplaySettings( glw_state.displayName, ENUM_CURRENT_SETTINGS, &curr );
 
 	// Check if current resolution is the same as we want to set
 	if ( curr.dmDisplayFrequency &&
@@ -790,7 +788,7 @@ long ApplyDisplaySettings( DEVMODE *dm )
 	}
 
 	// Apply requested mode
-	result = ChangeDisplaySettings( dm, CDS_FULLSCREEN );
+	result = ChangeDisplaySettingsEx( glw_state.displayName, dm, NULL, CDS_FULLSCREEN, NULL );
 	if ( result == DISP_CHANGE_SUCCESSFUL ) {
 		memcpy( &dm_current, dm, sizeof( dm_current ) );
 	}
@@ -805,12 +803,15 @@ void SetGameDisplaySettings( void )
 }
 
 
-void ResetToDesktopDisplaySettings( void ) 
+void SetDesktopDisplaySettings( void ) 
 {
-	ChangeDisplaySettings( NULL, 0 );
+	ResetDisplaySettings();
 	memset( &dm_desktop, 0, sizeof( dm_desktop ) );
 	dm_desktop.dmSize = sizeof( DEVMODE );
-	EnumDisplaySettings( glw_state.displayNamePtr, ENUM_CURRENT_SETTINGS, &dm_desktop );
+	if ( glw_state.displayName[0] )
+		EnumDisplaySettings( glw_state.displayName, ENUM_CURRENT_SETTINGS, &dm_desktop );
+	else
+		EnumDisplaySettings( NULL, ENUM_CURRENT_SETTINGS, &dm_desktop );
 }
 
 
@@ -843,7 +844,6 @@ void UpdateMonitorInfo( void )
 			glw_state.desktopX = x;
 			glw_state.desktopY = y;
 			glw_state.hMonitor = hMon;
-			glw_state.displayNamePtr = glw_state.displayName;
 			memcpy( glw_state.displayName, mInfo.szDevice, sizeof( glw_state.displayName ) );
 			ri.Printf( PRINT_ALL, "...current monitor: %ix%i@%i,%i %s\n", 
 				w, h, x, y, mInfo.szDevice );
@@ -864,7 +864,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qbo
 		
 	if ( dm_desktop.dmSize == 0 ) 
 	{
-		ResetToDesktopDisplaySettings( );
+		SetDesktopDisplaySettings();
 	}
 
 	//
@@ -972,10 +972,10 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qbo
 		{
 			ri.Printf( PRINT_ALL, "...already fullscreen, avoiding redundant CDS\n" );
 
-			if ( !GLW_CreateWindow ( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qtrue ) )
+			if ( !GLW_CreateWindow( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qtrue ) )
 			{
 				ri.Printf( PRINT_ALL, "...restoring display settings\n" );
-				ChangeDisplaySettings( 0, 0 );
+				ResetDisplaySettings();
 				return RSERR_INVALID_MODE;
 			}
 		}
@@ -995,7 +995,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qbo
 				if ( !GLW_CreateWindow ( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qtrue) )
 				{
 					ri.Printf( PRINT_ALL, "...restoring display settings\n" );
-					ChangeDisplaySettings( 0, 0 );
+					ResetDisplaySettings();
 					return RSERR_INVALID_MODE;
 				}
 				
@@ -1017,7 +1017,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qbo
 				
 				// we could do a better matching job here...
 				for ( modeNum = 0 ; ; modeNum++ ) {
-					if ( !EnumDisplaySettings( glw_state.displayNamePtr, modeNum, &devmode ) ) {
+					if ( !EnumDisplaySettings( glw_state.displayName, modeNum, &devmode ) ) {
 						modeNum = -1;
 						break;
 					}
@@ -1034,7 +1034,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qbo
 					if ( !GLW_CreateWindow( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qtrue) )
 					{
 						ri.Printf( PRINT_ALL, "...restoring display settings\n" );
-						ChangeDisplaySettings( NULL, 0 );
+						ResetDisplaySettings();
 						return RSERR_INVALID_MODE;
 					}
 					
@@ -1047,7 +1047,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qbo
 					PrintCDSError( cdsRet );
 					
 					ri.Printf( PRINT_ALL, "...restoring display settings\n" );
-					ChangeDisplaySettings( NULL, 0 );
+					ResetDisplaySettings();
 					
 					glw_state.cdsFullscreen = qfalse;
 					glConfig.isFullscreen = qfalse;
@@ -1064,7 +1064,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qbo
 	{
 		if ( glw_state.cdsFullscreen )
 		{
-			ChangeDisplaySettings( NULL, 0 );
+			ResetDisplaySettings();
 		}
 
 		glw_state.cdsFullscreen = qfalse;
@@ -1079,7 +1079,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qbo
 	//
 	memset( &dm, 0, sizeof( dm ) );
 	dm.dmSize = sizeof( dm );
-	if ( EnumDisplaySettings( glw_state.displayNamePtr, ENUM_CURRENT_SETTINGS, &dm ) ) 
+	if ( EnumDisplaySettings( glw_state.displayName, ENUM_CURRENT_SETTINGS, &dm ) ) 
 	{
 		glConfig.displayFrequency = dm.dmDisplayFrequency;
 	}
@@ -1439,7 +1439,7 @@ void GLimp_EndFrame (void)
 	QGL_EnableLogging( r_logFile->integer );
 }
 
-static void GLW_StartOpenGL( void )
+static qboolean GLW_StartOpenGL( void )
 {
 	qboolean attemptedOpenGL32 = qfalse;
 
@@ -1456,6 +1456,7 @@ static void GLW_StartOpenGL( void )
 		{
 			ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
 			attemptedOpenGL32 = qtrue;
+			return qfalse;
 		}
 #if 0
 		else if ( !Q_stricmp( r_glDriver->string, _3DFX_DRIVER_NAME ) )
@@ -1500,9 +1501,11 @@ static void GLW_StartOpenGL( void )
 			else
 			{
 				ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
+				return qfalse;
 			}
 		}
 	}
+	return qtrue;
 }
 
 /*
@@ -1534,7 +1537,11 @@ void GLimp_Init( void )
 	r_maskMinidriver = ri.Cvar_Get( "r_maskMinidriver", "0", CVAR_LATCH );
 
 	// load appropriate DLL and initialize subsystem
-	GLW_StartOpenGL();
+	if ( !GLW_StartOpenGL() )
+		return;
+
+	// show main window after all initializations
+	ShowWindow( g_wv.hWnd, SW_SHOW );
 
 	// get our config strings
 	Q_strncpyz( glConfig.vendor_string, qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
@@ -1690,7 +1697,7 @@ void GLimp_Shutdown( void )
 	if ( glw_state.cdsFullscreen )
 	{
 		ri.Printf( PRINT_ALL, "...resetting display\n" );
-		ChangeDisplaySettings( 0, 0 );
+		ResetDisplaySettings();
 		glw_state.cdsFullscreen = qfalse;
 	}
 

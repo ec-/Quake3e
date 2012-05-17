@@ -122,9 +122,12 @@ WIN32 MOUSE CONTROL
 /*
 ================
 IN_UpdateWindow
+
+Called when window gets resized/moved
+Updates window center and clip region
 ================
 */
-void IN_UpdateWindow( RECT *window_rect ) 
+void IN_UpdateWindow( RECT *window_rect, qboolean updateClipRegion ) 
 {
 	RECT		rect;
 
@@ -140,7 +143,7 @@ void IN_UpdateWindow( RECT *window_rect )
 	//Com_Printf( S_COLOR_CYAN "Screen: %i %i\n", width, height );
 
 	// glw_state should be previously updated via UpdateMonitorInfo()
-
+#if 0
 	if ( window_rect->left < glw_state.desktopX )
 		window_rect->left = glw_state.desktopX;
 	if ( window_rect->top < glw_state.desktopY )
@@ -149,9 +152,15 @@ void IN_UpdateWindow( RECT *window_rect )
 		window_rect->right = glw_state.desktopWidth-1;
 	if ( window_rect->bottom >= glw_state.desktopHeight )
 		window_rect->bottom = glw_state.desktopHeight-1;
+#endif
 
 	window_center[0] = ( window_rect->right + window_rect->left )/2;
 	window_center[1] = ( window_rect->top + window_rect->bottom )/2;
+
+	if ( updateClipRegion && s_wmv.mouseActive == qtrue && g_wv.activeApp == qtrue ) {
+		ClipCursor( window_rect );
+	}
+
 }
 
 /*
@@ -178,10 +187,10 @@ IN_ActivateWin32Mouse
 void IN_ActivateWin32Mouse( void ) 
 {
 	RECT window_rect;
-	IN_UpdateWindow( &window_rect );
+	IN_UpdateWindow( &window_rect, qfalse );
+	ClipCursor( &window_rect );
 	SetCursorPos( window_center[0], window_center[1] );
 	SetCapture( g_wv.hWnd );
-	ClipCursor( &window_rect );
 	while ( ShowCursor( FALSE ) >= 0 )
 		;
 }
@@ -193,9 +202,9 @@ IN_DeactivateWin32Mouse
 */
 void IN_DeactivateWin32Mouse( void ) 
 {
-	IN_UpdateWindow( NULL );
-	SetCursorPos( window_center[0], window_center[1] );
+	IN_UpdateWindow( NULL, qfalse );
 	ClipCursor( NULL );
+	SetCursorPos( window_center[0], window_center[1] );
 	ReleaseCapture();
 	while ( ShowCursor( TRUE ) < 0 )
 		;
@@ -324,7 +333,7 @@ void IN_ActivateRawMouse( void )
     }
 
 	GetCursorPos( &cur_pos );
-	IN_UpdateWindow( &window_rect );
+	IN_UpdateWindow( &window_rect, qfalse );
 
 	// not yet activated
 
@@ -355,24 +364,24 @@ void IN_ActivateRawMouse( void )
 	while( ShowCursor( FALSE ) >= 0 )
         ;
 	SetCursorPos( window_center[0], window_center[1] );
-	raw_activated = 1;
-	// raw input device sucessfully activated
+
+	raw_activated = 1; // success
 }
 
 
 /*
 ================
 IN_DeactivateRawMouse
+
+All work is performed in In_DeactivateWin32Mouse()
+and there are no special API calls to disable raw input
 ================
 */
-
-void IN_DeactivateRawMouse( void ) {
-	/* All work is performed in In_DeactivateWin32Mouse()
-	  and there are no special API calls to disable raw input
-	  so just set flag and restore cursor potision */ 
-	//SetCursorPos( cur_pos.x, cur_pos.y );
+void IN_DeactivateRawMouse( void ) 
+{
 	raw_activated = 0;
 }
+
 
 /*
 ============================================================
@@ -727,13 +736,14 @@ IN_DeactivateMouse
 Called when the window loses focus
 ===========
 */
-void IN_DeactivateMouse( void ) {
-	if (!s_wmv.mouseInitialized ) {
+void IN_DeactivateMouse( void ) 
+{
+	if ( !s_wmv.mouseActive )
 		return;
-	}
-	if (!s_wmv.mouseActive ) {
+
+	if ( !s_wmv.mouseInitialized )
 		return;
-	}
+
 	s_wmv.mouseActive = qfalse;
 
 	IN_DeactivateDIMouse();
@@ -829,7 +839,7 @@ void IN_MouseEvent( int mstate )
 IN_MouseMove
 ===========
 */
-void IN_MouseMove ( void ) {
+void IN_MouseMove( void ) {
 	int		mx, my;
 
 	if ( g_pMouse ) {
@@ -1028,7 +1038,7 @@ The window may have been destroyed and recreated
 between a deactivate and an activate.
 ===========
 */
-void IN_Activate (qboolean active) {
+void IN_Activate( qboolean active ) {
 	in_appactive = active;
 
 	if ( !active )
@@ -1055,10 +1065,9 @@ void IN_Frame (void) {
 #endif
 
 	if ( !s_wmv.mouseInitialized ) {
-    if (s_wmv.mouseStartupDelayed && g_wv.hWnd)
-		{
+		if ( s_wmv.mouseStartupDelayed && g_wv.hWnd ) {
 			Com_Printf("Proceeding with delayed mouse init\n");
-      IN_StartupMouse();
+			IN_StartupMouse();
 			s_wmv.mouseStartupDelayed = qfalse;
 		}
 		return;
@@ -1068,9 +1077,8 @@ void IN_Frame (void) {
 		// temporarily deactivate if not in the game and
 		// running on the desktop
 		// voodoo always counts as full screen
-		if ( !glw_state.cdsFullscreen && r_glDriver && r_glDriver->string 
-			&& strcmp ( r_glDriver->string, _3DFX_DRIVER_NAME ) ) {
-			IN_DeactivateMouse ();
+		if ( !glw_state.cdsFullscreen ) {
+			IN_DeactivateMouse();
 			WIN_EnableAltTab();
 			return;
 		}

@@ -267,16 +267,13 @@ extern cvar_t *in_minimize;
 extern UINT (WINAPI *GRID)(HRAWINPUT hRawInput, UINT uiCommand, LPVOID pData, PUINT pcbSize, UINT cbSizeHeader);
 extern int raw_activated;
 
-extern void IN_UpdateWindow( RECT * window_rect );
-extern void UpdateMonitorInfo( void ); 
-
 int			HotKey = 0;
 int			hkinstalled = 0;
 
 extern void	WG_RestoreGamma( void );
 extern void	R_SetColorMappings( void );
 extern void	SetGameDisplaySettings( void );
-extern void ResetToDesktopDisplaySettings( void );
+extern void SetDesktopDisplaySettings( void );
 
 void Win_AddHotkey( ) {
 	UINT modifiers, vk;
@@ -494,19 +491,19 @@ LONG WINAPI MainWndProc (
 					SetGameDisplaySettings();
 					R_SetColorMappings();
 					WIN_DisableAltTab();
-					SetWindowLongPtr( hWnd, GWL_STYLE, WINDOW_STYLE_FULLSCREEN );
-					SetWindowLongPtr( hWnd, GWL_EXSTYLE, WINDOW_ESTYLE_FULLSCREEN );
+					//SetWindowLongPtr( hWnd, GWL_STYLE, WINDOW_STYLE_FULLSCREEN );
+					//SetWindowLongPtr( hWnd, GWL_EXSTYLE, WINDOW_ESTYLE_FULLSCREEN );
 					//UpdateWindow( hWnd );
 				} else {
 					//ShowWindow( hWnd, SW_MINIMIZE );
 					//Com_Printf(S_COLOR_BLUE "set desk ");
-					SetWindowLongPtr( hWnd, GWL_STYLE,  WINDOW_STYLE_FULLSCREEN_MIN );
-					SetWindowLongPtr( hWnd, GWL_EXSTYLE, WINDOW_ESTYLE_FULLSCREEN_MIN );
+					//SetWindowLongPtr( hWnd, GWL_STYLE,  WINDOW_STYLE_FULLSCREEN_MIN );
+					//SetWindowLongPtr( hWnd, GWL_EXSTYLE, WINDOW_ESTYLE_FULLSCREEN_MIN );
 					WG_RestoreGamma();
 					if ( !fMinimized )
 						ShowWindow( hWnd, SW_MINIMIZE );
 					//UpdateWindow( hWnd );
-					ResetToDesktopDisplaySettings();
+					SetDesktopDisplaySettings();
 					WIN_EnableAltTab();
 			} else {
 				if ( fActive ) {
@@ -525,45 +522,27 @@ LONG WINAPI MainWndProc (
 
 	case WM_MOVE:
 		{
-			int		xPos, yPos;
-			//int		style;
 			RECT	r;
 
 			GetWindowRect( hWnd, &g_wv.winRect );
 			g_wv.winRectValid = qtrue;
 			UpdateMonitorInfo();
+			IN_UpdateWindow( &r, qtrue );
 
 			if ( !glw_state.cdsFullscreen )
 			{
-				xPos = (short) LOWORD(lParam);    // horizontal position 
-				yPos = (short) HIWORD(lParam);    // vertical position 
-
-				//r.left   = 0;
-				//r.top    = 0;
-				//r.right  = 1;
-				//r.bottom = 1;
-
-				//style = GetWindowLong( hWnd, GWL_STYLE );
-				//AdjustWindowRect( &r, style, FALSE );
-				
-				GetWindowRect( hWnd, &r );
-
-				Cvar_SetValue( "vid_xpos", xPos );
-				Cvar_SetValue( "vid_ypos", yPos );
+				Cvar_SetValue( "vid_xpos", r.left );
+				Cvar_SetValue( "vid_ypos", r.top );
 
 				vid_xpos->modified = qfalse;
 				vid_ypos->modified = qfalse;
-
-				IN_UpdateWindow( &r );
-
-				if ( g_wv.activeApp )
-				{
-					ClipCursor( &r ); // don't forget to clip cursor
-					IN_Activate( qtrue );
-				}
-			} else {
-				IN_UpdateWindow( NULL );			
 			}
+
+			if ( g_wv.activeApp ) 
+			{
+				IN_Activate( qtrue );
+			}
+
 		}
 		break;
 
@@ -707,7 +686,7 @@ LONG WINAPI MainWndProc (
 		GetWindowRect( hWnd, &g_wv.winRect );
 		g_wv.winRectValid = qtrue;
 		UpdateMonitorInfo();
-		IN_UpdateWindow( NULL );
+		IN_UpdateWindow( NULL, qtrue );
 		break;
 
 #if 0 // looks like people have troubles with it
