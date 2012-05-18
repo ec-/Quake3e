@@ -824,6 +824,8 @@ void UpdateMonitorInfo( void )
 	RECT *Rect;
 	int w, h, x ,y;
 
+	glw_state.monitorCount = GetSystemMetrics( SM_CMONITORS );
+
 	if ( g_wv.winRectValid )
 		Rect = &g_wv.winRect;
 	else

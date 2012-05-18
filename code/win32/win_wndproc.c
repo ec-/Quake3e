@@ -88,7 +88,7 @@ void WIN_DisableAltTab( void )
 		return;
 
 	if ( !Q_stricmp( Cvar_VariableString( "arch" ), "winnt" ) )
-		RegisterHotKey( 0, 0, MOD_ALT, VK_TAB );
+		RegisterHotKey( NULL, 0, MOD_ALT, VK_TAB );
 	else
 		SystemParametersInfo( SPI_SETSCREENSAVERRUNNING, 1, &old, 0 );
 
@@ -103,7 +103,7 @@ void WIN_EnableAltTab( void )
 		return;
 
 	if ( !Q_stricmp( Cvar_VariableString( "arch" ), "winnt" ) ) 
-		UnregisterHotKey( 0, 0 );
+		UnregisterHotKey( NULL, 0 );
 	else 
 		SystemParametersInfo( SPI_SETSCREENSAVERRUNNING, 0, &old, 0 );
 
@@ -423,12 +423,10 @@ LONG WINAPI MainWndProc (
 		r_fullscreen = Cvar_Get ("r_fullscreen", "1", CVAR_ARCHIVE | CVAR_LATCH );
 
 		MSH_MOUSEWHEEL = RegisterWindowMessage( TEXT( "MSWHEEL_ROLLMSG" ) ); 
-		if ( r_fullscreen->integer )
-		{
+
+		if ( glw_state.cdsFullscreen ) {
 			WIN_DisableAltTab();
-		}
-		else
-		{
+		} else {
 			WIN_EnableAltTab();
 		}
 
@@ -457,10 +455,7 @@ LONG WINAPI MainWndProc (
 		Win_RemoveHotkey();
 		g_wv.hWnd = NULL;
 		g_wv.isMinimized = qfalse;
-		if ( glw_state.cdsFullscreen )
-		{
-			WIN_EnableAltTab();
-		}
+		WIN_EnableAltTab();
 		break;
 
 	case WM_CLOSE:
@@ -481,41 +476,37 @@ LONG WINAPI MainWndProc (
 			fMinimized = ( wp.showCmd == SW_SHOWMINIMIZED );
 
 			VID_AppActivate( fActive, fMinimized );
-			//Key_ClearStates();
+
 			Win_AddHotkey();
-			if ( glw_state.cdsFullscreen )
+
+			if ( glw_state.cdsFullscreen ) {
 				if ( fActive ) {
 					//Com_Printf( S_COLOR_BLUE "set game ");
 					//SetForegroundWindow( hWnd ); // ATI Catalyst may require this
 					//SetFocus( hWnd );			 // ATI Catalyst may require this
 					SetGameDisplaySettings();
 					R_SetColorMappings();
-					WIN_DisableAltTab();
-					//SetWindowLongPtr( hWnd, GWL_STYLE, WINDOW_STYLE_FULLSCREEN );
-					//SetWindowLongPtr( hWnd, GWL_EXSTYLE, WINDOW_ESTYLE_FULLSCREEN );
-					//UpdateWindow( hWnd );
 				} else {
-					//ShowWindow( hWnd, SW_MINIMIZE );
-					//Com_Printf(S_COLOR_BLUE "set desk ");
-					//SetWindowLongPtr( hWnd, GWL_STYLE,  WINDOW_STYLE_FULLSCREEN_MIN );
-					//SetWindowLongPtr( hWnd, GWL_EXSTYLE, WINDOW_ESTYLE_FULLSCREEN_MIN );
 					WG_RestoreGamma();
-					if ( !fMinimized )
+					// Minimize if there only one monitor
+					if ( !fMinimized && glw_state.monitorCount <= 1 )
 						ShowWindow( hWnd, SW_MINIMIZE );
-					//UpdateWindow( hWnd );
 					SetDesktopDisplaySettings();
-					WIN_EnableAltTab();
+				}
 			} else {
 				if ( fActive ) {
-					WIN_DisableAltTab();
-					WIN_EnableHook();
 					R_SetColorMappings();
 				} else {
 					WG_RestoreGamma();
-					WIN_EnableAltTab();
-					WIN_DisableHook();
 				}
 			}
+
+			if ( fActive ) {
+				WIN_DisableAltTab();
+			} else {
+				WIN_EnableAltTab();
+			}
+
 			SNDDMA_Activate();
 		}
 		break;

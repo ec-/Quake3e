@@ -47,6 +47,7 @@ typedef struct
 	TCHAR		displayName[CCHDEVICENAME];
 
 	qboolean	cdsFullscreen;
+	int			monitorCount;
 
 	FILE *log_fp;
 } glwstate_t;
