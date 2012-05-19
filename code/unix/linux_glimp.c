@@ -1126,9 +1126,6 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
   else
     colorbits = r_colorbits->value;
 
-  if ( !Q_stricmp( r_glDriver->string, _3DFX_DRIVER_NAME ) )
-    colorbits = 16;
-
   if (!r_depthbits->value)
     depthbits = 24;
   else
@@ -1486,14 +1483,6 @@ static qboolean GLW_LoadOpenGL( const char *name )
 
   ri.Printf( PRINT_ALL, "...loading %s: ", name );
 
-  // disable the 3Dfx splash screen and set gamma
-  // we do this all the time, but it shouldn't hurt anything
-  // on non-3Dfx stuff
-  putenv("FX_GLIDE_NO_SPLASH=0");
-
-  // Mesa VooDoo hacks
-  putenv("MESA_GLX_FX=fullscreen\n");
-
   // load the QGL layer
   if ( QGL_Init( name ) )
   {
@@ -1546,165 +1535,150 @@ int qXErrorHandler(Display *dpy, XErrorEvent *ev)
 ** GLimp_Init
 **
 ** This routine is responsible for initializing the OS specific portions
-** of OpenGL.  
+** of OpenGL.
 */
 void GLimp_Init( void )
 {
-  qboolean attemptedlibGL = qfalse;
-  qboolean attempted3Dfx = qfalse;
-  qboolean success = qfalse;
-  char  buf[1024];
-  cvar_t *lastValidRenderer = ri.Cvar_Get( "r_lastValidRenderer", "(uninitialized)", CVAR_ARCHIVE );
+	qboolean attemptedlibGL = qfalse;
+	qboolean success = qfalse;
+	char	buf[1024];
+	cvar_t *lastValidRenderer = ri.Cvar_Get( "r_lastValidRenderer", "(uninitialized)", CVAR_ARCHIVE );
 
-  r_allowSoftwareGL = ri.Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
+	r_allowSoftwareGL = ri.Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
 
-  r_previousglDriver = ri.Cvar_Get( "r_previousglDriver", "", CVAR_ROM );
+	r_previousglDriver = ri.Cvar_Get( "r_previousglDriver", "", CVAR_ROM );
 
-  InitSig();
+	InitSig();
 
-  IN_Init();   // rcg08312005 moved into glimp.
+	IN_Init();   // rcg08312005 moved into glimp.
 
-  // Hack here so that if the UI 
-  if ( *r_previousglDriver->string )
-  {
-    // The UI changed it on us, hack it back
-    // This means the renderer can't be changed on the fly
-    ri.Cvar_Set( "r_glDriver", r_previousglDriver->string );
-  }
-  
-  // set up our custom error handler for X failures
-  XSetErrorHandler(&qXErrorHandler);
+	// Hack here so that if the UI
+	if ( *r_previousglDriver->string )
+	{
+		// The UI changed it on us, hack it back
+		// This means the renderer can't be changed on the fly
+		ri.Cvar_Set( "r_glDriver", r_previousglDriver->string );
+	}
 
-  //
-  // load and initialize the specific OpenGL driver
-  //
-  if ( !GLW_LoadOpenGL( r_glDriver->string ) )
-  {
-    if ( !Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) )
-    {
-      attemptedlibGL = qtrue;
-    } else if ( !Q_stricmp( r_glDriver->string, _3DFX_DRIVER_NAME ) )
-    {
-      attempted3Dfx = qtrue;
+	// set up our custom error handler for X failures
+	XSetErrorHandler( &qXErrorHandler );
+
+	//
+	// load and initialize the specific OpenGL driver
+	//
+	if ( !GLW_LoadOpenGL( r_glDriver->string ) )
+	{
+		if ( !Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) )
+		{
+			attemptedlibGL = qtrue;
+			ri.Error( ERR_FATAL, "GLimp_Init() - could not load OpenGL subsystem\n" );
+			return;
+		}
     }
 
-    #if 0
-    // TTimo
-    // https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=455
-    // old legacy load code, was confusing people who had a bad OpenGL setup
-    if ( !attempted3Dfx && !success )
-    {
-      attempted3Dfx = qtrue;
-      if ( GLW_LoadOpenGL( _3DFX_DRIVER_NAME ) )
-      {
-        ri.Cvar_Set( "r_glDriver", _3DFX_DRIVER_NAME );
-        r_glDriver->modified = qfalse;
-        success = qtrue;
-      }
-    }
-    #endif
+	// try ICD before trying 3Dfx standalone driver
+	if ( !attemptedlibGL && !success )
+	{
+		attemptedlibGL = qtrue;
+		if ( GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) )
+		{
+			ri.Cvar_Set( "r_glDriver", OPENGL_DRIVER_NAME );
+			r_glDriver->modified = qfalse;
+			success = qtrue;
+		}
+	}
 
-    // try ICD before trying 3Dfx standalone driver
-    if ( !attemptedlibGL && !success )
+    if ( !success )
     {
-      attemptedlibGL = qtrue;
-      if ( GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) )
-      {
-        ri.Cvar_Set( "r_glDriver", OPENGL_DRIVER_NAME );
-        r_glDriver->modified = qfalse;
-        success = qtrue;
-      }
+    	ri.Error( ERR_FATAL, "GLimp_Init() - could not load OpenGL subsystem\n" );
+    	return;
     }
 
-    if (!success)
-      ri.Error( ERR_FATAL, "GLimp_Init() - could not load OpenGL subsystem\n" );
+	// Save it in case the UI stomps it
+	ri.Cvar_Set( "r_previousglDriver", r_glDriver->string );
 
-  }
+	// This values force the UI to disable driver selection
+	glConfig.driverType = GLDRV_ICD;
+	glConfig.hardwareType = GLHW_GENERIC;
 
-  // Save it in case the UI stomps it
-  ri.Cvar_Set( "r_previousglDriver", r_glDriver->string );
+	// get our config strings
+	Q_strncpyz( glConfig.vendor_string, (char *)qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
+	Q_strncpyz( glConfig.renderer_string, (char *)qglGetString (GL_RENDERER), sizeof( glConfig.renderer_string ) );
+	if (*glConfig.renderer_string && glConfig.renderer_string[strlen(glConfig.renderer_string) - 1] == '\n')
+		glConfig.renderer_string[strlen(glConfig.renderer_string) - 1] = '\0';
+	Q_strncpyz( glConfig.version_string, (char *)qglGetString (GL_VERSION), sizeof( glConfig.version_string ) );
 
-  // This values force the UI to disable driver selection
-  glConfig.driverType = GLDRV_ICD;
-  glConfig.hardwareType = GLHW_GENERIC;
+	Q_strncpyz( gl_extensions, (char *)qglGetString (GL_EXTENSIONS), sizeof( gl_extensions ) );
+	Q_strncpyz( glConfig.extensions_string, gl_extensions, sizeof( glConfig.extensions_string ) );
 
-  // get our config strings
-  Q_strncpyz( glConfig.vendor_string, (char *)qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
-  Q_strncpyz( glConfig.renderer_string, (char *)qglGetString (GL_RENDERER), sizeof( glConfig.renderer_string ) );
-  if (*glConfig.renderer_string && glConfig.renderer_string[strlen(glConfig.renderer_string) - 1] == '\n')
-    glConfig.renderer_string[strlen(glConfig.renderer_string) - 1] = 0;
-  Q_strncpyz( glConfig.version_string, (char *)qglGetString (GL_VERSION), sizeof( glConfig.version_string ) );
+	//
+	// chipset specific configuration
+	//
+	strcpy( buf, glConfig.renderer_string );
+	strlwr( buf );
 
-  Q_strncpyz( gl_extensions, (char *)qglGetString (GL_EXTENSIONS), sizeof( gl_extensions ) );
-  Q_strncpyz( glConfig.extensions_string, gl_extensions, sizeof( glConfig.extensions_string ) );
+	//
+	// NOTE: if changing cvars, do it within this block.  This allows them
+	// to be overridden when testing driver fixes, etc. but only sets
+	// them to their default state when the hardware is first installed/run.
+	//
+	if ( Q_stricmp( lastValidRenderer->string, glConfig.renderer_string ) )
+	{
+		glConfig.hardwareType = GLHW_GENERIC;
 
-  //
-  // chipset specific configuration
-  //
-  strcpy( buf, glConfig.renderer_string );
-  strlwr( buf );
+		ri.Cvar_Set( "r_textureMode", "GL_LINEAR_MIPMAP_NEAREST" );
 
-  //
-  // NOTE: if changing cvars, do it within this block.  This allows them
-  // to be overridden when testing driver fixes, etc. but only sets
-  // them to their default state when the hardware is first installed/run.
-  //
-  if ( Q_stricmp( lastValidRenderer->string, glConfig.renderer_string ) )
-  {
-    glConfig.hardwareType = GLHW_GENERIC;
+		// VOODOO GRAPHICS w/ 2MB
+		if ( Q_stristr( buf, "voodoo graphics/1 tmu/2 mb" ) )
+		{
+			ri.Cvar_Set( "r_picmip", "2" );
+			ri.Cvar_Get( "r_picmip", "1", CVAR_ARCHIVE | CVAR_LATCH );
+		}
+		else
+		{
+			ri.Cvar_Set( "r_picmip", "1" );
 
-    ri.Cvar_Set( "r_textureMode", "GL_LINEAR_MIPMAP_NEAREST" );
+			if ( Q_stristr( buf, "rage 128" ) || Q_stristr( buf, "rage128" ) )
+			{
+				ri.Cvar_Set( "r_finish", "0" );
+			}
+			// Savage3D and Savage4 should always have trilinear enabled
+			else if ( Q_stristr( buf, "savage3d" ) || Q_stristr( buf, "s3 savage4" ) )
+			{
+				ri.Cvar_Set( "r_texturemode", "GL_LINEAR_MIPMAP_LINEAR" );
+			}
+		}
+	}
 
-    // VOODOO GRAPHICS w/ 2MB
-    if ( Q_stristr( buf, "voodoo graphics/1 tmu/2 mb" ) )
-    {
-      ri.Cvar_Set( "r_picmip", "2" );
-      ri.Cvar_Get( "r_picmip", "1", CVAR_ARCHIVE | CVAR_LATCH );
-    } else
-    {
-      ri.Cvar_Set( "r_picmip", "1" );
+	//
+	// this is where hardware specific workarounds that should be
+	// detected/initialized every startup should go.
+	//
+	if ( Q_stristr( buf, "banshee" ) || Q_stristr( buf, "Voodoo_Graphics" ) )
+	{
+		glConfig.hardwareType = GLHW_3DFX_2D3D;
+	} else if ( Q_stristr( buf, "rage pro" ) || Q_stristr( buf, "RagePro" ) )
+	{
+		glConfig.hardwareType = GLHW_RAGEPRO;
+	} else if ( Q_stristr( buf, "permedia2" ) )
+	{
+		glConfig.hardwareType = GLHW_PERMEDIA2;
+	} else if ( Q_stristr( buf, "riva 128" ) )
+	{
+		glConfig.hardwareType = GLHW_RIVA128;
+	} else if ( Q_stristr( buf, "riva tnt " ) )
+	{
+	}
 
-      if ( Q_stristr( buf, "rage 128" ) || Q_stristr( buf, "rage128" ) )
-      {
-        ri.Cvar_Set( "r_finish", "0" );
-      }
-      // Savage3D and Savage4 should always have trilinear enabled
-      else if ( Q_stristr( buf, "savage3d" ) || Q_stristr( buf, "s3 savage4" ) )
-      {
-        ri.Cvar_Set( "r_texturemode", "GL_LINEAR_MIPMAP_LINEAR" );
-      }
-    }
-  }
+	ri.Cvar_Set( "r_lastValidRenderer", glConfig.renderer_string );
 
-  //
-  // this is where hardware specific workarounds that should be
-  // detected/initialized every startup should go.
-  //
-  if ( Q_stristr( buf, "banshee" ) || Q_stristr( buf, "Voodoo_Graphics" ) )
-  {
-    glConfig.hardwareType = GLHW_3DFX_2D3D;
-  } else if ( Q_stristr( buf, "rage pro" ) || Q_stristr( buf, "RagePro" ) )
-  {
-    glConfig.hardwareType = GLHW_RAGEPRO;
-  } else if ( Q_stristr( buf, "permedia2" ) )
-  {
-    glConfig.hardwareType = GLHW_PERMEDIA2;
-  } else if ( Q_stristr( buf, "riva 128" ) )
-  {
-    glConfig.hardwareType = GLHW_RIVA128;
-  } else if ( Q_stristr( buf, "riva tnt " ) )
-  {
-  }
+	// initialize extensions
+	GLW_InitExtensions();
+	GLW_InitGamma();
 
-  ri.Cvar_Set( "r_lastValidRenderer", glConfig.renderer_string );
+	InitSig(); // not clear why this is at begin & end of function
 
-  // initialize extensions
-  GLW_InitExtensions();
-  GLW_InitGamma();
-
-  InitSig(); // not clear why this is at begin & end of function
-
-  return;
+	return;
 }
 
 
@@ -1781,25 +1755,24 @@ void IN_Shutdown(void)
   mouse_avail = qfalse;
 }
 
-void IN_Frame (void) {
+void IN_Frame( void )
+{
+	// bk001130 - from cvs 1.17 (mkv)
+	IN_JoyMove(); // FIXME: disable if on desktop?
 
-  // bk001130 - from cvs 1.17 (mkv)
-  IN_JoyMove(); // FIXME: disable if on desktop?
+	if ( Key_GetCatcher( ) & KEYCATCH_CONSOLE )
+	{
+		// temporarily deactivate if not in the game and
+		// running on the desktop
+		// voodoo always counts as full screen
+		if ( Cvar_VariableValue( "r_fullscreen" ) == 0 )
+		{
+			IN_DeactivateMouse();
+			return;
+		}
+	}
 
-  if ( Key_GetCatcher( ) & KEYCATCH_CONSOLE )
-  {
-    // temporarily deactivate if not in the game and
-    // running on the desktop
-    // voodoo always counts as full screen
-    if (Cvar_VariableValue ("r_fullscreen") == 0
-        && strcmp( Cvar_VariableString("r_glDriver"), _3DFX_DRIVER_NAME ) )
-    {
-      IN_DeactivateMouse ();
-      return;
-    }
-  }
-
-  IN_ActivateMouse();
+	IN_ActivateMouse();
 }
 
 void IN_Activate(void)
