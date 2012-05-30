@@ -194,6 +194,8 @@ typedef enum {
 	MOP_IGNORE4,
 	MOP_ADD4,
 	MOP_SUB4,
+	MOP_BAND4,
+	MOP_BOR4,
 	MOP_CALCF4,
 } macro_op_t;
 
@@ -373,38 +375,37 @@ static void EmitAddEDI4( vm_t *vm ) {
 }
 
 
-static int EmitMovEAXEDI(vm_t *vm) 
+static void EmitMovEAXEDI( vm_t *vm ) 
 {
+	opcode_t pop = pop1;
+	pop1 = OP_UNDEF;
+
 	if ( jlabel ) {
-		if ( !vm )
-			return 0;
 		EmitString( "8B 07" );		// mov eax, dword ptr [edi]
-		return 0;
+		return;
 	}
 	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI )  {
-		return 1;
+		return;
 	}
 	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI_CALL ) {
-		return 1;
+		return;
 	}
 	if (LastCommand == LAST_COMMAND_MOV_EDI_EAX) 
 	{	// mov [edi], eax
-		if ( !vm )
-			return 1;
 		compiledOfs -= 2;
 		vm->instructionPointers[ ip-1 ] = compiledOfs;
 		LastCommand = LAST_COMMAND_NONE; 
-		return 1;
+		return;
 	}
-	if (pop1 == OP_DIVI || pop1 == OP_DIVU || pop1 == OP_MULI || pop1 == OP_MULU ||
-		pop1 == OP_STORE4 || pop1 == OP_STORE2 || pop1 == OP_STORE1 ) 
+
+	if ( pop == OP_DIVI || pop == OP_DIVU || pop == OP_MULI || pop == OP_MULU ||
+		pop == OP_STORE4 || pop == OP_STORE2 || pop == OP_STORE1 ) 
 	{	
-		return 1;
+		return;
 	}
+
 	if ( LastCommand == LAST_COMMAND_MOV_EDI_CONST ) 
 	{	// mov dword ptr [edi], 0x12345678
-		if ( !vm )
-			return 2;
 		compiledOfs -= 6;
 		vm->instructionPointers[ ip-1 ] = compiledOfs;
 		if ( lastConst == 0 ) {
@@ -413,19 +414,21 @@ static int EmitMovEAXEDI(vm_t *vm)
 			EmitString( "B8" );			// mov	eax, 0x12345678
 			Emit4( lastConst );
 		}
-		return 2;
+		return;
 	}
-	if ( !vm )
-		return 1;
+
 	EmitString( "8B 07" );		    // mov eax, dword ptr [edi]
-	return 1;
 }
 
 
 void EmitMovECXEDI( vm_t *vm, int andit ) 
 {
+	opcode_t pop = pop1;
+	pop1 = OP_UNDEF;
+
 	if ( jlabel ) {
 		EmitString( "8B 0F" );		// mov ecx, dword ptr [edi]
+		pop1 = OP_UNDEF;
 		return;
 	}
 	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI_CALL ) {
@@ -445,8 +448,8 @@ void EmitMovECXEDI( vm_t *vm, int andit )
 		EmitString( "89 C1" );		// mov ecx, eax
 		return;
 	}
-	if (pop1 == OP_DIVI || pop1 == OP_DIVU || pop1 == OP_MULI || pop1 == OP_MULU ||
-		pop1 == OP_STORE4 || pop1 == OP_STORE2 || pop1 == OP_STORE1 ) 
+	if (pop == OP_DIVI || pop == OP_DIVU || pop == OP_MULI || pop == OP_MULU ||
+		pop == OP_STORE4 || pop == OP_STORE2 || pop == OP_STORE1 ) 
 	{	
 		EmitString( "89 C1" );		// mov ecx, eax
 		return;
@@ -1057,6 +1060,138 @@ qboolean ConstOptimize( vm_t *vm ) {
 }
 
 
+/*
+=================
+LocalOptimize
+=================
+*/
+qboolean LocalOptimize( vm_t *vm ) 
+{
+	int v, n;
+	switch ( ci->mop ) 
+	{
+		//[local] += CONST
+		case MOP_ADD4:
+			v = ci->value + (int) vm->dataBase; // local variable address
+			n = inst[ip+2].value;
+			if ( ISS8( n ) ) {
+				if ( ISS8( ci->value ) ) {
+					EmitString( "83 44 33" );	// add dword ptr [ebx + esi + 0x7F], 0x12
+					Emit1( ci->value );
+					Emit1( n );
+				} else {
+					EmitString( "83 86" );		// add dword ptr [esi + 0x12345678], 0x12
+					Emit4( v );
+					Emit1( n );
+				}
+			} else {
+				if ( ISS8( ci->value ) ) {
+					EmitString( "81 44 33" );	// add dword ptr [ebx + esi + 0x7F], 0x12345678
+					Emit1( ci->value );
+					Emit4( n );
+				} else {
+					EmitString( "81 86" );		// add dword ptr[esi+0x12345678], 0x12345678
+					Emit4( v );
+					Emit4( n );
+				}
+			}
+			ip += 5;
+			return qtrue;
+
+		//[local] -= CONST
+		case MOP_SUB4:
+			v = ci->value + (int) vm->dataBase;	// local variable address
+			n = inst[ip+2].value;
+			if ( ISS8( n ) ) {
+				if ( ISS8( ci->value ) ) {
+					EmitString( "83 6C 33" );	// sub dword ptr [ebx + esi + 0x7F], 0x12
+					Emit1( ci->value );
+					Emit1( n );
+				} else {
+					EmitString( "83 AE" );		// sub dword ptr [esi + 0x12345678], 0x12
+					Emit4( v );
+					Emit1( n );
+				}
+			} else {
+				if ( ISS8( ci->value ) ) {
+					EmitString( "81 6C 33" );	// sub dword ptr [ebx + esi + 0x7F], 0x12345678
+					Emit1( ci->value );
+					Emit4( n );
+				} else {
+					EmitString( "81 AE" );		// sub dword ptr [esi + 0x12345678], 0x12345678
+					Emit4( v );
+					Emit4( n );
+				}
+			}
+			ip += 5;
+			return qtrue;
+
+		//[local] &= CONST
+		case MOP_BAND4:
+			v = ci->value + (int) vm->dataBase;	// local variable address
+			n = inst[ip+2].value;
+			if ( ISS8( n ) ) {
+				if ( ISS8( ci->value ) ) {
+					EmitString( "83 64 33" );	// and dword ptr [ebx + esi + 0x7F], 0x12
+					Emit1( ci->value );
+					Emit1( n );
+				} else {
+					EmitString( "83 A6" );		// and dword ptr [esi + 0x12345678], 0x12
+					Emit4( v );
+					Emit1( n );
+				}
+			} else {
+				if ( ISS8( ci->value ) ) {
+					EmitString( "81 64 33" );	// and dword ptr [ebx + esi + 0x7F], 0x12345678
+					Emit1( ci->value );
+					Emit4( n );
+				} else {
+					EmitString( "81 A6" );		// and dword ptr [esi + 0x12345678], 0x12345678
+					Emit4( v );
+					Emit4( n );
+				}
+			}
+			ip += 5;
+			return qtrue;
+
+		//[local] |= CONST
+		case MOP_BOR4:
+			v = ci->value + (int) vm->dataBase;	// local variable address
+			n = inst[ip+2].value;
+			if ( ISS8( n ) ) {
+				if ( ISS8( ci->value ) ) {
+					EmitString( "83 4C 33" );	// or dword ptr [ebx + esi + 0x7F], 0x12
+					Emit1( ci->value );
+					Emit1( n );
+				} else {
+					EmitString( "83 8E" );		// or dword ptr [esi + 0x12345678], 0x12
+					Emit4( v );
+					Emit1( n );
+				}
+			} else {
+				if ( ISS8( ci->value ) ) {
+					EmitString( "81 4C 33" );	// or dword ptr [ebx + esi + 0x7F], 0x12345678
+					Emit1( ci->value );
+					Emit4( n );
+				} else {
+					EmitString( "81 8E" );		// or dword ptr [esi + 0x12345678], 0x12345678
+					Emit4( v );
+					Emit4( n );
+				}
+			}
+			ip += 5;
+			return qtrue;
+
+		// [local] = [local]
+		case MOP_IGNORE4:
+			ip += 3;
+			return qtrue;
+
+	};
+	return qfalse;
+}
+
+
 char *VM_LoadInstructions( vm_t *vm, vmHeader_t *header, instruction_t *buf ) 
 {
 	static char errBuf[128];
@@ -1341,6 +1476,16 @@ void VM_FindMOps(  vm_t *vm, vmHeader_t *header, instruction_t *buf )
 					ci += 6; i += 6;
 					continue;
 				}
+				if ( v == OP_BAND ) {
+					ci->mop = MOP_BAND4;
+					ci += 6; i += 6;
+					continue;
+				}
+				if ( v == OP_BOR ) {
+					ci->mop = MOP_BOR4;
+					ci += 6; i += 6;
+					continue;
+				}
 			}
 
 			// skip useless sequences
@@ -1451,10 +1596,12 @@ __compile:
 			break;
 
 		case OP_CONST:
+			
 			// we can safely perform optimizations only in case if 
 			// we are 100% sure that next instruction is not a jump label
 			if ( !ni->jused && ConstOptimize( vm ) )
 				break;
+
 			EmitAddEDI4( vm );
 			EmitString( "C7 07" );		// mov	dword ptr [edi], 0x12345678
 			lastConst = ci->value;
@@ -1464,6 +1611,9 @@ __compile:
 
 		case OP_LOCAL:
 
+			if ( ci->mop != MOP_UNDEF && LocalOptimize( vm ) )
+				break;
+			
 			// merge OP_LOCAL + OP_LOAD4
 			if ( ni->op == OP_LOAD4 ) {
 				EmitAddEDI4( vm );
@@ -1509,70 +1659,6 @@ __compile:
 				}
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
 				ip++;
-				break;
-			}
-
-			// [local]+=CONST
-			if ( ci->mop == MOP_ADD4 ) {
-				v = ci->value + (int) vm->dataBase; // local variable address
-				n = inst[ip+2].value;
-				if ( ISS8( n ) ) {
-					if ( ISS8( ci->value ) ) {
-						EmitString( "83 44 33" );	// add dword ptr [ebx + esi + 0x7F], 0x12
-						Emit1( ci->value );
-						Emit1( n );
-					} else {
-						EmitString( "83 86" );		// add dword ptr [esi + 0x12345678], 0x12
-						Emit4( v );
-						Emit1( n );
-					}
-				} else {
-					if ( ISS8( ci->value ) ) {
-						EmitString( "81 44 33" );	// add dword ptr [ebx + esi + 0x7F], 0x12345678
-						Emit1( ci->value );
-						Emit4( n );
-					} else {
-						EmitString( "81 86" );		// add dword ptr[esi+0x12345678], 0x12345678
-						Emit4( v );
-						Emit4( n );
-					}
-				}
-				ip += 5;
-				break;
-			}
-
-			// [local]-=CONST
-			if ( ci->mop == MOP_SUB4 ) {
-				v = ci->value + (int) vm->dataBase;	// local variable address
-				n = inst[ip+2].value;
-				if ( ISS8( n ) ) {
-					if ( ISS8( ci->value ) ) {
-						EmitString( "83 6C 33" );	// sub dword ptr [ebx + esi + 0x7F], 0x12
-						Emit1( ci->value );
-						Emit1( n );
-					} else {
-						EmitString( "83 AE" );		// sub dword ptr [esi + 0x12345678], 0x12
-						Emit4( v );
-						Emit1( n );
-					}
-				} else {
-					if ( ISS8( ci->value ) ) {
-						EmitString( "81 6C 33" );	// sub dword ptr [ebx + esi + 0x7F], 0x12345678
-						Emit1( ci->value );
-						Emit4( n );
-					} else {
-						EmitString( "81 AE" );		// sub dword ptr [esi + 0x12345678], 0x12345678
-						Emit4( v );
-						Emit4( n );
-					}
-				}
-				ip += 5;
-				break;
-			}
-
-			// [local] = [local]
-			if ( ci-> mop ==  MOP_IGNORE4 ) {
-				ip += 3;
 				break;
 			}
 
