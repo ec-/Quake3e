@@ -658,8 +658,6 @@ typedef struct msurface_s {
 } msurface_t;
 
 
-
-#define	CONTENTS_NODE		-1
 typedef struct mnode_s {
 	// common with leaf and node
 	int			contents;		// -1 for nodes, to differentiate from leafs
