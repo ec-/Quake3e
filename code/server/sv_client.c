@@ -589,9 +589,9 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 	// tell everyone why they got dropped
 	SV_SendServerCommand( NULL, "print \"%s " S_COLOR_WHITE "%s\n\"", drop->name, reason );
 
-	if ( drop->download ) {
+	if ( drop->download != FS_INVALID_HANDLE ) {
 		FS_FCloseFile( drop->download );
-		drop->download = 0;
+		drop->download = FS_INVALID_HANDLE;
 	}
 
 	// call the prog function for removing a client
@@ -758,11 +758,12 @@ static void SV_CloseDownload( client_t *cl ) {
 	int i;
 
 	// EOF
-	if (cl->download) {
+	if ( cl->download != FS_INVALID_HANDLE ) {
 		FS_FCloseFile( cl->download );
+		cl->download = FS_INVALID_HANDLE;
 	}
-	cl->download = 0;
-	*cl->downloadName = 0;
+
+	*cl->downloadName = '\0';
 
 	// Free the temporary buffer space
 	for (i = 0; i < MAX_DOWNLOAD_WINDOW; i++) {
@@ -866,10 +867,10 @@ void SV_WriteDownloadToClient( client_t *cl , msg_t *msg )
 	char pakbuf[MAX_QPATH], *pakptr;
 	int numRefPaks;
 
-	if (!*cl->downloadName)
+	if ( !*cl->downloadName )
 		return;	// Nothing being downloaded
 
-	if (!cl->download) {
+	if ( cl->download == FS_INVALID_HANDLE ) {
  		// Chop off filename extension.
 		Com_sprintf(pakbuf, sizeof(pakbuf), "%s", cl->downloadName);
 		pakptr = Q_strrchr(pakbuf, '.');
@@ -905,7 +906,7 @@ void SV_WriteDownloadToClient( client_t *cl , msg_t *msg )
 			}
 		}
 
-		cl->download = 0;
+		cl->download = FS_INVALID_HANDLE;
 
 		// We open the file here
 		if ( !(sv_allowDownload->integer & DLF_ENABLE) ||
@@ -953,10 +954,12 @@ void SV_WriteDownloadToClient( client_t *cl , msg_t *msg )
 			MSG_WriteLong( msg, -1 ); // illegal file size
 			MSG_WriteString( msg, errorMessage );
 
-			*cl->downloadName = 0;
+			*cl->downloadName = '\0';
 			
-			if(cl->download)
-				FS_FCloseFile(cl->download);
+			if ( cl->download != FS_INVALID_HANDLE ) {
+				FS_FCloseFile( cl->download );
+				cl->download = FS_INVALID_HANDLE;
+			}
 			
 			return;
 		}

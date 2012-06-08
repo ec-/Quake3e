@@ -582,11 +582,11 @@ void CL_ParseDownload ( msg_t *msg ) {
 	}
 
 	// open the file if not opened yet
-	if (!clc.download)
+	if ( clc.download == FS_INVALID_HANDLE )
 	{
 		clc.download = FS_SV_FOpenFileWrite( clc.downloadTempName );
 
-		if (!clc.download) {
+		if ( clc.download == FS_INVALID_HANDLE ) {
 			Com_Printf( "Could not create %s\n", clc.downloadTempName );
 			CL_AddReliableCommand( "stopdl", qfalse );
 			CL_NextDownload();
@@ -606,12 +606,12 @@ void CL_ParseDownload ( msg_t *msg ) {
 	Cvar_SetValue( "cl_downloadCount", clc.downloadCount );
 
 	if (!size) { // A zero length block means EOF
-		if (clc.download) {
+		if ( clc.download != FS_INVALID_HANDLE ) {
 			FS_FCloseFile( clc.download );
-			clc.download = 0;
+			clc.download = FS_INVALID_HANDLE;
 
 			// rename the file
-			FS_SV_Rename ( clc.downloadTempName, clc.downloadName );
+			FS_SV_Rename( clc.downloadTempName, clc.downloadName );
 		}
 
 		// send intentions now

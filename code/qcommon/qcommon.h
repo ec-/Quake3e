@@ -587,6 +587,7 @@ typedef enum {
 } handleOwner_t;
 
 #define	MAX_FILE_HANDLES	64
+#define	FS_INVALID_HANDLE	0
 
 qboolean FS_Initialized( void );
 
@@ -717,7 +718,7 @@ void	FS_FilenameCompletion( const char *dir, const char *ext,
 		qboolean stripExt, void(*callback)(const char *s), qboolean allowNonPureFilesOnDisk );
 
 int FS_VM_OpenFile( const char *qpath, fileHandle_t *f, fsMode_t mode, handleOwner_t owner );
-void FS_VM_ReadFile( void *buffer, int len, fileHandle_t f, handleOwner_t owner );
+int FS_VM_ReadFile( void *buffer, int len, fileHandle_t f, handleOwner_t owner );
 void FS_VM_WriteFile( void *buffer, int len, fileHandle_t f, handleOwner_t owner );
 int FS_VM_SeekFile( fileHandle_t f, long offset, int origin, handleOwner_t owner );
 void FS_VM_CloseFile( fileHandle_t f, handleOwner_t owner );

@@ -71,14 +71,14 @@ static void SV_EmitPacketEntities( clientSnapshot_t *from, clientSnapshot_t *to,
 	oldindex = 0;
 	while ( newindex < to->num_entities || oldindex < from_num_entities ) {
 		if ( newindex >= to->num_entities ) {
-			newnum = 9999;
+			newnum = MAX_GENTITIES+1;
 		} else {
 			newent = &svs.snapshotEntities[(to->first_entity+newindex) % svs.numSnapshotEntities];
 			newnum = newent->number;
 		}
 
 		if ( oldindex >= from_num_entities ) {
-			oldnum = 9999;
+			oldnum = MAX_GENTITIES+1;
 		} else {
 			oldent = &svs.snapshotEntities[(from->first_entity+oldindex) % svs.numSnapshotEntities];
 			oldnum = oldent->number;

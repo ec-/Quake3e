@@ -80,10 +80,10 @@ static int  bufIndex;
 SafeFS_Write
 ===============
 */
-static ID_INLINE void SafeFS_Write( const void *buffer, int len, fileHandle_t f )
+static ID_INLINE void SafeFS_Write( const void *data, int len, fileHandle_t f )
 {
-  if( FS_Write( buffer, len, f ) < len )
-    Com_Error( ERR_DROP, "Failed to write avi file" );
+	if ( FS_Write( data, len, f ) < len )
+		Com_Error( ERR_DROP, "Failed to write avi file" );
 }
 
 /*
@@ -141,15 +141,15 @@ START_CHUNK
 */
 static ID_INLINE void START_CHUNK( const char *s )
 {
-  if( afd.chunkStackTop == MAX_RIFF_CHUNKS )
-  {
-    Com_Error( ERR_DROP, "ERROR: Top of chunkstack breached" );
-  }
+	if( afd.chunkStackTop >= MAX_RIFF_CHUNKS )
+	{
+		Com_Error( ERR_DROP, "ERROR: Top of chunkstack breached" );
+	}
 
-  afd.chunkStack[ afd.chunkStackTop ] = bufIndex;
-  afd.chunkStackTop++;
-  WRITE_STRING( s );
-  WRITE_4BYTES( 0 );
+	afd.chunkStack[ afd.chunkStackTop ] = bufIndex;
+	afd.chunkStackTop++;
+	WRITE_STRING( s );
+	WRITE_4BYTES( 0 );
 }
 
 /*
@@ -159,19 +159,19 @@ END_CHUNK
 */
 static ID_INLINE void END_CHUNK( void )
 {
-  int endIndex = bufIndex;
+	int endIndex = bufIndex;
 
-  if( afd.chunkStackTop <= 0 )
-  {
-    Com_Error( ERR_DROP, "ERROR: Bottom of chunkstack breached" );
-  }
+	if( afd.chunkStackTop <= 0 )
+	{
+		Com_Error( ERR_DROP, "ERROR: Bottom of chunkstack breached" );
+	}
 
-  afd.chunkStackTop--;
-  bufIndex = afd.chunkStack[ afd.chunkStackTop ];
-  bufIndex += 4;
-  WRITE_4BYTES( endIndex - bufIndex - 4 );
-  bufIndex = endIndex;
-  bufIndex = PAD( bufIndex, 2 );
+	afd.chunkStackTop--;
+	bufIndex = afd.chunkStack[ afd.chunkStackTop ];
+	bufIndex += 4;
+	WRITE_4BYTES( endIndex - bufIndex - 4 );
+	bufIndex = endIndex;
+	bufIndex = PAD( bufIndex, 2 );
 }
 
 /*
@@ -615,11 +615,10 @@ qboolean CL_CloseAVI( void )
   // Write index
 
   // Open the temp index file
-  if( ( indexSize = FS_FOpenFileRead( idxFileName,
-          &afd.idxF, qtrue ) ) <= 0 )
+  if( ( indexSize = FS_FOpenFileRead( idxFileName, &afd.idxF, qtrue ) ) <= 0 )
   {
-    FS_FCloseFile( afd.f );
-    return qfalse;
+		FS_FCloseFile( afd.f );
+		return qfalse;
   }
 
   indexRemainder = indexSize;

@@ -226,6 +226,7 @@ static const unsigned pak_checksums[] = {
 typedef struct fileInPack_s {
 	char					*name;		// name of the file
 	unsigned long			pos;		// file info position in zip
+	unsigned long           size;		// file size
 	struct	fileInPack_s*	next;		// next file in the hash
 } fileInPack_t;
 
@@ -396,7 +397,7 @@ static long FS_HashFileName( const char *fname, int hashSize ) {
 	return hash;
 }
 
-static fileHandle_t	FS_HandleForFile(void) {
+static fileHandle_t	FS_HandleForFile( void ) {
 	int		i;
 
 	for ( i = 1 ; i < MAX_FILE_HANDLES ; i++ ) {
@@ -406,7 +407,7 @@ static fileHandle_t	FS_HandleForFile(void) {
 		}
 	}
 	Com_Error( ERR_DROP, "FS_HandleForFile: none free" );
-	return 0;
+	return FS_INVALID_HANDLE;
 }
 
 static FILE	*FS_FileForHandle( fileHandle_t f ) {
@@ -432,26 +433,46 @@ void	FS_ForceFlush( fileHandle_t f ) {
 
 /*
 ================
-FS_filelength
+FS_FileLengthByHandle
 
 If this is called on a non-unique FILE (from a pak file),
 it will return the size of the pak file, not the expected
 size of the file.
 ================
 */
-int FS_filelength( fileHandle_t f ) {
+static int FS_FileLengthByHandle( fileHandle_t f ) {
 	int		pos;
 	int		end;
 	FILE*	h;
 
-	h = FS_FileForHandle(f);
-	pos = ftell (h);
-	fseek (h, 0, SEEK_END);
-	end = ftell (h);
-	fseek (h, pos, SEEK_SET);
+	h = FS_FileForHandle( f );
+	pos = ftell( h );
+	fseek( h, 0, SEEK_END );
+	end = ftell( h );
+	fseek( h, pos, SEEK_SET );
 
 	return end;
 }
+
+
+/*
+================
+FS_FileLength
+================
+*/
+static int FS_FileLength( FILE* h ) 
+{
+	int		pos;
+	int		end;
+
+	pos = ftell( h );
+	fseek( h, 0, SEEK_END );
+	end = ftell( h );
+	fseek( h, pos, SEEK_SET );
+
+	return end;
+}
+
 
 /*
 ====================
@@ -503,7 +524,7 @@ FS_CreatePath
 Creates any directories needed to store the given filename
 ============
 */
-static qboolean FS_CreatePath (char *OSPath) {
+static qboolean FS_CreatePath( char *OSPath ) {
 	char	*ofs;
 	
 	// make absolutely sure that it can't back up the path
@@ -513,11 +534,11 @@ static qboolean FS_CreatePath (char *OSPath) {
 		return qtrue;
 	}
 
-	for (ofs = OSPath+1 ; *ofs ; ofs++) {
-		if (*ofs == PATH_SEP) {	
+	for ( ofs = OSPath + 1; *ofs; ofs++ ) {
+		if ( *ofs == PATH_SEP ) {	
 			// create the directory
-			*ofs = 0;
-			Sys_Mkdir (OSPath);
+			*ofs = '\0';
+			Sys_Mkdir( OSPath );
 			*ofs = PATH_SEP;
 		}
 	}
@@ -547,9 +568,8 @@ static void FS_CopyFile( char *fromOSPath, char *toOSPath ) {
 	if ( !f ) {
 		return;
 	}
-	fseek (f, 0, SEEK_END);
-	len = ftell (f);
-	fseek (f, 0, SEEK_SET);
+
+	len = FS_FileLength( f );
 
 	// we are using direct malloc instead of Z_Malloc here, so it
 	// probably won't work on a mac... Its only for developers anyway...
@@ -558,7 +578,7 @@ static void FS_CopyFile( char *fromOSPath, char *toOSPath ) {
 		Com_Error( ERR_FATAL, "Short read in FS_Copyfiles()\n" );
 	fclose( f );
 
-	if( FS_CreatePath( toOSPath ) ) {
+	if ( FS_CreatePath( toOSPath ) ) {
 		return;
 	}
 
@@ -652,14 +672,37 @@ qboolean FS_SV_FileExists( const char *file )
 	FILE *f;
 	char *testpath;
 
+	// search in homepath
 	testpath = FS_BuildOSPath( fs_homepath->string, file, "" );
 	testpath[strlen(testpath)-1] = '\0';
-
 	f = fopen( testpath, "rb" );
 	if ( f ) {
 		fclose( f );
 		return qtrue;
 	}
+
+	// search in basepath
+	if ( Q_stricmp( fs_homepath->string, fs_basepath->string ) ) {
+		testpath = FS_BuildOSPath( fs_basepath->string, file, "" );
+		testpath[strlen(testpath)-1] = '\0';
+		f = fopen( testpath, "rb" );
+		if ( f ) {
+			fclose( f );
+			return qtrue;
+		}
+	}
+
+	// search in cdpath
+	if ( fs_cdpath->string[0] != '\0' ) {
+		testpath = FS_BuildOSPath( fs_cdpath->string, file, "" );
+		testpath[strlen(testpath)-1] = '\0';
+		f = fopen( testpath, "rb" );
+		if ( f ) {
+			fclose( f );
+			return qtrue;
+		}
+	}
+
 	return qfalse;
 }
 
@@ -673,20 +716,24 @@ FS_SV_FOpenFileWrite
 fileHandle_t FS_SV_FOpenFileWrite( const char *filename ) {
 	char *ospath;
 	fileHandle_t	f;
+	fileHandleData_t *fd;
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
 
-	if ( !*filename )
-		return 0;
+	if ( !*filename ) {
+		return FS_INVALID_HANDLE;
+	}
 
 	ospath = FS_BuildOSPath( fs_homepath->string, filename, "" );
 	ospath[strlen(ospath)-1] = '\0';
 
 	f = FS_HandleForFile();
-	fsh[f].zipFile = qfalse;
-	fsh[f].pak = NULL;
+	fd = &fsh[ f ];
+
+	fd->zipFile = qfalse;
+	fd->pak = NULL;
 
 	if ( fs_debug->integer ) {
 		Com_Printf( "FS_SV_FOpenFileWrite: %s\n", ospath );
@@ -694,19 +741,20 @@ fileHandle_t FS_SV_FOpenFileWrite( const char *filename ) {
 
 	FS_CheckFilenameIsNotExecutable( ospath, __func__ );
 
-	if( FS_CreatePath( ospath ) ) {
-		return 0;
+	if ( FS_CreatePath( ospath ) ) {
+		return FS_INVALID_HANDLE;
 	}
 
 	Com_DPrintf( "writing to: %s\n", ospath );
 
-	fsh[f].handleFiles.file.o = fopen( ospath, "wb" );
+	fd->handleFiles.file.o = fopen( ospath, "wb" );
 
-	if ( !fsh[f].handleFiles.file.o )
-		return 0;
+	if ( !fd->handleFiles.file.o ) {
+		return FS_INVALID_HANDLE;
+	}
 
-	Q_strncpyz( fsh[f].name, filename, sizeof( fsh[f].name ) );
-	fsh[f].handleSync = qfalse;
+	Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
+	fd->handleSync = qfalse;
 
 	return f;
 }
@@ -720,21 +768,26 @@ we search in that order, matching FS_SV_FOpenFileRead order
 */
 int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
 	char *ospath;
-	fileHandle_t	f = 0;
+	fileHandle_t f = FS_INVALID_HANDLE;
+	fileHandleData_t *fd;
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
 
-	if ( !fp ) { // should never happen but for safe
+	// should never happen but for safe
+	if ( !fp ) { 
 		return -1;
 	}
 
-	f = FS_HandleForFile();
-	fsh[f].zipFile = qfalse;
-	fsh[f].pak = NULL;
+	// allocate new file handle
+	f = FS_HandleForFile(); 
+	fd = &fsh[ f ];
 
-	Q_strncpyz( fsh[f].name, filename, sizeof( fsh[f].name ) );
+	fd->zipFile = qfalse;
+	fd->pak = NULL;
+
+	Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
 
 #ifndef DEDICATED
 	// don't let sound stutter
@@ -750,48 +803,52 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
 		Com_Printf( "FS_SV_FOpenFileRead (fs_homepath): %s\n", ospath );
 	}
 
-	fsh[f].handleFiles.file.o = fopen( ospath, "rb" );
-	fsh[f].handleSync = qfalse;
+	fd->handleFiles.file.o = fopen( ospath, "rb" );
+	fd->handleSync = qfalse;
 
-	if ( !fsh[f].handleFiles.file.o )
-  {
-    // NOTE TTimo on non *nix systems, fs_homepath == fs_basepath, might want to avoid
+	if ( !fd->handleFiles.file.o )
+	{
+		// NOTE TTimo on non *nix systems, fs_homepath == fs_basepath, might want to avoid
 		if ( Q_stricmp( fs_homepath->string, fs_basepath->string ) != 0 )
-    {
-      // search basepath
-      ospath = FS_BuildOSPath( fs_basepath->string, filename, "" );
-      ospath[strlen(ospath)-1] = '\0';
+		{
+			// search basepath
+			ospath = FS_BuildOSPath( fs_basepath->string, filename, "" );
+			ospath[strlen(ospath)-1] = '\0';
 
-      if ( fs_debug->integer )
-      {
-        Com_Printf( "FS_SV_FOpenFileRead (fs_basepath): %s\n", ospath );
-      }
+			if ( fs_debug->integer )
+			{
+				Com_Printf( "FS_SV_FOpenFileRead (fs_basepath): %s\n", ospath );
+			}
 
-      fsh[f].handleFiles.file.o = fopen( ospath, "rb" );
-      fsh[f].handleSync = qfalse;
-    }
-  }
-
-	if ( !fsh[f].handleFiles.file.o ) {
-    // search cd path
-    ospath = FS_BuildOSPath( fs_cdpath->string, filename, "" );
-    ospath[strlen(ospath)-1] = '\0';
-
-    if (fs_debug->integer)
-    {
-      Com_Printf( "FS_SV_FOpenFileRead (fs_cdpath) : %s\n", ospath );
-    }
-
-	  fsh[f].handleFiles.file.o = fopen( ospath, "rb" );
-	  fsh[f].handleSync = qfalse;
-  }
-  
-	if( fsh[f].handleFiles.file.o ) {
-		*fp = f;
-		return FS_filelength( f );
+			fd->handleFiles.file.o = fopen( ospath, "rb" );
+			fd->handleSync = qfalse;
+		}
 	}
 
-	*fp = 0;
+	if ( fd->handleFiles.file.o == NULL ) 
+	{
+		if ( fs_cdpath->string[0] != '\0' ) 
+		{
+			// search cd path
+			ospath = FS_BuildOSPath( fs_cdpath->string, filename, "" );
+			ospath[strlen(ospath)-1] = '\0';
+
+			if ( fs_debug->integer )
+			{
+				Com_Printf( "FS_SV_FOpenFileRead (fs_cdpath) : %s\n", ospath );
+			}
+
+			fd->handleFiles.file.o = fopen( ospath, "rb" );
+			fd->handleSync = qfalse;
+		}
+	}
+  
+	if( fd->handleFiles.file.o != NULL ) {
+		*fp = f;
+		return FS_FileLength( fd->handleFiles.file.o );
+	}
+
+	*fp = FS_INVALID_HANDLE;
 	return -1;
 }
 
@@ -875,6 +932,7 @@ on files returned by FS_FOpenFile...
 ==============
 */
 void FS_FCloseFile( fileHandle_t f ) {
+
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
@@ -882,6 +940,7 @@ void FS_FCloseFile( fileHandle_t f ) {
 	if (fsh[f].streamed) {
 		Sys_EndStreamedFile(f);
 	}
+
 	if (fsh[f].zipFile == qtrue) {
 		unzCloseCurrentFile( fsh[f].handleFiles.file.z );
 		if ( fsh[f].handleFiles.unique ) {
@@ -892,9 +951,10 @@ void FS_FCloseFile( fileHandle_t f ) {
 	}
 
 	// we didn't find it as a pak, so close it as a unique file
-	if (fsh[f].handleFiles.file.o) {
-		fclose (fsh[f].handleFiles.file.o);
+	if ( fsh[f].handleFiles.file.o ) {
+		fclose( fsh[f].handleFiles.file.o );
 	}
+
 	Com_Memset( &fsh[f], 0, sizeof( fileHandleData_t ) );
 }
 
@@ -913,7 +973,7 @@ fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 	}
 
 	if ( !*filename ) {
-		return 0;
+		return FS_INVALID_HANDLE;
 	}
 
 	f = FS_HandleForFile();
@@ -925,15 +985,16 @@ fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 	}
 
 	if( FS_CreatePath( ospath ) ) {
-		return 0;
+		return FS_INVALID_HANDLE;
 	}
 
 	// enabling the following line causes a recursive function call loop
 	// when running with +set logfile 1 +set developer 1
 	//Com_DPrintf( "writing to: %s\n", ospath );
 	fsh[f].handleFiles.file.o = fopen( ospath, "wb" );
-	if ( !fsh[f].handleFiles.file.o )
-		return 0;
+	if ( fsh[f].handleFiles.file.o == NULL ) {
+		return FS_INVALID_HANDLE;
+	}
 
 	Q_strncpyz( fsh[f].name, filename, sizeof( fsh[f].name ) );
 	fsh[f].handleSync = qfalse;
@@ -959,7 +1020,7 @@ fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 	}
 
 	if ( !*filename ) {
-		return 0;
+		return FS_INVALID_HANDLE;
 	}
 
 	f = FS_HandleForFile();
@@ -977,13 +1038,14 @@ fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 
 	FS_CheckFilenameIsNotExecutable( ospath, __func__ );
 
-	if( FS_CreatePath( ospath ) ) {
-		return 0;
+	if ( FS_CreatePath( ospath ) ) {
+		return FS_INVALID_HANDLE;
 	}
 
 	fsh[f].handleFiles.file.o = fopen( ospath, "ab" );
-	if ( !fsh[f].handleFiles.file.o )
-		return 0;
+	if ( fsh[f].handleFiles.file.o == NULL ) {
+		return FS_INVALID_HANDLE;
+	}
 
 	Q_strncpyz( fsh[f].name, filename, sizeof( fsh[f].name ) );
 	fsh[f].handleSync = qfalse;
@@ -1106,7 +1168,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	long			hash;
 	unz_s			*zfi;
 	FILE			*temp;
-	int				l;
+	int				l, length;
 	fileHandleData_t *f;
 	char demoExt[16];
 
@@ -1116,12 +1178,16 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
 
+	if ( !filename ) {
+		Com_Error( ERR_FATAL, "FS_FOpenFileRead: NULL 'filename' parameter passed\n" );
+	}
+
 	if ( file == NULL ) {
 		// just wants to see if file is there
 		for ( search = fs_searchpaths ; search ; search = search->next ) {
 			//
 			if ( search->pack ) {
-				hash = FS_HashFileName(filename, search->pack->hashSize);
+				hash = FS_HashFileName( filename, search->pack->hashSize );
 			}
 			// is the element a pak file?
 			if ( search->pack && search->pack->hashTable[hash] ) {
@@ -1132,30 +1198,27 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					// case and separator insensitive comparisons
 					if ( !FS_FilenameCompare( pakFile->name, filename ) ) {
 						// found it!
-						return qtrue;
+						return pakFile->size; 
 					}
 					pakFile = pakFile->next;
-				} while(pakFile != NULL);
+				} while ( pakFile != NULL );
 			} else if ( search->dir ) {
 				dir = search->dir;
 			
 				netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
-				temp = fopen (netpath, "rb");
+				temp = fopen( netpath, "rb" );
 				if ( !temp ) {
 					continue;
 				}
-				fclose(temp);
-				return qtrue;
+				length = FS_FileLength( temp );
+				fclose( temp );
+				return length;
 			}
 		}
-		return qfalse;
+		return -1;
 	}
 
-	if ( !filename ) {
-		Com_Error( ERR_FATAL, "FS_FOpenFileRead: NULL 'filename' parameter passed\n" );
-	}
-
-	Com_sprintf (demoExt, sizeof(demoExt), ".dm_%d",PROTOCOL_VERSION );
+	Com_sprintf( demoExt, sizeof( demoExt ), ".dm_%d", PROTOCOL_VERSION );
 	// qpaths are not supposed to have a leading slash
 	if ( filename[0] == '/' || filename[0] == '\\' ) {
 		filename++;
@@ -1165,14 +1228,14 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	// The searchpaths do guarantee that something will always
 	// be prepended, so we don't need to worry about "c:" or "//limbo" 
 	if ( strstr( filename, ".." ) || strstr( filename, "::" ) ) {
-		*file = 0;
+		*file = FS_INVALID_HANDLE;
 		return -1;
 	}
 
 	// make sure the q3key file is only readable by the quake3.exe at initialization
 	// any other time the key should only be accessed in memory using the provided functions
 	if( com_fullyInitialized && strstr( filename, "q3key" ) ) {
-		*file = 0;
+		*file = FS_INVALID_HANDLE;
 		return -1;
 	}
 
@@ -1194,7 +1257,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 		// is the element a pak file?
 		if ( search->pack && search->pack->hashTable[hash] ) {
 			// disregard if it doesn't match one of the allowed pure pak files
-			if ( !FS_PakIsPure(search->pack) ) {
+			if ( !FS_PakIsPure( search->pack ) ) {
 				continue;
 			}
 
@@ -1238,7 +1301,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 						// open a new file on the pakfile
 						f->handleFiles.file.z = unzReOpen( pak->pakFilename, pak->handle );
 						if ( f->handleFiles.file.z == NULL ) {
-							Com_Error (ERR_FATAL, "Couldn't reopen %s", pak->pakFilename);
+							Com_Error( ERR_FATAL, "Couldn't reopen %s", pak->pakFilename );
 						}
 					} else {
 						f->handleFiles.file.z = pak->handle;
@@ -1267,7 +1330,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					return zfi->cur_file_info.uncompressed_size;
 				}
 				pakFile = pakFile->next;
-			} while(pakFile != NULL);
+			} while ( pakFile != NULL );
 		} else if ( search->dir ) {
 			// check a file in the directory tree
 
@@ -1323,7 +1386,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 				FS_CopyFile( netpath, copypath );
 			}
 
-			return FS_filelength (*file);
+			return FS_FileLength( f->handleFiles.file.o );
 		}		
 	}
 	
@@ -1332,7 +1395,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 		fprintf(missingFiles, "%s\n", filename);
 	}
 #endif
-	*file = 0;
+	*file = FS_INVALID_HANDLE;
 	return -1;
 }
 
@@ -1345,6 +1408,8 @@ Properly handles partial reads
 =================
 */
 int FS_Read2( void *buffer, int len, fileHandle_t f ) {
+	int r;
+
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
@@ -1352,14 +1417,14 @@ int FS_Read2( void *buffer, int len, fileHandle_t f ) {
 	if ( f <= 0 || f >= MAX_FILE_HANDLES ) {
 		return 0;
 	}
-	if (fsh[f].streamed) {
-		int r;
+
+	if ( fsh[f].streamed ) {
 		fsh[f].streamed = qfalse;
-		r = Sys_StreamedRead( buffer, len, 1, f);
+		r = Sys_StreamedRead( buffer, len, 1, f );
 		fsh[f].streamed = qtrue;
 		return r;
 	} else {
-		return FS_Read( buffer, len, f);
+		return FS_Read( buffer, len, f );
 	}
 }
 
@@ -1380,12 +1445,12 @@ int FS_Read( void *buffer, int len, fileHandle_t f ) {
 	buf = (byte *)buffer;
 	fs_readCount += len;
 
-	if (fsh[f].zipFile == qfalse) {
+	if ( fsh[f].zipFile == qfalse ) {
 		remaining = len;
 		tries = 0;
 		while (remaining) {
 			block = remaining;
-			read = fread (buf, 1, block, fsh[f].handleFiles.file.o);
+			read = fread( buf, 1, block, fsh[f].handleFiles.file.o );
 			if (read == 0) {
 				// we might have been trying to read from a CD, which
 				// sometimes returns a 0 read on windows
@@ -1405,7 +1470,7 @@ int FS_Read( void *buffer, int len, fileHandle_t f ) {
 		}
 		return len;
 	} else {
-		return unzReadCurrentFile(fsh[f].handleFiles.file.z, buffer, len);
+		return unzReadCurrentFile( fsh[f].handleFiles.file.z, buffer, len );
 	}
 }
 
@@ -1487,7 +1552,6 @@ int FS_Seek( fileHandle_t f, long offset, int origin ) {
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
-		return -1;
 	}
 
 	if (fsh[f].streamed) {
@@ -1560,7 +1624,7 @@ CONVENIENCE FUNCTIONS FOR ENTIRE FILES
 ======================================================================================
 */
 
-int	FS_FileIsInPAK(const char *filename, int *pChecksum ) {
+int	FS_FileIsInPAK( const char *filename, int *pChecksum ) {
 	searchpath_t	*search;
 	pack_t			*pak;
 	fileInPack_t	*pakFile;
@@ -1608,13 +1672,13 @@ int	FS_FileIsInPAK(const char *filename, int *pChecksum ) {
 			do {
 				// case and separator insensitive comparisons
 				if ( !FS_FilenameCompare( pakFile->name, filename ) ) {
-					if (pChecksum) {
+					if ( pChecksum ) {
 						*pChecksum = pak->pure_checksum;
 					}
 					return 1;
 				}
 				pakFile = pakFile->next;
-			} while(pakFile != NULL);
+			} while ( pakFile != NULL );
 		}
 	}
 	return -1;
@@ -1881,6 +1945,7 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 		}
 		if (file_info.uncompressed_size > 0) {
 			fs_headerLongs[fs_numHeaderLongs++] = LittleLong(file_info.crc);
+			buildBuffer[i].size = file_info.uncompressed_size;
 		}
 		Q_strlwr( filename_inzip );
 		hash = FS_HashFileName(filename_inzip, pack->hashSize);
@@ -3171,9 +3236,9 @@ static void FS_Startup( const char *gameName ) {
 		}
 	}
 
-	Com_ReadCDKey(BASEGAME);
-	fs = Cvar_Get ("fs_game", "", CVAR_INIT|CVAR_SYSTEMINFO );
-	if (fs && fs->string[0] != 0) {
+	Com_ReadCDKey( BASEGAME );
+	fs = Cvar_Get( "fs_game", "", CVAR_INIT | CVAR_SYSTEMINFO );
+	if ( fs && fs->string[0] != '\0' ) {
 		Com_AppendCDKey( fs->string );
 	}
 
@@ -3247,7 +3312,7 @@ static void FS_CheckPak0( void )
 			&& strlen(pakBasename) == 4 && !Q_stricmpn( pakBasename, "pak", 3 )
 			&& pakBasename[3] >= '0' && pakBasename[3] <= '8')
 		{
-			if( path->pack->checksum != pak_checksums[pakBasename[3]-'0'] )
+			if( (unsigned int)path->pack->checksum != pak_checksums[pakBasename[3]-'0'] )
 			{
 				if(pakBasename[3] == '0')
 				{
@@ -3341,7 +3406,7 @@ const char *FS_LoadedPakChecksums( void ) {
 	static char	info[BIG_INFO_STRING];
 	searchpath_t	*search;
 
-	info[0] = 0;
+	info[0] = '\0';
 
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		// is the element a pak file? 
@@ -3804,10 +3869,11 @@ int		FS_FOpenFileByMode( const char *qpath, fileHandle_t *f, fsMode_t mode ) {
 
 	if ( !qpath || !*qpath ) {
 		if ( f ) 
-			*f = 0;
+			*f = FS_INVALID_HANDLE;
 		return -1;
 	}
 
+	r = 0;	// file size
 	sync = qfalse;
 
 	switch( mode ) {
@@ -3815,28 +3881,26 @@ int		FS_FOpenFileByMode( const char *qpath, fileHandle_t *f, fsMode_t mode ) {
 		r = FS_FOpenFileRead( qpath, f, qtrue );
 		break;
 	case FS_WRITE:
-			if ( !f )
-				return -1;
+		if ( f == NULL )
+			return -1;
 		*f = FS_FOpenFileWrite( qpath );
-		r = 0;
 		break;
 	case FS_APPEND_SYNC:
 		sync = qtrue;
 	case FS_APPEND:
-			if ( !f )
-				return -1;
+		if ( f == NULL )
+			return -1;
 		*f = FS_FOpenFileAppend( qpath );
-		r = 0;
 		break;
 	default:
-		Com_Error( ERR_FATAL, "FSH_FOpenFile: bad mode" );
+		Com_Error( ERR_FATAL, "FSH_FOpenFile: bad mode %i", mode );
 		return -1;
 	}
 
 	if ( !f )
 		return r;
 
-	if ( !*f ) {
+	if ( *f == FS_INVALID_HANDLE ) {
 		return -1;
 	}
 
@@ -3844,18 +3908,18 @@ int		FS_FOpenFileByMode( const char *qpath, fileHandle_t *f, fsMode_t mode ) {
 
 	if ( fhd->zipFile == qtrue ) {
 		fhd->baseOffset = unztell( fhd->handleFiles.file.z );
-		} else {
+	} else {
 		fhd->baseOffset = ftell( fhd->handleFiles.file.o );
-		}
+	}
 
 	fhd->used = qtrue;
 	fhd->fileSize = r;
 	fhd->streamed = qfalse;
 
 	if ( mode == FS_READ ) {
-			Sys_BeginStreamedFile( *f, 0x4000 );
+		Sys_BeginStreamedFile( *f, 0x4000 );
 		fhd->streamed = qtrue;
-		}
+	}
 
 	fhd->handleSync = sync;
 
@@ -3908,20 +3972,21 @@ int FS_VM_OpenFile( const char *qpath, fileHandle_t *f, fsMode_t mode, handleOwn
 
 	r = FS_FOpenFileByMode( qpath, f, mode );
 
-	if ( f && *f )
+	if ( f && *f != FS_INVALID_HANDLE )
 		fsh[ *f ].owner = owner;
+
 	return r;
 }
 
-void FS_VM_ReadFile( void *buffer, int len, fileHandle_t f, handleOwner_t owner ) {
+int FS_VM_ReadFile( void *buffer, int len, fileHandle_t f, handleOwner_t owner ) {
 
 	if ( f <= 0 || f >= MAX_FILE_HANDLES )
-		return;
+		return 0;
 
 	if ( fsh[f].owner != owner || !fsh[f].used )
-		return; 
+		return 0; 
 
-	FS_Read2( buffer, len, f );
+	return FS_Read2( buffer, len, f );
 }
 
 void FS_VM_WriteFile( void *buffer, int len, fileHandle_t f, handleOwner_t owner ) {

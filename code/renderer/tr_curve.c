@@ -364,7 +364,7 @@ srfGridMesh_t *R_SubdividePatchToGrid( int width, int height,
 	drawVert_t_cleared( next );
 	drawVert_t_cleared( mid );
 	float		len, maxLen;
-	int			dir;
+	int			n;
 	int			t;
 	drawVert_t	ctrl[MAX_GRID_SIZE][MAX_GRID_SIZE];
 	float		errorTable[2][MAX_GRID_SIZE];
@@ -375,10 +375,10 @@ srfGridMesh_t *R_SubdividePatchToGrid( int width, int height,
 		}
 	}
 
-	for ( dir = 0 ; dir < 2 ; dir++ ) {
+	for ( n = 0 ; n < 2 ; n++ ) {
 
 		for ( j = 0 ; j < MAX_GRID_SIZE ; j++ ) {
-			errorTable[dir][j] = 0;
+			errorTable[n][j] = 0;
 		}
 
 		// horizontal subdivisions
@@ -423,22 +423,22 @@ srfGridMesh_t *R_SubdividePatchToGrid( int width, int height,
 
 			// if all the points are on the lines, remove the entire columns
 			if ( maxLen < 0.1f ) {
-				errorTable[dir][j+1] = 999;
+				errorTable[n][j+1] = 999;
 				continue;
 			}
 
 			// see if we want to insert subdivided columns
 			if ( width + 2 > MAX_GRID_SIZE ) {
-				errorTable[dir][j+1] = 1.0f/maxLen;
+				errorTable[n][j+1] = 1.0f/maxLen;
 				continue;	// can't subdivide any more
 			}
 
 			if ( maxLen <= r_subdivisions->value ) {
-				errorTable[dir][j+1] = 1.0f/maxLen;
+				errorTable[n][j+1] = 1.0f/maxLen;
 				continue;	// didn't need subdivision
 			}
 
-			errorTable[dir][j+2] = 1.0f/maxLen;
+			errorTable[n][j+2] = 1.0f/maxLen;
 
 			// insert two columns and replace the peak
 			width += 2;

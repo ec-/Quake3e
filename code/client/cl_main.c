@@ -222,19 +222,19 @@ void CL_StopRecord_f( void ) {
 	int		len;
 
 	if ( !clc.demorecording ) {
-		Com_Printf ("Not recording a demo.\n");
+		Com_Printf( "Not recording a demo.\n" );
 		return;
 	}
 
 	// finish up
 	len = -1;
-	FS_Write (&len, 4, clc.demofile);
-	FS_Write (&len, 4, clc.demofile);
+	FS_Write( &len, 4, clc.demofile );
+	FS_Write( &len, 4, clc.demofile );
 	FS_FCloseFile( clc.demofile );
-	clc.demofile = 0;
+	clc.demofile = FS_INVALID_HANDLE;
 	clc.demorecording = qfalse;
 	clc.spDemoRecording = qfalse;
-	Com_Printf ("Stopped demo.\n");
+	Com_Printf( "Stopped demo.\n" );
 }
 
 /* 
@@ -436,15 +436,15 @@ void CL_ReadDemoMessage( void ) {
 	byte		bufData[ MAX_MSGLEN ];
 	int			s;
 
-	if ( !clc.demofile ) {
-		CL_DemoCompleted ();
+	if ( clc.demofile == FS_INVALID_HANDLE ) {
+		CL_DemoCompleted();
 		return;
 	}
 
 	// get the sequence number
-	r = FS_Read( &s, 4, clc.demofile);
+	r = FS_Read( &s, 4, clc.demofile );
 	if ( r != 4 ) {
-		CL_DemoCompleted ();
+		CL_DemoCompleted();
 		return;
 	}
 	clc.serverMessageSequence = LittleLong( s );
@@ -453,14 +453,14 @@ void CL_ReadDemoMessage( void ) {
 	MSG_Init( &buf, bufData, sizeof( bufData ) );
 
 	// get the length
-	r = FS_Read (&buf.cursize, 4, clc.demofile);
+	r = FS_Read( &buf.cursize, 4, clc.demofile );
 	if ( r != 4 ) {
 		CL_DemoCompleted ();
 		return;
 	}
 	buf.cursize = LittleLong( buf.cursize );
 	if ( buf.cursize == -1 ) {
-		CL_DemoCompleted ();
+		CL_DemoCompleted();
 		return;
 	}
 	if ( buf.cursize > buf.maxsize ) {
@@ -469,7 +469,7 @@ void CL_ReadDemoMessage( void ) {
 	r = FS_Read( buf.data, buf.cursize, clc.demofile );
 	if ( r != buf.cursize ) {
 		Com_Printf( "Demo file was truncated.\n");
-		CL_DemoCompleted ();
+		CL_DemoCompleted();
 		return;
 	}
 
@@ -619,18 +619,18 @@ If the "nextdemo" cvar is set, that command will be issued
 ==================
 */
 void CL_NextDemo( void ) {
-	char	v[MAX_STRING_CHARS];
+	char v[MAX_STRING_CHARS];
 
-	Q_strncpyz( v, Cvar_VariableString ("nextdemo"), sizeof(v) );
-	v[MAX_STRING_CHARS-1] = 0;
+	Q_strncpyz( v, Cvar_VariableString( "nextdemo" ), sizeof( v ) );
+	v[sizeof(v)-1] = '\0';
 	Com_DPrintf("CL_NextDemo: %s\n", v );
 	if (!v[0]) {
 		return;
 	}
 
-	Cvar_Set ("nextdemo","");
-	Cbuf_AddText (v);
-	Cbuf_AddText ("\n");
+	Cvar_Set( "nextdemo","" );
+	Cbuf_AddText( v );
+	Cbuf_AddText( "\n" );
 	Cbuf_Execute();
 }
 
@@ -819,21 +819,22 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	// shutting down the client so enter full screen ui mode
 	Cvar_Set("r_uiFullScreen", "1");
 
+	// Stop demo recording
 	if ( clc.demorecording ) {
-		CL_StopRecord_f ();
+		CL_StopRecord_f();
 	}
-
-	if (clc.download) {
-		FS_FCloseFile( clc.download );
-		clc.download = 0;
-	}
-	*clc.downloadTempName = *clc.downloadName = 0;
-	Cvar_Set( "cl_downloadName", "" );
-
-	if ( clc.demofile ) {
+	if ( clc.demofile != FS_INVALID_HANDLE ) {
 		FS_FCloseFile( clc.demofile );
-		clc.demofile = 0;
+		clc.demofile = FS_INVALID_HANDLE;
 	}
+
+	// Finish downloads
+	if ( clc.download != FS_INVALID_HANDLE ) {
+		FS_FCloseFile( clc.download );
+		clc.download = FS_INVALID_HANDLE;
+	}
+	*clc.downloadTempName = *clc.downloadName = '\0';
+	Cvar_Set( "cl_downloadName", "" );
 
 	if ( uivm && showMainMenu ) {
 		VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_NONE );

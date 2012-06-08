@@ -278,6 +278,9 @@ static BOOL IN_InitRawMouse( void ) {
 	GRID  = NULL;
 
 	dll = GetModuleHandle( T("user32") ); // should always success
+	if ( !dll ) {
+		return FALSE;
+	}
 
 	GRRID = (PGRRID) GetProcAddress( dll, "GetRegisteredRawInputDevices" );
 	RRID  = (PRRID) GetProcAddress( dll, "RegisterRawInputDevices" );
@@ -876,15 +879,15 @@ extern int Win32_GetKey( char **s, char *buf, int buflen );
 
 =========================================================================
 */
-static void IN_GetHotkey( cvar_t *var, int *HotKey ) {
+static void IN_GetHotkey( cvar_t *var, int *pHotKey ) {
 
 	char	kset[256], buf[64], *s;
 	int		i, code;
 
-	if ( !HotKey )
+	if ( !pHotKey )
 		return;
 
-	*HotKey = 0;
+	*pHotKey = 0;
 
 	if ( !var )
 		return;
@@ -908,26 +911,26 @@ static void IN_GetHotkey( cvar_t *var, int *HotKey ) {
 				&& code != VK_MENU && code != VK_LMENU && code != VK_RMENU
 				&& code != VK_SHIFT && code != VK_LSHIFT && code != VK_RSHIFT
 				&& code != (VK_LWIN|HK_MOD_LWIN) && code != (VK_RWIN|HK_MOD_RWIN)
-				&& *HotKey & 0xFF )) {
+				&& *pHotKey & 0xFF )) {
 			Com_Printf( "%s:"S_COLOR_YELLOW" invalid token %s\n", var->name, buf );
-			*HotKey = 0;
+			*pHotKey = 0;
 			break;
 		}
 		kset[code & 0xFF] = 1;
 		switch ( code ) {
-			case VK_MENU:	 *HotKey |= HK_MOD_ALT; break;
-			case VK_LMENU:	 *HotKey |= (HK_MOD_ALT|HK_MOD_LALT); break;
-			case VK_RMENU:	 *HotKey |= (HK_MOD_ALT|HK_MOD_RALT); break;
-			case VK_CONTROL: *HotKey |= HK_MOD_CONTROL; break;
-			case VK_LCONTROL:*HotKey |= (HK_MOD_CONTROL|HK_MOD_LCONTROL); break;
-			case VK_RCONTROL:*HotKey |= (HK_MOD_CONTROL|HK_MOD_RCONTROL); break;
-			case VK_SHIFT:	 *HotKey |= HK_MOD_SHIFT; break;
-			case VK_LSHIFT:	 *HotKey |= HK_MOD_SHIFT|HK_MOD_LSHIFT; break;
-			case VK_RSHIFT:	 *HotKey |= HK_MOD_SHIFT|HK_MOD_RSHIFT; break;
-			case VK_LWIN:	 *HotKey |= HK_MOD_WIN; break;
-			case (VK_LWIN|HK_MOD_LWIN): *HotKey |= (HK_MOD_WIN|HK_MOD_LWIN); break;
-			case (VK_RWIN|HK_MOD_RWIN): *HotKey |= (HK_MOD_WIN|HK_MOD_RWIN); break;
-			default:		 *HotKey |= (code & 0xFF); break;
+			case VK_MENU:	 *pHotKey |= HK_MOD_ALT; break;
+			case VK_LMENU:	 *pHotKey |= (HK_MOD_ALT|HK_MOD_LALT); break;
+			case VK_RMENU:	 *pHotKey |= (HK_MOD_ALT|HK_MOD_RALT); break;
+			case VK_CONTROL: *pHotKey |= HK_MOD_CONTROL; break;
+			case VK_LCONTROL:*pHotKey |= (HK_MOD_CONTROL|HK_MOD_LCONTROL); break;
+			case VK_RCONTROL:*pHotKey |= (HK_MOD_CONTROL|HK_MOD_RCONTROL); break;
+			case VK_SHIFT:	 *pHotKey |= HK_MOD_SHIFT; break;
+			case VK_LSHIFT:	 *pHotKey |= HK_MOD_SHIFT|HK_MOD_LSHIFT; break;
+			case VK_RSHIFT:	 *pHotKey |= HK_MOD_SHIFT|HK_MOD_RSHIFT; break;
+			case VK_LWIN:	 *pHotKey |= HK_MOD_WIN; break;
+			case (VK_LWIN|HK_MOD_LWIN): *pHotKey |= (HK_MOD_WIN|HK_MOD_LWIN); break;
+			case (VK_RWIN|HK_MOD_RWIN): *pHotKey |= (HK_MOD_WIN|HK_MOD_RWIN); break;
+			default:		 *pHotKey |= (code & 0xFF); break;
 		};
     }
 
@@ -937,15 +940,15 @@ static void IN_GetHotkey( cvar_t *var, int *HotKey ) {
 		return;
 	}
 
-	if ( *HotKey == VK_OEM_3 // '~'
-			|| *HotKey == VK_RETURN
-			|| *HotKey == HK_MOD_WIN
-			|| *HotKey == (HK_MOD_WIN|HK_MOD_LWIN)
-			|| *HotKey == (HK_MOD_WIN|HK_MOD_RWIN)
-			|| *HotKey == (VK_RETURN|HK_MOD_ALT)
-			|| *HotKey == (HK_MOD_CONTROL|VK_PAUSE)) {
+	if ( *pHotKey == VK_OEM_3 // '~'
+			|| *pHotKey == VK_RETURN
+			|| *pHotKey == HK_MOD_WIN
+			|| *pHotKey == (HK_MOD_WIN|HK_MOD_LWIN)
+			|| *pHotKey == (HK_MOD_WIN|HK_MOD_RWIN)
+			|| *pHotKey == (VK_RETURN|HK_MOD_ALT)
+			|| *pHotKey == (HK_MOD_CONTROL|VK_PAUSE)) {
 		Com_Printf( "%s:"S_COLOR_YELLOW" invalid hotkey %s\n", var->name, var->string );
-		*HotKey = 0;
+		*pHotKey = 0;
 	}
 
 	//Com_Printf("GetHotkey: %06X\n",*HotKey);

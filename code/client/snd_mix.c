@@ -115,7 +115,7 @@ S_TransferPaintBuffer
 void S_TransferPaintBuffer(int endtime)
 {
 	int 	out_idx;
-	int 	count;
+	int 	i, count;
 	int 	out_mask;
 	int 	*p;
 	int 	step;
@@ -126,9 +126,6 @@ void S_TransferPaintBuffer(int endtime)
 
 
 	if ( s_testsound->integer ) {
-		int		i;
-		int		count;
-
 		// write a fixed sine wave
 		count = (endtime - s_paintedtime);
 		for (i=0 ; i<count ; i++)

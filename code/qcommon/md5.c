@@ -273,7 +273,7 @@ char *Com_MD5File( const char *fn, int length, const char *prefix, int prefix_le
 
 	filelen = FS_SV_FOpenFileRead( fn, &f );
 
-	if( !f ) {
+	if( f == FS_INVALID_HANDLE ) {
 		return final;
 	}
 	if( filelen < 1 ) {

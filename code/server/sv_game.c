@@ -333,8 +333,7 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 	case G_FS_FOPEN_FILE:
 		return FS_VM_OpenFile( VMA(1), VMA(2), args[3], H_QAGAME );
 	case G_FS_READ:
-		FS_VM_ReadFile( VMA(1), args[2], args[3], H_QAGAME );
-		return 0;
+		return FS_VM_ReadFile( VMA(1), args[2], args[3], H_QAGAME );
 	case G_FS_WRITE:
 		FS_VM_WriteFile( VMA(1), args[2], args[3], H_QAGAME );
 		return 0;

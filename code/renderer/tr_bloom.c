@@ -212,11 +212,10 @@ static void R_Bloom_WarsowEffect( void )
 	//Copy downscaled framebuffer into a texture
 	GL_Bind( bloom.effect.texture );
 	qglCopyTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 0, 0, bloom.work.width, bloom.work.height );
+	
 	// darkening passes with repeated filter
-	if( r_bloom_darken->integer ) {
-		int i;
+	if ( r_bloom_darken->integer ) {
 		GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO );
-
 		for( i = 0; i < r_bloom_darken->integer; i++ ) {
 			R_Bloom_Quad( bloom.work.width, bloom.work.height, 0, 0, 
 				bloom.effect.readW, bloom.effect.readH );
