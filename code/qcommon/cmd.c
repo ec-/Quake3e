@@ -515,7 +515,7 @@ static void Cmd_TokenizeString2( const char *text_in, qboolean ignoreQuotes ) {
 	textOut = cmd_tokenized;
 
 	while ( 1 ) {
-		if ( cmd_argc == MAX_STRING_TOKENS ) {
+		if ( cmd_argc >= MAX_STRING_TOKENS ) {
 			return;			// this is usually something malicious
 		}
 
