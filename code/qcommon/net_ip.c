@@ -1548,10 +1548,10 @@ void NET_Config( qboolean enableNetworking ) {
 			ip_socket = INVALID_SOCKET;
 		}
 
-		if(multicast6_socket)
+		if ( multicast6_socket != INVALID_SOCKET )
 		{
-			if(multicast6_socket != ip6_socket)
-				closesocket(multicast6_socket);
+			if ( multicast6_socket != ip6_socket )
+				closesocket( multicast6_socket );
 				
 			multicast6_socket = INVALID_SOCKET;
 		}
@@ -1630,39 +1630,41 @@ NET_Sleep
 Sleeps msec or until something happens on the network
 ====================
 */
-void NET_Sleep( int msec ) {
+void NET_Sleep( int msec ) 
+{
 	struct timeval timeout;
 	fd_set	fdset;
-	int highestfd = -1;
+	SOCKET highestfd = INVALID_SOCKET;
 
-	if (!com_dedicated->integer)
+	if ( !com_dedicated->integer )
 		return; // we're not a server, just run full speed
 
-	if (ip_socket == INVALID_SOCKET && ip6_socket == INVALID_SOCKET)
+	if ( ip_socket == INVALID_SOCKET && ip6_socket == INVALID_SOCKET )
 		return;
 
-	if (msec < 0 )
+	if ( msec < 0 )
 		return;
 
-	FD_ZERO(&fdset);
+	FD_ZERO( &fdset );
 
-	if(ip_socket != INVALID_SOCKET)
+	if ( ip_socket != INVALID_SOCKET )
 	{
-		FD_SET(ip_socket, &fdset);
+		FD_SET( ip_socket, &fdset );
 
 		highestfd = ip_socket;
 	}
-	if(ip6_socket != INVALID_SOCKET)
+
+	if ( ip6_socket != INVALID_SOCKET )
 	{
-		FD_SET(ip6_socket, &fdset);
+		FD_SET( ip6_socket, &fdset );
 		
-		if(ip6_socket > highestfd)
+		if ( ip6_socket > highestfd )
 			highestfd = ip6_socket;
 	}
 
 	timeout.tv_sec = msec/1000;
 	timeout.tv_usec = (msec%1000)*1000;
-	select(highestfd + 1, &fdset, NULL, NULL, &timeout);
+	select( highestfd + 1, &fdset, NULL, NULL, &timeout );
 }
 
 
