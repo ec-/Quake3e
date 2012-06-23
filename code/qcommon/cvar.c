@@ -1233,7 +1233,7 @@ void Cvar_Register(vmCvar_t *vmCvar, const char *varName, const char *defaultVal
 
 	cv = Cvar_Get(varName, defaultValue, flags | CVAR_VM_CREATED);
 
-	if (!vmCvar)
+	if ( !vmCvar )
 		return;
 
 	vmCvar->handle = cv - cvar_indexes;
