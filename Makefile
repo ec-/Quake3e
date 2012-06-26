@@ -742,6 +742,7 @@ Q3OBJ = \
   $(B)/client/cvar.o \
   $(B)/client/files.o \
   $(B)/client/history.o \
+  $(B)/client/keys.o \
   $(B)/client/md4.o \
   $(B)/client/md5.o \
   $(B)/client/msg.o \
@@ -977,6 +978,7 @@ Q3DOBJ = \
   $(B)/ded/common.o \
   $(B)/ded/cvar.o \
   $(B)/ded/files.o \
+  $(B)/ded/keys.o \
   $(B)/ded/md4.o \
   $(B)/ded/msg.o \
   $(B)/ded/net_chan.o \

@@ -338,7 +338,6 @@
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
-					ExcludedFromBuild="true"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -495,6 +494,10 @@
 			</File>
 			<File
 				RelativePath="..\..\qcommon\huffman.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\qcommon\keys.c"
 				>
 			</File>
 			<File

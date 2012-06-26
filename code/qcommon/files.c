@@ -440,6 +440,7 @@ it will return the size of the pak file, not the expected
 size of the file.
 ================
 */
+#if 0
 static int FS_FileLengthByHandle( fileHandle_t f ) {
 	int		pos;
 	int		end;
@@ -453,6 +454,7 @@ static int FS_FileLengthByHandle( fileHandle_t f ) {
 
 	return end;
 }
+#endif
 
 
 /*

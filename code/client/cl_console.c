@@ -53,6 +53,8 @@ typedef struct {
 } console_t;
 
 extern	console_t	con;
+extern  qboolean    chat_team;
+extern  int         chat_playerNum;
 
 console_t	con;
 

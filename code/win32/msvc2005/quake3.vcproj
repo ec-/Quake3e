@@ -306,6 +306,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\qcommon\keys.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\qcommon\md4.c"
 				>
 			</File>

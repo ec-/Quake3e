@@ -427,9 +427,17 @@ void IN_CenterView (void);
 
 void CL_VerifyCode( void );
 
-float CL_KeyState (kbutton_t *key);
-int Key_StringToKeynum( char *str );
-char *Key_KeynumToString (int keynum);
+//
+// cl_keys.c
+//
+extern  field_t     chatField;
+extern  field_t     g_consoleField;
+
+//char *Key_KeynumToString( int keynum );
+
+void Field_CharEvent( field_t *edit, int ch );
+void Field_Draw( field_t *edit, int x, int y, int width, qboolean showCursor, qboolean noColorEscape );
+void Field_BigDraw( field_t *edit, int x, int y, int width, qboolean showCursor, qboolean noColorEscape );
 
 //
 // cl_parse.c
