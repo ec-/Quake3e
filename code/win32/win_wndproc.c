@@ -376,7 +376,7 @@ LONG WINAPI MainWndProc (
 			// 120 increments, might be 240 and multiples if wheel goes too fast
 			// NOTE Logitech: logitech drivers are screwed and send the message twice?
 			//   could add a cvar to interpret the message as successive press/release events
-			zDelta = ( short ) HIWORD( wParam ) / 120;
+			zDelta = ( short ) HIWORD( wParam ) / WHEEL_DELTA;
 			if ( zDelta > 0 )
 			{
 				for(i=0; i<zDelta; i++)

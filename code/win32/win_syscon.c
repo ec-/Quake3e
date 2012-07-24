@@ -356,6 +356,8 @@ LONG WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 LONG WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	TCHAR inputBuffer[1024];
+	int zDelta, fwKeys, i;
+	WPARAM scrollMsg;
 
 	switch ( uMsg )
 	{
@@ -365,6 +367,30 @@ LONG WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			return 0;
 		}
 		break;
+
+	case WM_MOUSEWHEEL:
+		zDelta = (short) HIWORD( wParam ) / WHEEL_DELTA;
+		if ( zDelta ) {
+			fwKeys = LOWORD( wParam );
+			if ( zDelta > 0 ) {
+				if ( fwKeys & MK_CONTROL )
+					scrollMsg = SB_PAGEUP;
+				else
+					scrollMsg = SB_LINEUP;
+			} else {
+				zDelta = -zDelta;
+				if ( fwKeys & MK_CONTROL )
+					scrollMsg = SB_PAGEDOWN;
+				else
+					scrollMsg = SB_LINEDOWN;
+			}
+			for ( i = 0; i < zDelta; i++ ) {
+				SendMessage( s_wcd.hwndBuffer, EM_SCROLL, scrollMsg, 0 );
+			}
+			return 0;
+		}
+		break;
+
 	case WM_KEYDOWN:
 	{
 		if ( wParam == 'L' && ( GetAsyncKeyState( VK_LCONTROL ) & 0x8000 || GetAsyncKeyState( VK_RCONTROL ) & 0x8000 ) ) {
