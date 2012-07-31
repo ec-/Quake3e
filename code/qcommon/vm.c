@@ -451,6 +451,80 @@ static int Load_JTS( vm_t *vm, unsigned int crc32, void *data )  {
 	return length;
 }
 
+static char *VM_ValidateHeader( vmHeader_t *header, int fileSize ) 
+{
+	static char errMsg[128];
+	int i, n;
+
+	// truncated
+	if ( fileSize < ( sizeof( vmHeader_t ) - sizeof( int ) ) ) {
+		sprintf( errMsg, "truncated image header (%i bytes long)", fileSize );
+		return errMsg;
+	}
+
+	// bad magic
+	if ( LittleLong( header->vmMagic ) != VM_MAGIC && LittleLong( header->vmMagic ) != VM_MAGIC_VER2 ) {
+		sprintf( errMsg, "bad file magic %08x", LittleLong( header->vmMagic ) );
+		return errMsg;
+	}
+	
+	// truncated
+	if ( fileSize < sizeof( vmHeader_t ) && LittleLong( header->vmMagic ) != VM_MAGIC_VER2 ) {
+		sprintf( errMsg, "truncated image header (%i bytes long)", fileSize );
+		return errMsg;
+	}
+
+	if ( LittleLong( header->vmMagic ) == VM_MAGIC_VER2 )
+		n = sizeof( vmHeader_t ) / 4;
+	else
+		n = ( sizeof( vmHeader_t ) - sizeof( int ) ) / 4;
+
+	// byte swap the header
+	for ( i = 0 ; i < n ; i++ ) {
+		((int *)header)[i] = LittleLong( ((int *)header)[i] );
+	}
+
+	// bad code offset
+	if ( header->codeOffset >= fileSize ) {
+		sprintf( errMsg, "bad code offset %i", header->codeOffset );
+		return errMsg;
+	}
+
+	// bad code length
+	if ( header->codeLength <= 0 || header->codeOffset + header->codeLength > fileSize ) {
+		sprintf( errMsg, "bad code length %i", header->codeLength );
+		return errMsg;
+	}
+
+	// bad data offset
+	if ( header->dataOffset >= fileSize || header->dataOffset != header->codeOffset + header->codeLength ) {
+		sprintf( errMsg, "bad data offset %i", header->dataOffset );
+		return errMsg;
+	}
+
+	// bad data length
+	if ( header->dataOffset + header->dataLength > fileSize )  {
+		sprintf( errMsg, "bad data length %i", header->dataLength );
+		return errMsg;
+	}
+
+	if ( header->vmMagic == VM_MAGIC_VER2 ) 
+	{
+		// bad lit/jtrg length
+		if ( header->dataOffset + header->dataLength + header->litLength + header->jtrgLength != fileSize ) {
+			sprintf( errMsg, "bad lit/jrgs length" );
+			return errMsg;
+		}
+	} 
+	// bad lit length
+	else if ( header->dataOffset + header->dataLength + header->litLength != fileSize ) 
+	{
+		sprintf( errMsg, "bad lit length %i", header->litLength );
+		return errMsg;
+	}
+
+	return NULL;	
+}
 
 /*
 =================
@@ -463,7 +537,7 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 	int					length;
 	int					dataLength;
 	int					i;
-	char				filename[MAX_QPATH];
+	char				filename[MAX_QPATH], *errorMsg;
 	unsigned int		crc32 = 0;
 	qboolean			tryjts;
 	vmHeader_t			*header;
@@ -478,53 +552,25 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 		return NULL;
 	}
 
+	crc32_init( &crc32 );
+	crc32_update( &crc32, (void*)header, length );
+	crc32_final( &crc32 );
+
+	// will also swap header
+	errorMsg = VM_ValidateHeader( header, length );
+	if ( errorMsg ) {
+		VM_Free( vm );
+		FS_FreeFile( header );
+		Com_Error( ERR_FATAL, "%s", errorMsg );
+		return NULL;
+	}
+
 	tryjts = qfalse;
 
 	if( LittleLong( header->vmMagic ) == VM_MAGIC_VER2 ) {
 		Com_Printf( "...which has vmMagic VM_MAGIC_VER2\n" );
-
-		// byte swap the header
-		for ( i = 0 ; i < sizeof( vmHeader_t ) / 4 ; i++ ) {
-			((int *)header)[i] = LittleLong( ((int *)header)[i] );
-		}
-
-		// validate
-		if ( header->jtrgLength < 0
-			|| header->bssLength < 0
-			|| header->dataLength < 0
-			|| header->litLength < 0
-			|| header->codeLength <= 0 ) {
-			VM_Free( vm );
-			FS_FreeFile( header );
-			Com_Error( ERR_FATAL, "%s has bad header", filename );
-		}
-	} else if( LittleLong( header->vmMagic ) == VM_MAGIC ) {
-
-		crc32_init( &crc32 );
-		crc32_update( &crc32, (void*)header, length );
-		crc32_final( &crc32 );
-		tryjts = qtrue;
-
-		// byte swap the header
-		// sizeof( vmHeader_t ) - sizeof( int ) is the 1.32b vm header size
-		for ( i = 0 ; i < ( sizeof( vmHeader_t ) - sizeof( int ) ) / 4 ; i++ ) {
-			((int *)header)[i] = LittleLong( ((int *)header)[i] );
-		}
-
-		// validate
-		if ( header->bssLength < 0
-			|| header->dataLength < 0
-			|| header->litLength < 0
-			|| header->codeLength <= 0 ) {
-			VM_Free( vm );
-			FS_FreeFile( header );
-			Com_Error( ERR_FATAL, "%s has bad header", filename );
-		}
 	} else {
-		VM_Free( vm );
-		FS_FreeFile( header );
-		Com_Error( ERR_FATAL, "%s does not have a recognisable "
-				"magic number in its header", filename );
+		tryjts = qtrue;
 	}
 
 	// round up to next power of 2 so all data operations can
@@ -758,7 +804,7 @@ vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *),
 	vm->programStack = vm->dataMask + 1;
 	vm->stackBottom = vm->programStack - VM_STACK_SIZE;
 
-	Com_Printf("%s loaded in %d bytes on the hunk\n", module, remaining - Hunk_MemoryRemaining());
+	Com_Printf( "%s loaded in %d bytes on the hunk\n", module, remaining - Hunk_MemoryRemaining() );
 
 	return vm;
 }

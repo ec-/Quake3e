@@ -1260,7 +1260,7 @@ char *VM_LoadInstructions( vm_t *vm, vmHeader_t *header, instruction_t *buf )
 	}
 
 
-	// ensure that the optimisation pass knows about all the jump table targets
+	// ensure that the optimization pass knows about all the jump table targets
 	if ( vm->jumpTableTargets ) {
 		for( i = 0; i < vm->numJumpTableTargets; i++ ) {
 			n = *(int *)(vm->jumpTableTargets + ( i * sizeof( int ) ) );
