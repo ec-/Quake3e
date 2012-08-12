@@ -393,13 +393,13 @@ static int Load_JTS( vm_t *vm, unsigned int crc32, void *data )  {
 
 	length = FS_FOpenFileRead( filename, &fh, qtrue ); // fixme: unique?
 	
-	if ( !fh ) {
+	if ( fh == FS_INVALID_HANDLE ) {
 		if ( data )
 			Com_Printf( " not found.\n" );
 		return -1;
 	}
 
-	if ( length < sizeof( header ) || length < 0 ) {
+	if ( length < sizeof( header ) ) {
 		if ( data )
 			Com_Printf( " bad filesize.\n" );
 		FS_FCloseFile( fh );
@@ -414,7 +414,7 @@ static int Load_JTS( vm_t *vm, unsigned int crc32, void *data )  {
 	}
 
 	// byte swap the header
-	for ( i = 0 ; i < sizeof( header  ) / 4 ; i++ ) {
+	for ( i = 0 ; i < sizeof( header  ) / sizeof( int ) ; i++ ) {
 		((int *)header)[i] = LittleLong( ((int *)header)[i] );
 	}
 
@@ -425,14 +425,14 @@ static int Load_JTS( vm_t *vm, unsigned int crc32, void *data )  {
 		return -1;
 	}
 
-	if ( header[1] < 0 || header[1] != (length - 8) ) {
+	if ( header[1] < 0 || header[1] != (length - (int)sizeof( header ) ) ) {
 		if ( data )
 			Com_Printf( " bad file header.\n" );
 		FS_FCloseFile( fh );
 		return -1;
 	}
 
-	length -= 8; // skip header and filesize
+	length -= sizeof( header ); // skip header and filesize
 
 	// we need just filesize
 	if ( !data ) { 
@@ -444,7 +444,7 @@ static int Load_JTS( vm_t *vm, unsigned int crc32, void *data )  {
 	FS_FCloseFile( fh );
 
 	// byte swap the data
-	for ( i = 0 ; i < length / 4 ; i++ ) {
+	for ( i = 0 ; i < length / sizeof( int ); i++ ) {
 		((int *)data)[i] = LittleLong( ((int *)data)[i] );
 	}
 

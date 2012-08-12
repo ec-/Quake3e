@@ -1284,14 +1284,12 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 							!FS_IsExt( filename, ".bot", l ) &&
 							!FS_IsExt( filename, ".cfg", l ) &&
 							!FS_IsExt( filename, ".txt", l ) &&
+							Q_stricmp(filename, "qagame.qvm") != 0 &&
 							strstr( filename, "levelshots" ) == NULL ) {
 								 pak->referenced |= FS_GENERAL_REF;
 							}
 					}
 
-					if (!(pak->referenced & FS_QAGAME_REF) && strstr(filename, "qagame.qvm")) {
-						pak->referenced |= FS_QAGAME_REF;
-					}
 					if (!(pak->referenced & FS_CGAME_REF) && strstr(filename, "cgame.qvm")) {
 						pak->referenced |= FS_CGAME_REF;
 					}
@@ -1626,7 +1624,7 @@ CONVENIENCE FUNCTIONS FOR ENTIRE FILES
 ======================================================================================
 */
 
-int	FS_FileIsInPAK( const char *filename, int *pChecksum ) {
+qboolean FS_FileIsInPAK( const char *filename, int *pChecksum ) {
 	searchpath_t	*search;
 	pack_t			*pak;
 	fileInPack_t	*pakFile;
@@ -1649,7 +1647,7 @@ int	FS_FileIsInPAK( const char *filename, int *pChecksum ) {
 	// The searchpaths do guarantee that something will always
 	// be prepended, so we don't need to worry about "c:" or "//limbo" 
 	if ( strstr( filename, ".." ) || strstr( filename, "::" ) ) {
-		return -1;
+		return qfalse;
 	}
 
 	//
@@ -1677,13 +1675,13 @@ int	FS_FileIsInPAK( const char *filename, int *pChecksum ) {
 					if ( pChecksum ) {
 						*pChecksum = pak->pure_checksum;
 					}
-					return 1;
+					return qtrue;
 				}
 				pakFile = pakFile->next;
 			} while ( pakFile != NULL );
 		}
 	}
-	return -1;
+	return qfalse;
 }
 
 /*
@@ -3371,30 +3369,6 @@ static void FS_CheckPak0( void )
 	}
 }
 
-/*
-=====================
-FS_GamePureChecksum
-
-Returns the checksum of the pk3 from which the server loaded the qagame.qvm
-=====================
-*/
-const char *FS_GamePureChecksum( void ) {
-	static char	info[MAX_STRING_TOKENS];
-	searchpath_t *search;
-
-	info[0] = 0;
-
-	for ( search = fs_searchpaths ; search ; search = search->next ) {
-		// is the element a pak file?
-		if ( search->pack ) {
-			if (search->pack->referenced & FS_QAGAME_REF) {
-				Com_sprintf(info, sizeof(info), "%d", search->pack->checksum);
-			}
-		}
-	}
-
-	return info;
-}
 
 /*
 =====================
