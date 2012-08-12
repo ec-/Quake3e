@@ -1192,7 +1192,8 @@ qboolean LocalOptimize( vm_t *vm )
 }
 
 
-char *VM_LoadInstructions( vm_t *vm, vmHeader_t *header, instruction_t *buf ) 
+char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf, 
+						  char *jumpTableTargets, int numJumpTableTargets ) 
 {
 	static char errBuf[128];
 	byte *code, *code_start, *code_end;
@@ -1261,10 +1262,10 @@ char *VM_LoadInstructions( vm_t *vm, vmHeader_t *header, instruction_t *buf )
 
 
 	// ensure that the optimization pass knows about all the jump table targets
-	if ( vm->jumpTableTargets ) {
-		for( i = 0; i < vm->numJumpTableTargets; i++ ) {
-			n = *(int *)(vm->jumpTableTargets + ( i * sizeof( int ) ) );
-			if ( (unsigned)n >= header->instructionCount )
+	if ( jumpTableTargets ) {
+		for( i = 0; i < numJumpTableTargets; i++ ) {
+			n = *(int *)(jumpTableTargets + ( i * sizeof( int ) ) );
+			if ( n >= header->instructionCount )
 				continue;
 			if ( buf[n].opStack != 0 ) {
 				opStack = buf[n].opStack;
@@ -1340,7 +1341,7 @@ char *VM_LoadInstructions( vm_t *vm, vmHeader_t *header, instruction_t *buf )
 		// conditional jumps
 		if ( ci->jump ) {
 			v = ci->value;
-			if ( (unsigned)(v) >= vm->instructionCount ) {
+			if ( v >= header->instructionCount ) {
 				sprintf( errBuf, "jump target %i is out of range", v ); 
 				return errBuf;
 			}
@@ -1363,7 +1364,7 @@ char *VM_LoadInstructions( vm_t *vm, vmHeader_t *header, instruction_t *buf )
 			}
 			if ( op1 == OP_CONST ) {
 				v = buf[i-1].value;
-				if ( (unsigned)v >= vm->instructionCount ) {
+				if ( v >= header->instructionCount ) {
 					sprintf( errBuf, "jump target %i is out of range", v );
 					return errBuf;
 				}
@@ -1392,7 +1393,7 @@ char *VM_LoadInstructions( vm_t *vm, vmHeader_t *header, instruction_t *buf )
 				v = buf[i-1].value;
 				// analyse only local function calls
 				if ( v >= 0 ) {
-					if ( v >= vm->instructionCount ) {
+					if ( v >= header->instructionCount ) {
 						sprintf( errBuf, "call target %i is out of range", v ); 
 						return errBuf;
 					}
@@ -1449,7 +1450,7 @@ char *VM_LoadInstructions( vm_t *vm, vmHeader_t *header, instruction_t *buf )
 }
 
 
-void VM_FindMOps(  vm_t *vm, vmHeader_t *header, instruction_t *buf ) 
+void VM_FindMOps( vmHeader_t *header, instruction_t *buf ) 
 {
 	int i, v, op0;
 	instruction_t *ci;
@@ -1530,7 +1531,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 
 	inst = Z_Malloc( (header->instructionCount + 8 ) * sizeof( instruction_t ) );
 
-	errMsg = VM_LoadInstructions( vm, header, inst );
+	errMsg = VM_LoadInstructions( header, inst, vm->jumpTableTargets, vm->numJumpTableTargets );
 
 	if ( errMsg ) {
 		Z_Free( inst );
@@ -1538,7 +1539,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 		return qfalse;
 	}
 
-	VM_FindMOps( vm, header, inst );
+	VM_FindMOps( header, inst );
 
 	code = NULL; // we will allocate memory later, after last defined pass
 
