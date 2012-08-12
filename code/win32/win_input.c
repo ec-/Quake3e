@@ -1058,9 +1058,6 @@ IN_Frame
 Called every frame, even if not generating commands
 ==================
 */
-
-extern cvar_t *r_glDriver;
-
 void IN_Frame (void) {
 	// post joystick events
 #ifdef USE_JOYSTICK
