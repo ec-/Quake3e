@@ -1694,7 +1694,7 @@ void GLimp_Shutdown( void )
 	if ( glw_state.log_fp )
 	{
 		fclose( glw_state.log_fp );
-		glw_state.log_fp = 0;
+		glw_state.log_fp = NULL;
 	}
 
 	// reset display settings
