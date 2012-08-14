@@ -567,7 +567,7 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 
 	tryjts = qfalse;
 
-	if( LittleLong( header->vmMagic ) == VM_MAGIC_VER2 ) {
+	if( header->vmMagic == VM_MAGIC_VER2 ) {
 		Com_Printf( "...which has vmMagic VM_MAGIC_VER2\n" );
 	} else {
 		tryjts = qtrue;
