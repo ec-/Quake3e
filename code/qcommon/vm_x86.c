@@ -1287,7 +1287,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 	static char errBuf[128];
 	byte *code, *code_start, *code_end;
 	int i, n, v, op0, op1, opStack, pstack;
-	instruction_t *ci;
+	instruction_t *ci, *proc;
 	
 	code = (byte *) header + header->codeOffset;
 	code_start = code; // for printing
@@ -1376,6 +1376,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 	ci = buf;
 	pstack = 0;
 	op1 = OP_UNDEF;
+	proc = NULL;
 
 	// Additional security checks
 
@@ -1402,6 +1403,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 			pstack = ci->value;
 			// mark jump target
 			ci->jused = 1;
+			proc = ci;
 			continue;
 		}
 
@@ -1423,6 +1425,9 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 			if ( v < 0 || v >= VM_STACK_SIZE || (v & 3) ) {
 				sprintf( errBuf, "bad return programStack %i at %i", v, i ); 
 				return errBuf;
+			}
+			if ( op1 == OP_PUSH ) {
+				proc = NULL;
 			}
 			continue;
 		}
@@ -1516,6 +1521,24 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 			}
 			continue;
 		}
+
+		if ( ci->op == OP_LOCAL ) {
+			v = ci->value;
+			if ( proc == NULL ) {
+				VM_FreeBuffers();				
+				Com_Error( ERR_DROP, "VM_CompileX86: missing proc frame for local %i at %i", v, i );
+				return 0;
+			}
+			if ( (ci+1)->op == OP_LOAD1 || (ci+1)->op == OP_LOAD2 || (ci+1)->op == OP_LOAD4 ) {
+				// FIXME: alloc 256 bytes of programStack in VM_CallCompiled()?
+				if ( v < 8 || v >= proc->value + 256 ) {
+					VM_FreeBuffers();
+					Com_Error( ERR_DROP, "VM_CompileX86: bad local address %i at %i", v, i );
+					return 0;
+				}
+			}
+		}
+
 #if 0  // FIXME: runtime checks?
 		if ( ci->op == OP_LOCAL && (ci+1)->op != OP_ADD ) {
 			v = ci->value;
