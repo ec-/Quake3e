@@ -95,96 +95,171 @@ static void VM_Destroy_Compiled( vm_t *vm );
 
 */
 
-#define OPF_JUMP      (1<<0)
-#define OPF_CALC      (1<<1)
-#define OPF_FLOAT     (1<<2)
+#define JUMP	(1<<0)
+#define CALC	(1<<1)
 
 #define ISS8(V) ( (V) >= -128 && (V) <= 127 )
 #define ISU8(V) ( (V) >= 0 && (V) <= 127 )
 
 typedef struct {
-	const char *name;
 	int   size; 
 	int	  stack;
 	int   flags;
 } opcode_info_t ;
 
+const char *opname[OP_MAX] = 
+{
+	"undef",
+	"ignore",
+	"break",
+	"enter",
+	"leave",
+	"call",
+	"push",
+	"pop",
+
+	"const",
+	"local",
+	"jump",
+
+	"eq",
+	"ne",
+
+	"lti",
+	"lei",
+	"gti",
+	"gei",
+
+	"ltu",
+	"leu",
+	"gtu",
+	"geu",
+
+	"eqf",
+	"nef",
+
+	"ltf",
+	"lef",
+	"gtf",
+	"gef",
+
+	"load1",
+	"load2",
+	"load4",
+	"store1",
+	"store2",
+	"store4",
+	"arg",
+	"bcopy",
+
+	"sex8",
+	"sex16",
+
+	"negi",
+	"add",
+	"sub",
+	"divi",
+	"divu",
+	"modi",
+	"modu",
+	"muli",
+	"mulu",
+
+	"band",
+	"bor", 
+	"bxor",
+	"bcom",
+
+	"lsh",
+	"rshi",
+	"rshu",
+
+	"negf",
+	"addf",
+	"subf",
+	"divf",
+	"mulf",
+
+	"cvif",
+	"cvfi",
+};
+
 opcode_info_t ops[OP_MAX] = 
 {
-	{ "undef",  0, 0, 0 },
-	{ "ignore", 0, 0, 0 },
-	{ "break",  0, 0, 0 },
+	{ 0, 0, 0 }, // undef
+	{ 0, 0, 0 }, // ignore
+	{ 0, 0, 0 }, // break
 
-	{ "enter",  4, 0, 0 },
-	{ "leave",  4,-4, 0 },
-	{ "call",   0, 0, 0 },
-	{ "push",   0, 4, 0 },
-	{ "pop",    0,-4, 0 },
+	{ 4, 0, 0 }, // enter
+	{ 4,-4, 0 }, // leave
+	{ 0, 0, 0 }, // call
+	{ 0, 4, 0 }, // push
+	{ 0,-4, 0 }, // pop
 
-	{ "const",  4, 4, 0 },
-	{ "local",  4, 4, 0 },
-	{ "jump",   0,-4, 0 },
+	{ 4, 4, 0 }, // const
+	{ 4, 4, 0 }, // local
+	{ 0,-4, 0 }, // jump
 
-	{ "eq",     4,-8, OPF_JUMP },
-	{ "ne",     4,-8, OPF_JUMP },
+	{ 4,-8, JUMP }, // eq
+	{ 4,-8, JUMP }, // ne
 
-	{ "lti",    4,-8, OPF_JUMP },
-	{ "lei",    4,-8, OPF_JUMP },
-	{ "gti",    4,-8, OPF_JUMP },
-	{ "gei",    4,-8, OPF_JUMP },
+	{ 4,-8, JUMP }, // lti
+	{ 4,-8, JUMP }, // lei
+	{ 4,-8, JUMP }, // gti
+	{ 4,-8, JUMP }, // gei
 
-	{ "ltu",    4,-8, OPF_JUMP },
-	{ "leu",    4,-8, OPF_JUMP },
-	{ "gtu",    4,-8, OPF_JUMP },
-	{ "geu",    4,-8, OPF_JUMP },
+	{ 4,-8, JUMP }, // ltu
+	{ 4,-8, JUMP }, // leu
+	{ 4,-8, JUMP }, // gtu
+	{ 4,-8, JUMP }, // geu
 
-	{ "eqf",    4,-8, OPF_JUMP | OPF_FLOAT },
-	{ "nef",    4,-8, OPF_JUMP | OPF_FLOAT },
+	{ 4,-8, JUMP }, // eqf
+	{ 4,-8, JUMP }, // nef
 
-	{ "ltf",    4,-8, OPF_JUMP | OPF_FLOAT },
-	{ "lef",    4,-8, OPF_JUMP | OPF_FLOAT },
-	{ "gtf",    4,-8, OPF_JUMP | OPF_FLOAT },
-	{ "gef",    4,-8, OPF_JUMP | OPF_FLOAT },
+	{ 4,-8, JUMP }, // ltf
+	{ 4,-8, JUMP }, // lef
+	{ 4,-8, JUMP }, // gtf
+	{ 4,-8, JUMP }, // gef
 
-	{ "load1",  0, 0, 0 },
-	{ "load2",  0, 0, 0 },
-	{ "load4",  0, 0, 0 },
-	{ "store1", 0,-8, 0 },
-	{ "store2", 0,-8, 0 },
-	{ "store4", 0,-8, 0 },
-	{ "arg",    1,-4, 0 },
-	{ "bcopy",  4,-8, 0 },
+	{ 0, 0, 0 }, // load1
+	{ 0, 0, 0 }, // load2
+	{ 0, 0, 0 }, // load4
+	{ 0,-8, 0 }, // store1
+	{ 0,-8, 0 }, // store2
+	{ 0,-8, 0 }, // store4
+	{ 1,-4, 0 }, // arg
+	{ 4,-8, 0 }, // bcopy
 
-	{ "sex8",   0, 0, 0 },
-	{ "sex16",  0, 0, 0 },
+	{ 0, 0, 0 }, // sex8
+	{ 0, 0, 0 }, // sex16
 
-	{ "negi",  0, 0, 0 },
-	{ "add",   0,-4, 0 },
-	{ "sub",   0,-4, 0 },
-	{ "divi",  0,-4, 0 },
-	{ "divu",  0,-4, 0 },
-	{ "modi",  0,-4, 0 },
-	{ "modu",  0,-4, 0 },
-	{ "muli",  0,-4, 0 },
-	{ "mulu",  0,-4, 0 },
+	{ 0, 0, 0 }, // negi
+	{ 0,-4, 0 }, // add
+	{ 0,-4, 0 }, // sub
+	{ 0,-4, 0 }, // divi
+	{ 0,-4, 0 }, // divu
+	{ 0,-4, 0 }, // modi
+	{ 0,-4, 0 }, // modu
+	{ 0,-4, 0 }, // muli
+	{ 0,-4, 0 }, // mulu
 
-	{ "band",  0,-4, 0 },
-	{ "bor",   0,-4, 0 },
-	{ "bxor",  0,-4, 0 },
-	{ "bcom",  0, 0, 0 },
+	{ 0,-4, 0 }, // band
+	{ 0,-4, 0 }, // bor
+	{ 0,-4, 0 }, // bxor
+	{ 0, 0, 0 }, // bcom
 
-	{ "lsh",   0,-4, 0 },
-	{ "rshi",  0,-4, 0 },
-	{ "rshu",  0,-4, 0 },
+	{ 0,-4, 0 }, // lsh
+	{ 0,-4, 0 }, // rshi
+	{ 0,-4, 0 }, // rshu
 
-	{ "negf",  0, 0, 0 },
-	{ "addf",  0,-4, OPF_CALC | OPF_FLOAT },
-	{ "subf",  0,-4, OPF_CALC | OPF_FLOAT },
-	{ "divf",  0,-4, OPF_CALC | OPF_FLOAT },
-	{ "mulf",  0,-4, OPF_CALC | OPF_FLOAT },
+	{ 0, 0, 0 }, // negf
+	{ 0,-4, CALC }, // addf
+	{ 0,-4, CALC }, // subf
+	{ 0,-4, CALC }, // divf
+	{ 0,-4, CALC }, // mulf
 
-	{ "cvif",  0, 0, 0 },
-	{ "cvfi",  0, 0, 0 }
+	{ 0, 0, 0 }, // cvif
+	{ 0, 0, 0 } // cvfi
 };
 
 
@@ -207,7 +282,7 @@ typedef struct {
 	byte  opStack;  // 8
 	int jused:1;
 	int jump:1;
-	int njump:1;
+//	int njump:1;
 } instruction_t;
 
 
@@ -641,7 +716,7 @@ void EmitCall( vm_t *vm, instruction_t *i, int addr )
 
 void EmitCallFunc( vm_t *vm ) 
 {
-	//EmitString( "8B 07" );			// mov eax, dword ptr [edi]
+	//EmitString( "8B 07" );		// mov eax, dword ptr [edi]
 	EmitString( "83 EF 04" );		// sub edi, 4
 	EmitString( "85 C0" );			// test eax, eax
 	EmitString( "7C 1A" );			// jl (SystemCall) +26
@@ -755,6 +830,24 @@ void EmitBCPYFunc( vm_t *vm )
 
 /*
 =================
+EmitFCalc
+=================
+*/
+void EmitFCalc( int op ) 
+{
+	switch ( op )
+	{
+		case OP_ADDF: EmitString( "D8 07" ); break; // fadd dword ptr [edi]
+		case OP_SUBF: EmitString( "D8 27" ); break;	// fsub dword ptr [edi]
+		case OP_MULF: EmitString( "D8 0F" ); break; // fmul dword ptr [edi]
+		case OP_DIVF: EmitString( "D8 37" ); break; // fdiv dword ptr [edi]
+		default: Com_Error( ERR_DROP, "bad float op" ); break;
+	};
+}
+
+
+/*
+=================
 FloatMerge
 =================
 */
@@ -762,17 +855,13 @@ static int FloatMerge( instruction_t *curr, instruction_t *next )
 {
 	EmitString( "D9 47 F8" );				// fld dword ptr [edi-8]
 	EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
-	switch ( curr->op ) {
-		case OP_ADDF: EmitString( "D8 07" ); break; // fadd dword ptr [edi]
-		case OP_SUBF: EmitString( "D8 27" ); break; // fsub dword ptr [edi]
-		case OP_MULF: EmitString( "D8 0F" ); break; // fmul dword ptr [edi]
-		case OP_DIVF: EmitString( "D8 37" ); break; // fdiv dword ptr [edi]
-	}
+	EmitFCalc( curr->op );
 	switch ( next->op ) {
 		case OP_ADDF: EmitString( "DE C1" ); break; // faddp
 		case OP_SUBF: EmitString( "DE E9" ); break; // fsubp
 		case OP_MULF: EmitString( "DE C9" ); break; // fmulp
 		case OP_DIVF: EmitString( "DE F9" ); break; // fdivp
+		default: Com_Error( ERR_DROP, "bad merge op2" ); break;
 	}
 	EmitString( "D9 5F F8" );				// fstp dword ptr [edi-8]
 	EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
@@ -1251,7 +1340,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 		}
 
 		// set some bits for easy access
-		if ( ops[ op0 ].flags & OPF_JUMP ) 
+		if ( ops[ op0 ].flags & JUMP ) 
 			ci->jump = 1;
 		else
 			ci->jump = 0;
@@ -1497,7 +1586,7 @@ void VM_FindMOps( vmHeader_t *header, instruction_t *buf )
 			}
 		}
 
-		if ( (ops[ ci->op ].flags & (OPF_FLOAT|OPF_CALC))==(OPF_FLOAT|OPF_CALC) && (ops[(ci+1)->op].flags&(OPF_FLOAT|OPF_CALC))==(OPF_FLOAT|OPF_CALC) && !(ci+1)->jused ) {
+		if ( (ops[ ci->op ].flags & CALC) && (ops[(ci+1)->op].flags & CALC) && !(ci+1)->jused ) {
 			ci->mop = MOP_CALCF4;
 			ci += 2; i += 2;
 			continue;
@@ -1951,45 +2040,15 @@ __compile:
 			break;
 
 		case OP_ADDF:
-			if ( ci->mop == MOP_CALCF4 ) {
-				FloatMerge( ci, ni );
-				break;
-			}
-			EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
-			EmitString( "D8 07" );					// fadd dword ptr [edi]
-			EmitString( "D9 5F FC" );				// fstp dword ptr [edi-4]
-			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
-			break;
-
 		case OP_SUBF:
-			if ( ci->mop == MOP_CALCF4 ) {
-				FloatMerge( ci, ni );
-				break;
-			}
-			EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
-			EmitString( "D8 27" );					// fsub dword ptr [edi]
-			EmitString( "D9 5F FC" );				// fstp dword ptr [edi-4]
-			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
-			break;
-
 		case OP_DIVF:
-			if ( ci->mop == MOP_CALCF4 ) {
-				FloatMerge( ci, ni );
-				break;
-			}
-			EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
-			EmitString( "D8 37" );					// fdiv dword ptr [edi]
-			EmitString( "D9 5F FC" );				// fstp dword ptr [edi-4]
-			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
-			break;
-
 		case OP_MULF:
 			if ( ci->mop == MOP_CALCF4 ) {
 				FloatMerge( ci, ni );
 				break;
 			}
 			EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
-			EmitString( "D8 0F" );					// fmul dword ptr [edi]
+			EmitFCalc( ci->op );					// fadd|fsub|fmul|fdiv dword ptr [edi]
 			EmitString( "D9 5F FC" );				// fstp dword ptr [edi-4]
 			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 			break;
