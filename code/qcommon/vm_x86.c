@@ -1515,7 +1515,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 		if ( ci->op == OP_ARG ) {
 			v = ci->value;
 			// argument can't exceed programStack frame
-			if ( v > pstack - 4 || (v & 3) ) {
+			if ( v < 8 || v > pstack - 4 || (v & 3) ) {
 				sprintf( errBuf, "bad argument address %i at %i", v, i );
 				return errBuf;
 			}
@@ -1525,16 +1525,14 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 		if ( ci->op == OP_LOCAL ) {
 			v = ci->value;
 			if ( proc == NULL ) {
-				VM_FreeBuffers();				
-				Com_Error( ERR_DROP, "VM_CompileX86: missing proc frame for local %i at %i", v, i );
-				return 0;
+				sprintf( errBuf, "missing proc frame for local %i at %i", v, i );
+				return errBuf;
 			}
 			if ( (ci+1)->op == OP_LOAD1 || (ci+1)->op == OP_LOAD2 || (ci+1)->op == OP_LOAD4 ) {
 				// FIXME: alloc 256 bytes of programStack in VM_CallCompiled()?
 				if ( v < 8 || v >= proc->value + 256 ) {
-					VM_FreeBuffers();
-					Com_Error( ERR_DROP, "VM_CompileX86: bad local address %i at %i", v, i );
-					return 0;
+					sprintf( errBuf, "bad local address %i at %i", v, i );
+					return errBuf;
 				}
 			}
 		}
