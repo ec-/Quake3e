@@ -327,8 +327,16 @@ void BadJump( void )
 	exit(1);
 }
 
+void BadStack( void )
+{
+	Com_Error( ERR_DROP, "program tried to overflow program stack" ); 
+	exit(1);
+}
+
+
 static void (*const errJumpPtr)(void) = ErrJump;
 static void (*const badJumpPtr)(void) = BadJump;
+static void (*const badStackPtr)(void) = BadStack;
 
 static void VM_FreeBuffers( void ) 
 {
@@ -826,6 +834,13 @@ void EmitBCPYFunc( vm_t *vm )
 	EmitString( "C3" );			// ret
 }
 #endif
+
+
+void EmitPSOFFunc( vm_t *vm ) 
+{
+	EmitString( "FF 15" );		// call badStackPtr
+	Emit4( (int)&badStackPtr );
+}
 
 
 /*
@@ -1513,7 +1528,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 		}
 
 		if ( ci->op == OP_ARG ) {
-			v = ci->value;
+			v = ci->value & 255;
 			// argument can't exceed programStack frame
 			if ( v < 8 || v > pstack - 4 || (v & 3) ) {
 				sprintf( errBuf, "bad argument address %i at %i", v, i );
@@ -1623,6 +1638,7 @@ enum {
 	FUNC_CALL = 0,
 	FUNC_FTOL,
 	FUNC_BCPY,
+	FUNC_PSOF,
 	FUNC_LAST
 };
 
@@ -1689,6 +1705,7 @@ __compile:
 		switch ( ci->op ) {
 
 		case OP_UNDEF:
+		case OP_IGNORE:
 			break;
 
 		case OP_BREAK:
@@ -1698,12 +1715,18 @@ __compile:
 		case OP_ENTER:
 			v = ci->value;
 			if ( ISS8( v ) ) {
-				EmitString( "83 EE" );		// sub	esi, 0x12345678
+				EmitString( "83 EE" );		// sub	esi, 0x12
 				Emit1( v );
 			} else {
 				EmitString( "81 EE" );		// sub	esi, 0x12345678
 				Emit4( v );
 			}
+			// programStack overflow check
+			EmitString( "81 FE" );		// cmp	esi, vm->stackBottom
+			Emit4( vm->stackBottom );
+			EmitString( "0F 82" );		// jb +codeOffset[FUNC_PSOF]
+			n = codeOffset[FUNC_PSOF] - compiledOfs;
+			Emit4( n - 6 );
 			break;
 
 		case OP_CONST:
@@ -2176,6 +2199,8 @@ __compile:
 #if BCPY_PTR
 		EmitBCPYFunc( vm );
 #endif
+		codeOffset[FUNC_PSOF] = compiledOfs;
+		EmitPSOFFunc( vm );
 
 	} // for( pass = 0; pass < n; pass++ )
 
