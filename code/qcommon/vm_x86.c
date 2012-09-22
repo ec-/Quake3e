@@ -1303,6 +1303,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 	byte *code, *code_start, *code_end;
 	int i, n, v, op0, op1, opStack, pstack;
 	instruction_t *ci, *proc;
+	int startp, endp;
 	
 	code = (byte *) header + header->codeOffset;
 	code_start = code; // for printing
@@ -1311,6 +1312,9 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 	ci = buf;
 	opStack = 0;
 	op1 = OP_UNDEF;
+
+	startp = 0;
+	endp = header->instructionCount - 1;
 
 	// load instructions and perform some initial calculations/checks
 	for ( i = 0; i < header->instructionCount; i++, ci++, op1 = op0 ) {
@@ -1400,9 +1404,9 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 
 		// function entry
 		if ( op0 == OP_ENTER ) {
-			// missing block end
-			if ( pstack && op1 != OP_LEAVE ) {
-				sprintf( errBuf, "missing return instruction before %i", i ); 
+			// missing block end 
+			if ( proc || ( pstack && op1 != OP_LEAVE ) ) {
+				sprintf( errBuf, "missing proc end before %i", i ); 
 				return errBuf;
 			}
 			if ( ci->opStack != 0 ) {
@@ -1415,10 +1419,27 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 				sprintf( errBuf, "bad entry programStack %i at %i", v, i ); 
 				return errBuf;
 			}
+			
 			pstack = ci->value;
+			
 			// mark jump target
 			ci->jused = 1;
 			proc = ci;
+			startp = i + 1;
+
+			// locate endproc
+			for ( endp = 0, n = i+1 ; n < header->instructionCount; n++ ) {
+				if ( buf[n].op == OP_PUSH && buf[n+1].op == OP_LEAVE ) {
+					endp = n;
+					break;
+				}
+			}
+
+			if ( endp == 0 ) {
+				sprintf( errBuf, "missing end proc for %i", i ); 
+				return errBuf;
+			}
+
 			continue;
 		}
 
@@ -1442,7 +1463,13 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 				return errBuf;
 			}
 			if ( op1 == OP_PUSH ) {
+				if ( proc == NULL ) {
+					sprintf( errBuf, "unexpected proc end at %i", i ); 
+					return errBuf;
+				}
 				proc = NULL;
+				startp = i + 1; // next instruction
+				endp = header->instructionCount - 1; // end of the image
 			}
 			continue;
 		}
@@ -1450,8 +1477,10 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 		// conditional jumps
 		if ( ci->jump ) {
 			v = ci->value;
-			if ( v >= header->instructionCount ) {
-				sprintf( errBuf, "jump target %i is out of range", v ); 
+			//if ( v >= header->instructionCount ) {
+			// allow only local proc jumps
+			if ( v < startp || v > endp ) {
+				sprintf( errBuf, "jump target %i at %i is out of range (%i,%i)", v, startp, endp );
 				return errBuf;
 			}
 			if ( buf[v].opStack != 0 ) {
@@ -1473,8 +1502,9 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 			}
 			if ( op1 == OP_CONST ) {
 				v = buf[i-1].value;
-				if ( v >= header->instructionCount ) {
-					sprintf( errBuf, "jump target %i is out of range", v );
+				// allow only local jumps
+				if ( v < startp || v > endp ) {
+					sprintf( errBuf, "jump target %i at %i is out of range (%i,%i)", v, startp, endp );
 					return errBuf;
 				}
 				if ( buf[v].opStack != 0 ) {
@@ -1485,6 +1515,10 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 				if ( buf[v].op == OP_ENTER ) {
 					n = buf[v].op;
 					sprintf( errBuf, "jump target %i has bad opcode %i", v, n ); 
+					return errBuf;
+				}
+				if ( v == (i-1) ) {
+					sprintf( errBuf, "self loop at %i", v ); 
 					return errBuf;
 				}
 				// mark jump target
