@@ -531,9 +531,44 @@ void CL_PlayDemo_f( void ) {
 	char		*arg, *ext_test;
 	int			protocol, i;
 	char		retry[MAX_OSPATH];
+	fileHandle_t hFile;
 
 	if (Cmd_Argc() != 2) {
 		Com_Printf ("demo <demoname>\n");
+		return;
+	}
+
+	// open the demo file
+	arg = Cmd_Argv(1);
+	
+	// check for an extension .dm_?? (?? is protocol)
+	ext_test = arg + strlen(arg) - 6;
+	if ( strlen( arg ) > 6 && Q_stricmpn( ext_test, ".dm_", 4 ) == 0 )
+	{
+		protocol = atoi(ext_test+4);
+		i = 0;
+		while ( demo_protocols[i] )
+		{
+			if ( demo_protocols[i] == protocol )
+				break;
+			i++;
+		}
+		if ( demo_protocols[i] )
+		{
+			Com_sprintf( name, sizeof( name ), "demos/%s", arg );
+			FS_FOpenFileRead( name, &hFile, qtrue );
+		} else {
+			Com_Printf( "Protocol %d not supported for demos\n", protocol );
+			Q_strncpyz( retry, arg, sizeof( retry ) );
+			retry[strlen(retry)-6] = '\0';
+			CL_WalkDemoExt( retry, name, &hFile );
+		}
+	} else {
+		CL_WalkDemoExt( arg, name, &hFile );
+	}
+	
+	if ( hFile == FS_INVALID_HANDLE ) {
+		Com_Printf( S_COLOR_YELLOW "couldn't open %s\n", name );
 		return;
 	}
 
@@ -541,44 +576,9 @@ void CL_PlayDemo_f( void ) {
 	// 2 means don't force disconnect of local client
 	Cvar_Set( "sv_killserver", "2" );
 
-	// open the demo file
-	arg = Cmd_Argv(1);
-	
 	CL_Disconnect( qtrue );
 
-	// check for an extension .dm_?? (?? is protocol)
-	ext_test = arg + strlen(arg) - 6;
-	if ((strlen(arg) > 6) && (ext_test[0] == '.') &&
-		((ext_test[1] == 'd') || (ext_test[1] == 'D')) &&
-		((ext_test[2] == 'm') || (ext_test[2] == 'M')) &&
-		(ext_test[3] == '_'))
-	{
-		protocol = atoi(ext_test+4);
-		i=0;
-		while(demo_protocols[i])
-		{
-			if (demo_protocols[i] == protocol)
-				break;
-			i++;
-		}
-		if (demo_protocols[i])
-		{
-			Com_sprintf (name, sizeof(name), "demos/%s", arg);
-			FS_FOpenFileRead( name, &clc.demofile, qtrue );
-		} else {
-			Com_Printf("Protocol %d not supported for demos\n", protocol);
-			Q_strncpyz(retry, arg, sizeof(retry));
-			retry[strlen(retry)-6] = 0;
-			CL_WalkDemoExt( retry, name, &clc.demofile );
-		}
-	} else {
-		CL_WalkDemoExt( arg, name, &clc.demofile );
-	}
-	
-	if (!clc.demofile) {
-		Com_Error( ERR_DROP, "couldn't open %s", name);
-		return;
-	}
+	clc.demofile = hFile;
 	Q_strncpyz( clc.demoName, Cmd_Argv(1), sizeof( clc.demoName ) );
 
 	Con_Close();
