@@ -281,19 +281,19 @@ void CL_Record_f( void ) {
 	char		*s;
 
 	if ( Cmd_Argc() > 2 ) {
-		Com_Printf ("record <demoname>\n");
+		Com_Printf( "record <demoname>\n" );
 		return;
 	}
 
 	if ( clc.demorecording ) {
-		if (!clc.spDemoRecording) {
-			Com_Printf ("Already recording.\n");
+		if ( !clc.spDemoRecording ) {
+			Com_Printf( "Already recording.\n" );
 		}
 		return;
 	}
 
 	if ( cls.state != CA_ACTIVE ) {
-		Com_Printf ("You must be in a level to record.\n");
+		Com_Printf( "You must be in a level to record.\n" );
 		return;
 	}
 
@@ -322,19 +322,21 @@ void CL_Record_f( void ) {
 	// open the demo file
 
 	Com_Printf ("recording to %s.\n", name);
+
 	clc.demofile = FS_FOpenFileWrite( name );
-	if ( !clc.demofile ) {
+	if ( clc.demofile == FS_INVALID_HANDLE ) {
 		Com_Printf ("ERROR: couldn't open.\n");
 		return;
 	}
+
 	FS_LockHandle( clc.demofile );
 	clc.demorecording = qtrue;
-	if (Cvar_VariableValue("ui_recordSPDemo")) {
+
+	if ( Cvar_VariableValue( "ui_recordSPDemo" ) ) {
 	  clc.spDemoRecording = qtrue;
 	} else {
 	  clc.spDemoRecording = qfalse;
 	}
-
 
 	Q_strncpyz( clc.demoName, demoName, sizeof( clc.demoName ) );
 
@@ -533,8 +535,8 @@ void CL_PlayDemo_f( void ) {
 	char		retry[MAX_OSPATH];
 	fileHandle_t hFile;
 
-	if (Cmd_Argc() != 2) {
-		Com_Printf ("demo <demoname>\n");
+	if ( Cmd_Argc() != 2 ) {
+		Com_Printf( "demo <demoname>\n" );
 		return;
 	}
 

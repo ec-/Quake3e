@@ -172,16 +172,16 @@ void Con_Dump_f (void)
 	fileHandle_t	f;
 	char	buffer[1024];
 
-	if (Cmd_Argc() != 2)
+	if ( Cmd_Argc() != 2 )
 	{
-		Com_Printf ("usage: condump <filename>\n");
+		Com_Printf( "usage: condump <filename>\n" );
 		return;
 	}
 
-	Com_Printf ("Dumped console text to %s.\n", Cmd_Argv(1) );
+	Com_Printf( "Dumped console text to %s.\n", Cmd_Argv( 1 ) );
 
 	f = FS_FOpenFileWrite( Cmd_Argv( 1 ) );
-	if (!f)
+	if ( f == FS_INVALID_HANDLE )
 	{
 		Com_Printf ("ERROR: couldn't open.\n");
 		return;
