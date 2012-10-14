@@ -1297,7 +1297,7 @@ qboolean LocalOptimize( vm_t *vm )
 
 
 char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf, 
-						  char *jumpTableTargets, int numJumpTableTargets ) 
+						  byte *jumpTableTargets, int numJumpTableTargets ) 
 {
 	static char errBuf[128];
 	byte *code, *code_start, *code_end;
@@ -1480,7 +1480,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 			//if ( v >= header->instructionCount ) {
 			// allow only local proc jumps
 			if ( v < startp || v > endp ) {
-				sprintf( errBuf, "jump target %i at %i is out of range (%i,%i)", v, startp, endp );
+				sprintf( errBuf, "jump target %i at %i is out of range (%i,%i)", v, i-1, startp, endp );
 				return errBuf;
 			}
 			if ( buf[v].opStack != 0 ) {
@@ -1504,7 +1504,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 				v = buf[i-1].value;
 				// allow only local jumps
 				if ( v < startp || v > endp ) {
-					sprintf( errBuf, "jump target %i at %i is out of range (%i,%i)", v, startp, endp );
+					sprintf( errBuf, "jump target %i at %i is out of range (%i,%i)", v, i-1, startp, endp );
 					return errBuf;
 				}
 				if ( buf[v].opStack != 0 ) {
