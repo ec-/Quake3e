@@ -1313,9 +1313,9 @@ void SV_UserinfoChanged( client_t *cl ) {
 	}
 
 	// snaps command
-	val = Info_ValueForKey (cl->userinfo, "snaps");
-	if (strlen(val)) {
-		i = atoi(val);
+	val = Info_ValueForKey( cl->userinfo, "snaps" );
+	if ( val[0] ) {
+		i = atoi( val );
 		if ( i < 1 ) {
 			i = 1;
 		} else if ( i > sv_fps->integer ) {
@@ -1323,7 +1323,7 @@ void SV_UserinfoChanged( client_t *cl ) {
 		}
 		cl->snapshotMsec = 1000/i;
 	} else {
-		cl->snapshotMsec = 50;
+		cl->snapshotMsec = 1000/sv_fps->integer;
 	}
 	
 	// TTimo
