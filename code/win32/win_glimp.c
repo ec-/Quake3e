@@ -68,7 +68,6 @@ static qboolean s_classRegistered = qfalse;
 //
 // function declaration
 //
-void	 QGL_EnableLogging( qboolean enable );
 qboolean QGL_Init( const char *dllname );
 void     QGL_Shutdown( void );
 
@@ -1223,37 +1222,6 @@ static void GLW_InitExtensions( void )
 		ri.Printf( PRINT_ALL, "...GL_EXT_compiled_vertex_array not found\n" );
 	}
 
-	// WGL_3DFX_gamma_control
-	qwglGetDeviceGammaRamp3DFX = NULL;
-	qwglSetDeviceGammaRamp3DFX = NULL;
-
-	if ( HAVE_EXT("WGL_3DFX_gamma_control") )
-	{
-		if ( !r_ignorehwgamma->integer && r_ext_gamma_control->integer )
-		{
-			qwglGetDeviceGammaRamp3DFX = ( BOOL ( WINAPI * )( HDC, LPVOID ) ) qwglGetProcAddress( "wglGetDeviceGammaRamp3DFX" );
-			qwglSetDeviceGammaRamp3DFX = ( BOOL ( WINAPI * )( HDC, LPVOID ) ) qwglGetProcAddress( "wglSetDeviceGammaRamp3DFX" );
-
-			if ( qwglGetDeviceGammaRamp3DFX && qwglSetDeviceGammaRamp3DFX )
-			{
-				ri.Printf( PRINT_ALL, "...using WGL_3DFX_gamma_control\n" );
-			}
-			else
-			{
-				qwglGetDeviceGammaRamp3DFX = NULL;
-				qwglSetDeviceGammaRamp3DFX = NULL;
-			}
-		}
-		else
-		{
-			ri.Printf( PRINT_ALL, "...ignoring WGL_3DFX_gamma_control\n" );
-		}
-	}
-	else
-	{
-		ri.Printf( PRINT_ALL, "...WGL_3DFX_gamma_control not found\n" );
-	}
-
 	textureFilterAnisotropic = qfalse;
 	if ( HAVE_EXT("GL_EXT_texture_filter_anisotropic") )
 	{
@@ -1438,10 +1406,8 @@ void GLimp_EndFrame (void)
 			SwapBuffers( glw_state.hDC );
 		}
 	}
-
-	// check logging
-	QGL_EnableLogging( r_logFile->integer );
 }
+
 
 static qboolean GLW_StartOpenGL( void )
 {
@@ -1690,13 +1656,6 @@ void GLimp_Shutdown( void )
 		glw_state.pixelFormatSet = qfalse;
 	}
 
-	// close the r_logFile
-	if ( glw_state.log_fp )
-	{
-		fclose( glw_state.log_fp );
-		glw_state.log_fp = NULL;
-	}
-
 	// reset display settings
 	if ( glw_state.cdsFullscreen )
 	{
@@ -1710,14 +1669,4 @@ void GLimp_Shutdown( void )
 
 	memset( &glConfig, 0, sizeof( glConfig ) );
 	memset( &glState, 0, sizeof( glState ) );
-}
-
-/*
-** GLimp_LogComment
-*/
-void GLimp_LogComment( char *comment ) 
-{
-	if ( glw_state.log_fp ) {
-		fprintf( glw_state.log_fp, "%s", comment );
-	}
 }
