@@ -663,7 +663,7 @@ static void LerpMeshVertexes_scalar(md3Surface_t *surf, float backlerp)
 
 //			VectorNormalize (outNormal);
 		}
-    	VectorArrayNormalize((vec4_t *)tess.normal[tess.numVertexes], numVerts);
+    	VectorArrayNormalize( (vec4_t*)tess.normal[tess.numVertexes], numVerts );
    	}
 }
 

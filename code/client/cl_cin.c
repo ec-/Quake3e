@@ -86,7 +86,8 @@ typedef struct {
 	int		mcomp[256];
 	byte				*qStatus[2][32768];
 
-	long				oldXOff, oldYOff, oldysize, oldxsize;
+	long				oldXOff, oldYOff;
+	unsigned long		oldysize, oldxsize;
 
 	int					currentHandle;
 } cinematics_t;
@@ -1332,7 +1333,7 @@ Fetch and decompress the pending frame
 e_status CIN_RunCinematic (int handle)
 {
         // bk001204 - init
-	int	start = 0;
+	unsigned int start = 0;
 	int     thisTime = 0;
 
 	if (handle < 0 || handle>= MAX_VIDEO_HANDLES || cinTable[handle].status == FMV_EOF) return FMV_EOF;
