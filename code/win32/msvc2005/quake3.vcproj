@@ -519,6 +519,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\qcommon\q_platform.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\.\qcommon\q_shared.h"
 				>
 			</File>
