@@ -493,12 +493,13 @@ nextInstruction2:
 #ifdef DEBUG_VM
 				stomped = *(int *)&image[ programStack + 4 ];
 #endif
-				*(int *)&image[ programStack + 4 ] = -1 - programCounter;
+				*(int *)&image[ programStack + 4 ] = ~programCounter;
 
 //VM_LogSyscalls( (int *)&image[ programStack + 4 ] );
 				{
 					intptr_t* argptr = (intptr_t *)&image[ programStack + 4 ];
-				#if __WORDSIZE == 64
+				
+				#if idx64 //__WORDSIZE == 64
 				// the vm has ints on the stack, we expect
 				// longs so we have to convert it
 					intptr_t argarr[16];

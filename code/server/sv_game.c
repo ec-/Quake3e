@@ -298,7 +298,7 @@ The module is making a system call
 ====================
 */
 intptr_t SV_GameSystemCalls( intptr_t *args ) {
-	switch( args[0] ) {
+	switch( (int)args[0] ) {
 	case G_PRINT:
 		Com_Printf( "%s", (const char*)VMA(1) );
 		return 0;
@@ -846,7 +846,7 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 
 
 	default:
-		Com_Error( ERR_DROP, "Bad game system trap: %ld", (long int) args[0] );
+		Com_Error( ERR_DROP, "Bad game system trap: %d", (int)args[0] );
 	}
 	return -1;
 }

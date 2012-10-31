@@ -1080,7 +1080,7 @@ void	QDECL Sys_SetStatus( const char *format, ...) __attribute__ ((format (print
 
 // Sys_Milliseconds should only be used for profiling purposes,
 // any game related timing information should come from event timestamps
-int		Sys_Milliseconds (void);
+int		Sys_Milliseconds( void );
 
 void	Sys_SnapVector( float *v );
 
