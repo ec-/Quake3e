@@ -344,7 +344,7 @@ int WriteIndent(FILE *fp, int indent)
 int WriteFloat(FILE *fp, float value)
 {
 	char buf[128];
-	int l;
+	size_t l;
 
 	Com_sprintf(buf, sizeof(buf), "%f", value);
 	l = strlen(buf);

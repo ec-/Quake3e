@@ -782,7 +782,7 @@ int PS_ReadLiteral(script_t *script, token_t *token)
 //============================================================================
 int PS_ReadPunctuation(script_t *script, token_t *token)
 {
-	int len;
+	size_t len;
 	char *p;
 	punctuation_t *punc;
 
@@ -1277,7 +1277,7 @@ int NumLinesCrossed(script_t *script)
 //============================================================================
 int ScriptSkipTo(script_t *script, char *value)
 {
-	int len;
+	size_t len;
 	char firstchar;
 
 	firstchar = *value;

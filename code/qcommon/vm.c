@@ -784,7 +784,7 @@ vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *),
 
 	// the stack is implicitly at the end of the image
 	vm->programStack = vm->dataMask + 1;
-	vm->stackBottom = vm->programStack - VM_STACK_SIZE;
+	vm->stackBottom = vm->programStack - PROGRAM_STACK_SIZE;
 
 	vm->compiled = qfalse;
 
@@ -937,9 +937,6 @@ an OP_ENTER instruction, which will subtract space for
 locals from sp
 ==============
 */
-#define	MAX_STACK	256
-#define	STACK_MASK	(MAX_STACK-1)
-
 intptr_t	QDECL VM_Call( vm_t *vm, int callnum, ... ) {
 	vm_t	*oldVM;
 	intptr_t r;

@@ -1353,7 +1353,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 			sprintf( errBuf, "opStack underflow at %i", i ); 
 			return errBuf;
 		}
-		if ( opStack >= VM_MAX_OPSTACK * 4 ) {
+		if ( opStack >= OPSTACK_SIZE * 4 ) {
 			sprintf( errBuf, "opStack overflow at %i", i ); 
 			return errBuf;
 		}
@@ -1415,7 +1415,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 				return errBuf;
 			}
 			v = ci->value;
-			if ( v < 0 || v >= VM_STACK_SIZE || (v & 3) ) {
+			if ( v < 0 || v >= PROGRAM_STACK_SIZE || (v & 3) ) {
 				sprintf( errBuf, "bad entry programStack %i at %i", v, i ); 
 				return errBuf;
 			}
@@ -1458,7 +1458,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 				return errBuf;
 			}
 			v = ci->value;
-			if ( v < 0 || v >= VM_STACK_SIZE || (v & 3) ) {
+			if ( v < 0 || v >= PROGRAM_STACK_SIZE || (v & 3) ) {
 				sprintf( errBuf, "bad return programStack %i at %i", v, i ); 
 				return errBuf;
 			}
@@ -2336,7 +2336,7 @@ This function is called directly by the generated code
 ==============
 */
 int	VM_CallCompiled( vm_t *vm, int *args ) {
-	int		stack[VM_MAX_OPSTACK+2];
+	int		stack[OPSTACK_SIZE+2];
 	size_t	programStack;
 	size_t	stackOnEntry;
 	byte	*image;

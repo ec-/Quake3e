@@ -58,8 +58,9 @@ char *COM_SkipPath (char *pathname)
 COM_GetExtension
 ============
 */
-const char *COM_GetExtension( const char *name ) {
-	int length, i;
+const char *COM_GetExtension( const char *name ) 
+{
+	size_t length, i;
 
 	length = strlen(name)-1;
 	i = length;

@@ -22,13 +22,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "q_shared.h"
 #include "qcommon.h"
 
-#define	OPSTACK_SIZE	1024
-#define	OPSTACK_MASK	(OPSTACK_SIZE-1)
+#define	OPSTACK_SIZE	64
 
 // don't change
 // Hardcoded in q3asm an reserved at end of bss
 #define	PROGRAM_STACK_SIZE	0x10000
-#define	PROGRAM_STACK_MASK	(PROGRAM_STACK_SIZE-1)
 
 typedef enum {
 	OP_UNDEF, 
@@ -130,12 +128,6 @@ typedef struct vmSymbol_s {
 	char	symName[1];		// variable sized
 } vmSymbol_t;
 
-#define	VM_OFFSET_PROGRAM_STACK			0
-#define	VM_OFFSET_SYSTEM_CALL			4
-#define	VM_OFFSET_DATA_BASE				8
-
-#define	VM_OFFSET_INSTRUCTON_COUNT		12
-#define	VM_OFFSET_INSTRUCTON_POINTERS	16
 
 struct vm_s {
     // DO NOT MOVE OR CHANGE THESE WITHOUT CHANGING THE VM_OFFSET_* DEFINES
@@ -153,7 +145,7 @@ struct vm_s {
 
 	// for dynamic linked modules
 	void		*dllHandle;
-	intptr_t			(QDECL *entryPoint)( int callNum, ... );
+	intptr_t	(QDECL *entryPoint)( int callNum, ... );
 	void (*destroy)(vm_t* self);
 
 	// for interpreted modules
@@ -168,7 +160,7 @@ struct vm_s {
 	int			stackBottom;		// if programStack < stackBottom, error
 
 	int			numSymbols;
-	struct vmSymbol_s	*symbols;
+	vmSymbol_t	*symbols;
 
 	int			callLevel;		// counts recursive VM_Call
 	int			breakFunction;		// increment breakCount on function entry to this
