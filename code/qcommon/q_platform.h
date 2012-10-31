@@ -34,8 +34,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #if (defined _M_IX86 || defined __i386__) && !defined(C_ONLY)
 #define id386 1
 #elif defined (_M_AMD64)
-#define id386 1
-#define idx64 0
+#define id386 0
+#define idx64 1
 #else
 #define id386 0
 #define idx64 0
@@ -75,6 +75,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define ARCH_STRING "x86"
 #elif defined( _M_AMD64 )
 #define ARCH_STRING "x86_64"
+#define UNICODE
+#define NO_VM_COMPILED
 #elif defined _M_ALPHA
 #define ARCH_STRING "AXP"
 #endif
