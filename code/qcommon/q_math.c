@@ -500,10 +500,7 @@ void VectorRotate( vec3_t in, vec3_t matrix[3], vec3_t out )
 */
 float Q_rsqrt( float number )
 {
-	union {
-		float f;
-		int i;
-	} t;
+	floatint_t t;
 	float x2, y;
 	const float threehalfs = 1.5F;
 
@@ -1007,15 +1004,11 @@ Don't pass doubles to this
 */
 int Q_isnan( float x )
 {
-	union
-	{
-		float f;
-		unsigned int i;
-	} t;
+	floatint_t t;
 
 	t.f = x;
-	t.i &= 0x7FFFFFFF;
-	t.i = 0x7F800000 - t.i;
+	t.u &= 0x7FFFFFFF;
+	t.u = 0x7F800000 - t.u;
 
-	return (int)( (unsigned int)t.i >> 31 );
+	return (int)( t.u >> 31 );
 }

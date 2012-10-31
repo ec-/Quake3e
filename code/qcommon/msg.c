@@ -409,13 +409,9 @@ int MSG_ReadLong( msg_t *msg ) {
 }
 
 float MSG_ReadFloat( msg_t *msg ) {
-	union {
-		byte	b[4];
-		float	f;
-		int	l;
-	} dat;
+	floatint_t dat;
 	
-	dat.l = MSG_ReadBits( msg, 32 );
+	dat.i = MSG_ReadBits( msg, 32 );
 	if ( msg->readcount > msg->cursize ) {
 		dat.f = -1;
 	}	

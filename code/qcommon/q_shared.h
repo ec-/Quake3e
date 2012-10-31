@@ -144,15 +144,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
   #endif
 #endif
 
-typedef unsigned char 		byte;
+typedef unsigned char byte;
 
-typedef enum {qfalse, qtrue}	qboolean;
+typedef enum { qfalse = 0, qtrue } qboolean;
 
-typedef union {
-	float f;
+typedef union 
+{
 	int i;
-	unsigned int ui;
-} floatint_t;
+	unsigned int u;
+	float f;
+	byte b[4];
+}
+floatint_t;
 
 typedef int		qhandle_t;
 typedef int		sfxHandle_t;

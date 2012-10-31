@@ -225,26 +225,22 @@ qint64 Long64Swap (qint64 ll)
 	return result;
 }
 
-qint64 Long64NoSwap (qint64 ll)
+qint64 Long64NoSwap( qint64 ll )
 {
 	return ll;
 }
 
-typedef union {
-    float	f;
-    unsigned int i;
-} _FloatByteUnion;
-
-float FloatSwap (const float *f) {
-	_FloatByteUnion out;
+float FloatSwap( const float *f ) 
+{
+	floatint_t out;
 
 	out.f = *f;
-	out.i = LongSwap(out.i);
+	out.i = LongSwap( out.i );
 
 	return out.f;
 }
 
-float FloatNoSwap (const float *f)
+float FloatNoSwap( const float *f )
 {
 	return *f;
 }

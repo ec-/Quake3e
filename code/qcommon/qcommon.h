@@ -308,7 +308,6 @@ VIRTUAL MACHINE
 
 ==============================================================
 */
-
 typedef struct vm_s vm_t;
 
 typedef enum {
@@ -356,12 +355,9 @@ void	*VM_ExplicitArgPtr( vm_t *vm, intptr_t intValue );
 #define	VMA(x) VM_ArgPtr(args[x])
 static ID_INLINE float _vmf(intptr_t x)
 {
-	union {
-		int i;
-		float f;
-	} t;
-	t.i = (int)x;
-	return t.f;
+	floatint_t v;
+	v.i = (int)x;
+	return v.f;
 }
 #define	VMF(x)	_vmf(args[x])
 

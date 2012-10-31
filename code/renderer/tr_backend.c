@@ -574,9 +574,9 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 			if ( entityNum != ENTITYNUM_WORLD ) {
 				backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
 				if ( backEnd.floatfix )
-					backEnd.refdef.floatTime = originalTime - (double)(backEnd.currentEntity->e.u.shaderTime_ms) * 0.001;
+					backEnd.refdef.floatTime = originalTime - (double)(backEnd.currentEntity->e.shaderTime.i) * 0.001;
 				else
-					backEnd.refdef.floatTime = originalTime - (double)backEnd.currentEntity->e.u.shaderTime;
+					backEnd.refdef.floatTime = originalTime - (double)backEnd.currentEntity->e.shaderTime.f;
 
 				// we have to reset the shaderTime as well otherwise image animations start
 				// from the wrong frame
