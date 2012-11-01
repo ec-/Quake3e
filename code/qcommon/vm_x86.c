@@ -2360,7 +2360,6 @@ void VM_Destroy_Compiled( vm_t* vm )
 	vm->codeBase.ptr = NULL;
 }
 
-typedef void(*vmfunc_t)(void);
 /*
 ==============
 VM_CallCompiled
@@ -2368,6 +2367,9 @@ VM_CallCompiled
 This function is called directly by the generated code
 ==============
 */
+
+#define CALL_PSTACK 48
+
 int	VM_CallCompiled( vm_t *vm, int *args ) {
 	int		opStack[OPSTACK_SIZE + 2];
 	int		stackOnEntry;
@@ -2379,7 +2381,7 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 
 	// we might be called recursively, so this might not be the very top
 	stackOnEntry = vm->programStack;
-	vm->programStack -= 48;
+	vm->programStack -= CALL_PSTACK;
 
 	// set up the stack frame 
 	image = (int*)( vm->dataBase + vm->programStack );
@@ -2404,7 +2406,7 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 	if ( vm->opStack != &opStack[2] ) {
 		Com_Error( ERR_DROP, "opStack corrupted in compiled code" );
 	}
-	if ( vm->programStack != stackOnEntry - 48 ) {
+	if ( vm->programStack != stackOnEntry - CALL_PSTACK ) {
 		Com_Error( ERR_DROP, "programStack corrupted in compiled code" );
 	}
 #endif

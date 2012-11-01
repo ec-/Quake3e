@@ -150,7 +150,7 @@ typedef enum {
 	G_DROP_CLIENT,		// ( int clientNum, const char *reason );
 	// kick a client off the server with a message
 
-	G_SEND_SERVER_COMMAND,	// ( int clientNum, const char *fmt, ... );
+	G_SEND_SERVER_COMMAND,	// ( int clientNum, const char *text );
 	// reliably sends a command string to be interpreted by the given
 	// client.  If clientNum is -1, it will be sent to all clients
 
