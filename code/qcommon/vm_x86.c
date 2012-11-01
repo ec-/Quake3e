@@ -364,6 +364,17 @@ static void Emit4( int v )
 	Emit1( ( v >> 24 ) & 255 );
 }
 
+static void Emit8( int64_t v ) 
+{
+	Emit1( ( v >> 0 ) & 255 );
+	Emit1( ( v >> 8 ) & 255 );
+	Emit1( ( v >> 16 ) & 255 );
+	Emit1( ( v >> 24 ) & 255 );
+	Emit1( ( v >> 32 ) & 255 );
+	Emit1( ( v >> 40 ) & 255 );
+	Emit1( ( v >> 48 ) & 255 );
+	Emit1( ( v >> 56 ) & 255 );
+}
 
 static int Hex( int c ) 
 {
@@ -735,14 +746,14 @@ void EmitCallFunc( vm_t *vm )
 	// calling another vm function
 	EmitString( "C1 E0 02" );		// shl eax, 2
 	EmitString( "05" );				// add eax, [vm->instructionPointers]
-	Emit4( (int)vm->instructionPointers );
+	Emit4( (intptr_t)vm->instructionPointers );
 	EmitString( "FF 10" );			// call dword ptr [eax]
 	EmitString( "8B 07" );			// mov eax, dword ptr [edi]
 	EmitString( "C3" );				// ret
 
 	// badAddr:
 	EmitString( "FF 15" );          // call errJumpPtr
-	Emit4( (int)&errJumpPtr );
+	Emit4( (intptr_t)&errJumpPtr );
 
 	// systemCall:
 	// convert negative num to system call number
@@ -760,11 +771,11 @@ void EmitCallFunc( vm_t *vm )
 	// currentVM->programStack = programStack - 4;
 	EmitString( "8D 46 FC" );		// lea eax, [esi-4]
 	EmitString( "A3" );				// mov [currentVM->programStack], eax 
-	Emit4( (int)&vm->programStack );
+	Emit4( (intptr_t)&vm->programStack );
 
 	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
 	EmitString( "B8" );				// mov eax, [currentVM->dataBase] (+ 4)  
-	Emit4( (int)vm->dataBase + 4 );
+	Emit4( (intptr_t)vm->dataBase + 4 );
 	EmitString( "01 F0" );			// add eax, esi 
 
 	// params[0] = syscallNum
@@ -778,7 +789,7 @@ void EmitCallFunc( vm_t *vm )
 	Emit1( VM_OFFSET_SYSTEM_CALL );
 #else
 	EmitString( "FF 15" );		// call dword ptr [&currentVM->systemCall]
-	Emit4( (int)&vm->systemCall );
+	Emit4( (intptr_t)&vm->systemCall );
 #endif
 
 	EmitString( "83 C4 04" );		// add esp, 4
@@ -798,13 +809,13 @@ void EmitCallFunc( vm_t *vm )
 void EmitFTOLFunc( vm_t *vm ) 
 {
 	EmitString( "9B D9 3D" );	// fnstcw word ptr [cwCurr]
-	Emit4( (int)&cwCurr );
+	Emit4( (intptr_t)&cwCurr );
 	//EmitString( "D9 07" );	// fld dword ptr [edi]
 	EmitString( "D9 2D" );		// fldcw word ptr [cw0F7F]
-	Emit4( (int)&cw0F7F );
+	Emit4( (intptr_t)&cw0F7F );
 	EmitString( "DB 1F" );		// fistp dword ptr [edi]
 	EmitString( "D9 2D" );		// fldcw word ptr [cwCurr]
-	Emit4( (int)&cwCurr );
+	Emit4( (intptr_t)&cwCurr );
 	EmitString( "C3" );			// ret
 }
 #endif
@@ -839,7 +850,7 @@ void EmitBCPYFunc( vm_t *vm )
 void EmitPSOFFunc( vm_t *vm ) 
 {
 	EmitString( "FF 15" );		// call badStackPtr
-	Emit4( (int)&badStackPtr );
+	Emit4( (intptr_t)&badStackPtr );
 }
 
 
@@ -1176,7 +1187,7 @@ qboolean LocalOptimize( vm_t *vm )
 	{
 		//[local] += CONST
 		case MOP_ADD4:
-			v = ci->value + (int) vm->dataBase; // local variable address
+			v = ci->value + (intptr_t)vm->dataBase; // local variable address
 			n = inst[ip+2].value;
 			if ( ISS8( n ) ) {
 				if ( ISS8( ci->value ) ) {
@@ -1204,7 +1215,7 @@ qboolean LocalOptimize( vm_t *vm )
 
 		//[local] -= CONST
 		case MOP_SUB4:
-			v = ci->value + (int) vm->dataBase;	// local variable address
+			v = ci->value + (intptr_t)vm->dataBase;	// local variable address
 			n = inst[ip+2].value;
 			if ( ISS8( n ) ) {
 				if ( ISS8( ci->value ) ) {
@@ -1232,7 +1243,7 @@ qboolean LocalOptimize( vm_t *vm )
 
 		//[local] &= CONST
 		case MOP_BAND4:
-			v = ci->value + (int) vm->dataBase;	// local variable address
+			v = ci->value + (intptr_t)vm->dataBase;	// local variable address
 			n = inst[ip+2].value;
 			if ( ISS8( n ) ) {
 				if ( ISS8( ci->value ) ) {
@@ -1260,7 +1271,7 @@ qboolean LocalOptimize( vm_t *vm )
 
 		//[local] |= CONST
 		case MOP_BOR4:
-			v = ci->value + (int) vm->dataBase;	// local variable address
+			v = ci->value + (intptr_t)vm->dataBase;	// local variable address
 			n = inst[ip+2].value;
 			if ( ISS8( n ) ) {
 				if ( ISS8( ci->value ) ) {
@@ -1726,23 +1737,23 @@ __compile:
 	//EmitString( "57" );		// push edi
 
 	EmitString( "BB" );			// mov ebx, vm->dataBase
-	Emit4( (int)vm->dataBase );
+	Emit4( (intptr_t)vm->dataBase );
 	
 	EmitString( "8B 35" );		// mov esi, [vm->currProgramStack]
-	Emit4( (int)&vm->programStack );
+	Emit4( (intptr_t)&vm->programStack );
 	
 	EmitString( "8B 3D" );		// mov edi, [vm->currOpStack]
-	Emit4( (int)&vm->opStack );
+	Emit4( (intptr_t)&vm->opStack );
 	
 	n = codeOffset[FUNC_ENTR] - compiledOfs;
 	EmitString( "E8" );			// call +codeOffset[FUNC_ENTR]
 	Emit4( n - 5 );
 
 	EmitString( "89 35" );		// [vm->currProgramStack], esi
-	Emit4( (int)&vm->programStack );
+	Emit4( (intptr_t)&vm->programStack );
 	
 	EmitString( "89 3D" );		// [vm->opStack], edi
-	Emit4( (int)&vm->opStack );
+	Emit4( (intptr_t)&vm->opStack );
 
 	//EmitString( "5F" );			// pop edi
 	//EmitString( "5E" );			// pop esi
@@ -1822,7 +1833,7 @@ __compile:
 					Emit1( v );
 				} else {
 					EmitString( "8B 86" );		// mov eax, dword ptr [esi + LOCAL + vm->dataBase]
-					Emit4( v + (int)vm->dataBase );
+					Emit4( v + (intptr_t)vm->dataBase );
 				}
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
 				ip++;
@@ -1838,7 +1849,7 @@ __compile:
 					Emit1( v );
 				} else {
 					EmitString( "0F B7 86" );		// movzx eax, word ptr [esi + LOCAL + vm->dataBase]
-					Emit4( v + (int)vm->dataBase );
+					Emit4( v + (intptr_t)vm->dataBase );
 				}
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
 				ip++;
@@ -1854,7 +1865,7 @@ __compile:
 					Emit1( v );
 				} else {
 					EmitString( "0F B6 86" );		// movzx eax, byte ptr [esi + LOCAL + vm->dataBase ]
-					Emit4( v + (int)vm->dataBase );
+					Emit4( v + (intptr_t)vm->dataBase );
 				}
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
 				ip++;
@@ -1884,7 +1895,7 @@ __compile:
 				Emit1( v );
 			} else {
 				EmitString( "89 86" );		// mov	dword ptr [esi + 0x12345678], eax
-				Emit4( v + (int)vm->dataBase );
+				Emit4( v + (intptr_t)vm->dataBase );
 			}
 			
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
@@ -2240,9 +2251,9 @@ __compile:
 			EmitString( "73 07" );					// jae +7
 			// FIXME: allow jump withing local function scope only
 			EmitString( "FF 24 85" );				// jmp dword ptr [instructionPointers + eax * 4]
-			Emit4( (int)vm->instructionPointers );
+			Emit4( (intptr_t)vm->instructionPointers );
 			EmitString( "FF 15" );					// call errJumpPtr
-			Emit4( (int)&errJumpPtr );
+			Emit4( (intptr_t)&errJumpPtr );
 			break;
 
 		default:
@@ -2300,10 +2311,10 @@ __compile:
 	// offset all the instruction pointers for the new location
 	for ( i = 0 ; i < header->instructionCount ; i++ ) {
 		if ( inst[i].opStack != 0 ) {
-			vm->instructionPointers[i] = (int)badJumpPtr;
+			vm->instructionPointers[i] = (intptr_t)badJumpPtr;
 			continue;
 		}
-		vm->instructionPointers[i] += (int)vm->codeBase.ptr;
+		vm->instructionPointers[i] += (intptr_t)vm->codeBase.ptr;
 	}
 
 	VM_FreeBuffers();

@@ -144,7 +144,7 @@ struct vm_s {
 	int			*opStack;			// pointer to local function stack
 
 	int			instructionCount;
-	int			*instructionPointers;
+	intptr_t	*instructionPointers;
 
 	//------------------------------------
    
