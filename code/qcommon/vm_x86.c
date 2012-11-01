@@ -1669,7 +1669,8 @@ void VM_FindMOps( vmHeader_t *header, instruction_t *buf )
 
 
 enum {
-	FUNC_CALL = 0,
+	FUNC_ENTR = 0,
+	FUNC_CALL,
 	FUNC_FTOL,
 	FUNC_BCPY,
 	FUNC_PSOF,
@@ -1716,12 +1717,42 @@ __compile:
 	// translate all instructions
 	ip = 0;
 	compiledOfs = 0;
-
-	EmitString( "BB" ); 
-	Emit4( (int)vm->dataBase );
-
 	LastCommand = LAST_COMMAND_NONE;
+	
+	EmitString( "60" );			// pushad
 
+	//EmitString( "53" );		// push ebx
+	//EmitString( "56" );		// push esi
+	//EmitString( "57" );		// push edi
+
+	EmitString( "BB" );			// mov ebx, vm->dataBase
+	Emit4( (int)vm->dataBase );
+	
+	EmitString( "8B 35" );		// mov esi, [vm->currProgramStack]
+	Emit4( (int)&vm->programStack );
+	
+	EmitString( "8B 3D" );		// mov edi, [vm->currOpStack]
+	Emit4( (int)&vm->opStack );
+	
+	n = codeOffset[FUNC_ENTR] - compiledOfs;
+	EmitString( "E8" );			// call +codeOffset[FUNC_ENTR]
+	Emit4( n - 5 );
+
+	EmitString( "89 35" );		// [vm->currProgramStack], esi
+	Emit4( (int)&vm->programStack );
+	
+	EmitString( "89 3D" );		// [vm->opStack], edi
+	Emit4( (int)&vm->opStack );
+
+	//EmitString( "5F" );			// pop edi
+	//EmitString( "5E" );			// pop esi
+	//EmitString( "5B" );			// pop ebx
+	EmitString( "61" );			// popad
+	
+	EmitString( "C3" );			// ret
+	
+	codeOffset[FUNC_ENTR] = compiledOfs;
+	
 	while( ip < instructionCount )
 	{
 		vm->instructionPointers[ ip ] = compiledOfs;
@@ -2248,7 +2279,7 @@ __compile:
 	}
 
 #ifdef VM_X86_MMAP
-	if ( mprotect( vm->codeBase, compiledOfs, PROT_READ|PROT_EXEC ) ) {
+	if ( mprotect( vm->codeBase.ptr, compiledOfs, PROT_READ|PROT_EXEC ) ) {
 		VM_Destroy_Compiled( vm );
 		Com_Error( ERR_FATAL, "VM_CompileX86: mprotect failed" );
 		return qfalse;
@@ -2258,7 +2289,7 @@ __compile:
 		DWORD oldProtect = 0;
 		
 		// remove write permissions.
-		if ( !VirtualProtect(vm->codeBase, compiledOfs, PAGE_EXECUTE_READ, &oldProtect ) ) {
+		if ( !VirtualProtect( vm->codeBase.ptr, compiledOfs, PAGE_EXECUTE_READ, &oldProtect ) ) {
 			VM_Destroy_Compiled( vm );
 			Com_Error( ERR_FATAL, "VM_CompileX86: VirtualProtect failed" );
 			return qfalse;
@@ -2272,7 +2303,7 @@ __compile:
 			vm->instructionPointers[i] = (int)badJumpPtr;
 			continue;
 		}
-		vm->instructionPointers[i] += (int)vm->codeBase;
+		vm->instructionPointers[i] += (int)vm->codeBase.ptr;
 	}
 
 	VM_FreeBuffers();
@@ -2294,40 +2325,42 @@ void *VM_Alloc_Compiled( vm_t *vm, int codeLength )
 {
 	vm->codeLength = codeLength;
 #ifdef VM_X86_MMAP
-	vm->codeBase = mmap( NULL, vm->codeLength, PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0 );
-	if ( vm->codeBase == MAP_FAILED ) {
+	vm->codeBase.ptr = mmap( NULL, vm->codeLength, PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0 );
+	if ( vm->codeBase.ptr == MAP_FAILED ) {
 		Com_Error( ERR_FATAL, "VM_CompileX86: can't mmap memory" );
 		return NULL;
 	}
 #elif _WIN32
 	// allocate memory with EXECUTE permissions under windows.
-	vm->codeBase = VirtualAlloc( NULL, vm->codeLength, MEM_COMMIT, PAGE_EXECUTE_READWRITE );
-	if ( !vm->codeBase ) {
+	vm->codeBase.ptr = VirtualAlloc( NULL, vm->codeLength, MEM_COMMIT, PAGE_EXECUTE_READWRITE );
+	if ( !vm->codeBase.ptr ) {
 		Com_Error( ERR_FATAL, "VM_CompileX86: VirtualAlloc failed" );
 		return NULL;
 	}
 #else
-	vm->codeBase = malloc( vm->codeLength );
-	if ( !vm->codeBase ) {
+	vm->codeBase.ptr = malloc( vm->codeLength );
+	if ( !vm->codeBase.ptr ) {
 		Com_Error( ERR_FATAL, "VM_CompileX86: malloc failed" );
 		return NULL;
 	}
 #endif
-	return vm->codeBase;
+	return vm->codeBase.ptr;
 }
 
 
 void VM_Destroy_Compiled( vm_t* vm )
 {
 #ifdef VM_X86_MMAP
-	munmap( vm->codeBase, vm->codeLength );
+	munmap( vm->codeBase.ptr, vm->codeLength );
 #elif _WIN32
-	VirtualFree( vm->codeBase, 0, MEM_RELEASE );
+	VirtualFree( vm->codeBase.ptr, 0, MEM_RELEASE );
 #else
-	free( vm->codeBase );
+	free( vm->codeBase.ptr );
 #endif
+	vm->codeBase.ptr = NULL;
 }
 
+typedef void(*vmfunc_t)(void);
 /*
 ==============
 VM_CallCompiled
@@ -2336,79 +2369,50 @@ This function is called directly by the generated code
 ==============
 */
 int	VM_CallCompiled( vm_t *vm, int *args ) {
-	int		stack[OPSTACK_SIZE+2];
-	size_t	programStack;
-	size_t	stackOnEntry;
-	byte	*image;
-	void	*opStack;
+	int		opStack[OPSTACK_SIZE + 2];
+	int		stackOnEntry;
+	int		*image;
 	vm_t	*oldVM;
 
 	oldVM = currentVM;
-
 	currentVM = vm;
 
-	// interpret the code
-	//vm->currentlyInterpreting = qtrue;
-
 	// we might be called recursively, so this might not be the very top
-	programStack = vm->programStack;
-	stackOnEntry = programStack;
+	stackOnEntry = vm->programStack;
+	vm->programStack -= 48;
 
 	// set up the stack frame 
-	image = vm->dataBase;
+	image = (int*)( vm->dataBase + vm->programStack );
+	//image[11] = args[9];
+	//image[10] = args[8];
+	//image[9] = args[7];
+	//image[8] = args[6];
+	image[7] = args[5];
+	image[6] = args[4];
+	image[5] = args[3];
+	image[4] = args[2];
+	image[3] = args[1];
+	image[2] = args[0];
+	//image[1] =  0;	// return stack
+	//image[0] = -1;	// will terminate loop on return
 
-	programStack -= 48;
+	vm->opStack = &opStack[1];
 
-	*(int *)&image[ programStack + 44] = args[9];
-	*(int *)&image[ programStack + 40] = args[8];
-	*(int *)&image[ programStack + 36] = args[7];
-	*(int *)&image[ programStack + 32] = args[6];
-	*(int *)&image[ programStack + 28] = args[5];
-	*(int *)&image[ programStack + 24] = args[4];
-	*(int *)&image[ programStack + 20] = args[3];
-	*(int *)&image[ programStack + 16] = args[2];
-	*(int *)&image[ programStack + 12] = args[1];
-	*(int *)&image[ programStack + 8 ] = args[0];
-	//*(int *)&image[ programStack + 4 ] = 0;	// return stack
-	//*(int *)&image[ programStack ] = -1;		// will terminate the loop on return
+	vm->codeBase.func(); // go into generated code
 
-	// off we go into generated code...
-	opStack = &stack[1];
-
-	{
-#ifdef _MSC_VER
-		void *entryPoint = vm->codeBase;
-
-	__asm  {
-		pushad
-		mov		esi, programStack
-		mov		edi, opStack
-		call	entryPoint
-		mov		programStack, esi
-		mov		opStack, edi
-		popad
-	}
-#else
-		__asm__ volatile(
-			"call *%2"
-			: "+S" (programStack), "+D" (opStack)
-			: "mr" (vm->codeBase)
-			: "cc", "memory", "%eax", "%ecx", "%edx"
-		);
-#endif
-	}
-
-	if ( opStack != &stack[2] ) {
+#ifdef DEBUG_VM
+	if ( vm->opStack != &opStack[2] ) {
 		Com_Error( ERR_DROP, "opStack corrupted in compiled code" );
 	}
-	if ( programStack != stackOnEntry - 48 ) {
+	if ( vm->programStack != stackOnEntry - 48 ) {
 		Com_Error( ERR_DROP, "programStack corrupted in compiled code" );
 	}
+#endif
 
 	vm->programStack = stackOnEntry;
 
 	// in case we were recursively called by another vm
 	currentVM = oldVM;
 
-	return *(int *)opStack;
+	return *vm->opStack;
 }

@@ -128,6 +128,12 @@ typedef struct vmSymbol_s {
 	char	symName[1];		// variable sized
 } vmSymbol_t;
 
+//typedef void(*vmfunc_t)(void);
+
+typedef union {
+	byte		*ptr;
+	void (*func)(void);
+} vmFunc_t;
 
 struct vm_s {
     // DO NOT MOVE OR CHANGE THESE WITHOUT CHANGING THE VM_OFFSET_* DEFINES
@@ -135,6 +141,7 @@ struct vm_s {
     int			programStack;		// the vm may be recursively entered
     intptr_t	(*systemCall)( intptr_t *parms );
 	byte		*dataBase;
+	int			*opStack;			// pointer to local function stack
 
 	int			instructionCount;
 	int			*instructionPointers;
@@ -152,7 +159,8 @@ struct vm_s {
 	qboolean	currentlyInterpreting;
 
 	qboolean	compiled;
-	byte		*codeBase;
+
+	vmFunc_t	codeBase;
 	int			codeLength;
 
 	int			dataMask;

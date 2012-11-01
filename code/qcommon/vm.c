@@ -161,10 +161,10 @@ VM_SymbolForCompiledPointer
 const char *VM_SymbolForCompiledPointer( vm_t *vm, void *code ) {
 	int			i;
 
-	if ( code < (void *)vm->codeBase ) {
+	if ( code < (void *)vm->codeBase.ptr ) {
 		return "Before code block";
 	}
-	if ( code >= (void *)(vm->codeBase + vm->codeLength) ) {
+	if ( code >= (void *)(vm->codeBase.ptr + vm->codeLength) ) {
 		return "After code block";
 	}
 
@@ -848,8 +848,8 @@ void VM_Free( vm_t *vm ) {
 		Com_Memset( vm, 0, sizeof( *vm ) );
 	}
 #if 0	// now automatically freed by hunk
-	if ( vm->codeBase ) {
-		Z_Free( vm->codeBase );
+	if ( vm->codeBase.ptr ) {
+		Z_Free( vm->codeBase.ptr );
 	}
 	if ( vm->dataBase ) {
 		Z_Free( vm->dataBase );
