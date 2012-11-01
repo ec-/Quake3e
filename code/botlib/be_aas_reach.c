@@ -1065,7 +1065,7 @@ int AAS_Reachability_Step_Barrier_WaterJump_WalkOffLedge(int area1num, int area2
 	float dist, dist1, dist2, diff, invgravitydot, ortdot;
 	float x1, x2, x3, x4, y1, y2, y3, y4, tmp, y;
 	float length, ground_bestlength, water_bestlength, ground_bestdist, water_bestdist;
-	vec3_t v1, v2, v3, v4, tmpv, p1area1, p1area2, p2area1, p2area2;
+	vec4_t v1, v2, v3, v4, tmpv, p1area1, p1area2, p2area1, p2area2;
 	vec3_t normal, ort, edgevec, start, end, dir;
 	vec3_t ground_beststart = {0, 0, 0}, ground_bestend = {0, 0, 0}, ground_bestnormal = {0, 0, 0};
 	vec3_t water_beststart = {0, 0, 0}, water_bestend = {0, 0, 0}, water_bestnormal = {0, 0, 0};
@@ -1210,10 +1210,17 @@ int AAS_Reachability_Step_Barrier_WaterJump_WalkOffLedge(int area1num, int area2
 					{
 						dist1 = y3 - y1;
 						dist2 = y4 - y2;
+#if 1	// msvc.2005.x86_64 compiler crash fix
+						memcpy( p1area1, v1, sizeof( v1 ) );
+						memcpy( p2area1, v2, sizeof( v2 ) );
+						memcpy( p1area2, v3, sizeof( v3 ) );
+						memcpy( p2area2, v4, sizeof( v4 ) );
+#else	
 						VectorCopy(v1, p1area1);
 						VectorCopy(v2, p2area1);
 						VectorCopy(v3, p1area2);
 						VectorCopy(v4, p2area2);
+#endif
 					} //end if
 					else
 					{
