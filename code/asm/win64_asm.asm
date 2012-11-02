@@ -1,24 +1,35 @@
-.data
+.DATA
 
-  ALIGN 16
-  ssemask DWORD 0FFFFFFFFh, 0FFFFFFFFh, 0FFFFFFFFh, 00000000h
-  ssecw DWORD 00001F80h
+cwCurr DWORD 0
+cw037F DWORD 037Fh ; round towards nearest
 
-.code
+.CODE
 
+; [RCX] - vector
 PUBLIC Sys_SnapVector
+Sys_SnapVector proc
 
-Sys_SnapVector PROC
-	movaps xmm1, ssemask		; initialize the mask register
-	movups xmm0, [rcx]			; here is stored our vector. Read 4 values in one go
-	movaps xmm2, xmm0			; keep a copy of the original data
-	andps xmm0, xmm1			; set the fourth value to zero in xmm0
-	andnps xmm1, xmm2			; copy fourth value to xmm1 and set rest to zero
-	cvtps2dq xmm0, xmm0			; convert 4 single fp to int
-	cvtdq2ps xmm0, xmm0			; convert 4 int to single fp
-	orps xmm0, xmm1				; combine all 4 values again
-	movups [rcx], xmm0			; write 3 rounded and 1 unchanged values back to memory
+	fnstcw word ptr cwCurr
+	fldcw word ptr cw037F
+
+	fld   dword ptr[rcx+8]
+	fistp dword ptr[rcx+8]
+	fild  dword ptr[rcx+8]
+	fstp  dword ptr[rcx+8]
+
+	fld   dword ptr[rcx+4]
+	fistp dword ptr[rcx+4]
+	fild  dword ptr[rcx+4]
+	fstp  dword ptr[rcx+4]
+
+	fld   dword ptr[rcx+0]
+	fistp dword ptr[rcx+0]
+	fild  dword ptr[rcx+0]
+	fstp  dword ptr[rcx+0]
+
+	fldcw word ptr cwCurr
+
 	ret
-Sys_SnapVector ENDP
+Sys_SnapVector endp
 
 END

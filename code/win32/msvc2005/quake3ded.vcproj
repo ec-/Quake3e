@@ -27,21 +27,24 @@
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
+			ExcludeBuckets="3;4"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
 			/>
 			<Tool
 				Name="MASM"
+				ExecutionBucket="2"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
-				Name="MASM64"
+				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"
+				Name="MASM64"
+				ExecutionBucket="4"
 			/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"
@@ -83,6 +86,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				ExecutionBucket="11"
 				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib libcurl.lib ws2_32.lib"
 				OutputFile="$(OutDir)\quake3de.ded-debug.exe"
 				LinkIncremental="2"
@@ -96,29 +100,36 @@
 			/>
 			<Tool
 				Name="VCALinkTool"
+				ExecutionBucket="12"
 			/>
 			<Tool
 				Name="VCManifestTool"
+				ExecutionBucket="13"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
+				ExecutionBucket="14"
 			/>
 			<Tool
 				Name="VCBscMakeTool"
+				ExecutionBucket="15"
 			/>
 			<Tool
 				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
+				ExecutionBucket="16"
 			/>
 			<Tool
 				Name="VCWebDeploymentTool"
+				ExecutionBucket="17"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Post build processing.."
 				CommandLine="rem bash -c &quot;perl ./unix/cons -- debug&quot;"
+				ExecutionBucket="18"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
 			/>
 		</Configuration>
 		<Configuration
@@ -230,21 +241,24 @@
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			WholeProgramOptimization="0"
+			ExcludeBuckets="3;4"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
 			/>
 			<Tool
 				Name="MASM"
+				ExecutionBucket="2"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
-				Name="MASM64"
+				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"
+				Name="MASM64"
+				ExecutionBucket="4"
 			/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"
@@ -278,6 +292,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				ExecutionBucket="11"
 				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib"
 				OutputFile="$(OutDir)\quake3e.ded.exe"
 				GenerateDebugInformation="true"
@@ -292,27 +307,34 @@
 			/>
 			<Tool
 				Name="VCALinkTool"
+				ExecutionBucket="12"
 			/>
 			<Tool
 				Name="VCManifestTool"
+				ExecutionBucket="13"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
+				ExecutionBucket="14"
 			/>
 			<Tool
 				Name="VCBscMakeTool"
+				ExecutionBucket="15"
 			/>
 			<Tool
 				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
+				ExecutionBucket="16"
 			/>
 			<Tool
 				Name="VCWebDeploymentTool"
+				ExecutionBucket="17"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				ExecutionBucket="18"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
 			/>
 		</Configuration>
 		<Configuration
@@ -551,6 +573,42 @@
 			<File
 				RelativePath="..\..\asm\win32_asm.asm"
 				>
+				<FileConfiguration
+					Name="Debug|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\asm\win64_asm.asm"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM64"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM64"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\win32\win_main.c"
