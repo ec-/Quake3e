@@ -286,6 +286,29 @@ typedef struct {
 } instruction_t;
 
 
+typedef enum 
+{
+	LAST_COMMAND_NONE = 0,
+	LAST_COMMAND_MOV_EDI_EAX,
+	LAST_COMMAND_MOV_EDI_CONST,
+	LAST_COMMAND_MOV_EAX_EDI,
+	LAST_COMMAND_MOV_EAX_EDI_CALL,
+	LAST_COMMAND_SUB_DI_4,
+	LAST_COMMAND_SUB_DI_8,
+	LAST_COMMAND_FSTP_EDI
+} ELastCommand;
+
+typedef enum 
+{
+	FUNC_ENTR = 0,
+	FUNC_CALL,
+	FUNC_FTOL,
+	FUNC_BCPY,
+	FUNC_PSOF,
+	FUNC_BADJ,
+	FUNC_LAST
+} func_t;
+
 static	byte    *code;
 static	int     compiledOfs;
 
@@ -301,19 +324,9 @@ static	int	lastConst;
 static	int	pop1;
 static	int jlabel;
 
-typedef enum 
-{
-	LAST_COMMAND_NONE = 0,
-	LAST_COMMAND_MOV_EDI_EAX,
-	LAST_COMMAND_MOV_EDI_CONST,
-	LAST_COMMAND_MOV_EAX_EDI,
-	LAST_COMMAND_MOV_EAX_EDI_CALL,
-	LAST_COMMAND_SUB_DI_4,
-	LAST_COMMAND_SUB_DI_8,
-	LAST_COMMAND_FSTP_EDI
-} ELastCommand;
-
 static	ELastCommand	LastCommand;
+
+int		funcOffset[FUNC_LAST];
 
 void ErrJump( void )
 {
@@ -782,6 +795,16 @@ void EmitCall( vm_t *vm, instruction_t *i, int addr )
 	Emit4( v - 5 ); 
 }
 
+
+void EmitCallOffset( func_t Func ) 
+{
+	int  n;
+	n = funcOffset[ Func ] - compiledOfs;
+	EmitString( "E8" );		// call +funcOffset[ Func ]
+	Emit4( n - 5 );
+}
+
+
 //FIXME: 64 bit
 void EmitCallFunc( vm_t *vm ) 
 {
@@ -803,7 +826,7 @@ void EmitCallFunc( vm_t *vm )
 
 	// badAddr:
 	EmitString( "FF 15" );          // call errJumpPtr
-	Emit4( (intptr_t)&errJumpPtr );
+	EmitPtr( &errJumpPtr );
 
 	// systemCall:
 	// convert negative num to system call number
@@ -907,8 +930,23 @@ void EmitBCPYFunc( vm_t *vm )
 
 void EmitPSOFFunc( vm_t *vm ) 
 {
-	EmitString( "FF 15" );		// call dword [badStackPtr]
+//	EmitString( "FF 15" );		// call dword [badStackPtr]
+//	EmitPtr( &badStackPtr );
+	EmitRexString( 0x48, "B8" );	// mov eax, badJumpPtr
 	EmitPtr( &badStackPtr );
+	EmitString( "FF 10" );			// call [eax]
+	EmitString( "C3" );				// ret
+}
+
+
+void EmitBADJFunc( vm_t *vm ) 
+{
+//	EmitString( "FF 15" );			// call dword [badJumpPtr]
+//	EmitPtr( &badJumpPtr );
+	EmitRexString( 0x48, "B8" );	// mov eax, badJumpPtr
+	EmitPtr( &badJumpPtr );
+	EmitString( "FF 10" );			// call [eax]
+	EmitString( "C3" );				// ret
 }
 
 
@@ -1737,16 +1775,6 @@ void VM_FindMOps( vmHeader_t *header, instruction_t *buf )
 }
 
 
-enum {
-	FUNC_ENTR = 0,
-	FUNC_CALL,
-	FUNC_FTOL,
-	FUNC_BCPY,
-	FUNC_PSOF,
-	FUNC_LAST
-};
-
-
 /*
 =================
 VM_Compile
@@ -1755,7 +1783,6 @@ VM_Compile
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int		v, n;
 	int		i;
-	int		codeOffset[FUNC_LAST];
 	int     instructionCount;
 	char	*errMsg;
 
@@ -1773,7 +1800,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 
 	code = NULL; // we will allocate memory later, after last defined pass
 
-	memset( codeOffset, 0, sizeof( codeOffset ) );
+	memset( funcOffset, 0, sizeof( funcOffset ) );
 
 	instructionCount = header->instructionCount;
 
@@ -1794,33 +1821,31 @@ __compile:
 	//EmitString( "56" );		// push esi
 	//EmitString( "57" );		// push edi
 
-	EmitString( "BB" );			// mov ebx, vm->dataBase
-	Emit4( (intptr_t)vm->dataBase );
+	EmitRexString( 0x48, "BB" );	// mov ebx, vm->dataBase
+	EmitPtr( vm->dataBase );
 	
 	EmitString( "8B 35" );		// mov esi, [vm->currProgramStack]
-	Emit4( (intptr_t)&vm->programStack );
+	EmitPtr( &vm->programStack );
 	
 	EmitString( "8B 3D" );		// mov edi, [vm->currOpStack]
-	Emit4( (intptr_t)&vm->opStack );
-	
-	n = codeOffset[FUNC_ENTR] - compiledOfs;
-	EmitString( "E8" );			// call +codeOffset[FUNC_ENTR]
-	Emit4( n - 5 );
+	EmitPtr( &vm->opStack );
 
-	EmitString( "89 35" );		// [vm->currProgramStack], esi
-	Emit4( (intptr_t)&vm->programStack );
+	EmitCallOffset( FUNC_ENTR );
+
+	EmitString( "89 35" );		// [vm->programStack], esi
+	EmitPtr( &vm->programStack );
 	
 	EmitString( "89 3D" );		// [vm->opStack], edi
-	Emit4( (intptr_t)&vm->opStack );
+	EmitPtr( &vm->opStack );
 
 	//EmitString( "5F" );			// pop edi
 	//EmitString( "5E" );			// pop esi
 	//EmitString( "5B" );			// pop ebx
-	EmitString( "61" );			// popad
+	EmitString( "61" );				// popad
 	
 	EmitString( "C3" );			// ret
 	
-	codeOffset[FUNC_ENTR] = compiledOfs;
+	funcOffset[FUNC_ENTR] = compiledOfs;
 	
 	while( ip < instructionCount )
 	{
@@ -1858,8 +1883,9 @@ __compile:
 			// programStack overflow check
 			EmitString( "81 FE" );		// cmp	esi, vm->stackBottom
 			Emit4( vm->stackBottom );
-			EmitString( "0F 82" );		// jb +codeOffset[FUNC_PSOF]
-			n = codeOffset[FUNC_PSOF] - compiledOfs;
+
+			EmitString( "0F 82" );		// jb +funcOffset[FUNC_PSOF]
+			n = funcOffset[FUNC_PSOF] - compiledOfs;
 			Emit4( n - 6 );
 			break;
 
@@ -1968,9 +1994,7 @@ __compile:
 			Emit4( ip-1 );
 #endif
 			EmitMovEAXEDI( vm );
-			n = codeOffset[FUNC_CALL] - compiledOfs;
-			EmitString( "E8" );			// call +codeOffset[FUNC_CALL]
-			Emit4( n - 5 );
+			EmitCallOffset( FUNC_CALL );
 			LastCommand = LAST_COMMAND_MOV_EAX_EDI_CALL;
 			break;
 
@@ -2257,9 +2281,7 @@ __compile:
 				EmitString( "DB 0F" );	// fisttp dword ptr [edi]
 			} else {
 				// call the library conversion function
-				n = codeOffset[FUNC_FTOL] - compiledOfs;
-				EmitString( "E8" );		// call +codeOffset[FUNC_FTOL]
-				Emit4( n - 5 );
+				EmitCallOffset( FUNC_FTOL );
 			}
 #endif
 			break;
@@ -2278,9 +2300,7 @@ __compile:
 #if	BCPY_PTR
 			EmitString( "B9" );			// mov ecx, 0x12345678
 			Emit4( ci->value >> 2 );
-			n = codeOffset[FUNC_BCPY] - compiledOfs;
-			EmitString( "E8" );			// call +codeOffset[FUNC_BCPY]
-			Emit4( n - 5 );
+			EmitCallOffset( FUNC_BCPY );
 #else
 			// FIXME: range check
 			EmitString( "56" );			// push esi
@@ -2319,8 +2339,7 @@ __compile:
 			EmitString( "FF 24 85" );				// jmp dword ptr [instructionPointers + eax * 4]
 			EmitPtr( vm->instructionPointers );
 #endif
-			EmitString( "FF 15" );					// call errJumpPtr
-			EmitPtr( &errJumpPtr );					// FIXME!
+			EmitCallOffset( FUNC_BADJ );
 			break;
 
 		default:
@@ -2332,17 +2351,25 @@ __compile:
 		pop1 = ci->op;
 	} // while( ip < header->instructionCount )
 
-		codeOffset[FUNC_CALL] = compiledOfs;
+		funcOffset[FUNC_CALL] = compiledOfs;
 		EmitCallFunc( vm );
-		codeOffset[FUNC_FTOL] = compiledOfs;
+
+		funcOffset[FUNC_FTOL] = compiledOfs;
 #if FTOL_PTR
 		EmitFTOLFunc( vm );
 #endif
-		codeOffset[FUNC_BCPY] = compiledOfs;
+
+		funcOffset[FUNC_BCPY] = compiledOfs;
 #if BCPY_PTR
 		EmitBCPYFunc( vm );
 #endif
-		codeOffset[FUNC_PSOF] = compiledOfs;
+
+		// bad jump
+		funcOffset[FUNC_BADJ] = compiledOfs;
+		EmitBADJFunc( vm );
+
+		// programStack overflow
+		funcOffset[FUNC_PSOF] = compiledOfs;
 		EmitPSOFFunc( vm );
 
 	} // for( pass = 0; pass < n; pass++ )
