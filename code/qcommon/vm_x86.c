@@ -810,16 +810,15 @@ void EmitCallFunc( vm_t *vm )
 	//EmitString( "8B 07" );		// mov eax, dword ptr [edi]
 	EmitString( "83 EF 04" );		// sub edi, 4
 	EmitString( "85 C0" );			// test eax, eax
-	EmitString( "7C 1A" );			// jl (SystemCall) +26
+	EmitString( "7C 19" );			// jl (SystemCall) +25
 	EmitString( "3D" );				// cmp eax, [vm->instructionCount]
 	Emit4( vm->instructionCount );
-	EmitString( "73 0D" );			// jae badAddr (+13)
+	EmitString( "73 0C" );			// jae badAddr (+12)
 
 	// calling another vm function
-	EmitString( "C1 E0 02" );		// shl eax, 2
-	EmitString( "05" );				// add eax, [vm->instructionPointers]
+	EmitString( "8D 0C 85" );		// lea ecx, [vm->instructionPointers+eax*4]
 	EmitPtr( vm->instructionPointers );
-	EmitString( "FF 10" );			// call dword ptr [eax]
+	EmitString( "FF 11" );			// call dword ptr [ecx]
 	EmitString( "8B 07" );			// mov eax, dword ptr [edi]
 	EmitString( "C3" );				// ret
 
@@ -840,6 +839,7 @@ void EmitCallFunc( vm_t *vm )
 
 	// save syscallNum
 	EmitString( "89 C1" );			// mov ecx, eax
+
 	// currentVM->programStack = programStack - 4;
 	EmitString( "8D 46 FC" );		// lea eax, [esi-4]
 	EmitString( "A3" );				// mov [currentVM->programStack], eax 
@@ -852,17 +852,13 @@ void EmitCallFunc( vm_t *vm )
 
 	// params[0] = syscallNum
 	EmitString( "89 08" );			// mov [eax], ecx
+
 	// cdecl - push params
 	EmitString( "50" );				// push eax
 
 	// currentVm->systemCall( param );
-#if 0
-	EmitString( "FF 51" );		// call	dword ptr [ecx+VM_OFFSET_SYSTEM_CALL] ;
-	Emit1( VM_OFFSET_SYSTEM_CALL );
-#else
 	EmitString( "FF 15" );		// call dword ptr [&currentVM->systemCall]
 	Emit4( (intptr_t)&vm->systemCall );
-#endif
 
 	EmitString( "83 C4 04" );		// add esp, 4
 	EmitString( "5F" );				// pop edi
