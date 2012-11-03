@@ -306,6 +306,7 @@ typedef enum
 	FUNC_BCPY,
 	FUNC_PSOF,
 	FUNC_BADJ,
+	FUNC_ERRJ,
 	FUNC_LAST
 } func_t;
 
@@ -807,13 +808,17 @@ void EmitCallOffset( func_t Func )
 //FIXME: 64 bit
 void EmitCallFunc( vm_t *vm ) 
 {
+	int n;
 	//EmitString( "8B 07" );		// mov eax, dword ptr [edi]
 	EmitString( "83 EF 04" );		// sub edi, 4
 	EmitString( "85 C0" );			// test eax, eax
-	EmitString( "7C 19" );			// jl (SystemCall) +25
+	EmitString( "7C 17" );			// jl (SystemCall) +23
 	EmitString( "3D" );				// cmp eax, [vm->instructionCount]
 	Emit4( vm->instructionCount );
-	EmitString( "73 0C" );			// jae badAddr (+12)
+
+	EmitString( "0F 83" );			// jae +funcOffset[FUNC_ERRJ]
+	n = funcOffset[FUNC_ERRJ] - compiledOfs;
+	Emit4( n - 6 );
 
 	// calling another vm function
 	EmitString( "8D 0C 85" );		// lea ecx, [vm->instructionPointers+eax*4]
@@ -821,10 +826,6 @@ void EmitCallFunc( vm_t *vm )
 	EmitString( "FF 11" );			// call dword ptr [ecx]
 	EmitString( "8B 07" );			// mov eax, dword ptr [edi]
 	EmitString( "C3" );				// ret
-
-	// badAddr:
-	EmitString( "FF 15" );          // call errJumpPtr
-	EmitPtr( &errJumpPtr );
 
 	// systemCall:
 	// convert negative num to system call number
@@ -955,6 +956,13 @@ void EmitBADJFunc( vm_t *vm )
 	EmitString( "C3" );				// ret
 }
 
+void EmitERRJFunc( vm_t *vm ) 
+{
+	EmitRexString( 0x48, "B8" );	// mov eax, badJumpPtr
+	EmitPtr( &errJumpPtr );
+	EmitString( "FF 10" );			// call [eax]
+	EmitString( "C3" );				// ret
+}
 
 /*
 =================
@@ -1883,7 +1891,6 @@ __compile:
 	//EmitString( "5B" );			// pop ebx
 	EmitString( "61" );				// popad
 #endif
-
 	
 	EmitString( "C3" );			// ret
 	
@@ -2022,8 +2029,13 @@ __compile:
 				EmitString( "89 44 33" );	// mov	dword ptr [ebx + esi + 0x7F], eax
 				Emit1( v );
 			} else {
+#if idx64
+				EmitString( "89 84 33" );	// mov	dword ptr [rbx + rsi + 0x12345678], eax
+				Emit4( v );
+#else
 				EmitString( "89 86" );		// mov	dword ptr [esi + 0x12345678], eax
 				Emit4( v + (intptr_t)vm->dataBase );
+#endif
 			}
 			
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
@@ -2409,6 +2421,10 @@ __compile:
 		// bad jump
 		funcOffset[FUNC_BADJ] = compiledOfs;
 		EmitBADJFunc( vm );
+
+		// error jump
+		funcOffset[FUNC_ERRJ] = compiledOfs;
+		EmitERRJFunc( vm );
 
 		// programStack overflow
 		funcOffset[FUNC_PSOF] = compiledOfs;
