@@ -316,8 +316,7 @@ static  instruction_t *inst = NULL;
 static  instruction_t *ci;
 static  instruction_t *ni;
 
-static int cw0F7F = 0x0F7F; // round towards zero
-static int cwCurr = 0;
+static int fp_cw[2] = { 0, 0x0F7F}; // [0] - current value, [1] - round towards zero
 
 static	int	ip, pass;
 static	int	lastConst;
@@ -881,6 +880,16 @@ void EmitCallFunc( vm_t *vm )
 #if FTOL_PTR
 void EmitFTOLFunc( vm_t *vm ) 
 {
+#if 1
+	//EmitString( "D9 07" );	// fld dword ptr [edi]
+	EmitRexString( 0x48, "B8" );// mov eax, &fp_cw[0]
+	EmitPtr( &fp_cw[0] );		
+	EmitString( "9B D9 38" );	// fnstcw word ptr [eax]
+	EmitString( "D9 68 04" );	// fldcw word ptr [eax+4]
+	EmitString( "DB 1F" );		// fistp dword ptr [edi]
+	EmitString( "D9 28" );		// fldcw word ptr [eax]
+	EmitString( "C3" );			// ret
+#else
 	EmitString( "9B D9 3D" );	// fnstcw word ptr [cwCurr]
 	EmitPtr( &cwCurr );
 	//EmitString( "D9 07" );	// fld dword ptr [edi]
@@ -890,6 +899,7 @@ void EmitFTOLFunc( vm_t *vm )
 	EmitString( "D9 2D" );		// fldcw word ptr [cwCurr]
 	EmitPtr( &cwCurr );
 	EmitString( "C3" );			// ret
+#endif
 }
 #endif
 
@@ -1815,23 +1825,57 @@ __compile:
 	compiledOfs = 0;
 	LastCommand = LAST_COMMAND_NONE;
 	
-	EmitString( "60" );			// pushad
+#if idx64
+	EmitString( "53" );				// push rbx
+	EmitString( "56" );				// push rsi
+	EmitString( "57" );				// push rdi
+	EmitString( "41 52" );			// push r10
 
+	EmitRexString( 0x48, "BB" );	// mov ebx, vm->dataBase
+	EmitPtr( vm->dataBase );
+
+	EmitString( "49 BA" );			// mov r10, instructionPointers
+	EmitPtr( vm->instructionPointers );
+
+	EmitString( "48 B8" );			// mov rax, &vm->programStack
+	EmitPtr( &vm->programStack );
+	EmitStr( "8B 30" );				// mov esi, [rax]
+
+	EmitString( "48 B8" );			// mov rax, &vm->opStack
+	EmitPtr( &vm->opStack );
+	EmitStr( "48 8B 38" );			// mov rdi, [rax]
+#else
+	EmitString( "60" );				// pushad
 	//EmitString( "53" );		// push ebx
 	//EmitString( "56" );		// push esi
 	//EmitString( "57" );		// push edi
 
 	EmitRexString( 0x48, "BB" );	// mov ebx, vm->dataBase
 	EmitPtr( vm->dataBase );
-	
-	EmitString( "8B 35" );		// mov esi, [vm->currProgramStack]
+
+	EmitString( "8B 35" );			// mov esi, [vm->currProgramStack]
 	EmitPtr( &vm->programStack );
 	
-	EmitString( "8B 3D" );		// mov edi, [vm->currOpStack]
+	EmitString( "8B 3D" );			// mov edi, [vm->currOpStack]
 	EmitPtr( &vm->opStack );
+#endif
 
 	EmitCallOffset( FUNC_ENTR );
 
+#if idx64
+	EmitString( "48 B8" );			// mov rax, &vm->programStack
+	EmitPtr( &vm->programStack );
+	EmitStr( "89 30" );				// mov [rax], esi
+
+	EmitString( "48 B8" );			// mov rax, &vm->opStack
+	EmitPtr( &vm->opStack );
+	EmitStr( "48 89 38" );			// mov [rax], rdi
+
+	EmitString( "41 5A" );			// pop r10
+	EmitString( "5F" );				// pop rdi
+	EmitString( "5E" );				// pop rsi
+	EmitString( "5B" );				// pop rbx
+#else
 	EmitString( "89 35" );		// [vm->programStack], esi
 	EmitPtr( &vm->programStack );
 	
@@ -1842,6 +1886,8 @@ __compile:
 	//EmitString( "5E" );			// pop esi
 	//EmitString( "5B" );			// pop ebx
 	EmitString( "61" );				// popad
+#endif
+
 	
 	EmitString( "C3" );			// ret
 	
@@ -2286,12 +2332,12 @@ __compile:
 #endif
 			break;
 
-		case OP_SEX8: // 64ok
+		case OP_SEX8:
 			EmitString( "0F BE 07" );	// movsx eax, byte ptr [edi]
 			EmitCommand(LAST_COMMAND_MOV_EDI_EAX);		// mov dword ptr [edi], eax
 			break;
 
-		case OP_SEX16: // 64ok
+		case OP_SEX16:
 			EmitString( "0F BF 07" );	// movsx eax, word ptr [edi]
 			EmitCommand(LAST_COMMAND_MOV_EDI_EAX);		// mov dword ptr [edi], eax
 			break;
