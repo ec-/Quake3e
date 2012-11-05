@@ -1841,13 +1841,13 @@ __compile:
 	EmitString( "49 BA" );			// mov r10, instructionPointers
 	EmitPtr( vm->instructionPointers );
 
-	EmitString( "48 B8" );			// mov rax, &vm->programStack
+	EmitRexString( 0x48, "B8" );	// mov rax, &vm->programStack
 	EmitPtr( &vm->programStack );
 	EmitStr( "8B 30" );				// mov esi, [rax]
 
-	EmitString( "48 B8" );			// mov rax, &vm->opStack
+	EmitRexString( 0x48, "B8" );	// mov rax, &vm->opStack
 	EmitPtr( &vm->opStack );
-	EmitStr( "48 8B 38" );			// mov rdi, [rax]
+	EmitRexString( 0x48, "8B 38" );	// mov rdi, [rax]
 #else
 	EmitString( "60" );				// pushad
 	//EmitString( "53" );		// push ebx
@@ -1867,13 +1867,13 @@ __compile:
 	EmitCallOffset( FUNC_ENTR );
 
 #if idx64
-	EmitString( "48 B8" );			// mov rax, &vm->programStack
+	EmitRexString( 0x48, "48" );	// mov rax, &vm->programStack
 	EmitPtr( &vm->programStack );
-	EmitStr( "89 30" );				// mov [rax], esi
+	EmitString( "89 30" );			// mov [rax], esi
 
-	EmitString( "48 B8" );			// mov rax, &vm->opStack
+	EmitString( 0x48, "B8" );		// mov rax, &vm->opStack
 	EmitPtr( &vm->opStack );
-	EmitStr( "48 89 38" );			// mov [rax], rdi
+	EmitRexString( 0x48, "89 38" );	// mov [rax], rdi
 
 	EmitString( "41 5A" );			// pop r10
 	EmitString( "5F" );				// pop rdi
@@ -2034,7 +2034,7 @@ __compile:
 				Emit4( v );
 #else
 				EmitString( "89 86" );		// mov	dword ptr [esi + 0x12345678], eax
-				Emit4( v + (intptr_t)vm->dataBase );
+				EmitPtr( vm->dataBase + v );
 #endif
 			}
 			
