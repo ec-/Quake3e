@@ -808,42 +808,54 @@ void EmitCallOffset( func_t Func )
 //FIXME: 64 bit
 void EmitCallFunc( vm_t *vm ) 
 {
+	static int sysCallOffset = 0;
 	int n;
-	//EmitString( "8B 07" );		// mov eax, dword ptr [edi]
-	EmitString( "83 EF 04" );		// sub edi, 4
-	EmitString( "85 C0" );			// test eax, eax
-	EmitString( "7C 17" );			// jl (SystemCall) +23
-	EmitString( "3D" );				// cmp eax, [vm->instructionCount]
+
+	//EmitString( "8B 07" );			// mov eax, dword ptr [edi]
+	EmitRexString( 0x48, "83 EF 04" );	// sub edi, 4
+	EmitString( "85 C0" );				// test eax, eax
+	EmitString( "7C" );					// jl +offset (SystemCall) 
+	Emit1( sysCallOffset );				// will be valid after first pass
+sysCallOffset = compiledOfs;				
+
+	EmitString( "3D" );					// cmp eax, vm->instructionCount
 	Emit4( vm->instructionCount );
 
-	EmitString( "0F 83" );			// jae +funcOffset[FUNC_ERRJ]
+	EmitString( "0F 83" );				// jae +funcOffset[FUNC_ERRJ]
 	n = funcOffset[FUNC_ERRJ] - compiledOfs;
 	Emit4( n - 6 );
 
 	// calling another vm function
+#if idx64
+	EmitString( "41 FF 14 C2" );	// call dword ptr [r10+rax*8]
+#else
 	EmitString( "8D 0C 85" );		// lea ecx, [vm->instructionPointers+eax*4]
 	EmitPtr( vm->instructionPointers );
 	EmitString( "FF 11" );			// call dword ptr [ecx]
+#endif
 	EmitString( "8B 07" );			// mov eax, dword ptr [edi]
 	EmitString( "C3" );				// ret
 
+sysCallOffset = compiledOfs - sysCallOffset;
 	// systemCall:
 	// convert negative num to system call number
 	// and store right before the first arg
 	EmitString( "F7 D0" );          // not eax
-	EmitString( "55" );				// push ebp
-	EmitString( "89 E5" );			// mov ebp, esp
-	EmitString( "83 E4 F0" );		// and esp, -16
 
-	EmitString( "56" );				// push esi
-	EmitString( "57" );				// push edi
+	// function prologue
+	EmitString( "55" );					// push ebp
+	EmitRexString( 0x48, "89 E5" );		// mov ebp, esp
+	EmitRexString( 0x48, "83 E4 F0" );	// and esp, -16
+
+	EmitString( "56" );					// push esi
+	EmitString( "57" );					// push edi
 
 	// save syscallNum
-	EmitString( "89 C1" );			// mov ecx, eax
+	EmitString( "89 C1" );				// mov ecx, eax
 
 	// currentVM->programStack = programStack - 4;
-	EmitString( "8D 46 FC" );		// lea eax, [esi-4]
-	EmitString( "A3" );				// mov [currentVM->programStack], eax 
+	EmitString( "8D 46 FC" );			// lea eax, [esi-4]
+	EmitString( "A3" );					// mov [currentVM->programStack], eax 
 	Emit4( (intptr_t)&vm->programStack );
 
 	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
@@ -861,15 +873,17 @@ void EmitCallFunc( vm_t *vm )
 	EmitString( "FF 15" );		// call dword ptr [&currentVM->systemCall]
 	Emit4( (intptr_t)&vm->systemCall );
 
-	EmitString( "83 C4 04" );		// add esp, 4
-	EmitString( "5F" );				// pop edi
-	EmitString( "5E" );				// pop esi
+	EmitRexString( 0x48, "83 C4 04" );	// add esp, 4
+	EmitString( "5F" );					// pop edi
+	EmitString( "5E" );					// pop esi
 
 	// we added the return value: *(opstack+1) = eax
-	EmitString( "83 C7 04" );		// add edi, 4
-	EmitString( "89 07" );			// mov [edi], eax
+	EmitAddEDI4( vm );							// add edi, 4
+	EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov [edi], eax
+	//EmitString( "83 C7 04" );		// add edi, 4
+	//EmitString( "89 07" );			// mov [edi], eax
 
-	EmitString( "89 EC" );			// mov esp, ebp
+	EmitRexString( 0x48, "89 EC" );	// mov esp, ebp
 	EmitString( "5D" );				// pop ebp
 	EmitString( "C3" );				// ret
 }
@@ -937,8 +951,6 @@ void EmitBCPYFunc( vm_t *vm )
 
 void EmitPSOFFunc( vm_t *vm ) 
 {
-//	EmitString( "FF 15" );		// call dword [badStackPtr]
-//	EmitPtr( &badStackPtr );
 	EmitRexString( 0x48, "B8" );	// mov eax, badJumpPtr
 	EmitPtr( &badStackPtr );
 	EmitString( "FF 10" );			// call [eax]
@@ -948,8 +960,6 @@ void EmitPSOFFunc( vm_t *vm )
 
 void EmitBADJFunc( vm_t *vm ) 
 {
-//	EmitString( "FF 15" );			// call dword [badJumpPtr]
-//	EmitPtr( &badJumpPtr );
 	EmitRexString( 0x48, "B8" );	// mov eax, badJumpPtr
 	EmitPtr( &badJumpPtr );
 	EmitString( "FF 10" );			// call [eax]
@@ -2565,14 +2575,14 @@ int	VM_CallCompiled( vm_t *vm, int *args ) {
 
 	vm->codeBase.func(); // go into generated code
 
-#ifdef DEBUG_VM
+//#ifdef DEBUG_VM
 	if ( vm->opStack != &opStack[2] ) {
 		Com_Error( ERR_DROP, "opStack corrupted in compiled code" );
 	}
 	if ( vm->programStack != stackOnEntry - CALL_PSTACK ) {
 		Com_Error( ERR_DROP, "programStack corrupted in compiled code" );
 	}
-#endif
+//#endif
 
 	vm->programStack = stackOnEntry;
 
