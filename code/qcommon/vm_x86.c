@@ -894,9 +894,7 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	EmitString( "A3" );					// mov [currentVM->programStack], eax 
 	EmitPtr( &vm->programStack );
 	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
-	EmitRexString( 0x48, "B8" );		// mov eax, currentVM->dataBase + 4  
-	EmitPtr( vm->dataBase + 4 );
-	EmitRexString( 0x48, "01 F0" );		// add eax, esi 
+	EmitString( "8D 44 33 04" );		// lea eax, [ebx+esi+4]  
 	// params[0] = syscallNum
 	EmitString( "89 08" );			// mov [eax], ecx
 	// cdecl - push params
