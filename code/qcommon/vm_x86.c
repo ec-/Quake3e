@@ -1014,6 +1014,7 @@ void EmitBCPYFunc( vm_t *vm )
 
 void EmitPSOFFunc( vm_t *vm ) 
 {
+	EmitString( "CD 32" );			// int 3
 	EmitRexString( 0x48, "B8" );	// mov eax, badJumpPtr
 	EmitPtr( &badStackPtr );
 	EmitString( "FF 10" );			// call [eax]
@@ -2466,7 +2467,7 @@ __compile:
 			Emit4( vm->instructionCount );
 #if idx64
 			EmitString( "73 04" );					// jae +4
-			EmitString( "41 FF 24 C2" );			// jmp dword ptr [r10 + rax*8]
+			EmitString( "41 FF 24 C0" );			// jmp dword ptr [r8 + rax*8]
 #else
 			EmitString( "73 07" );					// jae +7
 			EmitString( "FF 24 85" );				// jmp dword ptr [instructionPointers + eax * 4]
