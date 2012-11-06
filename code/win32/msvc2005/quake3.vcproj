@@ -10,9 +10,6 @@
 		<Platform
 			Name="Win32"
 		/>
-		<Platform
-			Name="x64"
-		/>
 	</Platforms>
 	<ToolFiles>
 		<DefaultToolFile
@@ -32,13 +29,10 @@
 				Name="VCPreBuildEventTool"
 			/>
 			<Tool
-				Name="MASM"
-			/>
-			<Tool
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
-				Name="MASM64"
+				Name="MASM"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -122,107 +116,6 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Debug|x64"
-			OutputDirectory=".\build_x64\quake3e_debug"
-			IntermediateDirectory=".\build_x64\quake3e_debug"
-			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="MASM"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="MASM64"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="3"
-				TypeLibraryName="$(IntDir)\quake3e.tlb"
-				HeaderFileName=""
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_CURL;USE_VIDEO;CURL_STATICLIB;_CRT_SECURE_NO_DEPRECATE"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
-				BrowseInformation="1"
-				BrowseInformationFile="$(IntDir)\"
-				WarningLevel="3"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"
-				ResourceOutputFileName="..\winquake.res"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib libcurl.lib ws2_32.lib opengl32.lib"
-				OutputFile="$(OutDir)\quake3e_x64-debug.exe"
-				LinkIncremental="2"
-				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(IntDir)\quake3e.pdb"
-				GenerateMapFile="true"
-				MapFileName="$(IntDir)\quake3e.map"
-				SubSystem="2"
-				StackReserveSize="10247680"
-				TargetMachine="17"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-				Description="Post build processing.."
-				CommandLine="rem bash -c &quot;perl ./unix/cons -- debug&quot;"
-			/>
-		</Configuration>
-		<Configuration
 			Name="Release|Win32"
 			OutputDirectory=".\build\quake3e_release"
 			IntermediateDirectory=".\build\quake3e_release"
@@ -235,13 +128,10 @@
 				Name="VCPreBuildEventTool"
 			/>
 			<Tool
-				Name="MASM"
-			/>
-			<Tool
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
-				Name="MASM64"
+				Name="MASM"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -289,99 +179,6 @@
 				OptimizeReferences="2"
 				SetChecksum="true"
 				TargetMachine="1"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release|x64"
-			OutputDirectory=".\build_x64\quake3e_release"
-			IntermediateDirectory=".\build_x64\quake3e_release"
-			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			WholeProgramOptimization="0"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="MASM"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="MASM64"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="3"
-				TypeLibraryName="$(IntDir)\quake3e.tlb"
-				HeaderFileName=""
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;USE_SKIPIDLOGO;USE_CURL;USE_VIDEO;CURL_STATICLIB"
-				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
-				WarningLevel="4"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib libcurl.lib ws2_32.lib opengl32.lib"
-				OutputFile="$(OutDir)\quake3e_x64.exe"
-				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(IntDir)\quake3e.pdb"
-				GenerateMapFile="true"
-				MapFileName="$(IntDir)\quake3e.map"
-				SubSystem="2"
-				StackReserveSize="10247680"
-				OptimizeReferences="2"
-				SetChecksum="true"
-				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -635,62 +432,10 @@
 			<File
 				RelativePath="..\..\asm\win32_asm.asm"
 				>
-				<FileConfiguration
-					Name="Debug|x64"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\asm\win32_snd.asm"
 				>
-				<FileConfiguration
-					Name="Debug|x64"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\asm\win64_asm.asm"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="MASM64"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="MASM64"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\win32\win_input.c"
