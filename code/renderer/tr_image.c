@@ -616,14 +616,14 @@ static void Upload32( unsigned *data,
 		// select proper internal format
 		if ( samples == 3 )
 		{
-			if ( r_greyscale->integer )
+			if(r_greyscale->integer)
 			{
- 				if ( r_texturebits->integer == 16 )
- 					internalFormat = GL_LUMINANCE8;
- 				else if( r_texturebits->integer == 32 )
- 					internalFormat = GL_LUMINANCE16;
- 				else
- 					internalFormat = GL_LUMINANCE;
+				if(r_texturebits->integer == 16)
+					internalFormat = GL_LUMINANCE8;
+				else if(r_texturebits->integer == 32)
+					internalFormat = GL_LUMINANCE16;
+				else
+					internalFormat = GL_LUMINANCE;
 			}
 			else
 			{
@@ -639,34 +639,48 @@ static void Upload32( unsigned *data,
 						internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 				}
 				else if ( glConfig.textureCompression == TC_S3TC )
+				{
 					internalFormat = GL_RGB4_S3TC;
+				}
 				else if ( r_texturebits->integer == 16 )
+				{
 					internalFormat = GL_RGB5;
+				}
 				else if ( r_texturebits->integer == 32 )
+				{
 					internalFormat = GL_RGB8;
+				}
 				else
-					internalFormat = 3;
+				{
+					internalFormat = GL_RGB;
+				}
 			}
 		}
 		else if ( samples == 4 )
 		{
-			if ( r_greyscale->integer )
-  			{
- 				if ( r_texturebits->integer == 16 )
- 					internalFormat = GL_LUMINANCE8_ALPHA8;
- 				else if ( r_texturebits->integer == 32 )
- 					internalFormat = GL_LUMINANCE16_ALPHA16;
- 				else
- 					internalFormat = GL_LUMINANCE_ALPHA;
-  			}
+			if(r_greyscale->integer)
+			{
+				if(r_texturebits->integer == 16)
+					internalFormat = GL_LUMINANCE8_ALPHA8;
+				else if(r_texturebits->integer == 32)
+					internalFormat = GL_LUMINANCE16_ALPHA16;
+				else
+					internalFormat = GL_LUMINANCE_ALPHA;
+			}
 			else
 			{
 				if ( r_texturebits->integer == 16 )
+				{
 					internalFormat = GL_RGBA4;
+				}
 				else if ( r_texturebits->integer == 32 )
+				{
 					internalFormat = GL_RGBA8;
+				}
 				else
-					internalFormat = 4;
+				{
+					internalFormat = GL_RGBA;
+				}
 			}
 		}
 	}
@@ -1317,7 +1331,6 @@ void R_DeleteTextures( void ) {
 	tr.numImages = 0;
 
 	Com_Memset( glState.currenttextures, 0, sizeof( glState.currenttextures ) );
-
 	if ( qglActiveTextureARB ) {
 		GL_SelectTexture( 1 );
 		qglBindTexture( GL_TEXTURE_2D, 0 );
@@ -1434,7 +1447,7 @@ static char *CommaParse( char **data_p ) {
 
 	if (len == MAX_TOKEN_CHARS)
 	{
-//		Com_Printf ("Token exceeded %i chars, discarded.\n", MAX_TOKEN_CHARS);
+//		ri.Printf (PRINT_DEVELOPER, "Token exceeded %i chars, discarded.\n", MAX_TOKEN_CHARS);
 		len = 0;
 	}
 	com_token[len] = 0;
@@ -1454,17 +1467,21 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 	qhandle_t	hSkin;
 	skin_t		*skin;
 	skinSurface_t	*surf;
-	char		*text, *text_p;
+	union {
+		char *c;
+		void *v;
+	} text;
+	char		*text_p;
 	char		*token;
 	char		surfName[MAX_QPATH];
 
 	if ( !name || !name[0] ) {
-		Com_Printf( "Empty name passed to RE_RegisterSkin\n" );
+		ri.Printf( PRINT_DEVELOPER, "Empty name passed to RE_RegisterSkin\n" );
 		return 0;
 	}
 
 	if ( strlen( name ) >= MAX_QPATH ) {
-		Com_Printf( "Skin name exceeds MAX_QPATH\n" );
+		ri.Printf( PRINT_DEVELOPER, "Skin name exceeds MAX_QPATH\n" );
 		return 0;
 	}
 
@@ -1503,12 +1520,12 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 	}
 
 	// load and parse the skin file
-    ri.FS_ReadFile( name, (void **)&text );
-	if ( !text ) {
+    ri.FS_ReadFile( name, &text.v );
+	if ( !text.c ) {
 		return 0;
 	}
 
-	text_p = text;
+	text_p = text.c;
 	while ( text_p && *text_p ) {
 		// get surface name
 		token = CommaParse( &text_p );
@@ -1537,7 +1554,7 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 		skin->numSurfaces++;
 	}
 
-	ri.FS_FreeFile( text );
+	ri.FS_FreeFile( text.v );
 
 
 	// never let a skin have 0 shaders
