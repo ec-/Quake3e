@@ -47,7 +47,7 @@ void *GetHunkMemoryDebug(unsigned long size, char *label, char *file, int line);
 void *GetClearedHunkMemoryDebug(unsigned long size, char *label, char *file, int line);
 #else
 //allocate a memory block of the given size
-void *GetMemory(unsigned long size);
+void *GetMemory( unsigned int size );
 //allocate a memory block of the given size and clear it
 void *GetClearedMemory(unsigned long size);
 //
@@ -56,7 +56,7 @@ void *GetClearedMemory(unsigned long size);
 #define GetClearedHunkMemory GetClearedMemory
 #else
 //allocate a memory block of the given size
-void *GetHunkMemory(unsigned long size);
+void *GetHunkMemory( unsigned int size );
 //allocate a memory block of the given size and clear it
 void *GetClearedHunkMemory(unsigned long size);
 #endif

@@ -340,17 +340,19 @@ void DumpMemory(void)
 #ifdef MEMDEBUG
 void *GetMemoryDebug(unsigned long size, char *label, char *file, int line)
 #else
-void *GetMemory(unsigned long size)
+void *GetMemory( unsigned int size )
 #endif //MEMDEBUG
 {
 	void *ptr;
-	unsigned long int *memid;
+	unsigned int *memid;
 
-	ptr = botimport.GetMemory(size + sizeof(unsigned long int));
-	if (!ptr) return NULL;
-	memid = (unsigned long int *) ptr;
+	ptr = botimport.GetMemory( size + sizeof(unsigned int) );
+	if ( !ptr ) {
+		return NULL;
+	}
+	memid = (unsigned int *) ptr;
 	*memid = MEM_ID;
-	return (unsigned long int *) ((char *) ptr + sizeof(unsigned long int));
+	return ((char *)ptr + sizeof(unsigned int) );
 } //end of the function GetMemory
 //===========================================================================
 //
@@ -382,17 +384,20 @@ void *GetClearedMemory(unsigned long size)
 #ifdef MEMDEBUG
 void *GetHunkMemoryDebug(unsigned long size, char *label, char *file, int line)
 #else
-void *GetHunkMemory(unsigned long size)
+void *GetHunkMemory( unsigned int size )
 #endif //MEMDEBUG
 {
 	void *ptr;
-	unsigned long int *memid;
+	unsigned int *memid;
 
-	ptr = botimport.HunkAlloc(size + sizeof(unsigned long int));
-	if (!ptr) return NULL;
-	memid = (unsigned long int *) ptr;
+	ptr = botimport.HunkAlloc( size + sizeof(unsigned int) );
+	if ( !ptr ) 
+	{
+		return NULL;
+	}
+	memid = (unsigned int *) ptr;
 	*memid = HUNK_ID;
-	return (unsigned long int *) ((char *) ptr + sizeof(unsigned long int));
+	return ( (char *)ptr + sizeof(unsigned int) );
 } //end of the function GetHunkMemory
 //===========================================================================
 //

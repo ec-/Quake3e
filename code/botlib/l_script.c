@@ -706,14 +706,14 @@ int PS_ReadNumber(script_t *script, token_t *token)
 	{
 		c = *script->script_p;
 		//check for a LONG number
-		if ( (c == 'l' || c == 'L') // bk001204 - brackets 
+		if ( (c == 'l' || c == 'L')
 		     && !(token->subtype & TT_LONG))
 		{
 			script->script_p++;
 			token->subtype |= TT_LONG;
 		} //end if
 		//check for an UNSIGNED number
-		else if ( (c == 'u' || c == 'U') // bk001204 - brackets 
+		else if ( (c == 'u' || c == 'U')
 			  && !(token->subtype & (TT_UNSIGNED | TT_FLOAT)))
 		{
 			script->script_p++;
@@ -782,7 +782,7 @@ int PS_ReadLiteral(script_t *script, token_t *token)
 //============================================================================
 int PS_ReadPunctuation(script_t *script, token_t *token)
 {
-	size_t len;
+	int len;
 	char *p;
 	punctuation_t *punc;
 
@@ -879,7 +879,7 @@ int PS_ReadToken(script_t *script, token_t *token)
 	{
 		if (!PS_ReadString(script, token, '\"')) return 0;
 	} //end if
-	//if an literal
+	//if a literal
 	else if (*script->script_p == '\'')
 	{
 		//if (!PS_ReadLiteral(script, token)) return 0;
@@ -1277,7 +1277,7 @@ int NumLinesCrossed(script_t *script)
 //============================================================================
 int ScriptSkipTo(script_t *script, char *value)
 {
-	size_t len;
+	int len;
 	char firstchar;
 
 	firstchar = *value;
