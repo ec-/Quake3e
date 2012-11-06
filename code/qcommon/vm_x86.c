@@ -857,9 +857,7 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	EmitString( "89 02" );				// mov [rdx], eax
 
 	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
-	EmitRexString( 0x48, "B8" );		// mov eax, currentVM->dataBase + 4  
-	EmitPtr( vm->dataBase + 4 );
-	EmitRexString( 0x48, "01 F0" );		// add eax, esi 
+	EmitRexString( 0x48, "8D 44 33 04" );// lea rax, [ebx+esi+4]
 
 	EmitString( "48 8D 94 24" );		// lea rdx, [rsp-160]
 	Emit4( 160 );
