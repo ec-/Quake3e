@@ -886,18 +886,20 @@ sysCallOffset = compiledOfs - sysCallOffset;
 
 	EmitString( "48 83 C1 F8" );			// add rcx, -8
 	
+#if 0
 	// currentVM->programStack = programStack - 4;
 	EmitString( "48 BA" );					// mov rdx, &vm->programStack
 	EmitPtr( &vm->programStack );
 	EmitString( "8D 46 FC" );				// lea eax, [esi-4]
 	EmitString( "89 02" );					// mov [rdx], eax
+#endif
 
 	// currentVm->systemCall( param );
-	EmitString( "48 B8" );					// mov rax, &vm->systemCall 
-	EmitPtr( &vm->systemCall );
-	EmitString( "FF 10" );					// call qword [rax]
-	
-	//EmitString( "41 FF 12" );				// call qword [r10]
+	//EmitString( "48 B8" );					// mov rax, &vm->systemCall 
+	//EmitPtr( &vm->systemCall );
+	//EmitString( "FF 10" );					// call qword [rax]
+
+	EmitString( "41 FF 12" );				// call qword [r10]
 
 	EmitString1( "48 8D 54 24", 32 );		// lea rdx, [rsp+32]
 	EmitString( "48 8B 32" );				// mov rsi, [rdx+00]
@@ -917,8 +919,8 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	EmitString( "55" );					// push ebp
 	EmitRexString( 0x48, "89 E5" );		// mov ebp, esp
 	EmitRexString( 0x48, "83 E4 F0" );	// and esp, -16
-	EmitString( "56" );					// push esi
-	EmitString( "57" );					// push edi
+	//EmitString( "56" );				// push esi
+	//EmitString( "57" );				// push edi
 	// save syscallNum
 	EmitString( "89 C1" );				// mov ecx, eax
 #if 0
@@ -937,8 +939,8 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	EmitString( "FF 15" );				// call dword ptr [&currentVM->systemCall]
 	Emit4( (intptr_t)&vm->systemCall );
 	EmitString( "83 C4 04" );			// add esp, 4
-	EmitString( "5F" );					// pop edi
-	EmitString( "5E" );					// pop esi
+	//EmitString( "5F" );				// pop edi
+	//EmitString( "5E" );				// pop esi
 	// we added the return value: *(opstack+1) = eax
 	EmitAddEDI4( vm );							// add edi, 4
 	EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov [edi], eax
