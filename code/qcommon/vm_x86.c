@@ -843,59 +843,77 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	// and store right before the first arg
 	EmitString( "F7 D0" );          // not eax
 
+#if idx64
+	// function prologue
+	EmitString( "48 81 EC A8 00 00 00" );	// sub rsp, 168
+
+	// save syscallNum
+	EmitString( "89 C1" );				// mov ecx, eax
+	
+	// currentVM->programStack = programStack - 4;
+	EmitRexString( 0x48, "BA" );		// mov rdx, &vm->programStack
+	EmitPtr( &vm->programStack );
+	EmitString( "8D 46 FC" );			// lea eax, [esi-4]
+	EmitString( "89 02" );				// mov [rdx], eax
+
+	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
+	EmitRexString( 0x48, "B8" );		// mov eax, currentVM->dataBase + 4  
+	EmitPtr( vm->dataBase + 4 );
+	EmitRexString( 0x48, "01 F0" );		// add eax, esi 
+
+	EmitString( "48 8D 94 24" );		// lea rdx, [rsp-160]
+	Emit4( 160 );
+	// params[0] = syscallNum
+	EmitString( "89 0A" );				// mov [rdx], ecx
+	// ecx = &params[0]
+	EmitString( "48 89 D1" );			// mov rcx, rdx
+	
+	// currentVm->systemCall( param );
+	EmitRexString( 0x48, "B8" );	// mov rax, &vm->systemCall 
+	EmitPtr( &vm->systemCall );
+	EmitString( "FF 10" );			// call qword [rax]
+
+	// we added the return value: *(opstack+1) = eax
+	EmitAddEDI4( vm );							// add edi, 4
+	EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov [edi], eax
+
+	// epilogue
+	EmitString( "48 81 EC A8 00 00 00" );	// add rsp, 160
+
+#else // i386
 	// function prologue
 	EmitString( "55" );					// push ebp
 	EmitRexString( 0x48, "89 E5" );		// mov ebp, esp
 	EmitRexString( 0x48, "83 E4 F0" );	// and esp, -16
 	EmitString( "56" );					// push esi
 	EmitString( "57" );					// push edi
-	
-#if idx64 && defined (_MSC_VER)
-	EmitRexString( 0x48, "83 EC 20" );	// sub esp, 20
-#endif
 	// save syscallNum
 	EmitString( "89 C1" );				// mov ecx, eax
-
 	// currentVM->programStack = programStack - 4;
-#if idx64
-	EmitRexString( 0x48, "BA" );		// mov rdx, &vm->programStack
-	EmitPtr( &vm->programStack );
-	EmitString( "8D 46 FC" );			// lea eax, [esi-4]
-	EmitString( "89 02" );				// mov [rdx], eax
-#else
 	EmitString( "8D 46 FC" );			// lea eax, [esi-4]
 	EmitString( "A3" );					// mov [currentVM->programStack], eax 
 	EmitPtr( &vm->programStack );
-#endif
-
 	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
 	EmitRexString( 0x48, "B8" );		// mov eax, currentVM->dataBase + 4  
 	EmitPtr( vm->dataBase + 4 );
 	EmitRexString( 0x48, "01 F0" );		// add eax, esi 
 	// params[0] = syscallNum
 	EmitString( "89 08" );			// mov [eax], ecx
-
-	// currentVm->systemCall( param );
-#if idx64
-	EmitRexString( 0x48, "B8" );	// mov rax, &vm->systemCall 
-	EmitPtr( &vm->systemCall );
-	EmitString( "FF 10" );			// call qword [rax]
-#else
 	// cdecl - push params
 	EmitString( "50" );				// push eax
+	// currentVm->systemCall( param );
 	EmitString( "FF 15" );			// call dword ptr [&currentVM->systemCall]
 	Emit4( (intptr_t)&vm->systemCall );
 	EmitRexString( 0x48, "83 C4 04" );	// add esp, 4
-#endif
 	EmitString( "5F" );					// pop edi
 	EmitString( "5E" );					// pop esi
-
 	// we added the return value: *(opstack+1) = eax
 	EmitAddEDI4( vm );							// add edi, 4
 	EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov [edi], eax
-
 	EmitRexString( 0x48, "89 EC" );	// mov esp, ebp
 	EmitString( "5D" );				// pop ebp
+#endif
+
 	EmitString( "C3" );				// ret
 }
 
