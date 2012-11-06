@@ -856,24 +856,30 @@ sysCallOffset = compiledOfs - sysCallOffset;
 
 #if idx64
 	// allocate stack for shadow(win32)+parameters
-	EmitString4( "48 81 EC", 32+32+128 );	// sub rsp, 0x12345678
+	EmitString( "48 81 EC" );				// sub rsp, 192
+	Emit4( 32 + 32 + 128 );
 
-	EmitString1( "48 8D 54 24", 32 );		// lea rdx, [rsp+32]
+	EmitString( "48 8D 54 24" );			// lea rdx, [rsp+32]
+	Emit1( 32 );
 	EmitString( "48 89 32" );				// mov [rdx+00], rsi
 	EmitString( "48 89 7A 08" );			// mov [rdx+08], rdi
 	EmitString( "4C 89 42 10" );			// mov [rdx+16], r8
 	EmitString( "4C 89 4A 18" );			// mov [rdx+24], r9
 
 	// ecx = &dest_params[0]
-	EmitString4( "48 8D 4C 24", 32+32 );	// lea rcx, [rsp+64]
+	EmitString( "48 8D 4C 24" );			// lea rcx, [rsp+64]
+	Emit1( 32 + 32 );
 	// save syscallNum
 	EmitString( "48 89 01" );				// mov [rcx], rax
 
 	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
 	// params += 4;
 	EmitString( "48 8D 74 33 08" );			// lea rsi, [rbx+rsi+8]
+	//EmitString( "48 01 DE" );					// add rsi, ebx
+	//EmitString( "48 83 C6 08" );				// add rsi, 8
 
 	EmitString( "48 83 C1 08" );			// add rcx, 8
+	//EmitString( "CC" );
 
 	// dest_params[1-15] = params[1-15];
 	EmitString( "31 D2" );					// xor edx, edx
@@ -895,11 +901,12 @@ sysCallOffset = compiledOfs - sysCallOffset;
 #endif
 
 	// currentVm->systemCall( param );
+	
 	//EmitString( "48 B8" );					// mov rax, &vm->systemCall 
 	//EmitPtr( &vm->systemCall );
 	//EmitString( "FF 10" );					// call qword [rax]
 
-	EmitString( "41 FF 12" );				// call qword [r10]
+	EmitString( "41 FF 14 24" );			// call qword [r12]
 
 	EmitString1( "48 8D 54 24", 32 );		// lea rdx, [rsp+32]
 	EmitString( "48 8B 32" );				// mov rsi, [rdx+00]
@@ -912,7 +919,8 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov [edi], eax
 
 	// return stack
-	EmitString4( "48 81 EC", 32+32+128 );	// add rsp, 168
+	EmitString( "48 81 C4" );	// add rsp, 192
+	Emit4( 32 + 32 + 128 );
 
 #else // i386
 	// function prologue
@@ -1907,7 +1915,7 @@ __compile:
 	EmitString( "53" );				// push rbx
 	EmitString( "56" );				// push rsi
 	EmitString( "57" );				// push rdi
-	EmitString( "41 52" );			// push r10
+	EmitString( "41 54" );			// push r12
 
 	EmitRexString( 0x48, "BB" );	// mov rbx, vm->dataBase
 	EmitPtr( vm->dataBase );
@@ -1915,11 +1923,11 @@ __compile:
 	EmitString( "49 B8" );			// mov r8, vm->instructionPointers
 	EmitPtr( vm->instructionPointers );
 
-	EmitString( "49 B9" );			// mov r9, vm->dataMask
+	EmitString( "49 C7 C1" );		// mov r9, vm->dataMask
 	Emit4( vm->dataMask );
 
-	EmitString( "49 BA" );			// mov r10, vm->systemCall
-	EmitPtr( vm->systemCall );
+	EmitString( "49 BC" );			// mov r12, vm->systemCall
+	EmitPtr( &vm->systemCall );
 
 	EmitRexString( 0x48, "B8" );	// mov rax, &vm->programStack
 	EmitPtr( &vm->programStack );
@@ -1940,7 +1948,7 @@ __compile:
 	EmitString( "8B 35" );			// mov esi, [vm->currProgramStack]
 	EmitPtr( &vm->programStack );
 	
-	EmitString( "8B 3D" );			// mov edi, [vm->currOpStack]
+	EmitString( "8B 3D" );			// mov edi, [vm->opStack]
 	EmitPtr( &vm->opStack );
 #endif
 
@@ -1955,7 +1963,7 @@ __compile:
 	EmitPtr( &vm->opStack );
 	EmitRexString( 0x48, "89 38" );	// mov [rax], rdi
 
-	EmitString( "41 5A" );			// pop r10
+	EmitString( "41 5C" );			// pop r12
 	EmitString( "5F" );				// pop rdi
 	EmitString( "5E" );				// pop rsi
 	EmitString( "5B" );				// pop rbx
