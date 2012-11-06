@@ -76,7 +76,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #elif defined( _M_AMD64 )
 #define ARCH_STRING "x86_64"
 #define UNICODE
-#define NO_VM_COMPILED
+//#define NO_VM_COMPILED
 #elif defined _M_ALPHA
 #define ARCH_STRING "AXP"
 #endif

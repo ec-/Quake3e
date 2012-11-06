@@ -862,7 +862,7 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	EmitString( "48 89 32" );				// mov [rdx+00], rsi
 	EmitString( "48 89 7A 08" );			// mov [rdx+08], rdi
 	EmitString( "4C 89 42 10" );			// mov [rdx+16], r8
-	EmitString( "4C 89 4A 18" );			// mov [rdx+16], r9
+	EmitString( "4C 89 4A 18" );			// mov [rdx+24], r9
 
 	// ecx = &dest_params[0]
 	EmitString4( "48 8D 4C 24", 32+32 );	// lea rcx, [rsp+64]
@@ -910,7 +910,7 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov [edi], eax
 
 	// return stack
-	EmitString4( "48 81 EC", 32+16+128 );	// add rsp, 168
+	EmitString4( "48 81 EC", 32+32+128 );	// add rsp, 168
 
 #else // i386
 	// function prologue
@@ -921,10 +921,12 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	EmitString( "57" );					// push edi
 	// save syscallNum
 	EmitString( "89 C1" );				// mov ecx, eax
+#if 0
 	// currentVM->programStack = programStack - 4;
 	EmitString( "8D 46 FC" );			// lea eax, [esi-4]
-	EmitString( "A3" );					// mov [currentVM->programStack], eax 
+	EmitString( "A3" );				// mov [currentVM->programStack], eax 
 	EmitPtr( &vm->programStack );
+#endif
 	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
 	EmitString( "8D 44 33 04" );		// lea eax, [ebx+esi+4]  
 	// params[0] = syscallNum
