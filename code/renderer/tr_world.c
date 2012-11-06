@@ -63,7 +63,6 @@ static qboolean	R_CullGrid( srfGridMesh_t *cv ) {
 	} else {
 		sphereCull = R_CullPointAndRadius( cv->localOrigin, cv->meshRadius );
 	}
-	boxCull = CULL_OUT;
 	
 	// check for trivial reject
 	if ( sphereCull == CULL_OUT )
@@ -330,7 +329,7 @@ void R_AddBrushModelSurfaces ( trRefEntity_t *ent ) {
 	if ( clip == CULL_OUT ) {
 		return;
 	}
-
+	
 	R_SetupEntityLighting( &tr.refdef, ent );
 	R_DlightBmodel( bmodel );
 

@@ -475,7 +475,7 @@ static void FillCloudySkySide( const int mins[2], const int maxs[2], qboolean ad
 
 			if ( tess.numVertexes >= SHADER_MAX_VERTEXES )
 			{
-				ri.Error( ERR_DROP, "SHADER_MAX_VERTEXES hit in FillCloudySkySide()\n" );
+				ri.Error( ERR_DROP, "SHADER_MAX_VERTEXES hit in FillCloudySkySide()" );
 			}
 		}
 	}
@@ -618,14 +618,14 @@ void R_BuildCloudData( shaderCommands_t *input )
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
 
-	if ( input->shader->sky.cloudHeight )
+	if ( shader->sky.cloudHeight )
 	{
 		for ( i = 0; i < MAX_SHADER_STAGES; i++ )
 		{
 			if ( !tess.xstages[i] ) {
 				break;
 			}
-			FillCloudBox( input->shader, i );
+			FillCloudBox( shader, i );
 		}
 	}
 }

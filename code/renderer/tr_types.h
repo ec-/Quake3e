@@ -43,8 +43,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 									// animation without needing to know the frame count
 
 // refdef flags
-#define RDF_NOWORLDMODEL	1		// used for player configuration screen
-#define RDF_HYPERSPACE		4		// teleportation effect
+#define RDF_NOWORLDMODEL	0x0001		// used for player configuration screen
+#define RDF_HYPERSPACE		0x0004		// teleportation effect
 
 typedef struct {
 	vec3_t		xyz;
@@ -147,8 +147,8 @@ typedef enum {
 */
 typedef enum {
 	TC_NONE,
-	TC_S3TC,
-	TC_S3TC_ARB
+	TC_S3TC,  // this is for the GL_S3_s3tc extension.
+	TC_S3TC_ARB  // this is for the GL_EXT_texture_compression_s3tc extension.
 } textureCompression_t;
 
 typedef enum {

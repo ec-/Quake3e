@@ -272,11 +272,11 @@ static shader_t *ShaderForShaderNum( int shaderNum, int lightmapNum ) {
 	shader_t	*shader;
 	dshader_t	*dsh;
 
-	shaderNum = LittleLong( shaderNum );
-	if ( shaderNum < 0 || shaderNum >= s_worldData.numShaders ) {
-		ri.Error( ERR_DROP, "ShaderForShaderNum: bad num %i", shaderNum );
+	int _shaderNum = LittleLong( shaderNum );
+	if ( _shaderNum < 0 || _shaderNum >= s_worldData.numShaders ) {
+		ri.Error( ERR_DROP, "ShaderForShaderNum: bad num %i", _shaderNum );
 	}
-	dsh = &s_worldData.shaders[ shaderNum ];
+	dsh = &s_worldData.shaders[ _shaderNum ];
 
 	if ( r_vertexLight->integer || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
 		lightmapNum = LIGHTMAP_BY_VERTEX;
@@ -1319,6 +1319,9 @@ static	void R_LoadSubmodels( lump_t *l ) {
 		model = R_AllocModel();
 
 		assert( model != NULL );			// this should never happen
+		if ( model == NULL ) {
+			ri.Error(ERR_DROP, "R_LoadSubmodels: R_AllocModel() failed");
+		}
 
 		model->type = MOD_BRUSH;
 		model->bmodel = out;
@@ -1794,11 +1797,14 @@ Called directly from cgame
 void RE_LoadWorldMap( const char *name ) {
 	int			i;
 	dheader_t	*header;
-	byte		*buffer;
+	union {
+		byte *b;
+		void *v;
+	} buffer;
 	byte		*startMarker;
 
 	if ( tr.worldMapLoaded ) {
-		ri.Error( ERR_DROP, "ERROR: attempted to redundantly load world map\n" );
+		ri.Error( ERR_DROP, "ERROR: attempted to redundantly load world map" );
 	}
 
 	// set default sun direction to be used if it isn't
@@ -1812,8 +1818,8 @@ void RE_LoadWorldMap( const char *name ) {
 	tr.worldMapLoaded = qtrue;
 
 	// load it
-    ri.FS_ReadFile( name, (void **)&buffer );
-	if ( !buffer ) {
+    ri.FS_ReadFile( name, &buffer.v );
+	if ( !buffer.b ) {
 		ri.Error (ERR_DROP, "RE_LoadWorldMap: %s not found", name);
 	}
 
@@ -1830,7 +1836,7 @@ void RE_LoadWorldMap( const char *name ) {
 	startMarker = ri.Hunk_Alloc(0, h_low);
 	c_gridVerts = 0;
 
-	header = (dheader_t *)buffer;
+	header = (dheader_t *)buffer.b;
 	fileBase = (byte *)header;
 
 	i = LittleLong (header->version);
@@ -1862,6 +1868,6 @@ void RE_LoadWorldMap( const char *name ) {
 	// only set tr.world now that we know the entire level has loaded properly
 	tr.world = &s_worldData;
 
-    ri.FS_FreeFile( buffer );
+    ri.FS_FreeFile( buffer.v );
 }
 
