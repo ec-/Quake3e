@@ -827,13 +827,14 @@ sysCallOffset = compiledOfs;
 
 	// calling another vm function
 #if idx64
-	EmitString( "41 FF 14 C2" );	// call dword ptr [r10+rax*8]
+	EmitString( "41 FF 14 C0" );	// call dword ptr [r8+rax*8]
 #else
 	EmitString( "8D 0C 85" );		// lea ecx, [vm->instructionPointers+eax*4]
 	EmitPtr( vm->instructionPointers );
 	EmitString( "FF 11" );			// call dword ptr [ecx]
 #endif
-	EmitString( "8B 07" );			// mov eax, dword ptr [edi]
+	//EmitString( "8B 07" );			
+	EmitMovEAXEDI( vm );			// mov eax, dword ptr [edi]
 	EmitString( "C3" );				// ret
 
 sysCallOffset = compiledOfs - sysCallOffset;
@@ -846,17 +847,17 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	EmitString( "55" );					// push ebp
 	EmitRexString( 0x48, "89 E5" );		// mov ebp, esp
 	EmitRexString( 0x48, "83 E4 F0" );	// and esp, -16
+	EmitString( "56" );					// push esi
+	EmitString( "57" );					// push edi
+	
 #if idx64 && defined (_MSC_VER)
 	EmitRexString( 0x48, "83 EC 20" );	// sub esp, 20
 #endif
-	EmitString( "56" );					// push esi
-	EmitString( "57" );					// push edi
-
 	// save syscallNum
 	EmitString( "89 C1" );				// mov ecx, eax
 
 	// currentVM->programStack = programStack - 4;
-#if 1 || idx64
+#if idx64
 	EmitRexString( 0x48, "BA" );		// mov rdx, &vm->programStack
 	EmitPtr( &vm->programStack );
 	EmitString( "8D 46 FC" );			// lea eax, [esi-4]
@@ -864,19 +865,18 @@ sysCallOffset = compiledOfs - sysCallOffset;
 #else
 	EmitString( "8D 46 FC" );			// lea eax, [esi-4]
 	EmitString( "A3" );					// mov [currentVM->programStack], eax 
-	Emit4( (intptr_t)&vm->programStack );
+	EmitPtr( &vm->programStack );
 #endif
 
 	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
 	EmitRexString( 0x48, "B8" );		// mov eax, currentVM->dataBase + 4  
 	EmitPtr( vm->dataBase + 4 );
 	EmitRexString( 0x48, "01 F0" );		// add eax, esi 
-
 	// params[0] = syscallNum
 	EmitString( "89 08" );			// mov [eax], ecx
 
 	// currentVm->systemCall( param );
-#if 1 || idx64
+#if idx64
 	EmitRexString( 0x48, "B8" );	// mov rax, &vm->systemCall 
 	EmitPtr( &vm->systemCall );
 	EmitString( "FF 10" );			// call qword [rax]
@@ -893,8 +893,6 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	// we added the return value: *(opstack+1) = eax
 	EmitAddEDI4( vm );							// add edi, 4
 	EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov [edi], eax
-	//EmitString( "83 C7 04" );		// add edi, 4
-	//EmitString( "89 07" );			// mov [edi], eax
 
 	EmitRexString( 0x48, "89 EC" );	// mov esp, ebp
 	EmitString( "5D" );				// pop ebp
@@ -1858,15 +1856,18 @@ __compile:
 	EmitString( "57" );				// push rdi
 	EmitString( "41 52" );			// push r10
 
-	EmitRexString( 0x48, "BB" );	// mov ebx, vm->dataBase
+	EmitRexString( 0x48, "BB" );	// mov rbx, vm->dataBase
 	EmitPtr( vm->dataBase );
 
-	EmitString( "49 BA" );			// mov r10, instructionPointers
+	EmitString( "49 B8" );			// mov r8, vm->instructionPointers
 	EmitPtr( vm->instructionPointers );
+
+	EmitString( "49 B9" );			// mov r9, vm->dataMask
+	Emit4( vm->dataMask );
 
 	EmitRexString( 0x48, "B8" );	// mov rax, &vm->programStack
 	EmitPtr( &vm->programStack );
-	EmitStr( "8B 30" );				// mov esi, [rax]
+	EmitString( "8B 30" );			// mov esi, [rax]
 
 	EmitRexString( 0x48, "B8" );	// mov rax, &vm->opStack
 	EmitPtr( &vm->opStack );
@@ -1894,7 +1895,7 @@ __compile:
 	EmitPtr( &vm->programStack );
 	EmitString( "89 30" );			// mov [rax], esi
 
-	EmitString( 0x48, "B8" );		// mov rax, &vm->opStack
+	EmitRexString( 0x48, "B8" );	// mov rax, &vm->opStack
 	EmitPtr( &vm->opStack );
 	EmitRexString( 0x48, "89 38" );	// mov [rax], rdi
 
