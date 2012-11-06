@@ -856,11 +856,11 @@ sysCallOffset = compiledOfs - sysCallOffset;
 
 #if idx64
 	// allocate stack for shadow(win32)+parameters
-	EmitString( "48 81 EC" );				// sub rsp, 192
-	Emit4( 32 + 32 + 128 );
+	EmitString( "48 81 EC" );				// sub rsp, 200
+	Emit4( 40 + 32 + 128 );
 
 	EmitString( "48 8D 54 24" );			// lea rdx, [rsp+32]
-	Emit1( 32 );
+	Emit1( 40 );
 	EmitString( "48 89 32" );				// mov [rdx+00], rsi
 	EmitString( "48 89 7A 08" );			// mov [rdx+08], rdi
 	EmitString( "4C 89 42 10" );			// mov [rdx+16], r8
@@ -868,7 +868,7 @@ sysCallOffset = compiledOfs - sysCallOffset;
 
 	// ecx = &dest_params[0]
 	EmitString( "48 8D 4C 24" );			// lea rcx, [rsp+64]
-	Emit1( 32 + 32 );
+	Emit1( 40 + 32 );
 	// save syscallNum
 	EmitString( "48 89 01" );				// mov [rcx], rax
 
@@ -890,7 +890,7 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	EmitString( "48 83 FA 0F" );			// cmp rdx, 15
 	EmitString( "7C EE" );					// jl -18
 
-	EmitString( "48 83 C1 F8" );			// add rcx, -8
+	EmitString( "48 83 E9 08" );			// sub rcx, 8
 	
 #if 0
 	// currentVM->programStack = programStack - 4;
@@ -908,7 +908,7 @@ sysCallOffset = compiledOfs - sysCallOffset;
 
 	EmitString( "41 FF 14 24" );			// call qword [r12]
 
-	EmitString1( "48 8D 54 24", 32 );		// lea rdx, [rsp+32]
+	EmitString1( "48 8D 54 24", 40 );		// lea rdx, [rsp+32]
 	EmitString( "48 8B 32" );				// mov rsi, [rdx+00]
 	EmitString( "48 8B 7A 08" );			// mov rdi, [rdx+08]
 	EmitString( "4C 8B 42 10" );			// mov r8,  [rdx+16]
@@ -920,7 +920,7 @@ sysCallOffset = compiledOfs - sysCallOffset;
 
 	// return stack
 	EmitString( "48 81 C4" );	// add rsp, 192
-	Emit4( 32 + 32 + 128 );
+	Emit4( 40 + 32 + 128 );
 
 #else // i386
 	// function prologue
