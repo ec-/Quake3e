@@ -42,6 +42,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 //#define VM_LOG_SYSCALLS
 #define JUMP_OPTIMIZE 0
+#define OPTIMIZE 1
 
 #if JUMP_OPTIMIZE
 #define NUM_PASSES 7
@@ -1945,7 +1946,7 @@ __compile:
 	EmitRexString( 0x48, "BB" );	// mov ebx, vm->dataBase
 	EmitPtr( vm->dataBase );
 
-	EmitString( "8B 35" );			// mov esi, [vm->currProgramStack]
+	EmitString( "8B 35" );			// mov esi, [vm->programStack]
 	EmitPtr( &vm->programStack );
 	
 	EmitString( "8B 3D" );			// mov edi, [vm->opStack]
@@ -2027,7 +2028,7 @@ __compile:
 			break;
 
 		case OP_CONST:
-#if !idx64			
+#if !idx64 && OPTIMIZE
 			// we can safely perform optimizations only in case if 
 			// we are 100% sure that next instruction is not a jump label
 			if ( !ni->jused && ConstOptimize( vm ) )
@@ -2042,7 +2043,7 @@ __compile:
 
 		case OP_LOCAL:
 
-#if !idx64
+#if !idx64 && OPTIMIZE
 			if ( ci->mop != MOP_UNDEF && LocalOptimize( vm ) )
 				break;
 			
@@ -2113,20 +2114,19 @@ __compile:
 		case OP_ARG:
 			EmitMovEAXEDI( vm );			// mov	eax, dword ptr [edi]
 			v = ci->value;
-			if ( ISS8( v ) ) {
-				EmitString( "89 44 33" );	// mov	dword ptr [ebx + esi + 0x7F], eax
-				Emit1( v );
-			} else {
 #if idx64
 				EmitString( "89 84 33" );	// mov	dword ptr [rbx + rsi + 0x12345678], eax
 				Emit4( v );
 #else
+			if ( ISS8( v ) ) {
+				EmitString( "89 44 33" );	// mov	dword ptr [ebx + esi + 0x7F], eax
+				Emit1( v );
+			} else {
 				EmitString( "89 86" );		// mov	dword ptr [esi + 0x12345678], eax
 				EmitPtr( vm->dataBase + v );
-#endif
 			}
-			
-			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
+#endif
+			EmitCommand( LAST_COMMAND_SUB_DI_4 );		// sub edi, 4
 			break;
 
 		case OP_CALL:
@@ -2161,7 +2161,7 @@ __compile:
 			break;
 
 		case OP_LOAD4:
-#if !idx64
+#if !idx64 && OPTIMIZE
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
@@ -2176,7 +2176,7 @@ __compile:
 			break;
 
 		case OP_LOAD2:
-#if !idx64
+#if !idx64 && OPTIMIZE
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
@@ -2191,7 +2191,7 @@ __compile:
 			break;
 
 		case OP_LOAD1:
-#if !idx64
+#if !idx64 && OPTIMIZE
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
@@ -2395,7 +2395,7 @@ __compile:
 		case OP_SUBF:
 		case OP_DIVF:
 		case OP_MULF:
-#if !idx64
+#if !idx64 && OPTIMIZE
 			if ( ci->mop == MOP_CALCF4 ) {
 				FloatMerge( ci, ni );
 				break;
