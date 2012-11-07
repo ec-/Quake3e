@@ -2161,6 +2161,7 @@ __compile:
 			break;
 
 		case OP_LOAD4:
+#if !idx64
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
@@ -2168,12 +2169,14 @@ __compile:
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );		// mov dword ptr [edi], eax
 				break;
 			}
+#endif
 			EmitMovECXEDI(vm, vm->dataMask);
 			EmitString( "8B 04 0B" );							// mov	eax, dword ptr [ebx + ecx]
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );			// mov dword ptr [edi], eax
 			break;
 
 		case OP_LOAD2:
+#if !idx64
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
@@ -2181,12 +2184,14 @@ __compile:
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );		// mov dword ptr [edi], eax
 				break;
 			}
+#endif
 			EmitMovECXEDI(vm, vm->dataMask);
 			EmitString( "0F B7 04 0B" );						// movzx eax, word ptr [ebx + ecx]
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );			// mov dword ptr [edi], eax
 			break;
 
 		case OP_LOAD1:
+#if !idx64
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
@@ -2194,6 +2199,7 @@ __compile:
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov dword ptr [edi], eax
 				break;
 			}
+#endif
 			EmitMovECXEDI(vm, vm->dataMask);
 			EmitString( "0F B6 04 0B" );				// movzx eax, byte ptr [ebx + ecx]
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov dword ptr [edi], eax
