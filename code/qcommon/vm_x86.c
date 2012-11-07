@@ -57,13 +57,23 @@ static void *VM_Alloc_Compiled( vm_t *vm, int codeLength );
 static void VM_Destroy_Compiled( vm_t *vm );
 
 /*
-
+  -------------
   eax	scratch
   ebx	scratch
   ecx	scratch (required for shifts) | currentVM
   edx	scratch (required for divisions)
   esi	program stack
   edi	opstack
+  -------------
+  rax	scratch
+  rbx*	dataBase
+  rcx	scratch (required for shifts)
+  rdx	scratch (required for divisions)
+  rsi*	programStack
+  rdi*	opstack
+  r8	instructionPointers
+  r9    dataMask
+  r12*  systemCall
 
   Example how data segment will look like during vmMain execution:
   | .... |
@@ -873,19 +883,24 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	EmitString( "4C 89 42 10" );			// mov [rdx+16], r8
 	EmitString( "4C 89 4A 18" );			// mov [rdx+24], r9
 
-	// ecx = &dest_params[0]
+	// ecx = &int64_params[0]
 	EmitString( "48 8D 4C 24" );			// lea rcx, [rsp+SHADOW_BASE+PUSH_STACK]
 	Emit1( SHADOW_BASE + PUSH_STACK );
 
 	// save syscallNum
-	//EmitString( "48 98" );					// cdqe?
 	EmitString( "48 89 01" );				// mov [rcx], rax
+
+	// vm->programStack = programStack - 4;
+	EmitString( "48 BA" );					// mov rdx, &vm->programStack
+	EmitPtr( &vm->programStack );
+	EmitString( "8D 46 FC" );				// lea eax, [esi-4]
+	EmitString( "89 02" );					// mov [rdx], eax
 
 	// params = (currentVM->dataBase + programStack + 8);
 	EmitString( "48 8D 74 33 08" );			// lea rsi, [rbx+rsi+8]
 
+	// rcx = &int64_params[1]
 	EmitString( "48 83 C1 08" );			// add rcx, 8
-	//EmitString( "CC" );
 
 	// dest_params[1-15] = params[1-15];
 	EmitString( "31 D2" );					// xor edx, edx
@@ -897,21 +912,14 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	Emit1( (PARAM_STACK/8) - 1 );
 	EmitString( "7C EE" );					// jl -18
 
+	// rcx = &int64_params[0]
 	EmitString( "48 83 E9 08" );			// sub rcx, 8
 	
-#if 0
-	// currentVM->programStack = programStack - 4;
-	EmitString( "48 BA" );					// mov rdx, &vm->programStack
-	EmitPtr( &vm->programStack );
-	EmitString( "8D 46 FC" );				// lea eax, [esi-4]
-	EmitString( "89 02" );					// mov [rdx], eax
-#endif
-
 	// currentVm->systemCall( param );
 	
-	//EmitString( "48 B8" );					// mov rax, &vm->systemCall 
+	//EmitString( "48 B8" );				// mov rax, &vm->systemCall 
 	//EmitPtr( &vm->systemCall );
-	//EmitString( "FF 10" );					// call qword [rax]
+	//EmitString( "FF 10" );				// call qword [rax]
 
 	EmitString( "41 FF 14 24" );			// call qword [r12]
 
@@ -923,11 +931,11 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	EmitString( "4C 8B 4A 18" );			// mov r9,  [rdx+24]
 
 	// we added the return value: *(opstack+1) = eax
-	EmitAddEDI4( vm );							// add edi, 4
-	EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov [edi], eax
+	EmitAddEDI4( vm );						// add edi, 4
+	EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov [edi], eax
 
 	// return stack
-	EmitString( "48 81 C4" );	// add rsp, 200
+	EmitString( "48 81 C4" );				// add rsp, 200
 	Emit4( SHADOW_BASE + PUSH_STACK + PARAM_STACK );
 
 #else // i386
@@ -937,31 +945,40 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	EmitRexString( 0x48, "83 E4 F0" );	// and esp, -16
 	//EmitString( "56" );				// push esi
 	//EmitString( "57" );				// push edi
+	
 	// save syscallNum
 	EmitString( "89 C1" );				// mov ecx, eax
-#if 0
+
 	// currentVM->programStack = programStack - 4;
 	EmitString( "8D 46 FC" );			// lea eax, [esi-4]
-	EmitString( "A3" );				// mov [currentVM->programStack], eax 
+	EmitString( "A3" );					// mov [vm->programStack], eax 
 	EmitPtr( &vm->programStack );
-#endif
+
 	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
 	EmitString( "8D 44 33 04" );		// lea eax, [ebx+esi+4]  
+
 	// params[0] = syscallNum
 	EmitString( "89 08" );				// mov [eax], ecx
+
 	// cdecl - push params
 	EmitString( "50" );					// push eax
+
 	// currentVm->systemCall( param );
 	EmitString( "FF 15" );				// call dword ptr [&currentVM->systemCall]
 	Emit4( (intptr_t)&vm->systemCall );
+	
+	// cdecl - pop params
 	EmitString( "83 C4 04" );			// add esp, 4
+
 	//EmitString( "5F" );				// pop edi
 	//EmitString( "5E" );				// pop esi
+	
 	// we added the return value: *(opstack+1) = eax
 	EmitAddEDI4( vm );							// add edi, 4
 	EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov [edi], eax
-	EmitRexString( 0x48, "89 EC" );	// mov esp, ebp
-	EmitString( "5D" );				// pop ebp
+
+	EmitRexString( 0x48, "89 EC" );		// mov esp, ebp
+	EmitString( "5D" );					// pop ebp
 #endif
 
 	EmitString( "C3" );				// ret
