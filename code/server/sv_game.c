@@ -298,7 +298,7 @@ The module is making a system call
 ====================
 */
 intptr_t SV_GameSystemCalls( intptr_t *args ) {
-	switch( (int)args[0] ) {
+	switch( args[0] ) {
 	case G_PRINT:
 		Com_Printf( "%s", (const char*)VMA(1) );
 		return 0;
