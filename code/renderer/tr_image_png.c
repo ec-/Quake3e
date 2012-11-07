@@ -215,6 +215,10 @@ struct BufferedFile
 static struct BufferedFile *ReadBufferedFile(const char *name)
 {
 	struct BufferedFile *BF;
+	union {
+		byte *b;
+		void *v;
+	} buffer;
 
 	/*
 	 *  input verification
@@ -248,7 +252,8 @@ static struct BufferedFile *ReadBufferedFile(const char *name)
 	 *  Read the file.
 	 */
 
-	BF->Length = ri.FS_ReadFile((char *) name, (void **) &BF->Buffer);
+	BF->Length = ri.FS_ReadFile((char *) name, &buffer.v);
+	BF->Buffer = buffer.b;
 
 	/*
 	 *  Did we get it? Is it big enough?
@@ -786,8 +791,6 @@ static uint8_t PredictPaeth(uint8_t a, uint8_t b, uint8_t c)
 	int p;
 	int pa, pb, pc;
 
-	Pr = 0;
-
 	p  = ((int) a) + ((int) b) - ((int) c);
 	pa = abs(p - ((int) a));
 	pb = abs(p - ((int) b));
@@ -959,7 +962,7 @@ static qboolean UnfilterImage(uint8_t  *DecompressedData,
 			PixelLeft = DecompPtr;
 
 			/*
-			 *  We only have a upleft pixel if we are on the second line or above.
+			 *  We only have an upleft pixel if we are on the second line or above.
 			 */
 
 			if(h > 0)
@@ -2060,7 +2063,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 	{
 		CloseBufferedFile(ThePNG);
 
-		Com_Printf(S_COLOR_YELLOW "%s: invalid image size\n", name);
+		ri.Printf( PRINT_WARNING, "%s: invalid image size\n", name );
 
 		return; 
 	}
@@ -2128,7 +2131,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 		ChunkHeaderType   = BigLong(CH->Type);
 
 		/*
-		 *  Check if the chunk is an PLTE.
+		 *  Check if the chunk is a PLTE.
 		 */
 
 		if(!(ChunkHeaderType == PNG_ChunkType_PLTE))
@@ -2230,7 +2233,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 		ChunkHeaderType   = BigLong(CH->Type);
 
 		/*
-		 *  Check if the chunk is an tRNS.
+		 *  Check if the chunk is a tRNS.
 		 */
 
 		if(!(ChunkHeaderType == PNG_ChunkType_tRNS))
