@@ -1203,7 +1203,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 		ip += 1;
 		return qtrue;
-
+	
 	case OP_ADD:
 		v = ci->value;
 		EmitMovEAXEDI( vm ); 
@@ -1343,6 +1343,8 @@ qboolean ConstOptimize( vm_t *vm ) {
 			ip += 1;
 			return qtrue;
 		}
+		break;
+#if 0
 		if ( v < 0 )
 			break;
 #ifdef VM_LOG_SYSCALLS
@@ -1354,6 +1356,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 		EmitCommand( LAST_COMMAND_MOV_EAX_EDI );
 		ip += 1; // OP_CALL
 		return qtrue;
+#endif
 
 	case OP_EQ:
 	case OP_NE:
@@ -2051,12 +2054,12 @@ __compile:
 			break;
 
 		case OP_CONST:
-#if !idx64 && OPTIMIZE
+			
 			// we can safely perform optimizations only in case if 
 			// we are 100% sure that next instruction is not a jump label
 			if ( !ni->jused && ConstOptimize( vm ) )
 				break;
-#endif
+
 			EmitAddEDI4( vm );
 			EmitString( "C7 07" );		// mov	dword ptr [edi], 0x12345678
 			lastConst = ci->value;
