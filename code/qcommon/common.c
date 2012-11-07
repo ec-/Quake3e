@@ -2682,13 +2682,11 @@ int Sys_GetProcessorId( char *vendor )
 {
 	unsigned int regs[4];
 
+	// setup initial features
+#if idx64
+	CPU_Flags |= CPU_SSE | CPU_FCOM;
+#else
 	CPU_Flags = 0;
-
-#if defined	(_M_AMD64)
-	CPU_Flags |= CPU_MMX | CPU_SSE | CPU_FCOM;
-	if ( vendor )
-		strcpy( vendor, "Generic x86_64 CPU" );
-	return 1;
 #endif
 
 	// get CPU feature bits
@@ -2715,21 +2713,29 @@ int Sys_GetProcessorId( char *vendor )
 		CPU_Flags |= CPU_SSE3;
 
 	if ( vendor ) {
+#if idx64
+		strcpy( vendor, "64-bit " );
+		vendor += strlen( vendor );
+#else
+		vendor[0] = '\0';
+#endif
 		// get CPU vendor string
 		CPUID( 0, regs );
 		memcpy( vendor+0, (char*) &regs[1], 4 );
 		memcpy( vendor+4, (char*) &regs[3], 4 );
 		memcpy( vendor+8, (char*) &regs[2], 4 );
-		vendor[12] = '\0';
+		vendor[12] = '\0'; vendor += 12;
 		if ( CPU_Flags ) {
-			// add features
-			strcat( vendor, " w/" );
+			// print features
+			strcat( vendor, " /w" );
+#if !idx64	// do not print default 64-bit features
 			if ( CPU_Flags & CPU_FCOM )
 				strcat( vendor, "CMOV " );
 			if ( CPU_Flags & CPU_MMX )
 				strcat( vendor, "MMX " );
 			if ( CPU_Flags & CPU_SSE )
 				strcat( vendor, "SSE " );
+#endif
 			if ( CPU_Flags & CPU_SSE2 )
 				strcat( vendor, "SSE2 " );
 			if ( CPU_Flags & CPU_SSE3 )
