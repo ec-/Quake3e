@@ -402,11 +402,9 @@ void CL_ShutdownCGame( void ) {
 }
 
 static int	FloatAsInt( float f ) {
-	int		temp;
-
-	*(float *)&temp = f;
-
-	return temp;
+	floatint_t fi;
+	fi.f = f;
+	return fi.i;
 }
 
 /*
@@ -552,6 +550,7 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return re.RegisterShaderNoMip( VMA(1) );
 	case CG_R_REGISTERFONT:
 		re.RegisterFont( VMA(1), args[2], VMA(3));
+		return 0;
 	case CG_R_CLEARSCENE:
 		re.ClearScene();
 		return 0;
@@ -704,7 +703,7 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return re.inPVS( VMA(1), VMA(2) );
 
 	default:
-	        assert(0); // bk010102
+	        assert(0);
 		Com_Error( ERR_DROP, "Bad cgame system trap: %ld", (long int) args[0] );
 	}
 	return 0;

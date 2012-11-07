@@ -563,20 +563,22 @@ int	MSG_ReadDelta( msg_t *msg, int oldV, int bits ) {
 }
 
 void MSG_WriteDeltaFloat( msg_t *msg, float oldV, float newV ) {
+	floatint_t fi;
 	if ( oldV == newV ) {
 		MSG_WriteBits( msg, 0, 1 );
 		return;
 	}
+	fi.f = newV;
 	MSG_WriteBits( msg, 1, 1 );
-	MSG_WriteBits( msg, *(int *)&newV, 32 );
+	MSG_WriteBits( msg, fi.i, 32 );
 }
 
 float MSG_ReadDeltaFloat( msg_t *msg, float oldV ) {
 	if ( MSG_ReadBits( msg, 1 ) ) {
-		float	newV;
+		floatint_t fi;
 
-		*(int *)&newV = MSG_ReadBits( msg, 32 );
-		return newV;
+		fi.i = MSG_ReadBits( msg, 32 );
+		return fi.f;
 	}
 	return oldV;
 }
@@ -617,20 +619,22 @@ int	MSG_ReadDeltaKey( msg_t *msg, int key, int oldV, int bits ) {
 }
 
 void MSG_WriteDeltaKeyFloat( msg_t *msg, int key, float oldV, float newV ) {
+	floatint_t fi;
 	if ( oldV == newV ) {
 		MSG_WriteBits( msg, 0, 1 );
 		return;
 	}
+	fi.f = newV;
 	MSG_WriteBits( msg, 1, 1 );
-	MSG_WriteBits( msg, (*(int *)&newV) ^ key, 32 );
+	MSG_WriteBits( msg, fi.i ^ key, 32 );
 }
 
 float MSG_ReadDeltaKeyFloat( msg_t *msg, int key, float oldV ) {
 	if ( MSG_ReadBits( msg, 1 ) ) {
-		float	newV;
+		floatint_t fi;
 
-		*(int *)&newV = MSG_ReadBits( msg, 32 ) ^ key;
-		return newV;
+		fi.i = MSG_ReadBits( msg, 32 ) ^ key;
+		return fi.f;
 	}
 	return oldV;
 }
@@ -693,8 +697,14 @@ void MSG_ReadDeltaUsercmd( msg_t *msg, usercmd_t *from, usercmd_t *to ) {
 	to->angles[1] = MSG_ReadDelta( msg, from->angles[1], 16);
 	to->angles[2] = MSG_ReadDelta( msg, from->angles[2], 16);
 	to->forwardmove = MSG_ReadDelta( msg, from->forwardmove, 8);
+	if( to->forwardmove == -128 )
+		to->forwardmove = -127;
 	to->rightmove = MSG_ReadDelta( msg, from->rightmove, 8);
+	if( to->rightmove == -128 )
+		to->rightmove = -127;
 	to->upmove = MSG_ReadDelta( msg, from->upmove, 8);
+	if( to->upmove == -128 )
+		to->upmove = -127;
 	to->buttons = MSG_ReadDelta( msg, from->buttons, 16);
 	to->weapon = MSG_ReadDelta( msg, from->weapon, 8);
 }
@@ -754,8 +764,14 @@ void MSG_ReadDeltaUsercmdKey( msg_t *msg, int key, usercmd_t *from, usercmd_t *t
 		to->angles[1] = MSG_ReadDeltaKey( msg, key, from->angles[1], 16);
 		to->angles[2] = MSG_ReadDeltaKey( msg, key, from->angles[2], 16);
 		to->forwardmove = MSG_ReadDeltaKey( msg, key, from->forwardmove, 8);
+		if( to->forwardmove == -128 )
+			to->forwardmove = -127;
 		to->rightmove = MSG_ReadDeltaKey( msg, key, from->rightmove, 8);
+		if( to->rightmove == -128 )
+			to->rightmove = -127;
 		to->upmove = MSG_ReadDeltaKey( msg, key, from->upmove, 8);
+		if( to->upmove == -128 )
+			to->upmove = -127;
 		to->buttons = MSG_ReadDeltaKey( msg, key, from->buttons, 16);
 		to->weapon = MSG_ReadDeltaKey( msg, key, from->weapon, 8);
 	} else {
@@ -884,7 +900,7 @@ void MSG_WriteDeltaEntity( msg_t *msg, struct entityState_s *from, struct entity
 	float		fullFloat;
 	int			*fromF, *toF;
 
-	numFields = sizeof(entityStateFields)/sizeof(entityStateFields[0]);
+	numFields = ARRAY_LEN( entityStateFields );
 
 	// all fields should be 32 bits to avoid any compiler packing issues
 	// the "number" field is not part of the field list
@@ -1031,7 +1047,7 @@ void MSG_ReadDeltaEntity( msg_t *msg, entityState_t *from, entityState_t *to,
 		return;
 	}
 
-	numFields = sizeof(entityStateFields)/sizeof(entityStateFields[0]);
+	numFields = ARRAY_LEN( entityStateFields );
 	lc = MSG_ReadByte(msg);
 
 	if ( lc > numFields || lc < 0 ) {
@@ -1192,7 +1208,6 @@ void MSG_WriteDeltaPlayerstate( msg_t *msg, struct playerState_s *from, struct p
 	int				ammobits;
 	int				powerupbits;
 	int				numFields;
-	int				c;
 	netField_t		*field;
 	int				*fromF, *toF;
 	float			fullFloat;
@@ -1203,9 +1218,7 @@ void MSG_WriteDeltaPlayerstate( msg_t *msg, struct playerState_s *from, struct p
 		Com_Memset (&dummy, 0, sizeof(dummy));
 	}
 
-	c = msg->cursize;
-
-	numFields = sizeof( playerStateFields ) / sizeof( playerStateFields[0] );
+	numFields = ARRAY_LEN( playerStateFields );
 
 	lc = 0;
 	for ( i = 0, field = playerStateFields ; i < numFields ; i++, field++ ) {
@@ -1252,7 +1265,6 @@ void MSG_WriteDeltaPlayerstate( msg_t *msg, struct playerState_s *from, struct p
 			MSG_WriteBits( msg, *toF, field->bits );
 		}
 	}
-	c = msg->cursize - c;
 
 
 	//
@@ -1376,7 +1388,7 @@ void MSG_ReadDeltaPlayerstate (msg_t *msg, playerState_t *from, playerState_t *t
 		print = 0;
 #endif
 
-	numFields = sizeof( playerStateFields ) / sizeof( playerStateFields[0] );
+	numFields = ARRAY_LEN( playerStateFields );
 	lc = MSG_ReadByte(msg);
 
 	if ( lc > numFields || lc < 0 ) {

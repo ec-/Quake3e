@@ -219,7 +219,7 @@ void SV_AdjustAreaPortalState( sharedEntity_t *ent, qboolean open ) {
 
 /*
 ==================
-SV_GameAreaEntities
+SV_EntityContact
 ==================
 */
 qboolean	SV_EntityContact( vec3_t mins, vec3_t maxs, const sharedEntity_t *gEnt, int capsule ) {
@@ -542,7 +542,7 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 
 	case BOTLIB_EA_ACTION:
 		botlib_export->ea.EA_Action( args[1], args[2] );
-		break;
+		return 0;
 	case BOTLIB_EA_GESTURE:
 		botlib_export->ea.EA_Gesture( args[1] );
 		return 0;
@@ -846,9 +846,9 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 
 
 	default:
-		Com_Error( ERR_DROP, "Bad game system trap: %d", (int)args[0] );
+		Com_Error( ERR_DROP, "Bad game system trap: %ld", (long int) args[0] );
 	}
-	return -1;
+	return 0;
 }
 
 /*
