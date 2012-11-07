@@ -1344,7 +1344,7 @@ qboolean ConstOptimize( vm_t *vm ) {
 			return qtrue;
 		}
 		break;
-#if 0
+#if 1
 		if ( v < 0 )
 			break;
 #ifdef VM_LOG_SYSCALLS

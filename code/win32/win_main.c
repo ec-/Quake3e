@@ -543,7 +543,11 @@ void * QDECL Sys_LoadDll( const char *name, intptr_t (QDECL **entryPoint)(intptr
 	char	*fn;
 	char	filename[MAX_QPATH];
 
+#if idx64
+	Com_sprintf( filename, sizeof( filename ), "%sx86_64.dll", name );
+#else
 	Com_sprintf( filename, sizeof( filename ), "%sx86.dll", name );
+#endif
 
 #ifndef NDEBUG
 	libHandle = LoadLibrary( filename );
