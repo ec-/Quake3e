@@ -176,7 +176,12 @@ int Cvar_Flags(const char *var_name)
 	if( (var = Cvar_FindVar(var_name)) == NULL )
 		return CVAR_NONEXISTENT;
 	else
-		return var->flags;
+	{
+		if(var->modified)
+			return var->flags | CVAR_MODIFIED;
+		else
+			return var->flags;
+	}
 }
 
 /*
@@ -312,9 +317,9 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 	long	hash;
 	int	index;
 
-  if ( !var_name || ! var_value ) {
+	if ( !var_name || ! var_value ) {
 		Com_Error( ERR_FATAL, "Cvar_Get: NULL parameter" );
-  }
+	}
 
 	if ( !Cvar_ValidateString( var_name ) ) {
 		Com_Printf("invalid cvar name string: %s\n", var_name );
@@ -329,7 +334,7 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 #endif
 
 	var = Cvar_FindVar (var_name);
-
+	
 	if(var)
 	{
 		var_value = Cvar_Validate(var, var_value, qfalse);
@@ -349,36 +354,37 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 
 				if(var->latchedString)
 					Z_Free(var->latchedString);
-
+				
 				var->latchedString = CopyString(var_value);
 			}
 		}
-
+		
 		// Make sure the game code cannot mark engine-added variables as gamecode vars
-		if( var->flags & CVAR_VM_CREATED )
+		if(var->flags & CVAR_VM_CREATED)
 		{
-			if ( !( flags & CVAR_VM_CREATED ) )
+			if(!(flags & CVAR_VM_CREATED))
 				var->flags &= ~CVAR_VM_CREATED;
 		}
 		else
 		{
-			if ( flags & CVAR_VM_CREATED )
+			if(flags & CVAR_VM_CREATED)
 				flags &= ~CVAR_VM_CREATED;
 		}
-
- 		// Make sure servers cannot mark engine-added variables as SERVER_CREATED
- 		if ( var->flags & CVAR_SERVER_CREATED )
- 		{
- 			if ( !( flags & CVAR_SERVER_CREATED ) )
- 				var->flags &= ~CVAR_SERVER_CREATED;
- 		}
- 		else
- 		{
- 			if ( flags & CVAR_SERVER_CREATED )
- 				flags &= ~CVAR_SERVER_CREATED;
- 		}
-
+		
+		// Make sure servers cannot mark engine-added variables as SERVER_CREATED
+		if(var->flags & CVAR_SERVER_CREATED)
+		{
+			if(!(flags & CVAR_SERVER_CREATED))
+				var->flags &= ~CVAR_SERVER_CREATED;
+		}
+		else
+		{
+			if(flags & CVAR_SERVER_CREATED)
+				flags &= ~CVAR_SERVER_CREATED;
+		}
+		
 		var->flags |= flags;
+
 		// only allow one non-empty reset string without a warning
 		if ( !var->resetString[0] ) {
 			// we don't have a reset string yet
@@ -423,12 +429,12 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 
 		return NULL;
 	}
-
+	
 	var = &cvar_indexes[index];
-
+	
 	if(index >= cvar_numIndexes)
 		cvar_numIndexes = index + 1;
-
+		
 	var->name = CopyString (var_name);
 	var->string = CopyString (var_value);
 	var->modified = qtrue;
@@ -539,10 +545,10 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 			Z_Free(var->latchedString);
 			var->latchedString = NULL;
 			return var;
-	}
+		}
 
 		if(!strcmp(value, var->latchedString))
-		return var;
+			return var;
 	}
 	else if(!strcmp(value, var->string))
 		return var;
@@ -634,7 +640,7 @@ void Cvar_SetSafe( const char *var_name, const char *value )
 {
 	int flags = Cvar_Flags( var_name );
 
-	if( flags != CVAR_NONEXISTENT && flags & CVAR_PROTECTED )
+	if((flags != CVAR_NONEXISTENT) && (flags & CVAR_PROTECTED))
 	{
 		if( value )
 			Com_Printf( S_COLOR_YELLOW "Restricted source tried to set "
@@ -723,13 +729,13 @@ void Cvar_SetCheatState(void)
 	{
 		if(var->flags & CVAR_CHEAT)
 		{
-      // the CVAR_LATCHED|CVAR_CHEAT vars might escape the reset here 
-      // because of a different var->latchedString
-      if (var->latchedString)
-      {
-        Z_Free(var->latchedString);
-        var->latchedString = NULL;
-      }
+			// the CVAR_LATCHED|CVAR_CHEAT vars might escape the reset here 
+			// because of a different var->latchedString
+			if (var->latchedString)
+			{
+				Z_Free(var->latchedString);
+				var->latchedString = NULL;
+			}
 			if (strcmp(var->resetString,var->string))
 				Cvar_Set(var->name, var->resetString);
 		}
@@ -776,7 +782,7 @@ void Cvar_Print_f(void)
 {
 	char *name;
 	cvar_t *cv;
-
+	
 	if(Cmd_Argc() != 2)
 	{
 		Com_Printf ("usage: print <variable>\n");
@@ -786,7 +792,7 @@ void Cvar_Print_f(void)
 	name = Cmd_Argv(1);
 
 	cv = Cvar_FindVar(name);
-
+	
 	if(cv)
 		Cvar_Print(cv);
 	else
@@ -829,8 +835,8 @@ void Cvar_Toggle_f( void ) {
 	for(i = 2; i + 1 < c; i++) {
 		if(strcmp(curval, Cmd_Argv(i)) == 0) {
 			Cvar_Set2(Cmd_Argv(1), Cmd_Argv(i + 1), qfalse);
-		return;
-	}
+			return;
+		}
 	}
 
 	// fallback
@@ -869,7 +875,7 @@ void Cvar_Set_f( void ) {
 	switch( cmd[3] ) {
 		case 'a':
 			if( !( v->flags & CVAR_ARCHIVE ) ) {
-	v->flags |= CVAR_ARCHIVE;
+				v->flags |= CVAR_ARCHIVE;
 				cvar_modifiedFlags |= CVAR_ARCHIVE;
 			}
 			break;
@@ -1060,7 +1066,7 @@ cvar_t *Cvar_Unset(cvar_t *cv)
 		cv->hashNext->hashPrev = cv->hashPrev;
 
 	Com_Memset(cv, '\0', sizeof(*cv));
-
+	
 	return next;
 }
 
@@ -1080,7 +1086,7 @@ void Cvar_Unset_f(void)
 	{
 		Com_Printf("Usage: %s <varname>\n", Cmd_Argv(0));
 		return;
-			}
+	}
 	
 	cv = Cvar_FindVar(Cmd_Argv(1));
 
@@ -1119,13 +1125,13 @@ void Cvar_Restart(qboolean unsetVM)
 			curvar = Cvar_Unset(curvar);
 			continue;
 		}
-
+		
 		if(!(curvar->flags & (CVAR_ROM | CVAR_INIT | CVAR_NORESTART)))
 		{
 			// Just reset the rest to their default values.
 			Cvar_Set2(curvar->name, curvar->resetString, qfalse);
 		}
-
+		
 		curvar = curvar->next;
 	}
 }
@@ -1159,7 +1165,7 @@ char *Cvar_InfoString(int bit)
 	{
 		if(var->name && (var->flags & bit))
 			Info_SetValueForKey (info, var->name, var->string);
-		}
+	}
 
 	return info;
 }
@@ -1182,7 +1188,7 @@ char *Cvar_InfoString_Big(int bit)
 	{
 		if(var->name && (var->flags & bit))
 			Info_SetValueForKey_Big (info, var->name, var->string);
-		}
+	}
 	return info;
 }
 
@@ -1228,12 +1234,15 @@ void Cvar_Register(vmCvar_t *vmCvar, const char *varName, const char *defaultVal
 	// user. In other words CVAR_ARCHIVE and CVAR_ROM are mutually exclusive
 	// flags. Unfortunately some historical game code (including single player
 	// baseq3) sets both flags. We unset CVAR_ROM for such cvars.
-	if ((flags & (CVAR_ARCHIVE | CVAR_ROM)) == (CVAR_ARCHIVE | CVAR_ROM))
+	if ((flags & (CVAR_ARCHIVE | CVAR_ROM)) == (CVAR_ARCHIVE | CVAR_ROM)) {
+		Com_DPrintf( S_COLOR_YELLOW "WARNING: Unsetting CVAR_ROM cvar '%s', "
+			"since it is also CVAR_ARCHIVE\n", varName );
 		flags &= ~CVAR_ROM;
+	}
 
 	cv = Cvar_Get(varName, defaultValue, flags | CVAR_VM_CREATED);
 
-	if ( !vmCvar )
+	if (!vmCvar)
 		return;
 
 	vmCvar->handle = cv - cvar_indexes;
