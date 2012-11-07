@@ -162,8 +162,6 @@ int		max_polyverts;
 
 cvar_t	*r_floatfix;
 
-cvar_t *r_clamptoedge;
-int		gl_clamp_mode;
 
 static void AssertCvarRange( cvar_t *cv, float minVal, float maxVal, qboolean shouldBeIntegral )
 {
@@ -1158,8 +1156,7 @@ void R_Register( void )
 	r_maxpolyverts = ri.Cvar_Get( "r_maxpolyverts", va("%d", MAX_POLYVERTS), 0);
 
 	r_GLlibCoolDownMsec = ri.Cvar_Get( "r_GLlibCoolDownMsec", "0", CVAR_ARCHIVE );
-	r_clamptoedge =  ri.Cvar_Get( "r_clamptoedge", "1", CVAR_LATCH );
-  
+	  
 	r_floatfix = ri.Cvar_Get( "r_floatfix", "0", 0 );
 
 	// make sure all the commands added here are also
@@ -1243,11 +1240,6 @@ void R_Init( void ) {
 	max_polyverts = r_maxpolyverts->integer;
 	if (max_polyverts < MAX_POLYVERTS)
 		max_polyverts = MAX_POLYVERTS;
-
-	if ( r_clamptoedge && r_clamptoedge->integer > 0 )
-		gl_clamp_mode = GL_CLAMP_TO_EDGE;
-	else
-		gl_clamp_mode = GL_CLAMP;
 	
 	ptr = ri.Hunk_Alloc( sizeof( *backEndData ) + sizeof(srfPoly_t) * max_polys + sizeof(polyVert_t) * max_polyverts, h_low);
 	backEndData = (backEndData_t *) ptr;
