@@ -266,26 +266,30 @@ Cmd_Exec_f
 ===============
 */
 void Cmd_Exec_f( void ) {
+	qboolean quiet;
 	union {
 		char	*c;
 		void	*v;
 	} f;
-	int		len;
 	char	filename[MAX_QPATH];
 
+	quiet = !Q_stricmp(Cmd_Argv(0), "execq");
+
 	if (Cmd_Argc () != 2) {
-		Com_Printf ("exec <filename> : execute a script file\n");
+		Com_Printf ("exec%s <filename> : execute a script file%s\n",
+		            quiet ? "q" : "", quiet ? " without notification" : "");
 		return;
 	}
 
 	Q_strncpyz( filename, Cmd_Argv(1), sizeof( filename ) );
 	COM_DefaultExtension( filename, sizeof( filename ), ".cfg" );
-	len = FS_ReadFile( filename, &f.v);
+	FS_ReadFile( filename, &f.v );
 	if ( f.v == NULL ) {
-		Com_Printf( "couldn't exec %s\n", Cmd_Argv( 1 ) );
+		Com_Printf( "couldn't exec %s\n", filename );
 		return;
 	}
-	Com_Printf( "execing %s\n", Cmd_Argv( 1 ) );
+	if (!quiet)
+		Com_Printf ("execing %s\n", filename);
 	
 	Cbuf_InsertText( f.c );
 
@@ -711,7 +715,7 @@ void Cmd_RemoveCommandSafe( const char *cmd_name )
 	if( cmd->function )
 	{
 		Com_Error( ERR_DROP, "Restricted source tried to remove "
-			"system command \"%s\"\n", cmd_name );
+			"system command \"%s\"", cmd_name );
 		return;
 	}
 
@@ -860,7 +864,9 @@ Cmd_Init
 void Cmd_Init (void) {
 	Cmd_AddCommand ("cmdlist",Cmd_List_f);
 	Cmd_AddCommand ("exec",Cmd_Exec_f);
+	Cmd_AddCommand ("execq",Cmd_Exec_f);
 	Cmd_SetCommandCompletionFunc( "exec", Cmd_CompleteCfgName );
+	Cmd_SetCommandCompletionFunc( "execq", Cmd_CompleteCfgName );
 	Cmd_AddCommand ("vstr",Cmd_Vstr_f);
 	Cmd_SetCommandCompletionFunc( "vstr", Cvar_CompleteCvarName );
 	Cmd_AddCommand ("echo",Cmd_Echo_f);
