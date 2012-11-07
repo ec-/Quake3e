@@ -816,6 +816,9 @@ void EmitCallOffset( func_t Func )
 	Emit4( n - 5 );
 }
 
+#define SHADOW_BASE 40
+#define PUSH_STACK  32
+#define PARAM_STACK 128
 
 //FIXME: 64 bit
 void EmitCallFunc( vm_t *vm ) 
@@ -824,7 +827,9 @@ void EmitCallFunc( vm_t *vm )
 	int n;
 
 	//EmitString( "8B 07" );			// mov eax, dword ptr [edi]
-	EmitRexString( 0x48, "83 EF 04" );	// sub edi, 4
+	//EmitRexString( 0x48, "83 EF 04" );	// sub edi, 4
+	LastCommand = LAST_COMMAND_NONE;
+	EmitCommand( LAST_COMMAND_SUB_DI_4 );
 	EmitString( "85 C0" );				// test eax, eax
 	EmitString( "7C" );					// jl +offset (SystemCall) 
 	Emit1( sysCallOffset );				// will be valid after first pass
@@ -858,26 +863,24 @@ sysCallOffset = compiledOfs - sysCallOffset;
 #if idx64
 	// allocate stack for shadow(win32)+parameters
 	EmitString( "48 81 EC" );				// sub rsp, 200
-	Emit4( 40 + 32 + 128 );
+	Emit4( SHADOW_BASE + PUSH_STACK + PARAM_STACK );
 
-	EmitString( "48 8D 54 24" );			// lea rdx, [rsp+32]
-	Emit1( 40 );
+	EmitString( "48 8D 54 24" );			// lea rdx, [rsp+SHADOW_BASE]
+	Emit1( SHADOW_BASE );
 	EmitString( "48 89 32" );				// mov [rdx+00], rsi
 	EmitString( "48 89 7A 08" );			// mov [rdx+08], rdi
 	EmitString( "4C 89 42 10" );			// mov [rdx+16], r8
 	EmitString( "4C 89 4A 18" );			// mov [rdx+24], r9
 
 	// ecx = &dest_params[0]
-	EmitString( "48 8D 4C 24" );			// lea rcx, [rsp+64]
-	Emit1( 40 + 32 );
+	EmitString( "48 8D 4C 24" );			// lea rcx, [rsp+SHADOW_BASE+PUSH_STACK]
+	Emit1( SHADOW_BASE + PUSH_STACK );
 	// save syscallNum
 	EmitString( "48 89 01" );				// mov [rcx], rax
 
 	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
 	// params += 4;
 	EmitString( "48 8D 74 33 08" );			// lea rsi, [rbx+rsi+8]
-	//EmitString( "48 01 DE" );					// add rsi, ebx
-	//EmitString( "48 83 C6 08" );				// add rsi, 8
 
 	EmitString( "48 83 C1 08" );			// add rcx, 8
 	//EmitString( "CC" );
@@ -888,7 +891,8 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	EmitString( "48 63 04 96" );			// movsxd rax, dword [rsi+rdx*4]
 	EmitString( "48 89 04 D1" );			// mov qword ptr[rcx+rdx*8], rax
 	EmitString( "48 83 C2 01" );			// add rdx, 1
-	EmitString( "48 83 FA 0F" );			// cmp rdx, 15
+	EmitString( "48 83 FA" );				// cmp rdx, 16
+	Emit1( (PARAM_STACK/8) - 1 );
 	EmitString( "7C EE" );					// jl -18
 
 	EmitString( "48 83 E9 08" );			// sub rcx, 8
@@ -909,7 +913,8 @@ sysCallOffset = compiledOfs - sysCallOffset;
 
 	EmitString( "41 FF 14 24" );			// call qword [r12]
 
-	EmitString1( "48 8D 54 24", 40 );		// lea rdx, [rsp+32]
+	EmitString( "48 8D 54 24" );			// lea rdx, [rsp+SHADOW_BASE]
+	Emit1( SHADOW_BASE );
 	EmitString( "48 8B 32" );				// mov rsi, [rdx+00]
 	EmitString( "48 8B 7A 08" );			// mov rdi, [rdx+08]
 	EmitString( "4C 8B 42 10" );			// mov r8,  [rdx+16]
@@ -920,8 +925,8 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov [edi], eax
 
 	// return stack
-	EmitString( "48 81 C4" );	// add rsp, 192
-	Emit4( 40 + 32 + 128 );
+	EmitString( "48 81 C4" );	// add rsp, 200
+	Emit4( SHADOW_BASE + PUSH_STACK + PARAM_STACK );
 
 #else // i386
 	// function prologue
