@@ -1007,8 +1007,6 @@ extern cvar_t		*r_customPixelAspect;
 extern qboolean		textureFilterAnisotropic;
 extern int		maxAnisotropy;
                 
-extern int		gl_clamp_mode;
-
 //
 // cvars
 //

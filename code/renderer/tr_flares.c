@@ -29,7 +29,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 LIGHT FLARES
 
 A light flare is an effect that takes place inside the eye when bright light
-sources are visible.  The size of the flare reletive to the screen is nearly
+sources are visible.  The size of the flare relative to the screen is nearly
 constant, irrespective of distance, but the intensity should be proportional to the
 projected area of the light source.
 
@@ -114,7 +114,7 @@ This is called at surface tesselation time
 */
 void RB_AddFlare( void *surface, int fogNum, vec3_t point, vec3_t color, vec3_t normal ) {
 	int				i;
-	flare_t			*f, *oldest;
+	flare_t			*f;
 	vec3_t			local;
 	float			d = 1;
 	vec4_t			eye, clip, normalized, window;
@@ -152,7 +152,6 @@ void RB_AddFlare( void *surface, int fogNum, vec3_t point, vec3_t color, vec3_t 
 	}
 
 	// see if a flare with a matching surface, scene, and view exists
-	oldest = r_flareStructs;
 	for ( f = r_activeFlares ; f ; f = f->next ) {
 		if ( f->surface == surface && f->frameSceneNum == backEnd.viewParms.frameSceneNum
 			&& f->inPortal == backEnd.viewParms.isPortal ) {

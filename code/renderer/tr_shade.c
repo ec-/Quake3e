@@ -984,18 +984,20 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 void RB_StageIteratorGeneric( void )
 {
 	shaderCommands_t *input;
+	shader_t		*shader;
 
 	input = &tess;
+	shader = input->shader;
 
 	RB_DeformTessGeometry();
 
 	//
 	// set face culling appropriately
 	//
-	GL_Cull( input->shader->cullType );
+	GL_Cull( shader->cullType );
 
 	// set polygon offset if necessary
-	if ( input->shader->polygonOffset )
+	if ( shader->polygonOffset )
 	{
 		qglEnable( GL_POLYGON_OFFSET_FILL );
 		qglPolygonOffset( r_offsetFactor->value, r_offsetUnits->value );
@@ -1007,7 +1009,7 @@ void RB_StageIteratorGeneric( void )
 	// to avoid compiling those arrays since they will change
 	// during multipass rendering
 	//
-	if ( tess.numPasses > 1 || input->shader->multitextureEnv )
+	if ( tess.numPasses > 1 || shader->multitextureEnv )
 	{
 		setArraysOnce = qfalse;
 		qglDisableClientState (GL_COLOR_ARRAY);
@@ -1073,7 +1075,7 @@ void RB_StageIteratorGeneric( void )
 	//
 	// reset polygon offset
 	//
-	if ( input->shader->polygonOffset )
+	if ( shader->polygonOffset )
 	{
 		qglDisable( GL_POLYGON_OFFSET_FILL );
 	}
