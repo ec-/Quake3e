@@ -283,6 +283,7 @@ typedef struct {
 	byte  opStack;  // 8
 	int jused:1;
 	int jump:1;
+	int last:1;		// arg# before call
 //	int njump:1;
 } instruction_t;
 
@@ -875,11 +876,12 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	// ecx = &dest_params[0]
 	EmitString( "48 8D 4C 24" );			// lea rcx, [rsp+SHADOW_BASE+PUSH_STACK]
 	Emit1( SHADOW_BASE + PUSH_STACK );
+
 	// save syscallNum
+	//EmitString( "48 98" );					// cdqe?
 	EmitString( "48 89 01" );				// mov [rcx], rax
 
-	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
-	// params += 4;
+	// params = (currentVM->dataBase + programStack + 8);
 	EmitString( "48 8D 74 33 08" );			// lea rsi, [rbx+rsi+8]
 
 	EmitString( "48 83 C1 08" );			// add rcx, 8
@@ -1028,7 +1030,6 @@ void EmitBCPYFunc( vm_t *vm )
 
 void EmitPSOFFunc( vm_t *vm ) 
 {
-	EmitString( "CD 32" );			// int 3
 	EmitRexString( 0x48, "B8" );	// mov eax, badJumpPtr
 	EmitPtr( &badStackPtr );
 	EmitString( "FF 10" );			// call [eax]
