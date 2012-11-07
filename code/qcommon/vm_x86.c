@@ -2066,7 +2066,7 @@ __compile:
 
 		case OP_LOCAL:
 
-#if !idx64 && OPTIMIZE
+#if !idx64
 			if ( ci->mop != MOP_UNDEF && LocalOptimize( vm ) )
 				break;
 			
@@ -2138,8 +2138,13 @@ __compile:
 			EmitMovEAXEDI( vm );			// mov	eax, dword ptr [edi]
 			v = ci->value;
 #if idx64
+			if ( ISS8( v ) ) {
+				EmitString( "89 44 33" );	// mov	dword ptr [rbx + rsi + 0x7F], eax
+				Emit1( v );
+			} else {
 				EmitString( "89 84 33" );	// mov	dword ptr [rbx + rsi + 0x12345678], eax
 				Emit4( v );
+			}
 #else
 			if ( ISS8( v ) ) {
 				EmitString( "89 44 33" );	// mov	dword ptr [ebx + esi + 0x7F], eax
@@ -2184,7 +2189,6 @@ __compile:
 			break;
 
 		case OP_LOAD4:
-#if !idx64 && OPTIMIZE
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
@@ -2192,14 +2196,12 @@ __compile:
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );		// mov dword ptr [edi], eax
 				break;
 			}
-#endif
 			EmitMovECXEDI(vm, vm->dataMask);
 			EmitString( "8B 04 0B" );							// mov	eax, dword ptr [ebx + ecx]
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );			// mov dword ptr [edi], eax
 			break;
 
 		case OP_LOAD2:
-#if !idx64 && OPTIMIZE
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
@@ -2207,14 +2209,12 @@ __compile:
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );		// mov dword ptr [edi], eax
 				break;
 			}
-#endif
 			EmitMovECXEDI(vm, vm->dataMask);
 			EmitString( "0F B7 04 0B" );						// movzx eax, word ptr [ebx + ecx]
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );			// mov dword ptr [edi], eax
 			break;
 
 		case OP_LOAD1:
-#if !idx64 && OPTIMIZE
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
@@ -2222,7 +2222,6 @@ __compile:
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov dword ptr [edi], eax
 				break;
 			}
-#endif
 			EmitMovECXEDI(vm, vm->dataMask);
 			EmitString( "0F B6 04 0B" );				// movzx eax, byte ptr [ebx + ecx]
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov dword ptr [edi], eax
@@ -2418,12 +2417,10 @@ __compile:
 		case OP_SUBF:
 		case OP_DIVF:
 		case OP_MULF:
-#if !idx64 && OPTIMIZE
 			if ( ci->mop == MOP_CALCF4 ) {
 				FloatMerge( ci, ni );
 				break;
 			}
-#endif
 			EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
 			EmitFCalc( ci->op );					// fadd|fsub|fmul|fdiv dword ptr [edi]
 			EmitString( "D9 5F FC" );				// fstp dword ptr [edi-4]
