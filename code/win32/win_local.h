@@ -127,11 +127,7 @@ void	UpdateMonitorInfo( void );
 
 
 // window procedure
-LONG WINAPI MainWndProc (
-    HWND    hWnd,
-    UINT    uMsg,
-    WPARAM  wParam,
-    LPARAM  lParam);
+LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM  lParam );
 
 void Conbuf_AppendText( const char *msg );
 void Conbuf_BeginPrint( void );

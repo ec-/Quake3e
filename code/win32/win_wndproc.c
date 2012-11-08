@@ -38,8 +38,6 @@ cvar_t		*r_fullscreen;
 
 #define VID_NUM_MODES ( sizeof( vid_modes ) / sizeof( vid_modes[0] ) )
 
-LONG WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
-
 static HHOOK WinHook;
 
 static LRESULT CALLBACK WinKeyHook( int code, WPARAM wParam, LPARAM lParam )
@@ -332,11 +330,7 @@ BOOL Win_CheckHotkeyMod( void ) {
 }
 
 
-LONG WINAPI MainWndProc (
-    HWND    hWnd,
-    UINT    uMsg,
-    WPARAM  wParam,
-    LPARAM  lParam)
+LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam )
 {
 	static qboolean flip = qtrue;
 	int zDelta, i;
@@ -360,7 +354,7 @@ LONG WINAPI MainWndProc (
 				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qtrue, 0, NULL );
 				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qfalse, 0, NULL );
 			}
-			return DefWindowProc (hWnd, uMsg, wParam, lParam);
+			return DefWindowProc( hWnd, uMsg, wParam, lParam );
 		}
 	}
 
