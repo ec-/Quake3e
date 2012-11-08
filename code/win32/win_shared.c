@@ -181,5 +181,35 @@ void Sys_SnapVector( float *vector )
 	_mm_store_ss( &vector[2], vf2 );
 }
 
+#else
+
+static const DWORD cw037F = 0x037F;
+
+void Sys_SnapVector( float *vector ) 
+{
+	DWORD cwCurr;
+__asm {
+	fnstcw word ptr [cwCurr]
+	mov ecx, vector
+	fldcw word ptr [cw037F]
+
+	fld   dword ptr[ecx+8]
+	fistp dword ptr[ecx+8]
+	fild  dword ptr[ecx+8]
+	fstp  dword ptr[ecx+8]
+
+	fld   dword ptr[ecx+4]
+	fistp dword ptr[ecx+4]
+	fild  dword ptr[ecx+4]
+	fstp  dword ptr[ecx+4]
+
+	fld   dword ptr[ecx+0]
+	fistp dword ptr[ecx+0]
+	fild  dword ptr[ecx+0]
+	fstp  dword ptr[ecx+0]
+
+	fldcw word ptr cwCurr
+}; // __asm
+}
 #endif
 
