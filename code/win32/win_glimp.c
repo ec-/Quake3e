@@ -601,8 +601,8 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		wc.cbWndExtra    = 0;
 		wc.hInstance     = g_wv.hInstance;
 		wc.hIcon         = LoadIcon( g_wv.hInstance, MAKEINTRESOURCE(IDI_ICON1));
-		wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
-		wc.hbrBackground = (void *)COLOR_GRAYTEXT;
+		wc.hCursor       = LoadCursor( NULL, IDC_ARROW );
+		wc.hbrBackground = (HBRUSH)COLOR_GRAYTEXT;
 		wc.lpszMenuName  = 0;
 		wc.lpszClassName = T(CLIENT_WINDOW_TITLE);
 

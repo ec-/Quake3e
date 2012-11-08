@@ -23,16 +23,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
 #include "win_local.h"
-#include <lmerr.h>
-#include <lmcons.h>
-#include <lmwksta.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <direct.h>
 #include <io.h>
 #include <conio.h>
-#include <wincrypt.h>
 
 /*
 ================
