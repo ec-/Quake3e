@@ -407,26 +407,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\asm\win32_asm.asm"
-				>
-				<FileConfiguration
-					Name="Debug|x64"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="..\..\asm\win32_snd.asm"
 				>
 				<FileConfiguration
