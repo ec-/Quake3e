@@ -314,6 +314,7 @@ typedef enum
 {
 	FUNC_ENTR = 0,
 	FUNC_CALL,
+	FUNC_SYSC,
 	FUNC_FTOL,
 	FUNC_BCPY,
 	FUNC_PSOF,
@@ -837,10 +838,6 @@ void EmitCallFunc( vm_t *vm )
 	static int sysCallOffset = 0;
 	int n;
 
-	//EmitString( "8B 07" );			// mov eax, dword ptr [edi]
-	//EmitRexString( 0x48, "83 EF 04" );	// sub edi, 4
-	LastCommand = LAST_COMMAND_NONE;
-	EmitCommand( LAST_COMMAND_SUB_DI_4 );
 	EmitString( "85 C0" );				// test eax, eax
 	EmitString( "7C" );					// jl +offset (SystemCall) 
 	Emit1( sysCallOffset );				// will be valid after first pass
@@ -852,6 +849,8 @@ sysCallOffset = compiledOfs;
 	EmitString( "0F 83" );				// jae +funcOffset[FUNC_ERRJ]
 	n = funcOffset[FUNC_ERRJ] - compiledOfs;
 	Emit4( n - 6 );
+
+	EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 
 	// calling another vm function
 #if idx64
@@ -869,10 +868,15 @@ sysCallOffset = compiledOfs;
 	EmitString( "C3" );				// ret
 
 sysCallOffset = compiledOfs - sysCallOffset;
+
 	// systemCall:
 	// convert negative num to system call number
 	// and store right before the first arg
 	EmitString( "F7 D0" );          // not eax
+
+	EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+
+funcOffset[FUNC_SYSC] = compiledOfs;
 
 #if idx64
 	// allocate stack for shadow(win32)+parameters
@@ -1354,15 +1358,22 @@ qboolean ConstOptimize( vm_t *vm ) {
 			ip += 1;
 			return qtrue;
 		}
-		break;
 #if 1
-		if ( v < 0 )
-			break;
+		if ( v < 0 ) 
+		{
+			EmitString( "B8" );		// mov eax, 0x12345678
+			Emit4( ~v );
+			EmitCallOffset( FUNC_SYSC );
+			LastCommand = LAST_COMMAND_MOV_EAX_EDI_CALL;
+			ip += 1; // OP_CALL
+			return qtrue;
+		}
 #ifdef VM_LOG_SYSCALLS
 		EmitString( "C7 86" );    // mov dword ptr [esi+database],0x12345678
 		Emit4( (int)vm->dataBase );
 		Emit4( ip );
 #endif
+		break;
 		EmitCall( vm, ni, ci->value );
 		EmitCommand( LAST_COMMAND_MOV_EAX_EDI );
 		ip += 1; // OP_CALL
