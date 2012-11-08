@@ -676,26 +676,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\asm\win64_asm.asm"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="MASM64"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="MASM64"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="..\..\win32\win_input.c"
 				>
 			</File>

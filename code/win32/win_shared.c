@@ -29,6 +29,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <direct.h>
 #include <io.h>
 #include <conio.h>
+#include <intrin.h>
 
 /*
 ================
@@ -159,4 +160,26 @@ char *Sys_DefaultInstallPath(void)
 {
 	return Sys_Cwd();
 }
+
+#if idx64
+
+void Sys_SnapVector( float *vector ) 
+{
+	__m128 vf0, vf1, vf2;
+	__m128i vi;
+
+	vf0 = _mm_setr_ps( vector[0], vector[1], vector[2], 0.0 );
+
+	vi = _mm_cvtps_epi32( vf0 );
+	vf0 = _mm_cvtepi32_ps( vi );
+
+	vf1 = _mm_shuffle_ps(vf0, vf0, _MM_SHUFFLE(1,1,1,1));
+	vf2 = _mm_shuffle_ps(vf0, vf0, _MM_SHUFFLE(2,2,2,2));
+
+	_mm_store_ss( &vector[0], vf0 );
+	_mm_store_ss( &vector[1], vf1 );
+	_mm_store_ss( &vector[2], vf2 );
+}
+
+#endif
 

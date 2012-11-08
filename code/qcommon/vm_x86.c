@@ -24,7 +24,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "vm_local.h"
 #ifdef _WIN32
 #include <windows.h>
-#include <intrin.h>
 #endif
 
 #ifdef __FreeBSD__
