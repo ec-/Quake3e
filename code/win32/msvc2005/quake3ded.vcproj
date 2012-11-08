@@ -18,9 +18,6 @@
 		<DefaultToolFile
 			FileName="masm.rules"
 		/>
-		<DefaultToolFile
-			FileName="masm64.rules"
-		/>
 	</ToolFiles>
 	<Configurations>
 		<Configuration
@@ -32,31 +29,7 @@
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
 			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
 				Name="MASM"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="MASM64"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="1"
-				TypeLibraryName="$(IntDir)\quake3e.tlb"
-				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
@@ -73,16 +46,10 @@
 				DebugInformationFormat="4"
 			/>
 			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG"
 				Culture="1033"
 				ResourceOutputFileName="..\winquake.res"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
@@ -97,32 +64,6 @@
 				StackReserveSize="10247680"
 				TargetMachine="1"
 			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-				Description="Post build processing.."
-				CommandLine="rem bash -c &quot;perl ./unix/cons -- debug&quot;"
-			/>
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
@@ -133,31 +74,7 @@
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
 			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
 				Name="MASM"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="MASM64"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="3"
-				TypeLibraryName="$(IntDir)\quake3e.tlb"
-				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
@@ -174,16 +91,10 @@
 				DebugInformationFormat="3"
 			/>
 			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG"
 				Culture="1033"
 				ResourceOutputFileName="..\winquake.res"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
@@ -191,38 +102,12 @@
 				OutputFile="$(OutDir)\quake3de.ded-debug.x64.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(IntDir)\quake3e.ded-debug.pdb"
+				ProgramDatabaseFile="$(IntDir)\quake3e.ded-debug.x64.pdb"
 				GenerateMapFile="true"
-				MapFileName="$(IntDir)\quake3e.ded-debug.map"
+				MapFileName="$(IntDir)\quake3e.ded-debug.x64.map"
 				SubSystem="2"
 				StackReserveSize="10247680"
 				TargetMachine="17"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-				Description="Post build processing.."
-				CommandLine="rem bash -c &quot;perl ./unix/cons -- debug&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -235,31 +120,7 @@
 			WholeProgramOptimization="0"
 			>
 			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
 				Name="MASM"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="MASM64"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="1"
-				TypeLibraryName="$(IntDir)\quake3e.tlb"
-				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
@@ -269,15 +130,6 @@
 				ProgramDataBaseFileName="$(IntDir)\"
 				WarningLevel="4"
 				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
@@ -293,30 +145,6 @@
 				SetChecksum="true"
 				TargetMachine="1"
 			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
@@ -328,31 +156,7 @@
 			WholeProgramOptimization="0"
 			>
 			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
 				Name="MASM"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="MASM64"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="3"
-				TypeLibraryName="$(IntDir)\quake3e.tlb"
-				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
@@ -364,51 +168,18 @@
 				DebugInformationFormat="3"
 			/>
 			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib"
 				OutputFile="$(OutDir)\quake3e.ded.x64.exe"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(IntDir)\quake3e.ded.pdb"
+				ProgramDatabaseFile="$(IntDir)\quake3e.ded.x64.pdb"
 				GenerateMapFile="true"
-				MapFileName="$(IntDir)\quake3e.ded.map"
+				MapFileName="$(IntDir)\quake3e.ded.x64.map"
 				SubSystem="2"
 				StackReserveSize="10247680"
 				OptimizeReferences="2"
 				SetChecksum="true"
 				TargetMachine="17"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
 	</Configurations>
@@ -417,7 +188,7 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;hpj;bat"
+			Filter="cpp;c;bat"
 			>
 			<File
 				RelativePath="..\..\qcommon\cm_load.c"
@@ -586,7 +357,7 @@
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl;fi;fd"
+			Filter="h;hpp"
 			>
 			<File
 				RelativePath="..\..\game\bg_public.h"
