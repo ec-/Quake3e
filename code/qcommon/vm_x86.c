@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "vm_local.h"
 #ifdef _WIN32
 #include <windows.h>
+#include <intrin.h>
 #endif
 
 #ifdef __FreeBSD__
@@ -42,7 +43,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 //#define VM_LOG_SYSCALLS
 #define JUMP_OPTIMIZE 0
-#define OPTIMIZE 1
+#define USE_EBP 4
 
 #if JUMP_OPTIMIZE
 #define NUM_PASSES 7
@@ -855,11 +856,14 @@ sysCallOffset = compiledOfs;
 
 	// calling another vm function
 #if idx64
-	EmitString( "41 FF 14 C0" );	// call dword ptr [r8+rax*8]
+	EmitString( "41 FF 14 C0" );		// call dword ptr [r8+rax*8]
 #else
-	EmitString( "8D 0C 85" );		// lea ecx, [vm->instructionPointers+eax*4]
+	EmitString( "8D 0C 85" );			// lea ecx, [vm->instructionPointers+eax*4]
 	EmitPtr( vm->instructionPointers );
-	EmitString( "FF 11" );			// call dword ptr [ecx]
+	EmitString( "FF 11" );				// call dword ptr [ecx]
+#endif
+#if USE_EBP > 3
+	EmitRexString( 0x48, "8D 2C 33" );	// lea ebp, [ebx+esi]
 #endif
 	//EmitString( "8B 07" );			
 	EmitMovEAXEDI( vm );			// mov eax, dword ptr [edi]
@@ -937,6 +941,10 @@ sysCallOffset = compiledOfs - sysCallOffset;
 	// return stack
 	EmitString( "48 81 C4" );				// add rsp, 200
 	Emit4( SHADOW_BASE + PUSH_STACK + PARAM_STACK );
+
+#if USE_EBP > 3
+	EmitRexString( 0x48, "8D 2C 33" );		// lea rbp, [rbx+rsi]
+#endif
 
 #else // i386
 	// function prologue
@@ -1331,7 +1339,11 @@ qboolean ConstOptimize( vm_t *vm ) {
 		v = ci->value;
 		// try to inline some syscalls
 		if ( v == ~TRAP_SIN || v == ~TRAP_COS || v == ~TRAP_SQRT ) {
-			EmitString( "D9 44 1E 08" );			// fld dword ptr [esi + ebx + 8]
+#if USE_EBP > 1
+			EmitString( "D9 45 08" );		// fld dword ptr [ebp + 8]
+#else
+			EmitString( "D9 44 1E 08" );	// fld dword ptr [esi + ebx + 8]
+#endif
 			switch ( v ) {
 				case ~TRAP_SQRT: EmitString( "D9 FA" ); break; // fsqrt
 				case ~TRAP_SIN: EmitString( "D9 FE" ); break;  // fsin
@@ -1406,8 +1418,32 @@ qboolean LocalOptimize( vm_t *vm )
 	{
 		//[local] += CONST
 		case MOP_ADD4:
-			v = ci->value + (intptr_t)vm->dataBase; // local variable address
 			n = inst[ip+2].value;
+#if USE_EBP > 2
+			v = ci->value; // local variable address
+			if ( ISS8( n ) ) {
+				if ( ISS8( v ) ) {
+					EmitString( "83 45" );	// add dword ptr [ebp + 0x7F], 0x12
+					Emit1( v );
+					Emit1( n );
+				} else {
+					EmitString( "83 85" );	// add dword ptr [ebp + 0x12345678], 0x12
+					Emit4( v );
+					Emit1( n );
+				}
+			} else {
+				if ( ISS8( v ) ) {
+					EmitString( "81 45" );	// add dword ptr [ebp + 0x7F], 0x12345678
+					Emit1( v );
+					Emit4( n );
+				} else {
+					EmitString( "81 85" );	// add dword ptr[esi+0x12345678], 0x12345678
+					Emit4( v );
+					Emit4( n );
+				}
+			}
+#else
+			v = ci->value + (intptr_t)vm->dataBase; // local variable address
 			if ( ISS8( n ) ) {
 				if ( ISS8( ci->value ) ) {
 					EmitString( "83 44 33" );	// add dword ptr [ebx + esi + 0x7F], 0x12
@@ -1429,13 +1465,38 @@ qboolean LocalOptimize( vm_t *vm )
 					Emit4( n );
 				}
 			}
+#endif
 			ip += 5;
 			return qtrue;
 
 		//[local] -= CONST
 		case MOP_SUB4:
-			v = ci->value + (intptr_t)vm->dataBase;	// local variable address
 			n = inst[ip+2].value;
+#if USE_EBP > 2
+			v = ci->value; // local variable address
+			if ( ISS8( n ) ) {
+				if ( ISS8( v ) ) {
+					EmitString( "83 6D" );	// sub dword ptr [ebp + 0x7F], 0x12
+					Emit1( v );
+					Emit1( n );
+				} else {
+					EmitString( "83 AD" );	// sub dword ptr [ebp + 0x12345678], 0x12
+					Emit4( v );
+					Emit1( n );
+				}
+			} else {
+				if ( ISS8( v ) ) {
+					EmitString( "81 6D" );	// sub dword ptr [ebp + 0x7F], 0x12345678
+					Emit1( v );
+					Emit4( n );
+				} else {
+					EmitString( "81 AD" );	// sub dword ptr[esi+0x12345678], 0x12345678
+					Emit4( v );
+					Emit4( n );
+				}
+			}
+#else
+			v = ci->value + (intptr_t)vm->dataBase;	// local variable address
 			if ( ISS8( n ) ) {
 				if ( ISS8( ci->value ) ) {
 					EmitString( "83 6C 33" );	// sub dword ptr [ebx + esi + 0x7F], 0x12
@@ -1457,13 +1518,38 @@ qboolean LocalOptimize( vm_t *vm )
 					Emit4( n );
 				}
 			}
+#endif
 			ip += 5;
 			return qtrue;
 
 		//[local] &= CONST
 		case MOP_BAND4:
-			v = ci->value + (intptr_t)vm->dataBase;	// local variable address
 			n = inst[ip+2].value;
+#if USE_EBP > 2
+			v = ci->value; // local variable address
+			if ( ISS8( n ) ) {
+				if ( ISS8( v ) ) {
+					EmitString( "83 65" );	// and dword ptr [ebp + 0x7F], 0x12
+					Emit1( v );
+					Emit1( n );
+				} else {
+					EmitString( "83 A5" );	// and dword ptr [ebp + 0x12345678], 0x12
+					Emit4( v );
+					Emit1( n );
+				}
+			} else {
+				if ( ISS8( v ) ) {
+					EmitString( "81 65" );	// and dword ptr [ebp + 0x7F], 0x12345678
+					Emit1( v );
+					Emit4( n );
+				} else {
+					EmitString( "81 A5" );	// and dword ptr [ebp + 0x12345678], 0x12345678
+					Emit4( v );
+					Emit4( n );
+				}
+			}
+#else
+			v = ci->value + (intptr_t)vm->dataBase;	// local variable address
 			if ( ISS8( n ) ) {
 				if ( ISS8( ci->value ) ) {
 					EmitString( "83 64 33" );	// and dword ptr [ebx + esi + 0x7F], 0x12
@@ -1485,13 +1571,38 @@ qboolean LocalOptimize( vm_t *vm )
 					Emit4( n );
 				}
 			}
+#endif
 			ip += 5;
 			return qtrue;
 
 		//[local] |= CONST
 		case MOP_BOR4:
-			v = ci->value + (intptr_t)vm->dataBase;	// local variable address
 			n = inst[ip+2].value;
+#if USE_EBP > 2
+			v = ci->value; // local variable address
+			if ( ISS8( n ) ) {
+				if ( ISS8( v ) ) {
+					EmitString( "83 4D" );	// or dword ptr [ebp + 0x7F], 0x12
+					Emit1( v );
+					Emit1( n );
+				} else {
+					EmitString( "83 8D" );	// or dword ptr [ebp + 0x12345678], 0x12
+					Emit4( v );
+					Emit1( n );
+				}
+			} else {
+				if ( ISS8( v ) ) {
+					EmitString( "81 4D" );	// or dword ptr [ebp + 0x7F], 0x12345678
+					Emit1( v );
+					Emit4( n );
+				} else {
+					EmitString( "81 8D" );	// or dword ptr [ebp + 0x12345678], 0x12345678
+					Emit4( v );
+					Emit4( n );
+				}
+			}
+#else
+			v = ci->value + (intptr_t)vm->dataBase;	// local variable address
 			if ( ISS8( n ) ) {
 				if ( ISS8( ci->value ) ) {
 					EmitString( "83 4C 33" );	// or dword ptr [ebx + esi + 0x7F], 0x12
@@ -1513,6 +1624,7 @@ qboolean LocalOptimize( vm_t *vm )
 					Emit4( n );
 				}
 			}
+#endif
 			ip += 5;
 			return qtrue;
 
@@ -1816,16 +1928,6 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 			}
 		}
 
-#if 0  // FIXME: runtime checks?
-		if ( ci->op == OP_LOCAL && (ci+1)->op != OP_ADD ) {
-			v = ci->value;
-			if ( v < 8 ) {
-				VM_FreeBuffers();
-				Com_Error( ERR_DROP, "VM_CompileX86: bad local address %i at %i", v, i );
-				return 0;
-			}
-		}
-#endif
 //		op1 = op0;
 //		ci++;
 	}
@@ -1942,7 +2044,9 @@ __compile:
 	EmitString( "53" );				// push rbx
 	EmitString( "56" );				// push rsi
 	EmitString( "57" );				// push rdi
+	EmitString( "55" );				// push rbp
 	EmitString( "41 54" );			// push r12
+	EmitString( "41 55" );			// push r13
 
 	EmitRexString( 0x48, "BB" );	// mov rbx, vm->dataBase
 	EmitPtr( vm->dataBase );
@@ -1968,6 +2072,7 @@ __compile:
 	//EmitString( "53" );		// push ebx
 	//EmitString( "56" );		// push esi
 	//EmitString( "57" );		// push edi
+	//EmitString( "55" );		// push ebp
 
 	EmitRexString( 0x48, "BB" );	// mov ebx, vm->dataBase
 	EmitPtr( vm->dataBase );
@@ -1990,7 +2095,9 @@ __compile:
 	EmitPtr( &vm->opStack );
 	EmitRexString( 0x48, "89 38" );	// mov [rax], rdi
 
+	EmitString( "41 5D" );			// pop r13
 	EmitString( "41 5C" );			// pop r12
+	EmitString( "5D" );				// pop rbp
 	EmitString( "5F" );				// pop rdi
 	EmitString( "5E" );				// pop rsi
 	EmitString( "5B" );				// pop rbx
@@ -2001,6 +2108,7 @@ __compile:
 	EmitString( "89 3D" );		// [vm->opStack], edi
 	EmitPtr( &vm->opStack );
 
+	//EmitString( "5D" );			// pop ebp
 	//EmitString( "5F" );			// pop edi
 	//EmitString( "5E" );			// pop esi
 	//EmitString( "5B" );			// pop ebx
@@ -2044,13 +2152,16 @@ __compile:
 				EmitString( "81 EE" );		// sub	esi, 0x12345678
 				Emit4( v );
 			}
+
 			// programStack overflow check
 			EmitString( "81 FE" );		// cmp	esi, vm->stackBottom
 			Emit4( vm->stackBottom );
-
 			EmitString( "0F 82" );		// jb +funcOffset[FUNC_PSOF]
 			n = funcOffset[FUNC_PSOF] - compiledOfs;
 			Emit4( n - 6 );
+#if USE_EBP
+			EmitRexString( 0x48, "8D 2C 33" ); // lea ebp, [ebx+esi]
+#endif
 			break;
 
 		case OP_CONST:
@@ -2069,7 +2180,7 @@ __compile:
 
 		case OP_LOCAL:
 
-#if !idx64
+//#if !idx64
 			if ( ci->mop != MOP_UNDEF && LocalOptimize( vm ) )
 				break;
 			
@@ -2077,6 +2188,15 @@ __compile:
 			if ( ni->op == OP_LOAD4 ) {
 				EmitAddEDI4( vm );
 				v = ci->value;
+#if USE_EBP > 1
+				if ( ISS8( v ) ) {
+					EmitString( "8B 45" );	// mov eax, dword ptr [ebp + 0x7F]
+					Emit1( v );
+				} else {
+					EmitString( "8B 85" );	// mov eax, dword ptr [ebp + 0x12345678]
+					Emit4( v );
+				}
+#else
 				if ( ISS8( v ) ) {
 					EmitString( "8B 44 33" );	// mov eax, dword ptr [esi + ebx + 0x7F]
 					Emit1( v );
@@ -2084,6 +2204,7 @@ __compile:
 					EmitString( "8B 86" );		// mov eax, dword ptr [esi + LOCAL + vm->dataBase]
 					Emit4( v + (intptr_t)vm->dataBase );
 				}
+#endif
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
 				ip++;
 				break;
@@ -2093,6 +2214,15 @@ __compile:
 			if ( ni->op == OP_LOAD2 ) {
 				EmitAddEDI4( vm );
 				v = ci->value;
+#if USE_EBP > 1
+				if ( ISS8( v ) ) {
+					EmitString( "0F B7 45" );	// movzx eax, word ptr [ebp + 0x7F]
+					Emit1( v );
+				} else {
+					EmitString( "0F B7 85" );	// movzx eax, word ptr [ebp +0x12345678]
+					Emit4( v );
+				}
+#else
 				if ( ISS8( v ) ) {
 					EmitString( "0F B7 44 33" );	// movzx eax, word ptr [ebx + esi + 0x7F]
 					Emit1( v );
@@ -2100,6 +2230,7 @@ __compile:
 					EmitString( "0F B7 86" );		// movzx eax, word ptr [esi + LOCAL + vm->dataBase]
 					Emit4( v + (intptr_t)vm->dataBase );
 				}
+#endif
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
 				ip++;
 				break;
@@ -2109,6 +2240,15 @@ __compile:
 			if ( ni->op == OP_LOAD1 ) {
 				EmitAddEDI4( vm );
 				v = ci->value;
+#if USE_EBP > 1
+				if ( ISS8( v ) ) {
+					EmitString( "0F B6 45" );		// movzx eax, byte ptr [ebp + 0x7F]
+					Emit1( v );
+				} else {
+					EmitString( "0F B6 85" );		// movzx eax, byte ptr [ebp + 0x12345678]
+					Emit4( v );
+				}
+#else
 				if ( ISS8( v ) ) {
 					EmitString( "0F B6 44 33" );	// movzx eax, byte ptr [ebx + esi + 0x7F]
 					Emit1( v );
@@ -2116,11 +2256,12 @@ __compile:
 					EmitString( "0F B6 86" );		// movzx eax, byte ptr [esi + LOCAL + vm->dataBase ]
 					Emit4( v + (intptr_t)vm->dataBase );
 				}
+#endif
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
 				ip++;
 				break;
 			}
-#endif
+//#endif
 
 			// TODO: i = j + k;
 			// TODO: i = j - k;
@@ -2140,7 +2281,7 @@ __compile:
 		case OP_ARG:
 			EmitMovEAXEDI( vm );			// mov	eax, dword ptr [edi]
 			v = ci->value;
-#if idx64
+#if idx64 && USE_EBP < 2
 			if ( ISS8( v ) ) {
 				EmitString( "89 44 33" );	// mov	dword ptr [rbx + rsi + 0x7F], eax
 				Emit1( v );
@@ -2150,11 +2291,20 @@ __compile:
 			}
 #else
 			if ( ISS8( v ) ) {
+#if USE_EBP > 1
+				EmitString( "89 45" );		// mov	dword ptr [ebp + 0x7F], eax
+#else
 				EmitString( "89 44 33" );	// mov	dword ptr [ebx + esi + 0x7F], eax
+#endif
 				Emit1( v );
 			} else {
+#if USE_EBP > 1
+				EmitString( "89 85" );		// mov	dword ptr [ebp + 0x12345678], eax
+				Emit4( v );
+#else
 				EmitString( "89 86" );		// mov	dword ptr [esi + 0x12345678], eax
 				EmitPtr( vm->dataBase + v );
+#endif
 			}
 #endif
 			EmitCommand( LAST_COMMAND_SUB_DI_4 );		// sub edi, 4
@@ -2188,6 +2338,9 @@ __compile:
 				EmitString( "81 C6" );		// add	esi, 0x12345678
 				Emit4( v );
 			}
+#if USE_EBP > 0 && USE_EBP < 4
+			EmitRexString( 0x48, "8D 2C 33" ); // lea ebp, [ebx+esi]
+#endif
 			EmitString( "C3" );				// ret
 			break;
 
