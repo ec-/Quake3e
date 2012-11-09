@@ -898,8 +898,9 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 	EmitPtr( &vm->programStack );
 	EmitString( "8D 46 FC" );				// lea eax, [esi-4]
 	EmitString( "89 02" );					// mov [rdx], eax
+	//EmitString( "89 32" );				// mov dword ptr [rdx], esi
 
-	// params = (currentVM->dataBase + programStack + 8);
+	// params = (vm->dataBase + programStack + 8);
 	EmitString( "48 8D 74 33 08" );			// lea rsi, [rbx+rsi+8]
 
 	// rcx = &int64_params[1]
@@ -911,7 +912,7 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 	EmitString( "48 63 04 96" );			// movsxd rax, dword [rsi+rdx*4]
 	EmitString( "48 89 04 D1" );			// mov qword ptr[rcx+rdx*8], rax
 	EmitString( "48 83 C2 01" );			// add rdx, 1
-	EmitString( "48 83 FA" );				// cmp rdx, 16
+	EmitString( "48 83 FA" );				// cmp rdx, 15
 	Emit1( (PARAM_STACK/8) - 1 );
 	EmitString( "7C EE" );					// jl -18
 
@@ -919,11 +920,6 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 	EmitString( "48 83 E9 08" );			// sub rcx, 8
 	
 	// currentVm->systemCall( param );
-	
-	//EmitString( "48 B8" );				// mov rax, &vm->systemCall 
-	//EmitPtr( &vm->systemCall );
-	//EmitString( "FF 10" );				// call qword [rax]
-
 	EmitString( "41 FF 14 24" );			// call qword [r12]
 
 	EmitString( "48 8D 54 24" );			// lea rdx, [rsp+SHADOW_BASE]
@@ -2003,9 +1999,12 @@ __compile:
 	EmitCallOffset( FUNC_ENTR );
 
 #if idx64
+
+#ifdef DEBUG_VM
 	EmitRexString( 0x48, "B8" );	// mov rax, &vm->programStack
 	EmitPtr( &vm->programStack );
 	EmitString( "89 30" );			// mov [rax], esi
+#endif
 
 	EmitRexString( 0x48, "B8" );	// mov rax, &vm->opStack
 	EmitPtr( &vm->opStack );
@@ -2018,9 +2017,12 @@ __compile:
 	EmitString( "5E" );				// pop rsi
 	EmitString( "5B" );				// pop rbx
 #else
+
+#ifdef DEBUG_VM
 	EmitString( "89 35" );		// [vm->programStack], esi
 	EmitPtr( &vm->programStack );
-	
+#endif
+
 	EmitString( "89 3D" );		// [vm->opStack], edi
 	EmitPtr( &vm->opStack );
 
@@ -2068,7 +2070,6 @@ __compile:
 				EmitString( "81 EE" );		// sub	esi, 0x12345678
 				Emit4( v );
 			}
-
 			// programStack overflow check
 			EmitString( "81 FE" );		// cmp	esi, vm->stackBottom
 			Emit4( vm->stackBottom );
@@ -2121,7 +2122,7 @@ __compile:
 					EmitString( "0F B7 45" );	// movzx eax, word ptr [ebp + 0x7F]
 					Emit1( v );
 				} else {
-					EmitString( "0F B7 85" );	// movzx eax, word ptr [ebp +0x12345678]
+					EmitString( "0F B7 85" );	// movzx eax, word ptr [ebp + 0x12345678]
 					Emit4( v );
 				}
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
@@ -2193,17 +2194,16 @@ __compile:
 			break;
 
 		case OP_LEAVE:
-			if ( 1 || ci->flag ) 
-			{
-				v = ci->value;
-				if ( ISS8( v ) ) {
-					EmitString( "83 C6" );		// add	esi, 0x12
-					Emit1( v );
-				} else {
-					EmitString( "81 C6" );		// add	esi, 0x12345678
-					Emit4( v );
-				}
+#ifdef DEBUG_VM
+			v = ci->value;
+			if ( ISS8( v ) ) {
+				EmitString( "83 C6" );		// add	esi, 0x12
+				Emit1( v );
+			} else {
+				EmitString( "81 C6" );		// add	esi, 0x12345678
+				Emit4( v );
 			}
+#endif
 			EmitString( "C3" );				// ret
 			break;
 
@@ -2699,14 +2699,15 @@ int	VM_CallCompiled( vm_t *vm, int *args )
 
 	vm->codeBase.func(); // go into generated code
 
-//#ifdef DEBUG_VM
 	if ( vm->opStack != &opStack[2] ) {
 		Com_Error( ERR_DROP, "opStack corrupted in compiled code" );
 	}
+
+#ifdef DEBUG_VM
 	if ( vm->programStack != stackOnEntry - CALL_PSTACK ) {
 		Com_Error( ERR_DROP, "programStack corrupted in compiled code" );
 	}
-//#endif
+#endif
 
 	vm->programStack = stackOnEntry;
 
