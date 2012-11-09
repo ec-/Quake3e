@@ -611,13 +611,13 @@ static qboolean R_LoadMDR( model_t *mod, void *buffer, int filesize, const char 
 			// now do the checks that may fail.
 			if ( surf->numVerts > SHADER_MAX_VERTEXES ) 
 			{
-				ri.Printf(PRINT_WARNING, "R_LoadMDR: %s has more than %i verts on a surface (%i)",
+				ri.Printf(PRINT_WARNING, "R_LoadMDR: %s has more than %i verts on a surface (%i).\n",
 					  mod_name, SHADER_MAX_VERTEXES, surf->numVerts );
 				return qfalse;
 			}
 			if ( surf->numTriangles*3 > SHADER_MAX_INDEXES ) 
 			{
-				ri.Printf(PRINT_WARNING, "R_LoadMDR: %s has more than %i triangles on a surface (%i)",
+				ri.Printf(PRINT_WARNING, "R_LoadMDR: %s has more than %i triangles on a surface (%i).\n",
 					  mod_name, SHADER_MAX_INDEXES / 3, surf->numTriangles );
 				return qfalse;
 			}
@@ -719,7 +719,7 @@ static qboolean R_LoadMDR( model_t *mod, void *buffer, int filesize, const char 
 	tag = (mdrTag_t *) lod;
 	mdr->ofsTags = (int)((byte *) tag - (byte *) mdr);
 	curtag = (mdrTag_t *) ((byte *)pinmodel + LittleLong(pinmodel->ofsTags));
-	
+
 	// simple bounds check
 	if(mdr->numTags < 0 || (byte *) (tag + mdr->numTags) > (byte *) mdr + size)
 	{

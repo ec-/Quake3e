@@ -2202,7 +2202,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 	}
 
 	/*
-	 *  transparency information is sometimes stored in an tRNS chunk
+	 *  transparency information is sometimes stored in a tRNS chunk
 	 */
 
 	/*
