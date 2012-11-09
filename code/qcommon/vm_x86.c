@@ -293,8 +293,7 @@ typedef struct {
 	byte  opStack;  // 8
 	int jused:1;
 	int jump:1;
-	int last:1;		// arg# before call
-//	int njump:1;
+	int flag:1;		// arg# before call
 } instruction_t;
 
 
@@ -811,7 +810,7 @@ void EmitFloatJump( vm_t *vm, instruction_t *i, int op, int addr )
 
 }
 
-void EmitCall( vm_t *vm, instruction_t *i, int addr ) 
+void EmitCall( vm_t *vm, int addr ) 
 {
 	int v;
 	v = vm->instructionPointers[ addr ] - compiledOfs;
@@ -860,7 +859,7 @@ sysCallOffset = compiledOfs;
 	EmitPtr( vm->instructionPointers );
 	EmitString( "FF 11" );				// call dword ptr [ecx]
 #endif
-#if USE_EBP > 3
+#if USE_EBP
 	EmitRexString( 0x48, "8D 2C 33" );	// lea ebp, [ebx+esi]
 #endif
 	//EmitString( "8B 07" );			
@@ -945,9 +944,11 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 	EmitString( "48 81 C4" );				// add rsp, 200
 	Emit4( SHADOW_BASE + PUSH_STACK + PARAM_STACK );
 
-#if USE_EBP > 3
+#if USE_EBP
 	EmitRexString( 0x48, "8D 2C 33" );		// lea rbp, [rbx+rsi]
 #endif
+
+	EmitString( "C3" );						// ret
 
 #else // i386
 	// function prologue
@@ -990,9 +991,8 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 
 	EmitRexString( 0x48, "89 EC" );		// mov esp, ebp
 	EmitString( "5D" );					// pop ebp
+	EmitString( "C3" );					// ret
 #endif
-
-	EmitString( "C3" );				// ret
 }
 
 #if FTOL_PTR
@@ -1373,8 +1373,17 @@ qboolean ConstOptimize( vm_t *vm ) {
 		Emit4( (int)vm->dataBase );
 		Emit4( ip );
 #endif
-		break;
-		EmitCall( vm, ni, ci->value );
+		//break;
+		EmitString( "55" );	// push ebp
+		EmitString( "56" );	// push rsi
+		EmitString( "53" );	// push rbx
+		EmitCall( vm, v );
+		EmitString( "5B" );	// pop rbx
+		EmitString( "5E" );	// pop rsi
+		EmitString( "5D" );	// pop ebp
+#if USE_EBP
+		//EmitRexString( 0x48, "8D 2C 33" ); // lea ebp, [ebx+esi]
+#endif
 		EmitCommand( LAST_COMMAND_MOV_EAX_EDI );
 		ip += 1; // OP_CALL
 		return qtrue;
@@ -1429,7 +1438,7 @@ qboolean LocalOptimize( vm_t *vm )
 		//[local] += CONST
 		case MOP_ADD4:
 			n = inst[ip+2].value;
-#if USE_EBP > 2
+#if USE_EBP
 			v = ci->value; // local variable address
 			if ( ISS8( n ) ) {
 				if ( ISS8( v ) ) {
@@ -1447,7 +1456,7 @@ qboolean LocalOptimize( vm_t *vm )
 					Emit1( v );
 					Emit4( n );
 				} else {
-					EmitString( "81 85" );	// add dword ptr[esi+0x12345678], 0x12345678
+					EmitString( "81 85" );	// add dword ptr [ebp + 0x12345678], 0x12345678
 					Emit4( v );
 					Emit4( n );
 				}
@@ -1482,7 +1491,7 @@ qboolean LocalOptimize( vm_t *vm )
 		//[local] -= CONST
 		case MOP_SUB4:
 			n = inst[ip+2].value;
-#if USE_EBP > 2
+#if USE_EBP
 			v = ci->value; // local variable address
 			if ( ISS8( n ) ) {
 				if ( ISS8( v ) ) {
@@ -1535,7 +1544,7 @@ qboolean LocalOptimize( vm_t *vm )
 		//[local] &= CONST
 		case MOP_BAND4:
 			n = inst[ip+2].value;
-#if USE_EBP > 2
+#if USE_EBP
 			v = ci->value; // local variable address
 			if ( ISS8( n ) ) {
 				if ( ISS8( v ) ) {
@@ -1588,7 +1597,7 @@ qboolean LocalOptimize( vm_t *vm )
 		//[local] |= CONST
 		case MOP_BOR4:
 			n = inst[ip+2].value;
-#if USE_EBP > 2
+#if USE_EBP
 			v = ci->value; // local variable address
 			if ( ISS8( n ) ) {
 				if ( ISS8( v ) ) {
@@ -1656,6 +1665,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 	int i, n, v, op0, op1, opStack, pstack;
 	instruction_t *ci, *proc;
 	int startp, endp;
+	qboolean first;
 	
 	code = (byte *) header + header->codeOffset;
 	code_start = code; // for printing
@@ -1748,6 +1758,8 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 	pstack = 0;
 	op1 = OP_UNDEF;
 	proc = NULL;
+	
+	first = qtrue;	// vmMain return flag
 
 	// Additional security checks
 
@@ -1822,6 +1834,11 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 				proc = NULL;
 				startp = i + 1; // next instruction
 				endp = header->instructionCount - 1; // end of the image
+			}
+			if ( first ) 
+			{
+				first = qfalse;
+				ci->flag = 1;
 			}
 			continue;
 		}
@@ -2190,7 +2207,6 @@ __compile:
 
 		case OP_LOCAL:
 
-//#if !idx64
 			if ( ci->mop != MOP_UNDEF && LocalOptimize( vm ) )
 				break;
 			
@@ -2198,7 +2214,7 @@ __compile:
 			if ( ni->op == OP_LOAD4 ) {
 				EmitAddEDI4( vm );
 				v = ci->value;
-#if USE_EBP > 1
+#if USE_EBP
 				if ( ISS8( v ) ) {
 					EmitString( "8B 45" );	// mov eax, dword ptr [ebp + 0x7F]
 					Emit1( v );
@@ -2224,7 +2240,7 @@ __compile:
 			if ( ni->op == OP_LOAD2 ) {
 				EmitAddEDI4( vm );
 				v = ci->value;
-#if USE_EBP > 1
+#if USE_EBP
 				if ( ISS8( v ) ) {
 					EmitString( "0F B7 45" );	// movzx eax, word ptr [ebp + 0x7F]
 					Emit1( v );
@@ -2250,7 +2266,7 @@ __compile:
 			if ( ni->op == OP_LOAD1 ) {
 				EmitAddEDI4( vm );
 				v = ci->value;
-#if USE_EBP > 1
+#if USE_EBP
 				if ( ISS8( v ) ) {
 					EmitString( "0F B6 45" );		// movzx eax, byte ptr [ebp + 0x7F]
 					Emit1( v );
@@ -2271,7 +2287,6 @@ __compile:
 				ip++;
 				break;
 			}
-//#endif
 
 			// TODO: i = j + k;
 			// TODO: i = j - k;
@@ -2291,24 +2306,15 @@ __compile:
 		case OP_ARG:
 			EmitMovEAXEDI( vm );			// mov	eax, dword ptr [edi]
 			v = ci->value;
-#if idx64 && USE_EBP < 2
 			if ( ISS8( v ) ) {
-				EmitString( "89 44 33" );	// mov	dword ptr [rbx + rsi + 0x7F], eax
-				Emit1( v );
-			} else {
-				EmitString( "89 84 33" );	// mov	dword ptr [rbx + rsi + 0x12345678], eax
-				Emit4( v );
-			}
-#else
-			if ( ISS8( v ) ) {
-#if USE_EBP > 1
+#if USE_EBP
 				EmitString( "89 45" );		// mov	dword ptr [ebp + 0x7F], eax
 #else
 				EmitString( "89 44 33" );	// mov	dword ptr [ebx + esi + 0x7F], eax
 #endif
 				Emit1( v );
 			} else {
-#if USE_EBP > 1
+#if USE_EBP
 				EmitString( "89 85" );		// mov	dword ptr [ebp + 0x12345678], eax
 				Emit4( v );
 #else
@@ -2316,7 +2322,6 @@ __compile:
 				EmitPtr( vm->dataBase + v );
 #endif
 			}
-#endif
 			EmitCommand( LAST_COMMAND_SUB_DI_4 );		// sub edi, 4
 			break;
 
@@ -2340,17 +2345,17 @@ __compile:
 			break;
 
 		case OP_LEAVE:
-			v = ci->value;
-			if ( ISS8( v ) ) {
-				EmitString( "83 C6" );		// add	esi, 0x12
-				Emit1( v );
-			} else {
-				EmitString( "81 C6" );		// add	esi, 0x12345678
-				Emit4( v );
+			if ( 1 || ci->flag ) 
+			{
+				v = ci->value;
+				if ( ISS8( v ) ) {
+					EmitString( "83 C6" );		// add	esi, 0x12
+					Emit1( v );
+				} else {
+					EmitString( "81 C6" );		// add	esi, 0x12345678
+					Emit4( v );
+				}
 			}
-#if USE_EBP > 0 && USE_EBP < 4
-			EmitRexString( 0x48, "8D 2C 33" ); // lea ebp, [ebx+esi]
-#endif
 			EmitString( "C3" );				// ret
 			break;
 
