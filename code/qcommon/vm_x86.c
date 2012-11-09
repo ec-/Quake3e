@@ -851,6 +851,10 @@ sysCallOffset = compiledOfs;
 
 	EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 
+	//EmitString( "55" );	// push ebp
+	//EmitString( "56" );	// push esi
+	//EmitString( "53" );	// push ebx
+
 	// calling another vm function
 #if idx64
 	EmitString( "41 FF 14 C0" );		// call dword ptr [r8+rax*8]
@@ -862,8 +866,12 @@ sysCallOffset = compiledOfs;
 #if USE_EBP
 	EmitRexString( 0x48, "8D 2C 33" );	// lea ebp, [ebx+esi]
 #endif
-	//EmitString( "8B 07" );			
 	EmitMovEAXEDI( vm );			// mov eax, dword ptr [edi]
+
+	//EmitString( "5B" );				// pop ebx
+	//EmitString( "5E" );				// pop esi
+	//EmitString( "5D" );				// pop ebp
+
 	EmitString( "C3" );				// ret
 
 sysCallOffset = compiledOfs - sysCallOffset;
@@ -875,6 +883,7 @@ sysCallOffset = compiledOfs - sysCallOffset;
 
 	EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 
+	// jump here from ConstOptimize()
 funcOffset[FUNC_SYSC] = compiledOfs;
 
 #if idx64
@@ -1837,8 +1846,8 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 			}
 			if ( first ) 
 			{
-				first = qfalse;
 				ci->flag = 1;
+				first = qfalse;
 			}
 			continue;
 		}
