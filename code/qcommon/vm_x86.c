@@ -452,6 +452,7 @@ static void EmitString( const char *string )
 	}
 }
 
+
 static void EmitRexString( int prefix, const char *string ) 
 {
 #if idx64
@@ -460,17 +461,6 @@ static void EmitRexString( int prefix, const char *string )
 	EmitString( string );
 }
 
-static void EmitString1( const char *string, int value )  
-{
-	EmitString( string );
-	Emit1( value );
-}
-
-static void EmitString4( const char *string, int value )  
-{
-	EmitString( string );
-	Emit4( value );
-}
 
 static void EmitCommand( ELastCommand command )
 {
@@ -850,9 +840,9 @@ sysCallOffset = compiledOfs;
 
 	EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 
-	//EmitString( "55" );	// push ebp
-	//EmitString( "56" );	// push esi
-	//EmitString( "53" );	// push ebx
+	EmitString( "55" );				// push ebp
+	EmitString( "56" );				// push esi
+	//EmitString( "53" );			// push ebx
 
 	// calling another vm function
 #if idx64
@@ -862,12 +852,13 @@ sysCallOffset = compiledOfs;
 	EmitPtr( vm->instructionPointers );
 	EmitString( "FF 11" );				// call dword ptr [ecx]
 #endif
-	EmitRexString( 0x48, "8D 2C 33" );	// lea ebp, [ebx+esi]
+	//EmitRexString( 0x48, "8D 2C 33" );	// lea ebp, [ebx+esi]
+	
 	EmitMovEAXEDI( vm );			// mov eax, dword ptr [edi]
 
-	//EmitString( "5B" );				// pop ebx
-	//EmitString( "5E" );				// pop esi
-	//EmitString( "5D" );				// pop ebp
+	//EmitString( "5B" );			// pop ebx
+	EmitString( "5E" );				// pop esi
+	EmitString( "5D" );				// pop ebp
 
 	EmitString( "C3" );				// ret
 
