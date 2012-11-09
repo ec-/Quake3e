@@ -2666,7 +2666,8 @@ This function is called directly by the generated code
 
 #define CALL_PSTACK 48
 
-int	VM_CallCompiled( vm_t *vm, int *args ) {
+int	VM_CallCompiled( vm_t *vm, int *args )
+{
 	int		opStack[OPSTACK_SIZE + 2];
 	int		stackOnEntry;
 	int		*image;

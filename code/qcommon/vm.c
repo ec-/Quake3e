@@ -956,19 +956,19 @@ intptr_t	QDECL VM_Call( vm_t *vm, int callnum, ... ) {
 
 	++vm->callLevel;
 	// if we have a dll loaded, call it directly
-	if ( vm->entryPoint ) {
+	if ( vm->entryPoint ) 
+	{
 		//rcg010207 -  see dissertation at top of VM_DllSyscall() in this file.
-		int args[10];
+		int args[8];
 		va_list ap;
-		va_start(ap, callnum);
-		for (i = 0; i < sizeof (args) / sizeof (args[i]); i++) {
+		va_start( ap, callnum );
+		for ( i = 0; i < ARRAY_LEN( args ); i++ ) {
 			args[i] = va_arg(ap, int);
 		}
 		va_end(ap);
 
-		r = vm->entryPoint( callnum,  args[0],  args[1],  args[2], args[3],
-                            args[4],  args[5],  args[6], args[7],
-                            args[8],  args[9]);
+		r = vm->entryPoint( callnum, args[0], args[1], args[2], args[3],
+			args[4], args[5], args[6], args[7] );
 	} else {
 #if id386 // i386 calling convention doesn't need conversion
 #ifndef NO_VM_COMPILED
@@ -980,14 +980,14 @@ intptr_t	QDECL VM_Call( vm_t *vm, int callnum, ... ) {
 #else
 		struct {
 			int callnum;
-			int args[10];
+			int args[8];
 		} a;
 		va_list ap;
 
 		a.callnum = callnum;
 		va_start(ap, callnum);
-		for (i = 0; i < sizeof (a.args) / sizeof (a.args[0]); i++) {
-			a.args[i] = va_arg(ap, int);
+		for (i = 0; i < ARRAY_LEN( a.args ); i++ ) {
+			a.args[i] = va_arg( ap, int );
 		}
 		va_end(ap);
 #ifndef NO_VM_COMPILED
