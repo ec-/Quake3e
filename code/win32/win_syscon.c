@@ -608,11 +608,11 @@ void Sys_CreateConsole( char *title )
 
 	// create the buttons 
 	s_wcd.hwndButtonCopy = CreateWindow( T("button"), T("copy"), WS_VISIBLE | WS_CHILD,
-		x, rect.top, w, h, s_wcd.hwndStatusBar, ( HMENU ) COPY_ID, g_wv.hInstance, NULL );
+		x, rect.top, w, h, s_wcd.hwndStatusBar, (HMENU)(LRESULT)COPY_ID, g_wv.hInstance, NULL );
 	x += w + 4;
 
 	s_wcd.hwndButtonClear = CreateWindow( T("button"), T("clear"), WS_VISIBLE | WS_CHILD,
-		x, rect.top, w, h, s_wcd.hwndStatusBar, ( HMENU ) CLEAR_ID,	g_wv.hInstance, NULL );
+		x, rect.top, w, h, s_wcd.hwndStatusBar, (HMENU)(LRESULT)CLEAR_ID,	g_wv.hInstance, NULL );
 
 	SendMessage( s_wcd.hwndButtonCopy, WM_SETFONT, ( WPARAM ) s_wcd.hfStatusFont, 0 );
 	SendMessage( s_wcd.hwndButtonClear, WM_SETFONT, ( WPARAM ) s_wcd.hfStatusFont, 0 );
@@ -630,7 +630,7 @@ void Sys_CreateConsole( char *title )
 												ES_LEFT | ES_AUTOHSCROLL,
 												BORDERW, rect.bottom - sth - INPUT_HEIGHT - BORDERH, rect.right - BORDERW*2, INPUT_HEIGHT,
 												s_wcd.hWnd, 
-												( HMENU ) INPUT_ID,	// child window ID
+												(HMENU)(LRESULT)INPUT_ID,	// child window ID
 												g_wv.hInstance, NULL );
 
 	// create the scrollbuffer
@@ -638,7 +638,7 @@ void Sys_CreateConsole( char *title )
 												ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | ES_NOHIDESEL,
 												BORDERW, BORDERH, rect.right - BORDERW*2, rect.bottom - sth - INPUT_HEIGHT - BORDERH*3 - 2,
 												s_wcd.hWnd, 
-												( HMENU ) EDIT_ID,	// child window ID
+												(HMENU)(LRESULT)EDIT_ID,	// child window ID
 												g_wv.hInstance, NULL );
 
 	SendMessage( s_wcd.hwndBuffer, WM_SETFONT, ( WPARAM ) s_wcd.hfBufferFont, 0 );
@@ -917,7 +917,7 @@ void Sys_SetErrorText( const char *buf )
 	s_wcd.hwndErrorBox = CreateWindow( T("static"), NULL, WS_CHILD | WS_VISIBLE | SS_SUNKEN,
 												BORDERW, BORDERH, rect.right - BORDERW*2, ERROR_HEIGHT,
 												s_wcd.hWnd, 
-												( HMENU ) ERRORBOX_ID,	// child window ID
+												(HMENU)(LRESULT)ERRORBOX_ID,	// child window ID
 												g_wv.hInstance, NULL );
 
 	SendMessage( s_wcd.hwndErrorBox, WM_SETFONT, ( WPARAM ) s_wcd.hfBufferFont, 0 );
