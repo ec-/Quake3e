@@ -1250,20 +1250,22 @@ typedef struct memstatic_s {
 	byte mem[2];
 } memstatic_t;
 
+#define STATIC_SIZE PAD( sizeof( memblock_t ) + 2, sizeof( intptr_t ) )
+
 // bk001204 - initializer brackets
 memstatic_t emptystring =
-	{ {(sizeof(memblock_t)+2 + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'\0', '\0'} };
+	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'\0', '\0'} };
 memstatic_t numberstring[] = {
-	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'0', '\0'} },
-	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'1', '\0'} },
-	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'2', '\0'} },
-	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'3', '\0'} },
-	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'4', '\0'} },
-	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'5', '\0'} },
-	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'6', '\0'} },
-	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'7', '\0'} },
-	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'8', '\0'} }, 
-	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'9', '\0'} }
+	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'0', '\0'} },
+	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'1', '\0'} },
+	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'2', '\0'} },
+	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'3', '\0'} },
+	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'4', '\0'} },
+	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'5', '\0'} },
+	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'6', '\0'} },
+	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'7', '\0'} },
+	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'8', '\0'} }, 
+	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'9', '\0'} }
 };
 
 /*
