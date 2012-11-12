@@ -1183,6 +1183,10 @@ void	Huff_offsetTransmit (huff_t *huff, int ch, byte *fout, int *offset);
 void	Huff_putBit( int bit, byte *fout, int *offset);
 int		Huff_getBit( byte *fout, int *offset);
 
+// don't use if you don't know what you're doing.
+int		Huff_getBloc(void);
+void	Huff_setBloc(int _bloc);
+
 extern huffman_t clientHuffTables;
 
 #define	SV_ENCODE_START		4
