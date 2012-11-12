@@ -1125,7 +1125,6 @@ void	Sys_BeginProfiling( void );
 void	Sys_EndProfiling( void );
 
 qboolean Sys_LowPhysicalMemory( void );
-unsigned int Sys_ProcessorCount( void );
 
 int Sys_MonkeyShouldBeSpanked( void );
 

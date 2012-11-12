@@ -391,6 +391,7 @@ static void Emit4( int v )
 }
 
 
+#if idx64
 static void Emit8( int64_t v ) 
 {
 	Emit1( ( v >> 0 ) & 255 );
@@ -402,9 +403,10 @@ static void Emit8( int64_t v )
 	Emit1( ( v >> 48 ) & 255 );
 	Emit1( ( v >> 56 ) & 255 );
 }
+#endif
 
 
-static void EmitPtr( void *ptr ) 
+static void EmitPtr( const void *ptr ) 
 {
 #if idx64
 	Emit8( (intptr_t)ptr );
@@ -816,7 +818,11 @@ void EmitCallOffset( func_t Func )
 	Emit4( n - 5 );
 }
 
+#ifdef __linux__
+#define SHADOW_BASE 8
+#else
 #define SHADOW_BASE 40
+#endif
 #define PUSH_STACK  32
 #define PARAM_STACK 128
 
@@ -916,8 +922,13 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 	Emit1( (PARAM_STACK/8) - 1 );
 	EmitString( "7C EE" );					// jl -18
 
+#ifdef __linux__
+	// rdi = &int64_params[0]
+	EmitString( "48 8D 79 F8" );			// lea rdi, [rcx-8]
+#else
 	// rcx = &int64_params[0]
 	EmitString( "48 83 E9 08" );			// sub rcx, 8
+#endif
 	
 	// currentVm->systemCall( param );
 	EmitString( "41 FF 14 24" );			// call qword [r12]

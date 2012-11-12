@@ -123,6 +123,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define ZLASTCHAR(xXx) (xXx)[sizeof(xXx)-1]='\0'
 
+//endianness
+short ShortSwap( short l );
+int LongSwap( int l );
+float FloatSwap( const float *f );
+
 #include "q_platform.h"
 
 //=============================================================

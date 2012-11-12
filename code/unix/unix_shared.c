@@ -140,29 +140,22 @@ int Sys_XTimeToSysTime (unsigned long xtime)
 }
 #endif
 
-//#if 0 // bk001215 - see snapvector.nasm for replacement
-#if !id386 // rcg010206 - using this for PPC builds...
-long fastftol( float f ) { // bk001213 - from win32/win_shared.c
-  //static int tmp;
-  //	__asm fld f
-  //__asm fistp tmp
-  //__asm mov eax, tmp
-  return (long)f;
-}
 
-void Sys_SnapVector( float *v ) { // bk001213 - see win32/win_shared.c
-  // bk001213 - old linux
-  v[0] = rint(v[0]);
-  v[1] = rint(v[1]);
-  v[2] = rint(v[2]);
+#if !id386
+void Sys_SnapVector( float *v ) 
+{
+  v[0] = round(v[0]);
+  v[1] = round(v[1]);
+  v[2] = round(v[2]);
 }
 #endif
 
 
-void	Sys_Mkdir( const char *path )
+void Sys_Mkdir( const char *path )
 {
-    mkdir (path, 0750);
+    mkdir( path, 0750 );
 }
+
 
 char *strlwr (char *s) {
   if ( s==NULL ) { // bk001204 - paranoia
@@ -175,6 +168,7 @@ char *strlwr (char *s) {
   }
   return s; // bk001204 - duh
 }
+
 
 qboolean Sys_RandomBytes( byte *string, int len )
 {
@@ -437,15 +431,6 @@ char *Sys_GetCurrentUser( void )
 	}
 	return p->pw_name;
 }
-
-#if defined(__linux__) || defined(__FreeBSD__)
-// TTimo 
-// sysconf() in libc, POSIX.1 compliant
-unsigned int Sys_ProcessorCount(void)
-{
-  return sysconf(_SC_NPROCESSORS_ONLN);
-}
-#endif
 
 void *Sys_LoadLibrary( const char *name )
 {

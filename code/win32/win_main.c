@@ -550,7 +550,7 @@ void * QDECL Sys_LoadDll( const char *name, intptr_t (QDECL **entryPoint)(intptr
 #endif
 
 #ifndef NDEBUG
-	libHandle = LoadLibrary( filename );
+	libHandle = LoadLibrary( AtoW( filename ) );
   if (libHandle)
     Com_Printf("LoadLibrary '%s' ok\n", filename);
   else

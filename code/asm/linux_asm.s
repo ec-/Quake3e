@@ -36,26 +36,3 @@ C(Sys_SnapVector):
 	ret
 
 #endif
-
-#if idx64
-
-.globl C(Sys_SnapVector)
-C(Sys_SnapVector):
-	fnstcw word ptr cwCurr
-    fldcw word ptr cw037F
-	fld   dword ptr[eax+8]
-	fistp dword ptr[rdi+8]
-	fild  dword ptr[rdi+8]
-	fstp  dword ptr[rdi+8]
-	fld   dword ptr[rdi+4]
-	fistp dword ptr[rdi+4]
-	fild  dword ptr[rdi+4]
-	fstp  dword ptr[rdi+4]
-	fld   dword ptr[rdi+0]
-	fistp dword ptr[rdi+0]
-	fild  dword ptr[rdi+0]
-	fstp  dword ptr[rdi+0]
-	fldcw word ptr cwCurr
-	ret
-
-#endif
