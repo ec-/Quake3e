@@ -41,7 +41,7 @@ BASIC MATH
 RotatePoint
 ================
 */
-void RotatePoint(vec3_t point, /*const*/ vec3_t matrix[3]) { // bk: FIXME 
+void RotatePoint(vec3_t point, /*const*/ vec3_t matrix[3]) { // FIXME 
 	vec3_t tvec;
 
 	VectorCopy(point, tvec);
@@ -55,7 +55,7 @@ void RotatePoint(vec3_t point, /*const*/ vec3_t matrix[3]) { // bk: FIXME
 TransposeMatrix
 ================
 */
-void TransposeMatrix(/*const*/ vec3_t matrix[3], vec3_t transpose[3]) { // bk: FIXME
+void TransposeMatrix(/*const*/ vec3_t matrix[3], vec3_t transpose[3]) { // FIXME
 	int i, j;
 	for (i = 0; i < 3; i++) {
 		for (j = 0; j < 3; j++) {
@@ -734,7 +734,8 @@ get the first intersection of the ray with the sphere
 */
 void CM_TraceThroughSphere( traceWork_t *tw, vec3_t origin, float radius, vec3_t start, vec3_t end ) {
 	float l1, l2, length, scale, fraction;
-	float a, b, c, d, sqrtd;
+	//float a;
+	float b, c, d, sqrtd;
 	vec3_t v1, dir, intersection;
 
 	// if inside the sphere
@@ -770,7 +771,7 @@ void CM_TraceThroughSphere( traceWork_t *tw, vec3_t origin, float radius, vec3_t
 	//
 	VectorSubtract(start, origin, v1);
 	// dir is normalized so a = 1
-	a = 1.0f;//dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2];
+	//a = 1.0f;//dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2];
 	b = 2.0f * (dir[0] * v1[0] + dir[1] * v1[1] + dir[2] * v1[2]);
 	c = v1[0] * v1[0] + v1[1] * v1[1] + v1[2] * v1[2] - (radius+RADIUS_EPSILON) * (radius+RADIUS_EPSILON);
 
@@ -822,7 +823,8 @@ the cylinder extends halfheight above and below the origin
 */
 void CM_TraceThroughVerticalCylinder( traceWork_t *tw, vec3_t origin, float radius, float halfheight, vec3_t start, vec3_t end) {
 	float length, scale, fraction, l1, l2;
-	float a, b, c, d, sqrtd;
+	//float a;
+	float b, c, d, sqrtd;
 	vec3_t v1, dir, start2d, end2d, org2d, intersection;
 
 	// 2d coordinates
@@ -868,7 +870,7 @@ void CM_TraceThroughVerticalCylinder( traceWork_t *tw, vec3_t origin, float radi
 	//
 	VectorSubtract(start, origin, v1);
 	// dir is normalized so we can use a = 1
-	a = 1.0f;// * (dir[0] * dir[0] + dir[1] * dir[1]);
+	//a = 1.0f;// * (dir[0] * dir[0] + dir[1] * dir[1]);
 	b = 2.0f * (v1[0] * dir[0] + v1[1] * dir[1]);
 	c = v1[0] * v1[0] + v1[1] * v1[1] - (radius+RADIUS_EPSILON) * (radius+RADIUS_EPSILON);
 
@@ -1066,17 +1068,6 @@ void CM_TraceThroughTree( traceWork_t *tw, int num, float p1f, float p2f, vec3_t
 		if ( tw->isPoint ) {
 			offset = 0;
 		} else {
-#if 0 // bk010201 - DEAD
-			// an axial brush right behind a slanted bsp plane
-			// will poke through when expanded, so adjust
-			// by sqrt(3)
-			offset = fabs(tw->extents[0]*plane->normal[0]) +
-				fabs(tw->extents[1]*plane->normal[1]) +
-				fabs(tw->extents[2]*plane->normal[2]);
-
-			offset *= 2;
-			offset = tw->maxOffset;
-#endif
 			// this is silly
 			offset = 2048;
 		}
@@ -1275,7 +1266,7 @@ void CM_Trace( trace_t *results, const vec3_t start, const vec3_t end, vec3_t mi
 	//
 	if (start[0] == end[0] && start[1] == end[1] && start[2] == end[2]) {
 		if ( model ) {
-#ifdef ALWAYS_BBOX_VS_BBOX // bk010201 - FIXME - compile time flag?
+#ifdef ALWAYS_BBOX_VS_BBOX // FIXME - compile time flag?
 			if ( model == BOX_MODEL_HANDLE || model == CAPSULE_MODEL_HANDLE) {
 				tw.sphere.use = qfalse;
 				CM_TestInLeaf( &tw, &cmod->leaf );

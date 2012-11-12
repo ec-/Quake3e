@@ -1,15 +1,17 @@
 #include "qasm.h"
 
 #if id386
-
-.data
-
 .arch i586
+#endif
+
 .intel_syntax noprefix
 
+.data
 cw037F: .long 0x037F // rounding towards nearest (even)
 cw0F7F: .long 0x0F7F // rounding towards zero (chop mode)
 cwCurr: .long 0x0000
+
+#if id386
 
 .text
 
@@ -30,6 +32,29 @@ C(Sys_SnapVector):
 	fistp dword ptr[eax+0]
 	fild  dword ptr[eax+0]
 	fstp  dword ptr[eax+0]
+	fldcw word ptr cwCurr
+	ret
+
+#endif
+
+#if idx64
+
+.globl C(Sys_SnapVector)
+C(Sys_SnapVector):
+	fnstcw word ptr cwCurr
+    fldcw word ptr cw037F
+	fld   dword ptr[eax+8]
+	fistp dword ptr[rdi+8]
+	fild  dword ptr[rdi+8]
+	fstp  dword ptr[rdi+8]
+	fld   dword ptr[rdi+4]
+	fistp dword ptr[rdi+4]
+	fild  dword ptr[rdi+4]
+	fstp  dword ptr[rdi+4]
+	fld   dword ptr[rdi+0]
+	fistp dword ptr[rdi+0]
+	fild  dword ptr[rdi+0]
+	fstp  dword ptr[rdi+0]
 	fldcw word ptr cwCurr
 	ret
 

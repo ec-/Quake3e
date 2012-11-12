@@ -906,7 +906,7 @@ ifeq ($(HAVE_VM_COMPILED),true)
     Q3OBJ += $(B)/client/vm_x86.o
   endif
   ifeq ($(ARCH),x86_64)
-    Q3OBJ += $(B)/client/vm_x86_64.o $(B)/client/vm_x86_64_assembler.o
+    Q3OBJ += $(B)/client/vm_x86.o
   endif
   ifeq ($(ARCH),ppc)
     Q3OBJ += $(B)/client/vm_ppc.o
@@ -1046,7 +1046,7 @@ ifeq ($(HAVE_VM_COMPILED),true)
     Q3DOBJ += $(B)/ded/vm_x86.o
   endif
   ifeq ($(ARCH),x86_64)
-    Q3DOBJ += $(B)/ded/vm_x86_64.o $(B)/ded/vm_x86_64_assembler.o
+    Q3DOBJ += $(B)/ded/vm_x86.o
   endif
   ifeq ($(ARCH),ppc)
     Q3DOBJ += $(B)/ded/vm_ppc.o

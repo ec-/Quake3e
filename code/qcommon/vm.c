@@ -217,7 +217,6 @@ VM_LoadSymbols
 ===============
 */
 void VM_LoadSymbols( vm_t *vm ) {
-	int		len;
 	char	*mapfile, *text_p, *token;
 	char	name[MAX_QPATH];
 	char	symbols[MAX_QPATH];
@@ -235,7 +234,7 @@ void VM_LoadSymbols( vm_t *vm ) {
 
 	COM_StripExtension(vm->name, name, sizeof(name));
 	Com_sprintf( symbols, sizeof( symbols ), "vm/%s.map", name );
-	len = FS_ReadFile( symbols, (void **)&mapfile );
+	FS_ReadFile( symbols, (void **)&mapfile );
 	if ( !mapfile ) {
 		Com_Printf( "Couldn't load symbol file: %s\n", symbols );
 		return;
