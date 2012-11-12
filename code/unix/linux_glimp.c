@@ -104,8 +104,7 @@ static qboolean desktop_ok = qfalse;
 // static qboolean autorepeaton = qtrue;
 
 #define KEY_MASK (KeyPressMask | KeyReleaseMask)
-#define MOUSE_MASK (ButtonPressMask | ButtonReleaseMask | \
-		    PointerMotionMask | ButtonMotionMask )
+#define MOUSE_MASK (ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ButtonMotionMask )
 #define X_MASK (KEY_MASK | MOUSE_MASK | VisibilityChangeMask | StructureNotifyMask )
 
 static qboolean mouse_avail;
@@ -419,30 +418,30 @@ static Cursor CreateNullCursor(Display *display, Window root)
 
 static void install_grabs(void)
 {
-  // inviso cursor
-  XWarpPointer(dpy, None, win,
-               0, 0, 0, 0,
-               glConfig.vidWidth / 2, glConfig.vidHeight / 2);
-  XSync(dpy, False);
+	// inviso cursor
+	XWarpPointer(dpy, None, win, 0, 0, 0, 0,
+		glConfig.vidWidth / 2, glConfig.vidHeight / 2);
 
-  XDefineCursor(dpy, win, CreateNullCursor(dpy, win));
+	XSync( dpy, False );
 
-  XGrabPointer(dpy, win, // bk010108 - do this earlier?
-               False,
-               MOUSE_MASK,
-               GrabModeAsync, GrabModeAsync,
-               win,
-               None,
-               CurrentTime);
+	XDefineCursor( dpy, win, CreateNullCursor( dpy, win ) );
 
-  XGetPointerControl(dpy, &mouse_accel_numerator, &mouse_accel_denominator,
-                     &mouse_threshold);
+	XGrabPointer( dpy, win, // bk010108 - do this earlier?
+		False,
+		MOUSE_MASK,
+		GrabModeAsync, GrabModeAsync,
+		win,
+		None,
+		CurrentTime);
 
-  XChangePointerControl(dpy, True, True, 1, 1, 1);
+	XGetPointerControl(dpy, &mouse_accel_numerator, &mouse_accel_denominator,
+		 &mouse_threshold );
 
-  XSync(dpy, False);
+	XChangePointerControl( dpy, True, True, 1, 1, 1 );
 
-  mouseResetTime = Sys_Milliseconds ();
+	XSync( dpy, False );
+
+	mouseResetTime = Sys_Milliseconds();
 
 #ifdef HAVE_XF86DGA
   if (in_dgamouse->value)
@@ -467,37 +466,32 @@ static void install_grabs(void)
     mx = my = 0;
   }
 
-  XGrabKeyboard(dpy, win,
-                False,
-                GrabModeAsync, GrabModeAsync,
-                CurrentTime);
+	XGrabKeyboard( dpy, win, False, GrabModeAsync, GrabModeAsync, CurrentTime );
 
-  XSync(dpy, False);
+	XSync( dpy, False );
 }
 
 static void uninstall_grabs(void)
 {
 #ifdef HAVE_XF86DGA
-  if (in_dgamouse->value)
-  {
+	if (in_dgamouse->value)
+	{
 		if (com_developer->value)
-			ri.Printf( PRINT_ALL, "DGA Mouse - Disabling DGA DirectVideo\n" );
-    XF86DGADirectVideo(dpy, DefaultScreen(dpy), 0);
-  }
+		    ri.Printf( PRINT_ALL, "DGA Mouse - Disabling DGA DirectVideo\n" );
+		XF86DGADirectVideo(dpy, DefaultScreen(dpy), 0);
+	}
 #endif /* HAVE_XF86DGA */
 
-  XChangePointerControl(dpy, qtrue, qtrue, mouse_accel_numerator, 
-                        mouse_accel_denominator, mouse_threshold);
+	XChangePointerControl(dpy, qtrue, qtrue, mouse_accel_numerator, 
+		mouse_accel_denominator, mouse_threshold);
 
-  XUngrabPointer(dpy, CurrentTime);
-  XUngrabKeyboard(dpy, CurrentTime);
+	XUngrabPointer( dpy, CurrentTime );
+	XUngrabKeyboard( dpy, CurrentTime );
 
-  XWarpPointer(dpy, None, win,
-               0, 0, 0, 0,
-               glConfig.vidWidth / 2, glConfig.vidHeight / 2);
+	XWarpPointer(dpy, None, win, 0, 0, 0, 0, glConfig.vidWidth / 2, glConfig.vidHeight / 2 ) ;
 
-  // inviso cursor
-  XUndefineCursor(dpy, win);
+	// inviso cursor
+	XUndefineCursor( dpy, win );
 }
 
 // bk001206 - from Ryan's Fakk2
@@ -646,7 +640,7 @@ static void HandleEvents( void )
 			if ( mouse_active )
 			{
 #ifdef HAVE_XF86DGA
-			    if ( in_dgamouse->value )
+				if ( in_dgamouse->value )
 				{
 					mx += event.xmotion.x_root;
 					my += event.xmotion.y_root;
@@ -676,7 +670,6 @@ static void HandleEvents( void )
 					dy = ((int)event.xmotion.y - mwy);
 					mx += dx;
 					my += dy;
-
 					mwx = event.xmotion.x;
 					mwy = event.xmotion.y;
 					dowarp = qtrue;
@@ -705,7 +698,7 @@ static void HandleEvents( void )
 			}
 			if ( b != -1 )
 				Sys_QueEvent( t, SE_KEY, K_MOUSE1 + b, qtrue, 0, NULL );
-		break; // case ButtonPress
+			break; // case ButtonPress
 
 		case ButtonRelease:
 			t = Sys_XTimeToSysTime(event.xkey.time);
@@ -727,24 +720,24 @@ static void HandleEvents( void )
 			}
 			if ( b != -1 )
 				Sys_QueEvent( t, SE_KEY, K_MOUSE1 + b, qfalse, 0, NULL );
-		break;
+			break;
 
 		case CreateNotify :
 			win_x = event.xcreatewindow.x;
 			win_y = event.xcreatewindow.y;
-		break;
+			break;
 
 		case ConfigureNotify :
 			win_x = event.xconfigure.x;
 			win_y = event.xconfigure.y;
-		break;
+			break;
 		}
 	}
 
 	if ( dowarp )
 	{
 		XWarpPointer( dpy, None, win, 0, 0, 0, 0, 
-                 (glConfig.vidWidth/2), (glConfig.vidHeight/2) );
+		    (glConfig.vidWidth/2), (glConfig.vidHeight/2) );
 	}
 }
 
@@ -760,32 +753,36 @@ void KBD_Close(void)
 
 void IN_ActivateMouse( void )
 {
-  if (!mouse_avail || !dpy || !win)
-    return;
+	if (!mouse_avail || !dpy || !win) 
+	{
+		return;
+	}
 
-  if (!mouse_active)
-  {
-		if (!in_nograb->value)
-      install_grabs();
-		else if (in_dgamouse->value) // force dga mouse to 0 if using nograb
-			ri.Cvar_Set("in_dgamouse", "0");
-    mouse_active = qtrue;
-  }
+	if ( !mouse_active )
+	{
+		if (! in_nograb->value )
+			 install_grabs();
+		else if ( in_dgamouse->value ) // force dga mouse to 0 if using nograb
+		    ri.Cvar_Set("in_dgamouse", "0");
+		mouse_active = qtrue;
+	}
 }
 
-void IN_DeactivateMouse( void ) 
+void IN_DeactivateMouse( void )
 {
-  if (!mouse_avail || !dpy || !win)
-    return;
+	if ( !mouse_avail || !dpy || !win ) 
+	{
+		return;
+	}
 
-  if (mouse_active)
-  {
-		if (!in_nograb->value)
-      uninstall_grabs();
-		else if (in_dgamouse->value) // force dga mouse to 0 if using nograb
+	if ( mouse_active )
+	{
+		if ( !in_nograb->value )
+			 uninstall_grabs();
+		else if ( in_dgamouse->value ) // force dga mouse to 0 if using nograb
 			ri.Cvar_Set("in_dgamouse", "0");
-    mouse_active = qfalse;
-  }
+		mouse_active = qfalse;
+	}
 }
 /*****************************************************************************/
 

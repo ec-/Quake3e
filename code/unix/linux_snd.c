@@ -76,26 +76,26 @@ static void (*_pthread_exit)(void *retval);
 static void *a_lib = NULL;
 
 static const char *(*_snd_strerror)(int errnum);
-static int  (*_snd_pcm_open)(snd_pcm_t **pcm, const char *name, snd_pcm_stream_t stream, int mode);
-static int  (*_snd_pcm_drop)(snd_pcm_t *pcm);
-static int  (*_snd_pcm_close)(snd_pcm_t *pcm);
+static int (*_snd_pcm_open)(snd_pcm_t **pcm, const char *name, snd_pcm_stream_t stream, int mode);
+static int (*_snd_pcm_drop)(snd_pcm_t *pcm);
+static int (*_snd_pcm_close)(snd_pcm_t *pcm);
 static size_t (*_snd_pcm_hw_params_sizeof)(void);
 static size_t (*_snd_pcm_sw_params_sizeof)(void);
-static int  (*_snd_pcm_hw_params_any)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params);
-static int  (*_snd_pcm_hw_params_set_rate_resample)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int val);
-static int  (*_snd_pcm_hw_params_set_access)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_access_t _access);
-static int  (*_snd_pcm_hw_params_set_format)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_format_t val);
-static int  (*_snd_pcm_hw_params_set_channels)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int val);
-static int  (*_snd_pcm_hw_params_set_rate_near)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int *val, int *dir);
-static int  (*_snd_pcm_hw_params_set_period_time_near)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int *val, int *dir);
-static int  (*_snd_pcm_hw_params_set_periods)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int val, int dir);
-static int  (*_snd_pcm_hw_params_get_period_size)(const snd_pcm_hw_params_t *params, snd_pcm_uframes_t *frames, int *dir);
-static int  (*_snd_pcm_hw_params)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params);
-static int  (*_snd_pcm_sw_params_current)(snd_pcm_t *pcm, snd_pcm_sw_params_t *params);
-static int  (*_snd_pcm_sw_params_set_start_threshold)(snd_pcm_t *pcm, snd_pcm_sw_params_t *params, snd_pcm_uframes_t val);
-static int  (*_snd_pcm_sw_params_set_stop_threshold)(snd_pcm_t *pcm, snd_pcm_sw_params_t *params, snd_pcm_uframes_t val);
-static int  (*_snd_pcm_sw_params_set_avail_min)(snd_pcm_t *pcm, snd_pcm_sw_params_t *params, snd_pcm_uframes_t val);
-static int  (*_snd_pcm_sw_params)(snd_pcm_t *pcm, snd_pcm_sw_params_t *params);
+static int (*_snd_pcm_hw_params_any)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params);
+static int (*_snd_pcm_hw_params_set_rate_resample)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int val);
+static int (*_snd_pcm_hw_params_set_access)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_access_t _access);
+static int (*_snd_pcm_hw_params_set_format)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_format_t val);
+static int (*_snd_pcm_hw_params_set_channels)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int val);
+static int (*_snd_pcm_hw_params_set_rate_near)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int *val, int *dir);
+static int (*_snd_pcm_hw_params_set_period_time_near)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int *val, int *dir);
+static int (*_snd_pcm_hw_params_set_periods)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int val, int dir);
+static int (*_snd_pcm_hw_params_get_period_size)(const snd_pcm_hw_params_t *params, snd_pcm_uframes_t *frames, int *dir);
+static int (*_snd_pcm_hw_params)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params);
+static int (*_snd_pcm_sw_params_current)(snd_pcm_t *pcm, snd_pcm_sw_params_t *params);
+static int (*_snd_pcm_sw_params_set_start_threshold)(snd_pcm_t *pcm, snd_pcm_sw_params_t *params, snd_pcm_uframes_t val);
+static int (*_snd_pcm_sw_params_set_stop_threshold)(snd_pcm_t *pcm, snd_pcm_sw_params_t *params, snd_pcm_uframes_t val);
+static int (*_snd_pcm_sw_params_set_avail_min)(snd_pcm_t *pcm, snd_pcm_sw_params_t *params, snd_pcm_uframes_t val);
+static int (*_snd_pcm_sw_params)(snd_pcm_t *pcm, snd_pcm_sw_params_t *params);
 static int (*_snd_pcm_start)(snd_pcm_t *pcm);
 static int (*_snd_pcm_prepare)(snd_pcm_t *pcm);
 static int (*_snd_pcm_resume)(snd_pcm_t *pcm);
@@ -113,7 +113,7 @@ typedef struct {
 
 sym_t t_list[] = {
 	{ (void**)&_pthread_mutex_init, "pthread_mutex_init" },
-    { (void**)&_pthread_mutex_destroy, "pthread_mutex_destroy" },
+	{ (void**)&_pthread_mutex_destroy, "pthread_mutex_destroy" },
 	{ (void**)&_pthread_mutex_lock, "pthread_mutex_lock" },
 	{ (void**)&_pthread_mutex_unlock, "pthread_mutex_unlock" },
 	{ (void**)&_pthread_join, "pthread_join" },
@@ -121,8 +121,7 @@ sym_t t_list[] = {
 	{ (void**)&_pthread_exit, "pthread_exit" }
 };
 
-sym_t a_list[] = 
-{
+sym_t a_list[] = {
 	{ (void**)&_snd_strerror, "snd_strerror" },
 	{ (void**)&_snd_pcm_open, "snd_pcm_open" },
 	{ (void**)&_snd_pcm_drop, "snd_pcm_drop" },
@@ -215,12 +214,14 @@ qboolean SNDDMA_Init( void )
 	snd_pcm_sw_params_t *swparams;
 	snd_pcm_uframes_t period_size;
 	unsigned int speed, rrate;
-    int err, dir, bps, channels;
-  	qboolean use_mmap;
+	int err, dir, bps, channels;
+	qboolean use_mmap;
 	int i;
 
-    if ( snd_inited == qtrue )
-        return qtrue;
+	if ( snd_inited == qtrue ) 
+	{
+		return qtrue;
+	}
 
 	alsa_used = qfalse;
 
@@ -583,36 +584,37 @@ void print_state( snd_pcm_state_t state )
 static int xrun_recovery( snd_pcm_t *handle, int err )
 {
 	if ( err == -EPIPE ) /* underrun */
-    {
+	{
 		err = _snd_pcm_prepare( handle );
 		if ( err < 0 )
 		{
 			Com_Printf( "Can't recovery from underrun, prepare failed: " \
 				"%s\n", _snd_strerror( err ) );
-            return err;
+			return err;
 		}
 		return 0;
 	}
-	else
-	if ( err == -ESTRPIPE )
-    {
+	else if ( err == -ESTRPIPE )
+	{
 		int tries = 0;
-    	/* wait until the suspend flag is released */
+		/* wait until the suspend flag is released */
 		while ( ( err = _snd_pcm_resume( handle ) ) == -EAGAIN ) 
 		{
 			usleep( period_time );
 			if ( tries++ < 16 )
+			{
 				break;
+			}
 		}
 		if ( err < 0 )
-        {
+		{
 			err = _snd_pcm_prepare( handle );
 			if ( err < 0 )
 			{
 				Com_Printf( "Can't recovery from suspend, prepare failed: " \
 					"%s\n", _snd_strerror( err ) );
-                return err;
-            }
+				return err;
+			}
 		}
 		return 0;
 	}
@@ -629,24 +631,23 @@ static int restore_transfer( void )
 	state = __snd_pcm_state( handle );
 
 	if ( state == SND_PCM_STATE_XRUN )
-    {
-		print_state( state );
+	{
+		//print_state( state );
 		err = xrun_recovery( handle, -EPIPE );
 		if ( err < 0 )
-        {
+		{
 			Com_Printf( "XRUN recovery failed: %s\n",
 				_snd_strerror( err ) );
 			return err;
 		}
 		buffer_pos = 0;
 	}
-	else
-	if ( state == SND_PCM_STATE_SUSPENDED )
-    {
+	else if ( state == SND_PCM_STATE_SUSPENDED )
+	{
 		print_state( state );
 		err = xrun_recovery( handle, -ESTRPIPE );
 		if ( err < 0 )
-        {
+		{
 			Com_Printf( "SUSPEND recovery failed: %s\n", 
 				_snd_strerror( err ) );
 			return err;
@@ -664,7 +665,7 @@ inside the recirculating dma buffer, so the mixing code will know
 how many sample are required to fill it up.
 ===============
 */
-int SNDDMA_GetDMAPos()
+int SNDDMA_GetDMAPos( void )
 {
 	int samples;
 
@@ -685,17 +686,17 @@ int SNDDMA_GetDMAPos()
 
 static void thread_proc_mmap( void )
 {
-    const snd_pcm_channel_area_t *areas;
-	snd_pcm_uframes_t commitres;
-    snd_pcm_uframes_t frames;
-    snd_pcm_uframes_t offset;
-    snd_pcm_sframes_t avail;
-    snd_pcm_state_t state;
+	const snd_pcm_channel_area_t *areas;
+	snd_pcm_sframes_t commitres;
+	snd_pcm_uframes_t frames;
+	snd_pcm_uframes_t offset;
+	snd_pcm_sframes_t avail;
+	snd_pcm_state_t state;
 	unsigned char *addr;
 	int frame_sz;	// in bytes
 	int buffer_sz;	// in bytes
 	int sz0, sz1;
-    int err, p;
+	int err, p;
 
 	frame_sz = dma.channels * dma.samplebits / 8;
 	buffer_sz = dma.samples * dma.samplebits / 8;
@@ -733,11 +734,11 @@ static void thread_proc_mmap( void )
 		err = _snd_pcm_mmap_begin( handle, &areas, &offset, &frames );
 
 		if ( err < 0 )
-    	{
+		{
 			if ( (err = xrun_recovery( handle, err ) ) < 0 )
-    	    {
+			{
 				Com_Printf( "MMAP begin error: %s\n",
-					_snd_strerror( err ) );
+				_snd_strerror( err ) );
 				_pthread_mutex_unlock( &mutex );
 				continue;
 			}
@@ -762,10 +763,9 @@ static void thread_proc_mmap( void )
 
 		commitres = _snd_pcm_mmap_commit( handle, offset, frames );
 		if ( commitres < 0 || commitres != frames )
-	    {
-			if ( ( err = xrun_recovery( handle,
-				commitres >= 0 ? -EPIPE : commitres ) ) < 0 )
-	        {
+		{
+			if ( ( err = xrun_recovery( handle, commitres >= 0 ? -EPIPE : commitres ) ) < 0 )
+			{
 				Com_Printf( "MMAP commit error: %s\n", _snd_strerror( err ) );
 				_pthread_mutex_unlock( &mutex );
 				break;
