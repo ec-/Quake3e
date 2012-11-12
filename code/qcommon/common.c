@@ -1033,7 +1033,7 @@ Z_TagMalloc
 */
 #ifdef ZONE_DEBUG
 void *Z_TagMallocDebug( int size, int tag, char *label, char *file, int line ) {
-	int allocSize;
+	int		allocSize;
 #else
 void *Z_TagMalloc( int size, int tag ) {
 #endif
@@ -1051,6 +1051,7 @@ void *Z_TagMalloc( int size, int tag ) {
 	else {
 		zone = mainzone;
 	}
+
 #ifdef ZONE_DEBUG
 	allocSize = size;
 #endif
@@ -1067,12 +1068,16 @@ void *Z_TagMalloc( int size, int tag ) {
 	
 	do {
 		if (rover == start)	{
+			// scaned all the way around the list
 #ifdef ZONE_DEBUG
 			Z_LogHeap();
-#endif
-			// scaned all the way around the list
-			Com_Error( ERR_FATAL, "Z_Malloc: failed on allocation of %i bytes from the %s zone",
+
+			Com_Error(ERR_FATAL, "Z_Malloc: failed on allocation of %i bytes from the %s zone: %s, line: %d (%s)",
+								size, zone == smallzone ? "small" : "main", file, line, label);
+#else
+			Com_Error(ERR_FATAL, "Z_Malloc: failed on allocation of %i bytes from the %s zone",
 								size, zone == smallzone ? "small" : "main");
+#endif
 			return NULL;
 		}
 		if (rover->tag) {

@@ -186,13 +186,15 @@ ifeq ($(PLATFORM),linux)
     BASE_CFLAGS += -DUSE_CODEC_VORBIS=1
   endif
 
-  BASE_CFLAGS += -I/usr/X11R7/include
+  BASE_CFLAGS += -I/usr/X11R7/include -I/usr/include
 
   OPTIMIZE = -O2
 
   ifeq ($(ARCH),x86_64)
     OPTIMIZE = -O2  -fvisibility=hidden
     HAVE_VM_COMPILED = true
+    CNAME = quake3e.x64
+    DNAME = quake3e.ded.x64
   else
   ifeq ($(ARCH),i386)
     OPTIMIZE = -O2 -march=i486 -mtune=i686 -fvisibility=hidden
@@ -221,7 +223,7 @@ ifeq ($(PLATFORM),linux)
   LDFLAGS=-ldl -lm -Wl,--hash-style=both
 
 #  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -lX11 -lXext -lXxf86dga -lXxf86vm
-  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -lX11 -lXxf86dga -lXxf86vm -lGL
+  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -L/usr/$(LIB) -lX11 -lXxf86dga -lXxf86vm -lGL
 
 ifeq ($(USE_ALSA_STATIC),1)
   CLIENT_LDFLAGS += -lasound -lpthread
