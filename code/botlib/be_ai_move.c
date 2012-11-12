@@ -51,8 +51,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //#define DEBUG_ELEVATOR
 //#define DEBUG_GRAPPLE
 
-// bk001204 - redundant bot_avoidspot_t, see be_ai_move.h
-
 //movement state
 //NOTE: the moveflags MFL_ONGROUND, MFL_TELEPORTED, MFL_WATERJUMP and
 //		MFL_GRAPPLEPULL must be set outside the movement code
@@ -765,7 +763,7 @@ int BotGetReachabilityToGoal(vec3_t origin, int areanum,
 		reachnum = AAS_NextAreaReachability(areanum, reachnum))
 	{
 #ifdef AVOIDREACH
-		//check if it isn't an reachability to avoid
+		//check if it isn't a reachability to avoid
 		for (i = 0; i < MAX_AVOIDREACH; i++)
 		{
 			if (avoidreach[i] == reachnum && avoidreachtimes[i] >= AAS_Time()) break;
@@ -849,7 +847,6 @@ int BotMovementViewTarget(int movestate, bot_goal_t *goal, int travelflags, floa
 
 	ms = BotMoveStateFromHandle(movestate);
 	if (!ms) return qfalse;
-	reachnum = 0;
 	//if the bot has no goal or no last reachability
 	if (!ms->lastreachnum || !goal) return qfalse;
 
@@ -998,12 +995,13 @@ void MoverBottomCenter(aas_reachability_t *reach, vec3_t bottomcenter)
 //===========================================================================
 float BotGapDistance(vec3_t origin, vec3_t hordir, int entnum)
 {
-	float dist, startz;
+	int dist;
+	float startz;
 	vec3_t start, end;
 	aas_trace_t trace;
 
 	//do gap checking
-	startz = origin[2];
+	//startz = origin[2];
 	//this enables walking down stairs more fluidly
 	{
 		VectorCopy(origin, start);
@@ -1031,7 +1029,7 @@ float BotGapDistance(vec3_t origin, vec3_t hordir, int entnum)
 				end[2] -= 20;
 				if (AAS_PointContents(end) & CONTENTS_WATER) break;
 				//if a gap is found slow down
-				//botimport.Print(PRT_MESSAGE, "gap at %f\n", dist);
+				//botimport.Print(PRT_MESSAGE, "gap at %i\n", dist);
 				return dist;
 			} //end if
 			startz = trace.endpos[2];
@@ -1481,7 +1479,6 @@ bot_moveresult_t BotTravel_BarrierJump(bot_movestate_t *ms, aas_reachability_t *
 //===========================================================================
 bot_moveresult_t BotFinishTravel_BarrierJump(bot_movestate_t *ms, aas_reachability_t *reach)
 {
-	float dist;
 	vec3_t hordir;
 	bot_moveresult_t_cleared( result );
 
@@ -1491,7 +1488,6 @@ bot_moveresult_t BotFinishTravel_BarrierJump(bot_movestate_t *ms, aas_reachabili
 		hordir[0] = reach->end[0] - ms->origin[0];
 		hordir[1] = reach->end[1] - ms->origin[1];
 		hordir[2] = 0;
-		dist = VectorNormalize(hordir);
 		//
 		BotCheckBlocked(ms, hordir, qtrue, &result);
 		//
@@ -1568,7 +1564,6 @@ bot_moveresult_t BotTravel_WaterJump(bot_movestate_t *ms, aas_reachability_t *re
 bot_moveresult_t BotFinishTravel_WaterJump(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t dir, pnt;
-	float dist;
 	bot_moveresult_t_cleared( result );
 
 	//botimport.Print(PRT_MESSAGE, "BotFinishTravel_WaterJump\n");
@@ -1584,7 +1579,6 @@ bot_moveresult_t BotFinishTravel_WaterJump(bot_movestate_t *ms, aas_reachability
 	dir[0] += crandom() * 10;
 	dir[1] += crandom() * 10;
 	dir[2] += 70 + crandom() * 10;
-	dist = VectorNormalize(dir);
 	//elemantary actions
 	EA_Move(ms->client, dir, 400);
 	//set the ideal view angles
@@ -1722,7 +1716,6 @@ bot_moveresult_t BotFinishTravel_WalkOffLedge(bot_movestate_t *ms, aas_reachabil
 		VectorCopy(dir, hordir);
 		hordir[2] = 0;
 		//
-		dist = VectorNormalize(hordir);
 		speed = 400;
 	} //end if
 	//
@@ -1789,6 +1782,7 @@ bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
 bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t hordir, dir1, dir2, mins, maxs, start, end;
+	int gapdist;
 	float dist1, dist2, speed;
 	bot_moveresult_t_cleared( result );
 	bsp_trace_t trace;
@@ -1809,13 +1803,13 @@ bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
 	trace = AAS_Trace(start, mins, maxs, end, ms->entitynum, MASK_PLAYERSOLID);
 	if (trace.startsolid) VectorCopy(start, trace.endpos);
 	//check for a gap
-	for (dist1 = 0; dist1 < 80; dist1 += 10)
+	for (gapdist = 0; gapdist < 80; gapdist += 10)
 	{
-		VectorMA(start, dist1+10, hordir, end);
+		VectorMA(start, gapdist+10, hordir, end);
 		end[2] += 1;
 		if (AAS_PointAreaNum(end) != ms->reachareanum) break;
 	} //end for
-	if (dist1 < 80) VectorMA(reach->start, dist1, hordir, trace.endpos);
+	if (gapdist < 80) VectorMA(reach->start, gapdist, hordir, trace.endpos);
 //	dist1 = BotGapDistance(start, hordir, ms->entitynum);
 //	if (dist1 && dist1 <= trace.fraction * 80) VectorMA(reach->start, dist1-20, hordir, trace.endpos);
 	//
@@ -1861,6 +1855,7 @@ bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t hordir, dir1, dir2, start, end, runstart;
 //	vec3_t runstart, dir1, dir2, hordir;
+	int gapdist;
 	float dist1, dist2, speed;
 	bot_moveresult_t_cleared( result );
 
@@ -1876,13 +1871,13 @@ bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
 	start[2] += 1;
 	VectorMA(reach->start, 80, hordir, runstart);
 	//check for a gap
-	for (dist1 = 0; dist1 < 80; dist1 += 10)
+	for (gapdist = 0; gapdist < 80; gapdist += 10)
 	{
-		VectorMA(start, dist1+10, hordir, end);
+		VectorMA(start, gapdist+10, hordir, end);
 		end[2] += 1;
 		if (AAS_PointAreaNum(end) != ms->reachareanum) break;
 	} //end for
-	if (dist1 < 80) VectorMA(reach->start, dist1, hordir, runstart);
+	if (gapdist < 80) VectorMA(reach->start, gapdist, hordir, runstart);
 	//
 	VectorSubtract(ms->origin, reach->start, dir1);
 	dir1[2] = 0;
@@ -1992,7 +1987,7 @@ bot_moveresult_t BotTravel_Ladder(bot_movestate_t *ms, aas_reachability_t *reach
 	{
 		//botimport.Print(PRT_MESSAGE, "moving towards ladder\n");
 		VectorSubtract(reach->end, ms->origin, dir);
-		//make sure the horizontal movement is large anough
+		//make sure the horizontal movement is large enough
 		VectorCopy(dir, hordir);
 		hordir[2] = 0;
 		dist = VectorNormalize(hordir);
@@ -2868,7 +2863,6 @@ bot_moveresult_t BotFinishTravel_WeaponJump(bot_movestate_t *ms, aas_reachabilit
 //===========================================================================
 bot_moveresult_t BotTravel_JumpPad(bot_movestate_t *ms, aas_reachability_t *reach)
 {
-	float dist, speed;
 	vec3_t hordir;
 	bot_moveresult_t_cleared( result );
 
@@ -2876,12 +2870,10 @@ bot_moveresult_t BotTravel_JumpPad(bot_movestate_t *ms, aas_reachability_t *reac
 	hordir[0] = reach->start[0] - ms->origin[0];
 	hordir[1] = reach->start[1] - ms->origin[1];
 	hordir[2] = 0;
-	dist = VectorNormalize(hordir);
 	//
 	BotCheckBlocked(ms, hordir, qtrue, &result);
-	speed = 400;
 	//elemantary action move in direction
-	EA_Move(ms->client, hordir, speed);
+	EA_Move(ms->client, hordir, 400);
 	VectorCopy(hordir, result.movedir);
 	//
 	return result;

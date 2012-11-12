@@ -177,7 +177,7 @@ void PC_PushIndent(source_t *source, int type, int skip)
 {
 	indent_t *indent;
 
-	indent = GetMemory( sizeof(*indent) );
+	indent = (indent_t *) GetMemory(sizeof(indent_t));
 	indent->type = type;
 	indent->script = source->scriptstack;
 	indent->skip = (skip != 0);
@@ -264,7 +264,7 @@ token_t *PC_CopyToken(token_t *token)
 	token_t *t;
 
 //	t = (token_t *) malloc(sizeof(token_t));
-	t = (token_t *) GetMemory( sizeof(*t) );
+	t = (token_t *) GetMemory(sizeof(token_t));
 //	t = freetokens;
 	if (!t)
 	{
@@ -681,9 +681,9 @@ void PC_AddBuiltinDefines(source_t *source)
 
 	for (i = 0; builtin[i].string; i++)
 	{
-		define = (define_t *) GetMemory( sizeof(*define) );
-		Com_Memset(define, 0, sizeof(*define) );
-		define->name = (char *) GetMemory( strlen(builtin[i].string) + 1 );
+		define = (define_t *) GetMemory(sizeof(define_t));
+		Com_Memset(define, 0, sizeof(define_t));
+		define->name = (char *) GetMemory(strlen(builtin[i].string) + 1);
 		strcpy(define->name, builtin[i].string);
 		define->flags |= DEFINE_FIXED;
 		define->builtin = builtin[i].builtin;
@@ -1217,10 +1217,10 @@ int PC_Directive_define(source_t *source)
 #endif //DEFINEHASHING
 	} //end if
 	//allocate define
-	define = GetMemory( sizeof(*define) );
-	Com_Memset( define, 0, sizeof(*define) );
-	define->name = GetMemory( strlen(token.string) + 1 );
-	strcpy( define->name, token.string );
+	define = (define_t *) GetMemory(sizeof(define_t));
+	Com_Memset(define, 0, sizeof(define_t));
+	define->name = (char *) GetMemory(strlen(token.string) + 1);
+	strcpy(define->name, token.string);
 	//add the define to the source
 #if DEFINEHASHING
 	PC_AddDefineToHash(define, source->definehash);
@@ -1453,7 +1453,7 @@ define_t *PC_CopyDefine(source_t *source, define_t *define)
 	define_t *newdefine;
 	token_t *token, *newtoken, *lasttoken;
 
-	newdefine = GetMemory( sizeof(*define) );
+	newdefine = (define_t *) GetMemory(sizeof(define_t));
 	//copy the define name
 	newdefine->name = (char *) GetMemory(strlen(define->name) + 1);
 	strcpy(newdefine->name, define->name);
@@ -1666,7 +1666,7 @@ int PC_OperatorPriority(int op)
 #define MAX_OPERATORS	64
 #define AllocValue(val)									\
 	if (numvalues >= MAX_VALUES) {						\
-		SourceError(source, "out of value space\n");		\
+		SourceError(source, "out of value space");		\
 		error = 1;										\
 		break;											\
 	}													\
@@ -1698,7 +1698,6 @@ int PC_EvaluateTokens(source_t *source, token_t *tokens, signed long int *intval
 	int questmarkintvalue = 0;
 	float questmarkfloatvalue = 0;
 	int gotquestmarkvalue = qfalse;
-	int lastoperatortype = 0;
 	//
 	operator_t operator_heap[MAX_OPERATORS];
 	int numoperators = 0;
@@ -2087,7 +2086,6 @@ int PC_EvaluateTokens(source_t *source, token_t *tokens, signed long int *intval
 		else Log_Write("result value = %f", v1->floatvalue);
 #endif //DEBUG_EVAL
 		if (error) break;
-		lastoperatortype = o->operator;
 		//if not an operator with arity 1
 		if (o->operator != P_LOGIC_NOT
 				&& o->operator != P_BIN_NOT)
@@ -2752,7 +2750,7 @@ int PC_ReadToken(source_t *source, token_t *token)
 					token->string[strlen(token->string)-1] = '\0';
 					if (strlen(token->string) + strlen(newtoken.string+1) + 1 >= MAX_TOKEN)
 					{
-						SourceError(source, "string longer than MAX_TOKEN %d\n", MAX_TOKEN);
+						SourceError(source, "string longer than MAX_TOKEN %d", MAX_TOKEN);
 						return qfalse;
 					}
 					strcat(token->string, newtoken.string+1);

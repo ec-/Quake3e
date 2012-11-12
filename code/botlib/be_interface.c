@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 /*****************************************************************************
- * name:		be_interface.c // bk010221 - FIXME - DEAD code elimination
+ * name:		be_interface.c
  *
  * desc:		bot library interface
  *
@@ -138,30 +138,33 @@ int Export_BotLibSetup(void)
 	int		errnum;
 	
 	botDeveloper = LibVarGetValue("bot_developer");
-  memset( &botlibglobals, 0, sizeof(botlibglobals) ); // bk001207 - init
+ 	memset( &botlibglobals, 0, sizeof(botlibglobals) );
 	//initialize byte swapping (litte endian etc.)
-	//Swap_Init();
+//	Swap_Init();
 
- 	if(botDeveloper)
- 	{
- 		char *homedir, *gamedir;
- 		char logfilename[MAX_OSPATH];
- 
-	homedir = LibVarGetString("homedir");
-	gamedir = LibVarGetString("gamedir");
- 
- 		if (*homedir)
- 		{
- 			if(*gamedir)
-			Com_sprintf(logfilename, sizeof(logfilename), "%s%c%s%cbotlib.log", homedir, PATH_SEP, gamedir, PATH_SEP);
- 			else
-			Com_sprintf(logfilename, sizeof(logfilename), "%s%c" BASEGAME "%cbotlib.log", homedir, PATH_SEP, PATH_SEP);
+	if(botDeveloper)
+	{
+		char *homedir, *gamedir, *basedir;
+		char logfilename[MAX_OSPATH];
+
+		homedir = LibVarGetString("homedir");
+		gamedir = LibVarGetString("gamedir");
+		basedir = LibVarGetString("com_basegame");
+
+		if (*homedir)
+		{
+			if(*gamedir)
+				Com_sprintf(logfilename, sizeof(logfilename), "%s%c%s%cbotlib.log", homedir, PATH_SEP, gamedir, PATH_SEP);
+			else if(*basedir)
+				Com_sprintf(logfilename, sizeof(logfilename), "%s%c%s%cbotlib.log", homedir, PATH_SEP, basedir, PATH_SEP);
+			else
+				Com_sprintf(logfilename, sizeof(logfilename), "%s%c" BASEGAME "%cbotlib.log", homedir, PATH_SEP, PATH_SEP);
 		}
- 		else
-		Com_sprintf(logfilename, sizeof(logfilename), "botlib.log");
-
-	Log_Open(logfilename);
-  	}
+		else
+			Com_sprintf(logfilename, sizeof(logfilename), "botlib.log");
+	
+		Log_Open(logfilename);
+	}
 
 	botimport.Print(PRT_MESSAGE, "------- BotLib Initialization -------\n");
 
@@ -562,7 +565,7 @@ int BotExportTest(int parm0, char *parm1, vec3_t parm2, vec3_t parm3)
 			reachnum = BotGetReachabilityToGoal(curorigin, curarea,
 										  lastgoalareanum, lastareanum,
 										  avoidreach, avoidreachtimes, avoidreachtries,
-										  &goal, TFL_DEFAULT|TFL_FUNCBOB|TFL_ROCKETJUMP,
+										  &goal, TFL_DEFAULT|TFL_FUNCBOB|TFL_ROCKETJUMP, TFL_DEFAULT|TFL_FUNCBOB|TFL_ROCKETJUMP,
 										  NULL, 0, &resultFlags);
 			AAS_ReachabilityFromNum(reachnum, &reach);
 			AAS_ShowReachability(&reach);
@@ -866,9 +869,9 @@ GetBotLibAPI
 ============
 */
 botlib_export_t *GetBotLibAPI(int apiVersion, botlib_import_t *import) {
-	assert(import);   // bk001129 - this wasn't set for baseq3/
-  botimport = *import;
-  assert(botimport.Print);   // bk001129 - pars pro toto
+	assert(import);
+	botimport = *import;
+	assert(botimport.Print);
 
 	Com_Memset( &be_botlib_export, 0, sizeof( be_botlib_export ) );
 

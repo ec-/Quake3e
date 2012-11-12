@@ -990,7 +990,7 @@ int PS_ExpectTokenType(script_t *script, int type, int subtype, token_t *token)
 		if (token->subtype != subtype)
 		{
 			ScriptError(script, "expected %s, found %s",
-							script->punctuations[subtype], token->string);
+							script->punctuations[subtype].p, token->string);
 			return 0;
 		} //end if
 	} //end else if
@@ -1158,7 +1158,7 @@ float ReadSignedFloat(script_t *script)
 	{
 		if(!PS_ExpectAnyToken(script, &token))
 		{
-			ScriptError(script, "Missing float value\n", token.string);
+			ScriptError(script, "Missing float value");
 			return 0;
 		}
 
@@ -1167,7 +1167,7 @@ float ReadSignedFloat(script_t *script)
 	
 	if (token.type != TT_NUMBER)
 	{
-		ScriptError(script, "expected float value, found %s\n", token.string);
+		ScriptError(script, "expected float value, found %s", token.string);
 		return 0;
 	}
 
@@ -1189,7 +1189,7 @@ signed long int ReadSignedInt(script_t *script)
 	{
 		if(!PS_ExpectAnyToken(script, &token))
 		{
-			ScriptError(script, "Missing integer value\n", token.string);
+			ScriptError(script, "Missing integer value");
 			return 0;
 		}
 
@@ -1198,7 +1198,7 @@ signed long int ReadSignedInt(script_t *script)
 
 	if (token.type != TT_NUMBER || token.subtype == TT_FLOAT)
 	{
-		ScriptError(script, "expected integer value, found %s\n", token.string);
+		ScriptError(script, "expected integer value, found %s", token.string);
 		return 0;
 	}
 	

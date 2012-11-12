@@ -698,7 +698,7 @@ bot_synonymlist_t *BotLoadSynonyms(char *filename)
 						StripDoubleQuotes(token.string);
 						if (strlen(token.string) <= 0)
 						{
-							SourceError(source, "empty string", token.string);
+							SourceError(source, "empty string");
 							FreeSource(source);
 							return NULL;
 						} //end if
@@ -739,7 +739,7 @@ bot_synonymlist_t *BotLoadSynonyms(char *filename)
 					} //end while
 					if (numsynonyms < 2)
 					{
-						SourceError(source, "synonym must have at least two entries\n");
+						SourceError(source, "synonym must have at least two entries");
 						FreeSource(source);
 						return NULL;
 					} //end if
@@ -844,7 +844,6 @@ void BotReplaceReplySynonyms(char *string, unsigned long int context)
 			if (!(syn->context & context)) continue;
 			for (synonym = syn->firstsynonym->next; synonym; synonym = synonym->next)
 			{
-				str2 = synonym->string;
 				//if the synonym is not at the front of the string continue
 				str2 = StringContainsWord(str1, synonym->string, qfalse);
 				if (!str2 || str2 != str1) continue;
@@ -892,7 +891,7 @@ int BotLoadChatMessage(source_t *source, char *chatmessagestring)
 			StripDoubleQuotes(token.string);
 			if (strlen(ptr) + strlen(token.string) + 1 > MAX_MESSAGE_SIZE)
 			{
-				SourceError(source, "chat message too long\n");
+				SourceError(source, "chat message too long");
 				return qfalse;
 			} //end if
 			strcat(ptr, token.string);
@@ -902,7 +901,7 @@ int BotLoadChatMessage(source_t *source, char *chatmessagestring)
 		{
 			if (strlen(ptr) + 7 > MAX_MESSAGE_SIZE)
 			{
-				SourceError(source, "chat message too long\n");
+				SourceError(source, "chat message too long");
 				return qfalse;
 			} //end if
 			sprintf(&ptr[strlen(ptr)], "%cv%ld%c", ESCAPE_CHAR, token.intvalue, ESCAPE_CHAR);
@@ -912,14 +911,14 @@ int BotLoadChatMessage(source_t *source, char *chatmessagestring)
 		{
 			if (strlen(ptr) + 7 > MAX_MESSAGE_SIZE)
 			{
-				SourceError(source, "chat message too long\n");
+				SourceError(source, "chat message too long");
 				return qfalse;
 			} //end if
 			sprintf(&ptr[strlen(ptr)], "%cr%s%c", ESCAPE_CHAR, token.string, ESCAPE_CHAR);
 		} //end else if
 		else
 		{
-			SourceError(source, "unknown message component %s\n", token.string);
+			SourceError(source, "unknown message component %s", token.string);
 			return qfalse;
 		} //end else
 		if (PC_CheckTokenString(source, ";")) break;
@@ -1174,16 +1173,16 @@ bot_matchpiece_t *BotLoadMatchPieces(source_t *source, char *endtoken)
 	{
 		if (token.type == TT_NUMBER && (token.subtype & TT_INTEGER))
 		{
-			if (token.intvalue < 0 || token.intvalue >= MAX_MATCHVARIABLES)
+			if (token.intvalue >= MAX_MATCHVARIABLES)
 			{
-				SourceError(source, "can't have more than %d match variables\n", MAX_MATCHVARIABLES);
+				SourceError(source, "can't have more than %d match variables", MAX_MATCHVARIABLES);
 				FreeSource(source);
 				BotFreeMatchPieces(firstpiece);
 				return NULL;
 			} //end if
 			if (lastwasvariable)
 			{
-				SourceError(source, "not allowed to have adjacent variables\n");
+				SourceError(source, "not allowed to have adjacent variables");
 				FreeSource(source);
 				BotFreeMatchPieces(firstpiece);
 				return NULL;
@@ -1239,7 +1238,7 @@ bot_matchpiece_t *BotLoadMatchPieces(source_t *source, char *endtoken)
 		} //end if
 		else
 		{
-			SourceError(source, "invalid token %s\n", token.string);
+			SourceError(source, "invalid token %s", token.string);
 			FreeSource(source);
 			BotFreeMatchPieces(firstpiece);
 			return NULL;
@@ -1299,7 +1298,7 @@ bot_matchtemplate_t *BotLoadMatchTemplates(char *matchfile)
 	{
 		if (token.type != TT_NUMBER || !(token.subtype & TT_INTEGER))
 		{
-			SourceError(source, "expected integer, found %s\n", token.string);
+			SourceError(source, "expected integer, found %s", token.string);
 			BotFreeMatchTemplates(matches);
 			FreeSource(source);
 			return NULL;
@@ -1439,7 +1438,7 @@ int StringsMatch(bot_matchpiece_t *pieces, bot_match_t *match)
 		//if the last piece was a variable string
 		if (lastvariable >= 0)
 		{
-        		assert( match->variables[lastvariable].offset >= 0 ); // bk001204
+        		assert( match->variables[lastvariable].offset >= 0 );
 			match->variables[lastvariable].length =
 				strlen(&match->string[ (int) match->variables[lastvariable].offset]);
 		} //end if
@@ -1500,7 +1499,7 @@ void BotMatchVariable(bot_match_t *match, int variable, char *buf, int size)
 	{
 		if (match->variables[variable].length < size)
 			size = match->variables[variable].length+1;
-		assert( match->variables[variable].offset >= 0 ); // bk001204
+		assert( match->variables[variable].offset >= 0 );
 		strncpy(buf, &match->string[ (int) match->variables[variable].offset], size-1);
 		buf[size-1] = '\0';
 	} //end if
@@ -2081,7 +2080,7 @@ bot_chat_t *BotLoadInitialChat(char *chatfile, char *chatname)
 					return NULL;
 				} //end if
 				StripDoubleQuotes(token.string);
-				//after the chat name we expect a opening brace
+				//after the chat name we expect an opening brace
 				if (!PC_ExpectTokenString(source, "{"))
 				{
 					FreeSource(source);
@@ -2102,7 +2101,7 @@ bot_chat_t *BotLoadInitialChat(char *chatfile, char *chatname)
 						if (!strcmp(token.string, "}")) break;
 						if (strcmp(token.string, "type"))
 						{
-							SourceError(source, "expected type found %s\n", token.string);
+							SourceError(source, "expected type found %s", token.string);
 							FreeSource(source);
 							return NULL;
 						} //end if
@@ -2173,7 +2172,7 @@ bot_chat_t *BotLoadInitialChat(char *chatfile, char *chatname)
 			} //end if
 			else
 			{
-				SourceError(source, "unknown definition %s\n", token.string);
+				SourceError(source, "unknown definition %s", token.string);
 				FreeSource(source);
 				return NULL;
 			} //end else
@@ -2316,7 +2315,7 @@ int BotExpandChatMessage(char *outmessage, char *message, unsigned long mcontext
 					} //end if
 					if (match->variables[num].offset >= 0)
 					{
-					        assert( match->variables[num].offset >= 0 ); // bk001204
+					        assert( match->variables[num].offset >= 0 );
 						ptr = &match->string[ (int) match->variables[num].offset];
 						for (i = 0; i < match->variables[num].length; i++)
 						{
@@ -2939,7 +2938,6 @@ int BotAllocChatState(void)
 //========================================================================
 void BotFreeChatState(int handle)
 {
-	bot_chatstate_t *cs;
 	bot_consolemessage_t m;
 	int h;
 
@@ -2953,7 +2951,6 @@ void BotFreeChatState(int handle)
 		botimport.Print(PRT_FATAL, "invalid chat state %d\n", handle);
 		return;
 	} //end if
-	cs = botchatstates[handle];
 	if (LibVarGetValue("bot_reloadcharacters"))
 	{
 		BotFreeChatFile(handle);

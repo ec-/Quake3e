@@ -102,7 +102,7 @@ struct weaponinfo_s;
 #define ACTION_FOLLOWME			0x08000000
 #define ACTION_JUMPEDLASTFRAME		0x10000000
 
-//the bot input, will be converted to an usercmd_t
+//the bot input, will be converted to a usercmd_t
 typedef struct bot_input_s
 {
 	float thinktime;		//time since last output (in seconds)
@@ -170,7 +170,7 @@ typedef struct bot_entitystate_s
 typedef struct botlib_import_s
 {
 	//print messages from the bot library
-	void		(QDECL *Print)(int type, char *fmt, ...);
+	void		(QDECL *Print)(int type, char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 	//trace a bbox through the world
 	void		(*Trace)(bsp_trace_t *trace, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, int passent, int contentmask);
 	//trace a bbox against a specific entity
