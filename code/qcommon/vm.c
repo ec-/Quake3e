@@ -36,8 +36,8 @@ and one exported function: Perform
 #include "vm_local.h"
 
 
-vm_t	*currentVM = NULL; // bk001212
-vm_t	*lastVM    = NULL; // bk001212
+vm_t	*currentVM = NULL;
+vm_t	*lastVM    = NULL;
 int		vm_debugLevel;
 
 // used by Com_Error to get rid of running vm's before longjmp
@@ -217,7 +217,11 @@ VM_LoadSymbols
 ===============
 */
 void VM_LoadSymbols( vm_t *vm ) {
-	char	*mapfile, *text_p, *token;
+	union {
+		char	*c;
+		void	*v;
+	} mapfile;
+	char *text_p, *token;
 	char	name[MAX_QPATH];
 	char	symbols[MAX_QPATH];
 	vmSymbol_t	**prev, *sym;
@@ -234,8 +238,8 @@ void VM_LoadSymbols( vm_t *vm ) {
 
 	COM_StripExtension(vm->name, name, sizeof(name));
 	Com_sprintf( symbols, sizeof( symbols ), "vm/%s.map", name );
-	FS_ReadFile( symbols, (void **)&mapfile );
-	if ( !mapfile ) {
+	FS_ReadFile( symbols, &mapfile.v );
+	if ( !mapfile.c ) {
 		Com_Printf( "Couldn't load symbol file: %s\n", symbols );
 		return;
 	}
@@ -243,7 +247,7 @@ void VM_LoadSymbols( vm_t *vm ) {
 	numInstructions = vm->instructionCount;
 
 	// parse the symbols
-	text_p = mapfile;
+	text_p = mapfile.c;
 	prev = &vm->symbols;
 	count = 0;
 
@@ -290,7 +294,7 @@ void VM_LoadSymbols( vm_t *vm ) {
 
 	vm->numSymbols = count;
 	Com_Printf( "%i symbols parsed from %s\n", count, symbols );
-	FS_FreeFile( mapfile );
+	FS_FreeFile( mapfile.v );
 }
 
 /*
@@ -332,7 +336,7 @@ Dlls will call this directly
 ============
 */
 intptr_t QDECL VM_DllSyscall( intptr_t arg, ... ) {
-#if !id386
+#if !id386 || defined __clang__
   // rcg010206 - see commentary above
   intptr_t args[16];
   int i;
@@ -341,7 +345,7 @@ intptr_t QDECL VM_DllSyscall( intptr_t arg, ... ) {
   args[0] = arg;
   
   va_start(ap, arg);
-  for (i = 1; i < sizeof (args) / sizeof (args[i]); i++)
+  for (i = 1; i < ARRAY_LEN (args); i++)
     args[i] = va_arg(ap, intptr_t);
   va_end(ap);
   
@@ -776,7 +780,7 @@ vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *),
 
 	// allocate space for the jump targets, which will be filled in by the compile/prep functions
 	vm->instructionCount = header->instructionCount;
-	vm->instructionPointers = Hunk_Alloc( vm->instructionCount*sizeof(intptr_t), h_high );
+	vm->instructionPointers = Hunk_Alloc(vm->instructionCount * sizeof(*vm->instructionPointers), h_high);
 
 	// copy or compile the instructions
 	vm->codeLength = header->codeLength;
@@ -882,7 +886,7 @@ void *VM_ArgPtr( intptr_t intValue ) {
 	if ( !intValue ) {
 		return NULL;
 	}
-	// bk001220 - currentVM is missing on reconnect
+	// currentVM is missing on reconnect
 	if ( currentVM==NULL )
 	  return NULL;
 
@@ -899,7 +903,7 @@ void *VM_ExplicitArgPtr( vm_t *vm, intptr_t intValue ) {
 		return NULL;
 	}
 
-	// bk010124 - currentVM is missing on reconnect here as well?
+	// currentVM is missing on reconnect here as well?
 	if ( currentVM==NULL )
 	  return NULL;
 
@@ -936,7 +940,9 @@ an OP_ENTER instruction, which will subtract space for
 locals from sp
 ==============
 */
-intptr_t	QDECL VM_Call( vm_t *vm, int callnum, ... ) {
+
+intptr_t QDECL VM_Call( vm_t *vm, int callnum, ... )
+{
 	vm_t	*oldVM;
 	intptr_t r;
 	int i;
@@ -999,7 +1005,7 @@ intptr_t	QDECL VM_Call( vm_t *vm, int callnum, ... ) {
 	}
 	--vm->callLevel;
 
-	if ( oldVM != NULL ) // bk001220 - assert(currentVM!=NULL) for oldVM==NULL
+	if ( oldVM != NULL )
 	  currentVM = oldVM;
 	return r;
 }

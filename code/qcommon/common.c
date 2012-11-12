@@ -1512,7 +1512,6 @@ Com_InitZoneMemory
 */
 void Com_InitSmallZoneMemory( void ) {
 	s_smallZoneTotal = 512 * 1024;
-	// bk001205 - was malloc
 	smallzone = calloc( s_smallZoneTotal, 1 );
 	if ( !smallzone ) {
 		Com_Error( ERR_FATAL, "Small zone data failed to allocate %1.1f megs", (float)s_smallZoneTotal / (1024*1024) );
@@ -1540,7 +1539,6 @@ void Com_InitZoneMemory( void ) {
 		s_zoneTotal = cv->integer * 1024 * 1024;
 	}
 
-	// bk001205 - was malloc
 	mainzone = calloc( s_zoneTotal, 1 );
 	if ( !mainzone ) {
 		Com_Error( ERR_FATAL, "Zone data failed to allocate %i megs", s_zoneTotal / (1024*1024) );
@@ -1665,8 +1663,6 @@ void Com_InitHunkMemory( void ) {
 		s_hunkTotal = cv->integer * 1024 * 1024;
 	}
 
-
-	// bk001205 - was malloc
 	s_hunkData = calloc( s_hunkTotal + 31, 1 );
 	if ( !s_hunkData ) {
 		Com_Error( ERR_FATAL, "Hunk data failed to allocate %i megs", s_hunkTotal / (1024*1024) );
@@ -1835,8 +1831,11 @@ void *Hunk_Alloc( int size, ha_pref preference ) {
 #ifdef HUNK_DEBUG
 		Hunk_Log();
 		Hunk_SmallLog();
+
+		Com_Error(ERR_DROP, "Hunk_Alloc failed on %i: %s, line: %d (%s)", size, file, line, label);
+#else
+		Com_Error(ERR_DROP, "Hunk_Alloc failed on %i", size);
 #endif
-		Com_Error( ERR_DROP, "Hunk_Alloc failed on %i", size );
 	}
 
 	if ( hunk_permanent == &hunk_low ) {
@@ -1981,46 +1980,6 @@ void Hunk_ClearTempMemory( void ) {
 }
 
 /*
-=================
-Hunk_Trash
-=================
-*/
-void Hunk_Trash( void ) {
-	int length, i, rnd;
-	char *buf, value;
-
-	return;
-
-	if ( s_hunkData == NULL )
-		return;
-
-#ifdef _DEBUG
-	Com_Error(ERR_DROP, "hunk trashed");
-	return;
-#endif
-
-	Cvar_Set("com_jp", "1");
-	Hunk_SwapBanks();
-
-	if ( hunk_permanent == &hunk_low ) {
-		buf = (void *)(s_hunkData + hunk_permanent->permanent);
-	} else {
-		buf = (void *)(s_hunkData + s_hunkTotal - hunk_permanent->permanent );
-	}
-	length = hunk_permanent->permanent;
-
-	if (length > 0x7FFFF) {
-		//randomly trash data within buf
-		rnd = random() * (length - 0x7FFFF);
-		value = 31;
-		for (i = 0; i < 0x7FFFF; i++) {
-			value *= 109;
-			buf[rnd+i] ^= value;
-		}
-	}
-}
-
-/*
 ===================================================================
 
 EVENTS AND JOURNALING
@@ -2030,14 +1989,9 @@ journaled file
 ===================================================================
 */
 
-// bk001129 - here we go again: upped from 64
-// FIXME TTimo blunt upping from 256 to 1024
-// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=5
 #define	MAX_PUSHED_EVENTS	            1024
-// bk001129 - init, also static
 static int com_pushedEventsHead = 0;
 static int com_pushedEventsTail = 0;
-// bk001129 - static
 static sysEvent_t	com_pushedEvents[MAX_PUSHED_EVENTS];
 
 /*
@@ -2125,7 +2079,6 @@ sysEvent_t	Com_GetRealEvent( void ) {
 Com_InitPushEvent
 =================
 */
-// bk001129 - added
 void Com_InitPushEvent( void ) {
   // clear the static buffer array
   // this requires SE_NONE to be accepted as a valid but NOP event
@@ -2144,7 +2097,7 @@ Com_PushEvent
 */
 void Com_PushEvent( sysEvent_t *event ) {
 	sysEvent_t		*ev;
-	static int printedWarning = 0; // bk001129 - init, bk001204 - explicit int
+	static int printedWarning = 0;
 
 	ev = &com_pushedEvents[ com_pushedEventsHead & (MAX_PUSHED_EVENTS-1) ];
 
@@ -3304,34 +3257,6 @@ void Com_Shutdown (void) {
 
 //------------------------------------------------------------------------
 
-
-/*
-=====================
-Q_acos
-
-the msvc acos doesn't always return a value between -PI and PI:
-
-int i;
-i = 1065353246;
-acos(*(float*) &i) == -1.#IND0
-
-	This should go in q_math but it is too late to add new traps
-	to game and ui
-=====================
-*/
-float Q_acos(float c) {
-	float angle;
-
-	angle = acos(c);
-
-	if (angle > M_PI) {
-		return (float)M_PI;
-	}
-	if (angle < -M_PI) {
-		return (float)M_PI;
-	}
-	return angle;
-}
 
 /*
 ===========================================

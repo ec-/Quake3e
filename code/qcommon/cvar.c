@@ -33,9 +33,7 @@ cvar_t		cvar_indexes[MAX_CVARS];
 int			cvar_numIndexes;
 
 #define FILE_HASH_SIZE		256
-static	cvar_t*		hashTable[FILE_HASH_SIZE];
-
-cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force);
+static	cvar_t	*hashTable[FILE_HASH_SIZE];
 
 /*
 ================
@@ -46,7 +44,7 @@ static long generateHashValue( const char *fname ) {
 	int		i;
 	long	hash;
 	char	letter;
-	
+
 	hash = 0;
 	i = 0;
 	while (fname[i] != '\0') {

@@ -386,6 +386,17 @@ int MSG_ReadByte( msg_t *msg ) {
 	return c;
 }
 
+int MSG_LookaheadByte( msg_t *msg ) {
+	const int bloc = Huff_getBloc();
+	const int readcount = msg->readcount;
+	const int bit = msg->bit;
+	int c = MSG_ReadByte(msg);
+	Huff_setBloc(bloc);
+	msg->readcount = readcount;
+	msg->bit = bit;
+	return c;
+}
+
 int MSG_ReadShort( msg_t *msg ) {
 	int	c;
 	
@@ -812,7 +823,7 @@ void MSG_ReportChangeVectors_f( void ) {
 
 typedef struct {
 	char	*name;
-	size_t	offset;
+	int		offset;
 	int		bits;		// 0 = float
 } netField_t;
 
