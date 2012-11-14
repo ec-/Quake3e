@@ -2624,11 +2624,26 @@ out:
 */
 
 #if defined _MSC_VER
+
 static void CPUID( int func, unsigned int *regs )
 {
+#if _MSC_VER >= 1400
 	__cpuid( regs, func );
-}
 #else
+	__asm {
+		mov edi,regs
+		mov eax,[edi]
+		cpuid
+		mov [edi], eax
+		mov [edi+4], ebx
+		mov [edi+8], ecx
+		mov [edi+12], edx
+	}
+#endif
+}
+
+#else
+
 static void CPUID( int func, unsigned int *regs )
 {
 	__asm__ __volatile__( "cpuid" :
