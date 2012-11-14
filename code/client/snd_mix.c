@@ -32,28 +32,21 @@ int*     snd_p;
 int      snd_linear_count;
 short*   snd_out;
 
-void S_WriteLinearBlastStereo16 (void)
+void S_WriteLinearBlastStereo16( void )
 {
 	int		i;
 	int		val;
-
-	for (i=0 ; i<snd_linear_count ; i+=2)
+	int		*src = snd_p;
+	short	*dst = snd_out;
+	for ( i = 0; i < snd_linear_count; i++, src++, dst++ )
 	{
-		val = snd_p[i]>>8;
-		if (val > 0x7fff)
-			snd_out[i] = 0x7fff;
-		else if (val < -32768)
-			snd_out[i] = -32768;
+		val = *src>>8;
+		if ( val > 32767 )
+			*dst = 32767;
+		else if ( val < -32768 )
+			*dst = -32768;
 		else
-			snd_out[i] = val;
-
-		val = snd_p[i+1]>>8;
-		if (val > 0x7fff)
-			snd_out[i+1] = 0x7fff;
-		else if (val < -32768)
-			snd_out[i+1] = -32768;
-		else
-			snd_out[i+1] = val;
+			*dst = val;
 	}
 }
 
@@ -73,13 +66,16 @@ __asm {
 	mov esi,snd_p
 	mov edi,snd_out
 	mov ebx,snd_linear_count
-	mov eax,esi
-	and eax,63
+	test ebx,ebx
+	jz	LExit
+	mov ecx,esi
+	and ecx,63
 	jz LMain
-	shr eax,2
-	jc LTail
-	mov ecx,16
-	sub ecx,eax
+	and ecx,3
+	jnz LTail
+	shr ecx,2
+	not ecx		
+	add ecx,17
 LClamp1:
 	mov eax,[esi]
 	sar eax,8
@@ -100,11 +96,10 @@ LClampDone1:
 	dec ecx
 	jnz	LClamp1
 LMain:
-    mov ecx,ebx
-    shr ecx,4
-    test ecx,ecx
+	mov ecx,ebx
+	shr ecx,4
 	jz  LTail
-	and ebx, 15
+	and ebx,15
 LAgain:
 	movq mm0, qword ptr [esi+ 0]
 	movq mm1, qword ptr [esi+ 8]
@@ -145,6 +140,7 @@ LClamp2:
 	cmp eax,-32768
 	jnl LClampDone2
 	mov eax,-32768
+	jmp LClampDone2
 LClampHigh2:
 	mov eax,32767
 LClampDone2:
@@ -162,6 +158,7 @@ LExit:
 } // __asm
 }
 
+
 void S_WriteLinearBlastStereo16_SSE( void ) 
 {
 __asm {
@@ -171,13 +168,16 @@ __asm {
 	mov esi,snd_p
 	mov edi,snd_out
 	mov ebx,snd_linear_count
-	mov eax,esi
-	and eax,63
+	test ebx,ebx
+	jz	LExit
+	mov ecx,esi
+	and ecx,63
 	jz LMain
-	shr eax,2
-	jc LTail
-	mov ecx,16
-	sub ecx,eax
+	and ecx,3
+	jnz LTail
+	shr ecx,2
+	not ecx		
+	add ecx,17
 LClamp1:
 	mov eax,[esi]
 	sar eax,8
@@ -190,7 +190,7 @@ LClamp1:
 LClampHigh1:
 	mov eax,32767
 LClampDone1:
-	mov [edi], ax
+	mov [edi],ax
 	add esi,4
 	add edi,2
 	dec ebx
@@ -200,9 +200,8 @@ LClampDone1:
 LMain:
 	mov ecx,ebx
 	shr ecx,4
-	test ecx,ecx
 	jz  LTail
-	and ebx, 15
+	and ebx,15
 LAgain:
 	movq mm0, qword ptr [esi+ 0]
 	movq mm1, qword ptr [esi+ 8]
@@ -263,7 +262,6 @@ LExit:
 }
 
 
-
 #endif // _WIN32
 
 #endif // id386
@@ -290,16 +288,15 @@ void S_TransferStereo16( unsigned long *pbuf, int endtime )
 		snd_linear_count <<= 1;
 
 		// write a linear blast of samples
-#if 0 && id386
+#if id386
 		if ( CPU_Flags & CPU_SSE )
 			S_WriteLinearBlastStereo16_SSE();
-		else 
+		else
 		if ( CPU_Flags & CPU_MMX )
 			S_WriteLinearBlastStereo16_MMX();
-		else
+		else 
 #endif
-		S_WriteLinearBlastStereo16 ();
-
+		S_WriteLinearBlastStereo16();
 		snd_p += snd_linear_count;
 		ls_paintedtime += (snd_linear_count>>1);
 

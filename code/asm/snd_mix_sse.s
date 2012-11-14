@@ -16,13 +16,16 @@ C(S_WriteLinearBlastStereo16_SSE):
 	mov esi,snd_p
 	mov edi,snd_out
 	mov ebx,snd_linear_count
-	mov eax,esi
-	and eax,63
+	test ebx,ebx
+	jz	LExit
+	mov ecx,esi
+	and ecx,63
 	jz LMain
-	shr eax,2
-	jc LTail
-	mov ecx,16
-	sub ecx,eax
+	and ecx,3
+	jnz LTail
+	shr ecx,2
+	not ecx		
+	add ecx,17
 LClamp1:
 	mov eax,[esi]
 	sar eax,8
@@ -35,7 +38,7 @@ LClamp1:
 LClampHigh1:
 	mov eax,32767
 LClampDone1:
-	mov [edi], ax
+	mov [edi],ax
 	add esi,4
 	add edi,2
 	dec ebx
@@ -45,9 +48,8 @@ LClampDone1:
 LMain:
 	mov ecx,ebx
 	shr ecx,4
-	test ecx,ecx
 	jz  LTail
-	and ebx, 15
+	and ebx,15
 LAgain:
 	movq mm0, qword ptr [esi+ 0]
 	movq mm1, qword ptr [esi+ 8]
