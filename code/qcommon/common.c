@@ -2661,7 +2661,7 @@ int Sys_GetProcessorId( char *vendor )
 
 	// setup initial features
 #if idx64
-	CPU_Flags |= CPU_SSE | CPU_FCOM;
+	CPU_Flags |= CPU_SSE | CPU_SSE2 | CPU_FCOM;
 #else
 	CPU_Flags = 0;
 #endif
@@ -2712,9 +2712,9 @@ int Sys_GetProcessorId( char *vendor )
 				strcat( vendor, "MMX " );
 			if ( CPU_Flags & CPU_SSE )
 				strcat( vendor, "SSE " );
-#endif
 			if ( CPU_Flags & CPU_SSE2 )
 				strcat( vendor, "SSE2 " );
+#endif
 			if ( CPU_Flags & CPU_SSE3 )
 				strcat( vendor, "SSE3 " );
 		}
