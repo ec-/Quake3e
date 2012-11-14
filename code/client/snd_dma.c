@@ -1162,7 +1162,7 @@ void S_Base_Update( void ) {
 	S_Update_();
 }
 
-void S_GetSoundtime(void)
+void S_GetSoundtime( void )
 {
 	int		samplepos;
 	static	int		buffers;
@@ -1171,13 +1171,12 @@ void S_GetSoundtime(void)
 	
 	fullsamples = dma.samples / dma.channels;
 
-#ifdef USE_VIDEO
 	if( CL_VideoRecording( ) )
 	{
 		s_soundtime += (int)ceil( dma.speed / cl_aviFrameRate->value );
 		return;
 	}
-#endif
+
 	// it is possible to miscount buffers if it has wrapped twice between
 	// calls to S_Update.  Oh well.
 	samplepos = SNDDMA_GetDMAPos();

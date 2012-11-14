@@ -402,7 +402,7 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 	backEnd.pc.msec = 0;
 }
 
-#ifdef USE_VIDEO
+
 /*
 =============
 RE_TakeVideoFrame
@@ -430,4 +430,3 @@ void RE_TakeVideoFrame( int width, int height,
 	cmd->encodeBuffer = encodeBuffer;
 	cmd->motionJpeg = motionJpeg;
 }
-#endif

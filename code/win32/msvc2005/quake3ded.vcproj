@@ -14,11 +14,6 @@
 			Name="x64"
 		/>
 	</Platforms>
-	<ToolFiles>
-		<DefaultToolFile
-			FileName="masm.rules"
-		/>
-	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
@@ -28,9 +23,6 @@
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
-			<Tool
-				Name="MASM"
-			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
@@ -73,9 +65,6 @@
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
-			<Tool
-				Name="MASM"
-			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
@@ -120,9 +109,6 @@
 			WholeProgramOptimization="0"
 			>
 			<Tool
-				Name="MASM"
-			/>
-			<Tool
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="WIN32;_WIN32;DEDICATED;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE"
 				AssemblerListingLocation="$(IntDir)\"
@@ -155,9 +141,6 @@
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			WholeProgramOptimization="0"
 			>
-			<Tool
-				Name="MASM"
-			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="WIN32;_WIN32;DEDICATED;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE"

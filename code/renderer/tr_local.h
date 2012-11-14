@@ -1257,9 +1257,8 @@ skin_t	*R_GetSkinByHandle( qhandle_t hSkin );
 
 int R_ComputeLOD( trRefEntity_t *ent );
 
-#ifdef USE_VIDEO
 const void *RB_TakeVideoFrameCmd( const void *data );
-#endif
+
 
 //
 // tr_shader.c
@@ -1631,7 +1630,7 @@ typedef struct {
 	qboolean jpeg;
 } screenshotCommand_t;
 
-#ifdef USE_VIDEO
+
 typedef struct {
 	int						commandId;
 	int						width;
@@ -1640,7 +1639,7 @@ typedef struct {
 	byte					*encodeBuffer;
 	qboolean			motionJpeg;
 } videoFrameCommand_t;
-#endif
+
 
 typedef enum {
 	RC_END_OF_LIST,
@@ -1649,10 +1648,8 @@ typedef enum {
 	RC_DRAW_SURFS,
 	RC_DRAW_BUFFER,
 	RC_SWAP_BUFFERS,
-	RC_SCREENSHOT
-#ifdef USE_VIDEO
-	,RC_VIDEOFRAME
-#endif
+	RC_SCREENSHOT,
+	RC_VIDEOFRAME
 } renderCommand_t;
 
 

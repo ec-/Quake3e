@@ -1087,11 +1087,9 @@ void RB_ExecuteRenderCommands( const void *data ) {
 		case RC_SCREENSHOT:
 			data = RB_TakeScreenshotCmd( data );
 			break;
-#ifdef USE_VIDEO
 		case RC_VIDEOFRAME:
 			data = RB_TakeVideoFrameCmd( data );
 			break;
-#endif
 
 		case RC_END_OF_LIST:
 		default:

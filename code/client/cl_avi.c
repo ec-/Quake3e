@@ -1,4 +1,3 @@
-#ifdef USE_VIDEO
 /*
 ===========================================================================
 Copyright (C) 2005-2006 Tim Angus
@@ -669,5 +668,3 @@ qboolean CL_VideoRecording( void )
 {
   return afd.fileOpen;
 }
-
-#endif

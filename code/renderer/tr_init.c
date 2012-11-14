@@ -150,9 +150,8 @@ cvar_t	*r_saveFontData;
 
 cvar_t	*r_GLlibCoolDownMsec;
 
-#ifdef USE_VIDEO
 cvar_t	*r_aviMotionJpegQuality;
-#endif
+
 cvar_t	*r_screenshotJpegQuality;
 
 cvar_t	*r_maxpolys;
@@ -786,7 +785,7 @@ void R_ScreenShotJPEG_f (void) {
 	}
 } 
 
-#ifdef USE_VIDEO
+
 //============================================================================
 
 /*
@@ -865,7 +864,7 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 
 	return (const void *)(cmd + 1);	
 }
-#endif
+
 
 //============================================================================
 
@@ -1147,9 +1146,8 @@ void R_Register( void )
 	r_noportals = ri.Cvar_Get ("r_noportals", "0", CVAR_CHEAT);
 	r_shadows = ri.Cvar_Get( "cg_shadows", "1", 0 );
 
-#ifdef USE_VIDEO
 	r_aviMotionJpegQuality = ri.Cvar_Get("r_aviMotionJpegQuality", "90", CVAR_ARCHIVE);
-#endif
+
 	r_screenshotJpegQuality = ri.Cvar_Get("r_screenshotJpegQuality", "90", CVAR_ARCHIVE);
 
 	r_maxpolys = ri.Cvar_Get( "r_maxpolys", va("%d", MAX_POLYS), 0);
@@ -1377,9 +1375,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.GetEntityToken = R_GetEntityToken;
 	re.inPVS = R_inPVS;
 
-#ifdef USE_VIDEO
 	re.TakeVideoFrame = RE_TakeVideoFrame;
-#endif
 
 	return &re;
 }

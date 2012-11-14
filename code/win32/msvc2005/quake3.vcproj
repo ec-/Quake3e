@@ -14,11 +14,6 @@
 			Name="x64"
 		/>
 	</Platforms>
-	<ToolFiles>
-		<DefaultToolFile
-			FileName="masm.rules"
-		/>
-	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
@@ -29,12 +24,9 @@
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
 			<Tool
-				Name="MASM"
-			/>
-			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_CURL;USE_VIDEO;CURL_STATICLIB;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_CURL;CURL_STATICLIB;_CRT_SECURE_NO_DEPRECATE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				AssemblerListingLocation="$(IntDir)\"
@@ -46,10 +38,16 @@
 				DebugInformationFormat="4"
 			/>
 			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG"
 				Culture="1033"
 				ResourceOutputFileName="..\winquake.res"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
@@ -64,6 +62,30 @@
 				StackReserveSize="10247680"
 				TargetMachine="1"
 			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
@@ -74,12 +96,9 @@
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
 			<Tool
-				Name="MASM"
-			/>
-			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_CURL;USE_VIDEO;CURL_STATICLIB;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_CURL;CURL_STATICLIB;_CRT_SECURE_NO_DEPRECATE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				AssemblerListingLocation="$(IntDir)\"
@@ -91,10 +110,16 @@
 				DebugInformationFormat="3"
 			/>
 			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG"
 				Culture="1033"
 				ResourceOutputFileName="..\winquake.res"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
@@ -109,6 +134,30 @@
 				StackReserveSize="10247680"
 				TargetMachine="17"
 			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
@@ -120,11 +169,8 @@
 			WholeProgramOptimization="0"
 			>
 			<Tool
-				Name="MASM"
-			/>
-			<Tool
 				Name="VCCLCompilerTool"
-				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;USE_SKIPIDLOGO;USE_CURL;USE_VIDEO;CURL_STATICLIB"
+				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;USE_SKIPIDLOGO;USE_CURL;CURL_STATICLIB"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
 				ProgramDataBaseFileName="$(IntDir)\"
@@ -145,6 +191,30 @@
 				SetChecksum="true"
 				TargetMachine="1"
 			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
@@ -156,11 +226,8 @@
 			WholeProgramOptimization="0"
 			>
 			<Tool
-				Name="MASM"
-			/>
-			<Tool
 				Name="VCCLCompilerTool"
-				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;USE_SKIPIDLOGO;USE_CURL;USE_VIDEO;CURL_STATICLIB"
+				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;USE_SKIPIDLOGO;USE_CURL;CURL_STATICLIB"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
 				ProgramDataBaseFileName="$(IntDir)\"
@@ -405,26 +472,6 @@
 			<File
 				RelativePath="..\..\qcommon\vm_x86.c"
 				>
-			</File>
-			<File
-				RelativePath="..\..\asm\win32_snd.asm"
-				>
-				<FileConfiguration
-					Name="Debug|x64"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\win32\win_input.c"

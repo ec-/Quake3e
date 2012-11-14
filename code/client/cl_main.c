@@ -44,11 +44,10 @@ cvar_t	*cl_shownet;
 cvar_t	*cl_showSend;
 cvar_t	*cl_timedemo;
 cvar_t	*cl_autoRecordDemo;
-#ifdef USE_VIDEO
+
 cvar_t	*cl_aviFrameRate;
 cvar_t	*cl_aviMotionJpeg;
 cvar_t	*cl_forceavidemo;
-#endif
 
 cvar_t	*cl_freelook;
 cvar_t	*cl_sensitivity;
@@ -871,13 +870,12 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	cl_connectedToPureServer = qfalse;
 
 	// Stop recording any video
-#ifdef USE_VIDEO
 	if( CL_VideoRecording( ) ) {
 		// Finish rendering current frame
 		SCR_UpdateScreen( );
 		CL_CloseAVI( );
 	}
-#endif
+
 	CL_UpdateGUID( NULL, 0 );
 }
 
@@ -1325,11 +1323,9 @@ void CL_Vid_Restart_f( void ) {
 	}
 
 	// Settings may have changed so stop recording now
-#ifdef USE_VIDEO
 	if( CL_VideoRecording( ) ) {
 		CL_CloseAVI( );
 	}
-#endif
 
 	if(clc.demorecording)
 		CL_StopRecord_f();
@@ -2373,7 +2369,6 @@ void CL_Frame ( int msec ) {
 		VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_MAIN );
 	}
 
-#ifdef USE_VIDEO
 	// if recording an avi, lock to a fixed fps
 	if ( CL_VideoRecording( ) && cl_aviFrameRate->integer && msec) {
 		// save the current screen
@@ -2387,7 +2382,6 @@ void CL_Frame ( int msec ) {
 			}
 		}
 	}
-#endif	
 	
 	if( cl_autoRecordDemo->integer ) {
 		if( cls.state == CA_ACTIVE && !clc.demorecording && !clc.demoplaying ) {
@@ -2635,9 +2629,7 @@ void CL_InitRef( void ) {
 	ri.CIN_PlayCinematic = CIN_PlayCinematic;
 	ri.CIN_RunCinematic = CIN_RunCinematic;
   
-#ifdef USE_VIDEO  
 	ri.CL_WriteAVIVideoFrame = CL_WriteAVIVideoFrame;
-#endif
 
 	ret = GetRefAPI( REF_API_VERSION, &ri );
 
@@ -2687,7 +2679,6 @@ video
 video [filename]
 ===============
 */
-#ifdef USE_VIDEO
 void CL_Video_f( void )
 {
   char  filename[ MAX_OSPATH ];
@@ -2747,7 +2738,7 @@ void CL_StopVideo_f( void )
 {
   CL_CloseAVI( );
 }
-#endif
+
 
 /*
 ===============
@@ -2827,11 +2818,10 @@ void CL_Init( void ) {
 
 	cl_timedemo = Cvar_Get ("timedemo", "0", 0);
 	cl_autoRecordDemo = Cvar_Get ("cl_autoRecordDemo", "0", CVAR_ARCHIVE);
-#ifdef USE_VIDEO
+
 	cl_aviFrameRate = Cvar_Get ("cl_aviFrameRate", "25", CVAR_ARCHIVE);
 	cl_aviMotionJpeg = Cvar_Get ("cl_aviMotionJpeg", "1", CVAR_ARCHIVE);
 	cl_forceavidemo = Cvar_Get ("cl_forceavidemo", "0", 0);
-#endif
 
 	rconAddress = Cvar_Get ("rconAddress", "", 0);
 
@@ -2949,10 +2939,9 @@ void CL_Init( void ) {
 	Cmd_AddCommand ("fs_openedList", CL_OpenedPK3List_f );
 	Cmd_AddCommand ("fs_referencedList", CL_ReferencedPK3List_f );
 	Cmd_AddCommand ("model", CL_SetModel_f );
-#ifdef USE_VIDEO	
 	Cmd_AddCommand ("video", CL_Video_f );
 	Cmd_AddCommand ("stopvideo", CL_StopVideo_f );
-#endif
+
 	CL_InitRef();
 
 	SCR_Init ();

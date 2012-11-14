@@ -159,9 +159,8 @@ typedef struct {
 	int		(*CIN_PlayCinematic)( const char *arg0, int xpos, int ypos, int width, int height, int bits);
 	e_status (*CIN_RunCinematic) (int handle);
 
-#ifdef USE_VIDEO
 	void	(*CL_WriteAVIVideoFrame)( const byte *buffer, int size );
-#endif
+
 } refimport_t;
 
 
