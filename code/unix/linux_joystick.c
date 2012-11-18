@@ -30,6 +30,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 **
 */
 
+#ifdef USE_JOYSTICK
+
 #include <linux/joystick.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -203,3 +205,5 @@ void IN_JoyMove( void )
   /* Save for future generations. */
   old_axes = axes;
 }
+
+#endif

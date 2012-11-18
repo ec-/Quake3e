@@ -1227,7 +1227,8 @@ Sys_GetEvent
 
 ================
 */
-sysEvent_t Sys_GetEvent( void ) {
+sysEvent_t Sys_GetEvent( void ) 
+{
   sysEvent_t  ev;
   char    *s;
   msg_t   netmsg;

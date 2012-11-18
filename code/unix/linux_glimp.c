@@ -123,9 +123,11 @@ cvar_t *in_subframe;
 cvar_t *in_nograb; // this is strictly for developers
 
 // bk001130 - from cvs1.17 (mkv), but not static
+#ifdef USE_JOYSTICK
 cvar_t   *in_joystick      = NULL;
 cvar_t   *in_joystickDebug = NULL;
 cvar_t   *joy_threshold    = NULL;
+#endif
 
 cvar_t  *r_allowSoftwareGL;   // don't abort out if the pixelformat claims software
 cvar_t  *r_previousglDriver;
@@ -143,7 +145,7 @@ static int win_x, win_y;
 #ifdef HAVE_XF86DGA
 static XF86VidModeModeInfo **vidmodes;
 #endif /* HAVE_XF86DGA */
-//static int default_dotclock_vidmode; // bk001204 - unused
+
 static int num_vidmodes;
 static qboolean vidmode_active = qfalse;
 
@@ -189,6 +191,7 @@ static const char *Q_stristr( const char *s, const char *find)
   return s;
 }
 
+
 /*****************************************************************************
 ** KEYBOARD
 ** NOTE TTimo the keyboard handling is done with KeySyms
@@ -202,7 +205,7 @@ static const char *Q_stristr( const char *s, const char *find)
 
 //#define KBD_DBG
 
-static char *XLateKey(XKeyEvent *ev, int *key)
+static char *XLateKey( XKeyEvent *ev, int *key )
 {
   static unsigned char buf[64];
   static unsigned char bufnomod[2];
@@ -507,7 +510,8 @@ static void uninstall_grabs(void)
  *  same timestamp on press/release event pairs 
  *  for key repeats. 
  */
-static qboolean X11_PendingInput(void) {
+static qboolean X11_PendingInput( void )
+{
 
   assert(dpy != NULL);
 
@@ -567,9 +571,9 @@ int Sys_XTimeToSysTime( Time xtime );
 
 static void HandleEvents( void )
 {
+	XEvent event, peek;
 	int b;
 	int key;
-	XEvent event, peek;
 	qboolean dowarp = qfalse;
 	char *p;
 	int dx, dy;
@@ -580,7 +584,8 @@ static void HandleEvents( void )
 
 	while( XPending( dpy ) )
 	{
-		XNextEvent(dpy, &event);
+		XNextEvent( dpy, &event );
+
 		switch( event.type )
 		{
 		case KeyPress:
@@ -941,28 +946,30 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
 #define ATTR_BLUE_IDX 6
 #define ATTR_DEPTH_IDX 9
 #define ATTR_STENCIL_IDX 11
-  Window root;
-  XVisualInfo *visinfo;
-  XSetWindowAttributes attr;
-  XSizeHints sizehints;
-  unsigned long mask;
-  int colorbits, depthbits, stencilbits;
-  int tcolorbits, tdepthbits, tstencilbits;
-  int dga_MajorVersion, dga_MinorVersion;
-  int actualWidth, actualHeight;
-  int i;
-  const char*   glstring; // bk001130 - from cvs1.17 (mkv)
+	Window root;
+	XVisualInfo *visinfo;
+	XSetWindowAttributes attr;
+	XSizeHints sizehints;
+	unsigned long mask;
+	int colorbits, depthbits, stencilbits;
+	int tcolorbits, tdepthbits, tstencilbits;
+	int dga_MajorVersion, dga_MinorVersion;
+	int actualWidth, actualHeight;
+	int i;
+	const char*   glstring; // bk001130 - from cvs1.17 (mkv)
 
-  dpy = XOpenDisplay( NULL );
+	dpy = XOpenDisplay( NULL );
 
-  if ( dpy == NULL )
-  {
-    fprintf( stderr, "Error couldn't open the X display\n" );
-    return RSERR_INVALID_MODE;
-  }
-  
-  scrnum = DefaultScreen(dpy);
-  root = RootWindow(dpy, scrnum);
+	if ( dpy == NULL )
+	{
+		fprintf( stderr, "Error couldn't open the X display\n" );
+		return RSERR_INVALID_MODE;
+	}
+
+	ri.Printf( PRINT_ALL, "INIT---------------------------------------------\n" );
+
+	scrnum = DefaultScreen( dpy );
+	root = RootWindow( dpy, scrnum );
 
 /* - moved down
   ri.Printf( PRINT_ALL, "Initializing OpenGL display\n");
@@ -1007,10 +1014,10 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
   }
 #endif /* HAVE_XF86DGA */
 
-  // Check for DGA	
+  // Check for DGA
   dga_MajorVersion = 0, dga_MinorVersion = 0;
 #ifdef HAVE_XF86DGA
-  if (in_dgamouse->value)
+  if ( in_dgamouse && in_dgamouse->value )
   {
     if (!XF86DGAQueryVersion(dpy, &dga_MajorVersion, &dga_MinorVersion))
     {
@@ -1272,8 +1279,7 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
   ri.Printf( PRINT_ALL, "GL_RENDERER: %s\n", glstring );
 
   // bk010122 - new software token (Indirect)
-  if ( !Q_stricmp( glstring, "Mesa X11")
-       || !Q_stricmp( glstring, "Mesa GLX Indirect") )
+  if ( !Q_stricmp( glstring, "Mesa X11") || !Q_stricmp( glstring, "Mesa GLX Indirect") )
   {
     if ( !r_allowSoftwareGL->integer )
     {
@@ -1476,38 +1482,41 @@ static void GLW_InitGamma(void)
 */
 static qboolean GLW_LoadOpenGL( const char *name )
 {
-  qboolean fullscreen;
+	qboolean fullscreen;
 
-  ri.Printf( PRINT_ALL, "...loading %s: ", name );
+	ri.Printf( PRINT_ALL, "...loading %s: ", name );
 
-  // load the QGL layer
-  if ( QGL_Init( name ) )
-  {
-    fullscreen = r_fullscreen->integer;
+	// load the QGL layer
+	if ( QGL_Init( name ) )
+	{
+		fullscreen = r_fullscreen->integer;
 
-    // create the window and set up the context
-    if ( !GLW_StartDriverAndSetMode( name, r_mode->integer, fullscreen ) )
-    {
-      if (r_mode->integer != 3)
-      {
-        if ( !GLW_StartDriverAndSetMode( name, 3, fullscreen ) )
-        {
-          goto fail;
-        }
-      } else
-        goto fail;
-    }
+		// create the window and set up the context
+		if ( !GLW_StartDriverAndSetMode( name, r_mode->integer, fullscreen ) )
+		{
+			if (r_mode->integer != 3)
+			{
+				if ( !GLW_StartDriverAndSetMode( name, 3, fullscreen ) )
+				{
+					goto fail;
+				}
+			}
+			else
+			{
+		        goto fail;
+			}
+		}
+		return qtrue;
+	}
+	else
+	{
+		ri.Printf( PRINT_ALL, "failed\n" );
+	}
+	fail:
 
-    return qtrue;
-  } else
-  {
-    ri.Printf( PRINT_ALL, "failed\n" );
-  }
-  fail:
+	QGL_Shutdown();
 
-  QGL_Shutdown();
-
-  return qfalse;
+	return qfalse;
 }
 
 /*
@@ -1517,15 +1526,15 @@ static qboolean GLW_LoadOpenGL( const char *name )
 **   but those don't seem to be fatal .. so the default would be to just ignore them
 **   our implementation mimics the default handler behaviour (not completely cause I'm lazy)
 */
-int qXErrorHandler(Display *dpy, XErrorEvent *ev)
+int qXErrorHandler( Display *dpy, XErrorEvent *ev )
 {
-  static char buf[1024];
-  XGetErrorText(dpy, ev->error_code, buf, 1024);
-  ri.Printf( PRINT_ALL, "X Error of failed request: %s\n", buf);
-  ri.Printf( PRINT_ALL, "  Major opcode of failed request: %d\n", ev->request_code, buf);
-  ri.Printf( PRINT_ALL, "  Minor opcode of failed request: %d\n", ev->minor_code);  
-  ri.Printf( PRINT_ALL, "  Serial number of failed request: %d\n", ev->serial);
-  return 0;
+	static char buf[1024];
+	XGetErrorText( dpy, ev->error_code, buf, 1024 );
+	ri.Printf( PRINT_ALL, "X Error of failed request: %s\n", buf);
+	ri.Printf( PRINT_ALL, "  Major opcode of failed request: %d\n", ev->request_code, buf);
+	ri.Printf( PRINT_ALL, "  Minor opcode of failed request: %d\n", ev->minor_code);
+	ri.Printf( PRINT_ALL, "  Serial number of failed request: %d\n", ev->serial);
+	return 0;
 }
 
 /*
@@ -1571,6 +1580,10 @@ void GLimp_Init( void )
 			ri.Error( ERR_FATAL, "GLimp_Init() - could not load OpenGL subsystem\n" );
 			return;
 		}
+    } 
+    else
+    {
+    	success = qtrue;
     }
 
 	// try ICD before trying 3Dfx standalone driver
@@ -1624,47 +1637,6 @@ void GLimp_Init( void )
 		glConfig.hardwareType = GLHW_GENERIC;
 
 		ri.Cvar_Set( "r_textureMode", "GL_LINEAR_MIPMAP_NEAREST" );
-
-		// VOODOO GRAPHICS w/ 2MB
-		if ( Q_stristr( buf, "voodoo graphics/1 tmu/2 mb" ) )
-		{
-			ri.Cvar_Set( "r_picmip", "2" );
-			ri.Cvar_Get( "r_picmip", "1", CVAR_ARCHIVE | CVAR_LATCH );
-		}
-		else
-		{
-			ri.Cvar_Set( "r_picmip", "1" );
-
-			if ( Q_stristr( buf, "rage 128" ) || Q_stristr( buf, "rage128" ) )
-			{
-				ri.Cvar_Set( "r_finish", "0" );
-			}
-			// Savage3D and Savage4 should always have trilinear enabled
-			else if ( Q_stristr( buf, "savage3d" ) || Q_stristr( buf, "s3 savage4" ) )
-			{
-				ri.Cvar_Set( "r_texturemode", "GL_LINEAR_MIPMAP_LINEAR" );
-			}
-		}
-	}
-
-	//
-	// this is where hardware specific workarounds that should be
-	// detected/initialized every startup should go.
-	//
-	if ( Q_stristr( buf, "banshee" ) || Q_stristr( buf, "Voodoo_Graphics" ) )
-	{
-		glConfig.hardwareType = GLHW_3DFX_2D3D;
-	} else if ( Q_stristr( buf, "rage pro" ) || Q_stristr( buf, "RagePro" ) )
-	{
-		glConfig.hardwareType = GLHW_RAGEPRO;
-	} else if ( Q_stristr( buf, "permedia2" ) )
-	{
-		glConfig.hardwareType = GLHW_PERMEDIA2;
-	} else if ( Q_stristr( buf, "riva 128" ) )
-	{
-		glConfig.hardwareType = GLHW_RIVA128;
-	} else if ( Q_stristr( buf, "riva tnt " ) )
-	{
 	}
 
 	ri.Cvar_Set( "r_lastValidRenderer", glConfig.renderer_string );
@@ -1686,28 +1658,35 @@ void GLimp_Init( void )
 ** as yet to be determined.  Probably better not to make this a GLimp
 ** function and instead do a call to GLimp_SwapBuffers.
 */
-void GLimp_EndFrame (void)
+void GLimp_EndFrame( void )
 {
-  // don't flip if drawing to front buffer
-  if ( Q_stricmp( r_drawBuffer->string, "GL_FRONT" ) != 0 )
-  {
-    qglXSwapBuffers(dpy, win);
-  }
+	// don't flip if drawing to front buffer
+	if ( Q_stricmp( r_drawBuffer->string, "GL_FRONT" ) != 0 )
+	{
+		qglXSwapBuffers( dpy, win );
+	}
 }
 
-void GLimp_RenderThreadWrapper( void *stub ) {
+void GLimp_RenderThreadWrapper( void *stub )
+{
 
 }
 
-void *GLimp_RendererSleep( void ) {
+
+void *GLimp_RendererSleep( void ) 
+{
 	return NULL;
 }
 
-void GLimp_FrontEndSleep( void ) { 
+
+void GLimp_FrontEndSleep( void )
+{
 
 }
 
-void GLimp_WakeRenderer( void *data ) {
+
+void GLimp_WakeRenderer( void *data ) 
+{
 
 }
 
@@ -1716,43 +1695,57 @@ void GLimp_WakeRenderer( void *data ) {
 /* MOUSE                                                                     */
 /*****************************************************************************/
 
-void IN_Init(void) {
-	Com_DPrintf ("\n------- Input Initialization -------\n");
-  // mouse variables
-  in_mouse = Cvar_Get ("in_mouse", "1", CVAR_ARCHIVE);
-  in_dgamouse = Cvar_Get ("in_dgamouse", "1", CVAR_ARCHIVE);
-  in_shiftedKeys = Cvar_Get ("in_shiftedKeys", "0", CVAR_ARCHIVE);
-	
+void IN_Init( void )
+{
+	Com_DPrintf( "\n------- Input Initialization -------\n" );
+
+	// mouse variables
+	in_mouse = Cvar_Get( "in_mouse", "1", CVAR_ARCHIVE );
+	in_dgamouse = Cvar_Get( "in_dgamouse", "1", CVAR_ARCHIVE );
+	in_shiftedKeys = Cvar_Get( "in_shiftedKeys", "0", CVAR_ARCHIVE );
+
 	// turn on-off sub-frame timing of X events
 	in_subframe = Cvar_Get ("in_subframe", "1", CVAR_ARCHIVE);
-	
+
 	// developer feature, allows to break without loosing mouse pointer
 	in_nograb = Cvar_Get ("in_nograb", "0", 0);
 
-  // bk001130 - from cvs.17 (mkv), joystick variables
-  in_joystick = Cvar_Get ("in_joystick", "0", CVAR_ARCHIVE|CVAR_LATCH);
-  // bk001130 - changed this to match win32
-  in_joystickDebug = Cvar_Get ("in_debugjoystick", "0", CVAR_TEMP);
-  joy_threshold = Cvar_Get ("joy_threshold", "0.15", CVAR_ARCHIVE); // FIXME: in_joythreshold
+#ifdef USE_JOYSTICK
+	// bk001130 - from cvs.17 (mkv), joystick variables
+	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE|CVAR_LATCH );
+	// bk001130 - changed this to match win32
+	in_joystickDebug = Cvar_Get( "in_debugjoystick", "0", CVAR_TEMP );
+	joy_threshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE ); // FIXME: in_joythreshold
+#endif
 
-  if (in_mouse->value)
-    mouse_avail = qtrue;
-  else
-    mouse_avail = qfalse;
+	if ( in_mouse->integer )
+	{
+		mouse_avail = qtrue;
+	}
+	else
+	{
+		mouse_avail = qfalse;
+	}
 
-  IN_StartupJoystick( ); // bk001130 - from cvs1.17 (mkv)
-	Com_DPrintf ("------------------------------------\n");
+#ifdef USE_JOYSTICK
+	IN_StartupJoystick(); // bk001130 - from cvs1.17 (mkv)
+#endif
+
+	Com_DPrintf( "------------------------------------\n" );
 }
 
-void IN_Shutdown(void)
+void IN_Shutdown( void )
 {
-  mouse_avail = qfalse;
+	mouse_avail = qfalse;
 }
 
 void IN_Frame( void )
 {
+
+#ifdef USE_JOYSTICK
 	// bk001130 - from cvs 1.17 (mkv)
 	IN_JoyMove(); // FIXME: disable if on desktop?
+#endif
 
 	if ( Key_GetCatcher( ) & KEYCATCH_CONSOLE )
 	{
@@ -1769,21 +1762,21 @@ void IN_Frame( void )
 	IN_ActivateMouse();
 }
 
-void IN_Activate(void)
+void IN_Activate( void )
 {
+
 }
 
 // bk001130 - cvs1.17 joystick code (mkv) was here, no linux_joystick.c
 
-void Sys_SendKeyEvents (void) {
-  // XEvent event; // bk001204 - unused
-
-  if (!dpy)
-    return;
-  HandleEvents();
+void Sys_SendKeyEvents( void )
+{
+	if ( !dpy )
+		return;
+	HandleEvents();
 }
 
-
+#ifdef USE_JOYSTICK
 // bk010216 - added stubs for non-Linux UNIXes here
 // FIXME - use NO_JOYSTICK or something else generic
 
@@ -1791,3 +1784,5 @@ void Sys_SendKeyEvents (void) {
 void IN_StartupJoystick( void ) {}
 void IN_JoyMove( void ) {}
 #endif
+#endif
+
