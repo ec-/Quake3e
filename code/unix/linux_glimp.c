@@ -397,103 +397,120 @@ static char *XLateKey( XKeyEvent *ev, int *key )
 // makes a null cursor
 // ========================================================================
 
-static Cursor CreateNullCursor(Display *display, Window root)
+static Cursor CreateNullCursor( Display *display, Window root )
 {
-  Pixmap cursormask; 
-  XGCValues xgc;
-  GC gc;
-  XColor dummycolour;
-  Cursor cursor;
+	Pixmap cursormask; 
+	XGCValues xgc;
+	GC gc;
+	XColor dummycolour;
+	Cursor cursor;
 
-  cursormask = XCreatePixmap(display, root, 1, 1, 1/*depth*/);
-  xgc.function = GXclear;
-  gc =  XCreateGC(display, cursormask, GCFunction, &xgc);
-  XFillRectangle(display, cursormask, gc, 0, 0, 1, 1);
-  dummycolour.pixel = 0;
-  dummycolour.red = 0;
-  dummycolour.flags = 04;
-  cursor = XCreatePixmapCursor(display, cursormask, cursormask,
-                               &dummycolour,&dummycolour, 0,0);
-  XFreePixmap(display,cursormask);
-  XFreeGC(display,gc);
-  return cursor;
+	cursormask = XCreatePixmap( display, root, 1, 1, 1/*depth*/ );
+	xgc.function = GXclear;
+	gc = XCreateGC( display, cursormask, GCFunction, &xgc );
+	XFillRectangle( display, cursormask, gc, 0, 0, 1, 1 );
+	dummycolour.pixel = 0;
+	dummycolour.red = 0;
+	dummycolour.flags = 04;
+	cursor = XCreatePixmapCursor( display, cursormask, cursormask, &dummycolour, &dummycolour, 0, 0 );
+	XFreePixmap( display, cursormask );
+	XFreeGC( display, gc );
+	return cursor;
 }
 
-static void install_grabs(void)
+
+static void install_grabs( void )
 {
-	// inviso cursor
-	XWarpPointer(dpy, None, win, 0, 0, 0, 0,
-		glConfig.vidWidth / 2, glConfig.vidHeight / 2);
+	int res;
+
+	// move pointer to destination window area
+	XWarpPointer( dpy, None, win, 0, 0, 0, 0, glConfig.vidWidth / 2, glConfig.vidHeight / 2 );
 
 	XSync( dpy, False );
 
+	// hide cursor
 	XDefineCursor( dpy, win, CreateNullCursor( dpy, win ) );
 
-	XGrabPointer( dpy, win, // bk010108 - do this earlier?
-		False,
-		MOUSE_MASK,
-		GrabModeAsync, GrabModeAsync,
-		win,
-		None,
-		CurrentTime);
+	// save old mouse settings
+	XGetPointerControl( dpy, &mouse_accel_numerator, &mouse_accel_denominator, &mouse_threshold );
 
-	XGetPointerControl(dpy, &mouse_accel_numerator, &mouse_accel_denominator,
-		 &mouse_threshold );
+	// set new one
+	//XChangePointerControl( dpy, True, True, 1, 1, 1 );
 
-	XChangePointerControl( dpy, True, True, 1, 1, 1 );
+	// do this earlier?
+	res = XGrabPointer( dpy, win, False, MOUSE_MASK, GrabModeAsync, GrabModeAsync, win, None, CurrentTime );
+	if ( res != GrabSuccess ) 
+	{
+		//ri.Printf( PRINT_ALL, S_COLOR_YELLOW "Warning: XGrabPointer() failed\n" );
+	}
+	else
+	{
+		// set new mouse settings
+		XChangePointerControl( dpy, True, True, 1, 1, 1 );
+	}
 
 	XSync( dpy, False );
 
 	mouseResetTime = Sys_Milliseconds();
 
 #ifdef HAVE_XF86DGA
-  if (in_dgamouse->value)
-  {
-    int MajorVersion, MinorVersion;
+	if ( in_dgamouse->value )
+	{
+		int MajorVersion, MinorVersion;
 
-    if (!XF86DGAQueryVersion(dpy, &MajorVersion, &MinorVersion))
-    {
-      // unable to query, probalby not supported, force the setting to 0
-      ri.Printf( PRINT_ALL, "Failed to detect XF86DGA Mouse\n" );
-      ri.Cvar_Set( "in_dgamouse", "0" );
-    } else
-    {
-      XF86DGADirectVideo(dpy, DefaultScreen(dpy), XF86DGADirectMouse);
-      XWarpPointer(dpy, None, win, 0, 0, 0, 0, 0, 0);
-    }
-  } else
+		if ( !XF86DGAQueryVersion( dpy, &MajorVersion, &MinorVersion ) )
+		{
+			// unable to query, probalby not supported, force the setting to 0
+			ri.Printf( PRINT_ALL, "Failed to detect XF86DGA Mouse\n" );
+			ri.Cvar_Set( "in_dgamouse", "0" );
+		} 
+		else
+		{
+			XF86DGADirectVideo( dpy, DefaultScreen( dpy ), XF86DGADirectMouse );
+			XWarpPointer( dpy, None, win, 0, 0, 0, 0, 0, 0 );
+		}
+	} 
+	else
 #endif /* HAVE_XF86DGA */
-  {
-    mwx = glConfig.vidWidth / 2;
-    mwy = glConfig.vidHeight / 2;
-    mx = my = 0;
-  }
+	{
+		mwx = glConfig.vidWidth / 2;
+		mwy = glConfig.vidHeight / 2;
+		mx = my = 0;
+	}
 
-	XGrabKeyboard( dpy, win, False, GrabModeAsync, GrabModeAsync, CurrentTime );
+	res = XGrabKeyboard( dpy, win, False, GrabModeAsync, GrabModeAsync, CurrentTime );
+	if ( res != GrabSuccess )
+	{
+		//ri.Printf( PRINT_ALL, S_COLOR_YELLOW "Warning: XGrabKeyboard() failed\n" );
+	}
 
 	XSync( dpy, False );
 }
 
-static void uninstall_grabs(void)
+static void uninstall_grabs( void )
 {
+
 #ifdef HAVE_XF86DGA
-	if (in_dgamouse->value)
+	if ( in_dgamouse->integer )
 	{
-		if (com_developer->value)
-		    ri.Printf( PRINT_ALL, "DGA Mouse - Disabling DGA DirectVideo\n" );
-		XF86DGADirectVideo(dpy, DefaultScreen(dpy), 0);
+		if ( com_developer->integer ) 
+		{
+			ri.Printf( PRINT_ALL, "DGA Mouse - Disabling DGA DirectVideo\n" );
+		}
+		XF86DGADirectVideo( dpy, DefaultScreen( dpy ), 0 );
 	}
 #endif /* HAVE_XF86DGA */
 
-	XChangePointerControl(dpy, qtrue, qtrue, mouse_accel_numerator, 
-		mouse_accel_denominator, mouse_threshold);
+	// restore mouse settings
+	XChangePointerControl( dpy, qtrue, qtrue, mouse_accel_numerator, 
+		mouse_accel_denominator, mouse_threshold );
+
+	XWarpPointer( dpy, None, win, 0, 0, 0, 0, glConfig.vidWidth / 2, glConfig.vidHeight / 2 );
 
 	XUngrabPointer( dpy, CurrentTime );
 	XUngrabKeyboard( dpy, CurrentTime );
 
-	XWarpPointer(dpy, None, win, 0, 0, 0, 0, glConfig.vidWidth / 2, glConfig.vidHeight / 2 ) ;
-
-	// inviso cursor
+	// show cursor
 	XUndefineCursor( dpy, win );
 }
 
@@ -513,71 +530,70 @@ static void uninstall_grabs(void)
 static qboolean X11_PendingInput( void )
 {
 
-  assert(dpy != NULL);
+	assert(dpy != NULL);
 
-  // Flush the display connection
-  //  and look to see if events are queued
-  XFlush( dpy );
-  if ( XEventsQueued( dpy, QueuedAlready) )
-  {
-    return qtrue;
-  }
+	// Flush the display connection and look to see if events are queued
+	XFlush( dpy );
 
-  // More drastic measures are required -- see if X is ready to talk
-  {
-    static struct timeval zero_time;
-    int x11_fd;
-    fd_set fdset;
+	if ( XEventsQueued( dpy, QueuedAlready ) )
+	{
+		return qtrue;
+	}
 
-    x11_fd = ConnectionNumber( dpy );
-    FD_ZERO(&fdset);
-    FD_SET(x11_fd, &fdset);
-    if ( select(x11_fd+1, &fdset, NULL, NULL, &zero_time) == 1 )
-    {
-      return(XPending(dpy));
-    }
-  }
+	// More drastic measures are required -- see if X is ready to talk
+	{
+		static struct timeval zero_time;
+		int x11_fd;
+		fd_set fdset;
 
-  // Oh well, nothing is ready ..
-  return qfalse;
+		x11_fd = ConnectionNumber( dpy );
+		FD_ZERO( &fdset );
+		FD_SET( x11_fd, &fdset );
+		if ( select( x11_fd+1, &fdset, NULL, NULL, &zero_time ) == 1 )
+		{
+			return( XPending( dpy ) );
+		}
+	}
+
+	// Oh well, nothing is ready ..
+	return qfalse;
 }
 
-// bk001206 - from Ryan's Fakk2. See above.
-#if 0
+
 static qboolean repeated_press( XEvent *event )
 {
-	XEvent        peekevent;
-	qboolean      repeated = qfalse;
+	XEvent        peek;
 
 	assert( dpy != NULL );
 
 	if ( X11_PendingInput() )
 	{
-		XPeekEvent( dpy, &peekevent );
+		XPeekEvent( dpy, &peek );
 
-		if ((peekevent.type == KeyPress) &&
-			(peekevent.xkey.keycode == event->xkey.keycode) &&
-			(peekevent.xkey.time == event->xkey.time))
+		if ( ( peek.type == KeyPress ) &&
+			 ( peek.xkey.keycode == event->xkey.keycode ) &&
+			 ( peek.xkey.time == event->xkey.time ) )
 		{
-			repeated = qtrue;
-			XNextEvent( dpy, &peekevent );  // skip event.
+			return qtrue;
 		}
 	}
-	return repeated;
-} // repeated_press
-#endif
+
+	return qfalse;
+}
+
 
 int Sys_XTimeToSysTime( Time xtime );
 
 static void HandleEvents( void )
 {
-	XEvent event, peek;
+	XEvent event;
 	int b;
 	int key;
 	qboolean dowarp = qfalse;
 	char *p;
 	int dx, dy;
 	int t = 0; // default to 0 in case we don't set
+	qboolean btn_press;
 
 	if ( !dpy )
 		return;
@@ -590,7 +606,7 @@ static void HandleEvents( void )
 		{
 		case KeyPress:
 //			ri.Printf( PRINT_ALL,"^2K+^7 %08X\n", event.xkey.keycode );
-			t = Sys_XTimeToSysTime(event.xkey.time);
+			t = Sys_XTimeToSysTime( event.xkey.time );
 			p = XLateKey( &event.xkey, &key );
 			if (key)
 			{
@@ -606,35 +622,16 @@ static void HandleEvents( void )
 			break; // case KeyPress
 
 		case KeyRelease:
-			t = Sys_XTimeToSysTime(event.xkey.time);
+
+			if ( repeated_press( &event ) ) 
+				break; // XNextEvent( dpy, &event )
+
+			t = Sys_XTimeToSysTime( event.xkey.time );
 #if 0
 			ri.Printf( PRINT_ALL,"^5K-^7 %08X %s\n",
 				event.xkey.keycode,
 				X11_PendingInput()?"pending":"");
 #endif
-			if ( X11_PendingInput() ) 
-			{
-				XPeekEvent( dpy, &peek );
-				if ((peek.type == KeyPress) &&
-					(peek.xkey.keycode == event.xkey.keycode) &&
-					(peek.xkey.time == event.xkey.time)) {
-						//ri.Printf( PRINT_ALL,"^3skip\n" );
-						continue;
-					}
-			}
-			// bk001206 - handle key repeat w/o XAutRepatOn/Off
-			//            also: not done if console/menu is active.
-			// From Ryan's Fakk2.
-			// see game/q_shared.h, KEYCATCH_* . 0 == in 3d game.
-			//if ( Key_GetCatcher() == 0 )
-			//{   // FIXME: KEYCATCH_NONE
-				//if ( repeated_press( &event ) == qtrue ) {
-					// simulate win32 behavior???
-					//XLateKey( &event.xkey, &key );
-					//Sys_QueEvent( t, SE_KEY, key, qtrue, 0, NULL );
-				//	continue;
-				//}
-			//}
 			XLateKey( &event.xkey, &key );
 			Sys_QueEvent( t, SE_KEY, key, qfalse, 0, NULL );
 
@@ -654,8 +651,9 @@ static void HandleEvents( void )
 						Sys_QueEvent( t, SE_MOUSE, mx, my, 0, NULL );
 					}
 					mx = my = 0;
-				} else
-#endif /* HAVE_XF86DGA */
+				} 
+				else
+#endif // HAVE_XF86DGA
 				{
 					// If it's a center motion, we've just returned from our warp
 					if (event.xmotion.x == glConfig.vidWidth/2 &&
@@ -683,15 +681,23 @@ static void HandleEvents( void )
 			break;
 
 		case ButtonPress:
+		case ButtonRelease:
+
+			if ( event.type == ButtonPress )
+				btn_press = qtrue;
+			else
+				btn_press = qfalse;
+
 			t = Sys_XTimeToSysTime( event.xkey.time );
 			// NOTE TTimo there seems to be a weird mapping for K_MOUSE1 K_MOUSE2 K_MOUSE3 ..
 			b = -1;
-			switch ( event.xbutton.button ) {
+			switch ( event.xbutton.button ) 
+			{
 				case 1: b = 0; break; // K_MOUSE1
 				case 2: b = 2; break; // K_MOUSE3
 				case 3: b = 1; break; // K_MOUSE2
-				case 4: Sys_QueEvent( t, SE_KEY, K_MWHEELUP, qtrue, 0, NULL ); break;
-				case 5:	Sys_QueEvent( t, SE_KEY, K_MWHEELDOWN, qtrue, 0, NULL ); break;
+				case 4: Sys_QueEvent( t, SE_KEY, K_MWHEELUP, btn_press, 0, NULL ); break;
+				case 5:	Sys_QueEvent( t, SE_KEY, K_MWHEELDOWN, btn_press, 0, NULL ); break;
 				case 6: b = 3; break; // K_MOUSE4
 				case 7: b = 4; break; // K_MOUSE5
 				case 8:	case 9:       // K_AUX1..K_AUX8
@@ -699,40 +705,20 @@ static void HandleEvents( void )
 				case 12: case 13:
 				case 14: case 15:
 						Sys_QueEvent( t, SE_KEY, event.xbutton.button - 8 + K_AUX1, 
-							qtrue, 0, NULL ); break;
+							btn_press, 0, NULL ); break;
 			}
-			if ( b != -1 )
-				Sys_QueEvent( t, SE_KEY, K_MOUSE1 + b, qtrue, 0, NULL );
-			break; // case ButtonPress
-
-		case ButtonRelease:
-			t = Sys_XTimeToSysTime(event.xkey.time);
-			b = -1;
-			switch ( event.xbutton.button ) {
-				case 1: b = 0; break; // K_MOUSE1
-				case 2: b = 2; break; // K_MOUSE3
-				case 3: b = 1; break; // K_MOUSE2
-				case 4: Sys_QueEvent( t, SE_KEY, K_MWHEELUP, qfalse, 0, NULL ); break;
-				case 5:	Sys_QueEvent( t, SE_KEY, K_MWHEELDOWN, qfalse, 0, NULL ); break;
-				case 6: b = 3; break; // K_MOUSE4
-				case 7: b = 4; break; // K_MOUSE5
-				case 8:	case 9:       // K_AUX1..K_AUX8
-				case 10: case 11:
-				case 12: case 13:
-				case 14: case 15:
-						Sys_QueEvent( t, SE_KEY, event.xbutton.button - 8 + K_AUX1, 
-							qfalse, 0, NULL ); break;
+			if ( b != -1 ) // K_MOUSE1..K_MOUSE5
+			{
+				Sys_QueEvent( t, SE_KEY, K_MOUSE1 + b, btn_press, 0, NULL );
 			}
-			if ( b != -1 )
-				Sys_QueEvent( t, SE_KEY, K_MOUSE1 + b, qfalse, 0, NULL );
-			break;
+			break; // case ButtonPress/ButtonRelease
 
-		case CreateNotify :
+		case CreateNotify:
 			win_x = event.xcreatewindow.x;
 			win_y = event.xcreatewindow.y;
 			break;
 
-		case ConfigureNotify :
+		case ConfigureNotify:
 			win_x = event.xconfigure.x;
 			win_y = event.xconfigure.y;
 			break;
@@ -748,27 +734,35 @@ static void HandleEvents( void )
 
 // NOTE TTimo for the tty console input, we didn't rely on those .. 
 //   it's not very surprising actually cause they are not used otherwise
-void KBD_Init(void)
+void KBD_Init( void )
 {
+
 }
 
-void KBD_Close(void)
+
+void KBD_Close( void )
 {
+
 }
+
 
 void IN_ActivateMouse( void )
 {
-	if (!mouse_avail || !dpy || !win) 
+	if ( !mouse_avail || !dpy || !win ) 
 	{
 		return;
 	}
 
 	if ( !mouse_active )
 	{
-		if (! in_nograb->value )
-			 install_grabs();
-		else if ( in_dgamouse->value ) // force dga mouse to 0 if using nograb
-		    ri.Cvar_Set("in_dgamouse", "0");
+		if ( !in_nograb->integer ) 
+		{
+			install_grabs();
+		}
+		else if ( in_dgamouse->integer ) // force dga mouse to 0 if using nograb
+		{
+		    ri.Cvar_Set( "in_dgamouse", "0" );
+		}	
 		mouse_active = qtrue;
 	}
 }
@@ -782,13 +776,18 @@ void IN_DeactivateMouse( void )
 
 	if ( mouse_active )
 	{
-		if ( !in_nograb->value )
+		if ( !in_nograb->integer ) 
+		{
 			 uninstall_grabs();
-		else if ( in_dgamouse->value ) // force dga mouse to 0 if using nograb
-			ri.Cvar_Set("in_dgamouse", "0");
+		}
+		else if ( in_dgamouse->integer ) // force dga mouse to 0 if using nograb
+		{
+			ri.Cvar_Set( "in_dgamouse", "0" );
+		}
 		mouse_active = qfalse;
 	}
 }
+
 /*****************************************************************************/
 
 /*
@@ -831,41 +830,43 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 */
 void GLimp_Shutdown( void )
 {
-  if (!ctx || !dpy)
-    return;
-  IN_DeactivateMouse();
+	if ( !ctx || !dpy )
+		return;
+
+	IN_DeactivateMouse();
   // bk001206 - replaced with H2/Fakk2 solution
   // XAutoRepeatOn(dpy);
   // autorepeaton = qfalse; // bk001130 - from cvs1.17 (mkv)
-  if (dpy)
-  {
-    if (ctx)
-      qglXDestroyContext(dpy, ctx);
-    if (win)
-      XDestroyWindow(dpy, win);
+	if ( dpy )
+	{
+		if ( ctx )
+			qglXDestroyContext( dpy, ctx );
+		if ( win )
+			XDestroyWindow( dpy, win );
 #ifdef HAVE_XF86DGA
-    if (vidmode_active)
-      XF86VidModeSwitchToMode(dpy, scrnum, vidmodes[0]);
-    if (glConfig.deviceSupportsGamma)
-    {
-      XF86VidModeSetGamma(dpy, scrnum, &vidmode_InitialGamma);
-    }
+		if ( vidmode_active )
+			XF86VidModeSwitchToMode( dpy, scrnum, vidmodes[0] );
+
+		if ( glConfig.deviceSupportsGamma )
+		{
+			XF86VidModeSetGamma( dpy, scrnum, &vidmode_InitialGamma );
+		}
 #endif /* HAVE_XF86DGA */
-    // NOTE TTimo opening/closing the display should be necessary only once per run
-    //   but it seems QGL_Shutdown gets called in a lot of occasion
-    //   in some cases, this XCloseDisplay is known to raise some X errors
-    //   ( https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=33 )
-    XCloseDisplay(dpy);
-  }
-  vidmode_active = qfalse;
-  dpy = NULL;
-  win = 0;
-  ctx = NULL;
+		// NOTE TTimo opening/closing the display should be necessary only once per run
+		//   but it seems QGL_Shutdown gets called in a lot of occasion
+		//   in some cases, this XCloseDisplay is known to raise some X errors
+		//   ( https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=33 )
+		XCloseDisplay( dpy );
+	}
+	vidmode_active = qfalse;
+	dpy = NULL;
+	win = 0;
+	ctx = NULL;
 
-  memset( &glConfig, 0, sizeof( glConfig ) );
-  memset( &glState, 0, sizeof( glState ) );
+	memset( &glConfig, 0, sizeof( glConfig ) );
+	memset( &glState, 0, sizeof( glState ) );
 
-  QGL_Shutdown();
+	QGL_Shutdown();
 }
 
 /*
@@ -884,45 +885,38 @@ void GLimp_LogComment( char *comment )
 */
 // bk001204 - prototype needed
 int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen );
-static qboolean GLW_StartDriverAndSetMode( const char *drivername, 
-                                           int mode, 
-                                           qboolean fullscreen )
-{
-  rserr_t err;
 
-  // don't ever bother going into fullscreen with a voodoo card
-#if 1	// JDC: I reenabled this
-  if ( Q_stristr( drivername, "Voodoo" ) )
-  {
-    ri.Cvar_Set( "r_fullscreen", "0" );
-    r_fullscreen->modified = qfalse;
-    fullscreen = qfalse;
-  }
-#endif
+static qboolean GLW_StartDriverAndSetMode( const char *drivername, int mode, qboolean fullscreen )
+{
+	rserr_t err;
 	
-	if (fullscreen && in_nograb->value)
+	if ( fullscreen && in_nograb->integer )
 	{
 		ri.Printf( PRINT_ALL, "Fullscreen not allowed with in_nograb 1\n");
-    ri.Cvar_Set( "r_fullscreen", "0" );
-    r_fullscreen->modified = qfalse;
-    fullscreen = qfalse;		
+		ri.Cvar_Set( "r_fullscreen", "0" );
+		r_fullscreen->modified = qfalse;
+		fullscreen = qfalse;		
 	}
 
-  err = GLW_SetMode( drivername, mode, fullscreen );
+	err = GLW_SetMode( drivername, mode, fullscreen );
 
-  switch ( err )
-  {
-  case RSERR_INVALID_FULLSCREEN:
-    ri.Printf( PRINT_ALL, "...WARNING: fullscreen unavailable in this mode\n" );
-    return qfalse;
-  case RSERR_INVALID_MODE:
-    ri.Printf( PRINT_ALL, "...WARNING: could not set the given mode (%d)\n", mode );
-    return qfalse;
-  default:
-    break;
-  }
-  glConfig.isFullscreen = fullscreen;
-  return qtrue;
+	switch ( err )
+	{
+	case RSERR_INVALID_FULLSCREEN:
+		ri.Printf( PRINT_ALL, "...WARNING: fullscreen unavailable in this mode\n" );
+		return qfalse;
+
+	case RSERR_INVALID_MODE:
+		ri.Printf( PRINT_ALL, "...WARNING: could not set the given mode (%d)\n", mode );
+		return qfalse;
+
+	default:
+	    break;
+	}
+
+	glConfig.isFullscreen = fullscreen;
+
+	return qtrue;
 }
 
 /*
@@ -930,16 +924,17 @@ static qboolean GLW_StartDriverAndSetMode( const char *drivername,
 */
 int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
 {
-  int attrib[] = {
-    GLX_RGBA,         // 0
-    GLX_RED_SIZE, 4,      // 1, 2
-    GLX_GREEN_SIZE, 4,      // 3, 4
-    GLX_BLUE_SIZE, 4,     // 5, 6
-    GLX_DOUBLEBUFFER,     // 7
-    GLX_DEPTH_SIZE, 1,      // 8, 9
-    GLX_STENCIL_SIZE, 1,    // 10, 11
-    None
-  };
+	int attrib[] = 
+	{
+		GLX_RGBA,         // 0
+		GLX_RED_SIZE, 4,      // 1, 2
+		GLX_GREEN_SIZE, 4,      // 3, 4
+		GLX_BLUE_SIZE, 4,     // 5, 6
+		GLX_DOUBLEBUFFER,     // 7
+		GLX_DEPTH_SIZE, 1,      // 8, 9
+		GLX_STENCIL_SIZE, 1,    // 10, 11
+		None
+	};
   // these match in the array
 #define ATTR_RED_IDX 2
 #define ATTR_GREEN_IDX 4
@@ -962,11 +957,9 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
 
 	if ( dpy == NULL )
 	{
-		fprintf( stderr, "Error couldn't open the X display\n" );
+		fprintf( stderr, "Error: couldn't open the X display\n" );
 		return RSERR_INVALID_MODE;
 	}
-
-	ri.Printf( PRINT_ALL, "INIT---------------------------------------------\n" );
 
 	scrnum = DefaultScreen( dpy );
 	root = RootWindow( dpy, scrnum );
@@ -1001,66 +994,70 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
 
   // Get video mode list
 #ifdef HAVE_XF86DGA
-  if (!XF86VidModeQueryVersion(dpy, &vidmode_MajorVersion, &vidmode_MinorVersion))
-  {
-#endif /* HAVE_XF86DGA */
-    vidmode_ext = qfalse;
+	if ( !XF86VidModeQueryVersion( dpy, &vidmode_MajorVersion, &vidmode_MinorVersion ) )
+	{
+#endif
+		vidmode_ext = qfalse;
 #ifdef HAVE_XF86DGA
-  } else
-  {
-    ri.Printf(PRINT_ALL, "Using XFree86-VidModeExtension Version %d.%d\n",
-              vidmode_MajorVersion, vidmode_MinorVersion);
-    vidmode_ext = qtrue;
-  }
-#endif /* HAVE_XF86DGA */
+	} 
+	else
+	{
+		ri.Printf( PRINT_ALL, "Using XFree86-VidModeExtension Version %d.%d\n",
+			vidmode_MajorVersion, vidmode_MinorVersion );
+		vidmode_ext = qtrue;
+	}
+#endif
 
   // Check for DGA
-  dga_MajorVersion = 0, dga_MinorVersion = 0;
 #ifdef HAVE_XF86DGA
-  if ( in_dgamouse && in_dgamouse->value )
-  {
-    if (!XF86DGAQueryVersion(dpy, &dga_MajorVersion, &dga_MinorVersion))
-    {
-      // unable to query, probably not supported
-      ri.Printf( PRINT_ALL, "Failed to detect XF86DGA Mouse\n" );
-      ri.Cvar_Set( "in_dgamouse", "0" );
-    } else
-    {
-      ri.Printf( PRINT_ALL, "XF86DGA Mouse (Version %d.%d) initialized\n",
-                 dga_MajorVersion, dga_MinorVersion);
-    }
-  }
+	dga_MajorVersion = 0, dga_MinorVersion = 0;
+	if ( in_dgamouse && in_dgamouse->integer )
+	{
+		if ( !XF86DGAQueryVersion( dpy, &dga_MajorVersion, &dga_MinorVersion ) )
+		{
+			// unable to query, probably not supported
+			ri.Printf( PRINT_ALL, "Failed to detect XF86DGA Mouse\n" );
+			ri.Cvar_Set( "in_dgamouse", "0" );
+		} 
+		else
+		{
+			ri.Printf( PRINT_ALL, "XF86DGA Mouse (Version %d.%d) initialized\n",
+				dga_MajorVersion, dga_MinorVersion );
+		}
+	}
 #endif /* HAVE_XF86DGA */
 
 #ifdef HAVE_XF86DGA
-  if ( vidmode_ext ) {
-	if ( desktop_ok == qfalse )
+	if ( vidmode_ext ) 
 	{
-	  XF86VidModeModeLine c;
-	  int n;
-	  XF86VidModeGetModeLine( dpy, scrnum, &n, &c );
-	  desktop_width = c.hdisplay;
-	  desktop_height = c.vdisplay;
-	  desktop_ok = qtrue;
-	}
-	ri.Printf( PRINT_ALL, "w:%i h:%i\n", desktop_width, desktop_height );
+		if ( desktop_ok == qfalse )
+		{
+			XF86VidModeModeLine c;
+			int n;
+			XF86VidModeGetModeLine( dpy, scrnum, &n, &c );
+			desktop_width = c.hdisplay;
+			desktop_height = c.vdisplay;
+			desktop_ok = qtrue;
+		}
+		ri.Printf( PRINT_ALL, "desktop width:%i height:%i\n", desktop_width, desktop_height );
   }
 #endif
 
-  ri.Printf( PRINT_ALL, "Initializing OpenGL display\n");
+	ri.Printf( PRINT_ALL, "Initializing OpenGL display\n");
 
-  ri.Printf (PRINT_ALL, "...setting mode %d:", mode );
+	ri.Printf (PRINT_ALL, "...setting mode %d:", mode );
 
-  if ( !R_GetModeInfo( &glConfig.vidWidth, &glConfig.vidHeight, &glConfig.windowAspect,
-	  mode, desktop_width, desktop_height ) )
-  {
-    ri.Printf( PRINT_ALL, " invalid mode\n" );
-    return RSERR_INVALID_MODE;
-  }
-  ri.Printf( PRINT_ALL, " %d %d\n", glConfig.vidWidth, glConfig.vidHeight);
+	if ( !R_GetModeInfo( &glConfig.vidWidth, &glConfig.vidHeight, &glConfig.windowAspect,
+		mode, desktop_width, desktop_height ) )
+	{
+		ri.Printf( PRINT_ALL, " invalid mode\n" );
+		return RSERR_INVALID_MODE;
+	}
 
-  actualWidth = glConfig.vidWidth;
-  actualHeight = glConfig.vidHeight;
+	ri.Printf( PRINT_ALL, " %d %d\n", glConfig.vidWidth, glConfig.vidHeight );
+
+	actualWidth = glConfig.vidWidth;
+	actualHeight = glConfig.vidHeight;
 
 #ifdef HAVE_XF86DGA
   if (vidmode_ext)
@@ -1125,16 +1122,17 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
 #endif /* HAVE_XF86DGA */
 
 
-  if (!r_colorbits->value)
-    colorbits = 24;
-  else
-    colorbits = r_colorbits->value;
+	if ( !r_colorbits->integer )
+		colorbits = 24;
+	else
+		colorbits = r_colorbits->integer;
 
-  if (!r_depthbits->value)
-    depthbits = 24;
-  else
-    depthbits = r_depthbits->value;
-  stencilbits = r_stencilbits->value;
+	if ( !r_depthbits->integer )
+		depthbits = 24;
+	else
+		depthbits = r_depthbits->integer;
+
+	stencilbits = r_stencilbits->integer;
 
   for (i = 0; i < 16; i++)
   {
@@ -1752,7 +1750,7 @@ void IN_Frame( void )
 		// temporarily deactivate if not in the game and
 		// running on the desktop
 		// voodoo always counts as full screen
-		if ( Cvar_VariableValue( "r_fullscreen" ) == 0 )
+		if ( Cvar_VariableIntegerValue( "r_fullscreen" ) == 0 )
 		{
 			IN_DeactivateMouse();
 			return;
@@ -1773,6 +1771,7 @@ void Sys_SendKeyEvents( void )
 {
 	if ( !dpy )
 		return;
+
 	HandleEvents();
 }
 

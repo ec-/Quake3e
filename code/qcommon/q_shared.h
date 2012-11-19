@@ -154,7 +154,7 @@ typedef unsigned char byte;
 
 typedef enum { qfalse = 0, qtrue } qboolean;
 
-typedef union 
+typedef union floatint_u
 {
 	int i;
 	unsigned int u;

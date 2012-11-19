@@ -100,7 +100,7 @@ int Sys_XTimeToSysTime (unsigned long xtime)
 {
 	int ret, time, test;
 	
-	if (!in_subframe->value)
+	if ( !in_subframe->integer )
 	{
 		// if you don't want to do any event times corrections
 		return Sys_Milliseconds();
