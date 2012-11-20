@@ -14,6 +14,8 @@
 			Name="x64"
 		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
@@ -23,6 +25,21 @@
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
@@ -51,7 +68,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib libcurl.lib ws2_32.lib opengl32.lib"
+				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib wldap32.lib opengl32.lib libcurl.lib"
 				OutputFile="$(OutDir)\quake3e-debug.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -96,6 +113,21 @@
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
 			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_CURL;CURL_STATICLIB;_CRT_SECURE_NO_DEPRECATE"
@@ -123,7 +155,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib libcurl.lib ws2_32.lib opengl32.lib"
+				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib wldap32.lib opengl32.lib libcurl.lib"
 				OutputFile="$(OutDir)\quake3e-debug.x64.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -169,6 +201,21 @@
 			WholeProgramOptimization="0"
 			>
 			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;USE_SKIPIDLOGO;USE_CURL;CURL_STATICLIB"
 				AssemblerListingLocation="$(IntDir)\"
@@ -178,8 +225,17 @@
 				DebugInformationFormat="3"
 			/>
 			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib libcurl.lib ws2_32.lib opengl32.lib"
+				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib wldap32.lib opengl32.lib libcurl.lib"
 				OutputFile="$(OutDir)\quake3e.exe"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(IntDir)\quake3e.pdb"
@@ -226,6 +282,21 @@
 			WholeProgramOptimization="0"
 			>
 			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;USE_SKIPIDLOGO;USE_CURL;CURL_STATICLIB"
 				AssemblerListingLocation="$(IntDir)\"
@@ -235,8 +306,17 @@
 				DebugInformationFormat="3"
 			/>
 			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib libcurl.lib ws2_32.lib opengl32.lib"
+				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib wldap32.lib opengl32.lib libcurl.lib"
 				OutputFile="$(OutDir)\quake3e.x64.exe"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(IntDir)\quake3e.x64.pdb"
@@ -247,6 +327,30 @@
 				OptimizeReferences="2"
 				SetChecksum="true"
 				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
 	</Configurations>
