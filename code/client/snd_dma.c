@@ -229,16 +229,18 @@ static sfx_t *S_FindName( const char *name ) {
 
 	sfx_t	*sfx;
 
-	if ( !name ) {
-		Com_Error( ERR_FATAL, "S_FindName: NULL" );
+	if (!name) {
+		Com_Error(ERR_FATAL, "Sound name is NULL");
 	}
 
-	if ( !name[0] ) {
-		Com_Error( ERR_FATAL, "S_FindName: empty name" );
+	if (!name[0]) {
+		Com_Printf( S_COLOR_YELLOW "WARNING: Sound name is empty\n" );
+		return NULL;
 	}
 
-	if ( strlen( name ) >= MAX_QPATH ) {
-		Com_Error( ERR_FATAL, "Sound name too long: %s", name );
+	if (strlen(name) >= MAX_QPATH) {
+		Com_Printf( S_COLOR_YELLOW "WARNING: Sound name is too long: %s\n", name );
+		return NULL;
 	}
 
 	hash = S_HashSFXName(name);
@@ -468,7 +470,7 @@ void S_Base_StartSound( vec3_t origin, int entityNum, int entchannel, sfxHandle_
 		return;
 	}
 
-	if ( !origin && ( entityNum < 0 || entityNum > MAX_GENTITIES ) ) {
+	if ( !origin && ( entityNum < 0 || entityNum >= MAX_GENTITIES ) ) {
 		Com_Error( ERR_DROP, "S_StartSound: bad entitynum %i", entityNum );
 	}
 
@@ -648,11 +650,7 @@ void S_Base_ClearSoundBuffer( void ) {
 
 	SNDDMA_BeginPainting ();
 	if (dma.buffer)
-    // TTimo: due to a particular bug workaround in linux sound code,
-    //   have to optionally use a custom C implementation of Com_Memset
-    //   not affecting win32, we have #define Snd_Memset Com_Memset
-    // https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=371
-		Snd_Memset(dma.buffer, clear, dma.samples * dma.samplebits/8);
+		Com_Memset(dma.buffer, clear, dma.samples * dma.samplebits/8);
 	SNDDMA_Submit ();
 }
 
@@ -1030,7 +1028,7 @@ let the sound system know where an entity currently is
 ======================
 */
 void S_Base_UpdateEntityPosition( int entityNum, const vec3_t origin ) {
-	if ( entityNum < 0 || entityNum > MAX_GENTITIES ) {
+	if ( entityNum < 0 || entityNum >= MAX_GENTITIES ) {
 		Com_Error( ERR_DROP, "S_UpdateEntityPosition: bad entitynum %i", entityNum );
 	}
 	VectorCopy( origin, loopSounds[entityNum].origin );
@@ -1310,7 +1308,9 @@ void S_Base_StartBackgroundTrack( const char *intro, const char *loop ){
 	}
 	Com_DPrintf( "S_StartBackgroundTrack( %s, %s )\n", intro, loop );
 
-	if ( !intro[0] ) {
+	if(!*intro)
+	{
+		S_Base_StopBackgroundTrack();
 		return;
 	}
 

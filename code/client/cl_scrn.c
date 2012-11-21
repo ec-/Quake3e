@@ -224,14 +224,16 @@ void SCR_DrawStringExt( int x, int y, float size, const char *string, float *set
 	xx = x;
 	re.SetColor( setColor );
 	while ( *s ) {
-		if ( !noColorEscape && Q_IsColorString( s ) ) {
+		if ( Q_IsColorString( s ) ) {
 			if ( !forceColor ) {
 				Com_Memcpy( color, g_color_table[ColorIndex(*(s+1))], sizeof( color ) );
 				color[3] = setColor[3];
 				re.SetColor( color );
 			}
-			s += 2;
-			continue;
+			if ( !noColorEscape ) {
+				s += 2;
+				continue;
+			}
 		}
 		SCR_DrawChar( xx, y, size, *s );
 		xx += size;
@@ -280,9 +282,9 @@ void SCR_DrawSmallStringExt( int x, int y, const char *string, float *setColor, 
 				re.SetColor( color );
 			}
 			if ( !noColorEscape ) {
-			s += 2;
-			continue;
-		}
+				s += 2;
+				continue;
+			}
 		}
 		SCR_DrawSmallChar( xx, y, *s );
 		xx += SMALLCHAR_WIDTH;
@@ -353,25 +355,18 @@ DEBUG GRAPH
 ===============================================================================
 */
 
-typedef struct
-{
-	float	value;
-	int		color;
-} graphsamp_t;
-
 static	int			current;
-static	graphsamp_t	values[1024];
+static	float		values[1024];
 
 /*
 ==============
 SCR_DebugGraph
 ==============
 */
-void SCR_DebugGraph (float value, int color)
+void SCR_DebugGraph (float value)
 {
-	values[current&1023].value = value;
-	values[current&1023].color = color;
-	current++;
+	values[current] = value;
+	current = (current + 1) % ARRAY_LEN(values);
 }
 
 /*
@@ -383,7 +378,6 @@ void SCR_DrawDebugGraph (void)
 {
 	int		a, x, y, w, i, h;
 	float	v;
-	int		color;
 
 	//
 	// draw the graph
@@ -398,9 +392,8 @@ void SCR_DrawDebugGraph (void)
 
 	for (a=0 ; a<w ; a++)
 	{
-		i = (current-1-a+1024) & 1023;
-		v = values[i].value;
-		color = values[i].color;
+		i = (ARRAY_LEN(values)+current-1-(a % ARRAY_LEN(values))) % ARRAY_LEN(values);
+		v = values[i];
 		v = v * cl_graphscale->integer + cl_graphshift->integer;
 		
 		if (v < 0)

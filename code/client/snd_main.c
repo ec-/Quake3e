@@ -311,22 +311,26 @@ S_Play_f
 */
 void S_Play_f( void ) {
 	int 		i;
+	int			c;
 	sfxHandle_t	h;
-	char		name[256];
 
 	if( !si.RegisterSound || !si.StartLocalSound ) {
 		return;
 	}
 
-	i = 1;
-	while ( i<Cmd_Argc() ) {
-		Q_strncpyz( name, Cmd_Argv(i), sizeof(name) );
+	c = Cmd_Argc();
 
-		h = si.RegisterSound( name, qfalse );
+	if( c < 2 ) {
+		Com_Printf ("Usage: play <sound filename> [sound filename] [sound filename] ...\n");
+		return;
+	}
+
+	for( i = 1; i < c; i++ ) {
+		h = si.RegisterSound( Cmd_Argv(i), qfalse );
+
 		if( h ) {
 			si.StartLocalSound( h, CHAN_LOCAL_SOUND );
 		}
-		i++;
 	}
 }
 
@@ -349,11 +353,25 @@ void S_Music_f( void ) {
 	} else if ( c == 3 ) {
 		si.StartBackgroundTrack( Cmd_Argv(1), Cmd_Argv(2) );
 	} else {
-		Com_Printf ("music <musicfile> [loopfile]\n");
+		Com_Printf ("Usage: music <musicfile> [loopfile]\n");
 		return;
 	}
 
 }
+
+/*
+=================
+S_Music_f
+=================
+*/
+void S_StopMusic_f( void )
+{
+	if(!si.StopBackgroundTrack)
+		return;
+
+	si.StopBackgroundTrack();
+}
+
 
 //=============================================================================
 
@@ -382,6 +400,7 @@ void S_Init( void )
 
 		Cmd_AddCommand( "play", S_Play_f );
 		Cmd_AddCommand( "music", S_Music_f );
+		Cmd_AddCommand( "stopmusic", S_StopMusic_f );
 		Cmd_AddCommand( "s_list", S_SoundList );
 		Cmd_AddCommand( "s_stop", S_StopAllSounds );
 		Cmd_AddCommand( "s_info", S_SoundInfo );
@@ -424,6 +443,7 @@ void S_Shutdown( void )
 
 	Cmd_RemoveCommand( "play" );
 	Cmd_RemoveCommand( "music");
+	Cmd_RemoveCommand( "stopmusic");
 	Cmd_RemoveCommand( "s_list" );
 	Cmd_RemoveCommand( "s_stop" );
 	Cmd_RemoveCommand( "s_info" );
