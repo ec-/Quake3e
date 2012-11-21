@@ -59,7 +59,7 @@ static void VM_Destroy_Compiled( vm_t *vm );
   -------------
   eax	scratch
   ebx	scratch
-  ecx	scratch (required for shifts) | currentVM
+  ecx	scratch (required for shifts)
   edx	scratch (required for divisions)
   esi	program stack
   edi	opstack
@@ -73,6 +73,7 @@ static void VM_Destroy_Compiled( vm_t *vm );
   r8	instructionPointers
   r9    dataMask
   r12*  systemCall
+  r13*  stackBottom
 
   Example how data segment will look like during vmMain execution:
   | .... |
@@ -1972,6 +1973,9 @@ __compile:
 	EmitString( "49 BC" );			// mov r12, vm->systemCall
 	EmitPtr( &vm->systemCall );
 
+	EmitString( "49 C7 C5" );		// mov r13, vm->stackBottom
+	Emit4( vm->stackBottom );
+
 	EmitRexString( 0x48, "B8" );	// mov rax, &vm->programStack
 	EmitPtr( &vm->programStack );
 	EmitString( "8B 30" );			// mov esi, [rax]
@@ -2071,8 +2075,12 @@ __compile:
 				Emit4( v );
 			}
 			// programStack overflow check
+#if idx64
+			EmitString( "4C 39 EE" );	// cmp	rsi, r13
+#else
 			EmitString( "81 FE" );		// cmp	esi, vm->stackBottom
 			Emit4( vm->stackBottom );
+#endif
 			EmitString( "0F 82" );		// jb +funcOffset[FUNC_PSOF]
 			n = funcOffset[FUNC_PSOF] - compiledOfs;
 			Emit4( n - 6 );
