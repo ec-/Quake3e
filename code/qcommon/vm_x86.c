@@ -1000,7 +1000,6 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 #if FTOL_PTR
 void EmitFTOLFunc( vm_t *vm ) 
 {
-#if 1
 	//EmitString( "D9 07" );	// fld dword ptr [edi]
 	EmitRexString( 0x48, "B8" );// mov eax, &fp_cw[0]
 	EmitPtr( &fp_cw[0] );		
@@ -1009,17 +1008,6 @@ void EmitFTOLFunc( vm_t *vm )
 	EmitString( "DB 1F" );		// fistp dword ptr [edi]
 	EmitString( "D9 28" );		// fldcw word ptr [eax]
 	EmitString( "C3" );			// ret
-#else
-	EmitString( "9B D9 3D" );	// fnstcw word ptr [cwCurr]
-	EmitPtr( &cwCurr );
-	//EmitString( "D9 07" );	// fld dword ptr [edi]
-	EmitString( "D9 2D" );		// fldcw word ptr [cw0F7F]
-	EmitPtr( &cw0F7F );
-	EmitString( "DB 1F" );		// fistp dword ptr [edi]
-	EmitString( "D9 2D" );		// fldcw word ptr [cwCurr]
-	EmitPtr( &cwCurr );
-	EmitString( "C3" );			// ret
-#endif
 }
 #endif
 
@@ -1131,7 +1119,8 @@ static int FloatMerge( instruction_t *curr, instruction_t *next )
 ConstOptimize
 =================
 */
-qboolean ConstOptimize( vm_t *vm ) {
+qboolean ConstOptimize( vm_t *vm ) 
+{
 	int v;
 	int op1;
 
@@ -1557,14 +1546,14 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 						  byte *jumpTableTargets, int numJumpTableTargets ) 
 {
 	static char errBuf[128];
-	byte *code, *code_start, *code_end;
+	byte *code_pos, *code_start, *code_end;
 	int i, n, v, op0, op1, opStack, pstack;
 	instruction_t *ci, *proc;
 	int startp, endp;
 	qboolean first;
 	
-	code = (byte *) header + header->codeOffset;
-	code_start = code; // for printing
+	code_pos = (byte *) header + header->codeOffset;
+	code_start = code_pos; // for printing
 	code_end =  (byte *) header + header->codeOffset + header->codeLength;
 
 	ci = buf;
@@ -1576,24 +1565,24 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 
 	// load instructions and perform some initial calculations/checks
 	for ( i = 0; i < header->instructionCount; i++, ci++, op1 = op0 ) {
-		op0 = *code;
+		op0 = *code_pos;
 		if ( op0 < 0 || op0 >= OP_MAX ) {
-			sprintf( errBuf, "bad opcode %02X at offset %i", op0,  code - code_start );
+			sprintf( errBuf, "bad opcode %02X at offset %i", op0,  code_pos - code_start );
 			return errBuf;
 		}
 		n = ops[ op0 ].size;
-		if ( code + 1 + n  > code_end ) {
-			sprintf( errBuf, "code > code_end" );
+		if ( code_pos + 1 + n  > code_end ) {
+			sprintf( errBuf, "code_pos > code_end" );
 			return errBuf;
 		}
-		code++;
+		code_pos++;
 		ci->op = op0;
 		if ( n == 4 ) {
-			ci->value = LittleLong( *((int*)code) );
-			code += 4;
+			ci->value = LittleLong( *((int*)code_pos) );
+			code_pos += 4;
 		} else if ( n == 1 ) { 
-			ci->value = *((char*)code);
-			code += 1;
+			ci->value = *((char*)code_pos);
+			code_pos += 1;
 		} else {
 			ci->value = 0;
 		}

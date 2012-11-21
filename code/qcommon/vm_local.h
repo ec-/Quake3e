@@ -130,7 +130,7 @@ typedef struct vmSymbol_s {
 
 //typedef void(*vmfunc_t)(void);
 
-typedef union {
+typedef union vmFunc_u {
 	byte		*ptr;
 	void (*func)(void);
 } vmFunc_t;
