@@ -699,12 +699,11 @@ qboolean Q_isanumber( const char *s )
     return qfalse;
 #else
     char *p;
-    double d;
 
-    if( *s == '\0' )
+	if( *s == '\0' )
         return qfalse;
 
-    d = strtod( s, &p );
+	strtod( s, &p );
 
     return *p == '\0';
 #endif
