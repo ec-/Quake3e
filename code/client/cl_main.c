@@ -78,6 +78,8 @@ cvar_t	*cl_lanForcePackets;
 
 cvar_t	*cl_guidServerUniq;
 
+cvar_t	*cl_dlURL;
+
 clientActive_t		cl;
 clientConnection_t	clc;
 clientStatic_t		cls;
@@ -110,6 +112,8 @@ void CL_CheckForResend( void );
 void CL_ShowIP_f(void);
 void CL_ServerStatus_f(void);
 void CL_ServerStatusResponse( netadr_t from, msg_t *msg );
+
+void CL_Download_f( void );
 
 /*
 ===============
@@ -2887,6 +2891,8 @@ void CL_Init( void ) {
 
 	cl_guidServerUniq = Cvar_Get ("cl_guidServerUniq", "1", CVAR_ARCHIVE);
 
+	cl_dlURL = Cvar_Get( "cl_dlURL", "http://q3a.ath.cx/getpk3bymapname.php/%m", CVAR_ARCHIVE );
+
 	// userinfo
 	Cvar_Get ("name", "UnnamedPlayer", CVAR_USERINFO | CVAR_ARCHIVE );
 	Cvar_Get ("rate", "25000", CVAR_USERINFO | CVAR_ARCHIVE );
@@ -2941,6 +2947,8 @@ void CL_Init( void ) {
 	Cmd_AddCommand ("model", CL_SetModel_f );
 	Cmd_AddCommand ("video", CL_Video_f );
 	Cmd_AddCommand ("stopvideo", CL_StopVideo_f );
+
+	Cmd_AddCommand( "download", CL_Download_f );
 
 	CL_InitRef();
 
@@ -3848,4 +3856,15 @@ CL_ShowIP_f
 */
 void CL_ShowIP_f(void) {
 	Sys_ShowIP();
+}
+
+
+/*
+==================
+CL_Download_f
+==================
+*/
+void CL_Download_f( void ) 
+{
+
 }
