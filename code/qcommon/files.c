@@ -969,6 +969,7 @@ FS_FOpenFileWrite
 fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 	char			*ospath;
 	fileHandle_t	f;
+	fileHandleData_t *fd;
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
@@ -990,19 +991,21 @@ fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 		return FS_INVALID_HANDLE;
 	}
 
+	fd = &fsh[ f ];
+
 	// enabling the following line causes a recursive function call loop
 	// when running with +set logfile 1 +set developer 1
 	//Com_DPrintf( "writing to: %s\n", ospath );
-	fsh[f].handleFiles.file.o = fopen( ospath, "wb" );
-	if ( fsh[f].handleFiles.file.o == NULL ) {
+	fd->handleFiles.file.o = fopen( ospath, "wb" );
+	if ( fd->handleFiles.file.o == NULL ) {
 		return FS_INVALID_HANDLE;
 	}
 
-	Q_strncpyz( fsh[f].name, filename, sizeof( fsh[f].name ) );
-	fsh[f].handleSync = qfalse;
-	fsh[f].zipFile = qfalse;
-	fsh[f].pak = NULL;
-	fsh[f].used = qtrue;
+	Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
+	fd->handleSync = qfalse;
+	fd->zipFile = qfalse;
+	fd->pak = NULL;
+	fd->used = qtrue;
 
 	return f;
 }
@@ -3783,6 +3786,18 @@ void FS_Restart( int checksumFeed ) {
 	Q_strncpyz(lastValidGame, fs_gamedirvar->string, sizeof(lastValidGame));
 
 }
+
+
+/*
+=================
+FS_Reload
+=================
+*/
+void FS_Reload( void ) 
+{
+	FS_Restart( fs_checksumFeed );
+}
+
 
 /*
 =================
