@@ -153,6 +153,20 @@ demo through a file.
 =============================================================================
 */
 
+#ifdef USE_CURL
+typedef struct download_s {
+	char		URL[MAX_OSPATH];
+	char		TempName[MAX_OSPATH];
+	char		Name[MAX_OSPATH];
+	CURL		*cURL;
+	CURLM		*cURLM;
+	fileHandle_t fHandle;
+	int			Size;
+	int			Count;
+	int			Block;
+	qboolean	clientUI;
+} download_t;
+#endif
 
 typedef struct {
 
@@ -310,6 +324,14 @@ typedef struct {
 } clientStatic_t;
 
 extern	clientStatic_t		cls;
+
+#ifdef USE_CURL
+
+extern		download_t	download;
+qboolean	Com_DL_Perform( download_t *dl );
+qboolean	Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean checkHeader );
+
+#endif
 
 //=============================================================================
 

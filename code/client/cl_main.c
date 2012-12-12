@@ -85,6 +85,10 @@ clientConnection_t	clc;
 clientStatic_t		cls;
 vm_t				*cgvm;
 
+#ifdef USE_CURL
+download_t			download;
+#endif
+
 // Structure containing functions exported from refresh DLL
 refexport_t	re;
 
@@ -2339,6 +2343,13 @@ CL_Frame
 */
 void CL_Frame ( int msec ) {
 
+#ifdef USE_CURL	
+	if ( download.cURL ) 
+	{
+		Com_DL_Perform( &download );
+	}
+#endif
+
 	if ( !com_cl_running->integer ) {
 		return;
 	}
@@ -3858,6 +3869,94 @@ void CL_ShowIP_f(void) {
 	Sys_ShowIP();
 }
 
+#ifdef USE_CURL
+int sreplace( char * str1, char * str2, char * src, int max_len ) 
+{
+	int count = 0; // replace count
+    int len1, len2, d;
+    char *match, *s0, *s1, *s2, *max;
+
+    match = strstr( src, str1 );
+
+    if ( !match )
+        return count;
+
+    len1 = strlen( str1 );
+    len2 = strlen( str2 );
+    d = len2-len1;
+
+    if ( d > 0 ) // expand and replace mode    
+    {
+        max = src + max_len;
+        src += strlen( src );
+
+        do  
+        {
+            // expand source string
+			s1 = src;
+            src += d;
+            if ( src >= max )
+                return count;
+            s2 = src;
+            
+            s0 = match + len1;
+
+            while ( s1 >= s0 )
+                *s2-- = *s1--;
+			
+			// replace match
+            s2 = str2;
+			while ( *s2 ) {
+                *match++ = *s2++;
+			}
+            match = strstr( match, str1 );
+
+            count++;
+        }
+        while ( match );
+
+        return count;
+    } 
+    else
+    if ( d < 0 ) // shrink and replace mode
+    {
+        do 
+        {
+            // shrink source string
+            s1 = match + len1;
+            s2 = match + len2;
+            while ( (*s2++ = *s1++) != 0 );
+			
+			//replace match
+            s2 = str2;
+			while ( *s2 ) {
+				*match++ = *s2++;
+			}
+
+            match = strstr( match, str1 );
+
+            count++;
+        } 
+        while ( match );
+
+        return count;
+    }
+    else
+    do  // just replace match
+    {
+        s2 = str2;
+		while ( *s2 ) {
+			*match++ = *s2++;
+		}
+
+        match = strstr( match, str1 );
+        count++;
+	} 
+    while ( match );
+
+	return count;
+}
+
 
 /*
 ==================
@@ -3866,5 +3965,27 @@ CL_Download_f
 */
 void CL_Download_f( void ) 
 {
+	char url[MAX_CVAR_VALUE_STRING];
+	char name[MAX_CVAR_VALUE_STRING];
 
+	if ( Cmd_Argc() < 2 || !*Cmd_Argv(1) ) 
+	{
+		Com_Printf( "usage: download <mapname>\n" );
+		return;
+	}
+
+	strcpy( url, cl_dlURL->string );
+	strcpy( name, Cmd_Argv(1) );
+
+	if ( !sreplace( "%1", name, url, sizeof( url ) ) ) 
+	{
+		Q_strcat( url, sizeof( url ), Cmd_Argv( 1 ) );
+	}
+
+	//Com_Printf( "dl: %s", url );
+
+	Q_strcat( name, sizeof( name ), ".pk3" );
+
+	Com_DL_Begin( &download, name, url, qtrue );
 }
+#endif

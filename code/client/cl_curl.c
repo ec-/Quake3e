@@ -335,4 +335,395 @@ void CL_cURL_PerformDownload(void)
 
 	CL_NextDownload();
 }
+
+
+/*  
+==================================
+
+Common CURL downloading functions
+
+==================================
+*/
+
+/*
+==================================
+stristr
+
+case-insensitive sub-string search
+==================================
+*/
+char* stristr( char *source, char *target ) 
+{
+	char *p0, *p1, *p2, *pn;
+	char c1, c2;
+
+	if ( *target == '\0' )  
+	{
+		return source;
+	}
+
+	pn = source;
+	p1 = source;
+	p2 = target;
+	
+	while ( *++p2 )
+	{
+	    pn++;
+	}
+
+	while ( *pn != '\0' ) 
+	{
+
+    	p0 = p1;
+	    p2 = target;
+
+    	while ( (c1 = *p1) != '\0' && (c2 = *p2) != '\0' )
+		{
+				if ( c1 <= 'Z' && c1 >= 'A' )
+					c1 += ('a' - 'A');
+
+				if ( c2 <= 'Z' && c2 >= 'A' )
+					c2 += ('a' - 'A');
+
+				if ( c1 != c2 ) 
+				{
+					break;
+				}
+
+				p1++;
+				p2++;
+		}
+
+		if ( *p2 == '\0' )  
+		{
+			return p0;
+		}
+
+		p1 = p0 + 1;
+	    pn++;
+  }
+
+  return NULL;
+}
+
+/*
+==================================
+replace
+==================================
+*/
+int replace1( const char src, const char dst, char *str ) 
+{
+	int count;
+
+	if ( !str ) 
+		return 0;
+
+	count = 0;
+
+	while ( *str != '\0' ) 
+	{
+		if ( *str == src )	
+		{
+			*str = dst;
+			count++;
+		}
+		str++;
+	}
+
+	return count;
+}
+
+
+
+void Com_DL_Cleanup( download_t *dl )
+{
+	if( dl->cURLM ) 
+	{
+		if ( dl->cURL ) 
+		{
+			qcurl_multi_remove_handle( dl->cURLM, dl->cURL );
+			qcurl_easy_cleanup( dl->cURL );
+		}
+		qcurl_multi_cleanup( dl->cURLM );
+		dl->cURLM = NULL;
+		dl->cURL = NULL;
+	}
+	else if( dl->cURL ) 
+	{
+		qcurl_easy_cleanup( dl->cURL );
+		dl->cURL = NULL;
+	}
+	if ( dl->fHandle != FS_INVALID_HANDLE ) 
+	{
+		FS_FCloseFile( dl->fHandle );
+		dl->fHandle = FS_INVALID_HANDLE;
+	}
+
+	dl->Block = 0;
+	dl->Count = 0;
+	dl->Size = 0;
+
+	dl->URL[0] = '\0';
+	dl->Name[0] = '\0';
+	dl->TempName[0] = '\0';
+}
+
+
+static int Com_DL_CallbackProgress( void *data, double dltotal, double dlnow, double ultotal, double ulnow )
+{
+	download_t *dl = (download_t *)data;
+	
+	dl->Size = (int)dltotal;
+	dl->Count = (int)dlnow;
+	
+	if ( dl->clientUI ) 
+	{
+		Cvar_SetValue( "cl_downloadSize", dl->Size );
+		Cvar_SetValue( "cl_downloadCount", dl->Count );
+	}
+
+	return 0;
+}
+
+
+static size_t Com_DL_CallbackWrite( void *ptr, size_t size, size_t nmemb, void *userdata )
+{
+	download_t *dl;
+
+	dl = (download_t *)userdata;
+
+	if ( dl->fHandle == FS_INVALID_HANDLE ) 
+		return (size_t)-1;
+
+	FS_Write( ptr, size*nmemb, dl->fHandle );
+
+	return (size * nmemb);
+}
+
+
+static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void *userdata ) 
+{
+	char name[MAX_CVAR_VALUE_STRING];
+	char header[1024], *s, quote, *d;
+	download_t *dl;
+	int len;
+
+	if ( size*nmemb >= sizeof( header ) ) 
+	{
+		Com_Printf( S_COLOR_RED "Com_DL_HeaderCallback: header is too large." );
+		return (size_t)-1;
+	}
+
+	dl = (download_t *)userdata;
+	if ( dl->fHandle != FS_INVALID_HANDLE ) 
+	{
+		//Com_Printf( "Already created file?\n" );
+		return size*nmemb; // already created file?
+	}
+
+	memcpy( header, ptr, size*nmemb+1 );
+	header[ size*nmemb ] = '\0';
+
+	//Com_Printf( "h: %s\n--------------------------\n", header );
+
+	s = stristr( header, "content-disposition:" );
+	if ( s ) 
+	{
+		s += 20; // strlen( "content-disposition:" )	
+		s = stristr( s, "filename=" );
+		if ( s ) 
+		{
+			s += 9; // strlen( "filename=" )
+			
+			d = name;
+			replace1( '\r', '\0', s );
+			replace1( '\n', '\0', s );
+
+			// prevent overflow
+			if ( strlen( s ) >= sizeof( name ) ) 
+				s[ sizeof( name ) - 1 ] = '\0';
+
+			if ( *s == '\'' || *s == '"' )
+				quote = *s++;
+			else
+				quote = '\0';
+
+			// copy filename
+			while ( *s != '\0' && *s != quote ) 
+				*d++ = *s++;
+			len = d - name;
+			*d++ = '\0';
+
+			// validate
+			if ( len < 5 || !stristr( name + len - 4, ".pk3" ) || strchr( name, '/' ) )
+			{
+				Com_Printf( "Com_DL_HeaderCallback: bad file name '%s'\n" );
+				return (size_t)-1;
+			}
+
+			// store in
+			Com_sprintf( dl->Name, sizeof( dl->Name ), "%s/%s", FS_GetCurrentGameDir(), name );
+
+			Com_sprintf( dl->TempName, sizeof( dl->TempName ), "%s.tmp%04X", dl->Name, random() );
+
+			//Com_Printf( S_COLOR_YELLOW "%s %s\n", dl->Name, dl->TempName );
+
+			dl->fHandle = FS_SV_FOpenFileWrite( dl->TempName );
+			if ( dl->fHandle == FS_INVALID_HANDLE ) 
+			{
+				Com_Printf( S_COLOR_RED "Com_DL_HeaderCallback: failed to open %s for writing\n", 
+					dl->TempName );
+				return (size_t)-1;
+			}
+			FS_LockHandle( dl->fHandle );
+		}
+	}
+	
+	return size*nmemb;
+}
+
+
+qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean checkHeader )
+{
+	if ( dl->cURL && dl->URL[0] ) 
+	{
+		Com_Printf( "already downloading %s\n", dl->URL );
+		return qfalse;
+	}
+
+	Com_Printf( "URL: %s\n", remoteURL );
+
+	Com_DL_Cleanup( dl );
+
+	dl->cURL = qcurl_easy_init();
+	if ( !dl->cURL ) 
+	{
+		Com_Printf( S_COLOR_RED "Com_BeginDownload: qcurl_easy_init() failed\n" );
+		return qfalse;
+	}
+
+	Q_strncpyz( dl->URL, remoteURL, sizeof( dl->URL ) );
+	
+	dl->Count = 0; // Starting new file
+	dl->Block = 0;
+	
+	if ( !checkHeader ) 
+	{
+		Q_strncpyz( dl->Name, localName, sizeof( dl->Name ) );
+		Com_sprintf( dl->TempName, sizeof( dl->TempName ), "%s.tmp", localName );
+		dl->fHandle = FS_SV_FOpenFileWrite( dl->TempName );
+		if ( dl->fHandle == FS_INVALID_HANDLE ) 
+		{
+			Com_Printf( S_COLOR_RED "Com_DL_Begin: failed to open %s for writing\n", 
+				dl->TempName );
+			return qfalse;
+		}
+		FS_LockHandle( dl->fHandle );
+
+		dl->clientUI = qtrue;
+	}
+	else 
+	{
+		dl->clientUI = qfalse;
+	}
+
+	if ( com_developer->integer )
+		qcurl_easy_setopt( dl->cURL, CURLOPT_VERBOSE, 1 );
+
+	qcurl_easy_setopt( dl->cURL, CURLOPT_URL, dl->URL );
+	qcurl_easy_setopt( dl->cURL, CURLOPT_TRANSFERTEXT, 0 );
+	qcurl_easy_setopt( dl->cURL, CURLOPT_REFERER, va( "ioQ3://%s", NET_AdrToString( clc.serverAddress ) ) );
+	qcurl_easy_setopt( dl->cURL, CURLOPT_USERAGENT, Q3_VERSION );
+	qcurl_easy_setopt( dl->cURL, CURLOPT_WRITEFUNCTION,	Com_DL_CallbackWrite );
+	qcurl_easy_setopt( dl->cURL, CURLOPT_WRITEDATA, dl );
+	if ( checkHeader ) 
+	{
+		qcurl_easy_setopt( dl->cURL, CURLOPT_HEADERFUNCTION, Com_DL_HeaderCallback );
+		qcurl_easy_setopt( dl->cURL, CURLOPT_HEADERDATA, dl );
+	}
+	qcurl_easy_setopt( dl->cURL, CURLOPT_NOPROGRESS, 0 );
+	qcurl_easy_setopt( dl->cURL, CURLOPT_PROGRESSFUNCTION, Com_DL_CallbackProgress );
+	qcurl_easy_setopt( dl->cURL, CURLOPT_PROGRESSDATA, dl );
+	qcurl_easy_setopt( dl->cURL, CURLOPT_FAILONERROR, 1 );
+	qcurl_easy_setopt( dl->cURL, CURLOPT_FOLLOWLOCATION, 1 );
+	qcurl_easy_setopt( dl->cURL, CURLOPT_MAXREDIRS, 5 );
+	
+	dl->cURLM = qcurl_multi_init();	
+	
+	if ( !dl->cURLM ) 
+	{
+		Com_DL_Cleanup( dl );	
+		Com_Printf( S_COLOR_RED "Com_DL_Begin: qcurl_multi_init() failed\n" );
+		return qfalse;
+	}
+
+	if ( qcurl_multi_add_handle( dl->cURLM, dl->cURL ) != CURLM_OK ) 
+	{
+		Com_DL_Cleanup( dl );
+		Com_Printf( S_COLOR_RED "Com_DL_Begin: qcurl_multi_add_handle() failed\n" );
+		return qfalse;
+	}
+
+	return qtrue;
+}
+
+
+qboolean Com_DL_Perform( download_t *dl )
+{
+	CURLMcode res;
+	CURLMsg *msg;
+	long code;
+	int c, n;
+	int i = 0;
+
+	res = qcurl_multi_perform( dl->cURLM, &c );
+
+	if ( cls.state == CA_DISCONNECTED )
+		n = 64;
+	else
+		n = 32;
+
+	while( res == CURLM_CALL_MULTI_PERFORM && i < n ) 
+	{
+		res = qcurl_multi_perform( dl->cURLM, &c );
+		i++;
+	}
+	if( res == CURLM_CALL_MULTI_PERFORM ) 
+	{
+		return qtrue;
+	}
+
+	msg = qcurl_multi_info_read( dl->cURLM, &c );
+	if( msg == NULL ) 
+	{
+		return qtrue;
+	}
+
+	FS_FCloseFile( dl->fHandle );
+	dl->fHandle = FS_INVALID_HANDLE;
+
+	if ( msg->msg == CURLMSG_DONE && msg->data.result == CURLE_OK ) 
+	{
+		if ( dl->TempName ) 
+		{
+			FS_SV_Rename( dl->TempName, dl->Name );
+		}
+		Com_Printf( "%s downloaded\n", dl->Name );
+		Com_DL_Cleanup( dl );
+		FS_Reload(); //clc.downloadRestart = qtrue;
+		return qfalse;
+	}
+	else 
+	{
+		qcurl_easy_getinfo( msg->easy_handle, CURLINFO_RESPONSE_CODE, &code );	
+		Com_Printf( S_COLOR_RED "Download Error: %s Code: %ld URL: %s",
+			qcurl_easy_strerror( msg->data.result ), code, dl->URL );
+		FS_Remove( dl->TempName ); 
+		Com_DL_Cleanup( dl );
+	}
+
+	return qtrue;
+}
+
+
 #endif /* USE_CURL */
