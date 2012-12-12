@@ -211,6 +211,8 @@ snd_stream_t *S_CodecUtilOpen(const char *filename, snd_codec_t *codec)
 		return NULL;
 	}
 
+	FS_LockHandle( hnd );
+
 	// Copy over, return
 	stream->codec = codec;
 	stream->file = hnd;
