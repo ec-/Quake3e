@@ -492,15 +492,18 @@ void CL_ReadDemoMessage( void ) {
 CL_WalkDemoExt
 ====================
 */
-static void CL_WalkDemoExt(char *arg, char *name, int *demofile)
+static void CL_WalkDemoExt(char *arg, char *name, fileHandle_t *handle )
 {
-	int i = 0;
-	*demofile = 0;
-	while(demo_protocols[i])
+	int i;
+	
+	*handle = FS_INVALID_HANDLE;
+	i = 0;
+
+	while ( demo_protocols[i] )
 	{
-		Com_sprintf (name, MAX_OSPATH, "demos/%s.dm_%d", arg, demo_protocols[i]);
-		FS_FOpenFileRead( name, demofile, qtrue );
-		if (*demofile)
+		Com_sprintf( name, MAX_OSPATH, "demos/%s.dm_%d", arg, demo_protocols[i] );
+		FS_FOpenFileRead( name, handle, qtrue );
+		if ( *handle != FS_INVALID_HANDLE )
 		{
 			Com_Printf("Demo file: %s\n", name);
 			break;
