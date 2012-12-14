@@ -1072,12 +1072,9 @@ static void RoQReset( void ) {
 	
 	if (currentHandle < 0) return;
 
-	Sys_EndStreamedFile(cinTable[currentHandle].iFile);
 	FS_FCloseFile( cinTable[currentHandle].iFile );
 	FS_FOpenFileRead (cinTable[currentHandle].fileName, &cinTable[currentHandle].iFile, qtrue);
 	// let the background thread start reading ahead
-	Sys_BeginStreamedFile( cinTable[currentHandle].iFile, 0x10000 );
-	Sys_StreamedRead (cin.file, 16, 1, cinTable[currentHandle].iFile);
 	RoQ_init();
 	cinTable[currentHandle].status = FMV_LOOPED;
 }
@@ -1098,7 +1095,6 @@ static void RoQInterrupt(void)
         
 	if (currentHandle < 0) return;
 
-	Sys_StreamedRead( cin.file, cinTable[currentHandle].RoQFrameSize+8, 1, cinTable[currentHandle].iFile );
 	if ( cinTable[currentHandle].RoQPlayed >= cinTable[currentHandle].ROQSize ) { 
 		if (cinTable[currentHandle].holdAtEnd==qfalse) {
 			if (cinTable[currentHandle].looping) {
@@ -1214,7 +1210,6 @@ redump:
 // one more frame hits the dust
 //
 //	assert(cinTable[currentHandle].RoQFrameSize <= 65536);
-//	r = Sys_StreamedRead( cin.file, cinTable[currentHandle].RoQFrameSize+8, 1, cinTable[currentHandle].iFile );
 	cinTable[currentHandle].RoQPlayed	+= cinTable[currentHandle].RoQFrameSize+8;
 }
 
@@ -1272,7 +1267,6 @@ static void RoQShutdown( void ) {
 	cinTable[currentHandle].status = FMV_IDLE;
 
 	if (cinTable[currentHandle].iFile) {
-		Sys_EndStreamedFile( cinTable[currentHandle].iFile );
 		FS_FCloseFile( cinTable[currentHandle].iFile );
 		cinTable[currentHandle].iFile = 0;
 	}
@@ -1473,7 +1467,6 @@ int CIN_PlayCinematic( const char *arg, int x, int y, int w, int h, int systemBi
 		RoQ_init();
 //		FS_Read (cin.file, cinTable[currentHandle].RoQFrameSize+8, cinTable[currentHandle].iFile);
 		// let the background thread start reading ahead
-		Sys_BeginStreamedFile( cinTable[currentHandle].iFile, 0x10000 );
 
 		cinTable[currentHandle].status = FMV_PLAY;
 		Com_DPrintf("trFMV::play(), playing %s\n", arg);

@@ -30,23 +30,6 @@ int			sys_curtime;
 
 //===================================================================
 
-void Sys_BeginStreamedFile( FILE *f, int readAhead ) {
-}
-
-void Sys_EndStreamedFile( FILE *f ) {
-}
-
-int Sys_StreamedRead( void *buffer, int size, int count, FILE *f ) {
-	return fread( buffer, size, count, f );
-}
-
-void Sys_StreamSeek( FILE *f, int offset, int origin ) {
-	fseek( f, offset, origin );
-}
-
-
-//===================================================================
-
 
 void Sys_mkdir ( const char *path ) {
 }
