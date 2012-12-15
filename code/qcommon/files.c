@@ -733,9 +733,6 @@ fileHandle_t FS_SV_FOpenFileWrite( const char *filename ) {
 	f = FS_HandleForFile();
 	fd = &fsh[ f ];
 
-	fd->zipFile = qfalse;
-	fd->pak = NULL;
-
 	if ( fs_debug->integer ) {
 		Com_Printf( "FS_SV_FOpenFileWrite: %s\n", ospath );
 	}
@@ -756,6 +753,9 @@ fileHandle_t FS_SV_FOpenFileWrite( const char *filename ) {
 
 	Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
 	fd->handleSync = qfalse;
+	fd->zipFile = qfalse;
+	fd->used = qtrue;
+	fd->pak = NULL;
 
 	return f;
 }
@@ -768,9 +768,9 @@ we search in that order, matching FS_SV_FOpenFileRead order
 ===========
 */
 int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
-	char *ospath;
-	fileHandle_t f = FS_INVALID_HANDLE;
 	fileHandleData_t *fd;
+	fileHandle_t f;
+	char *ospath;
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
@@ -785,17 +785,12 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
 	f = FS_HandleForFile(); 
 	fd = &fsh[ f ];
 
-	fd->zipFile = qfalse;
-	fd->pak = NULL;
-
-	Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
-
 #ifndef DEDICATED
-	// don't let sound stutter
+	// don't let sound shutter
 	S_ClearSoundBuffer();
 #endif
 
-  // search homepath
+	// search homepath
 	ospath = FS_BuildOSPath( fs_homepath->string, filename, "" );
 	// remove trailing slash
 	ospath[strlen(ospath)-1] = '\0';
@@ -805,8 +800,6 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
 	}
 
 	fd->handleFiles.file.o = fopen( ospath, "rb" );
-	fd->handleSync = qfalse;
-
 	if ( !fd->handleFiles.file.o )
 	{
 		// NOTE TTimo on non *nix systems, fs_homepath == fs_basepath, might want to avoid
@@ -822,7 +815,6 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
 			}
 
 			fd->handleFiles.file.o = fopen( ospath, "rb" );
-			fd->handleSync = qfalse;
 		}
 	}
 
@@ -840,11 +832,15 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
 			}
 
 			fd->handleFiles.file.o = fopen( ospath, "rb" );
-			fd->handleSync = qfalse;
 		}
 	}
   
 	if( fd->handleFiles.file.o != NULL ) {
+		Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
+		fd->handleSync = qfalse;
+		fd->zipFile = qfalse;
+		fd->used = qtrue;
+		fd->pak = NULL;
 		*fp = f;
 		return FS_FileLength( fd->handleFiles.file.o );
 	}
@@ -933,26 +929,28 @@ on files returned by FS_FOpenFile...
 ==============
 */
 void FS_FCloseFile( fileHandle_t f ) {
+	fileHandleData_t *fd;
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
 
-	if (fsh[f].zipFile == qtrue) {
-		unzCloseCurrentFile( fsh[f].handleFiles.file.z );
-		if ( fsh[f].handleFiles.unique ) {
-			unzClose( fsh[f].handleFiles.file.z );
+	fd = &fsh[ f ];
+
+	if ( fd->zipFile == qtrue ) {
+		unzCloseCurrentFile( fd->handleFiles.file.z );
+		if ( fd->handleFiles.unique ) {
+			unzClose( fd->handleFiles.file.z );
 		}
-		Com_Memset( &fsh[f], 0, sizeof( fileHandleData_t ) );
+		Com_Memset( fd, 0, sizeof( *fd ) );
 		return;
 	}
 
 	// we didn't find it as a pak, so close it as a unique file
-	if ( fsh[f].handleFiles.file.o ) {
-		fclose( fsh[f].handleFiles.file.o );
+	if ( fd->handleFiles.file.o ) {
+		fclose( fd->handleFiles.file.o );
 	}
-
-	Com_Memset( &fsh[f], 0, sizeof( fileHandleData_t ) );
+	Com_Memset( fd, 0, sizeof( *fd ) );
 }
 
 /*
@@ -999,8 +997,8 @@ fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 	Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
 	fd->handleSync = qfalse;
 	fd->zipFile = qfalse;
-	fd->pak = NULL;
 	fd->used = qtrue;
+	fd->pak = NULL;
 
 	return f;
 }
@@ -1013,6 +1011,7 @@ FS_FOpenFileAppend
 */
 fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 	char			*ospath;
+	fileHandleData_t *fd;
 	fileHandle_t	f;
 
 	if ( !fs_searchpaths ) {
@@ -1022,9 +1021,6 @@ fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 	if ( !*filename ) {
 		return FS_INVALID_HANDLE;
 	}
-
-	f = FS_HandleForFile();
-
 #ifndef DEDICATED
 	// don't let sound stutter
 	S_ClearSoundBuffer();
@@ -1041,17 +1037,20 @@ fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 	if ( FS_CreatePath( ospath ) ) {
 		return FS_INVALID_HANDLE;
 	}
+	
+	f = FS_HandleForFile();
+	fd = &fsh[ f ];
 
-	fsh[f].handleFiles.file.o = fopen( ospath, "ab" );
-	if ( fsh[f].handleFiles.file.o == NULL ) {
+	fd->handleFiles.file.o = fopen( ospath, "ab" );
+	if ( fd->handleFiles.file.o == NULL ) {
 		return FS_INVALID_HANDLE;
 	}
 
-	Q_strncpyz( fsh[f].name, filename, sizeof( fsh[f].name ) );
-	fsh[f].handleSync = qfalse;
-	fsh[f].zipFile = qfalse;
-	fsh[f].pak = NULL;
-	fsh[f].used = qtrue;
+	Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
+	fd->handleSync = qfalse;
+	fd->zipFile = qfalse;
+	fd->used = qtrue;
+	fd->pak = NULL;
 
 	return f;
 }
@@ -2694,7 +2693,7 @@ void FS_TouchFile_f( void ) {
 	}
 
 	FS_FOpenFileRead( Cmd_Argv( 1 ), &f, qfalse );
-	if ( f ) {
+	if ( f != FS_INVALID_HANDLE ) {
 		FS_FCloseFile( f );
 	}
 }
