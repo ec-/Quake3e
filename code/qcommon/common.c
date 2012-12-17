@@ -2024,8 +2024,8 @@ void Com_InitJournaling( void ) {
 			FS_FCloseFile( com_journalFile );
 		if ( com_journalDataFile )
 			FS_FCloseFile( com_journalDataFile );
-		com_journalFile = 0;
-		com_journalDataFile = 0;
+		com_journalFile = FS_INVALID_HANDLE;
+		com_journalDataFile = FS_INVALID_HANDLE;
 		Com_Printf( "Couldn't open journal files\n" );
 	}
 }
@@ -3242,19 +3242,19 @@ Com_Shutdown
 =================
 */
 void Com_Shutdown (void) {
-	if (logfile) {
-		FS_FCloseFile (logfile);
-		logfile = 0;
+	if ( logfile != FS_INVALID_HANDLE ) {
+		FS_FCloseFile( logfile );
+		logfile = FS_INVALID_HANDLE;
 	}
 
-	if ( com_journalFile ) {
+	if ( com_journalFile != FS_INVALID_HANDLE ) {
 		FS_FCloseFile( com_journalFile );
-		com_journalFile = 0;
+		com_journalFile = FS_INVALID_HANDLE;
 	}
 
-	if ( com_journalDataFile ) {
+	if ( com_journalDataFile != FS_INVALID_HANDLE ) {
 		FS_FCloseFile( com_journalDataFile );
-		com_journalDataFile = 0;
+		com_journalDataFile = FS_INVALID_HANDLE;
 	}
 }
 

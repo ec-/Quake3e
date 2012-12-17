@@ -319,6 +319,7 @@ void CL_cURL_PerformDownload(void)
 		return;
 	}
 	FS_FCloseFile( clc.download );
+	clc.download = FS_INVALID_HANDLE;
 	if(msg->msg == CURLMSG_DONE && msg->data.result == CURLE_OK) {
 		FS_SV_Rename(clc.downloadTempName, clc.downloadName);
 		clc.downloadRestart = qtrue;
