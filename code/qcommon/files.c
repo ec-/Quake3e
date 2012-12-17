@@ -276,6 +276,7 @@ static int fs_checksumFeed;
 typedef union qfile_gus {
 	FILE*		o;
 	unzFile		z;
+	void*		v;
 } qfile_gut;
 
 typedef struct qfile_us {
@@ -286,8 +287,8 @@ typedef struct qfile_us {
 typedef struct {
 	qfile_ut	handleFiles;
 	qboolean	handleSync;
-	int			baseOffset;
-	int			fileSize;
+	//int		baseOffset;
+	//int		fileSize;
 	int			zipFilePos;
 	qboolean	zipFile;
 	char		name[MAX_ZPATH];
@@ -400,10 +401,13 @@ static fileHandle_t	FS_HandleForFile( void ) {
 	int		i;
 
 	for ( i = 1 ; i < MAX_FILE_HANDLES ; i++ ) {
-		if ( fsh[i].handleFiles.file.o == NULL && 
-			fsh[i].handleFiles.file.z == NULL ) {
+		if ( fsh[i].used == qfalse ) {
 			return i;
 		}
+		//if ( fsh[i].handleFiles.file.o == NULL && 
+		//	fsh[i].handleFiles.file.z == NULL ) {
+		//	return i;
+		//}
 	}
 	Com_Error( ERR_DROP, "FS_HandleForFile: none free" );
 	return FS_INVALID_HANDLE;
@@ -942,15 +946,16 @@ void FS_FCloseFile( fileHandle_t f ) {
 		if ( fd->handleFiles.unique ) {
 			unzClose( fd->handleFiles.file.z );
 		}
-		Com_Memset( fd, 0, sizeof( *fd ) );
-		return;
+		fd->handleFiles.file.z = NULL;
+	} else {
+		if ( fd->handleFiles.file.o ) {
+			fclose( fd->handleFiles.file.o );
+			fd->handleFiles.file.o = NULL;
+		}
 	}
 
-	// we didn't find it as a pak, so close it as a unique file
-	if ( fd->handleFiles.file.o ) {
-		fclose( fd->handleFiles.file.o );
-	}
-	Com_Memset( fd, 0, sizeof( *fd ) );
+	fd->name[0] = '\0';
+	fd->used = qfalse;
 }
 
 /*
@@ -1245,9 +1250,6 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	*file = FS_HandleForFile();
 	f = &fsh[*file];
 
-	f->handleFiles.unique = uniqueFILE;
-	f->used = qfalse;
-
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		//
 		if ( search->pack ) {
@@ -1318,6 +1320,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					// open the file in the zip
 					unzOpenCurrentFile( f->handleFiles.file.z );
 					f->zipFilePos = pakFile->pos;
+					f->handleFiles.unique = uniqueFILE;
 					f->used = qtrue;
 
 					if ( fs_debug->integer ) {
@@ -1536,20 +1539,20 @@ FS_Seek
 
 =================
 */
-int FS_Seek( fileHandle_t f, long offset, int origin ) {
+int FS_Seek( fileHandle_t f, long offset, fsOrigin_t origin ) {
 	int		_origin;
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
 
-	if (fsh[f].zipFile == qtrue) {
+	if ( fsh[f].zipFile == qtrue ) {
 		//FIXME: this is incomplete and really, really
 		//crappy (but better than what was here before)
 		byte	buffer[PK3_SEEK_BUFFER_SIZE];
 		int		remainder = offset;
 
-		if( offset < 0 || origin == FS_SEEK_END ) {
+		if ( offset < 0 || origin == FS_SEEK_END ) {
 			Com_Error( ERR_FATAL, "Negative offsets and FS_SEEK_END not implemented "
 					"for FS_Seek on pk3 file contents\n" );
 			return -1;
@@ -1738,7 +1741,7 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 
 	// look for it in the filesystem or pack files
 	len = FS_FOpenFileRead( qpath, &h, qfalse );
-	if ( h == 0 ) {
+	if ( h == FS_INVALID_HANDLE ) {
 		if ( buffer ) {
 			*buffer = NULL;
 		}
@@ -1758,7 +1761,7 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 			FS_Write( &len, sizeof( len ), com_journalDataFile );
 			FS_Flush( com_journalDataFile );
 		}
-		FS_FCloseFile( h);
+		FS_FCloseFile( h );
 		return len;
 	}
 
@@ -3876,15 +3879,15 @@ int		FS_FOpenFileByMode( const char *qpath, fileHandle_t *f, fsMode_t mode ) {
 
 	fhd = &fsh[ *f ];
 
-	if ( fhd->zipFile == qtrue ) {
-		fhd->baseOffset = unztell( fhd->handleFiles.file.z );
-	} else {
-		fhd->baseOffset = ftell( fhd->handleFiles.file.o );
-	}
+	//if ( fhd->zipFile == qtrue ) {
+	//	fhd->baseOffset = unztell( fhd->handleFiles.file.z );
+	//} else {
+	//	fhd->baseOffset = ftell( fhd->handleFiles.file.o );
+	//}
+	//fhd->fileSize = r;
 
-	fhd->used = qtrue;
-	fhd->fileSize = r;
 	fhd->handleSync = sync;
+	fhd->used = qtrue;
 
 	return r;
 }
@@ -3992,8 +3995,8 @@ void FS_VM_CloseFiles( handleOwner_t owner ) {
 	for ( i = 1; i < MAX_FILE_HANDLES; i++ ) {
 		if ( fsh[i].owner != owner )
 			continue;
-		Com_Printf( "^3%s:%i:%s leaked filehandle\n", 
-			FS_OwnerName(owner), i, fsh[i].name );
+		Com_Printf( S_COLOR_YELLOW"%s:%i:%s leaked filehandle\n", 
+			FS_OwnerName( owner ), i, fsh[i].name );
 		FS_FCloseFile( i );
 	}
 }
