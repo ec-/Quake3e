@@ -273,6 +273,8 @@ static	int			fs_packCount = 0;			// total number of packs
 
 static int fs_checksumFeed;
 
+static qboolean reload = qfalse;
+
 typedef union qfile_gus {
 	FILE*		o;
 	unzFile		z;
@@ -949,8 +951,15 @@ void FS_FCloseFile( fileHandle_t f ) {
 		}
 	}
 
-	fd->name[0] = '\0';
-	fd->used = qfalse;
+	if ( !reload ) {
+		fd->name[0] = '\0';
+		fd->used = qfalse;
+		fd->pak = NULL;
+	} else {
+		if ( fd->pak ) {
+		
+		}
+	}
 }
 
 /*
@@ -1167,7 +1176,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	FILE			*temp;
 	int				l, length;
 	fileHandleData_t *f;
-	char demoExt[16];
+	//char demoExt[16];
 
 	hash = 0;
 
@@ -1215,7 +1224,8 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 		return -1;
 	}
 
-	Com_sprintf( demoExt, sizeof( demoExt ), ".dm_%d", PROTOCOL_VERSION );
+	//Com_sprintf( demoExt, sizeof( demoExt ), ".dm_%d", PROTOCOL_VERSION );
+
 	// qpaths are not supposed to have a leading slash
 	if ( filename[0] == '/' || filename[0] == '\\' ) {
 		filename++;
@@ -1765,7 +1775,7 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 	FS_Read (buf, len, h);
 
 	// guarantee that it will have a trailing 0 for string operations
-	buf[len] = 0;
+	buf[len] = '\0';
 	FS_FCloseFile( h );
 
 	// if we are journalling and it is a config file, write it to the journal file
@@ -2443,7 +2453,7 @@ int	FS_GetModList( char *listbuf, int bufsize ) {
         strcpy(descPath, name);
         strcat(descPath, "/description.txt");
         nDescLen = FS_SV_FOpenFileRead( descPath, &descHandle );
-        if ( nDescLen > 0 && descHandle) {
+        if ( nDescLen > 0 && descHandle != FS_INVALID_HANDLE ) {
           FILE *file;
           file = FS_FileForHandle(descHandle);
           Com_Memset( descPath, 0, sizeof( descPath ) );
