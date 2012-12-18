@@ -287,10 +287,7 @@ typedef struct qfile_us {
 typedef struct {
 	qfile_ut	handleFiles;
 	qboolean	handleSync;
-	//int		baseOffset;
-	//int		fileSize;
 	int			zipFilePos;
-	qboolean	zipFile;
 	char		name[MAX_ZPATH];
 	handleOwner_t	owner;
 	qboolean	used;
@@ -417,7 +414,7 @@ static FILE	*FS_FileForHandle( fileHandle_t f ) {
 	if ( f <= 0 || f >= MAX_FILE_HANDLES ) {
 		Com_Error( ERR_DROP, "FS_FileForHandle: out of range" );
 	}
-	if (fsh[f].zipFile == qtrue) {
+	if ( fsh[f].pak ) {
 		Com_Error( ERR_DROP, "FS_FileForHandle: can't get FILE on zip file" );
 	}
 	if ( ! fsh[f].handleFiles.file.o ) {
@@ -757,7 +754,6 @@ fileHandle_t FS_SV_FOpenFileWrite( const char *filename ) {
 
 	Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
 	fd->handleSync = qfalse;
-	fd->zipFile = qfalse;
 	fd->used = qtrue;
 	fd->pak = NULL;
 
@@ -842,7 +838,6 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
 	if( fd->handleFiles.file.o != NULL ) {
 		Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
 		fd->handleSync = qfalse;
-		fd->zipFile = qfalse;
 		fd->used = qtrue;
 		fd->pak = NULL;
 		*fp = f;
@@ -941,7 +936,7 @@ void FS_FCloseFile( fileHandle_t f ) {
 
 	fd = &fsh[ f ];
 
-	if ( fd->zipFile == qtrue ) {
+	if ( fd->pak ) {
 		unzCloseCurrentFile( fd->handleFiles.file.z );
 		if ( fd->handleFiles.unique ) {
 			unzClose( fd->handleFiles.file.z );
@@ -1001,7 +996,6 @@ fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 
 	Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
 	fd->handleSync = qfalse;
-	fd->zipFile = qfalse;
 	fd->used = qtrue;
 	fd->pak = NULL;
 
@@ -1053,7 +1047,6 @@ fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 
 	Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
 	fd->handleSync = qfalse;
-	fd->zipFile = qfalse;
 	fd->used = qtrue;
 	fd->pak = NULL;
 
@@ -1306,7 +1299,6 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 						f->handleFiles.file.z = pak->handle;
 					}
 					Q_strncpyz( f->name, filename, sizeof( f->name ) );
-					f->zipFile = qtrue;
 					f->pak = pak;
 					zfi = (unz_s *)f->handleFiles.file.z;
 					// in case the file was new
@@ -1368,7 +1360,6 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 			}
 
 			Q_strncpyz( f->name, filename, sizeof( f->name ) );
-			f->zipFile = qfalse;
 			f->used = qtrue;
 			f->pak = NULL;
 
@@ -1437,7 +1428,7 @@ int FS_Read( void *buffer, int len, fileHandle_t f ) {
 	buf = (byte *)buffer;
 	fs_readCount += len;
 
-	if ( fsh[f].zipFile == qfalse ) {
+	if ( fsh[f].pak == NULL ) {
 		remaining = len;
 		tries = 0;
 		while (remaining) {
@@ -1546,7 +1537,7 @@ int FS_Seek( fileHandle_t f, long offset, fsOrigin_t origin ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
 
-	if ( fsh[f].zipFile == qtrue ) {
+	if ( fsh[f].pak ) {
 		//FIXME: this is incomplete and really, really
 		//crappy (but better than what was here before)
 		byte	buffer[PK3_SEEK_BUFFER_SIZE];
@@ -3879,25 +3870,18 @@ int		FS_FOpenFileByMode( const char *qpath, fileHandle_t *f, fsMode_t mode ) {
 
 	fhd = &fsh[ *f ];
 
-	//if ( fhd->zipFile == qtrue ) {
-	//	fhd->baseOffset = unztell( fhd->handleFiles.file.z );
-	//} else {
-	//	fhd->baseOffset = ftell( fhd->handleFiles.file.o );
-	//}
-	//fhd->fileSize = r;
-
 	fhd->handleSync = sync;
 	fhd->used = qtrue;
 
 	return r;
 }
 
-int		FS_FTell( fileHandle_t f ) {
+int FS_FTell( fileHandle_t f ) {
 	int pos;
-	if (fsh[f].zipFile == qtrue) {
-		pos = unztell(fsh[f].handleFiles.file.z);
+	if ( fsh[f].pak ) {
+		pos = unztell( fsh[f].handleFiles.file.z );
 	} else {
-		pos = ftell(fsh[f].handleFiles.file.o);
+		pos = ftell( fsh[f].handleFiles.file.o );
 	}
 	return pos;
 }
