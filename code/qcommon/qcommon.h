@@ -591,8 +591,6 @@ void	FS_InitFilesystem ( void );
 void	FS_Shutdown( qboolean closemfp );
 
 qboolean	FS_ConditionalRestart( int checksumFeed );
-void	FS_LockHandle( fileHandle_t fh );
-void	FS_CloseHandles( void );
 
 void	FS_Restart( int checksumFeed );
 // shutdown and restart the filesystem so changes to fs_gamedir can take effect

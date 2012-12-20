@@ -201,8 +201,7 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 			if(logfile)
 			{
 				Com_Printf( "logfile opened on %s\n", asctime( newtime ) );
-				FS_LockHandle( logfile );
-			
+		
 				if ( com_logfile->integer > 1 )
 				{
 					// force it to not buffer so we get valid
@@ -2010,8 +2009,6 @@ void Com_InitJournaling( void ) {
 		Com_Printf( "Journaling events\n");
 		com_journalFile = FS_FOpenFileWrite( "journal.dat" );
 		com_journalDataFile = FS_FOpenFileWrite( "journaldata.dat" );
-		FS_LockHandle( com_journalFile );
-		FS_LockHandle( com_journalDataFile );
 	} else if ( com_journal->integer == 2 ) {
 		Com_Printf( "Replaying journaled events\n");
 		FS_FOpenFileRead( "journal.dat", &com_journalFile, qtrue );

@@ -273,8 +273,6 @@ static	int			fs_packCount = 0;			// total number of packs
 
 static int fs_checksumFeed;
 
-static qboolean reload = qfalse;
-
 typedef union qfile_gus {
 	FILE*		o;
 	unzFile		z;
@@ -289,12 +287,10 @@ typedef struct qfile_us {
 typedef struct {
 	qfile_ut	handleFiles;
 	qboolean	handleSync;
+	qboolean	zipFile;
 	int			zipFilePos;
 	char		name[MAX_ZPATH];
 	handleOwner_t	owner;
-	qboolean	used;
-	qboolean	lock;
-	pack_t		*pak;
 } fileHandleData_t;
 
 static fileHandleData_t	fsh[MAX_FILE_HANDLES];
@@ -396,18 +392,16 @@ static long FS_HashFileName( const char *fname, int hashSize ) {
 	return hash;
 }
 
-static fileHandle_t	FS_HandleForFile( void ) {
+static fileHandle_t	FS_HandleForFile( void ) 
+{
 	int		i;
 
-	for ( i = 1 ; i < MAX_FILE_HANDLES ; i++ ) {
-		if ( fsh[i].used == qfalse ) {
+	for ( i = 1 ; i < MAX_FILE_HANDLES ; i++ ) 
+	{
+		if ( fsh[i].handleFiles.file.v == NULL )
 			return i;
-		}
-		//if ( fsh[i].handleFiles.file.o == NULL && 
-		//	fsh[i].handleFiles.file.z == NULL ) {
-		//	return i;
-		//}
 	}
+
 	Com_Error( ERR_DROP, "FS_HandleForFile: none free" );
 	return FS_INVALID_HANDLE;
 }
@@ -416,7 +410,7 @@ static FILE	*FS_FileForHandle( fileHandle_t f ) {
 	if ( f <= 0 || f >= MAX_FILE_HANDLES ) {
 		Com_Error( ERR_DROP, "FS_FileForHandle: out of range" );
 	}
-	if ( fsh[f].pak ) {
+	if ( fsh[f].zipFile ) {
 		Com_Error( ERR_DROP, "FS_FileForHandle: can't get FILE on zip file" );
 	}
 	if ( ! fsh[f].handleFiles.file.o ) {
@@ -756,8 +750,7 @@ fileHandle_t FS_SV_FOpenFileWrite( const char *filename ) {
 
 	Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
 	fd->handleSync = qfalse;
-	fd->used = qtrue;
-	fd->pak = NULL;
+	fd->zipFile = qfalse;
 
 	return f;
 }
@@ -840,8 +833,7 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
 	if( fd->handleFiles.file.o != NULL ) {
 		Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
 		fd->handleSync = qfalse;
-		fd->used = qtrue;
-		fd->pak = NULL;
+		fd->zipFile = qfalse;
 		*fp = f;
 		return FS_FileLength( fd->handleFiles.file.o );
 	}
@@ -938,12 +930,13 @@ void FS_FCloseFile( fileHandle_t f ) {
 
 	fd = &fsh[ f ];
 
-	if ( fd->pak ) {
+	if ( fd->zipFile ) {
 		unzCloseCurrentFile( fd->handleFiles.file.z );
 		if ( fd->handleFiles.unique ) {
 			unzClose( fd->handleFiles.file.z );
 		}
 		fd->handleFiles.file.z = NULL;
+		fd->zipFile = qfalse;
 	} else {
 		if ( fd->handleFiles.file.o ) {
 			fclose( fd->handleFiles.file.o );
@@ -951,16 +944,9 @@ void FS_FCloseFile( fileHandle_t f ) {
 		}
 	}
 
-	if ( !reload ) {
-		fd->name[0] = '\0';
-		fd->used = qfalse;
-		fd->pak = NULL;
-	} else {
-		if ( fd->pak ) {
-		
-		}
-	}
+	Com_Memset( fd, 0, sizeof( *fd ) );
 }
+
 
 /*
 ===========
@@ -981,8 +967,6 @@ fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 		return FS_INVALID_HANDLE;
 	}
 
-	f = FS_HandleForFile();
-
 	ospath = FS_BuildOSPath( fs_homepath->string, fs_gamedir, filename );
 
 	if ( fs_debug->integer ) {
@@ -993,6 +977,7 @@ fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 		return FS_INVALID_HANDLE;
 	}
 
+	f = FS_HandleForFile();
 	fd = &fsh[ f ];
 
 	// enabling the following line causes a recursive function call loop
@@ -1005,8 +990,7 @@ fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 
 	Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
 	fd->handleSync = qfalse;
-	fd->used = qtrue;
-	fd->pak = NULL;
+	fd->zipFile = qfalse;
 
 	return f;
 }
@@ -1056,8 +1040,7 @@ fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 
 	Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
 	fd->handleSync = qfalse;
-	fd->used = qtrue;
-	fd->pak = NULL;
+	fd->zipFile = qfalse;
 
 	return f;
 }
@@ -1076,24 +1059,20 @@ qboolean FS_FilenameCompare( const char *s1, const char *s2 ) {
 		c1 = *s1++;
 		c2 = *s2++;
 
-		if (c1 >= 'a' && c1 <= 'z') {
-			c1 -= ('a' - 'A');
-		}
-		if (c2 >= 'a' && c2 <= 'z') {
-			c2 -= ('a' - 'A');
-		}
-
-		if ( c1 == '\\' || c1 == ':' ) {
+		if ( c1 <= 'Z' && c1 >= 'A' )
+			c1 += ('a' - 'A');
+		else if ( c1 == '\\' || c1 == ':' )
 			c1 = '/';
-		}
-		if ( c2 == '\\' || c2 == ':' ) {
+
+		if ( c2 <= 'Z' && c2 >= 'A' )
+			c2 += ('a' - 'A');
+		else if ( c2 == '\\' || c2 == ':' )
 			c2 = '/';
-		}
-		
-		if (c1 != c2) {
+
+		if ( c1 != c2 ) {
 			return qtrue;		// strings not equal
 		}
-	} while (c1);
+	} while ( c1 );
 	
 	return qfalse;		// strings are equal
 }
@@ -1150,6 +1129,69 @@ qboolean FS_IsDemoExt( const char *filename, int namelen )
 	}
 
 	return qfalse;
+}
+
+qboolean FS_HasExt( const char *fileName, const char **extList, int extCount ) 
+{
+	const char *e;
+	int i;
+
+	e = Q_strrchr( fileName, '.' );
+
+	if ( !e ) 
+		return qfalse;
+
+	for ( i = 0; e++, i < extCount; i++ ) 
+	{
+		if ( !Q_stricmp( e, extList[i] ) )
+			return qtrue;
+	}
+
+	return qfalse;
+}
+
+static qboolean FS_GeneralRef( const char *filename ) 
+{
+	// allowed non-ref extensions
+	static const char *extList[] = { "config", "shader", "arena", "menu", "bot", "cfg", "txt" };
+
+	if ( FS_HasExt( filename, extList, ARRAY_LEN( extList ) ) )
+		return qfalse;
+	
+	if ( !Q_stricmp( filename, "qagame.qvm" ) )
+		return qfalse;
+
+	if ( strstr( filename, "levelshots" ) )
+		return qfalse;
+
+	return qtrue;
+}
+
+static qboolean FS_ExternalRef( const char *filename ) 
+{
+	// allowed non-ref extensions
+	static const char *extList[] = { 
+		"cfg",	// config files
+		"txt",	// config/text files
+		"dat",	// misc. data files
+		"bot", // bot files
+		"c",	// bot files
+		"add",	// custom entities
+		"set",	// custom entities
+		"jpg",	// external hud images
+		"tga",	// external hud images
+		"png",	// external hud images
+		"menu",	// menu files
+		"game" // menu files
+	};
+
+	if ( FS_HasExt( filename, extList, ARRAY_LEN( extList ) ) )
+		return qfalse;
+	
+	if ( FS_IsDemoExt( filename, strlen( filename ) ) )
+		return qfalse;
+
+	return qtrue;
 }
 
 
@@ -1279,6 +1321,10 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					// from every pk3 file.. 
 					l = strlen( filename );
 					if ( !( pak->referenced & FS_GENERAL_REF ) ) {
+#if 1
+						if ( FS_GeneralRef( filename ) ) 
+							pak->referenced |= FS_GENERAL_REF;
+#else
 						if ( !FS_IsExt( filename, ".config", l ) &&
 							!FS_IsExt( filename, ".shader", l ) &&
 							!FS_IsExt( filename, ".arena", l ) &&
@@ -1290,6 +1336,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 							strstr( filename, "levelshots" ) == NULL ) {
 								 pak->referenced |= FS_GENERAL_REF;
 							}
+#endif
 					}
 
 					if (!(pak->referenced & FS_CGAME_REF) && strstr(filename, "cgame.qvm")) {
@@ -1309,7 +1356,6 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 						f->handleFiles.file.z = pak->handle;
 					}
 					Q_strncpyz( f->name, filename, sizeof( f->name ) );
-					f->pak = pak;
 					zfi = (unz_s *)f->handleFiles.file.z;
 					// in case the file was new
 					temp = zfi->file;
@@ -1322,8 +1368,8 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					// open the file in the zip
 					unzOpenCurrentFile( f->handleFiles.file.z );
 					f->zipFilePos = pakFile->pos;
+					f->zipFile = qtrue;
 					f->handleFiles.unique = uniqueFILE;
-					f->used = qtrue;
 
 					if ( fs_debug->integer ) {
 						Com_Printf( "FS_FOpenFileRead: %s (found in '%s')\n", 
@@ -1338,13 +1384,19 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 
 			// if we are running restricted, the only files we
 			// will allow to come from the directory are .cfg files
-			l = strlen( filename );
-      // FIXME TTimo I'm not sure about the fs_numServerPaks test
-      // if you are using FS_ReadFile to find out if a file exists,
-      //   this test can make the search fail although the file is in the directory
-      // I had the problem on https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=8
-      // turned out I used FS_FileExists instead
+
+			// FIXME TTimo I'm not sure about the fs_numServerPaks test
+			// if you are using FS_ReadFile to find out if a file exists,
+			//   this test can make the search fail although the file is in the directory
+			// I had the problem on https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=8
+			// turned out I used FS_FileExists instead
 			if ( fs_numServerPaks ) {
+#if 1
+				if ( FS_ExternalRef( filename ) )
+					continue;
+#else
+				l = strlen( filename );
+
 				if ( !FS_IsExt( filename, ".cfg", l ) &&	// config files
 					!FS_IsExt( filename, ".txt", l ) &&		// config/text files
 					!FS_IsExt( filename, ".dat", l ) &&		// misc. data files
@@ -1359,6 +1411,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					!FS_IsExt( filename, ".game", l ) &&	// menu files
 					!FS_IsDemoExt( filename, l ) )
 					continue;
+#endif
 			}
 
 			dir = search->dir;
@@ -1370,8 +1423,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 			}
 
 			Q_strncpyz( f->name, filename, sizeof( f->name ) );
-			f->used = qtrue;
-			f->pak = NULL;
+			f->zipFile = qfalse;
 
 			if ( fs_debug->integer ) {
 				Com_Printf( "FS_FOpenFileRead: %s (found in '%s/%s')\n", filename,
@@ -1410,13 +1462,13 @@ Properly handles partial reads
 */
 int FS_Read2( void *buffer, int len, fileHandle_t f ) {
 
-	if ( !fs_searchpaths ) {
-		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
-	}
+	//if ( !fs_searchpaths ) {
+	//	Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
+	//}
 
-	if ( f <= 0 || f >= MAX_FILE_HANDLES ) {
-		return 0;
-	}
+	//if ( f <= 0 || f >= MAX_FILE_HANDLES ) {
+	//	return 0;
+	//}
 
 	return FS_Read( buffer, len, f );
 }
@@ -1438,7 +1490,7 @@ int FS_Read( void *buffer, int len, fileHandle_t f ) {
 	buf = (byte *)buffer;
 	fs_readCount += len;
 
-	if ( fsh[f].pak == NULL ) {
+	if ( !fsh[f].zipFile ) {
 		remaining = len;
 		tries = 0;
 		while (remaining) {
@@ -1485,9 +1537,9 @@ int FS_Write( const void *buffer, int len, fileHandle_t h ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
 
-	if ( h <= 0 || h >= MAX_FILE_HANDLES ) {
-		return 0;
-	}
+	//if ( h <= 0 || h >= MAX_FILE_HANDLES ) {
+	//	return 0;
+	//}
 
 	f = FS_FileForHandle(h);
 	buf = (byte *)buffer;
@@ -1547,7 +1599,7 @@ int FS_Seek( fileHandle_t f, long offset, fsOrigin_t origin ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
 
-	if ( fsh[f].pak ) {
+	if ( fsh[f].zipFile ) {
 		//FIXME: this is incomplete and really, really
 		//crappy (but better than what was here before)
 		byte	buffer[PK3_SEEK_BUFFER_SIZE];
@@ -1732,7 +1784,7 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 			fs_loadStack++;
 
 			// guarantee that it will have a trailing 0 for string operations
-			buf[len] = 0;
+			buf[len] = '\0';
 
 			return len;
 		}
@@ -1829,7 +1881,7 @@ void FS_WriteFile( const char *qpath, const void *buffer, int size ) {
 	}
 
 	f = FS_FOpenFileWrite( qpath );
-	if ( !f ) {
+	if ( f == FS_INVALID_HANDLE ) {
 		Com_Printf( "Failed to open %s\n", qpath );
 		return;
 	}
@@ -2062,7 +2114,7 @@ static int FS_AddFileToList( char *name, char *list[MAX_FOUND_FILES], int nfiles
 FS_AllowUnpure
 ===============
 */
-static qboolean FS_AllowExternal( const char *extension ) 
+static qboolean FS_AllowListExternal( const char *extension ) 
 {
 	if ( !extension )
 		return qfalse;
@@ -2115,7 +2167,7 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, char *filt
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
 
-	allowExternal = FS_AllowExternal( extension );
+	allowExternal = FS_AllowListExternal( extension );
 
 	if ( !path ) {
 		*numfiles = 0;
@@ -3037,6 +3089,7 @@ qboolean FS_ComparePaks( char *neededpaks, int len, qboolean dlstring ) {
 	return qfalse; // We have them all
 }
 
+
 /*
 ================
 FS_Shutdown
@@ -3044,25 +3097,35 @@ FS_Shutdown
 Frees all resources.
 ================
 */
-void FS_Shutdown( qboolean closemfp ) {
+void FS_Shutdown( qboolean closemfp ) 
+{
 	searchpath_t	*p, *next;
-	//int	i;
+	int i;
 
-	// release everything except files opened for writing -EC-
-	// files in paks should't be opened in write mode
-	FS_CloseHandles();
+	// close opened files
+	if ( closemfp ) 
+	{
+		for ( i = 1; i < MAX_FILE_HANDLES; i++ ) 
+		{
+			if ( !fsh[i].handleFiles.file.v  )
+				continue;
+
+			FS_FCloseFile( i );
+		}
+	}
 
 	// free everything
-	for(p = fs_searchpaths; p; p = next)
+	for( p = fs_searchpaths; p; p = next )
 	{
 		next = p->next;
 
-		if(p->pack)
-			FS_FreePak(p->pack);
-		if (p->dir)
-			Z_Free(p->dir);
+		if ( p->pack )
+			FS_FreePak( p->pack );
 
-		Z_Free(p);
+		if ( p->dir )
+			Z_Free( p->dir );
+
+		Z_Free( p );
 	}
 
 	// any FS_ calls will now be an error until reinitialized
@@ -3074,13 +3137,8 @@ void FS_Shutdown( qboolean closemfp ) {
 	Cmd_RemoveCommand( "touchFile" );
  	Cmd_RemoveCommand( "which" );
 	Cmd_RemoveCommand( "lsof" );
-
-#ifdef FS_MISSING
-	if (closemfp) {
-		fclose(missingFiles);
-	}
-#endif
 }
+
 
 void Com_AppendCDKey( const char *filename );
 void Com_ReadCDKey( const char *filename );
@@ -3150,12 +3208,13 @@ static void FS_ListOpenFiles_f( void ) {
 	fileHandleData_t *fh;
 	fh = fsh;
 	for ( i = 0; i < MAX_FILE_HANDLES; i++, fh++ ) {
-		if ( !fh->used || !fh->name )
+		if ( !fh->handleFiles.file.v )
 			continue;
 		Com_Printf( "%2i %2s %s\n", i, FS_OwnerName(fh->owner), fh->name );
 	}
 }
 
+void FS_Reload( void );
 
 /*
 ================
@@ -3725,7 +3784,7 @@ FS_Restart
 void FS_Restart( int checksumFeed ) {
 
 	// free anything we currently have loaded
-	FS_Shutdown(qfalse);
+	FS_Shutdown( qfalse );
 
 	// set the checksum feed
 	fs_checksumFeed = checksumFeed;
@@ -3736,7 +3795,7 @@ void FS_Restart( int checksumFeed ) {
 	// try to start up normally
 	FS_Startup( BASEGAME );
 
-	FS_CheckPak0( );
+	FS_CheckPak0();
 
 	// if we can't find default.cfg, assume that the paths are
 	// busted and error out now, rather than getting an unreadable
@@ -3758,7 +3817,7 @@ void FS_Restart( int checksumFeed ) {
 		Com_Error( ERR_FATAL, "Couldn't load default.cfg" );
 	}
 
-	// bk010116 - new check before safeMode
+	// new check before safeMode
 	if ( Q_stricmp(fs_gamedirvar->string, lastValidGame) ) {
 		// skip the q3config.cfg if "safe" is on the command line
 		if ( !Com_SafeMode() ) {
@@ -3789,44 +3848,22 @@ FS_ConditionalRestart
 restart if necessary
 =================
 */
-qboolean FS_ConditionalRestart(int checksumFeed)
+qboolean FS_ConditionalRestart( int checksumFeed )
 {
-	if(fs_gamedirvar->modified)
+	if ( fs_gamedirvar->modified )
 	{
-		Com_GameRestart(checksumFeed, qfalse);
+		Com_GameRestart( checksumFeed, qfalse );
 		return qtrue;
 	}
-
-	else if(checksumFeed != fs_checksumFeed)
+	else if ( checksumFeed != fs_checksumFeed )
 	{
-		FS_Restart(checksumFeed);
+		FS_Restart( checksumFeed );
 		return qtrue;
 	}
 	
 	return qfalse;
 }
 
-/* Do not free automatically handle on FS_Restart() -EC- */
-void FS_LockHandle( fileHandle_t fh ) {
-	if ( fh <= 0 || fh >= MAX_FILE_HANDLES )
-		return;
-	if ( !fsh[fh].used || !fsh[fh].name[0] )
-		return;
-	fsh[fh].lock = qtrue;
-}
-
-void FS_CloseHandles( void ) {
-	fileHandle_t i;
-	for ( i = 1; i < MAX_FILE_HANDLES; i++ ) {
-		if ( fsh[i].lock )
-			continue;
-		if ( !fsh[i].used )
-			continue;
-		if ( !fsh[i].name ) // FIXME: print warning? -EC-
-			continue;
-		FS_FCloseFile( i );
-	}
-}
 
 /*
 ========================================================================================
@@ -3836,7 +3873,7 @@ Handle based file calls for virtual machines
 ========================================================================================
 */
 
-int		FS_FOpenFileByMode( const char *qpath, fileHandle_t *f, fsMode_t mode ) {
+int	FS_FOpenFileByMode( const char *qpath, fileHandle_t *f, fsMode_t mode ) {
 	int		r;
 	qboolean	sync;
 	fileHandleData_t *fhd;
@@ -3881,14 +3918,13 @@ int		FS_FOpenFileByMode( const char *qpath, fileHandle_t *f, fsMode_t mode ) {
 	fhd = &fsh[ *f ];
 
 	fhd->handleSync = sync;
-	fhd->used = qtrue;
 
 	return r;
 }
 
 int FS_FTell( fileHandle_t f ) {
 	int pos;
-	if ( fsh[f].pak ) {
+	if ( fsh[f].zipFile ) {
 		pos = unztell( fsh[f].handleFiles.file.z );
 	} else {
 		pos = ftell( fsh[f].handleFiles.file.o );
@@ -3927,6 +3963,7 @@ void	FS_FilenameCompletion( const char *dir, const char *ext,
 /*
 	Secure VM functions
 */
+
 int FS_VM_OpenFile( const char *qpath, fileHandle_t *f, fsMode_t mode, handleOwner_t owner ) {
 	int r;
 
@@ -3938,27 +3975,30 @@ int FS_VM_OpenFile( const char *qpath, fileHandle_t *f, fsMode_t mode, handleOwn
 	return r;
 }
 
+
 int FS_VM_ReadFile( void *buffer, int len, fileHandle_t f, handleOwner_t owner ) {
 
 	if ( f <= 0 || f >= MAX_FILE_HANDLES )
 		return 0;
 
-	if ( fsh[f].owner != owner || !fsh[f].used )
+	if ( fsh[f].owner != owner || !fsh[f].handleFiles.file.v )
 		return 0; 
 
 	return FS_Read2( buffer, len, f );
 }
+
 
 void FS_VM_WriteFile( void *buffer, int len, fileHandle_t f, handleOwner_t owner ) {
 
 	if ( f <= 0 || f >= MAX_FILE_HANDLES )
 		return;
 
-	if ( fsh[f].owner != owner || !fsh[f].used )
+	if ( fsh[f].owner != owner || !fsh[f].handleFiles.file.v )
 		return;
 
 	FS_Write( buffer, len, f );
 }
+
 
 int FS_VM_SeekFile( fileHandle_t f, long offset, int origin, handleOwner_t owner ) {
 	int r;
@@ -3966,27 +4006,31 @@ int FS_VM_SeekFile( fileHandle_t f, long offset, int origin, handleOwner_t owner
 	if ( f <= 0 || f >= MAX_FILE_HANDLES )
 		return -1;
 
-	if ( fsh[f].owner != owner || !fsh[f].used )
+	if ( fsh[f].owner != owner || !fsh[f].handleFiles.file.v )
 		return -1;
 
 	r = FS_Seek( f, offset, origin );
 	return r;
 }
 
+
 void FS_VM_CloseFile( fileHandle_t f, handleOwner_t owner ) {
 
 	if ( f <= 0 || f >= MAX_FILE_HANDLES )
 		return;
 
-	if ( fsh[f].owner != owner )
+	if ( fsh[f].owner != owner || !fsh[f].handleFiles.file.v )
 		return;
 
 	FS_FCloseFile( f );
 }
 
-void FS_VM_CloseFiles( handleOwner_t owner ) {
+
+void FS_VM_CloseFiles( handleOwner_t owner ) 
+{
 	int i;
-	for ( i = 1; i < MAX_FILE_HANDLES; i++ ) {
+	for ( i = 1; i < MAX_FILE_HANDLES; i++ ) 
+	{
 		if ( fsh[i].owner != owner )
 			continue;
 		Com_Printf( S_COLOR_YELLOW"%s:%i:%s leaked filehandle\n", 
@@ -3995,9 +4039,10 @@ void FS_VM_CloseFiles( handleOwner_t owner ) {
 	}
 }
 
+
 const char *FS_GetCurrentGameDir( void )
 {
-	if( fs_gamedirvar->string[0] )
+	if ( fs_gamedirvar->string[0] )
 		return fs_gamedirvar->string;
 
     return BASEGAME;

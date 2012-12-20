@@ -355,7 +355,6 @@ qboolean CL_OpenAVIForWriting( const char *fileName )
     FS_FCloseFile( afd.f );
     return qfalse;
   }
-  FS_LockHandle( afd.f );
 
   Q_strncpyz( afd.fileName, fileName, MAX_QPATH );
 

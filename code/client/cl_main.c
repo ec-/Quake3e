@@ -208,7 +208,7 @@ void CL_WriteDemoMessage ( msg_t *msg, int headerBytes ) {
 	// write the packet sequence
 	len = clc.serverMessageSequence;
 	swlen = LittleLong( len );
-	FS_Write (&swlen, 4, clc.demofile); // FIXME: do not close demofiles!
+	FS_Write( &swlen, 4, clc.demofile );
 
 	// skip the packet sequencing information
 	len = msg->cursize - headerBytes;
@@ -336,7 +336,6 @@ void CL_Record_f( void ) {
 		return;
 	}
 
-	FS_LockHandle( clc.demofile );
 	clc.demorecording = qtrue;
 
 	if ( Cvar_VariableValue( "ui_recordSPDemo" ) ) {
@@ -835,6 +834,8 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	if ( clc.demorecording ) {
 		CL_StopRecord_f();
 	}
+
+	// Stop demo playback
 	if ( clc.demofile != FS_INVALID_HANDLE ) {
 		FS_FCloseFile( clc.demofile );
 		clc.demofile = FS_INVALID_HANDLE;
@@ -3004,9 +3005,9 @@ void CL_Shutdown( char *finalmsg ) {
 
 	CL_Disconnect( qtrue );
 
-	S_Shutdown();
-	
 	CL_ShutdownVMs();
+
+	S_Shutdown();
 	
 	CL_ShutdownRef();
 	

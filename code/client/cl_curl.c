@@ -260,7 +260,6 @@ void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 			"%s for writing\n", clc.downloadTempName);
 		return;
 	}
-	FS_LockHandle( clc.download ); // -EC-
 
 	if ( com_developer->integer )
 		qcurl_easy_setopt( clc.downloadCURL, CURLOPT_VERBOSE, 1 );
@@ -576,7 +575,6 @@ static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void 
 					dl->TempName );
 				return (size_t)-1;
 			}
-			FS_LockHandle( dl->fHandle );
 		}
 	}
 	
@@ -619,7 +617,6 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 				dl->TempName );
 			return qfalse;
 		}
-		FS_LockHandle( dl->fHandle );
 
 		dl->clientUI = qtrue;
 	}

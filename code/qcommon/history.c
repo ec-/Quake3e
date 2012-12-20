@@ -112,7 +112,7 @@ static void Con_LoadHistory( void )
 	}
 
 	consoleSaveBufferSize = FS_FOpenFileRead( CONSOLE_HISTORY_FILE, &f, qfalse );
-	if( !f )
+	if ( f == FS_INVALID_HANDLE )
 	{
 		Com_Printf( "Couldn't read %s.\n", CONSOLE_HISTORY_FILE );
 		return;
