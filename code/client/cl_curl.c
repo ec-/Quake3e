@@ -466,6 +466,7 @@ void Com_DL_Cleanup( download_t *dl )
 	dl->URL[0] = '\0';
 	dl->Name[0] = '\0';
 	dl->TempName[0] = '\0';
+	dl->stripped = qfalse;
 }
 
 
@@ -564,9 +565,14 @@ static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void 
 			// store in
 			Com_sprintf( dl->Name, sizeof( dl->Name ), "%s/%s", FS_GetCurrentGameDir(), name );
 
-			Com_sprintf( dl->TempName, sizeof( dl->TempName ), "%s.tmp%04X", dl->Name, random() );
+			// strip extension
+			s = strrchr( dl->Name, '.' );
+			if ( s ) *s = '\0';
+			dl->stripped = qtrue;
 
-			//Com_Printf( S_COLOR_YELLOW "%s %s\n", dl->Name, dl->TempName );
+			Com_sprintf( dl->TempName, sizeof( dl->TempName ), "%s.%04X.tmp", dl->Name, random() );
+
+			//Com_Printf( "downloading %s into %s\n", dl->Name, dl->TempName );
 
 			dl->fHandle = FS_SV_FOpenFileWrite( dl->TempName );
 			if ( dl->fHandle == FS_INVALID_HANDLE ) 
@@ -605,11 +611,19 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 	
 	dl->Count = 0; // Starting new file
 	dl->Block = 0;
+	dl->stripped = qfalse;
 	
 	if ( !checkHeader ) 
 	{
 		Q_strncpyz( dl->Name, localName, sizeof( dl->Name ) );
-		Com_sprintf( dl->TempName, sizeof( dl->TempName ), "%s.tmp", localName );
+
+		// strip extension
+		if ( FS_IsExt( dl->Name, ".pk3", strlen( dl->Name ) ) ) {
+			dl->Name[ strlen( dl->Name ) - 4 ] = '\0';
+			dl->stripped = qtrue;
+		}
+
+		Com_sprintf( dl->TempName, sizeof( dl->TempName ), "%s.%04X.tmp", random(), localName );
 		dl->fHandle = FS_SV_FOpenFileWrite( dl->TempName );
 		if ( dl->fHandle == FS_INVALID_HANDLE ) 
 		{
@@ -668,11 +682,12 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 
 qboolean Com_DL_Perform( download_t *dl )
 {
+	char name[MAX_OSPATH];
 	CURLMcode res;
 	CURLMsg *msg;
 	long code;
 	int c, n;
-	int i = 0;
+	int i;
 
 	res = qcurl_multi_perform( dl->cURLM, &c );
 
@@ -681,6 +696,7 @@ qboolean Com_DL_Perform( download_t *dl )
 	else
 		n = 32;
 
+	i = 0;
 	while( res == CURLM_CALL_MULTI_PERFORM && i < n ) 
 	{
 		res = qcurl_multi_perform( dl->cURLM, &c );
@@ -704,9 +720,25 @@ qboolean Com_DL_Perform( download_t *dl )
 	{
 		if ( dl->TempName ) 
 		{
-			FS_SV_Rename( dl->TempName, dl->Name );
+			if ( !dl->stripped ) 
+			{
+				FS_SV_Rename( dl->TempName, dl->Name );
+			}
+			else //
+			{
+				Com_sprintf( name, sizeof( name ), "%s.pk3", dl->Name );
+				if ( !FS_SV_FileExists( name ) ) 
+				{
+					FS_SV_Rename( dl->TempName, name );
+				}
+				else // destination file exists?
+				{
+					Com_sprintf( name, sizeof( name ), "%s_%04X.pk3", dl->Name, random() );
+					FS_SV_Rename( dl->TempName, name );
+				}
+			}
 		}
-		Com_Printf( "%s downloaded\n", dl->Name );
+		//Com_Printf( "%s downloaded\n", dl->Name );
 		Com_DL_Cleanup( dl );
 		FS_Reload(); //clc.downloadRestart = qtrue;
 		return qfalse;

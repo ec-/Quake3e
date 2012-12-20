@@ -612,6 +612,7 @@ void	FS_FreeFileList( char **list );
 qboolean FS_FileExists( const char *file );
 
 char   *FS_BuildOSPath( const char *base, const char *game, const char *qpath );
+
 qboolean FS_CompareZipChecksum(const char *zipfile);
 
 int		FS_LoadStack( void );
@@ -621,6 +622,8 @@ int		FS_GetModList(  char *listbuf, int bufsize );
 
 fileHandle_t	FS_FOpenFileWrite( const char *qpath );
 // will properly create any needed paths and deal with seperater character issues
+
+qboolean FS_SV_FileExists( const char *file );
 
 fileHandle_t FS_SV_FOpenFileWrite( const char *filename );
 int		FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp );
@@ -724,7 +727,7 @@ void FS_VM_CloseFiles( handleOwner_t owner );
 
 const char *FS_GetCurrentGameDir(void);
 
-unsigned int FS_GetFileCRC32( const char *fileName );
+qboolean FS_IsExt( const char *filename, const char *ext, int namelen );
 
 /*
 ==============================================================
@@ -1118,7 +1121,7 @@ void	Sys_SetDefaultCDPath(const char *path);
 char	*Sys_DefaultCDPath(void);
 void	Sys_SetDefaultInstallPath(const char *path);
 char	*Sys_DefaultInstallPath(void);
-void  Sys_SetDefaultHomePath(const char *path);
+void	Sys_SetDefaultHomePath(const char *path);
 char	*Sys_DefaultHomePath(void);
 
 char **Sys_ListFiles( const char *directory, const char *extension, char *filter, int *numfiles, qboolean wantsubs );

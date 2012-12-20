@@ -164,6 +164,7 @@ typedef struct download_s {
 	int			Size;
 	int			Count;
 	int			Block;
+	qboolean	stripped;
 	qboolean	clientUI;
 } download_t;
 #endif
