@@ -589,7 +589,14 @@ void CL_PlayDemo_f( void ) {
 
 	CL_Disconnect( qtrue );
 
-	clc.demofile = hFile;
+	// clc.demofile will be closed during CL_Disconnect so reopen it
+	if ( FS_FOpenFileRead( name, &clc.demofile, qtrue ) == -1 ) 
+	{
+		// drop this time
+		Com_Error( ERR_DROP, "couldn't open %s\n", name );
+		return;
+	}
+
 	Q_strncpyz( clc.demoName, Cmd_Argv(1), sizeof( clc.demoName ) );
 
 	Con_Close();
@@ -602,6 +609,7 @@ void CL_PlayDemo_f( void ) {
 	while ( cls.state >= CA_CONNECTED && cls.state < CA_PRIMED ) {
 		CL_ReadDemoMessage();
 	}
+
 	// don't get the first snapshot this frame, to prevent the long
 	// time from the gamestate load from messing causing a time skip
 	clc.firstDemoFrameSkipped = qfalse;
