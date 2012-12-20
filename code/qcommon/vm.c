@@ -356,33 +356,6 @@ intptr_t QDECL VM_DllSyscall( intptr_t arg, ... ) {
 }
 
 
-static unsigned int crc32_table[256];
-
-static void crc32_init( unsigned int *crc )
-{
-	unsigned int c;
-    int i, j;
-    for (i = 0; i < 256; i++)
-    {
-        c = i;
-        for (j = 0; j < 8; j++)
-            c = c & 1 ? (c >> 1) ^ 0xEDB88320UL : c >> 1;
-        crc32_table[i] = c;
-    };
-    *crc = 0xFFFFFFFFUL;
-}
-
-static void crc32_update( unsigned int *crc, unsigned char *buf, unsigned int len )
-{
-    while (len--) 
-        *crc = crc32_table[(*crc ^ *buf++) & 0xFF] ^ (*crc >> 8);
-}
-
-static void crc32_final( unsigned int *crc )
-{
-	*crc = *crc ^ 0xFFFFFFFFUL;
-}
-
 static int Load_JTS( vm_t *vm, unsigned int crc32, void *data )  {
 	char		filename[MAX_QPATH];
 	int			header[2];
@@ -394,7 +367,7 @@ static int Load_JTS( vm_t *vm, unsigned int crc32, void *data )  {
 	if ( data )
 		Com_Printf( "Loading jts file %s...\n", filename );
 
-	length = FS_FOpenFileRead( filename, &fh, qtrue ); // fixme: unique?
+	length = FS_FOpenFileRead( filename, &fh, qtrue );
 	
 	if ( fh == FS_INVALID_HANDLE ) {
 		if ( data )
@@ -478,9 +451,9 @@ static char *VM_ValidateHeader( vmHeader_t *header, int fileSize )
 	}
 
 	if ( LittleLong( header->vmMagic ) == VM_MAGIC_VER2 )
-		n = sizeof( vmHeader_t ) / 4;
+		n = sizeof( vmHeader_t ) / sizeof( int );
 	else
-		n = ( sizeof( vmHeader_t ) - sizeof( int ) ) / 4;
+		n = ( sizeof( vmHeader_t ) - sizeof( int ) ) / sizeof( int );
 
 	// byte swap the header
 	for ( i = 0 ; i < n ; i++ ) {

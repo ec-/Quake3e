@@ -555,6 +555,11 @@ extern	int			cvar_modifiedFlags;
 // etc, variables have been modified since the last check.  The bit
 // can then be cleared to allow another change detection.
 
+
+void crc32_init( unsigned int *crc );
+void crc32_update( unsigned int *crc, unsigned char *buf, unsigned int len );
+void crc32_final( unsigned int *crc );
+
 /*
 ==============================================================
 
@@ -718,6 +723,8 @@ void FS_VM_CloseFile( fileHandle_t f, handleOwner_t owner );
 void FS_VM_CloseFiles( handleOwner_t owner );
 
 const char *FS_GetCurrentGameDir(void);
+
+unsigned int FS_GetFileCRC32( const char *fileName );
 
 /*
 ==============================================================

@@ -2027,7 +2027,37 @@ static void FS_FreePak(pack_t *thepak)
 
 /*
 =================
-FS_GetZipChecksum
+FS_GetFileCRC32
+=================
+*/
+unsigned int FS_GetFileCRC32( const char *fileName )
+{
+	unsigned char buffer[4096];
+	unsigned int result;
+	size_t	count;
+	FILE *f;
+
+	f = fopen( fileName, "rb" );
+	if ( !f ) 
+		return 0;
+
+	crc32_init( &result );
+	while ( !feof( f ) )
+	{
+		count = fread( buffer, 1, sizeof( buffer ), f );
+		crc32_update( &result, buffer, count );
+	}
+	crc32_final( &result );
+
+	fclose( f );
+
+	return result;	
+}
+
+
+/*
+=================
+FS_CompareZipChecksum
 
 Compares whether the given pak file matches a referenced checksum
 =================
