@@ -698,6 +698,8 @@ qboolean Q_isintegral( float f );
 void	Q_strncpyz( char *dest, const char *src, int destsize );
 void	Q_strcat( char *dest, int size, const char *src );
 
+int     Q_replace( char * str1, char * str2, char * src, int max_len );
+
 // strlen that discounts Quake color sequences
 int Q_PrintStrlen( const char *string );
 // removes color sequences from string

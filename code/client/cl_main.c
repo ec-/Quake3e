@@ -3884,93 +3884,6 @@ void CL_ShowIP_f(void) {
 }
 
 #ifdef USE_CURL
-int sreplace( char * str1, char * str2, char * src, int max_len ) 
-{
-	int count = 0; // replace count
-    int len1, len2, d;
-    char *match, *s0, *s1, *s2, *max;
-
-    match = strstr( src, str1 );
-
-    if ( !match )
-        return count;
-
-    len1 = strlen( str1 );
-    len2 = strlen( str2 );
-    d = len2-len1;
-
-    if ( d > 0 ) // expand and replace mode    
-    {
-        max = src + max_len;
-        src += strlen( src );
-
-        do  
-        {
-            // expand source string
-			s1 = src;
-            src += d;
-            if ( src >= max )
-                return count;
-            s2 = src;
-            
-            s0 = match + len1;
-
-            while ( s1 >= s0 )
-                *s2-- = *s1--;
-			
-			// replace match
-            s2 = str2;
-			while ( *s2 ) {
-                *match++ = *s2++;
-			}
-            match = strstr( match, str1 );
-
-            count++;
-        }
-        while ( match );
-
-        return count;
-    } 
-    else
-    if ( d < 0 ) // shrink and replace mode
-    {
-        do 
-        {
-            // shrink source string
-            s1 = match + len1;
-            s2 = match + len2;
-            while ( (*s2++ = *s1++) != 0 );
-			
-			//replace match
-            s2 = str2;
-			while ( *s2 ) {
-				*match++ = *s2++;
-			}
-
-            match = strstr( match, str1 );
-
-            count++;
-        } 
-        while ( match );
-
-        return count;
-    }
-    else
-    do  // just replace match
-    {
-        s2 = str2;
-		while ( *s2 ) {
-			*match++ = *s2++;
-		}
-
-        match = strstr( match, str1 );
-        count++;
-	} 
-    while ( match );
-
-	return count;
-}
-
 
 /*
 ==================
@@ -4029,7 +3942,7 @@ void CL_Download_f( void )
 	else
 		s = name;
 
-	if ( !sreplace( "%1", s, url, sizeof( url ) ) ) 
+	if ( !Q_replace( "%1", s, url, sizeof( url ) ) ) 
 	{
 		if ( url[strlen(url)] != '/' )
 			Q_strcat( url, sizeof( url ), "/" );
