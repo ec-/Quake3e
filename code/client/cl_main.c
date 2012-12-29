@@ -2910,7 +2910,7 @@ void CL_Init( void ) {
 
 	cl_guidServerUniq = Cvar_Get ("cl_guidServerUniq", "1", CVAR_ARCHIVE);
 
-	cl_dlURL = Cvar_Get( "cl_dlURL", "http://q3a.ath.cx/getpk3bymapname.php/%m", CVAR_ARCHIVE );
+	cl_dlURL = Cvar_Get( "cl_dlURL", "", CVAR_ARCHIVE );
 
 	// userinfo
 	Cvar_Get ("name", "UnnamedPlayer", CVAR_USERINFO | CVAR_ARCHIVE );
@@ -2968,6 +2968,7 @@ void CL_Init( void ) {
 	Cmd_AddCommand ("stopvideo", CL_StopVideo_f );
 
 	Cmd_AddCommand( "download", CL_Download_f );
+	//Cmd_AddCommand( "dlmap", CL_Download_f );
 
 	CL_InitRef();
 
@@ -3041,6 +3042,11 @@ void CL_Shutdown( char *finalmsg ) {
 	Cmd_RemoveCommand ("stopvideo");
 	Cmd_RemoveCommand ("fs_openedList");
 	Cmd_RemoveCommand ("fs_referencedList");
+
+	Com_DL_Cleanup( &download );
+
+	Cmd_RemoveCommand( "download" );
+	//Cmd_RemoveCommand( "dlmap" );
 
 	CL_ClearInput();
 	
@@ -3975,25 +3981,61 @@ void CL_Download_f( void )
 {
 	char url[MAX_CVAR_VALUE_STRING];
 	char name[MAX_CVAR_VALUE_STRING];
+	char *s;
+	qboolean stripped;
 
-	if ( Cmd_Argc() < 2 || !*Cmd_Argv(1) ) 
+	if ( !cl_dlURL->string[0] ) 
 	{
-		Com_Printf( "usage: download <mapname>\n" );
+		Com_Printf( "cl_dlURL cvar is not set\n" );
 		return;
 	}
 
-	strcpy( url, cl_dlURL->string );
-	strcpy( name, Cmd_Argv(1) );
+	s = Cmd_Argv( 1 );
 
-	if ( !sreplace( "%1", name, url, sizeof( url ) ) ) 
+	if ( Cmd_Argc() < 2 || !*s ) 
 	{
+		Com_Printf( "usage: %s <mapname>\n", Cmd_Argv( 0 ) );
+		return;
+	}
+
+	// skip leading slashes
+	while ( *s == '/' || *s == '\\' )
+		s++;
+	strcpy( name, s );
+	strcpy( url, cl_dlURL->string );
+
+	if ( 0 && !Q_stricmp( Cmd_Argv(0), "dlmap" ) ) 
+	{
+		stripped = FS_StripExt( name, ".pk3" );
+		s = va( "maps/%s.bsp", name );
+		if ( FS_FileIsInPAK( s, NULL ) ) 
+		{
+			Com_Printf( " map %s already exists.\n", name );
+			return;
+		}
+		if ( stripped )
+			strcat( name, ".pk3" );
+	} else {
+		if ( !strcmp( Cmd_Argv(1), "-" ) ) 
+		{
+			Com_DL_Cleanup( &download );
+			return;
+		}
+	}
+
+	s = strrchr( name, '/' );
+	if ( s )
+		s++;
+	else
+		s = name;
+
+	if ( !sreplace( "%1", s, url, sizeof( url ) ) ) 
+	{
+		if ( url[strlen(url)] != '/' )
+			Q_strcat( url, sizeof( url ), "/" );
 		Q_strcat( url, sizeof( url ), Cmd_Argv( 1 ) );
 	}
 
-	//Com_Printf( "dl: %s", url );
-
-	Q_strcat( name, sizeof( name ), ".pk3" );
-
-	Com_DL_Begin( &download, name, url, qtrue );
+	Com_DL_Begin( &download, name, url );
 }
 #endif

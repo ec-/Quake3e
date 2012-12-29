@@ -642,7 +642,6 @@ void Con_DrawSolidConsole( float frac ) {
 			lines - SMALLCHAR_HEIGHT, Q3_VERSION[x] );
 	}
 
-
 	// draw the text
 	con.vislines = lines;
 	rows = (lines-SMALLCHAR_WIDTH)/SMALLCHAR_WIDTH;		// rows of text to draw
@@ -664,6 +663,19 @@ void Con_DrawSolidConsole( float frac ) {
 
 	if ( con.x == 0 ) {
 		row--;
+	}
+
+	if ( download.progress[0] ) 
+	{
+		currentColor = 5;
+		re.SetColor( g_color_table[currentColor] );
+
+		i = strlen( download.progress );
+		for ( x = 0 ; x < i ; x++ ) 
+		{
+			SCR_DrawSmallChar( ( x + 1 ) * SMALLCHAR_WIDTH,
+				lines - SMALLCHAR_HEIGHT, download.progress[x] );
+		}
 	}
 
 	currentColor = 7;

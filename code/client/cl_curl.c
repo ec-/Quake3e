@@ -465,24 +465,30 @@ void Com_DL_Cleanup( download_t *dl )
 
 	dl->URL[0] = '\0';
 	dl->Name[0] = '\0';
+	dl->Game[0] = '\0';
 	dl->TempName[0] = '\0';
-	dl->stripped = qfalse;
+	dl->progress[0] = '\0';
+	dl->checkHeader = qfalse;
 }
 
 
 static int Com_DL_CallbackProgress( void *data, double dltotal, double dlnow, double ultotal, double ulnow )
 {
+	double percentage;
 	download_t *dl = (download_t *)data;
 	
 	dl->Size = (int)dltotal;
 	dl->Count = (int)dlnow;
-	
-	if ( dl->clientUI ) 
-	{
-		Cvar_SetValue( "cl_downloadSize", dl->Size );
-		Cvar_SetValue( "cl_downloadCount", dl->Count );
+
+	if ( dltotal )
+		percentage = ( dlnow / dltotal ) * 100.0;
+	else {
+		dl->progress[0] = '\0';
+		return 0;
 	}
 
+	sprintf( dl->progress, " downloading %s: %2.1f%%", dl->Name, percentage );
+	
 	return 0;
 }
 
@@ -493,8 +499,14 @@ static size_t Com_DL_CallbackWrite( void *ptr, size_t size, size_t nmemb, void *
 
 	dl = (download_t *)userdata;
 
-	if ( dl->fHandle == FS_INVALID_HANDLE ) 
-		return (size_t)-1;
+	if ( dl->fHandle == FS_INVALID_HANDLE )
+	{
+		dl->fHandle = FS_SV_FOpenFileWrite( dl->TempName );
+		if ( dl->fHandle == FS_INVALID_HANDLE ) 
+		{
+			return (size_t)-1;
+		}
+	}
 
 	FS_Write( ptr, size*nmemb, dl->fHandle );
 
@@ -516,11 +528,10 @@ static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void 
 	}
 
 	dl = (download_t *)userdata;
+	
+	// already created file?
 	if ( dl->fHandle != FS_INVALID_HANDLE ) 
-	{
-		//Com_Printf( "Already created file?\n" );
-		return size*nmemb; // already created file?
-	}
+		return size*nmemb;
 
 	memcpy( header, ptr, size*nmemb+1 );
 	header[ size*nmemb ] = '\0';
@@ -562,37 +573,40 @@ static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void 
 				return (size_t)-1;
 			}
 
-			// store in
-			Com_sprintf( dl->Name, sizeof( dl->Name ), "%s/%s", FS_GetCurrentGameDir(), name );
-
 			// strip extension
-			s = strrchr( dl->Name, '.' );
-			if ( s ) *s = '\0';
-			dl->stripped = qtrue;
+			FS_StripExt( name, ".pk3" );
 
-			Com_sprintf( dl->TempName, sizeof( dl->TempName ), "%s.%04X.tmp", dl->Name, random() );
-
-			//Com_Printf( "downloading %s into %s\n", dl->Name, dl->TempName );
-
-			dl->fHandle = FS_SV_FOpenFileWrite( dl->TempName );
-			if ( dl->fHandle == FS_INVALID_HANDLE ) 
-			{
-				Com_Printf( S_COLOR_RED "Com_DL_HeaderCallback: failed to open %s for writing\n", 
-					dl->TempName );
-				return (size_t)-1;
-			}
+			// store in
+			strcpy( dl->Name, name );
 		}
 	}
 	
 	return size*nmemb;
 }
 
+/*
 
-qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean checkHeader )
+===============================================================
+Com_DL_Begin()
+
+Start downloading file from remoteURL and save it under localName
+
+If remoteURL doesn't have pk3 extension - real filename will be 
+retrieved from http header
+
+localName may contain base path - otherwise file will be saved
+in current game directory (which may differ from baseq3)
+==============================================================
+*/
+
+qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL )
 {
+	qboolean checkHeader;
+	char *s;
+
 	if ( dl->cURL && dl->URL[0] ) 
 	{
-		Com_Printf( "already downloading %s\n", dl->URL );
+		Com_Printf( S_COLOR_YELLOW " already downloading %s\n", dl->Name );
 		return qfalse;
 	}
 
@@ -607,37 +621,27 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 		return qfalse;
 	}
 
+	checkHeader = qfalse;
+
 	Q_strncpyz( dl->URL, remoteURL, sizeof( dl->URL ) );
-	
-	dl->Count = 0; // Starting new file
-	dl->Block = 0;
-	dl->stripped = qfalse;
-	
-	if ( !checkHeader ) 
-	{
+
+	// try to extract game path from localName
+	// dl->Name should contain only pak name without game dir and extension
+	Q_strncpyz( dl->Game, localName, sizeof( dl->Game ) );
+	s = strrchr( dl->Game, '/' );
+	if ( !s ) {
+		Q_strncpyz( dl->Game, FS_GetCurrentGameDir(), sizeof( dl->Game ) );
 		Q_strncpyz( dl->Name, localName, sizeof( dl->Name ) );
-
-		// strip extension
-		if ( FS_IsExt( dl->Name, ".pk3", strlen( dl->Name ) ) ) {
-			dl->Name[ strlen( dl->Name ) - 4 ] = '\0';
-			dl->stripped = qtrue;
-		}
-
-		Com_sprintf( dl->TempName, sizeof( dl->TempName ), "%s.%04X.tmp", random(), localName );
-		dl->fHandle = FS_SV_FOpenFileWrite( dl->TempName );
-		if ( dl->fHandle == FS_INVALID_HANDLE ) 
-		{
-			Com_Printf( S_COLOR_RED "Com_DL_Begin: failed to open %s for writing\n", 
-				dl->TempName );
-			return qfalse;
-		}
-
-		dl->clientUI = qtrue;
+	} else {
+		*s = '\0';
+		Q_strncpyz( dl->Name, s+1, sizeof( dl->Name ) );
 	}
-	else 
-	{
-		dl->clientUI = qfalse;
-	}
+
+	if ( !FS_StripExt( dl->Name, ".pk3" ) )
+		dl->checkHeader = qtrue;
+
+	Com_sprintf( dl->TempName, sizeof( dl->TempName ), "%s/%s.%04X.tmp", 
+		dl->Game[0] ? dl->Game : FS_GetCurrentGameDir(), dl->Name, random() );
 
 	if ( com_developer->integer )
 		qcurl_easy_setopt( dl->cURL, CURLOPT_VERBOSE, 1 );
@@ -692,9 +696,9 @@ qboolean Com_DL_Perform( download_t *dl )
 	res = qcurl_multi_perform( dl->cURLM, &c );
 
 	if ( cls.state == CA_DISCONNECTED )
-		n = 64;
+		n = 128;
 	else
-		n = 32;
+		n = 64;
 
 	i = 0;
 	while( res == CURLM_CALL_MULTI_PERFORM && i < n ) 
@@ -713,43 +717,46 @@ qboolean Com_DL_Perform( download_t *dl )
 		return qtrue;
 	}
 
-	FS_FCloseFile( dl->fHandle );
-	dl->fHandle = FS_INVALID_HANDLE;
+	if ( dl->fHandle != FS_INVALID_HANDLE ) 
+	{
+		FS_FCloseFile( dl->fHandle );
+		dl->fHandle = FS_INVALID_HANDLE;
+	}
 
 	if ( msg->msg == CURLMSG_DONE && msg->data.result == CURLE_OK ) 
 	{
-		if ( dl->TempName ) 
+		Com_sprintf( name, sizeof( name ), "%s/%s.pk3", 
+			dl->Game[0] ? dl->Game : FS_GetCurrentGameDir(), dl->Name );
+
+		if ( !FS_SV_FileExists( name ) ) 
 		{
-			if ( !dl->stripped ) 
-			{
-				FS_SV_Rename( dl->TempName, dl->Name );
-			}
-			else //
-			{
-				Com_sprintf( name, sizeof( name ), "%s.pk3", dl->Name );
-				if ( !FS_SV_FileExists( name ) ) 
-				{
-					FS_SV_Rename( dl->TempName, name );
-				}
-				else // destination file exists?
-				{
-					Com_sprintf( name, sizeof( name ), "%s_%04X.pk3", dl->Name, random() );
-					FS_SV_Rename( dl->TempName, name );
-				}
-			}
+			FS_SV_Rename( dl->TempName, name );
 		}
-		//Com_Printf( "%s downloaded\n", dl->Name );
+		else
+		{
+			n = FS_GetZipChecksum( name );
+			Com_sprintf( name, sizeof( name ), "%s/%s.%08X.pk3", 
+				dl->Game[0] ? dl->Game : FS_GetCurrentGameDir(), dl->Name, n );
+			if ( FS_SV_FileExists( name ) ) 
+			{
+				FS_Remove( name );
+			}
+			FS_SV_Rename( dl->TempName, name );
+		}
+
 		Com_DL_Cleanup( dl );
 		FS_Reload(); //clc.downloadRestart = qtrue;
+		Com_Printf( S_COLOR_GREEN "%s downloaded\n", name );
 		return qfalse;
 	}
 	else 
 	{
 		qcurl_easy_getinfo( msg->easy_handle, CURLINFO_RESPONSE_CODE, &code );	
-		Com_Printf( S_COLOR_RED "Download Error: %s Code: %ld URL: %s",
+		Com_Printf( S_COLOR_RED "Download Error: %s Code: %ld URL: %s\n",
 			qcurl_easy_strerror( msg->data.result ), code, dl->URL );
-		FS_Remove( dl->TempName ); 
+		strcpy( name, dl->TempName );
 		Com_DL_Cleanup( dl );
+		FS_Remove( name ); 
 	}
 
 	return qtrue;

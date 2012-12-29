@@ -157,15 +157,16 @@ demo through a file.
 typedef struct download_s {
 	char		URL[MAX_OSPATH];
 	char		TempName[MAX_OSPATH];
-	char		Name[MAX_OSPATH];
+	char		Name[MAX_QPATH];
+	char		Game[MAX_QPATH];
+	char		progress[MAX_QPATH+32];
 	CURL		*cURL;
 	CURLM		*cURLM;
 	fileHandle_t fHandle;
 	int			Size;
 	int			Count;
 	int			Block;
-	qboolean	stripped;
-	qboolean	clientUI;
+	qboolean	checkHeader;
 } download_t;
 #endif
 
@@ -330,7 +331,8 @@ extern	clientStatic_t		cls;
 
 extern		download_t	download;
 qboolean	Com_DL_Perform( download_t *dl );
-qboolean	Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean checkHeader );
+void		Com_DL_Cleanup( download_t *dl );
+qboolean	Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL );
 
 #endif
 

@@ -1085,11 +1085,12 @@ FS_IsExt
 Return qtrue if ext matches file extension filename
 ===========
 */
-qboolean FS_IsExt( const char *filename, const char *ext, int namelen )
+qboolean FS_IsExt( const char *filename, const char *ext )
 {
-	int extlen;
+	int extlen, namelen;
 
 	extlen = strlen( ext );
+	namelen = strlen( filename );
 
 	if ( extlen > namelen )
 		return qfalse;
@@ -1097,6 +1098,33 @@ qboolean FS_IsExt( const char *filename, const char *ext, int namelen )
 	filename += namelen - extlen;
 
 	return !Q_stricmp( filename, ext );
+}
+
+
+/*
+===========
+FS_StripExt
+===========
+*/
+qboolean FS_StripExt( char *filename, const char *ext )
+{
+	int extlen, namelen;
+
+	extlen = strlen( ext );
+	namelen = strlen( filename );
+
+	if ( extlen > namelen )
+		return qfalse;
+
+	filename += namelen - extlen;
+
+	if ( !Q_stricmp( filename, ext ) ) 
+	{
+		filename[0] = '\0';
+		return qtrue;
+	}
+
+	return qfalse;
 }
 
 
@@ -1167,7 +1195,7 @@ static qboolean FS_GeneralRef( const char *filename )
 	return qtrue;
 }
 
-static qboolean FS_ExternalRef( const char *filename ) 
+static qboolean FS_DeniedPureFile( const char *filename ) 
 {
 	// allowed non-ref extensions
 	static const char *extList[] = { 
@@ -1321,22 +1349,8 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					// from every pk3 file.. 
 					l = strlen( filename );
 					if ( !( pak->referenced & FS_GENERAL_REF ) ) {
-#if 1
 						if ( FS_GeneralRef( filename ) ) 
 							pak->referenced |= FS_GENERAL_REF;
-#else
-						if ( !FS_IsExt( filename, ".config", l ) &&
-							!FS_IsExt( filename, ".shader", l ) &&
-							!FS_IsExt( filename, ".arena", l ) &&
-							!FS_IsExt( filename, ".menu", l ) &&
-							!FS_IsExt( filename, ".bot", l ) &&
-							!FS_IsExt( filename, ".cfg", l ) &&
-							!FS_IsExt( filename, ".txt", l ) &&
-							Q_stricmp(filename, "qagame.qvm") != 0 &&
-							strstr( filename, "levelshots" ) == NULL ) {
-								 pak->referenced |= FS_GENERAL_REF;
-							}
-#endif
 					}
 
 					if (!(pak->referenced & FS_CGAME_REF) && strstr(filename, "cgame.qvm")) {
@@ -1391,27 +1405,9 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 			// I had the problem on https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=8
 			// turned out I used FS_FileExists instead
 			if ( fs_numServerPaks ) {
-#if 1
-				if ( FS_ExternalRef( filename ) )
+				if ( FS_DeniedPureFile( filename ) ) {
 					continue;
-#else
-				l = strlen( filename );
-
-				if ( !FS_IsExt( filename, ".cfg", l ) &&	// config files
-					!FS_IsExt( filename, ".txt", l ) &&		// config/text files
-					!FS_IsExt( filename, ".dat", l ) &&		// misc. data files
-					!FS_IsExt( filename, ".bot", l ) &&		// bot files
-					!FS_IsExt( filename, ".c", l ) &&		// bot files
-					!FS_IsExt( filename, ".add", l ) &&		// custom entities
-					!FS_IsExt( filename, ".set", l ) &&		// custom entities
-					!FS_IsExt( filename, ".jpg", l ) &&		// external hud images
-					!FS_IsExt( filename, ".tga", l ) &&		// external hud images
-					!FS_IsExt( filename, ".png", l ) &&		// external hud images
-					!FS_IsExt( filename, ".menu", l ) &&	// menu files
-					!FS_IsExt( filename, ".game", l ) &&	// menu files
-					!FS_IsDemoExt( filename, l ) )
-					continue;
-#endif
+				}
 			}
 
 			dir = search->dir;
@@ -1677,10 +1673,9 @@ qboolean FS_FileIsInPAK( const char *filename, int *pChecksum ) {
 		Com_Error( ERR_FATAL, "FS_FOpenFileRead: NULL 'filename' parameter passed" );
 	}
 
-	// qpaths are not supposed to have a leading slash
-	if ( filename[0] == '/' || filename[0] == '\\' ) {
+	// qpaths are not supposed to have a leading slashes
+	while ( filename[0] == '/' || filename[0] == '\\' )
 		filename++;
-	}
 
 	// make absolutely sure that it can't back up the path.
 	// The searchpaths do guarantee that something will always
@@ -2054,6 +2049,29 @@ qboolean FS_CompareZipChecksum(const char *zipfile)
 	
 	return qfalse;
 }
+
+
+/*
+=================
+FS_GetZipChecksum
+=================
+*/
+int FS_GetZipChecksum( const char *zipfile ) 
+{
+	pack_t *pak;
+	int checksum;
+	
+	pak = FS_LoadZipFile( zipfile, "" );
+	
+	if ( !pak )
+		return 0xFFFFFFFF;
+	
+	checksum = pak->checksum;
+	FS_FreePak( pak );
+
+	return checksum;
+} 
+
 
 /*
 =================================================================================
