@@ -2910,7 +2910,7 @@ void CL_Init( void ) {
 
 	cl_guidServerUniq = Cvar_Get ("cl_guidServerUniq", "1", CVAR_ARCHIVE);
 
-	cl_dlURL = Cvar_Get( "cl_dlURL", "", CVAR_ARCHIVE );
+	cl_dlURL = Cvar_Get( "cl_dlURL", "http://ws.q3df.org/getpk3bymapname.php/%1", CVAR_ARCHIVE );
 
 	// userinfo
 	Cvar_Get ("name", "UnnamedPlayer", CVAR_USERINFO | CVAR_ARCHIVE );
@@ -3896,6 +3896,7 @@ void CL_Download_f( void )
 	char name[MAX_CVAR_VALUE_STRING];
 	char *s;
 	qboolean stripped;
+	qboolean headerCheck;
 
 	if ( !cl_dlURL->string[0] ) 
 	{
@@ -3919,15 +3920,6 @@ void CL_Download_f( void )
 
 	if ( 0 && !Q_stricmp( Cmd_Argv(0), "dlmap" ) ) 
 	{
-		stripped = FS_StripExt( name, ".pk3" );
-		s = va( "maps/%s.bsp", name );
-		if ( FS_FileIsInPAK( s, NULL ) ) 
-		{
-			Com_Printf( " map %s already exists.\n", name );
-			return;
-		}
-		if ( stripped )
-			strcat( name, ".pk3" );
 	} else {
 		if ( !strcmp( Cmd_Argv(1), "-" ) ) 
 		{
@@ -3938,7 +3930,7 @@ void CL_Download_f( void )
 
 	s = strrchr( name, '/' );
 	if ( s )
-		s++;
+		s++; // skip gamedir
 	else
 		s = name;
 
@@ -3947,8 +3939,23 @@ void CL_Download_f( void )
 		if ( url[strlen(url)] != '/' )
 			Q_strcat( url, sizeof( url ), "/" );
 		Q_strcat( url, sizeof( url ), Cmd_Argv( 1 ) );
+		headerCheck = qfalse;
+	}
+	else 
+	{
+		stripped = FS_StripExt( s, ".pk3" );
+		if ( FS_FileIsInPAK( va( "maps/%s.bsp", s ), NULL, url ) ) 
+		{
+			Com_Printf( S_COLOR_YELLOW "map %s already exists in %s.pk3\n", s, url );
+			return;
+		}
+		if ( stripped ) 
+		{
+			strcat( name, ".pk3" );
+		}
+		headerCheck = qtrue;
 	}
 
-	Com_DL_Begin( &download, name, url );
+	Com_DL_Begin( &download, name, url, headerCheck );
 }
 #endif

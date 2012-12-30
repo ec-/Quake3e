@@ -166,7 +166,7 @@ typedef struct download_s {
 	int			Size;
 	int			Count;
 	int			Block;
-	qboolean	checkHeader;
+	qboolean	headerCheck;
 } download_t;
 #endif
 
@@ -332,7 +332,7 @@ extern	clientStatic_t		cls;
 extern		download_t	download;
 qboolean	Com_DL_Perform( download_t *dl );
 void		Com_DL_Cleanup( download_t *dl );
-qboolean	Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL );
+qboolean	Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean headerCheck );
 
 #endif
 
