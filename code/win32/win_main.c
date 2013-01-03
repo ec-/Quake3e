@@ -504,6 +504,70 @@ LOAD/UNLOAD DLL
 ========================================================================
 */
 
+static int dll_err_count = 0;
+
+/*
+=================
+Sys_LoadLibrary
+=================
+*/
+void *Sys_LoadLibrary( const char *name ) 
+{
+	if ( !name || !*name )
+		return NULL;
+
+	return (void *)LoadLibrary( AtoW( name ) );
+}
+
+
+/*
+=================
+Sys_LoadFunction
+=================
+*/
+void *Sys_LoadFunction( void *handle, const char *name ) 
+{
+	void *symbol;
+
+	if ( handle == NULL || name == NULL || *name == '\0' ) 
+	{
+		dll_err_count++;
+		return NULL;
+	}
+
+	symbol = GetProcAddress( handle, name );
+	if ( !symbol )
+		dll_err_count++;
+
+	return symbol;
+}
+
+
+/*
+=================
+Sys_LoadFunctionErrors
+=================
+*/
+int Sys_LoadFunctionErrors( void ) 
+{
+	int result = dll_err_count;
+	dll_err_count = 0;
+	return result;
+}
+
+
+/*
+=================
+Sys_UnloadLibrary
+=================
+*/
+void Sys_UnloadLibrary( void *handle ) 
+{
+	if ( handle ) 
+		FreeLibrary( handle );
+}
+
+
 /*
 =================
 Sys_UnloadDll
@@ -836,14 +900,12 @@ void Sys_Init( void ) {
 		Cvar_Set( "arch", "unknown Windows variant" );
 	}
 
-#ifndef DEDICATED
-	glw_state.wndproc = MainWndProc;
-#endif
-
 	Cvar_Set( "username", Sys_GetCurrentUser() );
 
 #ifndef DEDICATED
-	IN_Init();		// FIXME: not in dedicated?
+	glw_state.wndproc = MainWndProc;
+
+	IN_Init();
 #endif
 
 }

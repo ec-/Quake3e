@@ -314,6 +314,8 @@ static char		*fs_serverReferencedPakNames[MAX_SEARCH_PATHS];		// pk3 names
 char lastValidBase[MAX_OSPATH];
 char lastValidGame[MAX_OSPATH];
 
+static qboolean	silent = qfalse;
+
 #ifdef FS_MISSING
 FILE*		missingFiles = NULL;
 #endif
@@ -3244,10 +3246,11 @@ FS_Startup
 ================
 */
 static void FS_Startup( const char *gameName ) {
-        const char *homePath;
+	const char *homePath;
 	cvar_t	*fs;
 
-	Com_Printf( "----- FS_Startup -----\n" );
+	if ( !silent )
+		Com_Printf( "----- FS_Startup -----\n" );
 
 	fs_packFiles = 0;
 	fs_packCount = 0;
@@ -3257,10 +3260,12 @@ static void FS_Startup( const char *gameName ) {
 	fs_cdpath = Cvar_Get ("fs_cdpath", Sys_DefaultCDPath(), CVAR_INIT );
 	fs_basepath = Cvar_Get ("fs_basepath", Sys_DefaultInstallPath(), CVAR_INIT | CVAR_PROTECTED );
 	fs_basegame = Cvar_Get ("fs_basegame", "", CVAR_INIT );
-  homePath = Sys_DefaultHomePath();
-  if (!homePath || !homePath[0]) {
+	
+	homePath = Sys_DefaultHomePath();
+	if ( !homePath || !homePath[0] ) {
 		homePath = fs_basepath->string;
 	}
+
 	fs_homepath = Cvar_Get ("fs_homepath", homePath, CVAR_INIT | CVAR_PROTECTED );
 	fs_gamedirvar = Cvar_Get ("fs_game", "", CVAR_INIT|CVAR_SYSTEMINFO );
 
@@ -3271,8 +3276,9 @@ static void FS_Startup( const char *gameName ) {
 	if (fs_basepath->string[0]) {
 		FS_AddGameDirectory( fs_basepath->string, gameName );
 	}
-  // fs_homepath is somewhat particular to *nix systems, only add if relevant
-  // NOTE: same filtering below for mods and basegame
+
+	// fs_homepath is somewhat particular to *nix systems, only add if relevant
+	// NOTE: same filtering below for mods and basegame
 	if (fs_basepath->string[0] && Q_stricmp(fs_homepath->string,fs_basepath->string)) {
 		FS_AddGameDirectory ( fs_homepath->string, gameName );
 	}
@@ -3322,19 +3328,21 @@ static void FS_Startup( const char *gameName ) {
 	// reorder the pure pk3 files according to server order
 	FS_ReorderPurePaks();
 	
-	// print the current search paths
-	FS_Path_f();
+	if ( silent == qfalse ) {
+		// print the current search paths
+		FS_Path_f();
+		Com_Printf( "----------------------\n" );
+		Com_Printf( "%d files in %d pk3 files\n", fs_packFiles, fs_packCount );
+	}
 
 	fs_gamedirvar->modified = qfalse; // We just loaded, it's not modified
-
-	Com_Printf( "----------------------\n" );
 
 #ifdef FS_MISSING
 	if (missingFiles == NULL) {
 		missingFiles = fopen( "\\missing.txt", "ab" );
 	}
 #endif
-	Com_Printf( "%d files in %d pk3 files\n", fs_packFiles, fs_packCount );
+
 }
 
 /*
@@ -3860,7 +3868,9 @@ FS_Reload
 */
 void FS_Reload( void ) 
 {
+	silent = qtrue;
 	FS_Restart( fs_checksumFeed );
+	silent = qfalse;
 }
 
 

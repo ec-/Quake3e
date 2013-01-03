@@ -393,35 +393,55 @@ void Sys_SetDefaultHomePath(const char *path)
 	Q_strncpyz(homePath, path, sizeof(homePath));
 }
 
-char *Sys_DefaultHomePath(void)
+
+/*
+=================
+Sys_DefaultHomePath
+=================
+*/
+char *Sys_DefaultHomePath( void )
 {
 	char *p;
 
-        if (*homePath)
-            return homePath;
+	if ( *homePath )
+		return homePath;
             
-	if ((p = getenv("HOME")) != NULL) {
-		Q_strncpyz(homePath, p, sizeof(homePath));
+	if ( (p = getenv("HOME")) != NULL ) 
+	{
+		Q_strncpyz( homePath, p, sizeof( homePath ) );
 #ifdef MACOS_X
 		Q_strcat(homePath, sizeof(homePath), "/Library/Application Support/Quake3");
 #else
-		Q_strcat(homePath, sizeof(homePath), "/.q3a");
+		Q_strcat( homePath, sizeof( homePath ), "/.q3a" );
 #endif
-		if (mkdir(homePath, 0750)) {
-			if (errno != EEXIST) 
-				Sys_Error("Unable to create directory \"%s\", error is %s(%d)\n", homePath, strerror(errno), errno);
+		if ( mkdir( homePath, 0750 ) ) 
+		{
+			if ( errno != EEXIST ) 
+				Sys_Error( "Unable to create directory \"%s\", error is %s(%d)\n", 
+					homePath, strerror( errno ), errno );
 		}
 		return homePath;
 	}
 	return ""; // assume current dir
 }
 
-//============================================
 
+/*
+=================
+Sys_ShowConsole
+=================
+*/
 void Sys_ShowConsole( int visLevel, qboolean quitOnClose )
 {
+	// not implemented
 }
 
+
+/*
+=================
+Sys_GetCurentUser
+=================
+*/
 char *Sys_GetCurrentUser( void )
 {
 	struct passwd *p;
@@ -432,6 +452,24 @@ char *Sys_GetCurrentUser( void )
 	return p->pw_name;
 }
 
+
+/*
+========================================================================
+
+LOAD/UNLOAD DLL
+
+========================================================================
+*/
+
+
+static int dll_err_count = 0;
+
+
+/*
+=================
+Sys_LoadLibrary
+=================
+*/
 void *Sys_LoadLibrary( const char *name )
 {
 	void *handle;
@@ -439,12 +477,24 @@ void *Sys_LoadLibrary( const char *name )
 	return handle;
 }
 
-void  Sys_UnloadLibrary( void *handle )
+
+/*
+=================
+Sys_UnloadLibrary
+=================
+*/
+void Sys_UnloadLibrary( void *handle )
 {
 	if ( handle != NULL )
 		dlclose( handle );
 }
 
+
+/*
+=================
+Sys_LoadFunction
+=================
+*/
 void *Sys_LoadFunction( void *handle, const char *name )
 {
 	char buf[1024];
@@ -452,8 +502,11 @@ void *Sys_LoadFunction( void *handle, const char *name )
 	char *error;
 	size_t nlen;
 
-	if ( handle == NULL || name == NULL )
+	if ( handle == NULL || name == NULL || *name == '\0' ) 
+	{
+		dll_err_count++;
 		return NULL;
+	}
 
 	error = dlerror(); /* clear old error state */
 	symbol = dlsym( handle, name );
@@ -468,5 +521,22 @@ void *Sys_LoadFunction( void *handle, const char *name )
 		error = dlerror(); /* clear old error state */
 		symbol = dlsym( handle, buf );
 	}
+
+	if ( !symbol )
+		dll_err_count++;
+
 	return symbol;
+}
+
+
+/*
+=================
+Sys_LoadFunctionErrors
+=================
+*/
+int Sys_LoadFunctionErrors( void ) 
+{
+	int result = dll_err_count;
+	dll_err_count = 0;
+	return result;
 }

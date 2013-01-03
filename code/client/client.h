@@ -153,22 +153,6 @@ demo through a file.
 =============================================================================
 */
 
-#ifdef USE_CURL
-typedef struct download_s {
-	char		URL[MAX_OSPATH];
-	char		TempName[MAX_OSPATH];
-	char		Name[MAX_QPATH];
-	char		Game[MAX_QPATH];
-	char		progress[MAX_QPATH+32];
-	CURL		*cURL;
-	CURLM		*cURLM;
-	fileHandle_t fHandle;
-	int			Size;
-	int			Count;
-	int			Block;
-	qboolean	headerCheck;
-} download_t;
-#endif
 
 typedef struct {
 

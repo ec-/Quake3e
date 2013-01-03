@@ -1138,8 +1138,8 @@ int Sys_MonkeyShouldBeSpanked( void );
 
 void *Sys_LoadLibrary( const char *name );
 void *Sys_LoadFunction( void *handle, const char *name );
+int   Sys_LoadFunctionErrors( void );
 void  Sys_UnloadLibrary( void *handle );
-/* char *Sys_LibraryError( void ); - unused */
 
 /* This is based on the Adaptive Huffman algorithm described in Sayood's Data
  * Compression book.  The ranks are not actually stored, but implicitly defined

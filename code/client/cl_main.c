@@ -2968,7 +2968,7 @@ void CL_Init( void ) {
 	Cmd_AddCommand ("stopvideo", CL_StopVideo_f );
 
 	Cmd_AddCommand( "download", CL_Download_f );
-	//Cmd_AddCommand( "dlmap", CL_Download_f );
+	Cmd_AddCommand( "dlmap", CL_Download_f );
 
 	CL_InitRef();
 
@@ -3046,7 +3046,7 @@ void CL_Shutdown( char *finalmsg ) {
 	Com_DL_Cleanup( &download );
 
 	Cmd_RemoveCommand( "download" );
-	//Cmd_RemoveCommand( "dlmap" );
+	Cmd_RemoveCommand( "dlmap" );
 
 	CL_ClearInput();
 	
@@ -3916,10 +3916,18 @@ void CL_Download_f( void )
 	while ( *s == '/' || *s == '\\' )
 		s++;
 	strcpy( name, s );
-	strcpy( url, cl_dlURL->string );
 
-	if ( 0 && !Q_stricmp( Cmd_Argv(0), "dlmap" ) ) 
+	if ( !Q_stricmp( Cmd_Argv(0), "dlmap" ) ) 
 	{
+		stripped = FS_StripExt( name, ".pk3" );
+		s = va( "maps/%s.bsp", name );
+		if ( FS_FileIsInPAK( s, NULL, url ) ) 
+		{
+			Com_Printf( S_COLOR_YELLOW " map %s already exists in %s.pk3\n", name, url );
+			return;
+		}
+		if ( stripped )
+			strcat( name, ".pk3" );
 	} else {
 		if ( !strcmp( Cmd_Argv(1), "-" ) ) 
 		{
@@ -3927,6 +3935,8 @@ void CL_Download_f( void )
 			return;
 		}
 	}
+
+	strcpy( url, cl_dlURL->string );
 
 	s = strrchr( name, '/' );
 	if ( s )
@@ -3943,16 +3953,6 @@ void CL_Download_f( void )
 	}
 	else 
 	{
-		stripped = FS_StripExt( s, ".pk3" );
-		if ( FS_FileIsInPAK( va( "maps/%s.bsp", s ), NULL, url ) ) 
-		{
-			Com_Printf( S_COLOR_YELLOW "map %s already exists in %s.pk3\n", s, url );
-			return;
-		}
-		if ( stripped ) 
-		{
-			strcat( name, ".pk3" );
-		}
 		headerCheck = qtrue;
 	}
 
