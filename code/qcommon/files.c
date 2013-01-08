@@ -314,8 +314,6 @@ static char		*fs_serverReferencedPakNames[MAX_SEARCH_PATHS];		// pk3 names
 char lastValidBase[MAX_OSPATH];
 char lastValidGame[MAX_OSPATH];
 
-static qboolean	silent = qfalse;
-
 #ifdef FS_MISSING
 FILE*		missingFiles = NULL;
 #endif
@@ -3278,8 +3276,7 @@ static void FS_Startup( const char *gameName ) {
 	const char *homePath;
 	cvar_t	*fs;
 
-	if ( !silent )
-		Com_Printf( "----- FS_Startup -----\n" );
+	Com_Printf( "----- FS_Startup -----\n" );
 
 	fs_packFiles = 0;
 	fs_packCount = 0;
@@ -3357,12 +3354,10 @@ static void FS_Startup( const char *gameName ) {
 	// reorder the pure pk3 files according to server order
 	FS_ReorderPurePaks();
 	
-	if ( silent == qfalse ) {
-		// print the current search paths
-		FS_Path_f();
-		Com_Printf( "----------------------\n" );
-		Com_Printf( "%d files in %d pk3 files\n", fs_packFiles, fs_packCount );
-	}
+	// print the current search paths
+	FS_Path_f();
+	Com_Printf( "----------------------\n" );
+	Com_Printf( "%d files in %d pk3 files\n", fs_packFiles, fs_packCount );
 
 	fs_gamedirvar->modified = qfalse; // We just loaded, it's not modified
 
@@ -3897,9 +3892,7 @@ FS_Reload
 */
 void FS_Reload( void ) 
 {
-	silent = qtrue;
 	FS_Restart( fs_checksumFeed );
-	silent = qfalse;
 }
 
 
