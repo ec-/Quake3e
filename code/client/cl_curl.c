@@ -548,9 +548,8 @@ void Com_DL_Cleanup( download_t *dl )
 		dl->fHandle = FS_INVALID_HANDLE;
 	}
 
-	dl->Block = 0;
-	dl->Count = 0;
 	dl->Size = 0;
+	dl->Count = 0;
 
 	dl->URL[0] = '\0';
 	dl->Name[0] = '\0';
@@ -678,11 +677,8 @@ Com_DL_Begin()
 
 Start downloading file from remoteURL and save it under localName
 
-If remoteURL doesn't have pk3 extension - real filename will be 
-retrieved from http header
-
-localName may contain base path - otherwise file will be saved
-in current game directory (which may differ from baseq3)
+localName may contain game path - otherwise file will be saved
+in current baseq3 directory
 ==============================================================
 */
 
@@ -721,7 +717,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 	Q_strncpyz( dl->Game, localName, sizeof( dl->Game ) );
 	s = strrchr( dl->Game, '/' );
 	if ( !s ) {
-		Q_strncpyz( dl->Game, FS_GetCurrentGameDir(), sizeof( dl->Game ) );
+		Q_strncpyz( dl->Game, FS_GetBaseGameDir(), sizeof( dl->Game ) );
 		Q_strncpyz( dl->Name, localName, sizeof( dl->Name ) );
 	} else {
 		*s = '\0';

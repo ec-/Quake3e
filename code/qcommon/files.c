@@ -4079,3 +4079,10 @@ const char *FS_GetCurrentGameDir( void )
 
     return BASEGAME;
 }
+
+
+const char *FS_GetBaseGameDir( void )
+{
+    return BASEGAME;
+}
+

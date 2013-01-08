@@ -614,7 +614,7 @@ qboolean FS_FileExists( const char *file );
 char   *FS_BuildOSPath( const char *base, const char *game, const char *qpath );
 
 qboolean FS_CompareZipChecksum( const char *zipfile );
-qboolean FS_GetZipChecksum( const char *zipfile );
+int		FS_GetZipChecksum( const char *zipfile );
 
 int		FS_LoadStack( void );
 
@@ -727,6 +727,7 @@ void FS_VM_CloseFile( fileHandle_t f, handleOwner_t owner );
 void FS_VM_CloseFiles( handleOwner_t owner );
 
 const char *FS_GetCurrentGameDir(void);
+const char *FS_GetBaseGameDir(void);
 
 qboolean FS_IsExt( const char *filename, const char *ext );
 qboolean FS_StripExt( char *filename, const char *ext );

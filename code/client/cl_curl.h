@@ -103,7 +103,6 @@ typedef struct download_s {
 	fileHandle_t fHandle;
 	int			Size;
 	int			Count;
-	int			Block;
 	qboolean	headerCheck;
 
 	struct func_s {
