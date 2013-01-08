@@ -221,7 +221,7 @@ static const unsigned pak_checksums[] = {
 
 #define MAX_ZPATH			256
 #define	MAX_SEARCH_PATHS	4096
-#define MAX_FILEHASH_SIZE	1024
+#define MAX_FILEHASH_SIZE	4096
 
 typedef struct fileInPack_s {
 	char					*name;		// name of the file
@@ -374,7 +374,9 @@ int FS_LoadStack( void )
 return a hash value for the filename
 ================
 */
-static long FS_HashFileName( const char *fname, int hashSize ) {
+#if 0
+static long FS_HashFileName( const char *fname, int hashSize ) 
+{
 	int		i;
 	long	hash;
 	char	letter;
@@ -393,6 +395,35 @@ static long FS_HashFileName( const char *fname, int hashSize ) {
 	hash &= (hashSize-1);
 	return hash;
 }
+#else 
+static long FS_HashFileName( const char *fname, int hashSize ) 
+{
+	char	letter;
+	long	hash;
+
+	hash = 0;
+
+	while ( (letter = *fname) != '\0' ) 
+	{
+		if ( letter >= 'A' && letter <= 'Z' )	
+			letter = letter - 'A' + 'a';
+		else if ( letter == '.' ) 
+			break;
+		else if ( letter == '\\' )
+			letter = '/';
+#if ( PATH_SEP != '\\' ) && ( PATH_SEP != '/' )
+		else if ( letter == PATH_SEP ) 
+			letter = '/'
+#endif
+		hash = hash * 101 + letter;
+		fname++;
+	}
+	hash = (hash ^ (hash >> 10) ^ (hash >> 20));
+
+	return hash & (hashSize-1);
+}
+#endif
+
 
 static fileHandle_t	FS_HandleForFile( void ) 
 {
@@ -1951,8 +1982,8 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 
 	// get the hash table size from the number of files in the zip
 	// because lots of custom pk3 files have less than 32 or 64 files
-	for (i = 1; i <= MAX_FILEHASH_SIZE; i <<= 1) {
-		if (i > gi.number_entry) {
+	for ( i = 2; i < MAX_FILEHASH_SIZE; i <<= 1 ) {
+		if ( i >= gi.number_entry ) {
 			break;
 		}
 	}
@@ -1960,7 +1991,7 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 	pack = Z_Malloc( sizeof( pack_t ) + i * sizeof(fileInPack_t *) );
 	pack->hashSize = i;
 	pack->hashTable = (fileInPack_t **) (((char *) pack) + sizeof( pack_t ));
-	for(i = 0; i < pack->hashSize; i++) {
+	for( i = 0; i < pack->hashSize; i++ ) {
 		pack->hashTable[i] = NULL;
 	}
 
@@ -1968,9 +1999,7 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 	Q_strncpyz( pack->pakBasename, basename, sizeof( pack->pakBasename ) );
 
 	// strip .pk3 if needed
-	if ( strlen( pack->pakBasename ) > 4 && !Q_stricmp( pack->pakBasename + strlen( pack->pakBasename ) - 4, ".pk3" ) ) {
-		pack->pakBasename[strlen( pack->pakBasename ) - 4] = 0;
-	}
+	FS_StripExt( pack->pakBasename, ".pk3" );
 
 	pack->handle = uf;
 	pack->numfiles = gi.number_entry;
@@ -2937,7 +2966,7 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 			continue;
 
 		pakfile = FS_BuildOSPath( path, dir, pakfiles[i] );
-		if ( ( pak = FS_LoadZipFile( pakfile, pakfiles[i] ) ) == 0 )
+		if ( ( pak = FS_LoadZipFile( pakfile, pakfiles[i] ) ) == NULL )
 			continue;
 		// store the game name for downloading
 		strcpy(pak->pakGamename, dir);
