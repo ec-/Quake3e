@@ -3920,7 +3920,13 @@ void CL_Download_f( void )
 	if ( !Q_stricmp( Cmd_Argv(0), "dlmap" ) ) 
 	{
 		stripped = FS_StripExt( name, ".pk3" );
-		s = va( "maps/%s.bsp", name );
+		// try to skip gamedir
+		s = strrchr( name, '/' );
+		if ( s )
+			s++;
+		else
+			s = name;
+		s = va( "maps/%s.bsp", s );
 		if ( FS_FileIsInPAK( s, NULL, url ) ) 
 		{
 			Com_Printf( S_COLOR_YELLOW " map %s already exists in %s.pk3\n", name, url );
@@ -3937,10 +3943,11 @@ void CL_Download_f( void )
 	}
 
 	strcpy( url, cl_dlURL->string );
-
+ 
+	// try to skip gamedir
 	s = strrchr( name, '/' );
 	if ( s )
-		s++; // skip gamedir
+		s++;
 	else
 		s = name;
 
@@ -3948,7 +3955,7 @@ void CL_Download_f( void )
 	{
 		if ( url[strlen(url)] != '/' )
 			Q_strcat( url, sizeof( url ), "/" );
-		Q_strcat( url, sizeof( url ), Cmd_Argv( 1 ) );
+		Q_strcat( url, sizeof( url ), name );
 		headerCheck = qfalse;
 	}
 	else 

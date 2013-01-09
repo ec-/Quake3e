@@ -96,7 +96,6 @@ typedef struct download_s {
 	char		URL[MAX_OSPATH];
 	char		TempName[MAX_OSPATH];
 	char		Name[MAX_QPATH];
-	char		Game[MAX_QPATH];
 	char		progress[MAX_QPATH+32];
 	CURL		*cURL;
 	CURLM		*cURLM;

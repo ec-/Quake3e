@@ -553,7 +553,6 @@ void Com_DL_Cleanup( download_t *dl )
 
 	dl->URL[0] = '\0';
 	dl->Name[0] = '\0';
-	dl->Game[0] = '\0';
 	dl->TempName[0] = '\0';
 	dl->progress[0] = '\0';
 	dl->headerCheck = qfalse;
@@ -714,21 +713,17 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 
 	// try to extract game path from localName
 	// dl->Name should contain only pak name without game dir and extension
-	Q_strncpyz( dl->Game, localName, sizeof( dl->Game ) );
-	s = strrchr( dl->Game, '/' );
-	if ( !s ) {
-		Q_strncpyz( dl->Game, FS_GetBaseGameDir(), sizeof( dl->Game ) );
+	s = strchr( localName, '/' );
+	if ( !s ) 
+		Com_sprintf( dl->Name, sizeof( dl->Name ), "%s/%s", FS_GetBaseGameDir(), localName );
+	else
 		Q_strncpyz( dl->Name, localName, sizeof( dl->Name ) );
-	} else {
-		*s = '\0';
-		Q_strncpyz( dl->Name, s+1, sizeof( dl->Name ) );
-	}
 
 	FS_StripExt( dl->Name, ".pk3" );
 	dl->headerCheck = headerCheck;
 
-	Com_sprintf( dl->TempName, sizeof( dl->TempName ), "%s/%s.%04x.tmp", 
-		dl->Game, dl->Name, random() );
+	Com_sprintf( dl->TempName, sizeof( dl->TempName ), 
+		"%s.%04x.tmp", dl->Name, random() );
 
 	if ( com_developer->integer )
 		dl->func.easy_setopt( dl->cURL, CURLOPT_VERBOSE, 1 );
@@ -810,8 +805,7 @@ qboolean Com_DL_Perform( download_t *dl )
 
 	if ( msg->msg == CURLMSG_DONE && msg->data.result == CURLE_OK ) 
 	{
-		Com_sprintf( name, sizeof( name ), "%s/%s.pk3", 
-			dl->Game, dl->Name );
+		Com_sprintf( name, sizeof( name ), "%s.pk3", dl->Name );
 
 		if ( !FS_SV_FileExists( name ) ) 
 		{
@@ -820,7 +814,7 @@ qboolean Com_DL_Perform( download_t *dl )
 		else
 		{
 			n = FS_GetZipChecksum( name );
-			Com_sprintf( name, sizeof( name ), "%s/%s.%08x.pk3", dl->Game, dl->Name, n );
+			Com_sprintf( name, sizeof( name ), "%s.%08x.pk3", dl->Name, n );
 
 			if ( FS_SV_FileExists( name ) ) 
 				FS_Remove( name );
