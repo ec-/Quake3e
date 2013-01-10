@@ -654,7 +654,7 @@ static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void 
 			// validate
 			if ( len < 5 || !stristr( name + len - 4, ".pk3" ) || strchr( name, '/' ) )
 			{
-				Com_Printf( "Com_DL_HeaderCallback: bad file name '%s'\n" );
+				Com_Printf( "Com_DL_HeaderCallback: bad file name '%s'\n", name );
 				return (size_t)-1;
 			}
 
@@ -723,7 +723,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 	dl->headerCheck = headerCheck;
 
 	Com_sprintf( dl->TempName, sizeof( dl->TempName ), 
-		"%s.%04x.tmp", dl->Name, random() );
+		"%s.%04x.tmp", dl->Name, rand() );
 
 	if ( com_developer->integer )
 		dl->func.easy_setopt( dl->cURL, CURLOPT_VERBOSE, 1 );
