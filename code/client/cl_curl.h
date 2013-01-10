@@ -95,7 +95,7 @@ void CL_cURL_Cleanup( void );
 typedef struct download_s {
 	char		URL[MAX_OSPATH];
 	char		TempName[MAX_OSPATH];
-	char		Name[MAX_QPATH];
+	char		Name[MAX_QPATH*2];
 	char		progress[MAX_QPATH+32];
 	CURL		*cURL;
 	CURLM		*cURLM;
@@ -103,6 +103,7 @@ typedef struct download_s {
 	int			Size;
 	int			Count;
 	qboolean	headerCheck;
+	qboolean	pk3ext;
 
 	struct func_s {
 		char*		(*version)(void);

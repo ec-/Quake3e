@@ -556,6 +556,7 @@ void Com_DL_Cleanup( download_t *dl )
 	dl->TempName[0] = '\0';
 	dl->progress[0] = '\0';
 	dl->headerCheck = qfalse;
+	dl->pk3ext = qfalse;
 
 	Com_DL_Done( dl );
 }
@@ -590,6 +591,12 @@ static size_t Com_DL_CallbackWrite( void *ptr, size_t size, size_t nmemb, void *
 
 	if ( dl->fHandle == FS_INVALID_HANDLE )
 	{
+		if ( !dl->pk3ext ) 
+		{
+			Com_Printf( "Com_DL_CallbackWrite(): file must have pk3 extension.\n" );
+			return (size_t)-1;
+		}
+
 		dl->fHandle = FS_SV_FOpenFileWrite( dl->TempName );
 		if ( dl->fHandle == FS_INVALID_HANDLE ) 
 		{
@@ -605,7 +612,7 @@ static size_t Com_DL_CallbackWrite( void *ptr, size_t size, size_t nmemb, void *
 
 static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void *userdata ) 
 {
-	char name[MAX_CVAR_VALUE_STRING];
+	char name[MAX_QPATH];
 	char header[1024], *s, quote, *d;
 	download_t *dl;
 	int len;
@@ -659,10 +666,17 @@ static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void 
 			}
 
 			// strip extension
-			FS_StripExt( name, ".pk3" );
+			dl->pk3ext = FS_StripExt( name, ".pk3" );
+
+			// preserve gamename
+			s = strchr( dl->Name, '/' );
+			if ( s )
+				s++;
+			else
+				s = dl->Name;
 
 			// store in
-			strcpy( dl->Name, name );
+			strcpy( s, name );
 		}
 	}
 	
@@ -719,7 +733,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 	else
 		Q_strncpyz( dl->Name, localName, sizeof( dl->Name ) );
 
-	FS_StripExt( dl->Name, ".pk3" );
+	dl->pk3ext = FS_StripExt( dl->Name, ".pk3" );
 	dl->headerCheck = headerCheck;
 
 	Com_sprintf( dl->TempName, sizeof( dl->TempName ), 
