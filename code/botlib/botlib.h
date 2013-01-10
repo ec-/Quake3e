@@ -195,7 +195,7 @@ typedef struct botlib_import_s
 	int			(*FS_Read)( void *buffer, int len, fileHandle_t f );
 	int			(*FS_Write)( const void *buffer, int len, fileHandle_t f );
 	void		(*FS_FCloseFile)( fileHandle_t f );
-	int			(*FS_Seek)( fileHandle_t f, long offset, int origin );
+	int			(*FS_Seek)( fileHandle_t f, long offset, fsOrigin_t origin );
 	//debug visualisation stuff
 	int			(*DebugLineCreate)(void);
 	void		(*DebugLineDelete)(int line);
