@@ -1,0 +1,214 @@
+--- curl-7.28.1/lib/file.c
++++ curl-7.28.1/lib/file.c
+@@ -91,6 +91,7 @@
+  */
+ 
+ static CURLcode file_do(struct connectdata *, bool *done);
++static CURLcode file_doing(struct connectdata *, bool *done);
+ static CURLcode file_done(struct connectdata *conn,
+                           CURLcode status, bool premature);
+ static CURLcode file_connect(struct connectdata *conn, bool *done);
+@@ -110,7 +111,11 @@
+   ZERO_NULL,                            /* do_more */
+   file_connect,                         /* connect_it */
+   ZERO_NULL,                            /* connecting */
++#ifdef WIN32
++  file_doing,                           /* doing */
++#else
+   ZERO_NULL,                            /* doing */
++#endif
+   ZERO_NULL,                            /* proto_getsock */
+   ZERO_NULL,                            /* doing_getsock */
+   ZERO_NULL,                            /* domore_getsock */
+@@ -482,12 +487,12 @@
+     snprintf(buf, sizeof(data->state.buffer),
+              "Content-Length: %" FORMAT_OFF_T "\r\n", expected_size);
+     result = Curl_client_write(conn, CLIENTWRITE_BOTH, buf, 0);
+-    if(result)
++    if ( result != CURLE_OK )
+       return result;
+ 
+     result = Curl_client_write(conn, CLIENTWRITE_BOTH,
+                                (char *)"Accept-ranges: bytes\r\n", 0);
+-    if(result)
++	if ( result != CURLE_OK )
+       return result;
+ 
+     if(fstated) {
+@@ -578,7 +583,7 @@
+     expected_size -= nread;
+ 
+     res = Curl_client_write(conn, CLIENTWRITE_BODY, buf, nread);
+-    if(res)
++	if ( res != CURLE_OK )
+       return res;
+ 
+     Curl_pgrsSetDownloadCounter(data, bytecount);
+@@ -587,11 +592,147 @@
+       res = CURLE_ABORTED_BY_CALLBACK;
+     else
+       res = Curl_speedcheck(data, now);
++
++#ifdef WIN32
++	if ( res == CURLE_OK && expected_size > 0 && bytecount > (BUFSIZE-1)*8 ) {
++		if ( data->state.resume_from == -1 )
++			data->state.resume_from = bytecount;
++		else
++			data->state.resume_from += bytecount;
++		*done = FALSE;
++		break;
+   }
+-  if(Curl_pgrsUpdate(conn))
++#endif
++  }
++
++  if( Curl_pgrsUpdate( conn ) )
++    res = CURLE_ABORTED_BY_CALLBACK;
++
++  return res;
++}
++
++
++#ifdef WIN32
++
++long _tvdiff( struct timeval newer, struct timeval older )
++{
++	return (newer.tv_sec-older.tv_sec)*1000+
++		(newer.tv_usec-older.tv_usec)/1000;
++}
++
++static CURLcode file_doing( struct connectdata *conn, bool *done )
++{
++  CURLcode res = CURLE_OK;
++  struct_stat statbuf;
++  curl_off_t expected_size=0, nreaded = 0;
++  bool fstated=FALSE;
++  ssize_t nread;
++  size_t bytestoread;
++  struct SessionHandle *data = conn->data;
++  char *buf = data->state.buffer;
++  curl_off_t bytecount = 0;
++  int fd;
++  struct timeval now = Curl_tvnow();
++  long	diff;
++
++  *done = TRUE; /* unconditionally */
++
++  //if ( data->set.upload )
++  // return file_upload( conn );
++
++  /* get the fd from the connection phase */
++  fd = conn->data->state.proto.file->fd;
++
++  if( -1 != fstat(fd, &statbuf)) {
++    expected_size = statbuf.st_size;
++    data->info.filetime = (long)statbuf.st_mtime;
++    fstated = TRUE;
++  }
++
++  /* Check whether file range has been specified */
++  file_range( conn );
++
++  /* Adjust the start offset in case we want to get the N last bytes
++   * of the stream iff the filesize could be determined */
++  if ( data->state.resume_from < 0 ) {
++    if ( !fstated ) {
++      failf( data, "Can't get the size of file." );
++      return CURLE_READ_ERROR;
++    }
++    else
++      data->state.resume_from += (curl_off_t)statbuf.st_size;
++  }
++
++  if( data->state.resume_from <= expected_size )
++    expected_size -= data->state.resume_from;
++  else {
++    failf( data, "failed to resume file:// transfer" );
++    return CURLE_BAD_DOWNLOAD_RESUME;
++  }
++
++  /* A high water mark has been specified so we obey... */
++  if ( data->req.maxdownload > 0 )
++    expected_size = data->req.maxdownload;
++
++  if ( fstated && ( expected_size == 0 ) )
++    return CURLE_OK;
++
++  //if ( fstated )
++  //  Curl_pgrsSetDownloadSize( data, expected_size );
++
++  if( data->state.resume_from ) {
++	nreaded = data->state.resume_from;
++    if( data->state.resume_from !=
++      lseek( fd, data->state.resume_from, SEEK_SET ) )
++    return CURLE_BAD_DOWNLOAD_RESUME;
++  }
++
++  //Curl_pgrsTime( data, TIMER_PRETRANSFER );
++
++  while( res == CURLE_OK ) {
++
++    /* Don't fill a whole buffer if we want less than all data */
++    bytestoread = ( expected_size < BUFSIZE-1 ) ? (size_t)expected_size : BUFSIZE-1;
++    nread = read( fd, buf, bytestoread );
++
++    if( nread > 0 )
++      buf[nread] = 0;
++
++    if ( nread <= 0 || expected_size == 0 )
++      break;
++
++    bytecount += nread;
++    expected_size -= nread;
++	nreaded += nread;
++
++    res = Curl_client_write( conn, CLIENTWRITE_BODY, buf, nread );
++	if ( res != CURLE_OK )
++      return res;
++
++	Curl_pgrsSetDownloadCounter( data, nreaded );
++
++	if( Curl_pgrsUpdate( conn ) )
++      res = CURLE_ABORTED_BY_CALLBACK;
++    else
++      res = Curl_speedcheck( data, now );
++
++	if ( res == CURLE_OK && expected_size > 0 ) {
++		diff = _tvdiff( Curl_tvnow(), now );
++		//if ( bytecount >= (BUFSIZE-1)*8 ) {
++		if ( diff >= 25 || diff < 0 ) {
++			data->state.resume_from = nreaded;
++			*done = FALSE;
++			break;
++		}
++	}
++  }
++
++  if( Curl_pgrsUpdate( conn ) )
+     res = CURLE_ABORTED_BY_CALLBACK;
+ 
+   return res;
+ }
+ 
++#endif // WIN32
++
+ #endif
+--- curl-7.28.1/lib/url.c
++++ curl-7.28.1/lib/url.c
+@@ -3799,6 +3799,7 @@
+   if((2 == sscanf(data->change.url, "%15[^:]:%[^\n]",
+                   protobuf, path)) &&
+      Curl_raw_equal(protobuf, "file")) {
++#ifndef WIN32
+     if(path[0] == '/' && path[1] == '/') {
+       /* Allow omitted hostname (e.g. file:/<path>).  This is not strictly
+        * speaking a valid file: URL by RFC 1738, but treating file:/<path> as
+@@ -3843,7 +3844,7 @@
+         memmove(path, ptr, strlen(ptr)+1);
+       }
+     }
+-
++#endif
+     protop = "file"; /* protocol string */
+   }
+   else {
