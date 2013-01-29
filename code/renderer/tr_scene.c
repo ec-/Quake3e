@@ -42,7 +42,7 @@ R_ToggleSmpFrame
 
 ====================
 */
-void R_ToggleSmpFrame( void ) {
+void R_InitNextFrame( void ) {
 
 	backEndData->commands.used = 0;
 

@@ -230,9 +230,6 @@ static void InitOpenGL( void )
 		}
 	}
 
-	// init command buffers and SMP
-	R_InitCommandBuffers();
-
 	// print info
 	GfxInfo_f();
 
@@ -1244,7 +1241,7 @@ void R_Init( void ) {
 	backEndData->polys = (srfPoly_t *) ((char *) ptr + sizeof( *backEndData ));
 	backEndData->polyVerts = (polyVert_t *) ((char *) ptr + sizeof( *backEndData ) + sizeof(srfPoly_t) * max_polys);
 	
-	R_ToggleSmpFrame();
+	R_InitNextFrame();
 
 	InitOpenGL();
 
@@ -1287,8 +1284,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 
 
 	if ( tr.registered ) {
-		R_SyncRenderThread();
-		R_ShutdownCommandBuffers();
+		R_IssuePendingRenderCommands();
 		R_DeleteTextures();
 	}
 
@@ -1311,7 +1307,7 @@ Touch all images to make sure they are resident
 =============
 */
 void RE_EndRegistration( void ) {
-	R_SyncRenderThread();
+	R_IssuePendingRenderCommands();
 	if (!Sys_LowPhysicalMemory()) {
 		RB_ShowImages();
 	}

@@ -652,7 +652,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 /*
 ============================================================================
 
-RENDER BACK END THREAD FUNCTIONS
+RENDER BACK END FUNCTIONS
 
 ============================================================================
 */
@@ -704,7 +704,8 @@ void RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *
 	if ( !tr.registered ) {
 		return;
 	}
-	R_SyncRenderThread();
+
+	R_IssuePendingRenderCommands();
 
 	// we definately want to sync every frame for the cinematics
 	qglFinish();
@@ -1045,9 +1046,6 @@ const void	*RB_SwapBuffers( const void *data ) {
 /*
 ====================
 RB_ExecuteRenderCommands
-
-This function will be called synchronously if running without
-smp extensions, or asynchronously by another thread.
 ====================
 */
 void RB_ExecuteRenderCommands( const void *data ) {
@@ -1093,8 +1091,8 @@ void RB_ExecuteRenderCommands( const void *data ) {
 
 		case RC_END_OF_LIST:
 		default:
-			// stop rendering on this thread
-			t2 = ri.Milliseconds ();
+			// stop rendering
+			t2 = ri.Milliseconds();
 			backEnd.pc.msec = t2 - t1;
 			return;
 		}

@@ -77,28 +77,9 @@ void R_PerformanceCounters( void ) {
 
 /*
 ====================
-R_InitCommandBuffers
-====================
-*/
-void R_InitCommandBuffers( void ) {
-}
-
-/*
-====================
-R_ShutdownCommandBuffers
-====================
-*/
-void R_ShutdownCommandBuffers( void ) {
-}
-
-/*
-====================
 R_IssueRenderCommands
 ====================
 */
-int	c_blockedOnRender;
-int	c_blockedOnMain;
-
 void R_IssueRenderCommands( qboolean runPerformanceCounters ) {
 	renderCommandList_t	*cmdList;
 
@@ -126,20 +107,18 @@ void R_IssueRenderCommands( qboolean runPerformanceCounters ) {
 
 /*
 ====================
-R_SyncRenderThread
+R_IssuePendingRenderCommands
 
 Issue any pending commands and wait for them to complete.
-After exiting, the render thread will have completed its work
-and will remain idle and the main thread is free to issue
-OpenGL calls until R_IssueRenderCommands is called.
 ====================
 */
-void R_SyncRenderThread( void ) {
+void R_IssuePendingRenderCommands( void ) {
 	if ( !tr.registered ) {
 		return;
 	}
 	R_IssueRenderCommands( qfalse );
 }
+
 
 /*
 ============
@@ -289,7 +268,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 		}
 		else
 		{
-			R_SyncRenderThread();
+			R_IssuePendingRenderCommands();
 			qglEnable( GL_STENCIL_TEST );
 			qglStencilMask( ~0U );
 			qglClearStencil( 0U );
@@ -302,7 +281,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	{
 		// this is only reached if it was on and is now off
 		if ( r_measureOverdraw->modified ) {
-			R_SyncRenderThread();
+			R_IssuePendingRenderCommands();
 			qglDisable( GL_STENCIL_TEST );
 		}
 		r_measureOverdraw->modified = qfalse;
@@ -312,7 +291,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	// texturemode stuff
 	//
 	if ( r_textureMode->modified ) {
-		R_SyncRenderThread();
+		R_IssuePendingRenderCommands();
 		GL_TextureMode( r_textureMode->string );
 		r_textureMode->modified = qfalse;
 	}
@@ -323,7 +302,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	if ( r_gamma->modified ) {
 		r_gamma->modified = qfalse;
 
-		R_SyncRenderThread();
+		R_IssuePendingRenderCommands();
 		R_SetColorMappings();
 	}
 
@@ -331,7 +310,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
     if ( !r_ignoreGLErrors->integer ) {
         int	err;
 
-		R_SyncRenderThread();
+		R_IssuePendingRenderCommands();
         if ( ( err = qglGetError() ) != GL_NO_ERROR ) {
             ri.Error( ERR_FATAL, "RE_BeginFrame() - glGetError() failed (0x%x)!\n", err );
         }
@@ -390,7 +369,7 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 
 	// use the other buffers next frame, because another CPU
 	// may still be rendering into the current ones
-	R_ToggleSmpFrame();
+	R_InitNextFrame();
 
 	if ( frontEndMsec ) {
 		*frontEndMsec = tr.frontEndMsec;
