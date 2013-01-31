@@ -1601,7 +1601,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 			sprintf( errBuf, "opStack underflow at %i", i ); 
 			return errBuf;
 		}
-		if ( opStack >= OPSTACK_SIZE * 4 ) {
+		if ( opStack >= PROC_OPSTACK_SIZE * 4 ) {
 			sprintf( errBuf, "opStack overflow at %i", i ); 
 			return errBuf;
 		}
@@ -2676,7 +2676,7 @@ This function is called directly by the generated code
 
 int	VM_CallCompiled( vm_t *vm, int *args )
 {
-	int		opStack[OPSTACK_SIZE + 2];
+	int		opStack[MAX_OPSTACK_SIZE];
 	int		stackOnEntry;
 	int		*image;
 	vm_t	*oldVM;
@@ -2703,11 +2703,11 @@ int	VM_CallCompiled( vm_t *vm, int *args )
 	//image[1] =  0;	// return stack
 	//image[0] = -1;	// will terminate loop on return
 
-	vm->opStack = &opStack[1];
+	vm->opStack = &opStack[0];
 
 	vm->codeBase.func(); // go into generated code
 
-	if ( vm->opStack != &opStack[2] ) {
+	if ( vm->opStack != &opStack[1] ) {
 		Com_Error( ERR_DROP, "opStack corrupted in compiled code" );
 	}
 
