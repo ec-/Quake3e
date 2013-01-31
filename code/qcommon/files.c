@@ -1200,7 +1200,7 @@ qboolean FS_HasExt( const char *fileName, const char **extList, int extCount )
 	if ( !e ) 
 		return qfalse;
 
-	for ( i = 0; e++, i < extCount; i++ ) 
+	for ( i = 0, e++; i < extCount; i++ ) 
 	{
 		if ( !Q_stricmp( e, extList[i] ) )
 			return qtrue;
