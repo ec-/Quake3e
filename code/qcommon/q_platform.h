@@ -35,9 +35,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #undef QDECL
 #define QDECL __cdecl
 
-#if defined (_WIN32_WINNT) && _WIN32_WINNT < 0x0501
+#if defined (_WIN32_WINNT)
+#if _WIN32_WINNT < 0x0501
 #undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
+#endif
 #else
 #define _WIN32_WINNT 0x0501
 #endif
