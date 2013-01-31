@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "q_shared.h"
 #include "qcommon.h"
 
-#define	MAX_OPSTACK_SIZE  1024
+#define	MAX_OPSTACK_SIZE  512
 #define	PROC_OPSTACK_SIZE 30
 
 // don't change
@@ -167,6 +167,7 @@ struct vm_s {
 	int			dataMask;
 
 	int			stackBottom;		// if programStack < stackBottom, error
+	int			*opStackTop;		
 
 	int			numSymbols;
 	vmSymbol_t	*symbols;

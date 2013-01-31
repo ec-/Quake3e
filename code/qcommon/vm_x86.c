@@ -293,7 +293,7 @@ typedef struct {
 	byte  opStack;  // 8
 	int jused:1;
 	int jump:1;
-	int flag:1;		// arg# before call
+	int swtch:1;
 } instruction_t;
 
 
@@ -317,6 +317,7 @@ typedef enum
 	FUNC_FTOL,
 	FUNC_BCPY,
 	FUNC_PSOF,
+	FUNC_OSOF,
 	FUNC_BADJ,
 	FUNC_ERRJ,
 	FUNC_LAST
@@ -340,29 +341,37 @@ static	ELastCommand	LastCommand;
 
 int		funcOffset[FUNC_LAST];
 
-void ErrJump( void )
+static void ErrJump( void )
 {
 	Com_Error( ERR_DROP, "program tried to execute code outside VM" ); 
 	exit(1);
 }
 
-void BadJump( void )
+
+static void BadJump( void )
 {
 	Com_Error( ERR_DROP, "program tried to execute code at bad location inside VM" ); 
 	exit(1);
 }
 
-void BadStack( void )
+
+static void BadStack( void )
 {
 	Com_Error( ERR_DROP, "program tried to overflow program stack" ); 
 	exit(1);
 }
 
 
+static void BadOpStack( void )
+{
+	Com_Error( ERR_DROP, "program tried to overflow opcode stack" ); 
+	exit(1);
+}
+
 static void (*const errJumpPtr)(void) = ErrJump;
 static void (*const badJumpPtr)(void) = BadJump;
 static void (*const badStackPtr)(void) = BadStack;
-
+static void (*const badOpStackPtr)(void) = BadOpStack;
 
 static void VM_FreeBuffers( void ) 
 {
@@ -1056,6 +1065,15 @@ void EmitPSOFFunc( vm_t *vm )
 }
 
 
+void EmitOSOFFunc( vm_t *vm ) 
+{
+	EmitRexString( 0x48, "B8" );	// mov eax, badOptackPtr
+	EmitPtr( &badOpStackPtr );
+	EmitString( "FF 10" );			// call [eax]
+	EmitString( "C3" );				// ret
+}
+
+
 void EmitBADJFunc( vm_t *vm ) 
 {
 	EmitRexString( 0x48, "B8" );	// mov eax, badJumpPtr
@@ -1551,7 +1569,6 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 	int i, n, v, op0, op1, opStack, pstack;
 	instruction_t *ci, *proc;
 	int startp, endp;
-	qboolean first;
 	
 	code_pos = (byte *) header + header->codeOffset;
 	code_start = code_pos; // for printing
@@ -1616,37 +1633,11 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 	//	ci++;
 	}
 
-
-	// ensure that the optimization pass knows about all the jump table targets
-	if ( jumpTableTargets ) {
-		for( i = 0; i < numJumpTableTargets; i++ ) {
-			n = *(int *)(jumpTableTargets + ( i * sizeof( int ) ) );
-			if ( n >= header->instructionCount )
-				continue;
-			if ( buf[n].opStack != 0 ) {
-				opStack = buf[n].opStack;
-				sprintf( errBuf, "jump target set on instruction %i with bad opStack %i", n, opStack ); 
-				return errBuf;
-			}
-			buf[n].jused = 1;
-		}
-	} else {
-		// instructions with opStack > 0 can't be jump labels so its safe to optimize/merge
-		for ( i = 0; i < header->instructionCount; i++ ) {
-			if ( buf[i].opStack > 0 )
-				buf[i].jused = 0;
-			else
-				buf[i].jused = 1;
-		}
-	}
-
 	ci = buf;
 	pstack = 0;
 	op1 = OP_UNDEF;
 	proc = NULL;
 	
-	first = qtrue;	// vmMain return flag
-
 	// Additional security checks
 
 	for ( i = 0; i < header->instructionCount; i++, ci++, op1 = op0  ) {
@@ -1693,6 +1684,10 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 			continue;
 		}
 
+		// proc opstack will carry max.possible opstack alue
+		if ( proc && ci->opStack > proc->opStack ) 
+			proc->opStack = ci->opStack;
+
 		// function return
 		if ( op0 == OP_LEAVE ) {
 			// bad return programStack
@@ -1720,11 +1715,6 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 				proc = NULL;
 				startp = i + 1; // next instruction
 				endp = header->instructionCount - 1; // end of the image
-			}
-			if ( first ) 
-			{
-				ci->flag = 1;
-				first = qfalse;
 			}
 			continue;
 		}
@@ -1778,6 +1768,11 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 				}
 				// mark jump target
 				buf[v].jused = 1;
+			} else {
+				if ( proc )
+					proc->swtch = 1;
+				else
+					ci->swtch = 1;
 			}
 			continue;
 		}
@@ -1793,11 +1788,6 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 				if ( v >= 0 ) {
 					if ( v >= header->instructionCount ) {
 						sprintf( errBuf, "call target %i is out of range", v ); 
-						return errBuf;
-					}
-					if ( buf[v].opStack != 0 ) {
-						n = buf[v].opStack;
-						sprintf( errBuf, "call target %i has bad opStack %i", v, n );
 						return errBuf;
 					}
 					if ( buf[v].op != OP_ENTER ) {
@@ -1848,6 +1838,36 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 	if ( op1 != OP_UNDEF && op1 != OP_LEAVE ) {
 		sprintf( errBuf, "missing return instruction at the end of the image" );
 		return errBuf;
+	}
+
+	// ensure that the optimization pass knows about all the jump table targets
+	if ( jumpTableTargets ) {
+		for( i = 0; i < numJumpTableTargets; i++ ) {
+			n = *(int *)(jumpTableTargets + ( i * sizeof( int ) ) );
+			if ( n >= header->instructionCount )
+				continue;
+			if ( buf[n].opStack != 0 ) {
+				opStack = buf[n].opStack;
+				sprintf( errBuf, "jump target set on instruction %i with bad opStack %i", n, opStack ); 
+				return errBuf;
+			}
+			buf[n].jused = 1;
+		}
+	} else {
+		v = 0;
+		// instructions with opStack > 0 can't be jump labels so its safe to optimize/merge
+		for ( i = 0, ci = buf; i < header->instructionCount; i++, ci++ ) {
+			if ( ci->op == OP_ENTER ) {
+				v = ci->swtch;
+				continue;
+			}
+			if ( ci->swtch )
+				v = ci->swtch;
+			if ( ci->opStack > 0 )
+				ci->jused = 0;
+			else if ( v )
+				ci->jused = 1;
+		}
 	}
 
 	return NULL;
@@ -1960,6 +1980,8 @@ __compile:
 	EmitString( "55" );				// push rbp
 	EmitString( "41 54" );			// push r12
 	EmitString( "41 55" );			// push r13
+	EmitString( "41 56" );			// push r14
+	EmitString( "41 57" );			// push r15
 
 	EmitRexString( 0x48, "BB" );	// mov rbx, vm->dataBase
 	EmitPtr( vm->dataBase );
@@ -1983,6 +2005,11 @@ __compile:
 	EmitRexString( 0x48, "B8" );	// mov rax, &vm->opStack
 	EmitPtr( &vm->opStack );
 	EmitRexString( 0x48, "8B 38" );	// mov rdi, [rax]
+
+	EmitRexString( 0x48, "B8" );	// mov rax, &vm->opStackTop
+	EmitPtr( &vm->opStackTop );
+	EmitString( "4C 8B 30" );		// mov r14, [rax]
+
 #else
 	EmitString( "60" );				// pushad
 	//EmitString( "53" );		// push ebx
@@ -2014,6 +2041,8 @@ __compile:
 	EmitPtr( &vm->opStack );
 	EmitRexString( 0x48, "89 38" );	// mov [rax], rdi
 
+	EmitString( "41 5F" );			// pop r15
+	EmitString( "41 5E" );			// pop r14
 	EmitString( "41 5D" );			// pop r13
 	EmitString( "41 5C" );			// pop r12
 	EmitString( "5D" );				// pop rbp
@@ -2084,6 +2113,20 @@ __compile:
 			EmitString( "0F 82" );		// jb +funcOffset[FUNC_PSOF]
 			n = funcOffset[FUNC_PSOF] - compiledOfs;
 			Emit4( n - 6 );
+
+			// opStack overflow check
+			EmitRexString( 0x48, "8D 47" );		// lea eax, [edi+0x7F]
+			Emit1( ci->opStack );
+#if idx64
+			EmitString( "4C 39 F0" );			// cmp rax, r14
+#else
+			EmitString( "3B 05" );				// cmp eax, [&vm->opStackTop]
+			EmitPtr( &vm->opStackTop );
+#endif
+			EmitString( "0F 87" );				// ja +funcOffset[FUNC_OSOF]
+			n = funcOffset[FUNC_OSOF] - compiledOfs;
+			Emit4( n - 6 );
+
 			EmitRexString( 0x48, "8D 2C 33" ); // lea ebp, [ebx+esi]
 			break;
 
@@ -2571,6 +2614,10 @@ __compile:
 		funcOffset[FUNC_PSOF] = compiledOfs;
 		EmitPSOFFunc( vm );
 
+		// opStack overflow
+		funcOffset[FUNC_OSOF] = compiledOfs;
+		EmitOSOFFunc( vm );
+
 	} // for( pass = 0; pass < n; pass++ )
 
 	if ( code == NULL ) {
@@ -2603,7 +2650,7 @@ __compile:
 	
 	// offset all the instruction pointers for the new location
 	for ( i = 0 ; i < header->instructionCount ; i++ ) {
-		if ( inst[i].opStack != 0 ) {
+		if ( !inst[i].jused ) {
 			vm->instructionPointers[i] = (intptr_t)badJumpPtr;
 			continue;
 		}
@@ -2680,12 +2727,14 @@ int	VM_CallCompiled( vm_t *vm, int *args )
 	int		stackOnEntry;
 	int		*image;
 	vm_t	*oldVM;
+	int		*oldOpTop;
 
 	oldVM = currentVM;
 	currentVM = vm;
 
 	// we might be called recursively, so this might not be the very top
 	stackOnEntry = vm->programStack;
+	oldOpTop = vm->opStackTop;
 	vm->programStack -= CALL_PSTACK;
 
 	// set up the stack frame 
@@ -2703,7 +2752,8 @@ int	VM_CallCompiled( vm_t *vm, int *args )
 	//image[1] =  0;	// return stack
 	//image[0] = -1;	// will terminate loop on return
 
-	vm->opStack = &opStack[0];
+	vm->opStack = opStack;
+	vm->opStackTop = opStack + MAX_OPSTACK_SIZE - 1;
 
 	vm->codeBase.func(); // go into generated code
 
@@ -2718,9 +2768,11 @@ int	VM_CallCompiled( vm_t *vm, int *args )
 #endif
 
 	vm->programStack = stackOnEntry;
+	vm->opStackTop = oldOpTop;
+
 
 	// in case we were recursively called by another vm
 	currentVM = oldVM;
 
-	return *vm->opStack;
+	return vm->opStack[0];
 }
