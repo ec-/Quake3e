@@ -159,6 +159,7 @@ void S_ChannelFree(channel_t *v) {
 	freelist = (channel_t*)v;
 }
 
+
 channel_t*	S_ChannelMalloc( void ) {
 	channel_t *v;
 	if (freelist == NULL) {
@@ -170,8 +171,8 @@ channel_t*	S_ChannelMalloc( void ) {
 	return v;
 }
 
-static void S_ChannelSetup()
-{
+
+static void S_ChannelSetup( void ) {
 	channel_t *p, *q;
 
 	// clear all the sounds so they don't
