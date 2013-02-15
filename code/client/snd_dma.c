@@ -56,6 +56,7 @@ static char		s_backgroundLoop[MAX_QPATH];
 #define		SOUND_ATTENUATE		0.0008f
 
 #define		MASTER_VOL			127
+#define		SPHERE_VOL			90
 
 channel_t   s_channels[MAX_CHANNELS];
 channel_t   loop_channels[MAX_CHANNELS];
@@ -834,9 +835,9 @@ void S_AddLoopSounds (void) {
 		}
 
 		if (loop->kill) {
-			S_SpatializeOrigin( loop->origin, 127, &left_total, &right_total);			// 3d
+			S_SpatializeOrigin( loop->origin, MASTER_VOL, &left_total, &right_total);	// 3d
 		} else {
-			S_SpatializeOrigin( loop->origin, 90,  &left_total, &right_total);			// sphere
+			S_SpatializeOrigin( loop->origin, SPHERE_VOL,  &left_total, &right_total);	// sphere
 		}
 
 		loop->sfx->lastTimeUsed = time;
@@ -849,9 +850,9 @@ void S_AddLoopSounds (void) {
 			loop2->mergeFrame = loopFrame;
 
 			if (loop2->kill) {
-				S_SpatializeOrigin( loop2->origin, 127, &left, &right);				// 3d
+				S_SpatializeOrigin( loop2->origin, MASTER_VOL, &left, &right);		// 3d
 			} else {
-				S_SpatializeOrigin( loop2->origin, 90,  &left, &right);				// sphere
+				S_SpatializeOrigin( loop2->origin, SPHERE_VOL,  &left, &right);		// sphere
 			}
 
 			loop2->sfx->lastTimeUsed = time;
@@ -880,7 +881,7 @@ void S_AddLoopSounds (void) {
 		ch->dopplerScale = loop->dopplerScale;
 		ch->oldDopplerScale = loop->oldDopplerScale;
 		numLoopChannels++;
-		if (numLoopChannels == MAX_CHANNELS) {
+		if ( numLoopChannels >= MAX_CHANNELS ) {
 			return;
 		}
 	}
