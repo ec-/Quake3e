@@ -722,22 +722,28 @@ Q_strncpyz
 Safe strncpy that ensures a trailing zero
 =============
 */
-void Q_strncpyz( char *dest, const char *src, int destsize ) {
-  // bk001129 - also NULL dest
-  if ( !dest ) {
-    Com_Error( ERR_FATAL, "Q_strncpyz: NULL dest" );
-  }
-	if ( !src ) {
+void Q_strncpyz( char *dest, const char *src, int destsize ) 
+{
+	if ( !dest ) 
+	{
+		Com_Error( ERR_FATAL, "Q_strncpyz: NULL dest" );
+	}
+
+	if ( !src ) 
+	{
 		Com_Error( ERR_FATAL, "Q_strncpyz: NULL src" );
 	}
-	if ( destsize < 1 ) {
+
+	if ( destsize < 1 ) 
+	{
 		Com_Error(ERR_FATAL,"Q_strncpyz: destsize < 1" ); 
 	}
 
 	strncpy( dest, src, destsize-1 );
-  dest[destsize-1] = 0;
+	dest[ destsize-1 ] = '\0';
 }
-                 
+
+
 int Q_stricmpn (const char *s1, const char *s2, int n) {
 	int		c1, c2;
 
@@ -777,7 +783,8 @@ int Q_stricmpn (const char *s1, const char *s2, int n) {
 	return 0;		// strings are equal
 }
 
-int Q_strncmp (const char *s1, const char *s2, int n) {
+
+int Q_strncmp( const char *s1, const char *s2, int n ) {
 	int		c1, c2;
 	
 	do {
@@ -795,6 +802,7 @@ int Q_strncmp (const char *s1, const char *s2, int n) {
 	
 	return 0;		// strings are equal
 }
+
 
 int Q_stricmp( const char *s1, const char *s2 ) 
 {
@@ -845,6 +853,7 @@ char *Q_strlwr( char *s1 ) {
     return s1;
 }
 
+
 char *Q_strupr( char *s1 ) {
     char	*s;
 
@@ -867,6 +876,7 @@ void Q_strcat( char *dest, int size, const char *src ) {
 	}
 	Q_strncpyz( dest + l1, src, size - l1 );
 }
+
 
 int Q_replace( char * str1, char * str2, char * src, int max_len ) 
 {
@@ -1015,24 +1025,46 @@ int Q_CountChar(const char *string, char tocount)
 }
 
 
-void QDECL Com_sprintf( char *dest, int size, const char *fmt, ...) {
+void QDECL Com_sprintf( char *dest, int size, const char *fmt, ...) 
+{
 	int		len;
-	va_list		argptr;
+	va_list	argptr;
 	char	bigbuffer[32000];	// big, but small enough to fit in PPC stack
 
-	va_start (argptr,fmt);
-	len = vsprintf (bigbuffer,fmt,argptr);
-	va_end (argptr);
-	if ( len >= sizeof( bigbuffer ) ) {
-		Com_Error( ERR_FATAL, "Com_sprintf: overflowed bigbuffer" );
-	}
-	if (len >= size) {
-		Com_Printf ("Com_sprintf: overflow of %i in %i\n", len, size);
-#ifdef	_DEBUG
+	if ( !dest ) 
+	{
+		Com_Error( ERR_FATAL, "Com_sprintf: NULL dest" );
+#if	defined(_DEBUG) && defined(_WIN32)
 		__debugbreak();
 #endif
+		return;
 	}
-	Q_strncpyz (dest, bigbuffer, size );
+
+	va_start( argptr, fmt );
+	len = vsprintf( bigbuffer, fmt, argptr );
+	va_end( argptr );
+
+	if ( len >= sizeof( bigbuffer ) ) 
+	{
+		Com_Error( ERR_FATAL, "Com_sprintf: overflowed bigbuffer" );
+#if	defined(_DEBUG) && defined(_WIN32)
+		__debugbreak();
+#endif
+		return;
+	}
+
+	if ( len >= size ) 
+	{
+		Com_Printf( S_COLOR_YELLOW "Com_sprintf: overflow of %i in %i\n", len, size );
+#if	defined(_DEBUG) && defined(_WIN32)
+		__debugbreak();
+#endif
+		len = size - 1;
+	}
+
+	//Q_strncpyz( dest, bigbuffer, size );
+	strncpy( dest, bigbuffer, len );
+	dest[ len ] = '\0';
 }
 
 
@@ -1045,21 +1077,23 @@ varargs versions of all text functions.
 FIXME: make this buffer size safe someday
 ============
 */
-char	* QDECL va( char *format, ... ) {
-	va_list		argptr;
-	static char		string[2][32000];	// in case va is called by nested functions
-	static int		index = 0;
+char	*QDECL va( const char *format, ... ) 
+{
 	char	*buf;
+	va_list		argptr;
+	static int	index = 0;
+	static char	string[2][32000];	// in case va is called by nested functions
 
-	buf = string[index & 1];
-	index++;
+	buf = string[ index ];
+	index ^= 1;
 
-	va_start (argptr, format);
-	vsprintf (buf, format,argptr);
-	va_end (argptr);
+	va_start( argptr, format );
+	vsprintf( buf, format, argptr );
+	va_end( argptr );
 
 	return buf;
 }
+
 
 /*
 ============
@@ -1081,6 +1115,7 @@ void Com_TruncateLongString( char *buffer, const char *s )
 		Q_strcat( buffer, TRUNCATE_LENGTH, s + length - ( TRUNCATE_LENGTH / 2 ) + 3 );
 	}
 }
+
 
 /*
 =====================================================================
