@@ -811,7 +811,7 @@ void EmitFloatJump( vm_t *vm, instruction_t *i, int op, int addr )
 
 }
 
-void EmitCall( vm_t *vm, int addr ) 
+void EmitCallAddr( vm_t *vm, int addr ) 
 {
 	int v;
 	v = vm->instructionPointers[ addr ] - compiledOfs;
@@ -856,9 +856,9 @@ sysCallOffset = compiledOfs;
 
 	EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 
+	// save proc base and programStack
 	EmitString( "55" );				// push ebp
 	EmitString( "56" );				// push esi
-	//EmitString( "53" );			// push ebx
 
 	// calling another vm function
 #if idx64
@@ -872,7 +872,8 @@ sysCallOffset = compiledOfs;
 	
 	EmitMovEAXEDI( vm );			// mov eax, dword ptr [edi]
 
-	//EmitString( "5B" );			// pop ebx
+	// restore proc base and programStack so there is 
+	// no need to validate programStack anymore
 	EmitString( "5E" );				// pop esi
 	EmitString( "5D" );				// pop ebp
 
@@ -887,7 +888,7 @@ sysCallOffset = compiledOfs - sysCallOffset;
 
 	EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 
-	// jump here from ConstOptimize()
+	// we may jump here from ConstOptimize() also
 funcOffset[FUNC_SYSC] = compiledOfs;
 
 #if idx64
@@ -989,7 +990,7 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 
 	// currentVm->systemCall( param );
 	EmitString( "FF 15" );				// call dword ptr [&currentVM->systemCall]
-	Emit4( (intptr_t)&vm->systemCall );
+	EmitPtr( &vm->systemCall );
 	
 	// cdecl - pop params
 	EmitString( "83 C4 04" );			// add esp, 4
@@ -1051,7 +1052,7 @@ void EmitBCPYFunc( vm_t *vm )
 	EmitString( "5F" );						// pop edi
 	EmitString( "5E" );						// pop esi
 	EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
-	EmitString( "C3" );			// ret
+	EmitString( "C3" );						// ret
 }
 #endif
 
@@ -1383,7 +1384,7 @@ qboolean ConstOptimize( vm_t *vm )
 		EmitString( "55" );	// push ebp
 		EmitString( "56" );	// push rsi
 		EmitString( "53" );	// push rbx
-		EmitCall( vm, v );
+		EmitCallAddr( vm, v ); // call +addr
 		EmitString( "5B" );	// pop rbx
 		EmitString( "5E" );	// pop rsi
 		EmitString( "5D" );	// pop ebp
@@ -1742,7 +1743,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 		if ( op0 == OP_JUMP ) {
 			// jumps should have opStack == 4
 			if ( ci->opStack != 4 ) {
-				sprintf( errBuf, "bad jump opStack at %i", i ); 
+				sprintf( errBuf, "bad jump opStack %i at %i", ci->opStack, i ); 
 				return errBuf;
 			}
 			if ( op1 == OP_CONST ) {
@@ -1861,6 +1862,8 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 				v = ci->swtch;
 				continue;
 			}
+			// if there is a switch statement in function -
+			// mark all potential jump labels
 			if ( ci->swtch )
 				v = ci->swtch;
 			if ( ci->opStack > 0 )
