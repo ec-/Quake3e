@@ -73,14 +73,21 @@ LAN_SaveServersToCache
 ====================
 */
 void LAN_SaveServersToCache( void ) {
+	
+	fileHandle_t fileOut;
 	int size;
-	fileHandle_t fileOut = FS_SV_FOpenFileWrite("servercache.dat");
+
+	fileOut = FS_SV_FOpenFileWrite( "servercache.dat" );
+	if ( fileOut == FS_INVALID_HANDLE )
+		return;
+
 	FS_Write(&cls.numglobalservers, sizeof(int), fileOut);
 	FS_Write(&cls.numfavoriteservers, sizeof(int), fileOut);
 	size = sizeof(cls.globalServers) + sizeof(cls.favoriteServers);
 	FS_Write(&size, sizeof(int), fileOut);
 	FS_Write(&cls.globalServers, sizeof(cls.globalServers), fileOut);
 	FS_Write(&cls.favoriteServers, sizeof(cls.favoriteServers), fileOut);
+
 	FS_FCloseFile(fileOut);
 }
 

@@ -394,7 +394,7 @@ static void SV_TouchCGame(void) {
 
 	Com_sprintf( filename, sizeof(filename), "vm/%s.qvm", "cgame" );
 	FS_FOpenFileRead( filename, &f, qfalse );
-	if ( f ) {
+	if ( f != FS_INVALID_HANDLE ) {
 		FS_FCloseFile( f );
 	}
 }

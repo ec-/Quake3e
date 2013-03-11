@@ -2591,7 +2591,7 @@ static void Com_WriteCDKey( const char *filename, const char *ikey ) {
 	savedumask = umask(0077);
 #endif
 	f = FS_SV_FOpenFileWrite( fbuffer );
-	if ( !f ) {
+	if ( f == FS_INVALID_HANDLE ) {
 		Com_Printf ("Couldn't write CD key to %s.\n", fbuffer );
 		goto out;
 	}
@@ -2920,8 +2920,8 @@ void Com_WriteConfigToFile( const char *filename ) {
 	fileHandle_t	f;
 
 	f = FS_FOpenFileWrite( filename );
-	if ( !f ) {
-		Com_Printf ("Couldn't write %s.\n", filename );
+	if ( f == FS_INVALID_HANDLE ) {
+		Com_Printf( "Couldn't write %s.\n", filename );
 		return;
 	}
 
