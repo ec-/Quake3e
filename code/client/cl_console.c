@@ -170,7 +170,9 @@ void Con_Dump_f (void)
 	int		l, x, i;
 	short	*line;
 	fileHandle_t	f;
-	char	buffer[1024];
+	int		bufferlen;
+	char	*buffer;
+	char	filename[MAX_QPATH];
 
 	if ( Cmd_Argc() != 2 )
 	{
@@ -178,12 +180,15 @@ void Con_Dump_f (void)
 		return;
 	}
 
-	Com_Printf( "Dumped console text to %s.\n", Cmd_Argv( 1 ) );
+	Q_strncpyz( filename, Cmd_Argv( 1 ), sizeof( filename ) );
+	COM_DefaultExtension( filename, sizeof( filename ), ".txt" );
 
-	f = FS_FOpenFileWrite( Cmd_Argv( 1 ) );
+	Com_Printf( "Dumped console text to %s.\n", filename );
+
+	f = FS_FOpenFileWrite( filename );
 	if ( f == FS_INVALID_HANDLE )
 	{
-		Com_Printf ("ERROR: couldn't open.\n");
+		Com_Printf( "ERROR: couldn't open %s.\n", filename );		
 		return;
 	}
 
@@ -198,8 +203,16 @@ void Con_Dump_f (void)
 			break;
 	}
 
+#ifdef _WIN32
+	bufferlen = con.linewidth + 3 * sizeof( char );
+#else
+	bufferlen = con.linewidth + 2 * sizeof( char );
+#endif
+
+	buffer = Hunk_AllocateTempMemory( bufferlen );
+
 	// write the remaining lines
-	buffer[con.linewidth] = 0;
+	buffer[bufferlen-1] = '\0';
 	for ( ; l <= con.current ; l++)
 	{
 		line = con.text + (l%con.totallines)*con.linewidth;
@@ -212,10 +225,15 @@ void Con_Dump_f (void)
 			else
 				break;
 		}
-		strcat( buffer, "\n" );
-		FS_Write(buffer, strlen(buffer), f);
+#ifdef _WIN32
+		Q_strcat( buffer, bufferlen, "\r\n" );
+#else
+		Q_strcat( buffer, bufferlen, "\n" );
+#endif
+		FS_Write( buffer, strlen( buffer ), f );
 	}
 
+	Hunk_FreeTempMemory( buffer );
 	FS_FCloseFile( f );
 }
 
