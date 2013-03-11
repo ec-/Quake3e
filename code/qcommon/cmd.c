@@ -141,7 +141,7 @@ void Cbuf_InsertText( const char *text ) {
 Cbuf_ExecuteText
 ============
 */
-void Cbuf_ExecuteText (int exec_when, const char *text)
+void Cbuf_ExecuteText( cbufExec_t exec_when, const char *text )
 {
 	switch (exec_when)
 	{
@@ -224,28 +224,26 @@ void Cbuf_Execute (void)
 			}
 		}
 
-		if( i >= (MAX_CMD_LINE - 1)) {
+		if ( i >= (MAX_CMD_LINE - 1) )
 			i = MAX_CMD_LINE - 1;
-		}
 				
-		Com_Memcpy (line, text, i);
-		line[i] = 0;
+		Com_Memcpy( line, text, i );
+		line[i] = '\0';
 		
-// delete the text from the command buffer and move remaining commands down
-// this is necessary because commands (exec) can insert data at the
-// beginning of the text buffer
+		// delete the text from the command buffer and move remaining commands down
+		// this is necessary because commands (exec) can insert data at the
+		// beginning of the text buffer
 
-		if (i == cmd_text.cursize)
+		if ( i == cmd_text.cursize )
 			cmd_text.cursize = 0;
 		else
 		{
 			i++;
 			cmd_text.cursize -= i;
-			memmove (text, text+i, cmd_text.cursize);
+			memmove( text, text+i, cmd_text.cursize );
 		}
 
-// execute the command line
-
+		// execute the command line
 		Cmd_ExecuteString (line);		
 	}
 }
