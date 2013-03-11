@@ -182,7 +182,7 @@ void Cbuf_Execute (void)
 	// breaking it for semicolon or newline.
 	qboolean in_star_comment = qfalse;
 	qboolean in_slash_comment = qfalse;
-	while (cmd_text.cursize)
+	while ( cmd_text.cursize > 0 )
 	{
 		if ( cmd_wait > 0 ) {
 			// skip out while text still remains in buffer, leaving it
@@ -195,18 +195,18 @@ void Cbuf_Execute (void)
 		text = (char *)cmd_text.data;
 
 		quotes = 0;
-		for (i=0 ; i< cmd_text.cursize ; i++)
+		for ( i = 0 ; i< cmd_text.cursize ; i++ )
 		{
 			if (text[i] == '"')
 				quotes++;
 
 			if ( !(quotes&1)) {
-				if (i < cmd_text.cursize - 1) {
-					if (! in_star_comment && text[i] == '/' && text[i+1] == '/')
+				if ( i < cmd_text.cursize - 1 ) {
+					if ( !in_star_comment && text[i] == '/' && text[i+1] == '/' )
 						in_slash_comment = qtrue;
-					else if (! in_slash_comment && text[i] == '/' && text[i+1] == '*')
+					else if ( !in_slash_comment && text[i] == '/' && text[i+1] == '*' )
 						in_star_comment = qtrue;
-					else if (in_star_comment && text[i] == '*' && text[i+1] == '/') {
+					else if ( in_star_comment && text[i] == '*' && text[i+1] == '/' ) {
 						in_star_comment = qfalse;
 						// If we are in a star comment, then the part after it is valid
 						// Note: This will cause it to NUL out the terminating '/'
@@ -215,10 +215,10 @@ void Cbuf_Execute (void)
 						break;
 					}
 				}
-				if (! in_slash_comment && ! in_star_comment && text[i] == ';')
+				if ( !in_slash_comment && !in_star_comment && text[i] == ';')
 					break;
 			}
-			if (! in_star_comment && (text[i] == '\n' || text[i] == '\r')) {
+			if ( !in_star_comment && (text[i] == '\n' || text[i] == '\r') ) {
 				in_slash_comment = qfalse;
 				break;
 			}
@@ -240,11 +240,16 @@ void Cbuf_Execute (void)
 		{
 			i++;
 			cmd_text.cursize -= i;
+			// skip all repeating newlines/semicolons
+			while ( ( text[i] == '\n' || text[i] == '\r' || text[i] == ';' ) && cmd_text.cursize > 0 ) {
+				cmd_text.cursize--;
+				i++;
+			}
 			memmove( text, text+i, cmd_text.cursize );
 		}
 
 		// execute the command line
-		Cmd_ExecuteString (line);		
+		Cmd_ExecuteString( line );		
 	}
 }
 
@@ -756,7 +761,7 @@ Cmd_ExecuteString
 A complete command line has been parsed, so try to execute it
 ============
 */
-void	Cmd_ExecuteString( const char *text ) {	
+void Cmd_ExecuteString( const char *text ) {	
 	cmd_function_t	*cmd, **prev;
 
 	// execute the command line
@@ -768,7 +773,7 @@ void	Cmd_ExecuteString( const char *text ) {
 	// check registered command functions	
 	for ( prev = &cmd_functions ; *prev ; prev = &cmd->next ) {
 		cmd = *prev;
-		if ( !Q_stricmp( cmd_argv[0],cmd->name ) ) {
+		if ( !Q_stricmp( cmd_argv[0], cmd->name ) ) {
 			// rearrange the links so that the command will be
 			// near the head of the list next time it is used
 			*prev = cmd->next;
@@ -780,7 +785,7 @@ void	Cmd_ExecuteString( const char *text ) {
 				// let the cgame or game handle it
 				break;
 			} else {
-				cmd->function ();
+				cmd->function();
 			}
 			return;
 		}
@@ -811,7 +816,7 @@ void	Cmd_ExecuteString( const char *text ) {
 
 	// send it as a server command if we are connected
 	// this will usually result in a chat message
-	CL_ForwardCommandToServer ( text );
+	CL_ForwardCommandToServer( text );
 #endif
 
 }
