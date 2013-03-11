@@ -913,7 +913,7 @@ Appends lines containing "set variable value" for all variables
 with the archive flag set to qtrue.
 ============
 */
-void Cvar_WriteVariables(fileHandle_t f)
+void Cvar_WriteVariables( fileHandle_t f )
 {
 	cvar_t	*var;
 	char	buffer[1024];
@@ -933,14 +933,14 @@ void Cvar_WriteVariables(fileHandle_t f)
 							"\"%s\" too long to write to file\n", var->name );
 					continue;
 				}
-				Com_sprintf (buffer, sizeof(buffer), "seta %s \"%s\"\n", var->name, var->latchedString);
+				Com_sprintf (buffer, sizeof(buffer), "seta %s \"%s\"" Q_NEWLINE, var->name, var->latchedString);
 			} else {
 				if( strlen( var->name ) + strlen( var->string ) + 10 > sizeof( buffer ) ) {
 					Com_Printf( S_COLOR_YELLOW "WARNING: value of variable "
 							"\"%s\" too long to write to file\n", var->name );
 					continue;
 				}
-				Com_sprintf (buffer, sizeof(buffer), "seta %s \"%s\"\n", var->name, var->string);
+				Com_sprintf (buffer, sizeof(buffer), "seta %s \"%s\"" Q_NEWLINE, var->name, var->string);
 			}
 			FS_Write( buffer, strlen( buffer ), f );
 		}

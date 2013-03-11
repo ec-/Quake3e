@@ -203,12 +203,7 @@ void Con_Dump_f (void)
 			break;
 	}
 
-#ifdef _WIN32
-	bufferlen = con.linewidth + 3 * sizeof( char );
-#else
-	bufferlen = con.linewidth + 2 * sizeof( char );
-#endif
-
+	bufferlen = con.linewidth + ARRAY_LEN( Q_NEWLINE ) * sizeof( char );
 	buffer = Hunk_AllocateTempMemory( bufferlen );
 
 	// write the remaining lines
@@ -225,11 +220,7 @@ void Con_Dump_f (void)
 			else
 				break;
 		}
-#ifdef _WIN32
-		Q_strcat( buffer, bufferlen, "\r\n" );
-#else
-		Q_strcat( buffer, bufferlen, "\n" );
-#endif
+		Q_strcat( buffer, bufferlen, Q_NEWLINE );
 		FS_Write( buffer, strlen( buffer ), f );
 	}
 

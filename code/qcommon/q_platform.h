@@ -34,6 +34,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #undef QDECL
 #define QDECL __cdecl
+#define Q_NEWLINE "\r\n"
 
 #if defined (_WIN32_WINNT)
 #if _WIN32_WINNT < 0x0501
@@ -68,6 +69,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define idx64 1
 #define UNICODE
 #endif
+
+#else // !defined _WIN32
+
+#define Q_NEWLINE "\n"
 
 #endif
 

@@ -596,11 +596,11 @@ Writes lines containing "bind key value"
 void Key_WriteBindings( fileHandle_t f ) {
 	int		i;
 
-	FS_Printf( f, "unbindall\n" );
+	FS_Printf( f, "unbindall" Q_NEWLINE );
 
 	for ( i = 0 ; i < MAX_KEYS ; i++ ) {
 		if ( keys[i].binding && keys[i].binding[0 ] ) {
-			FS_Printf( f, "bind %s \"%s\"\n", Key_KeynumToString(i), keys[i].binding );
+			FS_Printf( f, "bind %s \"%s\"" Q_NEWLINE, Key_KeynumToString(i), keys[i].binding );
 		}
 	}
 }
