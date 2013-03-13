@@ -1115,11 +1115,11 @@ qboolean	Sys_StringToAdr( const char *s, netadr_t *a, netadrtype_t family );
 qboolean	Sys_IsLANAddress (netadr_t adr);
 void		Sys_ShowIP(void);
 
-void	Sys_Mkdir( const char *path );
-char	*Sys_Cwd( void );
-char	*Sys_DefaultInstallPath( void );
-void	Sys_SetDefaultHomePath(const char *path);
-char	*Sys_DefaultHomePath(void);
+void		Sys_Mkdir( const char *path );
+
+const char *Sys_Cwd( void );
+const char *Sys_DefaultBasePath( void );
+const char *Sys_DefaultHomePath( void );
 
 char **Sys_ListFiles( const char *directory, const char *extension, char *filter, int *numfiles, qboolean wantsubs );
 void	Sys_FreeFileList( char **list );

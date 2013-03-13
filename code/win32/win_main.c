@@ -157,7 +157,8 @@ void Sys_Mkdir( const char *path ) {
 Sys_Cwd
 ==============
 */
-char *Sys_Cwd( void ) {
+const char *Sys_Cwd( void )
+{
 	static char cwd[MAX_OSPATH];
 
 	_getcwd( cwd, sizeof( cwd ) - 1 );
@@ -172,9 +173,11 @@ char *Sys_Cwd( void ) {
 Sys_DefaultBasePath
 ==============
 */
-char *Sys_DefaultBasePath( void ) {
+const char *Sys_DefaultBasePath( void ) 
+{
 	return Sys_Cwd();
 }
+
 
 /*
 ==============================================================

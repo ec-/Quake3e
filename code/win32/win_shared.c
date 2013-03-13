@@ -112,7 +112,8 @@ char *Sys_GetCurrentUser( void )
 	return s_userName;
 }
 
-char	*Sys_DefaultHomePath(void) {
+const char *Sys_DefaultHomePath( void ) 
+{
 #ifdef USE_PROFILES
 	TCHAR szPath[MAX_PATH];
 	static char path[MAX_OSPATH];
@@ -156,10 +157,6 @@ char	*Sys_DefaultHomePath(void) {
 #endif
 }
 
-char *Sys_DefaultInstallPath(void)
-{
-	return Sys_Cwd();
-}
 
 #if idx64
 

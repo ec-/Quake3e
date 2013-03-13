@@ -349,7 +349,12 @@ void	Sys_FreeFileList( char **list ) {
 }
 
 
-char *Sys_Cwd( void ) 
+/*
+=================
+Sys_Cwd
+=================
+*/
+const char *Sys_Cwd( void ) 
 {
 	static char cwd[MAX_OSPATH];
 
@@ -360,15 +365,14 @@ char *Sys_Cwd( void )
 }
 
 
-char *Sys_DefaultInstallPath(void)
+/*
+=================
+Sys_DefaultBasePath
+=================
+*/
+const char *Sys_DefaultBasePath( void )
 {
 	return Sys_Cwd();
-}
-
-
-void Sys_SetDefaultHomePath(const char *path)
-{
-	Q_strncpyz(homePath, path, sizeof(homePath));
 }
 
 
@@ -388,7 +392,7 @@ char *Sys_DefaultHomePath( void )
 	{
 		Q_strncpyz( homePath, p, sizeof( homePath ) );
 #ifdef MACOS_X
-		Q_strcat(homePath, sizeof(homePath), "/Library/Application Support/Quake3");
+		Q_strcat( homePath, sizeof(homePath), "/Library/Application Support/Quake3" );
 #else
 		Q_strcat( homePath, sizeof( homePath ), "/.q3a" );
 #endif
