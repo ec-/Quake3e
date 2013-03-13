@@ -863,8 +863,8 @@ void *Sys_LoadDll( const char *name, intptr_t (**entryPoint)(intptr_t, ...),
   char  fname[MAX_OSPATH];
   char  *basepath;
   char  *homepath;
-  char  *pwdpath;
   char  *gamedir;
+  const char  *pwdpath;
   const char*  err = NULL;
 	
   // bk001206 - let's have some paranoia
