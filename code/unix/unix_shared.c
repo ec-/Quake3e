@@ -29,7 +29,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <sys/time.h>
 #include <pwd.h>
 #include <dlfcn.h>
-
+#include <libgen.h>
 
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
@@ -349,7 +349,7 @@ void	Sys_FreeFileList( char **list ) {
 
 /*
 =================
-Sys_Cwd
+Sys_Pwd
 =================
 */
 const char *Sys_Pwd( void ) 
@@ -360,14 +360,14 @@ const char *Sys_Pwd( void )
 		return pwd;
 
 	// more reliable, linux-specific
-	if ( readlink( "/proc/self/exe", pwd, sizeof( pwd ) - 1 ) != -1 ) 
+	if ( readlink( "/proc/self/exe", pwd, sizeof( pwd ) - 1 ) != -1 )
 	{
 		pwd[ sizeof( pwd ) - 1 ] = '\0';
 		dirname( pwd );
 		return pwd;
 	}
-	
-	if ( !getcwd( pwd, sizeof( pwd ) ) ) 
+
+	if ( !getcwd( pwd, sizeof( pwd ) ) )
 	{
 		pwd[0] = '\0';
 	}

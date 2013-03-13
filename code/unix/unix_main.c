@@ -874,7 +874,7 @@ void *Sys_LoadDll( const char *name, intptr_t (**entryPoint)(intptr_t, ...),
   snprintf (fname, sizeof(fname), "%s" ARCH_STRING DLL_EXT, name);
 
   // TODO: use fs_searchpaths from files.c
-  pwdpath = Sys_Cwd();
+  pwdpath = Sys_Pwd();
   basepath = Cvar_VariableString( "fs_basepath" );
   homepath = Cvar_VariableString( "fs_homepath" );
   gamedir = Cvar_VariableString( "fs_game" );

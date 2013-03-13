@@ -154,7 +154,7 @@ void Sys_Mkdir( const char *path ) {
 
 /*
 ==============
-Sys_Cwd
+Sys_Pwd
 ==============
 */
 const char *Sys_Pwd( void )

@@ -93,9 +93,9 @@ qboolean CL_cURL_Init()
 #else
 		char fn[1024];
 
-		Q_strncpyz( fn, Sys_Cwd( ), sizeof( fn ) );
-		strncat(fn, "/", sizeof(fn)-strlen(fn)-1);
-		strncat(fn, cl_cURLLib->string, sizeof(fn)-strlen(fn)-1);
+		Q_strncpyz( fn, Sys_Pwd(), sizeof( fn ) );
+		strncat( fn, "/", sizeof( fn ) - strlen( fn ) - 1 );
+		strncat( fn, cl_cURLLib->string, sizeof( fn ) - strlen( fn ) - 1 );
 
 		if((cURLLib = Sys_LoadLibrary(fn)) == 0)
 		{
@@ -450,11 +450,11 @@ qboolean Com_DL_Init( download_t *dl )
 #else
 		char fn[1024];
 
-		Q_strncpyz( fn, Sys_Cwd( ), sizeof( fn ) );
-		strncat(fn, "/", sizeof(fn)-strlen(fn)-1);
-		strncat(fn, cl_cURLLib->string, sizeof(fn)-strlen(fn)-1);
+		Q_strncpyz( fn, Sys_Pwd(), sizeof( fn ) );
+		strncat( fn, "/", sizeof( fn ) - strlen( fn ) - 1 );
+		strncat( fn, cl_cURLLib->string, sizeof( fn ) - strlen( fn ) - 1 );
 
-		if ( (dl->func.lib = Sys_LoadLibrary( fn ) ) == NULL)
+		if ( ( dl->func.lib = Sys_LoadLibrary( fn ) ) == NULL )
 		{
 #ifdef ALTERNATE_CURL_LIB
 			// On some linux distributions there is no libcurl.so.3, but only libcurl.so.4. That one works too.
