@@ -864,7 +864,6 @@ void *Sys_LoadDll( const char *name, intptr_t (**entryPoint)(intptr_t, ...),
   char  *basepath;
   char  *homepath;
   char  *pwdpath;
-  char  *cdpath;
   char  *gamedir;
   const char*  err = NULL;
 	
@@ -878,7 +877,6 @@ void *Sys_LoadDll( const char *name, intptr_t (**entryPoint)(intptr_t, ...),
   pwdpath = Sys_Cwd();
   basepath = Cvar_VariableString( "fs_basepath" );
   homepath = Cvar_VariableString( "fs_homepath" );
-  cdpath = Cvar_VariableString( "fs_cdpath" );
   gamedir = Cvar_VariableString( "fs_game" );
 
   libHandle = try_dlopen( pwdpath, gamedir, fname );
@@ -888,9 +886,6 @@ void *Sys_LoadDll( const char *name, intptr_t (**entryPoint)(intptr_t, ...),
 
   if( !libHandle && basepath )
      libHandle = try_dlopen( basepath, gamedir, fname );
-
-  if(!libHandle && cdpath)
-     libHandle = try_dlopen( cdpath, gamedir, fname );
 
   if(!libHandle) {
 #if 0 // don't abort -- ln
@@ -1089,10 +1084,6 @@ sysEvent_t Sys_GetEvent( void )
 }
 
 /*****************************************************************************/
-
-qboolean Sys_CheckCD( void ) {
-  return qtrue;
-}
 
 void Sys_AppActivate (void)
 {
@@ -1335,14 +1326,6 @@ char *Sys_StripAppBundle(char *dir)
 }
 #endif /* MACOS_X */
 
-#ifndef DEFAULT_BASEDIR
-  #ifdef MACOS_X
-    // if run from an .app bundle, we want to also search its containing dir
-    #define DEFAULT_BASEDIR Sys_StripAppBundle(Sys_DefaultCDPath())
-  #else
-    #define DEFAULT_BASEDIR Sys_DefaultCDPath()
-  #endif
-#endif
 
 #include "../client/client.h"
 extern clientStatic_t cls;
@@ -1351,28 +1334,19 @@ int main ( int argc, char* argv[] )
 {
 	int   len, i;
 	char  *cmdline;
-	char cdpath[PATH_MAX] = { 0 };
-
-	void Sys_SetDefaultCDPath(const char *path);
 
 	Sys_ParseArgs( argc, argv );  // bk010104 - added this for support
 
-	strncat( cdpath, Sys_BinName( argv[0] ), sizeof(cdpath)-1 );
-
-	Sys_SetDefaultCDPath(dirname(cdpath));
-
-	Sys_SetDefaultInstallPath( DEFAULT_BASEDIR );
-
 	// merge the command line, this is kinda silly
-	for (len = 1, i = 1; i < argc; i++)
-    	len += strlen(argv[i]) + 1;
+	for ( len = 1, i = 1; i < argc; i++ )
+    	len += strlen( argv[i] ) + 1;
 
-	cmdline = malloc(len);
-	*cmdline = 0;
-	for (i = 1; i < argc; i++)
+	cmdline = malloc( len );
+	*cmdline = '\0';
+	for ( i = 1; i < argc; i++ )
 	{
 		if ( i > 1 )
-	      strcat( cmdline, " " );
+			strcat( cmdline, " " );
 		strcat( cmdline, argv[i] );
 	}
 

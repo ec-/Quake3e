@@ -2577,9 +2577,7 @@ static void Com_WriteCDKey( const char *filename, const char *ikey ) {
 	mode_t			savedumask;
 #endif
 
-
-	Com_sprintf(fbuffer, sizeof(fbuffer), "%s/q3key", filename);
-
+	Com_sprintf( fbuffer, sizeof(fbuffer), "%s/q3key", filename );
 
 	Q_strncpyz( key, ikey, 17 );
 
@@ -2763,7 +2761,7 @@ void Com_Init( char *commandLine ) {
 	// done early so bind command exists
 	Com_InitKeyCommands();
 
-	FS_InitFilesystem ();
+	FS_InitFilesystem();
 
 	Com_InitJournaling();
 
@@ -2940,8 +2938,9 @@ Writes key bindings and archived cvars to config file if modified
 ===============
 */
 void Com_WriteConfiguration( void ) {
-#ifndef DEDICATED // bk001204
-	cvar_t	*fs;
+#ifndef DEDICATED
+	extern cvar_t *fs_basegame;
+	extern cvar_t *fs_gamedirvar;
 #endif
 	// if we are quiting without fully initializing, make sure
 	// we don't write out anything
@@ -2958,11 +2957,10 @@ void Com_WriteConfiguration( void ) {
 
 	// bk001119 - tentative "not needed for dedicated"
 #ifndef DEDICATED
-	fs = Cvar_Get ("fs_game", "", CVAR_INIT|CVAR_SYSTEMINFO );
-	if (UI_usesUniqueCDKey() && fs && fs->string[0] != 0) {
-		Com_WriteCDKey( fs->string, &cl_cdkey[16] );
+	if ( UI_usesUniqueCDKey() && fs_gamedirvar->string[0] && Q_stricmp( fs_basegame->string, fs_gamedirvar->string ) ) {
+		Com_WriteCDKey( fs_gamedirvar->string, &cl_cdkey[16] );
 	} else {
-		Com_WriteCDKey( BASEGAME, cl_cdkey );
+		Com_WriteCDKey( fs_basegame->string, cl_cdkey );
 	}
 #endif
 }

@@ -35,13 +35,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qcommon/qcommon.h"
 
 //=============================================================================
-
-// Used to determine CD Path
-static char cdPath[MAX_OSPATH];
-
-// Used to determine local installation path
-static char installPath[MAX_OSPATH];
-
 // Used to determine where to store user-specific files
 static char homePath[MAX_OSPATH];
 
@@ -355,6 +348,7 @@ void	Sys_FreeFileList( char **list ) {
 	Z_Free( list );
 }
 
+
 char *Sys_Cwd( void ) 
 {
 	static char cwd[MAX_OSPATH];
@@ -365,28 +359,12 @@ char *Sys_Cwd( void )
 	return cwd;
 }
 
-void Sys_SetDefaultCDPath(const char *path)
-{
-	Q_strncpyz(cdPath, path, sizeof(cdPath));
-}
-
-char *Sys_DefaultCDPath(void)
-{
-        return cdPath;
-}
-
-void Sys_SetDefaultInstallPath(const char *path)
-{
-	Q_strncpyz(installPath, path, sizeof(installPath));
-}
 
 char *Sys_DefaultInstallPath(void)
 {
-	if (*installPath)
-		return installPath;
-	else
-		return Sys_Cwd();
+	return Sys_Cwd();
 }
+
 
 void Sys_SetDefaultHomePath(const char *path)
 {

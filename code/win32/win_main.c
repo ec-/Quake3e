@@ -161,19 +161,11 @@ char *Sys_Cwd( void ) {
 	static char cwd[MAX_OSPATH];
 
 	_getcwd( cwd, sizeof( cwd ) - 1 );
-	cwd[MAX_OSPATH-1] = 0;
+	cwd[ sizeof( cwd ) - 1 ] = '\0';
 
 	return cwd;
 }
 
-/*
-==============
-Sys_DefaultCDPath
-==============
-*/
-char *Sys_DefaultCDPath( void ) {
-	return "";
-}
 
 /*
 ==============
@@ -319,7 +311,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, char *filter
 		return listCopy;
 	}
 
-	if ( !extension) {
+	if ( !extension ) {
 		extension = "";
 	}
 
@@ -399,73 +391,6 @@ void	Sys_FreeFileList( char **list ) {
 }
 
 //========================================================
-
-
-/*
-================
-Sys_ScanForCD
-
-Search all the drives to see if there is a valid CD to grab
-the cddir from
-================
-*/
-#if 0
-qboolean Sys_ScanForCD( void ) {
-	static char	cddir[MAX_OSPATH];
-	char		drive[4];
-	FILE		*f;
-	char		test[MAX_OSPATH];
-#if 0
-	// don't override a cdpath on the command line
-	if ( strstr( sys_cmdline, "cdpath" ) ) {
-		return;
-	}
-#endif
-
-	drive[0] = 'c';
-	drive[1] = ':';
-	drive[2] = '\\';
-	drive[3] = 0;
-
-	// scan the drives
-	for ( drive[0] = 'c' ; drive[0] <= 'z' ; drive[0]++ ) {
-		if ( GetDriveType (drive) != DRIVE_CDROM ) {
-			continue;
-		}
-
-		sprintf (cddir, "%s%s", drive, CD_BASEDIR);
-		sprintf (test, "%s\\%s", cddir, CD_EXE);
-		f = fopen( test, "r" );
-		if ( f ) {
-			fclose (f);
-			return qtrue;
-    } else {
-      sprintf(cddir, "%s%s", drive, CD_BASEDIR_LINUX);
-      sprintf(test, "%s\\%s", cddir, CD_EXE_LINUX);
-  		f = fopen( test, "r" );
-	  	if ( f ) {
-		  	fclose (f);
-			  return qtrue;
-      }
-    }
-	}
-
-	return qfalse;
-}
-#endif
-
-/*
-================
-Sys_CheckCD
-
-Return true if the proper CD is in the drive
-================
-*/
-qboolean	Sys_CheckCD( void ) {
-  // FIXME: mission pack
-  return qtrue;
-	//return Sys_ScanForCD();
-}
 
 
 /*
@@ -579,7 +504,7 @@ void Sys_UnloadDll( void *dllHandle ) {
 		return;
 	}
 	if ( !FreeLibrary( dllHandle ) ) {
-		Com_Error (ERR_FATAL, "Sys_UnloadDll FreeLibrary failed");
+		Com_Error( ERR_FATAL, "Sys_UnloadDll FreeLibrary failed" );
 	}
 }
 
@@ -602,7 +527,6 @@ void * QDECL Sys_LoadDll( const char *name, intptr_t (QDECL **entryPoint)(intptr
 	HINSTANCE	libHandle;
 	void	(QDECL *dllEntry)( intptr_t (QDECL *syscallptr)(intptr_t, ...) );
 	char	*basepath;
-	char	*cdpath;
 	char	*gamedir;
 	char	*fn;
 	char	filename[MAX_QPATH];
@@ -622,7 +546,6 @@ void * QDECL Sys_LoadDll( const char *name, intptr_t (QDECL **entryPoint)(intptr
 	if ( !libHandle ) {
 #endif
 	basepath = Cvar_VariableString( "fs_basepath" );
-	cdpath = Cvar_VariableString( "fs_cdpath" );
 	gamedir = Cvar_VariableString( "fs_game" );
 
 	fn = FS_BuildOSPath( basepath, gamedir, filename );
@@ -632,25 +555,6 @@ void * QDECL Sys_LoadDll( const char *name, intptr_t (QDECL **entryPoint)(intptr
     Com_Printf("LoadLibrary '%s' ok\n", fn);
   else
     Com_Printf("LoadLibrary '%s' failed\n", fn);
-#endif
-
-	if ( !libHandle ) {
-		if( cdpath[0] ) {
-			fn = FS_BuildOSPath( cdpath, gamedir, filename );
-			libHandle = LoadLibrary( AtoW( fn ) );
-#ifndef NDEBUG
-      if (libHandle)
-        Com_Printf("LoadLibrary '%s' ok\n", fn);
-      else
-        Com_Printf("LoadLibrary '%s' failed\n", fn);
-#endif
-		}
-
-		if ( !libHandle ) {
-			return NULL;
-		}
-	}
-#ifndef NDEBUG
 	}
 #endif
 
@@ -942,16 +846,12 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 	// get the initial time base
 	Sys_Milliseconds();
-#if 0
-	// if we find the CD, add a +set cddir xxx command line
-	Sys_ScanForCD();
-#endif
 
 	Com_Init( sys_cmdline );
 	NET_Init();
 
-	_getcwd (cwd, sizeof(cwd));
-	Com_Printf("Working directory: %s\n", cwd);
+	_getcwd( cwd, sizeof( cwd ) );
+	Com_Printf( "Working directory: %s\n", cwd );
 
 	// hide the early console since we've reached the point where we
 	// have a working graphics subsystems

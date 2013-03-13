@@ -146,7 +146,7 @@ void SV_GetChallenge( netadr_t from ) {
 
 			Com_DPrintf( "sending getIpAuthorize for %s\n", NET_AdrToString( from ));
 		
-			strcpy(game, BASEGAME);
+			strcpy(game, IDBASEGAME);
 			fs = Cvar_Get ("fs_game", "", CVAR_INIT|CVAR_SYSTEMINFO );
 			if (fs && fs->string[0] != 0) {
 				strcpy(game, fs->string);
@@ -901,7 +901,7 @@ void SV_WriteDownloadToClient( client_t *cl , msg_t *msg )
 						// now that we know the file is referenced,
 						// check whether it's legal to download it.
 						missionPack = FS_idPak(pakbuf, "missionpack");
-						idPack = missionPack || FS_idPak(pakbuf, BASEGAME);
+						idPack = missionPack || FS_idPak(pakbuf, IDBASEGAME);
 
 						break;
 					}
