@@ -935,11 +935,11 @@ EVENT LOOP
 #define	MAX_QUED_EVENTS		256
 #define	MASK_QUED_EVENTS	( MAX_QUED_EVENTS - 1 )
 
-sysEvent_t  eventQue[MAX_QUED_EVENTS];
+sysEvent_t	eventQue[ MAX_QUED_EVENTS ];
+byte		sys_packetReceived[ MAX_MSGLEN ];
 // bk000306: initialize
-int   eventHead = 0;
-int             eventTail = 0;
-byte    sys_packetReceived[MAX_MSGLEN];
+unsigned int eventHead = 0;
+unsigned int eventTail = 0;
 
 /*
 ================
@@ -976,34 +976,35 @@ void Sys_QueEvent( int time, sysEventType_t type, int value, int value2, int ptr
 		}
 	}
 
-  ev = &eventQue[ eventHead & MASK_QUED_EVENTS ];
+	ev = &eventQue[ eventHead & MASK_QUED_EVENTS ];
 
-  // bk000305 - was missing
-  if ( eventHead - eventTail >= MAX_QUED_EVENTS )
-  {
+	// bk000305 - was missing
+	if ( eventHead - eventTail >= MAX_QUED_EVENTS )
+	{
 		Com_Printf( "Sys_QueEvent(time=%i,type=%i): overflow\n", time, type );
-    // we are discarding an event, but don't leak memory
-    if ( ev->evPtr )
-    {
-      Z_Free( ev->evPtr );
-    }
-    eventTail++;
-  }
+		// we are discarding an event, but don't leak memory
+		if ( ev->evPtr )
+		{
+			Z_Free( ev->evPtr );
+		}
+		eventTail++;
+	}
 
-  eventHead++;
+	eventHead++;
 
-  if ( time == 0 )
-  {
-    time = Sys_Milliseconds();
-  }
+	if ( time == 0 )
+	{
+		time = Sys_Milliseconds();
+	}
 
-  ev->evTime = time;
-  ev->evType = type;
-  ev->evValue = value;
-  ev->evValue2 = value2;
-  ev->evPtrLength = ptrLength;
-  ev->evPtr = ptr;
+	ev->evTime = time;
+	ev->evType = type;
+	ev->evValue = value;
+	ev->evValue2 = value2;
+	ev->evPtrLength = ptrLength;
+	ev->evPtr = ptr;
 }
+
 
 /*
 ================
@@ -1027,7 +1028,7 @@ sysEvent_t Sys_GetEvent( void )
 
   // pump the message loop
   // in vga this calls KBD_Update, under X, it calls GetEvent
-  Sys_SendKeyEvents ();
+  Sys_SendKeyEvents();
 
   // check for console commands
   s = Sys_ConsoleInput();
@@ -1076,7 +1077,6 @@ sysEvent_t Sys_GetEvent( void )
   }
 
   // create an empty event to return
-
   memset( &ev, 0, sizeof( ev ) );
   ev.evTime = Sys_Milliseconds();
 
@@ -1354,8 +1354,13 @@ int main ( int argc, char* argv[] )
 	memset( &eventQue[0], 0, MAX_QUED_EVENTS*sizeof(sysEvent_t) ); 
 	memset( &sys_packetReceived[0], 0, MAX_MSGLEN*sizeof(byte) );
 
+	// get the initial time base
+	Sys_Milliseconds();
+
 	Com_Init(cmdline);
 	NET_Init();
+
+	Com_Printf( "Working directory: %s\n", Sys_Pwd() );
 
 	Sys_ConsoleInputInit();
 

@@ -157,14 +157,27 @@ void Sys_Mkdir( const char *path ) {
 Sys_Cwd
 ==============
 */
-const char *Sys_Cwd( void )
+const char *Sys_Pwd( void )
 {
-	static char cwd[MAX_OSPATH];
+	static char pwd[ MAX_OSPATH ];
+	char *s;
 
-	_getcwd( cwd, sizeof( cwd ) - 1 );
-	cwd[ sizeof( cwd ) - 1 ] = '\0';
+	if ( pwd[0] )
+		return pwd;
 
-	return cwd;
+	GetModuleFileName( NULL, pwd, ARRAY_LEN( pwd ) -1 );
+	pwd[ ARRAY_LEN( pwd ) - 1 ] = '\0';
+
+	s = strrchr( pwd, PATH_SEP );
+	if ( s ) 
+		*s = '\0';
+	else // bogus case?
+	{
+		_getcwd( pwd, sizeof( pwd ) - 1 );
+		pwd[ sizeof( pwd ) - 1 ] = '\0';
+	}
+
+	return pwd;
 }
 
 
@@ -175,7 +188,7 @@ Sys_DefaultBasePath
 */
 const char *Sys_DefaultBasePath( void ) 
 {
-	return Sys_Cwd();
+	return Sys_Pwd();
 }
 
 
@@ -585,8 +598,9 @@ EVENT LOOP
 #define	MASK_QUED_EVENTS	( MAX_QUED_EVENTS - 1 )
 
 sysEvent_t	eventQue[MAX_QUED_EVENTS];
-unsigned int eventHead = 0, eventTail = 0;
-byte		sys_packetReceived[MAX_MSGLEN];
+byte	sys_packetReceived[MAX_MSGLEN];
+unsigned int eventHead = 0;
+unsigned int eventTail = 0;
 
 /*
 ================
@@ -721,10 +735,8 @@ sysEvent_t Sys_GetEvent( void ) {
 	}
 
 	// create an empty event to return
-
 	memset( &ev, 0, sizeof( ev ) );
 	ev.evTime = Sys_Milliseconds();
-	//ev.evTime = timeGetTime();
 
 	return ev;
 }
@@ -830,7 +842,6 @@ WinMain
 */
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 
-	char		cwd[MAX_OSPATH];
 	int			startTime, endTime;
 
     // should never get a previous instance in Win32
@@ -853,8 +864,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	Com_Init( sys_cmdline );
 	NET_Init();
 
-	_getcwd( cwd, sizeof( cwd ) );
-	Com_Printf( "Working directory: %s\n", cwd );
+	Com_Printf( "Working directory: %s\n", Sys_Pwd() );
 
 	// hide the early console since we've reached the point where we
 	// have a working graphics subsystems

@@ -35,8 +35,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qcommon/qcommon.h"
 
 //=============================================================================
-// Used to determine where to store user-specific files
-static char homePath[MAX_OSPATH];
 
 /*
 ================
@@ -354,14 +352,27 @@ void	Sys_FreeFileList( char **list ) {
 Sys_Cwd
 =================
 */
-const char *Sys_Cwd( void ) 
+const char *Sys_Pwd( void ) 
 {
-	static char cwd[MAX_OSPATH];
+	static char pwd[ MAX_OSPATH ];
 
-	getcwd( cwd, sizeof( cwd ) - 1 );
-	cwd[MAX_OSPATH-1] = 0;
+	if ( pwd[0] )
+		return pwd;
 
-	return cwd;
+	// more reliable, linux-specific
+	if ( readlink( "/proc/self/exe", pwd, sizeof( pwd ) - 1 ) != -1 ) 
+	{
+		pwd[ sizeof( pwd ) - 1 ] = '\0';
+		dirname( pwd );
+		return pwd;
+	}
+	
+	if ( !getcwd( pwd, sizeof( pwd ) ) ) 
+	{
+		pwd[0] = '\0';
+	}
+
+	return pwd;
 }
 
 
@@ -372,7 +383,7 @@ Sys_DefaultBasePath
 */
 const char *Sys_DefaultBasePath( void )
 {
-	return Sys_Cwd();
+	return Sys_Pwd();
 }
 
 
@@ -383,6 +394,9 @@ Sys_DefaultHomePath
 */
 const char *Sys_DefaultHomePath( void )
 {
+	// Used to determine where to store user-specific files
+	static char homePath[ MAX_OSPATH ];
+
 	char *p;
 
 	if ( *homePath )

@@ -1117,7 +1117,7 @@ void		Sys_ShowIP(void);
 
 void		Sys_Mkdir( const char *path );
 
-const char *Sys_Cwd( void );
+const char *Sys_Pwd( void );
 const char *Sys_DefaultBasePath( void );
 const char *Sys_DefaultHomePath( void );
 
