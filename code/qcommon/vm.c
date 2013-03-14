@@ -1091,9 +1091,12 @@ void VM_LogSyscalls( int *args ) {
 	static	FILE	*f;
 
 	if ( !f ) {
-		f = fopen("syscalls.log", "w" );
+		f = Sys_FOpen( "syscalls.log", "w" );
+		if ( !f ) {
+			return;
+		}
 	}
 	callnum++;
-	fprintf(f, "%i: %p (%i) = %i %i %i %i\n", callnum, (void*)(args - (int *)currentVM->dataBase),
+	fprintf( f, "%i: %p (%i) = %i %i %i %i\n", callnum, (void*)(args - (int *)currentVM->dataBase),
 		args[0], args[1], args[2], args[3], args[4] );
 }

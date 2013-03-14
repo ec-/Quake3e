@@ -170,7 +170,7 @@ void WriteTGA (char *filename, byte *data, int width, int height) {
 
 	ri.FS_WriteFile(filename, buffer, c);
 
-	//f = fopen (filename, "wb");
+	//f = Sys_FOpen (filename, "wb");
 	//fwrite (buffer, 1, c, f);
 	//fclose (f);
 

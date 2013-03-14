@@ -1341,7 +1341,7 @@ script_t *LoadScriptFile(const char *filename)
 	length = botimport.FS_FOpenFile( pathname, &fp, FS_READ );
 	if (!fp) return NULL;
 #else
-	fp = fopen(filename, "rb");
+	fp = Sys_FOpen( filename, "rb" );
 	if (!fp) return NULL;
 
 	length = FileLength(fp);

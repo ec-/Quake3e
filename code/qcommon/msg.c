@@ -158,7 +158,7 @@ void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 			Com_Error(ERR_DROP, "can't read %d bits", bits);
 		}
 	} else {
-//		fp = fopen("c:\\netchan.bin", "a");
+//		fp = Sys_FOpen("c:\\netchan.bin", "a");
 		value &= (0xffffffff>>(32-bits));
 		if (bits&7) {
 			int nbits;
@@ -225,7 +225,7 @@ int MSG_ReadBits( msg_t *msg, int bits ) {
 			bits = bits - nbits;
 		}
 		if (bits) {
-//			fp = fopen("c:\\netchan.bin", "a");
+//			fp = Sys_FOpen("c:\\netchan.bin", "a");
 			for(i=0;i<bits;i+=8) {
 				Huff_offsetReceive (msgHuff.decompressor.tree, &get, msg->data, &msg->bit);
 //				fwrite(&get, 1, 1, fp);

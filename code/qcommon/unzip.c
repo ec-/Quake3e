@@ -140,7 +140,7 @@ typedef Byte    *voidp;
 
 #endif /* _ZCONF_H */
 
-#define ZLIB_VERSION "1.1.3"
+#define ZLIB_VERSION "1.1.4"
 
 /* 
      The 'zlib' compression library provides in-memory compression and
@@ -1004,7 +1004,7 @@ typedef unsigned long  ulg;
 #endif
 
 #ifndef F_OPEN
-#  define F_OPEN(name, mode) fopen((name), (mode))
+#  define F_OPEN(name, mode) Sys_FOpen((name), (mode))
 #endif
 
          /* functions */
@@ -1291,7 +1291,7 @@ extern unzFile unzReOpen (const char* path, unzFile file)
 	unz_s *s;
 	FILE * fin;
 
-    fin=fopen(path,"rb");
+    fin=F_OPEN(path,"rb");
 	if (fin==NULL)
 		return NULL;
 
@@ -1328,7 +1328,7 @@ extern unzFile unzOpen (const char* path)
 
 	int err=UNZ_OK;
 
-    fin=fopen(path,"rb");
+    fin=F_OPEN(path,"rb");
 	if (fin==NULL)
 		return NULL;
 

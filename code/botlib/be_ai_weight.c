@@ -532,7 +532,7 @@ qboolean WriteWeightConfig(char *filename, weightconfig_t *config)
 	FILE *fp;
 	weight_t *ifw;
 
-	fp = fopen(filename, "wb");
+	fp = Sys_FOpen( filename, "wb" );
 	if (!fp) return qfalse;
 
 	for (i = 0; i < config->numweights; i++)

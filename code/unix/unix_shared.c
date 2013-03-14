@@ -142,11 +142,6 @@ void Sys_SnapVector( float *v )
 #endif
 
 
-void Sys_Mkdir( const char *path )
-{
-    mkdir( path, 0750 );
-}
-
 
 char *strlwr (char *s) {
   if ( s==NULL ) { // bk001204 - paranoia
@@ -344,6 +339,34 @@ void	Sys_FreeFileList( char **list ) {
 	}
 
 	Z_Free( list );
+}
+
+
+/*
+=================
+Sys_Mkdir
+=================
+*/
+void Sys_Mkdir( const char *path )
+{
+    mkdir( path, 0750 );
+}
+
+
+/*
+=================
+Sys_FOpen
+=================
+*/
+FILE *Sys_FOpen( const char *ospath, const char *mode )
+{
+	struct stat buf;
+
+	// check if path exists and its not a directory
+	if ( stat( ospath, &buf ) == -1 || S_ISDIR( buf.st_mode ) )
+		return NULL;
+
+	return fopen( ospath, mode );
 }
 
 

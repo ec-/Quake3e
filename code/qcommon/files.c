@@ -592,7 +592,7 @@ static void FS_CopyFile( char *fromOSPath, char *toOSPath ) {
 		return;
 	}
 
-	f = fopen( fromOSPath, "rb" );
+	f = Sys_FOpen( fromOSPath, "rb" );
 	if ( !f ) {
 		return;
 	}
@@ -610,7 +610,7 @@ static void FS_CopyFile( char *fromOSPath, char *toOSPath ) {
 		return;
 	}
 
-	f = fopen( toOSPath, "wb" );
+	f = Sys_FOpen( toOSPath, "wb" );
 	if ( !f ) {
 		return;
 	}
@@ -680,7 +680,7 @@ qboolean FS_FileExists( const char *file )
 
 	testpath = FS_BuildOSPath( fs_homepath->string, fs_gamedir, file );
 
-	f = fopen( testpath, "rb" );
+	f = Sys_FOpen( testpath, "rb" );
 	if (f) {
 		fclose( f );
 		return qtrue;
@@ -703,7 +703,7 @@ qboolean FS_SV_FileExists( const char *file )
 	// search in homepath
 	testpath = FS_BuildOSPath( fs_homepath->string, file, "" );
 	testpath[strlen(testpath)-1] = '\0';
-	f = fopen( testpath, "rb" );
+	f = Sys_FOpen( testpath, "rb" );
 	if ( f ) {
 		fclose( f );
 		return qtrue;
@@ -713,7 +713,7 @@ qboolean FS_SV_FileExists( const char *file )
 	if ( Q_stricmp( fs_homepath->string, fs_basepath->string ) ) {
 		testpath = FS_BuildOSPath( fs_basepath->string, file, "" );
 		testpath[strlen(testpath)-1] = '\0';
-		f = fopen( testpath, "rb" );
+		f = Sys_FOpen( testpath, "rb" );
 		if ( f ) {
 			fclose( f );
 			return qtrue;
@@ -761,7 +761,7 @@ fileHandle_t FS_SV_FOpenFileWrite( const char *filename ) {
 
 	Com_DPrintf( "writing to: %s\n", ospath );
 
-	fd->handleFiles.file.o = fopen( ospath, "wb" );
+	fd->handleFiles.file.o = Sys_FOpen( ospath, "wb" );
 
 	if ( !fd->handleFiles.file.o ) {
 		return FS_INVALID_HANDLE;
@@ -813,7 +813,7 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
 		Com_Printf( "FS_SV_FOpenFileRead (fs_homepath): %s\n", ospath );
 	}
 
-	fd->handleFiles.file.o = fopen( ospath, "rb" );
+	fd->handleFiles.file.o = Sys_FOpen( ospath, "rb" );
 	if ( !fd->handleFiles.file.o )
 	{
 		// NOTE TTimo on non *nix systems, fs_homepath == fs_basepath, might want to avoid
@@ -828,7 +828,7 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
 				Com_Printf( "FS_SV_FOpenFileRead (fs_basepath): %s\n", ospath );
 			}
 
-			fd->handleFiles.file.o = fopen( ospath, "rb" );
+			fd->handleFiles.file.o = Sys_FOpen( ospath, "rb" );
 		}
 	}
 
@@ -985,7 +985,7 @@ fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 	// enabling the following line causes a recursive function call loop
 	// when running with +set logfile 1 +set developer 1
 	//Com_DPrintf( "writing to: %s\n", ospath );
-	fd->handleFiles.file.o = fopen( ospath, "wb" );
+	fd->handleFiles.file.o = Sys_FOpen( ospath, "wb" );
 	if ( fd->handleFiles.file.o == NULL ) {
 		return FS_INVALID_HANDLE;
 	}
@@ -1035,7 +1035,7 @@ fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 	f = FS_HandleForFile();
 	fd = &fsh[ f ];
 
-	fd->handleFiles.file.o = fopen( ospath, "ab" );
+	fd->handleFiles.file.o = Sys_FOpen( ospath, "ab" );
 	if ( fd->handleFiles.file.o == NULL ) {
 		return FS_INVALID_HANDLE;
 	}
@@ -1284,7 +1284,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 				dir = search->dir;
 			
 				netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
-				temp = fopen( netpath, "rb" );
+				temp = Sys_FOpen( netpath, "rb" );
 				if ( !temp ) {
 					continue;
 				}
@@ -1415,7 +1415,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 			dir = search->dir;
 			
 			netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
-			f->handleFiles.file.o = fopen( netpath, "rb" );
+			f->handleFiles.file.o = Sys_FOpen( netpath, "rb" );
 			if ( f->handleFiles.file.o == NULL ) {
 				continue;
 			}
@@ -2813,7 +2813,7 @@ void FS_Which_f( void ) {
 			dir = search->dir;
 
 			netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
-			temp = fopen (netpath, "rb");
+			temp = Sys_FOpen( netpath, "rb" );
 			if ( !temp ) {
 				continue;
 			}
@@ -3293,7 +3293,7 @@ static void FS_Startup( void ) {
 
 #ifdef FS_MISSING
 	if (missingFiles == NULL) {
-		missingFiles = fopen( "\\missing.txt", "ab" );
+		missingFiles = Sys_FOpen( "\\missing.txt", "ab" );
 	}
 #endif
 }

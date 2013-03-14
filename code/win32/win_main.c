@@ -143,14 +143,28 @@ void Sys_EndPrint( void ) {
 	Conbuf_EndPrint();
 }
 
+
 /*
 ==============
 Sys_Mkdir
 ==============
 */
-void Sys_Mkdir( const char *path ) {
-	_mkdir (path);
+void Sys_Mkdir( const char *path ) 
+{
+	_mkdir( path );
 }
+
+
+/*
+==============
+Sys_FOpen
+==============
+*/
+FILE *Sys_FOpen( const char *ospath, const char *mode )
+{
+	return fopen( ospath, mode );
+}
+
 
 /*
 ==============
