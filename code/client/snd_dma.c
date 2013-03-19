@@ -936,7 +936,10 @@ void S_Base_RawSamples( int samples, int rate, int width, int s_channels, const 
 		return;
 	}
 
-	intVolume = 256 * volume;
+	if ( cls.soundMuted )
+		intVolume = 0;
+	else
+		intVolume = 256 * volume;
 
 	if ( s_rawend < s_soundtime ) {
 		Com_DPrintf( "S_RawSamples: resetting minimum: %i < %i\n", s_rawend, s_soundtime );

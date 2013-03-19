@@ -116,8 +116,9 @@ VID_AppActivate
 static void VID_AppActivate( BOOL fActive, BOOL minimize )
 {
 	g_wv.isMinimized = minimize;
+	cls.soundMuted = minimize;
 
-	Com_DPrintf( "VID_AppActivate: %i\n", fActive );
+	Com_DPrintf( "VID_AppActivate: %i %i\n", fActive, minimize );
 
 	Key_ClearStates();	// FIXME!!!
 
@@ -334,6 +335,8 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 {
 	static qboolean flip = qtrue;
 	int zDelta, i;
+	BOOL fActive;
+	BOOL fMinimized;
 
 	// http://msdn.microsoft.com/library/default.asp?url=/library/en-us/winui/winui/windowsuserinterface/userinput/mouseinput/aboutmouseinput.asp
 	// Windows 95, Windows NT 3.51 - uses MSH_MOUSEWHEEL
@@ -456,34 +459,36 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		Cbuf_ExecuteText( EXEC_APPEND, "quit" );
 		break;
 
+	case WM_ACTIVATE:
+		fActive = (LOWORD( wParam ) != WA_INACTIVE) ? TRUE : FALSE;
+		fMinimized = (BOOL)HIWORD( wParam ) ? TRUE : FALSE;
+		Win_AddHotkey();
+		// sometimes we can recieve fActive with fMinimized
+		if ( !( fActive && fMinimized ) )
+			VID_AppActivate( fActive, fMinimized );
+		break;
+	
+	// WM_KILLFOCUS goes first and without correct window status
+	// WM_SETFOCUS goes (almost) last with correct window status
 	case WM_SETFOCUS:
 	case WM_KILLFOCUS:
 		{
-			int	fActive, fMinimized;
 			WINDOWPLACEMENT wp;
-
+		
 			memset( &wp, 0, sizeof( wp ) );
-			wp.length = sizeof( wp );
+			wp.length = sizeof( WINDOWPLACEMENT );
 			GetWindowPlacement( hWnd, &wp );
 
 			fActive = ( uMsg == WM_SETFOCUS );
-			fMinimized = ( wp.showCmd == SW_SHOWMINIMIZED );
-
-			VID_AppActivate( fActive, fMinimized );
-
-			Win_AddHotkey();
 
 			if ( glw_state.cdsFullscreen ) {
 				if ( fActive ) {
-					//Com_Printf( S_COLOR_BLUE "set game ");
-					//SetForegroundWindow( hWnd ); // ATI Catalyst may require this
-					//SetFocus( hWnd );			 // ATI Catalyst may require this
 					SetGameDisplaySettings();
 					R_SetColorMappings();
 				} else {
 					WG_RestoreGamma();
 					// Minimize if there only one monitor
-					if ( !fMinimized && glw_state.monitorCount <= 1 )
+					if ( glw_state.monitorCount <= 1 )
 						ShowWindow( hWnd, SW_MINIMIZE );
 					SetDesktopDisplaySettings();
 				}

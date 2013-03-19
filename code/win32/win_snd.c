@@ -208,7 +208,7 @@ int SNDDMA_InitDS ()
 	dsbuf.dwSize = sizeof(DSBUFFERDESC);
 
 	// Micah: take advantage of 2D hardware.if available.
-	dsbuf.dwFlags = DSBCAPS_LOCHARDWARE;
+	dsbuf.dwFlags = DSBCAPS_LOCHARDWARE | DSBCAPS_GLOBALFOCUS;
 	if (use8) {
 		dsbuf.dwFlags |= DSBCAPS_GETCURRENTPOSITION2;
 	}
@@ -224,7 +224,7 @@ int SNDDMA_InitDS ()
 	}
 	else {
 		// Couldn't get hardware, fallback to software.
-		dsbuf.dwFlags = DSBCAPS_LOCSOFTWARE;
+		dsbuf.dwFlags = DSBCAPS_LOCSOFTWARE | DSBCAPS_GLOBALFOCUS;
 		if (use8) {
 			dsbuf.dwFlags |= DSBCAPS_GETCURRENTPOSITION2;
 		}
