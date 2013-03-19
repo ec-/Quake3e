@@ -343,11 +343,11 @@ void IN_ActivateRawMouse( void )
 	if ( cnt >= 1 && Rid[0].hwndTarget == g_wv.hWnd ) 
 	{
 		// device already exists
+		while ( ShowCursor( FALSE ) >= 0 )
+			;
+		SetCursorPos( window_center[0], window_center[1] );
 		SetCapture( g_wv.hWnd );
 		ClipCursor( &window_rect );
-		while ( ShowCursor( FALSE ) >= 0 )
-		;
-		SetCursorPos( window_center[0], window_center[1] );
         raw_activated = 1;
 		return;
     }
