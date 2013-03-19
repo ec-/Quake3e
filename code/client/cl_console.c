@@ -591,6 +591,9 @@ void Con_DrawNotify (void)
 
 }
 
+static char  conColorString[ MAX_CVAR_VALUE_STRING ] = { 0 };
+static float conColorValue[4] = { 0.0, 0.0, 0.0, 0.0 };
+
 /*
 ================
 Con_DrawSolidConsole
@@ -608,6 +611,7 @@ void Con_DrawSolidConsole( float frac ) {
 	int				currentColor;
 	vec4_t			color;
 	float			yf, wf;
+	char			buf[ MAX_CVAR_VALUE_STRING ], *v[4];
 
 	lines = cls.glconfig.vidHeight * frac;
 	if ( lines <= 0 )
@@ -628,7 +632,23 @@ void Con_DrawSolidConsole( float frac ) {
 	if ( yf < 1.0 ) {
 		yf = 0;
 	} else {
-		re.DrawStretchPic( 0, 0, wf, yf, 0,0, 1,1, cls.consoleShader );
+		if ( cl_conColor->string[0] ) {
+			if ( strcmp( cl_conColor->string, conColorString ) ) 
+			{
+				strcpy( conColorString, cl_conColor->string );
+				strcpy( buf, cl_conColor->string );
+				Com_Split( buf, v, 4, ' ' );
+				conColorValue[0] = atof( v[0] ) / 255.0;
+				conColorValue[1] = atof( v[1] ) / 255.0;
+				conColorValue[2] = atof( v[2] ) / 255.0;
+				conColorValue[3] = atof( v[3] ) / 255.0;
+			}
+			re.SetColor( conColorValue );
+			re.DrawStretchPic( 0, 0, wf, yf, 0, 0, 1, 1, cls.whiteShader );
+		} else {
+			re.DrawStretchPic( 0, 0, wf, yf, 0, 0, 1, 1, cls.consoleShader );
+		}
+
 	}
 
 	color[0] = 1;
