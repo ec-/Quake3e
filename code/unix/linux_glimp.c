@@ -65,6 +65,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <X11/keysym.h>
 #include <X11/cursorfont.h>
+#include <X11/Xatom.h>
 
 #if !defined(__sun)
 #include <X11/extensions/Xxf86dga.h>
@@ -584,6 +585,41 @@ static qboolean repeated_press( XEvent *event )
 
 int Sys_XTimeToSysTime( Time xtime );
 
+
+static int WindowMinimized( Display *dpy, Window win )
+{
+	unsigned long i, num_items, bytes_after;
+	Atom actual_type, *atoms, nws, nwsh;
+	int actual_format;
+
+	nws = XInternAtom( dpy, "_NET_WM_STATE", True );
+	if ( nws == BadValue || nws == None )
+		return 0;
+
+	nwsh = XInternAtom( dpy, "_NET_WM_STATE_HIDDEN", True );
+	if ( nwsh == BadValue || nwsh == None )
+		return 0;
+
+	atoms = NULL;
+
+    XGetWindowProperty( dpy, win, nws, 0, 0x7FFFFFFF, False, XA_ATOM, 
+		&actual_type, &actual_format, &num_items, 
+		&bytes_after, (unsigned char**)&atoms );
+
+    for ( i = 0; i < num_items; i++ )
+    {
+        if ( atoms[i] == nwsh )
+        {
+            XFree( atoms );
+            return 1;
+        }
+    }
+
+    XFree( atoms );
+    return 0;
+}
+
+
 static void HandleEvents( void )
 {
 	XEvent event;
@@ -719,6 +755,8 @@ static void HandleEvents( void )
 			break;
 
 		case ConfigureNotify:
+			cls.soundMuted = WindowMinimized( dpy, win );
+//			Com_Printf( "ConfigureNotify minimized: %i\n", cls.soundMuted );
 			win_x = event.xconfigure.x;
 			win_y = event.xconfigure.y;
 			break;
