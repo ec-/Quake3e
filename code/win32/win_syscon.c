@@ -130,7 +130,7 @@ static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 	char *cmdString;
 	static qboolean s_timePolarity;
 
-	switch (uMsg)
+	switch ( uMsg )
 	{
 
 	case WM_SETFOCUS:

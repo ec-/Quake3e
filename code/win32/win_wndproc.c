@@ -116,7 +116,6 @@ VID_AppActivate
 static void VID_AppActivate( BOOL fActive, BOOL minimize )
 {
 	g_wv.isMinimized = minimize;
-	cls.soundMuted = minimize;
 
 	Com_DPrintf( "VID_AppActivate: %i %i\n", fActive, minimize );
 
@@ -133,7 +132,7 @@ static void VID_AppActivate( BOOL fActive, BOOL minimize )
 	}
 
 	// minimize/restore mouse-capture on demand
-	if (!g_wv.activeApp )
+	if ( !g_wv.activeApp )
 	{
 		WIN_DisableHook();
 		IN_Activate( qfalse );
@@ -462,10 +461,9 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 	case WM_ACTIVATE:
 		fActive = (LOWORD( wParam ) != WA_INACTIVE) ? TRUE : FALSE;
 		fMinimized = (BOOL)HIWORD( wParam ) ? TRUE : FALSE;
-		Win_AddHotkey();
 		// sometimes we can recieve fActive with fMinimized
-		if ( !( fActive && fMinimized ) )
-			VID_AppActivate( fActive, fMinimized );
+		if ( !( fActive && fMinimized )  )
+			cls.soundMuted = fMinimized;
 		break;
 	
 	// WM_KILLFOCUS goes first and without correct window status
@@ -480,6 +478,12 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			GetWindowPlacement( hWnd, &wp );
 
 			fActive = ( uMsg == WM_SETFOCUS );
+			//Com_DPrintf( "%s\n", fActive ? "WM_SETFOCUS" : "WM_KILLFOCUS" );
+
+			Win_AddHotkey();
+
+			// We can't get correct minimized status on WM_KILLFOCUS
+			VID_AppActivate( fActive, FALSE ); 
 
 			if ( glw_state.cdsFullscreen ) {
 				if ( fActive ) {
