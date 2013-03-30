@@ -96,6 +96,7 @@ static Display *dpy = NULL;
 static int scrnum;
 static Window win = 0;
 static GLXContext ctx = NULL;
+static Atom wmDeleteEvent = None;
 
 static int desktop_width = 0;
 static int desktop_height = 0;
@@ -640,6 +641,13 @@ static void HandleEvents( void )
 
 		switch( event.type )
 		{
+
+		case ClientMessage:
+
+			if ( event.xclient.data.l[0] == wmDeleteEvent )
+				Com_Quit_f();
+			break;
+
 		case KeyPress:
 //			ri.Printf( PRINT_ALL,"^2K+^7 %08X\n", event.xkey.keycode );
 			t = Sys_XTimeToSysTime( event.xkey.time );
@@ -1260,81 +1268,89 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
     break;
   }
 
-  if (!visinfo)
-  {
-    ri.Printf( PRINT_ALL, "Couldn't get a visual\n" );
-    return RSERR_INVALID_MODE;
-  }
+	if (!visinfo)
+	{
+		ri.Printf( PRINT_ALL, "Couldn't get a visual\n" );
+		return RSERR_INVALID_MODE;
+	}
 
-  /* window attributes */
-  attr.background_pixel = BlackPixel(dpy, scrnum);
-  attr.border_pixel = 0;
-  attr.colormap = XCreateColormap(dpy, root, visinfo->visual, AllocNone);
-  attr.event_mask = X_MASK;
-  if (vidmode_active)
-  {
-    mask = CWBackPixel | CWColormap | CWSaveUnder | CWBackingStore | 
-           CWEventMask | CWOverrideRedirect;
-    attr.override_redirect = True;
-    attr.backing_store = NotUseful;
-    attr.save_under = False;
-  } else
-    mask = CWBackPixel | CWBorderPixel | CWColormap | CWEventMask;
-
-  win = XCreateWindow(dpy, root, 0, 0, 
-                      actualWidth, actualHeight, 
-                      0, visinfo->depth, InputOutput,
-                      visinfo->visual, mask, &attr);
-
-  XStoreName( dpy, win, CLIENT_WINDOW_TITLE );
-
-  /* GH: Don't let the window be resized */
-  sizehints.flags = PMinSize | PMaxSize;
-  sizehints.min_width = sizehints.max_width = actualWidth;
-  sizehints.min_height = sizehints.max_height = actualHeight;
-
-  XSetWMNormalHints( dpy, win, &sizehints );
-
-  XMapWindow( dpy, win );
-
-  if (vidmode_active)
-    XMoveWindow(dpy, win, 0, 0);
-
-  XFlush(dpy);
-  XSync(dpy,False); // bk001130 - from cvs1.17 (mkv)
-  ctx = qglXCreateContext(dpy, visinfo, NULL, True);
-  XSync(dpy,False); // bk001130 - from cvs1.17 (mkv)
-
-  /* GH: Free the visinfo after we're done with it */
-  XFree( visinfo );
-
-  qglXMakeCurrent(dpy, win, ctx);
-
-  // bk001130 - from cvs1.17 (mkv)
-  glstring = (char *)qglGetString (GL_RENDERER);
-  ri.Printf( PRINT_ALL, "GL_RENDERER: %s\n", glstring );
-
-  // bk010122 - new software token (Indirect)
-  if ( !Q_stricmp( glstring, "Mesa X11") || !Q_stricmp( glstring, "Mesa GLX Indirect") )
-  {
-    if ( !r_allowSoftwareGL->integer )
-    {
-      ri.Printf( PRINT_ALL, "\n\n***********************************************************\n" );
-      ri.Printf( PRINT_ALL, " You are using software Mesa (no hardware acceleration)!   \n" );
-      ri.Printf( PRINT_ALL, " Driver DLL used: %s\n", drivername ); 
-      ri.Printf( PRINT_ALL, " If this is intentional, add\n" );
-      ri.Printf( PRINT_ALL, "       \"+set r_allowSoftwareGL 1\"\n" );
-      ri.Printf( PRINT_ALL, " to the command line when starting the game.\n" );
-      ri.Printf( PRINT_ALL, "***********************************************************\n");
-      GLimp_Shutdown( );
-      return RSERR_INVALID_MODE;
-    } else
-    {
-      ri.Printf( PRINT_ALL, "...using software Mesa (r_allowSoftwareGL==1).\n" );
+	/* window attributes */
+	attr.background_pixel = BlackPixel(dpy, scrnum);
+	attr.border_pixel = 0;
+	attr.colormap = XCreateColormap( dpy, root, visinfo->visual, AllocNone );
+	attr.event_mask = X_MASK;
+	if (vidmode_active)
+	{
+		mask = CWBackPixel | CWColormap | CWSaveUnder | CWBackingStore |
+			CWEventMask | CWOverrideRedirect;
+		attr.override_redirect = True;
+		attr.backing_store = NotUseful;
+		attr.save_under = False;
+	}
+	else
+	{
+    	mask = CWBackPixel | CWBorderPixel | CWColormap | CWEventMask;
     }
-  }
 
-  return RSERR_OK;
+	win = XCreateWindow( dpy, root, 0, 0,
+		actualWidth, actualHeight,
+		0, visinfo->depth, InputOutput,
+		visinfo->visual, mask, &attr );
+
+	XStoreName( dpy, win, CLIENT_WINDOW_TITLE );
+
+	/* GH: Don't let the window be resized */
+	sizehints.flags = PMinSize | PMaxSize;
+	sizehints.min_width = sizehints.max_width = actualWidth;
+	sizehints.min_height = sizehints.max_height = actualHeight;
+
+	XSetWMNormalHints( dpy, win, &sizehints );
+
+	XMapWindow( dpy, win );
+
+	wmDeleteEvent = XInternAtom( dpy, "WM_DELETE_WINDOW", True );
+	if ( wmDeleteEvent == BadValue )
+		wmDeleteEvent = None;
+	if ( wmDeleteEvent != None )
+		XSetWMProtocols( dpy, win, &wmDeleteEvent, 1 );
+
+	if ( vidmode_active )
+		XMoveWindow( dpy, win, 0, 0 );
+
+	XFlush( dpy );
+	XSync( dpy, False );
+	ctx = qglXCreateContext( dpy, visinfo, NULL, True );
+	XSync( dpy, False );
+
+	/* GH: Free the visinfo after we're done with it */
+	XFree( visinfo );
+
+	qglXMakeCurrent( dpy, win, ctx );
+
+	glstring = (char *)qglGetString( GL_RENDERER );
+	ri.Printf( PRINT_ALL, "GL_RENDERER: %s\n", glstring );
+
+	if ( !Q_stricmp( glstring, "Mesa X11") || !Q_stricmp( glstring, "Mesa GLX Indirect") )
+	{
+		if ( !r_allowSoftwareGL->integer )
+		{
+			ri.Printf( PRINT_ALL, "\n\n***********************************************************\n" );
+			ri.Printf( PRINT_ALL, " You are using software Mesa (no hardware acceleration)!   \n" );
+			ri.Printf( PRINT_ALL, " Driver DLL used: %s\n", drivername ); 
+			ri.Printf( PRINT_ALL, " If this is intentional, add\n" );
+			ri.Printf( PRINT_ALL, "       \"+set r_allowSoftwareGL 1\"\n" );
+			ri.Printf( PRINT_ALL, " to the command line when starting the game.\n" );
+			ri.Printf( PRINT_ALL, "***********************************************************\n");
+			GLimp_Shutdown();
+			return RSERR_INVALID_MODE;
+		}
+		else
+		{
+			ri.Printf( PRINT_ALL, "...using software Mesa (r_allowSoftwareGL==1).\n" );
+		}
+	}
+
+	return RSERR_OK;
 }
 
 /*
