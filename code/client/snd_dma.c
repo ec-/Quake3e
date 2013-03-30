@@ -936,7 +936,7 @@ void S_Base_RawSamples( int samples, int rate, int width, int s_channels, const 
 		return;
 	}
 
-	if ( cls.soundMuted )
+	if ( s_clientMuted )
 		intVolume = 0;
 	else
 		intVolume = 256 * volume;

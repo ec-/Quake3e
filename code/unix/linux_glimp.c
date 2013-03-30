@@ -755,7 +755,7 @@ static void HandleEvents( void )
 			break;
 
 		case ConfigureNotify:
-			cls.soundMuted = WindowMinimized( dpy, win );
+			S_MuteClient( WindowMinimized( dpy, win ) );
 //			Com_Printf( "ConfigureNotify minimized: %i\n", cls.soundMuted );
 			win_x = event.xconfigure.x;
 			win_y = event.xconfigure.y;

@@ -188,6 +188,8 @@ extern cvar_t *s_doppler;
 
 extern cvar_t *s_testsound;
 
+extern qboolean s_clientMuted;
+
 qboolean S_LoadSound( sfx_t *sfx );
 
 void		SND_free(sndBuffer *v);

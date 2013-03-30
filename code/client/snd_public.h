@@ -70,3 +70,5 @@ void S_ClearSoundBuffer( void );
 void SNDDMA_Activate( void );
 
 void S_UpdateBackgroundTrack( void );
+
+void S_MuteClient( qboolean mute );

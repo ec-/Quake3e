@@ -31,6 +31,7 @@ cvar_t *s_musicVolume;
 cvar_t *s_doppler;
 
 static soundInterface_t si;
+qboolean s_clientMuted = qfalse;
 
 /*
 =================
@@ -370,6 +371,20 @@ void S_StopMusic_f( void )
 		return;
 
 	si.StopBackgroundTrack();
+}
+
+
+/*
+=================
+S_MuteClient
+=================
+*/
+void S_MuteClient( qboolean mute )
+{
+	if ( s_clientMuted == mute )
+		return;
+
+	s_clientMuted = mute;
 }
 
 

@@ -463,7 +463,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		fMinimized = (BOOL)HIWORD( wParam ) ? TRUE : FALSE;
 		// sometimes we can recieve fActive with fMinimized
 		if ( !( fActive && fMinimized )  )
-			cls.soundMuted = fMinimized;
+			S_MuteClient( fMinimized );
 		break;
 	
 	// WM_KILLFOCUS goes first and without correct window status
