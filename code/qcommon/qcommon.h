@@ -946,7 +946,7 @@ void CL_InitKeyCommands( void );
 
 void CL_Init( void );
 void CL_Disconnect( qboolean showMainMenu );
-void CL_Shutdown( char *finalmsg );
+void CL_Shutdown( const char *finalmsg );
 void CL_Frame( int msec );
 qboolean CL_GameCommand( void );
 void CL_KeyEvent (int key, qboolean down, unsigned time);
@@ -1004,7 +1004,7 @@ void S_ClearSoundBuffer( void );
 // server interface
 //
 void SV_Init( void );
-void SV_Shutdown( char *finalmsg );
+void SV_Shutdown( const char *finalmsg );
 void SV_Frame( int msec );
 void SV_PacketEvent( netadr_t from, msg_t *msg );
 qboolean SV_GameCommand( void );

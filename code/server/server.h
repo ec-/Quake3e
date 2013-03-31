@@ -271,7 +271,7 @@ extern	int serverBansCount;
 //
 // sv_main.c
 //
-void SV_FinalMessage (char *message);
+void SV_FinalMessage( const char *message );
 void QDECL SV_SendServerCommand( client_t *cl, const char *fmt, ...);
 
 
@@ -296,7 +296,7 @@ void SV_SetUserinfo( int index, const char *val );
 void SV_GetUserinfo( int index, char *buffer, int bufferSize );
 
 void SV_ChangeMaxClients( void );
-void SV_SpawnServer( char *server, qboolean killBots );
+void SV_SpawnServer( const char *mapname, qboolean killBots );
 
 
 

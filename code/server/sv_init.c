@@ -408,7 +408,7 @@ clients along with it.
 This is NOT called for map_restart
 ================
 */
-void SV_SpawnServer( char *server, qboolean killBots ) {
+void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	int			i;
 	int			checksum;
 	qboolean	isBot;
@@ -418,8 +418,8 @@ void SV_SpawnServer( char *server, qboolean killBots ) {
 	// shut down the existing game if it is running
 	SV_ShutdownGameProgs();
 
-	Com_Printf ("------ Server Initialization ------\n");
-	Com_Printf ("Server: %s\n",server);
+	Com_Printf( "------ Server Initialization ------\n" );
+	Com_Printf( "Server: %s\n", mapname );
 
 	Sys_SetStatus( "Initializing server..." );
 
@@ -464,7 +464,7 @@ void SV_SpawnServer( char *server, qboolean killBots ) {
 
 	// set nextmap to the same map, but it may be overriden
 	// by the game startup or another console command
-	Cvar_Set( "nextmap", "map_restart 0");
+	Cvar_Set( "nextmap", "map_restart 0" );
 //	Cvar_Set( "nextmap", va("map %s", server) );
 
 	for (i=0 ; i<sv_maxclients->integer ; i++) {
@@ -488,18 +488,19 @@ void SV_SpawnServer( char *server, qboolean killBots ) {
 	sv.checksumFeed = ( ((int) rand() << 16) ^ rand() ) ^ Com_Milliseconds();
 	FS_Restart( sv.checksumFeed );
 
-	CM_LoadMap( va("maps/%s.bsp", server), qfalse, &checksum );
+	Sys_SetStatus( "Loading map %s", mapname );
+	CM_LoadMap( va( "maps/%s.bsp", mapname ), qfalse, &checksum );
 
 	// set serverinfo visible name
-	Cvar_Set( "mapname", server );
+	Cvar_Set( "mapname", mapname );
 
-	Cvar_Set( "sv_mapChecksum", va("%i",checksum) );
+	Cvar_Set( "sv_mapChecksum", va( "%i",checksum ) );
 
 	// serverid should be different each time
 	sv.serverId = com_frameTime;
 	sv.restartedServerId = sv.serverId; // I suppose the init here is just to be safe
 	sv.checksumFeedServerId = sv.serverId;
-	Cvar_Set( "sv_serverid", va("%i", sv.serverId ) );
+	Cvar_Set( "sv_serverid", va( "%i", sv.serverId ) );
 
 	// clear physics interaction links
 	SV_ClearWorld ();
@@ -631,7 +632,7 @@ void SV_SpawnServer( char *server, qboolean killBots ) {
 
 	Com_Printf ("-----------------------------------\n");
 
-	Sys_SetStatus( "Running map %s", server );
+	Sys_SetStatus( "Running map %s", mapname );
 }
 
 /*
@@ -736,7 +737,7 @@ not just stuck on the outgoing message list, because the server is going
 to totally exit after returning from this function.
 ==================
 */
-void SV_FinalMessage( char *message ) {
+void SV_FinalMessage( const char *message ) {
 	int			i, j;
 	client_t	*cl;
 	
@@ -766,7 +767,7 @@ Called when each game quits,
 before Sys_Quit or Sys_Error
 ================
 */
-void SV_Shutdown( char *finalmsg ) {
+void SV_Shutdown( const char *finalmsg ) {
 	if ( !com_sv_running || !com_sv_running->integer ) {
 		return;
 	}
