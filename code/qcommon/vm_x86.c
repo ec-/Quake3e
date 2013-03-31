@@ -1251,10 +1251,10 @@ qboolean ConstOptimize( vm_t *vm )
 		if ( !EmitMovEAXEDI( vm ) && (ni+1)->op == OP_LOAD4 /*&& ISS8( v ) */ ) 
 		{
 			if ( ISS8( v ) ) {
-				EmitRexString( 0x48, "8B 44 03" ); // mov eax, dword ptr [ebx + eax + 0x7F]
+				EmitString( "8B 44 03" ); // mov eax, dword ptr [ebx + eax + 0x7F]
 				Emit1( v );
 			} else {
-				EmitRexString( 0x48, "8B 84 03" ); // mov eax, dword ptr [ebx + eax + 0x12345678]
+				EmitString( "8B 84 03" ); // mov eax, dword ptr [ebx + eax + 0x12345678]
 				Emit4( v );
 			}
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
@@ -2295,7 +2295,7 @@ __compile:
 				EmitString( "8B 04 03" );						// mov	eax, dword ptr [ebx + eax]
 				if ( ni->op == OP_CONST && ISS8( ni->value ) && (ni+1)->op == OP_ADD && (ni+2)->op == OP_LOAD4 ) 
 				{
-					EmitRexString( 0x48, "8B 44 03" ); // mov eax, dword ptr [ebx + eax + 0x7F]
+					EmitString( "8B 44 03" ); // mov eax, dword ptr [ebx + eax + 0x7F]
 					Emit1( ni->value );
 					ip += 3; // OP_CONST + OP_ADD + OP_LOAD
 				}
