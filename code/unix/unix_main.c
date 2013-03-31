@@ -61,12 +61,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "linux_local.h" // bk001204
 
-#if idppc_altivec
-  #ifdef MACOS_X
-    #include <sys/sysctl.h>
-  #endif
-#endif
-
 unsigned  sys_frame_time;
 
 qboolean stdin_active = qtrue;
@@ -78,12 +72,15 @@ qboolean stdin_active = qtrue;
 // enable/disabled tty input mode
 // NOTE TTimo this is used during startup, cannot be changed during run
 static cvar_t *ttycon = NULL;
+
 // general flag to tell about tty console mode
 static qboolean ttycon_on = qfalse;
+
 // when printing general stuff to stdout stderr (Sys_Printf)
 //   we need to disable the tty console stuff
 // this increments so we can recursively disable
 static int ttycon_hide = 0;
+
 // some key codes that the terminal may be using
 // TTimo NOTE: I'm not sure how relevant this is
 static int tty_erase;
@@ -117,21 +114,25 @@ void Sys_ConsoleInputInit( void );
 Sys_LowPhysicalMemory()
 ==================
 */
-qboolean Sys_LowPhysicalMemory() {
+qboolean Sys_LowPhysicalMemory() 
+{
   //MEMORYSTATUS stat;
   //GlobalMemoryStatus (&stat);
   //return (stat.dwTotalPhys <= MEM_THRESHOLD) ? qtrue : qfalse;
   return qfalse; // bk001207 - FIXME
 }
 
+
 /*
 ==================
 Sys_FunctionCmp
 ==================
 */
-int Sys_FunctionCmp(void *f1, void *f2) {
-  return qtrue;
+int Sys_FunctionCmp( void *f1, void *f2 )
+{
+	return qtrue;
 }
+
 
 /*
 ==================
@@ -143,19 +144,12 @@ int Sys_FunctionCheckSum(void *f1)
 	return 0;
 }
 
-/*
-==================
-Sys_MonkeyShouldBeSpanked
-==================
-*/
-int Sys_MonkeyShouldBeSpanked( void )
-{
-	return 0;
-}
 
 void Sys_BeginProfiling( void )
 {
+
 }
+
 
 /*
 =================
@@ -170,6 +164,7 @@ void Sys_In_Restart_f( void )
 	IN_Init();
 }
 
+
 // =============================================================
 // tty console routines
 // NOTE: if the user is editing a line when something gets printed to the early console then it won't look good
@@ -183,6 +178,7 @@ void tty_FlushIn( void )
 	char key;
 	while ( read( STDIN_FILENO, &key, 1 ) != -1 );
 }
+
 
 // do a backspace
 // TTimo NOTE: it seems on some terminals just sending '\b' is not enough
@@ -200,6 +196,7 @@ void tty_Back( void )
 	key = '\b';
 	size = write( STDOUT_FILENO, &key, 1 );
 }
+
 
 // clear the display of the line currently edited
 // bring cursor back to beginning of line
@@ -226,6 +223,7 @@ void tty_Hide( void )
 	ttycon_hide++;
 }
 
+
 // show the current line
 // FIXME TTimo need to position the cursor if needed??
 void tty_Show( void )
@@ -243,13 +241,14 @@ void tty_Show( void )
 		size = write( STDOUT_FILENO, "]", 1 ); // -EC-
 		if ( tty_con.cursor )
 		{
-			for ( i=0; i < tty_con.cursor; i++ )
+			for ( i = 0; i < tty_con.cursor; i++ )
 			{
 				size = write( STDOUT_FILENO, tty_con.buffer+i, 1 );
 			}
 		}
 	}
 }
+
 
 // never exit without calling this, or your terminal will be left in a pretty bad state
 void Sys_ConsoleInputShutdown( void )
@@ -264,6 +263,7 @@ void Sys_ConsoleInputShutdown( void )
 	// Restore blocking to stdin reads
 	fcntl( STDIN_FILENO, F_SETFL, fcntl( STDIN_FILENO, F_GETFL, 0 ) & ~O_NONBLOCK );
 }
+
 
 void Hist_Add(field_t *field)
 {
@@ -285,6 +285,7 @@ void Hist_Add(field_t *field)
 	hist_current = -1; // re-init
 }
 
+
 field_t *Hist_Prev( void )
 {
 	int hist_prev;
@@ -300,6 +301,7 @@ field_t *Hist_Prev( void )
 	hist_current++;
 	return &(ttyEditLines[hist_current]);
 }
+
 
 field_t *Hist_Next( void )
 {
@@ -318,6 +320,7 @@ field_t *Hist_Next( void )
 	return &(ttyEditLines[hist_current]);
 }
 
+
 /*
 ==================
 CON_SigCont
@@ -325,43 +328,15 @@ Reinitialize console input after receiving SIGCONT, as on Linux the terminal see
 set attributes if user did CTRL+Z and then does fg again.
 ==================
 */
-
 void CON_SigCont( int signum )
 {
 	Sys_ConsoleInputInit();
 }
 
 
-
 // =============================================================
 // general sys routines
 // =============================================================
-
-#if 0
-// NOTE TTimo this is not used .. looks interesting though? protection against buffer overflow kind of stuff?
-void Sys_Printf (char *fmt, ...)
-{
-  va_list   argptr;
-  char    text[1024];
-  unsigned char   *p;
-
-  va_start (argptr,fmt);
-  vsprintf (text,fmt,argptr);
-  va_end (argptr);
-
-  if (strlen(text) > sizeof(text))
-    Sys_Error( "memory overwrite in Sys_Printf" );
-
-  for (p = (unsigned char *)text; *p; p++)
-  {
-    *p &= 0x7f;
-    if ((*p > 128 || *p < 32) && *p != 10 && *p != 13 && *p != 9)
-      printf("[%02x]", *p);
-    else
-      putc(*p, stdout);
-  }
-}
-#endif
 
 // single exit point (regular exit or in case of signal fault)
 void Sys_Exit( int ex ) 
@@ -369,13 +344,11 @@ void Sys_Exit( int ex )
 	Sys_ConsoleInputShutdown();
 
 #ifdef NDEBUG // regular behavior
-
 	// We can't do this 
 	//  as long as GL DLL's keep installing with atexit...
 	//exit(ex);
 	_exit(ex);
 #else
-
 	// Give me a backtrace on error exits.
 	assert( ex == 0 );
 	exit( ex );
@@ -391,54 +364,10 @@ void Sys_Quit( void )
 }
 
 
-#if idppc_altivec && !MACOS_X
-/* This is the brute force way of detecting instruction sets...
-   the code is borrowed from SDL, which got the idea from the libmpeg2
-   library - thanks!
- */
-#include <signal.h>
-#include <setjmp.h>
-static jmp_buf jmpbuf;
-static void illegal_instruction(int sig)
-{
-    longjmp(jmpbuf, 1);
-}
-#endif
-
-qboolean Sys_DetectAltivec( void )
-{
-    qboolean altivec = qfalse;
-
-#if idppc_altivec
-    #ifdef MACOS_X
-    int selectors[2] = { CTL_HW, HW_VECTORUNIT };
-    int hasVectorUnit = 0;
-    size_t length = sizeof(hasVectorUnit);
-    int error = sysctl(selectors, 2, &hasVectorUnit, &length, NULL, 0);
-
-    if( 0 == error )
-        altivec = (hasVectorUnit != 0);
-    #else
-    void (*handler)(int sig);
-    handler = signal(SIGILL, illegal_instruction);
-    if ( setjmp(jmpbuf) == 0 ) {
-        asm volatile ("mtspr 256, %0\n\t"
-                      "vand %%v0, %%v0, %%v0"
-                        :
-                        : "r" (-1));
-        altivec = qtrue;
-    }
-    signal(SIGILL, handler);
-    #endif
-#endif
-
-    return altivec;
-}
-
-void Sys_Init(void)
+void Sys_Init( void )
 {
 
-  Cmd_AddCommand ("in_restart", Sys_In_Restart_f);
+  Cmd_AddCommand( "in_restart", Sys_In_Restart_f );
 
   Cvar_Set( "arch", OS_STRING " " ARCH_STRING );
 
@@ -448,70 +377,33 @@ void Sys_Init(void)
 
 }
 
-void  Sys_Error( const char *error, ...)
+
+void Sys_Error( const char *format, ... )
 { 
-  va_list     argptr;
-  char        string[1024];
+	va_list     argptr;
+	char        text[1024];
 
   // change stdin to non blocking
   // NOTE TTimo not sure how well that goes with tty console mode
   fcntl( STDIN_FILENO, F_SETFL, fcntl( STDIN_FILENO, F_GETFL, 0) & ~FNDELAY );
 
-  // don't bother do a show on this one heh
-  if ( ttycon_on )
-  {
-    tty_Hide();
-  }
+	// don't bother do a show on this one heh
+	if ( ttycon_on )
+	{
+		tty_Hide();
+	}
 
-  va_start( argptr,error );
-  Q_vsnprintf( string, sizeof(string), error, argptr );
-  va_end( argptr );
+	va_start( argptr, format );
+	Q_vsnprintf( text, sizeof( text ), format, argptr );
+	va_end( argptr );
 
-  CL_Shutdown( string );
+	CL_Shutdown( text );
 
-  fprintf( stderr, "Sys_Error: %s\n", string );
+	fprintf( stderr, "Sys_Error: %s\n", text );
 
-  Sys_Exit( 1 ); // bk010104 - use single exit point.
+	Sys_Exit( 1 ); // bk010104 - use single exit point.
 }
 
-void Sys_Warn (char *warning, ...)
-{ 
-  va_list     argptr;
-  char        string[1024];
-
-  va_start (argptr,warning);
-  vsprintf (string,warning,argptr);
-  va_end (argptr);
-
-  if ( ttycon_on )
-  {
-    tty_Hide();
-  }
-
-  fprintf(stderr, "Warning: %s", string);
-
-  if ( ttycon_on )
-  {
-    tty_Show();
-  }
-} 
-
-/*
-============
-Sys_FileTime
-
-returns -1 if not present
-============
-*/
-int Sys_FileTime (char *path)
-{
-  struct  stat  buf;
-
-  if (stat (path,&buf) == -1)
-    return -1;
-
-  return buf.st_mtime;
-}
 
 void floating_point_exception_handler( int whatever )
 {
@@ -568,7 +460,7 @@ void Sys_ConsoleInputInit( void )
      ISIG: when any of the characters  INTR,  QUIT,  SUSP,  or
               DSUSP are received, generate the corresponding sig­
               nal
-    */              
+    */
     tc.c_lflag &= ~(ECHO | ICANON);
     /*
      ISTRIP strip off bit 8
@@ -795,7 +687,7 @@ void Sys_Sleep( int msec ) {
 			}
 		} else {
 			if ( msec < 0 ) { 
-				// can happen only if no map loaded	
+				// can happen only if no map loaded
 				// which means we totally stuck as stdin is also disabled :P
 				usleep( 10000 );
 			}
@@ -830,96 +722,90 @@ changed the load procedure to match VFS logic, and allow developer use
 #3 look in fs_basepath
 =================
 */
-
-static void* try_dlopen(const char* base, const char* gamedir, const char* fname )
+static void* try_dlopen( const char* base, const char* gamedir, const char* fname )
 {
-  void* libHandle;
-  char* fn;
+	void* libHandle;
+	char* fn;
 
-// bk001129 - was RTLD_LAZY 
-#define Q_RTLD    RTLD_NOW
+	fn = FS_BuildOSPath( base, gamedir, fname );
+	Com_Printf( "Sys_LoadDll(%s)... \n", fn );
 
-  fn = FS_BuildOSPath( base, gamedir, fname );
-  Com_Printf( "Sys_LoadDll(%s)... \n", fn );
+	libHandle = dlopen( fn, RTLD_NOW );
 
-  libHandle = dlopen( fn, Q_RTLD );
+	if( !libHandle ) 
+	{
+    	Com_Printf( "Sys_LoadDll(%s) failed:\n\"%s\"\n", fn, do_dlerror() );
+		return NULL;
+	}
 
-  if(!libHandle) {
-    Com_Printf( "Sys_LoadDll(%s) failed:\n\"%s\"\n", fn, do_dlerror() );
-    return NULL;
-  }
+	Com_Printf ( "Sys_LoadDll(%s): succeeded ...\n", fn );
 
-  Com_Printf ( "Sys_LoadDll(%s): succeeded ...\n", fn );
-
-  return libHandle;
+	return libHandle;
 }
+
 
 void *Sys_LoadDll( const char *name, intptr_t (**entryPoint)(intptr_t, ...),
                    intptr_t (*systemcalls)(intptr_t, ...) ) 
 {
-  void *libHandle;
-  void  (*dllEntry)( intptr_t (*syscallptr)(intptr_t, ...) );
-  char  curpath[MAX_OSPATH];
-  char  fname[MAX_OSPATH];
-  char  *basepath;
-  char  *homepath;
-  char  *gamedir;
-  const char  *pwdpath;
-  const char*  err = NULL;
-	
-  // bk001206 - let's have some paranoia
-  assert( name );
+	void *libHandle;
+	void  (*dllEntry)( intptr_t (*syscallptr)(intptr_t, ...) );
+	char  curpath[MAX_OSPATH];
+	char  fname[MAX_OSPATH];
+	char  *basepath;
+	char  *homepath;
+	char  *gamedir;
+	const char  *pwdpath;
+	const char*  err = NULL;
 
-  getcwd(curpath, sizeof(curpath));
-  snprintf (fname, sizeof(fname), "%s" ARCH_STRING DLL_EXT, name);
+	assert( name ); // let's have some paranoia
 
-  // TODO: use fs_searchpaths from files.c
-  pwdpath = Sys_Pwd();
-  basepath = Cvar_VariableString( "fs_basepath" );
-  homepath = Cvar_VariableString( "fs_homepath" );
-  gamedir = Cvar_VariableString( "fs_game" );
+	getcwd( curpath, sizeof( curpath ) );
+	snprintf( fname, sizeof( fname ), "%s" ARCH_STRING DLL_EXT, name );
 
-  libHandle = try_dlopen( pwdpath, gamedir, fname );
+	// TODO: use fs_searchpaths from files.c
+	pwdpath = Sys_Pwd();
+	basepath = Cvar_VariableString( "fs_basepath" );
+	homepath = Cvar_VariableString( "fs_homepath" );
+	gamedir = Cvar_VariableString( "fs_game" );
 
-  if( !libHandle && homepath )
-     libHandle = try_dlopen( homepath, gamedir, fname );
+	libHandle = try_dlopen( pwdpath, gamedir, fname );
 
-  if( !libHandle && basepath )
-     libHandle = try_dlopen( basepath, gamedir, fname );
+	if ( !libHandle && homepath && homepath[0] )
+		libHandle = try_dlopen( homepath, gamedir, fname );
 
-  if(!libHandle) {
-#if 0 // don't abort -- ln
-//#ifndef NDEBUG // bk001206 - in debug abort on failure
-    Com_Error ( ERR_FATAL, "Sys_LoadDll(%s) failed dlopen() completely!\n", name  );
-#else
-    Com_Printf ( "Sys_LoadDll(%s) failed dlopen() completely!\n", name );
-#endif
-    return NULL;
-  }
+	if( !libHandle && basepath && basepath[0] )
+		libHandle = try_dlopen( basepath, gamedir, fname );
 
-  dllEntry = dlsym( libHandle, "dllEntry" );
-  *entryPoint = dlsym( libHandle, "vmMain" );
+	if ( !libHandle ) 
+	{
+		Com_Printf ( "Sys_LoadDll(%s) failed dlopen() completely!\n", name );
+		return NULL;
+	}
 
-  if ( !*entryPoint || !dllEntry )
-  {
-    err = do_dlerror();
+	dllEntry = dlsym( libHandle, "dllEntry" );
+	*entryPoint = dlsym( libHandle, "vmMain" );
+
+	if ( !*entryPoint || !dllEntry )
+	{
+		err = do_dlerror();
 #ifndef NDEBUG // bk001206 - in debug abort on failure
-    Com_Error ( ERR_FATAL, "Sys_LoadDll(%s) failed dlsym(vmMain):\n\"%s\" !\n", name, err );
+		Com_Error ( ERR_FATAL, "Sys_LoadDll(%s) failed dlsym(vmMain):\n\"%s\" !\n", name, err );
 #else
-    Com_Printf ( "Sys_LoadDll(%s) failed dlsym(vmMain):\n\"%s\" !\n", name, err );
+		Com_Printf ( "Sys_LoadDll(%s) failed dlsym(vmMain):\n\"%s\" !\n", name, err );
 #endif
-    dlclose( libHandle );
-    err = do_dlerror();
-    if ( err != NULL ) {
-      Com_Printf ( "Sys_LoadDll(%s) failed dlcose:\n\"%s\"\n", name, err );
-    }
+		dlclose( libHandle );
+		err = do_dlerror();
+		if ( err != NULL ) 
+		{
+			Com_Printf( "Sys_LoadDll(%s) failed dlcose:\n\"%s\"\n", name, err );
+		}
 
-    return NULL;
-  }
-  Com_Printf ( "Sys_LoadDll(%s) found **vmMain** at  %p  \n", name, *entryPoint ); // bk001212
-  dllEntry( systemcalls );
-  Com_Printf ( "Sys_LoadDll(%s) succeeded!\n", name );
-  return libHandle;
+		return NULL;
+	}
+	Com_Printf( "Sys_LoadDll(%s) found **vmMain** at  %p  \n", name, *entryPoint ); // bk001212
+	dllEntry( systemcalls );
+	Com_Printf( "Sys_LoadDll(%s) succeeded!\n", name );
+	return libHandle;
 }
 
 
@@ -1085,11 +971,11 @@ sysEvent_t Sys_GetEvent( void )
 
 /*****************************************************************************/
 
-void Sys_AppActivate (void)
+void Sys_AppActivate( void )
 {
 }
 
-char *Sys_GetClipboardData(void)
+char *Sys_GetClipboardData( void )
 {
   return NULL;
 }
@@ -1210,45 +1096,49 @@ void QDECL Sys_SetStatus( const char *format, ... )
 }
 
 
-void    Sys_ConfigureFPU( void ) { // bk001213 - divide by zero
+void Sys_ConfigureFPU( void )  // bk001213 - divide by zero
+{
 #ifdef __linux__
 #ifdef __i386
 #ifndef NDEBUG
-
-  // bk0101022 - enable FPE's in debug mode
-  static int fpu_word = _FPU_DEFAULT & ~(_FPU_MASK_ZM | _FPU_MASK_IM);
-  int current = 0;
-  _FPU_GETCW(current);
-  if ( current!=fpu_word)
-  {
+	// bk0101022 - enable FPE's in debug mode
+	static int fpu_word = _FPU_DEFAULT & ~(_FPU_MASK_ZM | _FPU_MASK_IM);
+	int current = 0;
+	_FPU_GETCW( current );
+	if ( current!=fpu_word)
+	{
 #if 0
-    Com_Printf("FPU Control 0x%x (was 0x%x)\n", fpu_word, current );
-    _FPU_SETCW( fpu_word );
-    _FPU_GETCW( current );
-    assert(fpu_word==current);
+		Com_Printf("FPU Control 0x%x (was 0x%x)\n", fpu_word, current );
+		_FPU_SETCW( fpu_word );
+		_FPU_GETCW( current );
+		assert(fpu_word==current);
 #endif
-  }
+	}
 #else // NDEBUG
-  static int fpu_word = _FPU_DEFAULT;
-  _FPU_SETCW( fpu_word );
+	static int fpu_word = _FPU_DEFAULT;
+	_FPU_SETCW( fpu_word );
 #endif // NDEBUG
 #endif // __i386 
 #endif // __linux
 }
 
-void Sys_PrintBinVersion( const char* name ) {
-  char* date = __DATE__;
-  char* time = __TIME__;
-  char* sep = "==============================================================";
-  fprintf( stdout, "\n\n%s\n", sep );
+
+void Sys_PrintBinVersion( const char* name ) 
+{
+	const char *date = __DATE__;
+	const char *time = __TIME__;
+	const char *sep = "==============================================================";
+
+	fprintf( stdout, "\n\n%s\n", sep );
 #ifdef DEDICATED
-  fprintf( stdout, "Linux Quake3 Dedicated Server [%s %s]\n", date, time );  
+	fprintf( stdout, "Linux Quake3 Dedicated Server [%s %s]\n", date, time );
 #else
-  fprintf( stdout, "Linux Quake3 Full Executable  [%s %s]\n", date, time );  
+	fprintf( stdout, "Linux Quake3 Full Executable  [%s %s]\n", date, time );
 #endif
-  fprintf( stdout, " local install: %s\n", name );
-  fprintf( stdout, "%s\n\n", sep );
+	fprintf( stdout, " local install: %s\n", name );
+	fprintf( stdout, "%s\n\n", sep );
 }
+
 
 /*
 =================
@@ -1259,83 +1149,54 @@ builds because there are situations where you are likely to want
 to symlink to binaries and /not/ have the links resolved.
 =================
 */
-char *Sys_BinName( const char *arg0 )
+const char *Sys_BinName( const char *arg0 )
 {
-  static char   dst[ PATH_MAX ];
+	static char   dst[ PATH_MAX ];
 
 #ifdef NDEBUG
 
 #ifdef __linux__
-  int n = readlink( "/proc/self/exe", dst, PATH_MAX - 1 );
+	int n = readlink( "/proc/self/exe", dst, PATH_MAX - 1 );
 
-  if( n >= 0 && n < PATH_MAX )
-    dst[ n ] = '\0';
-  else
-    Q_strncpyz( dst, arg0, PATH_MAX );
+	if ( n >= 0 && n < PATH_MAX )
+		dst[ n ] = '\0';
+	else
+	Q_strncpyz( dst, arg0, PATH_MAX );
 #else
 #warning Sys_BinName not implemented
-  Q_strncpyz( dst, arg0, PATH_MAX );
+	Q_strncpyz( dst, arg0, PATH_MAX );
 #endif
 
 #else
-  Q_strncpyz( dst, arg0, PATH_MAX );
+	Q_strncpyz( dst, arg0, PATH_MAX );
 #endif
 
-  return dst;
+	return dst;
 }
 
-void Sys_ParseArgs( int argc, char* argv[] ) {
 
-  if ( argc==2 )
-  {
-    if ( (!strcmp( argv[1], "--version" ))
-         || ( !strcmp( argv[1], "-v" )) )
-    {
-      Sys_PrintBinVersion( Sys_BinName( argv[0] ) );
-      Sys_Exit(0);
-    }
-  }
-}
-
-#ifdef MACOS_X
-/* 
-=================
-Sys_EscapeAppBundle
-
-Discovers if passed dir is suffixed with the directory structure of a
-Mac OS X .app bundle.  If it is, the .app directory structure is stripped off
-the end and the result is returned.   If not, dir is returned untouched. 
-
-=================
-*/
-char *Sys_StripAppBundle(char *dir)
+int Sys_ParseArgs( int argc, char* argv[] ) 
 {
-	static char cwd[MAX_OSPATH];
+	if ( argc == 2 )
+	{
+		if ( ( !strcmp( argv[1], "--version" ) ) || ( !strcmp( argv[1], "-v" ) ) )
+		{
+			Sys_PrintBinVersion( Sys_BinName( argv[0] ) );
+			return 1;
+		}
+	}
 
-	Q_strncpyz(cwd, dir, sizeof(cwd));
-	if(strcmp(basename(cwd), "MacOS"))
-		return dir;
-	Q_strncpyz(cwd, dirname(cwd), sizeof(cwd));
-	if(strcmp(basename(cwd), "Contents"))
-		return dir;
-	Q_strncpyz(cwd, dirname(cwd), sizeof(cwd));
-	if(!strstr(basename(cwd), ".app"))
-		return dir;
-	Q_strncpyz(cwd, dirname(cwd), sizeof(cwd));
-	return cwd;	
+	return 0;
 }
-#endif /* MACOS_X */
 
 
-#include "../client/client.h"
-extern clientStatic_t cls;
-
-int main ( int argc, char* argv[] )
+int main( int argc, char* argv[] )
 {
 	int   len, i;
 	char  *cmdline;
 
-	Sys_ParseArgs( argc, argv );  // bk010104 - added this for support
+	if ( Sys_ParseArgs( argc, argv ) ) // added this for support
+		return 0;
 
 	// merge the command line, this is kinda silly
 	for ( len = 1, i = 1; i < argc; i++ )
@@ -1351,13 +1212,13 @@ int main ( int argc, char* argv[] )
 	}
 
 	// bk000306 - clear queues
-	memset( &eventQue[0], 0, MAX_QUED_EVENTS*sizeof(sysEvent_t) ); 
-	memset( &sys_packetReceived[0], 0, MAX_MSGLEN*sizeof(byte) );
+	memset( &eventQue[0], 0, sizeof( eventQue ) );
+	memset( &sys_packetReceived[0], 0, sizeof( sys_packetReceived ) );
 
 	// get the initial time base
 	Sys_Milliseconds();
 
-	Com_Init(cmdline);
+	Com_Init( cmdline );
 	NET_Init();
 
 	Com_Printf( "Working directory: %s\n", Sys_Pwd() );
@@ -1377,8 +1238,7 @@ int main ( int argc, char* argv[] )
 #ifdef __linux__
 		Sys_ConfigureFPU();
 #endif
-		Com_Frame ();
+		Com_Frame();
 	}
 	return 0;
 }
-
