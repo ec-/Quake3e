@@ -1025,11 +1025,7 @@ Q3DOBJ = \
   \
   $(B)/ded/linux_signals.o \
   $(B)/ded/unix_main.o \
-  $(B)/ded/unix_shared.o \
-  \
-  $(B)/ded/null_client.o \
-  $(B)/ded/null_input.o \
-  $(B)/ded/null_snddma.o
+  $(B)/ded/unix_shared.o
 
 ifeq ($(ARCH),i386)
   Q3DOBJ += \

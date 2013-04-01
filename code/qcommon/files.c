@@ -1246,7 +1246,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	long			hash;
 	unz_s			*zfi;
 	FILE			*temp;
-	int				l, length;
+	int				length;
 	fileHandleData_t *f;
 	//char demoExt[16];
 
@@ -1282,7 +1282,6 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 				} while ( pakFile != NULL );
 			} else if ( search->dir ) {
 				dir = search->dir;
-			
 				netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
 				temp = Sys_FOpen( netpath, "rb" );
 				if ( !temp ) {
@@ -1347,9 +1346,8 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 
 					// mark the pak as having been referenced and mark specifics on cgame and ui
 					// shaders, txt, arena files  by themselves do not count as a reference as 
-					// these are loaded from all pk3s 
-					// from every pk3 file.. 
-					l = strlen( filename );
+					// these are loaded from all pk3s
+					// from every pk3 file..
 					if ( !( pak->referenced & FS_GENERAL_REF ) ) {
 						if ( FS_GeneralRef( filename ) ) 
 							pak->referenced |= FS_GENERAL_REF;

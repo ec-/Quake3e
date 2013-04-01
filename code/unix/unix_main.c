@@ -158,11 +158,13 @@ Sys_In_Restart_f
 Restart the input subsystem
 =================
 */
-void Sys_In_Restart_f( void ) 
+#ifndef DEDICATED
+void Sys_In_Restart_f( void )
 {
 	IN_Shutdown();
 	IN_Init();
 }
+#endif
 
 
 // =============================================================
@@ -358,7 +360,9 @@ void Sys_Exit( int ex )
 
 void Sys_Quit( void )
 {
+#ifndef DEDICATED
 	CL_Shutdown( "" );
+#endif
 	fcntl( STDIN_FILENO, F_SETFL, fcntl( STDIN_FILENO, F_GETFL, 0 ) & ~FNDELAY );
 	Sys_Exit( 0 );
 }
@@ -367,7 +371,9 @@ void Sys_Quit( void )
 void Sys_Init( void )
 {
 
+#ifndef DEDICATED
   Cmd_AddCommand( "in_restart", Sys_In_Restart_f );
+#endif
 
   Cvar_Set( "arch", OS_STRING " " ARCH_STRING );
 
@@ -379,13 +385,13 @@ void Sys_Init( void )
 
 
 void Sys_Error( const char *format, ... )
-{ 
+{
 	va_list     argptr;
 	char        text[1024];
 
-  // change stdin to non blocking
-  // NOTE TTimo not sure how well that goes with tty console mode
-  fcntl( STDIN_FILENO, F_SETFL, fcntl( STDIN_FILENO, F_GETFL, 0) & ~FNDELAY );
+	// change stdin to non blocking
+	// NOTE TTimo not sure how well that goes with tty console mode
+	fcntl( STDIN_FILENO, F_SETFL, fcntl( STDIN_FILENO, F_GETFL, 0) & ~FNDELAY );
 
 	// don't bother do a show on this one heh
 	if ( ttycon_on )
@@ -397,7 +403,9 @@ void Sys_Error( const char *format, ... )
 	Q_vsnprintf( text, sizeof( text ), format, argptr );
 	va_end( argptr );
 
+#ifndef DEDICATED
 	CL_Shutdown( text );
+#endif
 
 	fprintf( stderr, "Sys_Error: %s\n", text );
 
@@ -409,6 +417,7 @@ void floating_point_exception_handler( int whatever )
 {
 	signal( SIGFPE, floating_point_exception_handler );
 }
+
 
 // initialize the console input (tty mode if wanted and possible)
 void Sys_ConsoleInputInit( void )
@@ -900,73 +909,77 @@ Sys_GetEvent
 */
 sysEvent_t Sys_GetEvent( void ) 
 {
-  sysEvent_t  ev;
-  char    *s;
-  msg_t   netmsg;
-  netadr_t  adr;
+	sysEvent_t  ev;
+	char    *s;
+	msg_t   netmsg;
+	netadr_t  adr;
 
-  // return if we have data
-  if ( eventHead > eventTail )
-  {
-    eventTail++;
-    return eventQue[ ( eventTail - 1 ) & MASK_QUED_EVENTS ];
-  }
-
-  // pump the message loop
-  // in vga this calls KBD_Update, under X, it calls GetEvent
-  Sys_SendKeyEvents();
-
-  // check for console commands
-  s = Sys_ConsoleInput();
-  if ( s )
-  {
-    char  *b;
-    int   len;
-
-    len = strlen( s ) + 1;
-    b = Z_Malloc( len );
-	if ( len > 1 && (*s == '/' || *s == '\\') )
+	// return if we have data
+	if ( eventHead > eventTail )
 	{
-		strcpy( b, s+1 );
-		len--;
+		eventTail++;
+		return eventQue[ ( eventTail - 1 ) & MASK_QUED_EVENTS ];
 	}
-	else
+
+	// pump the message loop
+	// in vga this calls KBD_Update, under X, it calls GetEvent
+#ifndef DEDICATED
+	Sys_SendKeyEvents();
+#endif
+
+	// check for console commands
+	s = Sys_ConsoleInput();
+	if ( s )
 	{
-	    strcpy( b, s );
+		char  *b;
+		int   len;
+
+		len = strlen( s ) + 1;
+		b = Z_Malloc( len );
+		if ( len > 1 && (*s == '/' || *s == '\\') )
+		{
+			strcpy( b, s+1 );
+			len--;
+		}
+		else
+		{
+			strcpy( b, s );
+		}
+		Sys_QueEvent( 0, SE_CONSOLE, 0, 0, len, b );
 	}
-    Sys_QueEvent( 0, SE_CONSOLE, 0, 0, len, b );
-  }
 
-  // check for other input devices
-  IN_Frame();
+#ifndef DEDICATED
+	// check for other input devices
+	IN_Frame();
+#endif
 
-  // check for network packets
-  MSG_Init( &netmsg, sys_packetReceived, sizeof( sys_packetReceived ) );
-  if ( Sys_GetPacket ( &adr, &netmsg ) )
-  {
-    netadr_t    *buf;
-    int       len;
+	// check for network packets
+	MSG_Init( &netmsg, sys_packetReceived, sizeof( sys_packetReceived ) );
+	if ( Sys_GetPacket ( &adr, &netmsg ) )
+	{
+		netadr_t *buf;
+		int      len;
 
-    // copy out to a seperate buffer for qeueing
-    len = sizeof( netadr_t ) + netmsg.cursize;
-    buf = Z_Malloc( len );
-    *buf = adr;
-    memcpy( buf+1, netmsg.data, netmsg.cursize );
-    Sys_QueEvent( 0, SE_PACKET, 0, 0, len, buf );
-  }
+		// copy out to a seperate buffer for qeueing
+		len = sizeof( netadr_t ) + netmsg.cursize;
+		buf = Z_Malloc( len );
+		*buf = adr;
+		memcpy( buf+1, netmsg.data, netmsg.cursize );
+		Sys_QueEvent( 0, SE_PACKET, 0, 0, len, buf );
+	}
 
-  // return if we have data
-  if ( eventHead > eventTail )
-  {
-    eventTail++;
-    return eventQue[ ( eventTail - 1 ) & MASK_QUED_EVENTS ];
-  }
+	// return if we have data
+	if ( eventHead > eventTail )
+	{
+		eventTail++;
+		return eventQue[ ( eventTail - 1 ) & MASK_QUED_EVENTS ];
+	}
 
-  // create an empty event to return
-  memset( &ev, 0, sizeof( ev ) );
-  ev.evTime = Sys_Milliseconds();
+	// create an empty event to return
+	memset( &ev, 0, sizeof( ev ) );
+	ev.evTime = Sys_Milliseconds();
 
-  return ev;
+	return ev;
 }
 
 /*****************************************************************************/
