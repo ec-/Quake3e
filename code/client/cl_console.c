@@ -52,7 +52,6 @@ typedef struct {
 	vec4_t	color;
 } console_t;
 
-extern	console_t	con;
 extern  qboolean    chat_team;
 extern  int         chat_playerNum;
 
@@ -259,7 +258,7 @@ void Con_CheckResize( void )
 
 	if ( width == con.linewidth )
 		return;
-
+	
 	if ( width < 1 )			// video hasn't been initialized yet
 	{
 		width = DEFAULT_CONSOLE_WIDTH;
@@ -388,7 +387,7 @@ All console printing must go through this in order to be logged to disk
 If no console is visible, the text will appear at the top of the game window
 ================
 */
-void CL_ConsolePrint( char *txt ) {
+void CL_ConsolePrint( const char *txt ) {
 	int		y;
 	int		c, l;
 	int		color;
@@ -662,14 +661,18 @@ void Con_DrawSolidConsole( float frac ) {
 	y = yf;
 
 	// draw the version number
-	re.SetColor( g_color_table[ColorIndex(COLOR_RED)] );
+	re.SetColor( g_color_table[ ColorIndex( COLOR_RED ) ] );
 
+	SCR_DrawSmallString( cls.glconfig.vidWidth - ( ARRAY_LEN( Q3_VERSION ) ) * SMALLCHAR_WIDTH, 
+		lines - SMALLCHAR_HEIGHT, Q3_VERSION, ARRAY_LEN( Q3_VERSION ) - 1 );
+/*
 	i = strlen( Q3_VERSION );
 
 	for ( x = 0 ; x < i ; x++ ) {
 		SCR_DrawSmallChar( cls.glconfig.vidWidth - ( i - x + 1 ) * SMALLCHAR_WIDTH,
 			lines - SMALLCHAR_HEIGHT, Q3_VERSION[x] );
 	}
+*/
 
 	// draw the text
 	con.vislines = lines;
@@ -803,16 +806,28 @@ void Con_RunConsole (void) {
 }
 
 
-void Con_PageUp( void ) {
-	con.display -= 2;
+void Con_PageUp( int lines ) {
+	if ( lines == 0 ) {
+		lines = (cls.glconfig.vidHeight / ( SMALLCHAR_HEIGHT * 2 ) ) - 2;
+		if ( lines < 0 ) {
+			lines = 2;
+		}
+	}
+	con.display -= lines;
 	if ( con.current - con.display >= con.totallines ) {
 		con.display = con.current - con.totallines + 1;
 	}
 }
 
-void Con_PageDown( void ) {
-	con.display += 2;
-	if (con.display > con.current) {
+void Con_PageDown( int lines ) {
+	if ( lines == 0 ) {
+		lines = (cls.glconfig.vidHeight / ( SMALLCHAR_HEIGHT * 2 ) ) - 2;
+		if ( lines < 0 ) {
+			lines = 2;
+		}
+	}
+	con.display += lines;
+	if ( con.display > con.current ) {
 		con.display = con.current;
 	}
 }

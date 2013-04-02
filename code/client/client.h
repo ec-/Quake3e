@@ -474,16 +474,16 @@ qboolean CL_UpdateVisiblePings_f( int source );
 //
 void Con_DrawCharacter (int cx, int line, int num);
 
-void Con_CheckResize (void);
-void Con_Init (void);
-void Con_Clear_f (void);
-void Con_ToggleConsole_f (void);
-void Con_DrawNotify (void);
-void Con_ClearNotify (void);
-void Con_RunConsole (void);
-void Con_DrawConsole (void);
-void Con_PageUp( void );
-void Con_PageDown( void );
+void Con_CheckResize( void );
+void Con_Init( void );
+void Con_Clear_f( void );
+void Con_ToggleConsole_f( void );
+void Con_DrawNotify( void );
+void Con_ClearNotify( void );
+void Con_RunConsole( void );
+void Con_DrawConsole( void );
+void Con_PageUp( int lines );
+void Con_PageDown( int lines );
 void Con_Top( void );
 void Con_Bottom( void );
 void Con_Close( void );
@@ -511,7 +511,7 @@ void	SCR_DrawBigString( int x, int y, const char *s, float alpha, qboolean noCol
 void	SCR_DrawBigStringColor( int x, int y, const char *s, vec4_t color, qboolean noColorEscape );	// ignores embedded color control characters
 void	SCR_DrawSmallStringExt( int x, int y, const char *string, float *setColor, qboolean forceColor, qboolean noColorEscape );
 void	SCR_DrawSmallChar( int x, int y, int ch );
-
+void	SCR_DrawSmallString( int x, int y, const char *s, int len );
 
 //
 // cl_cin.c

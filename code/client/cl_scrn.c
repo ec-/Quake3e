@@ -187,6 +187,37 @@ void SCR_DrawSmallChar( int x, int y, int ch ) {
 
 
 /*
+** SCR_DrawSmallString
+** small string are drawn at native screen resolution
+*/
+void SCR_DrawSmallString( int x, int y, const char *s, int len ) {
+	int row, col, ch, i;
+	float frow, fcol;
+	float size;
+
+	if ( y < -SMALLCHAR_HEIGHT ) {
+		return;
+	}
+
+	size = 0.0625;
+
+	for ( i = 0; i < len; i++ ) {
+		ch = *s++ & 255;
+		row = ch>>4;
+		col = ch&15;
+
+		frow = row*0.0625;
+		fcol = col*0.0625;
+
+		re.DrawStretchPic( x, y, SMALLCHAR_WIDTH, SMALLCHAR_HEIGHT,
+						   fcol, frow, fcol + size, frow + size, 
+						   cls.charSetShader );
+
+		x += SMALLCHAR_WIDTH;
+	}
+}
+
+/*
 ==================
 SCR_DrawBigString[Color]
 

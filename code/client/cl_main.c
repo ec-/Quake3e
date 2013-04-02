@@ -1169,7 +1169,7 @@ void CL_Connect_f( void ) {
 
 	// try resolve remote server first
 	if ( !NET_StringToAdr( server, &addr, family ) ) {
-		Com_Printf( "Bad server address - %s\n", server );
+		Com_Printf( S_COLOR_YELLOW "Bad server address - %s\n", server );
 		return;
 	}
 
@@ -1785,18 +1785,17 @@ void CL_CheckForResend( void ) {
 		Info_SetValueForKey( info, "qport", va("%i", port ) );
 		Info_SetValueForKey( info, "challenge", va("%i", clc.challenge ) );
 		
-		strcpy(data, "connect ");
-    // TTimo adding " " around the userinfo string to avoid truncated userinfo on the server
-    //   (Com_TokenizeString tokenizes around spaces)
-    data[8] = '"';
-
-		for(i=0;i<strlen(info);i++) {
+		strcpy( data, "connect " );
+		// TTimo adding " " around the userinfo string to avoid truncated userinfo on the server
+		// (Com_TokenizeString tokenizes around spaces)
+		data[8] = '"';
+		for( i = 0; i < strlen( info ); i++ ) {
 			data[9+i] = info[i];	// + (clc.challenge)&0x3;
 		}
-    data[9+i] = '"';
-		data[10+i] = 0;
+		data[9+i] = '"';
+		data[10+i] = '\0';
 
-    // NOTE TTimo don't forget to set the right data length!
+		// NOTE TTimo don't forget to set the right data length!
 		NET_OutOfBandData( NS_CLIENT, clc.serverAddress, (byte *) &data[0], i+10 );
 		// the most current userinfo has been sent, so watch for any
 		// newer changes to userinfo variables
@@ -1836,7 +1835,7 @@ void CL_DisconnectPacket( netadr_t from ) {
 
 	// drop the connection
 	Com_Printf( "Server disconnected for unknown reason\n" );
-	Cvar_Set("com_errorMessage", "Server disconnected for unknown reason\n" );
+	Cvar_Set( "com_errorMessage", "Server disconnected for unknown reason\n" );
 	CL_Disconnect( qtrue );
 }
 
