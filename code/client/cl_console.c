@@ -50,6 +50,11 @@ typedef struct {
 	int		times[NUM_CON_TIMES];	// cls.realtime time the line was generated
 								// for transparent notify lines
 	vec4_t	color;
+
+	int		viswidth;
+	int		vispage;		
+	int		fill;
+
 } console_t;
 
 extern  qboolean    chat_team;
@@ -152,6 +157,8 @@ void Con_Clear_f (void) {
 	for ( i = 0 ; i < CON_TEXTSIZE ; i++ ) {
 		con.text[i] = (ColorIndex(COLOR_WHITE)<<8) | ' ';
 	}
+	con.fill = 0;
+	con.current = 0;
 
 	Con_Bottom();		// go to end
 }
@@ -254,16 +261,19 @@ void Con_CheckResize( void )
 	int		i, j, width, oldwidth, oldtotallines, numlines, numchars;
 	short	tbuf[CON_TEXTSIZE];
 
-	width = (cls.glconfig.vidWidth / SMALLCHAR_WIDTH) - 2;
-
-	if ( width == con.linewidth )
+	if ( con.viswidth == cls.glconfig.vidWidth )
 		return;
+
+	con.viswidth = cls.glconfig.vidWidth;
+
+	width = (cls.glconfig.vidWidth / SMALLCHAR_WIDTH) - 2;
 	
-	if ( width < 1 )			// video hasn't been initialized yet
+	if ( width < 1 ) // video hasn't been initialized yet
 	{
 		width = DEFAULT_CONSOLE_WIDTH;
 		con.linewidth = width;
 		con.totallines = CON_TEXTSIZE / con.linewidth;
+		con.vispage = 4;
 		for ( i = 0; i < CON_TEXTSIZE; i++ ) 
 		{
 			con.text[i] = (ColorIndex(COLOR_WHITE)<<8) | ' ';
@@ -276,16 +286,17 @@ void Con_CheckResize( void )
 		oldtotallines = con.totallines;
 		con.totallines = CON_TEXTSIZE / con.linewidth;
 		numlines = oldtotallines;
+		con.vispage = cls.glconfig.vidHeight / ( SMALLCHAR_HEIGHT * 2 ) - 1;
 
 		if (con.totallines < numlines)
 			numlines = con.totallines;
 
 		numchars = oldwidth;
 	
-		if (con.linewidth < numchars)
+		if ( con.linewidth < numchars )
 			numchars = con.linewidth;
 
-		Com_Memcpy( tbuf, con.text, CON_TEXTSIZE * sizeof(short) );
+		Com_Memcpy( tbuf, con.text, CON_TEXTSIZE * sizeof( short ) );
 
 		for ( i = 0; i < CON_TEXTSIZE; i++ ) 
 		{
@@ -302,7 +313,7 @@ void Con_CheckResize( void )
 			}
 		}
 
-		Con_ClearNotify ();
+		Con_ClearNotify();
 	}
 
 	con.current = con.totallines - 1;
@@ -357,25 +368,35 @@ void Con_Init( void )
 Con_Linefeed
 ===============
 */
-void Con_Linefeed (qboolean skipnotify)
+void Con_Linefeed( qboolean skipnotify )
 {
 	int		i;
 
 	// mark time for transparent overlay
-	if (con.current >= 0)
+	if ( con.current >= 0 )
 	{
-    if (skipnotify)
-		  con.times[con.current % NUM_CON_TIMES] = 0;
-    else
-		  con.times[con.current % NUM_CON_TIMES] = cls.realtime;
+		if ( skipnotify )
+			con.times[ con.current % NUM_CON_TIMES ] = 0;
+		else
+			con.times[ con.current % NUM_CON_TIMES ] = cls.realtime;
 	}
 
 	con.x = 0;
-	if (con.display == con.current)
-		con.display++;
+	if ( con.display == con.current )
+		con.display++; // follow last line
 	con.current++;
-	for(i=0; i<con.linewidth; i++)
-		con.text[(con.current%con.totallines)*con.linewidth+i] = (ColorIndex(COLOR_WHITE)<<8) | ' ';
+	
+	// keep values in some reasonable range
+	if ( con.current > con.totallines*2 )
+		con.current -= con.totallines;
+	if ( con.display > con.totallines*2 )
+		con.display -= con.totallines;
+
+	if ( con.fill < con.totallines )
+		con.fill++;
+
+	for( i = 0; i < con.linewidth; i++ )
+		con.text[ (con.current % con.totallines) * con.linewidth + i ] = (ColorIndex(COLOR_WHITE)<<8) | ' ';
 }
 
 /*
@@ -406,13 +427,13 @@ void CL_ConsolePrint( const char *txt ) {
 		return;
 	}
 	
-	if (!con.initialized) {
+	if ( !con.initialized ) {
 		con.color[0] = 
 		con.color[1] = 
 		con.color[2] =
 		con.color[3] = 1.0f;
-		con.linewidth = -1;
-		Con_CheckResize ();
+		con.viswidth = -9999;
+		Con_CheckResize();
 		con.initialized = qtrue;
 	}
 
@@ -660,19 +681,20 @@ void Con_DrawSolidConsole( float frac ) {
 
 	y = yf;
 
+	// fixup
+	if ( con.fill <= con.vispage ) {
+		con.display = con.current;
+	} else if ( con.current - con.display > con.fill - con.vispage + 1 ) {
+		con.display = con.current - con.fill + con.vispage - 1;
+	} else if ( con.display > con.current ) {
+		con.display = con.current;
+	}
+
 	// draw the version number
 	re.SetColor( g_color_table[ ColorIndex( COLOR_RED ) ] );
 
 	SCR_DrawSmallString( cls.glconfig.vidWidth - ( ARRAY_LEN( Q3_VERSION ) ) * SMALLCHAR_WIDTH, 
 		lines - SMALLCHAR_HEIGHT, Q3_VERSION, ARRAY_LEN( Q3_VERSION ) - 1 );
-/*
-	i = strlen( Q3_VERSION );
-
-	for ( x = 0 ; x < i ; x++ ) {
-		SCR_DrawSmallChar( cls.glconfig.vidWidth - ( i - x + 1 ) * SMALLCHAR_WIDTH,
-			lines - SMALLCHAR_HEIGHT, Q3_VERSION[x] );
-	}
-*/
 
 	// draw the text
 	con.vislines = lines;
@@ -681,11 +703,11 @@ void Con_DrawSolidConsole( float frac ) {
 	y = lines - (SMALLCHAR_HEIGHT*3);
 
 	// draw from the bottom up
-	if (con.display != con.current)
+	if ( con.display != con.current )
 	{
-	// draw arrows to show the buffer is backscrolled
-		re.SetColor( g_color_table[ColorIndex(COLOR_RED)] );
-		for (x=0 ; x<con.linewidth ; x+=4)
+		// draw arrows to show the buffer is backscrolled
+		re.SetColor( g_color_table[ ColorIndex( COLOR_RED ) ] );
+		for ( x = 0 ; x < con.linewidth ; x += 4 )
 			SCR_DrawSmallChar( con.xadjust + (x+1)*SMALLCHAR_WIDTH, y, '^' );
 		y -= SMALLCHAR_HEIGHT;
 		rows--;
@@ -713,22 +735,22 @@ void Con_DrawSolidConsole( float frac ) {
 	currentColor = 7;
 	re.SetColor( g_color_table[currentColor] );
 
-	for (i=0 ; i<rows ; i++, y -= SMALLCHAR_HEIGHT, row--)
+	for ( i = 0 ; i < rows ; i++, y -= SMALLCHAR_HEIGHT, row-- )
 	{
-		if (row < 0)
+		if ( row < 0 )
 			break;
-		if (con.current - row >= con.totallines) {
+		if ( con.current - row >= con.totallines ) {
 			// past scrollback wrap point
 			continue;	
 		}
 
 		text = con.text + (row % con.totallines)*con.linewidth;
 
-		for (x=0 ; x<con.linewidth ; x++) {
+		for ( x = 0 ; x < con.linewidth ; x++ ) {
 			if ( ( text[x] & 0xff ) == ' ' ) {
 				continue;
 			}
-
+			// track color changes
 			if ( ( (text[x]>>8)&7 ) != currentColor ) {
 				currentColor = (text[x]>>8)&7;
 				re.SetColor( g_color_table[currentColor] );
@@ -738,7 +760,7 @@ void Con_DrawSolidConsole( float frac ) {
 	}
 
 	// draw the input prompt, user text, and cursor if desired
-	Con_DrawInput ();
+	Con_DrawInput();
 
 	re.SetColor( NULL );
 }
@@ -752,7 +774,7 @@ Con_DrawConsole
 */
 void Con_DrawConsole( void ) {
 	// check for console width changes from a vid mode change
-	Con_CheckResize ();
+	Con_CheckResize();
 
 	// if disconnected, render console full screen
 	if ( cls.state == CA_DISCONNECTED ) {
@@ -808,35 +830,26 @@ void Con_RunConsole (void) {
 
 void Con_PageUp( int lines ) {
 	if ( lines == 0 ) {
-		lines = (cls.glconfig.vidHeight / ( SMALLCHAR_HEIGHT * 2 ) ) - 2;
-		if ( lines < 0 ) {
-			lines = 2;
-		}
+		lines = con.vispage - 1;
 	}
 	con.display -= lines;
-	if ( con.current - con.display >= con.totallines ) {
-		con.display = con.current - con.totallines + 1;
-	}
+	//if ( con.current - con.display >= con.totallines ) {
+	//	con.display = con.current - con.totallines + 1;
+	//}
 }
 
 void Con_PageDown( int lines ) {
 	if ( lines == 0 ) {
-		lines = (cls.glconfig.vidHeight / ( SMALLCHAR_HEIGHT * 2 ) ) - 2;
-		if ( lines < 0 ) {
-			lines = 2;
-		}
+		lines = con.vispage - 1;
 	}
 	con.display += lines;
-	if ( con.display > con.current ) {
-		con.display = con.current;
-	}
+	//if ( con.display > con.current ) {
+	//	con.display = con.current;
+	//}
 }
 
 void Con_Top( void ) {
-	con.display = con.totallines;
-	if ( con.current - con.display >= con.totallines ) {
-		con.display = con.current - con.totallines + 1;
-	}
+	con.display = con.current - con.fill + con.vispage - 1;
 }
 
 void Con_Bottom( void ) {
