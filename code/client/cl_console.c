@@ -53,7 +53,6 @@ typedef struct {
 
 	int		viswidth;
 	int		vispage;		
-	int		fill;
 
 } console_t;
 
@@ -66,6 +65,8 @@ cvar_t		*con_conspeed;
 cvar_t		*con_notifytime;
 
 int         g_console_field_width = DEFAULT_CONSOLE_WIDTH;
+
+void		Con_Fixup( void );
 
 /*
 ================
@@ -157,7 +158,7 @@ void Con_Clear_f (void) {
 	for ( i = 0 ; i < CON_TEXTSIZE ; i++ ) {
 		con.text[i] = (ColorIndex(COLOR_WHITE)<<8) | ' ';
 	}
-	con.fill = 0;
+
 	con.current = 0;
 
 	Con_Bottom();		// go to end
@@ -248,7 +249,7 @@ void Con_ClearNotify( void ) {
 	}
 }
 
-						
+
 /*
 ================
 Con_CheckResize
@@ -258,8 +259,8 @@ If the line width has changed, reformat the buffer.
 */
 void Con_CheckResize( void )
 {
-	int		i, j, width, oldwidth, oldtotallines, numlines, numchars;
-	short	tbuf[CON_TEXTSIZE];
+	int		i, j, width, oldwidth, oldtotallines, oldcurrent, numlines, numchars;
+	short	tbuf[CON_TEXTSIZE], *src, *dst;
 
 	if ( con.viswidth == cls.glconfig.vidWidth )
 		return;
@@ -278,45 +279,48 @@ void Con_CheckResize( void )
 		{
 			con.text[i] = (ColorIndex(COLOR_WHITE)<<8) | ' ';
 		}
+
+		con.current = 0;
 	}
 	else
 	{
 		oldwidth = con.linewidth;
-		con.linewidth = width;
 		oldtotallines = con.totallines;
+		oldcurrent = con.current;
+		con.linewidth = width;
 		con.totallines = CON_TEXTSIZE / con.linewidth;
-		numlines = oldtotallines;
 		con.vispage = cls.glconfig.vidHeight / ( SMALLCHAR_HEIGHT * 2 ) - 1;
 
-		if (con.totallines < numlines)
-			numlines = con.totallines;
-
 		numchars = oldwidth;
-	
-		if ( con.linewidth < numchars )
+		if ( numchars > con.linewidth )
 			numchars = con.linewidth;
+
+		if ( oldcurrent > oldtotallines )
+			numlines = oldtotallines;	
+		else
+			numlines = oldcurrent + 1;	
+
+		if ( numlines > con.totallines )
+			numlines = con.totallines;
 
 		Com_Memcpy( tbuf, con.text, CON_TEXTSIZE * sizeof( short ) );
 
 		for ( i = 0; i < CON_TEXTSIZE; i++ ) 
-		{
 			con.text[i] = (ColorIndex(COLOR_WHITE)<<8) | ' ';
-		}
 
-		for (i=0 ; i<numlines ; i++)
+		for ( i = 0; i < numlines; i++ )
 		{
-			for (j=0 ; j<numchars ; j++)
-			{
-				con.text[(con.totallines - 1 - i) * con.linewidth + j] =
-						tbuf[((con.current - i + oldtotallines) %
-							  oldtotallines) * oldwidth + j];
-			}
+			src = &tbuf[ ((oldcurrent - i + oldtotallines) % oldtotallines) * oldwidth ];
+			dst = &con.text[ (numlines - 1 - i) * con.linewidth ];
+			for ( j = 0; j < numchars; j++ )
+				*dst++ = *src++;
 		}
 
 		Con_ClearNotify();
+
+		con.current = numlines - 1;
 	}
 
-	con.current = con.totallines - 1;
 	con.display = con.current;
 }
 
@@ -365,15 +369,23 @@ void Con_Init( void )
 
 /*
 ===============
-Con_Advance
+Con_Fixup
 ===============
 */
-void Con_Advance( void ) 
+void Con_Fixup( void ) 
 {
-	if ( con.fill <= con.vispage ) {
+	int filled;
+	
+	if ( con.current > con.totallines ) {
+		filled = con.totallines;
+	} else {
+		filled = con.current;
+	}
+
+	if ( filled <= con.vispage ) {
 		con.display = con.current;
-	} else if ( con.current - con.display > con.fill - con.vispage ) {
-		con.display = con.current - con.fill + con.vispage;
+	} else if ( con.current - con.display > filled - con.vispage ) {
+		con.display = con.current - filled + con.vispage;
 	} else if ( con.display > con.current ) {
 		con.display = con.current;
 	}
@@ -405,12 +417,10 @@ void Con_Linefeed( qboolean skipnotify )
 
 	for( i = 0; i < con.linewidth; i++ )
 		con.text[ (con.current % con.totallines ) * con.linewidth + i ] = (ColorIndex(COLOR_WHITE)<<8) | ' ';
-	if ( con.fill < con.totallines )
-		con.fill++;
 
-
-	Con_Advance();
+	Con_Fixup();
 }
+
 
 /*
 ================
@@ -434,7 +444,7 @@ void CL_ConsolePrint( const char *txt ) {
 		skipnotify = qtrue;
 		txt += 12;
 	}
-	
+
 	// for some demos we don't want to ever show anything on the console
 	if ( cl_noprint && cl_noprint->integer ) {
 		return;
@@ -618,9 +628,6 @@ void Con_DrawNotify( void )
 
 }
 
-static char  conColorString[ MAX_CVAR_VALUE_STRING ] = { 0 };
-static float conColorValue[4] = { 0.0, 0.0, 0.0, 0.0 };
-
 /*
 ================
 Con_DrawSolidConsole
@@ -629,6 +636,11 @@ Draws the console with the solid background
 ================
 */
 void Con_DrawSolidConsole( float frac ) {
+
+	static float conColorValue[4] = { 0.0, 0.0, 0.0, 0.0 };
+	// for cvar value change tracking
+	static char  conColorString[ MAX_CVAR_VALUE_STRING ] = { '\0' };
+
 	int				i, x, y;
 	int				rows;
 	short			*text;
@@ -658,7 +670,9 @@ void Con_DrawSolidConsole( float frac ) {
 	if ( yf < 1.0 ) {
 		yf = 0;
 	} else {
+		// custom console background color
 		if ( cl_conColor->string[0] ) {
+			// track changes
 			if ( strcmp( cl_conColor->string, conColorString ) ) 
 			{
 				strcpy( conColorString, cl_conColor->string );
@@ -827,17 +841,16 @@ void Con_RunConsole( void )
 }
 
 
-void Con_PageUp( int lines ) {
-	if ( lines == 0 ) {
+void Con_PageUp( int lines ) 
+{
+	if ( lines == 0 )
 		lines = con.vispage - 1;
-	}
+
 	con.display -= lines;
 	
-	Con_Advance();
-	//if ( con.current - con.display >= con.totallines ) {
-	//	con.display = con.current - con.totallines + 1;
-	//}
+	Con_Fixup();
 }
+
 
 void Con_PageDown( int lines ) {
 	if ( lines == 0 ) {
@@ -845,29 +858,32 @@ void Con_PageDown( int lines ) {
 	}
 	con.display += lines;
 
-	Con_Advance();
-	//if ( con.display > con.current ) {
-	//	con.display = con.current;
-	//}
+	Con_Fixup();
 }
 
 
-void Con_Top( void ) {
-	con.display = con.current - con.fill + con.vispage;
-	Con_Advance();
+void Con_Top( void ) 
+{
+	// this is generally incorrect but will be adjusted in Con_Fixup()
+	con.display = con.current - con.totallines;
+
+	Con_Fixup();
 }
 
 
-void Con_Bottom( void ) {
+void Con_Bottom( void ) 
+{
 	con.display = con.current;
-	Con_Advance();
+
+	Con_Fixup();
 }
 
 
-void Con_Close( void ) {
-	if ( !com_cl_running->integer ) {
+void Con_Close( void ) 
+{
+	if ( !com_cl_running->integer ) 
 		return;
-	}
+
 	Field_Clear( &g_consoleField );
 	Con_ClearNotify();
 	Key_SetCatcher( Key_GetCatcher( ) & ~KEYCATCH_CONSOLE );
