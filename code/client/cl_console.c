@@ -678,10 +678,14 @@ void Con_DrawSolidConsole( float frac ) {
 				strcpy( conColorString, cl_conColor->string );
 				strcpy( buf, cl_conColor->string );
 				Com_Split( buf, v, 4, ' ' );
-				conColorValue[0] = atof( v[0] ) / 255.0;
-				conColorValue[1] = atof( v[1] ) / 255.0;
-				conColorValue[2] = atof( v[2] ) / 255.0;
-				conColorValue[3] = atof( v[3] ) / 255.0;
+				for ( i = 0; i < 4 ; i++ ) {
+					conColorValue[ i ] = atof( v[ i ] ) / 255.0;
+					if ( conColorValue[ i ] > 1.0 ) {
+						conColorValue[ i ] = 1.0;
+					} else if ( conColorValue[ i ] < 0.0 ) {
+						conColorValue[ i ] = 0.0;
+					}
+				}
 			}
 			re.SetColor( conColorValue );
 			re.DrawStretchPic( 0, 0, wf, yf, 0, 0, 1, 1, cls.whiteShader );
