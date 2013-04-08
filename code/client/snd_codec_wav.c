@@ -131,7 +131,7 @@ S_ReadRIFFHeader
 static qboolean S_ReadRIFFHeader(fileHandle_t file, snd_info_t *info)
 {
 	char dump[16];
-	int wav_format;
+	//int wav_format;
 	int bits;
 	int fmtlen = 0;
 
@@ -146,7 +146,8 @@ static qboolean S_ReadRIFFHeader(fileHandle_t file, snd_info_t *info)
 	}
 
 	// Save the parameters
-	wav_format = FGetLittleShort(file);
+	//wav_format = FGetLittleShort(file);
+	FGetLittleShort(file);
 	info->channels = FGetLittleShort(file);
 	info->rate = FGetLittleLong(file);
 	FGetLittleLong(file);

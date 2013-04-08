@@ -1602,12 +1602,11 @@ void CIN_DrawCinematic (int handle) {
 	cinTable[handle].dirty = qfalse;
 }
 
-void CL_PlayCinematic_f(void) {
+void CL_PlayCinematic_f( void ) {
 	char	*arg, *s;
-	qboolean	holdatend;
 	int bits = CIN_system;
 
-	Com_DPrintf("CL_PlayCinematic_f\n");
+	Com_DPrintf( "CL_PlayCinematic_f\n" );
 	if (cls.state == CA_CINEMATIC) {
 		SCR_StopCinematic();
 	}
@@ -1615,7 +1614,6 @@ void CL_PlayCinematic_f(void) {
 	arg = Cmd_Argv( 1 );
 	s = Cmd_Argv(2);
 
-	holdatend = qfalse;
 	if ((s && s[0] == '1') || Q_stricmp(arg,"demoend.roq")==0 || Q_stricmp(arg,"end.roq")==0) {
 		bits |= CIN_hold;
 	}
@@ -1629,7 +1627,7 @@ void CL_PlayCinematic_f(void) {
 	if (CL_handle >= 0) {
 		do {
 			SCR_RunCinematic();
-		} while (cinTable[currentHandle].buf == NULL && cinTable[currentHandle].status == FMV_PLAY);		// wait for first frame (load codebook and sound)
+		} while (cinTable[currentHandle].buf == NULL && cinTable[currentHandle].status == FMV_PLAY); // wait for first frame (load codebook and sound)
 	}
 }
 

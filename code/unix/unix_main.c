@@ -189,14 +189,13 @@ void tty_FlushIn( void )
 void tty_Back( void )
 {
 	char key;
-	size_t size;
 
 	key = '\b';
-	size = write( STDOUT_FILENO, &key, 1 );
+	write( STDOUT_FILENO, &key, 1 );
 	key = ' ';
-	size = write( STDOUT_FILENO, &key, 1 );
+	write( STDOUT_FILENO, &key, 1 );
 	key = '\b';
-	size = write( STDOUT_FILENO, &key, 1 );
+	write( STDOUT_FILENO, &key, 1 );
 }
 
 
@@ -214,9 +213,10 @@ void tty_Hide( void )
 		ttycon_hide++;
 		return;
 	}
+
 	if ( tty_con.cursor > 0 )
 	{
-		for ( i=0; i<tty_con.cursor; i++ )
+		for ( i = 0; i < tty_con.cursor; i++ )
 		{
 			tty_Back();
 		}
@@ -239,13 +239,12 @@ void tty_Show( void )
 	ttycon_hide--;
 	if ( ttycon_hide == 0 )
 	{
-		size_t size;
-		size = write( STDOUT_FILENO, "]", 1 ); // -EC-
+		write( STDOUT_FILENO, "]", 1 ); // -EC-
 		if ( tty_con.cursor )
 		{
 			for ( i = 0; i < tty_con.cursor; i++ )
 			{
-				size = write( STDOUT_FILENO, tty_con.buffer+i, 1 );
+				write( STDOUT_FILENO, tty_con.buffer + i, 1 );
 			}
 		}
 	}
@@ -497,7 +496,6 @@ char *Sys_ConsoleInput( void )
 	int avail;
 	char key;
 	field_t *history;
-	size_t size;
 
 	if ( ttycon_on )
 	{
@@ -524,12 +522,12 @@ char *Sys_ConsoleInput( void )
 				if (key == '\n')
 				{
 					// push it in history
-					Hist_Add(&tty_con);
-					Q_strncpyz( text, tty_con.buffer, sizeof(text ) );
-					Field_Clear(&tty_con);
+					Hist_Add( &tty_con );
+					Q_strncpyz( text, tty_con.buffer, sizeof( text ) );
+					Field_Clear( &tty_con );
 					key = '\n';
-					size = write( STDOUT_FILENO, &key, 1 );
-					size = write( STDOUT_FILENO, "]", 1 );
+					write( STDOUT_FILENO, &key, 1 );
+					write( STDOUT_FILENO, "]", 1 );
 					return text;
 				}
 
@@ -584,17 +582,17 @@ char *Sys_ConsoleInput( void )
 						}
 					}
 				}
-				Com_DPrintf("droping ISCTL sequence: %d, tty_erase: %d\n", key, tty_erase);
+				Com_DPrintf( "droping ISCTL sequence: %d, tty_erase: %d\n", key, tty_erase );
 				tty_FlushIn();
 				return NULL;
 			}
-			if ( tty_con.cursor >= sizeof(text) - 1 )
+			if ( tty_con.cursor >= sizeof( text ) - 1 )
 				return NULL;
 			// push regular character
-			tty_con.buffer[tty_con.cursor] = key;
+			tty_con.buffer[ tty_con.cursor ] = key;
 			tty_con.cursor++;
 			// print the current line (this is differential)
-			size = write( STDOUT_FILENO, &key, 1 );
+			write( STDOUT_FILENO, &key, 1 );
     	}
 		return NULL;
 	}
@@ -993,6 +991,7 @@ char *Sys_GetClipboardData( void )
   return NULL;
 }
 
+
 static struct Q3ToAnsiColorTable_s
 {
   char Q3color;
@@ -1009,12 +1008,10 @@ static struct Q3ToAnsiColorTable_s
   { COLOR_WHITE,    "0" }
 };
 
-static int tty_colorTableSize =
-  sizeof( tty_colorTable ) / sizeof( tty_colorTable[ 0 ] );
 
 void Sys_ANSIColorify( const char *msg, char *buffer, int bufferSize )
 {
-  int   msgLength, pos;
+  int   msgLength;
   int   i, j;
   char  *escapeCode;
   char  tempBuffer[ 7 ];
@@ -1023,7 +1020,6 @@ void Sys_ANSIColorify( const char *msg, char *buffer, int bufferSize )
     return;
 
   msgLength = strlen( msg );
-  pos = 0;
   i = 0;
   buffer[ 0 ] = '\0';
 
@@ -1042,7 +1038,7 @@ void Sys_ANSIColorify( const char *msg, char *buffer, int bufferSize )
       if( i < msgLength )
       {
         escapeCode = NULL;
-        for( j = 0; j < tty_colorTableSize; j++ )
+        for( j = 0; j < ARRAY_LEN( tty_colorTable ); j++ )
         {
           if( msg[ i ] == tty_colorTable[ j ].Q3color )
           {

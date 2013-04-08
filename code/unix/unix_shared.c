@@ -233,20 +233,16 @@ void Sys_ListFilteredFiles( const char *basedir, char *subdirs, char *filter, ch
 char **Sys_ListFiles( const char *directory, const char *extension, char *filter, int *numfiles, qboolean wantsubs )
 {
 	struct dirent *d;
-	// char *p; // bk001204 - unused
 	DIR		*fdir;
 	qboolean dironly = wantsubs;
 	char		search[MAX_OSPATH];
 	int			nfiles;
 	char		**listCopy;
 	char		*list[MAX_FOUND_FILES];
-	//int			flag; // bk001204 - unused
 	int			i;
 	struct stat st;
 
-	int			extLen;
-
-	if (filter) {
+	if ( filter ) {
 
 		nfiles = 0;
 		Sys_ListFilteredFiles( directory, "", filter, list, &nfiles );
@@ -254,7 +250,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, char *filter
 		list[ nfiles ] = NULL;
 		*numfiles = nfiles;
 
-		if (!nfiles)
+		if ( !nfiles )
 			return NULL;
 
 		listCopy = Z_Malloc( ( nfiles + 1 ) * sizeof( *listCopy ) );
@@ -273,8 +269,6 @@ char **Sys_ListFiles( const char *directory, const char *extension, char *filter
 		extension = "";
 		dironly = qtrue;
 	}
-
-	extLen = strlen( extension );
 	
 	// search
 	nfiles = 0;
@@ -326,6 +320,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, char *filter
 
 	return listCopy;
 }
+
 
 void	Sys_FreeFileList( char **list ) {
 	int		i;
