@@ -57,6 +57,7 @@ void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, q
 	int		prestep;
 	int		cursorChar;
 	char	str[MAX_STRING_CHARS];
+	float	color[4];
 	int		i;
 
 	drawLen = edit->widthInChars - 1; // - 1 so there is always a space for the cursor
@@ -85,14 +86,15 @@ void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, q
 	}
 
 	Com_Memcpy( str, edit->buffer + prestep, drawLen );
-	str[ drawLen ] = 0;
+	str[ drawLen ] = '\0';
 
 	// draw it
 	if ( size == SMALLCHAR_WIDTH ) {
-		float	color[4];
-
 		color[0] = color[1] = color[2] = color[3] = 1.0;
 		SCR_DrawSmallStringExt( x, y, str, color, qfalse, noColorEscape );
+		if ( len > drawLen + prestep ) {
+			SCR_DrawSmallChar( x + ( edit->widthInChars - 1 ) * size, y, '>' );
+		}
 	} else {
 		// draw big string with drop shadow
 		SCR_DrawBigString( x, y, str, 1.0, noColorEscape );
@@ -100,26 +102,25 @@ void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, q
 
 	// draw the cursor
 	if ( showCursor ) {
-	if ( (int)( cls.realtime >> 8 ) & 1 ) {
-		return;		// off blink
-	}
+		if ( cls.realtime & 256 ) {
+			return;		// off blink
+		}
 
-	if ( key_overstrikeMode ) {
-		cursorChar = 11;
-	} else {
-		cursorChar = 10;
-	}
+		if ( key_overstrikeMode ) {
+			cursorChar = 11;
+		} else {
+			cursorChar = 10;
+		}
 
 		i = drawLen - strlen( str );
 
-	if ( size == SMALLCHAR_WIDTH ) {
-		SCR_DrawSmallChar( x + ( edit->cursor - prestep - i ) * size, y, cursorChar );
-	} else {
-		str[0] = cursorChar;
-		str[1] = 0;
+		if ( size == SMALLCHAR_WIDTH ) {
+			SCR_DrawSmallChar( x + ( edit->cursor - prestep - i ) * size, y, cursorChar );
+		} else {
+			str[0] = cursorChar;
+			str[1] = '\0';
 			SCR_DrawBigString( x + ( edit->cursor - prestep - i ) * size, y, str, 1.0, qfalse );
-
-	}
+		}
 	}
 }
 
