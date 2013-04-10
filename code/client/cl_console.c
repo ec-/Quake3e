@@ -27,7 +27,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define  NUM_CON_TIMES  4
 
-#define  CON_TEXTSIZE   32768*2
+#define  CON_TEXTSIZE   65536
 
 typedef struct {
 	qboolean	initialized;
@@ -53,6 +53,8 @@ typedef struct {
 
 	int		viswidth;
 	int		vispage;		
+
+	qboolean newline;
 
 } console_t;
 
@@ -172,9 +174,9 @@ Con_Dump_f
 Save the console contents out to a file
 ================
 */
-void Con_Dump_f (void)
+void Con_Dump_f( void )
 {
-	int		l, x, i;
+	int		l, x, i, n;
 	short	*line;
 	fileHandle_t	f;
 	int		bufferlen;
@@ -190,8 +192,6 @@ void Con_Dump_f (void)
 	Q_strncpyz( filename, Cmd_Argv( 1 ), sizeof( filename ) );
 	COM_DefaultExtension( filename, sizeof( filename ), ".txt" );
 
-	Com_Printf( "Dumped console text to %s.\n", filename );
-
 	f = FS_FOpenFileWrite( filename );
 	if ( f == FS_INVALID_HANDLE )
 	{
@@ -199,31 +199,32 @@ void Con_Dump_f (void)
 		return;
 	}
 
-	// skip empty lines
-	for (l = con.current - con.totallines + 1 ; l <= con.current ; l++)
-	{
-		line = con.text + (l%con.totallines)*con.linewidth;
-		for (x=0 ; x<con.linewidth ; x++)
-			if ((line[x] & 0xff) != ' ')
-				break;
-		if (x != con.linewidth)
-			break;
+	Com_Printf( "Dumped console text to %s.\n", filename );
+
+	if ( con.current >= con.totallines ) {
+		n = con.totallines;
+		l = con.current + 1;
+	} else {
+		n = con.current + 1;
+		l = 0;
 	}
 
 	bufferlen = con.linewidth + ARRAY_LEN( Q_NEWLINE ) * sizeof( char );
 	buffer = Hunk_AllocateTempMemory( bufferlen );
 
 	// write the remaining lines
-	buffer[bufferlen-1] = '\0';
-	for ( ; l <= con.current ; l++)
+	buffer[ bufferlen - 1 ] = '\0';
+
+	for ( i = 0; i < n ; i++, l++ ) 
 	{
-		line = con.text + (l%con.totallines)*con.linewidth;
-		for(i=0; i<con.linewidth; i++)
-			buffer[i] = line[i] & 0xff;
-		for (x=con.linewidth-1 ; x>=0 ; x--)
-		{
-			if (buffer[x] == ' ')
-				buffer[x] = 0;
+		line = con.text + (l % con.totallines) * con.linewidth;
+		// store line
+		for( x = 0; x < con.linewidth; x++ )
+			buffer[ x ] = line[ x ] & 0xff;
+		// terminate on ending space characters
+		for ( x = con.linewidth - 1 ; x >= 0 ; x-- ) {
+			if ( buffer[ x ] == ' ' )
+				buffer[ x ] = '\0';
 			else
 				break;
 		}
@@ -375,11 +376,11 @@ Con_Fixup
 void Con_Fixup( void ) 
 {
 	int filled;
-	
-	if ( con.current > con.totallines ) {
+
+	if ( con.current >= con.totallines ) {
 		filled = con.totallines;
 	} else {
-		filled = con.current;
+		filled = con.current + 1;
 	}
 
 	if ( filled <= con.vispage ) {
@@ -397,10 +398,31 @@ void Con_Fixup( void )
 Con_Linefeed
 ===============
 */
+void Con_NewLine( void ) 
+{
+	short *s;
+	int i;
+
+	// follow last line
+	if ( con.display == con.current )
+		con.display++;
+	con.current++;
+
+	s = &con.text[ ( con.current % con.totallines ) * con.linewidth ];
+	for ( i = 0; i < con.linewidth ; i++ ) 
+		*s++ = (ColorIndex(COLOR_WHITE)<<8) | ' ';
+
+	con.x = 0;
+}
+
+
+/*
+===============
+Con_Linefeed
+===============
+*/
 void Con_Linefeed( qboolean skipnotify )
 {
-	int		i;
-
 	// mark time for transparent overlay
 	if ( con.current >= 0 )	{
 		if ( skipnotify )
@@ -409,14 +431,13 @@ void Con_Linefeed( qboolean skipnotify )
 			con.times[ con.current % NUM_CON_TIMES ] = cls.realtime;
 	}
 
-	con.x = 0;
-	if ( con.display == con.current ) {
-		con.display++; // follow the last line
+	if ( con.newline )
+		Con_NewLine();
+	else 
+	{
+		con.newline = qtrue;
+		con.x = 0;
 	}
-	con.current++;
-
-	for( i = 0; i < con.linewidth; i++ )
-		con.text[ (con.current % con.totallines ) * con.linewidth + i ] = (ColorIndex(COLOR_WHITE)<<8) | ' ';
 
 	Con_Fixup();
 }
@@ -491,7 +512,13 @@ void CL_ConsolePrint( const char *txt ) {
 		case '\r':
 			con.x = 0;
 			break;
-		default:	// display character and advance
+		default:
+			if ( con.newline ) {
+				Con_NewLine();
+				Con_Fixup();
+				con.newline = qfalse;
+			}
+			// display character and advance
 			y = con.current % con.totallines;
 			con.text[y * con.linewidth + con.x ] = (color << 8) | (c & 255);
 			con.x++;
@@ -728,10 +755,6 @@ void Con_DrawSolidConsole( float frac ) {
 		for ( x = 0 ; x < con.linewidth ; x += 4 )
 			SCR_DrawSmallChar( con.xadjust + (x+1)*SMALLCHAR_WIDTH, y, '^' );
 		y -= SMALLCHAR_HEIGHT;
-		row--;
-	}
-
-	if ( con.x == 0 ) {
 		row--;
 	}
 
