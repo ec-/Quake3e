@@ -848,6 +848,7 @@ void Cmd_List_f (void)
 	Com_Printf ("%i commands\n", i);
 }
 
+
 /*
 ==================
 Cmd_CompleteCfgName
@@ -855,9 +856,17 @@ Cmd_CompleteCfgName
 */
 void Cmd_CompleteCfgName( char *args, int argNum ) {
 	if( argNum == 2 ) {
-		Field_CompleteFilename( "", "cfg", qfalse, qtrue );
+		Field_CompleteFilename( "", "cfg", qfalse, FS_MATCH_ANY );
 	}
 }
+
+
+void Cmd_CompleteWriteCfgName( char *args, int argNum ) {
+	if( argNum == 2 ) {
+		Field_CompleteFilename( "", "cfg", qfalse, FS_MATCH_EXTERN | FS_MATCH_STICK );
+	}
+}
+
 
 /*
 ============

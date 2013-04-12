@@ -2837,7 +2837,7 @@ void Com_Init( char *commandLine ) {
 	Cmd_AddCommand ("quit", Com_Quit_f);
 	Cmd_AddCommand ("changeVectors", MSG_ReportChangeVectors_f );
 	Cmd_AddCommand ("writeconfig", Com_WriteConfig_f );
-	Cmd_SetCommandCompletionFunc( "writeconfig", Cmd_CompleteCfgName );
+	Cmd_SetCommandCompletionFunc( "writeconfig", Cmd_CompleteWriteCfgName );
 	Cmd_AddCommand("game_restart", Com_GameRestart_f);
 
 	s = va("%s %s %s", Q3_VERSION, PLATFORM_STRING, __DATE__ );
@@ -3409,16 +3409,15 @@ void Field_CompleteKeyname( void )
 Field_CompleteFilename
 ===============
 */
-void Field_CompleteFilename( const char *dir,
-		const char *ext, qboolean stripExt, qboolean allowNonPureFilesOnDisk )
+void Field_CompleteFilename( const char *dir, const char *ext, qboolean stripExt, int flags )
 {
 	matchCount = 0;
 	shortestMatch[ 0 ] = 0;
 
-	FS_FilenameCompletion( dir, ext, stripExt, FindMatches, allowNonPureFilesOnDisk );
+	FS_FilenameCompletion( dir, ext, stripExt, FindMatches, flags );
 
-	if( !Field_Complete( ) )
-		FS_FilenameCompletion( dir, ext, stripExt, PrintMatches, allowNonPureFilesOnDisk );
+	if ( !Field_Complete() )
+		FS_FilenameCompletion( dir, ext, stripExt, PrintMatches, flags );
 }
 
 /*
@@ -3426,8 +3425,7 @@ void Field_CompleteFilename( const char *dir,
 Field_CompleteCommand
 ===============
 */
-void Field_CompleteCommand( char *cmd,
-		qboolean doCommands, qboolean doCvars )
+void Field_CompleteCommand( char *cmd, qboolean doCommands, qboolean doCvars )
 {
 	int		completionArgument = 0;
 

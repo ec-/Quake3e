@@ -427,6 +427,7 @@ void Cmd_SetCommandCompletionFunc( const char *command,
 	completionFunc_t complete );
 void Cmd_CompleteArgument( const char *command, char *args, int argNum );
 void Cmd_CompleteCfgName( char *args, int argNum );
+void Cmd_CompleteWriteCfgName( char *args, int argNum );
 
 int		Cmd_Argc (void);
 char	*Cmd_Argv (int arg);
@@ -586,6 +587,13 @@ typedef enum {
 	H_Q3UI
 } handleOwner_t;
 
+#define FS_MATCH_EXTERN (1<<0)
+#define FS_MATCH_PURE   (1<<1)
+#define FS_MATCH_UNPURE (1<<2)
+#define FS_MATCH_STICK  (1<<3)
+#define FS_MATCH_PK3s   (FS_MATCH_PURE | FS_MATCH_UNPURE)
+#define FS_MATCH_ANY    (FS_MATCH_EXTERN | FS_MATCH_PURE | FS_MATCH_UNPURE)
+
 #define	MAX_FILE_HANDLES	64
 #define	FS_INVALID_HANDLE	0
 
@@ -716,7 +724,7 @@ void FS_Remove( const char *osPath );
 void FS_HomeRemove( const char *homePath );
 
 void	FS_FilenameCompletion( const char *dir, const char *ext,
-		qboolean stripExt, void(*callback)(const char *s), qboolean allowNonPureFilesOnDisk );
+		qboolean stripExt, void(*callback)(const char *s), int flags );
 
 int FS_VM_OpenFile( const char *qpath, fileHandle_t *f, fsMode_t mode, handleOwner_t owner );
 int FS_VM_ReadFile( void *buffer, int len, fileHandle_t f, handleOwner_t owner );
@@ -750,10 +758,8 @@ typedef struct {
 void Field_Clear( field_t *edit );
 void Field_AutoComplete( field_t *edit );
 void Field_CompleteKeyname( void );
-void Field_CompleteFilename( const char *dir,
-		const char *ext, qboolean stripExt, qboolean allowNonPureFilesOnDisk );
-void Field_CompleteCommand( char *cmd,
-		qboolean doCommands, qboolean doCvars );
+void Field_CompleteFilename( const char *dir, const char *ext, qboolean stripExt, int flags );
+void Field_CompleteCommand( char *cmd, qboolean doCommands, qboolean doCvars );
 
 void Con_SaveField( const field_t *field );
 void Con_HistoryGetPrev( field_t *field );

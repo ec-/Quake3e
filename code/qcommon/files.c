@@ -436,6 +436,7 @@ static fileHandle_t	FS_HandleForFile( void )
 	return FS_INVALID_HANDLE;
 }
 
+
 static FILE	*FS_FileForHandle( fileHandle_t f ) {
 	if ( f <= 0 || f >= MAX_FILE_HANDLES ) {
 		Com_Error( ERR_DROP, "FS_FileForHandle: out of range" );
@@ -449,6 +450,7 @@ static FILE	*FS_FileForHandle( fileHandle_t f ) {
 	
 	return fsh[f].handleFiles.file.o;
 }
+
 
 void	FS_ForceFlush( fileHandle_t f ) {
 	FILE *file;
@@ -1197,6 +1199,7 @@ static qboolean FS_GeneralRef( const char *filename )
 	return qtrue;
 }
 
+
 static qboolean FS_DeniedPureFile( const char *filename ) 
 {
 	// allowed non-ref extensions
@@ -1248,7 +1251,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	FILE			*temp;
 	int				length;
 	fileHandleData_t *f;
-	//char demoExt[16];
+	int				flags;
 
 	hash = 0;
 
@@ -1260,15 +1263,31 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 		Com_Error( ERR_FATAL, "FS_FOpenFileRead: NULL 'filename' parameter passed\n" );
 	}
 
+	if ( fs_numServerPaks ) {
+		flags = FS_MATCH_EXTERN | FS_MATCH_PURE;
+	} else {
+		flags = FS_MATCH_ANY;
+	}
+
+	// qpaths are not supposed to have a leading slash
+	if ( filename[0] == '/' || filename[0] == '\\' ) {
+		filename++;
+	}
+
 	if ( file == NULL ) {
 		// just wants to see if file is there
 		for ( search = fs_searchpaths ; search ; search = search->next ) {
 			//
 			if ( search->pack ) {
+				//if ( !( flags & FS_MATCH_PK3s ) ) // always true?
+				//	continue;
 				hash = FS_HashFileName( filename, search->pack->hashSize );
 			}
 			// is the element a pak file?
 			if ( search->pack && search->pack->hashTable[hash] ) {
+				// skip non-pure files
+				if ( !FS_PakIsPure( search->pack ) && !( flags & FS_MATCH_UNPURE ) )
+					continue;
 				// look through all the pak file elements
 				pak = search->pack;
 				pakFile = pak->hashTable[hash];
@@ -1280,7 +1299,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					}
 					pakFile = pakFile->next;
 				} while ( pakFile != NULL );
-			} else if ( search->dir ) {
+			} else if ( search->dir /*&& ( flags & FS_MATCH_EXTERN ) */ ) {
 				dir = search->dir;
 				netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
 				temp = Sys_FOpen( netpath, "rb" );
@@ -1293,13 +1312,6 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 			}
 		}
 		return -1;
-	}
-
-	//Com_sprintf( demoExt, sizeof( demoExt ), ".dm_%d", PROTOCOL_VERSION );
-
-	// qpaths are not supposed to have a leading slash
-	if ( filename[0] == '/' || filename[0] == '\\' ) {
-		filename++;
 	}
 
 	// make absolutely sure that it can't back up the path.
@@ -1327,12 +1339,15 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		//
 		if ( search->pack ) {
-			hash = FS_HashFileName(filename, search->pack->hashSize);
+			//if ( !( flags & FS_MATCH_PK3s ) ) // always true?
+			//	continue;
+			hash = FS_HashFileName( filename, search->pack->hashSize );
 		}
 		// is the element a pak file?
 		if ( search->pack && search->pack->hashTable[hash] ) {
+
 			// disregard if it doesn't match one of the allowed pure pak files
-			if ( !FS_PakIsPure( search->pack ) ) {
+			if ( !FS_PakIsPure( search->pack ) && !( flags & FS_MATCH_UNPURE ) ) {
 				continue;
 			}
 
@@ -1393,7 +1408,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 				}
 				pakFile = pakFile->next;
 			} while ( pakFile != NULL );
-		} else if ( search->dir ) {
+		} else if ( search->dir /*&& ( flags & FS_MATCH_EXTERN ) */ ) {
 			// check a file in the directory tree
 
 			// if we are running restricted, the only files we
@@ -1654,6 +1669,7 @@ qboolean FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName ) {
 	searchpath_t	*search;
 	pack_t			*pak;
 	fileInPack_t	*pakFile;
+	int				flags;
 	long			hash = 0;
 
 	if ( !fs_searchpaths ) {
@@ -1675,19 +1691,25 @@ qboolean FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName ) {
 		return qfalse;
 	}
 
+	if ( fs_numServerPaks ) 
+		flags = FS_MATCH_PURE;
+	else
+		flags = FS_MATCH_PK3s;
+
 	//
 	// search through the path, one element at a time
 	//
-
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		//
-		if (search->pack) {
-			hash = FS_HashFileName(filename, search->pack->hashSize);
+		if ( search->pack ) {
+			//if ( !( flags & FS_MATCH_PK3s ) ) // always true?
+			//	continue;
+			hash = FS_HashFileName( filename, search->pack->hashSize );
 		}
 		// is the element a pak file?
 		if ( search->pack && search->pack->hashTable[hash] ) {
 			// disregard if it doesn't match one of the allowed pure pak files
-			if ( !FS_PakIsPure(search->pack) ) {
+			if ( !FS_PakIsPure( search->pack ) && !( flags & FS_MATCH_UNPURE ) ) {
 				continue;
 			}
 
@@ -1711,6 +1733,7 @@ qboolean FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName ) {
 	}
 	return qfalse;
 }
+
 
 /*
 ============
@@ -1810,10 +1833,10 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 	fs_loadCount++;
 	fs_loadStack++;
 
-	buf = Hunk_AllocateTempMemory(len+1);
+	buf = Hunk_AllocateTempMemory( len + 1 );
 	*buffer = buf;
 
-	FS_Read (buf, len, h);
+	FS_Read( buf, len, h );
 
 	// guarantee that it will have a trailing 0 for string operations
 	buf[len] = '\0';
@@ -1828,6 +1851,7 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 	}
 	return len;
 }
+
 
 /*
 =============
@@ -1850,6 +1874,7 @@ void FS_FreeFile( void *buffer ) {
 		Hunk_ClearTempMemory();
 	}
 }
+
 
 /*
 ============
@@ -1997,6 +2022,7 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 	return pack;
 }
 
+
 /*
 =================
 FS_FreePak
@@ -2004,12 +2030,11 @@ FS_FreePak
 Frees a pak structure and releases all associated resources
 =================
 */
-
-static void FS_FreePak(pack_t *thepak)
+static void FS_FreePak( pack_t *pak )
 {
-	unzClose(thepak->handle);
-	Z_Free(thepak->buildBuffer);
-	Z_Free(thepak);
+	unzClose( pak->handle );
+	Z_Free( pak->buildBuffer );
+	Z_Free( pak );
 }
 
 
@@ -2160,7 +2185,7 @@ Returns a uniqued list of files that match the given criteria
 from all search paths
 ===============
 */
-char **FS_ListFilteredFiles( const char *path, const char *extension, char *filter, int *numfiles, qboolean allowNonPureFilesOnDisk ) {
+char **FS_ListFilteredFiles( const char *path, const char *extension, char *filter, int *numfiles, int flags ) {
 	int				nfiles;
 	char			**listCopy;
 	char			*list[MAX_FOUND_FILES];
@@ -2172,18 +2197,22 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, char *filt
 	pack_t			*pak;
 	fileInPack_t	*buildBuffer;
 	char			zpath[MAX_ZPATH];
-	qboolean		allowExternal;
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
 
-	allowExternal = FS_AllowListExternal( extension );
+	if  ( fs_numServerPaks && !( flags & FS_MATCH_STICK ) ) {
+		flags &= ~FS_MATCH_UNPURE;		
+		if ( !FS_AllowListExternal( extension ) )
+			flags &= ~FS_MATCH_EXTERN;
+	}
 
 	if ( !path ) {
 		*numfiles = 0;
 		return NULL;
 	}
+
 	if ( !extension ) {
 		extension = "";
 	}
@@ -2201,11 +2230,11 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, char *filt
 	//
 	for (search = fs_searchpaths ; search ; search = search->next) {
 		// is the element a pak file?
-		if (search->pack) {
+		if ( search->pack && ( flags & FS_MATCH_PK3s ) ) {
 
 			//ZOID:  If we are pure, don't search for files on paks that
 			// aren't on the pure list
-			if ( FS_PakIsPure(search->pack) == qfalse && allowNonPureFilesOnDisk == qfalse ) {
+			if ( !FS_PakIsPure( search->pack ) && !( flags & FS_MATCH_UNPURE ) ) {
 				continue;
 			}
 
@@ -2252,25 +2281,20 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, char *filt
 					nfiles = FS_AddFileToList( name + temp, list, nfiles );
 				}
 			}
-		} else if (search->dir) { // scan for files in the filesystem
+		} else if ( search->dir && ( flags & FS_MATCH_EXTERN ) ) { // scan for files in the filesystem
 			char	*netpath;
 			int		numSysFiles;
 			char	**sysFiles;
 			char	*name;
 
-			// don't scan directories for files if we are pure
-			if ( fs_numServerPaks && allowNonPureFilesOnDisk == qfalse && allowExternal == qfalse ) {
-		        continue;
-		    } else {
-				netpath = FS_BuildOSPath( search->dir->path, search->dir->gamedir, path );
-				sysFiles = Sys_ListFiles( netpath, extension, filter, &numSysFiles, qfalse );
-				for ( i = 0 ; i < numSysFiles ; i++ ) {
-					// unique the match
-					name = sysFiles[i];
-					nfiles = FS_AddFileToList( name, list, nfiles );
-				}
-				Sys_FreeFileList( sysFiles );
+			netpath = FS_BuildOSPath( search->dir->path, search->dir->gamedir, path );
+			sysFiles = Sys_ListFiles( netpath, extension, filter, &numSysFiles, qfalse );
+			for ( i = 0 ; i < numSysFiles ; i++ ) {
+				// unique the match
+				name = sysFiles[i];
+				nfiles = FS_AddFileToList( name, list, nfiles );
 			}
+			Sys_FreeFileList( sysFiles );
 		}		
 	}
 
@@ -2290,14 +2314,17 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, char *filt
 	return listCopy;
 }
 
+
 /*
 =================
 FS_ListFiles
 =================
 */
-char **FS_ListFiles( const char *path, const char *extension, int *numfiles ) {
-	return FS_ListFilteredFiles( path, extension, NULL, numfiles, qfalse );
+char **FS_ListFiles( const char *path, const char *extension, int *numfiles ) 
+{
+	return FS_ListFilteredFiles( path, extension, NULL, numfiles, FS_MATCH_ANY );
 }
+
 
 /*
 =================
@@ -2699,19 +2726,19 @@ void FS_Path_f( void ) {
 
 	Sys_BeginPrint(); // cache output
 
-	Com_Printf ("Current search path:\n");
-	for (s = fs_searchpaths; s; s = s->next) {
-		if (s->pack) {
-			Com_Printf ("%s (%i files)\n", s->pack->pakFilename, s->pack->numfiles);
+	Com_Printf( "Current search path:\n" );
+	for ( s = fs_searchpaths; s; s = s->next ) {
+		if ( s->pack ) {
+			Com_Printf( "%s (%i files)\n", s->pack->pakFilename, s->pack->numfiles );
 			if ( fs_numServerPaks ) {
-				if ( !FS_PakIsPure(s->pack) ) {
-					Com_Printf( "    not on the pure list\n" );
+				if ( !FS_PakIsPure( s->pack ) ) {
+					Com_Printf( S_COLOR_YELLOW "    not on the pure list\n" );
 				} else {
 					Com_Printf( "    on the pure list\n" );
 				}
 			}
 		} else {
-			Com_Printf ("%s/%s\n", s->dir->path, s->dir->gamedir );
+			Com_Printf( "%s/%s\n", s->dir->path, s->dir->gamedir );
 		}
 	}
 
@@ -2755,7 +2782,7 @@ FS_CompleteFileName
 */
 void FS_CompleteFileName( char *args, int argNum ) {
 	if( argNum == 2 ) {
-		Field_CompleteFilename( "", "", qfalse, qtrue );
+		Field_CompleteFilename( "", "", qfalse, FS_MATCH_ANY );
 	}
 }
 
@@ -3416,12 +3443,15 @@ const char *FS_LoadedPakChecksums( void ) {
 		if ( !search->pack ) {
 			continue;
 		}
-
-		Q_strcat( info, sizeof( info ), va("%i ", search->pack->checksum ) );
+		if ( *info ) {
+			Q_strcat( info, sizeof( info ), " " );
+		}
+		Q_strcat( info, sizeof( info ), va( "%i", search->pack->checksum ) );
 	}
 
 	return info;
 }
+
 
 /*
 =====================
@@ -3435,15 +3465,14 @@ const char *FS_LoadedPakNames( void ) {
 	static char	info[BIG_INFO_STRING];
 	searchpath_t	*search;
 
-	info[0] = 0;
+	info[0] = '\0';
 
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		// is the element a pak file?
 		if ( !search->pack ) {
 			continue;
 		}
-
-		if (*info) {
+		if ( *info ) {
 			Q_strcat(info, sizeof( info ), " " );
 		}
 		Q_strcat( info, sizeof( info ), search->pack->pakBasename );
@@ -3451,6 +3480,7 @@ const char *FS_LoadedPakNames( void ) {
 
 	return info;
 }
+
 
 /*
 =====================
@@ -3920,13 +3950,13 @@ void	FS_Flush( fileHandle_t f ) {
 }
 
 void	FS_FilenameCompletion( const char *dir, const char *ext,
-		qboolean stripExt, void(*callback)(const char *s), qboolean allowNonPureFilesOnDisk ) {
+		qboolean stripExt, void(*callback)(const char *s), int flags ) {
 	char	**filenames;
 	int		nfiles;
 	int		i;
 	char	filename[ MAX_STRING_CHARS ];
 
-	filenames = FS_ListFilteredFiles( dir, ext, NULL, &nfiles, allowNonPureFilesOnDisk );
+	filenames = FS_ListFilteredFiles( dir, ext, NULL, &nfiles, flags );
 
 	FS_SortFileList( filenames, nfiles );
 
