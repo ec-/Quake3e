@@ -91,6 +91,8 @@ void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, q
 	// draw it
 	if ( size == SMALLCHAR_WIDTH ) {
 		color[0] = color[1] = color[2] = color[3] = 1.0;
+		if ( prestep > 0 )
+			str[0] = '<';
 		SCR_DrawSmallStringExt( x, y, str, color, qfalse, noColorEscape );
 		if ( len > drawLen + prestep ) {
 			SCR_DrawSmallChar( x + ( edit->widthInChars - 1 ) * size, y, '>' );
