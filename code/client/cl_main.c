@@ -2993,7 +2993,7 @@ void CL_Shutdown( const char *finalmsg ) {
 	static qboolean recursive = qfalse;
 	
 	// check whether the client is running at all.
-	if(!(com_cl_running && com_cl_running->integer))
+	if ( !( com_cl_running && com_cl_running->integer ) )
 		return;
 	
 	Com_Printf( "----- Client Shutdown (%s) -----\n", finalmsg );
@@ -3004,7 +3004,7 @@ void CL_Shutdown( const char *finalmsg ) {
 	}
 	recursive = qtrue;
 
-	CL_Disconnect( qtrue );
+	CL_Disconnect( qfalse );
 
 	CL_ShutdownVMs();
 
@@ -3012,8 +3012,6 @@ void CL_Shutdown( const char *finalmsg ) {
 	
 	CL_ShutdownRef();
 	
-	CL_ShutdownUI();
-
 	Cmd_RemoveCommand ("cmd");
 	Cmd_RemoveCommand ("configstrings");
 	Cmd_RemoveCommand ("userinfo");
@@ -3054,8 +3052,8 @@ void CL_Shutdown( const char *finalmsg ) {
 	Key_SetCatcher( 0 );
 
 	Com_Printf( "-----------------------\n" );
-
 }
+
 
 static void CL_SetServerInfo(serverInfo_t *server, const char *info, int ping) {
 	if (server) {
@@ -3074,6 +3072,7 @@ static void CL_SetServerInfo(serverInfo_t *server, const char *info, int ping) {
 		server->ping = ping;
 	}
 }
+
 
 static void CL_SetServerInfoByAddress(netadr_t from, const char *info, int ping) {
 	int i;
@@ -3097,6 +3096,7 @@ static void CL_SetServerInfoByAddress(netadr_t from, const char *info, int ping)
 	}
 
 }
+
 
 /*
 ===================
@@ -3198,6 +3198,7 @@ void CL_ServerInfoPacket( netadr_t from, msg_t *msg ) {
 	}
 }
 
+
 /*
 ===================
 CL_GetServerStatus
@@ -3230,6 +3231,7 @@ serverStatus_t *CL_GetServerStatus( netadr_t from ) {
 	serverStatusCount++;
 	return &cl_serverStatusList[serverStatusCount & (MAX_SERVERSTATUSREQUESTS-1)];
 }
+
 
 /*
 ===================
@@ -3293,6 +3295,7 @@ int CL_ServerStatus( char *serverAddress, char *serverStatusString, int maxLen )
 	}
 	return qfalse;
 }
+
 
 /*
 ===================
@@ -3392,6 +3395,7 @@ void CL_ServerStatusResponse( netadr_t from, msg_t *msg ) {
 	}
 }
 
+
 /*
 ==================
 CL_LocalServers_f
@@ -3435,6 +3439,7 @@ void CL_LocalServers_f( void ) {
 		}
 	}
 }
+
 
 /*
 ==================
@@ -3576,6 +3581,7 @@ void CL_ClearPing( int n )
 	cl_pinglist[n].adr.port = 0;
 }
 
+
 /*
 ==================
 CL_GetPingQueueCount
@@ -3656,6 +3662,7 @@ ping_t* CL_GetFreePing( void )
 	return (best);
 }
 
+
 /*
 ==================
 CL_Ping_f
@@ -3705,6 +3712,7 @@ void CL_Ping_f( void ) {
 		
 	NET_OutOfBandPrint( NS_CLIENT, to, "getinfo xxx" );
 }
+
 
 /*
 ==================
@@ -3811,6 +3819,7 @@ qboolean CL_UpdateVisiblePings_f(int source) {
 	return status;
 }
 
+
 /*
 ==================
 CL_ServerStatus_f
@@ -3867,6 +3876,7 @@ void CL_ServerStatus_f(void) {
 	serverStatus->print = qtrue;
 	serverStatus->pending = qtrue;
 }
+
 
 /*
 ==================
