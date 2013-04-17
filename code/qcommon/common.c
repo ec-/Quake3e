@@ -240,12 +240,13 @@ void QDECL Com_DPrintf( const char *fmt, ...) {
 	}
 
 	va_start (argptr,fmt);	
-	Q_vsnprintf (msg, sizeof(msg), fmt, argptr);
-	va_end (argptr);
-	ZLASTCHAR(msg);
-
-	Com_Printf ("%s", msg);
+	Q_vsnprintf( msg, sizeof( msg ), fmt, argptr );
+	va_end( argptr );
+	// sanitize
+	msg[ARRAY_LEN(msg)-1] = '\0';
+	Com_Printf( "%s", msg );
 }
+
 
 /*
 =============
@@ -313,7 +314,7 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 		SV_Shutdown( "Server disconnected" );
 #ifndef DEDICATED
 		CL_Disconnect( qtrue );
-		CL_FlushMemory( );
+		CL_FlushMemory();
 #endif
 		VM_Forced_Unload_Done();
 
@@ -345,21 +346,22 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 			VM_Forced_Unload_Start();
 			CL_FlushMemory();
 			VM_Forced_Unload_Done();
-//			com_errorEntered = qfalse;
 			CL_CDDialog();
 		} else {
 			Com_Printf( "Server didn't have CD\n" );
 		}
 #endif
-		FS_PureServerSetLoadedPaks("", "");
+		FS_PureServerSetLoadedPaks( "", "" );
 
 		com_errorEntered = qfalse;
 		longjmp( abortframe, -1 );
 	} else {
+		VM_Forced_Unload_Start();
 #ifndef DEDICATED
 		CL_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ) );
 #endif
 		SV_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ) );
+		VM_Forced_Unload_Done();
 	}
 
 	Com_Shutdown ();

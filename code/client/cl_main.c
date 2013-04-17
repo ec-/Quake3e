@@ -720,7 +720,7 @@ void CL_FlushMemory( void ) {
 		Hunk_ClearToMark();
 	}
 
-	CL_StartHunkUsers( );
+	CL_StartHunkUsers();
 }
 
 /*
@@ -856,7 +856,7 @@ void CL_Disconnect( qboolean showMainMenu ) {
 		VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_NONE );
 	}
 
-	SCR_StopCinematic ();
+	SCR_StopCinematic();
 	S_ClearSoundBuffer();
 
 	// send a disconnect message to the server
@@ -869,9 +869,9 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	}
 	
 	// Remove pure paks
-	FS_PureServerSetLoadedPaks("", "");
+	FS_PureServerSetLoadedPaks( "", "" );
 	
-	CL_ClearState ();
+	CL_ClearState();
 
 	// wipe the client connection
 	Com_Memset( &clc, 0, sizeof( clc ) );

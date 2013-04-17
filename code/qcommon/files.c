@@ -3176,11 +3176,11 @@ static void FS_ReorderPurePaks( void )
 	searchpath_t **p_insert_index, // for linked list reordering
 		**p_previous; // when doing the scan
 	
+	fs_reordered = qfalse;
+
 	// only relevant when connected to pure server
 	if ( !fs_numServerPaks )
 		return;
-	
-	fs_reordered = qfalse;
 	
 	p_insert_index = &fs_searchpaths; // we insert in order at the beginning of the list 
 	for ( i = 0 ; i < fs_numServerPaks ; i++ ) {
@@ -3667,17 +3667,17 @@ void FS_PureServerSetLoadedPaks( const char *pakSums, const char *pakNames ) {
 		fs_serverPaks[i] = atoi( Cmd_Argv( i ) );
 	}
 
-	if (fs_numServerPaks) {
+	if ( fs_numServerPaks ) {
 		Com_DPrintf( "Connected to a pure server.\n" );
 	}
 	else
 	{
-		if (fs_reordered)
+		if ( fs_reordered )
 		{
 			// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=540
 			// force a restart to make sure the search order will be correct
 			Com_DPrintf( "FS search reorder is required\n" );
-			FS_Restart(fs_checksumFeed);
+			FS_Restart( fs_checksumFeed );
 			return;
 		}
 	}
@@ -3872,6 +3872,10 @@ qboolean FS_ConditionalRestart( int checksumFeed )
 	{
 		FS_Restart( checksumFeed );
 		return qtrue;
+	}
+	else if( fs_numServerPaks && !fs_reordered ) 
+	{
+		FS_ReorderPurePaks();
 	}
 	
 	return qfalse;
