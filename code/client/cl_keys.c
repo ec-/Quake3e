@@ -115,8 +115,13 @@ void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, q
 			SCR_DrawSmallChar( x + ( edit->widthInChars - 1 ) * size, y, '>' );
 		}
 	} else {
+		if ( len > drawLen + prestep ) {
+			SCR_DrawStringExt( x + ( edit->widthInChars - 1 ) * size, y, size, ">", 
+				g_color_table[ ColorIndex( COLOR_WHITE ) ], qfalse, noColorEscape );
+		}
 		// draw big string with drop shadow
-		SCR_DrawBigString( x, y, str, 1.0, noColorEscape );
+		SCR_DrawStringExt( x, y, size, str, g_color_table[ ColorIndex( curColor ) ], 
+			qfalse, noColorEscape );
 	}
 
 	// draw the cursor
@@ -142,6 +147,7 @@ void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, q
 		}
 	}
 }
+
 
 void Field_Draw( field_t *edit, int x, int y, int width, qboolean showCursor, qboolean noColorEscape ) 
 {
