@@ -541,7 +541,7 @@ static void EmitAddEDI4( vm_t *vm )
 }
 
 
-static qboolean EmitMovEAXEDI( vm_t *vm ) 
+static void EmitMovEAXEDI( vm_t *vm ) 
 {
 	opcode_t pop = pop1;
 	pop1 = OP_UNDEF;
@@ -549,28 +549,27 @@ static qboolean EmitMovEAXEDI( vm_t *vm )
 	if ( jlabel ) 
 	{
 		EmitString( "8B 07" );		// mov eax, dword ptr [edi]
-		return qtrue;
+		return;
 	}
 
 	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI )
-		return qfalse;
+		return;
 
-	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI_CALL ) {
-		return qfalse;
-	}
+	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI_CALL )
+		return;
 
 	if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) // mov [edi], eax
 	{	
 		compiledOfs -= 2;
 		vm->instructionPointers[ ip-1 ] = compiledOfs;
 		LastCommand = LAST_COMMAND_NONE; 
-		return qfalse;
+		return;
 	}
 
 	if ( pop == OP_DIVI || pop == OP_DIVU || pop == OP_MULI || pop == OP_MULU ||
 		pop == OP_STORE4 || pop == OP_STORE2 || pop == OP_STORE1 ) 
 	{	
-		return qfalse;
+		return;
 	}
 
 	if ( LastCommand == LAST_COMMAND_MOV_EDI_CONST ) // mov dword ptr [edi], 0x12345678
@@ -583,11 +582,10 @@ static qboolean EmitMovEAXEDI( vm_t *vm )
 			EmitString( "B8" );			// mov	eax, 0x12345678
 			Emit4( lastConst );
 		}
-		return qtrue;
+		return;
 	}
 
 	EmitString( "8B 07" );		    // mov eax, dword ptr [edi]
-	return qtrue;
 }
 
 
@@ -824,7 +822,7 @@ void EmitCallAddr( vm_t *vm, int addr )
 
 void EmitCallOffset( func_t Func ) 
 {
-	int v;
+	int  v;
 	v = funcOffset[ Func ] - compiledOfs;
 	EmitString( "E8" );		// call +funcOffset[ Func ]
 	Emit4( v - 5 );
@@ -1100,14 +1098,10 @@ void EmitFCalc( int op )
 {
 	switch ( op )
 	{
-		case OP_ADDF: EmitString( "D8 07" ); // fadd dword ptr [edi]
-			break;
-		case OP_SUBF: EmitString( "D8 27" ); // fsub dword ptr [edi]
-			break;
-		case OP_MULF: EmitString( "D8 0F" ); // fmul dword ptr [edi]
-			break;
-		case OP_DIVF: EmitString( "D8 37" ); // fdiv dword ptr [edi]
-			break;
+		case OP_ADDF: EmitString( "D8 07" ); break; // fadd dword ptr [edi]
+		case OP_SUBF: EmitString( "D8 27" ); break;	// fsub dword ptr [edi]
+		case OP_MULF: EmitString( "D8 0F" ); break; // fmul dword ptr [edi]
+		case OP_DIVF: EmitString( "D8 37" ); break; // fdiv dword ptr [edi]
 		default: Com_Error( ERR_DROP, "bad float op" ); break;
 	};
 }
@@ -1124,14 +1118,10 @@ static int FloatMerge( instruction_t *curr, instruction_t *next )
 	EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
 	EmitFCalc( curr->op );
 	switch ( next->op ) {
-		case OP_ADDF: EmitString( "DE C1" ); // faddp
-			break;
-		case OP_SUBF: EmitString( "DE E9" ); // fsubp
-			break;
-		case OP_MULF: EmitString( "DE C9" ); // fmulp
-			break;
-		case OP_DIVF: EmitString( "DE F9" ); // fdivp
-			break;
+		case OP_ADDF: EmitString( "DE C1" ); break; // faddp
+		case OP_SUBF: EmitString( "DE E9" ); break; // fsubp
+		case OP_MULF: EmitString( "DE C9" ); break; // fmulp
+		case OP_DIVF: EmitString( "DE F9" ); break; // fdivp
 		default: Com_Error( ERR_DROP, "bad merge op2" ); break;
 	}
 	EmitString( "D9 5F F8" );				// fstp dword ptr [edi-8]
@@ -1155,18 +1145,6 @@ qboolean ConstOptimize( vm_t *vm )
 	op1 = ni->op;
 
 	switch ( op1 ) {
-
-	case OP_ARG:
-#if 0
-		if ( ISS8( ni->value ) && ci->value ) {
-			EmitString( "C7 45" );		// mov	dword ptr [ebp + 0x7F], 0x12345678
-			Emit1( ni->value );
-			Emit4( ci->value );
-			ip += 1; // OP_ARG
-			return qtrue;
-		} 
-#endif
-		return qfalse;
 
 	case OP_LOAD4:
 		EmitAddEDI4( vm );
@@ -1248,19 +1226,7 @@ qboolean ConstOptimize( vm_t *vm )
 	
 	case OP_ADD:
 		v = ci->value;
-		if ( !EmitMovEAXEDI( vm ) && (ni+1)->op == OP_LOAD4 /*&& ISS8( v ) */ ) 
-		{
-			if ( ISS8( v ) ) {
-				EmitString( "8B 44 03" ); // mov eax, dword ptr [ebx + eax + 0x7F]
-				Emit1( v );
-			} else {
-				EmitString( "8B 84 03" ); // mov eax, dword ptr [ebx + eax + 0x12345678]
-				Emit4( v );
-			}
-			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
-			ip += 2; // OP_ADD + OP_LOAD4
-			return qtrue;
-		} 
+		EmitMovEAXEDI( vm ); 
 		if ( ISS8( v ) ) {
 			EmitString( "83 C0" );	// add eax, 0x7F
 			Emit1( v );
@@ -1392,12 +1358,12 @@ qboolean ConstOptimize( vm_t *vm )
 				case ~TRAP_COS: EmitString( "D9 FF" ); break;  // fcos
 			}
 			EmitAddEDI4( vm );						// add edi, 4
-			EmitCommand( LAST_COMMAND_FSTP_EDI ); 	// fstp dword ptr [edi]
+			EmitCommand( LAST_COMMAND_FSTP_EDI ); 	// fstp dword ptr[edi]
 			ip += 1;
 			return qtrue;
 		}
-#if 1
-		if ( v < 0 ) 
+
+		if ( v < 0 ) // syscall
 		{
 			EmitString( "B8" );		// mov eax, 0x12345678
 			Emit4( ~v );
@@ -1412,15 +1378,14 @@ qboolean ConstOptimize( vm_t *vm )
 		Emit4( ip );
 #endif
 		EmitString( "55" );	// push ebp
-		EmitString( "56" );	// push esi
-		EmitString( "53" );	// push ebx
+		EmitString( "56" );	// push rsi
+		EmitString( "53" );	// push rbx
 		EmitCallAddr( vm, v ); // call +addr
-		EmitString( "5B" );	// pop ebx
-		EmitString( "5E" );	// pop esi
+		EmitString( "5B" );	// pop rbx
+		EmitString( "5E" );	// pop rsi
 		EmitString( "5D" );	// pop ebp
 		ip += 1; // OP_CALL
 		return qtrue;
-#endif
 
 	case OP_EQ:
 	case OP_NE:
@@ -2293,12 +2258,6 @@ __compile:
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
 				EmitString( "8B 04 03" );						// mov	eax, dword ptr [ebx + eax]
-				if ( ni->op == OP_CONST && ISS8( ni->value ) && (ni+1)->op == OP_ADD && (ni+2)->op == OP_LOAD4 ) 
-				{
-					EmitString( "8B 44 03" ); // mov eax, dword ptr [ebx + eax + 0x7F]
-					Emit1( ni->value );
-					ip += 3; // OP_CONST + OP_ADD + OP_LOAD
-				}
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );		// mov dword ptr [edi], eax
 				break;
 			}
