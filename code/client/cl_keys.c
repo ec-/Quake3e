@@ -85,14 +85,17 @@ void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, q
 		Com_Error( ERR_DROP, "drawLen >= MAX_STRING_CHARS" );
 	}
 
+	// FIXME: color tracking
 	Com_Memcpy( str, edit->buffer + prestep, drawLen );
 	str[ drawLen ] = '\0';
+
+	// scroll marker
+	if ( prestep > 0 && str[0] )
+		str[0] = '<';
 
 	// draw it
 	if ( size == SMALLCHAR_WIDTH ) {
 		color[0] = color[1] = color[2] = color[3] = 1.0;
-		if ( prestep > 0 )
-			str[0] = '<';
 		SCR_DrawSmallStringExt( x, y, str, color, qfalse, noColorEscape );
 		if ( len > drawLen + prestep ) {
 			SCR_DrawSmallChar( x + ( edit->widthInChars - 1 ) * size, y, '>' );
