@@ -75,31 +75,32 @@ void		Con_Fixup( void );
 Con_ToggleConsole_f
 ================
 */
-void Con_ToggleConsole_f (void) {
+void Con_ToggleConsole_f( void ) {
 	// Can't toggle the console when it's the only thing available
-    if ( cls.state == CA_DISCONNECTED && Key_GetCatcher( ) == KEYCATCH_CONSOLE ) {
+    if ( cls.state == CA_DISCONNECTED && Key_GetCatcher() == KEYCATCH_CONSOLE ) {
 		return;
 	}
 
 	Field_Clear( &g_consoleField );
 	g_consoleField.widthInChars = g_console_field_width;
 
-	Con_ClearNotify ();
-	Key_SetCatcher( Key_GetCatcher( ) ^ KEYCATCH_CONSOLE );
+	Con_ClearNotify();
+	Key_SetCatcher( Key_GetCatcher() ^ KEYCATCH_CONSOLE );
 }
+
 
 /*
 ================
 Con_MessageMode_f
 ================
 */
-void Con_MessageMode_f (void) {
+void Con_MessageMode_f( void ) {
 	chat_playerNum = -1;
 	chat_team = qfalse;
 	Field_Clear( &chatField );
 	chatField.widthInChars = 30;
 
-	Key_SetCatcher( Key_GetCatcher( ) ^ KEYCATCH_MESSAGE );
+	Key_SetCatcher( Key_GetCatcher() ^ KEYCATCH_MESSAGE );
 }
 
 /*
@@ -120,7 +121,7 @@ void Con_MessageMode2_f (void) {
 Con_MessageMode3_f
 ================
 */
-void Con_MessageMode3_f (void) {
+void Con_MessageMode3_f( void ) {
 	chat_playerNum = VM_Call( cgvm, CG_CROSSHAIR_PLAYER );
 	if ( chat_playerNum < 0 || chat_playerNum >= MAX_CLIENTS ) {
 		chat_playerNum = -1;
@@ -129,7 +130,7 @@ void Con_MessageMode3_f (void) {
 	chat_team = qfalse;
 	Field_Clear( &chatField );
 	chatField.widthInChars = 30;
-	Key_SetCatcher( Key_GetCatcher( ) ^ KEYCATCH_MESSAGE );
+	Key_SetCatcher( Key_GetCatcher() ^ KEYCATCH_MESSAGE );
 }
 
 /*
@@ -154,14 +155,16 @@ void Con_MessageMode4_f (void) {
 Con_Clear_f
 ================
 */
-void Con_Clear_f (void) {
+void Con_Clear_f( void ) {
 	int		i;
 
-	for ( i = 0 ; i < CON_TEXTSIZE ; i++ ) {
-		con.text[i] = (ColorIndex(COLOR_WHITE)<<8) | ' ';
+	for ( i = 0 ; i < con.linewidth ; i++ ) {
+		con.text[i] = ( ColorIndex( COLOR_WHITE ) << 8 ) | ' ';
 	}
 
+	con.x = 0;
 	con.current = 0;
+	con.newline = qtrue;
 
 	Con_Bottom();		// go to end
 }
@@ -276,13 +279,8 @@ void Con_CheckResize( void )
 		con.linewidth = width;
 		con.totallines = CON_TEXTSIZE / con.linewidth;
 		con.vispage = 4;
-		//for ( i = 0; i < CON_TEXTSIZE; i++ ) 
-		//{
-		//	con.text[i] = (ColorIndex(COLOR_WHITE)<<8) | ' ';
-		//}
-		con.x = 0;
-		con.display = con.current = 0;
-		con.newline = qtrue;
+
+		Con_Clear_f();
 	}
 	else
 	{
