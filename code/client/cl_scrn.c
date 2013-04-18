@@ -295,7 +295,7 @@ Draws a multi-colored string with a drop shadow, optionally forcing
 to a fixed color.
 ==================
 */
-void SCR_DrawSmallStringExt( int x, int y, const char *string, float *setColor, qboolean forceColor,
+void SCR_DrawSmallStringExt( int x, int y, const char *string, const float *setColor, qboolean forceColor,
 		qboolean noColorEscape ) {
 	vec4_t		color;
 	const char	*s;

@@ -56,9 +56,9 @@ void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, q
 	int		drawLen;
 	int		prestep;
 	int		cursorChar;
-	char	str[MAX_STRING_CHARS];
-	float	color[4];
+	char	str[MAX_STRING_CHARS], *s;
 	int		i;
+	int		curColor;
 
 	drawLen = edit->widthInChars - 1; // - 1 so there is always a space for the cursor
 	len = strlen( edit->buffer );
@@ -85,18 +85,32 @@ void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, q
 		Com_Error( ERR_DROP, "drawLen >= MAX_STRING_CHARS" );
 	}
 
-	// FIXME: color tracking
 	Com_Memcpy( str, edit->buffer + prestep, drawLen );
 	str[ drawLen ] = '\0';
 
-	// scroll marker
-	if ( prestep > 0 && str[0] )
-		str[0] = '<';
+	// color tracking
+	curColor = COLOR_WHITE;
+
+	if ( prestep > 0 ) {
+		// we need to track last actual color because we cut some text before
+		s = edit->buffer;
+		for ( i = 0; i < prestep; i++, s++ ) {
+			if ( *s == Q_COLOR_ESCAPE && *(s+1) != '\0' && *(s+1) != Q_COLOR_ESCAPE ) {
+				curColor = *(s+1);
+				s++;						
+			}
+		}
+		// scroll marker
+		// FIXME: force white color?
+		if ( str[0] ) {
+			str[0] = '<';
+		}
+	}
 
 	// draw it
 	if ( size == SMALLCHAR_WIDTH ) {
-		color[0] = color[1] = color[2] = color[3] = 1.0;
-		SCR_DrawSmallStringExt( x, y, str, color, qfalse, noColorEscape );
+		SCR_DrawSmallStringExt( x, y, str, g_color_table[ ColorIndex( curColor ) ], 
+			qfalse, noColorEscape );
 		if ( len > drawLen + prestep ) {
 			SCR_DrawSmallChar( x + ( edit->widthInChars - 1 ) * size, y, '>' );
 		}

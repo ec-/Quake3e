@@ -396,6 +396,8 @@ void Con_Fixup( void )
 /*
 ===============
 Con_Linefeed
+
+Move to newline only when we _really_ need this
 ===============
 */
 void Con_NewLine( void ) 
@@ -431,10 +433,9 @@ void Con_Linefeed( qboolean skipnotify )
 			con.times[ con.current % NUM_CON_TIMES ] = cls.realtime;
 	}
 
-	if ( con.newline )
+	if ( con.newline ) {
 		Con_NewLine();
-	else 
-	{
+	} else {
 		con.newline = qtrue;
 		con.x = 0;
 	}
