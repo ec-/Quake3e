@@ -94,7 +94,7 @@ void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, q
 	if ( prestep > 0 ) {
 		// we need to track last actual color because we cut some text before
 		s = edit->buffer;
-		for ( i = 0; i < prestep; i++, s++ ) {
+		for ( i = 0; i < prestep + 1; i++, s++ ) {
 			if ( *s == Q_COLOR_ESCAPE && *(s+1) != '\0' && *(s+1) != Q_COLOR_ESCAPE ) {
 				curColor = *(s+1);
 				s++;						
