@@ -276,12 +276,13 @@ void Con_CheckResize( void )
 		con.linewidth = width;
 		con.totallines = CON_TEXTSIZE / con.linewidth;
 		con.vispage = 4;
-		for ( i = 0; i < CON_TEXTSIZE; i++ ) 
-		{
-			con.text[i] = (ColorIndex(COLOR_WHITE)<<8) | ' ';
-		}
-
-		con.current = 0;
+		//for ( i = 0; i < CON_TEXTSIZE; i++ ) 
+		//{
+		//	con.text[i] = (ColorIndex(COLOR_WHITE)<<8) | ' ';
+		//}
+		con.x = 0;
+		con.display = con.current = 0;
+		con.newline = qtrue;
 	}
 	else
 	{
