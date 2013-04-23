@@ -1190,7 +1190,7 @@ static qboolean FS_GeneralRef( const char *filename )
 	if ( FS_HasExt( filename, extList, ARRAY_LEN( extList ) ) )
 		return qfalse;
 	
-	if ( !Q_stricmp( filename, "qagame.qvm" ) )
+	if ( !Q_stricmp( filename, "vm/qagame.qvm" ) )
 		return qfalse;
 
 	if ( strstr( filename, "levelshots" ) )
