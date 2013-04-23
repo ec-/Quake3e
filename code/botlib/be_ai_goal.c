@@ -1773,7 +1773,7 @@ void BotFreeGoalState(int handle)
 //===========================================================================
 int BotSetupGoalAI(void)
 {
-	char *filename;
+	const char *filename;
 
 	//check if teamplay is on
 	g_gametype = LibVarValue("g_gametype", "0");
