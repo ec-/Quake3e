@@ -137,39 +137,39 @@ int Export_BotLibSetup(void)
 {
 	int		errnum;
 	
-	botDeveloper = LibVarGetValue("bot_developer");
+	botDeveloper = LibVarGetValue( "bot_developer" );
  	memset( &botlibglobals, 0, sizeof(botlibglobals) );
 	//initialize byte swapping (litte endian etc.)
 //	Swap_Init();
 
-	if(botDeveloper)
+	if ( botDeveloper )
 	{
-		char *homedir, *gamedir, *basedir;
+		const char *homedir, *gamedir, *basedir;
 		char logfilename[MAX_OSPATH];
 
-		homedir = LibVarGetString("homedir");
-		gamedir = LibVarGetString("gamedir");
-		basedir = LibVarGetString("com_basegame");
+		homedir = LibVarGetString( "homedir" );
+		gamedir = LibVarGetString( "gamedir" );
+		basedir = LibVarGetString( "basedir" );
 
-		if (*homedir)
+		if ( *homedir )
 		{
-			if(*gamedir)
-				Com_sprintf(logfilename, sizeof(logfilename), "%s%c%s%cbotlib.log", homedir, PATH_SEP, gamedir, PATH_SEP);
-			else if(*basedir)
-				Com_sprintf(logfilename, sizeof(logfilename), "%s%c%s%cbotlib.log", homedir, PATH_SEP, basedir, PATH_SEP);
+			if ( *gamedir )
+				Com_sprintf( logfilename, sizeof( logfilename ), "%s%c%s%cbotlib.log", homedir, PATH_SEP, gamedir, PATH_SEP );
+			else if ( *basedir )
+				Com_sprintf( logfilename, sizeof( logfilename ), "%s%c%s%cbotlib.log", homedir, PATH_SEP, basedir, PATH_SEP );
 			else
-				Com_sprintf(logfilename, sizeof(logfilename), "%s%c" BASEGAME "%cbotlib.log", homedir, PATH_SEP, PATH_SEP);
+				Com_sprintf( logfilename, sizeof( logfilename ), "%s%c" BASEGAME "%cbotlib.log", homedir, PATH_SEP, PATH_SEP );
 		}
 		else
-			Com_sprintf(logfilename, sizeof(logfilename), "botlib.log");
+			Com_sprintf( logfilename, sizeof( logfilename ), "botlib.log" );
 	
-		Log_Open(logfilename);
+		Log_Open( logfilename );
 	}
 
-	botimport.Print(PRT_MESSAGE, "------- BotLib Initialization -------\n");
+	botimport.Print( PRT_MESSAGE, "------- BotLib Initialization -------\n" );
 
-	botlibglobals.maxclients = (int) LibVarValue("maxclients", "128");
-	botlibglobals.maxentities = (int) LibVarValue("maxentities", "1024");
+	botlibglobals.maxclients = (int) LibVarValue( "maxclients", "64" );
+	botlibglobals.maxentities = (int) LibVarValue( "maxentities", "1024" );
 
 	errnum = AAS_Setup();			//be_aas_main.c
 	if (errnum != BLERR_NOERROR) return errnum;
@@ -238,9 +238,9 @@ int Export_BotLibShutdown(void)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int Export_BotLibVarSet(char *var_name, char *value)
+int Export_BotLibVarSet( const char *var_name, const char *value )
 {
-	LibVarSet(var_name, value);
+	LibVarSet( var_name, value );
 	return BLERR_NOERROR;
 } //end of the function Export_BotLibVarSet
 //===========================================================================
@@ -249,12 +249,12 @@ int Export_BotLibVarSet(char *var_name, char *value)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int Export_BotLibVarGet(char *var_name, char *value, int size)
+int Export_BotLibVarGet( const char *var_name, char *value, int size)
 {
-	char *varvalue;
+	const char *varvalue;
 
-	varvalue = LibVarGetString(var_name);
-	strncpy(value, varvalue, size-1);
+	varvalue = LibVarGetString( var_name );
+	strncpy( value, varvalue, size-1 );
 	value[size-1] = '\0';
 	return BLERR_NOERROR;
 } //end of the function Export_BotLibVarGet
