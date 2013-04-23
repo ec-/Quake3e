@@ -733,8 +733,13 @@ int FS_VM_SeekFile( fileHandle_t f, long offset, int origin, handleOwner_t owner
 void FS_VM_CloseFile( fileHandle_t f, handleOwner_t owner );
 void FS_VM_CloseFiles( handleOwner_t owner );
 
-const char *FS_GetCurrentGameDir(void);
-const char *FS_GetBaseGameDir(void);
+const char *FS_GetCurrentGameDir( void );
+const char *FS_GetBaseGameDir( void );
+
+const char *FS_GetBasePath( void );
+const char *FS_GetHomePath( void );
+const char *FS_GetGamePath( void );
+
 
 qboolean FS_IsExt( const char *filename, const char *ext );
 qboolean FS_StripExt( char *filename, const char *ext );

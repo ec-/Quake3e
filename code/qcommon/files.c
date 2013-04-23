@@ -4071,3 +4071,33 @@ const char *FS_GetBaseGameDir( void )
 	return fs_basegame->string;
 }
 
+
+const char *FS_GetBasePath( void )
+{
+	if ( fs_basepath && fs_basepath->string[0] )
+		return fs_basepath->string;
+	else
+		return "";
+}
+
+
+const char *FS_GetHomePath( void )
+{
+	if ( fs_homepath && fs_homepath->string[0] )
+		return fs_homepath->string;
+	else
+		return FS_GetBasePath();
+}
+
+
+const char *FS_GetGamePath( void ) 
+{
+	static char buffer[MAX_CVAR_VALUE_STRING];
+	if ( fs_gamedirvar && fs_gamedirvar->string[0] ) {
+		Com_sprintf( buffer, sizeof( buffer ), "%s%c%s", FS_GetHomePath(), 
+			PATH_SEP, fs_gamedirvar->string );
+	} else {
+		return "";
+	}
+}
+
