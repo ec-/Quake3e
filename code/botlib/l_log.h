@@ -30,7 +30,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *****************************************************************************/
 
 //open a log file
-void Log_Open(char *filename);
+void Log_Open( const char *filename );
 //close the current log file
 void Log_Close(void);
 //close log file if present

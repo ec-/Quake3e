@@ -133,36 +133,41 @@ qboolean BotLibSetup(char *str)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int Export_BotLibSetup(void)
+int Export_BotLibSetup( void )
 {
+	const	char *homedir, *gamedir, *basedir;
+	const	char *base, *game;
+	char	logfilename[MAX_OSPATH];
 	int		errnum;
 	
 	botDeveloper = LibVarGetValue( "bot_developer" );
- 	memset( &botlibglobals, 0, sizeof(botlibglobals) );
-	//initialize byte swapping (litte endian etc.)
-//	Swap_Init();
+ 	memset( &botlibglobals, 0, sizeof( botlibglobals ) );
+
+	// initialize byte swapping (litte endian etc.)
+	// Swap_Init();
 
 	if ( botDeveloper )
 	{
-		const char *homedir, *gamedir, *basedir;
-		char logfilename[MAX_OSPATH];
-
 		homedir = LibVarGetString( "homedir" );
-		gamedir = LibVarGetString( "gamedir" );
 		basedir = LibVarGetString( "basedir" );
+		gamedir = LibVarGetString( "gamedir" );
 
 		if ( *homedir )
-		{
-			if ( *gamedir )
-				Com_sprintf( logfilename, sizeof( logfilename ), "%s%c%s%cbotlib.log", homedir, PATH_SEP, gamedir, PATH_SEP );
-			else if ( *basedir )
-				Com_sprintf( logfilename, sizeof( logfilename ), "%s%c%s%cbotlib.log", homedir, PATH_SEP, basedir, PATH_SEP );
-			else
-				Com_sprintf( logfilename, sizeof( logfilename ), "%s%c" BASEGAME "%cbotlib.log", homedir, PATH_SEP, PATH_SEP );
-		}
+			base = homedir;
 		else
-			Com_sprintf( logfilename, sizeof( logfilename ), "botlib.log" );
-	
+			base = basedir;
+
+		if ( *gamedir )
+			game = gamedir;
+		else
+			game = BASEGAME;
+
+		if ( *base ) {
+			Com_sprintf( logfilename, sizeof( logfilename ), "%s%c%s%cbotlib.log", base, PATH_SEP, game, PATH_SEP );
+		} else {
+			Com_sprintf( logfilename, sizeof( logfilename ), "%s%cbotlib.log", game, PATH_SEP );
+		}
+
 		Log_Open( logfilename );
 	}
 
