@@ -556,8 +556,8 @@ void * QDECL Sys_LoadDll( const char *name, intptr_t (QDECL **entryPoint)(intptr
 				  intptr_t (QDECL *systemcalls)(intptr_t, ...) ) {
 	HINSTANCE	libHandle;
 	void	(QDECL *dllEntry)( intptr_t (QDECL *syscallptr)(intptr_t, ...) );
-	char	*basepath;
-	char	*gamedir;
+	const char *basepath;
+	const char *gamedir;
 	char	*fn;
 	char	filename[MAX_QPATH];
 
