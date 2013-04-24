@@ -323,11 +323,11 @@ void CL_Record_f( void ) {
 
 	// open the demo file
 
-	Com_Printf ("recording to %s.\n", name);
+	Com_Printf( "recording to %s.\n", name );
 
 	clc.demofile = FS_FOpenFileWrite( name );
 	if ( clc.demofile == FS_INVALID_HANDLE ) {
-		Com_Printf ("ERROR: couldn't open.\n");
+		Com_Printf( "ERROR: couldn't open.\n" );
 		return;
 	}
 

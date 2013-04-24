@@ -358,7 +358,7 @@ FILE *Sys_FOpen( const char *ospath, const char *mode )
 	struct stat buf;
 
 	// check if path exists and its not a directory
-	if ( stat( ospath, &buf ) == -1 || S_ISDIR( buf.st_mode ) )
+	if ( stat( ospath, &buf ) == 0 && S_ISDIR( buf.st_mode ) )
 		return NULL;
 
 	return fopen( ospath, mode );
