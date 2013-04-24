@@ -399,6 +399,24 @@ void CL_Record_f( void ) {
 	// the rest of the demo file will be copied from net messages
 }
 
+
+/*
+====================
+CL_CompleteRecordName
+====================
+*/
+static void CL_CompleteRecordName( char *args, int argNum )
+{
+	if( argNum == 2 )
+	{
+		char demoExt[ 16 ];
+
+		Com_sprintf( demoExt, sizeof( demoExt ), ".dm_%d", PROTOCOL_VERSION );
+		Field_CompleteFilename( "demos", demoExt, qtrue, FS_MATCH_EXTERN | FS_MATCH_STICK );
+	}
+}
+
+
 /*
 =======================================================================
 
@@ -508,6 +526,7 @@ static void CL_WalkDemoExt(char *arg, char *name, fileHandle_t *handle )
 	}
 }
 
+
 /*
 ====================
 CL_CompleteDemoName
@@ -523,6 +542,7 @@ static void CL_CompleteDemoName( char *args, int argNum )
 		Field_CompleteFilename( "demos", demoExt, qtrue, FS_MATCH_ANY | FS_MATCH_STICK );
 	}
 }
+
 
 /*
 ====================
@@ -2758,6 +2778,20 @@ void CL_StopVideo_f( void )
 
 
 /*
+====================
+CL_CompleteRecordName
+====================
+*/
+static void CL_CompleteVideoName( char *args, int argNum )
+{
+	if( argNum == 2 )
+	{
+		Field_CompleteFilename( "videos", ".avi", qtrue, FS_MATCH_EXTERN | FS_MATCH_STICK );
+	}
+}
+
+
+/*
 ===============
 CL_GenerateQKey
 
@@ -2944,6 +2978,7 @@ void CL_Init( void ) {
 	Cmd_AddCommand ("vid_restart", CL_Vid_Restart_f);
 	Cmd_AddCommand ("disconnect", CL_Disconnect_f);
 	Cmd_AddCommand ("record", CL_Record_f);
+	Cmd_SetCommandCompletionFunc( "record", CL_CompleteRecordName );
 	Cmd_AddCommand ("demo", CL_PlayDemo_f);
 	Cmd_SetCommandCompletionFunc( "demo", CL_CompleteDemoName );
 	Cmd_AddCommand ("cinematic", CL_PlayCinematic_f);
@@ -2961,6 +2996,7 @@ void CL_Init( void ) {
 	Cmd_AddCommand ("fs_referencedList", CL_ReferencedPK3List_f );
 	Cmd_AddCommand ("model", CL_SetModel_f );
 	Cmd_AddCommand ("video", CL_Video_f );
+	Cmd_SetCommandCompletionFunc( "video", CL_CompleteVideoName );
 	Cmd_AddCommand ("stopvideo", CL_StopVideo_f );
 
 	Cmd_AddCommand( "download", CL_Download_f );
