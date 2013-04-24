@@ -474,7 +474,7 @@ Cvar_Print
 Prints the value, default, and latched string of the given variable
 ============
 */
-void Cvar_Print( cvar_t *v ) {
+void Cvar_Print( const cvar_t *v ) {
 
 	Sys_BeginPrint();
 
@@ -806,40 +806,41 @@ given values
 ============
 */
 void Cvar_Toggle_f( void ) {
-	int		i, c = Cmd_Argc();
-	char		*curval;
+	int		i, c;
+	const char	*curval;
 
-	if(c < 2) {
-		Com_Printf("usage: toggle <variable> [value1, value2, ...]\n");
+	c = Cmd_Argc();
+	if ( c < 2 ) {
+		Com_Printf( "usage: toggle <variable> [value1, value2, ...]\n" );
 		return;
 	}
 
-	if(c == 2) {
-		Cvar_Set2(Cmd_Argv(1), va("%d", 
-			!Cvar_VariableValue(Cmd_Argv(1))), 
-			qfalse);
+	if ( c == 2 ) {
+		Cvar_Set2( Cmd_Argv( 1 ), va( "%d", !Cvar_VariableValue( Cmd_Argv( 1 ) ) ), 
+			qfalse );
 		return;
 	}
 
-	if(c == 3) {
-		Com_Printf("toggle: nothing to toggle to\n");
+	if ( c == 3 ) {
+		Com_Printf( "toggle: nothing to toggle to\n" );
 		return;
 	}
 
-	curval = Cvar_VariableString(Cmd_Argv(1));
+	curval = Cvar_VariableString( Cmd_Argv( 1 ) );
 
 	// don't bother checking the last arg for a match since the desired
 	// behaviour is the same as no match (set to the first argument)
-	for(i = 2; i + 1 < c; i++) {
-		if(strcmp(curval, Cmd_Argv(i)) == 0) {
-			Cvar_Set2(Cmd_Argv(1), Cmd_Argv(i + 1), qfalse);
+	for ( i = 2; i + 1 < c; i++ ) {
+		if ( strcmp( curval, Cmd_Argv( i ) ) == 0 ) {
+			Cvar_Set2( Cmd_Argv( 1 ), Cmd_Argv(i + 1), qfalse );
 			return;
 		}
 	}
 
 	// fallback
-	Cvar_Set2(Cmd_Argv(1), Cmd_Argv(2), qfalse);
+	Cvar_Set2( Cmd_Argv( 1 ), Cmd_Argv( 2 ), qfalse );
 }
+
 
 /*
 ============
@@ -892,6 +893,7 @@ void Cvar_Set_f( void ) {
 	}
 }
 
+
 /*
 ============
 Cvar_Reset_f
@@ -904,6 +906,7 @@ void Cvar_Reset_f( void ) {
 	}
 	Cvar_Reset( Cmd_Argv( 1 ) );
 }
+
 
 /*
 ============
@@ -948,6 +951,7 @@ void Cvar_WriteVariables( fileHandle_t f )
 
 	Sys_EndPrint();
 }
+
 
 /*
 ============
@@ -1028,6 +1032,7 @@ void Cvar_List_f( void ) {
 	Sys_EndPrint();
 }
 
+
 /*
 ============
 Cvar_Unset
@@ -1036,37 +1041,38 @@ Unsets a cvar
 ============
 */
 
-cvar_t *Cvar_Unset(cvar_t *cv)
+cvar_t *Cvar_Unset( cvar_t *cv )
 {
 	cvar_t *next = cv->next;
 
-	if(cv->name)
-		Z_Free(cv->name);
-	if(cv->string)
-		Z_Free(cv->string);
-	if(cv->latchedString)
-		Z_Free(cv->latchedString);
-	if(cv->resetString)
-		Z_Free(cv->resetString);
+	if ( cv->name )
+		Z_Free( cv->name );
+	if ( cv->string )
+		Z_Free( cv->string );
+	if ( cv->latchedString )
+		Z_Free( cv->latchedString );
+	if ( cv->resetString )
+		Z_Free( cv->resetString );
 
-	if(cv->prev)
+	if ( cv->prev )
 		cv->prev->next = cv->next;
 	else
 		cvar_vars = cv->next;
-	if(cv->next)
+	if ( cv->next )
 		cv->next->prev = cv->prev;
 
-	if(cv->hashPrev)
+	if ( cv->hashPrev )
 		cv->hashPrev->hashNext = cv->hashNext;
 	else
 		hashTable[cv->hashIndex] = cv->hashNext;
-	if(cv->hashNext)
+	if ( cv->hashNext )
 		cv->hashNext->hashPrev = cv->hashPrev;
 
-	Com_Memset(cv, '\0', sizeof(*cv));
+	Com_Memset( cv, '\0', sizeof( *cv ) );
 	
 	return next;
 }
+
 
 /*
 ============
@@ -1080,23 +1086,23 @@ void Cvar_Unset_f(void)
 {
 	cvar_t *cv;
 	
-	if(Cmd_Argc() != 2)
+	if ( Cmd_Argc() != 2 )
 	{
-		Com_Printf("Usage: %s <varname>\n", Cmd_Argv(0));
+		Com_Printf( "Usage: %s <varname>\n", Cmd_Argv( 0 ) );
 		return;
 	}
 	
-	cv = Cvar_FindVar(Cmd_Argv(1));
+	cv = Cvar_FindVar( Cmd_Argv( 1 ) );
 
-	if(!cv)
+	if ( !cv )
 		return;
 	
-	if(cv->flags & CVAR_USER_CREATED)
-		Cvar_Unset(cv);
+	if ( cv->flags & CVAR_USER_CREATED )
+		Cvar_Unset( cv );
 	else
-		Com_Printf("Error: %s: Variable %s is not user created.\n", Cmd_Argv(0), cv->name);
+		Com_Printf( "Error: %s: Variable %s is not user created.\n", 
+			Cmd_Argv( 0 ), cv->name );
 }
-
 
 
 /*
@@ -1287,6 +1293,7 @@ void	Cvar_Update( vmCvar_t *vmCvar ) {
 	vmCvar->integer = cv->integer;
 }
 
+
 /*
 ==================
 Cvar_CompleteCvarName
@@ -1303,6 +1310,7 @@ void Cvar_CompleteCvarName( char *args, int argNum )
 			Field_CompleteCommand( p, qfalse, qtrue );
 	}
 }
+
 
 /*
 ============

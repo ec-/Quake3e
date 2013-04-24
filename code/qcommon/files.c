@@ -3834,12 +3834,12 @@ void FS_Restart( int checksumFeed ) {
 	if ( Q_stricmp(fs_gamedirvar->string, lastValidGame) ) {
 		// skip the q3config.cfg if "safe" is on the command line
 		if ( !Com_SafeMode() ) {
-			Cbuf_AddText ("exec q3config.cfg\n");
+			Cbuf_AddText( "exec q3config.cfg\n" );
 		}
 	}
 
-	Q_strncpyz(lastValidBase, fs_basepath->string, sizeof(lastValidBase));
-	Q_strncpyz(lastValidGame, fs_gamedirvar->string, sizeof(lastValidGame));
+	Q_strncpyz( lastValidBase, fs_basepath->string, sizeof( lastValidBase ) );
+	Q_strncpyz( lastValidGame, fs_gamedirvar->string, sizeof( lastValidGame ) );
 
 }
 
@@ -3949,9 +3949,12 @@ int FS_FTell( fileHandle_t f ) {
 	return pos;
 }
 
-void	FS_Flush( fileHandle_t f ) {
-	fflush(fsh[f].handleFiles.file.o);
+
+void FS_Flush( fileHandle_t f ) 
+{
+	fflush( fsh[f].handleFiles.file.o );
 }
+
 
 void	FS_FilenameCompletion( const char *dir, const char *ext,
 		qboolean stripExt, void(*callback)(const char *s), int flags ) {
@@ -3968,14 +3971,15 @@ void	FS_FilenameCompletion( const char *dir, const char *ext,
 		FS_ConvertPath( filenames[ i ] );
 		Q_strncpyz( filename, filenames[ i ], MAX_STRING_CHARS );
 
-		if( stripExt ) {
-			COM_StripExtension(filename, filename, sizeof(filename));
+		if ( stripExt ) {
+			COM_StripExtension( filename, filename, sizeof( filename ) );
 		}
 
 		callback( filename );
 	}
 	FS_FreeFileList( filenames );
 }
+
 
 /*
 	Secure VM functions
@@ -4096,6 +4100,7 @@ const char *FS_GetGamePath( void )
 	if ( fs_gamedirvar && fs_gamedirvar->string[0] ) {
 		Com_sprintf( buffer, sizeof( buffer ), "%s%c%s", FS_GetHomePath(), 
 			PATH_SEP, fs_gamedirvar->string );
+		return buffer;
 	} else {
 		return "";
 	}
