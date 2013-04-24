@@ -132,7 +132,7 @@ int PC_WhiteSpaceBeforeToken(token_t *token);
 //add a define to the source
 int PC_AddDefine(source_t *source, char *string);
 //add a globals define that will be added to all opened sources
-int PC_AddGlobalDefine(char *string);
+int PC_AddGlobalDefine(const char *string);
 //remove the given global define
 int PC_RemoveGlobalDefine(char *name);
 //remove all globals defines
@@ -140,11 +140,11 @@ void PC_RemoveAllGlobalDefines(void);
 //add builtin defines
 void PC_AddBuiltinDefines(source_t *source);
 //set the source include path
-void PC_SetIncludePath(source_t *source, char *path);
+void PC_SetIncludePath(source_t *source, const char *path);
 //set the punction set
 void PC_SetPunctuations(source_t *source, punctuation_t *p);
 //set the base folder to load files from
-void PC_SetBaseFolder(char *path);
+void PC_SetBaseFolder(const char *path);
 //load a source file
 source_t *LoadSourceFile(const char *filename);
 //load a source from memory
@@ -152,9 +152,9 @@ source_t *LoadSourceMemory(char *ptr, int length, char *name);
 //free the given source
 void FreeSource(source_t *source);
 //print a source error
-void QDECL SourceError(source_t *source, char *str, ...) __attribute__ ((format (printf, 2, 3)));
+void QDECL SourceError(source_t *source, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 //print a source warning
-void QDECL SourceWarning(source_t *source, char *str, ...)  __attribute__ ((format (printf, 2, 3)));
+void QDECL SourceWarning(source_t *source, const char *fmt, ...)  __attribute__ ((format (printf, 2, 3)));
 
 #ifdef BSPC
 // some of BSPC source does include game/q_shared.h and some does not

@@ -887,7 +887,7 @@ void R_LoadImage( const char *name, byte **pic, int *width, int *height )
 	int i;
 	char localName[ MAX_QPATH ];
 	const char *ext;
-	char *altName;
+	const char *altName;
 
 	*pic = NULL;
 	*width = 0;

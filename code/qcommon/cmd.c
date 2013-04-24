@@ -308,15 +308,15 @@ Inserts the current value of a variable as command text
 ===============
 */
 void Cmd_Vstr_f( void ) {
-	char	*v;
+	const char *v;
 
-	if (Cmd_Argc () != 2) {
-		Com_Printf ("vstr <variablename> : execute a variable command\n");
+	if ( Cmd_Argc () != 2 ) {
+		Com_Printf( "vstr <variablename> : execute a variable command\n" );
 		return;
 	}
 
 	v = Cvar_VariableString( Cmd_Argv( 1 ) );
-	Cbuf_InsertText( va("%s\n", v ) );
+	Cbuf_InsertText( va( "%s\n", v ) );
 }
 
 

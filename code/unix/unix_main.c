@@ -758,9 +758,9 @@ void *Sys_LoadDll( const char *name, intptr_t (**entryPoint)(intptr_t, ...),
 	void  (*dllEntry)( intptr_t (*syscallptr)(intptr_t, ...) );
 	char  curpath[MAX_OSPATH];
 	char  fname[MAX_OSPATH];
-	char  *basepath;
-	char  *homepath;
-	char  *gamedir;
+	const char  *basepath;
+	const char  *homepath;
+	const char  *gamedir;
 	const char  *pwdpath;
 	const char*  err = NULL;
 

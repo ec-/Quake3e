@@ -2727,7 +2727,7 @@ Com_Init
 =================
 */
 void Com_Init( char *commandLine ) {
-	char	*s;
+	const char *s;
 	int	qport;
 
 	Com_Printf( "%s %s %s\n", SVN_VERSION, PLATFORM_STRING, __DATE__ );
@@ -2914,6 +2914,7 @@ void Com_Init( char *commandLine ) {
 
 	Com_Printf ("--- Common Initialization Complete ---\n");
 }
+
 
 //==================================================================
 

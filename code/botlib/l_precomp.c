@@ -125,13 +125,13 @@ define_t *globaldefines;
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-void QDECL SourceError(source_t *source, char *str, ...)
+void QDECL SourceError(source_t *source, const char *fmt, ...)
 {
 	char text[1024];
 	va_list ap;
 
-	va_start(ap, str);
-	vsprintf(text, str, ap);
+	va_start(ap, fmt);
+	vsprintf(text, fmt, ap);
 	va_end(ap);
 #ifdef BOTLIB
 	botimport.Print(PRT_ERROR, "file %s, line %d: %s\n", source->scriptstack->filename, source->scriptstack->line, text);
@@ -149,13 +149,13 @@ void QDECL SourceError(source_t *source, char *str, ...)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void QDECL SourceWarning(source_t *source, char *str, ...)
+void QDECL SourceWarning(source_t *source, const char *fmt, ...)
 {
 	char text[1024];
 	va_list ap;
 
-	va_start(ap, str);
-	vsprintf(text, str, ap);
+	va_start(ap, fmt);
+	vsprintf(text, fmt, ap);
 	va_end(ap);
 #ifdef BOTLIB
 	botimport.Print(PRT_WARNING, "file %s, line %d: %s\n", source->scriptstack->filename, source->scriptstack->line, text);
@@ -1317,7 +1317,7 @@ int PC_Directive_define(source_t *source)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-define_t *PC_DefineFromString(char *string)
+define_t *PC_DefineFromString(const char *string)
 {
 	script_t *script;
 	source_t src;
@@ -1396,7 +1396,7 @@ int PC_AddDefine(source_t *source, char *string)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int PC_AddGlobalDefine(char *string)
+int PC_AddGlobalDefine(const char *string)
 {
 	define_t *define;
 
@@ -2961,7 +2961,7 @@ void PC_UnreadToken(source_t *source, token_t *token)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-void PC_SetIncludePath(source_t *source, char *path)
+void PC_SetIncludePath(source_t *source, const char *path)
 {
 	strncpy(source->includepath, path, MAX_PATH);
 	//add trailing path seperator
@@ -3209,7 +3209,7 @@ int PC_SourceFileAndLine(int handle, char *filename, int *line)
 // Returns:				-
 // Changes Globals:		-
 //============================================================================
-void PC_SetBaseFolder(char *path)
+void PC_SetBaseFolder(const char *path)
 {
 	PS_SetBaseFolder(path);
 } //end of the function PC_SetBaseFolder

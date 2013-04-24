@@ -700,7 +700,7 @@ qboolean Q_isintegral( float f );
 void	Q_strncpyz( char *dest, const char *src, int destsize );
 void	Q_strcat( char *dest, int size, const char *src );
 
-int     Q_replace( char * str1, char * str2, char * src, int max_len );
+int     Q_replace( const char *str1, const char *str2, char *src, int max_len );
 
 // strlen that discounts Quake color sequences
 int Q_PrintStrlen( const char *string );
@@ -738,7 +738,7 @@ float	LittleFloat (const float *l);
 
 void	Swap_Init (void);
 */
-char	*QDECL va( const char *format, ... ) __attribute__ ((format( printf, 1, 2 )));
+const char *QDECL va( const char *format, ... ) __attribute__ ((format( printf, 1, 2 )));
 
 #define TRUNCATE_LENGTH	64
 void Com_TruncateLongString( char *buffer, const char *s );

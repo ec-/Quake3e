@@ -2408,7 +2408,7 @@ void CL_Frame ( int msec ) {
 		if( cls.state == CA_ACTIVE && !clc.demorecording && !clc.demoplaying ) {
 			// If not recording a demo, and we should be, start one
 			qtime_t	now;
-			char		*nowString;
+			const char	*nowString;
 			char		*p;
 			char		mapName[ MAX_QPATH ];
 			char		serverName[ MAX_OSPATH ];
@@ -3449,19 +3449,20 @@ CL_GlobalServers_f
 void CL_GlobalServers_f( void ) {
 	netadr_t	to;
 	int			count, i, masterNum;
-	char		command[1024], *masteraddress;
+	char		command[1024];
+	const char	*masteraddress;
 	char		*cmdname;
 	
-	if ((count = Cmd_Argc()) < 3 || (masterNum = atoi(Cmd_Argv(1))) < 0 || masterNum > MAX_MASTER_SERVERS - 1)
+	if ( (count = Cmd_Argc()) < 3 || (masterNum = atoi(Cmd_Argv(1))) < 0 || masterNum > MAX_MASTER_SERVERS - 1 )
 	{
-		Com_Printf("usage: globalservers <master# 0-%d> <protocol> [keywords]\n", MAX_MASTER_SERVERS - 1);
+		Com_Printf( "usage: globalservers <master# 0-%d> <protocol> [keywords]\n", MAX_MASTER_SERVERS - 1 );
 		return;	
 	}
 
 	sprintf(command, "sv_master%d", masterNum + 1);
-	masteraddress = Cvar_VariableString(command);
+	masteraddress = Cvar_VariableString( command );
 	
-	if(!*masteraddress)
+	if ( !*masteraddress )
 	{
 		Com_Printf( "CL_GlobalServers_f: Error: No master server address given.\n");
 		return;	
@@ -3470,17 +3471,17 @@ void CL_GlobalServers_f( void ) {
 	// reset the list, waiting for response
 	// -1 is used to distinguish a "no response"
 
-	i = NET_StringToAdr(masteraddress, &to, NA_UNSPEC);
+	i = NET_StringToAdr( masteraddress, &to, NA_UNSPEC );
 	
-	if(!i)
+	if ( !i )
 	{
 		Com_Printf( "CL_GlobalServers_f: Error: could not resolve address of master %s\n", masteraddress);
 		return;	
 	}
-	else if(i == 2)
-		to.port = BigShort(PORT_MASTER);
+	else if ( i == 2 )
+		to.port = BigShort( PORT_MASTER );
 
-	Com_Printf("Requesting servers from master %s...\n", masteraddress);
+	Com_Printf( "Requesting servers from master %s...\n", masteraddress );
 
 	cls.numglobalservers = -1;
 	cls.pingUpdateSource = AS_GLOBAL;
@@ -3898,7 +3899,7 @@ void CL_Download_f( void )
 {
 	char url[MAX_CVAR_VALUE_STRING];
 	char name[MAX_CVAR_VALUE_STRING];
-	char *s;
+	const char *s;
 	qboolean stripped;
 	qboolean headerCheck;
 

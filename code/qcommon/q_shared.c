@@ -878,20 +878,22 @@ void Q_strcat( char *dest, int size, const char *src ) {
 }
 
 
-int Q_replace( char * str1, char * str2, char * src, int max_len ) 
+int Q_replace( const char *str1, const char *str2, char *src, int max_len ) 
 {
-	int count = 0; // replace count
-    int len1, len2, d;
-    char *match, *s0, *s1, *s2, *max;
+	int len1, len2, d, count;
+	const char *s0, *s1, *s2, *max;
+	char *match, *dst;
 
-    match = strstr( src, str1 );
+	match = strstr( src, str1 );
 
-    if ( !match )
-        return count;
+	if ( !match )
+		return 0;
+
+	count = 0; // replace count
 
     len1 = strlen( str1 );
     len2 = strlen( str2 );
-    d = len2-len1;
+    d = len2 - len1;
 
     if ( d > 0 ) // expand and replace mode    
     {
@@ -905,12 +907,12 @@ int Q_replace( char * str1, char * str2, char * src, int max_len )
             src += d;
             if ( src >= max )
                 return count;
-            s2 = src;
+            dst = src;
             
             s0 = match + len1;
 
             while ( s1 >= s0 )
-                *s2-- = *s1--;
+                *dst-- = *s1--;
 			
 			// replace match
             s2 = str2;
@@ -932,8 +934,8 @@ int Q_replace( char * str1, char * str2, char * src, int max_len )
         {
             // shrink source string
             s1 = match + len1;
-            s2 = match + len2;
-            while ( (*s2++ = *s1++) != 0 );
+            dst = match + len2;
+            while ( (*dst++ = *s1++) != '\0' );
 			
 			//replace match
             s2 = str2;
@@ -1077,7 +1079,7 @@ varargs versions of all text functions.
 FIXME: make this buffer size safe someday
 ============
 */
-char	*QDECL va( const char *format, ... ) 
+const char *QDECL va( const char *format, ... ) 
 {
 	char	*buf;
 	va_list		argptr;

@@ -264,7 +264,7 @@ void BotMutateGoalFuzzyLogic(int goalstate, float range)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-itemconfig_t *LoadItemConfig(char *filename)
+itemconfig_t *LoadItemConfig( const char *filename )
 {
 	int max_iteminfo;
 	token_t token;

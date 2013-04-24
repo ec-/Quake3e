@@ -194,17 +194,17 @@ typedef struct script_s
 //read a token from the script
 int PS_ReadToken(script_t *script, token_t *token);
 //expect a certain token
-int PS_ExpectTokenString(script_t *script, char *string);
+int PS_ExpectTokenString(script_t *script, const char *string);
 //expect a certain token type
 int PS_ExpectTokenType(script_t *script, int type, int subtype, token_t *token);
 //expect a token
 int PS_ExpectAnyToken(script_t *script, token_t *token);
 //returns true when the token is available
-int PS_CheckTokenString(script_t *script, char *string);
+int PS_CheckTokenString(script_t *script, const char *string);
 //returns true and reads the token when a token with the given type is available
 int PS_CheckTokenType(script_t *script, int type, int subtype, token_t *token);
 //skip tokens until the given token string is read
-int PS_SkipUntilString(script_t *script, char *string);
+int PS_SkipUntilString(script_t *script, const char *string);
 //unread the last token read from the script
 void PS_UnreadLastToken(script_t *script);
 //unread the given token
@@ -234,14 +234,14 @@ char *PunctuationFromNum(script_t *script, int num);
 //load a script from the given file at the given offset with the given length
 script_t *LoadScriptFile(const char *filename);
 //load a script from the given memory with the given length
-script_t *LoadScriptMemory(char *ptr, int length, char *name);
+script_t *LoadScriptMemory(const char *ptr, int length, const char *name);
 //free a script
 void FreeScript(script_t *script);
 //set the base folder to load files from
-void PS_SetBaseFolder(char *path);
+void PS_SetBaseFolder(const char *path);
 //print a script error with filename and line number
-void QDECL ScriptError(script_t *script, char *str, ...) __attribute__ ((format (printf, 2, 3)));
+void QDECL ScriptError(script_t *script, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 //print a script warning with filename and line number
-void QDECL ScriptWarning(script_t *script, char *str, ...) __attribute__ ((format (printf, 2, 3)));
+void QDECL ScriptWarning(script_t *script, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 
 
