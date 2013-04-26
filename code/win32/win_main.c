@@ -174,13 +174,16 @@ Sys_Pwd
 const char *Sys_Pwd( void )
 {
 	static char pwd[ MAX_OSPATH ];
+	TCHAR	buffer[ MAX_OSPATH ];
 	char *s;
 
 	if ( pwd[0] )
 		return pwd;
 
-	GetModuleFileName( NULL, pwd, ARRAY_LEN( pwd ) -1 );
-	pwd[ ARRAY_LEN( pwd ) - 1 ] = '\0';
+	GetModuleFileName( NULL, buffer, ARRAY_LEN( buffer ) -1 );
+	buffer[ ARRAY_LEN( buffer ) - 1 ] = '\0';
+
+	strcpy( pwd, WtoA( buffer ) );
 
 	s = strrchr( pwd, PATH_SEP );
 	if ( s ) 
