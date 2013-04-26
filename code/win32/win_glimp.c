@@ -57,6 +57,10 @@ typedef enum {
 #define TRY_PFD_FAIL_SOFT	1
 #define TRY_PFD_FAIL_HARD	2
 
+#ifndef PFD_SUPPORT_COMPOSITION
+#define PFD_SUPPORT_COMPOSITION 0x00008000
+#endif
+
 static void		GLW_InitExtensions( void );
 static rserr_t	GLW_SetMode( const char *drivername, 
 							 int mode, 
@@ -118,9 +122,8 @@ static qboolean GLW_StartDriverAndSetMode( const char *drivername,
 static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 {
 	PIXELFORMATDESCRIPTOR pfds[MAX_PFDS+1];
-	int maxPFD = 0;
+	int maxPFD, bestMatch;
 	int i;
-	int bestMatch = 0;
 
 	ri.Printf( PRINT_ALL, "...GLW_ChoosePFD( %d, %d, %d )\n", ( int ) pPFD->cColorBits, ( int ) pPFD->cDepthBits, ( int ) pPFD->cStencilBits );
 
@@ -133,6 +136,7 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 	{
 		maxPFD = DescribePixelFormat( hDC, 1, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[0] );
 	}
+
 	if ( maxPFD > MAX_PFDS )
 	{
 		ri.Printf( PRINT_WARNING, "...numPFDs > MAX_PFDS (%d > %d)\n", maxPFD, MAX_PFDS );
@@ -153,6 +157,10 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 			DescribePixelFormat( hDC, i, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[i] );
 		}
 	}
+
+__rescan:
+
+	bestMatch = 0;
 
 	// look for a best match
 	for ( i = 1; i <= maxPFD; i++ )
@@ -183,7 +191,7 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 		}
 
 		// verify proper flags
-		if ( ( ( pfds[i].dwFlags & pPFD->dwFlags ) & pPFD->dwFlags ) != pPFD->dwFlags ) 
+		if ( ( pfds[i].dwFlags & pPFD->dwFlags ) != pPFD->dwFlags ) 
 		{
 			if ( r_verbose->integer )
 			{
@@ -283,8 +291,16 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 		}
 	}
 	
-	if ( !bestMatch )
+	if ( !bestMatch ) 
+	{
+		if ( pPFD->dwFlags & PFD_SUPPORT_COMPOSITION ) 
+		{
+			// this can be a problem if we are working via RDP for example
+			pPFD->dwFlags &= ~PFD_SUPPORT_COMPOSITION;
+			goto __rescan;
+		}
 		return 0;
+	}
 
 	if ( ( pfds[bestMatch].dwFlags & PFD_GENERIC_FORMAT ) != 0 )
 	{
@@ -312,9 +328,6 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 	return bestMatch;
 }
 
-#ifndef PFD_SUPPORT_COMPOSITION
-#define PFD_SUPPORT_COMPOSITION 0x00008000
-#endif
 
 /*
 ** void GLW_CreatePFD
