@@ -1716,8 +1716,8 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 		// conditional jumps
 		if ( ci->jump ) {
 			v = ci->value;
-			// jumps should have opStack == 4
-			if ( ci->opStack != 4 ) {
+			// conditional jumps should have opStack == 8
+			if ( ci->opStack != 8 ) {
 				sprintf( errBuf, "bad jump opStack %i at %i", ci->opStack, i ); 
 				return errBuf;
 			}
