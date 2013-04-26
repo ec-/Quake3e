@@ -1716,6 +1716,11 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 		// conditional jumps
 		if ( ci->jump ) {
 			v = ci->value;
+			// jumps should have opStack == 4
+			if ( ci->opStack != 4 ) {
+				sprintf( errBuf, "bad jump opStack %i at %i", ci->opStack, i ); 
+				return errBuf;
+			}
 			//if ( v >= header->instructionCount ) {
 			// allow only local proc jumps
 			if ( v < startp || v > endp ) {
