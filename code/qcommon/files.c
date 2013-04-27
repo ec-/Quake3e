@@ -622,6 +622,35 @@ static void FS_CopyFile( char *fromOSPath, char *toOSPath ) {
 	free( buf );
 }
 
+static int FS_HasExt( const char *fileName, const char **extList, int extCount );
+
+/*
+=================
+FS_AllowedExtension
+=================
+*/
+qboolean FS_AllowedExtension( const char *fileName, qboolean allowPk3s, const char **ext ) 
+{
+	static const char *extlist[] =	{ "dll", "so", "dylib", "pk3" };
+	int index, n;
+
+	if ( allowPk3s )
+		n = ARRAY_LEN( extlist ) - 1;
+	else
+		n = ARRAY_LEN( extlist );
+
+	index = FS_HasExt( fileName, extlist, n );
+
+	if ( index == -1 )
+		return qtrue;
+
+	if ( ext )
+		*ext = extlist[ index ];
+
+	return qfalse;
+}
+
+
 /*
 =================
 FS_CheckFilenameIsNotExecutable
@@ -629,14 +658,14 @@ FS_CheckFilenameIsNotExecutable
 ERR_FATAL if trying to maniuplate a file with the platform library extension
 =================
  */
-static void FS_CheckFilenameIsNotExecutable( const char *filename,
-		const char *function )
+static void FS_CheckFilenameIsNotAllowed( const char *filename, const char *function, qboolean allowPk3s )
 {
+	const char *extension;
 	// Check if the filename ends with the library extension
-	if(COM_CompareExtension(filename, DLL_EXT))
+	if ( FS_AllowedExtension( filename, allowPk3s, &extension ) == qfalse ) 
 	{
 		Com_Error( ERR_FATAL, "%s: Not allowed to manipulate '%s' due "
-			"to %s extension", function, filename, DLL_EXT );
+			"to %s extension", function, filename, extension );
 	}
 }
 
@@ -646,24 +675,27 @@ FS_Remove
 
 ===========
 */
-void FS_Remove( const char *osPath ) {
-	FS_CheckFilenameIsNotExecutable( osPath, __func__ );
+void FS_Remove( const char *osPath ) 
+{
+	FS_CheckFilenameIsNotAllowed( osPath, __func__, qtrue );
 
 	remove( osPath );
 }
 
+
 /*
 ===========
 FS_HomeRemove
-
 ===========
 */
-void FS_HomeRemove( const char *osPath ) {
-	FS_CheckFilenameIsNotExecutable( osPath, __func__ );
+void FS_HomeRemove( const char *osPath ) 
+{
+	FS_CheckFilenameIsNotAllowed( osPath, __func__, qfalse );
 
 	remove( FS_BuildOSPath( fs_homepath->string,
 			fs_gamedir, osPath ) );
 }
+
 
 /*
 ================
@@ -755,7 +787,7 @@ fileHandle_t FS_SV_FOpenFileWrite( const char *filename ) {
 		Com_Printf( "FS_SV_FOpenFileWrite: %s\n", ospath );
 	}
 
-	FS_CheckFilenameIsNotExecutable( ospath, __func__ );
+	FS_CheckFilenameIsNotAllowed( ospath, __func__, qtrue );
 
 	if ( FS_CreatePath( ospath ) ) {
 		return FS_INVALID_HANDLE;
@@ -874,10 +906,10 @@ void FS_SV_Rename( const char *from, const char *to ) {
 		Com_Printf( "FS_SV_Rename: %s --> %s\n", from_ospath, to_ospath );
 	}
 
-	if (rename( from_ospath, to_ospath )) {
+	if ( rename( from_ospath, to_ospath ) ) {
 		// Failed, try copying it and deleting the original
-		FS_CopyFile ( from_ospath, to_ospath );
-		FS_Remove ( from_ospath );
+		FS_CopyFile( from_ospath, to_ospath );
+		FS_Remove( from_ospath );
 	}
 }
 
@@ -908,10 +940,10 @@ void FS_Rename( const char *from, const char *to ) {
 		Com_Printf( "FS_Rename: %s --> %s\n", from_ospath, to_ospath );
 	}
 
-	if (rename( from_ospath, to_ospath )) {
+	if ( rename( from_ospath, to_ospath ) ) {
 		// Failed, try copying it and deleting the original
-		FS_CopyFile ( from_ospath, to_ospath );
-		FS_Remove ( from_ospath );
+		FS_CopyFile( from_ospath, to_ospath );
+		FS_Remove( from_ospath );
 	}
 }
 
@@ -967,7 +999,7 @@ fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
 
-	if ( !*filename ) {
+	if ( !filename || !*filename ) {
 		return FS_INVALID_HANDLE;
 	}
 
@@ -976,6 +1008,8 @@ fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 	if ( fs_debug->integer ) {
 		Com_Printf( "FS_FOpenFileWrite: %s\n", ospath );
 	}
+
+	FS_CheckFilenameIsNotAllowed( ospath, __func__, qfalse );
 
 	if( FS_CreatePath( ospath ) ) {
 		return FS_INVALID_HANDLE;
@@ -1028,7 +1062,7 @@ fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 		Com_Printf( "FS_FOpenFileAppend: %s\n", ospath );
 	}
 
-	FS_CheckFilenameIsNotExecutable( ospath, __func__ );
+	FS_CheckFilenameIsNotAllowed( ospath, __func__, qfalse );
 
 	if ( FS_CreatePath( ospath ) ) {
 		return FS_INVALID_HANDLE;
@@ -1163,7 +1197,7 @@ qboolean FS_IsDemoExt( const char *filename, int namelen )
 	return qfalse;
 }
 
-qboolean FS_HasExt( const char *fileName, const char **extList, int extCount ) 
+static int FS_HasExt( const char *fileName, const char **extList, int extCount ) 
 {
 	const char *e;
 	int i;
@@ -1171,15 +1205,15 @@ qboolean FS_HasExt( const char *fileName, const char **extList, int extCount )
 	e = Q_strrchr( fileName, '.' );
 
 	if ( !e ) 
-		return qfalse;
+		return -1;
 
 	for ( i = 0, e++; i < extCount; i++ ) 
 	{
 		if ( !Q_stricmp( e, extList[i] ) )
-			return qtrue;
+			return i;
 	}
 
-	return qfalse;
+	return -1;
 }
 
 static qboolean FS_GeneralRef( const char *filename ) 
@@ -1187,7 +1221,7 @@ static qboolean FS_GeneralRef( const char *filename )
 	// allowed non-ref extensions
 	static const char *extList[] = { "config", "shader", "arena", "menu", "bot", "cfg", "txt" };
 
-	if ( FS_HasExt( filename, extList, ARRAY_LEN( extList ) ) )
+	if ( FS_HasExt( filename, extList, ARRAY_LEN( extList ) ) != -1 )
 		return qfalse;
 	
 	if ( !Q_stricmp( filename, "vm/qagame.qvm" ) )
@@ -1218,7 +1252,7 @@ static qboolean FS_DeniedPureFile( const char *filename )
 		"game" // menu files
 	};
 
-	if ( FS_HasExt( filename, extList, ARRAY_LEN( extList ) ) )
+	if ( FS_HasExt( filename, extList, ARRAY_LEN( extList ) ) != -1 )
 		return qfalse;
 	
 	if ( FS_IsDemoExt( filename, strlen( filename ) ) )
@@ -2955,17 +2989,15 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 FS_idPak
 ================
 */
-qboolean FS_idPak( char *pak, char *base ) {
+qboolean FS_idPak( const char *pak, const char *base ) {
 	int i;
 
-	for (i = 0; i < NUM_ID_PAKS; i++) {
-		if ( !FS_FilenameCompare(pak, va("%s/pak%d", base, i)) ) {
-			break;
+	for ( i = 0; i < NUM_ID_PAKS; i++ ) {
+		if ( !FS_FilenameCompare( pak, va( "%s/pak%d", base, i ) ) ) {
+			return qtrue;
 		}
 	}
-	if (i < NUM_ID_PAKS) {
-		return qtrue;
-	}
+
 	return qfalse;
 }
 
