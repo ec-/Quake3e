@@ -330,7 +330,7 @@ static  instruction_t *inst = NULL;
 static  instruction_t *ci;
 static  instruction_t *ni;
 
-static int fp_cw[2] = { 0, 0x0F7F}; // [0] - current value, [1] - round towards zero
+static int fp_cw[2] = { 0x0000, 0x0F7F }; // [0] - current value, [1] - round towards zero
 
 static	int	ip, pass;
 static	int	lastConst;
@@ -340,6 +340,7 @@ static	int jlabel;
 static	ELastCommand	LastCommand;
 
 int		funcOffset[FUNC_LAST];
+
 
 static void ErrJump( void )
 {
@@ -368,10 +369,12 @@ static void BadOpStack( void )
 	exit(1);
 }
 
+
 static void (*const errJumpPtr)(void) = ErrJump;
 static void (*const badJumpPtr)(void) = BadJump;
 static void (*const badStackPtr)(void) = BadStack;
 static void (*const badOpStackPtr)(void) = BadOpStack;
+
 
 static void VM_FreeBuffers( void ) 
 {
@@ -706,6 +709,7 @@ const char *NearJumpStr( int op )
 }
 #endif
 
+
 const char *FarJumpStr( int op, int *n ) 
 {
 	switch ( op )
@@ -737,6 +741,7 @@ const char *FarJumpStr( int op, int *n )
 	};
 	return NULL;
 }
+
 
 void EmitJump( vm_t *vm, instruction_t *i, int op, int addr ) 
 {
@@ -775,6 +780,7 @@ void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 	Emit4( v - 4 - jump_size );
 }
 
+
 void EmitFloatJump( vm_t *vm, instruction_t *i, int op, int addr ) 
 {
 	switch ( op ) {
@@ -810,6 +816,7 @@ void EmitFloatJump( vm_t *vm, instruction_t *i, int op, int addr )
 	};
 
 }
+
 
 void EmitCallAddr( vm_t *vm, int addr ) 
 {
@@ -848,9 +855,9 @@ void EmitCallFunc( vm_t *vm )
 	Emit1( sysCallOffset );				// will be valid after first pass
 sysCallOffset = compiledOfs;				
 
+	// range check
 	EmitString( "3D" );					// cmp eax, vm->instructionCount
 	Emit4( vm->instructionCount );
-
 	EmitString( "0F 83" );				// jae +funcOffset[FUNC_ERRJ]
 	n = funcOffset[FUNC_ERRJ] - compiledOfs;
 	Emit4( n - 6 );
@@ -894,6 +901,7 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 	EmitString( "48 81 EC" );				// sub rsp, 200
 	Emit4( SHADOW_BASE + PUSH_STACK + PARAM_STACK );
 
+	// save scratch registers
 	EmitString( "48 8D 54 24" );			// lea rdx, [rsp+SHADOW_BASE]
 	Emit1( SHADOW_BASE );
 	EmitString( "48 89 32" );				// mov [rdx+00], rsi
@@ -942,6 +950,7 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 	// currentVm->systemCall( param );
 	EmitString( "41 FF 14 24" );			// call qword [r12]
 
+	// restore registers
 	EmitString( "48 8D 54 24" );			// lea rdx, [rsp+SHADOW_BASE]
 	Emit1( SHADOW_BASE );
 	EmitString( "48 8B 32" );				// mov rsi, [rdx+00]
@@ -962,6 +971,7 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 	EmitString( "C3" );						// ret
 
 #else // i386
+
 	// function prologue
 	EmitString( "55" );					// push ebp
 	EmitRexString( 0x48, "89 E5" );		// mov ebp, esp
@@ -1000,16 +1010,17 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 	EmitAddEDI4( vm );							// add edi, 4
 	EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov [edi], eax
 
+	// function epilogue
 	EmitRexString( 0x48, "89 EC" );		// mov esp, ebp
 	EmitString( "5D" );					// pop ebp
 	EmitString( "C3" );					// ret
 #endif
 }
 
+
 #if FTOL_PTR
 void EmitFTOLFunc( vm_t *vm ) 
 {
-	//EmitString( "D9 07" );	// fld dword ptr [edi]
 	EmitRexString( 0x48, "B8" );// mov eax, &fp_cw[0]
 	EmitPtr( &fp_cw[0] );		
 	EmitString( "9B D9 38" );	// fnstcw word ptr [eax]
@@ -1081,6 +1092,7 @@ void EmitBADJFunc( vm_t *vm )
 	EmitString( "C3" );				// ret
 }
 
+
 void EmitERRJFunc( vm_t *vm ) 
 {
 	EmitRexString( 0x48, "B8" );	// mov eax, badJumpPtr
@@ -1088,6 +1100,7 @@ void EmitERRJFunc( vm_t *vm )
 	EmitString( "FF 10" );			// call [eax]
 	EmitString( "C3" );				// ret
 }
+
 
 /*
 =================
@@ -1843,8 +1856,10 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 	if ( jumpTableTargets ) {
 		for( i = 0; i < numJumpTableTargets; i++ ) {
 			n = *(int *)(jumpTableTargets + ( i * sizeof( int ) ) );
-			if ( n >= header->instructionCount )
-				continue;
+			if ( n < 0 || n >= header->instructionCount ) {
+				sprintf( errBuf, "jump target %i at %i is out of range [0..%i]", n, i, header->instructionCount - 1 ); 
+				return errBuf;
+			}
 			if ( buf[n].opStack != 0 ) {
 				opStack = buf[n].opStack;
 				sprintf( errBuf, "jump target set on instruction %i with bad opStack %i", n, opStack ); 
