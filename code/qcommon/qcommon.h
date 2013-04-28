@@ -859,6 +859,8 @@ extern	cvar_t	*sv_paused;
 extern	cvar_t	*cl_packetdelay;
 extern	cvar_t	*sv_packetdelay;
 
+extern	cvar_t	*vm_rtChecks;
+
 // com_speeds times
 extern	int		time_game;
 extern	int		time_frontend;

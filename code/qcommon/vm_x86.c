@@ -58,11 +58,12 @@ static void VM_Destroy_Compiled( vm_t *vm );
 /*
   -------------
   eax	scratch
-  ebx	scratch
+  ebx*	dataBase
   ecx	scratch (required for shifts)
   edx	scratch (required for divisions)
-  esi	program stack
-  edi	opstack
+  esi*	program stack
+  edi*	opstack
+  ebp*  current proc stack ( dataBase + program stack )
   -------------
   rax	scratch
   rbx*	dataBase
@@ -70,10 +71,12 @@ static void VM_Destroy_Compiled( vm_t *vm );
   rdx	scratch (required for divisions)
   rsi*	programStack
   rdi*	opstack
+  rbp*  current proc stack ( dataBase + program stack )
   r8	instructionPointers
   r9    dataMask
   r12*  systemCall
   r13*  stackBottom
+  r14*  opStackTop
 
   Example how data segment will look like during vmMain execution:
   | .... |
@@ -104,6 +107,14 @@ static void VM_Destroy_Compiled( vm_t *vm );
   | arg9 | +44
   |------| vm->programStack = vm->dataMask + 1 // set by VM_Create()
 
+  jump/call opStack rules:
+
+  1) opStack must be 8 before conditional jump
+  2) opStack must be 4 before unconditional jump
+  3) opStack must be >=4 before OP_CALL
+  4) opStack must remain the same after OP_CALL
+  5) you may not jump in/call locations with opStack != 0
+
 */
 
 #define JUMP	(1<<0)
@@ -111,6 +122,12 @@ static void VM_Destroy_Compiled( vm_t *vm );
 
 #define ISS8(V) ( (V) >= -128 && (V) <= 127 )
 #define ISU8(V) ( (V) >= 0 && (V) <= 127 )
+
+typedef enum 
+{
+	REG_EAX = 0,
+	REG_ECX
+};
 
 typedef struct {
 	int   size; 
@@ -320,6 +337,7 @@ typedef enum
 	FUNC_OSOF,
 	FUNC_BADJ,
 	FUNC_ERRJ,
+	FUNC_DATA,
 	FUNC_LAST
 } func_t;
 
@@ -341,6 +359,9 @@ static	ELastCommand	LastCommand;
 
 int		funcOffset[FUNC_LAST];
 
+#ifdef DEBUG_VM
+static int	errParam = 0;
+#endif
 
 static void ErrJump( void )
 {
@@ -370,10 +391,22 @@ static void BadOpStack( void )
 }
 
 
+static void BadData( void )
+{
+#ifdef DEBUG_VM	
+	Com_Error( ERR_DROP, "program tried to read/write out of data segment at %i", errParam ); 
+#else
+	Com_Error( ERR_DROP, "program tried to read/write out of data segment" ); 
+#endif
+	exit(1);
+}
+
+
 static void (*const errJumpPtr)(void) = ErrJump;
 static void (*const badJumpPtr)(void) = BadJump;
 static void (*const badStackPtr)(void) = BadStack;
 static void (*const badOpStackPtr)(void) = BadOpStack;
+static void (*const badDataPtr)(void) = BadData;
 
 
 static void VM_FreeBuffers( void ) 
@@ -592,7 +625,7 @@ static void EmitMovEAXEDI( vm_t *vm )
 }
 
 
-void EmitMovECXEDI( vm_t *vm, int andit ) 
+void EmitMovECXEDI( vm_t *vm ) 
 {
 	opcode_t pop = pop1;
 	pop1 = OP_UNDEF;
@@ -638,15 +671,41 @@ void EmitMovECXEDI( vm_t *vm, int andit )
 		compiledOfs -= 6;			
 		vm->instructionPointers[ ip-1 ] = compiledOfs;
 		EmitString( "B9" );			// mov ecx, 0x12345678
-		if ( andit ) {
-			Emit4( lastConst & andit );
-		} else {
-			Emit4( lastConst );
-		}
+		Emit4( lastConst );
 		return;
 	}
 
 	EmitString( "8B 0F" );		    // mov ecx, dword ptr [edi]
+}
+
+
+static void EmitCheckReg( vm_t *vm, int reg, int size )  
+{
+	int n;
+
+	if ( !( vm_rtChecks->integer & 8 ) )
+		return;
+
+#ifdef DEBUG_VM
+	EmitString( "50" );			// push eax
+	EmitRexString( 0x48, "B8" );// mov eax, &errParam
+	EmitPtr( &errParam );
+	EmitString( "C7 00" );		// mov [rax], ip-1
+	Emit4( ip-1 );
+	EmitString( "58" );			// pop eax
+#endif
+
+	if ( reg == REG_EAX )
+		EmitString( "3D" );		// cmp eax, 0x12345678
+	else
+		EmitString( "81 F9" );	// cmp ecx, 0x12345678
+
+	Emit4( vm->dataMask - ( size - 1 ) ); // FIXME: use vm->dataSize?
+
+	// error reporting
+	EmitString( "0F 87" );		// ja +errorFunction
+	n = funcOffset[FUNC_DATA] - compiledOfs;
+	Emit4( n - 6 );
 }
 
 
@@ -671,6 +730,7 @@ static int EmitFldEDI( vm_t *vm )
 	EmitString( "D9 07" );			// fld dword ptr [edi]
 	return 0;
 }
+
 
 #if JUMP_OPTIMIZE
 const char *NearJumpStr( int op ) 
@@ -855,12 +915,14 @@ void EmitCallFunc( vm_t *vm )
 	Emit1( sysCallOffset );				// will be valid after first pass
 sysCallOffset = compiledOfs;				
 
-	// range check
-	EmitString( "3D" );					// cmp eax, vm->instructionCount
-	Emit4( vm->instructionCount );
-	EmitString( "0F 83" );				// jae +funcOffset[FUNC_ERRJ]
-	n = funcOffset[FUNC_ERRJ] - compiledOfs;
-	Emit4( n - 6 );
+	// jump target range check
+	if ( vm_rtChecks->integer & 4 ) {
+		EmitString( "3D" );					// cmp eax, vm->instructionCount
+		Emit4( vm->instructionCount );
+		EmitString( "0F 83" );				// jae +funcOffset[FUNC_ERRJ]
+		n = funcOffset[FUNC_ERRJ] - compiledOfs;
+		Emit4( n - 6 );
+	}
 
 	EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 
@@ -1102,6 +1164,15 @@ void EmitERRJFunc( vm_t *vm )
 }
 
 
+void EmitDATAFunc( vm_t *vm ) 
+{
+	EmitRexString( 0x48, "B8" );	// mov eax, badDataPtr
+	EmitPtr( &badDataPtr );
+	EmitString( "FF 10" );			// call [eax]
+	EmitString( "C3" );				// ret
+}
+
+
 /*
 =================
 EmitFCalc
@@ -1206,6 +1277,7 @@ qboolean ConstOptimize( vm_t *vm )
 			EmitString( "B9" );			// mov	ecx, 0x12345678
 			Emit4( ci->value );
 		}
+		EmitCheckReg( vm, REG_EAX, 4 );
 		EmitString( "89 0C 03" );     // mov dword ptr [ebx + eax], ecx
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );		// sub edi, 4
 		ip += 1;
@@ -1219,6 +1291,7 @@ qboolean ConstOptimize( vm_t *vm )
 			EmitString( "B9" );			// mov	ecx, 0x12345678
 			Emit4( ci->value );
 		}
+		EmitCheckReg( vm, REG_EAX, 2 );
 		EmitString( "66 89 0C 03" );   // mov word ptr [ebx + eax], cx
 		EmitCommand( LAST_COMMAND_SUB_DI_4 ); // sub edi, 4
 		ip += 1;
@@ -1232,6 +1305,7 @@ qboolean ConstOptimize( vm_t *vm )
 			EmitString( "B9" );			// mov	ecx, 0x12345678
 			Emit4( ci->value );
 		}
+		EmitCheckReg( vm, REG_EAX, 1 );
 		EmitString( "88 0C 03" );		// mov byte ptr [ebx + eax], cl
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 		ip += 1;
@@ -1569,7 +1643,7 @@ qboolean LocalOptimize( vm_t *vm )
 
 
 char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf, 
-						  byte *jumpTableTargets, int numJumpTableTargets ) 
+						  byte *jumpTableTargets, int numJumpTableTargets, int dataLength ) 
 {
 	static char errBuf[128];
 	byte *code_pos, *code_start, *code_end;
@@ -1843,6 +1917,30 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 			}
 		}
 
+		if ( ci->op == OP_LOAD4 && op1 == OP_CONST ) {
+			v = (ci-1)->value;
+			if ( v < 0 || v > dataLength - 4 ) {
+				sprintf( errBuf, "bad load4 address %i at %i", v, i - 1 );
+				return errBuf;
+			}
+		}
+
+		if ( ci->op == OP_LOAD2 && op1 == OP_CONST ) {
+			v = (ci-1)->value;
+			if ( v < 0 || v > dataLength - 2 ) {
+				sprintf( errBuf, "bad load2 address %i at %i", v, i - 1 );
+				return errBuf;
+			}
+		}
+
+		if ( ci->op == OP_LOAD1 && op1 == OP_CONST ) {
+			v =  (ci-1)->value;
+			if ( v < 0 || v > dataLength - 1 ) {
+				sprintf( errBuf, "bad load1 address %i at %i", v, i - 1 );
+				return errBuf;
+			}
+		}
+
 //		op1 = op0;
 //		ci++;
 	}
@@ -1962,7 +2060,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 
 	inst = Z_Malloc( (header->instructionCount + 8 ) * sizeof( instruction_t ) );
 
-	errMsg = VM_LoadInstructions( header, inst, vm->jumpTableTargets, vm->numJumpTableTargets );
+	errMsg = VM_LoadInstructions( header, inst, vm->jumpTableTargets, vm->numJumpTableTargets, vm->dataLength );
 
 	if ( errMsg ) {
 		Z_Free( inst );
@@ -2119,29 +2217,34 @@ __compile:
 				EmitString( "81 EE" );		// sub	esi, 0x12345678
 				Emit4( v );
 			}
+
 			// programStack overflow check
+			if ( vm_rtChecks->integer & 1 ) {
 #if idx64
-			EmitString( "4C 39 EE" );	// cmp	rsi, r13
+				EmitString( "4C 39 EE" );	// cmp	rsi, r13
 #else
-			EmitString( "81 FE" );		// cmp	esi, vm->stackBottom
-			Emit4( vm->stackBottom );
+				EmitString( "81 FE" );		// cmp	esi, vm->stackBottom
+				Emit4( vm->stackBottom );
 #endif
-			EmitString( "0F 82" );		// jb +funcOffset[FUNC_PSOF]
-			n = funcOffset[FUNC_PSOF] - compiledOfs;
-			Emit4( n - 6 );
+				EmitString( "0F 82" );		// jb +funcOffset[FUNC_PSOF]
+				n = funcOffset[FUNC_PSOF] - compiledOfs;
+				Emit4( n - 6 );
+			}
 
 			// opStack overflow check
-			EmitRexString( 0x48, "8D 47" );		// lea eax, [edi+0x7F]
-			Emit1( ci->opStack );
+			if ( vm_rtChecks->integer & 2 ) {
+				EmitRexString( 0x48, "8D 47" );		// lea eax, [edi+0x7F]
+				Emit1( ci->opStack );
 #if idx64
-			EmitString( "4C 39 F0" );			// cmp rax, r14
+				EmitString( "4C 39 F0" );			// cmp rax, r14
 #else
-			EmitString( "3B 05" );				// cmp eax, [&vm->opStackTop]
-			EmitPtr( &vm->opStackTop );
+				EmitString( "3B 05" );				// cmp eax, [&vm->opStackTop]
+				EmitPtr( &vm->opStackTop );
 #endif
-			EmitString( "0F 87" );				// ja +funcOffset[FUNC_OSOF]
-			n = funcOffset[FUNC_OSOF] - compiledOfs;
-			Emit4( n - 6 );
+				EmitString( "0F 87" );				// ja +funcOffset[FUNC_OSOF]
+				n = funcOffset[FUNC_OSOF] - compiledOfs;
+				Emit4( n - 6 );
+			}
 
 			EmitRexString( 0x48, "8D 2C 33" ); // lea ebp, [ebx+esi]
 			break;
@@ -2277,11 +2380,13 @@ __compile:
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
+				EmitCheckReg( vm, REG_EAX, 4 );
 				EmitString( "8B 04 03" );						// mov	eax, dword ptr [ebx + eax]
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );		// mov dword ptr [edi], eax
 				break;
 			}
-			EmitMovECXEDI(vm, vm->dataMask);
+			EmitMovECXEDI( vm );
+			EmitCheckReg( vm, REG_ECX, 4 );
 			EmitString( "8B 04 0B" );							// mov	eax, dword ptr [ebx + ecx]
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );			// mov dword ptr [edi], eax
 			break;
@@ -2290,11 +2395,13 @@ __compile:
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
+				EmitCheckReg( vm, REG_EAX, 2 );
 				EmitString( "0F B7 04 03" );					// movzx eax, word ptr [ebx + eax]
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );		// mov dword ptr [edi], eax
 				break;
 			}
-			EmitMovECXEDI(vm, vm->dataMask);
+			EmitMovECXEDI( vm );								
+			EmitCheckReg( vm, REG_ECX, 2 );
 			EmitString( "0F B7 04 0B" );						// movzx eax, word ptr [ebx + ecx]
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );			// mov dword ptr [edi], eax
 			break;
@@ -2303,11 +2410,13 @@ __compile:
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				compiledOfs -= 2;
 				vm->instructionPointers[ ip-1 ] = compiledOfs;
+				EmitCheckReg( vm, REG_EAX, 1 );
 				EmitString( "0F B6 04 03" );				// movzx eax, byte ptr [ebx + eax]
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov dword ptr [edi], eax
 				break;
 			}
-			EmitMovECXEDI(vm, vm->dataMask);
+			EmitMovECXEDI( vm );
+			EmitCheckReg( vm, REG_ECX, 1 );
 			EmitString( "0F B6 04 0B" );				// movzx eax, byte ptr [ebx + ecx]
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov dword ptr [edi], eax
 			break;
@@ -2319,6 +2428,7 @@ __compile:
 				//EmitString( "81 E1" );						// and ecx, 0x12345678
 				//Emit4( vm->dataMask & ~3 );	
 			//}
+			EmitCheckReg( vm, REG_ECX, 4 );				
 			EmitString( "89 04 0B" );					// mov dword ptr [ebx + ecx], eax
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
 			break;
@@ -2326,8 +2436,7 @@ __compile:
 		case OP_STORE2:
 			EmitMovEAXEDI( vm );
 			EmitString( "8B 4F FC" );					// mov ecx, dword ptr [edi-4]
-			//EmitString( "81 E1" );						// and ecx, 0x12345678
-			//Emit4( vm->dataMask & ~1 );	
+			EmitCheckReg( vm, REG_ECX, 2 );				// range check
 			EmitString( "66 89 04 0B" );				// mov word ptr [ebx + ecx], ax
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
 			break;
@@ -2335,8 +2444,7 @@ __compile:
 		case OP_STORE1:
 			EmitMovEAXEDI( vm );	
 			EmitString( "8B 4F FC" );					// mov	ecx, dword ptr [edi-4]
-			//EmitString( "81 E1" );						// and ecx, 0x12345678
-			//Emit4( vm->dataMask );	
+			EmitCheckReg( vm, REG_ECX, 1 );				// range check
 			EmitString( "88 04 0B" );					// mov byte ptr [ebx + ecx], eax
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
 			break;
@@ -2475,19 +2583,19 @@ __compile:
 			break;
 
 		case OP_LSH:
-			EmitMovECXEDI( vm, 0 );
+			EmitMovECXEDI( vm );
 			EmitString( "D3 67 FC" );				// shl dword ptr [edi-4], cl
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
 			break;
 
 		case OP_RSHI:
-			EmitMovECXEDI( vm, 0 );
+			EmitMovECXEDI( vm );
 			EmitString( "D3 7F FC" );				// sar dword ptr [edi-4], cl
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
 			break;
 
 		case OP_RSHU:
-			EmitMovECXEDI( vm, 0 );
+			EmitMovECXEDI( vm );
 			EmitString( "D3 6F FC" );				// shr dword ptr [edi-4], cl
 			EmitCommand(LAST_COMMAND_SUB_DI_4);		// sub edi, 4
 			break;
@@ -2582,16 +2690,19 @@ __compile:
 			EmitMovEAXEDI( vm );					// mov eax, dword ptr [edi]
 			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 
-			EmitString( "3D" );						// cmp eax, 0x12345678
-			Emit4( vm->instructionCount );
-			EmitString( "0F 83" );					// jae +funcOffset[FUNC_BADJ]
-			n = funcOffset[FUNC_BADJ] - compiledOfs;
-			Emit4( n - 6 );
+			// jump target range check
+			if ( vm_rtChecks->integer & 4 ) {
+				EmitString( "3D" );						// cmp eax, 0x12345678
+				Emit4( vm->instructionCount );
+				EmitString( "0F 83" );					// jae +funcOffset[FUNC_BADJ]
+				n = funcOffset[FUNC_BADJ] - compiledOfs;
+				Emit4( n - 6 );
+			}
 #if idx64
-			EmitString( "41 FF 24 C0" );			// jmp dword ptr [r8 + rax*8]
+				EmitString( "41 FF 24 C0" );			// jmp dword ptr [r8 + rax*8]
 #else
-			EmitString( "FF 24 85" );				// jmp dword ptr [instructionPointers + eax * 4]
-			EmitPtr( vm->instructionPointers );
+				EmitString( "FF 24 85" );				// jmp dword ptr [instructionPointers + eax * 4]
+				EmitPtr( vm->instructionPointers );
 #endif
 			break;
 
@@ -2603,6 +2714,10 @@ __compile:
 
 		pop1 = ci->op;
 	} // while( ip < header->instructionCount )
+
+		// ****************
+		// system functions
+		// ****************
 
 		funcOffset[FUNC_CALL] = compiledOfs;
 		EmitCallFunc( vm );
@@ -2616,6 +2731,9 @@ __compile:
 #if BCPY_PTR
 		EmitBCPYFunc( vm );
 #endif
+		// ***************
+		// error functions
+		// ***************
 
 		// bad jump
 		funcOffset[FUNC_BADJ] = compiledOfs;
@@ -2632,6 +2750,11 @@ __compile:
 		// opStack overflow
 		funcOffset[FUNC_OSOF] = compiledOfs;
 		EmitOSOFFunc( vm );
+
+		// read/write access violation
+		funcOffset[FUNC_DATA] = compiledOfs;
+		EmitDATAFunc( vm );
+
 
 	} // for( pass = 0; pass < n; pass++ )
 

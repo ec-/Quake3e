@@ -35,6 +35,7 @@ and one exported function: Perform
 
 #include "vm_local.h"
 
+cvar_t	*vm_rtChecks;
 
 vm_t	*currentVM = NULL;
 vm_t	*lastVM    = NULL;
@@ -560,9 +561,11 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 		tryjts = qtrue;
 	}
 
+	dataLength = header->dataLength + header->litLength + header->bssLength;
+	vm->dataLength = dataLength;
+
 	// round up to next power of 2 so all data operations can
 	// be mask protected
-	dataLength = header->dataLength + header->litLength + header->bssLength;
 	for ( i = 0 ; dataLength > ( 1 << i ) ; i++ ) {
 	}
 	dataLength = 1 << i;

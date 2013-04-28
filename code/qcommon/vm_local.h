@@ -165,6 +165,7 @@ struct vm_s {
 	int			codeLength;
 
 	int			dataMask;
+	int			dataLength;			// exact data segment length
 
 	int			stackBottom;		// if programStack < stackBottom, error
 	int			*opStackTop;		

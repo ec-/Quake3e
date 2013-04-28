@@ -2761,6 +2761,9 @@ void Com_Init( char *commandLine ) {
 	Com_StartupVariable( "developer" );
 	com_developer = Cvar_Get( "developer", "0", CVAR_TEMP );
 
+	Com_StartupVariable( "vm_rtChecks" );
+	vm_rtChecks = Cvar_Get( "vm_rtChecks", "15", CVAR_INIT | CVAR_ROM );
+
 	// done early so bind command exists
 	Com_InitKeyCommands();
 
