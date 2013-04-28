@@ -49,7 +49,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define NUM_PASSES 3
 #endif
 
-#define FTOL_PTR 1
 #define BCPY_PTR 1
 
 static void *VM_Alloc_Compiled( vm_t *vm, int codeLength );
@@ -1080,7 +1079,6 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 }
 
 
-#if FTOL_PTR
 void EmitFTOLFunc( vm_t *vm ) 
 {
 	EmitRexString( 0x48, "B8" );// mov eax, &fp_cw[0]
@@ -1091,7 +1089,6 @@ void EmitFTOLFunc( vm_t *vm )
 	EmitString( "D9 28" );		// fldcw word ptr [eax]
 	EmitString( "C3" );			// ret
 }
-#endif
 
 
 #if BCPY_PTR
@@ -2626,16 +2623,6 @@ __compile:
 			break;
 
 		case OP_CVFI:
-#if !FTOL_PTR
-			EmitString( "9B D9 3D" );	// fnstcw word ptr [cwCurr]
-			EmitPtr( &cwCurr );
-			EmitString( "D9 07" );		// fld dword ptr [edi]
-			EmitString( "D9 2D" );		// fldcw word ptr [cw0F7F]
-			EmitPtr( &cw0F7F );
-			EmitString( "DB 1F" );		// fistp dword ptr [edi]
-			EmitString( "D9 2D" );		// fldcw word ptr [cwCurr]
-			EmitPtr( &cwCurr );
-#else
 			EmitFldEDI( vm );			// fld dword ptr [edi]
 			if ( CPU_Flags & CPU_SSE3 ) {
 				// fast sse3 truncation
@@ -2644,7 +2631,6 @@ __compile:
 				// call the library conversion function
 				EmitCallOffset( FUNC_FTOL );
 			}
-#endif
 			break;
 
 		case OP_SEX8:
