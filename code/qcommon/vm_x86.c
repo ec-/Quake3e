@@ -127,7 +127,7 @@ typedef enum
 {
 	REG_EAX = 0,
 	REG_ECX
-};
+} reg_t;
 
 typedef struct {
 	int   size; 
