@@ -49,7 +49,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define NUM_PASSES 3
 #endif
 
-#define BCPY_PTR 1
 
 static void *VM_Alloc_Compiled( vm_t *vm, int codeLength );
 static void VM_Destroy_Compiled( vm_t *vm );
@@ -1091,7 +1090,6 @@ void EmitFTOLFunc( vm_t *vm )
 }
 
 
-#if BCPY_PTR
 void EmitBCPYFunc( vm_t *vm ) 
 {
 	// FIXME: range check
@@ -1099,14 +1097,8 @@ void EmitBCPYFunc( vm_t *vm )
 	EmitString( "57" );						// push edi
 	EmitString( "8B 37" );					// mov esi,[edi] 
 	EmitString( "8B 7F FC" );				// mov edi,[edi-4] 
-	//EmitString( "B9" );					// mov ecx,0x12345678
-	//Emit4( ci->value >> 2 );
 	EmitString( "B8" );						// mov eax, datamask
 	Emit4( vm->dataMask );
-	//EmitString( "BB" );					// mov ebx, database
-	//Emit4( (int)vm->dataBase );
-	//EmitString( "23 F0" );				// and esi, eax - WTF???
-	//EmitString( "23 F8" );				// and edi, eax - WTF???
 	EmitString( "21 C6" );					// and esi, eax
 	EmitString( "21 C7" );					// and edi, eax
 #if idx64
@@ -1122,7 +1114,6 @@ void EmitBCPYFunc( vm_t *vm )
 	EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
 	EmitString( "C3" );						// ret
 }
-#endif
 
 
 void EmitPSOFFunc( vm_t *vm ) 
@@ -2632,31 +2623,9 @@ __compile:
 			break;
 
 		case OP_BLOCK_COPY:
-#if	BCPY_PTR
 			EmitString( "B9" );						// mov ecx, 0x12345678
 			Emit4( ci->value >> 2 );
 			EmitCallOffset( FUNC_BCPY );
-#else
-			// FIXME: range check
-			EmitString( "56" );			// push esi
-			EmitString( "57" );			// push edi
-			EmitString( "8B 37" );		// mov esi,[edi] 
-			EmitString( "8B 7F FC" );	// mov edi,[edi-4] 
-			EmitString( "B9" );			// mov ecx,0x12345678
-			Emit4( ci->value >> 2 );
-			EmitString( "B8" );			// mov eax, datamask
-			Emit4( vm->dataMask );
-			//EmitString( "BB" );			// mov ebx, database
-			//Emit4( (int)vm->dataBase );
-			EmitString( "23 F0" );		// and esi, eax
-			EmitString( "03 F3" );		// add esi, ebx
-			EmitString( "23 F8" );		// and edi, eax
-			EmitString( "03 FB" );		// add edi, ebx
-			EmitString( "F3 A5" );		// rep movsd
-			EmitString( "5F" );			// pop edi
-			EmitString( "5E" );			// pop esi
-			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
-#endif
 			break;
 
 		 // FIXME: allow jump withing local function scope only
@@ -2697,14 +2666,11 @@ __compile:
 		EmitCallFunc( vm );
 
 		funcOffset[FUNC_FTOL] = compiledOfs;
-#if FTOL_PTR
 		EmitFTOLFunc( vm );
-#endif
 
 		funcOffset[FUNC_BCPY] = compiledOfs;
-#if BCPY_PTR
 		EmitBCPYFunc( vm );
-#endif
+
 		// ***************
 		// error functions
 		// ***************
