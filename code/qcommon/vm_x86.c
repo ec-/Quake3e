@@ -2046,12 +2046,15 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int     instructionCount;
 	char	*errMsg;
 
+	int		proc_base;
+	int		proc_len;
+
 	inst = Z_Malloc( (header->instructionCount + 8 ) * sizeof( instruction_t ) );
 
 	errMsg = VM_LoadInstructions( header, inst, vm->jumpTableTargets, vm->numJumpTableTargets, vm->dataLength );
 
 	if ( errMsg ) {
-		Z_Free( inst );
+		VM_FreeBuffers();
 		Com_Printf( "VM_CompileX86 error: %s\n", errMsg );
 		return qfalse;
 	}
@@ -2074,6 +2077,9 @@ __compile:
 	ip = 0;
 	compiledOfs = 0;
 	LastCommand = LAST_COMMAND_NONE;
+
+	proc_base = -1;
+	proc_len = 0;
 	
 #if idx64
 	EmitString( "53" );				// push rbx
@@ -2162,9 +2168,10 @@ __compile:
 	
 	EmitString( "C3" );				// ret
 	
+	 // main function entry offset
 	funcOffset[FUNC_ENTR] = compiledOfs;
 	
-	while( ip < instructionCount )
+	while ( ip < instructionCount )
 	{
 		vm->instructionPointers[ ip ] = compiledOfs;
 
@@ -2197,6 +2204,24 @@ __compile:
 				EmitString( "81 EE" );		// sub	esi, 0x12345678
 				Emit4( v );
 			}
+
+			// locate endproc
+			for ( n = -1, i = ip + 1; i < instructionCount; i++ ) {
+				if ( inst[ i ].op == OP_PUSH && inst[ i + 1 ].op == OP_LEAVE ) {
+					n = i;
+					break;
+				}
+			}
+
+			// should never happen because equal check in VM_LoadInstructions() but anyway
+			if ( n == -1 ) {
+				VM_FreeBuffers();
+				Com_Printf( "VM_CompileX86 error: %s\n", "missing proc end" );
+				return qfalse;
+			}
+
+			proc_base = ip + 1;
+			proc_len = n - proc_base + 1 ;
 
 			// programStack overflow check
 			if ( vm_rtChecks->integer & 1 ) {
@@ -2628,15 +2653,33 @@ __compile:
 			EmitCallOffset( FUNC_BCPY );
 			break;
 
-		 // FIXME: allow jump withing local function scope only
 		case OP_JUMP:
 			EmitMovEAXEDI( vm );					// mov eax, dword ptr [edi]
 			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 
 			// jump target range check
 			if ( vm_rtChecks->integer & 4 ) {
-				EmitString( "3D" );					// cmp eax, 0x12345678
-				Emit4( vm->instructionCount );
+				if ( proc_base != -1 ) {
+					// allow jump within local function scope only
+					EmitString( "89 C2" );			// mov edx, eax
+					if ( ISS8( proc_base ) ) {
+						EmitString( "83 EA" );		// sub edx, 0x7F
+						Emit1( proc_base );
+					} else {
+						EmitString( "81 EA" );		// sub edx, 0x12345678
+						Emit4( proc_base );
+					}
+					if ( ISS8( proc_len ) ) {
+						EmitString( "83 FA" );		// cmp edx, 0x7F
+						Emit1( proc_len );
+					} else {
+						EmitString( "81 FA" );		// cmp edx, 0x12345678
+						Emit4( proc_len );
+					}
+				} else {
+					EmitString( "3D" );				// cmp eax, 0x12345678
+					Emit4( vm->instructionCount );
+				}
 				EmitString( "0F 83" );				// jae +funcOffset[FUNC_BADJ]
 				n = funcOffset[FUNC_BADJ] - compiledOfs;
 				Emit4( n - 6 );
