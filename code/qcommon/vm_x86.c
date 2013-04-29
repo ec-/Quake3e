@@ -1033,48 +1033,46 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 
 #else // i386
 
+	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
+	EmitString( "8D 4D 04" );				// lea ecx, [ebp+4]
+
 	// function prologue
-	EmitString( "55" );					// push ebp
-	EmitRexString( 0x48, "89 E5" );		// mov ebp, esp
-	EmitRexString( 0x48, "83 E4 F0" );	// and esp, -16
-	//EmitString( "56" );				// push esi
-	//EmitString( "57" );				// push edi
-	
-	// save syscallNum
-	EmitString( "89 C1" );				// mov ecx, eax
+	EmitString( "55" );						// push ebp
+	EmitRexString( 0x48, "89 E5" );			// mov ebp, esp
+	EmitRexString( 0x48, "83 EC 04" );		// sub esp, 4
+	// align stack before call
+	EmitRexString( 0x48, "83 E4 F0" );		// and esp, -16
+
+	// ABI note: esi/edi must not change during call!
 
 	// currentVM->programStack = programStack - 4;
-	EmitString( "8D 46 FC" );			// lea eax, [esi-4]
-	EmitString( "A3" );					// mov [vm->programStack], eax 
+	EmitString( "8D 56 FC" );				// lea edx, [esi-4]
+	EmitString( "89 15" );					// mov [&vm->programStack], edx 
 	EmitPtr( &vm->programStack );
 
-	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
-	EmitString( "8D 44 33 04" );		// lea eax, [ebx+esi+4]  
-
 	// params[0] = syscallNum
-	EmitString( "89 08" );				// mov [eax], ecx
+	EmitString( "89 01" );					// mov [ecx], eax
 
-	// cdecl - push params
-	EmitString( "50" );					// push eax
-
+	// cdecl - set params
+	EmitString( "89 0C 24" );				// mov [esp], ecx
+	
 	// currentVm->systemCall( param );
-	EmitString( "FF 15" );				// call dword ptr [&currentVM->systemCall]
+	EmitString( "FF 15" );					// call dword ptr [&currentVM->systemCall]
 	EmitPtr( &vm->systemCall );
 	
-	// cdecl - pop params
-	EmitString( "83 C4 04" );			// add esp, 4
-
-	//EmitString( "5F" );				// pop edi
-	//EmitString( "5E" );				// pop esi
-	
 	// we added the return value: *(opstack+1) = eax
-	EmitAddEDI4( vm );							// add edi, 4
-	EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov [edi], eax
+#if 0
+	EmitAddEDI4( vm );						// add edi, 4
+	EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov [edi], eax
+#else // break dependency from edi value?
+	EmitString( "89 47 04" );				// mov [edi+4], eax
+	EmitAddEDI4( vm );						// add edi, 4
+#endif
 
 	// function epilogue
-	EmitRexString( 0x48, "89 EC" );		// mov esp, ebp
-	EmitString( "5D" );					// pop ebp
-	EmitString( "C3" );					// ret
+	EmitRexString( 0x48, "89 EC" );			// mov esp, ebp
+	EmitString( "5D" );						// pop ebp
+	EmitString( "C3" );						// ret
 #endif
 }
 
