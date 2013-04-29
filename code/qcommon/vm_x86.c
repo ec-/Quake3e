@@ -2683,10 +2683,10 @@ __compile:
 				Emit4( n - 6 );
 			}
 #if idx64
-				EmitString( "41 FF 24 C0" );			// jmp dword ptr [r8 + rax*8]
+			EmitString( "41 FF 24 C0" );			// jmp dword ptr [r8 + rax*8]
 #else
-				EmitString( "FF 24 85" );				// jmp dword ptr [instructionPointers + eax * 4]
-				EmitPtr( vm->instructionPointers );
+			EmitString( "FF 24 85" );				// jmp dword ptr [instructionPointers + eax * 4]
+			EmitPtr( vm->instructionPointers );
 #endif
 			break;
 
