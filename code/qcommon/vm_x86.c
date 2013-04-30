@@ -309,7 +309,6 @@ typedef struct {
 	byte  mop;		// 8
 	byte  opStack;  // 8
 	int jused:1;
-	int jump:1;
 	int swtch:1;
 } instruction_t;
 
@@ -1681,13 +1680,6 @@ const char *VM_LoadInstructions( const vmHeader_t *header, instruction_t *buf )
 			ci->value = (ci-1)->value;
 		}
 
-		// set some bits for easy access
-		if ( ops[ op0 ].flags & JUMP ) {
-			ci->jump = 1;
-		} else {
-			ci->jump = 0;
-		}
-
 		ci->opStack = opStack;
 		opStack += ops[ op0 ].stack;
 	}
@@ -1820,7 +1812,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 		}
 
 		// conditional jumps
-		if ( ci->jump ) {
+		if ( ops[ ci->op ].flags & JUMP ) {
 			v = ci->value;
 			// conditional jumps should have opStack == 8
 			if ( ci->opStack != 8 ) {
