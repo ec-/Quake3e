@@ -1630,14 +1630,19 @@ qboolean LocalOptimize( vm_t *vm )
 }
 
 
-char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf, 
-						  byte *jumpTableTargets, int numJumpTableTargets, int dataLength ) 
+/*
+=================
+VM_LoadInstructions
+
+loads instructions in structured format
+=================
+*/
+const char *VM_LoadInstructions( const vmHeader_t *header, instruction_t *buf ) 
 {
-	static char errBuf[128];
+	static char errBuf[ 128 ];
 	byte *code_pos, *code_start, *code_end;
-	int i, n, v, op0, op1, opStack, pstack;
-	instruction_t *ci, *proc;
-	int startp, endp;
+	int i, n, op0, op1, opStack;
+	instruction_t *ci;
 	
 	code_pos = (byte *) header + header->codeOffset;
 	code_start = code_pos; // for printing
@@ -1646,9 +1651,6 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 	ci = buf;
 	opStack = 0;
 	op1 = OP_UNDEF;
-
-	startp = 0;
-	endp = header->instructionCount - 1;
 
 	// load instructions and perform some initial calculations/checks
 	for ( i = 0; i < header->instructionCount; i++, ci++, op1 = op0 ) {
@@ -1679,10 +1681,45 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 			ci->value = (ci-1)->value;
 		}
 
+		// set some bits for easy access
+		if ( ops[ op0 ].flags & JUMP ) {
+			ci->jump = 1;
+		} else {
+			ci->jump = 0;
+		}
+
 		ci->opStack = opStack;
 		opStack += ops[ op0 ].stack;
+	}
 
-		// check opstack bounds
+	return NULL;
+}
+
+
+/*
+===============================
+VM_CheckInstructions
+
+performs additional consistency and security checks
+===============================
+*/
+const char *VM_CheckInstructions( instruction_t *buf, 
+								 int instructionCount, 
+								 const byte *jumpTableTargets, 
+								 int numJumpTableTargets, 
+								 int dataLength ) 
+{
+	static char errBuf[ 128 ];
+	int i, n, v, op0, op1, opStack, pstack;
+	instruction_t *ci, *proc;
+	int startp, endp;
+
+	ci = buf;
+	opStack = 0;
+
+	// opstack checks
+	for ( i = 0; i < instructionCount; i++, ci++ ) {
+		opStack += ops[ ci->op ].stack;
 		if ( opStack < 0 ) {
 			sprintf( errBuf, "opStack underflow at %i", i ); 
 			return errBuf;
@@ -1691,25 +1728,19 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 			sprintf( errBuf, "opStack overflow at %i", i ); 
 			return errBuf;
 		}
-
-		// set some bits for easy access
-		if ( ops[ op0 ].flags & JUMP ) 
-			ci->jump = 1;
-		else
-			ci->jump = 0;
-
-	//	op1 = op0;
-	//	ci++;
 	}
 
 	ci = buf;
 	pstack = 0;
 	op1 = OP_UNDEF;
 	proc = NULL;
-	
+
+	startp = 0;
+	endp = instructionCount - 1;
+
 	// Additional security checks
 
-	for ( i = 0; i < header->instructionCount; i++, ci++, op1 = op0  ) {
+	for ( i = 0; i < instructionCount; i++, ci++, op1 = op0 ) {
 		op0 = ci->op;
 
 		// function entry
@@ -1738,7 +1769,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 			startp = i + 1;
 
 			// locate endproc
-			for ( endp = 0, n = i+1 ; n < header->instructionCount; n++ ) {
+			for ( endp = 0, n = i+1 ; n < instructionCount; n++ ) {
 				if ( buf[n].op == OP_PUSH && buf[n+1].op == OP_LEAVE ) {
 					endp = n;
 					break;
@@ -1783,7 +1814,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 				}
 				proc = NULL;
 				startp = i + 1; // next instruction
-				endp = header->instructionCount - 1; // end of the image
+				endp = instructionCount - 1; // end of the image
 			}
 			continue;
 		}
@@ -1860,7 +1891,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 				v = buf[i-1].value;
 				// analyse only local function calls
 				if ( v >= 0 ) {
-					if ( v >= header->instructionCount ) {
+					if ( v >= instructionCount ) {
 						sprintf( errBuf, "call target %i is out of range", v ); 
 						return errBuf;
 					}
@@ -1942,8 +1973,8 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 	if ( jumpTableTargets ) {
 		for( i = 0; i < numJumpTableTargets; i++ ) {
 			n = *(int *)(jumpTableTargets + ( i * sizeof( int ) ) );
-			if ( n < 0 || n >= header->instructionCount ) {
-				sprintf( errBuf, "jump target %i at %i is out of range [0..%i]", n, i, header->instructionCount - 1 ); 
+			if ( n < 0 || n >= instructionCount ) {
+				sprintf( errBuf, "jump target %i at %i is out of range [0..%i]", n, i, instructionCount - 1 ); 
 				return errBuf;
 			}
 			if ( buf[n].opStack != 0 ) {
@@ -1956,7 +1987,7 @@ char *VM_LoadInstructions( vmHeader_t *header, instruction_t *buf,
 	} else {
 		v = 0;
 		// instructions with opStack > 0 can't be jump labels so its safe to optimize/merge
-		for ( i = 0, ci = buf; i < header->instructionCount; i++, ci++ ) {
+		for ( i = 0, ci = buf; i < instructionCount; i++, ci++ ) {
 			if ( ci->op == OP_ENTER ) {
 				v = ci->swtch;
 				continue;
@@ -2041,18 +2072,18 @@ VM_Compile
 =================
 */
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
-	int		v, n;
-	int		i;
+	const char *errMsg;
 	int     instructionCount;
-	char	*errMsg;
-
 	int		proc_base;
 	int		proc_len;
+	int		i, n, v;
 
 	inst = Z_Malloc( (header->instructionCount + 8 ) * sizeof( instruction_t ) );
 
-	errMsg = VM_LoadInstructions( header, inst, vm->jumpTableTargets, vm->numJumpTableTargets, vm->dataLength );
-
+	errMsg = VM_LoadInstructions( header, inst );
+	if ( !errMsg ) {
+		errMsg = VM_CheckInstructions( inst, vm->instructionCount, vm->jumpTableTargets, vm->numJumpTableTargets, vm->dataLength );
+	}
 	if ( errMsg ) {
 		VM_FreeBuffers();
 		Com_Printf( "VM_CompileX86 error: %s\n", errMsg );
