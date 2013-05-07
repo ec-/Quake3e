@@ -267,6 +267,25 @@ void VM_PrepareInterpreter( vm_t *vm, vmHeader_t *header ) {
 	}
 }
 
+
+void VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header ) 
+{
+	const char *errMsg;
+	instruction_t *buf;
+	buf = ( instruction_t *) Hunk_Alloc( (vm->instructionCount + 8) * sizeof( instruction_t ), h_high );
+
+	errMsg = VM_LoadInstructions( header, buf );
+	if ( !errMsg ) {
+		errMsg = VM_CheckInstructions( buf, vm->instructionCount, vm->jumpTableTargets, vm->numJumpTableTargets, vm->dataLength );
+	}
+	if ( errMsg ) {
+		Com_Printf( "VM_PrepareInterpreter error: %s\n", errMsg );
+		return;
+	}
+	vm->codeBase.ptr = (void*)buf;
+}
+
+
 /*
 ==============
 VM_Call
@@ -332,7 +351,7 @@ int	VM_CallInterpreted( vm_t *vm, int *args ) {
 	opStack = stack;
 	programCounter = 0;
 
-	programStack -= 48;
+	programStack -= VM_CALL_PSTACK;
 
 	*(int *)&image[ programStack + 44] = args[9];
 	*(int *)&image[ programStack + 40] = args[8];
@@ -871,6 +890,449 @@ nextInstruction2:
 		case OP_SEX16:
 			*opStack = (short)*opStack;
 			goto nextInstruction;
+		}
+	}
+
+done:
+	vm->currentlyInterpreting = qfalse;
+
+	if ( opStack != &stack[1] ) {
+		Com_Error( ERR_DROP, "Interpreter error: opStack = %ld", (long int) (opStack - stack) );
+	}
+
+	vm->programStack = stackOnEntry;
+
+	// return the result
+	return *opStack;
+}
+
+
+int	VM_CallInterpreted2( vm_t *vm, int *args ) {
+	int		stack[MAX_OPSTACK_SIZE];
+	int		*opStack;
+	int		programStack;
+	int		stackOnEntry;
+	byte	*image;
+	int		v1, v0;
+	int		dataMask;
+	instruction_t *inst, *ci;
+	floatint_t	r0, r1;
+	int		opcode;
+
+	// interpret the code
+	vm->currentlyInterpreting = qtrue;
+
+	// we might be called recursively, so this might not be the very top
+	programStack = stackOnEntry = vm->programStack;
+
+	// set up the stack frame 
+	image = vm->dataBase;
+	inst = (instruction_t *)vm->codeBase.ptr;
+	dataMask = vm->dataMask;
+	
+	// leave a free spot at start of stack so
+	// that as long as opStack is valid, opStack-1 will
+	// not corrupt anything
+	opStack = stack;
+
+	programStack -= VM_CALL_PSTACK;
+
+	//*(int *)&image[ programStack + 44] = args[9];
+	//*(int *)&image[ programStack + 40] = args[8];
+	//*(int *)&image[ programStack + 36] = args[7];
+	*(int *)&image[ programStack + 32] = args[6];
+	*(int *)&image[ programStack + 28] = args[5];
+	*(int *)&image[ programStack + 24] = args[4];
+	*(int *)&image[ programStack + 20] = args[3];
+	*(int *)&image[ programStack + 16] = args[2];
+	*(int *)&image[ programStack + 12] = args[1];
+	*(int *)&image[ programStack + 8 ] = args[0];
+	*(int *)&image[ programStack + 4 ] = 0;	// return stack
+	*(int *)&image[ programStack ] = -1;	// will terminate the loop on return
+
+	ci = inst;
+
+	while ( 1 ) {
+
+		r0.i = opStack[0];
+		r1.i = opStack[-1];
+
+nextInstruction2:
+
+		v0 = ci->value;
+		opcode = ci->op; 
+		ci++;
+
+		switch ( opcode ) {
+
+		case OP_BREAK:
+			vm->breakCount++;
+			goto nextInstruction2;
+
+		case OP_ENTER:
+			// get size of stack frame
+			programStack -= v0;
+			if ( programStack <= vm->stackBottom ) {
+				Com_Error( ERR_DROP, "VM stack overflow" );
+			}
+			break;
+
+		case OP_LEAVE:
+			// remove our stack frame
+			programStack += v0;
+
+			// grab the saved program counter
+			v1 = *(int *)&image[ programStack ];
+			// check for leaving the VM
+			if ( v1 == -1 ) {
+				goto done;
+			} else if ( (unsigned)v1 >= vm->codeLength ) {
+				Com_Error( ERR_DROP, "VM program counter out of range in OP_LEAVE" );
+			}
+			ci = inst + v1;
+			break;
+
+		case OP_CALL:
+			// save current program counter
+			*(int *)&image[ programStack ] = ci - inst;
+			
+			// jump to the location on the stack
+			if ( r0.i < 0 ) {
+				// system call
+				// save the stack to allow recursive VM entry
+				vm->programStack = programStack - 4;
+				*(int *)&image[ programStack + 4 ] = ~r0.i;
+				{
+					intptr_t* argptr = (intptr_t *)&image[ programStack + 4 ];
+				
+				#if idx64 //__WORDSIZE == 64
+				// the vm has ints on the stack, we expect
+				// longs so we have to convert it
+					intptr_t argarr[16];
+					int i;
+					for (i = 0; i < 16; ++i) {
+						argarr[i] = *(int*)&image[ programStack + 4 + 4*i ];
+					}
+					argptr = argarr;
+				#endif
+					v0 = vm->systemCall( argptr );
+				}
+
+				// save return value
+				//opStack++;
+				ci = inst + *(int *)&image[ programStack ];
+				*opStack = v0;
+			} else if ( r0.u < vm->instructionCount ) {
+				ci = inst + r0.i;
+				opStack--;
+			} else {
+				Com_Error( ERR_DROP, "VM program counter out of range in OP_CALL" );
+			}
+			break;
+
+		// push and pop are only needed for discarded or bad function return values
+		case OP_PUSH:
+			opStack++;
+			break;
+
+		case OP_POP:
+			opStack--;
+			break;
+
+		case OP_CONST:
+			opStack++;
+			r1.i = r0.i;
+			r0.i = *opStack = v0;
+			goto nextInstruction2;
+
+		case OP_LOCAL:
+			opStack++;
+			r1.i = r0.i;
+			r0.i = *opStack = v0 + programStack;
+			goto nextInstruction2;
+
+		case OP_JUMP:
+			if ( r0.u >= vm->instructionCount ) {
+				Com_Error( ERR_DROP, "VM program counter out of range in OP_JUMP" );
+			}
+			ci = inst + r0.i;
+			opStack--;
+			break;
+
+		/*
+		===================================================================
+		BRANCHES
+		===================================================================
+		*/
+
+		case OP_EQ:
+			opStack -= 2;
+			if ( r1.i == r0.i )
+				ci = inst + v0;
+			break;
+
+		case OP_NE:
+			opStack -= 2;
+			if ( r1.i != r0.i )
+				ci = inst + v0;
+			break;
+
+		case OP_LTI:
+			opStack -= 2;
+			if ( r1.i < r0.i )
+				ci = inst + v0;
+			break;
+
+		case OP_LEI:
+			opStack -= 2;
+			if ( r1.i <= r0.i )
+				ci = inst + v0;
+			break;
+
+		case OP_GTI:
+			opStack -= 2;
+			if ( r1.i > r0.i )
+				ci = inst + v0;
+			break;
+
+		case OP_GEI:
+			opStack -= 2;
+			if ( r1.i >= r0.i )
+				ci = inst + v0;
+			break;
+
+		case OP_LTU:
+			opStack -= 2;
+			if ( r1.u < r0.u )
+				ci = inst + v0;
+			break;
+
+		case OP_LEU:
+			opStack -= 2;
+			if ( r1.u <= r0.u )
+				ci = inst + v0;
+			break;
+
+		case OP_GTU:
+			opStack -= 2;
+			if ( r1.u > r0.u )
+				ci = inst + v0;
+			break;
+
+		case OP_GEU:
+			opStack -= 2;
+			if ( r1.u >= r0.u )
+				ci = inst + v0;
+			break;
+
+		case OP_EQF:
+			opStack -= 2;
+			if ( r1.f == r0.f )
+				ci = inst + v0;
+			break;
+
+		case OP_NEF:
+			opStack -= 2;
+			if ( r1.f != r0.f )
+				ci = inst + v0;
+			break;
+
+		case OP_LTF:
+			opStack -= 2;
+			if ( r1.f < r0.f )
+				ci = inst + v0;
+			break;
+
+		case OP_LEF:
+			opStack -= 2;
+			if ( r1.f <= r0.f )
+				ci = inst + v0;
+			break;
+
+		case OP_GTF:
+			opStack -= 2;
+			if ( r1.f > r0.f )
+				ci = inst + v0;
+			break;
+
+		case OP_GEF:
+			opStack -= 2;
+			if ( r1.f >= r0.f )
+				ci = inst + v0;
+			break;
+
+		//===================================================================
+
+		case OP_LOAD1:
+			r0.i = *opStack = image[ r0.i & dataMask ];
+			goto nextInstruction2;
+
+		case OP_LOAD2:
+			r0.i = *opStack = *(unsigned short *)&image[ r0.i & ( dataMask & ~1 ) ];
+			goto nextInstruction2;
+
+		case OP_LOAD4:
+			r0.i = *opStack = *(int *)&image[ r0.i & ( dataMask & ~3 ) ];
+			goto nextInstruction2;
+
+		case OP_STORE1:
+			image[ r1.i & dataMask ] = r0.i;
+			opStack -= 2;
+			break;
+
+		case OP_STORE2:
+			*(short *)&image[ r1.i & (dataMask & ~1) ] = r0.i;
+			opStack -= 2;
+			break;
+
+		case OP_STORE4:
+			*(int *)&image[ r1.i & (dataMask & ~3) ] = r0.i;
+			opStack -= 2;
+			break;
+
+		case OP_ARG:
+			// single byte offset from programStack
+			*(int *)&image[ ( v0 + programStack ) /*& ( dataMask & ~3 ) */ ] = r0.i;
+			opStack--;
+			break;
+
+		case OP_BLOCK_COPY:
+			{
+				int		*src, *dest;
+				int		count, srci, desti;
+
+				count = v0;
+				// MrE: copy range check
+				srci = r0.i & dataMask;
+				desti = r1.i & dataMask;
+				count = ((srci + count) & dataMask) - srci;
+				count = ((desti + count) & dataMask) - desti;
+
+				src = (int *)&image[ srci ];
+				dest = (int *)&image[ desti ];
+				
+				memcpy( dest, src, count );
+				opStack -= 2;
+			}
+			break;
+
+		case OP_SEX8:
+			*opStack = (signed char)*opStack;
+			break;
+
+		case OP_SEX16:
+			*opStack = (short)*opStack;
+			break;
+
+		case OP_NEGI:
+			*opStack = -r0.i;
+			break;
+
+		case OP_ADD:
+			opStack[-1] = r1.i + r0.i;
+			opStack--;
+			break;
+
+		case OP_SUB:
+			opStack[-1] = r1.i - r0.i;
+			opStack--;
+			break;
+
+		case OP_DIVI:
+			opStack[-1] = r1.i / r0.i;
+			opStack--;
+			break;
+
+		case OP_DIVU:
+			opStack[-1] = r1.u / r0.u;
+			opStack--;
+			break;
+
+		case OP_MODI:
+			opStack[-1] = r1.i % r0.i;
+			opStack--;
+			break;
+
+		case OP_MODU:
+			opStack[-1] = r1.u % r0.u;
+			opStack--;
+			break;
+
+		case OP_MULI:
+			opStack[-1] = r1.i * r0.i;
+			opStack--;
+			break;
+
+		case OP_MULU:
+			opStack[-1] = r1.u * r0.u;
+			opStack--;
+			break;
+
+		case OP_BAND:
+			opStack[-1] = r1.u & r0.u;
+			opStack--;
+			break;
+
+		case OP_BOR:
+			opStack[-1] = r1.u | r0.u;
+			opStack--;
+			break;
+
+		case OP_BXOR:
+			opStack[-1] = r1.u ^ r0.u;
+			opStack--;
+			break;
+
+		case OP_BCOM:
+			*opStack = ~ r0.u;
+			break;
+
+		case OP_LSH:
+			opStack[-1] = r1.i << r0.i;
+			opStack--;
+			break;
+
+		case OP_RSHI:
+			opStack[-1] = r1.i >> r0.i;
+			opStack--;
+			break;
+
+		case OP_RSHU:
+			opStack[-1] = r1.u >> r0.i;
+			opStack--;
+			break;
+
+		case OP_NEGF:
+			*(float *)opStack =  - r0.f;
+			break;
+
+		case OP_ADDF:
+			*(float *)(opStack-1) = r1.f + r0.f;
+			opStack--;
+			break;
+
+		case OP_SUBF:
+			*(float *)(opStack-1) = r1.f - r0.f;
+			opStack--;
+			break;
+
+		case OP_DIVF:
+			*(float *)(opStack-1) = r1.f / r0.f;
+			opStack--;
+			break;
+
+		case OP_MULF:
+			*(float *)(opStack-1) = r1.f * r0.f;
+			opStack--;
+			break;
+
+		case OP_CVIF:
+			*(float *)opStack = (float) r0.i;
+			break;
+
+		case OP_CVFI:
+			*opStack = (int) r0.f;
+			break;
 		}
 	}
 

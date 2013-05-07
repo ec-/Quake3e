@@ -35,6 +35,96 @@ and one exported function: Perform
 
 #include "vm_local.h"
 
+typedef struct opcode_info_s 
+{
+	int   size; 
+	int	  stack;
+	int   nargs;
+	int   flags;
+} opcode_info_t ;
+
+#define JUMP	(1<<0)
+#define CALC	(1<<1)
+
+opcode_info_t ops[ OP_MAX ] = 
+{
+	{ 0, 0, 0, 0 }, // undef
+	{ 0, 0, 0, 0 }, // ignore
+	{ 0, 0, 0, 0 }, // break
+
+	{ 4, 0, 0, 0 }, // enter
+	{ 4,-4, 1, 0 }, // leave
+	{ 0, 0, 1, 0 }, // call
+	{ 0, 4, 0, 0 }, // push
+	{ 0,-4, 1, 0 }, // pop
+
+	{ 4, 4, 0, 0 }, // const
+	{ 4, 4, 0, 0 }, // local
+	{ 0,-4, 1, 0 }, // jump
+
+	{ 4,-8, 2, JUMP }, // eq
+	{ 4,-8, 2, JUMP }, // ne
+
+	{ 4,-8, 2, JUMP }, // lti
+	{ 4,-8, 2, JUMP }, // lei
+	{ 4,-8, 2, JUMP }, // gti
+	{ 4,-8, 2, JUMP }, // gei
+
+	{ 4,-8, 2, JUMP }, // ltu
+	{ 4,-8, 2, JUMP }, // leu
+	{ 4,-8, 2, JUMP }, // gtu
+	{ 4,-8, 2, JUMP }, // geu
+
+	{ 4,-8, 2, JUMP }, // eqf
+	{ 4,-8, 2, JUMP }, // nef
+
+	{ 4,-8, 2, JUMP }, // ltf
+	{ 4,-8, 2, JUMP }, // lef
+	{ 4,-8, 2, JUMP }, // gtf
+	{ 4,-8, 2, JUMP }, // gef
+
+	{ 0, 0, 1, 0 }, // load1
+	{ 0, 0, 1, 0 }, // load2
+	{ 0, 0, 1, 0 }, // load4
+	{ 0,-8, 2, 0 }, // store1
+	{ 0,-8, 2, 0 }, // store2
+	{ 0,-8, 2, 0 }, // store4
+	{ 1,-4, 1, 0 }, // arg
+	{ 4,-8, 2, 0 }, // bcopy
+
+	{ 0, 0, 1, 0 }, // sex8
+	{ 0, 0, 1, 0 }, // sex16
+
+	{ 0, 0, 1, 0 }, // negi
+	{ 0,-4, 2, 0 }, // add
+	{ 0,-4, 2, 0 }, // sub
+	{ 0,-4, 2, 0 }, // divi
+	{ 0,-4, 2, 0 }, // divu
+	{ 0,-4, 2, 0 }, // modi
+	{ 0,-4, 2, 0 }, // modu
+	{ 0,-4, 2, 0 }, // muli
+	{ 0,-4, 2, 0 }, // mulu
+
+	{ 0,-4, 2, 0 }, // band
+	{ 0,-4, 2, 0 }, // bor
+	{ 0,-4, 2, 0 }, // bxor
+	{ 0, 0, 1, 0 }, // bcom
+
+	{ 0,-4, 2, 0 }, // lsh
+	{ 0,-4, 2, 0 }, // rshi
+	{ 0,-4, 2, 0 }, // rshu
+
+	{ 0, 0, 1, 0 }, // negf
+	{ 0,-4, 2, CALC }, // addf
+	{ 0,-4, 2, CALC }, // subf
+	{ 0,-4, 2, CALC }, // divf
+	{ 0,-4, 2, CALC }, // mulf
+
+	{ 0, 0, 1, 0 }, // cvif
+	{ 0, 0, 1, 0 } // cvfi
+};
+
+
 cvar_t	*vm_rtChecks;
 
 vm_t	*currentVM = NULL;
@@ -75,8 +165,8 @@ void VM_Init( void ) {
 	Cvar_Get( "vm_game", "2", CVAR_ARCHIVE | CVAR_PROTECTED );	// !@# SHIP WITH SET TO 2
 	Cvar_Get( "vm_ui", "2", CVAR_ARCHIVE | CVAR_PROTECTED );	// !@# SHIP WITH SET TO 2
 
-	Cmd_AddCommand ("vmprofile", VM_VmProfile_f );
-	Cmd_AddCommand ("vminfo", VM_VmInfo_f );
+	Cmd_AddCommand( "vmprofile", VM_VmProfile_f );
+	Cmd_AddCommand( "vminfo", VM_VmInfo_f );
 
 	Com_Memset( vmTable, 0, sizeof( vmTable ) );
 }
@@ -111,6 +201,7 @@ const char *VM_ValueToSymbol( vm_t *vm, int value ) {
 
 	return text;
 }
+
 
 /*
 ===============
@@ -298,6 +389,7 @@ void VM_LoadSymbols( vm_t *vm ) {
 	FS_FreeFile( mapfile.v );
 }
 
+
 /*
 ============
 VM_DllSyscall
@@ -428,6 +520,12 @@ static int Load_JTS( vm_t *vm, unsigned int crc32, void *data )  {
 	return length;
 }
 
+
+/*
+=================
+VM_ValidateHeader
+=================
+*/
 static char *VM_ValidateHeader( vmHeader_t *header, int fileSize ) 
 {
 	static char errMsg[128];
@@ -502,6 +600,7 @@ static char *VM_ValidateHeader( vmHeader_t *header, int fileSize )
 
 	return NULL;	
 }
+
 
 /*
 =================
@@ -646,6 +745,441 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 	return header;
 }
 
+
+/*
+=================
+VM_LoadInstructions
+
+loads instructions in structured format
+=================
+*/
+const char *VM_LoadInstructions( const vmHeader_t *header, instruction_t *buf ) 
+{
+	static char errBuf[ 128 ];
+	byte *code_pos, *code_start, *code_end;
+	int i, n, op0, op1, opStack;
+	instruction_t *ci;
+	
+	code_pos = (byte *) header + header->codeOffset;
+	code_start = code_pos; // for printing
+	code_end =  (byte *) header + header->codeOffset + header->codeLength;
+
+	ci = buf;
+	opStack = 0;
+	op1 = OP_UNDEF;
+
+	// load instructions and perform some initial calculations/checks
+	for ( i = 0; i < header->instructionCount; i++, ci++, op1 = op0 ) {
+		op0 = *code_pos;
+		if ( op0 < 0 || op0 >= OP_MAX ) {
+			sprintf( errBuf, "bad opcode %02X at offset %i", op0,  code_pos - code_start );
+			return errBuf;
+		}
+		n = ops[ op0 ].size;
+		if ( code_pos + 1 + n  > code_end ) {
+			sprintf( errBuf, "code_pos > code_end" );
+			return errBuf;
+		}
+		code_pos++;
+		ci->op = op0;
+		if ( n == 4 ) {
+			ci->value = LittleLong( *((int*)code_pos) );
+			code_pos += 4;
+		} else if ( n == 1 ) { 
+			ci->value = *((char*)code_pos);
+			code_pos += 1;
+		} else {
+			ci->value = 0;
+		}
+
+		// setup jump value from previous const
+		if ( op0 == OP_JUMP && op1 == OP_CONST ) {
+			ci->value = (ci-1)->value;
+		}
+
+		ci->opStack = opStack;
+		opStack += ops[ op0 ].stack;
+	}
+
+	return NULL;
+}
+
+
+/*
+===============================
+VM_CheckInstructions
+
+performs additional consistency and security checks
+===============================
+*/
+const char *VM_CheckInstructions( instruction_t *buf, 
+								 int instructionCount, 
+								 const byte *jumpTableTargets, 
+								 int numJumpTableTargets, 
+								 int dataLength ) 
+{
+	static char errBuf[ 128 ];
+	int i, n, v, op0, op1, opStack, pstack;
+	instruction_t *ci, *proc;
+	int startp, endp;
+
+	ci = buf;
+	opStack = 0;
+
+	// opstack checks
+	for ( i = 0; i < instructionCount; i++, ci++ ) {
+		opStack += ops[ ci->op ].stack;
+		if ( opStack < 0 ) {
+			sprintf( errBuf, "opStack underflow at %i", i ); 
+			return errBuf;
+		}
+		if ( opStack >= PROC_OPSTACK_SIZE * 4 ) {
+			sprintf( errBuf, "opStack overflow at %i", i ); 
+			return errBuf;
+		}
+	}
+
+	ci = buf;
+	pstack = 0;
+	op1 = OP_UNDEF;
+	proc = NULL;
+
+	startp = 0;
+	endp = instructionCount - 1;
+
+	// Additional security checks
+
+	for ( i = 0; i < instructionCount; i++, ci++, op1 = op0 ) {
+		op0 = ci->op;
+
+		// function entry
+		if ( op0 == OP_ENTER ) {
+			// missing block end 
+			if ( proc || ( pstack && op1 != OP_LEAVE ) ) {
+				sprintf( errBuf, "missing proc end before %i", i ); 
+				return errBuf;
+			}
+			if ( ci->opStack != 0 ) {
+				v = ci->opStack;
+				sprintf( errBuf, "bad entry opstack %i at %i", v, i ); 
+				return errBuf;
+			}
+			v = ci->value;
+			if ( v < 0 || v >= PROGRAM_STACK_SIZE || (v & 3) ) {
+				sprintf( errBuf, "bad entry programStack %i at %i", v, i ); 
+				return errBuf;
+			}
+			
+			pstack = ci->value;
+			
+			// mark jump target
+			ci->jused = 1;
+			proc = ci;
+			startp = i + 1;
+
+			// locate endproc
+			for ( endp = 0, n = i+1 ; n < instructionCount; n++ ) {
+				if ( buf[n].op == OP_PUSH && buf[n+1].op == OP_LEAVE ) {
+					endp = n;
+					break;
+				}
+			}
+
+			if ( endp == 0 ) {
+				sprintf( errBuf, "missing end proc for %i", i ); 
+				return errBuf;
+			}
+
+			continue;
+		}
+
+		// proc opstack will carry max.possible opstack value
+		if ( proc && ci->opStack > proc->opStack ) 
+			proc->opStack = ci->opStack;
+
+		// function return
+		if ( op0 == OP_LEAVE ) {
+			// bad return programStack
+			if ( pstack != ci->value ) {
+				v = ci->value;
+				sprintf( errBuf, "bad programStack %i at %i", v, i ); 
+				return errBuf;
+			}
+			// bad opStack before return
+			if ( ci->opStack != 4 ) {
+				v = ci->opStack;
+				sprintf( errBuf, "bad opStack %i at %i", v, i );
+				return errBuf;
+			}
+			v = ci->value;
+			if ( v < 0 || v >= PROGRAM_STACK_SIZE || (v & 3) ) {
+				sprintf( errBuf, "bad return programStack %i at %i", v, i ); 
+				return errBuf;
+			}
+			if ( op1 == OP_PUSH ) {
+				if ( proc == NULL ) {
+					sprintf( errBuf, "unexpected proc end at %i", i ); 
+					return errBuf;
+				}
+				proc = NULL;
+				startp = i + 1; // next instruction
+				endp = instructionCount - 1; // end of the image
+			}
+			continue;
+		}
+
+		// conditional jumps
+		if ( ops[ ci->op ].flags & JUMP ) {
+			v = ci->value;
+			// conditional jumps should have opStack == 8
+			if ( ci->opStack != 8 ) {
+				sprintf( errBuf, "bad jump opStack %i at %i", ci->opStack, i ); 
+				return errBuf;
+			}
+			//if ( v >= header->instructionCount ) {
+			// allow only local proc jumps
+			if ( v < startp || v > endp ) {
+				sprintf( errBuf, "jump target %i at %i is out of range (%i,%i)", v, i-1, startp, endp );
+				return errBuf;
+			}
+			if ( buf[v].opStack != 0 ) {
+				n = buf[v].opStack;
+				sprintf( errBuf, "jump target %i has bad opStack %i", v, n ); 
+				return errBuf;
+			}
+			// mark jump target
+			buf[v].jused = 1;
+			continue;
+		}
+
+		// unconditional jumps
+		if ( op0 == OP_JUMP ) {
+			// jumps should have opStack == 4
+			if ( ci->opStack != 4 ) {
+				sprintf( errBuf, "bad jump opStack %i at %i", ci->opStack, i ); 
+				return errBuf;
+			}
+			if ( op1 == OP_CONST ) {
+				v = buf[i-1].value;
+				// allow only local jumps
+				if ( v < startp || v > endp ) {
+					sprintf( errBuf, "jump target %i at %i is out of range (%i,%i)", v, i-1, startp, endp );
+					return errBuf;
+				}
+				if ( buf[v].opStack != 0 ) {
+					n = buf[v].opStack;
+					sprintf( errBuf, "jump target %i has bad opStack %i", v, n ); 
+					return errBuf;
+				}
+				if ( buf[v].op == OP_ENTER ) {
+					n = buf[v].op;
+					sprintf( errBuf, "jump target %i has bad opcode %i", v, n ); 
+					return errBuf;
+				}
+				if ( v == (i-1) ) {
+					sprintf( errBuf, "self loop at %i", v ); 
+					return errBuf;
+				}
+				// mark jump target
+				buf[v].jused = 1;
+			} else {
+				if ( proc )
+					proc->swtch = 1;
+				else
+					ci->swtch = 1;
+			}
+			continue;
+		}
+
+		if ( op0 == OP_CALL ) {
+			if ( ci->opStack < 4 ) {
+				sprintf( errBuf, "bad call opStack at %i", i ); 
+				return errBuf;
+			}
+			if ( op1 == OP_CONST ) {
+				v = buf[i-1].value;
+				// analyse only local function calls
+				if ( v >= 0 ) {
+					if ( v >= instructionCount ) {
+						sprintf( errBuf, "call target %i is out of range", v ); 
+						return errBuf;
+					}
+					if ( buf[v].op != OP_ENTER ) {
+						n = buf[v].op;
+						sprintf( errBuf, "call target %i has bad opcode %i", v, n );
+						return errBuf;
+					}
+					if ( v == 0 ) {
+						sprintf( errBuf, "explicit vmMain call inside VM" );
+						return errBuf;
+					}
+					// mark jump target
+					buf[v].jused = 1;
+				}
+			}
+			continue;
+		}
+
+		if ( ci->op == OP_ARG ) {
+			v = ci->value & 255;
+			// argument can't exceed programStack frame
+			if ( v < 8 || v > pstack - 4 || (v & 3) ) {
+				sprintf( errBuf, "bad argument address %i at %i", v, i );
+				return errBuf;
+			}
+			continue;
+		}
+
+		if ( ci->op == OP_LOCAL ) {
+			v = ci->value;
+			if ( proc == NULL ) {
+				sprintf( errBuf, "missing proc frame for local %i at %i", v, i );
+				return errBuf;
+			}
+			if ( (ci+1)->op == OP_LOAD1 || (ci+1)->op == OP_LOAD2 || (ci+1)->op == OP_LOAD4 ) {
+				// FIXME: alloc 256 bytes of programStack in VM_CallCompiled()?
+				if ( v < 8 || v >= proc->value + 256 ) {
+					sprintf( errBuf, "bad local address %i at %i", v, i );
+					return errBuf;
+				}
+			}
+		}
+
+		if ( ci->op == OP_LOAD4 && op1 == OP_CONST ) {
+			v = (ci-1)->value;
+			if ( v < 0 || v > dataLength - 4 ) {
+				sprintf( errBuf, "bad load4 address %i at %i", v, i - 1 );
+				return errBuf;
+			}
+		}
+
+		if ( ci->op == OP_LOAD2 && op1 == OP_CONST ) {
+			v = (ci-1)->value;
+			if ( v < 0 || v > dataLength - 2 ) {
+				sprintf( errBuf, "bad load2 address %i at %i", v, i - 1 );
+				return errBuf;
+			}
+		}
+
+		if ( ci->op == OP_LOAD1 && op1 == OP_CONST ) {
+			v =  (ci-1)->value;
+			if ( v < 0 || v > dataLength - 1 ) {
+				sprintf( errBuf, "bad load1 address %i at %i", v, i - 1 );
+				return errBuf;
+			}
+		}
+
+//		op1 = op0;
+//		ci++;
+	}
+
+	if ( op1 != OP_UNDEF && op1 != OP_LEAVE ) {
+		sprintf( errBuf, "missing return instruction at the end of the image" );
+		return errBuf;
+	}
+
+	// ensure that the optimization pass knows about all the jump table targets
+	if ( jumpTableTargets ) {
+		for( i = 0; i < numJumpTableTargets; i++ ) {
+			n = *(int *)(jumpTableTargets + ( i * sizeof( int ) ) );
+			if ( n < 0 || n >= instructionCount ) {
+				sprintf( errBuf, "jump target %i at %i is out of range [0..%i]", n, i, instructionCount - 1 ); 
+				return errBuf;
+			}
+			if ( buf[n].opStack != 0 ) {
+				opStack = buf[n].opStack;
+				sprintf( errBuf, "jump target set on instruction %i with bad opStack %i", n, opStack ); 
+				return errBuf;
+			}
+			buf[n].jused = 1;
+		}
+	} else {
+		v = 0;
+		// instructions with opStack > 0 can't be jump labels so its safe to optimize/merge
+		for ( i = 0, ci = buf; i < instructionCount; i++, ci++ ) {
+			if ( ci->op == OP_ENTER ) {
+				v = ci->swtch;
+				continue;
+			}
+			// if there is a switch statement in function -
+			// mark all potential jump labels
+			if ( ci->swtch )
+				v = ci->swtch;
+			if ( ci->opStack > 0 )
+				ci->jused = 0;
+			else if ( v )
+				ci->jused = 1;
+		}
+	}
+
+	return NULL;
+}
+
+
+/*
+=================
+VM_FindMOps
+=================
+*/
+void VM_FindMOps( vmHeader_t *header, instruction_t *buf ) 
+{
+	int i, v, op0;
+	instruction_t *ci;
+	
+	ci = buf;
+
+	// Search for known macro-op sequences
+	i = 0;
+
+	while ( i < header->instructionCount )
+	{
+		op0 = ci->op;
+		if ( op0 == OP_LOCAL ) {
+			// OP_LOCAL + OP_LOCAL + OP_LOAD4 + OP_CONST + OP_XXX + OP_STORE4
+			if ( (ci+1)->op == OP_LOCAL && ci->value == (ci+1)->value && (ci+2)->op == OP_LOAD4 && (ci+3)->op == OP_CONST && (ci+4)->op != OP_UNDEF && (ci+5)->op == OP_STORE4 ) {
+				v = (ci+4)->op;
+				if ( v == OP_ADD ) {
+					ci->mop = MOP_ADD4;
+					ci += 6; i += 6;
+					continue;
+				}
+				if ( v == OP_SUB ) {
+					ci->mop = MOP_SUB4;
+					ci += 6; i += 6;
+					continue;
+				}
+				if ( v == OP_BAND ) {
+					ci->mop = MOP_BAND4;
+					ci += 6; i += 6;
+					continue;
+				}
+				if ( v == OP_BOR ) {
+					ci->mop = MOP_BOR4;
+					ci += 6; i += 6;
+					continue;
+				}
+			}
+
+			// skip useless sequences
+			if ( (ci+1)->op == OP_LOCAL && (ci+0)->value == (ci+1)->value && (ci+2)->op == OP_LOAD4 && (ci+3)->op == OP_STORE4 ) {
+				ci->mop = MOP_IGNORE4;
+				ci += 4; i += 4;
+				continue;
+			}
+		}
+
+		if ( (ops[ ci->op ].flags & CALC) && (ops[(ci+1)->op].flags & CALC) && !(ci+1)->jused ) {
+			ci->mop = MOP_CALCF4;
+			ci += 2; i += 2;
+			continue;
+		}
+
+		ci++;
+		i++;
+	}
+}
+
+
 /*
 =================
 VM_Restart
@@ -783,9 +1317,9 @@ vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *),
 	}
 #endif
 	// VM_Compile may have reset vm->compiled if compilation failed
-	if (!vm->compiled)
+	if ( !vm->compiled )
 	{
-		VM_PrepareInterpreter( vm, header );
+		VM_PrepareInterpreter2( vm, header );
 	}
 
 	// free the original file
@@ -798,6 +1332,7 @@ vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *),
 
 	return vm;
 }
+
 
 /*
 ==============
@@ -850,13 +1385,16 @@ void VM_Clear(void) {
 	}
 }
 
+
 void VM_Forced_Unload_Start(void) {
 	forced_unload = 1;
 }
 
+
 void VM_Forced_Unload_Done(void) {
 	forced_unload = 0;
 }
+
 
 void *VM_ArgPtr( intptr_t intValue ) {
 	if ( !intValue ) {
@@ -957,7 +1495,7 @@ intptr_t QDECL VM_Call( vm_t *vm, int callnum, ... )
 			r = VM_CallCompiled( vm, (int*)&callnum );
 		else
 #endif
-			r = VM_CallInterpreted( vm, (int*)&callnum );
+			r = VM_CallInterpreted2( vm, (int*)&callnum );
 #else
 		struct {
 			int callnum;
@@ -976,7 +1514,7 @@ intptr_t QDECL VM_Call( vm_t *vm, int callnum, ... )
 			r = VM_CallCompiled( vm, &a.callnum );
 		else
 #endif
-			r = VM_CallInterpreted( vm, &a.callnum );
+			r = VM_CallInterpreted2( vm, &a.callnum );
 #endif
 	}
 	--vm->callLevel;

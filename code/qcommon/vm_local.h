@@ -19,11 +19,16 @@ along with Quake III Arena source code; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
+#ifndef VM_LOCAL_H
+#define VM_LOCAL_H
+
 #include "q_shared.h"
 #include "qcommon.h"
 
-#define	MAX_OPSTACK_SIZE  512
-#define	PROC_OPSTACK_SIZE 30
+#define	MAX_OPSTACK_SIZE	512
+#define	PROC_OPSTACK_SIZE	30
+
+#define VM_CALL_PSTACK		48
 
 // don't change
 // Hardcoded in q3asm an reserved at end of bss
@@ -118,7 +123,27 @@ typedef enum {
 	OP_MAX
 } opcode_t;
 
+// macro opcode sequences
+typedef enum {
+	MOP_UNDEF = OP_MAX,
+	MOP_IGNORE4,
+	MOP_ADD4,
+	MOP_SUB4,
+	MOP_BAND4,
+	MOP_BOR4,
+	MOP_CALCF4,
+} macro_op_t;
 
+typedef struct {
+	int   value;    // 32
+	byte  op;	 	// 8
+	byte  mop;		// 8
+	byte  opStack;  // 8
+	int jused:1;
+	int swtch:1;
+} instruction_t;
+
+const char *opname[OP_MAX]; 
 
 typedef int	vmptr_t;
 
@@ -181,7 +206,6 @@ struct vm_s {
 	int			numJumpTableTargets;
 };
 
-
 extern	vm_t	*currentVM;
 extern	int		vm_debugLevel;
 
@@ -189,9 +213,21 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header );
 int	VM_CallCompiled( vm_t *vm, int *args );
 
 void VM_PrepareInterpreter( vm_t *vm, vmHeader_t *header );
+void VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header );
 int	VM_CallInterpreted( vm_t *vm, int *args );
+int	VM_CallInterpreted2( vm_t *vm, int *args );
 
 vmSymbol_t *VM_ValueToFunctionSymbol( vm_t *vm, int value );
 int VM_SymbolToValue( vm_t *vm, const char *symbol );
 const char *VM_ValueToSymbol( vm_t *vm, int value );
 void VM_LogSyscalls( int *args );
+
+const char *VM_LoadInstructions( const vmHeader_t *header, instruction_t *buf );
+const char *VM_CheckInstructions( instruction_t *buf, int instructionCount, 
+								 const byte *jumpTableTargets, 
+								 int numJumpTableTargets, 
+								 int dataLength );
+
+void VM_FindMOps( vmHeader_t *header, instruction_t *buf );
+
+#endif // VM_LOCAL_H
