@@ -50,7 +50,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 
 
-static void *VM_Alloc_Compiled( vm_t *vm, int codeLength );
+static void *VM_Alloc_Compiled( vm_t *vm, int codeLength, int tableLength );
 static void VM_Destroy_Compiled( vm_t *vm );
 
 /*
@@ -118,6 +118,8 @@ static void VM_Destroy_Compiled( vm_t *vm );
 #define ISS8(V) ( (V) >= -128 && (V) <= 127 )
 #define ISU8(V) ( (V) >= 0 && (V) <= 127 )
 
+#define REWIND(N) { compiledOfs -= (N); instructionOffsets[ ip-1 ] = compiledOfs; };
+
 typedef enum 
 {
 	REG_EAX = 0,
@@ -152,8 +154,10 @@ typedef enum
 	FUNC_LAST
 } func_t;
 
-static	byte    *code;
-static	int     compiledOfs;
+static	byte     *code;
+static	int      compiledOfs;
+static	int      *instructionOffsets;
+static	intptr_t *instructionPointers;
 
 static  instruction_t *inst = NULL;
 static  instruction_t *ci;
@@ -223,6 +227,7 @@ static void (*const badDataPtr)(void) = BadData;
 static void VM_FreeBuffers( void ) 
 {
 	// should be freed in reversed allocation order
+	Z_Free( instructionOffsets );
 	Z_Free( inst ); 
 }
 
@@ -321,9 +326,20 @@ static void EmitRexString( int prefix, const char *string )
 }
 
 
+static void EmitAlign( int align ) 
+{
+	int i, n;
+
+	n = compiledOfs & ( align - 1 );
+
+	for ( i = 0; i < n ; i++ )
+		EmitString( "90" );	// nop
+}
+
+
 static void EmitCommand( ELastCommand command )
 {
-	switch(command)
+	switch( command )
 	{
 		case LAST_COMMAND_MOV_EDI_EAX:
 			EmitString( "89 07" );		// mov dword ptr [edi], eax
@@ -363,11 +379,10 @@ static void EmitAddEDI4( vm_t *vm )
 	if ( LastCommand == LAST_COMMAND_SUB_DI_4 ) // sub edi, 4
 	{
 #if idx64
-		compiledOfs -= 4;
+		REWIND( 4 );
 #else
-		compiledOfs -= 3;
+		REWIND( 3 );
 #endif
-		vm->instructionPointers[ ip-1 ] = compiledOfs;
 		LastCommand = LAST_COMMAND_NONE;
 		return;
 	}
@@ -375,11 +390,10 @@ static void EmitAddEDI4( vm_t *vm )
 	if ( LastCommand == LAST_COMMAND_SUB_DI_8 ) // sub edi, 8
 	{	
 #if idx64
-		compiledOfs -= 4;
+		REWIND( 4 );
 #else
-		compiledOfs -= 3;
+		REWIND( 3 );
 #endif
-		vm->instructionPointers[ ip-1 ] = compiledOfs;
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );
 		return;
 	}
@@ -407,8 +421,7 @@ static void EmitMovEAXEDI( vm_t *vm )
 
 	if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) // mov [edi], eax
 	{	
-		compiledOfs -= 2;
-		vm->instructionPointers[ ip-1 ] = compiledOfs;
+		REWIND( 2 );
 		LastCommand = LAST_COMMAND_NONE; 
 		return;
 	}
@@ -421,8 +434,7 @@ static void EmitMovEAXEDI( vm_t *vm )
 
 	if ( LastCommand == LAST_COMMAND_MOV_EDI_CONST ) // mov dword ptr [edi], 0x12345678
 	{	
-		compiledOfs -= 6;
-		vm->instructionPointers[ ip-1 ] = compiledOfs;
+		REWIND( 6 );
 		if ( lastConst == 0 ) {
 			EmitString( "31 C0" );		// xor eax, eax
 		} else {
@@ -454,18 +466,16 @@ void EmitMovECXEDI( vm_t *vm )
 		return;
 	}
 
-	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI )  
+	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI ) // mov eax, dword ptr [edi] 
 	{
-		compiledOfs -= 2;			// mov eax, dword ptr [edi]
-		vm->instructionPointers[ ip-1 ] = compiledOfs;
+		REWIND( 2 );
 		EmitString( "8B 0F" );		// mov ecx, dword ptr [edi]
 		return;
 	}
 
 	if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) // mov [edi], eax
 	{
-		compiledOfs -= 2;
-		vm->instructionPointers[ ip-1 ] = compiledOfs;
+		REWIND( 2 );
 		EmitString( "89 C1" );		// mov ecx, eax
 		return;
 	}
@@ -479,8 +489,7 @@ void EmitMovECXEDI( vm_t *vm )
 
 	if ( LastCommand == LAST_COMMAND_MOV_EDI_CONST ) // mov dword ptr [edi], 0x12345678
 	{	
-		compiledOfs -= 6;			
-		vm->instructionPointers[ ip-1 ] = compiledOfs;
+		REWIND( 6 );
 		EmitString( "B9" );			// mov ecx, 0x12345678
 		Emit4( lastConst );
 		return;
@@ -532,8 +541,7 @@ static int EmitFldEDI( vm_t *vm )
 	{ 	
 		if ( !vm )
 			return 1;				// just report
-		compiledOfs -= 2;
-		vm->instructionPointers[ ip-1 ] = compiledOfs;
+		REWIND( 2 );
 		LastCommand = LAST_COMMAND_NONE;
 		return 1;
 	}
@@ -619,7 +627,7 @@ void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 	const char *str;
 	int v, jump_size;
 
-	v = vm->instructionPointers[ addr ] - compiledOfs;
+	v = instructionOffsets[ addr ] - compiledOfs;
 
 #if JUMP_OPTIMIZE
 	if ( i->njump ) {
@@ -692,7 +700,7 @@ void EmitFloatJump( vm_t *vm, instruction_t *i, int op, int addr )
 void EmitCallAddr( vm_t *vm, int addr ) 
 {
 	int v;
-	v = vm->instructionPointers[ addr ] - compiledOfs;
+	v = instructionOffsets[ addr ] - compiledOfs;
 	EmitString( "E8" );
 	Emit4( v - 5 ); 
 }
@@ -746,7 +754,7 @@ sysCallOffset = compiledOfs;
 	EmitString( "41 FF 14 C0" );		// call dword ptr [r8+rax*8]
 #else
 	EmitString( "8D 0C 85" );			// lea ecx, [vm->instructionPointers+eax*4]
-	EmitPtr( vm->instructionPointers );
+	EmitPtr( instructionPointers );
 	EmitString( "FF 11" );				// call dword ptr [ecx]
 #endif
 
@@ -1454,6 +1462,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int		i, n, v;
 
 	inst = Z_Malloc( (header->instructionCount + 8 ) * sizeof( instruction_t ) );
+	instructionOffsets = Z_Malloc( header->instructionCount * sizeof( int ) );
 
 	errMsg = VM_LoadInstructions( header, inst );
 	if ( !errMsg ) {
@@ -1468,6 +1477,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	VM_FindMOps( header, inst );
 
 	code = NULL; // we will allocate memory later, after last defined pass
+	instructionPointers = NULL;
 
 	memset( funcOffset, 0, sizeof( funcOffset ) );
 
@@ -1501,7 +1511,7 @@ __compile:
 	EmitPtr( vm->dataBase );
 
 	EmitString( "49 B8" );			// mov r8, vm->instructionPointers
-	EmitPtr( vm->instructionPointers );
+	EmitPtr( instructionPointers );
 
 	EmitString( "49 C7 C1" );		// mov r9, vm->dataMask
 	Emit4( vm->dataMask );
@@ -1574,15 +1584,18 @@ __compile:
 	
 	EmitString( "C3" );				// ret
 	
+	EmitAlign( 4 );
+
 	 // main function entry offset
 	funcOffset[FUNC_ENTR] = compiledOfs;
 	
 	while ( ip < instructionCount )
 	{
-		vm->instructionPointers[ ip ] = compiledOfs;
+		instructionOffsets[ ip ] = compiledOfs;
 
-		ci = &inst[ ip++ ];
-		ni = &inst[ ip ];
+		ci = &inst[ ip ];
+		ni = &inst[ ip + 1 ];
+		ip++;
 
 		jlabel = ci->jused;
 
@@ -1789,8 +1802,7 @@ __compile:
 
 		case OP_LOAD4:
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
-				compiledOfs -= 2;
-				vm->instructionPointers[ ip-1 ] = compiledOfs;
+				REWIND( 2 );
 				EmitCheckReg( vm, REG_EAX, 4 );			// range check eax
 				EmitString( "8B 04 03" );				// mov	eax, dword ptr [ebx + eax]
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov dword ptr [edi], eax
@@ -1804,8 +1816,7 @@ __compile:
 
 		case OP_LOAD2:
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
-				compiledOfs -= 2;
-				vm->instructionPointers[ ip-1 ] = compiledOfs;
+				REWIND( 2 );
 				EmitCheckReg( vm, REG_EAX, 2 );			// range check eax
 				EmitString( "0F B7 04 03" );			// movzx eax, word ptr [ebx + eax]
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov dword ptr [edi], eax
@@ -1819,8 +1830,7 @@ __compile:
 
 		case OP_LOAD1:
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
-				compiledOfs -= 2;
-				vm->instructionPointers[ ip-1 ] = compiledOfs;
+				REWIND( 2 );
 				EmitCheckReg( vm, REG_EAX, 1 );			// range check eax
 				EmitString( "0F B6 04 03" );			// movzx eax, byte ptr [ebx + eax]
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov dword ptr [edi], eax
@@ -2094,7 +2104,7 @@ __compile:
 			EmitString( "41 FF 24 C0" );			// jmp dword ptr [r8 + rax*8]
 #else
 			EmitString( "FF 24 85" );				// jmp dword ptr [instructionPointers + eax * 4]
-			EmitPtr( vm->instructionPointers );
+			EmitPtr( instructionPointers );
 #endif
 			break;
 
@@ -2110,13 +2120,15 @@ __compile:
 		// ****************
 		// system functions
 		// ****************
-
+		EmitAlign( 4 );
 		funcOffset[FUNC_CALL] = compiledOfs;
 		EmitCallFunc( vm );
 
+		EmitAlign( 4 );
 		funcOffset[FUNC_FTOL] = compiledOfs;
 		EmitFTOLFunc( vm );
 
+		EmitAlign( 4 );
 		funcOffset[FUNC_BCPY] = compiledOfs;
 		EmitBCPYFunc( vm );
 
@@ -2125,39 +2137,59 @@ __compile:
 		// ***************
 
 		// bad jump
+		EmitAlign( 4 );
 		funcOffset[FUNC_BADJ] = compiledOfs;
 		EmitBADJFunc( vm );
 
 		// error jump
+		EmitAlign( 4 );
 		funcOffset[FUNC_ERRJ] = compiledOfs;
 		EmitERRJFunc( vm );
 
 		// programStack overflow
+		EmitAlign( 4 );
 		funcOffset[FUNC_PSOF] = compiledOfs;
 		EmitPSOFFunc( vm );
 
 		// opStack overflow
+		EmitAlign( 4 );
 		funcOffset[FUNC_OSOF] = compiledOfs;
 		EmitOSOFFunc( vm );
 
 		// read/write access violation
+		EmitAlign( 4 );
 		funcOffset[FUNC_DATA] = compiledOfs;
 		EmitDATAFunc( vm );
 
+		EmitAlign( sizeof( intptr_t ) ); // for instructionPointers
 
 	} // for( pass = 0; pass < n; pass++ )
 
+	n = header->instructionCount * sizeof( intptr_t );
+
 	if ( code == NULL ) {
-		code = VM_Alloc_Compiled( vm, compiledOfs );
+		code = VM_Alloc_Compiled( vm, compiledOfs, n );
 		if ( code == NULL ) {
 			return qfalse;
 		}
 		pass = NUM_PASSES-1;
+		instructionPointers = (intptr_t*)(byte*)(code + compiledOfs);
 		goto __compile;
 	}
 
+	// offset all the instruction pointers for the new location
+	for ( i = 0 ; i < header->instructionCount ; i++ ) {
+		if ( !inst[i].jused ) {
+			instructionPointers[ i ] = (intptr_t)badJumpPtr;
+			continue;
+		}
+		instructionPointers[ i ] = (intptr_t)vm->codeBase.ptr + instructionOffsets[ i ];
+	}
+
+	VM_FreeBuffers();
+
 #ifdef VM_X86_MMAP
-	if ( mprotect( vm->codeBase.ptr, compiledOfs, PROT_READ|PROT_EXEC ) ) {
+	if ( mprotect( vm->codeBase.ptr, compiledOfs + n, PROT_READ|PROT_EXEC ) ) {
 		VM_Destroy_Compiled( vm );
 		Com_Error( ERR_FATAL, "VM_CompileX86: mprotect failed" );
 		return qfalse;
@@ -2167,24 +2199,13 @@ __compile:
 		DWORD oldProtect = 0;
 		
 		// remove write permissions.
-		if ( !VirtualProtect( vm->codeBase.ptr, compiledOfs, PAGE_EXECUTE_READ, &oldProtect ) ) {
+		if ( !VirtualProtect( vm->codeBase.ptr, compiledOfs + n, PAGE_EXECUTE_READ, &oldProtect ) ) {
 			VM_Destroy_Compiled( vm );
 			Com_Error( ERR_FATAL, "VM_CompileX86: VirtualProtect failed" );
 			return qfalse;
 		}
 	}
 #endif
-	
-	// offset all the instruction pointers for the new location
-	for ( i = 0 ; i < header->instructionCount ; i++ ) {
-		if ( !inst[i].jused ) {
-			vm->instructionPointers[i] = (intptr_t)badJumpPtr;
-			continue;
-		}
-		vm->instructionPointers[i] += (intptr_t)vm->codeBase.ptr;
-	}
-
-	VM_FreeBuffers();
 
 	vm->destroy = VM_Destroy_Compiled;
 
@@ -2199,29 +2220,34 @@ __compile:
 VM_Alloc_Compiled
 =================
 */
-void *VM_Alloc_Compiled( vm_t *vm, int codeLength ) 
+void *VM_Alloc_Compiled( vm_t *vm, int codeLength, int tableLength ) 
 {
-	vm->codeLength = codeLength;
+	void	*ptr;
+	int		length;
+
+	length = codeLength + tableLength;
 #ifdef VM_X86_MMAP
-	vm->codeBase.ptr = mmap( NULL, vm->codeLength, PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0 );
-	if ( vm->codeBase.ptr == MAP_FAILED ) {
-		Com_Error( ERR_FATAL, "VM_CompileX86: can't mmap memory" );
+	ptr = mmap( NULL, length, PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0 );
+	if ( ptr == MAP_FAILED ) {
+		Com_Error( ERR_FATAL, "VM_CompileX86: mmap failed" );
 		return NULL;
 	}
 #elif _WIN32
 	// allocate memory with EXECUTE permissions under windows.
-	vm->codeBase.ptr = VirtualAlloc( NULL, vm->codeLength, MEM_COMMIT, PAGE_EXECUTE_READWRITE );
-	if ( !vm->codeBase.ptr ) {
+	ptr = VirtualAlloc( NULL, length, MEM_COMMIT, PAGE_EXECUTE_READWRITE );
+	if ( !ptr ) {
 		Com_Error( ERR_FATAL, "VM_CompileX86: VirtualAlloc failed" );
 		return NULL;
 	}
 #else
-	vm->codeBase.ptr = malloc( vm->codeLength );
-	if ( !vm->codeBase.ptr ) {
+	ptr = malloc( length );
+	if ( !ptr ) {
 		Com_Error( ERR_FATAL, "VM_CompileX86: malloc failed" );
 		return NULL;
 	}
 #endif
+	vm->codeBase.ptr = ptr;
+	vm->codeLength = codeLength;
 	return vm->codeBase.ptr;
 }
 
