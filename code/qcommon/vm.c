@@ -561,25 +561,25 @@ static char *VM_ValidateHeader( vmHeader_t *header, int fileSize )
 
 	// bad code offset
 	if ( header->codeOffset >= fileSize ) {
-		sprintf( errMsg, "bad code offset %i", header->codeOffset );
+		sprintf( errMsg, "bad code segment offset %i", header->codeOffset );
 		return errMsg;
 	}
 
 	// bad code length
 	if ( header->codeLength <= 0 || header->codeOffset + header->codeLength > fileSize ) {
-		sprintf( errMsg, "bad code length %i", header->codeLength );
+		sprintf( errMsg, "bad code segment length %i", header->codeLength );
 		return errMsg;
 	}
 
 	// bad data offset
 	if ( header->dataOffset >= fileSize || header->dataOffset != header->codeOffset + header->codeLength ) {
-		sprintf( errMsg, "bad data offset %i", header->dataOffset );
+		sprintf( errMsg, "bad data segment offset %i", header->dataOffset );
 		return errMsg;
 	}
 
 	// bad data length
 	if ( header->dataOffset + header->dataLength > fileSize )  {
-		sprintf( errMsg, "bad data length %i", header->dataLength );
+		sprintf( errMsg, "bad data segment length %i", header->dataLength );
 		return errMsg;
 	}
 
@@ -587,14 +587,14 @@ static char *VM_ValidateHeader( vmHeader_t *header, int fileSize )
 	{
 		// bad lit/jtrg length
 		if ( header->dataOffset + header->dataLength + header->litLength + header->jtrgLength != fileSize ) {
-			sprintf( errMsg, "bad lit/jrgs length" );
+			sprintf( errMsg, "bad lit/jtrg segment length" );
 			return errMsg;
 		}
 	} 
 	// bad lit length
 	else if ( header->dataOffset + header->dataLength + header->litLength != fileSize ) 
 	{
-		sprintf( errMsg, "bad lit length %i", header->litLength );
+		sprintf( errMsg, "bad lit segment length %i", header->litLength );
 		return errMsg;
 	}
 
