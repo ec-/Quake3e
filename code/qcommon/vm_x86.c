@@ -2174,6 +2174,7 @@ __compile:
 		}
 		pass = NUM_PASSES-1;
 		instructionPointers = (intptr_t*)(byte*)(code + compiledOfs);
+		vm->instructionPointers = instructionPointers; // for debug purposes?
 		goto __compile;
 	}
 
