@@ -1242,6 +1242,11 @@ qboolean ConstOptimize( vm_t *vm )
 		return qtrue;
 
 	case OP_CALL:
+#ifdef VM_LOG_SYSCALLS
+		// [dataBase + programStack + 0] = ip;
+		EmitString( "C7 45 00" );	// mov dword ptr [ebp], 0x12345678
+		Emit4( ip );
+#endif
 		v = ci->value;
 		// try to inline some syscalls
 		if ( v == ~TRAP_SIN || v == ~TRAP_COS || v == ~TRAP_SQRT ) {
@@ -1266,11 +1271,6 @@ qboolean ConstOptimize( vm_t *vm )
 			ip += 1; // OP_CALL
 			return qtrue;
 		}
-#ifdef VM_LOG_SYSCALLS
-		EmitString( "C7 86" );    // mov dword ptr [esi+database],0x12345678
-		Emit4( (int)vm->dataBase );
-		Emit4( ip );
-#endif
 		EmitString( "55" );	// push ebp
 		EmitString( "56" );	// push rsi
 		EmitString( "53" );	// push rbx
@@ -1770,8 +1770,8 @@ __compile:
 
 		case OP_CALL:
 #ifdef VM_LOG_SYSCALLS
-			EmitString( "C7 86" );		// mov dword ptr [esi + dataBase + 0 ],0x12345678
-			Emit4( (int)vm->dataBase );
+			// [dataBase + programStack + 0] = ip-1;
+			EmitString( "C7 45 00" );				// mov dword ptr [ebp], 0x12345678
 			Emit4( ip-1 );
 #endif
 			EmitMovEAXEDI( vm );					// mov eax, dword ptr [edi]

@@ -909,7 +909,7 @@ done:
 
 int	VM_CallInterpreted2( vm_t *vm, int *args ) {
 	int		stack[MAX_OPSTACK_SIZE];
-	int		*opStack;
+	int		*opStack, *opStackTop;
 	int		programStack;
 	int		stackOnEntry;
 	byte	*image;
@@ -934,6 +934,7 @@ int	VM_CallInterpreted2( vm_t *vm, int *args ) {
 	// that as long as opStack is valid, opStack-1 will
 	// not corrupt anything
 	opStack = stack;
+	opStackTop = stack + ARRAY_LEN( stack ) - 1;
 
 	programStack -= VM_CALL_PSTACK;
 
@@ -951,6 +952,9 @@ int	VM_CallInterpreted2( vm_t *vm, int *args ) {
 	*(int *)&image[ programStack ] = -1;	// will terminate the loop on return
 
 	ci = inst;
+
+	// main interpreter loop, will exit when a LEAVE instruction
+	// grabs the -1 program counter
 
 	while ( 1 ) {
 
@@ -973,7 +977,10 @@ nextInstruction2:
 			// get size of stack frame
 			programStack -= v0;
 			if ( programStack <= vm->stackBottom ) {
-				Com_Error( ERR_DROP, "VM stack overflow" );
+				Com_Error( ERR_DROP, "VM programStack overflow" );
+			}
+			if ( opStack + ((ci-1)->opStack/4) >= opStackTop ) {
+				Com_Error( ERR_DROP, "VM opStack overflow" );
 			}
 			break;
 
@@ -986,7 +993,7 @@ nextInstruction2:
 			// check for leaving the VM
 			if ( v1 == -1 ) {
 				goto done;
-			} else if ( (unsigned)v1 >= vm->codeLength ) {
+			} else if ( (unsigned)v1 >= vm->instructionCount ) {
 				Com_Error( ERR_DROP, "VM program counter out of range in OP_LEAVE" );
 			}
 			ci = inst + v1;
@@ -1004,10 +1011,9 @@ nextInstruction2:
 				*(int *)&image[ programStack + 4 ] = ~r0.i;
 				{
 					intptr_t* argptr = (intptr_t *)&image[ programStack + 4 ];
-				
 				#if idx64 //__WORDSIZE == 64
-				// the vm has ints on the stack, we expect
-				// longs so we have to convert it
+					// the vm has ints on the stack, we expect
+					// longs so we have to convert it
 					intptr_t argarr[16];
 					int i;
 					for (i = 0; i < 16; ++i) {
