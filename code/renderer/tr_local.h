@@ -29,17 +29,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qcommon/qcommon.h"
 #include "tr_public.h"
 #include "qgl.h"
+#include "iqm.h"
 
 #define GL_INDEX_TYPE		GL_UNSIGNED_INT
 typedef unsigned int glIndex_t;
 
 // fast float to int conversion
-#if 0 && id386 && !defined(__GNUC__)
-long myftol( float f );
-#else
 #define	myftol(x) ((int)(x))
-#endif
-
 
 // 12 bits
 // see QSORT_SHADERNUM_SHIFT
@@ -50,7 +46,6 @@ long myftol( float f );
 #define MAX_STATE_NAME 32
 
 // can't be increased without changing bit packing for drawsurfs
-
 
 typedef struct dlight_s {
 	vec3_t	origin;
@@ -522,9 +517,8 @@ typedef enum {
 	SF_POLY,
 	SF_MD3,
 	SF_MD4,
-#ifdef RAVENMD4
 	SF_MDR,
-#endif
+	SF_IQM,
 	SF_FLARE,
 	SF_ENTITY,				// beams, rails, lightning, etc that can be determined by entity
 	SF_DISPLAY_LIST,
@@ -650,6 +644,7 @@ typedef struct {
 	int		*triangles;
 
 	int		*jointParents;
+	float		*jointMats;
 	float		*poseMats;
 	float		*bounds;
 	char		*names;
@@ -664,7 +659,6 @@ typedef struct srfIQModel_s {
 	int		first_vertex, num_vertexes;
 	int		first_triangle, num_triangles;
 } srfIQModel_t;
-
 
 extern	void (*rb_surfaceTable[SF_NUM_SURFACE_TYPES])(void *);
 
@@ -770,24 +764,22 @@ typedef enum {
 	MOD_BRUSH,
 	MOD_MESH,
 	MOD_MD4,
-#ifdef RAVENMD4
-	MOD_MDR
-#endif
+	MOD_MDR,
+	MOD_IQM
 } modtype_t;
 
 typedef struct model_s {
 	char		name[MAX_QPATH];
 	modtype_t	type;
-	int			index;				// model = tr.models[model->index]
+	int			index;		// model = tr.models[model->index]
 
-	int			dataSize;			// just for listing purposes
-	bmodel_t	*bmodel;			// only if type == MOD_BRUSH
+	int			dataSize;	// just for listing purposes
+	bmodel_t	*bmodel;		// only if type == MOD_BRUSH
 	md3Header_t	*md3[MD3_MAX_LODS];	// only if type == MOD_MESH
-	void	*md4;				// only if type == (MOD_MD4 | MOD_MDR)
+	void	*modelData;			// only if type == (MOD_MD4 | MOD_MDR | MOD_IQM)
 
 	int			 numLods;
 } model_t;
-
 
 #define	MAX_MOD_KNOWN	1024
 
@@ -1157,10 +1149,10 @@ void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader,
 
 void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader, int fogIndex, int dlightMap );
 
-
 #define	CULL_IN		0		// completely unclipped
 #define	CULL_CLIP	1		// clipped by one or more planes
 #define	CULL_OUT	2		// completely outside the clipping planes
+
 void R_LocalNormalToWorld (vec3_t local, vec3_t world);
 void R_LocalPointToWorld (vec3_t local, vec3_t world);
 int R_CullLocalBox (vec3_t bounds[2]);
@@ -1190,7 +1182,7 @@ void	GL_Cull( int cullType );
 #define GLS_SRCBLEND_DST_ALPHA					0x00000007
 #define GLS_SRCBLEND_ONE_MINUS_DST_ALPHA		0x00000008
 #define GLS_SRCBLEND_ALPHA_SATURATE				0x00000009
-#define		GLS_SRCBLEND_BITS					0x0000000f
+#define GLS_SRCBLEND_BITS						0x0000000f
 
 #define GLS_DSTBLEND_ZERO						0x00000010
 #define GLS_DSTBLEND_ONE						0x00000020
@@ -1200,7 +1192,7 @@ void	GL_Cull( int cullType );
 #define GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA		0x00000060
 #define GLS_DSTBLEND_DST_ALPHA					0x00000070
 #define GLS_DSTBLEND_ONE_MINUS_DST_ALPHA		0x00000080
-#define		GLS_DSTBLEND_BITS					0x000000f0
+#define GLS_DSTBLEND_BITS						0x000000f0
 
 #define GLS_DEPTHMASK_TRUE						0x00000100
 
@@ -1212,7 +1204,7 @@ void	GL_Cull( int cullType );
 #define GLS_ATEST_GT_0							0x10000000
 #define GLS_ATEST_LT_80							0x20000000
 #define GLS_ATEST_GE_80							0x40000000
-#define		GLS_ATEST_BITS						0x70000000
+#define GLS_ATEST_BITS							0x70000000
 
 #define GLS_DEFAULT			GLS_DEPTHMASK_TRUE
 
@@ -1313,16 +1305,16 @@ typedef struct stageVars
 
 typedef struct shaderCommands_s 
 {
+#pragma pack(push,16)
 	glIndex_t	indexes[SHADER_MAX_INDEXES] QALIGN(16);
 	vec4_t		xyz[SHADER_MAX_VERTEXES] QALIGN(16);
 	vec4_t		normal[SHADER_MAX_VERTEXES] QALIGN(16);
 	vec2_t		texCoords[SHADER_MAX_VERTEXES][2] QALIGN(16);
 	color4ub_t	vertexColors[SHADER_MAX_VERTEXES] QALIGN(16);
 	int			vertexDlightBits[SHADER_MAX_VERTEXES] QALIGN(16);
-
 	stageVars_t	svars QALIGN(16);
-
 	color4ub_t	constantColor255[SHADER_MAX_VERTEXES] QALIGN(16);
+#pragma pack(pop)
 
 	shader_t	*shader;
 	double		shaderTime;
@@ -1470,7 +1462,6 @@ void RE_AddLightToScene( const vec3_t org, float intensity, float r, float g, fl
 void RE_AddAdditiveLightToScene( const vec3_t org, float intensity, float r, float g, float b );
 void RE_RenderScene( const refdef_t *fd );
 
-#ifdef RAVENMD4
 /*
 =============================================================
 
@@ -1489,7 +1480,6 @@ UNCOMPRESSING BONES
 #define MC_SCALE_Z (1.0f/64)
 
 void MC_UnCompress(float mat[3][4],const unsigned char * comp);
-#endif
 
 /*
 =============================================================
@@ -1499,13 +1489,16 @@ ANIMATED MODELS
 =============================================================
 */
 
-// void R_MakeAnimModel( model_t *model );      haven't seen this one really, so not needed I guess.
 void R_AddAnimSurfaces( trRefEntity_t *ent );
 void RB_SurfaceAnim( md4Surface_t *surfType );
-#ifdef RAVENMD4
 void R_MDRAddAnimSurfaces( trRefEntity_t *ent );
 void RB_MDRSurfaceAnim( md4Surface_t *surface );
-#endif
+qboolean R_LoadIQM (model_t *mod, void *buffer, int filesize, const char *name );
+void R_AddIQMSurfaces( trRefEntity_t *ent );
+void RB_IQMSurfaceAnim( surfaceType_t *surface );
+int R_IQMLerpTag( orientation_t *tag, iqmData_t *data,
+                  int startFrame, int endFrame,
+                  float frac, const char *tagName );
 
 /*
 =============================================================

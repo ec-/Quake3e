@@ -555,10 +555,8 @@ static void RB_SurfaceLightningBolt( void ) {
 static void VectorArrayNormalize(vec4_t *normals, unsigned int count)
 {
 //    assert(count);
-        
-	// No assembly version for this architecture, or C_ONLY defined
 	// given the input, it's safe to call VectorNormalizeFast
-    while (count--) {
+    while ( count-- ) {
         VectorNormalizeFast(normals[0]);
         normals++;
     }
@@ -864,7 +862,6 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 	// in the tess structure, so we may have to issue it in multiple passes
 
 	used = 0;
-	rows = 0;
 	while ( used < lodHeight - 1 ) {
 		// see how many rows of both verts and indexes we can add without overflowing
 		do {
@@ -1057,9 +1054,8 @@ void (*rb_surfaceTable[SF_NUM_SURFACE_TYPES])( void *) = {
 	(void(*)(void*))RB_SurfacePolychain,		// SF_POLY,
 	(void(*)(void*))RB_SurfaceMesh,			// SF_MD3,
 	(void(*)(void*))RB_SurfaceAnim,			// SF_MD4,
-#ifdef RAVENMD4
 	(void(*)(void*))RB_MDRSurfaceAnim,		// SF_MDR,
-#endif
+	(void(*)(void*))RB_IQMSurfaceAnim,		// SF_IQM,
 	(void(*)(void*))RB_SurfaceFlare,		// SF_FLARE,
 	(void(*)(void*))RB_SurfaceEntity,		// SF_ENTITY
 	(void(*)(void*))RB_SurfaceDisplayList		// SF_DISPLAY_LIST
