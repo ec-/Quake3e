@@ -1633,6 +1633,17 @@ typedef struct {
 	qboolean			motionJpeg;
 } videoFrameCommand_t;
 
+typedef struct
+{
+	int commandId;
+
+	GLboolean rgba[4];
+} colorMaskCommand_t;
+
+typedef struct
+{
+	int commandId;
+} clearDepthCommand_t;
 
 typedef enum {
 	RC_END_OF_LIST,
@@ -1642,7 +1653,9 @@ typedef enum {
 	RC_DRAW_BUFFER,
 	RC_SWAP_BUFFERS,
 	RC_SCREENSHOT,
-	RC_VIDEOFRAME
+	RC_VIDEOFRAME,
+	RC_COLORMASK,
+	RC_CLEARDEPTH
 } renderCommand_t;
 
 

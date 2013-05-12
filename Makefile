@@ -877,6 +877,7 @@ Q3OBJ = \
   $(B)/client/tr_marks.o \
   $(B)/client/tr_mesh.o \
   $(B)/client/tr_model.o \
+  $(B)/client/tr_model_iqm.o \
   $(B)/client/tr_noise.o \
   $(B)/client/tr_scene.o \
   $(B)/client/tr_shade.o \

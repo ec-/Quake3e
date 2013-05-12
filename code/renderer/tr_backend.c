@@ -53,7 +53,9 @@ void GL_Bind( image_t *image ) {
 	}
 
 	if ( glState.currenttextures[glState.currenttmu] != texnum ) {
-		image->frameUsed = tr.frameCount;
+		if ( image ) {
+			image->frameUsed = tr.frameCount;
+		}
 		glState.currenttextures[glState.currenttmu] = texnum;
 		qglBindTexture (GL_TEXTURE_2D, texnum);
 	}
@@ -130,30 +132,16 @@ void GL_Cull( int cullType ) {
 	} 
 	else 
 	{
+		qboolean cullFront;
 		qglEnable( GL_CULL_FACE );
 
-		if ( cullType == CT_BACK_SIDED )
+		cullFront = (cullType == CT_FRONT_SIDED);
+		if ( backEnd.viewParms.isMirror )
 		{
-			if ( backEnd.viewParms.isMirror )
-			{
-				qglCullFace( GL_FRONT );
-			}
-			else
-			{
-				qglCullFace( GL_BACK );
-			}
+			cullFront = !cullFront;
 		}
-		else
-		{
-			if ( backEnd.viewParms.isMirror )
-			{
-				qglCullFace( GL_BACK );
-			}
-			else
-			{
-				qglCullFace( GL_FRONT );
-			}
-		}
+
+		qglCullFace( cullFront ? GL_FRONT : GL_BACK );
 	}
 }
 
@@ -225,7 +213,7 @@ void GL_State( unsigned long stateBits )
 	//
 	if ( diff & ( GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS ) )
 	{
-		GLenum srcFactor, dstFactor;
+		GLenum srcFactor = GL_ONE, dstFactor = GL_ONE;
 
 		if ( stateBits & ( GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS ) )
 		{
@@ -259,7 +247,6 @@ void GL_State( unsigned long stateBits )
 				srcFactor = GL_SRC_ALPHA_SATURATE;
 				break;
 			default:
-				srcFactor = GL_ONE;		// to get warning to shut up
 				ri.Error( ERR_DROP, "GL_State: invalid src blend state bits" );
 				break;
 			}
@@ -291,7 +278,6 @@ void GL_State( unsigned long stateBits )
 				dstFactor = GL_ONE_MINUS_DST_ALPHA;
 				break;
 			default:
-				dstFactor = GL_ONE;		// to get warning to shut up
 				ri.Error( ERR_DROP, "GL_State: invalid dst blend state bits" );
 				break;
 			}
@@ -704,13 +690,12 @@ void RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *
 	if ( !tr.registered ) {
 		return;
 	}
-
 	R_IssuePendingRenderCommands();
 
 	// we definately want to sync every frame for the cinematics
 	qglFinish();
 
-	start = end = 0;
+	start = 0;
 	if ( r_speeds->integer ) {
 		start = ri.Milliseconds();
 	}
@@ -990,6 +975,42 @@ void RB_ShowImages( void ) {
 
 }
 
+/*
+=============
+RB_ColorMask
+
+=============
+*/
+const void *RB_ColorMask(const void *data)
+{
+	const colorMaskCommand_t *cmd = data;
+	
+	qglColorMask(cmd->rgba[0], cmd->rgba[1], cmd->rgba[2], cmd->rgba[3]);
+	
+	return (const void *)(cmd + 1);
+}
+
+/*
+=============
+RB_ClearDepth
+
+=============
+*/
+const void *RB_ClearDepth(const void *data)
+{
+	const clearDepthCommand_t *cmd = data;
+	
+	if(tess.numIndexes)
+		RB_EndSurface();
+
+	// texture swapping test
+	if (r_showImages->integer)
+		RB_ShowImages();
+
+	qglClear(GL_DEPTH_BUFFER_BIT);
+	
+	return (const void *)(cmd + 1);
+}
 
 /*
 =============
@@ -1088,7 +1109,12 @@ void RB_ExecuteRenderCommands( const void *data ) {
 		case RC_VIDEOFRAME:
 			data = RB_TakeVideoFrameCmd( data );
 			break;
-
+		case RC_COLORMASK:
+			data = RB_ColorMask(data);
+			break;
+		case RC_CLEARDEPTH:
+			data = RB_ClearDepth(data);
+			break;
 		case RC_END_OF_LIST:
 		default:
 			// stop rendering

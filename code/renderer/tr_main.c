@@ -1203,11 +1203,12 @@ void R_AddEntitySurfaces (void) {
 				case MOD_MD4:
 					R_AddAnimSurfaces( ent );
 					break;
-#ifdef RAVENMD4
 				case MOD_MDR:
 					R_MDRAddAnimSurfaces( ent );
 					break;
-#endif
+				case MOD_IQM:
+					R_AddIQMSurfaces( ent );
+					break;
 				case MOD_BRUSH:
 					R_AddBrushModelSurfaces( ent );
 					break;
@@ -1215,7 +1216,6 @@ void R_AddEntitySurfaces (void) {
 					if ( (ent->e.renderfx & RF_THIRD_PERSON) && !tr.viewParms.isPortal) {
 						break;
 					}
-					shader = R_GetShaderByHandle( ent->e.customShader );
 					R_AddDrawSurf( &entitySurface, tr.defaultShader, 0, 0 );
 					break;
 				default:
@@ -1295,7 +1295,6 @@ void R_DebugGraphics( void ) {
 		return;
 	}
 
-	// the render thread can't make callbacks to the main thread
 	R_IssuePendingRenderCommands();
 
 	GL_Bind( tr.whiteImage);
