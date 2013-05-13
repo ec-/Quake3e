@@ -39,7 +39,6 @@ typedef struct opcode_info_s
 {
 	int   size; 
 	int	  stack;
-	int   nargs;
 	int   flags;
 } opcode_info_t ;
 
@@ -48,80 +47,80 @@ typedef struct opcode_info_s
 
 opcode_info_t ops[ OP_MAX ] = 
 {
-	{ 0, 0, 0, 0 }, // undef
-	{ 0, 0, 0, 0 }, // ignore
-	{ 0, 0, 0, 0 }, // break
+	{ 0, 0, 0 }, // undef
+	{ 0, 0, 0 }, // ignore
+	{ 0, 0, 0 }, // break
 
-	{ 4, 0, 0, 0 }, // enter
-	{ 4,-4, 1, 0 }, // leave
-	{ 0, 0, 1, 0 }, // call
-	{ 0, 4, 0, 0 }, // push
-	{ 0,-4, 1, 0 }, // pop
+	{ 4, 0, 0 }, // enter
+	{ 4,-4, 0 }, // leave
+	{ 0, 0, 0 }, // call
+	{ 0, 4, 0 }, // push
+	{ 0,-4, 0 }, // pop
 
-	{ 4, 4, 0, 0 }, // const
-	{ 4, 4, 0, 0 }, // local
-	{ 0,-4, 1, 0 }, // jump
+	{ 4, 4, 0 }, // const
+	{ 4, 4, 0 }, // local
+	{ 0,-4, 0 }, // jump
 
-	{ 4,-8, 2, JUMP }, // eq
-	{ 4,-8, 2, JUMP }, // ne
+	{ 4,-8, JUMP }, // eq
+	{ 4,-8, JUMP }, // ne
 
-	{ 4,-8, 2, JUMP }, // lti
-	{ 4,-8, 2, JUMP }, // lei
-	{ 4,-8, 2, JUMP }, // gti
-	{ 4,-8, 2, JUMP }, // gei
+	{ 4,-8, JUMP }, // lti
+	{ 4,-8, JUMP }, // lei
+	{ 4,-8, JUMP }, // gti
+	{ 4,-8, JUMP }, // gei
 
-	{ 4,-8, 2, JUMP }, // ltu
-	{ 4,-8, 2, JUMP }, // leu
-	{ 4,-8, 2, JUMP }, // gtu
-	{ 4,-8, 2, JUMP }, // geu
+	{ 4,-8, JUMP }, // ltu
+	{ 4,-8, JUMP }, // leu
+	{ 4,-8, JUMP }, // gtu
+	{ 4,-8, JUMP }, // geu
 
-	{ 4,-8, 2, JUMP }, // eqf
-	{ 4,-8, 2, JUMP }, // nef
+	{ 4,-8, JUMP }, // eqf
+	{ 4,-8, JUMP }, // nef
 
-	{ 4,-8, 2, JUMP }, // ltf
-	{ 4,-8, 2, JUMP }, // lef
-	{ 4,-8, 2, JUMP }, // gtf
-	{ 4,-8, 2, JUMP }, // gef
+	{ 4,-8, JUMP }, // ltf
+	{ 4,-8, JUMP }, // lef
+	{ 4,-8, JUMP }, // gtf
+	{ 4,-8, JUMP }, // gef
 
-	{ 0, 0, 1, 0 }, // load1
-	{ 0, 0, 1, 0 }, // load2
-	{ 0, 0, 1, 0 }, // load4
-	{ 0,-8, 2, 0 }, // store1
-	{ 0,-8, 2, 0 }, // store2
-	{ 0,-8, 2, 0 }, // store4
-	{ 1,-4, 1, 0 }, // arg
-	{ 4,-8, 2, 0 }, // bcopy
+	{ 0, 0, 0 }, // load1
+	{ 0, 0, 0 }, // load2
+	{ 0, 0, 0 }, // load4
+	{ 0,-8, 0 }, // store1
+	{ 0,-8, 0 }, // store2
+	{ 0,-8, 0 }, // store4
+	{ 1,-4, 0 }, // arg
+	{ 4,-8, 0 }, // bcopy
 
-	{ 0, 0, 1, 0 }, // sex8
-	{ 0, 0, 1, 0 }, // sex16
+	{ 0, 0, 0 }, // sex8
+	{ 0, 0, 0 }, // sex16
 
-	{ 0, 0, 1, 0 }, // negi
-	{ 0,-4, 2, 0 }, // add
-	{ 0,-4, 2, 0 }, // sub
-	{ 0,-4, 2, 0 }, // divi
-	{ 0,-4, 2, 0 }, // divu
-	{ 0,-4, 2, 0 }, // modi
-	{ 0,-4, 2, 0 }, // modu
-	{ 0,-4, 2, 0 }, // muli
-	{ 0,-4, 2, 0 }, // mulu
+	{ 0, 0, 0 }, // negi
+	{ 0,-4, 0 }, // add
+	{ 0,-4, 0 }, // sub
+	{ 0,-4, 0 }, // divi
+	{ 0,-4, 0 }, // divu
+	{ 0,-4, 0 }, // modi
+	{ 0,-4, 0 }, // modu
+	{ 0,-4, 0 }, // muli
+	{ 0,-4, 0 }, // mulu
 
-	{ 0,-4, 2, 0 }, // band
-	{ 0,-4, 2, 0 }, // bor
-	{ 0,-4, 2, 0 }, // bxor
-	{ 0, 0, 1, 0 }, // bcom
+	{ 0,-4, 0 }, // band
+	{ 0,-4, 0 }, // bor
+	{ 0,-4, 0 }, // bxor
+	{ 0, 0, 0 }, // bcom
 
-	{ 0,-4, 2, 0 }, // lsh
-	{ 0,-4, 2, 0 }, // rshi
-	{ 0,-4, 2, 0 }, // rshu
+	{ 0,-4, 0 }, // lsh
+	{ 0,-4, 0 }, // rshi
+	{ 0,-4, 0 }, // rshu
 
-	{ 0, 0, 1, 0 }, // negf
-	{ 0,-4, 2, CALC }, // addf
-	{ 0,-4, 2, CALC }, // subf
-	{ 0,-4, 2, CALC }, // divf
-	{ 0,-4, 2, CALC }, // mulf
+	{ 0, 0, 0 }, // negf
+	{ 0,-4, CALC }, // addf
+	{ 0,-4, CALC }, // subf
+	{ 0,-4, CALC }, // divf
+	{ 0,-4, CALC }, // mulf
 
-	{ 0, 0, 1, 0 }, // cvif
-	{ 0, 0, 1, 0 } // cvfi
+	{ 0, 0, 0 }, // cvif
+	{ 0, 0, 0 } // cvfi
 };
 
 
