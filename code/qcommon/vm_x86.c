@@ -168,7 +168,6 @@ static int fp_cw[2] = { 0x0000, 0x0F7F }; // [0] - current value, [1] - round to
 static	int	ip, pass;
 static	int	lastConst;
 static	int	pop1;
-static	int jlabel;
 
 static	ELastCommand	LastCommand;
 
@@ -370,7 +369,7 @@ static void EmitCommand( ELastCommand command )
 
 static void EmitAddEDI4( vm_t *vm ) 
 {
-	if ( jlabel ) 
+	if ( LastCommand == LAST_COMMAND_NONE ) 
 	{
 		EmitRexString( 0x48, "83 C7 04" );		//	add edi,4
 		return;
@@ -407,7 +406,7 @@ static void EmitMovEAXEDI( vm_t *vm )
 	opcode_t pop = pop1;
 	pop1 = OP_UNDEF;
 
-	if ( jlabel ) 
+	if ( LastCommand == LAST_COMMAND_NONE ) 
 	{
 		EmitString( "8B 07" );		// mov eax, dword ptr [edi]
 		return;
@@ -453,10 +452,9 @@ void EmitMovECXEDI( vm_t *vm )
 	opcode_t pop = pop1;
 	pop1 = OP_UNDEF;
 
-	if ( jlabel ) 
+	if ( LastCommand == LAST_COMMAND_NONE ) 
 	{
 		EmitString( "8B 0F" );		// mov ecx, dword ptr [edi]
-		pop1 = OP_UNDEF;
 		return;
 	}
 
@@ -531,7 +529,7 @@ static void EmitCheckReg( vm_t *vm, int reg, int size )
 
 static int EmitFldEDI( vm_t *vm ) 
 {
-	if ( jlabel ) 
+	if ( LastCommand == LAST_COMMAND_NONE ) 
 	{
 		EmitString( "D9 07" );		// fld dword ptr [edi]
 		return 0;
@@ -1597,11 +1595,9 @@ __compile:
 		ni = &inst[ ip + 1 ];
 		ip++;
 
-		jlabel = ci->jused;
-
-		if ( jlabel ) {
-			pop1 = OP_UNDEF;
+		if ( ci->jused ) {
 			LastCommand = LAST_COMMAND_NONE;
+			pop1 = OP_UNDEF;
 		}
 		
 		switch ( ci->op ) {
@@ -2305,7 +2301,7 @@ int	VM_CallCompiled( vm_t *vm, int *args )
 	//image[0] = -1;	// will terminate loop on return
 
 	vm->opStack = opStack;
-	vm->opStackTop = opStack + MAX_OPSTACK_SIZE - 1;
+	vm->opStackTop = opStack + ARRAY_LEN( opStack ) - 1;
 
 	vm->codeBase.func(); // go into generated code
 
