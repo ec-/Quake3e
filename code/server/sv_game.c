@@ -804,11 +804,11 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 
 	case TRAP_MEMSET:
 		Com_Memset( VMA(1), args[2], args[3] );
-		return 0;
+		return args[1];
 
 	case TRAP_MEMCPY:
 		Com_Memcpy( VMA(1), VMA(2), args[3] );
-		return 0;
+		return args[1];
 
 	case TRAP_STRNCPY:
 		strncpy( VMA(1), VMA(2), args[3] );

@@ -993,11 +993,11 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 
 	case UI_MEMSET:
 		Com_Memset( VMA(1), args[2], args[3] );
-		return 0;
+		return args[1];
 
 	case UI_MEMCPY:
 		Com_Memcpy( VMA(1), VMA(2), args[3] );
-		return 0;
+		return args[1];
 
 	case UI_STRNCPY:
 		strncpy( VMA(1), VMA(2), args[3] );

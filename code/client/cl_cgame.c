@@ -618,14 +618,12 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
   case CG_KEY_GETKEY:
 		return Key_GetKey( VMA(1) );
 
-
-
 	case CG_MEMSET:
 		Com_Memset( VMA(1), args[2], args[3] );
-		return 0;
+		return args[1];
 	case CG_MEMCPY:
 		Com_Memcpy( VMA(1), VMA(2), args[3] );
-		return 0;
+		return args[1];
 	case CG_STRNCPY:
 		strncpy( VMA(1), VMA(2), args[3] );
 		return args[1];
