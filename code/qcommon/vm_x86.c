@@ -980,10 +980,10 @@ void EmitDATAFunc( vm_t *vm )
 
 /*
 =================
-EmitFCalc
+EmitFCalcEDI
 =================
 */
-void EmitFCalc( int op ) 
+void EmitFCalcEDI( int op ) 
 {
 	switch ( op )
 	{
@@ -998,6 +998,24 @@ void EmitFCalc( int op )
 
 /*
 =================
+EmitFCalcPop
+=================
+*/
+void EmitFCalcPop( int op ) 
+{
+	switch ( op )
+	{
+		case OP_ADDF: EmitString( "DE C1" ); break; // faddp
+		case OP_SUBF: EmitString( "DE E9" ); break; // fsubp
+		case OP_MULF: EmitString( "DE C9" ); break; // fmulp
+		case OP_DIVF: EmitString( "DE F9" ); break; // fdivp
+		default: Com_Error( ERR_DROP, "bad opcode %02x", op ); break;
+	};
+}
+
+
+/*
+=================
 FloatMerge
 =================
 */
@@ -1005,18 +1023,11 @@ static int FloatMerge( instruction_t *curr, instruction_t *next )
 {
 	EmitString( "D9 47 F8" );				// fld dword ptr [edi-8]
 	EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
-	EmitFCalc( curr->op );
-	switch ( next->op ) {
-		case OP_ADDF: EmitString( "DE C1" ); break; // faddp
-		case OP_SUBF: EmitString( "DE E9" ); break; // fsubp
-		case OP_MULF: EmitString( "DE C9" ); break; // fmulp
-		case OP_DIVF: EmitString( "DE F9" ); break; // fdivp
-		default: Com_Error( ERR_DROP, "bad merge op2" ); break;
-	}
+	EmitFCalcEDI( curr->op );
+	EmitFCalcPop( next->op );
 	EmitString( "D9 5F F8" );				// fstp dword ptr [edi-8]
 	EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
 	ip += 1;
-
 	return 1;
 }
 
@@ -1156,6 +1167,20 @@ qboolean ConstOptimize( vm_t *vm )
 		}
 		EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
 		ip += 1;
+		return qtrue;
+
+	case OP_MULF:
+	case OP_DIVF:
+	case OP_ADDF:
+	case OP_SUBF:
+		v = ci->value;
+		EmitFldEDI( vm );
+		EmitString( "C7 45 00" );	// mov [ebp], 0x12345678
+		Emit4( v );
+		EmitString( "D9 45 00" );	// fld dword ptr [ebp]
+		EmitFCalcPop( op1 );		// fmulp/fdivp/faddp/fsubp
+		EmitCommand( LAST_COMMAND_FSTP_EDI );
+		ip +=1;
 		return qtrue;
 
 	case OP_LSH:
@@ -2028,7 +2053,7 @@ __compile:
 				break;
 			}
 			EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
-			EmitFCalc( ci->op );					// fadd|fsub|fmul|fdiv dword ptr [edi]
+			EmitFCalcEDI( ci->op );					// fadd|fsub|fmul|fdiv dword ptr [edi]
 			EmitString( "D9 5F FC" );				// fstp dword ptr [edi-4]
 			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 			break;
@@ -2168,9 +2193,9 @@ __compile:
 		if ( code == NULL ) {
 			return qfalse;
 		}
-		pass = NUM_PASSES-1;
 		instructionPointers = (intptr_t*)(byte*)(code + compiledOfs);
 		vm->instructionPointers = instructionPointers; // for debug purposes?
+		pass = NUM_PASSES-1; // repeat last pass
 		goto __compile;
 	}
 
