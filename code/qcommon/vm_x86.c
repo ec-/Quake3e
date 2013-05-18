@@ -1034,6 +1034,23 @@ static int FloatMerge( instruction_t *curr, instruction_t *next )
 
 /*
 =================
+CommuteFloatOp
+=================
+*/
+static int CommuteFloatOp( int op ) 
+{
+	switch ( op ) {
+		case OP_LEF: return OP_GEF;
+		case OP_LTF: return OP_GTF;
+		case OP_GEF: return OP_LEF;
+		case OP_GTF: return OP_LTF;
+		default: return op;
+	}
+}
+
+
+/*
+=================
 ConstOptimize
 =================
 */
@@ -1302,6 +1319,30 @@ qboolean ConstOptimize( vm_t *vm )
 		EmitString( "5E" );	// pop rsi
 		EmitString( "5D" );	// pop ebp
 		ip += 1; // OP_CALL
+		return qtrue;
+
+	case OP_EQF:
+	case OP_NEF:
+	case OP_LTF:
+	case OP_LEF:
+	case OP_GTF:
+	case OP_GEF:
+		if ( !( CPU_Flags & CPU_FCOM ) )
+			return qfalse;
+		EmitFldEDI( vm );
+		EmitCommand( LAST_COMMAND_SUB_DI_4 );
+		v = ci->value;
+		if ( v == 0 ) {
+			EmitString( "D9 EE" );		// fldz
+		} else {
+			EmitString( "C7 45 00" );	// mov [ebp], 0x12345678
+			Emit4( v );
+			EmitString( "D9 45 00" );	// fld dword ptr [ebp]
+		}
+		EmitString( "DF E9" );		// fucomip
+		EmitString( "DD D8" );		// fstp st(0)
+		EmitJump( vm, ni, CommuteFloatOp( ni->op ), ni->value );
+		ip +=1;
 		return qtrue;
 
 	case OP_EQ:
