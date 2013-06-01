@@ -1393,7 +1393,6 @@ void S_UpdateBackgroundTrack( void ) {
 		r = S_CodecReadStream(s_backgroundStream, fileBytes, raw);
 		if(r < fileBytes)
 		{
-			fileBytes = r;
 			fileSamples = r / (s_backgroundStream->info.width * s_backgroundStream->info.channels);
 		}
 

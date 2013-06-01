@@ -764,10 +764,6 @@ static qboolean IsMirror( const drawSurf_t *drawSurf, int entityNum )
 
 		// translate the original plane
 		originalPlane.dist = originalPlane.dist + DotProduct( originalPlane.normal, tr.or.origin );
-	} 
-	else 
-	{
-		plane = originalPlane;
 	}
 
 	// locate the portal entity closest to this plane.
