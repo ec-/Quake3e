@@ -177,42 +177,37 @@ int		funcOffset[FUNC_LAST];
 static int	errParam = 0;
 #endif
 
-static void ErrJump( void )
+static void __attribute__((__noreturn__)) ErrJump( void )
 {
 	Com_Error( ERR_DROP, "program tried to execute code outside VM" ); 
-	exit(1);
 }
 
 
-static void BadJump( void )
+static void __attribute__((__noreturn__)) BadJump( void )
 {
 	Com_Error( ERR_DROP, "program tried to execute code at bad location inside VM" ); 
-	exit(1);
 }
 
 
-static void BadStack( void )
+static void __attribute__((__noreturn__)) BadStack( void )
 {
 	Com_Error( ERR_DROP, "program tried to overflow program stack" ); 
-	exit(1);
 }
 
 
-static void BadOpStack( void )
+static void __attribute__((__noreturn__)) BadOpStack( void )
 {
 	Com_Error( ERR_DROP, "program tried to overflow opcode stack" ); 
-	exit(1);
 }
 
 
-static void BadData( void )
+static void __attribute__((__noreturn__)) BadData( void )
 {
 #ifdef DEBUG_VM	
 	Com_Error( ERR_DROP, "program tried to read/write out of data segment at %i", errParam ); 
 #else
 	Com_Error( ERR_DROP, "program tried to read/write out of data segment" ); 
 #endif
-	exit(1);
 }
 
 
