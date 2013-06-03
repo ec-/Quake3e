@@ -296,7 +296,7 @@ static	int		com_lines;
 
 void COM_BeginParseSession( const char *name )
 {
-	com_lines = 0;
+	com_lines = 1;
 	Com_sprintf(com_parsename, sizeof(com_parsename), "%s", name);
 }
 
@@ -482,6 +482,10 @@ char *COM_ParseExt( char **data_p, qboolean allowLineBreaks )
 			{
 				data++;
 			}
+			if  ( *data == '\n' ) 
+			{
+				com_lines++;
+			}
 			if ( *data ) 
 			{
 				data += 2;
@@ -500,15 +504,19 @@ char *COM_ParseExt( char **data_p, qboolean allowLineBreaks )
 		while (1)
 		{
 			c = *data++;
-			if (c=='\"' || !c)
+			if ( c=='\"' || c == '\0' )
 			{
-				com_token[len] = 0;
+				com_token[ len ] = '\0';
 				*data_p = ( char * ) data;
 				return com_token;
 			}
-			if (len < MAX_TOKEN_CHARS - 1)
+			if ( c == '\n' ) 
 			{
-				com_token[len] = c;
+				com_lines++;
+			}
+			if ( len < MAX_TOKEN_CHARS - 1 )
+			{
+				com_token[ len ] = c;
 				len++;
 			}
 		}
@@ -517,22 +525,21 @@ char *COM_ParseExt( char **data_p, qboolean allowLineBreaks )
 	// parse a regular word
 	do
 	{
-		if (len < MAX_TOKEN_CHARS - 1)
+		if ( len < MAX_TOKEN_CHARS - 1 )
 		{
-			com_token[len] = c;
+			com_token[ len ] = c;
 			len++;
 		}
 		data++;
 		c = *data;
-		if ( c == '\n' )
-			com_lines++;
-	} while (c>32);
+	} while ( c > ' ' );
 
-	com_token[len] = 0;
+	com_token[ len ] = '\0';
 
 	*data_p = ( char * ) data;
 	return com_token;
 }
+
 
 /*
 ==================
