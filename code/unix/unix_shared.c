@@ -164,7 +164,7 @@ qboolean Sys_RandomBytes( byte *string, int len )
   if( !fp )
     return qfalse;
 
-  if( !fread( string, sizeof( byte ), len, fp ) ) {
+  if( fread( string, sizeof( byte ), len, fp ) != len ) {
 	fclose( fp );
 	return qfalse;
   }
