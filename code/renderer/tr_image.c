@@ -113,10 +113,10 @@ void GL_TextureMode( const char *string ) {
 	// change all the existing mipmap texture objects
 	for ( i = 0 ; i < tr.numImages ; i++ ) {
 		glt = tr.images[ i ];
-		if ( glt->mipmap ) {
+		if ( glt->flags & IMGFLAG_MIPMAP ) {
 			GL_Bind (glt);
-			qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-			qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
+			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 		}
 	}
 }
@@ -146,74 +146,141 @@ R_ImageList_f
 ===============
 */
 void R_ImageList_f( void ) {
-	int		i;
-	image_t	*image;
-	int		texels;
-	const char *yesno[] = {
-		"no ", "yes"
-	};
+	int i;
+	int estTotalSize = 0;
 
-	ri.Printf (PRINT_ALL, "\n      -w-- -h-- -mm- -TMU- -if-- wrap --name-------\n");
-	texels = 0;
+	ri.Printf(PRINT_ALL, "\n      -w-- -h-- type  -size- --name-------\n");
 
-	for ( i = 0 ; i < tr.numImages ; i++ ) {
-		image = tr.images[ i ];
+	for ( i = 0 ; i < tr.numImages ; i++ )
+	{
+		image_t *image = tr.images[i];
+		char *format = "???? ";
+		char *sizeSuffix;
+		int estSize;
+		int displaySize;
 
-		texels += image->uploadWidth*image->uploadHeight;
-		ri.Printf (PRINT_ALL,  "%4i: %4i %4i  %s   %d   ",
-			i, image->uploadWidth, image->uploadHeight, yesno[image->mipmap], image->TMU );
-		switch ( image->internalFormat ) {
-		case 1:
-			ri.Printf( PRINT_ALL, "I    " );
-			break;
-		case 2:
-			ri.Printf( PRINT_ALL, "IA   " );
-			break;
-		case 3:
-			ri.Printf( PRINT_ALL, "RGB  " );
-			break;
-		case 4:
-			ri.Printf( PRINT_ALL, "RGBA " );
-			break;
-		case GL_RGBA8:
-			ri.Printf( PRINT_ALL, "RGBA8" );
-			break;
-		case GL_RGB8:
-			ri.Printf( PRINT_ALL, "RGB8" );
-			break;
-		case GL_RGB4_S3TC:
-		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
-		case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
-		case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-			ri.Printf( PRINT_ALL, "S3TC " );
-			break;
-		case GL_RGBA4:
-			ri.Printf( PRINT_ALL, "RGBA4" );
-			break;
-		case GL_RGB5:
-			ri.Printf( PRINT_ALL, "RGB5 " );
-			break;
-		default:
-			ri.Printf( PRINT_ALL, "???? " );
+		estSize = image->uploadHeight * image->uploadWidth;
+
+		switch(image->internalFormat)
+		{
+			case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT:
+				format = "sDXT1";
+				// 64 bits per 16 pixels, so 4 bits per pixel
+				estSize /= 2;
+				break;
+			case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
+				format = "sDXT5";
+				// 128 bits per 16 pixels, so 1 byte per pixel
+				break;
+			case GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM_ARB:
+				format = "sBPTC";
+				// 128 bits per 16 pixels, so 1 byte per pixel
+				break;
+			case GL_COMPRESSED_LUMINANCE_ALPHA_LATC2_EXT:
+				format = "LATC ";
+				// 128 bits per 16 pixels, so 1 byte per pixel
+				break;
+			case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+				format = "DXT1 ";
+				// 64 bits per 16 pixels, so 4 bits per pixel
+				estSize /= 2;
+				break;
+			case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+				format = "DXT5 ";
+				// 128 bits per 16 pixels, so 1 byte per pixel
+				break;
+			case GL_COMPRESSED_RGBA_BPTC_UNORM_ARB:
+				format = "BPTC ";
+				// 128 bits per 16 pixels, so 1 byte per pixel
+				break;
+			case GL_RGB4_S3TC:
+				format = "S3TC ";
+				// same as DXT1?
+				estSize /= 2;
+				break;
+			case GL_RGBA4:
+			case GL_RGBA8:
+			case GL_RGBA:
+				format = "RGBA ";
+				// 4 bytes per pixel
+				estSize *= 4;
+				break;
+			case GL_LUMINANCE8:
+			case GL_LUMINANCE16:
+			case GL_LUMINANCE:
+				format = "L    ";
+				// 1 byte per pixel?
+				break;
+			case GL_RGB5:
+			case GL_RGB8:
+			case GL_RGB:
+				format = "RGB  ";
+				// 3 bytes per pixel?
+				estSize *= 3;
+				break;
+			case GL_LUMINANCE8_ALPHA8:
+			case GL_LUMINANCE16_ALPHA16:
+			case GL_LUMINANCE_ALPHA:
+				format = "LA   ";
+				// 2 bytes per pixel?
+				estSize *= 2;
+				break;
+			case GL_SRGB_EXT:
+			case GL_SRGB8_EXT:
+				format = "sRGB ";
+				// 3 bytes per pixel?
+				estSize *= 3;
+				break;
+			case GL_SRGB_ALPHA_EXT:
+			case GL_SRGB8_ALPHA8_EXT:
+				format = "sRGBA";
+				// 4 bytes per pixel?
+				estSize *= 4;
+				break;
+			case GL_SLUMINANCE_EXT:
+			case GL_SLUMINANCE8_EXT:
+				format = "sL   ";
+				// 1 byte per pixel?
+				break;
+			case GL_SLUMINANCE_ALPHA_EXT:
+			case GL_SLUMINANCE8_ALPHA8_EXT:
+				format = "sLA  ";
+				// 2 byte per pixel?
+				estSize *= 2;
+				break;
 		}
 
-		switch ( image->wrapClampMode ) {
-		case GL_REPEAT:
-			ri.Printf( PRINT_ALL, "rept " );
-			break;
-		case GL_CLAMP:
-		case GL_CLAMP_TO_EDGE:
-			ri.Printf( PRINT_ALL, "clmp " );
-			break;
-		default:
-			ri.Printf( PRINT_ALL, "%4i ", image->wrapClampMode );
-			break;
+		// mipmap adds about 50%
+		if (image->flags & IMGFLAG_MIPMAP)
+			estSize += estSize / 2;
+
+		sizeSuffix = "b ";
+		displaySize = estSize;
+
+		if (displaySize > 1024)
+		{
+			displaySize /= 1024;
+			sizeSuffix = "kb";
 		}
-		
-		ri.Printf( PRINT_ALL, " %s\n", image->imgName );
+
+		if (displaySize > 1024)
+		{
+			displaySize /= 1024;
+			sizeSuffix = "Mb";
+		}
+
+		if (displaySize > 1024)
+		{
+			displaySize /= 1024;
+			sizeSuffix = "Gb";
+		}
+
+		ri.Printf(PRINT_ALL, "%4i: %4ix%4i %s %4i%s %s\n", i, image->uploadWidth, image->uploadHeight, format, displaySize, sizeSuffix, image->imgName);
+		estTotalSize += estSize;
 	}
+
 	ri.Printf (PRINT_ALL, " ---------\n");
-	ri.Printf (PRINT_ALL, " %i total texels (not including mipmaps)\n", texels);
+	ri.Printf (PRINT_ALL, " approx %i bytes\n", estTotalSize);
 	ri.Printf (PRINT_ALL, " %i total images\n\n", tr.numImages );
 }
 
@@ -628,14 +695,7 @@ static void Upload32( unsigned *data,
 			{
 				if ( glConfig.textureCompression == TC_S3TC_ARB )
 				{
-					if ( r_ext_compressed_textures->integer == 1 ) 
-						internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-					else
-					if ( r_ext_compressed_textures->integer == 2 )
-						internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-					else
-					if ( r_ext_compressed_textures->integer == 3 )
-						internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+					internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
 				}
 				else if ( glConfig.textureCompression == TC_S3TC )
 				{
@@ -782,11 +842,12 @@ R_CreateImage
 This is the only way any image_t are created
 ================
 */
-image_t *R_CreateImage( const char *name, const byte *pic, int width, int height, 
-					   qboolean mipmap, qboolean allowPicmip, int glWrapClampMode ) {
+image_t *R_CreateImage( const char *name, byte *pic, int width, int height,
+		imgType_t type, imgFlags_t flags, int internalFormat ) {
 	image_t		*image;
 	qboolean	isLightmap = qfalse;
 	long		hash;
+	int         glWrapClampMode;
 
 	if (strlen(name) >= MAX_QPATH ) {
 		ri.Error (ERR_DROP, "R_CreateImage: \"%s\" is too long", name);
@@ -795,7 +856,7 @@ image_t *R_CreateImage( const char *name, const byte *pic, int width, int height
 		isLightmap = qtrue;
 	}
 
-	if ( tr.numImages >= MAX_DRAWIMAGES ) {
+	if ( tr.numImages == MAX_DRAWIMAGES ) {
 		ri.Error( ERR_DROP, "R_CreateImage: MAX_DRAWIMAGES hit");
 	}
 
@@ -803,14 +864,17 @@ image_t *R_CreateImage( const char *name, const byte *pic, int width, int height
 	image->texnum = 1024 + tr.numImages;
 	tr.numImages++;
 
-	image->mipmap = mipmap;
-	image->allowPicmip = allowPicmip;
+	image->type = type;
+	image->flags = flags;
 
 	strcpy (image->imgName, name);
 
 	image->width = width;
 	image->height = height;
-	image->wrapClampMode = glWrapClampMode;
+	if (flags & IMGFLAG_CLAMPTOEDGE)
+		glWrapClampMode = GL_CLAMP_TO_EDGE;
+	else
+		glWrapClampMode = GL_REPEAT;
 
 	// lightmaps are always allocated on TMU 1
 	if ( qglActiveTextureARB && isLightmap ) {
@@ -826,8 +890,8 @@ image_t *R_CreateImage( const char *name, const byte *pic, int width, int height
 	GL_Bind(image);
 
 	Upload32( (unsigned *)pic, image->width, image->height, 
-								image->mipmap,
-								allowPicmip,
+								image->flags & IMGFLAG_MIPMAP,
+								image->flags & IMGFLAG_PICMIP,
 								isLightmap,
 								&image->internalFormat,
 								&image->uploadWidth,
@@ -962,7 +1026,8 @@ Finds or loads the given image.
 Returns NULL if it fails, not a default image.
 ==============
 */
-image_t	*R_FindImageFile( const char *name, qboolean mipmap, qboolean allowPicmip, int glWrapClampMode ) {
+image_t	*R_FindImageFile( const char *name, imgType_t type, imgFlags_t flags )
+{
 	image_t	*image;
 	int		width, height;
 	byte	*pic;
@@ -981,14 +1046,8 @@ image_t	*R_FindImageFile( const char *name, qboolean mipmap, qboolean allowPicmi
 		if ( !strcmp( name, image->imgName ) ) {
 			// the white image can be used with any set of parms, but other mismatches are errors
 			if ( strcmp( name, "*white" ) ) {
-				if ( image->mipmap != mipmap ) {
-					ri.Printf( PRINT_DEVELOPER, "WARNING: reused image %s with mixed mipmap parm\n", name );
-				}
-				if ( image->allowPicmip != allowPicmip ) {
-					ri.Printf( PRINT_DEVELOPER, "WARNING: reused image %s with mixed allowPicmip parm\n", name );
-				}
-				if ( image->wrapClampMode != glWrapClampMode ) {
-					ri.Printf( PRINT_ALL, "WARNING: reused image %s with mixed glWrapClampMode parm\n", name );
+				if ( image->flags != flags ) {
+					ri.Printf( PRINT_DEVELOPER, "WARNING: reused image %s with mixed flags (%i vs %i)\n", name, image->flags, flags );
 				}
 			}
 			return image;
@@ -1003,7 +1062,7 @@ image_t	*R_FindImageFile( const char *name, qboolean mipmap, qboolean allowPicmi
 		return NULL;
 	}
 
-	image = R_CreateImage( ( char * ) name, pic, width, height, mipmap, allowPicmip, glWrapClampMode );
+	image = R_CreateImage( ( char * ) name, pic, width, height, type, flags, 0 );
 	ri.Free( pic );
 	return image;
 }
@@ -1039,7 +1098,7 @@ static void R_CreateDlightImage( void ) {
 			data[y][x][3] = 255;			
 		}
 	}
-	tr.dlightImage = R_CreateImage("*dlight", (byte *)data, DLIGHT_SIZE, DLIGHT_SIZE, qfalse, qfalse, GL_CLAMP_TO_EDGE );
+	tr.dlightImage = R_CreateImage("*dlight", (byte *)data, DLIGHT_SIZE, DLIGHT_SIZE, IMGTYPE_COLORALPHA, IMGFLAG_CLAMPTOEDGE, 0 );
 }
 
 
@@ -1126,7 +1185,7 @@ static void R_CreateFogImage( void ) {
 	// standard openGL clamping doesn't really do what we want -- it includes
 	// the border color at the edges.  OpenGL 1.2 has clamp-to-edge, which does
 	// what we want.
-	tr.fogImage = R_CreateImage("*fog", (byte *)data, FOG_S, FOG_T, qfalse, qfalse, GL_CLAMP_TO_EDGE );
+	tr.fogImage = R_CreateImage("*fog", (byte *)data, FOG_S, FOG_T, IMGTYPE_COLORALPHA, IMGFLAG_CLAMPTOEDGE, 0 );
 	ri.Hunk_FreeTempMemory( data );
 
 	borderColor[0] = 1.0;
@@ -1170,7 +1229,7 @@ static void R_CreateDefaultImage( void ) {
 		data[x][DEFAULT_SIZE-1][2] =
 		data[x][DEFAULT_SIZE-1][3] = 255;
 	}
-	tr.defaultImage = R_CreateImage("*default", (byte *)data, DEFAULT_SIZE, DEFAULT_SIZE, qtrue, qfalse, GL_REPEAT );
+	tr.defaultImage = R_CreateImage("*default", (byte *)data, DEFAULT_SIZE, DEFAULT_SIZE, IMGTYPE_COLORALPHA, IMGFLAG_MIPMAP, 0);
 }
 
 /*
@@ -1186,7 +1245,7 @@ void R_CreateBuiltinImages( void ) {
 
 	// we use a solid white image instead of disabling texturing
 	Com_Memset( data, 255, sizeof( data ) );
-	tr.whiteImage = R_CreateImage("*white", (byte *)data, 8, 8, qfalse, qfalse, GL_REPEAT );
+	tr.whiteImage = R_CreateImage("*white", (byte *)data, 8, 8, IMGTYPE_COLORALPHA, IMGFLAG_NONE, 0);
 
 	// with overbright bits active, we need an image which is some fraction of full color,
 	// for default lightmaps, etc
@@ -1199,12 +1258,12 @@ void R_CreateBuiltinImages( void ) {
 		}
 	}
 
-	tr.identityLightImage = R_CreateImage("*identityLight", (byte *)data, 8, 8, qfalse, qfalse, GL_REPEAT );
+	tr.identityLightImage = R_CreateImage("*identityLight", (byte *)data, 8, 8, IMGTYPE_COLORALPHA, IMGFLAG_NONE, 0);
 
 
 	for(x=0;x<32;x++) {
 		// scratchimage is usually used for cinematic drawing
-		tr.scratchImage[x] = R_CreateImage("*scratch", (byte *)data, DEFAULT_SIZE, DEFAULT_SIZE, qfalse, qtrue, GL_CLAMP_TO_EDGE );
+		tr.scratchImage[x] = R_CreateImage("*scratch", (byte *)data, DEFAULT_SIZE, DEFAULT_SIZE, IMGTYPE_COLORALPHA, IMGFLAG_PICMIP | IMGFLAG_CLAMPTOEDGE, 0);
 	}
 
 	R_CreateDlightImage();
@@ -1360,7 +1419,7 @@ static char *CommaParse( char **data_p ) {
 
 	data = *data_p;
 	len = 0;
-	com_token[0] = 0;
+	com_token[0] = '\0';
 
 	// make sure incoming data is valid
 	if ( !data ) {
@@ -1409,19 +1468,19 @@ static char *CommaParse( char **data_p ) {
 	}
 
 	// handle quoted strings
-	if (c == '\"')
+	if ( c == '\"' )
 	{
 		data++;
 		while (1)
 		{
 			c = *data++;
-			if (c=='\"' || !c)
+			if ( c == '\"' || c == '\0' )
 			{
-				com_token[len] = 0;
+				com_token[len] = '\0';
 				*data_p = ( char * ) data;
 				return com_token;
 			}
-			if (len < MAX_TOKEN_CHARS)
+			if ( len < MAX_TOKEN_CHARS )
 			{
 				com_token[len] = c;
 				len++;
@@ -1439,14 +1498,14 @@ static char *CommaParse( char **data_p ) {
 		}
 		data++;
 		c = *data;
-	} while (c>32 && c != ',' );
+	} while ( c > ' ' && c != ',' );
 
 	if (len == MAX_TOKEN_CHARS)
 	{
 //		ri.Printf (PRINT_DEVELOPER, "Token exceeded %i chars, discarded.\n", MAX_TOKEN_CHARS);
 		len = 0;
 	}
-	com_token[len] = 0;
+	com_token[len] = '\0';
 
 	*data_p = ( char * ) data;
 	return com_token;
@@ -1504,7 +1563,6 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 	Q_strncpyz( skin->name, name, sizeof( skin->name ) );
 	skin->numSurfaces = 0;
 
-	// make sure the render thread is stopped
 	R_IssuePendingRenderCommands();
 
 	// If not a .skin file, load as a single shader
