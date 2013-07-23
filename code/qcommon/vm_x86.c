@@ -599,7 +599,7 @@ const char *FarJumpStr( int op, int *n )
 
 		case OP_LTF:
 		case OP_LTU: *n = 2; return "0F 82"; // jb
-		
+
 		case OP_LEF:
 		case OP_LEU: *n = 2; return "0F 86"; // jbe
 		
@@ -1011,24 +1011,6 @@ void EmitFCalcPop( int op )
 
 /*
 =================
-FloatMerge
-=================
-*/
-static int FloatMerge( instruction_t *curr, instruction_t *next ) 
-{
-	EmitString( "D9 47 F8" );				// fld dword ptr [edi-8]
-	EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
-	EmitFCalcEDI( curr->op );
-	EmitFCalcPop( next->op );
-	EmitString( "D9 5F F8" );				// fstp dword ptr [edi-8]
-	EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
-	ip += 1;
-	return 1;
-}
-
-
-/*
-=================
 CommuteFloatOp
 =================
 */
@@ -1378,13 +1360,77 @@ qboolean ConstOptimize( vm_t *vm )
 
 /*
 =================
-LocalOptimize
+VM_FindMOps
 =================
 */
-qboolean LocalOptimize( vm_t *vm ) 
+void VM_FindMOps( vmHeader_t *header, instruction_t *buf ) 
+{
+	int i, v, op0;
+	instruction_t *ci;
+	
+	ci = buf;
+
+	// Search for known macro-op sequences
+	i = 0;
+
+	while ( i < header->instructionCount )
+	{
+		op0 = ci->op;
+		if ( op0 == OP_LOCAL ) {
+			// OP_LOCAL + OP_LOCAL + OP_LOAD4 + OP_CONST + OP_XXX + OP_STORE4
+			if ( (ci+1)->op == OP_LOCAL && ci->value == (ci+1)->value && (ci+2)->op == OP_LOAD4 && (ci+3)->op == OP_CONST && (ci+4)->op != OP_UNDEF && (ci+5)->op == OP_STORE4 ) {
+				v = (ci+4)->op;
+				if ( v == OP_ADD ) {
+					ci->op = MOP_ADD4;
+					ci += 6; i += 6;
+					continue;
+				}
+				if ( v == OP_SUB ) {
+					ci->op = MOP_SUB4;
+					ci += 6; i += 6;
+					continue;
+				}
+				if ( v == OP_BAND ) {
+					ci->op = MOP_BAND4;
+					ci += 6; i += 6;
+					continue;
+				}
+				if ( v == OP_BOR ) {
+					ci->op = MOP_BOR4;
+					ci += 6; i += 6;
+					continue;
+				}
+			}
+
+			// skip useless sequences
+			if ( (ci+1)->op == OP_LOCAL && (ci+0)->value == (ci+1)->value && (ci+2)->op == OP_LOAD4 && (ci+3)->op == OP_STORE4 ) {
+				ci->op = MOP_IGNORE4;
+				ci += 4; i += 4;
+				continue;
+			}
+		}
+
+		//if ( (ops[ ci->op ].flags & CALC) && (ops[(ci+1)->op].flags & CALC) && !(ci+1)->jused ) {
+		//	ci->mop = MOP_CALCF4;
+		//	ci += 2; i += 2;
+		//	continue;
+		//}
+
+		ci++;
+		i++;
+	}
+}
+
+
+/*
+=================
+EmitMOPs
+=================
+*/
+qboolean EmitMOPs( vm_t *vm, int op ) 
 {
 	int v, n;
-	switch ( ci->mop ) 
+	switch ( op ) 
 	{
 		//[local] += CONST
 		case MOP_ADD4:
@@ -1745,10 +1791,6 @@ __compile:
 			break;
 
 		case OP_LOCAL:
-
-			if ( ci->mop != MOP_UNDEF && LocalOptimize( vm ) )
-				break;
-			
 			// merge OP_LOCAL + OP_LOAD4
 			if ( ni->op == OP_LOAD4 ) {
 				EmitAddEDI4( vm );				// add edi, 4
@@ -2075,19 +2117,17 @@ __compile:
 			break;
 
 		case OP_NEGF:
-			EmitFldEDI( vm );						// fld dword ptr [edi]
+			if ( !ci->fpu )
+				EmitFldEDI( vm );					// fld dword ptr [edi]
 			EmitString( "D9 E0" );					// fchs
-			EmitCommand( LAST_COMMAND_FSTP_EDI );	// fstp dword ptr [edi]
+			if ( !ci->fpu || ci->store )
+				EmitCommand( LAST_COMMAND_FSTP_EDI );	// fstp dword ptr [edi]
 			break;
 
 		case OP_ADDF:
 		case OP_SUBF:
 		case OP_DIVF:
 		case OP_MULF:
-			if ( ci->mop == MOP_CALCF4 ) {
-				FloatMerge( ci, ni );
-				break;
-			}
 			EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
 			EmitFCalcEDI( ci->op );					// fadd|fsub|fmul|fdiv dword ptr [edi]
 			EmitString( "D9 5F FC" );				// fstp dword ptr [edi-4]
@@ -2096,7 +2136,8 @@ __compile:
 
 		case OP_CVIF:
 			EmitString( "DB 07" );					// fild dword ptr [edi]
-			EmitCommand( LAST_COMMAND_FSTP_EDI );	// fstp dword ptr [edi]
+			if ( !ci->fpu ) 
+				EmitCommand( LAST_COMMAND_FSTP_EDI );	// fstp dword ptr [edi]
 			break;
 
 		case OP_CVFI:
@@ -2163,6 +2204,16 @@ __compile:
 			EmitString( "FF 24 85" );				// jmp dword ptr [instructionPointers + eax * 4]
 			EmitPtr( instructionPointers );
 #endif
+			break;
+
+		case MOP_IGNORE4:
+		case MOP_ADD4:
+		case MOP_SUB4:
+		case MOP_BAND4:
+		case MOP_BOR4:
+
+			if ( !EmitMOPs( vm, ci->op ) ) 
+				Com_Error( ERR_FATAL, "VM_CompileX86: bad opcode %02X", ci->op );
 			break;
 
 		default:

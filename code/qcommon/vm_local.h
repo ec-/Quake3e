@@ -137,10 +137,12 @@ typedef enum {
 typedef struct {
 	int   value;    // 32
 	byte  op;	 	// 8
-	byte  mop;		// 8
 	byte  opStack;  // 8
 	int jused:1;
 	int swtch:1;
+	int root:1;
+	int fpu:1;
+	int store:1;
 } instruction_t;
 
 const char *opname[OP_MAX]; 
@@ -228,6 +230,16 @@ const char *VM_CheckInstructions( instruction_t *buf, int instructionCount,
 								 int numJumpTableTargets, 
 								 int dataLength );
 
-void VM_FindMOps( vmHeader_t *header, instruction_t *buf );
+#define JUMP	(1<<0)
+
+typedef struct opcode_info_s 
+{
+	int   size; 
+	int	  stack;
+	int   nargs;
+	int   flags;
+} opcode_info_t ;
+
+opcode_info_t ops[ OP_MAX ];
 
 #endif // VM_LOCAL_H
