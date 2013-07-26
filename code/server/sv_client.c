@@ -51,6 +51,7 @@ v4-only auth server for these new types of connections.
 =================
 */
 void SV_GetChallenge( netadr_t from ) {
+	static leakyBucket_t outboundLeakyBucket;
 	int		i;
 	int		oldest;
 	int		oldestTime;
@@ -61,6 +62,20 @@ void SV_GetChallenge( netadr_t from ) {
 
 	// ignore if we are in single player
 	if ( Cvar_VariableValue( "g_gametype" ) == GT_SINGLE_PLAYER || Cvar_VariableValue("ui_singlePlayerActive")) {
+		return;
+	}
+
+		// Prevent using getchallenge as an amplifier
+	if ( SVC_RateLimitAddress( from, 10, 1000 ) ) {
+		Com_DPrintf( "SV_GetChallenge: rate limit from %s exceeded, dropping request\n",
+			NET_AdrToString( from ) );
+		return;
+	}
+
+	// Allow getchallenge to be DoSed relatively easily, but prevent
+	// excess outbound bandwidth usage when being flooded inbound
+	if ( SVC_RateLimit( &outboundLeakyBucket, 10, 100 ) ) {
+		Com_DPrintf( "SV_GetChallenge: rate limit exceeded, dropping request\n" );
 		return;
 	}
 
