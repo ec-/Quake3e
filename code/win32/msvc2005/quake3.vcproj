@@ -78,6 +78,7 @@
 				SubSystem="2"
 				StackReserveSize="10247680"
 				TargetMachine="1"
+				FixedBaseAddress="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -165,6 +166,7 @@
 				SubSystem="2"
 				StackReserveSize="10247680"
 				TargetMachine="17"
+				FixedBaseAddress="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -246,6 +248,7 @@
 				OptimizeReferences="2"
 				SetChecksum="true"
 				TargetMachine="1"
+				FixedBaseAddress="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -327,6 +330,7 @@
 				OptimizeReferences="2"
 				SetChecksum="true"
 				TargetMachine="17"
+				FixedBaseAddress="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
