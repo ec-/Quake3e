@@ -457,7 +457,7 @@ void Key_SetBinding( int keynum, const char *binding ) {
 	}
 		
 	// allocate memory for new binding
-	keys[keynum].binding = CopyString( binding );
+	keys[ keynum ].binding = CopyString( binding );
 
 	// consider this like modifying an archived cvar, so the
 	// file write will be triggered at the next oportunity
@@ -484,18 +484,17 @@ char *Key_GetBinding( int keynum ) {
 Key_GetKey
 ===================
 */
-
 int Key_GetKey( const char *binding ) {
-  int i;
+	int i;
 
-  if (binding) {
-  	for (i=0 ; i < MAX_KEYS ; i++) {
-      if (keys[i].binding && Q_stricmp(binding, keys[i].binding) == 0) {
-        return i;
-      }
-    }
-  }
-  return -1;
+	if ( binding ) {
+		for ( i = 0 ; i < MAX_KEYS ; i++ ) {
+			if ( keys[i].binding && Q_stricmp( binding, keys[i].binding ) == 0 ) {
+				return i;
+			}
+		}
+	}
+	return -1;
 }
 
 
@@ -534,9 +533,13 @@ void Key_Unbindall_f (void)
 {
 	int		i;
 	
-	for (i=0 ; i < MAX_KEYS; i++)
-		if (keys[i].binding)
-			Key_SetBinding (i, "");
+	for ( i = 0 ; i < MAX_KEYS; i++ ) 
+	{
+		if ( keys[i].binding )
+		{
+			Key_SetBinding( i, "" );
+		}
+	}
 }
 
 
@@ -545,44 +548,45 @@ void Key_Unbindall_f (void)
 Key_Bind_f
 ===================
 */
-void Key_Bind_f (void)
+void Key_Bind_f( void )
 {
 	int			i, c, b;
-	char		cmd[1024];
+	char		cmd[MAX_STRING_TOKENS];
 	
 	c = Cmd_Argc();
 
-	if (c < 2)
+	if ( c < 2 )
 	{
-		Com_Printf ("bind <key> [command] : attach a command to a key\n");
-		return;
-	}
-	b = Key_StringToKeynum (Cmd_Argv(1));
-	if (b==-1)
-	{
-		Com_Printf ("\"%s\" isn't a valid key\n", Cmd_Argv(1));
+		Com_Printf( "bind <key> [command] : attach a command to a key\n" );
 		return;
 	}
 
-	if (c == 2)
+	b = Key_StringToKeynum( Cmd_Argv( 1 ) );
+	if ( b == -1 )
 	{
-		if (keys[b].binding)
-			Com_Printf ("\"%s\" = \"%s\"\n", Cmd_Argv(1), keys[b].binding );
+		Com_Printf( "\"%s\" isn't a valid key\n", Cmd_Argv( 1 ) );
+		return;
+	}
+
+	if ( c == 2 )
+	{
+		if ( keys[b].binding && keys[b].binding[0] )
+			Com_Printf( "\"%s\" = \"%s\"\n", Cmd_Argv( 1 ), keys[b].binding );
 		else
-			Com_Printf ("\"%s\" is not bound\n", Cmd_Argv(1) );
+			Com_Printf( "\"%s\" is not bound\n", Cmd_Argv( 1 ) );
 		return;
 	}
 	
-// copy the rest of the command line
-	cmd[0] = 0;		// start out with a null string
-	for (i=2 ; i< c ; i++)
+	// copy the rest of the command line
+	cmd[0] = '\0'; // start out with a null string
+	for ( i = 2 ; i < c ; i++ )
 	{
-		strcat (cmd, Cmd_Argv(i));
-		if (i != (c-1))
-			strcat (cmd, " ");
+		strcat( cmd, Cmd_Argv( i ) );
+		if ( i != ( c-1 ) )
+			strcat( cmd, " " );
 	}
 
-	Key_SetBinding (b, cmd);
+	Key_SetBinding( b, cmd );
 }
 
 
@@ -599,7 +603,7 @@ void Key_WriteBindings( fileHandle_t f ) {
 	FS_Printf( f, "unbindall" Q_NEWLINE );
 
 	for ( i = 0 ; i < MAX_KEYS ; i++ ) {
-		if ( keys[i].binding && keys[i].binding[0 ] ) {
+		if ( keys[i].binding && keys[i].binding[0] ) {
 			FS_Printf( f, "bind %s \"%s\"" Q_NEWLINE, Key_KeynumToString(i), keys[i].binding );
 		}
 	}
@@ -646,7 +650,7 @@ static void Key_CompleteBind( char *args, int argNum )
 {
 	char *p;
 
-	if( argNum == 2 )
+	if ( argNum == 2 )
 	{
 		// Skip "bind "
 		p = Com_SkipTokens( args, 1, " " );
@@ -654,12 +658,12 @@ static void Key_CompleteBind( char *args, int argNum )
 		if( p > args )
 			Field_CompleteKeyname( );
 	}
-	else if( argNum >= 3 )
+	else if ( argNum >= 3 )
 	{
 		// Skip "bind <key> "
 		p = Com_SkipTokens( args, 2, " " );
 
-		if( p > args )
+		if ( p > args )
 			Field_CompleteCommand( p, qtrue, qtrue );
 	}
 }
@@ -672,13 +676,13 @@ Key_CompleteUnbind
 */
 static void Key_CompleteUnbind( char *args, int argNum )
 {
-	if( argNum == 2 )
+	if ( argNum == 2 )
 	{
 		// Skip "unbind "
 		char *p = Com_SkipTokens( args, 1, " " );
 
-		if( p > args )
-			Field_CompleteKeyname( );
+		if ( p > args )
+			Field_CompleteKeyname();
 	}
 }
 
@@ -692,20 +696,23 @@ Execute the commands in the bind string
 */
 void Key_ParseBinding( int key, qboolean down, unsigned time )
 {
-	char buf[ MAX_STRING_CHARS ], *p = buf, *end;
+	char buf[ MAX_STRING_CHARS ], *p, *end;
 
 	if( !keys[key].binding || !keys[key].binding[0] )
 		return;
+
+	p = buf;
+
 	Q_strncpyz( buf, keys[key].binding, sizeof( buf ) );
 
 	while( 1 )
 	{
-		while( isspace( *p ) )
+		while ( isspace( *p ) )
 			p++;
 		end = strchr( p, ';' );
-		if( end )
+		if ( end )
 			*end = '\0';
-		if( *p == '+' )
+		if ( *p == '+' )
 		{
 			// button commands add keynum and time as parameters
 			// so that multiple sources can be discriminated and
@@ -714,7 +721,7 @@ void Key_ParseBinding( int key, qboolean down, unsigned time )
 			Com_sprintf( cmd, sizeof( cmd ), "%c%s %d %d\n",
 				( down ) ? '+' : '-', p + 1, key, time );
 			Cbuf_AddText( cmd );
-	}
+		}
 		else if( down )
 		{
 			// normal commands only execute on key press
