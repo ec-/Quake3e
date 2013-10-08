@@ -40,7 +40,7 @@ const int demo_protocols[] = { 66, 67, 68, 0 };
 
 #define MIN_DEDICATED_COMHUNKMEGS 1
 #define MIN_COMHUNKMEGS		56
-#define DEF_COMHUNKMEGS		64
+#define DEF_COMHUNKMEGS		128
 #define DEF_COMZONEMEGS		24
 #define XSTRING(x)				STRING(x)
 #define STRING(x)					#x
