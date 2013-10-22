@@ -232,21 +232,26 @@ static sfx_t *S_FindName( const char *name ) {
 
 	sfx_t	*sfx;
 
-	if (!name) {
-		Com_Error(ERR_FATAL, "Sound name is NULL");
+	if ( !name ) {
+		Com_Error( ERR_FATAL, "Sound name is NULL" );
 	}
 
-	if (!name[0]) {
+	if ( !name[0] ) {
 		Com_Printf( S_COLOR_YELLOW "WARNING: Sound name is empty\n" );
 		return NULL;
 	}
 
-	if (strlen(name) >= MAX_QPATH) {
+	if ( strlen( name ) >= MAX_QPATH ) {
 		Com_Printf( S_COLOR_YELLOW "WARNING: Sound name is too long: %s\n", name );
 		return NULL;
 	}
 
-	hash = S_HashSFXName(name);
+	if ( name[0] == '*' ) {
+		Com_Printf( S_COLOR_YELLOW "WARNING: Tried to load player sound directly: %s\n", name );
+		return NULL;
+	}
+
+	hash = S_HashSFXName( name );
 
 	sfx = sfxHash[hash];
 	// see if already loaded
