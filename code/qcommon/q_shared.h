@@ -606,6 +606,13 @@ void AngleVectors( const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up)
 void PerpendicularVector( vec3_t dst, const vec3_t src );
 int Q_isnan( float x );
 
+#ifndef MAX
+#define MAX(x,y) ((x)>(y)?(x):(y))
+#endif
+
+#ifndef MIN
+#define MIN(x,y) ((x)<(y)?(x):(y))
+#endif
 
 //=============================================
 

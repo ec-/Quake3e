@@ -1177,12 +1177,20 @@ void S_GetSoundtime( void )
 	static	int		buffers;
 	static	int		oldsamplepos;
 	int		fullsamples;
+	float	fps;
+	float	frameDuration;
+	int		msec;
 	
 	fullsamples = dma.samples / dma.channels;
 
 	if( CL_VideoRecording( ) )
 	{
-		s_soundtime += (int)ceil( dma.speed / cl_aviFrameRate->value );
+		fps = MIN( cl_aviFrameRate->value, 1000.0f );
+		frameDuration = MAX( dma.speed / fps, 1.0f ) + clc.aviSoundFrameRemainder;
+
+		msec = (int)frameDuration;
+		s_soundtime += msec;
+		clc.aviSoundFrameRemainder = frameDuration - msec;
 		return;
 	}
 
