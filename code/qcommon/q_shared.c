@@ -81,21 +81,19 @@ const char *COM_GetExtension( const char *name )
 COM_StripExtension
 ============
 */
-void COM_StripExtension( const char *in, char *out, int destsize ) {
-	int             length;
+void COM_StripExtension( const char *in, char *out, int destsize )
+{
+	const char *dot = strrchr(in, '.'), *slash;
 
-	Q_strncpyz(out, in, destsize);
+	if (dot && (!(slash = strrchr(in, '/')) || slash < dot))
+		destsize = (destsize < dot-in+1 ? destsize : dot-in+1);
 
-	length = strlen(out)-1;
-	while (length > 0 && out[length] != '.')
-	{
-		length--;
-		if (out[length] == '/')
-			return;		// no extension
-	}
-	if (length)
-		out[length] = 0;
+	if ( in == out && destsize > 1 )
+		out[destsize-1] = '\0';
+	else
+		Q_strncpyz(out, in, destsize);
 }
+
 
 /*
 ============
@@ -122,31 +120,24 @@ qboolean COM_CompareExtension(const char *in, const char *ext)
 	return qfalse;
 }
 
+
 /*
 ==================
 COM_DefaultExtension
+
+if path doesn't have an extension, then append
+ the specified one (which should include the .)
 ==================
 */
-void COM_DefaultExtension (char *path, int maxSize, const char *extension ) {
-	char	oldPath[MAX_QPATH];
-	char    *src;
-
-//
-// if path doesn't have a .EXT, append extension
-// (extension should include the .)
-//
-	src = path + strlen(path) - 1;
-
-	while (*src != '/' && src != path) {
-		if ( *src == '.' ) {
-			return;                 // it has an extension
-		}
-		src--;
-	}
-
-	Q_strncpyz( oldPath, path, sizeof( oldPath ) );
-	Com_sprintf( path, maxSize, "%s%s", oldPath, extension );
+void COM_DefaultExtension( char *path, int maxSize, const char *extension )
+{
+	const char *dot = strrchr(path, '.'), *slash;
+	if (dot && (!(slash = strrchr(path, '/')) || slash < dot))
+		return;
+	else
+		Q_strcat(path, maxSize, extension);
 }
+
 
 /*
 ============================================================================
