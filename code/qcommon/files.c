@@ -288,6 +288,7 @@ typedef struct {
 	qboolean	handleSync;
 	qboolean	zipFile;
 	int			zipFilePos;
+	int			zipFileLen;
 	char		name[MAX_ZPATH];
 	handleOwner_t	owner;
 } fileHandleData_t;
@@ -1435,6 +1436,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					// open the file in the zip
 					unzOpenCurrentFile( f->handleFiles.file.z );
 					f->zipFilePos = pakFile->pos;
+					f->zipFileLen = pakFile->size;
 					f->zipFile = qtrue;
 					f->handleFiles.unique = uniqueFILE;
 
