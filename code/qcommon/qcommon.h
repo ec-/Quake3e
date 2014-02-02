@@ -1076,19 +1076,6 @@ void	* QDECL Sys_LoadDll( const char *name, intptr_t (QDECL **entryPoint)(intptr
 				  intptr_t (QDECL *systemCalls)(intptr_t, ...) );
 void	Sys_UnloadDll( void *dllHandle );
 
-void	Sys_UnloadGame( void );
-void	*Sys_GetGameAPI( void *parms );
-
-void	Sys_UnloadCGame( void );
-void	*Sys_GetCGameAPI( void );
-
-void	Sys_UnloadUI( void );
-void	*Sys_GetUIAPI( void );
-
-//bot libraries
-void	Sys_UnloadBotLib( void );
-void	*Sys_GetBotLibAPI( void *parms );
-
 char	*Sys_GetCurrentUser( void );
 
 void	QDECL Sys_Error( const char *error, ...) __attribute__ ((format (printf, 1, 2)));
