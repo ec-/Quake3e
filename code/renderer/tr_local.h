@@ -632,6 +632,7 @@ typedef struct {
 	int		num_frames;
 	int		num_surfaces;
 	int		num_joints;
+	int		num_poses;
 	struct srfIQModel_s	*surfaces;
 
 	float		*positions;
@@ -639,9 +640,17 @@ typedef struct {
 	float		*normals;
 	float		*tangents;
 	byte		*blendIndexes;
-	byte		*blendWeights;
+	union {
+		float	*f;
+		byte	*b;
+	} blendWeights;
 	byte		*colors;
 	int		*triangles;
+
+	// depending upon the exporter, blend indices and weights might be int/float
+	// as opposed to the recommended byte/byte, for example Noesis exports
+	// int/float whereas the official IQM tool exports byte/byte
+	byte blendWeightsType; // IQM_UBYTE or IQM_FLOAT
 
 	int		*jointParents;
 	float		*jointMats;
