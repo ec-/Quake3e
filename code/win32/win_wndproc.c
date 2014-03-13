@@ -36,10 +36,13 @@ cvar_t		*vid_xpos;			// X coordinate of window position
 cvar_t		*vid_ypos;			// Y coordinate of window position
 cvar_t		*r_fullscreen;
 
-#define VID_NUM_MODES ( sizeof( vid_modes ) / sizeof( vid_modes[0] ) )
-
 static HHOOK WinHook;
 
+/*
+==================
+WinKeyHook
+==================
+*/
 static LRESULT CALLBACK WinKeyHook( int code, WPARAM wParam, LPARAM lParam )
 {
 	PKBDLLHOOKSTRUCT key = (PKBDLLHOOKSTRUCT)lParam;
@@ -61,6 +64,12 @@ static LRESULT CALLBACK WinKeyHook( int code, WPARAM wParam, LPARAM lParam )
   return CallNextHookEx( NULL, code, wParam, lParam );
 }
 
+
+/*
+==================
+WIN_DisableHook
+==================
+*/
 void WIN_DisableHook( void  ) 
 {
 	if ( WinHook ) {
@@ -69,6 +78,12 @@ void WIN_DisableHook( void  )
 	}
 }
 
+
+/*
+==================
+WIN_EnableHook
+==================
+*/
 void WIN_EnableHook( void  ) 
 {
 	if ( !WinHook ) {
@@ -78,6 +93,11 @@ void WIN_EnableHook( void  )
 
 static qboolean s_alttab_disabled;
 
+/*
+==================
+WIN_DisableAltTab
+==================
+*/
 void WIN_DisableAltTab( void )
 {
 	BOOL old;
@@ -93,6 +113,12 @@ void WIN_DisableAltTab( void )
 	s_alttab_disabled = qtrue;
 }
 
+
+/*
+==================
+WIN_EnableAltTab
+==================
+*/
 void WIN_EnableAltTab( void )
 {
 	BOOL old;
@@ -107,6 +133,7 @@ void WIN_EnableAltTab( void )
 
 	s_alttab_disabled = qfalse;
 }
+
 
 /*
 ==================
@@ -168,12 +195,13 @@ static int s_scantokey[ 128 ] =
 	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0      // 7 
 }; 
 
+
 /*
-=======
+==================
 MapKey
 
 Map from windows to quake keynums
-=======
+==================
 */
 static int MapKey( int key )
 {
@@ -273,7 +301,8 @@ extern void	R_SetColorMappings( void );
 extern void	SetGameDisplaySettings( void );
 extern void SetDesktopDisplaySettings( void );
 
-void Win_AddHotkey( ) {
+void Win_AddHotkey( void ) 
+{
 	UINT modifiers, vk;
 	ATOM atom;
 
@@ -298,7 +327,9 @@ void Win_AddHotkey( ) {
 	hkinstalled = 1;
 }
 
-void Win_RemoveHotkey( void ) {
+
+void Win_RemoveHotkey( void ) 
+{
 	ATOM atom;
 
 	if ( !g_wv.hWnd || !hkinstalled )
@@ -311,6 +342,7 @@ void Win_RemoveHotkey( void ) {
 		hkinstalled = 0;
 	}
 }
+
 
 BOOL Win_CheckHotkeyMod( void ) {
 
@@ -712,4 +744,3 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
     return DefWindowProc( hWnd, uMsg, wParam, lParam );
 }
-
