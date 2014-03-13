@@ -75,7 +75,9 @@ redo:
 	return v;
 }
 
-void SND_setup( void ) {
+
+void SND_setup( void ) 
+{
 	sndBuffer *p, *q;
 	cvar_t	*cv;
 	int scs, sz;
@@ -83,7 +85,8 @@ void SND_setup( void ) {
 
 	cv = Cvar_Get( "com_soundMegs", DEF_COMSOUNDMEGS, CVAR_LATCH | CVAR_ARCHIVE );
 
-	scs = (cv->integer * 1536);
+	scs = ( cv->integer * /*1536*/ 12 * dma.speed ) / 22050;
+	scs *= 128;
 
 	sz = scs * sizeof( sndBuffer );
 
@@ -135,8 +138,9 @@ void SND_setup( void ) {
 	*(sndBuffer **)q = NULL;
 	freelist = p + scs - 1;
 
-	Com_Printf("Sound memory manager started\n");
+	Com_Printf( "Sound memory manager started\n" );
 }
+
 
 /*
 ================
@@ -155,7 +159,7 @@ static void ResampleSfx( sfx_t *sfx, int inrate, int inwidth, byte *data, qboole
 	sndBuffer	*chunk;
 	
 	//slightly faster and better resample for that case
-	if (inrate == 22050 && dma.speed == 44100) {
+	if ( inrate == 22050 && dma.speed == 44100 ) {
 		sfx->soundLength = sfx->soundLength * 2;
 		chunk = sfx->soundData;
 		for ( i=0 ; i < sfx->soundLength ; i++) {
