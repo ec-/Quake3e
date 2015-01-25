@@ -750,5 +750,3 @@ void Com_InitKeyCommands( void )
 	Cmd_AddCommand( "unbindall", Key_Unbindall_f );
 	Cmd_AddCommand( "bindlist", Key_Bindlist_f );
 }
-
-

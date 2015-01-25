@@ -821,8 +821,9 @@ struct cvar_s {
 	int			integer;			// atoi( string )
 	qboolean	validate;
 	qboolean	integral;
-	float			min;
-	float			max;
+	float		min;
+	float		max;
+	char		*description;
 
 	cvar_t *next;
 	cvar_t *prev;
