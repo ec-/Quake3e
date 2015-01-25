@@ -372,12 +372,12 @@ qboolean QGL_Init( const char *dllname )
 	qwglSetPixelFormat           = GPA( "wglSetPixelFormat" );
 	qwglSwapBuffers              = GPA( "wglSwapBuffers" );
 
-	qwglSwapIntervalEXT = 0;
-	qglActiveTextureARB = 0;
-	qglClientActiveTextureARB = 0;
-	qglMultiTexCoord2fARB = 0;
-	qglLockArraysEXT = 0;
-	qglUnlockArraysEXT = 0;
+	qwglSwapIntervalEXT = NULL;
+	qglActiveTextureARB = NULL;
+	qglClientActiveTextureARB = NULL;
+	qglMultiTexCoord2fARB = NULL;
+	qglLockArraysEXT = NULL;
+	qglUnlockArraysEXT = NULL;
 
 	return qtrue;
 }

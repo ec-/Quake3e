@@ -1385,10 +1385,27 @@ fail:
 	return qfalse;
 }
 
+
+static void GLimp_SwapBuffers( void ) 
+{
+	if ( glConfig.driverType > GLDRV_ICD )
+	{
+		if ( !qwglSwapBuffers( glw_state.hDC ) )
+		{
+			ri.Error( ERR_FATAL, "GLimp_EndFrame() - SwapBuffers() failed!\n" );
+		}
+	}
+	else
+	{
+		SwapBuffers( glw_state.hDC );
+	}
+}
+
+
 /*
 ** GLimp_EndFrame
 */
-void GLimp_EndFrame (void)
+void GLimp_EndFrame( void )
 {
 	//
 	// swapinterval stuff
@@ -1403,21 +1420,9 @@ void GLimp_EndFrame (void)
 		}
 	}
 
-
 	// don't flip if drawing to front buffer
-	if ( Q_stricmp( r_drawBuffer->string, "GL_FRONT" ) != 0 )
-	{
-		if ( glConfig.driverType > GLDRV_ICD )
-		{
-			if ( !qwglSwapBuffers( glw_state.hDC ) )
-			{
-				ri.Error( ERR_FATAL, "GLimp_EndFrame() - SwapBuffers() failed!\n" );
-			}
-		}
-		else
-		{
-			SwapBuffers( glw_state.hDC );
-		}
+	if ( Q_stricmp( r_drawBuffer->string, "GL_FRONT" ) != 0 ) {
+		GLimp_SwapBuffers();
 	}
 }
 
@@ -1523,9 +1528,6 @@ void GLimp_Init( void )
 	if ( !GLW_StartOpenGL() )
 		return;
 
-	// show main window after all initializations
-	ShowWindow( g_wv.hWnd, SW_SHOW );
-
 	// get our config strings
 	Q_strncpyz( glConfig.vendor_string, qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
 	Q_strncpyz( glConfig.renderer_string, qglGetString (GL_RENDERER), sizeof( glConfig.renderer_string ) );
@@ -1611,6 +1613,14 @@ void GLimp_Init( void )
 
 	GLW_InitExtensions();
 	WG_CheckHardwareGamma();
+
+	// show main window after all initializations
+	ShowWindow( g_wv.hWnd, SW_SHOW );
+
+	// Clear window buffer when it's created
+	qglClearColor( 0.0, 0.0, 0.0, 1.0 );
+	qglClear( GL_COLOR_BUFFER_BIT );
+	GLimp_SwapBuffers();
 }
 
 /*
