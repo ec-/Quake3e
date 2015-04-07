@@ -552,7 +552,6 @@ Upload32
 
 ===============
 */
-extern qboolean charSet;
 static void Upload32( unsigned *data, 
 						  int width, int height, 
 						  qboolean mipmap, 
@@ -1182,7 +1181,6 @@ static void R_CreateFogImage( void ) {
 			data[(y*FOG_S+x)*4+3] = 255*d;
 		}
 	}
-
 	tr.fogImage = R_CreateImage("*fog", (byte *)data, FOG_S, FOG_T, IMGTYPE_COLORALPHA, IMGFLAG_CLAMPTOEDGE, 0 );
 	ri.Hunk_FreeTempMemory( data );
 }
@@ -1410,7 +1408,7 @@ static char *CommaParse( char **data_p ) {
 
 	data = *data_p;
 	len = 0;
-	com_token[0] = '\0';
+	com_token[0] = 0;
 
 	// make sure incoming data is valid
 	if ( !data ) {
@@ -1433,12 +1431,15 @@ static char *CommaParse( char **data_p ) {
 		// skip double slash comments
 		if ( c == '/' && data[1] == '/' )
 		{
-			while (*data && *data != '\n')
+			data += 2;
+			while (*data && *data != '\n') {
 				data++;
+			}
 		}
 		// skip /* */ comments
 		else if ( c=='/' && data[1] == '*' ) 
 		{
+			data += 2;
 			while ( *data && ( *data != '*' || data[1] != '/' ) ) 
 			{
 				data++;
@@ -1459,19 +1460,19 @@ static char *CommaParse( char **data_p ) {
 	}
 
 	// handle quoted strings
-	if ( c == '\"' )
+	if (c == '\"')
 	{
 		data++;
 		while (1)
 		{
 			c = *data++;
-			if ( c == '\"' || c == '\0' )
+			if (c=='\"' || !c)
 			{
-				com_token[len] = '\0';
+				com_token[len] = 0;
 				*data_p = ( char * ) data;
 				return com_token;
 			}
-			if ( len < MAX_TOKEN_CHARS )
+			if (len < MAX_TOKEN_CHARS - 1)
 			{
 				com_token[len] = c;
 				len++;
@@ -1482,21 +1483,16 @@ static char *CommaParse( char **data_p ) {
 	// parse a regular word
 	do
 	{
-		if (len < MAX_TOKEN_CHARS)
+		if (len < MAX_TOKEN_CHARS - 1)
 		{
 			com_token[len] = c;
 			len++;
 		}
 		data++;
 		c = *data;
-	} while ( c > ' ' && c != ',' );
+	} while (c>32 && c != ',' );
 
-	if (len == MAX_TOKEN_CHARS)
-	{
-//		ri.Printf (PRINT_DEVELOPER, "Token exceeded %i chars, discarded.\n", MAX_TOKEN_CHARS);
-		len = 0;
-	}
-	com_token[len] = '\0';
+	com_token[len] = 0;
 
 	*data_p = ( char * ) data;
 	return com_token;
@@ -1593,10 +1589,10 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 		// parse the shader name
 		token = CommaParse( &text_p );
 
-		if ( skin->numSurfaces >= MD3_MAX_SURFACES ) { 
+		if ( skin->numSurfaces >= MD3_MAX_SURFACES ) {
 			ri.Printf( PRINT_WARNING, "WARNING: Ignoring surfaces in '%s', the max is %d surfaces!\n", name, MD3_MAX_SURFACES );
-			break; 
-		} 
+			break;
+		}
 
 		surf = skin->surfaces[ skin->numSurfaces ] = ri.Hunk_Alloc( sizeof( *skin->surfaces[0] ), h_low );
 		Q_strncpyz( surf->name, surfName, sizeof( surf->name ) );
