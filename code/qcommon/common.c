@@ -3049,7 +3049,7 @@ int Com_ModifyMsec( int msec ) {
 Com_Frame
 =================
 */
-void Com_Frame( void ) {
+void Com_Frame( qboolean demoPlaying ) {
 
 	int		msec, minMsec;
 	static int	lastTime;
@@ -3089,18 +3089,21 @@ void Com_Frame( void ) {
 	if ( com_speeds->integer ) {
 		timeBeforeFirstEvents = Sys_Milliseconds ();
 	}
+	
+	if ( com_timedemo->integer && demoPlaying )
+		minMsec = 0;
+	else
+		minMsec = 1;
 
 	// we may want to spin here if things are going too fast
 #ifndef _WIN32
-	if ( !com_dedicated->integer && com_maxfps->integer > 0 && !com_timedemo->integer ) {
+	if ( !com_dedicated->integer && com_maxfps->integer > 0 && ( !com_timedemo->integer || minMsec ) ) {
 		minMsec = 1000 / com_maxfps->integer;
-	} else {
-		minMsec = 1;
 	}
 #else
-	minMsec = 1;
+	
 #ifndef DEDICATED
-	if ( !com_dedicated->integer && !com_timedemo->integer ) {
+	if ( !com_dedicated->integer && ( !com_timedemo->integer || minMsec ) ) {
 		if ( g_wv.isMinimized && com_maxfpsMinimized->integer > 0 )
 			minMsec = 1000 / com_maxfpsMinimized->integer;
 		else 
@@ -3111,7 +3114,9 @@ void Com_Frame( void ) {
 			minMsec = 1000 / com_maxfps->integer;
 	}
 #endif
-#endif
+
+#endif // defined(_WIN32)
+
 	msec = minMsec;
 	do {
 		Sys_Sleep( minMsec - msec );

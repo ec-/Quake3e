@@ -61,6 +61,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "linux_local.h" // bk001204
 
+#ifndef DEDICATED
+#include "../client/client.h"
+#endif
+
 unsigned  sys_frame_time;
 
 qboolean stdin_active = qtrue;
@@ -1247,7 +1251,12 @@ int main( int argc, char* argv[] )
 #ifdef __linux__
 		Sys_ConfigureFPU();
 #endif
-		Com_Frame();
+#ifdef DEDICATED
+		Com_Frame( qfalse );
+#else
+		Com_Frame( clc.demoplaying );
+
+#endif
 	}
 	return 0;
 }

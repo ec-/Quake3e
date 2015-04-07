@@ -850,7 +850,6 @@ void Sys_Init( void ) {
 //=======================================================================
 
 int	totalMsec, countMsec;
-
 /*
 ==================
 WinMain
@@ -907,11 +906,11 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 #ifndef DEDICATED
 		// make sure mouse and joystick are only called once a frame
 		IN_Frame();
-#endif
-
 		// run the game
-		Com_Frame();
-
+		Com_Frame( clc.demoplaying );
+#else
+		Com_Frame( qfalse );
+#endif
 		endTime = Sys_Milliseconds();
 		totalMsec += endTime - startTime;
 		countMsec++;

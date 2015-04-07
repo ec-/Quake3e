@@ -435,8 +435,8 @@ void CL_DemoCompleted( void ) {
 		
 		time = Sys_Milliseconds() - clc.timeDemoStart;
 		if ( time > 0 ) {
-			Com_Printf ("%i frames, %3.1f seconds: %3.1f fps\n", clc.timeDemoFrames,
-			time/1000.0, clc.timeDemoFrames*1000.0 / time);
+			Com_Printf( "%i frames, %3.*f seconds: %3.1f fps\n", clc.timeDemoFrames,
+			time > 10000 ? 1 : 2, time/1000.0, clc.timeDemoFrames*1000.0 / time );
 		}
 	}
 
