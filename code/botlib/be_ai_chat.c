@@ -2062,7 +2062,7 @@ bot_chat_t *BotLoadInitialChat(char *chatfile, char *chatname)
 			return NULL;
 		} //end if
 		//chat structure
-		if (pass && ptr)
+		if (pass)
 		{
 			chat = (bot_chat_t *) ptr;
 			ptr += sizeof(bot_chat_t);

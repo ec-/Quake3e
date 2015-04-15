@@ -247,7 +247,7 @@ bot_character_t *BotLoadCharacterFromFile(char *charfile, int skill)
 				return NULL;
 			} //end if
 			//if it's the correct skill
-			if (skill < 0 || (int)token.intvalue == skill)
+			if (skill < 0 || token.intvalue == skill)
 			{
 				foundcharacter = qtrue;
 				ch->skill = token.intvalue;
@@ -760,14 +760,11 @@ void Characteristic_String(int character, int index, char *buf, int size)
 	{
 		strncpy(buf, ch->c[index].value.string, size-1);
 		buf[size-1] = '\0';
-		return;
 	} //end if
 	else
 	{
 		botimport.Print(PRT_ERROR, "characteristic %d is not a string\n", index);
-		return;
 	} //end else if
-	return;
 } //end of the function Characteristic_String
 //===========================================================================
 //
