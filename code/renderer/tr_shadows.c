@@ -219,10 +219,14 @@ void RB_ShadowTessEnd( void ) {
 
 	GL_Cull( CT_BACK_SIDED );
 	qglStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
+
 	R_RenderShadowEdges();
+
 	GL_Cull( CT_FRONT_SIDED );
 	qglStencilOp( GL_KEEP, GL_KEEP, GL_DECR );
+
 	R_RenderShadowEdges();
+
 
 	// reenable writing to the color buffer
 	qglColorMask(rgba[0], rgba[1], rgba[2], rgba[3]);

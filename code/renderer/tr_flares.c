@@ -79,13 +79,12 @@ typedef struct flare_s {
 	vec3_t		color;
 } flare_t;
 
-#define		MAX_FLARES		128
+#define		MAX_FLARES		256
 
 flare_t		r_flareStructs[MAX_FLARES];
 flare_t		*r_activeFlares, *r_inactiveFlares;
 
 static float flareCoeff;
-
 
 /*
 ==================
@@ -93,13 +92,12 @@ R_SetFlareCoeff
 ==================
 */
 static void R_SetFlareCoeff( void ) {
-	if ( r_flareCoeff->value == 0.0f ) {
-		flareCoeff = atof( FLARE_STDCOEFF );
-	} else {
-		flareCoeff = r_flareCoeff->value;
-	}
-}
 
+	if(r_flareCoeff->value == 0.0f)
+		flareCoeff = atof(FLARE_STDCOEFF);
+	else
+		flareCoeff = r_flareCoeff->value;
+}
 
 /*
 ==================
@@ -369,8 +367,8 @@ void RB_RenderFlare( flare_t *f ) {
 
 	VectorScale(f->color, f->drawIntensity * intensity, color);
 
-// Calculations for fogging
-	if(tr.world && f->fogNum < tr.world->numfogs)
+	// Calculations for fogging
+	if(tr.world && f->fogNum > 0 && f->fogNum < tr.world->numfogs)
 	{
 		tess.numVertexes = 1;
 		VectorCopy(f->origin, tess.xyz[0]);
@@ -465,7 +463,7 @@ void RB_RenderFlares (void) {
 		return;
 	}
 
-	if ( r_flareCoeff->modified )
+	if(r_flareCoeff->modified)
 	{
 		R_SetFlareCoeff();
 		r_flareCoeff->modified = qfalse;

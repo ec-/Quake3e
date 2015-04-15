@@ -235,7 +235,7 @@ static void R_BindAnimatedImage( textureBundle_t *bundle ) {
 	//index = v;
 	//index >>= FUNCTABLE_SIZE2;
 
-	v = tess.shaderTime * bundle->imageAnimationSpeed;
+	v = tess.shaderTime * bundle->imageAnimationSpeed; // fix for frameloss bug -EC-
 	index = v;
 
 	if ( index < 0 ) {

@@ -847,6 +847,8 @@ static qboolean ParseStage( shaderStage_t *stage, char **text )
 			{
 				vec3_t	color;
 
+				VectorClear( color );
+
 				ParseVector( text, 3, color );
 				stage->constantColor[0] = 255 * color[0];
 				stage->constantColor[1] = 255 * color[1];
@@ -1010,8 +1012,8 @@ static qboolean ParseStage( shaderStage_t *stage, char **text )
 				token = COM_ParseExt( text, qfalse );
 				if ( token[0] == 0 )
 					break;
-				strcat( buffer, token );
-				strcat( buffer, " " );
+				Q_strcat( buffer, sizeof (buffer), token );
+				Q_strcat( buffer, sizeof (buffer), " " );
 			}
 
 			ParseTexMod( buffer, stage );
@@ -1476,7 +1478,7 @@ static qboolean ParseShader( char **text )
 			continue;
 		}
 		// sun parms
-		else if ( !Q_stricmp( token, "q3map_sun" ) ) {
+		else if ( !Q_stricmp( token, "q3map_sun" ) || !Q_stricmp( token, "q3map_sunExt" ) ) {
 			float	a, b;
 
 			token = COM_ParseExt( text, qfalse );
@@ -1503,6 +1505,9 @@ static qboolean ParseShader( char **text )
 			tr.sunDirection[0] = cos( a ) * cos( b );
 			tr.sunDirection[1] = sin( a ) * cos( b );
 			tr.sunDirection[2] = sin( b );
+
+			SkipRestOfLine( text );
+			continue;
 		}
 		else if ( !Q_stricmp( token, "deformVertexes" ) ) {
 			ParseDeform( text );
