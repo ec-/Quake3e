@@ -62,7 +62,7 @@ channel_t   s_channels[MAX_CHANNELS];
 channel_t   loop_channels[MAX_CHANNELS];
 int			numLoopChannels;
 
-static int	s_soundStarted;
+static		qboolean	s_soundStarted;
 static		qboolean	s_soundMuted;
 
 dma_t		dma;
@@ -1515,8 +1515,8 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 	r = SNDDMA_Init();
 
 	if ( r ) {
-		s_soundStarted = 1;
-		s_soundMuted = 1;
+		s_soundStarted = qtrue;
+		s_soundMuted = qtrue;
 //		s_numSfx = 0;
 
 		Com_Memset( sfxHash, 0, sizeof( sfxHash ) );
