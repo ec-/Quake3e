@@ -363,7 +363,7 @@ void VM_LoadSymbols( vm_t *vm ) {
 		sym->next = NULL;
 
 		// convert value from an instruction number to a code offset
-		if ( value >= 0 && value < numInstructions ) {
+		if ( vm->instructionPointers && value >= 0 && value < numInstructions ) {
 			value = vm->instructionPointers[value];
 		}
 
@@ -600,7 +600,7 @@ Load a .qvm file
 if ( alloc )
  - Validate header, swap data
  - Alloc memory for data/instructions
- - Alloc memory for instructionPointers
+ - Alloc memory for instructionPointers - NOT NEEDED
  - Load instructions
  - Clear/load data
 else
@@ -1215,7 +1215,8 @@ vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *),
 
 	// allocate space for the jump targets, which will be filled in by the compile/prep functions
 	vm->instructionCount = header->instructionCount;
-	vm->instructionPointers = Hunk_Alloc(vm->instructionCount * sizeof(*vm->instructionPointers), h_high);
+	//vm->instructionPointers = Hunk_Alloc(vm->instructionCount * sizeof(*vm->instructionPointers), h_high);
+	vm->instructionPointers = NULL;
 
 	// copy or compile the instructions
 	vm->codeLength = header->codeLength;
@@ -1242,9 +1243,12 @@ vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *),
 	}
 #endif
 	// VM_Compile may have reset vm->compiled if compilation failed
-	if ( !vm->compiled )
-	{
-		VM_PrepareInterpreter2( vm, header );
+	if ( !vm->compiled ) {
+		if ( !VM_PrepareInterpreter2( vm, header ) ) {
+			FS_FreeFile( header );	// free the original file
+			VM_Free( vm );
+			return NULL;
+		}
 	}
 
 	// free the original file
@@ -1279,13 +1283,12 @@ void VM_Free( vm_t *vm ) {
 		}
 	}
 
-	if(vm->destroy)
-		vm->destroy(vm);
+	if ( vm->destroy )
+		vm->destroy( vm );
 
-	if ( vm->dllHandle ) {
+	if ( vm->dllHandle )
 		Sys_UnloadDll( vm->dllHandle );
-		Com_Memset( vm, 0, sizeof( *vm ) );
-	}
+
 #if 0	// now automatically freed by hunk
 	if ( vm->codeBase.ptr ) {
 		Z_Free( vm->codeBase.ptr );

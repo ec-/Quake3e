@@ -2281,7 +2281,7 @@ __compile:
 			return qfalse;
 		}
 		instructionPointers = (intptr_t*)(byte*)(code + compiledOfs);
-		vm->instructionPointers = instructionPointers; // for debug purposes?
+		//vm->instructionPointers = instructionPointers; // for debug purposes?
 		pass = NUM_PASSES-1; // repeat last pass
 		goto __compile;
 	}

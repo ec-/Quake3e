@@ -268,7 +268,7 @@ void VM_PrepareInterpreter( vm_t *vm, vmHeader_t *header ) {
 }
 
 
-void VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header ) 
+qboolean VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header ) 
 {
 	const char *errMsg;
 	instruction_t *buf;
@@ -279,10 +279,12 @@ void VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header )
 		errMsg = VM_CheckInstructions( buf, vm->instructionCount, vm->jumpTableTargets, vm->numJumpTableTargets, vm->dataLength );
 	}
 	if ( errMsg ) {
-		Com_Printf( "VM_PrepareInterpreter error: %s\n", errMsg );
-		return;
+		Com_Printf( "VM_PrepareInterpreter2 error: %s\n", errMsg );
+		return qfalse;
 	}
+
 	vm->codeBase.ptr = (void*)buf;
+	return qtrue;
 }
 
 
