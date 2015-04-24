@@ -2762,6 +2762,9 @@ void Com_Init( char *commandLine ) {
 
 	Com_StartupVariable( "vm_rtChecks" );
 	vm_rtChecks = Cvar_Get( "vm_rtChecks", "15", CVAR_INIT | CVAR_ROM );
+	Cvar_SetDescription( vm_rtChecks, 
+		"Runtime checks in compiled vm code, bitmask:\n 1 - program stack overflow\n" \
+		" 2 - opcode stack overflow\n 4 - jump target range\n 8 - data read/write range" );
 
 	// done early so bind command exists
 	Com_InitKeyCommands();
