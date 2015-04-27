@@ -1272,16 +1272,14 @@ void R_SetColorMappings( void ) {
 	int		shift;
 
 	// setup the overbright lighting
-	tr.overbrightBits = r_overBrightBits->integer;
-	if ( !glConfig.deviceSupportsGamma ) {
+	// negative value will force gamma in windowed mode
+	tr.overbrightBits = abs( r_overBrightBits->integer );
+	if ( !glConfig.deviceSupportsGamma )
 		tr.overbrightBits = 0;		// need hardware gamma for overbright
-	}
 
 	// never overbright in windowed mode
-	if ( !glConfig.isFullscreen ) 
-	{
+	if ( !glConfig.isFullscreen && r_overBrightBits->integer >= 0 ) 
 		tr.overbrightBits = 0;
-	}
 
 	// allow 2 overbright bits in 24 bit, but only 1 in 16 bit
 	if ( glConfig.colorBits > 16 ) {

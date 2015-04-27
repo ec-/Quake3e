@@ -473,7 +473,7 @@ qboolean SNDDMA_Init( void )
 	err = _snd_pcm_sw_params_set_stop_threshold( handle, swparams, -1 );
 	if ( err < 0 )
 	{
-		Com_Printf( "Unable to set avail min for playback: " \
+		Com_Printf( "Unable to set stop threshold for playback: " \
 			"%s\n", _snd_strerror( err ) );
 		_snd_pcm_close( handle );
 		UnloadLibs();
