@@ -1716,7 +1716,7 @@ int FS_Seek( fileHandle_t f, long offset, fsOrigin_t origin ) {
 			break;
 		default:
 			Com_Error( ERR_FATAL, "Bad origin in FS_Seek" );
-			break;
+			return -1;
 		}
 
 		return fseek( file, offset, _origin );
