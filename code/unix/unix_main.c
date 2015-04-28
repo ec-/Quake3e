@@ -990,11 +990,6 @@ void Sys_AppActivate( void )
 {
 }
 
-char *Sys_GetClipboardData( void )
-{
-  return NULL;
-}
-
 
 static struct Q3ToAnsiColorTable_s
 {

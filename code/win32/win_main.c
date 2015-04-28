@@ -436,13 +436,16 @@ char *Sys_GetClipboardData( void ) {
 	char *data = NULL;
 	char *cliptext;
 
-	if ( OpenClipboard( NULL ) != 0 ) {
+	if ( OpenClipboard( NULL ) ) {
 		HANDLE hClipboardData;
+		DWORD size;
 
+		// GetClipboardData performs implicit CF_UNICODETEXT => CF_TEXT conversion
 		if ( ( hClipboardData = GetClipboardData( CF_TEXT ) ) != 0 ) {
 			if ( ( cliptext = GlobalLock( hClipboardData ) ) != 0 ) {
-				data = Z_Malloc( GlobalSize( hClipboardData ) + 1 );
-				Q_strncpyz( data, cliptext, GlobalSize( hClipboardData ) );
+				size = GlobalSize( hClipboardData ) + 1;
+				data = Z_Malloc( size );
+				Q_strncpyz( data, cliptext, size );
 				GlobalUnlock( hClipboardData );
 				
 				strtok( data, "\n\r\b" );
