@@ -1129,6 +1129,8 @@ extern	cvar_t	*r_floatfix;
 
 extern	cvar_t	*r_GLlibCoolDownMsec;
 
+extern cvar_t	*r_marksOnTriangleMeshes;
+
 //====================================================================
 
 float R_NoiseGet4f( float x, float y, float z, float t );
