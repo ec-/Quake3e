@@ -2656,7 +2656,10 @@ void CL_InitRef( void ) {
 #endif
 	ri.Hunk_AllocateTempMemory = Hunk_AllocateTempMemory;
 	ri.Hunk_FreeTempMemory = Hunk_FreeTempMemory;
+	
+	ri.CM_ClusterPVS = CM_ClusterPVS;
 	ri.CM_DrawDebugSurface = CM_DrawDebugSurface;
+
 	ri.FS_ReadFile = FS_ReadFile;
 	ri.FS_FreeFile = FS_FreeFile;
 	ri.FS_WriteFile = FS_WriteFile;
@@ -2666,8 +2669,10 @@ void CL_InitRef( void ) {
 	ri.FS_FileExists = FS_FileExists;
 	ri.Cvar_Get = Cvar_Get;
 	ri.Cvar_Set = Cvar_Set;
+	ri.Cvar_SetValue = Cvar_SetValue;
 	ri.Cvar_CheckRange = Cvar_CheckRange;
 	ri.Cvar_SetDescription = Cvar_SetDescription;
+	ri.Cvar_VariableIntegerValue = Cvar_VariableIntegerValue;
 
 	// cinematic stuff
 

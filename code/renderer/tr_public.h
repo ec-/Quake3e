@@ -106,10 +106,10 @@ typedef struct {
 //
 typedef struct {
 	// print message on the local console
-	void	(QDECL *Printf)( int printLevel, const char *fmt, ...);
+	void	(QDECL *Printf)( int printLevel, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 
 	// abort the game
-	void	(QDECL *Error)( int errorLevel, const char *fmt, ...);
+	void	(QDECL *Error)( int errorLevel, const char *fmt, ...) __attribute__ ((noreturn, format (printf, 2, 3)));
 
 	// milliseconds should only be used for profiling, never
 	// for anything game related.  Get time from the refdef
@@ -131,8 +131,11 @@ typedef struct {
 
 	cvar_t	*(*Cvar_Get)( const char *name, const char *value, int flags );
 	void	(*Cvar_Set)( const char *name, const char *value );
+	void	(*Cvar_SetValue) (const char *name, float value);
 	void	(*Cvar_CheckRange)( cvar_t *cv, float minVal, float maxVal, qboolean shouldBeIntegral );
 	void	(*Cvar_SetDescription)( cvar_t *cv, const char *description );
+
+	int		(*Cvar_VariableIntegerValue) (const char *var_name);
 
 	void	(*Cmd_AddCommand)( const char *name, void(*cmd)(void) );
 	void	(*Cmd_RemoveCommand)( const char *name );
@@ -141,6 +144,8 @@ typedef struct {
 	char	*(*Cmd_Argv) (int i);
 
 	void	(*Cmd_ExecuteText)( cbufExec_t exec_when, const char *text );
+
+	byte	*(*CM_ClusterPVS)(int cluster);
 
 	// visualization for debugging collision detection
 	void	(*CM_DrawDebugSurface)( void (*drawPoly)(int color, int numPoints, float *points) );

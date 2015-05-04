@@ -41,8 +41,9 @@ typedef unsigned int glIndex_t;
 // 14 bits
 // can't be increased without changing bit packing for drawsurfs
 // see QSORT_SHADERNUM_SHIFT
-#define SHADERNUM_BITS  14
-#define MAX_SHADERS    (1<<SHADERNUM_BITS)
+#define SHADERNUM_BITS	14
+#define MAX_SHADERS		(1<<SHADERNUM_BITS)
+
 
 
 typedef struct dlight_s {
@@ -285,6 +286,7 @@ typedef struct {
 	float			rotateSpeed;
 
 } texModInfo_t;
+
 
 #define	MAX_IMAGE_ANIMATIONS	8
 
@@ -546,6 +548,7 @@ typedef struct srfPoly_s {
 	polyVert_t		*verts;
 } srfPoly_t;
 
+
 typedef struct srfFlare_s {
 	surfaceType_t	surfaceType;
 	vec3_t			origin;
@@ -661,6 +664,7 @@ typedef struct srfIQModel_s {
 	int		first_vertex, num_vertexes;
 	int		first_triangle, num_triangles;
 } srfIQModel_t;
+
 
 extern	void (*rb_surfaceTable[SF_NUM_SURFACE_TYPES])(void *);
 
@@ -857,7 +861,6 @@ typedef struct {
 	int			faceCulling;
 	unsigned long	glStateBits;
 } glstate_t;
-
 
 typedef struct {
 	int		c_surfaces, c_shaders, c_vertexes, c_indexes, c_totalIndexes;
@@ -1153,10 +1156,10 @@ void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader,
 
 void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader, int fogIndex, int dlightMap );
 
+
 #define	CULL_IN		0		// completely unclipped
 #define	CULL_CLIP	1		// clipped by one or more planes
 #define	CULL_OUT	2		// completely outside the clipping planes
-
 void R_LocalNormalToWorld (vec3_t local, vec3_t world);
 void R_LocalPointToWorld (vec3_t local, vec3_t world);
 int R_CullLocalBox (vec3_t bounds[2]);
@@ -1316,7 +1319,9 @@ typedef struct shaderCommands_s
 	vec2_t		texCoords[SHADER_MAX_VERTEXES][2] QALIGN(16);
 	color4ub_t	vertexColors[SHADER_MAX_VERTEXES] QALIGN(16);
 	int			vertexDlightBits[SHADER_MAX_VERTEXES] QALIGN(16);
+
 	stageVars_t	svars QALIGN(16);
+
 	color4ub_t	constantColor255[SHADER_MAX_VERTEXES] QALIGN(16);
 #pragma pack(pop)
 
@@ -1337,7 +1342,6 @@ typedef struct shaderCommands_s
 
 extern	shaderCommands_t	tess;
 
-void RB_SetGL2D (void);
 void RB_BeginSurface(shader_t *shader, int fogNum );
 void RB_EndSurface(void);
 void RB_CheckOverflow( int verts, int indexes );
@@ -1626,7 +1630,6 @@ typedef struct {
 	char *fileName;
 	qboolean jpeg;
 } screenshotCommand_t;
-
 
 typedef struct {
 	int						commandId;

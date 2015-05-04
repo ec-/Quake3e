@@ -19,7 +19,6 @@ along with Quake III Arena source code; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
-
 #include "tr_local.h"
 
 /*
@@ -80,15 +79,13 @@ void R_IssueRenderCommands( qboolean runPerformanceCounters ) {
 	renderCommandList_t	*cmdList;
 
 	cmdList = &backEndData->commands;
-	assert(cmdList); // bk001205
+	assert(cmdList);
 	// add an end-of-list command
 	*(int *)(cmdList->cmds + cmdList->used) = RC_END_OF_LIST;
 
 	// clear it out, in case this is a sync and not a buffer flip
 	cmdList->used = 0;
-	
-	// at this point, the back end thread is idle, so it is ok
-	// to look at its performance counters
+
 	if ( runPerformanceCounters ) {
 		R_PerformanceCounters();
 	}
@@ -115,13 +112,11 @@ void R_IssuePendingRenderCommands( void ) {
 	R_IssueRenderCommands( qfalse );
 }
 
-
 /*
 ============
 R_GetCommandBuffer
 
-make sure there is enough command space, waiting on the
-render thread if needed.
+make sure there is enough command space
 ============
 */
 void *R_GetCommandBuffer( int bytes ) {
@@ -363,8 +358,6 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 
 	R_IssueRenderCommands( qtrue );
 
-	// use the other buffers next frame, because another CPU
-	// may still be rendering into the current ones
 	R_InitNextFrame();
 
 	if ( frontEndMsec ) {
@@ -376,7 +369,6 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 	}
 	backEnd.pc.msec = 0;
 }
-
 
 /*
 =============
