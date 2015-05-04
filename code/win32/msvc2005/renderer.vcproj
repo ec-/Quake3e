@@ -430,10 +430,6 @@
 			Filter="h;hpp;hxx;hm;inl"
 			>
 			<File
-				RelativePath="..\..\qcommon\cm_public.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\win32\glw_win.h"
 				>
 			</File>
