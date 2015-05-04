@@ -795,7 +795,8 @@ void SV_Shutdown( const char *finalmsg ) {
 	Com_Memset( &sv, 0, sizeof( sv ) );
 
 	Cvar_Set( "sv_running", "0" );
-	Cvar_Set("ui_singlePlayerActive", "0");
+	Cvar_Set( "ui_singlePlayerActive", "0" );
+	Cvar_Set( "mapname", NULL ); // force reset
 
 	Com_Printf( "---------------------------\n" );
 
