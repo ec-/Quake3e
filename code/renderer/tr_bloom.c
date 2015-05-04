@@ -300,6 +300,7 @@ static void R_Bloom_RestoreScreen( void ) {
 		bloom.work.height / (float)bloom.screen.height );
 }
 
+extern void	RB_SetGL2D (void);
 
 /*
 =================
