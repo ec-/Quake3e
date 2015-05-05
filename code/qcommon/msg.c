@@ -140,23 +140,28 @@ void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 		bits = -bits;
 	}
 	if (msg->oob) {
-		if (bits==8) {
+		if(bits==8)
+		{
 			msg->data[msg->cursize] = value;
 			msg->cursize += 1;
 			msg->bit += 8;
-		} else if (bits==16) {
-			unsigned short *sp = (unsigned short *)&msg->data[msg->cursize];
-			*sp = LittleShort(value);
+		}
+		else if(bits==16)
+		{
+			short temp = value;
+			
+			CopyLittleShort(&msg->data[msg->cursize], &temp);
 			msg->cursize += 2;
 			msg->bit += 16;
-		} else if (bits==32) {
-			unsigned int *ip = (unsigned int *)&msg->data[msg->cursize];
-			*ip = LittleLong(value);
+		}
+		else if(bits==32)
+		{
+			CopyLittleLong(&msg->data[msg->cursize], &value);
 			msg->cursize += 4;
 			msg->bit += 32;
-		} else {
-			Com_Error(ERR_DROP, "can't read %d bits", bits);
 		}
+		else 
+			Com_Error(ERR_DROP, "can't write %d bits", bits);
 	} else {
 //		fp = Sys_FOpen("c:\\netchan.bin", "a");
 		value &= (0xffffffff>>(32-bits));
@@ -198,23 +203,29 @@ int MSG_ReadBits( msg_t *msg, int bits ) {
 	}
 
 	if (msg->oob) {
-		if (bits==8) {
+		if(bits==8)
+		{
 			value = msg->data[msg->readcount];
 			msg->readcount += 1;
 			msg->bit += 8;
-		} else if (bits==16) {
-			unsigned short *sp = (unsigned short *)&msg->data[msg->readcount];
-			value = LittleShort(*sp);
+		}
+		else if(bits==16)
+		{
+			short temp;
+			
+			CopyLittleShort(&temp, &msg->data[msg->readcount]);
+			value = temp;
 			msg->readcount += 2;
 			msg->bit += 16;
-		} else if (bits==32) {
-			unsigned int *ip = (unsigned int *)&msg->data[msg->readcount];
-			value = LittleLong(*ip);
+		}
+		else if(bits==32)
+		{
+			CopyLittleLong(&value, &msg->data[msg->readcount]);
 			msg->readcount += 4;
 			msg->bit += 32;
-		} else {
-			Com_Error(ERR_DROP, "can't read %d bits", bits);
 		}
+		else
+			Com_Error(ERR_DROP, "can't read %d bits", bits);
 	} else {
 		nbits = 0;
 		if (bits&7) {
@@ -235,7 +246,7 @@ int MSG_ReadBits( msg_t *msg, int bits ) {
 		}
 		msg->readcount = (msg->bit>>3)+1;
 	}
-	if ( sgn ) {
+	if ( sgn && bits > 0 && bits < 32 ) {
 		if ( value & ( 1 << ( bits - 1 ) ) ) {
 			value |= -1 ^ ( ( 1 << bits ) - 1 );
 		}
@@ -292,7 +303,6 @@ void MSG_WriteLong( msg_t *sb, int c ) {
 
 void MSG_WriteFloat( msg_t *sb, float f ) {
 	floatint_t dat;
-	
 	dat.f = f;
 	MSG_WriteBits( sb, dat.i, 32 );
 }
@@ -552,7 +562,7 @@ delta functions
 
 #ifndef DEDICATED
 extern cvar_t *cl_shownet;
-#define	LOG(x) if( cl_shownet->integer == 4 ) { Com_Printf("%s ", x ); };
+#define	LOG(x) if( cl_shownet && cl_shownet->integer == 4 ) { Com_Printf("%s ", x ); };
 #else
 #define	LOG(x)
 #endif
@@ -983,7 +993,7 @@ void MSG_ReadDeltaEntity( msg_t *msg, entityState_t *from, entityState_t *to,
 		Com_Memset( to, 0, sizeof( *to ) );	
 		to->number = MAX_GENTITIES - 1;
 #ifndef DEDICATED
-		if ( cl_shownet->integer >= 2 || cl_shownet->integer == -1 ) {
+		if ( cl_shownet && ( cl_shownet->integer >= 2 || cl_shownet->integer == -1 ) ) {
 			Com_Printf( "%3i: #%-3i remove\n", msg->readcount, number );
 		}
 #endif
@@ -1007,7 +1017,7 @@ void MSG_ReadDeltaEntity( msg_t *msg, entityState_t *from, entityState_t *to,
 #ifndef DEDICATED
 	// shownet 2/3 will interleave with other printed info, -1 will
 	// just print the delta records`
-	if ( cl_shownet->integer >= 2 || cl_shownet->integer == -1 ) {
+	if ( cl_shownet && ( cl_shownet->integer >= 2 || cl_shownet->integer == -1 ) ) {
 		print = 1;
 		Com_Printf( "%3i: #%-3i ", msg->readcount, to->number );
 	} else {
@@ -1328,7 +1338,7 @@ void MSG_ReadDeltaPlayerstate (msg_t *msg, playerState_t *from, playerState_t *t
 #ifndef DEDICATED	
 	// shownet 2/3 will interleave with other printed info, -2 will
 	// just print the delta records
-	if ( cl_shownet->integer >= 2 || cl_shownet->integer == -2 ) {
+	if ( cl_shownet && ( cl_shownet->integer >= 2 || cl_shownet->integer == -2 ) ) {
 		print = 1;
 		Com_Printf( "%3i: playerstate ", msg->readcount );
 	} else {

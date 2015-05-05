@@ -203,6 +203,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #elif defined( Q3_BIG_ENDIAN )
 
+#define CopyLittleShort(dest, src) CopyShortSwap(dest, src)
+#define CopyLittleLong(dest, src) CopyLongSwap(dest, src)
 #define LittleShort(x) ShortSwap(x)
 #define LittleLong(x) LongSwap(x)
 #define LittleFloat(x) FloatSwap(&x)
@@ -212,6 +214,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #elif defined( Q3_LITTLE_ENDIAN ) || defined ( Q3_VM )
 
+#define CopyLittleShort(dest, src) Com_Memcpy(dest, src, 2)
+#define CopyLittleLong(dest, src) Com_Memcpy(dest, src, 4)
 #define LittleShort
 #define LittleLong
 #define LittleFloat

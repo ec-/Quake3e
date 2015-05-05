@@ -562,10 +562,12 @@ qboolean Com_AddStartupCommands( void ) {
 			continue;
 		}
 
-		// set commands won't override menu startup
-		if ( Q_stricmpn( com_consoleLines[i], "set", 3 ) ) {
-			added = qtrue;
+		// set commands already added with Com_StartupVariable
+		if ( !Q_stricmpn( com_consoleLines[i], "set", 3 ) ) {
+			continue;
 		}
+
+		added = qtrue;
 		Cbuf_AddText( com_consoleLines[i] );
 		Cbuf_AddText( "\n" );
 	}

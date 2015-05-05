@@ -57,6 +57,7 @@ typedef unsigned short sa_family_t;
 #	define EADDRNOTAVAIL	WSAEADDRNOTAVAIL
 #	define EAFNOSUPPORT		WSAEAFNOSUPPORT
 #	define ECONNRESET			WSAECONNRESET
+typedef u_long	ioctlarg_t;
 #	define socketError		WSAGetLastError( )
 
 static WSADATA	winsockdata;
@@ -69,11 +70,11 @@ static qboolean	winsockInitialized = qfalse;
 #		define _BSD_SOCKLEN_T_
 #	endif
 
-#	include <arpa/inet.h>
+#	include <sys/socket.h>
 #	include <errno.h>
 #	include <netdb.h>
 #	include <netinet/in.h>
-#	include <sys/socket.h>
+#	include <arpa/inet.h>
 #	include <net/if.h>
 #	include <sys/ioctl.h>
 #	include <sys/types.h>
@@ -92,6 +93,7 @@ typedef int SOCKET;
 #	define SOCKET_ERROR			-1
 #	define closesocket			close
 #	define ioctlsocket			ioctl
+typedef int	ioctlarg_t;
 #	define socketError			errno
 
 #endif
@@ -208,7 +210,7 @@ char *NET_ErrorString( void ) {
 		default: return "NO ERROR";
 	}
 #else
-	return strerror (errno);
+	return strerror(socketError);
 #endif
 }
 
@@ -456,7 +458,6 @@ qboolean NET_CompareBaseAdr (netadr_t a, netadr_t b)
 	return NET_CompareBaseAdrMask(a, b, -1);
 }
 
-
 const char	*NET_AdrToString (netadr_t a)
 {
 	static	char	s[NET_ADDRSTRMAXLEN];
@@ -572,7 +573,7 @@ qboolean Sys_GetPacket( netadr_t *net_from, msg_t *net_message ) {
 				net_message->readcount = 0;
 			}
 		
-			if( ret == net_message->maxsize ) {
+			if( ret >= net_message->maxsize ) {
 				Com_Printf( "Oversize packet from %s\n", NET_AdrToString (*net_from) );
 				return qfalse;
 			}
@@ -599,7 +600,7 @@ qboolean Sys_GetPacket( netadr_t *net_from, msg_t *net_message ) {
 			SockadrToNetadr((struct sockaddr *) &from, net_from);
 			net_message->readcount = 0;
 		
-			if(ret == net_message->maxsize)
+			if(ret >= net_message->maxsize)
 			{
 				Com_Printf( "Oversize packet from %s\n", NET_AdrToString (*net_from) );
 				return qfalse;
@@ -627,7 +628,7 @@ qboolean Sys_GetPacket( netadr_t *net_from, msg_t *net_message ) {
 			SockadrToNetadr((struct sockaddr *) &from, net_from);
 			net_message->readcount = 0;
 		
-			if(ret == net_message->maxsize)
+			if(ret >= net_message->maxsize)
 			{
 				Com_Printf( "Oversize packet from %s\n", NET_AdrToString (*net_from) );
 				return qfalse;
@@ -821,10 +822,10 @@ void Sys_ShowIP(void) {
 NET_IPSocket
 ====================
 */
-int NET_IPSocket( char *net_interface, int port, int *err ) {
+SOCKET NET_IPSocket( char *net_interface, int port, int *err ) {
 	SOCKET				newsocket;
 	struct sockaddr_in	address;
-	u_long				_true = 1;
+	ioctlarg_t			_true = 1;
 	int					i = 1;
 
 	*err = 0;
@@ -889,10 +890,10 @@ int NET_IPSocket( char *net_interface, int port, int *err ) {
 NET_IP6Socket
 ====================
 */
-int NET_IP6Socket( char *net_interface, int port, struct sockaddr_in6 *bindto, int *err ) {
+SOCKET NET_IP6Socket( char *net_interface, int port, struct sockaddr_in6 *bindto, int *err ) {
 	SOCKET				newsocket;
 	struct sockaddr_in6	address;
-	u_long				_true = 1;
+	ioctlarg_t			_true = 1;
 
 	*err = 0;
 
@@ -1284,6 +1285,8 @@ static void NET_GetLocalAddress(void)
 {
 	struct ifaddrs *ifap, *search;
 
+	numIP = 0;
+
 	if(getifaddrs(&ifap))
 		Com_Printf("NET_GetLocalAddress: Unable to get list of network interfaces: %s\n", NET_ErrorString());
 	else
@@ -1305,6 +1308,8 @@ static void NET_GetLocalAddress( void ) {
 	char				hostname[256];
 	struct addrinfo	hint;
 	struct addrinfo	*res = NULL;
+
+	numIP = 0;
 
 	if(gethostname( hostname, 256 ) == SOCKET_ERROR)
 		return;

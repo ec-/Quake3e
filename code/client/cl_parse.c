@@ -400,8 +400,14 @@ void CL_SystemInfoChanged( void ) {
 			// If this cvar may not be modified by a server discard the value.
 			if(!(cvar_flags & (CVAR_SYSTEMINFO | CVAR_SERVER_CREATED | CVAR_USER_CREATED)))
 			{
-				Com_Printf(S_COLOR_YELLOW "WARNING: server is not allowed to set %s=%s\n", key, value);
-				continue;
+#ifndef STANDALONE
+				if(Q_stricmp(key, "g_synchronousClients") && Q_stricmp(key, "pmove_fixed") &&
+				   Q_stricmp(key, "pmove_msec"))
+#endif
+				{
+					Com_Printf(S_COLOR_YELLOW "WARNING: server is not allowed to set %s=%s\n", key, value);
+					continue;
+				}
 			}
 
 			Cvar_SetSafe(key, value);
@@ -696,7 +702,7 @@ void CL_ParseServerMessage( msg_t *msg ) {
 		}
 
 		if ( cl_shownet->integer >= 2 ) {
-			if ( !svc_strings[cmd] ) {
+			if ( cmd < 0 || !svc_strings[cmd] ) {
 				Com_Printf( "%3i:BAD CMD %i\n", msg->readcount-1, cmd );
 			} else {
 				SHOWNET( msg, svc_strings[cmd] );

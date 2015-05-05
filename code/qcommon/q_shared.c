@@ -171,6 +171,24 @@ float	BigFloat (const float *l) {return _BigFloat(l);}
 float	LittleFloat (const float *l) {return _LittleFloat(l);}
 */
 
+void CopyShortSwap(void *dest, void *src)
+{
+	byte *to = dest, *from = src;
+
+	to[0] = from[1];
+	to[1] = from[0];
+}
+
+void CopyLongSwap(void *dest, void *src)
+{
+	byte *to = dest, *from = src;
+
+	to[0] = from[3];
+	to[1] = from[2];
+	to[2] = from[1];
+	to[3] = from[0];
+}
+
 short   ShortSwap (short l)
 {
 	byte    b1,b2;
@@ -658,6 +676,44 @@ void Parse3DMatrix (char **buf_p, int z, int y, int x, float *m) {
 	COM_MatchToken( buf_p, ")" );
 }
 
+/*
+===================
+Com_HexStrToInt
+===================
+*/
+int Com_HexStrToInt( const char *str )
+{
+	if ( !str || !str[ 0 ] )
+		return -1;
+
+	// check for hex code
+	if( str[ 0 ] == '0' && str[ 1 ] == 'x' )
+	{
+		int i, n = 0;
+
+		for( i = 2; i < strlen( str ); i++ )
+		{
+			char digit;
+
+			n *= 16;
+
+			digit = tolower( str[ i ] );
+
+			if( digit >= '0' && digit <= '9' )
+				digit -= '0';
+			else if( digit >= 'a' && digit <= 'f' )
+				digit = digit - 'a' + 10;
+			else
+				return -1;
+
+			n += digit;
+		}
+
+		return n;
+	}
+
+	return -1;
+}
 
 /*
 ============================================================================
@@ -1295,7 +1351,8 @@ void Info_RemoveKey( char *s, const char *key ) {
 
 		if (!strcmp (key, pkey) )
 		{
-			strcpy (start, s);	// remove this part
+			memmove(start, s, strlen(s) + 1); // remove this part
+			
 			return;
 		}
 
@@ -1450,7 +1507,7 @@ void Info_SetValueForKey_Big( char *s, const char *key, const char *value ) {
 	}
 
 	Info_RemoveKey_Big (s, key);
-	if (!value || !strlen(value))
+	if ( !value || !*value )
 		return;
 
 	Com_sprintf (newi, sizeof(newi), "\\%s\\%s", key, value);
