@@ -235,6 +235,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalOptions="/DYNAMICBASE"
 				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib"
 				OutputFile="$(OutDir)\quake3e.ded.exe"
 				GenerateDebugInformation="true"
@@ -316,6 +317,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalOptions="/DYNAMICBASE"
 				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib"
 				OutputFile="$(OutDir)\quake3e.ded.x64.exe"
 				GenerateDebugInformation="true"
