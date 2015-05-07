@@ -101,7 +101,6 @@ void	IN_MouseEvent( int mstate );
 
 void	Sys_CreateConsole( char *title );
 void	Sys_DestroyConsole( void );
-char	*Sys_ConsoleInput( void );
 
 // Input subsystem
 

@@ -1072,6 +1072,7 @@ void	Sys_Init( void );
 void	Sys_QueEvent( int time, sysEventType_t type, int value, int value2, int ptrLength, void *ptr );
 void	Sys_SendKeyEvents( void );
 void	Sys_Sleep( int msec );
+char	*Sys_ConsoleInput( void );
 
 // general development dll loading for virtual machine testing
 // fqpath param added 7/20/02 by T.Ray - Sys_LoadDll is only called in vm.c at this time

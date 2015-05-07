@@ -621,7 +621,7 @@ static int WindowMinimized( Display *dpy, Window win )
 }
 
 
-static void HandleEvents( void )
+void HandleX11Events( void )
 {
 	XEvent event;
 	int b;
@@ -1818,24 +1818,6 @@ void IN_Frame( void )
 void IN_Activate( void )
 {
 
-}
-
-
-/*
-=================
-Sys_SendKeyEvents
-
-Platform-dependent event handling
-=================
-*/
-void Sys_SendKeyEvents( void )
-{
-#ifndef DEDICATED
-	if ( !dpy )
-		return;
-
-	HandleEvents();
-#endif
 }
 
 
