@@ -496,9 +496,10 @@ void Sys_ConsoleInputInit( void )
 char *Sys_ConsoleInput( void )
 {
 	// we use this when sending back commands
-	static char text[256];
+	static char text[512];
 	int avail;
 	char key;
+	char *s;
 	field_t *history;
 
 	if ( ttycon_on )
@@ -632,8 +633,12 @@ char *Sys_ConsoleInput( void )
 			return NULL;
 
 		text[len-1] = '\0';    // rip off the /n and terminate
+		s = text;
 
-		return text;
+		while ( *s == '\\' || *s == '/' ) // skip leading slashes
+			s++;
+
+		return s;
 	}
 }
 
@@ -668,6 +673,7 @@ void Sys_UnloadDll( void *dllHandle ) {
   }
 }
 
+
 /*
 ==================
 Sys_Sleep
@@ -675,9 +681,6 @@ Sys_Sleep
 Block execution for msec or until input is recieved.
 ==================
 */
-
-extern cvar_t *com_yieldCPU;
-
 void Sys_Sleep( int msec ) {
 	struct timeval timeout;
 	fd_set fdset;
@@ -700,23 +703,13 @@ void Sys_Sleep( int msec ) {
 			if ( msec < 0 ) { 
 				// can happen only if no map loaded
 				// which means we totally stuck as stdin is also disabled :P
-				usleep( 10000 );
+				usleep( 1000 );
 			}
 		}
 	} else {
-		if ( msec <= 0 )
+		if ( msec < 0 )
   		 	return;
-		if ( msec >= 1 && com_yieldCPU && com_yieldCPU->integer > 0 ) {
-			if ( com_yieldCPU->integer == 1 ) {
-				if ( msec > 2 )
-					usleep( 2*1000 );
-				else
-					usleep( (msec-1)*1000 );
-			} else if ( com_yieldCPU->integer == 2 )
-				usleep( (msec-1)*1000 );
-			else
-				usleep( msec*1000 );
-        }
+		usleep( msec * 1000 );
 	}
 }
 
@@ -817,171 +810,6 @@ void *Sys_LoadDll( const char *name, intptr_t (**entryPoint)(intptr_t, ...),
 	dllEntry( systemcalls );
 	Com_Printf( "Sys_LoadDll(%s) succeeded!\n", name );
 	return libHandle;
-}
-
-
-/*
-========================================================================
-
-EVENT LOOP
-
-========================================================================
-*/
-
-// bk000306: upped this from 64
-#define	MAX_QUED_EVENTS		256
-#define	MASK_QUED_EVENTS	( MAX_QUED_EVENTS - 1 )
-
-sysEvent_t	eventQue[ MAX_QUED_EVENTS ];
-byte		sys_packetReceived[ MAX_MSGLEN ];
-// bk000306: initialize
-unsigned int eventHead = 0;
-unsigned int eventTail = 0;
-
-/*
-================
-Sys_QueEvent
-
-A time of 0 will get the current time
-Ptr should either be null, or point to a block of data that can
-be freed by the game later.
-================
-*/
-void Sys_QueEvent( int time, sysEventType_t type, int value, int value2, int ptrLength, void *ptr ) {
-  sysEvent_t  *ev;
-
-	// try to combine all sequential mouse moves in one event
-	if ( type == SE_MOUSE ) {
-		// get previous event from queue
-		ev = &eventQue[ ( eventHead + MAX_QUED_EVENTS - 1 ) & MASK_QUED_EVENTS ];
-		if ( ev->evType == SE_MOUSE ) {
-
-			if ( eventTail == eventHead && eventTail )
-			{
-				ev->evValue = 0;
-				ev->evValue2 = 0;
-				eventTail--;
-			}
-			if ( time == 0 ) {
-				time = Sys_Milliseconds();
-			}
-			ev->evValue += value;
-			ev->evValue2 += value2;
-			ev->evTime = time;
-
-			return;
-		}
-	}
-
-	ev = &eventQue[ eventHead & MASK_QUED_EVENTS ];
-
-	// bk000305 - was missing
-	if ( eventHead - eventTail >= MAX_QUED_EVENTS )
-	{
-		Com_Printf( "Sys_QueEvent(time=%i,type=%i): overflow\n", time, type );
-		// we are discarding an event, but don't leak memory
-		if ( ev->evPtr )
-		{
-			Z_Free( ev->evPtr );
-		}
-		eventTail++;
-	}
-
-	eventHead++;
-
-	if ( time == 0 )
-	{
-		time = Sys_Milliseconds();
-	}
-
-	ev->evTime = time;
-	ev->evType = type;
-	ev->evValue = value;
-	ev->evValue2 = value2;
-	ev->evPtrLength = ptrLength;
-	ev->evPtr = ptr;
-}
-
-
-/*
-================
-Sys_GetEvent
-
-================
-*/
-sysEvent_t Sys_GetEvent( void ) 
-{
-	sysEvent_t  ev;
-	char    *s;
-	msg_t   netmsg;
-	netadr_t  adr;
-
-	// return if we have data
-	if ( eventHead > eventTail )
-	{
-		eventTail++;
-		return eventQue[ ( eventTail - 1 ) & MASK_QUED_EVENTS ];
-	}
-
-	// pump the message loop
-	// in vga this calls KBD_Update, under X, it calls GetEvent
-#ifndef DEDICATED
-	Sys_SendKeyEvents();
-#endif
-
-	// check for console commands
-	s = Sys_ConsoleInput();
-	if ( s )
-	{
-		char  *b;
-		int   len;
-
-		len = strlen( s ) + 1;
-		b = Z_Malloc( len );
-		if ( len > 1 && (*s == '/' || *s == '\\') )
-		{
-			strcpy( b, s+1 );
-			len--;
-		}
-		else
-		{
-			strcpy( b, s );
-		}
-		Sys_QueEvent( 0, SE_CONSOLE, 0, 0, len, b );
-	}
-
-#ifndef DEDICATED
-	// check for other input devices
-	IN_Frame();
-#endif
-
-	// check for network packets
-	MSG_Init( &netmsg, sys_packetReceived, sizeof( sys_packetReceived ) );
-	if ( Sys_GetPacket ( &adr, &netmsg ) )
-	{
-		netadr_t *buf;
-		int      len;
-
-		// copy out to a seperate buffer for qeueing
-		len = sizeof( netadr_t ) + netmsg.cursize;
-		buf = Z_Malloc( len );
-		*buf = adr;
-		memcpy( buf+1, netmsg.data, netmsg.cursize );
-		Sys_QueEvent( 0, SE_PACKET, 0, 0, len, buf );
-	}
-
-	// return if we have data
-	if ( eventHead > eventTail )
-	{
-		eventTail++;
-		return eventQue[ ( eventTail - 1 ) & MASK_QUED_EVENTS ];
-	}
-
-	// create an empty event to return
-	memset( &ev, 0, sizeof( ev ) );
-	ev.evTime = Sys_Milliseconds();
-
-	return ev;
 }
 
 /*****************************************************************************/
@@ -1246,12 +1074,17 @@ int main( int argc, char* argv[] )
 #ifdef __linux__
 		Sys_ConfigureFPU();
 #endif
+
 #ifdef DEDICATED
+		// run the game
 		Com_Frame( qfalse );
 #else
+		// check for other input devices
+		IN_Frame();
+		// run the game
 		Com_Frame( clc.demoplaying );
-
 #endif
 	}
+	// never gets here
 	return 0;
 }

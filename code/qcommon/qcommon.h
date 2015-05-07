@@ -187,9 +187,7 @@ int         NET_StringToAdr( const char *s, netadr_t *a, netadrtype_t family );
 qboolean	NET_GetLoopPacket( netsrc_t sock, netadr_t *net_from, msg_t *net_message );
 void		NET_JoinMulticast6(void);
 void		NET_LeaveMulticast6(void);
-void		NET_Sleep(int msec);
-
-void		Sys_Sleep(int msec);
+void		NET_Sleep( int msec );
 
 #define	MAX_MSGLEN				16384		// max length of a message, which may
 											// be fragmented into multiple packets
@@ -821,6 +819,7 @@ void 		Com_Quit_f( void );
 void		Com_GameRestart( int checksumFeed, qboolean clientRestart );
 
 int			Com_EventLoop( void );
+void		Com_RunAndTimeServerPacket( netadr_t *evFrom, msg_t *buf );
 int			Com_Milliseconds( void );	// will be journaled properly
 unsigned	Com_BlockChecksum( const void *buffer, int length );
 char		*Com_MD5File(const char *filename, int length, const char *prefix, int prefix_len);
@@ -861,6 +860,9 @@ extern	cvar_t	*cl_packetdelay;
 extern	cvar_t	*sv_packetdelay;
 
 extern	cvar_t	*vm_rtChecks;
+
+extern	cvar_t	*com_yieldCPU;
+
 
 // com_speeds times
 extern	int		time_game;
@@ -942,7 +944,6 @@ void Com_Init( char *commandLine );
 void Com_Frame( qboolean demoPlaying );
 void Com_Shutdown( void );
 
-
 /*
 ==============================================================
 
@@ -1021,6 +1022,7 @@ void SV_Init( void );
 void SV_Shutdown( const char *finalmsg );
 void SV_Frame( int msec );
 void SV_PacketEvent( netadr_t from, msg_t *msg );
+int SV_FrameMsec( void );
 qboolean SV_GameCommand( void );
 
 
@@ -1056,7 +1058,6 @@ typedef enum {
 	SE_MOUSE,	// evValue and evValue2 are reletive signed x / y moves
 	SE_JOYSTICK_AXIS,	// evValue is an axis number and evValue2 is the current state (-127 to 127)
 	SE_CONSOLE,	// evPtr is a char*
-	SE_PACKET	// evPtr is a netadr_t followed by data bytes to evPtrLength
 } sysEventType_t;
 
 typedef struct {
@@ -1067,9 +1068,10 @@ typedef struct {
 	void			*evPtr;			// this must be manually freed if not NULL
 } sysEvent_t;
 
-sysEvent_t	Sys_GetEvent( void );
-
-void	Sys_Init (void);
+void	Sys_Init( void );
+void	Sys_QueEvent( int time, sysEventType_t type, int value, int value2, int ptrLength, void *ptr );
+void	Sys_SendKeyEvents( void );
+void	Sys_Sleep( int msec );
 
 // general development dll loading for virtual machine testing
 // fqpath param added 7/20/02 by T.Ray - Sys_LoadDll is only called in vm.c at this time

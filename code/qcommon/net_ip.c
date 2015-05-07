@@ -116,6 +116,8 @@ static cvar_t	*net_port6;
 static cvar_t	*net_mcast6addr;
 static cvar_t	*net_mcast6iface;
 
+static cvar_t	*net_dropsim;
+
 static struct sockaddr	socksRelayAddr;
 
 static SOCKET	ip_socket = INVALID_SOCKET;
@@ -520,7 +522,7 @@ qboolean	NET_IsLocalAddress( netadr_t adr ) {
 
 /*
 ==================
-Sys_GetPacket
+NET_GetPacket
 
 Never called by the game logic, just the system event queing
 ==================
@@ -529,7 +531,7 @@ Never called by the game logic, just the system event queing
 int	recvfromCount;
 #endif
 
-qboolean Sys_GetPacket( netadr_t *net_from, msg_t *net_message ) {
+qboolean NET_GetPacket( netadr_t *net_from, msg_t *net_message, fd_set *fdr ) {
 	int 	ret;
 	struct sockaddr_storage from;
 	socklen_t	fromlen;
@@ -539,7 +541,7 @@ qboolean Sys_GetPacket( netadr_t *net_from, msg_t *net_message ) {
 	recvfromCount++;		// performance check
 #endif
 	
-	if(ip_socket != INVALID_SOCKET)
+	if(ip_socket != INVALID_SOCKET && FD_ISSET(ip_socket, fdr))
 	{
 		fromlen = sizeof(from);
 		ret = recvfrom( ip_socket, (void *)net_message->data, net_message->maxsize, 0, (struct sockaddr *) &from, &fromlen );
@@ -583,7 +585,7 @@ qboolean Sys_GetPacket( netadr_t *net_from, msg_t *net_message ) {
 		}
 	}
 	
-	if(ip6_socket != INVALID_SOCKET)
+	if(ip6_socket != INVALID_SOCKET && FD_ISSET(ip6_socket, fdr))
 	{
 		fromlen = sizeof(from);
 		ret = recvfrom(ip6_socket, (void *)net_message->data, net_message->maxsize, 0, (struct sockaddr *) &from, &fromlen);
@@ -611,7 +613,7 @@ qboolean Sys_GetPacket( netadr_t *net_from, msg_t *net_message ) {
 		}
 	}
 
-	if(multicast6_socket != INVALID_SOCKET && multicast6_socket != ip6_socket)
+	if(multicast6_socket != INVALID_SOCKET && multicast6_socket != ip6_socket && FD_ISSET(multicast6_socket, fdr))
 	{
 		fromlen = sizeof(from);
 		ret = recvfrom(multicast6_socket, (void *)net_message->data, net_message->maxsize, 0, (struct sockaddr *) &from, &fromlen);
@@ -1490,6 +1492,8 @@ static qboolean NET_GetCvars( void ) {
 	modified += net_socksPassword->modified;
 	net_socksPassword->modified = qfalse;
 
+	net_dropsim = Cvar_Get("net_dropsim", "", CVAR_TEMP);
+
 	return modified ? qtrue : qfalse;
 }
 
@@ -1544,10 +1548,10 @@ void NET_Config( qboolean enableNetworking ) {
 			ip_socket = INVALID_SOCKET;
 		}
 
-		if ( multicast6_socket != INVALID_SOCKET )
+		if(multicast6_socket != INVALID_SOCKET)
 		{
-			if ( multicast6_socket != ip6_socket )
-				closesocket( multicast6_socket );
+			if(multicast6_socket != ip6_socket)
+				closesocket(multicast6_socket);
 				
 			multicast6_socket = INVALID_SOCKET;
 		}
@@ -1621,46 +1625,100 @@ void NET_Shutdown( void ) {
 
 /*
 ====================
+NET_Event
+
+Called from NET_Sleep which uses select() to determine which sockets have seen action.
+====================
+*/
+void NET_Event( fd_set *fdr )
+{
+	byte bufData[MAX_MSGLEN + 1];
+	netadr_t from = {0};
+	msg_t netmsg;
+	
+	while(1)
+	{
+		MSG_Init(&netmsg, bufData, sizeof(bufData));
+
+		if(NET_GetPacket(&from, &netmsg, fdr))
+		{
+			if(net_dropsim->value > 0.0f && net_dropsim->value <= 100.0f)
+			{
+				// com_dropsim->value percent of incoming packets get dropped.
+				if(rand() < (int) (((double) RAND_MAX) / 100.0 * (double) net_dropsim->value))
+					continue;          // drop this packet
+			}
+
+			if ( com_sv_running->integer )
+				Com_RunAndTimeServerPacket( &from, &netmsg );
+#ifndef DEDICATED
+			else
+				CL_PacketEvent( from, &netmsg );
+#endif
+		}
+		else
+			break;
+	}
+}
+
+
+/*
+====================
 NET_Sleep
 
 Sleeps msec or until something happens on the network
 ====================
 */
-void NET_Sleep( int msec ) 
+void NET_Sleep( int msec )
 {
 	struct timeval timeout;
-	fd_set	fdset;
+	fd_set fdr;
+	int retval;
 	SOCKET highestfd = INVALID_SOCKET;
 
-	if ( !com_dedicated->integer )
-		return; // we're not a server, just run full speed
-
-	if ( ip_socket == INVALID_SOCKET && ip6_socket == INVALID_SOCKET )
-		return;
-
 	if ( msec < 0 )
-		return;
+		msec = 0;
 
-	FD_ZERO( &fdset );
+	FD_ZERO( &fdr );
 
 	if ( ip_socket != INVALID_SOCKET )
 	{
-		FD_SET( ip_socket, &fdset );
+		FD_SET( ip_socket, &fdr );
 
 		highestfd = ip_socket;
 	}
 
 	if ( ip6_socket != INVALID_SOCKET )
 	{
-		FD_SET( ip6_socket, &fdset );
-		
-		if ( ip6_socket > highestfd )
+		FD_SET( ip6_socket, &fdr );
+
+		if ( highestfd == INVALID_SOCKET || ip6_socket > highestfd )
 			highestfd = ip6_socket;
 	}
 
+#ifdef _WIN32
+	if ( highestfd == INVALID_SOCKET ) 
+	{
+		// windows ain't happy when select is called without valid FDs
+		Sleep( msec );
+		return;
+	}
+#endif
+
 	timeout.tv_sec = msec/1000;
 	timeout.tv_usec = (msec%1000)*1000;
-	select( highestfd + 1, &fdset, NULL, NULL, &timeout );
+
+	retval = select( highestfd + 1, &fdr, NULL, NULL, &timeout );
+
+	if ( retval > 0 ) {
+		NET_Event( &fdr );
+		return;
+	}
+
+	if ( retval == SOCKET_ERROR ) {
+		Com_Printf( S_COLOR_YELLOW "Warning: select() syscall failed: %s\n", 
+			NET_ErrorString() );
+	}
 }
 
 
@@ -1669,6 +1727,7 @@ void NET_Sleep( int msec )
 NET_Restart_f
 ====================
 */
-void NET_Restart_f( void ) {
-	NET_Config( networkingEnabled );
+void NET_Restart_f(void)
+{
+	NET_Config(qtrue);
 }

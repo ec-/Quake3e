@@ -1820,17 +1820,30 @@ void IN_Activate( void )
 
 }
 
-// bk001130 - cvs1.17 joystick code (mkv) was here, no linux_joystick.c
 
+/*
+=================
+Sys_SendKeyEvents
+
+Platform-dependent event handling
+=================
+*/
 void Sys_SendKeyEvents( void )
 {
+#ifndef DEDICATED
 	if ( !dpy )
 		return;
 
 	HandleEvents();
+#endif
 }
 
 
+/*
+=================
+Sys_GetClipboardData
+=================
+*/
 char *Sys_GetClipboardData( void )
 {
 	const Atom xtarget = XInternAtom( dpy, "UTF8_STRING", 0 );

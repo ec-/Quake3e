@@ -287,33 +287,32 @@ static qboolean strgtr(const char *s0, const char *s1) {
 	return qfalse;
 }
 
-extern cvar_t *com_yieldCPU;
 
+/*
+=============
+Sys_Sleep
+=============
+*/
 void Sys_Sleep( int msec ) {
-	if ( msec <=0 )
+
+	if ( msec < 0 && com_dedicated->integer ) {
+		WaitMessage();
 		return;
-	/* if ( com_dedicated->integer ) {
-		if( msec < 0 )
-			WaitForSingleObject( GetStdHandle( STD_INPUT_HANDLE ), INFINITE );
-		else
-			WaitForSingleObject( GetStdHandle( STD_INPUT_HANDLE ), msec );
-	} */
-#ifndef DEDICATED
-	if ( com_yieldCPU && com_yieldCPU->integer > 0 ) {
-		if ( g_wv.activeApp ) {
-			if ( com_yieldCPU->integer == 1 && msec > 2 ) 
-				Sleep( 2 );
-			else
-				Sleep( msec-1 );
-		} else { // inactive or minimized
-			Sleep ( msec );
-		}
 	}
-#else
+
+	if ( msec <= 0 ) {
+		return;
+	}
+
 	Sleep ( msec );
-#endif
 }
 
+
+/*
+=============
+Sys_Sys_ListFiles
+=============
+*/
 char **Sys_ListFiles( const char *directory, const char *extension, char *filter, int *numfiles, qboolean wantsubs ) {
 	char		search[MAX_OSPATH];
 	int			nfiles;
@@ -607,106 +606,15 @@ void * QDECL Sys_LoadDll( const char *name, intptr_t (QDECL **entryPoint)(intptr
 
 
 /*
-========================================================================
+=================
+Sys_SendKeyEvents
 
-EVENT LOOP
-
-========================================================================
+Platform-dependent event handling
+=================
 */
-
-#define	MAX_QUED_EVENTS		256
-#define	MASK_QUED_EVENTS	( MAX_QUED_EVENTS - 1 )
-
-sysEvent_t	eventQue[MAX_QUED_EVENTS];
-byte	sys_packetReceived[MAX_MSGLEN];
-unsigned int eventHead = 0;
-unsigned int eventTail = 0;
-
-/*
-================
-Sys_QueEvent
-
-A time of 0 will get the current time
-Ptr should either be null, or point to a block of data that can
-be freed by the game later.
-================
-*/
-void Sys_QueEvent( int time, sysEventType_t type, int value, int value2, int ptrLength, void *ptr ) {
-	sysEvent_t	*ev;
-
-	// try to combine all sequential mouse moves in one event
-	if ( type == SE_MOUSE ) {
-		// get previous event from queue
-		ev = &eventQue[ ( eventHead + MAX_QUED_EVENTS - 1 ) & MASK_QUED_EVENTS ];
-		if ( ev->evType == SE_MOUSE ) {
-
-			if ( eventTail == eventHead && eventTail )
-			{
-				ev->evValue = 0;
-				ev->evValue2 = 0;
-				eventTail--;
-			}
-			if ( time == 0 ) {
-				time = Sys_Milliseconds();
-			}
-			ev->evValue += value;
-			ev->evValue2 += value2;
-			ev->evTime = time;
-
-			return;
-		}
-	}
-
-	ev = &eventQue[ eventHead & MASK_QUED_EVENTS ];
-
-	if ( eventHead - eventTail >= MAX_QUED_EVENTS ) {
-		Com_Printf( "Sys_QueEvent(time=%i,type=%i): overflow\n", time, type );
-		// we are discarding an event, but don't leak memory
-		if ( ev->evPtr ) {
-			Z_Free( ev->evPtr );
-		}
-		eventTail++;
-	}
-
-	eventHead++;
-
-	if ( time == 0 ) {
-		time = Sys_Milliseconds();
-	}
-
-	ev->evTime = time;
-	ev->evType = type;
-	ev->evValue = value;
-	ev->evValue2 = value2;
-	ev->evPtrLength = ptrLength;
-	ev->evPtr = ptr;
-#if 0
-	Com_Printf( "ev[%03i-%03i] time=%i(%i) type=%i\n",
-		eventTail % MAX_QUED_EVENTS,
-		eventHead % MAX_QUED_EVENTS,
-		ev->evTime, timeGetTime(), ev->evType );
-#endif
-}
-
-/*
-================
-Sys_GetEvent
-
-================
-*/
-sysEvent_t Sys_GetEvent( void ) {
-    MSG			msg;
-	sysEvent_t	ev;
-	char		*s;
-	msg_t		netmsg;
-	netadr_t	adr;
-
-	// return if we have data
-	if ( eventHead > eventTail ) {
-		eventTail++;
-		return eventQue[ ( eventTail - 1 ) & MASK_QUED_EVENTS ];
-	}
-
+void Sys_SendKeyEvents( void ) 
+{
+    MSG	msg;
 	// pump the message loop
 	while ( PeekMessage( &msg, NULL, 0, 0, PM_NOREMOVE ) ) {
 		if ( GetMessage( &msg, NULL, 0, 0 ) <= 0 ) {
@@ -720,46 +628,8 @@ sysEvent_t Sys_GetEvent( void ) {
 		TranslateMessage (&msg);
       	DispatchMessage (&msg);
 	}
-
-	// check for console commands
-	s = Sys_ConsoleInput();
-	if ( s ) {
-		char	*b;
-		int		len;
-
-		len = strlen( s ) + 1;
-		b = Z_Malloc( len );
-		Q_strncpyz( b, s, len-1 );
-		Sys_QueEvent( 0, SE_CONSOLE, 0, 0, len, b );
-	}
-
-	// check for network packets
-	MSG_Init( &netmsg, sys_packetReceived, sizeof( sys_packetReceived ) );
-	if ( Sys_GetPacket ( &adr, &netmsg ) ) {
-		netadr_t		*buf;
-		int				len;
-
-		// copy out to a seperate buffer for qeueing
-		// the readcount stepahead is for SOCKS support
-		len = sizeof( netadr_t ) + netmsg.cursize - netmsg.readcount;
-		buf = Z_Malloc( len );
-		*buf = adr;
-		memcpy( buf+1, &netmsg.data[netmsg.readcount], netmsg.cursize - netmsg.readcount );
-		Sys_QueEvent( 0, SE_PACKET, 0, 0, len, buf );
-	}
-
-	// return if we have data
-	if ( eventHead > eventTail ) {
-		eventTail++;
-		return eventQue[ ( eventTail - 1 ) & MASK_QUED_EVENTS ];
-	}
-
-	// create an empty event to return
-	memset( &ev, 0, sizeof( ev ) );
-	ev.evTime = Sys_Milliseconds();
-
-	return ev;
 }
+
 
 //================================================================
 
@@ -852,16 +722,13 @@ void Sys_Init( void ) {
 
 //=======================================================================
 
-int	totalMsec, countMsec;
 /*
 ==================
 WinMain
 
 ==================
 */
-int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-
-	int			startTime, endTime;
+int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow ) {
 
     // should never get a previous instance in Win32
     if ( hPrevInstance ) {
@@ -876,6 +743,10 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 	// no abort/retry/fail errors
 	SetErrorMode( SEM_FAILCRITICALERRORS );
+
+	// FIXME: not needed?
+	//memset( &eventQue[0], 0, sizeof( eventQue ) );
+	//memset( &sys_packetReceived[0], 0, sizeof( sys_packetReceived ) );
 
 	// get the initial time base
 	Sys_Milliseconds();
@@ -894,32 +765,26 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
     // main game loop
 	while( 1 ) {
 		// if not running as a game client, sleep a bit
-		if ( g_wv.isMinimized || ( com_dedicated && com_dedicated->integer ) ) {
-			Sleep( 5 );
-		}
-
+		//if ( g_wv.isMinimized || ( com_dedicated && com_dedicated->integer ) ) {
+		//	Sleep( 5 );
+		//}
 		// set low precision every frame, because some system calls
 		// reset it arbitrarily
-//		_controlfp( _PC_24, _MCW_PC );
-//    _controlfp( -1, _MCW_EM  ); // no exceptions, even if some crappy
-                                // syscall turns them back on!
+		// _controlfp( _PC_24, _MCW_PC );
+		// _controlfp( -1, _MCW_EM  ); // no exceptions, even if some crappy syscall turns them back on!
 
-		startTime = Sys_Milliseconds();
-
-#ifndef DEDICATED
+#ifdef DEDICATED
+		// run the game
+		Com_Frame( qfalse );
+#else
 		// make sure mouse and joystick are only called once a frame
 		IN_Frame();
 		// run the game
 		Com_Frame( clc.demoplaying );
-#else
-		Com_Frame( qfalse );
 #endif
-		endTime = Sys_Milliseconds();
-		totalMsec += endTime - startTime;
-		countMsec++;
 	}
-
 	// never gets here
+	return 0;
 }
 
 

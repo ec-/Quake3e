@@ -451,9 +451,10 @@ LONG WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			Con_SaveField( &console );
 
 			s = console.buffer;
-			if ( *s == '\\' || *s == '/' )
-				s++;
 
+			while ( *s == '\\' || *s == '/' ) // skip leading slashes
+				s++;
+			
 			strncat( s_wcd.consoleText, s, sizeof( s_wcd.consoleText ) - strlen( s_wcd.consoleText ) - 2 );
 			strcat( s_wcd.consoleText, "\n" );
 			

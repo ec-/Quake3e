@@ -3244,8 +3244,7 @@ aas_lreachability_t *AAS_FindFaceReachabilities(vec3_t *facepoints, int numpoint
 		//
 		if (towardsface) VectorCopy(bestend, testpoint);
 		else VectorCopy(beststart, testpoint);
-		testpoint[2] = 0;
-		if ( bestfaceplane != NULL )
+		if (bestfaceplane != NULL)
 			testpoint[2] = (bestfaceplane->dist - DotProduct(bestfaceplane->normal, testpoint)) / bestfaceplane->normal[2];
 		else
 			testpoint[2] = 0;

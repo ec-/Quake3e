@@ -65,7 +65,6 @@ cvar_t	*com_developer;
 cvar_t	*com_dedicated;
 cvar_t	*com_timescale;
 cvar_t	*com_fixedtime;
-cvar_t	*com_dropsim;		// 0.0 to 1.0, simulated packet drops
 cvar_t	*com_journal;
 cvar_t	*com_maxfps;
 cvar_t	*com_maxfpsUnfocused;
@@ -1198,7 +1197,10 @@ void Z_LogZoneHeap( memzone_t *zone, char *name ) {
 
 	if (!logfile || !FS_Initialized())
 		return;
-	size = allocSize = numBlocks = 0;
+	size = numBlocks = 0;
+#ifdef ZONE_DEBUG
+	allocSize = 0;
+#endif
 	Com_sprintf(buf, sizeof(buf), "\r\n================\r\n%s log\r\n================\r\n", name);
 	FS_Write(buf, strlen(buf), logfile);
 	for (block = zone->blocklist.next ; block->next != &zone->blocklist; block = block->next) {
@@ -1251,22 +1253,19 @@ typedef struct memstatic_s {
 	byte mem[2];
 } memstatic_t;
 
-#define STATIC_SIZE PAD( sizeof( memblock_t ) + 2, sizeof( intptr_t ) )
-
-// bk001204 - initializer brackets
 memstatic_t emptystring =
-	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'\0', '\0'} };
+	{ {(sizeof(memblock_t)+2 + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'\0', '\0'} };
 memstatic_t numberstring[] = {
-	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'0', '\0'} },
-	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'1', '\0'} },
-	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'2', '\0'} },
-	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'3', '\0'} },
-	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'4', '\0'} },
-	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'5', '\0'} },
-	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'6', '\0'} },
-	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'7', '\0'} },
-	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'8', '\0'} }, 
-	{ { STATIC_SIZE, TAG_STATIC, NULL, NULL, ZONEID}, {'9', '\0'} }
+	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'0', '\0'} },
+	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'1', '\0'} },
+	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'2', '\0'} },
+	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'3', '\0'} },
+	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'4', '\0'} },
+	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'5', '\0'} },
+	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'6', '\0'} },
+	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'7', '\0'} },
+	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'8', '\0'} }, 
+	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'9', '\0'} }
 };
 
 /*
@@ -1518,8 +1517,6 @@ void Com_InitSmallZoneMemory( void ) {
 		Com_Error( ERR_FATAL, "Small zone data failed to allocate %1.1f megs", (float)s_smallZoneTotal / (1024*1024) );
 	}
 	Z_ClearZone( smallzone, s_smallZoneTotal );
-	
-	return;
 }
 
 void Com_InitZoneMemory( void ) {
@@ -2030,6 +2027,139 @@ void Com_InitJournaling( void ) {
 	}
 }
 
+
+
+/*
+========================================================================
+
+EVENT LOOP
+
+========================================================================
+*/
+
+#define	MAX_QUED_EVENTS		256
+#define	MASK_QUED_EVENTS	( MAX_QUED_EVENTS - 1 )
+
+sysEvent_t	eventQue[MAX_QUED_EVENTS];
+byte	sys_packetReceived[MAX_MSGLEN];
+unsigned int eventHead = 0;
+unsigned int eventTail = 0;
+
+/*
+================
+Sys_QueEvent
+
+A time of 0 will get the current time
+Ptr should either be null, or point to a block of data that can
+be freed by the game later.
+================
+*/
+void Sys_QueEvent( int time, sysEventType_t type, int value, int value2, int ptrLength, void *ptr ) {
+	sysEvent_t	*ev;
+
+	// try to combine all sequential mouse moves in one event
+	if ( type == SE_MOUSE ) {
+		// get previous event from queue
+		ev = &eventQue[ ( eventHead + MAX_QUED_EVENTS - 1 ) & MASK_QUED_EVENTS ];
+		if ( ev->evType == SE_MOUSE ) {
+
+			if ( eventTail == eventHead && eventTail )
+			{
+				ev->evValue = 0;
+				ev->evValue2 = 0;
+				eventTail--;
+			}
+			if ( time == 0 ) {
+				time = Sys_Milliseconds();
+			}
+			ev->evValue += value;
+			ev->evValue2 += value2;
+			ev->evTime = time;
+
+			return;
+		}
+	}
+
+	ev = &eventQue[ eventHead & MASK_QUED_EVENTS ];
+
+	if ( eventHead - eventTail >= MAX_QUED_EVENTS ) {
+		Com_Printf( "Sys_QueEvent(time=%i,type=%i): overflow\n", time, type );
+		// we are discarding an event, but don't leak memory
+		if ( ev->evPtr ) {
+			Z_Free( ev->evPtr );
+		}
+		eventTail++;
+	}
+
+	eventHead++;
+
+	if ( time == 0 ) {
+		time = Sys_Milliseconds();
+	}
+
+	ev->evTime = time;
+	ev->evType = type;
+	ev->evValue = value;
+	ev->evValue2 = value2;
+	ev->evPtrLength = ptrLength;
+	ev->evPtr = ptr;
+#if 0
+	Com_Printf( "ev[%03i-%03i] time=%i(%i) type=%i\n",
+		eventTail % MAX_QUED_EVENTS,
+		eventHead % MAX_QUED_EVENTS,
+		ev->evTime, timeGetTime(), ev->evType );
+#endif
+}
+
+
+/*
+================
+Com_GetSystemEvent
+
+================
+*/
+sysEvent_t Com_GetSystemEvent( void )
+{
+	sysEvent_t  ev;
+	char        *s;
+
+	// return if we have data
+	if ( eventHead > eventTail )
+	{
+		eventTail++;
+		return eventQue[ ( eventTail - 1 ) & MASK_QUED_EVENTS ];
+	}
+
+	Sys_SendKeyEvents();
+
+	// check for console commands
+	s = Sys_ConsoleInput();
+	if ( s )
+	{
+		char  *b;
+		int   len;
+
+		len = strlen( s ) + 1;
+		b = Z_Malloc( len );
+		strcpy( b, s );
+		Sys_QueEvent( 0, SE_CONSOLE, 0, 0, len, b );
+	}
+
+	// return if we have data
+	if ( eventHead > eventTail )
+	{
+		eventTail++;
+		return eventQue[ ( eventTail - 1 ) & MASK_QUED_EVENTS ];
+	}
+
+	// create an empty event to return
+	memset( &ev, 0, sizeof( ev ) );
+	ev.evTime = Sys_Milliseconds();
+
+	return ev;
+}
+
+
 /*
 =================
 Com_GetRealEvent
@@ -2053,7 +2183,7 @@ sysEvent_t	Com_GetRealEvent( void ) {
 			}
 		}
 	} else {
-		ev = Sys_GetEvent();
+		ev = Com_GetSystemEvent();
 
 		// write the journal value out if needed
 		if ( com_journal->integer == 1 ) {
@@ -2175,7 +2305,6 @@ int Com_EventLoop( void ) {
 	MSG_Init( &buf, bufData, sizeof( bufData ) );
 
 	while ( 1 ) {
-		NET_FlushPacketQueue();
 		ev = Com_GetEvent();
 
 		// if no more events are available
@@ -2198,10 +2327,6 @@ int Com_EventLoop( void ) {
 
 
 		switch ( ev.evType ) {
-		default:
-		  // bk001129 - was ev.evTime
-			Com_Error( ERR_FATAL, "Com_EventLoop: bad event type %i", ev.evType );
-			break;
         case SE_NONE:
             break;
 #ifndef DEDICATED
@@ -2222,37 +2347,8 @@ int Com_EventLoop( void ) {
 			Cbuf_AddText( (char *)ev.evPtr );
 			Cbuf_AddText( "\n" );
 			break;
-		case SE_PACKET:
-			// this cvar allows simulation of connections that
-			// drop a lot of packets.  Note that loopback connections
-			// don't go through here at all.
-			if ( com_dropsim->value > 0 ) {
-				static int seed;
-
-				if ( Q_random( &seed ) < com_dropsim->value ) {
-					break;		// drop this packet
-				}
-			}
-
-			evFrom = *(netadr_t *)ev.evPtr;
-			buf.cursize = ev.evPtrLength - sizeof( evFrom );
-
-			// we must copy the contents of the message out, because
-			// the event buffers are only large enough to hold the
-			// exact payload, but channel messages need to be large
-			// enough to hold fragment reassembly
-			if ( (unsigned)buf.cursize > buf.maxsize ) {
-				Com_Printf("Com_EventLoop: oversize packet\n");
-				continue;
-			}
-			Com_Memcpy( buf.data, (byte *)((netadr_t *)ev.evPtr + 1), buf.cursize );
-			if ( com_sv_running->integer ) {
-				Com_RunAndTimeServerPacket( &evFrom, &buf );
-			} else {
-#ifndef DEDICATED
-				CL_PacketEvent( evFrom, &buf );
-#endif
-			}
+			default:
+				Com_Error( ERR_FATAL, "Com_EventLoop: bad event type %i", ev.evType );
 			break;
 		}
 
@@ -2809,7 +2905,6 @@ void Com_Init( char *commandLine ) {
 	com_timescale = Cvar_Get ("timescale", "1", CVAR_CHEAT | CVAR_SYSTEMINFO );
 	com_fixedtime = Cvar_Get ("fixedtime", "0", CVAR_CHEAT);
 	com_showtrace = Cvar_Get ("com_showtrace", "0", CVAR_CHEAT);
-	com_dropsim = Cvar_Get ("com_dropsim", "0", CVAR_CHEAT);
 	com_viewlog = Cvar_Get( "viewlog", "0", CVAR_CHEAT );
 	com_speeds = Cvar_Get ("com_speeds", "0", 0);
 	com_timedemo = Cvar_Get ("timedemo", "0", CVAR_CHEAT);
@@ -3049,6 +3144,27 @@ int Com_ModifyMsec( int msec ) {
 	return msec;
 }
 
+
+/*
+=================
+Com_TimeVal
+=================
+*/
+int Com_TimeVal( int minMsec )
+{
+	int timeVal;
+
+	timeVal = Sys_Milliseconds() - com_frameTime;
+
+	if ( timeVal >= minMsec )
+		timeVal = 0;
+	else
+		timeVal = minMsec - timeVal;
+
+	return timeVal;
+}
+
+
 /*
 =================
 Com_Frame
@@ -3057,13 +3173,14 @@ Com_Frame
 void Com_Frame( qboolean demoPlaying ) {
 
 	int		msec, minMsec;
-	static int	lastTime;
+	int		timeVal;
+	static int lastTime = 0;
 
-	int		timeBeforeFirstEvents;
-	int           timeBeforeServer;
-	int           timeBeforeEvents;
-	int           timeBeforeClient;
-	int           timeAfter;
+	int	timeBeforeFirstEvents;
+	int	timeBeforeServer;
+	int	timeBeforeEvents;
+	int	timeBeforeClient;
+	int	timeAfter;
 
 	if ( setjmp( abortframe ) ) {
 		return;			// an ERR_DROP was thrown
@@ -3071,9 +3188,9 @@ void Com_Frame( qboolean demoPlaying ) {
 
 	// bk001204 - init to zero.
 	//  also:  might be clobbered by `longjmp' or `vfork'
-	timeBeforeFirstEvents =0;
-	timeBeforeServer =0;
-	timeBeforeEvents =0;
+	timeBeforeFirstEvents = 0;
+	timeBeforeServer = 0;
+	timeBeforeEvents = 0;
 	timeBeforeClient = 0;
 	timeAfter = 0;
 
@@ -3095,48 +3212,68 @@ void Com_Frame( qboolean demoPlaying ) {
 		timeBeforeFirstEvents = Sys_Milliseconds ();
 	}
 	
-	if ( com_timedemo->integer && demoPlaying )
-		minMsec = 0;
-	else
-		minMsec = 1;
-
 	// we may want to spin here if things are going too fast
-#ifndef _WIN32
-	if ( !com_dedicated->integer && com_maxfps->integer > 0 && ( !com_timedemo->integer || minMsec ) ) {
-		minMsec = 1000 / com_maxfps->integer;
-	}
-#else
-	
-#ifndef DEDICATED
-	if ( !com_dedicated->integer && ( !com_timedemo->integer || minMsec ) ) {
-		if ( g_wv.isMinimized && com_maxfpsMinimized->integer > 0 )
-			minMsec = 1000 / com_maxfpsMinimized->integer;
-		else 
-		if ( !g_wv.activeApp && com_maxfpsUnfocused->integer > 0 )
-			minMsec = 1000 / com_maxfpsUnfocused->integer;
+	if ( !com_dedicated->integer ) {
+		if ( com_timedemo->integer && demoPlaying )
+			minMsec = 0;
 		else
-		if ( com_maxfps->integer > 0 )
-			minMsec = 1000 / com_maxfps->integer;
-	}
+			minMsec = 1;
+		if ( !com_timedemo->integer || minMsec ) {
+#if defined( _WIN32 ) && !defined( DEDICATED )
+			if ( g_wv.isMinimized && com_maxfpsMinimized->integer > 0 )
+				minMsec = 1000 / com_maxfpsMinimized->integer;
+			else 
+			if ( !g_wv.activeApp && com_maxfpsUnfocused->integer > 0 )
+				minMsec = 1000 / com_maxfpsUnfocused->integer;
+			else
 #endif
-
-#endif // defined(_WIN32)
-
-	msec = minMsec;
-	do {
-		Sys_Sleep( minMsec - msec );
-		com_frameTime = Com_EventLoop();
-		if ( lastTime > com_frameTime ) {
-			lastTime = com_frameTime;		// possible on first frame
+			if ( com_maxfps->integer > 0 )
+				minMsec = 1000 / com_maxfps->integer;
 		}
-		msec = com_frameTime - lastTime;
-	} while ( msec < minMsec );
-	Cbuf_Execute ();
+	} else {
+		// dedicated server
+		minMsec = SV_FrameMsec();
+	}
+
+	// waiting for incoming packets
+	if ( minMsec )
+	do {
+		timeVal = Com_TimeVal( minMsec );
+#if 1
+		if ( com_dedicated->integer ) {
+			NET_Sleep( timeVal );
+		} else if ( com_yieldCPU->integer == 0 || timeVal < 1 ) {
+			NET_Sleep( 0 ); // busy wait
+			Com_EventLoop();
+		} else {
+			if ( com_yieldCPU->integer == 1 && timeVal > 2 ) {
+				NET_Sleep( 2 ); // more frequent event polling
+				Com_EventLoop();
+			} else {
+				NET_Sleep( timeVal );
+			}
+		}
+#else
+		if ( com_yieldCPU->integer == 0 || timeVal < 1 ) {
+			NET_Sleep( 0 ); // busy wait
+			Com_EventLoop();
+		} else {
+			NET_Sleep( timeVal );
+		}
+#endif
+	} while( Com_TimeVal( minMsec ) );
+	
+	if ( lastTime > com_frameTime ) // possible on first frame?
+		lastTime = com_frameTime;
 
 	lastTime = com_frameTime;
+	com_frameTime = Com_EventLoop();
+	
+	msec = com_frameTime - lastTime;
+
+	Cbuf_Execute();
 
 	// mess with msec if needed
-	com_frameMsec = msec;
 	msec = Com_ModifyMsec( msec );
 
 	//
@@ -3180,6 +3317,13 @@ void Com_Frame( qboolean demoPlaying ) {
 		}
 	}
 
+#ifdef DEDICATED
+	if ( com_speeds->integer ) {
+		timeAfter = Sys_Milliseconds ();
+		timeBeforeEvents = timeAfter;
+		timeBeforeClient = timeAfter;
+	}
+#else
 	//
 	// client system
 	//
@@ -3194,7 +3338,6 @@ void Com_Frame( qboolean demoPlaying ) {
 		Com_EventLoop();
 		Cbuf_Execute ();
 
-
 		//
 		// client side
 		//
@@ -3202,14 +3345,15 @@ void Com_Frame( qboolean demoPlaying ) {
 			timeBeforeClient = Sys_Milliseconds ();
 		}
 
-#ifndef DEDICATED
 		CL_Frame( msec );
-#endif
 
 		if ( com_speeds->integer ) {
 			timeAfter = Sys_Milliseconds ();
 		}
 	}
+#endif
+
+	NET_FlushPacketQueue();
 
 	//
 	// report timing information
@@ -3558,7 +3702,7 @@ void Com_RandomBytes( byte *string, int len )
 	Com_Printf( "Com_RandomBytes: using weak randomization\n" );
 	srand( time( 0 ) );
 	for( i = 0; i < len; i++ )
-		string[i] = (unsigned char)( rand() % 255 );
+		string[i] = (unsigned char)( rand() % 256 );
 }
 
 

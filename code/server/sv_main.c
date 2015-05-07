@@ -983,6 +983,31 @@ static qboolean SV_CheckPaused( void ) {
 	return qtrue;
 }
 
+
+/*
+==================
+SV_FrameMsec
+Return time in millseconds until processing of the next server frame.
+==================
+*/
+int SV_FrameMsec( void )
+{
+	if ( sv_fps )
+	{
+		int frameMsec;
+		
+		frameMsec = 1000.0f / sv_fps->value;
+		
+		if ( frameMsec < sv.timeResidual )
+			return 0;
+		else
+			return frameMsec - sv.timeResidual;
+	}
+	else
+		return 1;
+}
+
+
 /*
 ==================
 SV_Frame
@@ -1003,15 +1028,14 @@ void SV_Frame( int msec ) {
 		return;
 	}
 
-	if (!com_sv_running->integer)
+	if ( !com_sv_running->integer )
 	{
-		if(com_dedicated->integer)
+		if ( com_dedicated->integer )
 		{
 			// Block indefinitely until something interesting happens
 			// on STDIN.
-			Sys_Sleep(-1);
+			Sys_Sleep( -1 );
 		}
-		
 		return;
 	}
 
@@ -1035,14 +1059,18 @@ void SV_Frame( int msec ) {
 
 	sv.timeResidual += msec;
 
-	if (!com_dedicated->integer) SV_BotFrame (sv.time + sv.timeResidual);
+	if ( !com_dedicated->integer )
+		SV_BotFrame( sv.time + sv.timeResidual );
 
+/*
 	if ( com_dedicated->integer && sv.timeResidual < frameMsec ) {
 		// NET_Sleep will give the OS time slices until either get a packet
 		// or time enough for a server frame has gone by
+		Com_Printf( S_COLOR_YELLOW "NET_Sleep(%i)\n", frameMsec - sv.timeResidual );
 		NET_Sleep(frameMsec - sv.timeResidual);
 		return;
 	}
+*/
 
 	// if time is about to hit the 32nd bit, kick all clients
 	// and clear sv.time, rather

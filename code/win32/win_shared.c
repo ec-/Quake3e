@@ -180,10 +180,9 @@ void Sys_SnapVector( float *vector )
 
 #else
 
-static const DWORD cw037F = 0x037F;
-
 void Sys_SnapVector( float *vector ) 
 {
+	static const DWORD cw037F = 0x037F;
 	DWORD cwCurr;
 __asm {
 	fnstcw word ptr [cwCurr]
