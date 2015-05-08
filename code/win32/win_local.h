@@ -134,8 +134,6 @@ typedef struct
 {
 	HWND			hWnd;
 	HINSTANCE		hInstance;
-	qboolean		activeApp;
-	qboolean		isMinimized;
 	OSVERSIONINFO	osversion;
 
 	// when we get a windows message, we store the time off so keyboard processing

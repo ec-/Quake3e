@@ -157,7 +157,7 @@ void IN_UpdateWindow( RECT *window_rect, qboolean updateClipRegion )
 	window_center[0] = ( window_rect->right + window_rect->left )/2;
 	window_center[1] = ( window_rect->top + window_rect->bottom )/2;
 
-	if ( updateClipRegion && s_wmv.mouseActive == qtrue && g_wv.activeApp == qtrue ) {
+	if ( updateClipRegion && s_wmv.mouseActive && gw_active ) {
 		ClipCursor( window_rect );
 	}
 

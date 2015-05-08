@@ -764,10 +764,6 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
     // main game loop
 	while( 1 ) {
-		// if not running as a game client, sleep a bit
-		//if ( g_wv.isMinimized || ( com_dedicated && com_dedicated->integer ) ) {
-		//	Sleep( 5 );
-		//}
 		// set low precision every frame, because some system calls
 		// reset it arbitrarily
 		// _controlfp( _PC_24, _MCW_PC );

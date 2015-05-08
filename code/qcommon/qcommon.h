@@ -872,6 +872,9 @@ extern	int		time_backend;		// renderer backend time
 extern	int		com_frameTime;
 extern	int		com_frameMsec;
 
+extern	qboolean	gw_minimized;
+extern	qboolean	gw_active;
+
 extern	qboolean	com_errorEntered;
 
 extern	fileHandle_t	com_journalFile;

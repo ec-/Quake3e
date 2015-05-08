@@ -587,7 +587,7 @@ static qboolean repeated_press( XEvent *event )
 int Sys_XTimeToSysTime( Time xtime );
 
 
-static int WindowMinimized( Display *dpy, Window win )
+static qboolean WindowMinimized( Display *dpy, Window win )
 {
 	unsigned long i, num_items, bytes_after;
 	Atom actual_type, *atoms, nws, nwsh;
@@ -595,11 +595,11 @@ static int WindowMinimized( Display *dpy, Window win )
 
 	nws = XInternAtom( dpy, "_NET_WM_STATE", True );
 	if ( nws == BadValue || nws == None )
-		return 0;
+		return qfalse;
 
 	nwsh = XInternAtom( dpy, "_NET_WM_STATE_HIDDEN", True );
 	if ( nwsh == BadValue || nwsh == None )
-		return 0;
+		return qfalse;
 
 	atoms = NULL;
 
@@ -612,12 +612,12 @@ static int WindowMinimized( Display *dpy, Window win )
         if ( atoms[i] == nwsh )
         {
             XFree( atoms );
-            return 1;
+            return qtrue;
         }
     }
 
     XFree( atoms );
-    return 0;
+    return qfalse;
 }
 
 
@@ -763,7 +763,8 @@ void HandleX11Events( void )
 			break;
 
 		case ConfigureNotify:
-			S_MuteClient( WindowMinimized( dpy, win ) );
+			gw_minimized = WindowMinimized( dpy, win );
+			S_MuteClient( gw_minimized );
 //			Com_Printf( "ConfigureNotify minimized: %i\n", cls.soundMuted );
 			win_x = event.xconfigure.x;
 			win_y = event.xconfigure.y;

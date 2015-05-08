@@ -125,7 +125,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	int		ret;
 	OSVERSIONINFO	vinfo;
 
-	if ( !glConfig.deviceSupportsGamma || r_ignorehwgamma->integer || !glw_state.hDC || !g_wv.activeApp ) {
+	if ( !glConfig.deviceSupportsGamma || r_ignorehwgamma->integer || !glw_state.hDC || !gw_active ) {
 		return;
 	}
 

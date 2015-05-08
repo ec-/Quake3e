@@ -142,24 +142,20 @@ VID_AppActivate
 */
 static void VID_AppActivate( BOOL fActive, BOOL minimize )
 {
-	g_wv.isMinimized = minimize;
+	gw_minimized = minimize ? qtrue : qfalse;
 
 	Com_DPrintf( "VID_AppActivate: %i %i\n", fActive, minimize );
 
 	Key_ClearStates();	// FIXME!!!
 
 	// we don't want to act like we're active if we're minimized
-	if ( fActive && !g_wv.isMinimized )
-	{
-		g_wv.activeApp = qtrue;
-	}
+	if ( fActive && !gw_minimized )
+		gw_active = qtrue;
 	else
-	{
-		g_wv.activeApp = qfalse;
-	}
+		gw_active = qfalse;
 
 	// minimize/restore mouse-capture on demand
-	if ( !g_wv.activeApp )
+	if ( !gw_active )
 	{
 		WIN_DisableHook();
 		IN_Activate( qfalse );
@@ -482,7 +478,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		// let sound and input know about this?
 		Win_RemoveHotkey();
 		g_wv.hWnd = NULL;
-		g_wv.isMinimized = qfalse;
+		gw_minimized = qfalse;
 		WIN_EnableAltTab();
 		break;
 
@@ -564,7 +560,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 				vid_ypos->modified = qfalse;
 			}
 
-			if ( g_wv.activeApp ) 
+			if ( gw_active ) 
 			{
 				IN_Activate( qtrue );
 			}
@@ -671,7 +667,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		// check for left/right modifiers
 		if ( Win_CheckHotkeyMod() )
 		{
-			if ( g_wv.activeApp )
+			if ( gw_active )
 			{
 				ShowWindow( hWnd, SW_MINIMIZE );
 			}

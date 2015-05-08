@@ -29,7 +29,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <sys/stat.h> // umask
 #else
 #include <winsock.h>
-#include "../win32/win_local.h"
 #endif
 
 #include "../client/keys.h"
@@ -106,12 +105,15 @@ qboolean	com_errorEntered = qfalse;
 qboolean	com_fullyInitialized = qfalse;
 qboolean	com_gameRestarting = qfalse;
 
+// renderer window states
+qboolean	gw_minimized = qfalse;
+qboolean	gw_active = qtrue;
+
 char	com_errorMessage[MAXPRINTMSG];
 
 void Com_WriteConfig_f( void );
 void CIN_CloseAllVideos( void );
 
-extern void Sys_Sleep(int msec);
 //============================================================================
 
 static char	*rd_buffer;
@@ -3219,14 +3221,12 @@ void Com_Frame( qboolean demoPlaying ) {
 		else
 			minMsec = 1;
 		if ( !com_timedemo->integer || minMsec ) {
-#if defined( _WIN32 ) && !defined( DEDICATED )
-			if ( g_wv.isMinimized && com_maxfpsMinimized->integer > 0 )
+			if ( gw_minimized && com_maxfpsMinimized->integer > 0 )
 				minMsec = 1000 / com_maxfpsMinimized->integer;
 			else 
-			if ( !g_wv.activeApp && com_maxfpsUnfocused->integer > 0 )
+			if ( !gw_active && com_maxfpsUnfocused->integer > 0 )
 				minMsec = 1000 / com_maxfpsUnfocused->integer;
 			else
-#endif
 			if ( com_maxfps->integer > 0 )
 				minMsec = 1000 / com_maxfps->integer;
 		}
