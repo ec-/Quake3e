@@ -667,13 +667,15 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 	case WM_SYSCOMMAND:
 		if ( wParam == SC_SCREENSAVE )
 			return 0;
+		if ( wParam == SC_MINIMIZE && CL_VideoRecording() )
+			return 0;
 		break;
 
 	case WM_HOTKEY:
 		// check for left/right modifiers
 		if ( Win_CheckHotkeyMod() )
 		{
-			if ( gw_active )
+			if ( gw_active && !CL_VideoRecording() )
 			{
 				ShowWindow( hWnd, SW_MINIMIZE );
 			}
