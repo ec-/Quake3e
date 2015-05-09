@@ -140,11 +140,9 @@ void WIN_EnableAltTab( void )
 VID_AppActivate
 ==================
 */
-static void VID_AppActivate( BOOL fActive, BOOL minimize )
+static void VID_AppActivate( BOOL fActive )
 {
-	gw_minimized = minimize ? qtrue : qfalse;
-
-	Com_DPrintf( "VID_AppActivate: %i %i\n", fActive, minimize );
+	Com_DPrintf( "VID_AppActivate: %i %i\n", fActive, gw_minimized );
 
 	Key_ClearStates();	// FIXME!!!
 
@@ -486,16 +484,24 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		Cbuf_ExecuteText( EXEC_APPEND, "quit" );
 		break;
 
+	/*
+		on minimize: WM_KILLFOCUS, WM_ACTIVATE A:0 M:1
+		on restore: WM_ACTIVATE A:1 M:1, WM_SETFOCUS, WM_ACTIVATE A:1 M:0
+		on click in: WM_ACTIVATE A:1 M:0, WM_SETFOCUS
+		on click out: WM_ACTIVATE A:0 M:0, WM_KILLFOCUS
+	*/
+
 	case WM_ACTIVATE:
 		fActive = (LOWORD( wParam ) != WA_INACTIVE) ? TRUE : FALSE;
 		fMinimized = (BOOL)HIWORD( wParam ) ? TRUE : FALSE;
-		// sometimes we can recieve fActive with fMinimized
-		if ( !( fActive && fMinimized )  )
-			S_MuteClient( fMinimized );
+		//Com_DPrintf( S_COLOR_YELLOW "%WM_ACTIVATE active=%i minimized=%i\n", fActive, fMinimized  );
+		// We can recieve Active & Minimized when restoring from minimized state
+		if ( fActive && fMinimized )
+			gw_minimized = qfalse;
+		else
+			gw_minimized = fMinimized;
 		break;
 	
-	// WM_KILLFOCUS goes first and without correct window status
-	// WM_SETFOCUS goes (almost) last with correct window status
 	case WM_SETFOCUS:
 	case WM_KILLFOCUS:
 		{
@@ -506,12 +512,12 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			GetWindowPlacement( hWnd, &wp );
 
 			fActive = ( uMsg == WM_SETFOCUS );
-			//Com_DPrintf( "%s\n", fActive ? "WM_SETFOCUS" : "WM_KILLFOCUS" );
+			//Com_DPrintf( S_COLOR_YELLOW "%s\n", fActive ? "WM_SETFOCUS" : "WM_KILLFOCUS" );
 
 			Win_AddHotkey();
 
 			// We can't get correct minimized status on WM_KILLFOCUS
-			VID_AppActivate( fActive, FALSE ); 
+			VID_AppActivate( fActive ); 
 
 			if ( glw_state.cdsFullscreen ) {
 				if ( fActive ) {

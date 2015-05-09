@@ -374,20 +374,6 @@ void S_StopMusic_f( void )
 }
 
 
-/*
-=================
-S_MuteClient
-=================
-*/
-void S_MuteClient( qboolean mute )
-{
-	if ( s_clientMuted == mute )
-		return;
-
-	s_clientMuted = mute;
-}
-
-
 //=============================================================================
 
 /*

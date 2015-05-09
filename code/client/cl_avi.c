@@ -609,6 +609,7 @@ qboolean CL_CloseAVI( void )
   WRITE_4BYTES( indexSize );
   SafeFS_Write( buffer, bufIndex, afd.idxF );
   FS_FCloseFile( afd.idxF );
+  afd.idxF = FS_INVALID_HANDLE;
 
   // Write index
 

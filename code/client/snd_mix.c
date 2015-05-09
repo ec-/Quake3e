@@ -616,7 +616,7 @@ void S_PaintChannels( int endtime ) {
 	int		ltime, count;
 	int		sampleOffset;
 
-	if ( s_clientMuted )
+	if ( gw_minimized && !CL_VideoRecording() ) // mute client
 		snd_vol = 0;
 	else
 		snd_vol = s_volume->value * 255;

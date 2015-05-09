@@ -941,7 +941,7 @@ void S_Base_RawSamples( int samples, int rate, int width, int s_channels, const 
 		return;
 	}
 
-	if ( s_clientMuted )
+	if ( gw_minimized && !CL_VideoRecording() ) // mute client
 		intVolume = 0;
 	else
 		intVolume = 256 * volume;

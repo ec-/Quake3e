@@ -2896,9 +2896,9 @@ void Com_Init( char *commandLine ) {
 	//
 	com_maxfps = Cvar_Get( "com_maxfps", "125", 0 ); // try to force that in some light way
 
-	com_maxfpsUnfocused = Cvar_Get ("com_maxfpsUnfocused", "0", CVAR_ARCHIVE);
-	com_maxfpsMinimized = Cvar_Get ("com_maxfpsMinimized", "0", CVAR_ARCHIVE);
-	com_yieldCPU = Cvar_Get ("com_yieldCPU", "0", CVAR_ARCHIVE);
+	com_maxfpsUnfocused = Cvar_Get ("com_maxfpsUnfocused", "60", CVAR_ARCHIVE);
+	com_maxfpsMinimized = Cvar_Get ("com_maxfpsMinimized", "30", CVAR_ARCHIVE);
+	com_yieldCPU = Cvar_Get ("com_yieldCPU", "2", CVAR_ARCHIVE);
 
 	com_blood = Cvar_Get ("com_blood", "1", CVAR_ARCHIVE);
 
@@ -3239,28 +3239,17 @@ void Com_Frame( qboolean demoPlaying ) {
 	if ( minMsec )
 	do {
 		timeVal = Com_TimeVal( minMsec );
-#if 1
 		if ( com_dedicated->integer ) {
 			NET_Sleep( timeVal );
-		} else if ( com_yieldCPU->integer == 0 || timeVal < 1 ) {
-			NET_Sleep( 0 ); // busy wait
-			Com_EventLoop();
 		} else {
-			if ( com_yieldCPU->integer == 1 && timeVal > 2 ) {
-				NET_Sleep( 2 ); // more frequent event polling
+			if ( timeVal > com_yieldCPU->integer && com_yieldCPU->integer >= 0 ) {
+				timeVal = com_yieldCPU->integer;
+				NET_Sleep( timeVal );
 				Com_EventLoop();
 			} else {
 				NET_Sleep( timeVal );
 			}
 		}
-#else
-		if ( com_yieldCPU->integer == 0 || timeVal < 1 ) {
-			NET_Sleep( 0 ); // busy wait
-			Com_EventLoop();
-		} else {
-			NET_Sleep( timeVal );
-		}
-#endif
 	} while( Com_TimeVal( minMsec ) );
 	
 	if ( lastTime > com_frameTime ) // possible on first frame?
