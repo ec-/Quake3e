@@ -116,14 +116,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 
 #ifdef _WIN32
-#define Q_vsnprintf _vsnprintf
 #define Q_snprintf _snprintf
 #else
-#define Q_vsnprintf vsnprintf
 #define Q_snprintf snprintf
 #endif
-
-#define ZLASTCHAR(xXx) (xXx)[sizeof(xXx)-1]='\0'
 
 //endianness
 short ShortSwap( short l );
@@ -135,21 +131,25 @@ float FloatSwap( const float *f );
 //=============================================================
 
 #ifdef Q3_VM
-   typedef int intptr_t;
+	typedef int intptr_t;
 #else
-  #ifndef _MSC_VER
-    #include <stdint.h>
-  #else
-    #include <io.h>
-    typedef __int64 int64_t;
-    typedef __int32 int32_t;
-    typedef __int16 int16_t;
-    typedef __int8 int8_t;
-    typedef unsigned __int64 uint64_t;
-    typedef unsigned __int32 uint32_t;
-    typedef unsigned __int16 uint16_t;
-    typedef unsigned __int8 uint8_t;
-  #endif
+	#ifdef _MSC_VER
+		#include <io.h>
+		typedef __int64 int64_t;
+		typedef __int32 int32_t;
+		typedef __int16 int16_t;
+		typedef __int8 int8_t;
+		typedef unsigned __int64 uint64_t;
+		typedef unsigned __int32 uint32_t;
+		typedef unsigned __int16 uint16_t;
+		typedef unsigned __int8 uint8_t;
+		// vsnprintf is ISO/IEC 9899:1999
+		// abstracting this to make it portable
+		int Q_vsnprintf(char *str, size_t size, const char *format, va_list ap);
+	#else
+		#include <stdint.h>
+		#define Q_vsnprintf vsnprintf
+	#endif
 #endif
 
 typedef unsigned char byte;

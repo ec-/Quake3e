@@ -1621,7 +1621,6 @@ void QDECL FS_Printf( fileHandle_t h, const char *fmt, ... ) {
 	va_start (argptr,fmt);
 	Q_vsnprintf (msg, sizeof(msg), fmt, argptr);
 	va_end (argptr);
-	ZLASTCHAR(msg);
 
 	FS_Write(msg, strlen(msg), h);
 }

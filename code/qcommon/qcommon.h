@@ -777,18 +777,6 @@ MISC
 ==============================================================
 */
 
-// TTimo
-// vsnprintf is ISO/IEC 9899:1999
-// abstracting this to make it portable
-#ifndef Q_vsnprintf
-#ifdef WIN32
-#define Q_vsnprintf _vsnprintf
-#else
-// TODO: do we need Mac define?
-#define Q_vsnprintf vsnprintf
-#endif
-#endif
-
 // centralizing the declarations for cl_cdkey
 // https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=470
 extern char cl_cdkey[34];

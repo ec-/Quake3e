@@ -550,7 +550,6 @@ void QDECL NET_OutOfBandPrint( netsrc_t sock, netadr_t adr, const char *format, 
 	va_start( argptr, format );
 	Q_vsnprintf( string+4, sizeof(string)-4, format, argptr );
 	va_end( argptr );
-	ZLASTCHAR(string);
 
 	// send the datagram
 	NET_SendPacket( sock, strlen( string ), string, adr );

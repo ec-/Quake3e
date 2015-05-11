@@ -141,7 +141,6 @@ static void QDECL BotImport_Print(int type, const char *fmt, ...)
 	va_start(ap, fmt);
 	Q_vsnprintf(str, sizeof(str), fmt, ap);
 	va_end(ap);
-	ZLASTCHAR(str);
 
 	switch(type) {
 		case PRT_MESSAGE: {

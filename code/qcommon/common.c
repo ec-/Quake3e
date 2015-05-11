@@ -160,7 +160,6 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 	va_start (argptr,fmt);
 	Q_vsnprintf (msg, sizeof(msg), fmt, argptr);
 	va_end (argptr);
-	ZLASTCHAR(msg);
 
 	if ( rd_buffer ) {
 		if ((strlen (msg) + strlen(rd_buffer)) > (rd_buffersize - 1)) {
