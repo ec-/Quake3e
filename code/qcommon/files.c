@@ -415,7 +415,7 @@ static long FS_HashFileName( const char *fname, int hashSize )
 			letter = '/';
 #if ( PATH_SEP != '\\' ) && ( PATH_SEP != '/' )
 		else if ( letter == PATH_SEP ) 
-			letter = '/'
+			letter = '/';
 #endif
 		hash = hash * 101 + letter;
 		fname++;
@@ -544,7 +544,11 @@ char *FS_BuildOSPath( const char *base, const char *game, const char *qpath ) {
 		game = fs_gamedir;
 	}
 
-	Com_sprintf( temp, sizeof(temp), "/%s/%s", game, qpath );
+	if ( qpath )
+		Com_sprintf( temp, sizeof( temp ), "/%s/%s", game, qpath );
+	else
+		Com_sprintf( temp, sizeof( temp ), "/%s", game );
+
 	FS_ReplaceSeparators( temp );	
 	Com_sprintf( ospath[toggle], sizeof( ospath[0] ), "%s%s", base, temp );
 	
@@ -740,8 +744,7 @@ qboolean FS_SV_FileExists( const char *file )
 	char *testpath;
 
 	// search in homepath
-	testpath = FS_BuildOSPath( fs_homepath->string, file, "" );
-	testpath[strlen(testpath)-1] = '\0';
+	testpath = FS_BuildOSPath( fs_homepath->string, file, NULL );
 	f = Sys_FOpen( testpath, "rb" );
 	if ( f ) {
 		fclose( f );
@@ -750,8 +753,7 @@ qboolean FS_SV_FileExists( const char *file )
 
 	// search in basepath
 	if ( Q_stricmp( fs_homepath->string, fs_basepath->string ) ) {
-		testpath = FS_BuildOSPath( fs_basepath->string, file, "" );
-		testpath[strlen(testpath)-1] = '\0';
+		testpath = FS_BuildOSPath( fs_basepath->string, file, NULL );
 		f = Sys_FOpen( testpath, "rb" );
 		if ( f ) {
 			fclose( f );
@@ -782,8 +784,7 @@ fileHandle_t FS_SV_FOpenFileWrite( const char *filename ) {
 		return FS_INVALID_HANDLE;
 	}
 
-	ospath = FS_BuildOSPath( fs_homepath->string, filename, "" );
-	ospath[strlen(ospath)-1] = '\0';
+	ospath = FS_BuildOSPath( fs_homepath->string, filename, NULL );
 
 	f = FS_HandleForFile();
 	fd = &fsh[ f ];
@@ -844,9 +845,7 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
 #endif
 
 	// search homepath
-	ospath = FS_BuildOSPath( fs_homepath->string, filename, "" );
-	// remove trailing slash
-	ospath[strlen(ospath)-1] = '\0';
+	ospath = FS_BuildOSPath( fs_homepath->string, filename, NULL );
 
 	if ( fs_debug->integer ) {
 		Com_Printf( "FS_SV_FOpenFileRead (fs_homepath): %s\n", ospath );
@@ -859,8 +858,7 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
 		if ( Q_stricmp( fs_homepath->string, fs_basepath->string ) != 0 )
 		{
 			// search basepath
-			ospath = FS_BuildOSPath( fs_basepath->string, filename, "" );
-			ospath[strlen(ospath)-1] = '\0';
+			ospath = FS_BuildOSPath( fs_basepath->string, filename, NULL );
 
 			if ( fs_debug->integer )
 			{
@@ -902,10 +900,8 @@ void FS_SV_Rename( const char *from, const char *to ) {
 	S_ClearSoundBuffer();
 #endif
 
-	from_ospath = FS_BuildOSPath( fs_homepath->string, from, "" );
-	to_ospath = FS_BuildOSPath( fs_homepath->string, to, "" );
-	from_ospath[strlen(from_ospath)-1] = '\0';
-	to_ospath[strlen(to_ospath)-1] = '\0';
+	from_ospath = FS_BuildOSPath( fs_homepath->string, from, NULL );
+	to_ospath = FS_BuildOSPath( fs_homepath->string, to, NULL );
 
 	if ( fs_debug->integer ) {
 		Com_Printf( "FS_SV_Rename: %s --> %s\n", from_ospath, to_ospath );
@@ -2570,7 +2566,7 @@ int	FS_GetModList( char *listbuf, int bufsize ) {
       // we didn't keep the information when we merged the directory names, as to what OS Path it was found under
       //   so it could be in base path, cd path or home path
       //   we will try each three of them here (yes, it's a bit messy)
-      path = FS_BuildOSPath( fs_basepath->string, name, "" );
+      path = FS_BuildOSPath( fs_basepath->string, name, NULL );
       nPaks = 0;
       pPaks = Sys_ListFiles( path, ".pk3", NULL, &nPaks, qfalse ); 
       Sys_FreeFileList( pPaks ); // we only use Sys_ListFiles to check wether .pk3 files are present
@@ -2578,7 +2574,7 @@ int	FS_GetModList( char *listbuf, int bufsize ) {
       /* try on home path */
       if ( nPaks <= 0 )
       {
-        path = FS_BuildOSPath( fs_homepath->string, name, "" );
+        path = FS_BuildOSPath( fs_homepath->string, name, NULL );
         nPaks = 0;
         pPaks = Sys_ListFiles( path, ".pk3", NULL, &nPaks, qfalse );
         Sys_FreeFileList( pPaks );
@@ -2981,9 +2977,7 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 	fs_searchpaths = search;
 
 	// find all pak files in this directory
-	pakfile = FS_BuildOSPath( path, dir, "" );
-	pakfile[ strlen(pakfile) - 1 ] = 0;	// strip the trailing slash
-
+	pakfile = FS_BuildOSPath( path, dir, NULL );
 	pakfiles = Sys_ListFiles( pakfile, ".pk3", NULL, &numfiles, qfalse );
 
 	if ( numfiles >= 2 )
