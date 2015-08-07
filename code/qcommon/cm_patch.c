@@ -878,7 +878,7 @@ void CM_AddFacetBevels( facet_t *facet ) {
 			if ( i == facet->numBorders ) {
 				if ( facet->numBorders >= 4 + 6 + 16 ) {
 					Com_Printf( "ERROR: too many bevels\n" );
-					return;
+					continue;
 				}
 				facet->borderPlanes[facet->numBorders] = CM_FindPlane2(plane, &flipped);
 				facet->borderNoAdjust[facet->numBorders] = 0;
@@ -943,7 +943,7 @@ void CM_AddFacetBevels( facet_t *facet ) {
 				if ( i == facet->numBorders ) {
 					if ( facet->numBorders >= 4 + 6 + 16 ) {
 						Com_Printf( "ERROR: too many bevels\n" );
-						return;
+						continue;
 					}
 					facet->borderPlanes[facet->numBorders] = CM_FindPlane2(plane, &flipped);
 
@@ -982,6 +982,10 @@ void CM_AddFacetBevels( facet_t *facet ) {
 
 #ifndef BSPC
 	//add opposite plane
+	if ( facet->numBorders >= 4 + 6 + 16 ) {
+		Com_Printf( "ERROR: too many bevels\n" );
+		return;
+	}
 	facet->borderPlanes[facet->numBorders] = facet->surfacePlane;
 	facet->borderNoAdjust[facet->numBorders] = 0;
 	facet->borderInward[facet->numBorders] = qtrue;
