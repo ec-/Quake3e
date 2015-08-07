@@ -105,7 +105,6 @@ typedef struct serverStatus_s
 } serverStatus_t;
 
 serverStatus_t cl_serverStatusList[MAX_SERVERSTATUSREQUESTS];
-int serverStatusCount;
 
 void CL_CheckForResend( void );
 void CL_ShowIP_f(void);
@@ -3249,11 +3248,7 @@ serverStatus_t *CL_GetServerStatus( netadr_t from ) {
 			oldestTime = cl_serverStatusList[i].startTime;
 		}
 	}
-	if (oldest != -1) {
-		return &cl_serverStatusList[oldest];
-	}
-	serverStatusCount++;
-	return &cl_serverStatusList[serverStatusCount & (MAX_SERVERSTATUSREQUESTS-1)];
+	return &cl_serverStatusList[oldest];
 }
 
 
