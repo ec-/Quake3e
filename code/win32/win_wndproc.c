@@ -477,6 +477,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		Win_RemoveHotkey();
 		g_wv.hWnd = NULL;
 		gw_minimized = qfalse;
+		gw_active = qfalse;
 		WIN_EnableAltTab();
 		break;
 

@@ -809,7 +809,7 @@ int Q_vsnprintf(char *str, size_t size, const char *format, va_list ap)
 	
 	retval = _vsnprintf(str, size, format, ap);
 
-	if(retval < 0 || retval == size)
+	if( retval < 0 || (size_t)retval == size)
 	{
 		// Microsoft doesn't adhere to the C99 standard of vsnprintf,
 		// which states that the return value must be the number of
@@ -1139,7 +1139,7 @@ int Q_CountChar(const char *string, char tocount)
 }
 
 
-void QDECL Com_sprintf( char *dest, int size, const char *fmt, ...) 
+int QDECL Com_sprintf( char *dest, int size, const char *fmt, ...) 
 {
 	int		len;
 	va_list	argptr;
@@ -1151,34 +1151,37 @@ void QDECL Com_sprintf( char *dest, int size, const char *fmt, ...)
 #if	defined(_DEBUG) && defined(_WIN32)
 		__debugbreak();
 #endif
-		return;
+		return 0;
 	}
 
 	va_start( argptr, fmt );
 	len = vsprintf( bigbuffer, fmt, argptr );
 	va_end( argptr );
 
-	if ( len >= sizeof( bigbuffer ) ) 
+	if ( len >= sizeof( bigbuffer ) || len < 0 ) 
 	{
 		Com_Error( ERR_FATAL, "Com_sprintf: overflowed bigbuffer" );
 #if	defined(_DEBUG) && defined(_WIN32)
-		__debugbreak();
+		DebugBreak();
 #endif
-		return;
+		return 0;
 	}
 
 	if ( len >= size ) 
 	{
 		Com_Printf( S_COLOR_YELLOW "Com_sprintf: overflow of %i in %i\n", len, size );
 #if	defined(_DEBUG) && defined(_WIN32)
-		__debugbreak();
+		DebugBreak();
 #endif
 		len = size - 1;
 	}
 
 	//Q_strncpyz( dest, bigbuffer, size );
-	strncpy( dest, bigbuffer, len );
+	//strncpy( dest, bigbuffer, len );
+	memcpy( dest, bigbuffer, len );
 	dest[ len ] = '\0';
+
+	return len;
 }
 
 
@@ -1440,7 +1443,7 @@ void Info_RemoveKey_Big( char *s, const char *key ) {
 
 		if (!strcmp (key, pkey) )
 		{
-			strcpy (start, s);	// remove this part
+			memmove(start, s, strlen(s) + 1); // remove this part 
 			return;
 		}
 
