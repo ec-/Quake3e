@@ -78,7 +78,7 @@ static void *GPA(char *str)
 CL_cURL_Init
 =================
 */
-qboolean CL_cURL_Init()
+qboolean CL_cURL_Init( void )
 {
 #ifdef USE_CURL_DLOPEN
 	if(cURLLib)
@@ -204,6 +204,7 @@ static int CL_cURL_CallbackProgress( void *dummy, double dltotal, double dlnow,
 	return 0;
 }
 
+
 static size_t CL_cURL_CallbackWrite(void *buffer, size_t size, size_t nmemb,
 	void *stream)
 {
@@ -211,8 +212,11 @@ static size_t CL_cURL_CallbackWrite(void *buffer, size_t size, size_t nmemb,
 	return size*nmemb;
 }
 
+
 void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 {
+	CURLMcode result;
+
 	clc.cURLUsed = qtrue;
 	Com_Printf("URL: %s\n", remoteURL);
 	Com_DPrintf("***** CL_cURL_BeginDownload *****\n"
@@ -264,15 +268,24 @@ void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_FAILONERROR, 1);
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_FOLLOWLOCATION, 1);
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_MAXREDIRS, 5);
+
 	clc.downloadCURLM = qcurl_multi_init();	
-	if(!clc.downloadCURLM) {
-		qcurl_easy_cleanup(clc.downloadCURL);
+	if( !clc.downloadCURLM ) {
+		qcurl_easy_cleanup( clc.downloadCURL );
 		clc.downloadCURL = NULL;
-		Com_Error(ERR_DROP, "CL_cURL_BeginDownload: qcurl_multi_init() "
-			"failed\n");
+		Com_Error( ERR_DROP, "CL_cURL_BeginDownload: qcurl_multi_init() "
+			"failed\n" );
 		return;
 	}
-	qcurl_multi_add_handle(clc.downloadCURLM, clc.downloadCURL);
+
+	result = qcurl_multi_add_handle( clc.downloadCURLM, clc.downloadCURL );
+	if ( result != CURLM_OK ) {
+		qcurl_easy_cleanup( clc.downloadCURL );
+		clc.downloadCURL = NULL;
+		Com_Error( ERR_DROP, "CL_cURL_BeginDownload: qcurl_multi_add_handle() failed: %s",	
+			qcurl_multi_strerror( result ) );
+		return;
+	}
 
 	if(!(clc.sv_allowDownload & DLF_NO_DISCONNECT) &&
 		!clc.cURLDisconnected) {
@@ -285,7 +298,7 @@ void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 	}
 }
 
-void CL_cURL_PerformDownload(void)
+void CL_cURL_PerformDownload( void )
 {
 	CURLMcode res;
 	CURLMsg *msg;
@@ -331,6 +344,7 @@ Common CURL downloading functions
 ==================================
 */
 
+
 /*
 ==================================
 stristr
@@ -338,9 +352,9 @@ stristr
 case-insensitive sub-string search
 ==================================
 */
-char* stristr( char *source, char *target ) 
+const char* stristr( const char *source, const char *target ) 
 {
-	char *p0, *p1, *p2, *pn;
+	const char *p0, *p1, *p2, *pn;
 	char c1, c2;
 
 	if ( *target == '\0' )  
@@ -394,7 +408,7 @@ char* stristr( char *source, char *target )
 
 /*
 ==================================
-replace
+replace1
 ==================================
 */
 int replace1( const char src, const char dst, char *str ) 
@@ -524,6 +538,11 @@ qboolean Com_DL_Init( download_t *dl )
 }
 
 
+/*
+=================
+Com_DL_Cleanup
+=================
+*/
 void Com_DL_Cleanup( download_t *dl )
 {
 	if( dl->cURLM ) 
@@ -562,6 +581,11 @@ void Com_DL_Cleanup( download_t *dl )
 }
 
 
+/*
+=================
+Com_DL_CallbackProgress
+=================
+*/
 static int Com_DL_CallbackProgress( void *data, double dltotal, double dlnow, double ultotal, double ulnow )
 {
 	double percentage;
@@ -583,6 +607,11 @@ static int Com_DL_CallbackProgress( void *data, double dltotal, double dlnow, do
 }
 
 
+/*
+=================
+Com_DL_CallbackWrite
+=================
+*/
 static size_t Com_DL_CallbackWrite( void *ptr, size_t size, size_t nmemb, void *userdata )
 {
 	download_t *dl;
@@ -593,7 +622,7 @@ static size_t Com_DL_CallbackWrite( void *ptr, size_t size, size_t nmemb, void *
 	{
 		if ( !dl->pk3ext ) 
 		{
-			Com_Printf( "Com_DL_CallbackWrite(): file must have pk3 extension.\n" );
+			Com_Printf( S_COLOR_YELLOW "Com_DL_CallbackWrite(): file must have pk3 extension.\n" );
 			return (size_t)-1;
 		}
 
@@ -610,6 +639,11 @@ static size_t Com_DL_CallbackWrite( void *ptr, size_t size, size_t nmemb, void *
 }
 
 
+/*
+=================
+Com_DL_HeaderCallback
+=================
+*/
 static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void *userdata ) 
 {
 	char name[MAX_QPATH];
@@ -630,11 +664,11 @@ static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void 
 
 	//Com_Printf( "h: %s\n--------------------------\n", header );
 
-	s = stristr( header, "content-disposition:" );
+	s = (char*)stristr( header, "content-disposition:" );
 	if ( s ) 
 	{
 		s += 20; // strlen( "content-disposition:" )	
-		s = stristr( s, "filename=" );
+		s = (char*)stristr( s, "filename=" );
 		if ( s ) 
 		{
 			s += 9; // strlen( "filename=" )
@@ -661,7 +695,7 @@ static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void 
 			// validate
 			if ( len < 5 || !stristr( name + len - 4, ".pk3" ) || strchr( name, '/' ) )
 			{
-				Com_Printf( "Com_DL_HeaderCallback: bad file name '%s'\n", name );
+				Com_Printf( S_COLOR_RED "Com_DL_HeaderCallback: bad file name '%s'\n", name );
 				return (size_t)-1;
 			}
 
