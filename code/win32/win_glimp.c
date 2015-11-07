@@ -1528,6 +1528,8 @@ void GLimp_Init( void )
 	if ( !GLW_StartOpenGL() )
 		return;
 
+	glConfig.hardwareType = GLHW_GENERIC;
+
 	// get our config strings
 	Q_strncpyz( glConfig.vendor_string, qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
 	Q_strncpyz( glConfig.renderer_string, qglGetString (GL_RENDERER), sizeof( glConfig.renderer_string ) );
@@ -1539,9 +1541,10 @@ void GLimp_Init( void )
 	//
 	// chipset specific configuration
 	//
-	Q_strncpyz( buf, glConfig.renderer_string, sizeof(buf) );
+	Q_strncpyz( buf, glConfig.renderer_string, sizeof( buf ) );
 	Q_strlwr( buf );
 
+#if 0
 	//
 	// NOTE: if changing cvars, do it within this block.  This allows them
 	// to be overridden when testing driver fixes, etc. but only sets
@@ -1608,6 +1611,7 @@ void GLimp_Init( void )
 	else if ( strstr( buf, "riva tnt " ) )
 	{
 	}
+#endif
 
 	ri.Cvar_Set( "r_lastValidRenderer", glConfig.renderer_string );
 
@@ -1622,6 +1626,7 @@ void GLimp_Init( void )
 	qglClear( GL_COLOR_BUFFER_BIT );
 	GLimp_SwapBuffers();
 }
+
 
 /*
 ** GLimp_Shutdown
