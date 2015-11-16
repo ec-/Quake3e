@@ -553,12 +553,13 @@ Upload32
 ===============
 */
 static void Upload32( unsigned *data, 
-						  int width, int height, 
-						  qboolean mipmap, 
-						  qboolean picmip, 
-							qboolean lightMap,
-						  int *format, 
-						  int *pUploadWidth, int *pUploadHeight )
+						int width, int height, 
+						qboolean mipmap, 
+						qboolean picmip, 
+						qboolean lightMap,
+						qboolean allowCompression,
+						int *format, 
+						int *pUploadWidth, int *pUploadHeight )
 {
 	int			samples;
 	unsigned	*scaledBuffer = NULL;
@@ -692,11 +693,11 @@ static void Upload32( unsigned *data,
 			}
 			else
 			{
-				if ( glConfig.textureCompression == TC_S3TC_ARB )
+				if ( allowCompression && glConfig.textureCompression == TC_S3TC_ARB )
 				{
 					internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
 				}
-				else if ( glConfig.textureCompression == TC_S3TC )
+				else if ( allowCompression && glConfig.textureCompression == TC_S3TC )
 				{
 					internalFormat = GL_RGB4_S3TC;
 				}
@@ -892,6 +893,7 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height,
 								image->flags & IMGFLAG_MIPMAP,
 								image->flags & IMGFLAG_PICMIP,
 								isLightmap,
+								!(image->flags & IMGFLAG_NO_COMPRESSION),
 								&image->internalFormat,
 								&image->uploadWidth,
 								&image->uploadHeight );
