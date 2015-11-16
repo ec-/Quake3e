@@ -37,6 +37,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define IDBASEGAME				"baseq3"
 #define IDBASEDEMO				"demoq3"
 #define BASEGAME				IDBASEGAME
+#define STEAMPATH_NAME			"Quake 3 Arena"
+#define STEAMPATH_APPID			"2200"
 
 #define MAX_TEAMNAME            32
 #define MAX_MASTER_SERVERS      5	// number of supported master servers

@@ -1116,6 +1116,7 @@ FILE	*Sys_FOpen( const char *ospath, const char *mode );
 const char *Sys_Pwd( void );
 const char *Sys_DefaultBasePath( void );
 const char *Sys_DefaultHomePath( void );
+const char *Sys_SteamPath( void );
 
 char	**Sys_ListFiles( const char *directory, const char *extension, char *filter, int *numfiles, qboolean wantsubs );
 void	Sys_FreeFileList( char **list );
