@@ -165,7 +165,8 @@ Sys_SteamPath
 */
 const char *Sys_SteamPath( void )
 {
-	static char steamPath[ MAX_OSPATH ];
+	static TCHAR steamPath[ MAX_OSPATH ]; // will be converted to ANSI
+
 #if defined(STEAMPATH_NAME) || defined(STEAMPATH_APPID)
 	HKEY steamRegKey;
 	DWORD pathLen = MAX_OSPATH;
@@ -173,46 +174,50 @@ const char *Sys_SteamPath( void )
 #endif
 
 #ifdef STEAMPATH_APPID
-	if (!steamPath[0] && !RegOpenKeyEx(HKEY_LOCAL_MACHINE, "SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App " STEAMPATH_APPID, 0, KEY_QUERY_VALUE, &steamRegKey))
+	if ( !steamPath[0] && RegOpenKeyEx( HKEY_LOCAL_MACHINE, AtoW( "SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App " STEAMPATH_APPID), 0, KEY_QUERY_VALUE, &steamRegKey ) == ERROR_SUCCESS )
 	{
-		pathLen = MAX_OSPATH;
-		if (RegQueryValueEx(steamRegKey, "InstallLocation", NULL, NULL, (LPBYTE)steamPath, &pathLen))
-			steamPath[0] = '\0';
+		pathLen = sizeof( steamPath );
+		if ( RegQueryValueEx(steamRegKey, AtoW("InstallLocation"), NULL, NULL, (LPBYTE)steamPath, &pathLen ) != ERROR_SUCCESS )
+			steamPath[ 0 ] = '\0';
 	}
 
-	if (!steamPath[0] && !RegOpenKeyEx(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App " STEAMPATH_APPID, 0, KEY_QUERY_VALUE, &steamRegKey))
+	if ( !steamPath[0] && RegOpenKeyEx(HKEY_LOCAL_MACHINE, AtoW("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App " STEAMPATH_APPID), 0, KEY_READ, &steamRegKey ) == ERROR_SUCCESS ) 
 	{
-		pathLen = MAX_OSPATH;
-		if (RegQueryValueEx(steamRegKey, "InstallLocation", NULL, NULL, (LPBYTE)steamPath, &pathLen))
-			steamPath[0] = '\0';
+		pathLen = sizeof( steamPath );
+		if ( RegQueryValueEx( steamRegKey, AtoW("InstallLocation"), NULL, NULL, (LPBYTE)steamPath, &pathLen ) != ERROR_SUCCESS )
+			steamPath[ 0 ] = '\0';
 	}
 
 #ifdef STEAMPATH_NAME
-	if (!steamPath[0] && !RegOpenKeyEx(HKEY_CURRENT_USER, "Software\\Valve\\Steam", 0, KEY_QUERY_VALUE, &steamRegKey))
+	if ( !steamPath[0] && RegOpenKeyEx(HKEY_CURRENT_USER, AtoW("Software\\Valve\\Steam"), 0, KEY_QUERY_VALUE, &steamRegKey ) == ERROR_SUCCESS )
 	{
-		pathLen = MAX_OSPATH;
-		if (RegQueryValueEx(steamRegKey, "SteamPath", NULL, NULL, (LPBYTE)steamPath, &pathLen))
-			if (RegQueryValueEx(steamRegKey, "InstallPath", NULL, NULL, (LPBYTE)steamPath, &pathLen))
-				steamPath[0] = '\0';
+		pathLen = sizeof( steamPath );
+		if ( RegQueryValueEx( steamRegKey, AtoW("SteamPath"), NULL, NULL, (LPBYTE)steamPath, &pathLen ) != ERROR_SUCCESS ) {
+			pathLen = sizeof( steamPath );
+			if ( RegQueryValueEx( steamRegKey, AtoW("InstallPath"), NULL, NULL, (LPBYTE)steamPath, &pathLen ) != ERROR_SUCCESS )
+				steamPath[ 0 ] = '\0';
+		}
 
-		if (steamPath[0])
+		if ( steamPath[ 0 ] )
 			finishPath = qtrue;
 	}
 #endif
 
-	if (steamPath[0])
+	if ( steamPath[ 0 ] )
 	{
-		if (pathLen == MAX_OSPATH)
+		if ( pathLen == sizeof( steamPath ) )
 			pathLen--;
 
-		steamPath[pathLen] = '\0';
-
-		if (finishPath)
-			Q_strcat(steamPath, MAX_OSPATH, "\\SteamApps\\common\\" STEAMPATH_NAME );
+		*( ((char*)steamPath) + pathLen )  = '\0';
+#ifdef UNICODE
+		strcpy( (char*)steamPath, WtoA( steamPath ) );
+#endif
+		if ( finishPath )
+			Q_strcat( (char*)steamPath, MAX_OSPATH, "\\SteamApps\\common\\" STEAMPATH_NAME );
 	}
 #endif
 
-	return steamPath;
+	return (char*)steamPath;
 }
 
 
