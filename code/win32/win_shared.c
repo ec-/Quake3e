@@ -165,7 +165,7 @@ Sys_SteamPath
 */
 const char *Sys_SteamPath( void )
 {
-	static TCHAR steamPath[ MAX_OSPATH ]; // will be converted to ANSI
+	static TCHAR steamPath[ MAX_OSPATH ]; // will be converted from TCHAR to ANSI
 
 #if defined(STEAMPATH_NAME) || defined(STEAMPATH_APPID)
 	HKEY steamRegKey;
@@ -174,14 +174,8 @@ const char *Sys_SteamPath( void )
 #endif
 
 #ifdef STEAMPATH_APPID
-	if ( !steamPath[0] && RegOpenKeyEx( HKEY_LOCAL_MACHINE, AtoW( "SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App " STEAMPATH_APPID), 0, KEY_QUERY_VALUE, &steamRegKey ) == ERROR_SUCCESS )
-	{
-		pathLen = sizeof( steamPath );
-		if ( RegQueryValueEx(steamRegKey, AtoW("InstallLocation"), NULL, NULL, (LPBYTE)steamPath, &pathLen ) != ERROR_SUCCESS )
-			steamPath[ 0 ] = '\0';
-	}
-
-	if ( !steamPath[0] && RegOpenKeyEx(HKEY_LOCAL_MACHINE, AtoW("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App " STEAMPATH_APPID), 0, KEY_READ, &steamRegKey ) == ERROR_SUCCESS ) 
+	// Assuming Steam is a 32-bit app
+	if ( !steamPath[0] && RegOpenKeyEx(HKEY_LOCAL_MACHINE, AtoW("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App " STEAMPATH_APPID), 0, KEY_QUERY_VALUE | KEY_WOW64_32KEY, &steamRegKey ) == ERROR_SUCCESS ) 
 	{
 		pathLen = sizeof( steamPath );
 		if ( RegQueryValueEx( steamRegKey, AtoW("InstallLocation"), NULL, NULL, (LPBYTE)steamPath, &pathLen ) != ERROR_SUCCESS )
