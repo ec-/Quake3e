@@ -1138,6 +1138,9 @@ int Q_CountChar(const char *string, char tocount)
 	return count;
 }
 
+#if	defined(_DEBUG) && defined(_WIN32)
+#include <windows.h>
+#endif
 
 int QDECL Com_sprintf( char *dest, int size, const char *fmt, ...) 
 {
@@ -1149,7 +1152,7 @@ int QDECL Com_sprintf( char *dest, int size, const char *fmt, ...)
 	{
 		Com_Error( ERR_FATAL, "Com_sprintf: NULL dest" );
 #if	defined(_DEBUG) && defined(_WIN32)
-		__debugbreak();
+		DebugBreak();
 #endif
 		return 0;
 	}
