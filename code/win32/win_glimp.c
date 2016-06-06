@@ -128,11 +128,13 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 	ri.Printf( PRINT_ALL, "...GLW_ChoosePFD( %d, %d, %d )\n", ( int ) pPFD->cColorBits, ( int ) pPFD->cDepthBits, ( int ) pPFD->cStencilBits );
 
 	// count number of PFDs
+#ifdef USE_WGL
 	if ( glConfig.driverType > GLDRV_ICD )
 	{
 		maxPFD = qwglDescribePixelFormat( hDC, 1, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[0] );
 	}
 	else
+#endif
 	{
 		maxPFD = DescribePixelFormat( hDC, 1, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[0] );
 	}
@@ -148,11 +150,13 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 	// grab information
 	for ( i = 1; i <= maxPFD; i++ )
 	{
+#ifdef USE_WGL
 		if ( glConfig.driverType > GLDRV_ICD )
 		{
 			qwglDescribePixelFormat( hDC, i, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[i] );
 		}
 		else
+#endif
 		{
 			DescribePixelFormat( hDC, i, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[i] );
 		}
@@ -403,7 +407,7 @@ static int GLW_MakeContext( PIXELFORMATDESCRIPTOR *pPFD )
 			return TRY_PFD_FAIL_SOFT;
 		}
 		ri.Printf( PRINT_ALL, "...PIXELFORMAT %d selected\n", pixelformat );
-
+#ifdef USE_WGL
 		if ( glConfig.driverType > GLDRV_ICD )
 		{
 			qwglDescribePixelFormat( glw_state.hDC, pixelformat, sizeof( *pPFD ), pPFD );
@@ -414,6 +418,7 @@ static int GLW_MakeContext( PIXELFORMATDESCRIPTOR *pPFD )
 			}
 		}
 		else
+#endif
 		{
 			DescribePixelFormat( glw_state.hDC, pixelformat, sizeof( *pPFD ), pPFD );
 
@@ -1388,16 +1393,21 @@ fail:
 
 static void GLimp_SwapBuffers( void ) 
 {
+#ifdef USE_WGL	
 	if ( glConfig.driverType > GLDRV_ICD )
 	{
 		if ( !qwglSwapBuffers( glw_state.hDC ) )
 		{
-			ri.Error( ERR_FATAL, "GLimp_EndFrame() - SwapBuffers() failed!\n" );
+			ri.Error( ERR_FATAL, "GLimp_EndFrame() - wglSwapBuffers() failed!\n" );
 		}
 	}
 	else
+#endif
 	{
-		SwapBuffers( glw_state.hDC );
+		if ( !SwapBuffers( glw_state.hDC ) ) 
+		{
+			ri.Error( ERR_FATAL, "GLimp_EndFrame() - SwapBuffers() failed!\n" );
+		}
 	}
 }
 

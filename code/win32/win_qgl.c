@@ -43,7 +43,6 @@ int   ( WINAPI * qwglGetPixelFormat)(HDC);
 BOOL  ( WINAPI * qwglSetPixelFormat)(HDC, int, CONST PIXELFORMATDESCRIPTOR *);
 BOOL  ( WINAPI * qwglSwapBuffers)(HDC);
 
-BOOL  ( WINAPI * qwglCopyContext)(HGLRC, HGLRC, UINT);
 HGLRC ( WINAPI * qwglCreateContext)(HDC);
 HGLRC ( WINAPI * qwglCreateLayerContext)(HDC, int);
 BOOL  ( WINAPI * qwglDeleteContext)(HGLRC);
@@ -51,19 +50,7 @@ HGLRC ( WINAPI * qwglGetCurrentContext)(VOID);
 HDC   ( WINAPI * qwglGetCurrentDC)(VOID);
 PROC  ( WINAPI * qwglGetProcAddress)(LPCSTR);
 BOOL  ( WINAPI * qwglMakeCurrent)(HDC, HGLRC);
-BOOL  ( WINAPI * qwglShareLists)(HGLRC, HGLRC);
-BOOL  ( WINAPI * qwglUseFontBitmaps)(HDC, DWORD, DWORD, DWORD);
 
-BOOL  ( WINAPI * qwglUseFontOutlines)(HDC, DWORD, DWORD, DWORD, FLOAT,
-                                           FLOAT, int, LPGLYPHMETRICSFLOAT);
-
-BOOL ( WINAPI * qwglDescribeLayerPlane)(HDC, int, int, UINT,
-                                            LPLAYERPLANEDESCRIPTOR);
-int  ( WINAPI * qwglSetLayerPaletteEntries)(HDC, int, int, int,
-                                                CONST COLORREF *);
-int  ( WINAPI * qwglGetLayerPaletteEntries)(HDC, int, int, int,
-                                                COLORREF *);
-BOOL ( WINAPI * qwglRealizeLayerPalette)(HDC, int, BOOL);
 BOOL ( WINAPI * qwglSwapLayerBuffers)(HDC, UINT);
 
 void ( APIENTRY * qglMultiTexCoord2fARB )( GLenum texture, GLfloat s, GLfloat t );
@@ -215,22 +202,14 @@ void QGL_Shutdown( void )
 
 	glw_state.hinstOpenGL = NULL;
 
-	qwglCopyContext              = NULL;
 	qwglCreateContext            = NULL;
 	qwglCreateLayerContext       = NULL;
 	qwglDeleteContext            = NULL;
-	qwglDescribeLayerPlane       = NULL;
 	qwglGetCurrentContext        = NULL;
 	qwglGetCurrentDC             = NULL;
-	qwglGetLayerPaletteEntries   = NULL;
 	qwglGetProcAddress           = NULL;
 	qwglMakeCurrent              = NULL;
-	qwglRealizeLayerPalette      = NULL;
-	qwglSetLayerPaletteEntries   = NULL;
-	qwglShareLists               = NULL;
 	qwglSwapLayerBuffers         = NULL;
-	qwglUseFontBitmaps           = NULL;
-	qwglUseFontOutlines          = NULL;
 
 	qwglChoosePixelFormat        = NULL;
 	qwglDescribePixelFormat      = NULL;
@@ -349,22 +328,14 @@ qboolean QGL_Init( const char *dllname )
 
 	ri.Printf( PRINT_ALL, "succeeded\n" );
 
-	qwglCopyContext              = GPA( "wglCopyContext" );
 	qwglCreateContext            = GPA( "wglCreateContext" );
 	qwglCreateLayerContext       = GPA( "wglCreateLayerContext" );
 	qwglDeleteContext            = GPA( "wglDeleteContext" );
-	qwglDescribeLayerPlane       = GPA( "wglDescribeLayerPlane" );
 	qwglGetCurrentContext        = GPA( "wglGetCurrentContext" );
 	qwglGetCurrentDC             = GPA( "wglGetCurrentDC" );
-	qwglGetLayerPaletteEntries   = GPA( "wglGetLayerPaletteEntries" );
 	qwglGetProcAddress           = GPA( "wglGetProcAddress" );
 	qwglMakeCurrent              = GPA( "wglMakeCurrent" );
-	qwglRealizeLayerPalette      = GPA( "wglRealizeLayerPalette" );
-	qwglSetLayerPaletteEntries   = GPA( "wglSetLayerPaletteEntries" );
-	qwglShareLists               = GPA( "wglShareLists" );
 	qwglSwapLayerBuffers         = GPA( "wglSwapLayerBuffers" );
-	qwglUseFontBitmaps           = GPA( "wglUseFontBitmapsA" );
-	qwglUseFontOutlines          = GPA( "wglUseFontOutlinesA" );
 
 	qwglChoosePixelFormat        = GPA( "wglChoosePixelFormat" );
 	qwglDescribePixelFormat      = GPA( "wglDescribePixelFormat" );
