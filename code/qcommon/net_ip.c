@@ -524,22 +524,15 @@ qboolean	NET_IsLocalAddress( netadr_t adr ) {
 ==================
 NET_GetPacket
 
-Never called by the game logic, just the system event queing
+Receive one packet
 ==================
 */
-#ifdef _DEBUG
-int	recvfromCount;
-#endif
-
-qboolean NET_GetPacket( netadr_t *net_from, msg_t *net_message, fd_set *fdr ) {
+qboolean NET_GetPacket(netadr_t *net_from, msg_t *net_message, fd_set *fdr)
+{
 	int 	ret;
 	struct sockaddr_storage from;
 	socklen_t	fromlen;
 	int		err;
-
-#ifdef _DEBUG
-	recvfromCount++;		// performance check
-#endif
 	
 	if(ip_socket != INVALID_SOCKET && FD_ISSET(ip_socket, fdr))
 	{
@@ -1630,7 +1623,8 @@ NET_Event
 Called from NET_Sleep which uses select() to determine which sockets have seen action.
 ====================
 */
-void NET_Event( fd_set *fdr )
+
+void NET_Event(fd_set *fdr)
 {
 	byte bufData[MAX_MSGLEN + 1];
 	netadr_t from = {0};

@@ -3041,26 +3041,31 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 	Sys_FreeFileList( pakfiles );
 }
 
+
 /*
 ================
 FS_idPak
 ================
 */
-qboolean FS_idPak( const char *pak, const char *base ) {
+qboolean FS_idPak(const char *pak, const char *base, int numPaks)
+{
 	int i;
 
-	for ( i = 0; i < NUM_ID_PAKS; i++ ) {
-		if ( !FS_FilenameCompare( pak, va( "%s/pak%d", base, i ) ) ) {
-			return qtrue;
+	for (i = 0; i < NUM_ID_PAKS; i++) {
+		if ( !FS_FilenameCompare(pak, va("%s/pak%d", base, i)) ) {
+			break;
 		}
 	}
-
+	if (i < numPaks) {
+		return qtrue;
+	}
 	return qfalse;
 }
 
+
 /*
 ================
-FS_idPak
+FS_CheckDirTraversal
 
 Check whether the string contains stuff like "../" to prevent directory traversal bugs
 and return qtrue if it does.
@@ -3118,7 +3123,7 @@ qboolean FS_ComparePaks( char *neededpaks, int len, qboolean dlstring ) {
 		havepak = qfalse;
 
 		// never autodownload any of the id paks
-		if ( FS_idPak(fs_serverReferencedPakNames[i], IDBASEGAME) || FS_idPak(fs_serverReferencedPakNames[i], "missionpack") ) {
+		if ( FS_idPak(fs_serverReferencedPakNames[i], BASEGAME, NUM_ID_PAKS) || FS_idPak(fs_serverReferencedPakNames[i], BASETA, NUM_TA_PAKS) ) {
 			continue;
 		}
 
@@ -3410,7 +3415,7 @@ static void FS_Startup( void ) {
 	fs_gamedirvar->modified = qfalse; // We just loaded, it's not modified
 
 	// check original q3a files
-	if ( !Q_stricmp( fs_basegame->string, IDBASEGAME ) || !Q_stricmp( fs_basegame->string, IDBASEDEMO ) )
+	if ( !Q_stricmp( fs_basegame->string, BASEGAME ) || !Q_stricmp( fs_basegame->string, BASEDEMO ) )
 		FS_CheckIdPaks();
 
 #ifdef FS_MISSING
@@ -3443,7 +3448,7 @@ static void FS_CheckIdPaks( void )
 		if(!path->pack)
 			continue;
 
-		if(!Q_stricmpn( path->pack->pakGamename, IDBASEDEMO, MAX_OSPATH )
+		if(!Q_stricmpn( path->pack->pakGamename, BASEDEMO, MAX_OSPATH )
 		   && !Q_stricmpn( pakBasename, "pak0", MAX_OSPATH ))
 		{
 			founddemo = qtrue;
@@ -3459,7 +3464,7 @@ static void FS_CheckIdPaks( void )
 			}
 		}
 
-		else if(!Q_stricmpn( path->pack->pakGamename, IDBASEGAME, MAX_OSPATH )
+		else if(!Q_stricmpn( path->pack->pakGamename, BASEGAME, MAX_OSPATH )
 			&& strlen(pakBasename) == 4 && !Q_stricmpn( pakBasename, "pak", 3 )
 			&& pakBasename[3] >= '0' && pakBasename[3] <= '8')
 		{
@@ -3511,11 +3516,11 @@ static void FS_CheckIdPaks( void )
 		Com_Printf("\n\n"
 			"Also check that your Q3 executable is in\n"
 			"the correct place and that every file\n"
-			"in the %s directory is present and readable.\n", IDBASEGAME);
+			"in the %s directory is present and readable.\n", BASEGAME);
 
 		if(!fs_gamedirvar->string[0]
-		|| !Q_stricmp( fs_gamedirvar->string, IDBASEGAME )
-		|| !Q_stricmp( fs_gamedirvar->string, "missionpack" ))
+		|| !Q_stricmp( fs_gamedirvar->string, BASEGAME )
+		|| !Q_stricmp( fs_gamedirvar->string, BASETA ))
 			Com_Error(ERR_FATAL, "\n*** you need to install Quake III Arena in order to play ***");
 	}
 }

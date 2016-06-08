@@ -299,10 +299,7 @@ void SV_AddOperatorCommands (void);
 void SV_RemoveOperatorCommands (void);
 
 
-void SV_MasterHeartbeat (void);
 void SV_MasterShutdown (void);
-
-
 
 
 //

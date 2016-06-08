@@ -59,23 +59,13 @@ char *COM_SkipPath (char *pathname)
 COM_GetExtension
 ============
 */
-const char *COM_GetExtension( const char *name ) 
+const char *COM_GetExtension( const char *name )
 {
-	size_t i;
-
-	i = strlen( name ) - 1;
-
-	if ( i == -1 )
+	const char *dot = strrchr(name, '.'), *slash;
+	if (dot && (!(slash = strrchr(name, '/')) || slash < dot))
+		return dot + 1;
+	else
 		return "";
-
-	while ( name[i] != '.' )
-	{
-		i--;
-		if ( name[i] == '/' || i == 0 )
-			return ""; // no extension
-	}
-
-	return &name[i+1];
 }
 
 
@@ -1446,7 +1436,7 @@ void Info_RemoveKey_Big( char *s, const char *key ) {
 
 		if (!strcmp (key, pkey) )
 		{
-			memmove(start, s, strlen(s) + 1); // remove this part 
+			memmove(start, s, strlen(s) + 1); // remove this part
 			return;
 		}
 

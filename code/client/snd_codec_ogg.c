@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 // OGG support is enabled by this define
-#if USE_CODEC_VORBIS
+#ifdef USE_CODEC_VORBIS
 
 // includes for the Q3 sound system
 #include "client.h"
@@ -129,7 +129,7 @@ int S_OGG_Callback_seek(void *datasource, ogg_int64_t offset, int whence)
 			retVal = FS_Seek(stream->file, (long) offset, FS_SEEK_SET);
 
 			// something has gone wrong, so we return here
-			if(!(retVal == 0))
+			if(retVal < 0)
 			{
 			 return retVal;
 			}
@@ -145,7 +145,7 @@ int S_OGG_Callback_seek(void *datasource, ogg_int64_t offset, int whence)
 			retVal = FS_Seek(stream->file, (long) offset, FS_SEEK_CUR);
 
 			// something has gone wrong, so we return here
-			if(!(retVal == 0))
+			if(retVal < 0)
 			{
 			 return retVal;
 			}
@@ -157,14 +157,11 @@ int S_OGG_Callback_seek(void *datasource, ogg_int64_t offset, int whence)
  
 		case SEEK_END :
 		{
-			// Quake 3 seems to have trouble with FS_SEEK_END 
-			// so we use the file length and FS_SEEK_SET
-
 			// set the file position in the actual file with the Q3 function
-			retVal = FS_Seek(stream->file, (long) stream->length + (long) offset, FS_SEEK_SET);
+			retVal = FS_Seek(stream->file, (long) offset, FS_SEEK_END);
 
 			// something has gone wrong, so we return here
-			if(!(retVal == 0))
+			if(retVal < 0)
 			{
 			 return retVal;
 			}
@@ -199,15 +196,19 @@ int S_OGG_Callback_close(void *datasource)
 // ftell() replacement
 long S_OGG_Callback_tell(void *datasource)
 {
+	snd_stream_t   *stream;
+
 	// check if input is valid
 	if(!datasource)
 	{
-		errno = EBADF; 
+		errno = EBADF;
 		return -1;
 	}
 
-	// we keep track of the file position in stream->pos
-	return (long) (((snd_stream_t *) datasource) -> pos);
+	// snd_stream_t in the generic pointer
+	stream = (snd_stream_t *) datasource;
+
+	return (long) FS_FTell(stream->file);
 }
 
 // the callback structure
