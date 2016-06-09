@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "client.h"
 
-char *svc_strings[256] = {
+static const char *svc_strings[256] = {
 	"svc_bad",
 
 	"svc_nop",
@@ -32,10 +32,13 @@ char *svc_strings[256] = {
 	"svc_baseline",	
 	"svc_serverCommand",
 	"svc_download",
-	"svc_snapshot"
+	"svc_snapshot",
+	"svc_EOF",
+	"svc_voipSpeex", // ioq3 extension
+	"svc_voipOpus",  // ioq3 extension
 };
 
-void SHOWNET( msg_t *msg, char *s) {
+void SHOWNET( msg_t *msg, const char *s ) {
 	if ( cl_shownet->integer >= 2) {
 		Com_Printf ("%3i:%s\n", msg->readcount-1, s);
 	}
@@ -632,6 +635,7 @@ void CL_ParseDownload ( msg_t *msg ) {
 	}
 }
 
+
 /*
 =====================
 CL_ParseCommandString
@@ -728,8 +732,16 @@ void CL_ParseServerMessage( msg_t *msg ) {
 		case svc_download:
 			CL_ParseDownload( msg );
 			break;
+		case svc_voipSpeex: // ioq3 extension
+#ifdef USE_VOIP
+			CL_ParseVoip( msg, qtrue );
+#endif
+			break;
+		case svc_voipOpus: // ioq3 extension
+#ifdef USE_VOIP
+			CL_ParseVoip( msg, !clc.voipEnabled );
+#endif
+			break;
 		}
 	}
 }
-
-

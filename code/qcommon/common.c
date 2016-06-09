@@ -191,7 +191,7 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 			struct tm *newtime;
 			time_t aclock;
 
-      opening_qconsole = qtrue;
+			opening_qconsole = qtrue;
 
 			time( &aclock );
 			newtime = localtime( &aclock );
@@ -215,7 +215,7 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 				Cvar_SetValue("logfile", 0);
 			}
 
-      opening_qconsole = qfalse;
+			opening_qconsole = qfalse;
 		}
 		if ( logfile && FS_Initialized()) {
 			FS_Write(msg, strlen(msg), logfile);
@@ -2906,7 +2906,7 @@ void Com_Init( char *commandLine ) {
 	com_timescale = Cvar_Get ("timescale", "1", CVAR_CHEAT | CVAR_SYSTEMINFO );
 	com_fixedtime = Cvar_Get ("fixedtime", "0", CVAR_CHEAT);
 	com_showtrace = Cvar_Get ("com_showtrace", "0", CVAR_CHEAT);
-	com_viewlog = Cvar_Get( "viewlog", "0", CVAR_CHEAT );
+	com_viewlog = Cvar_Get( "viewlog", "0", 0 );
 	com_speeds = Cvar_Get ("com_speeds", "0", 0);
 	com_timedemo = Cvar_Get ("timedemo", "0", CVAR_CHEAT);
 	com_cameraMode = Cvar_Get ("com_cameraMode", "0", CVAR_CHEAT);
@@ -3175,6 +3175,8 @@ void Com_Frame( qboolean demoPlaying ) {
 
 	int		msec, minMsec;
 	int		timeVal;
+	int		timeValSV;
+
 	static int lastTime = 0;
 
 	int	timeBeforeFirstEvents;
@@ -3214,7 +3216,9 @@ void Com_Frame( qboolean demoPlaying ) {
 	}
 	
 	// we may want to spin here if things are going too fast
-	if ( !com_dedicated->integer ) {
+	if ( com_dedicated->integer ) {
+		minMsec = SV_FrameMsec();
+	} else {
 		if ( com_timedemo->integer && demoPlaying )
 			minMsec = 0;
 		else
@@ -3229,15 +3233,19 @@ void Com_Frame( qboolean demoPlaying ) {
 			if ( com_maxfps->integer > 0 )
 				minMsec = 1000 / com_maxfps->integer;
 		}
-	} else {
-		// dedicated server
-		minMsec = SV_FrameMsec();
 	}
 
 	// waiting for incoming packets
 	if ( minMsec )
 	do {
-		timeVal = Com_TimeVal( minMsec );
+		if ( com_sv_running->integer ) {
+			timeValSV = SV_SendQueuedPackets();
+			timeVal = Com_TimeVal( minMsec );
+			if ( timeValSV < timeVal )
+				timeVal = timeValSV;
+		} else {
+			timeVal = Com_TimeVal(minMsec);
+		}
 		if ( com_dedicated->integer ) {
 			NET_Sleep( timeVal );
 		} else {

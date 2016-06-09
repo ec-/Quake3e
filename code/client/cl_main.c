@@ -1264,6 +1264,7 @@ static void CL_CompleteRcon( char *args, int argNum )
 	}
 }
 
+
 /*
 =====================
 CL_Rcon_f
@@ -2105,7 +2106,7 @@ void CL_ConnectionlessPacket( netadr_t from, msg_t *msg ) {
 
 	c = Cmd_Argv(0);
 
-	Com_DPrintf ("CL packet %s: %s\n", NET_AdrToStringwPort(from), c);
+	Com_DPrintf( "CL packet %s: %s\n", NET_AdrToStringwPort( from ), s );
 
 	// challenge from the server we are connecting to
 	if (!Q_stricmp(c, "challengeResponse"))
@@ -2235,7 +2236,7 @@ A packet has arrived from the main event loop
 void CL_PacketEvent( netadr_t from, msg_t *msg ) {
 	int		headerBytes;
 
-	clc.lastPacketTime = cls.realtime;
+	clc.lastPacketTime = cls.realtime; // -EC- FIXME: move down?
 
 	if ( msg->cursize >= 4 && *(int *)msg->data == -1 ) {
 		CL_ConnectionlessPacket( from, msg );
@@ -3065,11 +3066,11 @@ void CL_Shutdown( const char *finalmsg ) {
 	Cmd_RemoveCommand ("ping");
 	Cmd_RemoveCommand ("serverstatus");
 	Cmd_RemoveCommand ("showip");
+	Cmd_RemoveCommand ("fs_openedList");
+	Cmd_RemoveCommand ("fs_referencedList");
 	Cmd_RemoveCommand ("model");
 	Cmd_RemoveCommand ("video");
 	Cmd_RemoveCommand ("stopvideo");
-	Cmd_RemoveCommand ("fs_openedList");
-	Cmd_RemoveCommand ("fs_referencedList");
 
 	Com_DL_Cleanup( &download );
 
@@ -3102,6 +3103,8 @@ static void CL_SetServerInfo(serverInfo_t *server, const char *info, int ping) {
 			server->minPing = atoi(Info_ValueForKey(info, "minping"));
 			server->maxPing = atoi(Info_ValueForKey(info, "maxping"));
 			server->punkbuster = atoi(Info_ValueForKey(info, "punkbuster"));
+			server->g_humanplayers = atoi(Info_ValueForKey(info, "g_humanplayers"));
+			server->g_needpass = atoi(Info_ValueForKey(info, "g_needpass"));
 		}
 		server->ping = ping;
 	}
@@ -3215,7 +3218,7 @@ void CL_ServerInfoPacket( netadr_t from, msg_t *msg ) {
 	Q_strncpyz( info, MSG_ReadString( msg ), MAX_INFO_STRING );
 	if (strlen(info)) {
 		if (info[strlen(info)-1] != '\n') {
-			strncat(info, "\n", sizeof(info) - 1);
+			Q_strcat(info, sizeof(info), "\n");
 		}
 		Com_Printf( "%s: %s", NET_AdrToStringwPort( from ), info );
 	}
@@ -3283,7 +3286,7 @@ int CL_ServerStatus( char *serverAddress, char *serverStatusString, int maxLen )
 
 	// if this server status request has the same address
 	if ( NET_CompareAdr( to, serverStatus->address) ) {
-		// if we recieved an response for this server status request
+		// if we received a response for this server status request
 		if (!serverStatus->pending) {
 			Q_strncpyz(serverStatusString, serverStatus->string, maxLen);
 			serverStatus->retrieved = qtrue;
@@ -3756,7 +3759,6 @@ qboolean CL_UpdateVisiblePings_f(int source) {
 	if (slots < MAX_PINGREQUESTS) {
 		serverInfo_t *server = NULL;
 
-		max = (source == AS_GLOBAL) ? MAX_GLOBAL_SERVERS : MAX_OTHER_SERVERS;
 		switch (source) {
 			case AS_LOCAL :
 				server = &cls.localServers[0];

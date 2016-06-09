@@ -569,7 +569,7 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 					client->gentity = ent;
 
 					client->deltaMessage = -1;
-					client->nextSnapshotTime = svs.time;	// generate a snapshot immediately
+					client->lastSnapshotTime = 0;	// generate a snapshot immediately
 
 					VM_Call( gvm, GAME_CLIENT_BEGIN, i );
 				}
@@ -662,6 +662,7 @@ void SV_Init (void)
 
 	sv_minRate = Cvar_Get ("sv_minRate", "0", CVAR_ARCHIVE | CVAR_SERVERINFO );
 	sv_maxRate = Cvar_Get ("sv_maxRate", "0", CVAR_ARCHIVE | CVAR_SERVERINFO );
+	sv_dlRate = Cvar_Get("sv_dlRate", "100", CVAR_ARCHIVE | CVAR_SERVERINFO);
 	sv_minPing = Cvar_Get ("sv_minPing", "0", CVAR_ARCHIVE | CVAR_SERVERINFO );
 	sv_maxPing = Cvar_Get ("sv_maxPing", "0", CVAR_ARCHIVE | CVAR_SERVERINFO );
 	sv_floodProtect = Cvar_Get ("sv_floodProtect", "1", CVAR_ARCHIVE | CVAR_SERVERINFO );
@@ -744,14 +745,14 @@ void SV_FinalMessage( const char *message ) {
 	// send it twice, ignoring rate
 	for ( j = 0 ; j < 2 ; j++ ) {
 		for (i=0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++) {
-			if (cl->state >= CS_CONNECTED || cl->downloadName[0] ) {
+			if (cl->state >= CS_CONNECTED ) {
 				// don't send a disconnect to a local client
 				if ( cl->netchan.remoteAddress.type != NA_LOOPBACK ) {
 					SV_SendServerCommand( cl, "print \"%s\n\"\n", message );
 					SV_SendServerCommand( cl, "disconnect \"%s\"", message );
 				}
 				// force a snapshot to be sent
-				cl->nextSnapshotTime = -1;
+				cl->lastSnapshotTime = 0;
 				SV_SendClientSnapshot( cl );
 			}
 		}
@@ -788,15 +789,21 @@ void SV_Shutdown( const char *finalmsg ) {
 	SV_ClearServer();
 
 	// free server static data
-	if ( svs.clients ) {
-		Z_Free( svs.clients );
+	if(svs.clients)
+	{
+		int index;
+		
+		for(index = 0; index < sv_maxclients->integer; index++)
+			SV_FreeClient(&svs.clients[index]);
+		
+		Z_Free(svs.clients);
 	}
 	Com_Memset( &svs, 0, sizeof( svs ) );
-	Com_Memset( &sv, 0, sizeof( sv ) );
+	Com_Memset( &sv, 0, sizeof( sv ) ); // -EC- FIXME: don't do that?
 
 	Cvar_Set( "sv_running", "0" );
 	Cvar_Set( "ui_singlePlayerActive", "0" );
-	Cvar_Set( "mapname", NULL ); // force reset
+	Cvar_Set( "mapname", NULL ); // -EC- force reset
 
 	Com_Printf( "---------------------------\n" );
 

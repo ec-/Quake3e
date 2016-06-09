@@ -230,7 +230,7 @@ typedef enum {
 typedef struct {
 	genFunc_t	func;
 
-	double base;
+	double base;		// set to double for frameloss fix -EC- 
 	double amplitude;
 	double phase;
 	double frequency;
@@ -410,8 +410,8 @@ typedef struct shader_s {
 
 	void		(*optimalStageIteratorFunc)( void );
 
-	double	clampTime;                                  // time this shader is clamped to
-	double	timeOffset;                                 // current time offset for this shader
+	double	clampTime;                                  // time this shader is clamped to - set to double for frameloss fix -EC-
+	double	timeOffset;                                 // current time offset for this shader - set to double for frameloss fix -EC-
 
 	struct shader_s *remappedShader;                  // current shader this one is remapped too
 
@@ -1326,7 +1326,7 @@ typedef struct shaderCommands_s
 #pragma pack(pop)
 
 	shader_t	*shader;
-	double		shaderTime;
+	double		shaderTime;	// set to double for frameloss fix -EC-
 	int			fogNum;
 
 	int			dlightBits;	// or together of all vertexDlightBits

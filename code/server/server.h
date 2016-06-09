@@ -98,7 +98,7 @@ typedef struct {
 } clientSnapshot_t;
 
 typedef enum {
-	CS_FREE,		// can be reused for a new connection
+	CS_FREE = 0,	// can be reused for a new connection
 	CS_ZOMBIE,		// client has been disconnected, but don't reuse
 					// connection for a couple seconds
 	CS_CONNECTED,	// has been assigned to a client_t, but no gamestate yet
@@ -109,6 +109,7 @@ typedef enum {
 typedef struct netchan_buffer_s {
 	msg_t           msg;
 	byte            msgBuffer[MAX_MSGLEN];
+	char		clientCommandString[MAX_STRING_CHARS];	// valid command string for SV_Netchan_Encode
 	struct netchan_buffer_s *next;
 } netchan_buffer_t;
 
@@ -149,7 +150,7 @@ typedef struct client_s {
 	int				nextReliableTime;	// svs.time when another reliable command will be allowed
 	int				lastPacketTime;		// svs.time when packet was last received
 	int				lastConnectTime;	// svs.time when connection started
-	int				nextSnapshotTime;	// send another snapshot when svs.time >= nextSnapshotTime
+	int				lastSnapshotTime;	// svs.time of last sent snapshot
 	qboolean		rateDelayed;		// true if nextSnapshotTime was set based on rate instead of snapshotMsec
 	int				timeoutCount;		// must timeout a few frames in a row so debugging doesn't break
 	clientSnapshot_t	frames[PACKET_BACKUP];	// updates can be delta'd from here
@@ -167,7 +168,7 @@ typedef struct client_s {
 	netchan_buffer_t **netchan_end_queue;
 
 	int				oldServerTime;
-	qboolean		csUpdated[MAX_CONFIGSTRINGS+1];	
+	qboolean		csUpdated[MAX_CONFIGSTRINGS];	
 } client_t;
 
 //=============================================================================
@@ -251,6 +252,7 @@ extern	cvar_t	*sv_mapChecksum;
 extern	cvar_t	*sv_serverid;
 extern	cvar_t	*sv_minRate;
 extern	cvar_t	*sv_maxRate;
+extern	cvar_t	*sv_dlRate;
 extern	cvar_t	*sv_minPing;
 extern	cvar_t	*sv_maxPing;
 extern	cvar_t	*sv_gametype;
@@ -287,11 +289,13 @@ struct leakyBucket_s {
 	leakyBucket_t *prev, *next;
 };
 
+extern leakyBucket_t outboundLeakyBucket;
+
 qboolean SVC_RateLimit( leakyBucket_t *bucket, int burst, int period );
 qboolean SVC_RateLimitAddress( netadr_t from, int burst, int period );
 
-void SV_FinalMessage( const char *message );
-void QDECL SV_SendServerCommand( client_t *cl, const char *fmt, ...);
+void SV_FinalMessage(const char *message);
+void QDECL SV_SendServerCommand( client_t *cl, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 
 
 void SV_AddOperatorCommands (void);
@@ -299,6 +303,8 @@ void SV_RemoveOperatorCommands (void);
 
 
 void SV_MasterShutdown (void);
+int SV_RateMsec(client_t *client);
+
 
 
 //
@@ -331,12 +337,16 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg );
 void SV_UserinfoChanged( client_t *cl );
 
 void SV_ClientEnterWorld( client_t *client, usercmd_t *cmd );
+void SV_FreeClient(client_t *client);
 void SV_DropClient( client_t *drop, const char *reason );
 
 void SV_ExecuteClientCommand( client_t *cl, const char *s, qboolean clientOK );
 void SV_ClientThink (client_t *cl, usercmd_t *cmd);
 
-void SV_WriteDownloadToClient( client_t *cl , msg_t *msg );
+int SV_WriteDownloadToClient(client_t *cl , msg_t *msg);
+int SV_SendDownloadMessages(void);
+int SV_SendQueuedMessages(void);
+
 
 //
 // sv_ccmds.c
@@ -399,7 +409,7 @@ void SV_UnlinkEntity( sharedEntity_t *ent );
 void SV_LinkEntity( sharedEntity_t *ent );
 // Needs to be called any time an entity changes origin, mins, maxs,
 // or solid.  Automatically unlinks if needed.
-// sets ent->v.absmin and ent->v.absmax
+// sets ent->r.absmin and ent->r.absmax
 // sets ent->leafnums[] for pvs determination even if the entity
 // is not solid
 
@@ -442,6 +452,6 @@ void SV_ClipToEntity( trace_t *trace, const vec3_t start, const vec3_t mins, con
 // sv_net_chan.c
 //
 void SV_Netchan_Transmit( client_t *client, msg_t *msg);
-void SV_Netchan_TransmitNextFragment( client_t *client );
+int SV_Netchan_TransmitNextFragment( client_t *client );
 qboolean SV_Netchan_Process( client_t *client, msg_t *msg );
-
+void SV_Netchan_FreeQueue( client_t *client );

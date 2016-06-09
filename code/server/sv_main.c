@@ -46,6 +46,7 @@ cvar_t	*sv_mapChecksum;
 cvar_t	*sv_serverid;
 cvar_t	*sv_minRate;
 cvar_t	*sv_maxRate;
+cvar_t	*sv_dlRate;
 cvar_t	*sv_minPing;
 cvar_t	*sv_maxPing;
 cvar_t	*sv_gametype;
@@ -329,7 +330,7 @@ Informs all masters that this server is going down
 =================
 */
 void SV_MasterShutdown( void ) {
-	// send a hearbeat right now
+	// send a heartbeat right now
 	svs.nextHeartbeatTime = -9999;
 	SV_MasterHeartbeat(HEARTBEAT_FOR_MASTER);
 
@@ -356,6 +357,7 @@ CONNECTIONLESS COMMANDS
 
 static leakyBucket_t buckets[ MAX_BUCKETS ];
 static leakyBucket_t *bucketHashes[ MAX_HASHES ];
+leakyBucket_t outboundLeakyBucket;
 
 /*
 ================
@@ -527,10 +529,9 @@ static void SVC_Status( netadr_t from ) {
 	int		statusLength;
 	int		playerLength;
 	char	infostring[MAX_INFO_STRING];
-	static leakyBucket_t bucket;
 
 	// ignore if we are in single player
-	if ( Cvar_VariableValue( "g_gametype" ) == GT_SINGLE_PLAYER ) {
+	if ( Cvar_VariableValue( "g_gametype" ) == GT_SINGLE_PLAYER || Cvar_VariableValue("ui_singlePlayerActive")) {
 		return;
 	}
 
@@ -543,10 +544,14 @@ static void SVC_Status( netadr_t from ) {
 
 	// Allow getstatus to be DoSed relatively easily, but prevent
 	// excess outbound bandwidth usage when being flooded inbound
-	if ( SVC_RateLimit( &bucket, 10, 100 ) ) {
+	if ( SVC_RateLimit( &outboundLeakyBucket, 10, 100 ) ) {
 		Com_DPrintf( "SVC_Status: rate limit exceeded, dropping request\n" );
 		return;
 	}
+
+	// A maximum challenge length of 128 should be more than plenty.
+	if(strlen(Cmd_Argv(1)) > 128)
+		return;
 
 	strcpy( infostring, Cvar_InfoString( CVAR_SERVERINFO ) );
 
@@ -584,8 +589,8 @@ if a user is interested in a server to do a full status
 ================
 */
 void SVC_Info( netadr_t from ) {
-	int		i, count;
-	const char *gamedir;
+	int		i, count, humans;
+	const char	*gamedir;
 	char	infostring[MAX_INFO_STRING];
 
 	// ignore if we are in single player
@@ -600,6 +605,13 @@ void SVC_Info( netadr_t from ) {
 		return;
 	}
 
+	// Allow getinfo to be DoSed relatively easily, but prevent
+	// excess outbound bandwidth usage when being flooded inbound
+	if ( SVC_RateLimit( &outboundLeakyBucket, 10, 100 ) ) {
+		Com_DPrintf( "SVC_Info: rate limit exceeded, dropping request\n" );
+		return;
+	}
+
 	/*
 	 * Check whether Cmd_Argv(1) has a sane length. This was not done in the original Quake3 version which led
 	 * to the Infostring bug discovered by Luigi Auriemma. See http://aluigi.altervista.org/ for the advisory.
@@ -610,10 +622,13 @@ void SVC_Info( netadr_t from ) {
 		return;
 
 	// don't count privateclients
-	count = 0;
+	count = humans = 0;
 	for ( i = sv_privateClients->integer ; i < sv_maxclients->integer ; i++ ) {
 		if ( svs.clients[i].state >= CS_CONNECTED ) {
 			count++;
+			if (svs.clients[i].netchan.remoteAddress.type != NA_BOT) {
+				humans++;
+			}
 		}
 	}
 
@@ -627,10 +642,12 @@ void SVC_Info( netadr_t from ) {
 	Info_SetValueForKey( infostring, "hostname", sv_hostname->string );
 	Info_SetValueForKey( infostring, "mapname", sv_mapname->string );
 	Info_SetValueForKey( infostring, "clients", va("%i", count) );
+	Info_SetValueForKey(infostring, "g_humanplayers", va("%i", humans));
 	Info_SetValueForKey( infostring, "sv_maxclients", 
 		va("%i", sv_maxclients->integer - sv_privateClients->integer ) );
 	Info_SetValueForKey( infostring, "gametype", va("%i", sv_gametype->integer ) );
 	Info_SetValueForKey( infostring, "pure", va("%i", sv_pure->integer ) );
+	Info_SetValueForKey(infostring, "g_needpass", va("%d", Cvar_VariableIntegerValue("g_needpass")));
 
 	if( sv_minPing->integer ) {
 		Info_SetValueForKey( infostring, "minPing", va("%i", sv_minPing->integer) );
@@ -793,6 +810,7 @@ void SV_PacketEvent( netadr_t from, msg_t *msg ) {
 	int			i;
 	client_t	*cl;
 	int			qport;
+	int			seq;
 
 	// check for connectionless packet (0xffffffff) first
 	if ( msg->cursize >= 4 && *(int *)msg->data == -1) {
@@ -803,7 +821,7 @@ void SV_PacketEvent( netadr_t from, msg_t *msg ) {
 	// read the qport out of the message so we can fix up
 	// stupid address translating routers
 	MSG_BeginReadingOOB( msg );
-	MSG_ReadLong( msg );				// sequence number
+	seq = MSG_ReadLong( msg );				// sequence number
 	qport = MSG_ReadShort( msg ) & 0xffff;
 
 	// find which client the message is from
@@ -840,10 +858,12 @@ void SV_PacketEvent( netadr_t from, msg_t *msg ) {
 		}
 		return;
 	}
-	
+#if 0 // FIXME: delete this check? -EC-  	
 	// if we received a sequenced packet from an address we don't recognize,
 	// send an out of band disconnect packet to it
-	NET_OutOfBandPrint( NS_SERVER, from, "disconnect" );
+	if ( seq > 0 && !SVC_RateLimitAddress( from, 1, 3500 ) )
+		NET_OutOfBandPrint( NS_SERVER, from, "disconnect" );
+#endif
 }
 
 
@@ -1164,5 +1184,132 @@ void SV_Frame( int msec ) {
 	SV_MasterHeartbeat(HEARTBEAT_FOR_MASTER);
 }
 
-//============================================================================
+/*
+====================
+SV_RateMsec
 
+Return the number of msec until another message can be sent to
+a client based on its rate settings
+====================
+*/
+
+#define UDPIP_HEADER_SIZE 28
+#define UDPIP6_HEADER_SIZE 48
+
+int SV_RateMsec(client_t *client)
+{
+	int rate, rateMsec;
+	int messageSize;
+	
+	messageSize = client->netchan.lastSentSize;
+	rate = client->rate;
+
+	if(sv_maxRate->integer)
+	{
+		if(sv_maxRate->integer < 1000)
+			Cvar_Set( "sv_MaxRate", "1000" );
+		if(sv_maxRate->integer < rate)
+			rate = sv_maxRate->integer;
+	}
+
+	if(sv_minRate->integer)
+	{
+		if(sv_minRate->integer < 1000)
+			Cvar_Set("sv_minRate", "1000");
+		if(sv_minRate->integer > rate)
+			rate = sv_minRate->integer;
+	}
+
+	if(client->netchan.remoteAddress.type == NA_IP6)
+		messageSize += UDPIP6_HEADER_SIZE;
+	else
+		messageSize += UDPIP_HEADER_SIZE;
+		
+	rateMsec = messageSize * 1000 / ((int) (rate * com_timescale->value));
+	rate = Sys_Milliseconds() - client->netchan.lastSentTime;
+	
+	if(rate > rateMsec)
+		return 0;
+	else
+		return rateMsec - rate;
+}
+
+
+/*
+====================
+SV_SendQueuedPackets
+
+Send download messages and queued packets in the time that we're idle, i.e.
+not computing a server frame or sending client snapshots.
+Return the time in msec until we expect to be called next
+====================
+*/
+int SV_SendQueuedPackets( void )
+{
+	int numBlocks;
+	int dlStart, deltaT, delayT;
+	static int dlNextRound = 0;
+	int timeVal = INT_MAX;
+
+	// Send out fragmented packets now that we're idle
+	delayT = SV_SendQueuedMessages();
+	if(delayT >= 0)
+		timeVal = delayT;
+
+	if(sv_dlRate->integer)
+	{
+		// Rate limiting. This is very imprecise for high
+		// download rates due to millisecond timedelta resolution
+		dlStart = Sys_Milliseconds();
+		deltaT = dlNextRound - dlStart;
+
+		if(deltaT > 0)
+		{
+			if(deltaT < timeVal)
+				timeVal = deltaT + 1;
+		}
+		else
+		{
+			numBlocks = SV_SendDownloadMessages();
+
+			if(numBlocks)
+			{
+				// There are active downloads
+				deltaT = Sys_Milliseconds() - dlStart;
+
+				delayT = 1000 * numBlocks * MAX_DOWNLOAD_BLKSIZE;
+				delayT /= sv_dlRate->integer * 1024;
+
+				if(delayT <= deltaT + 1)
+				{
+					// Sending the last round of download messages
+					// took too long for given rate, don't wait for
+					// next round, but always enforce a 1ms delay
+					// between DL message rounds so we don't hog
+					// all of the bandwidth. This will result in an
+					// effective maximum rate of 1MB/s per user, but the
+					// low download window size limits this anyways.
+					if(timeVal > 2)
+						timeVal = 2;
+
+					dlNextRound = dlStart + deltaT + 1;
+				}
+				else
+				{
+					dlNextRound = dlStart + delayT;
+					delayT -= deltaT;
+
+					if(delayT < timeVal)
+						timeVal = delayT;
+				}
+			}
+		}
+	}
+	else
+	{
+		if(SV_SendDownloadMessages())
+			timeVal = 0;
+	}
+
+	return timeVal;
+}

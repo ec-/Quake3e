@@ -192,9 +192,11 @@ void		NET_Sleep( int msec );
 #define	MAX_MSGLEN				16384		// max length of a message, which may
 											// be fragmented into multiple packets
 
-#define MAX_DOWNLOAD_WINDOW			8		// max of eight download frames
-#define MAX_DOWNLOAD_BLKSIZE		2048	// 2048 byte block chunks
- 
+#define MAX_DOWNLOAD_WINDOW		48	// ACK window of 48 download chunks. Cannot set this higher, or clients
+						// will overflow the reliable commands buffer
+#define MAX_DOWNLOAD_BLKSIZE		1024	// 896 byte block chunks
+
+#define NETCHAN_GENCHECKSUM(challenge, sequence) ((challenge) ^ ((sequence) * (challenge)))
 
 /*
 Netchan handles packet fragmentation and out of order / duplicate suppression
@@ -223,6 +225,10 @@ typedef struct {
 	int			unsentFragmentStart;
 	int			unsentLength;
 	byte		unsentBuffer[MAX_MSGLEN];
+
+	int			challenge;
+	int		lastSentTime;
+	int		lastSentSize;
 } netchan_t;
 
 void Netchan_Init( int qport );
@@ -282,7 +288,11 @@ enum svc_ops_e {
 	svc_serverCommand,			// [string] to be executed by client game module
 	svc_download,				// [short] size [size bytes]
 	svc_snapshot,
-	svc_EOF
+	svc_EOF,
+
+	// new commands, supported only by ioquake3 protocol but not legacy
+	svc_voipSpeex,     // not wrapped in USE_VOIP, so this value is reserved.
+	svc_voipOpus,      //
 };
 
 
@@ -295,7 +305,11 @@ enum clc_ops_e {
 	clc_move,				// [[usercmd_t]
 	clc_moveNoDelta,		// [[usercmd_t]
 	clc_clientCommand,		// [string] message
-	clc_EOF
+	clc_EOF,
+
+	// new commands, supported only by ioquake3 protocol but not legacy
+	clc_voipSpeex,   // not wrapped in USE_VOIP, so this value is reserved.
+	clc_voipOpus,    //
 };
 
 /*
@@ -575,8 +589,7 @@ issues.
 #define FS_GENERAL_REF	0x01
 #define FS_UI_REF		0x02
 #define FS_CGAME_REF	0x04
-
-// number of id paks that will never be autodownloaded from baseq3
+// number of id paks that will never be autodownloaded from baseq3/missionpack
 #define NUM_ID_PAKS		9
 #define NUM_TA_PAKS		4
 
@@ -808,19 +821,19 @@ void 		Com_Quit_f( void );
 void		Com_GameRestart( int checksumFeed, qboolean clientRestart );
 
 int			Com_EventLoop( void );
-void		Com_RunAndTimeServerPacket( netadr_t *evFrom, msg_t *buf );
 int			Com_Milliseconds( void );	// will be journaled properly
 unsigned	Com_BlockChecksum( const void *buffer, int length );
 char		*Com_MD5File(const char *filename, int length, const char *prefix, int prefix_len);
 char		*Com_MD5Buf( const char *data, int length, const char *data2, int length2 );
 qboolean    Com_CDKeyValidate( const char *key, const char *checksum );
+char		*Com_ConsoleTitle( char *commandline );
+int			Com_Split( char *in, char **out, int outsz, int delim );
 
 int			Com_Filter(char *filter, char *name, int casesensitive);
 int			Com_FilterPath(char *filter, char *name, int casesensitive);
 int			Com_RealTime(qtime_t *qtime);
-char		*Com_ConsoleTitle( char *commandline );
 qboolean	Com_SafeMode( void );
-int			Com_Split( char *in, char **out, int outsz, int delim );
+void		Com_RunAndTimeServerPacket(netadr_t *evFrom, msg_t *buf);
 
 void		Com_StartupVariable( const char *match );
 // checks for and removes command line "+set var arg" constructs
@@ -927,7 +940,6 @@ void *Hunk_AllocateTempMemory( int size );
 void Hunk_FreeTempMemory( void *buf );
 int	Hunk_MemoryRemaining( void );
 void Hunk_Log( void);
-void Hunk_Trash( void );
 
 void Com_TouchMemory( void );
 
@@ -1016,7 +1028,7 @@ void SV_Frame( int msec );
 void SV_PacketEvent( netadr_t from, msg_t *msg );
 int SV_FrameMsec( void );
 qboolean SV_GameCommand( void );
-
+int SV_SendQueuedPackets( void );
 
 //
 // UI interface
@@ -1074,8 +1086,8 @@ void	Sys_UnloadDll( void *dllHandle );
 
 char	*Sys_GetCurrentUser( void );
 
-void	QDECL Sys_Error( const char *error, ...) __attribute__ ((format (printf, 1, 2)));
-void	Sys_Quit (void);
+void	QDECL Sys_Error( const char *error, ...) __attribute__ ((noreturn, format (printf, 1, 2)));
+void	Sys_Quit (void) __attribute__ ((noreturn));
 char	*Sys_GetClipboardData( void );	// note that this isn't journaled...
 
 void	Sys_Print( const char *msg );
@@ -1184,6 +1196,7 @@ int		Huff_getBit( byte *fout, int *offset);
 // don't use if you don't know what you're doing.
 int		Huff_getBloc(void);
 void	Huff_setBloc(int _bloc);
+
 
 extern huffman_t clientHuffTables;
 
