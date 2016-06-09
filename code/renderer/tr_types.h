@@ -101,7 +101,7 @@ typedef struct {
 	float		shaderTexCoord[2];	// texture coordinates used by tcMod entity modifiers
 
 	// subtracted from refdef time to control effect start times
-	floatint_t	shaderTime;
+	floatint_t	shaderTime;			// -EC- set to union
 
 	// extra sprite information
 	float		radius;

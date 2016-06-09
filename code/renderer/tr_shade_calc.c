@@ -915,7 +915,7 @@ void RB_CalcEnvironmentTexCoords( float *st )
 void RB_CalcTurbulentTexCoords( const waveForm_t *wf, float *st )
 {
 	int i;
-	double now;
+	double now; // -EC- set to double
 
 	now = ( wf->phase + tess.shaderTime * wf->frequency );
 
@@ -991,8 +991,8 @@ void RB_CalcTransformTexCoords( const texModInfo_t *tmi, float *st  )
 */
 void RB_CalcRotateTexCoords( float degsPerSecond, float *st )
 {
-	double timeScale = tess.shaderTime;
-	double degs;
+	double timeScale = tess.shaderTime; // -EC- set to double
+	double degs; // -EC- set to double
 	int index;
 	float sinValue, cosValue;
 	texModInfo_t tmi;

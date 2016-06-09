@@ -470,7 +470,7 @@ void RB_BeginDrawingView (void) {
 	// clip to the plane of the portal
 	if ( backEnd.viewParms.isPortal ) {
 		float	plane[4];
-		GLdouble plane2[4];
+		GLdouble plane2[4]; // -EC-
 
 		plane[0] = backEnd.viewParms.portalPlane.normal[0];
 		plane[1] = backEnd.viewParms.portalPlane.normal[1];
@@ -559,7 +559,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 
 			if ( entityNum != ENTITYNUM_WORLD ) {
 				backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
-				if ( backEnd.floatfix )
+				if ( backEnd.floatfix ) // -EC-
 					backEnd.refdef.floatTime = originalTime - (double)(backEnd.currentEntity->e.shaderTime.i) * 0.001;
 				else
 					backEnd.refdef.floatTime = originalTime - (double)backEnd.currentEntity->e.shaderTime.f;
@@ -1079,7 +1079,7 @@ void RB_ExecuteRenderCommands( const void *data ) {
 
 	t1 = ri.Milliseconds ();
 
-	if ( r_floatfix->integer ) {
+	if ( r_floatfix->integer ) { // -EC-
 		backEnd.floatfix = qtrue;
 	} else {
 		backEnd.floatfix = qfalse;

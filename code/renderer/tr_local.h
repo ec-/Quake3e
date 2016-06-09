@@ -230,7 +230,7 @@ typedef enum {
 typedef struct {
 	genFunc_t	func;
 
-	double base;		// set to double for frameloss fix -EC- 
+	double base;		// -EC- set to double for frameloss fix
 	double amplitude;
 	double phase;
 	double frequency;
@@ -293,7 +293,7 @@ typedef struct {
 typedef struct {
 	image_t			*image[MAX_IMAGE_ANIMATIONS];
 	int				numImageAnimations;
-	double			imageAnimationSpeed;
+	double			imageAnimationSpeed;	// -EC- set to double
 
 	texCoordGen_t	tcGen;
 	vec3_t			tcGenVectors[2];
@@ -434,7 +434,7 @@ typedef struct {
 	byte		areamask[MAX_MAP_AREA_BYTES];
 	qboolean	areamaskModified;	// qtrue if areamask changed since last scene
 
-	double		floatTime;			// tr.refdef.time / 1000.0
+	double		floatTime;			// tr.refdef.time / 1000.0 -EC- set to double
 
 	// text messages for deform text shaders
 	char		text[MAX_RENDER_STRINGS][MAX_RENDER_STRING_LENGTH];
@@ -894,7 +894,7 @@ typedef struct {
 	qboolean	doneSurfaces;   // done any 3d surfaces already
 	trRefEntity_t	entity2D;	// currentEntity will point at this when doing 2D rendering
 
-	qboolean	floatfix;
+	qboolean	floatfix;		// -EC- frameloss bug fix
 } backEndState_t;
 
 /*
@@ -1326,7 +1326,7 @@ typedef struct shaderCommands_s
 #pragma pack(pop)
 
 	shader_t	*shader;
-	double		shaderTime;	// set to double for frameloss fix -EC-
+	double		shaderTime;	// -EC- set to double for frameloss fix
 	int			fogNum;
 
 	int			dlightBits;	// or together of all vertexDlightBits

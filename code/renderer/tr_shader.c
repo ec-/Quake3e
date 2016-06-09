@@ -3135,6 +3135,12 @@ static void CreateInternalShaders( void ) {
 	tr.shadowShader = FinishShader();
 }
 
+
+/*
+====================
+CreateExternalShaders
+====================
+*/
 static void CreateExternalShaders( void ) {
 	tr.projectionShadowShader = R_FindShader( "projectionShadow", LIGHTMAP_NONE, qtrue );
 	tr.flareShader = R_FindShader( "flareShader", LIGHTMAP_NONE, qtrue );
@@ -3154,6 +3160,7 @@ static void CreateExternalShaders( void ) {
 
 	tr.sunShader = R_FindShader( "sun", LIGHTMAP_NONE, qtrue );
 }
+
 
 /*
 ==================
