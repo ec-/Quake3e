@@ -440,7 +440,7 @@ float MSG_ReadFloat( msg_t *msg ) {
 	return dat.f;	
 }
 
-char *MSG_ReadString( msg_t *msg ) {
+const char *MSG_ReadString( msg_t *msg ) {
 	static char	string[MAX_STRING_CHARS];
 	int		l,c;
 	

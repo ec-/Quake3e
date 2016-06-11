@@ -315,7 +315,7 @@ void SV_DirectConnect( netadr_t from ) {
 	int			startIndex;
 	intptr_t		denied;
 	int			count;
-	char		*ip;
+	const char	*ip;
 
 	Com_DPrintf( "SVC_DirectConnect()\n" );
 

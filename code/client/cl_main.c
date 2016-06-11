@@ -2094,7 +2094,7 @@ Responses to broadcasts, etc
 =================
 */
 void CL_ConnectionlessPacket( netadr_t from, msg_t *msg ) {
-	char	*s;
+	const char *s;
 	char	*c;
 
 	MSG_BeginReadingOOB( msg );
@@ -2176,13 +2176,14 @@ void CL_ConnectionlessPacket( netadr_t from, msg_t *msg ) {
 		CL_ServerStatusResponse( from, msg );
 		return;
 	}
-
+#if 0
 	// a disconnect message from the server, which will happen if the server
 	// dropped the connection but it is still getting packets from us
 	if (!Q_stricmp(c, "disconnect")) {
 		CL_DisconnectPacket( from );
 		return;
 	}
+#endif
 
 	// echo request from server
 	if ( !Q_stricmp(c, "echo") ) {
@@ -3143,7 +3144,7 @@ CL_ServerInfoPacket
 void CL_ServerInfoPacket( netadr_t from, msg_t *msg ) {
 	int		i, type;
 	char	info[MAX_INFO_STRING];
-	char	*infoString;
+	const char *infoString;
 	int		prot;
 
 	infoString = MSG_ReadString( msg );

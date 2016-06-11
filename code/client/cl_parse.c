@@ -491,7 +491,8 @@ void CL_ParseGamestate( msg_t *msg ) {
 			len = strlen( s );
 
 			if ( len + 1 + cl.gameState.dataCount > MAX_GAMESTATE_CHARS ) {
-				Com_Error( ERR_DROP, "MAX_GAMESTATE_CHARS exceeded" );
+				Com_Error( ERR_DROP, "MAX_GAMESTATE_CHARS exceeded: %i", 
+					len + 1 + cl.gameState.dataCount );
 			}
 
 			// append it to the gameState string buffer
@@ -645,7 +646,7 @@ when it transitions a snapshot
 =====================
 */
 void CL_ParseCommandString( msg_t *msg ) {
-	char	*s;
+	const char *s, *text;
 	int		seq;
 	int		index;
 
@@ -663,6 +664,17 @@ void CL_ParseCommandString( msg_t *msg ) {
 
 	index = seq & (MAX_RELIABLE_COMMANDS-1);
 	Q_strncpyz( clc.serverCommands[ index ], s, sizeof( clc.serverCommands[ index ] ) );
+
+	// -EC- : we may stuck on downloading because of non-working cgvm, so handle "disconnect" here
+	if ( cls.state == CA_CONNECTED && clc.download != FS_INVALID_HANDLE && !cgvm ) {
+		Cmd_TokenizeString( s );
+		if ( !Q_stricmp( Cmd_Argv(0), "disconnect" ) ) {
+			text = ( Cmd_Argc() > 1 ) ? va( "Server disconnected: %s", Cmd_Argv( 1 ) ) : "Server disconnected.";
+			Cvar_Set( "com_errorMessage", text );
+			Com_Printf( "%s\n",text );
+			CL_Disconnect( qtrue );			
+		}
+	}
 }
 
 

@@ -88,7 +88,7 @@ int		MSG_ReadByte (msg_t *sb);
 int		MSG_ReadShort (msg_t *sb);
 int		MSG_ReadLong (msg_t *sb);
 float	MSG_ReadFloat (msg_t *sb);
-char	*MSG_ReadString (msg_t *sb);
+const char *MSG_ReadString (msg_t *sb);
 char	*MSG_ReadBigString (msg_t *sb);
 char	*MSG_ReadStringLine (msg_t *sb);
 float	MSG_ReadAngle16 (msg_t *sb);
