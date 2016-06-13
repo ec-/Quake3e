@@ -36,22 +36,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 Sys_Milliseconds
 ================
 */
-int			sys_timeBase;
-int Sys_Milliseconds (void)
+int Sys_Milliseconds( void )
 {
-	int			sys_curtime;
 	static qboolean	initialized = qfalse;
+	static DWORD sys_timeBase;
+	int	sys_curtime;
 
-	if (!initialized) {
+	if ( !initialized ) {
 		sys_timeBase = timeGetTime();
 		initialized = qtrue;
 	}
+
 	sys_curtime = timeGetTime() - sys_timeBase;
 
 	return sys_curtime;
 }
 
 
+/*
+================
+Sys_RandomBytes
+================
+*/
 qboolean Sys_RandomBytes( byte *string, int len )
 {
 	HCRYPTPROV  prov;
@@ -72,7 +78,6 @@ qboolean Sys_RandomBytes( byte *string, int len )
 
 
 #ifdef UNICODE
-
 LPWSTR AtoW( const char *s ) 
 {
 	static WCHAR buffer[MAXPRINTMSG*2];
@@ -86,11 +91,14 @@ const char *WtoA( const LPWSTR s )
 	WideCharToMultiByte( CP_OEMCP, 0, s, -1, buffer, ARRAYSIZE( buffer ), NULL, NULL );
 	return buffer;
 }
-
 #endif
 
-//============================================
 
+/*
+================
+Sys_GetCurrentUser
+================
+*/
 char *Sys_GetCurrentUser( void )
 {
 	static char s_userName[256];
@@ -98,20 +106,21 @@ char *Sys_GetCurrentUser( void )
 	TCHAR buffer[256];
 	DWORD size = ARRAYSIZE( buffer );
 
-	if ( !GetUserName( buffer, &size ) ) {
+	if ( !GetUserName( buffer, &size ) || !s_userName[0] ) {
 		strcpy( s_userName, "player" );
 	} else {
 		strcpy( s_userName, WtoA( buffer ) );
 	}
 
-	if ( !s_userName[0] )
-	{
-		strcpy( s_userName, "player" );
-	}
-
 	return s_userName;
 }
 
+
+/*
+================
+Sys_DefaultHomePath
+================
+*/
 const char *Sys_DefaultHomePath( void ) 
 {
 #ifdef USE_PROFILES
@@ -211,12 +220,16 @@ const char *Sys_SteamPath( void )
 	}
 #endif
 
-	return (char*)steamPath;
+	return (const char*)steamPath;
 }
 
 
+/*
+================
+Sys_SnapVector
+================
+*/
 #if idx64
-
 void Sys_SnapVector( float *vector ) 
 {
 	__m128 vf0, vf1, vf2;
@@ -234,9 +247,7 @@ void Sys_SnapVector( float *vector )
 	_mm_store_ss( &vector[1], vf1 );
 	_mm_store_ss( &vector[2], vf2 );
 }
-
 #else
-
 void Sys_SnapVector( float *vector ) 
 {
 	static const DWORD cw037F = 0x037F;
