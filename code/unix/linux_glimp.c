@@ -1597,26 +1597,11 @@ int qXErrorHandler( Display *dpy, XErrorEvent *ev )
 */
 void GLimp_Init( void )
 {
-	qboolean attemptedlibGL = qfalse;
-	qboolean success = qfalse;
-	char	buf[1024];
-	cvar_t *lastValidRenderer = ri.Cvar_Get( "r_lastValidRenderer", "(uninitialized)", CVAR_ARCHIVE );
-
 	r_allowSoftwareGL = ri.Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
-
-	r_previousglDriver = ri.Cvar_Get( "r_previousglDriver", "", CVAR_ROM );
 
 	InitSig();
 
 	IN_Init();   // rcg08312005 moved into glimp.
-
-	// Hack here so that if the UI
-	if ( *r_previousglDriver->string )
-	{
-		// The UI changed it on us, hack it back
-		// This means the renderer can't be changed on the fly
-		ri.Cvar_Set( "r_glDriver", r_previousglDriver->string );
-	}
 
 	// set up our custom error handler for X failures
 	XSetErrorHandler( &qXErrorHandler );
@@ -1624,40 +1609,11 @@ void GLimp_Init( void )
 	//
 	// load and initialize the specific OpenGL driver
 	//
-	if ( !GLW_LoadOpenGL( r_glDriver->string ) )
+	if ( !GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) )
 	{
-		if ( !Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) )
-		{
-			attemptedlibGL = qtrue;
-			ri.Error( ERR_FATAL, "GLimp_Init() - could not load OpenGL subsystem\n" );
-			return;
-		}
-    } 
-    else
-    {
-    	success = qtrue;
-    }
-
-	// try ICD before trying 3Dfx standalone driver
-	if ( !attemptedlibGL && !success )
-	{
-		attemptedlibGL = qtrue;
-		if ( GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) )
-		{
-			ri.Cvar_Set( "r_glDriver", OPENGL_DRIVER_NAME );
-			r_glDriver->modified = qfalse;
-			success = qtrue;
-		}
-	}
-
-    if ( !success )
-    {
     	ri.Error( ERR_FATAL, "GLimp_Init() - could not load OpenGL subsystem\n" );
     	return;
-    }
-
-	// Save it in case the UI stomps it
-	ri.Cvar_Set( "r_previousglDriver", r_glDriver->string );
+	}
 
 	// This values force the UI to disable driver selection
 	glConfig.driverType = GLDRV_ICD;
@@ -1672,26 +1628,6 @@ void GLimp_Init( void )
 
 	Q_strncpyz( gl_extensions, (char *)qglGetString (GL_EXTENSIONS), sizeof( gl_extensions ) );
 	Q_strncpyz( glConfig.extensions_string, gl_extensions, sizeof( glConfig.extensions_string ) );
-
-	//
-	// chipset specific configuration
-	//
-	strcpy( buf, glConfig.renderer_string );
-	strlwr( buf );
-
-	//
-	// NOTE: if changing cvars, do it within this block.  This allows them
-	// to be overridden when testing driver fixes, etc. but only sets
-	// them to their default state when the hardware is first installed/run.
-	//
-	if ( Q_stricmp( lastValidRenderer->string, glConfig.renderer_string ) )
-	{
-		glConfig.hardwareType = GLHW_GENERIC;
-
-		ri.Cvar_Set( "r_textureMode", "GL_LINEAR_MIPMAP_NEAREST" );
-	}
-
-	ri.Cvar_Set( "r_lastValidRenderer", glConfig.renderer_string );
 
 	// initialize extensions
 	GLW_InitExtensions();

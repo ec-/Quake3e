@@ -81,7 +81,6 @@ void     QGL_Shutdown( void );
 glwstate_t glw_state;
 
 cvar_t	*r_allowSoftwareGL;		// don't abort out if the pixelformat claims software
-cvar_t	*r_maskMinidriver;		// allow a different dll name to be treated as if it were opengl32.dll
 
 char	gl_extensions[16384];	// to store full extension string
 
@@ -1292,31 +1291,7 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 	Q_strncpyz( buffer, drivername, sizeof(buffer) );
 	Q_strlwr(buffer);
 
-	//
-	// determine if we're on a standalone driver
-	//
-	if ( strstr( buffer, "opengl32" ) != 0 || r_maskMinidriver->integer )
-	{
-		glConfig.driverType = GLDRV_ICD;
-	}
-	else
-	{
-		glConfig.driverType = GLDRV_STANDALONE;
-
-		ri.Printf( PRINT_ALL, "...assuming '%s' is a standalone driver\n", drivername );
-#if 0
-		if ( strstr( buffer, _3DFX_DRIVER_NAME ) )
-		{
-			glConfig.driverType = GLDRV_VOODOO;
-		}
-#endif
-	}
-
-	// disable the 3Dfx splash screen
-#if 0
-	_putenv("FX_GLIDE_NO_SPLASH=0");
-#endif
-
+	glConfig.driverType = GLDRV_ICD;
 	//
 	// load the driver and bind our function pointers to it
 	// 
@@ -1344,12 +1319,6 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 				goto fail;
 			}
 		}
-#if 0
-		if ( glConfig.driverType == GLDRV_VOODOO )
-		{
-			glConfig.isFullscreen = qtrue;
-		}
-#endif
 		return qtrue;
 	}
 fail:
@@ -1362,21 +1331,9 @@ fail:
 
 static void GLimp_SwapBuffers( void ) 
 {
-#ifdef USE_WGL	
-	if ( glConfig.driverType > GLDRV_ICD )
+	if ( !SwapBuffers( glw_state.hDC ) ) 
 	{
-		if ( !qwglSwapBuffers( glw_state.hDC ) )
-		{
-			ri.Error( ERR_FATAL, "GLimp_EndFrame() - wglSwapBuffers() failed!\n" );
-		}
-	}
-	else
-#endif
-	{
-		if ( !SwapBuffers( glw_state.hDC ) ) 
-		{
-			ri.Error( ERR_FATAL, "GLimp_EndFrame() - SwapBuffers() failed!\n" );
-		}
+		ri.Error( ERR_FATAL, "GLimp_EndFrame() - SwapBuffers() failed!\n" );
 	}
 }
 
@@ -1408,36 +1365,18 @@ void GLimp_EndFrame( void )
 
 static qboolean GLW_StartOpenGL( void )
 {
-	qboolean attemptedOpenGL32 = qfalse;
-
 	//
 	// load and initialize the specific OpenGL driver
 	//
-	if ( !GLW_LoadOpenGL( r_glDriver->string ) )
+	if ( !GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) )
 	{
-		if ( !Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) )
-		{
-			ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
-			attemptedOpenGL32 = qtrue;
-			return qfalse;
-		}
-		else if ( !attemptedOpenGL32 )
-		{
-			attemptedOpenGL32 = qtrue;
-			if ( GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) )
-			{
-				ri.Cvar_Set( "r_glDriver", OPENGL_DRIVER_NAME );
-				r_glDriver->modified = qfalse;
-			}
-			else
-			{
-				ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
-				return qfalse;
-			}
-		}
+		ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
+		return qfalse;
 	}
+
 	return qtrue;
 }
+
 
 /*
 ** GLimp_Init
@@ -1451,9 +1390,6 @@ static qboolean GLW_StartOpenGL( void )
 */
 void GLimp_Init( void )
 {
-	char	buf[1024];
-	//cvar_t *lastValidRenderer = ri.Cvar_Get( "r_lastValidRenderer", "(uninitialized)", CVAR_ARCHIVE );
-
 	ri.Printf( PRINT_ALL, "Initializing OpenGL subsystem\n" );
 
 	//
@@ -1465,7 +1401,6 @@ void GLimp_Init( void )
 	}
 
 	r_allowSoftwareGL = ri.Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
-	r_maskMinidriver = ri.Cvar_Get( "r_maskMinidriver", "0", CVAR_LATCH );
 
 	// load appropriate DLL and initialize subsystem
 	if ( !GLW_StartOpenGL() )
@@ -1480,83 +1415,6 @@ void GLimp_Init( void )
 
 	Q_strncpyz( gl_extensions, qglGetString (GL_EXTENSIONS), sizeof( gl_extensions ) );
 	Q_strncpyz( glConfig.extensions_string, gl_extensions, sizeof( glConfig.extensions_string ) );
-
-	//
-	// chipset specific configuration
-	//
-	Q_strncpyz( buf, glConfig.renderer_string, sizeof( buf ) );
-	Q_strlwr( buf );
-
-#if 0
-	//
-	// NOTE: if changing cvars, do it within this block.  This allows them
-	// to be overridden when testing driver fixes, etc. but only sets
-	// them to their default state when the hardware is first installed/run.
-	//
-	if ( Q_stricmp( lastValidRenderer->string, glConfig.renderer_string ) )
-	{
-		glConfig.hardwareType = GLHW_GENERIC;
-
-		ri.Cvar_Set( "r_textureMode", "GL_LINEAR_MIPMAP_NEAREST" );
-
-		// VOODOO GRAPHICS w/ 2MB
-		if ( strstr( buf, "voodoo graphics/1 tmu/2 mb" ) )
-		{
-			ri.Cvar_Set( "r_picmip", "2" );
-			ri.Cvar_Get( "r_picmip", "1", CVAR_ARCHIVE | CVAR_LATCH );
-		}
-		else
-		{
-			ri.Cvar_Set( "r_picmip", "1" );
-
-			if ( strstr( buf, "rage 128" ) || strstr( buf, "rage128" ) )
-			{
-				ri.Cvar_Set( "r_finish", "0" );
-			}
-			// Savage3D and Savage4 should always have trilinear enabled
-			else if ( strstr( buf, "savage3d" ) || strstr( buf, "s3 savage4" ) )
-			{
-				ri.Cvar_Set( "r_texturemode", "GL_LINEAR_MIPMAP_LINEAR" );
-			}
-		}
-	}
-	
-	//
-	// this is where hardware specific workarounds that should be
-	// detected/initialized every startup should go.
-	//
-	if ( strstr( buf, "banshee" ) || strstr( buf, "voodoo3" ) )
-	{
-		glConfig.hardwareType = GLHW_3DFX_2D3D;
-	}
-	// VOODOO GRAPHICS w/ 2MB
-	else if ( strstr( buf, "voodoo graphics/1 tmu/2 mb" ) )
-	{
-	}
-	else if ( strstr( buf, "glzicd" ) )
-	{
-	}
-	else if ( strstr( buf, "rage pro" ) || strstr( buf, "Rage Pro" ) || strstr( buf, "ragepro" ) )
-	{
-		glConfig.hardwareType = GLHW_RAGEPRO;
-	}
-	else if ( strstr( buf, "rage 128" ) )
-	{
-	}
-	else if ( strstr( buf, "permedia2" ) )
-	{
-		glConfig.hardwareType = GLHW_PERMEDIA2;
-	}
-	else if ( strstr( buf, "riva 128" ) )
-	{
-		glConfig.hardwareType = GLHW_RIVA128;
-	}
-	else if ( strstr( buf, "riva tnt " ) )
-	{
-	}
-#endif
-
-	ri.Cvar_Set( "r_lastValidRenderer", glConfig.renderer_string );
 
 	GLW_InitExtensions();
 	WG_CheckHardwareGamma();
