@@ -470,7 +470,7 @@ void RB_BeginDrawingView (void) {
 	// clip to the plane of the portal
 	if ( backEnd.viewParms.isPortal ) {
 		float	plane[4];
-		GLdouble plane2[4]; // -EC-
+		GLdouble plane2[4];
 
 		plane[0] = backEnd.viewParms.portalPlane.normal[0];
 		plane[1] = backEnd.viewParms.portalPlane.normal[1];
@@ -507,7 +507,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	int				i;
 	drawSurf_t		*drawSurf;
 	unsigned int	oldSort;
-	double			originalTime;
+	double			originalTime; // -EC- 
 
 	// save original time for entity shader offsets
 	originalTime = backEnd.refdef.floatTime;
@@ -671,7 +671,7 @@ void	RB_SetGL2D (void) {
 
 	// set time for 2D shaders
 	backEnd.refdef.time = ri.Milliseconds();
-	backEnd.refdef.floatTime = (double)backEnd.refdef.time * 0.001;
+	backEnd.refdef.floatTime = (double)backEnd.refdef.time * 0.001; // -EC-: cast to double
 }
 
 
