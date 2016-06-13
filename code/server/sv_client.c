@@ -537,7 +537,7 @@ gotnewcl:
 	SV_UserinfoChanged( newcl );
 
 	// send the connect packet to the client
-	NET_OutOfBandPrint(NS_SERVER, from, "connectResponse %d", challenge);
+	NET_OutOfBandPrint( NS_SERVER, from, "connectResponse" );
 
 	Com_DPrintf( "Going from CS_FREE to CS_CONNECTED for %s\n", newcl->name );
 
