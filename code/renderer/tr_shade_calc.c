@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // tr_shade_calc.c
 
 #include "tr_local.h"
-
+// -EC-: avoid using ri.ftol
 #define	WAVEVALUE( table, base, amplitude, phase, freq )  ((base) + table[ myftol( ( ( (phase) + tess.shaderTime * (freq) ) * FUNCTABLE_SIZE ) ) & FUNCTABLE_MASK ] * (amplitude))
 
 static float *TableForFunc( genFunc_t func ) 
@@ -949,8 +949,8 @@ void RB_CalcScaleTexCoords( const float scale[2], float *st )
 void RB_CalcScrollTexCoords( const float scrollSpeed[2], float *st )
 {
 	int i;
-	double	timeScale;
-	double	adjustedScrollS, adjustedScrollT;
+	double	timeScale; // -EC-: set to double
+	double	adjustedScrollS, adjustedScrollT; // -EC-: set to double
 
 	timeScale = tess.shaderTime;
 

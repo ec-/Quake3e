@@ -1026,7 +1026,6 @@ static void RB_SurfaceEntity( surfaceType_t *surfType ) {
 		RB_SurfaceAxis();
 		break;
 	}
-	return;
 }
 
 static void RB_SurfaceBad( surfaceType_t *surfType ) {
