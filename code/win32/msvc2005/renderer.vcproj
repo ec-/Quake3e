@@ -454,6 +454,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\renderer\tr_common.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\renderer\tr_local.h"
 				>
 			</File>

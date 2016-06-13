@@ -374,6 +374,48 @@ void SCR_DrawDemoRecording( void ) {
 }
 
 
+#ifdef USE_VOIP
+/*
+=================
+SCR_DrawVoipMeter
+=================
+*/
+void SCR_DrawVoipMeter( void ) {
+	char	buffer[16];
+	char	string[256];
+	int limit, i;
+
+	if (!cl_voipShowMeter->integer)
+		return;  // player doesn't want to show meter at all.
+	else if (!cl_voipSend->integer)
+		return;  // not recording at the moment.
+	else if (clc.state != CA_ACTIVE)
+		return;  // not connected to a server.
+	else if (!clc.voipEnabled)
+		return;  // server doesn't support VoIP.
+	else if (clc.demoplaying)
+		return;  // playing back a demo.
+	else if (!cl_voip->integer)
+		return;  // client has VoIP support disabled.
+
+	limit = (int) (clc.voipPower * 10.0f);
+	if (limit > 10)
+		limit = 10;
+
+	for (i = 0; i < limit; i++)
+		buffer[i] = '*';
+	while (i < 10)
+		buffer[i++] = ' ';
+	buffer[i] = '\0';
+
+	sprintf( string, "VoIP: [%s]", buffer );
+	SCR_DrawStringExt( 320 - strlen( string ) * 4, 10, 8, string, g_color_table[7], qtrue, qfalse );
+}
+#endif
+
+
+
+
 /*
 ===============================================================================
 
@@ -458,11 +500,15 @@ This will be called twice if rendering in stereo mode
 ==================
 */
 void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
+	qboolean uiFullscreen;
+
 	re.BeginFrame( stereoFrame );
+
+	uiFullscreen = (uivm && VM_Call( uivm, UI_IS_FULLSCREEN ));
 
 	// wide aspect ratio screens need to have the sides cleared
 	// unless they are displaying game renderings
-	if ( cls.state < CA_LOADING ) {
+	if ( uiFullscreen || cls.state < CA_LOADING ) {
 		if ( cls.glconfig.vidWidth * 480 > cls.glconfig.vidHeight * 640 ) {
 			re.SetColor( g_color_table[0] );
 			re.DrawStretchPic( 0, 0, cls.glconfig.vidWidth, cls.glconfig.vidHeight, 0, 0, 0, 0, cls.whiteShader );
@@ -472,7 +518,7 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 
 	// if the menu is going to cover the entire screen, we
 	// don't need to render anything under it
-	if ( uivm && !VM_Call( uivm, UI_IS_FULLSCREEN )) {
+	if ( uivm && !uiFullscreen ) {
 		switch( cls.state ) {
 		default:
 			Com_Error( ERR_FATAL, "SCR_DrawScreenField: bad cls.state" );
@@ -508,6 +554,9 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 			// always supply STEREO_CENTER as vieworg offset is now done by the engine.
 			CL_CGameRendering( stereoFrame );
 			SCR_DrawDemoRecording();
+#ifdef USE_VOIP
+			SCR_DrawVoipMeter();
+#endif
 			break;
 		}
 	}
@@ -550,19 +599,21 @@ void SCR_UpdateScreen( void ) {
 	// that case.
 	if( uivm || com_dedicated->integer )
 	{
-	// if running in stereo, we need to draw the frame twice
-	if ( cls.glconfig.stereoEnabled ) {
-		SCR_DrawScreenField( STEREO_LEFT );
-		SCR_DrawScreenField( STEREO_RIGHT );
-	} else {
-		SCR_DrawScreenField( STEREO_CENTER );
-	}
+		// XXX
+		int in_anaglyphMode = Cvar_VariableIntegerValue("r_anaglyphMode");
+		// if running in stereo, we need to draw the frame twice
+		if ( cls.glconfig.stereoEnabled || in_anaglyphMode) {
+			SCR_DrawScreenField( STEREO_LEFT );
+			SCR_DrawScreenField( STEREO_RIGHT );
+		} else {
+			SCR_DrawScreenField( STEREO_CENTER );
+		}
 
-	if ( com_speeds->integer ) {
-		re.EndFrame( &time_frontend, &time_backend );
-	} else {
-		re.EndFrame( NULL, NULL );
-	}
+		if ( com_speeds->integer ) {
+			re.EndFrame( &time_frontend, &time_backend );
+		} else {
+			re.EndFrame( NULL, NULL );
+		}
 	}
 
 	recursive = 0;

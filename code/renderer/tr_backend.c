@@ -491,8 +491,6 @@ void RB_BeginDrawingView (void) {
 }
 
 
-#define	MAC_EVENT_PUMP_MSEC		5
-
 /*
 ==================
 RB_RenderDrawSurfList
@@ -503,7 +501,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	int				fogNum, oldFogNum;
 	int				entityNum, oldEntityNum;
 	int				dlighted, oldDlighted;
-	qboolean		depthRange, oldDepthRange;
+	qboolean		depthRange, oldDepthRange, isCrosshair, wasCrosshair;
 	int				i;
 	drawSurf_t		*drawSurf;
 	unsigned int	oldSort;
@@ -521,6 +519,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	oldShader = NULL;
 	oldFogNum = -1;
 	oldDepthRange = qfalse;
+	wasCrosshair = qfalse;
 	oldDlighted = qfalse;
 	oldSort = MAX_UINT;
 	depthRange = qfalse;
@@ -540,8 +539,8 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 		// change the tess parameters if needed
 		// a "entityMergable" shader is a shader that can have surfaces from seperate
 		// entities merged into a single batch, like smoke and blood puff sprites
-		if (shader != oldShader || fogNum != oldFogNum || dlighted != oldDlighted 
-			|| ( entityNum != oldEntityNum && !shader->entityMergable ) ) {
+		if ( shader != NULL && ( shader != oldShader || fogNum != oldFogNum || dlighted != oldDlighted 
+			|| ( entityNum != oldEntityNum && !shader->entityMergable ) ) ) {
 			if (oldShader != NULL) {
 				RB_EndSurface();
 			}
@@ -555,9 +554,9 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 		// change the modelview matrix if needed
 		//
 		if ( entityNum != oldEntityNum ) {
-			depthRange = qfalse;
+			depthRange = isCrosshair = qfalse;
 
-			if ( entityNum != ENTITYNUM_WORLD ) {
+			if ( entityNum != REFENTITYNUM_WORLD ) {
 				backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
 				if ( backEnd.floatfix ) // -EC-
 					backEnd.refdef.floatTime = originalTime - (double)(backEnd.currentEntity->e.shaderTime.i) * 0.001;
@@ -579,6 +578,9 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				if ( backEnd.currentEntity->e.renderfx & RF_DEPTHHACK ) {
 					// hack the depth range to prevent view model from poking into walls
 					depthRange = qtrue;
+					
+					if(backEnd.currentEntity->e.renderfx & RF_CROSSHAIR)
+						isCrosshair = qtrue;
 				}
 			} else {
 				backEnd.currentEntity = &tr.worldEntity;
@@ -593,15 +595,53 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 			qglLoadMatrixf( backEnd.or.modelMatrix );
 
 			//
-			// change depthrange if needed
+			// change depthrange. Also change projection matrix so first person weapon does not look like coming
+			// out of the screen.
 			//
-			if ( oldDepthRange != depthRange ) {
-				if ( depthRange ) {
-					qglDepthRange (0, 0.3);
-				} else {
+			if (oldDepthRange != depthRange || wasCrosshair != isCrosshair)
+			{
+				if (depthRange)
+				{
+					if(backEnd.viewParms.stereoFrame != STEREO_CENTER)
+					{
+						if(isCrosshair)
+						{
+							if(oldDepthRange)
+							{
+								// was not a crosshair but now is, change back proj matrix
+								qglMatrixMode(GL_PROJECTION);
+								qglLoadMatrixf(backEnd.viewParms.projectionMatrix);
+								qglMatrixMode(GL_MODELVIEW);
+							}
+						}
+						else
+						{
+							viewParms_t temp = backEnd.viewParms;
+
+							R_SetupProjection(&temp, r_znear->value, qfalse);
+
+							qglMatrixMode(GL_PROJECTION);
+							qglLoadMatrixf(temp.projectionMatrix);
+							qglMatrixMode(GL_MODELVIEW);
+						}
+					}
+
+					if(!oldDepthRange)
+						qglDepthRange (0, 0.3);
+				}
+				else
+				{
+					if(!wasCrosshair && backEnd.viewParms.stereoFrame != STEREO_CENTER)
+					{
+						qglMatrixMode(GL_PROJECTION);
+						qglLoadMatrixf(backEnd.viewParms.projectionMatrix);
+						qglMatrixMode(GL_MODELVIEW);
+					}
+
 					qglDepthRange (0, 1);
 				}
 				oldDepthRange = depthRange;
+				wasCrosshair = isCrosshair;
 			}
 
 			oldEntityNum = entityNum;

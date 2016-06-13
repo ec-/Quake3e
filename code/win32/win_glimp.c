@@ -128,16 +128,7 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 	ri.Printf( PRINT_ALL, "...GLW_ChoosePFD( %d, %d, %d )\n", ( int ) pPFD->cColorBits, ( int ) pPFD->cDepthBits, ( int ) pPFD->cStencilBits );
 
 	// count number of PFDs
-#ifdef USE_WGL
-	if ( glConfig.driverType > GLDRV_ICD )
-	{
-		maxPFD = qwglDescribePixelFormat( hDC, 1, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[0] );
-	}
-	else
-#endif
-	{
-		maxPFD = DescribePixelFormat( hDC, 1, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[0] );
-	}
+	maxPFD = DescribePixelFormat( hDC, 1, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[0] );
 
 	if ( maxPFD > MAX_PFDS )
 	{
@@ -150,16 +141,7 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 	// grab information
 	for ( i = 1; i <= maxPFD; i++ )
 	{
-#ifdef USE_WGL
-		if ( glConfig.driverType > GLDRV_ICD )
-		{
-			qwglDescribePixelFormat( hDC, i, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[i] );
-		}
-		else
-#endif
-		{
-			DescribePixelFormat( hDC, i, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[i] );
-		}
+		DescribePixelFormat( hDC, i, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[i] );
 	}
 
 __rescan:
@@ -407,26 +389,13 @@ static int GLW_MakeContext( PIXELFORMATDESCRIPTOR *pPFD )
 			return TRY_PFD_FAIL_SOFT;
 		}
 		ri.Printf( PRINT_ALL, "...PIXELFORMAT %d selected\n", pixelformat );
-#ifdef USE_WGL
-		if ( glConfig.driverType > GLDRV_ICD )
-		{
-			qwglDescribePixelFormat( glw_state.hDC, pixelformat, sizeof( *pPFD ), pPFD );
-			if ( qwglSetPixelFormat( glw_state.hDC, pixelformat, pPFD ) == FALSE )
-			{
-				ri.Printf ( PRINT_ALL, "...qwglSetPixelFormat failed\n");
-				return TRY_PFD_FAIL_SOFT;
-			}
-		}
-		else
-#endif
-		{
-			DescribePixelFormat( glw_state.hDC, pixelformat, sizeof( *pPFD ), pPFD );
 
-			if ( SetPixelFormat( glw_state.hDC, pixelformat, pPFD ) == FALSE )
-			{
-				ri.Printf (PRINT_ALL, "...SetPixelFormat failed\n", glw_state.hDC );
-				return TRY_PFD_FAIL_SOFT;
-			}
+		DescribePixelFormat( glw_state.hDC, pixelformat, sizeof( *pPFD ), pPFD );
+
+		if ( SetPixelFormat( glw_state.hDC, pixelformat, pPFD ) == FALSE )
+		{
+			ri.Printf (PRINT_ALL, "...SetPixelFormat failed\n", glw_state.hDC );
+			return TRY_PFD_FAIL_SOFT;
 		}
 
 		glw_state.pixelFormatSet = qtrue;
@@ -526,7 +495,7 @@ static qboolean GLW_InitDriver( const char *drivername, int colorbits )
 	//
 	if ( !glw_state.pixelFormatSet )
 	{
-		GLW_CreatePFD( &pfd, colorbits, depthbits, stencilbits, r_stereo->integer );
+		GLW_CreatePFD( &pfd, colorbits, depthbits, stencilbits, r_stereoEnabled->integer != 0 );
 		if ( ( tpfd = GLW_MakeContext( &pfd ) ) != TRY_PFD_SUCCESS )
 		{
 			if ( tpfd == TRY_PFD_FAIL_HARD )
@@ -556,7 +525,7 @@ static qboolean GLW_InitDriver( const char *drivername, int colorbits )
 			{
 				colorbits = glw_state.desktopBitsPixel;
 			}
-			GLW_CreatePFD( &pfd, colorbits, depthbits, 0, r_stereo->integer );
+			GLW_CreatePFD( &pfd, colorbits, depthbits, 0, r_stereoEnabled->integer != 0 );
 			if ( GLW_MakeContext( &pfd ) != TRY_PFD_SUCCESS )
 			{
 				if ( glw_state.hDC )
@@ -574,7 +543,7 @@ static qboolean GLW_InitDriver( const char *drivername, int colorbits )
 		/*
 		** report if stereo is desired but unavailable
 		*/
-		if ( !( pfd.dwFlags & PFD_STEREO ) && ( r_stereo->integer != 0 ) ) 
+		if ( !( pfd.dwFlags & PFD_STEREO ) && ( r_stereoEnabled->integer != 0 ) ) 
 		{
 			ri.Printf( PRINT_ALL, "...failed to select stereo pixel format\n" );
 			glConfig.stereoEnabled = qfalse;
@@ -1191,9 +1160,9 @@ static void GLW_InitExtensions( void )
 
 			if ( qglActiveTextureARB )
 			{
-				qglGetIntegerv( GL_MAX_ACTIVE_TEXTURES_ARB, &glConfig.maxActiveTextures );
+				qglGetIntegerv( GL_MAX_ACTIVE_TEXTURES_ARB, &glConfig.numTextureUnits );
 
-				if ( glConfig.maxActiveTextures > 1 )
+				if ( glConfig.numTextureUnits > 1 )
 				{
 					ri.Printf( PRINT_ALL, "...using GL_ARB_multitexture\n" );
 				}
@@ -1441,10 +1410,6 @@ static qboolean GLW_StartOpenGL( void )
 {
 	qboolean attemptedOpenGL32 = qfalse;
 
-#if 0
-	qboolean attempted3Dfx = qfalse;
-#endif
-
 	//
 	// load and initialize the specific OpenGL driver
 	//
@@ -1456,38 +1421,6 @@ static qboolean GLW_StartOpenGL( void )
 			attemptedOpenGL32 = qtrue;
 			return qfalse;
 		}
-#if 0
-		else if ( !Q_stricmp( r_glDriver->string, _3DFX_DRIVER_NAME ) )
-		{
-			attempted3Dfx = qtrue;
-		}
-
-		if ( !attempted3Dfx )
-		{
-			attempted3Dfx = qtrue;
-			if ( GLW_LoadOpenGL( _3DFX_DRIVER_NAME ) )
-			{
-				ri.Cvar_Set( "r_glDriver", _3DFX_DRIVER_NAME );
-				r_glDriver->modified = qfalse;
-			}
-			else
-			{
-				if ( !attemptedOpenGL32 )
-				{
-					if ( !GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) )
-					{
-						ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
-					}
-					ri.Cvar_Set( "r_glDriver", OPENGL_DRIVER_NAME );
-					r_glDriver->modified = qfalse;
-				}
-				else
-				{
-					ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
-				}
-			}
-		}
-#endif
 		else if ( !attemptedOpenGL32 )
 		{
 			attemptedOpenGL32 = qtrue;

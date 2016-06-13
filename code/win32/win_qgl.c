@@ -37,21 +37,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 int ( WINAPI * qwglSwapIntervalEXT)( int interval );
 
-int   ( WINAPI * qwglChoosePixelFormat )(HDC, CONST PIXELFORMATDESCRIPTOR *);
-int   ( WINAPI * qwglDescribePixelFormat) (HDC, int, UINT, LPPIXELFORMATDESCRIPTOR);
-int   ( WINAPI * qwglGetPixelFormat)(HDC);
-BOOL  ( WINAPI * qwglSetPixelFormat)(HDC, int, CONST PIXELFORMATDESCRIPTOR *);
-BOOL  ( WINAPI * qwglSwapBuffers)(HDC);
 
 HGLRC ( WINAPI * qwglCreateContext)(HDC);
-HGLRC ( WINAPI * qwglCreateLayerContext)(HDC, int);
 BOOL  ( WINAPI * qwglDeleteContext)(HGLRC);
 HGLRC ( WINAPI * qwglGetCurrentContext)(VOID);
 HDC   ( WINAPI * qwglGetCurrentDC)(VOID);
 PROC  ( WINAPI * qwglGetProcAddress)(LPCSTR);
 BOOL  ( WINAPI * qwglMakeCurrent)(HDC, HGLRC);
-
-BOOL ( WINAPI * qwglSwapLayerBuffers)(HDC, UINT);
 
 void ( APIENTRY * qglMultiTexCoord2fARB )( GLenum texture, GLfloat s, GLfloat t );
 void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
@@ -203,64 +195,13 @@ void QGL_Shutdown( void )
 	glw_state.hinstOpenGL = NULL;
 
 	qwglCreateContext            = NULL;
-	qwglCreateLayerContext       = NULL;
 	qwglDeleteContext            = NULL;
 	qwglGetCurrentContext        = NULL;
 	qwglGetCurrentDC             = NULL;
 	qwglGetProcAddress           = NULL;
 	qwglMakeCurrent              = NULL;
-	qwglSwapLayerBuffers         = NULL;
-
-	qwglChoosePixelFormat        = NULL;
-	qwglDescribePixelFormat      = NULL;
-	qwglGetPixelFormat           = NULL;
-	qwglSetPixelFormat           = NULL;
-	qwglSwapBuffers              = NULL;
 }
 
-#define GR_NUM_BOARDS 0x0f
-
-#if 0
-static qboolean GlideIsValid( void )
-{
-	HMODULE hGlide;
-//	int numBoards;
-//	void (__stdcall *grGet)(unsigned int, unsigned int, int*);
-
-    if ( ( hGlide = LoadLibrary("Glide3X") ) != 0 ) 
-	{
-		// FIXME: 3Dfx needs to fix this shit
-		return qtrue;
-
-#if 0
-        grGet = (void *)GetProcAddress( hGlide, "_grGet@12");
-
-		if ( grGet )
-		{
-	        grGet( GR_NUM_BOARDS, sizeof(int), &numBoards);
-		}
-		else
-		{
-			// if we've reached this point, something is seriously wrong
-			ri.Printf( PRINT_WARNING, "WARNING: could not find grGet in GLIDE3X.DLL\n" );
-			numBoards = 0;
-		}
-
-		FreeLibrary( hGlide );
-		hGlide = NULL;
-
-		if ( numBoards > 0 )
-		{
-			return qtrue;
-		}
-
-		ri.Printf( PRINT_WARNING, "WARNING: invalid Glide installation!\n" );
-#endif
-    }
-
-	return qfalse;
-} 
-#endif
 
 #ifdef _MSC_VER
 #	pragma warning (disable : 4113 4133 4047 )
@@ -268,6 +209,7 @@ static qboolean GlideIsValid( void )
 #else
 #	define GPA( a ) (void *)GetProcAddress( glw_state.hinstOpenGL, a )
 #endif
+
 
 /*
 ** QGL_Init
@@ -296,16 +238,6 @@ qboolean QGL_Init( const char *dllname )
 	ri.Printf( PRINT_ALL, "...initializing QGL\n" );
 
 	// NOTE: this assumes that 'dllname' is lower case (and it should be)!
-#if 0
-	if ( strstr( dllname, _3DFX_DRIVER_NAME ) )
-	{
-		if ( !GlideIsValid() )
-		{
-			ri.Printf( PRINT_ALL, "...WARNING: missing Glide installation, assuming no 3Dfx available\n" );
-			return qfalse;
-		}
-	}
-#endif
 
 	if ( dllname[0] != '!' )
 	{
@@ -329,19 +261,11 @@ qboolean QGL_Init( const char *dllname )
 	ri.Printf( PRINT_ALL, "succeeded\n" );
 
 	qwglCreateContext            = GPA( "wglCreateContext" );
-	qwglCreateLayerContext       = GPA( "wglCreateLayerContext" );
 	qwglDeleteContext            = GPA( "wglDeleteContext" );
 	qwglGetCurrentContext        = GPA( "wglGetCurrentContext" );
 	qwglGetCurrentDC             = GPA( "wglGetCurrentDC" );
 	qwglGetProcAddress           = GPA( "wglGetProcAddress" );
 	qwglMakeCurrent              = GPA( "wglMakeCurrent" );
-	qwglSwapLayerBuffers         = GPA( "wglSwapLayerBuffers" );
-
-	qwglChoosePixelFormat        = GPA( "wglChoosePixelFormat" );
-	qwglDescribePixelFormat      = GPA( "wglDescribePixelFormat" );
-	qwglGetPixelFormat           = GPA( "wglGetPixelFormat" );
-	qwglSetPixelFormat           = GPA( "wglSetPixelFormat" );
-	qwglSwapBuffers              = GPA( "wglSwapBuffers" );
 
 	qwglSwapIntervalEXT = NULL;
 	qglActiveTextureARB = NULL;

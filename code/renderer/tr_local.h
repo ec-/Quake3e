@@ -28,8 +28,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qcommon/qfiles.h"
 #include "../qcommon/qcommon.h"
 #include "tr_public.h"
-#include "qgl.h"
+#include "tr_common.h"
 #include "iqm.h"
+#include "qgl.h"
 
 #define GL_INDEX_TYPE		GL_UNSIGNED_INT
 typedef unsigned int glIndex_t;
@@ -78,44 +79,6 @@ typedef struct {
 	vec3_t		viewOrigin;		// viewParms->or.origin in local coordinates
 	float		modelMatrix[16];
 } orientationr_t;
-
-typedef enum
-{
-	IMGTYPE_COLORALPHA, // for color, lightmap, diffuse, and specular
-	IMGTYPE_NORMAL,
-	IMGTYPE_NORMALHEIGHT,
-	IMGTYPE_DELUXE, // normals are swizzled, deluxe are not
-} imgType_t;
-
-typedef enum
-{
-	IMGFLAG_NONE           = 0x0000,
-	IMGFLAG_MIPMAP         = 0x0001,
-	IMGFLAG_PICMIP         = 0x0002,
-	IMGFLAG_CUBEMAP        = 0x0004,
-	IMGFLAG_NO_COMPRESSION = 0x0010,
-	IMGFLAG_NOLIGHTSCALE   = 0x0020,
-	IMGFLAG_CLAMPTOEDGE    = 0x0040,
-	IMGFLAG_SRGB           = 0x0080,
-	IMGFLAG_GENNORMALMAP   = 0x0100,
-} imgFlags_t;
-
-typedef struct image_s {
-	char		imgName[MAX_QPATH];		// game path, including extension
-	int			width, height;				// source image
-	int			uploadWidth, uploadHeight;	// after power of two and picmip but not including clamp to MAX_TEXTURE_SIZE
-	GLuint		texnum;					// gl texture binding
-
-	int			frameUsed;			// for texture usage in frame statistics
-
-	int			internalFormat;
-	int			TMU;				// only needed for voodoo2
-
-	imgType_t   type;
-	imgFlags_t  flags;
-
-	struct image_s*	next;
-} image_t;
 
 //===============================================================================
 
@@ -330,13 +293,6 @@ typedef struct {
 
 struct shaderCommands_s;
 
-// any change in the LIGHTMAP_* defines here MUST be reflected in
-// R_FindShader() in tr_bsp.c
-#define LIGHTMAP_2D         -4	// shader is for 2D rendering
-#define LIGHTMAP_BY_VERTEX  -3	// pre-lit triangle models
-#define LIGHTMAP_WHITEIMAGE -2
-#define LIGHTMAP_NONE       -1
-
 typedef enum {
 	CT_FRONT_SIDED,
 	CT_BACK_SIDED,
@@ -426,6 +382,8 @@ typedef struct {
 	float		fov_x, fov_y;
 	vec3_t		vieworg;
 	vec3_t		viewaxis[3];		// transformation matrix
+
+	stereoFrame_t	stereoFrame;
 
 	int			time;				// time in milliseconds for shader effects and other time dependent rendering issues
 	int			rdflags;			// RDF_NOWORLDMODEL, etc
@@ -518,7 +476,6 @@ typedef enum {
 	SF_TRIANGLES,
 	SF_POLY,
 	SF_MD3,
-	SF_MD4,
 	SF_MDR,
 	SF_IQM,
 	SF_FLARE,
@@ -769,7 +726,6 @@ typedef enum {
 	MOD_BAD,
 	MOD_BRUSH,
 	MOD_MESH,
-	MOD_MD4,
 	MOD_MDR,
 	MOD_IQM
 } modtype_t;
@@ -782,7 +738,7 @@ typedef struct model_s {
 	int			dataSize;	// just for listing purposes
 	bmodel_t	*bmodel;		// only if type == MOD_BRUSH
 	md3Header_t	*md3[MD3_MAX_LODS];	// only if type == MOD_MESH
-	void	*modelData;			// only if type == (MOD_MD4 | MOD_MDR | MOD_IQM)
+	void	*modelData;			// only if type == (MOD_MDR | MOD_IQM)
 
 	int			 numLods;
 } model_t;
@@ -798,7 +754,6 @@ void		R_ModelBounds( qhandle_t handle, vec3_t mins, vec3_t maxs );
 void		R_Modellist_f (void);
 
 //====================================================
-extern	refimport_t		ri;
 
 #define	MAX_DRAWIMAGES			2048
 #define	MAX_SKINS				1024
@@ -814,21 +769,24 @@ compared quickly during the qsorting process
 
 the bits are allocated as follows:
 
-21 - 31	: sorted shader index
-11 - 20	: entity index
-2 - 6	: fog index
-//2		: used to be clipped flag REMOVED - 03.21.00 rad
 0 - 1	: dlightmap index
+//2		: used to be clipped flag REMOVED - 03.21.00 rad
+2 - 6	: fog index
+11 - 20	: entity index
+21 - 31	: sorted shader index
 
 	TTimo - 1.32
-17-31 : sorted shader index
-7-16  : entity index
-2-6   : fog index
 0-1   : dlightmap index
+2-6   : fog index
+7-16  : entity index
+17-30 : sorted shader index
 */
-#define	QSORT_SHADERNUM_SHIFT	17
-#define	QSORT_ENTITYNUM_SHIFT	7
-#define	QSORT_FOGNUM_SHIFT		2
+#define	QSORT_FOGNUM_SHIFT	2
+#define	QSORT_REFENTITYNUM_SHIFT	7
+#define	QSORT_SHADERNUM_SHIFT	(QSORT_REFENTITYNUM_SHIFT+REFENTITYNUM_BITS)
+#if (QSORT_SHADERNUM_SHIFT+SHADERNUM_BITS) > 32
+	#error "Need to update sorting, too many bits."
+#endif
 
 extern	int			gl_filter_min, gl_filter_max;
 
@@ -942,7 +900,7 @@ typedef struct {
 	trRefEntity_t			*currentEntity;
 	trRefEntity_t			worldEntity;		// point currentEntity at this when rendering world
 	int						currentEntityNum;
-	int						shiftedEntityNum;	// currentEntityNum << QSORT_ENTITYNUM_SHIFT
+	int						shiftedEntityNum;	// currentEntityNum << QSORT_REFENTITYNUM_SHIFT
 	model_t					*currentModel;
 
 	viewParms_t				viewParms;
@@ -993,17 +951,8 @@ typedef struct {
 
 extern backEndState_t	backEnd;
 extern trGlobals_t	tr;
-extern glconfig_t	glConfig;		// outside of TR since it shouldn't be cleared during ref re-init
 extern glstate_t	glState;		// outside of TR since it shouldn't be cleared during ref re-init
 
-extern cvar_t		*r_customPixelAspect;
-
-// These two variables should live inside glConfig but can't because of compatibility issues to the original ID vms.
-// If you release a stand-alone game and your mod uses tr_types.h from this build you can safely move them to
-// the glconfig_t struct.
-extern qboolean		textureFilterAnisotropic;
-extern int		maxAnisotropy;
-                
 //
 // cvars
 //
@@ -1022,16 +971,8 @@ extern cvar_t	*r_verbose;				// used for verbose debug spew
 extern cvar_t	*r_ignoreFastPath;		// allows us to ignore our Tess fast paths
 
 extern cvar_t	*r_znear;				// near Z clip plane
-
-extern cvar_t	*r_stencilbits;			// number of desired stencil bits
-extern cvar_t	*r_depthbits;			// number of desired depth bits
-extern cvar_t	*r_colorbits;			// number of desired color bits, only relevant for fullscreen
-extern cvar_t	*r_stereo;				// desired pixelformat stereo flag
-extern cvar_t	*r_texturebits;			// number of desired texture bits
-										// 0 = use framebuffer depth
-										// 16 = use 16-bit textures
-										// 32 = use 32-bit textures
-										// all else = error
+extern cvar_t	*r_zproj;				// z distance of projection plane
+extern cvar_t	*r_stereoSeparation;			// separation of cameras for stereo rendering
 
 extern cvar_t	*r_measureOverdraw;		// enables stencil buffer overdraw measurement
 
@@ -1064,18 +1005,6 @@ extern cvar_t	*r_mode;				// video mode
 extern cvar_t	*r_fullscreen;
 extern cvar_t	*r_gamma;
 extern cvar_t	*r_displayRefresh;		// optional display refresh option
-extern cvar_t	*r_ignorehwgamma;		// overrides hardware gamma capabilities
-
-extern cvar_t	*r_allowExtensions;				// global enable/disable of OpenGL extensions
-extern cvar_t	*r_ext_compressed_textures;		// these control use of specific extensions
-extern cvar_t	*r_ext_gamma_control;
-extern cvar_t	*r_ext_texenv_op;
-extern cvar_t	*r_ext_multitexture;
-extern cvar_t	*r_ext_compiled_vertex_array;
-extern cvar_t	*r_ext_texture_env_add;
-
-extern cvar_t	*r_ext_texture_filter_anisotropic;
-extern cvar_t	*r_ext_max_anisotropy;
 
 extern	cvar_t	*r_nobind;						// turns off binding to appropriate textures
 extern	cvar_t	*r_singleShader;				// make most world faces use default shader
@@ -1083,9 +1012,7 @@ extern	cvar_t	*r_roundImagesDown;
 extern	cvar_t	*r_colorMipLevels;				// development aid to see texture mip usage
 extern	cvar_t	*r_picmip;						// controls picmip values
 extern	cvar_t	*r_finish;
-extern	cvar_t	*r_drawBuffer;
 extern  cvar_t  *r_glDriver;
-extern	cvar_t	*r_swapInterval;
 extern	cvar_t	*r_textureMode;
 extern	cvar_t	*r_offsetFactor;
 extern	cvar_t	*r_offsetUnits;
@@ -1113,8 +1040,11 @@ extern	cvar_t	*r_subdivisions;
 extern	cvar_t	*r_lodCurveError;
 extern	cvar_t	*r_skipBackEnd;
 
-extern	cvar_t	*r_ignoreGLErrors;
+extern	cvar_t	*r_anaglyphMode;
+
 extern	cvar_t	*r_greyscale;
+
+extern	cvar_t	*r_ignoreGLErrors;
 
 extern	cvar_t	*r_overBrightBits;
 extern	cvar_t	*r_mapOverBrightBits;
@@ -1126,18 +1056,12 @@ extern	cvar_t	*r_showImages;
 extern	cvar_t	*r_debugSort;
 
 extern	cvar_t	*r_printShaders;
-extern	cvar_t	*r_saveFontData;
 
 extern	cvar_t	*r_floatfix;
-
-extern	cvar_t	*r_GLlibCoolDownMsec;
 
 extern cvar_t	*r_marksOnTriangleMeshes;
 
 //====================================================================
-
-float R_NoiseGet4f( float x, float y, float z, float t );
-void  R_NoiseInit( void );
 
 void R_SwapBuffers( int );
 
@@ -1166,6 +1090,7 @@ int R_CullLocalBox (vec3_t bounds[2]);
 int R_CullPointAndRadius( vec3_t origin, float radius );
 int R_CullLocalPointAndRadius( vec3_t origin, float radius );
 
+void R_SetupProjection(viewParms_t *dest, float zProj, qboolean computeFrustum);
 void R_RotateForEntity( const trRefEntity_t *ent, const viewParms_t *viewParms, orientationr_t *or );
 
 /*
@@ -1232,9 +1157,6 @@ model_t		*R_AllocModel( void );
 
 void    	R_Init( void );
 
-image_t     *R_FindImageFile( const char *name, imgType_t type, imgFlags_t flags );
-image_t		*R_CreateImage( const char *name, byte *pic, int width, int height, imgType_t type, imgFlags_t flags, int internalFormat );
-
 qboolean	R_GetModeInfo( int *width, int *height, float *windowAspect, int mode, int dw, int dh );
 
 void		R_SetColorMappings( void );
@@ -1262,11 +1184,6 @@ const void *RB_TakeVideoFrameCmd( const void *data );
 //
 // tr_shader.c
 //
-qhandle_t		 RE_RegisterShaderLightMap( const char *name, int lightmapIndex );
-qhandle_t		 RE_RegisterShader( const char *name );
-qhandle_t		 RE_RegisterShaderNoMip( const char *name );
-qhandle_t RE_RegisterShaderFromImage(const char *name, int lightmapIndex, image_t *image, qboolean mipRawImage);
-
 shader_t	*R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImage );
 shader_t	*R_GetShaderByHandle( qhandle_t hShader );
 shader_t	*R_GetShaderByState( int index, long *cycleTime );
@@ -1274,25 +1191,6 @@ shader_t *R_FindShaderByName( const char *name );
 void		R_InitShaders( void );
 void		R_ShaderList_f( void );
 void    R_RemapShader(const char *oldShader, const char *newShader, const char *timeOffset);
-
-/*
-====================================================================
-
-IMPLEMENTATION SPECIFIC FUNCTIONS
-
-====================================================================
-*/
-
-void		GLimp_Init( void );
-void		GLimp_Shutdown( void );
-void		GLimp_EndFrame( void );
-
-// NOTE TTimo linux works with float gamma value, not the gamma table
-//   the params won't be used, getting the r_gamma cvar directly
-void		GLimp_SetGamma( unsigned char red[256], 
-						    unsigned char green[256],
-							unsigned char blue[256] );
-
 
 /*
 ====================================================================
@@ -1497,30 +1395,14 @@ ANIMATED MODELS
 =============================================================
 */
 
-void R_AddAnimSurfaces( trRefEntity_t *ent );
-void RB_SurfaceAnim( md4Surface_t *surfType );
 void R_MDRAddAnimSurfaces( trRefEntity_t *ent );
-void RB_MDRSurfaceAnim( md4Surface_t *surface );
+void RB_MDRSurfaceAnim( mdrSurface_t *surface );
 qboolean R_LoadIQM (model_t *mod, void *buffer, int filesize, const char *name );
 void R_AddIQMSurfaces( trRefEntity_t *ent );
 void RB_IQMSurfaceAnim( surfaceType_t *surface );
 int R_IQMLerpTag( orientation_t *tag, iqmData_t *data,
                   int startFrame, int endFrame,
                   float frac, const char *tagName );
-
-/*
-=============================================================
-
-IMAGE LOADERS
-
-=============================================================
-*/
-
-void R_LoadBMP( const char *name, byte **pic, int *width, int *height );
-void R_LoadJPG( const char *name, byte **pic, int *width, int *height );
-void R_LoadPCX( const char *name, byte **pic, int *width, int *height );
-void R_LoadPNG( const char *name, byte **pic, int *width, int *height );
-void R_LoadTGA( const char *name, byte **pic, int *width, int *height );
 
 /*
 =============================================================
@@ -1677,7 +1559,7 @@ typedef enum {
 typedef struct {
 	drawSurf_t	drawSurfs[MAX_DRAWSURFS];
 	dlight_t	dlights[MAX_DLIGHTS];
-	trRefEntity_t	entities[MAX_ENTITIES];
+	trRefEntity_t	entities[MAX_REFENTITIES];
 	srfPoly_t	*polys;//[MAX_POLYS];
 	polyVert_t	*polyVerts;//[MAX_POLYVERTS];
 	renderCommandList_t	commands;
@@ -1707,11 +1589,6 @@ size_t RE_SaveJPGToBuffer(byte *buffer, size_t bufSize, int quality,
 		          int image_width, int image_height, byte *image_buffer, int padding);
 void RE_TakeVideoFrame( int width, int height,
 		byte *captureBuffer, byte *encodeBuffer, qboolean motionJpeg );
-
-// font stuff
-void R_InitFreeType( void );
-void R_DoneFreeType( void );
-void RE_RegisterFont(const char *fontName, int pointSize, fontInfo_t *font);
 
 //Bloom Stuff
 void R_BloomInit( void );
