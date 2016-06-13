@@ -326,6 +326,8 @@ int	VM_CallInterpreted( vm_t *vm, int *args ) {
 	int		*codeImage;
 	int		v1;
 	int		dataMask;
+	int		i;
+	int		*img;
 #ifdef DEBUG_VM
 	vmSymbol_t	*profileSymbol;
 #endif
@@ -353,20 +355,13 @@ int	VM_CallInterpreted( vm_t *vm, int *args ) {
 	opStack = stack;
 	programCounter = 0;
 
-	programStack -= VM_CALL_PSTACK;
-
-	*(int *)&image[ programStack + 44] = args[9];
-	*(int *)&image[ programStack + 40] = args[8];
-	*(int *)&image[ programStack + 36] = args[7];
-	*(int *)&image[ programStack + 32] = args[6];
-	*(int *)&image[ programStack + 28] = args[5];
-	*(int *)&image[ programStack + 24] = args[4];
-	*(int *)&image[ programStack + 20] = args[3];
-	*(int *)&image[ programStack + 16] = args[2];
-	*(int *)&image[ programStack + 12] = args[1];
-	*(int *)&image[ programStack + 8 ] = args[0];
-	*(int *)&image[ programStack + 4 ] = 0;	// return stack
-	*(int *)&image[ programStack ] = -1;	// will terminate the loop on return
+	programStack -= 8 + (VMMAIN_CALL_ARGS*4);
+	img = (int*)&image[ programStack ];
+	for ( i = 0; i < VMMAIN_CALL_ARGS; i++ ) {
+		img[ i + 2 ] = args[ i ];
+	}
+	img[ 1 ] = 0; 	// return stack
+	img[ 0 ] = -1;	// will terminate the loop on return
 
 	VM_Debug(0);
 
@@ -920,6 +915,8 @@ int	VM_CallInterpreted2( vm_t *vm, int *args ) {
 	instruction_t *inst, *ci;
 	floatint_t	r0, r1;
 	int		opcode;
+	int		*img;
+	int		i;
 
 	// interpret the code
 	vm->currentlyInterpreting = qtrue;
@@ -938,20 +935,13 @@ int	VM_CallInterpreted2( vm_t *vm, int *args ) {
 	opStack = stack;
 	opStackTop = stack + ARRAY_LEN( stack ) - 1;
 
-	programStack -= VM_CALL_PSTACK;
-
-	//*(int *)&image[ programStack + 44] = args[9];
-	//*(int *)&image[ programStack + 40] = args[8];
-	//*(int *)&image[ programStack + 36] = args[7];
-	*(int *)&image[ programStack + 32] = args[6];
-	*(int *)&image[ programStack + 28] = args[5];
-	*(int *)&image[ programStack + 24] = args[4];
-	*(int *)&image[ programStack + 20] = args[3];
-	*(int *)&image[ programStack + 16] = args[2];
-	*(int *)&image[ programStack + 12] = args[1];
-	*(int *)&image[ programStack + 8 ] = args[0];
-	*(int *)&image[ programStack + 4 ] = 0;	// return stack
-	*(int *)&image[ programStack ] = -1;	// will terminate the loop on return
+	programStack -= 8 + (VMMAIN_CALL_ARGS*4);
+	img = (int*)&image[ programStack ];
+	for ( i = 0; i < VMMAIN_CALL_ARGS; i++ ) {
+		img[ i + 2 ] = args[ i ];
+	}
+	img[ 1 ] = 0; 	// return stack
+	img[ 0 ] = -1;	// will terminate the loop on return
 
 	ci = inst;
 

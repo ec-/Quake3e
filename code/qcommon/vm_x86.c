@@ -1361,6 +1361,8 @@ qboolean ConstOptimize( vm_t *vm )
 /*
 =================
 VM_FindMOps
+
+Search for known macro-op sequences
 =================
 */
 void VM_FindMOps( vmHeader_t *header, instruction_t *buf ) 
@@ -1369,8 +1371,6 @@ void VM_FindMOps( vmHeader_t *header, instruction_t *buf )
 	instruction_t *ci;
 	
 	ci = buf;
-
-	// Search for known macro-op sequences
 	i = 0;
 
 	while ( i < header->instructionCount )
@@ -1791,7 +1791,7 @@ __compile:
 			break;
 
 		case OP_LOCAL:
-			// merge OP_LOCAL + OP_LOAD4
+			// Optimizaton: merge OP_LOCAL + OP_LOAD4
 			if ( ni->op == OP_LOAD4 ) {
 				EmitAddEDI4( vm );				// add edi, 4
 				v = ci->value;
@@ -1807,7 +1807,7 @@ __compile:
 				break;
 			}
 
-			// merge OP_LOCAL + OP_LOAD2
+			// Optimizaton: merge OP_LOCAL + OP_LOAD2
 			if ( ni->op == OP_LOAD2 ) {
 				EmitAddEDI4( vm );				// add edi, 4
 				v = ci->value;
@@ -1823,7 +1823,7 @@ __compile:
 				break;
 			}
 
-			// merge OP_LOCAL + OP_LOAD1
+			// Optimizaton: merge OP_LOCAL + OP_LOAD1
 			if ( ni->op == OP_LOAD1 ) {
 				EmitAddEDI4( vm );				// add edi, 4
 				v = ci->value;
@@ -2361,6 +2361,11 @@ void *VM_Alloc_Compiled( vm_t *vm, int codeLength, int tableLength )
 }
 
 
+/*
+==============
+VM_Destroy_Compiled
+==============
+*/
 void VM_Destroy_Compiled( vm_t* vm )
 {
 #ifdef VM_X86_MMAP
@@ -2388,6 +2393,7 @@ int	VM_CallCompiled( vm_t *vm, int *args )
 	int		*image;
 	vm_t	*oldVM;
 	int		*oldOpTop;
+	int		i;
 
 	oldVM = currentVM;
 	currentVM = vm;
@@ -2395,22 +2401,15 @@ int	VM_CallCompiled( vm_t *vm, int *args )
 	// we might be called recursively, so this might not be the very top
 	stackOnEntry = vm->programStack;
 	oldOpTop = vm->opStackTop;
-	vm->programStack -= VM_CALL_PSTACK;
+	vm->programStack -= 8 + (VMMAIN_CALL_ARGS*4);
 
 	// set up the stack frame 
 	image = (int*)( vm->dataBase + vm->programStack );
-	//image[11] = args[9];
-	//image[10] = args[8];
-	//image[9] = args[7];
-	//image[8] = args[6];
-	image[7] = args[5];
-	image[6] = args[4];
-	image[5] = args[3];
-	image[4] = args[2];
-	image[3] = args[1];
-	image[2] = args[0];
-	//image[1] =  0;	// return stack
-	//image[0] = -1;	// will terminate loop on return
+	for ( i = 0; i < VMMAIN_CALL_ARGS; i++ ) {
+		image[ i + 2 ] = args[ i ];
+	}
+	image[1] =  0;	// return stack
+	image[0] = -1;	// will terminate loop on return
 
 	vm->opStack = opStack;
 	vm->opStackTop = opStack + ARRAY_LEN( opStack ) - 1;
@@ -2429,7 +2428,6 @@ int	VM_CallCompiled( vm_t *vm, int *args )
 
 	vm->programStack = stackOnEntry;
 	vm->opStackTop = oldOpTop;
-
 
 	// in case we were recursively called by another vm
 	currentVM = oldVM;

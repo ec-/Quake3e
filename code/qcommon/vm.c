@@ -1144,6 +1144,7 @@ vm_t *VM_Restart( vm_t *vm ) {
 	return vm;
 }
 
+
 /*
 ================
 VM_Create
@@ -1406,7 +1407,7 @@ intptr_t QDECL VM_Call( vm_t *vm, int callnum, ... )
 	if ( vm->entryPoint ) 
 	{
 		//rcg010207 -  see dissertation at top of VM_DllSyscall() in this file.
-		int args[8];
+		int args[VMMAIN_CALL_ARGS-1];
 		va_list ap;
 		va_start( ap, callnum );
 		for ( i = 0; i < ARRAY_LEN( args ); i++ ) {
@@ -1415,9 +1416,10 @@ intptr_t QDECL VM_Call( vm_t *vm, int callnum, ... )
 		va_end(ap);
 
 		r = vm->entryPoint( callnum, args[0], args[1], args[2], args[3],
-			args[4], args[5], args[6], args[7] );
+			args[4], args[5], args[6], args[7],
+			args[8], args[9], args[10], args[11] );
 	} else {
-#if id386 // i386 calling convention doesn't need conversion
+#if id386 && !defined __clang__ // calling convention doesn't need conversion in some cases
 #ifndef NO_VM_COMPILED
 		if ( vm->compiled )
 			r = VM_CallCompiled( vm, (int*)&callnum );
@@ -1427,7 +1429,7 @@ intptr_t QDECL VM_Call( vm_t *vm, int callnum, ... )
 #else
 		struct {
 			int callnum;
-			int args[8];
+			int args[VMMAIN_CALL_ARGS-1];
 		} a;
 		va_list ap;
 

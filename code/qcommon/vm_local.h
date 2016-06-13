@@ -28,7 +28,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define	MAX_OPSTACK_SIZE	512
 #define	PROC_OPSTACK_SIZE	30
 
-#define VM_CALL_PSTACK		48
+#define VMMAIN_CALL_ARGS	13
 
 // don't change
 // Hardcoded in q3asm an reserved at end of bss
