@@ -706,10 +706,6 @@
 				</File>
 			</Filter>
 		</Filter>
-		<File
-			RelativePath="..\..\renderer\ref_trin.def"
-			>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>
