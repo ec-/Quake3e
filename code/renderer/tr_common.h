@@ -116,7 +116,7 @@ extern cvar_t *r_stereoEnabled;
 
 extern	cvar_t	*r_saveFontData;
 
-//qboolean	R_GetModeInfo( int *width, int *height, float *windowAspect, int mode );
+//qboolean	R_GetModeInfo( int *width, int *height, float *windowAspect, int mode, int dw, int dh );
 
 float R_NoiseGet4f( float x, float y, float z, float t );
 void  R_NoiseInit( void );
