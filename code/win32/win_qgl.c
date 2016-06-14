@@ -186,13 +186,13 @@ void QGL_Shutdown( void )
 {
 	ri.Printf( PRINT_ALL, "...shutting down QGL\n" );
 
-	if ( glw_state.hinstOpenGL )
+	if ( glw_state.OpenGLLib )
 	{
 		ri.Printf( PRINT_ALL, "...unloading OpenGL DLL\n" );
-		FreeLibrary( glw_state.hinstOpenGL );
+		Sys_UnloadLibrary( glw_state.OpenGLLib );
 	}
 
-	glw_state.hinstOpenGL = NULL;
+	glw_state.OpenGLLib = NULL;
 
 	qwglCreateContext            = NULL;
 	qwglDeleteContext            = NULL;
@@ -205,9 +205,9 @@ void QGL_Shutdown( void )
 
 #ifdef _MSC_VER
 #	pragma warning (disable : 4113 4133 4047 )
-#	define GPA( a ) GetProcAddress( glw_state.hinstOpenGL, a )
+#	define GPA( a ) Sys_LoadFunction( glw_state.OpenGLLib, a )
 #else
-#	define GPA( a ) (void *)GetProcAddress( glw_state.hinstOpenGL, a )
+#	define GPA( a ) (void *)Sys_LoadFunction( glw_state.OpenGLLib, a )
 #endif
 
 
@@ -233,7 +233,7 @@ qboolean QGL_Init( const char *dllname )
 	GetSystemDirectory( systemDir, sizeof( systemDir ) );
 #endif
 
-	assert( glw_state.hinstOpenGL == 0 );
+	assert( glw_state.OpenGLLib == 0 );
 
 	ri.Printf( PRINT_ALL, "...initializing QGL\n" );
 
@@ -248,11 +248,11 @@ qboolean QGL_Init( const char *dllname )
 		Q_strncpyz( libName, dllname+1, sizeof( libName ) );
 	}
 
-	ri.Printf( PRINT_ALL, "...calling LoadLibrary( '%s.dll' ): ", libName );
+	ri.Printf( PRINT_ALL, "...loading '%s.dll' : ", libName );
 
-	glw_state.hinstOpenGL = LoadLibrary( AtoW( libName ) );
+	glw_state.OpenGLLib = Sys_LoadLibrary( libName );
 
-	if ( glw_state.hinstOpenGL == NULL )
+	if ( glw_state.OpenGLLib == NULL )
 	{
 		ri.Printf( PRINT_ALL, "failed\n" );
 		return qfalse;

@@ -33,7 +33,7 @@ typedef struct
 	HDC     hDC;			// handle to device context
 	HGLRC   hGLRC;			// handle to GL rendering context
 
-	HINSTANCE hinstOpenGL;	// HINSTANCE for the OpenGL library
+	HINSTANCE   OpenGLLib;  // HINSTANCE for the OpenGL library
 
 	qboolean allowdisplaydepthchange;
 	qboolean pixelFormatSet;
@@ -48,6 +48,8 @@ typedef struct
 
 	qboolean	cdsFullscreen;
 	int			monitorCount;
+
+	FILE *log_fp; // TODO: implement?
 
 } glwstate_t;
 

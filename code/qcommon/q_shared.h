@@ -359,6 +359,10 @@ typedef	int	fixed16_t;
 #define M_PI		3.14159265358979323846f	// matches value in gcc v2 math.h
 #endif
 
+#ifndef M_LN2
+#define M_LN2      0.693147180559945309417
+#endif
+
 #define NUMVERTEXNORMALS	162
 extern	vec3_t	bytedirs[NUMVERTEXNORMALS];
 
@@ -432,6 +436,9 @@ extern	vec3_t	axisDefault[3];
 
 float Q_fabs( float f );
 float Q_rsqrt( float f );		// reciprocal square root
+
+float Q_log2f( float f );
+float Q_exp2f( float f );
 
 #define SQRTFAST( x ) ( (x) * Q_rsqrt( x ) )
 
@@ -717,6 +724,7 @@ int		Q_stricmpn (const char *s1, const char *s2, int n);
 char	*Q_strlwr( char *s1 );
 char	*Q_strupr( char *s1 );
 char	*Q_strrchr( const char* string, int c );
+const char	*Q_stristr( const char *s, const char *find);
 
 qboolean Q_isanumber( const char *s );
 qboolean Q_isintegral( float f );
