@@ -218,21 +218,16 @@ typedef struct {
 	qboolean				smpActive;		// UNUSED, present for compatibility
 } glconfig_t;
 
+#define	myftol(x) ((int)(x))
+
 // FIXME: VM should be OS agnostic .. in theory
 
 #if defined(Q3_VM) || defined(_WIN32)
-
 #define OPENGL_DRIVER_NAME	"opengl32"
-
 #elif defined(MACOS_X)
-
 #define OPENGL_DRIVER_NAME	"/System/Library/Frameworks/OpenGL.framework/Libraries/libGL.dylib"
-
 #else
-
-// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=524
 #define OPENGL_DRIVER_NAME	"libGL.so.1"
-
-#endif	// !defined _WIN32
+#endif
 
 #endif	// __TR_TYPES_H

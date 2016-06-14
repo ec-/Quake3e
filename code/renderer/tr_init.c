@@ -173,14 +173,11 @@ cvar_t	*r_floatfix; // -EC-
 */
 static void InitOpenGL( void )
 {
-	char renderer_buffer[1024];
-
 	//
 	// initialize OS specific portions of the renderer
 	//
 	// GLimp_Init directly or indirectly references the following cvars:
 	//		- r_fullscreen
-	//		- r_glDriver
 	//		- r_mode
 	//		- r_(color|depth|stencil)bits
 	//		- r_ignorehwgamma
@@ -192,9 +189,6 @@ static void InitOpenGL( void )
 		GLint		temp;
 		
 		GLimp_Init();
-
-		strcpy( renderer_buffer, glConfig.renderer_string );
-		Q_strlwr( renderer_buffer );
 
 		// OpenGL driver constants
 		qglGetIntegerv( GL_MAX_TEXTURE_SIZE, &temp );
@@ -221,7 +215,8 @@ GL_CheckErrors
 */
 void GL_CheckErrors( void ) {
     int		err;
-    char	s[64];
+    const char *s;
+    char buf[32];
 
     err = qglGetError();
     if ( err == GL_NO_ERROR ) {
@@ -232,25 +227,26 @@ void GL_CheckErrors( void ) {
     }
     switch( err ) {
         case GL_INVALID_ENUM:
-            strcpy( s, "GL_INVALID_ENUM" );
+            s = "GL_INVALID_ENUM";
             break;
         case GL_INVALID_VALUE:
-            strcpy( s, "GL_INVALID_VALUE" );
+            s = "GL_INVALID_VALUE";
             break;
         case GL_INVALID_OPERATION:
-            strcpy( s, "GL_INVALID_OPERATION" );
+            s = "GL_INVALID_OPERATION";
             break;
         case GL_STACK_OVERFLOW:
-            strcpy( s, "GL_STACK_OVERFLOW" );
+            s = "GL_STACK_OVERFLOW";
             break;
         case GL_STACK_UNDERFLOW:
-            strcpy( s, "GL_STACK_UNDERFLOW" );
+            s = "GL_STACK_UNDERFLOW";
             break;
         case GL_OUT_OF_MEMORY:
-            strcpy( s, "GL_OUT_OF_MEMORY" );
+            s = "GL_OUT_OF_MEMORY";
             break;
         default:
-            Com_sprintf( s, sizeof(s), "%i", err);
+            Com_sprintf( buf, sizeof(buf), "%i", err);
+            s = buf;
             break;
     }
 
