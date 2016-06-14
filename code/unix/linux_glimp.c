@@ -159,40 +159,6 @@ char gl_extensions[16384]; // to store full extension string
 
 #define HAVE_EXT(S) (Q_stristr(gl_extensions,(S)))
 
-/*
-* Find the first occurrence of find in s.
-*/
-// bk001130 - from cvs1.17 (mkv), const
-// bk001130 - made first argument const
-static const char *Q_stristr( const char *s, const char *find)
-{
-  register char c, sc;
-  register size_t len;
-
-  if ((c = *find++) != 0)
-  {
-    if (c >= 'a' && c <= 'z')
-    {
-      c -= ('a' - 'A');
-    }
-    len = strlen(find);
-    do
-    {
-      do
-      {
-        if ((sc = *s++) == 0)
-          return NULL;
-        if (sc >= 'a' && sc <= 'z')
-        {
-          sc -= ('a' - 'A');
-        }
-      } while (sc != c);
-    } while (Q_stricmpn(s, find, len) != 0);
-    s--;
-  }
-  return s;
-}
-
 
 /*****************************************************************************
 ** KEYBOARD
@@ -370,7 +336,7 @@ static char *XLateKey( XKeyEvent *ev, int *key )
     {
       if (com_developer->value)
       {
-        ri.Printf(PRINT_ALL, "Warning: XLookupString failed on KeySym %d\n", keysym);
+        ri.Printf( PRINT_ALL, "Warning: XLookupString failed on KeySym %d\n", (int)keysym );
       }
       return NULL;
     }
@@ -436,12 +402,9 @@ static void install_grabs( void )
 	// save old mouse settings
 	XGetPointerControl( dpy, &mouse_accel_numerator, &mouse_accel_denominator, &mouse_threshold );
 
-	// set new one
-	//XChangePointerControl( dpy, True, True, 1, 1, 1 );
-
 	// do this earlier?
 	res = XGrabPointer( dpy, win, False, MOUSE_MASK, GrabModeAsync, GrabModeAsync, win, None, CurrentTime );
-	if ( res != GrabSuccess ) 
+	if ( res != GrabSuccess )
 	{
 		//ri.Printf( PRINT_ALL, S_COLOR_YELLOW "Warning: XGrabPointer() failed\n" );
 	}
@@ -489,9 +452,9 @@ static void install_grabs( void )
 	XSync( dpy, False );
 }
 
+
 static void uninstall_grabs( void )
 {
-
 #ifdef HAVE_XF86DGA
 	if ( in_dgamouse->integer )
 	{
@@ -531,7 +494,6 @@ static void uninstall_grabs( void )
  */
 static qboolean X11_PendingInput( void )
 {
-
 	assert(dpy != NULL);
 
 	// Flush the display connection and look to see if events are queued
@@ -603,8 +565,8 @@ static qboolean WindowMinimized( Display *dpy, Window win )
 
 	atoms = NULL;
 
-    XGetWindowProperty( dpy, win, nws, 0, 0x7FFFFFFF, False, XA_ATOM, 
-		&actual_type, &actual_format, &num_items, 
+	XGetWindowProperty( dpy, win, nws, 0, 0x7FFFFFFF, False, XA_ATOM,
+		&actual_type, &actual_format, &num_items,
 		&bytes_after, (unsigned char**)&atoms );
 
     for ( i = 0; i < num_items; i++ )
@@ -1434,9 +1396,9 @@ static void GLW_InitExtensions( void )
       {
         GLint glint = 0;
         qglGetIntegerv( GL_MAX_ACTIVE_TEXTURES_ARB, &glint );
-        glConfig.maxActiveTextures = (int) glint;
+        glConfig.numTextureUnits = (int) glint;
 
-        if ( glConfig.maxActiveTextures > 1 )
+        if ( glConfig.numTextureUnits > 1 )
         {
           ri.Printf( PRINT_ALL, "...using GL_ARB_multitexture\n" );
         } else
@@ -1581,11 +1543,11 @@ static qboolean GLW_LoadOpenGL( const char *name )
 int qXErrorHandler( Display *dpy, XErrorEvent *ev )
 {
 	static char buf[1024];
-	XGetErrorText( dpy, ev->error_code, buf, 1024 );
-	ri.Printf( PRINT_ALL, "X Error of failed request: %s\n", buf);
-	ri.Printf( PRINT_ALL, "  Major opcode of failed request: %d\n", ev->request_code, buf);
-	ri.Printf( PRINT_ALL, "  Minor opcode of failed request: %d\n", ev->minor_code);
-	ri.Printf( PRINT_ALL, "  Serial number of failed request: %d\n", ev->serial);
+	XGetErrorText( dpy, ev->error_code, buf, sizeof( buf ) );
+	ri.Printf( PRINT_ALL, "X Error of failed request: %s\n", buf) ;
+	ri.Printf( PRINT_ALL, "  Major opcode of failed request: %d\n", ev->request_code );
+	ri.Printf( PRINT_ALL, "  Minor opcode of failed request: %d\n", ev->minor_code );
+	ri.Printf( PRINT_ALL, "  Serial number of failed request: %d\n", (int)ev->serial );
 	return 0;
 }
 
@@ -1597,14 +1559,14 @@ int qXErrorHandler( Display *dpy, XErrorEvent *ev )
 */
 void GLimp_Init( void )
 {
-	r_allowSoftwareGL = ri.Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
-
 	InitSig();
 
 	IN_Init();   // rcg08312005 moved into glimp.
 
 	// set up our custom error handler for X failures
 	XSetErrorHandler( &qXErrorHandler );
+
+	r_allowSoftwareGL = ri.Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
 
 	//
 	// load and initialize the specific OpenGL driver

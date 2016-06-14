@@ -98,6 +98,7 @@ extern BOOL ( WINAPI * qwglSwapIntervalEXT)( int interval );
 //GLX Functions
 #if ( (defined __linux__ )  || (defined __FreeBSD__ ) || (defined __sun) )
 
+extern void* (*qwglGetProcAddress)( const char *symbol );
 extern XVisualInfo * (*qglXChooseVisual)( Display *dpy, int screen, int *attribList );
 extern GLXContext (*qglXCreateContext)( Display *dpy, XVisualInfo *vis, GLXContext shareList, Bool direct );
 extern void (*qglXDestroyContext)( Display *dpy, GLXContext ctx );

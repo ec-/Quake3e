@@ -39,26 +39,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../renderer/tr_local.h"
 #include "unix_glw.h"
 
-// bk001129 - from cvs1.17 (mkv)
-//#if defined(__FX__)
-//#include <GL/fxmesa.h>
-//#endif
-//#include <GL/glx.h> // bk010216 - FIXME: all of the above redundant? renderer/qgl.h
-
 #include <dlfcn.h>
 
-// bk001129 - from cvs1.17 (mkv)
-#if defined(__FX__)
-//FX Mesa Functions
-fxMesaContext (*qfxMesaCreateContext)(GLuint win, GrScreenResolution_t, GrScreenRefresh_t, const GLint attribList[]);
-fxMesaContext (*qfxMesaCreateBestContext)(GLuint win, GLint width, GLint height, const GLint attribList[]);
-void (*qfxMesaDestroyContext)(fxMesaContext ctx);
-void (*qfxMesaMakeCurrent)(fxMesaContext ctx);
-fxMesaContext (*qfxMesaGetCurrentContext)(void);
-void (*qfxMesaSwapBuffers)(void);
-#endif
-
 //GLX Functions
+void* (*qwglGetProcAddress)( const char *symbol );
 XVisualInfo * (*qglXChooseVisual)( Display *dpy, int screen, int *attribList );
 GLXContext (*qglXCreateContext)( Display *dpy, XVisualInfo *vis, GLXContext shareList, Bool direct );
 void (*qglXDestroyContext)( Display *dpy, GLXContext ctx );
@@ -76,9 +60,6 @@ void ( APIENTRY * qglUnlockArraysEXT) ( void );
 void ( APIENTRY * qglPointParameterfEXT)( GLenum param, GLfloat value );
 void ( APIENTRY * qglPointParameterfvEXT)( GLenum param, const GLfloat *value );
 void ( APIENTRY * qglColorTableEXT)( int, int, int, int, int, const void * );
-void ( APIENTRY * qgl3DfxSetPaletteEXT)( GLuint * );
-void ( APIENTRY * qglSelectTextureSGIS)( GLenum );
-void ( APIENTRY * qglMTexCoord2fSGIS)( GLenum, GLfloat, GLfloat );
 
 /*
 ** QGL_Shutdown
@@ -104,23 +85,14 @@ void QGL_Shutdown( void )
 		// placing a short delay before libGL is unloaded works around the problem.
 		// This delay is changable via the r_GLlibCoolDownMsec cvar (nice name
 		// huh?), and it defaults to 0. For me, 500 seems to work.
-		if( r_GLlibCoolDownMsec->integer )
-			usleep( r_GLlibCoolDownMsec->integer * 1000 );
+		//if( r_GLlibCoolDownMsec->integer )
+		//	usleep( r_GLlibCoolDownMsec->integer * 1000 );
+		usleep( 250 * 1000 );
 
 		dlclose ( glw_state.OpenGLLib );
 
 		glw_state.OpenGLLib = NULL;
 	}
-
-// bk001129 - from cvs1.17 (mkv)
-#if defined(__FX__)
-	qfxMesaCreateContext         = NULL;
-	qfxMesaCreateBestContext     = NULL;
-	qfxMesaDestroyContext        = NULL;
-	qfxMesaMakeCurrent           = NULL;
-	qfxMesaGetCurrentContext     = NULL;
-	qfxMesaSwapBuffers           = NULL;
-#endif
 
 	qglXChooseVisual             = NULL;
 	qglXCreateContext            = NULL;
@@ -128,18 +100,22 @@ void QGL_Shutdown( void )
 	qglXMakeCurrent              = NULL;
 	qglXCopyContext              = NULL;
 	qglXSwapBuffers              = NULL;
+
+	qwglGetProcAddress           =  NULL;
+
 }
 
-#define GPA( a ) dlsym( glw_state.OpenGLLib, a )
 
-void *qwglGetProcAddress(char *symbol)
+static void *glGetProcAddress( const char *symbol )
 {
-	if (glw_state.OpenGLLib)
-		return GPA ( symbol );
+	if ( glw_state.OpenGLLib )
+		return dlsym( glw_state.OpenGLLib, symbol );
+
 	return NULL;
 }
 
 char *do_dlerror(void);
+
 
 /*
 ** QGL_Init
@@ -182,15 +158,9 @@ qboolean QGL_Init( const char *dllname )
 		}
 	}
 
-// bk001129 - from cvs1.17 (mkv)
-#if defined(__FX__)
-	qfxMesaCreateContext         =  GPA("fxMesaCreateContext");
-	qfxMesaCreateBestContext     =  GPA("fxMesaCreateBestContext");
-	qfxMesaDestroyContext        =  GPA("fxMesaDestroyContext");
-	qfxMesaMakeCurrent           =  GPA("fxMesaMakeCurrent");
-	qfxMesaGetCurrentContext     =  GPA("fxMesaGetCurrentContext");
-	qfxMesaSwapBuffers           =  GPA("fxMesaSwapBuffers");
-#endif
+#define GPA( a ) qwglGetProcAddress( a )
+
+	qwglGetProcAddress			 =  glGetProcAddress;
 
 	qglXChooseVisual             =  GPA("glXChooseVisual");
 	qglXCreateContext            =  GPA("glXCreateContext");
@@ -204,9 +174,6 @@ qboolean QGL_Init( const char *dllname )
 	qglPointParameterfEXT = NULL;
 	qglPointParameterfvEXT = NULL;
 	qglColorTableEXT = NULL;
-	qgl3DfxSetPaletteEXT = NULL;
-	qglSelectTextureSGIS = NULL;
-	qglMTexCoord2fSGIS = NULL;
 	qglActiveTextureARB = NULL;
 	qglClientActiveTextureARB = NULL;
 	qglMultiTexCoord2fARB = NULL;

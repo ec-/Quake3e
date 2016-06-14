@@ -118,7 +118,7 @@ void Sys_ConsoleInputInit( void );
 Sys_LowPhysicalMemory()
 ==================
 */
-qboolean Sys_LowPhysicalMemory() 
+qboolean Sys_LowPhysicalMemory( void )
 {
   //MEMORYSTATUS stat;
   //GlobalMemoryStatus (&stat);
@@ -461,36 +461,35 @@ void Sys_ConsoleInputInit( void )
 	Com_Printf( "Started tty console (use +set ttycon 0 to disable)\n" );
 	Field_Clear( &tty_con );
 	tcgetattr( STDIN_FILENO, &tty_tc );
-    tty_erase = tty_tc.c_cc[VERASE];
-    tty_eof = tty_tc.c_cc[VEOF];
-    tc = tty_tc;
-    /*
-     ECHO: don't echo input characters
-     ICANON: enable canonical mode.  This  enables  the  special
-              characters  EOF,  EOL,  EOL2, ERASE, KILL, REPRINT,
-              STATUS, and WERASE, and buffers by lines.
-     ISIG: when any of the characters  INTR,  QUIT,  SUSP,  or
-              DSUSP are received, generate the corresponding sig­
-              nal
-    */
-    tc.c_lflag &= ~(ECHO | ICANON);
-    /*
-     ISTRIP strip off bit 8
-     INPCK enable input parity checking
-     */
-    tc.c_iflag &= ~(ISTRIP | INPCK);
-    tc.c_cc[VMIN] = 1;
-    tc.c_cc[VTIME] = 0;
-    tcsetattr( STDIN_FILENO, TCSADRAIN, &tc );
+	tty_erase = tty_tc.c_cc[ VERASE ];
+	tty_eof = tty_tc.c_cc[ VEOF ];
+	tc = tty_tc;
+	/*
+		ECHO: don't echo input characters
+		ICANON: enable canonical mode.  This  enables  the  special
+			characters  EOF,  EOL,  EOL2, ERASE, KILL, REPRINT,
+			STATUS, and WERASE, and buffers by lines.
+		ISIG: when any of the characters  INTR,  QUIT,  SUSP,  or
+			DSUSP are received, generate the corresponding signal
+	*/
+	tc.c_lflag &= ~(ECHO | ICANON);
+	/*
+		ISTRIP strip off bit 8
+		INPCK enable input parity checking
+	*/
+	tc.c_iflag &= ~(ISTRIP | INPCK);
+	tc.c_cc[VMIN] = 1;
+	tc.c_cc[VTIME] = 0;
+	tcsetattr( STDIN_FILENO, TCSADRAIN, &tc );
 
-    ttycon_ansicolor = Cvar_Get( "ttycon_ansicolor", "0", CVAR_ARCHIVE );
+	ttycon_ansicolor = Cvar_Get( "ttycon_ansicolor", "0", CVAR_ARCHIVE );
 
 	if( ttycon_ansicolor && ttycon_ansicolor->integer )
 	{
 		ttycon_color_on = qtrue;
 	}
 
-    ttycon_on = qtrue;
+	ttycon_on = qtrue;
 }
 
 char *Sys_ConsoleInput( void )
@@ -620,14 +619,14 @@ char *Sys_ConsoleInput( void )
 		if ( select( STDIN_FILENO + 1, &fdset, NULL, NULL, &timeout) == -1 || !FD_ISSET( 0, &fdset ) )
 		{
 			return NULL;
-    	}
+		}
 
 		len = read( STDIN_FILENO, text, sizeof( text ) );
 		if ( len == 0 )
 		{ // eof!
 			stdin_active = qfalse;
 			return NULL;
-	    }
+		}
 
 		if ( len < 1 )
 			return NULL;
@@ -662,31 +661,30 @@ void Sys_SendKeyEvents( void )
 
 char *do_dlerror(void)
 {
-    return dlerror();
+	return dlerror();
 }
 
 
 /*
 =================
 Sys_UnloadDll
-
 =================
 */
 void Sys_UnloadDll( void *dllHandle ) {
-  // bk001206 - verbose error reporting
-  if ( !dllHandle )
-  {
-    Com_Printf("Sys_UnloadDll(NULL)\n");
-    return;
-  }
 
-  dlclose( dllHandle );
-  {
-    const char* err; // rb010123 - now const
-    err = dlerror();
-    if ( err != NULL )
-      Com_Printf ( "Sys_UnloadGame failed on dlclose: \"%s\"!\n", err );
-  }
+	if ( !dllHandle )
+	{
+		Com_Printf( "Sys_UnloadDll(NULL)\n" );
+		return;
+	}
+
+	dlclose( dllHandle );
+	{
+		const char* err; // rb010123 - now const
+		err = dlerror();
+		if ( err != NULL )
+			Com_Printf ( "Sys_UnloadDLL failed on dlclose: \"%s\"!\n", err );
+	}
 }
 
 
@@ -837,18 +835,18 @@ void Sys_AppActivate( void )
 
 static struct Q3ToAnsiColorTable_s
 {
-  char Q3color;
-  char *ANSIcolor;
+	const char Q3color;
+	const char *ANSIcolor;
 } tty_colorTable[ ] =
 {
-  { COLOR_BLACK,    "30" },
-  { COLOR_RED,      "31" },
-  { COLOR_GREEN,    "32" },
-  { COLOR_YELLOW,   "33" },
-  { COLOR_BLUE,     "34" },
-  { COLOR_CYAN,     "36" },
-  { COLOR_MAGENTA,  "35" },
-  { COLOR_WHITE,    "0" }
+	{ COLOR_BLACK,    "30" },
+	{ COLOR_RED,      "31" },
+	{ COLOR_GREEN,    "32" },
+	{ COLOR_YELLOW,   "33" },
+	{ COLOR_BLUE,     "34" },
+	{ COLOR_CYAN,     "36" },
+	{ COLOR_MAGENTA,  "35" },
+	{ COLOR_WHITE,    "0" }
 };
 
 
@@ -856,7 +854,7 @@ void Sys_ANSIColorify( const char *msg, char *buffer, int bufferSize )
 {
   int   msgLength;
   int   i, j;
-  char  *escapeCode;
+  const char *escapeCode;
   char  tempBuffer[ 7 ];
 
   if( !msg || !buffer )
@@ -907,44 +905,44 @@ void Sys_ANSIColorify( const char *msg, char *buffer, int bufferSize )
   }
 }
 
-void  Sys_Print( const char *msg )
+void Sys_Print( const char *msg )
 {
-  if (ttycon_on)
-  {
-    tty_Hide();
-  }
+	if ( ttycon_on )
+	{
+		tty_Hide();
+	}
 
-  if( ttycon_on && ttycon_color_on )
-  {
-    char ansiColorString[ MAXPRINTMSG ];
-    Sys_ANSIColorify( msg, ansiColorString, MAXPRINTMSG );
-    fputs( ansiColorString, stderr );
-  }
-  else
-    fputs(msg, stderr);
+	if ( ttycon_on && ttycon_color_on )
+	{
+		char ansiColorString[ MAXPRINTMSG ];
+		Sys_ANSIColorify( msg, ansiColorString, MAXPRINTMSG );
+		fputs( ansiColorString, stderr );
+	}
+	else
+		fputs( msg, stderr );
 
-  if (ttycon_on)
-  {
-    tty_Show();
-  }
+	if ( ttycon_on )
+	{
+		tty_Show();
+	}
 }
 
 
-void Sys_BeginPrint( void ) 
+void Sys_BeginPrint( void )
 {
-  return;
+	return;
 }
 
 
-void Sys_EndPrint( void ) 
+void Sys_EndPrint( void )
 {
-  return;
+	return;
 }
 
 
 void QDECL Sys_SetStatus( const char *format, ... )
 {
-  return;
+	return;
 }
 
 
@@ -975,7 +973,7 @@ void Sys_ConfigureFPU( void )  // bk001213 - divide by zero
 }
 
 
-void Sys_PrintBinVersion( const char* name ) 
+void Sys_PrintBinVersion( const char* name )
 {
 	const char *date = __DATE__;
 	const char *time = __TIME__;
@@ -1027,7 +1025,7 @@ const char *Sys_BinName( const char *arg0 )
 }
 
 
-int Sys_ParseArgs( int argc, char* argv[] ) 
+int Sys_ParseArgs( int argc, const char* argv[] )
 {
 	if ( argc == 2 )
 	{
@@ -1042,7 +1040,7 @@ int Sys_ParseArgs( int argc, char* argv[] )
 }
 
 
-int main( int argc, char* argv[] )
+int main( int argc, const char* argv[] )
 {
 	int   len, i;
 	char  *cmdline;
