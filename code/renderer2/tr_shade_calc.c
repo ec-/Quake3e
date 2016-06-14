@@ -426,7 +426,7 @@ Autosprite2Deform
 Autosprite2 will pivot a rectangular quad along the center of its long axis
 =====================
 */
-int edgeVerts[6][2] = {
+unsigned int edgeVerts[6][2] = {
 	{ 0, 1 },
 	{ 0, 2 },
 	{ 0, 3 },
@@ -803,8 +803,8 @@ void RB_CalcTransformTexMatrix( const texModInfo_t *tmi, float *matrix  )
 */
 void RB_CalcRotateTexMatrix( float degsPerSecond, float *matrix )
 {
-	float timeScale = tess.shaderTime;
-	float degs;
+	double timeScale = tess.shaderTime; // -EC- set to double
+	double degs; // -EC- set to double
 	int index;
 	float sinValue, cosValue;
 

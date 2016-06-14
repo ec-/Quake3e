@@ -3615,6 +3615,16 @@ void	R_ShaderList_f (void) {
 	ri.Printf (PRINT_ALL, "------------------\n");
 }
 
+
+static char *stradd( char *dst, const char *src ) 
+{
+	char c;
+	while ( (c = *src++) != '\0' ) 
+		*dst++ = c;
+	*dst = '\0';
+	return dst;
+}
+
 /*
 ====================
 ScanAndLoadShaderFiles
@@ -3720,7 +3730,7 @@ static void ScanAndLoadShaderFiles( void )
 	}
 
 	// build single large buffer
-	s_shaderText = ri.Hunk_Alloc( sum + numShaderFiles*2, h_low );
+	s_shaderText = ri.Hunk_Alloc( sum + numShaderFiles*2 + 1, h_low );
 	s_shaderText[ 0 ] = '\0';
 	textEnd = s_shaderText;
  
@@ -3729,10 +3739,8 @@ static void ScanAndLoadShaderFiles( void )
 	{
 		if ( !buffers[i] )
 			continue;
-
-		strcat( textEnd, buffers[i] );
-		strcat( textEnd, "\n" );
-		textEnd += strlen( textEnd );
+		textEnd = stradd( textEnd, buffers[i] );
+		textEnd = stradd( textEnd, "\n" );
 		ri.FS_FreeFile( buffers[i] );
 	}
 
@@ -3767,8 +3775,6 @@ static void ScanAndLoadShaderFiles( void )
 		hashMem = ((char *) hashMem) + ((shaderTextHashTableSizes[i] + 1) * sizeof(char *));
 	}
 
-	Com_Memset(shaderTextHashTableSizes, 0, sizeof(shaderTextHashTableSizes));
-
 	p = s_shaderText;
 	// look for shader names
 	while ( 1 ) {
@@ -3779,7 +3785,7 @@ static void ScanAndLoadShaderFiles( void )
 		}
 
 		hash = generateHashValue(token, MAX_SHADERTEXT_HASH);
-		shaderTextHashTable[hash][shaderTextHashTableSizes[hash]++] = oldp;
+		shaderTextHashTable[hash][--shaderTextHashTableSizes[hash]] = oldp;
 
 		SkipBracedSection(&p, 0);
 	}
