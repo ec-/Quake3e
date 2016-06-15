@@ -271,10 +271,10 @@ typedef enum {
 typedef struct {
 	genFunc_t	func;
 
-	float base;
-	float amplitude;
-	float phase;
-	float frequency;
+	double base;
+	double amplitude;
+	double phase;
+	double frequency;
 } waveForm_t;
 
 #define TR_MAX_TEXMODS 4
@@ -334,7 +334,7 @@ typedef struct {
 typedef struct {
 	image_t			*image[MAX_IMAGE_ANIMATIONS];
 	int				numImageAnimations;
-	float			imageAnimationSpeed;
+	double			imageAnimationSpeed;
 
 	texCoordGen_t	tcGen;
 	vec3_t			tcGenVectors[2];
@@ -474,8 +474,8 @@ typedef struct shader_s {
 
 	void		(*optimalStageIteratorFunc)( void );
 
-  float clampTime;                                  // time this shader is clamped to
-  float timeOffset;                                 // current time offset for this shader
+	double	clampTime;                                  // time this shader is clamped to - set to double for frameloss fix -EC-
+	double	timeOffset;                                 // current time offset for this shader - set to double for frameloss fix -EC-
 
   struct shader_s *remappedShader;                  // current shader this one is remapped too
 
@@ -734,7 +734,7 @@ typedef struct {
 	byte		areamask[MAX_MAP_AREA_BYTES];
 	qboolean	areamaskModified;	// qtrue if areamask changed since last scene
 
-	float		floatTime;			// tr.refdef.time / 1000.0
+	double		floatTime;			// tr.refdef.time / 1000.0
 
 	float		blurFactor;
 
@@ -1468,6 +1468,7 @@ typedef struct {
 	qboolean	vertexes2D;		// shader needs to be finished
 	trRefEntity_t	entity2D;	// currentEntity will point at this when doing 2D rendering
 
+	qboolean	floatfix;		// -EC- frameloss bug fix
 	FBO_t *last2DFBO;
 	qboolean    colorMask[4];
 	qboolean    framePostProcessed;
@@ -1830,6 +1831,8 @@ extern	cvar_t	*r_debugSort;
 
 extern	cvar_t	*r_printShaders;
 
+extern	cvar_t	*r_floatfix;
+
 extern cvar_t	*r_marksOnTriangleMeshes;
 
 //====================================================================
@@ -2023,7 +2026,7 @@ typedef struct shaderCommands_s
 	//color4ub_t	constantColor255[SHADER_MAX_VERTEXES] QALIGN(16);
 
 	shader_t	*shader;
-	float		shaderTime;
+	double		shaderTime;	// -EC- set to double for frameloss fix
 	int			fogNum;
 	int         cubemapIndex;
 

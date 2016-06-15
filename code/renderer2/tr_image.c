@@ -2849,7 +2849,7 @@ void R_SetColorMappings( void ) {
 
 	// setup the overbright lighting
 #if defined(USE_OVERBRIGHT)
-	tr.overbrightBits = r_overBrightBits->integer;
+	tr.overbrightBits = abs( r_overBrightBits->integer );
 #else
 	tr.overbrightBits = 0;
 #endif
