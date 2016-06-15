@@ -116,8 +116,8 @@ void GL_TextureMode( const char *string ) {
 	for ( i = 0 ; i < tr.numImages ; i++ ) {
 		glt = tr.images[ i ];
 		if ( glt->flags & IMGFLAG_MIPMAP && !(glt->flags & IMGFLAG_CUBEMAP)) {
-			qglTextureParameterf(glt->texnum, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-			qglTextureParameterf(glt->texnum, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+			qglTextureParameteri(glt->texnum, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
+			qglTextureParameteri(glt->texnum, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 		}
 	}
 }
@@ -2115,16 +2115,16 @@ done:
 			qglTextureParameteri(image->texnum, textureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT,
 			(GLint)Com_Clamp(1, maxAnisotropy, r_ext_max_anisotropy->integer));
 
-		qglTextureParameterf(image->texnum, textureTarget, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-		qglTextureParameterf(image->texnum, textureTarget, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+		qglTextureParameteri(image->texnum, textureTarget, GL_TEXTURE_MIN_FILTER, gl_filter_min);
+		qglTextureParameteri(image->texnum, textureTarget, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 	}
 	else
 	{
 		if (textureFilterAnisotropic && !cubemap)
 			qglTextureParameteri(image->texnum, textureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
 
-		qglTextureParameterf(image->texnum, textureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		qglTextureParameterf(image->texnum, textureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		qglTextureParameteri(image->texnum, textureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		qglTextureParameteri(image->texnum, textureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
 
 	// Fix for sampling depth buffer on old nVidia cards
@@ -2135,9 +2135,9 @@ done:
 		case GL_DEPTH_COMPONENT16_ARB:
 		case GL_DEPTH_COMPONENT24_ARB:
 		case GL_DEPTH_COMPONENT32_ARB:
-			qglTextureParameterf(image->texnum, textureTarget, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE);
-			qglTextureParameterf(image->texnum, textureTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			qglTextureParameterf(image->texnum, textureTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			qglTextureParameteri(image->texnum, textureTarget, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE);
+			qglTextureParameteri(image->texnum, textureTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			qglTextureParameteri(image->texnum, textureTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			break;
 		default:
 			break;
@@ -2199,14 +2199,14 @@ image_t *R_CreateImage2( const char *name, byte *pic, int width, int height, GLe
 
 	if (image->flags & IMGFLAG_CUBEMAP)
 	{
-		qglTextureParameterf(image->texnum, GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, glWrapClampMode);
-		qglTextureParameterf(image->texnum, GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, glWrapClampMode);
+		qglTextureParameteri(image->texnum, GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, glWrapClampMode);
+		qglTextureParameteri(image->texnum, GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, glWrapClampMode);
 		qglTextureParameteri(image->texnum, GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, glWrapClampMode);
 	}
 	else
 	{
-		qglTextureParameterf(image->texnum, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, glWrapClampMode);
-		qglTextureParameterf(image->texnum, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, glWrapClampMode);
+		qglTextureParameteri(image->texnum, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, glWrapClampMode);
+		qglTextureParameteri(image->texnum, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, glWrapClampMode);
 	}
 
 	hash = generateHashValue(name);
@@ -2822,8 +2822,8 @@ void R_CreateBuiltinImages( void ) {
 			for ( x = 0; x < 4; x++)
 			{
 				tr.sunShadowDepthImage[x] = R_CreateImage(va("*sunshadowdepth%i", x), NULL, r_shadowMapSize->integer, r_shadowMapSize->integer, IMGTYPE_COLORALPHA, IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE, GL_DEPTH_COMPONENT24_ARB);
-				qglTextureParameterf(tr.sunShadowDepthImage[x]->texnum, GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-				qglTextureParameterf(tr.sunShadowDepthImage[x]->texnum, GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+				qglTextureParameteri(tr.sunShadowDepthImage[x]->texnum, GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+				qglTextureParameteri(tr.sunShadowDepthImage[x]->texnum, GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 			}
 
 			tr.screenShadowImage = R_CreateImage("*screenShadow", NULL, width, height, IMGTYPE_COLORALPHA, IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE, GL_RGBA8);

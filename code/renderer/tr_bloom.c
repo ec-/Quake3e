@@ -156,12 +156,12 @@ static void R_Bloom_InitTextures( void )
 
 	data = ri.Hunk_AllocateTempMemory( bloom.screen.width * bloom.screen.height * 4 );
 	Com_Memset( data, 0, bloom.screen.width * bloom.screen.height * 4 );
-	bloom.screen.texture = R_CreateImage( "***bloom screen texture***", data, bloom.screen.width, bloom.screen.height, IMGTYPE_COLORALPHA, IMGFLAG_NONE, 0 );
+	bloom.screen.texture = R_CreateImage( "***bloom screen texture***", data, bloom.screen.width, bloom.screen.height, IMGTYPE_COLORALPHA, IMGFLAG_CLAMPTOEDGE, 0 );
 	ri.Hunk_FreeTempMemory( data );
 
 	data = ri.Hunk_AllocateTempMemory( bloom.effect.width * bloom.effect.height * 4 );
 	Com_Memset( data, 0, bloom.effect.width * bloom.effect.height * 4 );
-	bloom.effect.texture = R_CreateImage( "***bloom effect texture***", data, bloom.effect.width, bloom.effect.height, IMGTYPE_COLORALPHA, IMGFLAG_NONE, 0 );
+	bloom.effect.texture = R_CreateImage( "***bloom effect texture***", data, bloom.effect.width, bloom.effect.height, IMGTYPE_COLORALPHA, IMGFLAG_CLAMPTOEDGE, 0 );
 	ri.Hunk_FreeTempMemory( data );
 	bloom.started = qtrue;
 }
