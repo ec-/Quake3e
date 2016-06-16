@@ -1320,6 +1320,7 @@ e_status CIN_StopCinematic(int handle) {
 	return FMV_EOF;
 }
 
+
 /*
 ==================
 CIN_RunCinematic
@@ -1327,8 +1328,6 @@ CIN_RunCinematic
 Fetch and decompress the pending frame
 ==================
 */
-
-
 e_status CIN_RunCinematic (int handle)
 {
 	unsigned int start = 0;
@@ -1388,6 +1387,7 @@ e_status CIN_RunCinematic (int handle)
 		RoQReset();
 	  } else {
 		RoQShutdown();
+		return FMV_EOF;
 	  }
 	}
 
