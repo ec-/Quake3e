@@ -155,9 +155,7 @@ static int mouse_accel_numerator;
 static int mouse_accel_denominator;
 static int mouse_threshold;
 
-char gl_extensions[16384]; // to store full extension string
-
-#define HAVE_EXT(S) (Q_stristr(gl_extensions,(S)))
+#define HAVE_EXT(S) (Q_stristr(glw_state.gl_extensions,(S)))
 
 
 /*****************************************************************************
@@ -1559,6 +1557,7 @@ int qXErrorHandler( Display *dpy, XErrorEvent *ev )
 */
 void GLimp_Init( void )
 {
+	size_t len;
 	InitSig();
 
 	IN_Init();   // rcg08312005 moved into glimp.
@@ -1584,12 +1583,13 @@ void GLimp_Init( void )
 	// get our config strings
 	Q_strncpyz( glConfig.vendor_string, (char *)qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
 	Q_strncpyz( glConfig.renderer_string, (char *)qglGetString (GL_RENDERER), sizeof( glConfig.renderer_string ) );
-	if (*glConfig.renderer_string && glConfig.renderer_string[strlen(glConfig.renderer_string) - 1] == '\n')
-		glConfig.renderer_string[strlen(glConfig.renderer_string) - 1] = '\0';
+	len = strlen( glConfig.renderer_string );
+	if ( len && glConfig.renderer_string[ len - 1 ] == '\n')
+		glConfig.renderer_string[ len - 1 ] = '\0';
 	Q_strncpyz( glConfig.version_string, (char *)qglGetString (GL_VERSION), sizeof( glConfig.version_string ) );
 
-	Q_strncpyz( gl_extensions, (char *)qglGetString (GL_EXTENSIONS), sizeof( gl_extensions ) );
-	Q_strncpyz( glConfig.extensions_string, gl_extensions, sizeof( glConfig.extensions_string ) );
+	Q_strncpyz( glw_state.gl_extensions, (char *)qglGetString (GL_EXTENSIONS), sizeof( glw_state.gl_extensions ) );
+	Q_strncpyz( glConfig.extensions_string, glw_state.gl_extensions, sizeof( glConfig.extensions_string ) );
 
 	// initialize extensions
 	GLW_InitExtensions();

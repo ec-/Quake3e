@@ -34,6 +34,7 @@ typedef struct
 	HGLRC   hGLRC;			// handle to GL rendering context
 
 	HINSTANCE   OpenGLLib;  // HINSTANCE for the OpenGL library
+	char		gl_extensions[ 16384 ]; // to store full extension string
 
 	qboolean allowdisplaydepthchange;
 	qboolean pixelFormatSet;

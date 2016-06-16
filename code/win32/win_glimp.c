@@ -82,9 +82,7 @@ glwstate_t glw_state;
 
 cvar_t	*r_allowSoftwareGL;		// don't abort out if the pixelformat claims software
 
-char	gl_extensions[16384];	// to store full extension string
-
-#define HAVE_EXT(S) (strstr(gl_extensions,(S)))
+#define HAVE_EXT(S) (strstr(glw_state.gl_extensions,(S)))
 /*
 ** GLW_StartDriverAndSetMode
 */
@@ -692,6 +690,7 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 	return qtrue;
 }
 
+
 static void PrintCDSError( int value )
 {
 	switch ( value )
@@ -1187,7 +1186,7 @@ static void GLW_InitExtensions( void )
 	// GL_EXT_compiled_vertex_array
 	qglLockArraysEXT = NULL;
 	qglUnlockArraysEXT = NULL;
-	if ( HAVE_EXT("GL_EXT_compiled_vertex_array") && ( glConfig.hardwareType != GLHW_RIVA128 ) )
+	if ( HAVE_EXT("GL_EXT_compiled_vertex_array") )
 	{
 		if ( r_ext_compiled_vertex_array->integer )
 		{
@@ -1285,13 +1284,12 @@ static qboolean GLW_CheckOSVersion( void )
 */
 static qboolean GLW_LoadOpenGL( const char *drivername )
 {
-	char buffer[1024];
+	char buffer[ 256 ];
 	qboolean cdsFullscreen;
 
 	Q_strncpyz( buffer, drivername, sizeof(buffer) );
 	Q_strlwr(buffer);
 
-	glConfig.driverType = GLDRV_ICD;
 	//
 	// load the driver and bind our function pointers to it
 	// 
@@ -1302,21 +1300,13 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 		// create the window and set up the context
 		if ( !GLW_StartDriverAndSetMode( drivername, r_mode->integer, r_colorbits->integer, cdsFullscreen ) )
 		{
-			// if we're on a 24/32-bit desktop and we're going fullscreen on an ICD,
-			// try it again but with a 16-bit desktop
-			if ( glConfig.driverType == GLDRV_ICD )
+			// if we're on a 24/32-bit desktop try it again but with a 16-bit desktop
+			if ( r_colorbits->integer != 16 || cdsFullscreen != qtrue || r_mode->integer != 3 )
 			{
-				if ( r_colorbits->integer != 16 || cdsFullscreen != qtrue || r_mode->integer != 3 )
+				if ( !GLW_StartDriverAndSetMode( drivername, 3, 16, qtrue ) )
 				{
-					if ( !GLW_StartDriverAndSetMode( drivername, 3, 16, qtrue ) )
-					{
-						goto fail;
-					}
+					goto fail;
 				}
-			}
-			else
-			{
-				goto fail;
 			}
 		}
 		return qtrue;
@@ -1390,6 +1380,7 @@ static qboolean GLW_StartOpenGL( void )
 */
 void GLimp_Init( void )
 {
+	size_t len;
 	ri.Printf( PRINT_ALL, "Initializing OpenGL subsystem\n" );
 
 	//
@@ -1406,15 +1397,19 @@ void GLimp_Init( void )
 	if ( !GLW_StartOpenGL() )
 		return;
 
+	glConfig.driverType = GLDRV_ICD;
 	glConfig.hardwareType = GLHW_GENERIC;
 
 	// get our config strings
-	Q_strncpyz( glConfig.vendor_string, qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
-	Q_strncpyz( glConfig.renderer_string, qglGetString (GL_RENDERER), sizeof( glConfig.renderer_string ) );
-	Q_strncpyz( glConfig.version_string, qglGetString (GL_VERSION), sizeof( glConfig.version_string ) );
+	Q_strncpyz( glConfig.vendor_string, (char *)qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
+	Q_strncpyz( glConfig.renderer_string, (char *)qglGetString (GL_RENDERER), sizeof( glConfig.renderer_string ) );
+	len = strlen( glConfig.renderer_string );
+	if ( len && glConfig.renderer_string[ len - 1 ] == '\n')
+		glConfig.renderer_string[ len - 1 ] = '\0';
+	Q_strncpyz( glConfig.version_string, (char *)qglGetString (GL_VERSION), sizeof( glConfig.version_string ) );
 
-	Q_strncpyz( gl_extensions, qglGetString (GL_EXTENSIONS), sizeof( gl_extensions ) );
-	Q_strncpyz( glConfig.extensions_string, gl_extensions, sizeof( glConfig.extensions_string ) );
+	Q_strncpyz( glw_state.gl_extensions, (char *)qglGetString (GL_EXTENSIONS), sizeof( glw_state.gl_extensions ) );
+	Q_strncpyz( glConfig.extensions_string, glw_state.gl_extensions, sizeof( glConfig.extensions_string ) );
 
 	GLW_InitExtensions();
 	WG_CheckHardwareGamma();

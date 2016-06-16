@@ -102,7 +102,6 @@ void QGL_Shutdown( void )
 	qglXSwapBuffers              = NULL;
 
 	qwglGetProcAddress           =  NULL;
-
 }
 
 
