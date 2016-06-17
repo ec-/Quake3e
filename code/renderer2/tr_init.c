@@ -1542,6 +1542,8 @@ void RE_Shutdown( qboolean destroyWindow ) {
 		GLSL_ShutdownGPUShaders();
 	}
 
+	R_DoneFreeType();
+
 	// shut down platform specific OpenGL stuff
 	if ( destroyWindow ) {
 		GLimp_Shutdown();

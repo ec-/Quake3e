@@ -1384,7 +1384,7 @@ void GLSL_ShutdownGPUShaders(void)
 void GLSL_BindProgram(shaderProgram_t * program)
 {
 	GLuint programObject = program ? program->program : 0;
-	//char *name = program ? program->name : "NULL";
+	char *name = program ? program->name : "NULL";
 
 	if (GL_UseProgramObject(programObject))
 		backEnd.pc.c_glslShaderBinds++;
