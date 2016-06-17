@@ -2963,6 +2963,7 @@ static void ScanAndLoadShaderFiles( void )
 	int shaderTextHashTableSizes[MAX_SHADERTEXT_HASH], hash, size;
 	char shaderName[MAX_QPATH];
 	int shaderLine;
+	char filename[MAX_QPATH];
 
 	long sum = 0, summand;
 	// scan for shader files
@@ -2981,8 +2982,6 @@ static void ScanAndLoadShaderFiles( void )
 	// load and parse shader files
 	for ( i = 0; i < numShaderFiles; i++ )
 	{
-		char filename[MAX_QPATH];
-
 		Com_sprintf( filename, sizeof( filename ), "scripts/%s", shaderFiles[i] );
 		ri.Printf( PRINT_DEVELOPER, "...loading '%s'\n", filename );
 		summand = ri.FS_ReadFile( filename, (void **)&buffers[i] );
@@ -3037,34 +3036,19 @@ static void ScanAndLoadShaderFiles( void )
 	s_shaderText = ri.Hunk_Alloc( sum + numShaderFiles*2 + 1, h_low );
 	s_shaderText[ 0 ] = '\0';
 
-#if 0
-	// free in reverse order, so the temp files are all dumped
-	for ( i = numShaderFiles - 1; i >= 0 ; i-- )
-	{
-		if(buffers[i])
-		{
-		p = &s_shaderText[strlen(s_shaderText)];
-		strcat( s_shaderText, buffers[i] );
-		ri.FS_FreeFile( buffers[i] );
-		COM_Compress(p);
-		strcat( s_shaderText, "\n" );
-	}
-	}
-#else
 	textEnd = s_shaderText;
 
 	// free in reverse order, so the temp files are all dumped
 	for ( i = numShaderFiles - 1; i >= 0 ; i-- )
 	{
-		if ( !buffers[i] )
-			continue;
-		textEnd = stradd( textEnd, buffers[i] );
-		textEnd = stradd( textEnd, "\n" );
-		ri.FS_FreeFile( buffers[i] );
+		if ( buffers[ i ] ) 
+		{
+			textEnd = stradd( textEnd, buffers[ i ] );
+			textEnd = stradd( textEnd, "\n" );
+			ri.FS_FreeFile( buffers[ i ] );
+		}
 	}
 	COM_Compress( s_shaderText );
-
-#endif
 
 	// free up memory
 	ri.FS_FreeFileList( shaderFiles );

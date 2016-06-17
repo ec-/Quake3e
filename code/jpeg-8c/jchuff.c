@@ -302,7 +302,8 @@ dump_buffer_e (huff_entropy_ptr entropy)
  * between calls, so 24 bits are sufficient.
  */
 
-LOCAL(boolean) INLINE
+INLINE
+LOCAL(boolean)
 emit_bits_s (working_state * state, unsigned int code, int size)
 /* Emit some bits; return TRUE if successful, FALSE if must suspend */
 {

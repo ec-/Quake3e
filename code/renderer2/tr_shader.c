@@ -3737,11 +3737,12 @@ static void ScanAndLoadShaderFiles( void )
 	// free in reverse order, so the temp files are all dumped
 	for ( i = numShaderFiles - 1; i >= 0 ; i-- )
 	{
-		if ( !buffers[i] )
-			continue;
-		textEnd = stradd( textEnd, buffers[i] );
-		textEnd = stradd( textEnd, "\n" );
-		ri.FS_FreeFile( buffers[i] );
+		if ( buffers[ i ] ) 
+		{
+			textEnd = stradd( textEnd, buffers[ i ] );
+			textEnd = stradd( textEnd, "\n" );
+			ri.FS_FreeFile( buffers[ i ] );
+		}
 	}
 
 	COM_Compress( s_shaderText );

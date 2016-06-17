@@ -1117,7 +1117,7 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
 
       } else
       {
-        fullscreen = 0;
+        //fullscreen = 0;
         ri.Printf(PRINT_ALL, "XFree86-VidModeExtension: No acceptable modes found\n");
       }
     } else

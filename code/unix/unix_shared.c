@@ -548,7 +548,6 @@ void *Sys_LoadFunction( void *handle, const char *name )
 {
 	char buf[1024];
 	void *symbol;
-	char *error;
 	size_t nlen;
 
 	if ( handle == NULL || name == NULL || *name == '\0' ) 
@@ -557,7 +556,7 @@ void *Sys_LoadFunction( void *handle, const char *name )
 		return NULL;
 	}
 
-	error = dlerror(); /* clear old error state */
+	dlerror(); /* clear old error state */
 	symbol = dlsym( handle, name );
 	error = dlerror();
 	if ( error != NULL )
@@ -567,7 +566,7 @@ void *Sys_LoadFunction( void *handle, const char *name )
 			return NULL;
 		buf[0] = '_';
 		strcpy( buf+1, name );
-		error = dlerror(); /* clear old error state */
+		dlerror(); /* clear old error state */
 		symbol = dlsym( handle, buf );
 	}
 

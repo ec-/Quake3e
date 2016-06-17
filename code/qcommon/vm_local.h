@@ -214,9 +214,7 @@ extern	int		vm_debugLevel;
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header );
 int	VM_CallCompiled( vm_t *vm, int *args );
 
-void VM_PrepareInterpreter( vm_t *vm, vmHeader_t *header );
 qboolean VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header );
-int	VM_CallInterpreted( vm_t *vm, int *args );
 int	VM_CallInterpreted2( vm_t *vm, int *args );
 
 vmSymbol_t *VM_ValueToFunctionSymbol( vm_t *vm, int value );
