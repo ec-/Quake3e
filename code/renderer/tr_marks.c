@@ -265,7 +265,6 @@ int R_MarkFragments( int numPoints, const vec3_t *points, const vec3_t projectio
 	vec3_t			clipPoints[2][MAX_VERTS_ON_POLY];
 	int				numClipPoints;
 	float			*v;
-	srfSurfaceFace_t *surf;
 	srfGridMesh_t	*cv;
 	drawVert_t		*dv;
 	vec3_t			normal;
@@ -405,7 +404,8 @@ int R_MarkFragments( int numPoints, const vec3_t *points, const vec3_t projectio
 		}
 		else if (*surfaces[i] == SF_FACE) {
 
-			surf = ( srfSurfaceFace_t * ) surfaces[i];
+			srfSurfaceFace_t *surf = ( srfSurfaceFace_t * ) surfaces[i];
+
 			// check the normal of this face
 			if (DotProduct(surf->plane.normal, projectionDir) > -0.5) {
 				continue;
