@@ -810,7 +810,6 @@ void SV_PacketEvent( netadr_t from, msg_t *msg ) {
 	int			i;
 	client_t	*cl;
 	int			qport;
-	int			seq;
 
 	// check for connectionless packet (0xffffffff) first
 	if ( msg->cursize >= 4 && *(int *)msg->data == -1) {
@@ -821,7 +820,7 @@ void SV_PacketEvent( netadr_t from, msg_t *msg ) {
 	// read the qport out of the message so we can fix up
 	// stupid address translating routers
 	MSG_BeginReadingOOB( msg );
-	seq = MSG_ReadLong( msg );				// sequence number
+	MSG_ReadLong( msg ); // sequence number
 	qport = MSG_ReadShort( msg ) & 0xffff;
 
 	// find which client the message is from

@@ -278,9 +278,8 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 			calledSysError = qtrue;
 			Sys_Error("recursive error after: %s", com_errorMessage);
 		}
-		return;
 	}
- 
+
 	com_errorEntered = qtrue;
 
 	Cvar_Set("com_errorCode", va("%i", code));
