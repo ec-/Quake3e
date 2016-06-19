@@ -898,7 +898,7 @@ void R_PrintLongString(const char *string) {
 	while(size > 0)
 	{
 		Q_strncpyz(buffer, p, sizeof (buffer) );
-		ri.Printf( PRINT_ALL, "%s", buffer );
+		ri.Printf( PRINT_DEVELOPER, "%s", buffer );
 		p += 1023;
 		size -= 1023;
 	}
@@ -926,7 +926,7 @@ void GfxInfo_f( void )
 	ri.Printf( PRINT_ALL, "\nGL_VENDOR: %s\n", glConfig.vendor_string );
 	ri.Printf( PRINT_ALL, "GL_RENDERER: %s\n", glConfig.renderer_string );
 	ri.Printf( PRINT_ALL, "GL_VERSION: %s\n", glConfig.version_string );
-	ri.Printf( PRINT_ALL, "GL_EXTENSIONS: " );
+	ri.Printf( PRINT_DEVELOPER, "GL_EXTENSIONS: " );
 	R_PrintLongString( glConfig.extensions_string );
 	ri.Printf( PRINT_ALL, "\n" );
 	ri.Printf( PRINT_ALL, "GL_MAX_TEXTURE_SIZE: %d\n", glConfig.maxTextureSize );
