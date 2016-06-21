@@ -425,7 +425,8 @@ static leakyBucket_t *SVC_BucketForAddress( netadr_t address, int burst, int per
 		interval = now - bucket->lastTime;
 
 		// Reclaim expired buckets
-		if ( bucket->lastTime > 0 && ( interval > ( burst * period ) || interval < 0 ) ) {
+		if ( bucket->lastTime > 0 && ( interval > ( burst * period ) ||
+					interval < 0 ) ) {
 			if ( bucket->prev != NULL ) {
 				bucket->prev->next = bucket->next;
 			} else {
@@ -1081,16 +1082,6 @@ void SV_Frame( int msec ) {
 
 	if ( !com_dedicated->integer )
 		SV_BotFrame( sv.time + sv.timeResidual );
-
-/*
-	if ( com_dedicated->integer && sv.timeResidual < frameMsec ) {
-		// NET_Sleep will give the OS time slices until either get a packet
-		// or time enough for a server frame has gone by
-		Com_Printf( S_COLOR_YELLOW "NET_Sleep(%i)\n", frameMsec - sv.timeResidual );
-		NET_Sleep(frameMsec - sv.timeResidual);
-		return;
-	}
-*/
 
 	// if time is about to hit the 32nd bit, kick all clients
 	// and clear sv.time, rather

@@ -612,7 +612,6 @@ void CL_KeyDownEvent( int key, unsigned time )
 		// send the bound action
 		Key_ParseBinding( key, qtrue, time );
 	}
-	return;
 }
 
 /*

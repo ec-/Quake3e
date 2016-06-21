@@ -608,12 +608,7 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 			}
 		}
 	}
-
-	if ( drop->download != FS_INVALID_HANDLE ) {
-		FS_FCloseFile( drop->download );
-		drop->download = FS_INVALID_HANDLE;
-	}
-
+	
 	// Free all allocated data on the client structure
 	SV_FreeClient(drop);
 
