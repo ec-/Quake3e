@@ -546,6 +546,7 @@ Sys_LoadFunction
 */
 void *Sys_LoadFunction( void *handle, const char *name )
 {
+	const char *error;
 	char buf[1024];
 	void *symbol;
 	size_t nlen;
