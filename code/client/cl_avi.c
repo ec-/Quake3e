@@ -79,9 +79,9 @@ static int  bufIndex;
 SafeFS_Write
 ===============
 */
-static ID_INLINE void SafeFS_Write( const void *data, int len, fileHandle_t f )
+static ID_INLINE void SafeFS_Write( const void *buffer, int len, fileHandle_t f )
 {
-	if ( FS_Write( data, len, f ) < len )
+  if( FS_Write( buffer, len, f ) < len )
 		Com_Error( ERR_DROP, "Failed to write avi file" );
 }
 
@@ -120,17 +120,6 @@ static ID_INLINE void WRITE_2BYTES( int x )
   buffer[ bufIndex + 0 ] = (byte)( ( x >>  0 ) & 0xFF );
   buffer[ bufIndex + 1 ] = (byte)( ( x >>  8 ) & 0xFF );
   bufIndex += 2;
-}
-
-/*
-===============
-WRITE_1BYTES
-===============
-*/
-static ID_INLINE void WRITE_1BYTES( int x )
-{
-  buffer[ bufIndex ] = x;
-  bufIndex += 1;
 }
 
 /*
@@ -614,7 +603,8 @@ qboolean CL_CloseAVI( void )
   // Write index
 
   // Open the temp index file
-  if( ( indexSize = FS_FOpenFileRead( idxFileName, &afd.idxF, qtrue ) ) <= 0 )
+  if( ( indexSize = FS_FOpenFileRead( idxFileName,
+          &afd.idxF, qtrue ) ) <= 0 )
   {
 		FS_FCloseFile( afd.f );
 		return qfalse;

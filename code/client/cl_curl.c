@@ -320,7 +320,7 @@ void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 		qcurl_easy_cleanup( clc.downloadCURL );
 		clc.downloadCURL = NULL;
 		Com_Error( ERR_DROP, "CL_cURL_BeginDownload: qcurl_multi_init() "
-			"failed\n" );
+			"failed");
 		return;
 	}
 

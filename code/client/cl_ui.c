@@ -305,6 +305,8 @@ static void LAN_GetServerInfo( int source, int n, char *buf, int buflen ) {
 		Info_SetValueForKey( info, "nettype", va("%i",server->netType));
 		Info_SetValueForKey( info, "addr", NET_AdrToStringwPort(server->adr));
 		Info_SetValueForKey( info, "punkbuster", va("%i", server->punkbuster));
+		Info_SetValueForKey( info, "g_needpass", va("%i", server->g_needpass));
+		Info_SetValueForKey( info, "g_humanplayers", va("%i", server->g_humanplayers));
 		Q_strncpyz(buf, info, buflen);
 	} else {
 		if (buf) {
@@ -1102,13 +1104,14 @@ void CL_InitUI( void ) {
 	vmInterpret_t		interpret;
 
 	// load the dll or bytecode
-	if ( cl_connectedToPureServer != 0 ) {
+	interpret = Cvar_VariableValue("vm_ui");
+	if(cl_connectedToPureServer)
+	{
 		// if sv_pure is set we only allow qvms to be loaded
+		if(interpret != VMI_COMPILED && interpret != VMI_BYTECODE)
 		interpret = VMI_COMPILED;
 	}
-	else {
-		interpret = Cvar_VariableValue( "vm_ui" );
-	}
+
 	uivm = VM_Create( "ui", CL_UISystemCalls, interpret );
 	if ( !uivm ) {
 		Com_Error( ERR_FATAL, "VM_Create on UI failed" );

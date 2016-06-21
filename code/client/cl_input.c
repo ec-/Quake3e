@@ -249,11 +249,6 @@ void IN_Button14Up(void) {IN_KeyUp(&in_buttons[14]);}
 void IN_Button15Down(void) {IN_KeyDown(&in_buttons[15]);}
 void IN_Button15Up(void) {IN_KeyUp(&in_buttons[15]);}
 
-void IN_ButtonDown (void) {
-	IN_KeyDown(&in_buttons[1]);}
-void IN_ButtonUp (void) {
-	IN_KeyUp(&in_buttons[1]);}
-
 void IN_CenterView (void) {
 	cl.viewangles[PITCH] = -SHORT2ANGLE(cl.snap.ps.delta_angles[PITCH]);
 }
@@ -476,8 +471,8 @@ void CL_MouseMove(usercmd_t *cmd)
 
 			rate[0] = fabs(mx) / (float) frame_msec;
 			rate[1] = fabs(my) / (float) frame_msec;
-			power[0] = pow( rate[0] / offset, cl_mouseAccel->value );
-			power[1] = pow( rate[1] / offset, cl_mouseAccel->value );
+			power[0] = powf( rate[0] / offset, cl_mouseAccel->value );
+			power[1] = powf( rate[1] / offset, cl_mouseAccel->value );
 
 			mx = cl_sensitivity->value * (mx + ((mx < 0) ? -power[0] : power[0]) * offset);
 			my = cl_sensitivity->value * (my + ((my < 0) ? -power[1] : power[1]) * offset);
@@ -827,16 +822,6 @@ void CL_WritePacket( void ) {
 	}
 
 	CL_Netchan_Transmit (&clc.netchan, &buf);	
-
-	// clients never really should have messages large enough
-	// to fragment, but in case they do, fire them all off
-	// at once
-	// TTimo: this causes a packet burst, which is bad karma for winsock
-	// added a WARNING message, we'll see if there are legit situations where this happens
-	while ( clc.netchan.unsentFragments ) {
-		Com_DPrintf( "WARNING: #462 unsent fragments (not supposed to happen!)\n" );
-		CL_Netchan_TransmitNextFragment( &clc.netchan );
-	}
 }
 
 /*

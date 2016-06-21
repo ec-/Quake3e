@@ -217,7 +217,7 @@ void *S_WAV_CodecLoad(const char *filename, snd_info_t *info)
 	}
 
 	// Allocate some memory
-	buffer = Z_Malloc(info->size);
+	buffer = Hunk_AllocateTempMemory(info->size);
 	if(!buffer)
 	{
 		FS_FCloseFile(file);

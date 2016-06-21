@@ -718,7 +718,7 @@ void CL_ParseServerMessage( msg_t *msg ) {
 		}
 
 		if ( cl_shownet->integer >= 2 ) {
-			if ( cmd < 0 || !svc_strings[cmd] ) {
+			if ( (cmd < 0) || (!svc_strings[cmd]) ) {
 				Com_Printf( "%3i:BAD CMD %i\n", msg->readcount-1, cmd );
 			} else {
 				SHOWNET( msg, svc_strings[cmd] );

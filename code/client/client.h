@@ -561,7 +561,6 @@ void LAN_SaveServersToCache( void );
 // cl_net_chan.c
 //
 void CL_Netchan_Transmit( netchan_t *chan, msg_t* msg);	//int length, const byte *data );
-void CL_Netchan_TransmitNextFragment( netchan_t *chan );
 qboolean CL_Netchan_Process( netchan_t *chan, msg_t *msg );
 
 //
