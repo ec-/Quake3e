@@ -729,7 +729,7 @@ void Con_DrawSolidConsole( float frac ) {
 	re.SetColor( color );
 	re.DrawStretchPic( 0, yf, wf, 2, 0, 0, 1, 1, cls.whiteShader );
 
-	y = yf;
+	//y = yf;
 
 	// draw the version number
 	re.SetColor( g_color_table[ ColorIndex( COLOR_RED ) ] );

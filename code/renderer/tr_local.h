@@ -396,7 +396,7 @@ typedef struct {
 	int			num_entities;
 	trRefEntity_t	*entities;
 
-	int			num_dlights;
+	unsigned int num_dlights;
 	struct dlight_s	*dlights;
 
 	int			numPolys;

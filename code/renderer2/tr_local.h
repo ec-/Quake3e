@@ -744,7 +744,7 @@ typedef struct {
 	int			num_entities;
 	trRefEntity_t	*entities;
 
-	int			num_dlights;
+	unsigned int num_dlights;
 	struct dlight_s	*dlights;
 
 	int			numPolys;
@@ -754,7 +754,7 @@ typedef struct {
 	struct drawSurf_s	*drawSurfs;
 
 	unsigned int dlightMask;
-	int         num_pshadows;
+	unsigned int num_pshadows;
 	struct pshadow_s *pshadows;
 
 	float       sunShadowMvp[4][16];
