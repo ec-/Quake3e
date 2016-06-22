@@ -799,12 +799,12 @@ void R_AddWorldSurfaces (void) {
 	}
 	else if ( !(tr.viewParms.flags & VPF_SHADOWMAP) )
 	{
-		dlightBits = ( 1 << tr.refdef.num_dlights ) - 1;
-		pshadowBits = ( 1 << tr.refdef.num_pshadows ) - 1;
+		dlightBits = MASK_32BITS( tr.refdef.num_dlights );
+		pshadowBits = MASK_32BITS( tr.refdef.num_pshadows );
 	}
 	else
 	{
-		dlightBits = ( 1 << tr.refdef.num_dlights ) - 1;
+		dlightBits = MASK_32BITS( tr.refdef.num_dlights );
 		pshadowBits = 0;
 	}
 
