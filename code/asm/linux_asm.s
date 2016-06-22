@@ -1,7 +1,9 @@
 #include "qasm.h"
 
+#ifndef __clang__
 #if id386
 .arch i586
+#endif
 #endif
 
 .intel_syntax noprefix

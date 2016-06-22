@@ -113,13 +113,6 @@ static char	*opnames[256] = {
 #endif
 
 
-static ID_INLINE int loadWord(void *addr) {
-	int word;
-	memcpy( &word, addr, 4 );
-	return LittleLong(word);
-}
-
-
 char *VM_Indent( vm_t *vm ) {
 	static char	*string = "                                        ";
 	if ( vm->callLevel > 20 ) {
@@ -127,6 +120,7 @@ char *VM_Indent( vm_t *vm ) {
 	}
 	return string + 2 * ( 20 - vm->callLevel );
 }
+
 
 void VM_StackTrace( vm_t *vm, int programCounter, int programStack ) {
 	int		count;

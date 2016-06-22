@@ -2,7 +2,10 @@
 
 #if id386
 
+#ifndef __clang__
 .arch athlon
+#endif
+
 .intel_syntax noprefix
 
 .text
