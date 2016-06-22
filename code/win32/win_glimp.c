@@ -82,7 +82,6 @@ glwstate_t glw_state;
 
 cvar_t	*r_allowSoftwareGL;		// don't abort out if the pixelformat claims software
 
-#define HAVE_EXT(S) (strstr(glw_state.gl_extensions,(S)))
 /*
 ** GLW_StartDriverAndSetMode
 */
@@ -1078,6 +1077,20 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qbo
 	return RSERR_OK;
 }
 
+
+/*
+** GLimp_HaveExtension
+*/
+qboolean GLimp_HaveExtension( const char *ext )
+{
+	const char *ptr = Q_stristr( glw_state.gl_extensions, ext );
+	if (ptr == NULL)
+		return qfalse;
+	ptr += strlen(ext);
+	return ((*ptr == ' ') || (*ptr == '\0'));  // verify it's complete string.
+}
+
+
 /*
 ** GLW_InitExtensions
 */
@@ -1093,8 +1106,8 @@ static void GLW_InitExtensions( void )
 
 	// GL_EXT_texture_compression_s3tc
 	glConfig.textureCompression = TC_NONE;
-	if ( HAVE_EXT("GL_ARB_texture_compression") &&
-		 HAVE_EXT("GL_EXT_texture_compression_s3tc") )
+	if ( GLimp_HaveExtension("GL_ARB_texture_compression") &&
+		 GLimp_HaveExtension("GL_EXT_texture_compression_s3tc") )
 	{
 		if ( r_ext_compressed_textures->value ){ 
 			glConfig.textureCompression = TC_S3TC_ARB;
@@ -1108,7 +1121,7 @@ static void GLW_InitExtensions( void )
 
 	// GL_S3_s3tc
 	if ( glConfig.textureCompression == TC_NONE && r_ext_compressed_textures->integer ) {
-		if ( HAVE_EXT( "GL_S3_s3tc" ) ) {
+		if ( GLimp_HaveExtension( "GL_S3_s3tc" ) ) {
 			if ( r_ext_compressed_textures->integer ) {
 				glConfig.textureCompression = TC_S3TC;
 				ri.Printf( PRINT_ALL, "...using GL_S3_s3tc\n" );
@@ -1123,7 +1136,7 @@ static void GLW_InitExtensions( void )
 
 	// GL_EXT_texture_env_add
 	glConfig.textureEnvAddAvailable = qfalse;
-	if ( HAVE_EXT( "EXT_texture_env_add" ) ) {
+	if ( GLimp_HaveExtension( "EXT_texture_env_add" ) ) {
 		if ( r_ext_texture_env_add->integer ) {
 			glConfig.textureEnvAddAvailable = qtrue;
 			ri.Printf( PRINT_ALL, "...using GL_EXT_texture_env_add\n" );
@@ -1148,7 +1161,7 @@ static void GLW_InitExtensions( void )
 	qglMultiTexCoord2fARB = NULL;
 	qglActiveTextureARB = NULL;
 	qglClientActiveTextureARB = NULL;
-	if ( HAVE_EXT("GL_ARB_multitexture")  )
+	if ( GLimp_HaveExtension("GL_ARB_multitexture")  )
 	{
 		if ( r_ext_multitexture->integer )
 		{
@@ -1186,7 +1199,7 @@ static void GLW_InitExtensions( void )
 	// GL_EXT_compiled_vertex_array
 	qglLockArraysEXT = NULL;
 	qglUnlockArraysEXT = NULL;
-	if ( HAVE_EXT("GL_EXT_compiled_vertex_array") )
+	if ( GLimp_HaveExtension("GL_EXT_compiled_vertex_array") )
 	{
 		if ( r_ext_compiled_vertex_array->integer )
 		{
@@ -1208,7 +1221,7 @@ static void GLW_InitExtensions( void )
 	}
 
 	textureFilterAnisotropic = qfalse;
-	if ( HAVE_EXT("GL_EXT_texture_filter_anisotropic") )
+	if ( GLimp_HaveExtension("GL_EXT_texture_filter_anisotropic") )
 	{
 		if ( r_ext_texture_filter_anisotropic->integer ) {
 			qglGetIntegerv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy );

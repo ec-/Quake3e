@@ -25,7 +25,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "tr_dsa.h"
 
 #ifdef _MSC_VER
-#	pragma warning (disable : 4113 4133 4045 )
+#	pragma warning (disable : 4054 )
 #	define SDL_GL_GetProcAddress( a ) qwglGetProcAddress( a )
 #else
 #	define SDL_GL_GetProcAddress( a ) (void *)qwglGetProcAddress( a )
@@ -226,15 +226,6 @@ GLvoid(APIENTRY * qglNamedFramebufferTexture2D)(GLuint framebuffer,
 GLvoid(APIENTRY * qglNamedFramebufferRenderbuffer)(GLuint framebuffer,
 	GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
 
-
-static qboolean GLimp_HaveExtension(const char *ext)
-{
-	const char *ptr = Q_stristr( glConfig.extensions_string, ext );
-	if (ptr == NULL)
-		return qfalse;
-	ptr += strlen(ext);
-	return ((*ptr == ' ') || (*ptr == '\0'));  // verify it's complete string.
-}
 
 void GLimp_InitExtraExtensions( void )
 {
@@ -843,3 +834,6 @@ void GLimp_InitExtraExtensions( void )
 		ri.Printf(PRINT_ALL, result[2], extension);
 	}
 }
+#ifdef _MSC_VER
+#pragma warning (default : 4054 )
+#endif
