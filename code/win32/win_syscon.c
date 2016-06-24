@@ -323,7 +323,7 @@ LONG WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 					if ( hMem != NULL ) {
 						text = ( TCHAR* )GlobalLock( hMem );
 						if ( text != NULL ) {
-							GetWindowText( s_wcd.hwndBuffer, text, len );
+							GetWindowText( s_wcd.hwndBuffer, text, len + 1 );
 						}
 						GlobalUnlock( hMem );
 #ifdef UNICODE
