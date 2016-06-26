@@ -451,4 +451,3 @@ void S_Shutdown( void )
 
 	S_CodecShutdown( );
 }
-

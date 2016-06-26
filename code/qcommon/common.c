@@ -2879,8 +2879,10 @@ void Com_Init( char *commandLine ) {
   // get dedicated here for proper hunk megs initialization
 #ifdef DEDICATED
 	com_dedicated = Cvar_Get ("dedicated", "1", CVAR_INIT);
+	Cvar_CheckRange( com_dedicated, 1, 2, qtrue );
 #else
 	com_dedicated = Cvar_Get ("dedicated", "0", CVAR_LATCH);
+	Cvar_CheckRange( com_dedicated, 0, 2, qtrue );
 #endif
 	// allocate the stack based hunk allocator
 	Com_InitHunkMemory();
@@ -3289,7 +3291,7 @@ void Com_Frame( qboolean demoPlaying ) {
 		Cvar_Get( "dedicated", "0", 0 );
 		com_dedicated->modified = qfalse;
 		if ( !com_dedicated->integer ) {
-			SV_Shutdown( "" );
+			SV_Shutdown( "dedicated set to 0" );
 #ifndef DEDICATED
 			CL_Init();
 #endif

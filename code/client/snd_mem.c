@@ -141,11 +141,21 @@ void SND_setup( void )
 	Com_Printf( "Sound memory manager started\n" );
 }
 
-void SND_shutdown(void)
+
+void SND_shutdown( void )
 {
-		free(sfxScratchBuffer);
-		free(buffer);
+	if ( sfxScratchBuffer ) 
+	{
+		free( sfxScratchBuffer );
+		sfxScratchBuffer = NULL;
+	}
+	if ( buffer ) 
+	{
+		free( buffer );
+		buffer = NULL;
+	}
 }
+
 
 /*
 ================

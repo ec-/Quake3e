@@ -40,8 +40,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define	CD_EXE_LINUX "quake3"
 #define MEM_THRESHOLD 96*1024*1024
 
-static char		sys_cmdline[MAX_STRING_CHARS];
-
 WinVars_t	g_wv;
 
 
@@ -726,9 +724,11 @@ WinMain
 
 ==================
 */
-int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow ) {
+int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow ) 
+{
+    static char	sys_cmdline[ MAX_STRING_CHARS ];
 
-    // should never get a previous instance in Win32
+	// should never get a previous instance in Win32
     if ( hPrevInstance ) {
         return 0;
 	}
@@ -741,10 +741,6 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 	// no abort/retry/fail errors
 	SetErrorMode( SEM_FAILCRITICALERRORS );
-
-	// FIXME: not needed?
-	//memset( &eventQue[0], 0, sizeof( eventQue ) );
-	//memset( &sys_packetReceived[0], 0, sizeof( sys_packetReceived ) );
 
 	// get the initial time base
 	Sys_Milliseconds();

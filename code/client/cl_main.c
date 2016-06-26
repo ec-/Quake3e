@@ -681,14 +681,14 @@ void CL_ShutdownAll( void ) {
 	// shutdown VMs
 	CL_ShutdownVMs();
 
+	// shutdown sound system before renderer -EC-
+	S_Shutdown();
+	cls.soundStarted = qfalse;
+
 	// shutdown the renderer
 	if ( re.Shutdown ) {
 		re.Shutdown( qfalse );		// don't destroy window or context
 	}
-
-	// shutdown sound system -EC-
-	S_Shutdown();
-	cls.soundStarted = qfalse;
 
 	cls.uiStarted = qfalse;
 	cls.cgameStarted = qfalse;
@@ -1406,11 +1406,13 @@ CL_Snd_Restart
 Restart the sound subsystem
 =================
 */
-void CL_Snd_Restart(void)
+void CL_Snd_Shutdown( void )
 {
+	S_StopAllSounds();
 	S_Shutdown();
-	S_Init();
+	cls.soundStarted = qfalse;
 }
+
 
 /*
 =================
@@ -1421,8 +1423,10 @@ The cgame and game must also be forced to restart because
 handles will be invalid
 =================
 */
-void CL_Snd_Restart_f( void ) {
-	CL_Snd_Restart();
+void CL_Snd_Restart_f( void ) 
+{
+	CL_Snd_Shutdown();
+	// sound will be reinitialized by vid_restart
 	CL_Vid_Restart_f();
 }
 
@@ -2518,10 +2522,10 @@ CL_ShutdownRef
 ============
 */
 void CL_ShutdownRef( void ) {
-	if ( !re.Shutdown ) {
-		return;
+	if ( re.Shutdown ) {
+		re.Shutdown( qtrue );
 	}
-	re.Shutdown( qtrue );
+
 	Com_Memset( &re, 0, sizeof( re ) );
 }
 
@@ -2550,7 +2554,7 @@ After the server has cleared the hunk, these will need to be restarted
 This is the only place that any of these functions are called from
 ============================
 */
-void CL_StartHunkUsers( ) {
+void CL_StartHunkUsers( void ) {
 	if (!com_cl_running) {
 		return;
 	}
@@ -2579,7 +2583,7 @@ void CL_StartHunkUsers( ) {
 		S_BeginRegistration();
 	}
 
-	if( com_dedicated->integer ) {
+	if ( com_dedicated->integer ) {
 		return;
 	}
 
