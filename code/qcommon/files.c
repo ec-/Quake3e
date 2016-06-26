@@ -616,6 +616,11 @@ static void FS_CopyFile( char *fromOSPath, char *toOSPath ) {
 	// we are using direct malloc instead of Z_Malloc here, so it
 	// probably won't work on a mac... Its only for developers anyway...
 	buf = malloc( len );
+	if ( !buf ) {
+		fclose( f );
+		Com_Error( ERR_FATAL, "Memory alloc error in FS_Copyfiles()\n" );
+	}
+
 	if (fread( buf, 1, len, f ) != len) {
 		free( buf );
 		fclose( f );

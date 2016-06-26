@@ -19,7 +19,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\build\out"
+			OutputDirectory=".\output"
 			IntermediateDirectory=".\build\quake3ded_debug"
 			ConfigurationType="1"
 			UseOfMFC="0"
@@ -106,7 +106,7 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory=".\build_x64\out"
+			OutputDirectory=".\output"
 			IntermediateDirectory=".\build_x64\quake3ded_debug"
 			ConfigurationType="1"
 			UseOfMFC="0"
@@ -193,7 +193,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\build\out"
+			OutputDirectory=".\output"
 			IntermediateDirectory=".\build\quake3ded_release"
 			ConfigurationType="1"
 			UseOfMFC="0"
@@ -275,7 +275,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory=".\build_x64\out"
+			OutputDirectory=".\output"
 			IntermediateDirectory=".\build_x64\quake3ded_release"
 			ConfigurationType="1"
 			UseOfMFC="0"

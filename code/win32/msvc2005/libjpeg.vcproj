@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="Windows-1252"?>
+<?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8,00"
-	Name="renderer"
-	ProjectGUID="{AB424155-FBED-4D8D-B007-5B6CF93EA395}"
+	Name="libjpeg"
+	ProjectGUID="{17867AF4-12CB-4847-A13E-BF37D8BDF597}"
 	>
 	<Platforms>
 		<Platform
@@ -17,141 +17,10 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
-			Name="Release|Win32"
-			OutputDirectory=".\build\renderer_release"
-			IntermediateDirectory=".\build\renderer_release"
-			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE"
-				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
-				WarningLevel="4"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\renderer.lib"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release|x64"
-			OutputDirectory=".\build_x64\renderer_release"
-			IntermediateDirectory=".\build_x64\renderer_release"
-			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE"
-				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
-				WarningLevel="4"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\renderer.lib"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\build\renderer_debug"
-			IntermediateDirectory=".\build\renderer_debug"
+			OutputDirectory=".\build\libjpeg_debug"
+			IntermediateDirectory=".\build\libjpeg_debug"
 			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
 			>
 			<Tool
@@ -173,14 +42,11 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE"
+				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
-				BrowseInformation="1"
 				WarningLevel="3"
-				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -188,15 +54,12 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\renderer.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -216,11 +79,9 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory=".\build_x64\renderer_debug"
-			IntermediateDirectory=".\build_x64\renderer_debug"
+			OutputDirectory=".\build_x64\libjpeg_debug"
+			IntermediateDirectory=".\build\libjpeg_debug"
 			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
 			>
 			<Tool
@@ -237,20 +98,75 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				TargetEnvironment="3"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE"
+				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
-				BrowseInformation="1"
 				WarningLevel="3"
-				SuppressStartupBanner="true"
+				DebugInformationFormat="4"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory=".\build\libjpeg_release"
+			IntermediateDirectory=".\build\libjpeg_release"
+			ConfigurationType="4"
+			CharacterSet="2"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				WholeProgramOptimization="false"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE"
+				RuntimeLibrary="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -258,15 +174,72 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\renderer.lib"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory=".\build_x64\libjpeg_release"
+			IntermediateDirectory=".\build_x64\libjpeg_release"
+			ConfigurationType="4"
+			CharacterSet="2"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				WholeProgramOptimization="false"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE"
+				RuntimeLibrary="0"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -290,187 +263,233 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+			Filter="cpp;c;cc;cxx;def;bat;asm;asmx"
+			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\renderer\tr_animation.c"
+				RelativePath="..\..\jpeg-8c\jaricom.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_backend.c"
+				RelativePath="..\..\jpeg-8c\jcapimin.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_bloom.c"
+				RelativePath="..\..\jpeg-8c\jcapistd.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_bsp.c"
+				RelativePath="..\..\jpeg-8c\jcarith.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_cmds.c"
+				RelativePath="..\..\jpeg-8c\jccoefct.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_curve.c"
+				RelativePath="..\..\jpeg-8c\jccolor.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_flares.c"
+				RelativePath="..\..\jpeg-8c\jcdctmgr.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_font.c"
+				RelativePath="..\..\jpeg-8c\jchuff.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_image.c"
+				RelativePath="..\..\jpeg-8c\jcinit.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_image_bmp.c"
+				RelativePath="..\..\jpeg-8c\jcmainct.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_image_jpg.c"
+				RelativePath="..\..\jpeg-8c\jcmarker.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_image_pcx.c"
+				RelativePath="..\..\jpeg-8c\jcmaster.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_image_png.c"
+				RelativePath="..\..\jpeg-8c\jcomapi.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_image_tga.c"
+				RelativePath="..\..\jpeg-8c\jcparam.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_init.c"
+				RelativePath="..\..\jpeg-8c\jcprepct.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_light.c"
+				RelativePath="..\..\jpeg-8c\jcsample.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_main.c"
+				RelativePath="..\..\jpeg-8c\jctrans.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_marks.c"
+				RelativePath="..\..\jpeg-8c\jdapimin.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_mesh.c"
+				RelativePath="..\..\jpeg-8c\jdapistd.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_model.c"
+				RelativePath="..\..\jpeg-8c\jdarith.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_model_iqm.c"
+				RelativePath="..\..\jpeg-8c\jdatadst.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_noise.c"
+				RelativePath="..\..\jpeg-8c\jdatasrc.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_scene.c"
+				RelativePath="..\..\jpeg-8c\jdcoefct.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_shade.c"
+				RelativePath="..\..\jpeg-8c\jdcolor.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_shade_calc.c"
+				RelativePath="..\..\jpeg-8c\jddctmgr.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_shader.c"
+				RelativePath="..\..\jpeg-8c\jdhuff.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_shadows.c"
+				RelativePath="..\..\jpeg-8c\jdinput.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_sky.c"
+				RelativePath="..\..\jpeg-8c\jdmainct.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_surface.c"
+				RelativePath="..\..\jpeg-8c\jdmarker.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_world.c"
+				RelativePath="..\..\jpeg-8c\jdmaster.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\win32\win_gamma.c"
+				RelativePath="..\..\jpeg-8c\jdmerge.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\win32\win_glimp.c"
+				RelativePath="..\..\jpeg-8c\jdpostct.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\win32\win_qgl.c"
+				RelativePath="..\..\jpeg-8c\jdsample.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\jpeg-8c\jdtrans.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\jpeg-8c\jerror.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\jpeg-8c\jfdctflt.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\jpeg-8c\jfdctfst.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\jpeg-8c\jfdctint.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\jpeg-8c\jidctflt.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\jpeg-8c\jidctfst.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\jpeg-8c\jidctint.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\jpeg-8c\jmemmgr.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\jpeg-8c\jmemnobs.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\jpeg-8c\jquant1.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\jpeg-8c\jquant2.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\jpeg-8c\jutils.c"
 				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl"
+			Filter="h;hpp;hxx;inc"
+			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\..\win32\glw_win.h"
+				RelativePath="..\..\jpeg-8c\jconfig.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\qcommon\q_shared.h"
+				RelativePath="..\..\jpeg-8c\jdct.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\qcommon\qcommon.h"
+				RelativePath="..\..\jpeg-8c\jerror.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\qcommon\qfiles.h"
+				RelativePath="..\..\jpeg-8c\jinclude.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\qgl.h"
+				RelativePath="..\..\jpeg-8c\jmemsys.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\qcommon\surfaceflags.h"
+				RelativePath="..\..\jpeg-8c\jmorecfg.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_common.h"
+				RelativePath="..\..\jpeg-8c\jpegint.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_local.h"
+				RelativePath="..\..\jpeg-8c\jpeglib.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_public.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\renderer\tr_types.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\win32\win_local.h"
+				RelativePath="..\..\jpeg-8c\jversion.h"
 				>
 			</File>
 		</Filter>

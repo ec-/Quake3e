@@ -74,16 +74,18 @@ static aviFileData_t afd;
 static byte buffer[ MAX_AVI_BUFFER ];
 static int  bufIndex;
 
+
 /*
 ===============
 SafeFS_Write
 ===============
 */
-static ID_INLINE void SafeFS_Write( const void *buffer, int len, fileHandle_t f )
+static ID_INLINE void SafeFS_Write( const void *buf, int len, fileHandle_t f )
 {
-  if( FS_Write( buffer, len, f ) < len )
+  if ( FS_Write( buf, len, f ) < len )
 		Com_Error( ERR_DROP, "Failed to write avi file" );
 }
+
 
 /*
 ===============
@@ -132,13 +134,16 @@ static ID_INLINE void START_CHUNK( const char *s )
 	if( afd.chunkStackTop >= MAX_RIFF_CHUNKS )
 	{
 		Com_Error( ERR_DROP, "ERROR: Top of chunkstack breached" );
+	} 
+	else 
+	{
+		afd.chunkStack[ afd.chunkStackTop ] = bufIndex;
+		afd.chunkStackTop++;
+		WRITE_STRING( s );
+		WRITE_4BYTES( 0 );
 	}
-
-	afd.chunkStack[ afd.chunkStackTop ] = bufIndex;
-	afd.chunkStackTop++;
-	WRITE_STRING( s );
-	WRITE_4BYTES( 0 );
 }
+
 
 /*
 ===============
@@ -152,15 +157,18 @@ static ID_INLINE void END_CHUNK( void )
 	if( afd.chunkStackTop <= 0 )
 	{
 		Com_Error( ERR_DROP, "ERROR: Bottom of chunkstack breached" );
+	} 
+	else
+	{
+		afd.chunkStackTop--;
+		bufIndex = afd.chunkStack[ afd.chunkStackTop ];
+		bufIndex += 4;
+		WRITE_4BYTES( endIndex - bufIndex - 4 );
+		bufIndex = endIndex;
+		bufIndex = PAD( bufIndex, 2 );
 	}
-
-	afd.chunkStackTop--;
-	bufIndex = afd.chunkStack[ afd.chunkStackTop ];
-	bufIndex += 4;
-	WRITE_4BYTES( endIndex - bufIndex - 4 );
-	bufIndex = endIndex;
-	bufIndex = PAD( bufIndex, 2 );
 }
+
 
 /*
 ===============
