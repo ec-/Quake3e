@@ -227,12 +227,15 @@ typedef struct {
 	byte		unsentBuffer[MAX_MSGLEN];
 
 	int			challenge;
-	int		lastSentTime;
-	int		lastSentSize;
+	int			lastSentTime;
+	int			lastSentSize;
+
+	qboolean	compat; // ioq3 extension
+
 } netchan_t;
 
 void Netchan_Init( int qport );
-void Netchan_Setup( netsrc_t sock, netchan_t *chan, netadr_t adr, int qport );
+void Netchan_Setup( netsrc_t sock, netchan_t *chan, netadr_t adr, int qport, int challenge, qboolean compat );
 
 void Netchan_Transmit( netchan_t *chan, int length, const byte *data );
 void Netchan_TransmitNextFragment( netchan_t *chan );
@@ -248,8 +251,14 @@ PROTOCOL
 ==============================================================
 */
 
-#define	PROTOCOL_VERSION	68
+#define	PROTOCOL_VERSION		68
+// new protocol with UDP spoofing protection:
+#define	NEW_PROTOCOL_VERSION	71
 // 1.31 - 67
+
+// force legacy extension for recorded demos:
+#define FORCE_DM68_EXT
+
 
 // maintain a list of compatible protocols for demo playing
 // NOTE: that stuff only works with two digits protocols

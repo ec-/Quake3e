@@ -226,6 +226,9 @@ typedef struct {
 
 	// big stuff at end of structure so most offsets are 15 bits or less
 	netchan_t	netchan;
+
+	qboolean compat;
+
 } clientConnection_t;
 
 extern	clientConnection_t clc;

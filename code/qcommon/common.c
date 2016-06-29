@@ -33,7 +33,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "../client/keys.h"
 
-const int demo_protocols[] = { 66, 67, 68, 0 };
+const int demo_protocols[] = { 66, 67, PROTOCOL_VERSION, NEW_PROTOCOL_VERSION, 0 };
 
 #define MAX_NUM_ARGVS	50
 
@@ -3575,6 +3575,7 @@ void Field_CompleteFilename( const char *dir, const char *ext, qboolean stripExt
 	if ( !Field_Complete() )
 		FS_FilenameCompletion( dir, ext, stripExt, PrintMatches, flags );
 }
+
 
 /*
 ===============

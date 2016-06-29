@@ -178,8 +178,8 @@ void SV_GetChallenge( netadr_t from ) {
 #endif
 
 	challenge->pingTime = svs.time;
-	NET_OutOfBandPrint(NS_SERVER, challenge->adr, "challengeResponse %d %d",
-			   challenge->challenge, clientChallenge);
+	NET_OutOfBandPrint(NS_SERVER, challenge->adr, "challengeResponse %d %d %d",
+			   challenge->challenge, clientChallenge, NEW_PROTOCOL_VERSION );
 }
 
 #ifndef STANDALONE
@@ -232,7 +232,7 @@ void SV_AuthorizeIpPacket( netadr_t from ) {
 	}
 	if ( !Q_stricmp( s, "accept" ) ) {
 		NET_OutOfBandPrint(NS_SERVER, challengeptr->adr,
-			"challengeResponse %d %d", challengeptr->challenge, challengeptr->clientChallenge);
+			"challengeResponse %d %d %d", challengeptr->challenge, challengeptr->clientChallenge, NEW_PROTOCOL_VERSION );
 		return;
 	}
 	if ( !Q_stricmp( s, "unknown" ) ) {
@@ -316,6 +316,7 @@ void SV_DirectConnect( netadr_t from ) {
 	intptr_t		denied;
 	int			count;
 	const char	*ip;
+	qboolean	compat = qfalse;
 
 	Com_DPrintf( "SVC_DirectConnect()\n" );
 
@@ -331,10 +332,18 @@ void SV_DirectConnect( netadr_t from ) {
 	Q_strncpyz( userinfo, Cmd_Argv(1), sizeof(userinfo) );
 
 	version = atoi( Info_ValueForKey( userinfo, "protocol" ) );
-	if ( version != PROTOCOL_VERSION ) {
-		NET_OutOfBandPrint( NS_SERVER, from, "print\nServer uses protocol version %i.\n", PROTOCOL_VERSION );
-		Com_DPrintf ("    rejected connect from version %i\n", version);
-		return;
+	
+	if ( version == PROTOCOL_VERSION )
+		compat = qtrue;
+	else
+	{
+		if ( version != NEW_PROTOCOL_VERSION )
+		{
+			NET_OutOfBandPrint( NS_SERVER, from, "print\nServer uses protocol version %i "
+					   "(yours is %i).\n", NEW_PROTOCOL_VERSION, version );
+			Com_DPrintf( "    rejected connect from version %i\n", version );
+			return;
+		}
 	}
 
 	challenge = atoi( Info_ValueForKey( userinfo, "challenge" ) );
@@ -516,7 +525,9 @@ gotnewcl:
 	newcl->challenge = challenge;
 
 	// save the address
-	Netchan_Setup (NS_SERVER, &newcl->netchan , from, qport);
+	newcl->compat = compat;
+	Netchan_Setup(NS_SERVER, &newcl->netchan, from, qport, challenge, compat);
+
 	// init the netchan queue
 	newcl->netchan_end_queue = &newcl->netchan_start_queue;
 
@@ -537,7 +548,7 @@ gotnewcl:
 	SV_UserinfoChanged( newcl );
 
 	// send the connect packet to the client
-	NET_OutOfBandPrint( NS_SERVER, from, "connectResponse" );
+	NET_OutOfBandPrint(NS_SERVER, from, "connectResponse %d", challenge);
 
 	Com_DPrintf( "Going from CS_FREE to CS_CONNECTED for %s\n", newcl->name );
 

@@ -1230,6 +1230,7 @@ qboolean FS_IsDemoExt( const char *filename, int namelen )
 	return qfalse;
 }
 
+
 static int FS_HasExt( const char *fileName, const char **extList, int extCount ) 
 {
 	const char *e;

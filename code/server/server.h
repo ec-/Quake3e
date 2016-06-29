@@ -169,6 +169,7 @@ typedef struct client_s {
 
 	int				oldServerTime;
 	qboolean		csUpdated[MAX_CONFIGSTRINGS];	
+	qboolean		compat;
 } client_t;
 
 //=============================================================================
