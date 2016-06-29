@@ -105,11 +105,13 @@ void Netchan_TransmitNextFragment( netchan_t *chan ) {
 	msg_t		send;
 	byte		send_buf[MAX_PACKETLEN];
 	int			fragmentLength;
+	int			outgoingSequence;
 
 	// write the packet header
 	MSG_InitOOB (&send, send_buf, sizeof(send_buf));				// <-- only do the oob here
 
-	MSG_WriteLong( &send, chan->outgoingSequence | FRAGMENT_BIT );
+	outgoingSequence = chan->outgoingSequence | FRAGMENT_BIT;
+	MSG_WriteLong(&send, outgoingSequence);
 
 	// send the qport if we are a client
 	if ( chan->sock == NS_CLIENT ) {
@@ -128,6 +130,10 @@ void Netchan_TransmitNextFragment( netchan_t *chan ) {
 
 	// send the datagram
 	NET_SendPacket( chan->sock, send.cursize, send.data, chan->remoteAddress );
+
+	// Store send time and size of this packet for rate control
+	chan->lastSentTime = Sys_Milliseconds();
+	chan->lastSentSize = send.cursize;
 
 	if ( showpackets->integer ) {
 		Com_Printf ("%s send %4i : s=%i fragment=%i,%i\n"
@@ -195,6 +201,10 @@ void Netchan_Transmit( netchan_t *chan, int length, const byte *data ) {
 	// send the datagram
 	NET_SendPacket( chan->sock, send.cursize, send.data, chan->remoteAddress );
 
+	// Store send time and size of this packet for rate control
+	chan->lastSentTime = Sys_Milliseconds();
+	chan->lastSentSize = send.cursize;
+
 	if ( showpackets->integer ) {
 		Com_Printf( "%s send %4i : s=%i ack=%i\n"
 			, netsrcString[ chan->sock ]
@@ -218,7 +228,6 @@ copied out.
 */
 qboolean Netchan_Process( netchan_t *chan, msg_t *msg ) {
 	int			sequence;
-	//int			qport;
 	int			fragmentStart, fragmentLength;
 	qboolean	fragmented;
 
@@ -239,8 +248,7 @@ qboolean Netchan_Process( netchan_t *chan, msg_t *msg ) {
 
 	// read the qport if we are a server
 	if ( chan->sock == NS_SERVER ) {
-		//qport = MSG_ReadShort( msg );
-		MSG_ReadShort( msg );
+		/*qport=*/ MSG_ReadShort( msg );
 	}
 
 	// read the fragment information

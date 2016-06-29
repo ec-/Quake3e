@@ -533,7 +533,7 @@ void Com_StartupVariable( const char *match ) {
 			if ( Cvar_Flags( s ) == CVAR_NONEXISTENT )
 				Cvar_Get( s, Cmd_Argv( 2 ), CVAR_USER_CREATED );
 			else
-				Cvar_Set( s, Cmd_Argv( 2 ) );
+				Cvar_Set2(s, Cmd_Argv(2), qfalse);
 		}
 	}
 }
@@ -1623,9 +1623,10 @@ void Hunk_SmallLog( void) {
 	FS_Write(buf, strlen(buf), logfile);
 }
 
+
 /*
 =================
-Com_InitZoneMemory
+Com_InitHunkMemory
 =================
 */
 void Com_InitHunkMemory( void ) {
@@ -2327,8 +2328,6 @@ int Com_EventLoop( void ) {
 
 
 		switch ( ev.evType ) {
-        case SE_NONE:
-            break;
 #ifndef DEDICATED
 		case SE_KEY:
 			CL_KeyEvent( ev.evValue, ev.evValue2, ev.evTime );
@@ -2393,7 +2392,7 @@ Just throw a fatal error to
 test error shutdown procedures
 =============
 */
-static void Com_Error_f (void) {
+static void __attribute__((__noreturn__)) Com_Error_f (void) {
 	if ( Cmd_Argc() > 1 ) {
 		Com_Error( ERR_DROP, "Testing drop error" );
 	} else {
@@ -3686,7 +3685,7 @@ void Field_AutoComplete( field_t *field )
 ==================
 Com_RandomBytes
 
-fills string array with len radom bytes, peferably from the OS randomizer
+fills string array with len random bytes, preferably from the OS randomizer
 ==================
 */
 void Com_RandomBytes( byte *string, int len )
