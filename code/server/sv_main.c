@@ -1112,11 +1112,22 @@ void SV_Frame( int msec ) {
 		}
 	}
 
-	// this can happen considerably earlier when lots of clients play and the map doesn't change
-	if ( svs.nextSnapshotEntities >= 0x7FFFFFFE - svs.numSnapshotEntities ) {
-		SV_Shutdown( "Restarting server due to numSnapshotEntities wrapping" );
-		Cbuf_AddText( va( "map %s\n", Cvar_VariableString( "mapname" ) ) );
-		return;
+
+	// We set clamp trigger condition to some higher value to guarantee that:
+	// 1) all valid client frames will be affected at [nextSnapshotEntities > modSnapshotEntities] condition
+	// 2) clamped oldframe->first_entity value will not break delta compression
+	if ( svs.nextSnapshotEntities > svs.modSnapshotEntities + svs.numSnapshotEntities ) {
+		svs.nextSnapshotEntities -= svs.modSnapshotEntities;
+		if ( svs.clients ) {
+			for ( i = 0; i < sv_maxclients->integer; i++ ) {
+				if ( svs.clients[ i ].state < CS_CONNECTED )
+					continue;
+				for ( n = 0; n < PACKET_BACKUP; n++ ) {
+					if ( svs.clients[ i ].frames[ n ].first_entity > svs.modSnapshotEntities )
+						svs.clients[ i ].frames[ n ].first_entity -= svs.modSnapshotEntities;
+				}
+			}
+		}
 	}
 
 	if( sv.restartTime && sv.time >= sv.restartTime ) {
