@@ -95,7 +95,7 @@ void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, q
 		// we need to track last actual color because we cut some text before
 		s = edit->buffer;
 		for ( i = 0; i < prestep + 1; i++, s++ ) {
-			if ( *s == Q_COLOR_ESCAPE && *(s+1) != '\0' && *(s+1) != Q_COLOR_ESCAPE ) {
+			if ( Q_IsColorString( s ) ) {
 				curColor = *(s+1);
 				s++;						
 			}
@@ -109,7 +109,7 @@ void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, q
 
 	// draw it
 	if ( size == SMALLCHAR_WIDTH ) {
-		SCR_DrawSmallStringExt( x, y, str, g_color_table[ ColorIndex( curColor ) ], 
+		SCR_DrawSmallStringExt( x, y, str, g_color_table[ ColorIndexFromChar( curColor ) ], 
 			qfalse, noColorEscape );
 		if ( len > drawLen + prestep ) {
 			SCR_DrawSmallChar( x + ( edit->widthInChars - 1 ) * size, y, '>' );
@@ -120,7 +120,7 @@ void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, q
 				g_color_table[ ColorIndex( COLOR_WHITE ) ], qfalse, noColorEscape );
 		}
 		// draw big string with drop shadow
-		SCR_DrawStringExt( x, y, size, str, g_color_table[ ColorIndex( curColor ) ], 
+		SCR_DrawStringExt( x, y, size, str, g_color_table[ ColorIndexFromChar( curColor ) ], 
 			qfalse, noColorEscape );
 	}
 

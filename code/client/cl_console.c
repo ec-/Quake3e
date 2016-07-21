@@ -455,7 +455,7 @@ If no console is visible, the text will appear at the top of the game window
 void CL_ConsolePrint( const char *txt ) {
 	int		y;
 	int		c, l;
-	int		color;
+	int		colorIndex;
 	qboolean skipnotify = qfalse;		// NERVE - SMF
 	int prev;							// NERVE - SMF
 
@@ -481,11 +481,11 @@ void CL_ConsolePrint( const char *txt ) {
 		con.initialized = qtrue;
 	}
 
-	color = ColorIndex(COLOR_WHITE);
+	colorIndex = ColorIndex( COLOR_WHITE );
 
 	while ( (c = *txt) != 0 ) {
 		if ( Q_IsColorString( txt ) ) {
-			color = ColorIndex( *(txt+1) );
+			colorIndex = ColorIndexFromChar( *(txt+1) );
 			txt += 2;
 			continue;
 		}
@@ -520,7 +520,7 @@ void CL_ConsolePrint( const char *txt ) {
 			}
 			// display character and advance
 			y = con.current % con.totallines;
-			con.text[y * con.linewidth + con.x ] = (color << 8) | (c & 255);
+			con.text[y * con.linewidth + con.x ] = (colorIndex << 8) | (c & 255);
 			con.x++;
 			if ( con.x >= con.linewidth ) {
 				Con_Linefeed( skipnotify );
@@ -591,10 +591,11 @@ void Con_DrawNotify( void )
 	int		i;
 	int		time;
 	int		skip;
-	int		currentColor;
+	int		currentColorIndex;
+	int		colorIndex;
 
-	currentColor = 7;
-	re.SetColor( g_color_table[currentColor] );
+	currentColorIndex = ColorIndex( COLOR_WHITE );
+	re.SetColor( g_color_table[ currentColorIndex ] );
 
 	v = 0;
 	for (i= con.current-NUM_CON_TIMES+1 ; i<=con.current ; i++)
@@ -617,9 +618,10 @@ void Con_DrawNotify( void )
 			if ( ( text[x] & 0xff ) == ' ' ) {
 				continue;
 			}
-			if ( ( (text[x]>>8)&7 ) != currentColor ) {
-				currentColor = (text[x]>>8)&7;
-				re.SetColor( g_color_table[currentColor] );
+			colorIndex = ( text[x] >> 8 ) & 63;
+			if ( currentColorIndex != colorIndex ) {
+				currentColorIndex = colorIndex;
+				re.SetColor( g_color_table[ colorIndex ] );
 			}
 			SCR_DrawSmallChar( cl_conXOffset->integer + con.xadjust + (x+1)*SMALLCHAR_WIDTH, v, text[x] & 0xff );
 		}
@@ -672,7 +674,8 @@ void Con_DrawSolidConsole( float frac ) {
 	short			*text;
 	int				row;
 	int				lines;
-	int				currentColor;
+	int				currentColorIndex;
+	int				colorIndex;
 	vec4_t			color;
 	float			yf, wf;
 	char			buf[ MAX_CVAR_VALUE_STRING ], *v[4];
@@ -756,10 +759,10 @@ void Con_DrawSolidConsole( float frac ) {
 		row--;
 	}
 
-	if ( download.progress[0] ) 
+	if ( download.progress[ 0 ] ) 
 	{
-		currentColor = 5;
-		re.SetColor( g_color_table[currentColor] );
+		currentColorIndex = ColorIndex( COLOR_CYAN );
+		re.SetColor( g_color_table[ currentColorIndex ] );
 
 		i = strlen( download.progress );
 		for ( x = 0 ; x < i ; x++ ) 
@@ -769,8 +772,8 @@ void Con_DrawSolidConsole( float frac ) {
 		}
 	}
 
-	currentColor = 7;
-	re.SetColor( g_color_table[currentColor] );
+	currentColorIndex = ColorIndex( COLOR_WHITE );
+	re.SetColor( g_color_table[ currentColorIndex ] );
 
 	for ( i = 0 ; i < rows ; i++, y -= SMALLCHAR_HEIGHT, row-- )
 	{
@@ -790,9 +793,10 @@ void Con_DrawSolidConsole( float frac ) {
 				continue;
 			}
 			// track color changes
-			if ( ( (text[x]>>8)&7 ) != currentColor ) {
-				currentColor = (text[x]>>8)&7;
-				re.SetColor( g_color_table[currentColor] );
+			colorIndex = ( text[ x ] >> 8 ) & 63;
+			if ( currentColorIndex != colorIndex ) {
+				currentColorIndex = colorIndex;
+				re.SetColor( g_color_table[ colorIndex ] );
 			}
 			SCR_DrawSmallChar( con.xadjust + (x + 1) * SMALLCHAR_WIDTH, y, text[x] & 0xff );
 		}
