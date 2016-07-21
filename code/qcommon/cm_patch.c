@@ -737,7 +737,7 @@ static void CM_SetBorderInward( facet_t *facet, cGrid_t *grid, int gridPlanes[MA
 			side = CM_PointOnPlaneSide( points[l], facet->borderPlanes[k] );
 			if ( side == SIDE_FRONT ) {
 				front++;
-			} if ( side == SIDE_BACK ) {
+			} else if ( side == SIDE_BACK ) {
 				back++;
 			}
 		}

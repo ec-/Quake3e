@@ -3459,10 +3459,12 @@ static void FS_CheckIdPaks( void )
 
 	for( path = fs_searchpaths; path; path = path->next )
 	{
-		const char* pakBasename = path->pack->pakBasename;
+		const char* pakBasename;
 
-		if(!path->pack)
+		if ( !path->pack )
 			continue;
+
+		pakBasename = path->pack->pakBasename;
 
 		if(!Q_stricmpn( path->pack->pakGamename, BASEDEMO, MAX_OSPATH )
 		   && !Q_stricmpn( pakBasename, "pak0", MAX_OSPATH ))
