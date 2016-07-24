@@ -826,14 +826,22 @@ void UpdateMonitorInfo( void )
 		if ( glw_state.desktopWidth != w || glw_state.desktopHeight != h || 
 			glw_state.desktopX != x || glw_state.desktopY != y || 
 			glw_state.hMonitor != hMon ) {
-			glw_state.desktopWidth = w;
-			glw_state.desktopHeight = h;
-			glw_state.desktopX = x;
-			glw_state.desktopY = y;
-			glw_state.hMonitor = hMon;
-			memcpy( glw_state.displayName, mInfo.szDevice, sizeof( glw_state.displayName ) );
-			ri.Printf( PRINT_ALL, "...current monitor: %ix%i@%i,%i %s\n", 
-				w, h, x, y, mInfo.szDevice );
+				// track monitor and gamma change
+				qboolean gammaSet = glw_state.gammaSet;
+				if ( gammaSet ) {
+					WG_RestoreGamma();
+				}
+				glw_state.desktopWidth = w;
+				glw_state.desktopHeight = h;
+				glw_state.desktopX = x;
+				glw_state.desktopY = y;
+				glw_state.hMonitor = hMon;
+				memcpy( glw_state.displayName, mInfo.szDevice, sizeof( glw_state.displayName ) );
+				ri.Printf( PRINT_ALL, "...current monitor: %ix%i@%i,%i %s\n", 
+					w, h, x, y, WtoA( mInfo.szDevice ) );
+				if ( gammaSet ) {
+					R_SetColorMappings();
+				}
 		}
 	}
 }

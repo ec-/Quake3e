@@ -49,9 +49,18 @@ void WG_CheckHardwareGamma( void )
 
 	if ( !r_ignorehwgamma->integer )
 	{
-		hDC = GetDC( GetDesktopWindow() );
-		glConfig.deviceSupportsGamma = ( GetDeviceGammaRamp( hDC, s_oldHardwareGamma ) == FALSE ) ? qfalse : qtrue;
-		ReleaseDC( GetDesktopWindow(), hDC );
+		if ( glw_state.displayName ) 
+		{
+			hDC = CreateDC( L"DISPLAY", glw_state.displayName, NULL, NULL );		
+			glConfig.deviceSupportsGamma = ( GetDeviceGammaRamp( hDC, s_oldHardwareGamma ) == FALSE ) ? qfalse : qtrue;
+			DeleteDC( hDC );
+		}
+		else 
+		{
+			hDC = GetDC( GetDesktopWindow() );
+			glConfig.deviceSupportsGamma = ( GetDeviceGammaRamp( hDC, s_oldHardwareGamma ) == FALSE ) ? qfalse : qtrue;
+			ReleaseDC( GetDesktopWindow(), hDC );
+		}
 
 		if ( glConfig.deviceSupportsGamma )
 		{
@@ -122,7 +131,7 @@ void mapGammaMax( void ) {
 void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned char blue[256] ) {
 	unsigned short table[3][256];
 	int		i, j;
-	int		ret;
+	BOOL	ret;
 	OSVERSIONINFO	vinfo;
 	HDC hDC;
 
@@ -176,6 +185,8 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 
 	if ( !ret ) {
 		Com_Printf( "SetDeviceGammaRamp failed.\n" );
+	} else {
+		glw_state.gammaSet = qtrue;
 	}
 }
 
@@ -187,15 +198,18 @@ void WG_RestoreGamma( void )
 	if ( glConfig.deviceSupportsGamma )
 	{
 		HDC hDC;
+		BOOL ret;
 		if ( glw_state.displayName ) {
 			hDC = CreateDC( L"DISPLAY", glw_state.displayName, NULL, NULL );
-			SetDeviceGammaRamp( hDC, s_oldHardwareGamma );
+			ret = SetDeviceGammaRamp( hDC, s_oldHardwareGamma );
 			DeleteDC( hDC);		
 		} else {
 			hDC = GetDC( GetDesktopWindow() );
-			SetDeviceGammaRamp( hDC, s_oldHardwareGamma );
+			ret = SetDeviceGammaRamp( hDC, s_oldHardwareGamma );
 			ReleaseDC( GetDesktopWindow(), hDC );
 		}
+		if ( ret )
+			glw_state.gammaSet = qfalse;
 	}
 }
 

@@ -46,6 +46,7 @@ typedef struct
 	int			desktopY;		// can be negative
 	HMONITOR	hMonitor;		// current monitor
 	TCHAR		displayName[CCHDEVICENAME];
+	qboolean	gammaSet;
 
 	qboolean	cdsFullscreen;
 	int			monitorCount;
