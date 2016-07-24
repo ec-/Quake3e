@@ -595,6 +595,8 @@ void SV_SendClientMessages( void )
 {
 	int		i;
 	client_t	*c;
+	qboolean	lanRate;
+	qboolean	skipSnapshot;
 
 	// send a message to each connected client
 	for(i=0; i < sv_maxclients->integer; i++)
@@ -613,15 +615,22 @@ void SV_SendClientMessages( void )
 			continue;		// Drop this snapshot if the packet queue is still full or delta compression will break
 		}
 
-		if(!(c->netchan.remoteAddress.type == NA_LOOPBACK ||
-		     (sv_lanForceRate->integer && Sys_IsLANAddress(c->netchan.remoteAddress))))
-		{
+		lanRate = (c->netchan.remoteAddress.type == NA_LOOPBACK ||
+		     (sv_lanForceRate->integer && Sys_IsLANAddress(c->netchan.remoteAddress)));
+
+		skipSnapshot = svs.time - c->lastSnapshotTime < c->snapshotMsec * com_timescale->value;
+
+		// do not force lan rate on listen server
+		if ( !com_dedicated->integer && lanRate && skipSnapshot ) {
+			continue;
+		}
+
+		if ( !lanRate ) {
 			// rate control for clients not on LAN 
-			
-			if(svs.time - c->lastSnapshotTime < c->snapshotMsec * com_timescale->value)
+			if ( skipSnapshot )
 				continue;		// It's not time yet
 
-			if(SV_RateMsec(c) > 0)
+			if ( SV_RateMsec( c ) > 0 )
 			{
 				// Not enough time since last packet passed through the line
 				c->rateDelayed = qtrue;
