@@ -124,6 +124,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	int		i, j;
 	int		ret;
 	OSVERSIONINFO	vinfo;
+	HDC hDC;
 
 	if ( !glConfig.deviceSupportsGamma || r_ignorehwgamma->integer || !glw_state.hDC || !gw_active ) {
 		return;
@@ -165,8 +166,14 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 		}
 	}
 
+	if ( glw_state.displayName ) {
+		hDC = CreateDC( L"DISPLAY", glw_state.displayName, NULL, NULL );
+		ret = SetDeviceGammaRamp( hDC, table );
+		DeleteDC( hDC );
+	} else {
+		ret = SetDeviceGammaRamp( glw_state.hDC, table );
+	}
 
-	ret = SetDeviceGammaRamp( glw_state.hDC, table );
 	if ( !ret ) {
 		Com_Printf( "SetDeviceGammaRamp failed.\n" );
 	}
@@ -180,10 +187,15 @@ void WG_RestoreGamma( void )
 	if ( glConfig.deviceSupportsGamma )
 	{
 		HDC hDC;
-			
-		hDC = GetDC( GetDesktopWindow() );
-		SetDeviceGammaRamp( hDC, s_oldHardwareGamma );
-		ReleaseDC( GetDesktopWindow(), hDC );
+		if ( glw_state.displayName ) {
+			hDC = CreateDC( L"DISPLAY", glw_state.displayName, NULL, NULL );
+			SetDeviceGammaRamp( hDC, s_oldHardwareGamma );
+			DeleteDC( hDC);		
+		} else {
+			hDC = GetDC( GetDesktopWindow() );
+			SetDeviceGammaRamp( hDC, s_oldHardwareGamma );
+			ReleaseDC( GetDesktopWindow(), hDC );
+		}
 	}
 }
 

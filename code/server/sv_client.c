@@ -1100,7 +1100,7 @@ int SV_SendQueuedMessages( void )
 	{
 		cl = &svs.clients[i];
 		
-		if(cl->state)
+		if ( cl->state >= CS_CONNECTED )
 		{
 			nextFragT = SV_RateMsec(cl);
 
