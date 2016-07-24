@@ -841,7 +841,7 @@ void UpdateMonitorInfo( void )
 					w, h, x, y, WtoA( mInfo.szDevice ) );
 				if ( gammaSet ) {
 					R_SetColorMappings();
-				}
+			}
 		}
 	}
 }

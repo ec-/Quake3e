@@ -802,8 +802,12 @@ void IN_DeactivateMouse( void )
 void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned char blue[256] )
 {
 #ifdef HAVE_XF86DGA
-    int size,i;
-    unsigned short r[256], g[256], b[256];
+	int size, i;
+	unsigned short r[256], g[256], b[256];
+    
+	if ( !glConfig.deviceSupportsGamma || r_ignorehwgamma->integer ) {
+		return;
+	}
 
 	for ( i = 0; i < 256; i++ ) {
 		r[i] = ( ( ( unsigned short ) red[i] ) << 8 ) | red[i];
