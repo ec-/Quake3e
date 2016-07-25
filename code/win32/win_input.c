@@ -88,9 +88,11 @@ cvar_t	*in_mididevice;
 #endif
 
 cvar_t	*in_minimize;
+cvar_t	*in_nograb;
 
 cvar_t	*in_mouse;
 cvar_t  *in_logitechbug;
+
 #ifdef USE_JOYSTICK
 cvar_t	*in_joystick;
 cvar_t	*in_joyBallScale;
@@ -222,10 +224,16 @@ void IN_Win32Mouse( int *mx, int *my ) {
 	GetCursorPos( &current_pos );
 
 	// force the mouse to the center, so there's room to move
-	SetCursorPos( window_center[0], window_center[1] );
+	if ( !in_nograb->integer )
+		SetCursorPos( window_center[0], window_center[1] );
 
 	*mx = current_pos.x - window_center[0];
 	*my = current_pos.y - window_center[1];
+
+	if ( in_nograb->integer == 1 ) {
+		*mx = 0;
+		*my = 0;
+	}
 }
 
 
@@ -706,18 +714,20 @@ Called when the window gains focus or changes in some way
 */
 void IN_ActivateMouse( void ) 
 {
-	if (!s_wmv.mouseInitialized ) {
+	if ( in_nograb->integer )
 		return;
-	}
+
+	if ( !s_wmv.mouseInitialized )
+		return;
+
 	if ( !in_mouse->integer ) 
 	{
 		s_wmv.mouseActive = qfalse;
 		return;
 	}
+
 	if ( s_wmv.mouseActive ) 
-	{
 		return;
-	}
 
 	s_wmv.mouseActive = qtrue;
 
@@ -728,6 +738,7 @@ void IN_ActivateMouse( void )
 			IN_ActivateDIMouse();
 		return;
 	}
+
 	IN_ActivateWin32Mouse();
 }
 
@@ -849,7 +860,8 @@ void IN_MouseMove( void ) {
 		IN_DIMouse( &mx, &my );
 	} else {
 		if ( raw_activated ) {
-			SetCursorPos( window_center[0], window_center[1] );
+			if ( !in_nograb->integer )
+				SetCursorPos( window_center[0], window_center[1] );
 			return;
 		} else {
 			IN_Win32Mouse( &mx, &my );
@@ -1012,7 +1024,9 @@ void IN_Init( void ) {
 #endif
 
 	// mouse variables
-  in_mouse				= Cvar_Get ("in_mouse",					"1",		CVAR_ARCHIVE|CVAR_LATCH);
+	in_mouse				= Cvar_Get ("in_mouse",					"1",		CVAR_ARCHIVE|CVAR_LATCH);
+	in_nograb				= Cvar_Get ("in_nograb",				"0",		0 );
+
 	in_logitechbug  = Cvar_Get ("in_logitechbug", "0", CVAR_ARCHIVE);
 
 #ifdef USE_JOYSTICK
@@ -1066,7 +1080,7 @@ void IN_Frame (void) {
 
 	if ( !s_wmv.mouseInitialized ) {
 		if ( s_wmv.mouseStartupDelayed && g_wv.hWnd ) {
-			Com_Printf("Proceeding with delayed mouse init\n");
+			Com_Printf( "Proceeding with delayed mouse init\n" );
 			IN_StartupMouse();
 			s_wmv.mouseStartupDelayed = qfalse;
 		}
@@ -1089,7 +1103,11 @@ void IN_Frame (void) {
 		return;
 	}
 
-	IN_ActivateMouse();
+	if ( in_nograb->integer )
+		IN_DeactivateMouse();
+	else
+		IN_ActivateMouse();
+	
 	WIN_DisableAltTab();
 
 	// post events to the system que
