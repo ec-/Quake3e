@@ -134,22 +134,20 @@ cvar_t   *joy_threshold    = NULL;
 cvar_t  *r_allowSoftwareGL;   // don't abort out if the pixelformat claims software
 cvar_t  *r_previousglDriver;
 
-qboolean vidmode_ext = qfalse;
+static qboolean vidmode_ext = qfalse;
+static qboolean vidmode_active = qfalse;
+
 #ifdef HAVE_XF86DGA
 static int vidmode_MajorVersion = 0, vidmode_MinorVersion = 0; // major and minor of XF86VidExtensions
 
 // gamma value of the X display before we start playing with it
 static XF86VidModeGamma vidmode_InitialGamma;
+
+static XF86VidModeModeInfo **vidmodes = NULL;
 #endif /* HAVE_XF86DGA */
+
 
 static int win_x, win_y;
-
-#ifdef HAVE_XF86DGA
-static XF86VidModeModeInfo **vidmodes;
-#endif /* HAVE_XF86DGA */
-
-static int num_vidmodes;
-static qboolean vidmode_active = qfalse;
 
 static int mouse_accel_numerator;
 static int mouse_accel_denominator;
@@ -853,7 +851,15 @@ void GLimp_Shutdown( void )
 			XDestroyWindow( dpy, win );
 #ifdef HAVE_XF86DGA
 		if ( vidmode_active )
-			XF86VidModeSwitchToMode( dpy, scrnum, vidmodes[0] );
+		{
+			if ( vidmodes )
+			{
+				XF86VidModeSwitchToMode( dpy, scrnum, vidmodes[ 0 ] );
+				// don't forget to release memory:
+				free( vidmodes );
+				vidmodes = NULL;
+			}
+		}
 
 		if ( glConfig.deviceSupportsGamma )
 		{
@@ -866,6 +872,7 @@ void GLimp_Shutdown( void )
 		//   ( https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=33 )
 		XCloseDisplay( dpy );
 	}
+	
 	vidmode_active = qfalse;
 	dpy = NULL;
 	win = 0;
@@ -882,10 +889,10 @@ void GLimp_Shutdown( void )
 */
 void GLimp_LogComment( char *comment ) 
 {
-  if ( glw_state.log_fp )
-  {
-    fprintf( glw_state.log_fp, "%s", comment );
-  }
+	if ( glw_state.log_fp )
+	{
+		fprintf( glw_state.log_fp, "%s", comment );
+	}
 }
 
 /*
@@ -1018,7 +1025,8 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
 
   // Check for DGA
 #ifdef HAVE_XF86DGA
-	dga_MajorVersion = 0, dga_MinorVersion = 0;
+	dga_MajorVersion = 0;
+	dga_MinorVersion = 0;
 	if ( in_dgamouse && in_dgamouse->integer )
 	{
 		if ( !XF86DGAQueryVersion( dpy, &dga_MajorVersion, &dga_MinorVersion ) )
@@ -1036,16 +1044,22 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
 #endif /* HAVE_XF86DGA */
 
 #ifdef HAVE_XF86DGA
-	if ( vidmode_ext ) 
+	if ( vidmode_ext )
 	{
 		if ( desktop_ok == qfalse )
 		{
 			XF86VidModeModeLine c;
 			int n;
-			XF86VidModeGetModeLine( dpy, scrnum, &n, &c );
-			desktop_width = c.hdisplay;
-			desktop_height = c.vdisplay;
-			desktop_ok = qtrue;
+			if ( XF86VidModeGetModeLine( dpy, scrnum, &n, &c ) )
+			{
+				desktop_width = c.hdisplay;
+				desktop_height = c.vdisplay;
+				desktop_ok = qtrue;
+			}
+			else
+			{
+				ri.Printf( PRINT_ALL, "XF86VidModeGetModeLine failed.\n" );
+			}
 		}
 		ri.Printf( PRINT_ALL, "desktop width:%i height:%i\n", desktop_width, desktop_height );
   }
@@ -1068,67 +1082,68 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
 	actualHeight = glConfig.vidHeight;
 
 #ifdef HAVE_XF86DGA
-  if (vidmode_ext)
-  {
-    int best_fit, best_dist, dist, x, y;
+	if ( vidmode_ext )
+	{
+		int best_fit, best_dist, dist, x, y;
+		int num_vidmodes;
 
-    XF86VidModeGetAllModeLines(dpy, scrnum, &num_vidmodes, &vidmodes);
+		XF86VidModeGetAllModeLines( dpy, scrnum, &num_vidmodes, &vidmodes );
 
-    // Are we going fullscreen?  If so, let's change video mode
-    if (fullscreen)
-    {
-      best_dist = 9999999;
-      best_fit = -1;
+		// Are we going fullscreen?  If so, let's change video mode
+		if ( fullscreen )
+		{
+			best_dist = 9999999;
+			best_fit = -1;
 
-      for (i = 0; i < num_vidmodes; i++)
-      {
-        if (glConfig.vidWidth > vidmodes[i]->hdisplay ||
-            glConfig.vidHeight > vidmodes[i]->vdisplay)
-          continue;
+			for ( i = 0; i < num_vidmodes; i++ )
+			{
+				if (glConfig.vidWidth > vidmodes[i]->hdisplay ||
+					glConfig.vidHeight > vidmodes[i]->vdisplay)
+					continue;
 
-        x = glConfig.vidWidth - vidmodes[i]->hdisplay;
-        y = glConfig.vidHeight - vidmodes[i]->vdisplay;
-        dist = (x * x) + (y * y);
-        if (dist < best_dist)
-        {
-          best_dist = dist;
-          best_fit = i;
-        }
-      }
+				x = glConfig.vidWidth - vidmodes[i]->hdisplay;
+				y = glConfig.vidHeight - vidmodes[i]->vdisplay;
+				dist = (x * x) + (y * y);
+				if (dist < best_dist)
+				{
+					best_dist = dist;
+					best_fit = i;
+				}
+			}
 
-      if (best_fit != -1)
-      {
-        actualWidth = vidmodes[best_fit]->hdisplay;
-        actualHeight = vidmodes[best_fit]->vdisplay;
+			if ( best_fit != -1 )
+			{
+				actualWidth = vidmodes[ best_fit ]->hdisplay;
+				actualHeight = vidmodes[ best_fit ]->vdisplay;
 
-        // change to the mode
-        XF86VidModeSwitchToMode(dpy, scrnum, vidmodes[best_fit]);
-		XFlush( dpy );  // drakkar - man 3 XF86VidModeSwitchToMode
-        vidmode_active = qtrue;
+				// change to the mode
+				XF86VidModeSwitchToMode( dpy, scrnum, vidmodes[ best_fit ] );
+				XFlush( dpy );  // drakkar - man 3 XF86VidModeSwitchToMode
+				vidmode_active = qtrue;
 
-		// drakkar - XF86VidModeSetViewPort problems
-		// if windows is placed out of screen
-		if ( win )
-			XMoveWindow( dpy, win, 0, 0 );
+				// drakkar - XF86VidModeSetViewPort problems
+				// if windows is placed out of screen
+				// if ( win )
+				//	XMoveWindow( dpy, win, 0, 0 );
 
-        // Move the viewport to top left
-        XF86VidModeSetViewPort( dpy, scrnum, 0, 0 );
+				// Move the viewport to top left
+				XF86VidModeSetViewPort( dpy, scrnum, 0, 0 );
 
-        ri.Printf(PRINT_ALL, "XFree86-VidModeExtension Activated at %dx%d\n",
-                  actualWidth, actualHeight);
-
-      } else
-      {
-        //fullscreen = 0;
-        ri.Printf(PRINT_ALL, "XFree86-VidModeExtension: No acceptable modes found\n");
-      }
-    } else
-    {
-      ri.Printf(PRINT_ALL, "XFree86-VidModeExtension:  Ignored on non-fullscreen/Voodoo\n");
-    }
-  }
+				ri.Printf( PRINT_ALL, "XFree86-VidModeExtension Activated at %dx%d\n",
+					actualWidth, actualHeight );
+			}
+			else
+			{
+				//fullscreen = 0;
+				ri.Printf( PRINT_ALL, "XFree86-VidModeExtension: No acceptable modes found\n" );
+			}
+		}
+		else
+		{
+			ri.Printf(PRINT_ALL, "XFree86-VidModeExtension:  Ignored on non-fullscreen/Voodoo\n");
+		}
+	}
 #endif /* HAVE_XF86DGA */
-
 
 	if ( !r_colorbits->integer )
 		colorbits = 24;
@@ -1142,106 +1157,107 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
 
 	stencilbits = r_stencilbits->integer;
 
-  for (i = 0; i < 16; i++)
-  {
-    // 0 - default
-    // 1 - minus colorbits
-    // 2 - minus depthbits
-    // 3 - minus stencil
-    if ((i % 4) == 0 && i)
-    {
-      // one pass, reduce
-      switch (i / 4)
-      {
-      case 2 :
-        if (colorbits == 24)
-          colorbits = 16;
-        break;
-      case 1 :
-        if (depthbits == 24)
-          depthbits = 16;
-        else if (depthbits == 16)
-          depthbits = 8;
-      case 3 :
-        if (stencilbits == 24)
-          stencilbits = 16;
-        else if (stencilbits == 16)
-          stencilbits = 8;
-      }
-    }
+	for ( i = 0; i < 16; i++ )
+	{
+		// 0 - default
+		// 1 - minus colorbits
+		// 2 - minus depthbits
+		// 3 - minus stencil
+		if ( (i % 4) == 0 && i )
+		{
+			// one pass, reduce
+			switch (i / 4)
+			{
+			case 2 :
+				if ( colorbits == 24 )
+					colorbits = 16;
+				break;
+			case 1 :
+				if ( depthbits == 24 )
+					depthbits = 16;
+				else if ( depthbits == 16 )
+					depthbits = 8;
+			case 3 :
+				if ( stencilbits == 24 )
+					stencilbits = 16;
+				else if ( stencilbits == 16 )
+					stencilbits = 8;
+			}
+		}
 
-    tcolorbits = colorbits;
-    tdepthbits = depthbits;
-    tstencilbits = stencilbits;
+		tcolorbits = colorbits;
+		tdepthbits = depthbits;
+		tstencilbits = stencilbits;
 
-    if ((i % 4) == 3)
-    { // reduce colorbits
-      if (tcolorbits == 24)
-        tcolorbits = 16;
-    }
+		if ( (i % 4) == 3 )
+		{ // reduce colorbits
+			if ( tcolorbits == 24 )
+				tcolorbits = 16;
+		}
 
-    if ((i % 4) == 2)
-    { // reduce depthbits
-      if (tdepthbits == 24)
-        tdepthbits = 16;
-      else if (tdepthbits == 16)
-        tdepthbits = 8;
-    }
+		if ( (i % 4) == 2 )
+		{ // reduce depthbits
+			if ( tdepthbits == 24 )
+				tdepthbits = 16;
+			else if ( tdepthbits == 16 )
+				tdepthbits = 8;
+		}
 
-    if ((i % 4) == 1)
-    { // reduce stencilbits
-      if (tstencilbits == 24)
-        tstencilbits = 16;
-      else if (tstencilbits == 16)
-        tstencilbits = 8;
-      else
-        tstencilbits = 0;
-    }
+		if ((i % 4) == 1)
+		{ // reduce stencilbits
+			if ( tstencilbits == 24 )
+				tstencilbits = 16;
+			else if ( tstencilbits == 16 )
+				tstencilbits = 8;
+			else
+				tstencilbits = 0;
+		}
 
-    if (tcolorbits == 24)
-    {
-      attrib[ATTR_RED_IDX] = 8;
-      attrib[ATTR_GREEN_IDX] = 8;
-      attrib[ATTR_BLUE_IDX] = 8;
-    } else
-    {
-      // must be 16 bit
-      attrib[ATTR_RED_IDX] = 4;
-      attrib[ATTR_GREEN_IDX] = 4;
-      attrib[ATTR_BLUE_IDX] = 4;
-    }
+		if (tcolorbits == 24)
+		{
+			attrib[ATTR_RED_IDX] = 8;
+			attrib[ATTR_GREEN_IDX] = 8;
+			attrib[ATTR_BLUE_IDX] = 8;
+		}
+		else
+		{
+			// must be 16 bit
+			attrib[ATTR_RED_IDX] = 4;
+			attrib[ATTR_GREEN_IDX] = 4;
+			attrib[ATTR_BLUE_IDX] = 4;
+		}
 
-    attrib[ATTR_DEPTH_IDX] = tdepthbits; // default to 24 depth
-    attrib[ATTR_STENCIL_IDX] = tstencilbits;
+		attrib[ATTR_DEPTH_IDX] = tdepthbits; // default to 24 depth
+		attrib[ATTR_STENCIL_IDX] = tstencilbits;
 
-    visinfo = qglXChooseVisual(dpy, scrnum, attrib);
-    if (!visinfo)
-    {
-      continue;
-    }
+		visinfo = qglXChooseVisual( dpy, scrnum, attrib );
+		if ( !visinfo )
+		{
+			continue;
+		}
 
-    ri.Printf( PRINT_ALL, "Using %d/%d/%d Color bits, %d depth, %d stencil display.\n", 
-               attrib[ATTR_RED_IDX], attrib[ATTR_GREEN_IDX], attrib[ATTR_BLUE_IDX],
-               attrib[ATTR_DEPTH_IDX], attrib[ATTR_STENCIL_IDX]);
+		ri.Printf( PRINT_ALL, "Using %d/%d/%d Color bits, %d depth, %d stencil display.\n", 
+			attrib[ATTR_RED_IDX], attrib[ATTR_GREEN_IDX], attrib[ATTR_BLUE_IDX],
+			attrib[ATTR_DEPTH_IDX], attrib[ATTR_STENCIL_IDX]);
 
-    glConfig.colorBits = tcolorbits;
-    glConfig.depthBits = tdepthbits;
-    glConfig.stencilBits = tstencilbits;
-    break;
-  }
+		glConfig.colorBits = tcolorbits;
+		glConfig.depthBits = tdepthbits;
+		glConfig.stencilBits = tstencilbits;
+		break;
+	}
 
-	if (!visinfo)
+	if ( !visinfo )
 	{
 		ri.Printf( PRINT_ALL, "Couldn't get a visual\n" );
 		return RSERR_INVALID_MODE;
 	}
 
 	/* window attributes */
-	attr.background_pixel = BlackPixel(dpy, scrnum);
+	attr.background_pixel = BlackPixel( dpy, scrnum );
 	attr.border_pixel = 0;
 	attr.colormap = XCreateColormap( dpy, root, visinfo->visual, AllocNone );
 	attr.event_mask = X_MASK;
-	if (vidmode_active)
+	if ( vidmode_active )
 	{
 		mask = CWBackPixel | CWColormap | CWSaveUnder | CWBackingStore |
 			CWEventMask | CWOverrideRedirect;
@@ -1251,8 +1267,8 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
 	}
 	else
 	{
-    	mask = CWBackPixel | CWBorderPixel | CWColormap | CWEventMask;
-    }
+		mask = CWBackPixel | CWBorderPixel | CWColormap | CWEventMask;
+	}
 
 	win = XCreateWindow( dpy, root, 0, 0,
 		actualWidth, actualHeight,
