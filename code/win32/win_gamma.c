@@ -51,7 +51,7 @@ void WG_CheckHardwareGamma( void )
 	{
 		if ( glw_state.displayName ) 
 		{
-			hDC = CreateDC( L"DISPLAY", glw_state.displayName, NULL, NULL );		
+			hDC = CreateDC( TEXT( "DISPLAY" ), glw_state.displayName, NULL, NULL );		
 			glConfig.deviceSupportsGamma = ( GetDeviceGammaRamp( hDC, s_oldHardwareGamma ) == FALSE ) ? qfalse : qtrue;
 			DeleteDC( hDC );
 		}
@@ -176,7 +176,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	}
 
 	if ( glw_state.displayName ) {
-		hDC = CreateDC( L"DISPLAY", glw_state.displayName, NULL, NULL );
+		hDC = CreateDC( TEXT( "DISPLAY" ), glw_state.displayName, NULL, NULL );
 		ret = SetDeviceGammaRamp( hDC, table );
 		DeleteDC( hDC );
 	} else {
@@ -200,7 +200,7 @@ void WG_RestoreGamma( void )
 		HDC hDC;
 		BOOL ret;
 		if ( glw_state.displayName ) {
-			hDC = CreateDC( L"DISPLAY", glw_state.displayName, NULL, NULL );
+			hDC = CreateDC( TEXT( "DISPLAY" ), glw_state.displayName, NULL, NULL );
 			ret = SetDeviceGammaRamp( hDC, s_oldHardwareGamma );
 			DeleteDC( hDC);		
 		} else {
