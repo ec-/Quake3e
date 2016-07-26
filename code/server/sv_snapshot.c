@@ -596,50 +596,45 @@ void SV_SendClientMessages( void )
 	int		i;
 	client_t	*c;
 	qboolean	lanRate;
-	qboolean	skipSnapshot;
 
 	// send a message to each connected client
-	for(i=0; i < sv_maxclients->integer; i++)
+	for( i = 0; i < sv_maxclients->integer; i++ )
 	{
-		c = &svs.clients[i];
+		c = &svs.clients[ i ];
 		
-		if(c->state == CS_FREE)
+		if ( c->state == CS_FREE )
 			continue;		// not connected
 
-		if(*c->downloadName)
+		if ( *c->downloadName )
 			continue;		// Client is downloading, don't send snapshots
 
-		if(c->netchan.unsentFragments || c->netchan_start_queue)
+		if ( c->netchan.unsentFragments || c->netchan_start_queue )
 		{
 			c->rateDelayed = qtrue;
 			continue;		// Drop this snapshot if the packet queue is still full or delta compression will break
 		}
 
+		// 1. Local clients get snapshots every server frame
+		// 2. Remote clients get snapshots depending from rate and requested number of updates
+
+		if ( svs.time - c->lastSnapshotTime < c->snapshotMsec * com_timescale->value ) 
+		{
+			// It's not time yet
+			continue; 
+		}
+
 		lanRate = (c->netchan.remoteAddress.type == NA_LOOPBACK ||
-		     (sv_lanForceRate->integer && Sys_IsLANAddress(c->netchan.remoteAddress)));
+			(sv_lanForceRate->integer && Sys_IsLANAddress(c->netchan.remoteAddress)));
 
-		skipSnapshot = svs.time - c->lastSnapshotTime < c->snapshotMsec * com_timescale->value;
-
-		// do not force lan rate on listen server
-		if ( !com_dedicated->integer && lanRate && skipSnapshot ) {
+		if ( !lanRate && SV_RateMsec( c ) > 0 )
+		{
+			// Not enough time since last packet passed through the line
+			c->rateDelayed = qtrue;
 			continue;
 		}
 
-		if ( !lanRate ) {
-			// rate control for clients not on LAN 
-			if ( skipSnapshot )
-				continue;		// It's not time yet
-
-			if ( SV_RateMsec( c ) > 0 )
-			{
-				// Not enough time since last packet passed through the line
-				c->rateDelayed = qtrue;
-				continue;
-			}
-		}
-
 		// generate and send a new message
-		SV_SendClientSnapshot(c);
+		SV_SendClientSnapshot( c );
 		c->lastSnapshotTime = svs.time;
 		c->rateDelayed = qfalse;
 	}
