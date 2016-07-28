@@ -43,6 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="..\..\libcurl\windows\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_CURL;CURL_STATICLIB;_CRT_SECURE_NO_DEPRECATE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -68,7 +69,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib wldap32.lib opengl32.lib libcurl.lib"
+				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib wldap32.lib opengl32.lib ..\..\libcurl\windows\lib32\libcurl_a.lib"
 				OutputFile="$(OutDir)\quake3e-debug.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -131,6 +132,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="..\..\libcurl\windows\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_CURL;CURL_STATICLIB;_CRT_SECURE_NO_DEPRECATE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -156,7 +158,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib wldap32.lib opengl32.lib libcurl.lib"
+				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib wldap32.lib opengl32.lib ..\..\libcurl\windows\lib64\libcurl_a.lib"
 				OutputFile="$(OutDir)\quake3e-debug.x64.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -219,6 +221,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="..\..\libcurl\windows\include"
 				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;USE_SKIPIDLOGO;USE_CURL;CURL_STATICLIB"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
@@ -238,7 +241,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/DYNAMICBASE"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib wldap32.lib opengl32.lib libcurl.lib"
+				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib wldap32.lib opengl32.lib ..\..\libcurl\windows\lib32\libcurl_a.lib"
 				OutputFile="$(OutDir)\quake3e.exe"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(IntDir)\quake3e.pdb"
@@ -302,6 +305,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="..\..\libcurl\windows\include"
 				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;USE_SKIPIDLOGO;USE_CURL;CURL_STATICLIB"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
@@ -321,7 +325,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/DYNAMICBASE"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib wldap32.lib opengl32.lib libcurl.lib"
+				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib wldap32.lib opengl32.lib ..\..\libcurl\windows\lib64\libcurl_a.lib"
 				OutputFile="$(OutDir)\quake3e.x64.exe"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(IntDir)\quake3e.x64.pdb"
