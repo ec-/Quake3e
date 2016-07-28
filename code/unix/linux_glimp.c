@@ -800,28 +800,49 @@ void IN_DeactivateMouse( void )
 void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned char blue[256] )
 {
 #ifdef HAVE_XF86DGA
-	int size, i;
-	unsigned short r[256], g[256], b[256];
-    
-	if ( !glConfig.deviceSupportsGamma || r_ignorehwgamma->integer ) {
+	unsigned short table[3][4096];
+	int i, j;
+	int size;
+	int m, m1;
+	int shift;
+
+	if ( !glConfig.deviceSupportsGamma || r_ignorehwgamma->integer )
 		return;
-	}
+
+	XF86VidModeGetGammaRampSize( dpy, scrnum, &size );
+
+	switch ( size ) {
+		case 256: shift = 0; break;
+		case 512: shift = 1; break;
+		case 1024: shift = 2; break;
+		case 2048: shift = 3; break;
+		case 4096: shift = 4; break;
+		default: 
+			ri.Printf( PRINT_ALL, "Unsupported gamma ramp size: %d\n", size );
+		return;
+	};
+
+	m = size / 256;
+	m1 = 256 / m;
 
 	for ( i = 0; i < 256; i++ ) {
-		r[i] = ( ( ( unsigned short ) red[i] ) << 8 ) | red[i];
-		g[i] = ( ( ( unsigned short ) green[i] ) << 8 ) | green[i];
-		b[i] = ( ( ( unsigned short ) blue[i] ) << 8 ) | blue[i];
+		for ( j = 0; j < m; j++ ) {
+			table[0][i*m+j] = (unsigned short)(red[i] << 8)   | (m1 * j) | ( red[i] >> shift );
+			table[1][i*m+j] = (unsigned short)(green[i] << 8) | (m1 * j) | ( green[i] >> shift );
+			table[2][i*m+j] = (unsigned short)(blue[i] << 8)  | (m1 * j) | ( blue[i] >> shift );
+		}
 	}
 
 	// enforce constantly increasing
-	for ( i = 1 ; i < 256 ; i++ ) {
-		if ( r[i] < r[i-1] ) r[i] = r[i-1];
-		if ( g[i] < g[i-1] ) g[i] = g[i-1];
-		if ( b[i] < b[i-1] ) b[i] = b[i-1];
+	for ( j = 0 ; j < 3 ; j++ ) {
+		for ( i = 1 ; i < size ; i++ ) {
+			if ( table[j][i] < table[j][i-1] ) {
+				table[j][i] = table[j][i-1];
+			}
+		}
 	}
 
-    XF86VidModeGetGammaRampSize( dpy, scrnum, &size );
-    XF86VidModeSetGammaRamp( dpy, scrnum, size, &r[0], &g[0], &b[0] );
+    XF86VidModeSetGammaRamp( dpy, scrnum, size, table[0], table[1], table[2] );
 #endif /* HAVE_XF86DGA */
 }
 
