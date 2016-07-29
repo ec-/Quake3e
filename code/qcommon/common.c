@@ -2858,7 +2858,7 @@ void Com_Init( char *commandLine ) {
 	com_developer = Cvar_Get( "developer", "0", CVAR_TEMP );
 
 	Com_StartupVariable( "vm_rtChecks" );
-	vm_rtChecks = Cvar_Get( "vm_rtChecks", "15", CVAR_INIT | CVAR_ROM );
+	vm_rtChecks = Cvar_Get( "vm_rtChecks", "15", CVAR_INIT | CVAR_PROTECTED );
 	Cvar_SetDescription( vm_rtChecks, 
 		"Runtime checks in compiled vm code, bitmask:\n 1 - program stack overflow\n" \
 		" 2 - opcode stack overflow\n 4 - jump target range\n 8 - data read/write range" );
@@ -2897,7 +2897,8 @@ void Com_Init( char *commandLine ) {
 
 	com_maxfpsUnfocused = Cvar_Get ("com_maxfpsUnfocused", "60", CVAR_ARCHIVE);
 	com_maxfpsMinimized = Cvar_Get ("com_maxfpsMinimized", "30", CVAR_ARCHIVE);
-	com_yieldCPU = Cvar_Get ("com_yieldCPU", "2", CVAR_ARCHIVE);
+	com_yieldCPU = Cvar_Get( "com_yieldCPU", "2", CVAR_ARCHIVE );
+	Cvar_CheckRange( com_yieldCPU, 0, 1000, qtrue );
 
 	com_blood = Cvar_Get ("com_blood", "1", CVAR_ARCHIVE);
 
@@ -3249,7 +3250,7 @@ void Com_Frame( qboolean demoPlaying ) {
 		if ( com_dedicated->integer ) {
 			NET_Sleep( timeVal );
 		} else {
-			if ( timeVal > com_yieldCPU->integer && com_yieldCPU->integer >= 0 ) {
+			if ( timeVal > com_yieldCPU->integer ) {
 				timeVal = com_yieldCPU->integer;
 				NET_Sleep( timeVal );
 				Com_EventLoop();
