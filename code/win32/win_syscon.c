@@ -855,7 +855,7 @@ void Conbuf_AppendText( const char *msg )
 		} else {
 			pos = SendMessage( s_wcd.hwndBuffer, EM_LINEINDEX, n, 0 );
 			SendMessage( s_wcd.hwndBuffer, EM_SETSEL, 0, pos );
-			SendMessage( s_wcd.hwndBuffer, EM_REPLACESEL, FALSE, (LPARAM) "" );
+			SendMessage( s_wcd.hwndBuffer, EM_REPLACESEL, FALSE, (LPARAM) TEXT("") );
 		}
 	}
 
