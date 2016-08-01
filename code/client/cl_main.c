@@ -85,6 +85,8 @@ clientConnection_t	clc;
 clientStatic_t		cls;
 vm_t				*cgvm;
 
+char				cl_reconnectArgs[MAX_OSPATH];
+
 #ifdef USE_CURL
 download_t			download;
 #endif
@@ -1133,12 +1135,10 @@ CL_Reconnect_f
 ================
 */
 void CL_Reconnect_f( void ) {
-	if ( !strlen( cls.servername ) || !strcmp( cls.servername, "localhost" ) ) {
-		Com_Printf( "Can't reconnect to localhost.\n" );
+	if ( !strlen( cl_reconnectArgs ) )
 		return;
-	}
 	Cvar_Set("ui_singlePlayerActive", "0");
-	Cbuf_AddText( va("connect %s\n", cls.servername ) );
+	Cbuf_AddText( va("connect %s\n", cl_reconnectArgs ) );
 }
 
 /*
@@ -1228,6 +1228,9 @@ void CL_Connect_f( void ) {
 	Con_Close();
 
 	Q_strncpyz( cls.servername, server, sizeof( cls.servername ) );
+
+	// save arguments for reconnect
+	Q_strncpyz( cl_reconnectArgs, Cmd_Args(), sizeof( cl_reconnectArgs ) );
 
 	// copy resolved address 
 	clc.serverAddress = addr;
@@ -1924,6 +1927,8 @@ void CL_InitServerInfo( serverInfo_t *server, netadr_t *address ) {
 	server->gameType = 0;
 	server->netType = 0;
 	server->punkbuster = 0;
+	server->g_humanplayers = 0;
+	server->g_needpass = 0;
 }
 
 #define MAX_SERVERSPERPACKET	256
