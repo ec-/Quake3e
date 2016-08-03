@@ -107,6 +107,7 @@ cvar_t	*r_uiFullScreen;
 cvar_t	*r_shadows;
 cvar_t	*r_flares;
 cvar_t	*r_mode;
+cvar_t	*r_modeFullscreen;
 cvar_t	*r_nobind;
 cvar_t	*r_singleShader;
 cvar_t	*r_roundImagesDown;
@@ -281,34 +282,34 @@ vidmode_t r_vidModes[] =
 };
 static int	s_numVidModes = ARRAY_LEN( r_vidModes );
 
-qboolean R_GetModeInfo( int *width, int *height, float *windowAspect, int mode, int dw, int dh ) {
+qboolean R_GetModeInfo( int *width, int *height, float *windowAspect, int mode, const char *modeFS, int dw, int dh, qboolean fullscreen ) {
 	vidmode_t	*vm;
-	float			pixelAspect;
+	float		pixelAspect;
 
-    if ( mode < -2 ) {
+	// set dedicated fullscreen mode
+	if ( fullscreen && *modeFS )
+		mode = atoi( modeFS );
+
+    if ( mode < -2 )
         return qfalse;
-	}
-	if ( mode >= s_numVidModes ) {
+
+	if ( mode >= s_numVidModes )
 		return qfalse;
-	}
 
 	// fix unknown desktop resolution
 	if ( mode == -2 && (dw == 0 || dh == 0) ) 
-	{
 		mode = 3;
-	}
 
-	if ( mode == -2 ) {
+	if ( mode == -2 ) { // desktop resolution
 		*width = dw;
 		*height = dh;
 		pixelAspect = r_customPixelAspect->value;
-	} else if ( mode == -1 ) {
+	} else if ( mode == -1 ) { // custom resolution
 		*width = r_customwidth->integer;
 		*height = r_customheight->integer;
 		pixelAspect = r_customPixelAspect->value;
-	}	else {
-		vm = &r_vidModes[mode];
-
+	} else { // predefined resolution
+		vm = &r_vidModes[ mode ];
 		*width  = vm->width;
 		*height = vm->height;
 		pixelAspect = vm->pixelAspect;
@@ -1033,6 +1034,7 @@ void R_Register( void )
 	r_overBrightBits = ri.Cvar_Get ("r_overBrightBits", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_ignorehwgamma = ri.Cvar_Get( "r_ignorehwgamma", "0", CVAR_ARCHIVE | CVAR_LATCH);
 	r_mode = ri.Cvar_Get( "r_mode", "3", CVAR_ARCHIVE | CVAR_LATCH );
+	r_modeFullscreen = ri.Cvar_Get( "r_modeFullscreen", "", CVAR_ARCHIVE | CVAR_LATCH );
 	r_fullscreen = ri.Cvar_Get( "r_fullscreen", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_customwidth = ri.Cvar_Get( "r_customwidth", "1600", CVAR_ARCHIVE | CVAR_LATCH );
 	r_customheight = ri.Cvar_Get( "r_customheight", "1024", CVAR_ARCHIVE | CVAR_LATCH );

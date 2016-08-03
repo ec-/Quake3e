@@ -920,9 +920,9 @@ void GLimp_LogComment( char *comment )
 ** GLW_StartDriverAndSetMode
 */
 // bk001204 - prototype needed
-int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen );
+int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean fullscreen );
 
-static qboolean GLW_StartDriverAndSetMode( const char *drivername, int mode, qboolean fullscreen )
+static qboolean GLW_StartDriverAndSetMode( const char *drivername, int mode, const char *modeFS, qboolean fullscreen )
 {
 	rserr_t err;
 	
@@ -934,7 +934,7 @@ static qboolean GLW_StartDriverAndSetMode( const char *drivername, int mode, qbo
 		fullscreen = qfalse;		
 	}
 
-	err = GLW_SetMode( drivername, mode, fullscreen );
+	err = GLW_SetMode( drivername, mode, modeFS, fullscreen );
 
 	switch ( err )
 	{
@@ -958,7 +958,7 @@ static qboolean GLW_StartDriverAndSetMode( const char *drivername, int mode, qbo
 /*
 ** GLW_SetMode
 */
-int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
+int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean fullscreen )
 {
 	int attrib[] = 
 	{
@@ -1091,7 +1091,7 @@ int GLW_SetMode( const char *drivername, int mode, qboolean fullscreen )
 	ri.Printf (PRINT_ALL, "...setting mode %d:", mode );
 
 	if ( !R_GetModeInfo( &glConfig.vidWidth, &glConfig.vidHeight, &glConfig.windowAspect,
-		mode, desktop_width, desktop_height ) )
+		mode, modeFS, desktop_width, desktop_height, fullscreen ) )
 	{
 		ri.Printf( PRINT_ALL, " invalid mode\n" );
 		return RSERR_INVALID_MODE;
@@ -1558,11 +1558,11 @@ static qboolean GLW_LoadOpenGL( const char *name )
 		fullscreen = r_fullscreen->integer;
 
 		// create the window and set up the context
-		if ( !GLW_StartDriverAndSetMode( name, r_mode->integer, fullscreen ) )
+		if ( !GLW_StartDriverAndSetMode( name, r_mode->integer, r_modeFullscreen->string, fullscreen ) )
 		{
-			if (r_mode->integer != 3)
+			if ( r_mode->integer != 3 )
 			{
-				if ( !GLW_StartDriverAndSetMode( name, 3, fullscreen ) )
+				if ( !GLW_StartDriverAndSetMode( name, 3, "", fullscreen ) )
 				{
 					goto fail;
 				}

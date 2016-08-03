@@ -64,6 +64,7 @@ typedef enum {
 static void		GLW_InitExtensions( void );
 static rserr_t	GLW_SetMode( const char *drivername, 
 							 int mode, 
+							 const char *modeFS,
 							 int colorbits, 
 							 qboolean cdsFullscreen );
 
@@ -87,12 +88,13 @@ cvar_t	*r_allowSoftwareGL;		// don't abort out if the pixelformat claims softwar
 */
 static qboolean GLW_StartDriverAndSetMode( const char *drivername, 
 										   int mode, 
+										   const char *modeFS,
 										   int colorbits,
 										   qboolean cdsFullscreen )
 {
 	rserr_t err;
 
-	err = GLW_SetMode( drivername, r_mode->integer, colorbits, cdsFullscreen );
+	err = GLW_SetMode( drivername, mode, modeFS, colorbits, cdsFullscreen );
 
 	switch ( err )
 	{
@@ -568,6 +570,7 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 	int				stylebits;
 	int				x, y, w, h;
 	int				exstyle;
+	qboolean		oldFullscreen;
 
 	//
 	// register the window class if necessary
@@ -655,12 +658,16 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		}
 
 		stylebits &= ~WS_VISIBLE; // show window only after successive OpenGL initialization
+			
+		oldFullscreen = glw_state.cdsFullscreen;
+		glw_state.cdsFullscreen = cdsFullscreen;
 
 		g_wv.hWnd = CreateWindowEx( exstyle, TEXT(CLIENT_WINDOW_TITLE), TEXT(CLIENT_WINDOW_TITLE),
 			 stylebits, x, y, w, h, NULL, NULL, g_wv.hInstance,  NULL );
 
 		if ( !g_wv.hWnd )
 		{
+			glw_state.cdsFullscreen = oldFullscreen;
 			ri.Error( ERR_FATAL, "GLW_CreateWindow() - Couldn't create window" );
 			return qfalse;
 		}
@@ -850,7 +857,7 @@ void UpdateMonitorInfo( void )
 /*
 ** GLW_SetMode
 */
-static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qboolean cdsFullscreen )
+static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS, int colorbits, qboolean cdsFullscreen )
 {
 	HDC hDC;
 	const char *win_fs[] = { "W", "FS" };
@@ -867,10 +874,10 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qbo
 	//
 	hDC = GetDC( GetDesktopWindow() );
 	glw_state.desktopBitsPixel = GetDeviceCaps( hDC, BITSPIXEL );
-	glw_state.desktopWidth = GetDeviceCaps( hDC, HORZRES );
-	glw_state.desktopHeight = GetDeviceCaps( hDC, VERTRES );
-	glw_state.desktopX = 0;
-	glw_state.desktopY = 0;
+	//glw_state.desktopWidth = GetDeviceCaps( hDC, HORZRES );
+	//glw_state.desktopHeight = GetDeviceCaps( hDC, VERTRES );
+	//glw_state.desktopX = 0;
+	//glw_state.desktopY = 0;
 	ReleaseDC( GetDesktopWindow(), hDC );
 	
 	UpdateMonitorInfo();
@@ -880,12 +887,12 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qbo
 	//
 	ri.Printf( PRINT_ALL, "...setting mode %d:", mode );
 	if ( !R_GetModeInfo( &glConfig.vidWidth, &glConfig.vidHeight, &glConfig.windowAspect, 
-		mode, glw_state.desktopWidth, glw_state.desktopHeight ) )
+		mode, modeFS, glw_state.desktopWidth, glw_state.desktopHeight, cdsFullscreen ) )
 	{
 		ri.Printf( PRINT_ALL, " invalid mode\n" );
 		return RSERR_INVALID_MODE;
 	}
-	ri.Printf( PRINT_ALL, " %d %d %s\n", glConfig.vidWidth, glConfig.vidHeight, win_fs[cdsFullscreen] );
+	ri.Printf( PRINT_ALL, " %d %d %s\n", glConfig.vidWidth, glConfig.vidHeight, win_fs[ cdsFullscreen ] );
 
 	//
 	// verify desktop bit depth
@@ -987,14 +994,12 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qbo
 			{
 				ri.Printf( PRINT_ALL, "ok\n" );
 
-				if ( !GLW_CreateWindow ( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qtrue) )
+				if ( !GLW_CreateWindow( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qtrue) )
 				{
 					ri.Printf( PRINT_ALL, "...restoring display settings\n" );
 					ResetDisplaySettings();
 					return RSERR_INVALID_MODE;
 				}
-				
-				glw_state.cdsFullscreen = qtrue;
 			}
 			else
 			{
@@ -1032,8 +1037,6 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qbo
 						ResetDisplaySettings();
 						return RSERR_INVALID_MODE;
 					}
-					
-					glw_state.cdsFullscreen = qtrue;
 				}
 				else
 				{
@@ -1044,7 +1047,6 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qbo
 					ri.Printf( PRINT_ALL, "...restoring display settings\n" );
 					ResetDisplaySettings();
 					
-					glw_state.cdsFullscreen = qfalse;
 					glConfig.isFullscreen = qfalse;
 					if ( !GLW_CreateWindow( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qfalse) )
 					{
@@ -1062,7 +1064,6 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, int colorbits, qbo
 			ResetDisplaySettings();
 		}
 
-		glw_state.cdsFullscreen = qfalse;
 		if ( !GLW_CreateWindow( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qfalse ) )
 		{
 			return RSERR_INVALID_MODE;
@@ -1319,12 +1320,12 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 		cdsFullscreen = r_fullscreen->integer;
 
 		// create the window and set up the context
-		if ( !GLW_StartDriverAndSetMode( drivername, r_mode->integer, r_colorbits->integer, cdsFullscreen ) )
+		if ( !GLW_StartDriverAndSetMode( drivername, r_mode->integer, r_modeFullscreen->string, r_colorbits->integer, cdsFullscreen ) )
 		{
 			// if we're on a 24/32-bit desktop try it again but with a 16-bit desktop
 			if ( r_colorbits->integer != 16 || cdsFullscreen != qtrue || r_mode->integer != 3 )
 			{
-				if ( !GLW_StartDriverAndSetMode( drivername, 3, 16, qtrue ) )
+				if ( !GLW_StartDriverAndSetMode( drivername, 3, "", 16, qtrue ) )
 				{
 					goto fail;
 				}

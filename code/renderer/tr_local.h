@@ -997,8 +997,6 @@ extern	cvar_t	*r_facePlaneCull;		// enables culling of planar surfaces with back
 extern	cvar_t	*r_nocurves;
 extern	cvar_t	*r_showcluster;
 
-extern cvar_t	*r_mode;				// video mode
-extern cvar_t	*r_fullscreen;
 extern cvar_t	*r_gamma;
 extern cvar_t	*r_displayRefresh;		// optional display refresh option
 
@@ -1152,7 +1150,7 @@ model_t		*R_AllocModel( void );
 
 void    	R_Init( void );
 
-qboolean	R_GetModeInfo( int *width, int *height, float *windowAspect, int mode, int dw, int dh );
+qboolean	R_GetModeInfo( int *width, int *height, float *windowAspect, int mode, const char *modeFS, int dw, int dh, qboolean fullscreen );
 
 void		R_SetColorMappings( void );
 void		R_GammaCorrect( byte *buffer, int bufSize );

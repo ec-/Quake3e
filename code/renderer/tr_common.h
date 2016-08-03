@@ -97,6 +97,7 @@ extern cvar_t *r_ext_multisample;
 										// all else = error
 
 extern cvar_t *r_mode;				// video mode
+extern cvar_t *r_modeFullscreen;	// fullscreen video mode
 extern cvar_t *r_noborder;
 extern cvar_t *r_fullscreen;
 extern cvar_t *r_ignorehwgamma;		// overrides hardware gamma capabilities
