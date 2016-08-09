@@ -275,12 +275,18 @@ __asm {
 	fldcw word ptr cwCurr
 	}; // __asm
 }
+#endif
 
 
+/*
+================
+Sys_SetAffinityMask
+================
+*/
 void Sys_SetAffinityMask( int mask ) 
 {
-	static DWORD dwOldProcessMask;
-	static DWORD dwSystemMask;
+	static DWORD_PTR dwOldProcessMask;
+	static DWORD_PTR dwSystemMask;
 
 	// initialize
 	if ( !dwOldProcessMask ) {
@@ -308,7 +314,4 @@ void Sys_SetAffinityMask( int mask )
 		}
 	}
 }
-
-
-#endif
 
