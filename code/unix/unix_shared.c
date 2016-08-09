@@ -589,3 +589,15 @@ int Sys_LoadFunctionErrors( void )
 	dll_err_count = 0;
 	return result;
 }
+
+
+/*
+=================
+Sys_SetAffinityMask
+=================
+*/
+void Sys_SetAffinityMask( int mask ) 
+{
+	// TODO: implement
+}
+

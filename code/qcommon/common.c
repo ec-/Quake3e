@@ -52,6 +52,7 @@ char	*com_argv[MAX_NUM_ARGVS+1];
 jmp_buf abortframe;		// an ERR_DROP occured, exit the entire frame
 
 int		CPU_Flags = 0;
+void	(*Com_DelayFunc)( void ) = NULL;
 
 FILE *debuglogfile;
 static fileHandle_t logfile;
@@ -69,6 +70,7 @@ cvar_t	*com_maxfps;
 cvar_t	*com_maxfpsUnfocused;
 cvar_t	*com_maxfpsMinimized;
 cvar_t	*com_yieldCPU;
+cvar_t	*com_affinityMask;
 cvar_t	*com_timedemo;
 cvar_t	*com_sv_running;
 cvar_t	*com_cl_running;
@@ -378,19 +380,20 @@ Both client and server can use this, and it will
 do the apropriate things.
 =============
 */
-void Com_Quit_f( void ) {
+static char FinalMsg[ 256 ];
+static void Com_Quit( void ) {
 	// don't try to shutdown if we are in a recursive error
-	char *p = Cmd_Args( );
 	if ( !com_errorEntered ) {
 		// Some VMs might execute "quit" command directly,
 		// which would trigger an unload of active VM error.
 		// Sys_Quit will kill this process anyways, so
 		// a corrupt call stack makes no difference
 		VM_Forced_Unload_Start();
-		SV_Shutdown( p[0] ? p : "Server quit" );
+		SV_Shutdown( FinalMsg[0] ? FinalMsg : "Server quit" );
 #ifndef DEDICATED
-		CL_Shutdown( p[0] ? p : "Client quit" );
+		CL_Shutdown( FinalMsg[0] ? FinalMsg : "Client quit" );
 #endif
+		FinalMsg[ 0 ] = '\0';
 		VM_Forced_Unload_Done();
 		Com_Shutdown();
 		FS_Shutdown( qtrue );
@@ -398,6 +401,30 @@ void Com_Quit_f( void ) {
 	Sys_Quit();
 }
 
+
+/*
+=============
+Com_Quit_f
+
+Com_Quit wrapper for delayed quit
+=============
+*/
+void Com_Quit_f( void ) {
+	
+	char *p = Cmd_Args();
+	if ( *p )
+		Q_strncpyz( FinalMsg, p, sizeof( FinalMsg ) );
+	else
+		FinalMsg[0] = '\0';
+
+	if ( Com_DelayFunc ) { // something pending? quit now
+		Com_DPrintf( "...perform quit\n" );
+		Com_Quit();
+	} else {
+		Com_DPrintf( "...delay quit\n" );
+		Com_DelayFunc = Com_Quit;
+	}
+}
 
 
 /*
@@ -2899,6 +2926,8 @@ void Com_Init( char *commandLine ) {
 	com_maxfpsMinimized = Cvar_Get ("com_maxfpsMinimized", "30", CVAR_ARCHIVE);
 	com_yieldCPU = Cvar_Get( "com_yieldCPU", "2", CVAR_ARCHIVE );
 	Cvar_CheckRange( com_yieldCPU, 0, 1000, qtrue );
+	com_affinityMask = Cvar_Get( "com_affinityMask", "0", CVAR_ARCHIVE );
+	com_affinityMask->modified = qtrue;
 
 	com_blood = Cvar_Get ("com_blood", "1", CVAR_ARCHIVE);
 
@@ -3209,6 +3238,12 @@ void Com_Frame( qboolean demoPlaying ) {
 		com_viewlog->modified = qfalse;
 	}
 
+	if ( com_affinityMask->modified ) {
+		Cvar_Get( "com_affinityMask", "0", CVAR_ARCHIVE );
+		com_affinityMask->modified = qfalse;
+		Sys_SetAffinityMask( com_affinityMask->integer );
+	}
+
 	//
 	// main event loop
 	//
@@ -3383,6 +3418,12 @@ void Com_Frame( qboolean demoPlaying ) {
 		c_brush_traces = 0;
 		c_patch_traces = 0;
 		c_pointcontents = 0;
+	}
+
+	//execute delayed function
+	if ( Com_DelayFunc ) {
+		Com_DelayFunc();
+		Com_DelayFunc = NULL;
 	}
 
 	com_frameNumber++;

@@ -1363,7 +1363,7 @@ void CL_ResetPureClientAtServer( void ) {
 
 /*
 =================
-CL_Vid_Restart_f
+CL_Vid_Restart
 
 Restart the video subsystem
 
@@ -1371,13 +1371,7 @@ we also have to reload the UI and CGame because the renderer
 doesn't know what graphics to reload
 =================
 */
-void CL_Vid_Restart_f( void ) {
-
-	if ( cls.lastVidRestart ) // hack for OSP mod
-	{
-		if ( abs(cls.lastVidRestart - Sys_Milliseconds()) < 500 )
-			return; // do not allow vid restart righ after cgame init
-	}
+static void CL_Vid_Restart( void ) {
 
 	// Settings may have changed so stop recording now
 	if( CL_VideoRecording( ) ) {
@@ -1436,6 +1430,32 @@ void CL_Vid_Restart_f( void ) {
 		CL_SendPureChecksums();
 	}
 }
+
+
+/*
+=================
+CL_Vid_Restart_f
+
+Wrapper for CL_Vid_Restart
+=================
+*/
+void CL_Vid_Restart_f( void ) {
+
+	 // hack for OSP mod: do not allow vid restart right after cgame init
+	if ( cls.lastVidRestart )
+		if ( abs( cls.lastVidRestart - Sys_Milliseconds() ) < 500 )
+			return;
+
+	if ( Com_DelayFunc ) {
+		Com_DPrintf( "...perform vid_restart\n" );
+		CL_Vid_Restart(); // something pending, direct restart
+	} else {
+		Com_DPrintf( "...delay vid_restart\n" );
+		Com_DelayFunc = CL_Vid_Restart; // queue restart out of rendering cycle
+		
+	}
+}
+
 
 /*
 =================
@@ -3172,7 +3192,6 @@ void CL_Shutdown( const char *finalmsg ) {
 
 	Com_Memset( &cls, 0, sizeof( cls ) );
 	Key_SetCatcher( 0 );
-
 	Com_Printf( "-----------------------\n" );
 }
 

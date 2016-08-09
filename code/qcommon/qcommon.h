@@ -828,6 +828,7 @@ void 		QDECL Com_DPrintf( const char *fmt, ... ) __attribute__ ((format (printf,
 void 		QDECL Com_Error( errorParm_t code, const char *fmt, ... ) __attribute__ ((format (printf, 2, 3)));
 void 		Com_Quit_f( void );
 void		Com_GameRestart( int checksumFeed, qboolean clientRestart );
+void		(*Com_DelayFunc)( void );
 
 int			Com_EventLoop( void );
 int			Com_Milliseconds( void );	// will be journaled properly
@@ -873,6 +874,7 @@ extern	cvar_t	*sv_packetdelay;
 extern	cvar_t	*vm_rtChecks;
 
 extern	cvar_t	*com_yieldCPU;
+extern	cvar_t	*com_affinityMask;
 
 
 // com_speeds times
@@ -1107,6 +1109,8 @@ void	Sys_EndPrint( void );
 
 // dedicated console status, win32-only at the moment
 void	QDECL Sys_SetStatus( const char *format, ...) __attribute__ ((format (printf, 1, 2)));
+
+void Sys_SetAffinityMask( int mask );
 
 // Sys_Milliseconds should only be used for profiling purposes,
 // any game related timing information should come from event timestamps
