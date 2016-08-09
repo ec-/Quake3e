@@ -282,12 +282,14 @@ void Sys_SetAffinityMask( int mask )
 	static DWORD dwOldProcessMask;
 	static DWORD dwSystemMask;
 
+	// initialize
 	if ( !dwOldProcessMask ) {
 		dwSystemMask = 0x1;
 		dwOldProcessMask = 0x1;
 		GetProcessAffinityMask( GetCurrentProcess(), &dwOldProcessMask, &dwSystemMask );
 	}
 
+	 // set default mask
 	if ( !mask ) {
 		if ( dwOldProcessMask )
 			mask = dwOldProcessMask;

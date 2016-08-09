@@ -2901,7 +2901,7 @@ void Com_Init( char *commandLine ) {
 	com_yieldCPU = Cvar_Get( "com_yieldCPU", "2", CVAR_ARCHIVE );
 	Cvar_CheckRange( com_yieldCPU, 0, 1000, qtrue );
 	com_affinityMask = Cvar_Get( "com_affinityMask", "0", CVAR_ARCHIVE );
-	com_affinityMask->modified = qtrue;
+	com_affinityMask->modified = qfalse;
 
 	com_blood = Cvar_Get ("com_blood", "1", CVAR_ARCHIVE);
 
@@ -2967,6 +2967,9 @@ void Com_Init( char *commandLine ) {
 	}
 	Com_Printf( "%s\n", Cvar_VariableString( "sys_cpustring" ) );
 #endif
+
+	if ( com_affinityMask->integer )
+		Sys_SetAffinityMask( com_affinityMask->integer );
 
 	// Pick a random port value
 	Com_RandomBytes( (byte*)&qport, sizeof(int) );
