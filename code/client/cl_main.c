@@ -1446,7 +1446,7 @@ void CL_Vid_Restart_f( void ) {
 		if ( abs( cls.lastVidRestart - Sys_Milliseconds() ) < 500 )
 			return;
 
-	if ( Com_DelayFunc ) {
+	if ( Com_DelayFunc && Com_DelayFunc != CL_Vid_Restart ) {
 		Com_DPrintf( "...perform vid_restart\n" );
 		CL_Vid_Restart(); // something pending, direct restart
 	} else {

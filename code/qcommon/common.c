@@ -380,8 +380,8 @@ Both client and server can use this, and it will
 do the apropriate things.
 =============
 */
-static char FinalMsg[ 256 ];
-static void Com_Quit( void ) {
+void Com_Quit_f( void ) {
+	char *p = Cmd_Args();
 	// don't try to shutdown if we are in a recursive error
 	if ( !com_errorEntered ) {
 		// Some VMs might execute "quit" command directly,
@@ -389,41 +389,15 @@ static void Com_Quit( void ) {
 		// Sys_Quit will kill this process anyways, so
 		// a corrupt call stack makes no difference
 		VM_Forced_Unload_Start();
-		SV_Shutdown( FinalMsg[0] ? FinalMsg : "Server quit" );
+		SV_Shutdown( p[0] ? p : "Server quit" );
 #ifndef DEDICATED
-		CL_Shutdown( FinalMsg[0] ? FinalMsg : "Client quit" );
+		CL_Shutdown( p[0] ? p : "Client quit" );
 #endif
-		FinalMsg[ 0 ] = '\0';
 		VM_Forced_Unload_Done();
 		Com_Shutdown();
 		FS_Shutdown( qtrue );
 	}
 	Sys_Quit();
-}
-
-
-/*
-=============
-Com_Quit_f
-
-Com_Quit wrapper for delayed quit
-=============
-*/
-void Com_Quit_f( void ) {
-	
-	char *p = Cmd_Args();
-	if ( *p )
-		Q_strncpyz( FinalMsg, p, sizeof( FinalMsg ) );
-	else
-		FinalMsg[0] = '\0';
-
-	if ( Com_DelayFunc ) { // something pending? quit now
-		Com_DPrintf( "...perform quit\n" );
-		Com_Quit();
-	} else {
-		Com_DPrintf( "...delay quit\n" );
-		Com_DelayFunc = Com_Quit;
-	}
 }
 
 
