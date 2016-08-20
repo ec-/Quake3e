@@ -603,7 +603,7 @@ void Sys_SetAffinityMask( int mask )
 	static qboolean inited = qfalse;
 	static cpu_set_t old_set;
 	cpu_set_t set;
-	int cpu, n;
+	int cpu;
 	
 	if ( !inited )
 	{
@@ -618,17 +618,17 @@ void Sys_SetAffinityMask( int mask )
 		}
 	}
 
-	CPU_ZERO( &set );
 	if ( mask == 0 ) // restore default set
 	{
-		n = CPU_COUNT( &old_set );
-		for ( cpu = 0; cpu < n; cpu++ ) {
-			CPU_SET( cpu, &set );
-			mask |= (1 << cpu);
+		memcpy( &set, &old_set, sizeof( set ) );
+		for ( cpu = 0; cpu < sizeof( mask ) * 8; cpu++ ) {
+			if ( CPU_ISSET( cpu, &set ) )
+				mask |= (1 << cpu);
 		}
 	}
 	else
 	{
+		CPU_ZERO( &set );
 		for ( cpu = 0; cpu < sizeof( mask ) * 8; cpu++ )
 		{
 			if ( mask & (1 << cpu) )
@@ -636,7 +636,7 @@ void Sys_SetAffinityMask( int mask )
 		}
 	}
 
-	if ( sched_setaffinity( getpid(), sizeof( set ), &set ) != -1 ) {
+	if ( sched_setaffinity( getpid(), sizeof( set ), &set ) == 0 ) {
 		Com_Printf( "setting CPU affinity mask to %i\n", mask );
 	} else {
 		Com_Printf( S_COLOR_YELLOW "error setting CPU affinity mask %i\n", mask );
