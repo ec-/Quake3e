@@ -19,6 +19,8 @@ along with Quake III Arena source code; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
+#define _GNU_SOURCE
+#include <sched.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -583,7 +585,7 @@ void *Sys_LoadFunction( void *handle, const char *name )
 Sys_LoadFunctionErrors
 =================
 */
-int Sys_LoadFunctionErrors( void ) 
+int Sys_LoadFunctionErrors( void )
 {
 	int result = dll_err_count;
 	dll_err_count = 0;
@@ -596,8 +598,47 @@ int Sys_LoadFunctionErrors( void )
 Sys_SetAffinityMask
 =================
 */
-void Sys_SetAffinityMask( int mask ) 
+void Sys_SetAffinityMask( int mask )
 {
-	// TODO: implement
-}
+	static qboolean inited = qfalse;
+	static cpu_set_t old_set;
+	cpu_set_t set;
+	int cpu, n;
+	
+	if ( !inited )
+	{
+		if ( sched_getaffinity( getpid(), sizeof( old_set ), &old_set ) == 0 )
+		{
+			inited = qtrue;
+		}
+		else
+		{
+			Com_Printf( S_COLOR_YELLOW "sched_getaffinity() error.\n" );
+			return;
+		}
+	}
 
+	CPU_ZERO( &set );
+	if ( mask == 0 ) // restore default set
+	{
+		n = CPU_COUNT( &old_set );
+		for ( cpu = 0; cpu < n; cpu++ ) {
+			CPU_SET( cpu, &set );
+			mask |= (1 << cpu);
+		}
+	}
+	else
+	{
+		for ( cpu = 0; cpu < sizeof( mask ) * 8; cpu++ )
+		{
+			if ( mask & (1 << cpu) )
+				CPU_SET( cpu, &set );
+		}
+	}
+
+	if ( sched_setaffinity( getpid(), sizeof( set ), &set ) != -1 ) {
+		Com_Printf( "setting CPU affinity mask to %i\n", mask );
+	} else {
+		Com_Printf( S_COLOR_YELLOW "error setting CPU affinity mask %i\n", mask );
+	}
+}

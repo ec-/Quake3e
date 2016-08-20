@@ -306,12 +306,7 @@ void Sys_SetAffinityMask( int mask )
 	if ( SetProcessAffinityMask( GetCurrentProcess(), mask ) ) {
 		Com_Printf( "setting CPU affinity mask to %i\n", mask );
 	} else {
-		if ( (unsigned)mask != dwOldProcessMask ) {
-			Com_Printf( S_COLOR_YELLOW "bad CPU affinity mask %i, restoring to %i\n", mask, dwOldProcessMask );
-			SetProcessAffinityMask( GetCurrentProcess(), dwOldProcessMask );
-		} else {
-			Com_Printf( S_COLOR_YELLOW "error setting CPU affinity mask %i\n", mask, dwOldProcessMask );
-		}
+		Com_Printf( S_COLOR_YELLOW "error setting CPU affinity mask %i\n", mask );
 	}
 }
 
