@@ -401,11 +401,11 @@ void R_AddBrushModelSurfaces ( trRefEntity_t *ent ) {
 R_RecursiveWorldNode
 ================
 */
-static void R_RecursiveWorldNode( mnode_t *node, int planeBits, int dlightBits, int pshadowBits ) {
+static void R_RecursiveWorldNode( mnode_t *node, uint32_t planeBits, uint32_t dlightBits, uint32_t pshadowBits ) {
 
 	do {
-		int			newDlights[2];
-		unsigned int newPShadows[2];
+		uint32_t	newDlights[2];
+		uint32_t	newPShadows[2];
 
 		// if the node wasn't marked as potentially visible, exit
 		// pvs is skipped for depth shadows
@@ -761,7 +761,7 @@ R_AddWorldSurfaces
 =============
 */
 void R_AddWorldSurfaces (void) {
-	int planeBits, dlightBits, pshadowBits;
+	uint32_t planeBits, dlightBits, pshadowBits;
 
 	if ( !r_drawworld->integer ) {
 		return;
@@ -799,12 +799,12 @@ void R_AddWorldSurfaces (void) {
 	}
 	else if ( !(tr.viewParms.flags & VPF_SHADOWMAP) )
 	{
-		dlightBits = MASK_32BITS( tr.refdef.num_dlights );
-		pshadowBits = MASK_32BITS( tr.refdef.num_pshadows );
+		dlightBits = (1ULL << tr.refdef.num_dlights) - 1;
+		pshadowBits = (1ULL << tr.refdef.num_pshadows) - 1;
 	}
 	else
 	{
-		dlightBits = MASK_32BITS( tr.refdef.num_dlights );
+		dlightBits = (1ULL << tr.refdef.num_dlights ) - 1;
 		pshadowBits = 0;
 	}
 

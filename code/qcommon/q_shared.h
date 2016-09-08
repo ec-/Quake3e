@@ -1326,7 +1326,4 @@ typedef enum _flag_status {
 #define LERP( a, b, w ) ( ( a ) * ( 1.0f - ( w ) ) + ( b ) * ( w ) )
 #define LUMA( red, green, blue ) ( 0.2126f * ( red ) + 0.7152f * ( green ) + 0.0722f * ( blue ) )
 
-//#define MASK_32BITS(shift) ( ( ( (1 << (shift)) )  & ~( (((shift) & 0xFFFFFFE0 ) >> 5) << shift ) ) - 1 )
-#define MASK_32BITS(shift) ( ( ( (1 << (shift)) ) & ~( ((shift) & 32) >> 5 ) ) - 1 )
-
 #endif	// __Q_SHARED_H
