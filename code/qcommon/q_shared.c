@@ -328,7 +328,7 @@ void COM_ParseError( char *format, ... )
 	static char string[4096];
 
 	va_start( argptr, format );
-	vsnprintf( string, sizeof( string ), format, argptr );
+	Q_vsnprintf (string, sizeof(string), format, argptr);
 	va_end( argptr );
 
 	Com_Printf( "ERROR: %s, line %d: %s\n", com_parsename, COM_GetCurrentParseLine(), string );
@@ -341,7 +341,7 @@ void COM_ParseWarning( char *format, ... )
 	static char string[4096];
 
 	va_start( argptr, format );
-	vsnprintf( string, sizeof( string ), format, argptr );
+	Q_vsnprintf (string, sizeof(string), format, argptr);
 	va_end( argptr );
 
 	Com_Printf( "WARNING: %s, line %d: %s\n", com_parsename, COM_GetCurrentParseLine(), string );

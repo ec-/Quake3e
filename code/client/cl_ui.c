@@ -1099,6 +1099,8 @@ void CL_ShutdownUI( void ) {
 CL_InitUI
 ====================
 */
+#define UI_OLD_API_VERSION	4
+
 void CL_InitUI( void ) {
 	int		v;
 	vmInterpret_t		interpret;

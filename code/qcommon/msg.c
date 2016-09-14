@@ -101,12 +101,9 @@ bit functions
 =============================================================================
 */
 
-int	overflows;
-
 // negative bit values include signs
 void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 	int	i;
-//	FILE*	fp;
 
 	oldsize += bits;
 
@@ -120,50 +117,28 @@ void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 		Com_Error( ERR_DROP, "MSG_WriteBits: bad bits %i", bits );
 	}
 
-	// check for overflows
-	if ( bits != 32 ) {
-		if ( bits > 0 ) {
-			if ( value > ( ( 1 << bits ) - 1 ) || value < 0 ) {
-				overflows++;
-			}
-		} else {
-			int	r;
-
-			r = 1 << (bits-1);
-
-			if ( value >  r - 1 || value < -r ) {
-				overflows++;
-			}
-		}
-	}
 	if ( bits < 0 ) {
 		bits = -bits;
 	}
 	if (msg->oob) {
-		if(bits==8)
-		{
+		if ( bits == 8 ) {
 			msg->data[msg->cursize] = value;
 			msg->cursize += 1;
 			msg->bit += 8;
-		}
-		else if(bits==16)
-		{
+		} else if ( bits == 16 ) {
 			short temp = value;
 			
 			CopyLittleShort(&msg->data[msg->cursize], &temp);
 			msg->cursize += 2;
 			msg->bit += 16;
-		}
-		else if(bits==32)
-		{
+		} else if ( bits==32 ) {
 			CopyLittleLong(&msg->data[msg->cursize], &value);
 			msg->cursize += 4;
 			msg->bit += 32;
-		}
-		else 
+		} else {
 			Com_Error(ERR_DROP, "can't write %d bits", bits);
+		}
 	} else {
-//		fp = Sys_FOpen("c:\\netchan.bin", "a");
 		value &= (0xffffffff>>(32-bits));
 		if (bits&7) {
 			int nbits;
@@ -176,13 +151,11 @@ void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 		}
 		if (bits) {
 			for(i=0;i<bits;i+=8) {
-//				fwrite(bp, 1, 1, fp);
 				Huff_offsetTransmit (&msgHuff.compressor, (value&0xff), msg->data, &msg->bit);
 				value = (value>>8);
 			}
 		}
 		msg->cursize = (msg->bit>>3)+1;
-//		fclose(fp);
 	}
 }
 
@@ -236,7 +209,7 @@ int MSG_ReadBits( msg_t *msg, int bits ) {
 			bits = bits - nbits;
 		}
 		if (bits) {
-//			fp = Sys_FOpen("c:\\netchan.bin", "a");
+//			fp = fopen("c:\\netchan.bin", "a");
 			for(i=0;i<bits;i+=8) {
 				Huff_offsetReceive (msgHuff.decompressor.tree, &get, msg->data, &msg->bit);
 //				fwrite(&get, 1, 1, fp);

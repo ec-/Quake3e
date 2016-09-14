@@ -24,7 +24,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define __UI_PUBLIC_H__
 
 #define UI_API_VERSION	6
-#define UI_OLD_API_VERSION	4
 
 typedef struct {
 	connstate_t		connState;
