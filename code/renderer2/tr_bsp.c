@@ -105,11 +105,7 @@ static	void R_ColorShiftLightingBytes( byte in[4], byte out[4] ) {
 	int		shift, r, g, b;
 
 	// shift the color data based on overbright range
-#if defined(USE_OVERBRIGHT)
 	shift = r_mapOverBrightBits->integer - tr.overbrightBits;
-#else
-	shift = 0;
-#endif
 
 	// shift the data based on overbright range
 	r = in[0] << shift;
@@ -144,9 +140,7 @@ static void R_ColorShiftLightingFloats(float in[4], float out[4], float scale )
 {
 	float	r, g, b;
 
-#if defined(USE_OVERBRIGHT)
 	scale *= 1 << (r_mapOverBrightBits->integer - tr.overbrightBits);
-#endif
 
 	r = in[0] * scale;
 	g = in[1] * scale;
@@ -667,6 +661,66 @@ static shader_t *ShaderForShaderNum( int shaderNum, int lightmapNum ) {
 	return shader;
 }
 
+void LoadDrawVertToSrfVert(srfVert_t *s, drawVert_t *d, int realLightmapNum, float hdrVertColors[3], vec3_t *bounds)
+{
+	vec4_t v;
+
+	s->xyz[0] = LittleFloat(d->xyz[0]);
+	s->xyz[1] = LittleFloat(d->xyz[1]);
+	s->xyz[2] = LittleFloat(d->xyz[2]);
+
+	if (bounds)
+		AddPointToBounds(s->xyz, bounds[0], bounds[1]);
+
+	s->st[0] = LittleFloat(d->st[0]);
+	s->st[1] = LittleFloat(d->st[1]);
+
+	if (realLightmapNum >= 0)
+	{
+		s->lightmap[0] = FatPackU(LittleFloat(d->lightmap[0]), realLightmapNum);
+		s->lightmap[1] = FatPackV(LittleFloat(d->lightmap[1]), realLightmapNum);
+	}
+	else
+	{
+		s->lightmap[0] = LittleFloat(d->lightmap[0]);
+		s->lightmap[1] = LittleFloat(d->lightmap[1]);
+	}
+
+	v[0] = LittleFloat(d->normal[0]);
+	v[1] = LittleFloat(d->normal[1]);
+	v[2] = LittleFloat(d->normal[2]);
+
+	R_VaoPackNormal(s->normal, v);
+
+	if (hdrVertColors)
+	{
+		v[0] = hdrVertColors[0];
+		v[1] = hdrVertColors[1];
+		v[2] = hdrVertColors[2];
+	}
+	else
+	{
+		//hack: convert LDR vertex colors to HDR
+		if (r_hdr->integer)
+		{
+			v[0] = MAX(d->color[0], 0.499f);
+			v[1] = MAX(d->color[1], 0.499f);
+			v[2] = MAX(d->color[2], 0.499f);
+		}
+		else
+		{
+			v[0] = d->color[0];
+			v[1] = d->color[1];
+			v[2] = d->color[2];
+		}
+
+	}
+	v[3] = d->color[3] / 255.0f;
+
+	R_ColorShiftLightingFloats(v, s->vertexColors, 1.0f / 255.0f);
+}
+
+
 /*
 ===============
 ParseFace
@@ -714,50 +768,7 @@ static void ParseFace( dsurface_t *ds, drawVert_t *verts, float *hdrVertColors, 
 	ClearBounds(surf->cullinfo.bounds[0], surf->cullinfo.bounds[1]);
 	verts += LittleLong(ds->firstVert);
 	for(i = 0; i < numVerts; i++)
-	{
-		vec4_t color;
-
-		for(j = 0; j < 3; j++)
-		{
-			cv->verts[i].xyz[j] = LittleFloat(verts[i].xyz[j]);
-			cv->verts[i].normal[j] = LittleFloat(verts[i].normal[j]);
-		}
-		AddPointToBounds(cv->verts[i].xyz, surf->cullinfo.bounds[0], surf->cullinfo.bounds[1]);
-		for(j = 0; j < 2; j++)
-		{
-			cv->verts[i].st[j] = LittleFloat(verts[i].st[j]);
-			//cv->verts[i].lightmap[j] = LittleFloat(verts[i].lightmap[j]);
-		}
-		cv->verts[i].lightmap[0] = FatPackU(LittleFloat(verts[i].lightmap[0]), realLightmapNum);
-		cv->verts[i].lightmap[1] = FatPackV(LittleFloat(verts[i].lightmap[1]), realLightmapNum);
-
-		if (hdrVertColors)
-		{
-			color[0] = hdrVertColors[(ds->firstVert + i) * 3    ];
-			color[1] = hdrVertColors[(ds->firstVert + i) * 3 + 1];
-			color[2] = hdrVertColors[(ds->firstVert + i) * 3 + 2];
-		}
-		else
-		{
-			//hack: convert LDR vertex colors to HDR
-			if (r_hdr->integer)
-			{
-				color[0] = MAX(verts[i].color[0], 0.499f);
-				color[1] = MAX(verts[i].color[1], 0.499f);
-				color[2] = MAX(verts[i].color[2], 0.499f);
-			}
-			else
-			{
-				color[0] = verts[i].color[0];
-				color[1] = verts[i].color[1];
-				color[2] = verts[i].color[2];
-			}
-
-		}
-		color[3] = verts[i].color[3] / 255.0f;
-
-		R_ColorShiftLightingFloats( color, cv->verts[i].vertexColors, 1.0f / 255.0f );
-	}
+		LoadDrawVertToSrfVert(&cv->verts[i], &verts[i], realLightmapNum, hdrVertColors ? hdrVertColors + (ds->firstVert + i) * 3 : NULL, surf->cullinfo.bounds);
 
 	// copy triangles
 	badTriangles = 0;
@@ -798,7 +809,6 @@ static void ParseFace( dsurface_t *ds, drawVert_t *verts, float *hdrVertColors, 
 
 	surf->data = (surfaceType_t *)cv;
 
-#ifdef USE_VERT_TANGENT_SPACE
 	// Calculate tangent spaces
 	{
 		srfVert_t      *dv[3];
@@ -812,7 +822,6 @@ static void ParseFace( dsurface_t *ds, drawVert_t *verts, float *hdrVertColors, 
 			R_CalcTangentVectors(dv);
 		}
 	}
-#endif
 }
 
 
@@ -822,8 +831,8 @@ ParseMesh
 ===============
 */
 static void ParseMesh ( dsurface_t *ds, drawVert_t *verts, float *hdrVertColors, msurface_t *surf ) {
-	srfBspSurface_t	*grid;
-	int				i, j;
+	srfBspSurface_t	*grid = (srfBspSurface_t *)surf->data;
+	int				i;
 	int				width, height, numPoints;
 	srfVert_t points[MAX_PATCH_SIZE*MAX_PATCH_SIZE];
 	vec3_t			bounds[2];
@@ -858,53 +867,10 @@ static void ParseMesh ( dsurface_t *ds, drawVert_t *verts, float *hdrVertColors,
 	verts += LittleLong( ds->firstVert );
 	numPoints = width * height;
 	for(i = 0; i < numPoints; i++)
-	{
-		vec4_t color;
-
-		for(j = 0; j < 3; j++)
-		{
-			points[i].xyz[j] = LittleFloat(verts[i].xyz[j]);
-			points[i].normal[j] = LittleFloat(verts[i].normal[j]);
-		}
-
-		for(j = 0; j < 2; j++)
-		{
-			points[i].st[j] = LittleFloat(verts[i].st[j]);
-			//points[i].lightmap[j] = LittleFloat(verts[i].lightmap[j]);
-		}
-		points[i].lightmap[0] = FatPackU(LittleFloat(verts[i].lightmap[0]), realLightmapNum);
-		points[i].lightmap[1] = FatPackV(LittleFloat(verts[i].lightmap[1]), realLightmapNum);
-
-		if (hdrVertColors)
-		{
-			color[0] = hdrVertColors[(ds->firstVert + i) * 3    ];
-			color[1] = hdrVertColors[(ds->firstVert + i) * 3 + 1];
-			color[2] = hdrVertColors[(ds->firstVert + i) * 3 + 2];
-		}
-		else
-		{
-			//hack: convert LDR vertex colors to HDR
-			if (r_hdr->integer)
-			{
-				color[0] = MAX(verts[i].color[0], 0.499f);
-				color[1] = MAX(verts[i].color[1], 0.499f);
-				color[2] = MAX(verts[i].color[2], 0.499f);
-			}
-			else
-			{
-				color[0] = verts[i].color[0];
-				color[1] = verts[i].color[1];
-				color[2] = verts[i].color[2];
-			}
-		}
-		color[3] = verts[i].color[3] / 255.0f;
-
-		R_ColorShiftLightingFloats( color, points[i].vertexColors, 1.0f / 255.0f );
-	}
+		LoadDrawVertToSrfVert(&points[i], &verts[i], realLightmapNum, hdrVertColors ? hdrVertColors + (ds->firstVert + i) * 3 : NULL, NULL);
 
 	// pre-tesseleate
-	grid = R_SubdividePatchToGrid( width, height, points );
-	surf->data = (surfaceType_t *)grid;
+	R_SubdividePatchToGrid( grid, width, height, points );
 
 	// copy the level of detail origin, which is the center
 	// of the group of all curves that must subdivide the same
@@ -917,6 +883,12 @@ static void ParseMesh ( dsurface_t *ds, drawVert_t *verts, float *hdrVertColors,
 	VectorScale( bounds[1], 0.5f, grid->lodOrigin );
 	VectorSubtract( bounds[0], grid->lodOrigin, tmpVec );
 	grid->lodRadius = VectorLength( tmpVec );
+
+	surf->cullinfo.type = CULLINFO_BOX | CULLINFO_SPHERE;
+	VectorCopy(grid->cullBounds[0], surf->cullinfo.bounds[0]);
+	VectorCopy(grid->cullBounds[1], surf->cullinfo.bounds[1]);
+	VectorCopy(grid->cullOrigin, surf->cullinfo.localOrigin);
+	surf->cullinfo.radius = grid->cullRadius;
 }
 
 /*
@@ -959,49 +931,7 @@ static void ParseTriSurf( dsurface_t *ds, drawVert_t *verts, float *hdrVertColor
 	ClearBounds(surf->cullinfo.bounds[0], surf->cullinfo.bounds[1]);
 	verts += LittleLong(ds->firstVert);
 	for(i = 0; i < numVerts; i++)
-	{
-		vec4_t color;
-
-		for(j = 0; j < 3; j++)
-		{
-			cv->verts[i].xyz[j] = LittleFloat(verts[i].xyz[j]);
-			cv->verts[i].normal[j] = LittleFloat(verts[i].normal[j]);
-		}
-
-		AddPointToBounds( cv->verts[i].xyz, surf->cullinfo.bounds[0], surf->cullinfo.bounds[1] );
-
-		for(j = 0; j < 2; j++)
-		{
-			cv->verts[i].st[j] = LittleFloat(verts[i].st[j]);
-			cv->verts[i].lightmap[j] = LittleFloat(verts[i].lightmap[j]);
-		}
-
-		if (hdrVertColors)
-		{
-			color[0] = hdrVertColors[(ds->firstVert + i) * 3    ];
-			color[1] = hdrVertColors[(ds->firstVert + i) * 3 + 1];
-			color[2] = hdrVertColors[(ds->firstVert + i) * 3 + 2];
-		}
-		else
-		{
-			//hack: convert LDR vertex colors to HDR
-			if (r_hdr->integer)
-			{
-				color[0] = MAX(verts[i].color[0], 0.499f);
-				color[1] = MAX(verts[i].color[1], 0.499f);
-				color[2] = MAX(verts[i].color[2], 0.499f);
-			}
-			else
-			{
-				color[0] = verts[i].color[0];
-				color[1] = verts[i].color[1];
-				color[2] = verts[i].color[2];
-			}
-		}
-		color[3] = verts[i].color[3] / 255.0f;
-
-		R_ColorShiftLightingFloats( color, cv->verts[i].vertexColors, 1.0f / 255.0f );
-	}
+		LoadDrawVertToSrfVert(&cv->verts[i], &verts[i], -1, hdrVertColors ? hdrVertColors + (ds->firstVert + i) * 3 : NULL, surf->cullinfo.bounds);
 
 	// copy triangles
 	badTriangles = 0;
@@ -1031,7 +961,6 @@ static void ParseTriSurf( dsurface_t *ds, drawVert_t *verts, float *hdrVertColor
 		cv->numIndexes -= badTriangles * 3;
 	}
 
-#ifdef USE_VERT_TANGENT_SPACE
 	// Calculate tangent spaces
 	{
 		srfVert_t      *dv[3];
@@ -1045,7 +974,6 @@ static void ParseTriSurf( dsurface_t *ds, drawVert_t *verts, float *hdrVertColor
 			R_CalcTangentVectors(dv);
 		}
 	}
-#endif
 }
 
 /*
@@ -1077,6 +1005,8 @@ static void ParseFlare( dsurface_t *ds, drawVert_t *verts, msurface_t *surf, int
 		flare->color[i] = LittleFloat( ds->lightmapVecs[0][i] );
 		flare->normal[i] = LittleFloat( ds->lightmapVecs[2][i] );
 	}
+
+	surf->cullinfo.type = CULLINFO_NONE;
 }
 
 
@@ -1321,7 +1251,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 					// insert column into grid2 right after after column l
 					if (m) row = grid2->height-1;
 					else row = 0;
-					grid2 = R_GridInsertColumn( grid2, l+1, row,
+					R_GridInsertColumn( grid2, l+1, row,
 									grid1->verts[k + 1 + offset1].xyz, grid1->widthLodError[k+1]);
 					grid2->lodStitched = qfalse;
 					s_worldData.surfaces[grid2num].data = (void *) grid2;
@@ -1365,7 +1295,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 					// insert row into grid2 right after after row l
 					if (m) column = grid2->width-1;
 					else column = 0;
-					grid2 = R_GridInsertRow( grid2, l+1, column,
+					R_GridInsertRow( grid2, l+1, column,
 										grid1->verts[k + 1 + offset1].xyz, grid1->widthLodError[k+1]);
 					grid2->lodStitched = qfalse;
 					s_worldData.surfaces[grid2num].data = (void *) grid2;
@@ -1418,7 +1348,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 					// insert column into grid2 right after after column l
 					if (m) row = grid2->height-1;
 					else row = 0;
-					grid2 = R_GridInsertColumn( grid2, l+1, row,
+					R_GridInsertColumn( grid2, l+1, row,
 									grid1->verts[grid1->width * (k + 1) + offset1].xyz, grid1->heightLodError[k+1]);
 					grid2->lodStitched = qfalse;
 					s_worldData.surfaces[grid2num].data = (void *) grid2;
@@ -1462,7 +1392,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 					// insert row into grid2 right after after row l
 					if (m) column = grid2->width-1;
 					else column = 0;
-					grid2 = R_GridInsertRow( grid2, l+1, column,
+					R_GridInsertRow( grid2, l+1, column,
 									grid1->verts[grid1->width * (k + 1) + offset1].xyz, grid1->heightLodError[k+1]);
 					grid2->lodStitched = qfalse;
 					s_worldData.surfaces[grid2num].data = (void *) grid2;
@@ -1516,7 +1446,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 					// insert column into grid2 right after after column l
 					if (m) row = grid2->height-1;
 					else row = 0;
-					grid2 = R_GridInsertColumn( grid2, l+1, row,
+					R_GridInsertColumn( grid2, l+1, row,
 										grid1->verts[k - 1 + offset1].xyz, grid1->widthLodError[k+1]);
 					grid2->lodStitched = qfalse;
 					s_worldData.surfaces[grid2num].data = (void *) grid2;
@@ -1560,7 +1490,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 					// insert row into grid2 right after after row l
 					if (m) column = grid2->width-1;
 					else column = 0;
-					grid2 = R_GridInsertRow( grid2, l+1, column,
+					R_GridInsertRow( grid2, l+1, column,
 										grid1->verts[k - 1 + offset1].xyz, grid1->widthLodError[k+1]);
 					if (!grid2)
 						break;
@@ -1615,7 +1545,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 					// insert column into grid2 right after after column l
 					if (m) row = grid2->height-1;
 					else row = 0;
-					grid2 = R_GridInsertColumn( grid2, l+1, row,
+					R_GridInsertColumn( grid2, l+1, row,
 										grid1->verts[grid1->width * (k - 1) + offset1].xyz, grid1->heightLodError[k+1]);
 					grid2->lodStitched = qfalse;
 					s_worldData.surfaces[grid2num].data = (void *) grid2;
@@ -1659,7 +1589,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 					// insert row into grid2 right after after row l
 					if (m) column = grid2->width-1;
 					else column = 0;
-					grid2 = R_GridInsertRow( grid2, l+1, column,
+					R_GridInsertRow( grid2, l+1, column,
 										grid1->verts[grid1->width * (k - 1) + offset1].xyz, grid1->heightLodError[k+1]);
 					grid2->lodStitched = qfalse;
 					s_worldData.surfaces[grid2num].data = (void *) grid2;
@@ -1749,37 +1679,37 @@ R_MovePatchSurfacesToHunk
 ===============
 */
 void R_MovePatchSurfacesToHunk(void) {
-	int i, size;
-	srfBspSurface_t *grid, *hunkgrid;
+	int i;
+	srfBspSurface_t *grid;
 
 	for ( i = 0; i < s_worldData.numsurfaces; i++ ) {
+		void *copyFrom;
 		//
 		grid = (srfBspSurface_t *) s_worldData.surfaces[i].data;
 		// if this surface is not a grid
 		if ( grid->surfaceType != SF_GRID )
 			continue;
 		//
-		size = sizeof(*grid);
-		hunkgrid = ri.Hunk_Alloc(size, h_low);
-		Com_Memcpy(hunkgrid, grid, size);
 
-		hunkgrid->widthLodError = ri.Hunk_Alloc( grid->width * 4, h_low );
-		Com_Memcpy( hunkgrid->widthLodError, grid->widthLodError, grid->width * 4 );
+		copyFrom = grid->widthLodError;
+		grid->widthLodError = ri.Hunk_Alloc( grid->width * 4, h_low );
+		Com_Memcpy(grid->widthLodError, copyFrom, grid->width * 4);
+		ri.Free(copyFrom);
 
-		hunkgrid->heightLodError = ri.Hunk_Alloc( grid->height * 4, h_low );
-		Com_Memcpy( hunkgrid->heightLodError, grid->heightLodError, grid->height * 4 );
+		copyFrom = grid->heightLodError;
+		grid->heightLodError = ri.Hunk_Alloc(grid->height * 4, h_low);
+		Com_Memcpy(grid->heightLodError, copyFrom, grid->height * 4);
+		ri.Free(copyFrom);
 
-		hunkgrid->numIndexes = grid->numIndexes;
-		hunkgrid->indexes = ri.Hunk_Alloc(grid->numIndexes * sizeof(glIndex_t), h_low);
-		Com_Memcpy(hunkgrid->indexes, grid->indexes, grid->numIndexes * sizeof(glIndex_t));
+		copyFrom = grid->indexes;
+		grid->indexes = ri.Hunk_Alloc(grid->numIndexes * sizeof(glIndex_t), h_low);
+		Com_Memcpy(grid->indexes, copyFrom, grid->numIndexes * sizeof(glIndex_t));
+		ri.Free(copyFrom);
 
-		hunkgrid->numVerts = grid->numVerts;
-		hunkgrid->verts = ri.Hunk_Alloc(grid->numVerts * sizeof(srfVert_t), h_low);
-		Com_Memcpy(hunkgrid->verts, grid->verts, grid->numVerts * sizeof(srfVert_t));
-
-		R_FreeSurfaceGridMesh( grid );
-
-		s_worldData.surfaces[i].data = (void *) hunkgrid;
+		copyFrom = grid->verts;
+		grid->verts = ri.Hunk_Alloc(grid->numVerts * sizeof(srfVert_t), h_low);
+		Com_Memcpy(grid->verts, copyFrom, grid->numVerts * sizeof(srfVert_t));
+		ri.Free(copyFrom);
 	}
 }
 
@@ -1839,11 +1769,9 @@ static int BSPSurfaceCompare(const void *a, const void *b)
 static void CopyVert(const srfVert_t * in, srfVert_t * out)
 {
 	VectorCopy(in->xyz,      out->xyz);
-#ifdef USE_VERT_TANGENT_SPACE
 	VectorCopy4(in->tangent, out->tangent);
-#endif
-	VectorCopy(in->normal,   out->normal);
-	VectorCopy(in->lightdir, out->lightdir);
+	VectorCopy4(in->normal,   out->normal);
+	VectorCopy4(in->lightdir, out->lightdir);
 
 	VectorCopy2(in->st,       out->st);
 	VectorCopy2(in->lightmap, out->lightmap);
@@ -2276,7 +2204,7 @@ static	void R_LoadSurfaces( lump_t *surfs, lump_t *verts, lump_t *indexLump ) {
 	for ( i = 0 ; i < count ; i++, in++, out++ ) {
 		switch ( LittleLong( in->surfaceType ) ) {
 			case MST_PATCH:
-				// FIXME: do this
+				out->data = ri.Hunk_Alloc( sizeof(srfBspSurface_t), h_low);
 				break;
 			case MST_TRIANGLE_SOUP:
 				out->data = ri.Hunk_Alloc( sizeof(srfBspSurface_t), h_low);
@@ -2298,15 +2226,6 @@ static	void R_LoadSurfaces( lump_t *surfs, lump_t *verts, lump_t *indexLump ) {
 		switch ( LittleLong( in->surfaceType ) ) {
 		case MST_PATCH:
 			ParseMesh ( in, dv, hdrVertColors, out );
-			{
-				srfBspSurface_t *surface = (srfBspSurface_t *)out->data;
-
-				out->cullinfo.type = CULLINFO_BOX | CULLINFO_SPHERE;
-				VectorCopy(surface->cullBounds[0], out->cullinfo.bounds[0]);
-				VectorCopy(surface->cullBounds[1], out->cullinfo.bounds[1]);
-				VectorCopy(surface->cullOrigin, out->cullinfo.localOrigin);
-				out->cullinfo.radius = surface->cullRadius;
-			}
 			numMeshes++;
 			break;
 		case MST_TRIANGLE_SOUP:
@@ -2319,9 +2238,6 @@ static	void R_LoadSurfaces( lump_t *surfs, lump_t *verts, lump_t *indexLump ) {
 			break;
 		case MST_FLARE:
 			ParseFlare( in, dv, out, indexes );
-			{
-				out->cullinfo.type = CULLINFO_NONE;
-			}
 			numFlares++;
 			break;
 		default:
@@ -2758,11 +2674,7 @@ void R_LoadLightGrid( lump_t *l ) {
 
 		if (hdrLightGrid)
 		{
-#if defined(USE_OVERBRIGHT)
 			float lightScale = 1 << (r_mapOverBrightBits->integer - tr.overbrightBits);
-#else
-			float lightScale = 1.0f;
-#endif
 
 			//ri.Printf(PRINT_ALL, "found!\n");
 
@@ -3198,7 +3110,14 @@ void R_CalcVertexLightDirs( void )
 			case SF_GRID:
 			case SF_TRIANGLES:
 				for(i = 0; i < bspSurf->numVerts; i++)
-					R_LightDirForPoint( bspSurf->verts[i].xyz, bspSurf->verts[i].lightdir, bspSurf->verts[i].normal, &s_worldData );
+				{
+					vec3_t lightDir;
+					vec3_t normal;
+
+					R_VaoUnpackNormal(normal, bspSurf->verts[i].normal);
+					R_LightDirForPoint( bspSurf->verts[i].xyz, lightDir, normal, &s_worldData );
+					R_VaoPackNormal(bspSurf->verts[i].lightdir, lightDir);
+				}
 
 				break;
 
@@ -3230,7 +3149,6 @@ void RE_LoadWorldMap( const char *name ) {
 	}
 
 	// set default map light scale
-	tr.mapLightScale  = 1.0f;
 	tr.sunShadowScale = 0.5f;
 
 	// set default sun direction to be used if it isn't

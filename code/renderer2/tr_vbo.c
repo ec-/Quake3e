@@ -23,73 +23,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "tr_local.h"
 
 
-union pack10_u {
-	struct {
-		signed int x:10;
-		signed int y:10;
-		signed int z:10;
-		signed int w:2;
-	} pack;
-	uint32_t i;
-};
+void R_VaoPackTangent(int16_t *out, vec4_t v)
+	{
+	out[0] = v[0] * 32767.0f + (v[0] > 0.0f ? 0.5f : -0.5f);
+	out[1] = v[1] * 32767.0f + (v[1] > 0.0f ? 0.5f : -0.5f);
+	out[2] = v[2] * 32767.0f + (v[2] > 0.0f ? 0.5f : -0.5f);
+	out[3] = v[3] * 32767.0f + (v[3] > 0.0f ? 0.5f : -0.5f);
+	}
 
-union pack8_u {
-	struct {
-		signed int x:8;
-		signed int y:8;
-		signed int z:8;
-		signed int w:8;
-	} pack;
-	uint32_t i;
-};
-
-
-int R_VaoPackTangent(byte *out, vec4_t v)
+void R_VaoPackNormal(int16_t *out, vec3_t v)
 {
-	if (glRefConfig.packedNormalDataType == GL_INT_2_10_10_10_REV)
-	{
-		union pack10_u *num = (union pack10_u *)out;
-
-		num->pack.x = v[0] * 511.0f;
-		num->pack.y = v[1] * 511.0f;
-		num->pack.z = v[2] * 511.0f;
-		num->pack.w = v[3];
-	}
-	else
-	{
-		union pack8_u *num = (union pack8_u *)out;
-
-		num->pack.x = v[0] * 127.0f;
-		num->pack.y = v[1] * 127.0f;
-		num->pack.z = v[2] * 127.0f;
-		num->pack.w = v[3] * 127.0f;
-	}
-
-	return 4;
-}
-
-int R_VaoPackNormal(byte *out, vec3_t v)
-{
-	if (glRefConfig.packedNormalDataType == GL_INT_2_10_10_10_REV)
-	{
-		union pack10_u *num = (union pack10_u *)out;
-
-		num->pack.x = v[0] * 511.0f;
-		num->pack.y = v[1] * 511.0f;
-		num->pack.z = v[2] * 511.0f;
-		num->pack.w = 0;
-	}
-	else
-	{
-		union pack8_u *num = (union pack8_u *)out;
-
-		num->pack.x = v[0] * 127.0f;
-		num->pack.y = v[1] * 127.0f;
-		num->pack.z = v[2] * 127.0f;
-		num->pack.w = 0;
-	}
-
-	return 4;
+	out[0] = v[0] * 32767.0f + (v[0] > 0.0f ? 0.5f : -0.5f);
+	out[1] = v[1] * 32767.0f + (v[1] > 0.0f ? 0.5f : -0.5f);
+	out[2] = v[2] * 32767.0f + (v[2] > 0.0f ? 0.5f : -0.5f);
+	out[3] = 0;
 }
 
 int R_VaoPackTexCoord(byte *out, vec2_t st)
@@ -140,47 +87,19 @@ int R_VaoPackColors(byte *out, vec4_t color)
 	}
 }
 
-
-void R_VaoUnpackTangent(vec4_t v, uint32_t b)
-{
-	if (glRefConfig.packedNormalDataType == GL_INT_2_10_10_10_REV)
+void R_VaoUnpackTangent(vec4_t v, int16_t *pack)
 	{
-		union pack10_u *num = (union pack10_u *)&b;
-
-		v[0] = num->pack.x / 511.0f;
-		v[1] = num->pack.y / 511.0f;
-		v[2] = num->pack.z / 511.0f;
-		v[3] = num->pack.w; 
-	}
-	else
-	{
-		union pack8_u *num = (union pack8_u *)&b;
-
-		v[0] = num->pack.x / 127.0f;
-		v[1] = num->pack.y / 127.0f;
-		v[2] = num->pack.z / 127.0f;
-		v[3] = num->pack.w / 127.0f; 
-	}
+	v[0] = pack[0] / 32767.0f;
+	v[1] = pack[1] / 32767.0f;
+	v[2] = pack[2] / 32767.0f;
+	v[3] = pack[3] / 32767.0f;
 }
 
-void R_VaoUnpackNormal(vec3_t v, uint32_t b)
+void R_VaoUnpackNormal(vec3_t v, int16_t *pack)
 {
-	if (glRefConfig.packedNormalDataType == GL_INT_2_10_10_10_REV)
-	{
-		union pack10_u *num = (union pack10_u *)&b;
-
-		v[0] = num->pack.x / 511.0f;
-		v[1] = num->pack.y / 511.0f;
-		v[2] = num->pack.z / 511.0f;
-	}
-	else
-	{
-		union pack8_u *num = (union pack8_u *)&b;
-
-		v[0] = num->pack.x / 127.0f;
-		v[1] = num->pack.y / 127.0f;
-		v[2] = num->pack.z / 127.0f;
-	}
+	v[0] = pack[0] / 32767.0f;
+	v[1] = pack[1] / 32767.0f;
+	v[2] = pack[2] / 32767.0f;
 }
 
 
@@ -330,9 +249,7 @@ vao_t *R_CreateVao2(const char *name, int numVertexes, srfVert_t *verts, int num
 	// since these vertex attributes are never altered, interleave them
 	vao->attribs[ATTR_INDEX_POSITION      ].enabled = 1;
 	vao->attribs[ATTR_INDEX_NORMAL        ].enabled = 1;
-#ifdef USE_VERT_TANGENT_SPACE
 	vao->attribs[ATTR_INDEX_TANGENT       ].enabled = 1;
-#endif
 	vao->attribs[ATTR_INDEX_TEXCOORD      ].enabled = 1;
 	vao->attribs[ATTR_INDEX_LIGHTCOORD    ].enabled = 1;
 	vao->attribs[ATTR_INDEX_COLOR         ].enabled = 1;
@@ -347,12 +264,12 @@ vao_t *R_CreateVao2(const char *name, int numVertexes, srfVert_t *verts, int num
 	vao->attribs[ATTR_INDEX_LIGHTDIRECTION].count = 4;
 
 	vao->attribs[ATTR_INDEX_POSITION      ].type = GL_FLOAT;
-	vao->attribs[ATTR_INDEX_NORMAL        ].type = glRefConfig.packedNormalDataType;
-	vao->attribs[ATTR_INDEX_TANGENT       ].type = glRefConfig.packedNormalDataType;
+	vao->attribs[ATTR_INDEX_NORMAL        ].type = GL_SHORT;
+	vao->attribs[ATTR_INDEX_TANGENT       ].type = GL_SHORT;
 	vao->attribs[ATTR_INDEX_TEXCOORD      ].type = glRefConfig.packedTexcoordDataType;
 	vao->attribs[ATTR_INDEX_LIGHTCOORD    ].type = glRefConfig.packedTexcoordDataType;
 	vao->attribs[ATTR_INDEX_COLOR         ].type = glRefConfig.packedColorDataType;
-	vao->attribs[ATTR_INDEX_LIGHTDIRECTION].type = glRefConfig.packedNormalDataType;
+	vao->attribs[ATTR_INDEX_LIGHTDIRECTION].type = GL_SHORT;
 
 	vao->attribs[ATTR_INDEX_POSITION      ].normalized = GL_FALSE;
 	vao->attribs[ATTR_INDEX_NORMAL        ].normalized = GL_TRUE;
@@ -363,14 +280,12 @@ vao_t *R_CreateVao2(const char *name, int numVertexes, srfVert_t *verts, int num
 	vao->attribs[ATTR_INDEX_LIGHTDIRECTION].normalized = GL_TRUE;
 
 	vao->attribs[ATTR_INDEX_POSITION      ].offset = 0;        dataSize  = sizeof(verts[0].xyz);
-	vao->attribs[ATTR_INDEX_NORMAL        ].offset = dataSize; dataSize += sizeof(uint32_t);
-#ifdef USE_VERT_TANGENT_SPACE
-	vao->attribs[ATTR_INDEX_TANGENT       ].offset = dataSize; dataSize += sizeof(uint32_t);
-#endif
+	vao->attribs[ATTR_INDEX_NORMAL        ].offset = dataSize; dataSize += sizeof(verts[0].normal);
+	vao->attribs[ATTR_INDEX_TANGENT       ].offset = dataSize; dataSize += sizeof(verts[0].tangent);
 	vao->attribs[ATTR_INDEX_TEXCOORD      ].offset = dataSize; dataSize += glRefConfig.packedTexcoordDataSize;
 	vao->attribs[ATTR_INDEX_LIGHTCOORD    ].offset = dataSize; dataSize += glRefConfig.packedTexcoordDataSize;
 	vao->attribs[ATTR_INDEX_COLOR         ].offset = dataSize; dataSize += glRefConfig.packedColorDataSize;
-	vao->attribs[ATTR_INDEX_LIGHTDIRECTION].offset = dataSize; dataSize += sizeof(uint32_t);
+	vao->attribs[ATTR_INDEX_LIGHTDIRECTION].offset = dataSize; dataSize += sizeof(verts[0].lightdir);
 
 	vao->attribs[ATTR_INDEX_POSITION      ].stride = dataSize;
 	vao->attribs[ATTR_INDEX_NORMAL        ].stride = dataSize;
@@ -400,12 +315,12 @@ vao_t *R_CreateVao2(const char *name, int numVertexes, srfVert_t *verts, int num
 		dataOfs += sizeof(verts[i].xyz);
 
 		// normal
-		dataOfs += R_VaoPackNormal(data + dataOfs, verts[i].normal);
+		memcpy(data + dataOfs, &verts[i].normal, sizeof(verts[i].normal));
+		dataOfs += sizeof(verts[i].normal);
 
-#ifdef USE_VERT_TANGENT_SPACE
 		// tangent
-		dataOfs += R_VaoPackTangent(data + dataOfs, verts[i].tangent);
-#endif
+		memcpy(data + dataOfs, &verts[i].tangent, sizeof(verts[i].tangent));
+		dataOfs += sizeof(verts[i].tangent);
 
 		// texcoords
 		dataOfs += R_VaoPackTexCoord(data + dataOfs, verts[i].st);
@@ -417,7 +332,8 @@ vao_t *R_CreateVao2(const char *name, int numVertexes, srfVert_t *verts, int num
 		dataOfs += R_VaoPackColors(data + dataOfs, verts[i].vertexColors);
 
 		// light directions
-		dataOfs += R_VaoPackNormal(data + dataOfs, verts[i].lightdir);
+		memcpy(data + dataOfs, &verts[i].lightdir, sizeof(verts[i].lightdir));
+		dataOfs += sizeof(verts[i].lightdir);
 	}
 
 	vao->vertexesSize = dataSize;
@@ -542,9 +458,7 @@ void R_InitVaos(void)
 
 	vertexesSize  = sizeof(tess.xyz[0]);
 	vertexesSize += sizeof(tess.normal[0]);
-#ifdef USE_VERT_TANGENT_SPACE
 	vertexesSize += sizeof(tess.tangent[0]);
-#endif
 	vertexesSize += sizeof(tess.vertexColors[0]);
 	vertexesSize += sizeof(tess.texCoords[0][0]) * 2;
 	vertexesSize += sizeof(tess.lightdir[0]);
@@ -558,9 +472,7 @@ void R_InitVaos(void)
 
 	tess.vao->attribs[ATTR_INDEX_POSITION      ].enabled = 1;
 	tess.vao->attribs[ATTR_INDEX_NORMAL        ].enabled = 1;
-#ifdef USE_VERT_TANGENT_SPACE
 	tess.vao->attribs[ATTR_INDEX_TANGENT       ].enabled = 1;
-#endif
 	tess.vao->attribs[ATTR_INDEX_TEXCOORD      ].enabled = 1;
 	tess.vao->attribs[ATTR_INDEX_LIGHTCOORD    ].enabled = 1;
 	tess.vao->attribs[ATTR_INDEX_COLOR         ].enabled = 1;
@@ -575,12 +487,12 @@ void R_InitVaos(void)
 	tess.vao->attribs[ATTR_INDEX_LIGHTDIRECTION].count = 4;
 
 	tess.vao->attribs[ATTR_INDEX_POSITION      ].type = GL_FLOAT;
-	tess.vao->attribs[ATTR_INDEX_NORMAL        ].type = glRefConfig.packedNormalDataType;
-	tess.vao->attribs[ATTR_INDEX_TANGENT       ].type = glRefConfig.packedNormalDataType;
+	tess.vao->attribs[ATTR_INDEX_NORMAL        ].type = GL_SHORT;
+	tess.vao->attribs[ATTR_INDEX_TANGENT       ].type = GL_SHORT;
 	tess.vao->attribs[ATTR_INDEX_TEXCOORD      ].type = GL_FLOAT;
 	tess.vao->attribs[ATTR_INDEX_LIGHTCOORD    ].type = GL_FLOAT;
 	tess.vao->attribs[ATTR_INDEX_COLOR         ].type = GL_FLOAT;
-	tess.vao->attribs[ATTR_INDEX_LIGHTDIRECTION].type = glRefConfig.packedNormalDataType;
+	tess.vao->attribs[ATTR_INDEX_LIGHTDIRECTION].type = GL_SHORT;
 
 	tess.vao->attribs[ATTR_INDEX_POSITION      ].normalized = GL_FALSE;
 	tess.vao->attribs[ATTR_INDEX_NORMAL        ].normalized = GL_TRUE;
@@ -592,9 +504,7 @@ void R_InitVaos(void)
 
 	tess.vao->attribs[ATTR_INDEX_POSITION      ].offset = offset; offset += sizeof(tess.xyz[0])              * SHADER_MAX_VERTEXES;
 	tess.vao->attribs[ATTR_INDEX_NORMAL        ].offset = offset; offset += sizeof(tess.normal[0])           * SHADER_MAX_VERTEXES;
-#ifdef USE_VERT_TANGENT_SPACE
 	tess.vao->attribs[ATTR_INDEX_TANGENT       ].offset = offset; offset += sizeof(tess.tangent[0])          * SHADER_MAX_VERTEXES;
-#endif
 	// these next two are actually interleaved
 	tess.vao->attribs[ATTR_INDEX_TEXCOORD      ].offset = offset; 
 	tess.vao->attribs[ATTR_INDEX_LIGHTCOORD    ].offset = offset + sizeof(tess.texCoords[0][0]);
@@ -605,9 +515,7 @@ void R_InitVaos(void)
 
 	tess.vao->attribs[ATTR_INDEX_POSITION      ].stride = sizeof(tess.xyz[0]);
 	tess.vao->attribs[ATTR_INDEX_NORMAL        ].stride = sizeof(tess.normal[0]);
-#ifdef USE_VERT_TANGENT_SPACE
 	tess.vao->attribs[ATTR_INDEX_TANGENT       ].stride = sizeof(tess.tangent[0]);
-#endif
 	tess.vao->attribs[ATTR_INDEX_COLOR         ].stride = sizeof(tess.vertexColors[0]);
 	tess.vao->attribs[ATTR_INDEX_TEXCOORD      ].stride = sizeof(tess.texCoords[0][0]) * 2;
 	tess.vao->attribs[ATTR_INDEX_LIGHTCOORD    ].stride = sizeof(tess.texCoords[0][0]) * 2;
@@ -616,9 +524,7 @@ void R_InitVaos(void)
 	tess.attribPointers[ATTR_INDEX_POSITION]       = tess.xyz;
 	tess.attribPointers[ATTR_INDEX_TEXCOORD]       = tess.texCoords;
 	tess.attribPointers[ATTR_INDEX_NORMAL]         = tess.normal;
-#ifdef USE_VERT_TANGENT_SPACE
 	tess.attribPointers[ATTR_INDEX_TANGENT]        = tess.tangent;
-#endif
 	tess.attribPointers[ATTR_INDEX_COLOR]          = tess.vertexColors;
 	tess.attribPointers[ATTR_INDEX_LIGHTDIRECTION] = tess.lightdir;
 

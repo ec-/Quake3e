@@ -148,8 +148,15 @@ static uniformInfo_t uniformsInfo[] =
 	{ "u_CubeMapInfo", GLSL_VEC4 },
 };
 
+typedef enum
+{
+	GLSL_PRINTLOG_PROGRAM_INFO,
+	GLSL_PRINTLOG_SHADER_INFO,
+	GLSL_PRINTLOG_SHADER_SOURCE
+}
+glslPrintLog_t;
 
-static void GLSL_PrintInfoLog(GLuint program, qboolean developerOnly)
+static void GLSL_PrintLog(GLuint programOrShader, glslPrintLog_t type, qboolean developerOnly)
 {
 	char           *msg;
 	static char     msgPart[1024];
@@ -157,61 +164,70 @@ static void GLSL_PrintInfoLog(GLuint program, qboolean developerOnly)
 	int             i;
 	int             printLevel = developerOnly ? PRINT_DEVELOPER : PRINT_ALL;
 
-	qglGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
+	switch (type)
+	{
+		case GLSL_PRINTLOG_PROGRAM_INFO:
+			ri.Printf(printLevel, "Program info log:\n");
+			qglGetProgramiv(programOrShader, GL_INFO_LOG_LENGTH, &maxLength);
+			break;
+
+		case GLSL_PRINTLOG_SHADER_INFO:
+			ri.Printf(printLevel, "Shader info log:\n");
+			qglGetShaderiv(programOrShader, GL_INFO_LOG_LENGTH, &maxLength);
+			break;
+
+		case GLSL_PRINTLOG_SHADER_SOURCE:
+			ri.Printf(printLevel, "Shader source:\n");
+			qglGetShaderiv(programOrShader, GL_SHADER_SOURCE_LENGTH, &maxLength);
+			break;
+	}
 
 	if (maxLength <= 0)
 	{
-		ri.Printf(printLevel, "No compile log.\n");
+		ri.Printf(printLevel, "None.\n");
 		return;
 	}
 
-	ri.Printf(printLevel, "compile log:\n");
+	if (maxLength < 1023)
+		msg = msgPart;
+	else
+		msg = ri.Malloc(maxLength);
+
+	switch (type)
+	{
+		case GLSL_PRINTLOG_PROGRAM_INFO:
+			qglGetProgramInfoLog(programOrShader, maxLength, &maxLength, msg);
+			break;
+
+		case GLSL_PRINTLOG_SHADER_INFO:
+			qglGetShaderInfoLog(programOrShader, maxLength, &maxLength, msg);
+			break;
+
+		case GLSL_PRINTLOG_SHADER_SOURCE:
+			qglGetShaderSource(programOrShader, maxLength, &maxLength, msg);
+			break;
+	}
 
 	if (maxLength < 1023)
 	{
-		qglGetProgramInfoLog(program, maxLength, &maxLength, msgPart);
-
 		msgPart[maxLength + 1] = '\0';
 
 		ri.Printf(printLevel, "%s\n", msgPart);
 	}
 	else
 	{
-		msg = ri.Malloc(maxLength);
-
-		qglGetProgramInfoLog(program, maxLength, &maxLength, msg);
-
-		for(i = 0; i < maxLength; i += 1024)
+		for(i = 0; i < maxLength; i += 1023)
 		{
 			Q_strncpyz(msgPart, msg + i, sizeof(msgPart));
 
-			ri.Printf(printLevel, "%s\n", msgPart);
+			ri.Printf(printLevel, "%s", msgPart);
 		}
+
+		ri.Printf(printLevel, "\n");
 
 		ri.Free(msg);
 	}
-}
 
-static void GLSL_PrintShaderSource(GLuint shader)
-{
-	char           *msg;
-	static char     msgPart[1024];
-	int             maxLength = 0;
-	int             i;
-
-	qglGetShaderiv(shader, GL_SHADER_SOURCE_LENGTH, &maxLength);
-
-	msg = ri.Malloc(maxLength);
-
-	qglShaderSource(shader, 1, (const GLchar **)&msg, &maxLength);
-
-	for(i = 0; i < maxLength; i += 1024)
-	{
-		Q_strncpyz(msgPart, msg + i, sizeof(msgPart));
-		ri.Printf(PRINT_ALL, "%s\n", msgPart);
-	}
-
-	ri.Free(msg);
 }
 
 static void GLSL_GetShaderHeader( GLenum shaderType, const GLchar *extra, char *dest, int size )
@@ -365,14 +381,11 @@ static int GLSL_CompileGPUShader(GLuint program, GLuint *prevShader, const GLcha
 	qglGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
 	if(!compiled)
 	{
-		GLSL_PrintShaderSource(shader);
-		GLSL_PrintInfoLog(shader, qfalse);
+		GLSL_PrintLog(shader, GLSL_PRINTLOG_SHADER_SOURCE, qfalse);
+		GLSL_PrintLog(shader, GLSL_PRINTLOG_SHADER_INFO, qfalse);
 		ri.Error(ERR_DROP, "Couldn't compile shader");
 		return 0;
 	}
-
-	//GLSL_PrintInfoLog(shader, qtrue);
-	//GLSL_PrintShaderSource(shader);
 
 	if (*prevShader)
 	{
@@ -460,8 +473,7 @@ static void GLSL_LinkProgram(GLuint program)
 	qglGetProgramiv(program, GL_LINK_STATUS, &linked);
 	if(!linked)
 	{
-		GLSL_PrintInfoLog(program, qfalse);
-		ri.Printf(PRINT_ALL, "\n");
+		GLSL_PrintLog(program, GLSL_PRINTLOG_PROGRAM_INFO, qfalse);
 		ri.Error(ERR_DROP, "shaders failed to link");
 	}
 }
@@ -475,8 +487,7 @@ static void GLSL_ValidateProgram(GLuint program)
 	qglGetProgramiv(program, GL_VALIDATE_STATUS, &validated);
 	if(!validated)
 	{
-		GLSL_PrintInfoLog(program, qfalse);
-		ri.Printf(PRINT_ALL, "\n");
+		GLSL_PrintLog(program, GLSL_PRINTLOG_PROGRAM_INFO, qfalse);
 		ri.Error(ERR_DROP, "shaders failed to validate");
 	}
 }
@@ -1050,10 +1061,7 @@ void GLSL_InitGPUShaders(void)
 			{
 				Q_strcat(extradefines, 1024, "#define USE_NORMALMAP\n");
 
-#ifdef USE_VERT_TANGENT_SPACE
-				Q_strcat(extradefines, 1024, "#define USE_VERT_TANGENT_SPACE\n");
 				attribs |= ATTR_TANGENT;
-#endif
 
 				if ((i & LIGHTDEF_USE_PARALLAXMAP) && !(i & LIGHTDEF_ENTITY) && r_parallaxMapping->integer)
 				{
@@ -1108,12 +1116,10 @@ void GLSL_InitGPUShaders(void)
 			Q_strcat(extradefines, 1024, "#define USE_VERTEX_ANIMATION\n#define USE_MODELMATRIX\n");
 			attribs |= ATTR_POSITION2 | ATTR_NORMAL2;
 
-#ifdef USE_VERT_TANGENT_SPACE
 			if (r_normalMapping->integer)
 			{
 				attribs |= ATTR_TANGENT2;
 			}
-#endif
 		}
 
 		if (!GLSL_InitGPUShader(&tr.lightallShader[i], "lightall", attribs, qtrue, extradefines, qtrue, fallbackShader_lightall_vp, fallbackShader_lightall_fp))

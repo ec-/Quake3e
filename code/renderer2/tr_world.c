@@ -786,8 +786,8 @@ void R_AddWorldSurfaces (void) {
 		tr.refdef.num_dlights = MAX_DLIGHTS ;
 	}
 
-	if ( tr.refdef.num_pshadows > 32 ) {
-		tr.refdef.num_pshadows = 32 ;
+	if ( tr.refdef.num_pshadows > MAX_DRAWN_PSHADOWS ) {
+		tr.refdef.num_pshadows = MAX_DRAWN_PSHADOWS;
 	}
 
 	planeBits = (tr.viewParms.flags & VPF_FARPLANEFRUSTUM) ? 31 : 15;
