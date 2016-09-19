@@ -34,7 +34,8 @@ USE_LOCAL_HEADERS= 0
 CNAME			 = quake3e
 DNAME 			 = quake3e.ded
 
-#USE_ALSA_STATIC	 = 1
+#USE_ALSA_STATIC	= 1
+#USE_STATIC_GL		= 1
 
 ifeq ($(V),1)
 echo_cmd=@:
@@ -115,6 +116,11 @@ endif
 ifndef USE_ALSA_STATIC
 USE_ALSA_STATIC=0
 endif
+
+ifndef USE_STATIC_GL
+USE_STATIC_GL=0
+endif
+
 
 #############################################################################
 
@@ -223,7 +229,11 @@ ifeq ($(PLATFORM),linux)
   LDFLAGS=-ldl -lm -Wl,--hash-style=both
 
 #  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -lX11 -lXext -lXxf86dga -lXxf86vm
-  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -L/usr/$(LIB) -lX11 -lXxf86dga -lXxf86vm -lGL
+  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -L/usr/$(LIB) -lX11 -lXxf86dga -lXxf86vm
+
+ifeq ($(USE_STATIC_GL),1)
+  CLIENT_LDFLAGS += -lGL
+endif
 
 ifeq ($(USE_ALSA_STATIC),1)
   CLIENT_LDFLAGS += -lasound -lpthread
@@ -616,6 +626,10 @@ endif
 
 ifeq ($(USE_ALSA_STATIC),1)
   BASE_CFLAGS += -DUSE_ALSA_STATIC
+endif
+
+ifeq ($(USE_STATIC_GL),1)
+  BASE_CFLAGS += -DUSE_STATIC_GL
 endif
 
 ifeq ($(GENERATE_DEPENDENCIES),1)

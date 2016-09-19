@@ -235,7 +235,7 @@ qboolean SNDDMA_Init( void )
 		}
 		if ( t_lib == NULL )
 		{
-			Com_Printf("Error loading pthread library, disabling ALSA support.\n" );
+			Com_Printf( "Error loading pthread library, disabling ALSA support.\n" );
 			return qfalse;
 		}
 	}
@@ -261,7 +261,7 @@ qboolean SNDDMA_Init( void )
 		}
 		if ( a_lib == NULL )
 		{
-			Com_Printf("Error loading ALSA library.\n" );
+			Com_Printf( "Error loading ALSA library.\n" );
 			UnloadLibs();
 			return qfalse;
 		}
