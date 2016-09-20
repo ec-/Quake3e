@@ -277,6 +277,10 @@ char *do_dlerror( void );
 
 qboolean QGL_Init( const char *dllname )
 {
+	ri.Printf( PRINT_ALL, "...initializing QGL\n" );
+
+	ri.Printf( PRINT_ALL, "...loading '%s' : ", dllname );
+
 	if ( glw_state.OpenGLLib == NULL )
 	{
 		glw_state.OpenGLLib = dlopen( dllname, RTLD_LAZY | RTLD_GLOBAL );
@@ -284,30 +288,33 @@ qboolean QGL_Init( const char *dllname )
 
 	if ( glw_state.OpenGLLib == NULL )
 	{
-		char	fn[1024];
-		// FILE *fp; // bk001204 - unused
-
 		// if we are not setuid, try current directory
 		if ( dllname != NULL ) 
 		{
-			getcwd( fn, sizeof(fn) );
-			Q_strcat( fn, sizeof(fn), "/" );
-			Q_strcat( fn, sizeof(fn), dllname );
+			char fn[1024];
+
+			getcwd( fn, sizeof( fn ) );
+			Q_strcat( fn, sizeof( fn ), "/" );
+			Q_strcat( fn, sizeof( fn ), dllname );
 
 			glw_state.OpenGLLib = dlopen( fn, RTLD_LAZY );
 
 			if ( glw_state.OpenGLLib == NULL ) 
 			{
-				ri.Printf(PRINT_ALL, "QGL_Init: Can't load %s from /etc/ld.so.conf or current dir: %s\n", dllname, do_dlerror());
+				ri.Printf( PRINT_ALL, "failed\n" );
+				ri.Printf(PRINT_ALL, "QGL_Init: Can't load %s from /etc/ld.so.conf or current dir: %s\n", dllname, do_dlerror() );
 				return qfalse;
 			}
 		}
 		else 
 		{	
+			ri.Printf( PRINT_ALL, "failed\n" );
 			ri.Printf( PRINT_ALL, "QGL_Init: Can't load %s from /etc/ld.so.conf: %s\n", dllname, do_dlerror() );
 			return qfalse;
 		}
 	}
+
+	ri.Printf( PRINT_ALL, "succeeded\n" );
 
 #define GPA( a ) qwglGetProcAddress( a )
 	qwglGetProcAddress		= glGetProcAddress;

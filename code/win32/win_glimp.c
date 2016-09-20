@@ -82,6 +82,7 @@ void     QGL_Shutdown( void );
 glwstate_t glw_state;
 
 cvar_t	*r_allowSoftwareGL;		// don't abort out if the pixelformat claims software
+cvar_t	*r_maskMinidriver;		// allow a different dll name to be treated as if it were opengl32.dll
 
 /*
 ** GLW_StartDriverAndSetMode
@@ -1309,8 +1310,18 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 	char buffer[ 256 ];
 	qboolean cdsFullscreen;
 
-	Q_strncpyz( buffer, drivername, sizeof(buffer) );
-	Q_strlwr(buffer);
+	Q_strncpyz( buffer, drivername, sizeof( buffer ) );
+	Q_strlwr( buffer );
+
+	if ( Q_stricmp( buffer, OPENGL_DRIVER_NAME ) == 0 || r_maskMinidriver->integer )
+	{
+		glConfig.driverType = GLDRV_ICD;
+	}
+	else
+	{
+		glConfig.driverType = GLDRV_STANDALONE;
+		ri.Printf( PRINT_ALL, "...assuming '%s' is a standalone driver\n", drivername );
+	}
 
 	//
 	// load the driver and bind our function pointers to it
@@ -1380,8 +1391,19 @@ static qboolean GLW_StartOpenGL( void )
 	//
 	// load and initialize the specific OpenGL driver
 	//
-	if ( !GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) )
+	if ( !GLW_LoadOpenGL( r_glDriver->string ) )
 	{
+		if ( Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) != 0 ) 
+		{
+			// try default driver
+			if ( GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) ) 
+			{
+				ri.Cvar_Set( "r_glDriver", OPENGL_DRIVER_NAME );
+				r_glDriver->modified = qfalse;
+				return qtrue;
+			}
+		}
+
 		ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
 		return qfalse;
 	}
@@ -1414,12 +1436,13 @@ void GLimp_Init( void )
 	}
 
 	r_allowSoftwareGL = ri.Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
+	r_maskMinidriver = ri.Cvar_Get( "r_maskMinidriver", "0", CVAR_LATCH );
 
 	// load appropriate DLL and initialize subsystem
 	if ( !GLW_StartOpenGL() )
 		return;
 
-	glConfig.driverType = GLDRV_ICD;
+	//glConfig.driverType = GLDRV_ICD;
 	glConfig.hardwareType = GLHW_GENERIC;
 
 	// get our config strings

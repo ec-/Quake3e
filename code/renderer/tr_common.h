@@ -102,6 +102,7 @@ extern cvar_t *r_noborder;
 extern cvar_t *r_fullscreen;
 extern cvar_t *r_ignorehwgamma;		// overrides hardware gamma capabilities
 extern cvar_t *r_drawBuffer;
+extern cvar_t *r_glDriver;
 extern cvar_t *r_swapInterval;
 
 extern cvar_t *r_allowExtensions;				// global enable/disable of OpenGL extensions

@@ -1540,6 +1540,7 @@ static void GLW_InitGamma( void )
 #endif /* HAVE_XF86DGA */
 }
 
+
 /*
 ** GLW_LoadOpenGL
 **
@@ -1549,8 +1550,6 @@ static void GLW_InitGamma( void )
 static qboolean GLW_LoadOpenGL( const char *name )
 {
 	qboolean fullscreen;
-
-	ri.Printf( PRINT_ALL, "...loading %s: ", name );
 
 	// load the QGL layer
 	if ( QGL_Init( name ) )
@@ -1574,16 +1573,39 @@ static qboolean GLW_LoadOpenGL( const char *name )
 		}
 		return qtrue;
 	}
-	else
-	{
-		ri.Printf( PRINT_ALL, "failed\n" );
-	}
 	fail:
 
 	QGL_Shutdown();
 
 	return qfalse;
 }
+
+
+static qboolean GLW_StartOpenGL( void )
+{
+	//
+	// load and initialize the specific OpenGL driver
+	//
+	if ( !GLW_LoadOpenGL( r_glDriver->string ) )
+	{
+		if ( Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) != 0 ) 
+		{
+			// try default driver
+			if ( GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) ) 
+			{
+				ri.Cvar_Set( "r_glDriver", OPENGL_DRIVER_NAME );
+				r_glDriver->modified = qfalse;
+				return qtrue;
+			}
+		}
+
+		ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
+		return qfalse;
+	}
+
+	return qtrue;
+}
+
 
 /*
 ** XErrorHandler
@@ -1602,6 +1624,7 @@ int qXErrorHandler( Display *dpy, XErrorEvent *ev )
 	ri.Printf( PRINT_ALL, "  Serial number of failed request: %d\n", (int)ev->serial );
 	return 0;
 }
+
 
 /*
 ** GLimp_Init
@@ -1624,11 +1647,8 @@ void GLimp_Init( void )
 	//
 	// load and initialize the specific OpenGL driver
 	//
-	if ( !GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) )
-	{
-    	ri.Error( ERR_FATAL, "GLimp_Init() - could not load OpenGL subsystem\n" );
+	if ( !GLW_StartOpenGL() )
     	return;
-	}
 
 	// This values force the UI to disable driver selection
 	glConfig.driverType = GLDRV_ICD;
