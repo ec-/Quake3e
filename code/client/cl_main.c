@@ -1150,7 +1150,8 @@ CL_Connect_f
 void CL_Connect_f( void ) {
 	netadrtype_t family;
 	netadr_t	addr;
-	char	buffer[MAX_OSPATH];  // same length as cls.servername
+	char	buffer[ sizeof(cls.servername) ];  // same length as cls.servername
+	char	cmd_args[ sizeof(cl_reconnectArgs) ];
 	char	*server;	
 	const char	*serverString;
 	int		len;
@@ -1210,6 +1211,7 @@ void CL_Connect_f( void ) {
 		return;
 	}
 
+	Q_strncpyz( cmd_args, Cmd_Args(), sizeof( cmd_args ) );
 	Cvar_Set( "ui_singlePlayerActive", "0" );
 
 	// clear any previous "server full" type messages
@@ -1230,7 +1232,7 @@ void CL_Connect_f( void ) {
 	Q_strncpyz( cls.servername, server, sizeof( cls.servername ) );
 
 	// save arguments for reconnect
-	Q_strncpyz( cl_reconnectArgs, Cmd_Args(), sizeof( cl_reconnectArgs ) );
+	strcpy( cl_reconnectArgs, cmd_args );
 
 	// copy resolved address 
 	clc.serverAddress = addr;

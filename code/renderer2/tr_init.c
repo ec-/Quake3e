@@ -347,18 +347,32 @@ typedef struct vidmode_s
 
 vidmode_t r_vidModes[] =
 {
-	{ "Mode  0: 320x240",		320,	240,	1 },
-	{ "Mode  1: 400x300",		400,	300,	1 },
-	{ "Mode  2: 512x384",		512,	384,	1 },
-	{ "Mode  3: 640x480",		640,	480,	1 },
-	{ "Mode  4: 800x600",		800,	600,	1 },
-	{ "Mode  5: 960x720",		960,	720,	1 },
-	{ "Mode  6: 1024x768",		1024,	768,	1 },
-	{ "Mode  7: 1152x864",		1152,	864,	1 },
-	{ "Mode  8: 1280x1024",		1280,	1024,	1 },
-	{ "Mode  9: 1600x1200",		1600,	1200,	1 },
-	{ "Mode 10: 2048x1536",		2048,	1536,	1 },
-	{ "Mode 11: 856x480 (wide)",856,	480,	1 }
+	{ "Mode  0: 320x240",			320,	240,	1 },
+	{ "Mode  1: 400x300",			400,	300,	1 },
+	{ "Mode  2: 512x384",			512,	384,	1 },
+	{ "Mode  3: 640x480",			640,	480,	1 },
+	{ "Mode  4: 800x600",			800,	600,	1 },
+	{ "Mode  5: 960x720",			960,	720,	1 },
+	{ "Mode  6: 1024x768",			1024,	768,	1 },
+	{ "Mode  7: 1152x864",			1152,	864,	1 },
+	{ "Mode  8: 1280x1024",			1280,	1024,	1 },
+	{ "Mode  9: 1600x1200",			1600,	1200,	1 },
+	{ "Mode 10: 2048x1536",			2048,	1536,	1 },
+	{ "Mode 11: 856x480 (wide)",	856,	480,	1 },
+	// extra modes:
+	{ "Mode 12: 1280x960",			1280,	960,	1 },
+	{ "Mode 13: 1280x720",			1280,	720,	1 },
+	{ "Mode 14: 1280x800 (16:10)",	1280,	800,	1 },
+	{ "Mode 15: 1366x768",			1366,	768,	1 },
+	{ "Mode 16: 1440x900 (16:10)",	1440,	900,	1 },
+	{ "Mode 17: 1600x900",			1600,	900,	1 },
+	{ "Mode 18: 1680x1050 (16:10)",	1680,	1050,	1 },
+	{ "Mode 19: 1920x1080",			1920,	1080,	1 },
+	{ "Mode 20: 1920x1200 (16:10)",	1920,	1200,	1 },
+	{ "Mode 21: 2560x1080 (21:9)",	2560,	1080,	1 },
+	{ "Mode 22: 3440x1440 (21:9)",	3440,	1440,	1 },
+	{ "Mode 23: 3840x2160",			3840,	2160,	1 },
+	{ "Mode 24: 4096x2160 (4K)",	4096,	2160,	1 }
 };
 static int	s_numVidModes = ARRAY_LEN( r_vidModes );
 
@@ -1202,7 +1216,7 @@ void R_Register( void )
 	r_overBrightBits = ri.Cvar_Get ("r_overBrightBits", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_ignorehwgamma = ri.Cvar_Get( "r_ignorehwgamma", "0", CVAR_ARCHIVE | CVAR_LATCH);
 	r_mode = ri.Cvar_Get( "r_mode", "-2", CVAR_ARCHIVE | CVAR_LATCH );
-	r_modeFullscreen = ri.Cvar_Get( "r_modeFullscreen", "", CVAR_ARCHIVE | CVAR_LATCH );
+	r_modeFullscreen = ri.Cvar_Get( "r_modeFullscreen", "-2", CVAR_ARCHIVE | CVAR_LATCH );
 	r_fullscreen = ri.Cvar_Get( "r_fullscreen", "1", CVAR_ARCHIVE );
 	r_noborder = ri.Cvar_Get("r_noborder", "0", CVAR_ARCHIVE | CVAR_LATCH);
 	r_customwidth = ri.Cvar_Get( "r_customwidth", "1600", CVAR_ARCHIVE | CVAR_LATCH );
