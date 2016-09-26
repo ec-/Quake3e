@@ -257,7 +257,7 @@ PROTOCOL
 // 1.31 - 67
 
 // force legacy extension for recorded demos:
-#define FORCE_DM68_EXT
+//#define FORCE_DM68_EXT
 
 
 // maintain a list of compatible protocols for demo playing
