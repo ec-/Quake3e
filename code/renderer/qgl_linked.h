@@ -63,6 +63,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define qglLoadIdentity glLoadIdentity
 #define qglLoadMatrixf glLoadMatrixf
 #define qglMatrixMode glMatrixMode
+#define qglNormalPointer glNormalPointer
 #define qglOrtho glOrtho
 #define qglPolygonMode glPolygonMode
 #define qglPolygonOffset glPolygonOffset
@@ -134,6 +135,7 @@ extern  void ( APIENTRY * qglLineWidth )(GLfloat width);
 extern  void ( APIENTRY * qglLoadIdentity )(void);
 extern  void ( APIENTRY * qglLoadMatrixf )(const GLfloat *m);
 extern  void ( APIENTRY * qglMatrixMode )(GLenum mode);
+extern  void ( APIENTRY * qglNormalPointer )(GLenum type, GLsizei stride, const GLvoid *pointer);
 extern  void ( APIENTRY * qglOrtho )(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar);
 extern  void ( APIENTRY * qglPolygonMode )(GLenum face, GLenum mode);
 extern  void ( APIENTRY * qglPolygonOffset )(GLfloat factor, GLfloat units);

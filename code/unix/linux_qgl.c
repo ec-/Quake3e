@@ -83,6 +83,7 @@ void ( APIENTRY * qglLineWidth )(GLfloat width);
 void ( APIENTRY * qglLoadIdentity )(void);
 void ( APIENTRY * qglLoadMatrixf )(const GLfloat *m);
 void ( APIENTRY * qglMatrixMode )(GLenum mode);
+void ( APIENTRY * qglNormalPointer )(GLenum type, GLsizei stride, const GLvoid *pointer);
 void ( APIENTRY * qglOrtho )(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar);
 void ( APIENTRY * qglPolygonMode )(GLenum face, GLenum mode);
 void ( APIENTRY * qglPolygonOffset )(GLfloat factor, GLfloat units);
@@ -207,6 +208,7 @@ void QGL_Shutdown( void )
 	qglLoadIdentity			= NULL;
 	qglLoadMatrixf			= NULL;
 	qglMatrixMode			= NULL;
+	qglNormalPointer		= NULL;
 	qglOrtho				= NULL;
 	qglPolygonMode			= NULL;
 	qglPolygonOffset		= NULL;
@@ -362,6 +364,7 @@ qboolean QGL_Init( const char *dllname )
 	qglLoadIdentity			= GPA( "glLoadIdentity" );
 	qglLoadMatrixf			= GPA( "glLoadMatrixf" );
 	qglMatrixMode			= GPA( "glMatrixMode" );
+	qglNormalPointer		= GPA( "glNormalPointer" );
 	qglOrtho				= GPA( "glOrtho" );
 	qglPolygonMode			= GPA( "glPolygonMode" );
 	qglPolygonOffset		= GPA( "glPolygonOffset" );

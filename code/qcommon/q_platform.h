@@ -67,7 +67,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define Q3_LITTLE_ENDIAN
 #undef idx64
 #define idx64 1
-#define UNICODE
+//#define UNICODE
 #endif
 
 #else // !defined _WIN32
