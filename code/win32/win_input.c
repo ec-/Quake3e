@@ -294,7 +294,7 @@ static BOOL IN_InitRawMouse( void ) {
 	RRID  = (PRRID) GetProcAddress( dll, "RegisterRawInputDevices" );
 	GRID  = (PGRID) GetProcAddress( dll, "GetRawInputData" );
 
-	CloseHandle( dll );
+	//CloseHandle( dll );
 
 	if ( !GRRID || !RRID || !GRID ) {
         return FALSE;
