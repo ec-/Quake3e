@@ -304,6 +304,7 @@ void Sys_SetAffinityMask( int mask )
 	}
 
 	if ( SetProcessAffinityMask( GetCurrentProcess(), mask ) ) {
+		Sleep( 0 );
 		Com_Printf( "setting CPU affinity mask to %i\n", mask );
 	} else {
 		Com_Printf( S_COLOR_YELLOW "error setting CPU affinity mask %i\n", mask );

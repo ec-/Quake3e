@@ -708,14 +708,14 @@ void EmitCallOffset( func_t Func )
 }
 
 
-#ifdef __linux__
-#define SHADOW_BASE 8
-#else
+#ifdef _WIN32
 #define SHADOW_BASE 40
+#else // linux/*BSD ABI
+#define SHADOW_BASE 8
 #endif
+
 #define PUSH_STACK  32
 #define PARAM_STACK 128
-
 
 void EmitCallFunc( vm_t *vm ) 
 {
@@ -813,12 +813,12 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 	Emit1( (PARAM_STACK/8) - 1 );
 	EmitString( "7C EE" );					// jl -18
 
-#ifdef __linux__
-	// rdi = &int64_params[0]
-	EmitString( "48 8D 79 F8" );			// lea rdi, [rcx-8]
-#else
+#ifdef _WIN32
 	// rcx = &int64_params[0]
 	EmitString( "48 83 E9 08" );			// sub rcx, 8
+#else // linux/*BSD ABI
+	// rdi = &int64_params[0]
+	EmitString( "48 8D 79 F8" );			// lea rdi, [rcx-8]
 #endif
 	
 	// currentVm->systemCall( param );
