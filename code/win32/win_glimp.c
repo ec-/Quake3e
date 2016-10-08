@@ -1554,13 +1554,13 @@ void GLimp_Init( void )
 
 	GLW_InitExtensions();
 
+	GLW_AttemptMSAA();
+
 #ifdef USE_PMLIGHT
 	QGL_InitARB();
 #endif
 
 	WG_CheckHardwareGamma();
-
-	GLW_AttemptMSAA();
 
 	// show main window after all initializations
 	ShowWindow( g_wv.hWnd, SW_SHOW );
