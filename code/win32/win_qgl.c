@@ -485,11 +485,10 @@ qboolean QGL_Init( const char *dllname )
 
 	if ( Sys_LoadFunctionErrors() ) 
 	{
-		ri.Printf( PRINT_ALL, "resolve error\n" );
+		ri.Printf( PRINT_ALL, "core OpenGL functions resolve error\n" );
 		return qfalse;
 	}
 #endif
-
 
 	qwglCreateContext		= GPA( "wglCreateContext" );
 	qwglDeleteContext		= GPA( "wglDeleteContext" );
@@ -497,6 +496,12 @@ qboolean QGL_Init( const char *dllname )
 	qwglGetCurrentDC		= GPA( "wglGetCurrentDC" );
 	qwglGetProcAddress		= GPA( "wglGetProcAddress" );
 	qwglMakeCurrent			= GPA( "wglMakeCurrent" );
+
+	if ( Sys_LoadFunctionErrors() ) 
+	{
+		ri.Printf( PRINT_ALL, "wgl functions resolve error\n" );
+		return qfalse;
+	}
 
 	qwglSwapIntervalEXT		= NULL;
 	qglActiveTextureARB		= NULL;
@@ -507,6 +512,7 @@ qboolean QGL_Init( const char *dllname )
 
 	return qtrue;
 }
+
 
 #ifdef _MSC_VER
 #pragma warning (default : 4113 4133 4047 )
