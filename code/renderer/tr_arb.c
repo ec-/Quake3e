@@ -301,8 +301,8 @@ qboolean QGL_InitARB( void )
 {
 	programAvail = qfalse;
 
-	if ( atof( qglGetString( GL_VERSION ) ) < 1.4 ) {
-		ri.Printf( PRINT_ALL, "...OpenGL 1.4 is not available\n" );
+	if ( atof( (const char *)qglGetString( GL_VERSION ) ) < 1.4 ) {
+		ri.Printf( PRINT_ALL, S_COLOR_YELLOW "...OpenGL 1.4 is not available\n" );
 		goto __fail;
 	}
 
@@ -323,7 +323,7 @@ qboolean QGL_InitARB( void )
 	GPA( glProgramEnvParameter4fARB );
 #undef GPA
 
-	if ( ARB_LoadPrograms() ) 
+	if ( ARB_LoadPrograms() )
 	{
 		programAvail = qtrue;
 		programEnabled = qtrue; // force disable

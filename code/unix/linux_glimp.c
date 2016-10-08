@@ -860,7 +860,7 @@ void GLimp_Shutdown( void )
 	if ( !ctx || !dpy )
 		return;
 
-#ifdef CNQ3L
+#ifdef USE_PMLIGHT
 	QGL_DoneARB();
 #endif
 
@@ -964,7 +964,18 @@ static qboolean GLW_StartDriverAndSetMode( const char *drivername, int mode, con
 */
 int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean fullscreen )
 {
-	int attrib[] = 
+	PFNGLXCHOOSEFBCONFIGPROC		qglXChooseFBConfig;
+	PFNGLXGETFBCONFIGATTRIBPROC		qglXGetFBConfigAttrib;
+	PFNGLXGETVISUALFROMFBCONFIGPROC	qglXGetVisualFromFBConfig;
+	
+	// these match in the array
+	#define ATTR_RED_IDX 2
+	#define ATTR_GREEN_IDX 4
+	#define ATTR_BLUE_IDX 6
+	#define ATTR_DEPTH_IDX 9
+	#define ATTR_STENCIL_IDX 11
+
+	static int attrib[] = 
 	{
 		GLX_RGBA,         // 0
 		GLX_RED_SIZE, 4,      // 1, 2
@@ -975,14 +986,30 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 		GLX_STENCIL_SIZE, 1,    // 10, 11
 		None
 	};
-  // these match in the array
-#define ATTR_RED_IDX 2
-#define ATTR_GREEN_IDX 4
-#define ATTR_BLUE_IDX 6
-#define ATTR_DEPTH_IDX 9
-#define ATTR_STENCIL_IDX 11
+
+	#define MSAA_DEPTH_INDEX   15
+	#define MSAA_STENCIL_INDEX 17
+	#define MSAA_SAMPLES_INDEX 23
+
+	static int MSAAattrib[] = {
+		GLX_X_RENDERABLE    , True,
+		GLX_DRAWABLE_TYPE   , GLX_WINDOW_BIT,
+		GLX_RENDER_TYPE     , GLX_RGBA_BIT,
+		GLX_X_VISUAL_TYPE   , GLX_TRUE_COLOR,
+		GLX_RED_SIZE        , 8,
+		GLX_GREEN_SIZE      , 8,
+		GLX_BLUE_SIZE       , 8,
+		GLX_DEPTH_SIZE      , 24, // 15
+		GLX_STENCIL_SIZE    , 8,  // 17
+		GLX_DOUBLEBUFFER    , True,
+     	GLX_SAMPLE_BUFFERS  , 1,
+		GLX_SAMPLES         , 1,  // 23
+		None		
+	};
+
 	Window root;
 	XVisualInfo *visinfo;
+
 	XSetWindowAttributes attr;
 	XSizeHints sizehints;
 	unsigned long mask;
@@ -1277,6 +1304,68 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 		return RSERR_INVALID_MODE;
 	}
 
+	qglXChooseFBConfig = qwglGetProcAddress( "glXChooseFBConfig" );
+	qglXGetFBConfigAttrib = qwglGetProcAddress( "glXGetFBConfigAttrib" );
+	qglXGetVisualFromFBConfig = qwglGetProcAddress( "glXGetVisualFromFBConfig" );
+	
+	if ( r_ext_multisample->integer > 0 && colorbits == 24 && qglXChooseFBConfig && qglXGetFBConfigAttrib && qglXGetVisualFromFBConfig )
+	{
+		GLXFBConfig *fbconfig;
+		int numfbconfig;
+		int maxval;
+	    int bestfbi
+		int value;
+		
+		maxval = 0;
+		bestfbi = 0;
+
+		MSAAattrib[ MSAA_DEPTH_INDEX ] = glConfig.depthBits;
+		MSAAattrib[ MSAA_STENCIL_INDEX ] = glConfig.stencilBits;
+		
+		fbconfig = qglXChooseFBConfig( dpy, scrnum, MSAAattrib, &numfbconfig );
+		if ( fbconfig )
+		{
+			for( i = 0; i < numfbconfig; i++ )
+			{
+				qglXGetFBConfigAttrib( dpy, fbconfig[ i ], GLX_SAMPLES, &value );
+				if ( value > maxval )
+				{
+					bestfbi = i;
+					maxval = value;
+					if ( maxval >= r_ext_multisample->integer )
+					{
+						break;
+					}
+				}
+			}
+			if ( value )
+			{
+				visinfo = qglXGetVisualFromFBConfig( dpy, fbconfig[ bestfbi ] );
+				ri.Printf( PRINT_ALL, "...using %ix MSAA visual\n", value );
+			}
+			else
+			{
+				ri.Printf( PRINT_ALL, "...no MSAA visuals available\n" );
+			}
+			//
+		}
+		else
+		{
+			ri.Printf( PRINT_ALL, "...no MSAA visuals available\n" );
+		}// if ( fbconfig )
+	}
+	else // verbose errors
+	{
+		if ( !qglXChooseFBConfig || !qglXGetFBConfigAttrib || !qglXGetVisualFromFBConfig )
+		{
+			ri.Printf( PRINT_ALL, "...MSAA functions resolve error\n" );
+		}
+		else if ( colorbits != 24 )
+		{
+			ri.Printf( PRINT_ALL, "...MSAA requires 24 bit color depth\n" );
+		}
+	}
+
 	/* window attributes */
 	attr.background_pixel = BlackPixel( dpy, scrnum );
 	attr.border_pixel = 0;
@@ -1331,12 +1420,12 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 	qglXMakeCurrent( dpy, win, ctx );
 
 	glstring = (char *)qglGetString( GL_RENDERER );
-	ri.Printf( PRINT_ALL, "GL_RENDERER: %s\n", glstring );
 
 	if ( !Q_stricmp( glstring, "Mesa X11") || !Q_stricmp( glstring, "Mesa GLX Indirect") )
 	{
 		if ( !r_allowSoftwareGL->integer )
 		{
+			ri.Printf( PRINT_ALL, "GL_RENDERER: %s\n", glstring );
 			ri.Printf( PRINT_ALL, "\n\n***********************************************************\n" );
 			ri.Printf( PRINT_ALL, " You are using software Mesa (no hardware acceleration)!   \n" );
 			ri.Printf( PRINT_ALL, " Driver DLL used: %s\n", drivername ); 
@@ -1671,7 +1760,7 @@ void GLimp_Init( void )
 
 	// initialize extensions
 	GLW_InitExtensions();
-#ifdef CNQ3L
+#ifdef USE_PMLIGHT
 	QGL_InitARB();
 #endif
 	GLW_InitGamma();

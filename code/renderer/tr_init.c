@@ -104,6 +104,7 @@ cvar_t	*r_depthbits;
 cvar_t	*r_colorbits;
 cvar_t	*r_primitives;
 cvar_t	*r_texturebits;
+cvar_t  *r_ext_multisample;
 
 cvar_t	*r_drawBuffer;
 cvar_t  *r_glDriver;
@@ -1052,6 +1053,8 @@ void R_Register( void )
 	r_colorbits = ri.Cvar_Get( "r_colorbits", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_stencilbits = ri.Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE | CVAR_LATCH );
 	r_depthbits = ri.Cvar_Get( "r_depthbits", "0", CVAR_ARCHIVE | CVAR_LATCH );
+	r_ext_multisample = ri.Cvar_Get( "r_ext_multisample", "0", CVAR_ARCHIVE | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_ext_multisample, 0, 8, qtrue );
 	r_overBrightBits = ri.Cvar_Get ("r_overBrightBits", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_ignorehwgamma = ri.Cvar_Get( "r_ignorehwgamma", "0", CVAR_ARCHIVE | CVAR_LATCH);
 	r_mode = ri.Cvar_Get( "r_mode", "3", CVAR_ARCHIVE | CVAR_LATCH );
@@ -1096,7 +1099,7 @@ void R_Register( void )
 	r_dynamiclight = ri.Cvar_Get( "r_dynamiclight", "1", CVAR_ARCHIVE );
 #ifdef USE_PMLIGHT
 	r_dlightMode = ri.Cvar_Get( "r_dlightMode", "0", CVAR_ARCHIVE );
-	r_dlightScale = ri.Cvar_Get( "r_dlightScale", "1.0", CVAR_ARCHIVE );
+	r_dlightScale = ri.Cvar_Get( "r_dlightScale", "0.5", CVAR_ARCHIVE );
 	Cvar_CheckRange( r_dlightScale, 0.1f, 1.0f, qfalse );
 	r_dlightSpecExp = ri.Cvar_Get( "r_dlightSpecExp", "8.0", CVAR_ARCHIVE | CVAR_LATCH );
 	Cvar_CheckRange( r_dlightSpecExp, 1.0f, 32.0f, qfalse );
