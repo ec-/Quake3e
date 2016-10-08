@@ -32,6 +32,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "iqm.h"
 #include "qgl.h"
 
+#define USE_PMLIGHT			// promode lighting via \r_dlightMode 1
+typedef unsigned int		lightMask_t;
+//#define USE_BUGGY_LIGHT_COUNT
+
 #define GL_INDEX_TYPE		GL_UNSIGNED_INT
 typedef unsigned int glIndex_t;
 
@@ -41,8 +45,6 @@ typedef unsigned int glIndex_t;
 #define SHADERNUM_BITS	14
 #define MAX_SHADERS		(1<<SHADERNUM_BITS)
 
-
-
 typedef struct dlight_s {
 	vec3_t	origin;
 	vec3_t	color;				// range from 0.0 to 1.0, should be color normalized
@@ -50,6 +52,11 @@ typedef struct dlight_s {
 
 	vec3_t	transformed;		// origin in local coordinate system
 	int		additive;			// texture detail is lost tho when the lightmap is dark
+#ifdef USE_PMLIGHT
+	struct litSurf_s	*head;
+	struct litSurf_s	*tail;
+	lightMask_t			mask;	// suitable only for MAX_DLIGHTS <= 32!
+#endif // USE_PMLIGHT
 } dlight_t;
 
 
@@ -311,7 +318,6 @@ typedef struct {
 	float	depthForOpaque;
 } fogParms_t;
 
-
 typedef struct shader_s {
 	char		name[MAX_QPATH];		// game path, including extension
 	int			lightmapIndex;			// for a shader to match, both name and lightmapIndex must match
@@ -357,8 +363,13 @@ typedef struct shader_s {
 	int			numDeforms;
 	deformStage_t	deforms[MAX_SHADER_DEFORMS];
 
+
 	int			numUnfoggedPasses;
-	shaderStage_t	*stages[MAX_SHADER_STAGES];		
+	shaderStage_t	*stages[MAX_SHADER_STAGES];
+
+#ifdef USE_PMLIGHT
+	int	lightingStage;
+#endif
 
 	void		(*optimalStageIteratorFunc)( void );
 
@@ -404,8 +415,11 @@ typedef struct {
 
 	int			numDrawSurfs;
 	struct drawSurf_s	*drawSurfs;
-
-
+#ifdef USE_PMLIGHT
+	int			numLitSurfs;
+	struct litSurf_s	*litSurfs;
+	volatile int shiftMaskMult;
+#endif
 } trRefdef_t;
 
 
@@ -485,6 +499,14 @@ typedef struct drawSurf_s {
 	unsigned int		sort;			// bit combination for fast compares
 	surfaceType_t		*surface;		// any of surface*_t
 } drawSurf_t;
+
+#ifdef USE_PMLIGHT
+typedef struct litSurf_s {
+	unsigned int		sort;			// bit combination for fast compares
+	surfaceType_t		*surface;		// any of surface*_t
+	struct litSurf_s	*next;
+} litSurf_t;
+#endif
 
 #define	MAX_FACE_POINTS		64
 
@@ -642,7 +664,15 @@ typedef struct msurface_s {
 	int					viewCount;		// if == tr.viewCount, already added
 	struct shader_s		*shader;
 	int					fogIndex;
-
+#ifdef USE_PMLIGHT
+	int					vcVisible;		// if == tr.viewCount, is actually VISIBLE in this frame, i.e. passed facecull and has been added to the drawsurf list
+#ifdef USE_BUGGY_LIGHT_COUNT
+	int					lightCount;		// if == tr.lightCount, already added to the litsurf list for the current light
+#else
+	int					sceneCount;
+	lightMask_t			lightMask;
+#endif
+#endif // USE_PMLIGHT
 	surfaceType_t		*data;			// any of srf*_t
 } msurface_t;
 
@@ -798,6 +828,14 @@ typedef struct {
 	int		c_leafs;
 	int		c_dlightSurfaces;
 	int		c_dlightSurfacesCulled;
+#ifdef USE_PMLIGHT
+	int		c_light_cull_out;
+	int		c_light_cull_in;
+	int		c_lit_leafs;
+	int		c_lit_surfs;
+	int		c_lit_culls;
+	int		c_lit_masks;
+#endif
 } frontEndCounters_t;
 
 #define	FOG_TABLE_SIZE		256
@@ -828,6 +866,14 @@ typedef struct {
 	int		c_flareRenders;
 
 	int		msec;			// total msec for backend run
+#ifdef USE_PMLIGHT
+	int		c_lit_batches;
+	int		c_lit_vertices;
+	int		c_lit_indices;
+	int		c_lit_indices_latecull_in;
+	int		c_lit_indices_latecull_out;
+	int		c_lit_vertices_lateculltest;
+#endif
 } backEndCounters_t;
 
 // all state modified by the back end is seperated
@@ -867,6 +913,11 @@ typedef struct {
 	int						sceneCount;		// incremented every scene
 	int						viewCount;		// incremented every view (twice a scene if portaled)
 											// and every R_MarkFragments call
+#ifdef USE_PMLIGHT
+#ifdef USE_BUGGY_LIGHT_COUNT
+	int						lightCount;		// incremented for each dlight in the view
+#endif
+#endif
 
 	int						frameSceneNum;	// zeroed at RE_BeginFrame
 
@@ -910,7 +961,9 @@ typedef struct {
 	trRefdef_t				refdef;
 
 	int						viewCluster;
-
+#ifdef USE_PMLIGHT
+	dlight_t				*light;				// current light during R_RecursiveLightNode
+#endif
 	vec3_t					sunLight;			// from the sky shader for this level
 	vec3_t					sunDirection;
 
@@ -984,6 +1037,11 @@ extern cvar_t	*r_inGameVideo;				// controls whether in game video should be dra
 extern cvar_t	*r_fastsky;				// controls whether sky should be cleared or drawn
 extern cvar_t	*r_drawSun;				// controls drawing of sun quad
 extern cvar_t	*r_dynamiclight;		// dynamic lights enabled/disabled
+#ifdef USE_PMLIGHT
+extern cvar_t	*r_dlightMode;			// 0 - vq3, 1 - pmlight
+extern cvar_t	*r_dlightSpecExp;		// 1 - 32
+extern cvar_t	*r_dlightScale;			// 0.1 - 1.0
+#endif
 extern cvar_t	*r_dlightBacks;			// dlight non-facing surfaces for continuity
 
 extern	cvar_t	*r_norefresh;			// bypasses the ref rendering
@@ -1072,7 +1130,10 @@ void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader,
 					 int *fogNum, int *dlightMap );
 
 void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader, int fogIndex, int dlightMap );
-
+#ifdef USE_PMLIGHT
+void R_DecomposeLitSort( unsigned sort, int *entityNum, shader_t **shader, int *fogNum );
+void R_AddLitSurf( surfaceType_t *surface, shader_t *shader, int fogIndex );
+#endif
 
 #define	CULL_IN		0		// completely unclipped
 #define	CULL_CLIP	1		// clipped by one or more planes
@@ -1200,7 +1261,6 @@ typedef struct stageVars
 	vec2_t		texcoords[NUM_TEXTURE_BUNDLES][SHADER_MAX_VERTEXES];
 } stageVars_t;
 
-
 typedef struct shaderCommands_s 
 {
 #pragma pack(push,16)
@@ -1215,7 +1275,6 @@ typedef struct shaderCommands_s
 
 	color4ub_t	constantColor255[SHADER_MAX_VERTEXES] QALIGN(16);
 #pragma pack(pop)
-
 	shader_t	*shader;
 	double		shaderTime;	// -EC- set to double for frameloss fix
 	int			fogNum;
@@ -1225,10 +1284,16 @@ typedef struct shaderCommands_s
 	int			numIndexes;
 	int			numVertexes;
 
+#ifdef USE_PMLIGHT
+	qboolean	dlightPass;
+	const dlight_t* light;
+#endif
+
 	// info extracted from current shader
 	int			numPasses;
 	void		(*currentStageIteratorFunc)( void );
 	shaderStage_t	**xstages;
+
 } shaderCommands_t;
 
 extern	shaderCommands_t	tess;
@@ -1283,12 +1348,27 @@ LIGHTS
 
 ============================================================
 */
-
 void R_DlightBmodel( bmodel_t *bmodel );
 void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent );
 void R_TransformDlights( int count, dlight_t *dl, orientationr_t *or );
 int R_LightForPoint( vec3_t point, vec3_t ambientLight, vec3_t directedLight, vec3_t lightDir );
 
+#ifdef USE_PMLIGHT
+
+void R_BindAnimatedImage( const textureBundle_t *bundle );
+void R_DrawElements( int numIndexes, const glIndex_t *indexes );
+void R_ComputeTexCoords( const shaderStage_t *pStage );
+
+qboolean QGL_InitARB( void );
+void QGL_DoneARB( void );
+
+void GL_ProgramDisable( void );
+void GL_ProgramEnable( void );
+
+void ARB_SetupLightParams( void );
+void ARB_LightingPass( void );
+
+#endif // USE_PMLIGHT
 
 /*
 ============================================================
@@ -1551,7 +1631,11 @@ typedef enum {
 // contained in a backEndData_t
 typedef struct {
 	drawSurf_t	drawSurfs[MAX_DRAWSURFS];
+#ifdef USE_PMLIGHT
+	litSurf_t	litSurfs[MAX_DRAWSURFS];
+#endif
 	dlight_t	dlights[MAX_DLIGHTS];
+
 	trRefEntity_t	entities[MAX_REFENTITIES];
 	srfPoly_t	*polys;//[MAX_POLYS];
 	polyVert_t	*polyVerts;//[MAX_POLYVERTS];

@@ -745,6 +745,13 @@ Other things could be stuck in here, like birds in the sky, etc
 ================
 */
 void RB_StageIteratorSky( void ) {
+
+#ifdef USE_PMLIGHT
+	if ( r_dlightMode->integer ) {
+		GL_ProgramDisable();
+	}
+#endif
+
 	if ( r_fastsky->integer ) {
 		return;
 	}
@@ -781,10 +788,11 @@ void RB_StageIteratorSky( void ) {
 	// by the generic shader routine
 	R_BuildCloudData( &tess );
 
-	RB_StageIteratorGeneric();
+	if ( tess.numVertexes ) {
+		RB_StageIteratorGeneric();
+	}
 
 	// draw the inner skybox
-
 
 	// back to normal depth range
 	qglDepthRange( 0.0, 1.0 );
@@ -792,4 +800,3 @@ void RB_StageIteratorSky( void ) {
 	// note that sky was drawn so we will draw a sun later
 	backEnd.skyRenderedThisView = qtrue;
 }
-

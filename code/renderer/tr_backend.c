@@ -569,12 +569,13 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 
 				// set up the transformation matrix
 				R_RotateForEntity( backEnd.currentEntity, &backEnd.viewParms, &backEnd.or );
-
 				// set up the dynamic lighting if needed
+#ifdef USE_PMLIGHT
+				if ( !r_dlightMode->integer )
+#endif
 				if ( backEnd.currentEntity->needDlights ) {
 					R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 				}
-
 				if ( backEnd.currentEntity->e.renderfx & RF_DEPTHHACK ) {
 					// hack the depth range to prevent view model from poking into walls
 					depthRange = qtrue;
@@ -589,6 +590,9 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				// we have to reset the shaderTime as well otherwise image animations on
 				// the world (like water) continue with the wrong frame
 				tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+#ifdef USE_PMLIGHT
+				if ( !r_dlightMode->integer )
+#endif
 				R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 			}
 
@@ -674,6 +678,185 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	// add light flares on lights that aren't obscured
 	RB_RenderFlares();
 }
+
+
+#ifdef USE_PMLIGHT
+/*
+==================
+RB_RenderLitSurfList
+==================
+*/
+void RB_RenderLitSurfList( dlight_t* dl ) {
+	shader_t		*shader, *oldShader;
+	int				fogNum, oldFogNum;
+	int				entityNum, oldEntityNum;
+	//int			dlighted, oldDlighted;
+	qboolean		depthRange, oldDepthRange, isCrosshair, wasCrosshair;
+	const litSurf_t	*litSurf;
+	unsigned int	oldSort;
+	double			originalTime; // -EC- 
+
+	// save original time for entity shader offsets
+	originalTime = backEnd.refdef.floatTime;
+
+	// draw everything
+	oldEntityNum = -1;
+	backEnd.currentEntity = &tr.worldEntity;
+	oldShader = NULL;
+	oldFogNum = -1;
+	oldDepthRange = qfalse;
+	wasCrosshair = qfalse;
+	//oldDlighted = qfalse;
+	oldSort = MAX_UINT;
+	depthRange = qfalse;
+
+	for ( litSurf = dl->head; litSurf; litSurf = litSurf->next ) {
+		//if ( litSurf->sort == sort ) {
+		if ( litSurf->sort == oldSort ) {
+			// fast path, same as previous sort
+			rb_surfaceTable[ *litSurf->surface ]( litSurf->surface );
+			continue;
+		}
+		oldSort = litSurf->sort;
+		R_DecomposeLitSort( litSurf->sort, &entityNum, &shader, &fogNum /*, &dlighted */ );
+
+		// anything BEFORE opaque is sky/portal, anything AFTER it should never have been added
+		//assert( shader->sort == SS_OPAQUE );
+		// !!! but MIRRORS can trip that assert, so just do this for now
+		if ( shader->sort < SS_OPAQUE )
+			continue;
+
+		//
+		// change the tess parameters if needed
+		// a "entityMergable" shader is a shader that can have surfaces from seperate
+		// entities merged into a single batch, like smoke and blood puff sprites
+		if ( shader != NULL && ( shader != oldShader || fogNum != oldFogNum /* || dlighted != oldDlighted */
+			|| ( entityNum != oldEntityNum && !shader->entityMergable ) ) ) {
+			if (oldShader != NULL) {
+				RB_EndSurface();
+			}
+			RB_BeginSurface( shader, fogNum );
+			oldShader = shader;
+			oldFogNum = fogNum;
+			//oldDlighted = dlighted;
+		}
+
+		//
+		// change the modelview matrix if needed
+		//
+		if ( entityNum != oldEntityNum ) {
+			depthRange = isCrosshair = qfalse;
+
+			if ( entityNum != REFENTITYNUM_WORLD ) {
+				backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
+				if ( backEnd.floatfix ) // -EC-
+					backEnd.refdef.floatTime = originalTime - (double)(backEnd.currentEntity->e.shaderTime.i) * 0.001;
+				else
+					backEnd.refdef.floatTime = originalTime - (double)backEnd.currentEntity->e.shaderTime.f;
+
+				// we have to reset the shaderTime as well otherwise image animations start
+				// from the wrong frame
+				tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+
+				// set up the transformation matrix
+				R_RotateForEntity( backEnd.currentEntity, &backEnd.viewParms, &backEnd.or );
+
+				// set up the dynamic lighting
+				R_TransformDlights( 1, dl, &backEnd.or );
+				ARB_SetupLightParams();
+
+				if ( backEnd.currentEntity->e.renderfx & RF_DEPTHHACK ) {
+					// hack the depth range to prevent view model from poking into walls
+					depthRange = qtrue;
+					
+					if(backEnd.currentEntity->e.renderfx & RF_CROSSHAIR)
+						isCrosshair = qtrue;
+				}
+			} else {
+				backEnd.currentEntity = &tr.worldEntity;
+				backEnd.refdef.floatTime = originalTime;
+				backEnd.or = backEnd.viewParms.world;
+				// we have to reset the shaderTime as well otherwise image animations on
+				// the world (like water) continue with the wrong frame
+				tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+
+				R_TransformDlights( 1, dl, &backEnd.or );
+				ARB_SetupLightParams();
+			}
+
+			qglLoadMatrixf( backEnd.or.modelMatrix );
+
+			//
+			// change depthrange. Also change projection matrix so first person weapon does not look like coming
+			// out of the screen.
+			//
+			if (oldDepthRange != depthRange || wasCrosshair != isCrosshair)
+			{
+				if (depthRange)
+				{
+					if(backEnd.viewParms.stereoFrame != STEREO_CENTER)
+					{
+						if(isCrosshair)
+						{
+							if(oldDepthRange)
+							{
+								// was not a crosshair but now is, change back proj matrix
+								qglMatrixMode(GL_PROJECTION);
+								qglLoadMatrixf(backEnd.viewParms.projectionMatrix);
+								qglMatrixMode(GL_MODELVIEW);
+							}
+						}
+						else
+						{
+							viewParms_t temp = backEnd.viewParms;
+
+							R_SetupProjection(&temp, r_znear->value, qfalse);
+
+							qglMatrixMode(GL_PROJECTION);
+							qglLoadMatrixf(temp.projectionMatrix);
+							qglMatrixMode(GL_MODELVIEW);
+						}
+					}
+
+					if(!oldDepthRange)
+						qglDepthRange (0, 0.3);
+				}
+				else
+				{
+					if(!wasCrosshair && backEnd.viewParms.stereoFrame != STEREO_CENTER)
+					{
+						qglMatrixMode(GL_PROJECTION);
+						qglLoadMatrixf(backEnd.viewParms.projectionMatrix);
+						qglMatrixMode(GL_MODELVIEW);
+					}
+
+					qglDepthRange (0, 1);
+				}
+				oldDepthRange = depthRange;
+				wasCrosshair = isCrosshair;
+			}
+
+			oldEntityNum = entityNum;
+		}
+
+		// add the triangles for this surface
+		rb_surfaceTable[ *litSurf->surface ]( litSurf->surface );
+	}
+
+	backEnd.refdef.floatTime = originalTime;
+
+	// draw the contents of the last shader batch
+	if (oldShader != NULL) {
+		RB_EndSurface();
+	}
+
+	// go back to the world modelview matrix
+	qglLoadMatrixf( backEnd.viewParms.world.modelMatrix );
+	if ( depthRange ) {
+		qglDepthRange (0, 1);
+	}
+}
+#endif // USE_PMLIGHT
 
 
 /*
@@ -931,8 +1114,30 @@ const void	*RB_DrawSurfs( const void *data ) {
 	backEnd.refdef = cmd->refdef;
 	backEnd.viewParms = cmd->viewParms;
 	//TODO Maybe check for rdf_noworld stuff but q3mme has full 3d ui
-	backEnd.doneSurfaces = qtrue;
+	backEnd.doneSurfaces = qtrue; // bloom
+
+#ifdef USE_PMLIGHT
+	tess.dlightPass = qfalse;
+#endif
+
 	RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
+
+#ifdef USE_PMLIGHT
+	if ( r_dlightMode->integer ) {
+		dlight_t	*dl;
+		int			i;
+		tess.dlightPass = qtrue;
+		for ( i = 0; i < backEnd.refdef.num_dlights; ++i ) {
+			dl = &backEnd.refdef.dlights[ i ];
+			if ( dl->head ) {
+				tess.light = dl;
+				RB_RenderLitSurfList( dl );
+			}
+		}
+		tess.dlightPass = qfalse;
+		GL_ProgramDisable();
+	}
+#endif // USE_PMLIGHT
 
 	return (const void *)(cmd + 1);
 }
@@ -1168,5 +1373,4 @@ void RB_ExecuteRenderCommands( const void *data ) {
 			return;
 		}
 	}
-
 }

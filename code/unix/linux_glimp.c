@@ -860,6 +860,10 @@ void GLimp_Shutdown( void )
 	if ( !ctx || !dpy )
 		return;
 
+#ifdef CNQ3L
+	QGL_DoneARB();
+#endif
+
 	IN_DeactivateMouse();
   // bk001206 - replaced with H2/Fakk2 solution
   // XAutoRepeatOn(dpy);
@@ -1667,6 +1671,9 @@ void GLimp_Init( void )
 
 	// initialize extensions
 	GLW_InitExtensions();
+#ifdef CNQ3L
+	QGL_InitARB();
+#endif
 	GLW_InitGamma();
 
 	InitSig(); // not clear why this is at begin & end of function

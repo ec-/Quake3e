@@ -1750,6 +1750,7 @@ static void ComputeStageIteratorFunc( void )
 	}
 }
 
+
 typedef struct {
 	int		blendA;
 	int		blendB;
@@ -2073,6 +2074,30 @@ static shader_t *GeneratePermanentShader( void ) {
 	return newShader;
 }
 
+
+#ifdef USE_PMLIGHT
+/*
+====================
+FindLightingStages
+====================
+*/
+static void FindLightingStages( void )
+{
+	int i;
+	shader.lightingStage = 0;
+	for ( i = 1; i < shader.numUnfoggedPasses; ++i ) {
+		if ( !stages[i].bundle[0].isLightmap ) {
+			if ( stages[i].bundle[0].tcGen != TCGEN_TEXTURE )
+				continue;
+			if ((stages[ i ].stateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS)) == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE))
+				continue;
+			shader.lightingStage = i;
+		}
+	}
+}
+#endif // USE_PMLIGHT
+
+
 /*
 =================
 VertexLightingCollapse
@@ -2363,7 +2388,9 @@ static shader_t *FinishShader( void ) {
 	// compute number of passes
 	//
 	shader.numUnfoggedPasses = stage;
-
+#ifdef USE_PMLIGHT
+	FindLightingStages();
+#endif
 	// fogonly shaders don't have any normal passes
 	if (stage == 0 && !shader.isSky)
 		shader.sort = SS_FOG;

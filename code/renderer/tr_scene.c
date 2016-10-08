@@ -23,6 +23,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "tr_local.h"
 
 int			r_firstSceneDrawSurf;
+#ifdef USE_PMLIGHT
+int			r_firstSceneLitSurf;
+#endif
 
 int			r_numdlights;
 int			r_firstSceneDlight;
@@ -47,6 +50,9 @@ void R_InitNextFrame( void ) {
 	backEndData->commands.used = 0;
 
 	r_firstSceneDrawSurf = 0;
+#ifdef USE_PMLIGHT
+	r_firstSceneLitSurf = 0;
+#endif
 
 	r_numdlights = 0;
 	r_firstSceneDlight = 0;
@@ -255,7 +261,13 @@ void RE_AddDynamicLightToScene( const vec3_t org, float intensity, float r, floa
 	dl->color[1] = g;
 	dl->color[2] = b;
 	dl->additive = additive;
+#ifdef USE_PMLIGHT
+	dl->mask = 1 << (r_numdlights - 1);
+	dl->head = NULL;
+	dl->tail = NULL;
+#endif // USE_PMLIGHT
 }
+
 
 /*
 =====================
@@ -357,14 +369,17 @@ void RE_RenderScene( const refdef_t *fd ) {
 	tr.refdef.num_dlights = r_numdlights - r_firstSceneDlight;
 	tr.refdef.dlights = &backEndData->dlights[r_firstSceneDlight];
 
+#ifdef USE_PMLIGHT
+	tr.refdef.numLitSurfs = r_firstSceneLitSurf;
+	tr.refdef.litSurfs = backEndData->litSurfs;
+#endif
+
 	tr.refdef.numPolys = r_numpolys - r_firstScenePoly;
 	tr.refdef.polys = &backEndData->polys[r_firstScenePoly];
 
 	// turn off dynamic lighting globally by clearing all the
-	// dlights if it needs to be disabled or if vertex lighting is enabled
-	if ( r_dynamiclight->integer == 0 ||
-		 r_vertexLight->integer == 1 ||
-		 glConfig.hardwareType == GLHW_PERMEDIA2 ) {
+	// dlights if it needs to be disabled
+	if ( r_dynamiclight->integer == 0 || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
 		tr.refdef.num_dlights = 0;
 	}
 
@@ -405,6 +420,10 @@ void RE_RenderScene( const refdef_t *fd ) {
 
 	// the next scene rendered in this frame will tack on after this one
 	r_firstSceneDrawSurf = tr.refdef.numDrawSurfs;
+#ifdef USE_PMLIGHT
+	r_firstSceneLitSurf = tr.refdef.numLitSurfs;
+#endif
+
 	r_firstSceneEntity = r_numentities;
 	r_firstSceneDlight = r_numdlights;
 	r_firstScenePoly = r_numpolys;

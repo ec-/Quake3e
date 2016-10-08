@@ -160,7 +160,7 @@ instead of using the single glDrawElements call that may be inefficient
 without compiled vertex arrays.
 ==================
 */
-static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
+void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 	int		primitives;
 
 	primitives = r_primitives->integer;
@@ -214,7 +214,7 @@ R_BindAnimatedImage
 
 =================
 */
-static void R_BindAnimatedImage( textureBundle_t *bundle ) {
+void R_BindAnimatedImage( const textureBundle_t *bundle ) {
 	int64_t index;
 	double	v;
 
@@ -395,7 +395,6 @@ static void DrawMultitextured( shaderCommands_t *input, int stage ) {
 }
 
 
-
 /*
 ===================
 ProjectDlightTexture
@@ -417,13 +416,13 @@ static void ProjectDlightTexture_scalar( void ) {
 	float	radius;
 	vec3_t	floatColor;
 	float	modulate = 0.0f;
+	dlight_t *dl;
 
 	if ( !backEnd.refdef.num_dlights ) {
 		return;
 	}
 
 	for ( l = 0 ; l < backEnd.refdef.num_dlights ; l++ ) {
-		dlight_t	*dl;
 
 		if ( !( tess.dlightBits & ( 1 << l ) ) ) {
 			continue;	// this surface definately doesn't have any of this light
@@ -458,7 +457,7 @@ static void ProjectDlightTexture_scalar( void ) {
 			floatColor[1] = dl->color[1];
 			floatColor[2] = dl->color[2];
 		}
-
+		
 		for ( i = 0 ; i < tess.numVertexes ; i++, texCoords += 2, colors += 4 ) {
 			int		clip = 0;
 			vec3_t	dist;
@@ -542,17 +541,19 @@ static void ProjectDlightTexture_scalar( void ) {
 		GL_Bind( tr.dlightImage );
 		// include GLS_DEPTHFUNC_EQUAL so alpha tested surfaces don't add light
 		// where they aren't rendered
+
 		if ( dl->additive ) {
 			GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
-		}
-		else {
+		} else {
 			GL_State( GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
 		}
 		R_DrawElements( numIndexes, hitIndexes );
+
 		backEnd.pc.c_totalIndexes += numIndexes;
 		backEnd.pc.c_dlightIndexes += numIndexes;
 	}
 }
+
 
 static void ProjectDlightTexture( void ) {
 	ProjectDlightTexture_scalar();
@@ -817,7 +818,7 @@ static void ComputeColors( shaderStage_t *pStage )
 ComputeTexCoords
 ===============
 */
-static void ComputeTexCoords( shaderStage_t *pStage ) {
+void R_ComputeTexCoords( const shaderStage_t *pStage ) {
 	int		i;
 	int		b;
 
@@ -930,7 +931,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 		}
 
 		ComputeColors( pStage );
-		ComputeTexCoords( pStage );
+		R_ComputeTexCoords( pStage );
 
 		if ( !setArraysOnce )
 		{
@@ -980,6 +981,19 @@ void RB_StageIteratorGeneric( void )
 {
 	shaderCommands_t *input;
 	shader_t		*shader;
+
+#ifdef USE_PMLIGHT
+	if ( r_dlightMode->integer ) 
+	{
+		if ( tess.dlightPass ) 
+		{
+			ARB_LightingPass();
+			return;
+		}
+
+		GL_ProgramDisable();
+	}
+#endif
 
 	input = &tess;
 	shader = input->shader;
@@ -1047,6 +1061,9 @@ void RB_StageIteratorGeneric( void )
 	// 
 	// now do any dynamic lighting needed
 	//
+#ifdef USE_PMLIGHT
+	if ( !r_dlightMode->integer )
+#endif
 	if ( tess.dlightBits && tess.shader->sort <= SS_OPAQUE
 		&& !(tess.shader->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) ) {
 		ProjectDlightTexture();
@@ -1083,8 +1100,20 @@ void RB_StageIteratorGeneric( void )
 void RB_StageIteratorVertexLitTexture( void )
 {
 	shaderCommands_t *input;
-
 	input = &tess;
+
+#ifdef USE_PMLIGHT
+	if ( r_dlightMode->integer ) 
+	{
+		if ( tess.dlightPass ) 
+		{
+			ARB_LightingPass();
+			return;
+		}
+
+		GL_ProgramDisable();
+	}
+#endif
 
 	//
 	// compute colors
@@ -1121,6 +1150,9 @@ void RB_StageIteratorVertexLitTexture( void )
 	// 
 	// now do any dynamic lighting needed
 	//
+#ifdef USE_PMLIGHT
+	if ( !r_dlightMode->integer )
+#endif
 	if ( tess.dlightBits && tess.shader->sort <= SS_OPAQUE ) {
 		ProjectDlightTexture();
 	}
@@ -1144,9 +1176,22 @@ void RB_StageIteratorVertexLitTexture( void )
 //define	REPLACE_MODE
 
 void RB_StageIteratorLightmappedMultitexture( void ) {
-	shaderCommands_t *input;
 
+	shaderCommands_t *input;
 	input = &tess;
+
+#ifdef USE_PMLIGHT
+	if ( r_dlightMode->integer ) 
+	{
+		if ( tess.dlightPass ) 
+		{
+			ARB_LightingPass();
+			return;
+		}
+
+		GL_ProgramDisable();
+	}
+#endif
 
 	//
 	// set face culling appropriately
@@ -1215,6 +1260,9 @@ void RB_StageIteratorLightmappedMultitexture( void ) {
 	// 
 	// now do any dynamic lighting needed
 	//
+#ifdef USE_PMLIGHT
+	if ( !r_dlightMode->integer )
+#endif
 	if ( tess.dlightBits && tess.shader->sort <= SS_OPAQUE ) {
 		ProjectDlightTexture();
 	}
@@ -1266,9 +1314,18 @@ void RB_EndSurface( void ) {
 	//
 	// update performance counters
 	//
-	backEnd.pc.c_shaders++;
-	backEnd.pc.c_vertexes += tess.numVertexes;
-	backEnd.pc.c_indexes += tess.numIndexes;
+#ifdef USE_PMLIGHT
+	if ( tess.dlightPass ) {
+		backEnd.pc.c_lit_batches++;
+		backEnd.pc.c_lit_vertices += tess.numVertexes;
+		backEnd.pc.c_lit_indices += tess.numIndexes;
+	} else 
+#endif
+	{
+		backEnd.pc.c_shaders++;
+		backEnd.pc.c_vertexes += tess.numVertexes;
+		backEnd.pc.c_indexes += tess.numIndexes;
+	}
 	backEnd.pc.c_totalIndexes += tess.numIndexes * tess.numPasses;
 
 	//

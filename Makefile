@@ -872,6 +872,7 @@ Q3OBJ = \
   $(B)/client/jutils.o \
   \
   $(B)/client/tr_animation.o \
+  $(B)/client/tr_arb.o \
   $(B)/client/tr_backend.o \
   $(B)/client/tr_bloom.o \
   $(B)/client/tr_bsp.o \

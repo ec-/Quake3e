@@ -66,6 +66,11 @@ cvar_t	*r_inGameVideo;
 cvar_t	*r_fastsky;
 cvar_t	*r_drawSun;
 cvar_t	*r_dynamiclight;
+#ifdef USE_PMLIGHT
+cvar_t	*r_dlightMode;
+cvar_t	*r_dlightSpecExp;
+cvar_t	*r_dlightScale;
+#endif
 cvar_t	*r_dlightBacks;
 
 cvar_t	*r_lodbias;
@@ -1089,6 +1094,13 @@ void R_Register( void )
 	r_inGameVideo = ri.Cvar_Get( "r_inGameVideo", "1", CVAR_ARCHIVE );
 	r_drawSun = ri.Cvar_Get( "r_drawSun", "0", CVAR_ARCHIVE );
 	r_dynamiclight = ri.Cvar_Get( "r_dynamiclight", "1", CVAR_ARCHIVE );
+#ifdef USE_PMLIGHT
+	r_dlightMode = ri.Cvar_Get( "r_dlightMode", "0", CVAR_ARCHIVE );
+	r_dlightScale = ri.Cvar_Get( "r_dlightScale", "1.0", CVAR_ARCHIVE );
+	Cvar_CheckRange( r_dlightScale, 0.1f, 1.0f, qfalse );
+	r_dlightSpecExp = ri.Cvar_Get( "r_dlightSpecExp", "8.0", CVAR_ARCHIVE | CVAR_LATCH );
+	Cvar_CheckRange( r_dlightSpecExp, 1.0f, 32.0f, qfalse );
+#endif
 	r_dlightBacks = ri.Cvar_Get( "r_dlightBacks", "1", CVAR_ARCHIVE );
 	r_finish = ri.Cvar_Get ("r_finish", "0", CVAR_ARCHIVE);
 	r_textureMode = ri.Cvar_Get( "r_textureMode", "GL_LINEAR_MIPMAP_NEAREST", CVAR_ARCHIVE );

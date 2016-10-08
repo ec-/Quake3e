@@ -159,6 +159,58 @@ static qboolean	R_CullSurface( surfaceType_t *surface, shader_t *shader ) {
 }
 
 
+#ifdef USE_PMLIGHT
+static qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t maxs )
+{
+	if (dl->transformed[0] - dl->radius > maxs[0])
+		return qtrue;
+	if (dl->transformed[0] + dl->radius < mins[0])
+		return qtrue;
+
+	if (dl->transformed[1] - dl->radius > maxs[1])
+		return qtrue;
+	if (dl->transformed[1] + dl->radius < mins[1])
+		return qtrue;
+
+	if (dl->transformed[2] - dl->radius > maxs[2])
+		return qtrue;
+	if (dl->transformed[2] + dl->radius < mins[2])
+		return qtrue;
+
+	return qfalse;
+}
+
+
+static qboolean R_LightCullFace( const srfSurfaceFace_t* face, const dlight_t* dl )
+{
+	float d = DotProduct( dl->origin, face->plane.normal ) - face->plane.dist;
+	if ( (d < -dl->radius) || (d > dl->radius) )
+		return qtrue;
+
+	return qfalse;
+}
+
+
+static qboolean R_LightCullSurface( const surfaceType_t* surface, const dlight_t* dl )
+{
+	switch (*surface) {
+	case SF_FACE:
+		return R_LightCullFace( (const srfSurfaceFace_t*)surface, dl );
+	case SF_GRID: {
+		const srfGridMesh_t* grid = (const srfGridMesh_t*)surface;
+		return R_LightCullBounds( dl, grid->meshBounds[0], grid->meshBounds[1] );
+		}
+	case SF_TRIANGLES: {
+		const srfTriangles_t* tris = (const srfTriangles_t*)surface;
+		return R_LightCullBounds( dl, tris->bounds[0], tris->bounds[1] );
+		}
+	default:
+		return qfalse;
+	};
+}
+#endif // USE_PMLIGHT
+
+
 static int R_DlightFace( srfSurfaceFace_t *face, int dlightBits ) {
 	float		d;
 	int			i;
@@ -274,7 +326,6 @@ static int R_DlightSurface( msurface_t *surf, int dlightBits ) {
 }
 
 
-
 /*
 ======================
 R_AddWorldSurface
@@ -292,7 +343,19 @@ static void R_AddWorldSurface( msurface_t *surf, int dlightBits ) {
 	if ( R_CullSurface( surf->data, surf->shader ) ) {
 		return;
 	}
-
+#ifdef USE_PMLIGHT
+	if ( r_dlightMode->integer ) {
+#ifndef USE_BUGGY_LIGHT_COUNT
+		// reset surface light mask on first lookup for this scene
+		if ( surf->sceneCount != tr.sceneCount )
+			surf->lightMask = 0;
+		surf->sceneCount = tr.sceneCount;
+#endif
+		surf->vcVisible = tr.viewCount;
+		R_AddDrawSurf( surf->data, surf->shader, surf->fogIndex, 0 );
+		return;
+	}
+#endif
 	// check for dlighting
 	if ( dlightBits ) {
 		dlightBits = R_DlightSurface( surf, dlightBits );
@@ -301,6 +364,114 @@ static void R_AddWorldSurface( msurface_t *surf, int dlightBits ) {
 
 	R_AddDrawSurf( surf->data, surf->shader, surf->fogIndex, dlightBits );
 }
+
+
+/*
+=============================================================
+	PM LIGHTING
+=============================================================
+*/
+#ifdef USE_PMLIGHT
+static void R_AddLitSurface( msurface_t *surf, const dlight_t *light )
+{
+	// since we're not worried about offscreen lights casting into the frustum (ATM !!!)
+	// only add the "lit" version of this surface if it was already added to the view
+	//if ( surf->viewCount != tr.viewCount )
+	//	return;
+
+#ifndef USE_BUGGY_LIGHT_COUNT
+	 // check if already masked by this light in this scene
+	if ( surf->lightMask & light->mask ) {
+		tr.pc.c_lit_masks++;
+		return;
+	}
+	surf->lightMask |= light->mask;
+#endif
+
+	// surfaces that were faceculled will still have the current viewCount in vcBSP
+	// because that's set to indicate that it's BEEN vis tested at all, to avoid
+	// repeated vis tests, not whether it actually PASSED the vis test or not
+	// only light surfaces that are GENUINELY visible, as opposed to merely in a visible LEAF
+	if ( surf->vcVisible != tr.viewCount ) {
+		return;
+	}
+
+	if ( surf->shader->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) )
+		return;
+
+	if ( surf->shader->sort != SS_OPAQUE )
+		return;
+
+#ifdef USE_BUGGY_LIGHT_COUNT
+	if ( surf->lightCount == tr.lightCount )
+		return;
+	surf->lightCount = tr.lightCount;
+#endif
+
+	if ( R_LightCullSurface( surf->data, light ) ) {
+		tr.pc.c_lit_culls++;
+		return;
+	}
+
+	R_AddLitSurf( surf->data, surf->shader, surf->fogIndex );
+}
+
+
+static void R_RecursiveLightNode( const mnode_t* node )
+{
+	qboolean children[2];
+	msurface_t** mark;
+	msurface_t* surf;
+	float d;
+	int c;
+	do {
+		// if the node wasn't marked as potentially visible, exit
+		if ( node->visframe != tr.visCount )
+			return;
+
+		if ( node->contents != CONTENTS_NODE )
+			break;
+
+		children[0] = children[1] = qfalse;
+
+		d = DotProduct( tr.light->origin, node->plane->normal ) - node->plane->dist;
+		if ( d > -tr.light->radius ) {
+			children[0] = qtrue;
+		}
+		if ( d < tr.light->radius ) {
+			children[1] = qtrue;
+		}
+
+		if ( children[0] && children[1] ) {
+			R_RecursiveLightNode( node->children[0] );
+			node = node->children[1];
+		}
+		else if ( children[0] ) {
+			node = node->children[0];
+		}
+		else if ( children[1] ) {
+			node = node->children[1];
+		}
+		else {
+			return;
+		}
+
+	} while ( 1 );
+
+	tr.pc.c_lit_leafs++;
+
+	// add the individual surfaces
+	c = node->nummarksurfaces;
+	mark = node->firstmarksurface;
+	while ( c-- ) {
+		// the surface may have already been added if it spans multiple leafs
+		surf = *mark;
+		R_AddLitSurface( surf, tr.light );
+		mark++;
+	}
+}
+#endif // USE_PMLIGHT
+
 
 /*
 =============================================================
@@ -329,7 +500,34 @@ void R_AddBrushModelSurfaces ( trRefEntity_t *ent ) {
 	if ( clip == CULL_OUT ) {
 		return;
 	}
-	
+
+#ifdef USE_PMLIGHT
+	if ( r_dlightMode->integer ) {
+		dlight_t *dl;
+		int s;
+
+		for ( s = 0; s < bmodel->numSurfaces; s++ ) {
+			R_AddWorldSurface( bmodel->firstSurface + s, qfalse );
+		}
+		
+		R_TransformDlights( tr.refdef.num_dlights, tr.refdef.dlights, &tr.or );
+
+		for ( i = 0; i < tr.refdef.num_dlights; i++ ) {
+			dl = &tr.refdef.dlights[i];
+			if ( !R_LightCullBounds( dl, bmodel->bounds[0], bmodel->bounds[1] ) ) {
+#ifdef USE_BUGGY_LIGHT_COUNT
+				tr.lightCount++;
+#endif
+				tr.light = dl;
+				for ( s = 0; s < bmodel->numSurfaces; s++ ) {
+					R_AddLitSurface( bmodel->firstSurface + s, dl );
+				}
+			}
+		}
+		return;
+	}
+#endif
+
 	R_SetupEntityLighting( &tr.refdef, ent );
 	R_DlightBmodel( bmodel );
 
@@ -421,6 +619,9 @@ static void R_RecursiveWorldNode( mnode_t *node, unsigned int planeBits, unsigne
 		// determine which dlights are needed
 		newDlights[0] = 0;
 		newDlights[1] = 0;
+#ifdef USE_PMLIGHT
+		if ( !r_dlightMode->integer )
+#endif
 		if ( dlightBits ) {
 			int	i;
 
@@ -642,7 +843,12 @@ static void R_MarkLeaves (void) {
 R_AddWorldSurfaces
 =============
 */
-void R_AddWorldSurfaces (void) {
+void R_AddWorldSurfaces( void ) {
+#ifdef USE_PMLIGHT
+	dlight_t* dl;
+	int i;
+#endif
+
 	if ( !r_drawworld->integer ) {
 		return;
 	}
@@ -662,7 +868,35 @@ void R_AddWorldSurfaces (void) {
 
 	// perform frustum culling and add all the potentially visible surfaces
 	if ( tr.refdef.num_dlights > MAX_DLIGHTS ) {
-		tr.refdef.num_dlights = MAX_DLIGHTS ;
+		tr.refdef.num_dlights = MAX_DLIGHTS;
 	}
+
 	R_RecursiveWorldNode( tr.world->nodes, 15, ( 1ULL << tr.refdef.num_dlights ) - 1 );
+#ifdef USE_PMLIGHT
+	if ( !r_dlightMode->integer )
+		return;
+
+	// "transform" all the dlights so that dl->transformed is actually populated
+	// (even though HERE it's == dl->origin) so we can always use R_LightCullBounds
+	// instead of having copypasted versions for both world and local cases
+
+	R_TransformDlights( tr.refdef.num_dlights, tr.refdef.dlights, &tr.viewParms.world );
+	for ( i = 0; i < tr.refdef.num_dlights; i++ ) 
+	{
+		dl = &tr.refdef.dlights[i];	
+#ifdef USE_BUGGY_LIGHT_COUNT
+		dl->head = dl->tail = 0;
+#endif
+		if (  R_CullPointAndRadius( dl->origin, dl->radius ) == CULL_OUT ) {
+			tr.pc.c_light_cull_out++;
+			continue;
+		}
+		tr.pc.c_light_cull_in++;
+#ifdef USE_BUGGY_LIGHT_COUNT
+		tr.lightCount++;
+#endif
+		tr.light = dl;
+		R_RecursiveLightNode( tr.world->nodes );
+	}
+#endif // USE_PMLIGHT
 }

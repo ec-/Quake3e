@@ -1457,6 +1457,11 @@ void GLimp_Init( void )
 	Q_strncpyz( glConfig.extensions_string, glw_state.gl_extensions, sizeof( glConfig.extensions_string ) );
 
 	GLW_InitExtensions();
+
+#ifdef USE_PMLIGHT
+	QGL_InitARB();
+#endif
+
 	WG_CheckHardwareGamma();
 
 	// show main window after all initializations
@@ -1490,6 +1495,10 @@ void GLimp_Shutdown( void )
 
 	// restore gamma.  We do this first because 3Dfx's extension needs a valid OGL subsystem
 	WG_RestoreGamma();
+
+#ifdef USE_PMLIGHT
+	QGL_DoneARB();
+#endif
 
 	// set current context to NULL
 	if ( qwglMakeCurrent )
