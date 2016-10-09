@@ -915,6 +915,89 @@ void Cvar_Reset_f( void ) {
 
 /*
 ============
+Cvar_IncDec_f
+============
+*/
+void Cvar_IncDec_f( void ) {
+	const char *var_name;
+	char	value[ 32 ];
+	cvar_t	*var;
+	qboolean addition;
+
+	if ( Cmd_Argc() < 3 ) {
+		Com_Printf( "usage: %s <variable> <amount> [limit]\n", Cmd_Argv( 0 ) );
+		return;
+	}
+
+	var_name = Cmd_Argv( 1 );
+	var = Cvar_FindVar( var_name );
+	if ( !var ) {
+		Com_Printf( "Cvar '%s' does not exist.\n", var_name );
+		return;
+	}
+	if ( var->flags & ( CVAR_INIT | CVAR_ROM | CVAR_PROTECTED ) ) {
+		Com_Printf( "Cvar '%s' is write-protected.\n", var_name );
+		return;
+	}
+
+	if ( !Q_stricmp( Cmd_Argv( 0 ), "inc" ) )
+		addition = qtrue;
+	else
+		addition = qfalse;
+
+	if ( var->integral ) {
+		int		ivalue, imod, icap;
+
+		ivalue = var->integer;
+		imod = atoi( Cmd_Argv( 2 ) );
+
+		if ( !addition ) imod = -imod;
+		ivalue += imod;
+
+		if ( Cmd_Argc() >= 4 ) {
+			icap = atoi( Cmd_Argv( 3 ) );
+			if ( addition ) {
+				if ( ivalue > icap ) {
+					ivalue = icap;
+				}
+			} else {
+				if ( ivalue < icap ) {
+					ivalue = icap;
+				}
+			}
+		}
+		sprintf( value, "%i", (int)ivalue );
+	} else {
+		float	fvalue,	fmod, fcap;
+
+		fvalue = var->value;
+		fmod = atof( Cmd_Argv( 2 ) );
+
+		if ( !addition ) fmod = -fmod;
+		fvalue += fmod;
+
+		if ( Cmd_Argc() >= 4 ) {
+			fcap = atof( Cmd_Argv( 3 ) );
+			if ( addition ) {
+				if ( fvalue > fcap )
+					fvalue = fcap;
+			} else {
+				if ( fvalue < fcap )
+					fvalue = fcap;
+			}
+		}
+		if ( (int)fvalue == fvalue )
+			sprintf( value, "%i", (int)fvalue );
+		else
+			sprintf( value, "%f", fvalue );
+	}
+
+	Cvar_Set2( var_name, value, qfalse );
+}
+
+
+/*
+============
 Cvar_WriteVariables
 
 Appends lines containing "set variable value" for all variables
@@ -1453,6 +1536,11 @@ void Cvar_Init (void)
 	Cmd_SetCommandCompletionFunc( "reset", Cvar_CompleteCvarName );
 	Cmd_AddCommand ("unset", Cvar_Unset_f);
 	Cmd_SetCommandCompletionFunc("unset", Cvar_CompleteCvarName);
+
+	Cmd_AddCommand( "inc", Cvar_IncDec_f );
+	Cmd_SetCommandCompletionFunc( "dec", Cvar_CompleteCvarName );
+	Cmd_AddCommand( "dec", Cvar_IncDec_f );
+	Cmd_SetCommandCompletionFunc( "inc", Cvar_CompleteCvarName );
 
 	Cmd_AddCommand ("cvarlist", Cvar_List_f);
 	Cmd_AddCommand ("cvar_modified", Cvar_ListModified_f);
