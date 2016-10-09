@@ -260,10 +260,23 @@ static const char *FPfmt = {
 	"END \n"
 };
 
-static qboolean ARB_LoadPrograms( void )
+qboolean ARB_UpdatePrograms( void )
 {
 	const char *FP;
 	GLint errorPos;
+	cvar_t	*cvar;
+
+	if ( !qglGenProgramsARB )
+		return qfalse;
+
+	if ( programAvail ) // delete old programs
+	{
+		programEnabled = qtrue; // force disable
+		GL_ProgramDisable();
+		qglDeleteProgramsARB( PR_COUNT, programs );
+		Com_Memset( programs, 0, sizeof( programs ) );
+		programAvail = qfalse;
+	}
 
 	qglGenProgramsARB( PR_COUNT, programs );
 
@@ -274,10 +287,14 @@ static qboolean ARB_LoadPrograms( void )
 	if ( qglGetError() != GL_NO_ERROR || errorPos != -1 ) {
 		ri.Printf( PRINT_ALL, S_COLOR_YELLOW "VP Compile Error: %s", qglGetString( GL_PROGRAM_ERROR_STRING_ARB ) );
 		qglDeleteProgramsARB( PR_COUNT, programs );
+		Com_Memset( programs, 0, sizeof( programs ) );
 		return qfalse;
 	}
 
-	FP = va( FPfmt, r_dlightSpecExp->value ); // apply custom parameters
+	// fetch latest value
+	cvar = ri.Cvar_Get( "r_dlightSpecExp", "8.0", CVAR_ARCHIVE );
+	cvar->modified = qfalse;
+	FP = va( FPfmt, cvar->value ); // apply custom parameters
 	qglBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, programs[ PR_FRAGMENT ] );
 	qglProgramStringARB( GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, strlen( FP ), FP );
 	qglGetIntegerv( GL_PROGRAM_ERROR_POSITION_ARB, &errorPos );
@@ -285,8 +302,11 @@ static qboolean ARB_LoadPrograms( void )
 	if ( qglGetError() != GL_NO_ERROR || errorPos != -1 ) {
 		ri.Printf( PRINT_ALL, S_COLOR_YELLOW "FP Compile Error: %s", qglGetString( GL_PROGRAM_ERROR_STRING_ARB ) );
 		qglDeleteProgramsARB( PR_COUNT, programs );
+		Com_Memset( programs, 0, sizeof( programs ) );
 		return qfalse;
 	}
+
+	programAvail = qtrue;
 
 	return qtrue;
 }
@@ -323,9 +343,9 @@ qboolean QGL_InitARB( void )
 	GPA( glProgramEnvParameter4fARB );
 #undef GPA
 
-	if ( ARB_LoadPrograms() )
+	if ( ARB_UpdatePrograms() )
 	{
-		programAvail = qtrue;
+		//programAvail = qtrue;
 		programEnabled = qtrue; // force disable
 		GL_ProgramDisable();
 		ri.Printf( PRINT_ALL, "...using ARB shaders\n" );

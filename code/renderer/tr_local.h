@@ -1362,6 +1362,7 @@ void R_ComputeTexCoords( const shaderStage_t *pStage );
 
 qboolean QGL_InitARB( void );
 void QGL_DoneARB( void );
+qboolean ARB_UpdatePrograms( void );
 
 void GL_ProgramDisable( void );
 void GL_ProgramEnable( void );

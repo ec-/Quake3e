@@ -2467,6 +2467,10 @@ CL_Frame
 
 ==================
 */
+//#ifdef USE_PMLIGHT
+extern cvar_t *r_dlightSpecExp;
+extern qboolean ARB_UpdatePrograms( void ) ;
+//#endif
 void CL_Frame ( int msec ) {
 	float fps;
 	float frameDuration;
@@ -2603,7 +2607,11 @@ void CL_Frame ( int msec ) {
 	SCR_RunCinematic();
 
 	Con_RunConsole();
-
+//#ifdef USE_PMLIGHT
+	if ( r_dlightSpecExp->modified ) {
+		ARB_UpdatePrograms();
+	}
+//#endif
 	cls.framecount++;
 }
 
