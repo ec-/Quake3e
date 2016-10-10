@@ -1250,7 +1250,7 @@ static void ParseSkyParms( char **text ) {
 	imgFlags_t imgFlags = IMGFLAG_MIPMAP | IMGFLAG_PICMIP;
 
 	if ( r_neatsky->integer ) {
-		imgFlags &= ~IMGFLAG_PICMIP;
+		imgFlags = IMGFLAG_NONE;
 	}
 	
 	// outerbox
@@ -1611,8 +1611,10 @@ static qboolean ParseShader( char **text )
 		else if ( !Q_stricmp( token, "skyparms" ) )
 		{
 			ParseSkyParms( text );
-			if ( r_neatsky->integer )
+			if ( r_neatsky->integer ) {
 				shader.noPicMip = qtrue;
+				shader.noMipMaps = qtrue;
+			}
 			continue;
 		}
 		// light <value> determines flaring in q3map, not needed here
