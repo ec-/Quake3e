@@ -913,86 +913,182 @@ void Cvar_Reset_f( void ) {
 }
 
 
-/*
-============
-Cvar_IncDec_f
-============
-*/
-void Cvar_IncDec_f( void ) {
-	const char *var_name;
-	char	value[ 32 ];
+// returns NULL for non-existent "-" agrument
+const char *GetValue( int index, int *ival, float *fval ) 
+{
+	static char buf[ MAX_CVAR_VALUE_STRING ];
+	const char *cmd;
 	cvar_t	*var;
-	qboolean addition;
+
+	cmd = Cmd_Argv( index );
+
+	if ( *cmd == '-' && *(cmd+1) == '\0' || *cmd == '\0' ) {
+		*ival = 0;
+		*fval = 0.0f;
+		buf[0] = '\0';
+		return NULL;
+	}
+
+	var = Cvar_FindVar( cmd );
+	if ( !var ) // cvar not found, return string
+	{
+		*ival = atoi( cmd );
+		*fval = atof( cmd );
+		strcpy( buf, cmd );
+		return buf;
+	}
+	else // found cvar, extract values
+	{
+		*ival = var->integer;
+		*fval = var->value;
+		strcpy( buf, var->string );
+		return buf;
+	}
+}
+
+
+typedef enum {
+	FT_BAD = 0,
+	FT_ADD,
+	FT_SUB,
+	FT_MUL,
+	FT_DIV,
+	FT_MOD
+} funcType_t;
+
+
+static funcType_t GetFuncType( void ) 
+{
+	const char *cmd;
+	cmd = Cmd_Argv( 1 );
+	if ( !Q_stricmp( cmd, "add" ) )
+		return FT_ADD;
+	if ( !Q_stricmp( cmd, "sub" ) )
+		return FT_SUB;
+	if ( !Q_stricmp( cmd, "mul" ) )
+		return FT_MUL;
+	if ( !Q_stricmp( cmd, "div" ) )
+		return FT_DIV;
+	if ( !Q_stricmp( cmd, "mod" ) )
+		return FT_MOD;
+
+	return FT_BAD;
+}
+
+
+static qboolean HaveCaps( funcType_t ftype ) 
+{
+	switch ( ftype ) {
+		case FT_ADD:
+		case FT_SUB:
+		case FT_MUL:
+		case FT_DIV:
+		case FT_MOD:
+			return qtrue;
+		default:
+			return qfalse;
+	};
+}
+
+
+static void Cvar_Op( funcType_t ftype, int *ival, float *fval, int imod, float fmod ) 
+{
+	switch ( ftype ) {
+		case FT_ADD:
+			*ival += imod;
+			*fval += fmod;
+			break;
+		case FT_SUB:
+			*ival -= imod;
+			*fval -= fmod;
+			break;
+		case FT_MUL:
+			*ival *= imod;
+			*fval *= fmod;
+			break;
+		case FT_DIV:
+			if ( imod )
+				*ival /= imod;
+			if ( fmod )
+				*fval /= fmod;
+			break;
+		case FT_MOD:
+			if ( imod )
+				*ival %= imod;
+			if ( imod )
+				*fval = (float)( (int)*fval % imod ); // FIXME: use float
+			break;
+		default: 
+			break;
+	}
+}
+
+
+void Cvar_Func_f( void ) {
+
+	funcType_t	ftype;
+	const char	*cvar_name;
+	char		value[ 32 ];
+	cvar_t		*cvar;
+	int			icap, ival, imod;
+	float		fcap, fval, fmod;
 
 	if ( Cmd_Argc() < 3 ) {
-		Com_Printf( "usage: %s <variable> <amount> [limit]\n", Cmd_Argv( 0 ) );
+		Com_Printf( "usage: %s <add|sub|mul|div|mod> <cvar> <value> [- or lowlimit] [- or highlimit]\n", Cmd_Argv( 0 ) );
 		return;
 	}
 
-	var_name = Cmd_Argv( 1 );
-	var = Cvar_FindVar( var_name );
-	if ( !var ) {
-		Com_Printf( "Cvar '%s' does not exist.\n", var_name );
+	//     0       1      2     3     4      5
+	// \varfunc <func> <cvar> <val> lo-cap hi-cap
+
+	ftype = GetFuncType(); // index 1: function type
+	if ( ftype == FT_BAD ) {
+		Com_Printf( "%s: unknown function %s\n", Cmd_Argv( 1 ) );
 		return;
 	}
-	if ( var->flags & ( CVAR_INIT | CVAR_ROM | CVAR_PROTECTED ) ) {
-		Com_Printf( "Cvar '%s' is write-protected.\n", var_name );
+
+	cvar_name = Cmd_Argv( 2 ); // index 2: cvar name
+	cvar = Cvar_FindVar( cvar_name );
+	if ( !cvar ) {
+		Com_Printf( "Cvar '%s' does not exist.\n", cvar_name );
+		return; // FIXME: allow cvar creation for some functions?
+	} else if ( cvar->flags & ( CVAR_INIT | CVAR_ROM | CVAR_PROTECTED ) ) {
+		Com_Printf( "Cvar '%s' is write-protected.\n", cvar_name );
 		return;
 	}
+	
+	fval = cvar->value;
+	ival = cvar->integer;
 
-	if ( !Q_stricmp( Cmd_Argv( 0 ), "inc" ) )
-		addition = qtrue;
-	else
-		addition = qfalse;
+	GetValue( 3, &imod, &fmod ); // index 3: value
 
-	if ( var->integral ) {
-		int		ivalue, imod, icap;
+	Cvar_Op( ftype, &ival, &fval, imod, fmod ); // apply modification
 
-		ivalue = var->integer;
-		imod = atoi( Cmd_Argv( 2 ) );
-
-		if ( !addition ) imod = -imod;
-		ivalue += imod;
-
-		if ( Cmd_Argc() >= 4 ) {
-			icap = atoi( Cmd_Argv( 3 ) );
-			if ( addition ) {
-				if ( ivalue > icap ) {
-					ivalue = icap;
-				}
-			} else {
-				if ( ivalue < icap ) {
-					ivalue = icap;
-				}
+	if ( HaveCaps( ftype ) ) {
+		if ( Cmd_Argc() > 4 ) { // low bound
+			if ( GetValue( 4, &icap, &fcap ) ) {
+				if ( ival < icap ) ival = icap;
+				if ( fval < fcap ) fval = fcap;
 			}
 		}
-		sprintf( value, "%i", (int)ivalue );
+		if ( Cmd_Argc() > 5 ) { // high bound
+			if ( GetValue( 5, &icap, &fcap ) ) {
+				if ( ival > icap ) ival = icap;
+				if ( fval > fcap ) fval = fcap;
+			}
+		}
+	}
+
+	if ( cvar->integral ) {
+		sprintf( value, "%i", ival );
 	} else {
-		float	fvalue,	fmod, fcap;
-
-		fvalue = var->value;
-		fmod = atof( Cmd_Argv( 2 ) );
-
-		if ( !addition ) fmod = -fmod;
-		fvalue += fmod;
-
-		if ( Cmd_Argc() >= 4 ) {
-			fcap = atof( Cmd_Argv( 3 ) );
-			if ( addition ) {
-				if ( fvalue > fcap )
-					fvalue = fcap;
-			} else {
-				if ( fvalue < fcap )
-					fvalue = fcap;
-			}
-		}
-		if ( (int)fvalue == fvalue )
-			sprintf( value, "%i", (int)fvalue );
+		if ( (int)fval == fval )
+			sprintf( value, "%i", (int)fval );
 		else
-			sprintf( value, "%f", fvalue );
+			sprintf( value, "%f", fval );
 	}
 
-	Cvar_Set2( var_name, value, qfalse );
+	Cvar_Set2( cvar_name, value, qfalse );
 }
 
 
@@ -1537,10 +1633,7 @@ void Cvar_Init (void)
 	Cmd_AddCommand ("unset", Cvar_Unset_f);
 	Cmd_SetCommandCompletionFunc("unset", Cvar_CompleteCvarName);
 
-	Cmd_AddCommand( "inc", Cvar_IncDec_f );
-	Cmd_SetCommandCompletionFunc( "dec", Cvar_CompleteCvarName );
-	Cmd_AddCommand( "dec", Cvar_IncDec_f );
-	Cmd_SetCommandCompletionFunc( "inc", Cvar_CompleteCvarName );
+	Cmd_AddCommand( "varfunc", Cvar_Func_f );
 
 	Cmd_AddCommand ("cvarlist", Cvar_List_f);
 	Cmd_AddCommand ("cvar_modified", Cvar_ListModified_f);
