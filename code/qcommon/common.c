@@ -2839,7 +2839,9 @@ void Com_Init( char *commandLine ) {
 	Com_InitSmallZoneMemory();
 	Cvar_Init ();
 
-	Cvar_Set( "fs_game", "edawn" );
+#ifdef DEFAULT_GAME
+	Cvar_Set( "fs_game", DEFAULT_GAME );
+#endif
 
 	// prepare enough of the subsystems to handle
 	// cvar and command buffer management

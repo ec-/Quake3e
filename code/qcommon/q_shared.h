@@ -34,6 +34,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define CONSOLE_WINDOW_TITLE  "Quake 3 Console"
 // 1.32 released 7-10-2002
 
+#define DEFAULT_GAME			"edawn"
+
 #define BASEGAME				"baseq3"
 #define BASEDEMO				"demoq3"
 #define BASETA					"missionpack"
