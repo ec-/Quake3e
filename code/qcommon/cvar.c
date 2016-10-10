@@ -922,7 +922,7 @@ const char *GetValue( int index, int *ival, float *fval )
 
 	cmd = Cmd_Argv( index );
 
-	if ( *cmd == '-' && *(cmd+1) == '\0' || *cmd == '\0' ) {
+	if ( ( *cmd == '-' && *(cmd+1) == '\0' ) || *cmd == '\0' ) {
 		*ival = 0;
 		*fval = 0.0f;
 		buf[0] = '\0';
@@ -1043,7 +1043,7 @@ void Cvar_Func_f( void ) {
 
 	ftype = GetFuncType(); // index 1: function type
 	if ( ftype == FT_BAD ) {
-		Com_Printf( "%s: unknown function %s\n", Cmd_Argv( 1 ) );
+		Com_Printf( "%s: unknown function %s\n", Cmd_Argv( 0 ), Cmd_Argv( 1 ) );
 		return;
 	}
 
