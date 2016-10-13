@@ -682,6 +682,61 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 
 #ifdef USE_PMLIGHT
 /*
+=================
+RB_BeginDrawingLitView
+=================
+*/
+void RB_BeginDrawingLitView( void ) 
+{
+	// we will need to change the projection matrix before drawing
+	// 2D images again
+	backEnd.projection2D = qfalse;
+
+	//
+	// set the modelview matrix for the viewer
+	//
+	SetViewportAndScissor();
+
+	// ensures that depth writes are enabled for the depth clear
+	GL_State( GLS_DEFAULT );
+	// clear relevant buffers
+	//clearBits = GL_DEPTH_BUFFER_BIT;
+
+	if ( r_measureOverdraw->integer || r_shadows->integer == 2 )
+	{
+		qglClear( GL_STENCIL_BUFFER_BIT );
+	}
+
+	glState.faceCulling = -1;		// force face culling to set next time
+
+	// we will only draw a sun if there was sky rendered in this view
+	backEnd.skyRenderedThisView = qfalse;
+
+	// clip to the plane of the portal
+	if ( backEnd.viewParms.isPortal ) {
+		float	plane[4];
+		GLdouble plane2[4];
+
+		plane[0] = backEnd.viewParms.portalPlane.normal[0];
+		plane[1] = backEnd.viewParms.portalPlane.normal[1];
+		plane[2] = backEnd.viewParms.portalPlane.normal[2];
+		plane[3] = backEnd.viewParms.portalPlane.dist;
+
+		plane2[0] = DotProduct (backEnd.viewParms.or.axis[0], plane);
+		plane2[1] = DotProduct (backEnd.viewParms.or.axis[1], plane);
+		plane2[2] = DotProduct (backEnd.viewParms.or.axis[2], plane);
+		plane2[3] = DotProduct (plane, backEnd.viewParms.or.origin) - plane[3];
+
+		qglLoadMatrixf( s_flipMatrix );
+		qglClipPlane (GL_CLIP_PLANE0, plane2);
+		qglEnable (GL_CLIP_PLANE0);
+	} else {
+		qglDisable (GL_CLIP_PLANE0);
+	}
+}
+
+
+/*
 ==================
 RB_RenderLitSurfList
 ==================
@@ -695,6 +750,8 @@ void RB_RenderLitSurfList( dlight_t* dl ) {
 	const litSurf_t	*litSurf;
 	unsigned int	oldSort;
 	double			originalTime; // -EC- 
+
+	RB_BeginDrawingLitView();
 
 	// save original time for entity shader offsets
 	originalTime = backEnd.refdef.floatTime;
