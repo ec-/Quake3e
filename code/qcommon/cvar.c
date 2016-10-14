@@ -953,7 +953,10 @@ typedef enum {
 	FT_SUB,
 	FT_MUL,
 	FT_DIV,
-	FT_MOD
+	FT_MOD,
+	FT_SIN,
+	FT_COS,
+	FT_RAND,
 } funcType_t;
 
 
@@ -971,12 +974,18 @@ static funcType_t GetFuncType( void )
 		return FT_DIV;
 	if ( !Q_stricmp( cmd, "mod" ) )
 		return FT_MOD;
+	if ( !Q_stricmp( cmd, "sin" ) )
+		return FT_SIN;
+	if ( !Q_stricmp( cmd, "cos" ) )
+		return FT_COS;
+	if ( !Q_stricmp( cmd, "rand" ) )
+		return FT_RAND;
 
 	return FT_BAD;
 }
 
 
-static qboolean HaveCaps( funcType_t ftype ) 
+static qboolean AllowEmptyCvar( funcType_t ftype ) 
 {
 	switch ( ftype ) {
 		case FT_ADD:
@@ -984,15 +993,20 @@ static qboolean HaveCaps( funcType_t ftype )
 		case FT_MUL:
 		case FT_DIV:
 		case FT_MOD:
-			return qtrue;
-		default:
 			return qfalse;
+		default:
+			return qtrue;
 	};
 }
 
 
-static void Cvar_Op( funcType_t ftype, int *ival, float *fval, int imod, float fmod ) 
+static void Cvar_Op( funcType_t ftype, int *ival, float *fval ) 
 {
+	int icap, imod;
+	float fcap, fmod;
+
+	GetValue( 3, &imod, &fmod ); // index 3: value
+
 	switch ( ftype ) {
 		case FT_ADD:
 			*ival += imod;
@@ -1018,8 +1032,56 @@ static void Cvar_Op( funcType_t ftype, int *ival, float *fval, int imod, float f
 			if ( imod )
 				*fval = (float)( (int)*fval % imod ); // FIXME: use float
 			break;
+
+		case FT_SIN:
+				*ival = sin( imod );
+				*fval = sin( fmod );
+				break;
+
+		case FT_COS:
+				*ival = cos( imod );
+				*fval = cos( fmod );
+				break;
 		default: 
 			break;
+	}
+
+	if ( Cmd_Argc() > 4 ) { // low bound
+		if ( GetValue( 4, &icap, &fcap ) ) {
+			if ( *ival < icap ) *ival = icap;
+			if ( *fval < fcap ) *fval = fcap;
+		}
+	}
+	if ( Cmd_Argc() > 5 ) { // high bound
+		if ( GetValue( 5, &icap, &fcap ) ) {
+			if ( *ival > icap ) *ival = icap;
+			if ( *fval > fcap ) *fval = fcap;
+		}
+	}
+}
+
+
+static void Cvar_Rand( int *ival, float *fval ) 
+{
+	int icap;
+	float fcap;
+
+	*ival = rand();
+	*fval = *ival;
+
+	if ( Cmd_Argc() > 3 ) { // base
+		if ( GetValue( 3, &icap, &fcap ) ) {
+			*ival += icap;
+			*fval = *ival;
+		}
+	}
+	if ( Cmd_Argc() > 4 ) { // modulus
+		if ( GetValue( 4, &icap, &fcap ) ) {
+			if ( icap ) {
+				*ival %= icap;
+				*fval = *ival;
+			}
+		}
 	}
 }
 
@@ -1030,16 +1092,20 @@ void Cvar_Func_f( void ) {
 	const char	*cvar_name;
 	char		value[ 32 ];
 	cvar_t		*cvar;
-	int			icap, ival, imod;
-	float		fcap, fval, fmod;
+	int			ival;
+	float		fval;
 
 	if ( Cmd_Argc() < 3 ) {
-		Com_Printf( "usage: %s <add|sub|mul|div|mod> <cvar> <value> [- or lowlimit] [- or highlimit]\n", Cmd_Argv( 0 ) );
+		Com_Printf( "usage: \n" \
+			"  \\varfunc <add|sub|mul|div|mod|sin|cos> <cvar> <value> [lo.cap] [hi.cap]\n" \
+			"  \\varfunc rand <cvar> [base] [modulus]\n" );
 		return;
 	}
 
-	//     0       1      2     3     4      5
-	// \varfunc <func> <cvar> <val> lo-cap hi-cap
+	//     0     1     2      3      4        5
+	// \varfunc <op> <cvar> <val> [lo-cap] [hi-cap]
+	
+	// \varfunc rand <cvar> [base] [modulus]
 
 	ftype = GetFuncType(); // index 1: function type
 	if ( ftype == FT_BAD ) {
@@ -1050,36 +1116,29 @@ void Cvar_Func_f( void ) {
 	cvar_name = Cmd_Argv( 2 ); // index 2: cvar name
 	cvar = Cvar_FindVar( cvar_name );
 	if ( !cvar ) {
-		Com_Printf( "Cvar '%s' does not exist.\n", cvar_name );
-		return; // FIXME: allow cvar creation for some functions?
+		if ( !AllowEmptyCvar( ftype ) )	{
+			Com_Printf( "Cvar '%s' does not exist.\n", cvar_name );
+			return; // FIXME: allow cvar creation for some functions?
+		}
 	} else if ( cvar->flags & ( CVAR_INIT | CVAR_ROM | CVAR_PROTECTED ) ) {
 		Com_Printf( "Cvar '%s' is write-protected.\n", cvar_name );
 		return;
 	}
 	
-	fval = cvar->value;
-	ival = cvar->integer;
-
-	GetValue( 3, &imod, &fmod ); // index 3: value
-
-	Cvar_Op( ftype, &ival, &fval, imod, fmod ); // apply modification
-
-	if ( HaveCaps( ftype ) ) {
-		if ( Cmd_Argc() > 4 ) { // low bound
-			if ( GetValue( 4, &icap, &fcap ) ) {
-				if ( ival < icap ) ival = icap;
-				if ( fval < fcap ) fval = fcap;
-			}
-		}
-		if ( Cmd_Argc() > 5 ) { // high bound
-			if ( GetValue( 5, &icap, &fcap ) ) {
-				if ( ival > icap ) ival = icap;
-				if ( fval > fcap ) fval = fcap;
-			}
-		}
+	if ( cvar ) {
+		fval = cvar->value;
+		ival = cvar->integer;
+	} else {
+		fval = 0.0;
+		ival = 0;
 	}
 
-	if ( cvar->integral ) {
+	if ( ftype == FT_RAND )
+		Cvar_Rand( &ival, &fval );
+	else
+		Cvar_Op( ftype, &ival, &fval ); // apply modification
+	
+	if ( cvar && cvar->integral ) {
 		sprintf( value, "%i", ival );
 	} else {
 		if ( (int)fval == fval )
