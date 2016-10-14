@@ -1644,7 +1644,7 @@ typedef struct {
 #endif
 	dlight_t	dlights[MAX_DLIGHTS];
 
-	trRefEntity_t	entities[MAX_REFENTITIES];
+	trRefEntity_t	entities[MAX_NUM_REFENTITIES];
 	srfPoly_t	*polys;//[MAX_POLYS];
 	polyVert_t	*polyVerts;//[MAX_POLYVERTS];
 	renderCommandList_t	commands;
