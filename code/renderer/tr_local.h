@@ -32,7 +32,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "iqm.h"
 #include "qgl.h"
 
-#define USE_PMLIGHT			// promode lighting via \r_dlightMode 1
+#define USE_LEGACY_DLIGHTS	// vq3 dynamic lights
+#define USE_PMLIGHT			// promode dynamic lights via \r_dlightMode 1
 typedef unsigned int		lightMask_t;
 //#define USE_BUGGY_LIGHT_COUNT
 
@@ -565,7 +566,9 @@ typedef struct {
 	cplane_t	plane;
 
 	// dynamic lighting information
+#ifdef USE_LEGACY_DLIGHTS
 	int			dlightBits;
+#endif
 
 	// triangle definitions (no normals at points)
 	int			numPoints;
@@ -581,7 +584,9 @@ typedef struct {
 	surfaceType_t	surfaceType;
 
 	// dynamic lighting information
+#ifdef USE_LEGACY_DLIGHTS
 	int				dlightBits;
+#endif
 
 	// culling information (FIXME: use this!)
 	vec3_t			bounds[2];
@@ -1270,8 +1275,9 @@ typedef struct shaderCommands_s
 	vec4_t		normal[SHADER_MAX_VERTEXES] QALIGN(16);
 	vec2_t		texCoords[SHADER_MAX_VERTEXES][2] QALIGN(16);
 	color4ub_t	vertexColors[SHADER_MAX_VERTEXES] QALIGN(16);
+#ifdef USE_LEGACY_DLIGHTS
 	int			vertexDlightBits[SHADER_MAX_VERTEXES] QALIGN(16);
-
+#endif
 	stageVars_t	svars QALIGN(16);
 
 	color4ub_t	constantColor255[SHADER_MAX_VERTEXES] QALIGN(16);
@@ -1279,9 +1285,9 @@ typedef struct shaderCommands_s
 	shader_t	*shader;
 	double		shaderTime;	// -EC- set to double for frameloss fix
 	int			fogNum;
-
+#ifdef USE_LEGACY_DLIGHTS
 	int			dlightBits;	// or together of all vertexDlightBits
-
+#endif
 	int			numIndexes;
 	int			numVertexes;
 

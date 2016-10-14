@@ -1322,7 +1322,10 @@ void R_SortDrawSurfs( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	}
 
 #ifdef USE_PMLIGHT
-	if ( r_dlightMode->integer ) {
+#ifdef USE_LEGACY_DLIGHTS
+	if ( r_dlightMode->integer ) 
+#endif
+	{
 		dlight_t *dl;
 		// all the lit surfaces are in a single queue
 		// but each light's surfaces are sorted within its subsection
@@ -1333,7 +1336,7 @@ void R_SortDrawSurfs( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 			}
 		}
 	}
-#endif
+#endif // USE_PMLIGHT
 
 	R_AddDrawSurfCmd( drawSurfs, numDrawSurfs );
 }

@@ -225,11 +225,15 @@ static void RB_SurfaceTriangles( srfTriangles_t *srf ) {
 	drawVert_t	*dv;
 	float		*xyz, *normal, *texCoords;
 	byte		*color;
+#ifdef USE_LEGACY_DLIGHTS
 	int			dlightBits;
+#endif
 	qboolean	needsNormal;
 
+#ifdef USE_LEGACY_DLIGHTS
 	dlightBits = srf->dlightBits;
 	tess.dlightBits |= dlightBits;
+#endif
 
 	RB_CHECKOVERFLOW( srf->numVerts, srf->numIndexes );
 
@@ -266,11 +270,11 @@ static void RB_SurfaceTriangles( srfTriangles_t *srf ) {
 
 		*(int *)color = *(int *)dv->color;
 	}
-
+#ifdef USE_LEGACY_DLIGHTS
 	for ( i = 0 ; i < srf->numVerts ; i++ ) {
 		tess.vertexDlightBits[ tess.numVertexes + i] = dlightBits;
 	}
-
+#endif
 	tess.numVertexes += srf->numVerts;
 }
 
@@ -734,12 +738,16 @@ static void RB_SurfaceFace( srfSurfaceFace_t *surf ) {
 	int			ndx;
 	int			Bob;
 	int			numPoints;
+#ifdef USE_LEGACY_DLIGHTS
 	int			dlightBits;
+#endif
 
 	RB_CHECKOVERFLOW( surf->numPoints, surf->numIndices );
 
+#ifdef USE_LEGACY_DLIGHTS
 	dlightBits = surf->dlightBits;
 	tess.dlightBits |= dlightBits;
+#endif
 
 	indices = ( unsigned * ) ( ( ( char  * ) surf ) + surf->ofsIndices );
 
@@ -767,7 +775,9 @@ static void RB_SurfaceFace( srfSurfaceFace_t *surf ) {
 		tess.texCoords[ndx][1][0] = v[5];
 		tess.texCoords[ndx][1][1] = v[6];
 		* ( unsigned int * ) &tess.vertexColors[ndx] = * ( unsigned int * ) &v[7];
+#ifdef USE_LEGACY_DLIGHTS
 		tess.vertexDlightBits[ndx] = dlightBits;
+#endif
 	}
 
 
@@ -826,12 +836,16 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 	float	lodError;
 	int		lodWidth, lodHeight;
 	int		numVertexes;
+#ifdef USE_LEGACY_DLIGHTS
 	int		dlightBits;
 	int		*vDlightBits;
+#endif
 	qboolean	needsNormal;
 
+#ifdef USE_LEGACY_DLIGHTS
 	dlightBits = cv->dlightBits;
 	tess.dlightBits |= dlightBits;
+#endif
 
 	// determine the allowable discrepance
 	lodError = LodErrorForVolume( cv->lodOrigin, cv->lodRadius );
@@ -894,7 +908,9 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 		normal = tess.normal[numVertexes];
 		texCoords = tess.texCoords[numVertexes][0];
 		color = ( unsigned char * ) &tess.vertexColors[numVertexes];
+#ifdef USE_LEGACY_DLIGHTS
 		vDlightBits = &tess.vertexDlightBits[numVertexes];
+#endif
 		needsNormal = tess.shader->needsNormal;
 
 		for ( i = 0 ; i < rows ; i++ ) {
@@ -915,7 +931,9 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 					normal[2] = dv->normal[2];
 				}
 				* ( unsigned int * ) color = * ( unsigned int * ) dv->color;
+#ifdef USE_LEGACY_DLIGHTS
 				*vDlightBits++ = dlightBits;
+#endif
 				xyz += 4;
 				normal += 4;
 				texCoords += 4;

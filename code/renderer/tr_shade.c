@@ -323,7 +323,9 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 	tess.numVertexes = 0;
 	tess.shader = state;
 	tess.fogNum = fogNum;
+#ifdef USE_LEGACY_DLIGHTS
 	tess.dlightBits = 0;		// will be OR'd in by surface functions
+#endif
 	tess.xstages = state->stages;
 	tess.numPasses = state->numUnfoggedPasses;
 	tess.currentStageIteratorFunc = state->optimalStageIteratorFunc;
@@ -395,6 +397,7 @@ static void DrawMultitextured( shaderCommands_t *input, int stage ) {
 }
 
 
+#ifdef USE_LEGACY_DLIGHTS
 /*
 ===================
 ProjectDlightTexture
@@ -558,6 +561,8 @@ static void ProjectDlightTexture_scalar( void ) {
 static void ProjectDlightTexture( void ) {
 	ProjectDlightTexture_scalar();
 }
+#endif // USE_LEGACY_DLIGHTS
+
 
 
 /*
@@ -983,7 +988,9 @@ void RB_StageIteratorGeneric( void )
 	shader_t		*shader;
 
 #ifdef USE_PMLIGHT
+#ifdef USE_LEGACY_DLIGHTS
 	if ( r_dlightMode->integer ) 
+#endif
 	{
 		if ( tess.dlightPass ) 
 		{
@@ -993,7 +1000,7 @@ void RB_StageIteratorGeneric( void )
 
 		GL_ProgramDisable();
 	}
-#endif
+#endif // USE_PMLIGHT
 
 	input = &tess;
 	shader = input->shader;
@@ -1061,6 +1068,7 @@ void RB_StageIteratorGeneric( void )
 	// 
 	// now do any dynamic lighting needed
 	//
+#ifdef USE_LEGACY_DLIGHTS
 #ifdef USE_PMLIGHT
 	if ( !r_dlightMode->integer )
 #endif
@@ -1068,6 +1076,7 @@ void RB_StageIteratorGeneric( void )
 		&& !(tess.shader->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) ) {
 		ProjectDlightTexture();
 	}
+#endif // USE_LEGACY_DLIGHTS
 
 	//
 	// now do fog
@@ -1103,7 +1112,9 @@ void RB_StageIteratorVertexLitTexture( void )
 	input = &tess;
 
 #ifdef USE_PMLIGHT
+#ifdef USE_LEGACY_DLIGHTS
 	if ( r_dlightMode->integer ) 
+#endif // USE_LEGACY_DLIGTHS
 	{
 		if ( tess.dlightPass ) 
 		{
@@ -1113,7 +1124,7 @@ void RB_StageIteratorVertexLitTexture( void )
 
 		GL_ProgramDisable();
 	}
-#endif
+#endif // USE_PMLIGHT
 
 	//
 	// compute colors
@@ -1150,12 +1161,14 @@ void RB_StageIteratorVertexLitTexture( void )
 	// 
 	// now do any dynamic lighting needed
 	//
+#ifdef USE_LEGACY_DLIGHTS
 #ifdef USE_PMLIGHT
 	if ( !r_dlightMode->integer )
 #endif
 	if ( tess.dlightBits && tess.shader->sort <= SS_OPAQUE ) {
 		ProjectDlightTexture();
 	}
+#endif // USE_LEGACY_DLIGHTS
 
 	//
 	// now do fog
@@ -1181,7 +1194,9 @@ void RB_StageIteratorLightmappedMultitexture( void ) {
 	input = &tess;
 
 #ifdef USE_PMLIGHT
+#ifdef USE_LEGACY_DLIGHTS
 	if ( r_dlightMode->integer ) 
+#endif
 	{
 		if ( tess.dlightPass ) 
 		{
@@ -1191,7 +1206,7 @@ void RB_StageIteratorLightmappedMultitexture( void ) {
 
 		GL_ProgramDisable();
 	}
-#endif
+#endif // USE_PMLIGHT
 
 	//
 	// set face culling appropriately
@@ -1260,12 +1275,14 @@ void RB_StageIteratorLightmappedMultitexture( void ) {
 	// 
 	// now do any dynamic lighting needed
 	//
+#ifdef USE_LEGACY_DLIGHTS
 #ifdef USE_PMLIGHT
 	if ( !r_dlightMode->integer )
 #endif
 	if ( tess.dlightBits && tess.shader->sort <= SS_OPAQUE ) {
 		ProjectDlightTexture();
 	}
+#endif // USE_LEGACY_DLIGTHS
 
 	//
 	// now do fog

@@ -747,10 +747,13 @@ Other things could be stuck in here, like birds in the sky, etc
 void RB_StageIteratorSky( void ) {
 
 #ifdef USE_PMLIGHT
-	if ( r_dlightMode->integer ) {
+#ifdef USE_LEGACY_DLIGHTS
+	if ( r_dlightMode->integer ) 
+#endif 
+	{
 		GL_ProgramDisable();
 	}
-#endif
+#endif // USE_PMLIGHT
 
 	if ( r_fastsky->integer ) {
 		return;

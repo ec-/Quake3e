@@ -570,12 +570,14 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				// set up the transformation matrix
 				R_RotateForEntity( backEnd.currentEntity, &backEnd.viewParms, &backEnd.or );
 				// set up the dynamic lighting if needed
+#ifdef USE_LEGACY_DLIGHTS
 #ifdef USE_PMLIGHT
 				if ( !r_dlightMode->integer )
-#endif
+#endif // USE_PMLIGHT
 				if ( backEnd.currentEntity->needDlights ) {
 					R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 				}
+#endif // USE_LEGACY_DLIGHTS
 				if ( backEnd.currentEntity->e.renderfx & RF_DEPTHHACK ) {
 					// hack the depth range to prevent view model from poking into walls
 					depthRange = qtrue;
@@ -590,10 +592,12 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				// we have to reset the shaderTime as well otherwise image animations on
 				// the world (like water) continue with the wrong frame
 				tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+#ifdef USE_LEGACY_DLIGHTS
 #ifdef USE_PMLIGHT
 				if ( !r_dlightMode->integer )
 #endif
 				R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
+#endif // USE_LEGACY_DLIGHTS
 			}
 
 			qglLoadMatrixf( backEnd.or.modelMatrix );
@@ -696,16 +700,6 @@ void RB_BeginDrawingLitView( void )
 	// set the modelview matrix for the viewer
 	//
 	SetViewportAndScissor();
-
-	// ensures that depth writes are enabled for the depth clear
-	GL_State( GLS_DEFAULT );
-	// clear relevant buffers
-	//clearBits = GL_DEPTH_BUFFER_BIT;
-
-	if ( r_measureOverdraw->integer || r_shadows->integer == 2 )
-	{
-		qglClear( GL_STENCIL_BUFFER_BIT );
-	}
 
 	glState.faceCulling = -1;		// force face culling to set next time
 
