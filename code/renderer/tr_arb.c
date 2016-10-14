@@ -1,6 +1,8 @@
 #include "tr_local.h"
 #include "tr_common.h"
 
+#ifdef USE_PMLIGHT
+
 enum {
 	VP_GLOBAL_EYEPOS,
 	VP_GLOBAL_MAX,
@@ -388,3 +390,5 @@ void QGL_DoneARB( void )
 #ifdef _MSC_VER
 #pragma warning (default : 4113 4133 4047 )
 #endif
+
+#endif // USE_PMLIGHT
