@@ -150,7 +150,7 @@ void R_ImageList_f( void ) {
 	int i;
 	int estTotalSize = 0;
 
-	ri.Printf(PRINT_ALL, "\n      -w-- -h-- type  -size- --name-------\n");
+	ri.Printf(PRINT_ALL, "\n      -w-- -h-- -type-- -size- --name-------\n");
 
 	for ( i = 0 ; i < tr.numImages ; i++ )
 	{
@@ -204,6 +204,16 @@ void R_ImageList_f( void ) {
 				// same as DXT1?
 				estSize /= 2;
 				break;
+			case GL_RGBA16F:
+				format = "RGBA16F";
+				// 8 bytes per pixel
+				estSize *= 8;
+				break;
+			case GL_RGBA16:
+				format = "RGBA16 ";
+				// 8 bytes per pixel
+				estSize *= 8;
+				break;
 			case GL_RGBA4:
 			case GL_RGBA8:
 			case GL_RGBA:
@@ -253,6 +263,22 @@ void R_ImageList_f( void ) {
 				format = "sLA  ";
 				// 2 byte per pixel?
 				estSize *= 2;
+				break;
+			case GL_DEPTH_COMPONENT16:
+				format = "Depth16";
+				// 2 bytes per pixel
+				estSize *= 2;
+				break;
+			case GL_DEPTH_COMPONENT24:
+				format = "Depth24";
+				// 3 bytes per pixel
+				estSize *= 3;
+				break;
+			case GL_DEPTH_COMPONENT:
+			case GL_DEPTH_COMPONENT32:
+				format = "Depth32";
+				// 4 bytes per pixel
+				estSize *= 4;
 				break;
 		}
 
@@ -1931,7 +1957,20 @@ static void RawImage_UploadTexture(GLuint texture, byte *data, int x, int y, int
 	dataFormat = PixelDataFormatFromInternalFormat(internalFormat);
 
 	// FIXME: This is an old hack to use half floats with lightmaps, use picFormat to determine this instead.
-	dataType = (internalFormat == GL_RGBA16F_ARB) ? GL_HALF_FLOAT_ARB : GL_UNSIGNED_BYTE;
+	switch (internalFormat)
+	{
+		case GL_RGBA16F_ARB:
+			dataType = GL_HALF_FLOAT_ARB;
+			break;
+
+		case GL_RGBA16:
+			dataType = GL_UNSIGNED_SHORT;
+			break;
+
+		default:
+			dataType = GL_UNSIGNED_BYTE;
+			break;
+	}
 
 	miplevel = 0;
 	do
