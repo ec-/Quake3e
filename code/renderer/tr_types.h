@@ -26,14 +26,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define	MAX_DLIGHTS		32		// can't be increased, because bit flags are used on surfaces
 
+#ifdef USE_LEGACY_DLIGHTS
 #define	REFENTITYNUM_BITS	10		// can't be increased without changing drawsurf bit packing
+#else
+#define	REFENTITYNUM_BITS	12		// since we dropped 2 dlight bits
+#endif
+
 #define	REFENTITYNUM_MASK	((1<<REFENTITYNUM_BITS) - 1)
 // the last N-bit number (2^REFENTITYNUM_BITS - 1) is reserved for the special world refentity,
 //  and this is reflected by the value of MAX_REFENTITIES (which therefore is not a power-of-2)
 #define	MAX_REFENTITIES		((1<<REFENTITYNUM_BITS) - 1)
 #define	REFENTITYNUM_WORLD	((1<<REFENTITYNUM_BITS) - 1)
-
-#define	MAX_NUM_REFENTITIES	(MAX_REFENTITIES*2)	// double size for stereo rendering
 
 // renderfx flags
 #define	RF_MINLIGHT		0x0001		// allways have some light (viewmodel, some items)

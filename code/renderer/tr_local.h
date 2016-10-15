@@ -24,6 +24,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef TR_LOCAL_H
 #define TR_LOCAL_H
 
+//#define USE_LEGACY_DLIGHTS	// vq3 dynamic lights
+#define USE_PMLIGHT			// promode dynamic lights via \r_dlightMode 1
+typedef unsigned int		lightMask_t;
+//#define USE_BUGGY_LIGHT_COUNT
+
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qfiles.h"
 #include "../qcommon/qcommon.h"
@@ -31,11 +36,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "tr_common.h"
 #include "iqm.h"
 #include "qgl.h"
-
-#define USE_LEGACY_DLIGHTS	// vq3 dynamic lights
-#define USE_PMLIGHT			// promode dynamic lights via \r_dlightMode 1
-typedef unsigned int		lightMask_t;
-//#define USE_BUGGY_LIGHT_COUNT
 
 #define GL_INDEX_TYPE		GL_UNSIGNED_INT
 typedef unsigned int glIndex_t;
@@ -812,9 +812,20 @@ the bits are allocated as follows:
 7-16  : entity index
 17-30 : sorted shader index
 */
+#ifdef USE_LEGACY_DLIGHTS
 #define	QSORT_FOGNUM_SHIFT	2
 #define	QSORT_REFENTITYNUM_SHIFT	7
 #define	QSORT_SHADERNUM_SHIFT	(QSORT_REFENTITYNUM_SHIFT+REFENTITYNUM_BITS)
+#else
+ // PMLIGHTS
+//0-4   : fog index
+//5-16  : entity index
+//17-30 : sorted shader index
+#define	QSORT_FOGNUM_SHIFT	0
+#define	QSORT_REFENTITYNUM_SHIFT	5
+#define	QSORT_SHADERNUM_SHIFT	(QSORT_REFENTITYNUM_SHIFT+REFENTITYNUM_BITS)
+#endif
+
 #if (QSORT_SHADERNUM_SHIFT+SHADERNUM_BITS) > 32
 	#error "Need to update sorting, too many bits."
 #endif
@@ -1644,7 +1655,7 @@ typedef struct {
 #endif
 	dlight_t	dlights[MAX_DLIGHTS];
 
-	trRefEntity_t	entities[MAX_NUM_REFENTITIES];
+	trRefEntity_t	entities[MAX_REFENTITIES];
 	srfPoly_t	*polys;//[MAX_POLYS];
 	polyVert_t	*polyVerts;//[MAX_POLYVERTS];
 	renderCommandList_t	commands;

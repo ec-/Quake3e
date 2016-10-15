@@ -207,7 +207,7 @@ void RE_AddRefEntityToScene( const refEntity_t *ent ) {
 	if ( !tr.registered ) {
 		return;
 	}
-	if ( r_numentities >= MAX_NUM_REFENTITIES ) {
+	if ( r_numentities >= MAX_REFENTITIES ) {
 		ri.Printf(PRINT_DEVELOPER, "RE_AddRefEntityToScene: Dropping refEntity, reached MAX_REFENTITIES\n");
 		return;
 	}
