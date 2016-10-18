@@ -695,12 +695,12 @@ void CL_NextDemo( void ) {
 CL_ShutdownVMs
 =====================
 */
-
 void CL_ShutdownVMs(void)
 {
 	CL_ShutdownCGame();
 	CL_ShutdownUI();
 }
+
 
 /*
 =====================
@@ -733,6 +733,26 @@ void CL_ShutdownAll( void ) {
 	cls.soundRegistered = qfalse;
 }
 
+
+/*
+=================
+CL_ClearMemory
+=================
+*/
+void CL_ClearMemory( void ) {
+	// if not running a server clear the whole hunk
+	if ( !com_sv_running->integer ) {
+		// clear the whole hunk
+		Hunk_Clear();
+		// clear collision map data
+		CM_ClearMap();
+	} else {
+		// clear all the client data on the hunk
+		Hunk_ClearToMark();
+	}
+}
+
+
 /*
 =================
 CL_FlushMemory
@@ -747,20 +767,11 @@ void CL_FlushMemory( void ) {
 	// shutdown all the client stuff
 	CL_ShutdownAll();
 
-	// if not running a server clear the whole hunk
-	if ( !com_sv_running->integer ) {
-		// clear the whole hunk
-		Hunk_Clear();
-		// clear collision map data
-		CM_ClearMap();
-	}
-	else {
-		// clear all the client data on the hunk
-		Hunk_ClearToMark();
-	}
+	CL_ClearMemory();
 
 	CL_StartHunkUsers();
 }
+
 
 /*
 =====================
@@ -1363,6 +1374,7 @@ void CL_ResetPureClientAtServer( void ) {
 	CL_AddReliableCommand( "vdr", qfalse );
 }
 
+
 /*
 =================
 CL_Vid_Restart
@@ -1408,21 +1420,13 @@ static void CL_Vid_Restart( void ) {
 	// unpause so the cgame definately gets a snapshot and renders a frame
 	Cvar_Set( "cl_paused", "0" );
 
-	// if not running a server clear the whole hunk
-	if ( !com_sv_running->integer ) {
-		// clear the whole hunk
-		Hunk_Clear();
-	}
-	else {
-		// clear all the client data on the hunk
-		Hunk_ClearToMark();
-	}
+	CL_ClearMemory();
 
 	// initialize the renderer interface
 	CL_InitRef();
 
 	// startup all the client stuff
-	CL_StartHunkUsers( );
+	CL_StartHunkUsers();
 
 	// start the cgame if connected
 	if ( cls.state > CA_CONNECTED && cls.state != CA_CINEMATIC ) {

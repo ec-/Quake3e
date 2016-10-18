@@ -440,11 +440,11 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	// clear the whole hunk because we're (re)loading the server
 	Hunk_Clear();
 
-    // Restart renderer?
-    // CL_StartHunkUsers( );
-
 	// clear collision map data
 	CM_ClearMap();
+
+    // Restart renderer?
+    // CL_StartHunkUsers( );
 
 	// init client structures and svs.numSnapshotEntities 
 	if ( !Cvar_VariableValue("sv_running") ) {

@@ -2484,7 +2484,7 @@ void Com_GameRestart(int checksumFeed, qboolean clientRestart)
 		{
 			CL_Disconnect( qfalse );
 			CL_ShutdownAll();
-			Hunk_Clear(); // -EC- 
+			CL_ClearMemory(); // Hunk_Clear(); // -EC- 
 		}
 #endif
 
@@ -3311,18 +3311,12 @@ void Com_Frame( qboolean demoPlaying ) {
 #endif
 			Sys_ShowConsole( com_viewlog->integer, qfalse );
 #ifndef DEDICATED
-			CL_StartHunkUsers( );
+			CL_StartHunkUsers();
 #endif
 		} else {
 #ifndef DEDICATED
 			CL_Shutdown( "" );
-			if ( !com_sv_running->integer ) {
-				// clear the whole hunk
-				Hunk_Clear( );
-			} else {
-				// clear all the client data on the hunk
-				Hunk_ClearToMark( );
-			}
+			CL_ClearMemory();
 #endif
 			Sys_ShowConsole( 1, qtrue );
 		}

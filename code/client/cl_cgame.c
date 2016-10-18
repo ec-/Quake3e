@@ -374,6 +374,7 @@ void CL_CM_LoadMap( const char *mapname ) {
 	CM_LoadMap( mapname, qtrue, &checksum );
 }
 
+
 /*
 ====================
 CL_ShutdonwCGame
@@ -391,6 +392,7 @@ void CL_ShutdownCGame( void ) {
 	cgvm = NULL;
 	FS_VM_CloseFiles( H_CGAME );
 }
+
 
 static int	FloatAsInt( float f ) {
 	floatint_t fi;
