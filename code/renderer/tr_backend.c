@@ -690,7 +690,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 RB_BeginDrawingLitView
 =================
 */
-void RB_BeginDrawingLitView( void ) 
+void RB_BeginDrawingLitSurfs( void ) 
 {
 	// we will need to change the projection matrix before drawing
 	// 2D images again
@@ -743,8 +743,6 @@ void RB_RenderLitSurfList( dlight_t* dl ) {
 	const litSurf_t	*litSurf;
 	unsigned int	oldSort;
 	double			originalTime; // -EC- 
-
-	RB_BeginDrawingLitView();
 
 	// save original time for entity shader offsets
 	originalTime = backEnd.refdef.floatTime;
@@ -1174,12 +1172,15 @@ const void	*RB_DrawSurfs( const void *data ) {
 	if ( r_dlightMode->integer ) {
 		dlight_t	*dl;
 		int			i;
-		tess.dlightPass = qtrue;
-		for ( i = 0; i < backEnd.refdef.num_dlights; ++i ) {
-			dl = &backEnd.refdef.dlights[ i ];
-			if ( dl->head ) {
-				tess.light = dl;
-				RB_RenderLitSurfList( dl );
+		if ( backEnd.refdef.numLitSurfs ) {
+			RB_BeginDrawingLitSurfs();
+			tess.dlightPass = qtrue;
+			for ( i = 0; i < backEnd.refdef.num_dlights; ++i ) {
+				dl = &backEnd.refdef.dlights[ i ];
+				if ( dl->head ) {
+					tess.light = dl;
+					RB_RenderLitSurfList( dl );
+				}
 			}
 		}
 		tess.dlightPass = qfalse;
