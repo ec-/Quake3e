@@ -1230,7 +1230,7 @@ R_DecomposeLitSort
 =================
 */
 void R_DecomposeLitSort( unsigned sort, int *entityNum, shader_t **shader, int *fogNum ) {
-	*fogNum = ( sort >> QSORT_FOGNUM_SHIFT ) & 31;
+	*fogNum = ( sort >> QSORT_FOGNUM_SHIFT ) & FOGNUM_MASK;
 	*shader = tr.sortedShaders[ ( sort >> QSORT_SHADERNUM_SHIFT ) & (MAX_SHADERS-1) ];
 	*entityNum = ( sort >> QSORT_REFENTITYNUM_SHIFT ) & REFENTITYNUM_MASK;
 }
@@ -1268,10 +1268,10 @@ R_DecomposeSort
 */
 void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader, 
 					 int *fogNum, int *dlightMap ) {
-	*fogNum = ( sort >> QSORT_FOGNUM_SHIFT ) & 31;
+	*fogNum = ( sort >> QSORT_FOGNUM_SHIFT ) & FOGNUM_MASK;
 	*shader = tr.sortedShaders[ ( sort >> QSORT_SHADERNUM_SHIFT ) & (MAX_SHADERS-1) ];
 	*entityNum = ( sort >> QSORT_REFENTITYNUM_SHIFT ) & REFENTITYNUM_MASK;
-	*dlightMap = sort & 3;
+	*dlightMap = sort & DLIGHT_MASK;
 }
 
 
