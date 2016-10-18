@@ -811,7 +811,11 @@ the bits are allocated as follows:
 7-16  : entity index
 17-30 : sorted shader index
 */
+#ifdef USE_RENDERER2
 #define	DLIGHT_BITS 2
+#else
+#define	DLIGHT_BITS 1 // qboolean in opengl1 renderer
+#endif
 #define	DLIGHT_MASK ((1<<DLIGHT_BITS)-1)
 #define	FOGNUM_BITS 5
 #define	FOGNUM_MASK ((1<<FOGNUM_BITS)-1)

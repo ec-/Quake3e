@@ -392,7 +392,6 @@ extern	cvar_t	*cl_autoRecordDemo;
 
 void CL_Init (void);
 void CL_FlushMemory(void);
-void CL_ClearMemory(void);
 void CL_ShutdownAll(void);
 void CL_AddReliableCommand( const char *cmd, qboolean isDisconnectCmd );
 
