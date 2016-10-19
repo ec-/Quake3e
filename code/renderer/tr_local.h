@@ -1374,6 +1374,8 @@ void R_BindAnimatedImage( const textureBundle_t *bundle );
 void R_DrawElements( int numIndexes, const glIndex_t *indexes );
 void R_ComputeTexCoords( const shaderStage_t *pStage );
 
+qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t maxs );
+
 qboolean QGL_InitARB( void );
 void QGL_DoneARB( void );
 qboolean ARB_UpdatePrograms( void );

@@ -75,14 +75,20 @@ static float ProjectRadius( float r, vec3_t location )
 R_CullModel
 =============
 */
-static int R_CullModel( md3Header_t *header, trRefEntity_t *ent ) {
-	vec3_t		bounds[2];
+static int R_CullModel( md3Header_t *header, trRefEntity_t *ent, vec3_t bounds[] ) {
+	//vec3_t bounds[2];
 	md3Frame_t	*oldFrame, *newFrame;
 	int			i;
 
 	// compute frame pointers
 	newFrame = ( md3Frame_t * ) ( ( byte * ) header + header->ofsFrames ) + ent->e.frame;
 	oldFrame = ( md3Frame_t * ) ( ( byte * ) header + header->ofsFrames ) + ent->e.oldframe;
+
+	// calculate a bounding box in the current coordinate system
+	for (i = 0 ; i < 3 ; i++) {
+		bounds[0][i] = oldFrame->bounds[0][i] < newFrame->bounds[0][i] ? oldFrame->bounds[0][i] : newFrame->bounds[0][i];
+		bounds[1][i] = oldFrame->bounds[1][i] > newFrame->bounds[1][i] ? oldFrame->bounds[1][i] : newFrame->bounds[1][i];
+	}
 
 	// cull bounding sphere ONLY if this is not an upscaled entity
 	if ( !ent->e.nonNormalizedAxes )
@@ -133,12 +139,6 @@ static int R_CullModel( md3Header_t *header, trRefEntity_t *ent ) {
 				}
 			}
 		}
-	}
-	
-	// calculate a bounding box in the current coordinate system
-	for (i = 0 ; i < 3 ; i++) {
-		bounds[0][i] = oldFrame->bounds[0][i] < newFrame->bounds[0][i] ? oldFrame->bounds[0][i] : newFrame->bounds[0][i];
-		bounds[1][i] = oldFrame->bounds[1][i] > newFrame->bounds[1][i] ? oldFrame->bounds[1][i] : newFrame->bounds[1][i];
 	}
 
 	switch ( R_CullLocalBox( bounds ) )
@@ -280,6 +280,7 @@ R_AddMD3Surfaces
 =================
 */
 void R_AddMD3Surfaces( trRefEntity_t *ent ) {
+	vec3_t			bounds[2];
 	int				i;
 	md3Header_t		*header = NULL;
 	md3Surface_t	*surface = NULL;
@@ -289,6 +290,12 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 	int				lod;
 	int				fogNum;
 	qboolean		personalModel;
+#ifdef USE_PMLIGHT
+	dlight_t		*dl;
+	int				n;
+	dlight_t		*dlights[ MAX_DLIGHTS ];
+	int				numDlights;
+#endif
 
 	// don't add third_person objects if not in a portal
 	personalModel = (ent->e.renderfx & RF_THIRD_PERSON) && !tr.viewParms.isPortal;
@@ -326,7 +333,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 	// cull the entire model if merged bounding box of both frames
 	// is outside the view frustum.
 	//
-	cull = R_CullModel ( header, ent );
+	cull = R_CullModel( header, ent, bounds );
 	if ( cull == CULL_OUT ) {
 		return;
 	}
@@ -337,6 +344,18 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 	if ( !personalModel || r_shadows->integer > 1 ) {
 		R_SetupEntityLighting( &tr.refdef, ent );
 	}
+
+#ifdef USE_PMLIGHT
+	numDlights = 0;
+	if ( r_dlightMode->integer > 1 ) {
+		R_TransformDlights( tr.refdef.num_dlights, tr.refdef.dlights, &tr.or );
+		for ( n = 0; n < tr.refdef.num_dlights; n++ ) {
+			dl = &tr.refdef.dlights[ n ];
+			if ( !R_LightCullBounds( dl, bounds[0], bounds[1] ) ) 
+				dlights[ numDlights++ ] = dl;
+		}
+	}
+#endif
 
 	//
 	// see if we are in a fog volume
@@ -404,6 +423,16 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 		if ( !personalModel ) {
 			R_AddDrawSurf( (void *)surface, shader, fogNum, qfalse );
 		}
+
+#ifdef USE_PMLIGHT
+		if ( numDlights && shader->sort == SS_OPAQUE && !(shader->surfaceFlags & (SURF_NODLIGHT | SURF_SKY)) /*&& r_dlightMode->integer*/ ) {
+			for ( n = 0; n < numDlights; n++ ) {
+				dl = dlights[ n ];
+				tr.light = dl;
+				R_AddLitSurf( (void *)surface, shader, fogNum );
+			}
+		}
+#endif
 
 		surface = (md3Surface_t *)( (byte *)surface + surface->ofsEnd );
 	}

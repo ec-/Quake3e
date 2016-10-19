@@ -160,7 +160,7 @@ static qboolean	R_CullSurface( surfaceType_t *surface, shader_t *shader ) {
 
 
 #ifdef USE_PMLIGHT
-static qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t maxs )
+qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t maxs )
 {
 	if (dl->transformed[0] - dl->radius > maxs[0])
 		return qtrue;
