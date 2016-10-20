@@ -35,6 +35,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // 1.32 released 7-10-2002
 
 #define DEFAULT_GAME			"edawn"
+#define USE_CPMA_HACKS			// will be removed someday
 
 #define BASEGAME				"baseq3"
 #define BASEDEMO				"demoq3"

@@ -424,9 +424,21 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		Cvar_Update( VMA(1) );
 		return 0;
 	case CG_CVAR_SET:
+#ifdef USE_CPMA_HACKS
+		if ( isCPMA && !Q_stricmp( VMA(1), "com_maxfps" ) )
+			return 0;
+#endif
 		Cvar_SetSafe( VMA(1), VMA(2) );
 		return 0;
 	case CG_CVAR_VARIABLESTRINGBUFFER:
+#ifdef USE_CPMA_HACKS
+		if ( isCPMA && Q_stricmp( VMA(1), "version" ) == 0 ) {
+			strcpy( VMA(2), "CNQ3 1.33" );
+			Cvar_Set2( "r_dlightMode", "1", qtrue );
+			Cvar_Set2( "r_dlightScale", "1", qtrue );
+			return 0;
+		}
+#endif
 		Cvar_VariableStringBuffer( VMA(1), VMA(2), args[3] );
 		return 0;
 	case CG_ARGC:

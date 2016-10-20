@@ -384,15 +384,17 @@ extern	cvar_t	*cl_inGameVideo;
 extern	cvar_t	*cl_lanForcePackets;
 extern	cvar_t	*cl_autoRecordDemo;
 
+extern	cvar_t	*com_maxfps;
+
 //=================================================
 
 //
 // cl_main
 //
 
-void CL_Init (void);
-void CL_FlushMemory(void);
-void CL_ShutdownAll(void);
+//void CL_Init (void);
+//void CL_FlushMemory(void);
+//void CL_ShutdownAll(void);
 void CL_AddReliableCommand( const char *cmd, qboolean isDisconnectCmd );
 
 void CL_StartHunkUsers(void);
