@@ -328,7 +328,7 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 	d = VectorLength( ent->directedLight );
 	VectorScale( ent->lightDir, d, lightDir );
 #ifdef USE_PMLIGHT
-	if ( r_dlightMode->integer == 1 && (ent->e.renderfx & RF_THIRD_PERSON) ) { 
+	if ( r_dlightMode->integer == 2 ) { 
 		// only direct lights
 	} else
 #endif
