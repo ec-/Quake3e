@@ -434,7 +434,8 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 #ifdef USE_CPMA_HACKS
 		if ( isCPMA && Q_stricmp( VMA(1), "version" ) == 0 ) {
 			strcpy( VMA(2), "CNQ3 1.33" );
-			Cvar_Set2( "r_dlightMode", "1", qtrue );
+			if ( Cvar_VariableIntegerValue( "r_dlightMode" ) == 0 )
+				Cvar_Set2( "r_dlightMode", "1", qtrue );
 			Cvar_Set2( "r_dlightScale", "1", qtrue );
 			return 0;
 		}
