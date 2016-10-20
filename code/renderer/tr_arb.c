@@ -294,7 +294,7 @@ qboolean ARB_UpdatePrograms( void )
 	}
 
 	// fetch latest value
-	cvar = ri.Cvar_Get( "r_dlightSpecExp", "8.0", CVAR_ARCHIVE );
+	cvar = ri.Cvar_Get( "r_dlightSpecExp", "12.0", CVAR_ARCHIVE );
 	cvar->modified = qfalse;
 	FP = va( FPfmt, cvar->value ); // apply custom parameters
 	qglBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, programs[ PR_FRAGMENT ] );

@@ -328,7 +328,9 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 	d = VectorLength( ent->directedLight );
 	VectorScale( ent->lightDir, d, lightDir );
 #ifdef USE_PMLIGHT
-	if ( !r_dlightMode->integer || !(ent->e.renderfx & RF_THIRD_PERSON) ) {
+	if ( r_dlightMode->integer == 1 && (ent->e.renderfx & RF_THIRD_PERSON) ) { 
+		// only direct lights
+	} else
 #endif
 	for ( i = 0 ; i < refdef->num_dlights ; i++ ) {
 		dl = &refdef->dlights[i];
@@ -344,9 +346,6 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 		VectorMA( ent->directedLight, d, dl->color, ent->directedLight );
 		VectorMA( lightDir, d, dir, lightDir );
 	}
-#ifdef USE_PMLIGHT
-	}	
-#endif
 
 	// clamp ambient
 	for ( i = 0 ; i < 3 ; i++ ) {
