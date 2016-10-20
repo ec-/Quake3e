@@ -28,6 +28,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 typedef unsigned int		lightMask_t;
 //#define USE_BUGGY_LIGHT_COUNT
 
+#ifdef USE_RENDERER2
+#undef USE_PMLIGHT
+#endif
+
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qfiles.h"
 #include "../qcommon/qcommon.h"

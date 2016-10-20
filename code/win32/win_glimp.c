@@ -1556,7 +1556,7 @@ void GLimp_Init( void )
 
 	GLW_AttemptMSAA();
 
-#ifdef USE_PMLIGHT
+#if defined(USE_PMLIGHT) && !defined(USE_RENDERER2)
 	QGL_InitARB();
 #endif
 
@@ -1594,7 +1594,7 @@ void GLimp_Shutdown( void )
 	// restore gamma.  We do this first because 3Dfx's extension needs a valid OGL subsystem
 	WG_RestoreGamma();
 
-#ifdef USE_PMLIGHT
+#if defined(USE_PMLIGHT) && !defined(USE_RENDERER2)
 	QGL_DoneARB();
 #endif
 
