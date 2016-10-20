@@ -1159,8 +1159,6 @@ const void	*RB_DrawSurfs( const void *data ) {
 
 	backEnd.refdef = cmd->refdef;
 	backEnd.viewParms = cmd->viewParms;
-	//TODO Maybe check for rdf_noworld stuff but q3mme has full 3d ui
-	backEnd.doneSurfaces = qtrue; // bloom
 
 #ifdef USE_PMLIGHT
 	tess.dlightPass = qfalse;
@@ -1187,6 +1185,9 @@ const void	*RB_DrawSurfs( const void *data ) {
 		GL_ProgramDisable();
 	}
 #endif // USE_PMLIGHT
+
+	//TODO Maybe check for rdf_noworld stuff but q3mme has full 3d ui
+	backEnd.doneSurfaces = qtrue; // for bloom
 
 	return (const void *)(cmd + 1);
 }
@@ -1358,8 +1359,10 @@ const void	*RB_SwapBuffers( const void *data ) {
 	GLimp_EndFrame();
 
 	backEnd.projection2D = qfalse;
+	
 	backEnd.doneBloom = qfalse;
-	backEnd.doneSurfaces = qfalse;
+	backEnd.doneSurfaces = qfalse; // for bloom
+
 	return (const void *)(cmd + 1);
 }
 
