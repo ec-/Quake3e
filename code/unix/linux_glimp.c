@@ -860,7 +860,7 @@ void GLimp_Shutdown( void )
 	if ( !ctx || !dpy )
 		return;
 
-#ifdef USE_PMLIGHT
+#if defined(USE_PMLIGHT) && !defined(USE_RENDERER2)
 	QGL_DoneARB();
 #endif
 
@@ -1760,7 +1760,7 @@ void GLimp_Init( void )
 
 	// initialize extensions
 	GLW_InitExtensions();
-#ifdef USE_PMLIGHT
+#if defined(USE_PMLIGHT) && !defined(USE_RENDERER2)
 	QGL_InitARB();
 #endif
 	GLW_InitGamma();
