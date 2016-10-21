@@ -70,8 +70,9 @@ typedef struct {
 	refEntity_t	e;
 
 	float		axisLength;		// compensate for non-normalized axis
-
+#ifdef USE_LEGACY_DLIGHTS
 	qboolean	needDlights;	// true for bmodels that touch a dlight
+#endif
 	qboolean	lightingCalculated;
 	vec3_t		lightDir;		// normalized direction towards light
 	vec3_t		ambientLight;	// color normalized to 0-255

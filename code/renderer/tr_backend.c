@@ -1167,7 +1167,10 @@ const void	*RB_DrawSurfs( const void *data ) {
 	RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
 
 #ifdef USE_PMLIGHT
-	if ( r_dlightMode->integer ) {
+#ifdef USE_LEGACY_DLIGHTS
+	if ( r_dlightMode->integer ) 
+#endif
+	{
 		dlight_t	*dl;
 		int			i;
 		if ( backEnd.refdef.numLitSurfs ) {
