@@ -456,6 +456,65 @@ ifeq ($(PLATFORM),freebsd)
 else # ifeq freebsd
 
 #############################################################################
+# SETUP AND BUILD -- OPENBSD
+#############################################################################
+
+ifeq ($(PLATFORM),openbsd)
+
+  ifneq (,$(findstring amd64,$(shell uname -m)))
+    ARCH=x86_64
+  else #default to i386
+    ARCH=i386
+  endif #alpha test
+
+
+  BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
+                -I/usr/X11R6/include -I/usr/local/include/SDL -fvisibility=hidden
+
+  DEBUG_CFLAGS=$(BASE_CFLAGS) -g
+
+  ifeq ($(USE_CODEC_VORBIS),1)
+    BASE_CFLAGS += -DUSE_CODEC_VORBIS=1
+  endif
+
+  ifeq ($(ARCH),x86_64)
+	HAVE_VM_COMPILED=true
+	BASE_CFLAGS +=  -I/usr/local/include -I/usr/X11R6/include -O3
+    RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O3 -ffast-math -funroll-loops \
+      -fomit-frame-pointer -fexpensive-optimizations
+  else
+  ifeq ($(ARCH),i386)
+    RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O3 -mtune=pentiumpro \
+      -march=pentium -fomit-frame-pointer -pipe -ffast-math \
+      -falign-loops=2 -falign-jumps=2 -falign-functions=2 \
+      -funroll-loops -fstrength-reduce
+    HAVE_VM_COMPILED=true
+  else
+    BASE_CFLAGS += -DNO_VM_COMPILED
+  endif
+  endif
+
+  ifneq ($(HAVE_VM_COMPILED),true)
+    BASE_CFLAGS += -DNO_VM_COMPILED
+  endif
+  SHLIBEXT=so
+  SHLIBCFLAGS=-fPIC
+  SHLIBLDFLAGS=-shared $(LDFLAGS)
+
+  THREAD_LDFLAGS=-lpthread
+  # don't need -ldl (FreeBSD)
+  LDFLAGS=-lm -lSDL -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext -lXxf86vm -lXxf86dga 
+
+  CLIENT_LDFLAGS =-lm -lSDL -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext -lXxf86vm -lXxf86dga 
+
+  ifeq ($(USE_CODEC_VORBIS),1)
+    CLIENT_LDFLAGS += -lvorbisfile -lvorbis -logg
+  endif
+
+
+else # ifeq openbsd
+
+#############################################################################
 # SETUP AND BUILD -- NETBSD
 #############################################################################
 
@@ -481,6 +540,7 @@ ifeq ($(PLATFORM),netbsd)
   BUILD_CLIENT = 0
 
 else # ifeq netbsd
+
 
 #############################################################################
 # SETUP AND BUILD -- IRIX
@@ -587,6 +647,7 @@ endif #Linux
 endif #darwin
 endif #mingw32
 endif #FreeBSD
+endif #OpenBSD
 endif #NetBSD
 endif #IRIX
 endif #SunOS
@@ -1195,9 +1256,9 @@ dist2:
 
 D_FILES=$(shell find . -name '*.d')
 
-ifneq ($(strip $(D_FILES)),)
-  include $(D_FILES)
-endif
+#ifneq ($(strip $(D_FILES)),)
+ # include $(D_FILES)
+#endif
 
 .PHONY: all clean clean2 clean-debug clean-release copyfiles \
 	debug default dist distclean installer makedirs release \
