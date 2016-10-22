@@ -81,14 +81,14 @@ qboolean Sys_RandomBytes( byte *string, int len )
 LPWSTR AtoW( const char *s ) 
 {
 	static WCHAR buffer[MAXPRINTMSG*2];
-	MultiByteToWideChar( CP_OEMCP, 0, s, strlen( s ) + 1, (LPWSTR) buffer, ARRAYSIZE( buffer ) );
+	MultiByteToWideChar( CP_ACP, 0, s, strlen( s ) + 1, (LPWSTR) buffer, ARRAYSIZE( buffer ) );
 	return buffer;
 }
 
 const char *WtoA( const LPWSTR s ) 
 {
 	static char buffer[MAXPRINTMSG*2];
-	WideCharToMultiByte( CP_OEMCP, 0, s, -1, buffer, ARRAYSIZE( buffer ), NULL, NULL );
+	WideCharToMultiByte( CP_ACP, 0, s, -1, buffer, ARRAYSIZE( buffer ), NULL, NULL );
 	return buffer;
 }
 #endif
