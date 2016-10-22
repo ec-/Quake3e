@@ -1060,6 +1060,7 @@ extern cvar_t	*r_dynamiclight;		// dynamic lights enabled/disabled
 extern cvar_t	*r_dlightMode;			// 0 - vq3, 1 - pmlight
 extern cvar_t	*r_dlightSpecExp;		// 1 - 32
 extern cvar_t	*r_dlightScale;			// 0.1 - 1.0
+extern cvar_t	*r_dlightIntensity;		// 0.1 - 1.0
 #endif
 extern cvar_t	*r_dlightBacks;			// dlight non-facing surfaces for continuity
 

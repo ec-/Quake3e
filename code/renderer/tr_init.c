@@ -71,6 +71,7 @@ cvar_t	*r_dynamiclight;
 cvar_t	*r_dlightMode;
 cvar_t	*r_dlightSpecExp;
 cvar_t	*r_dlightScale;
+cvar_t	*r_dlightIntensity;
 #endif
 cvar_t	*r_dlightBacks;
 
@@ -1106,10 +1107,12 @@ void R_Register( void )
 #else
 	Cvar_CheckRange( r_dlightMode, 1, 2, qtrue );
 #endif
-	r_dlightScale = ri.Cvar_Get( "r_dlightScale", "0.5", CVAR_ARCHIVE );
+	r_dlightScale = ri.Cvar_Get( "r_dlightScale", "1.0", CVAR_ARCHIVE );
 	Cvar_CheckRange( r_dlightScale, 0.1f, 1.0f, qfalse );
-	r_dlightSpecExp = ri.Cvar_Get( "r_dlightSpecExp", "12.0", CVAR_ARCHIVE );
+	r_dlightSpecExp = ri.Cvar_Get( "r_dlightSpecExp", "16.0", CVAR_ARCHIVE );
 	Cvar_CheckRange( r_dlightSpecExp, 1.0f, 32.0f, qfalse );
+	r_dlightIntensity = ri.Cvar_Get( "r_dlightIntensity", "1.0", CVAR_ARCHIVE );
+	Cvar_CheckRange( r_dlightIntensity, 0.1f, 2.0f, qfalse );
 #endif
 	r_dlightBacks = ri.Cvar_Get( "r_dlightBacks", "1", CVAR_ARCHIVE );
 	r_finish = ri.Cvar_Get ("r_finish", "0", CVAR_ARCHIVE);

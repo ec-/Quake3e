@@ -254,6 +254,11 @@ void RE_AddDynamicLightToScene( const vec3_t org, float intensity, float r, floa
 	if ( glConfig.hardwareType == GLHW_RIVA128 || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
 		return;
 	}
+	if ( r_dlightMode->integer ) {
+		r *= r_dlightIntensity->value;
+		g *= r_dlightIntensity->value;
+		b *= r_dlightIntensity->value;
+	}
 	dl = &backEndData->dlights[r_numdlights++];
 	VectorCopy (org, dl->origin);
 	dl->radius = intensity;

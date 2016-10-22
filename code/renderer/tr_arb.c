@@ -266,7 +266,7 @@ qboolean ARB_UpdatePrograms( void )
 {
 	const char *FP;
 	GLint errorPos;
-	cvar_t	*cvar;
+	cvar_t	*specExp;
 
 	if ( !qglGenProgramsARB )
 		return qfalse;
@@ -293,10 +293,12 @@ qboolean ARB_UpdatePrograms( void )
 		return qfalse;
 	}
 
-	// fetch latest value
-	cvar = ri.Cvar_Get( "r_dlightSpecExp", "12.0", CVAR_ARCHIVE );
-	cvar->modified = qfalse;
-	FP = va( FPfmt, cvar->value ); // apply custom parameters
+	// fetch latest values
+	specExp = ri.Cvar_Get( "r_dlightSpecExp", "16.0", CVAR_ARCHIVE );
+	specExp->modified = qfalse;
+
+	FP = va( FPfmt, specExp->value ); // apply custom parameters
+
 	qglBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, programs[ PR_FRAGMENT ] );
 	qglProgramStringARB( GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, strlen( FP ), FP );
 	qglGetIntegerv( GL_PROGRAM_ERROR_POSITION_ARB, &errorPos );
