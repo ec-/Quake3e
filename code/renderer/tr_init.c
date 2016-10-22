@@ -1111,8 +1111,8 @@ void R_Register( void )
 	Cvar_CheckRange( r_dlightScale, 0.1f, 1.0f, qfalse );
 	r_dlightSpecExp = ri.Cvar_Get( "r_dlightSpecExp", "16.0", CVAR_ARCHIVE );
 	Cvar_CheckRange( r_dlightSpecExp, 1.0f, 32.0f, qfalse );
-	r_dlightIntensity = ri.Cvar_Get( "r_dlightIntensity", "1.0", CVAR_ARCHIVE );
-	Cvar_CheckRange( r_dlightIntensity, 0.1f, 2.0f, qfalse );
+	r_dlightIntensity = ri.Cvar_Get( "r_dlightIntensity", "0.7", CVAR_ARCHIVE );
+	Cvar_CheckRange( r_dlightIntensity, 0.1f, 1.0f, qfalse );
 #endif
 	r_dlightBacks = ri.Cvar_Get( "r_dlightBacks", "1", CVAR_ARCHIVE );
 	r_finish = ri.Cvar_Get ("r_finish", "0", CVAR_ARCHIVE);
