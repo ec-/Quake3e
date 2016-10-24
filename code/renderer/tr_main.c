@@ -847,7 +847,7 @@ static qboolean IsMirror( const drawSurf_t *drawSurf, int entityNum )
 **
 ** Determines if a surface is completely offscreen.
 */
-static qboolean SurfIsOffscreen( const drawSurf_t *drawSurf, vec4_t clipDest[128] ) {
+static qboolean SurfIsOffscreen( const drawSurf_t *drawSurf, vec4_t clipDest[128], qboolean *isMirror ) {
 	float shortest = 100000000;
 	int entityNum;
 	int numTriangles;
@@ -858,6 +858,8 @@ static qboolean SurfIsOffscreen( const drawSurf_t *drawSurf, vec4_t clipDest[128
 	int i;
 	unsigned int pointOr = 0;
 	unsigned int pointAnd = (unsigned int)~0;
+
+	*isMirror = qfalse;
 
 	R_RotateForViewer();
 
@@ -929,6 +931,7 @@ static qboolean SurfIsOffscreen( const drawSurf_t *drawSurf, vec4_t clipDest[128
 	// with them (although we could)
 	if ( IsMirror( drawSurf, entityNum ) )
 	{
+		*isMirror = qtrue;
 		return qfalse;
 	}
 
@@ -952,6 +955,7 @@ qboolean R_MirrorViewBySurface (drawSurf_t *drawSurf, int entityNum) {
 	viewParms_t		newParms;
 	viewParms_t		oldParms;
 	orientation_t	surface, camera;
+	qboolean		isMirror;
 
 	// don't recursively mirror
 	if (tr.viewParms.isPortal) {
@@ -959,12 +963,16 @@ qboolean R_MirrorViewBySurface (drawSurf_t *drawSurf, int entityNum) {
 		return qfalse;
 	}
 
-	if ( r_noportals->integer || (r_fastsky->integer == 1) ) {
+	if ( r_noportals->integer > 1 || r_fastsky->integer == 1 ) {
 		return qfalse;
 	}
 
 	// trivially reject portal/mirror
-	if ( SurfIsOffscreen( drawSurf, clipDest ) ) {
+	if ( SurfIsOffscreen( drawSurf, clipDest, &isMirror ) ) {
+		return qfalse;
+	}
+
+	if ( !isMirror && r_noportals->integer ) {
 		return qfalse;
 	}
 
