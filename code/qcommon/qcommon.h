@@ -766,6 +766,10 @@ const char *FS_GetGamePath( void );
 qboolean FS_IsExt( const char *filename, const char *ext );
 qboolean FS_StripExt( char *filename, const char *ext );
 
+typedef qboolean ( *fnamecallback_f )( const char *filename, int length );
+
+void FS_SetFilenameCallback( fnamecallback_f func ); 
+
 /*
 ==============================================================
 
@@ -1150,7 +1154,7 @@ const char *Sys_DefaultBasePath( void );
 const char *Sys_DefaultHomePath( void );
 const char *Sys_SteamPath( void );
 
-char	**Sys_ListFiles( const char *directory, const char *extension, char *filter, int *numfiles, qboolean wantsubs );
+char	**Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, qboolean wantsubs );
 void	Sys_FreeFileList( char **list );
 
 void	Sys_BeginProfiling( void );

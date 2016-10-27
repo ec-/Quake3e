@@ -530,6 +530,26 @@ static int CL_WalkDemoExt( const char *arg, char *name, fileHandle_t *handle )
 
 /*
 ====================
+CL_DemoExtCallback
+====================
+*/
+static qboolean CL_DemoNameCallback_f( const char *filename, int length ) 
+{
+	int version;
+
+	if ( length < 7 || Q_stricmpn( filename + length - 6, ".dm_", 4 ) )
+		return qfalse;
+
+	version = atoi( filename + length - 2 );
+	if ( version < 66 || version > NEW_PROTOCOL_VERSION )
+		return qfalse;
+
+	return qtrue;
+}
+
+
+/*
+====================
 CL_CompleteDemoName
 ====================
 */
@@ -537,10 +557,9 @@ static void CL_CompleteDemoName( char *args, int argNum )
 {
 	if( argNum == 2 )
 	{
-		char demoExt[ 16 ];
-
-		Com_sprintf( demoExt, sizeof( demoExt ), ".dm_%d", PROTOCOL_VERSION );
-		Field_CompleteFilename( "demos", demoExt, qtrue, FS_MATCH_ANY | FS_MATCH_STICK );
+		FS_SetFilenameCallback( CL_DemoNameCallback_f );
+		Field_CompleteFilename( "demos", ".dm_??", qfalse, FS_MATCH_ANY | FS_MATCH_STICK );
+		FS_SetFilenameCallback( NULL );
 	}
 }
 

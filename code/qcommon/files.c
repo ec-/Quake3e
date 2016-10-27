@@ -2276,6 +2276,14 @@ static qboolean FS_AllowListExternal( const char *extension )
 	return qfalse;
 }
 
+static fnamecallback_f fnamecallback = NULL;
+
+void FS_SetFilenameCallback( fnamecallback_f func ) 
+{
+	fnamecallback = func;
+}
+
+
 /*
 ===============
 FS_ListFilteredFiles
@@ -2364,12 +2372,16 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 
 					// check for extension match
 					length = strlen( name );
-					if ( length < extensionLength ) {
-						continue;
-					}
 
-					if ( Q_stricmp( name + length - extensionLength, extension ) ) {
-						continue;
+					if ( fnamecallback ) {
+						// use custom filter
+						if ( !fnamecallback( name, length ) )
+							continue;
+					} else {
+						if ( length < extensionLength )
+							continue;
+						if ( Q_stricmp( name + length - extensionLength, extension ) )
+							continue;
 					}
 					// unique the match
 
@@ -2390,7 +2402,16 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 			sysFiles = Sys_ListFiles( netpath, extension, filter, &numSysFiles, qfalse );
 			for ( i = 0 ; i < numSysFiles ; i++ ) {
 				// unique the match
-				name = sysFiles[i];
+				name = sysFiles[ i ];
+				length = strlen( name );
+				if ( fnamecallback ) {
+					// use custom filter
+					if ( !fnamecallback( name, length ) )
+						continue;
+				} else {
+					if ( length < extensionLength )
+						continue;
+				}
 				nfiles = FS_AddFileToList( name, list, nfiles );
 			}
 			Sys_FreeFileList( sysFiles );
