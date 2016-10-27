@@ -781,7 +781,7 @@ int Com_Split( char *in, char **out, int outsz, int delim )
 Com_FilterPath
 ============
 */
-int Com_FilterPath(char *filter, char *name, int casesensitive)
+int Com_FilterPath(const char *filter, char *name, int casesensitive)
 {
 	int i;
 	char new_filter[MAX_QPATH];
