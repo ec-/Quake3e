@@ -1385,9 +1385,7 @@ typedef struct {
 	int maxRenderbufferSize;
 	int maxColorAttachments;
 
-	qboolean textureNonPowerOfTwo;
 	qboolean textureFloat;
-	qboolean halfFloatPixel;
 	textureCompressionRef_t textureCompression;
 	qboolean swizzleNormalmap;
 	
@@ -1396,9 +1394,6 @@ typedef struct {
 
 	qboolean depthClamp;
 	qboolean seamlessCubeMap;
-
-	GLenum packedTexcoordDataType;
-	int packedTexcoordDataSize;
 
 	qboolean vertexArrayObject;
 	qboolean directStateAccess;
@@ -1696,8 +1691,6 @@ extern  cvar_t  *r_ext_draw_range_elements;
 extern  cvar_t  *r_ext_multi_draw_arrays;
 extern  cvar_t  *r_ext_framebuffer_object;
 extern  cvar_t  *r_ext_texture_float;
-extern  cvar_t  *r_arb_half_float_pixel;
-extern  cvar_t  *r_arb_half_float_vertex;
 extern  cvar_t  *r_ext_framebuffer_multisample;
 extern  cvar_t  *r_arb_seamless_cube_map;
 extern  cvar_t  *r_arb_vertex_array_object;
@@ -1925,7 +1918,7 @@ qboolean	R_GetEntityToken( char *buffer, int size );
 model_t		*R_AllocModel( void );
 
 void    	R_Init( void );
-void		R_UpdateSubImage( image_t *image, byte *pic, int x, int y, int width, int height );
+void		R_UpdateSubImage( image_t *image, byte *pic, int x, int y, int width, int height, GLenum picFormat );
 
 void		R_SetColorMappings( void );
 void		R_GammaCorrect( byte *buffer, int bufSize );
@@ -2158,7 +2151,6 @@ VERTEX BUFFER OBJECTS
 
 void R_VaoPackTangent(int16_t *out, vec4_t v);
 void R_VaoPackNormal(int16_t *out, vec3_t v);
-int R_VaoPackTexCoord(byte *out, vec2_t st);
 void R_VaoPackColor(uint16_t *out, vec4_t c);
 void R_VaoUnpackTangent(vec4_t v, int16_t *pack);
 void R_VaoUnpackNormal(vec3_t v, int16_t *pack);
