@@ -943,6 +943,73 @@ static qboolean SurfIsOffscreen( const drawSurf_t *drawSurf, vec4_t clipDest[128
 	return qfalse;
 }
 
+
+/*
+================
+R_GetModemViewBounds
+================
+*/
+static void R_GetModelViewBounds( int *mins, int *maxs )
+{
+	vec4_t			eye, clip;
+	vec3_t			bounds[2];
+	vec3_t			test[8];
+	float			minn[2];
+	float			maxn[2];
+	float			norm[2];
+	int				i,j;
+
+	VectorCopy( tess.xyz[0], bounds[0] );
+	VectorCopy( tess.xyz[0], bounds[1] );
+	for ( i = 1; i < tess.numVertexes; i++ ) {
+		for ( j = 0; j < 3; j++ ) {
+			if ( bounds[0][j] > tess.xyz[i][j] )
+				 bounds[0][j] = tess.xyz[i][j];
+			if ( bounds[1][j] < tess.xyz[i][j] )
+				 bounds[1][j] = tess.xyz[i][j];
+		}
+	}
+
+	minn[0] = minn[1] =  1.0;
+	maxn[0] = maxn[1] = -1.0;
+
+	VectorSet( test[0], bounds[0][0], bounds[0][1], bounds[0][2] );
+	VectorSet( test[1], bounds[1][0], bounds[0][1], bounds[0][2] );
+	VectorSet( test[2], bounds[0][0], bounds[1][1], bounds[0][2] );
+	VectorSet( test[3], bounds[1][0], bounds[1][1], bounds[0][2] );
+	
+	VectorSet( test[4], bounds[1][0], bounds[1][1], bounds[1][2] );
+	VectorSet( test[5], bounds[0][0], bounds[1][1], bounds[1][2] );
+	VectorSet( test[6], bounds[1][0], bounds[0][1], bounds[1][2] );
+	VectorSet( test[7], bounds[0][0], bounds[0][1], bounds[1][2] );
+
+	for ( i = 0; i < 8; i++ ) {
+		R_TransformModelToClip( test[i], tr.or.modelMatrix, tr.viewParms.projectionMatrix, eye, clip );
+		if ( clip[3] <= 0.0 ) {
+			// bound values by sign
+			if ( clip[0] < 0 ) norm[0] = -1.0; else norm[0] = 1.0;
+			if ( clip[1] < 0 ) norm[1] = -1.0; else norm[1] = 1.0;
+		} else 	{
+			for ( j = 0; j < 2; j++ ) {
+				if ( clip[j] >  clip[3] ) clip[j] =  clip[3]; else
+				if ( clip[j] < -clip[3] ) clip[j] = -clip[3];
+			}
+			norm[0] = clip[0] / clip[3];
+			norm[1] = clip[1] / clip[3];
+		}
+		for ( j = 0; j < 2; j++ ) {
+			if ( norm[j] < minn[j] ) minn[j] = norm[j];
+			if ( norm[j] > maxn[j] ) maxn[j] = norm[j];
+		}
+	}
+
+	mins[0] = (int)(0.0 + 0.5 * ( 1.0 + minn[0] ) * tr.viewParms.viewportWidth);
+	mins[1] = (int)(0.0 + 0.5 * ( 1.0 + minn[1] ) * tr.viewParms.viewportHeight);
+	maxs[0] = (int)(0.5 + 0.5 * ( 1.0 + maxn[0] ) * tr.viewParms.viewportWidth);
+	maxs[1] = (int)(0.5 + 0.5 * ( 1.0 + maxn[1] ) * tr.viewParms.viewportHeight);
+}
+
+
 /*
 ========================
 R_MirrorViewBySurface
@@ -963,7 +1030,7 @@ qboolean R_MirrorViewBySurface (drawSurf_t *drawSurf, int entityNum) {
 		return qfalse;
 	}
 
-	if ( r_noportals->integer > 1 || r_fastsky->integer == 1 ) {
+	if ( r_noportals->integer > 1 /*|| r_fastsky->integer == 1 */ ) {
 		return qfalse;
 	}
 
@@ -984,6 +1051,15 @@ qboolean R_MirrorViewBySurface (drawSurf_t *drawSurf, int entityNum) {
 	if ( !R_GetPortalOrientations( drawSurf, entityNum, &surface, &camera, 
 		newParms.pvsOrigin, &newParms.isMirror ) ) {
 		return qfalse;		// bad portal, no portalentity
+	}
+
+	if ( tess.numVertexes > 2 ) {
+		int mins[2], maxs[2];
+		R_GetModelViewBounds( mins, maxs );
+		newParms.scissorX = newParms.viewportX + mins[0];
+		newParms.scissorY = newParms.viewportY + mins[1];
+		newParms.scissorWidth = maxs[0] - mins[0];
+		newParms.scissorHeight = maxs[1] - mins[1];
 	}
 
 	R_MirrorPoint (oldParms.or.origin, &surface, &camera, newParms.or.origin );

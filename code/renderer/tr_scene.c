@@ -411,6 +411,12 @@ void RE_RenderScene( const refdef_t *fd ) {
 	parms.viewportY = glConfig.vidHeight - ( tr.refdef.y + tr.refdef.height );
 	parms.viewportWidth = tr.refdef.width;
 	parms.viewportHeight = tr.refdef.height;
+
+	parms.scissorX = parms.viewportX;
+	parms.scissorY = parms.viewportY;
+	parms.scissorWidth = parms.viewportWidth;
+	parms.scissorHeight = parms.viewportHeight;
+
 	parms.isPortal = qfalse;
 
 	parms.fovX = tr.refdef.fov_x;
