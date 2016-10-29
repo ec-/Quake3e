@@ -185,7 +185,7 @@ void ARB_LightingPass( void )
 	R_ComputeTexCoords( pStage );
 
 	// since this is guaranteed to be a single pass, fill and lock all the arrays
-
+	
 	qglDisableClientState( GL_COLOR_ARRAY );
 
 	qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -196,16 +196,17 @@ void ARB_LightingPass( void )
 
 	qglVertexPointer( 3, GL_FLOAT, 16, tess.xyz );
 
-	if ( qglLockArraysEXT )
-		qglLockArraysEXT( 0, tess.numVertexes );
+	//if ( qglLockArraysEXT )
+	//		qglLockArraysEXT( 0, tess.numVertexes );
 
 	ARB_Lighting( pStage );
 
-	if ( qglUnlockArraysEXT )
-		qglUnlockArraysEXT();
+	//if ( qglUnlockArraysEXT )
+	//		qglUnlockArraysEXT();
 
 	qglDisableClientState( GL_NORMAL_ARRAY );
 }
+
 
 // welding these into the code to avoid having a pk3 dependency in the engine
 
@@ -214,9 +215,9 @@ static const char *VP = {
 	"OPTION ARB_position_invariant; \n"
 	"PARAM posEye = program.env[0]; \n"
 	"PARAM posLight = program.local[0]; \n"
-	"OUTPUT lv = result.texcoord[4]; \n"
-	"OUTPUT ev = result.texcoord[5]; \n"
-	"OUTPUT n = result.texcoord[6]; \n"
+	"OUTPUT lv = result.texcoord[1]; \n" // 1
+	"OUTPUT ev = result.texcoord[2]; \n" // 2
+	"OUTPUT n = result.texcoord[3]; \n"  // 3
 	"MOV result.texcoord[0], vertex.texcoord; \n"
 	"MOV n, vertex.normal; \n"
 	"SUB ev, posEye, vertex.position; \n"
@@ -230,9 +231,9 @@ static const char *FPfmt = {
 	"PARAM lightRGB = program.local[0]; \n"
 	"PARAM lightRange2recip = program.local[1]; \n"
 	"TEMP base; TEX base, fragment.texcoord[0], texture[0], 2D; \n"
-	"ATTRIB dnLV = fragment.texcoord[4]; \n"
-	"ATTRIB dnEV = fragment.texcoord[5]; \n"
-	"ATTRIB n = fragment.texcoord[6]; \n"
+	"ATTRIB dnLV = fragment.texcoord[1]; \n" // 1
+	"ATTRIB dnEV = fragment.texcoord[2]; \n" // 2
+	"ATTRIB n = fragment.texcoord[3]; \n"    // 3
 	"TEMP tmp, lv; \n"
 	"DP3 tmp, dnLV, dnLV; \n"
 	"RSQ lv.w, tmp.w; \n"
@@ -240,8 +241,8 @@ static const char *FPfmt = {
 	"TEMP light; \n"
 	"MUL tmp.x, tmp.w, lightRange2recip; \n"
 	"SUB tmp.x, 1.0, tmp.x; \n"
-	"MUL light.rgb, lightRGB, tmp.x; \n"
-	"PARAM specRGB = 0.25; \n"
+	"MUL light, lightRGB, tmp.x; \n" // light.rgb
+	"PARAM specRGB = { 0.25, 0.25, 0.25, 1.0 }; \n"
 	"PARAM specEXP = %1.1f; \n" // r_dlightSpecExp->value
 	"TEMP ev; \n"
 	"DP3 ev, dnEV, dnEV; \n"
@@ -254,7 +255,7 @@ static const char *FPfmt = {
 	"DP3_SAT tmp.w, n, tmp; \n"
 	"POW tmp.w, tmp.w, specEXP.w; \n"
 	"TEMP spec; \n"
-	"MUL spec.rgb, specRGB, tmp.w; \n"
+	"MUL spec, specRGB, tmp.w; \n" // spec.rgb
 	"TEMP bump; \n"
 	"DP3_SAT bump.w, n, lv; \n"
 	"MAD base, base, bump.w, spec; \n"
