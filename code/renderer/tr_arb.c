@@ -124,7 +124,11 @@ static void ARB_Lighting( const shaderStage_t* pStage )
 	if ( !numIndexes )
 		return;
 
-	GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
+	if ( tess.shader->sort < SS_OPAQUE ) {
+		GL_State( GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
+	} else {
+		GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
+	}
 
 	GL_SelectTexture( 0 );
 	R_BindAnimatedImage( &pStage->bundle[ 0 ] );

@@ -770,8 +770,8 @@ void RB_RenderLitSurfList( dlight_t* dl ) {
 		// anything BEFORE opaque is sky/portal, anything AFTER it should never have been added
 		//assert( shader->sort == SS_OPAQUE );
 		// !!! but MIRRORS can trip that assert, so just do this for now
-		if ( shader->sort < SS_OPAQUE )
-			continue;
+		//if ( shader->sort < SS_OPAQUE )
+		//	continue;
 
 		//
 		// change the tess parameters if needed
