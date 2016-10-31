@@ -263,7 +263,7 @@ static const char *FPfmt = {
 	"TEMP bump; \n"
 	"DP3_SAT bump.w, n, lv; \n"
 	"MAD base, base, bump.w, spec; \n"
-	"MUL result.color.rgb, base, light; \n"
+	"MUL result.color, base, light; \n"
 	"END \n"
 };
 
