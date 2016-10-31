@@ -577,6 +577,7 @@ void CL_PlayDemo_f( void ) {
 	char		*arg, *ext_test;
 	int			protocol, i;
 	char		retry[MAX_OSPATH];
+	const char	*shortname, *slash;
 	fileHandle_t hFile;
 
 	if ( Cmd_Argc() != 2 ) {
@@ -586,7 +587,7 @@ void CL_PlayDemo_f( void ) {
 
 	// open the demo file
 	arg = Cmd_Argv(1);
-	
+
 	// check for an extension .dm_?? (?? is protocol)
 	// check for an extension .DEMOEXT_?? (?? is protocol)
 	ext_test = strrchr(arg, '.');
@@ -645,13 +646,18 @@ void CL_PlayDemo_f( void ) {
 		return;
 	}
 
-	Q_strncpyz( clc.demoName, arg, sizeof( clc.demoName ) );
+	if ( (slash = strrchr( name, '/' )) != NULL )
+		shortname = slash + 1;
+	else
+		shortname = name;
+
+	Q_strncpyz( clc.demoName, shortname, sizeof( clc.demoName ) );
 
 	Con_Close();
 
 	cls.state = CA_CONNECTED;
 	clc.demoplaying = qtrue;
-	Q_strncpyz( cls.servername, arg, sizeof( cls.servername ) );
+	Q_strncpyz( cls.servername, shortname, sizeof( cls.servername ) );
 
 	if ( protocol < NEW_PROTOCOL_VERSION )
 		clc.compat = qtrue;
