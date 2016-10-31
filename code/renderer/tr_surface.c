@@ -75,6 +75,8 @@ void RB_AddQuadStampExt( vec3_t origin, vec3_t left, vec3_t up, byte *color, flo
 
 	RB_CHECKOVERFLOW( 4, 6 );
 
+	tess.surfType = SF_TRIANGLES;
+
 	ndx = tess.numVertexes;
 
 	// triangle indexes for a simple quad
@@ -192,6 +194,8 @@ static void RB_SurfacePolychain( srfPoly_t *p ) {
 
 	RB_CHECKOVERFLOW( p->numVerts, 3*(p->numVerts - 2) );
 
+	tess.surfType = SF_POLY;
+
 	// fan triangles into the tess array
 	numv = tess.numVertexes;
 	for ( i = 0; i < p->numVerts; i++ ) {
@@ -234,6 +238,8 @@ static void RB_SurfaceTriangles( srfTriangles_t *srf ) {
 	dlightBits = srf->dlightBits;
 	tess.dlightBits |= dlightBits;
 #endif
+
+	tess.surfType = SF_TRIANGLES;
 
 	RB_CHECKOVERFLOW( srf->numVerts, srf->numIndexes );
 
@@ -691,6 +697,8 @@ static void RB_SurfaceMesh(md3Surface_t *surface) {
 	int				Bob, Doug;
 	int				numVerts;
 
+	tess.surfType = SF_MD3;
+
 	if (  backEnd.currentEntity->e.oldframe == backEnd.currentEntity->e.frame ) {
 		backlerp = 0;
 	} else  {
@@ -741,6 +749,8 @@ static void RB_SurfaceFace( srfSurfaceFace_t *surf ) {
 #ifdef USE_LEGACY_DLIGHTS
 	int			dlightBits;
 #endif
+
+	tess.surfType = SF_FACE;
 
 	RB_CHECKOVERFLOW( surf->numPoints, surf->numIndices );
 
@@ -846,6 +856,8 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 	dlightBits = cv->dlightBits;
 	tess.dlightBits |= dlightBits;
 #endif
+
+	tess.surfType = SF_GRID;
 
 	// determine the allowable discrepance
 	lodError = LodErrorForVolume( cv->lodOrigin, cv->lodRadius );
@@ -1044,19 +1056,26 @@ static void RB_SurfaceEntity( surfaceType_t *surfType ) {
 		RB_SurfaceAxis();
 		break;
 	}
+	tess.surfType = SF_ENTITY;
 }
 
 static void RB_SurfaceBad( surfaceType_t *surfType ) {
+	tess.surfType = SF_BAD;
 	ri.Printf( PRINT_ALL, "Bad surface tesselated.\n" );
 }
 
+
 static void RB_SurfaceFlare(srfFlare_t *surf)
 {
-	if (r_flares->integer)
+	if (r_flares->integer) {
+		tess.surfType = SF_FLARE;
 		RB_AddFlare(surf, tess.fogNum, surf->origin, surf->color, surf->normal);
+	}
 }
 
+
 static void RB_SurfaceSkip( void *surf ) {
+	tess.surfType = SF_SKIP;
 }
 
 

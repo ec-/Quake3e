@@ -75,7 +75,7 @@ static void ARB_Lighting( const shaderStage_t* pStage )
 		vec3_t dist;
 		VectorSubtract( dl->transformed, tess.xyz[i], dist );
 
-		if ( DotProduct( dist, tess.normal[i] ) <= 0.0f ) {
+		if ( tess.surfType != SF_GRID && DotProduct( dist, tess.normal[i] ) <= 0.0f ) {
 			clipBits[ i ] = 63;
 			continue;
 		}

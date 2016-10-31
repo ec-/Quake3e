@@ -1297,6 +1297,9 @@ typedef struct shaderCommands_s
 
 	color4ub_t	constantColor255[SHADER_MAX_VERTEXES] QALIGN(16);
 #pragma pack(pop)
+	
+	surfaceType_t	surfType;
+
 	shader_t	*shader;
 	double		shaderTime;	// -EC- set to double for frameloss fix
 	int			fogNum;
