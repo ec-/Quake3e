@@ -234,32 +234,50 @@ static const char *FPfmt = {
 	"OPTION ARB_precision_hint_fastest; \n"
 	"PARAM lightRGB = program.local[0]; \n"
 	"PARAM lightRange2recip = program.local[1]; \n"
-	"TEMP base; TEX base, fragment.texcoord[0], texture[0], 2D; \n"
+	"TEMP base; \n"
+	"TEX base, fragment.texcoord[0], texture[0], 2D; \n"
 	"ATTRIB dnLV = fragment.texcoord[1]; \n" // 1
 	"ATTRIB dnEV = fragment.texcoord[2]; \n" // 2
 	"ATTRIB n = fragment.texcoord[3]; \n"    // 3
+	
+	// normalize light vector
 	"TEMP tmp, lv; \n"
 	"DP3 tmp, dnLV, dnLV; \n"
 	"RSQ lv.w, tmp.w; \n"
 	"MUL lv.xyz, dnLV, lv.w; \n"
+
+	// calculate light strength
 	"TEMP light; \n"
 	"MUL tmp.x, tmp.w, lightRange2recip; \n"
 	"SUB tmp.x, 1.0, tmp.x; \n"
 	"MUL light, lightRGB, tmp.x; \n" // light.rgb
+
 	"PARAM specRGB = { 0.25, 0.25, 0.25, 1.0 }; \n"
 	"PARAM specEXP = %1.1f; \n" // r_dlightSpecExp->value
+	
+	// normalize eye vector
 	"TEMP ev; \n"
 	"DP3 ev, dnEV, dnEV; \n"
 	"RSQ ev.w, ev.w; \n"
 	"MUL ev.xyz, dnEV, ev.w; \n"
+
+	// normalize (eye + light) vector
 	"ADD tmp, lv, ev; \n"
 	"DP3 tmp.w, tmp, tmp; \n"
 	"RSQ tmp.w, tmp.w; \n"
 	"MUL tmp.xyz, tmp, tmp.w; \n"
+
+	// get specular color
 	"DP3_SAT tmp.w, n, tmp; \n"
 	"POW tmp.w, tmp.w, specEXP.w; \n"
 	"TEMP spec; \n"
-	"MUL spec, specRGB, tmp.w; \n" // spec.rgb
+#if 1
+	"MUL spec, specRGB, tmp.w; \n"
+#else
+	"MUL tmp.w, tmp.w, 0.5; \n"
+	"MUL spec, base, tmp.w; \n"
+#endif
+
 	"TEMP bump; \n"
 	"DP3_SAT bump.w, n, lv; \n"
 	"MAD base, base, bump.w, spec; \n"
