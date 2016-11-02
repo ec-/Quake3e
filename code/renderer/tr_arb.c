@@ -267,7 +267,7 @@ static const char *ARB_BuildFragmentProgram( void  )
 	);
 
 	if ( r_dlightSpecColor->value > 0 ) {
-		strcat( program, va( "PARAM specRGB = { %1.2f }; \n", r_dlightSpecColor->value ) );
+		strcat( program, va( "PARAM specRGB = %1.2f; \n", r_dlightSpecColor->value ) );
 	}
 
 	strcat( program, va( "PARAM specEXP = %1.2f; \n", r_dlightSpecPower->value ) );
