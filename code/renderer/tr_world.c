@@ -405,11 +405,9 @@ static void R_AddLitSurface( msurface_t *surf, const dlight_t *light )
 		return;
 	}
 
-	if ( surf->shader->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) )
+	if ( surf->shader->lightingStage < 0 ) {
 		return;
-
-	if ( surf->shader->sort > SS_OPAQUE || surf->shader->isSky )
-		return;
+	}
 
 #ifdef USE_BUGGY_LIGHT_COUNT
 	if ( surf->lightCount == tr.lightCount )

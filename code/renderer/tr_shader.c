@@ -2089,15 +2089,25 @@ static shader_t *GeneratePermanentShader( void ) {
 FindLightingStages
 ====================
 */
+#define BLEND_MASK (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS)
 static void FindLightingStages( void )
 {
 	int i;
+	shader.lightingStage = -1;
+
+	if ( shader.isSky || ( shader.surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) || shader.sort > SS_OPAQUE )
+		return;
+
 	shader.lightingStage = 0;
+
 	for ( i = 1; i < shader.numUnfoggedPasses; ++i ) {
 		if ( !stages[i].bundle[0].isLightmap ) {
 			if ( stages[i].bundle[0].tcGen != TCGEN_TEXTURE )
 				continue;
-			if ((stages[ i ].stateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS)) == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE))
+			if ( (stages[i].stateBits & BLEND_MASK) == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE) )
+				continue;
+			 // fix for q3wcp17' textures/scanctf2/bounce_white and others
+			if ( stages[i].rgbGen == CGEN_IDENTITY && (stages[i].stateBits & BLEND_MASK) == (GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO) )
 				continue;
 			shader.lightingStage = i;
 		}

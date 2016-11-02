@@ -425,7 +425,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 		}
 
 #ifdef USE_PMLIGHT
-		if ( numDlights && shader->sort == SS_OPAQUE && !(shader->surfaceFlags & (SURF_NODLIGHT | SURF_SKY)) ) {
+		if ( numDlights && shader->lightingStage >= 0 ) {
 			for ( n = 0; n < numDlights; n++ ) {
 				dl = dlights[ n ];
 				tr.light = dl;

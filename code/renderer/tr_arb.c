@@ -131,8 +131,9 @@ static void ARB_Lighting( const shaderStage_t* pStage )
 	}
 
 	GL_SelectTexture( 0 );
-	R_BindAnimatedImage( &pStage->bundle[ 0 ] );
 
+	R_BindAnimatedImage( &pStage->bundle[ 0 ] );
+	
 	R_DrawElements( numIndexes, hitIndexes );
 }
 
@@ -179,6 +180,9 @@ void ARB_LightingPass( void )
 
 	if ( !programAvail )
 		return;
+
+	//if ( tess.shader->lightingStage == -1 )
+	//	return;
 
 	RB_DeformTessGeometry();
 
@@ -242,11 +246,11 @@ static const char *FPfmt = {
 	
 	// normalize light vector
 	"TEMP tmp, lv; \n"
-	"DP3 tmp, dnLV, dnLV; \n"
+	"DP3 tmp.w, dnLV, dnLV; \n"
 	"RSQ lv.w, tmp.w; \n"
 	"MUL lv.xyz, dnLV, lv.w; \n"
 
-	// calculate light strength
+	// calculate light intensity
 	"TEMP light; \n"
 	"MUL tmp.x, tmp.w, lightRange2recip; \n"
 	"SUB tmp.x, 1.0, tmp.x; \n"
@@ -257,7 +261,7 @@ static const char *FPfmt = {
 	
 	// normalize eye vector
 	"TEMP ev; \n"
-	"DP3 ev, dnEV, dnEV; \n"
+	"DP3 ev.w, dnEV, dnEV; \n"
 	"RSQ ev.w, ev.w; \n"
 	"MUL ev.xyz, dnEV, ev.w; \n"
 
@@ -267,19 +271,23 @@ static const char *FPfmt = {
 	"RSQ tmp.w, tmp.w; \n"
 	"MUL tmp.xyz, tmp, tmp.w; \n"
 
-	// get specular color
+	// modulate specular strength
 	"DP3_SAT tmp.w, n, tmp; \n"
 	"POW tmp.w, tmp.w, specEXP.w; \n"
 	"TEMP spec; \n"
 #if 1
+	// by constant
 	"MUL spec, specRGB, tmp.w; \n"
 #else
-	"MUL tmp.w, tmp.w, 0.5; \n"
+	// by texture
+	"MUL tmp.w, tmp.w, 0.33; \n"
 	"MUL spec, base, tmp.w; \n"
 #endif
 
+	// bump color
 	"TEMP bump; \n"
 	"DP3_SAT bump.w, n, lv; \n"
+
 	"MAD base, base, bump.w, spec; \n"
 	"MUL result.color, base, light; \n"
 	"END \n"
