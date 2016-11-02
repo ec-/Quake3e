@@ -2497,7 +2497,8 @@ CL_Frame
 ==================
 */
 //#ifdef USE_PMLIGHT
-extern cvar_t *r_dlightSpecExp;
+extern cvar_t *r_dlightSpecPower;
+extern cvar_t *r_dlightSpecColor;
 extern qboolean ARB_UpdatePrograms( void ) ;
 //#endif
 void CL_Frame ( int msec ) {
@@ -2637,7 +2638,7 @@ void CL_Frame ( int msec ) {
 
 	Con_RunConsole();
 //#ifdef USE_PMLIGHT
-	if ( r_dlightSpecExp->modified ) {
+	if ( r_dlightSpecPower->modified || r_dlightSpecColor->modified ) {
 		ARB_UpdatePrograms();
 	}
 //#endif

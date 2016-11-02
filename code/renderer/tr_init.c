@@ -69,7 +69,8 @@ cvar_t	*r_drawSun;
 cvar_t	*r_dynamiclight;
 #ifdef USE_PMLIGHT
 cvar_t	*r_dlightMode;
-cvar_t	*r_dlightSpecExp;
+cvar_t	*r_dlightSpecPower;
+cvar_t	*r_dlightSpecColor;
 cvar_t	*r_dlightScale;
 cvar_t	*r_dlightIntensity;
 #endif
@@ -1109,8 +1110,10 @@ void R_Register( void )
 #endif
 	r_dlightScale = ri.Cvar_Get( "r_dlightScale", "1.0", CVAR_ARCHIVE );
 	Cvar_CheckRange( r_dlightScale, 0.1f, 1.0f, qfalse );
-	r_dlightSpecExp = ri.Cvar_Get( "r_dlightSpecExp", "16.0", CVAR_ARCHIVE );
-	Cvar_CheckRange( r_dlightSpecExp, 1.0f, 32.0f, qfalse );
+	r_dlightSpecPower = ri.Cvar_Get( "r_dlightSpecPower", "8.0", CVAR_ARCHIVE );
+	Cvar_CheckRange( r_dlightSpecPower, 1.0f, 32.0f, qfalse );
+	r_dlightSpecColor = ri.Cvar_Get( "r_dlightSpecColor", "-0.25", CVAR_ARCHIVE );
+	Cvar_CheckRange( r_dlightSpecColor, -1.0f, 1.0f, qfalse );
 	r_dlightIntensity = ri.Cvar_Get( "r_dlightIntensity", "1.0", CVAR_ARCHIVE );
 	Cvar_CheckRange( r_dlightIntensity, 0.1f, 1.0f, qfalse );
 #endif

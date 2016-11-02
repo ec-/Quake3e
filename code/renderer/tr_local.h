@@ -1059,7 +1059,8 @@ extern cvar_t	*r_drawSun;				// controls drawing of sun quad
 extern cvar_t	*r_dynamiclight;		// dynamic lights enabled/disabled
 #ifdef USE_PMLIGHT
 extern cvar_t	*r_dlightMode;			// 0 - vq3, 1 - pmlight
-extern cvar_t	*r_dlightSpecExp;		// 1 - 32
+extern cvar_t	*r_dlightSpecPower;		// 1 - 32
+extern cvar_t	*r_dlightSpecColor;		// -1.0 - 1.0
 extern cvar_t	*r_dlightScale;			// 0.1 - 1.0
 extern cvar_t	*r_dlightIntensity;		// 0.1 - 1.0
 #endif

@@ -215,6 +215,8 @@ void ARB_LightingPass( void )
 	qglDisableClientState( GL_NORMAL_ARRAY );
 }
 
+extern cvar_t *r_dlightSpecPower;
+extern cvar_t *r_dlightSpecColor;
 
 // welding these into the code to avoid having a pk3 dependency in the engine
 
@@ -233,7 +235,14 @@ static const char *VP = {
 	"END \n" 
 };
 
-static const char *FPfmt = {
+
+// dynamically apply custom parameters
+static const char *ARB_BuildFragmentProgram( void  )
+{
+	static char program[1024], *str;
+	
+	program[0] = '\0';
+	strcat( program, 
 	"!!ARBfp1.0 \n"
 	"OPTION ARB_precision_hint_fastest; \n"
 	"PARAM lightRGB = program.local[0]; \n"
@@ -255,10 +264,15 @@ static const char *FPfmt = {
 	"MUL tmp.x, tmp.w, lightRange2recip; \n"
 	"SUB tmp.x, 1.0, tmp.x; \n"
 	"MUL light, lightRGB, tmp.x; \n" // light.rgb
+	);
 
-	"PARAM specRGB = { 0.25, 0.25, 0.25, 1.0 }; \n"
-	"PARAM specEXP = %1.1f; \n" // r_dlightSpecExp->value
-	
+	if ( r_dlightSpecColor->value > 0 ) {
+		strcat( program, va( "PARAM specRGB = { %1.2f }; \n", r_dlightSpecColor->value ) );
+	}
+
+	strcat( program, va( "PARAM specEXP = %1.2f; \n", r_dlightSpecPower->value ) );
+
+	strcat( program,
 	// normalize eye vector
 	"TEMP ev; \n"
 	"DP3 ev.w, dnEV, dnEV; \n"
@@ -274,30 +288,37 @@ static const char *FPfmt = {
 	// modulate specular strength
 	"DP3_SAT tmp.w, n, tmp; \n"
 	"POW tmp.w, tmp.w, specEXP.w; \n"
-	"TEMP spec; \n"
-#if 1
-	// by constant
-	"MUL spec, specRGB, tmp.w; \n"
-#else
-	// by texture
-	"MUL tmp.w, tmp.w, 0.33; \n"
-	"MUL spec, base, tmp.w; \n"
-#endif
+	"TEMP spec; \n" );
+	if ( r_dlightSpecColor->value > 0 ) {
+		// by constant
+		strcat( program, "MUL spec, specRGB, tmp.w; \n" );
+	} else {
+		// by texture
+		strcat( program, va( "MUL tmp.w, tmp.w, %1.2f; \n", -r_dlightSpecColor->value ) );
+		strcat( program, "MUL spec, base, tmp.w; \n" );
+	}
 
+	strcat( program, 
 	// bump color
 	"TEMP bump; \n"
 	"DP3_SAT bump.w, n, lv; \n"
 
 	"MAD base, base, bump.w, spec; \n"
 	"MUL result.color, base, light; \n"
-	"END \n"
-};
+	"END \n" 
+	);
+	
+	r_dlightSpecColor->modified = qfalse;
+	r_dlightSpecPower->modified = qfalse;
+
+	return program;
+}
+
 
 qboolean ARB_UpdatePrograms( void )
 {
 	const char *FP;
 	GLint errorPos;
-	cvar_t	*specExp;
 
 	if ( !qglGenProgramsARB )
 		return qfalse;
@@ -324,11 +345,7 @@ qboolean ARB_UpdatePrograms( void )
 		return qfalse;
 	}
 
-	// fetch latest values
-	specExp = ri.Cvar_Get( "r_dlightSpecExp", "16.0", CVAR_ARCHIVE );
-	specExp->modified = qfalse;
-
-	FP = va( FPfmt, specExp->value ); // apply custom parameters
+	FP = ARB_BuildFragmentProgram();
 
 	qglBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, programs[ PR_FRAGMENT ] );
 	qglProgramStringARB( GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, strlen( FP ), FP );
