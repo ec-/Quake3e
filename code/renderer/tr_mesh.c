@@ -347,7 +347,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 
 #ifdef USE_PMLIGHT
 	numDlights = 0;
-	if ( r_dlightMode->integer >= 2 ) {
+	if ( r_dlightMode->integer >= 2 && ( !personalModel || tr.viewParms.isPortal ) ) {
 		R_TransformDlights( tr.refdef.num_dlights, tr.refdef.dlights, &tr.or );
 		for ( n = 0; n < tr.refdef.num_dlights; n++ ) {
 			dl = &tr.refdef.dlights[ n ];
