@@ -1069,6 +1069,11 @@ static qboolean ParseStage( shaderStage_t *stage, char **text )
 		}
 	}
 
+	// fix decals on q3wcp18 and other maps
+	if ( depthMaskExplicit && blendSrcBits == GLS_SRCBLEND_SRC_ALPHA && blendDstBits == GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA && stage->rgbGen == CGEN_VERTEX ) {
+		depthMaskBits &= ~GLS_DEPTHMASK_TRUE;
+	}
+
 	//
 	// compute state bits
 	//
