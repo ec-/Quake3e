@@ -162,7 +162,12 @@ void RB_ShadowTessEnd( void ) {
 		return;
 	}
 
-	VectorCopy( backEnd.currentEntity->lightDir, lightDir );
+#ifdef USE_PMLIGHT
+	if ( r_dlightMode->integer == 2 && r_shadows->integer == 2 )
+		VectorCopy( backEnd.currentEntity->shadowLightDir, lightDir );
+	else
+#endif
+		VectorCopy( backEnd.currentEntity->lightDir, lightDir );
 
 	// project vertexes away from light direction
 	for ( i = 0 ; i < tess.numVertexes ; i++ ) {
@@ -302,7 +307,13 @@ void RB_ProjectionShadowDeform( void ) {
 
 	groundDist = backEnd.or.origin[2] - backEnd.currentEntity->e.shadowPlane;
 
-	VectorCopy( backEnd.currentEntity->lightDir, lightDir );
+#ifdef USE_PMLIGHT
+	if ( r_dlightMode->integer == 2 && r_shadows->integer == 2 )
+		VectorCopy( backEnd.currentEntity->shadowLightDir, lightDir );
+	else
+#endif
+		VectorCopy( backEnd.currentEntity->lightDir, lightDir );
+
 	d = DotProduct( lightDir, ground );
 	// don't let the shadows get too long or go negative
 	if ( d < 0.5 ) {

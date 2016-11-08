@@ -283,6 +283,9 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 	float			d;
 	vec3_t			lightDir;
 	vec3_t			lightOrigin;
+#ifdef USE_PMLIGHT
+	vec3_t			shadowLightDir;
+#endif
 
 	// lighting calculations 
 	if ( ent->lightingCalculated ) {
@@ -330,7 +333,24 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 #ifdef USE_PMLIGHT
 	if ( r_dlightMode->integer == 2 ) { 
 		// only direct lights
-	} else
+		// but we need to deal with shadow light direction
+		VectorCopy( lightDir, shadowLightDir );
+		if ( r_shadows->integer == 2 ) {
+			for ( i = 0 ; i < refdef->num_dlights ; i++ ) {
+				dl = &refdef->dlights[i];
+				VectorSubtract( dl->origin, lightOrigin, dir );
+				d = VectorNormalize( dir );
+
+				power = DLIGHT_AT_RADIUS * ( dl->radius * dl->radius );
+				if ( d < DLIGHT_MINIMUM_RADIUS ) {
+					d = DLIGHT_MINIMUM_RADIUS;
+				}
+				d = power / ( d * d );
+				VectorMA( shadowLightDir, d, dir, shadowLightDir );
+			}
+		} // if ( r_shadows->integer == 2 )
+	}  // if ( r_dlightMode->integer == 2 )
+	else
 #endif
 	for ( i = 0 ; i < refdef->num_dlights ; i++ ) {
 		dl = &refdef->dlights[i];
@@ -369,7 +389,17 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 	ent->lightDir[0] = DotProduct( lightDir, ent->e.axis[0] );
 	ent->lightDir[1] = DotProduct( lightDir, ent->e.axis[1] );
 	ent->lightDir[2] = DotProduct( lightDir, ent->e.axis[2] );
+
+#ifdef USE_PMLIGHT
+	if ( r_shadows->integer == 2 && r_dlightMode->integer == 2 ) {
+		VectorNormalize( shadowLightDir );
+		ent->shadowLightDir[0] = DotProduct( shadowLightDir, ent->e.axis[0] );
+		ent->shadowLightDir[1] = DotProduct( shadowLightDir, ent->e.axis[1] );
+		ent->shadowLightDir[2] = DotProduct( shadowLightDir, ent->e.axis[2] );
+	}
+#endif
 }
+
 
 /*
 =================

@@ -82,6 +82,9 @@ typedef struct {
 	vec3_t		ambientLight;	// color normalized to 0-255
 	int			ambientLightInt;	// 32 bit rgba packed
 	vec3_t		directedLight;
+#ifdef USE_PMLIGHT
+	vec3_t		shadowLightDir;	// normalized direction towards light
+#endif
 } trRefEntity_t;
 
 
