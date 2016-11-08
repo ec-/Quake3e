@@ -244,7 +244,7 @@ void RE_AddDynamicLightToScene( const vec3_t org, float intensity, float r, floa
 	if ( !tr.registered ) {
 		return;
 	}
-	if ( r_numdlights >= MAX_DLIGHTS ) {
+	if ( r_numdlights >= ARRAY_LEN( backEndData->dlights ) ) {
 		return;
 	}
 	if ( intensity <= 0 ) {
@@ -269,9 +269,11 @@ void RE_AddDynamicLightToScene( const vec3_t org, float intensity, float r, floa
 	dl->color[2] = b;
 	dl->additive = additive;
 #ifdef USE_PMLIGHT
+#ifndef USE_LIGHT_COUNT
 	dl->mask = 1 << (r_numdlights - 1);
 	dl->head = NULL;
 	dl->tail = NULL;
+#endif
 #endif // USE_PMLIGHT
 }
 
@@ -418,6 +420,11 @@ void RE_RenderScene( const refdef_t *fd ) {
 	parms.scissorHeight = parms.viewportHeight;
 
 	parms.isPortal = qfalse;
+
+#ifdef USE_PMLIGHT
+	parms.dlights = tr.refdef.dlights;
+	parms.num_dlights = tr.refdef.num_dlights;
+#endif
 
 	parms.fovX = tr.refdef.fov_x;
 	parms.fovY = tr.refdef.fov_y;

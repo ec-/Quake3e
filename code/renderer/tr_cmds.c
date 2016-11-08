@@ -366,7 +366,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	if ( r_fastsky->integer ) {
 		if ( stereoFrame != STEREO_RIGHT ) {
 			if ( r_anaglyphMode->integer )
-				qglColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+				qglColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE );
 			qglClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
 			qglClear( GL_COLOR_BUFFER_BIT );
 		}

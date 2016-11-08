@@ -351,7 +351,7 @@ static void R_AddWorldSurface( msurface_t *surf, int dlightBits ) {
 	if ( r_dlightMode->integer ) 
 #endif
 	{
-#ifndef USE_BUGGY_LIGHT_COUNT
+#ifndef USE_LIGHT_COUNT
 		// reset surface light mask on first lookup for this scene
 		if ( surf->sceneCount != tr.sceneCount )
 			surf->lightMask = 0;
@@ -388,7 +388,7 @@ static void R_AddLitSurface( msurface_t *surf, const dlight_t *light )
 	//if ( surf->viewCount != tr.viewCount )
 	//	return;
 
-#ifndef USE_BUGGY_LIGHT_COUNT
+#ifndef USE_LIGHT_COUNT
 	 // check if already masked by this light in this scene
 	if ( surf->lightMask & light->mask ) {
 		tr.pc.c_lit_masks++;
@@ -409,9 +409,10 @@ static void R_AddLitSurface( msurface_t *surf, const dlight_t *light )
 		return;
 	}
 
-#ifdef USE_BUGGY_LIGHT_COUNT
+#ifdef USE_LIGHT_COUNT
 	if ( surf->lightCount == tr.lightCount )
 		return;
+
 	surf->lightCount = tr.lightCount;
 #endif
 
@@ -520,12 +521,12 @@ void R_AddBrushModelSurfaces ( trRefEntity_t *ent ) {
 			R_AddWorldSurface( bmodel->firstSurface + s, qfalse );
 		}
 		
-		R_TransformDlights( tr.refdef.num_dlights, tr.refdef.dlights, &tr.or );
+		R_TransformDlights( tr.viewParms.num_dlights, tr.viewParms.dlights, &tr.or );
 
-		for ( i = 0; i < tr.refdef.num_dlights; i++ ) {
-			dl = &tr.refdef.dlights[i];
+		for ( i = 0; i < tr.viewParms.num_dlights; i++ ) {
+			dl = &tr.viewParms.dlights[i];
 			if ( !R_LightCullBounds( dl, bmodel->bounds[0], bmodel->bounds[1] ) ) {
-#ifdef USE_BUGGY_LIGHT_COUNT
+#ifdef USE_LIGHT_COUNT
 				tr.lightCount++;
 #endif
 				tr.light = dl;
@@ -897,19 +898,19 @@ void R_AddWorldSurfaces( void ) {
 	// (even though HERE it's == dl->origin) so we can always use R_LightCullBounds
 	// instead of having copypasted versions for both world and local cases
 
-	R_TransformDlights( tr.refdef.num_dlights, tr.refdef.dlights, &tr.viewParms.world );
-	for ( i = 0; i < tr.refdef.num_dlights; i++ ) 
+	R_TransformDlights( tr.viewParms.num_dlights, tr.viewParms.dlights, &tr.viewParms.world );
+	for ( i = 0; i < tr.viewParms.num_dlights; i++ ) 
 	{
-		dl = &tr.refdef.dlights[i];	
-#ifdef USE_BUGGY_LIGHT_COUNT
-		dl->head = dl->tail = 0;
+		dl = &tr.viewParms.dlights[i];	
+#ifdef USE_LIGHT_COUNT
+		dl->head = dl->tail = NULL;
 #endif
-		if (  R_CullPointAndRadius( dl->origin, dl->radius ) == CULL_OUT ) {
+		if ( R_CullPointAndRadius( dl->origin, dl->radius ) == CULL_OUT ) {
 			tr.pc.c_light_cull_out++;
 			continue;
 		}
 		tr.pc.c_light_cull_in++;
-#ifdef USE_BUGGY_LIGHT_COUNT
+#ifdef USE_LIGHT_COUNT
 		tr.lightCount++;
 #endif
 		tr.light = dl;

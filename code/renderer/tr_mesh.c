@@ -293,7 +293,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 #ifdef USE_PMLIGHT
 	dlight_t		*dl;
 	int				n;
-	dlight_t		*dlights[ MAX_DLIGHTS ];
+	dlight_t		*dlights[ ARRAY_LEN( backEndData->dlights ) ];
 	int				numDlights;
 #endif
 
@@ -348,9 +348,9 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 #ifdef USE_PMLIGHT
 	numDlights = 0;
 	if ( r_dlightMode->integer >= 2 && ( !personalModel || tr.viewParms.isPortal ) ) {
-		R_TransformDlights( tr.refdef.num_dlights, tr.refdef.dlights, &tr.or );
-		for ( n = 0; n < tr.refdef.num_dlights; n++ ) {
-			dl = &tr.refdef.dlights[ n ];
+		R_TransformDlights( tr.viewParms.num_dlights, tr.viewParms.dlights, &tr.or );
+		for ( n = 0; n < tr.viewParms.num_dlights; n++ ) {
+			dl = &tr.viewParms.dlights[ n ];
 			if ( !R_LightCullBounds( dl, bounds[0], bounds[1] ) ) 
 				dlights[ numDlights++ ] = dl;
 		}

@@ -735,7 +735,7 @@ void RB_BeginDrawingLitSurfs( void )
 RB_RenderLitSurfList
 ==================
 */
-void RB_RenderLitSurfList( dlight_t* dl ) {
+static void RB_RenderLitSurfList( dlight_t* dl ) {
 	shader_t		*shader, *oldShader;
 	int				fogNum, oldFogNum;
 	int				entityNum, oldEntityNum;
@@ -1176,8 +1176,8 @@ const void	*RB_DrawSurfs( const void *data ) {
 		if ( backEnd.refdef.numLitSurfs ) {
 			RB_BeginDrawingLitSurfs();
 			tess.dlightPass = qtrue;
-			for ( i = 0; i < backEnd.refdef.num_dlights; ++i ) {
-				dl = &backEnd.refdef.dlights[ i ];
+			for ( i = 0; i < backEnd.viewParms.num_dlights; ++i ) {
+				dl = &backEnd.viewParms.dlights[i];
 				if ( dl->head ) {
 					tess.light = dl;
 					RB_RenderLitSurfList( dl );

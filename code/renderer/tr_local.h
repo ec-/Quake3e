@@ -26,7 +26,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define USE_LEGACY_DLIGHTS	// vq3 dynamic lights
 #define USE_PMLIGHT			// promode dynamic lights via \r_dlightMode 1
 typedef unsigned int		lightMask_t;
-//#define USE_BUGGY_LIGHT_COUNT
+#define USE_LIGHT_COUNT
+#define MAX_REAL_DLIGHTS	(MAX_DLIGHTS*2)
+#define MAX_LITSURFS		(MAX_DRAWSURFS*2)
 
 #ifdef USE_RENDERER2
 #undef USE_PMLIGHT
@@ -59,7 +61,9 @@ typedef struct dlight_s {
 #ifdef USE_PMLIGHT
 	struct litSurf_s	*head;
 	struct litSurf_s	*tail;
+#ifndef USE_LIGHT_COUNT
 	lightMask_t			mask;	// suitable only for MAX_DLIGHTS <= 32!
+#endif
 #endif // USE_PMLIGHT
 } dlight_t;
 
@@ -423,7 +427,6 @@ typedef struct {
 #ifdef USE_PMLIGHT
 	int			numLitSurfs;
 	struct litSurf_s	*litSurfs;
-	volatile int shiftMaskMult;
 #endif
 } trRefdef_t;
 
@@ -473,6 +476,11 @@ typedef struct {
 	vec3_t		visBounds[2];
 	float		zFar;
 	stereoFrame_t	stereoFrame;
+#ifdef USE_PMLIGHT
+	// each view will have its own dlight set
+	unsigned int num_dlights;
+	struct dlight_s	*dlights;
+#endif
 } viewParms_t;
 
 /*
@@ -676,7 +684,7 @@ typedef struct msurface_s {
 	int					fogIndex;
 #ifdef USE_PMLIGHT
 	int					vcVisible;		// if == tr.viewCount, is actually VISIBLE in this frame, i.e. passed facecull and has been added to the drawsurf list
-#ifdef USE_BUGGY_LIGHT_COUNT
+#ifdef USE_LIGHT_COUNT
 	int					lightCount;		// if == tr.lightCount, already added to the litsurf list for the current light
 #else
 	int					sceneCount;
@@ -933,7 +941,7 @@ typedef struct {
 	int						viewCount;		// incremented every view (twice a scene if portaled)
 											// and every R_MarkFragments call
 #ifdef USE_PMLIGHT
-#ifdef USE_BUGGY_LIGHT_COUNT
+#ifdef USE_LIGHT_COUNT
 	int						lightCount;		// incremented for each dlight in the view
 #endif
 #endif
@@ -1661,9 +1669,11 @@ typedef enum {
 typedef struct {
 	drawSurf_t	drawSurfs[MAX_DRAWSURFS];
 #ifdef USE_PMLIGHT
-	litSurf_t	litSurfs[MAX_DRAWSURFS];
-#endif
+	litSurf_t	litSurfs[MAX_LITSURFS];
+	dlight_t	dlights[MAX_REAL_DLIGHTS];
+#else
 	dlight_t	dlights[MAX_DLIGHTS];
+#endif
 
 	trRefEntity_t	entities[MAX_REFENTITIES];
 	srfPoly_t	*polys;//[MAX_POLYS];

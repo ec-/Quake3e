@@ -946,7 +946,7 @@ static qboolean SurfIsOffscreen( const drawSurf_t *drawSurf, vec4_t clipDest[128
 
 /*
 ================
-R_GetModemViewBounds
+R_GetModelViewBounds
 ================
 */
 static void R_GetModelViewBounds( int *mins, int *maxs )
@@ -1017,12 +1017,14 @@ R_MirrorViewBySurface
 Returns qtrue if another view has been rendered
 ========================
 */
+extern int r_numdlights;
 qboolean R_MirrorViewBySurface (drawSurf_t *drawSurf, int entityNum) {
 	vec4_t			clipDest[128];
 	viewParms_t		newParms;
 	viewParms_t		oldParms;
 	orientation_t	surface, camera;
 	qboolean		isMirror;
+	int				i;
 
 	// don't recursively mirror
 	if (tr.viewParms.isPortal) {
@@ -1052,6 +1054,17 @@ qboolean R_MirrorViewBySurface (drawSurf_t *drawSurf, int entityNum) {
 		newParms.pvsOrigin, &newParms.isMirror ) ) {
 		return qfalse;		// bad portal, no portalentity
 	}
+
+#ifdef USE_PMLIGHT
+	if ( oldParms.num_dlights && r_numdlights + oldParms.num_dlights <= ARRAY_LEN( backEndData->dlights ) ) {
+		// create dedicated set for each view
+		newParms.dlights = oldParms.dlights + oldParms.num_dlights;
+		newParms.num_dlights = oldParms.num_dlights;
+		r_numdlights += oldParms.num_dlights;
+		for ( i = 0; i < oldParms.num_dlights; i++ )
+			newParms.dlights[i] = oldParms.dlights[i];
+	}
+#endif
 
 	if ( tess.numVertexes > 2 ) {
 		int mins[2], maxs[2];
@@ -1287,12 +1300,13 @@ R_AddLitSurf
 void R_AddLitSurf( surfaceType_t *surface, shader_t *shader, int fogIndex )
 {
 	struct litSurf_s *litsurf;
-	int index;
+
+	if ( tr.refdef.numLitSurfs >= ARRAY_LEN( backEndData->litSurfs ) )
+		return;
 
 	tr.pc.c_lit_surfs++;
 
-	index = tr.refdef.numLitSurfs++ & DRAWSURF_MASK;
-	litsurf = &tr.refdef.litSurfs[ index ];
+	litsurf = &tr.refdef.litSurfs[ tr.refdef.numLitSurfs++ ];
 
 	litsurf->sort = (shader->sortedIndex << QSORT_SHADERNUM_SHIFT) 
 		| tr.shiftedEntityNum | ( fogIndex << QSORT_FOGNUM_SHIFT );
