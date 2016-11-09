@@ -905,10 +905,16 @@ static void GLW_AttemptMSAA( void )
 		qglDisable( GL_MULTISAMPLE_ARB );
 		return;
 	}
-	nSamples = r_ext_multisample->integer;
-	for ( nSamples &= ~1 ;; nSamples -= 2 ) {
+
+	nSamples = MIN( PAD( r_ext_multisample->integer, 2 ), 8 );
+	if ( !nSamples ) {
+		qglDisable( GL_MULTISAMPLE_ARB );
+		return;
+	}
+
+	for ( ;; nSamples -= 2 ) {
 		if ( !nSamples ) {
-			ri.Printf( PRINT_ALL, "...disabling MSAA\n" );
+			ri.Printf( PRINT_ALL, "...not using MSAA\n" );
 			qglDisable( GL_MULTISAMPLE_ARB );
 			return;
 		}
