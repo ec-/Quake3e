@@ -698,6 +698,7 @@ static int GetConfigString(int index, char *buf, int size)
 	return qtrue;
 }
 
+
 /*
 ====================
 FloatAsInt
@@ -708,6 +709,24 @@ static int FloatAsInt( float f ) {
 	fi.f = f;
 	return fi.i;
 }
+
+
+/*
+====================
+VM_ArgPtr
+====================
+*/
+static void *VM_ArgPtr( intptr_t intValue ) {
+
+	if ( !intValue || uivm == NULL )
+	  return NULL;
+
+	if ( uivm->entryPoint )
+		return (void *)(uivm->dataBase + intValue);
+	else
+		return (void *)(uivm->dataBase + (intValue & uivm->dataMask));
+}
+
 
 /*
 ====================

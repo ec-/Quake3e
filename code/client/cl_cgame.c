@@ -400,6 +400,19 @@ static int	FloatAsInt( float f ) {
 	return fi.i;
 }
 
+
+static void *VM_ArgPtr( intptr_t intValue ) {
+
+	if ( !intValue || cgvm == NULL )
+	  return NULL;
+
+	if ( cgvm->entryPoint )
+		return (void *)(cgvm->dataBase + intValue);
+	else
+		return (void *)(cgvm->dataBase + (intValue & cgvm->dataMask));
+}
+
+
 /*
 ====================
 CL_CgameSystemCalls

@@ -282,6 +282,36 @@ static int	FloatAsInt( float f ) {
 	return fi.i;
 }
 
+
+/*
+====================
+VM_ArgPtr
+====================
+*/
+static void *VM_ArgPtr( intptr_t intValue ) {
+
+	if ( !intValue || gvm == NULL )
+	  return NULL;
+
+	if ( gvm->entryPoint )
+		return (void *)(gvm->dataBase + intValue);
+	else
+		return (void *)(gvm->dataBase + (intValue & gvm->dataMask));
+}
+
+/*
+====================
+GVM_ArgPtr
+
+exported version
+====================
+*/
+void *GVM_ArgPtr( intptr_t intValue ) 
+{
+	return VM_ArgPtr( intValue );
+}
+
+
 /*
 ====================
 SV_GameSystemCalls
