@@ -167,7 +167,7 @@ struct vm_s {
     // DO NOT MOVE OR CHANGE THESE WITHOUT CHANGING THE VM_OFFSET_* DEFINES
     // USED BY THE ASM CODE
     int			programStack;		// the vm may be recursively entered
-    intptr_t	(*systemCall)( intptr_t *parms );
+    syscall_t	systemCall;
 	byte		*dataBase;
 	int			*opStack;			// pointer to local function stack
 
@@ -176,11 +176,13 @@ struct vm_s {
 
 	//------------------------------------
    
-    char		name[MAX_QPATH];
+	const char	*name;
+	vmIndex_t	index;
 
 	// for dynamic linked modules
 	void		*dllHandle;
-	intptr_t	(QDECL *entryPoint)( intptr_t callNum, ... );
+	dllSyscall_t entryPoint;
+	dllSyscall_t dllSyscall;
 	void (*destroy)(vm_t* self);
 
 	// for interpreted modules
@@ -208,7 +210,6 @@ struct vm_s {
 	int			numJumpTableTargets;
 };
 
-extern	vm_t	*currentVM;
 extern	int		vm_debugLevel;
 
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header );

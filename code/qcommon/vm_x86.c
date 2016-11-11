@@ -2391,12 +2391,12 @@ int	VM_CallCompiled( vm_t *vm, int *args )
 	int		opStack[MAX_OPSTACK_SIZE];
 	int		stackOnEntry;
 	int		*image;
-	vm_t	*oldVM;
+	//vm_t	*oldVM;
 	int		*oldOpTop;
 	int		i;
 
-	oldVM = currentVM;
-	currentVM = vm;
+	//oldVM = currentVM;
+	//currentVM = vm;
 
 	// we might be called recursively, so this might not be the very top
 	stackOnEntry = vm->programStack;
@@ -2430,7 +2430,7 @@ int	VM_CallCompiled( vm_t *vm, int *args )
 	vm->opStackTop = oldOpTop;
 
 	// in case we were recursively called by another vm
-	currentVM = oldVM;
+	//currentVM = oldVM;
 
 	return vm->opStack[0];
 }

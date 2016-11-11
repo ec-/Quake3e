@@ -116,16 +116,18 @@ opcode_info_t ops[ OP_MAX ] =
 
 cvar_t	*vm_rtChecks;
 
-vm_t	*currentVM = NULL;
-vm_t	*lastVM    = NULL;
 int		vm_debugLevel;
 
 // used by Com_Error to get rid of running vm's before longjmp
 static int forced_unload;
 
-#define	MAX_VM		3
-vm_t	vmTable[MAX_VM];
+struct vm_s	vmTable[ VM_COUNT ];
 
+static const char *vmName[ VM_COUNT ] = {
+	"qagame",
+	"cgame",
+	"ui"
+};
 
 void VM_VmInfo_f( void );
 void VM_VmProfile_f( void );
@@ -417,25 +419,27 @@ Dlls will call this directly
  
 ============
 */
+#if 0 // - disabled because now is different for each module
 intptr_t QDECL VM_DllSyscall( intptr_t arg, ... ) {
 #if !id386 || defined __clang__
   // rcg010206 - see commentary above
-  intptr_t args[16];
+  intptr_t	args[16];
+  va_list	ap;
   int i;
-  va_list ap;
   
   args[0] = arg;
   
-  va_start(ap, arg);
-  for (i = 1; i < ARRAY_LEN (args); i++)
-    args[i] = va_arg(ap, intptr_t);
-  va_end(ap);
+  va_start( ap, arg );
+  for (i = 1; i < ARRAY_LEN( args ); i++ )
+    args[ i ] = va_arg( ap, intptr_t );
+  va_end( ap );
   
   return currentVM->systemCall( args );
 #else // original id code
 	return currentVM->systemCall( &arg );
 #endif
 }
+#endif
 
 
 static int Load_JTS( vm_t *vm, unsigned int crc32, void *data )  {
@@ -1118,15 +1122,17 @@ vm_t *VM_Restart( vm_t *vm ) {
 
 	// DLL's can't be restarted in place
 	if ( vm->dllHandle ) {
-		char	name[MAX_QPATH];
-		intptr_t	(*systemCall)( intptr_t *parms );
+		syscall_t		systemCall;
+		dllSyscall_t	dllSyscall;
+		vmIndex_t		index;
 		
-		systemCall = vm->systemCall;	
-		Q_strncpyz( name, vm->name, sizeof( name ) );
+		index = vm->index;
+		systemCall = vm->systemCall;
+		dllSyscall = vm->dllSyscall;
 
 		VM_Free( vm );
 
-		vm = VM_Create( name, systemCall, VMI_NATIVE );
+		vm = VM_Create( index, systemCall, dllSyscall, VMI_NATIVE );
 		return vm;
 	}
 
@@ -1153,42 +1159,39 @@ If image ends in .qvm it will be interpreted, otherwise
 it will attempt to load as a system dll
 ================
 */
-vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *), 
-				vmInterpret_t interpret ) {
-	vm_t		*vm;
+vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscalls, vmInterpret_t interpret ) {
+	int			remaining;
+	const char	*name;
 	vmHeader_t	*header;
-	int			i, remaining;
+	vm_t		*vm;
 
-	if ( !module || !module[0] || !systemCalls ) {
+	if ( !systemCalls ) {
 		Com_Error( ERR_FATAL, "VM_Create: bad parms" );
+	}
+
+	if ( (unsigned)index >= VM_COUNT ) {
+		Com_Error( ERR_FATAL, "VM_Create: bad vm index %i", index );	
 	}
 
 	remaining = Hunk_MemoryRemaining();
 
+	vm = &vmTable[ index ];
+
 	// see if we already have the VM
-	for ( i = 0 ; i < MAX_VM ; i++ ) {
-		if (!Q_stricmp(vmTable[i].name, module)) {
-			vm = &vmTable[i];
-			return vm;
+	if ( vm->name ) {
+		if ( vm->index != index ) {
+			Com_Error( ERR_FATAL, "VM_Create: bad allocated vm index %i", vm->index );
+			return NULL;
 		}
+		return vm;
 	}
 
-	// find a free vm
-	for ( i = 0 ; i < MAX_VM ; i++ ) {
-		if ( !vmTable[i].name[0] ) {
-			break;
-		}
-	}
+	name = vmName[ index ];
 
-	if ( i == MAX_VM ) {
-		Com_Error( ERR_FATAL, "VM_Create: no free vm_t" );
-		return NULL;
-	}
-
-	vm = &vmTable[i];
-
-	Q_strncpyz( vm->name, module, sizeof( vm->name ) );
+	vm->name = name;
+	vm->index = index;
 	vm->systemCall = systemCalls;
+	vm->dllSyscall = dllSyscalls;
 
 	// never allow dll loading with a demo
 	if ( interpret == VMI_NATIVE ) {
@@ -1199,8 +1202,8 @@ vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *),
 
 	if ( interpret == VMI_NATIVE ) {
 		// try to load as a system dll
-		Com_Printf( "Loading dll file %s.\n", vm->name );
-		vm->dllHandle = Sys_LoadDll( module, &vm->entryPoint, VM_DllSyscall );
+		Com_Printf( "Loading dll file %s.\n", name );
+		vm->dllHandle = Sys_LoadDll( name, &vm->entryPoint, dllSyscalls );
 		if ( vm->dllHandle ) {
 			return vm;
 		}
@@ -1258,7 +1261,7 @@ vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *),
 	// load the map file
 	VM_LoadSymbols( vm );
 
-	Com_Printf( "%s loaded in %d bytes on the hunk\n", module, remaining - Hunk_MemoryRemaining() );
+	Com_Printf( "%s loaded in %d bytes on the hunk\n", vm->name, remaining - Hunk_MemoryRemaining() );
 
 	return vm;
 }
@@ -1271,12 +1274,12 @@ VM_Free
 */
 void VM_Free( vm_t *vm ) {
 
-	if(!vm) {
+	if( !vm ) {
 		return;
 	}
 
-	if(vm->callLevel) {
-		if(!forced_unload) {
+	if ( vm->callLevel ) {
+		if ( !forced_unload ) {
 			Com_Error( ERR_FATAL, "VM_Free(%s) on running vm", vm->name );
 			return;
 		} else {
@@ -1302,15 +1305,13 @@ void VM_Free( vm_t *vm ) {
 	}
 #endif
 	Com_Memset( vm, 0, sizeof( *vm ) );
-
-	currentVM = NULL;
-	lastVM = NULL;
 }
 
-void VM_Clear(void) {
+
+void VM_Clear( void ) {
 	int i;
-	for (i=0;i<MAX_VM; i++) {
-		VM_Free(&vmTable[i]);
+	for ( i = 0; i < VM_COUNT; i++ ) {
+		VM_Free( &vmTable[ i ] );
 	}
 }
 
@@ -1351,17 +1352,13 @@ locals from sp
 
 intptr_t QDECL VM_Call( vm_t *vm, int callnum, ... )
 {
-	vm_t	*oldVM;
+	//vm_t	*oldVM;
 	intptr_t r;
 	int i;
 
 	if ( !vm ) {
 		Com_Error( ERR_FATAL, "VM_Call with NULL vm" );
 	}
-
-	oldVM = currentVM;
-	currentVM = vm;
-	lastVM = vm;
 
 	if ( vm_debugLevel ) {
 	  Com_Printf( "VM_Call( %d )\n", callnum );
@@ -1414,10 +1411,9 @@ intptr_t QDECL VM_Call( vm_t *vm, int callnum, ... )
 	}
 	--vm->callLevel;
 
-	if ( oldVM != NULL )
-	  currentVM = oldVM;
 	return r;
 }
+
 
 //=================================================================
 
@@ -1443,6 +1439,7 @@ VM_VmProfile_f
 ==============
 */
 void VM_VmProfile_f( void ) {
+#if 0
 	vm_t		*vm;
 	vmSymbol_t	**sorted, *sym;
 	int			i;
@@ -1481,6 +1478,7 @@ void VM_VmProfile_f( void ) {
 	Com_Printf("    %9.0f total\n", total );
 
 	Z_Free( sorted );
+#endif
 }
 
 /*
@@ -1494,9 +1492,9 @@ void VM_VmInfo_f( void ) {
 	int		i;
 
 	Com_Printf( "Registered virtual machines:\n" );
-	for ( i = 0 ; i < MAX_VM ; i++ ) {
+	for ( i = 0 ; i < VM_COUNT ; i++ ) {
 		vm = &vmTable[i];
-		if ( !vm->name[0] ) {
+		if ( !vm->name ) {
 			break;
 		}
 		Com_Printf( "%s : ", vm->name );
@@ -1523,6 +1521,7 @@ Insert calls to this while debugging the vm compiler
 ===============
 */
 void VM_LogSyscalls( int *args ) {
+#if 0
 	static	int		callnum;
 	static	FILE	*f;
 
@@ -1535,4 +1534,5 @@ void VM_LogSyscalls( int *args ) {
 	callnum++;
 	fprintf( f, "%i: %p (%i) = %i %i %i %i\n", callnum, (void*)(args - (int *)currentVM->dataBase),
 		args[0], args[1], args[2], args[3], args[4] );
+#endif
 }

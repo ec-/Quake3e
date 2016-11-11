@@ -553,14 +553,14 @@ TTimo: added some verbosity in debug
 // fqpath param added 7/20/02 by T.Ray - Sys_LoadDll is only called in vm.c at this time
 // fqpath will be empty if dll not loaded, otherwise will hold fully qualified path of dll module loaded
 // fqpath buffersize must be at least MAX_QPATH+1 bytes long
-void * QDECL Sys_LoadDll( const char *name, intptr_t (QDECL **entryPoint)(intptr_t, ...),
-				  intptr_t (QDECL *systemcalls)(intptr_t, ...) ) {
+void * QDECL Sys_LoadDll( const char *name, dllSyscall_t *entryPoint, dllSyscall_t systemcalls ) {
+
 	HINSTANCE	libHandle;
-	void	(QDECL *dllEntry)( intptr_t (QDECL *syscallptr)(intptr_t, ...) );
-	const char *basepath;
-	const char *gamedir;
-	char	*fn;
-	char	filename[MAX_QPATH];
+	dllEntry_t	dllEntry;
+	const char	*basepath;
+	const char	*gamedir;
+	char		*fn;
+	char		filename[ MAX_QPATH ];
 
 #if idx64
 	Com_sprintf( filename, sizeof( filename ), "%sx86_64.dll", name );
@@ -570,10 +570,10 @@ void * QDECL Sys_LoadDll( const char *name, intptr_t (QDECL **entryPoint)(intptr
 
 #ifndef NDEBUG
 	libHandle = LoadLibrary( AtoW( filename ) );
-  if (libHandle)
-    Com_Printf("LoadLibrary '%s' ok\n", filename);
-  else
-    Com_Printf("LoadLibrary '%s' failed\n", filename);
+	if ( libHandle )
+		Com_Printf( "LoadLibrary '%s' ok\n", filename );
+	else
+		Com_Printf( "LoadLibrary '%s' failed\n", filename );
 	if ( !libHandle ) {
 #endif
 	basepath = Cvar_VariableString( "fs_basepath" );
@@ -582,20 +582,23 @@ void * QDECL Sys_LoadDll( const char *name, intptr_t (QDECL **entryPoint)(intptr
 	fn = FS_BuildOSPath( basepath, gamedir, filename );
 	libHandle = LoadLibrary( AtoW( fn ) );
 #ifndef NDEBUG
-  if (libHandle)
-    Com_Printf("LoadLibrary '%s' ok\n", fn);
-  else
-    Com_Printf("LoadLibrary '%s' failed\n", fn);
+	if ( libHandle )
+		Com_Printf( "LoadLibrary '%s' ok\n", fn );
+	else
+		Com_Printf( "LoadLibrary '%s' failed\n", fn );
 	}
 #endif
 
-	dllEntry = ( void (QDECL *)(intptr_t (QDECL *)( intptr_t, ... ) ) )GetProcAddress( libHandle, "dllEntry" ); 
-	*entryPoint = (intptr_t (QDECL *)(intptr_t,...))GetProcAddress( libHandle, "vmMain" );
+	dllEntry = ( dllEntry_t ) GetProcAddress( libHandle, "dllEntry" ); 
+	*entryPoint = ( dllSyscall_t ) GetProcAddress( libHandle, "vmMain" );
 	if ( !*entryPoint || !dllEntry ) {
 		FreeLibrary( libHandle );
 		return NULL;
 	}
+
+	Com_Printf( "Sys_LoadDll(%s) found **vmMain** at %p\n", name, *entryPoint );
 	dllEntry( systemcalls );
+	Com_Printf( "Sys_LoadDll(%s) succeeded!\n", name );
 
 	return libHandle;
 }
@@ -656,10 +659,6 @@ are initialized
 */
 #define OSR2_BUILD_NUMBER 1111
 #define WIN98_BUILD_NUMBER 1998
-
-#ifndef DEDICATED
-extern glwstate_t glw_state;
-#endif
 
 void Sys_Init( void ) {
 
@@ -776,5 +775,3 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	// never gets here
 	return 0;
 }
-
-

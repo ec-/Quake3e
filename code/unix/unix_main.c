@@ -763,18 +763,17 @@ static void* try_dlopen( const char* base, const char* gamedir, const char* fnam
 }
 
 
-void *Sys_LoadDll( const char *name, intptr_t (**entryPoint)(intptr_t, ...),
-                   intptr_t (*systemcalls)(intptr_t, ...) ) 
+void *Sys_LoadDll( const char *name, dllSyscall_t *entryPoint, dllSyscall_t systemcalls )
 {
-	void *libHandle;
-	void  (*dllEntry)( intptr_t (*syscallptr)(intptr_t, ...) );
-	char  curpath[MAX_OSPATH];
-	char  fname[MAX_OSPATH];
-	const char  *basepath;
-	const char  *homepath;
-	const char  *gamedir;
-	const char  *pwdpath;
-	const char*  err = NULL;
+	void		*libHandle;
+	dllEntry_t	dllEntry;
+	char		curpath[MAX_OSPATH];
+	char		fname[MAX_OSPATH];
+	const char	*basepath;
+	const char	*homepath;
+	const char	*gamedir;
+	const char	*pwdpath;
+	const char	*err = NULL;
 
 	assert( name ); // let's have some paranoia
 
@@ -821,7 +820,7 @@ void *Sys_LoadDll( const char *name, intptr_t (**entryPoint)(intptr_t, ...),
 
 		return NULL;
 	}
-	Com_Printf( "Sys_LoadDll(%s) found **vmMain** at  %p  \n", name, *entryPoint ); // bk001212
+	Com_Printf( "Sys_LoadDll(%s) found **vmMain** at %p\n", name, *entryPoint );
 	dllEntry( systemcalls );
 	Com_Printf( "Sys_LoadDll(%s) succeeded!\n", name );
 	return libHandle;

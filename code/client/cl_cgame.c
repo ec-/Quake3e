@@ -729,6 +729,30 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 
 /*
 ====================
+CL_DllSyscall
+====================
+*/
+static intptr_t QDECL CL_DllSyscall( intptr_t arg, ... ) {
+#if !id386 || defined __clang__
+	intptr_t	args[10]; // max.count for cgame
+	va_list	ap;
+	int i;
+  
+	args[0] = arg;
+	va_start( ap, arg );
+	for (i = 1; i < ARRAY_LEN( args ); i++ )
+		args[ i ] = va_arg( ap, intptr_t );
+	va_end( ap );
+  
+	return CL_CgameSystemCalls( args );
+#else
+	return CL_CgameSystemCalls( &arg );
+#endif
+}
+
+
+/*
+====================
 CL_InitCGame
 
 Should only be called by CL_StartHunkUsers
@@ -751,15 +775,15 @@ void CL_InitCGame( void ) {
 	Com_sprintf( cl.mapname, sizeof( cl.mapname ), "maps/%s.bsp", mapname );
 
 	// load the dll or bytecode
-	interpret = Cvar_VariableValue("vm_cgame");
-	if(cl_connectedToPureServer)
+	interpret = Cvar_VariableValue( "vm_cgame" );
+	if ( cl_connectedToPureServer )
 	{
 		// if sv_pure is set we only allow qvms to be loaded
-		if(interpret != VMI_COMPILED && interpret != VMI_BYTECODE)
-		interpret = VMI_COMPILED;
+		if ( interpret != VMI_COMPILED && interpret != VMI_BYTECODE )
+			interpret = VMI_COMPILED;
 	}
 
-	cgvm = VM_Create( "cgame", CL_CgameSystemCalls, interpret );
+	cgvm = VM_Create( VM_CGAME, CL_CgameSystemCalls, CL_DllSyscall, interpret );
 	if ( !cgvm ) {
 		Com_Error( ERR_DROP, "VM_Create on cgame failed" );
 	}
@@ -813,7 +837,6 @@ qboolean CL_GameCommand( void ) {
 
 	return VM_Call( cgvm, CG_CONSOLE_COMMAND );
 }
-
 
 
 /*
@@ -1046,6 +1069,3 @@ void CL_SetCGameTime( void ) {
 	}
 
 }
-
-
-

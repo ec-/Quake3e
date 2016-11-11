@@ -1096,6 +1096,31 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 	return 0;
 }
 
+
+/*
+====================
+UI_DllSyscall
+====================
+*/
+static intptr_t QDECL UI_DllSyscall( intptr_t arg, ... ) {
+#if !id386 || defined __clang__
+	intptr_t	args[10]; // max.count for UI
+	va_list	ap;
+	int i;
+  
+	args[0] = arg;
+	va_start( ap, arg );
+	for (i = 1; i < ARRAY_LEN( args ); i++ )
+		args[ i ] = va_arg( ap, intptr_t );
+	va_end( ap );
+  
+	return CL_UISystemCalls( args );
+#else
+	return CL_UISystemCalls( &arg );
+#endif
+}
+
+
 /*
 ====================
 CL_ShutdownUI
@@ -1112,6 +1137,7 @@ void CL_ShutdownUI( void ) {
 	uivm = NULL;
 	FS_VM_CloseFiles( H_Q3UI );
 }
+
 
 /*
 ====================
@@ -1133,7 +1159,7 @@ void CL_InitUI( void ) {
 		interpret = VMI_COMPILED;
 	}
 
-	uivm = VM_Create( "ui", CL_UISystemCalls, interpret );
+	uivm = VM_Create( VM_UI, CL_UISystemCalls, UI_DllSyscall, interpret );
 	if ( !uivm ) {
 		Com_Error( ERR_FATAL, "VM_Create on UI failed" );
 	}
@@ -1159,6 +1185,7 @@ void CL_InitUI( void ) {
 	}
 }
 
+
 #ifndef STANDALONE
 qboolean UI_usesUniqueCDKey( void ) {
 	if (uivm) {
@@ -1168,6 +1195,7 @@ qboolean UI_usesUniqueCDKey( void ) {
 	}
 }
 #endif
+
 
 /*
 ====================

@@ -873,6 +873,31 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 	return 0;
 }
 
+
+/*
+====================
+SV_DllSyscall
+====================
+*/
+static intptr_t QDECL SV_DllSyscall( intptr_t arg, ... ) {
+#if !id386 || defined __clang__
+	intptr_t	args[14]; // max.count for qagame
+	va_list	ap;
+	int i;
+  
+	args[0] = arg;
+	va_start( ap, arg );
+	for (i = 1; i < ARRAY_LEN( args ); i++ )
+		args[ i ] = va_arg( ap, intptr_t );
+	va_end( ap );
+  
+	return SV_GameSystemCalls( args );
+#else
+	return SV_GameSystemCalls( &arg );
+#endif
+}
+
+
 /*
 ===============
 SV_ShutdownGameProgs
@@ -962,7 +987,7 @@ void SV_InitGameProgs( void ) {
 	}
 
 	// load the dll or bytecode
-	gvm = VM_Create( "qagame", SV_GameSystemCalls, Cvar_VariableValue( "vm_game" ) );
+	gvm = VM_Create( VM_GAME, SV_GameSystemCalls, SV_DllSyscall, Cvar_VariableValue( "vm_game" ) );
 	if ( !gvm ) {
 		Com_Error( ERR_FATAL, "VM_Create on game failed" );
 	}
