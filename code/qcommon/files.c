@@ -2304,6 +2304,9 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 	pack_t			*pak;
 	fileInPack_t	*buildBuffer;
 	char			zpath[MAX_ZPATH];
+	qboolean		hasPattern;
+	const char		*nameExt;
+	int				extLen;
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
@@ -2331,6 +2334,8 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 	extensionLength = strlen( extension );
 	nfiles = 0;
 	FS_ReturnPath(path, zpath, &pathDepth);
+
+	hasPattern = ( strchr( extension, '?' ) != NULL );
 
 	//
 	// search through the path, one element at a time, adding to list
@@ -2380,8 +2385,19 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 					} else {
 						if ( length < extensionLength )
 							continue;
-						if ( Q_stricmp( name + length - extensionLength, extension ) )
-							continue;
+						if ( !hasPattern ) {
+							if ( Q_stricmp( name + length - extensionLength, extension ) )
+								continue;
+						} else { 
+							// for now - check extension length if using pattern
+							nameExt = strrchr( name, '.' );
+							if ( nameExt && nameExt > name )
+								extLen = length - ( nameExt - name ) - 1;
+							else
+								extLen = 0;
+							if ( extLen != extensionLength )
+								continue;
+						}
 					}
 					// unique the match
 
@@ -2411,6 +2427,17 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 				} else {
 					if ( length < extensionLength )
 						continue;
+					if ( hasPattern ) {
+						// for now - check extension length if using pattern
+						nameExt = strrchr( name, '.' );
+						if ( nameExt && nameExt > name )
+							extLen = length - ( nameExt - name ) - 1;
+						else
+							extLen = 0;
+						if ( extLen != extensionLength ) {
+							continue;
+						}
+					}
 				}
 				nfiles = FS_AddFileToList( name, list, nfiles );
 			}
