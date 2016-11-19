@@ -2092,9 +2092,11 @@ static shader_t *GeneratePermanentShader( void ) {
 /*
 ====================
 FindLightingStages
+
+Find proper stage for dlight pass
 ====================
 */
-#define BLEND_MASK (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS)
+#define GLS_BLEND_BITS (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS)
 static void FindLightingStages( void )
 {
 	int i;
@@ -2107,10 +2109,10 @@ static void FindLightingStages( void )
 		if ( !stages[i].bundle[0].isLightmap ) {
 			if ( stages[i].bundle[0].tcGen != TCGEN_TEXTURE )
 				continue;
-			if ( (stages[i].stateBits & BLEND_MASK) == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE) )
+			if ( (stages[i].stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE) )
 				continue;
 			 // fix for q3wcp17' textures/scanctf2/bounce_white and others
-			if ( stages[i].rgbGen == CGEN_IDENTITY && (stages[i].stateBits & BLEND_MASK) == (GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO) ) {
+			if ( stages[i].rgbGen == CGEN_IDENTITY && (stages[i].stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO) ) {
 				if ( shader.lightingStage >= 0 ) {
 					continue;
 				}
@@ -2119,6 +2121,7 @@ static void FindLightingStages( void )
 		}
 	}
 }
+#undef GLS_BLEND_BITS
 #endif // USE_PMLIGHT
 
 
