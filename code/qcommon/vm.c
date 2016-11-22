@@ -618,7 +618,7 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 	int					dataLength;
 	int					i;
 	char				filename[MAX_QPATH], *errorMsg;
-	unsigned int		crc32 = 0;
+	unsigned int		crc32sum;
 	qboolean			tryjts;
 	vmHeader_t			*header;
 
@@ -632,9 +632,9 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 		return NULL;
 	}
 
-	crc32_init( &crc32 );
-	crc32_update( &crc32, (void*)header, length );
-	crc32_final( &crc32 );
+	crc32_init( &crc32sum );
+	crc32_update( &crc32sum, (void*)header, length );
+	crc32_final( &crc32sum );
 
 	// will also swap header
 	errorMsg = VM_ValidateHeader( header, length );
@@ -645,6 +645,7 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 		return NULL;
 	}
 
+	vm->crc32sum = crc32sum;
 	tryjts = qfalse;
 
 	if( header->vmMagic == VM_MAGIC_VER2 ) {
@@ -718,7 +719,7 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 		}
 	}
 
-	if ( tryjts == qtrue && (length = Load_JTS( vm, crc32, NULL )) >= 0 ) {
+	if ( tryjts == qtrue && (length = Load_JTS( vm, crc32sum, NULL )) >= 0 ) {
 		// we are trying to load newer file?
 		if ( vm->jumpTableTargets && vm->numJumpTableTargets != length >> 2 ) {
 			Com_Printf( S_COLOR_YELLOW "Reload jts file\n" );
@@ -732,7 +733,7 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 		} else {
 			Com_Memset( vm->jumpTableTargets, 0, length );
 		}
-		Load_JTS( vm, crc32, vm->jumpTableTargets );
+		Load_JTS( vm, crc32sum, vm->jumpTableTargets );
 	}
 
 	return header;
@@ -1106,6 +1107,44 @@ const char *VM_CheckInstructions( instruction_t *buf,
 	}
 
 	return NULL;
+}
+
+
+/*
+=================
+VM_ReplaceInstructions
+=================
+*/
+void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
+	instruction_t *ip;
+	if ( vm->index == VM_CGAME ) {
+		//Com_Printf( S_COLOR_GREEN "crc: %08x ic: %i, dl: %i\n", vm->crc32sum, vm->instructionCount, vm->dataLength );
+		if ( vm->crc32sum == 0x3E93FC1A && vm->instructionCount == 123596 && vm->dataLength == 2007536 ) {
+			ip = buf + 110190;
+			if ( ip->op == OP_ENTER && (ip+183)->op == OP_LEAVE && ip->value == (ip+183)->value ) {
+				ip++;
+				ip->op = OP_CONST;	ip->value = 110372; ip++;
+				ip->op = OP_JUMP;	ip->value = 0; ip++;
+				ip->op = OP_IGNORE; ip->value = 0; ip++;
+			}
+			if ( buf[4358].op == OP_LOCAL && buf[4358].value == 308 && buf[4359].op == OP_CONST && !buf[4359].value ) {
+				buf[4359].value++;
+			}
+		} 
+		else
+		if ( vm->crc32sum == 0xF0F1AE90 && vm->instructionCount == 123552 && vm->dataLength == 2007520 ) {
+			ip = buf + 110177;
+			if ( ip->op == OP_ENTER && (ip+183)->op == OP_LEAVE && ip->value == (ip+183)->value ) {
+				ip++;
+				ip->op = OP_CONST;	ip->value = 110359; ip++;
+				ip->op = OP_JUMP;	ip->value = 0; ip++;
+				ip->op = OP_IGNORE; ip->value = 0; ip++;
+			}
+			if ( buf[4358].op == OP_LOCAL && buf[4358].value == 308 && buf[4359].op == OP_CONST && !buf[4359].value ) {
+				buf[4359].value++;
+			}
+		}
+	}
 }
 
 

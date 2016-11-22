@@ -1365,7 +1365,7 @@ VM_FindMOps
 Search for known macro-op sequences
 =================
 */
-void VM_FindMOps( vmHeader_t *header, instruction_t *buf ) 
+void VM_FindMOps( instruction_t *buf, int instructionCount ) 
 {
 	int i, v, op0;
 	instruction_t *ci;
@@ -1373,7 +1373,7 @@ void VM_FindMOps( vmHeader_t *header, instruction_t *buf )
 	ci = buf;
 	i = 0;
 
-	while ( i < header->instructionCount )
+	while ( i < instructionCount )
 	{
 		op0 = ci->op;
 		if ( op0 == OP_LOCAL ) {
@@ -1578,8 +1578,10 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 		Com_Printf( "VM_CompileX86 error: %s\n", errMsg );
 		return qfalse;
 	}
+	
+	VM_ReplaceInstructions( vm, inst );
 
-	VM_FindMOps( header, inst );
+	VM_FindMOps( inst, vm->instructionCount );
 
 	code = NULL; // we will allocate memory later, after last defined pass
 	instructionPointers = NULL;

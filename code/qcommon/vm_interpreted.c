@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 //#define	DEBUG_VM
 #ifdef DEBUG_VM // bk001204
-static char	*opnames[256] = {
+static const char *opnames[256] = {
 	"OP_UNDEF", 
 
 	"OP_IGNORE", 
@@ -154,6 +154,8 @@ qboolean VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header )
 		Com_Printf( "VM_PrepareInterpreter2 error: %s\n", errMsg );
 		return qfalse;
 	}
+
+	VM_ReplaceInstructions( vm, buf );
 
 	vm->codeBase.ptr = (void*)buf;
 	return qtrue;

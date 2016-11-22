@@ -208,6 +208,8 @@ struct vm_s {
 
 	byte		*jumpTableTargets;
 	int			numJumpTableTargets;
+
+	uint32_t	crc32sum;
 };
 
 extern	int		vm_debugLevel;
@@ -228,6 +230,8 @@ const char *VM_CheckInstructions( instruction_t *buf, int instructionCount,
 								 const byte *jumpTableTargets, 
 								 int numJumpTableTargets, 
 								 int dataLength );
+
+void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf );
 
 #define JUMP	(1<<0)
 

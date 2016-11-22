@@ -317,10 +317,6 @@ static char		*fs_serverReferencedPakNames[MAX_SEARCH_PATHS];		// pk3 names
 char lastValidBase[MAX_OSPATH];
 char lastValidGame[MAX_OSPATH];
 
-#ifdef USE_CPMA_HACKS
-qboolean	isCPMA;
-#endif
-
 #ifdef FS_MISSING
 FILE*		missingFiles = NULL;
 #endif
@@ -4009,9 +4005,6 @@ void FS_Restart( int checksumFeed ) {
 
 	Q_strncpyz( lastValidBase, fs_basepath->string, sizeof( lastValidBase ) );
 	Q_strncpyz( lastValidGame, fs_gamedirvar->string, sizeof( lastValidGame ) );
-#ifdef USE_CPMA_HACKS
-	isCPMA = ( Q_stricmp( fs_gamedirvar->string, "cpma" ) == 0 );
-#endif
 }
 
 
