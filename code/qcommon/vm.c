@@ -1471,6 +1471,36 @@ static int QDECL VM_ProfileSort( const void *a, const void *b ) {
 	return 0;
 }
 
+
+/*
+==============
+VM_NameToVM
+==============
+*/
+vm_t *VM_NameToVM( const char *vmName ) 
+{
+	vmIndex_t index;
+
+	if ( !Q_stricmp( vmName, "game" ) )
+		index = VM_GAME;
+	else if ( !Q_stricmp( vmName, "cgame" ) )
+		index = VM_CGAME;
+	else if ( !Q_stricmp( vmName, "ui" ) )
+		index = VM_UI;
+	else {
+		Com_Printf( " unknown VM name '%s'\n", vmName );
+		return NULL;
+	}
+
+	if ( !vmTable[ index ].name ) {
+		Com_Printf( " %s is not running.\n", vmName );
+		return NULL;
+	}
+
+	return &vmTable[ index ];
+}
+
+
 /*
 ==============
 VM_VmProfile_f
@@ -1478,17 +1508,20 @@ VM_VmProfile_f
 ==============
 */
 void VM_VmProfile_f( void ) {
-#if 0
 	vm_t		*vm;
 	vmSymbol_t	**sorted, *sym;
 	int			i;
 	double		total;
 
-	if ( !lastVM ) {
+	if ( Cmd_Argc() < 2 ) {
+		Com_Printf( "usage: %s <game|cgame|ui>\n", Cmd_Argv( 0 ) );
 		return;
 	}
 
-	vm = lastVM;
+	vm = VM_NameToVM( Cmd_Argv( 1 ) );
+	if ( vm == NULL ) {
+		return;
+	}
 
 	if ( !vm->numSymbols ) {
 		return;
@@ -1517,13 +1550,12 @@ void VM_VmProfile_f( void ) {
 	Com_Printf("    %9.0f total\n", total );
 
 	Z_Free( sorted );
-#endif
 }
+
 
 /*
 ==============
 VM_VmInfo_f
-
 ==============
 */
 void VM_VmInfo_f( void ) {
@@ -1551,6 +1583,7 @@ void VM_VmInfo_f( void ) {
 		Com_Printf( "    data length : %7i\n", vm->dataMask + 1 );
 	}
 }
+
 
 /*
 ===============

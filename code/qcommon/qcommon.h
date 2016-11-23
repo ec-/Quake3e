@@ -355,6 +355,7 @@ typedef enum {
 } sharedTraps_t;
 
 typedef enum {
+	VM_BAD = -1,
 	VM_GAME = 0,
 #ifndef USE_DEDICATED
 	VM_CGAME,
