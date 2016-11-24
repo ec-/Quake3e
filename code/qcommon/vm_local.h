@@ -210,6 +210,8 @@ struct vm_s {
 	int			numJumpTableTargets;
 
 	uint32_t	crc32sum;
+
+	qboolean	forceDataMask;
 };
 
 extern	int		vm_debugLevel;

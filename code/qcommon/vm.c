@@ -1117,8 +1117,9 @@ VM_ReplaceInstructions
 */
 void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 	instruction_t *ip;
+
+	//Com_Printf( S_COLOR_GREEN "[%s] crc: %08x, ic: %i, dl: %i\n", vm->name, vm->crc32sum, vm->instructionCount, vm->dataLength );
 	if ( vm->index == VM_CGAME ) {
-		//Com_Printf( S_COLOR_GREEN "crc: %08x ic: %i, dl: %i\n", vm->crc32sum, vm->instructionCount, vm->dataLength );
 		if ( vm->crc32sum == 0x3E93FC1A && vm->instructionCount == 123596 && vm->dataLength == 2007536 ) {
 			ip = buf + 110190;
 			if ( ip->op == OP_ENTER && (ip+183)->op == OP_LEAVE && ip->value == (ip+183)->value ) {
@@ -1143,6 +1144,14 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 			if ( buf[4358].op == OP_LOCAL && buf[4358].value == 308 && buf[4359].op == OP_CONST && !buf[4359].value ) {
 				buf[4359].value++;
 			}
+		}
+	}
+
+	if ( vm->index == VM_GAME ) {
+		if ( vm->crc32sum == 0x5AAE0ACC && vm->instructionCount == 251521 && vm->dataLength == 1872720 ) {
+			vm->forceDataMask = qtrue; // OSP server doing some bad things with memory
+		} else {
+			vm->forceDataMask = qfalse;
 		}
 	}
 }

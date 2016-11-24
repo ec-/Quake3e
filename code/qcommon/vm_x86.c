@@ -496,8 +496,14 @@ static void EmitCheckReg( vm_t *vm, int reg, int size )
 {
 	int n;
 
-	if ( !( vm_rtChecks->integer & 8 ) )
+	if ( !( vm_rtChecks->integer & 8 ) || vm->forceDataMask ) {
+		if ( reg == REG_EAX )
+			EmitString( "25" ); 	// and eax, 0x12345678
+		else
+			EmitString( "81 E1" );  // and ecx, 0x12345678
+		Emit4( vm->dataMask & ~(size - 1) );
 		return;
+	}
 
 #ifdef DEBUG_VM
 	EmitString( "50" );			// push eax
