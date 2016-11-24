@@ -766,7 +766,7 @@ const char *VM_LoadInstructions( const vmHeader_t *header, instruction_t *buf )
 	for ( i = 0; i < header->instructionCount; i++, ci++, op1 = op0 ) {
 		op0 = *code_pos;
 		if ( op0 < 0 || op0 >= OP_MAX ) {
-			sprintf( errBuf, "bad opcode %02X at offset %i", op0,  code_pos - code_start );
+			sprintf( errBuf, "bad opcode %02X at offset %ld", op0,  code_pos - code_start );
 			return errBuf;
 		}
 		n = ops[ op0 ].size;
@@ -780,7 +780,7 @@ const char *VM_LoadInstructions( const vmHeader_t *header, instruction_t *buf )
 			ci->value = LittleLong( *((int*)code_pos) );
 			code_pos += 4;
 		} else if ( n == 1 ) { 
-			ci->value = *((char*)code_pos);
+			ci->value = *((unsigned char*)code_pos);
 			code_pos += 1;
 		} else {
 			ci->value = 0;

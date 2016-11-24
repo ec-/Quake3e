@@ -1316,6 +1316,7 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 	    int bestfbi;
 		int value;
 		
+		value = 0;
 		maxval = 0;
 		bestfbi = 0;
 

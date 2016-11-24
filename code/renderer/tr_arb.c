@@ -239,7 +239,7 @@ static const char *VP = {
 // dynamically apply custom parameters
 static const char *ARB_BuildFragmentProgram( void  )
 {
-	static char program[1024], *str;
+	static char program[1024];
 	
 	program[0] = '\0';
 	strcat( program, 
