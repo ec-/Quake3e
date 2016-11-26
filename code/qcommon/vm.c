@@ -1486,23 +1486,23 @@ static int QDECL VM_ProfileSort( const void *a, const void *b ) {
 VM_NameToVM
 ==============
 */
-vm_t *VM_NameToVM( const char *vmName ) 
+vm_t *VM_NameToVM( const char *name ) 
 {
 	vmIndex_t index;
 
-	if ( !Q_stricmp( vmName, "game" ) )
+	if ( !Q_stricmp( name, "game" ) )
 		index = VM_GAME;
-	else if ( !Q_stricmp( vmName, "cgame" ) )
+	else if ( !Q_stricmp( name, "cgame" ) )
 		index = VM_CGAME;
-	else if ( !Q_stricmp( vmName, "ui" ) )
+	else if ( !Q_stricmp( name, "ui" ) )
 		index = VM_UI;
 	else {
-		Com_Printf( " unknown VM name '%s'\n", vmName );
+		Com_Printf( " unknown VM name '%s'\n", name );
 		return NULL;
 	}
 
 	if ( !vmTable[ index ].name ) {
-		Com_Printf( " %s is not running.\n", vmName );
+		Com_Printf( " %s is not running.\n", name );
 		return NULL;
 	}
 

@@ -48,24 +48,43 @@ LAN_LoadCachedServers
 ====================
 */
 void LAN_LoadCachedServers( void ) {
-	int size;
+	char path[ MAX_OSPATH ];
+	const char *fs_game;
 	fileHandle_t fileIn;
+	int size, file_size;
+
 	cls.numglobalservers = cls.numfavoriteservers = 0;
 	cls.numGlobalServerAddresses = 0;
-	if (FS_SV_FOpenFileRead("servercache.dat", &fileIn)) {
-		FS_Read(&cls.numglobalservers, sizeof(int), fileIn);
-		FS_Read(&cls.numfavoriteservers, sizeof(int), fileIn);
-		FS_Read(&size, sizeof(int), fileIn);
-		if (size == sizeof(cls.globalServers) + sizeof(cls.favoriteServers)) {
-			FS_Read(&cls.globalServers, sizeof(cls.globalServers), fileIn);
-			FS_Read(&cls.favoriteServers, sizeof(cls.favoriteServers), fileIn);
-		} else {
-			cls.numglobalservers = cls.numfavoriteservers = 0;
-			cls.numGlobalServerAddresses = 0;
+
+	fs_game = Cvar_VariableString( "fs_game" );
+	if ( !*fs_game )
+		fs_game = BASEGAME;
+
+	Com_sprintf( path, sizeof( path ), "%s%cservercache.dat", fs_game, PATH_SEP );
+
+	file_size = FS_SV_FOpenFileRead( path, &fileIn );
+	if ( file_size < (3*sizeof(int)) ) {
+		if ( file_size >= 0 ) {
+			FS_FCloseFile( fileIn );
 		}
-		FS_FCloseFile(fileIn);
+		return;
+	} 
+
+	FS_Read( &cls.numglobalservers, sizeof(int), fileIn );
+	FS_Read( &cls.numfavoriteservers, sizeof(int), fileIn );
+	FS_Read( &size, sizeof(int), fileIn );
+
+	if ( size == sizeof(cls.globalServers) + sizeof(cls.favoriteServers) ) {
+		FS_Read( &cls.globalServers, sizeof(cls.globalServers), fileIn );
+		FS_Read( &cls.favoriteServers, sizeof(cls.favoriteServers), fileIn );
+	} else {
+		cls.numglobalservers = cls.numfavoriteservers = 0;
+		cls.numGlobalServerAddresses = 0;
 	}
+
+	FS_FCloseFile( fileIn );
 }
+
 
 /*
 ====================
@@ -74,10 +93,18 @@ LAN_SaveServersToCache
 */
 void LAN_SaveServersToCache( void ) {
 	
+	char path[ MAX_OSPATH ];
+	const char *fs_game;
 	fileHandle_t fileOut;
 	int size;
 
-	fileOut = FS_SV_FOpenFileWrite( "servercache.dat" );
+	fs_game = Cvar_VariableString( "fs_game" );
+	if ( !*fs_game )
+		fs_game = BASEGAME;
+
+	Com_sprintf( path, sizeof( path ), "%s%cservercache.dat", fs_game, PATH_SEP );
+
+	fileOut = FS_SV_FOpenFileWrite( path );
 	if ( fileOut == FS_INVALID_HANDLE )
 		return;
 
