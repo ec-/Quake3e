@@ -598,13 +598,18 @@ or crashing -- SV_FinalMessage() will handle that
 =====================
 */
 void SV_DropClient( client_t *drop, const char *reason ) {
-	int		i;
+	char	name[ MAX_NAME_LENGTH ];
 	challenge_t	*challenge;
-	const qboolean isBot = drop->netchan.remoteAddress.type == NA_BOT;
+	qboolean isBot;
+	int		i;
 
 	if ( drop->state == CS_ZOMBIE ) {
 		return;		// already dropped
 	}
+
+	isBot = drop->netchan.remoteAddress.type == NA_BOT;
+
+	Q_strncpyz( name, drop->name, sizeof( name ) );	// for further DPrintf() because drop->name will be nuked in SV_SetUserinfo()
 
 	if ( !isBot ) {
 		// see if we already have a challenge for this ip
@@ -624,7 +629,7 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 	SV_FreeClient(drop);
 
 	// tell everyone why they got dropped
-	SV_SendServerCommand( NULL, "print \"%s" S_COLOR_WHITE " %s\n\"", drop->name, reason );
+	SV_SendServerCommand( NULL, "print \"%s" S_COLOR_WHITE " %s\n\"", name, reason );
 
 	// call the prog function for removing a client
 	// this will remove the body, among other things
@@ -644,7 +649,7 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 		// bots shouldn't go zombie, as there's no real net connection.
 		drop->state = CS_FREE;
 	} else {
-		Com_DPrintf( "Going to CS_ZOMBIE for %s\n", drop->name );
+		Com_DPrintf( "Going to CS_ZOMBIE for %s\n", name );
 		drop->state = CS_ZOMBIE;		// become free in a few seconds
 	}
 
