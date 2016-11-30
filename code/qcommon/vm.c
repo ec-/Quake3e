@@ -1575,7 +1575,7 @@ void VM_VmInfo_f( void ) {
 	for ( i = 0 ; i < VM_COUNT ; i++ ) {
 		vm = &vmTable[i];
 		if ( !vm->name ) {
-			break;
+			continue;
 		}
 		Com_Printf( "%s : ", vm->name );
 		if ( vm->dllHandle ) {
