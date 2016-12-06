@@ -442,7 +442,7 @@ intptr_t QDECL VM_DllSyscall( intptr_t arg, ... ) {
 #endif
 
 
-static int Load_JTS( vm_t *vm, unsigned int crc32, void *data )  {
+static int Load_JTS( vm_t *vm, unsigned int crc32, void *data, int vmPakIndex )  {
 	char		filename[MAX_QPATH];
 	int			header[2];
 	int			length, i;
@@ -461,16 +461,22 @@ static int Load_JTS( vm_t *vm, unsigned int crc32, void *data )  {
 		return -1;
 	}
 
+	if ( fs_lastPakIndex != vmPakIndex ) {
+		Com_Printf( " bad pak index %i (expecting %i) for %s.\n", fs_lastPakIndex, vmPakIndex, filename );
+		FS_FCloseFile( fh );
+		return -1;
+	}
+
 	if ( length < sizeof( header ) ) {
 		if ( data )
-			Com_Printf( " bad filesize.\n" );
+			Com_Printf( " bad filesize %i for %s.\n", length, filename );
 		FS_FCloseFile( fh );
 		return -1;
 	}
 
 	if ( FS_Read( header, sizeof( header ), fh ) != sizeof( header ) ) {
 		if ( data )
-			Com_Printf( " error reading header.\n" );
+			Com_Printf( " error reading header of %s.\n", filename );
 		FS_FCloseFile( fh );
 		return -1;
 	}
@@ -621,6 +627,7 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 	unsigned int		crc32sum;
 	qboolean			tryjts;
 	vmHeader_t			*header;
+	int					vmPakIndex;
 
 	// load the image
 	Com_sprintf( filename, sizeof(filename), "vm/%s.qvm", vm->name );
@@ -631,6 +638,8 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 		VM_Free( vm );
 		return NULL;
 	}
+
+	vmPakIndex = fs_lastPakIndex;
 
 	crc32_init( &crc32sum );
 	crc32_update( &crc32sum, (void*)header, length );
@@ -719,7 +728,7 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 		}
 	}
 
-	if ( tryjts == qtrue && (length = Load_JTS( vm, crc32sum, NULL )) >= 0 ) {
+	if ( tryjts == qtrue && (length = Load_JTS( vm, crc32sum, NULL, vmPakIndex )) >= 0 ) {
 		// we are trying to load newer file?
 		if ( vm->jumpTableTargets && vm->numJumpTableTargets != length >> 2 ) {
 			Com_Printf( S_COLOR_YELLOW "Reload jts file\n" );
@@ -733,7 +742,7 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 		} else {
 			Com_Memset( vm->jumpTableTargets, 0, length );
 		}
-		Load_JTS( vm, crc32sum, vm->jumpTableTargets );
+		Load_JTS( vm, crc32sum, vm->jumpTableTargets, vmPakIndex );
 	}
 
 	return header;

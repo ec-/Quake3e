@@ -242,6 +242,7 @@ typedef struct {
 	int				hashSize;					// hash table size (power of 2)
 	fileInPack_t*	*hashTable;					// hash table
 	fileInPack_t*	buildBuffer;				// buffer with the filenames etc.
+	int				index;
 } pack_t;
 
 typedef struct {
@@ -294,6 +295,7 @@ typedef struct {
 	int			zipFileLen;
 	char		name[MAX_ZPATH];
 	handleOwner_t	owner;
+	int			pakIndex;
 } fileHandleData_t;
 
 static fileHandleData_t	fsh[MAX_FILE_HANDLES];
@@ -314,8 +316,10 @@ static int		fs_serverReferencedPaks[MAX_SEARCH_PATHS];			// checksums
 static char		*fs_serverReferencedPakNames[MAX_SEARCH_PATHS];		// pk3 names
 
 // last valid game folder used
-char lastValidBase[MAX_OSPATH];
-char lastValidGame[MAX_OSPATH];
+static char	lastValidBase[MAX_OSPATH];
+static char	lastValidGame[MAX_OSPATH];
+
+int	fs_lastPakIndex;
 
 #ifdef FS_MISSING
 FILE*		missingFiles = NULL;
@@ -509,6 +513,20 @@ static int FS_FileLength( FILE* h )
 	fseek( h, pos, SEEK_SET );
 
 	return end;
+}
+
+
+/*
+====================
+FS_PakIndexForHandle
+====================
+*/
+int FS_PakIndexForHandle( fileHandle_t f ) {
+
+	if ( f <= FS_INVALID_HANDLE || f >= MAX_FILE_HANDLES )
+		return -1;
+
+	return fsh[ f ].pakIndex;
 }
 
 
@@ -806,6 +824,8 @@ fileHandle_t FS_SV_FOpenFileWrite( const char *filename ) {
 
 	f = FS_HandleForFile();
 	fd = &fsh[ f ];
+	fd->pakIndex = -1;
+	fs_lastPakIndex = -1;
 
 	if ( fs_debug->integer ) {
 		Com_Printf( "FS_SV_FOpenFileWrite: %s\n", ospath );
@@ -856,6 +876,8 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
 	// allocate new file handle
 	f = FS_HandleForFile(); 
 	fd = &fsh[ f ];
+	fd->pakIndex = -1;
+	fs_lastPakIndex = -1;
 
 #ifndef DEDICATED
 	// don't let sound shutter
@@ -1050,6 +1072,8 @@ fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 
 	f = FS_HandleForFile();
 	fd = &fsh[ f ];
+	fd->pakIndex = -1;
+	fs_lastPakIndex = -1;
 
 	// enabling the following line causes a recursive function call loop
 	// when running with +set logfile 1 +set developer 1
@@ -1103,6 +1127,8 @@ fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 	
 	f = FS_HandleForFile();
 	fd = &fsh[ f ];
+	fd->pakIndex = -1;
+	fs_lastPakIndex = -1;
 
 	fd->handleFiles.file.o = Sys_FOpen( ospath, "ab" );
 	if ( fd->handleFiles.file.o == NULL ) {
@@ -1115,6 +1141,7 @@ fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 
 	return f;
 }
+
 
 /*
 ===========
@@ -1403,6 +1430,8 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 
 	*file = FS_HandleForFile();
 	f = &fsh[*file];
+	f->pakIndex = -1;
+	fs_lastPakIndex = -1;
 
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		//
@@ -1468,6 +1497,8 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					f->zipFileLen = pakFile->size;
 					f->zipFile = qtrue;
 					f->handleFiles.unique = uniqueFILE;
+					f->pakIndex = pak->index;
+					fs_lastPakIndex = pak->index;
 
 					if ( fs_debug->integer ) {
 						Com_Printf( "FS_FOpenFileRead: %s (found in '%s')\n", 
@@ -3089,8 +3120,10 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 		pakfile = FS_BuildOSPath( path, dir, pakfiles[i] );
 		if ( ( pak = FS_LoadZipFile( pakfile, pakfiles[i] ) ) == NULL )
 			continue;
+
 		// store the game name for downloading
 		strcpy(pak->pakGamename, dir);
+		pak->index = fs_packCount;
 
 		fs_packFiles += pak->numfiles;
 		fs_packCount++;

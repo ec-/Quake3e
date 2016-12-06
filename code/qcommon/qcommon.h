@@ -677,6 +677,10 @@ int		FS_FOpenFileRead( const char *qpath, fileHandle_t *file, qboolean uniqueFIL
 qboolean FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName );
 // returns qtrue if a file is in the PAK file, otherwise qfalse
 
+int		FS_PakIndexForHandle( fileHandle_t f );
+// returns pak index or -1 if file is not in pak
+int		fs_lastPakIndex;
+
 int		FS_Write( const void *buffer, int len, fileHandle_t f );
 
 int		FS_Read2( void *buffer, int len, fileHandle_t f );
