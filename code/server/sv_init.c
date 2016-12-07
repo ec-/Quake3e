@@ -386,6 +386,7 @@ static void SV_ClearServer( void ) {
 	}
 }
 
+
 /*
 ================
 SV_TouchCGame
@@ -393,16 +394,15 @@ SV_TouchCGame
   touch the cgame.vm so that a pure client can load it if it's in a seperate pk3
 ================
 */
-static void SV_TouchCGame(void) {
+static void SV_TouchCGame( void ) {
 	fileHandle_t	f;
-	char filename[MAX_QPATH];
 
-	Com_sprintf( filename, sizeof(filename), "vm/%s.qvm", "cgame" );
-	FS_FOpenFileRead( filename, &f, qfalse );
+	FS_FOpenFileRead( "vm/cgame.qvm", &f, qfalse );
 	if ( f != FS_INVALID_HANDLE ) {
 		FS_FCloseFile( f );
 	}
 }
+
 
 /*
 ================
