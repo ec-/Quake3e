@@ -57,7 +57,7 @@ static void SV_SendConfigstring(client_t *client, int index)
 			Q_strncpyz( buf, &sv.configstrings[index][sent],
 				maxChunkSize );
 
-			SV_SendServerCommand( client, "%s %i \"%s\"\n", cmd,
+			SV_SendServerCommand( client, "%s %i \"%s\"", cmd,
 				index, buf );
 
 			sent += (maxChunkSize - 1);
@@ -65,7 +65,7 @@ static void SV_SendConfigstring(client_t *client, int index)
 		}
 	} else {
 		// standard cs, just send it
-		SV_SendServerCommand( client, "cs %i \"%s\"\n", index,
+		SV_SendServerCommand( client, "cs %i \"%s\"", index,
 			sv.configstrings[index] );
 	}
 }
