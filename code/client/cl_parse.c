@@ -261,15 +261,15 @@ void CL_ParseSnapshot( msg_t *msg ) {
 	}
 
 	// read areamask
-	len = MSG_ReadByte( msg );
+	newSnap.areabytes = MSG_ReadByte( msg );
 	
-	if(len > sizeof(newSnap.areamask))
+	if ( newSnap.areabytes > sizeof(newSnap.areamask) )
 	{
-		Com_Error (ERR_DROP,"CL_ParseSnapshot: Invalid size %d for areamask", len);
+		Com_Error( ERR_DROP,"CL_ParseSnapshot: Invalid size %d for areamask", newSnap.areabytes );
 		return;
 	}
 	
-	MSG_ReadData( msg, &newSnap.areamask, len);
+	MSG_ReadData( msg, &newSnap.areamask, newSnap.areabytes );
 
 	// read playerinfo
 	SHOWNET( msg, "playerstate" );
@@ -322,6 +322,8 @@ void CL_ParseSnapshot( msg_t *msg ) {
 	}
 
 	cl.newSnapshots = qtrue;
+
+	clc.demoEventMask |= EM_SNAPSHOT;
 }
 
 
@@ -512,6 +514,8 @@ void CL_ParseGamestate( msg_t *msg ) {
 		}
 	}
 
+	clc.demoEventMask |= EM_GAMESTATE;
+
 	clc.clientNum = MSG_ReadLong(msg);
 	// read the checksum feed
 	clc.checksumFeed = MSG_ReadLong( msg );
@@ -675,6 +679,8 @@ void CL_ParseCommandString( msg_t *msg ) {
 			CL_Disconnect( qtrue );			
 		}
 	}
+
+	clc.demoEventMask |= EM_COMMAND;
 }
 
 

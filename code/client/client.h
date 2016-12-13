@@ -51,6 +51,7 @@ typedef struct {
 	int				messageNum;		// copied from netchan->incoming_sequence
 	int				deltaNum;		// messageNum the delta is from
 	int				ping;			// time from when cmdNum-1 was sent to time packet was reeceived
+	int				areabytes;
 	byte			areamask[MAX_MAP_AREA_BYTES];		// portalarea visibility bits
 
 	int				cmdNum;			// the next cmdNum the server is expecting
@@ -142,6 +143,10 @@ typedef struct {
 
 extern	clientActive_t		cl;
 
+#define EM_GAMESTATE 1
+#define EM_SNAPSHOT  2
+#define EM_COMMAND   4
+
 /*
 =============================================================================
 
@@ -153,7 +158,6 @@ demo through a file.
 
 =============================================================================
 */
-
 
 typedef struct {
 
@@ -211,12 +215,14 @@ typedef struct {
 
 	// demo information
 	char		demoName[MAX_QPATH];
+	char		recordName[MAX_QPATH];
 	qboolean	spDemoRecording;
 	qboolean	demorecording;
 	qboolean	demoplaying;
 	qboolean	demowaiting;	// don't record until a non-delta message is received
 	qboolean	firstDemoFrameSkipped;
 	fileHandle_t	demofile;
+	fileHandle_t	recordfile;
 
 	int		timeDemoFrames;		// counter of rendered frames
 	int		timeDemoStart;		// cls.realtime before first frame
@@ -229,6 +235,12 @@ typedef struct {
 	netchan_t	netchan;
 
 	qboolean compat;
+
+	// simultaneous demo playback and recording
+	int		demoEventMask;
+	int		demoCommandSequence;
+	int		demoDeltaNum;
+	int		demoMessageSequence;
 
 } clientConnection_t;
 
