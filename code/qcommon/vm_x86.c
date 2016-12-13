@@ -2394,28 +2394,25 @@ VM_CallCompiled
 This function is called directly by the generated code
 ==============
 */
-int	VM_CallCompiled( vm_t *vm, int *args )
+int	VM_CallCompiled( vm_t *vm, int nargs, int *args )
 {
 	int		opStack[MAX_OPSTACK_SIZE];
 	int		stackOnEntry;
 	int		*image;
-	//vm_t	*oldVM;
 	int		*oldOpTop;
 	int		i;
-
-	//oldVM = currentVM;
-	//currentVM = vm;
 
 	// we might be called recursively, so this might not be the very top
 	stackOnEntry = vm->programStack;
 	oldOpTop = vm->opStackTop;
-	vm->programStack -= 8 + (VMMAIN_CALL_ARGS*4);
+	vm->programStack -= 256; // reserve entire frame for effective compile-time LOCAL+LOAD* checks
 
 	// set up the stack frame 
 	image = (int*)( vm->dataBase + vm->programStack );
-	for ( i = 0; i < VMMAIN_CALL_ARGS; i++ ) {
+	for ( i = 0; i < nargs; i++ ) {
 		image[ i + 2 ] = args[ i ];
 	}
+
 	image[1] =  0;	// return stack
 	image[0] = -1;	// will terminate loop on return
 
@@ -2436,9 +2433,6 @@ int	VM_CallCompiled( vm_t *vm, int *args )
 
 	vm->programStack = stackOnEntry;
 	vm->opStackTop = oldOpTop;
-
-	// in case we were recursively called by another vm
-	//currentVM = oldVM;
 
 	return vm->opStack[0];
 }

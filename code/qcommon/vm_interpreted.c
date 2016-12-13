@@ -185,7 +185,7 @@ an OP_ENTER instruction, which will subtract space for
 locals from sp
 ==============
 */
-int	VM_CallInterpreted2( vm_t *vm, int *args ) {
+int	VM_CallInterpreted2( vm_t *vm, int nargs, int *args ) {
 	int		stack[MAX_OPSTACK_SIZE];
 	int		*opStack, *opStackTop;
 	int		programStack;
@@ -200,7 +200,7 @@ int	VM_CallInterpreted2( vm_t *vm, int *args ) {
 	int		i;
 
 	// interpret the code
-	vm->currentlyInterpreting = qtrue;
+	//vm->currentlyInterpreting = qtrue;
 
 	// we might be called recursively, so this might not be the very top
 	programStack = stackOnEntry = vm->programStack;
@@ -216,9 +216,9 @@ int	VM_CallInterpreted2( vm_t *vm, int *args ) {
 	opStack = stack;
 	opStackTop = stack + ARRAY_LEN( stack ) - 1;
 
-	programStack -= 8 + (VMMAIN_CALL_ARGS*4);
+	vm->programStack -= 256; // reserve entire frame for effective compile-time LOCAL+LOAD* checks
 	img = (int*)&image[ programStack ];
-	for ( i = 0; i < VMMAIN_CALL_ARGS; i++ ) {
+	for ( i = 0; i < nargs; i++ ) {
 		img[ i + 2 ] = args[ i ];
 	}
 	img[ 1 ] = 0; 	// return stack
@@ -617,7 +617,7 @@ nextInstruction2:
 	}
 
 done:
-	vm->currentlyInterpreting = qfalse;
+	//vm->currentlyInterpreting = qfalse;
 
 	if ( opStack != &stack[1] ) {
 		Com_Error( ERR_DROP, "Interpreter error: opStack = %ld", (long int) (opStack - stack) );

@@ -163,7 +163,7 @@ typedef enum {
 //	void	UI_Shutdown( void );
 
 	UI_KEY_EVENT,
-//	void	UI_KeyEvent( int key );
+//	void	UI_KeyEvent( int key, int down );
 
 	UI_MOUSE_EVENT,
 //	void	UI_MouseEvent( int dx, int dy );
@@ -182,10 +182,13 @@ typedef enum {
 
 	UI_DRAW_CONNECT_SCREEN,
 //	void	UI_DrawConnectScreen( qboolean overlay );
-	UI_HASUNIQUECDKEY
+
+	UI_HASUNIQUECDKEY,
 // if !overlay, the background will be drawn, otherwise it will be
 // overlayed over whatever the cgame has drawn.
 // a GetClientState syscall will be made to get the current strings
+	
+	UI_EXPORT_LAST,
 } uiExport_t;
 
 #endif

@@ -28,7 +28,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define	MAX_OPSTACK_SIZE	512
 #define	PROC_OPSTACK_SIZE	30
 
-#define VMMAIN_CALL_ARGS	13
+// we don't need more than 4 arguments (counting callnum) for vmMain, at least in Quake3
+#define MAX_VMMAIN_CALL_ARGS 4
 
 // don't change
 // Hardcoded in q3asm an reserved at end of bss
@@ -179,6 +180,8 @@ struct vm_s {
 	const char	*name;
 	vmIndex_t	index;
 
+	const int	*vmMainArgs;
+
 	// for dynamic linked modules
 	void		*dllHandle;
 	dllSyscall_t entryPoint;
@@ -186,7 +189,7 @@ struct vm_s {
 	void (*destroy)(vm_t* self);
 
 	// for interpreted modules
-	qboolean	currentlyInterpreting;
+	//qboolean	currentlyInterpreting;
 
 	qboolean	compiled;
 
@@ -217,10 +220,10 @@ struct vm_s {
 extern	int		vm_debugLevel;
 
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header );
-int	VM_CallCompiled( vm_t *vm, int *args );
+int	VM_CallCompiled( vm_t *vm, int nargs, int *args );
 
 qboolean VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header );
-int	VM_CallInterpreted2( vm_t *vm, int *args );
+int	VM_CallInterpreted2( vm_t *vm, int nargs, int *args );
 
 vmSymbol_t *VM_ValueToFunctionSymbol( vm_t *vm, int value );
 int VM_SymbolToValue( vm_t *vm, const char *symbol );

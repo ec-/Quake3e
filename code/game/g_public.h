@@ -400,7 +400,7 @@ typedef enum {
 	// The game should call G_GET_ENTITY_TOKEN to parse through all the
 	// entity configuration text and spawn gentities.
 
-	GAME_SHUTDOWN,	// (void);
+	GAME_SHUTDOWN,	// ( int restart );
 
 	GAME_CLIENT_CONNECT,	// ( int clientNum, qboolean firstTime, qboolean isBot );
 	// return NULL if the client is allowed to connect, otherwise return
@@ -424,6 +424,8 @@ typedef enum {
 	// The game can issue trap_argc() / trap_argv() commands to get the command
 	// and parameters.  Return qfalse if the game doesn't recognize it as a command.
 
-	BOTAI_START_FRAME				// ( int time );
+	BOTAI_START_FRAME,				// ( int time );
+
+	GAME_EXPORT_LAST
 } gameExport_t;
 

@@ -737,6 +737,17 @@ static intptr_t QDECL CL_DllSyscall( intptr_t arg, ... ) {
 #endif
 }
 
+static const int cg_vmMainArgs[ CG_EXPORT_LAST ] = {
+	4, // CG_INIT,	void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum )
+	1, // CG_SHUTDOWN, void (*CG_Shutdown)( void );
+	1, // CG_CONSOLE_COMMAND, qboolean (*CG_ConsoleCommand)( void );
+	4, // CG_DRAW_ACTIVE_FRAME, void (*CG_DrawActiveFrame)( int serverTime, stereoFrame_t stereoView, qboolean demoPlayback );
+	1, // CG_CROSSHAIR_PLAYER, int (*CG_CrosshairPlayer)( void );
+	1, // CG_LAST_ATTACKER, int (*CG_LastAttacker)( void );
+	3, // CG_KEY_EVENT, void	(*CG_KeyEvent)( int key, qboolean down );
+	3, // CG_MOUSE_EVENT, void	(*CG_MouseEvent)( int dx, int dy );
+	2  // CG_EVENT_HANDLING, void (*CG_EventHandling)(int type);
+};
 
 /*
 ====================
@@ -770,7 +781,7 @@ void CL_InitCGame( void ) {
 			interpret = VMI_COMPILED;
 	}
 
-	cgvm = VM_Create( VM_CGAME, CL_CgameSystemCalls, CL_DllSyscall, interpret );
+	cgvm = VM_Create( VM_CGAME, CL_CgameSystemCalls, CL_DllSyscall, cg_vmMainArgs, interpret );
 	if ( !cgvm ) {
 		Com_Error( ERR_DROP, "VM_Create on cgame failed" );
 	}

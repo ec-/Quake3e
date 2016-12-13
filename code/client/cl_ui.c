@@ -1147,6 +1147,19 @@ static intptr_t QDECL UI_DllSyscall( intptr_t arg, ... ) {
 #endif
 }
 
+static const int ui_vmMainArgs[ UI_EXPORT_LAST ] = {
+	1, // UI_GETAPIVERSION = 0
+	1, // UI_INIT, void	UI_Init( void );
+	1, // UI_SHUTDOWN, void	UI_Shutdown( void );
+	3, // UI_KEY_EVENT, void	UI_KeyEvent( int key, int down );
+	3, // UI_MOUSE_EVENT, void	UI_MouseEvent( int dx, int dy );
+	2, // UI_REFRESH, void	UI_Refresh( int time );
+	1, // UI_IS_FULLSCREEN, qboolean UI_IsFullscreen( void );
+	2, // UI_SET_ACTIVE_MENU, void UI_SetActiveMenu( uiMenuCommand_t menu );
+	2, // UI_CONSOLE_COMMAND, qboolean UI_ConsoleCommand( int realTime );
+	2, // UI_DRAW_CONNECT_SCREEN, void UI_DrawConnectScreen( qboolean overlay );
+	1  // UI_HASUNIQUECDKEY
+};
 
 /*
 ====================
@@ -1186,7 +1199,7 @@ void CL_InitUI( void ) {
 		interpret = VMI_COMPILED;
 	}
 
-	uivm = VM_Create( VM_UI, CL_UISystemCalls, UI_DllSyscall, interpret );
+	uivm = VM_Create( VM_UI, CL_UISystemCalls, UI_DllSyscall, ui_vmMainArgs, interpret );
 	if ( !uivm ) {
 		Com_Error( ERR_FATAL, "VM_Create on UI failed" );
 	}

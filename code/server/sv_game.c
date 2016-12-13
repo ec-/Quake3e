@@ -897,6 +897,20 @@ static intptr_t QDECL SV_DllSyscall( intptr_t arg, ... ) {
 #endif
 }
 
+static const int g_vmMainArgs[ GAME_EXPORT_LAST ] = {
+	4, // GAME_INIT, ( int levelTime, int randomSeed, int restart );
+	2, // GAME_SHUTDOWN, ( int restart );
+	4, // GAME_CLIENT_CONNECT, ( int clientNum, qboolean firstTime, qboolean isBot );
+	2, // GAME_CLIENT_BEGIN, ( int clientNum );
+	2, // GAME_CLIENT_USERINFO_CHANGED,	( int clientNum );
+	2, // GAME_CLIENT_DISCONNECT, ( int clientNum );
+	2, // GAME_CLIENT_COMMAND, ( int clientNum );
+	2, // GAME_CLIENT_THINK, ( int clientNum );
+	2, // GAME_RUN_FRAME, ( int levelTime );
+	1, // GAME_CONSOLE_COMMAND, ( void );
+	2  // BOTAI_START_FRAME	( int time );
+};
+
 
 /*
 ===============
@@ -987,7 +1001,7 @@ void SV_InitGameProgs( void ) {
 	}
 
 	// load the dll or bytecode
-	gvm = VM_Create( VM_GAME, SV_GameSystemCalls, SV_DllSyscall, Cvar_VariableValue( "vm_game" ) );
+	gvm = VM_Create( VM_GAME, SV_GameSystemCalls, SV_DllSyscall, g_vmMainArgs, Cvar_VariableValue( "vm_game" ) );
 	if ( !gvm ) {
 		Com_Error( ERR_FATAL, "VM_Create on game failed" );
 	}
