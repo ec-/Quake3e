@@ -256,9 +256,6 @@ PROTOCOL
 #define	NEW_PROTOCOL_VERSION	71
 // 1.31 - 67
 
-// force legacy extension for recorded demos:
-//#define FORCE_DM68_EXT
-
 
 // maintain a list of compatible protocols for demo playing
 // NOTE: that stuff only works with two digits protocols

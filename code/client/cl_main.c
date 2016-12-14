@@ -208,12 +208,29 @@ void CL_StopRecord_f( void ) {
 	int		len;
 
 	if ( clc.recordfile != FS_INVALID_HANDLE ) {
+		char tempName[MAX_QPATH];
+		char finalName[MAX_QPATH];
+		char finalExt[MAX_QPATH];
+		int protocol;
+
 		// finish up
 		len = -1;
 		FS_Write( &len, 4, clc.recordfile );
 		FS_Write( &len, 4, clc.recordfile );
 		FS_FCloseFile( clc.recordfile );
 		clc.recordfile = FS_INVALID_HANDLE;
+
+		// select proper extension
+		if ( clc.dm68compat || clc.demoplaying )
+			protocol = PROTOCOL_VERSION;
+		else
+			protocol = NEW_PROTOCOL_VERSION;
+
+		Com_sprintf( finalExt, sizeof( finalExt), ".%s%d", DEMOEXT, protocol );
+		Com_sprintf( finalName, sizeof( finalName ), "%s%s", clc.recordName, finalExt );
+		Com_sprintf( tempName, sizeof( tempName ), "%s.tmp", clc.recordName );
+
+		FS_Rename( tempName, finalName );
 	}
 
 	if ( !clc.demorecording ) {
@@ -224,30 +241,6 @@ void CL_StopRecord_f( void ) {
 
 	clc.demorecording = qfalse;
 	clc.spDemoRecording = qfalse;
-}
-
-
-/* 
-================== 
-CL_DemoFilename
-================== 
-*/  
-void CL_DemoFilename( int number, char *fileName, int fileNameSize ) {
-	int		a,b,c,d;
-
-	if(number < 0 || number > 9999)
-		number = 9999;
-
-	a = number / 1000;
-	number -= a*1000;
-	b = number / 100;
-	number -= b*100;
-	c = number / 10;
-	number -= c*10;
-	d = number;
-
-	Com_sprintf( fileName, fileNameSize, "demo%i%i%i%i"
-		, a, b, c, d );
 }
 
 
@@ -332,6 +325,7 @@ static void CL_WriteGamestate( qboolean initial )
 		MSG_WriteDeltaEntity( &msg, &nullstate, ent, qtrue );
 	}
 
+	// finalize message
 	MSG_WriteByte( &msg, svc_EOF );
 	
 	// finished writing the gamestate stuff
@@ -470,6 +464,7 @@ static void CL_WriteSnapshot( void ) {
 		MSG_WriteDeltaPlayerstate( &msg, &oldSnap->ps, &snap->ps );
 	else
 		MSG_WriteDeltaPlayerstate( &msg, NULL, &snap->ps );
+
 	CL_EmitPacketEntities( oldSnap, snap, &msg, saved_ents );
 
 	// finished writing the client packet
@@ -510,7 +505,9 @@ Begins recording a demo from the current position
 static char		demoName[MAX_QPATH];	// compiler bug workaround
 void CL_Record_f( void ) {
 	char		name[MAX_OSPATH];
-	char		*s;
+	char		demoExt[16];
+	const char	*ext;
+	int			number;
 
 	if ( Cmd_Argc() > 2 ) {
 		Com_Printf( "record <demoname>\n" );
@@ -535,43 +532,51 @@ void CL_Record_f( void ) {
 	}
 
 	if ( Cmd_Argc() == 2 ) {
-		s = Cmd_Argv(1);
-		Q_strncpyz( demoName, s, sizeof( demoName ) );
-#ifdef FORCE_DM68_EXT
-		Com_sprintf(name, sizeof(name), "demos/%s.%s%d", demoName, DEMOEXT, PROTOCOL_VERSION );
-#else
-		if ( clc.compat )
-			Com_sprintf(name, sizeof(name), "demos/%s.%s%d", demoName, DEMOEXT, PROTOCOL_VERSION );
-		else
-			Com_sprintf(name, sizeof(name), "demos/%s.%s%d", demoName, DEMOEXT, NEW_PROTOCOL_VERSION );
-#endif
+		// explicit demo name specified
+		Q_strncpyz( demoName, Cmd_Argv( 1 ), sizeof( demoName ) );
+		ext = COM_GetExtension( demoName );
+		if ( *ext ) {
+			sprintf( demoExt, "%s%d", DEMOEXT, PROTOCOL_VERSION );
+			if ( Q_stricmp( ext, demoExt ) == 0 ) {
+				*(strrchr( demoName, '.' )) = '\0';
+			} else {
+				// check both protocols
+				sprintf( demoExt, "%s%d", DEMOEXT, NEW_PROTOCOL_VERSION );
+				if ( Q_stricmp( ext, demoExt ) == 0 ) {
+					*(strrchr( demoName, '.' )) = '\0';
+				}
+			}
+		}
+		Com_sprintf( name, sizeof( name ), "demos/%s", demoName );
 	} else {
-		int		number;
 
 		// scan for a free demo name
 		for ( number = 0 ; number <= 9999 ; number++ ) {
-			CL_DemoFilename( number, demoName, sizeof( demoName ) );
-#ifdef FORCE_DM68_EXT
-			Com_sprintf(name, sizeof(name), "demos/%s.%s%d", demoName, DEMOEXT, PROTOCOL_VERSION );
-#else
-			if ( clc.compat )
-				Com_sprintf(name, sizeof(name), "demos/%s.%s%d", demoName, DEMOEXT, PROTOCOL_VERSION );
-			else
-				Com_sprintf(name, sizeof(name), "demos/%s.%s%d", demoName, DEMOEXT, NEW_PROTOCOL_VERSION );
-#endif
-
-			if (!FS_FileExists(name))
-				break;	// file doesn't exist
+			Com_sprintf( name, sizeof( name ), "demos/demo%04d.%s%d", number, DEMOEXT, PROTOCOL_VERSION );
+			if ( !FS_FileExists( name ) ) {
+				// check both protocols
+				Com_sprintf( name, sizeof( name ), "demos/demo%04d.%s%d", number, DEMOEXT, NEW_PROTOCOL_VERSION );
+				if ( !FS_FileExists( name ) ) {
+					break;	// file doesn't exist
+				}
+			}
 		}
+		Com_sprintf( name, sizeof( name ), "demos/demo%04d", number );
 	}
 
-	// open the demo file
+	// save desired filename without extension
+	Q_strncpyz( clc.recordName, name, sizeof( clc.recordName ) );
 
+	// start new record with temporary extension
+	Q_strcat( name, sizeof( name ), ".tmp" );
+
+	// open the demo file
 	Com_Printf( "recording to %s.\n", name );
 
 	clc.recordfile = FS_FOpenFileWrite( name );
 	if ( clc.recordfile == FS_INVALID_HANDLE ) {
 		Com_Printf( "ERROR: couldn't open.\n" );
+		clc.recordName[0] = '\0';
 		return;
 	}
 
@@ -583,10 +588,11 @@ void CL_Record_f( void ) {
 	  clc.spDemoRecording = qfalse;
 	}
 
-	Q_strncpyz( clc.recordName, demoName, sizeof( clc.recordName ) );
-
 	// don't start saving messages until a non-delta compressed message is received
 	clc.demowaiting = qtrue;
+
+	// we will rename record to dm_68 or dm_71 depending from this flag
+	clc.dm68compat = qtrue;
 
 	// write out the gamestate message
 	CL_WriteGamestate( qtrue );

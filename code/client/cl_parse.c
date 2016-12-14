@@ -201,7 +201,6 @@ for any reason, no changes to the state will be made at all.
 ================
 */
 void CL_ParseSnapshot( msg_t *msg ) {
-	int			len;
 	clSnapshot_t	*old;
 	clSnapshot_t	newSnap;
 	int			deltaNum;
@@ -731,7 +730,7 @@ void CL_ParseServerMessage( msg_t *msg ) {
 			}
 		}
 	
-	// other commands
+		// other commands
 		switch ( cmd ) {
 		default:
 			Com_Error (ERR_DROP,"CL_ParseServerMessage: Illegible server message");
@@ -751,15 +750,21 @@ void CL_ParseServerMessage( msg_t *msg ) {
 			CL_ParseDownload( msg );
 			break;
 		case svc_voipSpeex: // ioq3 extension
+			clc.dm68compat = qfalse;
 #ifdef USE_VOIP
 			CL_ParseVoip( msg, qtrue );
-#endif
 			break;
+#else
+			return;
+#endif
 		case svc_voipOpus: // ioq3 extension
+			clc.dm68compat = qfalse;
 #ifdef USE_VOIP
 			CL_ParseVoip( msg, !clc.voipEnabled );
-#endif
 			break;
+#else
+			return;
+#endif
 		}
 	}
 }

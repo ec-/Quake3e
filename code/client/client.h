@@ -215,7 +215,8 @@ typedef struct {
 
 	// demo information
 	char		demoName[MAX_QPATH];
-	char		recordName[MAX_QPATH];
+	char		recordName[MAX_QPATH]; // without extension
+	qboolean	dm68compat;
 	qboolean	spDemoRecording;
 	qboolean	demorecording;
 	qboolean	demoplaying;
