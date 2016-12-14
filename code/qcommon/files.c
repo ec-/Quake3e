@@ -4302,4 +4302,3 @@ const char *FS_GetGamePath( void )
 		return "";
 	}
 }
-

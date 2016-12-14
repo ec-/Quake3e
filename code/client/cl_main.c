@@ -205,13 +205,12 @@ stop recording a demo
 ====================
 */
 void CL_StopRecord_f( void ) {
-	int		len;
 
 	if ( clc.recordfile != FS_INVALID_HANDLE ) {
 		char tempName[MAX_QPATH];
 		char finalName[MAX_QPATH];
-		char finalExt[MAX_QPATH];
 		int protocol;
+		int	len;
 
 		// finish up
 		len = -1;
@@ -226,8 +225,7 @@ void CL_StopRecord_f( void ) {
 		else
 			protocol = NEW_PROTOCOL_VERSION;
 
-		Com_sprintf( finalExt, sizeof( finalExt), ".%s%d", DEMOEXT, protocol );
-		Com_sprintf( finalName, sizeof( finalName ), "%s%s", clc.recordName, finalExt );
+		Com_sprintf( finalName, sizeof( finalName ), "%s.%s%d", clc.recordName, DEMOEXT, protocol );
 		Com_sprintf( tempName, sizeof( tempName ), "%s.tmp", clc.recordName );
 
 		FS_Rename( tempName, finalName );
@@ -2777,8 +2775,8 @@ void CL_Frame ( int msec ) {
 		}
 	}
 	
-	if( cl_autoRecordDemo->integer ) {
-		if( cls.state == CA_ACTIVE && !clc.demorecording && !clc.demoplaying ) {
+	if ( cl_autoRecordDemo->integer && !clc.demoplaying ) {
+		if ( cls.state == CA_ACTIVE && !clc.demorecording ) {
 			// If not recording a demo, and we should be, start one
 			qtime_t	now;
 			const char	*nowString;
