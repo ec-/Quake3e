@@ -1,5 +1,5 @@
---- curl-7.50.0/lib/file.c
-+++ curl-7.50.0/lib/file.c
+--- curl-7.51.0/lib/file.c
++++ curl-7.51.0/lib/file.c
 @@ -82,6 +82,7 @@
   */
  
@@ -20,7 +20,7 @@
    ZERO_NULL,                            /* proto_getsock */
    ZERO_NULL,                            /* doing_getsock */
    ZERO_NULL,                            /* domore_getsock */
-@@ -478,12 +483,12 @@ static CURLcode file_do(struct connectda
+@@ -479,12 +484,12 @@ static CURLcode file_do(struct connectda
      snprintf(buf, sizeof(data->state.buffer),
               "Content-Length: %" CURL_FORMAT_CURL_OFF_T "\r\n", expected_size);
      result = Curl_client_write(conn, CLIENTWRITE_BOTH, buf, 0);
@@ -35,7 +35,7 @@
        return result;
  
      filetime = (time_t)statbuf.st_mtime;
-@@ -578,7 +583,7 @@ static CURLcode file_do(struct connectda
+@@ -579,7 +584,7 @@ static CURLcode file_do(struct connectda
        expected_size -= nread;
  
      result = Curl_client_write(conn, CLIENTWRITE_BODY, buf, nread);
@@ -44,7 +44,7 @@
        return result;
  
      Curl_pgrsSetDownloadCounter(data, bytecount);
-@@ -587,6 +592,17 @@ static CURLcode file_do(struct connectda
+@@ -588,6 +593,17 @@ static CURLcode file_do(struct connectda
        result = CURLE_ABORTED_BY_CALLBACK;
      else
        result = Curl_speedcheck(data, now);
@@ -62,7 +62,7 @@
    }
    if(Curl_pgrsUpdate(conn))
      result = CURLE_ABORTED_BY_CALLBACK;
-@@ -594,4 +610,126 @@ static CURLcode file_do(struct connectda
+@@ -595,4 +611,126 @@ static CURLcode file_do(struct connectda
    return result;
  }
  
@@ -189,17 +189,17 @@
 +#endif // WIN32
 +
  #endif
---- curl-7.50.0/lib/url.c
-+++ curl-7.50.0/lib/url.c
-@@ -4092,6 +4092,7 @@ static CURLcode parseurlandfillconn(stru
+--- curl-7.51.0/lib/url.c
++++ curl-7.51.0/lib/url.c
+@@ -4049,6 +4049,7 @@ static CURLcode parseurlandfillconn(stru
    if((2 == sscanf(data->change.url, "%15[^:]:%[^\n]",
                    protobuf, path)) &&
-      Curl_raw_equal(protobuf, "file")) {
+      strcasecompare(protobuf, "file")) {
 +#ifndef WIN32
      if(path[0] == '/' && path[1] == '/') {
        /* Allow omitted hostname (e.g. file:/<path>).  This is not strictly
         * speaking a valid file: URL by RFC 1738, but treating file:/<path> as
-@@ -4136,7 +4137,7 @@ static CURLcode parseurlandfillconn(stru
+@@ -4093,7 +4094,7 @@ static CURLcode parseurlandfillconn(stru
          memmove(path, ptr, strlen(ptr)+1);
        }
      }

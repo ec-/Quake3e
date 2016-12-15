@@ -68,7 +68,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib libcurl.lib ws2_32.lib"
+				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib"
 				OutputFile="$(OutDir)\quake3de.ded-debug.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -107,7 +107,7 @@
 		<Configuration
 			Name="Debug|x64"
 			OutputDirectory=".\output"
-			IntermediateDirectory=".\build_x64\quake3ded_debug"
+			IntermediateDirectory=".\build\quake3ded_debug_x64"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -155,7 +155,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib libcurl.lib ws2_32.lib"
+				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib"
 				OutputFile="$(OutDir)\quake3de.ded-debug.x64.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -276,7 +276,7 @@
 		<Configuration
 			Name="Release|x64"
 			OutputDirectory=".\output"
-			IntermediateDirectory=".\build_x64\quake3ded_release"
+			IntermediateDirectory=".\build\quake3ded_release_x64"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -514,10 +514,6 @@
 			</File>
 			<File
 				RelativePath="..\..\cgame\cg_public.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\client\cl_curl.h"
 				>
 			</File>
 			<File

@@ -82,8 +82,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory=".\build_x64\botlib_release"
-			IntermediateDirectory=".\build_x64\botlib_release"
+			OutputDirectory=".\build\botlib_release_x64"
+			IntermediateDirectory=".\build\botlib_release_x64"
 			ConfigurationType="4"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -218,8 +218,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory=".\build_x64\botlib_debug"
-			IntermediateDirectory=".\build_x64\botlib_debug"
+			OutputDirectory=".\build\botlib_debug_x64"
+			IntermediateDirectory=".\build\botlib_debug_x64"
 			ConfigurationType="4"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"

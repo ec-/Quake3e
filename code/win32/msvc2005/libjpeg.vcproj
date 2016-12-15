@@ -79,8 +79,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory=".\build_x64\libjpeg_debug"
-			IntermediateDirectory=".\build\libjpeg_debug"
+			OutputDirectory=".\build\libjpeg_debug_x64"
+			IntermediateDirectory=".\build\libjpeg_debug_x64"
 			ConfigurationType="4"
 			CharacterSet="2"
 			>
@@ -139,8 +139,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\build\libjpeg_release"
-			IntermediateDirectory=".\build\libjpeg_release"
+			OutputDirectory=".\build\release_libjpeg"
+			IntermediateDirectory=".\build\release_libjpeg"
 			ConfigurationType="4"
 			CharacterSet="2"
 			WholeProgramOptimization="1"
@@ -199,8 +199,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory=".\build_x64\libjpeg_release"
-			IntermediateDirectory=".\build_x64\libjpeg_release"
+			OutputDirectory=".\build\libjpeg_release_x64"
+			IntermediateDirectory=".\build\libjpeg_release_x64"
 			ConfigurationType="4"
 			CharacterSet="2"
 			WholeProgramOptimization="1"
