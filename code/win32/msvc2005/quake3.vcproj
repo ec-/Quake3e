@@ -532,6 +532,30 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\asm\snd_mix_x64.asm"
+				>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Assembling..."
+						CommandLine="ml64 /c /Zi /Fo&quot;$(IntDir)\$(InputFileName).obj&quot; $(InputPath)&#x0D;&#x0A;"
+						Outputs="$(IntDir)\$(InputFileName).obj"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Assembling..."
+						CommandLine="ml64 /c /Zi /Fo&quot;$(IntDir)\$(InputFileName).obj&quot; $(InputPath)&#x0D;&#x0A;"
+						Outputs="$(IntDir)\$(InputFileName).obj"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\..\client\snd_wavelet.c"
 				>
 			</File>

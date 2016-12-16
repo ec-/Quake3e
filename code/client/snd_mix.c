@@ -261,10 +261,13 @@ LExit:
 } // __asm
 }
 
-
 #endif // _WIN32
 
 #endif // id386
+
+#if idx64 && defined (_MSC_VER)
+void S_WriteLinearBlastStereo16_SSE_x64( int*, short*, int );
+#endif
 
 void S_TransferStereo16( unsigned long *pbuf, int endtime )
 {
@@ -296,7 +299,11 @@ void S_TransferStereo16( unsigned long *pbuf, int endtime )
 			S_WriteLinearBlastStereo16_MMX();
 		else 
 #endif
+#if idx64 && defined (_MSC_VER)
+		S_WriteLinearBlastStereo16_SSE_x64( snd_p, snd_out, snd_linear_count );
+#else
 		S_WriteLinearBlastStereo16();
+#endif
 		snd_p += snd_linear_count;
 		ls_paintedtime += (snd_linear_count>>1);
 
