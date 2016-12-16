@@ -1,7 +1,7 @@
 
 ; this is mostly copy-pasted x86-version with x86_64-related fixes and comments
 ; runs about 4x times faster than C version 
-; saves about 3M ticks each frame
+; saves about 3M ticks each second
 
 .code
 
