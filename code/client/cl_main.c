@@ -479,7 +479,7 @@ static void CL_WriteSnapshot( void ) {
 	FS_Write( &len, 4, clc.recordfile );
 	FS_Write( msg.data, msg.cursize, clc.recordfile );
 
-	// save last sent state
+	// save last sent state so if there any need - we can skip any further incoming messages
 	for ( i = 0; i < snap->numEntities; i++ )
 		saved_ents[ i ] = cl.parseEntities[ (snap->parseEntitiesNum + i) % MAX_PARSE_ENTITIES ];
 
@@ -565,12 +565,12 @@ void CL_Record_f( void ) {
 	// save desired filename without extension
 	Q_strncpyz( clc.recordName, name, sizeof( clc.recordName ) );
 
+	Com_Printf( "recording to %s.\n", name );
+
 	// start new record with temporary extension
 	Q_strcat( name, sizeof( name ), ".tmp" );
 
 	// open the demo file
-	Com_Printf( "recording to %s.\n", name );
-
 	clc.recordfile = FS_FOpenFileWrite( name );
 	if ( clc.recordfile == FS_INVALID_HANDLE ) {
 		Com_Printf( "ERROR: couldn't open.\n" );

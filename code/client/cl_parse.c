@@ -652,7 +652,7 @@ when it transitions a snapshot
 =====================
 */
 void CL_ParseCommandString( msg_t *msg ) {
-	const char *s, *text;
+	const char *s;
 	int		seq;
 	int		index;
 
@@ -671,8 +671,13 @@ void CL_ParseCommandString( msg_t *msg ) {
 	index = seq & (MAX_RELIABLE_COMMANDS-1);
 	Q_strncpyz( clc.serverCommands[ index ], s, sizeof( clc.serverCommands[ index ] ) );
 
+	
+#ifdef USE_CURL
+	if ( !clc.cURLUsed )
+#endif
 	// -EC- : we may stuck on downloading because of non-working cgvm, so handle "disconnect" here
 	if ( cls.state == CA_CONNECTED && clc.download != FS_INVALID_HANDLE && !cgvm ) {
+		const char *text;
 		Cmd_TokenizeString( s );
 		if ( !Q_stricmp( Cmd_Argv(0), "disconnect" ) ) {
 			text = ( Cmd_Argc() > 1 ) ? va( "Server disconnected: %s", Cmd_Argv( 1 ) ) : "Server disconnected.";
