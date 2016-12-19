@@ -1130,7 +1130,7 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 
 	//Com_Printf( S_COLOR_GREEN "[%s] crc: %08x, ic: %i, dl: %i\n", vm->name, vm->crc32sum, vm->instructionCount, vm->dataLength );
 	if ( vm->index == VM_CGAME ) {
-		if ( vm->crc32sum == 0x3E93FC1A && vm->instructionCount == 123596 && vm->dataLength == 2007536 ) {
+		if ( vm->crc32sum == 0x3E93FC1A && vm->instructionCount == 123596 && vm->dataLength == 2007792 ) {
 			ip = buf + 110190;
 			if ( ip->op == OP_ENTER && (ip+183)->op == OP_LEAVE && ip->value == (ip+183)->value ) {
 				ip++;
@@ -1143,7 +1143,7 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 			}
 		} 
 		else
-		if ( vm->crc32sum == 0xF0F1AE90 && vm->instructionCount == 123552 && vm->dataLength == 2007520 ) {
+		if ( vm->crc32sum == 0xF0F1AE90 && vm->instructionCount == 123552 && vm->dataLength == 2007776 ) {
 			ip = buf + 110177;
 			if ( ip->op == OP_ENTER && (ip+183)->op == OP_LEAVE && ip->value == (ip+183)->value ) {
 				ip++;
