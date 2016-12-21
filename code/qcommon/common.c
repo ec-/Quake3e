@@ -2837,7 +2837,11 @@ void Com_Init( char *commandLine ) {
 	Com_InitPushEvent();
 
 	Com_InitSmallZoneMemory();
-	Cvar_Init ();
+	Cvar_Init();
+
+#if defined(_WIN32) && defined(_DEBUG)
+	com_noErrorInterrupt = Cvar_Get( "com_noErrorInterrupt", "0", 0 );
+#endif
 
 #ifdef DEFAULT_GAME
 	Cvar_Set( "fs_game", DEFAULT_GAME );
@@ -2929,10 +2933,6 @@ void Com_Init( char *commandLine ) {
 
 #ifndef DEDICATED
 	com_skipIdLogo  = Cvar_Get( "com_skipIdLogo", "0", CVAR_ARCHIVE);
-#endif
-
-#if defined(_WIN32) && defined(_DEBUG)
-	com_noErrorInterrupt = Cvar_Get( "com_noErrorInterrupt", "0", 0 );
 #endif
 
 	if ( com_dedicated->integer ) {

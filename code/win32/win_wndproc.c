@@ -355,9 +355,23 @@ BOOL Win_CheckHotkeyMod( void ) {
  	return TRUE;
 }
 
+static int GetTimerMsec( void ) {
+	int msec;
+	if ( com_maxfps->integer > 0 ) {
+		msec = 1000 / com_maxfps->integer;
+		if ( msec < 1 )
+			msec = 1;
+	} else {
+		msec = 16; // 62.5fps
+	}
+	return msec;
+
+}
 
 LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam )
 {
+	#define TIMER_ID 10
+	static UINT uTimerID;
 	static qboolean flip = qtrue;
 	int zDelta, i;
 	BOOL fActive;
@@ -576,6 +590,24 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		}
 		break;
 
+	case WM_ENTERSIZEMOVE:
+		if ( uTimerID == 0 ) {
+			uTimerID = SetTimer( g_wv.hWnd, TIMER_ID, GetTimerMsec(), NULL );
+		}
+		break;
+
+	case WM_EXITSIZEMOVE:
+		if ( uTimerID != 0 ) {
+			KillTimer( g_wv.hWnd, uTimerID );
+			uTimerID = 0;
+		}
+		break;
+
+	case WM_TIMER:
+		if ( wParam == TIMER_ID && uTimerID != 0 )
+			Com_Frame( clc.demoplaying );
+		break;
+
 // this is complicated because Win32 seems to pack multiple mouse events into
 // one update sometimes, so we always check all states and look for events
 	case WM_LBUTTONDOWN:
@@ -671,6 +703,13 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			return 0;
 		if ( wParam == SC_MINIMIZE && CL_VideoRecording() )
 			return 0;
+
+		// simulate drag move to avoid ~500ms delay between DefWindowProc() and further WM_ENTERSIZEMOVE
+		if ( wParam == SC_MOVE + HTCAPTION ) 
+		{
+			mouse_event( MOUSEEVENTF_MOVE | MOUSEEVENTF_LEFTDOWN, 7, 0, 0, 0 );
+			mouse_event( MOUSEEVENTF_MOVE | MOUSEEVENTF_LEFTDOWN, (DWORD)-7, 0, 0, 0 );
+		}
 		break;
 
 	case WM_HOTKEY:

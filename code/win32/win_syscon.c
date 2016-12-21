@@ -27,7 +27,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define COPY_ID			1
 #define QUIT_ID			2
 #define CLEAR_ID		3
-#define TIMER_ID		4
+#define ERROR_TIMER_ID	4
+
+#define CON_TIMER_ID	5
+#define BUF_TIMER_ID	6
 
 #define ERRORBOX_ID		10
 #define ERRORTEXT_ID	11
@@ -88,6 +91,7 @@ typedef struct
 	
 	WNDPROC		SysInputLineWndProc;
 	WNDPROC		SysStatusWndProc;
+	WNDPROC		SysBufferWndProc;
 
 	qboolean	newline;
 
@@ -101,7 +105,6 @@ static int conCache = 0;
 
 void Conbuf_BeginPrint( void );
 void Conbuf_EndPrint( void );
-
 
 static void ConClear( void ) 
 {
@@ -125,10 +128,38 @@ static int GetStatusBarHeight( void )
 	return (rect.bottom-rect.top+1);
 }
 
+static int GetTimerMsec( void ) 
+{
+	int msec;
+	if ( !com_sv_running || Cvar_VariableIntegerValue( "sv_fps" ) == 0 ) {
+		msec = 50; // 20fps
+	} else {
+		msec = 1000 / Cvar_VariableIntegerValue( "sv_fps" );
+		if ( msec < 1 )
+			msec = 1;
+	}
+#ifndef DEDICATED
+	if ( com_cl_running ) {
+		if ( com_maxfps->integer ) {
+			msec = 1000 / com_maxfps->integer;
+			if ( msec < 1 )
+				msec = 1;
+		}
+		if ( Cvar_VariableIntegerValue( "com_maxfpsUnfocused" ) ) {
+			msec = 1000 / Cvar_VariableIntegerValue( "com_maxfpsUnfocused" );
+			if ( msec < 1 )
+				msec = 1;
+		}
+	}
+#endif
+	return msec;
+}
+
 static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	char *cmdString;
 	static qboolean s_timePolarity;
+	static UINT conTimerID;
 
 	switch ( uMsg )
 	{
@@ -286,20 +317,90 @@ static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			return TRUE;
 		}
 
+	case WM_SYSCOMMAND:
+		// simulate drag move to avoid ~500ms delay between DefWindowProc() and further WM_ENTERSIZEMOVE
+		if ( wParam == SC_MOVE + HTCAPTION ) 
+		{
+			mouse_event( MOUSEEVENTF_MOVE | MOUSEEVENTF_LEFTDOWN, 7, 0, 0, 0 );
+			mouse_event( MOUSEEVENTF_MOVE | MOUSEEVENTF_LEFTDOWN, (DWORD)-7, 0, 0, 0 );
+		}
+		break;
+
+	case WM_ENTERSIZEMOVE: 
+		if ( conTimerID == 0 ) {
+			conTimerID = SetTimer( s_wcd.hWnd, CON_TIMER_ID, GetTimerMsec(), NULL );
+		}
+		break;
+
+	case WM_EXITSIZEMOVE:
+		if ( conTimerID != 0 ) {
+			KillTimer( s_wcd.hWnd, conTimerID );
+			conTimerID = 0;
+		}
+		break;
+
 	case WM_TIMER:
-		if ( wParam == TIMER_ID )
+		if ( wParam == ERROR_TIMER_ID )
 		{
 			s_timePolarity = !s_timePolarity;
 			if ( s_wcd.hwndErrorBox )
 			{
 				InvalidateRect( s_wcd.hwndErrorBox, NULL, FALSE );
 			}
+		} 
+		else if ( wParam == CON_TIMER_ID && conTimerID != 0 ) 
+		{
+#ifdef DEDICATED
+			Com_Frame( qfalse );
+#else
+			Com_Frame( clc.demoplaying );
+#endif
 		}
 		break;
-    }
 
+	case WM_CONTEXTMENU:
+			return 0;
+    }
+	
     return DefWindowProc( hWnd, uMsg, wParam, lParam );
 }
+
+
+static LRESULT WINAPI BufferWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+{
+	static UINT bufTimerID;
+	switch ( uMsg )
+	{
+	case WM_CAPTURECHANGED:
+		if ( (HWND)lParam == hWnd ) {
+			if ( bufTimerID == 0 )
+				bufTimerID = SetTimer( hWnd, BUF_TIMER_ID, GetTimerMsec(), NULL );
+		} else {
+			if ( bufTimerID != 0 ) { 
+				KillTimer( hWnd, bufTimerID );
+				bufTimerID = 0;
+			}
+		}
+		return 0;
+
+	case WM_TIMER:
+		if ( wParam == BUF_TIMER_ID && bufTimerID != 0 ) 
+		{
+#ifdef DEDICATED
+			Com_Frame( qfalse );
+#else
+			Com_Frame( clc.demoplaying );
+#endif
+		}
+		return 0;
+	
+	case WM_CONTEXTMENU:
+		return 0;
+	}
+
+	return CallWindowProc( s_wcd.SysBufferWndProc, hWnd, uMsg, wParam, lParam );
+}
+
 
 LONG WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
@@ -482,8 +583,10 @@ LONG WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			SendMessage( hWnd, EM_SETSEL, console.cursor, console.cursor );
 			return 0;
 		}
-
 		break;
+
+	case WM_CONTEXTMENU:
+		return 0;
 	}
 
 	return CallWindowProc( s_wcd.SysInputLineWndProc, hWnd, uMsg, wParam, lParam );
@@ -652,6 +755,7 @@ void Sys_CreateConsole( char *title )
 
 	s_wcd.SysInputLineWndProc = ( WNDPROC ) SetWindowLongPtr( s_wcd.hwndInputLine, GWLP_WNDPROC, ( LONG_PTR ) InputLineWndProc );
 	s_wcd.SysStatusWndProc = ( WNDPROC ) SetWindowLongPtr( s_wcd.hwndStatusBar, GWLP_WNDPROC, ( LONG_PTR ) StatusWndProc );
+	s_wcd.SysBufferWndProc = ( WNDPROC ) SetWindowLongPtr( s_wcd.hwndBuffer, GWLP_WNDPROC, ( LONG_PTR ) BufferWndProc );
 
 	if ( title && *title ) {
 		SetWindowText( s_wcd.hWnd, AtoW( title ) );
@@ -912,7 +1016,7 @@ void Sys_SetErrorText( const char *buf )
 	EnableWindow( s_wcd.hwndButtonClear, FALSE );
 
 	s_wcd.hbrErrorBackground = CreateSolidBrush( ERROR_BG_COLOR );
-	SetTimer( s_wcd.hWnd, TIMER_ID, 1000, NULL );
+	SetTimer( s_wcd.hWnd, ERROR_TIMER_ID, 1000, NULL );
 
 	sth = GetStatusBarHeight();
 	GetClientRect( s_wcd.hWnd, &rect );
