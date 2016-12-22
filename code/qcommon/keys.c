@@ -619,13 +619,11 @@ Key_Bindlist_f
 void Key_Bindlist_f( void ) {
 	int		i;
 
-	Sys_BeginPrint();
 	for ( i = 0 ; i < MAX_KEYS ; i++ ) {
 		if ( keys[i].binding && keys[i].binding[0] ) {
 			Com_Printf( "%s \"%s\"\n", Key_KeynumToString(i), keys[i].binding );
 		}
 	}
-	Sys_EndPrint();
 }
 
 /*

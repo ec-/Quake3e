@@ -2912,8 +2912,6 @@ void FS_Path_f( void ) {
 	searchpath_t	*s;
 	int				i;
 
-	Sys_BeginPrint(); // cache output
-
 	Com_Printf( "Current search path:\n" );
 	for ( s = fs_searchpaths; s; s = s->next ) {
 		if ( s->pack ) {
@@ -2937,8 +2935,6 @@ void FS_Path_f( void ) {
 			Com_Printf( "handle %i: %s\n", i, fsh[i].name );
 		}
 	}
-
-	Sys_EndPrint(); // flush
 }
 
 /*

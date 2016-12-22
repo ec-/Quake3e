@@ -3210,11 +3210,10 @@ void R_InitShaders( void ) {
 	ri.Printf( PRINT_ALL, "Initializing Shaders\n" );
 
 	Com_Memset(hashTable, 0, sizeof(hashTable));
-	Sys_BeginPrint();
+
 	CreateInternalShaders();
 
 	ScanAndLoadShaderFiles();
 
 	CreateExternalShaders();
-	Sys_EndPrint();
 }

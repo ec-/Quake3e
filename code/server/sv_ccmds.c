@@ -299,7 +299,6 @@ static void SV_MapRestart_f( void ) {
 
 	SV_RestartGameProgs();
 
-	Sys_BeginPrint();
 	// run a few frames to allow everything to settle
 	for (i = 0; i < 3; i++)
 	{
@@ -307,7 +306,6 @@ static void SV_MapRestart_f( void ) {
 		sv.time += 100;
 		svs.time += 100;
 	}
-	Sys_EndPrint();
 
 	sv.state = SS_GAME;
 	sv.restarting = qfalse;
@@ -1126,8 +1124,6 @@ static void SV_Status_f( void ) {
 		return;
 	}
 
-	Sys_BeginPrint();
-
 	Com_Printf ("map: %s\n", sv_mapname->string );
 
 	Com_Printf ("cl score ping name            address                                 rate \n");
@@ -1179,9 +1175,8 @@ static void SV_Status_f( void ) {
 		Com_Printf ("\n");
 	}
 	Com_Printf ("\n");
-
-	Sys_EndPrint();
 }
+
 
 /*
 ==================
@@ -1241,10 +1236,8 @@ static void SV_Serverinfo_f( void ) {
 		Com_Printf( "Server is not running.\n" );
 		return;
 	}
-	Sys_BeginPrint();
 	Com_Printf ("Server info settings:\n");
 	Info_Print ( Cvar_InfoString( CVAR_SERVERINFO ) );
-	Sys_EndPrint();
 }
 
 
@@ -1261,10 +1254,8 @@ static void SV_Systeminfo_f( void ) {
 		Com_Printf( "Server is not running.\n" );
 		return;
 	}
-	Sys_BeginPrint();
 	Com_Printf ("System info settings:\n");
 	Info_Print ( Cvar_InfoString_Big( CVAR_SYSTEMINFO ) );
-	Sys_EndPrint();
 }
 
 
@@ -1294,11 +1285,9 @@ static void SV_DumpUser_f( void ) {
 		return;
 	}
 
-	Sys_BeginPrint();
 	Com_Printf( "userinfo\n" );
 	Com_Printf( "--------\n" );
 	Info_Print( cl->userinfo );
-	Sys_EndPrint();
 }
 
 

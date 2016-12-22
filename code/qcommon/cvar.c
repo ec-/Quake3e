@@ -477,8 +477,6 @@ Prints the value, default, and latched string of the given variable
 */
 void Cvar_Print( const cvar_t *v ) {
 
-	Sys_BeginPrint();
-
 	Com_Printf ("\"%s\" is:\"%s" S_COLOR_WHITE "\"",
 			v->name, v->string );
 
@@ -496,8 +494,6 @@ void Cvar_Print( const cvar_t *v ) {
 	if ( v->description ) {
 		Com_Printf( "%s\n", v->description );
 	}
-
-	Sys_EndPrint();
 }
 
 /*
@@ -1164,8 +1160,6 @@ void Cvar_WriteVariables( fileHandle_t f )
 	cvar_t	*var;
 	char	buffer[1024];
 
-	Sys_BeginPrint();
-
 	for (var = cvar_vars; var; var = var->next)
 	{
 		if(!var->name || Q_stricmp( var->name, "cl_cdkey" ) == 0)
@@ -1191,8 +1185,6 @@ void Cvar_WriteVariables( fileHandle_t f )
 			FS_Write( buffer, strlen( buffer ), f );
 		}
 	}
-
-	Sys_EndPrint();
 }
 
 
@@ -1205,8 +1197,6 @@ void Cvar_List_f( void ) {
 	cvar_t	*var;
 	int		i;
 	char	*match;
-
-	Sys_BeginPrint();
 
 	if ( Cmd_Argc() > 1 ) {
 		match = Cmd_Argv( 1 );
@@ -1271,8 +1261,6 @@ void Cvar_List_f( void ) {
 
 	Com_Printf ("\n%i total cvars\n", i);
 	Com_Printf ("%i cvar indexes\n", cvar_numIndexes);
-
-	Sys_EndPrint();
 }
 
 /*

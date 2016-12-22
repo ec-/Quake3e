@@ -521,7 +521,6 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	// don't allow a map_restart if game is modified
 	sv_gametype->modified = qfalse;
 
-	Sys_BeginPrint();
 	// run a few frames to allow everything to settle
 	for (i = 0;i < 3; i++)
 	{
@@ -530,7 +529,6 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 		sv.time += 100;
 		svs.time += 100;
 	}
-	Sys_EndPrint();
 
 	// create a baseline for more efficient communications
 	SV_CreateBaseline ();

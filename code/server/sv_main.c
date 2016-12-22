@@ -1157,8 +1157,6 @@ void SV_Frame( int msec ) {
 
 	if (com_dedicated->integer) SV_BotFrame (sv.time);
 
-	Sys_BeginPrint();
-
 	// run the game simulation in chunks
 	while ( sv.timeResidual >= frameMsec ) {
 		sv.timeResidual -= frameMsec;
@@ -1168,8 +1166,6 @@ void SV_Frame( int msec ) {
 		// let everything in the world think and move
 		VM_Call (gvm, GAME_RUN_FRAME, sv.time);
 	}
-
-	Sys_EndPrint();
 
 	if ( com_speeds->integer ) {
 		time_game = Sys_Milliseconds () - startTime;

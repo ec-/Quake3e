@@ -905,6 +905,7 @@ void Sys_ANSIColorify( const char *msg, char *buffer, int bufferSize )
   }
 }
 
+
 void Sys_Print( const char *msg )
 {
 	if ( ttycon_on )
@@ -925,18 +926,6 @@ void Sys_Print( const char *msg )
 	{
 		tty_Show();
 	}
-}
-
-
-void Sys_BeginPrint( void )
-{
-	return;
-}
-
-
-void Sys_EndPrint( void )
-{
-	return;
 }
 
 

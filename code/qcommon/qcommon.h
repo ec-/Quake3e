@@ -1119,10 +1119,6 @@ char	*Sys_GetClipboardData( void );	// note that this isn't journaled...
 
 void	Sys_Print( const char *msg );
 
-// for console print caching
-void	Sys_BeginPrint( void );
-void	Sys_EndPrint( void );
-
 // dedicated console status, win32-only at the moment
 void	QDECL Sys_SetStatus( const char *format, ...) __attribute__ ((format (printf, 1, 2)));
 
