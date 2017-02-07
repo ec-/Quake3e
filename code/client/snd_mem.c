@@ -209,13 +209,15 @@ static void ResampleSfx( sfx_t *sfx, int inrate, int inwidth, byte *data, qboole
 	outcount = sfx->soundLength / stepscale;
 	sfx->soundLength = outcount;
 
+	srcsample = 0;
 	samplefrac = 0;
 	fracstep = stepscale * 256;
 	chunk = sfx->soundData;
 
 	for (i=0 ; i<outcount ; i++)
 	{
-		srcsample = samplefrac >> 8;
+		srcsample += samplefrac >> 8;
+		samplefrac &= 255;
 		samplefrac += fracstep;
 		if( inwidth == 2 ) {
 			sample = ( ((short *)data)[srcsample] );
@@ -257,12 +259,14 @@ static int ResampleSfxRaw( short *sfx, int inrate, int inwidth, int samples, byt
 
 	outcount = samples / stepscale;
 
+	srcsample = 0;
 	samplefrac = 0;
 	fracstep = stepscale * 256;
 
 	for (i=0 ; i<outcount ; i++)
 	{
-		srcsample = samplefrac >> 8;
+		srcsample += samplefrac >> 8;
+		samplefrac &= 255;
 		samplefrac += fracstep;
 		if( inwidth == 2 ) {
 			sample = LittleShort ( ((short *)data)[srcsample] );
