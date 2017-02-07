@@ -738,6 +738,15 @@ static void SV_SendClientGameState( client_t *client ) {
 	// write the checksum feed
 	MSG_WriteLong( &msg, sv.checksumFeed);
 
+	// it is important to handle gamestate overflow
+	// but at this stage client can't process any reliable commands
+	// so at least try to inform him in console and release connection slot
+	if ( msg.overflowed ) {
+		NET_OutOfBandPrint( NS_SERVER, client->netchan.remoteAddress, "print\n" S_COLOR_RED "SERVER ERROR: gamestate overflow\n" );
+		SV_DropClient( client, "gamestate overflow" );
+		return;
+	}
+
 	// deliver this to the client
 	SV_SendMessageToClient( &msg, client );
 }
