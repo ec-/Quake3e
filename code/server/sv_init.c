@@ -366,8 +366,6 @@ void SV_ChangeMaxClients( void ) {
 SV_ClearServer
 ================
 */
-static cvar_t *sv_levelTimeReset;
-
 static void SV_ClearServer( void ) {
 	int i;
 
@@ -472,10 +470,12 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	Cvar_Set( "nextmap", "map_restart 0" );
 //	Cvar_Set( "nextmap", va("map %s", server) );
 
-	for (i=0 ; i<sv_maxclients->integer ; i++) {
+	for ( i = 0; i < sv_maxclients->integer; i++ ) {
 		// save when the server started for each client already connected
-		if (svs.clients[i].state >= CS_CONNECTED) {
+		if ( svs.clients[i].state >= CS_CONNECTED && sv_levelTimeReset->integer ) {
 			svs.clients[i].oldServerTime = sv.time;
+		} else {
+			svs.clients[i].oldServerTime = 0;
 		}
 	}
 
@@ -712,7 +712,7 @@ void SV_Init (void)
 	sv_banFile = Cvar_Get("sv_banFile", "serverbans.dat", CVAR_ARCHIVE);
 #endif
 
-	sv_levelTimeReset = Cvar_Get( "sv_levelTimeReset", "1", CVAR_ARCHIVE );
+	sv_levelTimeReset = Cvar_Get( "sv_levelTimeReset", "0", CVAR_ARCHIVE );
 
 	//extented version marker
 	Cvar_Get( "sv_version_ex", "1", CVAR_ROM );

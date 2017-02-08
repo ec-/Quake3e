@@ -58,6 +58,8 @@ cvar_t	*sv_strictAuth;
 #endif
 cvar_t	*sv_banFile;
 
+cvar_t *sv_levelTimeReset;
+
 serverBan_t serverBans[SERVER_MAXBANS];
 int serverBansCount = 0;
 
@@ -1094,11 +1096,11 @@ void SV_Frame( int msec ) {
 	}
 
 	// try to do silent restart earlier if possible
-	// FIXME: deal with bots (reconnect?)
-	if ( svs.time > 0x40000000 ) {
+	if ( svs.time > 0x40000000 || ( sv.time > (12*3600*1000) && sv_levelTimeReset->integer == 0 ) ) {
 		n = 0;
 		if ( svs.clients ) {
 			for ( i = 0; i < sv_maxclients->integer; i++ ) {
+				// FIXME: deal with bots (reconnect?)
 				if ( svs.clients[i].state != CS_FREE && svs.clients[i].netchan.remoteAddress.type != NA_BOT ) {
 					n = 1;
 					break;

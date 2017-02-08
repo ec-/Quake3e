@@ -267,6 +267,8 @@ extern	cvar_t	*sv_strictAuth;
 #endif
 extern	cvar_t	*sv_banFile;
 
+extern	cvar_t *sv_levelTimeReset;
+
 extern	serverBan_t serverBans[SERVER_MAXBANS];
 extern	int serverBansCount;
 

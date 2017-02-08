@@ -158,7 +158,7 @@ static void SV_Map_f( void ) {
 	char		mapname[MAX_QPATH];
 
 	map = Cmd_Argv(1);
-	if ( !map ) {
+	if ( !map || !*map ) {
 		return;
 	}
 
