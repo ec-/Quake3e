@@ -1090,8 +1090,10 @@ void SV_Frame( int msec ) {
 	// than checking for negative time wraparound everywhere.
 	// 2giga-milliseconds = 23 days, so it won't be too often
 	if ( svs.time > 0x78000000 ) {
+		char mapName[ MAX_CVAR_VALUE_STRING ];
+		Cvar_VariableStringBuffer( "mapname", mapName, sizeof( mapName ) );
 		SV_Shutdown( "Restarting server due to time wrapping" );
-		Cbuf_AddText( va( "map %s\n", Cvar_VariableString( "mapname" ) ) );
+		Cbuf_AddText( va( "map %s\n", mapName ) );
 		return;
 	}
 
@@ -1108,8 +1110,10 @@ void SV_Frame( int msec ) {
 			}
 		}
 		if ( !n ) {
+			char mapName[ MAX_CVAR_VALUE_STRING ];
+			Cvar_VariableStringBuffer( "mapname", mapName, sizeof( mapName ) );
 			SV_Shutdown( "Restarting server" );
-			Cbuf_AddText( va( "map %s\n", Cvar_VariableString( "mapname" ) ) );
+			Cbuf_AddText( va( "map %s\n", mapName ) );
 			return;
 		}
 	}

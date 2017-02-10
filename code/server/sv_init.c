@@ -806,7 +806,6 @@ void SV_Shutdown( const char *finalmsg ) {
 
 	Cvar_Set( "sv_running", "0" );
 	Cvar_Set( "ui_singlePlayerActive", "0" );
-	Cvar_Set( "mapname", NULL ); // -EC- force reset
 
 	Com_Printf( "---------------------------\n" );
 
@@ -818,4 +817,3 @@ void SV_Shutdown( const char *finalmsg ) {
 
 	Sys_SetStatus( "Server is not running" );
 }
-
