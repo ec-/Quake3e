@@ -179,7 +179,7 @@ qboolean Sys_RandomBytes( byte *string, int len )
 	}
 
 	fclose( fp );
-	return qtrue; 
+	return qtrue;
 }
 
 

@@ -65,13 +65,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../client/client.h"
 #endif
 
-unsigned  sys_frame_time;
+unsigned sys_frame_time;
 
-qboolean stdin_active = qtrue;
+qboolean stdin_active = qfalse;
+int      stdin_flags = 0;
 
 // =============================================================
 // tty console variables
 // =============================================================
+
+typedef enum {
+	TTY_ENABLED,
+	TTY_DISABLED,
+	TTY_ERROR
+} tty_err;
 
 // enable/disabled tty input mode
 // NOTE TTimo this is used during startup, cannot be changed during run
@@ -104,7 +111,7 @@ static qboolean ttycon_color_on = qfalse;
 static field_t ttyEditLines[TTY_HISTORY];
 static int hist_current = -1, hist_count = 0;
 
-void Sys_ConsoleInputInit( void );
+tty_err Sys_ConsoleInputInit( void );
 
 // =======================================================================
 // General routines
@@ -120,10 +127,10 @@ Sys_LowPhysicalMemory()
 */
 qboolean Sys_LowPhysicalMemory( void )
 {
-  //MEMORYSTATUS stat;
-  //GlobalMemoryStatus (&stat);
-  //return (stat.dwTotalPhys <= MEM_THRESHOLD) ? qtrue : qfalse;
-  return qfalse; // bk001207 - FIXME
+	//MEMORYSTATUS stat;
+	//GlobalMemoryStatus (&stat);
+	//return (stat.dwTotalPhys <= MEM_THRESHOLD) ? qtrue : qfalse;
+	return qfalse; // bk001207 - FIXME
 }
 
 
@@ -182,7 +189,7 @@ void Sys_In_Restart_f( void )
 void tty_FlushIn( void )
 {
 	char key;
-	while ( read( STDIN_FILENO, &key, 1 ) != -1 );
+	while ( read( STDIN_FILENO, &key, 1 ) > 0 );
 }
 
 
@@ -243,13 +250,11 @@ void tty_Show( void )
 	ttycon_hide--;
 	if ( ttycon_hide == 0 )
 	{
-		write( STDOUT_FILENO, "]", 1 ); // -EC-
-		if ( tty_con.cursor )
+		(void)write( STDOUT_FILENO, "]", 1 ); // -EC-
+		if ( tty_con.cursor > 0 )
 		{
 			for ( i = 0; i < tty_con.cursor; i++ )
-			{
-				write( STDOUT_FILENO, tty_con.buffer + i, 1 );
-			}
+				(void)write( STDOUT_FILENO, tty_con.buffer + i, 1 );
 		}
 	}
 }
@@ -266,7 +271,18 @@ void Sys_ConsoleInputShutdown( void )
 	}
 
 	// Restore blocking to stdin reads
-	fcntl( STDIN_FILENO, F_SETFL, fcntl( STDIN_FILENO, F_GETFL, 0 ) & ~O_NONBLOCK );
+	if ( stdin_active )
+	{
+		fcntl( STDIN_FILENO, F_SETFL, stdin_flags );
+//		fcntl( STDIN_FILENO, F_SETFL, fcntl( STDIN_FILENO, F_GETFL, 0 ) & ~O_NONBLOCK );
+	}
+	
+	Com_Memset( &tty_con, 0, sizeof( tty_con ) );
+
+	stdin_active = qfalse;
+	ttycon_on = qfalse;
+	
+	ttycon_hide = 0;
 }
 
 
@@ -339,6 +355,23 @@ void CON_SigCont( int signum )
 }
 
 
+void CON_SigTStp( int signum )
+{
+	sigset_t mask;
+	
+	tty_FlushIn();
+	Sys_ConsoleInputShutdown();
+
+	sigemptyset( &mask );
+	sigaddset( &mask, SIGTSTP );
+	sigprocmask( SIG_UNBLOCK, &mask, NULL );
+	
+	signal( SIGTSTP, SIG_DFL );
+	
+	kill( getpid(),  SIGTSTP );
+}
+
+
 // =============================================================
 // general sys routines
 // =============================================================
@@ -367,7 +400,7 @@ void Sys_Quit( void )
 #ifndef DEDICATED
 	CL_Shutdown( "" );
 #endif
-	fcntl( STDIN_FILENO, F_SETFL, fcntl( STDIN_FILENO, F_GETFL, 0 ) & ~FNDELAY );
+
 	Sys_Exit( 0 );
 }
 
@@ -384,7 +417,6 @@ void Sys_Init( void )
   Cvar_Set( "username", Sys_GetCurrentUser() );
 
   //IN_Init();   // rcg08312005 moved into glimp.
-
 }
 
 
@@ -395,7 +427,11 @@ void Sys_Error( const char *format, ... )
 
 	// change stdin to non blocking
 	// NOTE TTimo not sure how well that goes with tty console mode
-	fcntl( STDIN_FILENO, F_SETFL, fcntl( STDIN_FILENO, F_GETFL, 0) & ~FNDELAY );
+	if ( stdin_active )
+	{
+//		fcntl( STDIN_FILENO, F_SETFL, fcntl( STDIN_FILENO, F_GETFL, 0) & ~FNDELAY );
+		fcntl( STDIN_FILENO, F_SETFL, stdin_flags );
+	}
 
 	// don't bother do a show on this one heh
 	if ( ttycon_on )
@@ -424,12 +460,13 @@ void floating_point_exception_handler( int whatever )
 
 
 // initialize the console input (tty mode if wanted and possible)
-void Sys_ConsoleInputInit( void )
+// warning: might be called from signal handler
+tty_err Sys_ConsoleInputInit( void )
 {
 	struct termios tc;
 	const char* term;
 
-	// TTimo 
+	// TTimo
 	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=390
 	// ttycon 0 or 1, if the process is backgrounded (running non interactively)
 	// then SIGTTIN or SIGTOU is emitted, if not catched, turns into a SIGSTP
@@ -438,33 +475,38 @@ void Sys_ConsoleInputInit( void )
 
 	// If SIGCONT is received, reinitialize console
 	signal( SIGCONT, CON_SigCont );
+	
+	if ( signal( SIGTSTP, SIG_IGN ) == SIG_DFL )
+	{
+		signal( SIGTSTP, CON_SigTStp );
+	}
 
 	// FIXME TTimo initialize this in Sys_Init or something?
-	ttycon = Cvar_Get( "ttycon", "1", 0 );
+	//ttycon = Cvar_Get( "ttycon", "1", 0 );
 	if ( !ttycon || !ttycon->integer )
 	{
-	    ttycon_on = qfalse;
 		stdin_active = qfalse; // -EC-
-		return;
+		ttycon_on = qfalse;
+		return TTY_DISABLED;
 	}
 	term = getenv( "TERM" );
 
-	if ( isatty( STDIN_FILENO ) != 1 || !term  
+	if ( isatty( STDIN_FILENO ) != 1 || !term
 		|| !strcmp( term, "dumb" ) || !strcmp( term, "raw" ) )
 	{
-		Com_Printf( "stdin is not a tty, tty console mode failed\n" );
-		Cvar_Set( "ttycon", "0" );
-		ttycon_on = qfalse;
 		stdin_active = qfalse; // -EC-
-		return;
+		ttycon_on = qfalse;
+		return TTY_ERROR;
 	}
 
-	Com_Printf( "Started tty console (use +set ttycon 0 to disable)\n" );
+	stdin_flags = fcntl( STDIN_FILENO, F_GETFL, 0 );
+
 	Field_Clear( &tty_con );
 	tcgetattr( STDIN_FILENO, &tty_tc );
 	tty_erase = tty_tc.c_cc[ VERASE ];
 	tty_eof = tty_tc.c_cc[ VEOF ];
 	tc = tty_tc;
+
 	/*
 		ECHO: don't echo input characters
 		ICANON: enable canonical mode.  This  enables  the  special
@@ -483,20 +525,29 @@ void Sys_ConsoleInputInit( void )
 	tc.c_cc[VTIME] = 0;
 	tcsetattr( STDIN_FILENO, TCSADRAIN, &tc );
 
-	ttycon_ansicolor = Cvar_Get( "ttycon_ansicolor", "0", CVAR_ARCHIVE );
-
+	//ttycon_ansicolor = Cvar_Get( "ttycon_ansicolor", "0", CVAR_ARCHIVE );
 	if( ttycon_ansicolor && ttycon_ansicolor->integer )
 	{
 		ttycon_color_on = qtrue;
 	}
 
+	// set non-blocking mode
+	fcntl( STDIN_FILENO, F_SETFL, stdin_flags | O_NONBLOCK );
+
+	stdin_active = qtrue;
 	ttycon_on = qtrue;
+
+	tty_Hide();
+	tty_Show();
+
+	return TTY_ENABLED;
 }
+
 
 char *Sys_ConsoleInput( void )
 {
 	// we use this when sending back commands
-	static char text[512];
+	static char text[ sizeof( tty_con.buffer ) ];
 	int avail;
 	char key;
 	char *s;
@@ -508,7 +559,7 @@ char *Sys_ConsoleInput( void )
 		if (avail != -1)
 		{
 			// we have something
-			 // backspace?
+			// backspace?
 			// NOTE TTimo testing a lot of values .. seems it's the only way to get it to work everywhere
 			if ((key == tty_erase) || (key == 127) || (key == 8))
 			{
@@ -530,9 +581,10 @@ char *Sys_ConsoleInput( void )
 					Hist_Add( &tty_con );
 					Q_strncpyz( text, tty_con.buffer, sizeof( text ) );
 					Field_Clear( &tty_con );
-					key = '\n';
-					write( STDOUT_FILENO, &key, 1 );
-					write( STDOUT_FILENO, "]", 1 );
+					//key = '\n';
+					//write( STDOUT_FILENO, &key, 1 );
+					//(void)write( STDOUT_FILENO, "]", 1 );
+					(void)write( STDOUT_FILENO, "\n]", 2 );
 					return text;
 				}
 
@@ -565,7 +617,7 @@ char *Sys_ConsoleInput( void )
 								}
 								tty_FlushIn();
 								return NULL;
-				                break;
+								break;
 							case 'B':
 								history = Hist_Next();
 								tty_Hide();
@@ -582,12 +634,24 @@ char *Sys_ConsoleInput( void )
 							case 'D': // left
 							//case 'H': // home
 							//case 'F': // end
-				                return NULL;
+								return NULL;
 							}
 						}
 					}
 				}
-				Com_DPrintf( "droping ISCTL sequence: %d, tty_erase: %d\n", key, tty_erase );
+
+				if ( key == 12 ) // clear teaminal
+				{
+					(void)write( STDOUT_FILENO, "\ec]", 3 );
+					if ( tty_con.cursor )
+					{
+						(void)write( STDOUT_FILENO, tty_con.buffer, tty_con.cursor );
+					}
+					tty_FlushIn();
+					return NULL;
+				}
+
+				Com_DPrintf( "dropping ISCTL sequence: %d, tty_erase: %d\n", key, tty_erase );
 				tty_FlushIn();
 				return NULL;
 			}
@@ -598,7 +662,7 @@ char *Sys_ConsoleInput( void )
 			tty_con.cursor++;
 			// print the current line (this is differential)
 			write( STDOUT_FILENO, &key, 1 );
-    	}
+		}
 		return NULL;
 	}
 	else
@@ -715,7 +779,7 @@ void Sys_Sleep( int msec ) {
 				select( STDIN_FILENO + 1, &fdset, NULL, NULL, &timeout );
 			}
 		} else {
-			if ( msec < 0 ) { 
+			if ( msec < 0 ) {
 				// can happen only if no map loaded
 				// which means we totally stuck as stdin is also disabled :P
 				usleep( 1000 );
@@ -1031,8 +1095,9 @@ int Sys_ParseArgs( int argc, const char* argv[] )
 
 int main( int argc, const char* argv[] )
 {
-	int   len, i;
 	char  *cmdline;
+	int   len, i;
+	tty_err	err;
 
 	if ( Sys_ParseArgs( argc, argv ) ) // added this for support
 		return 0;
@@ -1062,10 +1127,24 @@ int main( int argc, const char* argv[] )
 
 	Com_Printf( "Working directory: %s\n", Sys_Pwd() );
 
-	Sys_ConsoleInputInit();
+	// Sys_ConsoleInputInit() might be called in signal handler
+	// so modify/init any cvars here
+	ttycon = Cvar_Get( "ttycon", "1", 0 );
+	ttycon_ansicolor = Cvar_Get( "ttycon_ansicolor", "0", CVAR_ARCHIVE );
 
-    if ( ttycon_on )
-        fcntl( STDIN_FILENO, F_SETFL, fcntl( STDIN_FILENO, F_GETFL, 0) | FNDELAY );
+	err = Sys_ConsoleInputInit();
+	if ( err == TTY_ENABLED )
+	{
+		Com_Printf( "Started tty console (use +set ttycon 0 to disable)\n" );
+	}
+	else 
+	{
+		if ( err == TTY_ERROR )
+		{
+			Com_Printf( "stdin is not a tty, tty console mode failed\n" );
+			Cvar_Set( "ttycon", "0" );
+		}
+	}
 
 #ifdef DEDICATED
 	// init here for dedicated, as we don't have GLimp_Init
