@@ -461,7 +461,7 @@ size_t RE_SaveJPGToBuffer(byte *buffer, size_t bufSize, int quality,
   return outcount;
 }
 
-void RE_SaveJPG(char * filename, int quality, int image_width, int image_height, byte *image_buffer, int padding)
+void RE_SaveJPG(const char *filename, int quality, int image_width, int image_height, byte *image_buffer, int padding)
 {
   byte *out;
   size_t bufSize;

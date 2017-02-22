@@ -906,6 +906,12 @@ typedef struct {
 #endif
 } backEndCounters_t;
 
+
+enum {
+	SCREENSHOT_TGA = 1<<0,
+	SCREENSHOT_JPG = 1<<1
+};
+
 // all state modified by the back end is seperated
 // from the front end state
 typedef struct {
@@ -925,6 +931,11 @@ typedef struct {
 	trRefEntity_t	entity2D;	// currentEntity will point at this when doing 2D rendering
 
 	qboolean	floatfix;		// -EC- frameloss bug fix
+
+	int		screenshotMask;	// tga | jpg
+	char	screenshotTGA[ MAX_OSPATH ];
+	char	screenshotJPG[ MAX_OSPATH ];
+
 } backEndState_t;
 
 /*
@@ -1692,6 +1703,8 @@ extern	backEndData_t	*backEndData;	// the second one may not be allocated
 
 void *R_GetCommandBuffer( int bytes );
 void RB_ExecuteRenderCommands( const void *data );
+void RB_TakeScreenshot( int x, int y, int width, int height, const char *fileName );
+void RB_TakeScreenshotJPEG( int x, int y, int width, int height, const char *fileName );
 
 void R_IssuePendingRenderCommands( void );
 
@@ -1702,7 +1715,7 @@ void RE_StretchPic ( float x, float y, float w, float h,
 					  float s1, float t1, float s2, float t2, qhandle_t hShader );
 void RE_BeginFrame( stereoFrame_t stereoFrame );
 void RE_EndFrame( int *frontEndMsec, int *backEndMsec );
-void RE_SaveJPG(char * filename, int quality, int image_width, int image_height,
+void RE_SaveJPG(const char * filename, int quality, int image_width, int image_height,
                 unsigned char *image_buffer, int padding);
 size_t RE_SaveJPGToBuffer(byte *buffer, size_t bufSize, int quality,
 		          int image_width, int image_height, byte *image_buffer, int padding);

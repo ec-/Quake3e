@@ -354,8 +354,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	}
 
 	// check for errors
-	if ( !r_ignoreGLErrors->integer )
-	{
+	if ( !r_ignoreGLErrors->integer ) {
 		int	err;
 
 		R_IssuePendingRenderCommands();
@@ -491,7 +490,20 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 		*backEndMsec = backEnd.pc.msec;
 	}
 	backEnd.pc.msec = 0;
+
+	if ( backEnd.screenshotMask && tr.frameCount > 1 ) {
+		if ( backEnd.screenshotMask & SCREENSHOT_TGA && backEnd.screenshotTGA[0] ) {
+			RB_TakeScreenshot( 0, 0, glConfig.vidWidth, glConfig.vidHeight, backEnd.screenshotTGA );
+		}
+		if ( backEnd.screenshotMask & SCREENSHOT_JPG && backEnd.screenshotJPG[0] ) {
+			RB_TakeScreenshotJPEG( 0, 0, glConfig.vidWidth, glConfig.vidHeight, backEnd.screenshotJPG );
+		}
+		backEnd.screenshotJPG[0] = '\0';
+		backEnd.screenshotTGA[0] = '\0';
+		backEnd.screenshotMask = 0;
+	}
 }
+
 
 /*
 =============

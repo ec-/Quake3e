@@ -1315,6 +1315,7 @@ const void *RB_ClearDepth(const void *data)
 	return (const void *)(cmd + 1);
 }
 
+
 /*
 =============
 RB_SwapBuffers
@@ -1368,6 +1369,7 @@ const void	*RB_SwapBuffers( const void *data ) {
 
 	return (const void *)(cmd + 1);
 }
+
 
 /*
 ====================
