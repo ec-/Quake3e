@@ -1880,7 +1880,7 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 	}
 
 	if ( !qpath || !qpath[0] ) {
-		Com_Error( ERR_FATAL, "FS_ReadFile with empty name\n" );
+		Com_Error( ERR_FATAL, "FS_ReadFile with empty name" );
 	}
 
 	buf = NULL;	// quiet compiler warning
@@ -2006,7 +2006,7 @@ void FS_FreeFile( void *buffer ) {
 ============
 FS_WriteFile
 
-Filename are reletive to the quake search path
+Filename are relative to the quake search path
 ============
 */
 void FS_WriteFile( const char *qpath, const void *buffer, int size ) {
@@ -3922,7 +3922,7 @@ void FS_PureServerSetReferencedPaks( const char *pakSums, const char *pakNames )
 		fs_serverReferencedPaks[i] = atoi( Cmd_Argv( i ) );
 	}
 
-	for (i = 0 ; i < sizeof(fs_serverReferencedPakNames) / sizeof(*fs_serverReferencedPakNames); i++)
+	for (i = 0 ; i < ARRAY_LEN(fs_serverReferencedPakNames); i++)
 	{
 		if(fs_serverReferencedPakNames[i])
 			Z_Free(fs_serverReferencedPakNames[i]);

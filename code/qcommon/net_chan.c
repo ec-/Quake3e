@@ -586,8 +586,8 @@ NET_OutOfBandPrint
 Sends a data message in an out-of-band datagram (only used for "connect")
 ================
 */
-void QDECL NET_OutOfBandData( netsrc_t sock, netadr_t adr, byte *format, int len ) {
-	byte		string[MAX_MSGLEN*2];
+void QDECL NET_OutOfBandData( netsrc_t sock, netadr_t adr, byte *data, int len ) {
+	byte		string[MAX_INFO_STRING*2];
 	int			i;
 	msg_t		mbuf;
 
@@ -598,7 +598,7 @@ void QDECL NET_OutOfBandData( netsrc_t sock, netadr_t adr, byte *format, int len
 	string[3] = 0xff;
 
 	for(i=0;i<len;i++) {
-		string[i+4] = format[i];
+		string[i+4] = data[i];
 	}
 
 	mbuf.data = string;
