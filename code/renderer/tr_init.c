@@ -554,14 +554,22 @@ void R_TakeScreenshot( int x, int y, int width, int height, const char *name, qb
 R_ScreenshotFilename
 ================== 
 */  
-void R_ScreenshotFilename( int lastNumber, char *fileName, const char *fileExt ) {
+static void R_ScreenshotFilename( char *fileName, const char *fileExt ) {
+	qtime_t t;
+	int count;
 
-	if ( (unsigned)lastNumber > 9999 ) {
-		Com_sprintf( fileName, MAX_OSPATH, "screenshots/shot%04i.%s", 9999, fileExt );
-		return;
+	count = 0;
+	Com_RealTime( &t );
+
+	Com_sprintf( fileName, MAX_OSPATH, "screenshots/shot-%04d%02d%02d-%02d%02d%02d.%s", 
+			1900 + t.tm_year, 1 + t.tm_mon,	t.tm_mday,
+			t.tm_hour, t.tm_min, t.tm_sec, fileExt );
+
+	while (	ri.FS_FileExists( fileName ) && ++count < 1000 ) {
+		Com_sprintf( fileName, MAX_OSPATH, "screenshots/shot-%04d%02d%02d-%02d%02d%02d-%d.%s", 
+				1900 + t.tm_year, 1 + t.tm_mon,	t.tm_mday,
+				t.tm_hour, t.tm_min, t.tm_sec, count, fileExt );
 	}
-
-	Com_sprintf( fileName, MAX_OSPATH, "screenshots/shot%04i.%s", lastNumber, fileExt );
 }
 
 
@@ -646,10 +654,8 @@ Doesn't print the pacifier message if there is a second arg
 ================== 
 */  
 void R_ScreenShot_f( void ) {
-	static	int	lastNumbers[2] = { -1, -1 };
 	char		checkname[MAX_OSPATH];
 	qboolean	silent;
-	int			*lastNumber;
 	int			typeMask;
 	const char	*ext;
 
@@ -681,32 +687,7 @@ void R_ScreenShot_f( void ) {
 		Com_sprintf( checkname, MAX_OSPATH, "screenshots/%s.%s", ri.Cmd_Argv( 1 ), ext );
 	} else {
 		// scan for a free filename
-
-		if ( typeMask & SCREENSHOT_JPG )
-			lastNumber = lastNumbers + 1;
-		else
-			lastNumber = lastNumbers + 0;
-
-		// if we have saved a previous screenshot, don't scan
-		// again, because recording demo avis can involve
-		// thousands of shots
-		if ( *lastNumber == -1 ) {
-			*lastNumber = 0;
-		}
-
-		// scan for a free number
-		for ( ; *lastNumber <= 9999 ; *lastNumber += 1 ) {
-			R_ScreenshotFilename( *lastNumber, checkname, ext );
-			if ( !ri.FS_FileExists( checkname ) )
-				break; // file doesn't exist
-		}
-
-		if ( *lastNumber >= 9999 ) {
-			ri.Printf (PRINT_ALL, "ScreenShot: Couldn't create a file\n"); 
-			return;
- 		}
-
-		*lastNumber++;
+		R_ScreenshotFilename( checkname, ext );
 	}
 
 #if 1

@@ -31,29 +31,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <fcntl.h>
 #include <stdio.h>
 #include <direct.h>
-#include <io.h>
-#include <conio.h>
+//#include <io.h>
+//#include <conio.h>
 
-#define	CD_BASEDIR	"quake3"
-#define	CD_EXE		"quake3.exe"
-#define	CD_BASEDIR_LINUX	"bin\\x86\\glibc-2.1"
-#define	CD_EXE_LINUX "quake3"
 #define MEM_THRESHOLD 96*1024*1024
 
 WinVars_t	g_wv;
 
-
 /*
 ==================
-Sys_LowPhysicalMemory()
+Sys_LowPhysicalMemory
 ==================
 */
-
-qboolean Sys_LowPhysicalMemory() {
+qboolean Sys_LowPhysicalMemory( void ) {
 	MEMORYSTATUS stat;
-  GlobalMemoryStatus (&stat);
+	GlobalMemoryStatus( &stat );
 	return (stat.dwTotalPhys <= MEM_THRESHOLD) ? qtrue : qfalse;
 }
+
 
 /*
 ==================
@@ -63,6 +58,7 @@ Sys_BeginProfiling
 void Sys_BeginProfiling( void ) {
 	// this is just used on the mac build
 }
+
 
 /*
 =============
@@ -105,6 +101,7 @@ void QDECL Sys_Error( const char *error, ... ) {
 	exit (1);
 }
 
+
 /*
 ==============
 Sys_Quit
@@ -122,12 +119,14 @@ void Sys_Quit( void ) {
 	exit (0);
 }
 
+
 /*
 ==============
 Sys_Print
 ==============
 */
-void Sys_Print( const char *msg ) {
+void Sys_Print( const char *msg ) 
+{
 	Conbuf_AppendText( msg );
 }
 
@@ -298,7 +297,7 @@ void Sys_Sleep( int msec ) {
 
 /*
 =============
-Sys_Sys_ListFiles
+Sys_ListFiles
 =============
 */
 char **Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, qboolean wantsubs ) {
@@ -396,7 +395,13 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 	return listCopy;
 }
 
-void	Sys_FreeFileList( char **list ) {
+
+/*
+=============
+Sys_FreeFileList
+=============
+*/
+void Sys_FreeFileList( char **list ) {
 	int		i;
 
 	if ( !list ) {
