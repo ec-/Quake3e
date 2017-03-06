@@ -2308,7 +2308,7 @@ __compile:
 	VM_FreeBuffers();
 
 #ifdef VM_X86_MMAP
-	if ( mprotect( vm->codeBase.ptr, compiledOfs + n, PROT_READ|PROT_EXEC ) ) {
+	if ( mprotect( vm->codeBase.ptr, vm->allocSize, PROT_READ|PROT_EXEC ) ) {
 		VM_Destroy_Compiled( vm );
 		Com_Error( ERR_FATAL, "VM_CompileX86: mprotect failed" );
 		return qfalse;
@@ -2318,7 +2318,7 @@ __compile:
 		DWORD oldProtect = 0;
 		
 		// remove write permissions.
-		if ( !VirtualProtect( vm->codeBase.ptr, compiledOfs + n, PAGE_EXECUTE_READ, &oldProtect ) ) {
+		if ( !VirtualProtect( vm->codeBase.ptr, vm->allocSize, PAGE_EXECUTE_READ, &oldProtect ) ) {
 			VM_Destroy_Compiled( vm );
 			Com_Error( ERR_FATAL, "VM_CompileX86: VirtualProtect failed" );
 			return qfalse;
@@ -2367,6 +2367,8 @@ void *VM_Alloc_Compiled( vm_t *vm, int codeLength, int tableLength )
 #endif
 	vm->codeBase.ptr = ptr;
 	vm->codeLength = codeLength;
+	vm->allocSize = length;
+
 	return vm->codeBase.ptr;
 }
 
@@ -2379,7 +2381,7 @@ VM_Destroy_Compiled
 void VM_Destroy_Compiled( vm_t* vm )
 {
 #ifdef VM_X86_MMAP
-	munmap( vm->codeBase.ptr, vm->codeLength );
+	munmap( vm->codeBase.ptr, vm->allocSize );
 #elif _WIN32
 	VirtualFree( vm->codeBase.ptr, 0, MEM_RELEASE );
 #else

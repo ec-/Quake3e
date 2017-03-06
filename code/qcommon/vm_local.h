@@ -196,6 +196,8 @@ struct vm_s {
 	vmFunc_t	codeBase;
 	int			codeLength;
 
+	int			allocSize;			// needed for proper munmap()
+
 	int			dataMask;
 	int			dataLength;			// exact data segment length
 
