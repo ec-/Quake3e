@@ -720,6 +720,8 @@ int Q_islower( int c );
 int Q_isupper( int c );
 int Q_isalpha( int c );
 
+qboolean Q_streq( const char *s1, const char *s2 );
+
 // portable case insensitive compare
 int		Q_stricmp (const char *s1, const char *s2);
 int		Q_strncmp (const char *s1, const char *s2, int n);

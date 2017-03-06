@@ -199,7 +199,7 @@ void Sys_ListFilteredFiles( const char *basedir, const char *subdirs, const char
 		return;
 	}
 
-	if (strlen(subdirs)) {
+	if ( *subdirs ) {
 		Com_sprintf( search, sizeof(search), "%s/%s", basedir, subdirs );
 	}
 	else {
@@ -216,11 +216,10 @@ void Sys_ListFilteredFiles( const char *basedir, const char *subdirs, const char
 			continue;
 
 		if (st.st_mode & S_IFDIR) {
-			if (Q_stricmp(d->d_name, ".") && Q_stricmp(d->d_name, "..")) {
-				if (strlen(subdirs)) {
+			if ( !Q_streq( d->d_name, "." ) && !Q_streq( d->d_name, ".." ) ) {
+				if ( *subdirs) {
 					Com_sprintf( newsubdirs, sizeof(newsubdirs), "%s/%s", subdirs, d->d_name);
-				}
-				else {
+				} else {
 					Com_sprintf( newsubdirs, sizeof(newsubdirs), "%s", d->d_name);
 				}
 				Sys_ListFilteredFiles( basedir, newsubdirs, filter, list, numfiles );

@@ -906,6 +906,21 @@ int Q_strncmp( const char *s1, const char *s2, int n ) {
 }
 
 
+qboolean Q_streq( const char *s1, const char *s2 ) {
+	int	c1, c2;
+
+	do {
+		c1 = *s1++;
+		c2 = *s2++;
+		if ( c1 != c2 ) {
+			return qfalse;
+		}
+	} while ( c1 != '\0' );
+
+	return qtrue;
+}
+
+
 int Q_stricmp( const char *s1, const char *s2 ) 
 {
 	unsigned char c1, c2;

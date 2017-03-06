@@ -206,7 +206,7 @@ DIRECTORY SCANNING
 
 #define	MAX_FOUND_FILES	0x1000
 
-void Sys_ListFilteredFiles( const char *basedir, char *subdirs, const char *filter, char **list, int *numfiles ) {
+void Sys_ListFilteredFiles( const char *basedir, const char *subdirs, const char *filter, char **list, int *numfiles ) {
 	char		search[MAX_OSPATH], newsubdirs[MAX_OSPATH];
 	char		filename[MAX_OSPATH];
 	int			findhandle;
@@ -216,7 +216,7 @@ void Sys_ListFilteredFiles( const char *basedir, char *subdirs, const char *filt
 		return;
 	}
 
-	if (strlen(subdirs)) {
+	if ( *subdirs ) {
 		Com_sprintf( search, sizeof(search), "%s\\%s\\*", basedir, subdirs );
 	}
 	else {
@@ -230,12 +230,11 @@ void Sys_ListFilteredFiles( const char *basedir, char *subdirs, const char *filt
 
 	do {
 		if (findinfo.attrib & _A_SUBDIR) {
-			if (Q_stricmp(findinfo.name, ".") && Q_stricmp(findinfo.name, "..")) {
-				if (strlen(subdirs)) {
-					Com_sprintf( newsubdirs, sizeof(newsubdirs), "%s\\%s", subdirs, findinfo.name);
-				}
-				else {
-					Com_sprintf( newsubdirs, sizeof(newsubdirs), "%s", findinfo.name);
+			if ( !Q_streq( findinfo.name, "." ) && !Q_streq( findinfo.name, ".." ) ) {
+				if ( *subdirs ) {
+					Com_sprintf( newsubdirs, sizeof(newsubdirs), "%s\\%s", subdirs, findinfo.name );
+				} else {
+					Com_sprintf( newsubdirs, sizeof(newsubdirs), "%s", findinfo.name );
 				}
 				Sys_ListFilteredFiles( basedir, newsubdirs, filter, list, numfiles );
 			}
