@@ -216,7 +216,7 @@ int	VM_CallInterpreted2( vm_t *vm, int nargs, int *args ) {
 	opStack = stack;
 	opStackTop = stack + ARRAY_LEN( stack ) - 1;
 
-	vm->programStack -= 256; // reserve entire frame for effective compile-time LOCAL+LOAD* checks
+	programStack -= 256; // reserve entire frame for effective compile-time LOCAL+LOAD* checks
 	img = (int*)&image[ programStack ];
 	for ( i = 0; i < nargs; i++ ) {
 		img[ i + 2 ] = args[ i ];
