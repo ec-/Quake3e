@@ -200,6 +200,7 @@ struct vm_s {
 
 	int			dataMask;
 	int			dataLength;			// exact data segment length
+	int			dataAlloc;			// actually allocated
 
 	int			stackBottom;		// if programStack < stackBottom, error
 	int			*opStackTop;		

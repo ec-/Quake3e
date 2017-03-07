@@ -516,12 +516,19 @@ static void EmitCheckReg( vm_t *vm, int reg, int size )
 	EmitString( "58" );			// pop eax
 #endif
 
+#if idx64
+	if ( reg == REG_EAX )
+		EmitString( "44 39 C8" );// cmp eax, r9d // vm->dataMask
+	else
+		EmitString( "44 39 C9" );// cmp ecx, r9d // vm->dataMask
+#else
 	if ( reg == REG_EAX )
 		EmitString( "3D" );		// cmp eax, 0x12345678
 	else
 		EmitString( "81 F9" );	// cmp ecx, 0x12345678
 
-	Emit4( vm->dataMask - ( size - 1 ) ); // FIXME: use vm->dataSize?
+	Emit4( vm->dataMask - (size - 1) );
+#endif
 
 	// error reporting
 	EmitString( "0F 87" );		// ja +errorFunction
@@ -2409,7 +2416,8 @@ int	VM_CallCompiled( vm_t *vm, int nargs, int *args )
 	// we might be called recursively, so this might not be the very top
 	stackOnEntry = vm->programStack;
 	oldOpTop = vm->opStackTop;
-	vm->programStack -= 256; // reserve entire frame for effective compile-time LOCAL+LOAD* checks
+
+	vm->programStack -= MAX_VMMAIN_CALL_ARGS*4;
 
 	// set up the stack frame 
 	image = (int*)( vm->dataBase + vm->programStack );

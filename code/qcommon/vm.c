@@ -622,6 +622,7 @@ else
 vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 	int					length;
 	int					dataLength;
+	int					dataAlloc;
 	int					i;
 	char				filename[MAX_QPATH], *errorMsg;
 	unsigned int		crc32sum;
@@ -663,30 +664,34 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 		tryjts = qtrue;
 	}
 
-	// reserve 256 bytes for entry frame
-	dataLength = header->dataLength + header->litLength + header->bssLength + 256;
+	
+	dataLength = header->dataLength + header->litLength + header->bssLength;
 	vm->dataLength = dataLength;
 
 	// round up to next power of 2 so all data operations can
 	// be mask protected
-	for ( i = 0 ; dataLength > ( 1 << i ) ; i++ ) {
-	}
+	for ( i = 0 ; dataLength > ( 1 << i ) ; i++ ) 
+		;
 	dataLength = 1 << i;
+
+	// reserve some space for effective LOCAL+LOAD* checks
+	dataAlloc = dataLength + 256;
 
 	if( alloc ) {
 		// allocate zero filled space for initialized and uninitialized data
-		vm->dataBase = Hunk_Alloc( dataLength, h_high );
+		vm->dataBase = Hunk_Alloc( dataAlloc, h_high );
 		vm->dataMask = dataLength - 1;
+		vm->dataAlloc = dataAlloc;
 	} else {
 		// clear the data, but make sure we're not clearing more than allocated
-		if( vm->dataMask + 1 != dataLength ) {
+		if ( vm->dataAlloc != dataAlloc ) {
 			VM_Free( vm );
 			FS_FreeFile( header );
 			Com_Printf( S_COLOR_YELLOW "Warning: Data region size of %s not matching after"
 					"VM_Restart()\n", filename );
 			return NULL;
 		}
-		Com_Memset( vm->dataBase, 0, dataLength );
+		Com_Memset( vm->dataBase, 0, vm->dataAlloc );
 	}
 
 	// copy the intialized data
@@ -1130,7 +1135,7 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 
 	//Com_Printf( S_COLOR_GREEN "[%s] crc: %08x, ic: %i, dl: %i\n", vm->name, vm->crc32sum, vm->instructionCount, vm->dataLength );
 	if ( vm->index == VM_CGAME ) {
-		if ( vm->crc32sum == 0x3E93FC1A && vm->instructionCount == 123596 && vm->dataLength == 2007792 ) {
+		if ( vm->crc32sum == 0x3E93FC1A && vm->instructionCount == 123596 && vm->dataLength == 2007536 ) {
 			ip = buf + 110190;
 			if ( ip->op == OP_ENTER && (ip+183)->op == OP_LEAVE && ip->value == (ip+183)->value ) {
 				ip++;
@@ -1143,7 +1148,7 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 			}
 		} 
 		else
-		if ( vm->crc32sum == 0xF0F1AE90 && vm->instructionCount == 123552 && vm->dataLength == 2007776 ) {
+		if ( vm->crc32sum == 0xF0F1AE90 && vm->instructionCount == 123552 && vm->dataLength == 2007520 ) {
 			ip = buf + 110177;
 			if ( ip->op == OP_ENTER && (ip+183)->op == OP_LEAVE && ip->value == (ip+183)->value ) {
 				ip++;
@@ -1158,7 +1163,7 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 	}
 
 	if ( vm->index == VM_GAME ) {
-		if ( vm->crc32sum == 0x5AAE0ACC && vm->instructionCount == 251521 && vm->dataLength == 1872720 ) {
+		if ( vm->crc32sum == 0x5AAE0ACC && vm->instructionCount == 251521 && vm->dataLength == 1872464 ) {
 			vm->forceDataMask = qtrue; // OSP server doing some bad things with memory
 		} else {
 			vm->forceDataMask = qfalse;
