@@ -1160,6 +1160,15 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 				buf[4359].value++;
 			}
 		}
+		if ( vm->crc32sum == 0x051D4668 && vm->instructionCount == 267812 && vm->dataLength == 38064376 ) {
+			int i;
+			ip = buf + 235;
+			if ( ip->value == 70943 ) {
+				for ( i = 0; i < 8; i++ ) {
+					ip[i].op = OP_IGNORE;
+				}
+			}
+		}
 	}
 
 	if ( vm->index == VM_GAME ) {
