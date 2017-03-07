@@ -502,7 +502,7 @@ static void EmitCheckReg( vm_t *vm, int reg, int size )
 				EmitString( "25" ); 	// and eax, 0x12345678
 			else
 				EmitString( "81 E1" );  // and ecx, 0x12345678
-			Emit4( vm->dataMask & ~(size - 1) );
+			Emit4( vm->dataMask /*& ~(size - 1)*/ );
 		}
 		return;
 	}

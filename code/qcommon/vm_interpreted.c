@@ -461,12 +461,12 @@ nextInstruction2:
 			break;
 
 		case OP_STORE2:
-			*(short *)&image[ r1.i & (dataMask & ~1) ] = r0.i;
+			*(short *)&image[ r1.i & dataMask ] = r0.i;
 			opStack -= 2;
 			break;
 
 		case OP_STORE4:
-			*(int *)&image[ r1.i & (dataMask & ~3) ] = r0.i;
+			*(int *)&image[ r1.i & dataMask ] = r0.i;
 			opStack -= 2;
 			break;
 
