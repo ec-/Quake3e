@@ -2417,7 +2417,7 @@ int	VM_CallCompiled( vm_t *vm, int nargs, int *args )
 	stackOnEntry = vm->programStack;
 	oldOpTop = vm->opStackTop;
 
-	vm->programStack -= MAX_VMMAIN_CALL_ARGS*4;
+	vm->programStack -= (MAX_VMMAIN_CALL_ARGS+2)*4;
 
 	// set up the stack frame 
 	image = (int*)( vm->dataBase + vm->programStack );

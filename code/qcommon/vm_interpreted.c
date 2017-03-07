@@ -216,7 +216,7 @@ int	VM_CallInterpreted2( vm_t *vm, int nargs, int *args ) {
 	opStack = stack;
 	opStackTop = stack + ARRAY_LEN( stack ) - 1;
 
-	programStack -= MAX_VMMAIN_CALL_ARGS*4;
+	programStack -= (MAX_VMMAIN_CALL_ARGS+2)*4;
 	img = (int*)&image[ programStack ];
 	for ( i = 0; i < nargs; i++ ) {
 		img[ i + 2 ] = args[ i ];
@@ -448,11 +448,11 @@ nextInstruction2:
 			goto nextInstruction2;
 
 		case OP_LOAD2:
-			r0.i = *opStack = *(unsigned short *)&image[ r0.i & ( dataMask & ~1 ) ];
+			r0.i = *opStack = *(unsigned short *)&image[ r0.i & dataMask ];
 			goto nextInstruction2;
 
 		case OP_LOAD4:
-			r0.i = *opStack = *(int *)&image[ r0.i & ( dataMask & ~3 ) ];
+			r0.i = *opStack = *(int *)&image[ r0.i & dataMask ];
 			goto nextInstruction2;
 
 		case OP_STORE1:
