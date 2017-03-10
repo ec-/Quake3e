@@ -255,6 +255,23 @@ static void SV_BoundMaxClients( int minimum ) {
 
 /*
 ===============
+SV_SetSnapshotParams
+===============
+*/
+static void SV_SetSnapshotParams( void ) 
+{
+	if ( com_dedicated->integer ) {
+		svs.numSnapshotEntities = sv_maxclients->integer * PACKET_BACKUP * MAX_SNAPSHOT_ENTITIES;
+	} else {
+		// we don't need nearly as many when playing locally
+		svs.numSnapshotEntities = sv_maxclients->integer* 4 * MAX_SNAPSHOT_ENTITIES;
+	}
+	svs.modSnapshotEntities = ( 0x10000000 / svs.numSnapshotEntities ) * svs.numSnapshotEntities;
+}
+
+
+/*
+===============
 SV_Startup
 
 Called when a host starts a map when it wasn't running
@@ -270,14 +287,7 @@ static void SV_Startup( void ) {
 	SV_BoundMaxClients( 1 );
 
 	svs.clients = Z_Malloc (sizeof(client_t) * sv_maxclients->integer );
-	if ( com_dedicated->integer ) {
-		svs.numSnapshotEntities = sv_maxclients->integer * PACKET_BACKUP * MAX_SNAPSHOT_ENTITIES;
-	} else {
-		// we don't need nearly as many when playing locally
-		svs.numSnapshotEntities = sv_maxclients->integer * 4 * MAX_SNAPSHOT_ENTITIES;
-	}
-
-	svs.modSnapshotEntities = ( 0x30000000 / svs.numSnapshotEntities ) * svs.numSnapshotEntities;
+	SV_SetSnapshotParams();
 	svs.initialized = qtrue;
 
 	// Don't respect sv_killserver unless a server is actually running
@@ -349,15 +359,7 @@ void SV_ChangeMaxClients( void ) {
 	// free the old clients on the hunk
 	Hunk_FreeTempMemory( oldClients );
 	
-	// allocate new snapshot entities
-	if ( com_dedicated->integer ) {
-		svs.numSnapshotEntities = sv_maxclients->integer * PACKET_BACKUP * MAX_SNAPSHOT_ENTITIES;
-	} else {
-		// we don't need nearly as many when playing locally
-		svs.numSnapshotEntities = sv_maxclients->integer * 4 * MAX_SNAPSHOT_ENTITIES;
-	}
-
-	svs.modSnapshotEntities = ( 0x30000000 / svs.numSnapshotEntities ) * svs.numSnapshotEntities;
+	SV_SetSnapshotParams();
 }
 
 
@@ -637,6 +639,7 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 
 	Sys_SetStatus( "Running map %s", mapname );
 }
+
 
 /*
 ===============

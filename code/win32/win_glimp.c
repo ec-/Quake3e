@@ -815,6 +815,7 @@ void SetDesktopDisplaySettings( void )
 void UpdateMonitorInfo( void ) 
 {
 	MONITORINFOEX mInfo;
+	DEVMODE	devMode;
 	HMONITOR hMon;
 	RECT *Rect;
 	int w, h, x ,y;
@@ -849,11 +850,18 @@ void UpdateMonitorInfo( void )
 				glw_state.desktopY = y;
 				glw_state.hMonitor = hMon;
 				memcpy( glw_state.displayName, mInfo.szDevice, sizeof( glw_state.displayName ) );
+				
+				memset( &devMode, 0, sizeof( devMode ) );
+				devMode.dmSize = sizeof( DEVMODE );
+				if ( EnumDisplaySettings( mInfo.szDevice, ENUM_CURRENT_SETTINGS, &devMode ) )
+					;
+				glw_state.desktopBitsPixel = devMode.dmBitsPerPel;
+
 				ri.Printf( PRINT_ALL, "...current monitor: %ix%i@%i,%i %s\n", 
 					w, h, x, y, WtoA( mInfo.szDevice ) );
 				if ( gammaSet ) {
 					R_SetColorMappings();
-			}
+				}
 		}
 	}
 }
@@ -962,7 +970,7 @@ static void GLW_AttemptMSAA( void )
 */
 static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS, int colorbits, qboolean cdsFullscreen )
 {
-	HDC hDC;
+	//HDC hDC;
 	const char *win_fs[] = { "W", "FS" };
 	int		cdsRet;
 	DEVMODE dm;
@@ -975,13 +983,13 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS
 	//
 	// check our desktop attributes
 	//
-	hDC = GetDC( GetDesktopWindow() );
-	glw_state.desktopBitsPixel = GetDeviceCaps( hDC, BITSPIXEL );
+	//hDC = GetDC( GetDesktopWindow() );
+	//glw_state.desktopBitsPixel = GetDeviceCaps( hDC, BITSPIXEL );
 	//glw_state.desktopWidth = GetDeviceCaps( hDC, HORZRES );
 	//glw_state.desktopHeight = GetDeviceCaps( hDC, VERTRES );
 	//glw_state.desktopX = 0;
 	//glw_state.desktopY = 0;
-	ReleaseDC( GetDesktopWindow(), hDC );
+	//ReleaseDC( GetDesktopWindow(), hDC );
 	
 	UpdateMonitorInfo();
 
@@ -1574,6 +1582,7 @@ void GLimp_Init( void )
 	// Clear window buffer when it's created
 	qglClearColor( 0.0, 0.0, 0.0, 1.0 );
 	qglClear( GL_COLOR_BUFFER_BIT );
+
 	GLimp_SwapBuffers();
 }
 
