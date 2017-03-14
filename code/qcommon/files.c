@@ -667,7 +667,7 @@ static void FS_CopyFile( char *fromOSPath, char *toOSPath ) {
 }
 
 
-static int FS_HasExt( const char *fileName, const char **extList, int extCount );
+static const char *FS_HasExt( const char *fileName, const char **extList, int extCount );
 
 /*
 =================
@@ -676,23 +676,45 @@ FS_AllowedExtension
 */
 qboolean FS_AllowedExtension( const char *fileName, qboolean allowPk3s, const char **ext ) 
 {
-	static const char *extlist[] =	{ "dll", "so", "dylib", "pk3" };
-	int index, n;
+	static const char *extlist[] =	{ "dll", "exe", "so", "dylib", "qvm", "pk3" };
+	const char *e;
+	int i, n;
+
+	e = Q_strrchr( fileName, '.' );
+
+	// check for unix '.so.[0-9]' pattern
+	if ( e >= (fileName + 3) && *(e+1) >= '0' && *(e+1) <= '9' && *(e+2) == '\0' ) 
+	{
+		if ( *(e-3) == '.' && (*(e-2) == 's' || *(e-2) == 'S') && (*(e-1) == 'o' || *(e-1) == 'O') )
+		{
+			if ( ext )
+			{
+				*ext = (e-2);
+			}
+			return qfalse;
+		}
+	}
+	if ( !e )
+		return qtrue;
+
+	e++; // skip '.'
 
 	if ( allowPk3s )
 		n = ARRAY_LEN( extlist ) - 1;
 	else
 		n = ARRAY_LEN( extlist );
+	
+	for ( i = 0; i < n; i++ ) 
+	{
+		if ( Q_stricmp( e, extlist[i] ) == 0 ) 
+		{
+			if ( ext )
+				*ext = e;
+			return qfalse;
+		}
+	}
 
-	index = FS_HasExt( fileName, extlist, n );
-
-	if ( index == -1 )
-		return qtrue;
-
-	if ( ext )
-		*ext = extlist[ index ];
-
-	return qfalse;
+	return qtrue;
 }
 
 
@@ -1258,7 +1280,7 @@ qboolean FS_IsDemoExt( const char *filename, int namelen )
 }
 
 
-static int FS_HasExt( const char *fileName, const char **extList, int extCount ) 
+static const char *FS_HasExt( const char *fileName, const char **extList, int extCount ) 
 {
 	const char *e;
 	int i;
@@ -1266,23 +1288,24 @@ static int FS_HasExt( const char *fileName, const char **extList, int extCount )
 	e = Q_strrchr( fileName, '.' );
 
 	if ( !e ) 
-		return -1;
+		return NULL;
 
 	for ( i = 0, e++; i < extCount; i++ ) 
 	{
 		if ( !Q_stricmp( e, extList[i] ) )
-			return i;
+			return e;
 	}
 
-	return -1;
+	return NULL;
 }
+
 
 static qboolean FS_GeneralRef( const char *filename ) 
 {
 	// allowed non-ref extensions
 	static const char *extList[] = { "config", "shader", "arena", "menu", "bot", "cfg", "txt" };
 
-	if ( FS_HasExt( filename, extList, ARRAY_LEN( extList ) ) != -1 )
+	if ( FS_HasExt( filename, extList, ARRAY_LEN( extList ) ) )
 		return qfalse;
 	
 	if ( !Q_stricmp( filename, "vm/qagame.qvm" ) )
@@ -1313,7 +1336,7 @@ static qboolean FS_DeniedPureFile( const char *filename )
 		"game" // menu files
 	};
 
-	if ( FS_HasExt( filename, extList, ARRAY_LEN( extList ) ) != -1 )
+	if ( FS_HasExt( filename, extList, ARRAY_LEN( extList ) ) )
 		return qfalse;
 	
 	if ( FS_IsDemoExt( filename, strlen( filename ) ) )

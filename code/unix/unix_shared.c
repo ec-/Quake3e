@@ -522,7 +522,14 @@ Sys_LoadLibrary
 */
 void *Sys_LoadLibrary( const char *name )
 {
+	const char *ext;
 	void *handle;
+
+	if ( FS_AllowedExtension( name, qfalse, &ext ) )
+	{
+		Com_Error( ERR_FATAL, "Sys_LoadLibrary: Unable to load library with '%s' extension", name, ext );
+	}
+
 	handle = dlopen( name, RTLD_NOW );
 	return handle;
 }

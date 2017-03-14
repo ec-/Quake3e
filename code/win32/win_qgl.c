@@ -399,7 +399,7 @@ qboolean QGL_Init( const char *dllname )
 	glw_state.OpenGLLib = Sys_LoadLibrary( libName );
 #else
 	ri.Printf( PRINT_ALL, "...loading '%s.dll' : ", dllname );
-	glw_state.OpenGLLib = Sys_LoadLibrary( dllname );
+	glw_state.OpenGLLib = Sys_LoadLibrary( va("%s.dll", dllname) );
 #endif
 
 	if ( glw_state.OpenGLLib == NULL )
