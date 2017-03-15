@@ -3262,11 +3262,11 @@ qboolean FS_ComparePaks( char *neededpaks, int len, qboolean dlstring ) {
 
       if (dlstring)
       {
-	// We need this to make sure we won't hit the end of the buffer or the server could
-	// overwrite non-pk3 files on clients by writing so much crap into neededpaks that
-	// Q_strcat cuts off the .pk3 extension.
+		// We need this to make sure we won't hit the end of the buffer or the server could
+		// overwrite non-pk3 files on clients by writing so much crap into neededpaks that
+		// Q_strcat cuts off the .pk3 extension.
 	
-	origpos += strlen(origpos);
+		origpos += strlen(origpos);
 	
         // Remote name
         Q_strcat( neededpaks, len, "@");
@@ -3962,6 +3962,11 @@ void FS_PureServerSetReferencedPaks( const char *pakSums, const char *pakNames )
 			d = c;
 
 		for ( i = 0 ; i < d ; i++ ) {
+
+			// Too long pak name may lose its extension during further processing
+			if ( strlen( Cmd_Argv( i ) ) >= MAX_OSPATH-13 ) // + ".00000000.pk3"
+				Com_Error( ERR_DROP, "Referenced pak name is too long: %s", Cmd_Argv( i ) );
+
 			fs_serverReferencedPakNames[i] = CopyString( Cmd_Argv( i ) );
 		}
 	}
@@ -3972,6 +3977,7 @@ void FS_PureServerSetReferencedPaks( const char *pakSums, const char *pakNames )
 
 	fs_numServerReferencedPaks = c;	
 }
+
 
 /*
 ================

@@ -1896,6 +1896,7 @@ void CL_BeginDownload( const char *localName, const char *remoteName ) {
 	CL_AddReliableCommand( va("download %s", remoteName), qfalse );
 }
 
+
 /*
 =================
 CL_NextDownload
@@ -1903,7 +1904,7 @@ CL_NextDownload
 A download completed or failed
 =================
 */
-void CL_NextDownload(void) 
+void CL_NextDownload( void )
 {
 	char *s;
 	char *remoteName, *localName;
@@ -1942,7 +1943,8 @@ void CL_NextDownload(void)
 		if ( (s = strchr(s, '@')) != NULL )
 			*s++ = 0;
 		else
-			s = localName + strlen(localName); // point at the nul byte
+			s = localName + strlen(localName); // point at the null byte
+
 #ifdef USE_CURL
 		if(!(cl_allowDownload->integer & DLF_NO_REDIRECT)) {
 			if(clc.sv_allowDownload & DLF_NO_REDIRECT) {
@@ -1989,13 +1991,14 @@ void CL_NextDownload(void)
 		clc.downloadRestart = qtrue;
 
 		// move over the rest
-		memmove( clc.downloadList, s, strlen(s) + 1);
+		memmove( clc.downloadList, s, strlen(s) + 1 );
 
 		return;
 	}
 
 	CL_DownloadsComplete();
 }
+
 
 /*
 =================
@@ -2005,25 +2008,26 @@ After receiving a valid game state, we valid the cgame and local zip files here
 and determine if we need to download them
 =================
 */
-void CL_InitDownloads(void) {
-  char missingfiles[1024];
+void CL_InitDownloads( void ) {
 
-  if ( !(cl_allowDownload->integer & DLF_ENABLE) )
-  {
-    // autodownload is disabled on the client
-    // but it's possible that some referenced files on the server are missing
-    if (FS_ComparePaks( missingfiles, sizeof( missingfiles ), qfalse ) )
-    {      
-      // NOTE TTimo I would rather have that printed as a modal message box
-      //   but at this point while joining the game we don't know wether we will successfully join or not
-      Com_Printf( "\nWARNING: You are missing some files referenced by the server:\n%s"
-                  "You might not be able to join the game\n"
-                  "Go to the setting menu to turn on autodownload, or get the file elsewhere\n\n", missingfiles );
-    }
-  }
-  else if ( FS_ComparePaks( clc.downloadList, sizeof( clc.downloadList ) , qtrue ) ) {
+	if ( !(cl_allowDownload->integer & DLF_ENABLE) )
+	{
+		char missingfiles[ MAXPRINTMSG ];
 
-    Com_Printf("Need paks: %s\n", clc.downloadList );
+		// autodownload is disabled on the client
+		// but it's possible that some referenced files on the server are missing
+		if ( FS_ComparePaks( missingfiles, sizeof( missingfiles ), qfalse ) )
+		{
+			// NOTE TTimo I would rather have that printed as a modal message box
+			// but at this point while joining the game we don't know wether we will successfully join or not
+			Com_Printf( "\nWARNING: You are missing some files referenced by the server:\n%s"
+				"You might not be able to join the game\n"
+				"Go to the setting menu to turn on autodownload, or get the file elsewhere\n\n", missingfiles );
+		}
+	}
+	else if ( FS_ComparePaks( clc.downloadList, sizeof( clc.downloadList ) , qtrue ) ) {
+
+		Com_Printf( "Need paks: %s\n", clc.downloadList );
 
 		if ( *clc.downloadList ) {
 			// if autodownloading is not enabled on the server
@@ -2040,6 +2044,7 @@ void CL_InitDownloads(void) {
 		
 	CL_DownloadsComplete();
 }
+
 
 /*
 =================

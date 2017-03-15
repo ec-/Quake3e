@@ -195,13 +195,13 @@ typedef struct {
 	fileHandle_t download;
 	char		downloadTempName[MAX_OSPATH];
 	char		downloadName[MAX_OSPATH];
-	int		sv_allowDownload;
+	int			sv_allowDownload;
 	char		sv_dlURL[MAX_CVAR_VALUE_STRING];
 	int			downloadNumber;
 	int			downloadBlock;	// block we are waiting for
 	int			downloadCount;	// how many bytes we got
 	int			downloadSize;	// how many bytes we got
-	char		downloadList[MAX_INFO_STRING]; // list of paks we need to download
+	char		downloadList[BIG_INFO_STRING]; // list of paks we need to download
 	qboolean	downloadRestart;	// if true, we need to do another FS_Restart because we downloaded a pak
 
 #ifdef USE_CURL
