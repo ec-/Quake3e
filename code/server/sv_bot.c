@@ -44,7 +44,7 @@ int	bot_enable;
 SV_BotAllocateClient
 ==================
 */
-int SV_BotAllocateClient(void) {
+int SV_BotAllocateClient( void ) {
 	int			i;
 	client_t	*cl;
 
@@ -63,8 +63,9 @@ int SV_BotAllocateClient(void) {
 	cl->gentity->s.number = i;
 	cl->state = CS_ACTIVE;
 	cl->lastPacketTime = svs.time;
+	cl->snapshotMsec = 1000 / sv_fps->integer;
 	cl->netchan.remoteAddress.type = NA_BOT;
-	cl->rate = 16384;
+	cl->rate = 100000;
 
 	return i;
 }
