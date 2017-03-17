@@ -665,7 +665,8 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 	}
 
 	
-	dataLength = header->dataLength + header->litLength + header->bssLength;
+	vm->dataOrig = header->dataLength + header->litLength + header->bssLength;
+	dataLength = vm->dataOrig + PROGRAM_STACK_EXTRA;
 	vm->dataLength = dataLength;
 
 	// round up to next power of 2 so all data operations can
@@ -1135,7 +1136,7 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 
 	//Com_Printf( S_COLOR_GREEN "[%s] crc: %08x, ic: %i, dl: %i\n", vm->name, vm->crc32sum, vm->instructionCount, vm->dataLength );
 	if ( vm->index == VM_CGAME ) {
-		if ( vm->crc32sum == 0x3E93FC1A && vm->instructionCount == 123596 && vm->dataLength == 2007536 ) {
+		if ( vm->crc32sum == 0x3E93FC1A && vm->instructionCount == 123596 && vm->dataOrig == 2007536 ) {
 			ip = buf + 110190;
 			if ( ip->op == OP_ENTER && (ip+183)->op == OP_LEAVE && ip->value == (ip+183)->value ) {
 				ip++;
@@ -1148,7 +1149,7 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 			}
 		} 
 		else
-		if ( vm->crc32sum == 0xF0F1AE90 && vm->instructionCount == 123552 && vm->dataLength == 2007520 ) {
+		if ( vm->crc32sum == 0xF0F1AE90 && vm->instructionCount == 123552 && vm->dataOrig == 2007520 ) {
 			ip = buf + 110177;
 			if ( ip->op == OP_ENTER && (ip+183)->op == OP_LEAVE && ip->value == (ip+183)->value ) {
 				ip++;
@@ -1160,7 +1161,7 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 				buf[4359].value++;
 			}
 		}
-		if ( vm->crc32sum == 0x051D4668 && vm->instructionCount == 267812 && vm->dataLength == 38064376 ) {
+		if ( vm->crc32sum == 0x051D4668 && vm->instructionCount == 267812 && vm->dataOrig == 38064376 ) {
 			int i;
 			ip = buf + 235;
 			if ( ip->value == 70943 ) {
@@ -1172,7 +1173,7 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 	}
 
 	if ( vm->index == VM_GAME ) {
-		if ( vm->crc32sum == 0x5AAE0ACC && vm->instructionCount == 251521 && vm->dataLength == 1872464 ) {
+		if ( vm->crc32sum == 0x5AAE0ACC && vm->instructionCount == 251521 && vm->dataOrig == 1872464 ) {
 			vm->forceDataMask = qtrue; // OSP server doing some bad things with memory
 		} else {
 			vm->forceDataMask = qfalse;
@@ -1302,7 +1303,7 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 
 	// the stack is implicitly at the end of the image
 	vm->programStack = vm->dataMask + 1;
-	vm->stackBottom = vm->programStack - PROGRAM_STACK_SIZE;
+	vm->stackBottom = vm->programStack - PROGRAM_STACK_SIZE - PROGRAM_STACK_EXTRA;
 
 	vm->compiled = qfalse;
 

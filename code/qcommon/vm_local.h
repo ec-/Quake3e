@@ -35,6 +35,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // Hardcoded in q3asm an reserved at end of bss
 #define	PROGRAM_STACK_SIZE	0x10000
 
+// for some buggy mods
+#define	PROGRAM_STACK_EXTRA	(16*1024)
+
 typedef enum {
 	OP_UNDEF, 
 
@@ -200,6 +203,7 @@ struct vm_s {
 
 	int			dataMask;
 	int			dataLength;			// exact data segment length
+	int			dataOrig;			// unmodified original value
 	int			dataAlloc;			// actually allocated
 
 	int			stackBottom;		// if programStack < stackBottom, error
