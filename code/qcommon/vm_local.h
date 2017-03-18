@@ -149,10 +149,6 @@ typedef struct {
 	int store:1;
 } instruction_t;
 
-const char *opname[OP_MAX]; 
-
-typedef int	vmptr_t;
-
 typedef struct vmSymbol_s {
 	struct vmSymbol_s	*next;
 	int		symValue;

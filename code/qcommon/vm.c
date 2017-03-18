@@ -113,6 +113,93 @@ opcode_info_t ops[ OP_MAX ] =
 	{ 0, 0, 1, 0 } // cvfi
 };
 
+const char *opname[ 256 ] = {
+	"OP_UNDEF", 
+
+	"OP_IGNORE", 
+
+	"OP_BREAK",
+
+	"OP_ENTER",
+	"OP_LEAVE",
+	"OP_CALL",
+	"OP_PUSH",
+	"OP_POP",
+
+	"OP_CONST",
+
+	"OP_LOCAL",
+
+	"OP_JUMP",
+
+	//-------------------
+
+	"OP_EQ",
+	"OP_NE",
+
+	"OP_LTI",
+	"OP_LEI",
+	"OP_GTI",
+	"OP_GEI",
+
+	"OP_LTU",
+	"OP_LEU",
+	"OP_GTU",
+	"OP_GEU",
+
+	"OP_EQF",
+	"OP_NEF",
+
+	"OP_LTF",
+	"OP_LEF",
+	"OP_GTF",
+	"OP_GEF",
+
+	//-------------------
+
+	"OP_LOAD1",
+	"OP_LOAD2",
+	"OP_LOAD4",
+	"OP_STORE1",
+	"OP_STORE2",
+	"OP_STORE4",
+	"OP_ARG",
+
+	"OP_BLOCK_COPY",
+
+	//-------------------
+
+	"OP_SEX8",
+	"OP_SEX16",
+
+	"OP_NEGI",
+	"OP_ADD",
+	"OP_SUB",
+	"OP_DIVI",
+	"OP_DIVU",
+	"OP_MODI",
+	"OP_MODU",
+	"OP_MULI",
+	"OP_MULU",
+
+	"OP_BAND",
+	"OP_BOR",
+	"OP_BXOR",
+	"OP_BCOM",
+
+	"OP_LSH",
+	"OP_RSHI",
+	"OP_RSHU",
+
+	"OP_NEGF",
+	"OP_ADDF",
+	"OP_SUBF",
+	"OP_DIVF",
+	"OP_MULF",
+
+	"OP_CVIF",
+	"OP_CVFI"
+};
 
 cvar_t	*vm_rtChecks;
 
@@ -132,15 +219,6 @@ static const char *vmName[ VM_COUNT ] = {
 void VM_VmInfo_f( void );
 void VM_VmProfile_f( void );
 
-
-
-#if 0 // 64bit!
-// converts a VM pointer to a C pointer and
-// checks to make sure that the range is acceptable
-void	*VM_VM2C( vmptr_t p, int length ) {
-	return (void *)p;
-}
-#endif
 
 void VM_Debug( int level ) {
 	vm_debugLevel = level;
@@ -1090,20 +1168,33 @@ const char *VM_CheckInstructions( instruction_t *buf,
 
 	// ensure that the optimization pass knows about all the jump table targets
 	if ( jumpTableTargets ) {
+		// first pass - validate
 		for( i = 0; i < numJumpTableTargets; i++ ) {
 			n = *(int *)(jumpTableTargets + ( i * sizeof( int ) ) );
 			if ( n < 0 || n >= instructionCount ) {
-				sprintf( errBuf, "jump target %i at %i is out of range [0..%i]", n, i, instructionCount - 1 ); 
-				return errBuf;
+				Com_Printf( S_COLOR_YELLOW "jump target %i set on instruction %i that is out of range [0..%i]",
+					i, n, instructionCount - 1 ); 
+				break;
 			}
 			if ( buf[n].opStack != 0 ) {
-				opStack = buf[n].opStack;
-				sprintf( errBuf, "jump target set on instruction %i with bad opStack %i", n, opStack ); 
-				return errBuf;
+				Com_Printf( S_COLOR_YELLOW "jump target %i set on instruction %i (%s) with bad opStack %i\n",
+					i, n, opname[ buf[n].op ], buf[n].opStack ); 
+				break;
 			}
+		}
+		if ( i != numJumpTableTargets ) {
+			// we may trap this on buggy VM_MAGIC_VER2 images
+			// but we can safely optimize code even without JTRGSEG
+			// so just switch to VM_MAGIC path here
+			goto __noJTS;
+		}
+		// second pass - apply
+		for( i = 0; i < numJumpTableTargets; i++ ) {
+			n = *(int *)(jumpTableTargets + ( i * sizeof( int ) ) );
 			buf[n].jused = 1;
 		}
 	} else {
+__noJTS:
 		v = 0;
 		// instructions with opStack > 0 can't be jump labels so its safe to optimize/merge
 		for ( i = 0, ci = buf; i < instructionCount; i++, ci++ ) {
