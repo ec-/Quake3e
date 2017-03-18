@@ -352,7 +352,7 @@ static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 				InvalidateRect( s_wcd.hwndErrorBox, NULL, FALSE );
 			}
 		} 
-		else if ( wParam == CON_TIMER_ID && conTimerID != 0 ) 
+		else if ( wParam == CON_TIMER_ID && conTimerID != 0 && !com_errorEntered )
 		{
 #ifdef DEDICATED
 			Com_Frame( qfalse );
@@ -402,7 +402,7 @@ static LRESULT WINAPI BufferWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 		return 0;
 
 	case WM_TIMER:
-		if ( wParam == BUF_TIMER_ID && bufTimerID != 0 ) 
+		if ( wParam == BUF_TIMER_ID && bufTimerID != 0 && !com_errorEntered )
 		{
 #ifdef DEDICATED
 			Com_Frame( qfalse );
