@@ -118,6 +118,7 @@ static void ConClear( void )
 	UpdateWindow( s_wcd.hwndBuffer );
 	s_wcd.newline = qfalse;
 	curConSize = 0;
+	conBufPos = 0;
 }
 
 static int GetStatusBarHeight( void ) 
