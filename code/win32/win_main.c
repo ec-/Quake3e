@@ -473,7 +473,7 @@ void *Sys_LoadLibrary( const char *name )
 
 	if ( FS_AllowedExtension( name, qfalse, &ext ) )
 	{
-		Com_Error( ERR_FATAL, "Sys_LoadLibrary: Unable to load library with '%s' extension", name, ext );
+		Com_Error( ERR_FATAL, "Sys_LoadLibrary: Unable to load library with '%s' extension", ext );
 	}
 
 	return (void *)LoadLibrary( AtoW( name ) );
