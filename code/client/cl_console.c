@@ -185,6 +185,7 @@ void Con_Dump_f( void )
 	int		bufferlen;
 	char	*buffer;
 	char	filename[MAX_QPATH];
+	char	*ext;
 
 	if ( Cmd_Argc() != 2 )
 	{
@@ -194,6 +195,11 @@ void Con_Dump_f( void )
 
 	Q_strncpyz( filename, Cmd_Argv( 1 ), sizeof( filename ) );
 	COM_DefaultExtension( filename, sizeof( filename ), ".txt" );
+
+	if ( !FS_AllowedExtension( filename, qfalse, &ext ) ) {
+		Com_Printf( "%s: Invalid filename extension '%s'.\n", __func__, ext );
+		return;
+	}
 
 	f = FS_FOpenFileWrite( filename );
 	if ( f == FS_INVALID_HANDLE )

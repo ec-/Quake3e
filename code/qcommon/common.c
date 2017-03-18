@@ -3091,6 +3091,7 @@ Write the config file to a specific name
 */
 void Com_WriteConfig_f( void ) {
 	char	filename[MAX_QPATH];
+	char	*ext;
 
 	if ( Cmd_Argc() != 2 ) {
 		Com_Printf( "Usage: writeconfig <filename>\n" );
@@ -3099,6 +3100,12 @@ void Com_WriteConfig_f( void ) {
 
 	Q_strncpyz( filename, Cmd_Argv(1), sizeof( filename ) );
 	COM_DefaultExtension( filename, sizeof( filename ), ".cfg" );
+
+	if ( !FS_AllowedExtension( filename, qfalse, &ext ) ) {
+		Com_Printf( "%s: Invalid filename extension: '%s'.\n", __func__, ext );
+		return;
+	}
+
 	Com_Printf( "Writing %s.\n", filename );
 	Com_WriteConfigToFile( filename );
 }
