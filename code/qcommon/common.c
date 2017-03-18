@@ -781,7 +781,7 @@ int Com_Split( char *in, char **out, int outsz, int delim )
 Com_FilterPath
 ============
 */
-int Com_FilterPath(const char *filter, char *name, int casesensitive)
+int Com_FilterPath(const char *filter, const char *name, int casesensitive)
 {
 	int i;
 	char new_filter[MAX_QPATH];
@@ -3091,7 +3091,7 @@ Write the config file to a specific name
 */
 void Com_WriteConfig_f( void ) {
 	char	filename[MAX_QPATH];
-	char	*ext;
+	const char *ext;
 
 	if ( Cmd_Argc() != 2 ) {
 		Com_Printf( "Usage: writeconfig <filename>\n" );

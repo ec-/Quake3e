@@ -863,7 +863,7 @@ char		*Com_ConsoleTitle( char *commandline );
 int			Com_Split( char *in, char **out, int outsz, int delim );
 
 int			Com_Filter(char *filter, char *name, int casesensitive);
-int			Com_FilterPath( const char *filter, char *name, int casesensitive );
+int			Com_FilterPath( const char *filter, const char *name, int casesensitive );
 int			Com_RealTime(qtime_t *qtime);
 qboolean	Com_SafeMode( void );
 void		Com_RunAndTimeServerPacket(netadr_t *evFrom, msg_t *buf);

@@ -1621,8 +1621,8 @@ void	Cvar_Update( vmCvar_t *vmCvar ) {
 
 	len = strlen( cv->string );
 	if ( len + 1 > MAX_CVAR_VALUE_STRING ) {
-		Com_Printf( S_COLOR_YELLOW "Cvar_Update: src %s length %ld exceeds MAX_CVAR_VALUE_STRING - truncate\n",
-			cv->string, len );
+		Com_Printf( S_COLOR_YELLOW "Cvar_Update: src %s length %d exceeds MAX_CVAR_VALUE_STRING - truncate\n",
+			cv->string, (int)len );
 	}
 
 	Q_strncpyz( vmCvar->string, cv->string,  MAX_CVAR_VALUE_STRING ); 

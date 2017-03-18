@@ -185,7 +185,7 @@ void Con_Dump_f( void )
 	int		bufferlen;
 	char	*buffer;
 	char	filename[MAX_QPATH];
-	char	*ext;
+	const char *ext;
 
 	if ( Cmd_Argc() != 2 )
 	{

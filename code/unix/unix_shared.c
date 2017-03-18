@@ -189,11 +189,12 @@ qboolean Sys_RandomBytes( byte *string, int len )
 
 // bk001129 - new in 1.26
 void Sys_ListFilteredFiles( const char *basedir, const char *subdirs, const char *filter, char **list, int *numfiles ) {
-	char		search[MAX_OSPATH], newsubdirs[MAX_OSPATH];
-	char		filename[MAX_OSPATH];
-	DIR			*fdir;
-	struct dirent *d;
-	struct stat st;
+	char	search[MAX_OSPATH*2+1];
+	char	newsubdirs[MAX_OSPATH*2];
+	char	filename[MAX_OSPATH*2];
+	DIR		*fdir;
+	struct	dirent *d;
+	struct	stat st;
 
 	if ( *numfiles >= MAX_FOUND_FILES - 1 ) {
 		return;
@@ -245,7 +246,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 	struct dirent *d;
 	DIR		*fdir;
 	qboolean dironly = wantsubs;
-	char		search[MAX_OSPATH];
+	char		search[MAX_OSPATH*2+MAX_QPATH+1];
 	int			nfiles;
 	char		**listCopy;
 	char		*list[MAX_FOUND_FILES];
@@ -527,7 +528,7 @@ void *Sys_LoadLibrary( const char *name )
 
 	if ( FS_AllowedExtension( name, qfalse, &ext ) )
 	{
-		Com_Error( ERR_FATAL, "Sys_LoadLibrary: Unable to load library with '%s' extension", name, ext );
+		Com_Error( ERR_FATAL, "Sys_LoadLibrary: Unable to load library with '%s' extension", ext );
 	}
 
 	handle = dlopen( name, RTLD_NOW );
