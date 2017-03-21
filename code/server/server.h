@@ -153,7 +153,9 @@ typedef struct client_s {
 	int				lastConnectTime;	// svs.time when connection started
 	int				lastSnapshotTime;	// svs.time of last sent snapshot
 	qboolean		rateDelayed;		// true if nextSnapshotTime was set based on rate instead of snapshotMsec
+#ifdef _DEBUG
 	int				timeoutCount;		// must timeout a few frames in a row so debugging doesn't break
+#endif
 	clientSnapshot_t	frames[PACKET_BACKUP];	// updates can be delta'd from here
 	int				ping;
 	int				rate;				// bytes / second

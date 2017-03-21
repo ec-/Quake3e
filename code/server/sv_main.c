@@ -951,14 +951,14 @@ static void SV_CheckTimeouts( void ) {
 			cl->lastPacketTime = svs.time;
 		}
 
-		if (cl->state == CS_ZOMBIE
-		&& cl->lastPacketTime < zombiepoint) {
+		if ( cl->state == CS_ZOMBIE && cl->lastPacketTime < zombiepoint ) {
 			// using the client id cause the cl->name is empty at this point
 			Com_DPrintf( "Going from CS_ZOMBIE to CS_FREE for client %d\n", i );
 			cl->state = CS_FREE;	// can now be reused
 			continue;
 		}
-		if ( cl->state >= CS_CONNECTED && cl->lastPacketTime < droppoint) {
+		if ( cl->state >= CS_CONNECTED && cl->lastPacketTime < droppoint ) {
+#ifdef _DEBUG
 			// wait several frames so a debugger session doesn't
 			// cause a timeout
 			if ( ++cl->timeoutCount > 5 ) {
@@ -967,6 +967,10 @@ static void SV_CheckTimeouts( void ) {
 			}
 		} else {
 			cl->timeoutCount = 0;
+#else
+			SV_DropClient( cl, "timed out" ); 
+			cl->state = CS_FREE;	// don't bother with zombie state
+#endif
 		}
 	}
 }
