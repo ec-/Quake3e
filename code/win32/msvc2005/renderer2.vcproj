@@ -84,8 +84,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory=".\build_x64\renderer2_release"
-			IntermediateDirectory=".\build_x64\renderer2_release"
+			OutputDirectory=".\build\renderer2_release_x64"
+			IntermediateDirectory=".\build\renderer2_release_x64"
 			ConfigurationType="4"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -222,8 +222,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory=".\build_x64\renderer2_debug"
-			IntermediateDirectory=".\build_x64\renderer2_debug"
+			OutputDirectory=".\build\renderer2_debug_x64"
+			IntermediateDirectory=".\build\renderer2_debug_x64"
 			ConfigurationType="4"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
