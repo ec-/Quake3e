@@ -448,7 +448,6 @@ static void SV_BuildClientSnapshot( client_t *client ) {
 	sharedEntity_t				*ent;
 	entityState_t				*state;
 	svEntity_t					*svEnt;
-	sharedEntity_t				*clent;
 	int							clientNum;
 	playerState_t				*ps;
 
@@ -465,8 +464,7 @@ static void SV_BuildClientSnapshot( client_t *client ) {
   // https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=62
 	frame->num_entities = 0;
 	
-	clent = client->gentity;
-	if ( !clent || client->state == CS_ZOMBIE ) {
+	if ( !client->gentity || client->state == CS_ZOMBIE ) {
 		return;
 	}
 
@@ -474,14 +472,14 @@ static void SV_BuildClientSnapshot( client_t *client ) {
 	ps = SV_GameClientNum( client - svs.clients );
 	frame->ps = *ps;
 
-	// never send client's own entity, because it can
-	// be regenerated from the playerstate
 	clientNum = frame->ps.clientNum;
 	if ( clientNum < 0 || clientNum >= MAX_GENTITIES ) {
 		Com_Error( ERR_DROP, "SV_SvEntityForGentity: bad gEnt" );
 	}
-	svEnt = &sv.svEntities[ clientNum ];
 
+	// never send client's own entity, because it can
+	// be regenerated from the playerstate
+	svEnt = &sv.svEntities[ clientNum ];
 	svEnt->snapshotCounter = sv.snapshotCounter;
 
 	// find the client's viewpoint
@@ -558,7 +556,7 @@ void SV_SendClientSnapshot( client_t *client ) {
 
 	// bots need to have their snapshots build, but
 	// the query them directly without needing to be sent
-	if ( client->gentity && client->gentity->r.svFlags & SVF_BOT ) {
+	if ( client->netchan.remoteAddress.type == NA_BOT ) {
 		return;
 	}
 
