@@ -466,6 +466,8 @@ void CL_ParseGamestate( msg_t *msg ) {
 
 	clc.connectPacketCount = 0;
 
+	Com_Memset( &nullstate, 0, sizeof( nullstate ) );
+
 	// wipe local client state
 	CL_ClearState();
 
@@ -505,7 +507,6 @@ void CL_ParseGamestate( msg_t *msg ) {
 			if ( newnum < 0 || newnum >= MAX_GENTITIES ) {
 				Com_Error( ERR_DROP, "Baseline number out of range: %i", newnum );
 			}
-			Com_Memset (&nullstate, 0, sizeof(nullstate));
 			es = &cl.entityBaselines[ newnum ];
 			MSG_ReadDeltaEntity( msg, &nullstate, es, newnum );
 		} else {
