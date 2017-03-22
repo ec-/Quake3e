@@ -215,20 +215,21 @@ baseline will be transmitted
 ================
 */
 static void SV_CreateBaseline( void ) {
-	sharedEntity_t *svent;
+	sharedEntity_t *ent;
 	int				entnum;	
 
-	for ( entnum = 1; entnum < sv.num_entities ; entnum++ ) {
-		svent = SV_GentityNum(entnum);
-		if (!svent->r.linked) {
+	for ( entnum = 0; entnum < sv.num_entities ; entnum++ ) {
+		ent = SV_GentityNum( entnum );
+		if ( !ent->r.linked ) {
 			continue;
 		}
-		svent->s.number = entnum;
+		ent->s.number = entnum;
 
 		//
 		// take current state as baseline
 		//
-		sv.svEntities[entnum].baseline = svent->s;
+		sv.svEntities[ entnum ].baseline = ent->s;
+		sv.baselineUsed[ entnum ] = 1;
 	}
 }
 
@@ -533,7 +534,7 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	}
 
 	// create a baseline for more efficient communications
-	SV_CreateBaseline ();
+	SV_CreateBaseline();
 
 	for (i=0 ; i<sv_maxclients->integer ; i++) {
 		// send the new gamestate to all connected clients
@@ -805,7 +806,7 @@ void SV_Shutdown( const char *finalmsg ) {
 		Z_Free(svs.clients);
 	}
 	Com_Memset( &svs, 0, sizeof( svs ) );
-	Com_Memset( &sv, 0, sizeof( sv ) ); // -EC- FIXME: don't do that?
+	sv.time = 0;
 
 	Cvar_Set( "sv_running", "0" );
 	Cvar_Set( "ui_singlePlayerActive", "0" );

@@ -680,7 +680,8 @@ the wrong gamestate.
 */
 static void SV_SendClientGameState( client_t *client ) {
 	int			start;
-	entityState_t	*base, nullstate;
+	entityState_t nullstate;
+	const svEntity_t *svEnt;
 	msg_t		msg;
 	byte		msgBuffer[MAX_MSGLEN];
 
@@ -723,12 +724,12 @@ static void SV_SendClientGameState( client_t *client ) {
 	// write the baselines
 	Com_Memset( &nullstate, 0, sizeof( nullstate ) );
 	for ( start = 0 ; start < MAX_GENTITIES; start++ ) {
-		base = &sv.svEntities[start].baseline;
-		if ( !base->number ) {
+		if ( !sv.baselineUsed[ start ] ) {
 			continue;
 		}
+		svEnt = &sv.svEntities[ start ];
 		MSG_WriteByte( &msg, svc_baseline );
-		MSG_WriteDeltaEntity( &msg, &nullstate, base, qtrue );
+		MSG_WriteDeltaEntity( &msg, &nullstate, &svEnt->baseline, qtrue );
 	}
 
 	MSG_WriteByte( &msg, svc_EOF );

@@ -313,13 +313,12 @@ static void CL_WriteGamestate( qboolean initial )
 	}
 
 	// baselines
-	Com_Memset (&nullstate, 0, sizeof(nullstate));
+	Com_Memset( &nullstate, 0, sizeof( nullstate ) );
 	for ( i = 0; i < MAX_GENTITIES ; i++ ) {
-		ent = &cl.entityBaselines[i];
-		if ( !ent->number ) {
+		if ( !cl.baselineUsed[ i ] )
 			continue;
-		}
-		MSG_WriteByte( &msg, svc_baseline );		
+		ent = &cl.entityBaselines[ i ];
+		MSG_WriteByte( &msg, svc_baseline );
 		MSG_WriteDeltaEntity( &msg, &nullstate, ent, qtrue );
 	}
 
