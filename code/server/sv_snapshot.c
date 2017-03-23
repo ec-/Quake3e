@@ -461,8 +461,9 @@ static void SV_BuildClientSnapshot( client_t *client ) {
 	entityNumbers.numSnapshotEntities = 0;
 	Com_Memset( frame->areabits, 0, sizeof( frame->areabits ) );
 
-  // https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=62
+ 	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=62
 	frame->num_entities = 0;
+	frame->first_entity = svs.nextSnapshotEntities;
 	
 	if ( !client->gentity || client->state == CS_ZOMBIE ) {
 		return;
