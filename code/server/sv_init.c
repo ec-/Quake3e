@@ -88,8 +88,7 @@ void SV_UpdateConfigstrings(client_t *client)
 			continue;
 
 		// do not always send server info to all clients
-		if ( index == CS_SERVERINFO && client->gentity &&
-			(client->gentity->r.svFlags & SVF_NOSERVERINFO) ) {
+		if ( index == CS_SERVERINFO && ( SV_GentityNum( client - svs.clients )->r.svFlags & SVF_NOSERVERINFO ) ) {
 			continue;
 		}
 		SV_SendConfigstring(client, index);
@@ -136,7 +135,7 @@ void SV_SetConfigstring (int index, const char *val) {
 				continue;
 			}
 			// do not always send server info to all clients
-			if ( index == CS_SERVERINFO && client->gentity && (client->gentity->r.svFlags & SVF_NOSERVERINFO) ) {
+			if ( index == CS_SERVERINFO && ( SV_GentityNum( i )->r.svFlags & SVF_NOSERVERINFO ) ) {
 				continue;
 			}
 		
@@ -760,6 +759,7 @@ void SV_FinalMessage( const char *message ) {
 				}
 				// force a snapshot to be sent
 				cl->lastSnapshotTime = 0;
+				cl->state = CS_ZOMBIE; // skip delta generation
 				SV_SendClientSnapshot( cl );
 			}
 		}

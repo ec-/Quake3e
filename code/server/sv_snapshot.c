@@ -189,6 +189,16 @@ static void SV_WriteSnapshotToClient( client_t *client, msg_t *msg ) {
 	MSG_WriteByte (msg, frame->areabytes);
 	MSG_WriteData (msg, frame->areabits, frame->areabytes);
 
+	// don't send any changes to zombies
+	if ( client->state <= CS_ZOMBIE ) {
+		// playerstate
+		MSG_WriteByte( msg, 0 ); // # of changes
+		MSG_WriteBits( msg, 0, 1 ); // no array changes
+		// packet entities
+		MSG_WriteBits( msg, (MAX_GENTITIES-1), GENTITYNUM_BITS );
+		return;
+	}
+
 	// delta encode the playerstate
 	if ( oldframe ) {
 		MSG_WriteDeltaPlayerstate( msg, &oldframe->ps, &frame->ps );
@@ -465,13 +475,19 @@ static void SV_BuildClientSnapshot( client_t *client ) {
 	frame->num_entities = 0;
 	frame->first_entity = svs.nextSnapshotEntities;
 	
-	if ( !client->gentity || client->state == CS_ZOMBIE ) {
+	if ( client->state == CS_ZOMBIE ) 
 		return;
-	}
 
 	// grab the current playerState_t
 	ps = SV_GameClientNum( client - svs.clients );
 	frame->ps = *ps;
+
+	// we set client->gentity only after sending gamestate
+	// so don't send any packetentities changes until CS_PRIMED
+	// because new gamestate will invalidate them anyway
+	if ( !client->gentity ) {
+		return;
+	}
 
 	clientNum = frame->ps.clientNum;
 	if ( clientNum < 0 || clientNum >= MAX_GENTITIES ) {

@@ -306,7 +306,7 @@ void SV_DirectConnect( netadr_t from ) {
 	int			i;
 	client_t	*cl, *newcl;
 	client_t	temp;
-	sharedEntity_t *ent;
+	//sharedEntity_t *ent;
 	int			clientNum;
 	int			version;
 	int			qport;
@@ -518,8 +518,10 @@ gotnewcl:
 	// this is the only place a client_t is ever initialized
 	*newcl = temp;
 	clientNum = newcl - svs.clients;
-	ent = SV_GentityNum( clientNum );
-	newcl->gentity = ent;
+#if 0 // skip this until CS_PRIMED
+	//ent = SV_GentityNum( clientNum );
+	//newcl->gentity = ent;
+#endif
 
 	// save the challenge
 	newcl->challenge = challenge;
@@ -690,6 +692,9 @@ static void SV_SendClientGameState( client_t *client ) {
 	client->state = CS_PRIMED;
 	client->pureAuthentic = 0;
 	client->gotCP = qfalse;
+
+	// to start generating delta for packet entities
+	client->gentity = SV_GentityNum( client - svs.clients );
 
 	// when we receive the first packet from the client, we will
 	// notice that it is from a different serverid and that the
@@ -1335,8 +1340,9 @@ static void SV_VerifyPaks_f( client_t *cl ) {
 		else {
 			cl->pureAuthentic = 0;
 			cl->lastSnapshotTime = 0;
-			cl->state = CS_ACTIVE;
+			cl->state = CS_ZOMBIE; // skip delta generation
 			SV_SendClientSnapshot( cl );
+			cl->state = CS_ACTIVE;
 			SV_DropClient( cl, "Unpure client detected. Invalid .PK3 files referenced!" );
 		}
 	}
