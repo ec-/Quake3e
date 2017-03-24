@@ -52,6 +52,23 @@ typedef enum {
 	SS_GAME				// actively running
 } serverState_t;
 
+#define USE_CSS			// common snapshot storage system
+
+#ifdef USE_CSS
+
+// we might not use all MAX_GENTITIES every frame
+// so leave more room for slow-snaps clients etc.
+#define NUM_SNAPSHOT_FRAMES (PACKET_BACKUP*4)
+
+typedef struct snapshotFrame_s {
+	entityState_t *ents[ MAX_GENTITIES ];
+	int	frameNum;
+	int start;
+	int count;
+} snapshotFrame_t;
+
+#endif // USE_CSS
+
 typedef struct {
 	serverState_t	state;
 	qboolean		restarting;			// if true, send configstring changes during SS_LOADING
@@ -83,21 +100,25 @@ typedef struct {
 	byte			baselineUsed[ MAX_GENTITIES ];
 } server_t;
 
-
-
-
-
 typedef struct {
 	int				areabytes;
 	byte			areabits[MAX_MAP_AREA_BYTES];		// portalarea visibility bits
 	playerState_t	ps;
 	int				num_entities;
+#ifndef USE_CSS
 	int				first_entity;		// into the circular sv_packet_entities[]
 										// the entities MUST be in increasing state number
 										// order, otherwise the delta compression will fail
+#endif
 	int				messageSent;		// time the message was transmitted
 	int				messageAcked;		// time the message was acked
 	int				messageSize;		// used to rate drop packets
+
+#ifdef USE_CSS	
+	int				frameNum;			// from snapshot storage to compare with last valid
+	entityState_t	*ents[ MAX_SNAPSHOT_ENTITIES ];
+#endif
+
 } clientSnapshot_t;
 
 typedef enum {
@@ -220,6 +241,17 @@ typedef struct {
 	netadr_t	redirectAddress;			// for rcon return messages
 
 	netadr_t	authorizeAddress;			// for rcon return messages
+
+#ifdef USE_CSS
+	int			freeStorageEntities;
+	int			currentStoragePosition;
+	int			snapshotFrame;			// incremented with each common snapshot built
+	int			currentSnapshotFrame;	// for initializing empty frames
+	int			lastValidFrame;			// updated with each snapshot built
+	snapshotFrame_t	snapFrames[ NUM_SNAPSHOT_FRAMES ];
+	snapshotFrame_t	*currFrame; // current frame that clients can refer
+#endif
+
 } serverStatic_t;
 
 #define SERVER_MAXBANS	1024
@@ -371,6 +403,10 @@ void SV_WriteFrameToClient (client_t *client, msg_t *msg);
 void SV_SendMessageToClient( msg_t *msg, client_t *client );
 void SV_SendClientMessages( void );
 void SV_SendClientSnapshot( client_t *client );
+
+#ifdef USE_CSS
+void SV_IssueNewSnapshot( void );
+#endif
 
 //
 // sv_game.c
