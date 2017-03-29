@@ -636,6 +636,7 @@ static void SV_BuildClientSnapshot( client_t *client ) {
 	// clear everything in this snapshot
 	entityNumbers.numSnapshotEntities = 0;
 	Com_Memset( frame->areabits, 0, sizeof( frame->areabits ) );
+	frame->areabytes = 0;
 
 	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=62
 	frame->num_entities = 0;
@@ -652,16 +653,16 @@ static void SV_BuildClientSnapshot( client_t *client ) {
 	ps = SV_GameClientNum( client - svs.clients );
 	frame->ps = *ps;
 
+	clientNum = frame->ps.clientNum;
+	if ( clientNum < 0 || clientNum >= MAX_GENTITIES ) {
+		Com_Error( ERR_DROP, "SV_SvEntityForGentity: bad gEnt" );
+	}
+
 	// we set client->gentity only after sending gamestate
 	// so don't send any packetentities changes until CS_PRIMED
 	// because new gamestate will invalidate them anyway
 	if ( !client->gentity ) {
 		return;
-	}
-
-	clientNum = frame->ps.clientNum;
-	if ( clientNum < 0 || clientNum >= MAX_GENTITIES ) {
-		Com_Error( ERR_DROP, "SV_SvEntityForGentity: bad gEnt" );
 	}
 
 #ifdef USE_CSS
