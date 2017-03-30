@@ -2985,7 +2985,7 @@ void R_LoadCubemapEntities(char *cubemapEntityName)
 				isCubemap = qtrue;
 
 			if (!Q_stricmp(spawnVars[i][0], "name"))
-				Q_strncpyz(name, spawnVars[i][1], MAX_QPATH);
+				Q_strncpyz(name, spawnVars[i][1], sizeof(name));
 
 			if (!Q_stricmp(spawnVars[i][0], "origin"))
 			{
@@ -3001,7 +3001,7 @@ void R_LoadCubemapEntities(char *cubemapEntityName)
 		if (isCubemap && originSet)
 		{
 			cubemap_t *cubemap = &tr.cubemaps[numCubemaps];
-			Q_strncpyz(cubemap->name, name, MAX_QPATH);
+			Q_strncpyz(cubemap->name, name, sizeof(cubemap->name));
 			VectorCopy(origin, cubemap->origin);
 			cubemap->parallaxRadius = parallaxRadius;
 			numCubemaps++;

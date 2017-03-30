@@ -491,9 +491,10 @@ LONG WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 	return CallWindowProc( s_wcd.SysStatusWndProc, hWnd, uMsg, wParam, lParam );
 }
 
+
 LONG WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	TCHAR inputBuffer[1024];
+	TCHAR inputBuffer[ MAX_EDIT_LINE ];
 	int zDelta, fwKeys, i;
 	WPARAM scrollMsg;
 
@@ -578,7 +579,7 @@ LONG WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			char *s;
 
 			GetWindowText( hWnd, inputBuffer, sizeof( inputBuffer ) );
-			strncpy( console.buffer, WtoA( inputBuffer ), sizeof( console.buffer ) );
+			Q_strncpyz( console.buffer, WtoA( inputBuffer ), sizeof( console.buffer ) );
 			SendMessage( hWnd, EM_GETSEL, (WPARAM) &pos, (LPARAM) 0 );
 			console.cursor = pos;
 			Con_SaveField( &console );
@@ -603,7 +604,7 @@ LONG WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			DWORD pos;
 
 			GetWindowText( hWnd, inputBuffer, sizeof( inputBuffer ) );
-			strncpy( console.buffer, WtoA( inputBuffer ), sizeof( console.buffer ) );
+			Q_strncpyz( console.buffer, WtoA( inputBuffer ), sizeof( console.buffer ) );
 			SendMessage( hWnd, EM_GETSEL, (WPARAM) &pos, (LPARAM) 0 );
 			console.cursor = pos;
 			

@@ -81,7 +81,7 @@ void Log_Open( const char *filename )
 		return;
 	} //end if
 
-	strncpy( logfile.filename, filename, MAX_LOGFILENAMESIZE );
+	Q_strncpyz( logfile.filename, filename, sizeof( logfile.filename ) );
 	botimport.Print( PRT_MESSAGE, "Opened log %s\n", logfile.filename );
 } //end of the function Log_Create
 //===========================================================================

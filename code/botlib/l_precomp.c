@@ -1323,7 +1323,7 @@ define_t *PC_DefineFromString(const char *string)
 	script = LoadScriptMemory(string, strlen(string), "*extern");
 	//create a new source
 	Com_Memset(&src, 0, sizeof(source_t));
-	strncpy(src.filename, "*extern", sizeof(src.filename) - 1);
+	Q_strncpyz( src.filename, "*extern", sizeof( src.filename ) );
 	src.scriptstack = script;
 #if DEFINEHASHING
 	src.definehash = GetClearedMemory(DEFINEHASHSIZE * sizeof(define_t *));
@@ -2960,7 +2960,7 @@ void PC_SetIncludePath(source_t *source, const char *path)
 {
 	size_t len;
 
-	Q_strncpyz(source->includepath, path, sizeof(source->includepath)-1);
+	Q_strncpyz( source->includepath, path, sizeof(source->includepath)-1 );
 
 	len = strlen(source->includepath);
 	//add trailing path seperator

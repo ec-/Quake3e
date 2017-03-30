@@ -1625,7 +1625,7 @@ void	Cvar_Update( vmCvar_t *vmCvar ) {
 			cv->string, (int)len );
 	}
 
-	Q_strncpyz( vmCvar->string, cv->string,  MAX_CVAR_VALUE_STRING ); 
+	Q_strncpyz( vmCvar->string, cv->string, sizeof( vmCvar->string ) ); 
 
 	vmCvar->value = cv->value;
 	vmCvar->integer = cv->integer;

@@ -302,7 +302,7 @@ qhandle_t RE_RegisterModel( const char *name ) {
 	//
 	// load the files
 	//
-	Q_strncpyz( localName, name, MAX_QPATH );
+	Q_strncpyz( localName, name, sizeof( localName ) );
 
 	ext = COM_GetExtension( localName );
 

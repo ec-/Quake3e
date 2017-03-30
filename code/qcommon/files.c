@@ -4182,7 +4182,7 @@ void	FS_FilenameCompletion( const char *dir, const char *ext,
 
 	for( i = 0; i < nfiles; i++ ) {
 		FS_ConvertPath( filenames[ i ] );
-		Q_strncpyz( filename, filenames[ i ], MAX_STRING_CHARS );
+		Q_strncpyz( filename, filenames[ i ], sizeof( filename ) );
 
 		if ( stripExt ) {
 			COM_StripExtension( filename, filename, sizeof( filename ) );

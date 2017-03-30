@@ -353,7 +353,7 @@ qboolean CL_OpenAVIForWriting( const char *fileName )
     return qfalse;
   }
 
-  Q_strncpyz( afd.fileName, fileName, MAX_QPATH );
+  Q_strncpyz( afd.fileName, fileName, sizeof( afd.fileName ) );
 
   afd.frameRate = cl_aviFrameRate->integer;
   afd.framePeriod = (int)( 1000000.0f / afd.frameRate );

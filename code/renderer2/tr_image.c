@@ -2305,7 +2305,7 @@ void R_LoadImage( const char *name, byte **pic, int *width, int *height, GLenum 
 	*picFormat = GL_RGBA8;
 	*numMips = 0;
 
-	Q_strncpyz( localName, name, MAX_QPATH );
+	Q_strncpyz( localName, name, sizeof( localName ) );
 
 	ext = COM_GetExtension( localName );
 
