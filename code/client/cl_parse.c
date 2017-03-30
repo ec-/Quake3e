@@ -546,6 +546,35 @@ void CL_ParseGamestate( msg_t *msg ) {
 }
 
 
+/*
+=====================
+CL_ValidPakSignature
+
+checks for valid ZIP signature
+returns qtrue for normal and empty archives
+=====================
+*/
+qboolean CL_ValidPakSignature( const byte *data, int len ) 
+{
+	// maybe it is not 100% correct to check for file size here
+	// because we may receive more data in future packets
+	// but situation when server sends fragmented/shortened
+	// zip header in first packet - looks pretty suspicious
+	if ( len < 22 )
+		return qfalse; // minimal ZIP file length is 22 bytes
+
+	if ( data[0] != 'P' || data[1] != 'K' )
+		return qfalse;
+
+	if ( data[2] == 0x3 && data[3] == 0x4 )
+		return qtrue; // local file header
+
+	if ( data[2] == 0x5 && data[3] == 0x6 )
+		return qtrue; // EOCD
+
+	return qfalse;
+}
+
 //=====================================================================
 
 /*
@@ -599,11 +628,20 @@ void CL_ParseDownload ( msg_t *msg ) {
 	}
 
 	// open the file if not opened yet
-	if ( clc.download == FS_INVALID_HANDLE )
+	if ( clc.download == FS_INVALID_HANDLE ) 
 	{
+		if ( !CL_ValidPakSignature( data, size ) ) 
+		{
+			Com_Printf( S_COLOR_YELLOW "Invalid pak signature for %s\n", clc.downloadName );
+			CL_AddReliableCommand( "stopdl", qfalse );
+			CL_NextDownload();
+			return;
+		}
+
 		clc.download = FS_SV_FOpenFileWrite( clc.downloadTempName );
 
-		if ( clc.download == FS_INVALID_HANDLE ) {
+		if ( clc.download == FS_INVALID_HANDLE ) 
+		{
 			Com_Printf( "Could not create %s\n", clc.downloadTempName );
 			CL_AddReliableCommand( "stopdl", qfalse );
 			CL_NextDownload();

@@ -226,12 +226,26 @@ static int CL_cURL_CallbackProgress( void *dummy, double dltotal, double dlnow,
 }
 
 
-static size_t CL_cURL_CallbackWrite(void *buffer, size_t size, size_t nmemb,
-	void *stream)
+static size_t CL_cURL_CallbackWrite( void *buffer, size_t size, size_t nmemb, void *stream )
 {
+	if ( clc.download == FS_INVALID_HANDLE ) {
+		if ( !CL_ValidPakSignature( buffer, size*nmemb ) ) {
+			Com_Error( ERR_DROP, "CL_cURL_CallbackWrite: invalid pak signature for %s", 
+				clc.downloadName );
+			return (size_t)-1;
+		}
+		clc.download = FS_SV_FOpenFileWrite( clc.downloadTempName );
+		if ( clc.download == FS_INVALID_HANDLE ) {
+			Com_Error( ERR_DROP, "CL_cURL_CallbackWrite: failed to open %s for writing", 
+				clc.downloadTempName );
+			return (size_t)-1;
+		}
+	}
+
 	FS_Write( buffer, size*nmemb, ((fileHandle_t*)stream)[0] );
 	return size*nmemb;
 }
+
 
 CURLcode qcurl_easy_setopt_warn(CURL *curl, CURLoption option, ...)
 {
@@ -259,6 +273,13 @@ CURLcode qcurl_easy_setopt_warn(CURL *curl, CURLoption option, ...)
 	return result;
 }
 
+static void CL_cURL_CloseDownload( void ) 
+{
+	if ( clc.download != FS_INVALID_HANDLE )
+		FS_FCloseFile( clc.download );
+	clc.download = FS_INVALID_HANDLE;
+}
+
 void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 {
 	CURLMcode result;
@@ -281,6 +302,8 @@ void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 	Cvar_Set("cl_downloadCount", "0");
 	Cvar_SetValue("cl_downloadTime", cls.realtime);
 
+	CL_cURL_CloseDownload();
+
 	clc.downloadBlock = 0; // Starting new file
 	clc.downloadCount = 0;
 
@@ -288,12 +311,6 @@ void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 	if(!clc.downloadCURL) {
 		Com_Error(ERR_DROP, "CL_cURL_BeginDownload: qcurl_easy_init() "
 			"failed");
-		return;
-	}
-	clc.download = FS_SV_FOpenFileWrite( clc.downloadTempName );
-	if(!clc.download) {
-		Com_Error(ERR_DROP, "CL_cURL_BeginDownload: failed to open "
-			"%s for writing", clc.downloadTempName);
 		return;
 	}
 
@@ -362,8 +379,7 @@ void CL_cURL_PerformDownload( void )
 	if(msg == NULL) {
 		return;
 	}
-	FS_FCloseFile( clc.download );
-	clc.download = FS_INVALID_HANDLE;
+	CL_cURL_CloseDownload();
 	if ( msg->msg == CURLMSG_DONE && msg->data.result == CURLE_OK ) {
 		FS_SV_Rename( clc.downloadTempName, clc.downloadName );
 		clc.downloadRestart = qtrue;
@@ -669,6 +685,13 @@ static size_t Com_DL_CallbackWrite( void *ptr, size_t size, size_t nmemb, void *
 		if ( !dl->pk3ext ) 
 		{
 			Com_Printf( S_COLOR_YELLOW "Com_DL_CallbackWrite(): file must have pk3 extension.\n" );
+			return (size_t)-1;
+		}
+
+		if ( !CL_ValidPakSignature( ptr, size*nmemb ) ) 
+		{
+			Com_Printf( S_COLOR_YELLOW "Com_DL_CallbackWrite(): invalid pak signature for %s.\n", 
+				dl->Name );
 			return (size_t)-1;
 		}
 
