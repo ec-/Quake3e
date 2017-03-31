@@ -22,11 +22,76 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "q_shared.h"
 #include "qcommon.h"
 
+#define USE_UDT_ENCODER 
+// alternative huffman encoder, backported from uberdemotools project
+// https://github.com/mightycow/uberdemotools/blob/develop/UDT_DLL/src/message.cpp
+
 static huffman_t		msgHuff;
 
 static qboolean			msgInit = qfalse;
 
 int pcount[256];
+
+
+#ifdef USE_UDT_ENCODER
+static const uint16_t HuffmanEncoderTable[ 256 ] =
+{
+	34, 437, 1159, 1735, 2584, 280, 263, 1014, 341, 839, 1687, 183, 311, 726, 920, 2761,
+	599, 1417, 7945, 8073, 7642, 16186, 8890, 12858, 3913, 6362, 2746, 13882, 7866, 1080, 1273, 3400,
+	886, 3386, 1097, 11482, 15450, 16282, 12506, 15578, 2377, 6858, 826, 330, 10010, 12042, 8009, 1928,
+	631, 3128, 3832, 6521, 1336, 2840, 217, 5657, 121, 3865, 6553, 6426, 4666, 3017, 5193, 7994,
+	3320, 1287, 1991, 71, 536, 1304, 2057, 1801, 5081, 1594, 11642, 14106, 6617, 10938, 7290, 13114,
+	4809, 2522, 5818, 14010, 7482, 5914, 7738, 9018, 3450, 11450, 5897, 2697, 3193, 4185, 3769, 3464,
+	3897, 968, 6841, 6393, 2425, 775, 1048, 5369, 454, 648, 3033, 3145, 2440, 2297, 200, 2872,
+	2136, 2248, 1144, 1944, 1431, 1031, 376, 408, 1208, 3608, 2616, 1848, 1784, 1671, 135, 1623,
+	502, 663, 1223, 2007, 248, 2104, 24, 2168, 1656, 3704, 1400, 1864, 7353, 7241, 2073, 1241,
+	4889, 5690, 6153, 15738, 698, 5210, 1722, 986, 12986, 3994, 3642, 9306, 4794, 794, 16058, 7066,
+	4425, 8090, 4922, 714, 11738, 7194, 12762, 7450, 5001, 1562, 11834, 13402, 9914, 3290, 3258, 5338,
+	905, 15386, 9178, 15306, 3162, 15050, 15930, 10650, 15674, 8522, 8250, 7114, 10714, 14362, 9786, 2266,
+	1352, 4153, 1496, 518, 151, 15482, 12410, 2952, 7961, 8906, 1114, 58, 4570, 7258, 13530, 474,
+	9, 15258, 3546, 6170, 4314, 2970, 7386, 14666, 7130, 6474, 14554, 5514, 15322, 3098, 15834, 3978,
+	3353, 2329, 2458, 12170, 570, 1818, 11578, 14618, 1175, 8986, 4218, 9754, 8762, 392, 8282, 11290,
+	7546, 3850, 11354, 12298, 15642, 14986, 8666, 20491, 90, 13706, 12186, 6794, 11162, 10458, 759, 582
+};
+
+
+static ID_INLINE void HuffmanPutBit( byte* fout, int32_t bitIndex, int32_t bit )
+{
+	const int32_t byteIndex = bitIndex >> 3;
+	const int32_t bitOffset = bitIndex & 7;
+
+	if ( bitOffset == 0 ) // Is this the first bit of a new byte?
+	{
+		// We don't need to preserve what's already in there,
+		// so we can write that byte immediately.
+		fout[ byteIndex ] = (byte)bit;
+		return;
+	}
+
+	fout[(bitIndex >> 3)] |= bit << (bitIndex & 7);
+}
+
+
+static ID_INLINE void HuffmanOffsetTransmit( byte* fout, int32_t* offset, int32_t ch )
+{
+	int32_t bits;
+	uint32_t i;
+	const uint16_t result = HuffmanEncoderTable[ ch ];
+	const uint16_t bitCount = result & 15;
+	const uint16_t code = (result >> 4) & 0x7FF;
+	const uint32_t bitIndex = *(const uint32_t*)offset;
+
+	bits = (int32_t)code;
+	for( i = 0; i < bitCount; ++i )
+	{
+		HuffmanPutBit( fout, bitIndex + i, bits & 1 );
+		bits >>= 1;
+	}
+
+	*offset += (int32_t)bitCount;
+}
+
+#endif // USE_UDT_ENCODER
 
 /*
 ==============================================================================
@@ -144,14 +209,23 @@ void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 			int nbits;
 			nbits = bits&7;
 			for(i=0;i<nbits;i++) {
+#ifdef USE_UDT_ENCODER
+				HuffmanPutBit( msg->data, msg->bit, (value & 1) );
+				msg->bit++;
+#else
 				Huff_putBit((value&1), msg->data, &msg->bit);
+#endif
 				value = (value>>1);
 			}
 			bits = bits - nbits;
 		}
 		if (bits) {
 			for(i=0;i<bits;i+=8) {
+#ifdef USE_UDT_ENCODER
+				HuffmanOffsetTransmit( msg->data, &msg->bit, (value & 0xFF) );
+#else
 				Huff_offsetTransmit (&msgHuff.compressor, (value&0xff), msg->data, &msg->bit);
+#endif
 				value = (value>>8);
 			}
 		}
@@ -830,7 +904,7 @@ void MSG_WriteDeltaEntity( msg_t *msg, const entityState_t *from, const entitySt
 	netField_t	*field;
 	int			trunc;
 	float		fullFloat;
-	int			*fromF, *toF;
+	const int	*fromF, *toF;
 
 	numFields = ARRAY_LEN( entityStateFields );
 
@@ -944,12 +1018,13 @@ void MSG_ReadDeltaEntity( msg_t *msg, const entityState_t *from, entityState_t *
 	int			i, lc;
 	int			numFields;
 	netField_t	*field;
-	int			*fromF, *toF;
+	const int	*fromF;
+	int			*toF;
 	int			print;
 	int			trunc;
 	int			startBit, endBit;
 
-	if ( number < 0 || number >= MAX_GENTITIES) {
+	if ( number < 0 || number >= MAX_GENTITIES ) {
 		Com_Error( ERR_DROP, "Bad delta entity number: %i", number );
 	}
 
@@ -1140,7 +1215,7 @@ void MSG_WriteDeltaPlayerstate( msg_t *msg, const playerState_t *from, const pla
 	int				powerupbits;
 	int				numFields;
 	netField_t		*field;
-	int				*fromF, *toF;
+	const int		*fromF, *toF;
 	float			fullFloat;
 	int				trunc, lc;
 
@@ -1290,7 +1365,8 @@ void MSG_ReadDeltaPlayerstate( msg_t *msg, const playerState_t *from, playerStat
 	int			numFields;
 	int			startBit, endBit;
 	int			print;
-	int			*fromF, *toF;
+	const int	*fromF;
+	int			*toF;
 	int			trunc;
 	playerState_t	dummy;
 
