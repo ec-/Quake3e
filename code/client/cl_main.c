@@ -913,7 +913,6 @@ void CL_NextDemo( void ) {
 	char v[MAX_STRING_CHARS];
 
 	Q_strncpyz( v, Cvar_VariableString( "nextdemo" ), sizeof( v ) );
-	v[sizeof(v)-1] = '\0';
 	Com_DPrintf("CL_NextDemo: %s\n", v );
 	if (!v[0]) {
 		return;
@@ -2765,14 +2764,18 @@ void CL_Frame ( int msec ) {
 	}
 
 	// if recording an avi, lock to a fixed fps
-	if ( CL_VideoRecording() && cl_aviFrameRate->integer && msec) {
+	if ( CL_VideoRecording() && cl_aviFrameRate->integer && msec ) {
 		// save the current screen
 		if ( cls.state == CA_ACTIVE || cl_forceavidemo->integer ) {
 
-			fps = MIN( cl_aviFrameRate->value * com_timescale->value, 1000.0f );
+			if ( com_timescale->value > 0.0001f )
+				fps = MIN( cl_aviFrameRate->value / com_timescale->value, 1000.0f );
+			else
+				fps = 1000.0f;
+
 			frameDuration = MAX( 1000.0f / fps, 1.0f ) + clc.aviVideoFrameRemainder;
 
-			CL_TakeVideoFrame( );
+			CL_TakeVideoFrame();
 
 			msec = (int)frameDuration;
 			clc.aviVideoFrameRemainder = frameDuration - msec;
@@ -3579,7 +3582,7 @@ void CL_ServerInfoPacket( netadr_t from, msg_t *msg ) {
 	cls.numlocalservers = i+1;
 	CL_InitServerInfo( &cls.localServers[i], &from );
 									 
-	Q_strncpyz( info, MSG_ReadString( msg ), MAX_INFO_STRING );
+	Q_strncpyz( info, MSG_ReadString( msg ), sizeof( info ) );
 	if (strlen(info)) {
 		if (info[strlen(info)-1] != '\n') {
 			Q_strcat(info, sizeof(info), "\n");
