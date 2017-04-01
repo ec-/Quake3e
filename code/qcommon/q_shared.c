@@ -845,9 +845,9 @@ void Q_strncpyz( char *dest, const char *src, int destsize )
 	// this is obvious behavior change but actually it may affect only buggy QVMs
 	// which passes overlapping or short buffers to cvar reading routines
 	// what is rather good than bad because it will no longer cause overwrites, maybe
-	dest[ --destsize ] = '\0';
-	while ( destsize-- && (*dest++ = *src++) != '\0' )
+	while ( --destsize > 0 && (*dest++ = *src++) != '\0' )
 		;
+	*dest = '\0';
 #else
 	strncpy( dest, src, destsize-1 );
 	dest[ destsize-1 ] = '\0';
