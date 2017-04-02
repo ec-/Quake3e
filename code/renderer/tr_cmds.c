@@ -498,6 +498,9 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 		if ( backEnd.screenshotMask & SCREENSHOT_JPG && backEnd.screenshotJPG[0] ) {
 			RB_TakeScreenshotJPEG( 0, 0, glConfig.vidWidth, glConfig.vidHeight, backEnd.screenshotJPG );
 		}
+		if ( backEnd.screenshotMask & SCREENSHOT_AVI ) {
+			RB_TakeVideoFrameCmd( &backEnd.vcmd );
+		}
 		backEnd.screenshotJPG[0] = '\0';
 		backEnd.screenshotTGA[0] = '\0';
 		backEnd.screenshotMask = 0;
@@ -519,10 +522,9 @@ void RE_TakeVideoFrame( int width, int height,
 		return;
 	}
 
-	cmd = R_GetCommandBuffer( sizeof( *cmd ) );
-	if( !cmd ) {
-		return;
-	}
+	backEnd.screenshotMask |= SCREENSHOT_AVI;
+
+	cmd = &backEnd.vcmd;
 
 	cmd->commandId = RC_VIDEOFRAME;
 

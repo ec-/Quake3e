@@ -906,10 +906,19 @@ typedef struct {
 #endif
 } backEndCounters_t;
 
+typedef struct videoFrameCommand_s {
+	int					commandId;
+	int					width;
+	int					height;
+	byte				*captureBuffer;
+	byte				*encodeBuffer;
+	qboolean			motionJpeg;
+} videoFrameCommand_t;
 
 enum {
 	SCREENSHOT_TGA = 1<<0,
-	SCREENSHOT_JPG = 1<<1
+	SCREENSHOT_JPG = 1<<1,
+	SCREENSHOT_AVI = 1<<2 // take video frame
 };
 
 // all state modified by the back end is seperated
@@ -932,9 +941,10 @@ typedef struct {
 
 	qboolean	floatfix;		// -EC- frameloss bug fix
 
-	int		screenshotMask;	// tga | jpg
+	int		screenshotMask;		// tga | jpg
 	char	screenshotTGA[ MAX_OSPATH ];
 	char	screenshotJPG[ MAX_OSPATH ];
+	videoFrameCommand_t	vcmd;	// avi capture
 
 } backEndState_t;
 
@@ -1636,15 +1646,6 @@ typedef struct {
 	char *fileName;
 	qboolean jpeg;
 } screenshotCommand_t;
-
-typedef struct {
-	int						commandId;
-	int						width;
-	int						height;
-	byte					*captureBuffer;
-	byte					*encodeBuffer;
-	qboolean			motionJpeg;
-} videoFrameCommand_t;
 
 typedef struct
 {
