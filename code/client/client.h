@@ -233,6 +233,8 @@ typedef struct {
 
 	float	aviVideoFrameRemainder;
 	float	aviSoundFrameRemainder;
+	char	videoName[MAX_QPATH];
+	int		videoIndex;
 
 	// big stuff at end of structure so most offsets are 15 bits or less
 	netchan_t	netchan;

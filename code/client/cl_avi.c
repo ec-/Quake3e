@@ -35,7 +35,7 @@ typedef struct audioFormat_s
   int bits;
 
   int sampleSize;
-  int totalBytes;
+  unsigned int totalBytes;
 } audioFormat_t;
 
 typedef struct aviFileData_s
@@ -43,9 +43,9 @@ typedef struct aviFileData_s
   qboolean      fileOpen;
   fileHandle_t  f;
   char          fileName[ MAX_QPATH ];
-  int           fileSize;
-  int           moviOffset;
-  int           moviSize;
+  unsigned int  fileSize;
+  unsigned int  moviOffset;
+  unsigned int  moviSize;
 
   fileHandle_t  idxF;
   int           numIndices;
@@ -60,6 +60,7 @@ typedef struct aviFileData_s
   qboolean      audio;
   audioFormat_t a;
   int           numAudioFrames;
+  int           audioFrameSize;
 
   int           chunkStack[ MAX_RIFF_CHUNKS ];
   int           chunkStackTop;
@@ -336,13 +337,6 @@ qboolean CL_OpenAVIForWriting( const char *fileName )
 
   Com_Memset( &afd, 0, sizeof( aviFileData_t ) );
 
-  // Don't start if a framerate has not been chosen
-  if( cl_aviFrameRate->integer <= 0 )
-  {
-    Com_Printf( S_COLOR_RED "cl_aviFrameRate must be >= 1\n" );
-    return qfalse;
-  }
-
   if( ( afd.f = FS_FOpenFileWrite( fileName ) ) <= 0 )
     return qfalse;
 
@@ -356,12 +350,9 @@ qboolean CL_OpenAVIForWriting( const char *fileName )
   Q_strncpyz( afd.fileName, fileName, sizeof( afd.fileName ) );
 
   afd.frameRate = cl_aviFrameRate->integer;
-  afd.framePeriod = (int)( 1000000.0f / afd.frameRate );
+  afd.framePeriod = (int)( 1000000.0 / afd.frameRate );
   afd.width = cls.glconfig.vidWidth;
   afd.height = cls.glconfig.vidHeight;
-
-  clc.aviSoundFrameRemainder = 0.0f;
-  clc.aviVideoFrameRemainder = 0.0f;
 
   if( cl_aviMotionJpeg->integer )
     afd.motionJpeg = qtrue;
@@ -380,8 +371,9 @@ qboolean CL_OpenAVIForWriting( const char *fileName )
   afd.a.format = WAV_FORMAT_PCM;
   afd.a.channels = dma.channels;
   afd.a.bits = dma.samplebits;
-  afd.a.sampleSize = ( afd.a.bits / 8 ) * afd.a.channels;
+  afd.a.sampleSize = ( afd.a.bits * afd.a.channels ) / 8;
 
+#if 0  
   if( afd.a.rate % afd.frameRate )
   {
     int suggestRate = afd.frameRate;
@@ -392,6 +384,8 @@ qboolean CL_OpenAVIForWriting( const char *fileName )
     Com_Printf( S_COLOR_YELLOW "WARNING: cl_aviFrameRate is not a divisor "
         "of the audio rate, suggest %d\n", suggestRate );
   }
+#endif
+  afd.audioFrameSize = ceil( (float)(afd.a.rate * afd.a.sampleSize) / (float)afd.frameRate );
 
   if( !Cvar_VariableIntegerValue( "s_initsound" ) )
   {
@@ -433,29 +427,31 @@ CL_CheckFileSize
 */
 static qboolean CL_CheckFileSize( int bytesToAdd )
 {
-  unsigned int newFileSize;
+	unsigned int newFileSize;
 
-  newFileSize =
-    afd.fileSize +                // Current file size
-    bytesToAdd +                  // What we want to add
-    ( afd.numIndices * 16 ) +     // The index
-    4;                            // The index size
+	newFileSize =
+		afd.fileSize +                // Current file size
+		bytesToAdd +                  // What we want to add
+		( afd.numIndices * 16 ) +     // The index
+		4;                            // The index size
 
-  // I assume all the operating systems
-  // we target can handle a 2Gb file
-  if( newFileSize > INT_MAX )
-  {
-    // Close the current file...
-    CL_CloseAVI( );
+	// I assume all the operating systems
+	// we target can handle a 2Gb file
+	//if( newFileSize > INT_MAX )
+	if( newFileSize > UINT_MAX || newFileSize < afd.fileSize )
+	{
+		// Close the current file...
+		CL_CloseAVI();
 
-    // ...And open a new one
-    CL_OpenAVIForWriting( va( "%s_", afd.fileName ) );
+		// ...And open a new one
+		CL_OpenAVIForWriting( va( "%s-%02d.avi", clc.videoName, ++clc.videoIndex ) );
 
-    return qtrue;
-  }
+		return qtrue;
+	}
 
-  return qfalse;
+	return qfalse;
 }
+
 
 /*
 ===============
@@ -464,7 +460,7 @@ CL_WriteAVIVideoFrame
 */
 void CL_WriteAVIVideoFrame( const byte *imageBuffer, int size )
 {
-  int   chunkOffset = afd.fileSize - afd.moviOffset - 8;
+  unsigned int chunkOffset = afd.fileSize - afd.moviOffset - 8;
   int   chunkSize = 8 + size;
   int   paddingSize = PADLEN(size, 2);
   byte  padding[ 4 ] = { 0 };
@@ -504,43 +500,19 @@ void CL_WriteAVIVideoFrame( const byte *imageBuffer, int size )
 
 #define PCM_BUFFER_SIZE 44100
 
+static byte pcmCaptureBuffer[ PCM_BUFFER_SIZE ] = { 0 };
+static int  bytesInBuffer = 0;
+
 /*
 ===============
-CL_WriteAVIAudioFrame
+CL_FlushAudioBuffer
 ===============
 */
-void CL_WriteAVIAudioFrame( const byte *pcmBuffer, int size )
+static void CL_FlushCaptureBuffer( void ) 
 {
-  static byte pcmCaptureBuffer[ PCM_BUFFER_SIZE ] = { 0 };
-  static int  bytesInBuffer = 0;
-
-  if( !afd.audio )
-    return;
-
-  if( !afd.fileOpen )
-    return;
-
-  // Chunk header + contents + padding
-  if( CL_CheckFileSize( 8 + bytesInBuffer + size + 2 ) )
-    return;
-
-  if( bytesInBuffer + size > PCM_BUFFER_SIZE )
-  {
-    Com_Printf( S_COLOR_YELLOW
-        "WARNING: Audio capture buffer overflow -- truncating\n" );
-    size = PCM_BUFFER_SIZE - bytesInBuffer;
-  }
-
-  Com_Memcpy( &pcmCaptureBuffer[ bytesInBuffer ], pcmBuffer, size );
-  bytesInBuffer += size;
-
-  // Only write if we have a frame's worth of audio
-  if( bytesInBuffer >= (int)ceil( (float)afd.a.rate / (float)afd.frameRate ) *
-        afd.a.sampleSize )
-  {
-    int   chunkOffset = afd.fileSize - afd.moviOffset - 8;
+    unsigned int chunkOffset = afd.fileSize - afd.moviOffset - 8;
     int   chunkSize = 8 + bytesInBuffer;
-    int   paddingSize = PADLEN(bytesInBuffer, 2);
+    int   paddingSize = PADLEN( bytesInBuffer, 2 );
     byte  padding[ 4 ] = { 0 };
 
     bufIndex = 0;
@@ -567,8 +539,46 @@ void CL_WriteAVIAudioFrame( const byte *pcmBuffer, int size )
     afd.numIndices++;
 
     bytesInBuffer = 0;
-  }
 }
+
+
+/*
+===============
+CL_WriteAVIAudioFrame
+===============
+*/
+void CL_WriteAVIAudioFrame( const byte *pcmBuffer, int size )
+{
+	if( !afd.audio )
+		return;
+
+	if( !afd.fileOpen )
+		return;
+
+	// Chunk header + contents + padding
+	if( CL_CheckFileSize( 8 + bytesInBuffer + size + 2 ) )
+		return;
+
+	if( bytesInBuffer + size > PCM_BUFFER_SIZE )
+	{
+		Com_Printf( S_COLOR_YELLOW "WARNING: Audio capture buffer overflow -- truncating\n" );
+		size = PCM_BUFFER_SIZE - bytesInBuffer;
+	}
+
+	// Only write if we have a frame's worth of audio
+	//if( bytesInBuffer >= afd.audioFrameSize )
+	if( bytesInBuffer + size > afd.audioFrameSize )
+	{
+		CL_FlushCaptureBuffer();
+	}
+
+	if ( pcmBuffer ) 
+	{
+		Com_Memcpy( &pcmCaptureBuffer[ bytesInBuffer ], pcmBuffer, size );
+		bytesInBuffer += size;
+	}
+}
+
 
 /*
 ===============
@@ -601,6 +611,8 @@ qboolean CL_CloseAVI( void )
   // AVI file isn't open
   if( !afd.fileOpen )
     return qfalse;
+
+  CL_FlushCaptureBuffer();
 
   afd.fileOpen = qfalse;
 

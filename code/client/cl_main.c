@@ -3085,53 +3085,50 @@ video [filename]
 */
 void CL_Video_f( void )
 {
-  char  filename[ MAX_OSPATH ];
-  int   i, last;
+	char  filename[ MAX_QPATH ];
+	int   i;
 
-  if( !clc.demoplaying )
-  {
-    Com_Printf( "The video command can only be used when playing back demos\n" );
-    return;
-  }
+	if( !clc.demoplaying )
+	{
+		Com_Printf( "The video command can only be used when playing back demos\n" );
+		return;
+	}
 
-  if( Cmd_Argc( ) == 2 )
-  {
-    // explicit filename
-    Com_sprintf( filename, MAX_OSPATH, "videos/%s.avi", Cmd_Argv( 1 ) );
-  }
-  else
-  {
-    // scan for a free filename
-    for( i = 0; i <= 9999; i++ )
-    {
-      int a, b, c, d;
+	if( Cmd_Argc() == 2 )
+	{
+		// explicit filename
+		Com_sprintf( filename, sizeof( filename ), "videos/%s", Cmd_Argv( 1 ) );
+	}
+	else
+	{
+		 // scan for a free filename
+		for( i = 0; i <= 9999; i++ )
+		{
+			Com_sprintf( filename, sizeof( filename ), "videos/video%04d.avi", i );
+			if ( !FS_FileExists( filename ) )
+				break; // file doesn't exist
+		}
 
-      last = i;
+		if( i > 9999 )
+		{
+			Com_Printf( S_COLOR_RED "ERROR: no free file names to create video\n" );
+			return;
+		}
 
-      a = last / 1000;
-      last -= a * 1000;
-      b = last / 100;
-      last -= b * 100;
-      c = last / 10;
-      last -= c * 10;
-      d = last;
+		// without extension
+		Com_sprintf( filename, sizeof( filename ), "videos/video%04d", i );
+	}
 
-      Com_sprintf( filename, MAX_OSPATH, "videos/video%d%d%d%d.avi",
-          a, b, c, d );
 
-      if( !FS_FileExists( filename ) )
-        break; // file doesn't exist
-    }
+	clc.aviSoundFrameRemainder = 0.0f;
+	clc.aviVideoFrameRemainder = 0.0f;
 
-    if( i > 9999 )
-    {
-      Com_Printf( S_COLOR_RED "ERROR: no free file names to create video\n" );
-      return;
-    }
-  }
+	Q_strncpyz( clc.videoName, filename, sizeof( clc.videoName ) );
+	clc.videoIndex = 0;
 
-  CL_OpenAVIForWriting( filename );
+	CL_OpenAVIForWriting( va( "%s.avi", clc.videoName ) );
 }
+
 
 /*
 ===============
@@ -3238,6 +3235,7 @@ void CL_Init( void ) {
 	cl_autoRecordDemo = Cvar_Get ("cl_autoRecordDemo", "0", CVAR_ARCHIVE);
 
 	cl_aviFrameRate = Cvar_Get ("cl_aviFrameRate", "25", CVAR_ARCHIVE);
+	Cvar_CheckRange( cl_aviFrameRate, 1, 1000, qtrue );
 	cl_aviMotionJpeg = Cvar_Get ("cl_aviMotionJpeg", "1", CVAR_ARCHIVE);
 	cl_forceavidemo = Cvar_Get ("cl_forceavidemo", "0", 0);
 
