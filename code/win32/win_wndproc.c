@@ -591,7 +591,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		break;
 
 	case WM_ENTERSIZEMOVE:
-		if ( uTimerID == 0 ) {
+		if ( uTimerID == 0 && !CL_VideoRecording() ) {
 			uTimerID = SetTimer( g_wv.hWnd, TIMER_ID, GetTimerMsec(), NULL );
 		}
 		break;
@@ -604,7 +604,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		break;
 
 	case WM_TIMER:
-		if ( wParam == TIMER_ID && uTimerID != 0 )
+		if ( wParam == TIMER_ID && uTimerID != 0 && !CL_VideoRecording() )
 			Com_Frame( clc.demoplaying );
 		break;
 
