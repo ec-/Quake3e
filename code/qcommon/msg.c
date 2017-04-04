@@ -22,76 +22,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "q_shared.h"
 #include "qcommon.h"
 
-#define USE_UDT_ENCODER 
-// alternative huffman encoder, backported from uberdemotools project
-// https://github.com/mightycow/uberdemotools/blob/develop/UDT_DLL/src/message.cpp
-
-static huffman_t		msgHuff;
-
-static qboolean			msgInit = qfalse;
-
 int pcount[256];
-
-
-#ifdef USE_UDT_ENCODER
-static const uint16_t HuffmanEncoderTable[ 256 ] =
-{
-	34, 437, 1159, 1735, 2584, 280, 263, 1014, 341, 839, 1687, 183, 311, 726, 920, 2761,
-	599, 1417, 7945, 8073, 7642, 16186, 8890, 12858, 3913, 6362, 2746, 13882, 7866, 1080, 1273, 3400,
-	886, 3386, 1097, 11482, 15450, 16282, 12506, 15578, 2377, 6858, 826, 330, 10010, 12042, 8009, 1928,
-	631, 3128, 3832, 6521, 1336, 2840, 217, 5657, 121, 3865, 6553, 6426, 4666, 3017, 5193, 7994,
-	3320, 1287, 1991, 71, 536, 1304, 2057, 1801, 5081, 1594, 11642, 14106, 6617, 10938, 7290, 13114,
-	4809, 2522, 5818, 14010, 7482, 5914, 7738, 9018, 3450, 11450, 5897, 2697, 3193, 4185, 3769, 3464,
-	3897, 968, 6841, 6393, 2425, 775, 1048, 5369, 454, 648, 3033, 3145, 2440, 2297, 200, 2872,
-	2136, 2248, 1144, 1944, 1431, 1031, 376, 408, 1208, 3608, 2616, 1848, 1784, 1671, 135, 1623,
-	502, 663, 1223, 2007, 248, 2104, 24, 2168, 1656, 3704, 1400, 1864, 7353, 7241, 2073, 1241,
-	4889, 5690, 6153, 15738, 698, 5210, 1722, 986, 12986, 3994, 3642, 9306, 4794, 794, 16058, 7066,
-	4425, 8090, 4922, 714, 11738, 7194, 12762, 7450, 5001, 1562, 11834, 13402, 9914, 3290, 3258, 5338,
-	905, 15386, 9178, 15306, 3162, 15050, 15930, 10650, 15674, 8522, 8250, 7114, 10714, 14362, 9786, 2266,
-	1352, 4153, 1496, 518, 151, 15482, 12410, 2952, 7961, 8906, 1114, 58, 4570, 7258, 13530, 474,
-	9, 15258, 3546, 6170, 4314, 2970, 7386, 14666, 7130, 6474, 14554, 5514, 15322, 3098, 15834, 3978,
-	3353, 2329, 2458, 12170, 570, 1818, 11578, 14618, 1175, 8986, 4218, 9754, 8762, 392, 8282, 11290,
-	7546, 3850, 11354, 12298, 15642, 14986, 8666, 20491, 90, 13706, 12186, 6794, 11162, 10458, 759, 582
-};
-
-
-static ID_INLINE void HuffmanPutBit( byte* fout, int32_t bitIndex, int32_t bit )
-{
-	const int32_t byteIndex = bitIndex >> 3;
-	const int32_t bitOffset = bitIndex & 7;
-
-	if ( bitOffset == 0 ) // Is this the first bit of a new byte?
-	{
-		// We don't need to preserve what's already in there,
-		// so we can write that byte immediately.
-		fout[ byteIndex ] = (byte)bit;
-		return;
-	}
-
-	fout[(bitIndex >> 3)] |= bit << (bitIndex & 7);
-}
-
-
-static ID_INLINE void HuffmanOffsetTransmit( byte* fout, int32_t* offset, int32_t ch )
-{
-	int32_t bits;
-	uint32_t i;
-	const uint16_t result = HuffmanEncoderTable[ ch ];
-	const uint16_t bitCount = result & 15;
-	const uint16_t code = (result >> 4) & 0x7FF;
-	const uint32_t bitIndex = *(const uint32_t*)offset;
-
-	bits = (int32_t)code;
-	for( i = 0; i < bitCount; ++i )
-	{
-		HuffmanPutBit( fout, bitIndex + i, bits & 1 );
-		bits >>= 1;
-	}
-
-	*offset += (int32_t)bitCount;
-}
-
-#endif // USE_UDT_ENCODER
 
 /*
 ==============================================================================
@@ -104,21 +35,13 @@ Handles byte ordering and avoids alignment errors
 
 int oldsize = 0;
 
-void MSG_initHuffman( void );
-
 void MSG_Init( msg_t *buf, byte *data, int length ) {
-	if (!msgInit) {
-		MSG_initHuffman();
-	}
 	Com_Memset (buf, 0, sizeof(*buf));
 	buf->data = data;
 	buf->maxsize = length;
 }
 
 void MSG_InitOOB( msg_t *buf, byte *data, int length ) {
-	if (!msgInit) {
-		MSG_initHuffman();
-	}
 	Com_Memset (buf, 0, sizeof(*buf));
 	buf->data = data;
 	buf->maxsize = length;
@@ -205,27 +128,19 @@ void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 		}
 	} else {
 		value &= (0xffffffff>>(32-bits));
-		if (bits&7) {
+		if ( bits & 7 ) {
 			int nbits;
 			nbits = bits&7;
-			for(i=0;i<nbits;i++) {
-#ifdef USE_UDT_ENCODER
+			for ( i = 0; i < nbits ; i++ ) {
 				HuffmanPutBit( msg->data, msg->bit, (value & 1) );
 				msg->bit++;
-#else
-				Huff_putBit((value&1), msg->data, &msg->bit);
-#endif
 				value = (value>>1);
 			}
 			bits = bits - nbits;
 		}
-		if (bits) {
-			for(i=0;i<bits;i+=8) {
-#ifdef USE_UDT_ENCODER
-				HuffmanOffsetTransmit( msg->data, &msg->bit, (value & 0xFF) );
-#else
-				Huff_offsetTransmit (&msgHuff.compressor, (value&0xff), msg->data, &msg->bit);
-#endif
+		if ( bits ) {
+			for( i = 0 ; i < bits ; i += 8 ) {
+				msg->bit += HuffmanPutSymbol( msg->data, msg->bit, (value & 0xFF) );
 				value = (value>>8);
 			}
 		}
@@ -233,12 +148,13 @@ void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 	}
 }
 
+
 int MSG_ReadBits( msg_t *msg, int bits ) {
 	int			value;
-	int			get;
 	qboolean	sgn;
-	int			i, nbits;
-//	FILE*	fp;
+	int			i;
+	int			sym;
+	const byte *buffer = msg->data; // dereference optimization
 
 	value = 0;
 
@@ -249,49 +165,50 @@ int MSG_ReadBits( msg_t *msg, int bits ) {
 		sgn = qfalse;
 	}
 
-	if (msg->oob) {
-		if(bits==8)
+	if ( msg->oob ) {
+		if( bits == 8 )
 		{
-			value = msg->data[msg->readcount];
+			value = *(buffer + msg->readcount);
 			msg->readcount += 1;
 			msg->bit += 8;
 		}
-		else if(bits==16)
+		else if ( bits == 16 )
 		{
 			short temp;
-			
-			CopyLittleShort(&temp, &msg->data[msg->readcount]);
+			CopyLittleShort( &temp, buffer + msg->readcount );
 			value = temp;
 			msg->readcount += 2;
 			msg->bit += 16;
 		}
-		else if(bits==32)
+		else if ( bits == 32 )
 		{
-			CopyLittleLong(&value, &msg->data[msg->readcount]);
+			CopyLittleLong( &value, buffer + msg->readcount );
 			msg->readcount += 4;
 			msg->bit += 32;
 		}
 		else
-			Com_Error(ERR_DROP, "can't read %d bits", bits);
+			Com_Error( ERR_DROP, "can't read %d bits", bits );
 	} else {
-		nbits = 0;
-		if (bits&7) {
-			nbits = bits&7;
-			for(i=0;i<nbits;i++) {
-				value |= (Huff_getBit(msg->data, &msg->bit)<<i);
+		const int nbits = bits & 7;
+		int bitIndex = msg->bit; // dereference optimizaton
+		if ( nbits )
+		{		
+			for ( i = 0; i < nbits; i++ ) {
+				value |= HuffmanGetBit( buffer, bitIndex ) << i;
+				bitIndex++;
 			}
-			bits = bits - nbits;
+			bits -= nbits;
 		}
-		if (bits) {
-//			fp = fopen("c:\\netchan.bin", "a");
-			for(i=0;i<bits;i+=8) {
-				Huff_offsetReceive (msgHuff.decompressor.tree, &get, msg->data, &msg->bit);
-//				fwrite(&get, 1, 1, fp);
-				value |= (get<<(i+nbits));
+		if ( bits )
+		{
+			for ( i = 0; i < bits; i += 8 )
+			{
+				bitIndex += HuffmanGetSymbol( &sym, buffer, bitIndex );
+				value |= ( sym << (i+nbits) );
 			}
-//			fclose(fp);
 		}
-		msg->readcount = (msg->bit>>3)+1;
+		msg->bit = bitIndex;
+		msg->readcount = (bitIndex >> 3) + 1;
 	}
 	if ( sgn && bits > 0 && bits < 32 ) {
 		if ( value & ( 1 << ( bits - 1 ) ) ) {
@@ -440,17 +357,6 @@ int MSG_ReadByte( msg_t *msg ) {
 	if ( msg->readcount > msg->cursize ) {
 		c = -1;
 	}	
-	return c;
-}
-
-int MSG_LookaheadByte( msg_t *msg ) {
-	const int bloc = Huff_getBloc();
-	const int readcount = msg->readcount;
-	const int bit = msg->bit;
-	int c = MSG_ReadByte(msg);
-	Huff_setBloc(bloc);
-	msg->readcount = readcount;
-	msg->bit = bit;
 	return c;
 }
 
@@ -818,15 +724,15 @@ void MSG_ReportChangeVectors_f( void ) {
 }
 
 typedef struct {
-	char	*name;
-	int		offset;
-	int		bits;		// 0 = float
+	const char	*name;
+	const int	offset;
+	const int	bits;	// 0 = float
 } netField_t;
 
 // using the stringizing operator to save typing...
 #define	NETF(x) #x,(size_t)&((entityState_t*)0)->x
 
-netField_t	entityStateFields[] = 
+const netField_t entityStateFields[] = 
 {
 { NETF(pos.trTime), 32 },
 { NETF(pos.trBase[0]), 0 },
@@ -901,7 +807,7 @@ identical, under the assumption that the in-order delta code will catch it.
 void MSG_WriteDeltaEntity( msg_t *msg, const entityState_t *from, const entityState_t *to, qboolean force ) {
 	int			i, lc;
 	int			numFields;
-	netField_t	*field;
+	const netField_t *field;
 	int			trunc;
 	float		fullFloat;
 	const int	*fromF, *toF;
@@ -1017,7 +923,7 @@ Can go from either a baseline or a previous packet_entity
 void MSG_ReadDeltaEntity( msg_t *msg, const entityState_t *from, entityState_t *to, int number ) {
 	int			i, lc;
 	int			numFields;
-	netField_t	*field;
+	const netField_t *field;
 	const int	*fromF;
 	int			*toF;
 	int			print;
@@ -1501,312 +1407,5 @@ void MSG_ReadDeltaPlayerstate( msg_t *msg, const playerState_t *from, playerStat
 		Com_Printf( " (%i bits)\n", endBit - startBit  );
 	}
 }
-
-int msg_hData[256] = {
-250315,			// 0
-41193,			// 1
-6292,			// 2
-7106,			// 3
-3730,			// 4
-3750,			// 5
-6110,			// 6
-23283,			// 7
-33317,			// 8
-6950,			// 9
-7838,			// 10
-9714,			// 11
-9257,			// 12
-17259,			// 13
-3949,			// 14
-1778,			// 15
-8288,			// 16
-1604,			// 17
-1590,			// 18
-1663,			// 19
-1100,			// 20
-1213,			// 21
-1238,			// 22
-1134,			// 23
-1749,			// 24
-1059,			// 25
-1246,			// 26
-1149,			// 27
-1273,			// 28
-4486,			// 29
-2805,			// 30
-3472,			// 31
-21819,			// 32
-1159,			// 33
-1670,			// 34
-1066,			// 35
-1043,			// 36
-1012,			// 37
-1053,			// 38
-1070,			// 39
-1726,			// 40
-888,			// 41
-1180,			// 42
-850,			// 43
-960,			// 44
-780,			// 45
-1752,			// 46
-3296,			// 47
-10630,			// 48
-4514,			// 49
-5881,			// 50
-2685,			// 51
-4650,			// 52
-3837,			// 53
-2093,			// 54
-1867,			// 55
-2584,			// 56
-1949,			// 57
-1972,			// 58
-940,			// 59
-1134,			// 60
-1788,			// 61
-1670,			// 62
-1206,			// 63
-5719,			// 64
-6128,			// 65
-7222,			// 66
-6654,			// 67
-3710,			// 68
-3795,			// 69
-1492,			// 70
-1524,			// 71
-2215,			// 72
-1140,			// 73
-1355,			// 74
-971,			// 75
-2180,			// 76
-1248,			// 77
-1328,			// 78
-1195,			// 79
-1770,			// 80
-1078,			// 81
-1264,			// 82
-1266,			// 83
-1168,			// 84
-965,			// 85
-1155,			// 86
-1186,			// 87
-1347,			// 88
-1228,			// 89
-1529,			// 90
-1600,			// 91
-2617,			// 92
-2048,			// 93
-2546,			// 94
-3275,			// 95
-2410,			// 96
-3585,			// 97
-2504,			// 98
-2800,			// 99
-2675,			// 100
-6146,			// 101
-3663,			// 102
-2840,			// 103
-14253,			// 104
-3164,			// 105
-2221,			// 106
-1687,			// 107
-3208,			// 108
-2739,			// 109
-3512,			// 110
-4796,			// 111
-4091,			// 112
-3515,			// 113
-5288,			// 114
-4016,			// 115
-7937,			// 116
-6031,			// 117
-5360,			// 118
-3924,			// 119
-4892,			// 120
-3743,			// 121
-4566,			// 122
-4807,			// 123
-5852,			// 124
-6400,			// 125
-6225,			// 126
-8291,			// 127
-23243,			// 128
-7838,			// 129
-7073,			// 130
-8935,			// 131
-5437,			// 132
-4483,			// 133
-3641,			// 134
-5256,			// 135
-5312,			// 136
-5328,			// 137
-5370,			// 138
-3492,			// 139
-2458,			// 140
-1694,			// 141
-1821,			// 142
-2121,			// 143
-1916,			// 144
-1149,			// 145
-1516,			// 146
-1367,			// 147
-1236,			// 148
-1029,			// 149
-1258,			// 150
-1104,			// 151
-1245,			// 152
-1006,			// 153
-1149,			// 154
-1025,			// 155
-1241,			// 156
-952,			// 157
-1287,			// 158
-997,			// 159
-1713,			// 160
-1009,			// 161
-1187,			// 162
-879,			// 163
-1099,			// 164
-929,			// 165
-1078,			// 166
-951,			// 167
-1656,			// 168
-930,			// 169
-1153,			// 170
-1030,			// 171
-1262,			// 172
-1062,			// 173
-1214,			// 174
-1060,			// 175
-1621,			// 176
-930,			// 177
-1106,			// 178
-912,			// 179
-1034,			// 180
-892,			// 181
-1158,			// 182
-990,			// 183
-1175,			// 184
-850,			// 185
-1121,			// 186
-903,			// 187
-1087,			// 188
-920,			// 189
-1144,			// 190
-1056,			// 191
-3462,			// 192
-2240,			// 193
-4397,			// 194
-12136,			// 195
-7758,			// 196
-1345,			// 197
-1307,			// 198
-3278,			// 199
-1950,			// 200
-886,			// 201
-1023,			// 202
-1112,			// 203
-1077,			// 204
-1042,			// 205
-1061,			// 206
-1071,			// 207
-1484,			// 208
-1001,			// 209
-1096,			// 210
-915,			// 211
-1052,			// 212
-995,			// 213
-1070,			// 214
-876,			// 215
-1111,			// 216
-851,			// 217
-1059,			// 218
-805,			// 219
-1112,			// 220
-923,			// 221
-1103,			// 222
-817,			// 223
-1899,			// 224
-1872,			// 225
-976,			// 226
-841,			// 227
-1127,			// 228
-956,			// 229
-1159,			// 230
-950,			// 231
-7791,			// 232
-954,			// 233
-1289,			// 234
-933,			// 235
-1127,			// 236
-3207,			// 237
-1020,			// 238
-927,			// 239
-1355,			// 240
-768,			// 241
-1040,			// 242
-745,			// 243
-952,			// 244
-805,			// 245
-1073,			// 246
-740,			// 247
-1013,			// 248
-805,			// 249
-1008,			// 250
-796,			// 251
-996,			// 252
-1057,			// 253
-11457,			// 254
-13504,			// 255
-};
-
-void MSG_initHuffman( void ) {
-	int i,j;
-
-	msgInit = qtrue;
-	Huff_Init(&msgHuff);
-	for(i=0;i<256;i++) {
-		for (j=0;j<msg_hData[i];j++) {
-			Huff_addRef(&msgHuff.compressor,	(byte)i);			// Do update
-			Huff_addRef(&msgHuff.decompressor,	(byte)i);			// Do update
-		}
-	}
-}
-
-/*
-void MSG_NUinitHuffman() {
-	byte	*data;
-	int		size, i, ch;
-	int		array[256];
-
-	msgInit = qtrue;
-
-	Huff_Init(&msgHuff);
-	// load it in
-	size = FS_ReadFile( "netchan/netchan.bin", (void **)&data );
-
-	for(i=0;i<256;i++) {
-		array[i] = 0;
-	}
-	for(i=0;i<size;i++) {
-		ch = data[i];
-		Huff_addRef(&msgHuff.compressor,	ch);			// Do update
-		Huff_addRef(&msgHuff.decompressor,	ch);			// Do update
-		array[ch]++;
-	}
-	Com_Printf("msg_hData {\n");
-	for(i=0;i<256;i++) {
-		if (array[i] == 0) {
-			Huff_addRef(&msgHuff.compressor,	i);			// Do update
-			Huff_addRef(&msgHuff.decompressor,	i);			// Do update
-		}
-		Com_Printf("%d,			// %d\n", array[i], i);
-	}
-	Com_Printf("};\n");
-	FS_FreeFile( data );
-	Cbuf_AddText( "condump dump.txt\n" );
-}
-*/
 
 //===========================================================================

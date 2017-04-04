@@ -460,6 +460,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\qcommon\huffman_static.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\qcommon\keys.c"
 				>
 			</File>
