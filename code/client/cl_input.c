@@ -687,16 +687,10 @@ qboolean CL_ReadyToSendPacket( void ) {
 	}
 
 	// send every frame for LAN
-	if ( cl_lanForcePackets->integer && Sys_IsLANAddress( clc.netchan.remoteAddress ) ) {
+	if ( cl_lanForcePackets->integer && clc.netchan.isLANAddress ) {
 		return qtrue;
 	}
 
-	// check for exceeding cl_maxpackets
-	if ( cl_maxpackets->integer < 15 ) {
-		Cvar_Set( "cl_maxpackets", "15" );
-	} else if ( cl_maxpackets->integer > 125 ) {
-		Cvar_Set( "cl_maxpackets", "125" );
-	}
 	oldPacketNum = (clc.netchan.outgoingSequence - 1) & PACKET_MASK;
 	delta = cls.realtime -  cl.outPackets[ oldPacketNum ].p_realtime;
 	if ( delta < 1000 / cl_maxpackets->integer ) {

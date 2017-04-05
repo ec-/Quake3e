@@ -238,6 +238,7 @@ typedef struct {
 	int			lastSentSize;
 
 	qboolean	compat; // ioq3 extension
+	qboolean	isLANAddress;
 
 } netchan_t;
 

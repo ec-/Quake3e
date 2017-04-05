@@ -3246,6 +3246,7 @@ void CL_Init( void ) {
 	cl_anglespeedkey = Cvar_Get ("cl_anglespeedkey", "1.5", 0);
 
 	cl_maxpackets = Cvar_Get ("cl_maxpackets", "30", CVAR_ARCHIVE );
+	Cvar_CheckRange( cl_maxpackets, 15, 125, qtrue );
 	cl_packetdup = Cvar_Get ("cl_packetdup", "1", CVAR_ARCHIVE );
 
 	cl_run = Cvar_Get ("cl_run", "1", CVAR_ARCHIVE);

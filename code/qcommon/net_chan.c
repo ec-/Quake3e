@@ -94,6 +94,7 @@ void Netchan_Setup(netsrc_t sock, netchan_t *chan, netadr_t adr, int qport, int 
 	chan->outgoingSequence = 1;
 	chan->challenge = challenge;
 	chan->compat = compat;
+	chan->isLANAddress = Sys_IsLANAddress( adr );
 }
 
 /*

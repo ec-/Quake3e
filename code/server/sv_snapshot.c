@@ -752,9 +752,8 @@ void SV_SendClientMessages( void )
 			// It's not time yet
 			continue; 
 		}
-
-		lanRate = (c->netchan.remoteAddress.type == NA_LOOPBACK ||
-			(sv_lanForceRate->integer && Sys_IsLANAddress(c->netchan.remoteAddress)));
+	
+		lanRate = c->netchan.remoteAddress.type == NA_LOOPBACK || (sv_lanForceRate->integer && c->netchan.isLANAddress);
 
 		if ( !lanRate && SV_RateMsec( c ) > 0 )
 		{
