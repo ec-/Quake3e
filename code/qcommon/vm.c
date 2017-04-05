@@ -1362,7 +1362,7 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 
 	// never allow dll loading with a demo
 	if ( interpret == VMI_NATIVE ) {
-		if ( Cvar_VariableValue( "fs_restrict" ) ) {
+		if ( Cvar_VariableIntegerValue( "fs_restrict" ) ) {
 			interpret = VMI_COMPILED;
 		}
 	}

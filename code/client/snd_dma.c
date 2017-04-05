@@ -535,7 +535,7 @@ void S_Base_StartSound( vec3_t origin, int entityNum, int entchannel, sfxHandle_
 	for ( i = 0; i < MAX_CHANNELS ; i++, ch++ ) {		
 		if ( ch->entnum == entityNum && ch->thesfx == sfx ) {
 			if ( time - ch->allocTime < 20 ) {
-//				if (Cvar_VariableValue( "cg_showmiss" )) {
+//				if (Cvar_VariableIntegerValue( "cg_showmiss" )) {
 //					Com_Printf( "double sound start: %d %s\n", entityNum, sfx->soundName);
 //				}
 				return;

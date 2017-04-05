@@ -60,7 +60,7 @@ void SV_GetChallenge( netadr_t from ) {
 	qboolean wasfound = qfalse;
 
 	// ignore if we are in single player
-	if ( Cvar_VariableValue( "g_gametype" ) == GT_SINGLE_PLAYER || Cvar_VariableValue("ui_singlePlayerActive")) {
+	if ( Cvar_VariableIntegerValue( "g_gametype" ) == GT_SINGLE_PLAYER || Cvar_VariableIntegerValue("ui_singlePlayerActive")) {
 		return;
 	}
 

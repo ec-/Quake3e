@@ -1441,7 +1441,7 @@ static void MidiInfo_f( void )
 	Com_Printf( "number of devices:  %d\n", s_midiInfo.numDevices );
 	for ( i = 0; i < s_midiInfo.numDevices; i++ )
 	{
-		if ( i == Cvar_VariableValue( "in_mididevice" ) )
+		if ( i == Cvar_VariableIntegerValue( "in_mididevice" ) )
 			Com_Printf( "***" );
 		else
 			Com_Printf( "..." );
@@ -1457,7 +1457,7 @@ static void IN_StartupMIDI( void )
 {
 	int i;
 
-	if ( !Cvar_VariableValue( "in_midi" ) )
+	if ( !Cvar_VariableIntegerValue( "in_midi" ) )
 		return;
 
 	//

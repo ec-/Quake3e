@@ -443,7 +443,7 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
     // CL_StartHunkUsers( );
 
 	// init client structures and svs.numSnapshotEntities 
-	if ( !Cvar_VariableValue("sv_running") ) {
+	if ( !Cvar_VariableIntegerValue( "sv_running" ) ) {
 		SV_Startup();
 	} else {
 		// check for maxclients change

@@ -524,7 +524,7 @@ void CL_Record_f( void ) {
 	}
 
 	// sync 0 doesn't prevent recording, so not forcing it off .. everyone does g_sync 1 ; record ; g_sync 0 ..
-	if ( NET_IsLocalAddress( clc.serverAddress ) && !Cvar_VariableValue( "g_synchronousClients" ) ) {
+	if ( NET_IsLocalAddress( clc.serverAddress ) && !Cvar_VariableIntegerValue( "g_synchronousClients" ) ) {
 		Com_Printf (S_COLOR_YELLOW "WARNING: You should set 'g_synchronousClients 1' for smoother demo recording\n");
 	}
 
@@ -579,7 +579,7 @@ void CL_Record_f( void ) {
 
 	clc.demorecording = qtrue;
 
-	if ( Cvar_VariableValue( "ui_recordSPDemo" ) ) {
+	if ( Cvar_VariableIntegerValue( "ui_recordSPDemo" ) ) {
 	  clc.spDemoRecording = qtrue;
 	} else {
 	  clc.spDemoRecording = qfalse;
@@ -2087,7 +2087,7 @@ void CL_CheckForResend( void ) {
 		
 	case CA_CHALLENGING:
 		// sending back the challenge
-		port = Cvar_VariableValue ("net_qport");
+		port = Cvar_VariableIntegerValue( "net_qport" );
 
 		Q_strncpyz( info, Cvar_InfoString( CVAR_USERINFO ), sizeof( info ) );
 		
@@ -2099,8 +2099,8 @@ void CL_CheckForResend( void ) {
 		else
 			Info_SetValueForKey(info, "protocol", va("%i", NEW_PROTOCOL_VERSION ));
 
-		Info_SetValueForKey( info, "qport", va("%i", port ) );
-		Info_SetValueForKey( info, "challenge", va("%i", clc.challenge ) );
+		Info_SetValueForKey( info, "qport", va( "%i", port ) );
+		Info_SetValueForKey( info, "challenge", va( "%i", clc.challenge ) );
 
 		len = Com_sprintf( data, sizeof( data ), "connect \"%s\"", info );
 		// NOTE TTimo don't forget to set the right data length!
@@ -2511,7 +2511,7 @@ void CL_ConnectionlessPacket( netadr_t from, msg_t *msg ) {
 			}
 		}
 
-		Netchan_Setup( NS_CLIENT, &clc.netchan, from, Cvar_VariableValue("net_qport"),
+		Netchan_Setup( NS_CLIENT, &clc.netchan, from, Cvar_VariableIntegerValue("net_qport"),
 			clc.challenge, clc.compat );
 
 		cls.state = CA_CONNECTED;
