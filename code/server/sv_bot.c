@@ -629,9 +629,5 @@ int SV_BotGetSnapshotEntity( int client, int sequence ) {
 	if (sequence < 0 || sequence >= frame->num_entities) {
 		return -1;
 	}
-#ifdef USE_CSS
 	return frame->ents[ sequence ]->number;
-#else
-	return svs.snapshotEntities[(frame->first_entity + sequence) % svs.numSnapshotEntities].number;
-#endif
 }

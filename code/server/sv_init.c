@@ -261,18 +261,8 @@ SV_SetSnapshotParams
 */
 static void SV_SetSnapshotParams( void ) 
 {
-#ifdef USE_CSS
 	// PACKET_BACKUP frames is just about 6.67MB so use that even on listen servers
 	svs.numSnapshotEntities = PACKET_BACKUP * MAX_GENTITIES;
-#else
-	if ( com_dedicated->integer ) {
-		svs.numSnapshotEntities = sv_maxclients->integer * PACKET_BACKUP * MAX_SNAPSHOT_ENTITIES;
-	} else {
-		// we don't need nearly as many when playing locally
-		svs.numSnapshotEntities = sv_maxclients->integer* 4 * MAX_SNAPSHOT_ENTITIES;
-	}
-	svs.modSnapshotEntities = ( 0x10000000 / svs.numSnapshotEntities ) * svs.numSnapshotEntities;
-#endif
 }
 
 
@@ -467,20 +457,9 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 
 	// allocate the snapshot entities on the hunk
 	svs.snapshotEntities = Hunk_Alloc( sizeof(entityState_t)*svs.numSnapshotEntities, h_high );
-	svs.nextSnapshotEntities = 0;
 
-#ifdef USE_CSS
 	// initialize snapshot storage
-	Com_Memset( svs.snapFrames, 0, sizeof( svs.snapFrames ) );
-	svs.freeStorageEntities = svs.numSnapshotEntities;
-	svs.currentStoragePosition = 0;
-
-	svs.snapshotFrame = 0;
-	svs.currentSnapshotFrame = 0;
-	svs.lastValidFrame = 0;
-
-	svs.currFrame = NULL;
-#endif
+	SV_InitSnapshotStorage();
 
 	// toggle the server bit so clients can detect that a
 	// server has changed

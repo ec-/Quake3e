@@ -1122,25 +1122,6 @@ void SV_Frame( int msec ) {
 		}
 	}
 
-#ifndef USE_CSS
-	// We set clamp trigger condition to some higher value to guarantee that:
-	// 1) all valid client frames will be affected at [nextSnapshotEntities > modSnapshotEntities] condition
-	// 2) clamped oldframe->first_entity value will not break delta compression
-	if ( svs.nextSnapshotEntities > svs.modSnapshotEntities + svs.numSnapshotEntities ) {
-		svs.nextSnapshotEntities -= svs.modSnapshotEntities;
-		if ( svs.clients ) {
-			for ( i = 0; i < sv_maxclients->integer; i++ ) {
-				if ( svs.clients[ i ].state < CS_CONNECTED )
-					continue;
-				for ( n = 0; n < PACKET_BACKUP; n++ ) {
-					if ( svs.clients[ i ].frames[ n ].first_entity > svs.modSnapshotEntities )
-						svs.clients[ i ].frames[ n ].first_entity -= svs.modSnapshotEntities;
-				}
-			}
-		}
-	}
-#endif
-
 	if( sv.restartTime && sv.time >= sv.restartTime ) {
 		sv.restartTime = 0;
 		Cbuf_AddText( "map_restart 0\n" );
@@ -1185,10 +1166,8 @@ void SV_Frame( int msec ) {
 	// check timeouts
 	SV_CheckTimeouts();
 
-#ifdef USE_CSS
 	// reset current and build new snapshot on first query
 	SV_IssueNewSnapshot();
-#endif
 
 	// send messages back to the clients
 	SV_SendClientMessages();
