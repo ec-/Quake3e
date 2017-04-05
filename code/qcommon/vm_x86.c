@@ -19,7 +19,7 @@ along with Quake III Arena source code; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
-// vm_x86.c -- load time compiler and execution environment for x86
+// load time compiler and execution environment for x86, 32-bit and 64-bit
 
 #include "vm_local.h"
 #ifdef _WIN32
@@ -75,6 +75,15 @@ static void VM_Destroy_Compiled( vm_t *vm );
   r12*  systemCall
   r13*  stackBottom
   r14*  opStackTop
+  xmm0  scratch
+  xmm1  scratch
+  xmm2  scratch
+  xmm3  scratch
+  xmm4  scratch
+  xmm5  scratch
+
+  Windows  ABI: you are required to preserve the XMM6-XMM15 registers
+  System V ABI: you don't have to preserve any of the XMM registers
 
   Example how data segment will look like during vmMain execution:
   | .... |
@@ -311,10 +320,10 @@ static void EmitString( const char *string )
 }
 
 
-static void EmitRexString( int prefix, const char *string ) 
+static void EmitRexString( const char *string )
 {
 #if idx64
-	Emit1( prefix );
+	Emit1( 0x48 );
 #endif
 	EmitString( string );
 }
@@ -344,11 +353,11 @@ static void EmitCommand( ELastCommand command )
 			break;
 
 		case LAST_COMMAND_SUB_DI_4:
-			EmitRexString( 0x48, "83 EF 04" );	// sub edi, 4
+			EmitRexString( "83 EF 04" );	// sub edi, 4
 			break;
 
 		case LAST_COMMAND_SUB_DI_8:
-			EmitRexString( 0x48, "83 EF 08" );	// sub edi, 8
+			EmitRexString( "83 EF 08" );	// sub edi, 8
 			break;
 
 		case LAST_COMMAND_FSTP_EDI:
@@ -366,7 +375,7 @@ static void EmitAddEDI4( vm_t *vm )
 {
 	if ( LastCommand == LAST_COMMAND_NONE ) 
 	{
-		EmitRexString( 0x48, "83 C7 04" );		//	add edi,4
+		EmitRexString( "83 C7 04" );			// add edi,4
 		return;
 	}
 
@@ -392,7 +401,7 @@ static void EmitAddEDI4( vm_t *vm )
 		return;
 	}
 
-	EmitRexString( 0x48, "83 C7 04" );	//	add edi,4
+	EmitRexString( "83 C7 04" );				// add edi,4
 }
 
 
@@ -509,7 +518,7 @@ static void EmitCheckReg( vm_t *vm, int reg, int size )
 
 #ifdef DEBUG_VM
 	EmitString( "50" );			// push eax
-	EmitRexString( 0x48, "B8" );// mov eax, &errParam
+	EmitRexString( "B8" );		// mov eax, &errParam
 	EmitPtr( &errParam );
 	EmitString( "C7 00" );		// mov [rax], ip-1
 	Emit4( ip-1 );
@@ -855,7 +864,7 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 	EmitString( "48 81 C4" );				// add rsp, 200
 	Emit4( SHADOW_BASE + PUSH_STACK + PARAM_STACK );
 
-	EmitRexString( 0x48, "8D 2C 33" );		// lea rbp, [rbx+rsi]
+	EmitRexString( "8D 2C 33" );			// lea rbp, [rbx+rsi]
 
 	EmitString( "C3" );						// ret
 
@@ -866,10 +875,10 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 
 	// function prologue
 	EmitString( "55" );						// push ebp
-	EmitRexString( 0x48, "89 E5" );			// mov ebp, esp
-	EmitRexString( 0x48, "83 EC 04" );		// sub esp, 4
+	EmitRexString( "89 E5" );				// mov ebp, esp
+	EmitRexString( "83 EC 04" );			// sub esp, 4
 	// align stack before call
-	EmitRexString( 0x48, "83 E4 F0" );		// and esp, -16
+	EmitRexString( "83 E4 F0" );			// and esp, -16
 
 	// ABI note: esi/edi must not change during call!
 
@@ -898,7 +907,7 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 #endif
 
 	// function epilogue
-	EmitRexString( 0x48, "89 EC" );			// mov esp, ebp
+	EmitRexString( "89 EC" );				// mov esp, ebp
 	EmitString( "5D" );						// pop ebp
 	EmitString( "C3" );						// ret
 #endif
@@ -907,7 +916,7 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 
 void EmitFTOLFunc( vm_t *vm ) 
 {
-	EmitRexString( 0x48, "B8" );// mov eax, &fp_cw[0]
+	EmitRexString( "B8" );		// mov eax, &fp_cw[0]
 	EmitPtr( &fp_cw[0] );		
 	EmitString( "9B D9 38" );	// fnstcw word ptr [eax]
 	EmitString( "D9 68 04" );	// fldcw word ptr [eax+4]
@@ -945,7 +954,7 @@ void EmitBCPYFunc( vm_t *vm )
 
 void EmitPSOFFunc( vm_t *vm ) 
 {
-	EmitRexString( 0x48, "B8" );	// mov eax, badJumpPtr
+	EmitRexString( "B8" );			// mov eax, badJumpPtr
 	EmitPtr( &badStackPtr );
 	EmitString( "FF 10" );			// call [eax]
 	EmitString( "C3" );				// ret
@@ -954,7 +963,7 @@ void EmitPSOFFunc( vm_t *vm )
 
 void EmitOSOFFunc( vm_t *vm ) 
 {
-	EmitRexString( 0x48, "B8" );	// mov eax, badOptackPtr
+	EmitRexString( "B8" );			// mov eax, badOptackPtr
 	EmitPtr( &badOpStackPtr );
 	EmitString( "FF 10" );			// call [eax]
 	EmitString( "C3" );				// ret
@@ -963,7 +972,7 @@ void EmitOSOFFunc( vm_t *vm )
 
 void EmitBADJFunc( vm_t *vm ) 
 {
-	EmitRexString( 0x48, "B8" );	// mov eax, badJumpPtr
+	EmitRexString( "B8" );			// mov eax, badJumpPtr
 	EmitPtr( &badJumpPtr );
 	EmitString( "FF 10" );			// call [eax]
 	EmitString( "C3" );				// ret
@@ -972,7 +981,7 @@ void EmitBADJFunc( vm_t *vm )
 
 void EmitERRJFunc( vm_t *vm ) 
 {
-	EmitRexString( 0x48, "B8" );	// mov eax, badJumpPtr
+	EmitRexString( "B8" );			// mov eax, badJumpPtr
 	EmitPtr( &errJumpPtr );
 	EmitString( "FF 10" );			// call [eax]
 	EmitString( "C3" );				// ret
@@ -981,7 +990,7 @@ void EmitERRJFunc( vm_t *vm )
 
 void EmitDATAFunc( vm_t *vm ) 
 {
-	EmitRexString( 0x48, "B8" );	// mov eax, badDataPtr
+	EmitRexString( "B8" );			// mov eax, badDataPtr
 	EmitPtr( &badDataPtr );
 	EmitString( "FF 10" );			// call [eax]
 	EmitString( "C3" );				// ret
@@ -1425,12 +1434,6 @@ void VM_FindMOps( instruction_t *buf, int instructionCount )
 			}
 		}
 
-		//if ( (ops[ ci->op ].flags & CALC) && (ops[(ci+1)->op].flags & CALC) && !(ci+1)->jused ) {
-		//	ci->mop = MOP_CALCF4;
-		//	ci += 2; i += 2;
-		//	continue;
-		//}
-
 		ci++;
 		i++;
 	}
@@ -1629,7 +1632,7 @@ __compile:
 	EmitString( "41 56" );			// push r14
 	EmitString( "41 57" );			// push r15
 
-	EmitRexString( 0x48, "BB" );	// mov rbx, vm->dataBase
+	EmitRexString( "BB" );			// mov rbx, vm->dataBase
 	EmitPtr( vm->dataBase );
 
 	EmitString( "49 B8" );			// mov r8, vm->instructionPointers
@@ -1644,22 +1647,22 @@ __compile:
 	EmitString( "49 C7 C5" );		// mov r13, vm->stackBottom
 	Emit4( vm->stackBottom );
 
-	EmitRexString( 0x48, "B8" );	// mov rax, &vm->programStack
+	EmitRexString( "B8" );			// mov rax, &vm->programStack
 	EmitPtr( &vm->programStack );
 	EmitString( "8B 30" );			// mov esi, [rax]
 
-	EmitRexString( 0x48, "B8" );	// mov rax, &vm->opStack
+	EmitRexString( "B8" );			// mov rax, &vm->opStack
 	EmitPtr( &vm->opStack );
-	EmitRexString( 0x48, "8B 38" );	// mov rdi, [rax]
+	EmitRexString( "8B 38" );		// mov rdi, [rax]
 
-	EmitRexString( 0x48, "B8" );	// mov rax, &vm->opStackTop
+	EmitRexString( "B8" );			// mov rax, &vm->opStackTop
 	EmitPtr( &vm->opStackTop );
 	EmitString( "4C 8B 30" );		// mov r14, [rax]
 
 #else
 	EmitString( "60" );				// pushad
 
-	EmitRexString( 0x48, "BB" );	// mov ebx, vm->dataBase
+	EmitRexString( "BB" );			// mov ebx, vm->dataBase
 	EmitPtr( vm->dataBase );
 
 	EmitString( "8B 35" );			// mov esi, [vm->programStack]
@@ -1674,14 +1677,14 @@ __compile:
 #if idx64
 
 #ifdef DEBUG_VM
-	EmitRexString( 0x48, "B8" );	// mov rax, &vm->programStack
+	EmitRexString( "B8" );			// mov rax, &vm->programStack
 	EmitPtr( &vm->programStack );
 	EmitString( "89 30" );			// mov [rax], esi
 #endif
 
-	EmitRexString( 0x48, "B8" );	// mov rax, &vm->opStack
+	EmitRexString( "B8" );			// mov rax, &vm->opStack
 	EmitPtr( &vm->opStack );
-	EmitRexString( 0x48, "89 38" );	// mov [rax], rdi
+	EmitRexString( "89 38" );		// mov [rax], rdi
 
 	EmitString( "41 5F" );			// pop r15
 	EmitString( "41 5E" );			// pop r14
@@ -1777,7 +1780,7 @@ __compile:
 
 			// opStack overflow check
 			if ( vm_rtChecks->integer & 2 ) {
-				EmitRexString( 0x48, "8D 47" );	// lea eax, [edi+0x7F]
+				EmitRexString( "8D 47" );	// lea eax, [edi+0x7F]
 				Emit1( ci->opStack );
 #if idx64
 				EmitString( "4C 39 F0" );		// cmp rax, r14
@@ -1790,7 +1793,7 @@ __compile:
 				Emit4( n - 6 );
 			}
 
-			EmitRexString( 0x48, "8D 2C 33" );	// lea ebp, [ebx+esi]
+			EmitRexString( "8D 2C 33" );		// lea ebp, [ebx+esi]
 			break;
 
 		case OP_CONST:
