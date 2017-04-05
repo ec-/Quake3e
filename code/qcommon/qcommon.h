@@ -894,8 +894,9 @@ extern	cvar_t	*cl_packetdelay;
 extern	cvar_t	*sv_packetdelay;
 
 extern	cvar_t	*vm_rtChecks;
-
+#ifndef DEDICATED
 extern	cvar_t	*com_yieldCPU;
+#endif
 extern	cvar_t	*com_affinityMask;
 
 

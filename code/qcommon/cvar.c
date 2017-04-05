@@ -34,6 +34,7 @@ int			cvar_numIndexes;
 
 #define FILE_HASH_SIZE		256
 static	cvar_t	*hashTable[FILE_HASH_SIZE];
+static	qboolean cvar_sort = qfalse;
 
 /*
 ================
@@ -465,8 +466,76 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 	var->hashPrev = NULL;
 	hashTable[hash] = var;
 
+	 // sort on write
+	cvar_sort = qtrue;
+
 	return var;
 }
+
+
+static void Cvar_QSortByName( cvar_t **a, int n ) 
+{
+	cvar_t *temp;
+	cvar_t *m;
+	int	i, j; 
+
+	i = 0;
+	j = n;
+	m = a[ n>>1 ];
+
+	do {
+		// sort in descending order
+		while ( strcmp( a[i]->name, m->name ) > 0 ) i++;
+		while ( strcmp( a[j]->name, m->name ) < 0 ) j--;
+
+		if ( i <= j ) {
+			temp = a[i]; 
+			a[i] = a[j]; 
+			a[j] = temp;
+			i++; 
+			j--;
+		}
+	} while ( i <= j );
+
+	if ( j > 0 ) Cvar_QSortByName( a, j );
+	if ( n > i ) Cvar_QSortByName( a+i, n-i );
+}
+
+
+static void Cvar_Sort( void ) 
+{
+	cvar_t *list[ MAX_CVARS ], *var;
+	int count;
+	int i;
+
+	for ( count = 0, var = cvar_vars; var; var = var->next ) {
+		if ( var->name ) {
+			list[ count++ ] = var;
+		} else {
+			Com_Error( ERR_FATAL, "%s: NULL cvar name", __func__ );
+		}
+	}
+
+	if ( count < 2 ) {
+		return; // nothing to sort
+	}
+
+	Cvar_QSortByName( &list[0], count-1 );
+	
+	cvar_vars = NULL;
+
+	// relink cvars
+	for ( i = 0; i < count; i++ ) {
+		var = list[ i ];
+		// link the variable in
+		var->next = cvar_vars;
+		if ( cvar_vars )
+			cvar_vars->prev = var;
+		var->prev = NULL;
+		cvar_vars = var;
+	}
+}
+
 
 /*
 ============
@@ -1159,6 +1228,12 @@ void Cvar_WriteVariables( fileHandle_t f )
 {
 	cvar_t	*var;
 	char	buffer[1024];
+
+	if ( cvar_sort ) {
+		Com_DPrintf( "%s: sort cvars\n", __func__ );
+		cvar_sort = qfalse;
+		Cvar_Sort();
+	}
 
 	for (var = cvar_vars; var; var = var->next)
 	{

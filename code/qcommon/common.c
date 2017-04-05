@@ -66,10 +66,12 @@ cvar_t	*com_dedicated;
 cvar_t	*com_timescale;
 cvar_t	*com_fixedtime;
 cvar_t	*com_journal;
+#ifndef DEDICATED
 cvar_t	*com_maxfps;
 cvar_t	*com_maxfpsUnfocused;
 cvar_t	*com_maxfpsMinimized;
 cvar_t	*com_yieldCPU;
+#endif
 cvar_t	*com_affinityMask;
 cvar_t	*com_timedemo;
 cvar_t	*com_sv_running;
@@ -2900,12 +2902,13 @@ void Com_Init( char *commandLine ) {
 	//
 	// init commands and vars
 	//
+#ifndef DEDICATED
 	com_maxfps = Cvar_Get( "com_maxfps", "125", 0 ); // try to force that in some light way
-
 	com_maxfpsUnfocused = Cvar_Get ("com_maxfpsUnfocused", "60", CVAR_ARCHIVE);
 	com_maxfpsMinimized = Cvar_Get ("com_maxfpsMinimized", "30", CVAR_ARCHIVE);
 	com_yieldCPU = Cvar_Get( "com_yieldCPU", "2", CVAR_ARCHIVE );
 	Cvar_CheckRange( com_yieldCPU, 0, 1000, qtrue );
+#endif
 	com_affinityMask = Cvar_Get( "com_affinityMask", "0", CVAR_ARCHIVE );
 	com_affinityMask->modified = qfalse;
 
@@ -3241,6 +3244,7 @@ void Com_Frame( qboolean demoPlaying ) {
 	if ( com_dedicated->integer ) {
 		minMsec = SV_FrameMsec();
 	} else {
+#ifndef DEDICATED
 		if ( com_timedemo->integer && demoPlaying )
 			minMsec = 0;
 		else
@@ -3255,6 +3259,7 @@ void Com_Frame( qboolean demoPlaying ) {
 			if ( com_maxfps->integer > 0 )
 				minMsec = 1000 / com_maxfps->integer;
 		}
+#endif
 	}
 
 	// waiting for incoming packets
@@ -3271,6 +3276,7 @@ void Com_Frame( qboolean demoPlaying ) {
 		if ( com_dedicated->integer ) {
 			NET_Sleep( timeVal );
 		} else {
+#ifndef DEDICATED
 			if ( timeVal > com_yieldCPU->integer ) {
 				timeVal = com_yieldCPU->integer;
 				NET_Sleep( timeVal );
@@ -3278,6 +3284,7 @@ void Com_Frame( qboolean demoPlaying ) {
 			} else {
 				NET_Sleep( timeVal );
 			}
+#endif
 		}
 	} while( Com_TimeVal( minMsec ) );
 	
