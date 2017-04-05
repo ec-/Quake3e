@@ -122,7 +122,7 @@ int	VM_CallInterpreted2( vm_t *vm, int nargs, int *args ) {
 	// leave a free spot at start of stack so
 	// that as long as opStack is valid, opStack-1 will
 	// not corrupt anything
-	opStack = stack;
+	opStack = &stack[1];
 	opStackTop = stack + ARRAY_LEN( stack ) - 1;
 
 	programStack -= (MAX_VMMAIN_CALL_ARGS+2)*4;
@@ -528,7 +528,7 @@ nextInstruction2:
 done:
 	//vm->currentlyInterpreting = qfalse;
 
-	if ( opStack != &stack[1] ) {
+	if ( opStack != &stack[2] ) {
 		Com_Error( ERR_DROP, "Interpreter error: opStack = %ld", (long int) (opStack - stack) );
 	}
 
