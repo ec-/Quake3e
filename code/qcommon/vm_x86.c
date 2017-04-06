@@ -88,8 +88,8 @@ static void VM_Destroy_Compiled( vm_t *vm );
   Example how data segment will look like during vmMain execution:
   | .... |
   |------| vm->programStack -=36 (8+12+16) // set by vmMain
-  | ???? | +0 - unused
-  | ???? | +4 - unused
+  | ???? | +0 - unused, reserved for interpreter
+  | ???? | +4 - unused, reserved for interpreter
   |-------
   | arg0 | +8  \
   | arg4 | +12  | - passed arguments, accessible from subroutines
@@ -99,19 +99,13 @@ static void VM_Destroy_Compiled( vm_t *vm );
   | loc4 | +24  \ - locals, accessible only from local scope
   | loc8 | +28  /
   | lc12 | +32 /
-  |------| vm->programStack -= 48 (8+40) // set by VM_CallCompiled()
-  | ???? | +0 - unused
-  | ???? | +4 - unused
-  | arg0 | +8
-  | arg1 | +12
-  | arg2 | +16
-  | arg3 | +20
-  | arg4 | +24
-  | arg5 | +28
-  | arg6 | +32
-  | arg7 | +36
-  | arg8 | +40
-  | arg9 | +44
+  |------| vm->programStack -= 24 ( 8 + MAX_VMMAIN_CALL_ARGS*4 ) // set by VM_CallCompiled()
+  | ???? | +0 - unused, reserved for interpreter
+  | ???? | +4 - unused, reserved for interpreter
+  | arg0 | +8  \
+  | arg1 | +12  \ - passed arguments, accessible from vmMain
+  | arg2 | +16  / 
+  | arg3 | +20 /
   |------| vm->programStack = vm->dataMask + 1 // set by VM_Create()
 
   jump/call opStack rules:
@@ -145,7 +139,9 @@ typedef enum
 	LAST_COMMAND_MOV_EAX_EDI_CALL,
 	LAST_COMMAND_SUB_DI_4,
 	LAST_COMMAND_SUB_DI_8,
-	LAST_COMMAND_FSTP_EDI
+	LAST_COMMAND_STORE_FLOAT_EDI,
+	LAST_COMMAND_STORE_FLOAT_EDI_X87,
+	LAST_COMMAND_STORE_FLOAT_EDI_SSE
 } ELastCommand;
 
 typedef enum 
@@ -176,7 +172,7 @@ static int fp_cw[2] = { 0x0000, 0x0F7F }; // [0] - current value, [1] - round to
 
 static	int	ip, pass;
 static	int	lastConst;
-static	int	pop1;
+static	opcode_t	pop1;
 
 static	ELastCommand	LastCommand;
 
@@ -227,7 +223,7 @@ static void (*const badOpStackPtr)(void) = BadOpStack;
 static void (*const badDataPtr)(void) = BadData;
 
 
-static void VM_FreeBuffers( void ) 
+static void VM_FreeBuffers( void )
 {
 	// should be freed in reversed allocation order
 	Z_Free( instructionOffsets );
@@ -235,7 +231,33 @@ static void VM_FreeBuffers( void )
 }
 
 
-static void Emit1( int v ) 
+static const ID_INLINE qboolean HasFCOM( void )
+{
+#if id386
+	return ( CPU_Flags & CPU_FCOM );
+#else
+	return qtrue; // assume idx64
+#endif
+}
+
+
+static const ID_INLINE qboolean HasSSEFP( void )
+{
+#if id386
+	return ( CPU_Flags & CPU_SSE ) && ( CPU_Flags & CPU_SSE2 );
+#else
+	return qtrue; // assume idx64
+#endif
+}
+
+
+static const ID_INLINE qboolean HasSSE3( void )
+{
+	return ( CPU_Flags & CPU_SSE3 );
+}
+
+
+static void Emit1( int v )
 {
 	if ( code ) 
 	{
@@ -247,7 +269,7 @@ static void Emit1( int v )
 }
 
 
-static void Emit4( int v ) 
+static void Emit4( int v )
 {
 	Emit1( v & 255 );
 	Emit1( ( v >> 8 ) & 255 );
@@ -257,7 +279,7 @@ static void Emit4( int v )
 
 
 #if idx64
-static void Emit8( int64_t v ) 
+static void Emit8( int64_t v )
 {
 	Emit1( ( v >> 0 ) & 255 );
 	Emit1( ( v >> 8 ) & 255 );
@@ -271,7 +293,7 @@ static void Emit8( int64_t v )
 #endif
 
 
-static void EmitPtr( const void *ptr ) 
+static void EmitPtr( const void *ptr )
 {
 #if idx64
 	Emit8( (intptr_t)ptr );
@@ -300,7 +322,7 @@ static int Hex( int c )
 }
 
 
-static void EmitString( const char *string ) 
+static void EmitString( const char *string )
 {
 	int		c1, c2;
 	int		v;
@@ -329,7 +351,7 @@ static void EmitRexString( const char *string )
 }
 
 
-static void EmitAlign( int align ) 
+static void EmitAlign( int align )
 {
 	int i, n;
 
@@ -360,8 +382,22 @@ static void EmitCommand( ELastCommand command )
 			EmitRexString( "83 EF 08" );	// sub edi, 8
 			break;
 
-		case LAST_COMMAND_FSTP_EDI:
-			EmitString( "D9 1F" );		// fstp dword ptr [edi]
+		case LAST_COMMAND_STORE_FLOAT_EDI_SSE:
+			EmitString( "F3 0F 11 07" );	// movss dword ptr [edi], xmm0
+			break;
+
+		case LAST_COMMAND_STORE_FLOAT_EDI_X87:
+			EmitString( "D9 1F" );			// fstp dword ptr [edi]
+			break;
+
+		case LAST_COMMAND_STORE_FLOAT_EDI:	// meta command
+			if ( HasSSEFP() ) {
+				EmitString( "F3 0F 11 07" );// movss dword ptr [edi], xmm0
+				command = LAST_COMMAND_STORE_FLOAT_EDI_SSE;
+			} else {
+				EmitString( "D9 1F" );		// fstp dword ptr [edi]
+				command = LAST_COMMAND_STORE_FLOAT_EDI_X87;
+			}
 			break;
 
 		default:
@@ -371,7 +407,7 @@ static void EmitCommand( ELastCommand command )
 }
 
 
-static void EmitAddEDI4( vm_t *vm ) 
+static void EmitAddEDI4( vm_t *vm )
 {
 	if ( LastCommand == LAST_COMMAND_NONE ) 
 	{
@@ -405,7 +441,7 @@ static void EmitAddEDI4( vm_t *vm )
 }
 
 
-static void EmitMovEAXEDI( vm_t *vm ) 
+static void EmitMovEAXEDI( vm_t *vm )
 {
 	opcode_t pop = pop1;
 	pop1 = OP_UNDEF;
@@ -422,7 +458,7 @@ static void EmitMovEAXEDI( vm_t *vm )
 	if ( LastCommand == LAST_COMMAND_MOV_EAX_EDI_CALL )
 		return;
 
-	if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) // mov [edi], eax
+	if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) // mov dword ptr [edi], eax
 	{	
 		REWIND( 2 );
 		LastCommand = LAST_COMMAND_NONE; 
@@ -475,7 +511,7 @@ void EmitMovECXEDI( vm_t *vm )
 		return;
 	}
 
-	if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) // mov [edi], eax
+	if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) // mov dword ptr [edi], eax
 	{
 		REWIND( 2 );
 		EmitString( "89 C1" );		// mov ecx, eax
@@ -501,7 +537,7 @@ void EmitMovECXEDI( vm_t *vm )
 }
 
 
-static void EmitCheckReg( vm_t *vm, int reg, int size )  
+static void EmitCheckReg( vm_t *vm, int reg, int size )
 {
 	int n;
 
@@ -511,7 +547,7 @@ static void EmitCheckReg( vm_t *vm, int reg, int size )
 				EmitString( "25" ); 	// and eax, 0x12345678
 			else
 				EmitString( "81 E1" );  // and ecx, 0x12345678
-			Emit4( vm->dataMask /*& ~(size - 1)*/ );
+			Emit4( vm->dataMask );
 		}
 		return;
 	}
@@ -546,27 +582,47 @@ static void EmitCheckReg( vm_t *vm, int reg, int size )
 }
 
 
-static int EmitFldEDI( vm_t *vm ) 
+static int EmitLoadFloatEDI_SSE( vm_t *vm )
 {
-	if ( LastCommand == LAST_COMMAND_NONE ) 
+	// movss dword ptr [edi], xmm0
+	if ( LastCommand == LAST_COMMAND_STORE_FLOAT_EDI_SSE )
 	{
-		EmitString( "D9 07" );		// fld dword ptr [edi]
-		return 0;
+		if ( !vm )
+			return 1;
+		REWIND( 4 );
+		LastCommand = LAST_COMMAND_NONE;
+		return 1;
 	}
 
-	if ( LastCommand == LAST_COMMAND_FSTP_EDI )	// fstp dword ptr [edi]
+	EmitString( "F3 0F 10 07" ); // movss xmm0, dword ptr [edi]
+	return 0;
+}
+
+
+static int EmitLoadFloatEDI_X87( vm_t *vm )
+{
+	// fstp dword ptr [edi]
+	if ( LastCommand == LAST_COMMAND_STORE_FLOAT_EDI_X87 )
 	{ 	
 		if ( !vm )
-			return 1;				// just report
+			return 1;
 		REWIND( 2 );
 		LastCommand = LAST_COMMAND_NONE;
 		return 1;
 	}
 
-	EmitString( "D9 07" );			// fld dword ptr [edi]
+	EmitString( "D9 07" );		// fld dword ptr [edi]
 	return 0;
 }
 
+
+static int EmitLoadFloatEDI( vm_t *vm )
+{
+	if ( HasSSEFP() )
+		return EmitLoadFloatEDI_SSE( vm );
+	else
+		return EmitLoadFloatEDI_X87( vm );
+}
 
 #if JUMP_OPTIMIZE
 const char *NearJumpStr( int op ) 
@@ -714,7 +770,7 @@ void EmitFloatJump( vm_t *vm, instruction_t *i, int op, int addr )
 }
 
 
-void EmitCallAddr( vm_t *vm, int addr ) 
+static void EmitCallAddr( vm_t *vm, int addr )
 {
 	int v;
 	v = instructionOffsets[ addr ] - compiledOfs;
@@ -723,7 +779,7 @@ void EmitCallAddr( vm_t *vm, int addr )
 }
 
 
-void EmitCallOffset( func_t Func ) 
+static void EmitCallOffset( func_t Func )
 {
 	int  v;
 	v = funcOffset[ Func ] - compiledOfs;
@@ -741,7 +797,7 @@ void EmitCallOffset( func_t Func )
 #define PUSH_STACK  32
 #define PARAM_STACK 128
 
-void EmitCallFunc( vm_t *vm ) 
+static void EmitCallFunc( vm_t *vm )
 {
 	static int sysCallOffset = 0;
 	int n;
@@ -858,7 +914,7 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 
 	// we added the return value: *(opstack+1) = eax
 	EmitAddEDI4( vm );						// add edi, 4
-	EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov [edi], eax
+	EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov dword ptr [edi], eax
 
 	// return stack
 	EmitString( "48 81 C4" );				// add rsp, 200
@@ -914,7 +970,7 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 }
 
 
-void EmitFTOLFunc( vm_t *vm ) 
+static void EmitFTOLFunc( vm_t *vm )
 {
 	EmitRexString( "B8" );		// mov eax, &fp_cw[0]
 	EmitPtr( &fp_cw[0] );		
@@ -926,7 +982,7 @@ void EmitFTOLFunc( vm_t *vm )
 }
 
 
-void EmitBCPYFunc( vm_t *vm ) 
+static void EmitBCPYFunc( vm_t *vm )
 {
 	// FIXME: range check
 	EmitString( "56" );						// push esi
@@ -952,16 +1008,16 @@ void EmitBCPYFunc( vm_t *vm )
 }
 
 
-void EmitPSOFFunc( vm_t *vm ) 
+static void EmitPSOFFunc( vm_t *vm )
 {
-	EmitRexString( "B8" );			// mov eax, badJumpPtr
+	EmitRexString( "B8" );			// mov eax, badStackPtr
 	EmitPtr( &badStackPtr );
 	EmitString( "FF 10" );			// call [eax]
 	EmitString( "C3" );				// ret
 }
 
 
-void EmitOSOFFunc( vm_t *vm ) 
+static void EmitOSOFFunc( vm_t *vm )
 {
 	EmitRexString( "B8" );			// mov eax, badOptackPtr
 	EmitPtr( &badOpStackPtr );
@@ -970,7 +1026,7 @@ void EmitOSOFFunc( vm_t *vm )
 }
 
 
-void EmitBADJFunc( vm_t *vm ) 
+static void EmitBADJFunc( vm_t *vm )
 {
 	EmitRexString( "B8" );			// mov eax, badJumpPtr
 	EmitPtr( &badJumpPtr );
@@ -979,16 +1035,16 @@ void EmitBADJFunc( vm_t *vm )
 }
 
 
-void EmitERRJFunc( vm_t *vm ) 
+static void EmitERRJFunc( vm_t *vm )
 {
-	EmitRexString( "B8" );			// mov eax, badJumpPtr
+	EmitRexString( "B8" );			// mov eax, errJumpPtr
 	EmitPtr( &errJumpPtr );
 	EmitString( "FF 10" );			// call [eax]
 	EmitString( "C3" );				// ret
 }
 
 
-void EmitDATAFunc( vm_t *vm ) 
+static void EmitDATAFunc( vm_t *vm )
 {
 	EmitRexString( "B8" );			// mov eax, badDataPtr
 	EmitPtr( &badDataPtr );
@@ -1002,7 +1058,7 @@ void EmitDATAFunc( vm_t *vm )
 EmitFCalcEDI
 =================
 */
-void EmitFCalcEDI( int op ) 
+static void EmitFCalcEDI( int op )
 {
 	switch ( op )
 	{
@@ -1020,7 +1076,7 @@ void EmitFCalcEDI( int op )
 EmitFCalcPop
 =================
 */
-void EmitFCalcPop( int op ) 
+static void EmitFCalcPop( int op )
 {
 	switch ( op )
 	{
@@ -1055,7 +1111,7 @@ static int CommuteFloatOp( int op )
 ConstOptimize
 =================
 */
-qboolean ConstOptimize( vm_t *vm ) 
+static qboolean ConstOptimize( vm_t *vm ) 
 {
 	int v;
 	int op1;
@@ -1192,12 +1248,24 @@ qboolean ConstOptimize( vm_t *vm )
 	case OP_ADDF:
 	case OP_SUBF:
 		v = ci->value;
-		EmitFldEDI( vm );
-		EmitString( "C7 45 00" );	// mov [ebp], 0x12345678
-		Emit4( v );
-		EmitString( "D9 45 00" );	// fld dword ptr [ebp]
-		EmitFCalcPop( op1 );		// fmulp/fdivp/faddp/fsubp
-		EmitCommand( LAST_COMMAND_FSTP_EDI );
+		EmitLoadFloatEDI( vm );
+		if ( HasSSEFP() ) {
+			EmitString( "C7 45 00" );			// mov dword ptr [ebp], v
+			Emit4( v );
+			EmitString( "F3 0F 10 4D 00" );		// movss xmm1, dword ptr [ebp]
+			switch( op1 ) {
+				case OP_ADDF: EmitString( "0F 58 C1" ); break;	// addps xmm0, xmm1
+				case OP_SUBF: EmitString( "0F 5C C1" ); break;	// subps xmm0, xmm1
+				case OP_MULF: EmitString( "0F 59 C1" ); break;	// mulps xmm0, xmm1
+				case OP_DIVF: EmitString( "0F 5E C1" ); break;	// divps xmm0, xmm1
+			}
+		} else {
+			EmitString( "C7 45 00" );	// mov dword ptr [ebp], 0x12345678
+			Emit4( v );
+			EmitString( "D9 45 00" );	// fld dword ptr [ebp]
+			EmitFCalcPop( op1 );		// fmulp/fdivp/faddp/fsubp
+		}
+		EmitCommand( LAST_COMMAND_STORE_FLOAT_EDI );
 		ip +=1;
 		return qtrue;
 
@@ -1277,7 +1345,6 @@ qboolean ConstOptimize( vm_t *vm )
 		return qtrue;
 
 	case OP_JUMP:
-		//JMP();
 		EmitJump( vm, ni, ni->op, ci->value );
 		ip += 1; // OP_JUMP
 		return qtrue;
@@ -1290,15 +1357,23 @@ qboolean ConstOptimize( vm_t *vm )
 #endif
 		v = ci->value;
 		// try to inline some syscalls
-		if ( v == ~TRAP_SIN || v == ~TRAP_COS || v == ~TRAP_SQRT ) {
+		if ( HasSSEFP() && v == ~TRAP_SQRT ) {
+			// inline SSE implementation of sin/cos is too problematic...
+			EmitString( "F3 0F 10 45 08" );		// movss xmm0, dword ptr [ebp + 8]
+			EmitAddEDI4( vm );
+			EmitString( "F3 0F 51 C0" );		// sqrtss xmm0, xmm0
+			EmitCommand( LAST_COMMAND_STORE_FLOAT_EDI_SSE );
+			ip += 1;
+			return qtrue;
+		} else if ( v == ~TRAP_SIN || v == ~TRAP_COS || v == ~TRAP_SQRT ) {
 			EmitString( "D9 45 08" );		// fld dword ptr [ebp + 8]
 			switch ( v ) {
 				case ~TRAP_SQRT: EmitString( "D9 FA" ); break; // fsqrt
 				case ~TRAP_SIN: EmitString( "D9 FE" ); break;  // fsin
 				case ~TRAP_COS: EmitString( "D9 FF" ); break;  // fcos
 			}
-			EmitAddEDI4( vm );						// add edi, 4
-			EmitCommand( LAST_COMMAND_FSTP_EDI ); 	// fstp dword ptr[edi]
+			EmitAddEDI4( vm );								// add edi, 4
+			EmitCommand( LAST_COMMAND_STORE_FLOAT_EDI_X87 );// fstp dword ptr[edi]
 			ip += 1;
 			return qtrue;
 		}
@@ -1328,21 +1403,33 @@ qboolean ConstOptimize( vm_t *vm )
 	case OP_LEF:
 	case OP_GTF:
 	case OP_GEF:
-		if ( !( CPU_Flags & CPU_FCOM ) )
+		if ( !HasFCOM() )
 			return qfalse;
-		EmitFldEDI( vm );
+		EmitLoadFloatEDI( vm );
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );
 		v = ci->value;
-		if ( v == 0 ) {
-			EmitString( "D9 EE" );		// fldz
+		if ( HasSSEFP() ) {
+			if ( v == 0 ) {
+				EmitString( "0F 57 C9" );			// xorps xmm1, xmm1
+			} else {
+				EmitString( "C7 45 00" );			// mov dword ptr [ebp], v
+				Emit4( v );
+				EmitString( "F3 0F 10 4D 00" );		// movss xmm1, dword ptr [ebp]
+			}
+			EmitString( "0F 2F C1" );				// comiss xmm0, xmm1
+			EmitJump( vm, ni, ni->op, ni->value );
 		} else {
-			EmitString( "C7 45 00" );	// mov [ebp], 0x12345678
-			Emit4( v );
-			EmitString( "D9 45 00" );	// fld dword ptr [ebp]
+			if ( v == 0 ) {
+				EmitString( "D9 EE" );		// fldz
+			} else {
+				EmitString( "C7 45 00" );	// mov [ebp], 0x12345678
+				Emit4( v );
+				EmitString( "D9 45 00" );	// fld dword ptr [ebp]
+			}
+			EmitString( "DF E9" );		// fucomip
+			EmitString( "DD D8" );		// fstp st(0)
+			EmitJump( vm, ni, CommuteFloatOp( ni->op ), ni->value );
 		}
-		EmitString( "DF E9" );		// fucomip
-		EmitString( "DD D8" );		// fstp st(0)
-		EmitJump( vm, ni, CommuteFloatOp( ni->op ), ni->value );
 		ip +=1;
 		return qtrue;
 
@@ -1389,7 +1476,7 @@ VM_FindMOps
 Search for known macro-op sequences
 =================
 */
-void VM_FindMOps( instruction_t *buf, int instructionCount ) 
+static void VM_FindMOps( instruction_t *buf, int instructionCount )
 {
 	int i, v, op0;
 	instruction_t *ci;
@@ -1445,7 +1532,7 @@ void VM_FindMOps( instruction_t *buf, int instructionCount )
 EmitMOPs
 =================
 */
-qboolean EmitMOPs( vm_t *vm, int op ) 
+static qboolean EmitMOPs( vm_t *vm, int op ) 
 {
 	int v, n;
 	switch ( op ) 
@@ -1584,8 +1671,8 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int		proc_len;
 	int		i, n, v;
 
-	inst = Z_Malloc( (header->instructionCount + 8 ) * sizeof( instruction_t ) );
-	instructionOffsets = Z_Malloc( header->instructionCount * sizeof( int ) );
+	inst = (instruction_t*)Z_Malloc( (header->instructionCount + 8 ) * sizeof( instruction_t ) );
+	instructionOffsets = (int*)Z_Malloc( header->instructionCount * sizeof( int ) );
 
 	errMsg = VM_LoadInstructions( header, inst );
 	if ( !errMsg ) {
@@ -1811,7 +1898,7 @@ __compile:
 			break;
 
 		case OP_LOCAL:
-			// Optimizaton: merge OP_LOCAL + OP_LOAD4
+			// optimization: merge OP_LOCAL + OP_LOAD4
 			if ( ni->op == OP_LOAD4 ) {
 				EmitAddEDI4( vm );				// add edi, 4
 				v = ci->value;
@@ -1827,7 +1914,7 @@ __compile:
 				break;
 			}
 
-			// Optimizaton: merge OP_LOCAL + OP_LOAD2
+			// optimization: merge OP_LOCAL + OP_LOAD2
 			if ( ni->op == OP_LOAD2 ) {
 				EmitAddEDI4( vm );				// add edi, 4
 				v = ci->value;
@@ -1843,7 +1930,7 @@ __compile:
 				break;
 			}
 
-			// Optimizaton: merge OP_LOCAL + OP_LOAD1
+			// optimization: merge OP_LOCAL + OP_LOAD1
 			if ( ni->op == OP_LOAD1 ) {
 				EmitAddEDI4( vm );				// add edi, 4
 				v = ci->value;
@@ -2007,13 +2094,19 @@ __compile:
 		case OP_LEF:
 		case OP_GTF:
 		case OP_GEF:
-			if ( CPU_Flags & CPU_FCOM ) {
-				EmitFldEDI( vm );						// fld dword ptr [edi]
-				EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
-				//EmitString( "D9 47 08" );				// fld dword ptr [edi+8]
-				EmitString( "D9 47 04" );				// fld dword ptr [edi+4]
-				EmitString( "DF E9" );					// fucomip
-				EmitString( "DD D8" );					// fstp st(0)
+			if ( HasFCOM() ) {
+				EmitLoadFloatEDI( vm );
+				if ( HasSSEFP() ) {
+					EmitString( "F3 0F 10 4F FC" );			// movss xmm1, dword ptr [edi-4]
+					EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
+					EmitString( "0F 2F C8" );				// comiss xmm1, xmm0
+				} else {
+					EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
+					//EmitString( "D9 47 08" );				// fld dword ptr [edi+8]
+					EmitString( "D9 47 04" );				// fld dword ptr [edi+4]
+					EmitString( "DF E9" );					// fucomip
+					EmitString( "DD D8" );					// fstp st(0)
+				}
 				EmitJump( vm, ci, ci->op, ci->value );
 			} else {
 				EmitCommand( LAST_COMMAND_SUB_DI_8 );	// sub edi, 8
@@ -2137,35 +2230,69 @@ __compile:
 			break;
 
 		case OP_NEGF:
-			if ( !ci->fpu )
-				EmitFldEDI( vm );					// fld dword ptr [edi]
-			EmitString( "D9 E0" );					// fchs
-			if ( !ci->fpu || ci->store )
-				EmitCommand( LAST_COMMAND_FSTP_EDI );	// fstp dword ptr [edi]
+			//if ( !ci->fpu )
+			EmitLoadFloatEDI( vm );					// fld dword ptr [edi] | movss xmm0, dword ptr [edi]
+			if ( HasSSEFP() ) {
+				EmitString( "0F 57 C9" );			// xorps xmm1, xmm1
+				EmitString( "0F 5C C8" );			// subps xmm1, xmm0
+				EmitString( "0F 28 C1" );			// movaps xmm0, xmm1
+			} else {
+				EmitString( "D9 E0" );				// fchs
+			}
+			//if ( !ci->fpu || ci->store )
+			EmitCommand( LAST_COMMAND_STORE_FLOAT_EDI ); // fstp dword ptr [edi]
 			break;
 
 		case OP_ADDF:
 		case OP_SUBF:
 		case OP_DIVF:
 		case OP_MULF:
-			EmitString( "D9 47 FC" );				// fld dword ptr [edi-4]
-			EmitFCalcEDI( ci->op );					// fadd|fsub|fmul|fdiv dword ptr [edi]
-			EmitString( "D9 5F FC" );				// fstp dword ptr [edi-4]
+			if ( HasSSEFP() ) {
+				EmitString( "F3 0F 10 47 FC" );		// movss xmm0, dword ptr [edi-4]
+				EmitString( "F3 0F 10 0F" );		// movss xmm1, dword ptr [edi]
+				switch( ci->op ) {
+					case OP_ADDF: EmitString( "0F 58 C1" ); break;	// addps xmm0, xmm1
+					case OP_SUBF: EmitString( "0F 5C C1" ); break;	// subps xmm0, xmm1
+					case OP_MULF: EmitString( "0F 59 C1" ); break;	// mulps xmm0, xmm1
+					case OP_DIVF: EmitString( "0F 5E C1" ); break;	// divps xmm0, xmm1
+				}
+				EmitString( "F3 0F 11 47 FC" );		// movss dword ptr [edi-4], xmm0
+			} else {
+				EmitString( "D9 47 FC" );			// fld dword ptr [edi-4]
+				EmitFCalcEDI( ci->op );				// fadd|fsub|fmul|fdiv dword ptr [edi]
+				EmitString( "D9 5F FC" );			// fstp dword ptr [edi-4]
+			}
 			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 			break;
 
 		case OP_CVIF:
-			EmitString( "DB 07" );					// fild dword ptr [edi]
-			if ( !ci->fpu ) 
-				EmitCommand( LAST_COMMAND_FSTP_EDI );	// fstp dword ptr [edi]
+			if ( HasSSEFP() ) {
+				EmitString( "F3 0F 2A 07" );		// cvtsi2ss xmm0, dword ptr [edi]				
+			} else {
+				EmitString( "DB 07" );				// fild dword ptr [edi]
+			}
+			//if ( !ci->fpu ) 
+			EmitCommand( LAST_COMMAND_STORE_FLOAT_EDI ); // fstp dword ptr [edi] | SSE
 			break;
 
 		case OP_CVFI:
-			EmitFldEDI( vm );						// fld dword ptr [edi]
-			if ( CPU_Flags & CPU_SSE3 ) {
-				// fast sse3 truncation
-				EmitString( "DB 0F" );				// fisttp dword ptr [edi]
+			if ( /*HasSSEFP() && */ HasSSE3() ) {
+				// try fast sse3 truncation
+				//if ( HasSSE3() ) 
+				{
+					EmitLoadFloatEDI_X87( vm );		// fld dword ptr [edi]
+					EmitString( "DB 0F" );			// fisttp dword ptr [edi]
+				} 
+#if 0 // FIXME: set corect rounding mode in MXCSR?
+				else 
+				{
+					EmitLoadFloatEDI_SSE( vm );		// movss xmm0, dword ptr [edi]
+					EmitString( "F3 0F 2C C0" );	// cvttss2si eax, xmm0
+					EmitString( "89 07" );			// mov dword ptr [edi], eax
+				}
+#endif
 			} else {
+				EmitLoadFloatEDI_X87( vm );			// fld dword ptr [edi]
 				// call the library conversion function
 				EmitCallOffset( FUNC_FTOL );		// call +FUNC_FTOL
 			}
@@ -2242,7 +2369,7 @@ __compile:
 			return qfalse;
 		}
 
-		pop1 = ci->op;
+		pop1 = (opcode_t)ci->op;
 	} // while( ip < header->instructionCount )
 
 		// ****************
@@ -2296,7 +2423,7 @@ __compile:
 	n = header->instructionCount * sizeof( intptr_t );
 
 	if ( code == NULL ) {
-		code = VM_Alloc_Compiled( vm, compiledOfs, n );
+		code = (byte*)VM_Alloc_Compiled( vm, compiledOfs, n );
 		if ( code == NULL ) {
 			return qfalse;
 		}
@@ -2349,7 +2476,7 @@ __compile:
 VM_Alloc_Compiled
 =================
 */
-void *VM_Alloc_Compiled( vm_t *vm, int codeLength, int tableLength ) 
+static void *VM_Alloc_Compiled( vm_t *vm, int codeLength, int tableLength )
 {
 	void	*ptr;
 	int		length;
@@ -2375,7 +2502,7 @@ void *VM_Alloc_Compiled( vm_t *vm, int codeLength, int tableLength )
 		return NULL;
 	}
 #endif
-	vm->codeBase.ptr = ptr;
+	vm->codeBase.ptr = (byte*)ptr;
 	vm->codeLength = codeLength;
 	vm->allocSize = length;
 
@@ -2388,7 +2515,7 @@ void *VM_Alloc_Compiled( vm_t *vm, int codeLength, int tableLength )
 VM_Destroy_Compiled
 ==============
 */
-void VM_Destroy_Compiled( vm_t* vm )
+static void VM_Destroy_Compiled( vm_t* vm )
 {
 #ifdef VM_X86_MMAP
 	munmap( vm->codeBase.ptr, vm->allocSize );
