@@ -139,6 +139,7 @@ typedef enum
 	LAST_COMMAND_MOV_EAX_EDI_CALL,
 	LAST_COMMAND_SUB_DI_4,
 	LAST_COMMAND_SUB_DI_8,
+	LAST_COMMAND_SUB_DI_12,
 	LAST_COMMAND_STORE_FLOAT_EDI,
 	LAST_COMMAND_STORE_FLOAT_EDI_X87,
 	LAST_COMMAND_STORE_FLOAT_EDI_SSE
@@ -382,6 +383,10 @@ static void EmitCommand( ELastCommand command )
 			EmitRexString( "83 EF 08" );	// sub edi, 8
 			break;
 
+		case LAST_COMMAND_SUB_DI_12:
+			EmitRexString( "83 EF 0C" );	// sub edi, 12
+			break;
+
 		case LAST_COMMAND_STORE_FLOAT_EDI_SSE:
 			EmitString( "F3 0F 11 07" );	// movss dword ptr [edi], xmm0
 			break;
@@ -434,6 +439,17 @@ static void EmitAddEDI4( vm_t *vm )
 		REWIND( 3 );
 #endif
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );
+		return;
+	}
+
+	if ( LastCommand == LAST_COMMAND_SUB_DI_12 ) // sub edi, 12
+	{	
+#if idx64
+		REWIND( 4 );
+#else
+		REWIND( 3 );
+#endif
+		EmitCommand( LAST_COMMAND_SUB_DI_8 );
 		return;
 	}
 
@@ -593,7 +609,6 @@ static int EmitLoadFloatEDI_SSE( vm_t *vm )
 		LastCommand = LAST_COMMAND_NONE;
 		return 1;
 	}
-
 	EmitString( "F3 0F 10 07" ); // movss xmm0, dword ptr [edi]
 	return 0;
 }
@@ -1362,7 +1377,7 @@ static qboolean ConstOptimize( vm_t *vm )
 			EmitString( "F3 0F 10 45 08" );		// movss xmm0, dword ptr [ebp + 8]
 			EmitAddEDI4( vm );
 			EmitString( "F3 0F 51 C0" );		// sqrtss xmm0, xmm0
-			EmitCommand( LAST_COMMAND_STORE_FLOAT_EDI_SSE );
+			EmitCommand( LAST_COMMAND_STORE_FLOAT_EDI );
 			ip += 1;
 			return qtrue;
 		} else if ( v == ~TRAP_SIN || v == ~TRAP_COS || v == ~TRAP_SQRT ) {
@@ -1670,6 +1685,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int		proc_base;
 	int		proc_len;
 	int		i, n, v;
+	qboolean wantres;
 
 	inst = (instruction_t*)Z_Malloc( (header->instructionCount + 8 ) * sizeof( instruction_t ) );
 	instructionOffsets = (int*)Z_Malloc( header->instructionCount * sizeof( int ) );
@@ -1962,6 +1978,19 @@ __compile:
 			break;
 
 		case OP_ARG:
+			if ( LastCommand == LAST_COMMAND_STORE_FLOAT_EDI_SSE ) {
+				REWIND(4);
+				v = ci->value;
+				if ( ISS8( v ) ) {
+					EmitString( "F3 0F 11 45" ); // movss dword ptr [ebp + 0x7F], xmm0
+					Emit1( v );
+				} else {
+					EmitString( "F3 0F 11 85" ); // movss dword ptr [ebp + 0x12345678], xmm0
+					Emit4( v );
+				}
+				EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+				break;
+			}
 			EmitMovEAXEDI( vm );					// mov	eax, dword ptr [edi]
 			v = ci->value;
 			if ( ISS8( v ) ) {
@@ -2068,7 +2097,7 @@ __compile:
 			EmitMovEAXEDI( vm );						// mov eax, dword ptr [edi]	
 			EmitString( "8B 4F FC" );					// mov ecx, dword ptr [edi-4]
 			EmitCheckReg( vm, REG_ECX, 1 );				// range check
-			EmitString( "88 04 0B" );					// mov byte ptr [ebx + ecx], eax
+			EmitString( "88 04 0B" );					// mov byte ptr [ebx + ecx], al
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
 			break;
 
@@ -2247,54 +2276,104 @@ __compile:
 		case OP_SUBF:
 		case OP_DIVF:
 		case OP_MULF:
+			wantres = ( ops[ ni->op ].stack <= 0 );
 			if ( HasSSEFP() ) {
+				if ( LastCommand == LAST_COMMAND_STORE_FLOAT_EDI_SSE ) {
+					REWIND(4);
+					EmitString( "0F 28 C8" );		// movaps xmm1, xmm0
+				} else {
+					EmitString( "F3 0F 10 0F" );	// movss xmm1, dword ptr [edi]
+				}
 				EmitString( "F3 0F 10 47 FC" );		// movss xmm0, dword ptr [edi-4]
-				EmitString( "F3 0F 10 0F" );		// movss xmm1, dword ptr [edi]
+				if ( wantres ) {
+					if ( ni->op == OP_STORE4 ) {
+						 EmitString( "8B 47 F8" );	// mov eax, dword ptr [edi-8]
+						 EmitCheckReg( vm, REG_EAX, 4 );
+					} else if ( ni->op == OP_ARG ) {
+						//
+					} else {
+						EmitCommand( LAST_COMMAND_SUB_DI_4 );
+					}
+				}
 				switch( ci->op ) {
 					case OP_ADDF: EmitString( "0F 58 C1" ); break;	// addps xmm0, xmm1
 					case OP_SUBF: EmitString( "0F 5C C1" ); break;	// subps xmm0, xmm1
 					case OP_MULF: EmitString( "0F 59 C1" ); break;	// mulps xmm0, xmm1
 					case OP_DIVF: EmitString( "0F 5E C1" ); break;	// divps xmm0, xmm1
 				}
-				EmitString( "F3 0F 11 47 FC" );		// movss dword ptr [edi-4], xmm0
+				if ( wantres ) {
+					if ( ni->op == OP_STORE4 ) {
+						EmitString( "F3 0F 11 04 03" );		// movss dword ptr [ebx + eax], xmm0
+						EmitCommand( LAST_COMMAND_SUB_DI_12 );
+						pop1 = OP_UNDEF;
+						ip++; // OP_STORE4
+					} else if ( ni->op == OP_ARG ) {
+						v = ni->value;
+						if ( ISS8( v ) ) {
+							EmitString( "F3 0F 11 45" ); // movss dword ptr [ebp + 0x7F], xmm0
+							Emit1( v );
+						} else {
+							EmitString( "F3 0F 11 85" ); // movss dword ptr [ebp + 0x12345678], xmm0
+							Emit4( v );
+						}
+						EmitCommand( LAST_COMMAND_SUB_DI_8 );
+						pop1 = OP_UNDEF;
+						ip++; // OP_ARG
+					} else {
+						EmitCommand( LAST_COMMAND_STORE_FLOAT_EDI );
+					}
+				} else {
+					EmitString( "F3 0F 11 47 FC" );			// movss dword ptr [edi-4], xmm0
+					EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+				}
 			} else {
 				EmitString( "D9 47 FC" );			// fld dword ptr [edi-4]
 				EmitFCalcEDI( ci->op );				// fadd|fsub|fmul|fdiv dword ptr [edi]
 				EmitString( "D9 5F FC" );			// fstp dword ptr [edi-4]
+				EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 			}
-			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 			break;
 
 		case OP_CVIF:
 			if ( HasSSEFP() ) {
-				EmitString( "F3 0F 2A 07" );		// cvtsi2ss xmm0, dword ptr [edi]				
+				if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
+					REWIND(2);
+					EmitString( "F3 0F 2A C0" );	// cvtsi2ss xmm0, eax
+				} else {
+					EmitString( "F3 0F 2A 07" );	// cvtsi2ss xmm0, dword ptr [edi]
+				}
 			} else {
 				EmitString( "DB 07" );				// fild dword ptr [edi]
 			}
 			//if ( !ci->fpu ) 
-			EmitCommand( LAST_COMMAND_STORE_FLOAT_EDI ); // fstp dword ptr [edi] | SSE
+			EmitCommand( LAST_COMMAND_STORE_FLOAT_EDI );
 			break;
 
 		case OP_CVFI:
-			if ( /*HasSSEFP() && */ HasSSE3() ) {
-				// try fast sse3 truncation
-				//if ( HasSSE3() ) 
-				{
+			if ( HasSSEFP() ) {
+#if idx64
+				// assume that rounding mode in MXCSR is correctly set in 64-bit environment
+				EmitLoadFloatEDI_SSE( vm );				// movss xmm0, dword ptr [edi]
+				EmitString( "F3 0F 2C C0" );			// cvttss2si eax, xmm0
+				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov dword ptr [edi], eax
+#else
+				if ( HasSSE3() ) {
 					EmitLoadFloatEDI_X87( vm );		// fld dword ptr [edi]
 					EmitString( "DB 0F" );			// fisttp dword ptr [edi]
-				} 
-#if 0 // FIXME: set corect rounding mode in MXCSR?
-				else 
-				{
-					EmitLoadFloatEDI_SSE( vm );		// movss xmm0, dword ptr [edi]
-					EmitString( "F3 0F 2C C0" );	// cvttss2si eax, xmm0
-					EmitString( "89 07" );			// mov dword ptr [edi], eax
+				}  else {
+					EmitLoadFloatEDI_X87( vm );		// fld dword ptr [edi]
+					// call the library conversion function
+					EmitCallOffset( FUNC_FTOL );	// call +FUNC_FTOL
 				}
 #endif
 			} else {
 				EmitLoadFloatEDI_X87( vm );			// fld dword ptr [edi]
-				// call the library conversion function
-				EmitCallOffset( FUNC_FTOL );		// call +FUNC_FTOL
+				if ( HasSSE3() ) {
+					EmitString( "DB 0F" );			// fisttp dword ptr [edi]
+				} else {
+					// call the library conversion function
+					EmitCallOffset( FUNC_FTOL );	// call +FUNC_FTOL
+				}
 			}
 			break;
 
