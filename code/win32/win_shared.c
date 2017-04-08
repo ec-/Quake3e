@@ -189,6 +189,8 @@ const char *Sys_SteamPath( void )
 		pathLen = sizeof( steamPath );
 		if ( RegQueryValueEx( steamRegKey, AtoW("InstallLocation"), NULL, NULL, (LPBYTE)steamPath, &pathLen ) != ERROR_SUCCESS )
 			steamPath[ 0 ] = '\0';
+
+		RegCloseKey( steamRegKey );
 	}
 
 #ifdef STEAMPATH_NAME
@@ -203,6 +205,8 @@ const char *Sys_SteamPath( void )
 
 		if ( steamPath[ 0 ] )
 			finishPath = qtrue;
+
+		RegCloseKey( steamRegKey );
 	}
 #endif
 
