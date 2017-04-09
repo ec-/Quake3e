@@ -119,9 +119,21 @@ static	void R_ColorShiftLightingBytes( byte in[4], byte out[4] ) {
 		b = b * 255 / max;
 	}
 
-	out[0] = r;
-	out[1] = g;
-	out[2] = b;
+	if ( r_mapGrayScale->integer ) {
+		byte luma = LUMA( r, g, b );
+		out[0] = luma;
+		out[1] = luma;
+		out[2] = luma;
+	} else if( r_mapGrayScale->value ) {
+		float luma = LUMA( r, g, b );
+		out[0] = LERP( r, luma, r_mapGrayScale->value );
+		out[1] = LERP( g, luma, r_mapGrayScale->value );
+		out[2] = LERP( b, luma, r_mapGrayScale->value );
+	} else {
+		out[0] = r;
+		out[1] = g;
+		out[2] = b;
+	}
 	out[3] = in[3];
 }
 
