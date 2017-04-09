@@ -210,7 +210,7 @@ void Sys_ListFilteredFiles( const char *basedir, const char *subdirs, const char
 	char		search[MAX_OSPATH*2+1];
 	char		newsubdirs[MAX_OSPATH*2];
 	char		filename[MAX_OSPATH*2];
-	int			findhandle;
+	intptr_t	findhandle;
 	struct _finddata_t findinfo;
 
 	if ( *numfiles >= MAX_FOUND_FILES - 1 ) {
