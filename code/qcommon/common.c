@@ -2440,7 +2440,7 @@ A way to force a bus error for development reasons
 =================
 */
 static void Com_Crash_f( void ) {
-	* ( int * ) 0 = 0x12345678;
+	* ( volatile int * ) 0 = 0x12345678;
 }
 
 /*
@@ -3208,6 +3208,8 @@ void Com_Frame( qboolean demoPlaying ) {
 		return;			// an ERR_DROP was thrown
 	}
 
+	minMsec = 0; // silent compiler warning
+
 	// bk001204 - init to zero.
 	//  also:  might be clobbered by `longjmp' or `vfork'
 	timeBeforeFirstEvents = 0;
@@ -3217,7 +3219,7 @@ void Com_Frame( qboolean demoPlaying ) {
 	timeAfter = 0;
 
 	// write config file if anything changed
-	Com_WriteConfiguration(); 
+	Com_WriteConfiguration();
 
 	// if "viewlog" has been modified, show or hide the log console
 	if ( com_viewlog->modified ) {
@@ -3252,7 +3254,7 @@ void Com_Frame( qboolean demoPlaying ) {
 		if ( !com_timedemo->integer || minMsec ) {
 			if ( gw_minimized && com_maxfpsMinimized->integer > 0 )
 				minMsec = 1000 / com_maxfpsMinimized->integer;
-			else 
+			else
 			if ( !gw_active && com_maxfpsUnfocused->integer > 0 )
 				minMsec = 1000 / com_maxfpsUnfocused->integer;
 			else
