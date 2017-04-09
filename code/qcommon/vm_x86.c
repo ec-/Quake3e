@@ -160,6 +160,17 @@ typedef enum
 	FUNC_LAST
 } func_t;
 
+// macro opcode sequences
+typedef enum {
+	MOP_UNDEF = OP_MAX,
+	MOP_IGNORE4,
+	MOP_ADD4,
+	MOP_SUB4,
+	MOP_BAND4,
+	MOP_BOR4,
+	MOP_CALCF4,
+} macro_op_t;
+
 static	byte     *code;
 static	int      compiledOfs;
 static	int      *instructionOffsets;
@@ -1829,7 +1840,7 @@ __compile:
 			LastCommand = LAST_COMMAND_NONE;
 			pop1 = OP_UNDEF;
 		}
-		
+	
 		switch ( ci->op ) {
 
 		case OP_UNDEF:
@@ -2154,23 +2165,48 @@ __compile:
 			break;
 
 		case OP_ADD:
-			EmitMovEAXEDI( vm );					// mov eax, dword ptr [edi]
-			EmitString( "01 47 FC" );				// add dword ptr [edi-4],eax
-			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+			wantres = ( ops[ ni->op ].stack <= 0 );
+			EmitMovEAXEDI( vm );						// mov eax, dword ptr [edi]
+			if ( wantres ) {
+				EmitString( "03 47 FC" );				// add eax, dword ptr [edi-4]
+				EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov dword ptr [edi], eax
+			} else {
+				EmitString( "01 47 FC" );				// add dword ptr [edi-4],eax
+				EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+			}
 			break;
 
 		case OP_SUB:
-			EmitMovEAXEDI( vm );					// mov eax, dword ptr [edi]
-			EmitString( "29 47 FC" );				// sub dword ptr [edi-4],eax
-			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+			wantres = ( ops[ ni->op ].stack <= 0 );
+			if ( wantres ) {
+				EmitMovECXEDI( vm );					// mov ecx,dword ptr [edi]
+				EmitString( "8B 47 FC" );				// mov eax,dword ptr [edi-4]
+				EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+				EmitString( "29 C8" );					// sub eax, ecx
+				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov dword ptr [edi], eax
+			} else {
+				EmitMovEAXEDI( vm );					// mov eax, dword ptr [edi]
+				EmitString( "29 47 FC" );				// sub dword ptr [edi-4],eax
+				EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+			}
 			break;
 
 		case OP_DIVI:
+			wantres = ( ops[ ni->op ].stack <= 0 );
+			EmitMovECXEDI( vm );					// mov ecx,dword ptr [edi]
 			EmitString( "8B 47 FC" );				// mov eax,dword ptr [edi-4]
-			EmitString( "99" );						// cdq
-			EmitString( "F7 3F" );					// idiv dword ptr [edi]
-			EmitString( "89 47 FC" );				// mov dword ptr [edi-4],eax
-			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+			if ( wantres ) {
+				EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+				EmitString( "99" );						// cdq
+				EmitString( "F7 F9" );					// idiv ecx
+				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov dword ptr [edi], eax
+			} else{
+				EmitString( "99" );						// cdq
+				EmitString( "F7 F9" );					// idiv ecx
+				EmitString( "89 47 FC" );				// mov dword ptr [edi-4],eax
+				EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+			}
 			break;
 
 		case OP_DIVU:
@@ -2198,15 +2234,16 @@ __compile:
 			break;
 
 		case OP_MULI:
-#if 0
-			EmitString( "8B 47 FC" );				// mov eax,dword ptr [edi-4]
-			EmitString( "F7 2F" );					// imul dword ptr [edi]
-#else
+			wantres = ( ops[ ni->op ].stack <= 0 );
 			EmitMovEAXEDI( vm );					// mov eax, dword ptr [edi]
 			EmitString( "F7 6F FC" );				// imul eax, dword ptr [edi-4]
-#endif
-			EmitString( "89 47 FC" );				// mov dword ptr [edi-4],eax
-			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+			if ( wantres ) {
+				EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov dword ptr [edi], eax
+			} else {
+				EmitString( "89 47 FC" );				// mov dword ptr [edi-4],eax
+				EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+			}
 			break;
 
 		case OP_MULU:

@@ -127,17 +127,6 @@ typedef enum {
 	OP_MAX
 } opcode_t;
 
-// macro opcode sequences
-typedef enum {
-	MOP_UNDEF = OP_MAX,
-	MOP_IGNORE4,
-	MOP_ADD4,
-	MOP_SUB4,
-	MOP_BAND4,
-	MOP_BOR4,
-	MOP_CALCF4,
-} macro_op_t;
-
 typedef struct {
 	int   value;    // 32
 	byte  op;	 	// 8
