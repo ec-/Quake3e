@@ -1703,7 +1703,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 
 	errMsg = VM_LoadInstructions( header, inst );
 	if ( !errMsg ) {
-		errMsg = VM_CheckInstructions( inst, vm->instructionCount, vm->jumpTableTargets, vm->numJumpTableTargets, vm->dataLength );
+		errMsg = VM_CheckInstructions( inst, vm->instructionCount, vm->jumpTableTargets, vm->numJumpTableTargets, vm->exactDataLength );
 	}
 	if ( errMsg ) {
 		VM_FreeBuffers();

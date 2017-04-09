@@ -187,8 +187,8 @@ struct vm_s {
 	int			allocSize;			// needed for proper munmap()
 
 	int			dataMask;
-	int			dataLength;			// exact data segment length
-	int			dataOrig;			// unmodified original value
+	int			dataLength;			// data segment length
+	int			exactDataLength;	// from qvm header
 	int			dataAlloc;			// actually allocated
 
 	int			stackBottom;		// if programStack < stackBottom, error
@@ -197,7 +197,7 @@ struct vm_s {
 	int			numSymbols;
 	vmSymbol_t	*symbols;
 
-	int			callLevel;		// counts recursive VM_Call
+	int			callLevel;			// counts recursive VM_Call
 	int			breakFunction;		// increment breakCount on function entry to this
 	int			breakCount;
 

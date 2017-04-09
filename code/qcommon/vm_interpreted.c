@@ -57,7 +57,7 @@ qboolean VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header )
 
 	errMsg = VM_LoadInstructions( header, buf );
 	if ( !errMsg ) {
-		errMsg = VM_CheckInstructions( buf, vm->instructionCount, vm->jumpTableTargets, vm->numJumpTableTargets, vm->dataLength );
+		errMsg = VM_CheckInstructions( buf, vm->instructionCount, vm->jumpTableTargets, vm->numJumpTableTargets, vm->exactDataLength );
 	}
 	if ( errMsg ) {
 		Com_Printf( "VM_PrepareInterpreter2 error: %s\n", errMsg );
