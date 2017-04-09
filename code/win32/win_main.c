@@ -306,7 +306,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 	char		**listCopy;
 	char		*list[MAX_FOUND_FILES];
 	struct _finddata_t findinfo;
-	int			findhandle;
+	intptr_t	findhandle;
 	int			flag;
 	int			i;
 
