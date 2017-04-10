@@ -633,6 +633,12 @@ typedef enum {
 #define	MAX_FILE_HANDLES	64
 #define	FS_INVALID_HANDLE	0
 
+#ifdef DEDICATED
+#define Q3CONFIG_CFG "q3config_server.cfg"
+#else
+#define Q3CONFIG_CFG "q3config.cfg"
+#endif
+
 qboolean FS_Initialized( void );
 
 void	FS_InitFilesystem ( void );
