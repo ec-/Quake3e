@@ -1005,16 +1005,7 @@ void CL_SetCGameTime( void ) {
 		// cl_timeNudge is a user adjustable cvar that allows more
 		// or less latency to be added in the interest of better 
 		// smoothness or better responsiveness.
-		int tn;
-		
-		tn = cl_timeNudge->integer;
-		if (tn<-30) {
-			tn = -30;
-		} else if (tn>30) {
-			tn = 30;
-		}
-
-		cl.serverTime = cls.realtime + cl.serverTimeDelta - tn;
+		cl.serverTime = cls.realtime + cl.serverTimeDelta - cl_timeNudge->integer;
 
 		// guarantee that time will never flow backwards, even if
 		// serverTimeDelta made an adjustment or cl_timeNudge was changed

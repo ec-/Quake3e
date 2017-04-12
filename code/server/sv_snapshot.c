@@ -52,7 +52,7 @@ SV_EmitPacketEntities
 Writes a delta update of an entityState_t list to the message.
 =============
 */
-static void SV_EmitPacketEntities( clientSnapshot_t *from, clientSnapshot_t *to, msg_t *msg ) {
+static void SV_EmitPacketEntities( const clientSnapshot_t *from, const clientSnapshot_t *to, msg_t *msg ) {
 	entityState_t	*oldent, *newent;
 	int		oldindex, newindex;
 	int		oldnum, newnum;
@@ -118,8 +118,9 @@ static void SV_EmitPacketEntities( clientSnapshot_t *from, clientSnapshot_t *to,
 SV_WriteSnapshotToClient
 ==================
 */
-static void SV_WriteSnapshotToClient( client_t *client, msg_t *msg ) {
-	clientSnapshot_t	*frame, *oldframe;
+static void SV_WriteSnapshotToClient( const client_t *client, msg_t *msg ) {
+	const clientSnapshot_t	*oldframe;
+	const clientSnapshot_t	*frame;
 	int					lastframe;
 	int					i;
 	int					snapFlags;
@@ -296,7 +297,7 @@ static void SV_AddIndexToSnapshot( svEntity_t *svEnt, int index, snapshotEntityN
 SV_AddEntitiesVisibleFromPoint
 ===============
 */
-static void SV_AddEntitiesVisibleFromPoint( vec3_t origin, clientSnapshot_t *frame, 
+static void SV_AddEntitiesVisibleFromPoint( const vec3_t origin, clientSnapshot_t *frame,
 									snapshotEntityNumbers_t *eNums, qboolean portal ) {
 	int		e, i;
 	sharedEntity_t *ent;

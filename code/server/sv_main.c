@@ -958,7 +958,6 @@ static void SV_CheckTimeouts( void ) {
 			continue;
 		}
 		if ( cl->state >= CS_CONNECTED && cl->lastPacketTime < droppoint ) {
-#ifdef _DEBUG
 			// wait several frames so a debugger session doesn't
 			// cause a timeout
 			if ( ++cl->timeoutCount > 5 ) {
@@ -967,10 +966,6 @@ static void SV_CheckTimeouts( void ) {
 			}
 		} else {
 			cl->timeoutCount = 0;
-#else
-			SV_DropClient( cl, "timed out" ); 
-			cl->state = CS_FREE;	// don't bother with zombie state
-#endif
 		}
 	}
 }
@@ -1072,15 +1067,13 @@ void SV_Frame( int msec ) {
 	}
 
 	// if it isn't time for the next frame, do nothing
-	if ( sv_fps->integer < 1 ) {
-		Cvar_Set( "sv_fps", "10" );
-	}
 
 	frameMsec = 1000 / sv_fps->integer * com_timescale->value;
 	// don't let it scale below 1ms
 	if(frameMsec < 1)
 	{
-		Cvar_Set("timescale", va("%f", sv_fps->integer / 1000.0f));
+		Cvar_Set( "timescale", va( "%f", sv_fps->value / 1000.0f ) );
+		Com_DPrintf( "timescale adjusted to %f\n", com_timescale->value );
 		frameMsec = 1;
 	}
 
