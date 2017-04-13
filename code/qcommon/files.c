@@ -865,6 +865,7 @@ fileHandle_t FS_SV_FOpenFileWrite( const char *filename ) {
 	return f;
 }
 
+
 /*
 ===========
 FS_SV_FOpenFileRead
@@ -1887,7 +1888,7 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 	fileHandle_t	h;
 	byte*			buf;
 	qboolean		isConfig;
-	int				len;
+	long			len;
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
@@ -2637,131 +2638,131 @@ static char** Sys_ConcatenateFileLists( char **list0, char **list1 )
 
 /*
 ================
+FS_GetModDescription
+================
+*/
+void FS_GetModDescription( const char *modDir, char *description, int descriptionLen ) {
+	fileHandle_t	descHandle;
+	char			descPath[MAX_QPATH];
+	int				nDescLen;
+
+	Com_sprintf( descPath, sizeof ( descPath ), "%s/description.txt", modDir );
+	nDescLen = FS_SV_FOpenFileRead( descPath, &descHandle );
+
+	if ( descHandle != FS_INVALID_HANDLE ) {
+		if ( nDescLen > 0 ) {
+			if ( nDescLen > descriptionLen - 1 )
+				nDescLen = descriptionLen - 1;
+			nDescLen = FS_Read( description, nDescLen, descHandle );
+			if ( nDescLen >= 0 ) {
+				description[ nDescLen ] = '\0';
+			}
+		} else {
+			Q_strncpyz( description, modDir, descriptionLen );
+		}
+		FS_FCloseFile( descHandle ); 
+	} else {
+		Q_strncpyz( description, modDir, descriptionLen );
+	}
+}
+
+/*
+================
 FS_GetModList
 
 Returns a list of mod directory names
 A mod directory is a peer to baseq3 with a pk3 in it
-The directories are searched in base path, cd path and home path
 ================
 */
 int	FS_GetModList( char *listbuf, int bufsize ) {
-  int		nMods, i, j, nTotal, nLen, nPaks, nPotential, nDescLen;
-  char **pFiles = NULL;
-  char **pPaks = NULL;
-  char *name, *path;
-  char descPath[MAX_OSPATH];
-  fileHandle_t descHandle;
+	int nMods, i, j, nTotal, nLen, nPaks, nPotential, nDescLen;
+	char **pFiles = NULL;
+	char **pPaks = NULL;
+	char *name, *path;
+	char description[ MAX_OSPATH ];
 
-  int dummy;
-  char **pFiles0 = NULL;
-  char **pFiles1 = NULL;
-  char **pFiles2 = NULL;
-  char **pFiles3 = NULL;
-  qboolean bDrop = qfalse;
+	int dummy;
+	char **pFiles0 = NULL;
+	qboolean bDrop = qfalse;
 
-  *listbuf = 0;
-  nMods = nPotential = nTotal = 0;
+	// paths to search for mods
+	const cvar_t **paths[] = { &fs_basepath, &fs_homepath, &fs_steampath };
 
-  pFiles0 = Sys_ListFiles( fs_homepath->string, NULL, NULL, &dummy, qtrue );
-  pFiles1 = Sys_ListFiles( fs_basepath->string, NULL, NULL, &dummy, qtrue );
-  pFiles2 = Sys_ListFiles( fs_steampath->string, NULL, NULL, &dummy, qtrue );
-  // we searched for mods in the three paths
-  // it is likely that we have duplicate names now, which we will cleanup below
-  pFiles3 = Sys_ConcatenateFileLists( pFiles0, pFiles1 );
-  pFiles = Sys_ConcatenateFileLists( pFiles2, pFiles3 );
+	*listbuf = 0;
+	nMods = nTotal = 0;
 
-  nPotential = Sys_CountFileList( pFiles );
+	// iterate through paths and get list of potential mods
+	for (i = 0; i < ARRAY_LEN( paths ); i++) {
+		if ( !*paths[ i ] )
+			continue;
+		pFiles0 = Sys_ListFiles( (*paths[i])->string, NULL, NULL, &dummy, qtrue );
+		// Sys_ConcatenateFileLists frees the lists so Sys_FreeFileList isn't required
+		pFiles = Sys_ConcatenateFileLists( pFiles, pFiles0 );
+	}
 
-  for ( i = 0 ; i < nPotential ; i++ ) {
-    name = pFiles[i];
-    // NOTE: cleaner would involve more changes
-    // ignore duplicate mod directories
-    if (i!=0) {
-      bDrop = qfalse;
-      for(j=0; j<i; j++)
-      {
-        if (Q_stricmp(pFiles[j],name)==0) {
-          // this one can be dropped
-          bDrop = qtrue;
-          break;
-        }
-      }
-    }
-    if (bDrop) {
-      continue;
-    }
-    // we drop BASEGAME "." and ".."
-	if ( Q_stricmp( name, fs_basegame->string ) && Q_stricmpn( name, ".", 1 ) ) {
-      // now we need to find some .pk3 files to validate the mod
-      // NOTE TTimo: (actually I'm not sure why .. what if it's a mod under developement with no .pk3?)
-      // we didn't keep the information when we merged the directory names, as to what OS Path it was found under
-      //   so it could be in base path, cd path or home path
-      //   we will try each three of them here (yes, it's a bit messy)
-      path = FS_BuildOSPath( fs_basepath->string, name, NULL );
-      nPaks = 0;
-      pPaks = Sys_ListFiles( path, ".pk3", NULL, &nPaks, qfalse ); 
-      Sys_FreeFileList( pPaks ); // we only use Sys_ListFiles to check wether .pk3 files are present
+	nPotential = Sys_CountFileList( pFiles );
 
-      /* try on home path */
-      if ( nPaks <= 0 )
-      {
-        path = FS_BuildOSPath( fs_homepath->string, name, NULL );
-        nPaks = 0;
-        pPaks = Sys_ListFiles( path, ".pk3", NULL, &nPaks, qfalse );
-        Sys_FreeFileList( pPaks );
-      }
+	for ( i = 0 ; i < nPotential ; i++ ) {
+		name = pFiles[i];
+		// NOTE: cleaner would involve more changes
+		// ignore duplicate mod directories
+		if ( i != 0 ) {
+			bDrop = qfalse;
+			for ( j = 0; j < i; j++ ) {
+				if ( Q_stricmp( pFiles[j], name ) == 0 ) {
+					// this one can be dropped
+					bDrop = qtrue;
+					break;
+				}
+			}
+		}
+		// we also drop "baseq3" "." and ".."
+		if ( bDrop || Q_stricmp( name, fs_basegame->string ) == 0 || Q_stricmpn(name, ".", 1) == 0 ) {
+			continue;
+		}
 
-      /* try on steam path */
-      if ( nPaks <= 0 )
-      {
-        path = FS_BuildOSPath( fs_steampath->string, name, NULL );
-        nPaks = 0;
-        pPaks = Sys_ListFiles( path, ".pk3", NULL, &nPaks, qfalse );
-        Sys_FreeFileList( pPaks );
-      }
+		// in order to be a valid mod the directory must contain at least one .pk3
+		// we didn't keep the information when we merged the directory names, as to what OS Path it was found under
+		// so we will try each of them here
+		nPaks = 0;
+		for ( j = 0; j < ARRAY_LEN( paths ); j++ ) {
+			if ( !*paths[ j ] )
+				break;
+			path = FS_BuildOSPath( (*paths[j])->string, name, NULL );
 
-      if (nPaks > 0) {
-        nLen = strlen(name) + 1;
-        // nLen is the length of the mod path
-        // we need to see if there is a description available
-        descPath[0] = '\0';
-        strcpy(descPath, name);
-        strcat(descPath, "/description.txt");
-        nDescLen = FS_SV_FOpenFileRead( descPath, &descHandle );
-        if ( nDescLen > 0 && descHandle != FS_INVALID_HANDLE ) {
-          FILE *file;
-          file = FS_FileForHandle(descHandle);
-          Com_Memset( descPath, 0, sizeof( descPath ) );
-          nDescLen = fread(descPath, 1, 48, file);
-          if (nDescLen >= 0) {
-            descPath[nDescLen] = '\0';
-          }
-          FS_FCloseFile(descHandle);
-        } else {
-          strcpy(descPath, name);
-        }
-        nDescLen = strlen(descPath) + 1;
+			nPaks = 0;
+			pPaks = Sys_ListFiles( path, ".pk3", NULL, &nPaks, qfalse );
 
-        if (nTotal + nLen + 1 + nDescLen + 1 < bufsize) {
-          strcpy(listbuf, name);
-          listbuf += nLen;
-          strcpy(listbuf, descPath);
-          listbuf += nDescLen;
-          nTotal += nLen + nDescLen;
-          nMods++;
-        }
-        else {
-          break;
-        }
-      }
-    }
-  }
-  Sys_FreeFileList( pFiles );
+			// we only use Sys_ListFiles to check whether files are present
+			Sys_FreeFileList( pPaks );
+			if ( nPaks > 0 ) {
+				break;
+			}
+		}
 
-  return nMods;
+		if ( nPaks > 0 ) {
+			nLen = strlen( name ) + 1;
+			// nLen is the length of the mod path
+			// we need to see if there is a description available
+			FS_GetModDescription( name, description, sizeof( description ) );
+			nDescLen = strlen( description ) + 1;
+
+			if ( nTotal + nLen + 1 + nDescLen + 1 < bufsize ) {
+				strcpy( listbuf, name );
+				listbuf += nLen;
+				strcpy( listbuf, description );
+				listbuf += nDescLen;
+				nTotal += nLen + nDescLen;
+				nMods++;
+			} else {
+				break;
+			}
+		}
+	}
+	Sys_FreeFileList( pFiles );
+
+	return nMods;
 }
-
-
 
 
 //============================================================================
@@ -2802,6 +2803,7 @@ void FS_Dir_f( void ) {
 	FS_FreeFileList( dirnames );
 }
 
+
 /*
 ===========
 FS_ConvertPath
@@ -2815,6 +2817,7 @@ void FS_ConvertPath( char *s ) {
 		s++;
 	}
 }
+
 
 /*
 ===========
@@ -2854,6 +2857,7 @@ int FS_PathCmp( const char *s1, const char *s2 ) {
 	
 	return 0;		// strings are equal
 }
+
 
 /*
 ================
