@@ -245,31 +245,39 @@ Build a client snapshot structure
 */
 
 
+typedef int entityNum_t;
 typedef struct {
 	int		numSnapshotEntities;
-	int		snapshotEntities[MAX_SNAPSHOT_ENTITIES];	
+	entityNum_t	snapshotEntities[ MAX_SNAPSHOT_ENTITIES ];
+	qboolean unordered;
 } snapshotEntityNumbers_t;
 
+
 /*
-=======================
-SV_QsortEntityNumbers
-=======================
+=============
+SV_SortEntityNumbers
+
+Insertion sort is about 10 times faster than quicksort for our task
+=============
 */
-static int QDECL SV_QsortEntityNumbers( const void *a, const void *b ) {
-	int	*ea, *eb;
-
-	ea = (int *)a;
-	eb = (int *)b;
-
-	if ( *ea == *eb ) {
-		Com_Error( ERR_DROP, "SV_QsortEntityStates: duplicated entity" );
+static void SV_SortEntityNumbers( entityNum_t *num, const int size ) {
+	entityNum_t tmp;
+	int i, d;
+	for ( i = 1 ; i < size; i++ ) {
+		d = i;
+		while ( d > 0 && num[d] < num[d-1] ) {
+			tmp = num[d];
+			num[d] = num[d-1];
+			num[d-1] = tmp;
+			d--;
+		}
 	}
-
-	if ( *ea < *eb ) {
-		return -1;
+	// consistency check for delta encoding
+	for ( i = 1 ; i < size; i++ ) {
+		if ( num[i-1] >= num[i] ) {
+			Com_Error( ERR_DROP, "%s: invalid entity number %i", __func__, num[ i ] );
+		}
 	}
-
-	return 1;
 }
 
 
@@ -415,6 +423,7 @@ static void SV_AddEntitiesVisibleFromPoint( const vec3_t origin, clientSnapshot_
 					continue;
 				}
 			}
+			eNums->unordered = qtrue;
 			SV_AddEntitiesVisibleFromPoint( ent->s.origin2, frame, eNums, qtrue );
 		}
 	}
@@ -630,14 +639,17 @@ static void SV_BuildClientSnapshot( client_t *client ) {
 
 	// add all the entities directly visible to the eye, which
 	// may include portal entities that merge other viewpoints
+	entityNumbers.unordered = qfalse;
 	SV_AddEntitiesVisibleFromPoint( org, frame, &entityNumbers, qfalse );
 
 	// if there were portals visible, there may be out of order entities
 	// in the list which will need to be resorted for the delta compression
 	// to work correctly.  This also catches the error condition
 	// of an entity being included twice.
-	qsort( entityNumbers.snapshotEntities, entityNumbers.numSnapshotEntities, 
-		sizeof( entityNumbers.snapshotEntities[0] ), SV_QsortEntityNumbers );
+	if ( entityNumbers.unordered ) {
+		SV_SortEntityNumbers( &entityNumbers.snapshotEntities[0], 
+			entityNumbers.numSnapshotEntities );
+	}
 
 	// now that all viewpoint's areabits have been OR'd together, invert
 	// all of them to make it a mask vector, which is what the renderer wants
