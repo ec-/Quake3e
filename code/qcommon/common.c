@@ -2946,6 +2946,8 @@ void Com_Init( char *commandLine ) {
 
 	com_buildScript = Cvar_Get( "com_buildScript", "0", 0 );
 
+	Cvar_Get( "com_errorMessage", "", CVAR_ROM | CVAR_NORESTART );
+
 #ifndef DEDICATED
 	com_introPlayed = Cvar_Get( "com_introplayed", "0", CVAR_ARCHIVE);
 	com_skipIdLogo  = Cvar_Get( "com_skipIdLogo", "0", CVAR_ARCHIVE);

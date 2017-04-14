@@ -1577,19 +1577,6 @@ FS_Read
 Properly handles partial reads
 =================
 */
-int FS_Read2( void *buffer, int len, fileHandle_t f ) {
-
-	//if ( !fs_searchpaths ) {
-	//	Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
-	//}
-
-	//if ( f <= 0 || f >= MAX_FILE_HANDLES ) {
-	//	return 0;
-	//}
-
-	return FS_Read( buffer, len, f );
-}
-
 int FS_Read( void *buffer, int len, fileHandle_t f ) {
 	int		block, remaining;
 	int		read;
@@ -4222,7 +4209,7 @@ int FS_VM_ReadFile( void *buffer, int len, fileHandle_t f, handleOwner_t owner )
 	if ( fsh[f].owner != owner || !fsh[f].handleFiles.file.v )
 		return 0; 
 
-	return FS_Read2( buffer, len, f );
+	return FS_Read( buffer, len, f );
 }
 
 
