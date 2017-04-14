@@ -542,11 +542,12 @@ void NET_SendPacket( netsrc_t sock, int length, const void *data, netadr_t to ) 
 	if ( to.type == NA_BAD ) {
 		return;
 	}
-
+#ifndef DEDICATED
 	if ( sock == NS_CLIENT && cl_packetdelay->integer > 0 ) {
 		NET_QueuePacket( length, data, to, cl_packetdelay->integer );
-	}
-	else if ( sock == NS_SERVER && sv_packetdelay->integer > 0 ) {
+	} else
+#endif
+	if ( sock == NS_SERVER && sv_packetdelay->integer > 0 ) {
 		NET_QueuePacket( length, data, to, sv_packetdelay->integer );
 	}
 	else {

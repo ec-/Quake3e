@@ -35,19 +35,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 const int demo_protocols[] = { 66, 67, PROTOCOL_VERSION, NEW_PROTOCOL_VERSION, 0 };
 
-#define MAX_NUM_ARGVS	50
-
 #define MIN_DEDICATED_COMHUNKMEGS 1
+#ifdef DEDICATED
+#define MIN_COMHUNKMEGS		48
+#define DEF_COMHUNKMEGS		56
+#else
 #define MIN_COMHUNKMEGS		56
-#define DEF_COMHUNKMEGS		128
+#define DEF_COMHUNKMEGS		96
+#endif
 #define DEF_COMZONEMEGS		24
-#define XSTRING(x)				STRING(x)
-#define STRING(x)					#x
+#define XSTRING(x)			STRING(x)
+#define STRING(x)			#x
 #define DEF_COMHUNKMEGS_S	XSTRING(DEF_COMHUNKMEGS)
 #define DEF_COMZONEMEGS_S	XSTRING(DEF_COMZONEMEGS)
-
-int		com_argc;
-char	*com_argv[MAX_NUM_ARGVS+1];
 
 jmp_buf abortframe;		// an ERR_DROP occured, exit the entire frame
 
@@ -56,8 +56,8 @@ void	(*Com_DelayFunc)( void ) = NULL;
 
 FILE *debuglogfile;
 static fileHandle_t logfile;
-fileHandle_t	com_journalFile;			// events are written here
-fileHandle_t	com_journalDataFile;		// config files are written here
+static fileHandle_t com_journalFile; // events are written here
+fileHandle_t	com_journalDataFile; // config files are written here
 
 cvar_t	*com_viewlog;
 cvar_t	*com_speeds;
@@ -71,25 +71,27 @@ cvar_t	*com_maxfps;
 cvar_t	*com_maxfpsUnfocused;
 cvar_t	*com_maxfpsMinimized;
 cvar_t	*com_yieldCPU;
+cvar_t	*com_timedemo;
 #endif
 cvar_t	*com_affinityMask;
-cvar_t	*com_timedemo;
-cvar_t	*com_sv_running;
-cvar_t	*com_cl_running;
 cvar_t	*com_logfile;		// 1 = buffer log, 2 = flush after each print
 cvar_t	*com_showtrace;
 cvar_t	*com_version;
-cvar_t	*com_blood;
 cvar_t	*com_buildScript;	// for automated data building scripts
-cvar_t	*com_introPlayed;
-#ifndef DEDICATED
-cvar_t	*com_skipIdLogo;
-#endif
-cvar_t	*cl_paused;
-cvar_t	*sv_paused;
+cvar_t	*com_blood;
 
-cvar_t  *cl_packetdelay;
+#ifndef DEDICATED
+cvar_t	*com_introPlayed;
+cvar_t	*com_skipIdLogo;
+
+cvar_t	*cl_paused;
+cvar_t	*cl_packetdelay;
+cvar_t	*com_cl_running;
+#endif
+
+cvar_t	*sv_paused;
 cvar_t  *sv_packetdelay;
+cvar_t	*com_sv_running;
 
 cvar_t	*com_cameraMode;
 #if defined(_WIN32) && defined(_DEBUG)
@@ -110,10 +112,12 @@ qboolean	com_fullyInitialized = qfalse;
 qboolean	com_gameRestarting = qfalse;
 
 // renderer window states
+#ifndef DEDICATED
 qboolean	gw_minimized = qfalse;
 qboolean	gw_active = qtrue;
+#endif
 
-char	com_errorMessage[MAXPRINTMSG];
+static char com_errorMessage[ MAXPRINTMSG ];
 
 void Com_WriteConfig_f( void );
 void CIN_CloseAllVideos( void );
@@ -1459,6 +1463,7 @@ void Com_Meminfo_f( void ) {
 	Com_Printf( "        %8i bytes in small Zone memory\n", smallZoneBytes );
 }
 
+
 /*
 ===============
 Com_TouchMemory
@@ -1507,10 +1512,9 @@ void Com_TouchMemory( void ) {
 }
 
 
-
 /*
 =================
-Com_InitZoneMemory
+Com_InitSmallZoneMemory
 =================
 */
 void Com_InitSmallZoneMemory( void ) {
@@ -1522,6 +1526,12 @@ void Com_InitSmallZoneMemory( void ) {
 	Z_ClearZone( smallzone, s_smallZoneTotal );
 }
 
+
+/*
+=================
+Com_InitZoneMemory
+=================
+*/
 void Com_InitZoneMemory( void ) {
 	cvar_t	*cv;
 
@@ -1545,15 +1555,15 @@ void Com_InitZoneMemory( void ) {
 		Com_Error( ERR_FATAL, "Zone data failed to allocate %i megs", s_zoneTotal / (1024*1024) );
 	}
 	Z_ClearZone( mainzone, s_zoneTotal );
-
 }
+
 
 /*
 =================
 Hunk_Log
 =================
 */
-void Hunk_Log( void) {
+void Hunk_Log( void ) {
 	hunkblock_t	*block;
 	char		buf[4096];
 	int size, numBlocks;
@@ -2921,20 +2931,23 @@ void Com_Init( char *commandLine ) {
 	com_showtrace = Cvar_Get ("com_showtrace", "0", CVAR_CHEAT);
 	com_viewlog = Cvar_Get( "viewlog", "0", 0 );
 	com_speeds = Cvar_Get ("com_speeds", "0", 0);
-	com_timedemo = Cvar_Get ("timedemo", "0", CVAR_CHEAT);
 	com_cameraMode = Cvar_Get ("com_cameraMode", "0", CVAR_CHEAT);
 
+#ifndef DEDICATED	
+	com_timedemo = Cvar_Get ("timedemo", "0", CVAR_CHEAT);
 	cl_paused = Cvar_Get ("cl_paused", "0", CVAR_ROM);
-	sv_paused = Cvar_Get ("sv_paused", "0", CVAR_ROM);
 	cl_packetdelay = Cvar_Get ("cl_packetdelay", "0", CVAR_CHEAT);
+	com_cl_running = Cvar_Get ("cl_running", "0", CVAR_ROM);
+#endif
+
+	sv_paused = Cvar_Get ("sv_paused", "0", CVAR_ROM);
 	sv_packetdelay = Cvar_Get ("sv_packetdelay", "0", CVAR_CHEAT);
 	com_sv_running = Cvar_Get ("sv_running", "0", CVAR_ROM);
-	com_cl_running = Cvar_Get ("cl_running", "0", CVAR_ROM);
+
 	com_buildScript = Cvar_Get( "com_buildScript", "0", 0 );
 
-	com_introPlayed = Cvar_Get( "com_introplayed", "0", CVAR_ARCHIVE);
-
 #ifndef DEDICATED
+	com_introPlayed = Cvar_Get( "com_introplayed", "0", CVAR_ARCHIVE);
 	com_skipIdLogo  = Cvar_Get( "com_skipIdLogo", "0", CVAR_ARCHIVE);
 #endif
 

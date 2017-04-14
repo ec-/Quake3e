@@ -883,8 +883,6 @@ extern	cvar_t	*com_developer;
 extern	cvar_t	*com_dedicated;
 extern	cvar_t	*com_speeds;
 extern	cvar_t	*com_timescale;
-extern	cvar_t	*com_sv_running;
-extern	cvar_t	*com_cl_running;
 extern	cvar_t	*com_viewlog;			// 0 = hidden, 1 = visible, 2 = minimized
 extern	cvar_t	*com_version;
 extern	cvar_t	*com_blood;
@@ -893,18 +891,19 @@ extern	cvar_t	*com_journal;
 extern	cvar_t	*com_cameraMode;
 
 // both client and server must agree to pause
-extern	cvar_t	*cl_paused;
 extern	cvar_t	*sv_paused;
-
-extern	cvar_t	*cl_packetdelay;
 extern	cvar_t	*sv_packetdelay;
+extern	cvar_t	*com_sv_running;
 
-extern	cvar_t	*vm_rtChecks;
 #ifndef DEDICATED
+extern	cvar_t	*cl_paused;
+extern	cvar_t	*cl_packetdelay;
+extern	cvar_t	*com_cl_running;
 extern	cvar_t	*com_yieldCPU;
 #endif
-extern	cvar_t	*com_affinityMask;
 
+extern	cvar_t	*vm_rtChecks;
+extern	cvar_t	*com_affinityMask;
 
 // com_speeds times
 extern	int		time_game;
@@ -914,12 +913,13 @@ extern	int		time_backend;		// renderer backend time
 extern	int		com_frameTime;
 extern	int		com_frameMsec;
 
+#ifndef DEDICATED
 extern	qboolean	gw_minimized;
 extern	qboolean	gw_active;
+#endif
 
 extern	qboolean	com_errorEntered;
 
-extern	fileHandle_t	com_journalFile;
 extern	fileHandle_t	com_journalDataFile;
 
 typedef enum {

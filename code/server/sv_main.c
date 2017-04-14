@@ -981,9 +981,14 @@ static qboolean SV_CheckPaused( void ) {
 	client_t	*cl;
 	int		i;
 
+#ifdef DEDICATED
+	// can't pause on dedicated servers
+	return qfalse;
+#else
 	if ( !cl_paused->integer ) {
 		return qfalse;
 	}
+#endif
 
 	// only pause if there is just a single client connected
 	count = 0;
