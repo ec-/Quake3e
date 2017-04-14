@@ -155,6 +155,9 @@ static int GetTimerMsec( void )
 			if ( msec < 1 )
 				msec = 1;
 		}
+		if ( gw_minimized || CL_VideoRecording() ) {
+			return 0;
+		}
 	}
 #endif
 	return msec;
@@ -165,6 +168,7 @@ static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 	char *cmdString;
 	static qboolean s_timePolarity;
 	static UINT conTimerID;
+	int v;
 
 	switch ( uMsg )
 	{
@@ -332,8 +336,8 @@ static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 		break;
 
 	case WM_ENTERSIZEMOVE: 
-		if ( conTimerID == 0 ) {
-			conTimerID = SetTimer( s_wcd.hWnd, CON_TIMER_ID, GetTimerMsec(), NULL );
+		if ( conTimerID == 0 && (v = GetTimerMsec()) > 0 ) {
+			conTimerID = SetTimer( s_wcd.hWnd, CON_TIMER_ID, v, NULL );
 		}
 		break;
 
@@ -374,6 +378,7 @@ static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 static LRESULT WINAPI BufferWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	static UINT bufTimerID;
+	int v;
 
 	switch ( uMsg ) {
 
@@ -384,16 +389,16 @@ static LRESULT WINAPI BufferWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 				bufTimerID = 0;
 			}
 		} else {
-			if ( bufTimerID == 0 ) {
-				bufTimerID = SetTimer( hWnd, BUF_TIMER_ID, GetTimerMsec(), NULL );
+			if ( bufTimerID == 0 && (v = GetTimerMsec()) > 0 ) {
+				bufTimerID = SetTimer( hWnd, BUF_TIMER_ID, v, NULL );
 			}
 		}
 		break;
 
 	case WM_CAPTURECHANGED:
 		if ( (HWND)lParam == hWnd ) {
-			if ( bufTimerID == 0 )
-				bufTimerID = SetTimer( hWnd, BUF_TIMER_ID, GetTimerMsec(), NULL );
+			if ( bufTimerID == 0 && (v = GetTimerMsec()) > 0 )
+				bufTimerID = SetTimer( hWnd, BUF_TIMER_ID, v, NULL );
 		} else {
 			if ( bufTimerID != 0 ) { 
 				KillTimer( hWnd, bufTimerID );

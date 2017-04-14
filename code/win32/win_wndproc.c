@@ -357,6 +357,10 @@ BOOL Win_CheckHotkeyMod( void ) {
 
 static int GetTimerMsec( void ) {
 	int msec;
+	
+	if ( gw_minimized || CL_VideoRecording() )
+		return 0;
+
 	if ( com_maxfps->integer > 0 ) {
 		msec = 1000 / com_maxfps->integer;
 		if ( msec < 1 )
@@ -364,8 +368,8 @@ static int GetTimerMsec( void ) {
 	} else {
 		msec = 16; // 62.5fps
 	}
-	return msec;
 
+	return msec;
 }
 
 LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam )
@@ -591,8 +595,8 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		break;
 
 	case WM_ENTERSIZEMOVE:
-		if ( uTimerID == 0 && !CL_VideoRecording() ) {
-			uTimerID = SetTimer( g_wv.hWnd, TIMER_ID, GetTimerMsec(), NULL );
+		if ( uTimerID == 0 && (i = GetTimerMsec()) > 0 ) {
+			uTimerID = SetTimer( g_wv.hWnd, TIMER_ID, i, NULL );
 		}
 		break;
 
