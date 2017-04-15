@@ -644,7 +644,7 @@ qboolean FS_Initialized( void );
 void	FS_InitFilesystem ( void );
 void	FS_Shutdown( qboolean closemfp );
 
-qboolean	FS_ConditionalRestart( int checksumFeed );
+qboolean	FS_ConditionalRestart( int checksumFeed, qboolean clientRestart );
 
 void	FS_Restart( int checksumFeed );
 // shutdown and restart the filesystem so changes to fs_gamedir can take effect
@@ -1004,7 +1004,8 @@ void CL_InitKeyCommands( void );
 
 void CL_Init( void );
 void CL_Disconnect( qboolean showMainMenu );
-void CL_Shutdown( const char *finalmsg );
+void CL_ResetOldGame( void );
+void CL_Shutdown( const char *finalmsg, qboolean quit );
 void CL_Frame( int msec );
 qboolean CL_GameCommand( void );
 void CL_KeyEvent (int key, qboolean down, unsigned time);

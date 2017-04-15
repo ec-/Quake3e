@@ -4065,11 +4065,11 @@ FS_ConditionalRestart
 restart if necessary
 =================
 */
-qboolean FS_ConditionalRestart( int checksumFeed )
+qboolean FS_ConditionalRestart( int checksumFeed, qboolean clientRestart )
 {
 	if ( fs_gamedirvar->modified )
 	{
-		Com_GameRestart( checksumFeed, qfalse );
+		Com_GameRestart( checksumFeed, clientRestart );
 		return qtrue;
 	}
 	else if ( checksumFeed != fs_checksumFeed )

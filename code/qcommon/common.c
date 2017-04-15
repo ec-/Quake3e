@@ -365,7 +365,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 	} else {
 		VM_Forced_Unload_Start();
 #ifndef DEDICATED
-		CL_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ) );
+		CL_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ), qtrue );
 #endif
 		SV_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ) );
 		VM_Forced_Unload_Done();
@@ -397,7 +397,7 @@ void Com_Quit_f( void ) {
 		VM_Forced_Unload_Start();
 		SV_Shutdown( p[0] ? p : "Server quit" );
 #ifndef DEDICATED
-		CL_Shutdown( p[0] ? p : "Client quit" );
+		CL_Shutdown( p[0] ? p : "Client quit", qtrue );
 #endif
 		VM_Forced_Unload_Done();
 		Com_Shutdown();
@@ -2476,6 +2476,7 @@ void Com_ExecuteCfg(void)
 	}
 }
 
+
 /*
 ==================
 Com_GameRestart
@@ -2483,14 +2484,12 @@ Com_GameRestart
 Change to a new mod properly with cleaning up cvars before switching.
 ==================
 */
-
 void Com_GameRestart(int checksumFeed, qboolean clientRestart)
 {
 	// make sure no recursion can be triggered
 	if(!com_gameRestarting && com_fullyInitialized)
 	{
 		com_gameRestarting = qtrue;
-
 #ifndef DEDICATED		
 		if( clientRestart )
 		{
@@ -2977,8 +2976,8 @@ void Com_Init( char *commandLine ) {
 
 #if defined (id386) || defined (idx64)
 	// CPU detection
-	Cvar_Get( "sys_cpustring", "detect", 0 );
-	if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring"), "detect" ) )
+	Cvar_Get( "sys_cpustring", "detect", CVAR_ROM | CVAR_NORESTART );
+	if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "detect" ) )
 	{
 		static char vendor[128];
 		Com_Printf( "...detecting CPU, found " );
@@ -3348,7 +3347,7 @@ void Com_Frame( qboolean demoPlaying ) {
 #endif
 		} else {
 #ifndef DEDICATED
-			CL_Shutdown( "" );
+			CL_Shutdown( "", qfalse );
 			CL_ClearMemory();
 #endif
 			Sys_ShowConsole( 1, qtrue );

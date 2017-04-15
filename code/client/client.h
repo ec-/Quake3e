@@ -338,6 +338,9 @@ typedef struct {
 
 extern	clientStatic_t		cls;
 
+extern	char		cl_oldGame[MAX_QPATH];
+extern	qboolean	cl_oldGameSet;
+
 #ifdef USE_CURL
 
 extern		download_t	download;
@@ -409,10 +412,6 @@ extern	cvar_t	*com_maxfps;
 //
 // cl_main
 //
-
-//void CL_Init (void);
-//void CL_FlushMemory(void);
-//void CL_ShutdownAll(void);
 void CL_AddReliableCommand( const char *cmd, qboolean isDisconnectCmd );
 
 void CL_StartHunkUsers(void);

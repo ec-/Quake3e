@@ -932,6 +932,9 @@ void CL_FirstSnapshot( void ) {
 	}
 	cls.state = CA_ACTIVE;
 
+	// clear old game so we will not switch back to old mod on disconnect
+	CL_ResetOldGame();
+
 	// set the timedelta so we are exactly on this first frame
 	cl.serverTimeDelta = cl.snap.serverTime - cls.realtime;
 	cl.oldServerTime = cl.snap.serverTime;

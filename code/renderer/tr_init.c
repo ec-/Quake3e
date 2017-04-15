@@ -867,7 +867,6 @@ GfxInfo_f
 */
 void GfxInfo_f( void ) 
 {
-	cvar_t *sys_cpustring = ri.Cvar_Get( "sys_cpustring", "", 0 );
 	const char *enablestrings[] =
 	{
 		"disabled",
@@ -905,7 +904,7 @@ void GfxInfo_f( void )
 	{
 		ri.Printf( PRINT_ALL, "GAMMA: software w/ %d overbright bits\n", tr.overbrightBits );
 	}
-	ri.Printf( PRINT_ALL, "CPU: %s\n", sys_cpustring->string );
+	ri.Printf( PRINT_ALL, "CPU: %s\n", Cvar_VariableString( "sys_cpustring" ) );
 
 	// rendering primitives
 	{

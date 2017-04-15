@@ -85,7 +85,10 @@ clientConnection_t	clc;
 clientStatic_t		cls;
 vm_t				*cgvm;
 
-char				cl_reconnectArgs[MAX_OSPATH];
+char				cl_reconnectArgs[ MAX_OSPATH ];
+char				cl_oldGame[ MAX_QPATH ];
+qboolean			cl_oldGameSet;
+static	qboolean	noGameRestart = qfalse;
 
 #ifdef USE_CURL
 download_t			download;
@@ -1104,6 +1107,36 @@ static void CL_UpdateGUID( const char *prefix, int prefix_len )
 
 /*
 =====================
+CL_ResetOldGame
+=====================
+*/
+void CL_ResetOldGame( void ) 
+{
+	cl_oldGameSet = qfalse;
+	cl_oldGame[0] = '\0';
+}
+
+
+/*
+=====================
+CL_RestoreOldGame
+
+change back to previous fs_game
+=====================
+*/
+static void CL_RestoreOldGame( void )
+{
+	if ( cl_oldGameSet )
+	{
+		cl_oldGameSet = qfalse;
+		Cvar_Set2( "fs_game", cl_oldGame, qtrue );
+		FS_ConditionalRestart( clc.checksumFeed, qtrue );
+	}
+}
+
+
+/*
+=====================
 CL_Disconnect
 
 Called when a connection, demo, or cinematic is being terminated.
@@ -1173,13 +1206,18 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	cl_connectedToPureServer = qfalse;
 
 	// Stop recording any video
-	if( CL_VideoRecording( ) ) {
+	if( CL_VideoRecording() ) {
 		// Finish rendering current frame
-		SCR_UpdateScreen( );
-		CL_CloseAVI( );
+		SCR_UpdateScreen();
+		CL_CloseAVI();
 	}
 
 	CL_UpdateGUID( NULL, 0 );
+
+	if ( noGameRestart )
+		noGameRestart = qfalse;
+	else
+		CL_RestoreOldGame();
 }
 
 
@@ -1474,6 +1512,7 @@ void CL_Connect_f( void ) {
 	Cvar_Set( "sv_killserver", "1" );
 	SV_Frame( 0 );
 
+	noGameRestart = qtrue;
 	CL_Disconnect( qtrue );
 	Con_Close();
 
@@ -1646,7 +1685,7 @@ static void CL_Vid_Restart( void ) {
 	FS_ClearPakReferences( FS_UI_REF | FS_CGAME_REF );
 	// reinitialize the filesystem if the game directory or checksum has changed
 	if ( !clc.demoplaying ) // -EC-
-		FS_ConditionalRestart( clc.checksumFeed );
+		FS_ConditionalRestart( clc.checksumFeed, qfalse );
 
 	cls.rendererStarted = qfalse;
 	cls.uiStarted = qfalse;
@@ -1863,6 +1902,7 @@ void CL_DownloadsComplete( void ) {
 	CL_WritePacket();
 	CL_WritePacket();
 }
+
 
 /*
 =================
@@ -3197,6 +3237,8 @@ static void CL_GenerateQKey(void)
 	}
 } 
 #endif
+
+
 /*
 ====================
 CL_Init
@@ -3205,15 +3247,16 @@ CL_Init
 void CL_Init( void ) {
 	Com_Printf( "----- Client Initialization -----\n" );
 
-	Con_Init ();
+	Con_Init();
 
-	CL_ClearState ();
-
+	CL_ClearState();
 	cls.state = CA_DISCONNECTED;	// no longer CA_UNINITIALIZED
+
+	CL_ResetOldGame();
 
 	cls.realtime = 0;
 
-	CL_InitInput ();
+	CL_InitInput();
 
 	//
 	// register our variables
@@ -3392,7 +3435,7 @@ CL_Shutdown
 
 ===============
 */
-void CL_Shutdown( const char *finalmsg ) {
+void CL_Shutdown( const char *finalmsg, qboolean quit ) {
 	static qboolean recursive = qfalse;
 	
 	// check whether the client is running at all.
@@ -3407,6 +3450,7 @@ void CL_Shutdown( const char *finalmsg ) {
 	}
 	recursive = qtrue;
 
+	noGameRestart = quit;
 	CL_Disconnect( qfalse );
 
 	CL_ShutdownVMs();
