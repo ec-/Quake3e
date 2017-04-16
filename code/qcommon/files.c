@@ -2673,7 +2673,7 @@ int	FS_GetModList( char *listbuf, int bufsize ) {
 	qboolean bDrop = qfalse;
 
 	// paths to search for mods
-	const cvar_t **paths[] = { &fs_basepath, &fs_homepath, &fs_steampath };
+	cvar_t *const *paths[] = { &fs_basepath, &fs_homepath, &fs_steampath };
 
 	*listbuf = 0;
 	nMods = nTotal = 0;

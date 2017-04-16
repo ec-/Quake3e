@@ -398,7 +398,7 @@ void Sys_Exit( int code )
 void Sys_Quit( void )
 {
 #ifndef DEDICATED
-	CL_Shutdown( "" );
+	CL_Shutdown( "", qtrue );
 #endif
 
 	Sys_Exit( 0 );
@@ -444,7 +444,7 @@ void Sys_Error( const char *format, ... )
 	va_end( argptr );
 
 #ifndef DEDICATED
-	CL_Shutdown( text );
+	CL_Shutdown( text, qtrue );
 #endif
 
 	fprintf( stderr, "Sys_Error: %s\n", text );

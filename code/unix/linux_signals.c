@@ -45,7 +45,7 @@ static void signal_handler( int sig )
 	sprintf( msg, "Signal caught (%d)", sig );
 	printf( "Received signal %d, exiting...\n", sig );
 #ifndef DEDICATED
-	CL_Shutdown( msg );
+	CL_Shutdown( msg, qtrue );
 #endif
 	SV_Shutdown( msg );
 	Sys_Exit( 0 ); // send a 0 to avoid DOUBLE SIGNAL FAULT
