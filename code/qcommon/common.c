@@ -2514,7 +2514,6 @@ void Com_GameRestart(int checksumFeed, qboolean clientRestart)
 		//CL_Snd_Restart();
 		if ( clientRestart )
 			CL_StartHunkUsers();
-//			CL_StartHunkUsers(qfalse);
 #endif
 		
 		com_gameRestarting = qfalse;
