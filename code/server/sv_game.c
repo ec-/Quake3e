@@ -250,8 +250,24 @@ SV_LocateGameData
 
 ===============
 */
-void SV_LocateGameData( sharedEntity_t *gEnts, int numGEntities, int sizeofGEntity_t,
-					   playerState_t *clients, int sizeofGameClient ) {
+void SV_LocateGameData( sharedEntity_t *gEnts, int numGEntities, int sizeofGEntity_t, playerState_t *clients, int sizeofGameClient ) {
+
+	if ( numGEntities > MAX_GENTITIES ) {
+		Com_Error( ERR_DROP, "%s: bad entity count %i", __func__, numGEntities );
+	} else {
+		if ( sizeofGEntity_t > gvm->exactDataLength / numGEntities ) {
+			Com_Error( ERR_DROP, "%s: bad entity size %i", __func__, sizeofGEntity_t );	
+		} else if ( (byte*)gEnts + (numGEntities * sizeofGEntity_t) > (gvm->dataBase + gvm->exactDataLength) ) {
+			Com_Error( ERR_DROP, "%s: entities located out of data segment", __func__ );
+		}
+	}
+
+	if ( sizeofGameClient > gvm->exactDataLength / MAX_CLIENTS ) {
+		Com_Error( ERR_DROP, "%s: bad game client size %i", __func__, sizeofGameClient );	
+	} else if ( (byte*)clients + (sizeofGameClient * MAX_CLIENTS) > gvm->dataBase + gvm->exactDataLength ) {
+		Com_Error( ERR_DROP, "%s: clients located out of data segment", __func__ );
+	}
+
 	sv.gentities = gEnts;
 	sv.gentitySize = sizeofGEntity_t;
 	sv.num_entities = numGEntities;
