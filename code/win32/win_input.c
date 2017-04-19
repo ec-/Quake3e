@@ -89,6 +89,7 @@ cvar_t	*in_mididevice;
 
 cvar_t	*in_minimize;
 cvar_t	*in_nograb;
+cvar_t	*in_lagged;
 
 cvar_t	*in_mouse;
 cvar_t  *in_logitechbug;
@@ -155,9 +156,14 @@ void IN_UpdateWindow( RECT *window_rect, qboolean updateClipRegion )
 	if ( window_rect->bottom >= glw_state.desktopHeight )
 		window_rect->bottom = glw_state.desktopHeight-1;
 #endif
-
+	
 	window_center[0] = ( window_rect->right + window_rect->left )/2;
 	window_center[1] = ( window_rect->top + window_rect->bottom )/2;
+
+	g_wv.median.x = window_center[0];
+	g_wv.median.y = window_center[1];
+	// to client area coordinates
+	ScreenToClient( g_wv.hWnd, &g_wv.median );
 
 	if ( updateClipRegion && s_wmv.mouseActive && gw_active ) {
 		ClipCursor( window_rect );
@@ -181,6 +187,7 @@ IN_ShutdownWin32Mouse
 void IN_ShutdownWin32Mouse( void ) {
 }
 
+
 /*
 ================
 IN_ActivateWin32Mouse
@@ -196,6 +203,7 @@ void IN_ActivateWin32Mouse( void )
 	while ( ShowCursor( FALSE ) >= 0 )
 		;
 }
+
 
 /*
 ================
@@ -223,20 +231,9 @@ void IN_Win32Mouse( int *mx, int *my ) {
 	// find mouse movement
 	GetCursorPos( &current_pos );
 
-	// force the mouse to the center, so there's room to move
-	if ( !in_nograb->integer )
-		SetCursorPos( window_center[0], window_center[1] );
-
 	*mx = current_pos.x - window_center[0];
 	*my = current_pos.y - window_center[1];
-
-	if ( in_nograb->integer == 1 ) {
-		*mx = 0;
-		*my = 0;
-	}
 }
-
-
 
 
 /*
@@ -377,6 +374,18 @@ void IN_ActivateRawMouse( void )
 	SetCursorPos( window_center[0], window_center[1] );
 
 	raw_activated = 1; // success
+}
+
+
+/*
+================
+IN_RawMouse
+================
+*/
+void IN_RawMouse( int *mx, int *my ) {
+
+	*mx = g_wv.raw_mx;
+	*my = g_wv.raw_my;
 }
 
 
@@ -720,8 +729,7 @@ void IN_ActivateMouse( void )
 	if ( !s_wmv.mouseInitialized )
 		return;
 
-	if ( !in_mouse->integer ) 
-	{
+	if ( !in_mouse->integer ) {
 		s_wmv.mouseActive = qfalse;
 		return;
 	}
@@ -731,15 +739,14 @@ void IN_ActivateMouse( void )
 
 	s_wmv.mouseActive = qtrue;
 
-	if ( in_mouse->integer != -1 ) {
+	if ( in_mouse->integer == -1 ) {
+		IN_ActivateWin32Mouse();
+	} else {
 		if ( raw_inited )
-  			IN_ActivateRawMouse();
+			IN_ActivateRawMouse();
         else
 			IN_ActivateDIMouse();
-		return;
 	}
-
-	IN_ActivateWin32Mouse();
 }
 
 
@@ -821,7 +828,7 @@ void IN_StartupMouse( void )
 IN_MouseEvent
 ===========
 */
-void IN_MouseEvent( int mstate )
+void IN_Win32MouseEvent( int mstate )
 {
 	if ( !s_wmv.mouseInitialized )
 		return;
@@ -854,17 +861,27 @@ IN_MouseMove
 ===========
 */
 void IN_MouseMove( void ) {
-	int		mx, my;
+	int		mx = 0, my = 0;
 
 	if ( g_pMouse ) {
 		IN_DIMouse( &mx, &my );
 	} else {
-		if ( raw_activated ) {
-			if ( !in_nograb->integer )
-				SetCursorPos( window_center[0], window_center[1] );
-			return;
+		if ( in_lagged->integer ) {
+			if ( raw_activated ) {
+				IN_RawMouse( &mx, &my );
+			} else {
+				IN_Win32Mouse( &mx, &my );
+			}
+		}
+		g_wv.raw_mx = 0;
+		g_wv.raw_my = 0;
+		if ( in_nograb->integer == 0 ) {
+			// force the mouse to the center, so there's room to move
+			SetCursorPos( window_center[0], window_center[1] );
+			// reset delta base
+			g_wv.mouse = g_wv.median;
 		} else {
-			IN_Win32Mouse( &mx, &my );
+			return;
 		}
 	}
 
@@ -1015,31 +1032,40 @@ void IN_Init( void ) {
 
 #ifdef USE_MIDI
 	// MIDI input controler variables
-	in_midi					= Cvar_Get ("in_midi",					"0",		CVAR_ARCHIVE);
-	in_midiport				= Cvar_Get ("in_midiport",				"1",		CVAR_ARCHIVE);
-	in_midichannel			= Cvar_Get ("in_midichannel",			"1",		CVAR_ARCHIVE);
-	in_mididevice			= Cvar_Get ("in_mididevice",			"0",		CVAR_ARCHIVE);
-
+	in_midi = Cvar_Get( "in_midi", "0", CVAR_ARCHIVE );
+	in_midiport = Cvar_Get( "in_midiport", "1", CVAR_ARCHIVE );
+	in_midichannel = Cvar_Get( "in_midichannel", "1", CVAR_ARCHIVE );
+	in_mididevice = Cvar_Get( "in_mididevice", "0", CVAR_ARCHIVE );
 	Cmd_AddCommand( "midiinfo", MidiInfo_f );
 #endif
 
-	// mouse variables
-	in_mouse				= Cvar_Get ("in_mouse",					"1",		CVAR_ARCHIVE|CVAR_LATCH);
-	in_nograb				= Cvar_Get ("in_nograb",				"0",		0 );
-
-	in_logitechbug  = Cvar_Get ("in_logitechbug", "0", CVAR_ARCHIVE);
-
 #ifdef USE_JOYSTICK
 	// joystick variables
-	in_joystick				= Cvar_Get ("in_joystick",				"0",		CVAR_ARCHIVE|CVAR_LATCH);
-	in_joyBallScale			= Cvar_Get ("in_joyBallScale",			"0.02",		CVAR_ARCHIVE);
-	in_debugJoystick		= Cvar_Get ("in_debugjoystick",			"0",		CVAR_TEMP);
-
-	joy_threshold			= Cvar_Get ("joy_threshold",			"0.15",		CVAR_ARCHIVE);
+	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE | CVAR_LATCH );
+	in_joyBallScale = Cvar_Get( "in_joyBallScale", "0.02", CVAR_ARCHIVE );
+	in_debugJoystick = Cvar_Get( "in_debugjoystick", "0", CVAR_TEMP );
+	joy_threshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE );
 #endif
 
-	in_minimize				= Cvar_Get ("in_minimize",				"",			CVAR_ARCHIVE|CVAR_LATCH);
+	// mouse variables
+	in_mouse = Cvar_Get ("in_mouse", "1", CVAR_ARCHIVE |CVAR_LATCH );
+	Cvar_CheckRange( in_mouse, -1, 1, qtrue );
+	Cvar_SetDescription( in_mouse,
+		"Mouse data input source:\n" \
+		"  0 - disable mouse input\n" \
+		"  1 - di/raw mouse\n" \
+		" -1 - win32 mouse" );
+		
+	in_nograb = Cvar_Get( "in_nograb", "0", 0 );
+	in_lagged = Cvar_Get( "in_lagged", "0", 0 );
+	Cvar_SetDescription( in_lagged, 
+		"Mouse movement processing order:\n" \
+		" 0 - before rendering\n" \
+		" 1 - before framerate limiter" );
 
+	in_logitechbug = Cvar_Get( "in_logitechbug", "0", CVAR_ARCHIVE );
+
+	in_minimize	= Cvar_Get( "in_minimize", "", CVAR_ARCHIVE | CVAR_LATCH );
 	IN_GetHotkey( in_minimize, &HotKey );
 
 	IN_Startup();

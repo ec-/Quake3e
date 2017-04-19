@@ -280,6 +280,8 @@ main window procedure
 ====================
 */
 extern cvar_t *in_mouse;
+extern cvar_t *in_lagged;
+extern cvar_t *in_nograb;
 extern cvar_t *in_logitechbug;
 extern cvar_t *in_minimize;
 
@@ -371,6 +373,7 @@ static int GetTimerMsec( void ) {
 
 	return msec;
 }
+
 
 LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam )
 {
@@ -570,17 +573,15 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 	case WM_MOVE:
 		{
-			RECT	r;
-
 			GetWindowRect( hWnd, &g_wv.winRect );
 			g_wv.winRectValid = qtrue;
 			UpdateMonitorInfo();
-			IN_UpdateWindow( &r, qtrue );
+			IN_UpdateWindow( NULL, qtrue );
 
 			if ( !glw_state.cdsFullscreen )
 			{
-				Cvar_SetValue( "vid_xpos", r.left );
-				Cvar_SetValue( "vid_ypos", r.top );
+				Cvar_SetValue( "vid_xpos", g_wv.winRect.left );
+				Cvar_SetValue( "vid_ypos", g_wv.winRect.top );
 
 				vid_xpos->modified = qfalse;
 				vid_ypos->modified = qfalse;
@@ -624,12 +625,25 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		{
 			int	temp;
 
-            if ( raw_activated ) 
-                break;
+			if ( raw_activated || in_nograb->integer )
+				break;
+
+			if ( in_lagged->integer ) {
+			
+			} else {
+				int dx, dy;
+				dx = LOWORD(lParam) - g_wv.mouse.x;
+				dy = HIWORD(lParam) - g_wv.mouse.y;
+				g_wv.mouse.x = LOWORD(lParam);
+				g_wv.mouse.y = HIWORD(lParam);
+				if ( dx || dy ) {
+					Sys_QueEvent( g_wv.sysMsgTime, SE_MOUSE, dx, dy, 0, NULL );
+				}
+			}
 
 			temp = (wParam & (MK_LBUTTON|MK_RBUTTON)) + ((wParam & (MK_MBUTTON|MK_XBUTTON1|MK_XBUTTON2)) >> 2);
 
-			IN_MouseEvent( temp );
+			IN_Win32MouseEvent( temp );
 		}
 		break;
 
@@ -644,8 +658,8 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			UINT err;
 			short data;
 
-			if ( !raw_activated /* || !s_wmv.mouseInitialized */ )
-                break;
+			if ( !raw_activated || in_nograb->integer /* || !s_wmv.mouseInitialized */ )
+				break;
 
 			dwSize = sizeof( u.raw );
 
@@ -656,9 +670,15 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			if ( u.raw.header.dwType != RIM_TYPEMOUSE || u.raw.data.mouse.usFlags != MOUSE_MOVE_RELATIVE )
 				break;
 
-			if ( u.raw.data.mouse.lLastX || u.raw.data.mouse.lLastY )
-				Sys_QueEvent( g_wv.sysMsgTime, SE_MOUSE, u.raw.data.mouse.lLastX,
-					u.raw.data.mouse.lLastY, 0, NULL );
+			if ( u.raw.data.mouse.lLastX || u.raw.data.mouse.lLastY ) {
+				if ( in_lagged->integer ) {
+					g_wv.raw_mx += u.raw.data.mouse.lLastX;
+					g_wv.raw_my += u.raw.data.mouse.lLastY;
+				} else {
+					Sys_QueEvent( g_wv.sysMsgTime, SE_MOUSE, u.raw.data.mouse.lLastX,
+						u.raw.data.mouse.lLastY, 0, NULL );
+				}
+			}
 
 			if ( !u.raw.data.mouse.usButtonFlags )
 				break;

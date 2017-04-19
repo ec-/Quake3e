@@ -97,7 +97,7 @@ const char *WtoA( const LPWSTR s );
 #endif
 
 
-void	IN_MouseEvent( int mstate );
+void	IN_Win32MouseEvent( int mstate );
 
 void	Sys_CreateConsole( char *title );
 void	Sys_DestroyConsole( void );
@@ -144,6 +144,12 @@ typedef struct
 	RECT			conRect;
 	RECT			winRect;
 	qboolean		winRectValid;
+
+	int	raw_mx;
+	int raw_my;
+
+	POINT mouse;
+	POINT median;
 
 } WinVars_t;
 

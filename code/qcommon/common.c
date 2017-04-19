@@ -2914,8 +2914,8 @@ void Com_Init( char *commandLine ) {
 	com_maxfps = Cvar_Get( "com_maxfps", "125", 0 ); // try to force that in some light way
 	com_maxfpsUnfocused = Cvar_Get ("com_maxfpsUnfocused", "60", CVAR_ARCHIVE);
 	com_maxfpsMinimized = Cvar_Get ("com_maxfpsMinimized", "30", CVAR_ARCHIVE);
-	com_yieldCPU = Cvar_Get( "com_yieldCPU", "2", CVAR_ARCHIVE );
-	Cvar_CheckRange( com_yieldCPU, 0, 1000, qtrue );
+	com_yieldCPU = Cvar_Get( "com_yieldCPU", "1", CVAR_ARCHIVE );
+	Cvar_CheckRange( com_yieldCPU, 0, 1, qtrue );
 #endif
 	com_affinityMask = Cvar_Get( "com_affinityMask", "0", CVAR_ARCHIVE );
 	com_affinityMask->modified = qfalse;
