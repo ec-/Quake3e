@@ -32,13 +32,13 @@ typedef struct {
 
 	qboolean	mouseActive;
 	qboolean	mouseInitialized;
-  qboolean  mouseStartupDelayed; // delay mouse init to try DI again when we have a window
+	qboolean	mouseStartupDelayed; // delay mouse init to try again when we have a window
 } WinMouseVars_t;
 
 static WinMouseVars_t s_wmv;
 
-static int	window_center[2];	// x,y
-int			window_pos[2];		// x,y
+static POINT window_center;
+static POINT client_center;
 
 #ifdef USE_MIDI
 //
@@ -143,7 +143,7 @@ Updates window center and clip region
 */
 void IN_UpdateWindow( RECT *window_rect, qboolean updateClipRegion ) 
 {
-	RECT		rect;
+	RECT		rect, rc;
 
 	if ( !window_rect ) 
 		window_rect = &rect;
@@ -151,51 +151,56 @@ void IN_UpdateWindow( RECT *window_rect, qboolean updateClipRegion )
 	if ( !GetWindowRect( g_wv.hWnd, window_rect ) )
 		return;
 
-	//width = GetSystemMetrics( SM_CXSCREEN );
-	//height = GetSystemMetrics( SM_CYSCREEN );
-
-	//Com_Printf( S_COLOR_CYAN "Screen: %i %i\n", width, height );
-
-	// glw_state should be previously updated via UpdateMonitorInfo()
-#if 0
-	if ( window_rect->left < glw_state.desktopX )
-		window_rect->left = glw_state.desktopX;
-	if ( window_rect->top < glw_state.desktopY )
-		window_rect->top = glw_state.desktopY;
-	if ( window_rect->right >= glw_state.desktopWidth )
-		window_rect->right = glw_state.desktopWidth-1;
-	if ( window_rect->bottom >= glw_state.desktopHeight )
-		window_rect->bottom = glw_state.desktopHeight-1;
-#endif
-	
-	window_center[0] = ( window_rect->right + window_rect->left )/2;
-	window_center[1] = ( window_rect->top + window_rect->bottom )/2;
-
-	g_wv.median.x = window_center[0];
-	g_wv.median.y = window_center[1];
-	// to client area coordinates
-	ScreenToClient( g_wv.hWnd, &g_wv.median );
+	if ( GetClientRect( g_wv.hWnd, &rc ) ) {
+		client_center.x = rc.right / 2;
+		client_center.y = rc.bottom / 2;
+		window_center = client_center;
+		ClientToScreen( g_wv.hWnd, &window_center );
+	} else {
+		window_center.x = ( window_rect->right + window_rect->left )/2;
+		window_center.y = ( window_rect->top + window_rect->bottom )/2;
+		client_center = window_center;
+		ScreenToClient( g_wv.hWnd, &client_center );
+	}
 
 	if ( updateClipRegion && s_wmv.mouseActive && gw_active ) {
 		ClipCursor( window_rect );
 	}
-
 }
+
+
+/*
+================
+IN_CaptureMouse
+================
+*/
+static void IN_CaptureMouse( const RECT *clipRect ) 
+{
+	while( ShowCursor( FALSE ) >= 0 )
+		;
+	SetCursorPos( window_center.x, window_center.y );
+	SetCapture( g_wv.hWnd );
+	ClipCursor( clipRect );
+}
+
 
 /*
 ================
 IN_InitWin32Mouse
 ================
 */
-void IN_InitWin32Mouse( void ) {
+static void IN_InitWin32Mouse( void ) 
+{
 }
+
 
 /*
 ================
 IN_ShutdownWin32Mouse
 ================
 */
-void IN_ShutdownWin32Mouse( void ) {
+static void IN_ShutdownWin32Mouse( void ) 
+{
 }
 
 
@@ -204,15 +209,11 @@ void IN_ShutdownWin32Mouse( void ) {
 IN_ActivateWin32Mouse
 ================
 */
-void IN_ActivateWin32Mouse( void ) 
+static void IN_ActivateWin32Mouse( void ) 
 {
 	RECT window_rect;
 	IN_UpdateWindow( &window_rect, qfalse );
-	ClipCursor( &window_rect );
-	SetCursorPos( window_center[0], window_center[1] );
-	SetCapture( g_wv.hWnd );
-	while ( ShowCursor( FALSE ) >= 0 )
-		;
+	IN_CaptureMouse( &window_rect );
 }
 
 
@@ -221,29 +222,30 @@ void IN_ActivateWin32Mouse( void )
 IN_DeactivateWin32Mouse
 ================
 */
-void IN_DeactivateWin32Mouse( void ) 
+static void IN_DeactivateWin32Mouse( void ) 
 {
 	IN_UpdateWindow( NULL, qfalse );
 	ClipCursor( NULL );
-	SetCursorPos( window_center[0], window_center[1] );
+	SetCursorPos( window_center.x, window_center.y );
 	ReleaseCapture();
 	while ( ShowCursor( TRUE ) < 0 )
 		;
 }
+
 
 /*
 ================
 IN_Win32Mouse
 ================
 */
-void IN_Win32Mouse( int *mx, int *my ) {
+static void IN_Win32Mouse( int *mx, int *my ) {
 	POINT		current_pos;
 
 	// find mouse movement
 	GetCursorPos( &current_pos );
 
-	*mx = current_pos.x - window_center[0];
-	*my = current_pos.y - window_center[1];
+	*mx = current_pos.x - window_center.x;
+	*my = current_pos.y - window_center.y;
 }
 
 
@@ -254,7 +256,6 @@ RAW INPUT MOUSE CONTROL
 
 ============================================================
 */
-
 #define ISWINXP(sys) (sys.dwPlatformId==VER_PLATFORM_WIN32_NT && \
 	((sys.dwMajorVersion==5 && sys.dwMinorVersion>=1)||(sys.dwMajorVersion>5)))
 
@@ -262,28 +263,28 @@ typedef UINT (WINAPI *PGRRID)(PRAWINPUTDEVICE pRawInputDevices, PUINT puiNumDevi
 typedef BOOL (WINAPI *PRRID)(PCRAWINPUTDEVICE pRawInputDevices, UINT uiNumDevices, UINT cbSize);
 typedef UINT (WINAPI *PGRID)(HRAWINPUT hRawInput, UINT uiCommand, LPVOID pData, PUINT pcbSize, UINT cbSizeHeader);
 
-PGRRID	GRRID;
-PRRID	RRID;
-PGRID	GRID;
+static	PGRRID	GRRID;
+static	PRRID	RRID;
+static	PGRID	GRID;
 
-int		raw_inited = 0;
-int		raw_activated = 0;
+static	BOOL	raw_inited = FALSE;
+static	BOOL	raw_activated = FALSE;
 
-POINT	cur_pos; // to store previous cursor position
 
 /*
 ================
 IN_InitRawMouse
 ================
 */
-
 static BOOL IN_InitRawMouse( void ) {
 
     HMODULE dll;
 
+#ifndef idx64
 	if ( !ISWINXP( g_wv.osversion ) ) {
 		return FALSE; // operating system is not supported
 	}
+#endif
 
     if ( raw_inited ) {
 		return TRUE; // already inited
@@ -308,22 +309,9 @@ static BOOL IN_InitRawMouse( void ) {
         return FALSE;
     }
 
-	raw_inited = 1;
+	raw_inited = TRUE;
+
 	return TRUE;
-}
-
-
-/*
-================
-IN_ShutdownRawMouse
-================
-*/
-
-void IN_ShutdownRawMouse( void ) {
-	//Com_Printf("IN_ShutdownRawMouse\n");
-    s_wmv.mouseInitialized = qfalse;
-	raw_activated = 0;
-	raw_inited = 0;
 }
 
 
@@ -332,12 +320,12 @@ void IN_ShutdownRawMouse( void ) {
 IN_ActivateRawMouse
 ================
 */
-void IN_ActivateRawMouse( void ) 
+static void IN_ActivateRawMouse( void ) 
 {
 	RECT		window_rect;
-    RAWINPUTDEVICE Rid[1];
-    UINT num;
-    int cnt;
+	RAWINPUTDEVICE Rid;
+	UINT num;
+	int cnt;
 
 	if ( raw_activated ) 
 	{
@@ -345,46 +333,36 @@ void IN_ActivateRawMouse( void )
 	}
 
 	num = 1;
-    cnt = GRRID( &Rid[0], &num, sizeof( Rid[0] ) );
-    if ( cnt < 0 || !g_wv.hWnd ) 
+	cnt = GRRID( &Rid, &num, sizeof( Rid ) );
+	if ( cnt < 0 || !g_wv.hWnd ) 
 	{
-        return; // error getting registered raw input devices
-    }
-
-	GetCursorPos( &cur_pos );
-	IN_UpdateWindow( &window_rect, qfalse );
-
-	// not yet activated
-
-	if ( cnt >= 1 && Rid[0].hwndTarget == g_wv.hWnd ) 
-	{
-		// device already exists
-		while ( ShowCursor( FALSE ) >= 0 )
-			;
-		SetCursorPos( window_center[0], window_center[1] );
-		SetCapture( g_wv.hWnd );
-		ClipCursor( &window_rect );
-        raw_activated = 1;
-		return;
-    }
-
-	Rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
-	Rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
-	Rid[0].dwFlags = RIDEV_INPUTSINK;
-	Rid[0].hwndTarget = g_wv.hWnd;
-    if( !RRID( Rid, 1, sizeof( Rid[0] ) ) ) 
-	{
-    	Com_Printf( S_COLOR_YELLOW "Error registering raw input device\n" );
-        return;
+		Com_Printf( S_COLOR_YELLOW "Error getting registered raw input devices\n" );
+		return; // error getting registered raw input devices
 	}
 
-	SetCapture( g_wv.hWnd );
-	ClipCursor( &window_rect );
-	while( ShowCursor( FALSE ) >= 0 )
-        ;
-	SetCursorPos( window_center[0], window_center[1] );
+	IN_UpdateWindow( &window_rect, qfalse );
 
-	raw_activated = 1; // success
+	if ( cnt >= 1 && Rid.hwndTarget == g_wv.hWnd ) 
+	{
+		// device already exists?
+	}
+	else 
+	{
+		Rid.usUsagePage = HID_USAGE_PAGE_GENERIC;
+		Rid.usUsage = HID_USAGE_GENERIC_MOUSE;
+		Rid.dwFlags = RIDEV_NOLEGACY; // skip all WM_*BUTTON* and WM_MOUSEMOVE stuff
+		Rid.hwndTarget = g_wv.hWnd;
+
+		if( !RRID( &Rid, 1, sizeof( Rid ) ) ) 
+		{
+			Com_Printf( S_COLOR_YELLOW "Error registering raw input device\n" );
+			return;
+		}
+	}
+
+	IN_CaptureMouse( &window_rect );
+
+	raw_activated = TRUE;
 }
 
 
@@ -393,7 +371,7 @@ void IN_ActivateRawMouse( void )
 IN_RawMouse
 ================
 */
-void IN_RawMouse( int *mx, int *my ) {
+static void IN_RawMouse( int *mx, int *my ) {
 
 	*mx = g_wv.raw_mx;
 	*my = g_wv.raw_my;
@@ -403,14 +381,26 @@ void IN_RawMouse( int *mx, int *my ) {
 /*
 ================
 IN_DeactivateRawMouse
-
-All work is performed in In_DeactivateWin32Mouse()
-and there are no special API calls to disable raw input
 ================
 */
-void IN_DeactivateRawMouse( void ) 
+static void IN_DeactivateRawMouse( void ) 
 {
-	raw_activated = 0;
+	if ( raw_activated ) 
+	{
+		RAWINPUTDEVICE Rid;
+
+		Rid.usUsagePage = HID_USAGE_PAGE_GENERIC;
+		Rid.usUsage = HID_USAGE_GENERIC_MOUSE;
+		Rid.dwFlags = RIDEV_REMOVE;
+		Rid.hwndTarget = NULL;
+		if( !RRID( &Rid, 1, sizeof( Rid ) ) ) 
+		{
+			Com_Printf( S_COLOR_YELLOW "Error removing raw input device\n" );
+			return;
+		}
+		
+	}
+	raw_activated = FALSE;
 }
 
 
@@ -477,14 +467,14 @@ static DIDATAFORMAT	df = {
 static LPDIRECTINPUT		g_pdi;
 static LPDIRECTINPUTDEVICE	g_pMouse;
 
-void IN_DIMouse( int *mx, int *my );
+static void IN_DIMouse( int *mx, int *my );
 
 /*
 ========================
 IN_InitDIMouse
 ========================
 */
-qboolean IN_InitDIMouse( void ) {
+static qboolean IN_InitDIMouse( void ) {
     HRESULT		hr;
 	int			x, y;
 	DIPROPDWORD	dipdw = {
@@ -570,12 +560,13 @@ qboolean IN_InitDIMouse( void ) {
 	return qtrue;
 }
 
+
 /*
 ==========================
 IN_ShutdownDIMouse
 ==========================
 */
-void IN_ShutdownDIMouse( void ) {
+static void IN_ShutdownDIMouse( void ) {
     if (g_pMouse) {
 		IDirectInputDevice_Release(g_pMouse);
 		g_pMouse = NULL;
@@ -587,12 +578,13 @@ void IN_ShutdownDIMouse( void ) {
 	}
 }
 
+
 /*
 ==========================
 IN_ActivateDIMouse
 ==========================
 */
-void IN_ActivateDIMouse( void ) {
+static void IN_ActivateDIMouse( void ) {
 	HRESULT		hr;
 
 	if (!g_pMouse) {
@@ -611,12 +603,13 @@ void IN_ActivateDIMouse( void ) {
         ;
 }
 
+
 /*
 ==========================
 IN_DeactivateDIMouse
 ==========================
 */
-void IN_DeactivateDIMouse( void ) {
+static void IN_DeactivateDIMouse( void ) {
 	if (!g_pMouse) {
 		return;
 	}
@@ -629,12 +622,12 @@ void IN_DeactivateDIMouse( void ) {
 IN_DIMouse
 ===================
 */
-void IN_DIMouse( int *mx, int *my ) {
+static void IN_DIMouse( int *mx, int *my ) {
 	DIDEVICEOBJECTDATA	od;
 	DIMOUSESTATE		state;
 	DWORD				dwElements;
 	HRESULT				hr;
-  int value;
+	int value;
 
 	if ( !g_pMouse ) {
 		return;
@@ -732,11 +725,8 @@ IN_ActivateMouse
 Called when the window gains focus or changes in some way
 ===========
 */
-void IN_ActivateMouse( void ) 
+static void IN_ActivateMouse( void ) 
 {
-	if ( in_nograb->integer )
-		return;
-
 	if ( !s_wmv.mouseInitialized )
 		return;
 
@@ -768,7 +758,7 @@ IN_DeactivateMouse
 Called when the window loses focus
 ===========
 */
-void IN_DeactivateMouse( void ) 
+static void IN_DeactivateMouse( void ) 
 {
 	if ( !s_wmv.mouseActive )
 		return;
@@ -776,6 +766,7 @@ void IN_DeactivateMouse( void )
 	if ( !s_wmv.mouseInitialized )
 		return;
 
+	s_wmv.oldButtonState = 0;
 	s_wmv.mouseActive = qfalse;
 
 	IN_DeactivateDIMouse();
@@ -784,13 +775,12 @@ void IN_DeactivateMouse( void )
 }
 
 
-
 /*
 ===========
 IN_StartupMouse
 ===========
 */
-void IN_StartupMouse( void ) 
+static void IN_StartupMouse( void ) 
 {
 	s_wmv.mouseInitialized = qfalse;
 	s_wmv.mouseStartupDelayed = qfalse;
@@ -800,6 +790,7 @@ void IN_StartupMouse( void )
 		return;
 	}
 
+#ifndef idx64
 	// nt4.0 direct input is screwed up
 	if ( ( g_wv.osversion.dwPlatformId == VER_PLATFORM_WIN32_NT ) &&
 		 ( g_wv.osversion.dwMajorVersion == 4 ) )
@@ -807,6 +798,7 @@ void IN_StartupMouse( void )
 		Com_DPrintf( "Disallowing DirectInput on NT 4.0\n" );
 		Cvar_Set( "in_mouse", "-1" );
 	}
+#endif
 
 	if ( in_mouse->integer == -1 ) {
 		Com_DPrintf( "Skipping check for Raw/DirectInput\n" ); 
@@ -834,15 +826,30 @@ void IN_StartupMouse( void )
 	IN_InitWin32Mouse();
 }
 
+
 /*
 ===========
-IN_MouseEvent
+IN_Win32MouseEvent
 ===========
 */
-void IN_Win32MouseEvent( int mstate )
+void IN_Win32MouseEvent( int x, int y, int mstate )
 {
+	int dx, dy;
+
 	if ( !s_wmv.mouseInitialized )
 		return;
+
+	if ( in_lagged->integer ) {
+		
+	} else {
+		dx = x - g_wv.mouse.x;
+		dy = y - g_wv.mouse.y;
+		g_wv.mouse.x = x;
+		g_wv.mouse.y = y;
+		if ( dx || dy ) {
+			Sys_QueEvent( g_wv.sysMsgTime, SE_MOUSE, dx, dy, 0, NULL );
+		}
+	}
 
 #define CHECK_BUTTON(button) \
 	if ( mstate & (1<<(button-1)) ) { \
@@ -868,10 +875,85 @@ void IN_Win32MouseEvent( int mstate )
 
 /*
 ===========
+IN_RawMouseEvent
+===========
+*/
+void IN_RawMouseEvent( LPARAM lParam )
+{
+	UINT err, dwSize;
+	union {
+		BYTE lpb[40];
+		RAWINPUT raw;
+	} u;
+
+	dwSize = sizeof( u.raw );
+
+	err = GRID( (HRAWINPUT) lParam, RID_INPUT, &u.raw, &dwSize, sizeof( RAWINPUTHEADER ) );
+	if ( err == -1 )
+		return;
+
+	if ( u.raw.header.dwType != RIM_TYPEMOUSE || u.raw.data.mouse.usFlags != MOUSE_MOVE_RELATIVE )
+		return;
+
+	if ( u.raw.data.mouse.lLastX || u.raw.data.mouse.lLastY ) {
+		if ( in_lagged->integer ) {
+			g_wv.raw_mx += u.raw.data.mouse.lLastX;
+			g_wv.raw_my += u.raw.data.mouse.lLastY;
+		} else {
+			Sys_QueEvent( g_wv.sysMsgTime, SE_MOUSE, u.raw.data.mouse.lLastX,
+				u.raw.data.mouse.lLastY, 0, NULL );
+		}
+	}
+
+	if ( !u.raw.data.mouse.usButtonFlags )
+		return;
+
+#define CHECK_RAW_BUTTON(button) \
+	if ( u.raw.data.mouse.usButtonFlags & RI_MOUSE_BUTTON_##button##_DOWN ) \
+		Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MOUSE##button##, qtrue, 0, NULL ); \
+	if ( u.raw.data.mouse.usButtonFlags & RI_MOUSE_BUTTON_##button##_UP ) \
+		Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MOUSE##button##, qfalse, 0, NULL )
+
+	CHECK_RAW_BUTTON(1);
+	CHECK_RAW_BUTTON(2);
+	CHECK_RAW_BUTTON(3);
+	CHECK_RAW_BUTTON(4);
+	CHECK_RAW_BUTTON(5);
+
+#undef CHECK_RAW_BUTTON
+
+	if ( u.raw.data.mouse.usButtonFlags & RI_MOUSE_WHEEL ) 
+	{
+		short data = u.raw.data.mouse.usButtonData / 120;
+
+		if ( data > 0 )
+		{
+			while( data > 0 )
+			{
+				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELUP, qtrue, 0, NULL );
+				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELUP, qfalse, 0, NULL );
+				data--;
+			}
+		}
+		else
+		{
+			while( data < 0 )
+			{
+				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qtrue, 0, NULL );
+				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qfalse, 0, NULL );
+				data++;
+			}
+		}
+	}
+}
+
+
+/*
+===========
 IN_MouseMove
 ===========
 */
-void IN_MouseMove( void ) {
+static void IN_MouseMove( void ) {
 	int		mx = 0, my = 0;
 
 	if ( g_pMouse ) {
@@ -886,14 +968,12 @@ void IN_MouseMove( void ) {
 		}
 		g_wv.raw_mx = 0;
 		g_wv.raw_my = 0;
-		if ( in_nograb->integer == 0 ) {
-			// force the mouse to the center, so there's room to move
-			SetCursorPos( window_center[0], window_center[1] );
-			// reset delta base
-			g_wv.mouse = g_wv.median;
-		} else {
-			return;
-		}
+
+		// force the mouse to the center, so there's room to move
+		SetCursorPos( window_center.x, window_center.y );
+
+		// reset delta base
+		g_wv.mouse = client_center;
 	}
 
 	if ( !mx && !my ) {
@@ -1029,8 +1109,8 @@ void IN_Shutdown( void ) {
 	IN_ShutdownDIMouse();
 #ifdef USE_MIDI
 	IN_ShutdownMIDI();
-#endif
 	Cmd_RemoveCommand("midiinfo" );
+#endif
 }
 
 
@@ -1109,7 +1189,7 @@ IN_Frame
 Called every frame, even if not generating commands
 ==================
 */
-void IN_Frame (void) {
+void IN_Frame( void ) {
 	// post joystick events
 #ifdef USE_JOYSTICK
 	IN_JoyMove();
@@ -1117,9 +1197,14 @@ void IN_Frame (void) {
 
 	if ( !s_wmv.mouseInitialized ) {
 		if ( s_wmv.mouseStartupDelayed && g_wv.hWnd ) {
-			Com_Printf( "Proceeding with delayed mouse init\n" );
-			IN_StartupMouse();
-			s_wmv.mouseStartupDelayed = qfalse;
+			// some application may steal our keyboard input focus and foreground state
+			// but windows will NOT send any WM_KILLFOCUS or WM_ACTIVATE messages to us
+			// which will result in stuck mouse cursor in current foreground application
+			if ( GetForegroundWindow() == g_wv.hWnd ) {
+				Com_Printf( "Proceeding with delayed mouse init\n" );
+				IN_StartupMouse();
+				s_wmv.mouseStartupDelayed = qfalse;
+			}
 		}
 		return;
 	}
@@ -1135,32 +1220,17 @@ void IN_Frame (void) {
 		}
 	}
 
-	if ( !in_appactive ) {
-		IN_DeactivateMouse ();
+	if ( !in_appactive || in_nograb->integer ) {
+		IN_DeactivateMouse();
 		return;
 	}
 
-	if ( in_nograb->integer )
-		IN_DeactivateMouse();
-	else
-		IN_ActivateMouse();
+	IN_ActivateMouse();
 	
 	WIN_DisableAltTab();
 
 	// post events to the system que
 	IN_MouseMove();
-
-}
-
-
-/*
-===================
-IN_ClearStates
-===================
-*/
-void IN_ClearStates (void) 
-{
-	s_wmv.oldButtonState = 0;
 }
 
 

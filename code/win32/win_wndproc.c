@@ -153,16 +153,12 @@ static void VID_AppActivate( BOOL fActive )
 		gw_active = qfalse;
 
 	// minimize/restore mouse-capture on demand
+	IN_Activate( gw_active );
+
 	if ( !gw_active )
-	{
 		WIN_DisableHook();
-		IN_Activate( qfalse );
-	}
 	else
-	{
 		WIN_EnableHook();
-		IN_Activate( qtrue );
-	}
 }
 
 //==========================================================================
@@ -280,13 +276,7 @@ main window procedure
 ====================
 */
 extern cvar_t *in_mouse;
-extern cvar_t *in_lagged;
 extern cvar_t *in_logitechbug;
-extern cvar_t *in_minimize;
-
-// raw input externals
-extern UINT (WINAPI *GRID)(HRAWINPUT hRawInput, UINT uiCommand, LPVOID pData, PUINT pcbSize, UINT cbSizeHeader);
-extern int raw_activated;
 
 int			HotKey = 0;
 int			hkinstalled = 0;
@@ -466,12 +456,6 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 		MSH_MOUSEWHEEL = RegisterWindowMessage( TEXT( "MSWHEEL_ROLLMSG" ) ); 
 
-		if ( glw_state.cdsFullscreen ) {
-			WIN_DisableAltTab();
-		} else {
-			WIN_EnableAltTab();
-		}
-
 		WIN_EnableHook();
 
 		GetWindowRect( hWnd, &g_wv.winRect );
@@ -576,6 +560,9 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			g_wv.winRectValid = qtrue;
 			UpdateMonitorInfo();
 			IN_UpdateWindow( NULL, qtrue );
+			IN_Activate( gw_active );
+			if ( !gw_active )
+				ClipCursor( NULL );
 
 			if ( !glw_state.cdsFullscreen )
 			{
@@ -585,12 +572,6 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 				vid_xpos->modified = qfalse;
 				vid_ypos->modified = qfalse;
 			}
-
-			if ( gw_active ) 
-			{
-				IN_Activate( qtrue );
-			}
-
 		}
 		break;
 
@@ -612,8 +593,8 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			Com_Frame( clc.demoplaying );
 		break;
 
-// this is complicated because Win32 seems to pack multiple mouse events into
-// one update sometimes, so we always check all states and look for events
+	// this is complicated because Win32 seems to pack multiple mouse events into
+	// one update sometimes, so we always check all states and look for events
 	case WM_LBUTTONDOWN:
 	case WM_LBUTTONUP:
 	case WM_RBUTTONDOWN:
@@ -621,104 +602,15 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 	case WM_MBUTTONDOWN:
 	case WM_MBUTTONUP:
 	case WM_MOUSEMOVE:
-		{
-			int	temp;
-
-			if ( raw_activated || !IN_MouseActive() )
-				break;
-
-			if ( in_lagged->integer ) {
-			
-			} else {
-				int dx, dy;
-				dx = LOWORD(lParam) - g_wv.mouse.x;
-				dy = HIWORD(lParam) - g_wv.mouse.y;
-				g_wv.mouse.x = LOWORD(lParam);
-				g_wv.mouse.y = HIWORD(lParam);
-				if ( dx || dy ) {
-					Sys_QueEvent( g_wv.sysMsgTime, SE_MOUSE, dx, dy, 0, NULL );
-				}
-			}
-
-			temp = (wParam & (MK_LBUTTON|MK_RBUTTON)) + ((wParam & (MK_MBUTTON|MK_XBUTTON1|MK_XBUTTON2)) >> 2);
-
-			IN_Win32MouseEvent( temp );
+		if ( IN_MouseActive() ) {
+			int mstate = (wParam & (MK_LBUTTON|MK_RBUTTON)) + ((wParam & (MK_MBUTTON|MK_XBUTTON1|MK_XBUTTON2)) >> 2);
+			IN_Win32MouseEvent( LOWORD(lParam), HIWORD(lParam), mstate );
 		}
 		break;
 
 	case WM_INPUT:
-        {
-			union {
-				BYTE lpb[40];
-				RAWINPUT raw;
-			} u;
-
-			UINT dwSize;
-			UINT err;
-			short data;
-
-			if ( !raw_activated || !IN_MouseActive() )
-				break;
-
-			dwSize = sizeof( u.raw );
-
-			err = GRID( (HRAWINPUT)lParam, RID_INPUT, &u.raw, &dwSize, sizeof( RAWINPUTHEADER ) );
-			if ( err == -1 )
-				break;
-
-			if ( u.raw.header.dwType != RIM_TYPEMOUSE || u.raw.data.mouse.usFlags != MOUSE_MOVE_RELATIVE )
-				break;
-
-			if ( u.raw.data.mouse.lLastX || u.raw.data.mouse.lLastY ) {
-				if ( in_lagged->integer ) {
-					g_wv.raw_mx += u.raw.data.mouse.lLastX;
-					g_wv.raw_my += u.raw.data.mouse.lLastY;
-				} else {
-					Sys_QueEvent( g_wv.sysMsgTime, SE_MOUSE, u.raw.data.mouse.lLastX,
-						u.raw.data.mouse.lLastY, 0, NULL );
-				}
-			}
-
-			if ( !u.raw.data.mouse.usButtonFlags )
-				break;
-
-			#define CHECK_RAW_BUTTON(button) \
-				if ( u.raw.data.mouse.usButtonFlags & RI_MOUSE_BUTTON_##button##_DOWN ) \
-					Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MOUSE##button##, qtrue, 0, NULL ); \
-				if ( u.raw.data.mouse.usButtonFlags & RI_MOUSE_BUTTON_##button##_UP ) \
-					Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MOUSE##button##, qfalse, 0, NULL )
-
-			CHECK_RAW_BUTTON(1);
-			CHECK_RAW_BUTTON(2);
-			CHECK_RAW_BUTTON(3);
-			CHECK_RAW_BUTTON(4);
-			CHECK_RAW_BUTTON(5);
-
-			if ( !(u.raw.data.mouse.usButtonFlags & RI_MOUSE_WHEEL) )
-				break;
-
-			data = u.raw.data.mouse.usButtonData;
-
-			data = data / 120;
-			if ( data > 0 )
-			{
-				while( data > 0 )
-				{
-					Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELUP, qtrue, 0, NULL );
-					Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELUP, qfalse, 0, NULL );
-					data--;
-				}
-			}
-			else
-			{
-				while( data < 0 )
-				{
-					Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qtrue, 0, NULL );
-					Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qfalse, 0, NULL );
-					data++;
-				}
-           }
-		}
+		if ( IN_MouseActive() )
+			IN_RawMouseEvent( lParam );
 		break;
 
 	case WM_SYSCOMMAND:
@@ -773,7 +665,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 	case WM_CHAR:
 		if ( (lParam & 0xFF0000) != 0x290000 /* '`' */ )
-		Sys_QueEvent( g_wv.sysMsgTime, SE_CHAR, wParam, 0, 0, NULL );
+			Sys_QueEvent( g_wv.sysMsgTime, SE_CHAR, wParam, 0, 0, NULL );
 		break;
 
 	case WM_SIZE:

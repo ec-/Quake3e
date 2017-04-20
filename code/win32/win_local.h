@@ -97,7 +97,8 @@ const char *WtoA( const LPWSTR s );
 #endif
 
 
-void	IN_Win32MouseEvent( int mstate );
+void	IN_Win32MouseEvent( int x, int y, int mstate );
+void	IN_RawMouseEvent( LPARAM lParam );
 
 void	Sys_CreateConsole( char *title );
 void	Sys_DestroyConsole( void );
@@ -107,8 +108,6 @@ void	Sys_DestroyConsole( void );
 void	IN_Init (void);
 void	IN_Shutdown (void);
 void	IN_JoystickCommands (void);
-
-void	IN_DeactivateWin32Mouse( void );
 
 void	IN_Activate( qboolean active );
 void	IN_Frame( void );
@@ -147,8 +146,7 @@ typedef struct
 	int raw_my;
 
 	POINT mouse;
-	POINT median;
-
+	
 } WinVars_t;
 
 extern WinVars_t	g_wv;
