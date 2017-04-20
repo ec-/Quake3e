@@ -1102,9 +1102,10 @@ typedef enum {
 	SE_NONE = 0,	// evTime is still valid
 	SE_KEY,		// evValue is a key code, evValue2 is the down flag
 	SE_CHAR,	// evValue is an ascii char
-	SE_MOUSE,	// evValue and evValue2 are reletive signed x / y moves
+	SE_MOUSE,	// evValue and evValue2 are relative signed x / y moves
 	SE_JOYSTICK_AXIS,	// evValue is an axis number and evValue2 is the current state (-127 to 127)
 	SE_CONSOLE,	// evPtr is a char*
+	SE_MAX,
 } sysEventType_t;
 
 typedef struct {
@@ -1116,7 +1117,7 @@ typedef struct {
 } sysEvent_t;
 
 void	Sys_Init( void );
-void	Sys_QueEvent( int time, sysEventType_t type, int value, int value2, int ptrLength, void *ptr );
+void	Sys_QueEvent( int evTime, sysEventType_t evType, int value, int value2, int ptrLength, void *ptr );
 void	Sys_SendKeyEvents( void );
 void	Sys_Sleep( int msec );
 char	*Sys_ConsoleInput( void );
