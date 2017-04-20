@@ -281,7 +281,6 @@ main window procedure
 */
 extern cvar_t *in_mouse;
 extern cvar_t *in_lagged;
-extern cvar_t *in_nograb;
 extern cvar_t *in_logitechbug;
 extern cvar_t *in_minimize;
 
@@ -625,7 +624,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		{
 			int	temp;
 
-			if ( raw_activated || in_nograb->integer )
+			if ( raw_activated || !IN_MouseActive() )
 				break;
 
 			if ( in_lagged->integer ) {
@@ -658,7 +657,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			UINT err;
 			short data;
 
-			if ( !raw_activated || in_nograb->integer /* || !s_wmv.mouseInitialized */ )
+			if ( !raw_activated || !IN_MouseActive() )
 				break;
 
 			dwSize = sizeof( u.raw );

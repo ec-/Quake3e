@@ -108,9 +108,6 @@ void	IN_Init (void);
 void	IN_Shutdown (void);
 void	IN_JoystickCommands (void);
 
-void	IN_Move (usercmd_t *cmd);
-// add additional non keyboard / non mouse movement on top of the keyboard move cmd
-
 void	IN_DeactivateWin32Mouse( void );
 
 void	IN_Activate( qboolean active );
@@ -119,6 +116,7 @@ void	IN_Frame( void );
 void	IN_UpdateWindow( RECT *window_rect, qboolean updateClipRegion );
 void	UpdateMonitorInfo( void ); 
 
+qboolean IN_MouseActive( void );
 
 // window procedure
 LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM  lParam );

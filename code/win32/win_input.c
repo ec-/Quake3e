@@ -124,6 +124,17 @@ WIN32 MOUSE CONTROL
 
 /*
 ================
+IN_MouseActive
+================
+*/
+qboolean IN_MouseActive( void ) 
+{
+	return ( in_nograb->integer == 0 && s_wmv.mouseActive );
+}
+
+
+/*
+================
 IN_UpdateWindow
 
 Called when window gets resized/moved
