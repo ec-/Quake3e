@@ -9,15 +9,8 @@
 #
 # GNU Make required
 #
-
-COMPILE_PLATFORM=$(shell uname|sed -e s/_.*//|tr '[:upper:]' '[:lower:]')
-
-ifeq ($(COMPILE_PLATFORM),darwin)
-  # Apple does some things a little differently...
-  COMPILE_ARCH=$(shell uname -p | sed -e s/i.86/i386/)
-else
-  COMPILE_ARCH=$(shell uname -m | sed -e s/i.86/i386/)
-endif
+COMPILE_PLATFORM=$(shell uname | sed -e 's/_.*//' | tr '[:upper:]' '[:lower:]' | sed -e 's/\//_/g')
+COMPILE_ARCH=$(shell uname -m | sed -e 's/i.86/x86/' | sed -e 's/^arm.*/arm/')
 
 ifeq ($(COMPILE_PLATFORM),mingw32)
   ifeq ($(COMPILE_ARCH),i386)
@@ -28,14 +21,14 @@ endif
 BUILD_CLIENT     = 1
 BUILD_SERVER     = 1
 
-USE_CURL		 = 1
+USE_CURL         = 1
 USE_LOCAL_HEADERS= 0
 
-CNAME			 = quake3e
-DNAME 			 = quake3e.ded
+CNAME            = quake3e
+DNAME            = quake3e.ded
 
-#USE_ALSA_STATIC	= 1
-#USE_STATIC_GL		= 1
+#USE_ALSA_STATIC = 1
+#USE_STATIC_GL   = 1
 
 ifeq ($(V),1)
 echo_cmd=@:
@@ -55,13 +48,31 @@ endif
 #############################################################################
 -include Makefile.local
 
+ifeq ($(COMPILE_PLATFORM),cygwin)
+  PLATFORM=mingw32
+endif
+
 ifndef PLATFORM
 PLATFORM=$(COMPILE_PLATFORM)
 endif
 export PLATFORM
 
-ifeq ($(COMPILE_ARCH),powerpc)
-  COMPILE_ARCH=ppc
+ifeq ($(PLATFORM),mingw32)
+  MINGW=1
+endif
+ifeq ($(PLATFORM),mingw64)
+  MINGW=1
+endif
+
+ifeq ($(COMPILE_ARCH),i86pc)
+  COMPILE_ARCH=x86
+endif
+
+ifeq ($(COMPILE_ARCH),amd64)
+  COMPILE_ARCH=x86_64
+endif
+ifeq ($(COMPILE_ARCH),x64)
+  COMPILE_ARCH=x86_64
 endif
 
 ifndef ARCH
@@ -136,54 +147,38 @@ W32DIR=$(MOUNT_DIR)/win32
 BLIBDIR=$(MOUNT_DIR)/botlib
 NDIR=$(MOUNT_DIR)/null
 UIDIR=$(MOUNT_DIR)/ui
-Q3UIDIR=$(MOUNT_DIR)/q3_ui
 JPDIR=$(MOUNT_DIR)/jpeg-8c
-TOOLSDIR=$(MOUNT_DIR)/tools
 LOKISETUPDIR=$(UDIR)/setup
 
 # extract version info
 VERSION=$(shell grep "\#define Q3_VERSION" $(CMDIR)/q_shared.h | \
   sed -e 's/.*".* \([^ ]*\)"/\1/')
 
-USE_SVN=
-#ifeq ($(wildcard .svn),.svn)
-#  SVN_REV=$(shell LANG=C svnversion .)
-#  ifneq ($(SVN_REV),)
-#    SVN_VERSION=$(VERSION)_SVN$(SVN_REV)
-#    USE_SVN=1
-#  endif
-#endif
-#ifneq ($(USE_SVN),1)
-#    SVN_VERSION=$(VERSION)
-#endif
-
+# common qvm definition
+ifeq ($(ARCH),x86_64)
+  HAVE_VM_COMPILED = true
+else
+ifeq ($(ARCH),x86)
+  HAVE_VM_COMPILED = true
+else
+  HAVE_VM_COMPILED = false
+endif
+endif
 
 #############################################################################
 # SETUP AND BUILD -- LINUX
 #############################################################################
 
 ## Defaults
-LIB=lib
-
 INSTALL=install
 MKDIR=mkdir
 
 ifeq ($(PLATFORM),linux)
 
-  ifeq ($(ARCH),alpha)
-    ARCH=axp
-  else
   ifeq ($(ARCH),x86_64)
     LIB=lib64
   else
-  ifeq ($(ARCH),ppc64)
-    LIB=lib64
-  else
-  ifeq ($(ARCH),s390x)
-    LIB=lib64
-  endif
-  endif
-  endif
+    LIB=lib
   endif
 
   BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
@@ -194,22 +189,14 @@ ifeq ($(PLATFORM),linux)
 
   BASE_CFLAGS += -I/usr/X11R7/include -I/usr/include
 
-  OPTIMIZE = -O2
+  OPTIMIZE = -O2 -fvisibility=hidden
 
   ifeq ($(ARCH),x86_64)
-    OPTIMIZE = -O2  -fvisibility=hidden
-    HAVE_VM_COMPILED = true
-    CNAME = quake3e.x64
-    DNAME = quake3e.ded.x64
+    CNAME    = quake3e.x64
+    DNAME    = quake3e.ded.x64
   else
-  ifeq ($(ARCH),i386)
-    OPTIMIZE = -O2 -march=i486 -mtune=i686 -fvisibility=hidden
-    HAVE_VM_COMPILED=true
-  else
-  ifeq ($(ARCH),ppc)
-    BASE_CFLAGS += -maltivec
-    HAVE_VM_COMPILED=false
-  endif
+  ifeq ($(ARCH),x86)
+    OPTIMIZE += -march=i586 -mtune=i686
   endif
   endif
 
@@ -231,123 +218,25 @@ ifeq ($(PLATFORM),linux)
 #  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -lX11 -lXext -lXxf86dga -lXxf86vm
   CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -L/usr/$(LIB) -lX11 -lXxf86dga -lXxf86vm
 
-ifeq ($(USE_STATIC_GL),1)
-  CLIENT_LDFLAGS += -lGL
-endif
+  ifeq ($(USE_STATIC_GL),1)
+    CLIENT_LDFLAGS += -lGL
+  endif
 
-ifeq ($(USE_ALSA_STATIC),1)
-  CLIENT_LDFLAGS += -lasound -lpthread
-endif
+  ifeq ($(USE_ALSA_STATIC),1)
+    CLIENT_LDFLAGS += -lasound -lpthread
+  endif
 
   ifeq ($(USE_CODEC_VORBIS),1)
     CLIENT_LDFLAGS += -lvorbisfile -lvorbis -logg
   endif
 
-  ifeq ($(ARCH),i386)
+  ifeq ($(ARCH),x86)
     # linux32 make ...
     BASE_CFLAGS += -m32
     LDFLAGS+=-m32
   endif
 
 else # ifeq Linux
-
-#############################################################################
-# SETUP AND BUILD -- MAC OS X
-#############################################################################
-
-ifeq ($(PLATFORM),darwin)
-  HAVE_VM_COMPILED=true
-  BASE_CFLAGS=
-  CLIENT_LDFLAGS=
-  LDFLAGS=
-  OPTIMIZE=
-  ifeq ($(BUILD_MACOSX_UB),ppc)
-    CC=gcc-3.3
-    BASE_CFLAGS += -arch ppc \
-      -DMAC_OS_X_VERSION_MIN_REQUIRED=1020 -nostdinc \
-      -F/Developer/SDKs/MacOSX10.2.8.sdk/System/Library/Frameworks \
-      -I/Developer/SDKs/MacOSX10.2.8.sdk/usr/include/gcc/darwin/3.3 \
-      -isystem /Developer/SDKs/MacOSX10.2.8.sdk/usr/include
-    # when using the 10.2 SDK we are not allowed the two-level namespace so
-    # in order to get the OpenAL dlopen() stuff to work without major
-    # modifications, the controversial -m linker flag must be used.  this
-    # throws a ton of multiply defined errors which cannot be suppressed.
-    LDFLAGS += -arch ppc \
-      -L/Developer/SDKs/MacOSX10.2.8.sdk/usr/lib/gcc/darwin/3.3 \
-      -F/Developer/SDKs/MacOSX10.2.8.sdk/System/Library/Frameworks \
-      -Wl,-syslibroot,/Developer/SDKs/MacOSX10.2.8.sdk,-m
-    ARCH=ppc
-
-    # OS X 10.2 sdk lacks dlopen() so ded would need libSDL anyway
-    BUILD_SERVER=0
-
-    # because of a problem with linking on 10.2 this will generate multiply
-    # defined symbol errors.  The errors can be turned into warnings with
-    # the -m linker flag, but you can't shut up the warnings
-  else
-  ifeq ($(BUILD_MACOSX_UB),i386)
-    CC=gcc-4.0
-    BASE_CFLAGS += -arch i386 \
-      -mmacosx-version-min=10.4 \
-      -DMAC_OS_X_VERSION_MIN_REQUIRED=1040 -nostdinc \
-      -F/Developer/SDKs/MacOSX10.4u.sdk/System/Library/Frameworks \
-      -I/Developer/SDKs/MacOSX10.4u.sdk/usr/lib/gcc/i686-apple-darwin8/4.0.1/include \
-      -isystem /Developer/SDKs/MacOSX10.4u.sdk/usr/include
-    LDFLAGS = -arch i386 -mmacosx-version-min=10.4 \
-      -L/Developer/SDKs/MacOSX10.4u.sdk/usr/lib/gcc/i686-apple-darwin8/4.0.1 \
-      -F/Developer/SDKs/MacOSX10.4u.sdk/System/Library/Frameworks \
-      -Wl,-syslibroot,/Developer/SDKs/MacOSX10.4u.sdk
-    ARCH=i386
-    BUILD_SERVER=0
-  else
-    # for whatever reason using the headers in the MacOSX SDKs tend to throw
-    # errors even though they are identical to the system ones which don't
-    # therefore we shut up warning flags when running the universal build
-    # script as much as possible.
-    BASE_CFLAGS += -Wall -Wimplicit -Wstrict-prototypes
-  endif
-  endif
-
-  ifeq ($(ARCH),ppc)
-    OPTIMIZE += -faltivec -O3
-  endif
-  ifeq ($(ARCH),i386)
-    OPTIMIZE += -march=prescott -mfpmath=sse
-    # x86 vm will crash without -mstackrealign since MMX instructions will be
-    # used no matter what and they corrupt the frame pointer in VM calls
-    BASE_CFLAGS += -mstackrealign
-  endif
-
-  BASE_CFLAGS += -fno-strict-aliasing -DMACOS_X -fno-common -pipe
-
-  # Always include debug symbols...you can strip the binary later...
-  BASE_CFLAGS += -gfull
-
-  ifeq ($(USE_CODEC_VORBIS),1)
-    BASE_CFLAGS += -DUSE_CODEC_VORBIS=1
-    CLIENT_LDFLAGS += -lvorbisfile -lvorbis -logg
-  endif
-
-  # !!! FIXME: frameworks: OpenGL, Carbon, etc...
-  #CLIENT_LDFLAGS += -L/usr/X11R6/$(LIB) -lX11 -lXext -lXxf86dga -lXxf86vm
-
-  OPTIMIZE += -ffast-math -falign-loops=16
-
-  ifneq ($(HAVE_VM_COMPILED),true)
-    BASE_CFLAGS += -DNO_VM_COMPILED
-  endif
-
-  DEBUG_CFLAGS = $(BASE_CFLAGS) -g -O0
-
-  RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
-
-  SHLIBEXT=dylib
-  SHLIBCFLAGS=-fPIC -fno-common
-  SHLIBLDFLAGS=-dynamiclib $(LDFLAGS)
-
-  NOTSHLIBCFLAGS=-mdynamic-no-pic
-
-else # ifeq darwin
 
 
 #############################################################################
@@ -356,9 +245,9 @@ else # ifeq darwin
 
 ifeq ($(PLATFORM),mingw32)
 
-ifndef WINDRES
-WINDRES=windres
-endif
+  ifndef WINDRES
+    WINDRES=windres
+  endif
 
   ARCH=x86
 
@@ -370,8 +259,6 @@ endif
 
   OPTIMIZE = -O3 -march=i586 -fomit-frame-pointer -ffast-math -falign-loops=2 \
     -funroll-loops -falign-jumps=2 -falign-functions=2 -fstrength-reduce
-
-  HAVE_VM_COMPILED = true
 
   DEBUG_CFLAGS=$(BASE_CFLAGS) -g -O0
 
@@ -406,15 +293,12 @@ else # ifeq mingw32
 
 ifeq ($(PLATFORM),freebsd)
 
-  ifneq (,$(findstring alpha,$(shell uname -m)))
-    ARCH=axp
-  else #default to i386
-    ARCH=i386
-  endif #alpha test
-
-
   BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
                 -I/usr/X11R6/include
+
+  ifneq ($(HAVE_VM_COMPILED),true)
+    BASE_CFLAGS += -DNO_VM_COMPILED
+  endif
 
   DEBUG_CFLAGS=$(BASE_CFLAGS) -g
 
@@ -422,20 +306,8 @@ ifeq ($(PLATFORM),freebsd)
     BASE_CFLAGS += -DUSE_CODEC_VORBIS=1
   endif
 
-  ifeq ($(ARCH),axp)
-    BASE_CFLAGS += -DNO_VM_COMPILED
-    RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O3 -ffast-math -funroll-loops \
-      -fomit-frame-pointer -fexpensive-optimizations
-  else
-  ifeq ($(ARCH),i386)
-    RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O3 -mtune=pentiumpro \
-      -march=pentium -fomit-frame-pointer -pipe -ffast-math \
-      -falign-loops=2 -falign-jumps=2 -falign-functions=2 \
-      -funroll-loops -fstrength-reduce
-    HAVE_VM_COMPILED=true
-  else
-    BASE_CFLAGS += -DNO_VM_COMPILED
-  endif
+  ifeq ($(ARCH),x86)
+    RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O2 -march=i586 -mtune=i686
   endif
 
   SHLIBEXT=so
@@ -451,8 +323,6 @@ ifeq ($(PLATFORM),freebsd)
   ifeq ($(USE_CODEC_VORBIS),1)
     CLIENT_LDFLAGS += -lvorbisfile -lvorbis -logg
   endif
-
-
 else # ifeq freebsd
 
 #############################################################################
@@ -461,15 +331,9 @@ else # ifeq freebsd
 
 ifeq ($(PLATFORM),openbsd)
 
-  ifneq (,$(findstring amd64,$(shell uname -m)))
-    ARCH=x86_64
-  else #default to i386
-    ARCH=i386
-  endif #alpha test
-
-
   BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
-                -I/usr/X11R6/include -I/usr/local/include/SDL -fvisibility=hidden
+                -I/usr/X11R6/include -I/usr/local/include \
+                -I/usr/local/include/SDL -fvisibility=hidden
 
   DEBUG_CFLAGS=$(BASE_CFLAGS) -g
 
@@ -478,39 +342,34 @@ ifeq ($(PLATFORM),openbsd)
   endif
 
   ifeq ($(ARCH),x86_64)
-	HAVE_VM_COMPILED=true
-	BASE_CFLAGS +=  -I/usr/local/include -I/usr/X11R6/include -O3
     RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O3 -ffast-math -funroll-loops \
       -fomit-frame-pointer -fexpensive-optimizations
   else
-  ifeq ($(ARCH),i386)
+  ifeq ($(ARCH),x86)
     RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O3 -mtune=pentiumpro \
       -march=pentium -fomit-frame-pointer -pipe -ffast-math \
       -falign-loops=2 -falign-jumps=2 -falign-functions=2 \
       -funroll-loops -fstrength-reduce
-    HAVE_VM_COMPILED=true
-  else
-    BASE_CFLAGS += -DNO_VM_COMPILED
   endif
   endif
 
   ifneq ($(HAVE_VM_COMPILED),true)
     BASE_CFLAGS += -DNO_VM_COMPILED
   endif
+
   SHLIBEXT=so
   SHLIBCFLAGS=-fPIC
   SHLIBLDFLAGS=-shared $(LDFLAGS)
 
   THREAD_LDFLAGS=-lpthread
   # don't need -ldl (FreeBSD)
-  LDFLAGS=-lm -lSDL -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext -lXxf86vm -lXxf86dga 
+  LDFLAGS=-lm -lSDL -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext -lXxf86vm -lXxf86dga
 
-  CLIENT_LDFLAGS =-lm -lSDL -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext -lXxf86vm -lXxf86dga 
+  CLIENT_LDFLAGS =-lm -lSDL -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext -lXxf86vm -lXxf86dga
 
   ifeq ($(USE_CODEC_VORBIS),1)
     CLIENT_LDFLAGS += -lvorbisfile -lvorbis -logg
   endif
-
 
 else # ifeq openbsd
 
@@ -519,10 +378,6 @@ else # ifeq openbsd
 #############################################################################
 
 ifeq ($(PLATFORM),netbsd)
-
-  ifeq ($(shell uname -m),i386)
-    ARCH=i386
-  endif
 
   LDFLAGS=-lm
   SHLIBEXT=so
@@ -533,7 +388,7 @@ ifeq ($(PLATFORM),netbsd)
   BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes
   DEBUG_CFLAGS=$(BASE_CFLAGS) -g
 
-  ifneq ($(ARCH),i386)
+  ifneq ($(HAVE_VM_COMPILED),true)
     BASE_CFLAGS += -DNO_VM_COMPILED
   endif
 
@@ -541,100 +396,10 @@ ifeq ($(PLATFORM),netbsd)
 
 else # ifeq netbsd
 
-
-#############################################################################
-# SETUP AND BUILD -- IRIX
-#############################################################################
-
-ifeq ($(PLATFORM),irix)
-
-  ARCH=mips  #default to MIPS
-
-  BASE_CFLAGS=-Dstricmp=strcasecmp -Xcpluscomm -woff 1185 -mips3 \
-    -nostdinc -I. -I$(ROOT)/usr/include -DNO_VM_COMPILED
-  RELEASE_CFLAGS=$(BASE_CFLAGS) -O3
-  DEBUG_CFLAGS=$(BASE_CFLAGS) -g
-
-  SHLIBEXT=so
-  SHLIBCFLAGS=
-  SHLIBLDFLAGS=-shared
-
-  LDFLAGS=-ldl -lm
-  CLIENT_LDFLAGS=-L/usr/X11/$(LIB) -lGL -lX11 -lXext -lm
-
-else # ifeq IRIX
-
-#############################################################################
-# SETUP AND BUILD -- SunOS
-#############################################################################
-
-ifeq ($(PLATFORM),sunos)
-
-  CC=gcc
-  INSTALL=ginstall
-  MKDIR=gmkdir
-  COPYDIR="/usr/local/share/games/quake3"
-
-  ifneq (,$(findstring i86pc,$(shell uname -m)))
-    ARCH=i386
-  else #default to sparc
-    ARCH=sparc
-  endif
-
-  ifneq ($(ARCH),i386)
-    ifneq ($(ARCH),sparc)
-      $(error arch $(ARCH) is currently not supported)
-    endif
-  endif
-
-
-  BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
-
-  BASE_CFLAGS += -I/usr/openwin/include
-
-  OPTIMIZE = -O3 -ffast-math -funroll-loops
-
-  ifeq ($(ARCH),sparc)
-    OPTIMIZE = -O3 -ffast-math -falign-loops=2 \
-      -falign-jumps=2 -falign-functions=2 -fstrength-reduce \
-      -mtune=ultrasparc -mv8plus -mno-faster-structs \
-      -funroll-loops
-  else
-  ifeq ($(ARCH),i386)
-    OPTIMIZE = -O3 -march=i586 -fomit-frame-pointer -ffast-math \
-      -funroll-loops -falign-loops=2 -falign-jumps=2 \
-      -falign-functions=2 -fstrength-reduce
-    HAVE_VM_COMPILED=true
-    BASE_CFLAGS += -m32
-    LDFLAGS += -m32
-    BASE_CFLAGS += -I/usr/X11/include/NVIDIA
-  endif
-  endif
-
-  ifneq ($(HAVE_VM_COMPILED),true)
-    BASE_CFLAGS += -DNO_VM_COMPILED
-  endif
-
-  DEBUG_CFLAGS = $(BASE_CFLAGS) -ggdb -O0
-
-  RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
-
-  SHLIBEXT=so
-  SHLIBCFLAGS=-fPIC
-  SHLIBLDFLAGS=-shared $(LDFLAGS)
-
-  THREAD_LDFLAGS=-lpthread
-  LDFLAGS=-lsocket -lnsl -ldl -lm
-
-  BOTCFLAGS=-O0
-
-  CLIENT_LDFLAGS=-L/usr/openwin/$(LIB) -L/usr/X11/lib -lGLU -lX11 -lXext
-
-else # ifeq sunos
-
 #############################################################################
 # SETUP AND BUILD -- GENERIC
 #############################################################################
+
   BASE_CFLAGS=-DNO_VM_COMPILED
   DEBUG_CFLAGS=$(BASE_CFLAGS) -g
   RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O3
@@ -644,13 +409,10 @@ else # ifeq sunos
   SHLIBLDFLAGS=-shared
 
 endif #Linux
-endif #darwin
 endif #mingw32
 endif #FreeBSD
 endif #OpenBSD
 endif #NetBSD
-endif #IRIX
-endif #SunOS
 
 #TARGET_CLIENT=$(CNAME).$(ARCH)$(BINEXT)
 #TARGET_SERVER=$(DNAME).$(ARCH)$(BINEXT)
@@ -965,12 +727,6 @@ Q3OBJ = \
   $(B)/client/tr_surface.o \
   $(B)/client/tr_world.o \
 
-ifeq ($(ARCH),i386)
-  Q3OBJ += \
-    $(B)/client/linux_asm.o \
-    $(B)/client/snd_mix_mmx.o \
-    $(B)/client/snd_mix_sse.o
-endif
 ifeq ($(ARCH),x86)
   Q3OBJ += \
     $(B)/client/linux_asm.o \
@@ -979,17 +735,11 @@ ifeq ($(ARCH),x86)
 endif
 
 ifeq ($(HAVE_VM_COMPILED),true)
-  ifeq ($(ARCH),i386)
-    Q3OBJ += $(B)/client/vm_x86.o
-  endif
   ifeq ($(ARCH),x86)
     Q3OBJ += $(B)/client/vm_x86.o
   endif
   ifeq ($(ARCH),x86_64)
     Q3OBJ += $(B)/client/vm_x86.o
-  endif
-  ifeq ($(ARCH),ppc)
-    Q3OBJ += $(B)/client/vm_ppc.o
   endif
 endif
 
@@ -1017,9 +767,9 @@ else
     $(B)/client/linux_qgl.o \
     $(B)/client/linux_snd.o
 
-  ifeq ($(PLATFORM),linux)
-    Q3OBJ += $(B)/client/linux_joystick.o
-  endif
+#  ifeq ($(PLATFORM),linux)
+#    Q3OBJ += $(B)/client/linux_joystick.o
+#  endif
 
   Q3POBJ = \
     $(B)/client/linux_glimp.o
@@ -1030,8 +780,6 @@ $(B)/$(TARGET_CLIENT): $(Q3OBJ) $(Q3POBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) -o $@ $(Q3OBJ) $(Q3POBJ) $(CLIENT_LDFLAGS) \
 		$(LDFLAGS)
-
-
 
 
 #############################################################################
@@ -1106,27 +854,17 @@ Q3DOBJ = \
   $(B)/ded/unix_main.o \
   $(B)/ded/unix_shared.o
 
-ifeq ($(ARCH),i386)
-  Q3DOBJ += \
-      $(B)/ded/linux_asm.o
-endif
 ifeq ($(ARCH),x86)
   Q3DOBJ += \
       $(B)/ded/linux_asm.o
 endif
 
 ifeq ($(HAVE_VM_COMPILED),true)
-  ifeq ($(ARCH),i386)
-    Q3DOBJ += $(B)/ded/vm_x86.o
-  endif
   ifeq ($(ARCH),x86)
     Q3DOBJ += $(B)/ded/vm_x86.o
   endif
   ifeq ($(ARCH),x86_64)
     Q3DOBJ += $(B)/ded/vm_x86.o
-  endif
-  ifeq ($(ARCH),ppc)
-    Q3DOBJ += $(B)/ded/vm_ppc.o
   endif
 endif
 
@@ -1188,14 +926,6 @@ $(B)/ded/%.o: $(UDIR)/%.c
 $(B)/ded/%.o: $(NDIR)/%.c
 	$(DO_DED_CC)
 
-# Extra dependencies to ensure the SVN version is incorporated
-ifeq ($(USE_SVN),1)
-  $(B)/client/cl_console.o : .svn/entries
-  $(B)/client/common.o : .svn/entries
-  $(B)/ded/common.o : .svn/entries
-endif
-
-
 #############################################################################
 # MISC
 #############################################################################
@@ -1230,11 +960,7 @@ clean-debug:
 clean-release:
 	@$(MAKE) clean2 B=$(BR)
 
-toolsclean:
-	@$(MAKE) -C $(TOOLSDIR)/asm clean uninstall
-	@$(MAKE) -C $(TOOLSDIR)/lcc clean uninstall
-
-distclean: clean toolsclean
+distclean: clean
 	@rm -rf $(BUILD_DIR)
 
 installer: release
