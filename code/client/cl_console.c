@@ -765,6 +765,7 @@ void Con_DrawSolidConsole( float frac ) {
 		row--;
 	}
 
+#ifdef USE_CURL
 	if ( download.progress[ 0 ] ) 
 	{
 		currentColorIndex = ColorIndex( COLOR_CYAN );
@@ -777,6 +778,7 @@ void Con_DrawSolidConsole( float frac ) {
 				lines - SMALLCHAR_HEIGHT, download.progress[x] );
 		}
 	}
+#endif
 
 	currentColorIndex = ColorIndex( COLOR_WHITE );
 	re.SetColor( g_color_table[ currentColorIndex ] );

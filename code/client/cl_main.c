@@ -3409,8 +3409,10 @@ void CL_Init( void ) {
 	Cmd_SetCommandCompletionFunc( "video", CL_CompleteVideoName );
 	Cmd_AddCommand ("stopvideo", CL_StopVideo_f );
 
+#ifdef USE_CURL
 	Cmd_AddCommand( "download", CL_Download_f );
 	Cmd_AddCommand( "dlmap", CL_Download_f );
+#endif
 
 	CL_InitRef();
 
@@ -3484,10 +3486,12 @@ void CL_Shutdown( const char *finalmsg, qboolean quit ) {
 	Cmd_RemoveCommand ("video");
 	Cmd_RemoveCommand ("stopvideo");
 
+#ifdef USE_CURL
 	Com_DL_Cleanup( &download );
 
 	Cmd_RemoveCommand( "download" );
 	Cmd_RemoveCommand( "dlmap" );
+#endif
 
 	CL_ClearInput();
 	
