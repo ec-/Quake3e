@@ -924,15 +924,14 @@ void IN_RawMouseEvent( LPARAM lParam )
 
 	if ( u.raw.data.mouse.usButtonFlags & RI_MOUSE_WHEEL ) 
 	{
-		short data = u.raw.data.mouse.usButtonData / 120;
-
+		short data = u.raw.data.mouse.usButtonData;
 		if ( data > 0 )
 		{
 			while( data > 0 )
 			{
 				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELUP, qtrue, 0, NULL );
 				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELUP, qfalse, 0, NULL );
-				data--;
+				data -= 120;
 			}
 		}
 		else
@@ -941,7 +940,7 @@ void IN_RawMouseEvent( LPARAM lParam )
 			{
 				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qtrue, 0, NULL );
 				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qfalse, 0, NULL );
-				data++;
+				data += 120;
 			}
 		}
 	}
