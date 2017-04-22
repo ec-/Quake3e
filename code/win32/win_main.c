@@ -543,6 +543,7 @@ void Sys_UnloadDll( void *dllHandle ) {
 	}
 }
 
+
 /*
 =================
 Sys_LoadDll
@@ -552,14 +553,15 @@ Used to load a development dll instead of a virtual machine
 TTimo: added some verbosity in debug
 =================
 */
-// fqpath param added 7/20/02 by T.Ray - Sys_LoadDll is only called in vm.c at this time
-// fqpath will be empty if dll not loaded, otherwise will hold fully qualified path of dll module loaded
-// fqpath buffersize must be at least MAX_QPATH+1 bytes long
 void * QDECL Sys_LoadDll( const char *name, dllSyscall_t *entryPoint, dllSyscall_t systemcalls ) {
 
 	HINSTANCE	libHandle;
 	dllEntry_t	dllEntry;
+#ifdef DEBUG
+	TCHAR		currpath[ MAX_OSPATH ];
+#endif
 	const char	*basepath;
+	const char	*homepath;
 	const char	*gamedir;
 	char		*fn;
 	char		filename[ MAX_QPATH ];
@@ -570,26 +572,38 @@ void * QDECL Sys_LoadDll( const char *name, dllSyscall_t *entryPoint, dllSyscall
 	Com_sprintf( filename, sizeof( filename ), "%sx86.dll", name );
 #endif
 
-#ifndef NDEBUG
-	libHandle = LoadLibrary( AtoW( filename ) );
-	if ( libHandle )
-		Com_Printf( "LoadLibrary '%s' ok\n", filename );
-	else
-		Com_Printf( "LoadLibrary '%s' failed\n", filename );
-	if ( !libHandle ) {
-#endif
 	basepath = Cvar_VariableString( "fs_basepath" );
+	homepath = Cvar_VariableString( "fs_homepath" );
 	gamedir = Cvar_VariableString( "fs_game" );
-
-	fn = FS_BuildOSPath( basepath, gamedir, filename );
-	libHandle = LoadLibrary( AtoW( fn ) );
-#ifndef NDEBUG
-	if ( libHandle )
-		Com_Printf( "LoadLibrary '%s' ok\n", fn );
-	else
-		Com_Printf( "LoadLibrary '%s' failed\n", fn );
+	if ( !*gamedir ) {
+		gamedir = Cvar_VariableString( "fs_basegame" );
 	}
+	fn = filename;
+
+#ifdef DEBUG
+	if ( GetCurrentDirectory( currpath, ARRAY_LEN( currpath ) ) < ARRAY_LEN( currpath ) ) {
+		fn = FS_BuildOSPath( WtoA( currpath ), gamedir, filename );
+		libHandle = LoadLibrary( AtoW( filename ) );
+	} else
 #endif
+	libHandle = NULL;
+
+	if ( !libHandle && *homepath ) {
+		fn = FS_BuildOSPath( homepath, gamedir, filename );
+		libHandle = LoadLibrary( AtoW( fn ) );
+	}
+
+	if ( !libHandle && Q_stricmp( basepath, homepath ) ) {
+		fn = FS_BuildOSPath( basepath, gamedir, filename );
+		libHandle = LoadLibrary( AtoW( fn ) );
+	}
+
+	if ( !libHandle ) {
+		Com_Printf( "LoadLibrary '%s' failed\n", fn );
+		return NULL;
+	}
+
+	Com_Printf( "LoadLibrary '%s' ok\n", fn );
 
 	dllEntry = ( dllEntry_t ) GetProcAddress( libHandle, "dllEntry" ); 
 	*entryPoint = ( dllSyscall_t ) GetProcAddress( libHandle, "vmMain" );

@@ -831,26 +831,33 @@ void *Sys_LoadDll( const char *name, dllSyscall_t *entryPoint, dllSyscall_t syst
 {
 	void		*libHandle;
 	dllEntry_t	dllEntry;
-	char		curpath[MAX_OSPATH];
+#ifdef DEBUG
+	char		*currpath[MAX_OSPATH];
+#endif
 	char		fname[MAX_OSPATH];
 	const char	*basepath;
 	const char	*homepath;
 	const char	*gamedir;
-	const char	*pwdpath;
 	const char	*err = NULL;
 
 	assert( name ); // let's have some paranoia
 
-	getcwd( curpath, sizeof( curpath ) );
 	snprintf( fname, sizeof( fname ), "%s" ARCH_STRING DLL_EXT, name );
 
 	// TODO: use fs_searchpaths from files.c
-	pwdpath = Sys_Pwd();
 	basepath = Cvar_VariableString( "fs_basepath" );
 	homepath = Cvar_VariableString( "fs_homepath" );
 	gamedir = Cvar_VariableString( "fs_game" );
+	if ( !*gamedir ) {
+		gamedir = Cvar_VariableString( "fs_basegame" );
+	}
 
-	libHandle = try_dlopen( pwdpath, gamedir, fname );
+#ifdef DEBUG
+	if ( getcwd( currpath, sizeof( currpath ) ) )
+		libHandle = try_dlopen( currpath, gamedir, fname );
+	else
+#endif
+	libHandle = NULL;
 
 	if ( !libHandle && homepath && homepath[0] )
 		libHandle = try_dlopen( homepath, gamedir, fname );
@@ -881,12 +888,13 @@ void *Sys_LoadDll( const char *name, dllSyscall_t *entryPoint, dllSyscall_t syst
 		{
 			Com_Printf( "Sys_LoadDll(%s) failed dlcose:\n\"%s\"\n", name, err );
 		}
-
 		return NULL;
 	}
+
 	Com_Printf( "Sys_LoadDll(%s) found **vmMain** at %p\n", name, *entryPoint );
 	dllEntry( systemcalls );
 	Com_Printf( "Sys_LoadDll(%s) succeeded!\n", name );
+
 	return libHandle;
 }
 
