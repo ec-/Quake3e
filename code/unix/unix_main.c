@@ -832,7 +832,7 @@ void *Sys_LoadDll( const char *name, dllSyscall_t *entryPoint, dllSyscall_t syst
 	void		*libHandle;
 	dllEntry_t	dllEntry;
 #ifdef DEBUG
-	char		*currpath[MAX_OSPATH];
+	char		currpath[MAX_OSPATH];
 #endif
 	char		fname[MAX_OSPATH];
 	const char	*basepath;
