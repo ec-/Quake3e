@@ -210,8 +210,8 @@ stop recording a demo
 void CL_StopRecord_f( void ) {
 
 	if ( clc.recordfile != FS_INVALID_HANDLE ) {
-		char tempName[MAX_QPATH];
-		char finalName[MAX_QPATH];
+		char tempName[MAX_OSPATH];
+		char finalName[MAX_OSPATH];
 		int protocol;
 		int	len;
 
@@ -502,8 +502,8 @@ record <demoname>
 Begins recording a demo from the current position
 ====================
 */
-static char		demoName[MAX_QPATH];	// compiler bug workaround
 void CL_Record_f( void ) {
+	char		demoName[MAX_OSPATH];
 	char		name[MAX_OSPATH];
 	char		demoExt[16];
 	const char	*ext;
@@ -581,6 +581,8 @@ void CL_Record_f( void ) {
 	}
 
 	clc.demorecording = qtrue;
+
+	Com_TruncateLongString( clc.recordNameShort, clc.recordName );
 
 	if ( Cvar_VariableIntegerValue( "ui_recordSPDemo" ) ) {
 	  clc.spDemoRecording = qtrue;

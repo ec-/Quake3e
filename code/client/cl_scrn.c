@@ -357,7 +357,7 @@ SCR_DrawDemoRecording
 =================
 */
 void SCR_DrawDemoRecording( void ) {
-	char	string[1024];
+	char	string[sizeof(clc.recordNameShort)+32];
 	int		pos;
 
 	if ( !clc.demorecording ) {
@@ -368,7 +368,7 @@ void SCR_DrawDemoRecording( void ) {
 	}
 
 	pos = FS_FTell( clc.recordfile );
-	sprintf( string, "RECORDING %s: %ik", clc.recordName, pos / 1024 );
+	sprintf( string, "RECORDING %s: %ik", clc.recordNameShort, pos / 1024 );
 
 	SCR_DrawStringExt( 320 - strlen( string ) * 4, 20, 8, string, g_color_table[ ColorIndex( COLOR_WHITE ) ], qtrue, qfalse );
 }

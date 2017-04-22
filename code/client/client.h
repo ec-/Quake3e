@@ -216,8 +216,9 @@ typedef struct {
 #endif /* USE_CURL */
 
 	// demo information
-	char		demoName[MAX_QPATH];
-	char		recordName[MAX_QPATH]; // without extension
+	char		demoName[MAX_OSPATH];
+	char		recordName[MAX_OSPATH]; // without extension
+	char		recordNameShort[TRUNCATE_LENGTH]; // for recording message
 	qboolean	dm68compat;
 	qboolean	spDemoRecording;
 	qboolean	demorecording;

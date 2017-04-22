@@ -546,7 +546,7 @@ Qpath may have either forward or backwards slashes
 ===================
 */
 char *FS_BuildOSPath( const char *base, const char *game, const char *qpath ) {
-	char	temp[MAX_OSPATH+MAX_QPATH+1];
+	char	temp[MAX_OSPATH*2+1];
 	static char ospath[2][sizeof(temp)+MAX_OSPATH];
 	static int toggle;
 	
