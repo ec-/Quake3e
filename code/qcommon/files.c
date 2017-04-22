@@ -2082,6 +2082,7 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 		if (err != UNZ_OK) {
 			break;
 		}
+		filename_inzip[sizeof(filename_inzip)-1] = '\0';
 		len += strlen(filename_inzip) + 1;
 		unzGoToNextFile(uf);
 	}
@@ -2122,6 +2123,7 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 		if (err != UNZ_OK) {
 			break;
 		}
+		filename_inzip[sizeof(filename_inzip)-1] = '\0';
 		if (file_info.uncompressed_size > 0) {
 			fs_headerLongs[fs_numHeaderLongs++] = LittleLong(file_info.crc);
 			buildBuffer[i].size = file_info.uncompressed_size;
