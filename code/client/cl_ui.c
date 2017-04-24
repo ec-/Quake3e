@@ -48,23 +48,15 @@ LAN_LoadCachedServers
 ====================
 */
 void LAN_LoadCachedServers( void ) {
-	char path[ MAX_OSPATH ];
-	const char *fs_game;
 	fileHandle_t fileIn;
 	int size, file_size;
 
 	cls.numglobalservers = cls.numfavoriteservers = 0;
 	cls.numGlobalServerAddresses = 0;
 
-	fs_game = Cvar_VariableString( "fs_game" );
-	if ( !*fs_game )
-		fs_game = BASEGAME;
-
-	Com_sprintf( path, sizeof( path ), "%s%cservercache.dat", fs_game, PATH_SEP );
-
-	file_size = FS_SV_FOpenFileRead( path, &fileIn );
+	file_size = FS_Home_FOpenFileRead( "servercache.dat", &fileIn );
 	if ( file_size < (3*sizeof(int)) ) {
-		if ( file_size >= 0 ) {
+		if ( fileIn != FS_INVALID_HANDLE ) {
 			FS_FCloseFile( fileIn );
 		}
 		return;
@@ -93,18 +85,10 @@ LAN_SaveServersToCache
 */
 void LAN_SaveServersToCache( void ) {
 	
-	char path[ MAX_OSPATH ];
-	const char *fs_game;
 	fileHandle_t fileOut;
 	int size;
 
-	fs_game = Cvar_VariableString( "fs_game" );
-	if ( !*fs_game )
-		fs_game = BASEGAME;
-
-	Com_sprintf( path, sizeof( path ), "%s%cservercache.dat", fs_game, PATH_SEP );
-
-	fileOut = FS_SV_FOpenFileWrite( path );
+	fileOut = FS_FOpenFileWrite( "servercache.dat" );
 	if ( fileOut == FS_INVALID_HANDLE )
 		return;
 

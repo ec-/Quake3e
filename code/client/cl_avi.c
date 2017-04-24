@@ -604,73 +604,81 @@ Closes the AVI file and writes an index chunk
 */
 qboolean CL_CloseAVI( void )
 {
-  int indexRemainder;
-  int indexSize = afd.numIndices * 16;
-  const char *idxFileName = va( "%s" INDEX_FILE_EXTENSION, afd.fileName );
+	int indexRemainder;
+	int indexSize = afd.numIndices * 16;
+	const char *idxFileName;
 
-  // AVI file isn't open
-  if( !afd.fileOpen )
-    return qfalse;
+	// AVI file isn't open
+	if( !afd.fileOpen ) {
+		return qfalse;
+	}
 
-  CL_FlushCaptureBuffer();
+	idxFileName = va( "%s" INDEX_FILE_EXTENSION, afd.fileName );
 
-  afd.fileOpen = qfalse;
+	CL_FlushCaptureBuffer();
 
-  FS_Seek( afd.idxF, 4, FS_SEEK_SET );
-  bufIndex = 0;
-  WRITE_4BYTES( indexSize );
-  SafeFS_Write( buffer, bufIndex, afd.idxF );
-  FS_FCloseFile( afd.idxF );
-  afd.idxF = FS_INVALID_HANDLE;
+	afd.fileOpen = qfalse;
 
-  // Write index
+	FS_Seek( afd.idxF, 4, FS_SEEK_SET );
+	bufIndex = 0;
+	WRITE_4BYTES( indexSize );
+	SafeFS_Write( buffer, bufIndex, afd.idxF );
+	FS_FCloseFile( afd.idxF );
+	afd.idxF = FS_INVALID_HANDLE;
 
-  // Open the temp index file
-  if( ( indexSize = FS_FOpenFileRead( idxFileName,
-          &afd.idxF, qtrue ) ) <= 0 )
-  {
+	// Write index
+
+	// Open the temp index file
+	if( ( indexSize = FS_Home_FOpenFileRead( idxFileName, &afd.idxF ) ) <= 0 )
+	{
+		if ( afd.idxF != FS_INVALID_HANDLE ) 
+		{
+			FS_FCloseFile( afd.idxF );
+		}
 		FS_FCloseFile( afd.f );
 		return qfalse;
-  }
+	}
 
-  indexRemainder = indexSize;
+	indexRemainder = indexSize;
 
-  // Append index to end of avi file
-  while( indexRemainder > MAX_AVI_BUFFER )
-  {
-    FS_Read( buffer, MAX_AVI_BUFFER, afd.idxF );
-    SafeFS_Write( buffer, MAX_AVI_BUFFER, afd.f );
-    afd.fileSize += MAX_AVI_BUFFER;
-    indexRemainder -= MAX_AVI_BUFFER;
-  }
-  FS_Read( buffer, indexRemainder, afd.idxF );
-  SafeFS_Write( buffer, indexRemainder, afd.f );
-  afd.fileSize += indexRemainder;
-  FS_FCloseFile( afd.idxF );
+	// Append index to end of avi file
+	while( indexRemainder > MAX_AVI_BUFFER )
+	{
+		FS_Read( buffer, MAX_AVI_BUFFER, afd.idxF );
+		SafeFS_Write( buffer, MAX_AVI_BUFFER, afd.f );
+		afd.fileSize += MAX_AVI_BUFFER;
+		indexRemainder -= MAX_AVI_BUFFER;
+	}
 
-  // Remove temp index file
-  FS_HomeRemove( idxFileName );
+	FS_Read( buffer, indexRemainder, afd.idxF );
+	SafeFS_Write( buffer, indexRemainder, afd.f );
+	afd.fileSize += indexRemainder;
+	FS_FCloseFile( afd.idxF );
 
-  // Write the real header
-  FS_Seek( afd.f, 0, FS_SEEK_SET );
-  CL_WriteAVIHeader( );
+	// Remove temp index file
+	FS_HomeRemove( idxFileName );
 
-  bufIndex = 4;
-  WRITE_4BYTES( afd.fileSize - 8 ); // "RIFF" size
+	// Write the real header
+	FS_Seek( afd.f, 0, FS_SEEK_SET );
+	CL_WriteAVIHeader();
 
-  bufIndex = afd.moviOffset + 4;    // Skip "LIST"
-  WRITE_4BYTES( afd.moviSize );
+	bufIndex = 4;
+	WRITE_4BYTES( afd.fileSize - 8 ); // "RIFF" size
 
-  SafeFS_Write( buffer, bufIndex, afd.f );
+	bufIndex = afd.moviOffset + 4;    // Skip "LIST"
+	WRITE_4BYTES( afd.moviSize );
 
-  Z_Free( afd.cBuffer );
-  Z_Free( afd.eBuffer );
-  FS_FCloseFile( afd.f );
+	SafeFS_Write( buffer, bufIndex, afd.f );
 
-  Com_DPrintf( "Wrote %d:%d frames to %s\n", afd.numVideoFrames, afd.numAudioFrames, afd.fileName );
+	Z_Free( afd.cBuffer );
+	Z_Free( afd.eBuffer );
+	FS_FCloseFile( afd.f );
 
-  return qtrue;
+	Com_DPrintf( "Wrote %d:%d frames to %s\n", afd.numVideoFrames, afd.numAudioFrames, afd.fileName );
+
+	return qtrue;
 }
+
 
 /*
 ===============

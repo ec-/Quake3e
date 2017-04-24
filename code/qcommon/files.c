@@ -1571,6 +1571,56 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 
 
 /*
+===========
+FS_Home_FOpenFileRead
+===========
+*/
+int FS_Home_FOpenFileRead( const char *filename, fileHandle_t *file ) 
+{
+	char path[ MAX_OSPATH*3 + 1 ];
+	const char *fs_homepath;
+	fileHandleData_t *fd;
+	fileHandle_t f;	
+
+	if ( !fs_searchpaths ) {
+		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
+	}
+
+	// should never happen but for safe
+	if ( !file ) { 
+		return -1;
+	}
+
+	// allocate new file handle
+	f = FS_HandleForFile(); 
+	fd = &fsh[ f ];
+	fd->pakIndex = -1;
+	fs_lastPakIndex = -1;
+
+	fs_homepath = Cvar_VariableString( "fs_homepath" );
+
+	Com_sprintf( path, sizeof( path ), "%s%c%s%c%s", 
+		fs_homepath, PATH_SEP, fs_gamedir, PATH_SEP, filename );
+
+	if ( fs_debug->integer ) {
+		Com_Printf( "%s: %s\n", __func__, path );
+	}
+
+	fd->handleFiles.file.o = Sys_FOpen( path, "rb" );
+	if ( fd->handleFiles.file.o != NULL ) {
+		Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
+		fd->handleSync = qfalse;
+		fd->zipFile = qfalse;
+		*file = f;
+		return FS_FileLength( fd->handleFiles.file.o );
+	}
+
+	*file = FS_INVALID_HANDLE;
+	return -1;
+}
+
+
+/*
 =================
 FS_Read
 
@@ -1622,6 +1672,7 @@ int FS_Read( void *buffer, int len, fileHandle_t f ) {
 		return unzReadCurrentFile( fsh[f].handleFiles.file.z, buffer, len );
 	}
 }
+
 
 /*
 =================

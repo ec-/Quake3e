@@ -685,6 +685,8 @@ int		FS_FOpenFileRead( const char *qpath, fileHandle_t *file, qboolean uniqueFIL
 // It is generally safe to always set uniqueFILE to true, because the majority of
 // file IO goes through FS_ReadFile, which Does The Right Thing already.
 
+int FS_Home_FOpenFileRead( const char *filename, fileHandle_t *file );
+
 qboolean FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName );
 // returns qtrue if a file is in the PAK file, otherwise qfalse
 
@@ -819,6 +821,7 @@ void Field_CompleteCommand( char *cmd, qboolean doCommands, qboolean doCvars );
 void Con_SaveField( const field_t *field );
 void Con_HistoryGetPrev( field_t *field );
 void Con_HistoryGetNext( field_t *field );
+void Con_ResetHistory( void );
 
 /*
 ==============================================================

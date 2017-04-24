@@ -23,6 +23,18 @@ int         historyLine;     // the line being displayed from history buffer
 static void Con_LoadHistory( void );
 static void Con_SaveHistory( void );
 
+
+/*
+================
+Con_ResetHistory
+================
+*/
+void Con_ResetHistory( void ) 
+{
+	historyLoaded = qfalse;
+}
+
+
 /*
 ================
 Con_SaveField
@@ -111,7 +123,7 @@ static void Con_LoadHistory( void )
 		Field_Clear( &historyEditLines[i] );
 	}
 
-	consoleSaveBufferSize = FS_FOpenFileRead( CONSOLE_HISTORY_FILE, &f, qfalse );
+	consoleSaveBufferSize = FS_Home_FOpenFileRead( CONSOLE_HISTORY_FILE, &f );
 	if ( f == FS_INVALID_HANDLE )
 	{
 		Com_Printf( "Couldn't read %s.\n", CONSOLE_HISTORY_FILE );
@@ -210,7 +222,7 @@ static void Con_SaveHistory( void )
 	consoleSaveBufferSize = strlen( consoleSaveBuffer );
 
 	f = FS_FOpenFileWrite( CONSOLE_HISTORY_FILE );
-	if( !f )
+	if( f == FS_INVALID_HANDLE )
 	{
 		Com_Printf( "Couldn't write %s.\n", CONSOLE_HISTORY_FILE );
 		return;
