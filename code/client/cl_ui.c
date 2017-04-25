@@ -1213,7 +1213,7 @@ void CL_InitUI( void ) {
 #ifndef STANDALONE
 qboolean UI_usesUniqueCDKey( void ) {
 	if (uivm) {
-		return (VM_Call( uivm, UI_HASUNIQUECDKEY) == qtrue);
+		return (VM_Call( uivm, UI_HASUNIQUECDKEY) != 0);
 	} else {
 		return qfalse;
 	}

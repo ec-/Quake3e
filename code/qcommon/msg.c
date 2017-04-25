@@ -1113,8 +1113,8 @@ MSG_WriteDeltaPlayerstate
 =============
 */
 void MSG_WriteDeltaPlayerstate( msg_t *msg, const playerState_t *from, const playerState_t *to ) {
+	static const playerState_t dummy = { 0 };
 	int				i;
-	playerState_t	dummy;
 	int				statsbits;
 	int				persistantbits;
 	int				ammobits;
@@ -1125,9 +1125,8 @@ void MSG_WriteDeltaPlayerstate( msg_t *msg, const playerState_t *from, const pla
 	float			fullFloat;
 	int				trunc, lc;
 
-	if (!from) {
+	if ( !from ) {
 		from = &dummy;
-		Com_Memset (&dummy, 0, sizeof(dummy));
 	}
 
 	numFields = ARRAY_LEN( playerStateFields );

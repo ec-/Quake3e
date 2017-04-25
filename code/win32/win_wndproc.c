@@ -295,7 +295,6 @@ void Win_AddHotkey( void )
 		return;
 
 	modifiers = 0;
-	vk = 0;
 
 	if ( HotKey & HK_MOD_ALT )		modifiers |= MOD_ALT;
 	if ( HotKey & HK_MOD_CONTROL )	modifiers |= MOD_CONTROL;
@@ -505,7 +504,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		if ( fActive && fMinimized )
 			gw_minimized = qfalse;
 		else
-			gw_minimized = fMinimized;
+			gw_minimized = (fMinimized != FALSE);
 		break;
 	
 	case WM_SETFOCUS:

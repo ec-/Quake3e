@@ -146,7 +146,7 @@ void Cbuf_ExecuteText( cbufExec_t exec_when, const char *text )
 	switch (exec_when)
 	{
 	case EXEC_NOW:
-		if (text && strlen(text) > 0) {
+		if ( text && text[0] != '\0' ) {
 			Com_DPrintf(S_COLOR_YELLOW "EXEC_NOW %s\n", text);
 			Cmd_ExecuteString (text);
 		} else {
@@ -481,7 +481,7 @@ void Cmd_Args_Sanitize(void)
 		if(strlen(c) > MAX_CVAR_VALUE_STRING - 1)
 			c[MAX_CVAR_VALUE_STRING - 1] = '\0';
 		
-		while ( (c = strpbrk(c, "\n\r")) != '\0' ) {
+		while ( (c = strpbrk(c, "\n\r")) != NULL ) {
 			*c = ' ';
 			++c;
 		}

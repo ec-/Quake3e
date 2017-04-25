@@ -1578,7 +1578,6 @@ FS_Home_FOpenFileRead
 int FS_Home_FOpenFileRead( const char *filename, fileHandle_t *file ) 
 {
 	char path[ MAX_OSPATH*3 + 1 ];
-	const char *fs_homepath;
 	fileHandleData_t *fd;
 	fileHandle_t f;	
 
@@ -1597,10 +1596,8 @@ int FS_Home_FOpenFileRead( const char *filename, fileHandle_t *file )
 	fd->pakIndex = -1;
 	fs_lastPakIndex = -1;
 
-	fs_homepath = Cvar_VariableString( "fs_homepath" );
-
-	Com_sprintf( path, sizeof( path ), "%s%c%s%c%s", 
-		fs_homepath, PATH_SEP, fs_gamedir, PATH_SEP, filename );
+	Com_sprintf( path, sizeof( path ), "%s%c%s%c%s", fs_homepath->string,
+		PATH_SEP, fs_gamedir, PATH_SEP, filename );
 
 	if ( fs_debug->integer ) {
 		Com_Printf( "%s: %s\n", __func__, path );
@@ -2111,7 +2108,7 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 	unz_global_info gi;
 	char			filename_inzip[MAX_ZPATH];
 	unz_file_info	file_info;
-	int				i, len;
+	unsigned int	i, len;
 	long			hash;
 	int				fs_numHeaderLongs;
 	int				*fs_headerLongs;
@@ -4282,7 +4279,7 @@ void FS_VM_WriteFile( void *buffer, int len, fileHandle_t f, handleOwner_t owner
 }
 
 
-int FS_VM_SeekFile( fileHandle_t f, long offset, int origin, handleOwner_t owner ) {
+int FS_VM_SeekFile( fileHandle_t f, long offset, fsOrigin_t origin, handleOwner_t owner ) {
 	int r;
 
 	if ( f <= 0 || f >= MAX_FILE_HANDLES )

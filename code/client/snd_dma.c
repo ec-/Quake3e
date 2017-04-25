@@ -1491,7 +1491,7 @@ void S_Base_Shutdown( void ) {
 	if ( com_dedicated->integer )
 		SND_shutdown();
 
-	s_soundStarted = 0;
+	s_soundStarted = qfalse;
 
 	s_numSfx = 0; // clean up sound cache -EC-
 	

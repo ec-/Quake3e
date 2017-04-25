@@ -3253,7 +3253,7 @@ void Com_Frame( qboolean demoPlaying ) {
 
 	// if "viewlog" has been modified, show or hide the log console
 	if ( com_viewlog->modified ) {
-		if ( !com_dedicated->value ) {
+		if ( !com_dedicated->integer ) {
 			Sys_ShowConsole( com_viewlog->integer, qfalse );
 		}
 		com_viewlog->modified = qfalse;
@@ -3320,9 +3320,6 @@ void Com_Frame( qboolean demoPlaying ) {
 		}
 	} while( Com_TimeVal( minMsec ) );
 	
-	if ( lastTime > com_frameTime ) // possible on first frame?
-		lastTime = com_frameTime;
-
 	lastTime = com_frameTime;
 	com_frameTime = Com_EventLoop();
 	
@@ -3554,6 +3551,7 @@ static void PrintCvarMatches( const char *s ) {
 	}
 }
 
+
 /*
 ===============
 Field_FindFirstSeparator
@@ -3561,16 +3559,15 @@ Field_FindFirstSeparator
 */
 static char *Field_FindFirstSeparator( char *s )
 {
-	int i;
-
-	for( i = 0; i < strlen( s ); i++ )
-	{
-		if( s[ i ] == ';' )
-			return &s[ i ];
+	char c;
+	while ( (c = *s) != '\0' ) {
+		if ( c == ';' )
+			return s;
+		s++;
 	}
-
 	return NULL;
 }
+
 
 /*
 ===============
@@ -3708,7 +3705,7 @@ void Field_CompleteCommand( char *cmd, qboolean doCommands, qboolean doCvars )
 		matchCount = 0;
 		shortestMatch[ 0 ] = 0;
 
-		if( strlen( completionString ) == 0 )
+		if( completionString[0] == '\0' )
 			return;
 
 		if( doCommands )

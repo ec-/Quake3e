@@ -37,8 +37,9 @@ CL_Netchan_Encode
 */
 static void CL_Netchan_Encode( msg_t *msg ) {
 	int serverId, messageAcknowledge, reliableAcknowledge;
-	int i, index, srdc, sbit, soob;
+	int i, index, srdc, sbit;
 	byte key, *string;
+	qboolean soob;
 
 	if ( msg->cursize <= CL_ENCODE_START ) {
 		return;
@@ -50,8 +51,8 @@ static void CL_Netchan_Encode( msg_t *msg ) {
         
 	msg->bit = 0;
 	msg->readcount = 0;
-	msg->oob = 0;
-        
+	msg->oob = qfalse;
+
 	serverId = MSG_ReadLong(msg);
 	messageAcknowledge = MSG_ReadLong(msg);
 	reliableAcknowledge = MSG_ReadLong(msg);

@@ -714,7 +714,7 @@ void Key_ClearStates (void)
 			CL_KeyEvent( i, qfalse, 0 );
 
 		}
-		keys[i].down = 0;
+		keys[i].down = qfalse;
 		keys[i].repeats = 0;
 	}
 }

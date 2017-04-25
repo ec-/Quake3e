@@ -826,7 +826,7 @@ void CL_PlayDemo_f( void ) {
 		}
 		else
 		{
-			int len;
+			size_t len;
 
 			Com_Printf("Protocol %d not supported for demos\n", protocol );
 			len = ext_test - arg;
@@ -2255,8 +2255,8 @@ unsigned int hash_count = 0;
 unsigned int hash_func( netadr_t *addr ) {
 
 	byte 			*ip = NULL;
-	size_t			size;
-	int				i;
+	unsigned int	size;
+	unsigned int	i;
 	unsigned int	hash = 0;
 
 	switch ( addr->type ) {
@@ -2845,7 +2845,7 @@ void CL_Frame ( int msec ) {
 			Q_strncpyz( serverName, cls.servername, MAX_OSPATH );
 			// Replace the ":" in the address as it is not a valid
 			// file name character
-			p = strstr( serverName, ":" );
+			p = strchr( serverName, ':' );
 			if( p ) {
 				*p = '.';
 			}

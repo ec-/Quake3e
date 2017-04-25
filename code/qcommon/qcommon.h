@@ -776,7 +776,7 @@ void	FS_FilenameCompletion( const char *dir, const char *ext,
 int FS_VM_OpenFile( const char *qpath, fileHandle_t *f, fsMode_t mode, handleOwner_t owner );
 int FS_VM_ReadFile( void *buffer, int len, fileHandle_t f, handleOwner_t owner );
 void FS_VM_WriteFile( void *buffer, int len, fileHandle_t f, handleOwner_t owner );
-int FS_VM_SeekFile( fileHandle_t f, long offset, int origin, handleOwner_t owner );
+int FS_VM_SeekFile( fileHandle_t f, long offset, fsOrigin_t origin, handleOwner_t owner );
 void FS_VM_CloseFile( fileHandle_t f, handleOwner_t owner );
 void FS_VM_CloseFiles( handleOwner_t owner );
 

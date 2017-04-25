@@ -1404,7 +1404,7 @@ int CIN_PlayCinematic( const char *arg, int x, int y, int w, int h, int systemBi
 	char	name[MAX_OSPATH];
 	int		i;
 
-	if (strstr(arg, "/") == NULL && strstr(arg, "\\") == NULL) {
+	if (strchr(arg, '/') == NULL && strchr(arg, '\\') == NULL) {
 		Com_sprintf (name, sizeof(name), "video/%s", arg);
 	} else {
 		Com_sprintf (name, sizeof(name), "%s", arg);

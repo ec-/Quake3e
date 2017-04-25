@@ -1505,7 +1505,7 @@ void NET_Config( qboolean enableNetworking ) {
 	modified = NET_GetCvars();
 
 	if( !net_enabled->integer ) {
-		enableNetworking = 0;
+		enableNetworking = qfalse;
 	}
 
 	// if enable state is the same and no cvars were modified, we have nothing to do

@@ -411,7 +411,7 @@ int COM_Compress( char *data_p ) {
 					*out++ = '\n';
 					newline = qfalse;
 					whitespace = qfalse;
-				} if (whitespace) {
+				} else if (whitespace) {
 					*out++ = ' ';
 					whitespace = qfalse;
 				}
@@ -679,9 +679,9 @@ int Com_HexStrToInt( const char *str )
 	// check for hex code
 	if( str[ 0 ] == '0' && str[ 1 ] == 'x' )
 	{
-		int i, n = 0;
+		int i, n = 0, len = strlen( str );
 
-		for( i = 2; i < strlen( str ); i++ )
+		for( i = 2; i < len; i++ )
 		{
 			char digit;
 

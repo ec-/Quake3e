@@ -1012,7 +1012,7 @@ static void CM_PatchCollideFromGrid( cGrid_t *grid, patchCollide_t *pf ) {
 	int				gridPlanes[MAX_GRID_SIZE][MAX_GRID_SIZE][2];
 	facet_t			*facet;
 	int				borders[4];
-	int				noAdjust[4];
+	qboolean		noAdjust[4];
 
 	numPlanes = 0;
 	numFacets = 0;
