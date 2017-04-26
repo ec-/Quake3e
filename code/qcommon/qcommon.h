@@ -591,10 +591,7 @@ extern	int			cvar_modifiedFlags;
 // etc, variables have been modified since the last check.  The bit
 // can then be cleared to allow another change detection.
 
-
-void crc32_init( unsigned int *crc );
-void crc32_update( unsigned int *crc, unsigned char *buf, unsigned int len );
-void crc32_final( unsigned int *crc );
+unsigned int crc32_buffer( const byte *buf, unsigned int len );
 
 /*
 ==============================================================

@@ -720,9 +720,7 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 
 	vmPakIndex = fs_lastPakIndex;
 
-	crc32_init( &crc32sum );
-	crc32_update( &crc32sum, (void*)header, length );
-	crc32_final( &crc32sum );
+	crc32sum = crc32_buffer( (const byte*) header, length );
 
 	// will also swap header
 	errorMsg = VM_ValidateHeader( header, length );

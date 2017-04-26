@@ -3763,20 +3763,20 @@ void Com_RandomBytes( byte *string, int len )
 
 /* 
 ==================
-crc32 routines
+crc32_buffer
 ==================
 */
+unsigned int crc32_buffer( const byte *buf, unsigned int len ) {
+	static unsigned int crc32_table[256];
+	static qboolean crc32_inited = qfalse;
 
-static unsigned int crc32_table[256];
-static qboolean crc32_inited = qfalse;
+	unsigned int crc = 0xFFFFFFFFUL;
 
-void crc32_init( unsigned int *crc )
-{
-	unsigned int c;
-    int i, j;
-
-	if ( !crc32_inited ) 
+	if ( !crc32_inited )  
 	{
+		unsigned int c;
+		int i, j;
+
 		for (i = 0; i < 256; i++)
 		{
 			c = i;
@@ -3787,20 +3787,10 @@ void crc32_init( unsigned int *crc )
 		crc32_inited = qtrue;
 	}
 
-    *crc = 0xFFFFFFFFUL;
-}
-
-
-void crc32_update( unsigned int *crc, unsigned char *buf, unsigned int len )
-{
 	while ( len-- ) 
 	{
-		*crc = crc32_table[(*crc ^ *buf++) & 0xFF] ^ (*crc >> 8);
+		crc = crc32_table[(crc ^ *buf++) & 0xFF] ^ (crc >> 8);
 	}
-}
 
-
-void crc32_final( unsigned int *crc )
-{
-	*crc = *crc ^ 0xFFFFFFFFUL;
+	return crc ^ 0xFFFFFFFFUL;
 }
