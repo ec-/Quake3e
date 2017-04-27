@@ -374,57 +374,14 @@ int FS_LoadStack( void )
 return a hash value for the filename
 ================
 */
-#if 0
-static long FS_HashFileName( const char *fname, int hashSize ) 
-{
-	int		i;
-	long	hash;
-	char	letter;
-
-	hash = 0;
-	i = 0;
-	while (fname[i] != '\0') {
-		letter = tolower(fname[i]);
-		if (letter =='.') break;				// don't include extension
-		if (letter =='\\') letter = '/';		// damn path names
-		if (letter == PATH_SEP) letter = '/';		// damn path names
-		hash+=(long)(letter)*(i+119);
-		i++;
-	}
-	hash = (hash ^ (hash >> 10) ^ (hash >> 20));
-	hash &= (hashSize-1);
-	return hash;
-}
-#else 
-static long FS_HashFileName( const char *fname, int hashSize ) 
-{
-	char	letter;
-	long	hash;
-
-	hash = 0;
-
-	while ( (letter = *fname) != '\0' ) 
-	{
-		if ( letter >= 'A' && letter <= 'Z' )	
-			letter = letter - 'A' + 'a';
-		else if ( letter == '.' ) 
-			break;
-		else if ( letter == '\\' )
-			letter = '/';
-#if ( PATH_SEP != '\\' ) && ( PATH_SEP != '/' )
-		else if ( letter == PATH_SEP ) 
-			letter = '/';
-#endif
-		hash = hash * 101 + letter;
-		fname++;
-	}
-	hash = (hash ^ (hash >> 10) ^ (hash >> 20));
-
-	return hash & (hashSize-1);
-}
-#endif
+#define FS_HashFileName Com_GenerateHashValue
 
 
+/*
+=================
+FS_HandleForFile
+=================
+*/
 static fileHandle_t	FS_HandleForFile( void ) 
 {
 	int		i;

@@ -45,25 +45,8 @@ return a hash value for the filename
 #ifdef __GNUCC__
   #warning TODO: check if long is ok here 
 #endif
-static long generateHashValue( const char *fname, const int size ) {
-	int		i;
-	long	hash;
-	char	letter;
 
-	hash = 0;
-	i = 0;
-	while (fname[i] != '\0') {
-		letter = tolower(fname[i]);
-		if (letter =='.') break;				// don't include extension
-		if (letter =='\\') letter = '/';		// damn path names
-		if (letter == PATH_SEP) letter = '/';		// damn path names
-		hash+=(long)(letter)*(i+119);
-		i++;
-	}
-	hash = (hash ^ (hash >> 10) ^ (hash >> 20));
-	hash &= (size-1);
-	return hash;
-}
+#define generateHashValue Com_GenerateHashValue
 
 void R_RemapShader(const char *shaderName, const char *newShaderName, const char *timeOffset) {
 	char		strippedName[MAX_QPATH];
