@@ -867,6 +867,7 @@ GfxInfo_f
 */
 void GfxInfo_f( void ) 
 {
+	cvar_t *sys_cpustring = ri.Cvar_Get( "sys_cpustring", "", 0 );
 	const char *enablestrings[] =
 	{
 		"disabled",
@@ -904,7 +905,8 @@ void GfxInfo_f( void )
 	{
 		ri.Printf( PRINT_ALL, "GAMMA: software w/ %d overbright bits\n", tr.overbrightBits );
 	}
-	ri.Printf( PRINT_ALL, "CPU: %s\n", Cvar_VariableString( "sys_cpustring" ) );
+
+	ri.Printf( PRINT_ALL, "CPU: %s\n", sys_cpustring->string );
 
 	// rendering primitives
 	{
@@ -1037,18 +1039,18 @@ void R_Register( void )
 #ifdef USE_PMLIGHT
 	r_dlightMode = ri.Cvar_Get( "r_dlightMode", "1", CVAR_ARCHIVE );
 #ifdef USE_LEGACY_DLIGHTS
-	Cvar_CheckRange( r_dlightMode, 0, 2, qtrue );
+	ri.Cvar_CheckRange( r_dlightMode, 0, 2, qtrue );
 #else
-	Cvar_CheckRange( r_dlightMode, 1, 2, qtrue );
+	ri.Cvar_CheckRange( r_dlightMode, 1, 2, qtrue );
 #endif
 	r_dlightScale = ri.Cvar_Get( "r_dlightScale", "1.0", CVAR_ARCHIVE );
-	Cvar_CheckRange( r_dlightScale, 0.1f, 1.0f, qfalse );
+	ri.Cvar_CheckRange( r_dlightScale, 0.1f, 1.0f, qfalse );
 	r_dlightSpecPower = ri.Cvar_Get( "r_dlightSpecPower", "8.0", CVAR_ARCHIVE );
-	Cvar_CheckRange( r_dlightSpecPower, 1.0f, 32.0f, qfalse );
+	ri.Cvar_CheckRange( r_dlightSpecPower, 1.0f, 32.0f, qfalse );
 	r_dlightSpecColor = ri.Cvar_Get( "r_dlightSpecColor", "-0.25", CVAR_ARCHIVE );
-	Cvar_CheckRange( r_dlightSpecColor, -1.0f, 1.0f, qfalse );
+	ri.Cvar_CheckRange( r_dlightSpecColor, -1.0f, 1.0f, qfalse );
 	r_dlightIntensity = ri.Cvar_Get( "r_dlightIntensity", "1.0", CVAR_ARCHIVE );
-	Cvar_CheckRange( r_dlightIntensity, 0.1f, 1.0f, qfalse );
+	ri.Cvar_CheckRange( r_dlightIntensity, 0.1f, 1.0f, qfalse );
 #endif
 	r_dlightBacks = ri.Cvar_Get( "r_dlightBacks", "1", CVAR_ARCHIVE );
 	r_finish = ri.Cvar_Get ("r_finish", "0", CVAR_ARCHIVE);
