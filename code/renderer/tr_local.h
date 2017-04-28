@@ -206,12 +206,12 @@ typedef enum {
 } acff_t;
 
 typedef struct {
-	genFunc_t	func;
-
 	double base;		// -EC- set to double for frameloss fix
 	double amplitude;
 	double phase;
 	double frequency;
+
+	genFunc_t	func;
 } waveForm_t;
 
 #define TR_MAX_TEXMODS 4
@@ -304,6 +304,8 @@ typedef struct {
 	acff_t			adjustColorsForFog;
 
 	qboolean		isDetail;
+	qboolean		depthFragment;
+
 } shaderStage_t;
 
 struct shaderCommands_s;
@@ -1424,6 +1426,7 @@ qboolean QGL_InitARB( void );
 void QGL_DoneARB( void );
 qboolean ARB_UpdatePrograms( void );
 
+qboolean GL_ProgramAvailable( void );
 void GL_ProgramDisable( void );
 void GL_ProgramEnable( void );
 

@@ -969,6 +969,15 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 			// draw
 			//
 			R_DrawElements( input->numIndexes, input->indexes );
+
+			if ( pStage->depthFragment ) 
+			{
+				GL_State( pStage->stateBits | GLS_DEPTHMASK_TRUE );
+				GL_ProgramEnable();
+				R_DrawElements( input->numIndexes, input->indexes );
+				GL_ProgramDisable();
+				//GL_State( pStage->stateBits &= ~GLS_DEPTHMASK_TRUE );
+			}
 		}
 		// allow skipping out to show just lightmaps during development
 		if ( r_lightmap->integer && ( pStage->bundle[0].isLightmap || pStage->bundle[1].isLightmap ) )
@@ -1158,6 +1167,15 @@ void RB_StageIteratorVertexLitTexture( void )
 	GL_State( tess.xstages[0]->stateBits );
 	R_DrawElements( input->numIndexes, input->indexes );
 
+	if ( tess.xstages[0]->depthFragment ) 
+	{
+		GL_State( tess.xstages[0]->stateBits | GLS_DEPTHMASK_TRUE );
+		GL_ProgramEnable();
+		R_DrawElements( input->numIndexes, input->indexes );
+		GL_ProgramDisable();
+		//GL_State( tess.xstages[0]->stateBits &= ~GLS_DEPTHMASK_TRUE );
+	}
+
 	// 
 	// now do any dynamic lighting needed
 	//
@@ -1185,6 +1203,7 @@ void RB_StageIteratorVertexLitTexture( void )
 		qglUnlockArraysEXT();
 	}
 }
+
 
 //define	REPLACE_MODE
 
@@ -1259,6 +1278,15 @@ void RB_StageIteratorLightmappedMultitexture( void ) {
 	}
 
 	R_DrawElements( input->numIndexes, input->indexes );
+
+	if ( tess.xstages[0]->depthFragment ) 
+	{
+		GL_State( tess.xstages[0]->stateBits | GLS_DEPTHMASK_TRUE );
+		GL_ProgramEnable();
+		R_DrawElements( input->numIndexes, input->indexes );
+		GL_ProgramDisable();
+		//GL_State( tess.xstages[0]->stateBits &= ~GLS_DEPTHMASK_TRUE );
+	}
 
 	//
 	// disable texturing on TEXTURE1, then select TEXTURE0

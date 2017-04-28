@@ -13,12 +13,21 @@ enum {
 #endif
 
 enum {
-	PR_VERTEX,
-	PR_FRAGMENT,
-	PR_COUNT
+	DLIGHT_VERTEX,
+	DLIGHT_FRAGMENT,
+	SPRITE_VERTEX,
+	SPRITE_FRAGMENT,
+	PROGRAM_COUNT
 };
 
-GLuint programs[ PR_COUNT ];
+typedef enum {
+	Vertex,
+	Fragment
+} programType;
+
+static GLuint programs[ PROGRAM_COUNT ];
+static GLuint current_vp;
+static GLuint current_fp;
 
 static	qboolean programAvail	= qfalse;
 static	qboolean programEnabled	= qfalse;
@@ -30,6 +39,11 @@ void ( APIENTRY * qglBindProgramARB )( GLenum target, GLuint program );
 void ( APIENTRY * qglProgramLocalParameter4fARB )( GLenum target, GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w );
 void ( APIENTRY * qglProgramEnvParameter4fARB )( GLenum target, GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w );
 
+qboolean GL_ProgramAvailable( void ) 
+{
+	return programAvail;
+}
+
 
 void GL_ProgramDisable( void )
 {
@@ -38,23 +52,50 @@ void GL_ProgramDisable( void )
 		qglDisable( GL_VERTEX_PROGRAM_ARB );
 		qglDisable( GL_FRAGMENT_PROGRAM_ARB );
 		programEnabled = qfalse;
+		current_vp = 0;
+		current_fp = 0;
 	}
 }
 
 
-void GL_ProgramEnable( void )
+void GL_ProgramEnable( void ) 
 {
 	if ( !programAvail )
 		return;
 
-	if ( !programEnabled )
-	{
+	if ( current_vp != programs[ SPRITE_VERTEX ] ) {
 		qglEnable( GL_VERTEX_PROGRAM_ARB );
-		qglBindProgramARB( GL_VERTEX_PROGRAM_ARB, programs[ PR_VERTEX ] );
-		qglEnable( GL_FRAGMENT_PROGRAM_ARB );
-		qglBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, programs[ PR_FRAGMENT ] );
-		programEnabled = qtrue;
+		qglBindProgramARB( GL_VERTEX_PROGRAM_ARB, programs[ SPRITE_VERTEX ] );
+		current_vp = programs[ SPRITE_VERTEX ];
 	}
+
+	if ( current_fp != programs[ SPRITE_FRAGMENT ] ) {
+		qglEnable( GL_FRAGMENT_PROGRAM_ARB );
+		qglBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, programs[ SPRITE_FRAGMENT ] );
+		current_fp = programs[ SPRITE_FRAGMENT ];
+	}
+	programEnabled = qtrue;
+}
+
+
+static void GL_DlightProgramEnable( void )
+{
+	if ( !programAvail )
+		return;
+
+	if ( current_vp != programs[ DLIGHT_VERTEX ] ) {
+		qglEnable( GL_VERTEX_PROGRAM_ARB );
+		qglBindProgramARB( GL_VERTEX_PROGRAM_ARB, programs[ DLIGHT_VERTEX ] );
+		current_vp = programs[ DLIGHT_VERTEX ];
+	}
+
+	if ( current_fp != programs[ DLIGHT_FRAGMENT ] ) {
+		qglEnable( GL_FRAGMENT_PROGRAM_ARB );
+		qglBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, programs[ DLIGHT_FRAGMENT ] );
+		current_fp = programs[ DLIGHT_FRAGMENT ];
+	}
+
+	programEnabled = qtrue;
 }
 
 
@@ -147,7 +188,7 @@ void ARB_SetupLightParams( void )
 	if ( !programAvail )
 		return;
 
-	GL_ProgramEnable();
+	GL_DlightProgramEnable();
 
 	dl = tess.light;
 
@@ -220,7 +261,7 @@ extern cvar_t *r_dlightSpecColor;
 
 // welding these into the code to avoid having a pk3 dependency in the engine
 
-static const char *VP = {
+static const char *dlightVP = {
 	"!!ARBvp1.0 \n"
 	"OPTION ARB_position_invariant; \n"
 	"PARAM posEye = program.env[0]; \n"
@@ -237,7 +278,7 @@ static const char *VP = {
 
 
 // dynamically apply custom parameters
-static const char *ARB_BuildFragmentProgram( void  )
+static const char *ARB_BuildDlightFragmentProgram( void  )
 {
 	static char program[1024];
 	
@@ -314,11 +355,62 @@ static const char *ARB_BuildFragmentProgram( void  )
 	return program;
 }
 
+static const char *spriteVP = {
+	"!!ARBvp1.0 \n"
+	"OPTION ARB_position_invariant; \n"
+	"MOV result.texcoord[0], vertex.texcoord; \n"
+	"END \n" 
+};
+
+static const char *spriteFP = {
+	"!!ARBfp1.0 \n"
+	"OPTION ARB_precision_hint_fastest; \n"
+	"TEMP base; \n"
+	"TEX base, fragment.texcoord[0], texture[0], 2D; \n"
+	"TEMP test; \n"
+	"SUB test.a, base.a, 0.85; \n"
+	"KIL test.a; \n"
+	"MOV base, 0.0; \n"
+	"MOV result.color, base; \n"
+	"MOV result.depth, fragment.position.z; \n"
+	"END \n" 
+};
+
+
+static void ARB_DeletePrograms( void ) 
+{
+	qglDeleteProgramsARB( ARRAY_LEN( programs ), programs );
+	Com_Memset( programs, 0, sizeof( programs ) );
+}
+
+
+static qboolean ARB_CompileProgram( programType ptype, const char *text, GLuint program ) 
+{
+	GLint errorPos;
+	int kind;
+
+	if ( ptype == Fragment )
+		kind = GL_FRAGMENT_PROGRAM_ARB;
+	else
+		kind = GL_VERTEX_PROGRAM_ARB;
+
+	qglBindProgramARB( kind, program );
+	qglProgramStringARB( kind, GL_PROGRAM_FORMAT_ASCII_ARB, strlen( text ), text );
+	qglGetIntegerv( GL_PROGRAM_ERROR_POSITION_ARB, &errorPos );
+	if ( qglGetError() != GL_NO_ERROR || errorPos != -1 ) {
+		ri.Printf( PRINT_ALL, S_COLOR_YELLOW "%s Compile Error: %s", (ptype == Fragment) ? "FP" : "VP", 
+			qglGetString( GL_PROGRAM_ERROR_STRING_ARB ) );
+		ARB_DeletePrograms();
+		return qfalse;
+	}
+
+	return qtrue;
+}
+
 
 qboolean ARB_UpdatePrograms( void )
 {
-	const char *FP;
-	GLint errorPos;
+	const char *dlightFP;
 
 	if ( !qglGenProgramsARB )
 		return qfalse;
@@ -327,36 +419,25 @@ qboolean ARB_UpdatePrograms( void )
 	{
 		programEnabled = qtrue; // force disable
 		GL_ProgramDisable();
-		qglDeleteProgramsARB( PR_COUNT, programs );
-		Com_Memset( programs, 0, sizeof( programs ) );
+		ARB_DeletePrograms();
 		programAvail = qfalse;
 	}
 
-	qglGenProgramsARB( PR_COUNT, programs );
+	qglGenProgramsARB( ARRAY_LEN( programs ), programs );
 
-	qglBindProgramARB( GL_VERTEX_PROGRAM_ARB, programs[ PR_VERTEX ] );
-	qglProgramStringARB( GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, strlen( VP ), VP );
-	qglGetIntegerv( GL_PROGRAM_ERROR_POSITION_ARB, &errorPos );
-
-	if ( qglGetError() != GL_NO_ERROR || errorPos != -1 ) {
-		ri.Printf( PRINT_ALL, S_COLOR_YELLOW "VP Compile Error: %s", qglGetString( GL_PROGRAM_ERROR_STRING_ARB ) );
-		qglDeleteProgramsARB( PR_COUNT, programs );
-		Com_Memset( programs, 0, sizeof( programs ) );
+	if ( !ARB_CompileProgram( Vertex, dlightVP, programs[ DLIGHT_VERTEX ] ) )
 		return qfalse;
-	}
 
-	FP = ARB_BuildFragmentProgram();
+	dlightFP = ARB_BuildDlightFragmentProgram();
 
-	qglBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, programs[ PR_FRAGMENT ] );
-	qglProgramStringARB( GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, strlen( FP ), FP );
-	qglGetIntegerv( GL_PROGRAM_ERROR_POSITION_ARB, &errorPos );
-
-	if ( qglGetError() != GL_NO_ERROR || errorPos != -1 ) {
-		ri.Printf( PRINT_ALL, S_COLOR_YELLOW "FP Compile Error: %s", qglGetString( GL_PROGRAM_ERROR_STRING_ARB ) );
-		qglDeleteProgramsARB( PR_COUNT, programs );
-		Com_Memset( programs, 0, sizeof( programs ) );
+	if ( !ARB_CompileProgram( Fragment, dlightFP, programs[ DLIGHT_FRAGMENT ] ) )
 		return qfalse;
-	}
+
+	if ( !ARB_CompileProgram( Vertex, spriteVP, programs[ SPRITE_VERTEX ] ) )
+		return qfalse;
+
+	if ( !ARB_CompileProgram( Fragment, spriteFP, programs[ SPRITE_FRAGMENT ] ) )
+		return qfalse;
 
 	programAvail = qtrue;
 
@@ -424,8 +505,7 @@ void QGL_DoneARB( void )
 	{
 		programEnabled = qtrue; // force disable
 		GL_ProgramDisable();
-		qglDeleteProgramsARB( PR_COUNT, programs );
-		Com_Memset( programs, 0, sizeof( programs ) );
+		ARB_DeletePrograms();
 	}
 	programAvail = qfalse;
 
