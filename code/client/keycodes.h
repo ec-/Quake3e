@@ -259,6 +259,7 @@ typedef enum {
 	K_MENU,
 	K_EURO,
 	K_UNDO,
+	K_BACKSLASH,
 
 	// Pseudo-key that brings the console down
 	K_CONSOLE,

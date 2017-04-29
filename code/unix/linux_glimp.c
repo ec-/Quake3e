@@ -178,25 +178,27 @@ static char *XLateKey( XKeyEvent *ev, int *key )
 
   XLookupRet = XLookupString(ev, (char*)buf, sizeof(buf), &keysym, 0);
 #ifdef KBD_DBG
-  ri.Printf(PRINT_ALL, "XLookupString ret: %d buf: %s keysym: %x\n", XLookupRet, buf, keysym);
+  ri.Printf(PRINT_ALL, "XLookupString ret: %d buf: %s keysym: %x\n", XLookupRet, buf, (int)keysym);
 #endif
 
   if (!in_shiftedKeys->integer) {
     // also get a buffer without modifiers held
     ev->state = 0;
-    XLookupRet = XLookupString(ev, (char*)bufnomod, sizeof bufnomod, &keysym, 0);
+    XLookupRet = XLookupString(ev, (char*)bufnomod, sizeof(bufnomod), &keysym, 0);
 #ifdef KBD_DBG
-  ri.Printf(PRINT_ALL, "XLookupString (minus modifiers) ret: %d buf: %s keysym: %x\n", XLookupRet, buf, keysym);
+    ri.Printf(PRINT_ALL, "XLookupString (minus modifiers) ret: %d buf: %s keysym: %x\n", XLookupRet, buf, (int)keysym);
 #endif
+  } else {
+    bufnomod[0] = '\0';
   }
 
   switch (keysym)
   {
   case XK_grave:
   case XK_twosuperior:
-				*key = K_CONSOLE;
-                buf[0] = '\0';
-                return (char*)buf;
+    *key = K_CONSOLE;
+    buf[0] = '\0';
+    return (char*)buf;
 
   case XK_KP_Page_Up:
   case XK_KP_9:  *key = K_KP_PGUP; break;
@@ -223,11 +225,21 @@ static char *XLateKey( XKeyEvent *ev, int *key )
   case XK_Right:  *key = K_RIGHTARROW;    break;
 
   case XK_KP_Down:
-  case XK_KP_2:    *key = K_KP_DOWNARROW; break;
+  case XK_KP_2:  if ( Key_GetCatcher() && (buf[0] || bufnomod[0]) )
+                   *key = 0;
+                 else
+                   *key = K_KP_DOWNARROW;
+                 break;
+
   case XK_Down:  *key = K_DOWNARROW; break;
 
   case XK_KP_Up:
-  case XK_KP_8:    *key = K_KP_UPARROW; break;
+  case XK_KP_8:  if ( Key_GetCatcher() && (buf[0] || bufnomod[0]) )
+                   *key = 0;
+                 else
+                   *key = K_KP_UPARROW;
+                 break;
+
   case XK_Up:    *key = K_UPARROW;   break;
 
   case XK_Escape: *key = K_ESCAPE;    break;
@@ -323,9 +335,10 @@ static char *XLateKey( XKeyEvent *ev, int *key )
   case XK_Num_Lock: *key = K_KP_NUMLOCK; break;
   case XK_Caps_Lock: *key = K_CAPSLOCK; break;
   case XK_Scroll_Lock: *key = K_SCROLLOCK; break;
+  case XK_backslash: *key = K_BACKSLASH; break;
 
   default:
-	//ri.Printf( PRINT_ALL, "unknown keysym: %08X\n", keysym );
+    //ri.Printf( PRINT_ALL, "unknown keysym: %08X\n", keysym );
     if (XLookupRet == 0)
     {
       if (com_developer->value)

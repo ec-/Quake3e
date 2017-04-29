@@ -165,14 +165,14 @@ static void VID_AppActivate( BOOL fActive )
 
 static const int s_scantokey[ 128 ] = 
 { 
-//  0        1       2       3       4       5       6       7 
-//  8        9       A       B       C       D       E       F 
+//	0        1       2       3       4       5       6       7 
+//	8        9       A       B       C       D       E       F 
 	0  , K_ESCAPE,  '1',    '2',    '3',    '4',    '5',    '6', 
-	'7',    '8',    '9',    '0',    '-',    '=',K_BACKSPACE, K_TAB, // 0 
+	'7',    '8',    '9',    '0',    '-',    '=',K_BACKSPACE,K_TAB,  // 0 
 	'q',    'w',    'e',    'r',    't',    'y',    'u',    'i', 
 	'o',    'p',    '[',    ']',  K_ENTER, K_CTRL,	'a',	's',	// 1 
 	'd',    'f',    'g',    'h',    'j',    'k',    'l',    ';', 
-	'\'',	'`',  K_SHIFT,  '\\',   'z',    'x',    'c',    'v',	// 2 
+	'\'',K_CONSOLE,K_SHIFT,K_BACKSLASH,'z', 'x',    'c',    'v',	// 2 
 	'b',    'n',    'm',    ',',    '.',    '/',  K_SHIFT,  '*', 
 	K_ALT,  ' ',K_CAPSLOCK, K_F1,   K_F2,   K_F3,   K_F4,  K_F5,    // 3 
 	K_F6, K_F7,  K_F8,   K_F9,  K_F10, K_PAUSE, K_SCROLLOCK, K_HOME, 
@@ -193,16 +193,13 @@ MapKey
 Map from windows to quake keynums
 ==================
 */
-static int MapKey( int key )
+static int MapKey( int nVirtKey, int key )
 {
 	int result;
 	int modified;
 	qboolean is_extended;
 
 	modified = ( key >> 16 ) & 255;
-
-	//Com_Printf( "key: 0x%08x modified:%i extended:%i scan:%i\n", 
-	//	key, modified, key & ( 1 << 24 )?1:0, s_scantokey[modified] );
 
 	if ( modified > 127 )
 		return 0;
@@ -218,6 +215,9 @@ static int MapKey( int key )
 
 	result = s_scantokey[modified];
 
+	//Com_Printf( "key: 0x%08x modified:%i extended:%i result:%i(%02x) vk=%i\n", \
+		key, modified, is_extended, result, result, nVirtKey );
+
 	if ( !is_extended )
 	{
 		switch ( result )
@@ -225,7 +225,13 @@ static int MapKey( int key )
 		case K_HOME:
 			return K_KP_HOME;
 		case K_UPARROW:
+			if ( Key_GetCatcher() && nVirtKey == VK_NUMPAD8 )
+				return 0;
 			return K_KP_UPARROW;
+		case K_DOWNARROW:
+			if ( Key_GetCatcher() && nVirtKey == VK_NUMPAD2 )
+				return 0;
+			return K_KP_DOWNARROW;
 		case K_PGUP:
 			return K_KP_PGUP;
 		case K_LEFTARROW:
@@ -234,16 +240,12 @@ static int MapKey( int key )
 			return K_KP_RIGHTARROW;
 		case K_END:
 			return K_KP_END;
-		case K_DOWNARROW:
-			return K_KP_DOWNARROW;
 		case K_PGDN:
 			return K_KP_PGDN;
 		case K_INS:
 			return K_KP_INS;
 		case K_DEL:
 			return K_KP_DEL;
-		case '`':
-			return K_CONSOLE;
 		default:
 			return result;
 		}
@@ -254,14 +256,14 @@ static int MapKey( int key )
 		{
 		case K_PAUSE:
 			return K_KP_NUMLOCK;
-		case 0x0D:
+		case K_ENTER:
 			return K_KP_ENTER;
-		case 0x2F:
+		case '/':
 			return K_KP_SLASH;
 		case 0xAF:
 			return K_KP_PLUS;
-		case '`':
-			return K_CONSOLE;
+		case '*':
+			return K_KP_STAR;
 		}
 		return result;
 	}
@@ -652,14 +654,14 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		}
 		// fall through
 	case WM_KEYDOWN:
-		//Com_Printf( "^2k+^7 %08x\n", lParam );
-		Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, MapKey( lParam ), qtrue, 0, NULL );
+		//Com_Printf( "^2k+^7 wParam:%08x lParam:%08x\n", wParam, lParam );
+		Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, MapKey( wParam, lParam ), qtrue, 0, NULL );
 		break;
 
 	case WM_SYSKEYUP:
 	case WM_KEYUP:
-		//Com_Printf( "^5k-^7 %08x\n", lParam );
-		Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, MapKey( lParam ), qfalse, 0, NULL );
+		//Com_Printf( "^5k-^7 wParam:%08x lParam:%08x\n", wParam, lParam );
+		Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, MapKey( wParam, lParam ), qfalse, 0, NULL );
 		break;
 
 	case WM_CHAR:

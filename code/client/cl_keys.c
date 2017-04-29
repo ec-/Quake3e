@@ -202,7 +202,6 @@ void Field_KeyDownEvent( field_t *edit, int key ) {
 		return;
 	}
 
-	key = tolower( key );
 	len = strlen( edit->buffer );
 
 	switch ( key ) {

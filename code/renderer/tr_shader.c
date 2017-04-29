@@ -2977,7 +2977,7 @@ void	R_ShaderList_f (void) {
 
 #define	MAX_SHADER_FILES	4096
 
-static int loadShaderBuffers( const char **shaderFiles, const int numShaderFiles, char *buffers[ MAX_SHADER_FILES ] )
+static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char *buffers[ MAX_SHADER_FILES ] )
 {
 	char filename[MAX_QPATH+8];
 	char shaderName[MAX_QPATH];
@@ -2985,7 +2985,7 @@ static int loadShaderBuffers( const char **shaderFiles, const int numShaderFiles
 	long summand, sum = 0;
 	int shaderLine;
 	int i;
-	
+
 	// load and parse shader files
 	for ( i = 0; i < numShaderFiles; i++ )
 	{
@@ -3033,9 +3033,9 @@ static int loadShaderBuffers( const char **shaderFiles, const int numShaderFiles
 				break;
 			}
 		}
-		
+
 		if ( buffers[ i ] )
-			sum += summand;		
+			sum += summand;
 	}
 
 	return sum;

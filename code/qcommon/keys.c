@@ -154,6 +154,7 @@ keyname_t keynames[] =
 	{"KP_NUMLOCK",		K_KP_NUMLOCK },
 	{"KP_STAR",			K_KP_STAR },
 	{"KP_EQUALS",		K_KP_EQUALS },
+	{"BACKSLASH",		K_BACKSLASH },
 
 	{"PAUSE", K_PAUSE},
 	

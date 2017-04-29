@@ -176,14 +176,16 @@ static const byte q_locase[ 256 ] =
 	0xf8,0xf9,0xfa,0xfb,0xfc,0xfd,0xfe,0xff
 };
 
-long Com_GenerateHashValue( const byte *fname, const int size ) 
+long Com_GenerateHashValue( const char *fname, const int size ) 
 {
+	const byte *s;
 	long	hash;
 	int		c;
 
+	s = (byte*)fname;
 	hash = 0;
 	
-	while ( (c = q_locase[*fname++]) != '\0' ) {
+	while ( (c = q_locase[*s++]) != '\0' ) {
 		hash = hash * 101 + c;
 	}
 	
