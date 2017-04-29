@@ -3287,7 +3287,7 @@ void CL_Init( void ) {
 	cl_pitchspeed = Cvar_Get ("cl_pitchspeed", "140", CVAR_ARCHIVE);
 	cl_anglespeedkey = Cvar_Get ("cl_anglespeedkey", "1.5", 0);
 
-	cl_maxpackets = Cvar_Get ("cl_maxpackets", "30", CVAR_ARCHIVE );
+	cl_maxpackets = Cvar_Get ("cl_maxpackets", "60", CVAR_ARCHIVE );
 	Cvar_CheckRange( cl_maxpackets, 15, 125, qtrue );
 	cl_packetdup = Cvar_Get ("cl_packetdup", "1", CVAR_ARCHIVE );
 
@@ -3353,15 +3353,15 @@ void CL_Init( void ) {
 	// userinfo
 	Cvar_Get ("name", "UnnamedPlayer", CVAR_USERINFO | CVAR_ARCHIVE );
 	Cvar_Get ("rate", "25000", CVAR_USERINFO | CVAR_ARCHIVE );
-	Cvar_Get ("snaps", "20", CVAR_USERINFO | CVAR_ARCHIVE );
+	Cvar_Get ("snaps", "40", CVAR_USERINFO | CVAR_ARCHIVE );
 	Cvar_Get ("model", "sarge", CVAR_USERINFO | CVAR_ARCHIVE );
 	Cvar_Get ("headmodel", "sarge", CVAR_USERINFO | CVAR_ARCHIVE );
 //	Cvar_Get ("team_model", "james", CVAR_USERINFO | CVAR_ARCHIVE );
 //	Cvar_Get ("team_headmodel", "*james", CVAR_USERINFO | CVAR_ARCHIVE );
 //	Cvar_Get ("g_redTeam", "Stroggs", CVAR_SERVERINFO | CVAR_ARCHIVE);
 //	Cvar_Get ("g_blueTeam", "Pagans", CVAR_SERVERINFO | CVAR_ARCHIVE);
-//	Cvar_Get ("color1",  "4", CVAR_USERINFO | CVAR_ARCHIVE );
-//	Cvar_Get ("color2", "5", CVAR_USERINFO | CVAR_ARCHIVE );
+	Cvar_Get ("color1",  "4", CVAR_USERINFO | CVAR_ARCHIVE );
+	Cvar_Get ("color2", "5", CVAR_USERINFO | CVAR_ARCHIVE );
 //	Cvar_Get ("handicap", "100", CVAR_USERINFO | CVAR_ARCHIVE );
 //	Cvar_Get ("teamtask", "0", CVAR_USERINFO );
 	Cvar_Get ("sex", "male", CVAR_USERINFO | CVAR_ARCHIVE );
