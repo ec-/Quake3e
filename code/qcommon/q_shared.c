@@ -510,6 +510,7 @@ int COM_Compress( char *data_p ) {
 	return out - data_p;
 }
 
+
 char *COM_ParseExt( char **data_p, qboolean allowLineBreaks )
 {
 	int c = 0, len;
@@ -672,7 +673,7 @@ qboolean SkipBracedSection( char **program, int depth ) {
 SkipRestOfLine
 =================
 */
-void SkipRestOfLine ( char **data ) {
+void SkipRestOfLine( char **data ) {
 	char	*p;
 	int		c;
 
@@ -681,7 +682,8 @@ void SkipRestOfLine ( char **data ) {
 	if ( !*p )
 		return;
 
-	while ( (c = *p++) != 0 ) {
+	while ( (c = *p) != '\0' ) {
+		p++;
 		if ( c == '\n' ) {
 			com_lines++;
 			break;

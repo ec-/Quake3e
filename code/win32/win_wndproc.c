@@ -215,8 +215,8 @@ static int MapKey( int nVirtKey, int key )
 
 	result = s_scantokey[modified];
 
-	//Com_Printf( "key: 0x%08x modified:%i extended:%i result:%i(%02x) vk=%i\n", \
-		key, modified, is_extended, result, result, nVirtKey );
+	//Com_Printf( "key: 0x%08x modified:%i extended:%i result:%i(%02x) vk=%i\n",
+	//	key, modified, is_extended, result, result, nVirtKey );
 
 	if ( !is_extended )
 	{

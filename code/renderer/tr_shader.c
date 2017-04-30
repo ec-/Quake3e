@@ -2985,12 +2985,14 @@ static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char
 	long summand, sum = 0;
 	int shaderLine;
 	int i;
+	char *shaderStart;
+	qboolean denyErrors;
 
 	// load and parse shader files
 	for ( i = 0; i < numShaderFiles; i++ )
 	{
 		Com_sprintf( filename, sizeof( filename ), "scripts/%s", shaderFiles[i] );
-		ri.Printf( PRINT_DEVELOPER, "...loading '%s'\n", filename );
+		//ri.Printf( PRINT_DEVELOPER, "...loading '%s'\n", filename );
 		summand = ri.FS_ReadFile( filename, (void **)&buffers[i] );
 
 		if ( !buffers[i] )
@@ -2998,6 +3000,9 @@ static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char
 
 		p = buffers[i];
 		COM_BeginParseSession( filename );
+		
+		shaderStart = NULL;
+		denyErrors = qfalse;
 
 		while ( 1 )
 		{
@@ -3012,16 +3017,24 @@ static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char
 			token = COM_ParseExt( &p, qtrue );
 			if ( token[0] != '{' || token[1] != '\0' )
 			{
-				ri.Printf(PRINT_WARNING, "WARNING: Ignoring shader file %s. Shader \"%s\" " \
+				ri.Printf( PRINT_DEVELOPER, "File %s: shader \"%s\" " \
 					"on line %d missing opening brace", filename, shaderName, shaderLine );
 				if ( token[0] )
+					ri.Printf( PRINT_DEVELOPER, " (found \"%s\" on line %d)\n", token, COM_GetCurrentParseLine() );
+				else
+					ri.Printf( PRINT_DEVELOPER, "\n" );
+
+				if ( denyErrors || !p )
 				{
-					ri.Printf( PRINT_WARNING, " (found \"%s\" on line %d)", token, COM_GetCurrentParseLine() );
+					ri.Printf( PRINT_WARNING, "Ignoring entire file '%s' due to error.\n", filename );
+					ri.FS_FreeFile( buffers[i] );
+					buffers[i] = NULL;
+					break;
 				}
-				ri.Printf( PRINT_WARNING, ".\n" );
-				ri.FS_FreeFile( buffers[i] );
-				buffers[i] = NULL;
-				break;
+
+				SkipRestOfLine( &p );
+				shaderStart = p;
+				continue;
 			}
 
 			if ( !SkipBracedSection( &p, 1 ) )
@@ -3032,10 +3045,19 @@ static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char
 				buffers[i] = NULL;
 				break;
 			}
+
+			denyErrors = qtrue;
 		}
 
-		if ( buffers[ i ] )
+		if ( buffers[ i ] ) {
+			if ( shaderStart ) {
+				summand -= (shaderStart - buffers[i]);
+				if ( summand >= 0 ) {
+					memmove( buffers[i], shaderStart, summand + 1 );
+				}
+			}
 			sum += summand;
+		}
 	}
 
 	return sum;
