@@ -700,17 +700,16 @@ void CL_ReadDemoMessage( void ) {
 	clc.lastPacketTime = cls.realtime;
 	buf.readcount = 0;
 
-	clc.demoEventMask = 0;
 	clc.demoCommandSequence = clc.serverCommandSequence;
 
 	CL_ParseServerMessage( &buf );
 
 	if ( clc.demorecording ) {
 		// track changes and write new message	
-		if ( clc.demoEventMask & EM_GAMESTATE ) {
+		if ( clc.eventMask & EM_GAMESTATE ) {
 			CL_WriteGamestate( qfalse );
 			// nothing should came after gamestate in current message
-		} else if ( clc.demoEventMask & (EM_SNAPSHOT|EM_COMMAND) ) {
+		} else if ( clc.eventMask & (EM_SNAPSHOT|EM_COMMAND) ) {
 			CL_WriteSnapshot();
 		}
 	}

@@ -243,7 +243,7 @@ typedef struct {
 	qboolean compat;
 
 	// simultaneous demo playback and recording
-	int		demoEventMask;
+	int		eventMask;
 	int		demoCommandSequence;
 	int		demoDeltaNum;
 	int		demoMessageSequence;

@@ -322,7 +322,7 @@ void CL_ParseSnapshot( msg_t *msg ) {
 
 	cl.newSnapshots = qtrue;
 
-	clc.demoEventMask |= EM_SNAPSHOT;
+	clc.eventMask |= EM_SNAPSHOT;
 }
 
 
@@ -519,7 +519,7 @@ void CL_ParseGamestate( msg_t *msg ) {
 		}
 	}
 
-	clc.demoEventMask |= EM_GAMESTATE;
+	clc.eventMask |= EM_GAMESTATE;
 
 	clc.clientNum = MSG_ReadLong(msg);
 	// read the checksum feed
@@ -596,7 +596,7 @@ CL_ParseDownload
 A download message has been received from the server
 =====================
 */
-void CL_ParseDownload ( msg_t *msg ) {
+void CL_ParseDownload( msg_t *msg ) {
 	int		size;
 	unsigned char data[MAX_MSGLEN];
 	uint16_t block;
@@ -605,6 +605,10 @@ void CL_ParseDownload ( msg_t *msg ) {
 		Com_Printf("Server sending download, but no download was requested\n");
 		CL_AddReliableCommand( "stopdl", qfalse );
 		return;
+	}
+
+	if ( clc.recordfile != FS_INVALID_HANDLE ) {
+		CL_StopRecord_f();
 	}
 
 	// read the data
@@ -739,7 +743,7 @@ void CL_ParseCommandString( msg_t *msg ) {
 		}
 	}
 
-	clc.demoEventMask |= EM_COMMAND;
+	clc.eventMask |= EM_COMMAND;
 }
 
 
@@ -757,7 +761,8 @@ void CL_ParseServerMessage( msg_t *msg ) {
 		Com_Printf ("------------------\n");
 	}
 
-	MSG_Bitstream(msg);
+	clc.eventMask = 0;
+	MSG_Bitstream( msg );
 
 	// get the reliable sequence acknowledge number
 	clc.reliableAcknowledge = MSG_ReadLong( msg );
@@ -807,6 +812,8 @@ void CL_ParseServerMessage( msg_t *msg ) {
 			CL_ParseSnapshot( msg );
 			break;
 		case svc_download:
+			if ( clc.demofile != FS_INVALID_HANDLE )
+				return;
 			CL_ParseDownload( msg );
 			break;
 		case svc_voipSpeex: // ioq3 extension
