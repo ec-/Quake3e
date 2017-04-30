@@ -172,7 +172,7 @@ static const int s_scantokey[ 128 ] =
 	'q',    'w',    'e',    'r',    't',    'y',    'u',    'i', 
 	'o',    'p',    '[',    ']',  K_ENTER, K_CTRL,	'a',	's',	// 1 
 	'd',    'f',    'g',    'h',    'j',    'k',    'l',    ';', 
-	'\'',K_CONSOLE,K_SHIFT,K_BACKSLASH,'z', 'x',    'c',    'v',	// 2 
+	'\'',K_CONSOLE,K_SHIFT, '\\',   'z',    'x',    'c',    'v',	// 2 
 	'b',    'n',    'm',    ',',    '.',    '/',  K_SHIFT,  '*', 
 	K_ALT,  ' ',K_CAPSLOCK, K_F1,   K_F2,   K_F3,   K_F4,  K_F5,    // 3 
 	K_F6, K_F7,  K_F8,   K_F9,  K_F10, K_PAUSE, K_SCROLLOCK, K_HOME, 
