@@ -335,7 +335,7 @@ static char *XLateKey( XKeyEvent *ev, int *key )
   case XK_Num_Lock: *key = K_KP_NUMLOCK; break;
   case XK_Caps_Lock: *key = K_CAPSLOCK; break;
   case XK_Scroll_Lock: *key = K_SCROLLOCK; break;
-  case XK_backslash: *key = K_BACKSLASH; break;
+  case XK_backslash: *key = '\\'; break;
 
   default:
     //ri.Printf( PRINT_ALL, "unknown keysym: %08X\n", keysym );
