@@ -863,6 +863,8 @@ void UpdateMonitorInfo( void )
 					R_SetColorMappings();
 				}
 		}
+	} else {
+		glw_state.displayName[0] = '\0';
 	}
 }
 
