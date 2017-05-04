@@ -90,9 +90,9 @@ typedef struct
 	qboolean	quitOnClose;
 	int			windowWidth, windowHeight;
 	
-	WNDPROC		SysInputLineWndProc;
-	WNDPROC		SysStatusWndProc;
-	WNDPROC		SysBufferWndProc;
+	LONG_PTR	SysInputLineWndProc;
+	LONG_PTR	SysStatusWndProc;
+	LONG_PTR	SysBufferWndProc;
 
 	qboolean	newline;
 
@@ -435,7 +435,7 @@ static LRESULT WINAPI BufferWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 		return 0;
 	}
 
-	return CallWindowProc( s_wcd.SysBufferWndProc, hWnd, uMsg, wParam, lParam );
+	return CallWindowProc( (WNDPROC) s_wcd.SysBufferWndProc, hWnd, uMsg, wParam, lParam );
 }
 
 
@@ -493,7 +493,7 @@ LRESULT WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 		break;
     }
 
-	return CallWindowProc( s_wcd.SysStatusWndProc, hWnd, uMsg, wParam, lParam );
+	return CallWindowProc( (WNDPROC)s_wcd.SysStatusWndProc, hWnd, uMsg, wParam, lParam );
 }
 
 
@@ -625,7 +625,7 @@ LRESULT WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 		return 0;
 	}
 
-	return CallWindowProc( s_wcd.SysInputLineWndProc, hWnd, uMsg, wParam, lParam );
+	return CallWindowProc( (WNDPROC)s_wcd.SysInputLineWndProc, hWnd, uMsg, wParam, lParam );
 }
 
 /*
@@ -789,9 +789,9 @@ void Sys_CreateConsole( char *title )
 	SendMessage( s_wcd.hwndBuffer, WM_SETFONT, ( WPARAM ) s_wcd.hfBufferFont, 0 );
 	SendMessage( s_wcd.hwndInputLine, WM_SETFONT, ( WPARAM ) s_wcd.hfBufferFont, 0 );
 
-	s_wcd.SysInputLineWndProc = ( WNDPROC ) SetWindowLongPtr( s_wcd.hwndInputLine, GWLP_WNDPROC, ( LONG_PTR ) InputLineWndProc );
-	s_wcd.SysStatusWndProc = ( WNDPROC ) SetWindowLongPtr( s_wcd.hwndStatusBar, GWLP_WNDPROC, ( LONG_PTR ) StatusWndProc );
-	s_wcd.SysBufferWndProc = ( WNDPROC ) SetWindowLongPtr( s_wcd.hwndBuffer, GWLP_WNDPROC, ( LONG_PTR ) BufferWndProc );
+	s_wcd.SysInputLineWndProc = SetWindowLongPtr( s_wcd.hwndInputLine, GWLP_WNDPROC, ( LONG_PTR ) InputLineWndProc );
+	s_wcd.SysStatusWndProc = SetWindowLongPtr( s_wcd.hwndStatusBar, GWLP_WNDPROC, ( LONG_PTR ) StatusWndProc );
+	s_wcd.SysBufferWndProc = SetWindowLongPtr( s_wcd.hwndBuffer, GWLP_WNDPROC, ( LONG_PTR ) BufferWndProc );
 
 	if ( title && *title ) {
 		SetWindowText( s_wcd.hWnd, AtoW( title ) );

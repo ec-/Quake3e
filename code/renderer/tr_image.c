@@ -1300,7 +1300,7 @@ void R_SetColorMappings( void ) {
 	shift = tr.overbrightBits;
 
 	for ( i = 0; i < 256; i++ ) {
-		if ( g == 1 ) {
+		if ( g == 1.0f ) {
 			inf = i;
 		} else {
 			inf = 255 * pow ( i/255.0f, 1.0f / g ) + 0.5f;
