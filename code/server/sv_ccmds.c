@@ -468,7 +468,7 @@ static void SV_Ban_f( void ) {
 
 	// otherwise send their ip to the authorize server
 	if ( svs.authorizeAddress.type != NA_BAD ) {
-		NET_OutOfBandPrint( NS_SERVER, svs.authorizeAddress,
+		NET_OutOfBandPrint( NS_SERVER, &svs.authorizeAddress,
 			"banUser %i.%i.%i.%i", cl->netchan.remoteAddress.ip[0], cl->netchan.remoteAddress.ip[1], 
 								   cl->netchan.remoteAddress.ip[2], cl->netchan.remoteAddress.ip[3] );
 		Com_Printf("%s was banned from coming back\n", cl->name);
@@ -522,7 +522,7 @@ static void SV_BanNum_f( void ) {
 
 	// otherwise send their ip to the authorize server
 	if ( svs.authorizeAddress.type != NA_BAD ) {
-		NET_OutOfBandPrint( NS_SERVER, svs.authorizeAddress,
+		NET_OutOfBandPrint( NS_SERVER, &svs.authorizeAddress,
 			"banUser %i.%i.%i.%i", cl->netchan.remoteAddress.ip[0], cl->netchan.remoteAddress.ip[1], 
 								   cl->netchan.remoteAddress.ip[2], cl->netchan.remoteAddress.ip[3] );
 		Com_Printf("%s was banned from coming back\n", cl->name);
@@ -648,7 +648,7 @@ static void SV_WriteBans(void)
 			curban = &serverBans[index];
 			
 			Com_sprintf(writebuf, sizeof(writebuf), "%d %s %d\n",
-				    curban->isexception, NET_AdrToString(curban->ip), curban->subnet);
+				    curban->isexception, NET_AdrToString(&curban->ip), curban->subnet);
 			FS_Write(writebuf, strlen(writebuf), writeto);
 		}
 
@@ -820,24 +820,24 @@ static void SV_AddBanToList(qboolean isexception)
 		
 		if(curban->subnet <= mask)
 		{
-			if((curban->isexception || !isexception) && NET_CompareBaseAdrMask(curban->ip, ip, curban->subnet))
+			if((curban->isexception || !isexception) && NET_CompareBaseAdrMask(&curban->ip, ip, &curban->subnet))
 			{
-				Q_strncpyz(addy2, NET_AdrToString(ip), sizeof(addy2));
+				Q_strncpyz(addy2, NET_AdrToString(&ip), sizeof(addy2));
 				
 				Com_Printf("Error: %s %s/%d supersedes %s %s/%d\n", curban->isexception ? "Exception" : "Ban",
-					   NET_AdrToString(curban->ip), curban->subnet,
+					   NET_AdrToString(&curban->ip), curban->subnet,
 					   isexception ? "exception" : "ban", addy2, mask);
 				return;
 			}
 		}
 		if(curban->subnet >= mask)
 		{
-			if(!curban->isexception && isexception && NET_CompareBaseAdrMask(curban->ip, ip, mask))
+			if(!curban->isexception && isexception && NET_CompareBaseAdrMask(&curban->ip, &ip, mask))
 			{
-				Q_strncpyz(addy2, NET_AdrToString(curban->ip), sizeof(addy2));
+				Q_strncpyz(addy2, NET_AdrToString(&curban->ip), sizeof(addy2));
 			
 				Com_Printf("Error: %s %s/%d supersedes already existing %s %s/%d\n", isexception ? "Exception" : "Ban",
-					   NET_AdrToString(ip), mask,
+					   NET_AdrToString(&ip), mask,
 					   curban->isexception ? "exception" : "ban", addy2, curban->subnet);
 				return;
 			}
@@ -850,7 +850,7 @@ static void SV_AddBanToList(qboolean isexception)
 	{
 		curban = &serverBans[index];
 		
-		if(curban->subnet > mask && (!curban->isexception || isexception) && NET_CompareBaseAdrMask(curban->ip, ip, mask))
+		if(curban->subnet > mask && (!curban->isexception || isexception) && NET_CompareBaseAdrMask(&curban->ip, &ip, mask))
 			SV_DelBanEntryFromList(index);
 		else
 			index++;
@@ -865,7 +865,7 @@ static void SV_AddBanToList(qboolean isexception)
 	SV_WriteBans();
 
 	Com_Printf("Added %s: %s/%d\n", isexception ? "ban exception" : "ban",
-		   NET_AdrToString(ip), mask);
+		   NET_AdrToString(&ip), mask);
 }
 
 /*
@@ -914,11 +914,11 @@ static void SV_DelBanFromList(qboolean isexception)
 			
 			if(curban->isexception == isexception		&&
 			   curban->subnet >= mask 			&&
-			   NET_CompareBaseAdrMask(curban->ip, ip, mask))
+			   NET_CompareBaseAdrMask(&curban->ip, &ip, mask))
 			{
 				Com_Printf("Deleting %s %s/%d\n",
 					   isexception ? "exception" : "ban",
-					   NET_AdrToString(curban->ip), curban->subnet);
+					   NET_AdrToString(&curban->ip), curban->subnet);
 					   
 				SV_DelBanEntryFromList(index);
 			}
@@ -946,7 +946,7 @@ static void SV_DelBanFromList(qboolean isexception)
 				{
 					Com_Printf("Deleting %s %s/%d\n",
 					   isexception ? "exception" : "ban",
-					   NET_AdrToString(serverBans[index].ip), serverBans[index].subnet);
+					   NET_AdrToString(&serverBans[index].ip), serverBans[index].subnet);
 
 					SV_DelBanEntryFromList(index);
 
@@ -988,7 +988,7 @@ static void SV_ListBans_f(void)
 			count++;
 
 			Com_Printf("Ban #%d: %s/%d\n", count,
-				    NET_AdrToString(ban->ip), ban->subnet);
+				    NET_AdrToString(&ban->ip), ban->subnet);
 		}
 	}
 	// List all exceptions
@@ -1000,7 +1000,7 @@ static void SV_ListBans_f(void)
 			count++;
 
 			Com_Printf("Except #%d: %s/%d\n", count,
-				    NET_AdrToString(ban->ip), ban->subnet);
+				    NET_AdrToString(&ban->ip), ban->subnet);
 		}
 	}
 }
@@ -1159,7 +1159,7 @@ static void SV_Status_f( void ) {
 
 
 		// TTimo adding a ^7 to reset the color
-		s = NET_AdrToString( cl->netchan.remoteAddress );
+		s = NET_AdrToString( &cl->netchan.remoteAddress );
 		Com_Printf ("^7%s", s);
 		l = 39 - strlen(s);
 		j = 0;

@@ -78,7 +78,7 @@ SV_ExpandNewlines
 Converts newlines to "\n" so a line prints nicer
 ===============
 */
-static char	*SV_ExpandNewlines( char *in ) {
+static char	*SV_ExpandNewlines( const char *in ) {
 	static	char	string[1024];
 	int		l;
 
@@ -92,7 +92,7 @@ static char	*SV_ExpandNewlines( char *in ) {
 		}
 		in++;
 	}
-	string[l] = 0;
+	string[l] = '\0';
 
 	return string;
 }
@@ -233,7 +233,7 @@ but not on every player enter or exit.
 ================
 */
 #define	HEARTBEAT_MSEC	300*1000
-void SV_MasterHeartbeat(const char *message)
+static void SV_MasterHeartbeat(const char *message)
 {
 	static netadr_t	adr[MAX_MASTER_SERVERS][2]; // [2] for v4 and v6 address for the same address string.
 	int			i;
@@ -277,9 +277,9 @@ void SV_MasterHeartbeat(const char *message)
 				}
 				
 				if(res)
-					Com_Printf( "%s resolved to %s\n", sv_master[i]->string, NET_AdrToStringwPort(adr[i][0]));
+					Com_Printf( "%s resolved to %s\n", sv_master[i]->string, NET_AdrToStringwPort( &adr[i][0] ) );
 				else
-					Com_Printf( "%s has no IPv4 address.\n", sv_master[i]->string);
+					Com_Printf( "%s has no IPv4 address.\n", sv_master[i]->string );
 			}
 			
 			if(netenabled & NET_ENABLEV6)
@@ -294,9 +294,9 @@ void SV_MasterHeartbeat(const char *message)
 				}
 				
 				if(res)
-					Com_Printf( "%s resolved to %s\n", sv_master[i]->string, NET_AdrToStringwPort(adr[i][1]));
+					Com_Printf( "%s resolved to %s\n", sv_master[i]->string, NET_AdrToStringwPort( &adr[i][1] ) );
 				else
-					Com_Printf( "%s has no IPv6 address.\n", sv_master[i]->string);
+					Com_Printf( "%s has no IPv6 address.\n", sv_master[i]->string );
 			}
 
 			if(adr[i][0].type == NA_BAD && adr[i][1].type == NA_BAD)
@@ -317,9 +317,9 @@ void SV_MasterHeartbeat(const char *message)
 		// ever incompatably changes
 
 		if(adr[i][0].type != NA_BAD)
-			NET_OutOfBandPrint( NS_SERVER, adr[i][0], "heartbeat %s\n", message);
+			NET_OutOfBandPrint( NS_SERVER, &adr[i][0], "heartbeat %s\n", message);
 		if(adr[i][1].type != NA_BAD)
-			NET_OutOfBandPrint( NS_SERVER, adr[i][1], "heartbeat %s\n", message);
+			NET_OutOfBandPrint( NS_SERVER, &adr[i][1], "heartbeat %s\n", message);
 	}
 }
 
@@ -366,15 +366,15 @@ leakyBucket_t outboundLeakyBucket;
 SVC_HashForAddress
 ================
 */
-static long SVC_HashForAddress( netadr_t address ) {
-	byte 		*ip = NULL;
+static long SVC_HashForAddress( const netadr_t *address ) {
+	const byte	*ip = NULL;
 	size_t	size = 0;
 	int			i;
 	long		hash = 0;
 
-	switch ( address.type ) {
-		case NA_IP:  ip = address.ip;  size = 4; break;
-		case NA_IP6: ip = address.ip6; size = 16; break;
+	switch ( address->type ) {
+		case NA_IP:  ip = address->ip;  size = 4; break;
+		case NA_IP6: ip = address->ip6; size = 16; break;
 		default: break;
 	}
 
@@ -395,22 +395,22 @@ SVC_BucketForAddress
 Find or allocate a bucket for an address
 ================
 */
-static leakyBucket_t *SVC_BucketForAddress( netadr_t address, int burst, int period ) {
+static leakyBucket_t *SVC_BucketForAddress( const netadr_t *address, int burst, int period ) {
 	leakyBucket_t	*bucket = NULL;
-	int						i;
-	long					hash = SVC_HashForAddress( address );
-	int						now = Sys_Milliseconds();
+	int				i;
+	long			hash = SVC_HashForAddress( address );
+	int				now = Sys_Milliseconds();
 
 	for ( bucket = bucketHashes[ hash ]; bucket; bucket = bucket->next ) {
 		switch ( bucket->type ) {
 			case NA_IP:
-				if ( memcmp( bucket->ipv._4, address.ip, 4 ) == 0 ) {
+				if ( memcmp( bucket->ipv._4, address->ip, 4 ) == 0 ) {
 					return bucket;
 				}
 				break;
 
 			case NA_IP6:
-				if ( memcmp( bucket->ipv._6, address.ip6, 16 ) == 0 ) {
+				if ( memcmp( bucket->ipv._6, address->ip6, 16 ) == 0 ) {
 					return bucket;
 				}
 				break;
@@ -443,10 +443,10 @@ static leakyBucket_t *SVC_BucketForAddress( netadr_t address, int burst, int per
 		}
 
 		if ( bucket->type == NA_BAD ) {
-			bucket->type = address.type;
-			switch ( address.type ) {
-				case NA_IP:  Com_Memcpy( bucket->ipv._4, address.ip, 4 );   break;
-				case NA_IP6: Com_Memcpy( bucket->ipv._6, address.ip6, 16 ); break;
+			bucket->type = address->type;
+			switch ( address->type ) {
+				case NA_IP:  Com_Memcpy( bucket->ipv._4, address->ip, 4 );   break;
+				case NA_IP6: Com_Memcpy( bucket->ipv._6, address->ip6, 16 ); break;
 				default: break;
 			}
 
@@ -470,6 +470,7 @@ static leakyBucket_t *SVC_BucketForAddress( netadr_t address, int burst, int per
 	// Couldn't allocate a bucket for this address
 	return NULL;
 }
+
 
 /*
 ================
@@ -501,6 +502,7 @@ qboolean SVC_RateLimit( leakyBucket_t *bucket, int burst, int period ) {
 	return qtrue;
 }
 
+
 /*
 ================
 SVC_RateLimitAddress
@@ -508,7 +510,7 @@ SVC_RateLimitAddress
 Rate limit for a particular address
 ================
 */
-qboolean SVC_RateLimitAddress( netadr_t from, int burst, int period ) {
+qboolean SVC_RateLimitAddress( const netadr_t *from, int burst, int period ) {
 	leakyBucket_t *bucket = SVC_BucketForAddress( from, burst, period );
 
 	return SVC_RateLimit( bucket, burst, period );
@@ -523,7 +525,7 @@ and all connected players.  Used for getting detailed information after
 the simple info query.
 ================
 */
-static void SVC_Status( netadr_t from ) {
+static void SVC_Status( const netadr_t *from ) {
 	char	player[1024];
 	char	status[MAX_MSGLEN];
 	int		i;
@@ -591,7 +593,7 @@ Responds with a short info message that should be enough to determine
 if a user is interested in a server to do a full status
 ================
 */
-void SVC_Info( netadr_t from ) {
+static void SVC_Info( const netadr_t *from ) {
 	int		i, count, humans;
 	const char	*gamedir;
 	char	infostring[MAX_INFO_STRING];
@@ -666,15 +668,18 @@ void SVC_Info( netadr_t from ) {
 	NET_OutOfBandPrint( NS_SERVER, from, "infoResponse\n%s", infostring );
 }
 
+
 /*
 ================
 SVC_FlushRedirect
 
 ================
 */
-static void SV_FlushRedirect( char *outputbuf ) {
-	NET_OutOfBandPrint( NS_SERVER, svs.redirectAddress, "print\n%s", outputbuf );
+static void SV_FlushRedirect( const char *outputbuf ) 
+{
+	NET_OutOfBandPrint( NS_SERVER, &svs.redirectAddress, "print\n%s", outputbuf );
 }
+
 
 /*
 ===============
@@ -685,7 +690,7 @@ Shift down the remaining args
 Redirect all printfs
 ===============
 */
-static void SVC_RemoteCommand( netadr_t from, msg_t *msg ) {
+static void SVC_RemoteCommand( const netadr_t *from, msg_t *msg ) {
 	qboolean	valid;
 	char		remaining[1024];
 	// TTimo - scaled down to accumulate, but not overflow anything network wise, print wise etc.
@@ -712,14 +717,14 @@ static void SVC_RemoteCommand( netadr_t from, msg_t *msg ) {
 		}
 
 		valid = qfalse;
-		Com_Printf ("Bad rcon from %s: %s\n", NET_AdrToString (from), Cmd_ArgsFrom(2) );
+		Com_Printf ("Bad rcon from %s: %s\n", NET_AdrToString( from ), Cmd_ArgsFrom(2) );
 	} else {
 		valid = qtrue;
-		Com_Printf ("Rcon from %s: %s\n", NET_AdrToString (from), Cmd_ArgsFrom(2) );
+		Com_Printf ("Rcon from %s: %s\n", NET_AdrToString( from ), Cmd_ArgsFrom(2) );
 	}
 
 	// start redirecting all print outputs to the packet
-	svs.redirectAddress = from;
+	svs.redirectAddress = *from;
 	Com_BeginRedirect (sv_outputbuf, SV_OUTPUTBUF_LENGTH, SV_FlushRedirect);
 
 	if ( !strlen( sv_rconPassword->string ) ) {
@@ -751,6 +756,7 @@ static void SVC_RemoteCommand( netadr_t from, msg_t *msg ) {
 	Com_EndRedirect ();
 }
 
+
 /*
 =================
 SV_ConnectionlessPacket
@@ -761,7 +767,7 @@ Clients that are in the game can still send
 connectionless packets.
 =================
 */
-static void SV_ConnectionlessPacket( netadr_t from, msg_t *msg ) {
+static void SV_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 	char	*s;
 	char	*c;
 
@@ -776,7 +782,7 @@ static void SV_ConnectionlessPacket( netadr_t from, msg_t *msg ) {
 	Cmd_TokenizeString( s );
 
 	c = Cmd_Argv(0);
-	Com_DPrintf ("SV packet %s : %s\n", NET_AdrToString(from), c);
+	Com_DPrintf ("SV packet %s : %s\n", NET_AdrToString( from ), c);
 
 	if (!Q_stricmp(c, "getstatus")) {
 		SVC_Status( from );
@@ -798,7 +804,7 @@ static void SV_ConnectionlessPacket( netadr_t from, msg_t *msg ) {
 		// sequenced messages to the old client
 	} else {
 		Com_DPrintf ("bad connectionless packet from %s:\n%s\n",
-			NET_AdrToString (from), s);
+			NET_AdrToString( from ), s);
 	}
 }
 
@@ -809,7 +815,7 @@ static void SV_ConnectionlessPacket( netadr_t from, msg_t *msg ) {
 SV_PacketEvent
 =================
 */
-void SV_PacketEvent( netadr_t from, msg_t *msg ) {
+void SV_PacketEvent( const netadr_t *from, msg_t *msg ) {
 	int			i;
 	client_t	*cl;
 	int			qport;
@@ -831,7 +837,7 @@ void SV_PacketEvent( netadr_t from, msg_t *msg ) {
 		if (cl->state == CS_FREE) {
 			continue;
 		}
-		if ( !NET_CompareBaseAdr( from, cl->netchan.remoteAddress ) ) {
+		if ( !NET_CompareBaseAdr( from, &cl->netchan.remoteAddress ) ) {
 			continue;
 		}
 		// it is possible to have multiple clients from a single IP
@@ -843,9 +849,9 @@ void SV_PacketEvent( netadr_t from, msg_t *msg ) {
 		// the IP port can't be used to differentiate them, because
 		// some address translating routers periodically change UDP
 		// port assignments
-		if (cl->netchan.remoteAddress.port != from.port) {
+		if (cl->netchan.remoteAddress.port != from->port) {
 			Com_Printf( "SV_PacketEvent: fixing up a translated port\n" );
-			cl->netchan.remoteAddress.port = from.port;
+			cl->netchan.remoteAddress.port = from->port;
 		}
 
 		// make sure it is a valid, in sequence packet
@@ -860,12 +866,6 @@ void SV_PacketEvent( netadr_t from, msg_t *msg ) {
 		}
 		return;
 	}
-#if 0 // FIXME: delete this check? -EC-  	
-	// if we received a sequenced packet from an address we don't recognize,
-	// send an out of band disconnect packet to it
-	if ( seq > 0 && !SVC_RateLimitAddress( from, 1, 3500 ) )
-		NET_OutOfBandPrint( NS_SERVER, from, "disconnect" );
-#endif
 }
 
 

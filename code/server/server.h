@@ -322,7 +322,7 @@ struct leakyBucket_s {
 extern leakyBucket_t outboundLeakyBucket;
 
 qboolean SVC_RateLimit( leakyBucket_t *bucket, int burst, int period );
-qboolean SVC_RateLimitAddress( netadr_t from, int burst, int period );
+qboolean SVC_RateLimitAddress( const netadr_t *from, int burst, int period );
 
 void SV_FinalMessage(const char *message);
 void QDECL SV_SendServerCommand( client_t *cl, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
@@ -355,12 +355,12 @@ void SV_SpawnServer( const char *mapname, qboolean killBots );
 //
 // sv_client.c
 //
-void SV_GetChallenge( netadr_t from );
+void SV_GetChallenge( const netadr_t *from );
 
-void SV_DirectConnect( netadr_t from );
+void SV_DirectConnect( const netadr_t *from );
 
 #ifndef STANDALONE
-void SV_AuthorizeIpPacket( netadr_t from );
+void SV_AuthorizeIpPacket( const netadr_t *from );
 #endif
 
 void SV_ExecuteClientMessage( client_t *cl, msg_t *msg );

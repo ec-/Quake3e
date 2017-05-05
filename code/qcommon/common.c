@@ -126,9 +126,9 @@ void CIN_CloseAllVideos( void );
 
 static char	*rd_buffer;
 static int	rd_buffersize;
-static void	(*rd_flush)( char *buffer );
+static void	(*rd_flush)( const char *buffer );
 
-void Com_BeginRedirect (char *buffer, int buffersize, void (*flush)( char *) )
+void Com_BeginRedirect( char *buffer, int buffersize, void (*flush)(const char *) )
 {
 	if (!buffer || !buffersize || !flush)
 		return;
@@ -2298,7 +2298,7 @@ sysEvent_t	Com_GetEvent( void ) {
 Com_RunAndTimeServerPacket
 =================
 */
-void Com_RunAndTimeServerPacket( netadr_t *evFrom, msg_t *buf ) {
+void Com_RunAndTimeServerPacket( const netadr_t *evFrom, msg_t *buf ) {
 	int		t1, t2, msec;
 
 	t1 = 0;
@@ -2307,7 +2307,7 @@ void Com_RunAndTimeServerPacket( netadr_t *evFrom, msg_t *buf ) {
 		t1 = Sys_Milliseconds ();
 	}
 
-	SV_PacketEvent( *evFrom, buf );
+	SV_PacketEvent( evFrom, buf );
 
 	if ( com_speeds->integer ) {
 		t2 = Sys_Milliseconds ();
@@ -2341,7 +2341,7 @@ int Com_EventLoop( void ) {
 			// manually send packet events for the loopback channel
 #ifndef DEDICATED
 			while ( NET_GetLoopPacket( NS_CLIENT, &evFrom, &buf ) ) {
-				CL_PacketEvent( evFrom, &buf );
+				CL_PacketEvent( &evFrom, &buf );
 			}
 #endif
 			while ( NET_GetLoopPacket( NS_SERVER, &evFrom, &buf ) ) {
@@ -3500,7 +3500,7 @@ FindMatches
 ===============
 */
 static void FindMatches( const char *s ) {
-	int		i;
+	int		i, n;
 
 	if ( Q_stricmpn( s, completionString, strlen( completionString ) ) ) {
 		return;
@@ -3511,9 +3511,10 @@ static void FindMatches( const char *s ) {
 		return;
 	}
 
+	n = (int)strlen(s);
 	// cut shortestMatch to the amount common with s
 	for ( i = 0 ; shortestMatch[i] ; i++ ) {
-		if ( i >= strlen( s ) ) {
+		if ( i >= n ) {
 			shortestMatch[i] = 0;
 			break;
 		}

@@ -190,7 +190,7 @@ int MSG_ReadBits( msg_t *msg, int bits ) {
 			Com_Error( ERR_DROP, "can't read %d bits", bits );
 	} else {
 		const int nbits = bits & 7;
-		int bitIndex = msg->bit; // dereference optimizaton
+		int bitIndex = msg->bit; // dereference optimization
 		if ( nbits )
 		{		
 			for ( i = 0; i < nbits; i++ ) {

@@ -489,7 +489,6 @@ void CL_ParseServerMessage( msg_t *msg );
 
 //====================================================================
 
-void	CL_ServerInfoPacket( netadr_t from, msg_t *msg );
 void	CL_LocalServers_f( void );
 void	CL_GlobalServers_f( void );
 void	CL_FavoriteServers_f( void );
@@ -596,9 +595,3 @@ void CL_WriteAVIVideoFrame( const byte *imageBuffer, int size );
 void CL_WriteAVIAudioFrame( const byte *pcmBuffer, int size );
 qboolean CL_CloseAVI( void );
 qboolean CL_VideoRecording( void );
-
-//
-// cl_main.c
-//
-void CL_WriteDemoMessage ( msg_t *msg, int headerBytes );
-
