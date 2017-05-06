@@ -2425,7 +2425,9 @@ static void CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 
 	c = Cmd_Argv(0);
 
-	Com_DPrintf( "CL packet %s: %s\n", NET_AdrToStringwPort( from ), s );
+	if ( com_developer->integer ) {
+		Com_Printf( "CL packet %s: %s\n", NET_AdrToStringwPort( from ), s );
+	}
 
 	// challenge from the server we are connecting to
 	if (!Q_stricmp(c, "challengeResponse"))
@@ -2620,13 +2622,15 @@ void CL_PacketEvent( const netadr_t *from, msg_t *msg ) {
 	// packet from server
 	//
 	if ( !NET_CompareAdr( from, &clc.netchan.remoteAddress ) ) {
-		Com_DPrintf ("%s:sequenced packet without connection\n"
-			, NET_AdrToStringwPort( from ) );
+		if ( com_developer->integer ) {
+			Com_Printf( "%s:sequenced packet without connection\n",
+				NET_AdrToStringwPort( from ) );
+		}
 		// FIXME: send a client disconnect?
 		return;
 	}
 
-	if (!CL_Netchan_Process( &clc.netchan, msg) ) {
+	if ( !CL_Netchan_Process( &clc.netchan, msg ) ) {
 		return;		// out of order, duplicated, etc
 	}
 

@@ -536,14 +536,18 @@ static void SVC_Status( const netadr_t *from ) {
 	char	infostring[MAX_INFO_STRING];
 
 	// ignore if we are in single player
+#ifndef DEDICATED
 	if ( Cvar_VariableIntegerValue( "g_gametype" ) == GT_SINGLE_PLAYER || Cvar_VariableIntegerValue("ui_singlePlayerActive")) {
 		return;
 	}
+#endif
 
 	// Prevent using getstatus as an amplifier
 	if ( SVC_RateLimitAddress( from, 10, 1000 ) ) {
-		Com_DPrintf( "SVC_Status: rate limit from %s exceeded, dropping request\n",
-			NET_AdrToString( from ) );
+		if ( com_developer->integer ) {
+			Com_Printf( "SVC_Status: rate limit from %s exceeded, dropping request\n",
+				NET_AdrToString( from ) );
+		}
 		return;
 	}
 
@@ -585,6 +589,7 @@ static void SVC_Status( const netadr_t *from ) {
 	NET_OutOfBandPrint( NS_SERVER, from, "statusResponse\n%s\n%s", infostring, status );
 }
 
+
 /*
 ================
 SVC_Info
@@ -599,14 +604,18 @@ static void SVC_Info( const netadr_t *from ) {
 	char	infostring[MAX_INFO_STRING];
 
 	// ignore if we are in single player
+#ifndef DEDICATED
 	if ( Cvar_VariableIntegerValue( "g_gametype" ) == GT_SINGLE_PLAYER || Cvar_VariableIntegerValue("ui_singlePlayerActive")) {
 		return;
 	}
+#endif
 
 	// Prevent using getinfo as an amplifier
 	if ( SVC_RateLimitAddress( from, 10, 1000 ) ) {
-		Com_DPrintf( "SVC_Info: rate limit from %s exceeded, dropping request\n",
-			NET_AdrToString( from ) );
+		if ( com_developer->integer ) {
+			Com_Printf( "SVC_Info: rate limit from %s exceeded, dropping request\n",
+				NET_AdrToString( from ) );
+		}
 		return;
 	}
 
@@ -701,8 +710,10 @@ static void SVC_RemoteCommand( const netadr_t *from, msg_t *msg ) {
 
 	// Prevent using rcon as an amplifier and make dictionary attacks impractical
 	if ( SVC_RateLimitAddress( from, 10, 1000 ) ) {
-		Com_DPrintf( "SVC_RemoteCommand: rate limit from %s exceeded, dropping request\n",
-			NET_AdrToString( from ) );
+		if ( com_developer->integer ) {
+			Com_Printf( "SVC_RemoteCommand: rate limit from %s exceeded, dropping request\n",
+				NET_AdrToString( from ) );
+		}
 		return;
 	}
 
@@ -768,7 +779,7 @@ connectionless packets.
 =================
 */
 static void SV_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
-	char	*s;
+	const char *s;
 	char	*c;
 
 	MSG_BeginReadingOOB( msg );
@@ -782,11 +793,14 @@ static void SV_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 	Cmd_TokenizeString( s );
 
 	c = Cmd_Argv(0);
-	Com_DPrintf ("SV packet %s : %s\n", NET_AdrToString( from ), c);
+
+	if ( com_developer->integer ) {
+		Com_Printf( "SV packet %s : %s\n", NET_AdrToString( from ), c );
+	}
 
 	if (!Q_stricmp(c, "getstatus")) {
 		SVC_Status( from );
-  } else if (!Q_stricmp(c, "getinfo")) {
+	} else if (!Q_stricmp(c, "getinfo")) {
 		SVC_Info( from );
 	} else if (!Q_stricmp(c, "getchallenge")) {
 		SV_GetChallenge( from );
@@ -803,8 +817,10 @@ static void SV_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 		// server disconnect messages when their new server sees our final
 		// sequenced messages to the old client
 	} else {
-		Com_DPrintf ("bad connectionless packet from %s:\n%s\n",
-			NET_AdrToString( from ), s);
+		if ( com_developer->integer ) {
+			Com_Printf( "bad connectionless packet from %s:\n%s\n",
+				NET_AdrToString( from ), s );
+		}
 	}
 }
 
