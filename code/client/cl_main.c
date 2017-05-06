@@ -3705,7 +3705,7 @@ CL_ServerStatusResponse
 ===================
 */
 static void CL_ServerStatusResponse( const netadr_t *from, msg_t *msg ) {
-	char	*s;
+	const char	*s;
 	char	info[MAX_INFO_STRING];
 	char	buf[64], *v[2];
 	int		i, l, score, ping;

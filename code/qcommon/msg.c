@@ -393,6 +393,7 @@ float MSG_ReadFloat( msg_t *msg ) {
 	return dat.f;	
 }
 
+
 const char *MSG_ReadString( msg_t *msg ) {
 	static char	string[MAX_STRING_CHARS];
 	int		l,c;
@@ -400,7 +401,7 @@ const char *MSG_ReadString( msg_t *msg ) {
 	l = 0;
 	do {
 		c = MSG_ReadByte(msg);		// use ReadByte so -1 is out of bounds
-		if ( c == -1 || c == 0 ) {
+		if ( c <=0 /*c == -1 || c == 0 */ ) {
 			break;
 		}
 		// translate all fmt spec to avoid crash bugs
@@ -421,14 +422,15 @@ const char *MSG_ReadString( msg_t *msg ) {
 	return string;
 }
 
-char *MSG_ReadBigString( msg_t *msg ) {
+
+const char *MSG_ReadBigString( msg_t *msg ) {
 	static char	string[BIG_INFO_STRING];
 	int		l,c;
 	
 	l = 0;
 	do {
 		c = MSG_ReadByte(msg);		// use ReadByte so -1 is out of bounds
-		if ( c == -1 || c == 0 ) {
+		if ( c <= 0 /*c == -1 || c == 0*/ ) {
 			break;
 		}
 		// translate all fmt spec to avoid crash bugs
@@ -449,14 +451,15 @@ char *MSG_ReadBigString( msg_t *msg ) {
 	return string;
 }
 
-char *MSG_ReadStringLine( msg_t *msg ) {
+
+const char *MSG_ReadStringLine( msg_t *msg ) {
 	static char	string[MAX_STRING_CHARS];
 	int		l,c;
 
 	l = 0;
 	do {
 		c = MSG_ReadByte(msg);		// use ReadByte so -1 is out of bounds
-		if (c == -1 || c == 0 || c == '\n') {
+		if ( c <= 0 /*c == -1 || c == 0*/ || c == '\n') {
 			break;
 		}
 		// translate all fmt spec to avoid crash bugs

@@ -460,7 +460,7 @@ void CL_ParseGamestate( msg_t *msg ) {
 	int				newnum;
 	entityState_t	nullstate;
 	int				cmd;
-	char			*s;
+	const char		*s;
 	char			oldGame[ MAX_QPATH ];
 
 	Con_Close();
