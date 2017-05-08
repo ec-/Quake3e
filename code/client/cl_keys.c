@@ -327,6 +327,7 @@ void Field_CharEvent( field_t *edit, int ch ) {
 	}
 }
 
+
 /*
 =============================================================================
 
@@ -673,7 +674,7 @@ Normal keyboard characters, already shifted / capslocked / etc
 void CL_CharEvent( int key ) {
 	// delete is not a printable character and is
 	// otherwise handled by Field_KeyDownEvent
-	if ( key == 127 ) {
+	if ( key == K_BACKSPACE ) {
 		return;
 	}
 

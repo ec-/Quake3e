@@ -348,11 +348,10 @@ void R_BloomInit( void )
 {
 	memset( &bloom, 0, sizeof( bloom ));
 
-	r_bloom = ri.Cvar_Get( "r_bloom", "0", CVAR_ARCHIVE );
-	r_bloom_alpha = ri.Cvar_Get( "r_bloom_alpha", "0.5", CVAR_ARCHIVE );
-	r_bloom_diamond_size = ri.Cvar_Get( "r_bloom_diamond_size", "8", CVAR_ARCHIVE );
-	r_bloom_intensity = ri.Cvar_Get( "r_bloom_intensity", "2.0", CVAR_ARCHIVE );
-	r_bloom_darken = ri.Cvar_Get( "r_bloom_darken", "2", CVAR_ARCHIVE );
-	r_bloom_sample_size = ri.Cvar_Get( "r_bloom_sample_size", "128", CVAR_ARCHIVE | CVAR_LATCH );
+	r_bloom = ri.Cvar_Get( "r_bloom", "0", CVAR_ARCHIVE_ND );
+	r_bloom_alpha = ri.Cvar_Get( "r_bloom_alpha", "0.5", CVAR_ARCHIVE_ND );
+	r_bloom_diamond_size = ri.Cvar_Get( "r_bloom_diamond_size", "8", CVAR_ARCHIVE_ND );
+	r_bloom_intensity = ri.Cvar_Get( "r_bloom_intensity", "2.0", CVAR_ARCHIVE_ND );
+	r_bloom_darken = ri.Cvar_Get( "r_bloom_darken", "2", CVAR_ARCHIVE_ND );
+	r_bloom_sample_size = ri.Cvar_Get( "r_bloom_sample_size", "128", CVAR_ARCHIVE_ND | CVAR_LATCH );
 }
-

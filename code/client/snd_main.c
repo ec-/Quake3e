@@ -390,7 +390,7 @@ void S_Init( void )
 
 	s_volume = Cvar_Get( "s_volume", "0.8", CVAR_ARCHIVE );
 	s_musicVolume = Cvar_Get( "s_musicvolume", "0.25", CVAR_ARCHIVE );
-	s_doppler = Cvar_Get( "s_doppler", "1", CVAR_ARCHIVE );
+	s_doppler = Cvar_Get( "s_doppler", "1", CVAR_ARCHIVE_ND );
 
 	cv = Cvar_Get( "s_initsound", "1", 0 );
 	if( !cv->integer ) {

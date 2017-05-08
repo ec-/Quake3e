@@ -1153,7 +1153,7 @@ void IN_Init( void ) {
 		" 0 - before rendering\n" \
 		" 1 - before framerate limiter" );
 
-	in_logitechbug = Cvar_Get( "in_logitechbug", "0", CVAR_ARCHIVE );
+	in_logitechbug = Cvar_Get( "in_logitechbug", "0", CVAR_ARCHIVE_ND );
 
 	in_minimize	= Cvar_Get( "in_minimize", "", CVAR_ARCHIVE | CVAR_LATCH );
 	IN_GetHotkey( in_minimize, &HotKey );
