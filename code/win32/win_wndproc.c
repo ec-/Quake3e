@@ -35,6 +35,7 @@ static UINT MSH_MOUSEWHEEL;
 cvar_t		*vid_xpos;			// X coordinate of window position
 cvar_t		*vid_ypos;			// Y coordinate of window position
 cvar_t		*r_fullscreen;
+cvar_t		*in_forceLayout;
 
 static HHOOK WinHook;
 
@@ -270,6 +271,100 @@ static int MapKey( int nVirtKey, int key )
 }
 
 
+static qboolean directMap( const byte chr ) {
+
+	if ( !in_forceLayout->integer )
+		return qtrue;
+
+	switch ( chr ) // edit control sequences
+	{
+		case 'c'-'a'+1:
+		case 'v'-'a'+1:
+		case 'h'-'a'+1:
+		case 'a'-'a'+1:
+		case 'e'-'a'+1:
+			return qtrue;
+	}
+#if 1 // skip AZERTY stuff for now
+	return qfalse;
+#else
+	if ( (chr >= 'A' && chr <= 'Z') || (chr >= 'a' && chr <= 'z') )
+		return qtrue;
+
+	if ( chr >= '0' && chr <= '9')
+		return qtrue;
+
+	switch ( chr ) {
+		case '!': case '^':
+		case '-': case '=':
+		case '$': case '_':
+		case '(': case ')':
+			return qtrue;
+		default:
+			return qfalse;
+	};
+#endif
+}
+
+
+/*
+==================
+MapChar
+
+Map input to ASCII charset
+==================
+*/
+static int MapChar( WPARAM wParam, byte scancode ) 
+{
+	static const int s_scantochar[ 128 ] = 
+	{ 
+//	0        1       2       3       4       5       6       7 
+//	8        9       A       B       C       D       E       F 
+ 	 0,      0,     '1',    '2',    '3',    '4',    '5',    '6', 
+	'7',    '8',    '9',    '0',    '-',    '=',    0x8,    0x9,	// 0
+	'q',    'w',    'e',    'r',    't',    'y',    'u',    'i', 
+	'o',    'p',    '[',    ']',    0xD,     0,     'a',    's',	// 1
+	'd',    'f',    'g',    'h',    'j',    'k',    'l',    ';', 
+	'\'',    0,      0,     '\\',   'z',    'x',    'c',    'v',	// 2
+	'b',    'n',    'm',    ',',    '.',    '/',     0,     '*', 
+	 0,     ' ',     0,      0,      0,      0,      0,      0,     // 3
+
+	 0,      0,     '!',    '@',    '#',    '$',    '%',    '^', 
+	'&',    '*',    '(',    ')',    '_',    '+',    0x8,    0x9,	// 4
+	'Q',    'W',    'E',    'R',    'T',    'Y',    'U',    'I', 
+	'O',    'P',    '{',    '}',    0xD,     0,     'A',    'S',	// 5
+	'D',    'F',    'G',    'H',    'J',    'K',    'L',    ';', 
+	'"',     0,      0,     '|',    'Z',    'X',    'C',    'V',	// 6
+	'B',    'N',    'M',    '<',    '>',    '?',     0,     '*', 
+ 	 0,     ' ',     0,      0,      0,      0,      0,      0,     // 7
+	}; 
+
+	if ( directMap( wParam ) || scancode > 0x39 )
+	{
+		return wParam;
+	}
+	else 
+	{
+		char ch = s_scantochar[ scancode ];
+		int shift = (GetKeyState( VK_SHIFT ) >> 15) & 1;
+		if ( ch >= 'a' && ch <= 'z' ) 
+		{
+			int  capital = GetKeyState( VK_CAPITAL ) & 1;
+			if ( capital ^ shift ) 
+			{
+				ch = ch - 'a' + 'A';
+			}
+		} 
+		else 
+		{
+			ch = s_scantochar[ scancode | (shift<<6) ];
+		}
+
+		return ch;
+	}
+}
+
+
 /*
 ====================
 MainWndProc
@@ -451,9 +546,10 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 		g_wv.hWnd = hWnd;
 
-		vid_xpos = Cvar_Get ("vid_xpos", "3", CVAR_ARCHIVE);
-		vid_ypos = Cvar_Get ("vid_ypos", "22", CVAR_ARCHIVE);
-		r_fullscreen = Cvar_Get ("r_fullscreen", "1", CVAR_ARCHIVE | CVAR_LATCH );
+		vid_xpos = Cvar_Get( "vid_xpos", "3", CVAR_ARCHIVE );
+		vid_ypos = Cvar_Get( "vid_ypos", "22", CVAR_ARCHIVE );
+		r_fullscreen = Cvar_Get( "r_fullscreen", "1", CVAR_ARCHIVE | CVAR_LATCH );
+		in_forceLayout = Cvar_Get( "in_forceLayout", "1", CVAR_ARCHIVE_ND );
 
 		MSH_MOUSEWHEEL = RegisterWindowMessage( TEXT( "MSWHEEL_ROLLMSG" ) ); 
 
@@ -665,9 +761,13 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		break;
 
 	case WM_CHAR:
-		if ( (lParam & 0xFF0000) != 0x290000 /* '`' */ )
-			Sys_QueEvent( g_wv.sysMsgTime, SE_CHAR, wParam, 0, 0, NULL );
-		break;
+		{
+			byte scancode = ((lParam >> 16) & 0xFF);
+			if ( wParam != VK_NUMPAD0 && scancode != 0x29 ) {
+				Sys_QueEvent( g_wv.sysMsgTime, SE_CHAR, MapChar( wParam, scancode ), 0, 0, NULL );
+			}
+		}
+		return 0;
 
 	case WM_SIZE:
 		GetWindowRect( hWnd, &g_wv.winRect );

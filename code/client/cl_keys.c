@@ -674,7 +674,7 @@ Normal keyboard characters, already shifted / capslocked / etc
 void CL_CharEvent( int key ) {
 	// delete is not a printable character and is
 	// otherwise handled by Field_KeyDownEvent
-	if ( key == K_BACKSPACE ) {
+	if ( key == 127 ) {
 		return;
 	}
 

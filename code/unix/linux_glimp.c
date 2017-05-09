@@ -67,6 +67,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <X11/cursorfont.h>
 #include <X11/Xatom.h>
 
+#include <X11/XKBlib.h>
+
 #if !defined(__sun)
 #include <X11/extensions/Xxf86dga.h>
 #include <X11/extensions/xf86vmode.h>
@@ -124,6 +126,8 @@ static cvar_t *in_shiftedKeys; // obey modifiers for certain keys in non-console
 cvar_t *in_subframe;
 cvar_t *in_nograb; // this is strictly for developers
 
+cvar_t *in_forceLayout;
+
 // bk001130 - from cvs1.17 (mkv), but not static
 #ifdef USE_JOYSTICK
 cvar_t   *in_joystick      = NULL;
@@ -166,6 +170,20 @@ static int mouse_threshold;
 ******************************************************************************/
 
 //#define KBD_DBG
+static const char s_keytochar[ 128 ] =
+{
+//0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F 
+ 0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  '1',  '2',  '3',  '4',  '5',  '6',  // 0
+ '7',  '8',  '9',  '0',  '-',  '=',  0x8,  0x9,  'q',  'w',  'e',  'r',  't',  'y',  'u',  'i',  // 1
+ 'o',  'p',  '[',  ']',  0x0,  0x0,  'a',  's',  'd',  'f',  'g',  'h',  'j',  'k',  'l',  ';',  // 2
+ '\'', 0x0,  0x0,  '\\', 'z',  'x',  'c',  'v',  'b',  'n',  'm',  ',',  '.',  '/',  0x0,  '*',  // 3
+
+//0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F 
+ 0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  '!',  '@',  '#',  '$',  '%',  '^',  // 1
+ '&',  '*',  '(',  ')',  '_',  '+',  0x8,  0x9,  'Q',  'W',  'E',  'R',  'T',  'Y',  'U',  'I',  // 2
+ 'O',  'P',  '{',  '}',  0x0,  0x0,  'A',  'S',  'D',  'F',  'G',  'H',  'J',  'K',  'L',  ':',  // 3
+ '"',  0x0,  0x0,  '|',  'Z',  'X',  'C',  'V',  'B',  'N',  'M',  '<',  '>',  '?',  0x0,  '*',  // 4
+};
 
 static char *XLateKey( XKeyEvent *ev, int *key )
 {
@@ -345,7 +363,8 @@ static char *XLateKey( XKeyEvent *ev, int *key )
       {
         ri.Printf( PRINT_ALL, "Warning: XLookupString failed on KeySym %d\n", (int)keysym );
       }
-      return NULL;
+      buf[0] = '\0';
+      return (char*)buf;
     }
     else
     {
@@ -374,7 +393,7 @@ static char *XLateKey( XKeyEvent *ev, int *key )
 
 static Cursor CreateNullCursor( Display *display, Window root )
 {
-	Pixmap cursormask; 
+	Pixmap cursormask;
 	XGCValues xgc;
 	GC gc;
 	XColor dummycolour;
@@ -590,6 +609,42 @@ static qboolean WindowMinimized( Display *dpy, Window win )
 }
 
 
+static qboolean directMap( const byte chr ) 
+{
+	if ( !in_forceLayout->integer )
+		return qtrue;
+
+	switch ( chr ) // edit control sequences
+	{
+		case 'c'-'a'+1:
+		case 'v'-'a'+1:
+		case 'h'-'a'+1:
+		case 'a'-'a'+1:
+		case 'e'-'a'+1:
+			return qtrue;
+	}
+#if 1 // skip AZERTY stuff for now
+	return qfalse;
+#else
+	if ( (chr >= 'A' && chr <= 'Z') || (chr >= 'a' && chr <= 'z') )
+		return qtrue;
+
+	if ( chr >= '0' && chr <= '9')
+		return qtrue;
+
+	switch ( chr ) {
+		case '!': case '^':
+		case '-': case '=':
+		case '$': case '_':
+		case '(': case ')':
+			return qtrue;
+		default:
+			return qfalse;
+	};
+#endif
+}
+
+
 void HandleX11Events( void )
 {
 	XEvent event;
@@ -600,6 +655,7 @@ void HandleX11Events( void )
 	int dx, dy;
 	int t = 0; // default to 0 in case we don't set
 	qboolean btn_press;
+	char buf[2];
 
 	if ( !dpy )
 		return;
@@ -620,17 +676,45 @@ void HandleX11Events( void )
 		case KeyPress:
 //			ri.Printf( PRINT_ALL,"^2K+^7 %08X\n", event.xkey.keycode );
 			t = Sys_XTimeToSysTime( event.xkey.time );
-			p = XLateKey( &event.xkey, &key );
+			if ( event.xkey.keycode == 0x31 ) 
+			{
+				key = K_CONSOLE;
+				p = "";
+			}
+			else
+			{
+				int shift = (event.xkey.state & 1);
+				p = XLateKey( &event.xkey, &key );
+				if ( !directMap( *p ) && event.xkey.keycode < 0x3F )
+				{
+					char ch;
+					ch = s_keytochar[ event.xkey.keycode ];
+					if ( ch >= 'a' && ch <= 'z' )
+					{
+						unsigned int capital;
+						XkbGetIndicatorState( dpy, XkbUseCoreKbd, &capital );
+						capital &= 1;
+						if ( capital ^ shift )
+						{
+							ch = ch - 'a' + 'A';
+						}
+					}
+					else
+					{
+						ch = s_keytochar[ event.xkey.keycode | (shift<<6) ];
+					}
+					buf[0] = ch;
+					buf[1] = '\0';
+					p = buf;
+				}
+			}
 			if (key)
 			{
 				Sys_QueEvent( t, SE_KEY, key, qtrue, 0, NULL );
 			}
-			if (p)
+			while (*p)
 			{
-				while (*p)
-				{
-					Sys_QueEvent( t, SE_CHAR, *p++, 0, 0, NULL );
-				}
+				Sys_QueEvent( t, SE_CHAR, *p++, 0, 0, NULL );
 			}
 			break; // case KeyPress
 
@@ -919,13 +1003,15 @@ void GLimp_Shutdown( void )
 	memset( &glConfig, 0, sizeof( glConfig ) );
 	memset( &glState, 0, sizeof( glState ) );
 
+	unsetenv( "vblank_mode" );
+	
 	QGL_Shutdown();
 }
 
 /*
 ** GLimp_LogComment
 */
-void GLimp_LogComment( char *comment ) 
+void GLimp_LogComment( char *comment )
 {
 	if ( glw_state.log_fp )
 	{
@@ -948,7 +1034,7 @@ static qboolean GLW_StartDriverAndSetMode( const char *drivername, int mode, con
 		ri.Printf( PRINT_ALL, "Fullscreen not allowed with in_nograb 1\n");
 		ri.Cvar_Set( "r_fullscreen", "0" );
 		r_fullscreen->modified = qfalse;
-		fullscreen = qfalse;		
+		fullscreen = qfalse;
 	}
 
 	err = GLW_SetMode( drivername, mode, modeFS, fullscreen );
@@ -1629,7 +1715,7 @@ static void GLW_InitGamma( void )
   /* Minimum extension version required */
   #define GAMMA_MINMAJOR 2
   #define GAMMA_MINMINOR 0
-  
+
   glConfig.deviceSupportsGamma = qfalse;
 
 #ifdef HAVE_XF86DGA
@@ -1657,6 +1743,14 @@ static void GLW_InitGamma( void )
 static qboolean GLW_LoadOpenGL( const char *name )
 {
 	qboolean fullscreen;
+	cvar_t		*r_swapInterval;
+
+	r_swapInterval = ri.Cvar_Get( "r_swapInterval", "0", CVAR_ARCHIVE_ND );
+
+	if ( r_swapInterval->integer )
+		setenv( "vblank_mode", "2", 1 );
+	else
+		setenv( "vblank_mode", "1", 1 );
 
 	// load the QGL layer
 	if ( QGL_Init( name ) )
@@ -1698,7 +1792,7 @@ static qboolean GLW_StartOpenGL( void )
 		if ( Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) != 0 ) 
 		{
 			// try default driver
-			if ( GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) ) 
+			if ( GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) )
 			{
 				ri.Cvar_Set( "r_glDriver", OPENGL_DRIVER_NAME );
 				r_glDriver->modified = qfalse;
@@ -1842,7 +1936,9 @@ void IN_Init( void )
 	in_subframe = Cvar_Get( "in_subframe", "1", CVAR_ARCHIVE_ND );
 
 	// developer feature, allows to break without loosing mouse pointer
-	in_nograb = Cvar_Get ("in_nograb", "0", 0);
+	in_nograb = Cvar_Get( "in_nograb", "0", 0 );
+
+	in_forceLayout = Cvar_Get( "in_forceLayout", "1", CVAR_ARCHIVE_ND );
 
 #ifdef USE_JOYSTICK
 	// bk001130 - from cvs.17 (mkv), joystick variables

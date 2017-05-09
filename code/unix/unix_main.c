@@ -136,17 +136,6 @@ qboolean Sys_LowPhysicalMemory( void )
 
 /*
 ==================
-Sys_FunctionCmp
-==================
-*/
-int Sys_FunctionCmp( void *f1, void *f2 )
-{
-	return qtrue;
-}
-
-
-/*
-==================
 Sys_FunctionCheckSum
 ==================
 */
