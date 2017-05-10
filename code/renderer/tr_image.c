@@ -577,9 +577,9 @@ static void Upload32( unsigned *data,
 	//
 	// perform optional picmip operation
 	//
-	if ( picmip ) {
-		scaled_width >>= r_picmip->integer;
-		scaled_height >>= r_picmip->integer;
+	if ( picmip && ( tr.mapLoading || r_picmip->integer > 0 ) ) {
+		scaled_width >>= abs( r_picmip->integer );
+		scaled_height >>= abs( r_picmip->integer );
 	}
 
 	//

@@ -1857,6 +1857,8 @@ void RE_LoadWorldMap( const char *name ) {
 		ri.Error (ERR_DROP, "RE_LoadWorldMap: %s not found", name);
 	}
 
+	tr.mapLoading = qtrue;
+
 	// clear tr.world so if the level fails to load, the next
 	// try will not look at the partially loaded version
 	tr.world = NULL;
@@ -1897,6 +1899,8 @@ void RE_LoadWorldMap( const char *name ) {
 	R_LoadEntities( &header->lumps[LUMP_ENTITIES] );
 	R_LoadLightGrid( &header->lumps[LUMP_LIGHTGRID] );
 
+	tr.mapLoading = qfalse;
+
 	s_worldData.dataSize = (byte *)ri.Hunk_Alloc(0, h_low) - startMarker;
 
 	// only set tr.world now that we know the entire level has loaded properly
@@ -1904,4 +1908,3 @@ void RE_LoadWorldMap( const char *name ) {
 
     ri.FS_FreeFile( buffer.v );
 }
-

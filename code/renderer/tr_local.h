@@ -1049,6 +1049,8 @@ typedef struct {
 	float					sawToothTable[FUNCTABLE_SIZE];
 	float					inverseSawToothTable[FUNCTABLE_SIZE];
 	float					fogTable[FOG_TABLE_SIZE];
+
+	qboolean				mapLoading;
 } trGlobals_t;
 
 extern backEndState_t	backEnd;
