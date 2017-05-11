@@ -35,7 +35,7 @@ static UINT MSH_MOUSEWHEEL;
 cvar_t		*vid_xpos;			// X coordinate of window position
 cvar_t		*vid_ypos;			// Y coordinate of window position
 cvar_t		*r_fullscreen;
-cvar_t		*in_forceLayout;
+cvar_t		*in_forceCharset;
 
 static HHOOK WinHook;
 
@@ -273,7 +273,7 @@ static int MapKey( int nVirtKey, int key )
 
 static qboolean directMap( const byte chr ) {
 
-	if ( !in_forceLayout->integer )
+	if ( !in_forceCharset->integer )
 		return qtrue;
 
 	switch ( chr ) // edit control sequences
@@ -285,25 +285,11 @@ static qboolean directMap( const byte chr ) {
 		case 'e'-'a'+1:
 			return qtrue;
 	}
-#if 1 // skip AZERTY stuff for now
-	return qfalse;
-#else
-	if ( (chr >= 'A' && chr <= 'Z') || (chr >= 'a' && chr <= 'z') )
-		return qtrue;
 
-	if ( chr >= '0' && chr <= '9')
+	if ( chr < ' ' || chr > '~' )
+		return qfalse;
+	else
 		return qtrue;
-
-	switch ( chr ) {
-		case '!': case '^':
-		case '-': case '=':
-		case '$': case '_':
-		case '(': case ')':
-			return qtrue;
-		default:
-			return qfalse;
-	};
-#endif
 }
 
 
@@ -549,7 +535,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		vid_xpos = Cvar_Get( "vid_xpos", "3", CVAR_ARCHIVE );
 		vid_ypos = Cvar_Get( "vid_ypos", "22", CVAR_ARCHIVE );
 		r_fullscreen = Cvar_Get( "r_fullscreen", "1", CVAR_ARCHIVE | CVAR_LATCH );
-		in_forceLayout = Cvar_Get( "in_forceLayout", "1", CVAR_ARCHIVE_ND );
+		in_forceCharset = Cvar_Get( "in_forceCharset", "1", CVAR_ARCHIVE_ND );
 
 		MSH_MOUSEWHEEL = RegisterWindowMessage( TEXT( "MSWHEEL_ROLLMSG" ) ); 
 

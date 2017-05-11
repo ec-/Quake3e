@@ -126,7 +126,7 @@ static cvar_t *in_shiftedKeys; // obey modifiers for certain keys in non-console
 cvar_t *in_subframe;
 cvar_t *in_nograb; // this is strictly for developers
 
-cvar_t *in_forceLayout;
+cvar_t *in_forceCharset;
 
 // bk001130 - from cvs1.17 (mkv), but not static
 #ifdef USE_JOYSTICK
@@ -179,10 +179,10 @@ static const char s_keytochar[ 128 ] =
  '\'', 0x0,  0x0,  '\\', 'z',  'x',  'c',  'v',  'b',  'n',  'm',  ',',  '.',  '/',  0x0,  '*',  // 3
 
 //0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F 
- 0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  '!',  '@',  '#',  '$',  '%',  '^',  // 1
- '&',  '*',  '(',  ')',  '_',  '+',  0x8,  0x9,  'Q',  'W',  'E',  'R',  'T',  'Y',  'U',  'I',  // 2
- 'O',  'P',  '{',  '}',  0x0,  0x0,  'A',  'S',  'D',  'F',  'G',  'H',  'J',  'K',  'L',  ':',  // 3
- '"',  0x0,  0x0,  '|',  'Z',  'X',  'C',  'V',  'B',  'N',  'M',  '<',  '>',  '?',  0x0,  '*',  // 4
+ 0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  '!',  '@',  '#',  '$',  '%',  '^',  // 4
+ '&',  '*',  '(',  ')',  '_',  '+',  0x8,  0x9,  'Q',  'W',  'E',  'R',  'T',  'Y',  'U',  'I',  // 5
+ 'O',  'P',  '{',  '}',  0x0,  0x0,  'A',  'S',  'D',  'F',  'G',  'H',  'J',  'K',  'L',  ':',  // 6
+ '"',  0x0,  0x0,  '|',  'Z',  'X',  'C',  'V',  'B',  'N',  'M',  '<',  '>',  '?',  0x0,  '*',  // 7
 };
 
 static char *XLateKey( XKeyEvent *ev, int *key )
@@ -611,7 +611,7 @@ static qboolean WindowMinimized( Display *dpy, Window win )
 
 static qboolean directMap( const byte chr ) 
 {
-	if ( !in_forceLayout->integer )
+	if ( !in_forceCharset->integer )
 		return qtrue;
 
 	switch ( chr ) // edit control sequences
@@ -623,25 +623,10 @@ static qboolean directMap( const byte chr )
 		case 'e'-'a'+1:
 			return qtrue;
 	}
-#if 1 // skip AZERTY stuff for now
-	return qfalse;
-#else
-	if ( (chr >= 'A' && chr <= 'Z') || (chr >= 'a' && chr <= 'z') )
+	if ( chr < ' ' || chr > '~' )
+		return qfalse;
+	else
 		return qtrue;
-
-	if ( chr >= '0' && chr <= '9')
-		return qtrue;
-
-	switch ( chr ) {
-		case '!': case '^':
-		case '-': case '=':
-		case '$': case '_':
-		case '(': case ')':
-			return qtrue;
-		default:
-			return qfalse;
-	};
-#endif
 }
 
 
@@ -1938,7 +1923,7 @@ void IN_Init( void )
 	// developer feature, allows to break without loosing mouse pointer
 	in_nograb = Cvar_Get( "in_nograb", "0", 0 );
 
-	in_forceLayout = Cvar_Get( "in_forceLayout", "1", CVAR_ARCHIVE_ND );
+	in_forceCharset = Cvar_Get( "in_forceCharset", "1", CVAR_ARCHIVE_ND );
 
 #ifdef USE_JOYSTICK
 	// bk001130 - from cvs.17 (mkv), joystick variables
