@@ -1840,6 +1840,14 @@ void GLimp_Init( void )
 	glConfig.driverType = GLDRV_ICD;
 	glConfig.hardwareType = GLHW_GENERIC;
 
+	// for some unknown reason glGetString() calls may start returning NULL
+	// and interaction with any other opengl function leads to segfault
+	// this may happen after system (mesa?) update and before reboot, catched on Arch linux distribution
+	if ( !qglGetString( GL_EXTENSIONS ) )
+	{
+		ri.Error( ERR_FATAL, "OpenGL installation is broken. Please fix video drivers and/or restart your system" );
+	}
+
 	// get our config strings
 	Q_strncpyz( glConfig.vendor_string, (char *)qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
 	Q_strncpyz( glConfig.renderer_string, (char *)qglGetString (GL_RENDERER), sizeof( glConfig.renderer_string ) );

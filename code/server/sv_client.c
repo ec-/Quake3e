@@ -162,7 +162,9 @@ void SV_GetChallenge( const netadr_t *from ) {
 			cvar_t	*fs;
 			char	game[1024];
 
-			Com_DPrintf( "sending getIpAuthorize for %s\n", NET_AdrToString( from ));
+			if ( com_developer->integer ) {
+				Com_Printf( "sending getIpAuthorize for %s\n", NET_AdrToString( from ) );
+			}
 		
 			strcpy(game, BASEGAME);
 			fs = Cvar_Get ("fs_game", "", CVAR_INIT|CVAR_SYSTEMINFO );
@@ -366,7 +368,9 @@ void SV_DirectConnect( const netadr_t *from ) {
 			|| from->port == cl->netchan.remoteAddress.port ) ) {
 			if (( svs.time - cl->lastConnectTime) 
 				< (sv_reconnectlimit->integer * 1000)) {
-				Com_DPrintf ("%s:reconnect rejected : too soon\n", NET_AdrToString( from ) );
+					if ( com_developer->integer ) {
+						Com_Printf( "%s:reconnect rejected : too soon\n", NET_AdrToString( from ) );
+					}
 				return;
 			}
 			break;

@@ -3988,6 +3988,10 @@ void FS_InitFilesystem( void ) {
 	Com_StartupVariable( "fs_copyfiles" );
 	Com_StartupVariable( "fs_restrict" );
 
+#ifdef _WIN32
+ 	_setmaxstdio( 2048 );
+#endif
+
 	// try to start up normally
 	FS_Startup();
 
