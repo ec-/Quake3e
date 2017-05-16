@@ -271,7 +271,7 @@ static int MapKey( int nVirtKey, int key )
 }
 
 
-static qboolean directMap( const byte chr ) {
+static qboolean directMap( const WPARAM chr ) {
 
 	if ( !in_forceCharset->integer )
 		return qtrue;
@@ -283,10 +283,11 @@ static qboolean directMap( const byte chr ) {
 		case 'h'-'a'+1:
 		case 'a'-'a'+1:
 		case 'e'-'a'+1:
+		case 0xC: // CTRL+L
 			return qtrue;
 	}
 
-	if ( chr < ' ' || chr > '~' )
+	if ( chr < ' ' || chr > 127 )
 		return qfalse;
 	else
 		return qtrue;
@@ -324,6 +325,9 @@ static int MapChar( WPARAM wParam, byte scancode )
 	'B',    'N',    'M',    '<',    '>',    '?',     0,     '*', 
  	 0,     ' ',     0,      0,      0,      0,      0,      0,     // 7
 	}; 
+
+	if ( scancode == 0x53 )
+		return '.';
 
 	if ( directMap( wParam ) || scancode > 0x39 )
 	{

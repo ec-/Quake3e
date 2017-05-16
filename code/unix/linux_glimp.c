@@ -621,9 +621,10 @@ static qboolean directMap( const byte chr )
 		case 'h'-'a'+1:
 		case 'a'-'a'+1:
 		case 'e'-'a'+1:
+		case 0xC: // CTRL+L
 			return qtrue;
 	}
-	if ( chr < ' ' || chr > '~' )
+	if ( chr < ' ' || chr > 127 )
 		return qfalse;
 	else
 		return qtrue;
@@ -659,9 +660,9 @@ void HandleX11Events( void )
 			break;
 
 		case KeyPress:
-//			ri.Printf( PRINT_ALL,"^2K+^7 %08X\n", event.xkey.keycode );
+			// ri.Printf( PRINT_ALL,"^2K+^7 %08X\n", event.xkey.keycode );
 			t = Sys_XTimeToSysTime( event.xkey.time );
-			if ( event.xkey.keycode == 0x31 ) 
+			if ( event.xkey.keycode == 0x31 )
 			{
 				key = K_CONSOLE;
 				p = "";
@@ -670,6 +671,11 @@ void HandleX11Events( void )
 			{
 				int shift = (event.xkey.state & 1);
 				p = XLateKey( &event.xkey, &key );
+				if ( *p && event.xkey.keycode == 0x5B )
+				{
+					p = ".";
+				}
+				else
 				if ( !directMap( *p ) && event.xkey.keycode < 0x3F )
 				{
 					char ch;
@@ -1397,7 +1403,7 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 		GLXFBConfig *fbconfig;
 		int numfbconfig;
 		int maxval;
-	    int bestfbi;
+		int bestfbi;
 		int value;
 		
 		value = 0;
