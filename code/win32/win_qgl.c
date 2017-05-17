@@ -73,6 +73,7 @@ void ( APIENTRY * qglEnable )(GLenum cap);
 void ( APIENTRY * qglEnableClientState )(GLenum array);
 void ( APIENTRY * qglEnd )(void);
 void ( APIENTRY * qglFinish )(void);
+void ( APIENTRY * qglGenTextures )(GLsizei n, GLuint *textures);
 void ( APIENTRY * qglGetBooleanv )(GLenum pname, GLboolean *params);
 GLenum ( APIENTRY * qglGetError )(void);
 void ( APIENTRY * qglGetIntegerv )(GLenum pname, GLint *params);
@@ -88,6 +89,7 @@ void ( APIENTRY * qglPolygonMode )(GLenum face, GLenum mode);
 void ( APIENTRY * qglPolygonOffset )(GLfloat factor, GLfloat units);
 void ( APIENTRY * qglPopMatrix )(void);
 void ( APIENTRY * qglPushMatrix )(void);
+void ( APIENTRY * qglReadBuffer )(GLenum mode);
 void ( APIENTRY * qglReadPixels )(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels);
 void ( APIENTRY * qglScissor )(GLint x, GLint y, GLsizei width, GLsizei height);
 void ( APIENTRY * qglShadeModel )(GLenum mode);
@@ -304,6 +306,7 @@ void QGL_Shutdown( void )
 	qglEnableClientState	= NULL;
 	qglEnd					= NULL;
 	qglFinish				= NULL;
+	qglGenTextures			= NULL;
 	qglGetBooleanv			= NULL;
 	qglGetError				= NULL;
 	qglGetIntegerv			= NULL;
@@ -319,6 +322,7 @@ void QGL_Shutdown( void )
 	qglPolygonOffset		= NULL;
 	qglPopMatrix			= NULL;
 	qglPushMatrix			= NULL;
+	qglReadBuffer			= NULL;
 	qglReadPixels			= NULL;
 	qglScissor				= NULL;
 	qglShadeModel			= NULL;
@@ -445,6 +449,7 @@ qboolean QGL_Init( const char *dllname )
 	qglEnableClientState	= GPA( "glEnableClientState" );
 	qglEnd					= GPA( "glEnd" );
 	qglFinish				= GPA( "glFinish" );
+	qglGenTextures			= GPA( "glGenTextures" );
 	qglGetBooleanv			= GPA( "glGetBooleanv" );
 	qglGetError				= GPA( "glGetError" );
 	qglGetIntegerv			= GPA( "glGetIntegerv" );
@@ -460,6 +465,7 @@ qboolean QGL_Init( const char *dllname )
 	qglPolygonOffset		= GPA( "glPolygonOffset" );
 	qglPopMatrix			= GPA( "glPopMatrix" );
 	qglPushMatrix			= GPA( "glPushMatrix" );
+	qglReadBuffer			= GPA( "glReadBuffer" );
 	qglReadPixels			= GPA( "glReadPixels" );
 	qglScissor				= GPA( "glScissor" );
 	qglShadeModel			= GPA( "glShadeModel" );
