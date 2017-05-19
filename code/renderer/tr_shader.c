@@ -2997,6 +2997,16 @@ static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char
 
 		if ( !buffers[i] )
 			ri.Error( ERR_DROP, "Couldn't load %s", filename );
+		
+		// comment some buggy shaders from pak0
+		if ( summand == 35910 && strcmp( shaderFiles[i], "sky.shader" ) == 0) 
+		{
+			if ( memcmp( buffers[i] + 0x3D3E, "\tcloudparms ", 12 ) == 0 ) 
+			{
+				memcpy( buffers[i] + 0x3CA9, "/*", 2 );
+				memcpy( buffers[i] + 0x3FC2, "*/", 2 );
+			}
+		}
 
 		p = buffers[i];
 		COM_BeginParseSession( filename );
