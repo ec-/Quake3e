@@ -375,8 +375,8 @@ void R_RotateForViewer (void)
 	myGlMultMatrix( viewerMatrix, s_flipMatrix, tr.or.modelMatrix );
 
 	tr.viewParms.world = tr.or;
-
 }
+
 
 /*
 ** SetFarClip
@@ -952,40 +952,17 @@ R_GetModelViewBounds
 static void R_GetModelViewBounds( int *mins, int *maxs )
 {
 	vec4_t			eye, clip;
-	vec3_t			bounds[2];
-	vec3_t			test[8];
 	float			minn[2];
 	float			maxn[2];
 	float			norm[2];
 	int				i,j;
 
-	VectorCopy( tess.xyz[0], bounds[0] );
-	VectorCopy( tess.xyz[0], bounds[1] );
-	for ( i = 1; i < tess.numVertexes; i++ ) {
-		for ( j = 0; j < 3; j++ ) {
-			if ( bounds[0][j] > tess.xyz[i][j] )
-				 bounds[0][j] = tess.xyz[i][j];
-			if ( bounds[1][j] < tess.xyz[i][j] )
-				 bounds[1][j] = tess.xyz[i][j];
-		}
-	}
-
 	minn[0] = minn[1] =  1.0;
 	maxn[0] = maxn[1] = -1.0;
 
-	VectorSet( test[0], bounds[0][0], bounds[0][1], bounds[0][2] );
-	VectorSet( test[1], bounds[1][0], bounds[0][1], bounds[0][2] );
-	VectorSet( test[2], bounds[0][0], bounds[1][1], bounds[0][2] );
-	VectorSet( test[3], bounds[1][0], bounds[1][1], bounds[0][2] );
-	
-	VectorSet( test[4], bounds[1][0], bounds[1][1], bounds[1][2] );
-	VectorSet( test[5], bounds[0][0], bounds[1][1], bounds[1][2] );
-	VectorSet( test[6], bounds[1][0], bounds[0][1], bounds[1][2] );
-	VectorSet( test[7], bounds[0][0], bounds[0][1], bounds[1][2] );
-
-	for ( i = 0; i < 8; i++ ) {
-		R_TransformModelToClip( test[i], tr.or.modelMatrix, tr.viewParms.projectionMatrix, eye, clip );
-		if ( clip[3] <= 0.0 ) {
+	for ( i = 0; i < tess.numVertexes; i++ ) {
+		R_TransformModelToClip( tess.xyz[i], tr.or.modelMatrix, tr.viewParms.projectionMatrix, eye, clip );
+		if ( clip[3] < 0.0 ) {
 			// bound values by sign
 			if ( clip[0] < 0 ) norm[0] = -1.0; else norm[0] = 1.0;
 			if ( clip[1] < 0 ) norm[1] = -1.0; else norm[1] = 1.0;
@@ -1003,8 +980,8 @@ static void R_GetModelViewBounds( int *mins, int *maxs )
 		}
 	}
 
-	mins[0] = (int)(0.0 + 0.5 * ( 1.0 + minn[0] ) * tr.viewParms.viewportWidth);
-	mins[1] = (int)(0.0 + 0.5 * ( 1.0 + minn[1] ) * tr.viewParms.viewportHeight);
+	mins[0] = (int)(-0.5 + 0.5 * ( 1.0 + minn[0] ) * tr.viewParms.viewportWidth);
+	mins[1] = (int)(-0.5 + 0.5 * ( 1.0 + minn[1] ) * tr.viewParms.viewportHeight);
 	maxs[0] = (int)(0.5 + 0.5 * ( 1.0 + maxn[0] ) * tr.viewParms.viewportWidth);
 	maxs[1] = (int)(0.5 + 0.5 * ( 1.0 + maxn[1] ) * tr.viewParms.viewportHeight);
 }
