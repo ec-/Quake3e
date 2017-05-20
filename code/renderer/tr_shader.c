@@ -3003,6 +3003,9 @@ static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char
 		{
 			if ( memcmp( buffers[i] + 0x3D3E, "\tcloudparms ", 12 ) == 0 ) 
 			{
+				memcpy( buffers[i] + 0x27D7, "/*", 2 );
+				memcpy( buffers[i] + 0x2A93, "*/", 2 );
+
 				memcpy( buffers[i] + 0x3CA9, "/*", 2 );
 				memcpy( buffers[i] + 0x3FC2, "*/", 2 );
 			}
