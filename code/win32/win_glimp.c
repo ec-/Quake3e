@@ -1218,6 +1218,22 @@ qboolean GLimp_HaveExtension( const char *ext )
 */
 static void GLW_InitExtensions( void )
 {
+	size_t len;
+
+	if ( !qglGetString( GL_EXTENSIONS ) )
+		return;
+
+	// get our config strings
+	Q_strncpyz( glConfig.vendor_string, (char *)qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
+	Q_strncpyz( glConfig.renderer_string, (char *)qglGetString (GL_RENDERER), sizeof( glConfig.renderer_string ) );
+	len = strlen( glConfig.renderer_string );
+	if ( len && glConfig.renderer_string[ len - 1 ] == '\n')
+		glConfig.renderer_string[ len - 1 ] = '\0';
+	Q_strncpyz( glConfig.version_string, (char *)qglGetString (GL_VERSION), sizeof( glConfig.version_string ) );
+
+	Q_strncpyz( glw_state.gl_extensions, (char *)qglGetString (GL_EXTENSIONS), sizeof( glw_state.gl_extensions ) );
+	Q_strncpyz( glConfig.extensions_string, glw_state.gl_extensions, sizeof( glConfig.extensions_string ) );
+
 	if ( !r_allowExtensions->integer )
 	{
 		ri.Printf( PRINT_ALL, "*** IGNORING OPENGL EXTENSIONS ***\n" );
@@ -1536,7 +1552,6 @@ static qboolean GLW_StartOpenGL( void )
 */
 void GLimp_Init( void )
 {
-	size_t len;
 	ri.Printf( PRINT_ALL, "Initializing OpenGL subsystem\n" );
 
 	//
@@ -1557,21 +1572,15 @@ void GLimp_Init( void )
 	//glConfig.driverType = GLDRV_ICD;
 	glConfig.hardwareType = GLHW_GENERIC;
 
-	// get our config strings
-	Q_strncpyz( glConfig.vendor_string, (char *)qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
-	Q_strncpyz( glConfig.renderer_string, (char *)qglGetString (GL_RENDERER), sizeof( glConfig.renderer_string ) );
-	len = strlen( glConfig.renderer_string );
-	if ( len && glConfig.renderer_string[ len - 1 ] == '\n')
-		glConfig.renderer_string[ len - 1 ] = '\0';
-	Q_strncpyz( glConfig.version_string, (char *)qglGetString (GL_VERSION), sizeof( glConfig.version_string ) );
-
-	Q_strncpyz( glw_state.gl_extensions, (char *)qglGetString (GL_EXTENSIONS), sizeof( glw_state.gl_extensions ) );
-	Q_strncpyz( glConfig.extensions_string, glw_state.gl_extensions, sizeof( glConfig.extensions_string ) );
-
 	GLW_InitExtensions();
 
-	GLW_AttemptMSAA();
-
+#if defined(USE_PMLIGHT) && !defined(USE_RENDERER2)
+	QGL_EarlyInitARB();
+	if ( !r_fbo->integer ) 
+#endif
+	{
+		GLW_AttemptMSAA();
+	}
 #if defined(USE_PMLIGHT) && !defined(USE_RENDERER2)
 	QGL_InitARB();
 #endif
@@ -1609,7 +1618,10 @@ void GLimp_Shutdown( void )
 	ri.Printf( PRINT_ALL, "Shutting down OpenGL subsystem\n" );
 
 	// restore gamma.  We do this first because 3Dfx's extension needs a valid OGL subsystem
-	WG_RestoreGamma();
+	if ( glw_state.gammaSet ) {
+		WG_RestoreGamma();
+		glw_state.gammaSet = qfalse;
+	}
 
 #if defined(USE_PMLIGHT) && !defined(USE_RENDERER2)
 	QGL_DoneARB();

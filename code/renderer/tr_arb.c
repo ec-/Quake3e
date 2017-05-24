@@ -17,6 +17,8 @@ enum {
 	DLIGHT_FRAGMENT,
 	SPRITE_VERTEX,
 	SPRITE_FRAGMENT,
+	GAMMA_VERTEX,
+	GAMMA_FRAGMENT,
 	PROGRAM_COUNT
 };
 
@@ -38,6 +40,47 @@ void ( APIENTRY * qglProgramStringARB )( GLenum target, GLenum format, GLsizei l
 void ( APIENTRY * qglBindProgramARB )( GLenum target, GLuint program );
 void ( APIENTRY * qglProgramLocalParameter4fARB )( GLenum target, GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w );
 void ( APIENTRY * qglProgramEnvParameter4fARB )( GLenum target, GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w );
+
+qboolean fboAvailable = qfalse;
+qboolean fboEnabled = qfalse;
+
+typedef struct frameBuffer_s {
+	GLuint fbo;
+	GLuint color;			// renderbuffer if mulsisampled
+	GLuint depthStencil;	// renderbuffer if mulsisampled
+	qboolean multiSampled;
+} frameBuffer_t;
+
+static GLuint commonDepthStencil;
+static frameBuffer_t frameBufferMS;
+static frameBuffer_t frameBuffers[2];
+
+static unsigned int frameBufferReadIndex = 0; // read this for the latest color/depth data
+static qboolean frameBufferMultiSampling = qfalse;
+
+qboolean blitMSfbo = qfalse;
+
+
+// framebuffer functions
+GLboolean (APIENTRY *qglIsRenderbuffer)( GLuint renderbuffer );
+void ( APIENTRY *qglBindRenderbuffer )( GLenum target, GLuint renderbuffer );
+void ( APIENTRY *qglDeleteFramebuffers )( GLsizei n, const GLuint *framebuffers );
+void ( APIENTRY *qglDeleteRenderbuffers )( GLsizei n, const GLuint *renderbuffers );
+void ( APIENTRY *qglGenRenderbuffers )( GLsizei n, GLuint *renderbuffers );
+void ( APIENTRY *qglRenderbufferStorage )( GLenum target, GLenum internalformat, GLsizei width, GLsizei height );
+void ( APIENTRY *qglGetRenderbufferParameteriv )( GLenum target, GLenum pname, GLint *params );
+GLboolean ( APIENTRY *qglIsFramebuffer)( GLuint framebuffer );
+void ( APIENTRY *qglBindFramebuffer)( GLenum target, GLuint framebuffer );
+void ( APIENTRY *qglGenFramebuffers)( GLsizei n, GLuint *framebuffers );
+GLenum ( APIENTRY *qglCheckFramebufferStatus )( GLenum target );
+void ( APIENTRY *qglFramebufferTexture1D )( GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level );
+void ( APIENTRY *qglFramebufferTexture2D )( GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level );
+void ( APIENTRY *qglFramebufferTexture3D )( GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset );
+void ( APIENTRY *qglFramebufferRenderbuffer )( GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer );
+void ( APIENTRY *qglGetFramebufferAttachmentParameteriv )( GLenum target, GLenum attachment, GLenum pname, GLint *params );
+void ( APIENTRY *qglGenerateMipmap)( GLenum target );
+void ( APIENTRY *qglBlitFramebuffer)( GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter );
+void ( APIENTRY *qglRenderbufferStorageMultisample )(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
 
 qboolean GL_ProgramAvailable( void ) 
 {
@@ -98,6 +141,24 @@ static void GL_DlightProgramEnable( void )
 	programEnabled = qtrue;
 }
 
+static void GL_GammaProgramEnable( void )
+{
+	if ( !programAvail )
+		return;
+
+	if ( current_vp != programs[ GAMMA_VERTEX ] ) {
+		qglEnable( GL_VERTEX_PROGRAM_ARB );
+		qglBindProgramARB( GL_VERTEX_PROGRAM_ARB, programs[ GAMMA_VERTEX ] );
+		current_vp = programs[ GAMMA_VERTEX ];
+	}
+
+	if ( current_fp != programs[ GAMMA_FRAGMENT ] ) {
+		qglEnable( GL_FRAGMENT_PROGRAM_ARB );
+		qglBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, programs[ GAMMA_FRAGMENT ] );
+		current_fp = programs[ GAMMA_FRAGMENT ];
+	}
+	programEnabled = qtrue;
+}
 
 static void ARB_Lighting( const shaderStage_t* pStage )
 {
@@ -377,6 +438,28 @@ static const char *spriteFP = {
 };
 
 
+static const char *gammaVP = {
+	"!!ARBvp1.0 \n"
+	"OPTION ARB_position_invariant; \n"
+	"MOV result.texcoord[0], vertex.texcoord; \n"
+	"END \n" 
+};
+static const char *gammaFP = {
+	"!!ARBfp1.0 \n"
+	"OPTION ARB_precision_hint_fastest; \n"
+	"PARAM gamma = program.local[0]; \n"
+	"TEMP base; \n"
+	"TEX base, fragment.texcoord[0], texture[0], 2D; \n"
+	"POW base.x, base.x, gamma.x; \n"
+	"POW base.y, base.y, gamma.y; \n"
+	"POW base.z, base.z, gamma.z; \n"
+	"MUL base.xyz, base, gamma.w; \n"
+	"MOV base.w, 1.0; \n"
+	"MOV result.color, base; \n"
+	"END \n" 
+};
+
+
 static void ARB_DeletePrograms( void ) 
 {
 	qglDeleteProgramsARB( ARRAY_LEN( programs ), programs );
@@ -439,6 +522,12 @@ qboolean ARB_UpdatePrograms( void )
 	if ( !ARB_CompileProgram( Fragment, spriteFP, programs[ SPRITE_FRAGMENT ] ) )
 		return qfalse;
 
+	if ( !ARB_CompileProgram( Vertex, gammaVP, programs[ GAMMA_VERTEX ] ) )
+		return qfalse;
+
+	if ( !ARB_CompileProgram( Fragment, gammaFP, programs[ GAMMA_FRAGMENT ] ) )
+		return qfalse;
+
 	programAvail = qtrue;
 
 	return qtrue;
@@ -446,46 +535,468 @@ qboolean ARB_UpdatePrograms( void )
 
 
 
+void FBO_Clean( frameBuffer_t *fb ) 
+{
+	if ( fb->fbo ) 
+	{
+		qglBindFramebuffer( GL_FRAMEBUFFER, fb->fbo );
+		if ( fb->multiSampled ) 
+		{
+			qglBindRenderbuffer( GL_RENDERBUFFER, 0 );
+			if ( fb->color ) 
+			{
+				qglDeleteRenderbuffers( 1, &fb->color );
+				fb->color = 0;
+			}
+			if ( fb->depthStencil ) 
+			{
+				qglDeleteRenderbuffers( 1, &fb->depthStencil );
+				fb->depthStencil = 0;
+			}
+		}
+		else 
+		{
+			qglBindTexture( GL_TEXTURE_2D, 0 );
+			if ( fb->color ) 
+			{
+				qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0 );	
+				qglDeleteTextures( 1, &fb->color );
+				fb->color = 0;
+			}
+			if ( fb->depthStencil || commonDepthStencil ) 
+			{
+				qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, 0, 0 );
+				if ( fb->depthStencil && fb->depthStencil != commonDepthStencil ) 
+				{
+					qglDeleteTextures( 1, &fb->depthStencil );
+					fb->depthStencil = 0;
+				}
+			}
+		}
+
+		qglBindFramebuffer( GL_FRAMEBUFFER, 0 );
+		qglDeleteFramebuffers( 1, &fb->fbo );
+		fb->fbo = 0;
+	}
+}
+
+
+void FBO_CleanDepth( void ) 
+{
+	if ( commonDepthStencil ) 
+	{
+		qglDeleteTextures( 1, &commonDepthStencil );
+		commonDepthStencil = 0;
+	}
+}
+
+
+static GLuint FBO_CreateDepthTexture( GLsizei width, GLsizei height ) 
+{
+	GLuint tex;
+	qglGenTextures( 1, &tex );
+	qglBindTexture( GL_TEXTURE_2D, tex );
+	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+
+	if ( r_stencilbits->integer == 0 )
+		qglTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL );
+	else
+		qglTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL );
+
+	return tex;
+}
+
+
+static qboolean FBO_Create( frameBuffer_t *fb, qboolean depthStencil )
+{
+	int fboStatus;
+
+	fb->multiSampled = qfalse;
+
+	if ( frameBufferMultiSampling && r_flares->integer ) 
+	{
+		depthStencil = qtrue;
+	}
+
+	if ( depthStencil )
+	{
+		if ( !commonDepthStencil ) 
+		{
+			commonDepthStencil = FBO_CreateDepthTexture( glConfig.vidWidth, glConfig.vidHeight );
+		}
+		fb->depthStencil = commonDepthStencil;
+	}
+
+	// color texture
+	qglGenTextures( 1, &fb->color );
+	qglBindTexture( GL_TEXTURE_2D, fb->color );
+	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+
+	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+
+	qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, glConfig.vidWidth, glConfig.vidHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL );
+
+	qglGenFramebuffers( 1, &fb->fbo );
+	qglBindFramebuffer( GL_FRAMEBUFFER, fb->fbo );
+	qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fb->color, 0 );
+
+	if ( depthStencil ) 
+	{
+		if ( r_stencilbits->integer == 0 )
+			qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, fb->depthStencil, 0 );
+		else
+			qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, fb->depthStencil, 0 );
+	}
+
+	fboStatus = qglCheckFramebufferStatus( GL_FRAMEBUFFER );
+	if ( fboStatus != GL_FRAMEBUFFER_COMPLETE )
+	{
+		ri.Printf( PRINT_ALL, "Failed to create FBO (status %d, error %d)\n", fboStatus, (int)qglGetError() );
+		FBO_Clean( fb );
+		return qfalse;
+	}
+
+	qglBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+	glState.currenttextures[ glState.currenttmu ] = 0;
+	qglBindTexture( GL_TEXTURE_2D, 0 );
+
+	return qtrue;
+}
+
+
+static qboolean FBO_CreateMS( frameBuffer_t *fb )
+{
+	GLsizei nSamples = r_ext_multisample->integer;
+	int fboStatus;
+	
+	fb->multiSampled = qtrue;
+
+	if ( nSamples <= 0 )
+	{
+		return qfalse;
+	}
+	nSamples = (nSamples + 1) & ~1;
+
+	qglGenFramebuffers( 1, &fb->fbo );
+	qglBindFramebuffer( GL_FRAMEBUFFER, fb->fbo );
+
+	qglGenRenderbuffers( 1, &fb->color );
+	qglBindRenderbuffer( GL_RENDERBUFFER, fb->color );
+	while ( nSamples > 0 ) {
+		qglRenderbufferStorageMultisample( GL_RENDERBUFFER, nSamples, GL_RGBA8, glConfig.vidWidth, glConfig.vidHeight );
+		if ( (int)qglGetError() == GL_INVALID_VALUE/* != GL_NO_ERROR */ ) {
+			ri.Printf( PRINT_ALL, "...%ix MSAA is not available\n", nSamples );
+			nSamples -= 2;
+		} else {
+			ri.Printf( PRINT_ALL, "...using %ix MSAA\n", nSamples );
+			break;
+		}
+	}
+	if ( nSamples <= 0 ) 
+	{
+		FBO_Clean( fb );
+		return qfalse;
+	}
+	qglFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, fb->color );
+
+	qglGenRenderbuffers( 1, &fb->depthStencil );
+	qglBindRenderbuffer( GL_RENDERBUFFER, fb->depthStencil );
+	if ( r_stencilbits->integer == 0 )
+		qglRenderbufferStorageMultisample( GL_RENDERBUFFER, nSamples, GL_DEPTH_COMPONENT32, glConfig.vidWidth, glConfig.vidHeight );
+	else
+		qglRenderbufferStorageMultisample( GL_RENDERBUFFER, nSamples, GL_DEPTH24_STENCIL8, glConfig.vidWidth, glConfig.vidHeight );
+
+	if ( (int)qglGetError() != GL_NO_ERROR ) 
+	{
+		FBO_Clean( fb );
+		return qfalse;
+	}
+
+	if ( r_stencilbits->integer == 0 )
+		qglFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fb->depthStencil );
+	else
+		qglFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fb->depthStencil );
+
+	fboStatus = qglCheckFramebufferStatus( GL_FRAMEBUFFER );
+	if ( fboStatus != GL_FRAMEBUFFER_COMPLETE )
+	{
+		Com_Printf( "Failed to create MS FBO (status 0x%x, error %d)\n", fboStatus, (int)qglGetError() );
+		FBO_Clean( fb );
+		return qfalse;
+	}
+	qglBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+	return qtrue;
+}
+
+
+void FBO_BindMain( void ) 
+{
+	if ( fboAvailable && programAvail ) 
+	{
+		const frameBuffer_t *fb;
+		if ( frameBufferMultiSampling ) 
+		{
+			blitMSfbo = qtrue;
+			fb = &frameBufferMS;
+		} 
+		else 
+		{
+			blitMSfbo = qfalse;
+			fb = &frameBuffers[ frameBufferReadIndex ];
+		}
+		qglBindFramebuffer( GL_FRAMEBUFFER, fb->fbo );
+	}
+}
+
+
+void FBO_Bind( void )
+{
+	if ( fboAvailable && programAvail ) 
+	{
+		const frameBuffer_t *fb = &frameBuffers[ frameBufferReadIndex ];
+		qglBindFramebuffer( GL_FRAMEBUFFER, fb->fbo );
+	}
+}
+
+
+static void FBO_Swap( void )
+{
+	frameBufferReadIndex ^= 1;
+}
+
+
+static void FBO_BlitToBackBuffer( void )
+{
+	const int w = glConfig.vidWidth;
+	const int h = glConfig.vidHeight;
+
+	const frameBuffer_t *fbo = &frameBuffers[ frameBufferReadIndex ];
+
+	qglBindFramebuffer( GL_READ_FRAMEBUFFER, fbo->fbo );
+	qglBindFramebuffer( GL_DRAW_FRAMEBUFFER, 0 );
+
+	qglReadBuffer( GL_COLOR_ATTACHMENT0 );
+	//qglDrawBuffer( GL_BACK );
+
+	qglBlitFramebuffer( 0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_LINEAR );
+}
+
+
+void FBO_BlitMS( qboolean depthOnly )
+{
+	//if ( blitMSfbo ) 
+	//{
+	const int w = glConfig.vidWidth;
+	const int h = glConfig.vidHeight;
+
+	const frameBuffer_t *r = &frameBufferMS;
+	const frameBuffer_t *d = &frameBuffers[ frameBufferReadIndex ];
+
+	qglBindFramebuffer( GL_READ_FRAMEBUFFER, r->fbo );
+	qglBindFramebuffer( GL_DRAW_FRAMEBUFFER, d->fbo );
+
+	if ( depthOnly ) 
+	{
+		qglBlitFramebuffer( 0, 0, w, h, 0, 0, w, h, GL_DEPTH_BUFFER_BIT, GL_NEAREST );
+		qglBindFramebuffer( GL_READ_FRAMEBUFFER, d->fbo );
+		return;
+	}
+
+	blitMSfbo = qfalse;
+	qglReadBuffer( GL_COLOR_ATTACHMENT0 );
+	qglDrawBuffer( GL_COLOR_ATTACHMENT0 );
+	qglBlitFramebuffer( 0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST );
+}
+
+
+void FBO_PostProcess( void )
+{
+	const float obScale = 1 << tr.overbrightBits;
+	const float gamma = 1.0f / r_gamma->value;
+	const float w = glConfig.vidWidth;
+	const float h = glConfig.vidHeight;
+
+	if ( !fboAvailable || !programAvail )
+		return;
+
+	if ( frameBufferMultiSampling && blitMSfbo )
+		FBO_BlitMS( qfalse );
+
+	FBO_Swap();
+	FBO_Bind();
+	
+	GL_SelectTexture( 0 );
+	qglBindTexture( GL_TEXTURE_2D, frameBuffers[ frameBufferReadIndex ^ 1 ].color );
+
+	GL_GammaProgramEnable();
+	qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, gamma, gamma, gamma, obScale );
+
+	qglBegin( GL_QUADS );
+		qglTexCoord2f( 0.0f, 0.0f );
+		qglVertex2f( 0.0f, h );
+		qglTexCoord2f( 0.0f, 1.0f );
+		qglVertex2f( 0.0f, 0.0f );
+		qglTexCoord2f( 1.0f, 1.0f );
+		qglVertex2f( w, 0.0f );
+		qglTexCoord2f( 1.0f, 0.0f );
+		qglVertex2f( w, h );
+	qglEnd();
+
+	GL_ProgramDisable();
+
+	glState.currenttextures[ glState.currenttmu ] = 0;
+	qglBindTexture( GL_TEXTURE_2D, 0 );
+
+	FBO_BlitToBackBuffer();
+}
+
+
 #ifdef _MSC_VER
 #	pragma warning (disable : 4113 4133 4047 )
 #endif
 
-qboolean QGL_InitARB( void )
+#define GPA(fn) q##fn = qwglGetProcAddress( #fn ); if ( !q##fn ) { Com_Printf( "GPA failed on '%s'\n", #fn );  goto __fail; }
+
+static void QGL_InitShaders( void ) 
 {
 	programAvail = qfalse;
 
+	if ( !r_allowExtensions->integer )
+		return;
+
 	if ( atof( (const char *)qglGetString( GL_VERSION ) ) < 1.4 ) {
 		ri.Printf( PRINT_ALL, S_COLOR_YELLOW "...OpenGL 1.4 is not available\n" );
-		goto __fail;
+		return;
 	}
 
 	if ( !GLimp_HaveExtension( "GL_ARB_vertex_program" ) ) {
-		goto __fail;
+		return;
 	}
 
 	if ( !GLimp_HaveExtension( "GL_ARB_fragment_program" ) ) {
-		goto __fail;
+		return;
 	}
 
-#define GPA(fn) q##fn = qwglGetProcAddress( #fn ); if ( !q##fn ) goto __fail;
 	GPA( glGenProgramsARB );
 	GPA( glBindProgramARB );
 	GPA( glProgramStringARB );
 	GPA( glDeleteProgramsARB );
 	GPA( glProgramLocalParameter4fARB );
 	GPA( glProgramEnvParameter4fARB );
-#undef GPA
 
+	programAvail = qtrue;
+__fail:
+	return;
+}
+
+
+static void QGL_InitFBO( void ) 
+{
+	fboAvailable = qfalse;
+
+	if ( !r_allowExtensions->integer )
+		return;
+
+	if ( !programAvail )
+		return;
+
+	if ( !GLimp_HaveExtension( "GL_EXT_framebuffer_object" ) )
+		return;
+
+	if ( !GLimp_HaveExtension( "GL_EXT_framebuffer_blit" ) )
+		return;
+
+	if ( !GLimp_HaveExtension( "GL_EXT_framebuffer_multisample" ) )
+		return;
+
+	GPA( glBindRenderbuffer );
+	GPA( glBlitFramebuffer );
+	GPA( glDeleteRenderbuffers );
+	GPA( glGenRenderbuffers );
+	GPA( glGetRenderbufferParameteriv );
+	GPA( glIsFramebuffer );
+	GPA( glBindFramebuffer );
+	GPA( glDeleteFramebuffers );
+	GPA( glCheckFramebufferStatus );
+	GPA( glFramebufferTexture1D );
+	GPA( glFramebufferTexture2D );
+	GPA( glFramebufferTexture3D );
+	GPA( glFramebufferRenderbuffer );
+	GPA( glGenerateMipmap );
+	GPA( glGenFramebuffers );
+	GPA( glGetFramebufferAttachmentParameteriv );
+	GPA( glIsRenderbuffer );
+	GPA( glRenderbufferStorage );
+	GPA( glRenderbufferStorageMultisample );
+	fboAvailable = qtrue;
+__fail:
+	return;
+}
+
+
+void QGL_EarlyInitARB( void ) 
+{
+	QGL_InitShaders();
+	QGL_InitFBO();
+}
+
+
+void QGL_InitARB( void )
+{
 	if ( ARB_UpdatePrograms() )
 	{
+		if ( r_fbo->integer && fboAvailable ) 
+		{
+			qboolean result = qfalse;
+			frameBufferMultiSampling = qfalse;
+
+			if ( FBO_CreateMS( &frameBufferMS ) ) 
+			{
+				frameBufferMultiSampling = qtrue;
+				result = FBO_Create( &frameBuffers[ 0 ], qfalse ) && FBO_Create( &frameBuffers[ 1 ], qfalse );
+				frameBufferMultiSampling = result;
+			}
+			else 
+			{
+				result = FBO_Create( &frameBuffers[ 0 ], qtrue ) && FBO_Create( &frameBuffers[ 1 ], qtrue );
+			}
+
+			if ( result ) 
+			{
+				FBO_BindMain();
+				qglClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+			}
+			else 
+			{
+				FBO_Clean( &frameBufferMS );
+				FBO_Clean( &frameBuffers[0] );
+				FBO_Clean( &frameBuffers[1] );
+				FBO_CleanDepth();
+				fboAvailable = qfalse;		
+			}
+		}
+		else 
+		{
+			fboAvailable = qfalse;
+		}
+		
 		//programAvail = qtrue;
 		programEnabled = qtrue; // force disable
 		GL_ProgramDisable();
 		ri.Printf( PRINT_ALL, "...using ARB shaders\n" );
-		return qtrue;
+		if ( fboAvailable ) 
+		{
+			ri.Printf( PRINT_ALL, "...using FBO\n" );
+		}
+
+		return; // success
 	}
 
-__fail:
 	ri.Printf( PRINT_ALL, "...not using ARB shaders\n" );
 
 	qglGenProgramsARB		= NULL;
@@ -495,7 +1006,9 @@ __fail:
 	qglProgramLocalParameter4fARB = NULL;
 	qglProgramEnvParameter4fARB = NULL;
 
-	return qfalse;
+	fboAvailable = qfalse;
+	programAvail = qfalse;
+	programEnabled = qfalse;
 }
 
 
@@ -507,7 +1020,14 @@ void QGL_DoneARB( void )
 		GL_ProgramDisable();
 		ARB_DeletePrograms();
 	}
+
+	FBO_Clean( &frameBufferMS );
+	FBO_Clean( &frameBuffers[0] );
+	FBO_Clean( &frameBuffers[1] );
+	FBO_CleanDepth();
+
 	programAvail = qfalse;
+	fboAvailable = qfalse;
 
 	qglGenProgramsARB		= NULL;
 	qglDeleteProgramsARB	= NULL;

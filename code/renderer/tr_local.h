@@ -1078,8 +1078,6 @@ extern cvar_t	*r_znear;				// near Z clip plane
 extern cvar_t	*r_zproj;				// z distance of projection plane
 extern cvar_t	*r_stereoSeparation;			// separation of cameras for stereo rendering
 
-extern cvar_t	*r_measureOverdraw;		// enables stencil buffer overdraw measurement
-
 extern cvar_t	*r_lodbias;				// push/pull LOD transitions
 extern cvar_t	*r_lodscale;
 
@@ -1099,6 +1097,7 @@ extern cvar_t	*r_dlightSpecPower;		// 1 - 32
 extern cvar_t	*r_dlightSpecColor;		// -1.0 - 1.0
 extern cvar_t	*r_dlightScale;			// 0.1 - 1.0
 extern cvar_t	*r_dlightIntensity;		// 0.1 - 1.0
+extern cvar_t	*r_fbo;
 #endif
 extern cvar_t	*r_dlightBacks;			// dlight non-facing surfaces for continuity
 
@@ -1424,7 +1423,9 @@ void R_ComputeTexCoords( const shaderStage_t *pStage );
 
 qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t maxs );
 
-qboolean QGL_InitARB( void );
+void QGL_EarlyInitARB( void );
+void QGL_InitARB( void );
+
 void QGL_DoneARB( void );
 qboolean ARB_UpdatePrograms( void );
 
@@ -1434,6 +1435,14 @@ void GL_ProgramEnable( void );
 
 void ARB_SetupLightParams( void );
 void ARB_LightingPass( void );
+
+extern qboolean		fboAvailable;
+extern qboolean		blitMSfbo;
+
+void FBO_BindMain( void );
+void FBO_Bind( void );
+void FBO_PostProcess( void );
+void FBO_BlitMS( qboolean depthOnly );
 
 #endif // USE_PMLIGHT
 
@@ -1671,8 +1680,6 @@ typedef enum {
 	RC_STRETCH_PIC,
 	RC_DRAW_SURFS,
 	RC_DRAW_BUFFER,
-	RC_SWAP_BUFFERS,
-	RC_SCREENSHOT,
 	RC_VIDEOFRAME,
 	RC_COLORMASK,
 	RC_CLEARDEPTH

@@ -39,6 +39,14 @@ void WG_CheckHardwareGamma( void )
 {
 	HDC			hDC;
 
+#ifdef USE_PMLIGHT
+	if ( fboAvailable ) 
+	{
+		glConfig.deviceSupportsGamma = qtrue;
+		return;
+	}
+#endif
+	
 	glConfig.deviceSupportsGamma = qfalse;
 
 	// non-3Dfx standalone drivers don't support gamma changes, period
@@ -135,10 +143,14 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	OSVERSIONINFO	vinfo;
 	HDC hDC;
 
-	if ( !glConfig.deviceSupportsGamma || r_ignorehwgamma->integer || !glw_state.hDC || !gw_active ) {
+#ifdef USE_PMLIGHT
+	if ( fboAvailable )
 		return;
-	}
+#endif
 
+	if ( !glConfig.deviceSupportsGamma || r_ignorehwgamma->integer || !glw_state.hDC || !gw_active )
+		return;
+	
 //mapGammaMax();
 
 	for ( i = 0; i < 256; i++ ) {

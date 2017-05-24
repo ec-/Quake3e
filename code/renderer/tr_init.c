@@ -60,7 +60,6 @@ cvar_t	*r_anaglyphMode;
 cvar_t	*r_greyscale;
 
 cvar_t	*r_ignorehwgamma;
-cvar_t	*r_measureOverdraw;
 
 cvar_t	*r_inGameVideo;
 cvar_t	*r_fastsky;
@@ -73,6 +72,7 @@ cvar_t	*r_dlightSpecPower;
 cvar_t	*r_dlightSpecColor;
 cvar_t	*r_dlightScale;
 cvar_t	*r_dlightIntensity;
+cvar_t	*r_fbo;
 #endif
 cvar_t	*r_dlightBacks;
 
@@ -523,30 +523,6 @@ const void *RB_TakeScreenshotCmd( const void *data ) {
 	
 	return (const void *)(cmd + 1);	
 
-}
-
-/*
-==================
-R_TakeScreenshot
-==================
-*/
-void R_TakeScreenshot( int x, int y, int width, int height, const char *name, qboolean jpeg ) {
-	static char	fileName[MAX_OSPATH]; // bad things if two screenshots per frame?
-	screenshotCommand_t	*cmd;
-
-	cmd = R_GetCommandBuffer( sizeof( *cmd ) );
-	if ( !cmd ) {
-		return;
-	}
-	cmd->commandId = RC_SCREENSHOT;
-
-	cmd->x = x;
-	cmd->y = y;
-	cmd->width = width;
-	cmd->height = height;
-	Q_strncpyz( fileName, name, sizeof(fileName) );
-	cmd->fileName = fileName;
-	cmd->jpeg = jpeg;
 }
 
 
@@ -1027,7 +1003,7 @@ void R_Register( void )
 	//
 	r_lodCurveError = ri.Cvar_Get( "r_lodCurveError", "250", CVAR_ARCHIVE_ND | CVAR_CHEAT );
 	r_lodbias = ri.Cvar_Get( "r_lodbias", "0", CVAR_ARCHIVE_ND );
-	r_flares = ri.Cvar_Get ("r_flares", "0", CVAR_ARCHIVE_ND );
+	r_flares = ri.Cvar_Get ("r_flares", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_znear = ri.Cvar_Get( "r_znear", "4", CVAR_CHEAT );
 	ri.Cvar_CheckRange( r_znear, 0.001f, 200, qfalse );
 	r_zproj = ri.Cvar_Get( "r_zproj", "64", CVAR_ARCHIVE_ND );
@@ -1052,6 +1028,8 @@ void R_Register( void )
 	ri.Cvar_CheckRange( r_dlightSpecColor, -1.0f, 1.0f, qfalse );
 	r_dlightIntensity = ri.Cvar_Get( "r_dlightIntensity", "1.0", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_dlightIntensity, 0.1f, 1.0f, qfalse );
+
+	r_fbo = ri.Cvar_Get( "r_fbo", "0", CVAR_ARCHIVE | CVAR_LATCH );
 #endif
 	r_dlightBacks = ri.Cvar_Get( "r_dlightBacks", "1", CVAR_ARCHIVE_ND );
 	r_finish = ri.Cvar_Get( "r_finish", "0", CVAR_ARCHIVE_ND );
@@ -1093,7 +1071,6 @@ void R_Register( void )
 
 	r_skipBackEnd = ri.Cvar_Get ("r_skipBackEnd", "0", CVAR_CHEAT);
 
-	r_measureOverdraw = ri.Cvar_Get( "r_measureOverdraw", "0", CVAR_CHEAT );
 	r_lodscale = ri.Cvar_Get( "r_lodscale", "5", CVAR_CHEAT );
 	r_norefresh = ri.Cvar_Get ("r_norefresh", "0", CVAR_CHEAT);
 	r_drawentities = ri.Cvar_Get ("r_drawentities", "1", CVAR_CHEAT );

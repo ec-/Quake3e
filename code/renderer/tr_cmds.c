@@ -296,41 +296,9 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	tr.frameCount++;
 	tr.frameSceneNum = 0;
 
-	//
-	// do overdraw measurement
-	//
-	if ( r_measureOverdraw->integer )
-	{
-		if ( glConfig.stencilBits < 4 )
-		{
-			ri.Printf( PRINT_ALL, "Warning: not enough stencil bits to measure overdraw: %d\n", glConfig.stencilBits );
-			ri.Cvar_Set( "r_measureOverdraw", "0" );
-		}
-		else if ( r_shadows->integer == 2 )
-		{
-			ri.Printf( PRINT_ALL, "Warning: stencil shadows and overdraw measurement are mutually exclusive\n" );
-			ri.Cvar_Set( "r_measureOverdraw", "0" );
-		}
-		else
-		{
-			R_IssuePendingRenderCommands();
-			qglEnable( GL_STENCIL_TEST );
-			qglStencilMask( ~0U );
-			qglClearStencil( 0U );
-			qglStencilFunc( GL_ALWAYS, 0U, ~0U );
-			qglStencilOp( GL_KEEP, GL_INCR, GL_INCR );
-		}
-		r_measureOverdraw->modified = qfalse;
-	}
-	else
-	{
-		// this is only reached if it was on and is now off
-		if ( r_measureOverdraw->modified ) {
-			R_IssuePendingRenderCommands();
-			qglDisable( GL_STENCIL_TEST );
-		}
-		r_measureOverdraw->modified = qfalse;
-	}
+#ifdef USE_PMLIGHT
+	FBO_BindMain();
+#endif
 
 	//
 	// texturemode stuff
@@ -465,29 +433,32 @@ Returns the number of msec spent in the back end
 =============
 */
 void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
-	swapBuffersCommand_t	*cmd;
 
 	if ( !tr.registered ) {
 		return;
 	}
-	cmd = R_GetCommandBufferReserved( sizeof( *cmd ), 0 );
-	if ( !cmd ) {
-		return;
-	}
-	cmd->commandId = RC_SWAP_BUFFERS;
 
 	R_IssueRenderCommands( qtrue );
 
-	R_InitNextFrame();
+	// finish any 2D drawing if needed
+	if ( tess.numIndexes ) {
+		RB_EndSurface();
+	}
 
-	if ( frontEndMsec ) {
-		*frontEndMsec = tr.frontEndMsec;
+	// texture swapping test
+	if ( r_showImages->integer ) {
+		RB_ShowImages();
 	}
-	tr.frontEndMsec = 0;
-	if ( backEndMsec ) {
-		*backEndMsec = backEnd.pc.msec;
+
+	if ( !glState.finishCalled ) {
+		qglFinish();
 	}
-	backEnd.pc.msec = 0;
+
+#ifdef USE_PMLIGHT
+	FBO_PostProcess();
+#endif
+
+	R_BloomScreen();
 
 	if ( backEnd.screenshotMask && tr.frameCount > 1 ) {
 		if ( backEnd.screenshotMask & SCREENSHOT_TGA && backEnd.screenshotTGA[0] ) {
@@ -503,6 +474,23 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 		backEnd.screenshotTGA[0] = '\0';
 		backEnd.screenshotMask = 0;
 	}
+
+	GLimp_EndFrame();
+
+	backEnd.projection2D = qfalse;
+	backEnd.doneBloom = qfalse;
+	backEnd.doneSurfaces = qfalse; // for bloom
+
+	R_InitNextFrame();
+
+	if ( frontEndMsec ) {
+		*frontEndMsec = tr.frontEndMsec;
+	}
+	tr.frontEndMsec = 0;
+	if ( backEndMsec ) {
+		*backEndMsec = backEnd.pc.msec;
+	}
+	backEnd.pc.msec = 0;
 }
 
 

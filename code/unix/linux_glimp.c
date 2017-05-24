@@ -894,7 +894,11 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	int m, m1;
 	int shift;
 
+#ifdef USE_PMLIGHT
+	if ( !glConfig.deviceSupportsGamma || r_ignorehwgamma->integer || r_fbo->integer )
+#else
 	if ( !glConfig.deviceSupportsGamma || r_ignorehwgamma->integer )
+#endif
 		return;
 
 	XF86VidModeGetGammaRampSize( dpy, scrnum, &size );
@@ -974,7 +978,11 @@ void GLimp_Shutdown( void )
 			}
 		}
 
+#ifdef USE_PMLIGHT
+		if ( glConfig.deviceSupportsGamma && !r_fbo->integer )
+#else
 		if ( glConfig.deviceSupportsGamma )
+#endif
 		{
 			XF86VidModeSetGamma( dpy, scrnum, &vidmode_InitialGamma );
 		}
@@ -1048,6 +1056,7 @@ static qboolean GLW_StartDriverAndSetMode( const char *drivername, int mode, con
 
 	return qtrue;
 }
+
 
 /*
 ** GLW_SetMode
@@ -1394,66 +1403,75 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 		return RSERR_INVALID_MODE;
 	}
 
-	qglXChooseFBConfig = qwglGetProcAddress( "glXChooseFBConfig" );
-	qglXGetFBConfigAttrib = qwglGetProcAddress( "glXGetFBConfigAttrib" );
-	qglXGetVisualFromFBConfig = qwglGetProcAddress( "glXGetVisualFromFBConfig" );
-	
-	if ( r_ext_multisample->integer > 0 && colorbits == 24 && qglXChooseFBConfig && qglXGetFBConfigAttrib && qglXGetVisualFromFBConfig )
+#ifdef USE_PMLIGHT
+	if ( r_ext_multisample->integer > 0 && !r_fbo->integer )
+#else
+	if ( r_ext_multisample->integer > 0 )
+#endif
 	{
-		GLXFBConfig *fbconfig;
-		int numfbconfig;
-		int maxval;
-		int bestfbi;
-		int value;
-		
-		value = 0;
-		maxval = 0;
-		bestfbi = 0;
+		qglXChooseFBConfig = qwglGetProcAddress( "glXChooseFBConfig" );
+		qglXGetFBConfigAttrib = qwglGetProcAddress( "glXGetFBConfigAttrib" );
+		qglXGetVisualFromFBConfig = qwglGetProcAddress( "glXGetVisualFromFBConfig" );
 
-		MSAAattrib[ MSAA_DEPTH_INDEX ] = glConfig.depthBits;
-		MSAAattrib[ MSAA_STENCIL_INDEX ] = glConfig.stencilBits;
-		
-		fbconfig = qglXChooseFBConfig( dpy, scrnum, MSAAattrib, &numfbconfig );
-		if ( fbconfig )
+		if ( colorbits == 24 && qglXChooseFBConfig && qglXGetFBConfigAttrib && qglXGetVisualFromFBConfig )
 		{
-			for( i = 0; i < numfbconfig; i++ )
+			GLXFBConfig *fbconfig;
+			int numfbconfig;
+			int maxval;
+			int bestfbi;
+			int value;
+			int nSamples;
+		
+			value = 0;
+			maxval = 0;
+			bestfbi = 0;
+
+			MSAAattrib[ MSAA_DEPTH_INDEX ] = glConfig.depthBits;
+			MSAAattrib[ MSAA_STENCIL_INDEX ] = glConfig.stencilBits;
+			nSamples = MAX( r_ext_multisample->integer, 8 );
+		
+			fbconfig = qglXChooseFBConfig( dpy, scrnum, MSAAattrib, &numfbconfig );
+			if ( fbconfig )
 			{
-				qglXGetFBConfigAttrib( dpy, fbconfig[ i ], GLX_SAMPLES, &value );
-				if ( value > maxval )
+				for( i = 0; i < numfbconfig; i++ )
 				{
-					bestfbi = i;
-					maxval = value;
-					if ( maxval >= r_ext_multisample->integer )
+					qglXGetFBConfigAttrib( dpy, fbconfig[ i ], GLX_SAMPLES, &value );
+					if ( value > maxval )
 					{
-						break;
+						bestfbi = i;
+						maxval = value;
+						if ( maxval >= nSamples )
+						{
+							break;
+						}
 					}
 				}
-			}
-			if ( value )
-			{
-				visinfo = qglXGetVisualFromFBConfig( dpy, fbconfig[ bestfbi ] );
-				ri.Printf( PRINT_ALL, "...using %ix MSAA visual\n", value );
+				if ( value )
+				{
+					visinfo = qglXGetVisualFromFBConfig( dpy, fbconfig[ bestfbi ] );
+					ri.Printf( PRINT_ALL, "...using %ix MSAA visual\n", value );
+				}
+				else
+				{
+					ri.Printf( PRINT_ALL, "...no MSAA visuals available\n" );
+				}
+			//
 			}
 			else
 			{
 				ri.Printf( PRINT_ALL, "...no MSAA visuals available\n" );
+			}// if ( fbconfig )
+		}
+		else // verbose errors
+		{
+			if ( !qglXChooseFBConfig || !qglXGetFBConfigAttrib || !qglXGetVisualFromFBConfig )
+			{
+				ri.Printf( PRINT_ALL, "...MSAA functions resolve error\n" );
 			}
-			//
-		}
-		else
-		{
-			ri.Printf( PRINT_ALL, "...no MSAA visuals available\n" );
-		}// if ( fbconfig )
-	}
-	else // verbose errors
-	{
-		if ( !qglXChooseFBConfig || !qglXGetFBConfigAttrib || !qglXGetVisualFromFBConfig )
-		{
-			ri.Printf( PRINT_ALL, "...MSAA functions resolve error\n" );
-		}
-		else if ( colorbits != 24 )
-		{
-			ri.Printf( PRINT_ALL, "...MSAA requires 24 bit color depth\n" );
+			else if ( colorbits != 24 )
+			{
+				ri.Printf( PRINT_ALL, "...MSAA requires 24 bit color depth\n" );
+			}
 		}
 	}
 
@@ -1549,11 +1567,33 @@ qboolean GLimp_HaveExtension( const char *ext )
 	return ((*ptr == ' ') || (*ptr == '\0'));  // verify it's complete string.
 }
 
+
 /*
 ** GLW_InitExtensions
 */
 static void GLW_InitExtensions( void )
 {
+	size_t len;
+
+	// for some unknown reason glGetString() calls may start returning NULL
+	// and interaction with any other opengl function leads to segfault
+	// this may happen after system (mesa?) update and before reboot, catched on Arch linux distribution
+	if ( !qglGetString( GL_EXTENSIONS ) )
+	{
+		ri.Error( ERR_FATAL, "OpenGL installation is broken. Please fix video drivers and/or restart your system" );
+	}
+
+	// get our config strings
+	Q_strncpyz( glConfig.vendor_string, (char *)qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
+	Q_strncpyz( glConfig.renderer_string, (char *)qglGetString (GL_RENDERER), sizeof( glConfig.renderer_string ) );
+	len = strlen( glConfig.renderer_string );
+	if ( len && glConfig.renderer_string[ len - 1 ] == '\n')
+		glConfig.renderer_string[ len - 1 ] = '\0';
+	Q_strncpyz( glConfig.version_string, (char *)qglGetString (GL_VERSION), sizeof( glConfig.version_string ) );
+
+	Q_strncpyz( glw_state.gl_extensions, (char *)qglGetString (GL_EXTENSIONS), sizeof( glw_state.gl_extensions ) );
+	Q_strncpyz( glConfig.extensions_string, glw_state.gl_extensions, sizeof( glConfig.extensions_string ) );
+
 	if ( !r_allowExtensions->integer )
 	{
 		ri.Printf( PRINT_ALL, "*** IGNORING OPENGL EXTENSIONS ***\n" );
@@ -1703,24 +1743,32 @@ static void GLW_InitExtensions( void )
 
 static void GLW_InitGamma( void )
 {
-  /* Minimum extension version required */
-  #define GAMMA_MINMAJOR 2
-  #define GAMMA_MINMINOR 0
+#ifdef USE_PMLIGHT
+	if ( fboAvailable ) 
+	{
+		glConfig.deviceSupportsGamma = qtrue;
+		return;
+	}
+#endif
+	/* Minimum extension version required */
+	#define GAMMA_MINMAJOR 2
+	#define GAMMA_MINMINOR 0
 
-  glConfig.deviceSupportsGamma = qfalse;
+	glConfig.deviceSupportsGamma = qfalse;
 
 #ifdef HAVE_XF86DGA
-  if (vidmode_ext)
-  {
-    if (vidmode_MajorVersion < GAMMA_MINMAJOR || 
-        (vidmode_MajorVersion == GAMMA_MINMAJOR && vidmode_MinorVersion < GAMMA_MINMINOR)) {
-      ri.Printf( PRINT_ALL, "XF86 Gamma extension not supported in this version\n");
-      return;
-    }
-    XF86VidModeGetGamma(dpy, scrnum, &vidmode_InitialGamma);
-    ri.Printf( PRINT_ALL, "XF86 Gamma extension initialized\n");
-    glConfig.deviceSupportsGamma = qtrue;
-  }
+	if ( vidmode_ext )
+	{
+		if (vidmode_MajorVersion < GAMMA_MINMAJOR || 
+			(vidmode_MajorVersion == GAMMA_MINMAJOR && vidmode_MinorVersion < GAMMA_MINMINOR)) 
+		{
+			ri.Printf( PRINT_ALL, "XF86 Gamma extension not supported in this version\n");
+			return;
+		}
+		XF86VidModeGetGamma(dpy, scrnum, &vidmode_InitialGamma);
+		ri.Printf( PRINT_ALL, "XF86 Gamma extension initialized\n");
+		glConfig.deviceSupportsGamma = qtrue;
+	}
 #endif /* HAVE_XF86DGA */
 }
 
@@ -1747,7 +1795,6 @@ static qboolean GLW_LoadOpenGL( const char *name )
 	if ( QGL_Init( name ) )
 	{
 		fullscreen = (r_fullscreen->integer != 0);
-
 		// create the window and set up the context
 		if ( !GLW_StartDriverAndSetMode( name, r_mode->integer, r_modeFullscreen->string, fullscreen ) )
 		{
@@ -1760,7 +1807,7 @@ static qboolean GLW_LoadOpenGL( const char *name )
 			}
 			else
 			{
-		        goto fail;
+				goto fail;
 			}
 		}
 		return qtrue;
@@ -1826,7 +1873,6 @@ int qXErrorHandler( Display *dpy, XErrorEvent *ev )
 */
 void GLimp_Init( void )
 {
-	size_t len;
 	InitSig();
 
 	IN_Init();   // rcg08312005 moved into glimp.
@@ -1840,36 +1886,22 @@ void GLimp_Init( void )
 	// load and initialize the specific OpenGL driver
 	//
 	if ( !GLW_StartOpenGL() )
-    	return;
+	{
+		return;
+	}
 
 	// This values force the UI to disable driver selection
 	glConfig.driverType = GLDRV_ICD;
 	glConfig.hardwareType = GLHW_GENERIC;
 
-	// for some unknown reason glGetString() calls may start returning NULL
-	// and interaction with any other opengl function leads to segfault
-	// this may happen after system (mesa?) update and before reboot, catched on Arch linux distribution
-	if ( !qglGetString( GL_EXTENSIONS ) )
-	{
-		ri.Error( ERR_FATAL, "OpenGL installation is broken. Please fix video drivers and/or restart your system" );
-	}
-
-	// get our config strings
-	Q_strncpyz( glConfig.vendor_string, (char *)qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
-	Q_strncpyz( glConfig.renderer_string, (char *)qglGetString (GL_RENDERER), sizeof( glConfig.renderer_string ) );
-	len = strlen( glConfig.renderer_string );
-	if ( len && glConfig.renderer_string[ len - 1 ] == '\n')
-		glConfig.renderer_string[ len - 1 ] = '\0';
-	Q_strncpyz( glConfig.version_string, (char *)qglGetString (GL_VERSION), sizeof( glConfig.version_string ) );
-
-	Q_strncpyz( glw_state.gl_extensions, (char *)qglGetString (GL_EXTENSIONS), sizeof( glw_state.gl_extensions ) );
-	Q_strncpyz( glConfig.extensions_string, glw_state.gl_extensions, sizeof( glConfig.extensions_string ) );
-
 	// initialize extensions
 	GLW_InitExtensions();
+
 #if defined(USE_PMLIGHT) && !defined(USE_RENDERER2)
+	QGL_EarlyInitARB();
 	QGL_InitARB();
 #endif
+
 	GLW_InitGamma();
 
 	InitSig(); // not clear why this is at begin & end of function
@@ -1963,10 +1995,12 @@ void IN_Init( void )
 	Com_DPrintf( "------------------------------------\n" );
 }
 
+
 void IN_Shutdown( void )
 {
 	mouse_avail = qfalse;
 }
+
 
 void IN_Frame( void )
 {
@@ -2045,4 +2079,3 @@ void IN_StartupJoystick( void ) {}
 void IN_JoyMove( void ) {}
 #endif
 #endif
-

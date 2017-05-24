@@ -213,6 +213,7 @@ void RB_AddFlare( void *surface, int fogNum, vec3_t point, vec3_t color, vec3_t 
 	f->eyeZ = eye[2];
 }
 
+
 /*
 ==================
 RB_AddDlightFlares
@@ -438,6 +439,7 @@ void RB_RenderFlare( flare_t *f ) {
 	RB_EndSurface();
 }
 
+
 /*
 ==================
 RB_RenderFlares
@@ -474,7 +476,15 @@ void RB_RenderFlares (void) {
 	backEnd.currentEntity = &tr.worldEntity;
 	backEnd.or = backEnd.viewParms.world;
 
-//	RB_AddDlightFlares();
+	// we can't read from multisampled renderbuffer storage
+#ifdef USE_PMLIGHT
+	if ( blitMSfbo ) 
+	{
+		FBO_BlitMS( qtrue );
+	}
+#endif
+
+	// RB_AddDlightFlares();
 
 	// perform z buffer readback on each flare in this view
 	draw = qfalse;
@@ -506,6 +516,14 @@ void RB_RenderFlares (void) {
 
 		prev = &f->next;
 	}
+
+	// bind primary framebuffer again
+#ifdef USE_PMLIGHT
+	if ( blitMSfbo ) 
+	{
+		FBO_BindMain();
+	}
+#endif
 
 	if ( !draw ) {
 		return;		// none visible

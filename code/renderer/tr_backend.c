@@ -437,7 +437,7 @@ void RB_BeginDrawingView (void) {
 	// clear relevant buffers
 	clearBits = GL_DEPTH_BUFFER_BIT;
 
-	if ( r_measureOverdraw->integer || r_shadows->integer == 2 )
+	if ( r_shadows->integer == 2 )
 	{
 		clearBits |= GL_STENCIL_BUFFER_BIT;
 	}
@@ -1318,61 +1318,6 @@ const void *RB_ClearDepth(const void *data)
 
 
 /*
-=============
-RB_SwapBuffers
-
-=============
-*/
-const void	*RB_SwapBuffers( const void *data ) {
-	const swapBuffersCommand_t	*cmd;
-
-	// finish any 2D drawing if needed
-	if ( tess.numIndexes ) {
-		RB_EndSurface();
-	}
-
-	// texture swapping test
-	if ( r_showImages->integer ) {
-		RB_ShowImages();
-	}
-
-	cmd = (const swapBuffersCommand_t *)data;
-
-	// we measure overdraw by reading back the stencil buffer and
-	// counting up the number of increments that have happened
-	if ( r_measureOverdraw->integer ) {
-		int i;
-		long sum = 0;
-		unsigned char *stencilReadback;
-
-		stencilReadback = ri.Hunk_AllocateTempMemory( glConfig.vidWidth * glConfig.vidHeight );
-		qglReadPixels( 0, 0, glConfig.vidWidth, glConfig.vidHeight, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, stencilReadback );
-
-		for ( i = 0; i < glConfig.vidWidth * glConfig.vidHeight; i++ ) {
-			sum += stencilReadback[i];
-		}
-
-		backEnd.pc.c_overDraw += sum;
-		ri.Hunk_FreeTempMemory( stencilReadback );
-	}
-
-
-	if ( !glState.finishCalled ) {
-		qglFinish();
-	}
-
-	GLimp_EndFrame();
-
-	backEnd.projection2D = qfalse;
-	
-	backEnd.doneBloom = qfalse;
-	backEnd.doneSurfaces = qfalse; // for bloom
-
-	return (const void *)(cmd + 1);
-}
-
-
-/*
 ====================
 RB_ExecuteRenderCommands
 ====================
@@ -1405,14 +1350,6 @@ void RB_ExecuteRenderCommands( const void *data ) {
 			break;
 		case RC_DRAW_BUFFER:
 			data = RB_DrawBuffer( data );
-			break;
-		case RC_SWAP_BUFFERS:
-			//Check if it's time for BLOOM!
-			R_BloomScreen();
-			data = RB_SwapBuffers( data );
-			break;
-		case RC_SCREENSHOT:
-			data = RB_TakeScreenshotCmd( data );
 			break;
 		case RC_VIDEOFRAME:
 			data = RB_TakeVideoFrameCmd( data );

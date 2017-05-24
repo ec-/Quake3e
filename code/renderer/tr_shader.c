@@ -1968,12 +1968,6 @@ static void FixRenderCommandList( int newShader ) {
 				curCmd = (const void *)(db_cmd + 1);
 				break;
 				}
-			case RC_SWAP_BUFFERS:
-				{
-				const swapBuffersCommand_t *sb_cmd = (const swapBuffersCommand_t *)curCmd;
-				curCmd = (const void *)(sb_cmd + 1);
-				break;
-				}
 			case RC_END_OF_LIST:
 			default:
 				return;
@@ -3111,10 +3105,13 @@ static void ScanAndLoadShaderFiles( void )
 	// scan for legacy shader files
 	shaderFiles = ri.FS_ListFiles( "scripts", ".shader", &numShaderFiles );
 
+#ifdef USE_PMLIGHT
 	if ( GL_ProgramAvailable() ) {
 		// if ARB shaders available - scan for extended shader files
 		shaderxFiles = ri.FS_ListFiles( "scripts", ".shaderx", &numShaderxFiles );
-	} else {
+	} else 
+#endif
+	{
 		shaderxFiles = NULL;
 		numShaderxFiles = 0;
 	}
