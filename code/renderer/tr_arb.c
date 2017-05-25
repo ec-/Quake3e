@@ -856,11 +856,8 @@ void FBO_PostProcess( void )
 }
 
 
-#ifdef _MSC_VER
-#	pragma warning (disable : 4113 4133 4047 )
-#endif
-
-#define GPA(fn) q##fn = qwglGetProcAddress( #fn ); if ( !q##fn ) { Com_Printf( "GPA failed on '%s'\n", #fn );  goto __fail; }
+static const void *fp;
+#define GPA(fn) fp = qwglGetProcAddress( #fn ); if ( !fp ) { Com_Printf( "GPA failed on '%s'\n", #fn ); goto __fail; } else { memcpy( &q##fn, &fp, sizeof( fp ) ); }
 
 static void QGL_InitShaders( void ) 
 {
@@ -1036,9 +1033,5 @@ void QGL_DoneARB( void )
 	qglProgramLocalParameter4fARB = NULL;
 	qglProgramEnvParameter4fARB = NULL;
 }
-
-#ifdef _MSC_VER
-#pragma warning (default : 4113 4133 4047 )
-#endif
 
 #endif // USE_PMLIGHT

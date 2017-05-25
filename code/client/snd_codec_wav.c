@@ -100,9 +100,13 @@ static int S_FindRIFFChunk( fileHandle_t f, char *chunk ) {
 	return -1;
 }
 
+
 /*
 =================
 S_ByteSwapRawSamples
+
+If raw data has been loaded in little endien binary form, this must be done.
+If raw data was calculated, as with ADPCM, this should not be called.
 =================
 */
 static void S_ByteSwapRawSamples( int samples, int width, int s_channels, const byte *data ) {
@@ -122,6 +126,7 @@ static void S_ByteSwapRawSamples( int samples, int width, int s_channels, const 
 		((short *)data)[i] = LittleShort( ((short *)data)[i] );
 	}
 }
+
 
 /*
 =================

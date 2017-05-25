@@ -186,26 +186,6 @@ static void IN_CaptureMouse( const RECT *clipRect )
 
 /*
 ================
-IN_InitWin32Mouse
-================
-*/
-static void IN_InitWin32Mouse( void ) 
-{
-}
-
-
-/*
-================
-IN_ShutdownWin32Mouse
-================
-*/
-static void IN_ShutdownWin32Mouse( void ) 
-{
-}
-
-
-/*
-================
 IN_ActivateWin32Mouse
 ================
 */
@@ -822,8 +802,8 @@ static void IN_StartupMouse( void )
 		}
 		Com_DPrintf( "Falling back to Win32 mouse support...\n" );
 	}
+
 	s_wmv.mouseInitialized = qtrue;
-	IN_InitWin32Mouse();
 }
 
 

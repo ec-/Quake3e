@@ -131,6 +131,7 @@ void ( APIENTRY * qglClientActiveTextureARB )( GLenum texture );
 void ( APIENTRY * qglLockArraysEXT)( GLint, GLint);
 void ( APIENTRY * qglUnlockArraysEXT) ( void );
 
+#if 0
 static const char * BooleanToString( GLboolean b )
 {
 	if ( b == GL_FALSE )
@@ -253,7 +254,7 @@ static const char * TypeToString( GLenum t )
 		return "!!! UNKNOWN !!!";
 	}
 }
-
+#endif
 
 /*
 ** QGL_Shutdown

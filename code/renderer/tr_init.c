@@ -316,8 +316,8 @@ qboolean R_GetModeInfo( int *width, int *height, float *windowAspect, int mode, 
 	if ( fullscreen && *modeFS )
 		mode = atoi( modeFS );
 
-    if ( mode < -2 )
-        return qfalse;
+	if ( mode < -2 )
+		return qfalse;
 
 	if ( mode >= s_numVidModes )
 		return qfalse;

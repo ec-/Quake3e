@@ -181,7 +181,7 @@ __rescan:
 		{
 			if ( r_verbose->integer )
 			{
-				ri.Printf( PRINT_ALL, "...PFD %d rejected, improper flags (%x instead of %x)\n", i, pfds[i].dwFlags, pPFD->dwFlags );
+				ri.Printf( PRINT_ALL, "...PFD %d rejected, improper flags (%lx instead of %lx)\n", i, pfds[i].dwFlags, pPFD->dwFlags );
 			}
 			continue;
 		}
