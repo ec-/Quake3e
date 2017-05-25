@@ -230,60 +230,6 @@ const char *Sys_SteamPath( void )
 
 /*
 ================
-Sys_SnapVector
-================
-*/
-#if idx64
-void Sys_SnapVector( float *vector ) 
-{
-	__m128 vf0, vf1, vf2;
-	__m128i vi;
-
-	vf0 = _mm_setr_ps( vector[0], vector[1], vector[2], 0.0 );
-
-	vi = _mm_cvtps_epi32( vf0 );
-	vf0 = _mm_cvtepi32_ps( vi );
-
-	vf1 = _mm_shuffle_ps(vf0, vf0, _MM_SHUFFLE(1,1,1,1));
-	vf2 = _mm_shuffle_ps(vf0, vf0, _MM_SHUFFLE(2,2,2,2));
-
-	_mm_store_ss( &vector[0], vf0 );
-	_mm_store_ss( &vector[1], vf1 );
-	_mm_store_ss( &vector[2], vf2 );
-}
-#else
-void Sys_SnapVector( float *vector ) 
-{
-	static const DWORD cw037F = 0x037F;
-	DWORD cwCurr;
-__asm {
-	fnstcw word ptr [cwCurr]
-	mov ecx, vector
-	fldcw word ptr [cw037F]
-
-	fld   dword ptr[ecx+8]
-	fistp dword ptr[ecx+8]
-	fild  dword ptr[ecx+8]
-	fstp  dword ptr[ecx+8]
-
-	fld   dword ptr[ecx+4]
-	fistp dword ptr[ecx+4]
-	fild  dword ptr[ecx+4]
-	fstp  dword ptr[ecx+4]
-
-	fld   dword ptr[ecx+0]
-	fistp dword ptr[ecx+0]
-	fild  dword ptr[ecx+0]
-	fstp  dword ptr[ecx+0]
-
-	fldcw word ptr cwCurr
-	}; // __asm
-}
-#endif
-
-
-/*
-================
 Sys_SetAffinityMask
 ================
 */
@@ -314,4 +260,3 @@ void Sys_SetAffinityMask( int mask )
 		Com_Printf( S_COLOR_YELLOW "error setting CPU affinity mask %i\n", mask );
 	}
 }
-

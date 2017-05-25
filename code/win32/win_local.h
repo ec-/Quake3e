@@ -62,6 +62,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define	DIRECTSOUND_VERSION	0x0300
 #define	DIRECTINPUT_VERSION	0x0300
 
+#include <mmsystem.h>
 #include <dinput.h>
 #include <dsound.h>
 #include <shlobj.h>

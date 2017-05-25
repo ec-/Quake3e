@@ -47,6 +47,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #if defined( _MSC_VER ) && _MSC_VER >= 1400 // MSVC++ 8.0 at least
 #define OS_STRING "win_msvc"
+#elif defined __MINGW32__
+#define OS_STRING "win_mingw"
+#elif defined __MINGW64__
+#define OS_STRING "win_mingw64"
 #else
 #error "Compiler not supported"
 #endif

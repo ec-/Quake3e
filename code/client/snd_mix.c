@@ -50,7 +50,7 @@ void S_WriteLinearBlastStereo16( void )
 	}
 }
 
-#if id386
+#if id386 && defined (_MSC_VER)
 
 void S_WriteLinearBlastStereo16_MMX( void );
 void S_WriteLinearBlastStereo16_SSE( void );
@@ -291,7 +291,7 @@ void S_TransferStereo16( unsigned long *pbuf, int endtime )
 		snd_linear_count <<= 1;
 
 		// write a linear blast of samples
-#if id386
+#if id386 && defined (_MSC_VER)
 		if ( CPU_Flags & CPU_SSE )
 			S_WriteLinearBlastStereo16_SSE();
 		else

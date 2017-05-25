@@ -397,7 +397,7 @@ static int GLW_MakeContext( PIXELFORMATDESCRIPTOR *pPFD )
 
 		if ( SetPixelFormat( glw_state.hDC, pixelformat, pPFD ) == FALSE )
 		{
-			ri.Printf (PRINT_ALL, "...SetPixelFormat failed\n", glw_state.hDC );
+			ri.Printf (PRINT_ALL, "...SetPixelFormat failed\n" );
 			return TRY_PFD_FAIL_SOFT;
 		}
 

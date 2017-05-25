@@ -124,6 +124,14 @@ ifndef USE_CURL
 USE_CURL=1
 endif
 
+ifndef USE_CURL_DLOPEN
+  ifdef MINGW
+    USE_CURL_DLOPEN=0
+  else
+    USE_CURL_DLOPEN=1
+  endif
+endif
+
 ifndef USE_ALSA_STATIC
 USE_ALSA_STATIC=0
 endif
@@ -131,7 +139,6 @@ endif
 ifndef USE_STATIC_GL
 USE_STATIC_GL=0
 endif
-
 
 #############################################################################
 
@@ -149,6 +156,9 @@ NDIR=$(MOUNT_DIR)/null
 UIDIR=$(MOUNT_DIR)/ui
 JPDIR=$(MOUNT_DIR)/jpeg-8c
 LOKISETUPDIR=$(UDIR)/setup
+
+bin_path=$(shell which $(1) 2> /dev/null)
+STRIP=strip
 
 # extract version info
 VERSION=$(shell grep "\#define Q3_VERSION" $(CMDIR)/q_shared.h | \
@@ -243,22 +253,71 @@ else # ifeq Linux
 # SETUP AND BUILD -- MINGW32
 #############################################################################
 
-ifeq ($(PLATFORM),mingw32)
+ifdef MINGW
+ 
+  ifeq ($(CROSS_COMPILING),1)
+    # If CC is already set to something generic, we probably want to use
+    # something more specific
+    ifneq ($(findstring $(strip $(CC)),cc gcc),)
+      CC=
+    endif
 
+    # We need to figure out the correct gcc and windres
+    ifeq ($(ARCH),x86_64)
+      MINGW_PREFIXES=x86_64-w64-mingw32 amd64-mingw32msvc
+      STRIP=x86_64-w64-mingw32-strip
+    endif
+    ifeq ($(ARCH),x86)
+      MINGW_PREFIXES=i686-w64-mingw32 i586-mingw32msvc i686-pc-mingw32
+    endif
+
+    ifndef CC
+      CC=$(firstword $(strip $(foreach MINGW_PREFIX, $(MINGW_PREFIXES), \
+         $(call bin_path, $(MINGW_PREFIX)-gcc))))
+    endif
+
+#   STRIP=$(MINGW_PREFIX)-strip -g
+
+    ifndef WINDRES
+      WINDRES=$(firstword $(strip $(foreach MINGW_PREFIX, $(MINGW_PREFIXES), \
+         $(call bin_path, $(MINGW_PREFIX)-windres))))
+    endif
+  else
+    # Some MinGW installations define CC to cc, but don't actually provide cc,
+    # so check that CC points to a real binary and use gcc if it doesn't
+    ifeq ($(call bin_path, $(CC)),)
+      CC=gcc
+    endif
+
+  endif
+
+  # using generic windres if specific one is not present
   ifndef WINDRES
     WINDRES=windres
   endif
 
-  ARCH=x86
-
-  BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes
-
-  ifeq ($(USE_CODEC_VORBIS),1)
-    BASE_CFLAGS += -DUSE_CODEC_VORBIS=1
+  ifeq ($(CC),)
+    $(error Cannot find a suitable cross compiler for $(PLATFORM))
   endif
 
-  OPTIMIZE = -O3 -march=i586 -fomit-frame-pointer -ffast-math -falign-loops=2 \
-    -funroll-loops -falign-jumps=2 -falign-functions=2 -fstrength-reduce
+  BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
+    -DUSE_ICON
+
+#  OPTIMIZE = -O3 -march=i586 -fomit-frame-pointer -ffast-math -falign-loops=2 \
+#    -funroll-loops -falign-jumps=2 -falign-functions=2 -fstrength-reduce
+
+  ifeq ($(ARCH),x86_64)
+    CNAME    = quake3e.x64
+    DNAME    = quake3e.ded.x64
+    BASE_CFLAGS += -m64
+    OPTIMIZE = -O3  -ffast-math -fstrength-reduce
+    HAVE_VM_COMPILED = true
+  endif
+  ifeq ($(ARCH),x86)
+    BASE_CFLAGS += -m32
+    OPTIMIZE = -O2 -march=i586 -mtune=i686 -ffast-math -fstrength-reduce
+    HAVE_VM_COMPILED = true
+  endif
 
   DEBUG_CFLAGS=$(BASE_CFLAGS) -g -O0
 
@@ -270,20 +329,24 @@ ifeq ($(PLATFORM),mingw32)
 
   BINEXT=.exe
 
-  LDFLAGS= -mwindows -lwsock32 -lgdi32 -lwinmm -lole32
-  CLIENT_LDFLAGS=
+  LDFLAGS= -mwindows -Wl,--dynamicbase -Wl,--nxcompat
+  LDFLAGS += -lwsock32 -lgdi32 -lwinmm -lole32 -lws2_32 -lpsapi -lcomctl32
+
+  CLIENT_LDFLAGS=$(LDFLAGS)
 
   ifeq ($(USE_CODEC_VORBIS),1)
     CLIENT_LDFLAGS += -lvorbisfile -lvorbis -logg
   endif
 
-  ifeq ($(ARCH),x86)
-    # build 32bit
-    BASE_CFLAGS += -m32
-    LDFLAGS+=-m32
+  ifeq ($(USE_CURL),1)
+    BASE_CFLAGS += -I$(MOUNT_DIR)/libcurl/windows/include
+    ifeq ($(ARCH),x86)
+      CLIENT_LDFLAGS += -L$(MOUNT_DIR)/libcurl/windows/mingw/lib32
+    else
+      CLIENT_LDFLAGS += -L$(MOUNT_DIR)/libcurl/windows/mingw/lib64
+    endif
+    CLIENT_LDFLAGS += -lcurl -lwldap32 -lcrypt32
   endif
-
-  BUILD_SERVER = 0
 
 else # ifeq mingw32
 
@@ -444,7 +507,11 @@ endif
 
 ifeq ($(USE_CURL),1)
   BASE_CFLAGS += -DUSE_CURL
+ifeq ($(USE_CURL_DLOPEN),1)
   BASE_CFLAGS += -DUSE_CURL_DLOPEN
+else
+  BASE_CFLAGS += -DCURL_STATICLIB
+endif
 endif
 
 ifeq ($(USE_ALSA_STATIC),1)
@@ -529,6 +596,9 @@ targets: makedirs tools
 	@echo "  ARCH: $(ARCH)"
 	@echo "  COMPILE_PLATFORM: $(COMPILE_PLATFORM)"
 	@echo "  COMPILE_ARCH: $(COMPILE_ARCH)"
+ifdef MINGW
+	@echo "  WINDRES: $(WINDRES)"
+endif
 	@echo "  CC: $(CC)"
 	@echo ""
 	@echo "  CFLAGS:"
@@ -728,10 +798,11 @@ Q3OBJ = \
   $(B)/client/tr_world.o \
 
 ifeq ($(ARCH),x86)
+ifndef MINGW
   Q3OBJ += \
-    $(B)/client/linux_asm.o \
     $(B)/client/snd_mix_mmx.o \
     $(B)/client/snd_mix_sse.o
+endif
 endif
 
 ifeq ($(HAVE_VM_COMPILED),true)
@@ -747,12 +818,13 @@ ifeq ($(USE_CURL),1)
   Q3OBJ += $(B)/client/cl_curl.o
 endif
 
-ifeq ($(PLATFORM),mingw32)
+ifdef MINGW
   Q3OBJ += \
     $(B)/client/win_gamma.o \
     $(B)/client/win_glimp.o \
     $(B)/client/win_input.o \
     $(B)/client/win_main.o \
+    $(B)/client/win_minimize.o \
     $(B)/client/win_qgl.o \
     $(B)/client/win_shared.o \
     $(B)/client/win_snd.o \
@@ -780,6 +852,7 @@ $(B)/$(TARGET_CLIENT): $(Q3OBJ) $(Q3POBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) -o $@ $(Q3OBJ) $(Q3POBJ) $(CLIENT_LDFLAGS) \
 		$(LDFLAGS)
+	$(STRIP) $@
 
 
 #############################################################################
@@ -848,15 +921,20 @@ Q3DOBJ = \
   $(B)/ded/l_memory.o \
   $(B)/ded/l_precomp.o \
   $(B)/ded/l_script.o \
-  $(B)/ded/l_struct.o \
-  \
+  $(B)/ded/l_struct.o
+
+ifdef MINGW
+  Q3DOBJ += \
+  $(B)/ded/history.o \
+  $(B)/ded/win_main.o \
+  $(B)/client/win_resource.o \
+  $(B)/ded/win_shared.o \
+  $(B)/ded/win_syscon.o
+else
+  Q3DOBJ += \
   $(B)/ded/linux_signals.o \
   $(B)/ded/unix_main.o \
   $(B)/ded/unix_shared.o
-
-ifeq ($(ARCH),x86)
-  Q3DOBJ += \
-      $(B)/ded/linux_asm.o
 endif
 
 ifeq ($(HAVE_VM_COMPILED),true)
@@ -871,7 +949,7 @@ endif
 $(B)/$(TARGET_SERVER): $(Q3DOBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) -o $@ $(Q3DOBJ) $(LDFLAGS)
-
+	$(STRIP) $@
 
 #############################################################################
 ## CLIENT/SERVER RULES
@@ -925,6 +1003,12 @@ $(B)/ded/%.o: $(UDIR)/%.c
 
 $(B)/ded/%.o: $(NDIR)/%.c
 	$(DO_DED_CC)
+
+$(B)/ded/%.o: $(W32DIR)/%.c
+	$(DO_DED_CC)
+
+$(B)/ded/%.o: $(W32DIR)/%.rc
+	$(DO_WINDRES)
 
 #############################################################################
 # MISC

@@ -134,17 +134,6 @@ int Sys_XTimeToSysTime (unsigned long xtime)
 #endif
 
 
-#if !id386
-void Sys_SnapVector( float *v ) 
-{
-  v[0] = round(v[0]);
-  v[1] = round(v[1]);
-  v[2] = round(v[2]);
-}
-#endif
-
-
-
 char *strlwr (char *s) {
   if ( s==NULL ) { // bk001204 - paranoia
     assert(0);

@@ -854,10 +854,10 @@ void IN_Win32MouseEvent( int x, int y, int mstate )
 #define CHECK_BUTTON(button) \
 	if ( mstate & (1<<(button-1)) ) { \
 		if ( !(s_wmv.oldButtonState & (1<<(button-1))) ) \
-			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MOUSE##button##, qtrue, 0, NULL ); \
+			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MOUSE##button, qtrue, 0, NULL ); \
 	} else { \
 		if 	( s_wmv.oldButtonState & (1<<(button-1)) ) \
-			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MOUSE##button##, qfalse, 0, NULL ); \
+			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MOUSE##button, qfalse, 0, NULL ); \
 	}
 
 	// perform button actions
@@ -910,9 +910,9 @@ void IN_RawMouseEvent( LPARAM lParam )
 
 #define CHECK_RAW_BUTTON(button) \
 	if ( u.raw.data.mouse.usButtonFlags & RI_MOUSE_BUTTON_##button##_DOWN ) \
-		Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MOUSE##button##, qtrue, 0, NULL ); \
+		Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MOUSE##button, qtrue, 0, NULL ); \
 	if ( u.raw.data.mouse.usButtonFlags & RI_MOUSE_BUTTON_##button##_UP ) \
-		Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MOUSE##button##, qfalse, 0, NULL )
+		Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MOUSE##button, qfalse, 0, NULL )
 
 	CHECK_RAW_BUTTON(1);
 	CHECK_RAW_BUTTON(2);
