@@ -775,13 +775,13 @@ static void FBO_BlitToBackBuffer( void )
 	const int w = glConfig.vidWidth;
 	const int h = glConfig.vidHeight;
 
-	const frameBuffer_t *fbo = &frameBuffers[ frameBufferReadIndex ];
+	//const frameBuffer_t *fbo = &frameBuffers[ frameBufferReadIndex ];
 
-	qglBindFramebuffer( GL_READ_FRAMEBUFFER, fbo->fbo );
+	//qglBindFramebuffer( GL_READ_FRAMEBUFFER, fbo->fbo );
 	qglBindFramebuffer( GL_DRAW_FRAMEBUFFER, 0 );
 
-	qglReadBuffer( GL_COLOR_ATTACHMENT0 );
-	//qglDrawBuffer( GL_BACK );
+	//qglReadBuffer( GL_COLOR_ATTACHMENT0 );
+	qglDrawBuffer( GL_BACK );
 
 	qglBlitFramebuffer( 0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_LINEAR );
 }
@@ -829,9 +829,19 @@ void FBO_PostProcess( void )
 
 	FBO_Swap();
 	FBO_Bind();
-	
+
 	GL_SelectTexture( 0 );
 	qglBindTexture( GL_TEXTURE_2D, frameBuffers[ frameBufferReadIndex ^ 1 ].color );
+
+	if ( !backEnd.projection2D )
+	{
+		qglMatrixMode( GL_PROJECTION );
+		qglLoadIdentity();
+		qglOrtho( 0, glConfig.vidWidth, glConfig.vidHeight, 0, 0, 1 );
+		qglMatrixMode( GL_MODELVIEW );
+		qglLoadIdentity();
+	}
+	GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
 
 	GL_GammaProgramEnable();
 	qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, gamma, gamma, gamma, obScale );
