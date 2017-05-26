@@ -645,7 +645,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		{
 			GetWindowRect( hWnd, &g_wv.winRect );
 			g_wv.winRectValid = qtrue;
-			UpdateMonitorInfo();
+			UpdateMonitorInfo( NULL );
 			IN_UpdateWindow( NULL, qtrue );
 			IN_Activate( gw_active );
 			if ( !gw_active )
@@ -771,7 +771,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 	case WM_SIZE:
 		GetWindowRect( hWnd, &g_wv.winRect );
 		g_wv.winRectValid = qtrue;
-		UpdateMonitorInfo();
+		UpdateMonitorInfo( NULL );
 		IN_UpdateWindow( NULL, qtrue );
 		break;
 

@@ -628,10 +628,11 @@ LRESULT WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 	return CallWindowProc( (WNDPROC)s_wcd.SysInputLineWndProc, hWnd, uMsg, wParam, lParam );
 }
 
+
 /*
 ** Sys_CreateConsole
 */
-void Sys_CreateConsole( char *title )
+void Sys_CreateConsole( const char *title, int xPos, int yPos, qboolean useXYpos )
 {
 	HDC hDC;
 	WNDCLASS wc;
@@ -643,6 +644,7 @@ void Sys_CreateConsole( char *title )
 	int widths[2] = { 140, -1 };
 	int borders[3];
 	int x, y, w, h, sth;
+	int con_x, con_y;
 
 	HMONITOR hMonitor;
 	MONITORINFO mInfo;
@@ -671,7 +673,14 @@ void Sys_CreateConsole( char *title )
 
 	AdjustWindowRect( &rect, DEDSTYLE, FALSE );
 
-	GetCursorPos( &p );
+	// try to use command line provided coodinates to locate primary monitor
+	if ( useXYpos ) {
+		p.x = xPos;
+		p.y = yPos;
+	} else {
+		GetCursorPos( &p );
+	}
+	
 	memset( &mInfo, 0, sizeof( mInfo ) );
 	mInfo.cbSize = sizeof( MONITORINFO );
 	// Query display dimensions
@@ -699,12 +708,23 @@ void Sys_CreateConsole( char *title )
 	s_wcd.windowWidth = rect.right - rect.left + 1;
 	s_wcd.windowHeight = rect.bottom - rect.top + 1;
 
+#ifdef DEDICATED
+	if ( useXYpos ) 
+	{
+		con_x = xPos;
+		con_y = yPos;
+	}
+	else 
+#endif
+	{
+		con_x = x + ( w - s_wcd.windowWidth ) / 2;
+		con_y = y + ( h - s_wcd.windowHeight ) / 2;
+	}
+
 	s_wcd.hWnd = CreateWindowEx( 0, DEDCLASS,
-							   T(CONSOLE_WINDOW_TITLE), DEDSTYLE,
-							   x + ( w - s_wcd.windowWidth ) / 2, 
-							   y + ( h - s_wcd.windowHeight ) / 2 , 
-							   s_wcd.windowWidth, s_wcd.windowHeight,
-							   NULL, NULL, g_wv.hInstance, NULL );
+					T(CONSOLE_WINDOW_TITLE), DEDSTYLE, con_x, con_y,
+					s_wcd.windowWidth, s_wcd.windowHeight,
+					NULL, NULL, g_wv.hInstance, NULL );
 
 	if ( s_wcd.hWnd == NULL ) 
 		return;

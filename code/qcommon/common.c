@@ -467,26 +467,54 @@ void Com_ParseCommandLine( char *commandLine ) {
 
 /*
 ===================
-Com_ConsoleTitle
+Com_EarlyParseCmdLine
+
+returns qtrue if both vid_xpos and vid_ypos was set
 ===================
 */
-char *Com_ConsoleTitle( char *commandLine ) {
+qboolean Com_EarlyParseCmdLine( char *commandLine, char *con_title, int title_size, int *vid_xpos, int *vid_ypos ) 
+{
+	int		flags = 0;
 	int		i;
 	
+	*con_title = '\0';
 	Com_ParseCommandLine( commandLine );
 
 	for ( i = 0 ; i < com_numConsoleLines ; i++ ) {
 		Cmd_TokenizeString( com_consoleLines[i] );
 		if ( !Q_stricmpn( Cmd_Argv(0), "set", 3 ) && !Q_stricmp( Cmd_Argv(1), "con_title" ) ) {
 			com_consoleLines[i][0] = '\0';
-			return Cmd_ArgsFrom( 2 );
+			Q_strncpyz( con_title, Cmd_ArgsFrom( 2 ), title_size );
+			continue;
 		}
 		if ( !Q_stricmp( Cmd_Argv(0), "con_title" ) ) {
 			com_consoleLines[i][0] = '\0';
-			return Cmd_ArgsFrom( 1 );
+			Q_strncpyz( con_title, Cmd_ArgsFrom( 1 ), title_size );
+			continue;
+		}
+		if ( !Q_stricmpn( Cmd_Argv(0), "set", 3 ) && !Q_stricmp( Cmd_Argv(1), "vid_xpos" ) ) {
+			*vid_xpos = atoi( Cmd_Argv( 2 ) );
+			flags |= 1;
+			continue;
+		}
+		if ( !Q_stricmp( Cmd_Argv(0), "vid_xpos" ) ) {
+			*vid_xpos = atoi( Cmd_Argv( 1 ) );
+			flags |= 1;
+			continue;
+		}
+		if ( !Q_stricmpn( Cmd_Argv(0), "set", 3 ) && !Q_stricmp( Cmd_Argv(1), "vid_ypos" ) ) {
+			*vid_ypos = atoi( Cmd_Argv( 2 ) );
+			flags |= 2;
+			continue;
+		}
+		if ( !Q_stricmp( Cmd_Argv(0), "vid_ypos" ) ) {
+			*vid_ypos = atoi( Cmd_Argv( 1 ) );
+			flags |= 2;
+			continue;
 		}
 	}
-	return NULL;
+
+	return (flags == 3) ? qtrue : qfalse ;
 }
 
 
@@ -2824,19 +2852,19 @@ int Sys_GetProcessorId( char *vendor )
 		vendor[12] = '\0'; vendor += 12;
 		if ( CPU_Flags ) {
 			// print features
-			strcat( vendor, " /w" );
-#if !idx64	// do not print default 64-bit features
+#if !idx64	// do not print default 64-bit features in 32-bit mode
+			strcat( vendor, " w/" );
 			if ( CPU_Flags & CPU_FCOM )
-				strcat( vendor, "CMOV " );
+				strcat( vendor, " CMOV" );
 			if ( CPU_Flags & CPU_MMX )
-				strcat( vendor, "MMX " );
+				strcat( vendor, " MMX" );
 			if ( CPU_Flags & CPU_SSE )
-				strcat( vendor, "SSE " );
+				strcat( vendor, " SSE" );
 			if ( CPU_Flags & CPU_SSE2 )
-				strcat( vendor, "SSE2 " );
+				strcat( vendor, " SSE2" );
 #endif
-			if ( CPU_Flags & CPU_SSE3 )
-				strcat( vendor, "SSE3 " );
+			//if ( CPU_Flags & CPU_SSE3 )
+			//	strcat( vendor, " SSE3" );
 		}
 	}
 	return 1;

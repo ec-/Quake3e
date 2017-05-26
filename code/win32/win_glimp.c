@@ -606,7 +606,7 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		ri.Printf( PRINT_ALL, "...registered window class\n" );
 	}
 
-	UpdateMonitorInfo();
+	UpdateMonitorInfo( NULL );
 
 	//
 	// create the HWND if one does not already exist
@@ -636,6 +636,15 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		w = r.right - r.left;
 		h = r.bottom - r.top;
 
+		// select monitor from window rect
+		vid_xpos = ri.Cvar_Get( "vid_xpos", "", 0 );
+		vid_ypos = ri.Cvar_Get( "vid_ypos", "", 0 );
+		r.left = vid_xpos->integer;
+		r.top = vid_ypos->integer;
+		r.right = r.left + w;
+		r.bottom = r.top + h;
+		UpdateMonitorInfo( &r );
+
 		if ( cdsFullscreen )
 		{
 			x = glw_state.desktopX;
@@ -643,18 +652,16 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		}
 		else
 		{
-			vid_xpos = ri.Cvar_Get( "vid_xpos", "", 0 );
-			vid_ypos = ri.Cvar_Get( "vid_ypos", "", 0 );
 			x = vid_xpos->integer;
 			y = vid_ypos->integer;
 
 			// adjust window coordinates if necessary 
 			// so that the window is completely on screen
 
-			if ( w < glw_state.desktopWidth && (x + w) > glw_state.desktopWidth )
-				x = ( glw_state.desktopWidth - w );
-			if ( h < glw_state.desktopHeight && (y + h) > glw_state.desktopHeight )
-				y = ( glw_state.desktopHeight - h );
+			if ( w < glw_state.desktopWidth && (x + w) > glw_state.desktopWidth + glw_state.desktopX )
+				x = ( glw_state.desktopWidth + glw_state.desktopX - w );
+			if ( h < glw_state.desktopHeight && (y + h) > glw_state.desktopHeight + glw_state.desktopY )
+				y = ( glw_state.desktopHeight + glw_state.desktopY - h );
 
 			if ( x < glw_state.desktopX )
 				x = glw_state.desktopX;
@@ -812,17 +819,19 @@ void SetDesktopDisplaySettings( void )
 }
 
 
-void UpdateMonitorInfo( void ) 
+void UpdateMonitorInfo( const RECT *target ) 
 {
 	MONITORINFOEX mInfo;
 	DEVMODE	devMode;
 	HMONITOR hMon;
-	RECT *Rect;
+	const RECT *Rect;
 	int w, h, x ,y;
 
 	glw_state.monitorCount = GetSystemMetrics( SM_CMONITORS );
 
-	if ( g_wv.winRectValid )
+	if ( target )
+		Rect = target;
+	else if ( g_wv.winRectValid )
 		Rect = &g_wv.winRect;
 	else
 		Rect = &g_wv.conRect;
@@ -993,7 +1002,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS
 	//glw_state.desktopY = 0;
 	//ReleaseDC( GetDesktopWindow(), hDC );
 	
-	UpdateMonitorInfo();
+	UpdateMonitorInfo( NULL );
 
 	//
 	// print out informational messages

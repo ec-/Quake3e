@@ -262,13 +262,6 @@ static const ID_INLINE qboolean HasSSEFP( void )
 #endif
 }
 
-
-static const ID_INLINE qboolean HasSSE3( void )
-{
-	return ( CPU_Flags & CPU_SSE3 );
-}
-
-
 static void Emit1( int v )
 {
 	if ( code ) 
@@ -2388,29 +2381,14 @@ __compile:
 
 		case OP_CVFI:
 			if ( HasSSEFP() ) {
-#if idx64
 				// assume that rounding mode in MXCSR is correctly set in 64-bit environment
 				EmitLoadFloatEDI_SSE( vm );				// movss xmm0, dword ptr [edi]
 				EmitString( "F3 0F 2C C0" );			// cvttss2si eax, xmm0
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov dword ptr [edi], eax
-#else
-				if ( HasSSE3() ) {
-					EmitLoadFloatEDI_X87( vm );		// fld dword ptr [edi]
-					EmitString( "DB 0F" );			// fisttp dword ptr [edi]
-				}  else {
-					EmitLoadFloatEDI_X87( vm );		// fld dword ptr [edi]
-					// call the library conversion function
-					EmitCallOffset( FUNC_FTOL );	// call +FUNC_FTOL
-				}
-#endif
 			} else {
 				EmitLoadFloatEDI_X87( vm );			// fld dword ptr [edi]
-				if ( HasSSE3() ) {
-					EmitString( "DB 0F" );			// fisttp dword ptr [edi]
-				} else {
-					// call the library conversion function
-					EmitCallOffset( FUNC_FTOL );	// call +FUNC_FTOL
-				}
+				// call the library conversion function
+				EmitCallOffset( FUNC_FTOL );	// call +FUNC_FTOL
 			}
 			break;
 

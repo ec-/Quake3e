@@ -863,7 +863,7 @@ unsigned	Com_BlockChecksum( const void *buffer, int length );
 char		*Com_MD5File(const char *filename, int length, const char *prefix, int prefix_len);
 char		*Com_MD5Buf( const char *data, int length, const char *data2, int length2 );
 qboolean    Com_CDKeyValidate( const char *key, const char *checksum );
-char		*Com_ConsoleTitle( char *commandline );
+qboolean	Com_EarlyParseCmdLine( char *commandLine, char *con_title, int title_size, int *vid_xpos, int *vid_ypos );
 int			Com_Split( char *in, char **out, int outsz, int delim );
 
 int			Com_Filter(char *filter, char *name, int casesensitive);
