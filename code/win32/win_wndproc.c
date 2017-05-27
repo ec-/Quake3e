@@ -619,7 +619,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 				} else {
 					WG_RestoreGamma();
 					// Minimize if there only one monitor
-					if ( glw_state.monitorCount <= 1 )
+					if ( glw_state.monitorCount <= 1 || fboAvailable )
 						ShowWindow( hWnd, SW_MINIMIZE );
 					SetDesktopDisplaySettings();
 				}
@@ -723,13 +723,14 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		// check for left/right modifiers
 		if ( Win_CheckHotkeyMod() )
 		{
-#ifdef USE_PMLIGHT
-			if ( gw_active && !CL_VideoRecording() && !fboAvailable )
-#else
-			if ( gw_active && !CL_VideoRecording() )
-#endif
+			if ( gw_active )
 			{
-				ShowWindow( hWnd, SW_MINIMIZE );
+#ifdef USE_PMLIGHT
+				if ( !CL_VideoRecording() || fboAvailable )
+#else
+				if ( !CL_VideoRecording() )
+#endif
+					ShowWindow( hWnd, SW_MINIMIZE );
 			}
 			else
 			{
@@ -737,6 +738,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 				SetFocus( hWnd );
 				ShowWindow( hWnd, SW_RESTORE );
 			}
+			return 0;
 		}
 		break;
 

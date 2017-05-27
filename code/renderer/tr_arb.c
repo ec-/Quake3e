@@ -46,8 +46,8 @@ qboolean fboEnabled = qfalse;
 
 typedef struct frameBuffer_s {
 	GLuint fbo;
-	GLuint color;			// renderbuffer if mulsisampled
-	GLuint depthStencil;	// renderbuffer if mulsisampled
+	GLuint color;			// renderbuffer if multisampled
+	GLuint depthStencil;	// renderbuffer if multisampled
 	qboolean multiSampled;
 } frameBuffer_t;
 
