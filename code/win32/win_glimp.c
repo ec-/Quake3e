@@ -657,7 +657,6 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 
 			// adjust window coordinates if necessary 
 			// so that the window is completely on screen
-
 			if ( w < glw_state.desktopWidth && (x + w) > glw_state.desktopWidth + glw_state.desktopX )
 				x = ( glw_state.desktopWidth + glw_state.desktopX - w );
 			if ( h < glw_state.desktopHeight && (y + h) > glw_state.desktopHeight + glw_state.desktopY )
@@ -840,11 +839,30 @@ void UpdateMonitorInfo( const RECT *target )
 	hMon = MonitorFromRect( Rect, MONITOR_DEFAULTTONEAREST );
 	memset( &mInfo, 0, sizeof( mInfo ) );
 	mInfo.cbSize = sizeof( MONITORINFOEX );
-	if ( GetMonitorInfo( hMon, (LPMONITORINFO)&mInfo ) ) {
+
+	memset( &devMode, 0, sizeof( devMode ) );
+	devMode.dmSize = sizeof( DEVMODE );
+
+	if ( GetMonitorInfo( hMon, (LPMONITORINFO)&mInfo ) && EnumDisplaySettings( mInfo.szDevice, ENUM_CURRENT_SETTINGS, &devMode ) ) {
 		w = mInfo.rcMonitor.right - mInfo.rcMonitor.left;
 		h = mInfo.rcMonitor.bottom - mInfo.rcMonitor.top;
 		x = mInfo.rcMonitor.left;
 		y = mInfo.rcMonitor.top;
+
+		// try to detect DPI scale
+		// we can't properly handle it but at least detect monitor resolution 
+		// and inform user in console
+		if ( devMode.dmPelsWidth > w || devMode.dmPelsHeight > h ) {
+			int scaleX, scaleY;
+			scaleX = (devMode.dmPelsWidth * 100) / w;
+			scaleY = (devMode.dmPelsHeight * 100) / h;
+			if ( scaleX == scaleY ) {
+				ri.Printf( PRINT_ALL, "...detected DPI scale: %i%%\n", scaleX );
+				w = devMode.dmPelsWidth;
+				h = devMode.dmPelsHeight;
+			}
+		}
+
 		if ( glw_state.desktopWidth != w || glw_state.desktopHeight != h || 
 			glw_state.desktopX != x || glw_state.desktopY != y || 
 			glw_state.hMonitor != hMon ) {
@@ -859,20 +877,23 @@ void UpdateMonitorInfo( const RECT *target )
 				glw_state.desktopY = y;
 				glw_state.hMonitor = hMon;
 				memcpy( glw_state.displayName, mInfo.szDevice, sizeof( glw_state.displayName ) );
-				
-				memset( &devMode, 0, sizeof( devMode ) );
-				devMode.dmSize = sizeof( DEVMODE );
-				if ( EnumDisplaySettings( mInfo.szDevice, ENUM_CURRENT_SETTINGS, &devMode ) )
-					;
+
 				glw_state.desktopBitsPixel = devMode.dmBitsPerPel;
 
 				ri.Printf( PRINT_ALL, "...current monitor: %ix%i@%i,%i %s\n", 
 					w, h, x, y, WtoA( mInfo.szDevice ) );
+
 				if ( gammaSet ) {
 					R_SetColorMappings();
 				}
 		}
 	} else {
+		HDC hDC = GetDC( GetDesktopWindow() );
+		glw_state.desktopX = 0;
+		glw_state.desktopY = 0;
+		glw_state.desktopWidth = GetDeviceCaps( hDC, HORZRES );
+		glw_state.desktopHeight = GetDeviceCaps( hDC, VERTRES );
+		ReleaseDC( GetDesktopWindow(), hDC );
 		glw_state.displayName[0] = '\0';
 	}
 }

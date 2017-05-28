@@ -732,10 +732,33 @@ void Sys_Init( void ) {
 
 //=======================================================================
 
+
+/*
+==================
+SetDPIAwareness
+==================
+*/
+static void SetDPIAwareness( void ) 
+{
+	typedef HANDLE (WINAPI *pfnSetThreadDpiAwarenessContext)( HANDLE dpiContext );
+	pfnSetThreadDpiAwarenessContext pSetThreadDpiAwarenessContext;
+	HMODULE dll;
+
+	dll = GetModuleHandle( T("user32") );
+	if ( !dll )  
+		return;
+
+	pSetThreadDpiAwarenessContext = (pfnSetThreadDpiAwarenessContext) GetProcAddress( dll, "SetThreadDpiAwarenessContext" );
+	if ( !pSetThreadDpiAwarenessContext ) 
+		return;
+
+	pSetThreadDpiAwarenessContext( (HANDLE)(-2) ); // DPI_AWARENESS_CONTEXT_SYSTEM_AWARE
+}
+
+
 /*
 ==================
 WinMain
-
 ==================
 */
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow ) 
@@ -746,9 +769,11 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	qboolean useXYpos;
 
 	// should never get a previous instance in Win32
-    if ( hPrevInstance ) {
-        return 0;
+	if ( hPrevInstance ) {
+		return 0;
 	}
+
+	SetDPIAwareness();
 
 	g_wv.hInstance = hInstance;
 	Q_strncpyz( sys_cmdline, lpCmdLine, sizeof( sys_cmdline ) );
@@ -775,7 +800,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 		Sys_ShowConsole( 0, qfalse );
 	}
 
-    // main game loop
+	// main game loop
 	while( 1 ) {
 		// set low precision every frame, because some system calls
 		// reset it arbitrarily

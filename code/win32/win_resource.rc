@@ -63,6 +63,7 @@ IDI_ICON1               ICON    DISCARDABLE     "qe3.ico"
 IDI_ICON1               ICON    DISCARDABLE     "code/win32/qe3.ico"
 #endif
 
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // String Table
@@ -74,6 +75,14 @@ BEGIN
 END
 
 #endif    // English (U.S.) resources
+
+
 /////////////////////////////////////////////////////////////////////////////
-
-
+//
+// Applicatioin manifest
+//
+#ifndef __MINGW32__
+2 RT_MANIFEST "q3.manifest"
+#else
+2 RT_MANIFEST "code/win32/q3.manifest"
+#endif
