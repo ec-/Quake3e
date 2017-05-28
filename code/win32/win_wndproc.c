@@ -287,7 +287,7 @@ static qboolean directMap( const WPARAM chr ) {
 			return qtrue;
 	}
 
-	if ( chr < ' ' || chr > 127 )
+	if ( chr < ' ' || chr > 127 || in_forceCharset->integer > 1 )
 		return qfalse;
 	else
 		return qtrue;

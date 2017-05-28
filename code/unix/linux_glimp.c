@@ -624,7 +624,7 @@ static qboolean directMap( const byte chr )
 		case 0xC: // CTRL+L
 			return qtrue;
 	}
-	if ( chr < ' ' || chr > 127 )
+	if ( chr < ' ' || chr > 127 || in_forceCharset->integer > 1 )
 		return qfalse;
 	else
 		return qtrue;
