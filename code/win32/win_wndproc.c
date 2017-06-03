@@ -701,7 +701,11 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		break;
 
 	case WM_SYSCOMMAND:
-		if ( wParam == SC_SCREENSAVE )
+		// Prevent Alt+Letter commands from hanging the application temporarily
+		if ( wParam == SC_KEYMENU )
+			return 0;
+
+		if ( wParam == SC_SCREENSAVE || wParam == SC_MONITORPOWER )
 			return 0;
 
 #ifdef USE_PMLIGHT
@@ -712,7 +716,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			return 0;
 
 		// simulate drag move to avoid ~500ms delay between DefWindowProc() and further WM_ENTERSIZEMOVE
-		if ( wParam == SC_MOVE + HTCAPTION ) 
+		if ( wParam == SC_MOVE + HTCAPTION )
 		{
 			mouse_event( MOUSEEVENTF_MOVE | MOUSEEVENTF_LEFTDOWN, 7, 0, 0, 0 );
 			mouse_event( MOUSEEVENTF_MOVE | MOUSEEVENTF_LEFTDOWN, (DWORD)-7, 0, 0, 0 );

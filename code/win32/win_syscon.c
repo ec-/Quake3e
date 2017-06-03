@@ -327,8 +327,12 @@ static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 		}
 
 	case WM_SYSCOMMAND:
+		// Prevent Alt+Letter commands from hanging the application temporarily
+		if ( wParam == SC_KEYMENU )
+			return 0;
+
 		// simulate drag move to avoid ~500ms delay between DefWindowProc() and further WM_ENTERSIZEMOVE
-		if ( wParam == SC_MOVE + HTCAPTION ) 
+		if ( wParam == SC_MOVE + HTCAPTION )
 		{
 			mouse_event( MOUSEEVENTF_MOVE | MOUSEEVENTF_LEFTDOWN, 7, 0, 0, 0 );
 			mouse_event( MOUSEEVENTF_MOVE | MOUSEEVENTF_LEFTDOWN, (DWORD)-7, 0, 0, 0 );
