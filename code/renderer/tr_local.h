@@ -875,10 +875,11 @@ typedef struct {
 #define FUNCTABLE_SIZE2		10
 #define FUNCTABLE_MASK		(FUNCTABLE_SIZE-1)
 
+#define MAX_TEXTURE_UNITS	4
 
 // the renderer front end should never modify glstate_t
 typedef struct {
-	int			currenttextures[2];
+	int			currenttextures[ MAX_TEXTURE_UNITS ];
 	int			currenttmu;
 	qboolean	finishCalled;
 	int			texEnv[2];
@@ -1211,6 +1212,7 @@ void R_RotateForEntity( const trRefEntity_t *ent, const viewParms_t *viewParms, 
 void	GL_Bind( image_t *image );
 void	GL_SetDefaultState (void);
 void	GL_SelectTexture( int unit );
+void	GL_BindTexture( int unit, GLuint texnum );
 void	GL_TextureMode( const char *string );
 void	GL_CheckErrors( void );
 void	GL_State( unsigned long stateVector );

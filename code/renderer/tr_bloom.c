@@ -173,7 +173,7 @@ R_InitBloomTextures
 */
 void R_InitBloomTextures( void )
 {
-	if( !r_bloom->integer )
+	if( r_bloom->integer != 1 )
 		return;
 	memset( &bloom, 0, sizeof( bloom ));
 	R_Bloom_InitTextures ();
@@ -309,7 +309,7 @@ R_BloomScreen
 */
 void R_BloomScreen( void )
 {
-	if( !r_bloom->integer )
+	if( r_bloom->integer != 1 )
 		return;
 	if ( backEnd.doneBloom )
 		return;

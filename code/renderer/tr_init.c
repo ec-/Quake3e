@@ -206,6 +206,9 @@ static void InitOpenGL( void )
 		qglGetIntegerv( GL_MAX_TEXTURE_SIZE, &temp );
 		glConfig.maxTextureSize = temp;
 
+		if ( glConfig.numTextureUnits > MAX_TEXTURE_UNITS )
+			glConfig.numTextureUnits = MAX_TEXTURE_UNITS;
+
 		// stubbed or broken drivers may have reported 0...
 		if ( glConfig.maxTextureSize <= 0 ) 
 		{

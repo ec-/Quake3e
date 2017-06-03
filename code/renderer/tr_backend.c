@@ -71,18 +71,13 @@ void GL_SelectTexture( int unit )
 		return;
 	}
 
-	if ( unit == 0 )
+	if ( unit >= glConfig.numTextureUnits )
 	{
-		qglActiveTextureARB( GL_TEXTURE0_ARB );
-		qglClientActiveTextureARB( GL_TEXTURE0_ARB );
-	}
-	else if ( unit == 1 )
-	{
-		qglActiveTextureARB( GL_TEXTURE1_ARB );
-		qglClientActiveTextureARB( GL_TEXTURE1_ARB );
-	} else {
 		ri.Error( ERR_DROP, "GL_SelectTexture: unit = %i", unit );
 	}
+
+	qglActiveTextureARB( GL_TEXTURE0_ARB + unit );
+	qglClientActiveTextureARB( GL_TEXTURE0_ARB + unit );
 
 	glState.currenttmu = unit;
 }
@@ -113,6 +108,17 @@ void GL_BindMultitexture( image_t *image0, GLuint env0, image_t *image1, GLuint 
 		glState.currenttextures[0] = texnum0;
 		qglBindTexture( GL_TEXTURE_2D, texnum0 );
 	}
+}
+
+
+/*
+** GL_BindTexture
+*/
+void GL_BindTexture( int unit, GLuint texnum ) 
+{
+	GL_SelectTexture( unit );
+	glState.currenttextures[ unit ] = texnum;
+	qglBindTexture( GL_TEXTURE_2D, texnum );
 }
 
 
