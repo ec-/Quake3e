@@ -784,8 +784,6 @@ const char *FS_GetBasePath( void );
 const char *FS_GetHomePath( void );
 const char *FS_GetGamePath( void );
 
-
-qboolean FS_IsExt( const char *filename, const char *ext );
 qboolean FS_StripExt( char *filename, const char *ext );
 qboolean FS_AllowedExtension( const char *fileName, qboolean allowPk3s, const char **ext );
 

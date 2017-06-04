@@ -233,7 +233,7 @@ typedef struct fileInPack_s {
 typedef struct {
 	char			pakFilename[MAX_OSPATH];	// c:\quake3\baseq3\pak0.pk3
 	char			pakBasename[MAX_OSPATH];	// pak0
-	char			pakGamename[MAX_OSPATH];	// baseq3
+	const char		*pakGamename;				// baseq3
 	unzFile			handle;						// handle to zip file
 	int				checksum;					// regular checksum
 	int				pure_checksum;				// checksum for pure
@@ -252,7 +252,6 @@ typedef struct {
 
 typedef struct searchpath_s {
 	struct searchpath_s *next;
-
 	pack_t		*pack;		// only one of pack / dir will be non NULL
 	directory_t	*dir;
 } searchpath_t;
@@ -684,6 +683,7 @@ static void FS_CheckFilenameIsNotAllowed( const char *filename, const char *func
 	}
 }
 
+
 /*
 ===========
 FS_Remove
@@ -736,6 +736,7 @@ qboolean FS_FileExists( const char *file )
 	}
 	return qfalse;
 }
+
 
 /*
 ================
@@ -940,7 +941,6 @@ void FS_SV_Rename( const char *from, const char *to ) {
 }
 
 
-
 /*
 ===========
 FS_Rename
@@ -972,6 +972,7 @@ void FS_Rename( const char *from, const char *to ) {
 		FS_Remove( from_ospath );
 	}
 }
+
 
 /*
 ==============
@@ -1061,10 +1062,10 @@ fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 	return f;
 }
 
+
 /*
 ===========
 FS_FOpenFileAppend
-
 ===========
 */
 fileHandle_t FS_FOpenFileAppend( const char *filename ) {
@@ -1154,12 +1155,11 @@ FS_IsExt
 Return qtrue if ext matches file extension filename
 ===========
 */
-qboolean FS_IsExt( const char *filename, const char *ext )
+static qboolean FS_IsExt( const char *filename, const char *ext, size_t namelen )
 {
-	int extlen, namelen;
+	size_t extlen;
 
 	extlen = strlen( ext );
-	namelen = strlen( filename );
 
 	if ( extlen > namelen )
 		return qfalse;
@@ -1500,6 +1500,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 			dir = search->dir;
 			
 			netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
+			
 			f->handleFiles.file.o = Sys_FOpen( netpath, "rb" );
 			if ( f->handleFiles.file.o == NULL ) {
 				continue;
@@ -2669,9 +2670,12 @@ A mod directory is a peer to baseq3 with a pk3 in it
 ================
 */
 int	FS_GetModList( char *listbuf, int bufsize ) {
-	int nMods, i, j, nTotal, nLen, nPaks, nPotential, nDescLen;
+	int i, j, k;
+	int	nMods, nTotal, nLen, nPaks, nPotential, nDescLen;
+	int nDirs, nPakDirs;
 	char **pFiles = NULL;
 	char **pPaks = NULL;
+	char **pDirs = NULL;
 	char *name, *path;
 	char description[ MAX_OSPATH ];
 
@@ -2718,23 +2722,31 @@ int	FS_GetModList( char *listbuf, int bufsize ) {
 		// in order to be a valid mod the directory must contain at least one .pk3
 		// we didn't keep the information when we merged the directory names, as to what OS Path it was found under
 		// so we will try each of them here
-		nPaks = 0;
+		nPaks = nPakDirs = 0;
 		for ( j = 0; j < ARRAY_LEN( paths ); j++ ) {
 			if ( !*paths[ j ] )
 				break;
 			path = FS_BuildOSPath( (*paths[j])->string, name, NULL );
 
-			nPaks = 0;
+			nPaks = nDirs = nPakDirs = 0;
 			pPaks = Sys_ListFiles( path, ".pk3", NULL, &nPaks, qfalse );
+			pDirs = Sys_ListFiles( path, "/", NULL, &nDirs, qfalse );
+			for ( k = 0; k < nDirs; k++ ) {
+				// we only want to count directories ending with ".pk3dir"
+				if ( FS_IsExt( pDirs[k], ".pk3dir", strlen( pDirs[k] ) ) ) {
+					nPakDirs++;
+				}
+			}
 
 			// we only use Sys_ListFiles to check whether files are present
+			Sys_FreeFileList( pDirs );
 			Sys_FreeFileList( pPaks );
-			if ( nPaks > 0 ) {
+			if ( nPaks > 0 || nPakDirs > 0 ) {
 				break;
 			}
 		}
 
-		if ( nPaks > 0 ) {
+		if ( nPaks > 0 || nPakDirs > 0 ) {
 			nLen = strlen( name ) + 1;
 			// nLen is the length of the mod path
 			// we need to see if there is a description available
@@ -3074,6 +3086,7 @@ static void PakSort( char **a, int n ) {
   if ( n > i ) PakSort( a+i, n-i );
 }
 
+
 /*
 ================
 FS_AddGameDirectory
@@ -3084,12 +3097,19 @@ then loads the zip headers
 */
 static void FS_AddGameDirectory( const char *path, const char *dir ) {
 	searchpath_t	*sp;
-	int				i, len;
+	int				len;
 	searchpath_t	*search;
+	const char		*gamedir;
 	pack_t			*pak;
+	char			curpath[MAX_OSPATH + 1];
 	char			*pakfile;
 	int				numfiles;
 	char			**pakfiles;
+	int				pakfilesi;
+	int				numdirs;
+	char			**pakdirs;
+	int				pakdirsi;
+	int				pakwhich;
 
 	for ( sp = fs_searchpaths ; sp ; sp = sp->next ) {
 		if ( sp->dir && !Q_stricmp( sp->dir->path, path ) && !Q_stricmp( sp->dir->gamedir, dir )) {
@@ -3107,42 +3127,110 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 
 	Q_strncpyz( search->dir->path, path, sizeof( search->dir->path ) );
 	Q_strncpyz( search->dir->gamedir, dir, sizeof( search->dir->gamedir ) );
+	gamedir = search->dir->gamedir;
 	search->next = fs_searchpaths;
 	fs_searchpaths = search;
 
 	// find all pak files in this directory
-	pakfile = FS_BuildOSPath( path, dir, NULL );
-	pakfiles = Sys_ListFiles( pakfile, ".pk3", NULL, &numfiles, qfalse );
+	Q_strncpyz( curpath, FS_BuildOSPath( path, dir, NULL ), sizeof( curpath ) );
+
+	// Get .pk3 files
+	pakfiles = Sys_ListFiles(curpath, ".pk3", NULL, &numfiles, qfalse);
 
 	if ( numfiles >= 2 )
 		PakSort( pakfiles, numfiles - 1 );
-	//qsort( pakfiles, numfiles, sizeof(char*), paksort );
 
-	for ( i = 0 ; i < numfiles ; i++ ) {
+	pakfilesi = 0;
+	pakdirsi = 0;
 
-		// skip files without valid pk3 extension -EC-
-		len = strlen( pakfiles[i] );
-		if ( len >= 4 && Q_stricmpn( &pakfiles[i][len-4], ".pk3", 4 ) )
-			continue;
+	if ( fs_numServerPaks ) {
+		numdirs = 0;
+		pakdirs = NULL;
+	} else {
+		// Get top level directories (we'll filter them later since the Sys_ListFiles filtering is terrible)
+		pakdirs = Sys_ListFiles( curpath, "/", NULL, &numdirs, qfalse );
+		if ( numdirs >= 2 ) {
+			PakSort( pakdirs, numdirs - 1 );
+		}
+	}
 
-		pakfile = FS_BuildOSPath( path, dir, pakfiles[i] );
-		if ( ( pak = FS_LoadZipFile( pakfile, pakfiles[i] ) ) == NULL )
-			continue;
+	while (( pakfilesi < numfiles) || (pakdirsi < numdirs) ) 
+	{
+		// Check if a pakfile or pakdir comes next
+		if (pakfilesi >= numfiles) {
+			// We've used all the pakfiles, it must be a pakdir.
+			pakwhich = 0;
+		}
+		else if (pakdirsi >= numdirs) {
+			// We've used all the pakdirs, it must be a pakfile.
+			pakwhich = 1;
+		}
+		else {
+			// Could be either, compare to see which name comes first
+			pakwhich = (FS_PathCmp( pakfiles[pakfilesi], pakdirs[pakdirsi] ) < 0);
+		}
 
-		// store the game name for downloading
-		strcpy(pak->pakGamename, dir);
-		pak->index = fs_packCount;
+		if ( pakwhich ) {
 
-		fs_packFiles += pak->numfiles;
-		fs_packCount++;
+			len = strlen( pakfiles[pakfilesi] );
+			if ( !FS_IsExt( pakfiles[pakfilesi], ".pk3", len ) ) {
+				// not a pk3 file
+				pakfilesi++;
+				continue;
+			}
 
-		search = Z_Malloc (sizeof(searchpath_t));
-		search->pack = pak;
-		search->next = fs_searchpaths;
-		fs_searchpaths = search;
+			// The next .pk3 file is before the next .pk3dir
+			pakfile = FS_BuildOSPath( path, dir, pakfiles[pakfilesi] );
+			if ( (pak = FS_LoadZipFile( pakfile, pakfiles[pakfilesi]) ) == NULL ) {
+				// This isn't a .pk3! Next!
+				pakfilesi++;
+				continue;
+			}
+
+			// store the game name for downloading
+			pak->pakGamename = gamedir;
+
+			pak->index = fs_packCount;
+
+			fs_packFiles += pak->numfiles;
+			fs_packCount++;
+
+			search = Z_Malloc(sizeof(searchpath_t));
+			search->pack = pak;
+			search->next = fs_searchpaths;
+			fs_searchpaths = search;
+
+			pakfilesi++;
+		} else {
+
+			len = strlen(pakdirs[pakdirsi]);
+
+			// The next .pk3dir is before the next .pk3 file
+			// But wait, this could be any directory, we're filtering to only ending with ".pk3dir" here.
+			if (!FS_IsExt(pakdirs[pakdirsi], ".pk3dir", len)) {
+				// This isn't a .pk3dir! Next!
+				pakdirsi++;
+				continue;
+			}
+
+			pakfile = FS_BuildOSPath(path, dir, pakdirs[pakdirsi]);
+
+			// add the directory to the search path
+			search = Z_Malloc(sizeof(searchpath_t));
+			search->dir = Z_Malloc(sizeof(*search->dir));
+
+			Q_strncpyz(search->dir->path, curpath, sizeof(search->dir->path));	// c:\quake3\baseq3
+			Q_strncpyz(search->dir->gamedir, pakdirs[pakdirsi], sizeof(search->dir->gamedir)); // mypak.pk3dir
+
+			search->next = fs_searchpaths;
+			fs_searchpaths = search;
+
+			pakdirsi++;
+		}
 	}
 
 	// done
+	Sys_FreeFileList( pakdirs );
 	Sys_FreeFileList( pakfiles );
 }
 
