@@ -1309,7 +1309,11 @@ SV_CompleteMapName
 */
 static void SV_CompleteMapName( char *args, int argNum ) {
 	if ( argNum == 2 ) 	{
-		Field_CompleteFilename( "maps", "bsp", qtrue, FS_MATCH_PK3s | FS_MATCH_STICK );
+		if ( sv_pure->integer ) {
+			Field_CompleteFilename( "maps", "bsp", qtrue, FS_MATCH_PK3s | FS_MATCH_STICK );
+		} else {
+			Field_CompleteFilename( "maps", "bsp", qtrue, FS_MATCH_ANY | FS_MATCH_STICK );
+		}
 	}
 }
 
@@ -1370,6 +1374,7 @@ void SV_AddOperatorCommands( void ) {
 #endif
 }
 
+
 /*
 ==================
 SV_RemoveOperatorCommands
@@ -1392,4 +1397,3 @@ void SV_RemoveOperatorCommands( void ) {
 	Cmd_RemoveCommand ("say");
 #endif
 }
-
