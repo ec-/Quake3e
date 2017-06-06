@@ -309,7 +309,19 @@ R_BloomScreen
 */
 void R_BloomScreen( void )
 {
-	if( r_bloom->integer != 1 )
+	if ( r_bloom->integer == 2 && fboAvailable ) 
+	{
+		if ( !backEnd.doneBloom2fbo && backEnd.doneSurfaces )
+		{
+			if ( !backEnd.projection2D )
+				RB_SetGL2D();
+			qglColor4f( 1, 1, 1, 1 );
+			FBO_Bloom( glConfig.vidWidth, glConfig.vidHeight, 0, 0, qfalse );
+		}
+		return;
+	}
+
+	if ( r_bloom->integer != 1 )
 		return;
 	if ( backEnd.doneBloom )
 		return;

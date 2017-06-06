@@ -298,6 +298,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 
 #ifdef USE_PMLIGHT
 	FBO_BindMain();
+	backEnd.doneBloom2fbo = qfalse;
 #endif
 
 	//

@@ -23,6 +23,7 @@ typedef enum {
 	BLOOM_FRAGMENT,
 	BLUR_FRAGMENT,
 	BLEND4_FRAGMENT,
+	BLEND2_FRAGMENT,
 	BLEND2_GAMMA_FRAGMENT,
 
 	PROGRAM_COUNT
@@ -55,6 +56,7 @@ void ( APIENTRY * qglProgramEnvParameter4fARB )( GLenum target, GLuint index, GL
 qboolean fboAvailable = qfalse;
 qboolean fboEnabled = qfalse;
 qboolean fboBloomInited = qfalse;
+int      fboReadIndex = 0;
 
 #define NUM_BLUR_PASSES 4
 #define BLOOM_BASE 2
@@ -76,7 +78,6 @@ static frameBuffer_t frameBuffers[ FBO_COUNT ];
 static qboolean frameBufferMultiSampling = qfalse;
 
 qboolean blitMSfbo = qfalse;
-
 
 // framebuffer functions
 GLboolean (APIENTRY *qglIsRenderbuffer)( GLuint renderbuffer );
@@ -525,6 +526,20 @@ static const char *blend4FP = {
 	"END \n" 
 };
 
+// blend 2 texture together
+static const char *blend2FP = {
+	"!!ARBfp1.0 \n"
+	"OPTION ARB_precision_hint_fastest; \n"
+	"TEMP base; \n"
+	"TEMP post; \n"
+	"TEX base, fragment.texcoord[0], texture[0], 2D; \n"
+	"TEX post, fragment.texcoord[0], texture[1], 2D; \n"
+	"ADD base, base, post; \n"
+	"MOV base.w, 1.0; \n"
+	"MOV result.color, base; \n"
+	"END \n" 
+};
+
 // combined blend + gamma correction pass
 static const char *blend2gammaFP = {
 	"!!ARBfp1.0 \n"
@@ -686,6 +701,9 @@ qboolean ARB_UpdatePrograms( void )
 		return qfalse;
 
 	if ( !ARB_CompileProgram( Fragment, blend4FP, programs[ BLEND4_FRAGMENT ] ) )
+		return qfalse;
+
+	if ( !ARB_CompileProgram( Fragment, blend2FP, programs[ BLEND2_FRAGMENT ] ) )
 		return qfalse;
 
 	if ( !ARB_CompileProgram( Fragment, blend2gammaFP, programs[ BLEND2_GAMMA_FRAGMENT ] ) )
@@ -954,6 +972,7 @@ void FBO_BindMain( void )
 			fb = &frameBuffers[ 0 ];
 		}
 		qglBindFramebuffer( GL_FRAMEBUFFER, fb->fbo );
+		fboReadIndex = 0;
 	}
 }
 
@@ -969,7 +988,8 @@ static void FBO_BlitToBackBuffer( int index )
 	qglReadBuffer( GL_COLOR_ATTACHMENT0 );
 	qglDrawBuffer( GL_BACK );
 
-	qglBlitFramebuffer( 0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST );
+	qglBlitFramebuffer( 0, 0, src->width, src->height, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST );
+	fboReadIndex = index;
 }
 
 
@@ -983,6 +1003,8 @@ void FBO_BlitMS( qboolean depthOnly )
 	const frameBuffer_t *r = &frameBufferMS;
 	const frameBuffer_t *d = &frameBuffers[ 0 ];
 
+	fboReadIndex = 0;
+
 	qglBindFramebuffer( GL_READ_FRAMEBUFFER, r->fbo );
 	qglBindFramebuffer( GL_DRAW_FRAMEBUFFER, d->fbo );
 
@@ -993,10 +1015,8 @@ void FBO_BlitMS( qboolean depthOnly )
 		return;
 	}
 
-	//blitMSfbo = qfalse;
-	//qglReadBuffer( GL_COLOR_ATTACHMENT0 );
-	//qglDrawBuffer( GL_COLOR_ATTACHMENT0 );
 	qglBlitFramebuffer( 0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST );
+	qglBindFramebuffer( GL_READ_FRAMEBUFFER, d->fbo ); // bind all further reads to main buffer
 }
 
 
@@ -1020,10 +1040,17 @@ void FBO_Blur( const frameBuffer_t *fb1, const frameBuffer_t *fb2, const int w, 
 }
 
 
-static qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obScale ) 
+qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obScale, qboolean finalStage ) 
 {
 	frameBuffer_t *src, *dst;
 	int i;
+
+	if ( backEnd.doneBloom2fbo || !backEnd.doneSurfaces )
+	{
+		return qfalse;
+	}
+
+	backEnd.doneBloom2fbo = qtrue;
 
 	if( !fboBloomInited )  
 	{
@@ -1040,27 +1067,32 @@ static qboolean FBO_Bloom( const int w, const int h, const float gamma, const fl
 		}
 	}
 
+	if ( frameBufferMultiSampling && blitMSfbo ) 
+	{
+		FBO_BlitMS( qfalse );
+		blitMSfbo = qfalse;
+	}
+
 	// extract intensity - render from FBO[0].texture to FBO[1]
-	src = &frameBuffers[ 0 ];
-	dst = &frameBuffers[ 2 ];
+
 	for ( i = 0; i < NUM_BLUR_PASSES; i++ ) {
-		//src = &frameBuffers[ i*2 ];
-		//dst = &frameBuffers[ i*2 + 2 ];
-		qglBindFramebuffer( GL_FRAMEBUFFER, dst->fbo );
-		GL_BindTexture( 0, src->color );
-		qglViewport( 0, 0, dst->width, dst->height );
+		src = &frameBuffers[ i*2 ];
+		dst = &frameBuffers[ i*2 + 2 ];
 		if ( i == 0 ) {
+			qglBindFramebuffer( GL_FRAMEBUFFER, dst->fbo );
+			GL_BindTexture( 0, src->color );
+			qglViewport( 0, 0, dst->width, dst->height );
 			ARB_ProgramEnable( DUMMY_VERTEX, BLOOM_FRAGMENT );
 			qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, r_bloom2_threshold->value, r_bloom2_threshold->value,
 				r_bloom2_threshold->value, r_bloom2_threshold->value );
 			RenderQuad( w, h );
-		} else {
-			ARB_ProgramDisable();
-			RenderQuad( w, h );
+		} else { 
+			// copy image to next level
+			qglBindFramebuffer( GL_READ_FRAMEBUFFER, src->fbo );
+			qglBindFramebuffer( GL_DRAW_FRAMEBUFFER, dst->fbo );
+			qglBlitFramebuffer( 0, 0, src->width, src->height, 0, 0, dst->width, dst->height, GL_COLOR_BUFFER_BIT, GL_LINEAR );
 		}
 		FBO_Blur( dst, dst+1, w, h );
-		src = &frameBuffers[ (i+1)*2 ];
-		dst = &frameBuffers[ (i+1)*2 + 2 ];
 	}
 
 	qglViewport( 0, 0, w, h );
@@ -1086,22 +1118,39 @@ static qboolean FBO_Bloom( const int w, const int h, const float gamma, const fl
 	RenderQuad( w, h );
 
 	// if we don't need to read pixels later - blend directly to back buffer
-	if ( backEnd.screenshotMask )
+	if ( finalStage ) {
+		if ( backEnd.screenshotMask ) {
+			qglBindFramebuffer( GL_FRAMEBUFFER, frameBuffers[ BLOOM_BASE ].fbo );
+		} else {
+			qglBindFramebuffer( GL_FRAMEBUFFER, 0 ); // back buffer
+		}
+	} else {
 		qglBindFramebuffer( GL_FRAMEBUFFER, frameBuffers[ BLOOM_BASE ].fbo );
-	else
-		qglBindFramebuffer( GL_FRAMEBUFFER, 0 ); // back buffer
+	}
 				
-	GL_BindTexture( 1, frameBuffers[1].color );
-	GL_BindTexture( 0, frameBuffers[0].color );
-	// render final bloom texture to bloom'FBO/backbuffer, blend & apply gamma in one pass
-	ARB_ProgramEnable( DUMMY_VERTEX, BLEND2_GAMMA_FRAGMENT );
-	qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, gamma, gamma, gamma, obScale );	
+	GL_BindTexture( 1, frameBuffers[1].color ); // final bloom texture
+	GL_BindTexture( 0, frameBuffers[0].color ); // original image
+	if ( finalStage ) {
+		// blend & apply gamma in one pass
+		ARB_ProgramEnable( DUMMY_VERTEX, BLEND2_GAMMA_FRAGMENT );
+		qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, gamma, gamma, gamma, obScale );	
+	} else {
+		// just blend
+		ARB_ProgramEnable( DUMMY_VERTEX, BLEND2_FRAGMENT );
+	}
 	RenderQuad( w, h );
 	ARB_ProgramDisable();
-	if ( backEnd.screenshotMask )
-		FBO_BlitToBackBuffer( BLOOM_BASE ); // so any further qglReadPixels() will read from BLOOM_BASE
-	//else
-	//	already in back buffer
+	if ( finalStage ) {
+		if ( backEnd.screenshotMask ) {
+			FBO_BlitToBackBuffer( BLOOM_BASE ); // so any further qglReadPixels() will read from BLOOM_BASE
+			fboReadIndex = 0;
+		} else {
+			//	already in back buffer
+			fboReadIndex = 0;
+		}
+	} else {
+		fboReadIndex = BLOOM_BASE;
+	}
 #endif
 	return qtrue;
 }
@@ -1141,7 +1190,7 @@ void FBO_PostProcess( void )
 
 	if ( bloom > 1 && programCompiled )
 	{
-		if ( FBO_Bloom( w, h, gamma, obScale ) ) 
+		if ( FBO_Bloom( w, h, gamma, obScale, qtrue ) )
 		{
 			return;
 		}
@@ -1150,7 +1199,7 @@ void FBO_PostProcess( void )
 	// check if we can perform final draw directly into back buffer
 	if ( backEnd.screenshotMask == 0 && programCompiled ) {
 		qglBindFramebuffer( GL_FRAMEBUFFER, 0 );
-		GL_BindTexture( 0, frameBuffers[ 0 ].color );
+		GL_BindTexture( 0, frameBuffers[ fboReadIndex ].color );
 		ARB_ProgramEnable( DUMMY_VERTEX, GAMMA_FRAGMENT );
 		qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, gamma, gamma, gamma, obScale );
 		RenderQuad( w, h );
@@ -1160,7 +1209,7 @@ void FBO_PostProcess( void )
 
 	// apply gamma shader
 	qglBindFramebuffer( GL_FRAMEBUFFER, frameBuffers[ 1 ].fbo ); // destination - secondary buffer
-	GL_BindTexture( 0, frameBuffers[ 0 ].color );  // source - main color buffer
+	GL_BindTexture( 0, frameBuffers[ fboReadIndex ].color );  // source - main color buffer
 	if ( programCompiled )
 	{
 		ARB_ProgramEnable( DUMMY_VERTEX, GAMMA_FRAGMENT );
