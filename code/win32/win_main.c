@@ -741,18 +741,33 @@ SetDPIAwareness
 static void SetDPIAwareness( void ) 
 {
 	typedef HANDLE (WINAPI *pfnSetThreadDpiAwarenessContext)( HANDLE dpiContext );
+	typedef HRESULT (WINAPI *pfnSetProcessDpiAwareness)( int value );
+
 	pfnSetThreadDpiAwarenessContext pSetThreadDpiAwarenessContext;
+	pfnSetProcessDpiAwareness pSetProcessDpiAwareness;
 	HMODULE dll;
 
 	dll = GetModuleHandle( T("user32") );
-	if ( !dll )  
-		return;
+	if ( dll )
+	{
+		pSetThreadDpiAwarenessContext = (pfnSetThreadDpiAwarenessContext) GetProcAddress( dll, "SetThreadDpiAwarenessContext" );
+		if ( pSetThreadDpiAwarenessContext )
+		{
+			pSetThreadDpiAwarenessContext( (HANDLE)(-2) ); // DPI_AWARENESS_CONTEXT_SYSTEM_AWARE
+		}
 
-	pSetThreadDpiAwarenessContext = (pfnSetThreadDpiAwarenessContext) GetProcAddress( dll, "SetThreadDpiAwarenessContext" );
-	if ( !pSetThreadDpiAwarenessContext ) 
-		return;
+	}
 
-	pSetThreadDpiAwarenessContext( (HANDLE)(-2) ); // DPI_AWARENESS_CONTEXT_SYSTEM_AWARE
+	dll = LoadLibrary( T("shcore") );
+	if ( dll )
+	{
+		pSetProcessDpiAwareness = (pfnSetProcessDpiAwareness) GetProcAddress( dll, "SetProcessDpiAwareness" );
+		if ( pSetProcessDpiAwareness )
+		{
+			pSetProcessDpiAwareness( 2 ); // PROCESS_PER_MONITOR_DPI_AWARE
+		}
+		FreeLibrary( dll );
+	}
 }
 
 
