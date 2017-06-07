@@ -1175,6 +1175,8 @@ void FBO_PostProcess( void )
 
 	if ( !backEnd.projection2D )
 	{
+		qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
+		qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
 		qglMatrixMode( GL_PROJECTION );
 		qglLoadIdentity();
 		qglOrtho( 0, glConfig.vidWidth, glConfig.vidHeight, 0, 0, 1 );
