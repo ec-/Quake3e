@@ -1169,12 +1169,10 @@ void FBO_PostProcess( void )
 
 	ARB_ProgramDisable();
 
-	if ( frameBufferMultiSampling && blitMSfbo )
-		FBO_BlitMS( qfalse );
-	blitMSfbo = qfalse;
-
 	if ( !backEnd.projection2D )
 	{
+		qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
+		qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
 		qglMatrixMode( GL_PROJECTION );
 		qglLoadIdentity();
 		qglOrtho( 0, glConfig.vidWidth, glConfig.vidHeight, 0, 0, 1 );
@@ -1182,6 +1180,10 @@ void FBO_PostProcess( void )
 		qglLoadIdentity();
 		backEnd.projection2D = qtrue;
 	}
+
+	if ( frameBufferMultiSampling && blitMSfbo )
+		FBO_BlitMS( qfalse );
+	blitMSfbo = qfalse;
 	
 	bloom = ri.Cvar_VariableIntegerValue( "r_bloom" );
 
