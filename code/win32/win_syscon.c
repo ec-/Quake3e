@@ -909,7 +909,7 @@ void QDECL Sys_SetStatus( const char *format, ... )
 
 	text[0] = ' '; // add leading space for better look :P
 	va_start( argptr, format );
-	vsprintf( text+1, format, argptr);
+	Q_vsnprintf( text + 1, sizeof( text ) - 1, format, argptr );
 	va_end( argptr );
 
 	SendMessage( s_wcd.hwndStatusBar, SB_SETTEXT, (WPARAM) 1 | 0, (LPARAM) AtoW( text ) );

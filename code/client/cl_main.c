@@ -88,6 +88,8 @@ clientConnection_t	clc;
 clientStatic_t		cls;
 vm_t				*cgvm;
 
+netadr_t			rcon_address;
+
 char				cl_reconnectArgs[ MAX_OSPATH ];
 char				cl_oldGame[ MAX_QPATH ];
 qboolean			cl_oldGameSet;
@@ -1600,7 +1602,6 @@ CL_Rcon_f
 */
 void CL_Rcon_f( void ) {
 	char	message[MAX_RCON_MESSAGE];
-	netadr_t	to;
 
 	if ( !rcon_client_password->string[0] ) {
 		Com_Printf ("You must set 'rconpassword' before\n"
@@ -1623,7 +1624,7 @@ void CL_Rcon_f( void ) {
 	Q_strcat (message, MAX_RCON_MESSAGE, Cmd_Cmd()+5);
 
 	if ( cls.state >= CA_CONNECTED ) {
-		to = clc.netchan.remoteAddress;
+		rcon_address = clc.netchan.remoteAddress;
 	} else {
 		if (!strlen(rconAddress->string)) {
 			Com_Printf ("You must either be connected,\n"
@@ -1632,13 +1633,13 @@ void CL_Rcon_f( void ) {
 
 			return;
 		}
-		NET_StringToAdr( rconAddress->string, &to, NA_UNSPEC );
-		if (to.port == 0) {
-			to.port = BigShort (PORT_SERVER);
+		NET_StringToAdr( rconAddress->string, &rcon_address, NA_UNSPEC );
+		if (rcon_address.port == 0) {
+			rcon_address.port = BigShort (PORT_SERVER);
 		}
 	}
 	
-	NET_SendPacket( NS_CLIENT, strlen(message)+1, message, &to );
+	NET_SendPacket( NS_CLIENT, strlen(message)+1, message, &rcon_address );
 }
 
 
@@ -2100,7 +2101,7 @@ void CL_InitDownloads( void ) {
 	}
 
 #ifdef USE_CURL
-	if( cl_mapAutoDownload->integer && ( !(sv_allowDownload->integer & DLF_ENABLE) || clc.demoplaying ) )
+	if( cl_mapAutoDownload->integer && ( !(clc.sv_allowDownload & DLF_ENABLE) || clc.demoplaying ) )
 	{
 		const char *info, *mapname, *bsp;
 
@@ -2584,7 +2585,10 @@ static void CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 
 	// echo request from server
 	if ( !Q_stricmp(c, "echo") ) {
-		NET_OutOfBandPrint( NS_CLIENT, from, "%s", Cmd_Argv(1) );
+		// NOTE: we may have to add exceptions for auth and update servers
+		if ( NET_CompareAdr( from, &clc.serverAddress ) || NET_CompareAdr( from, &rcon_address ) ) {
+			NET_OutOfBandPrint( NS_CLIENT, from, "%s", Cmd_Argv(1) );
+		}
 		return;
 	}
 
@@ -2600,11 +2604,14 @@ static void CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 		return;
 	}
 
-	// echo request from server
+	// print string from server
 	if ( !Q_stricmp(c, "print") ) {
-		s = MSG_ReadString( msg );
-		Q_strncpyz( clc.serverMessage, s, sizeof( clc.serverMessage ) );
-		Com_Printf( "%s", s );
+		// NOTE: we may have to add exceptions for auth and update servers
+		if ( NET_CompareAdr( from, &clc.serverAddress ) || NET_CompareAdr( from, &rcon_address ) ) {
+			s = MSG_ReadString( msg );
+			Q_strncpyz( clc.serverMessage, s, sizeof( clc.serverMessage ) );
+			Com_Printf( "%s", s );
+		}
 		return;
 	}
 
