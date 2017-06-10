@@ -747,14 +747,12 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		break;
 
 	case WM_SYSKEYDOWN:
-		if ( wParam == VK_RETURN )
-		{
+	case WM_KEYDOWN:
+		if ( wParam == VK_RETURN && ( uMsg == WM_SYSKEYDOWN || GetAsyncKeyState( VK_RMENU ) ) ) {
 			Cvar_SetValue( "r_fullscreen", glw_state.cdsFullscreen? 0 : 1 );
 				Cbuf_AddText( "vid_restart\n" );
 			return 0;
 		}
-		// fall through
-	case WM_KEYDOWN:
 		//Com_Printf( "^2k+^7 wParam:%08x lParam:%08x\n", wParam, lParam );
 		Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, MapKey( wParam, lParam ), qtrue, 0, NULL );
 		break;
