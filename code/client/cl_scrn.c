@@ -302,15 +302,22 @@ void SCR_DrawSmallStringExt( int x, int y, const char *string, const float *setC
 	xx = x;
 	re.SetColor( setColor );
 	while ( *s ) {
-		if ( Q_IsColorString( s ) ) {
-			if ( !forceColor ) {
-				Com_Memcpy( color, g_color_table[ ColorIndexFromChar( *(s+1) ) ], sizeof( color ) );
-				color[3] = setColor[3];
-				re.SetColor( color );
-			}
-			if ( !noColorEscape ) {
-				s += 2;
-				continue;
+		if ( *s == Q_COLOR_ESCAPE ) {
+			if ( *(s+1) == Q_COLOR_ESCAPE ) {
+				if ( !noColorEscape ) {
+					s += 1;
+					continue;
+				}
+			} else if ( *(s+1) != '\0' ) {
+				if ( !forceColor ) {
+					Com_Memcpy( color, g_color_table[ ColorIndexFromChar( *(s+1) ) ], sizeof( color ) );
+					color[3] = setColor[3];
+					re.SetColor( color );
+				}
+				if ( !noColorEscape ) {
+					s += 2;
+					continue;
+				}
 			}
 		}
 		SCR_DrawSmallChar( xx, y, *s );
