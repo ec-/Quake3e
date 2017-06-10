@@ -335,6 +335,9 @@ typedef struct {
 
 	int			lastVidRestart;
 	int			soundMuted;
+
+	qboolean	startCgame;
+
 } clientStatic_t;
 
 extern	clientStatic_t		cls;
@@ -347,7 +350,10 @@ extern	qboolean	cl_oldGameSet;
 extern		download_t	download;
 qboolean	Com_DL_Perform( download_t *dl );
 void		Com_DL_Cleanup( download_t *dl );
-qboolean	Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean headerCheck );
+qboolean	Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean headerCheck, qboolean autoDownload );
+qboolean	Com_DL_InProgress( const download_t *dl );
+qboolean	Com_DL_ValidFileName( const char *fileName );
+qboolean	CL_Download( const char *cmd, const char *pakname, qboolean autoDownload );
 
 #endif
 
@@ -399,6 +405,9 @@ extern	cvar_t	*cl_aviMotionJpeg;
 extern	cvar_t	*cl_activeAction;
 
 extern	cvar_t	*cl_allowDownload;
+#ifdef USE_CURL
+extern	cvar_t	*cl_mapAutoDownload;
+#endif
 extern	cvar_t	*cl_conXOffset;
 extern	cvar_t	*cl_conColor;
 extern	cvar_t	*cl_inGameVideo;

@@ -605,6 +605,20 @@ qboolean Com_DL_Init( download_t *dl )
 Com_DL_Cleanup
 =================
 */
+qboolean Com_DL_InProgress( const download_t *dl )
+{
+	if ( dl->cURL && dl->URL[0] )
+		return qtrue;
+	else
+		return qfalse;
+}
+
+
+/*
+=================
+Com_DL_Cleanup
+=================
+*/
 void Com_DL_Cleanup( download_t *dl )
 {
 	if( dl->cURLM ) 
@@ -629,17 +643,43 @@ void Com_DL_Cleanup( download_t *dl )
 		dl->fHandle = FS_INVALID_HANDLE;
 	}
 
+	if ( dl->mapAutoDownload )
+	{
+		Cvar_Set( "cl_downloadName", "" );
+		Cvar_Set( "cl_downloadSize", "0" );
+		Cvar_Set( "cl_downloadCount", "0" );
+		Cvar_Set( "cl_downloadTime", "0" );
+	}
+
 	dl->Size = 0;
 	dl->Count = 0;
 
 	dl->URL[0] = '\0';
 	dl->Name[0] = '\0';
+	if ( dl->TempName[0] )
+	{
+		FS_Remove( dl->TempName );
+	}
 	dl->TempName[0] = '\0';
 	dl->progress[0] = '\0';
 	dl->headerCheck = qfalse;
-	dl->pk3ext = qfalse;
+	dl->mapAutoDownload = qfalse;
 
 	Com_DL_Done( dl );
+}
+
+
+static const char *sizeToString( int size )
+{
+	static char buf[ 32 ];
+	if ( size < 1024 ) {
+		sprintf( buf, "%ib", size );
+	} else if ( size < 1024*1024 ) {
+		sprintf( buf, "%ikb", size / 1024 );
+	} else {
+		sprintf( buf, "%i.%imb", size / (1024*1024), (size / (1024*1024/10 )) % 10 );
+	}
+	return buf;
 }
 
 
@@ -650,21 +690,34 @@ Com_DL_CallbackProgress
 */
 static int Com_DL_CallbackProgress( void *data, double dltotal, double dlnow, double ultotal, double ulnow )
 {
-	double percentage;
+	double percentage, speed;
 	download_t *dl = (download_t *)data;
 	
 	dl->Size = (int)dltotal;
 	dl->Count = (int)dlnow;
 
-	if ( dltotal )
-		percentage = ( dlnow / dltotal ) * 100.0;
-	else {
-		dl->progress[0] = '\0';
-		return 0;
+	if ( dl->mapAutoDownload && cls.state == CA_CONNECTED )
+	{
+		if ( Key_IsDown( K_ESCAPE ) )
+		{
+			Com_Printf( "%s: aborted\n", dl->Name );
+			return -1;
+		}
+		Cvar_Set( "cl_downloadSize", va( "%i", dl->Size ) );
+		Cvar_Set( "cl_downloadCount", va( "%i", dl->Count ) );
 	}
 
-	sprintf( dl->progress, " downloading %s: %2.1f%%", dl->Name, percentage );
-	
+	if ( dl->Size ) {
+		percentage = ( dlnow / dltotal ) * 100.0;
+		sprintf( dl->progress, " downloading %s: %s (%i%%)", dl->Name, sizeToString( dl->Count ), (int)percentage );
+	} else {
+		sprintf( dl->progress, " downloading %s: %s", dl->Name, sizeToString( dl->Count ) );
+	}
+
+	if ( dl->func.easy_getinfo( dl->cURL, CURLINFO_SPEED_DOWNLOAD, &speed ) == CURLE_OK ) {
+		Q_strcat( dl->progress, sizeof( dl->progress ), va( " %s/s", sizeToString( (int)speed ) ) );
+	}
+
 	return 0;
 }
 
@@ -682,12 +735,6 @@ static size_t Com_DL_CallbackWrite( void *ptr, size_t size, size_t nmemb, void *
 
 	if ( dl->fHandle == FS_INVALID_HANDLE )
 	{
-		if ( !dl->pk3ext ) 
-		{
-			Com_Printf( S_COLOR_YELLOW "Com_DL_CallbackWrite(): file must have pk3 extension.\n" );
-			return (size_t)-1;
-		}
-
 		if ( !CL_ValidPakSignature( ptr, size*nmemb ) ) 
 		{
 			Com_Printf( S_COLOR_YELLOW "Com_DL_CallbackWrite(): invalid pak signature for %s.\n", 
@@ -710,12 +757,31 @@ static size_t Com_DL_CallbackWrite( void *ptr, size_t size, size_t nmemb, void *
 
 /*
 =================
+Com_DL_ValidFileName
+=================
+*/
+qboolean Com_DL_ValidFileName( const char *fileName )
+{
+	int c;
+	while ( (c = *fileName++) != '\0' )
+	{
+		if ( c == '/' || c == '\\' || c == ':' )
+			return qfalse;
+		if ( c < ' ' || c > '~' )
+			return qfalse;
+	}
+	return qtrue;
+}
+
+
+/*
+=================
 Com_DL_HeaderCallback
 =================
 */
 static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void *userdata ) 
 {
-	char name[MAX_QPATH];
+	char name[MAX_OSPATH];
 	char header[1024], *s, quote, *d;
 	download_t *dl;
 	int len;
@@ -762,47 +828,36 @@ static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void 
 			*d++ = '\0';
 
 			// validate
-			if ( len < 5 || !stristr( name + len - 4, ".pk3" ) || strchr( name, '/' ) )
+			if ( len < 5 || !stristr( name + len - 4, ".pk3" ) || !Com_DL_ValidFileName( name ) )
 			{
 				Com_Printf( S_COLOR_RED "Com_DL_HeaderCallback: bad file name '%s'\n", name );
 				return (size_t)-1;
 			}
 
 			// strip extension
-			dl->pk3ext = FS_StripExt( name, ".pk3" );
-
-			// preserve gamename
-			s = strchr( dl->Name, '/' );
-			if ( s )
-				s++;
-			else
-				s = dl->Name;
+			FS_StripExt( name, ".pk3" );
 
 			// store in
-			strcpy( s, name );
+			strcpy( dl->Name, name );
 		}
 	}
 	
 	return size*nmemb;
 }
 
-/*
 
+/*
 ===============================================================
 Com_DL_Begin()
 
-Start downloading file from remoteURL and save it under localName
-
-localName may contain game path - otherwise file will be saved
-in current baseq3 directory
+Start downloading file from remoteURL and save it under fs_game/localName
 ==============================================================
 */
-
-qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean headerCheck )
+qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean headerCheck, qboolean autoDownload )
 {
 	char *s;
 
-	if ( dl->cURL && dl->URL[0] ) 
+	if ( Com_DL_InProgress( dl ) )
 	{
 		Com_Printf( S_COLOR_YELLOW " already downloading %s\n", dl->Name );
 		return qfalse;
@@ -828,19 +883,27 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 
 	Q_strncpyz( dl->URL, remoteURL, sizeof( dl->URL ) );
 
+	Q_strncpyz( dl->gameDir, FS_GetCurrentGameDir(), sizeof( dl->gameDir ) );
+
 	// try to extract game path from localName
 	// dl->Name should contain only pak name without game dir and extension
-	s = strchr( localName, '/' );
-	if ( !s ) 
-		Com_sprintf( dl->Name, sizeof( dl->Name ), "%s/%s", FS_GetBaseGameDir(), localName );
+	s = Q_strrchr( localName, '/' );
+	if ( s ) 
+		Q_strncpyz( dl->Name, s+1, sizeof( dl->Name ) );
 	else
 		Q_strncpyz( dl->Name, localName, sizeof( dl->Name ) );
 
-	dl->pk3ext = FS_StripExt( dl->Name, ".pk3" );
+	FS_StripExt( dl->Name, ".pk3" );
+	if ( !dl->Name[0] )
+	{
+		Com_Printf( S_COLOR_YELLOW " empty filename after extension strip.\n" );
+		return qfalse;
+	}
+
 	dl->headerCheck = headerCheck;
 
 	Com_sprintf( dl->TempName, sizeof( dl->TempName ), 
-		"%s.%04x.tmp", dl->Name, rand() );
+		"%s/%s.%08x.tmp", dl->gameDir, dl->Name, rand() | (rand() << 16) );
 
 	if ( com_developer->integer )
 		dl->func.easy_setopt( dl->cURL, CURLOPT_VERBOSE, 1 );
@@ -878,6 +941,16 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 		Com_DL_Cleanup( dl );
 		Com_Printf( S_COLOR_RED "Com_DL_Begin: multi_add_handle() failed\n" );
 		return qfalse;
+	}
+
+	dl->mapAutoDownload = autoDownload;
+
+	if ( dl->mapAutoDownload )
+	{
+		Cvar_Set( "cl_downloadName", dl->Name );
+		Cvar_Set( "cl_downloadSize", "0" );
+		Cvar_Set( "cl_downloadCount", "0" );
+		Cvar_Set( "cl_downloadTime", va( "%i", cls.realtime ) );
 	}
 
 	return qtrue;
@@ -922,7 +995,9 @@ qboolean Com_DL_Perform( download_t *dl )
 
 	if ( msg->msg == CURLMSG_DONE && msg->data.result == CURLE_OK ) 
 	{
-		Com_sprintf( name, sizeof( name ), "%s.pk3", dl->Name );
+		qboolean autoDownload = dl->mapAutoDownload;
+
+		Com_sprintf( name, sizeof( name ), "%s/%s.pk3", dl->gameDir, dl->Name );
 
 		if ( !FS_SV_FileExists( name ) ) 
 		{
@@ -931,7 +1006,7 @@ qboolean Com_DL_Perform( download_t *dl )
 		else
 		{
 			n = FS_GetZipChecksum( name );
-			Com_sprintf( name, sizeof( name ), "%s.%08x.pk3", dl->Name, n );
+			Com_sprintf( name, sizeof( name ), "%s/%s.%08x.pk3", dl->gameDir, dl->Name, n );
 
 			if ( FS_SV_FileExists( name ) ) 
 				FS_Remove( name );
@@ -942,16 +1017,37 @@ qboolean Com_DL_Perform( download_t *dl )
 		Com_DL_Cleanup( dl );
 		FS_Reload(); //clc.downloadRestart = qtrue;
 		Com_Printf( S_COLOR_GREEN "%s downloaded\n", name );
+		if ( autoDownload )
+		{
+			if ( cls.state == CA_CONNECTED && !clc.demoplaying )
+			{
+				CL_AddReliableCommand( "donedl", qfalse ); // get new gamestate info from server
+			} 
+			else if ( clc.demoplaying )
+			{
+				// FIXME: there might be better solution than vid_restart
+				cls.startCgame = qtrue;
+				Cbuf_ExecuteText( EXEC_APPEND, "vid_restart\n" );
+			}
+		}
 		return qfalse;
 	}
-	else 
+	else
 	{
-		dl->func.easy_getinfo( msg->easy_handle, CURLINFO_RESPONSE_CODE, &code );	
+		qboolean autoDownload = dl->mapAutoDownload;
+		dl->func.easy_getinfo( msg->easy_handle, CURLINFO_RESPONSE_CODE, &code );
 		Com_Printf( S_COLOR_RED "Download Error: %s Code: %ld\n",
 			dl->func.easy_strerror( msg->data.result ), code );
 		strcpy( name, dl->TempName );
 		Com_DL_Cleanup( dl );
-		FS_Remove( name ); 
+		FS_Remove( name );
+		if ( autoDownload )
+		{
+			if ( cls.state == CA_CONNECTED )
+			{
+				Com_Error( ERR_DROP, "%s\n", "download error" );
+			}
+		}
 	}
 
 	return qtrue;

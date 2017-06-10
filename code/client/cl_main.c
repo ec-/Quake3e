@@ -68,6 +68,9 @@ cvar_t	*cl_activeAction;
 cvar_t	*cl_motdString;
 
 cvar_t	*cl_allowDownload;
+#ifdef USE_CURL
+cvar_t	*cl_mapAutoDownload;
+#endif
 cvar_t	*cl_conXOffset;
 cvar_t	*cl_conColor;
 cvar_t	*cl_inGameVideo;
@@ -884,7 +887,11 @@ static void CL_PlayDemo_f( void ) {
 		clc.compat = qfalse;
 
 	// read demo messages until connected
+#ifdef USE_CURL
+	while ( cls.state >= CA_CONNECTED && cls.state < CA_PRIMED && !Com_DL_InProgress( &download ) ) {
+#else
 	while ( cls.state >= CA_CONNECTED && cls.state < CA_PRIMED ) {
+#endif
 		CL_ReadDemoMessage();
 	}
 
@@ -1406,6 +1413,7 @@ static void CL_ForwardToServer_f( void ) {
 	}
 }
 
+
 /*
 ==================
 CL_Disconnect_f
@@ -1712,12 +1720,16 @@ static void CL_Vid_Restart( void ) {
 	CL_StartHunkUsers();
 
 	// start the cgame if connected
-	if ( cls.state > CA_CONNECTED && cls.state != CA_CINEMATIC ) {
+	if ( cls.state > CA_CONNECTED && cls.state != CA_CINEMATIC || cls.startCgame ) {
 		cls.cgameStarted = qtrue;
 		CL_InitCGame();
 		// send pure checksums
-		CL_SendPureChecksums();
+		if ( !clc.demoplaying ) {
+			CL_SendPureChecksums();
+		}
 	}
+
+	cls.startCgame = qfalse;
 }
 
 
@@ -1933,7 +1945,7 @@ void CL_BeginDownload( const char *localName, const char *remoteName ) {
 	Cvar_Set( "cl_downloadName", remoteName );
 	Cvar_Set( "cl_downloadSize", "0" );
 	Cvar_Set( "cl_downloadCount", "0" );
-	Cvar_SetValue( "cl_downloadTime", cls.realtime );
+	Cvar_Set( "cl_downloadTime", va( "%i", cls.realtime ) );
 
 	clc.downloadBlock = 0; // Starting new file
 	clc.downloadCount = 0;
@@ -2086,6 +2098,26 @@ void CL_InitDownloads( void ) {
 		}
 
 	}
+
+#ifdef USE_CURL
+	if( cl_mapAutoDownload->integer && ( !(sv_allowDownload->integer & DLF_ENABLE) || clc.demoplaying ) )
+	{
+		const char *info, *mapname, *bsp;
+
+		// get map name and BSP file name
+		info = cl.gameState.stringData + cl.gameState.stringOffsets[ CS_SERVERINFO ];
+		mapname = Info_ValueForKey( info, "mapname" );
+		bsp = va( "maps/%s.bsp", mapname );
+		if ( !FS_FileIsInPAK( bsp, NULL, NULL ) && FS_FOpenFileRead( bsp, NULL, qfalse ) == -1 )
+		{
+			if ( CL_Download( "dlmap", mapname, qtrue ) )
+			{
+				cls.state = CA_CONNECTED; // prevent continue loading and shows the ui download progress screen
+				return;
+			}
+		}
+	}
+#endif // USE_CURL
 		
 	CL_DownloadsComplete();
 }
@@ -2654,10 +2686,10 @@ void CL_PacketEvent( const netadr_t *from, msg_t *msg ) {
 	}
 }
 
+
 /*
 ==================
 CL_CheckTimeout
-
 ==================
 */
 void CL_CheckTimeout( void ) {
@@ -3281,6 +3313,7 @@ void CL_Init( void ) {
 
 	cl_allowDownload = Cvar_Get( "cl_allowDownload", "1", CVAR_ARCHIVE_ND );
 #ifdef USE_CURL
+	cl_mapAutoDownload = Cvar_Get( "cl_mapAutoDownload", "0", CVAR_ARCHIVE_ND );
 #ifdef USE_CURL_DLOPEN
 	cl_cURLLib = Cvar_Get( "cl_cURLLib", DEFAULT_CURL_LIB, 0 );
 #endif
@@ -4301,12 +4334,8 @@ static void CL_ShowIP_f(void) {
 
 
 #ifdef USE_CURL
-/*
-==================
-CL_Download_f
-==================
-*/
-static void CL_Download_f( void ) 
+
+qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownload ) 
 {
 	char url[MAX_CVAR_VALUE_STRING];
 	char name[MAX_CVAR_VALUE_STRING];
@@ -4317,61 +4346,45 @@ static void CL_Download_f( void )
 	if ( !cl_dlURL->string[0] ) 
 	{
 		Com_Printf( "cl_dlURL cvar is not set\n" );
-		return;
+		return qfalse;
 	}
 
-	s = Cmd_Argv( 1 );
-
-	if ( Cmd_Argc() < 2 || !*s ) 
-	{
-		Com_Printf( "usage: %s <mapname>\n", Cmd_Argv( 0 ) );
-		return;
-	}
+	s = pakname;
 
 	// skip leading slashes
-	while ( *s == '/' || *s == '\\' )
-		s++;
-	strcpy( name, s );
+	while ( *pakname == '/' || *pakname == '\\' )
+		pakname++;
 
-	if ( !Q_stricmp( Cmd_Argv(0), "dlmap" ) ) 
+	// skip gamedir
+	s = Q_strrchr( pakname, '/' );
+	if ( s )
+		pakname = s+1;
+
+	if ( !Com_DL_ValidFileName( pakname ) ) 
 	{
+		Com_Printf( "invalid file name: '%s'.\n" );
+		return qfalse;
+	}
+
+	if ( !Q_stricmp( cmd, "dlmap" ) ) 
+	{
+		Q_strncpyz( name, pakname, sizeof( name ) );
 		stripped = FS_StripExt( name, ".pk3" );
-		// try to skip gamedir
-		s = strrchr( name, '/' );
-		if ( s )
-			s++;
-		else
-			s = name;
-		s = va( "maps/%s.bsp", s );
+		s = va( "maps/%s.bsp", name );
 		if ( FS_FileIsInPAK( s, NULL, url ) ) 
 		{
 			Com_Printf( S_COLOR_YELLOW " map %s already exists in %s.pk3\n", name, url );
-			return;
-		}
-		if ( stripped )
-			strcat( name, ".pk3" );
-	} else {
-		if ( !strcmp( Cmd_Argv(1), "-" ) ) 
-		{
-			Com_DL_Cleanup( &download );
-			return;
+			return qfalse;
 		}
 	}
 
 	strcpy( url, cl_dlURL->string );
  
-	// try to skip gamedir
-	s = strrchr( name, '/' );
-	if ( s )
-		s++;
-	else
-		s = name;
-
-	if ( !Q_replace( "%1", s, url, sizeof( url ) ) ) 
+	if ( !Q_replace( "%1", pakname, url, sizeof( url ) ) ) 
 	{
 		if ( url[strlen(url)] != '/' )
 			Q_strcat( url, sizeof( url ), "/" );
-		Q_strcat( url, sizeof( url ), name );
+		Q_strcat( url, sizeof( url ), pakname );
 		headerCheck = qfalse;
 	}
 	else 
@@ -4379,7 +4392,30 @@ static void CL_Download_f( void )
 		headerCheck = qtrue;
 	}
 
-	Com_DL_Begin( &download, name, url, headerCheck );
+	return Com_DL_Begin( &download, pakname, url, headerCheck, autoDownload );
+}
+
+
+/*
+==================
+CL_Download_f
+==================
+*/
+static void CL_Download_f( void )
+{
+	if ( Cmd_Argc() < 2 || !*Cmd_Argv( 1 ) )
+	{
+		Com_Printf( "usage: %s <mapname>\n", Cmd_Argv( 0 ) );
+		return;
+	}
+
+	if ( !strcmp( Cmd_Argv(1), "-" ) )
+	{
+		Com_DL_Cleanup( &download );
+		return;
+	}
+
+	CL_Download( Cmd_Argv( 0 ), Cmd_Argv( 1 ), qfalse );
 }
 #endif // USE_CURL
 

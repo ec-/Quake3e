@@ -102,16 +102,17 @@ void CL_cURL_Cleanup( void );
 
 typedef struct download_s {
 	char		URL[MAX_OSPATH];
-	char		TempName[MAX_OSPATH];
-	char		Name[MAX_QPATH*2];
-	char		progress[MAX_QPATH+32];
+	char		TempName[MAX_OSPATH+4];
+	char		Name[MAX_OSPATH];
+	char		gameDir[MAX_OSPATH];
+	char		progress[MAX_OSPATH+64];
 	CURL		*cURL;
 	CURLM		*cURLM;
 	fileHandle_t fHandle;
 	int			Size;
 	int			Count;
 	qboolean	headerCheck;
-	qboolean	pk3ext;
+	qboolean	mapAutoDownload;
 
 	struct func_s {
 		char*		(*version)(void);
