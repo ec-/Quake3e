@@ -673,11 +673,11 @@ static const char *sizeToString( int size )
 {
 	static char buf[ 32 ];
 	if ( size < 1024 ) {
-		sprintf( buf, "%ib", size );
+		sprintf( buf, "%iB", size );
 	} else if ( size < 1024*1024 ) {
-		sprintf( buf, "%ikb", size / 1024 );
+		sprintf( buf, "%iKB", size / 1024 );
 	} else {
-		sprintf( buf, "%i.%imb", size / (1024*1024), (size / (1024*1024/10 )) % 10 );
+		sprintf( buf, "%i.%iMB", size / (1024*1024), (size / (1024*1024/10 )) % 10 );
 	}
 	return buf;
 }
