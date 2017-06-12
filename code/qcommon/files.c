@@ -250,10 +250,17 @@ typedef struct {
 	char		gamedir[MAX_OSPATH];	// baseq3
 } directory_t;
 
+typedef enum {
+	DIR_STATIC = 0,	// always allowed, never changes
+	DIR_ALLOW,
+	DIR_DENY
+} dirPolicy_t;
+
 typedef struct searchpath_s {
 	struct searchpath_s *next;
 	pack_t		*pack;		// only one of pack / dir will be non NULL
 	directory_t	*dir;
+	dirPolicy_t	policy;
 } searchpath_t;
 
 static	char		fs_gamedir[MAX_OSPATH];	// this will be a single file name with no separators
@@ -1314,6 +1321,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	fileInPack_t	*pakFile;
 	directory_t		*dir;
 	long			hash;
+	long			fullHash;
 	unz_s			*zfi;
 	FILE			*temp;
 	int				length;
@@ -1340,6 +1348,10 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	if ( filename[0] == '/' || filename[0] == '\\' ) {
 		filename++;
 	}
+	
+	// we will calculate full hash only once then just mask it by current pack->hashSize
+	// we can do that as long as we know properties of our hash function
+	fullHash = FS_HashFileName( filename, 1<<31 );
 
 	if ( file == NULL ) {
 		// just wants to see if file is there
@@ -1348,7 +1360,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 			if ( search->pack ) {
 				//if ( !( flags & FS_MATCH_PK3s ) ) // always true?
 				//	continue;
-				hash = FS_HashFileName( filename, search->pack->hashSize );
+				hash = fullHash & (search->pack->hashSize-1);
 			}
 			// is the element a pak file?
 			if ( search->pack && search->pack->hashTable[hash] ) {
@@ -1366,7 +1378,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					}
 					pakFile = pakFile->next;
 				} while ( pakFile != NULL );
-			} else if ( search->dir /*&& ( flags & FS_MATCH_EXTERN ) */ ) {
+			} else if ( search->dir /*&& ( flags & FS_MATCH_EXTERN ) */ && search->policy != DIR_DENY ) {
 				dir = search->dir;
 				netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
 				temp = Sys_FOpen( netpath, "rb" );
@@ -1410,7 +1422,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 		if ( search->pack ) {
 			//if ( !( flags & FS_MATCH_PK3s ) ) // always true?
 			//	continue;
-			hash = FS_HashFileName( filename, search->pack->hashSize );
+			hash = fullHash & (search->pack->hashSize-1);
 		}
 		// is the element a pak file?
 		if ( search->pack && search->pack->hashTable[hash] ) {
@@ -1480,7 +1492,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 				}
 				pakFile = pakFile->next;
 			} while ( pakFile != NULL );
-		} else if ( search->dir /*&& ( flags & FS_MATCH_EXTERN ) */ ) {
+		} else if ( search->dir /*&& ( flags & FS_MATCH_EXTERN ) */ && search->policy != DIR_DENY ) {
 			// check a file in the directory tree
 
 			// if we are running restricted, the only files we
@@ -1805,6 +1817,7 @@ qboolean FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName ) {
 	fileInPack_t	*pakFile;
 	int				flags;
 	long			hash = 0;
+	long			fullHash;
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
@@ -1830,6 +1843,8 @@ qboolean FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName ) {
 	else
 		flags = FS_MATCH_PK3s;
 
+	fullHash = FS_HashFileName( filename, 1<<31 );
+
 	//
 	// search through the path, one element at a time
 	//
@@ -1838,7 +1853,7 @@ qboolean FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName ) {
 		if ( search->pack ) {
 			//if ( !( flags & FS_MATCH_PK3s ) ) // always true?
 			//	continue;
-			hash = FS_HashFileName( filename, search->pack->hashSize );
+			hash = fullHash & (search->pack->hashSize-1);
 		}
 		// is the element a pak file?
 		if ( search->pack && search->pack->hashTable[hash] ) {
@@ -2445,7 +2460,7 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 					nfiles = FS_AddFileToList( name + temp, list, nfiles );
 				}
 			}
-		} else if ( search->dir && ( flags & FS_MATCH_EXTERN ) ) { // scan for files in the filesystem
+		} else if ( search->dir && ( flags & FS_MATCH_EXTERN ) && search->policy != DIR_DENY ) { // scan for files in the filesystem
 			char	*netpath;
 			int		numSysFiles;
 			char	**sysFiles;
@@ -3218,6 +3233,7 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 			// add the directory to the search path
 			search = Z_Malloc(sizeof(searchpath_t));
 			search->dir = Z_Malloc(sizeof(*search->dir));
+			search->policy = DIR_ALLOW;
 
 			Q_strncpyz(search->dir->path, curpath, sizeof(search->dir->path));	// c:\quake3\baseq3
 			Q_strncpyz(search->dir->gamedir, pakdirs[pakdirsi], sizeof(search->dir->gamedir)); // mypak.pk3dir
@@ -3883,6 +3899,7 @@ const char *FS_ReferencedPakPureChecksums( void ) {
 	return info;
 }
 
+
 /*
 =====================
 FS_ReferencedPakNames
@@ -3918,6 +3935,7 @@ const char *FS_ReferencedPakNames( void ) {
 	return info;
 }
 
+
 /*
 =====================
 FS_ClearPakReferences
@@ -3933,6 +3951,24 @@ void FS_ClearPakReferences( int flags ) {
 		// is the element a pak file and has it been referenced?
 		if ( search->pack ) {
 			search->pack->referenced &= ~flags;
+		}
+	}
+}
+
+
+/*
+=====================
+FS_ApplyDirPolicy
+
+Set access rights for non-regular (pk3dir) directories
+=====================
+*/
+static void FS_SetDirPolicy( dirPolicy_t policy ) {
+	searchpath_t	*search;
+
+	for ( search = fs_searchpaths ; search ; search = search->next ) {
+		if ( search->dir && search->policy != DIR_STATIC ) {
+			search->policy = policy;
 		}
 	}
 }
@@ -3959,6 +3995,8 @@ void FS_PureServerSetLoadedPaks( const char *pakSums, const char *pakNames ) {
 	}
 
 	fs_numServerPaks = c;
+
+	FS_SetDirPolicy( c ? DIR_DENY : DIR_ALLOW );
 
 	for ( i = 0 ; i < c ; i++ ) {
 		fs_serverPaks[i] = atoi( Cmd_Argv( i ) );
