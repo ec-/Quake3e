@@ -490,14 +490,10 @@ void CL_ConsolePrint( const char *txt ) {
 	colorIndex = ColorIndex( COLOR_WHITE );
 
 	while ( (c = *txt) != 0 ) {
-		if ( c == Q_COLOR_ESCAPE ) {
-			if ( *(txt+1) == Q_COLOR_ESCAPE ) {
-				txt++;
-			} else if ( *(txt+1) != '\0' && *(txt+1) != '\n' ) {
-				colorIndex = ColorIndexFromChar( *(txt+1) );
-				txt += 2;
-				continue;
-			}
+		if ( Q_IsColorString( txt ) && *(txt+1) != '\n' ) {
+			colorIndex = ColorIndexFromChar( *(txt+1) );
+			txt += 2;
+			continue;
 		}
 
 		// count word length
