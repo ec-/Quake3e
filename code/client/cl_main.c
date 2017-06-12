@@ -1721,7 +1721,7 @@ static void CL_Vid_Restart( void ) {
 	CL_StartHunkUsers();
 
 	// start the cgame if connected
-	if ( cls.state > CA_CONNECTED && cls.state != CA_CINEMATIC || cls.startCgame ) {
+	if ( ( cls.state > CA_CONNECTED && cls.state != CA_CINEMATIC ) || cls.startCgame ) {
 		cls.cgameStarted = qtrue;
 		CL_InitCGame();
 		// send pure checksums
@@ -4347,7 +4347,6 @@ qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownloa
 	char url[MAX_CVAR_VALUE_STRING];
 	char name[MAX_CVAR_VALUE_STRING];
 	const char *s;
-	qboolean stripped;
 	qboolean headerCheck;
 
 	if ( !cl_dlURL->string[0] ) 
@@ -4369,14 +4368,14 @@ qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownloa
 
 	if ( !Com_DL_ValidFileName( pakname ) ) 
 	{
-		Com_Printf( "invalid file name: '%s'.\n" );
+		Com_Printf( "invalid file name: '%s'.\n", pakname );
 		return qfalse;
 	}
 
 	if ( !Q_stricmp( cmd, "dlmap" ) ) 
 	{
 		Q_strncpyz( name, pakname, sizeof( name ) );
-		stripped = FS_StripExt( name, ".pk3" );
+		FS_StripExt( name, ".pk3" );
 		s = va( "maps/%s.bsp", name );
 		if ( FS_FileIsInPAK( s, NULL, url ) ) 
 		{
