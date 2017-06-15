@@ -670,20 +670,14 @@ void R_ScreenShot_f( void ) {
 		R_ScreenshotFilename( checkname, ext );
 	}
 
-#if 1
 	// we will make screenshot right at the end of RE_EndFrame()
 	backEnd.screenshotMask |= typeMask;
 	if ( typeMask == SCREENSHOT_JPG ) {
+		backEnd.screenShotJPGsilent = silent;
 		Q_strncpyz( backEnd.screenshotJPG, checkname, sizeof( backEnd.screenshotJPG ) );
 	} else {
+		backEnd.screenShotTGAsilent = silent;
 		Q_strncpyz( backEnd.screenshotTGA, checkname, sizeof( backEnd.screenshotTGA ) );
-	}
-#else
-	R_TakeScreenshot( 0, 0, glConfig.vidWidth, glConfig.vidHeight, checkname, typeMask == SCREENSHOT_JPG );
-#endif
-
-	if ( !silent ) {
-		ri.Printf (PRINT_ALL, "Wrote %s\n", checkname);
 	}
 } 
 

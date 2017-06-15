@@ -464,13 +464,20 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 	if ( backEnd.screenshotMask && tr.frameCount > 1 ) {
 		if ( backEnd.screenshotMask & SCREENSHOT_TGA && backEnd.screenshotTGA[0] ) {
 			RB_TakeScreenshot( 0, 0, glConfig.vidWidth, glConfig.vidHeight, backEnd.screenshotTGA );
+			if ( !backEnd.screenShotTGAsilent ) {
+				ri.Printf( PRINT_ALL, "Wrote %s\n", backEnd.screenshotTGA );
+			}
 		}
 		if ( backEnd.screenshotMask & SCREENSHOT_JPG && backEnd.screenshotJPG[0] ) {
 			RB_TakeScreenshotJPEG( 0, 0, glConfig.vidWidth, glConfig.vidHeight, backEnd.screenshotJPG );
+			if ( !backEnd.screenShotJPGsilent ) {
+				ri.Printf( PRINT_ALL, "Wrote %s\n", backEnd.screenshotJPG );
+			}
 		}
 		if ( backEnd.screenshotMask & SCREENSHOT_AVI ) {
 			RB_TakeVideoFrameCmd( &backEnd.vcmd );
 		}
+
 		backEnd.screenshotJPG[0] = '\0';
 		backEnd.screenshotTGA[0] = '\0';
 		backEnd.screenshotMask = 0;
