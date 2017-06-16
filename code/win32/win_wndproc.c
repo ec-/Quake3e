@@ -748,7 +748,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 	case WM_SYSKEYDOWN:
 	case WM_KEYDOWN:
-		if ( wParam == VK_RETURN && ( uMsg == WM_SYSKEYDOWN || GetAsyncKeyState( VK_RMENU ) ) ) {
+		if ( wParam == VK_RETURN && ( uMsg == WM_SYSKEYDOWN || GetAsyncKeyState( VK_RMENU ) & 0x8000 ) ) {
 			Cvar_SetValue( "r_fullscreen", glw_state.cdsFullscreen? 0 : 1 );
 				Cbuf_AddText( "vid_restart\n" );
 			return 0;
