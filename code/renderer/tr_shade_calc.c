@@ -993,7 +993,7 @@ void RB_CalcRotateTexCoords( float degsPerSecond, float *st )
 {
 	double timeScale = tess.shaderTime; // -EC- set to double
 	double degs; // -EC- set to double
-	int index;
+	int64_t index;
 	float sinValue, cosValue;
 	texModInfo_t tmi;
 
