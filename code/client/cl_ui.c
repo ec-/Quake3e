@@ -739,6 +739,17 @@ static void *VM_ArgPtr( intptr_t intValue ) {
 }
 
 
+static qboolean UI_GetValue( char* value, int valueSize, const char* key ) {
+
+	if ( !Q_stricmp( key, "trap_R_AddRefEntityToScene2" ) ) {
+		Q_snprintf( value, valueSize, "%i", UI_R_ADDREFENTITYTOSCENE2 );
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
+
 /*
 ====================
 CL_UISystemCalls
@@ -848,7 +859,7 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_R_ADDREFENTITYTOSCENE:
-		re.AddRefEntityToScene( VMA(1) );
+		re.AddRefEntityToScene( VMA(1), qfalse );
 		return 0;
 
 	case UI_R_ADDPOLYTOSCENE:
@@ -1098,6 +1109,14 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 
 	case UI_VERIFY_CDKEY:
 		return Com_CDKeyValidate(VMA(1), VMA(2));
+
+	// engine extensions
+	case UI_R_ADDREFENTITYTOSCENE2:
+		re.AddRefEntityToScene( VMA(1), qtrue );
+		return 0;
+
+	case UI_TRAP_GETVALUE:
+		return UI_GetValue( VMA(1), args[2], VMA(3) );
 		
 	default:
 		Com_Error( ERR_DROP, "Bad UI system trap: %ld", (long int) args[0] );

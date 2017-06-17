@@ -133,7 +133,12 @@ typedef enum {
 	UI_ATAN2,
 	UI_SQRT,
 	UI_FLOOR,
-	UI_CEIL
+	UI_CEIL,
+
+	// engine extensions
+	UI_R_ADDREFENTITYTOSCENE2,
+	UI_TRAP_GETVALUE = COM_TRAP_GETVALUE,
+
 } uiImport_t;
 
 typedef enum {

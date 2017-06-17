@@ -1205,4 +1205,7 @@ int HuffmanGetSymbol( int* symbol, const byte* buffer, int bitIndex );
 #define	DLF_NO_UDP		4
 #define	DLF_NO_DISCONNECT 8
 
+// functional gate syscall number
+#define COM_TRAP_GETVALUE 700
+
 #endif // _QCOMMON_H_

@@ -173,8 +173,6 @@ int		max_polys;
 cvar_t	*r_maxpolyverts;
 int		max_polyverts;
 
-cvar_t	*r_floatfix; // -EC-
-
 /*
 ** InitOpenGL
 **
@@ -1098,8 +1096,6 @@ void R_Register( void )
 	r_maxpolys = ri.Cvar_Get( "r_maxpolys", va("%d", MAX_POLYS), 0);
 	r_maxpolyverts = ri.Cvar_Get( "r_maxpolyverts", va("%d", MAX_POLYVERTS), 0);
  
-	r_floatfix = ri.Cvar_Get( "r_floatfix", "0", 0 ); // -EC-
-
 	// make sure all the commands added here are also
 	// removed in R_Shutdown
 	ri.Cmd_AddCommand( "imagelist", R_ImageList_f );

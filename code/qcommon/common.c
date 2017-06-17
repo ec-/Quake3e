@@ -3116,6 +3116,9 @@ void Com_Init( char *commandLine ) {
 	s = va("%s %s %s", Q3_VERSION, PLATFORM_STRING, __DATE__ );
 	com_version = Cvar_Get ("version", s, CVAR_ROM | CVAR_SERVERINFO );
 
+	// this cvar is the single entry point of the entire extension system
+	Cvar_Get( "//trap_GetValue", va( "%i", COM_TRAP_GETVALUE ), CVAR_INIT | CVAR_ROM );
+
 	Sys_Init();
 
 #if defined (id386) || defined (idx64)
