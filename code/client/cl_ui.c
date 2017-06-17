@@ -742,7 +742,7 @@ static void *VM_ArgPtr( intptr_t intValue ) {
 static qboolean UI_GetValue( char* value, int valueSize, const char* key ) {
 
 	if ( !Q_stricmp( key, "trap_R_AddRefEntityToScene2" ) ) {
-		Q_snprintf( value, valueSize, "%i", UI_R_ADDREFENTITYTOSCENE2 );
+		Com_sprintf( value, valueSize, "%i", UI_R_ADDREFENTITYTOSCENE2 );
 		return qtrue;
 	}
 

@@ -416,12 +416,12 @@ static void *VM_ArgPtr( intptr_t intValue ) {
 static qboolean CL_GetValue( char* value, int valueSize, const char* key ) {
 
 	if ( !Q_stricmp( key, "trap_R_AddRefEntityToScene2" ) ) {
-		Q_snprintf( value, valueSize, "%i", CG_R_ADDREFENTITYTOSCENE2 );
+		Com_sprintf( value, valueSize, "%i", CG_R_ADDREFENTITYTOSCENE2 );
 		return qtrue;
 	}
 
 	if ( !Q_stricmp( key, "trap_R_ForceFixedDLights" ) ) {
-		Q_snprintf( value, valueSize, "%i", CG_R_FORCEFIXEDDLIGHTS );
+		Com_sprintf( value, valueSize, "%i", CG_R_FORCEFIXEDDLIGHTS );
 		return qtrue;
 	}
 

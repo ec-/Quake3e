@@ -135,12 +135,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #endif
 
-#ifdef _WIN32
-#define Q_snprintf _snprintf
-#else
-#define Q_snprintf snprintf
-#endif
-
 //endianness
 short ShortSwap( short l );
 int LongSwap( int l );
