@@ -1175,7 +1175,7 @@ extern cvar_t	*r_marksOnTriangleMeshes;
 
 void R_SwapBuffers( int );
 
-void R_RenderView( viewParms_t *parms );
+void R_RenderView( const viewParms_t *parms );
 
 void R_AddMD3Surfaces( trRefEntity_t *e );
 void R_AddNullModelSurfaces( trRefEntity_t *e );
