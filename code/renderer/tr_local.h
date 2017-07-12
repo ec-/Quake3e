@@ -941,7 +941,9 @@ typedef struct {
 	qboolean	vertexes2D;		// shader needs to be finished
 	qboolean	doneBloom;		// done bloom this frame
 	qboolean	doneSurfaces;   // done any 3d surfaces already
+#ifdef USE_PMLIGHT
 	qboolean	doneBloom2fbo;
+#endif
 	trRefEntity_t	entity2D;	// currentEntity will point at this when doing 2D rendering
 
 	int		screenshotMask;		// tga | jpg

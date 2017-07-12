@@ -942,7 +942,8 @@ static qboolean FBO_CreateBloom( int width, int height )
 
 	for ( i = 0; i < NUM_BLUR_PASSES; i++ ) 
 	{
-		if ( !FBO_Create( &frameBuffers[ i*2 + BLOOM_BASE + 0 ], width, height, qfalse ) )
+		// we may need depth/stencil buffers for first bloom buffer in \r_bloom 2 mode
+		if ( !FBO_Create( &frameBuffers[ i*2 + BLOOM_BASE + 0 ], width, height, i == 0 ? qtrue : qfalse ) )
 			return qfalse;
 		if ( !FBO_Create( &frameBuffers[ i*2 + BLOOM_BASE + 1 ], width, height, qfalse ) )
 			return qfalse;
@@ -1149,6 +1150,7 @@ qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obS
 			fboReadIndex = 0;
 		}
 	} else {
+		// we need depth/stencil buffers there
 		fboReadIndex = BLOOM_BASE;
 	}
 #endif
