@@ -1227,6 +1227,8 @@ void CL_Disconnect( qboolean showMainMenu ) {
 
 	CL_UpdateGUID( NULL, 0 );
 
+	Cmd_RemoveCommand( "callvote" );
+
 	if ( noGameRestart )
 		noGameRestart = qfalse;
 	else
@@ -1847,6 +1849,19 @@ void CL_Clientinfo_f( void ) {
 }
 
 
+static void CL_CompleteCallvote( char *args, int argNum )
+{
+	if( argNum >= 2 )
+	{
+		// Skip "callvote "
+		char *p = Com_SkipTokens( args, 1, " " );
+
+		if ( p > args )
+			Field_CompleteCommand( p, qtrue, qtrue );
+	}
+}
+
+
 //====================================================================
 
 /*
@@ -1914,6 +1929,11 @@ void CL_DownloadsComplete( void ) {
 	// initialize the CGame
 	cls.cgameStarted = qtrue;
 	CL_InitCGame();
+
+	if ( clc.demofile == FS_INVALID_HANDLE ) {
+		Cmd_AddCommand( "callvote", NULL );
+		Cmd_SetCommandCompletionFunc( "callvote", CL_CompleteCallvote );
+	}
 
 	// set pure checksums
 	CL_SendPureChecksums();

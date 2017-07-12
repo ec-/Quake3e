@@ -802,7 +802,7 @@ int Com_Split( char *in, char **out, int outsz, int delim )
 		in++; 
 	*in = '\0';
 	c = out - o;
-	// set remaining out poiters
+	// set remaining out pointers
 	while( out < end ) {
 		*out = in; out++;
 	}
@@ -2145,7 +2145,7 @@ void Sys_QueEvent( int evTime, sysEventType_t evType, int value, int value2, int
 	ev = &eventQue[ eventHead & MASK_QUED_EVENTS ];
 
 	if ( eventHead - eventTail >= MAX_QUED_EVENTS ) {
-		Com_Printf( "%s(%s,time=%i): overflow\n", __func__, Sys_EventName( evType ), evTime );
+		Com_Printf( "%s(type=%s,keys=(%i,%i),time=%i): overflow\n", __func__, Sys_EventName( evType ), value, value2, evTime );
 		// we are discarding an event, but don't leak memory
 		if ( ev->evPtr ) {
 			Z_Free( ev->evPtr );

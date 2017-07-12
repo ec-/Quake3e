@@ -73,12 +73,13 @@ void Cmd_Wait_f( void ) {
 Cbuf_Init
 ============
 */
-void Cbuf_Init (void)
+void Cbuf_Init( void )
 {
 	cmd_text.data = cmd_text_buf;
 	cmd_text.maxsize = MAX_CMD_BUFFER;
 	cmd_text.cursize = 0;
 }
+
 
 /*
 ============
@@ -164,6 +165,7 @@ void Cbuf_ExecuteText( cbufExec_t exec_when, const char *text )
 		Com_Error (ERR_FATAL, "Cbuf_ExecuteText: bad exec_when");
 	}
 }
+
 
 /*
 ============
@@ -366,6 +368,7 @@ int		Cmd_Argc( void ) {
 	return cmd_argc;
 }
 
+
 /*
 ============
 Cmd_Argv
@@ -377,6 +380,7 @@ char	*Cmd_Argv( int arg ) {
 	}
 	return cmd_argv[arg];	
 }
+
 
 /*
 ============
@@ -413,6 +417,7 @@ char	*Cmd_Args( void ) {
 	return cmd_args;
 }
 
+
 /*
 ============
 Cmd_Args
@@ -437,6 +442,7 @@ char *Cmd_ArgsFrom( int arg ) {
 	return cmd_args;
 }
 
+
 /*
 ============
 Cmd_ArgsBuffer
@@ -448,6 +454,7 @@ they can't have pointers returned to them
 void	Cmd_ArgsBuffer( char *buffer, int bufferLength ) {
 	Q_strncpyz( buffer, Cmd_Args(), bufferLength );
 }
+
 
 /*
 ============
@@ -487,6 +494,7 @@ void Cmd_Args_Sanitize(void)
 		}
 	}
 }
+
 
 /*
 ============
@@ -602,6 +610,7 @@ static void Cmd_TokenizeString2( const char *text_in, qboolean ignoreQuotes ) {
 	
 }
 
+
 /*
 ============
 Cmd_TokenizeString
@@ -611,6 +620,7 @@ void Cmd_TokenizeString( const char *text_in ) {
 	Cmd_TokenizeString2( text_in, qfalse );
 }
 
+
 /*
 ============
 Cmd_TokenizeStringIgnoreQuotes
@@ -619,6 +629,7 @@ Cmd_TokenizeStringIgnoreQuotes
 void Cmd_TokenizeStringIgnoreQuotes( const char *text_in ) {
 	Cmd_TokenizeString2( text_in, qtrue );
 }
+
 
 /*
 ============
@@ -634,20 +645,23 @@ cmd_function_t *Cmd_FindCommand( const char *cmd_name )
 	return NULL;
 }
 
+
 /*
 ============
 Cmd_AddCommand
 ============
 */
-void	Cmd_AddCommand( const char *cmd_name, xcommand_t function ) {
+void Cmd_AddCommand( const char *cmd_name, xcommand_t function ) {
 	cmd_function_t	*cmd;
 	
 	// fail if the command already exists
-	if( Cmd_FindCommand( cmd_name ) )
+	if( (cmd = Cmd_FindCommand( cmd_name )) != NULL )
 	{
 		// allow completion-only commands to be silently doubled
-		if( function != NULL )
+		if ( function != NULL )
 			Com_Printf( "Cmd_AddCommand: %s already defined\n", cmd_name );
+		// update function
+		cmd->function = function;
 		return;
 	}
 
@@ -659,6 +673,7 @@ void	Cmd_AddCommand( const char *cmd_name, xcommand_t function ) {
 	cmd->next = cmd_functions;
 	cmd_functions = cmd;
 }
+
 
 /*
 ============
@@ -676,6 +691,7 @@ void Cmd_SetCommandCompletionFunc( const char *command, completionFunc_t complet
 	}
 }
 
+
 /*
 ============
 Cmd_RemoveCommand
@@ -691,7 +707,7 @@ void	Cmd_RemoveCommand( const char *cmd_name ) {
 			// command wasn't active
 			return;
 		}
-		if ( !strcmp( cmd_name, cmd->name ) ) {
+		if ( !Q_stricmp( cmd_name, cmd->name ) ) {
 			*back = cmd->next;
 			if (cmd->name) {
 				Z_Free(cmd->name);
@@ -702,6 +718,7 @@ void	Cmd_RemoveCommand( const char *cmd_name ) {
 		back = &cmd->next;
 	}
 }
+
 
 /*
 ============
@@ -725,6 +742,7 @@ void Cmd_RemoveCommandSafe( const char *cmd_name )
 
 	Cmd_RemoveCommand( cmd_name );
 }
+
 
 /*
 ============
@@ -823,8 +841,8 @@ void Cmd_ExecuteString( const char *text ) {
 	// this will usually result in a chat message
 	CL_ForwardCommandToServer( text );
 #endif
-
 }
+
 
 /*
 ============
@@ -878,7 +896,7 @@ void Cmd_CompleteWriteCfgName( char *args, int argNum ) {
 Cmd_Init
 ============
 */
-void Cmd_Init (void) {
+void Cmd_Init( void ) {
 	Cmd_AddCommand ("cmdlist",Cmd_List_f);
 	Cmd_AddCommand ("exec",Cmd_Exec_f);
 	Cmd_AddCommand ("execq",Cmd_Exec_f);
@@ -889,4 +907,3 @@ void Cmd_Init (void) {
 	Cmd_AddCommand ("echo",Cmd_Echo_f);
 	Cmd_AddCommand ("wait", Cmd_Wait_f);
 }
-
