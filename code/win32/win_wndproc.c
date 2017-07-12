@@ -435,7 +435,7 @@ BOOL Win_CheckHotkeyMod( void ) {
 static int GetTimerMsec( void ) {
 	int msec;
 	
-	if ( gw_minimized || CL_VideoRecording() )
+	if ( gw_minimized || CL_VideoRecording() || cls.state >= CA_ACTIVE || cls.state == CA_DISCONNECTED )
 		return 0;
 
 	if ( com_maxfps->integer > 0 ) {
