@@ -1414,6 +1414,108 @@ static void ParseSurfaceParm( char **text ) {
 	}
 }
 
+typedef enum {
+	opEQ,
+	opNEQ,
+	opGT,
+	opGTE,
+	opLT,
+	opLTE,
+} opType;
+
+typedef enum {
+	cond_invalid,
+	cond_false,
+	cond_true
+} condType;
+
+
+typedef enum {
+	tkIf,
+	tkElse
+} tokenType;
+
+/*
+===============
+ParseCondition
+
+if ( <cvar> <condition> <integer value> )
+{ shader stage }
+[ else
+{ shader stage } ]
+
+all tokens should be space-separated
+===============
+*/
+static qboolean ParseCondition( char **text, qboolean *result ) 
+{
+	char *token;
+	int lval, rval;
+	opType op;
+
+	// opening '('
+	token = COM_ParseExt( text, qfalse );
+	if ( token[0] != '(' ) {
+		ri.Printf( PRINT_WARNING, "WARNING: expecting '(' after 'if' in shader %s\n", shader.name );
+		return qfalse;
+	}
+
+	// cvar
+	token = COM_ParseExt( text, qfalse );
+	if ( token[0] == '\0' ) {
+		ri.Printf( PRINT_WARNING, "WARNING: expecting cvar name for condition in shader %s\n", shader.name );
+		return qfalse;
+	}
+	lval = ri.Cvar_VariableIntegerValue( token );
+
+	// operator
+	token = COM_ParseExt( text, qfalse );
+	if ( strcmp( token, "==" ) == 0 )
+		op = opEQ;
+	else if ( strcmp( token, "!=" ) == 0 )
+		op = opNEQ;
+	else if ( strcmp( token, ">" ) == 0 )
+		op = opGT;
+	else if ( strcmp( token, ">=" ) == 0 )
+		op = opGTE;
+	else if ( strcmp( token, "<" ) == 0 )
+		op = opLT;
+	else if ( strcmp( token, "<=" ) == 0 )
+		op = opLTE;
+	else {
+		ri.Printf( PRINT_WARNING, "WARNING: unexpected operator '%s' for comparison in shader %s\n", token, shader.name );
+		return qfalse;
+	}
+
+	// value
+	token = COM_ParseExt( text, qfalse );
+	if ( token[0] == '\0' ) {
+		ri.Printf( PRINT_WARNING, "WARNING: expecting cvar value for comparison in shader %s\n", shader.name );
+		return qfalse;
+	}
+	rval = atoi( token );
+
+	// closing ')'
+	token = COM_ParseExt( text, qfalse );
+	if ( strcmp( token, ")" ) ) {
+		ri.Printf( PRINT_WARNING, "WARNING: expecting ')' in shader %s\n", shader.name );
+		return qfalse;
+	}
+
+	// TODO: string comparisons
+	switch ( op ) {
+		case opEQ: *result = ( lval == rval ) ? cond_true : cond_false; break;
+		case opNEQ: *result = ( lval != rval ) ? cond_true : cond_false; break;
+		case opGT: *result = ( lval > rval ) ? cond_true : cond_false; break;
+		case opGTE: *result = ( lval >= rval ) ? cond_true : cond_false; break;
+		case opLT: *result = ( lval < rval ) ? cond_true : cond_false; break;
+		case opLTE: *result = ( lval <= rval ) ? cond_true : cond_false; break;
+	}
+	
+	return qtrue;
+}
+
+
 /*
 =================
 ParseShader
@@ -1425,6 +1527,8 @@ will optimize it.
 */
 static qboolean ParseShader( char **text )
 {
+	condType cond;
+	tokenType type;
 	char *token;
 	int s;
 
@@ -1437,6 +1541,8 @@ static qboolean ParseShader( char **text )
 		return qfalse;
 	}
 
+	cond = cond_invalid;
+
 	while ( 1 )
 	{
 		token = COM_ParseExt( text, qtrue );
@@ -1445,7 +1551,6 @@ static qboolean ParseShader( char **text )
 			ri.Printf( PRINT_WARNING, "WARNING: no concluding '}' in shader %s\n", shader.name );
 			return qfalse;
 		}
-
 		// end of shader definition
 		if ( token[0] == '}' )
 		{
@@ -1515,10 +1620,10 @@ static qboolean ParseShader( char **text )
 		}
 		else if ( !Q_stricmp( token, "clampTime" ) ) {
 			token = COM_ParseExt( text, qfalse );
-      if (token[0]) {
-        shader.clampTime = atof(token);
-      }
-    }
+			if (token[0]) {
+				shader.clampTime = atof(token);
+			}
+		}
 		// skip stuff that only the q3map needs
 		else if ( !Q_stricmpn( token, "q3map", 5 ) ) {
 			SkipRestOfLine( text );
@@ -1644,6 +1749,48 @@ static qboolean ParseShader( char **text )
 		{
 			ParseSort( text );
 			continue;
+		}
+		// conditional stage definition
+		else if ( !Q_stricmp( token, "if" ) || !Q_stricmp( token, "else" ) )
+		{
+			type = ( Q_stricmp( token, "if" ) == 0 ) ? tkIf : tkElse;
+			if ( type == tkIf && !ParseCondition( text, &cond ) ) 
+			{
+				ri.Printf( PRINT_WARNING, "WARNING: error parsing condition in '%s'\n", shader.name );
+				return qfalse;
+			}
+			if ( cond == cond_false )
+			{
+				// skip next stage or keyword until newline
+				token = COM_ParseExt( text, qtrue );
+				if ( token[0] == '{' )
+					SkipBracedSection( text, 1 );
+				else
+					SkipRestOfLine( text );
+
+				if ( type == tkIf )
+					cond = cond_true; // for possible "else" statement
+				else
+					cond = cond_invalid;
+
+				continue;
+			} 
+			else
+			{
+				if ( cond == cond_invalid )
+				{
+					ri.Printf( PRINT_WARNING, "WARNING: invalid state of condition in '%s'\n", shader.name );
+					return qfalse;
+				}
+
+				if ( type == tkIf )
+					cond = cond_false; // for possible "else" statement
+				else
+					cond = cond_invalid;
+
+				// parse next tokens as usual
+				continue;
+			}
 		}
 		else
 		{
@@ -2437,31 +2584,8 @@ static char *FindShaderInShaderText( const char *shadername ) {
 		{
 			p = shaderTextHashTable[hash][i];
 			token = COM_ParseExt(&p, qtrue);
-		
 			if(!Q_stricmp(token, shadername))
 				return p;
-		}
-	}
-
-	p = s_shaderText;
-
-	if ( !p ) {
-		return NULL;
-	}
-
-	// look for label
-	while ( 1 ) {
-		token = COM_ParseExt( &p, qtrue );
-		if ( token[0] == 0 ) {
-			break;
-		}
-
-		if ( !Q_stricmp( token, shadername ) ) {
-			return p;
-		}
-		else {
-			// skip the definition
-			SkipBracedSection( &p, 0 );
 		}
 	}
 

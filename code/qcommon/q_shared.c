@@ -624,7 +624,6 @@ char *COM_ParseExt( char **data_p, qboolean allowLineBreaks )
 }
 
 
-
 /*
 ==================
 COM_MatchToken
