@@ -879,6 +879,48 @@ void RB_CalcFogTexCoords( float *st ) {
 }
 
 
+/*
+========================
+RB_CalcEnvironmentTexCoordsFP
+
+Special version for first-person models, borrowed from OpenArena
+========================
+*/
+static void RB_CalcEnvironmentTexCoordsFP( float *st ) {
+	int			i;
+	const float	*v, *normal;
+	vec3_t		viewer, reflected, where, what, why, who;
+	float		d; 
+
+	v = tess.xyz[0];
+	normal = tess.normal[0];
+
+	for ( i = 0 ; i < tess.numVertexes ; i++, v += 4, normal += 4, st += 2 ) 
+	{
+		VectorSubtract( backEnd.or.axis[0], v, what );
+		VectorSubtract( backEnd.or.axis[1], v, why );
+		VectorSubtract( backEnd.or.axis[2], v, who );
+
+		VectorSubtract( backEnd.or.origin, v, where );
+		VectorSubtract( backEnd.or.viewOrigin, v, viewer );
+
+		VectorNormalizeFast( viewer );
+		VectorNormalizeFast( where );
+		VectorNormalizeFast( what );
+		VectorNormalizeFast( why );
+		VectorNormalizeFast( who );
+
+		d = DotProduct( normal, viewer );
+
+		reflected[0] = normal[0]*2*d - viewer[0] - (where[0] * 5) + (what[0] * 4);
+		reflected[1] = normal[1]*2*d - viewer[1] - (where[1] * 5) + (why[1] * 4);
+		reflected[2] = normal[2]*2*d - viewer[2] - (where[2] * 5) + (who[2] * 4);
+
+		st[0] = 0.33 + reflected[1] * 0.33;
+		st[1] = 0.33 - reflected[2] * 0.33;
+	}
+}
+
 
 /*
 ** RB_CalcEnvironmentTexCoords
@@ -893,14 +935,18 @@ void RB_CalcEnvironmentTexCoords( float *st )
 	v = tess.xyz[0];
 	normal = tess.normal[0];
 
-	for (i = 0 ; i < tess.numVertexes ; i++, v += 4, normal += 4, st += 2 ) 
+	if ( backEnd.currentEntity && ( backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON ) )
+	{
+		RB_CalcEnvironmentTexCoordsNew( st );
+	}
+	else for (i = 0 ; i < tess.numVertexes ; i++, v += 4, normal += 4, st += 2 ) 
 	{
 		VectorSubtract (backEnd.or.viewOrigin, v, viewer);
 		VectorNormalizeFast (viewer);
 
 		d = DotProduct (normal, viewer);
 
-		reflected[0] = normal[0]*2*d - viewer[0];
+		//reflected[0] = normal[0]*2*d - viewer[0];
 		reflected[1] = normal[1]*2*d - viewer[1];
 		reflected[2] = normal[2]*2*d - viewer[2];
 
@@ -908,6 +954,7 @@ void RB_CalcEnvironmentTexCoords( float *st )
 		st[1] = 0.5 - reflected[2] * 0.5;
 	}
 }
+
 
 /*
 ** RB_CalcTurbulentTexCoords
@@ -929,6 +976,7 @@ void RB_CalcTurbulentTexCoords( const waveForm_t *wf, float *st )
 	}
 }
 
+
 /*
 ** RB_CalcScaleTexCoords
 */
@@ -942,6 +990,7 @@ void RB_CalcScaleTexCoords( const float scale[2], float *st )
 		st[1] *= scale[1];
 	}
 }
+
 
 /*
 ** RB_CalcScrollTexCoords
@@ -969,6 +1018,7 @@ void RB_CalcScrollTexCoords( const float scrollSpeed[2], float *st )
 	}
 }
 
+
 /*
 ** RB_CalcTransformTexCoords
 */
@@ -985,6 +1035,7 @@ void RB_CalcTransformTexCoords( const texModInfo_t *tmi, float *st  )
 		st[1] = s * tmi->matrix[0][1] + t * tmi->matrix[1][1] + tmi->translate[1];
 	}
 }
+
 
 /*
 ** RB_CalcRotateTexCoords
@@ -1074,6 +1125,7 @@ void RB_CalcSpecularAlpha( unsigned char *alphas ) {
 	}
 }
 
+
 /*
 ** RB_CalcDiffuseColor
 **
@@ -1128,8 +1180,8 @@ static void RB_CalcDiffuseColor_scalar( unsigned char *colors )
 	}
 }
 
+
 void RB_CalcDiffuseColor( unsigned char *colors )
 {
 	RB_CalcDiffuseColor_scalar( colors );
 }
-
