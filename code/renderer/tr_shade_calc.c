@@ -937,7 +937,7 @@ void RB_CalcEnvironmentTexCoords( float *st )
 
 	if ( backEnd.currentEntity && ( backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON ) )
 	{
-		RB_CalcEnvironmentTexCoordsNew( st );
+		RB_CalcEnvironmentTexCoordsFP( st );
 	}
 	else for (i = 0 ; i < tess.numVertexes ; i++, v += 4, normal += 4, st += 2 ) 
 	{
