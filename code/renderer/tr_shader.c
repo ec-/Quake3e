@@ -1447,7 +1447,7 @@ if ( <cvar> <condition> <integer value> )
 all tokens should be space-separated
 ===============
 */
-static qboolean ParseCondition( char **text, qboolean *result ) 
+static qboolean ParseCondition( char **text, condType *result )
 {
 	char *token;
 	int lval, rval;

@@ -417,12 +417,12 @@ Any mirrored or portaled views have already been drawn, so prepare
 to actually render the visible surfaces for this view
 =================
 */
-void RB_BeginDrawingView (void) {
+void RB_BeginDrawingView( void ) {
 	int clearBits = 0;
 
 	// sync with gl if needed
 	if ( r_finish->integer == 1 && !glState.finishCalled ) {
-		qglFinish ();
+		qglFinish();
 		glState.finishCalled = qtrue;
 	}
 	if ( r_finish->integer == 0 ) {
@@ -974,8 +974,10 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *
 		RB_EndSurface();
 	}
 
-	// we definately want to sync every frame for the cinematics
-	qglFinish();
+	// sync with gl if needed
+	if ( r_finish->integer == 1 ) {
+		qglFinish();
+	}
 
 	start = 0;
 	if ( r_speeds->integer ) {
@@ -1248,7 +1250,9 @@ void RB_ShowImages( void ) {
 
 	qglClear( GL_COLOR_BUFFER_BIT );
 
-	qglFinish();
+	if ( r_finish->integer == 1 ) {
+		qglFinish();
+	}
 
 	start = ri.Milliseconds();
 
@@ -1279,7 +1283,9 @@ void RB_ShowImages( void ) {
 		qglEnd();
 	}
 
-	qglFinish();
+	if ( r_finish->integer == 1 ) {
+		qglFinish();
+	}
 
 	end = ri.Milliseconds();
 	ri.Printf( PRINT_ALL, "%i msec to draw all images\n", end - start );
