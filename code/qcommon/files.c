@@ -859,8 +859,8 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
 	fs_lastPakIndex = -1;
 
 #ifndef DEDICATED
-	// don't let sound shutter
-	S_ClearSoundBuffer();
+	// don't let sound stutter
+	// S_ClearSoundBuffer();
 #endif
 
 	// search homepath
@@ -930,7 +930,7 @@ void FS_SV_Rename( const char *from, const char *to ) {
 
 #ifndef DEDICATED
 	// don't let sound stutter
-	S_ClearSoundBuffer();
+	// S_ClearSoundBuffer();
 #endif
 
 	from_ospath = FS_BuildOSPath( fs_homepath->string, from, NULL );
@@ -963,7 +963,7 @@ void FS_Rename( const char *from, const char *to ) {
 
 #ifndef DEDICATED
 	// don't let sound stutter
-	S_ClearSoundBuffer();
+	// S_ClearSoundBuffer();
 #endif
 
 	from_ospath = FS_BuildOSPath( fs_homepath->string, fs_gamedir, from );
@@ -1087,9 +1087,10 @@ fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 	if ( !*filename ) {
 		return FS_INVALID_HANDLE;
 	}
+
 #ifndef DEDICATED
 	// don't let sound stutter
-	S_ClearSoundBuffer();
+	// S_ClearSoundBuffer();
 #endif
 
 	ospath = FS_BuildOSPath( fs_homepath->string, fs_gamedir, filename );
