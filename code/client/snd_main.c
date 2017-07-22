@@ -64,6 +64,7 @@ static qboolean S_ValidSoundInterface( soundInterface_t *si )
 	return qtrue;
 }
 
+
 /*
 =================
 S_StartSound
@@ -75,6 +76,7 @@ void S_StartSound( vec3_t origin, int entnum, int entchannel, sfxHandle_t sfx )
 		si.StartSound( origin, entnum, entchannel, sfx );
 	}
 }
+
 
 /*
 =================
@@ -88,6 +90,7 @@ void S_StartLocalSound( sfxHandle_t sfx, int channelNum )
 	}
 }
 
+
 /*
 =================
 S_StartBackgroundTrack
@@ -100,6 +103,7 @@ void S_StartBackgroundTrack( const char *intro, const char *loop )
 	}
 }
 
+
 /*
 =================
 S_StopBackgroundTrack
@@ -111,6 +115,7 @@ void S_StopBackgroundTrack( void )
 		si.StopBackgroundTrack( );
 	}
 }
+
 
 /*
 =================
@@ -125,6 +130,7 @@ void S_RawSamples (int samples, int rate, int width, int channels,
 	}
 }
 
+
 /*
 =================
 S_StopAllSounds
@@ -137,6 +143,7 @@ void S_StopAllSounds( void )
 	}
 }
 
+
 /*
 =================
 S_ClearLoopingSounds
@@ -148,6 +155,7 @@ void S_ClearLoopingSounds( qboolean killall )
 		si.ClearLoopingSounds( killall );
 	}
 }
+
 
 /*
 =================
@@ -162,6 +170,7 @@ void S_AddLoopingSound( int entityNum, const vec3_t origin,
 	}
 }
 
+
 /*
 =================
 S_AddRealLoopingSound
@@ -175,6 +184,7 @@ void S_AddRealLoopingSound( int entityNum, const vec3_t origin,
 	}
 }
 
+
 /*
 =================
 S_StopLoopingSound
@@ -186,6 +196,7 @@ void S_StopLoopingSound( int entityNum )
 		si.StopLoopingSound( entityNum );
 	}
 }
+
 
 /*
 =================
@@ -200,6 +211,7 @@ void S_Respatialize( int entityNum, const vec3_t origin,
 	}
 }
 
+
 /*
 =================
 S_UpdateEntityPosition
@@ -211,6 +223,7 @@ void S_UpdateEntityPosition( int entityNum, const vec3_t origin )
 		si.UpdateEntityPosition( entityNum, origin );
 	}
 }
+
 
 /*
 =================
@@ -224,6 +237,7 @@ void S_Update( void )
 	}
 }
 
+
 /*
 =================
 S_DisableSounds
@@ -232,9 +246,10 @@ S_DisableSounds
 void S_DisableSounds( void )
 {
 	if( si.DisableSounds ) {
-		si.DisableSounds( );
+		si.DisableSounds();
 	}
 }
+
 
 /*
 =================
@@ -244,9 +259,10 @@ S_BeginRegistration
 void S_BeginRegistration( void )
 {
 	if( si.BeginRegistration ) {
-		si.BeginRegistration( );
+		si.BeginRegistration();
 	}
 }
+
 
 /*
 =================
@@ -267,6 +283,7 @@ sfxHandle_t	S_RegisterSound( const char *sample, qboolean compressed )
 	}
 }
 
+
 /*
 =================
 S_ClearSoundBuffer
@@ -275,9 +292,10 @@ S_ClearSoundBuffer
 void S_ClearSoundBuffer( void )
 {
 	if( si.ClearSoundBuffer ) {
-		si.ClearSoundBuffer( );
+		si.ClearSoundBuffer();
 	}
 }
+
 
 /*
 =================
@@ -290,6 +308,7 @@ void S_SoundInfo( void )
 		si.SoundInfo( );
 	}
 }
+
 
 /*
 =================
@@ -335,6 +354,7 @@ void S_Play_f( void ) {
 	}
 }
 
+
 /*
 =================
 S_Music_f
@@ -359,6 +379,7 @@ void S_Music_f( void ) {
 	}
 
 }
+
 
 /*
 =================
@@ -424,6 +445,7 @@ void S_Init( void )
 
 	Com_Printf( "--------------------------------\n");
 }
+
 
 /*
 =================

@@ -441,6 +441,7 @@ static char *SkipWhitespace( char *data, qboolean *hasNewLines ) {
 	return data;
 }
 
+
 int COM_Compress( char *data_p ) {
 	char *in, *out;
 	int c;
@@ -498,15 +499,15 @@ int COM_Compress( char *data_p ) {
 						in++;
 					}
 				} else {
-					*out = c;
-					out++;
+					*out++ = c;
 					in++;
 				}
 			}
 		}
 
-		*out = 0;
+		*out = '\0';
 	}
+
 	return out - data_p;
 }
 

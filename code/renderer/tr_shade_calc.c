@@ -912,7 +912,7 @@ static void RB_CalcEnvironmentTexCoordsFP( float *st ) {
 
 		d = DotProduct( normal, viewer );
 
-		reflected[0] = normal[0]*2*d - viewer[0] - (where[0] * 5) + (what[0] * 4);
+		//reflected[0] = normal[0]*2*d - viewer[0] - (where[0] * 5) + (what[0] * 4);
 		reflected[1] = normal[1]*2*d - viewer[1] - (where[1] * 5) + (why[1] * 4);
 		reflected[2] = normal[2]*2*d - viewer[2] - (where[2] * 5) + (who[2] * 4);
 
@@ -935,11 +935,14 @@ void RB_CalcEnvironmentTexCoords( float *st )
 	v = tess.xyz[0];
 	normal = tess.normal[0];
 
+#if 0 // breaks some legacy shaders like battle suit
 	if ( backEnd.currentEntity && ( backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON ) )
 	{
 		RB_CalcEnvironmentTexCoordsFP( st );
 	}
-	else for (i = 0 ; i < tess.numVertexes ; i++, v += 4, normal += 4, st += 2 ) 
+	else 
+#endif
+	for (i = 0 ; i < tess.numVertexes ; i++, v += 4, normal += 4, st += 2 ) 
 	{
 		VectorSubtract (backEnd.or.viewOrigin, v, viewer);
 		VectorNormalizeFast (viewer);

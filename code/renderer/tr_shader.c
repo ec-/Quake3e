@@ -3187,7 +3187,8 @@ static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char
 					memmove( buffers[i], shaderStart, summand + 1 );
 				}
 			}
-			sum += summand;
+			//sum += summand;
+			sum += COM_Compress( buffers[ i ] );
 		}
 	}
 
@@ -3286,7 +3287,7 @@ static void ScanAndLoadShaderFiles( void )
 	if ( shaderFiles )
 		ri.FS_FreeFileList( shaderFiles );
 
-	COM_Compress( s_shaderText );
+	//COM_Compress( s_shaderText );
 	Com_Memset( shaderTextHashTableSizes, 0, sizeof( shaderTextHashTableSizes ) );
 	size = 0;
 

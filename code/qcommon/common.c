@@ -1560,7 +1560,7 @@ void Com_InitSmallZoneMemory( void ) {
 Com_InitZoneMemory
 =================
 */
-void Com_InitZoneMemory( void ) {
+static void Com_InitZoneMemory( void ) {
 	cvar_t	*cv;
 
 	// Please note: com_zoneMegs can only be set on the command line, and
@@ -1670,7 +1670,7 @@ void Hunk_SmallLog( void) {
 Com_InitHunkMemory
 =================
 */
-void Com_InitHunkMemory( void ) {
+static void Com_InitHunkMemory( void ) {
 	cvar_t	*cv;
 	int nMinAlloc;
 	char *pMsg = NULL;
@@ -3007,13 +3007,13 @@ void Com_Init( char *commandLine ) {
 	Com_ParseCommandLine( commandLine );
 
 //	Swap_Init ();
-	Cbuf_Init ();
+	Cbuf_Init();
 
 	// override anything from the config files with command line args
 	Com_StartupVariable( NULL );
 
 	Com_InitZoneMemory();
-	Cmd_Init ();
+	Cmd_Init();
 
 	// get the developer cvar set as early as possible
 	Com_StartupVariable( "developer" );
