@@ -283,7 +283,7 @@ CL_WriteGamestate
 */
 static void CL_WriteGamestate( qboolean initial ) 
 {
-	byte		bufData[MAX_MSGLEN];
+	byte		bufData[ MAX_MSGLEN_BUF ];
 	char		*s;
 	msg_t		msg;
 	int			i;
@@ -292,7 +292,7 @@ static void CL_WriteGamestate( qboolean initial )
 	entityState_t	nullstate;
 
 	// write out the gamestate message
-	MSG_Init( &msg, bufData, sizeof(bufData));
+	MSG_Init( &msg, bufData, MAX_MSGLEN );
 	MSG_Bitstream( &msg );
 
 	// NOTE, MRE: all server->client messages now acknowledge
@@ -437,7 +437,7 @@ static void CL_WriteSnapshot( void ) {
 	static entityState_t saved_ents[ MAX_SNAPSHOT_ENTITIES ]; 
 
 	clSnapshot_t *snap, *oldSnap; 
-	byte	bufData[MAX_MSGLEN];
+	byte	bufData[ MAX_MSGLEN_BUF ];
 	msg_t	msg;
 	int		i, len;
 
@@ -451,7 +451,7 @@ static void CL_WriteSnapshot( void ) {
 		oldSnap = &saved_snap;
 	}
 
-	MSG_Init( &msg, bufData, sizeof( bufData ) );
+	MSG_Init( &msg, bufData, MAX_MSGLEN );
 	MSG_Bitstream( &msg );
 
 	// NOTE, MRE: all server->client messages now acknowledge
@@ -664,7 +664,7 @@ CL_ReadDemoMessage
 void CL_ReadDemoMessage( void ) {
 	int			r;
 	msg_t		buf;
-	byte		bufData[ MAX_MSGLEN ];
+	byte		bufData[ MAX_MSGLEN_BUF ];
 	int			s;
 
 	if ( clc.demofile == FS_INVALID_HANDLE ) {
@@ -681,7 +681,7 @@ void CL_ReadDemoMessage( void ) {
 	clc.serverMessageSequence = LittleLong( s );
 
 	// init the message
-	MSG_Init( &buf, bufData, sizeof( bufData ) );
+	MSG_Init( &buf, bufData, MAX_MSGLEN );
 
 	// get the length
 	r = FS_Read( &buf.cursize, 4, clc.demofile );

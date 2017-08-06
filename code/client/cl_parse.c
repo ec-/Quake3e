@@ -598,7 +598,7 @@ A download message has been received from the server
 */
 void CL_ParseDownload( msg_t *msg ) {
 	int		size;
-	unsigned char data[MAX_MSGLEN];
+	unsigned char data[ MAX_MSGLEN ];
 	uint16_t block;
 
 	if (!*clc.downloadTempName) {

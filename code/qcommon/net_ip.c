@@ -534,7 +534,7 @@ NET_GetPacket
 Receive one packet
 ==================
 */
-static qboolean NET_GetPacket(netadr_t *net_from, msg_t *net_message, fd_set *fdr)
+static qboolean NET_GetPacket( netadr_t *net_from, msg_t *net_message, fd_set *fdr )
 {
 	int 	ret;
 	struct sockaddr_storage from;
@@ -1634,21 +1634,21 @@ Called from NET_Sleep which uses select() to determine which sockets have seen a
 
 void NET_Event(fd_set *fdr)
 {
-	byte bufData[MAX_MSGLEN + 1];
-	netadr_t from = {0};
+	byte bufData[ MAX_MSGLEN_BUF ];
+	netadr_t from;
 	msg_t netmsg;
 	
-	while(1)
+	while( 1 )
 	{
-		MSG_Init(&netmsg, bufData, sizeof(bufData));
+		MSG_Init( &netmsg, bufData, MAX_MSGLEN );
 
-		if(NET_GetPacket(&from, &netmsg, fdr))
+		if ( NET_GetPacket( &from, &netmsg, fdr ) )
 		{
-			if(net_dropsim->value > 0.0f && net_dropsim->value <= 100.0f)
+			if ( net_dropsim->value > 0.0f && net_dropsim->value <= 100.0f )
 			{
 				// com_dropsim->value percent of incoming packets get dropped.
-				if(rand() < (int) (((double) RAND_MAX) / 100.0 * (double) net_dropsim->value))
-					continue;          // drop this packet
+				if ( rand() < (int) (((double) RAND_MAX) / 100.0 * (double) net_dropsim->value) )
+					continue; // drop this packet
 			}
 
 			if ( com_sv_running->integer )

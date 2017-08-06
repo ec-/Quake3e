@@ -693,7 +693,7 @@ Also called by SV_FinalMessage
 =======================
 */
 void SV_SendClientSnapshot( client_t *client ) {
-	byte		msg_buf[MAX_MSGLEN];
+	byte		msg_buf[ MAX_MSGLEN_BUF ];
 	msg_t		msg;
 
 	// build the snapshot
@@ -705,7 +705,7 @@ void SV_SendClientSnapshot( client_t *client ) {
 		return;
 	}
 
-	MSG_Init (&msg, msg_buf, sizeof(msg_buf));
+	MSG_Init( &msg, msg_buf, MAX_MSGLEN );
 	msg.allowoverflow = qtrue;
 
 	// NOTE, MRE: all server->client messages now acknowledge
@@ -721,8 +721,8 @@ void SV_SendClientSnapshot( client_t *client ) {
 
 	// check for overflow
 	if ( msg.overflowed ) {
-		Com_Printf ("WARNING: msg overflowed for %s\n", client->name);
-		MSG_Clear (&msg);
+		Com_Printf( "WARNING: msg overflowed for %s\n", client->name );
+		MSG_Clear( &msg );
 	}
 
 	SV_SendMessageToClient( &msg, client );

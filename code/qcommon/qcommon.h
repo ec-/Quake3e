@@ -51,9 +51,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 typedef struct {
 	qboolean	allowoverflow;	// if false, do a Com_Error
 	qboolean	overflowed;		// set to true if the buffer size failed (with allowoverflow set)
-	qboolean	oob;			// set to true if the buffer size failed (with allowoverflow set)
+	qboolean	oob;			// raw out-of-band operation, no static huffman encoding/decoding
 	byte	*data;
 	int		maxsize;
+	int		maxbits;			// maxsize in bits, for overflow checks
 	int		cursize;
 	int		readcount;
 	int		bit;				// for bitwise reads and writes
@@ -196,8 +197,11 @@ void		NET_JoinMulticast6(void);
 void		NET_LeaveMulticast6(void);
 void		NET_Sleep( int msec );
 
-#define	MAX_MSGLEN				16384		// max length of a message, which may
-											// be fragmented into multiple packets
+#define	MAX_MSGLEN		16384	// max length of a message, which may
+								// be fragmented into multiple packets
+
+#define	MAX_MSGLEN_BUF	(MAX_MSGLEN+8)	// real buffer size that we need to allocate
+										// to safely handle overflows
 
 #define MAX_DOWNLOAD_WINDOW		48	// ACK window of 48 download chunks. Cannot set this higher, or clients
 						// will overflow the reliable commands buffer

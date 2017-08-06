@@ -785,8 +785,14 @@ static void SV_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 	MSG_BeginReadingOOB( msg );
 	MSG_ReadLong( msg );		// skip the -1 marker
 
-	if (!Q_strncmp("connect", (char *) &msg->data[4], 7)) {
-		Huff_Decompress(msg, 12);
+	if ( !Q_strncmp( "connect", (char *) &msg->data[4], 7 ) ) {
+		if ( msg->cursize > MAX_INFO_STRING*2 ) { // if we assume 200% compression ratio on userinfo
+			if ( com_developer->integer ) {
+				Com_Printf( "%s : connect packet is too long - %i\n", NET_AdrToString( from ), msg->cursize );
+			}
+			return;
+		}
+		Huff_Decompress( msg, 12 );
 	}
 
 	s = MSG_ReadStringLine( msg );

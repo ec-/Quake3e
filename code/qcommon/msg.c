@@ -32,19 +32,18 @@ int pcount[256];
 Handles byte ordering and avoids alignment errors
 ==============================================================================
 */
-
-int oldsize = 0;
-
 void MSG_Init( msg_t *buf, byte *data, int length ) {
 	Com_Memset (buf, 0, sizeof(*buf));
 	buf->data = data;
 	buf->maxsize = length;
+	buf->maxbits = length * 8;
 }
 
 void MSG_InitOOB( msg_t *buf, byte *data, int length ) {
 	Com_Memset (buf, 0, sizeof(*buf));
 	buf->data = data;
 	buf->maxsize = length;
+	buf->maxbits = length * 8;
 	buf->oob = qtrue;
 }
 
@@ -93,17 +92,12 @@ bit functions
 void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 	int	i;
 
-	oldsize += bits;
-
-	// this isn't an exact overflow check, but close enough
-	if ( msg->maxsize - msg->cursize < 4 ) {
-		msg->overflowed = qtrue;
-		return;
-	}
-
 	if ( bits == 0 || bits < -31 || bits > 32 ) {
 		Com_Error( ERR_DROP, "MSG_WriteBits: bad bits %i", bits );
 	}
+
+	if ( msg->overflowed != qfalse )
+		return;
 
 	if ( bits < 0 ) {
 		bits = -bits;
@@ -146,6 +140,10 @@ void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 		}
 		msg->cursize = (msg->bit>>3)+1;
 	}
+
+	if ( msg->bit > msg->maxbits ) {
+		msg->overflowed = qtrue;
+	}
 }
 
 
@@ -155,6 +153,9 @@ int MSG_ReadBits( msg_t *msg, int bits ) {
 	int			i;
 	int			sym;
 	const byte *buffer = msg->data; // dereference optimization
+
+	if ( msg->bit >= msg->maxbits )
+		return 0;
 
 	value = 0;
 
@@ -647,7 +648,6 @@ void MSG_WriteDeltaUsercmdKey( msg_t *msg, int key, usercmd_t *from, usercmd_t *
 		from->buttons == to->buttons &&
 		from->weapon == to->weapon) {
 			MSG_WriteBits( msg, 0, 1 );				// no change
-			oldsize += 7;
 			return;
 	}
 	key ^= to->serverTime;
@@ -865,8 +865,6 @@ void MSG_WriteDeltaEntity( msg_t *msg, const entityState_t *from, const entitySt
 
 	MSG_WriteByte( msg, lc );	// # of changes
 
-	oldsize += numFields;
-
 	for ( i = 0, field = entityStateFields ; i < lc ; i++, field++ ) {
 		fromF = (int *)( (byte *)from + field->offset );
 		toF = (int *)( (byte *)to + field->offset );
@@ -884,8 +882,7 @@ void MSG_WriteDeltaEntity( msg_t *msg, const entityState_t *from, const entitySt
 			trunc = (int)fullFloat;
 
 			if (fullFloat == 0.0f) {
-					MSG_WriteBits( msg, 0, 1 );
-					oldsize += FLOAT_INT_BITS;
+				MSG_WriteBits( msg, 0, 1 );
 			} else {
 				MSG_WriteBits( msg, 1, 1 );
 				if ( trunc == fullFloat && trunc + FLOAT_INT_BIAS >= 0 && 
@@ -1145,8 +1142,6 @@ void MSG_WriteDeltaPlayerstate( msg_t *msg, const playerState_t *from, const pla
 
 	MSG_WriteByte( msg, lc );	// # of changes
 
-	oldsize += numFields - lc;
-
 	for ( i = 0, field = playerStateFields ; i < lc ; i++, field++ ) {
 		fromF = (int *)( (byte *)from + field->offset );
 		toF = (int *)( (byte *)to + field->offset );
@@ -1211,7 +1206,6 @@ void MSG_WriteDeltaPlayerstate( msg_t *msg, const playerState_t *from, const pla
 
 	if (!statsbits && !persistantbits && !ammobits && !powerupbits) {
 		MSG_WriteBits( msg, 0, 1 );	// no change
-		oldsize += 4;
 		return;
 	}
 	MSG_WriteBits( msg, 1, 1 );	// changed

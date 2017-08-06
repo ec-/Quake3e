@@ -698,9 +698,9 @@ static void SV_SendClientGameState( client_t *client ) {
 	entityState_t nullstate;
 	const svEntity_t *svEnt;
 	msg_t		msg;
-	byte		msgBuffer[MAX_MSGLEN];
+	byte		msgBuffer[ MAX_MSGLEN_BUF ];
 
- 	Com_DPrintf ("SV_SendClientGameState() for %s\n", client->name);
+ 	Com_DPrintf( "SV_SendClientGameState() for %s\n", client->name );
 	Com_DPrintf( "Going from CS_CONNECTED to CS_PRIMED for %s\n", client->name );
 	client->state = CS_PRIMED;
 	client->pureAuthentic = 0;
@@ -714,7 +714,7 @@ static void SV_SendClientGameState( client_t *client ) {
 	// gamestate message was not just sent, forcing a retransmit
 	client->gamestateMessageNum = client->netchan.outgoingSequence;
 
-	MSG_Init( &msg, msgBuffer, sizeof( msgBuffer ) );
+	MSG_Init( &msg, msgBuffer, MAX_MSGLEN );
 
 	// NOTE, MRE: all server->client messages now acknowledge
 	// let the client know which reliable clientCommands we have received
@@ -1167,23 +1167,23 @@ int SV_SendDownloadMessages(void)
 	int i, numDLs = 0, retval;
 	client_t *cl;
 	msg_t msg;
-	byte msgBuffer[MAX_MSGLEN];
+	byte msgBuffer[ MAX_MSGLEN_BUF ];
 	
-	for(i=0; i < sv_maxclients->integer; i++)
+	for( i = 0; i < sv_maxclients->integer; i++ )
 	{
 		cl = &svs.clients[i];
 		
-		if(cl->state && *cl->downloadName)
+		if ( cl->state >= CS_CONNECTED && *cl->downloadName )
 		{
-			MSG_Init(&msg, msgBuffer, sizeof(msgBuffer));
-			MSG_WriteLong(&msg, cl->lastClientCommand);
+			MSG_Init( &msg, msgBuffer, MAX_MSGLEN );
+			MSG_WriteLong( &msg, cl->lastClientCommand );
 			
-			retval = SV_WriteDownloadToClient(cl, &msg);
+			retval = SV_WriteDownloadToClient( cl, &msg );
 				
-			if(retval)
+			if ( retval )
 			{
-				MSG_WriteByte(&msg, svc_EOF);
-				SV_Netchan_Transmit(cl, &msg);
+				MSG_WriteByte( &msg, svc_EOF );
+				SV_Netchan_Transmit( cl, &msg );
 				numDLs += retval;
 			}
 		}
@@ -1481,8 +1481,8 @@ static void SV_UpdateUserinfo_f( client_t *cl ) {
 }
 
 typedef struct {
-	char	*name;
-	void	(*func)( client_t *cl );
+	const char *name;
+	void (*func)( client_t *cl );
 } ucmd_t;
 
 static ucmd_t ucmds[] = {
