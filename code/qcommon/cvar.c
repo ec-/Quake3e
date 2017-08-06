@@ -1553,26 +1553,28 @@ void Cvar_Restart_f(void)
 	Cvar_Restart(qfalse);
 }
 
+
 /*
 =====================
 Cvar_InfoString
 =====================
 */
-char *Cvar_InfoString(int bit)
+char *Cvar_InfoString( int bit )
 {
-	static char	info[MAX_INFO_STRING];
+	static char	info[ MAX_INFO_STRING ];
 	cvar_t	*var;
 
 	info[0] = 0;
 
-	for(var = cvar_vars; var; var = var->next)
+	for( var = cvar_vars; var; var = var->next )
 	{
-		if(var->name && (var->flags & bit))
-			Info_SetValueForKey (info, var->name, var->string);
+		if ( var->name && ( var->flags & bit ) )
+			Info_SetValueForKey( info, var->name, var->string );
 	}
 
 	return info;
 }
+
 
 /*
 =====================

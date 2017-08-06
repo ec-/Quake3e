@@ -1070,6 +1070,16 @@ void Q_strcat( char *dest, int size, const char *src ) {
 }
 
 
+char *Q_stradd( char *dst, const char *src )
+{
+	char c;
+	while ( (c = *src++) != '\0' ) 
+		*dst++ = c;
+	*dst = '\0';
+	return dst;
+}
+
+
 /*
 * Find the first occurrence of find in s.
 */

@@ -219,9 +219,11 @@ typedef int		clipHandle_t;
 #define	MAX_TOKEN_CHARS		1024	// max length of an individual token
 
 #define	MAX_INFO_STRING		1024
-#define	MAX_INFO_KEY		  1024
+#define	MAX_INFO_KEY		1024
 #define	MAX_INFO_VALUE		1024
 
+#define MAX_USERINFO_LENGTH (MAX_INFO_STRING-12-19) // incl. length of 'connect ""' or 'userinfo ""' and '\ip\255.255.255.255' key on server side
+													
 #define	BIG_INFO_STRING		8192  // used for system info key only
 #define	BIG_INFO_KEY		  8192
 #define	BIG_INFO_VALUE		8192
@@ -735,6 +737,8 @@ void	Q_strncpyz( char *dest, const char *src, int destsize );
 void	Q_strcat( char *dest, int size, const char *src );
 
 int     Q_replace( const char *str1, const char *str2, char *src, int max_len );
+
+char	*Q_stradd( char *dst, const char *src );
 
 // strlen that discounts Quake color sequences
 int Q_PrintStrlen( const char *string );

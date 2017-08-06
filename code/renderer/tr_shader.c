@@ -3196,16 +3196,6 @@ static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char
 }
 
 
-static char *stradd( char *dst, const char *src ) 
-{
-	char c;
-	while ( (c = *src++) != '\0' ) 
-		*dst++ = c;
-	*dst = '\0';
-	return dst;
-}
-
-
 /*
 ====================
 ScanAndLoadShaderFiles
@@ -3267,16 +3257,16 @@ static void ScanAndLoadShaderFiles( void )
 	// legacy shaders
 	for ( i = numShaderFiles - 1; i >= 0 ; i-- ) {
 		if ( buffers[ i ] ) {
-			textEnd = stradd( textEnd, buffers[ i ] );
-			textEnd = stradd( textEnd, "\n" );
+			textEnd = Q_stradd( textEnd, buffers[ i ] );
+			textEnd = Q_stradd( textEnd, "\n" );
 			ri.FS_FreeFile( buffers[ i ] );
 		}
 	}
 	// extended shaders
 	for ( i = numShaderxFiles - 1; i >= 0 ; i-- ) {
 		if ( xbuffers[ i ] ) {
-			textEnd = stradd( textEnd, xbuffers[ i ] );
-			textEnd = stradd( textEnd, "\n" );
+			textEnd = Q_stradd( textEnd, xbuffers[ i ] );
+			textEnd = Q_stradd( textEnd, "\n" );
 			ri.FS_FreeFile( xbuffers[ i ] );
 		}
 	}

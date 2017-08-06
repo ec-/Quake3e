@@ -3863,29 +3863,32 @@ Servers with sv_pure set will get this string back from clients for pure validat
 The string has a specific order, "cgame ui @ ref1 ref2 ref3 ..."
 =====================
 */
-const char *FS_ReferencedPakPureChecksums( void ) {
-	static char	info[BIG_INFO_STRING];
+const char *FS_ReferencedPakPureChecksums( int maxlen ) {
+	static char	info[ MAX_STRING_CHARS*2 ];
+	char *s, *max;
 	searchpath_t	*search;
 	int nFlags, numPaks, checksum;
 
-	info[0] = 0;
+	max = info + maxlen; // maxlen is always smaller than MAX_STRING_CHARS so we can overflow a bit
+	s = info;
+	*s = '\0';
 
 	checksum = fs_checksumFeed;
 	numPaks = 0;
-	for (nFlags = FS_CGAME_REF; nFlags; nFlags = nFlags >> 1) {
-		if (nFlags & FS_GENERAL_REF) {
+	for ( nFlags = FS_CGAME_REF; nFlags; nFlags = nFlags >> 1 ) {
+		if ( nFlags & FS_GENERAL_REF ) {
 			// add a delimter between must haves and general refs
-			//Q_strcat(info, sizeof(info), "@ ");
-			info[strlen(info)+1] = '\0';
-			info[strlen(info)+2] = '\0';
-			info[strlen(info)] = '@';
-			info[strlen(info)] = ' ';
+			s = Q_stradd( s, "@ " );
+			if ( s > max ) // client-side overflow
+				break;
 		}
 		for ( search = fs_searchpaths ; search ; search = search->next ) {
 			// is the element a pak file and has it been referenced based on flag?
 			if ( search->pack && (search->pack->referenced & nFlags)) {
-				Q_strcat( info, sizeof( info ), va("%i ", search->pack->pure_checksum ) );
-				if (nFlags & (FS_CGAME_REF | FS_UI_REF)) {
+				s = Q_stradd( s, va( "%i ", search->pack->pure_checksum ) );
+				if ( s > max ) // client-side overflow
+					break;
+				if ( nFlags & (FS_CGAME_REF | FS_UI_REF) ) {
 					break;
 				}
 				checksum ^= search->pack->pure_checksum;
@@ -3893,10 +3896,16 @@ const char *FS_ReferencedPakPureChecksums( void ) {
 			}
 		}
 	}
+
 	// last checksum is the encoded number of referenced pk3s
 	checksum ^= numPaks;
-	Q_strcat( info, sizeof( info ), va("%i ", checksum ) );
-
+	s = Q_stradd( s, va( "%i ", checksum ) );
+	if ( s > max ) { 
+		// client-side overflow
+		Com_Printf( S_COLOR_YELLOW "WARNING: pure checksum list is too long (%i), you might be not able to play on remote server!\n", s - info );
+		*max = '\0';
+	}
+	
 	return info;
 }
 
@@ -4037,6 +4046,7 @@ void FS_PureServerSetLoadedPaks( const char *pakSums, const char *pakNames ) {
 		}
 	}
 }
+
 
 /*
 =====================

@@ -381,7 +381,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 	if ( NET_IsLocalAddress( from ) )
 		ip = "localhost";
 	else
-		ip = (char *)NET_AdrToString( from );
+		ip = NET_AdrToString( from );
 	if( ( strlen( ip ) + strlen( userinfo ) + 4 ) >= MAX_INFO_STRING ) {
 		NET_OutOfBandPrint( NS_SERVER, from, "print\nUserinfo string length exceeded.  "
 			"Try removing setu cvars from your config.\n" );
@@ -1389,9 +1389,9 @@ into a more C friendly form.
 =================
 */
 void SV_UserinfoChanged( client_t *cl ) {
-	char	*val;
-	char	*ip;
-	int		i;
+	const char *val;
+	const char *ip;
+	int	i;
 	int	len;
 	const int maxRate = 100000;
 
@@ -1454,12 +1454,12 @@ void SV_UserinfoChanged( client_t *cl ) {
 	if ( NET_IsLocalAddress( &cl->netchan.remoteAddress ) )
 		ip = "localhost";
 	else
-		ip = (char*)NET_AdrToString( &cl->netchan.remoteAddress );
+		ip = NET_AdrToString( &cl->netchan.remoteAddress );
 
 	val = Info_ValueForKey( cl->userinfo, "ip" );
 	len = strlen( ip ) - strlen( val ) + strlen( cl->userinfo ) + 14;
 
-	if( len >= MAX_INFO_STRING )
+	if ( len >= MAX_INFO_STRING )
 		SV_DropClient( cl, "userinfo string length exceeded" );
 	else
 		Info_SetValueForKey( cl->userinfo, "ip", ip );
@@ -1825,7 +1825,7 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 	} else if ( c == clc_moveNoDelta ) {
 		SV_UserMove( cl, msg, qfalse );
 	} else if ( c != clc_EOF ) {
-		Com_Printf( "WARNING: bad command byte for client %i\n", (int) (cl - svs.clients) );
+		Com_Printf( "WARNING: bad command byte %i for client %i\n", c, (int) (cl - svs.clients) );
 	}
 //	if ( msg->readcount != msg->cursize ) {
 //		Com_Printf( "WARNING: Junk at end of packet for client %i\n", cl - svs.clients );

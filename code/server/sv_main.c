@@ -516,6 +516,7 @@ qboolean SVC_RateLimitAddress( const netadr_t *from, int burst, int period ) {
 	return SVC_RateLimit( bucket, burst, period );
 }
 
+
 /*
 ================
 SVC_Status
@@ -526,14 +527,14 @@ the simple info query.
 ================
 */
 static void SVC_Status( const netadr_t *from ) {
-	char	player[1024];
+	char	player[MAX_NAME_LENGTH + 32]; // score + ping + name
 	char	status[MAX_MSGLEN];
 	int		i;
 	client_t	*cl;
 	playerState_t	*ps;
 	int		statusLength;
 	int		playerLength;
-	char	infostring[MAX_INFO_STRING];
+	char	infostring[MAX_INFO_STRING+20]; // add some space for challenge string
 
 	// ignore if we are in single player
 #ifndef DEDICATED
@@ -559,29 +560,30 @@ static void SVC_Status( const netadr_t *from ) {
 	}
 
 	// A maximum challenge length of 128 should be more than plenty.
-	if(strlen(Cmd_Argv(1)) > 128)
+	if ( strlen( Cmd_Argv( 1 ) ) > 128 )
 		return;
 
-	strcpy( infostring, Cvar_InfoString( CVAR_SERVERINFO ) );
+	Q_strncpyz( infostring, Cvar_InfoString( CVAR_SERVERINFO ), sizeof( infostring ) );
 
 	// echo back the parameter to status. so master servers can use it as a challenge
 	// to prevent timed spoofed reply packets that add ghost servers
-	Info_SetValueForKey( infostring, "challenge", Cmd_Argv(1) );
+	Info_SetValueForKey( infostring, "challenge", Cmd_Argv( 1 ) );
 
-	status[0] = 0;
+	status[0] = '\0';
 	statusLength = 0;
 
-	for (i=0 ; i < sv_maxclients->integer ; i++) {
+	for ( i = 0 ; i < sv_maxclients->integer ; i++ ) {
 		cl = &svs.clients[i];
 		if ( cl->state >= CS_CONNECTED ) {
+
 			ps = SV_GameClientNum( i );
-			Com_sprintf (player, sizeof(player), "%i %i \"%s\"\n", 
-				ps->persistant[PERS_SCORE], cl->ping, cl->name);
-			playerLength = strlen(player);
-			if (statusLength + playerLength >= sizeof(status) ) {
-				break;		// can't hold any more
+			playerLength = Com_sprintf( player, sizeof( player ), "%i %i \"%s\"\n", 
+				ps->persistant[PERS_SCORE], cl->ping, cl->name );
+			
+			if ( statusLength + playerLength >= sizeof( status ) ) {
+				break; // can't hold any more
 			}
-			strcpy (status + statusLength, player);
+			strcpy( status + statusLength, player );
 			statusLength += playerLength;
 		}
 	}
