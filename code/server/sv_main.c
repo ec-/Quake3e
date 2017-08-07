@@ -528,13 +528,14 @@ the simple info query.
 */
 static void SVC_Status( const netadr_t *from ) {
 	char	player[MAX_NAME_LENGTH + 32]; // score + ping + name
-	char	status[MAX_MSGLEN];
+	char	status[1400]; // MAX_PACKETLEN
+	char	*s;
 	int		i;
 	client_t	*cl;
 	playerState_t	*ps;
 	int		statusLength;
 	int		playerLength;
-	char	infostring[MAX_INFO_STRING+20]; // add some space for challenge string
+	char	infostring[MAX_INFO_STRING+160]; // add some space for challenge string
 
 	// ignore if we are in single player
 #ifndef DEDICATED
@@ -569,8 +570,9 @@ static void SVC_Status( const netadr_t *from ) {
 	// to prevent timed spoofed reply packets that add ghost servers
 	Info_SetValueForKey( infostring, "challenge", Cmd_Argv( 1 ) );
 
+	s = status;
 	status[0] = '\0';
-	statusLength = 0;
+	statusLength = strlen( infostring ) + 16; // strlen( "statusResponse\n\n" )
 
 	for ( i = 0 ; i < sv_maxclients->integer ; i++ ) {
 		cl = &svs.clients[i];
@@ -578,12 +580,12 @@ static void SVC_Status( const netadr_t *from ) {
 
 			ps = SV_GameClientNum( i );
 			playerLength = Com_sprintf( player, sizeof( player ), "%i %i \"%s\"\n", 
-				ps->persistant[PERS_SCORE], cl->ping, cl->name );
+				ps->persistant[ PERS_SCORE ], cl->ping, cl->name );
 			
-			if ( statusLength + playerLength >= sizeof( status ) ) {
+			if ( statusLength + playerLength >= 1400-4 ) // MAX_PACKETLEN-4
 				break; // can't hold any more
-			}
-			strcpy( status + statusLength, player );
+			
+			s = Q_stradd( s, player );
 			statusLength += playerLength;
 		}
 	}
@@ -634,7 +636,7 @@ static void SVC_Info( const netadr_t *from ) {
 	 */
 
 	// A maximum challenge length of 128 should be more than plenty.
-	if(strlen(Cmd_Argv(1)) > 128)
+	if ( strlen( Cmd_Argv ( 1 ) ) > 128 )
 		return;
 
 	// don't count privateclients

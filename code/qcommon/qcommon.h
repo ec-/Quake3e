@@ -183,7 +183,7 @@ void		NET_Config( qboolean enableNetworking );
 void		NET_FlushPacketQueue(void);
 void		NET_SendPacket( netsrc_t sock, int length, const void *data, const netadr_t *to );
 void		QDECL NET_OutOfBandPrint( netsrc_t net_socket, const netadr_t *adr, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
-void		QDECL NET_OutOfBandData( netsrc_t sock, const netadr_t *adr, const byte *data, int len );
+void		NET_OutOfBandCompress( netsrc_t sock, const netadr_t *adr, const byte *data, int len );
 
 qboolean	NET_CompareAdr( const netadr_t *a, const netadr_t *b );
 qboolean	NET_CompareBaseAdrMask( const netadr_t *a, const netadr_t *b, int netmask );

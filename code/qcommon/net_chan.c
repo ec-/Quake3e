@@ -581,12 +581,12 @@ void QDECL NET_OutOfBandPrint( netsrc_t sock, const netadr_t *adr, const char *f
 
 /*
 ===============
-NET_OutOfBandPrint
+NET_OutOfBandCompress
 
-Sends a data message in an out-of-band datagram (only used for "connect")
+Sends a compressed message in an out-of-band datagram (only used for "connect")
 ================
 */
-void QDECL NET_OutOfBandData( netsrc_t sock, const netadr_t *adr, const byte *data, int len ) {
+void NET_OutOfBandCompress( netsrc_t sock, const netadr_t *adr, const byte *data, int len ) {
 	byte		string[MAX_INFO_STRING*2];
 	int			i;
 	msg_t		mbuf;

@@ -2210,7 +2210,7 @@ static void CL_CheckForResend( void ) {
 
 		len = Com_sprintf( data, sizeof( data ), "connect \"%s\"", info );
 		// NOTE TTimo don't forget to set the right data length!
-		NET_OutOfBandData( NS_CLIENT, &clc.serverAddress, (byte *) &data[0], len );
+		NET_OutOfBandCompress( NS_CLIENT, &clc.serverAddress, (byte *) &data[0], len );
 		// the most current userinfo has been sent, so watch for any
 		// newer changes to userinfo variables
 		cvar_modifiedFlags &= ~CVAR_USERINFO;
