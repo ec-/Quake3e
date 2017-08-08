@@ -374,6 +374,9 @@ void CL_SystemInfoChanged( void ) {
 	t = Info_ValueForKey( systemInfo, "sv_referencedPakNames" );
 	FS_PureServerSetReferencedPaks( s, t );
 
+	s = Info_ValueForKey( systemInfo, "sv_pure" );
+	cl_connectedToPureServer = atoi( s );
+
 	gameSet = qfalse;
 	// scan through all the variables in the systeminfo and locally set cvars to match
 	s = systemInfo;
@@ -384,9 +387,20 @@ void CL_SystemInfoChanged( void ) {
 		if ( !key[0] ) {
 			break;
 		}
+
+		// we don't really need any of these server cvars to be set on client-side
+		if ( !Q_stricmp( key, "sv_pure" ) || !Q_stricmp( key, "sv_serverid" ) ) {
+			continue;
+		}
+		if ( !Q_stricmp( key, "sv_paks" ) || !Q_stricmp( key, "sv_pakNames" ) ) {
+			continue;
+		}
+		if ( !Q_stricmp( key, "sv_referencedPaks" ) || !Q_stricmp( key, "sv_referencedPakNames" ) ) {
+			continue;
+		}
 		
 		// ehw!
-		if (!Q_stricmp(key, "fs_game"))
+		if ( !Q_stricmp( key, "fs_game" ) )
 		{
 			if(FS_CheckDirTraversal(value))
 			{
@@ -421,8 +435,8 @@ void CL_SystemInfoChanged( void ) {
 	if ( !gameSet && *Cvar_VariableString("fs_game") ) {
 		Cvar_Set( "fs_game", "" );
 	}
-	cl_connectedToPureServer = Cvar_VariableIntegerValue( "sv_pure" );
 }
+
 
 /*
 ==================
