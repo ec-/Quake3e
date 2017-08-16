@@ -162,6 +162,25 @@ static qboolean	R_CullSurface( surfaceType_t *surface, shader_t *shader ) {
 #ifdef USE_PMLIGHT
 qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t maxs )
 {
+	if ( dl->linear ) {
+		if (dl->transformed[0] - dl->radius > maxs[0] && dl->transformed2[0] - dl->radius > maxs[0] )
+			return qtrue;
+		if (dl->transformed[0] + dl->radius < mins[0] && dl->transformed2[0] + dl->radius < mins[0] )
+			return qtrue;
+
+		if (dl->transformed[1] - dl->radius > maxs[1] && dl->transformed2[1] - dl->radius > maxs[1] )
+			return qtrue;
+		if (dl->transformed[1] + dl->radius < mins[1] && dl->transformed2[1] + dl->radius < mins[1] )
+			return qtrue;
+
+		if (dl->transformed[2] - dl->radius > maxs[2] && dl->transformed2[2] - dl->radius > maxs[2] )
+			return qtrue;
+		if (dl->transformed[2] + dl->radius < mins[2] && dl->transformed2[2] + dl->radius < mins[2] )
+			return qtrue;
+
+		return qfalse;
+	}
+
 	if (dl->transformed[0] - dl->radius > maxs[0])
 		return qtrue;
 	if (dl->transformed[0] + dl->radius < mins[0])
@@ -184,8 +203,19 @@ qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t 
 static qboolean R_LightCullFace( const srfSurfaceFace_t* face, const dlight_t* dl )
 {
 	float d = DotProduct( dl->origin, face->plane.normal ) - face->plane.dist;
-	if ( (d < -dl->radius) || (d > dl->radius) )
-		return qtrue;
+	if ( dl->linear )
+	{
+		float d2 = DotProduct( dl->origin2, face->plane.normal ) - face->plane.dist;
+		if ( (d < -dl->radius) && (d2 < -dl->radius) )
+			return qtrue;
+		if ( (d > dl->radius) && (d2 > dl->radius) ) 
+			return qtrue;
+	} 
+	else 
+	{
+		if ( (d < -dl->radius) || (d > dl->radius) )
+			return qtrue;
+	}
 
 	return qfalse;
 }
@@ -351,12 +381,6 @@ static void R_AddWorldSurface( msurface_t *surf, int dlightBits ) {
 	if ( r_dlightMode->integer ) 
 #endif
 	{
-#ifndef USE_LIGHT_COUNT
-		// reset surface light mask on first lookup for this scene
-		if ( surf->sceneCount != tr.sceneCount )
-			surf->lightMask = 0;
-		surf->sceneCount = tr.sceneCount;
-#endif
 		surf->vcVisible = tr.viewCount;
 		R_AddDrawSurf( surf->data, surf->shader, surf->fogIndex, 0 );
 		return;
@@ -388,15 +412,6 @@ static void R_AddLitSurface( msurface_t *surf, const dlight_t *light )
 	//if ( surf->viewCount != tr.viewCount )
 	//	return;
 
-#ifndef USE_LIGHT_COUNT
-	 // check if already masked by this light in this scene
-	if ( surf->lightMask & light->mask ) {
-		tr.pc.c_lit_masks++;
-		return;
-	}
-	surf->lightMask |= light->mask;
-#endif
-
 	// surfaces that were faceculled will still have the current viewCount in vcBSP
 	// because that's set to indicate that it's BEEN vis tested at all, to avoid
 	// repeated vis tests, not whether it actually PASSED the vis test or not
@@ -409,12 +424,10 @@ static void R_AddLitSurface( msurface_t *surf, const dlight_t *light )
 		return;
 	}
 
-#ifdef USE_LIGHT_COUNT
 	if ( surf->lightCount == tr.lightCount )
 		return;
 
 	surf->lightCount = tr.lightCount;
-#endif
 
 	if ( R_LightCullSurface( surf->data, light ) ) {
 		tr.pc.c_lit_culls++;
@@ -448,6 +461,16 @@ static void R_RecursiveLightNode( const mnode_t* node )
 		}
 		if ( d < tr.light->radius ) {
 			children[1] = qtrue;
+		}
+
+		if ( tr.light->linear ) {
+			d = DotProduct( tr.light->origin2, node->plane->normal ) - node->plane->dist;
+			if ( d > -tr.light->radius ) {
+				children[0] = qtrue;
+			}
+			if ( d < tr.light->radius ) {
+				children[1] = qtrue;
+			}
 		}
 
 		if ( children[0] && children[1] ) {
@@ -528,9 +551,7 @@ void R_AddBrushModelSurfaces ( trRefEntity_t *ent ) {
 		for ( i = 0; i < tr.viewParms.num_dlights; i++ ) {
 			dl = &tr.viewParms.dlights[i];
 			if ( !R_LightCullBounds( dl, bmodel->bounds[0], bmodel->bounds[1] ) ) {
-#ifdef USE_LIGHT_COUNT
 				tr.lightCount++;
-#endif
 				tr.light = dl;
 				for ( s = 0; s < bmodel->numSurfaces; s++ ) {
 					R_AddLitSurface( bmodel->firstSurface + s, dl );
@@ -904,17 +925,13 @@ void R_AddWorldSurfaces( void ) {
 	for ( i = 0; i < tr.viewParms.num_dlights; i++ ) 
 	{
 		dl = &tr.viewParms.dlights[i];	
-#ifdef USE_LIGHT_COUNT
 		dl->head = dl->tail = NULL;
-#endif
-		if ( R_CullPointAndRadius( dl->origin, dl->radius ) == CULL_OUT ) {
+		if ( R_CullDlight( dl ) == CULL_OUT ) {
 			tr.pc.c_light_cull_out++;
 			continue;
 		}
 		tr.pc.c_light_cull_in++;
-#ifdef USE_LIGHT_COUNT
 		tr.lightCount++;
-#endif
 		tr.light = dl;
 		R_RecursiveLightNode( tr.world->nodes );
 	}

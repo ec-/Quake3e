@@ -25,8 +25,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define USE_LEGACY_DLIGHTS	// vq3 dynamic lights
 #define USE_PMLIGHT			// promode dynamic lights via \r_dlightMode 1
-typedef unsigned int		lightMask_t;
-#define USE_LIGHT_COUNT
 #define MAX_REAL_DLIGHTS	(MAX_DLIGHTS*2)
 #define MAX_LITSURFS		(MAX_DRAWSURFS*2)
 
@@ -53,18 +51,20 @@ typedef unsigned int glIndex_t;
 
 typedef struct dlight_s {
 	vec3_t	origin;
+	vec3_t	origin2;
+	vec3_t	dir;		// origin2 - origin
+
 	vec3_t	color;				// range from 0.0 to 1.0, should be color normalized
 	float	radius;
 
 	vec3_t	transformed;		// origin in local coordinate system
+	vec3_t	transformed2;		// origin2 in local coordinate system
 	int		additive;			// texture detail is lost tho when the lightmap is dark
+	qboolean linear;
 #ifdef USE_PMLIGHT
 	struct litSurf_s	*head;
 	struct litSurf_s	*tail;
-#ifndef USE_LIGHT_COUNT
-	lightMask_t			mask;	// suitable only for MAX_DLIGHTS <= 32!
 #endif
-#endif // USE_PMLIGHT
 } dlight_t;
 
 
@@ -690,12 +690,7 @@ typedef struct msurface_s {
 	int					fogIndex;
 #ifdef USE_PMLIGHT
 	int					vcVisible;		// if == tr.viewCount, is actually VISIBLE in this frame, i.e. passed facecull and has been added to the drawsurf list
-#ifdef USE_LIGHT_COUNT
 	int					lightCount;		// if == tr.lightCount, already added to the litsurf list for the current light
-#else
-	int					sceneCount;
-	lightMask_t			lightMask;
-#endif
 #endif // USE_PMLIGHT
 	surfaceType_t		*data;			// any of srf*_t
 } msurface_t;
@@ -972,9 +967,7 @@ typedef struct {
 	int						viewCount;		// incremented every view (twice a scene if portaled)
 											// and every R_MarkFragments call
 #ifdef USE_PMLIGHT
-#ifdef USE_LIGHT_COUNT
 	int						lightCount;		// incremented for each dlight in the view
-#endif
 #endif
 
 	int						frameSceneNum;	// zeroed at RE_BeginFrame
@@ -1204,8 +1197,9 @@ void R_LocalPointToWorld (vec3_t local, vec3_t world);
 int R_CullLocalBox (vec3_t bounds[2]);
 int R_CullPointAndRadius( vec3_t origin, float radius );
 int R_CullLocalPointAndRadius( vec3_t origin, float radius );
+int R_CullDlight( const dlight_t *dl );
 
-void R_SetupProjection(viewParms_t *dest, float zProj, qboolean computeFrustum);
+void R_SetupProjection( viewParms_t *dest, float zProj, qboolean computeFrustum );
 void R_RotateForEntity( const trRefEntity_t *ent, const viewParms_t *viewParms, orientationr_t *or );
 
 /*
@@ -1520,6 +1514,8 @@ void RE_AddRefEntityToScene( const refEntity_t *ent, qboolean intShaderTime );
 void RE_AddPolyToScene( qhandle_t hShader , int numVerts, const polyVert_t *verts, int num );
 void RE_AddLightToScene( const vec3_t org, float intensity, float r, float g, float b );
 void RE_AddAdditiveLightToScene( const vec3_t org, float intensity, float r, float g, float b );
+void RE_AddLinearLightToScene( const vec3_t start, const vec3_t end, float intensity, float r, float g, float b );
+
 void RE_RenderScene( const refdef_t *fd );
 
 /*

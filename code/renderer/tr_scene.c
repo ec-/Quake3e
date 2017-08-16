@@ -236,7 +236,6 @@ void RE_AddRefEntityToScene( const refEntity_t *ent, qboolean intShaderTime ) {
 /*
 =====================
 RE_AddDynamicLightToScene
-
 =====================
 */
 void RE_AddDynamicLightToScene( const vec3_t org, float intensity, float r, float g, float b, int additive ) {
@@ -269,14 +268,48 @@ void RE_AddDynamicLightToScene( const vec3_t org, float intensity, float r, floa
 	dl->color[1] = g;
 	dl->color[2] = b;
 	dl->additive = additive;
-#ifdef USE_PMLIGHT
-#ifndef USE_LIGHT_COUNT
-	dl->mask = 1 << (r_numdlights - 1);
-	dl->head = NULL;
-	dl->tail = NULL;
-#endif
-#endif // USE_PMLIGHT
+	dl->linear = qfalse;
 }
+
+
+/*
+=====================
+RE_AddLinearLightToScene
+=====================
+*/
+void RE_AddLinearLightToScene( const vec3_t start, const vec3_t end, float intensity, float r, float g, float b  ) {
+	dlight_t	*dl;
+	if ( VectorCompare( start, end ) ) {
+		RE_AddDynamicLightToScene( start, intensity, r, g, b, 0 );
+		return;
+	}
+	if ( !tr.registered ) {
+		return;
+	}
+	if ( r_numdlights >= ARRAY_LEN( backEndData->dlights ) ) {
+		return;
+	}
+	if ( intensity <= 0 ) {
+		return;
+	}
+#ifdef USE_PMLIGHT
+	if ( r_dlightMode->integer ) {
+		r *= r_dlightIntensity->value;
+		g *= r_dlightIntensity->value;
+		b *= r_dlightIntensity->value;
+	}
+#endif
+	dl = &backEndData->dlights[ r_numdlights++ ];
+	VectorCopy( start, dl->origin );
+	VectorCopy( end, dl->origin2 );
+	dl->radius = intensity;
+	dl->color[0] = r;
+	dl->color[1] = g;
+	dl->color[2] = b;
+	dl->additive = 0;
+	dl->linear = qtrue;
+}
+
 
 
 /*

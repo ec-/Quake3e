@@ -118,6 +118,7 @@ int R_CullLocalPointAndRadius( vec3_t pt, float radius )
 	return R_CullPointAndRadius( transformed, radius );
 }
 
+
 /*
 ** R_CullPointAndRadius
 */
@@ -158,6 +159,48 @@ int R_CullPointAndRadius( vec3_t pt, float radius )
 
 
 /*
+** R_CullDlight
+*/
+int R_CullDlight( const dlight_t* dl )
+{
+	int		i;
+	float	dist, dist2;
+	cplane_t	*frust;
+	qboolean mightBeClipped = qfalse;
+
+	if ( r_nocull->integer )
+		return CULL_CLIP;
+
+	if ( dl->linear ) {
+		for ( i = 0 ; i < 4 ; i++ ) {
+			frust = &tr.viewParms.frustum[i];
+			dist = DotProduct( dl->transformed, frust->normal) - frust->dist;
+			dist2 = DotProduct( dl->transformed2, frust->normal) - frust->dist;
+			if ( dist < -dl->radius && dist2 < -dl->radius )
+				return CULL_OUT;
+			else if ( dist <= dl->radius || dist2 <= dl->radius ) 
+				mightBeClipped = qtrue;
+		}
+	} 
+	else
+	// check against frustum planes
+	for ( i = 0 ; i < 4 ; i++ ) {
+		frust = &tr.viewParms.frustum[i];
+		dist = DotProduct( dl->transformed, frust->normal) - frust->dist;
+		if ( dist < -dl->radius )
+			return CULL_OUT;
+		else if ( dist <= dl->radius ) 
+			mightBeClipped = qtrue;
+	}
+
+	if ( mightBeClipped )
+		return CULL_CLIP;
+
+	return CULL_IN;	// completely inside frustum
+}
+
+
+/*
 =================
 R_LocalNormalToWorld
 
@@ -168,6 +211,7 @@ void R_LocalNormalToWorld (vec3_t local, vec3_t world) {
 	world[1] = local[0] * tr.or.axis[0][1] + local[1] * tr.or.axis[1][1] + local[2] * tr.or.axis[2][1];
 	world[2] = local[0] * tr.or.axis[0][2] + local[1] * tr.or.axis[1][2] + local[2] * tr.or.axis[2][2];
 }
+
 
 /*
 =================
@@ -180,6 +224,7 @@ void R_LocalPointToWorld (vec3_t local, vec3_t world) {
 	world[1] = local[0] * tr.or.axis[0][1] + local[1] * tr.or.axis[1][1] + local[2] * tr.or.axis[2][1] + tr.or.origin[1];
 	world[2] = local[0] * tr.or.axis[0][2] + local[1] * tr.or.axis[1][2] + local[2] * tr.or.axis[2][2] + tr.or.origin[2];
 }
+
 
 /*
 =================
@@ -442,6 +487,7 @@ static void R_SetFarClip( void )
 	tr.viewParms.zFar = sqrt( farthestCornerDistance );
 }
 
+
 /*
 =================
 R_SetupFrustum
@@ -505,6 +551,7 @@ void R_SetupFrustum (viewParms_t *dest, float xmin, float xmax, float ymax, floa
 	}
 }
 
+
 /*
 ===============
 R_SetupProjection
@@ -559,6 +606,7 @@ void R_SetupProjection(viewParms_t *dest, float zProj, qboolean computeFrustum)
 		R_SetupFrustum(dest, xmin, xmax, ymax, zProj, stereoSep);
 }
 
+
 /*
 ===============
 R_SetupProjectionZ
@@ -602,6 +650,7 @@ void R_MirrorPoint (vec3_t in, orientation_t *surface, orientation_t *camera, ve
 
 	VectorAdd( transformed, camera->origin, out );
 }
+
 
 void R_MirrorVector (vec3_t in, orientation_t *surface, orientation_t *camera, vec3_t out) {
 	int		i;
@@ -656,6 +705,7 @@ void R_PlaneForSurface (surfaceType_t *surfType, cplane_t *plane) {
 		return;
 	}
 }
+
 
 /*
 =================
