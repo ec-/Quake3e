@@ -46,22 +46,23 @@ void pw(winding_t *w)
 AllocWinding
 =============
 */
-winding_t	*AllocWinding (int points)
+winding_t *AllocWinding( int points )
 {
 	winding_t	*w;
-	int			s;
+	size_t		s;
 
 	c_winding_allocs++;
 	c_winding_points += points;
 	c_active_windings++;
-	if (c_active_windings > c_peak_windings)
+	if ( c_active_windings > c_peak_windings )
 		c_peak_windings = c_active_windings;
 
-	s = sizeof(vec_t)*3*points + sizeof(int);
-	w = Z_Malloc (s);
-	Com_Memset (w, 0, s); 
+	s = sizeof( int ) + sizeof( vec3_t ) * points;
+	w = Z_Malloc( s );
+	Com_Memset( w, 0, s );
 	return w;
 }
+
 
 void FreeWinding (winding_t *w)
 {
@@ -270,14 +271,14 @@ winding_t *BaseWindingForPlane (vec3_t normal, vec_t dist)
 CopyWinding
 ==================
 */
-winding_t	*CopyWinding (winding_t *w)
+winding_t *CopyWinding( const winding_t *w )
 {
-	intptr_t	size;
+	size_t		size;
 	winding_t	*c;
 
-	c = AllocWinding (w->numpoints);
-	size = (intptr_t) ((winding_t *)0)->p[w->numpoints];
-	Com_Memcpy (c, w, size);
+	c = AllocWinding( w->numpoints );
+	size = sizeof( int ) + w->numpoints * sizeof( vec3_t );
+	Com_Memcpy( c, w, size );
 	return c;
 }
 

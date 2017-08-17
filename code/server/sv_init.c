@@ -488,8 +488,8 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	Cvar_Set("cl_paused", "0");
 
 	// get a new checksum feed and restart the file system
-	srand(Com_Milliseconds());
-	sv.checksumFeed = ( ((int) rand() << 16) ^ rand() ) ^ Com_Milliseconds();
+	srand( Com_Milliseconds() );
+	Com_RandomBytes( (byte*)&sv.checksumFeed, sizeof( sv.checksumFeed ) );
 	FS_Restart( sv.checksumFeed );
 
 	Sys_SetStatus( "Loading map %s", mapname );

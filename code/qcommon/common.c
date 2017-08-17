@@ -3139,7 +3139,7 @@ void Com_Init( char *commandLine ) {
 		Sys_SetAffinityMask( com_affinityMask->integer );
 
 	// Pick a random port value
-	Com_RandomBytes( (byte*)&qport, sizeof(int) );
+	Com_RandomBytes( (byte*)&qport, sizeof( qport ) );
 	Netchan_Init( qport & 0xffff );
 
 	VM_Init();

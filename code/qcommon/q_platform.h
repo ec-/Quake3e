@@ -109,7 +109,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 //=============================================================== FreeBSD ===
 
-#ifdef __FreeBSD__ // rb010123
+#ifdef __FreeBSD__
 
 #include <sys/types.h>
 #include <machine/endian.h>
@@ -117,20 +117,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define OS_STRING "freebsd"
 #define ID_INLINE inline
 #define PATH_SEP '/'
-
-#ifdef __i386__
-#define ARCH_STRING "i386"
-#elif defined __axp__
-#define ARCH_STRING "alpha"
-#endif
-
-#if BYTE_ORDER == BIG_ENDIAN
-#define Q3_BIG_ENDIAN
-#else
-#define Q3_LITTLE_ENDIAN
-#endif
-
 #define DLL_EXT ".so"
+
+#if defined __i386__
+#define ARCH_STRING "i386"
+#define Q3_LITTLE_ENDIAN
+#undef id386
+#define id386 1
+#endif
+
+#if defined __x86_64__
+#define ARCH_STRING "x86_64"
+#define Q3_LITTLE_ENDIAN
+#undef idx64
+#define idx64 1
+#endif
 
 #endif
 

@@ -357,20 +357,25 @@ else # ifeq mingw32
 ifeq ($(PLATFORM),freebsd)
 
   BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
-                -I/usr/X11R6/include
-
-  ifneq ($(HAVE_VM_COMPILED),true)
-    BASE_CFLAGS += -DNO_VM_COMPILED
-  endif
+                -I/usr/X11R6/include -I/usr/local/include \
+                -fvisibility=hidden
 
   DEBUG_CFLAGS=$(BASE_CFLAGS) -g
 
-  ifeq ($(USE_CODEC_VORBIS),1)
-    BASE_CFLAGS += -DUSE_CODEC_VORBIS=1
+  ifeq ($(ARCH),x86_64)
+    RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O3 -ffast-math -funroll-loops \
+      -fomit-frame-pointer -fexpensive-optimizations
+  else
+  ifeq ($(ARCH),x86)
+    RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O3 -mtune=pentiumpro \
+      -march=pentium -fomit-frame-pointer -pipe -ffast-math \
+      -falign-loops=2 -falign-jumps=2 -falign-functions=2 \
+      -funroll-loops -fstrength-reduce
+  endif
   endif
 
-  ifeq ($(ARCH),x86)
-    RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O2 -march=i586 -mtune=i686
+  ifneq ($(HAVE_VM_COMPILED),true)
+    BASE_CFLAGS += -DNO_VM_COMPILED
   endif
 
   SHLIBEXT=so
@@ -379,13 +384,10 @@ ifeq ($(PLATFORM),freebsd)
 
   THREAD_LDFLAGS=-lpthread
   # don't need -ldl (FreeBSD)
-  LDFLAGS=-lm
+  LDFLAGS=-lm -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext -lXxf86vm -lXxf86dga
 
-  CLIENT_LDFLAGS =
+  CLIENT_LDFLAGS =-lm -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext -lXxf86vm -lXxf86dga
 
-  ifeq ($(USE_CODEC_VORBIS),1)
-    CLIENT_LDFLAGS += -lvorbisfile -lvorbis -logg
-  endif
 else # ifeq freebsd
 
 #############################################################################

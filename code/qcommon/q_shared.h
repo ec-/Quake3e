@@ -648,7 +648,7 @@ void	COM_StripExtension(const char *in, char *out, int destsize);
 qboolean COM_CompareExtension(const char *in, const char *ext);
 void	COM_DefaultExtension( char *path, int maxSize, const char *extension );
 
-long	Com_GenerateHashValue( const char *fname, const int size );
+unsigned long Com_GenerateHashValue( const char *fname, const unsigned int size );
 
 void	COM_BeginParseSession( const char *name );
 int		COM_GetCurrentParseLine( void );
