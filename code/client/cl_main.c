@@ -2800,11 +2800,6 @@ CL_Frame
 
 ==================
 */
-//#ifdef USE_PMLIGHT
-extern cvar_t *r_dlightSpecPower;
-extern cvar_t *r_dlightSpecColor;
-extern qboolean ARB_UpdatePrograms( void );
-//#endif
 void CL_Frame ( int msec ) {
 	float fps;
 	float frameDuration;
@@ -2945,13 +2940,7 @@ void CL_Frame ( int msec ) {
 	SCR_RunCinematic();
 
 	Con_RunConsole();
-//#ifdef USE_PMLIGHT
-	if ( r_dlightSpecPower->modified || r_dlightSpecColor->modified ) {
-		ARB_UpdatePrograms();
-		r_dlightSpecPower->modified = qfalse;
-		r_dlightSpecColor->modified = qfalse;
-	}
-//#endif
+
 	cls.framecount++;
 }
 
