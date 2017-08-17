@@ -98,17 +98,12 @@ cvar_t	*r_ext_texture_env_add;
 cvar_t	*r_ext_texture_filter_anisotropic;
 cvar_t	*r_ext_max_anisotropy;
 
-cvar_t  *r_ext_draw_range_elements;
-cvar_t  *r_ext_multi_draw_arrays;
 cvar_t  *r_ext_framebuffer_object;
 cvar_t  *r_ext_texture_float;
 cvar_t  *r_ext_framebuffer_multisample;
 cvar_t  *r_arb_seamless_cube_map;
 cvar_t  *r_arb_vertex_array_object;
 cvar_t  *r_ext_direct_state_access;
-
-cvar_t  *r_mergeMultidraws;
-cvar_t  *r_mergeLeafSurfaces;
 
 cvar_t  *r_cameraExposure;
 
@@ -238,8 +233,6 @@ cvar_t	*r_maxpolys;
 int		max_polys;
 cvar_t	*r_maxpolyverts;
 int		max_polyverts;
-
-cvar_t	*r_floatfix; // -EC-
 
 /*
 ** InitOpenGL
@@ -976,14 +969,11 @@ void GL_SetDefaultState( void )
 
 	qglCullFace(GL_FRONT);
 
-	qglColor4f (1,1,1,1);
-
 	GL_BindNullTextures();
 
 	if (glRefConfig.framebufferObject)
 		GL_BindNullFramebuffers();
 
-	qglEnable(GL_TEXTURE_2D);
 	GL_TextureMode( r_textureMode->string );
 
 	//qglShadeModel( GL_SMOOTH );
@@ -1066,8 +1056,22 @@ void GfxInfo_f( void )
 	ri.Printf( PRINT_ALL, "\nGL_VENDOR: %s\n", glConfig.vendor_string );
 	ri.Printf( PRINT_ALL, "GL_RENDERER: %s\n", glConfig.renderer_string );
 	ri.Printf( PRINT_ALL, "GL_VERSION: %s\n", glConfig.version_string );
-	ri.Printf( PRINT_DEVELOPER, "GL_EXTENSIONS: " );
-	R_PrintLongString( glConfig.extensions_string );
+	ri.Printf( PRINT_ALL, "GL_EXTENSIONS: " );
+	if (glRefConfig.openglMajorVersion >= 3)
+	{
+		GLint numExtensions;
+		int i;
+
+		qglGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
+		for (i = 0; i < numExtensions; i++)
+		{
+			ri.Printf(PRINT_ALL, "%s ", qglGetStringi(GL_EXTENSIONS, i));
+		}
+	}
+	else
+	{
+		R_PrintLongString( glConfig.extensions_string );
+	}
 	ri.Printf( PRINT_ALL, "\n" );
 	ri.Printf( PRINT_ALL, "GL_MAX_TEXTURE_SIZE: %d\n", glConfig.maxTextureSize );
 	ri.Printf( PRINT_ALL, "GL_MAX_TEXTURE_UNITS_ARB: %d\n", glConfig.numTextureUnits );
@@ -1093,7 +1097,6 @@ void GfxInfo_f( void )
 	ri.Printf( PRINT_ALL, "texturemode: %s\n", r_textureMode->string );
 	ri.Printf( PRINT_ALL, "picmip: %d\n", r_picmip->integer );
 	ri.Printf( PRINT_ALL, "texture bits: %d\n", r_texturebits->integer );
-	ri.Printf( PRINT_ALL, "multitexture: %s\n", enablestrings[qglActiveTextureARB != 0] );
 	ri.Printf( PRINT_ALL, "compiled vertex arrays: %s\n", enablestrings[qglLockArraysEXT != 0 ] );
 	ri.Printf( PRINT_ALL, "texenv add: %s\n", enablestrings[glConfig.textureEnvAddAvailable != 0] );
 	ri.Printf( PRINT_ALL, "compressed textures: %s\n", enablestrings[glConfig.textureCompression!=TC_NONE] );
@@ -1113,6 +1116,7 @@ void GfxInfo_f( void )
 		ri.Printf( PRINT_ALL, "Forcing glFinish\n" );
 	}
 }
+
 
 /*
 ================
@@ -1187,8 +1191,6 @@ void R_Register( void )
 	r_ext_compiled_vertex_array = ri.Cvar_Get( "r_ext_compiled_vertex_array", "1", CVAR_ARCHIVE | CVAR_LATCH);
 	r_ext_texture_env_add = ri.Cvar_Get( "r_ext_texture_env_add", "1", CVAR_ARCHIVE | CVAR_LATCH);
 
-	r_ext_draw_range_elements = ri.Cvar_Get( "r_ext_draw_range_elements", "1", CVAR_ARCHIVE | CVAR_LATCH);
-	r_ext_multi_draw_arrays = ri.Cvar_Get( "r_ext_multi_draw_arrays", "1", CVAR_ARCHIVE | CVAR_LATCH);
 	r_ext_framebuffer_object = ri.Cvar_Get( "r_ext_framebuffer_object", "1", CVAR_ARCHIVE | CVAR_LATCH);
 	r_ext_texture_float = ri.Cvar_Get( "r_ext_texture_float", "1", CVAR_ARCHIVE | CVAR_LATCH);
 	r_ext_framebuffer_multisample = ri.Cvar_Get( "r_ext_framebuffer_multisample", "0", CVAR_ARCHIVE | CVAR_LATCH);
@@ -1327,8 +1329,6 @@ void R_Register( void )
 	r_directedScale = ri.Cvar_Get( "r_directedScale", "1", CVAR_CHEAT );
 
 	r_anaglyphMode = ri.Cvar_Get("r_anaglyphMode", "0", CVAR_ARCHIVE);
-	r_mergeMultidraws = ri.Cvar_Get("r_mergeMultidraws", "1", CVAR_ARCHIVE);
-	r_mergeLeafSurfaces = ri.Cvar_Get("r_mergeLeafSurfaces", "1", CVAR_ARCHIVE);
 
 	//
 	// temporary variables that can change at any time
@@ -1381,8 +1381,6 @@ void R_Register( void )
 
 	r_maxpolys = ri.Cvar_Get( "r_maxpolys", va("%d", MAX_POLYS), 0);
 	r_maxpolyverts = ri.Cvar_Get( "r_maxpolyverts", va("%d", MAX_POLYVERTS), 0);
- 
-	r_floatfix = ri.Cvar_Get( "r_floatfix", "0", 0 ); // -EC-
 
 	// make sure all the commands added here are also
 	// removed in R_Shutdown

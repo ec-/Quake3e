@@ -12,7 +12,7 @@ attribute vec4 attr_Tangent;
 attribute vec3 attr_Position2;
 attribute vec3 attr_Normal2;
 attribute vec4 attr_Tangent2;
-  #endif
+#endif
 
 #if defined(USE_LIGHT) && !defined(USE_LIGHT_VECTOR)
 attribute vec3 attr_LightDirection;

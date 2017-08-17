@@ -200,7 +200,7 @@ RE_AddRefEntityToScene
 
 =====================
 */
-void RE_AddRefEntityToScene( const refEntity_t *ent ) {
+void RE_AddRefEntityToScene( const refEntity_t *ent, qboolean intShaderTime ) {
 	vec3_t cross;
 
 	if ( !tr.registered ) {
@@ -224,6 +224,7 @@ void RE_AddRefEntityToScene( const refEntity_t *ent ) {
 
 	backEndData->entities[r_numentities].e = *ent;
 	backEndData->entities[r_numentities].lightingCalculated = qfalse;
+	backEndData->entities[r_numentities].intShaderTime = intShaderTime;
 
 	CrossProduct(ent->axis[0], ent->axis[1], cross);
 	backEndData->entities[r_numentities].mirrored = (DotProduct(ent->axis[2], cross) < 0.f);
@@ -491,7 +492,7 @@ void RE_RenderScene( const refdef_t *fd ) {
 	// playing with even more shadows
 	if(glRefConfig.framebufferObject && r_sunlightMode->integer && !( fd->rdflags & RDF_NOWORLDMODEL ) && (r_forceSun->integer || tr.sunShadows))
 	{
-		if (r_shadowCascadeZFar != 0)
+		if (r_shadowCascadeZFar->integer != 0)
 		{
 			R_RenderSunShadowMaps(fd, 0);
 			R_RenderSunShadowMaps(fd, 1);

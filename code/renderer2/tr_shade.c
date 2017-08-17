@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // tr_shade.c
 
 #include "tr_local.h" 
-#if idppc_altivec && !defined(MACOS_X)
+#if idppc_altivec && !defined(__APPLE__)
 #include <altivec.h>
 #endif
 
@@ -41,42 +41,9 @@ R_DrawElements
 ==================
 */
 
-void R_DrawElementsVao( int numIndexes, glIndex_t firstIndex, glIndex_t minIndex, glIndex_t maxIndex )
+void R_DrawElements( int numIndexes, glIndex_t firstIndex)
 {
-	if (glRefConfig.drawRangeElements)
-		qglDrawRangeElements(GL_TRIANGLES, minIndex, maxIndex, numIndexes, GL_INDEX_TYPE, BUFFER_OFFSET(firstIndex * sizeof(glIndex_t)));
-	else
-		qglDrawElements(GL_TRIANGLES, numIndexes, GL_INDEX_TYPE, BUFFER_OFFSET(firstIndex * sizeof(glIndex_t)));
-	
-}
-
-
-static void R_DrawMultiElementsVao( int multiDrawPrimitives, glIndex_t *multiDrawMinIndex, glIndex_t *multiDrawMaxIndex, 
-	GLsizei *multiDrawNumIndexes, glIndex_t **multiDrawFirstIndex)
-{
-	if (glRefConfig.multiDrawArrays && multiDrawPrimitives > 1)
-	{
-		qglMultiDrawElements(GL_TRIANGLES, multiDrawNumIndexes, GL_INDEX_TYPE, (const GLvoid **)multiDrawFirstIndex, multiDrawPrimitives);
-	}
-	else
-	{
-		int i;
-
-		if (glRefConfig.drawRangeElements)
-		{
-			for (i = 0; i < multiDrawPrimitives; i++)
-			{
-				qglDrawRangeElements(GL_TRIANGLES, multiDrawMinIndex[i], multiDrawMaxIndex[i], multiDrawNumIndexes[i], GL_INDEX_TYPE, multiDrawFirstIndex[i]);
-			}
-		}
-		else
-		{
-			for (i = 0; i < multiDrawPrimitives; i++)
-			{
-				qglDrawElements(GL_TRIANGLES, multiDrawNumIndexes[i], GL_INDEX_TYPE, multiDrawFirstIndex[i]);
-			}
-		}
-	}
+	qglDrawElements(GL_TRIANGLES, numIndexes, GL_INDEX_TYPE, BUFFER_OFFSET(firstIndex * sizeof(glIndex_t)));
 }
 
 
@@ -151,15 +118,9 @@ static void DrawTris (shaderCommands_t *input) {
 		GLSL_SetUniformMat4(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
 		VectorSet4(color, 1, 1, 1, 1);
 		GLSL_SetUniformVec4(sp, UNIFORM_COLOR, color);
+		GLSL_SetUniformInt(sp, UNIFORM_ALPHATEST, 0);
 
-		if (input->multiDrawPrimitives)
-		{
-			R_DrawMultiElementsVao(input->multiDrawPrimitives, input->multiDrawMinIndex, input->multiDrawMaxIndex, input->multiDrawNumIndexes, input->multiDrawFirstIndex);
-		}
-		else
-		{
-			R_DrawElementsVao(input->numIndexes, input->firstIndex, input->minIndex, input->maxIndex);
-		}
+		R_DrawElements(input->numIndexes, input->firstIndex);
 	}
 
 	qglDepthRange( 0, 1 );
@@ -193,7 +154,6 @@ void RB_BeginSurface( shader_t *shader, int fogNum, int cubemapIndex ) {
 	tess.numIndexes = 0;
 	tess.firstIndex = 0;
 	tess.numVertexes = 0;
-	tess.multiDrawPrimitives = 0;
 	tess.shader = state;
 	tess.fogNum = fogNum;
 	tess.cubemapIndex = cubemapIndex;
@@ -203,6 +163,7 @@ void RB_BeginSurface( shader_t *shader, int fogNum, int cubemapIndex ) {
 	tess.numPasses = state->numUnfoggedPasses;
 	tess.currentStageIteratorFunc = state->optimalStageIteratorFunc;
 	tess.useInternalVao = qtrue;
+	tess.useCacheVao = qfalse;
 
 	tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
 	if (tess.shader->clampTime && tess.shaderTime >= tess.shader->clampTime) {
@@ -426,15 +387,9 @@ static void ProjectDlightTexture( void ) {
 			GL_State( GLS_ATEST_GT_0 | GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
 		}
 
-		if (tess.multiDrawPrimitives)
-		{
-			shaderCommands_t *input = &tess;
-			R_DrawMultiElementsVao(input->multiDrawPrimitives, input->multiDrawMinIndex, input->multiDrawMaxIndex, input->multiDrawNumIndexes, input->multiDrawFirstIndex);
-		}
-		else
-		{
-			R_DrawElementsVao(tess.numIndexes, tess.firstIndex, tess.minIndex, tess.maxIndex);
-		}
+		GLSL_SetUniformInt(sp, UNIFORM_ALPHATEST, 1);
+
+		R_DrawElements(tess.numIndexes, tess.firstIndex);
 
 		backEnd.pc.c_totalIndexes += tess.numIndexes;
 		backEnd.pc.c_dlightIndexes += tess.numIndexes;
@@ -491,14 +446,14 @@ static void ComputeShaderColors( shaderStage_t *pStage, vec4_t baseColor, vec4_t
 			break;
 		case CGEN_VERTEX:
 		case CGEN_VERTEX_LIT:
-			baseColor[0] = 
+			baseColor[0] =
 			baseColor[1] =
-			baseColor[2] = 
+			baseColor[2] =
 			baseColor[3] = 0.0f;
 
 			vertColor[0] =
 			vertColor[1] =
-			vertColor[2] = 
+			vertColor[2] =
 			vertColor[3] = 1.0f;
 			break;
 		case CGEN_ONE_MINUS_VERTEX:
@@ -511,12 +466,12 @@ static void ComputeShaderColors( shaderStage_t *pStage, vec4_t baseColor, vec4_t
 			vertColor[2] = -1.0f;
 			break;
 		case CGEN_FOG:
-				fog = tr.world->fogs + tess.fogNum;
+			fog = tr.world->fogs + tess.fogNum;
 
-				baseColor[0] = ((unsigned char *)(&fog->colorInt))[0] / 255.0f;
-				baseColor[1] = ((unsigned char *)(&fog->colorInt))[1] / 255.0f;
-				baseColor[2] = ((unsigned char *)(&fog->colorInt))[2] / 255.0f;
-				baseColor[3] = ((unsigned char *)(&fog->colorInt))[3] / 255.0f;
+			baseColor[0] = ((unsigned char *)(&fog->colorInt))[0] / 255.0f;
+			baseColor[1] = ((unsigned char *)(&fog->colorInt))[1] / 255.0f;
+			baseColor[2] = ((unsigned char *)(&fog->colorInt))[2] / 255.0f;
+			baseColor[3] = ((unsigned char *)(&fog->colorInt))[3] / 255.0f;
 			break;
 		case CGEN_WAVEFORM:
 			baseColor[0] = 
@@ -797,6 +752,7 @@ static void ForwardDlight( void ) {
 		// include GLS_DEPTHFUNC_EQUAL so alpha tested surfaces don't add light
 		// where they aren't rendered
 		GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
+		GLSL_SetUniformInt(sp, UNIFORM_ALPHATEST, 0);
 
 		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
 
@@ -847,14 +803,7 @@ static void ForwardDlight( void ) {
 		// draw
 		//
 
-		if (input->multiDrawPrimitives)
-		{
-			R_DrawMultiElementsVao(input->multiDrawPrimitives, input->multiDrawMinIndex, input->multiDrawMaxIndex, input->multiDrawNumIndexes, input->multiDrawFirstIndex);
-		}
-		else
-		{
-			R_DrawElementsVao(input->numIndexes, input->firstIndex, input->minIndex, input->maxIndex);
-		}
+		R_DrawElements(input->numIndexes, input->firstIndex);
 
 		backEnd.pc.c_totalIndexes += tess.numIndexes;
 		backEnd.pc.c_dlightIndexes += tess.numIndexes;
@@ -916,6 +865,7 @@ static void ProjectPshadowVBOGLSL( void ) {
 		// include GLS_DEPTHFUNC_EQUAL so alpha tested surfaces don't add light
 		// where they aren't rendered
 		GL_State( GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_DEPTHFUNC_EQUAL );
+		GLSL_SetUniformInt(sp, UNIFORM_ALPHATEST, 0);
 
 		GL_BindToTMU( tr.pshadowMaps[l], TB_DIFFUSEMAP );
 
@@ -923,14 +873,7 @@ static void ProjectPshadowVBOGLSL( void ) {
 		// draw
 		//
 
-		if (input->multiDrawPrimitives)
-		{
-			R_DrawMultiElementsVao(input->multiDrawPrimitives, input->multiDrawMinIndex, input->multiDrawMaxIndex, input->multiDrawNumIndexes, input->multiDrawFirstIndex);
-		}
-		else
-		{
-			R_DrawElementsVao(input->numIndexes, input->firstIndex, input->minIndex, input->maxIndex);
-		}
+		R_DrawElements(input->numIndexes, input->firstIndex);
 
 		backEnd.pc.c_totalIndexes += tess.numIndexes;
 		//backEnd.pc.c_dlightIndexes += tess.numIndexes;
@@ -1004,16 +947,9 @@ static void RB_FogPass( void ) {
 	} else {
 		GL_State( GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA );
 	}
+	GLSL_SetUniformInt(sp, UNIFORM_ALPHATEST, 0);
 
-	if (tess.multiDrawPrimitives)
-	{
-		shaderCommands_t *input = &tess;
-		R_DrawMultiElementsVao(input->multiDrawPrimitives, input->multiDrawMinIndex, input->multiDrawMaxIndex, input->multiDrawNumIndexes, input->multiDrawFirstIndex);
-	}
-	else
-	{
-		R_DrawElementsVao(tess.numIndexes, tess.firstIndex, tess.minIndex, tess.maxIndex);
-	}
+	R_DrawElements(tess.numIndexes, tess.firstIndex);
 }
 
 
@@ -1154,6 +1090,23 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 		}
 
 		GL_State( pStage->stateBits );
+		if ((pStage->stateBits & GLS_ATEST_BITS) == GLS_ATEST_GT_0)
+		{
+			GLSL_SetUniformInt(sp, UNIFORM_ALPHATEST, 1);
+		}
+		else if ((pStage->stateBits & GLS_ATEST_BITS) == GLS_ATEST_LT_80)
+		{
+			GLSL_SetUniformInt(sp, UNIFORM_ALPHATEST, 2);
+		}
+		else if ((pStage->stateBits & GLS_ATEST_BITS) == GLS_ATEST_GE_80)
+		{
+			GLSL_SetUniformInt(sp, UNIFORM_ALPHATEST, 3);
+		}
+		else
+		{
+			GLSL_SetUniformInt(sp, UNIFORM_ALPHATEST, 0);
+		}
+
 
 		{
 			vec4_t baseColor;
@@ -1267,7 +1220,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 			{
 				// FIXME: screenShadowImage is NULL if no framebuffers
 				if (tr.screenShadowImage)
-				GL_BindToTMU(tr.screenShadowImage, TB_SHADOWMAP);
+					GL_BindToTMU(tr.screenShadowImage, TB_SHADOWMAP);
 				GLSL_SetUniformVec3(sp, UNIFORM_PRIMARYLIGHTAMBIENT, backEnd.refdef.sunAmbCol);
 				if (r_pbr->integer)
 				{
@@ -1381,7 +1334,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 
 			// FIXME: cubemap image could be NULL if cubemap isn't renderer or loaded
 			if (cubemap->image)
-			GL_BindToTMU( cubemap->image, TB_CUBEMAP);
+				GL_BindToTMU( cubemap->image, TB_CUBEMAP);
 
 			VectorSubtract(cubemap->origin, backEnd.viewParms.or.origin, vec);
 			vec[3] = 1.0f;
@@ -1394,14 +1347,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 		//
 		// draw
 		//
-		if (input->multiDrawPrimitives)
-		{
-			R_DrawMultiElementsVao(input->multiDrawPrimitives, input->multiDrawMinIndex, input->multiDrawMaxIndex, input->multiDrawNumIndexes, input->multiDrawFirstIndex);
-		}
-		else
-		{
-			R_DrawElementsVao(input->numIndexes, input->firstIndex, input->minIndex, input->maxIndex);
-		}
+		R_DrawElements(input->numIndexes, input->firstIndex);
 
 		// allow skipping out to show just lightmaps during development
 		if ( r_lightmap->integer && ( pStage->bundle[0].isLightmap || pStage->bundle[1].isLightmap ) )
@@ -1448,6 +1394,7 @@ static void RB_RenderShadowmap( shaderCommands_t *input )
 		GLSL_SetUniformFloat(sp, UNIFORM_LIGHTRADIUS, backEnd.viewParms.zFar);
 
 		GL_State( 0 );
+		GLSL_SetUniformInt(sp, UNIFORM_ALPHATEST, 0);
 
 		//
 		// do multitexture
@@ -1458,14 +1405,7 @@ static void RB_RenderShadowmap( shaderCommands_t *input )
 			// draw
 			//
 
-			if (input->multiDrawPrimitives)
-			{
-				R_DrawMultiElementsVao(input->multiDrawPrimitives, input->multiDrawMinIndex, input->multiDrawMaxIndex, input->multiDrawNumIndexes, input->multiDrawFirstIndex);
-			}
-			else
-			{
-				R_DrawElementsVao(input->numIndexes, input->firstIndex, input->minIndex, input->maxIndex);
-			}
+			R_DrawElements(input->numIndexes, input->firstIndex);
 		}
 	}
 }
@@ -1648,6 +1588,12 @@ void RB_EndSurface( void ) {
 		return;
 	}
 
+	if (tess.useCacheVao)
+	{
+		// upload indexes now
+		VaoCache_Commit();
+	}
+
 	//
 	// update performance counters
 	//
@@ -1674,7 +1620,6 @@ void RB_EndSurface( void ) {
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
 	tess.firstIndex = 0;
-	tess.multiDrawPrimitives = 0;
 
 //	GLimp_LogComment( "----------\n" );
 }

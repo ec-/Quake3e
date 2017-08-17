@@ -123,7 +123,7 @@ vec_t R_CalcTangentSpace(vec3_t tangent, vec3_t bitangent, const vec3_t normal, 
 
 	// Calculate orthogonal bitangent, if necessary
 	if (bitangent)
-	CrossProduct(normal, tangent, bitangent);
+		CrossProduct(normal, tangent, bitangent);
 
 	return handedness;
 }
@@ -2098,7 +2098,7 @@ void R_RenderPshadowMaps(const refdef_t *fd)
 		if (glRefConfig.framebufferObject)
 			shadowParms.targetFbo = tr.pshadowFbos[i];
 
-		shadowParms.flags = VPF_SHADOWMAP | VPF_DEPTHSHADOW | VPF_NOVIEWMODEL;
+		shadowParms.flags = VPF_DEPTHSHADOW | VPF_NOVIEWMODEL;
 		shadowParms.zFar = shadow->lightRadius;
 
 		VectorCopy(shadow->lightOrigin, shadowParms.or.origin);

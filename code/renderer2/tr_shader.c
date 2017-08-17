@@ -744,6 +744,8 @@ static qboolean ParseStage( shaderStage_t *stage, char **text )
 		//
 		else if ( !Q_stricmp( token, "animMap" ) )
 		{
+			int	totalImages = 0;
+
 			token = COM_ParseExt( text, qfalse );
 			if ( !token[0] )
 			{
@@ -778,6 +780,12 @@ static qboolean ParseStage( shaderStage_t *stage, char **text )
 					}
 					stage->bundle[0].numImageAnimations++;
 				}
+				totalImages++;
+			}
+
+			if ( totalImages > MAX_IMAGE_ANIMATIONS ) {
+				ri.Printf( PRINT_WARNING, "WARNING: ignoring excess images for 'animMap' (found %d, max is %d) in shader '%s'\n",
+						totalImages, MAX_IMAGE_ANIMATIONS, shader.name );
 			}
 		}
 		else if ( !Q_stricmp( token, "videoMap" ) )
@@ -792,6 +800,8 @@ static qboolean ParseStage( shaderStage_t *stage, char **text )
 			if (stage->bundle[0].videoMapHandle != -1) {
 				stage->bundle[0].isVideoMap = qtrue;
 				stage->bundle[0].image[0] = tr.scratchImage[stage->bundle[0].videoMapHandle];
+			} else {
+				ri.Printf( PRINT_WARNING, "WARNING: could not load '%s' for 'videoMap' keyword in shader '%s'\n", token, shader.name );
 			}
 		}
 		//
@@ -1832,7 +1842,7 @@ static qboolean ParseShader( char **text )
 				// parse twice, since older shaders may include mapLightScale before sunShadowScale
 				token = COM_ParseExt( text, qfalse );
 				if (token[0])
-				tr.sunShadowScale = atof(token);
+					tr.sunShadowScale = atof(token);
 			}
 
 			SkipRestOfLine( text );
@@ -2245,7 +2255,7 @@ static void CollapseStagesToLightall(shaderStage_t *diffuse,
 		{
 			char normalName[MAX_QPATH];
 			image_t *normalImg;
-			imgFlags_t normalFlags = (diffuseImg->flags & ~(IMGFLAG_GENNORMALMAP | IMGFLAG_SRGB)) | IMGFLAG_NOLIGHTSCALE;
+			imgFlags_t normalFlags = (diffuseImg->flags & ~IMGFLAG_GENNORMALMAP) | IMGFLAG_NOLIGHTSCALE;
 
 			// try a normalheight image first
 			COM_StripExtension(diffuseImg->imgName, normalName, MAX_QPATH);
@@ -2261,7 +2271,7 @@ static void CollapseStagesToLightall(shaderStage_t *diffuse,
 			{
 				// try a normal image ("_n" suffix)
 				normalName[strlen(normalName) - 1] = '\0';
-			normalImg = R_FindImageFile(normalName, IMGTYPE_NORMAL, normalFlags);
+				normalImg = R_FindImageFile(normalName, IMGTYPE_NORMAL, normalFlags);
 			}
 
 			if (normalImg)
@@ -2291,7 +2301,7 @@ static void CollapseStagesToLightall(shaderStage_t *diffuse,
 		{
 			char specularName[MAX_QPATH];
 			image_t *specularImg;
-			imgFlags_t specularFlags = (diffuseImg->flags & ~(IMGFLAG_GENNORMALMAP | IMGFLAG_SRGB)) | IMGFLAG_NOLIGHTSCALE;
+			imgFlags_t specularFlags = (diffuseImg->flags & ~IMGFLAG_GENNORMALMAP) | IMGFLAG_NOLIGHTSCALE;
 
 			COM_StripExtension(diffuseImg->imgName, specularName, MAX_QPATH);
 			Q_strcat(specularName, MAX_QPATH, "_s");
@@ -3096,9 +3106,7 @@ static shader_t *FinishShader( void ) {
 	//
 	// look for multitexture potential
 	//
-	if ( qglActiveTextureARB ) {
-		stage = CollapseStagesToGLSL();
-	}
+	stage = CollapseStagesToGLSL();
 
 	if ( shader.lightmapIndex >= 0 && !hasLightmapStage ) {
 		if (vertexLightmap) {
@@ -3663,16 +3671,6 @@ void	R_ShaderList_f (void) {
 	ri.Printf (PRINT_ALL, "------------------\n");
 }
 
-
-static char *stradd( char *dst, const char *src ) 
-{
-	char c;
-	while ( (c = *src++) != '\0' ) 
-		*dst++ = c;
-	*dst = '\0';
-	return dst;
-}
-
 /*
 ====================
 ScanAndLoadShaderFiles
@@ -3787,8 +3785,8 @@ static void ScanAndLoadShaderFiles( void )
 	{
 		if ( buffers[ i ] ) 
 		{
-			textEnd = stradd( textEnd, buffers[ i ] );
-			textEnd = stradd( textEnd, "\n" );
+			textEnd = Q_stradd( textEnd, buffers[ i ] );
+			textEnd = Q_stradd( textEnd, "\n" );
 			ri.FS_FreeFile( buffers[ i ] );
 		}
 	}

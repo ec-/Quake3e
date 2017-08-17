@@ -309,6 +309,7 @@ R_BloomScreen
 */
 void R_BloomScreen( void )
 {
+#ifdef USE_PMLIGHT
 	if ( r_bloom->integer == 2 && fboAvailable ) 
 	{
 		if ( !backEnd.doneBloom2fbo && backEnd.doneSurfaces )
@@ -320,7 +321,7 @@ void R_BloomScreen( void )
 		}
 		return;
 	}
-
+#endif
 	if ( r_bloom->integer != 1 )
 		return;
 	if ( backEnd.doneBloom )

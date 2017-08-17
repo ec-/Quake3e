@@ -99,7 +99,6 @@ void R_DlightBmodel( bmodel_t *bmodel ) {
 			case SF_FACE:
 			case SF_GRID:
 			case SF_TRIANGLES:
-			case SF_VAO_MESH:
 				((srfBspSurface_t *)surf->data)->dlightBits = mask;
 				break;
 
@@ -403,7 +402,7 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 			ent->ambientLight[0] *= max;
 			ent->ambientLight[1] *= max;
 			ent->ambientLight[2] *= max;
-			}
+		}
 
 		r = ent->directedLight[0];
 		g = ent->directedLight[1];
