@@ -1624,7 +1624,7 @@ void GLimp_Init( void )
 	qglClearColor( 0.0, 0.0, 0.0, 1.0 );
 	qglClear( GL_COLOR_BUFFER_BIT );
 
-	GLimp_SwapBuffers();
+	//GLimp_SwapBuffers();
 }
 
 

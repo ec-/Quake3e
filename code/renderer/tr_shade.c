@@ -417,7 +417,6 @@ static void ProjectDlightTexture_scalar( void ) {
 	int		numIndexes;
 	float	scale;
 	float	radius;
-	vec3_t	floatColor;
 	float	modulate = 0.0f;
 	dlight_t *dl;
 
@@ -437,30 +436,7 @@ static void ProjectDlightTexture_scalar( void ) {
 		VectorCopy( dl->transformed, origin );
 		radius = dl->radius;
 		scale = 1.0f / radius;
-
-		if( r_greyscale->integer )
-		{
-			float luminance;
-
-			luminance = LUMA( dl->color[0], dl->color[1], dl->color[2] );
-			floatColor[0] = floatColor[1] = floatColor[2] = luminance;
-		}
-		else if( r_greyscale->value )
-		{
-			float luminance;
-			
-			luminance = LUMA( dl->color[0], dl->color[1], dl->color[2] );
-			floatColor[0] = LERP( dl->color[0], luminance, r_greyscale->value );
-			floatColor[1] = LERP( dl->color[1], luminance, r_greyscale->value );
-			floatColor[2] = LERP( dl->color[2], luminance, r_greyscale->value );
-		}
-		else
-		{
-			floatColor[0] = dl->color[0];
-			floatColor[1] = dl->color[1];
-			floatColor[2] = dl->color[2];
-		}
-		
+	
 		for ( i = 0 ; i < tess.numVertexes ; i++, texCoords += 2, colors += 4 ) {
 			int		clip = 0;
 			vec3_t	dist;
@@ -508,9 +484,9 @@ static void ProjectDlightTexture_scalar( void ) {
 				}
 			}
 			clipBits[i] = clip;
-			colors[0] = floatColor[0] * modulate;
-			colors[1] = floatColor[1] * modulate;
-			colors[2] = floatColor[2] * modulate;
+			colors[0] = dl->color[0] * modulate;
+			colors[1] = dl->color[1] * modulate;
+			colors[2] = dl->color[2] * modulate;
 			colors[3] = 1.0f;
 		}
 
@@ -793,30 +769,8 @@ static void ComputeColors( shaderStage_t *pStage )
 			break;
 		}
 	}
-	
-	// if in greyscale rendering mode turn all color values into greyscale.
-	if(r_greyscale->integer)
-	{
-		int scale;
-		for(i = 0; i < tess.numVertexes; i++)
-		{
-			scale = LUMA(tess.svars.colors[i][0], tess.svars.colors[i][1], tess.svars.colors[i][2]);
- 			tess.svars.colors[i][0] = tess.svars.colors[i][1] = tess.svars.colors[i][2] = scale;
-		}
-	}
-	else if(r_greyscale->value)
-	{
-		float scale;
-		
-		for(i = 0; i < tess.numVertexes; i++)
-		{
-			scale = LUMA(tess.svars.colors[i][0], tess.svars.colors[i][1], tess.svars.colors[i][2]);
-			tess.svars.colors[i][0] = LERP(tess.svars.colors[i][0], scale, r_greyscale->value);
-			tess.svars.colors[i][1] = LERP(tess.svars.colors[i][1], scale, r_greyscale->value);
-			tess.svars.colors[i][2] = LERP(tess.svars.colors[i][2], scale, r_greyscale->value);
-		}
-	}
 }
+
 
 /*
 ===============

@@ -278,13 +278,6 @@ void ARB_SetupLightParams( void )
 		VectorCopy( dl->color, lightRGB );
 
 	radius = dl->radius * r_dlightScale->value;
-	if ( r_greyscale->value > 0 ) {
-		float luminance;
-		luminance = LUMA( lightRGB[0], lightRGB[1], lightRGB[2] );
-		lightRGB[0] = LERP( lightRGB[0], luminance, r_greyscale->value );
-		lightRGB[1] = LERP( lightRGB[1], luminance, r_greyscale->value );
-		lightRGB[2] = LERP( lightRGB[2], luminance, r_greyscale->value );
-	}
 
 	qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, lightRGB[0], lightRGB[1], lightRGB[2], 1.0f );
 	qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 1, 1.0f / Square( radius ), 0, 0, 0 );
@@ -595,6 +588,27 @@ static const char *spriteFP = {
 	"END \n" 
 };
 
+
+static char *ARB_BuildGreyscaleProgram( void ) {
+	static char buf[128], *s;
+
+	if ( r_greyscale->value == 0 )
+		return "";
+	
+	s = Q_stradd( buf, "PARAM sRGB = { 0.2126, 0.7152, 0.0722, 1.0 }; \n" );
+
+	if ( r_greyscale->value == 1.0 ) {
+		Q_stradd( s, "DP3 base.xyz, base, sRGB; \n"  );
+	} else {
+		s = Q_stradd( s, "TEMP luma; \n" );
+		s = Q_stradd( s, "DP3 luma, base, sRGB; \n" );
+		s += sprintf( s, "LRP base.xyz, %1.2f, luma, base; \n", r_greyscale->value );
+	}
+
+	return buf;
+}
+
+
 static const char *gammaFP = {
 	"!!ARBfp1.0 \n"
 	"OPTION ARB_precision_hint_fastest; \n"
@@ -605,6 +619,7 @@ static const char *gammaFP = {
 	"POW base.y, base.y, gamma.y; \n"
 	"POW base.z, base.z, gamma.z; \n"
 	"MUL base.xyz, base, gamma.w; \n"
+	"%s" // for greyscale shader if needed
 	"MOV base.w, 1.0; \n"
 	"MOV result.color, base; \n"
 	"END \n" 
@@ -721,6 +736,7 @@ static const char *blend2gammaFP = {
 	"POW base.y, base.y, gamma.y; \n"
 	"POW base.z, base.z, gamma.z; \n"
 	"MUL base.xyz, base, gamma.w; \n"
+	"%s" // for greyscale shader if needed
 	"MOV base.w, 1.0; \n"
 	"MOV result.color, base; \n"
 	"END \n" 
@@ -865,7 +881,7 @@ qboolean ARB_UpdatePrograms( void )
 	if ( !ARB_CompileProgram( Fragment, spriteFP, programs[ SPRITE_FRAGMENT ] ) )
 		return qfalse;
 
-	if ( !ARB_CompileProgram( Fragment, gammaFP, programs[ GAMMA_FRAGMENT ] ) )
+	if ( !ARB_CompileProgram( Fragment, va( gammaFP, ARB_BuildGreyscaleProgram() ), programs[ GAMMA_FRAGMENT ] ) )
 		return qfalse;
 
 	if ( !ARB_CompileProgram( Fragment, bloomFP, programs[ BLOOM_FRAGMENT ] ) )
@@ -880,7 +896,7 @@ qboolean ARB_UpdatePrograms( void )
 	if ( !ARB_CompileProgram( Fragment, blend2FP, programs[ BLEND2_FRAGMENT ] ) )
 		return qfalse;
 
-	if ( !ARB_CompileProgram( Fragment, blend2gammaFP, programs[ BLEND2_GAMMA_FRAGMENT ] ) )
+	if ( !ARB_CompileProgram( Fragment, va( blend2gammaFP, ARB_BuildGreyscaleProgram() ), programs[ BLEND2_GAMMA_FRAGMENT ] ) )
 		return qfalse;
 
 	programCompiled = 1;
@@ -1559,11 +1575,15 @@ void QGL_InitARB( void )
 		{
 			ri.Printf( PRINT_ALL, "...using FBO\n" );
 		}
-
-		return; // success
+	}
+	else
+	{
+		QGL_DoneARB();
 	}
 
-	QGL_DoneARB();
+	r_dlightSpecPower->modified = qfalse;
+	r_dlightSpecColor->modified = qfalse;
+	r_greyscale->modified = qfalse;
 }
 
 

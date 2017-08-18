@@ -977,8 +977,8 @@ void R_Register( void )
 	r_subdivisions = ri.Cvar_Get ("r_subdivisions", "4", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_stereoEnabled = ri.Cvar_Get( "r_stereoEnabled", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_ignoreFastPath = ri.Cvar_Get( "r_ignoreFastPath", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	r_greyscale = ri.Cvar_Get( "r_greyscale", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	ri.Cvar_CheckRange( r_greyscale, 0, 1, qfalse );
+	r_greyscale = ri.Cvar_Get( "r_greyscale", "0", CVAR_ARCHIVE_ND );
+	ri.Cvar_CheckRange( r_greyscale, -1, 1, qfalse );
 	r_mapGrayScale = ri.Cvar_Get( "r_mapGrayScale", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_mapGrayScale, 0, 1, qfalse );
 
@@ -1225,7 +1225,6 @@ void RE_Shutdown( qboolean destroyWindow ) {
 	ri.Cmd_RemoveCommand ("gfxinfo");
 	ri.Cmd_RemoveCommand( "modelist" );
 	ri.Cmd_RemoveCommand( "shaderstate" );
-
 
 	if ( tr.registered ) {
 		R_IssuePendingRenderCommands();

@@ -505,10 +505,11 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 
 #ifdef USE_PMLIGHT
 	// recompile GPU shaders if needed
-	if ( r_dlightSpecPower->modified || r_dlightSpecColor->modified ) {
+	if ( r_dlightSpecPower->modified || r_dlightSpecColor->modified || r_greyscale->modified ) {
 		ARB_UpdatePrograms();
 		r_dlightSpecPower->modified = qfalse;
 		r_dlightSpecColor->modified = qfalse;
+		r_greyscale->modified = qfalse;
 	}
 #endif
 }

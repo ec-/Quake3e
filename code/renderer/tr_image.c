@@ -616,33 +616,9 @@ static void Upload32( unsigned *data,
 	scan = ((byte *)data);
 	samples = 3;
 
-	if( r_greyscale->integer )
-	{
-		for ( i = 0; i < c; i++ )
-		{
-			byte luma = LUMA(scan[i*4], scan[i*4 + 1], scan[i*4 + 2]);
-			scan[i*4] = luma;
-			scan[i*4 + 1] = luma;
-			scan[i*4 + 2] = luma;
-		}
-	}
-	else if( r_greyscale->value )
-	{
-		for ( i = 0; i < c; i++ )
-		{
-			float luma = LUMA(scan[i*4], scan[i*4 + 1], scan[i*4 + 2]);
-			scan[i*4] = LERP(scan[i*4], luma, r_greyscale->value);
-			scan[i*4 + 1] = LERP(scan[i*4 + 1], luma, r_greyscale->value);
-			scan[i*4 + 2] = LERP(scan[i*4 + 2], luma, r_greyscale->value);
-		}
-	}
-
 	if(lightMap)
 	{
-		if(r_greyscale->integer)
-			internalFormat = GL_LUMINANCE;
-		else
-			internalFormat = GL_RGB;
+		internalFormat = GL_RGB;
 	}
 	else
 	{
@@ -669,64 +645,40 @@ static void Upload32( unsigned *data,
 		// select proper internal format
 		if ( samples == 3 )
 		{
-			if(r_greyscale->integer)
+			if ( allowCompression && glConfig.textureCompression == TC_S3TC_ARB )
 			{
-				if(r_texturebits->integer == 16)
-					internalFormat = GL_LUMINANCE8;
-				else if(r_texturebits->integer == 32)
-					internalFormat = GL_LUMINANCE16;
-				else
-					internalFormat = GL_LUMINANCE;
+				internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+			}
+			else if ( allowCompression && glConfig.textureCompression == TC_S3TC )
+			{
+				internalFormat = GL_RGB4_S3TC;
+			}
+			else if ( r_texturebits->integer == 16 )
+			{
+				internalFormat = GL_RGB5;
+			}
+			else if ( r_texturebits->integer == 32 )
+			{
+				internalFormat = GL_RGB8;
 			}
 			else
 			{
-				if ( allowCompression && glConfig.textureCompression == TC_S3TC_ARB )
-				{
-					internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-				}
-				else if ( allowCompression && glConfig.textureCompression == TC_S3TC )
-				{
-					internalFormat = GL_RGB4_S3TC;
-				}
-				else if ( r_texturebits->integer == 16 )
-				{
-					internalFormat = GL_RGB5;
-				}
-				else if ( r_texturebits->integer == 32 )
-				{
-					internalFormat = GL_RGB8;
-				}
-				else
-				{
-					internalFormat = GL_RGB;
-				}
+				internalFormat = GL_RGB;
 			}
 		}
 		else if ( samples == 4 )
 		{
-			if(r_greyscale->integer)
+			if ( r_texturebits->integer == 16 )
 			{
-				if(r_texturebits->integer == 16)
-					internalFormat = GL_LUMINANCE8_ALPHA8;
-				else if(r_texturebits->integer == 32)
-					internalFormat = GL_LUMINANCE16_ALPHA16;
-				else
-					internalFormat = GL_LUMINANCE_ALPHA;
+				internalFormat = GL_RGBA4;
+			}
+			else if ( r_texturebits->integer == 32 )
+			{
+				internalFormat = GL_RGBA8;
 			}
 			else
 			{
-				if ( r_texturebits->integer == 16 )
-				{
-					internalFormat = GL_RGBA4;
-				}
-				else if ( r_texturebits->integer == 32 )
-				{
-					internalFormat = GL_RGBA8;
-				}
-				else
-				{
-					internalFormat = GL_RGBA;
-				}
+				internalFormat = GL_RGBA;
 			}
 		}
 	}
