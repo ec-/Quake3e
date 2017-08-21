@@ -361,6 +361,9 @@ static	char	com_parsename[MAX_TOKEN_CHARS];
 static	int		com_lines;
 static  int		com_tokenline;
 
+// for complex parser
+tokenType_t		com_tokentype;
+
 void COM_BeginParseSession( const char *name )
 {
 	com_lines = 1;
@@ -621,6 +624,224 @@ char *COM_ParseExt( char **data_p, qboolean allowLineBreaks )
 	com_token[ len ] = '\0';
 
 	*data_p = ( char * ) data;
+	return com_token;
+}
+	
+
+/*
+==============
+COM_ParseComplex
+==============
+*/
+char *COM_ParseComplex( char **data_p, qboolean allowLineBreaks )
+{
+	static const byte is_separator[ 256 ] =
+	{
+	// \0 . . . . . . .\b\t\n . .\r . .
+		1,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,
+	//  . . . . . . . . . . . . . . . .
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	//    ! " # $ % & ' ( ) * + , - . /
+		1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0, // excl. '-' '.' '/'
+	//  0 1 2 3 4 5 6 7 8 9 : ; < = > ?
+		0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,
+	//  @ A B C D E F G H I J K L M N O
+		1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	//  P Q R S T U V W X Y Z [ \ ] ^ _
+		0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,0, // excl. '\\' '_'
+	//  ` a b c d e f g h i j k l m n o
+		1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	//  p q r s t u v w x y z { | } ~ 
+		0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1
+	};
+
+	int c, len, shift;
+	const byte *str;
+
+	str = *data_p;
+	len = 0; 
+	shift = 0; // token line shift relative to com_lines
+	com_tokentype = TK_GENEGIC;
+	
+__reswitch:
+	switch ( *str )
+	{
+	case '\0':
+		com_tokentype = TK_EOF;
+		break;
+
+	// whitespace
+	case ' ':
+	case '\t':
+		str++;
+		while ( (c = *str) == ' ' || c == '\t' )
+			str++;
+		goto __reswitch;
+
+	// newlines
+	case '\n':
+	case '\r':
+	com_lines++;
+	if ( !allowLineBreaks ) {
+		com_tokentype = TK_NEWLINE;
+		//com_token[ len++ ] = *str++;
+		break;
+	} else {
+		if ( *str == '\r' && str[1] == '\n' )
+			str += 2; // CR+LF
+		else
+			str++;
+		goto __reswitch;
+	}
+
+	// comments, single slash
+	case '/':
+		// until end of line
+		if ( str[1] == '/' ) {
+			str += 2;
+			while ( (c = *str) != '\0' && c != '\n' && c != '\r' )
+				str++;
+			goto __reswitch;
+		}
+
+		// comment
+		if ( str[1] == '*' ) {
+			str += 2;
+			while ( (c = *str) != '\0' && ( c != '*' || str[1] != '/' ) ) {
+				if ( c == '\n' || c == '\r' ) {
+					com_lines++;
+					if ( c == '\r' && str[1] == '\n' ) // CR+LF?
+						str++;
+				}
+				str++;
+			}
+			if ( c != '\0' && str[1] != '\0' ) {
+				str += 2;
+			} else {
+				// FIXME: unterminated comment?
+			}
+			goto __reswitch;
+		}
+
+		// single slash
+		com_token[ len++ ] = *str++;
+		break;
+	
+	// quoted string?
+	case '"':
+		str++; // skip leading '"'
+		//com_tokenline = com_lines;
+		while ( (c = *str) != '\0' && c != '"' ) {
+			if ( c == '\n' || c == '\r' ) {
+				com_lines++; // FIXME: unterminated quoted string?
+				shift++;
+			}
+			if ( len < MAX_TOKEN_CHARS-1 ) // overflow check
+				com_token[ len++ ] = c;
+		}
+		if ( c != '\0' ) {
+			str++; // skip enging '"'
+		} else {
+			// FIXME: unterminated quoted string?
+		}
+		com_tokentype = TK_QUOTED;
+		break;
+
+	// single tokens:
+	case '+': case '`':
+	case '*': case '~':
+	case '{': case '}':
+	case '[': case ']':
+	case '?': case ',':
+	case ':': case ';':
+	case '%': case '^':
+		com_token[ len++ ] = *str++;
+		break;
+
+	case '(':
+		com_token[ len++ ] = *str++;
+		com_tokentype = TK_SCOPE_OPEN;
+		break;
+
+	case ')':
+		com_token[ len++ ] = *str++;
+		com_tokentype = TK_SCOPE_CLOSE;
+		break;
+
+	// !, !=
+	case '!':
+		com_token[ len++ ] = *str++;
+		if ( *str == '=' ) {
+			com_token[ len++ ] = *str++;
+			com_tokentype = TK_NEQ;
+		}
+		break;
+
+	// =, ==
+	case '=':
+		com_token[ len++ ] = *str++;
+		if ( *str == '=' ) {
+			com_token[ len++ ] = *str++;
+			com_tokentype = TK_EQ;
+		}
+		break;
+
+	// >, >=
+	case '>':
+		com_token[ len++ ] = *str++;
+		if ( *str == '=' ) {
+			com_token[ len++ ] = *str++;
+			com_tokentype = TK_GTE;
+		} else {
+			com_tokentype = TK_GT;
+		}
+		break;
+
+	//  <, <=
+	case '<':
+		com_token[ len++ ] = *str++;
+		if ( *str == '=' ) {
+			com_token[ len++ ] = *str++;
+			com_tokentype = TK_LTE;
+		} else {
+			com_tokentype = TK_LT;
+		}
+		break;
+
+	// |, ||
+	case '|':
+		com_token[ len++ ] = *str++;
+		if ( *str == '|' ) {
+			com_token[ len++ ] = *str++;
+			com_tokentype = TK_OR;
+		}
+		break;
+
+	// &, &&
+	case '&':
+		com_token[ len++ ] = *str++;
+		if ( *str == '&' ) {
+			com_token[ len++ ] = *str++;
+			com_tokentype = TK_AND;
+		}
+		break;
+
+	// rest of the charset
+	default:
+		com_token[ len++ ] = *str++;
+		while ( !is_separator[ (c = *str) ] ) {
+			if ( len < MAX_TOKEN_CHARS-1 )
+				com_token[ len++ ] = c;
+			str++;
+		}
+		com_tokentype = TK_STRING;
+		break;
+
+	} // switch ( *str )
+
+	com_tokenline = com_lines - shift;
+	com_token[ len ] = '\0';
+	*data_p = ( char * )str;
 	return com_token;
 }
 
