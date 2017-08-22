@@ -1231,13 +1231,17 @@ Examine the serverinfo string
 ===========
 */
 static void SV_Serverinfo_f( void ) {
+	const char *info;
 	// make sure server is running
 	if ( !com_sv_running->integer ) {
 		Com_Printf( "Server is not running.\n" );
 		return;
 	}
 	Com_Printf ("Server info settings:\n");
-	Info_Print ( Cvar_InfoString( CVAR_SERVERINFO ) );
+	info = sv.configstrings[ CS_SERVERINFO ];
+	if ( info ) {
+		Info_Print( info );
+	}
 }
 
 
@@ -1249,13 +1253,17 @@ Examine the systeminfo string
 ===========
 */
 static void SV_Systeminfo_f( void ) {
+	const char *info;
 	// make sure server is running
 	if ( !com_sv_running->integer ) {
 		Com_Printf( "Server is not running.\n" );
 		return;
 	}
-	Com_Printf ("System info settings:\n");
-	Info_Print ( Cvar_InfoString_Big( CVAR_SYSTEMINFO ) );
+	Com_Printf( "System info settings:\n" );
+	info = sv.configstrings[ CS_SYSTEMINFO ];
+	if ( info ) {
+		Info_Print( info );
+	}
 }
 
 

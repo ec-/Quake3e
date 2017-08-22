@@ -463,6 +463,7 @@ static void CL_ParseServerInfo(void)
 		clc.sv_dlURL[len-1] = '\0';
 }
 
+
 /*
 ==================
 CL_ParseGamestate
@@ -508,7 +509,12 @@ void CL_ParseGamestate( msg_t *msg ) {
 			if ( i < 0 || i >= MAX_CONFIGSTRINGS ) {
 				Com_Error( ERR_DROP, "configstring > MAX_CONFIGSTRINGS" );
 			}
-			s = MSG_ReadBigString( msg );
+
+			if ( i == CS_SYSTEMINFO )
+				s = MSG_ReadBigString( msg );
+			else
+				s = MSG_ReadString( msg );
+
 			len = strlen( s );
 
 			if ( len + 1 + cl.gameState.dataCount > MAX_GAMESTATE_CHARS ) {

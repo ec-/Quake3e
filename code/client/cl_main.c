@@ -1839,18 +1839,53 @@ void CL_Configstrings_f( void ) {
 	}
 }
 
+
 /*
 ==============
 CL_Clientinfo_f
 ==============
 */
-void CL_Clientinfo_f( void ) {
+static void CL_Clientinfo_f( void ) {
 	Com_Printf( "--------- Client Information ---------\n" );
 	Com_Printf( "state: %i\n", cls.state );
 	Com_Printf( "Server: %s\n", cls.servername );
 	Com_Printf ("User info settings:\n");
 	Info_Print( Cvar_InfoString( CVAR_USERINFO ) );
 	Com_Printf( "--------------------------------------\n" );
+}
+
+
+/*
+==============
+CL_Serverinfo_f
+==============
+*/
+static void CL_Serverinfo_f( void ) {
+	int		ofs;
+
+	ofs = cl.gameState.stringOffsets[ CS_SERVERINFO ];
+	if ( !ofs )
+		return;
+
+	Com_Printf( "Server info settings:\n" );
+	Info_Print( cl.gameState.stringData + ofs );
+}
+
+
+/*
+===========
+CL_Systeminfo_f
+===========
+*/
+static void CL_Systeminfo_f( void ) {
+	int ofs;
+
+	ofs = cl.gameState.stringOffsets[ CS_SYSTEMINFO ];
+	if ( !ofs )
+		return;
+
+	Com_Printf( "System info settings:\n" );
+	Info_Print( cl.gameState.stringData + ofs );
 }
 
 
@@ -3443,6 +3478,8 @@ void CL_Init( void ) {
 	Cmd_AddCommand ("video", CL_Video_f );
 	Cmd_SetCommandCompletionFunc( "video", CL_CompleteVideoName );
 	Cmd_AddCommand ("stopvideo", CL_StopVideo_f );
+	Cmd_AddCommand ("serverinfo", CL_Serverinfo_f );
+	Cmd_AddCommand ("systeminfo", CL_Systeminfo_f );
 
 #ifdef USE_CURL
 	Cmd_AddCommand( "download", CL_Download_f );
@@ -3520,6 +3557,8 @@ void CL_Shutdown( const char *finalmsg, qboolean quit ) {
 	Cmd_RemoveCommand ("model");
 	Cmd_RemoveCommand ("video");
 	Cmd_RemoveCommand ("stopvideo");
+	Cmd_RemoveCommand ("serverinfo");
+	Cmd_RemoveCommand ("systeminfo");
 
 #ifdef USE_CURL
 	Com_DL_Cleanup( &download );
