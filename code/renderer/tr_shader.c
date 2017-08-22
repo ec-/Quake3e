@@ -1416,13 +1416,14 @@ static void ParseSurfaceParm( char **text ) {
 
 
 typedef enum {
-	res_invalid,
-	res_false,
-	res_true
+	res_invalid = -1,
+	res_false = 0,
+	res_true = 1
 } resultType;
 
 typedef enum {
 	brIF,
+	brELIF,
 	brELSE
 } branchType;
 
@@ -1760,54 +1761,51 @@ static qboolean ParseShader( char **text )
 			continue;
 		}
 		// conditional stage definition
-		else if ( !Q_stricmp( token, "if" ) || !Q_stricmp( token, "else" ) )
+		else if ( !Q_stricmp( token, "if" ) || !Q_stricmp( token, "else" ) || !Q_stricmp( token, "elif" ) )
 		{
-			branch = ( Q_stricmp( token, "if" ) == 0 ) ? brIF : brELSE;
-			if ( branch == brIF )
-			{
-				token = COM_ParseComplex( text, qtrue );
-				if ( com_tokentype != TK_SCOPE_OPEN ) {
-					ri.Printf( PRINT_WARNING, "WARNING: expecting '(' after 'if' in '%s'\n", shader.name );
+			if ( Q_stricmp( token, "if" ) == 0 ) {
+				branch = brIF;
+			} else {
+				if ( res == res_invalid  ) {
+					// we don't have any previous 'if' statements
+					ri.Printf( PRINT_WARNING, "WARNING: unexpected '%s' in '%s'\n", token, shader.name );
 					return qfalse;
 				}
-				if ( !ParseCondition( text, &res ) ) {
+				if ( Q_stricmp( token, "else" ) == 0 )
+					branch = brELSE;
+				else
+					branch = brELIF;
+			}
+
+			if ( branch != brELSE ) { // we can set/update result
+				token = COM_ParseComplex( text, qfalse );
+				if ( com_tokentype != TK_SCOPE_OPEN ) {
+					ri.Printf( PRINT_WARNING, "WARNING: expecting '(' in '%s'\n", shader.name );
+					return qfalse;
+				}
+				if ( !ParseCondition( text, (branch == brIF || res == res_true) ? &res : NULL ) ) {
 					ri.Printf( PRINT_WARNING, "WARNING: error parsing condition in '%s'\n", shader.name );
 					return qfalse;
 				}
 			}
 
-			if ( res == res_false )
-			{
+			if ( res == res_false )	{
 				// skip next stage or keyword until newline
 				token = COM_ParseExt( text, qtrue );
 				if ( token[0] == '{' )
 					SkipBracedSection( text, 1 );
 				else
 					SkipRestOfLine( text );
-
-				if ( branch == brIF )
-					res = res_true; // for possible "else" statement
-				else
-					res = res_invalid;
-
-				continue;
-			} 
-			else
-			{
-				if ( res == res_invalid )
-				{
-					ri.Printf( PRINT_WARNING, "WARNING: invalid state of condition in '%s'\n", shader.name );
-					return qfalse;
-				}
-
-				if ( branch == brIF )
-					res = res_false; // for possible "else" statement
-				else
-					res = res_invalid;
-
+			} else {
 				// parse next tokens as usual
-				continue;
 			}
+
+			if ( branch == brELSE )
+				res = res_invalid; // finalize branch
+			else
+				res ^= 1; // or toggle for possible "elif" / "else" statements
+
+			continue;
 		}
 		else
 		{

@@ -682,17 +682,15 @@ __reswitch:
 	case '\n':
 	case '\r':
 	com_lines++;
-	if ( !allowLineBreaks ) {
-		com_tokentype = TK_NEWLINE;
-		//com_token[ len++ ] = *str++;
-		break;
-	} else {
 		if ( *str == '\r' && str[1] == '\n' )
 			str += 2; // CR+LF
 		else
 			str++;
+		if ( !allowLineBreaks ) {
+			com_tokentype = TK_NEWLINE;
+			break;
+		}
 		goto __reswitch;
-	}
 
 	// comments, single slash
 	case '/':
