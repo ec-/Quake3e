@@ -886,11 +886,17 @@ RB_CalcEnvironmentTexCoordsFP
 Special version for first-person models, borrowed from OpenArena
 ========================
 */
-static void RB_CalcEnvironmentTexCoordsFP( float *st ) {
+void RB_CalcEnvironmentTexCoordsFP( float *st ) {
 	int			i;
 	const float	*v, *normal;
 	vec3_t		viewer, reflected, where, what, why, who;
 	float		d; 
+
+	if ( !backEnd.currentEntity || ( backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON ) == 0 )
+	{
+		RB_CalcEnvironmentTexCoords( st );
+		return;
+	}
 
 	v = tess.xyz[0];
 	normal = tess.normal[0];
@@ -935,13 +941,6 @@ void RB_CalcEnvironmentTexCoords( float *st )
 	v = tess.xyz[0];
 	normal = tess.normal[0];
 
-#if 0 // breaks some legacy shaders like battle suit
-	if ( backEnd.currentEntity && ( backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON ) )
-	{
-		RB_CalcEnvironmentTexCoordsFP( st );
-	}
-	else 
-#endif
 	for (i = 0 ; i < tess.numVertexes ; i++, v += 4, normal += 4, st += 2 ) 
 	{
 		VectorSubtract (backEnd.or.viewOrigin, v, viewer);

@@ -816,6 +816,9 @@ void R_ComputeTexCoords( const shaderStage_t *pStage ) {
 		case TCGEN_ENVIRONMENT_MAPPED:
 			RB_CalcEnvironmentTexCoords( ( float * ) tess.svars.texcoords[b] );
 			break;
+		case TCGEN_ENVIRONMENT_MAPPED_FP:
+			RB_CalcEnvironmentTexCoordsFP( ( float * ) tess.svars.texcoords[b] );
+			break;
 		case TCGEN_BAD:
 			return;
 		}
