@@ -1192,7 +1192,8 @@ void IN_Frame( void ) {
 		// temporarily deactivate if not in the game and
 		// running on the desktop
 		// voodoo always counts as full screen
-		if ( !glw_state.cdsFullscreen ) {
+		//if ( !glw_state.cdsFullscreen )
+		{
 			IN_DeactivateMouse();
 			WIN_EnableAltTab();
 			WIN_DisableHook();
