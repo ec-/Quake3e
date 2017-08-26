@@ -658,7 +658,7 @@ char *COM_ParseComplex( char **data_p, qboolean allowLineBreaks )
 	int c, len, shift;
 	const byte *str;
 
-	str = *data_p;
+	str = (byte*)*data_p;
 	len = 0; 
 	shift = 0; // token line shift relative to com_lines
 	com_tokentype = TK_GENEGIC;

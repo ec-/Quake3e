@@ -2015,7 +2015,7 @@ void IN_Frame( void )
 		// temporarily deactivate if not in the game and
 		// running on the desktop
 		// voodoo always counts as full screen
-		//if ( Cvar_VariableIntegerValue( "r_fullscreen" ) == 0 )
+		if ( !glConfig.isFullscreen )
 		{
 			IN_DeactivateMouse();
 			return;
