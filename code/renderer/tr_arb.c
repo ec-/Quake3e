@@ -307,8 +307,8 @@ void ARB_LightingPass( void )
 	if ( !programAvail )
 		return;
 
-	//if ( tess.shader->lightingStage == -1 )
-	//	return;
+	if ( tess.shader->lightingStage == -1 )
+		return;
 
 	RB_DeformTessGeometry();
 

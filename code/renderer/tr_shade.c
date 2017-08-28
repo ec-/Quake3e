@@ -1081,7 +1081,7 @@ void RB_StageIteratorVertexLitTexture( void )
 #ifdef USE_PMLIGHT
 #ifdef USE_LEGACY_DLIGHTS
 	if ( r_dlightMode->integer ) 
-#endif // USE_LEGACY_DLIGTHS
+#endif
 	{
 		if ( tess.dlightPass ) 
 		{
