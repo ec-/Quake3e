@@ -1191,7 +1191,7 @@ void Cvar_Func_f( void ) {
 	else
 		Cvar_Op( ftype, &ival, &fval ); // apply modification
 	
-	if ( cvar && cvar->integral ) {
+	if ( cvar && cvar->validator == CV_INTEGER ) {
 		sprintf( value, "%i", ival );
 	} else {
 		if ( (int)fval == fval )

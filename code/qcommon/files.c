@@ -1352,7 +1352,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	
 	// we will calculate full hash only once then just mask it by current pack->hashSize
 	// we can do that as long as we know properties of our hash function
-	fullHash = FS_HashFileName( filename, 1<<31 );
+	fullHash = FS_HashFileName( filename, 1U<<31 );
 
 	if ( file == NULL ) {
 		// just wants to see if file is there
@@ -1844,7 +1844,7 @@ qboolean FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName ) {
 	else
 		flags = FS_MATCH_PK3s;
 
-	fullHash = FS_HashFileName( filename, 1<<31 );
+	fullHash = FS_HashFileName( filename, 1U<<31 );
 
 	//
 	// search through the path, one element at a time
