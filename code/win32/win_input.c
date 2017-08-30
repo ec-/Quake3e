@@ -1119,7 +1119,7 @@ void IN_Init( void ) {
 
 	// mouse variables
 	in_mouse = Cvar_Get ("in_mouse", "1", CVAR_ARCHIVE |CVAR_LATCH );
-	Cvar_CheckRange( in_mouse, -1, 1, qtrue );
+	Cvar_CheckRange( in_mouse, "-1", "1", CV_INTEGER );
 	Cvar_SetDescription( in_mouse,
 		"Mouse data input source:\n" \
 		"  0 - disable mouse input\n" \

@@ -867,6 +867,11 @@ default values.
 #define CVAR_MODIFIED		0x40000000	// Cvar was modified
 #define CVAR_NONEXISTENT	0x80000000	// Cvar doesn't exist.
 
+typedef enum {
+	CV_NONE = 0,
+	CV_FLOAT,
+	CV_INTEGER
+} cvarValidator_t;
 
 // nothing outside the Cvar_*() functions should modify these fields!
 typedef struct cvar_s cvar_t;
@@ -881,10 +886,9 @@ struct cvar_s {
 	int			modificationCount;	// incremented each time the cvar is changed
 	float		value;				// atof( string )
 	int			integer;			// atoi( string )
-	qboolean	validate;
-	qboolean	integral;
-	float		min;
-	float		max;
+	cvarValidator_t validator;
+	char		*mins;
+	char		*maxs;
 	char		*description;
 
 	cvar_t *next;

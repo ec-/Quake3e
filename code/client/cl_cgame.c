@@ -439,7 +439,7 @@ static void CL_ForceFixedDlights( void ) {
 
 	cv = Cvar_Get( "r_dlightMode", "1", 0 );
 	if ( cv ) {
-		Cvar_CheckRange( cv, 1, 2, qtrue );
+		Cvar_CheckRange( cv, "1", "2", CV_INTEGER );
 	}
 }
 

@@ -3040,11 +3040,11 @@ void Com_Init( char *commandLine ) {
 
   // get dedicated here for proper hunk megs initialization
 #ifdef DEDICATED
-	com_dedicated = Cvar_Get ("dedicated", "1", CVAR_INIT);
-	Cvar_CheckRange( com_dedicated, 1, 2, qtrue );
+	com_dedicated = Cvar_Get( "dedicated", "1", CVAR_INIT );
+	Cvar_CheckRange( com_dedicated, "1", "2", CV_INTEGER );
 #else
-	com_dedicated = Cvar_Get ("dedicated", "0", CVAR_LATCH);
-	Cvar_CheckRange( com_dedicated, 0, 2, qtrue );
+	com_dedicated = Cvar_Get( "dedicated", "0", CVAR_LATCH );
+	Cvar_CheckRange( com_dedicated, "0", "2", CV_INTEGER );
 #endif
 	// allocate the stack based hunk allocator
 	Com_InitHunkMemory();
@@ -3061,7 +3061,7 @@ void Com_Init( char *commandLine ) {
 	com_maxfpsUnfocused = Cvar_Get ("com_maxfpsUnfocused", "60", CVAR_ARCHIVE_ND );
 	com_maxfpsMinimized = Cvar_Get ("com_maxfpsMinimized", "30", CVAR_ARCHIVE_ND );
 	com_yieldCPU = Cvar_Get( "com_yieldCPU", "1", CVAR_ARCHIVE_ND );
-	Cvar_CheckRange( com_yieldCPU, 0, 1, qtrue );
+	Cvar_CheckRange( com_yieldCPU, "0", "1", CV_INTEGER );
 #endif
 	com_affinityMask = Cvar_Get( "com_affinityMask", "0", CVAR_ARCHIVE_ND );
 	com_affinityMask->modified = qfalse;

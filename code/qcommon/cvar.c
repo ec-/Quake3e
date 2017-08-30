@@ -57,6 +57,7 @@ static long generateHashValue( const char *fname ) {
 	return hash;
 }
 
+
 /*
 ============
 Cvar_ValidateString
@@ -199,107 +200,94 @@ void Cvar_CommandCompletion(void (*callback)(const char *s))
 	}
 }
 
+
+static qboolean Cvar_IsIntegral( const char *s ) {
+
+	if ( *s == '-' && *(s+1) != '\0' )
+		s++;
+
+	while ( *s != '\0' ) {
+		if ( *s < '0' || *s > '9' ) {
+			return qfalse;
+		}
+		s++;
+	}
+
+	return qtrue;
+}
+
+
 /*
 ============
 Cvar_Validate
 ============
 */
-static const char *Cvar_Validate( cvar_t *var,
-    const char *value, qboolean warn )
+static const char *Cvar_Validate( cvar_t *var, const char *value, qboolean warn )
 {
-	static char s[ MAX_CVAR_VALUE_STRING ];
+	static char intbuf[ 32 ];
+	const char *limit;
 	float valuef;
-	qboolean changed = qfalse;
+	int	  valuei;
 
-	if( !var->validate )
+	if ( var->validator == CV_NONE )
 		return value;
 
-	if( !value )
+	if ( !value )
 		return value;
 
-	if( Q_isanumber( value ) )
-	{
-		valuef = atof( value );
+	limit = NULL;
 
-		if( var->integral )
-		{
-			if( !Q_isintegral( valuef ) )
-			{
-				if( warn )
-					Com_Printf( "WARNING: cvar '%s' must be integral", var->name );
-
-				valuef = (int)valuef;
-				changed = qtrue;
+	if ( var->validator == CV_INTEGER || var->validator == CV_FLOAT ) {
+		if ( !Q_isanumber( value ) ) {
+			if ( warn )
+				Com_Printf( "WARNING: cvar '%s' must be numeric", var->name );
+			limit = var->resetString;
+		} else {
+			if ( var->validator == CV_INTEGER ) {
+				if ( !Cvar_IsIntegral( value ) ) {
+					if ( warn )
+						Com_Printf( "WARNING: cvar '%s' must be integral", var->name );
+					sprintf( intbuf, "%i", atoi( value ) );
+					value = intbuf; // new value
+				}
+				valuei = atoi( value );
+				if ( var->mins && valuei < atoi( var->mins ) ) {
+					limit = var->mins;
+				} else if ( var->maxs && valuei > atoi( var->maxs ) ) {
+					limit = var->maxs;
+				}
+			} else { // CV_FLOAT
+				valuef = atof( value );
+				if ( var->mins && valuef < atof( var->mins ) ) {
+					limit = var->mins;
+				} else if ( var->maxs && valuef > atof( var->maxs ) ) {
+					limit = var->maxs;
+				}
 			}
-		}
-	}
-	else
-	{
-		if( warn )
-			Com_Printf( "WARNING: cvar '%s' must be numeric", var->name );
 
-		valuef = atof( var->resetString );
-		changed = qtrue;
-	}
+			if ( warn ) {
+				if ( limit == var->mins || limit == var->maxs ) {
+					if ( value == intbuf ) { // cast to integer
+						Com_Printf( " and" ); 
+					} else {
+						Com_Printf( "WARNING: cvar '%s'", var->name );
+					}
+					Com_Printf( " is out of range (%s '%s')", (limit == var->mins) ? "min" : "max", limit );
+				}
+			}
+		} // Q_isanumber
+	} // CV_INTEGER || CV_FLOAT
+	// TODO: stringlist
 
-	if( valuef < var->min )
-	{
-		if( warn )
-		{
-			if( changed )
-				Com_Printf( " and is" );
-			else
-				Com_Printf( "WARNING: cvar '%s'", var->name );
-
-			if( Q_isintegral( var->min ) )
-				Com_Printf( " out of range (min %d)", (int)var->min );
-			else
-				Com_Printf( " out of range (min %f)", var->min );
-		}
-
-		valuef = var->min;
-		changed = qtrue;
-	}
-	else if( valuef > var->max )
-	{
-		if( warn )
-		{
-			if( changed )
-				Com_Printf( " and is" );
-			else
-				Com_Printf( "WARNING: cvar '%s'", var->name );
-
-			if( Q_isintegral( var->max ) )
-				Com_Printf( " out of range (max %d)", (int)var->max );
-			else
-				Com_Printf( " out of range (max %f)", var->max );
-		}
-
-		valuef = var->max;
-		changed = qtrue;
-	}
-
-	if( changed )
-	{
-		if( Q_isintegral( valuef ) )
-		{
-			Com_sprintf( s, sizeof( s ), "%d", (int)valuef );
-
-			if( warn )
-				Com_Printf( ", setting to %d\n", (int)valuef );
-		}
-		else
-		{
-			Com_sprintf( s, sizeof( s ), "%f", valuef );
-
-			if( warn )
-				Com_Printf( ", setting to %f\n", valuef );
-		}
-
-		return s;
-	}
-	else
+	if ( limit || value == intbuf ) {
+		if ( !limit )
+			limit = value;
+		if ( warn )
+			Com_Printf( ", setting to %s\n", limit );
+		return limit;
+	} else {
 		return value;
+	}
 }
 
 
@@ -434,19 +422,19 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 	if(index >= cvar_numIndexes)
 		cvar_numIndexes = index + 1;
 		
-	var->name = CopyString (var_name);
-	var->string = CopyString (var_value);
+	var->name = CopyString( var_name );
+	var->string = CopyString( var_value );
 	var->modified = qtrue;
 	var->modificationCount = 1;
-	var->value = atof (var->string);
-	var->integer = atoi(var->string);
+	var->value = atof( var->string );
+	var->integer = atoi( var->string );
 	var->resetString = CopyString( var_value );
-	var->validate = qfalse;
+	var->validator = CV_NONE;
 	var->description = NULL;
 
 	// link the variable in
 	var->next = cvar_vars;
-	if(cvar_vars)
+	if ( cvar_vars )
 		cvar_vars->prev = var;
 
 	var->prev = NULL;
@@ -460,7 +448,7 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 	var->hashIndex = hash;
 
 	var->hashNext = hashTable[hash];
-	if(hashTable[hash])
+	if ( hashTable[hash] )
 		hashTable[hash]->hashPrev = var;
 
 	var->hashPrev = NULL;
@@ -1428,6 +1416,7 @@ void Cvar_ListModified_f( void ) {
 	Com_Printf ("\n%i total modified cvars\n", totalModified);
 }
 
+
 /*
 ============
 Cvar_Unset
@@ -1453,6 +1442,10 @@ cvar_t *Cvar_Unset( cvar_t *cv )
 		Z_Free( cv->resetString );
 	if ( cv->description )
 		Z_Free( cv->description );
+	if ( cv->mins )
+		Z_Free( cv->mins );
+	if ( cv->maxs )
+		Z_Free( cv->maxs );
 
 	if ( cv->prev )
 		cv->prev->next = cv->next;
@@ -1599,7 +1592,6 @@ char *Cvar_InfoString_Big(int bit)
 }
 
 
-
 /*
 =====================
 Cvar_InfoStringBuffer
@@ -1609,17 +1601,33 @@ void Cvar_InfoStringBuffer( int bit, char* buff, int buffsize ) {
 	Q_strncpyz(buff,Cvar_InfoString(bit),buffsize);
 }
 
+
 /*
 =====================
 Cvar_CheckRange
 =====================
 */
-void Cvar_CheckRange( cvar_t *var, float min, float max, qboolean integral )
+void Cvar_CheckRange( cvar_t *var, const char *mins, const char *maxs, cvarValidator_t type )
 {
-	var->validate = qtrue;
-	var->min = min;
-	var->max = max;
-	var->integral = integral;
+	if ( var->mins ) {
+		Z_Free( var->mins );
+		var->mins = NULL;
+	}
+	if ( var->maxs ) {
+		Z_Free( var->maxs );
+		var->maxs = NULL;
+	}
+
+	var->validator = type;
+
+	if ( type == CV_NONE )
+		return;
+
+	if ( mins )
+		var->mins = CopyString( mins );
+	
+	if ( maxs )
+		var->maxs = CopyString( maxs );
 
 	// Force an initial range check
 	Cvar_Set( var->name, var->string );
