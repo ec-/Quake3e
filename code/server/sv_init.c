@@ -793,14 +793,13 @@ void SV_Shutdown( const char *finalmsg ) {
 	SV_ClearServer();
 
 	// free server static data
-	if(svs.clients)
-	{
+	if ( svs.clients ) {
 		int index;
+
+		for ( index = 0; index < sv_maxclients->integer; index++ )
+			SV_FreeClient( &svs.clients[ index ] );
 		
-		for(index = 0; index < sv_maxclients->integer; index++)
-			SV_FreeClient(&svs.clients[index]);
-		
-		Z_Free(svs.clients);
+		Z_Free( svs.clients );
 	}
 	Com_Memset( &svs, 0, sizeof( svs ) );
 	sv.time = 0;
@@ -812,9 +811,15 @@ void SV_Shutdown( const char *finalmsg ) {
 
 #ifndef DEDICATED
 	// disconnect any local clients
-	if( sv_killserver->integer != 2 )
+	if ( sv_killserver->integer != 2 )
 		CL_Disconnect( qfalse );
 #endif
+
+	// clean some server cvars
+	Cvar_Set( "sv_referencedPaks", "" );
+	Cvar_Set( "sv_referencedPakNames", "" );
+	Cvar_Set( "sv_mapChecksum", "" );
+	Cvar_Set( "sv_serverid", "0" );
 
 	Sys_SetStatus( "Server is not running" );
 }

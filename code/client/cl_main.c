@@ -1185,12 +1185,13 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	*clc.downloadTempName = *clc.downloadName = '\0';
 	Cvar_Set( "cl_downloadName", "" );
 
+	SCR_StopCinematic();
+	S_StopAllSounds();
+	Key_ClearStates();
+
 	if ( uivm && showMainMenu ) {
 		VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_NONE );
 	}
-
-	SCR_StopCinematic();
-	S_ClearSoundBuffer();
 
 	// send a disconnect message to the server
 	// send it a few times in case one is dropped
@@ -1204,7 +1205,7 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	// Remove pure paks
 	FS_PureServerSetLoadedPaks( "", "" );
 	FS_PureServerSetReferencedPaks( "", "" );
-	
+
 	CL_ClearState();
 
 	// wipe the client connection
@@ -3360,7 +3361,8 @@ void CL_Init( void ) {
 
 	cl_maxpackets = Cvar_Get ("cl_maxpackets", "60", CVAR_ARCHIVE );
 	Cvar_CheckRange( cl_maxpackets, "15", "125", CV_INTEGER );
-	cl_packetdup = Cvar_Get ("cl_packetdup", "1", CVAR_ARCHIVE_ND );
+	cl_packetdup = Cvar_Get( "cl_packetdup", "1", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( cl_packetdup, "0", "5", CV_INTEGER );
 
 	cl_run = Cvar_Get( "cl_run", "1", CVAR_ARCHIVE_ND );
 	cl_sensitivity = Cvar_Get ("sensitivity", "5", CVAR_ARCHIVE);

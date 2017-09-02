@@ -320,7 +320,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		VM_Forced_Unload_Start();
 		SV_Shutdown( "Server disconnected" );
 #ifndef DEDICATED
-		CL_Disconnect( qtrue );
+		CL_Disconnect( qfalse );
 		CL_FlushMemory();
 #endif
 		VM_Forced_Unload_Done();
@@ -336,7 +336,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		VM_Forced_Unload_Start();
 		SV_Shutdown( va( "Server crashed: %s",  com_errorMessage ) );
 #ifndef DEDICATED
-		CL_Disconnect( qtrue );
+		CL_Disconnect( qfalse );
 		CL_FlushMemory();
 #endif
 		VM_Forced_Unload_Done();
@@ -349,7 +349,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		SV_Shutdown( "Server didn't have CD" );
 #ifndef DEDICATED
 		if ( com_cl_running && com_cl_running->integer ) {
-			CL_Disconnect( qtrue );
+			CL_Disconnect( qfalse );
 			VM_Forced_Unload_Start();
 			CL_FlushMemory();
 			VM_Forced_Unload_Done();
@@ -2417,6 +2417,7 @@ int Com_EventLoop( void ) {
 	return 0;	// never reached
 }
 
+
 /*
 ================
 Com_Milliseconds
@@ -2486,6 +2487,7 @@ static void Com_Freeze_f (void) {
 	}
 }
 
+
 /*
 =================
 Com_Crash_f
@@ -2497,6 +2499,7 @@ static void Com_Crash_f( void ) {
 	* ( volatile int * ) 0 = 0x12345678;
 }
 
+
 /*
 ==================
 Com_ExecuteCfg
@@ -2504,7 +2507,6 @@ Com_ExecuteCfg
 For controlling environment variables
 ==================
 */
-
 void Com_ExecuteCfg(void)
 {
 	Cbuf_ExecuteText(EXEC_NOW, "exec default.cfg\n");
@@ -2563,6 +2565,7 @@ void Com_GameRestart(int checksumFeed, qboolean clientRestart)
 		com_gameRestarting = qfalse;
 	}
 }
+
 
 /*
 ==================
