@@ -515,6 +515,9 @@ static void CL_FlushCaptureBuffer( void )
     int   paddingSize = PADLEN( bytesInBuffer, 2 );
     byte  padding[ 4 ] = { 0 };
 
+    if ( !bytesInBuffer )
+        return;
+
     bufIndex = 0;
     WRITE_STRING( "01wb" );
     WRITE_4BYTES( bytesInBuffer );
@@ -605,7 +608,7 @@ Closes the AVI file and writes an index chunk
 qboolean CL_CloseAVI( void )
 {
 	int indexRemainder;
-	int indexSize = afd.numIndices * 16;
+	int indexSize;
 	const char *idxFileName;
 
 	// AVI file isn't open
@@ -613,9 +616,10 @@ qboolean CL_CloseAVI( void )
 		return qfalse;
 	}
 
-	idxFileName = va( "%s" INDEX_FILE_EXTENSION, afd.fileName );
-
 	CL_FlushCaptureBuffer();
+
+	idxFileName = va( "%s" INDEX_FILE_EXTENSION, afd.fileName );
+	indexSize = afd.numIndices * 16;
 
 	afd.fileOpen = qfalse;
 

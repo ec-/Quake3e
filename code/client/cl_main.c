@@ -1185,6 +1185,13 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	*clc.downloadTempName = *clc.downloadName = '\0';
 	Cvar_Set( "cl_downloadName", "" );
 
+	// Stop recording any video
+	if ( CL_VideoRecording() ) {
+		// Finish rendering current frame
+		SCR_UpdateScreen();
+		CL_CloseAVI();
+	}
+
 	SCR_StopCinematic();
 	S_StopAllSounds();
 	Key_ClearStates();
@@ -1218,13 +1225,6 @@ void CL_Disconnect( qboolean showMainMenu ) {
 
 	// not connected to a pure server anymore
 	cl_connectedToPureServer = qfalse;
-
-	// Stop recording any video
-	if( CL_VideoRecording() ) {
-		// Finish rendering current frame
-		SCR_UpdateScreen();
-		CL_CloseAVI();
-	}
 
 	CL_UpdateGUID( NULL, 0 );
 
