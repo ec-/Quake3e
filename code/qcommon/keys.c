@@ -33,7 +33,7 @@ typedef struct {
 } keyname_t;
 
 // names not in this list can either be lowercase ascii, or '0xnn' hex sequences
-keyname_t keynames[] =
+static const keyname_t keynames[] =
 {
 	{"TAB", K_TAB},
 	{"ENTER", K_ENTER},
@@ -400,10 +400,10 @@ Returns a string (either a single ascii char, a K_* name, or a 0x11 hex string) 
 given keynum.
 ===================
 */
-char *Key_KeynumToString( int keynum ) {
-	keyname_t	*kn;	
-	static	char	tinystr[5];
-	int			i, j;
+const char *Key_KeynumToString( int keynum ) {
+	const keyname_t *kn;
+	static char tinystr[5];
+	int i, j;
 
 	if ( keynum == -1 ) {
 		return "<KEY NOT FOUND>";
@@ -421,8 +421,8 @@ char *Key_KeynumToString( int keynum ) {
 	}
 
 	// check for a key string
-	for ( kn=keynames ; kn->name ; kn++ ) {
-		if (keynum == kn->keynum) {
+	for ( kn = keynames ; kn->name ; kn++ ) {
+		if ( keynum == kn->keynum ) {
 			return kn->name;
 		}
 	}
@@ -470,7 +470,7 @@ void Key_SetBinding( int keynum, const char *binding ) {
 Key_GetBinding
 ===================
 */
-char *Key_GetBinding( int keynum ) {
+const char *Key_GetBinding( int keynum ) {
 	if ( keynum < 0 || keynum >= MAX_KEYS ) {
 		return "";
 	}

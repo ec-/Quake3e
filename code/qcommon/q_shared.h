@@ -652,14 +652,14 @@ unsigned long Com_GenerateHashValue( const char *fname, const unsigned int size 
 
 void	COM_BeginParseSession( const char *name );
 int		COM_GetCurrentParseLine( void );
-char	*COM_Parse( char **data_p );
-char	*COM_ParseExt( char **data_p, qboolean allowLineBreak );
+char	*COM_Parse( const char **data_p );
+char	*COM_ParseExt( const char **data_p, qboolean allowLineBreak );
 int		COM_Compress( char *data_p );
 void	COM_ParseError( char *format, ... ) __attribute__ ((format (printf, 1, 2)));
 void	COM_ParseWarning( char *format, ... ) __attribute__ ((format (printf, 1, 2)));
 //int		COM_ParseInfos( char *buf, int max, char infos[][MAX_INFO_STRING] );
 
-char	*COM_ParseComplex( char **data_p, qboolean allowLineBreak );
+char	*COM_ParseComplex( const char **data_p, qboolean allowLineBreak );
 
 typedef enum {
 	TK_GENEGIC = 0, // for single-char tokens
@@ -703,14 +703,14 @@ typedef struct pc_token_s
 
 // data is an in/out parm, returns a parsed out token
 
-void	COM_MatchToken( char**buf_p, char *match );
+void COM_MatchToken( const char**buf_p, const char *match );
 
-qboolean SkipBracedSection( char **program, int depth );
-void SkipRestOfLine( char **data );
+qboolean SkipBracedSection( const char **program, int depth );
+void SkipRestOfLine( const char **data );
 
-void Parse1DMatrix (char **buf_p, int x, float *m);
-void Parse2DMatrix (char **buf_p, int y, int x, float *m);
-void Parse3DMatrix (char **buf_p, int z, int y, int x, float *m);
+void Parse1DMatrix( const char **buf_p, int x, float *m);
+void Parse2DMatrix( const char **buf_p, int y, int x, float *m);
+void Parse3DMatrix( const char **buf_p, int z, int y, int x, float *m);
 
 int QDECL Com_sprintf( char *dest, int size, const char *fmt, ... ) __attribute__ ((format (printf, 3, 4)));
 

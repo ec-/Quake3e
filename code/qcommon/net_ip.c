@@ -825,7 +825,7 @@ void Sys_ShowIP(void) {
 NET_IPSocket
 ====================
 */
-SOCKET NET_IPSocket( char *net_interface, int port, int *err ) {
+static SOCKET NET_IPSocket( const char *net_interface, int port, int *err ) {
 	SOCKET				newsocket;
 	struct sockaddr_in	address;
 	ioctlarg_t			_true = 1;
@@ -888,12 +888,13 @@ SOCKET NET_IPSocket( char *net_interface, int port, int *err ) {
 	return newsocket;
 }
 
+
 /*
 ====================
 NET_IP6Socket
 ====================
 */
-SOCKET NET_IP6Socket( char *net_interface, int port, struct sockaddr_in6 *bindto, int *err ) {
+static SOCKET NET_IP6Socket( const char *net_interface, int port, struct sockaddr_in6 *bindto, int *err ) {
 	SOCKET				newsocket;
 	struct sockaddr_in6	address;
 	ioctlarg_t			_true = 1;
@@ -1308,13 +1309,13 @@ static void NET_GetLocalAddress(void)
 }
 #else
 static void NET_GetLocalAddress( void ) {
-	char				hostname[256];
+	char	hostname[256];
 	struct addrinfo	hint;
 	struct addrinfo	*res = NULL;
 
 	numIP = 0;
 
-	if(gethostname( hostname, 256 ) == SOCKET_ERROR)
+	if ( gethostname( hostname, sizeof( hostname ) ) == SOCKET_ERROR )
 		return;
 
 	Com_Printf( "Hostname: %s\n", hostname );
@@ -1356,6 +1357,7 @@ static void NET_GetLocalAddress( void ) {
 		freeaddrinfo(res);
 }
 #endif
+
 
 /*
 ====================

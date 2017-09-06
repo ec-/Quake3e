@@ -64,20 +64,20 @@ Cvar_ValidateString
 ============
 */
 static qboolean Cvar_ValidateString( const char *s ) {
+	int c;
+	
 	if ( !s ) {
 		return qfalse;
 	}
-	if ( strchr( s, '\\' ) ) {
-		return qfalse;
+
+	while ( (c = *s++) != '\0' ) {
+		if ( c == '\\' || c == '\"' || c == ';' )
+			return qfalse;
 	}
-	if ( strchr( s, '\"' ) ) {
-		return qfalse;
-	}
-	if ( strchr( s, ';' ) ) {
-		return qfalse;
-	}
+
 	return qtrue;
 }
+
 
 /*
 ============
@@ -164,6 +164,7 @@ void Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize 
 	}
 }
 
+
 /*
 ============
 Cvar_Flags
@@ -183,6 +184,7 @@ int Cvar_Flags(const char *var_name)
 			return var->flags;
 	}
 }
+
 
 /*
 ============
@@ -553,6 +555,7 @@ void Cvar_Print( const cvar_t *v ) {
 	}
 }
 
+
 /*
 ============
 Cvar_Set2
@@ -677,6 +680,7 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 
 	return var;
 }
+
 
 /*
 ============
@@ -1340,8 +1344,8 @@ Cvar_ListModified_f
 void Cvar_ListModified_f( void ) {
 	cvar_t	*var;
 	int		totalModified;
-	char	*value;
-	char	*match;
+	const char *value;
+	const char *match;
 
 	if ( Cmd_Argc() > 1 ) {
 		match = Cmd_Argv( 1 );

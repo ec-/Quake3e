@@ -115,9 +115,9 @@ Con_LoadHistory
 */
 static void Con_LoadHistory( void )
 {
-	char            *token, *text_p;
-	int             i, numChars, numLines = 0;
-	fileHandle_t	f;
+	const char *token, *text_p;
+	int i, numChars, numLines = 0;
+	fileHandle_t f;
 
 	for ( i = 0 ; i < COMMAND_HISTORY ; i++ ) {
 		Field_Clear( &historyEditLines[i] );

@@ -629,16 +629,17 @@ Key_GetBindingBuf
 ====================
 */
 static void Key_GetBindingBuf( int keynum, char *buf, int buflen ) {
-	char	*value;
+	const char *value;
 
 	value = Key_GetBinding( keynum );
 	if ( value ) {
 		Q_strncpyz( buf, value, buflen );
 	}
 	else {
-		*buf = 0;
+		*buf = '\0';
 	}
 }
+
 
 /*
 ====================
@@ -683,6 +684,7 @@ static void CLUI_SetCDKey( char *buf ) {
 	}
 }
 #endif
+
 
 /*
 ====================

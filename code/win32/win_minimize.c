@@ -140,11 +140,11 @@ static struct hk_token tokens[] =
 	{ 0,			"" }
 };
 
-int Win32_GetKey( char **s, char *buf, int buflen ) 
+int Win32_GetKey( const char **s, char *buf, int buflen )
 {
 
-	char	*base, *end;
-    int		len, i;
+	const char *base, *end;
+	int	len, i;
 
 	base = *s;
 

@@ -36,11 +36,11 @@ extern  int         anykeydown;
 
 void Key_WriteBindings( fileHandle_t f );
 void Key_SetBinding( int keynum, const char *binding );
-char *Key_GetBinding( int keynum );
+const char *Key_GetBinding( int keynum );
 void Key_ParseBinding( int key, qboolean down, unsigned time );
 
 int Key_GetKey( const char *binding );
-char *Key_KeynumToString( int keynum );
+const char *Key_KeynumToString( int keynum );
 
 qboolean Key_IsDown( int keynum );
 void Key_ClearStates( void );

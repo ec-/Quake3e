@@ -971,7 +971,7 @@ extern int HotKey;
 extern void Win_RemoveHotkey( void );
 extern void Win_AddHotkey( void );
 
-extern int Win32_GetKey( char **s, char *buf, int buflen );
+extern int Win32_GetKey( const char **s, char *buf, int buflen );
 
 /*
 =========================================================================
@@ -980,7 +980,8 @@ extern int Win32_GetKey( char **s, char *buf, int buflen );
 */
 static void IN_GetHotkey( cvar_t *var, int *pHotKey ) {
 
-	char	kset[256], buf[64], *s;
+	char	kset[256], buf[64];
+	const char *s;
 	int		i, code;
 
 	if ( !pHotKey )

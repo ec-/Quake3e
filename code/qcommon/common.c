@@ -660,7 +660,7 @@ void Info_Print( const char *s ) {
 Com_StringContains
 ============
 */
-char *Com_StringContains(char *str1, char *str2, int casesensitive) {
+static const char *Com_StringContains( const char *str1, const char *str2, int casesensitive ) {
 	int len, i, j;
 
 	len = strlen(str1) - strlen(str2);
@@ -684,15 +684,16 @@ char *Com_StringContains(char *str1, char *str2, int casesensitive) {
 	return NULL;
 }
 
+
 /*
 ============
 Com_Filter
 ============
 */
-int Com_Filter(char *filter, char *name, int casesensitive)
+int Com_Filter( const char *filter, const char *name, int casesensitive )
 {
-	char buf[MAX_TOKEN_CHARS];
-	char *ptr;
+	char buf[ MAX_TOKEN_CHARS ];
+	const char *ptr;
 	int i, found;
 
 	while(*filter) {
@@ -842,6 +843,7 @@ int Com_FilterPath(const char *filter, const char *name, int casesensitive)
 	new_name[i] = '\0';
 	return Com_Filter(new_filter, new_name, casesensitive);
 }
+
 
 /*
 ================
@@ -1289,9 +1291,9 @@ typedef struct memstatic_s {
 	byte mem[2];
 } memstatic_t;
 
-memstatic_t emptystring =
+static const memstatic_t emptystring =
 	{ {(sizeof(memblock_t)+2 + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'\0', '\0'} };
-memstatic_t numberstring[] = {
+static const memstatic_t numberstring[] = {
 	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'0', '\0'} },
 	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'1', '\0'} },
 	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'2', '\0'} },
