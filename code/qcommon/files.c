@@ -2086,6 +2086,7 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 	long			hash;
 	int				fs_numHeaderLongs;
 	int				*fs_headerLongs;
+	int				filecount;
 	char			*namePtr;
 
 	fs_numHeaderLongs = 0;
@@ -2097,27 +2098,38 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 		return NULL;
 
 	len = 0;
-	unzGoToFirstFile(uf);
+	filecount = 0;
+	unzGoToFirstFile( uf );
 	for (i = 0; i < gi.number_entry; i++)
 	{
 		err = unzGetCurrentFileInfo(uf, &file_info, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0);
+		filename_inzip[sizeof(filename_inzip)-1] = '\0';
 		if (err != UNZ_OK) {
 			break;
 		}
-		filename_inzip[sizeof(filename_inzip)-1] = '\0';
-		len += strlen(filename_inzip) + 1;
-		unzGoToNextFile(uf);
+		if ( file_info.compression_method != 0 && file_info.compression_method != 8 /*Z_DEFLATED*/ ) {
+			Com_Printf( S_COLOR_YELLOW "%s|%s: unsupported compression method %i\n", basename, filename_inzip, (int)file_info.compression_method );
+			continue;
+		} 
+		len += strlen( filename_inzip ) + 1;
+		unzGoToNextFile( uf );
+		filecount++;
 	}
 
-	buildBuffer = Z_Malloc( (gi.number_entry * sizeof( fileInPack_t )) + len );
-	namePtr = ((char *) buildBuffer) + gi.number_entry * sizeof( fileInPack_t );
-	fs_headerLongs = Z_Malloc( ( gi.number_entry + 1 ) * sizeof(int) );
+	if ( !filecount ) {
+		unzClose( uf );
+		return NULL;
+	}
+
+	buildBuffer = Z_Malloc( ( filecount * sizeof( fileInPack_t )) + len );
+	namePtr = ((char *) buildBuffer) + filecount * sizeof( fileInPack_t );
+	fs_headerLongs = Z_Malloc( ( filecount + 1 ) * sizeof(int) );
 	fs_headerLongs[ fs_numHeaderLongs++ ] = LittleLong( fs_checksumFeed );
 
 	// get the hash table size from the number of files in the zip
 	// because lots of custom pk3 files have less than 32 or 64 files
 	for ( i = 2; i < MAX_FILEHASH_SIZE; i <<= 1 ) {
-		if ( i >= gi.number_entry ) {
+		if ( i >= filecount ) {
 			break;
 		}
 	}
@@ -2136,31 +2148,35 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 	FS_StripExt( pack->pakBasename, ".pk3" );
 
 	pack->handle = uf;
-	pack->numfiles = gi.number_entry;
-	unzGoToFirstFile(uf);
-
-	for (i = 0; i < gi.number_entry; i++)
+	pack->numfiles = filecount;
+	unzGoToFirstFile( uf );
+	filecount = 0;
+	for ( i = 0; i < gi.number_entry; i++ )
 	{
-		err = unzGetCurrentFileInfo(uf, &file_info, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0);
+		err = unzGetCurrentFileInfo( uf, &file_info, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0 );
+		filename_inzip[sizeof(filename_inzip)-1] = '\0';
 		if (err != UNZ_OK) {
 			break;
 		}
-		filename_inzip[sizeof(filename_inzip)-1] = '\0';
+		if ( file_info.compression_method != 0 && file_info.compression_method != 8 /*Z_DEFLATED*/ ) {
+			continue;
+		} 
 		if (file_info.uncompressed_size > 0) {
-			fs_headerLongs[fs_numHeaderLongs++] = LittleLong(file_info.crc);
-			buildBuffer[i].size = file_info.uncompressed_size;
+			fs_headerLongs[fs_numHeaderLongs++] = LittleLong( file_info.crc );
+			buildBuffer[ filecount ].size = file_info.uncompressed_size;
 		}
 		Q_strlwr( filename_inzip );
-		hash = FS_HashFileName(filename_inzip, pack->hashSize);
-		buildBuffer[i].name = namePtr;
-		strcpy( buildBuffer[i].name, filename_inzip );
-		namePtr += strlen(filename_inzip) + 1;
+		hash = FS_HashFileName( filename_inzip, pack->hashSize );
+		buildBuffer[ filecount ].name = namePtr;
+		strcpy( buildBuffer[ filecount ].name, filename_inzip );
+		namePtr += strlen( filename_inzip ) + 1;
 		// store the file position in the zip
-		unzGetCurrentFileInfoPosition(uf, &buildBuffer[i].pos);
+		unzGetCurrentFileInfoPosition( uf, &buildBuffer[ filecount ].pos );
 		//
-		buildBuffer[i].next = pack->hashTable[hash];
-		pack->hashTable[hash] = &buildBuffer[i];
-		unzGoToNextFile(uf);
+		buildBuffer[ filecount ].next = pack->hashTable[ hash ];
+		pack->hashTable[ hash ] = &buildBuffer[ filecount ];
+		unzGoToNextFile( uf );
+		filecount++;
 	}
 
 	pack->checksum = Com_BlockChecksum( &fs_headerLongs[ 1 ], sizeof(*fs_headerLongs) * ( fs_numHeaderLongs - 1 ) );

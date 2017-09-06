@@ -1908,9 +1908,11 @@ extern int unzOpenCurrentFile (unzFile file)
 
 	pfile_in_zip_read_info->stream_initialised=0;
 	
-	if ((s->cur_file_info.compression_method!=0) &&
-        (s->cur_file_info.compression_method!=Z_DEFLATED))
-		err=UNZ_BADZIPFILE;
+	// already checked in unzlocal_CheckCurrentFileCoherencyHeader()
+	//if ((s->cur_file_info.compression_method!=0) &&
+	//	(s->cur_file_info.compression_method!=Z_DEFLATED))
+	//		err=UNZ_BADZIPFILE;
+
 	Store = s->cur_file_info.compression_method==0;
 
 	pfile_in_zip_read_info->crc32_wait=s->cur_file_info.crc;
