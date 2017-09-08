@@ -510,11 +510,7 @@ void CL_ParseGamestate( msg_t *msg ) {
 				Com_Error( ERR_DROP, "configstring > MAX_CONFIGSTRINGS" );
 			}
 
-			if ( i == CS_SYSTEMINFO )
-				s = MSG_ReadBigString( msg );
-			else
-				s = MSG_ReadString( msg );
-
+			s = MSG_ReadBigString( msg );
 			len = strlen( s );
 
 			if ( len + 1 + cl.gameState.dataCount > MAX_GAMESTATE_CHARS ) {
