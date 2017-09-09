@@ -54,6 +54,7 @@ static const char *DSoundError( int error ) {
 	return "unknown";
 }
 
+
 /*
 ==================
 SNDDMA_Shutdown
@@ -64,22 +65,19 @@ void SNDDMA_Shutdown( void ) {
 
 	if ( pDS ) {
 		Com_DPrintf( "Destroying DS buffers\n" );
-		if ( pDS )
-		{
+		if ( pDS ) {
 			Com_DPrintf( "...setting NORMAL coop level\n" );
 			pDS->lpVtbl->SetCooperativeLevel( pDS, g_wv.hWnd, DSSCL_PRIORITY );
 		}
 
-		if ( pDSBuf )
-		{
+		if ( pDSBuf ) {
 			Com_DPrintf( "...stopping and releasing sound buffer\n" );
 			pDSBuf->lpVtbl->Stop( pDSBuf );
 			pDSBuf->lpVtbl->Release( pDSBuf );
 		}
 
 		// only release primary buffer if it's not also the mixing buffer we just released
-		if ( pDSPBuf && ( pDSBuf != pDSPBuf ) )
-		{
+		if ( pDSPBuf && ( pDSBuf != pDSPBuf ) ) {
 			Com_DPrintf( "...releasing primary buffer\n" );
 			pDSPBuf->lpVtbl->Release( pDSPBuf );
 		}
@@ -103,8 +101,10 @@ void SNDDMA_Shutdown( void ) {
 	pDSPBuf = NULL;
 	dsound_init = qfalse;
 	memset ((void *)&dma, 0, sizeof (dma));
-	CoUninitialize( );
+
+	CoUninitialize();
 }
+
 
 /*
 ==================
@@ -114,14 +114,14 @@ Initialize direct sound
 Returns false if failed
 ==================
 */
-qboolean SNDDMA_Init(void) {
+qboolean SNDDMA_Init( void ) {
 
 	memset ((void *)&dma, 0, sizeof (dma));
 	dsound_init = qfalse;
 
-	CoInitialize(NULL);
+	CoInitialize( NULL );
 
-	if ( !SNDDMA_InitDS () ) {
+	if ( !SNDDMA_InitDS() ) {
 		return qfalse;
 	}
 
@@ -131,6 +131,7 @@ qboolean SNDDMA_Init(void) {
 
     return qtrue;
 }
+
 
 #undef DEFINE_GUID
 
@@ -148,7 +149,7 @@ DEFINE_GUID(IID_IDirectSound8, 0xC50A7E93, 0xF395, 0x4834, 0x9E, 0xF6, 0x7F, 0xA
 DEFINE_GUID(IID_IDirectSound, 0x279AFA83, 0x4981, 0x11CE, 0xA5, 0x21, 0x00, 0x20, 0xAF, 0x0B, 0xE5, 0x60);
 
 
-int SNDDMA_InitDS ()
+qboolean SNDDMA_InitDS( void )
 {
 	HRESULT			hresult;
 	DSBUFFERDESC	dsbuf;
@@ -156,7 +157,7 @@ int SNDDMA_InitDS ()
 	WAVEFORMATEX	format;
 	int				use8;
 
-	Com_Printf( "Initializing DirectSound\n");
+	Com_Printf( "Initializing DirectSound\n" );
 
 	use8 = 1;
     // Create IDirectSound using the primary sound device
@@ -230,7 +231,7 @@ int SNDDMA_InitDS ()
 		}
 		if (DS_OK != pDS->lpVtbl->CreateSoundBuffer(pDS, &dsbuf, &pDSBuf, NULL)) {
 			Com_Printf( "failed\n" );
-			SNDDMA_Shutdown ();
+			SNDDMA_Shutdown();
 			return qfalse;
 		}
 		Com_DPrintf( "forced to software.  ok\n" );
@@ -239,14 +240,14 @@ int SNDDMA_InitDS ()
 	// Make sure mixer is active
 	if ( DS_OK != pDSBuf->lpVtbl->Play(pDSBuf, 0, 0, DSBPLAY_LOOPING) ) {
 		Com_Printf ("*** Looped sound play failed ***\n");
-		SNDDMA_Shutdown ();
+		SNDDMA_Shutdown();
 		return qfalse;
 	}
 
 	// get the returned buffer size
 	if ( DS_OK != pDSBuf->lpVtbl->GetCaps (pDSBuf, &dsbcaps) ) {
 		Com_Printf ("*** GetCaps failed ***\n");
-		SNDDMA_Shutdown ();
+		SNDDMA_Shutdown();
 		return qfalse;
 	}
 	
@@ -261,12 +262,17 @@ int SNDDMA_InitDS ()
 
 	sample16 = (dma.samplebits/8) - 1;
 
-	SNDDMA_BeginPainting ();
+	SNDDMA_BeginPainting();
+
 	if ( dma.buffer )
 		memset( dma.buffer, 0, dma.samples * dma.samplebits/8 );
-	SNDDMA_Submit ();
-	return 1;
+	
+	SNDDMA_Submit();
+
+	return qtrue;
 }
+
+
 /*
 ==============
 SNDDMA_GetDMAPos
@@ -296,6 +302,7 @@ int SNDDMA_GetDMAPos( void ) {
 
 	return s;
 }
+
 
 /*
 ==============
@@ -336,7 +343,7 @@ void SNDDMA_BeginPainting( void ) {
 		if (hresult != DSERR_BUFFERLOST)
 		{
 			Com_Printf( "SNDDMA_BeginPainting: Lock failed with error '%s'\n", DSoundError( hresult ) );
-			S_Shutdown ();
+			S_Shutdown();
 			return;
 		}
 		else
@@ -349,6 +356,7 @@ void SNDDMA_BeginPainting( void ) {
 	}
 	dma.buffer = (unsigned char *)pbuf;
 }
+
 
 /*
 ==============
@@ -379,9 +387,7 @@ void SNDDMA_Activate( void ) {
 	}
 
 	if ( DS_OK != pDS->lpVtbl->SetCooperativeLevel( pDS, g_wv.hWnd, DSSCL_PRIORITY ) )	{
-		Com_Printf ("sound SetCooperativeLevel failed\n");
-		SNDDMA_Shutdown ();
+		Com_Printf( "sound SetCooperativeLevel failed\n" );
+		SNDDMA_Shutdown();
 	}
 }
-
-

@@ -656,11 +656,14 @@ void S_Base_ClearSoundBuffer( void ) {
 	else
 		clear = 0;
 
-	SNDDMA_BeginPainting ();
-	if (dma.buffer)
+	SNDDMA_BeginPainting();
+	
+	if ( dma.buffer )
 		Com_Memset(dma.buffer, clear, dma.samples * dma.samplebits/8);
-	SNDDMA_Submit ();
+
+	SNDDMA_Submit();
 }
+
 
 /*
 ==================
@@ -678,6 +681,7 @@ void S_Base_StopAllSounds(void) {
 	S_Base_ClearSoundBuffer ();
 }
 
+
 /*
 ==============================================================
 
@@ -692,10 +696,10 @@ void S_Base_StopLoopingSound(int entityNum) {
 	loopSounds[entityNum].kill = qfalse;
 }
 
+
 /*
 ==================
 S_ClearLoopingSounds
-
 ==================
 */
 void S_Base_ClearLoopingSounds( qboolean killall ) {
@@ -707,6 +711,7 @@ void S_Base_ClearLoopingSounds( qboolean killall ) {
 	}
 	numLoopChannels = 0;
 }
+
 
 /*
 ==================
@@ -771,6 +776,7 @@ void S_Base_AddLoopingSound( int entityNum, const vec3_t origin, const vec3_t ve
 	loopSounds[entityNum].framenum = cls.framecount;
 }
 
+
 /*
 ==================
 S_AddLoopingSound
@@ -807,7 +813,6 @@ void S_Base_AddRealLoopingSound( int entityNum, const vec3_t origin, const vec3_
 	loopSounds[entityNum].kill = qfalse;
 	loopSounds[entityNum].doppler = qfalse;
 }
-
 
 
 /*
@@ -916,10 +921,7 @@ static void S_Base_RawSamples( int samples, int rate, int width, int n_channels,
 		return;
 	}
 
-	if ( gw_minimized && !CL_VideoRecording() ) // mute client
-		intVolume = 0;
-	else
-		intVolume = 256 * volume;
+	intVolume = 256 * volume;
 
 	if ( s_rawend < s_soundtime ) {
 		Com_DPrintf( "S_RawSamples: resetting minimum: %i < %i\n", s_rawend, s_soundtime );
@@ -1106,6 +1108,7 @@ qboolean S_ScanChannelStarts( void ) {
 	return newSamples;
 }
 
+
 /*
 ============
 S_Update
@@ -1146,7 +1149,8 @@ void S_Base_Update( void ) {
 	S_Update_();
 }
 
-void S_GetSoundtime( void )
+
+static void S_GetSoundtime( void )
 {
 	int		samplepos;
 	static	int		buffers;
@@ -1204,10 +1208,10 @@ void S_GetSoundtime( void )
 }
 
 
-void S_Update_(void) {
-	unsigned        endtime;
+void S_Update_( void ) {
+	unsigned		endtime;
 	int				samps;
-	static			float	lastTime = 0.0f;
+	static float	lastTime = 0.0f;
 	float			ma, op;
 	float			thisTime, sane;
 	static			int ot = -1;
@@ -1254,13 +1258,19 @@ void S_Update_(void) {
 	if (endtime - s_soundtime > samps)
 		endtime = s_soundtime + samps;
 
+	SNDDMA_BeginPainting();
 
+	S_PaintChannels( endtime );
 
-	SNDDMA_BeginPainting ();
+	if ( (!gw_active && s_muteWhenUnfocused->integer) || (gw_minimized && s_muteWhenMinimized->integer) ) {
+		// clear dma buffer right after it was painted but still not sent to hardware
+		// this will allow us to record sound stream in video while staying muted
+		if ( dma.buffer ) {
+			memset( dma.buffer, 0, dma.samples * dma.samplebits/8 );
+		}
+	}
 
-	S_PaintChannels (endtime);
-
-	SNDDMA_Submit ();
+	SNDDMA_Submit();
 
 	lastTime = thisTime;
 }

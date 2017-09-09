@@ -279,7 +279,7 @@ void S_TransferStereo16( unsigned long *pbuf, int endtime )
 
 	while (ls_paintedtime < endtime)
 	{
-	// handle recirculating buffer issues
+		// handle recirculating buffer issues
 		lpos = ls_paintedtime & ((dma.samples>>1)-1);
 
 		snd_out = (short *) pbuf + (lpos<<1);
@@ -307,10 +307,11 @@ void S_TransferStereo16( unsigned long *pbuf, int endtime )
 		snd_p += snd_linear_count;
 		ls_paintedtime += (snd_linear_count>>1);
 
-		if( CL_VideoRecording( ) )
+		if ( CL_VideoRecording() )
 			CL_WriteAVIAudioFrame( (byte *)snd_out, snd_linear_count << 1 );
 	}
 }
+
 
 /*
 ===================
@@ -318,7 +319,7 @@ S_TransferPaintBuffer
 
 ===================
 */
-void S_TransferPaintBuffer(int endtime)
+static void S_TransferPaintBuffer( int endtime )
 {
 	int 	out_idx;
 	int 	i, count;
@@ -330,7 +331,6 @@ void S_TransferPaintBuffer(int endtime)
 
 	pbuf = (unsigned long *)dma.buffer;
 
-
 	if ( s_testsound->integer ) {
 		// write a fixed sine wave
 		count = (endtime - s_paintedtime);
@@ -339,9 +339,9 @@ void S_TransferPaintBuffer(int endtime)
 	}
 
 
-	if (dma.samplebits == 16 && dma.channels == 2)
+	if ( dma.samplebits == 16 && dma.channels == 2 )
 	{	// optimized case
-		S_TransferStereo16 (pbuf, endtime);
+		S_TransferStereo16( pbuf, endtime );
 	}
 	else
 	{	// general case
@@ -462,12 +462,14 @@ static void S_PaintChannelFrom16_scalar( channel_t *ch, const sfx_t *sc, int cou
 	}
 }
 
+
 static void S_PaintChannelFrom16( channel_t *ch, const sfx_t *sc, int count, int sampleOffset, int bufferOffset ) 
 {
 	S_PaintChannelFrom16_scalar( ch, sc, count, sampleOffset, bufferOffset );
 }
 
-void S_PaintChannelFromWavelet( channel_t *ch, sfx_t *sc, int count, int sampleOffset, int bufferOffset ) {
+
+static void S_PaintChannelFromWavelet( channel_t *ch, sfx_t *sc, int count, int sampleOffset, int bufferOffset ) {
 	int						data;
 	int						leftvol, rightvol;
 	int						i;
@@ -509,7 +511,8 @@ void S_PaintChannelFromWavelet( channel_t *ch, sfx_t *sc, int count, int sampleO
 	}
 }
 
-void S_PaintChannelFromADPCM( channel_t *ch, sfx_t *sc, int count, int sampleOffset, int bufferOffset ) {
+
+static void S_PaintChannelFromADPCM( channel_t *ch, sfx_t *sc, int count, int sampleOffset, int bufferOffset ) {
 	int						data;
 	int						leftvol, rightvol;
 	int						i;
@@ -556,7 +559,8 @@ void S_PaintChannelFromADPCM( channel_t *ch, sfx_t *sc, int count, int sampleOff
 	}
 }
 
-void S_PaintChannelFromMuLaw( channel_t *ch, sfx_t *sc, int count, int sampleOffset, int bufferOffset ) {
+
+static void S_PaintChannelFromMuLaw( channel_t *ch, sfx_t *sc, int count, int sampleOffset, int bufferOffset ) {
 	int						data;
 	int						leftvol, rightvol;
 	int						i;
@@ -610,6 +614,7 @@ void S_PaintChannelFromMuLaw( channel_t *ch, sfx_t *sc, int count, int sampleOff
 	}
 }
 
+
 /*
 ===================
 S_PaintChannels
@@ -623,10 +628,7 @@ void S_PaintChannels( int endtime ) {
 	int		ltime, count;
 	int		sampleOffset;
 
-	if ( gw_minimized && !CL_VideoRecording() ) // mute client
-		snd_vol = 0;
-	else
-		snd_vol = s_volume->value * 255;
+	snd_vol = s_volume->value * 255;
 
 	//Com_Printf ("%i to %i\n", s_paintedtime, endtime);
 	while ( s_paintedtime < endtime ) {
