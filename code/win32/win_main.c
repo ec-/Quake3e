@@ -246,12 +246,13 @@ void Sys_ListFilteredFiles( const char *basedir, const char *subdirs, const char
 		Com_sprintf( filename, sizeof(filename), "%s\\%s", subdirs, findinfo.name );
 		if (!Com_FilterPath( filter, filename, qfalse ))
 			continue;
-		list[ *numfiles ] = CopyString( filename );
+		list[ *numfiles ] = FS_CopyString( filename );
 		(*numfiles)++;
 	} while ( _findnext (findhandle, &findinfo) != -1 );
 
 	_findclose (findhandle);
 }
+
 
 static qboolean strgtr(const char *s0, const char *s1) {
 	int l0, l1, i;
@@ -358,7 +359,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 			if ( nfiles == MAX_FOUND_FILES - 1 ) {
 				break;
 			}
-			list[ nfiles ] = CopyString( findinfo.name );
+			list[ nfiles ] = FS_CopyString( findinfo.name );
 			nfiles++;
 		}
 	} while ( _findnext (findhandle, &findinfo) != -1 );

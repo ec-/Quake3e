@@ -331,22 +331,23 @@ int	fs_lastPakIndex;
 FILE*		missingFiles = NULL;
 #endif
 
+
 /*
 ==============
 FS_Initialized
 ==============
 */
-
 qboolean FS_Initialized( void ) {
-	return (fs_searchpaths != NULL);
+	return ( fs_searchpaths != NULL );
 }
+
 
 /*
 =================
 FS_PakIsPure
 =================
 */
-qboolean FS_PakIsPure( pack_t *pack ) {
+qboolean FS_PakIsPure( const pack_t *pack ) {
 	int i;
 
 	if ( fs_numServerPaks ) {
@@ -370,11 +371,11 @@ FS_LoadStack
 return load stack
 =================
 */
-int FS_LoadStack( void )
-{
+int FS_LoadStack( void ) {
 	return fs_loadStack;
 }
-                      
+
+
 /*
 ================
 return a hash value for the filename
@@ -418,12 +419,13 @@ static FILE	*FS_FileForHandle( fileHandle_t f ) {
 }
 
 
-void	FS_ForceFlush( fileHandle_t f ) {
+void FS_ForceFlush( fileHandle_t f ) {
 	FILE *file;
 
 	file = FS_FileForHandle(f);
 	setvbuf( file, NULL, _IONBF, 0 );
 }
+
 
 /*
 ================
@@ -500,6 +502,7 @@ static void FS_ReplaceSeparators( char *path ) {
 		}
 	}
 }
+
 
 /*
 ===================
@@ -926,7 +929,6 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
 /*
 ===========
 FS_SV_Rename
-
 ===========
 */
 void FS_SV_Rename( const char *from, const char *to ) {
@@ -959,7 +961,6 @@ void FS_SV_Rename( const char *from, const char *to ) {
 /*
 ===========
 FS_Rename
-
 ===========
 */
 void FS_Rename( const char *from, const char *to ) {
@@ -1029,7 +1030,6 @@ void FS_FCloseFile( fileHandle_t f ) {
 /*
 ===========
 FS_FOpenFileWrite
-
 ===========
 */
 fileHandle_t FS_FOpenFileWrite( const char *filename ) {
@@ -2304,6 +2304,15 @@ static int FS_ReturnPath( const char *zname, char *zpath, int *depth ) {
 }
 
 
+char *FS_CopyString( const char *in ) {
+	char *out;
+	//out = S_Malloc( strlen( in ) + 1 );
+	out = Z_Malloc( strlen( in ) + 1 );
+	strcpy( out, in );
+	return out;
+}
+
+
 /*
 ==================
 FS_AddFileToList
@@ -2320,11 +2329,12 @@ static int FS_AddFileToList( const char *name, char *list[MAX_FOUND_FILES], int 
 			return nfiles; // allready in list
 		}
 	}
-	list[ nfiles ] = CopyString( name );
+	list[ nfiles ] = FS_CopyString( name );
 	nfiles++;
 
 	return nfiles;
 }
+
 
 /*
 ===============
@@ -4081,7 +4091,7 @@ void FS_PureServerSetLoadedPaks( const char *pakSums, const char *pakNames ) {
 		}
 
 		for ( i = 0 ; i < d ; i++ ) {
-			fs_serverPakNames[i] = CopyString( Cmd_Argv( i ) );
+			fs_serverPakNames[i] = FS_CopyString( Cmd_Argv( i ) );
 		}
 	}
 }
@@ -4132,7 +4142,7 @@ void FS_PureServerSetReferencedPaks( const char *pakSums, const char *pakNames )
 			if ( strlen( Cmd_Argv( i ) ) >= MAX_OSPATH-13 ) // + ".00000000.pk3"
 				Com_Error( ERR_DROP, "Referenced pak name is too long: %s", Cmd_Argv( i ) );
 
-			fs_serverReferencedPakNames[i] = CopyString( Cmd_Argv( i ) );
+			fs_serverReferencedPakNames[i] = FS_CopyString( Cmd_Argv( i ) );
 		}
 	}
 

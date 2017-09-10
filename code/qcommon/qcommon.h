@@ -795,6 +795,9 @@ typedef qboolean ( *fnamecallback_f )( const char *filename, int length );
 
 void FS_SetFilenameCallback( fnamecallback_f func ); 
 
+
+char *FS_CopyString( const char *in );
+
 /*
 ==============================================================
 

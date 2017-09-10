@@ -43,7 +43,7 @@ const int demo_protocols[] = { 66, 67, PROTOCOL_VERSION, NEW_PROTOCOL_VERSION, 0
 #define MIN_COMHUNKMEGS		56
 #define DEF_COMHUNKMEGS		96
 #endif
-#define DEF_COMZONEMEGS		24
+#define DEF_COMZONEMEGS		25
 #define XSTRING(x)			STRING(x)
 #define STRING(x)			#x
 #define DEF_COMHUNKMEGS_S	XSTRING(DEF_COMHUNKMEGS)
@@ -55,9 +55,9 @@ int		CPU_Flags = 0;
 void	(*Com_DelayFunc)( void ) = NULL;
 
 FILE *debuglogfile;
-static fileHandle_t logfile;
-static fileHandle_t com_journalFile; // events are written here
-fileHandle_t	com_journalDataFile; // config files are written here
+static fileHandle_t logfile = FS_INVALID_HANDLE;
+static fileHandle_t com_journalFile = FS_INVALID_HANDLE ; // events are written here
+fileHandle_t com_journalDataFile = FS_INVALID_HANDLE; // config files are written here
 
 cvar_t	*com_viewlog;
 cvar_t	*com_speeds;
@@ -195,7 +195,7 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 	if ( com_logfile && com_logfile->integer ) {
     // TTimo: only open the qconsole.log if the filesystem is in an initialized state
     //   also, avoid recursing in the qconsole.log opening (i.e. if fs_debug is on)
-		if ( !logfile && FS_Initialized() && !opening_qconsole) {
+		if ( logfile == FS_INVALID_HANDLE && FS_Initialized() && !opening_qconsole ) {
 			struct tm *newtime;
 			time_t aclock;
 
@@ -206,7 +206,7 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 
 			logfile = FS_FOpenFileWrite( "qconsole.log" );
 			
-			if(logfile)
+			if ( logfile != FS_INVALID_HANDLE )
 			{
 				Com_Printf( "logfile opened on %s\n", asctime( newtime ) );
 		
@@ -225,7 +225,7 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 
 			opening_qconsole = qfalse;
 		}
-		if ( logfile && FS_Initialized()) {
+		if ( logfile != FS_INVALID_HANDLE && FS_Initialized() ) {
 			FS_Write(msg, strlen(msg), logfile);
 		}
 	}
@@ -313,8 +313,14 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 	Q_vsnprintf (com_errorMessage, sizeof(com_errorMessage), fmt, argptr);
 	va_end (argptr);
 
-	if (code != ERR_DISCONNECT && code != ERR_NEED_CD)
-		Cvar_Set("com_errorMessage", com_errorMessage);
+	if ( code != ERR_DISCONNECT && code != ERR_NEED_CD ) {
+		// we can't recover from ERR_FATAL so there is no recipients for com_errorMessage
+		// also if ERR_FATAL was called from S_Malloc - CopyString for a long (2+ chars) text
+		// will trigger recursive error without proper client/server shutdown
+		if ( code != ERR_FATAL ) {
+			Cvar_Set( "com_errorMessage", com_errorMessage );
+		}
+	}
 
 	if (code == ERR_DISCONNECT || code == ERR_SERVERDISCONNECT) {
 		VM_Forced_Unload_Start();
@@ -371,10 +377,10 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		VM_Forced_Unload_Done();
 	}
 
-	Com_Shutdown ();
+	Com_Shutdown();
 
 	calledSysError = qtrue;
-	Sys_Error ("%s", com_errorMessage);
+	Sys_Error( "%s", com_errorMessage );
 }
 
 
@@ -1162,6 +1168,7 @@ void *Z_TagMalloc( int size, int tag ) {
 	return (void *) ((byte *)base + sizeof(memblock_t));
 }
 
+
 /*
 ========================
 Z_Malloc
@@ -1186,6 +1193,7 @@ void *Z_Malloc( int size ) {
 	return buf;
 }
 
+
 #ifdef ZONE_DEBUG
 void *S_MallocDebug( int size, char *label, char *file, int line ) {
 	return Z_TagMallocDebug( size, TAG_SMALL, label, file, line );
@@ -1195,6 +1203,7 @@ void *S_Malloc( int size ) {
 	return Z_TagMalloc( size, TAG_SMALL );
 }
 #endif
+
 
 /*
 ========================
@@ -1219,12 +1228,13 @@ void Z_CheckHeap( void ) {
 	}
 }
 
+
 /*
 ========================
 Z_LogZoneHeap
 ========================
 */
-void Z_LogZoneHeap( memzone_t *zone, char *name ) {
+static void Z_LogZoneHeap( memzone_t *zone, const char *name ) {
 #ifdef ZONE_DEBUG
 	char dump[32], *ptr;
 	int  i, j;
@@ -1233,8 +1243,9 @@ void Z_LogZoneHeap( memzone_t *zone, char *name ) {
 	char		buf[4096];
 	int size, allocSize, numBlocks;
 
-	if (!logfile || !FS_Initialized())
+	if ( logfile == FS_INVALID_HANDLE || !FS_Initialized() )
 		return;
+
 	size = numBlocks = 0;
 #ifdef ZONE_DEBUG
 	allocSize = 0;
@@ -1275,6 +1286,7 @@ void Z_LogZoneHeap( memzone_t *zone, char *name ) {
 	FS_Write(buf, strlen(buf), logfile);
 }
 
+
 /*
 ========================
 Z_LogHeap
@@ -1284,6 +1296,7 @@ void Z_LogHeap( void ) {
 	Z_LogZoneHeap( mainzone, "MAIN" );
 	Z_LogZoneHeap( smallzone, "SMALL" );
 }
+
 
 // static mem blocks to reduce a lot of small zone overhead
 typedef struct memstatic_s {
@@ -1305,6 +1318,7 @@ static const memstatic_t numberstring[] = {
 	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'8', '\0'} }, 
 	{ {(sizeof(memstatic_t) + 3) & ~3, TAG_STATIC, NULL, NULL, ZONEID}, {'9', '\0'} }
 };
+
 
 /*
 ========================
@@ -1619,12 +1633,13 @@ void Hunk_Log( void ) {
 	FS_Write(buf, strlen(buf), logfile);
 }
 
+
 /*
 =================
 Hunk_SmallLog
 =================
 */
-void Hunk_SmallLog( void) {
+void Hunk_SmallLog( void ) {
 	hunkblock_t	*block, *block2;
 	char		buf[4096];
 	int size, locsize, numBlocks;
@@ -2311,6 +2326,7 @@ void Com_PushEvent( sysEvent_t *event ) {
 	com_pushedEventsHead++;
 }
 
+
 /*
 =================
 Com_GetEvent
@@ -2323,6 +2339,7 @@ sysEvent_t	Com_GetEvent( void ) {
 	}
 	return Com_GetRealEvent();
 }
+
 
 /*
 =================
@@ -2348,6 +2365,7 @@ void Com_RunAndTimeServerPacket( const netadr_t *evFrom, msg_t *buf ) {
 		}
 	}
 }
+
 
 /*
 =================
@@ -2509,7 +2527,7 @@ Com_ExecuteCfg
 For controlling environment variables
 ==================
 */
-void Com_ExecuteCfg(void)
+static void Com_ExecuteCfg( void )
 {
 	Cbuf_ExecuteText(EXEC_NOW, "exec default.cfg\n");
 	Cbuf_Execute(); // Always execute after exec to prevent text buffer overflowing
@@ -3584,12 +3602,13 @@ void Com_Frame( qboolean demoPlaying ) {
 	com_frameNumber++;
 }
 
+
 /*
 =================
 Com_Shutdown
 =================
 */
-void Com_Shutdown (void) {
+void Com_Shutdown( void ) {
 	if ( logfile != FS_INVALID_HANDLE ) {
 		FS_FCloseFile( logfile );
 		logfile = FS_INVALID_HANDLE;

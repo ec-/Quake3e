@@ -221,12 +221,13 @@ void Sys_ListFilteredFiles( const char *basedir, const char *subdirs, const char
 		Com_sprintf( filename, sizeof(filename), "%s/%s", subdirs, d->d_name );
 		if (!Com_FilterPath( filter, filename, qfalse ))
 			continue;
-		list[ *numfiles ] = CopyString( filename );
+		list[ *numfiles ] = FS_CopyString( filename );
 		(*numfiles)++;
 	}
 
 	closedir(fdir);
 }
+
 
 // bk001129 - in 1.17 this used to be
 // char **Sys_ListFiles( const char *directory, const char *extension, int *numfiles, qboolean wantsubs )
@@ -297,7 +298,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 
 		if ( nfiles == MAX_FOUND_FILES - 1 )
 			break;
-		list[ nfiles ] = CopyString( d->d_name );
+		list[ nfiles ] = FS_CopyString( d->d_name );
 		nfiles++;
 	}
 
@@ -322,7 +323,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 }
 
 
-void	Sys_FreeFileList( char **list ) {
+void Sys_FreeFileList( char **list ) {
 	int		i;
 
 	if ( !list ) {
