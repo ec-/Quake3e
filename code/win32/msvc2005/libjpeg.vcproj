@@ -21,7 +21,7 @@
 			OutputDirectory=".\build\libjpeg_debug"
 			IntermediateDirectory=".\build\libjpeg_debug"
 			ConfigurationType="4"
-			CharacterSet="2"
+			CharacterSet="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -82,7 +82,7 @@
 			OutputDirectory=".\build\libjpeg_debug_x64"
 			IntermediateDirectory=".\build\libjpeg_debug_x64"
 			ConfigurationType="4"
-			CharacterSet="2"
+			CharacterSet="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -142,7 +142,7 @@
 			OutputDirectory=".\build\release_libjpeg"
 			IntermediateDirectory=".\build\release_libjpeg"
 			ConfigurationType="4"
-			CharacterSet="2"
+			CharacterSet="0"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -202,7 +202,7 @@
 			OutputDirectory=".\build\libjpeg_release_x64"
 			IntermediateDirectory=".\build\libjpeg_release_x64"
 			ConfigurationType="4"
-			CharacterSet="2"
+			CharacterSet="0"
 			WholeProgramOptimization="1"
 			>
 			<Tool

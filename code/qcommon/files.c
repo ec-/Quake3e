@@ -3951,7 +3951,7 @@ const char *FS_ReferencedPakPureChecksums( int maxlen ) {
 	s = Q_stradd( s, va( "%i ", checksum ) );
 	if ( s > max ) { 
 		// client-side overflow
-		Com_Printf( S_COLOR_YELLOW "WARNING: pure checksum list is too long (%i), you might be not able to play on remote server!\n", s - info );
+		Com_Printf( S_COLOR_YELLOW "WARNING: pure checksum list is too long (%i), you might be not able to play on remote server!\n", (int)(s - info) );
 		*max = '\0';
 	}
 	

@@ -69,7 +69,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib wldap32.lib ..\..\libcurl\windows\vs2005\lib32\libcurl_a.lib"
+				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib wldap32.lib ..\..\libcurl\windows\vs2005\lib32\libcurl_a_debug.lib"
 				OutputFile="$(OutDir)\quake3e-debug.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -77,9 +77,8 @@
 				GenerateMapFile="true"
 				MapFileName="$(IntDir)\quake3e-debug.map"
 				SubSystem="2"
-				StackReserveSize="10247680"
+				StackReserveSize="4099072"
 				TargetMachine="1"
-				FixedBaseAddress="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -159,7 +158,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib wldap32.lib ..\..\libcurl\windows\vs2005\lib64\libcurl_a.lib"
+				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib wldap32.lib ..\..\libcurl\windows\vs2005\lib64\libcurl_a_debug.lib"
 				OutputFile="$(OutDir)\quake3e-debug.x64.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -167,9 +166,8 @@
 				GenerateMapFile="true"
 				MapFileName="$(IntDir)\quake3e-debug.x64.map"
 				SubSystem="2"
-				StackReserveSize="10247680"
+				StackReserveSize="4099072"
 				TargetMachine="17"
-				FixedBaseAddress="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -248,7 +246,7 @@
 				GenerateMapFile="true"
 				MapFileName="$(IntDir)\quake3e.map"
 				SubSystem="2"
-				StackReserveSize="10247680"
+				StackReserveSize="4099072"
 				OptimizeReferences="2"
 				SetChecksum="true"
 				TargetMachine="1"
@@ -331,7 +329,7 @@
 				GenerateMapFile="true"
 				MapFileName="$(IntDir)\quake3e.x64.map"
 				SubSystem="2"
-				StackReserveSize="10247680"
+				StackReserveSize="4099072"
 				OptimizeReferences="2"
 				SetChecksum="true"
 				TargetMachine="17"

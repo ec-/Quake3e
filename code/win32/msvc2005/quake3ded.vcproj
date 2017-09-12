@@ -247,6 +247,7 @@
 				OptimizeReferences="2"
 				SetChecksum="true"
 				TargetMachine="1"
+				FixedBaseAddress="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -328,6 +329,7 @@
 				OptimizeReferences="2"
 				SetChecksum="true"
 				TargetMachine="17"
+				FixedBaseAddress="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -574,14 +576,6 @@
 			</File>
 			<File
 				RelativePath="..\..\server\server.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\client\snd_local.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\client\snd_public.h"
 				>
 			</File>
 			<File
