@@ -33,7 +33,6 @@ cvar_t *s_muteWhenMinimized;
 cvar_t *s_muteWhenUnfocused;
 
 static soundInterface_t si;
-qboolean s_clientMuted = qfalse;
 
 /*
 =================
@@ -477,3 +476,4 @@ void S_Shutdown( void )
 
 	S_CodecShutdown( );
 }
+

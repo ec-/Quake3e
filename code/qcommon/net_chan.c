@@ -223,6 +223,7 @@ void Netchan_Transmit( netchan_t *chan, int length, const byte *data ) {
 	}
 }
 
+
 /*
 =================
 Netchan_Process
@@ -506,7 +507,8 @@ static void NET_QueuePacket( int length, const void *data, const netadr_t *to, i
 	}
 }
 
-void NET_FlushPacketQueue(void)
+
+void NET_FlushPacketQueue( void )
 {
 	packetQueue_t *last;
 	int now;
@@ -522,6 +524,7 @@ void NET_FlushPacketQueue(void)
 		Z_Free(last);
 	}
 }
+
 
 void NET_SendPacket( netsrc_t sock, int length, const void *data, const netadr_t *to ) {
 
@@ -553,6 +556,7 @@ void NET_SendPacket( netsrc_t sock, int length, const void *data, const netadr_t
 	}
 }
 
+
 /*
 ===============
 NET_OutOfBandPrint
@@ -562,7 +566,7 @@ Sends a text message in an out-of-band datagram
 */
 void QDECL NET_OutOfBandPrint( netsrc_t sock, const netadr_t *adr, const char *format, ... ) {
 	va_list		argptr;
-	char		string[MAX_MSGLEN];
+	char		string[ MAX_PACKETLEN ];
 
 	// set the header
 	string[0] = -1;

@@ -166,6 +166,7 @@ void CL_Netchan_Transmit( netchan_t *chan, msg_t* msg ) {
 	}
 }
 
+
 /*
 =================
 CL_Netchan_Process

@@ -35,16 +35,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #		else
 #			include <wspiapi.h>
 #		endif
-#	else
+#	else // WINVER >= 0x501
 
 #if	1	// Windows2000 compatibility 
 #		include <ws2tcpip.h>
 #		include <Wspiapi.h>
-#	else
+#else
 #		include <ws2spi.h>
-#	endif	
+#endif	
 
-#	endif
+#endif // WINVER >= 0x501
 
 typedef int socklen_t;
 #	ifdef ADDRESS_FAMILY
@@ -52,6 +52,11 @@ typedef int socklen_t;
 #	else
 typedef unsigned short sa_family_t;
 #	endif
+
+#	undef EAGAIN
+#	undef EADDRNOTAVAIL
+#	undef EAFNOSUPPORT
+#	undef ECONNRESET
 
 #	define EAGAIN			WSAEWOULDBLOCK
 #	define EADDRNOTAVAIL	WSAEADDRNOTAVAIL
@@ -63,7 +68,7 @@ typedef u_long	ioctlarg_t;
 static WSADATA	winsockdata;
 static qboolean	winsockInitialized = qfalse;
 
-#else
+#else // !_WIN32
 
 #	if MAC_OS_X_VERSION_MIN_REQUIRED == 1020
 		// needed for socklen_t on OSX 10.2
@@ -647,7 +652,6 @@ static qboolean NET_GetPacket( netadr_t *net_from, msg_t *net_message, fd_set *f
 
 //=============================================================================
 
-static char socksBuf[4096];
 
 /*
 ==================
@@ -677,6 +681,7 @@ void Sys_SendPacket( int length, const void *data, const netadr_t *to ) {
 	NetadrToSockadr( to, (struct sockaddr *) &addr );
 
 	if( usingSocks && to->type == NA_IP ) {
+		char socksBuf[ 4096 ];
 		socksBuf[0] = 0;	// reserved
 		socksBuf[1] = 0;
 		socksBuf[2] = 0;	// fragment (not fragmented)
@@ -972,13 +977,14 @@ static SOCKET NET_IP6Socket( const char *net_interface, int port, struct sockadd
 	return newsocket;
 }
 
+
 /*
 ====================
 NET_SetMulticast
 Set the current multicast group
 ====================
 */
-void NET_SetMulticast6(void)
+void NET_SetMulticast6( void )
 {
 	struct sockaddr_in6 addr;
 
@@ -1006,13 +1012,14 @@ void NET_SetMulticast6(void)
 		curgroup.ipv6mr_interface = 0;
 }
 
+
 /*
 ====================
 NET_JoinMulticast
 Join an ipv6 multicast group
 ====================
 */
-void NET_JoinMulticast6(void)
+void NET_JoinMulticast6( void )
 {
 	int err;
 	
@@ -1062,7 +1069,8 @@ void NET_JoinMulticast6(void)
 	}
 }
 
-void NET_LeaveMulticast6()
+
+void NET_LeaveMulticast6( void )
 {
 	if(multicast6_socket != INVALID_SOCKET)
 	{
@@ -1075,12 +1083,13 @@ void NET_LeaveMulticast6()
 	}
 }
 
+
 /*
 ====================
 NET_OpenSocks
 ====================
 */
-void NET_OpenSocks( int port ) {
+static void NET_OpenSocks( int port ) {
 	struct sockaddr_in	address;
 	struct hostent		*h;
 	int					len;

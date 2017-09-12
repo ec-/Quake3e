@@ -140,8 +140,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	unsigned short table[3][256];
 	int		i, j;
 	BOOL	ret;
-	OSVERSIONINFO	vinfo;
-	HDC hDC;
+	HDC		hDC;
 
 #ifdef USE_PMLIGHT
 	if ( fboAvailable )
@@ -160,22 +159,16 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	}
 
 	// Win2K and newer put this odd restriction on gamma ramps...
-	vinfo.dwOSVersionInfoSize = sizeof(vinfo);
-	GetVersionEx( &vinfo );
-	if ( vinfo.dwMajorVersion >= 5 && vinfo.dwPlatformId == VER_PLATFORM_WIN32_NT ) {
-		Com_DPrintf( "performing gamma clamp.\n" );
-		for ( j = 0 ; j < 3 ; j++ ) {
-			for ( i = 0 ; i < 128 ; i++ ) {
-				if ( table[j][i] > ( (128+i) << 8 ) ) {
-					table[j][i] = (128+i) << 8;
-				}
-			}
-			if ( table[j][127] > 254<<8 ) {
-				table[j][127] = 254<<8;
+	Com_DPrintf( "performing gamma clamp.\n" );
+	for ( j = 0 ; j < 3 ; j++ ) {
+		for ( i = 0 ; i < 128 ; i++ ) {
+			if ( table[j][i] > ( (128+i) << 8 ) ) {
+				table[j][i] = (128+i) << 8;
 			}
 		}
-	} else {
-		Com_DPrintf( "skipping gamma clamp.\n" );
+		if ( table[j][127] > 254<<8 ) {
+			table[j][127] = 254<<8;
+		}
 	}
 
 	// enforce constantly increasing
@@ -224,4 +217,3 @@ void WG_RestoreGamma( void )
 			glw_state.gammaSet = qfalse;
 	}
 }
-

@@ -684,42 +684,10 @@ void Sys_Init( void ) {
 	timeBeginPeriod( 1 );
 
 #ifndef DEDICATED
-	Cmd_AddCommand ("in_restart", Sys_In_Restart_f);
+	Cmd_AddCommand( "in_restart", Sys_In_Restart_f );
 #endif
 
-	g_wv.osversion.dwOSVersionInfoSize = sizeof( g_wv.osversion );
-
-	if (!GetVersionEx (&g_wv.osversion))
-		Sys_Error ("Couldn't get OS info");
-
-	if (g_wv.osversion.dwMajorVersion < 4)
-		Sys_Error ("Quake3 requires Windows version 4 or greater");
-	if (g_wv.osversion.dwPlatformId == VER_PLATFORM_WIN32s)
-		Sys_Error ("Quake3 doesn't run on Win32s");
-
-	if ( g_wv.osversion.dwPlatformId == VER_PLATFORM_WIN32_NT )
-	{
-		Cvar_Set( "arch", "winnt" );
-	}
-	else if ( g_wv.osversion.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS )
-	{
-		if ( LOWORD( g_wv.osversion.dwBuildNumber ) >= WIN98_BUILD_NUMBER )
-		{
-			Cvar_Set( "arch", "win98" );
-		}
-		else if ( LOWORD( g_wv.osversion.dwBuildNumber ) >= OSR2_BUILD_NUMBER )
-		{
-			Cvar_Set( "arch", "win95 osr2.x" );
-		}
-		else
-		{
-			Cvar_Set( "arch", "win95" );
-		}
-	}
-	else
-	{
-		Cvar_Set( "arch", "unknown Windows variant" );
-	}
+	Cvar_Set( "arch", "winnt" );
 
 	Cvar_Set( "username", Sys_GetCurrentUser() );
 
@@ -728,7 +696,6 @@ void Sys_Init( void ) {
 
 	IN_Init();
 #endif
-
 }
 
 //=======================================================================

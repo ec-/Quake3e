@@ -398,14 +398,14 @@ void Sys_Init( void )
 {
 
 #ifndef DEDICATED
-  Cmd_AddCommand( "in_restart", Sys_In_Restart_f );
+	Cmd_AddCommand( "in_restart", Sys_In_Restart_f );
 #endif
 
-  Cvar_Set( "arch", OS_STRING " " ARCH_STRING );
+	Cvar_Set( "arch", OS_STRING " " ARCH_STRING );
 
-  Cvar_Set( "username", Sys_GetCurrentUser() );
+	Cvar_Set( "username", Sys_GetCurrentUser() );
 
-  //IN_Init();   // rcg08312005 moved into glimp.
+	//IN_Init();   // rcg08312005 moved into glimp.
 }
 
 
