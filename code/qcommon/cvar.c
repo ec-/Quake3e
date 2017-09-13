@@ -268,7 +268,7 @@ static const char *Cvar_Validate( cvar_t *var, const char *value, qboolean warn 
 			}
 
 			if ( warn ) {
-				if ( limit == var->mins || limit == var->maxs ) {
+				if ( limit && ( limit == var->mins || limit == var->maxs ) ) {
 					if ( value == intbuf ) { // cast to integer
 						Com_Printf( " and" ); 
 					} else {
