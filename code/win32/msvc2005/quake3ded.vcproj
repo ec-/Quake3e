@@ -76,7 +76,7 @@
 				GenerateMapFile="true"
 				MapFileName="$(IntDir)\quake3e.ded-debug.map"
 				SubSystem="2"
-				StackReserveSize="10247680"
+				StackReserveSize="4194304"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -164,7 +164,7 @@
 				GenerateMapFile="true"
 				MapFileName="$(IntDir)\quake3e.ded-debug.x64.map"
 				SubSystem="2"
-				StackReserveSize="10247680"
+				StackReserveSize="4194304"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -243,7 +243,7 @@
 				GenerateMapFile="true"
 				MapFileName="$(IntDir)\quake3e.ded.map"
 				SubSystem="2"
-				StackReserveSize="10247680"
+				StackReserveSize="4194304"
 				OptimizeReferences="2"
 				SetChecksum="true"
 				TargetMachine="1"
@@ -325,7 +325,7 @@
 				GenerateMapFile="true"
 				MapFileName="$(IntDir)\quake3e.ded.x64.map"
 				SubSystem="2"
-				StackReserveSize="10247680"
+				StackReserveSize="4194304"
 				OptimizeReferences="2"
 				SetChecksum="true"
 				TargetMachine="17"

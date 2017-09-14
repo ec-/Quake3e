@@ -77,7 +77,7 @@
 				GenerateMapFile="true"
 				MapFileName="$(IntDir)\quake3e-debug.map"
 				SubSystem="2"
-				StackReserveSize="4099072"
+				StackReserveSize="4194304"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -166,7 +166,7 @@
 				GenerateMapFile="true"
 				MapFileName="$(IntDir)\quake3e-debug.x64.map"
 				SubSystem="2"
-				StackReserveSize="4099072"
+				StackReserveSize="4194304"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -246,7 +246,7 @@
 				GenerateMapFile="true"
 				MapFileName="$(IntDir)\quake3e.map"
 				SubSystem="2"
-				StackReserveSize="4099072"
+				StackReserveSize="4194304"
 				OptimizeReferences="2"
 				SetChecksum="true"
 				TargetMachine="1"
@@ -329,7 +329,7 @@
 				GenerateMapFile="true"
 				MapFileName="$(IntDir)\quake3e.x64.map"
 				SubSystem="2"
-				StackReserveSize="4099072"
+				StackReserveSize="4194304"
 				OptimizeReferences="2"
 				SetChecksum="true"
 				TargetMachine="17"
@@ -552,7 +552,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Assembling..."
-						CommandLine="ml64 /c /Zi /Fo&quot;$(IntDir)\$(InputFileName).obj&quot; &quot;$(InputPath)&quot;"
+						CommandLine="ml64 /c /Zi /Fo&quot;$(IntDir)\$(InputFileName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
 						Outputs="&quot;$(IntDir)\$(InputFileName).obj&quot;"
 					/>
 				</FileConfiguration>

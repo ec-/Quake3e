@@ -399,49 +399,57 @@ Stores the length of padding after a line of pixels to address padlen
 Return value must be freed with ri.Hunk_FreeTempMemory()
 ================== 
 */  
-byte *RB_ReadPixels(int x, int y, int width, int height, size_t *offset, int *padlen)
+static byte *RB_ReadPixels(int x, int y, int width, int height, size_t *offset, int *padlen, int lineAlign )
 {
 	byte *buffer, *bufstart;
 	int padwidth, linelen;
+	int	bufAlign;
 	GLint packAlign;
 	
 	qglGetIntegerv(GL_PACK_ALIGNMENT, &packAlign);
 	
 	linelen = width * 3;
-	padwidth = PAD(linelen, packAlign);
+
+	if ( packAlign < lineAlign )
+		padwidth = PAD(linelen, lineAlign);
+	else
+		padwidth = PAD(linelen, packAlign);
 	
+	bufAlign = MAX( packAlign, 16 ); // for SIMD
+
 	// Allocate a few more bytes so that we can choose an alignment we like
-	buffer = ri.Hunk_AllocateTempMemory(padwidth * height + *offset + packAlign - 1);
-	
-	bufstart = PADP((intptr_t) buffer + *offset, packAlign);
-	qglReadPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, bufstart);
+	buffer = ri.Hunk_AllocateTempMemory(padwidth * height + *offset + bufAlign - 1);
+	bufstart = PADP((intptr_t) buffer + *offset, bufAlign);
+
+	qglReadPixels( x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, bufstart );
 	
 	*offset = bufstart - buffer;
-	*padlen = padwidth - linelen;
+	*padlen = PAD(linelen, packAlign) - linelen;
 	
 	return buffer;
 }
 
 
-/* 
-================== 
+/*
+==================
 RB_TakeScreenshot
-================== 
+==================
 */  
 void RB_TakeScreenshot( int x, int y, int width, int height, const char *fileName )
 {
+	const int header_size = 18;
 	byte *allbuf, *buffer;
 	byte *srcptr, *destptr;
 	byte *endline, *endmem;
 	byte temp;
-	
 	int linelen, padlen;
-	size_t offset = 18, memcount;
+	size_t offset, memcount;
 		
-	allbuf = RB_ReadPixels(x, y, width, height, &offset, &padlen);
-	buffer = allbuf + offset - 18;
+	offset = header_size;
+	allbuf = RB_ReadPixels( x, y, width, height, &offset, &padlen, 0 );
+	buffer = allbuf + offset - header_size;
 	
-	Com_Memset (buffer, 0, 18);
+	Com_Memset( buffer, 0, header_size );
 	buffer[2] = 2;		// uncompressed type
 	buffer[12] = width & 255;
 	buffer[13] = width >> 8;
@@ -476,12 +484,12 @@ void RB_TakeScreenshot( int x, int y, int width, int height, const char *fileNam
 	memcount = linelen * height;
 
 	// gamma correct
-	if(glConfig.deviceSupportsGamma)
-		R_GammaCorrect(allbuf + offset, memcount);
+	if ( glConfig.deviceSupportsGamma )
+		R_GammaCorrect( allbuf + offset, memcount );
 
-	ri.FS_WriteFile(fileName, buffer, memcount + 18);
+	ri.FS_WriteFile( fileName, buffer, memcount + header_size );
 
-	ri.Hunk_FreeTempMemory(allbuf);
+	ri.Hunk_FreeTempMemory( allbuf );
 }
 
 
@@ -496,7 +504,7 @@ void RB_TakeScreenshotJPEG( int x, int y, int width, int height, const char *fil
 	size_t offset = 0, memcount;
 	int padlen;
 
-	buffer = RB_ReadPixels(x, y, width, height, &offset, &padlen);
+	buffer = RB_ReadPixels(x, y, width, height, &offset, &padlen, 0);
 	memcount = (width * 3 + padlen) * height;
 
 	// gamma correct
@@ -508,23 +516,123 @@ void RB_TakeScreenshotJPEG( int x, int y, int width, int height, const char *fil
 }
 
 
+static void FillBMPHeader( byte *buffer, int width, int height, int memcount, int filesize, int header_size ) 
+{
+	Com_Memset( buffer, 0, header_size );
+
+	// bitmap file header
+	buffer[0] = 'B';
+	buffer[1] = 'M';
+	filesize = memcount + header_size;
+	buffer[2] = (filesize >> 0) & 255;
+	buffer[3] = (filesize >> 8) & 255;
+	buffer[4] = (filesize >> 16) & 255;
+	buffer[5] = (filesize >> 24) & 255;
+	buffer[10] = header_size; // data offset
+
+	// bitmap info header
+	buffer[14] = 40; // size of this header
+	buffer[18] = (width >> 0) & 255;
+	buffer[19] = (width >> 8) & 255;
+	buffer[20] = (width >> 16) & 255;
+	buffer[21] = (width >> 24) & 255;
+
+	buffer[22] = (height >> 0) & 255;
+	buffer[23] = (height >> 8) & 255;
+	buffer[24] = (height >> 16) & 255;
+	buffer[25] = (height >> 24) & 255;
+	buffer[26] = 1; // number of color planes
+	buffer[28] = 24; // bpp
+
+	buffer[34] = (memcount >> 0) & 255;
+	buffer[35] = (memcount >> 8) & 255;
+	buffer[36] = (memcount >> 16) & 255;
+	buffer[37] = (memcount >> 24) & 255;
+	buffer[38] = 0xC4; // horizontal dpi
+	buffer[39] = 0x0E; // horizontal dpi
+	buffer[42] = 0xC4; // vertical dpi
+	buffer[43] = 0x0E; // vertical dpi
+}
+
+
 /*
 ==================
-RB_TakeScreenshotCmd
+RB_TakeScreenshotBMP
 ==================
 */
-const void *RB_TakeScreenshotCmd( const void *data ) {
-	const screenshotCommand_t	*cmd;
-	
-	cmd = (const screenshotCommand_t *)data;
-	
-	if (cmd->jpeg)
-		RB_TakeScreenshotJPEG( cmd->x, cmd->y, cmd->width, cmd->height, cmd->fileName);
-	else
-		RB_TakeScreenshot( cmd->x, cmd->y, cmd->width, cmd->height, cmd->fileName);
-	
-	return (const void *)(cmd + 1);	
+void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *fileName )
+{
+	byte *allbuf;
+	byte *buffer; // destination buffer
+	byte *srcptr, *srcline;
+	byte *destptr, *dstline;
+	byte *endmem;
+	byte temp[4];
+	size_t memcount, offset;
+	const int header_size = 54; // bitmapfileheader(14) + bitmapinfoheader(40)
+	int filesize;
+	int scanlen, padlen;
+	int scanpad, len;
 
+	offset = header_size;
+		
+	allbuf = RB_ReadPixels( x, y, width, height, &offset, &padlen, 4 );
+	buffer = allbuf + offset;
+
+	// scanline length
+	scanlen = PAD( width*3, 4 );
+	scanpad = scanlen - width*3;
+	memcount = scanlen * height;
+	filesize = memcount + header_size;
+	
+	// swap rgb to bgr and add line padding
+	if ( scanpad == 0 && padlen == 0 ) {
+		// fastest case
+		srcptr = destptr = allbuf + offset;
+		endmem = srcptr + scanlen * height;
+		while ( srcptr < endmem ) {
+			temp[0] = srcptr[0];
+			destptr[0] = srcptr[2];
+			destptr[2] = temp[0];
+			destptr += 3;
+			srcptr += 3;
+		}
+	} else {
+		// move destination buffer forward if source padding is greater than for BMP
+		if ( padlen > scanpad )
+			buffer += (width * 3 + padlen - scanlen ) * height;
+		// point on last line
+		srcptr = allbuf + offset + (height-1) * (width * 3 + padlen);
+		destptr = buffer + (height-1) * scanlen;
+		len = (width * 3 - 3);
+		while ( destptr >= buffer ) {
+			srcline = srcptr + len;
+			dstline = destptr + len;
+			while ( srcline >= srcptr ) {
+				temp[2] = srcline[0];
+				temp[1] = srcline[1];
+				temp[0] = srcline[2];
+				dstline[0] = temp[0];
+				dstline[1] = temp[1];
+				dstline[2] = temp[2];
+				dstline-=3;
+				srcline-=3;
+			}
+			srcptr -= (width * 3 + padlen);
+			destptr -= scanlen;
+		}
+	}
+
+	// fill this last to avoid data overwrite in case when we're moving destination buffer forward
+	FillBMPHeader( buffer - header_size, width, height, memcount, filesize, header_size );
+	
+	// gamma correct
+	if ( glConfig.deviceSupportsGamma )
+		R_GammaCorrect( buffer, memcount );
+
+	ri.FS_WriteFile( fileName, buffer - header_size, memcount + header_size );
+
+	ri.Hunk_FreeTempMemory( allbuf );
 }
 
 
@@ -565,7 +673,7 @@ void R_LevelShot( void ) {
 	byte		*buffer;
 	byte		*source, *allsource;
 	byte		*src, *dst;
-	size_t			offset = 0;
+	size_t		offset = 0;
 	int			padlen;
 	int			x, y;
 	int			r, g, b;
@@ -574,7 +682,7 @@ void R_LevelShot( void ) {
 
 	Com_sprintf(checkname, sizeof(checkname), "levelshots/%s.tga", tr.world->baseName);
 
-	allsource = RB_ReadPixels(0, 0, glConfig.vidWidth, glConfig.vidHeight, &offset, &padlen);
+	allsource = RB_ReadPixels(0, 0, glConfig.vidWidth, glConfig.vidHeight, &offset, &padlen, 0 );
 	source = allsource + offset;
 
 	buffer = ri.Hunk_AllocateTempMemory(128 * 128*3 + 18);
@@ -646,6 +754,9 @@ void R_ScreenShot_f( void ) {
 	if ( Q_stricmp( ri.Cmd_Argv(0), "screenshotJPEG" ) == 0 ) {
 		typeMask = SCREENSHOT_JPG;
 		ext = "jpg";
+	}else if ( Q_stricmp( ri.Cmd_Argv(0), "screenshotBMP" ) == 0 ) {
+		typeMask = SCREENSHOT_BMP;
+		ext = "bmp";
 	} else {
 		typeMask = SCREENSHOT_TGA;
 		ext = "tga";
@@ -674,6 +785,9 @@ void R_ScreenShot_f( void ) {
 	if ( typeMask == SCREENSHOT_JPG ) {
 		backEnd.screenShotJPGsilent = silent;
 		Q_strncpyz( backEnd.screenshotJPG, checkname, sizeof( backEnd.screenshotJPG ) );
+	} else if ( typeMask == SCREENSHOT_BMP ) {
+		backEnd.screenShotBMPsilent = silent;
+		Q_strncpyz( backEnd.screenshotBMP, checkname, sizeof( backEnd.screenshotBMP ) );
 	} else {
 		backEnd.screenShotTGAsilent = silent;
 		Q_strncpyz( backEnd.screenshotTGA, checkname, sizeof( backEnd.screenshotTGA ) );
@@ -1125,6 +1239,7 @@ void R_Register( void )
 	ri.Cmd_AddCommand( "modelist", R_ModeList_f );
 	ri.Cmd_AddCommand( "screenshot", R_ScreenShot_f );
 	ri.Cmd_AddCommand( "screenshotJPEG", R_ScreenShot_f );
+	ri.Cmd_AddCommand( "screenshotBMP", R_ScreenShot_f );
 	ri.Cmd_AddCommand( "gfxinfo", GfxInfo_f );
 }
 

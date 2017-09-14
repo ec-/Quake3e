@@ -364,7 +364,7 @@ the K_* names are matched up.
 to be configured even if they don't have defined names.
 ===================
 */
-int Key_StringToKeynum( char *str ) {
+static int Key_StringToKeynum( const char *str ) {
 	const keyname_t	*kn;
 	
 	if ( !str || !str[0] ) {
@@ -391,6 +391,7 @@ int Key_StringToKeynum( char *str ) {
 
 	return -1;
 }
+
 
 /*
 ===================
