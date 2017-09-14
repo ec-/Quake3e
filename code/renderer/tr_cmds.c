@@ -474,8 +474,8 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 				ri.Printf( PRINT_ALL, "Wrote %s\n", backEnd.screenshotJPG );
 			}
 		}
-		if ( backEnd.screenshotMask & SCREENSHOT_BMP && backEnd.screenshotBMP[0] ) {
-			RB_TakeScreenshotBMP( 0, 0, glConfig.vidWidth, glConfig.vidHeight, backEnd.screenshotBMP );
+		if ( backEnd.screenshotMask & SCREENSHOT_BMP && ( backEnd.screenshotBMP[0] || ( backEnd.screenshotMask & SCREENSHOT_BMP_CLIPBOARD ) ) ) {
+			RB_TakeScreenshotBMP( 0, 0, glConfig.vidWidth, glConfig.vidHeight, backEnd.screenshotBMP, backEnd.screenshotMask & SCREENSHOT_BMP_CLIPBOARD );
 			if ( !backEnd.screenShotBMPsilent ) {
 				ri.Printf( PRINT_ALL, "Wrote %s\n", backEnd.screenshotBMP );
 			}

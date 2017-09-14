@@ -167,6 +167,7 @@ typedef struct {
 	e_status (*CIN_RunCinematic) (int handle);
 
 	void	(*CL_WriteAVIVideoFrame)( const byte *buffer, int size );
+	void	(*Sys_SetClipboardBitmap)( const byte *bitmap, int size );
 
 } refimport_t;
 

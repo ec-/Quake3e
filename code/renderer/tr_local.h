@@ -919,7 +919,8 @@ enum {
 	SCREENSHOT_TGA = 1<<0,
 	SCREENSHOT_JPG = 1<<1,
 	SCREENSHOT_BMP = 1<<2,
-	SCREENSHOT_AVI = 1<<3 // take video frame
+	SCREENSHOT_BMP_CLIPBOARD = 1<<3,
+	SCREENSHOT_AVI = 1<<4 // take video frame
 };
 
 // all state modified by the back end is seperated
@@ -1724,7 +1725,7 @@ void *R_GetCommandBuffer( int bytes );
 void RB_ExecuteRenderCommands( const void *data );
 void RB_TakeScreenshot( int x, int y, int width, int height, const char *fileName );
 void RB_TakeScreenshotJPEG( int x, int y, int width, int height, const char *fileName );
-void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *fileName );
+void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *fileName, int clipboard );
 
 void R_IssuePendingRenderCommands( void );
 

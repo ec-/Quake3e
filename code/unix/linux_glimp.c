@@ -2070,6 +2070,18 @@ char *Sys_GetClipboardData( void )
 	return NULL;
 }
 
+
+/*
+=================
+Sys_SetClipboardBitmap
+=================
+*/
+void Sys_SetClipboardBitmap( const byte *bitmap, int length )
+{
+	// TODO: implement
+}
+
+
 #ifdef USE_JOYSTICK
 // bk010216 - added stubs for non-Linux UNIXes here
 // FIXME - use NO_JOYSTICK or something else generic

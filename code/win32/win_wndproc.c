@@ -51,18 +51,26 @@ static LRESULT CALLBACK WinKeyHook( int code, WPARAM wParam, LPARAM lParam )
 	{
 	case WM_KEYDOWN:
 	case WM_SYSKEYDOWN:
-		if ( key->vkCode == VK_LWIN || key->vkCode == VK_RWIN ) { 
+		if ( ( key->vkCode == VK_LWIN || key->vkCode == VK_RWIN ) && !(Key_GetCatcher() & KEYCATCH_CONSOLE) ) {
 			Sys_QueEvent( 0, SE_KEY, K_SUPER, qtrue, 0, NULL );
+			return 1;
+		}
+		if ( key->vkCode == VK_SNAPSHOT ) {
+			Sys_QueEvent( 0, SE_KEY, K_PRINT, qtrue, 0, NULL );
 			return 1;
 		}
 	case WM_KEYUP:
 	case WM_SYSKEYUP:
-		if ( key->vkCode == VK_LWIN || key->vkCode == VK_RWIN ) { 
+		if ( ( key->vkCode == VK_LWIN || key->vkCode == VK_RWIN ) && !(Key_GetCatcher() & KEYCATCH_CONSOLE) ) {
 			Sys_QueEvent( 0, SE_KEY, K_SUPER, qfalse, 0, NULL );
 			return 1;
 		}
-  }
-  return CallNextHookEx( NULL, code, wParam, lParam );
+		if ( key->vkCode == VK_SNAPSHOT ) {
+			Sys_QueEvent( 0, SE_KEY, K_PRINT, qfalse, 0, NULL );
+			return 1;
+		}
+	}
+	return CallNextHookEx( NULL, code, wParam, lParam );
 }
 
 
@@ -87,10 +95,12 @@ WIN_EnableHook
 */
 void WIN_EnableHook( void  ) 
 {
-	if ( !WinHook ) {
+	if ( !WinHook )
+	{
 		WinHook = SetWindowsHookEx( WH_KEYBOARD_LL, WinKeyHook, g_wv.hInstance, 0 );
 	}
 }
+
 
 static qboolean s_alttab_disabled;
 

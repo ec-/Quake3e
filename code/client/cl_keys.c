@@ -183,6 +183,7 @@ void Field_Paste( field_t *edit ) {
 	Z_Free( cbd );
 }
 
+
 /*
 =================
 Field_KeyDownEvent
@@ -528,9 +529,10 @@ Called by CL_KeyEvent to handle a keypress
 void CL_KeyDownEvent( int key, unsigned time )
 {
 	keys[key].down = qtrue;
-		keys[key].repeats++;
-	if( keys[key].repeats == 1 )
-			anykeydown++;
+	keys[key].repeats++;
+
+	if ( keys[key].repeats == 1 )
+		anykeydown++;
 
 #ifndef _WIN32
 	if( keys[K_ALT].down && key == K_ENTER )
@@ -545,11 +547,20 @@ void CL_KeyDownEvent( int key, unsigned time )
 	// console key is hardcoded, so the user can never unbind it
 	if( key == K_CONSOLE || ( keys[K_SHIFT].down && key == K_ESCAPE ) )
 	{
-		Con_ToggleConsole_f ();
-		Key_ClearStates ();
+		Con_ToggleConsole_f();
+		Key_ClearStates();
 		return;
 	}
 
+	// hardcoded screenshot key
+	if ( key == K_PRINT ) {
+		if ( keys[K_SHIFT].down ) {
+			Cbuf_ExecuteText( EXEC_APPEND, "screenshotBMP\n" );
+		} else {
+			Cbuf_ExecuteText( EXEC_APPEND, "screenshotBMP clipboard\n" );
+		}
+		return;
+	}
 
 	// keys can still be used for bound actions
 	if ( ( key < 128 || key == K_MOUSE1 ) 
@@ -619,6 +630,7 @@ void CL_KeyDownEvent( int key, unsigned time )
 	}
 }
 
+
 /*
 ===================
 CL_KeyUpEvent
@@ -631,12 +643,16 @@ void CL_KeyUpEvent( int key, unsigned time )
 	keys[key].repeats = 0;
 	keys[key].down = qfalse;
 	anykeydown--;
-	if (anykeydown < 0) {
+
+	if ( anykeydown < 0 )
 		anykeydown = 0;
-		}
 
 	// don't process key-up events for the console key
 	if ( key == K_CONSOLE || ( key == K_ESCAPE && keys[K_SHIFT].down ) )
+		return;
+
+	// hardcoded screenshot key
+	if ( key == K_PRINT )
 		return;
 
 	//

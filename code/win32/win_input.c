@@ -1197,7 +1197,7 @@ void IN_Frame( void ) {
 		{
 			IN_DeactivateMouse();
 			WIN_EnableAltTab();
-			WIN_DisableHook();
+			//WIN_DisableHook();
 			return;
 		}
 	}

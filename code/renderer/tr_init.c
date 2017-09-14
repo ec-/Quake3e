@@ -560,7 +560,7 @@ static void FillBMPHeader( byte *buffer, int width, int height, int memcount, in
 RB_TakeScreenshotBMP
 ==================
 */
-void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *fileName )
+void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *fileName, int clipboardOnly )
 {
 	byte *allbuf;
 	byte *buffer; // destination buffer
@@ -630,7 +630,12 @@ void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *file
 	if ( glConfig.deviceSupportsGamma )
 		R_GammaCorrect( buffer, memcount );
 
-	ri.FS_WriteFile( fileName, buffer - header_size, memcount + header_size );
+	if ( clipboardOnly ) {
+		// copy starting from bitmapinfoheader
+		ri.Sys_SetClipboardBitmap( buffer - 40, memcount + 40 );
+	} else {
+		ri.FS_WriteFile( fileName, buffer - header_size, memcount + header_size );
+	}
 
 	ri.Hunk_FreeTempMemory( allbuf );
 }
@@ -768,6 +773,9 @@ void R_ScreenShot_f( void ) {
 
 	if ( !strcmp( ri.Cmd_Argv(1), "silent" ) ) {
 		silent = qtrue;
+	} else if ( typeMask == SCREENSHOT_BMP && !strcmp( ri.Cmd_Argv(1), "clipboard" ) ) {
+		backEnd.screenshotMask |= SCREENSHOT_BMP_CLIPBOARD;
+		silent = qtrue;
 	} else {
 		silent = qfalse;
 	}
@@ -776,8 +784,13 @@ void R_ScreenShot_f( void ) {
 		// explicit filename
 		Com_sprintf( checkname, MAX_OSPATH, "screenshots/%s.%s", ri.Cmd_Argv( 1 ), ext );
 	} else {
-		// scan for a free filename
-		R_ScreenshotFilename( checkname, ext );
+		if ( backEnd.screenshotMask & SCREENSHOT_BMP_CLIPBOARD ) {
+			// no need for filename, copy to system buffer
+			checkname[0] = '\0';
+		} else {
+			// scan for a free filename
+			R_ScreenshotFilename( checkname, ext );
+		}
 	}
 
 	// we will make screenshot right at the end of RE_EndFrame()

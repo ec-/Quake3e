@@ -3146,8 +3146,9 @@ void CL_InitRef( void ) {
 	ri.CIN_UploadCinematic = CIN_UploadCinematic;
 	ri.CIN_PlayCinematic = CIN_PlayCinematic;
 	ri.CIN_RunCinematic = CIN_RunCinematic;
-  
+
 	ri.CL_WriteAVIVideoFrame = CL_WriteAVIVideoFrame;
+	ri.Sys_SetClipboardBitmap = Sys_SetClipboardBitmap;
 
 	ret = GetRefAPI( REF_API_VERSION, &ri );
 
