@@ -24,6 +24,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "client.h"
 cvar_t *cl_cURLLib;
 
+#define ALLOWED_PROTOCOLS ( CURLPROTO_HTTP | CURLPROTO_HTTPS | CURLPROTO_FTP | CURLPROTO_FTPS )
+
 #ifdef USE_CURL_DLOPEN
 
 char* (*qcurl_version)(void);
@@ -331,6 +333,7 @@ void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_FAILONERROR, 1);
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_FOLLOWLOCATION, 1);
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_MAXREDIRS, 5);
+	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_PROTOCOLS, ALLOWED_PROTOCOLS);
 
 	clc.downloadCURLM = qcurl_multi_init();	
 	if( !clc.downloadCURLM ) {
@@ -360,6 +363,7 @@ void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 		clc.cURLDisconnected = qtrue;
 	}
 }
+
 
 void CL_cURL_PerformDownload( void )
 {
@@ -913,7 +917,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 	//dl->func.easy_setopt( dl->cURL, CURLOPT_REFERER, "q3a://127.0.0.1" );
 	dl->func.easy_setopt( dl->cURL, CURLOPT_REFERER, dl->URL );
 	dl->func.easy_setopt( dl->cURL, CURLOPT_USERAGENT, Q3_VERSION );
-	dl->func.easy_setopt( dl->cURL, CURLOPT_WRITEFUNCTION,	Com_DL_CallbackWrite );
+	dl->func.easy_setopt( dl->cURL, CURLOPT_WRITEFUNCTION, Com_DL_CallbackWrite );
 	dl->func.easy_setopt( dl->cURL, CURLOPT_WRITEDATA, dl );
 	if ( headerCheck ) 
 	{
@@ -926,9 +930,10 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 	dl->func.easy_setopt( dl->cURL, CURLOPT_FAILONERROR, 1 );
 	dl->func.easy_setopt( dl->cURL, CURLOPT_FOLLOWLOCATION, 1 );
 	dl->func.easy_setopt( dl->cURL, CURLOPT_MAXREDIRS, 5 );
-	
-	dl->cURLM = dl->func.multi_init();	
-	
+	dl->func.easy_setopt( dl->cURL, CURLOPT_PROTOCOLS, ALLOWED_PROTOCOLS );
+
+	dl->cURLM = dl->func.multi_init();
+
 	if ( !dl->cURLM ) 
 	{
 		Com_DL_Cleanup( dl );	
