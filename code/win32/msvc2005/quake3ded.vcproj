@@ -68,7 +68,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib"
+				AdditionalDependencies="comctl32.lib winmm.lib wsock32.lib ws2_32.lib"
 				OutputFile="$(OutDir)\quake3de.ded-debug.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -156,7 +156,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib"
+				AdditionalDependencies="comctl32.lib winmm.lib wsock32.lib ws2_32.lib"
 				OutputFile="$(OutDir)\quake3de.ded-debug.x64.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -238,7 +238,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/DYNAMICBASE"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib"
+				AdditionalDependencies="comctl32.lib winmm.lib wsock32.lib ws2_32.lib"
 				OutputFile="$(OutDir)\quake3e.ded.exe"
 				GenerateMapFile="true"
 				MapFileName="$(IntDir)\quake3e.ded.map"
@@ -320,7 +320,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/DYNAMICBASE"
-				AdditionalDependencies="advapi32.lib gdi32.lib user32.lib comctl32.lib winmm.lib wsock32.lib ws2_32.lib"
+				AdditionalDependencies="comctl32.lib winmm.lib wsock32.lib ws2_32.lib"
 				OutputFile="$(OutDir)\quake3e.ded.x64.exe"
 				GenerateMapFile="true"
 				MapFileName="$(IntDir)\quake3e.ded.x64.map"
@@ -363,7 +363,7 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;bat"
+			Filter="c;cpp;def;bat;asm"
 			>
 			<File
 				RelativePath="..\..\qcommon\cm_load.c"
@@ -512,7 +512,7 @@
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp"
+			Filter="h;hpp;inc"
 			>
 			<File
 				RelativePath="..\..\game\bg_public.h"

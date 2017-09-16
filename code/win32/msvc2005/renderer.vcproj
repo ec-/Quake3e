@@ -290,7 +290,7 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;bat"
+			Filter="c;cpp;def;bat;asm"
 			>
 			<File
 				RelativePath="..\..\renderer\tr_animation.c"
@@ -431,7 +431,7 @@
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl"
+			Filter="h;hpp;inc"
 			>
 			<File
 				RelativePath="..\..\win32\glw_win.h"
