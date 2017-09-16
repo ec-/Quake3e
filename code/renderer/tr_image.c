@@ -46,11 +46,11 @@ void R_GammaCorrect( byte *buffer, int bufSize ) {
 }
 
 typedef struct {
-	char *name;
+	const char *name;
 	int	minimize, maximize;
 } textureMode_t;
 
-textureMode_t modes[] = {
+const textureMode_t modes[] = {
 	{"GL_NEAREST", GL_NEAREST, GL_NEAREST},
 	{"GL_LINEAR", GL_LINEAR, GL_LINEAR},
 	{"GL_NEAREST_MIPMAP_NEAREST", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST},
@@ -108,6 +108,7 @@ void GL_TextureMode( const char *string ) {
 	}
 }
 
+
 /*
 ===============
 R_SumOfUsedImages
@@ -126,6 +127,7 @@ int R_SumOfUsedImages( void ) {
 
 	return total;
 }
+
 
 /*
 ===============
@@ -326,6 +328,7 @@ static void ResampleTexture( unsigned *in, int inwidth, int inheight, unsigned *
 	}
 }
 
+
 /*
 ================
 R_LightScaleTexture
@@ -440,6 +443,7 @@ static void R_MipMap2( unsigned *in, int inWidth, int inHeight ) {
 	Com_Memcpy( in, temp, outWidth * outHeight * 4 );
 	ri.Hunk_FreeTempMemory( temp );
 }
+
 
 /*
 ================
@@ -1062,6 +1066,7 @@ void R_InitFogTable( void ) {
 	}
 }
 
+
 /*
 ================
 R_FogFactor
@@ -1097,6 +1102,7 @@ float	R_FogFactor( float s, float t ) {
 	return d;
 }
 
+
 /*
 ================
 R_CreateFogImage
@@ -1125,6 +1131,7 @@ static void R_CreateFogImage( void ) {
 	tr.fogImage = R_CreateImage("*fog", (byte *)data, FOG_S, FOG_T, IMGTYPE_COLORALPHA, IMGFLAG_CLAMPTOEDGE, 0 );
 	ri.Hunk_FreeTempMemory( data );
 }
+
 
 /*
 ==================
@@ -1161,6 +1168,7 @@ static void R_CreateDefaultImage( void ) {
 	}
 	tr.defaultImage = R_CreateImage("*default", (byte *)data, DEFAULT_SIZE, DEFAULT_SIZE, IMGTYPE_COLORALPHA, IMGFLAG_MIPMAP, 0);
 }
+
 
 /*
 ==================
@@ -1277,6 +1285,7 @@ void R_SetColorMappings( void ) {
 	}
 }
 
+
 /*
 ===============
 R_InitImages
@@ -1316,6 +1325,7 @@ void R_DeleteTextures( void ) {
 		qglBindTexture( GL_TEXTURE_2D, 0 );
 	}
 }
+
 
 /*
 ============================================================================
@@ -1434,7 +1444,6 @@ static char *CommaParse( char **data_p ) {
 /*
 ===============
 RE_RegisterSkin
-
 ===============
 */
 qhandle_t RE_RegisterSkin( const char *name ) {
@@ -1562,6 +1571,7 @@ void	R_InitSkins( void ) {
 	skin->surfaces[0]->shader = tr.defaultShader;
 }
 
+
 /*
 ===============
 R_GetSkinByHandle
@@ -1573,6 +1583,7 @@ skin_t	*R_GetSkinByHandle( qhandle_t hSkin ) {
 	}
 	return tr.skins[ hSkin ];
 }
+
 
 /*
 ===============
@@ -1596,4 +1607,3 @@ void	R_SkinList_f( void ) {
 	}
 	ri.Printf (PRINT_ALL, "------------------\n");
 }
-

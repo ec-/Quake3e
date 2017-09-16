@@ -895,9 +895,9 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	int shift;
 
 #ifdef USE_PMLIGHT
-	if ( !glConfig.deviceSupportsGamma || r_ignorehwgamma->integer || r_fbo->integer )
+	if ( r_ignorehwgamma->integer || r_fbo->integer )
 #else
-	if ( !glConfig.deviceSupportsGamma || r_ignorehwgamma->integer )
+	if ( r_ignorehwgamma->integer )
 #endif
 		return;
 

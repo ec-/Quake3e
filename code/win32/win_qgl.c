@@ -520,10 +520,6 @@ qboolean QGL_Init( const char *dllname )
 	return qtrue;
 }
 
-
 #ifdef _MSC_VER
 #pragma warning (default : 4113 4133 4047 )
 #endif
-
-
-

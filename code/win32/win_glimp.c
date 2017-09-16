@@ -1094,16 +1094,9 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS
 		// try to change color depth if possible
 		if ( colorbits != 0 )
 		{
-			if ( glw_state.allowdisplaydepthchange )
-			{
-				dm.dmBitsPerPel = colorbits;
-				dm.dmFields |= DM_BITSPERPEL;
-				ri.Printf( PRINT_ALL, "...using colorsbits of %d\n", colorbits );
-			}
-			else
-			{
-				ri.Printf( PRINT_ALL, "WARNING:...changing depth not supported on Win95 < pre-OSR 2.x\n" );
-			}
+			dm.dmBitsPerPel = colorbits;
+			dm.dmFields |= DM_BITSPERPEL;
+			ri.Printf( PRINT_ALL, "...using colorsbits of %d\n", colorbits );
 		}
 		else
 		{
@@ -1416,16 +1409,6 @@ static void GLW_InitExtensions( void )
 
 
 /*
-** GLW_CheckOSVersion
-*/
-static qboolean GLW_CheckOSVersion( void )
-{
-	glw_state.allowdisplaydepthchange = qtrue;
-	return qtrue;
-}
-
-
-/*
 ** GLW_LoadOpenGL
 **
 ** GLimp_win.c internal function that attempts to load and use 
@@ -1551,14 +1534,6 @@ static qboolean GLW_StartOpenGL( void )
 void GLimp_Init( void )
 {
 	ri.Printf( PRINT_ALL, "Initializing OpenGL subsystem\n" );
-
-	//
-	// check OS version to see if we can do fullscreen display changes
-	//
-	if ( !GLW_CheckOSVersion() )
-	{
-		ri.Error( ERR_FATAL, "GLimp_Init() - incorrect operating system\n" );
-	}
 
 	r_allowSoftwareGL = ri.Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
 	r_maskMinidriver = ri.Cvar_Get( "r_maskMinidriver", "0", CVAR_LATCH );

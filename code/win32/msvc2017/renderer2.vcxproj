@@ -336,7 +336,6 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
     <ClCompile Include="..\..\renderer\tr_image_png.c" />
     <ClCompile Include="..\..\renderer\tr_image_tga.c" />
     <ClCompile Include="..\..\renderer\tr_noise.c" />
-    <ClCompile Include="..\win_gamma.c" />
     <ClCompile Include="..\win_glimp.c" />
     <ClCompile Include="..\win_qgl.c" />
     <ClCompile Include="build\dynamic\renderer2\bokeh_fp.c" />

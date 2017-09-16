@@ -80,7 +80,7 @@ void WG_CheckHardwareGamma( void )
 				 ( HIBYTE( s_oldHardwareGamma[2][255] ) <= HIBYTE( s_oldHardwareGamma[2][0] ) ) )
 			{
 				glConfig.deviceSupportsGamma = qfalse;
-				ri.Printf( PRINT_WARNING, "WARNING: device has broken gamma support, generated gamma.dat\n" );
+				ri.Printf( PRINT_WARNING, "WARNING: device has broken gamma support\n" );
 			}
 
 			//
@@ -147,7 +147,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 		return;
 #endif
 
-	if ( !glConfig.deviceSupportsGamma || r_ignorehwgamma->integer || !glw_state.hDC || !gw_active )
+	if ( r_ignorehwgamma->integer || !glw_state.hDC || !gw_active )
 		return;
 	
 //mapGammaMax();
@@ -194,6 +194,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 		glw_state.gammaSet = qtrue;
 	}
 }
+
 
 /*
 ** WG_RestoreGamma

@@ -449,10 +449,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\win32\win_gamma.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\win32\win_glimp.c"
 				>
 			</File>
