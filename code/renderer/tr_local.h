@@ -208,10 +208,10 @@ typedef enum {
 } acff_t;
 
 typedef struct {
-	double base;		// -EC- set to double for frameloss fix
-	double amplitude;
-	double phase;
-	double frequency;
+	float base;
+	float amplitude;
+	float phase;
+	float frequency;
 
 	genFunc_t	func;
 } waveForm_t;

@@ -1905,8 +1905,6 @@ void GLimp_Init( void )
 	GLW_InitGamma();
 
 	InitSig(); // not clear why this is at begin & end of function
-
-	return;
 }
 
 

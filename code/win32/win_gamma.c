@@ -104,6 +104,7 @@ void WG_CheckHardwareGamma( void )
 	}
 }
 
+
 /*
 void mapGammaMax( void ) {
 	int		i, j;
@@ -159,7 +160,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	}
 
 	// Win2K and newer put this odd restriction on gamma ramps...
-	Com_DPrintf( "performing gamma clamp.\n" );
+	ri.Printf( PRINT_DEVELOPER, "performing gamma clamp.\n" );
 	for ( j = 0 ; j < 3 ; j++ ) {
 		for ( i = 0 ; i < 128 ; i++ ) {
 			if ( table[j][i] > ( (128+i) << 8 ) ) {
@@ -189,7 +190,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	}
 
 	if ( !ret ) {
-		Com_Printf( "SetDeviceGammaRamp failed.\n" );
+		ri.Printf( PRINT_WARNING, "SetDeviceGammaRamp failed.\n" );
 	} else {
 		glw_state.gammaSet = qtrue;
 	}

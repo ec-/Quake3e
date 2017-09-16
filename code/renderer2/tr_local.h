@@ -267,10 +267,10 @@ typedef enum {
 } acff_t;
 
 typedef struct {
-	double base;
-	double amplitude;
-	double phase;
-	double frequency;
+	float base;
+	float amplitude;
+	float phase;
+	float frequency;
 
 	genFunc_t	func;
 } waveForm_t;

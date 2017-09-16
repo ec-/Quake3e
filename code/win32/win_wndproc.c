@@ -378,9 +378,8 @@ extern cvar_t *in_logitechbug;
 int			HotKey = 0;
 int			hkinstalled = 0;
 
-extern void	WG_RestoreGamma( void );
-extern void	R_SetColorMappings( void );
-extern void	SetGameDisplaySettings( void );
+extern void WG_RestoreGamma( void );
+extern void SetGameDisplaySettings( void );
 extern void SetDesktopDisplaySettings( void );
 
 void Win_AddHotkey( void ) 
@@ -441,6 +440,7 @@ BOOL Win_CheckHotkeyMod( void ) {
 
  	return TRUE;
 }
+
 
 static int GetTimerMsec( void ) {
 	int msec;
@@ -625,7 +625,8 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			if ( glw_state.cdsFullscreen ) {
 				if ( fActive ) {
 					SetGameDisplaySettings();
-					R_SetColorMappings();
+					if ( re.SetColorMappings )
+						re.SetColorMappings();
 				} else {
 					WG_RestoreGamma();
 					// Minimize if there only one monitor
@@ -635,7 +636,8 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 				}
 			} else {
 				if ( fActive ) {
-					R_SetColorMappings();
+					if ( re.SetColorMappings )
+						re.SetColorMappings();
 				} else {
 					WG_RestoreGamma();
 				}
