@@ -1262,7 +1262,7 @@ void S_Update_( void ) {
 
 	S_PaintChannels( endtime );
 
-	if ( (!gw_active && s_muteWhenUnfocused->integer) || (gw_minimized && s_muteWhenMinimized->integer) ) {
+	if ( (!gw_active && !gw_minimized && s_muteWhenUnfocused->integer) || (gw_minimized && s_muteWhenMinimized->integer) ) {
 		// clear dma buffer right after it was painted but still not sent to hardware
 		// this will allow us to record sound stream in video while staying muted
 		if ( dma.buffer ) {
