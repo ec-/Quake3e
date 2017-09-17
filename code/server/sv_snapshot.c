@@ -415,7 +415,7 @@ static void SV_AddEntitiesVisibleFromPoint( const vec3_t origin, clientSnapshot_
 		SV_AddIndexToSnapshot( svEnt, e, eNums );
 
 		// if it's a portal entity, add everything visible from its camera position
-		if ( ent->r.svFlags & SVF_PORTAL ) {
+		if ( ent->r.svFlags & SVF_PORTAL && !portal ) {
 			if ( ent->s.generic1 ) {
 				vec3_t dir;
 				VectorSubtract(ent->s.origin, origin, dir);
@@ -424,8 +424,15 @@ static void SV_AddEntitiesVisibleFromPoint( const vec3_t origin, clientSnapshot_
 				}
 			}
 			eNums->unordered = qtrue;
-			SV_AddEntitiesVisibleFromPoint( ent->s.origin2, frame, eNums, qtrue );
+			SV_AddEntitiesVisibleFromPoint( ent->s.origin2, frame, eNums, portal );
 		}
+	}
+
+	ent = SV_GentityNum( frame->ps.clientNum );
+	// merge second PVS at ent->r.s.origin2
+	if ( ent->r.svFlags & SVF_SELF_PORTAL2 && !portal ) {
+		SV_AddEntitiesVisibleFromPoint( ent->r.s.origin2, frame, eNums, qtrue );
+		eNums->unordered = qtrue;
 	}
 }
 

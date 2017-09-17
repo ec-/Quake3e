@@ -48,7 +48,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define SVF_NOTSINGLECLIENT		0x00000800	// send entity to everyone but one client
 											// (entityShared_t->singleClient)
 
-
+#define SVF_SELF_PORTAL2		0x00020000  // merge a second pvs at entity->r.s.origin2 into snapshots
 
 //===============================================================
 
