@@ -1078,6 +1078,10 @@ int SV_FrameMsec( void );
 qboolean SV_GameCommand( void );
 int SV_SendQueuedPackets( void );
 
+void SV_AddDedicatedCommands( void );
+void SV_RemoveDedicatedCommands( void );
+
+
 //
 // UI interface
 //

@@ -3506,6 +3506,7 @@ void Com_Frame( qboolean demoPlaying ) {
 		com_dedicated->modified = qfalse;
 		if ( !com_dedicated->integer ) {
 			SV_Shutdown( "dedicated set to 0" );
+			SV_RemoveDedicatedCommands();
 #ifndef DEDICATED
 			CL_Init();
 #endif
@@ -3519,6 +3520,7 @@ void Com_Frame( qboolean demoPlaying ) {
 			CL_ClearMemory();
 #endif
 			Sys_ShowConsole( 1, qtrue );
+			SV_AddDedicatedCommands();
 		}
 	}
 

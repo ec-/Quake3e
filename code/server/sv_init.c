@@ -644,11 +644,14 @@ SV_Init
 Only called at main exe startup, not for each game
 ===============
 */
-void SV_Init (void)
+void SV_Init( void )
 {
 	int index;
 
-	SV_AddOperatorCommands ();
+	SV_AddOperatorCommands();
+
+	if ( com_dedicated->integer )
+		SV_AddDedicatedCommands();
 
 	// serverinfo vars
 	Cvar_Get ("dmflags", "0", CVAR_SERVERINFO);
@@ -727,7 +730,6 @@ void SV_Init (void)
 	// Load saved bans
 	Cbuf_AddText("rehashbans\n");
 #endif
-
 }
 
 

@@ -1352,8 +1352,6 @@ void SV_AddOperatorCommands( void ) {
 #endif
 	Cmd_AddCommand ("clientkick", SV_KickNum_f);
 	Cmd_AddCommand ("status", SV_Status_f);
-	Cmd_AddCommand ("serverinfo", SV_Serverinfo_f);
-	Cmd_AddCommand ("systeminfo", SV_Systeminfo_f);
 	Cmd_AddCommand ("dumpuser", SV_DumpUser_f);
 	Cmd_AddCommand ("map_restart", SV_MapRestart_f);
 	Cmd_AddCommand ("sectorlist", SV_SectorList_f);
@@ -1368,9 +1366,6 @@ void SV_AddOperatorCommands( void ) {
 	Cmd_SetCommandCompletionFunc( "spdevmap", SV_CompleteMapName );
 #endif
 	Cmd_AddCommand ("killserver", SV_KillServer_f);
-	if( com_dedicated->integer ) {
-		Cmd_AddCommand ("say", SV_ConSay_f);
-	}
 #ifdef USE_BANS	
 	Cmd_AddCommand("rehashbans", SV_RehashBans_f);
 	Cmd_AddCommand("listbans", SV_ListBans_f);
@@ -1397,11 +1392,24 @@ void SV_RemoveOperatorCommands( void ) {
 	Cmd_RemoveCommand ("banUser");
 	Cmd_RemoveCommand ("banClient");
 	Cmd_RemoveCommand ("status");
-	Cmd_RemoveCommand ("serverinfo");
-	Cmd_RemoveCommand ("systeminfo");
 	Cmd_RemoveCommand ("dumpuser");
 	Cmd_RemoveCommand ("map_restart");
 	Cmd_RemoveCommand ("sectorlist");
-	Cmd_RemoveCommand ("say");
 #endif
+}
+
+
+void SV_AddDedicatedCommands( void )
+{
+	Cmd_AddCommand( "serverinfo", SV_Serverinfo_f );
+	Cmd_AddCommand( "systeminfo", SV_Systeminfo_f );
+	Cmd_AddCommand( "say", SV_ConSay_f );
+}
+
+
+void SV_RemoveDedicatedCommands( void )
+{
+	Cmd_RemoveCommand( "serverinfo" );
+	Cmd_RemoveCommand( "systeminfo" );
+	Cmd_RemoveCommand( "say" );
 }

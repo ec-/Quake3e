@@ -327,10 +327,8 @@ qboolean SVC_RateLimitAddress( const netadr_t *from, int burst, int period );
 void SV_FinalMessage(const char *message);
 void QDECL SV_SendServerCommand( client_t *cl, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 
-
 void SV_AddOperatorCommands (void);
 void SV_RemoveOperatorCommands (void);
-
 
 void SV_MasterShutdown (void);
 int SV_RateMsec(client_t *client);
