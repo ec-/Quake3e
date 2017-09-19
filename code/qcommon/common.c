@@ -905,16 +905,16 @@ typedef struct zonedebug_s {
 } zonedebug_t;
 
 typedef struct memblock_s {
-	int		size;           // including the header and possibly tiny fragments
-	int     tag;            // a tag of 0 is a free block
-	struct memblock_s       *next, *prev;
-	int     id;        		// should be ZONEID
+	int			size;	// including the header and possibly tiny fragments
+	memtag_t	tag;	// a tag of 0 is a free block
+	struct memblock_s	*next, *prev;
+	int			id;		// should be ZONEID
 #ifdef ZONE_DEBUG
 	zonedebug_t d;
 #endif
 } memblock_t;
 
-typedef struct {
+typedef struct memzone_s {
 	int		size;			// total bytes malloced, including header
 	int		used;			// total bytes used
 	memblock_t	blocklist;	// start / end cap for linked list
@@ -934,14 +934,14 @@ void Z_CheckHeap( void );
 Z_ClearZone
 ========================
 */
-void Z_ClearZone( memzone_t *zone, int size ) {
+static void Z_ClearZone( memzone_t *zone, int size ) {
 	memblock_t	*block;
 	
 	// set the entire zone to one free block
 
 	zone->blocklist.next = zone->blocklist.prev = block =
 		(memblock_t *)( (byte *)zone + sizeof(memzone_t) );
-	zone->blocklist.tag = 1;	// in use block
+	zone->blocklist.tag = TAG_GENERAL;	// in use block
 	zone->blocklist.id = 0;
 	zone->blocklist.size = 0;
 	zone->rover = block;
@@ -949,19 +949,21 @@ void Z_ClearZone( memzone_t *zone, int size ) {
 	zone->used = 0;
 	
 	block->prev = block->next = &zone->blocklist;
-	block->tag = 0;			// free block
+	block->tag = TAG_FREE;	// free block
 	block->id = ZONEID;
 	block->size = size - sizeof(memzone_t);
 }
+
 
 /*
 ========================
 Z_AvailableZoneMemory
 ========================
 */
-int Z_AvailableZoneMemory( memzone_t *zone ) {
+static int Z_AvailableZoneMemory( const memzone_t *zone ) {
 	return zone->size - zone->used;
 }
+
 
 /*
 ========================
@@ -971,6 +973,7 @@ Z_AvailableMemory
 int Z_AvailableMemory( void ) {
 	return Z_AvailableZoneMemory( mainzone );
 }
+
 
 /*
 ========================
@@ -989,7 +992,7 @@ void Z_Free( void *ptr ) {
 	if (block->id != ZONEID) {
 		Com_Error( ERR_FATAL, "Z_Free: freed a pointer without ZONEID" );
 	}
-	if (block->tag == 0) {
+	if (block->tag == TAG_FREE) {
 		Com_Error( ERR_FATAL, "Z_Free: freed a freed pointer" );
 	}
 	// if static memory
@@ -1002,10 +1005,9 @@ void Z_Free( void *ptr ) {
 		Com_Error( ERR_FATAL, "Z_Free: memory block wrote past end" );
 	}
 
-	if (block->tag == TAG_SMALL) {
+	if ( block->tag == TAG_SMALL ) {
 		zone = smallzone;
-	}
-	else {
+	} else {
 		zone = mainzone;
 	}
 
@@ -1014,10 +1016,10 @@ void Z_Free( void *ptr ) {
 	// if it is referenced...
 	Com_Memset( ptr, 0xaa, block->size - sizeof( *block ) );
 
-	block->tag = 0;		// mark as free
+	block->tag = TAG_FREE; // mark as free
 	
 	other = block->prev;
-	if (!other->tag) {
+	if ( other->tag == TAG_FREE ) {
 		// merge with previous free block
 		other->size += block->size;
 		other->next = block->next;
@@ -1031,7 +1033,7 @@ void Z_Free( void *ptr ) {
 	zone->rover = block;
 
 	other = block->next;
-	if ( !other->tag ) {
+	if ( other->tag == TAG_FREE ) {
 		// merge the next free block onto the end
 		block->size += other->size;
 		block->next = other->next;
@@ -1045,7 +1047,7 @@ void Z_Free( void *ptr ) {
 Z_FreeTags
 ================
 */
-void Z_FreeTags( int tag ) {
+void Z_FreeTags( memtag_t tag ) {
 	int			count;
 	memzone_t	*zone;
 
@@ -1076,23 +1078,22 @@ Z_TagMalloc
 ================
 */
 #ifdef ZONE_DEBUG
-void *Z_TagMallocDebug( int size, int tag, char *label, char *file, int line ) {
+void *Z_TagMallocDebug( int size, memtag_t tag, char *label, char *file, int line ) {
 	int		allocSize;
 #else
-void *Z_TagMalloc( int size, int tag ) {
+void *Z_TagMalloc( int size, memtag_t tag ) {
 #endif
 	int		extra;
 	memblock_t	*start, *rover, *new, *base;
 	memzone_t *zone;
 
-	if (!tag) {
-		Com_Error( ERR_FATAL, "Z_TagMalloc: tried to use a 0 tag" );
+	if ( tag == TAG_FREE ) {
+		Com_Error( ERR_FATAL, "Z_TagMalloc: tried to use with TAG_FREE" );
 	}
 
 	if ( tag == TAG_SMALL ) {
 		zone = smallzone;
-	}
-	else {
+	} else {
 		zone = mainzone;
 	}
 
@@ -1115,7 +1116,6 @@ void *Z_TagMalloc( int size, int tag ) {
 			// scaned all the way around the list
 #ifdef ZONE_DEBUG
 			Z_LogHeap();
-
 			Com_Error(ERR_FATAL, "Z_Malloc: failed on allocation of %i bytes from the %s zone: %s, line: %d (%s)",
 								size, zone == smallzone ? "small" : "main", file, line, label);
 #else
@@ -1124,12 +1124,12 @@ void *Z_TagMalloc( int size, int tag ) {
 #endif
 			return NULL;
 		}
-		if (rover->tag) {
+		if ( rover->tag != TAG_FREE ) {
 			base = rover = rover->next;
 		} else {
 			rover = rover->next;
 		}
-	} while (base->tag || base->size < size);
+	} while (base->tag != TAG_FREE || base->size < size);
 	
 	//
 	// found a block big enough
@@ -1139,7 +1139,7 @@ void *Z_TagMalloc( int size, int tag ) {
 		// there will be a free fragment after the allocated block
 		new = (memblock_t *) ((byte *)base + size );
 		new->size = extra;
-		new->tag = 0;			// free block
+		new->tag = TAG_FREE; // free block
 		new->prev = base;
 		new->id = ZONEID;
 		new->next = base->next;
@@ -1149,7 +1149,6 @@ void *Z_TagMalloc( int size, int tag ) {
 	}
 	
 	base->tag = tag;			// no longer a free block
-	
 	zone->rover = base->next;	// next allocation will start looking here
 	zone->used += base->size;	//
 	
@@ -1222,7 +1221,7 @@ void Z_CheckHeap( void ) {
 		if ( block->next->prev != block) {
 			Com_Error( ERR_FATAL, "Z_CheckHeap: next block doesn't have proper back link" );
 		}
-		if ( !block->tag && !block->next->tag ) {
+		if ( block->tag == TAG_FREE && block->next->tag == TAG_FREE ) {
 			Com_Error( ERR_FATAL, "Z_CheckHeap: two consecutive free blocks" );
 		}
 	}
@@ -1253,7 +1252,7 @@ static void Z_LogZoneHeap( memzone_t *zone, const char *name ) {
 	Com_sprintf(buf, sizeof(buf), "\r\n================\r\n%s log\r\n================\r\n", name);
 	FS_Write(buf, strlen(buf), logfile);
 	for (block = zone->blocklist.next ; block->next != &zone->blocklist; block = block->next) {
-		if (block->tag) {
+		if (block->tag != TAG_FREE) {
 #ifdef ZONE_DEBUG
 			ptr = ((char *) block) + sizeof(memblock_t);
 			j = 0;
@@ -1437,7 +1436,7 @@ void Com_Meminfo_f( void ) {
 			Com_Printf ("block:%p    size:%7i    tag:%3i\n",
 				(void *)block, block->size, block->tag);
 		}
-		if ( block->tag ) {
+		if ( block->tag != TAG_FREE ) {
 			zoneBytes += block->size;
 			zoneBlocks++;
 			if ( block->tag == TAG_BOTLIB ) {
@@ -1456,7 +1455,7 @@ void Com_Meminfo_f( void ) {
 		if ( block->next->prev != block) {
 			Com_Printf ("ERROR: next block doesn't have proper back link\n");
 		}
-		if ( !block->tag && !block->next->tag ) {
+		if ( block->tag == TAG_FREE && block->next->tag == TAG_FREE ) {
 			Com_Printf ("ERROR: two consecutive free blocks\n");
 		}
 	}
@@ -1464,7 +1463,7 @@ void Com_Meminfo_f( void ) {
 	smallZoneBytes = 0;
 	smallZoneBlocks = 0;
 	for (block = smallzone->blocklist.next ; ; block = block->next) {
-		if ( block->tag ) {
+		if ( block->tag != TAG_FREE ) {
 			smallZoneBytes += block->size;
 			smallZoneBlocks++;
 		}
@@ -1925,6 +1924,7 @@ void *Hunk_Alloc( int size, ha_pref preference ) {
 #endif
 	return buf;
 }
+
 
 /*
 =================
