@@ -932,7 +932,8 @@ typedef enum {
 	TAG_BOTLIB,
 	TAG_RENDERER,
 	TAG_SMALL,
-	TAG_STATIC
+	TAG_STATIC,
+	TAG_COUNT
 } memtag_t;
 
 /*
