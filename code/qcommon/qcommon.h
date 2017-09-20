@@ -963,16 +963,16 @@ temp file loading
 #define Z_TagMalloc(size, tag)			Z_TagMallocDebug(size, tag, #size, __FILE__, __LINE__)
 #define Z_Malloc(size)					Z_MallocDebug(size, #size, __FILE__, __LINE__)
 #define S_Malloc(size)					S_MallocDebug(size, #size, __FILE__, __LINE__)
-void *Z_TagMallocDebug( int size, int tag, char *label, char *file, int line );	// NOT 0 filled memory
+void *Z_TagMallocDebug( int size, memtag_t tag, char *label, char *file, int line );	// NOT 0 filled memory
 void *Z_MallocDebug( int size, char *label, char *file, int line );			// returns 0 filled memory
 void *S_MallocDebug( int size, char *label, char *file, int line );			// returns 0 filled memory
 #else
-void *Z_TagMalloc( int size, int tag );	// NOT 0 filled memory
+void *Z_TagMalloc( int size, memtag_t tag );	// NOT 0 filled memory
 void *Z_Malloc( int size );			// returns 0 filled memory
 void *S_Malloc( int size );			// NOT 0 filled memory only for small allocations
 #endif
 void Z_Free( void *ptr );
-void Z_FreeTags( int tag );
+void Z_FreeTags( memtag_t tag );
 int Z_AvailableMemory( void );
 void Z_LogHeap( void );
 

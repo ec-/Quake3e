@@ -910,7 +910,7 @@ typedef struct zonedebug_s {
 	int allocSize;
 } zonedebug_t;
 
-typedef struct memzone_s;
+struct memzone_s;
 
 typedef struct memblock_s {
 	int			size;	// including the header and possibly tiny fragments
