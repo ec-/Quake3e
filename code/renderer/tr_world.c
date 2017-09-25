@@ -434,7 +434,7 @@ static void R_AddLitSurface( msurface_t *surf, const dlight_t *light )
 		return;
 	}
 
-	R_AddLitSurf( surf->data, surf->shader, surf->fogIndex );
+	R_AddLitSurf( surf->data, surf->shader /*, surf->fogIndex*/ );
 }
 
 

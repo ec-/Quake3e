@@ -743,7 +743,7 @@ RB_RenderLitSurfList
 */
 static void RB_RenderLitSurfList( dlight_t* dl ) {
 	shader_t		*shader, *oldShader;
-	int				fogNum, oldFogNum;
+	//int			fogNum, oldFogNum;
 	int				entityNum, oldEntityNum;
 	qboolean		depthRange, oldDepthRange, isCrosshair, wasCrosshair;
 	const litSurf_t	*litSurf;
@@ -757,7 +757,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 	oldEntityNum = -1;
 	backEnd.currentEntity = &tr.worldEntity;
 	oldShader = NULL;
-	oldFogNum = -1;
+	//oldFogNum = -1;
 	oldDepthRange = qfalse;
 	wasCrosshair = qfalse;
 	oldSort = MAX_UINT;
@@ -771,7 +771,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 			continue;
 		}
 		oldSort = litSurf->sort;
-		R_DecomposeLitSort( litSurf->sort, &entityNum, &shader, &fogNum );
+		R_DecomposeLitSort( litSurf->sort, &entityNum, &shader /*, &fogNum*/ );
 
 		// anything BEFORE opaque is sky/portal, anything AFTER it should never have been added
 		//assert( shader->sort == SS_OPAQUE );
@@ -783,14 +783,14 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 		// change the tess parameters if needed
 		// a "entityMergable" shader is a shader that can have surfaces from seperate
 		// entities merged into a single batch, like smoke and blood puff sprites
-		if ( shader != NULL && ( shader != oldShader || fogNum != oldFogNum
+		if ( shader != NULL && ( shader != oldShader /*|| fogNum != oldFogNum*/
 			|| ( entityNum != oldEntityNum && !shader->entityMergable ) ) ) {
 			if (oldShader != NULL) {
 				RB_EndSurface();
 			}
-			RB_BeginSurface( shader, fogNum );
+			RB_BeginSurface( shader, 0 /*fogNum*/ );
 			oldShader = shader;
-			oldFogNum = fogNum;
+			//oldFogNum = fogNum;
 		}
 
 		//
@@ -814,10 +814,6 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 				// set up the transformation matrix
 				R_RotateForEntity( backEnd.currentEntity, &backEnd.viewParms, &backEnd.or );
 
-				// set up the dynamic lighting
-				R_TransformDlights( 1, dl, &backEnd.or );
-				ARB_SetupLightParams();
-
 				if ( backEnd.currentEntity->e.renderfx & RF_DEPTHHACK ) {
 					// hack the depth range to prevent view model from poking into walls
 					depthRange = qtrue;
@@ -832,10 +828,11 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 				// we have to reset the shaderTime as well otherwise image animations on
 				// the world (like water) continue with the wrong frame
 				tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
-
-				R_TransformDlights( 1, dl, &backEnd.or );
-				ARB_SetupLightParams();
 			}
+		
+			// set up the dynamic lighting
+			R_TransformDlights( 1, dl, &backEnd.or );
+			ARB_SetupLightParams();
 
 			qglLoadMatrixf( backEnd.or.modelMatrix );
 
@@ -900,7 +897,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 	backEnd.refdef.floatTime = originalTime;
 
 	// draw the contents of the last shader batch
-	if (oldShader != NULL) {
+	if ( oldShader != NULL) {
 		RB_EndSurface();
 	}
 

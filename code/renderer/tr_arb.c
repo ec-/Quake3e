@@ -314,6 +314,13 @@ void ARB_LightingPass( void )
 
 	GL_Cull( tess.shader->cullType );
 
+	// set polygon offset if necessary
+	if ( tess.shader->polygonOffset )
+	{
+		qglEnable( GL_POLYGON_OFFSET_FILL );
+		qglPolygonOffset( r_offsetFactor->value, r_offsetUnits->value );
+	}
+
 	pStage = tess.xstages[ tess.shader->lightingStage ];
 
 	R_ComputeTexCoords( pStage );
@@ -341,6 +348,12 @@ void ARB_LightingPass( void )
 
 	//if ( qglUnlockArraysEXT )
 	//		qglUnlockArraysEXT();
+
+	// reset polygon offset
+	if ( tess.shader->polygonOffset ) 
+	{
+		qglDisable( GL_POLYGON_OFFSET_FILL );
+	}
 
 	qglDisableClientState( GL_NORMAL_ARRAY );
 }

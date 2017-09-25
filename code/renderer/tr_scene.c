@@ -408,16 +408,16 @@ void RE_RenderScene( const refdef_t *fd ) {
 	tr.refdef.numDrawSurfs = r_firstSceneDrawSurf;
 	tr.refdef.drawSurfs = backEndData->drawSurfs;
 
+#ifdef USE_PMLIGHT
+	tr.refdef.numLitSurfs = r_firstSceneLitSurf;
+	tr.refdef.litSurfs = backEndData->litSurfs;
+#endif
+
 	tr.refdef.num_entities = r_numentities - r_firstSceneEntity;
 	tr.refdef.entities = &backEndData->entities[r_firstSceneEntity];
 
 	tr.refdef.num_dlights = r_numdlights - r_firstSceneDlight;
 	tr.refdef.dlights = &backEndData->dlights[r_firstSceneDlight];
-
-#ifdef USE_PMLIGHT
-	tr.refdef.numLitSurfs = r_firstSceneLitSurf;
-	tr.refdef.litSurfs = backEndData->litSurfs;
-#endif
 
 	tr.refdef.numPolys = r_numpolys - r_firstScenePoly;
 	tr.refdef.polys = &backEndData->polys[r_firstScenePoly];

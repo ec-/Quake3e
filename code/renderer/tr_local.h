@@ -1191,8 +1191,8 @@ void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader,
 
 void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader, int fogIndex, int dlightMap );
 #ifdef USE_PMLIGHT
-void R_DecomposeLitSort( unsigned sort, int *entityNum, shader_t **shader, int *fogNum );
-void R_AddLitSurf( surfaceType_t *surface, shader_t *shader, int fogIndex );
+void R_DecomposeLitSort( unsigned sort, int *entityNum, shader_t **shader /*, int *fogNum*/ );
+void R_AddLitSurf( surfaceType_t *surface, shader_t *shader /*, int fogIndex*/ );
 #endif
 
 #define	CULL_IN		0		// completely unclipped
