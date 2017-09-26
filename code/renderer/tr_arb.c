@@ -282,10 +282,10 @@ void ARB_SetupLightParams( void )
 	}
 	else 
 	{
-		qglProgramLocalParameter4fARB( GL_VERTEX_PROGRAM_ARB, 0, dl->transformed[0], dl->transformed[1], dl->transformed[2], 0 );
+		qglProgramLocalParameter4fARB( GL_VERTEX_PROGRAM_ARB, 1, dl->transformed[0], dl->transformed[1], dl->transformed[2], 0 );
 	}
 
-	qglProgramLocalParameter4fARB( GL_VERTEX_PROGRAM_ARB, 1, backEnd.or.viewOrigin[0], backEnd.or.viewOrigin[1], backEnd.or.viewOrigin[2], 0 );
+	qglProgramLocalParameter4fARB( GL_VERTEX_PROGRAM_ARB, 0, backEnd.or.viewOrigin[0], backEnd.or.viewOrigin[1], backEnd.or.viewOrigin[2], 0 );
 }
 
 
@@ -355,8 +355,8 @@ extern cvar_t *r_dlightSpecColor;
 static const char *dlightVP = {
 	"!!ARBvp1.0 \n"
 	"OPTION ARB_position_invariant; \n"
-	"PARAM posEye = program.local[1]; \n"
-	"PARAM posLight = program.local[0]; \n"
+	"PARAM posEye = program.local[0]; \n"
+	"PARAM posLight = program.local[1]; \n"
 	"OUTPUT lv = result.texcoord[1]; \n" // 1
 	"OUTPUT ev = result.texcoord[2]; \n" // 2
 	"OUTPUT n = result.texcoord[3]; \n"  // 3
@@ -371,7 +371,7 @@ static const char *dlightVP = {
 static const char *dlightVP_linear = {
 	"!!ARBvp1.0 \n"
 	"OPTION ARB_position_invariant; \n"
-	"PARAM posEye = program.env[0]; \n"
+	"PARAM posEye = program.local[0]; \n"
 	"OUTPUT fp = result.texcoord[1]; \n"
 	"OUTPUT ev = result.texcoord[2]; \n"
 	"OUTPUT n = result.texcoord[3]; \n"
