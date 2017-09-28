@@ -1379,10 +1379,11 @@ void FBO_PostProcess( void )
 		FBO_BlitMS( qfalse );
 	blitMSfbo = qfalse;
 	
-	bloom = ri.Cvar_VariableIntegerValue( "r_bloom" );
-
 	qglColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
 	GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
+	GL_Cull( CT_FRONT_SIDED );
+
+	bloom = ri.Cvar_VariableIntegerValue( "r_bloom" );
 
 	if ( bloom > 1 && programCompiled )
 	{
