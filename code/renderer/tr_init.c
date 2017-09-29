@@ -73,6 +73,7 @@ cvar_t	*r_dlightSpecColor;
 cvar_t	*r_dlightScale;
 cvar_t	*r_dlightIntensity;
 cvar_t	*r_fbo;
+cvar_t	*r_hdr;
 #endif
 cvar_t	*r_dlightBacks;
 
@@ -197,16 +198,26 @@ static void InitOpenGL( void )
 	
 	if ( glConfig.vidWidth == 0 )
 	{
-		GLint		temp;
+		GLint max_texture_size;
+		GLint max_shader_units = -1;
+		GLint max_bind_units = -1;
 		
 		GLimp_Init();
 
 		// OpenGL driver constants
-		qglGetIntegerv( GL_MAX_TEXTURE_SIZE, &temp );
-		glConfig.maxTextureSize = temp;
+		qglGetIntegerv( GL_MAX_TEXTURE_SIZE, &max_texture_size );
+		glConfig.maxTextureSize = max_texture_size;
 
-		if ( glConfig.numTextureUnits > MAX_TEXTURE_UNITS )
-			glConfig.numTextureUnits = MAX_TEXTURE_UNITS;
+		qglGetIntegerv( GL_MAX_TEXTURE_IMAGE_UNITS, &max_shader_units );
+		qglGetIntegerv( GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &max_bind_units );
+
+		if ( max_bind_units > max_shader_units )
+			max_bind_units = max_shader_units;
+		if ( max_bind_units > MAX_TEXTURE_UNITS )
+			max_bind_units = MAX_TEXTURE_UNITS;
+
+		if ( glConfig.numTextureUnits && max_bind_units > 0 )
+			glConfig.numTextureUnits = max_bind_units;
 
 		// stubbed or broken drivers may have reported 0...
 		if ( glConfig.maxTextureSize <= 0 ) 
@@ -1172,6 +1183,7 @@ void R_Register( void )
 	ri.Cvar_CheckRange( r_dlightIntensity, "0.1", "1", CV_FLOAT );
 
 	r_fbo = ri.Cvar_Get( "r_fbo", "0", CVAR_ARCHIVE | CVAR_LATCH );
+	r_hdr = ri.Cvar_Get( "r_hdr", "0", CVAR_ARCHIVE | CVAR_LATCH );
 #endif
 	r_dlightBacks = ri.Cvar_Get( "r_dlightBacks", "1", CVAR_ARCHIVE_ND );
 	r_finish = ri.Cvar_Get( "r_finish", "0", CVAR_ARCHIVE_ND );

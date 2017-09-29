@@ -872,7 +872,7 @@ typedef struct {
 #define FUNCTABLE_SIZE2		10
 #define FUNCTABLE_MASK		(FUNCTABLE_SIZE-1)
 
-#define MAX_TEXTURE_UNITS	4
+#define MAX_TEXTURE_UNITS	8
 
 // the renderer front end should never modify glstate_t
 typedef struct {
@@ -1101,6 +1101,7 @@ extern cvar_t	*r_dlightSpecColor;		// -1.0 - 1.0
 extern cvar_t	*r_dlightScale;			// 0.1 - 1.0
 extern cvar_t	*r_dlightIntensity;		// 0.1 - 1.0
 extern cvar_t	*r_fbo;
+extern cvar_t	*r_hdr;
 #endif
 extern cvar_t	*r_dlightBacks;			// dlight non-facing surfaces for continuity
 
@@ -1442,7 +1443,6 @@ extern qboolean		fboAvailable;
 extern qboolean		blitMSfbo;
 
 void FBO_BindMain( void );
-void FBO_Bind( void );
 void FBO_PostProcess( void );
 void FBO_BlitMS( qboolean depthOnly );
 qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obScale, qboolean finalPass );
