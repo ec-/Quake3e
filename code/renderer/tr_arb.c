@@ -1059,7 +1059,14 @@ static qboolean FBO_Create( frameBuffer_t *fb, GLsizei width, GLsizei height, qb
 	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
 	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 
-	qglTexImage2D( GL_TEXTURE_2D, 0, fboTextureFormat, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL );
+	// always use GL_RGB10_A2 for bloom textures which is fast as usual GL_RGBA8
+	// (GL_R11F_G11F_B10F is a bit slower at least on AMD GPUs)
+	// but can provide better precision for blurring, also we barely need more than 10 bits for that,
+	// texture formats that doesn't fit into 32bits are just performance-killers for bloom
+	if ( fb - frameBuffers >= BLOOM_BASE )
+		qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGB10_A2, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL );
+	else
+		qglTexImage2D( GL_TEXTURE_2D, 0, fboTextureFormat, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL );
 	
 	qglGenFramebuffers( 1, &fb->fbo );
 	FBO_Bind( GL_FRAMEBUFFER, fb->fbo );
@@ -1612,19 +1619,19 @@ void QGL_InitARB( void )
 			h = glConfig.vidHeight;
 
 			hdr = ri.Cvar_VariableIntegerValue( "r_hdr" );
-			if ( hdr == 0 )
-				fboTextureFormat = GL_RGBA8;
-			else if ( hdr == 1 )
-				fboTextureFormat = GL_R11F_G11F_B10F;
-			else if ( hdr == 2 )
-				fboTextureFormat = GL_RGB16F;
-			else
-				fboTextureFormat = GL_RGBA16F;
+			switch ( hdr ) {
+				case -2: fboTextureFormat = GL_RGBA4; break;
+				case -1: fboTextureFormat = GL_RGB5_A1; break;
+				case 0: fboTextureFormat = GL_RGBA8; break;
+				case 1: fboTextureFormat = GL_RGB10_A2; break;
+				case 2: fboTextureFormat = GL_R11F_G11F_B10F; break;
+				default: fboTextureFormat = GL_RGBA12; break;
+			}
 
 			if ( FBO_CreateMS( &frameBufferMS ) ) 
 			{
 				frameBufferMultiSampling = qtrue;
-				if ( r_flares->integer ) 
+				if ( r_flares->integer )
 					depthStencil = qtrue;
 				else
 					depthStencil = qfalse;
