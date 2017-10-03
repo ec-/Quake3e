@@ -1330,6 +1330,7 @@ qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obS
 {
 	static int filter_size = -1;
 	frameBuffer_t *src, *dst;
+	int finalBloomFBO;
 	int i;
 
 	if ( backEnd.doneBloom2fbo || !backEnd.doneSurfaces )
@@ -1371,23 +1372,25 @@ qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obS
 		ARB_UpdatePrograms();
 	}
 
-	for ( i = 0; i < fboBloomPasses; i++ ) {
+	// extract intensity from main FBO to BLOOM_BASE
+	src = &frameBuffers[ 0 ];
+	dst = &frameBuffers[ BLOOM_BASE ];
+	FBO_Bind( GL_FRAMEBUFFER, dst->fbo );
+	GL_BindTexture( 0, src->color );
+	qglViewport( 0, 0, dst->width, dst->height );
+	ARB_ProgramEnable( DUMMY_VERTEX, BLOOM_FRAGMENT );
+	qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, r_bloom2_threshold->value, r_bloom2_threshold->value,
+		r_bloom2_threshold->value, 1.0 );
+	RenderQuad( w, h );
+
+	// downscale and blur
+	for ( i = 1; i < fboBloomPasses; i++ ) {
 		src = &frameBuffers[ i*2 ];
 		dst = &frameBuffers[ i*2 + 2 ];
-		if ( i == 0 ) {
-			FBO_Bind( GL_FRAMEBUFFER, dst->fbo );
-			GL_BindTexture( 0, src->color );
-			qglViewport( 0, 0, dst->width, dst->height );
-			ARB_ProgramEnable( DUMMY_VERTEX, BLOOM_FRAGMENT );
-			qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, r_bloom2_threshold->value, r_bloom2_threshold->value,
-				r_bloom2_threshold->value, 1.0 );
-			RenderQuad( w, h );
-		} else { 
-			// copy image to next level
-			FBO_Bind( GL_READ_FRAMEBUFFER, src->fbo );
-			FBO_Bind( GL_DRAW_FRAMEBUFFER, dst->fbo );
-			qglBlitFramebuffer( 0, 0, src->width, src->height, 0, 0, dst->width, dst->height, GL_COLOR_BUFFER_BIT, GL_LINEAR );
-		}
+		// copy image to next level
+		FBO_Bind( GL_READ_FRAMEBUFFER, src->fbo );
+		FBO_Bind( GL_DRAW_FRAMEBUFFER, dst->fbo );
+		qglBlitFramebuffer( 0, 0, src->width, src->height, 0, 0, dst->width, dst->height, GL_COLOR_BUFFER_BIT, GL_LINEAR );
 		FBO_Blur( dst, dst+1, dst, w, h );
 	}
 
@@ -1405,9 +1408,10 @@ qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obS
 	//qglBlitFramebuffer( 0, 0, w/4, h/4, 0, 0, w/2, h/2, GL_COLOR_BUFFER_BIT, GL_LINEAR );
 #else
 
-	// blend all bloom buffers to FBO[1]
+	// blend all bloom buffers to BLOOM_BASE+1 texture
+	finalBloomFBO = BLOOM_BASE+1;
 	GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
-	FBO_Bind( GL_FRAMEBUFFER, frameBuffers[1].fbo );
+	FBO_Bind( GL_FRAMEBUFFER, frameBuffers[ finalBloomFBO ].fbo );
 	ARB_ProgramEnable( DUMMY_VERTEX, BLENDX_FRAGMENT );
 	// setup all texture units
 	for ( i = 0; i < fboBloomPasses; i++ )
@@ -1425,7 +1429,7 @@ qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obS
 		FBO_Bind( GL_FRAMEBUFFER, frameBuffers[ BLOOM_BASE ].fbo );
 	}
 				
-	GL_BindTexture( 1, frameBuffers[1].color ); // final bloom texture
+	GL_BindTexture( 1, frameBuffers[ finalBloomFBO ].color ); // final bloom texture
 	GL_BindTexture( 0, frameBuffers[0].color ); // original image
 	if ( finalStage ) {
 		// blend & apply gamma in one pass
