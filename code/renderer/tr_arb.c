@@ -7,8 +7,8 @@
 #define FBO_COUNT (2+(MAX_BLUR_PASSES*2))
 #define BLOOM_BASE 2
 
-#define MAX_FILTER_SIZE 9
-#define MIN_FILTER_SIZE 2
+#define MAX_FILTER_SIZE 14
+#define MIN_FILTER_SIZE 1
 
 typedef enum {
 	DLIGHT_VERTEX,
@@ -62,6 +62,7 @@ qboolean fboBloomInited = qfalse;
 int      fboReadIndex = 0;
 GLuint   fboTextureFormat;
 int      fboBloomPasses;
+int      fboBloomFilterSize;
 
 typedef struct frameBuffer_s {
 	GLuint fbo;
@@ -636,16 +637,20 @@ static const char *gammaFP = {
 static const char *bloomFP = {
 	"!!ARBfp1.0 \n"
 	"OPTION ARB_precision_hint_fastest; \n"
-	//"PARAM luma = { 0.2126, 0.7152, 0.0722, 1.0 }; \n"
 	"PARAM thres = program.local[0]; \n"
 	"TEMP intensity; \n"
-	"TEMP tst; \n"
 	"TEMP base; \n"
 	"TEX base, fragment.texcoord[0], texture[0], 2D; \n"
-	//"DP3 intensity, base, luma; \n"
-	"MOV intensity, base; \n"
-	"SUB tst, intensity, thres; \n"
-	"CMP base, tst, 0.0, base; \n"
+#if 0
+	"PARAM luma = { 0.2126, 0.7152, 0.0722, 1.0 }; \n"
+	"DP3_SAT intensity.x, base, luma; \n"
+	"SGE intensity.x, intensity.x, thres.x; \n"
+	"MUL base.rgb, base, intensity.x; \n"
+#else
+	"SGE intensity.rgb, base, thres; \n"
+	"DP3_SAT intensity.w, intensity, intensity; \n"
+	"MUL base.rgb, base, intensity.w; \n"
+#endif
 	"MOV base.w, 1.0; \n"
 	"MOV result.color, base; \n"
 	"END \n" 
@@ -781,30 +786,40 @@ static void ARB_BloomParams( int width, int height, int ksize, qboolean horizont
 	static const float x_k[ MAX_FILTER_SIZE+1 ][ MAX_FILTER_SIZE + 1 ] = {
 		// [1/weight], coeff.1, coeff.2, [...]
 		{ 0 },
-		{ 0 },
-		{ 1.0/2,   1, 1 },
+		{ 1.0/1, 1 },
+		{ 1.0/2, 1, 1 },
 	//	{ 1/4,   1, 2, 1 },
 		{ 1.0/16,  5, 6, 5 },
 		{ 1.0/8,   1, 3, 3, 1 },
 		{ 1.0/16,  1, 4, 6, 4, 1 },
 		{ 1.0/32,  1, 5, 10, 10, 5, 1 },
 		{ 1.0/64,  1, 6, 15, 20, 15, 6, 1 },
-		{ 1.0/128, 1, 7, 21, 35, 35, 21, 6, 1 },
+		{ 1.0/128, 1, 7, 21, 35, 35, 21, 7, 1 },
 		{ 1.0/256, 1, 8, 28, 56, 70, 56, 28, 8, 1 },
+		{ 1.0/512, 1, 9, 36, 84, 126, 126, 84, 36, 9, 1 },
+		{ 1.0/1024, 1, 10, 45, 120, 210, 252, 210, 120, 45, 10, 1 },
+		{ 1.0/2048, 1, 11, 55, 165, 330, 462, 462, 330, 165, 55, 11, 1 },
+		{ 1.0/4096, 1, 12, 66, 220, 495, 792, 924, 792, 495, 220, 66, 12, 1 },
+		{ 1.0/8192, 1, 13, 78, 286, 715, 1287, 1716, 1716, 1287, 715, 286, 78, 13, 1 },
 	};
 
 	static const float x_o[ MAX_FILTER_SIZE+1 ][ MAX_FILTER_SIZE ] = {
 		{ 0 },
-		{ 1.0 },
+		{ 0.0 },
 		{ -0.5, 0.5 },
 	//	{ -1.0, 0.0, 1.0 },
-		{ -1.2, 0.0, 1.2 },
+		{ -1.2f, 0.0, 1.2f },
 		{ -1.5, -0.5, 0.5, 1.5 },
 		{ -2.0, -1.0, 0.0, 1.0, 2.0 },
 		{ -2.5, -1.5, -0.5, 0.5, 1.5, 2.5 },
 		{ -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0 },
 		{ -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5 },
 		{ -4.0, -3.0, -2.0, -1.0, 0.0, 1.0,	2.0, 3.0, 4.0 },
+		{ -4.5, -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5, 4.5 },
+		{ -5.0, -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0 },
+		{ -5.5, -4.5, -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5 },
+		{ -6.0, -5.0, -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 },
+		{ -6.5, -5.5, -4.5, -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5 },
 	};
 
 	const float *coeffs = x_k[ ksize ] + 1;
@@ -928,7 +943,9 @@ qboolean ARB_UpdatePrograms( void )
 	if ( !ARB_CompileProgram( Fragment, bloomFP, programs[ BLOOM_FRAGMENT ] ) )
 		return qfalse;
 
-	if ( !ARB_CompileProgram( Fragment, ARB_BuildBlurProgram( buf, r_bloom2_filter_size->integer ), programs[ BLUR_FRAGMENT ] ) )
+	fboBloomFilterSize = r_bloom2_filter_size->integer;
+
+	if ( !ARB_CompileProgram( Fragment, ARB_BuildBlurProgram( buf, fboBloomFilterSize ), programs[ BLUR_FRAGMENT ] ) )
 		return qfalse;
 
 	if ( !ARB_CompileProgram( Fragment, ARB_BuildBlendProgram( buf, r_bloom2_passes->integer ), programs[ BLENDX_FRAGMENT ] ) )
@@ -1182,14 +1199,13 @@ static qboolean FBO_CreateBloom( int width, int height )
 		// we may need depth/stencil buffers for first bloom buffer in \r_bloom 2 mode
 		if ( !FBO_Create( &frameBuffers[ i*2 + BLOOM_BASE + 0 ], width, height, i == 0 ? qtrue : qfalse ) ||
 			 !FBO_Create( &frameBuffers[ i*2 + BLOOM_BASE + 1 ], width, height, qfalse ) ) {
-			if ( i )
-				return qfalse;
-			else // maybe too small width/height which is ok
-				return qtrue;
+			return qfalse;
 		}
 		width = width / 2;
 		height = height / 2;
 		fboBloomPasses++;
+		if ( width < 2 || height < 2 )
+			break;
 	}
 
 	ri.Printf( PRINT_ALL, "...%i bloom passes\n", fboBloomPasses );
@@ -1299,20 +1315,20 @@ static void FBO_Blur( const frameBuffer_t *fb1, const frameBuffer_t *fb2,  const
 	FBO_Bind( GL_DRAW_FRAMEBUFFER, fb2->fbo );
 	GL_BindTexture( 0, fb1->color );
 	ARB_ProgramEnable( DUMMY_VERTEX, BLUR_FRAGMENT );
-	ARB_BloomParams( fb1->width, fb1->height, r_bloom2_filter_size->integer, qtrue );
+	ARB_BloomParams( fb1->width, fb1->height, fboBloomFilterSize, qtrue );
 	RenderQuad( w, h );
 
 	// apply vectical blur - render from FBO2 to FBO3
 	FBO_Bind( GL_DRAW_FRAMEBUFFER, fb3->fbo );
 	GL_BindTexture( 0, fb2->color );
-	//ARB_ProgramEnable( DUMMY_VERTEX, BLUR_FRAGMENT );
-	ARB_BloomParams( fb1->width, fb1->height, r_bloom2_filter_size->integer, qfalse );
+	ARB_BloomParams( fb1->width, fb1->height, fboBloomFilterSize, qfalse );
 	RenderQuad( w, h );
 }
 
 
 qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obScale, qboolean finalStage ) 
 {
+	static int filter_size = -1;
 	frameBuffer_t *src, *dst;
 	int i;
 
@@ -1349,6 +1365,12 @@ qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obS
 		blitMSfbo = qfalse;
 	}
 
+	if ( filter_size != r_bloom2_filter_size->integer ) 
+	{
+		// only 1, 2, 3, 6, 8, 10, 12 and 14 produces real visual difference
+		ARB_UpdatePrograms();
+	}
+
 	for ( i = 0; i < fboBloomPasses; i++ ) {
 		src = &frameBuffers[ i*2 ];
 		dst = &frameBuffers[ i*2 + 2 ];
@@ -1358,7 +1380,7 @@ qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obS
 			qglViewport( 0, 0, dst->width, dst->height );
 			ARB_ProgramEnable( DUMMY_VERTEX, BLOOM_FRAGMENT );
 			qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, r_bloom2_threshold->value, r_bloom2_threshold->value,
-				r_bloom2_threshold->value, r_bloom2_threshold->value );
+				r_bloom2_threshold->value, 1.0 );
 			RenderQuad( w, h );
 		} else { 
 			// copy image to next level
@@ -1509,12 +1531,12 @@ static void QGL_InitShaders( void )
 	float version;
 	programAvail = 0;
 
-	r_bloom2_threshold = ri.Cvar_Get( "r_bloom2_threshold", "0.5", CVAR_ARCHIVE );
+	r_bloom2_threshold = ri.Cvar_Get( "r_bloom2_threshold", "0.6", CVAR_ARCHIVE );
 	r_bloom2_intensity = ri.Cvar_Get( "r_bloom2_intensity", "0.5", CVAR_ARCHIVE );
-	r_bloom2_passes = ri.Cvar_Get( "r_bloom2_passes", "4", CVAR_ARCHIVE | CVAR_LATCH );
+	r_bloom2_passes = ri.Cvar_Get( "r_bloom2_passes", "5", CVAR_ARCHIVE | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_bloom2_passes, "2", XSTRING( MAX_BLUR_PASSES ), CV_INTEGER );
 
-	r_bloom2_filter_size = ri.Cvar_Get( "r_bloom2_filter_size", "5", CVAR_ARCHIVE | CVAR_LATCH );
+	r_bloom2_filter_size = ri.Cvar_Get( "r_bloom2_filter_size", "3", CVAR_ARCHIVE );
 	ri.Cvar_CheckRange( r_bloom2_filter_size, XSTRING( MIN_FILTER_SIZE ), XSTRING( MAX_FILTER_SIZE ), CV_INTEGER );
 
 	if ( !r_allowExtensions->integer )
