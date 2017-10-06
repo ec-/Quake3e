@@ -21,7 +21,8 @@ typedef enum {
 
 	SPRITE_FRAGMENT,
 	GAMMA_FRAGMENT,
-	BLOOM_FRAGMENT,
+	BLOOM_EXTRACT_FRAGMENT,
+	BLOOM_EXTRACT2_FRAGMENT, // modulated version
 	BLUR_FRAGMENT,
 	BLENDX_FRAGMENT,
 	BLEND2_FRAGMENT,
@@ -38,8 +39,10 @@ typedef enum {
 
 cvar_t *r_bloom2_threshold;
 cvar_t *r_bloom2_passes;
+cvar_t *r_bloom2_blend_base;
 cvar_t *r_bloom2_intensity;
 cvar_t *r_bloom2_filter_size;
+cvar_t *r_bloom2_modulate;
 
 static GLuint programs[ PROGRAM_COUNT ];
 static GLuint current_vp;
@@ -62,6 +65,7 @@ qboolean fboBloomInited = qfalse;
 int      fboReadIndex = 0;
 GLuint   fboTextureFormat;
 int      fboBloomPasses;
+int      fboBloomBlendBase;
 int      fboBloomFilterSize;
 
 typedef struct frameBuffer_s {
@@ -657,6 +661,31 @@ static const char *bloomFP = {
 };
 
 
+// intensity extractor, with modulated base color
+static const char *bloomFPm = {
+	"!!ARBfp1.0 \n"
+	"OPTION ARB_precision_hint_fastest; \n"
+	"PARAM thres = program.local[0]; \n"
+	"TEMP intensity; \n"
+	"TEMP base; \n"
+	"TEX base, fragment.texcoord[0], texture[0], 2D; \n"
+#if 0
+	"PARAM luma = { 0.2126, 0.7152, 0.0722, 1.0 }; \n"
+	"DP3_SAT intensity.x, base, luma; \n"
+	"SGE intensity.x, intensity.x, thres.x; \n"
+	"MUL base.rgb, base, intensity.x; \n"
+#else
+	"SGE intensity.rgb, base, thres; \n"
+	"DP3_SAT intensity.w, intensity, intensity; \n"
+	"MUL base.rgb, base, intensity.w; \n"
+#endif
+	"MUL base, base, base; \n"
+	"MOV base.w, 1.0; \n"
+	"MOV result.color, base; \n"
+	"END \n" 
+};
+
+
 // Gaussian blur shader
 static char *ARB_BuildBlurProgram( char *buf, int taps ) {
 	int i;
@@ -944,15 +973,19 @@ qboolean ARB_UpdatePrograms( void )
 	if ( !ARB_CompileProgram( Fragment, va( gammaFP, ARB_BuildGreyscaleProgram( buf ) ), programs[ GAMMA_FRAGMENT ] ) )
 		return qfalse;
 
-	if ( !ARB_CompileProgram( Fragment, bloomFP, programs[ BLOOM_FRAGMENT ] ) )
+	if ( !ARB_CompileProgram( Fragment, bloomFP, programs[ BLOOM_EXTRACT_FRAGMENT ] ) )
 		return qfalse;
 
-	fboBloomFilterSize = r_bloom2_filter_size->integer;
+	if ( !ARB_CompileProgram( Fragment, bloomFPm, programs[ BLOOM_EXTRACT2_FRAGMENT ] ) )
+		return qfalse;
 
+	// only 1, 2, 3, 6, 8, 10, 12 and 14 produces real visual difference
+	fboBloomFilterSize = r_bloom2_filter_size->integer;
 	if ( !ARB_CompileProgram( Fragment, ARB_BuildBlurProgram( buf, fboBloomFilterSize ), programs[ BLUR_FRAGMENT ] ) )
 		return qfalse;
 
-	if ( !ARB_CompileProgram( Fragment, ARB_BuildBlendProgram( buf, r_bloom2_passes->integer ), programs[ BLENDX_FRAGMENT ] ) )
+	fboBloomBlendBase = r_bloom2_blend_base->integer;
+	if ( !ARB_CompileProgram( Fragment, ARB_BuildBlendProgram( buf, r_bloom2_passes->integer - fboBloomBlendBase ), programs[ BLENDX_FRAGMENT ] ) )
 		return qfalse;
 
 	if ( !ARB_CompileProgram( Fragment, blend2FP, programs[ BLEND2_FRAGMENT ] ) )
@@ -1370,9 +1403,8 @@ qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obS
 		blitMSfbo = qfalse;
 	}
 
-	if ( filter_size != r_bloom2_filter_size->integer ) 
+	if ( filter_size != r_bloom2_filter_size->integer || fboBloomBlendBase != r_bloom2_blend_base->integer )
 	{
-		// only 1, 2, 3, 6, 8, 10, 12 and 14 produces real visual difference
 		ARB_UpdatePrograms();
 	}
 
@@ -1382,7 +1414,10 @@ qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obS
 	FBO_Bind( GL_FRAMEBUFFER, dst->fbo );
 	GL_BindTexture( 0, src->color );
 	qglViewport( 0, 0, dst->width, dst->height );
-	ARB_ProgramEnable( DUMMY_VERTEX, BLOOM_FRAGMENT );
+	if ( r_bloom2_modulate->integer )
+		ARB_ProgramEnable( DUMMY_VERTEX, BLOOM_EXTRACT2_FRAGMENT );
+	else
+		ARB_ProgramEnable( DUMMY_VERTEX, BLOOM_EXTRACT_FRAGMENT );
 	qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, r_bloom2_threshold->value, r_bloom2_threshold->value,
 		r_bloom2_threshold->value, 1.0 );
 	RenderQuad( w, h );
@@ -1418,8 +1453,9 @@ qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obS
 	FBO_Bind( GL_FRAMEBUFFER, frameBuffers[ finalBloomFBO ].fbo );
 	ARB_ProgramEnable( DUMMY_VERTEX, BLENDX_FRAGMENT );
 	// setup all texture units
-	for ( i = 0; i < fboBloomPasses; i++ )
-		GL_BindTexture( i, frameBuffers[ i*2 + BLOOM_BASE ].color );
+	for ( i = 0; i < fboBloomPasses - fboBloomBlendBase; i++ ) {
+		GL_BindTexture( i, frameBuffers[ (i+fboBloomBlendBase)*2 + BLOOM_BASE ].color );
+	}
 	RenderQuad( w, h );
 
 	// if we don't need to read pixels later - blend directly to back buffer
@@ -1539,12 +1575,15 @@ static void QGL_InitShaders( void )
 	float version;
 	programAvail = 0;
 
-	r_bloom2_threshold = ri.Cvar_Get( "r_bloom2_threshold", "0.6", CVAR_ARCHIVE );
-	r_bloom2_intensity = ri.Cvar_Get( "r_bloom2_intensity", "0.5", CVAR_ARCHIVE );
-	r_bloom2_passes = ri.Cvar_Get( "r_bloom2_passes", "5", CVAR_ARCHIVE | CVAR_LATCH );
+	r_bloom2_threshold = ri.Cvar_Get( "r_bloom2_threshold", "0.6", CVAR_ARCHIVE_ND );
+	r_bloom2_intensity = ri.Cvar_Get( "r_bloom2_intensity", "0.5", CVAR_ARCHIVE_ND );
+	r_bloom2_passes = ri.Cvar_Get( "r_bloom2_passes", "5", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_bloom2_passes, "2", XSTRING( MAX_BLUR_PASSES ), CV_INTEGER );
+	r_bloom2_blend_base = ri.Cvar_Get( "r_bloom2_blend_base", "1", CVAR_ARCHIVE_ND );
+	ri.Cvar_CheckRange( r_bloom2_blend_base, "0", va("%i", r_bloom2_passes->integer-1), CV_INTEGER );
+	r_bloom2_modulate = ri.Cvar_Get( "r_bloom2_modulate", "0", CVAR_ARCHIVE_ND );
 
-	r_bloom2_filter_size = ri.Cvar_Get( "r_bloom2_filter_size", "3", CVAR_ARCHIVE );
+	r_bloom2_filter_size = ri.Cvar_Get( "r_bloom2_filter_size", "3", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_bloom2_filter_size, XSTRING( MIN_FILTER_SIZE ), XSTRING( MAX_FILTER_SIZE ), CV_INTEGER );
 
 	if ( !r_allowExtensions->integer )
