@@ -212,7 +212,7 @@ static void R_Bloom_DrawEffect( void )
 	if ( r_bloom_cascade->integer ) {
 		alpha = r_bloom_cascade_alpha->value;
 	} else {
-		r_bloom_alpha->value
+		alpha = r_bloom_alpha->value;
 	}
 	qglColor4f( alpha, alpha, alpha, 1.0f );
 	R_Bloom_Quad( glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
