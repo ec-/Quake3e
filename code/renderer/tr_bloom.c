@@ -183,6 +183,7 @@ static void R_Bloom_InitTextures( void )
 	bloom.started = qtrue;
 }
 
+
 /*
 =================
 R_InitBloomTextures
@@ -190,11 +191,12 @@ R_InitBloomTextures
 */
 void R_InitBloomTextures( void )
 {
-	if( r_bloom->integer != 1 )
+	if ( r_bloom->integer != 1 )
 		return;
 	memset( &bloom, 0, sizeof( bloom ));
 	R_Bloom_InitTextures ();
 }
+
 
 /*
 =================
@@ -203,11 +205,14 @@ R_Bloom_DrawEffect
 */
 static void R_Bloom_DrawEffect( void )
 {
-	float alpha = r_bloom_alpha->value;
+	float alpha;
+
 	GL_Bind( bloom.effect.texture );
 	GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE );
 	if ( r_bloom_cascade->integer ) {
 		alpha = r_bloom_cascade_alpha->value;
+	} else {
+		r_bloom_alpha->value
 	}
 	qglColor4f( alpha, alpha, alpha, 1.0f );
 	R_Bloom_Quad( glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
@@ -251,8 +256,8 @@ static void R_Bloom_Cascaded( void )
 		scale >>= 1;
 
 	// prepare the first level.
-	newWorkW=bloom.work.width/scale;
-	newWorkH=bloom.work.height/scale;
+	newWorkW = bloom.work.width / scale;
+	newWorkH = bloom.work.height / scale;
 
 	GL_Bind( bloom.effect2.texture );
 	GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
@@ -271,7 +276,7 @@ static void R_Bloom_Cascaded( void )
 
 		// get effect texture.
 		GL_Bind( bloom.effect.texture );
-		qglCopyTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 0, 0, oldWorkW, oldWorkH);
+		qglCopyTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 0, 0, oldWorkW, oldWorkH );
 
 		// maginfy the previous level.
 		if ( r_bloom_cascade_blur->value < 0.01f ) {
@@ -496,7 +501,7 @@ void R_BloomInit( void )
 	r_bloom_sample_size = ri.Cvar_Get( "r_bloom_sample_size", "128", CVAR_ARCHIVE_ND | CVAR_LATCH );
 
 	r_bloom_cascade = ri.Cvar_Get( "r_bloom_cascade", "0", CVAR_ARCHIVE );
-	r_bloom_cascade_blur = ri.Cvar_Get( "r_bloom_cascade_blur", ".4", CVAR_ARCHIVE_ND );
+	r_bloom_cascade_blur = ri.Cvar_Get( "r_bloom_cascade_blur", "0.4", CVAR_ARCHIVE_ND );
 	r_bloom_cascade_intensity= ri.Cvar_Get( "r_bloom_cascade_intensity", "20", CVAR_ARCHIVE_ND );
 	r_bloom_cascade_alpha = ri.Cvar_Get( "r_bloom_cascade_alpha", "0.15", CVAR_ARCHIVE_ND );
 	r_bloom_cascade_dry = ri.Cvar_Get( "r_bloom_cascade_dry", "0.8", CVAR_ARCHIVE_ND );
