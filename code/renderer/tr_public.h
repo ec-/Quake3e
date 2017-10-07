@@ -139,6 +139,10 @@ typedef struct {
 	void	(*Cvar_CheckRange)( cvar_t *cv, const char *minVal, const char *maxVal, cvarValidator_t type );
 	void	(*Cvar_SetDescription)( cvar_t *cv, const char *description );
 
+	void	(*Cvar_SetGroup)( cvar_t *var, cvarGroup_t group );
+	int		(*Cvar_CheckGroup)( cvarGroup_t group );
+	void	(*Cvar_ResetGroup)( cvarGroup_t group, qboolean resetModifiedFlags );
+
 	int		(*Cvar_VariableIntegerValue) (const char *var_name);
 
 	void	(*Cmd_AddCommand)( const char *name, void(*cmd)(void) );

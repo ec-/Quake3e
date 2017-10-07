@@ -1137,6 +1137,7 @@ void R_Register( void )
 	r_ignoreFastPath = ri.Cvar_Get( "r_ignoreFastPath", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_greyscale = ri.Cvar_Get( "r_greyscale", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_greyscale, "-1", "1", CV_FLOAT );
+	ri.Cvar_SetGroup( r_greyscale, CVG_RENDERER );
 	r_mapGrayScale = ri.Cvar_Get( "r_mapGrayScale", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_mapGrayScale, "0", "1", CV_FLOAT );
 
@@ -1177,8 +1178,10 @@ void R_Register( void )
 	ri.Cvar_CheckRange( r_dlightScale, "0.1", "1", CV_FLOAT );
 	r_dlightSpecPower = ri.Cvar_Get( "r_dlightSpecPower", "8", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_dlightSpecPower, "1", "32", CV_FLOAT );
+	ri.Cvar_SetGroup( r_dlightSpecPower, CVG_RENDERER );
 	r_dlightSpecColor = ri.Cvar_Get( "r_dlightSpecColor", "-0.25", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_dlightSpecColor, "-1", "1", CV_FLOAT );
+	ri.Cvar_SetGroup( r_dlightSpecColor, CVG_RENDERER );
 	r_dlightIntensity = ri.Cvar_Get( "r_dlightIntensity", "1.0", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_dlightIntensity, "0.1", "1", CV_FLOAT );
 

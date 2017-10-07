@@ -512,11 +512,10 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 
 #ifdef USE_PMLIGHT
 	// recompile GPU shaders if needed
-	if ( r_dlightSpecPower->modified || r_dlightSpecColor->modified || r_greyscale->modified ) {
+	if ( ri.Cvar_CheckGroup( CVG_RENDERER ) )
+	{
 		ARB_UpdatePrograms();
-		r_dlightSpecPower->modified = qfalse;
-		r_dlightSpecColor->modified = qfalse;
-		r_greyscale->modified = qfalse;
+		ri.Cvar_ResetGroup( CVG_RENDERER, qtrue );
 	}
 #endif
 }

@@ -588,6 +588,10 @@ void	Cvar_InfoStringBuffer( int bit, char *buff, int buffsize );
 void	Cvar_CheckRange( cvar_t *cv, const char *minVal, const char *maxVal, cvarValidator_t type );
 void	Cvar_SetDescription( cvar_t *var, const char *var_description );
 
+void	Cvar_SetGroup( cvar_t *var, cvarGroup_t group );
+int		Cvar_CheckGroup( cvarGroup_t group );
+void	Cvar_ResetGroup( cvarGroup_t group, qboolean resetModifiedFlags );
+
 void	Cvar_Restart(qboolean unsetVM);
 void	Cvar_Restart_f( void );
 

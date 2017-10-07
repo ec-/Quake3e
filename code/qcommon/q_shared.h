@@ -870,8 +870,16 @@ default values.
 typedef enum {
 	CV_NONE = 0,
 	CV_FLOAT,
-	CV_INTEGER
+	CV_INTEGER,
+	CV_BOOLEAN,
+	CV_MAX,
 } cvarValidator_t;
+
+typedef enum {
+	CVG_NONE = 0,
+	CVG_RENDERER,
+	CVG_MAX,
+} cvarGroup_t;
 
 // nothing outside the Cvar_*() functions should modify these fields!
 typedef struct cvar_s cvar_t;
@@ -891,11 +899,12 @@ struct cvar_s {
 	char		*maxs;
 	char		*description;
 
-	cvar_t *next;
-	cvar_t *prev;
-	cvar_t *hashNext;
-	cvar_t *hashPrev;
+	cvar_t		*next;
+	cvar_t		*prev;
+	cvar_t		*hashNext;
+	cvar_t		*hashPrev;
 	int			hashIndex;
+	cvarGroup_t	group;				// to track changes
 };
 
 #define	MAX_CVAR_VALUE_STRING	256

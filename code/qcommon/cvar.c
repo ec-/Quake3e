@@ -32,6 +32,8 @@ int			cvar_modifiedFlags;
 cvar_t		cvar_indexes[MAX_CVARS];
 int			cvar_numIndexes;
 
+static int	cvar_group[ CVG_MAX ];
+
 #define FILE_HASH_SIZE		256
 static	cvar_t	*hashTable[FILE_HASH_SIZE];
 static	qboolean cvar_sort = qfalse;
@@ -433,6 +435,8 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 	var->resetString = CopyString( var_value );
 	var->validator = CV_NONE;
 	var->description = NULL;
+	var->group = CVG_NONE;
+	cvar_group[ var->group ] = 1;
 
 	// link the variable in
 	var->next = cvar_vars;
@@ -647,6 +651,7 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 			var->latchedString = CopyString(value);
 			var->modified = qtrue;
 			var->modificationCount++;
+			cvar_group[ var->group ] = 1;
 			return var;
 		}
 
@@ -671,6 +676,7 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 
 	var->modified = qtrue;
 	var->modificationCount++;
+	cvar_group[ var->group ] = 1;
 	
 	Z_Free (var->string);	// free the old value string
 	
@@ -1613,6 +1619,11 @@ Cvar_CheckRange
 */
 void Cvar_CheckRange( cvar_t *var, const char *mins, const char *maxs, cvarValidator_t type )
 {
+	if ( type >= CV_MAX ) {
+		Com_Printf( S_COLOR_YELLOW "Invalid validation type %i for %s\n", type, var->name );
+		return;
+	}
+
 	if ( var->mins ) {
 		Z_Free( var->mins );
 		var->mins = NULL;
@@ -1627,11 +1638,16 @@ void Cvar_CheckRange( cvar_t *var, const char *mins, const char *maxs, cvarValid
 	if ( type == CV_NONE )
 		return;
 
-	if ( mins )
-		var->mins = CopyString( mins );
-	
-	if ( maxs )
-		var->maxs = CopyString( maxs );
+	if ( type == CV_BOOLEAN ) {
+		var->mins = CopyString( "0" );
+		var->maxs = CopyString( "1" );
+		var->validator = CV_INTEGER;
+	} else {
+		if ( mins )
+			var->mins = CopyString( mins );
+		if ( maxs )
+			var->maxs = CopyString( maxs );
+	}
 
 	// Force an initial range check
 	Cvar_Set( var->name, var->string );
@@ -1652,6 +1668,54 @@ void Cvar_SetDescription( cvar_t *var, const char *var_description )
 			Z_Free( var->description );
 		}
 		var->description = CopyString( var_description );
+	}
+}
+
+
+/*
+=====================
+Cvar_SetGroup
+=====================
+*/
+void Cvar_SetGroup( cvar_t *var, cvarGroup_t group ) {
+	if ( group < CVG_MAX ) {
+		var->group = group;
+	} else {
+		Com_Error( ERR_DROP, "Bad group index %i for %s", group, var->name );
+	}
+}
+
+
+/*
+=====================
+Cvar_CheckGroup
+=====================
+*/
+int Cvar_CheckGroup( cvarGroup_t group ) {
+	if ( group < CVG_MAX ) {
+		return cvar_group[ group ];
+	} else {
+		return 0;
+	}
+}
+
+
+/*
+=====================
+Cvar_ResetGroup
+=====================
+*/
+void Cvar_ResetGroup( cvarGroup_t group, qboolean resetModifiedFlags ) {
+	if ( group < CVG_MAX ) {
+		cvar_group[ group ] = 0;
+		if ( resetModifiedFlags ) {
+			int i;
+			for ( i = 0; i < cvar_numIndexes; i++ ) {
+				if ( cvar_indexes[ i ].group == group && cvar_indexes[ i ].name ) {
+					cvar_indexes[ i ].modified = qfalse;
+				}
+			}
+		}
 	}
 }
 
