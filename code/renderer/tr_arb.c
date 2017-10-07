@@ -22,7 +22,6 @@ typedef enum {
 	SPRITE_FRAGMENT,
 	GAMMA_FRAGMENT,
 	BLOOM_EXTRACT_FRAGMENT,
-	BLOOM_EXTRACT2_FRAGMENT, // modulated version
 	BLUR_FRAGMENT,
 	BLENDX_FRAGMENT,
 	BLEND2_FRAGMENT,
@@ -38,11 +37,12 @@ typedef enum {
 } programType;
 
 cvar_t *r_bloom2_threshold;
+cvar_t *r_bloom2_threshold_mode;
+cvar_t *r_bloom2_modulate;
 cvar_t *r_bloom2_passes;
 cvar_t *r_bloom2_blend_base;
 cvar_t *r_bloom2_intensity;
 cvar_t *r_bloom2_filter_size;
-cvar_t *r_bloom2_modulate;
 
 static GLuint programs[ PROGRAM_COUNT ];
 static GLuint current_vp;
@@ -637,53 +637,68 @@ static const char *gammaFP = {
 	"END \n" 
 };
 
-// intensity extractor
-static const char *bloomFP = {
-	"!!ARBfp1.0 \n"
-	"OPTION ARB_precision_hint_fastest; \n"
-	"PARAM thres = program.local[0]; \n"
-	"TEMP intensity; \n"
-	"TEMP base; \n"
-	"TEX base, fragment.texcoord[0], texture[0], 2D; \n"
-#if 0
-	"PARAM luma = { 0.2126, 0.7152, 0.0722, 1.0 }; \n"
-	"DP3_SAT intensity.x, base, luma; \n"
-	"SGE intensity.x, intensity.x, thres.x; \n"
-	"MUL base.rgb, base, intensity.x; \n"
-#else
-	"SGE intensity.rgb, base, thres; \n"
-	"DP3_SAT intensity.w, intensity, intensity; \n"
-	"MUL base.rgb, base, intensity.w; \n"
-#endif
-	"MOV base.w, 1.0; \n"
-	"MOV result.color, base; \n"
-	"END \n" 
-};
+static char *ARB_BuildBloomProgram( char *buf ) {
+	qboolean intensityCalculated;
+	char *s = buf;
 
+	intensityCalculated = qfalse;
+	s = Q_stradd( s,
+		"!!ARBfp1.0 \n"
+		"OPTION ARB_precision_hint_fastest; \n"
+		"PARAM thres = program.local[0]; \n"
+		"TEMP base; \n"
+		"TEX base, fragment.texcoord[0], texture[0], 2D; \n" );
 
-// intensity extractor, with modulated base color
-static const char *bloomFPm = {
-	"!!ARBfp1.0 \n"
-	"OPTION ARB_precision_hint_fastest; \n"
-	"PARAM thres = program.local[0]; \n"
-	"TEMP intensity; \n"
-	"TEMP base; \n"
-	"TEX base, fragment.texcoord[0], texture[0], 2D; \n"
-#if 0
-	"PARAM luma = { 0.2126, 0.7152, 0.0722, 1.0 }; \n"
-	"DP3_SAT intensity.x, base, luma; \n"
-	"SGE intensity.x, intensity.x, thres.x; \n"
-	"MUL base.rgb, base, intensity.x; \n"
-#else
-	"SGE intensity.rgb, base, thres; \n"
-	"DP3_SAT intensity.w, intensity, intensity; \n"
-	"MUL base.rgb, base, intensity.w; \n"
-#endif
-	"MUL base, base, base; \n"
-	"MOV base.w, 1.0; \n"
-	"MOV result.color, base; \n"
-	"END \n" 
-};
+	if ( r_bloom2_threshold_mode->integer == 0 ) {
+		// (r|g|b) >= threshold
+		s = Q_stradd( s,
+			"TEMP minv; \n"
+			"SGE minv, base, thres; \n"
+			"DP3_SAT minv.w, minv, minv; \n"
+			"MUL base.rgb, base, minv.w; \n" );
+	} else if ( r_bloom2_threshold_mode->integer == 1 ) {
+		// (r+g+b)/3 >= threshold
+		s = Q_stradd( s,
+			"PARAM scale = { 0.3333, 0.3334, 0.3333, 1.0 }; \n"
+			"TEMP avg; \n"
+			"DP3_SAT avg, base, scale; \n"
+			"SGE avg.w, avg.x, thres.x; \n"
+			"MUL base.rgb, base, avg.w; \n" );
+	} else {
+		// luma(r,g,b) >= threshold
+		s = Q_stradd( s,
+			"PARAM luma = { 0.2126, 0.7152, 0.0722, 1.0 }; \n"
+			"TEMP intensity; \n"
+			"DP3_SAT intensity, base, luma; \n"
+			"SGE intensity.w, intensity.x, thres.x; \n"
+			"MUL base.rgb, base, intensity.w; \n" );
+		intensityCalculated = qtrue;
+	}
+
+	// modulation
+	if ( r_bloom2_modulate->integer ) {
+		if ( r_bloom2_modulate->integer == 1 ) {
+			// by itself
+			s = Q_stradd( s, "MUL base, base, base; \n" );
+		} else {
+			// by intensity
+			if ( !intensityCalculated ) {
+				s = Q_stradd( s,
+					"PARAM luma = { 0.2126, 0.7152, 0.0722, 1.0 }; \n"
+					"TEMP intensity; \n"
+					"DP3_SAT intensity, base, luma; \n" );
+			}
+			s = Q_stradd( s, "MUL base, base, intensity; \n" );
+		}
+	}
+
+	s = Q_stradd( s,
+		"MOV base.w, 1.0; \n"
+		"MOV result.color, base; \n"
+		"END \n" );
+
+	return buf;
+}
 
 
 // Gaussian blur shader
@@ -973,12 +988,9 @@ qboolean ARB_UpdatePrograms( void )
 	if ( !ARB_CompileProgram( Fragment, va( gammaFP, ARB_BuildGreyscaleProgram( buf ) ), programs[ GAMMA_FRAGMENT ] ) )
 		return qfalse;
 
-	if ( !ARB_CompileProgram( Fragment, bloomFP, programs[ BLOOM_EXTRACT_FRAGMENT ] ) )
+	if ( !ARB_CompileProgram( Fragment, ARB_BuildBloomProgram( buf ), programs[ BLOOM_EXTRACT_FRAGMENT ] ) )
 		return qfalse;
-
-	if ( !ARB_CompileProgram( Fragment, bloomFPm, programs[ BLOOM_EXTRACT2_FRAGMENT ] ) )
-		return qfalse;
-
+	
 	// only 1, 2, 3, 6, 8, 10, 12 and 14 produces real visual difference
 	fboBloomFilterSize = r_bloom2_filter_size->integer;
 	if ( !ARB_CompileProgram( Fragment, ARB_BuildBlurProgram( buf, fboBloomFilterSize ), programs[ BLUR_FRAGMENT ] ) )
@@ -1365,7 +1377,6 @@ static void FBO_Blur( const frameBuffer_t *fb1, const frameBuffer_t *fb2,  const
 
 qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obScale, qboolean finalStage ) 
 {
-	static int filter_size = -1;
 	frameBuffer_t *src, *dst;
 	int finalBloomFBO;
 	int i;
@@ -1403,21 +1414,13 @@ qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obS
 		blitMSfbo = qfalse;
 	}
 
-	if ( filter_size != r_bloom2_filter_size->integer || fboBloomBlendBase != r_bloom2_blend_base->integer )
-	{
-		ARB_UpdatePrograms();
-	}
-
 	// extract intensity from main FBO to BLOOM_BASE
 	src = &frameBuffers[ 0 ];
 	dst = &frameBuffers[ BLOOM_BASE ];
 	FBO_Bind( GL_FRAMEBUFFER, dst->fbo );
 	GL_BindTexture( 0, src->color );
 	qglViewport( 0, 0, dst->width, dst->height );
-	if ( r_bloom2_modulate->integer )
-		ARB_ProgramEnable( DUMMY_VERTEX, BLOOM_EXTRACT2_FRAGMENT );
-	else
-		ARB_ProgramEnable( DUMMY_VERTEX, BLOOM_EXTRACT_FRAGMENT );
+	ARB_ProgramEnable( DUMMY_VERTEX, BLOOM_EXTRACT_FRAGMENT );
 	qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, r_bloom2_threshold->value, r_bloom2_threshold->value,
 		r_bloom2_threshold->value, 1.0 );
 	RenderQuad( w, h );
@@ -1576,15 +1579,20 @@ static void QGL_InitShaders( void )
 	programAvail = 0;
 
 	r_bloom2_threshold = ri.Cvar_Get( "r_bloom2_threshold", "0.6", CVAR_ARCHIVE_ND );
+	ri.Cvar_SetGroup( r_bloom2_threshold, CVG_RENDERER );
+	r_bloom2_threshold_mode = ri.Cvar_Get( "r_bloom2_threshold_mode", "0", CVAR_ARCHIVE_ND );
+	ri.Cvar_SetGroup( r_bloom2_threshold_mode, CVG_RENDERER );
 	r_bloom2_intensity = ri.Cvar_Get( "r_bloom2_intensity", "0.5", CVAR_ARCHIVE_ND );
 	r_bloom2_passes = ri.Cvar_Get( "r_bloom2_passes", "5", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_bloom2_passes, "2", XSTRING( MAX_BLUR_PASSES ), CV_INTEGER );
 	r_bloom2_blend_base = ri.Cvar_Get( "r_bloom2_blend_base", "1", CVAR_ARCHIVE_ND );
+	ri.Cvar_SetGroup( r_bloom2_blend_base, CVG_RENDERER );
 	ri.Cvar_CheckRange( r_bloom2_blend_base, "0", va("%i", r_bloom2_passes->integer-1), CV_INTEGER );
 	r_bloom2_modulate = ri.Cvar_Get( "r_bloom2_modulate", "0", CVAR_ARCHIVE_ND );
-
+	ri.Cvar_SetGroup( r_bloom2_modulate, CVG_RENDERER );
 	r_bloom2_filter_size = ri.Cvar_Get( "r_bloom2_filter_size", "3", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_bloom2_filter_size, XSTRING( MIN_FILTER_SIZE ), XSTRING( MAX_FILTER_SIZE ), CV_INTEGER );
+	ri.Cvar_SetGroup( r_bloom2_filter_size, CVG_RENDERER );
 
 	if ( !r_allowExtensions->integer )
 		return;
@@ -1745,10 +1753,6 @@ void QGL_InitARB( void )
 	{
 		QGL_DoneARB();
 	}
-
-	r_dlightSpecPower->modified = qfalse;
-	r_dlightSpecColor->modified = qfalse;
-	r_greyscale->modified = qfalse;
 }
 
 
