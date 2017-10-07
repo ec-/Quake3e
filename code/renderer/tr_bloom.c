@@ -34,6 +34,7 @@ static cvar_t *r_bloom_cascade_intensity;
 static cvar_t *r_bloom_cascade_alpha;
 static cvar_t *r_bloom_cascade_dry;
 static cvar_t *r_bloom_dry;
+static cvar_t *r_bloom_reflection;
 
 /* 
 ============================================================================== 
@@ -120,6 +121,34 @@ static void ID_INLINE R_Bloom_Quad( int width, int height, float texX, float tex
 
 	qglTexCoord2f(	texWidth,					texHeight	);	
 	qglVertex2f(	width,						y	);				
+	qglEnd ();
+}
+
+
+static void ID_INLINE R_Bloom_Quad_Lens( float offsert, int width, int height, float texX, float texY, float texWidth, float texHeight )
+{
+	int x = 0;
+	int y = 0;
+	x = 0;
+	y += glConfig.vidHeight - height;
+	width += x;
+	height += y;
+	offsert = offsert * 9; // bah
+	texWidth -= texX;
+	texHeight -= texY;
+
+	qglBegin( GL_QUADS );
+	qglTexCoord2f(	texX,				texHeight );
+	qglVertex2f(	width + offsert,	height + offsert );
+
+	qglTexCoord2f(	texX,				texY );
+	qglVertex2f(	width + offsert,	y	- offsert );
+
+	qglTexCoord2f(	texWidth,			texY );
+	qglVertex2f(	x - offsert,		y	- offsert );
+
+	qglTexCoord2f(	texWidth,			texHeight );
+	qglVertex2f(	x - offsert,		height	+ offsert );
 	qglEnd ();
 }
 
@@ -216,6 +245,53 @@ static void R_Bloom_DrawEffect( void )
 	}
 	qglColor4f( alpha, alpha, alpha, 1.0f );
 	R_Bloom_Quad( glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+}
+
+
+/*
+=================
+R_Bloom_LensEffect
+LEILEI's Silly hack
+=================
+*/
+static void R_Bloom_LensEffect( void )
+{
+	GL_Bind( bloom.effect.texture );
+	GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE );
+
+	qglColor4f( 0.78f, 0.23f, 0.34f, 0.07f );
+	R_Bloom_Quad_Lens(16, glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+	qglColor4f( 0.78f, 0.39f, 0.21f, 0.07f );
+	R_Bloom_Quad_Lens(32, glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+	qglColor4f( 0.78f, 0.59f, 0.21f, 0.07f );
+	R_Bloom_Quad_Lens(48, glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+	qglColor4f( 0.71f, 0.75f, 0.21f, 0.07f );
+	R_Bloom_Quad_Lens(64, glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+	qglColor4f( 0.52f, 0.78f, 0.21f, 0.07f );
+	R_Bloom_Quad_Lens(80, glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+	qglColor4f( 0.32f, 0.78f, 0.21f, 0.07f );
+	R_Bloom_Quad_Lens(96, glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+	qglColor4f( 0.21f, 0.78f, 0.28f, 0.07f );
+	R_Bloom_Quad_Lens(112, glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+	qglColor4f( 0.21f, 0.78f, 0.47f, 0.07f );
+	R_Bloom_Quad_Lens(128, glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+	qglColor4f( 0.21f, 0.77f, 0.66f, 0.07f );
+	R_Bloom_Quad_Lens(144, glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+	qglColor4f( 0.21f, 0.67f, 0.78f, 0.07f );
+	R_Bloom_Quad_Lens(160, glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+	qglColor4f( 0.21f, 0.47f, 0.78f, 0.07f );
+	R_Bloom_Quad_Lens(176, glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+	qglColor4f( 0.21f, 0.28f, 0.78f, 0.07f );
+	R_Bloom_Quad_Lens(192, glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+	qglColor4f( 0.35f, 0.21f, 0.78f, 0.07f );
+	R_Bloom_Quad_Lens(208, glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+	qglColor4f( 0.53f, 0.21f, 0.78f, 0.07f );
+	R_Bloom_Quad_Lens(224, glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+	qglColor4f( 0.72f, 0.21f, 0.75f, 0.07f );
+	R_Bloom_Quad_Lens(240, glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+	qglColor4f( 0.78f, 0.21f, 0.59f, 0.07f );
+	R_Bloom_Quad_Lens(256, glConfig.vidWidth, glConfig.vidHeight, 0, 0, bloom.effect.readW, bloom.effect.readW );
+
 }
 
 
@@ -486,6 +562,9 @@ void R_BloomScreen( void )
 
 	// Do the final pass using the bloom texture for the final effect
 	R_Bloom_DrawEffect();
+
+	if ( r_bloom_reflection->integer )
+		R_Bloom_LensEffect();
 }
 
 
@@ -506,4 +585,5 @@ void R_BloomInit( void )
 	r_bloom_cascade_alpha = ri.Cvar_Get( "r_bloom_cascade_alpha", "0.15", CVAR_ARCHIVE_ND );
 	r_bloom_cascade_dry = ri.Cvar_Get( "r_bloom_cascade_dry", "0.8", CVAR_ARCHIVE_ND );
 	r_bloom_dry = ri.Cvar_Get( "r_bloom_dry", "1", CVAR_ARCHIVE_ND );
+	r_bloom_reflection = ri.Cvar_Get( "r_bloom_reflection", "0", CVAR_ARCHIVE_ND );
 }
