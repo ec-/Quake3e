@@ -37,7 +37,7 @@ static	image_t*		hashTable[FILE_HASH_SIZE];
 void R_GammaCorrect( byte *buffer, int bufSize ) {
 	int i;
 #ifdef USE_PMLIGHT
-	if ( fboAvailable )
+	if ( fboEnabled )
 		return;
 #endif
 	for ( i = 0; i < bufSize; i++ ) {
@@ -1228,7 +1228,7 @@ void R_SetColorMappings( void ) {
 
 	// never overbright in windowed mode
 #ifdef USE_PMLIGHT
-	if ( !glConfig.isFullscreen && r_overBrightBits->integer >= 0 && r_fbo->integer == 0 )
+	if ( !glConfig.isFullscreen && r_overBrightBits->integer >= 0 && !fboEnabled )
 #else
 	if ( !glConfig.isFullscreen && r_overBrightBits->integer >= 0 )
 #endif

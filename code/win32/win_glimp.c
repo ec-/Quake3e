@@ -42,9 +42,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "glw_win.h"
 #include "win_local.h"
 
-extern void WG_CheckHardwareGamma( void );
-extern void WG_RestoreGamma( void );
-
 typedef enum {
 	RSERR_OK,
 
@@ -869,7 +866,7 @@ void UpdateMonitorInfo( const RECT *target )
 				// track monitor and gamma change
 				qboolean gammaSet = glw_state.gammaSet;
 				if ( gammaSet ) {
-					WG_RestoreGamma();
+					GLW_RestoreGamma();
 				}
 				glw_state.desktopWidth = w;
 				glw_state.desktopHeight = h;
@@ -895,104 +892,6 @@ void UpdateMonitorInfo( const RECT *target )
 		glw_state.desktopHeight = GetDeviceCaps( hDC, VERTRES );
 		ReleaseDC( GetDesktopWindow(), hDC );
 		glw_state.displayName[0] = '\0';
-	}
-}
-
-
-static void GLW_AttemptMSAA( void )
-{
-	typedef BOOL (WINAPI * PFNWGLCHOOSEPIXELFORMATARBPROC) (HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats );
-	PFNWGLCHOOSEPIXELFORMATARBPROC qwglChoosePixelFormatARB;
-
-	#define WGL_DRAW_TO_WINDOW_ARB         0x2001
-	#define WGL_SUPPORT_OPENGL_ARB         0x2010
-	#define WGL_ACCELERATION_ARB           0x2003
-	#define WGL_FULL_ACCELERATION_ARB      0x2027
-	#define WGL_DOUBLE_BUFFER_ARB          0x2011
-	#define WGL_COLOR_BITS_ARB             0x2014
-	#define WGL_ALPHA_BITS_ARB             0x201B
-	#define WGL_DEPTH_BITS_ARB             0x2022
-	#define WGL_STENCIL_BITS_ARB           0x2023
-
-	//#ifndef WGL_ARB_multisample
-	#define WGL_SAMPLE_BUFFERS_ARB         0x2041
-	#define WGL_SAMPLES_ARB                0x2042
-	//#endif
-
-	static const float ar[] = { 0.0f, 0.0f };
-	qboolean result;
-	int nSamples;
-	UINT cPFD;
-	int iPFD;
-
-	// ignore r_xyzbits vars - MSAA requires 32-bit color, and anyone using it is implicitly on decent HW
-	static int anAttributes[ 22 ] = {
-		WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
-		WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
-		WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
-		WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
-		WGL_COLOR_BITS_ARB, 32,
-		WGL_ALPHA_BITS_ARB, 0,
-		WGL_DEPTH_BITS_ARB, 24,
-		WGL_STENCIL_BITS_ARB, 8,
-		WGL_SAMPLE_BUFFERS_ARB, GL_TRUE,
-		WGL_SAMPLES_ARB, 8,
-		0, 0
-	};
-
-	qwglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)qwglGetProcAddress( "wglChoosePixelFormatARB" );
-	if ( !qwglChoosePixelFormatARB ) {
-		qglDisable( GL_MULTISAMPLE_ARB );
-		return;
-	}
-
-	nSamples = MIN( PAD( r_ext_multisample->integer, 2 ), 8 );
-	if ( !nSamples ) {
-		qglDisable( GL_MULTISAMPLE_ARB );
-		return;
-	}
-
-	for ( ;; nSamples -= 2 ) {
-		if ( !nSamples ) {
-			ri.Printf( PRINT_ALL, "...not using MSAA\n" );
-			qglDisable( GL_MULTISAMPLE_ARB );
-			return;
-		}
-		anAttributes[ 19 ] = nSamples;
-		if ( !qwglChoosePixelFormatARB( glw_state.hDC, anAttributes, ar, 1, &iPFD, &cPFD) || !cPFD ) {
-			ri.Printf( PRINT_ALL, "...%ix MSAA is not available\n", nSamples );
-			continue;
-		} else {
-			break;
-		}
-	}
-
-	qwglMakeCurrent( glw_state.hDC, NULL );
-
-	if ( glw_state.hGLRC ) {
-		qwglDeleteContext( glw_state.hGLRC );
-		glw_state.hGLRC = NULL;
-	}
-
-	if ( glw_state.hDC ) {
-		ReleaseDC( g_wv.hWnd, glw_state.hDC );
-		glw_state.hDC = NULL;
-	}
-
-	if ( g_wv.hWnd ) {
-		DestroyWindow( g_wv.hWnd );
-		g_wv.hWnd = NULL;
-	}
-
-	ri.Printf( PRINT_ALL, "...using %ix MSAA\n", nSamples );
-
-	glw_state.nPendingPF = iPFD;
-	glw_state.pixelFormatSet = qfalse;
-	result = GLW_CreateWindow( r_glDriver->name, glConfig.vidWidth, glConfig.vidHeight, glConfig.colorBits, glConfig.isFullscreen );
-	glw_state.nPendingPF = 0;
-
-	if ( result ) {
-		qglEnable( GL_MULTISAMPLE_ARB );
 	}
 }
 
@@ -1548,17 +1447,10 @@ void GLimp_Init( void )
 	GLW_InitExtensions();
 
 #if defined(USE_PMLIGHT) && !defined(USE_RENDERER2)
-	QGL_EarlyInitARB();
-	if ( !r_fbo->integer ) 
-#endif
-	{
-		GLW_AttemptMSAA();
-	}
-#if defined(USE_PMLIGHT) && !defined(USE_RENDERER2)
 	QGL_InitARB();
 #endif
 
-	WG_CheckHardwareGamma();
+	GLW_InitGamma( &glConfig );
 
 	// show main window after all initializations
 	ShowWindow( g_wv.hWnd, SW_SHOW );
@@ -1592,7 +1484,7 @@ void GLimp_Shutdown( void )
 
 	// restore gamma.  We do this first because 3Dfx's extension needs a valid OGL subsystem
 	if ( glw_state.gammaSet ) {
-		WG_RestoreGamma();
+		GLW_RestoreGamma();
 		glw_state.gammaSet = qfalse;
 	}
 

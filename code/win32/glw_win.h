@@ -57,4 +57,7 @@ typedef struct
 
 extern glwstate_t glw_state;
 
+extern void GLW_InitGamma( glconfig_t *config );
+extern void GLW_RestoreGamma( void );
+
 #endif

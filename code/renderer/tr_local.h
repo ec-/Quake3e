@@ -1426,10 +1426,9 @@ void R_ComputeTexCoords( const shaderStage_t *pStage );
 
 qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t maxs );
 
-void QGL_EarlyInitARB( void );
 void QGL_InitARB( void );
-
 void QGL_DoneARB( void );
+void QGL_InitFBO( void );
 qboolean ARB_UpdatePrograms( void );
 
 qboolean GL_ProgramAvailable( void );
@@ -1439,7 +1438,7 @@ void GL_ProgramEnable( void );
 void ARB_SetupLightParams( void );
 void ARB_LightingPass( void );
 
-extern qboolean		fboAvailable;
+extern qboolean		fboEnabled;
 extern qboolean		blitMSfbo;
 
 void FBO_BindMain( void );

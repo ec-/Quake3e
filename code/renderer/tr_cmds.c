@@ -515,6 +515,8 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 	if ( ri.Cvar_CheckGroup( CVG_RENDERER ) )
 	{
 		ARB_UpdatePrograms();
+		if ( r_ext_multisample->modified || r_hdr->modified )
+			QGL_InitFBO();
 		ri.Cvar_ResetGroup( CVG_RENDERER, qtrue );
 	}
 #endif

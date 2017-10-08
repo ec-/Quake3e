@@ -48,7 +48,7 @@ static GLuint programs[ PROGRAM_COUNT ];
 static GLuint current_vp;
 static GLuint current_fp;
 
-static int programAvail	= 0;
+static int programAvailable	= 0;
 static int programCompiled = 0;
 static int programEnabled	= 0;
 static int gl_version = 0;
@@ -305,7 +305,7 @@ void ARB_LightingPass( void )
 {
 	const shaderStage_t* pStage;
 
-	if ( !programAvail )
+	if ( !programAvailable )
 		return;
 
 	if ( tess.shader->lightingStage == -1 )
@@ -953,7 +953,7 @@ qboolean ARB_UpdatePrograms( void )
 	const char *program;
 	char buf[4096];
 
-	if ( !qglGenProgramsARB || !programAvail )
+	if ( !qglGenProgramsARB || !programAvailable )
 		return qfalse;
 
 	if ( programCompiled ) // delete old programs
@@ -1170,11 +1170,11 @@ static qboolean FBO_CreateMS( frameBuffer_t *fb )
 	
 	fb->multiSampled = qtrue;
 
-	if ( nSamples <= 0 )
+	if ( nSamples <= 0 || !qglRenderbufferStorageMultisample )
 	{
 		return qfalse;
 	}
-	nSamples = (nSamples + 1) & ~1;
+	nSamples = PAD( nSamples, 2 );
 
 	qglGenFramebuffers( 1, &fb->fbo );
 	FBO_Bind( GL_FRAMEBUFFER, fb->fbo );
@@ -1293,7 +1293,7 @@ static void FBO_Bind( GLuint target, GLuint buffer )
 
 void FBO_BindMain( void ) 
 {
-	if ( fboAvailable && programAvail ) 
+	if ( fboEnabled )
 	{
 		const frameBuffer_t *fb;
 		if ( frameBufferMultiSampling ) 
@@ -1512,7 +1512,7 @@ void FBO_PostProcess( void )
 	const float h = glConfig.vidHeight;
 	int bloom;
 
-	if ( !fboAvailable )
+	if ( !fboEnabled )
 		return;
 
 	ARB_ProgramDisable();
@@ -1572,11 +1572,12 @@ void FBO_PostProcess( void )
 
 static const void *fp;
 #define GPA(fn) fp = qwglGetProcAddress( #fn ); if ( !fp ) { Com_Printf( "GPA failed on '%s'\n", #fn ); goto __fail; } else { memcpy( &q##fn, &fp, sizeof( fp ) ); }
+#define GPA_(fn) { fp = qwglGetProcAddress( #fn ); memcpy( &q##fn, &fp, sizeof( fp ) ); }
 
-static void QGL_InitShaders( void ) 
+static void QGL_InitPrograms( void ) 
 {
 	float version;
-	programAvail = 0;
+	programAvailable = 0;
 
 	r_bloom2_threshold = ri.Cvar_Get( "r_bloom2_threshold", "0.6", CVAR_ARCHIVE_ND );
 	ri.Cvar_SetGroup( r_bloom2_threshold, CVG_RENDERER );
@@ -1619,7 +1620,7 @@ static void QGL_InitShaders( void )
 	GPA( glProgramStringARB );
 	GPA( glDeleteProgramsARB );
 	GPA( glProgramLocalParameter4fARB );
-	programAvail = 1;
+	programAvailable = 1;
 
 	ri.Printf( PRINT_ALL, "...using ARB shaders\n" );
 
@@ -1628,14 +1629,14 @@ __fail:
 }
 
 
-static void QGL_InitFBO( void ) 
+static void QGL_EarlyInitFBO( void )
 {
 	fboAvailable = qfalse;
 
 	if ( !r_allowExtensions->integer )
 		return;
 
-	if ( !programAvail )
+	if ( !programAvailable )
 		return;
 
 	if ( !GLimp_HaveExtension( "GL_EXT_framebuffer_object" ) )
@@ -1663,117 +1664,107 @@ static void QGL_InitFBO( void )
 	GPA( glGetFramebufferAttachmentParameteriv );
 	GPA( glIsRenderbuffer );
 	GPA( glRenderbufferStorage );
-	if ( r_ext_multisample->integer ) 
-	{
-		GPA( glRenderbufferStorageMultisample );
-	}
+	GPA_( glRenderbufferStorageMultisample );
 	fboAvailable = qtrue;
 __fail:
 	return;
 }
 
 
-void QGL_EarlyInitARB( void ) 
+void QGL_DoneFBO( void )
 {
-	QGL_InitShaders();
-	QGL_InitFBO();
+	if ( fboAvailable ) 
+	{
+		FBO_Bind(GL_FRAMEBUFFER, 0);
+		FBO_Clean(&frameBufferMS);
+		FBO_Clean(&frameBuffers[0]);
+		FBO_Clean(&frameBuffers[1]);
+		FBO_CleanBloom();
+		FBO_CleanDepth();
+		fboEnabled = qfalse;
+		fboBloomInited = qfalse;
+	}
 }
 
 
-void QGL_DoneARB( void );
-void QGL_InitARB( void )
+void QGL_InitFBO( void )
 {
-	if ( ARB_UpdatePrograms() )
+	int w, h, hdr;
+	qboolean depthStencil;
+	qboolean result = qfalse;
+	const char *fboFormat;
+
+	QGL_DoneFBO();
+
+	w = glConfig.vidWidth;
+	h = glConfig.vidHeight;
+	
+	fboEnabled = qfalse;
+	frameBufferMultiSampling = qfalse;
+
+	if ( r_fbo->integer && ( !programAvailable || !fboAvailable ) )
+		ri.Printf( PRINT_WARNING, "...FBO is not available\n" );
+
+	if ( !r_fbo->integer || !programAvailable || !fboAvailable )
+		return;
+
+	hdr = ri.Cvar_VariableIntegerValue( "r_hdr" );
+	switch ( hdr ) {
+		case -1: fboTextureFormat = GL_RGBA4; fboFormat = "GL_RGBA4 "; break;
+		case 0: fboTextureFormat = GL_RGBA8; fboFormat = ""; break;
+		default: fboTextureFormat = GL_RGBA12; fboFormat = "GL_RGBA12 "; break;
+	}
+
+	if ( FBO_CreateMS( &frameBufferMS ) ) 
 	{
-		if ( r_fbo->integer && fboAvailable ) 
-		{
-			int w, h, hdr;
-			qboolean depthStencil;
-			qboolean result = qfalse;
-			frameBufferMultiSampling = qfalse;
-			
-			w = glConfig.vidWidth;
-			h = glConfig.vidHeight;
+		frameBufferMultiSampling = qtrue;
+		if ( r_flares->integer )
+			depthStencil = qtrue;
+		else
+			depthStencil = qfalse;
 
-			hdr = ri.Cvar_VariableIntegerValue( "r_hdr" );
-			switch ( hdr ) {
-				case -2: fboTextureFormat = GL_RGBA4; break;
-				case -1: fboTextureFormat = GL_RGB5_A1; break;
-				case 0: fboTextureFormat = GL_RGBA8; break;
-				case 1: fboTextureFormat = GL_RGB10_A2; break;
-				case 2: fboTextureFormat = GL_R11F_G11F_B10F; break;
-				default: fboTextureFormat = GL_RGBA12; break;
-			}
+		result = FBO_Create( &frameBuffers[ 0 ], w, h, depthStencil ) && FBO_Create( &frameBuffers[ 1 ], w, h, depthStencil );
+		frameBufferMultiSampling = result;
+	}
+	else 
+	{
+		result = FBO_Create( &frameBuffers[ 0 ], w, h, qtrue ) && FBO_Create( &frameBuffers[ 1 ], w, h, qtrue );
+	}
 
-			if ( FBO_CreateMS( &frameBufferMS ) ) 
-			{
-				frameBufferMultiSampling = qtrue;
-				if ( r_flares->integer )
-					depthStencil = qtrue;
-				else
-					depthStencil = qfalse;
-
-				result = FBO_Create( &frameBuffers[ 0 ], w, h, depthStencil ) && FBO_Create( &frameBuffers[ 1 ], w, h, depthStencil );
-				frameBufferMultiSampling = result;
-			}
-			else 
-			{
-				result = FBO_Create( &frameBuffers[ 0 ], w, h, qtrue ) && FBO_Create( &frameBuffers[ 1 ], w, h, qtrue );
-			}
-
-			if ( result ) 
-			{
-				FBO_BindMain();
-				qglClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-			}
-			else 
-			{
-				FBO_Clean( &frameBufferMS );
-				FBO_Clean( &frameBuffers[ 0 ] );
-				FBO_Clean( &frameBuffers[ 1 ] );
-				FBO_CleanBloom();
-				FBO_CleanDepth();
-
-				fboAvailable = qfalse;
-				fboBloomInited = qfalse;
-			}
-		}
-		else 
-		{
-			fboAvailable = qfalse;
-		}
-
-
-		if ( fboAvailable ) 
-		{
-			ri.Printf( PRINT_ALL, "...using FBO\n" );
-		}
+	if ( result )
+	{
+		fboEnabled = qtrue;
+		FBO_BindMain();
+		qglClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+		ri.Printf( PRINT_ALL, "...using %sFBO\n", fboFormat );
 	}
 	else
 	{
-		QGL_DoneARB();
+		QGL_DoneFBO();
 	}
+}
+
+
+void QGL_InitARB( void )
+{
+	QGL_InitPrograms();
+	ARB_UpdatePrograms();
+	QGL_EarlyInitFBO();
+	QGL_InitFBO();
 }
 
 
 void QGL_DoneARB( void )
 {
+	QGL_DoneFBO();
+
 	if ( programCompiled )
 	{
 		ARB_ProgramDisable();
 		ARB_DeletePrograms();
 	}
 
-	FBO_Clean( &frameBufferMS );
-	FBO_Clean( &frameBuffers[ 0 ] );
-	FBO_Clean( &frameBuffers[ 1 ] );
-	FBO_CleanBloom();
-	FBO_CleanDepth();
-
-	fboAvailable = qfalse;
-	fboBloomInited = qfalse;
-
-	programAvail = 0;
+	programAvailable = 0;
 
 	qglGenProgramsARB		= NULL;
 	qglDeleteProgramsARB	= NULL;

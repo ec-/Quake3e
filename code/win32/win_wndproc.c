@@ -378,7 +378,6 @@ extern cvar_t *in_logitechbug;
 int			HotKey = 0;
 int			hkinstalled = 0;
 
-extern void WG_RestoreGamma( void );
 extern void SetGameDisplaySettings( void );
 extern void SetDesktopDisplaySettings( void );
 
@@ -628,9 +627,9 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 					if ( re.SetColorMappings )
 						re.SetColorMappings();
 				} else {
-					WG_RestoreGamma();
+					GLW_RestoreGamma();
 					// Minimize if there only one monitor
-					if ( glw_state.monitorCount <= 1 || fboAvailable )
+					if ( glw_state.monitorCount <= 1 || fboEnabled )
 						ShowWindow( hWnd, SW_MINIMIZE );
 					SetDesktopDisplaySettings();
 				}
@@ -639,7 +638,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 					if ( re.SetColorMappings )
 						re.SetColorMappings();
 				} else {
-					WG_RestoreGamma();
+					GLW_RestoreGamma();
 				}
 			}
 
@@ -721,7 +720,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			return 0;
 
 #ifdef USE_PMLIGHT
-		if ( wParam == SC_MINIMIZE && CL_VideoRecording() && !fboAvailable )
+		if ( wParam == SC_MINIMIZE && CL_VideoRecording() && !fboEnabled )
 #else
 		if ( wParam == SC_MINIMIZE && CL_VideoRecording() )
 #endif
@@ -742,7 +741,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			if ( gw_active )
 			{
 #ifdef USE_PMLIGHT
-				if ( !CL_VideoRecording() || fboAvailable )
+				if ( !CL_VideoRecording() || fboEnabled )
 #else
 				if ( !CL_VideoRecording() )
 #endif

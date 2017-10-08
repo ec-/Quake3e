@@ -505,7 +505,7 @@ static void R_Bloom_RestoreScreen( void ) {
 }
 
 
-extern void	RB_SetGL2D (void);
+extern void	RB_SetGL2D( void );
 
 /*
 =================
@@ -515,7 +515,7 @@ R_BloomScreen
 void R_BloomScreen( void )
 {
 #ifdef USE_PMLIGHT
-	if ( r_bloom->integer == 2 && fboAvailable ) 
+	if ( r_bloom->integer == 2 && fboEnabled )
 	{
 		if ( !backEnd.doneBloom2fbo && backEnd.doneSurfaces )
 		{
