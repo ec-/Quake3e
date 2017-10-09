@@ -63,7 +63,7 @@ qboolean fboAvailable = qfalse;
 qboolean fboEnabled = qfalse;
 qboolean fboBloomInited = qfalse;
 int      fboReadIndex = 0;
-GLuint   fboTextureFormat;
+GLint    fboTextureFormat;
 int      fboBloomPasses;
 int      fboBloomBlendBase;
 int      fboBloomFilterSize;
@@ -103,7 +103,7 @@ void ( APIENTRY *qglGetFramebufferAttachmentParameteriv )( GLenum target, GLenum
 void ( APIENTRY *qglGenerateMipmap)( GLenum target );
 void ( APIENTRY *qglBlitFramebuffer)( GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter );
 void ( APIENTRY *qglRenderbufferStorageMultisample )(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
-
+void ( APIENTRY *qglGetInternalformativ )(GLenum target, GLenum internalformat, GLenum pname, GLsizei bufSize, GLint *params);
 
 qboolean GL_ProgramAvailable( void ) 
 {
@@ -1101,9 +1101,47 @@ static GLuint FBO_CreateDepthTexture( GLsizei width, GLsizei height )
 }
 
 
+static const char *textureFormat( GLint format )
+{
+	switch ( format )
+	{
+		case GL_BGRA: return "GL_BGRA";
+		case GL_RGB: return "GL_RGB";
+		case GL_RGBA: return "GL_RGBA";
+		case GL_RGBA4: return "GL_RGBA4";
+		case GL_RGBA8: return "GL_RGBA8";
+		case GL_RGBA12: return "GL_RGBA12";
+		case GL_RGB10_A2: return "GL_RGB10_A2";
+		case GL_R11F_G11F_B10F: return "GL_R11F_G11F_B10F";
+	}
+	return va( "%04x", format );
+}
+
+
+static void getPreferredFormatAndType( GLint format, GLint *pFormat, GLint *pType )
+{
+	GLint preferredFormat;
+	GLint preferredType;
+
+	if ( qglGetInternalformativ ) {
+		qglGetInternalformativ( GL_TEXTURE_2D, /*GL_RGBA8*/ format, GL_TEXTURE_IMAGE_FORMAT, 1, &preferredFormat );
+		qglGetInternalformativ( GL_TEXTURE_2D, /*GL_RGBA8*/ format, GL_TEXTURE_IMAGE_TYPE, 1, &preferredType );
+	} else  {
+		preferredFormat = GL_BGRA;
+		preferredType = GL_UNSIGNED_BYTE;
+	}
+
+	*pFormat = preferredFormat;
+	*pType = preferredType;
+}
+
+
 static qboolean FBO_Create( frameBuffer_t *fb, GLsizei width, GLsizei height, qboolean depthStencil )
 {
 	int fboStatus;
+	GLint internalFormat;
+	GLint textureFormat;
+	GLint textureType;
 
 	fb->multiSampled = qfalse;
 
@@ -1130,9 +1168,13 @@ static qboolean FBO_Create( frameBuffer_t *fb, GLsizei width, GLsizei height, qb
 	// but can provide better precision for blurring, also we barely need more than 10 bits for that,
 	// texture formats that doesn't fit into 32bits are just performance-killers for bloom
 	if ( fb - frameBuffers >= BLOOM_BASE )
-		qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGB10_A2, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL );
+		internalFormat = GL_RGB10_A2;
 	else
-		qglTexImage2D( GL_TEXTURE_2D, 0, fboTextureFormat, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL );
+		internalFormat = fboTextureFormat;
+
+	getPreferredFormatAndType( internalFormat, &textureFormat, &textureType );
+
+	qglTexImage2D( GL_TEXTURE_2D, 0, internalFormat, width, height, 0, textureFormat, textureType, NULL );
 	
 	qglGenFramebuffers( 1, &fb->fbo );
 	FBO_Bind( GL_FRAMEBUFFER, fb->fbo );
@@ -1648,6 +1690,12 @@ static void QGL_EarlyInitFBO( void )
 	if ( !GLimp_HaveExtension( "GL_EXT_framebuffer_multisample" ) )
 		return;
 
+	if ( GLimp_HaveExtension( "ARB_internalformat_query2" ) ) {
+		GPA_( glGetInternalformativ );
+	} else {
+		qglGetInternalformativ = NULL;
+	}
+
 	GPA( glBindRenderbuffer );
 	GPA( glBlitFramebuffer );
 	GPA( glDeleteRenderbuffers );
@@ -1692,7 +1740,6 @@ void QGL_InitFBO( void )
 	int w, h, hdr;
 	qboolean depthStencil;
 	qboolean result = qfalse;
-	const char *fboFormat;
 
 	QGL_DoneFBO();
 
@@ -1710,9 +1757,9 @@ void QGL_InitFBO( void )
 
 	hdr = ri.Cvar_VariableIntegerValue( "r_hdr" );
 	switch ( hdr ) {
-		case -1: fboTextureFormat = GL_RGBA4; fboFormat = "GL_RGBA4 "; break;
-		case 0: fboTextureFormat = GL_RGBA8; fboFormat = ""; break;
-		default: fboTextureFormat = GL_RGBA12; fboFormat = "GL_RGBA12 "; break;
+		case -1: fboTextureFormat = GL_RGBA4; break;
+		case 0: fboTextureFormat = GL_RGBA8; break;
+		default: fboTextureFormat = GL_RGBA12; break;
 	}
 
 	if ( FBO_CreateMS( &frameBufferMS ) ) 
@@ -1736,7 +1783,7 @@ void QGL_InitFBO( void )
 		fboEnabled = qtrue;
 		FBO_BindMain();
 		qglClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-		ri.Printf( PRINT_ALL, "...using %sFBO\n", fboFormat );
+		ri.Printf( PRINT_ALL, "...using %s FBO\n", textureFormat( fboTextureFormat ) );
 	}
 	else
 	{
