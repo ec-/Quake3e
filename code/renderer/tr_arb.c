@@ -1644,7 +1644,7 @@ static void QGL_InitPrograms( void )
 
 	gl_version = (int)version;
 
-	if ( version < 1.4 ) {
+	if ( version < 1.39 ) {
 		ri.Printf( PRINT_ALL, S_COLOR_YELLOW "...OpenGL 1.4 is not available\n" );
 		return;
 	}

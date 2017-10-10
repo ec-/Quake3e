@@ -409,6 +409,7 @@ static void SetViewportAndScissor( void ) {
 		backEnd.viewParms.scissorWidth, backEnd.viewParms.scissorHeight );
 }
 
+
 /*
 =================
 RB_BeginDrawingView
@@ -496,6 +497,9 @@ void RB_BeginDrawingView( void ) {
 	}
 }
 
+#ifdef USE_PMLIGHT
+static void RB_LightingPass( void );
+#endif
 
 /*
 ==================
@@ -511,13 +515,14 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	int				i;
 	drawSurf_t		*drawSurf;
 	unsigned int	oldSort;
+	float			oldShaderSort;
 	double			originalTime; // -EC- 
 
 	// save original time for entity shader offsets
 	originalTime = backEnd.refdef.floatTime;
 
 	// clear the z buffer, set the modelview, etc
-	RB_BeginDrawingView ();
+	RB_BeginDrawingView();
 
 	// draw everything
 	oldEntityNum = -1;
@@ -528,6 +533,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	wasCrosshair = qfalse;
 	oldDlighted = qfalse;
 	oldSort = MAX_UINT;
+	oldShaderSort = -1;
 	depthRange = qfalse;
 
 	backEnd.pc.c_surfaces += numDrawSurfs;
@@ -547,9 +553,20 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 		// entities merged into a single batch, like smoke and blood puff sprites
 		if ( shader != NULL && ( shader != oldShader || fogNum != oldFogNum || dlighted != oldDlighted 
 			|| ( entityNum != oldEntityNum && !shader->entityMergable ) ) ) {
-			if (oldShader != NULL) {
+			if ( oldShader != NULL ) {
 				RB_EndSurface();
 			}
+#ifdef USE_PMLIGHT
+			#define INSERT_POINT SS_UNDERWATER
+			if ( backEnd.refdef.numLitSurfs && oldShaderSort < INSERT_POINT && shader->sort >= INSERT_POINT ) {
+				//RB_BeginDrawingLitSurfs(); // no need, already setup in RB_BeginDrawingView()
+				qglDepthRange( 0, 1 );
+				RB_LightingPass();
+				oldEntityNum = -1; // force matrix setup
+				oldDepthRange = qtrue; // force depthRange setup
+			}
+			oldShaderSort = shader->sort;
+#endif
 			RB_BeginSurface( shader, fogNum );
 			oldShader = shader;
 			oldFogNum = fogNum;
@@ -696,7 +713,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 RB_BeginDrawingLitView
 =================
 */
-void RB_BeginDrawingLitSurfs( void ) 
+static void RB_BeginDrawingLitSurfs( void )
 {
 	// we will need to change the projection matrix before drawing
 	// 2D images again
@@ -728,10 +745,10 @@ void RB_BeginDrawingLitSurfs( void )
 		plane2[3] = DotProduct (plane, backEnd.viewParms.or.origin) - plane[3];
 
 		qglLoadMatrixf( s_flipMatrix );
-		qglClipPlane (GL_CLIP_PLANE0, plane2);
-		qglEnable (GL_CLIP_PLANE0);
+		qglClipPlane( GL_CLIP_PLANE0, plane2 );
+		qglEnable( GL_CLIP_PLANE0 );
 	} else {
-		qglDisable (GL_CLIP_PLANE0);
+		qglDisable( GL_CLIP_PLANE0 );
 	}
 }
 
@@ -1148,6 +1165,28 @@ const void *RB_StretchPic ( const void *data ) {
 }
 
 
+static void RB_LightingPass( void )
+{
+	dlight_t	*dl;
+	int	i;
+
+	tess.dlightPass = qtrue;
+	for ( i = 0; i < backEnd.viewParms.num_dlights; i++ )
+	{
+		dl = &backEnd.viewParms.dlights[i];
+		if ( dl->head )
+		{
+			tess.light = dl;
+			RB_RenderLitSurfList( dl );
+		}
+	}
+	tess.dlightPass = qfalse;
+
+	backEnd.viewParms.num_dlights = 0;
+	GL_ProgramDisable();
+}
+
+
 /*
 =============
 RB_DrawSurfs
@@ -1167,34 +1206,14 @@ const void	*RB_DrawSurfs( const void *data ) {
 	backEnd.refdef = cmd->refdef;
 	backEnd.viewParms = cmd->viewParms;
 
-#ifdef USE_PMLIGHT
-	tess.dlightPass = qfalse;
-#endif
-
 	RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
 
 #ifdef USE_PMLIGHT
-#ifdef USE_LEGACY_DLIGHTS
-	if ( r_dlightMode->integer ) 
-#endif
-	{
-		dlight_t	*dl;
-		int			i;
-		if ( backEnd.refdef.numLitSurfs ) {
-			RB_BeginDrawingLitSurfs();
-			tess.dlightPass = qtrue;
-			for ( i = 0; i < backEnd.viewParms.num_dlights; ++i ) {
-				dl = &backEnd.viewParms.dlights[i];
-				if ( dl->head ) {
-					tess.light = dl;
-					RB_RenderLitSurfList( dl );
-				}
-			}
-		}
-		tess.dlightPass = qfalse;
-		GL_ProgramDisable();
+	if ( backEnd.refdef.numLitSurfs ) {
+		RB_BeginDrawingLitSurfs();
+		RB_LightingPass();
 	}
-#endif // USE_PMLIGHT
+#endif
 
 	//TODO Maybe check for rdf_noworld stuff but q3mme has full 3d ui
 	backEnd.doneSurfaces = qtrue; // for bloom
