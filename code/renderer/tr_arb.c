@@ -1798,6 +1798,7 @@ void QGL_InitARB( void )
 	ARB_UpdatePrograms();
 	QGL_EarlyInitFBO();
 	QGL_InitFBO();
+	ri.Cvar_ResetGroup( CVG_RENDERER, qtrue );
 }
 
 
