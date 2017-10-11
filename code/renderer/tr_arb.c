@@ -4,10 +4,14 @@
 #ifdef USE_PMLIGHT
 
 #define MAX_BLUR_PASSES MAX_TEXTURE_UNITS
-#define FBO_COUNT (2+(MAX_BLUR_PASSES*2))
 #define BLOOM_BASE 2
+#define FBO_COUNT (BLOOM_BASE+(MAX_BLUR_PASSES*2))
 
-#define MAX_FILTER_SIZE 16
+#if BLOOM_BASE < 2
+#error no space for main/postprocess buffers
+#endif
+
+#define MAX_FILTER_SIZE 20
 #define MIN_FILTER_SIZE 1
 
 typedef enum {
@@ -847,6 +851,11 @@ static void ARB_BloomParams( int width, int height, int ksize, qboolean horizont
 		{ 1.0/8192, 1, 13, 78, 286, 715, 1287, 1716, 1716, 1287, 715, 286, 78, 13, 1 },
 		{ 1.0/16384, 1, 14, 91, 364, 1001, 2002, 3003, 3432, 3003, 2002, 1001, 364, 91, 14, 1 },
 		{ 1.0/32768, 1, 15, 105, 455, 1365, 3003, 5005, 6435, 6435, 5005, 3003, 1365, 455, 105, 15, 1 },
+		{ 1.0/65536, 1, 16, 120, 560, 1820, 4368, 8008, 11440, 12870, 11440, 8008, 4368, 1820, 560, 120, 16, 1 },
+		{ 1.0/131072, 1, 17, 136, 680, 2380, 6188, 12376, 19448, 24310, 24310, 19448, 12376, 6188, 2380, 680, 136, 17, 1 },
+		{ 1.0/262144, 1, 18, 153, 816, 3060, 8568, 18564, 31824, 43758, 48620, 43758, 31824, 18564, 8568, 3060, 816, 153, 18, 1 },
+		{ 1.0/524288, 1, 19, 171, 969, 3876, 11628, 27132, 50388, 75582, 92378, 92378, 75582, 50388, 27132, 11628, 3876, 969, 171, 19, 1 },
+
 	};
 
 	static const float x_o[ MAX_FILTER_SIZE+1 ][ MAX_FILTER_SIZE ] = {
@@ -868,6 +877,10 @@ static void ARB_BloomParams( int width, int height, int ksize, qboolean horizont
 		{ -6.5, -5.5, -4.5, -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5 },
 		{ -7.0, -6.0, -5.0, -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0 },
 		{ -7.5, -6.5, -5.5, -4.5, -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5 },
+		{ -8.0, -7.0, -6.0, -5.0, -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0 },
+		{ -8.5, -7.5, -6.5, -5.5, -4.5, -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5 },
+		{ -9.0, -8.0, -7.0, -6.0, -5.0, -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 },
+		{ -9.5, -8.5, -7.5, -6.5, -5.5, -4.5, -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5 },
 	};
 
 	const float *coeffs = x_k[ ksize ] + 1;
@@ -1468,9 +1481,9 @@ qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obS
 	RenderQuad( w, h );
 
 	// downscale and blur
-	for ( i = 1; i < fboBloomPasses; i++ ) {
-		src = &frameBuffers[ i*2 ];
-		dst = &frameBuffers[ i*2 + 2 ];
+	src = frameBuffers + BLOOM_BASE;
+	for ( i = 1; i < fboBloomPasses; i++, src+=2 ) {
+		dst = src + 2;
 		// copy image to next level
 		FBO_Bind( GL_READ_FRAMEBUFFER, src->fbo );
 		FBO_Bind( GL_DRAW_FRAMEBUFFER, dst->fbo );
