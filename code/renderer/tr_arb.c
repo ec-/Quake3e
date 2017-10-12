@@ -47,6 +47,7 @@ cvar_t *r_bloom2_passes;
 cvar_t *r_bloom2_blend_base;
 cvar_t *r_bloom2_intensity;
 cvar_t *r_bloom2_filter_size;
+cvar_t *r_bloom2_reflection;
 
 static GLuint programs[ PROGRAM_COUNT ];
 static GLuint current_vp;
@@ -1430,8 +1431,62 @@ static void FBO_Blur( const frameBuffer_t *fb1, const frameBuffer_t *fb2,  const
 }
 
 
-qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obScale, qboolean finalStage ) 
+static void R_Bloom_Quad_Lens( float offset )
 {
+	const int width = glConfig.vidWidth;
+	const int height = glConfig.vidHeight;
+
+	qglBegin( GL_QUADS );
+	qglTexCoord2f( 0.0f, 1.0f );
+	qglVertex2f( width + offset, height + offset );
+
+	qglTexCoord2f( 0.0f, 0.0f );
+	qglVertex2f( width + offset, -offset );
+
+	qglTexCoord2f( 1.0f, 0.0f );
+	qglVertex2f( -offset, -offset );
+
+	qglTexCoord2f( 1.0f, 1.0f );
+	qglVertex2f( -offset, height + offset );
+	qglEnd();
+}
+
+
+static void R_Bloom_LensEffect( float alpha )
+{
+	// lens rainbow colors
+	static const GLfloat lc[][3] = {
+		{ 0.78f, 0.23f, 0.34f },
+		{ 0.78f, 0.39f, 0.21f },
+		{ 0.78f, 0.59f, 0.21f },
+		{ 0.71f, 0.75f, 0.21f },
+		{ 0.52f, 0.78f, 0.21f },
+		{ 0.32f, 0.78f, 0.21f },
+		{ 0.21f, 0.78f, 0.28f },
+		{ 0.21f, 0.78f, 0.47f },
+		{ 0.21f, 0.77f, 0.66f },
+		{ 0.21f, 0.67f, 0.78f },
+		{ 0.21f, 0.47f, 0.78f },
+		{ 0.21f, 0.28f, 0.78f },
+		{ 0.35f, 0.21f, 0.78f },
+		{ 0.53f, 0.21f, 0.78f },
+		{ 0.72f, 0.21f, 0.75f },
+		{ 0.78f, 0.21f, 0.59f },
+	};
+	int i;
+
+	for ( i = 0; i < ARRAY_LEN( lc ); i++ ) {
+		qglColor4f( lc[i][0], lc[i][1], lc[i][2], alpha );
+		R_Bloom_Quad_Lens( (i+1)*144 );
+	}
+}
+
+
+qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage ) 
+{
+	const int w = glConfig.vidWidth;
+	const int h = glConfig.vidHeight;
+
 	frameBuffer_t *src, *dst;
 	int finalBloomFBO;
 	int i;
@@ -1516,6 +1571,43 @@ qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obS
 	}
 	RenderQuad( w, h );
 
+	if ( r_bloom2_reflection->value )
+	{
+		ARB_ProgramDisable();
+		
+		// copy final bloom image to some downscaled buffer
+		src = &frameBuffers[ finalBloomFBO ];
+		dst = &frameBuffers[ BLOOM_BASE + 2 + 2 ]; // 4x downscale
+		FBO_Bind( GL_DRAW_FRAMEBUFFER, dst->fbo );
+		FBO_Bind( GL_READ_FRAMEBUFFER, src->fbo );
+		qglBlitFramebuffer( 0, 0, src->width, src->height, 0, 0, dst->width, dst->height, GL_COLOR_BUFFER_BIT, GL_LINEAR );
+		
+		// set render target to paired destination buffer and draw reflections
+		FBO_Bind( GL_DRAW_FRAMEBUFFER, (dst+1)->fbo );
+		GL_BindTexture( 0, dst->color );
+		GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE );
+		qglViewport( 0, 0, dst->width, dst->height );
+		R_Bloom_LensEffect( r_bloom2_reflection->value );
+		
+		// restore color and blend mode
+		qglColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
+		GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
+		
+		// blur lens effect in paired buffer
+		FBO_Blur( dst+1, dst, dst+1, w, h ); // FBO_Blur( dst+1, dst, dst+1, w, h );
+		ARB_ProgramDisable();
+
+		// add lens effect to final bloom buffer
+		FBO_Bind( GL_FRAMEBUFFER, src->fbo );
+		GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE );
+		qglViewport( 0, 0, w, h );
+		GL_BindTexture( 0, (dst+1)->color );
+		RenderQuad( w, h );
+
+		// restore blend mode
+		GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
+	}
+
 	// if we don't need to read pixels later - blend directly to back buffer
 	if ( finalStage ) {
 		if ( backEnd.screenshotMask ) {
@@ -1590,13 +1682,13 @@ void FBO_PostProcess( void )
 	
 	qglColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
 	GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
-	GL_Cull( CT_FRONT_SIDED );
+	GL_Cull( CT_TWO_SIDED );
 
 	bloom = ri.Cvar_VariableIntegerValue( "r_bloom" );
 
 	if ( bloom > 1 && programCompiled )
 	{
-		if ( FBO_Bloom( w, h, gamma, obScale, qtrue ) )
+		if ( FBO_Bloom( gamma, obScale, qtrue ) )
 		{
 			return;
 		}
@@ -1640,15 +1732,18 @@ static void QGL_InitPrograms( void )
 	ri.Cvar_SetGroup( r_bloom2_threshold_mode, CVG_RENDERER );
 	r_bloom2_intensity = ri.Cvar_Get( "r_bloom2_intensity", "0.5", CVAR_ARCHIVE_ND );
 	r_bloom2_passes = ri.Cvar_Get( "r_bloom2_passes", "5", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	ri.Cvar_CheckRange( r_bloom2_passes, "2", XSTRING( MAX_BLUR_PASSES ), CV_INTEGER );
+	ri.Cvar_CheckRange( r_bloom2_passes, "3", XSTRING( MAX_BLUR_PASSES ), CV_INTEGER );
 	r_bloom2_blend_base = ri.Cvar_Get( "r_bloom2_blend_base", "1", CVAR_ARCHIVE_ND );
 	ri.Cvar_SetGroup( r_bloom2_blend_base, CVG_RENDERER );
 	ri.Cvar_CheckRange( r_bloom2_blend_base, "0", va("%i", r_bloom2_passes->integer-1), CV_INTEGER );
 	r_bloom2_modulate = ri.Cvar_Get( "r_bloom2_modulate", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_SetGroup( r_bloom2_modulate, CVG_RENDERER );
-	r_bloom2_filter_size = ri.Cvar_Get( "r_bloom2_filter_size", "3", CVAR_ARCHIVE_ND );
+	r_bloom2_filter_size = ri.Cvar_Get( "r_bloom2_filter_size", "6", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_bloom2_filter_size, XSTRING( MIN_FILTER_SIZE ), XSTRING( MAX_FILTER_SIZE ), CV_INTEGER );
 	ri.Cvar_SetGroup( r_bloom2_filter_size, CVG_RENDERER );
+
+	r_bloom2_reflection = ri.Cvar_Get( "r_bloom2_reflection", "0", CVAR_ARCHIVE_ND );
+	ri.Cvar_CheckRange( r_bloom2_reflection, "0", "1", CV_FLOAT );
 
 	if ( !r_allowExtensions->integer )
 		return;

@@ -522,7 +522,7 @@ void R_BloomScreen( void )
 			if ( !backEnd.projection2D )
 				RB_SetGL2D();
 			qglColor4f( 1, 1, 1, 1 );
-			FBO_Bloom( glConfig.vidWidth, glConfig.vidHeight, 0, 0, qfalse );
+			FBO_Bloom( 0, 0, qfalse );
 		}
 		return;
 	}

@@ -1450,7 +1450,7 @@ extern qboolean		blitMSfbo;
 void FBO_BindMain( void );
 void FBO_PostProcess( void );
 void FBO_BlitMS( qboolean depthOnly );
-qboolean FBO_Bloom( const int w, const int h, const float gamma, const float obScale, qboolean finalPass );
+qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalPass );
 
 #endif // USE_PMLIGHT
 
