@@ -1474,7 +1474,8 @@ static void R_Bloom_LensEffect( float alpha )
 		{ 0.78f, 0.21f, 0.59f },
 	};
 	int i;
-
+	
+	alpha /= (float)ARRAY_LEN( lc );
 	for ( i = 0; i < ARRAY_LEN( lc ); i++ ) {
 		qglColor4f( lc[i][0], lc[i][1], lc[i][2], alpha );
 		R_Bloom_Quad_Lens( (i+1)*144 );
@@ -1743,7 +1744,7 @@ static void QGL_InitPrograms( void )
 	ri.Cvar_SetGroup( r_bloom2_filter_size, CVG_RENDERER );
 
 	r_bloom2_reflection = ri.Cvar_Get( "r_bloom2_reflection", "0", CVAR_ARCHIVE_ND );
-	ri.Cvar_CheckRange( r_bloom2_reflection, "0", "1", CV_FLOAT );
+	ri.Cvar_CheckRange( r_bloom2_reflection, "0", "4", CV_FLOAT );
 
 	if ( !r_allowExtensions->integer )
 		return;

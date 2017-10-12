@@ -101,6 +101,8 @@ typedef struct {
 
 	void	(*TakeVideoFrame)( int h, int w, byte* captureBuffer, byte *encodeBuffer, qboolean motionJpeg );
 
+	void	(*FinishBloom)( void );
+
 	void	(*SetColorMappings)( void );
 
 } refexport_t;

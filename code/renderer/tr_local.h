@@ -1643,6 +1643,10 @@ typedef struct {
 
 typedef struct {
 	int		commandId;
+} finishBloomCommand_t;
+
+typedef struct {
+	int		commandId;
 	int		buffer;
 } endFrameCommand_t;
 
@@ -1692,6 +1696,7 @@ typedef enum {
 	RC_DRAW_SURFS,
 	RC_DRAW_BUFFER,
 	RC_VIDEOFRAME,
+	RC_FINISHBLOOM,
 	RC_COLORMASK,
 	RC_CLEARDEPTH
 } renderCommand_t;
@@ -1747,6 +1752,8 @@ size_t RE_SaveJPGToBuffer(byte *buffer, size_t bufSize, int quality,
 		          int image_width, int image_height, byte *image_buffer, int padding);
 void RE_TakeVideoFrame( int width, int height,
 		byte *captureBuffer, byte *encodeBuffer, qboolean motionJpeg );
+
+void RE_FinishBloom( void );
 
 //Bloom Stuff
 void R_BloomInit( void );

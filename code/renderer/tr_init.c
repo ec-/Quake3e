@@ -1491,5 +1491,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.TakeVideoFrame = RE_TakeVideoFrame;
 	re.SetColorMappings = R_SetColorMappings;
 
+	re.FinishBloom = RE_FinishBloom;
+
 	return &re;
 }

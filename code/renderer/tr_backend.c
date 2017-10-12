@@ -1323,10 +1323,10 @@ const void *RB_ColorMask(const void *data)
 	return (const void *)(cmd + 1);
 }
 
+
 /*
 =============
 RB_ClearDepth
-
 =============
 */
 const void *RB_ClearDepth(const void *data)
@@ -1342,6 +1342,31 @@ const void *RB_ClearDepth(const void *data)
 
 	qglClear(GL_DEPTH_BUFFER_BIT);
 	
+	return (const void *)(cmd + 1);
+}
+
+
+/*
+=============
+RB_FinishBloom
+=============
+*/
+extern cvar_t *r_bloom;
+const void *RB_FinishBloom(const void *data)
+{
+	const finishBloomCommand_t *cmd = data;
+
+	if ( r_bloom->integer > 1 && fboEnabled )
+	{
+		if ( !backEnd.doneBloom2fbo /*&& backEnd.doneSurfaces*/ )
+		{
+			if ( !backEnd.projection2D )
+				RB_SetGL2D();
+			qglColor4f( 1, 1, 1, 1 );
+			FBO_Bloom( 0, 0, qfalse );
+		}
+	}
+
 	return (const void *)(cmd + 1);
 }
 
@@ -1382,6 +1407,9 @@ void RB_ExecuteRenderCommands( const void *data ) {
 			break;
 		case RC_CLEARDEPTH:
 			data = RB_ClearDepth(data);
+			break;
+		case RC_FINISHBLOOM:
+			data = RB_FinishBloom(data);
 			break;
 		case RC_END_OF_LIST:
 		default:

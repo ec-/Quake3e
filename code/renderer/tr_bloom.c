@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tr_local.h"
 
 
-static cvar_t *r_bloom;
+cvar_t *r_bloom;
 static cvar_t *r_bloom_sample_size;
 static cvar_t *r_bloom_alpha;
 static cvar_t *r_bloom_darken;

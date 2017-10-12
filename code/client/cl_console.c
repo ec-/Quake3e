@@ -690,6 +690,9 @@ void Con_DrawSolidConsole( float frac ) {
 	if ( lines <= 0 )
 		return;
 
+	if ( re.FinishBloom )
+		re.FinishBloom();
+
 	if ( lines > cls.glconfig.vidHeight )
 		lines = cls.glconfig.vidHeight;
 
