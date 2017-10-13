@@ -1588,7 +1588,7 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 		GL_BindTexture( 0, dst->color );
 		GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE );
 		qglViewport( 0, 0, dst->width, dst->height );
-		R_Bloom_LensEffect( r_bloom2_reflection->value );
+		R_Bloom_LensEffect( fabs( r_bloom2_reflection->value ) );
 		
 		// restore color and blend mode
 		qglColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
@@ -1600,7 +1600,11 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 
 		// add lens effect to final bloom buffer
 		FBO_Bind( GL_FRAMEBUFFER, src->fbo );
-		GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE );
+		if ( r_bloom2_reflection->value > 0 ) {
+			GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE );
+		} else {
+			// negative reflection values will replace bloom texture with just lens effect
+		}
 		qglViewport( 0, 0, w, h );
 		GL_BindTexture( 0, (dst+1)->color );
 		RenderQuad( w, h );
@@ -1744,7 +1748,7 @@ static void QGL_InitPrograms( void )
 	ri.Cvar_SetGroup( r_bloom2_filter_size, CVG_RENDERER );
 
 	r_bloom2_reflection = ri.Cvar_Get( "r_bloom2_reflection", "0", CVAR_ARCHIVE_ND );
-	ri.Cvar_CheckRange( r_bloom2_reflection, "0", "4", CV_FLOAT );
+	ri.Cvar_CheckRange( r_bloom2_reflection, "-4", "4", CV_FLOAT );
 
 	if ( !r_allowExtensions->integer )
 		return;
