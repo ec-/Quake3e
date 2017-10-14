@@ -688,7 +688,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 	case WM_TIMER:
 		if ( wParam == TIMER_ID && uTimerID != 0 && !CL_VideoRecording() )
-			Com_Frame( clc.demoplaying );
+			Com_Frame( CL_NoDelay() );
 		break;
 
 	// this is complicated because Win32 seems to pack multiple mouse events into

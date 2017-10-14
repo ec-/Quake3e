@@ -110,7 +110,15 @@ void ( APIENTRY *qglBlitFramebuffer)( GLint srcX0, GLint srcY0, GLint srcX1, GLi
 void ( APIENTRY *qglRenderbufferStorageMultisample )(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
 void ( APIENTRY *qglGetInternalformativ )(GLenum target, GLenum internalformat, GLenum pname, GLsizei bufSize, GLint *params);
 
-qboolean GL_ProgramAvailable( void ) 
+#ifndef GL_TEXTURE_IMAGE_FORMAT
+#define GL_TEXTURE_IMAGE_FORMAT 0x828F
+#endif
+
+#ifndef GL_TEXTURE_IMAGE_TYPE
+#define GL_TEXTURE_IMAGE_TYPE 0x8290
+#endif
+
+qboolean GL_ProgramAvailable( void )
 {
 	return (programCompiled != 0);
 }

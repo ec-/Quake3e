@@ -48,6 +48,7 @@ cvar_t	*cl_autoRecordDemo;
 cvar_t	*cl_aviFrameRate;
 cvar_t	*cl_aviMotionJpeg;
 cvar_t	*cl_forceavidemo;
+cvar_t	*cl_aviPipeFormat;
 
 cvar_t	*cl_freelook;
 cvar_t	*cl_sensitivity;
@@ -2778,13 +2779,14 @@ void CL_CheckTimeout( void ) {
 	}
 }
 
+
 /*
 ==================
 CL_CheckPaused
 Check whether client has been paused.
 ==================
 */
-qboolean CL_CheckPaused(void)
+qboolean CL_CheckPaused( void )
 {
 	// if cl_paused->modified is set, the cvar has only been changed in
 	// this frame. Keep paused in this frame to ensure the server doesn't
@@ -2795,12 +2797,26 @@ qboolean CL_CheckPaused(void)
 	return qfalse;
 }
 
-//============================================================================
+
+/*
+==================
+CL_NoDelay
+==================
+*/
+qboolean CL_NoDelay( void )
+{
+	extern cvar_t *com_timedemo;
+
+	if ( CL_VideoRecording() || ( com_timedemo->integer && clc.demofile != FS_INVALID_HANDLE ) )
+		return qtrue;
+	
+	return qfalse;
+}
+
 
 /*
 ==================
 CL_CheckUserinfo
-
 ==================
 */
 void CL_CheckUserinfo( void ) {
@@ -3134,6 +3150,7 @@ void CL_InitRef( void ) {
 	ri.FS_ListFiles = FS_ListFiles;
 	//ri.FS_FileIsInPAK = FS_FileIsInPAK;
 	ri.FS_FileExists = FS_FileExists;
+
 	ri.Cvar_Get = Cvar_Get;
 	ri.Cvar_Set = Cvar_Set;
 	ri.Cvar_SetValue = Cvar_SetValue;
@@ -3201,13 +3218,22 @@ video [filename]
 void CL_Video_f( void )
 {
 	char  filename[ MAX_QPATH ];
+	const char *ext;
+	qboolean pipe;
 	int   i;
 
 	if( !clc.demoplaying )
 	{
-		Com_Printf( "The video command can only be used when playing back demos\n" );
+		Com_Printf( "The %s command can only be used when playing back demos\n", Cmd_Argv( 0 ) );
 		return;
 	}
+
+	pipe = ( Q_stricmp( Cmd_Argv( 0 ), "video-pipe" ) == 0 );
+
+	if ( pipe )
+		ext = "mp4";
+	else
+		ext = "avi";
 
 	if( Cmd_Argc() == 2 )
 	{
@@ -3219,7 +3245,7 @@ void CL_Video_f( void )
 		 // scan for a free filename
 		for( i = 0; i <= 9999; i++ )
 		{
-			Com_sprintf( filename, sizeof( filename ), "videos/video%04d.avi", i );
+			Com_sprintf( filename, sizeof( filename ), "videos/video%04d.%s", i, ext );
 			if ( !FS_FileExists( filename ) )
 				break; // file doesn't exist
 		}
@@ -3241,7 +3267,7 @@ void CL_Video_f( void )
 	Q_strncpyz( clc.videoName, filename, sizeof( clc.videoName ) );
 	clc.videoIndex = 0;
 
-	CL_OpenAVIForWriting( va( "%s.avi", clc.videoName ) );
+	CL_OpenAVIForWriting( va( "%s.%s", clc.videoName, ext ), pipe );
 }
 
 
@@ -3252,7 +3278,7 @@ CL_StopVideo_f
 */
 void CL_StopVideo_f( void )
 {
-  CL_CloseAVI( );
+  CL_CloseAVI();
 }
 
 
@@ -3357,6 +3383,11 @@ void CL_Init( void ) {
 	Cvar_CheckRange( cl_aviFrameRate, "1", "1000", CV_INTEGER );
 	cl_aviMotionJpeg = Cvar_Get ("cl_aviMotionJpeg", "1", CVAR_ARCHIVE);
 	cl_forceavidemo = Cvar_Get ("cl_forceavidemo", "0", 0);
+
+	cl_aviPipeFormat = Cvar_Get( "cl_aviPipeFormat",
+		"-preset medium -crf 23 -vcodec libx264 -flags +cgop -pix_fmt yuv420p "
+		"-bf 2 -codec:a aac -strict -2 -b:a 160k -r:a 22050 -movflags faststart", 
+		CVAR_ARCHIVE );
 
 	rconAddress = Cvar_Get ("rconAddress", "", 0);
 
@@ -3483,6 +3514,7 @@ void CL_Init( void ) {
 	Cmd_AddCommand ("fs_referencedList", CL_ReferencedPK3List_f );
 	Cmd_AddCommand ("model", CL_SetModel_f );
 	Cmd_AddCommand ("video", CL_Video_f );
+	Cmd_AddCommand ("video-pipe", CL_Video_f );
 	Cmd_SetCommandCompletionFunc( "video", CL_CompleteVideoName );
 	Cmd_AddCommand ("stopvideo", CL_StopVideo_f );
 	Cmd_AddCommand ("serverinfo", CL_Serverinfo_f );

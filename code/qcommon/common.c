@@ -3536,7 +3536,7 @@ int Com_TimeVal( int minMsec )
 Com_Frame
 =================
 */
-void Com_Frame( qboolean demoPlaying ) {
+void Com_Frame( qboolean noDelay ) {
 
 	int		msec, minMsec;
 	int		timeVal;
@@ -3593,11 +3593,9 @@ void Com_Frame( qboolean demoPlaying ) {
 		minMsec = SV_FrameMsec();
 	} else {
 #ifndef DEDICATED
-		if ( com_timedemo->integer && demoPlaying )
+		if ( noDelay ) {
 			minMsec = 0;
-		else
-			minMsec = 1;
-		if ( !com_timedemo->integer || minMsec ) {
+		} else {
 			if ( gw_minimized && com_maxfpsMinimized->integer > 0 )
 				minMsec = 1000 / com_maxfpsMinimized->integer;
 			else
@@ -3606,6 +3604,8 @@ void Com_Frame( qboolean demoPlaying ) {
 			else
 			if ( com_maxfps->integer > 0 )
 				minMsec = 1000 / com_maxfps->integer;
+			else
+				minMsec = 1;
 		}
 #endif
 	}

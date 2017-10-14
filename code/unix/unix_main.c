@@ -1161,7 +1161,7 @@ int main( int argc, const char* argv[] )
 		// check for other input devices
 		IN_Frame();
 		// run the game
-		Com_Frame( clc.demoplaying );
+		Com_Frame( CL_NoDelay() );
 #endif
 	}
 	// never gets here

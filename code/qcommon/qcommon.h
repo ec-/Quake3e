@@ -803,8 +803,13 @@ typedef qboolean ( *fnamecallback_f )( const char *filename, int length );
 
 void FS_SetFilenameCallback( fnamecallback_f func ); 
 
-
 char *FS_CopyString( const char *in );
+
+// AVI pipes
+
+fileHandle_t FS_PipeOpenWrite( const char *cmd, const char *filename );
+void FS_PipeClose( fileHandle_t f );
+
 
 /*
 ==============================================================
@@ -998,7 +1003,7 @@ void Com_TouchMemory( void );
 
 // commandLine should not include the executable name (argv[0])
 void Com_Init( char *commandLine );
-void Com_Frame( qboolean demoPlaying );
+void Com_Frame( qboolean noDelay );
 void Com_Shutdown( void );
 
 /*

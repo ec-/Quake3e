@@ -4511,3 +4511,67 @@ const char *FS_GetGamePath( void )
 		return "";
 	}
 }
+
+
+fileHandle_t FS_PipeOpenWrite( const char *cmd, const char *filename ) {
+	fileHandleData_t *fd;
+	fileHandle_t f;
+	const char *ospath;
+
+	if ( !fs_searchpaths ) {
+		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
+	}
+
+	ospath = FS_BuildOSPath( fs_homepath->string, fs_gamedir, filename );
+
+	if ( fs_debug->integer ) {
+		Com_Printf( "FS_PipeOpenWrite: %s\n", ospath );
+	}
+
+	FS_CheckFilenameIsNotAllowed( ospath, __func__, qfalse );
+
+	f = FS_HandleForFile();
+	fd = &fsh[ f ];
+	fd->pakIndex = -1;
+	fs_lastPakIndex = -1;
+
+	if ( FS_CreatePath( ospath ) ) {
+		return FS_INVALID_HANDLE;
+	}
+
+#ifdef _WIN32
+	fd->handleFiles.file.o = _popen( cmd, "wb" );
+#else
+	fd->handleFiles.file.o = popen( cmd, "w" );
+#endif
+
+	if ( fd->handleFiles.file.o == NULL ) {
+		return FS_INVALID_HANDLE;
+	}
+
+	Q_strncpyz( fd->name, filename, sizeof( fd->name ) );
+	fd->handleSync = qfalse;
+	fd->zipFile = qfalse;
+
+	return f;
+}
+
+
+void FS_PipeClose( fileHandle_t f )
+{
+	if ( !fs_searchpaths )
+		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
+
+	if ( fsh[f].zipFile )
+		return;
+
+	if ( fsh[f].handleFiles.file.o ) {
+#ifdef _WIN32
+		_pclose( fsh[f].handleFiles.file.o );
+#else
+		pclose( fsh[f].handleFiles.file.o );
+#endif
+	}
+
+	Com_Memset( &fsh[f], 0, sizeof( fsh[f] ) );
+}

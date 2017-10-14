@@ -366,7 +366,7 @@ static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 #ifdef DEDICATED
 			Com_Frame( qfalse );
 #else
-			Com_Frame( clc.demoplaying );
+			Com_Frame( CL_NoDelay() );
 #endif
 		}
 		break;
@@ -417,7 +417,7 @@ static LRESULT WINAPI BufferWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 #ifdef DEDICATED
 			Com_Frame( qfalse );
 #else
-			Com_Frame( clc.demoplaying );
+			Com_Frame( CL_NoDelay() );
 #endif
 		}
 		if ( wParam == TEX_TIMER_ID && texTimerID != 0 ) {
