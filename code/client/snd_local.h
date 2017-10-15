@@ -68,6 +68,7 @@ typedef struct {
 	int			samplebits;
 	int			speed;
 	byte		*buffer;
+	byte		*buffer2;
 } dma_t;
 
 #define START_SAMPLE_IMMEDIATE	0x7fffffff

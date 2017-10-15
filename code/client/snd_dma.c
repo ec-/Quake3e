@@ -45,6 +45,7 @@ snd_stream_t	*s_backgroundStream = NULL;
 static char		s_backgroundLoop[MAX_QPATH];
 //static char		s_backgroundMusic[MAX_QPATH]; //TTimo: unused
 
+static byte		buffer2[ 0x10000 ]; // for muted painting
 
 // =======================================================================
 // Internal sound data & structures
@@ -670,7 +671,7 @@ void S_Base_ClearSoundBuffer( void ) {
 S_StopAllSounds
 ==================
 */
-void S_Base_StopAllSounds(void) {
+void S_Base_StopAllSounds( void ) {
 	if ( !s_soundStarted ) {
 		return;
 	}
@@ -678,7 +679,7 @@ void S_Base_StopAllSounds(void) {
 	// stop the background music
 	S_Base_StopBackgroundTrack();
 
-	S_Base_ClearSoundBuffer ();
+	S_Base_ClearSoundBuffer();
 }
 
 
@@ -1262,14 +1263,6 @@ void S_Update_( void ) {
 
 	S_PaintChannels( endtime );
 
-	if ( (!gw_active && !gw_minimized && s_muteWhenUnfocused->integer) || (gw_minimized && s_muteWhenMinimized->integer) ) {
-		// clear dma buffer right after it was painted but still not sent to hardware
-		// this will allow us to record sound stream in video while staying muted
-		if ( dma.buffer ) {
-			memset( dma.buffer, 0, dma.samples * dma.samplebits/8 );
-		}
-	}
-
 	SNDDMA_Submit();
 
 	lastTime = thisTime;
@@ -1461,14 +1454,19 @@ void S_FreeOldestSound( void ) {
 	sfx->soundData = NULL;
 }
 
+
 // =======================================================================
 // Shutdown sound engine
 // =======================================================================
 
 void S_Base_Shutdown( void ) {
+	byte *p;
+
 	if ( !s_soundStarted ) {
 		return;
 	}
+
+	p = dma.buffer2;
 
 	SNDDMA_Shutdown();
 
@@ -1481,8 +1479,13 @@ void S_Base_Shutdown( void ) {
 
 	s_numSfx = 0; // clean up sound cache -EC-
 	
-	Cmd_RemoveCommand("s_info");
+	if ( p && p != buffer2 )
+		free( p );
+	dma.buffer2 = NULL;
+	
+	Cmd_RemoveCommand( "s_info" );
 }
+
 
 /*
 ================
@@ -1514,7 +1517,15 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 		s_soundtime = 0;
 		s_paintedtime = 0;
 
-		S_Base_StopAllSounds( );
+		S_Base_StopAllSounds();
+
+		// setup(likely) or allocate (unlikely) buffer for muted painting
+		if ( dma.samples * dma.samplebits/8 <= sizeof( buffer2 ) ) {
+			dma.buffer2 = buffer2;
+		} else {
+			dma.buffer2 = malloc( dma.samples * dma.samplebits/8 );
+			memset( dma.buffer2, 0, dma.samples * dma.samplebits/8 );
+		}
 	} else {
 		return qfalse;
 	}
