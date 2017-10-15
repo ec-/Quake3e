@@ -1663,7 +1663,10 @@ static void GLW_InitGamma( glconfig_t *config )
 #ifdef USE_PMLIGHT
 	if ( fboEnabled )
 	{
-		config->deviceSupportsGamma = qtrue;
+		if ( !r_ignorehwgamma->integer )
+			config->deviceSupportsGamma = qtrue;
+		else
+			config->deviceSupportsGamma = qfalse;
 		return;
 	}
 #endif
