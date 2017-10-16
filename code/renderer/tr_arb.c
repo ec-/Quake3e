@@ -68,7 +68,9 @@ qboolean fboAvailable = qfalse;
 qboolean fboEnabled = qfalse;
 qboolean fboBloomInited = qfalse;
 int      fboReadIndex = 0;
+GLint    fboInternalFormat;
 GLint    fboTextureFormat;
+GLint    fboTextureType;
 int      fboBloomPasses;
 int      fboBloomBlendBase;
 int      fboBloomFilterSize;
@@ -1123,20 +1125,61 @@ static GLuint FBO_CreateDepthTexture( GLsizei width, GLsizei height )
 }
 
 
-static const char *textureFormat( GLint format )
+static const char *glDefToStr( GLint define )
 {
-	switch ( format )
+	#define CASE_STR(x) case (x): return #x
+	static int index;
+	static char buf[8][32];
+	char *s;
+
+	switch ( define )
 	{
-		case GL_BGRA: return "GL_BGRA";
-		case GL_RGB: return "GL_RGB";
-		case GL_RGBA: return "GL_RGBA";
-		case GL_RGBA4: return "GL_RGBA4";
-		case GL_RGBA8: return "GL_RGBA8";
-		case GL_RGBA12: return "GL_RGBA12";
-		case GL_RGB10_A2: return "GL_RGB10_A2";
-		case GL_R11F_G11F_B10F: return "GL_R11F_G11F_B10F";
+		// texture formats
+		CASE_STR(GL_BGR);
+		CASE_STR(GL_BGRA);
+		CASE_STR(GL_RGB);
+		CASE_STR(GL_RGBA);
+		CASE_STR(GL_RGBA4);
+		CASE_STR(GL_RGBA8);
+		CASE_STR(GL_RGBA12);
+		CASE_STR(GL_RGBA16);
+		CASE_STR(GL_RGB10_A2);
+		CASE_STR(GL_R11F_G11F_B10F);
+		// data types
+		CASE_STR(GL_BYTE);
+		CASE_STR(GL_UNSIGNED_BYTE);
+		CASE_STR(GL_SHORT);
+		CASE_STR(GL_UNSIGNED_SHORT);
+		CASE_STR(GL_INT);
+		CASE_STR(GL_UNSIGNED_INT);
+		CASE_STR(GL_FLOAT);
+		CASE_STR(GL_DOUBLE);
+		CASE_STR(GL_UNSIGNED_SHORT_4_4_4_4);
+		CASE_STR(GL_UNSIGNED_INT_8_8_8_8);
+		CASE_STR(GL_UNSIGNED_INT_10_10_10_2);
+		CASE_STR(GL_UNSIGNED_SHORT_4_4_4_4_REV);
+		CASE_STR(GL_UNSIGNED_INT_8_8_8_8_REV);
+		CASE_STR(GL_UNSIGNED_INT_2_10_10_10_REV);
+		// error codes
+		CASE_STR(GL_NO_ERROR);
+		CASE_STR(GL_INVALID_ENUM);
+		CASE_STR(GL_INVALID_VALUE);
+		CASE_STR(GL_INVALID_OPERATION);
+		CASE_STR(GL_STACK_OVERFLOW);
+		CASE_STR(GL_STACK_UNDERFLOW);
+		CASE_STR(GL_OUT_OF_MEMORY);
+		// fbo error codes
+		CASE_STR(GL_FRAMEBUFFER_COMPLETE);
+		CASE_STR(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT);
+		CASE_STR(GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT);
+		CASE_STR(GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER);
+		CASE_STR(GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER);
+		CASE_STR(GL_FRAMEBUFFER_UNSUPPORTED);
 	}
-	return va( "%04x", format );
+	s = buf[ index ]; // to handle multiple invocations as function parameters
+	sprintf( s, "0x%04x", define );
+	index = ( index + 1 ) & 7;
+	return s;
 }
 
 
@@ -1148,9 +1191,16 @@ static void getPreferredFormatAndType( GLint format, GLint *pFormat, GLint *pTyp
 	if ( qglGetInternalformativ ) {
 		qglGetInternalformativ( GL_TEXTURE_2D, /*GL_RGBA8*/ format, GL_TEXTURE_IMAGE_FORMAT, 1, &preferredFormat );
 		qglGetInternalformativ( GL_TEXTURE_2D, /*GL_RGBA8*/ format, GL_TEXTURE_IMAGE_TYPE, 1, &preferredType );
-	} else  {
-		preferredFormat = GL_BGRA;
-		preferredType = GL_UNSIGNED_BYTE;
+		if ( preferredFormat == 0 ) // nVidia ION drivers can do that
+			preferredFormat = GL_RGBA;
+	} else {
+		if ( format == GL_RGBA12 || format == GL_RGBA16 ) {
+			preferredFormat = GL_RGBA;
+			preferredType = GL_UNSIGNED_SHORT;
+		} else {
+			preferredFormat = GL_RGBA;
+			preferredType = GL_UNSIGNED_BYTE;
+		}
 	}
 
 	*pFormat = preferredFormat;
@@ -1158,7 +1208,7 @@ static void getPreferredFormatAndType( GLint format, GLint *pFormat, GLint *pTyp
 }
 
 
-static qboolean FBO_Create( frameBuffer_t *fb, GLsizei width, GLsizei height, qboolean depthStencil )
+static qboolean FBO_Create( frameBuffer_t *fb, GLsizei width, GLsizei height, qboolean depthStencil, GLint *outFormat, GLint *outType )
 {
 	int fboStatus;
 	GLint internalFormat;
@@ -1192,11 +1242,17 @@ static qboolean FBO_Create( frameBuffer_t *fb, GLsizei width, GLsizei height, qb
 	if ( fb - frameBuffers >= BLOOM_BASE )
 		internalFormat = GL_RGB10_A2;
 	else
-		internalFormat = fboTextureFormat;
+		internalFormat = fboInternalFormat;
 
 	getPreferredFormatAndType( internalFormat, &textureFormat, &textureType );
 
 	qglTexImage2D( GL_TEXTURE_2D, 0, internalFormat, width, height, 0, textureFormat, textureType, NULL );
+	// TODO: handle GL_INVALID_OPERATION in case of unsupported internalFormat/textureFormat
+
+	if ( outFormat )
+		*outFormat = textureFormat;
+	if ( outType )
+		*outType = textureType;
 	
 	qglGenFramebuffers( 1, &fb->fbo );
 	FBO_Bind( GL_FRAMEBUFFER, fb->fbo );
@@ -1213,7 +1269,9 @@ static qboolean FBO_Create( frameBuffer_t *fb, GLsizei width, GLsizei height, qb
 	fboStatus = qglCheckFramebufferStatus( GL_FRAMEBUFFER );
 	if ( fboStatus != GL_FRAMEBUFFER_COMPLETE )
 	{
-		ri.Printf( PRINT_ALL, "Failed to create FBO (status %d, error %d)\n", fboStatus, (int)qglGetError() );
+		ri.Printf( PRINT_ALL, "Failed to create %s (%s:%s) FBO (status %s, error %s)\n",
+			glDefToStr( internalFormat ), glDefToStr( textureFormat ), glDefToStr( textureType ),
+			glDefToStr( fboStatus ), glDefToStr( (int)qglGetError() ) );
 		FBO_Clean( fb );
 		return qfalse;
 	}
@@ -1246,7 +1304,7 @@ static qboolean FBO_CreateMS( frameBuffer_t *fb )
 	qglGenRenderbuffers( 1, &fb->color );
 	qglBindRenderbuffer( GL_RENDERBUFFER, fb->color );
 	while ( nSamples > 0 ) {
-		qglRenderbufferStorageMultisample( GL_RENDERBUFFER, nSamples, fboTextureFormat, glConfig.vidWidth, glConfig.vidHeight );
+		qglRenderbufferStorageMultisample( GL_RENDERBUFFER, nSamples, fboInternalFormat, glConfig.vidWidth, glConfig.vidHeight );
 		if ( (int)qglGetError() == GL_INVALID_VALUE/* != GL_NO_ERROR */ ) {
 			ri.Printf( PRINT_ALL, "...%ix MSAA is not available\n", nSamples );
 			nSamples -= 2;
@@ -1283,7 +1341,7 @@ static qboolean FBO_CreateMS( frameBuffer_t *fb )
 	fboStatus = qglCheckFramebufferStatus( GL_FRAMEBUFFER );
 	if ( fboStatus != GL_FRAMEBUFFER_COMPLETE )
 	{
-		Com_Printf( "Failed to create MS FBO (status 0x%x, error %d)\n", fboStatus, (int)qglGetError() );
+		Com_Printf( "Failed to create MS FBO (status %s, error %s)\n", glDefToStr( fboStatus ), glDefToStr( (int)qglGetError() ) );
 		FBO_Clean( fb );
 		return qfalse;
 	}
@@ -1310,8 +1368,8 @@ static qboolean FBO_CreateBloom( int width, int height )
 	for ( i = 0; i < r_bloom2_passes->integer; i++ ) 
 	{
 		// we may need depth/stencil buffers for first bloom buffer in \r_bloom 2 mode
-		if ( !FBO_Create( &frameBuffers[ i*2 + BLOOM_BASE + 0 ], width, height, i == 0 ? qtrue : qfalse ) ||
-			 !FBO_Create( &frameBuffers[ i*2 + BLOOM_BASE + 1 ], width, height, qfalse ) ) {
+		if ( !FBO_Create( &frameBuffers[ i*2 + BLOOM_BASE + 0 ], width, height, i == 0 ? qtrue : qfalse, NULL, NULL ) ||
+			 !FBO_Create( &frameBuffers[ i*2 + BLOOM_BASE + 1 ], width, height, qfalse, NULL, NULL ) ) {
 			return qfalse;
 		}
 		width = width / 2;
@@ -1878,9 +1936,9 @@ void QGL_InitFBO( void )
 
 	hdr = ri.Cvar_VariableIntegerValue( "r_hdr" );
 	switch ( hdr ) {
-		case -1: fboTextureFormat = GL_RGBA4; break;
-		case 0: fboTextureFormat = GL_RGBA8; break;
-		default: fboTextureFormat = GL_RGBA12; break;
+		case -1: fboInternalFormat = GL_RGBA4; break;
+		case 0: fboInternalFormat = GL_RGBA8; break;
+		default: fboInternalFormat = GL_RGBA16; break;
 	}
 
 	if ( FBO_CreateMS( &frameBufferMS ) ) 
@@ -1891,12 +1949,12 @@ void QGL_InitFBO( void )
 		else
 			depthStencil = qfalse;
 
-		result = FBO_Create( &frameBuffers[ 0 ], w, h, depthStencil ) && FBO_Create( &frameBuffers[ 1 ], w, h, depthStencil );
+		result = FBO_Create( &frameBuffers[ 0 ], w, h, depthStencil, &fboTextureFormat, &fboTextureType ) && FBO_Create( &frameBuffers[ 1 ], w, h, depthStencil, NULL, NULL );
 		frameBufferMultiSampling = result;
 	}
 	else 
 	{
-		result = FBO_Create( &frameBuffers[ 0 ], w, h, qtrue ) && FBO_Create( &frameBuffers[ 1 ], w, h, qtrue );
+		result = FBO_Create( &frameBuffers[ 0 ], w, h, qtrue, &fboTextureFormat, &fboTextureType ) && FBO_Create( &frameBuffers[ 1 ], w, h, qtrue, NULL, NULL );
 	}
 
 	if ( result )
@@ -1904,7 +1962,8 @@ void QGL_InitFBO( void )
 		fboEnabled = qtrue;
 		FBO_BindMain();
 		qglClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-		ri.Printf( PRINT_ALL, "...using %s FBO\n", textureFormat( fboTextureFormat ) );
+		ri.Printf( PRINT_ALL, "...using %s (%s:%s) FBO\n", glDefToStr( fboInternalFormat ),
+			glDefToStr( fboTextureFormat ), glDefToStr( fboTextureType ) );
 	}
 	else
 	{
