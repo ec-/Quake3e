@@ -1754,6 +1754,8 @@ void FBO_PostProcess( void )
 	qglColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
 	GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
 	GL_Cull( CT_TWO_SIDED );
+	if ( r_anaglyphMode->integer )
+		qglColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE );
 
 	bloom = ri.Cvar_VariableIntegerValue( "r_bloom" );
 
