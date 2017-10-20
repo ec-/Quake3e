@@ -1839,34 +1839,26 @@ void GLimp_Init( void )
 */
 void GLimp_EndFrame( void )
 {
+	//
+	// swapinterval stuff
+	//
+	if ( r_swapInterval->modified ) {
+		r_swapInterval->modified = qfalse;
+
+		if ( qglXSwapIntervalEXT ) {
+			qglXSwapIntervalEXT( dpy, win, r_swapInterval->integer );
+		} else if ( qglXSwapIntervalMESA ) {
+			qglXSwapIntervalMESA( r_swapInterval->integer );
+		} else if ( qglXSwapIntervalSGI ) {
+			qglXSwapIntervalSGI( r_swapInterval->integer );
+		}
+	}
+
 	// don't flip if drawing to front buffer
 	if ( Q_stricmp( r_drawBuffer->string, "GL_FRONT" ) != 0 )
 	{
 		qglXSwapBuffers( dpy, win );
 	}
-}
-
-void GLimp_RenderThreadWrapper( void *stub )
-{
-
-}
-
-
-void *GLimp_RendererSleep( void ) 
-{
-	return NULL;
-}
-
-
-void GLimp_FrontEndSleep( void )
-{
-
-}
-
-
-void GLimp_WakeRenderer( void *data ) 
-{
-
 }
 
 

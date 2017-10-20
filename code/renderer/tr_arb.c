@@ -167,7 +167,7 @@ static void ARB_ProgramEnable( programNum vp, programNum fp )
 }
 
 
-void GL_ProgramEnable( void ) 
+void GL_ProgramEnable( void )
 {
 	ARB_ProgramEnable( DUMMY_VERTEX, SPRITE_FRAGMENT );
 }
@@ -1037,20 +1037,20 @@ qboolean ARB_UpdatePrograms( void )
 
 static void FBO_Bind( GLuint target, GLuint buffer );
 
-void FBO_Clean( frameBuffer_t *fb ) 
+void FBO_Clean( frameBuffer_t *fb )
 {
-	if ( fb->fbo ) 
+	if ( fb->fbo )
 	{
 		FBO_Bind( GL_FRAMEBUFFER, fb->fbo );
-		if ( fb->multiSampled ) 
+		if ( fb->multiSampled )
 		{
 			qglBindRenderbuffer( GL_RENDERBUFFER, 0 );
-			if ( fb->color ) 
+			if ( fb->color )
 			{
 				qglDeleteRenderbuffers( 1, &fb->color );
 				fb->color = 0;
 			}
-			if ( fb->depthStencil ) 
+			if ( fb->depthStencil )
 			{
 				qglDeleteRenderbuffers( 1, &fb->depthStencil );
 				fb->depthStencil = 0;
@@ -1059,13 +1059,13 @@ void FBO_Clean( frameBuffer_t *fb )
 		else 
 		{
 			GL_BindTexture( 0, 0 );
-			if ( fb->color ) 
+			if ( fb->color )
 			{
 				qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0 );	
 				qglDeleteTextures( 1, &fb->color );
 				fb->color = 0;
 			}
-			if ( fb->depthStencil ) 
+			if ( fb->depthStencil )
 			{
 				if ( r_stencilbits->integer == 0 )
 					qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0 );
@@ -1086,10 +1086,10 @@ void FBO_Clean( frameBuffer_t *fb )
 }
 
 
-static void FBO_CleanBloom( void ) 
+static void FBO_CleanBloom( void )
 {
 	int i;
-	for ( i = 0; i < MAX_BLUR_PASSES; i++ ) 
+	for ( i = 0; i < MAX_BLUR_PASSES; i++ )
 	{
 		FBO_Clean( &frameBuffers[ i * 2 + BLOOM_BASE + 0 ] );
 		FBO_Clean( &frameBuffers[ i * 2 + BLOOM_BASE + 1 ] );
@@ -1386,7 +1386,7 @@ static qboolean FBO_CreateBloom( int width, int height )
 }
 
 
-static void FBO_Bind( GLuint target, GLuint buffer ) 
+static void FBO_Bind( GLuint target, GLuint buffer )
 {
 #if 1
 	static GLuint draw_buffer = (GLuint)-1;
@@ -1452,7 +1452,7 @@ static void FBO_BlitToBackBuffer( int index )
 
 void FBO_BlitMS( qboolean depthOnly )
 {
-	//if ( blitMSfbo ) 
+	//if ( blitMSfbo )
 	//{
 	const int w = glConfig.vidWidth;
 	const int h = glConfig.vidHeight;
@@ -1565,7 +1565,7 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 
 	backEnd.doneBloom2fbo = qtrue;
 
-	if( !fboBloomInited )  
+	if( !fboBloomInited )
 	{
 		if ( (fboBloomInited = FBO_CreateBloom( w, h ) ) == qfalse ) 
 		{
@@ -1574,10 +1574,10 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 			FBO_CleanBloom();
 			return qfalse;
 		}
-		else 
+		else
 		{
 			ri.Printf( PRINT_ALL, "...bloom framebuffers created\n" );
-			if ( fboBloomPasses != r_bloom2_passes->integer ) 
+			if ( fboBloomPasses != r_bloom2_passes->integer )
 			{
 				ri.Printf( PRINT_ALL, "...blend shader updated\n" );
 				ARB_UpdatePrograms();
@@ -1585,7 +1585,7 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 		}
 	}
 
-	if ( frameBufferMultiSampling && blitMSfbo ) 
+	if ( frameBufferMultiSampling && blitMSfbo )
 	{
 		FBO_BlitMS( qfalse );
 		blitMSfbo = qfalse;
@@ -1641,7 +1641,7 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 	if ( r_bloom2_reflection->value )
 	{
 		ARB_ProgramDisable();
-		
+
 		// copy final bloom image to some downscaled buffer
 		src = &frameBuffers[ finalBloomFBO ];
 		dst = &frameBuffers[ BLOOM_BASE + 2 + 2 ]; // 4x downscale
@@ -1689,7 +1689,7 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 	} else {
 		FBO_Bind( GL_FRAMEBUFFER, frameBuffers[ BLOOM_BASE ].fbo );
 	}
-				
+
 	GL_BindTexture( 1, frameBuffers[ finalBloomFBO ].color ); // final bloom texture
 	GL_BindTexture( 0, frameBuffers[0].color ); // original image
 	if ( finalStage ) {
@@ -1750,7 +1750,7 @@ void FBO_PostProcess( void )
 	if ( frameBufferMultiSampling && blitMSfbo )
 		FBO_BlitMS( qfalse );
 	blitMSfbo = qfalse;
-	
+
 	qglColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
 	GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
 	GL_Cull( CT_TWO_SIDED );

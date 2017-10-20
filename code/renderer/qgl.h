@@ -78,36 +78,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
    #define GL_CLAMP_TO_EDGE                  0x812F
 #endif
 
-//WGL functions
-#if defined (WIN32)
-
-typedef void (APIENTRY * PFNGLMULTITEXCOORD2FARBPROC) (GLenum target, GLfloat s, GLfloat t);
-typedef void (APIENTRY * PFNGLACTIVETEXTUREARBPROC) (GLenum target);
-typedef void (APIENTRY * PFNGLCLIENTACTIVETEXTUREARBPROC) (GLenum target);
-
-extern HGLRC ( WINAPI * qwglCreateContext)(HDC);
-extern BOOL  ( WINAPI * qwglDeleteContext)(HGLRC);
-extern HGLRC ( WINAPI * qwglGetCurrentContext)(VOID);
-extern PROC  ( WINAPI * qwglGetProcAddress)(LPCSTR);
-extern BOOL  ( WINAPI * qwglMakeCurrent)(HDC, HGLRC);
-extern BOOL ( WINAPI * qwglSwapIntervalEXT)( int interval );
-
-#endif // WIN32
-
-
-//GLX Functions
-#if ( (defined __linux__ )  || (defined __FreeBSD__ ) || (defined __sun) )
-
-extern void* (*qwglGetProcAddress)( const char *symbol );
-extern XVisualInfo * (*qglXChooseVisual)( Display *dpy, int screen, int *attribList );
-extern GLXContext (*qglXCreateContext)( Display *dpy, XVisualInfo *vis, GLXContext shareList, Bool direct );
-extern void (*qglXDestroyContext)( Display *dpy, GLXContext ctx );
-extern Bool (*qglXMakeCurrent)( Display *dpy, GLXDrawable drawable, GLXContext ctx);
-extern void (*qglXCopyContext)( Display *dpy, GLXContext src, GLXContext dst, GLuint mask );
-extern void (*qglXSwapBuffers)( Display *dpy, GLXDrawable drawable );
-
-#endif // __linux__ || __FreeBSD__ || __sun
-
 
 /*
 ** extension constants
@@ -141,13 +111,6 @@ extern void (*qglXSwapBuffers)( Display *dpy, GLXDrawable drawable );
 #define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT            0x8C4F
 #endif
 
-// extensions will be function pointers on all platforms
-extern	void ( APIENTRY * qglMultiTexCoord2fARB )( GLenum texture, GLfloat s, GLfloat t );
-extern	void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
-extern	void ( APIENTRY * qglClientActiveTextureARB )( GLenum texture );
-
-extern	void ( APIENTRY * qglLockArraysEXT) (GLint, GLint);
-extern	void ( APIENTRY * qglUnlockArraysEXT) (void);
 
 //===========================================================================
 
