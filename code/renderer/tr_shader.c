@@ -2074,9 +2074,9 @@ static qboolean CollapseMultitexture( void ) {
 	return qtrue;
 }
 
+
 /*
 =============
-
 FixRenderCommandList
 https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=493
 Arnout: this is a nasty issue. Shaders can be registered after drawsurfaces are generated
@@ -2120,7 +2120,7 @@ static void FixRenderCommandList( int newShader ) {
 
 				for( i = 0, drawSurf = ds_cmd->drawSurfs; i < ds_cmd->numDrawSurfs; i++, drawSurf++ ) {
 					R_DecomposeSort( drawSurf->sort, &entityNum, &sh, &fogNum, &dlightMap );
-                    sortedIndex = (( drawSurf->sort >> QSORT_SHADERNUM_SHIFT ) & (MAX_SHADERS-1));
+					sortedIndex = (( drawSurf->sort >> QSORT_SHADERNUM_SHIFT ) & (MAX_SHADERS-1));
 					if( sortedIndex >= newShader ) {
 						sortedIndex++;
 						drawSurf->sort = (sortedIndex << QSORT_SHADERNUM_SHIFT) | entityNum | ( fogNum << QSORT_FOGNUM_SHIFT ) | (int)dlightMap;
@@ -2132,6 +2132,24 @@ static void FixRenderCommandList( int newShader ) {
 			case RC_DRAW_BUFFER:
 				{
 				const drawBufferCommand_t *db_cmd = (const drawBufferCommand_t *)curCmd;
+				curCmd = (const void *)(db_cmd + 1);
+				break;
+				}
+			case RC_FINISHBLOOM:
+				{
+				const finishBloomCommand_t *db_cmd = (const finishBloomCommand_t *)curCmd;
+				curCmd = (const void *)(db_cmd + 1);
+				break;
+				}
+			case RC_COLORMASK:
+				{
+				const colorMaskCommand_t *db_cmd = (const colorMaskCommand_t *)curCmd;
+				curCmd = (const void *)(db_cmd + 1);
+				break;
+				}
+			case RC_CLEARDEPTH:
+				{
+				const clearDepthCommand_t *db_cmd = (const clearDepthCommand_t *)curCmd;
 				curCmd = (const void *)(db_cmd + 1);
 				break;
 				}

@@ -541,7 +541,7 @@ void RE_TakeVideoFrame( int width, int height,
 
 	cmd = &backEnd.vcmd;
 
-	cmd->commandId = RC_VIDEOFRAME;
+	//cmd->commandId = RC_VIDEOFRAME;
 
 	cmd->width = width;
 	cmd->height = height;

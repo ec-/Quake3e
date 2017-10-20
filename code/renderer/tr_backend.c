@@ -1399,17 +1399,14 @@ void RB_ExecuteRenderCommands( const void *data ) {
 		case RC_DRAW_BUFFER:
 			data = RB_DrawBuffer( data );
 			break;
-		case RC_VIDEOFRAME:
-			data = RB_TakeVideoFrameCmd( data );
+		case RC_FINISHBLOOM:
+			data = RB_FinishBloom(data);
 			break;
 		case RC_COLORMASK:
 			data = RB_ColorMask(data);
 			break;
 		case RC_CLEARDEPTH:
 			data = RB_ClearDepth(data);
-			break;
-		case RC_FINISHBLOOM:
-			data = RB_FinishBloom(data);
 			break;
 		case RC_END_OF_LIST:
 		default:
