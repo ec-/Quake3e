@@ -447,11 +447,11 @@ static void InitOpenGL( void )
 #endif
 		glConfig.deviceSupportsGamma = qfalse;
 
-		if ( !r_ignorehwgamma->integer ) {
+		if ( !r_ignorehwgamma->integer )
+		{
+			ri.GLimp_InitGamma( &glConfig );
 			if ( fboAvailable )
 				glConfig.deviceSupportsGamma = qtrue;
-			else
-				ri.GLimp_InitGamma( &glConfig );
 		}
 	}
 
@@ -1731,6 +1731,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.SetColorMappings = R_SetColorMappings;
 
 	re.FinishBloom = RE_FinishBloom;
+	re.CanMinimize = RE_CanMinimize;
 
 	return &re;
 }

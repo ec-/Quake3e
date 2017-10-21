@@ -105,6 +105,8 @@ typedef struct {
 
 	void	(*SetColorMappings)( void );
 
+	qboolean (*CanMinimize)( void ); // == fbo enabled
+
 } refexport_t;
 
 //

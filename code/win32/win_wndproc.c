@@ -23,7 +23,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../client/client.h"
 #include "win_local.h"
 #include "glw_win.h"
-#include "../renderer/tr_local.h"
 
 #ifndef WM_MOUSEWHEEL
 #define WM_MOUSEWHEEL (WM_MOUSELAST+1)  // message that will be supported by the OS 
@@ -629,7 +628,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 				} else {
 					GLW_RestoreGamma();
 					// Minimize if there only one monitor
-					if ( glw_state.monitorCount <= 1 || fboEnabled )
+					if ( glw_state.monitorCount <= 1 || ( re.CanMinimize && re.CanMinimize() ) )
 						ShowWindow( hWnd, SW_MINIMIZE );
 					SetDesktopDisplaySettings();
 				}
@@ -719,11 +718,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		if ( wParam == SC_SCREENSAVE || wParam == SC_MONITORPOWER )
 			return 0;
 
-#ifdef USE_PMLIGHT
-		if ( wParam == SC_MINIMIZE && CL_VideoRecording() && !fboEnabled )
-#else
-		if ( wParam == SC_MINIMIZE && CL_VideoRecording() )
-#endif
+		if ( wParam == SC_MINIMIZE && CL_VideoRecording() && !( re.CanMinimize && re.CanMinimize() ) )
 			return 0;
 
 		// simulate drag move to avoid ~500ms delay between DefWindowProc() and further WM_ENTERSIZEMOVE
@@ -740,11 +735,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		{
 			if ( gw_active )
 			{
-#ifdef USE_PMLIGHT
-				if ( !CL_VideoRecording() || fboEnabled )
-#else
-				if ( !CL_VideoRecording() )
-#endif
+				if ( !CL_VideoRecording() || ( re.CanMinimize && re.CanMinimize() ) )
 					ShowWindow( hWnd, SW_MINIMIZE );
 			}
 			else

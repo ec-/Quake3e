@@ -566,3 +566,13 @@ void RE_FinishBloom( void )
 
 	cmd->commandId = RC_FINISHBLOOM;
 }
+
+
+qboolean RE_CanMinimize( void )
+{
+#ifdef USE_PMLIGHT
+	return fboEnabled;
+#else
+	return qfalse;
+#endif
+}

@@ -1436,17 +1436,6 @@ void GLimp_InitGamma( glconfig_t *config )
 {
 	config->deviceSupportsGamma = qfalse;
 
-	if ( r_ignorehwgamma->integer )
-		return;
-
-#ifdef USE_PMLIGHT
-	if ( fboEnabled )
-	{
-		config->deviceSupportsGamma = qtrue;
-		return;
-	}
-#endif
-
 	/* Minimum extension version required */
 	#define GAMMA_MINMAJOR 2
 	#define GAMMA_MINMINOR 0
