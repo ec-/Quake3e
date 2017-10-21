@@ -29,8 +29,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 typedef struct
 {
 	void *OpenGLLib; // instance of OpenGL library
-	char gl_extensions[ 16384 ];
 	FILE *log_fp;
+
+	qboolean gammaSet;
+
+	glconfig_t *config; // feedback to renderer module
+	void *GPA;
+
 } glwstate_t;
 
 extern glwstate_t glw_state;

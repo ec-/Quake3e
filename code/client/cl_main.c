@@ -3038,6 +3038,7 @@ void CL_ShutdownRef( void ) {
 	Com_Memset( &re, 0, sizeof( re ) );
 }
 
+
 /*
 ============
 CL_InitRenderer
@@ -3054,6 +3055,7 @@ void CL_InitRenderer( void ) {
 	g_console_field_width = cls.glconfig.vidWidth / SMALLCHAR_WIDTH - 2;
 	g_consoleField.widthInChars = g_console_field_width;
 }
+
 
 /*
 ============================
@@ -3098,6 +3100,7 @@ void CL_StartHunkUsers( void ) {
 	}
 }
 
+
 /*
 ============
 CL_RefMalloc
@@ -3107,9 +3110,11 @@ void *CL_RefMalloc( int size ) {
 	return Z_TagMalloc( size, TAG_RENDERER );
 }
 
+
 int CL_ScaledMilliseconds(void) {
 	return Sys_Milliseconds()*com_timescale->value;
 }
+
 
 /*
 ============
@@ -3170,6 +3175,14 @@ void CL_InitRef( void ) {
 
 	ri.CL_WriteAVIVideoFrame = CL_WriteAVIVideoFrame;
 	ri.Sys_SetClipboardBitmap = Sys_SetClipboardBitmap;
+	ri.Sys_LowPhysicalMemory = Sys_LowPhysicalMemory;
+	ri.Com_RealTime = Com_RealTime;
+
+	ri.GLimp_Init = GLimp_Init;
+	ri.GLimp_Shutdown = GLimp_Shutdown;
+	ri.GLimp_EndFrame = GLimp_EndFrame;
+	ri.GLimp_InitGamma = GLimp_InitGamma;
+	ri.GLimp_SetGamma = GLimp_SetGamma;
 
 	ret = GetRefAPI( REF_API_VERSION, &ri );
 

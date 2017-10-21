@@ -174,6 +174,218 @@ int		max_polys;
 cvar_t	*r_maxpolyverts;
 int		max_polyverts;
 
+static char gl_extensions[ 32768 ];
+
+#define GLE( ret, name, ... ) ret ( APIENTRY * q##name )( __VA_ARGS__ );
+	QGL_Core_PROCS;
+	QGL_Ext_PROCS;
+#undef GLE
+
+void* (APIENTRY *gl_GetProcAddress)( const char *function );
+
+// for modular renderer
+#if 0
+void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) 
+{
+	char buf[ 4096 ];
+	va_list	argptr;
+	va_start( argptr, fmt );
+	Q_vsnprintf( buf, sizeof( buf ), fmt, argptr );
+	va_end( argptr );
+	ri.Error( code, "%s", buf );
+}
+
+void QDECL Com_Printf( const char *fmt, ... ) 
+{
+	char buf[ MAXPRINTMSG ];
+	va_list	argptr;
+	va_start( argptr, fmt );
+	Q_vsnprintf( buf, sizeof( buf ), fmt, argptr );
+	va_end( argptr );
+
+	ri.Printf( PRINT_ALL, "%s", buf );
+}
+#endif
+
+
+/*
+** R_HaveExtension
+*/
+qboolean R_HaveExtension( const char *ext )
+{
+	const char *ptr = Q_stristr( gl_extensions, ext );
+	if (ptr == NULL)
+		return qfalse;
+	ptr += strlen(ext);
+	return ((*ptr == ' ') || (*ptr == '\0'));  // verify it's complete string.
+}
+
+
+/*
+** R_InitExtensions
+*/
+static void R_InitExtensions( void )
+{
+	size_t len;
+	
+	if ( !qglGetString( GL_EXTENSIONS ) )
+	{
+		ri.Error( ERR_FATAL, "OpenGL installation is broken. Please fix video drivers and/or restart your system" );
+	}
+
+	// get our config strings
+	Q_strncpyz( glConfig.vendor_string, (char *)qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
+	Q_strncpyz( glConfig.renderer_string, (char *)qglGetString (GL_RENDERER), sizeof( glConfig.renderer_string ) );
+	len = strlen( glConfig.renderer_string );
+	if ( len && glConfig.renderer_string[ len - 1 ] == '\n' )
+		glConfig.renderer_string[ len - 1 ] = '\0';
+	Q_strncpyz( glConfig.version_string, (char *)qglGetString( GL_VERSION ), sizeof( glConfig.version_string ) );
+
+	Q_strncpyz( gl_extensions, (char *)qglGetString( GL_EXTENSIONS ), sizeof( gl_extensions ) );
+	Q_strncpyz( glConfig.extensions_string, gl_extensions, sizeof( glConfig.extensions_string ) );
+
+	if ( !r_allowExtensions->integer )
+	{
+		ri.Printf( PRINT_ALL, "*** IGNORING OPENGL EXTENSIONS ***\n" );
+		return;
+	}
+
+	ri.Printf( PRINT_ALL, "Initializing OpenGL extensions\n" );
+
+	// GL_EXT_texture_compression_s3tc
+	glConfig.textureCompression = TC_NONE;
+	if ( R_HaveExtension( "GL_ARB_texture_compression" ) &&
+		 R_HaveExtension( "GL_EXT_texture_compression_s3tc" ) )
+	{
+		if ( r_ext_compressed_textures->integer ){ 
+			glConfig.textureCompression = TC_S3TC_ARB;
+			ri.Printf( PRINT_ALL, "...using GL_EXT_texture_compression_s3tc\n" );
+		} else {
+			ri.Printf( PRINT_ALL, "...ignoring GL_EXT_texture_compression_s3tc\n" );
+		}
+	} else {
+		ri.Printf( PRINT_ALL, "...GL_EXT_texture_compression_s3tc not found\n" );
+	}
+
+	// GL_S3_s3tc
+	if ( glConfig.textureCompression == TC_NONE && r_ext_compressed_textures->integer ) {
+		if ( R_HaveExtension( "GL_S3_s3tc" ) ) {
+			if ( r_ext_compressed_textures->integer ) {
+				glConfig.textureCompression = TC_S3TC;
+				ri.Printf( PRINT_ALL, "...using GL_S3_s3tc\n" );
+			} else {
+				glConfig.textureCompression = TC_NONE;
+				ri.Printf( PRINT_ALL, "...ignoring GL_S3_s3tc\n" );
+			}
+		} else {
+			ri.Printf( PRINT_ALL, "...GL_S3_s3tc not found\n" );
+		}
+	}
+
+	// GL_EXT_texture_env_add
+	glConfig.textureEnvAddAvailable = qfalse;
+	if ( R_HaveExtension( "EXT_texture_env_add" ) ) {
+		if ( r_ext_texture_env_add->integer ) {
+			glConfig.textureEnvAddAvailable = qtrue;
+			ri.Printf( PRINT_ALL, "...using GL_EXT_texture_env_add\n" );
+		} else {
+			glConfig.textureEnvAddAvailable = qfalse;
+			ri.Printf( PRINT_ALL, "...ignoring GL_EXT_texture_env_add\n" );
+		}
+	} else {
+		ri.Printf( PRINT_ALL, "...GL_EXT_texture_env_add not found\n" );
+	}
+
+	// GL_ARB_multitexture
+	qglMultiTexCoord2fARB = NULL;
+	qglActiveTextureARB = NULL;
+	qglClientActiveTextureARB = NULL;
+	if ( R_HaveExtension( "GL_ARB_multitexture" ) )
+	{
+		if ( r_ext_multitexture->integer )
+		{
+			qglMultiTexCoord2fARB = gl_GetProcAddress( "glMultiTexCoord2fARB" );
+			qglActiveTextureARB = gl_GetProcAddress( "glActiveTextureARB" );
+			qglClientActiveTextureARB = gl_GetProcAddress( "glClientActiveTextureARB" );
+
+			if ( qglActiveTextureARB )
+			{
+				qglGetIntegerv( GL_MAX_ACTIVE_TEXTURES_ARB, &glConfig.numTextureUnits );
+
+				if ( glConfig.numTextureUnits > 1 )
+				{
+					ri.Printf( PRINT_ALL, "...using GL_ARB_multitexture\n" );
+				}
+				else
+				{
+					qglMultiTexCoord2fARB = NULL;
+					qglActiveTextureARB = NULL;
+					qglClientActiveTextureARB = NULL;
+					ri.Printf( PRINT_ALL, "...not using GL_ARB_multitexture, < 2 texture units\n" );
+				}
+			}
+		}
+		else
+		{
+			ri.Printf( PRINT_ALL, "...ignoring GL_ARB_multitexture\n" );
+		}
+	}
+	else
+	{
+		ri.Printf( PRINT_ALL, "...GL_ARB_multitexture not found\n" );
+	}
+
+	// GL_EXT_compiled_vertex_array
+	qglLockArraysEXT = NULL;
+	qglUnlockArraysEXT = NULL;
+	if ( R_HaveExtension( "GL_EXT_compiled_vertex_array" ) )
+	{
+		if ( r_ext_compiled_vertex_array->integer )
+		{
+			ri.Printf( PRINT_ALL, "...using GL_EXT_compiled_vertex_array\n" );
+			qglLockArraysEXT = gl_GetProcAddress( "glLockArraysEXT" );
+			qglUnlockArraysEXT = gl_GetProcAddress( "glUnlockArraysEXT" );
+			if ( !qglLockArraysEXT || !qglUnlockArraysEXT ) {
+				ri.Error( ERR_FATAL, "bad getprocaddress" );
+			}
+		}
+		else
+		{
+			ri.Printf( PRINT_ALL, "...ignoring GL_EXT_compiled_vertex_array\n" );
+		}
+	}
+	else
+	{
+		ri.Printf( PRINT_ALL, "...GL_EXT_compiled_vertex_array not found\n" );
+	}
+
+	textureFilterAnisotropic = qfalse;
+	if ( R_HaveExtension( "GL_EXT_texture_filter_anisotropic" ) )
+	{
+		if ( r_ext_texture_filter_anisotropic->integer ) {
+			qglGetIntegerv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy );
+			if ( maxAnisotropy <= 0 ) {
+				ri.Printf( PRINT_ALL, "...GL_EXT_texture_filter_anisotropic not properly supported!\n" );
+				maxAnisotropy = 0;
+			}
+			else
+			{
+				ri.Printf( PRINT_ALL, "...using GL_EXT_texture_filter_anisotropic (max: %i)\n", maxAnisotropy );
+				textureFilterAnisotropic = qtrue;
+			}
+		}
+		else
+		{
+			ri.Printf( PRINT_ALL, "...ignoring GL_EXT_texture_filter_anisotropic\n" );
+		}
+	}
+	else
+	{
+		ri.Printf( PRINT_ALL, "...GL_EXT_texture_filter_anisotropic not found\n" );
+	}
+}
+
+
 /*
 ** InitOpenGL
 **
@@ -201,7 +413,11 @@ static void InitOpenGL( void )
 		GLint max_shader_units = -1;
 		GLint max_bind_units = -1;
 		
-		GLimp_Init();
+		ri.GLimp_Init( &glConfig, (void**)&gl_GetProcAddress );
+
+#define GLE( ret, name, ... ) q##name = gl_GetProcAddress( XSTRING( name ) ); if ( !q##name ) ri.Error( ERR_FATAL, "Error resolving core OpenGL functions" );
+		QGL_Core_PROCS;
+#undef GLE
 
 		// OpenGL driver constants
 		qglGetIntegerv( GL_MAX_TEXTURE_SIZE, &max_texture_size );
@@ -222,6 +438,20 @@ static void InitOpenGL( void )
 		if ( glConfig.maxTextureSize <= 0 ) 
 		{
 			glConfig.maxTextureSize = 0;
+		}
+
+		R_InitExtensions();
+
+#if defined(USE_PMLIGHT)
+		QGL_InitARB();
+#endif
+		glConfig.deviceSupportsGamma = qfalse;
+
+		if ( !r_ignorehwgamma->integer ) {
+			if ( fboAvailable )
+				glConfig.deviceSupportsGamma = qtrue;
+			else
+				ri.GLimp_InitGamma( &glConfig );
 		}
 	}
 
@@ -357,6 +587,7 @@ qboolean R_GetModeInfo( int *width, int *height, float *windowAspect, int mode, 
 
 	return qtrue;
 }
+
 
 /*
 ** R_ModeList_f
@@ -661,7 +892,7 @@ static void R_ScreenshotFilename( char *fileName, const char *fileExt ) {
 	int count;
 
 	count = 0;
-	Com_RealTime( &t );
+	ri.Com_RealTime( &t );
 
 	Com_sprintf( fileName, MAX_OSPATH, "screenshots/shot-%04d%02d%02d-%02d%02d%02d.%s", 
 			1900 + t.tm_year, 1 + t.tm_mon,	t.tm_mday,
@@ -1361,7 +1592,6 @@ void R_Init( void ) {
 
 	R_InitFreeType();
 
-
 	err = qglGetError();
 	if ( err != GL_NO_ERROR )
 		ri.Printf (PRINT_ALL, "glGetError() = 0x%x\n", err);
@@ -1399,7 +1629,16 @@ void RE_Shutdown( qboolean destroyWindow ) {
 
 	// shut down platform specific OpenGL stuff
 	if ( destroyWindow ) {
-		GLimp_Shutdown();
+
+#if defined(USE_PMLIGHT)
+		QGL_DoneARB();
+#endif
+		ri.GLimp_Shutdown();
+
+#define GLE( ret, name, ... ) q##name = NULL;
+		QGL_Core_PROCS;
+		QGL_Ext_PROCS;
+#undef GLE
 
 		Com_Memset( &glConfig, 0, sizeof( glConfig ) );
 		Com_Memset( &glState, 0, sizeof( glState ) );
@@ -1418,7 +1657,7 @@ Touch all images to make sure they are resident
 */
 void RE_EndRegistration( void ) {
 	R_IssuePendingRenderCommands();
-	if (!Sys_LowPhysicalMemory()) {
+	if ( !ri.Sys_LowPhysicalMemory() ) {
 		RB_ShowImages();
 	}
 }

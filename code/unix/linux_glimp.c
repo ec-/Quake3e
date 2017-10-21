@@ -29,7 +29,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ** GLimp_EndFrame
 ** GLimp_Init
 ** GLimp_Shutdown
-** GLimp_SwitchFullscreen
 ** GLimp_SetGamma
 **
 */
@@ -136,7 +135,6 @@ cvar_t   *joy_threshold    = NULL;
 #endif
 
 cvar_t  *r_allowSoftwareGL;   // don't abort out if the pixelformat claims software
-cvar_t  *r_previousglDriver;
 
 static qboolean vidmode_ext = qfalse;
 static qboolean vidmode_active = qfalse;
@@ -196,7 +194,7 @@ static char *XLateKey( XKeyEvent *ev, int *key )
 
   XLookupRet = XLookupString(ev, (char*)buf, sizeof(buf), &keysym, 0);
 #ifdef KBD_DBG
-  ri.Printf(PRINT_ALL, "XLookupString ret: %d buf: %s keysym: %x\n", XLookupRet, buf, (int)keysym);
+  Com_Printf( "XLookupString ret: %d buf: %s keysym: %x\n", XLookupRet, buf, (int)keysym) ;
 #endif
 
   if (!in_shiftedKeys->integer) {
@@ -204,7 +202,7 @@ static char *XLateKey( XKeyEvent *ev, int *key )
     ev->state = 0;
     XLookupRet = XLookupString(ev, (char*)bufnomod, sizeof(bufnomod), &keysym, 0);
 #ifdef KBD_DBG
-    ri.Printf(PRINT_ALL, "XLookupString (minus modifiers) ret: %d buf: %s keysym: %x\n", XLookupRet, buf, (int)keysym);
+    Com_Printf( "XLookupString (minus modifiers) ret: %d buf: %s keysym: %x\n", XLookupRet, buf, (int)keysym );
 #endif
   } else {
     bufnomod[0] = '\0';
@@ -356,12 +354,12 @@ static char *XLateKey( XKeyEvent *ev, int *key )
   case XK_backslash: *key = '\\'; break;
 
   default:
-    //ri.Printf( PRINT_ALL, "unknown keysym: %08X\n", keysym );
+    //Com_Printf( "unknown keysym: %08X\n", keysym );
     if (XLookupRet == 0)
     {
       if (com_developer->value)
       {
-        ri.Printf( PRINT_ALL, "Warning: XLookupString failed on KeySym %d\n", (int)keysym );
+        Com_Printf( "Warning: XLookupString failed on KeySym %d\n", (int)keysym );
       }
       buf[0] = '\0';
       return (char*)buf;
@@ -432,7 +430,7 @@ static void install_grabs( void )
 	res = XGrabPointer( dpy, win, False, MOUSE_MASK, GrabModeAsync, GrabModeAsync, win, None, CurrentTime );
 	if ( res != GrabSuccess )
 	{
-		//ri.Printf( PRINT_ALL, S_COLOR_YELLOW "Warning: XGrabPointer() failed\n" );
+		//Com_Printf( S_COLOR_YELLOW "Warning: XGrabPointer() failed\n" );
 	}
 	else
 	{
@@ -452,8 +450,8 @@ static void install_grabs( void )
 		if ( !XF86DGAQueryVersion( dpy, &MajorVersion, &MinorVersion ) )
 		{
 			// unable to query, probalby not supported, force the setting to 0
-			ri.Printf( PRINT_ALL, "Failed to detect XF86DGA Mouse\n" );
-			ri.Cvar_Set( "in_dgamouse", "0" );
+			Com_Printf( "Failed to detect XF86DGA Mouse\n" );
+			Cvar_Set( "in_dgamouse", "0" );
 		} 
 		else
 		{
@@ -472,7 +470,7 @@ static void install_grabs( void )
 	res = XGrabKeyboard( dpy, win, False, GrabModeAsync, GrabModeAsync, CurrentTime );
 	if ( res != GrabSuccess )
 	{
-		//ri.Printf( PRINT_ALL, S_COLOR_YELLOW "Warning: XGrabKeyboard() failed\n" );
+		//Com_Printf( S_COLOR_YELLOW "Warning: XGrabKeyboard() failed\n" );
 	}
 
 	XSync( dpy, False );
@@ -486,7 +484,7 @@ static void uninstall_grabs( void )
 	{
 		if ( com_developer->integer ) 
 		{
-			ri.Printf( PRINT_ALL, "DGA Mouse - Disabling DGA DirectVideo\n" );
+			Com_Printf( "DGA Mouse - Disabling DGA DirectVideo\n" );
 		}
 		XF86DGADirectVideo( dpy, DefaultScreen( dpy ), 0 );
 	}
@@ -660,7 +658,7 @@ void HandleX11Events( void )
 			break;
 
 		case KeyPress:
-			// ri.Printf( PRINT_ALL,"^2K+^7 %08X\n", event.xkey.keycode );
+			// Com_Printf("^2K+^7 %08X\n", event.xkey.keycode );
 			t = Sys_XTimeToSysTime( event.xkey.time );
 			if ( event.xkey.keycode == 0x31 )
 			{
@@ -716,7 +714,7 @@ void HandleX11Events( void )
 
 			t = Sys_XTimeToSysTime( event.xkey.time );
 #if 0
-			ri.Printf( PRINT_ALL,"^5K-^7 %08X %s\n",
+			Com_Printf("^5K-^7 %08X %s\n",
 				event.xkey.keycode,
 				X11_PendingInput()?"pending":"");
 #endif
@@ -852,7 +850,7 @@ void IN_ActivateMouse( void )
 		}
 		else if ( in_dgamouse->integer ) // force dga mouse to 0 if using nograb
 		{
-		    ri.Cvar_Set( "in_dgamouse", "0" );
+		    Cvar_Set( "in_dgamouse", "0" );
 		}	
 		mouse_active = qtrue;
 	}
@@ -874,7 +872,7 @@ void IN_DeactivateMouse( void )
 		}
 		else if ( in_dgamouse->integer ) // force dga mouse to 0 if using nograb
 		{
-			ri.Cvar_Set( "in_dgamouse", "0" );
+			Cvar_Set( "in_dgamouse", "0" );
 		}
 		mouse_active = qfalse;
 	}
@@ -897,11 +895,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	int m, m1;
 	int shift;
 
-#ifdef USE_PMLIGHT
-	if ( r_ignorehwgamma->integer || fboEnabled )
-#else
-	if ( r_ignorehwgamma->integer )
-#endif
+	if ( Cvar_VariableIntegerValue( "r_ignorehwgamma" ) )
 		return;
 
 	XF86VidModeGetGammaRampSize( dpy, scrnum, &size );
@@ -913,7 +907,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 		case 2048: shift = 3; break;
 		case 4096: shift = 4; break;
 		default: 
-			ri.Printf( PRINT_ALL, "Unsupported gamma ramp size: %d\n", size );
+			Com_Printf( "Unsupported gamma ramp size: %d\n", size );
 		return;
 	};
 
@@ -938,6 +932,8 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	}
 
     XF86VidModeSetGammaRamp( dpy, scrnum, size, table[0], table[1], table[2] );
+
+	glw_state.gammaSet = qtrue;
 #endif /* HAVE_XF86DGA */
 }
 
@@ -955,10 +951,6 @@ void GLimp_Shutdown( void )
 {
 	if ( !ctx || !dpy )
 		return;
-
-#if defined(USE_PMLIGHT) && !defined(USE_RENDERER2)
-	QGL_DoneARB();
-#endif
 
 	IN_DeactivateMouse();
   // bk001206 - replaced with H2/Fakk2 solution
@@ -982,14 +974,12 @@ void GLimp_Shutdown( void )
 			}
 		}
 
-#ifdef USE_PMLIGHT
-		if ( glConfig.deviceSupportsGamma && !fboEnabled )
-#else
-		if ( glConfig.deviceSupportsGamma )
-#endif
+		if ( glw_state.gammaSet ) 
 		{
 			XF86VidModeSetGamma( dpy, scrnum, &vidmode_InitialGamma );
+			glw_state.gammaSet = qfalse;
 		}
+
 #endif /* HAVE_XF86DGA */
 		// NOTE TTimo opening/closing the display should be necessary only once per run
 		//   but it seems QGL_Shutdown gets called in a lot of occasion
@@ -1036,8 +1026,8 @@ static qboolean GLW_StartDriverAndSetMode( const char *drivername, int mode, con
 	
 	if ( fullscreen && in_nograb->integer )
 	{
-		ri.Printf( PRINT_ALL, "Fullscreen not allowed with in_nograb 1\n");
-		ri.Cvar_Set( "r_fullscreen", "0" );
+		Com_Printf( "Fullscreen not allowed with in_nograb 1\n");
+		Cvar_Set( "r_fullscreen", "0" );
 		r_fullscreen->modified = qfalse;
 		fullscreen = qfalse;
 	}
@@ -1047,18 +1037,18 @@ static qboolean GLW_StartDriverAndSetMode( const char *drivername, int mode, con
 	switch ( err )
 	{
 	case RSERR_INVALID_FULLSCREEN:
-		ri.Printf( PRINT_ALL, "...WARNING: fullscreen unavailable in this mode\n" );
+		Com_Printf( "...WARNING: fullscreen unavailable in this mode\n" );
 		return qfalse;
 
 	case RSERR_INVALID_MODE:
-		ri.Printf( PRINT_ALL, "...WARNING: could not set the given mode (%d)\n", mode );
+		Com_Printf( "...WARNING: could not set the given mode (%d)\n", mode );
 		return qfalse;
 
 	default:
 	    break;
 	}
 
-	glConfig.isFullscreen = fullscreen;
+	glw_state.config->isFullscreen = fullscreen;
 
 	return qtrue;
 }
@@ -1088,6 +1078,8 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 		None
 	};
 
+	glconfig_t *config = glw_state.config;
+
 	Window root;
 	XVisualInfo *visinfo;
 
@@ -1099,7 +1091,8 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 	int dga_MajorVersion, dga_MinorVersion;
 	int actualWidth, actualHeight;
 	int i;
-	const char*   glstring; // bk001130 - from cvs1.17 (mkv)
+	//const char* glstring; // bk001130 - from cvs1.17 (mkv)
+
 
 	dpy = XOpenDisplay( NULL );
 
@@ -1112,34 +1105,6 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 	scrnum = DefaultScreen( dpy );
 	root = RootWindow( dpy, scrnum );
 
-/* - moved down
-  ri.Printf( PRINT_ALL, "Initializing OpenGL display\n");
-
-  ri.Printf (PRINT_ALL, "...setting mode %d:", mode );
-
-  if ( !R_GetModeInfo( &glConfig.vidWidth, &glConfig.vidHeight, &glConfig.windowAspect, mode, 0, 0 ) )
-  {
-    ri.Printf( PRINT_ALL, " invalid mode\n" );
-    return RSERR_INVALID_MODE;
-  }
-  ri.Printf( PRINT_ALL, " %d %d\n", glConfig.vidWidth, glConfig.vidHeight);
-*/
-
-/* - moved up
-  if (!(dpy = XOpenDisplay(NULL)))
-  {
-    fprintf(stderr, "Error couldn't open the X display\n");
-    return RSERR_INVALID_MODE;
-  }
-  
-  scrnum = DefaultScreen(dpy);
-  root = RootWindow(dpy, scrnum);
-*/
-/*
-  actualWidth = glConfig.vidWidth;
-  actualHeight = glConfig.vidHeight;
-*/
-
   // Get video mode list
 #ifdef HAVE_XF86DGA
 	if ( !XF86VidModeQueryVersion( dpy, &vidmode_MajorVersion, &vidmode_MinorVersion ) )
@@ -1150,7 +1115,7 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 	} 
 	else
 	{
-		ri.Printf( PRINT_ALL, "Using XFree86-VidModeExtension Version %d.%d\n",
+		Com_Printf( "Using XFree86-VidModeExtension Version %d.%d\n",
 			vidmode_MajorVersion, vidmode_MinorVersion );
 		vidmode_ext = qtrue;
 	}
@@ -1165,12 +1130,12 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 		if ( !XF86DGAQueryVersion( dpy, &dga_MajorVersion, &dga_MinorVersion ) )
 		{
 			// unable to query, probably not supported
-			ri.Printf( PRINT_ALL, "Failed to detect XF86DGA Mouse\n" );
-			ri.Cvar_Set( "in_dgamouse", "0" );
+			Com_Printf( "Failed to detect XF86DGA Mouse\n" );
+			Cvar_Set( "in_dgamouse", "0" );
 		} 
 		else
 		{
-			ri.Printf( PRINT_ALL, "XF86DGA Mouse (Version %d.%d) initialized\n",
+			Com_Printf( "XF86DGA Mouse (Version %d.%d) initialized\n",
 				dga_MajorVersion, dga_MinorVersion );
 		}
 	}
@@ -1191,28 +1156,28 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 			}
 			else
 			{
-				ri.Printf( PRINT_ALL, "XF86VidModeGetModeLine failed.\n" );
+				Com_Printf( "XF86VidModeGetModeLine failed.\n" );
 			}
 		}
-		ri.Printf( PRINT_ALL, "desktop width:%i height:%i\n", desktop_width, desktop_height );
+		Com_Printf( "desktop width:%i height:%i\n", desktop_width, desktop_height );
   }
 #endif
 
-	ri.Printf( PRINT_ALL, "Initializing OpenGL display\n");
+	Com_Printf( "Initializing OpenGL display\n");
 
-	ri.Printf (PRINT_ALL, "...setting mode %d:", mode );
+	Com_Printf( "...setting mode %d:", mode );
 
-	if ( !R_GetModeInfo( &glConfig.vidWidth, &glConfig.vidHeight, &glConfig.windowAspect,
+	if ( !R_GetModeInfo( &config->vidWidth, &config->vidHeight, &config->windowAspect,
 		mode, modeFS, desktop_width, desktop_height, fullscreen ) )
 	{
-		ri.Printf( PRINT_ALL, " invalid mode\n" );
+		Com_Printf( " invalid mode\n" );
 		return RSERR_INVALID_MODE;
 	}
 
-	ri.Printf( PRINT_ALL, " %d %d\n", glConfig.vidWidth, glConfig.vidHeight );
+	Com_Printf( " %d %d\n", glConfig.vidWidth, glConfig.vidHeight );
 
-	actualWidth = glConfig.vidWidth;
-	actualHeight = glConfig.vidHeight;
+	actualWidth = config->vidWidth;
+	actualHeight = config->vidHeight;
 
 #ifdef HAVE_XF86DGA
 	if ( vidmode_ext )
@@ -1230,12 +1195,12 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 
 			for ( i = 0; i < num_vidmodes; i++ )
 			{
-				if (glConfig.vidWidth > vidmodes[i]->hdisplay ||
-					glConfig.vidHeight > vidmodes[i]->vdisplay)
+				if ( config->vidWidth > vidmodes[i]->hdisplay ||
+					config->vidHeight > vidmodes[i]->vdisplay)
 					continue;
 
-				x = glConfig.vidWidth - vidmodes[i]->hdisplay;
-				y = glConfig.vidHeight - vidmodes[i]->vdisplay;
+				x = config->vidWidth - vidmodes[i]->hdisplay;
+				y = config->vidHeight - vidmodes[i]->vdisplay;
 				dist = (x * x) + (y * y);
 				if (dist < best_dist)
 				{
@@ -1262,18 +1227,18 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 				// Move the viewport to top left
 				XF86VidModeSetViewPort( dpy, scrnum, 0, 0 );
 
-				ri.Printf( PRINT_ALL, "XFree86-VidModeExtension Activated at %dx%d\n",
+				Com_Printf( "XFree86-VidModeExtension Activated at %dx%d\n",
 					actualWidth, actualHeight );
 			}
 			else
 			{
 				//fullscreen = 0;
-				ri.Printf( PRINT_ALL, "XFree86-VidModeExtension: No acceptable modes found\n" );
+				Com_Printf( "XFree86-VidModeExtension: No acceptable modes found\n" );
 			}
 		}
 		else
 		{
-			ri.Printf(PRINT_ALL, "XFree86-VidModeExtension:  Ignored on non-fullscreen/Voodoo\n");
+			Com_Printf( "XFree86-VidModeExtension:  Ignored on non-fullscreen/Voodoo\n");
 		}
 	}
 #endif /* HAVE_XF86DGA */
@@ -1369,19 +1334,19 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 			continue;
 		}
 
-		ri.Printf( PRINT_ALL, "Using %d/%d/%d Color bits, %d depth, %d stencil display.\n", 
+		Com_Printf( "Using %d/%d/%d Color bits, %d depth, %d stencil display.\n", 
 			attrib[ATTR_RED_IDX], attrib[ATTR_GREEN_IDX], attrib[ATTR_BLUE_IDX],
 			attrib[ATTR_DEPTH_IDX], attrib[ATTR_STENCIL_IDX]);
 
-		glConfig.colorBits = tcolorbits;
-		glConfig.depthBits = tdepthbits;
-		glConfig.stencilBits = tstencilbits;
+		config->colorBits = tcolorbits;
+		config->depthBits = tdepthbits;
+		config->stencilBits = tstencilbits;
 		break;
 	}
 
 	if ( !visinfo )
 	{
-		ri.Printf( PRINT_ALL, "Couldn't get a visual\n" );
+		Com_Printf( "Couldn't get a visual\n" );
 		return RSERR_INVALID_MODE;
 	}
 
@@ -1438,259 +1403,66 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 
 	qglXMakeCurrent( dpy, win, ctx );
 
+#if 0
 	glstring = (char *)qglGetString( GL_RENDERER );
 
 	if ( !Q_stricmp( glstring, "Mesa X11") || !Q_stricmp( glstring, "Mesa GLX Indirect") )
 	{
 		if ( !r_allowSoftwareGL->integer )
 		{
-			ri.Printf( PRINT_ALL, "GL_RENDERER: %s\n", glstring );
-			ri.Printf( PRINT_ALL, "\n\n***********************************************************\n" );
-			ri.Printf( PRINT_ALL, " You are using software Mesa (no hardware acceleration)!   \n" );
-			ri.Printf( PRINT_ALL, " Driver DLL used: %s\n", drivername ); 
-			ri.Printf( PRINT_ALL, " If this is intentional, add\n" );
-			ri.Printf( PRINT_ALL, "       \"+set r_allowSoftwareGL 1\"\n" );
-			ri.Printf( PRINT_ALL, " to the command line when starting the game.\n" );
-			ri.Printf( PRINT_ALL, "***********************************************************\n");
+			Com_Printf( "GL_RENDERER: %s\n", glstring );
+			Com_Printf( "\n\n***********************************************************\n" );
+			Com_Printf( " You are using software Mesa (no hardware acceleration)!   \n" );
+			Com_Printf( " Driver DLL used: %s\n", drivername ); 
+			Com_Printf( " If this is intentional, add\n" );
+			Com_Printf( "       \"+set r_allowSoftwareGL 1\"\n" );
+			Com_Printf( " to the command line when starting the game.\n" );
+			Com_Printf( "***********************************************************\n");
 			GLimp_Shutdown();
 			return RSERR_INVALID_MODE;
 		}
 		else
 		{
-			ri.Printf( PRINT_ALL, "...using software Mesa (r_allowSoftwareGL==1).\n" );
+			Com_Printf( "...using software Mesa (r_allowSoftwareGL==1).\n" );
 		}
 	}
+#endif
 
 	return RSERR_OK;
 }
 
 
-/*
-** GLimp_HaveExtension
-*/
-qboolean GLimp_HaveExtension( const char *ext )
+void GLimp_InitGamma( glconfig_t *config )
 {
-	const char *ptr = Q_stristr( glw_state.gl_extensions, ext );
-	if (ptr == NULL)
-		return qfalse;
-	ptr += strlen(ext);
-	return ((*ptr == ' ') || (*ptr == '\0'));  // verify it's complete string.
-}
+	config->deviceSupportsGamma = qfalse;
 
-
-/*
-** GLW_InitExtensions
-*/
-static void GLW_InitExtensions( void )
-{
-	size_t len;
-
-	// for some unknown reason glGetString() calls may start returning NULL
-	// and interaction with any other opengl function leads to segfault
-	// this may happen after system (mesa?) update and before reboot, catched on Arch linux distribution
-	if ( !qglGetString( GL_EXTENSIONS ) )
-	{
-		ri.Error( ERR_FATAL, "OpenGL installation is broken. Please fix video drivers and/or restart your system" );
-	}
-
-	// get our config strings
-	Q_strncpyz( glConfig.vendor_string, (char *)qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
-	Q_strncpyz( glConfig.renderer_string, (char *)qglGetString (GL_RENDERER), sizeof( glConfig.renderer_string ) );
-	len = strlen( glConfig.renderer_string );
-	if ( len && glConfig.renderer_string[ len - 1 ] == '\n')
-		glConfig.renderer_string[ len - 1 ] = '\0';
-	Q_strncpyz( glConfig.version_string, (char *)qglGetString (GL_VERSION), sizeof( glConfig.version_string ) );
-
-	Q_strncpyz( glw_state.gl_extensions, (char *)qglGetString (GL_EXTENSIONS), sizeof( glw_state.gl_extensions ) );
-	Q_strncpyz( glConfig.extensions_string, glw_state.gl_extensions, sizeof( glConfig.extensions_string ) );
-
-	if ( !r_allowExtensions->integer )
-	{
-		ri.Printf( PRINT_ALL, "*** IGNORING OPENGL EXTENSIONS ***\n" );
+	if ( r_ignorehwgamma->integer )
 		return;
-	}
 
-	ri.Printf( PRINT_ALL, "Initializing OpenGL extensions\n" );
-
-	// GL_EXT_texture_compression_s3tc
-	glConfig.textureCompression = TC_NONE;
-	if ( GLimp_HaveExtension("GL_ARB_texture_compression") &&
-		GLimp_HaveExtension("GL_EXT_texture_compression_s3tc") )
-	{
-	    if ( r_ext_compressed_textures->value ) { 
-        	glConfig.textureCompression = TC_S3TC_ARB;
-    	    ri.Printf( PRINT_ALL, "...using GL_EXT_texture_compression_s3tc\n" );
-	    } else {
-        	ri.Printf( PRINT_ALL, "...ignoring GL_EXT_texture_compression_s3tc\n" );
-    	}
-	} else {
-		ri.Printf( PRINT_ALL, "...GL_EXT_texture_compression_s3tc not found\n" );
-	}
-
-	// GL_S3_s3tc
-	if (glConfig.textureCompression == TC_NONE)
-	{
-		if ( GLimp_HaveExtension("GL_S3_s3tc") )
-		{
-			if ( r_ext_compressed_textures->value )
-			{
-				glConfig.textureCompression = TC_S3TC;
-				ri.Printf( PRINT_ALL, "...using GL_S3_s3tc\n" );
-			}
-			else
-			{
-				glConfig.textureCompression = TC_NONE;
-				ri.Printf( PRINT_ALL, "...ignoring GL_S3_s3tc\n" );
-			}
-		} 
-		else
-		{
-			glConfig.textureCompression = TC_NONE;
-			ri.Printf( PRINT_ALL, "...GL_S3_s3tc not found\n" );
-		}
-	}
-
-	// GL_EXT_texture_env_add
-	glConfig.textureEnvAddAvailable = qfalse;
-	if ( GLimp_HaveExtension("EXT_texture_env_add") )
-	{
-		if ( r_ext_texture_env_add->integer )
-		{
-			glConfig.textureEnvAddAvailable = qtrue;
-			ri.Printf( PRINT_ALL, "...using GL_EXT_texture_env_add\n" );
-		} else
-		{
-			glConfig.textureEnvAddAvailable = qfalse;
-			ri.Printf( PRINT_ALL, "...ignoring GL_EXT_texture_env_add\n" );
-		}
-	} else
-	{
-		ri.Printf( PRINT_ALL, "...GL_EXT_texture_env_add not found\n" );
-	}
-
-	// GL_ARB_multitexture
-	qglMultiTexCoord2fARB = NULL;
-	qglActiveTextureARB = NULL;
-	qglClientActiveTextureARB = NULL;
-	if ( GLimp_HaveExtension("GL_ARB_multitexture") )
-	{
-		if ( r_ext_multitexture->integer )
-		{
-			qglMultiTexCoord2fARB = ( PFNGLMULTITEXCOORD2FARBPROC ) dlsym( glw_state.OpenGLLib, "glMultiTexCoord2fARB" );
-			qglActiveTextureARB = ( PFNGLACTIVETEXTUREARBPROC ) dlsym( glw_state.OpenGLLib, "glActiveTextureARB" );
-			qglClientActiveTextureARB = ( PFNGLCLIENTACTIVETEXTUREARBPROC ) dlsym( glw_state.OpenGLLib, "glClientActiveTextureARB" );
-
-			if ( qglActiveTextureARB )
-			{
-				GLint glint = 0;
-				qglGetIntegerv( GL_MAX_ACTIVE_TEXTURES_ARB, &glint );
-				glConfig.numTextureUnits = (int) glint;
-
-				if ( glConfig.numTextureUnits > 1 )
-				{
-					ri.Printf( PRINT_ALL, "...using GL_ARB_multitexture\n" );
-				} else
-				{
-					qglMultiTexCoord2fARB = NULL;
-					qglActiveTextureARB = NULL;
-					qglClientActiveTextureARB = NULL;
-					ri.Printf( PRINT_ALL, "...not using GL_ARB_multitexture, < 2 texture units\n" );
-				}
-			}
-		}
-		else
-		{
-			ri.Printf( PRINT_ALL, "...ignoring GL_ARB_multitexture\n" );
-		}
-	}
-	else
-	{
-		ri.Printf( PRINT_ALL, "...GL_ARB_multitexture not found\n" );
-	}
-
-	// GL_EXT_compiled_vertex_array
-	if ( GLimp_HaveExtension("GL_EXT_compiled_vertex_array") )
-	{
-		if ( r_ext_compiled_vertex_array->integer )
-		{
-			ri.Printf( PRINT_ALL, "...using GL_EXT_compiled_vertex_array\n" );
-			qglLockArraysEXT = ( void ( APIENTRY * )( int, int ) ) dlsym( glw_state.OpenGLLib, "glLockArraysEXT" );
-			qglUnlockArraysEXT = ( void ( APIENTRY * )( void ) ) dlsym( glw_state.OpenGLLib, "glUnlockArraysEXT" );
-		if ( !qglLockArraysEXT || !qglUnlockArraysEXT )
-		{
-			ri.Error (ERR_FATAL, "bad getprocaddress");
-		}
-		}
-		else
-		{
-			ri.Printf( PRINT_ALL, "...ignoring GL_EXT_compiled_vertex_array\n" );
-		}
-	} 
-	else
-	{
-		ri.Printf( PRINT_ALL, "...GL_EXT_compiled_vertex_array not found\n" );
-	}
-
-	textureFilterAnisotropic = qfalse;
-	if ( GLimp_HaveExtension("GL_EXT_texture_filter_anisotropic") )
-	{
-		if ( r_ext_texture_filter_anisotropic->integer ) {
-			qglGetIntegerv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy );
-			if ( maxAnisotropy <= 0 ) {
-				ri.Printf( PRINT_ALL, "...GL_EXT_texture_filter_anisotropic not properly supported!\n" );
-				maxAnisotropy = 0;
-			}
-			else
-			{
-				ri.Printf( PRINT_ALL, "...using GL_EXT_texture_filter_anisotropic (max: %i)\n", maxAnisotropy );
-				textureFilterAnisotropic = qtrue;
-			}
-		}
-		else
-		{
-			ri.Printf( PRINT_ALL, "...ignoring GL_EXT_texture_filter_anisotropic\n" );
-		}
-	}
-	else
-	{
-		ri.Printf( PRINT_ALL, "...GL_EXT_texture_filter_anisotropic not found\n" );
-	}
-}
-
-
-static void GLW_InitGamma( glconfig_t *config )
-{
 #ifdef USE_PMLIGHT
 	if ( fboEnabled )
 	{
-		if ( !r_ignorehwgamma->integer )
-			config->deviceSupportsGamma = qtrue;
-		else
-			config->deviceSupportsGamma = qfalse;
+		config->deviceSupportsGamma = qtrue;
 		return;
 	}
 #endif
+
 	/* Minimum extension version required */
 	#define GAMMA_MINMAJOR 2
 	#define GAMMA_MINMINOR 0
 
-	config->deviceSupportsGamma = qfalse;
-
 #ifdef HAVE_XF86DGA
-	if ( !r_ignorehwgamma->integer )
+	if ( vidmode_ext )
 	{
-		if ( vidmode_ext )
+		if ( vidmode_MajorVersion < GAMMA_MINMAJOR || 
+			(vidmode_MajorVersion == GAMMA_MINMAJOR && vidmode_MinorVersion < GAMMA_MINMINOR) )
 		{
-			if ( vidmode_MajorVersion < GAMMA_MINMAJOR || 
-				(vidmode_MajorVersion == GAMMA_MINMAJOR && vidmode_MinorVersion < GAMMA_MINMINOR) )
-			{
-				ri.Printf( PRINT_ALL, "XF86 Gamma extension not supported in this version\n" );
-				return;
-			}
-			XF86VidModeGetGamma( dpy, scrnum, &vidmode_InitialGamma );
-			ri.Printf( PRINT_ALL, "XF86 Gamma extension initialized\n" );
-			config->deviceSupportsGamma = qtrue;
+			Com_Printf( "XF86 Gamma extension not supported in this version\n" );
+			return;
 		}
+		XF86VidModeGetGamma( dpy, scrnum, &vidmode_InitialGamma );
+		Com_Printf( "XF86 Gamma extension initialized\n" );
+		config->deviceSupportsGamma = qtrue;
 	}
 #endif /* HAVE_XF86DGA */
 }
@@ -1707,7 +1479,7 @@ static qboolean GLW_LoadOpenGL( const char *name )
 	qboolean fullscreen;
 	cvar_t		*r_swapInterval;
 
-	r_swapInterval = ri.Cvar_Get( "r_swapInterval", "0", CVAR_ARCHIVE_ND );
+	r_swapInterval = Cvar_Get( "r_swapInterval", "0", CVAR_ARCHIVE_ND );
 
 	if ( r_swapInterval->integer )
 		setenv( "vblank_mode", "2", 1 );
@@ -1755,13 +1527,13 @@ static qboolean GLW_StartOpenGL( void )
 			// try default driver
 			if ( GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) )
 			{
-				ri.Cvar_Set( "r_glDriver", OPENGL_DRIVER_NAME );
+				Cvar_Set( "r_glDriver", OPENGL_DRIVER_NAME );
 				r_glDriver->modified = qfalse;
 				return qtrue;
 			}
 		}
 
-		ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
+		Com_Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
 		return qfalse;
 	}
 
@@ -1780,10 +1552,10 @@ int qXErrorHandler( Display *dpy, XErrorEvent *ev )
 {
 	static char buf[1024];
 	XGetErrorText( dpy, ev->error_code, buf, sizeof( buf ) );
-	ri.Printf( PRINT_ALL, "X Error of failed request: %s\n", buf) ;
-	ri.Printf( PRINT_ALL, "  Major opcode of failed request: %d\n", ev->request_code );
-	ri.Printf( PRINT_ALL, "  Minor opcode of failed request: %d\n", ev->minor_code );
-	ri.Printf( PRINT_ALL, "  Serial number of failed request: %d\n", (int)ev->serial );
+	Com_Printf( "X Error of failed request: %s\n", buf) ;
+	Com_Printf( "  Major opcode of failed request: %d\n", ev->request_code );
+	Com_Printf( "  Minor opcode of failed request: %d\n", ev->minor_code );
+	Com_Printf( "  Serial number of failed request: %d\n", (int)ev->serial );
 	return 0;
 }
 
@@ -1794,7 +1566,7 @@ int qXErrorHandler( Display *dpy, XErrorEvent *ev )
 ** This routine is responsible for initializing the OS specific portions
 ** of OpenGL.
 */
-void GLimp_Init( void )
+void GLimp_Init( glconfig_t *config, void **GPA )
 {
 	InitSig();
 
@@ -1803,7 +1575,9 @@ void GLimp_Init( void )
 	// set up our custom error handler for X failures
 	XSetErrorHandler( &qXErrorHandler );
 
-	r_allowSoftwareGL = ri.Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
+	r_allowSoftwareGL = Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
+
+	glw_state.config = config; // feedback to renderer module
 
 	//
 	// load and initialize the specific OpenGL driver
@@ -1814,17 +1588,10 @@ void GLimp_Init( void )
 	}
 
 	// This values force the UI to disable driver selection
-	glConfig.driverType = GLDRV_ICD;
-	glConfig.hardwareType = GLHW_GENERIC;
+	config->driverType = GLDRV_ICD;
+	config->hardwareType = GLHW_GENERIC;
 
-	// initialize extensions
-	GLW_InitExtensions();
-
-#if defined(USE_PMLIGHT) && !defined(USE_RENDERER2)
-	QGL_InitARB();
-#endif
-
-	GLW_InitGamma( &glConfig );
+	*GPA = glw_state.GPA;
 
 	InitSig(); // not clear why this is at begin & end of function
 }

@@ -192,7 +192,7 @@ static void R_Bloom_InitTextures( void )
 		bloom.work.width > glConfig.vidWidth ||
 		bloom.work.height > glConfig.vidHeight
 	) {
-		Com_Printf( S_COLOR_YELLOW "WARNING: 'R_InitBloomTextures' too high resolution for light bloom, effect disabled\n" );
+		ri.Printf( PRINT_WARNING, "WARNING: 'R_InitBloomTextures' too high resolution for light bloom, effect disabled\n" );
 		bloom.started = qfalse;
 		bloom.disabled = qtrue;
 		return;

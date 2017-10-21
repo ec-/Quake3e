@@ -838,6 +838,7 @@ else
     $(B)/client/unix_main.o \
     $(B)/client/unix_shared.o \
     $(B)/client/linux_signals.o \
+    $(B)/client/linux_glimp.o \
     $(B)/client/linux_qgl.o \
     $(B)/client/linux_snd.o
 
@@ -845,14 +846,11 @@ else
 #    Q3OBJ += $(B)/client/linux_joystick.o
 #  endif
 
-  Q3POBJ = \
-    $(B)/client/linux_glimp.o
-
 endif
 
-$(B)/$(TARGET_CLIENT): $(Q3OBJ) $(Q3POBJ)
+$(B)/$(TARGET_CLIENT): $(Q3OBJ)
 	$(echo_cmd) "LD $@"
-	$(Q)$(CC) -o $@ $(Q3OBJ) $(Q3POBJ) $(CLIENT_LDFLAGS) \
+	$(Q)$(CC) -o $@ $(Q3OBJ) $(CLIENT_LDFLAGS) \
 		$(LDFLAGS)
 	$(STRIP) $@
 
@@ -1037,7 +1035,7 @@ clean: clean-debug clean-release
 clean2:
 	@echo "CLEAN $(B)"
 	@if [ -d $(B) ];then (find $(B) -name '*.d' -exec rm {} \;)fi
-	@rm -f $(Q3OBJ) $(Q3POBJ) $(Q3DOBJ)
+	@rm -f $(Q3OBJ) $(Q3DOBJ)
 	@rm -f $(TARGETS)
 
 clean-debug:

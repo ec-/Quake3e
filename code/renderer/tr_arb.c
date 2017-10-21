@@ -1341,7 +1341,7 @@ static qboolean FBO_CreateMS( frameBuffer_t *fb )
 	fboStatus = qglCheckFramebufferStatus( GL_FRAMEBUFFER );
 	if ( fboStatus != GL_FRAMEBUFFER_COMPLETE )
 	{
-		Com_Printf( "Failed to create MS FBO (status %s, error %s)\n", glDefToStr( fboStatus ), glDefToStr( (int)qglGetError() ) );
+		ri.Printf( PRINT_WARNING, "Failed to create MS FBO (status %s, error %s)\n", glDefToStr( fboStatus ), glDefToStr( (int)qglGetError() ) );
 		FBO_Clean( fb );
 		return qfalse;
 	}
@@ -1791,8 +1791,8 @@ void FBO_PostProcess( void )
 
 
 static const void *fp;
-#define GPA(fn) fp = qwglGetProcAddress( #fn ); if ( !fp ) { Com_Printf( "GPA failed on '%s'\n", #fn ); goto __fail; } else { memcpy( &q##fn, &fp, sizeof( fp ) ); }
-#define GPA_(fn) { fp = qwglGetProcAddress( #fn ); memcpy( &q##fn, &fp, sizeof( fp ) ); }
+#define GPA(fn) fp = gl_GetProcAddress( #fn ); if ( !fp ) { ri.Printf( PRINT_ALL, "GPA failed on '%s'\n", #fn ); goto __fail; } else { memcpy( &q##fn, &fp, sizeof( fp ) ); }
+#define GPA_(fn) { fp = gl_GetProcAddress( #fn ); memcpy( &q##fn, &fp, sizeof( fp ) ); }
 
 static void QGL_InitPrograms( void ) 
 {
@@ -1830,11 +1830,11 @@ static void QGL_InitPrograms( void )
 		return;
 	}
 
-	if ( !GLimp_HaveExtension( "GL_ARB_vertex_program" ) ) {
+	if ( !R_HaveExtension( "GL_ARB_vertex_program" ) ) {
 		return;
 	}
 
-	if ( !GLimp_HaveExtension( "GL_ARB_fragment_program" ) ) {
+	if ( !R_HaveExtension( "GL_ARB_fragment_program" ) ) {
 		return;
 	}
 
@@ -1862,16 +1862,16 @@ static void QGL_EarlyInitFBO( void )
 	if ( !programAvailable )
 		return;
 
-	if ( !GLimp_HaveExtension( "GL_EXT_framebuffer_object" ) )
+	if ( !R_HaveExtension( "GL_EXT_framebuffer_object" ) )
 		return;
 
-	if ( !GLimp_HaveExtension( "GL_EXT_framebuffer_blit" ) )
+	if ( !R_HaveExtension( "GL_EXT_framebuffer_blit" ) )
 		return;
 
-	if ( !GLimp_HaveExtension( "GL_EXT_framebuffer_multisample" ) )
+	if ( !R_HaveExtension( "GL_EXT_framebuffer_multisample" ) )
 		return;
 
-	if ( GLimp_HaveExtension( "ARB_internalformat_query2" ) ) {
+	if ( R_HaveExtension( "ARB_internalformat_query2" ) ) {
 		GPA_( glGetInternalformativ );
 	} else {
 		qglGetInternalformativ = NULL;

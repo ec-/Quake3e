@@ -124,12 +124,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 	GLE( void, glXCopyContext, Display *dpy, GLXContext src, GLXContext dst, GLuint mask ) \
 	GLE( void, glXSwapBuffers, Display *dpy, GLXDrawable drawable )
 
-#define QGL_LinGPA_PROC \
-	GLE( void*, wglGetProcAddress, const char *symbol )
-
 #define GLE( ret, name, ... ) extern ret ( APIENTRY * q##name )( __VA_ARGS__ );
-	QGL_Core_PROCS;
-	QGL_Ext_PROCS;
 	QGL_Swp_PROCS;
 #ifdef _WIN32
 	QGL_Win32_PROCS;
@@ -137,6 +132,5 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //#if ( (defined __linux__ )  || (defined __FreeBSD__ ) || (defined __sun) )
 #else // assume in opposition to win32
 	QGL_LinX11_PROCS;
-	QGL_LinGPA_PROC;
 #endif
 #undef GLE

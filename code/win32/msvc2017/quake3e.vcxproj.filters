@@ -187,6 +187,15 @@
     <ClCompile Include="..\win_wndproc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\win_gamma.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\win_glimp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\win_qgl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\game\bg_public.h">
@@ -256,9 +265,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\qcommon\surfaceflags.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\renderer\tr_local.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\renderer\tr_public.h">

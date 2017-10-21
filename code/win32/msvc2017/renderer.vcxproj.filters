@@ -104,15 +104,6 @@
     <ClCompile Include="..\..\renderer\tr_world.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\win_gamma.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\win_glimp.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\win_qgl.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\glw_win.h">
@@ -143,9 +134,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\renderer\tr_types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\win_local.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

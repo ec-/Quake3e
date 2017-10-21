@@ -29,17 +29,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ** QGL_Init() - loads libraries, assigns function pointers, etc.
 ** QGL_Shutdown() - unloads libraries, NULLs function pointers
 */
-#include "../renderer/tr_local.h"
+#include "../qcommon/q_shared.h"
+#include "../qcommon/qcommon.h"
+#include "../renderer/qgl.h"
+#include "../renderer/tr_types.h"
 #include "glw_win.h"
 #include "win_local.h"
 
 #define GLE( ret, name, ... ) ret ( APIENTRY * q##name )( __VA_ARGS__ );
-QGL_Core_PROCS;
 QGL_Win32_PROCS;
-QGL_Ext_PROCS;
 QGL_Swp_PROCS;
 #undef GLE
-
 
 /*
 ** QGL_Shutdown
@@ -49,22 +49,35 @@ QGL_Swp_PROCS;
 */
 void QGL_Shutdown( void )
 {
-	ri.Printf( PRINT_ALL, "...shutting down QGL\n" );
+	Com_Printf( "...shutting down QGL\n" );
 
 	if ( glw_state.OpenGLLib )
 	{
-		ri.Printf( PRINT_ALL, "...unloading OpenGL DLL\n" );
+		Com_Printf( "...unloading OpenGL DLL\n" );
 		Sys_UnloadLibrary( glw_state.OpenGLLib );
 	}
 
 	glw_state.OpenGLLib = NULL;
-
+	glw_state.GPA = NULL;
+	
 #define GLE( ret, name, ... ) q##name = NULL;
-	QGL_Core_PROCS;
-	QGL_Ext_PROCS;
 	QGL_Win32_PROCS;
 	QGL_Swp_PROCS;
 #undef GLE
+}
+
+
+static void *GL_LoadFunction( const char *name )
+{
+	void *ptr;
+
+	ptr = Sys_LoadFunction( glw_state.OpenGLLib, name );
+	if ( !ptr && qwglGetProcAddress )
+	{
+		ptr = qwglGetProcAddress( name );
+	}
+
+	return ptr;
 }
 
 
@@ -94,7 +107,7 @@ qboolean QGL_Init( const char *dllname )
 
 	assert( glw_state.OpenGLLib == 0 );
 
-	ri.Printf( PRINT_ALL, "...initializing QGL\n" );
+	Com_Printf( "...initializing QGL\n" );
 
 	// NOTE: this assumes that 'dllname' is lower case (and it should be)!
 #if 0
@@ -103,45 +116,40 @@ qboolean QGL_Init( const char *dllname )
 	else
 		Q_strncpyz( libName, dllname+1, sizeof( libName ) );
 
-	ri.Printf( PRINT_ALL, "...loading '%s.dll' : ", libName );
+	Com_Printf( "...loading '%s.dll' : ", libName );
 	glw_state.OpenGLLib = Sys_LoadLibrary( libName );
 #else
-	ri.Printf( PRINT_ALL, "...loading '%s.dll' : ", dllname );
+	Com_Printf( "...loading '%s.dll' : ", dllname );
 	glw_state.OpenGLLib = Sys_LoadLibrary( va("%s.dll", dllname) );
 #endif
 
 	if ( glw_state.OpenGLLib == NULL )
 	{
-		ri.Printf( PRINT_ALL, "failed\n" );
+		Com_Printf( "failed\n" );
 		return qfalse;
 	}
 
-	ri.Printf( PRINT_ALL, "succeeded\n" );
+	Com_Printf( "succeeded\n" );
+
+	glw_state.GPA = GL_LoadFunction;
 
 	Sys_LoadFunctionErrors(); // reset error count
 
-#define GLE( ret, name, ... ) q##name = Sys_LoadFunction( glw_state.OpenGLLib, XSTRING( name ) );
-	QGL_Core_PROCS;
-
-	if ( Sys_LoadFunctionErrors() ) 
-	{
-		ri.Printf( PRINT_ALL, "core OpenGL functions resolve error\n" );
-		return qfalse;
-	}
-
+#define GLE( ret, name, ... ) q##name = GL_LoadFunction( XSTRING( name ) ); if ( !q##name ) { Com_Printf( "Error resolving core Win32 functions\n" ); return qfalse; }
 	QGL_Win32_PROCS;
 #undef GLE
 
-	if ( Sys_LoadFunctionErrors() ) 
-	{
-		ri.Printf( PRINT_ALL, "wgl functions resolve error\n" );
-		return qfalse;
-	}
-
-#define GLE( ret, name, ... ) q##name = NULL;
+	// optional
+#define GLE( ret, name, ... ) q##name = GL_LoadFunction( XSTRING( name ) )
 	QGL_Swp_PROCS;
-	QGL_Ext_PROCS;
 #undef GLE
+
+	if ( qwglSwapIntervalEXT ) {
+		Com_Printf( "...using WGL_EXT_swap_control\n" );
+		Cvar_SetModified( "r_swapInterval", qtrue ); // force a set next frame
+	} else {
+		Com_Printf( "...WGL_EXT_swap_control not found\n" );
+	}
 
 	return qtrue;
 }

@@ -250,6 +250,9 @@
     <ClCompile Include="..\win_snd.c" />
     <ClCompile Include="..\win_syscon.c" />
     <ClCompile Include="..\win_wndproc.c" />
+    <ClCompile Include="..\win_gamma.c" />
+    <ClCompile Include="..\win_glimp.c" />
+    <ClCompile Include="..\win_qgl.c" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\asm\snd_mix_x64.asm">
@@ -287,12 +290,12 @@
     <ClInclude Include="..\..\qcommon\unzip.h" />
     <ClInclude Include="..\..\qcommon\vm_local.h" />
     <ClInclude Include="..\..\renderer\qgl.h" />
-    <ClInclude Include="..\..\renderer\tr_local.h" />
     <ClInclude Include="..\..\renderer\tr_public.h" />
     <ClInclude Include="..\..\renderer\tr_types.h" />
     <ClInclude Include="..\..\server\server.h" />
     <ClInclude Include="..\..\ui\ui_public.h" />
     <ClInclude Include="..\resource.h" />
+    <ClInclude Include="..\glw_win.h" />
     <ClInclude Include="..\win_local.h" />
   </ItemGroup>
   <ItemGroup>

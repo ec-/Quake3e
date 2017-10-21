@@ -490,7 +490,7 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 		backEnd.screenshotMask = 0;
 	}
 
-	GLimp_EndFrame();
+	ri.GLimp_EndFrame();
 
 	backEnd.projection2D = qfalse;
 	backEnd.doneBloom = qfalse;

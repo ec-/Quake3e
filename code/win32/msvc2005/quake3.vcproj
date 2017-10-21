@@ -614,11 +614,19 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\win32\win_input.c"
+				RelativePath="..\win_gamma.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\win32\win_main.c"
+				RelativePath="..\win_glimp.c"
+				>
+			</File>
+			<File
+				RelativePath="..\win_input.c"
+				>
+			</File>
+			<File
+				RelativePath="..\win_main.c"
 				>
 			</File>
 			<File
@@ -626,19 +634,23 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\win32\win_shared.c"
+				RelativePath="..\win_qgl.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\win32\win_snd.c"
+				RelativePath="..\win_shared.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\win32\win_syscon.c"
+				RelativePath="..\win_snd.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\win32\win_wndproc.c"
+				RelativePath="..\win_syscon.c"
+				>
+			</File>
+			<File
+				RelativePath="..\win_wndproc.c"
 				>
 			</File>
 		</Filter>
@@ -699,7 +711,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\.\qcommon\q_shared.h"
+				RelativePath="..\..\qcommon\q_shared.h"
 				>
 			</File>
 			<File
@@ -719,7 +731,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\win32\resource.h"
+				RelativePath="..\resource.h"
 				>
 			</File>
 			<File
@@ -763,7 +775,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\win32\win_local.h"
+				RelativePath="..\glw_win.h"
+				>
+			</File>
+			<File
+				RelativePath="..\win_local.h"
 				>
 			</File>
 		</Filter>
@@ -772,7 +788,7 @@
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe"
 			>
 			<File
-				RelativePath="..\..\win32\qe3.ico"
+				RelativePath="..\qe3.ico"
 				>
 			</File>
 			<File

@@ -778,52 +778,6 @@ int Com_Filter( const char *filter, const char *name, int casesensitive )
 
 /*
 ============
-Com_Split
-============
-*/
-int Com_Split( char *in, char **out, int outsz, int delim ) 
-{
-	int c;
-	char **o = out, **end = out + outsz;
-	// skip leading spaces
-	if ( delim >= ' ' ) {
-		while( (c = *in) != '\0' && c <= ' ' ) 
-			in++; 
-	}
-	*out = in; out++;
-	while( out < end ) {
-		while( (c = *in) != '\0' && c != delim ) 
-			in++; 
-		*in = '\0';
-		if ( !c ) {
-			// don't count last null value
-			if ( out[-1][0] == '\0' ) 
-				out--;
-			break;
-		}
-		in++;
-		// skip leading spaces
-		if ( delim >= ' ' ) {
-			while( (c = *in) != '\0' && c <= ' ' ) 
-				in++; 
-		}
-		*out = in; out++;
-	}
-	// sanitize last value
-	while( (c = *in) != '\0' && c != delim ) 
-		in++; 
-	*in = '\0';
-	c = out - o;
-	// set remaining out pointers
-	while( out < end ) {
-		*out = in; out++;
-	}
-	return c;
-}
-
-
-/*
-============
 Com_FilterPath
 ============
 */
@@ -4078,39 +4032,4 @@ void Com_RandomBytes( byte *string, int len )
 	srand( time( 0 ) );
 	for( i = 0; i < len; i++ )
 		string[i] = (unsigned char)( rand() % 256 );
-}
-
-
-/* 
-==================
-crc32_buffer
-==================
-*/
-unsigned int crc32_buffer( const byte *buf, unsigned int len ) {
-	static unsigned int crc32_table[256];
-	static qboolean crc32_inited = qfalse;
-
-	unsigned int crc = 0xFFFFFFFFUL;
-
-	if ( !crc32_inited )  
-	{
-		unsigned int c;
-		int i, j;
-
-		for (i = 0; i < 256; i++)
-		{
-			c = i;
-			for ( j = 0; j < 8; j++ )
-				c = c & 1 ? (c >> 1) ^ 0xEDB88320UL : c >> 1;
-			crc32_table[i] = c;
-		}
-		crc32_inited = qtrue;
-	}
-
-	while ( len-- ) 
-	{
-		crc = crc32_table[(crc ^ *buf++) & 0xFF] ^ (crc >> 8);
-	}
-
-	return crc ^ 0xFFFFFFFFUL;
 }

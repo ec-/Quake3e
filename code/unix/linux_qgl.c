@@ -30,23 +30,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ** QGL_Shutdown() - unloads libraries, NULLs function pointers
 */
 
-// bk001204
 #include <unistd.h>
 #include <sys/types.h>
-
-
-#include <float.h>
-#include "../renderer/tr_local.h"
+#include "../qcommon/q_shared.h"
+#include "../qcommon/qcommon.h"
+#include "../renderer/qgl.h"
+#include "../renderer/tr_types.h"
 #include "unix_glw.h"
 
 #include <dlfcn.h>
 
 #define GLE( ret, name, ... ) ret ( APIENTRY * q##name )( __VA_ARGS__ );
-QGL_Core_PROCS;
-QGL_Ext_PROCS;
-QGL_Swp_PROCS;
 QGL_LinX11_PROCS;
-QGL_LinGPA_PROC;
+QGL_Swp_PROCS;
 #undef GLE
 
 /*
@@ -83,17 +79,14 @@ void QGL_Shutdown( void )
 	}
 
 #define GLE( ret, name, ... ) q##name = NULL;
-	QGL_Core_PROCS;
-	QGL_Ext_PROCS;
-	QGL_Swp_PROCS;
 	QGL_LinX11_PROCS;
-	QGL_LinGPA_PROC;
+	QGL_Swp_PROCS;
 #undef GLE
 }
 
 static int glErrorCount = 0;
 
-static void *glGetProcAddress( const char *symbol )
+static void *GL_LoadFunction( const char *symbol )
 {
 	void *sym;
 
@@ -122,9 +115,9 @@ char *do_dlerror( void );
 
 qboolean QGL_Init( const char *dllname )
 {
-	ri.Printf( PRINT_ALL, "...initializing QGL\n" );
+	Com_Printf( "...initializing QGL\n" );
 
-	ri.Printf( PRINT_ALL, "...loading '%s' : ", dllname );
+	Com_Printf( "...loading '%s' : ", dllname );
 
 	if ( glw_state.OpenGLLib == NULL )
 	{
@@ -146,47 +139,43 @@ qboolean QGL_Init( const char *dllname )
 
 			if ( glw_state.OpenGLLib == NULL ) 
 			{
-				ri.Printf( PRINT_ALL, "failed\n" );
-				ri.Printf(PRINT_ALL, "QGL_Init: Can't load %s from /etc/ld.so.conf or current dir: %s\n", dllname, do_dlerror() );
+				Com_Printf( "failed\n" );
+				Com_Printf( "QGL_Init: Can't load %s from /etc/ld.so.conf or current dir: %s\n", dllname, do_dlerror() );
 				return qfalse;
 			}
 		}
 		else
 		{
-			ri.Printf( PRINT_ALL, "failed\n" );
-			ri.Printf( PRINT_ALL, "QGL_Init: Can't load %s from /etc/ld.so.conf: %s\n", dllname, do_dlerror() );
+			Com_Printf( "failed\n" );
+			Com_Printf( "QGL_Init: Can't load %s from /etc/ld.so.conf: %s\n", dllname, do_dlerror() );
 			return qfalse;
 		}
 	}
 
-	ri.Printf( PRINT_ALL, "succeeded\n" );
+	Com_Printf( "succeeded\n" );
 
-	qwglGetProcAddress		= glGetProcAddress;
-	glErrorCount			= 0;
+	glw_state.GPA = GL_LoadFunction;
 
-#define GLE( ret, name, ... ) q##name = qwglGetProcAddress( XSTRING( name ) );
-	QGL_Core_PROCS;
-
-	if ( glErrorCount )
-	{
-		ri.Printf( PRINT_ALL, "QGL_Init: Can't resolve required opengl function from %s\n", dllname );
-		return qfalse;
-	}
 	glErrorCount = 0;
 
+#define GLE( ret, name, ... ) q##name = GL_LoadFunction( XSTRING( name ) ); if ( !q##name ) { Com_Printf( "Error resolving core X11 functions\n" ); return qfalse; }
 	QGL_LinX11_PROCS;
-	if ( glErrorCount )
-	{
-		ri.Printf( PRINT_ALL, "QGL_Init: Can't resolve required X11 function from %s\n", dllname );
-		return qfalse;
-	}
+#undef GLE
+
 	// optional
+#define GLE( ret, name, ... ) q##name = GL_LoadFunction( XSTRING( name ) );
 	QGL_Swp_PROCS;
 #undef GLE
 
-#define GLE( ret, name, ... ) q##name = NULL;
-	QGL_Ext_PROCS;
-#undef GLE
+	if ( qglXSwapIntervalEXT || qglXSwapIntervalMESA || qglXSwapIntervalSGI ) 
+	{
+		Com_Printf( "...using GLX_EXT_swap_control\n" );
+		Cvar_SetModified( "r_swapInterval", qtrue ); // force a set next frame
+	}
+	else 
+	{
+		Com_Printf( "...GLX_EXT_swap_control not found\n" );
+	}
 
 	return qtrue;
 }

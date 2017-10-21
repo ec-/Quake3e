@@ -192,9 +192,6 @@
     <ClCompile Include="..\..\renderer\tr_sky.c" />
     <ClCompile Include="..\..\renderer\tr_surface.c" />
     <ClCompile Include="..\..\renderer\tr_world.c" />
-    <ClCompile Include="..\win_gamma.c" />
-    <ClCompile Include="..\win_glimp.c" />
-    <ClCompile Include="..\win_qgl.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\qcommon\qcommon.h" />
@@ -206,8 +203,6 @@
     <ClInclude Include="..\..\renderer\tr_local.h" />
     <ClInclude Include="..\..\renderer\tr_public.h" />
     <ClInclude Include="..\..\renderer\tr_types.h" />
-    <ClInclude Include="..\glw_win.h" />
-    <ClInclude Include="..\win_local.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="libjpeg.vcxproj">

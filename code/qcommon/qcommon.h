@@ -549,6 +549,8 @@ void	Cvar_SetValue( const char *var_name, float value );
 void	Cvar_SetValueSafe( const char *var_name, float value );
 // expands value to a string and calls Cvar_Set/Cvar_SetSafe
 
+qboolean Cvar_SetModified( const char *var_name, qboolean modified );
+
 float	Cvar_VariableValue( const char *var_name );
 int		Cvar_VariableIntegerValue( const char *var_name );
 // returns 0 if not defined or non numeric

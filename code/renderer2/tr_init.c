@@ -261,7 +261,7 @@ static void InitOpenGL( void )
 	{
 		GLint		temp;
 		
-		GLimp_Init();
+		ri.GLimp_Init( &glConfig );
 		GLimp_InitExtraExtensions();
 
 		strcpy( renderer_buffer, glConfig.renderer_string );
@@ -1556,7 +1556,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 
 	// shut down platform specific OpenGL stuff
 	if ( destroyWindow ) {
-		GLimp_Shutdown();
+		ri.GLimp_Shutdown();
 
 		Com_Memset( &glConfig, 0, sizeof( glConfig ) );
 		Com_Memset( &glState, 0, sizeof( glState ) );
@@ -1575,7 +1575,7 @@ Touch all images to make sure they are resident
 */
 void RE_EndRegistration( void ) {
 	R_IssuePendingRenderCommands();
-	if (Sys_LowPhysicalMemory()) {
+	if ( ri.Sys_LowPhysicalMemory() ) {
 		RB_ShowImages();
 	}
 }

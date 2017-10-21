@@ -1123,7 +1123,7 @@ extern	cvar_t	*r_nocurves;
 extern	cvar_t	*r_showcluster;
 
 extern cvar_t	*r_gamma;
-extern cvar_t	*r_displayRefresh;		// optional display refresh option
+//extern cvar_t	*r_displayRefresh;				// optional display refresh option
 
 extern	cvar_t	*r_nobind;						// turns off binding to appropriate textures
 extern	cvar_t	*r_singleShader;				// make most world faces use default shader
@@ -1757,5 +1757,16 @@ void RE_FinishBloom( void );
 //Bloom Stuff
 void R_BloomInit( void );
 void R_BloomScreen( void );
+
+qboolean fboAvailable;
+
+extern void* (APIENTRY *gl_GetProcAddress)( const char *function );
+
+qboolean R_HaveExtension( const char *ext );
+
+#define GLE( ret, name, ... ) extern ret ( APIENTRY * q##name )( __VA_ARGS__ );
+	QGL_Core_PROCS;
+	QGL_Ext_PROCS;
+#undef GLE
 
 #endif //TR_LOCAL_H

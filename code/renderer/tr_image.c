@@ -1279,9 +1279,9 @@ void R_SetColorMappings( void ) {
 		s_intensitytable[i] = j;
 	}
 
-	if ( glConfig.deviceSupportsGamma )
+	if ( glConfig.deviceSupportsGamma && !fboEnabled )
 	{
-		GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
+		ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
 	}
 }
 

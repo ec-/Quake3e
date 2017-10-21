@@ -416,27 +416,11 @@
 				RelativePath="..\..\renderer\tr_world.c"
 				>
 			</File>
-			<File
-				RelativePath="..\..\win32\win_gamma.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\win32\win_glimp.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\win32\win_qgl.c"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;inc"
 			>
-			<File
-				RelativePath="..\..\win32\glw_win.h"
-				>
-			</File>
 			<File
 				RelativePath="..\..\qcommon\q_shared.h"
 				>
@@ -471,10 +455,6 @@
 			</File>
 			<File
 				RelativePath="..\..\renderer\tr_types.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\win32\win_local.h"
 				>
 			</File>
 		</Filter>

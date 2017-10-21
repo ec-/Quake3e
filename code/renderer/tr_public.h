@@ -171,12 +171,22 @@ typedef struct {
 	qboolean (*FS_FileExists)( const char *file );
 
 	// cinematic stuff
-	void	(*CIN_UploadCinematic)(int handle);
-	int		(*CIN_PlayCinematic)( const char *arg0, int xpos, int ypos, int width, int height, int bits);
-	e_status (*CIN_RunCinematic) (int handle);
+	void	(*CIN_UploadCinematic)( int handle );
+	int		(*CIN_PlayCinematic)( const char *arg0, int xpos, int ypos, int width, int height, int bits );
+	e_status (*CIN_RunCinematic)( int handle );
 
 	void	(*CL_WriteAVIVideoFrame)( const byte *buffer, int size );
 	void	(*Sys_SetClipboardBitmap)( const byte *bitmap, int size );
+	qboolean(*Sys_LowPhysicalMemory)( void );
+
+	int		(*Com_RealTime)( qtime_t *qtime );
+
+	// platform-dependent functions
+	void	(*GLimp_Init)( glconfig_t *config, void **GPA );
+	void	(*GLimp_Shutdown)( void );
+	void	(*GLimp_EndFrame)( void );
+	void	(*GLimp_InitGamma)( glconfig_t *config );
+	void	(*GLimp_SetGamma)( unsigned char red[256], unsigned char green[256], unsigned char blue[256] );
 
 } refimport_t;
 
