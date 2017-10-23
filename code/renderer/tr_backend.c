@@ -941,21 +941,21 @@ RB_SetGL2D
 
 ================
 */
-void	RB_SetGL2D (void) {
+void RB_SetGL2D( void ) {
 	backEnd.projection2D = qtrue;
 
 	// set 2D virtual screen size
 	qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
 	qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
-	qglMatrixMode(GL_PROJECTION);
-    qglLoadIdentity ();
-	qglOrtho (0, glConfig.vidWidth, glConfig.vidHeight, 0, 0, 1);
-	qglMatrixMode(GL_MODELVIEW);
-    qglLoadIdentity ();
+	qglMatrixMode( GL_PROJECTION );
+	qglLoadIdentity();
+	qglOrtho( 0, glConfig.vidWidth, glConfig.vidHeight, 0, 0, 1 );
+	qglMatrixMode( GL_MODELVIEW );
+	qglLoadIdentity();
 
 	GL_State( GLS_DEPTHTEST_DISABLE |
-			  GLS_SRCBLEND_SRC_ALPHA |
-			  GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA );
+		GLS_SRCBLEND_SRC_ALPHA |
+		GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA );
 
 	GL_Cull( CT_TWO_SIDED );
 	qglDisable( GL_CLIP_PLANE0 );
@@ -1047,6 +1047,7 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *
 	qglEnd ();
 }
 
+
 void RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty) {
 
 	GL_Bind( tr.scratchImage[client] );
@@ -1088,6 +1089,7 @@ const void	*RB_SetColor( const void *data ) {
 
 	return (const void *)(cmd + 1);
 }
+
 
 /*
 =============
@@ -1233,7 +1235,11 @@ const void	*RB_DrawBuffer( const void *data ) {
 
 	cmd = (const drawBufferCommand_t *)data;
 
-	qglDrawBuffer( cmd->buffer );
+	if ( fboEnabled ) {
+		qglDrawBuffer( GL_COLOR_ATTACHMENT0 );
+	} else {
+		qglDrawBuffer( cmd->buffer );
+	}
 
 	// clear screen for debugging
 	if ( r_clear->integer ) {
@@ -1358,7 +1364,7 @@ const void *RB_FinishBloom(const void *data)
 
 	if ( r_bloom->integer > 1 && fboEnabled )
 	{
-		if ( !backEnd.doneBloom2fbo /*&& backEnd.doneSurfaces*/ )
+		if ( !backEnd.doneBloom2fbo && backEnd.doneSurfaces )
 		{
 			if ( !backEnd.projection2D )
 				RB_SetGL2D();
