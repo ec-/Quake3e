@@ -1109,6 +1109,7 @@ extern cvar_t	*r_dlightIntensity;		// 0.1 - 1.0
 extern cvar_t	*r_fbo;
 extern cvar_t	*r_hdr;
 #endif
+extern cvar_t	*r_bloom;
 extern cvar_t	*r_dlightBacks;			// dlight non-facing surfaces for continuity
 
 extern	cvar_t	*r_norefresh;			// bypasses the ref rendering

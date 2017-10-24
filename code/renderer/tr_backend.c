@@ -1096,16 +1096,12 @@ const void	*RB_SetColor( const void *data ) {
 RB_StretchPic
 =============
 */
-const void *RB_StretchPic ( const void *data ) {
+const void *RB_StretchPic( const void *data ) {
 	const stretchPicCommand_t	*cmd;
 	shader_t *shader;
 	int		numVerts, numIndexes;
 
 	cmd = (const stretchPicCommand_t *)data;
-
-	if ( !backEnd.projection2D ) {
-		RB_SetGL2D();
-	}
 
 	shader = cmd->shader;
 	if ( shader != tess.shader ) {
@@ -1115,6 +1111,13 @@ const void *RB_StretchPic ( const void *data ) {
 		backEnd.currentEntity = &backEnd.entity2D;
 		RB_BeginSurface( shader, 0 );
 	}
+	
+	if ( !backEnd.projection2D ) {
+		RB_SetGL2D();
+	}
+
+	//Check if it's time for BLOOM!
+	R_BloomScreen();
 
 	RB_CHECKOVERFLOW( 4, 6 );
 	numVerts = tess.numVertexes;
@@ -1357,7 +1360,6 @@ const void *RB_ClearDepth(const void *data)
 RB_FinishBloom
 =============
 */
-extern cvar_t *r_bloom;
 const void *RB_FinishBloom(const void *data)
 {
 	const finishBloomCommand_t *cmd = data;
@@ -1395,8 +1397,6 @@ void RB_ExecuteRenderCommands( const void *data ) {
 			data = RB_SetColor( data );
 			break;
 		case RC_STRETCH_PIC:
-			//Check if it's time for BLOOM!
-			R_BloomScreen();
 			data = RB_StretchPic( data );
 			break;
 		case RC_DRAW_SURFS:

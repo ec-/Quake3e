@@ -21,8 +21,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "tr_local.h"
 
-
-cvar_t *r_bloom;
 static cvar_t *r_bloom_sample_size;
 static cvar_t *r_bloom_alpha;
 static cvar_t *r_bloom_darken;
@@ -35,17 +33,18 @@ static cvar_t *r_bloom_cascade_alpha;
 static cvar_t *r_bloom_cascade_dry;
 static cvar_t *r_bloom_dry;
 static cvar_t *r_bloom_reflection;
+extern cvar_t *r_bloom;
 
-/* 
-============================================================================== 
- 
-						LIGHT BLOOMS
- 
-============================================================================== 
-*/ 
+/*
+==============================================================================
+
+				LIGHT BLOOMS
+
+==============================================================================
+*/
 
 static float Diamond8x[8][8] =
-{ 
+{
 	{ 0.0f, 0.0f, 0.0f, 0.1f, 0.1f, 0.0f, 0.0f, 0.0f, },
 	{ 0.0f, 0.0f, 0.2f, 0.3f, 0.3f, 0.2f, 0.0f, 0.0f, },
 	{ 0.0f, 0.2f, 0.4f, 0.6f, 0.6f, 0.4f, 0.2f, 0.0f, },
@@ -57,7 +56,7 @@ static float Diamond8x[8][8] =
 };
 
 static float Diamond6x[6][6] =
-{ 
+{
 	{ 0.0f, 0.0f, 0.1f, 0.1f, 0.0f, 0.0f, },
 	{ 0.0f, 0.3f, 0.5f, 0.5f, 0.3f, 0.0f, }, 
 	{ 0.1f, 0.5f, 0.9f, 0.9f, 0.5f, 0.1f, },
@@ -67,7 +66,7 @@ static float Diamond6x[6][6] =
 };
 
 static float Diamond4x[4][4] =
-{  
+{
 	{ 0.3f, 0.4f, 0.4f, 0.3f, },
 	{ 0.4f, 0.9f, 0.9f, 0.4f, },
 	{ 0.4f, 0.9f, 0.9f, 0.4f, },
@@ -568,11 +567,10 @@ void R_BloomScreen( void )
 }
 
 
-void R_BloomInit( void ) 
+void R_BloomInit( void )
 {
 	memset( &bloom, 0, sizeof( bloom ));
 
-	r_bloom = ri.Cvar_Get( "r_bloom", "0", CVAR_ARCHIVE );
 	r_bloom_alpha = ri.Cvar_Get( "r_bloom_alpha", "0.5", CVAR_ARCHIVE_ND );
 	r_bloom_diamond_size = ri.Cvar_Get( "r_bloom_diamond_size", "8", CVAR_ARCHIVE_ND );
 	r_bloom_intensity = ri.Cvar_Get( "r_bloom_intensity", "2.0", CVAR_ARCHIVE_ND );

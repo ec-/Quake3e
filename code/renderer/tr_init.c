@@ -75,6 +75,7 @@ cvar_t	*r_dlightIntensity;
 cvar_t	*r_fbo;
 cvar_t	*r_hdr;
 #endif
+cvar_t	*r_bloom;
 cvar_t	*r_dlightBacks;
 
 cvar_t	*r_lodbias;
@@ -1303,7 +1304,7 @@ void GfxInfo_f( void )
 R_Register
 ===============
 */
-void R_Register( void ) 
+void R_Register( void )
 {
 	//
 	// latched and archived variables
@@ -1419,6 +1420,8 @@ void R_Register( void )
 	r_hdr = ri.Cvar_Get( "r_hdr", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_SetGroup( r_hdr, CVG_RENDERER );
 #endif
+	r_bloom = ri.Cvar_Get( "r_bloom", "0", CVAR_ARCHIVE_ND );
+
 	r_dlightBacks = ri.Cvar_Get( "r_dlightBacks", "1", CVAR_ARCHIVE_ND );
 	r_finish = ri.Cvar_Get( "r_finish", "0", CVAR_ARCHIVE_ND );
 	r_textureMode = ri.Cvar_Get( "r_textureMode", "GL_LINEAR_MIPMAP_NEAREST", CVAR_ARCHIVE );
