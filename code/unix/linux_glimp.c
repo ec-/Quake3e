@@ -108,7 +108,7 @@ static qboolean desktop_ok = qfalse;
 
 #define KEY_MASK (KeyPressMask | KeyReleaseMask)
 #define MOUSE_MASK (ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ButtonMotionMask )
-#define X_MASK (KEY_MASK | MOUSE_MASK | VisibilityChangeMask | StructureNotifyMask )
+#define X_MASK (KEY_MASK | MOUSE_MASK | VisibilityChangeMask | StructureNotifyMask | FocusChangeMask )
 
 static qboolean mouse_avail;
 static qboolean mouse_active = qfalse;
@@ -810,7 +810,14 @@ void HandleX11Events( void )
 			win_x = event.xconfigure.x;
 			win_y = event.xconfigure.y;
 			break;
+
+		case FocusIn:
+		case FocusOut:
+			Com_DPrintf( "FocusChange: %s\n", event.type == FocusIn ? "FocusIn" : "FocusOut" );
+			Key_ClearStates();
+			break;
 		}
+
 	}
 
 	if ( dowarp )
@@ -1427,6 +1434,7 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 		}
 	}
 #endif
+	Key_ClearStates();
 
 	return RSERR_OK;
 }
