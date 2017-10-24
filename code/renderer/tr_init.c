@@ -182,8 +182,6 @@ static char gl_extensions[ 32768 ];
 	QGL_Ext_PROCS;
 #undef GLE
 
-void* (APIENTRY *gl_GetProcAddress)( const char *function );
-
 // for modular renderer
 #if 0
 void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) 
@@ -305,9 +303,9 @@ static void R_InitExtensions( void )
 	{
 		if ( r_ext_multitexture->integer )
 		{
-			qglMultiTexCoord2fARB = gl_GetProcAddress( "glMultiTexCoord2fARB" );
-			qglActiveTextureARB = gl_GetProcAddress( "glActiveTextureARB" );
-			qglClientActiveTextureARB = gl_GetProcAddress( "glClientActiveTextureARB" );
+			qglMultiTexCoord2fARB = ri.GL_GetProcAddress( "glMultiTexCoord2fARB" );
+			qglActiveTextureARB = ri.GL_GetProcAddress( "glActiveTextureARB" );
+			qglClientActiveTextureARB = ri.GL_GetProcAddress( "glClientActiveTextureARB" );
 
 			if ( qglActiveTextureARB )
 			{
@@ -344,8 +342,8 @@ static void R_InitExtensions( void )
 		if ( r_ext_compiled_vertex_array->integer )
 		{
 			ri.Printf( PRINT_ALL, "...using GL_EXT_compiled_vertex_array\n" );
-			qglLockArraysEXT = gl_GetProcAddress( "glLockArraysEXT" );
-			qglUnlockArraysEXT = gl_GetProcAddress( "glUnlockArraysEXT" );
+			qglLockArraysEXT = ri.GL_GetProcAddress( "glLockArraysEXT" );
+			qglUnlockArraysEXT = ri.GL_GetProcAddress( "glUnlockArraysEXT" );
 			if ( !qglLockArraysEXT || !qglUnlockArraysEXT ) {
 				ri.Error( ERR_FATAL, "bad getprocaddress" );
 			}
@@ -414,9 +412,9 @@ static void InitOpenGL( void )
 		GLint max_shader_units = -1;
 		GLint max_bind_units = -1;
 		
-		ri.GLimp_Init( &glConfig, (void**)&gl_GetProcAddress );
+		ri.GLimp_Init( &glConfig );
 
-#define GLE( ret, name, ... ) q##name = gl_GetProcAddress( XSTRING( name ) ); if ( !q##name ) ri.Error( ERR_FATAL, "Error resolving core OpenGL functions" );
+#define GLE( ret, name, ... ) q##name = ri.GL_GetProcAddress( XSTRING( name ) ); if ( !q##name ) ri.Error( ERR_FATAL, "Error resolving core OpenGL functions" );
 		QGL_Core_PROCS;
 #undef GLE
 

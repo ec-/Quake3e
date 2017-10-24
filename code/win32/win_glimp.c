@@ -1242,7 +1242,7 @@ static qboolean GLW_StartOpenGL( void )
 ** to make sure that a functional OpenGL subsystem is operating
 ** when it returns to the ref.
 */
-void GLimp_Init( glconfig_t *config, void **GPA )
+void GLimp_Init( glconfig_t *config )
 {
 	Com_Printf( "Initializing OpenGL subsystem\n" );
 
@@ -1257,8 +1257,6 @@ void GLimp_Init( glconfig_t *config, void **GPA )
 
 	//glConfig.driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
-
-	*GPA = glw_state.GPA;
 
 	// show main window after all initializations
 	ShowWindow( g_wv.hWnd, SW_SHOW );

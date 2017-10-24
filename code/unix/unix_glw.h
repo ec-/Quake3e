@@ -34,7 +34,6 @@ typedef struct
 	qboolean gammaSet;
 
 	glconfig_t *config; // feedback to renderer module
-	void *GPA;
 
 } glwstate_t;
 

@@ -1563,7 +1563,7 @@ int qXErrorHandler( Display *dpy, XErrorEvent *ev )
 ** This routine is responsible for initializing the OS specific portions
 ** of OpenGL.
 */
-void GLimp_Init( glconfig_t *config, void **GPA )
+void GLimp_Init( glconfig_t *config )
 {
 	InitSig();
 
@@ -1587,8 +1587,6 @@ void GLimp_Init( glconfig_t *config, void **GPA )
 	// This values force the UI to disable driver selection
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
-
-	*GPA = glw_state.GPA;
 
 	InitSig(); // not clear why this is at begin & end of function
 }

@@ -607,9 +607,11 @@ qboolean CL_CloseAVI( void );
 qboolean CL_VideoRecording( void );
 
 // platform-specific
-void	GLimp_Init( glconfig_t *config, void **GPA );
+void	GLimp_Init( glconfig_t *config );
 void	GLimp_Shutdown( void );
 void	GLimp_EndFrame( void );
 
 void	GLimp_InitGamma( glconfig_t *config );
 void	GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned char blue[256] );
+
+void	*GL_GetProcAddress( const char *name );

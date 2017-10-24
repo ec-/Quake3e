@@ -86,7 +86,7 @@ void QGL_Shutdown( void )
 
 static int glErrorCount = 0;
 
-static void *GL_LoadFunction( const char *symbol )
+void *GL_GetProcAddress( const char *symbol )
 {
 	void *sym;
 
@@ -154,16 +154,14 @@ qboolean QGL_Init( const char *dllname )
 
 	Com_Printf( "succeeded\n" );
 
-	glw_state.GPA = GL_LoadFunction;
-
 	glErrorCount = 0;
 
-#define GLE( ret, name, ... ) q##name = GL_LoadFunction( XSTRING( name ) ); if ( !q##name ) { Com_Printf( "Error resolving core X11 functions\n" ); return qfalse; }
+#define GLE( ret, name, ... ) q##name = GL_GetProcAddress( XSTRING( name ) ); if ( !q##name ) { Com_Printf( "Error resolving core X11 functions\n" ); return qfalse; }
 	QGL_LinX11_PROCS;
 #undef GLE
 
 	// optional
-#define GLE( ret, name, ... ) q##name = GL_LoadFunction( XSTRING( name ) );
+#define GLE( ret, name, ... ) q##name = GL_GetProcAddress( XSTRING( name ) );
 	QGL_Swp_PROCS;
 #undef GLE
 

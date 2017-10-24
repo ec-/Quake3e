@@ -58,7 +58,6 @@ void QGL_Shutdown( void )
 	}
 
 	glw_state.OpenGLLib = NULL;
-	glw_state.GPA = NULL;
 	
 #define GLE( ret, name, ... ) q##name = NULL;
 	QGL_Win32_PROCS;
@@ -67,7 +66,7 @@ void QGL_Shutdown( void )
 }
 
 
-static void *GL_LoadFunction( const char *name )
+void *GL_GetProcAddress( const char *name )
 {
 	void *ptr;
 
@@ -131,16 +130,14 @@ qboolean QGL_Init( const char *dllname )
 
 	Com_Printf( "succeeded\n" );
 
-	glw_state.GPA = GL_LoadFunction;
-
 	Sys_LoadFunctionErrors(); // reset error count
 
-#define GLE( ret, name, ... ) q##name = GL_LoadFunction( XSTRING( name ) ); if ( !q##name ) { Com_Printf( "Error resolving core Win32 functions\n" ); return qfalse; }
+#define GLE( ret, name, ... ) q##name = GL_GetProcAddress( XSTRING( name ) ); if ( !q##name ) { Com_Printf( "Error resolving core Win32 functions\n" ); return qfalse; }
 	QGL_Win32_PROCS;
 #undef GLE
 
 	// optional
-#define GLE( ret, name, ... ) q##name = GL_LoadFunction( XSTRING( name ) )
+#define GLE( ret, name, ... ) q##name = GL_GetProcAddress( XSTRING( name ) )
 	QGL_Swp_PROCS;
 #undef GLE
 

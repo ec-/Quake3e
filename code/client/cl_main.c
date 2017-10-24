@@ -3183,6 +3183,7 @@ void CL_InitRef( void ) {
 	ri.GLimp_EndFrame = GLimp_EndFrame;
 	ri.GLimp_InitGamma = GLimp_InitGamma;
 	ri.GLimp_SetGamma = GLimp_SetGamma;
+	ri.GL_GetProcAddress = GL_GetProcAddress;
 
 	ret = GetRefAPI( REF_API_VERSION, &ri );
 

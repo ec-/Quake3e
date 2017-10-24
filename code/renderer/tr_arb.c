@@ -1834,8 +1834,8 @@ void FBO_PostProcess( void )
 
 
 static const void *fp;
-#define GPA(fn) fp = gl_GetProcAddress( #fn ); if ( !fp ) { ri.Printf( PRINT_ALL, "GPA failed on '%s'\n", #fn ); goto __fail; } else { memcpy( &q##fn, &fp, sizeof( fp ) ); }
-#define GPA_(fn) { fp = gl_GetProcAddress( #fn ); memcpy( &q##fn, &fp, sizeof( fp ) ); }
+#define GPA(fn) fp = ri.GL_GetProcAddress( #fn ); if ( !fp ) { ri.Printf( PRINT_ALL, "GPA failed on '%s'\n", #fn ); goto __fail; } else { memcpy( &q##fn, &fp, sizeof( fp ) ); }
+#define GPA_(fn) { fp = ri.GL_GetProcAddress( #fn ); memcpy( &q##fn, &fp, sizeof( fp ) ); }
 
 static void QGL_InitPrograms( void )
 {

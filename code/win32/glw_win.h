@@ -52,7 +52,6 @@ typedef struct
 	FILE		*log_fp;	// TODO: implement?
 
 	glconfig_t	*config;	// feedback to renderer module
-	void		*GPA;
 
 } glwstate_t;
 
