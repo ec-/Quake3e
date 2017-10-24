@@ -160,20 +160,5 @@ qboolean QGL_Init( const char *dllname )
 	QGL_LinX11_PROCS;
 #undef GLE
 
-	// optional
-#define GLE( ret, name, ... ) q##name = GL_GetProcAddress( XSTRING( name ) );
-	QGL_Swp_PROCS;
-#undef GLE
-
-	if ( qglXSwapIntervalEXT || qglXSwapIntervalMESA || qglXSwapIntervalSGI ) 
-	{
-		Com_Printf( "...using GLX_EXT_swap_control\n" );
-		Cvar_SetModified( "r_swapInterval", qtrue ); // force a set next frame
-	}
-	else 
-	{
-		Com_Printf( "...GLX_EXT_swap_control not found\n" );
-	}
-
 	return qtrue;
 }
