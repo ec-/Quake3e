@@ -7,7 +7,6 @@
 #include "../client/snd_local.h"
 #include "../qcommon/q_shared.h"
 
-
 #define NUM_SAMPLES 8192
 #define NUM_PERIODS 3
 #define PERIOD_TIME 20000
@@ -15,6 +14,7 @@
 /* engine variables */
 
 extern cvar_t *s_khz;
+extern cvar_t *s_device;
 
 /* pthreads  private variables */
 
@@ -162,8 +162,6 @@ pthread_t thread;
 
 static qboolean snd_inited = qfalse;
 
-static const char *device = "default"; /* playback device */
-
 /* we will use static dma buffer */
 static unsigned char buffer[NUM_SAMPLES*4];
 
@@ -218,7 +216,7 @@ qboolean SNDDMA_Init( void )
 	qboolean use_mmap;
 	int i;
 
-	if ( snd_inited == qtrue ) 
+	if ( snd_inited == qtrue )
 	{
 		return qtrue;
 	}
@@ -280,16 +278,14 @@ qboolean SNDDMA_Init( void )
 	}
 #endif
 
-    err = _snd_pcm_open( &handle, device, SND_PCM_STREAM_PLAYBACK,
-		SND_PCM_NONBLOCK );
+	err = _snd_pcm_open( &handle, s_device->string, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK );
 
-    if ( err < 0 )
-    {
-        Com_Printf( "Playback device open error: %s\n",
-			_snd_strerror( err ) );
+	if ( err < 0 )
+	{
+		Com_Printf( "Playback device open error: %s\n", _snd_strerror( err ) );
 		UnloadLibs();
-        return qfalse;
-    }
+		return qfalse;
+	}
 
 	hwparams = alloca( _snd_pcm_hw_params_sizeof() );
 	swparams = alloca( _snd_pcm_hw_params_sizeof() );
@@ -308,34 +304,34 @@ qboolean SNDDMA_Init( void )
 	err = _snd_pcm_hw_params_set_access( handle,
 		hwparams, SND_PCM_ACCESS_MMAP_INTERLEAVED );
 	if ( err < 0 ) {
-  	  err = _snd_pcm_hw_params_set_access( handle,
-  		hwparams, SND_PCM_ACCESS_RW_INTERLEAVED );
-  	  use_mmap = qfalse;
-  	} else {
-	  use_mmap = qtrue;
-  	}
+		err = _snd_pcm_hw_params_set_access( handle,
+		hwparams, SND_PCM_ACCESS_RW_INTERLEAVED );
+		use_mmap = qfalse;
+	} else {
+		use_mmap = qtrue;
+	}
 
 	if ( err < 0 )
 	{
-		Com_Printf("Access type not available for playback: " \
-			"%s\n", _snd_strerror( err ) );
+		Com_Printf( "Access type not available for playback: %s\n",
+			_snd_strerror( err ) );
 		_snd_pcm_close( handle );
 		UnloadLibs();
 		return qfalse;
 	}
 	
 	if ( use_mmap ) {
-	  Com_Printf( "Use mmap access\n" );
+		Com_Printf( "Use mmap access\n" );
 	} else {
-	  Com_Printf( "Use direct access\n" );
+		Com_Printf( "Use direct access\n" );
 	}
 
-    /* set hw resampling */
+	/* set hw resampling */
 	err = _snd_pcm_hw_params_set_rate_resample( handle, hwparams, 1 );
 	if ( err < 0 )
 	{
-		Com_Printf( "Resampling setup failed for playback: " \
-			"%s\n", _snd_strerror( err ) );
+		Com_Printf( "Resampling setup failed for playback: %s\n",
+			_snd_strerror( err ) );
 		_snd_pcm_close( handle );
 		UnloadLibs();
 		return qfalse;
@@ -366,11 +362,12 @@ qboolean SNDDMA_Init( void )
 		channels = 1;
 		err = _snd_pcm_hw_params_set_channels( handle, hwparams, channels );
 	}
+	
 	if ( err < 0 )
 	{
 		err = _snd_pcm_hw_params_set_channels( handle, hwparams, channels );
-		Com_Printf( "Channels count (%i) not available for playbacks: " \
-			"%s\n", channels, _snd_strerror( err ) );
+		Com_Printf( "Channels count (%i) not available for playbacks: %s\n",
+			channels, _snd_strerror( err ) );
 		_snd_pcm_close( handle );
 		UnloadLibs();
 		return qfalse;
@@ -389,8 +386,8 @@ qboolean SNDDMA_Init( void )
 	err = _snd_pcm_hw_params_set_rate_near( handle, hwparams, &rrate, 0 );
 	if ( err < 0 )
 	{
-		Com_Printf("Rate %iHz not available for playback: " \
-			"%s\n", speed, _snd_strerror( err ) );
+		Com_Printf("Rate %iHz not available for playback: %s\n",
+			speed, _snd_strerror( err ) );
 		_snd_pcm_close( handle );
 		UnloadLibs();
 		return qfalse;
@@ -406,11 +403,11 @@ qboolean SNDDMA_Init( void )
 
 	/* set the period time */
 	err = _snd_pcm_hw_params_set_period_time_near( handle, hwparams,
-			&period_time, &dir );
+		&period_time, &dir );
 	if ( err < 0 )
 	{
-		Com_Printf( "Unable to set period time %i for playback: " \
-			"%s\n", period_time, _snd_strerror( err ) );
+		Com_Printf( "Unable to set period time %i for playback: %s\n",
+			period_time, _snd_strerror( err ) );
 		_snd_pcm_close( handle );
 		UnloadLibs();
 		return qfalse;
@@ -430,7 +427,7 @@ qboolean SNDDMA_Init( void )
 	err = _snd_pcm_hw_params_get_period_size( hwparams, &period_size, &dir );
 	if ( err < 0 )
 	{
-		Com_Printf("Unable to get period size for playback: %s\n",
+		Com_Printf( "Unable to get period size for playback: %s\n",
 			_snd_strerror( err ) );
 		_snd_pcm_close( handle );
 		UnloadLibs();
@@ -441,8 +438,8 @@ qboolean SNDDMA_Init( void )
 	err = _snd_pcm_hw_params( handle, hwparams );
 	if ( err < 0 )
 	{
-		Com_Printf( "Unable to set hw params for playback: " \
-			"%s\n", _snd_strerror( err ) );
+		Com_Printf( "Unable to set hw params for playback: %s\n",
+			_snd_strerror( err ) );
 		_snd_pcm_close( handle );
 		UnloadLibs();
 		return qfalse;
@@ -451,19 +448,18 @@ qboolean SNDDMA_Init( void )
 	err = _snd_pcm_sw_params_current( handle, swparams );
 	if ( err < 0 )
 	{
-		Com_Printf( "Unable to determine current swparams for playback: "\
-			"%s\n", _snd_strerror( err ) );
+		Com_Printf( "Unable to determine current swparams for playback: %s\n",
+			_snd_strerror( err ) );
 		_snd_pcm_close( handle );
 		UnloadLibs();
 		return qfalse;
 	}
 
-	err = _snd_pcm_sw_params_set_start_threshold( handle,
-		swparams, 1 /*period_size*/ );
+	err = _snd_pcm_sw_params_set_start_threshold( handle, swparams, 1 /*period_size*/ );
 	if ( err < 0 )
 	{
-		Com_Printf( "Unable to set start threshold mode for playback: " \
-			"%s\n", _snd_strerror( err ) );
+		Com_Printf( "Unable to set start threshold mode for playback: %s\n",
+			_snd_strerror( err ) );
 		_snd_pcm_close( handle );
 		UnloadLibs();
 		return qfalse;
@@ -483,8 +479,8 @@ qboolean SNDDMA_Init( void )
 	err = _snd_pcm_sw_params_set_avail_min( handle, swparams, period_size );
 	if ( err < 0 )
 	{
-		Com_Printf( "Unable to set avail min for playback: " \
-			"%s\n", _snd_strerror( err ) );
+		Com_Printf( "Unable to set avail min for playback: %s\n",
+			_snd_strerror( err ) );
 		_snd_pcm_close( handle );
 		UnloadLibs();
 		return qfalse;
@@ -493,8 +489,8 @@ qboolean SNDDMA_Init( void )
 	err = _snd_pcm_sw_params( handle, swparams );
 	if ( err < 0 )
 	{
-		Com_Printf( "Unable to set sw params for playback: " \
-			"%s\n", _snd_strerror( err ) );
+		Com_Printf( "Unable to set sw params for playback: %s\n",
+			_snd_strerror( err ) );
 		_snd_pcm_close( handle );
 		UnloadLibs();
 		return qfalse;
@@ -505,45 +501,46 @@ qboolean SNDDMA_Init( void )
 	Com_Printf( "period_size=%i\n", (int)period_size );
 #endif
 
-    dma.channels = channels;
-    dma.speed = speed;
-    dma.samples = NUM_SAMPLES;
-    dma.samplebits = bps;
-    dma.submission_chunk = 1;
-    dma.buffer = buffer;
+	dma.channels = channels;
+	dma.speed = speed;
+	dma.samples = NUM_SAMPLES;
+	dma.samplebits = bps;
+	dma.submission_chunk = 1;
+	dma.buffer = buffer;
 
-    memset( buffer, 0, sizeof( buffer ) );
+	memset( buffer, 0, sizeof( buffer ) );
 
-    _pthread_mutex_init( &mutex, NULL );
+	_pthread_mutex_init( &mutex, NULL );
 
-    snd_inited = qtrue;
-    snd_loop = qtrue;
+	snd_inited = qtrue;
+	snd_loop = qtrue;
 
-     /* will be unlocked after thread creation */
-    _pthread_mutex_lock( &mutex );
-    
+	 /* will be unlocked after thread creation */
+	_pthread_mutex_lock( &mutex );
+	
 	if ( use_mmap ==  qfalse )
-  	  err = _pthread_create( &thread, NULL, (void*)&thread_proc_direct, NULL );
-  	else
-  	  err = _pthread_create( &thread, NULL, (void*)&thread_proc_mmap, NULL );
+		err = _pthread_create( &thread, NULL, (void*)&thread_proc_direct, NULL );
+	else
+		err = _pthread_create( &thread, NULL, (void*)&thread_proc_mmap, NULL );
 
-    if ( err != 0 )
-    {
-	Com_Printf( "Error creating sound thread (%i)\n", err );
+	if ( err != 0 )
+	{
+		Com_Printf( "Error creating sound thread (%i)\n", err );
+		_pthread_mutex_unlock( &mutex );
+		_snd_pcm_close( handle );
+		UnloadLibs();
+		return qfalse;
+	}
+
+	/* wait for thread creation */
+	_pthread_mutex_lock( &mutex );
 	_pthread_mutex_unlock( &mutex );
-	_snd_pcm_close( handle );
-	UnloadLibs();
-	return qfalse;
-    }
 
-    /* wait for thread creation */
-    _pthread_mutex_lock( &mutex );
-    _pthread_mutex_unlock( &mutex );
+	alsa_used = qtrue;
 
-    alsa_used = qtrue;
-
-    return qtrue;
+	return qtrue;
 }
+
 
 void SNDDMA_Shutdown( void )
 {
@@ -555,8 +552,8 @@ void SNDDMA_Shutdown( void )
 	/* wait for thread loop exit */
 	_pthread_join( thread, NULL );
 
-    _snd_pcm_drop( handle );
-    _snd_pcm_close( handle );
+	_snd_pcm_drop( handle );
+	_snd_pcm_close( handle );
 
 	snd_inited = qfalse;
 
@@ -588,8 +585,8 @@ static int xrun_recovery( snd_pcm_t *handle, int err )
 		err = _snd_pcm_prepare( handle );
 		if ( err < 0 )
 		{
-			Com_Printf( "Can't recovery from underrun, prepare failed: " \
-				"%s\n", _snd_strerror( err ) );
+			Com_Printf( "Can't recovery from underrun, prepare failed: %s\n",
+				_snd_strerror( err ) );
 			return err;
 		}
 		return 0;
@@ -611,8 +608,8 @@ static int xrun_recovery( snd_pcm_t *handle, int err )
 			err = _snd_pcm_prepare( handle );
 			if ( err < 0 )
 			{
-				Com_Printf( "Can't recovery from suspend, prepare failed: " \
-					"%s\n", _snd_strerror( err ) );
+				Com_Printf( "Can't recovery from suspend, prepare failed: %s\n",
+					_snd_strerror( err ) );
 				return err;
 			}
 		}
@@ -648,7 +645,7 @@ static int restore_transfer( void )
 		err = xrun_recovery( handle, -ESTRPIPE );
 		if ( err < 0 )
 		{
-			Com_Printf( "SUSPEND recovery failed: %s\n", 
+			Com_Printf( "SUSPEND recovery failed: %s\n",
 				_snd_strerror( err ) );
 			return err;
 		}
@@ -681,8 +678,9 @@ int SNDDMA_GetDMAPos( void )
 
 	_pthread_mutex_unlock( &mutex );
 
-    return samples;
+	return samples;
 }
+
 
 static void thread_proc_mmap( void )
 {
@@ -738,7 +736,7 @@ static void thread_proc_mmap( void )
 			if ( (err = xrun_recovery( handle, err ) ) < 0 )
 			{
 				Com_Printf( "MMAP begin error: %s\n",
-				_snd_strerror( err ) );
+					_snd_strerror( err ) );
 				_pthread_mutex_unlock( &mutex );
 				continue;
 			}
@@ -776,6 +774,7 @@ static void thread_proc_mmap( void )
 
 	_pthread_exit( 0 );
 }
+
 
 static void thread_proc_direct( void )
 {

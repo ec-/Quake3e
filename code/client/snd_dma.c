@@ -79,7 +79,7 @@ int   		s_paintedtime; 		// sample PAIRS
 // of custom player sounds
 #define		MAX_SFX			4096
 sfx_t		s_knownSfx[MAX_SFX];
-int			s_numSfx = 0;
+int		s_numSfx = 0;
 
 #define		LOOP_HASH		128
 sfx_t		*sfxHash[LOOP_HASH];
@@ -89,11 +89,14 @@ cvar_t		*s_khz;
 cvar_t		*s_show;
 cvar_t		*s_mixahead;
 cvar_t		*s_mixPreStep;
+#ifdef __linux__
+cvar_t		*s_device;
+#endif
 
-static loopSound_t		loopSounds[MAX_GENTITIES];
-static	channel_t		*freelist = NULL;
+static loopSound_t	loopSounds[MAX_GENTITIES];
+static	channel_t	*freelist = NULL;
 
-int						s_rawend;
+int			s_rawend;
 portable_samplepair_t	s_rawsamples[MAX_RAW_SAMPLES];
 
 
@@ -102,9 +105,9 @@ portable_samplepair_t	s_rawsamples[MAX_RAW_SAMPLES];
 // ====================================================================
 
 
-void S_Base_SoundInfo(void) {	
+void S_Base_SoundInfo( void ) {
 	Com_Printf("----- Sound Info -----\n" );
-	if (!s_soundStarted) {
+	if ( !s_soundStarted ) {
 		Com_Printf ("sound system not started\n");
 	} else {
 		Com_Printf("%5d stereo\n", dma.channels - 1);
@@ -122,6 +125,7 @@ void S_Base_SoundInfo(void) {
 	}
 	Com_Printf("----------------------\n" );
 }
+
 
 /*
 =================
@@ -152,7 +156,6 @@ void S_Base_SoundList( void ) {
 	Com_Printf ("Total resident: %i\n", total);
 	S_DisplayFreeMemory();
 }
-
 
 
 void S_ChannelFree(channel_t *v) {
@@ -219,6 +222,7 @@ static unsigned int S_HashSFXName(const char *name) {
 	hash &= (LOOP_HASH-1);
 	return hash;
 }
+
 
 /*
 ==================
@@ -1495,7 +1499,7 @@ S_Init
 qboolean S_Base_Init( soundInterface_t *si ) {
 	qboolean	r;
 
-	if( !si ) {
+	if ( !si ) {
 		return qfalse;
 	}
 
@@ -1504,6 +1508,13 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 	s_mixPreStep = Cvar_Get( "s_mixPreStep", "0.05", CVAR_ARCHIVE_ND );
 	s_show = Cvar_Get( "s_show", "0", CVAR_CHEAT );
 	s_testsound = Cvar_Get( "s_testsound", "0", CVAR_CHEAT );
+#ifdef __linux__
+	s_device = Cvar_Get( "s_device", "default", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_SetDescription( s_device, "Set ALSA output device\n"
+		" Use \"default\", \"sysdefault\", \"front\", etc.\n"
+		" Enter " S_COLOR_CYAN "aplay -L "S_COLOR_WHITE"in your shell to see all options.\n"
+		S_COLOR_YELLOW " Please note that only mono/stereo devices are acceptable.\n" );
+#endif
 
 	r = SNDDMA_Init();
 
