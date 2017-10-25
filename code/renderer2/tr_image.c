@@ -2868,12 +2868,6 @@ void R_SetColorMappings( void ) {
 		ri.Cvar_Set( "r_intensity", "1" );
 	}
 
-	if ( r_gamma->value < 0.5f ) {
-		ri.Cvar_Set( "r_gamma", "0.5" );
-	} else if ( r_gamma->value > 3.0f ) {
-		ri.Cvar_Set( "r_gamma", "3.0" );
-	}
-
 	g = r_gamma->value;
 
 	for ( i = 0; i < 256; i++ ) {
@@ -2912,7 +2906,7 @@ void R_SetColorMappings( void ) {
 R_InitImages
 ===============
 */
-void	R_InitImages( void ) {
+void R_InitImages( void ) {
 	Com_Memset(hashTable, 0, sizeof(hashTable));
 	// build brightness translation tables
 	R_SetColorMappings();
@@ -2920,6 +2914,7 @@ void	R_InitImages( void ) {
 	// create default texture and white texture
 	R_CreateBuiltinImages();
 }
+
 
 /*
 ===============

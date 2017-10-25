@@ -34,11 +34,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ** Note that the GLW_xxx functions are Windows specific GL-subsystem
 ** related functions that are relevant ONLY to win_glimp.c
 */
+
 #include "../renderer/tr_local.h"
-#include "../qcommon/qcommon.h"
+#include "../client/client.h"
 #include "resource.h"
-#include "glw_win.h"
 #include "win_local.h"
+#include "glw_win.h"
 
 typedef enum {
 	RSERR_OK,
@@ -1259,7 +1260,7 @@ void GLimp_Init( glconfig_t *config )
 	config->hardwareType = GLHW_GENERIC;
 
 	// optional
-#define GLE( ret, name, ... ) q##name = ri.GL_GetProcAddress( XSTRING( name ) )
+#define GLE( ret, name, ... ) q##name = GL_GetProcAddress( XSTRING( name ) )
 	QGL_Swp_PROCS;
 #undef GLE
 

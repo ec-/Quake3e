@@ -56,8 +56,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "../renderer/tr_local.h"
 #include "../client/client.h"
-#include "linux_local.h" // bk001130
-
+#include "linux_local.h"
 #include "unix_glw.h"
 
 #include <GL/glx.h>
@@ -1591,7 +1590,7 @@ void GLimp_Init( glconfig_t *config )
 	InitSig(); // not clear why this is at begin & end of function
 
 	// optional
-#define GLE( ret, name, ... ) q##name = ri.GL_GetProcAddress( XSTRING( name ) );
+#define GLE( ret, name, ... ) q##name = GL_GetProcAddress( XSTRING( name ) );
 	QGL_Swp_PROCS;
 #undef GLE
 
