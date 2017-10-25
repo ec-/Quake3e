@@ -1687,11 +1687,10 @@ doesn't know what graphics to reload
 static void CL_Vid_Restart( void ) {
 
 	// Settings may have changed so stop recording now
-	if( CL_VideoRecording( ) ) {
-		CL_CloseAVI( );
-	}
+	if ( CL_VideoRecording() )
+		CL_CloseAVI();
 
-	if(clc.demorecording)
+	if ( clc.demorecording )
 		CL_StopRecord_f();
 
 	// don't let them loop during the restart
@@ -3541,7 +3540,7 @@ void CL_Init( void ) {
 
 	CL_InitRef();
 
-	SCR_Init ();
+	SCR_Init();
 
 	//Cbuf_Execute ();
 

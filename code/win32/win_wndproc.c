@@ -33,7 +33,6 @@ static UINT MSH_MOUSEWHEEL;
 // Console variables that we need to access from this module
 cvar_t		*vid_xpos;			// X coordinate of window position
 cvar_t		*vid_ypos;			// Y coordinate of window position
-cvar_t		*r_fullscreen;
 cvar_t		*in_forceCharset;
 
 static HHOOK WinHook;
@@ -546,7 +545,6 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 		vid_xpos = Cvar_Get( "vid_xpos", "3", CVAR_ARCHIVE );
 		vid_ypos = Cvar_Get( "vid_ypos", "22", CVAR_ARCHIVE );
-		r_fullscreen = Cvar_Get( "r_fullscreen", "1", CVAR_ARCHIVE | CVAR_LATCH );
 		in_forceCharset = Cvar_Get( "in_forceCharset", "1", CVAR_ARCHIVE_ND );
 
 		MSH_MOUSEWHEEL = RegisterWindowMessage( TEXT( "MSWHEEL_ROLLMSG" ) ); 

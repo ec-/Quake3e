@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 R_PerformanceCounters
 =====================
 */
-void R_PerformanceCounters( void ) {
+static void R_PerformanceCounters( void ) {
 	if ( !r_speeds->integer ) {
 		// clear the counters even if we aren't printing
 		Com_Memset( &tr.pc, 0, sizeof( tr.pc ) );
@@ -75,7 +75,7 @@ void R_PerformanceCounters( void ) {
 R_IssueRenderCommands
 ====================
 */
-void R_IssueRenderCommands( qboolean runPerformanceCounters ) {
+static void R_IssueRenderCommands( qboolean runPerformanceCounters ) {
 	renderCommandList_t	*cmdList;
 
 	cmdList = &backEndData->commands;
@@ -120,7 +120,7 @@ R_GetCommandBufferReserved
 make sure there is enough command space
 ============
 */
-void *R_GetCommandBufferReserved( int bytes, int reservedBytes ) {
+static void *R_GetCommandBufferReserved( int bytes, int reservedBytes ) {
 	renderCommandList_t	*cmdList;
 
 	cmdList = &backEndData->commands;
@@ -147,7 +147,7 @@ R_GetCommandBuffer
 returns NULL if there is not enough space for important commands
 =============
 */
-void *R_GetCommandBuffer( int bytes ) {
+static void *R_GetCommandBuffer( int bytes ) {
 	return R_GetCommandBufferReserved( bytes, PAD( sizeof( swapBuffersCommand_t ), sizeof(void *) ) );
 }
 
@@ -238,7 +238,7 @@ void RE_StretchPic ( float x, float y, float w, float h,
 #define MODE_GREEN_MAGENTA 4
 #define MODE_MAX	MODE_GREEN_MAGENTA
 
-void R_SetColorMode(GLboolean *rgba, stereoFrame_t stereoFrame, int colormode)
+static void R_SetColorMode(GLboolean *rgba, stereoFrame_t stereoFrame, int colormode)
 {
 	rgba[0] = rgba[1] = rgba[2] = rgba[3] = GL_TRUE;
 	

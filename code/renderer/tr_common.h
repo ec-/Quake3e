@@ -98,11 +98,8 @@ extern cvar_t *r_ext_multisample;
 extern cvar_t *r_mode;				// video mode
 extern cvar_t *r_modeFullscreen;	// fullscreen video mode
 extern cvar_t *r_noborder;
-extern cvar_t *r_fullscreen;
 extern cvar_t *r_ignorehwgamma;		// overrides hardware gamma capabilities
 extern cvar_t *r_drawBuffer;
-extern cvar_t *r_glDriver;
-extern cvar_t *r_swapInterval;
 
 extern cvar_t *r_allowExtensions;				// global enable/disable of OpenGL extensions
 extern cvar_t *r_ext_compressed_textures;		// these control use of specific extensions
@@ -113,11 +110,7 @@ extern cvar_t *r_ext_texture_env_add;
 extern cvar_t *r_ext_texture_filter_anisotropic;
 extern cvar_t *r_ext_max_anisotropy;
 
-extern cvar_t *r_stereoEnabled;
-
 extern	cvar_t	*r_saveFontData;
-
-//qboolean	R_GetModeInfo( int *width, int *height, float *windowAspect, int mode, int dw, int dh );
 
 float R_NoiseGet4f( float x, float y, float z, double t );
 void  R_NoiseInit( void );

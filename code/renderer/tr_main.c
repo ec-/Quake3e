@@ -41,7 +41,7 @@ refimport_t	ri;
 
 // entities that will have procedurally generated surfaces will just
 // point at this for their sorting surface
-surfaceType_t	entitySurface = SF_ENTITY;
+static surfaceType_t entitySurface = SF_ENTITY;
 
 /*
 =================
@@ -238,6 +238,7 @@ void R_WorldToLocal (vec3_t world, vec3_t local) {
 	local[2] = DotProduct(world, tr.or.axis[2]);
 }
 
+
 /*
 ==========================
 R_TransformModelToClip
@@ -291,7 +292,7 @@ myGlMultMatrix
 
 ==========================
 */
-void myGlMultMatrix( const float *a, const float *b, float *out ) {
+static void myGlMultMatrix( const float *a, const float *b, float *out ) {
 	int		i, j;
 
 	for ( i = 0 ; i < 4 ; i++ ) {
@@ -1045,7 +1046,7 @@ Returns qtrue if another view has been rendered
 ========================
 */
 extern int r_numdlights;
-qboolean R_MirrorViewBySurface (drawSurf_t *drawSurf, int entityNum) {
+static qboolean R_MirrorViewBySurface( drawSurf_t *drawSurf, int entityNum ) {
 	vec4_t			clipDest[128];
 	viewParms_t		newParms;
 	viewParms_t		oldParms;
@@ -1121,6 +1122,7 @@ qboolean R_MirrorViewBySurface (drawSurf_t *drawSurf, int entityNum) {
 	return qtrue;
 }
 
+
 /*
 =================
 R_SpriteFogNum
@@ -1128,7 +1130,7 @@ R_SpriteFogNum
 See if a sprite is inside a fog volume
 =================
 */
-int R_SpriteFogNum( trRefEntity_t *ent ) {
+static int R_SpriteFogNum( trRefEntity_t *ent ) {
 	int				i, j;
 	fog_t			*fog;
 
@@ -1405,7 +1407,7 @@ void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader,
 R_SortDrawSurfs
 =================
 */
-void R_SortDrawSurfs( drawSurf_t *drawSurfs, int numDrawSurfs ) {
+static void R_SortDrawSurfs( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	shader_t		*shader;
 	int				fogNum;
 	int				entityNum;

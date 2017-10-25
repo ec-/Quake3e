@@ -40,13 +40,13 @@ void GLimp_InitGamma( glconfig_t *config )
 
 	config->deviceSupportsGamma = qfalse;
 
-	if ( glw_state.displayName[0] ) 
+	if ( glw_state.displayName[0] )
 	{
-		hDC = CreateDC( TEXT( "DISPLAY" ), glw_state.displayName, NULL, NULL );		
+		hDC = CreateDC( TEXT( "DISPLAY" ), glw_state.displayName, NULL, NULL );
 		config->deviceSupportsGamma = ( GetDeviceGammaRamp( hDC, s_oldHardwareGamma ) == FALSE ) ? qfalse : qtrue;
 		DeleteDC( hDC );
 	}
-	else 
+	else
 	{
 		hDC = GetDC( GetDesktopWindow() );
 		config->deviceSupportsGamma = ( GetDeviceGammaRamp( hDC, s_oldHardwareGamma ) == FALSE ) ? qfalse : qtrue;
@@ -126,9 +126,9 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	BOOL	ret;
 	HDC		hDC;
 
-	if ( Cvar_VariableIntegerValue( "r_ignorehwgamma" ) || !glw_state.hDC || !gw_active )
+	if ( !glw_state.hDC || !gw_active )
 		return;
-	
+
 //mapGammaMax();
 
 	for ( i = 0; i < 256; i++ ) {

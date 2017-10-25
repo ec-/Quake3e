@@ -107,6 +107,8 @@ typedef struct {
 
 	qboolean (*CanMinimize)( void ); // == fbo enabled
 
+	qboolean (*GetModeInfo)( int *width, int *height, float *windowAspect, int mode, const char *modeFS, int dw, int dh, qboolean fullscreen );
+
 } refexport_t;
 
 //

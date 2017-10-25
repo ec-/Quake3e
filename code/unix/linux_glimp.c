@@ -54,10 +54,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "../renderer/tr_local.h"
 #include "../client/client.h"
 #include "linux_local.h"
 #include "unix_glw.h"
+#include "../renderer/qgl.h"
+#include "../renderer/qgl_linked.h"
 
 #include <GL/glx.h>
 
@@ -98,6 +99,9 @@ static Window win = 0;
 static GLXContext ctx = NULL;
 static Atom wmDeleteEvent = None;
 
+static int window_width = 0;
+static int window_height = 0;
+
 static int desktop_width = 0;
 static int desktop_height = 0;
 static qboolean desktop_ok = qfalse;
@@ -121,6 +125,7 @@ static int mouseResetTime = 0;
 static cvar_t *in_mouse;
 static cvar_t *in_dgamouse; // user pref for dga mouse
 static cvar_t *in_shiftedKeys; // obey modifiers for certain keys in non-console (comma, numbers, etc)
+
 cvar_t *in_subframe;
 cvar_t *in_nograb; // this is strictly for developers
 
@@ -133,7 +138,18 @@ cvar_t   *in_joystickDebug = NULL;
 cvar_t   *joy_threshold    = NULL;
 #endif
 
-cvar_t  *r_allowSoftwareGL;   // don't abort out if the pixelformat claims software
+static cvar_t *r_allowSoftwareGL;   // don't abort out if the pixelformat claims software
+static cvar_t *r_swapInterval;
+static cvar_t *r_glDriver;
+
+extern cvar_t *r_mode;
+extern cvar_t *r_modeFullscreen;
+cvar_t *r_fullscreen;
+
+extern cvar_t *r_colorbits;
+extern cvar_t *r_stencilbits;
+extern cvar_t *r_depthbits;
+extern cvar_t *r_drawBuffer;
 
 static qboolean vidmode_ext = qfalse;
 static qboolean vidmode_active = qfalse;
@@ -384,6 +400,7 @@ static char *XLateKey( XKeyEvent *ev, int *key )
   return (char*)buf;
 }
 
+
 // ========================================================================
 // makes a null cursor
 // ========================================================================
@@ -415,7 +432,7 @@ static void install_grabs( void )
 	int res;
 
 	// move pointer to destination window area
-	XWarpPointer( dpy, None, win, 0, 0, 0, 0, glConfig.vidWidth / 2, glConfig.vidHeight / 2 );
+	XWarpPointer( dpy, None, win, 0, 0, 0, 0, window_width / 2, window_height / 2 );
 
 	XSync( dpy, False );
 
@@ -451,18 +468,18 @@ static void install_grabs( void )
 			// unable to query, probalby not supported, force the setting to 0
 			Com_Printf( "Failed to detect XF86DGA Mouse\n" );
 			Cvar_Set( "in_dgamouse", "0" );
-		} 
+		}
 		else
 		{
 			XF86DGADirectVideo( dpy, DefaultScreen( dpy ), XF86DGADirectMouse );
-			XWarpPointer( dpy, None, win, 0, 0, 0, 0, 0, 0 );
+			XWarpPointer( dpy, None, win, 0, 0, 0, 0, window_width / 2, window_height / 2 );
 		}
-	} 
+	}
 	else
 #endif /* HAVE_XF86DGA */
 	{
-		mwx = glConfig.vidWidth / 2;
-		mwy = glConfig.vidHeight / 2;
+		mwx = window_width / 2;
+		mwy = window_height / 2;
 		mx = my = 0;
 	}
 
@@ -481,7 +498,7 @@ static void uninstall_grabs( void )
 #ifdef HAVE_XF86DGA
 	if ( in_dgamouse->integer )
 	{
-		if ( com_developer->integer ) 
+		if ( com_developer->integer )
 		{
 			Com_Printf( "DGA Mouse - Disabling DGA DirectVideo\n" );
 		}
@@ -493,7 +510,7 @@ static void uninstall_grabs( void )
 	XChangePointerControl( dpy, qtrue, qtrue, mouse_accel_numerator, 
 		mouse_accel_denominator, mouse_threshold );
 
-	XWarpPointer( dpy, None, win, 0, 0, 0, 0, glConfig.vidWidth / 2, glConfig.vidHeight / 2 );
+	XWarpPointer( dpy, None, win, 0, 0, 0, 0, window_width / 2, window_height / 2 );
 
 	XUngrabPointer( dpy, CurrentTime );
 	XUngrabKeyboard( dpy, CurrentTime );
@@ -501,6 +518,7 @@ static void uninstall_grabs( void )
 	// show cursor
 	XUndefineCursor( dpy, win );
 }
+
 
 // bk001206 - from Ryan's Fakk2
 /**
@@ -592,17 +610,17 @@ static qboolean WindowMinimized( Display *dpy, Window win )
 		&actual_type, &actual_format, &num_items,
 		&bytes_after, (unsigned char**)&atoms );
 
-    for ( i = 0; i < num_items; i++ )
-    {
-        if ( atoms[i] == nwsh )
-        {
-            XFree( atoms );
-            return qtrue;
-        }
-    }
+	for ( i = 0; i < num_items; i++ )
+	{
+		if ( atoms[i] == nwsh )
+		{
+			XFree( atoms );
+			return qtrue;
+		}
+	}
 
-    XFree( atoms );
-    return qfalse;
+	XFree( atoms );
+	return qfalse;
 }
 
 
@@ -708,7 +726,7 @@ void HandleX11Events( void )
 
 		case KeyRelease:
 
-			if ( repeated_press( &event ) ) 
+			if ( repeated_press( &event ) )
 				break; // XNextEvent( dpy, &event )
 
 			t = Sys_XTimeToSysTime( event.xkey.time );
@@ -741,11 +759,10 @@ void HandleX11Events( void )
 #endif // HAVE_XF86DGA
 				{
 					// If it's a center motion, we've just returned from our warp
-					if (event.xmotion.x == glConfig.vidWidth/2 &&
-						event.xmotion.y == glConfig.vidHeight/2)
+					if ( event.xmotion.x == window_width/2 && event.xmotion.y == window_height/2 )
 					{
-						mwx = glConfig.vidWidth/2;
-						mwy = glConfig.vidHeight/2;
+						mwx = window_width/2;
+						mwy = window_height/2;
 						if (t - mouseResetTime > MOUSE_RESET_DELAY )
 						{
 							Sys_QueEvent( t, SE_MOUSE, mx, my, 0, NULL );
@@ -821,8 +838,7 @@ void HandleX11Events( void )
 
 	if ( dowarp )
 	{
-		XWarpPointer( dpy, None, win, 0, 0, 0, 0, 
-		    (glConfig.vidWidth/2), (glConfig.vidHeight/2) );
+		XWarpPointer( dpy, None, win, 0, 0, 0, 0, window_width/2, window_height/2 );
 	}
 }
 
@@ -843,7 +859,7 @@ void KBD_Close( void )
 
 void IN_ActivateMouse( void )
 {
-	if ( !mouse_avail || !dpy || !win ) 
+	if ( !mouse_avail || !dpy || !win )
 	{
 		return;
 	}
@@ -857,7 +873,7 @@ void IN_ActivateMouse( void )
 		else if ( in_dgamouse->integer ) // force dga mouse to 0 if using nograb
 		{
 		    Cvar_Set( "in_dgamouse", "0" );
-		}	
+		}
 		mouse_active = qtrue;
 	}
 }
@@ -865,14 +881,14 @@ void IN_ActivateMouse( void )
 
 void IN_DeactivateMouse( void )
 {
-	if ( !mouse_avail || !dpy || !win ) 
+	if ( !mouse_avail || !dpy || !win )
 	{
 		return;
 	}
 
 	if ( mouse_active )
 	{
-		if ( !in_nograb->integer ) 
+		if ( !in_nograb->integer )
 		{
 			 uninstall_grabs();
 		}
@@ -901,9 +917,6 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	int m, m1;
 	int shift;
 
-	if ( Cvar_VariableIntegerValue( "r_ignorehwgamma" ) )
-		return;
-
 	XF86VidModeGetGammaRampSize( dpy, scrnum, &size );
 
 	switch ( size ) {
@@ -912,7 +925,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 		case 1024: shift = 2; break;
 		case 2048: shift = 3; break;
 		case 4096: shift = 4; break;
-		default: 
+		default:
 			Com_Printf( "Unsupported gamma ramp size: %d\n", size );
 		return;
 	};
@@ -937,7 +950,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 		}
 	}
 
-    XF86VidModeSetGammaRamp( dpy, scrnum, size, table[0], table[1], table[2] );
+	XF86VidModeSetGammaRamp( dpy, scrnum, size, table[0], table[1], table[2] );
 
 	glw_state.gammaSet = qtrue;
 #endif /* HAVE_XF86DGA */
@@ -980,7 +993,7 @@ void GLimp_Shutdown( void )
 			}
 		}
 
-		if ( glw_state.gammaSet ) 
+		if ( glw_state.gammaSet )
 		{
 			XF86VidModeSetGamma( dpy, scrnum, &vidmode_InitialGamma );
 			glw_state.gammaSet = qfalse;
@@ -993,17 +1006,19 @@ void GLimp_Shutdown( void )
 		//   ( https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=33 )
 		XCloseDisplay( dpy );
 	}
-	
+
 	vidmode_active = qfalse;
 	dpy = NULL;
 	win = 0;
 	ctx = NULL;
 
-	memset( &glConfig, 0, sizeof( glConfig ) );
-	memset( &glState, 0, sizeof( glState ) );
-
 	unsetenv( "vblank_mode" );
 	
+	//if ( glw_state.cdsFullscreen )
+	{
+		glw_state.cdsFullscreen = qfalse;
+	}
+
 	QGL_Shutdown();
 }
 
@@ -1072,7 +1087,7 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 	#define ATTR_DEPTH_IDX 9
 	#define ATTR_STENCIL_IDX 11
 
-	static int attrib[] = 
+	static int attrib[] =
 	{
 		GLX_RGBA,         // 0
 		GLX_RED_SIZE, 4,      // 1, 2
@@ -1099,6 +1114,8 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 	int i;
 	//const char* glstring; // bk001130 - from cvs1.17 (mkv)
 
+	window_width = 0;
+	window_height = 0;
 
 	dpy = XOpenDisplay( NULL );
 
@@ -1118,7 +1135,7 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 #endif
 		vidmode_ext = qfalse;
 #ifdef HAVE_XF86DGA
-	} 
+	}
 	else
 	{
 		Com_Printf( "Using XFree86-VidModeExtension Version %d.%d\n",
@@ -1138,7 +1155,7 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 			// unable to query, probably not supported
 			Com_Printf( "Failed to detect XF86DGA Mouse\n" );
 			Cvar_Set( "in_dgamouse", "0" );
-		} 
+		}
 		else
 		{
 			Com_Printf( "XF86DGA Mouse (Version %d.%d) initialized\n",
@@ -1173,17 +1190,17 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 
 	Com_Printf( "...setting mode %d:", mode );
 
-	if ( !R_GetModeInfo( &config->vidWidth, &config->vidHeight, &config->windowAspect,
+	if ( !re.GetModeInfo( &config->vidWidth, &config->vidHeight, &config->windowAspect,
 		mode, modeFS, desktop_width, desktop_height, fullscreen ) )
 	{
 		Com_Printf( " invalid mode\n" );
 		return RSERR_INVALID_MODE;
 	}
 
-	Com_Printf( " %d %d\n", glConfig.vidWidth, glConfig.vidHeight );
-
 	actualWidth = config->vidWidth;
 	actualHeight = config->vidHeight;
+
+	Com_Printf( " %d %d\n", actualWidth, actualHeight );
 
 #ifdef HAVE_XF86DGA
 	if ( vidmode_ext )
@@ -1356,6 +1373,11 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 		return RSERR_INVALID_MODE;
 	}
 
+	window_width = actualWidth;
+	window_height = actualHeight;
+
+	glw_state.cdsFullscreen = fullscreen;
+
 	/* window attributes */
 	attr.background_pixel = BlackPixel( dpy, scrnum );
 	attr.border_pixel = 0;
@@ -1473,9 +1495,6 @@ void GLimp_InitGamma( glconfig_t *config )
 static qboolean GLW_LoadOpenGL( const char *name )
 {
 	qboolean fullscreen;
-	cvar_t		*r_swapInterval;
-
-	r_swapInterval = Cvar_Get( "r_swapInterval", "0", CVAR_ARCHIVE_ND );
 
 	if ( r_swapInterval->integer )
 		setenv( "vblank_mode", "2", 1 );
@@ -1571,9 +1590,23 @@ void GLimp_Init( glconfig_t *config )
 	// set up our custom error handler for X failures
 	XSetErrorHandler( &qXErrorHandler );
 
+	// glimp-specific
 	r_allowSoftwareGL = Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
+	r_swapInterval = Cvar_Get( "r_swapInterval", "0", CVAR_ARCHIVE_ND );
+	r_glDriver = Cvar_Get( "r_glDriver", OPENGL_DRIVER_NAME, CVAR_ARCHIVE_ND | CVAR_LATCH );
 
-	glw_state.config = config; // feedback to renderer module
+	r_fullscreen = Cvar_Get( "r_fullscreen", "1", CVAR_ARCHIVE | CVAR_LATCH );
+	r_mode = Cvar_Get( "r_mode", "-2", CVAR_ARCHIVE | CVAR_LATCH );
+	r_modeFullscreen = Cvar_Get( "r_modeFullscreen", "-2", CVAR_ARCHIVE | CVAR_LATCH );
+
+	// shared with renderer
+	r_colorbits = Cvar_Get( "r_colorbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_stencilbits = Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_depthbits = Cvar_Get( "r_depthbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_drawBuffer = Cvar_Get( "r_drawBuffer", "GL_BACK", CVAR_CHEAT );
+
+	// feedback to renderer configuration
+	glw_state.config = config;
 
 	//
 	// load and initialize the specific OpenGL driver
@@ -1599,7 +1632,7 @@ void GLimp_Init( glconfig_t *config )
 		Com_Printf( "...using GLX_EXT_swap_control\n" );
 		Cvar_SetModified( "r_swapInterval", qtrue ); // force a set next frame
 	}
-	else 
+	else
 	{
 		Com_Printf( "...GLX_EXT_swap_control not found\n" );
 	}
@@ -1704,7 +1737,7 @@ void IN_Frame( void )
 		// temporarily deactivate if not in the game and
 		// running on the desktop
 		// voodoo always counts as full screen
-		if ( !glConfig.isFullscreen )
+		if ( !glw_state.cdsFullscreen )
 		{
 			IN_DeactivateMouse();
 			return;

@@ -33,6 +33,8 @@ typedef struct
 
 	qboolean gammaSet;
 
+	qboolean cdsFullscreen;
+
 	glconfig_t *config; // feedback to renderer module
 
 } glwstate_t;

@@ -25,7 +25,7 @@ backEndData_t	*backEndData;
 backEndState_t	backEnd;
 
 
-static float	s_flipMatrix[16] = {
+static float s_flipMatrix[16] = {
 	// convert from our coordinate system (looking down X)
 	// to OpenGL's coordinate system (looking down -Z)
 	0, 0, -1, 0,
@@ -60,6 +60,7 @@ void GL_Bind( image_t *image ) {
 		qglBindTexture (GL_TEXTURE_2D, texnum);
 	}
 }
+
 
 /*
 ** GL_SelectTexture
@@ -151,6 +152,7 @@ void GL_Cull( int cullType ) {
 	}
 }
 
+
 /*
 ** GL_TexEnv
 */
@@ -183,6 +185,7 @@ void GL_TexEnv( int env )
 		break;
 	}
 }
+
 
 /*
 ** GL_State
@@ -418,7 +421,7 @@ Any mirrored or portaled views have already been drawn, so prepare
 to actually render the visible surfaces for this view
 =================
 */
-void RB_BeginDrawingView( void ) {
+static void RB_BeginDrawingView( void ) {
 	int clearBits = 0;
 
 	// sync with gl if needed
@@ -506,7 +509,7 @@ static void RB_LightingPass( void );
 RB_RenderDrawSurfList
 ==================
 */
-void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
+static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	shader_t		*shader, *oldShader;
 	int				fogNum, oldFogNum;
 	int				entityNum, oldEntityNum;
@@ -1077,7 +1080,7 @@ RB_SetColor
 
 =============
 */
-const void	*RB_SetColor( const void *data ) {
+static const void *RB_SetColor( const void *data ) {
 	const setColorCommand_t	*cmd;
 
 	cmd = (const setColorCommand_t *)data;
@@ -1096,7 +1099,7 @@ const void	*RB_SetColor( const void *data ) {
 RB_StretchPic
 =============
 */
-const void *RB_StretchPic( const void *data ) {
+static const void *RB_StretchPic( const void *data ) {
 	const stretchPicCommand_t	*cmd;
 	shader_t *shader;
 	int		numVerts, numIndexes;
@@ -1198,7 +1201,7 @@ RB_DrawSurfs
 
 =============
 */
-const void	*RB_DrawSurfs( const void *data ) {
+static const void *RB_DrawSurfs( const void *data ) {
 	const drawSurfsCommand_t	*cmd;
 
 	// finish any 2D drawing if needed
@@ -1233,7 +1236,7 @@ RB_DrawBuffer
 
 =============
 */
-const void	*RB_DrawBuffer( const void *data ) {
+static const void *RB_DrawBuffer( const void *data ) {
 	const drawBufferCommand_t	*cmd;
 
 	cmd = (const drawBufferCommand_t *)data;
@@ -1252,6 +1255,7 @@ const void	*RB_DrawBuffer( const void *data ) {
 
 	return (const void *)(cmd + 1);
 }
+
 
 /*
 ===============
@@ -1317,17 +1321,17 @@ void RB_ShowImages( void ) {
 
 }
 
+
 /*
 =============
 RB_ColorMask
-
 =============
 */
-const void *RB_ColorMask(const void *data)
+static const void *RB_ColorMask( const void *data )
 {
 	const colorMaskCommand_t *cmd = data;
 	
-	qglColorMask(cmd->rgba[0], cmd->rgba[1], cmd->rgba[2], cmd->rgba[3]);
+	qglColorMask( cmd->rgba[0], cmd->rgba[1], cmd->rgba[2], cmd->rgba[3] );
 	
 	return (const void *)(cmd + 1);
 }
@@ -1338,18 +1342,18 @@ const void *RB_ColorMask(const void *data)
 RB_ClearDepth
 =============
 */
-const void *RB_ClearDepth(const void *data)
+static const void *RB_ClearDepth( const void *data )
 {
 	const clearDepthCommand_t *cmd = data;
 	
-	if(tess.numIndexes)
+	if ( tess.numIndexes )
 		RB_EndSurface();
 
 	// texture swapping test
-	if (r_showImages->integer)
+	if ( r_showImages->integer )
 		RB_ShowImages();
 
-	qglClear(GL_DEPTH_BUFFER_BIT);
+	qglClear( GL_DEPTH_BUFFER_BIT );
 	
 	return (const void *)(cmd + 1);
 }
@@ -1360,7 +1364,7 @@ const void *RB_ClearDepth(const void *data)
 RB_FinishBloom
 =============
 */
-const void *RB_FinishBloom(const void *data)
+static const void *RB_FinishBloom( const void *data )
 {
 	const finishBloomCommand_t *cmd = data;
 

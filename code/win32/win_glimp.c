@@ -35,11 +35,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ** related functions that are relevant ONLY to win_glimp.c
 */
 
-#include "../renderer/tr_local.h"
 #include "../client/client.h"
 #include "resource.h"
 #include "win_local.h"
 #include "glw_win.h"
+#include "../renderer/qgl_linked.h"
 
 typedef enum {
 	RSERR_OK,
@@ -78,8 +78,22 @@ void     QGL_Shutdown( void );
 //
 glwstate_t glw_state;
 
-cvar_t	*r_allowSoftwareGL;		// don't abort out if the pixelformat claims software
-cvar_t	*r_maskMinidriver;		// allow a different dll name to be treated as if it were opengl32.dll
+static cvar_t *r_allowSoftwareGL;		// don't abort out if the pixelformat claims software
+static cvar_t *r_maskMinidriver;		// allow a different dll name to be treated as if it were opengl32.dll
+static cvar_t *r_swapInterval;
+static cvar_t *r_glDriver;
+static cvar_t *r_stereoEnabled;
+static cvar_t *r_verbose;				// used for verbose debug spew
+
+cvar_t *r_fullscreen;
+
+extern cvar_t *r_mode;
+extern cvar_t *r_modeFullscreen;
+
+extern cvar_t *r_colorbits;
+extern cvar_t *r_stencilbits;
+extern cvar_t *r_depthbits;
+extern cvar_t *r_drawBuffer;
 
 /*
 ** GLW_StartDriverAndSetMode
@@ -878,8 +892,8 @@ void UpdateMonitorInfo( const RECT *target )
 				Com_Printf( "...current monitor: %ix%i@%i,%i %s\n", 
 					w, h, x, y, WtoA( mInfo.szDevice ) );
 
-				if ( gammaSet ) {
-					R_SetColorMappings();
+				if ( gammaSet && re.SetColorMappings ) {
+					re.SetColorMappings();
 				}
 		}
 	} else {
@@ -927,7 +941,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS
 	// print out informational messages
 	//
 	Com_Printf( "...setting mode %d:", mode );
-	if ( !R_GetModeInfo( &config->vidWidth, &config->vidHeight, &config->windowAspect, 
+	if ( !re.GetModeInfo( &config->vidWidth, &config->vidHeight, &config->windowAspect, 
 		mode, modeFS, glw_state.desktopWidth, glw_state.desktopHeight, cdsFullscreen ) )
 	{
 		Com_Printf( " invalid mode\n" );
@@ -1108,7 +1122,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS
 	dm.dmSize = sizeof( dm );
 	if ( EnumDisplaySettings( glw_state.displayName, ENUM_CURRENT_SETTINGS, &dm ) ) 
 	{
-		glConfig.displayFrequency = dm.dmDisplayFrequency;
+		glw_state.config->displayFrequency = dm.dmDisplayFrequency;
 	}
 
 	// NOTE: this is overridden later on standalone 3Dfx drivers
@@ -1193,11 +1207,11 @@ void GLimp_EndFrame( void )
 	if ( r_swapInterval->modified ) {
 		r_swapInterval->modified = qfalse;
 
-		if ( !glConfig.stereoEnabled ) {	// why?
+		//if ( !glConfig.stereoEnabled ) {	// why?
 			if ( qwglSwapIntervalEXT ) {
 				qwglSwapIntervalEXT( r_swapInterval->integer );
 			}
-		}
+		//}
 	}
 
 	// don't flip if drawing to front buffer
@@ -1247,10 +1261,26 @@ void GLimp_Init( glconfig_t *config )
 {
 	Com_Printf( "Initializing OpenGL subsystem\n" );
 
+	// glimp-specific
 	r_allowSoftwareGL = Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
 	r_maskMinidriver = Cvar_Get( "r_maskMinidriver", "0", CVAR_LATCH );
+	r_swapInterval = Cvar_Get( "r_swapInterval", "0", CVAR_ARCHIVE_ND );
+	r_glDriver = Cvar_Get( "r_glDriver", OPENGL_DRIVER_NAME, CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_stereoEnabled = Cvar_Get( "r_stereoEnabled", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_verbose = Cvar_Get( "r_verbose", "0", 0 );
 
-	glw_state.config = config; // feedback to renderer module
+	r_fullscreen = Cvar_Get( "r_fullscreen", "1", CVAR_ARCHIVE | CVAR_LATCH );
+	r_mode = Cvar_Get( "r_mode", "-2", CVAR_ARCHIVE | CVAR_LATCH );
+	r_modeFullscreen = Cvar_Get( "r_modeFullscreen", "-2", CVAR_ARCHIVE | CVAR_LATCH );
+
+	// shared with renderer
+	r_colorbits = Cvar_Get( "r_colorbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_stencilbits = Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_depthbits = Cvar_Get( "r_depthbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_drawBuffer = Cvar_Get( "r_drawBuffer", "GL_BACK", CVAR_CHEAT );
+
+	// feedback to renderer configuration
+	glw_state.config = config;
 
 	// load appropriate DLL and initialize subsystem
 	if ( !GLW_StartOpenGL() )
@@ -1266,7 +1296,7 @@ void GLimp_Init( glconfig_t *config )
 
 	if ( qwglSwapIntervalEXT ) {
 		Com_Printf( "...using WGL_EXT_swap_control\n" );
-		Cvar_SetModified( "r_swapInterval", qtrue ); // force a set next frame
+		r_swapInterval->modified = qtrue; // force a set next frame
 	} else {
 		Com_Printf( "...WGL_EXT_swap_control not found\n" );
 	}
@@ -1344,7 +1374,4 @@ void GLimp_Shutdown( void )
 
 	// shutdown QGL subsystem
 	QGL_Shutdown();
-
-	memset( &glConfig, 0, sizeof( glConfig ) );
-	memset( &glState, 0, sizeof( glState ) );
 }
