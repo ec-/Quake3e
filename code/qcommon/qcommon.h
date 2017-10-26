@@ -183,7 +183,6 @@ typedef struct {
 void		NET_Init( void );
 void		NET_Shutdown( void );
 void		NET_Restart_f( void );
-void		NET_Config( qboolean enableNetworking );
 void		NET_FlushPacketQueue(void);
 void		NET_SendPacket( netsrc_t sock, int length, const void *data, const netadr_t *to );
 void		QDECL NET_OutOfBandPrint( netsrc_t net_socket, const netadr_t *adr, const char *format, ...) __attribute__ ((format (printf, 3, 4)));

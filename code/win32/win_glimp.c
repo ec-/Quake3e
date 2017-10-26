@@ -897,6 +897,7 @@ void UpdateMonitorInfo( const RECT *target )
 				}
 		}
 	} else {
+		// no information about current monitor, get desktop settings
 		HDC hDC = GetDC( GetDesktopWindow() );
 		glw_state.desktopX = 0;
 		glw_state.desktopY = 0;
@@ -924,17 +925,6 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS
 		SetDesktopDisplaySettings();
 	}
 
-	//
-	// check our desktop attributes
-	//
-	//hDC = GetDC( GetDesktopWindow() );
-	//glw_state.desktopBitsPixel = GetDeviceCaps( hDC, BITSPIXEL );
-	//glw_state.desktopWidth = GetDeviceCaps( hDC, HORZRES );
-	//glw_state.desktopHeight = GetDeviceCaps( hDC, VERTRES );
-	//glw_state.desktopX = 0;
-	//glw_state.desktopY = 0;
-	//ReleaseDC( GetDesktopWindow(), hDC );
-	
 	UpdateMonitorInfo( NULL );
 
 	//

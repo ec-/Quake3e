@@ -51,20 +51,21 @@ short *sfxScratchBuffer = NULL;
 sfx_t *sfxScratchPointer = NULL;
 int	   sfxScratchIndex = 0;
 
-void	SND_free(sndBuffer *v) {
+
+void SND_free( sndBuffer *v )
+{
 	*(sndBuffer **)v = freelist;
 	freelist = (sndBuffer*)v;
 	inUse += sizeof(sndBuffer);
 	totalInUse -= sizeof(sndBuffer); // -EC-
 }
 
-sndBuffer*	SND_malloc(void) {
+
+sndBuffer *SND_malloc( void ) {
 	sndBuffer *v;
-redo:
-	if (freelist == NULL) {
+
+	while ( freelist == NULL )
 		S_FreeOldestSound();
-		goto redo;
-	}
 
 	inUse -= sizeof(sndBuffer);
 	totalInUse += sizeof(sndBuffer);

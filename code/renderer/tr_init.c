@@ -293,6 +293,7 @@ static void R_InitExtensions( void )
 	}
 
 	// GL_ARB_multitexture
+	glConfig.numTextureUnits = 0;
 	qglMultiTexCoord2fARB = NULL;
 	qglActiveTextureARB = NULL;
 	qglClientActiveTextureARB = NULL;
@@ -415,9 +416,15 @@ static void InitOpenGL( void )
 		QGL_Core_PROCS;
 #undef GLE
 
+		R_InitExtensions();
+
 		// OpenGL driver constants
 		qglGetIntegerv( GL_MAX_TEXTURE_SIZE, &max_texture_size );
 		glConfig.maxTextureSize = max_texture_size;
+
+		// stubbed or broken drivers may have reported 0...
+		if ( glConfig.maxTextureSize <= 0 ) 
+			glConfig.maxTextureSize = 0;
 
 		qglGetIntegerv( GL_MAX_TEXTURE_IMAGE_UNITS, &max_shader_units );
 		qglGetIntegerv( GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &max_bind_units );
@@ -429,14 +436,6 @@ static void InitOpenGL( void )
 
 		if ( glConfig.numTextureUnits && max_bind_units > 0 )
 			glConfig.numTextureUnits = max_bind_units;
-
-		// stubbed or broken drivers may have reported 0...
-		if ( glConfig.maxTextureSize <= 0 ) 
-		{
-			glConfig.maxTextureSize = 0;
-		}
-
-		R_InitExtensions();
 
 #if defined(USE_PMLIGHT)
 		QGL_InitARB();
