@@ -84,6 +84,24 @@ cvar_t	*cl_guidServerUniq;
 
 cvar_t	*cl_dlURL;
 
+// common cvars for GLimp modules
+cvar_t *r_allowSoftwareGL;		// don't abort out if the pixelformat claims software
+cvar_t *r_swapInterval;
+cvar_t *r_glDriver;
+cvar_t *r_displayRefresh;
+cvar_t *r_fullscreen;
+cvar_t *r_mode;
+cvar_t *r_modeFullscreen;
+cvar_t *r_customwidth;
+cvar_t *r_customheight;
+cvar_t *r_customPixelAspect;
+
+cvar_t *r_colorbits;
+// these also shared with renderers:
+cvar_t *r_stencilbits;
+cvar_t *r_depthbits;
+cvar_t *r_drawBuffer;
+
 clientActive_t		cl;
 clientConnection_t	clc;
 clientStatic_t		cls;
@@ -1078,6 +1096,7 @@ void CL_MapLoading( void ) {
 	}
 }
 
+
 /*
 =====================
 CL_ClearState
@@ -1091,6 +1110,7 @@ void CL_ClearState (void) {
 
 	Com_Memset( &cl, 0, sizeof( cl ) );
 }
+
 
 /*
 ====================
@@ -1248,9 +1268,9 @@ so when they are typed in at the console, they will need to be forwarded.
 ===================
 */
 void CL_ForwardCommandToServer( const char *string ) {
-	char	*cmd;
+	const char *cmd;
 
-	cmd = Cmd_Argv(0);
+	cmd = Cmd_Argv( 0 );
 
 	// ignore key up commands
 	if ( cmd[0] == '-' ) {
@@ -1268,6 +1288,7 @@ void CL_ForwardCommandToServer( const char *string ) {
 		CL_AddReliableCommand( cmd, qfalse );
 	}
 }
+
 
 /*
 ===================
@@ -1437,20 +1458,19 @@ void CL_Disconnect_f( void ) {
 /*
 ================
 CL_Reconnect_f
-
 ================
 */
 void CL_Reconnect_f( void ) {
-	if ( !strlen( cl_reconnectArgs ) )
+	if ( cl_reconnectArgs[0] == '\0' )
 		return;
-	Cvar_Set("ui_singlePlayerActive", "0");
-	Cbuf_AddText( va("connect %s\n", cl_reconnectArgs ) );
+	Cvar_Set( "ui_singlePlayerActive", "0" );
+	Cbuf_AddText( va( "connect %s\n", cl_reconnectArgs ) );
 }
+
 
 /*
 ================
 CL_Connect_f
-
 ================
 */
 void CL_Connect_f( void ) {
@@ -1617,7 +1637,7 @@ void CL_Rcon_f( void ) {
 	message[1] = -1;
 	message[2] = -1;
 	message[3] = -1;
-	message[4] = 0;
+	message[4] = '\0';
 
 	Q_strcat (message, MAX_RCON_MESSAGE, "rcon ");
 
@@ -2264,8 +2284,8 @@ CL_MotdPacket
 ===================
 */
 static void CL_MotdPacket( const netadr_t *from ) {
-	char	*challenge;
-	char	*info;
+	const char *challenge;
+	const char *info;
 
 	// if not from our server, ignore it
 	if ( !NET_CompareAdr( from, &cls.updateServer ) ) {
@@ -2821,15 +2841,15 @@ CL_CheckUserinfo
 void CL_CheckUserinfo( void ) {
 
 	// don't add reliable commands when not yet connected
-	if( cls.state < CA_CONNECTED )
+	if ( cls.state < CA_CONNECTED )
 		return;
 
 	// don't overflow the reliable command buffer when paused
-	if( CL_CheckPaused() )
+	if ( CL_CheckPaused() )
 		return;
 
 	// send a reliable userinfo update if needed
-	if( cvar_modifiedFlags & CVAR_USERINFO )
+	if ( cvar_modifiedFlags & CVAR_USERINFO )
 	{
 		char *info;
 		int len;
@@ -2845,10 +2865,10 @@ void CL_CheckUserinfo( void ) {
 	}
 }
 
+
 /*
 ==================
 CL_Frame
-
 ==================
 */
 void CL_Frame ( int msec ) {
@@ -3354,6 +3374,103 @@ static void CL_GenerateQKey(void)
 
 
 /*
+** CL_GetModeInfo
+*/
+typedef struct vidmode_s
+{
+	const char	*description;
+	int			width, height;
+	float		pixelAspect;		// pixel width / height
+} vidmode_t;
+
+static const vidmode_t cl_vidModes[] =
+{
+	{ "Mode  0: 320x240",			320,	240,	1 },
+	{ "Mode  1: 400x300",			400,	300,	1 },
+	{ "Mode  2: 512x384",			512,	384,	1 },
+	{ "Mode  3: 640x480",			640,	480,	1 },
+	{ "Mode  4: 800x600",			800,	600,	1 },
+	{ "Mode  5: 960x720",			960,	720,	1 },
+	{ "Mode  6: 1024x768",			1024,	768,	1 },
+	{ "Mode  7: 1152x864",			1152,	864,	1 },
+	{ "Mode  8: 1280x1024 (5:4)",	1280,	1024,	1 },
+	{ "Mode  9: 1600x1200",			1600,	1200,	1 },
+	{ "Mode 10: 2048x1536",			2048,	1536,	1 },
+	{ "Mode 11: 856x480 (wide)",	856,	480,	1 },
+	// extra modes:
+	{ "Mode 12: 1280x960",			1280,	960,	1 },
+	{ "Mode 13: 1280x720",			1280,	720,	1 },
+	{ "Mode 14: 1280x800 (16:10)",	1280,	800,	1 },
+	{ "Mode 15: 1366x768",			1366,	768,	1 },
+	{ "Mode 16: 1440x900 (16:10)",	1440,	900,	1 },
+	{ "Mode 17: 1600x900",			1600,	900,	1 },
+	{ "Mode 18: 1680x1050 (16:10)",	1680,	1050,	1 },
+	{ "Mode 19: 1920x1080",			1920,	1080,	1 },
+	{ "Mode 20: 1920x1200 (16:10)",	1920,	1200,	1 },
+	{ "Mode 21: 2560x1080 (21:9)",	2560,	1080,	1 },
+	{ "Mode 22: 3440x1440 (21:9)",	3440,	1440,	1 },
+	{ "Mode 23: 3840x2160",			3840,	2160,	1 },
+	{ "Mode 24: 4096x2160 (4K)",	4096,	2160,	1 }
+};
+static const int s_numVidModes = ARRAY_LEN( cl_vidModes );
+
+qboolean CL_GetModeInfo( int *width, int *height, float *windowAspect, int mode, const char *modeFS, int dw, int dh, qboolean fullscreen )
+{
+	const	vidmode_t *vm;
+	float	pixelAspect;
+
+	// set dedicated fullscreen mode
+	if ( fullscreen && *modeFS )
+		mode = atoi( modeFS );
+
+	if ( mode < -2 )
+		return qfalse;
+
+	if ( mode >= s_numVidModes )
+		return qfalse;
+
+	// fix unknown desktop resolution
+	if ( mode == -2 && (dw == 0 || dh == 0) )
+		mode = 3;
+
+	if ( mode == -2 ) { // desktop resolution
+		*width = dw;
+		*height = dh;
+		pixelAspect = r_customPixelAspect->value;
+	} else if ( mode == -1 ) { // custom resolution
+		*width = r_customwidth->integer;
+		*height = r_customheight->integer;
+		pixelAspect = r_customPixelAspect->value;
+	} else { // predefined resolution
+		vm = &cl_vidModes[ mode ];
+		*width  = vm->width;
+		*height = vm->height;
+		pixelAspect = vm->pixelAspect;
+	}
+
+	*windowAspect = (float)*width / ( *height * pixelAspect );
+
+	return qtrue;
+}
+
+
+/*
+** CL_ModeList_f
+*/
+static void CL_ModeList_f( void )
+{
+	int i;
+
+	Com_Printf( "\n" );
+	for ( i = 0; i < s_numVidModes; i++ )
+	{
+		Com_Printf( "%s\n", cl_vidModes[ i ].description );
+	}
+	Com_Printf( "\n" );
+}
+
+
+/*
 ====================
 CL_Init
 ====================
@@ -3499,6 +3616,35 @@ void CL_Init( void ) {
 	// Make sure cg_stereoSeparation is zero as that variable is deprecated and should not be used anymore.
 	Cvar_Get ("cg_stereoSeparation", "0", CVAR_ROM);
 
+	// shared with GLimp
+	r_allowSoftwareGL = Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
+	r_swapInterval = Cvar_Get( "r_swapInterval", "0", CVAR_ARCHIVE_ND );
+	r_glDriver = Cvar_Get( "r_glDriver", OPENGL_DRIVER_NAME, CVAR_ARCHIVE_ND | CVAR_LATCH );
+	
+	r_displayRefresh = Cvar_Get( "r_displayRefresh", "0", CVAR_LATCH );
+	Cvar_CheckRange( r_displayRefresh, "0", "250", CV_INTEGER );
+
+	r_mode = Cvar_Get( "r_mode", "-2", CVAR_ARCHIVE | CVAR_LATCH );
+	r_modeFullscreen = Cvar_Get( "r_modeFullscreen", "-2", CVAR_ARCHIVE | CVAR_LATCH );
+	Cvar_CheckRange( r_mode, "-2", va( "%i", s_numVidModes-1 ), CV_INTEGER );
+	Cvar_SetDescription( r_mode, "Set video mode:\n -2 - use current desktop resolution\n -1 - use \\r_customWidth and \\r_customHeight\n  0..N - enter \\modelist for details" );
+	Cvar_SetDescription( r_modeFullscreen, "Dedicated fullscreen mode, set to \"\" to use \\r_mode in all cases" );
+
+	r_fullscreen = Cvar_Get( "r_fullscreen", "1", CVAR_ARCHIVE | CVAR_LATCH );
+	r_customPixelAspect = Cvar_Get( "r_customPixelAspect", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_customwidth = Cvar_Get( "r_customWidth", "1600", CVAR_ARCHIVE | CVAR_LATCH );
+	r_customheight = Cvar_Get( "r_customHeight", "1024", CVAR_ARCHIVE | CVAR_LATCH );
+	Cvar_CheckRange( r_customwidth, "4", NULL, CV_INTEGER );
+	Cvar_CheckRange( r_customheight, "4", NULL, CV_INTEGER );
+	Cvar_SetDescription( r_customwidth, "Custom width to use with \\r_mode -1" );
+	Cvar_SetDescription( r_customheight, "Custom height to use with \\r_mode -1" );
+
+	r_colorbits = Cvar_Get( "r_colorbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	// shared with renderer:
+	r_stencilbits = Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_depthbits = Cvar_Get( "r_depthbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_drawBuffer = Cvar_Get( "r_drawBuffer", "GL_BACK", CVAR_CHEAT );
+
 	//
 	// register our commands
 	//
@@ -3537,6 +3683,7 @@ void CL_Init( void ) {
 	Cmd_AddCommand( "download", CL_Download_f );
 	Cmd_AddCommand( "dlmap", CL_Download_f );
 #endif
+	Cmd_AddCommand( "modelist", CL_ModeList_f );
 
 	CL_InitRef();
 

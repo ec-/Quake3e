@@ -86,8 +86,6 @@ extern float     displayAspect;
 // cvars
 //
 extern cvar_t *r_stencilbits;			// number of desired stencil bits
-extern cvar_t *r_depthbits;			// number of desired depth bits
-extern cvar_t *r_colorbits;			// number of desired color bits, only relevant for fullscreen
 extern cvar_t *r_texturebits;			// number of desired texture bits
 extern cvar_t *r_ext_multisample;
 										// 0 = use framebuffer depth
@@ -95,10 +93,7 @@ extern cvar_t *r_ext_multisample;
 										// 32 = use 32-bit textures
 										// all else = error
 
-extern cvar_t *r_mode;				// video mode
-extern cvar_t *r_modeFullscreen;	// fullscreen video mode
-extern cvar_t *r_noborder;
-extern cvar_t *r_ignorehwgamma;		// overrides hardware gamma capabilities
+extern cvar_t *r_ignorehwgamma;			// overrides hardware gamma capabilities
 extern cvar_t *r_drawBuffer;
 
 extern cvar_t *r_allowExtensions;				// global enable/disable of OpenGL extensions

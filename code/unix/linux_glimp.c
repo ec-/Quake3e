@@ -138,19 +138,6 @@ cvar_t   *in_joystickDebug = NULL;
 cvar_t   *joy_threshold    = NULL;
 #endif
 
-static cvar_t *r_allowSoftwareGL;   // don't abort out if the pixelformat claims software
-static cvar_t *r_swapInterval;
-static cvar_t *r_glDriver;
-
-extern cvar_t *r_mode;
-extern cvar_t *r_modeFullscreen;
-cvar_t *r_fullscreen;
-
-extern cvar_t *r_colorbits;
-extern cvar_t *r_stencilbits;
-extern cvar_t *r_depthbits;
-extern cvar_t *r_drawBuffer;
-
 static qboolean vidmode_ext = qfalse;
 static qboolean vidmode_active = qfalse;
 
@@ -1190,7 +1177,7 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 
 	Com_Printf( "...setting mode %d:", mode );
 
-	if ( !re.GetModeInfo( &config->vidWidth, &config->vidHeight, &config->windowAspect,
+	if ( !CL_GetModeInfo( &config->vidWidth, &config->vidHeight, &config->windowAspect,
 		mode, modeFS, desktop_width, desktop_height, fullscreen ) )
 	{
 		Com_Printf( " invalid mode\n" );
@@ -1589,21 +1576,6 @@ void GLimp_Init( glconfig_t *config )
 
 	// set up our custom error handler for X failures
 	XSetErrorHandler( &qXErrorHandler );
-
-	// glimp-specific
-	r_allowSoftwareGL = Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
-	r_swapInterval = Cvar_Get( "r_swapInterval", "0", CVAR_ARCHIVE_ND );
-	r_glDriver = Cvar_Get( "r_glDriver", OPENGL_DRIVER_NAME, CVAR_ARCHIVE_ND | CVAR_LATCH );
-
-	r_fullscreen = Cvar_Get( "r_fullscreen", "1", CVAR_ARCHIVE | CVAR_LATCH );
-	r_mode = Cvar_Get( "r_mode", "-2", CVAR_ARCHIVE | CVAR_LATCH );
-	r_modeFullscreen = Cvar_Get( "r_modeFullscreen", "-2", CVAR_ARCHIVE | CVAR_LATCH );
-
-	// shared with renderer
-	r_colorbits = Cvar_Get( "r_colorbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	r_stencilbits = Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	r_depthbits = Cvar_Get( "r_depthbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	r_drawBuffer = Cvar_Get( "r_drawBuffer", "GL_BACK", CVAR_CHEAT );
 
 	// feedback to renderer configuration
 	glw_state.config = config;

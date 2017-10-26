@@ -418,6 +418,22 @@ extern	cvar_t	*cl_autoRecordDemo;
 
 extern	cvar_t	*com_maxfps;
 
+extern	cvar_t	*r_allowSoftwareGL;
+extern	cvar_t	*r_swapInterval;
+extern	cvar_t	*r_glDriver;
+
+extern	cvar_t	*r_displayRefresh;
+extern	cvar_t	*r_fullscreen;
+extern	cvar_t	*r_mode;
+extern	cvar_t	*r_modeFullscreen;
+extern	cvar_t	*r_customwidth;
+extern	cvar_t	*r_customheight;
+extern	cvar_t	*r_customPixelAspect;
+extern	cvar_t	*r_colorbits;
+extern	cvar_t	*r_stencilbits;
+extern	cvar_t	*r_depthbits;
+extern	cvar_t	*r_drawBuffer;
+
 //=================================================
 
 //
@@ -450,6 +466,9 @@ int CL_ServerStatus( char *serverAddress, char *serverStatusString, int maxLen )
 
 qboolean CL_CheckPaused( void );
 qboolean CL_NoDelay( void );
+
+qboolean CL_GetModeInfo( int *width, int *height, float *windowAspect, int mode, const char *modeFS, int dw, int dh, qboolean fullscreen );
+
 
 //
 // cl_input

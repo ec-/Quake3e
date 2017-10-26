@@ -44,8 +44,6 @@ cvar_t	*r_ignoreFastPath;
 
 cvar_t	*r_ignore;
 
-cvar_t  *r_displayRefresh;
-
 cvar_t	*r_detailTextures;
 
 cvar_t	*r_znear;
@@ -104,21 +102,16 @@ cvar_t	*r_ext_max_anisotropy;
 cvar_t	*r_ignoreGLErrors;
 
 cvar_t	*r_stencilbits;
-cvar_t	*r_depthbits;
-cvar_t	*r_colorbits;
 cvar_t	*r_primitives;
 cvar_t	*r_texturebits;
 cvar_t  *r_ext_multisample;
 
 cvar_t	*r_drawBuffer;
-cvar_t  *r_glDriver;
 cvar_t	*r_lightmap;
 cvar_t	*r_vertexLight;
 cvar_t	*r_uiFullScreen;
 cvar_t	*r_shadows;
 cvar_t	*r_flares;
-cvar_t	*r_mode;
-cvar_t	*r_modeFullscreen;
 cvar_t	*r_nobind;
 cvar_t	*r_singleShader;
 cvar_t	*r_roundImagesDown;
@@ -141,10 +134,6 @@ cvar_t	*r_portalOnly;
 
 cvar_t	*r_subdivisions;
 cvar_t	*r_lodCurveError;
-
-cvar_t	*r_customwidth;
-cvar_t	*r_customheight;
-cvar_t	*r_customPixelAspect;
 
 cvar_t	*r_overBrightBits;
 cvar_t	*r_mapOverBrightBits;
@@ -501,102 +490,6 @@ void GL_CheckErrors( void ) {
     }
 
     ri.Error( ERR_FATAL, "GL_CheckErrors: %s", s );
-}
-
-
-/*
-** R_GetModeInfo
-*/
-typedef struct vidmode_s
-{
-    const char *description;
-    int         width, height;
-	float		pixelAspect;		// pixel width / height
-} vidmode_t;
-
-static const vidmode_t r_vidModes[] =
-{
-	{ "Mode  0: 320x240",			320,	240,	1 },
-	{ "Mode  1: 400x300",			400,	300,	1 },
-	{ "Mode  2: 512x384",			512,	384,	1 },
-	{ "Mode  3: 640x480",			640,	480,	1 },
-	{ "Mode  4: 800x600",			800,	600,	1 },
-	{ "Mode  5: 960x720",			960,	720,	1 },
-	{ "Mode  6: 1024x768",			1024,	768,	1 },
-	{ "Mode  7: 1152x864",			1152,	864,	1 },
-	{ "Mode  8: 1280x1024 (5:4)",	1280,	1024,	1 },
-	{ "Mode  9: 1600x1200",			1600,	1200,	1 },
-	{ "Mode 10: 2048x1536",			2048,	1536,	1 },
-	{ "Mode 11: 856x480 (wide)",	856,	480,	1 },
-	// extra modes:
-	{ "Mode 12: 1280x960",			1280,	960,	1 },
-	{ "Mode 13: 1280x720",			1280,	720,	1 },
-	{ "Mode 14: 1280x800 (16:10)",	1280,	800,	1 },
-	{ "Mode 15: 1366x768",			1366,	768,	1 },
-	{ "Mode 16: 1440x900 (16:10)",	1440,	900,	1 },
-	{ "Mode 17: 1600x900",			1600,	900,	1 },
-	{ "Mode 18: 1680x1050 (16:10)",	1680,	1050,	1 },
-	{ "Mode 19: 1920x1080",			1920,	1080,	1 },
-	{ "Mode 20: 1920x1200 (16:10)",	1920,	1200,	1 },
-	{ "Mode 21: 2560x1080 (21:9)",	2560,	1080,	1 },
-	{ "Mode 22: 3440x1440 (21:9)",	3440,	1440,	1 },
-	{ "Mode 23: 3840x2160",			3840,	2160,	1 },
-	{ "Mode 24: 4096x2160 (4K)",	4096,	2160,	1 }
-};
-static int	s_numVidModes = ARRAY_LEN( r_vidModes );
-
-static qboolean R_GetModeInfo( int *width, int *height, float *windowAspect, int mode, const char *modeFS, int dw, int dh, qboolean fullscreen ) {
-	const	vidmode_t *vm;
-	float	pixelAspect;
-
-	// set dedicated fullscreen mode
-	if ( fullscreen && *modeFS )
-		mode = atoi( modeFS );
-
-	if ( mode < -2 )
-		return qfalse;
-
-	if ( mode >= s_numVidModes )
-		return qfalse;
-
-	// fix unknown desktop resolution
-	if ( mode == -2 && (dw == 0 || dh == 0) ) 
-		mode = 3;
-
-	if ( mode == -2 ) { // desktop resolution
-		*width = dw;
-		*height = dh;
-		pixelAspect = r_customPixelAspect->value;
-	} else if ( mode == -1 ) { // custom resolution
-		*width = r_customwidth->integer;
-		*height = r_customheight->integer;
-		pixelAspect = r_customPixelAspect->value;
-	} else { // predefined resolution
-		vm = &r_vidModes[ mode ];
-		*width  = vm->width;
-		*height = vm->height;
-		pixelAspect = vm->pixelAspect;
-	}
-
-	*windowAspect = (float)*width / ( *height * pixelAspect );
-
-	return qtrue;
-}
-
-
-/*
-** R_ModeList_f
-*/
-static void R_ModeList_f( void )
-{
-	int i;
-
-	ri.Printf( PRINT_ALL, "\n" );
-	for ( i = 0; i < s_numVidModes; i++ )
-	{
-		ri.Printf( PRINT_ALL, "%s\n", r_vidModes[i].description );
-	}
-	ri.Printf( PRINT_ALL, "\n" );
 }
 
 
@@ -1223,7 +1116,7 @@ void GfxInfo_f( void )
 	ri.Printf( PRINT_ALL, "GL_MAX_TEXTURE_SIZE: %d\n", glConfig.maxTextureSize );
 	ri.Printf( PRINT_ALL, "GL_MAX_TEXTURE_UNITS_ARB: %d\n", glConfig.numTextureUnits );
 	ri.Printf( PRINT_ALL, "\nPIXELFORMAT: color(%d-bits) Z(%d-bit) stencil(%d-bits)\n", glConfig.colorBits, glConfig.depthBits, glConfig.stencilBits );
-	ri.Printf( PRINT_ALL, "MODE: %d, %d x %d %s hz:", r_mode->integer, glConfig.vidWidth, glConfig.vidHeight, fsstrings[ glConfig.isFullscreen != 0 ] );
+	ri.Printf( PRINT_ALL, "MODE: %d, %d x %d %s hz:", ri.Cvar_VariableIntegerValue( "r_mode" ), glConfig.vidWidth, glConfig.vidHeight, fsstrings[ glConfig.isFullscreen != 0 ] );
 	if ( glConfig.displayFrequency )
 	{
 		ri.Printf( PRINT_ALL, "%d\n", glConfig.displayFrequency );
@@ -1326,31 +1219,13 @@ static void R_Register( void )
 	r_colorMipLevels = ri.Cvar_Get ("r_colorMipLevels", "0", CVAR_LATCH );
 	r_detailTextures = ri.Cvar_Get( "r_detailtextures", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_texturebits = ri.Cvar_Get( "r_texturebits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	r_colorbits = ri.Cvar_Get( "r_colorbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_stencilbits = ri.Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	r_depthbits = ri.Cvar_Get( "r_depthbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_ext_multisample = ri.Cvar_Get( "r_ext_multisample", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_ext_multisample, "0", "8", CV_INTEGER );
 	ri.Cvar_SetGroup( r_ext_multisample, CVG_RENDERER );
 	r_overBrightBits = ri.Cvar_Get( "r_overBrightBits", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_ignorehwgamma = ri.Cvar_Get( "r_ignorehwgamma", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 
-	r_mode = ri.Cvar_Get( "r_mode", "3", CVAR_ARCHIVE | CVAR_LATCH );
-	ri.Cvar_CheckRange( r_mode, "-2", va( "%i", s_numVidModes-1 ), CV_INTEGER );
-	ri.Cvar_SetDescription( r_mode, "Set video mode:\n -2 - use current desktop resolution\n -1 - use \\r_customWidth and \\r_customHeight\n  0..N - enter \\modelist for details" );
-	
-	r_modeFullscreen = ri.Cvar_Get( "r_modeFullscreen", "-2", CVAR_ARCHIVE | CVAR_LATCH );
-	ri.Cvar_SetDescription( r_modeFullscreen, "Dedicated fullscreen mode, set to \"\" to use \\r_mode in all cases" );
-
-	r_customwidth = ri.Cvar_Get( "r_customWidth", "1600", CVAR_ARCHIVE | CVAR_LATCH );
-	ri.Cvar_CheckRange( r_customwidth, "1", NULL, CV_INTEGER );
-	ri.Cvar_SetDescription( r_customwidth, "Custom width to use with \\r_mode -1" );
-
-	r_customheight = ri.Cvar_Get( "r_customHeight", "1024", CVAR_ARCHIVE | CVAR_LATCH );
-	ri.Cvar_CheckRange( r_customheight, "1", NULL, CV_INTEGER );
-	ri.Cvar_SetDescription( r_customheight, "Custom height to use with \\r_mode -1" );
-
-	r_customPixelAspect = ri.Cvar_Get( "r_customPixelAspect", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_simpleMipMaps = ri.Cvar_Get( "r_simpleMipMaps", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_vertexLight = ri.Cvar_Get( "r_vertexLight", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_uiFullScreen = ri.Cvar_Get( "r_uifullscreen", "0", 0);
@@ -1366,8 +1241,6 @@ static void R_Register( void )
 	//
 	// temporary latched variables that can only change over a restart
 	//
-	r_displayRefresh = ri.Cvar_Get( "r_displayRefresh", "0", CVAR_LATCH );
-	ri.Cvar_CheckRange( r_displayRefresh, "0", "250", CV_INTEGER );
 	r_fullbright = ri.Cvar_Get ("r_fullbright", "0", CVAR_LATCH|CVAR_CHEAT );
 	r_mapOverBrightBits = ri.Cvar_Get ("r_mapOverBrightBits", "2", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_intensity = ri.Cvar_Get ("r_intensity", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
@@ -1487,7 +1360,6 @@ static void R_Register( void )
 	ri.Cmd_AddCommand( "shaderlist", R_ShaderList_f );
 	ri.Cmd_AddCommand( "skinlist", R_SkinList_f );
 	ri.Cmd_AddCommand( "modellist", R_Modellist_f );
-	ri.Cmd_AddCommand( "modelist", R_ModeList_f );
 	ri.Cmd_AddCommand( "screenshot", R_ScreenShot_f );
 	ri.Cmd_AddCommand( "screenshotJPEG", R_ScreenShot_f );
 	ri.Cmd_AddCommand( "screenshotBMP", R_ScreenShot_f );
@@ -1721,7 +1593,6 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 
 	re.TakeVideoFrame = RE_TakeVideoFrame;
 	re.SetColorMappings = R_SetColorMappings;
-	re.GetModeInfo = R_GetModeInfo;
 
 	re.FinishBloom = RE_FinishBloom;
 	re.CanMinimize = RE_CanMinimize;

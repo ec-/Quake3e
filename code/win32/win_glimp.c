@@ -78,22 +78,10 @@ void     QGL_Shutdown( void );
 //
 glwstate_t glw_state;
 
-static cvar_t *r_allowSoftwareGL;		// don't abort out if the pixelformat claims software
+// GLimp-specific cvars
 static cvar_t *r_maskMinidriver;		// allow a different dll name to be treated as if it were opengl32.dll
-static cvar_t *r_swapInterval;
-static cvar_t *r_glDriver;
 static cvar_t *r_stereoEnabled;
 static cvar_t *r_verbose;				// used for verbose debug spew
-
-cvar_t *r_fullscreen;
-
-extern cvar_t *r_mode;
-extern cvar_t *r_modeFullscreen;
-
-extern cvar_t *r_colorbits;
-extern cvar_t *r_stencilbits;
-extern cvar_t *r_depthbits;
-extern cvar_t *r_drawBuffer;
 
 /*
 ** GLW_StartDriverAndSetMode
@@ -931,7 +919,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS
 	// print out informational messages
 	//
 	Com_Printf( "...setting mode %d:", mode );
-	if ( !re.GetModeInfo( &config->vidWidth, &config->vidHeight, &config->windowAspect, 
+	if ( !CL_GetModeInfo( &config->vidWidth, &config->vidHeight, &config->windowAspect,
 		mode, modeFS, glw_state.desktopWidth, glw_state.desktopHeight, cdsFullscreen ) )
 	{
 		Com_Printf( " invalid mode\n" );
@@ -1252,22 +1240,10 @@ void GLimp_Init( glconfig_t *config )
 	Com_Printf( "Initializing OpenGL subsystem\n" );
 
 	// glimp-specific
-	r_allowSoftwareGL = Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
+
 	r_maskMinidriver = Cvar_Get( "r_maskMinidriver", "0", CVAR_LATCH );
-	r_swapInterval = Cvar_Get( "r_swapInterval", "0", CVAR_ARCHIVE_ND );
-	r_glDriver = Cvar_Get( "r_glDriver", OPENGL_DRIVER_NAME, CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_stereoEnabled = Cvar_Get( "r_stereoEnabled", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_verbose = Cvar_Get( "r_verbose", "0", 0 );
-
-	r_fullscreen = Cvar_Get( "r_fullscreen", "1", CVAR_ARCHIVE | CVAR_LATCH );
-	r_mode = Cvar_Get( "r_mode", "-2", CVAR_ARCHIVE | CVAR_LATCH );
-	r_modeFullscreen = Cvar_Get( "r_modeFullscreen", "-2", CVAR_ARCHIVE | CVAR_LATCH );
-
-	// shared with renderer
-	r_colorbits = Cvar_Get( "r_colorbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	r_stencilbits = Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	r_depthbits = Cvar_Get( "r_depthbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	r_drawBuffer = Cvar_Get( "r_drawBuffer", "GL_BACK", CVAR_CHEAT );
 
 	// feedback to renderer configuration
 	glw_state.config = config;
