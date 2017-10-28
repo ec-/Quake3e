@@ -48,10 +48,10 @@ static void APIENTRY R_ArrayElementDiscrete( GLint index ) {
 	qglVertex3fv( tess.xyz[ index ] );
 }
 
+
 /*
 ===================
 R_DrawStripElements
-
 ===================
 */
 static int		c_vertexes;		// for seeing how long our average strips are
@@ -150,7 +150,6 @@ static void R_DrawStripElements( int numIndexes, const glIndex_t *indexes, void 
 }
 
 
-
 /*
 ==================
 R_DrawElements
@@ -211,7 +210,6 @@ static qboolean	setArraysOnce;
 /*
 =================
 R_BindAnimatedImage
-
 =================
 */
 void R_BindAnimatedImage( const textureBundle_t *bundle ) {
@@ -245,6 +243,7 @@ void R_BindAnimatedImage( const textureBundle_t *bundle ) {
 
 	GL_Bind( bundle->image[ index ] );
 }
+
 
 /*
 ================
@@ -286,7 +285,7 @@ DrawNormals
 Draws vertex normals for debugging
 ================
 */
-static void DrawNormals (shaderCommands_t *input) {
+static void DrawNormals( const shaderCommands_t *input ) {
 	int		i;
 	vec3_t	temp;
 
@@ -305,6 +304,7 @@ static void DrawNormals (shaderCommands_t *input) {
 
 	qglDepthRange( 0, 1 );
 }
+
 
 /*
 ==============
@@ -328,15 +328,13 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 #endif
 	tess.xstages = state->stages;
 	tess.numPasses = state->numUnfoggedPasses;
-	tess.currentStageIteratorFunc = state->optimalStageIteratorFunc;
 
 	tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
 	if (tess.shader->clampTime && tess.shaderTime >= tess.shader->clampTime) {
 		tess.shaderTime = tess.shader->clampTime;
 	}
-
-
 }
+
 
 /*
 ===================
@@ -349,9 +347,9 @@ t1 = most downstream according to spec
 ===================
 */
 static void DrawMultitextured( shaderCommands_t *input, int stage ) {
-	shaderStage_t	*pStage;
+	const shaderStage_t *pStage;
 
-	pStage = tess.xstages[stage];
+	pStage = tess.xstages[ stage ];
 
 	GL_State( pStage->stateBits );
 
@@ -577,12 +575,13 @@ static void RB_FogPass( void ) {
 	R_DrawElements( tess.numIndexes, tess.indexes );
 }
 
+
 /*
 ===============
 ComputeColors
 ===============
 */
-static void ComputeColors( shaderStage_t *pStage )
+static void ComputeColors( const shaderStage_t *pStage )
 {
 	int		i;
 
@@ -876,21 +875,20 @@ void R_ComputeTexCoords( const shaderStage_t *pStage ) {
 	}
 }
 
+
 /*
 ** RB_IterateStagesGeneric
 */
 static void RB_IterateStagesGeneric( shaderCommands_t *input )
 {
+	const shaderStage_t *pStage;
 	int stage;
 
 	for ( stage = 0; stage < MAX_SHADER_STAGES; stage++ )
 	{
-		shaderStage_t *pStage = tess.xstages[stage];
-
+		pStage = tess.xstages[ stage ];
 		if ( !pStage )
-		{
 			break;
-		}
 
 		ComputeColors( pStage );
 		R_ComputeTexCoords( pStage );
@@ -995,24 +993,24 @@ void RB_StageIteratorGeneric( void )
 	if ( tess.numPasses > 1 || shader->multitextureEnv )
 	{
 		setArraysOnce = qfalse;
-		qglDisableClientState (GL_COLOR_ARRAY);
-		qglDisableClientState (GL_TEXTURE_COORD_ARRAY);
+		qglDisableClientState( GL_COLOR_ARRAY );
+		qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
 	}
 	else
 	{
 		setArraysOnce = qtrue;
 
-		qglEnableClientState( GL_COLOR_ARRAY);
+		qglEnableClientState( GL_COLOR_ARRAY );
 		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors );
 
-		qglEnableClientState( GL_TEXTURE_COORD_ARRAY);
+		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
 		qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[0] );
 	}
 
 	//
 	// lock XYZ
 	//
-	qglVertexPointer (3, GL_FLOAT, 16, input->xyz);	// padded for SIMD
+	qglVertexPointer( 3, GL_FLOAT, sizeof( input->xyz[0] ), input->xyz ); // padded for SIMD
 	if ( qglLockArraysEXT )
 	{
 		qglLockArraysEXT( 0, input->numVertexes );
@@ -1055,7 +1053,7 @@ void RB_StageIteratorGeneric( void )
 	// 
 	// unlock arrays
 	//
-	if ( qglUnlockArraysEXT ) 
+	if ( qglUnlockArraysEXT )
 	{
 		qglUnlockArraysEXT();
 	}
@@ -1293,15 +1291,16 @@ void RB_EndSurface( void ) {
 
 	input = &tess;
 
-	if (input->numIndexes == 0) {
+	if ( input->numIndexes == 0 ) {
 		return;
 	}
 
-	if (input->indexes[SHADER_MAX_INDEXES-1] != 0) {
-		ri.Error (ERR_DROP, "RB_EndSurface() - SHADER_MAX_INDEXES hit");
+	if ( input->numIndexes > SHADER_MAX_INDEXES ) {
+		ri.Error( ERR_DROP, "RB_EndSurface() - SHADER_MAX_INDEXES hit" );
 	}	
-	if (input->xyz[SHADER_MAX_VERTEXES-1][0] != 0) {
-		ri.Error (ERR_DROP, "RB_EndSurface() - SHADER_MAX_VERTEXES hit");
+
+	if ( input->numVertexes > SHADER_MAX_VERTEXES ) {
+		ri.Error( ERR_DROP, "RB_EndSurface() - SHADER_MAX_VERTEXES hit" );
 	}
 
 	if ( tess.shader == tr.shadowShader ) {
@@ -1334,16 +1333,16 @@ void RB_EndSurface( void ) {
 	//
 	// call off to shader specific tess end function
 	//
-	tess.currentStageIteratorFunc();
+	tess.shader->optimalStageIteratorFunc();
 
 	//
 	// draw debugging stuff
 	//
 	if ( r_showtris->integer ) {
-		DrawTris (input);
+		DrawTris( input );
 	}
 	if ( r_shownormals->integer ) {
-		DrawNormals (input);
+		DrawNormals( input );
 	}
 
 	// clear shader so we can tell we don't have any unclosed surfaces

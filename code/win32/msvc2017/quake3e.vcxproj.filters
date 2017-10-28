@@ -285,6 +285,7 @@
     <ClInclude Include="..\win_local.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\glw_win.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

@@ -1357,8 +1357,7 @@ typedef struct shaderCommands_s
 
 	// info extracted from current shader
 	int			numPasses;
-	void		(*currentStageIteratorFunc)( void );
-	shaderStage_t	**xstages;
+	const shaderStage_t **xstages;
 
 } shaderCommands_t;
 
@@ -1367,7 +1366,7 @@ extern	shaderCommands_t	tess;
 void RB_BeginSurface(shader_t *shader, int fogNum );
 void RB_EndSurface(void);
 void RB_CheckOverflow( int verts, int indexes );
-#define RB_CHECKOVERFLOW(v,i) if (tess.numVertexes + (v) >= SHADER_MAX_VERTEXES || tess.numIndexes + (i) >= SHADER_MAX_INDEXES ) {RB_CheckOverflow(v,i);}
+#define RB_CHECKOVERFLOW(v,i) RB_CheckOverflow(v,i)
 
 void RB_StageIteratorGeneric( void );
 void RB_StageIteratorSky( void );

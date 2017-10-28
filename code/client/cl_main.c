@@ -3140,9 +3140,12 @@ int CL_ScaledMilliseconds(void) {
 CL_InitRef
 ============
 */
+void CL_InitGLimp_Cvars( void );
 void CL_InitRef( void ) {
 	refimport_t	ri;
 	refexport_t	*ret;
+
+	CL_InitGLimp_Cvars();
 
 	Com_Printf( "----- Initializing Renderer ----\n" );
 
@@ -3470,6 +3473,39 @@ static void CL_ModeList_f( void )
 }
 
 
+void CL_InitGLimp_Cvars( void )
+{
+	// shared with GLimp
+	r_allowSoftwareGL = Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
+	r_swapInterval = Cvar_Get( "r_swapInterval", "0", CVAR_ARCHIVE_ND );
+	r_glDriver = Cvar_Get( "r_glDriver", OPENGL_DRIVER_NAME, CVAR_ARCHIVE_ND | CVAR_LATCH );
+	
+	r_displayRefresh = Cvar_Get( "r_displayRefresh", "0", CVAR_LATCH );
+	Cvar_CheckRange( r_displayRefresh, "0", "250", CV_INTEGER );
+
+	r_mode = Cvar_Get( "r_mode", "-2", CVAR_ARCHIVE | CVAR_LATCH );
+	r_modeFullscreen = Cvar_Get( "r_modeFullscreen", "-2", CVAR_ARCHIVE | CVAR_LATCH );
+	Cvar_CheckRange( r_mode, "-2", va( "%i", s_numVidModes-1 ), CV_INTEGER );
+	Cvar_SetDescription( r_mode, "Set video mode:\n -2 - use current desktop resolution\n -1 - use \\r_customWidth and \\r_customHeight\n  0..N - enter \\modelist for details" );
+	Cvar_SetDescription( r_modeFullscreen, "Dedicated fullscreen mode, set to \"\" to use \\r_mode in all cases" );
+
+	r_fullscreen = Cvar_Get( "r_fullscreen", "1", CVAR_ARCHIVE | CVAR_LATCH );
+	r_customPixelAspect = Cvar_Get( "r_customPixelAspect", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_customwidth = Cvar_Get( "r_customWidth", "1600", CVAR_ARCHIVE | CVAR_LATCH );
+	r_customheight = Cvar_Get( "r_customHeight", "1024", CVAR_ARCHIVE | CVAR_LATCH );
+	Cvar_CheckRange( r_customwidth, "4", NULL, CV_INTEGER );
+	Cvar_CheckRange( r_customheight, "4", NULL, CV_INTEGER );
+	Cvar_SetDescription( r_customwidth, "Custom width to use with \\r_mode -1" );
+	Cvar_SetDescription( r_customheight, "Custom height to use with \\r_mode -1" );
+
+	r_colorbits = Cvar_Get( "r_colorbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	// shared with renderer:
+	r_stencilbits = Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_depthbits = Cvar_Get( "r_depthbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_drawBuffer = Cvar_Get( "r_drawBuffer", "GL_BACK", CVAR_CHEAT );
+}
+
+
 /*
 ====================
 CL_Init
@@ -3616,35 +3652,6 @@ void CL_Init( void ) {
 	// Make sure cg_stereoSeparation is zero as that variable is deprecated and should not be used anymore.
 	Cvar_Get ("cg_stereoSeparation", "0", CVAR_ROM);
 
-	// shared with GLimp
-	r_allowSoftwareGL = Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
-	r_swapInterval = Cvar_Get( "r_swapInterval", "0", CVAR_ARCHIVE_ND );
-	r_glDriver = Cvar_Get( "r_glDriver", OPENGL_DRIVER_NAME, CVAR_ARCHIVE_ND | CVAR_LATCH );
-	
-	r_displayRefresh = Cvar_Get( "r_displayRefresh", "0", CVAR_LATCH );
-	Cvar_CheckRange( r_displayRefresh, "0", "250", CV_INTEGER );
-
-	r_mode = Cvar_Get( "r_mode", "-2", CVAR_ARCHIVE | CVAR_LATCH );
-	r_modeFullscreen = Cvar_Get( "r_modeFullscreen", "-2", CVAR_ARCHIVE | CVAR_LATCH );
-	Cvar_CheckRange( r_mode, "-2", va( "%i", s_numVidModes-1 ), CV_INTEGER );
-	Cvar_SetDescription( r_mode, "Set video mode:\n -2 - use current desktop resolution\n -1 - use \\r_customWidth and \\r_customHeight\n  0..N - enter \\modelist for details" );
-	Cvar_SetDescription( r_modeFullscreen, "Dedicated fullscreen mode, set to \"\" to use \\r_mode in all cases" );
-
-	r_fullscreen = Cvar_Get( "r_fullscreen", "1", CVAR_ARCHIVE | CVAR_LATCH );
-	r_customPixelAspect = Cvar_Get( "r_customPixelAspect", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	r_customwidth = Cvar_Get( "r_customWidth", "1600", CVAR_ARCHIVE | CVAR_LATCH );
-	r_customheight = Cvar_Get( "r_customHeight", "1024", CVAR_ARCHIVE | CVAR_LATCH );
-	Cvar_CheckRange( r_customwidth, "4", NULL, CV_INTEGER );
-	Cvar_CheckRange( r_customheight, "4", NULL, CV_INTEGER );
-	Cvar_SetDescription( r_customwidth, "Custom width to use with \\r_mode -1" );
-	Cvar_SetDescription( r_customheight, "Custom height to use with \\r_mode -1" );
-
-	r_colorbits = Cvar_Get( "r_colorbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	// shared with renderer:
-	r_stencilbits = Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	r_depthbits = Cvar_Get( "r_depthbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	r_drawBuffer = Cvar_Get( "r_drawBuffer", "GL_BACK", CVAR_CHEAT );
-
 	//
 	// register our commands
 	//
@@ -3758,6 +3765,7 @@ void CL_Shutdown( const char *finalmsg, qboolean quit ) {
 	Cmd_RemoveCommand ("stopvideo");
 	Cmd_RemoveCommand ("serverinfo");
 	Cmd_RemoveCommand ("systeminfo");
+	Cmd_RemoveCommand ("modelist");
 
 #ifdef USE_CURL
 	Com_DL_Cleanup( &download );
@@ -3819,7 +3827,6 @@ static void CL_SetServerInfoByAddress(const netadr_t *from, const char *info, in
 			CL_SetServerInfo(&cls.favoriteServers[i], info, ping);
 		}
 	}
-
 }
 
 
