@@ -1033,6 +1033,8 @@ void RB_IQMSurfaceAnim( surfaceType_t *surface ) {
 	glIndex_t	*ptr;
 	glIndex_t	base;
 
+	tess.surfType = SF_IQM;
+
 	RB_CHECKOVERFLOW( surf->num_vertexes, surf->num_triangles * 3 );
 
 	outXYZ = &tess.xyz[tess.numVertexes];
@@ -1146,6 +1148,7 @@ void RB_IQMSurfaceAnim( surfaceType_t *surface ) {
 	tess.numIndexes += 3 * surf->num_triangles;
 	tess.numVertexes += surf->num_vertexes;
 }
+
 
 int R_IQMLerpTag( orientation_t *tag, iqmData_t *data,
 		  int startFrame, int endFrame, 

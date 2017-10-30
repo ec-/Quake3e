@@ -1357,14 +1357,14 @@ typedef struct shaderCommands_s
 
 	// info extracted from current shader
 	int			numPasses;
-	const shaderStage_t **xstages;
+	shaderStage_t **xstages;
 
 } shaderCommands_t;
 
 extern	shaderCommands_t	tess;
 
-void RB_BeginSurface(shader_t *shader, int fogNum );
-void RB_EndSurface(void);
+void RB_BeginSurface( shader_t *shader, int fogNum );
+void RB_EndSurface( void );
 void RB_CheckOverflow( int verts, int indexes );
 #define RB_CHECKOVERFLOW(v,i) RB_CheckOverflow(v,i)
 
@@ -1422,6 +1422,7 @@ int R_LightForPoint( vec3_t point, vec3_t ambientLight, vec3_t directedLight, ve
 
 void R_BindAnimatedImage( const textureBundle_t *bundle );
 void R_DrawElements( int numIndexes, const glIndex_t *indexes );
+void R_ComputeColors( const shaderStage_t *pStage );
 void R_ComputeTexCoords( const shaderStage_t *pStage );
 
 qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t maxs );

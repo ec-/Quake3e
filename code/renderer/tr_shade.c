@@ -317,7 +317,13 @@ to overflow.
 */
 void RB_BeginSurface( shader_t *shader, int fogNum ) {
 
-	shader_t *state = (shader->remappedShader) ? shader->remappedShader : shader;
+	shader_t *state;
+	
+	if ( shader->remappedShader ) {
+		state = shader->remappedShader;
+	} else {
+		state = shader;
+	}
 
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
@@ -330,7 +336,7 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 	tess.numPasses = state->numUnfoggedPasses;
 
 	tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
-	if (tess.shader->clampTime && tess.shaderTime >= tess.shader->clampTime) {
+	if ( tess.shader->clampTime && tess.shaderTime >= tess.shader->clampTime ) {
 		tess.shaderTime = tess.shader->clampTime;
 	}
 }
@@ -364,6 +370,7 @@ static void DrawMultitextured( shaderCommands_t *input, int stage ) {
 	//
 	GL_SelectTexture( 0 );
 	qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[0] );
+
 	R_BindAnimatedImage( &pStage->bundle[0] );
 
 	//
@@ -538,7 +545,6 @@ static void ProjectDlightTexture( void ) {
 #endif // USE_LEGACY_DLIGHTS
 
 
-
 /*
 ===================
 RB_FogPass
@@ -578,10 +584,10 @@ static void RB_FogPass( void ) {
 
 /*
 ===============
-ComputeColors
+R_ComputeColors
 ===============
 */
-static void ComputeColors( const shaderStage_t *pStage )
+void R_ComputeColors( const shaderStage_t *pStage )
 {
 	int		i;
 
@@ -773,7 +779,7 @@ static void ComputeColors( const shaderStage_t *pStage )
 
 /*
 ===============
-ComputeTexCoords
+R_ComputeTexCoords
 ===============
 */
 void R_ComputeTexCoords( const shaderStage_t *pStage ) {
@@ -890,7 +896,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 		if ( !pStage )
 			break;
 
-		ComputeColors( pStage );
+		R_ComputeColors( pStage );
 		R_ComputeTexCoords( pStage );
 
 		if ( !setArraysOnce )
@@ -937,9 +943,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 		}
 		// allow skipping out to show just lightmaps during development
 		if ( r_lightmap->integer && ( pStage->bundle[0].isLightmap || pStage->bundle[1].isLightmap ) )
-		{
 			break;
-		}
 	}
 }
 
@@ -953,19 +957,15 @@ void RB_StageIteratorGeneric( void )
 	shader_t		*shader;
 
 #ifdef USE_PMLIGHT
-#ifdef USE_LEGACY_DLIGHTS
-	if ( r_dlightMode->integer ) 
-#endif
+	if ( tess.dlightPass )
 	{
-		if ( tess.dlightPass ) 
-		{
-			ARB_LightingPass();
-			return;
-		}
-
-		GL_ProgramDisable();
+		ARB_LightingPass();
+		return;
 	}
+
+	GL_ProgramDisable();
 #endif // USE_PMLIGHT
+
 
 	input = &tess;
 	shader = input->shader;
@@ -1024,7 +1024,7 @@ void RB_StageIteratorGeneric( void )
 		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
 		qglEnableClientState( GL_COLOR_ARRAY );
 	}
-
+	
 	//
 	// call shader function
 	//
@@ -1046,7 +1046,8 @@ void RB_StageIteratorGeneric( void )
 	//
 	// now do fog
 	//
-	if ( tess.fogNum && tess.shader->fogPass ) {
+	if ( tess.fogNum && tess.shader->fogPass )
+	{
 		RB_FogPass();
 	}
 
@@ -1077,18 +1078,12 @@ void RB_StageIteratorVertexLitTexture( void )
 	input = &tess;
 
 #ifdef USE_PMLIGHT
-#ifdef USE_LEGACY_DLIGHTS
-	if ( r_dlightMode->integer ) 
-#endif
+	if ( tess.dlightPass )
 	{
-		if ( tess.dlightPass ) 
-		{
-			ARB_LightingPass();
-			return;
-		}
-
-		GL_ProgramDisable();
+		ARB_LightingPass();
+		return;
 	}
+	GL_ProgramDisable();
 #endif // USE_PMLIGHT
 
 	//
@@ -1169,18 +1164,12 @@ void RB_StageIteratorLightmappedMultitexture( void ) {
 	input = &tess;
 
 #ifdef USE_PMLIGHT
-#ifdef USE_LEGACY_DLIGHTS
-	if ( r_dlightMode->integer ) 
-#endif
+	if ( tess.dlightPass )
 	{
-		if ( tess.dlightPass ) 
-		{
-			ARB_LightingPass();
-			return;
-		}
-
-		GL_ProgramDisable();
+		ARB_LightingPass();
+		return;
 	}
+	GL_ProgramDisable();
 #endif // USE_PMLIGHT
 
 	//

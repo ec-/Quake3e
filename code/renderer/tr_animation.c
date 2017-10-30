@@ -33,7 +33,6 @@ frame.
 
 */
 
-
 // copied and adapted from tr_mesh.c
 
 /*
@@ -41,7 +40,6 @@ frame.
 R_MDRCullModel
 =============
 */
-
 static int R_MDRCullModel( mdrHeader_t *header, trRefEntity_t *ent ) {
 	vec3_t		bounds[2];
 	mdrFrame_t	*oldFrame, *newFrame;
@@ -128,13 +126,12 @@ static int R_MDRCullModel( mdrHeader_t *header, trRefEntity_t *ent ) {
 	}
 }
 
+
 /*
 =================
 R_MDRComputeFogNum
-
 =================
 */
-
 int R_MDRComputeFogNum( mdrHeader_t *header, trRefEntity_t *ent ) {
 	int				i, j;
 	fog_t			*fog;
@@ -303,6 +300,7 @@ void R_MDRAddAnimSurfaces( trRefEntity_t *ent ) {
 	}
 }
 
+
 /*
 ==============
 RB_MDRSurfaceAnim
@@ -323,6 +321,8 @@ void RB_MDRSurfaceAnim( mdrSurface_t *surface )
 	mdrBone_t		bones[MDR_MAX_BONES], *bonePtr, *bone;
 
 	int			frameSize;
+
+	tess.surfType = SF_MDR;
 
 	// don't lerp if lerping off, or this is the only frame, or the last frame...
 	//

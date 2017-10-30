@@ -58,11 +58,10 @@ typedef enum {
 #define PFD_SUPPORT_COMPOSITION 0x00008000
 #endif
 
-static void		GLW_InitExtensions( void );
-static rserr_t	GLW_SetMode( const char *drivername, 
-							 int mode, 
+static rserr_t	GLW_SetMode( const char *drivername,
+							 int mode,
 							 const char *modeFS,
-							 int colorbits, 
+							 int colorbits,
 							 qboolean cdsFullscreen );
 
 static qboolean s_classRegistered = qfalse;

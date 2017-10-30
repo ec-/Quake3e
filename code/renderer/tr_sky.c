@@ -384,7 +384,8 @@ static void DrawSkySide( struct image_s *image, const int mins[2], const int max
 	}
 }
 
-static void DrawSkyBox( shader_t *shader )
+
+static void DrawSkyBox( const shader_t *shader )
 {
 	int		i;
 
@@ -454,6 +455,7 @@ static void DrawSkyBox( shader_t *shader )
 
 }
 
+
 static void FillCloudySkySide( const int mins[2], const int maxs[2], qboolean addIndexes )
 {
 	int s, t;
@@ -503,6 +505,7 @@ static void FillCloudySkySide( const int mins[2], const int maxs[2], qboolean ad
 		}
 	}
 }
+
 
 static void FillCloudBox( const shader_t *shader, int stage )
 {
@@ -599,13 +602,14 @@ static void FillCloudBox( const shader_t *shader, int stage )
 	}
 }
 
+
 /*
 ** R_BuildCloudData
 */
 void R_BuildCloudData( shaderCommands_t *input )
 {
-	int			i;
-	shader_t	*shader;
+	const shader_t *shader;
+	int i;
 
 	shader = input->shader;
 
@@ -629,6 +633,7 @@ void R_BuildCloudData( shaderCommands_t *input )
 		}
 	}
 }
+
 
 /*
 ** R_InitSkyTexCoords
@@ -731,8 +736,6 @@ void RB_DrawSun( float scale, shader_t *shader ) {
 	// back to normal depth range
 	qglDepthRange( 0.0, 1.0 );
 }
-
-
 
 
 /*

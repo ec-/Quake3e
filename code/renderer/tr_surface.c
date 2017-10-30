@@ -54,13 +54,14 @@ void RB_CheckOverflow( int verts, int indexes ) {
 	RB_EndSurface();
 
 	if ( verts >= SHADER_MAX_VERTEXES ) {
-		ri.Error(ERR_DROP, "RB_CheckOverflow: verts > MAX (%d > %d)", verts, SHADER_MAX_VERTEXES );
-	}
-	if ( indexes >= SHADER_MAX_INDEXES ) {
-		ri.Error(ERR_DROP, "RB_CheckOverflow: indices > MAX (%d > %d)", indexes, SHADER_MAX_INDEXES );
+		ri.Error( ERR_DROP, "RB_CheckOverflow: verts > MAX (%d > %d)", verts, SHADER_MAX_VERTEXES );
 	}
 
-	RB_BeginSurface(tess.shader, tess.fogNum );
+	if ( indexes >= SHADER_MAX_INDEXES ) {
+		ri.Error( ERR_DROP, "RB_CheckOverflow: indices > MAX (%d > %d)", indexes, SHADER_MAX_INDEXES );
+	}
+
+	RB_BeginSurface( tess.shader, tess.fogNum );
 }
 
 
@@ -133,10 +134,10 @@ void RB_AddQuadStampExt( vec3_t origin, vec3_t left, vec3_t up, byte *color, flo
 	* ( unsigned int * ) &tess.vertexColors[ndx+3] = 
 		* ( unsigned int * )color;
 
-
 	tess.numVertexes += 4;
 	tess.numIndexes += 6;
 }
+
 
 /*
 ==============
@@ -146,6 +147,7 @@ RB_AddQuadStamp
 void RB_AddQuadStamp( vec3_t origin, vec3_t left, vec3_t up, byte *color ) {
 	RB_AddQuadStampExt( origin, left, up, color, 0, 0, 1, 1 );
 }
+
 
 /*
 ==============
@@ -234,14 +236,14 @@ static void RB_SurfaceTriangles( srfTriangles_t *srf ) {
 #endif
 	qboolean	needsNormal;
 
+	RB_CHECKOVERFLOW( srf->numVerts, srf->numIndexes );
+
 #ifdef USE_LEGACY_DLIGHTS
 	dlightBits = srf->dlightBits;
 	tess.dlightBits |= dlightBits;
 #endif
 
 	tess.surfType = SF_TRIANGLES;
-
-	RB_CHECKOVERFLOW( srf->numVerts, srf->numIndexes );
 
 	for ( i = 0 ; i < srf->numIndexes ; i += 3 ) {
 		tess.indexes[ tess.numIndexes + i + 0 ] = tess.numVertexes + srf->indexes[ i + 0 ];
@@ -697,6 +699,8 @@ static void RB_SurfaceMesh(md3Surface_t *surface) {
 	int				Bob, Doug;
 	int				numVerts;
 
+	RB_CHECKOVERFLOW( surface->numVerts, surface->numTriangles * 3 );
+
 	tess.surfType = SF_MD3;
 
 	if (  backEnd.currentEntity->e.oldframe == backEnd.currentEntity->e.frame ) {
@@ -704,8 +708,6 @@ static void RB_SurfaceMesh(md3Surface_t *surface) {
 	} else  {
 		backlerp = backEnd.currentEntity->e.backlerp;
 	}
-
-	RB_CHECKOVERFLOW( surface->numVerts, surface->numTriangles*3 );
 
 	LerpMeshVertexes (surface, backlerp);
 
@@ -737,12 +739,12 @@ static void RB_SurfaceMesh(md3Surface_t *surface) {
 RB_SurfaceFace
 ==============
 */
-static void RB_SurfaceFace( srfSurfaceFace_t *surf ) {
+static void RB_SurfaceFace( const srfSurfaceFace_t *surf ) {
 	int			i;
 	unsigned	*indices;
 	glIndex_t	*tessIndexes;
-	float		*v;
-	float		*normal;
+	const float	*v;
+	const float	*normal;
 	int			ndx;
 	int			Bob;
 	int			numPoints;
@@ -750,9 +752,8 @@ static void RB_SurfaceFace( srfSurfaceFace_t *surf ) {
 	int			dlightBits;
 #endif
 
-	tess.surfType = SF_FACE;
-
 	RB_CHECKOVERFLOW( surf->numPoints, surf->numIndices );
+	tess.surfType = SF_FACE;
 
 #ifdef USE_LEGACY_DLIGHTS
 	dlightBits = surf->dlightBits;
@@ -795,9 +796,9 @@ static void RB_SurfaceFace( srfSurfaceFace_t *surf ) {
 }
 
 
-static float	LodErrorForVolume( vec3_t local, float radius ) {
-	vec3_t		world;
-	float		d;
+static float LodErrorForVolume( vec3_t local, float radius ) {
+	vec3_t	world;
+	float	d;
 
 	// never let it go negative
 	if ( r_lodCurveError->value < 0 ) {
@@ -824,6 +825,7 @@ static float	LodErrorForVolume( vec3_t local, float radius ) {
 
 	return r_lodCurveError->value / d;
 }
+
 
 /*
 =============
@@ -900,7 +902,7 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 			// if we don't have enough space for at least one strip, flush the buffer
 			if ( vrows < 2 || irows < 1 ) {
 				RB_EndSurface();
-				RB_BeginSurface(tess.shader, tess.fogNum );
+				RB_BeginSurface( tess.shader, tess.fogNum );
 			} else {
 				break;
 			}
@@ -1059,23 +1061,21 @@ static void RB_SurfaceEntity( surfaceType_t *surfType ) {
 	tess.surfType = SF_ENTITY;
 }
 
+
 static void RB_SurfaceBad( surfaceType_t *surfType ) {
-	tess.surfType = SF_BAD;
 	ri.Printf( PRINT_ALL, "Bad surface tesselated.\n" );
 }
 
 
-static void RB_SurfaceFlare(srfFlare_t *surf)
-{
-	if (r_flares->integer) {
+static void RB_SurfaceFlare( srfFlare_t *surf ) {
+	if ( r_flares->integer ) {
 		tess.surfType = SF_FLARE;
-		RB_AddFlare(surf, tess.fogNum, surf->origin, surf->color, surf->normal);
+		RB_AddFlare( surf, tess.fogNum, surf->origin, surf->color, surf->normal );
 	}
 }
 
 
 static void RB_SurfaceSkip( void *surf ) {
-	tess.surfType = SF_SKIP;
 }
 
 

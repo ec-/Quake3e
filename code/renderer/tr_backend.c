@@ -688,7 +688,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	backEnd.refdef.floatTime = originalTime;
 
 	// draw the contents of the last shader batch
-	if (oldShader != NULL) {
+	if ( oldShader != NULL ) {
 		RB_EndSurface();
 	}
 
@@ -917,7 +917,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 	backEnd.refdef.floatTime = originalTime;
 
 	// draw the contents of the last shader batch
-	if ( oldShader != NULL) {
+	if ( oldShader != NULL ) {
 		RB_EndSurface();
 	}
 

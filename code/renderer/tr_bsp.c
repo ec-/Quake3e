@@ -97,7 +97,7 @@ R_ColorShiftLightingBytes
 
 ===============
 */
-static	void R_ColorShiftLightingBytes( byte in[4], byte out[4] ) {
+static void R_ColorShiftLightingBytes( const byte in[4], byte out[4] ) {
 	int		shift, r, g, b;
 
 	// shift the color data based on overbright range
@@ -137,14 +137,14 @@ static	void R_ColorShiftLightingBytes( byte in[4], byte out[4] ) {
 	out[3] = in[3];
 }
 
+
 /*
 ===============
 R_LoadLightmaps
-
 ===============
 */
 #define	LIGHTMAP_SIZE	128
-static	void R_LoadLightmaps( lump_t *l ) {
+static void R_LoadLightmaps( const lump_t *l ) {
 	byte		*buf, *buf_p;
 	int			len;
 	byte		image[LIGHTMAP_SIZE*LIGHTMAP_SIZE*4];
@@ -233,7 +233,7 @@ This is called by the clipmodel subsystem so we can share the 1.8 megs of
 space in big maps...
 =================
 */
-void		RE_SetWorldVisData( const byte *vis ) {
+void RE_SetWorldVisData( const byte *vis ) {
 	tr.externalVisData = vis;
 }
 
@@ -243,7 +243,7 @@ void		RE_SetWorldVisData( const byte *vis ) {
 R_LoadVisibility
 =================
 */
-static	void R_LoadVisibility( lump_t *l ) {
+static void R_LoadVisibility( const lump_t *l ) {
 	int		len;
 	byte	*buf;
 
@@ -314,7 +314,7 @@ static shader_t *ShaderForShaderNum( int shaderNum, int lightmapNum ) {
 ParseFace
 ===============
 */
-static void ParseFace( dsurface_t *ds, drawVert_t *verts, msurface_t *surf, int *indexes  ) {
+static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t *surf, int *indexes  ) {
 	int			i, j;
 	srfSurfaceFace_t	*cv;
 	int			numPoints, numIndexes;
@@ -386,7 +386,7 @@ static void ParseFace( dsurface_t *ds, drawVert_t *verts, msurface_t *surf, int 
 ParseMesh
 ===============
 */
-static void ParseMesh ( dsurface_t *ds, drawVert_t *verts, msurface_t *surf ) {
+static void ParseMesh ( const dsurface_t *ds, const drawVert_t *verts, msurface_t *surf ) {
 	srfGridMesh_t	*grid;
 	int				i, j;
 	int				width, height, numPoints;
@@ -448,12 +448,13 @@ static void ParseMesh ( dsurface_t *ds, drawVert_t *verts, msurface_t *surf ) {
 	grid->lodRadius = VectorLength( tmpVec );
 }
 
+
 /*
 ===============
 ParseTriSurf
 ===============
 */
-static void ParseTriSurf( dsurface_t *ds, drawVert_t *verts, msurface_t *surf, int *indexes ) {
+static void ParseTriSurf( const dsurface_t *ds, const drawVert_t *verts, msurface_t *surf, int *indexes ) {
 	srfTriangles_t	*tri;
 	int				i, j;
 	int				numVerts, numIndexes;
@@ -507,12 +508,13 @@ static void ParseTriSurf( dsurface_t *ds, drawVert_t *verts, msurface_t *surf, i
 	}
 }
 
+
 /*
 ===============
 ParseFlare
 ===============
 */
-static void ParseFlare( dsurface_t *ds, drawVert_t *verts, msurface_t *surf, int *indexes ) {
+static void ParseFlare( const dsurface_t *ds, const drawVert_t *verts, msurface_t *surf, int *indexes ) {
 	srfFlare_t		*flare;
 	int				i;
 
@@ -559,6 +561,7 @@ int R_MergedWidthPoints(srfGridMesh_t *grid, int offset) {
 	return qfalse;
 }
 
+
 /*
 =================
 R_MergedHeightPoints
@@ -579,6 +582,7 @@ int R_MergedHeightPoints(srfGridMesh_t *grid, int offset) {
 	}
 	return qfalse;
 }
+
 
 /*
 =================
@@ -1168,6 +1172,7 @@ int R_TryStitchingPatch( int grid1num ) {
 	return numstitches;
 }
 
+
 /*
 ===============
 R_StitchAllPatches
@@ -1201,12 +1206,13 @@ void R_StitchAllPatches( void ) {
 	ri.Printf( PRINT_ALL, "stitched %d LoD cracks\n", numstitches );
 }
 
+
 /*
 ===============
 R_MovePatchSurfacesToHunk
 ===============
 */
-void R_MovePatchSurfacesToHunk(void) {
+void R_MovePatchSurfacesToHunk( void ) {
 	int i, size;
 	srfGridMesh_t *grid, *hunkgrid;
 
@@ -1238,10 +1244,10 @@ void R_MovePatchSurfacesToHunk(void) {
 R_LoadSurfaces
 ===============
 */
-static	void R_LoadSurfaces( lump_t *surfs, lump_t *verts, lump_t *indexLump ) {
-	dsurface_t	*in;
+static void R_LoadSurfaces( const lump_t *surfs, const lump_t *verts, const lump_t *indexLump ) {
+	const dsurface_t *in;
 	msurface_t	*out;
-	drawVert_t	*dv;
+	const drawVert_t *dv;
 	int			*indexes;
 	int			count;
 	int			numFaces, numMeshes, numTriSurfs, numFlares;
@@ -1273,7 +1279,7 @@ static	void R_LoadSurfaces( lump_t *surfs, lump_t *verts, lump_t *indexLump ) {
 	for ( i = 0 ; i < count ; i++, in++, out++ ) {
 		switch ( LittleLong( in->surfaceType ) ) {
 		case MST_PATCH:
-			ParseMesh ( in, dv, out );
+			ParseMesh( in, dv, out );
 			numMeshes++;
 			break;
 		case MST_TRIANGLE_SOUP:
@@ -1308,14 +1314,13 @@ static	void R_LoadSurfaces( lump_t *surfs, lump_t *verts, lump_t *indexLump ) {
 }
 
 
-
 /*
 =================
 R_LoadSubmodels
 =================
 */
-static	void R_LoadSubmodels( lump_t *l ) {
-	dmodel_t	*in;
+static void R_LoadSubmodels( const lump_t *l ) {
+	const dmodel_t *in;
 	bmodel_t	*out;
 	int			i, j, count;
 
@@ -1358,21 +1363,22 @@ static	void R_LoadSubmodels( lump_t *l ) {
 R_SetParent
 =================
 */
-static	void R_SetParent (mnode_t *node, mnode_t *parent)
+static void R_SetParent( mnode_t *node, mnode_t *parent )
 {
 	node->parent = parent;
 	if ( node->contents != CONTENTS_NODE )
 		return;
-	R_SetParent (node->children[0], node);
-	R_SetParent (node->children[1], node);
+	R_SetParent( node->children[0], node );
+	R_SetParent( node->children[1], node );
 }
+
 
 /*
 =================
 R_LoadNodesAndLeafs
 =================
 */
-static	void R_LoadNodesAndLeafs (lump_t *nodeLump, lump_t *leafLump) {
+static void R_LoadNodesAndLeafs( const lump_t *nodeLump, const lump_t *leafLump ) {
 	int			i, j, p;
 	dnode_t		*in;
 	dleaf_t		*inLeaf;
@@ -1470,7 +1476,7 @@ static void R_ReplaceMapShaders( dshader_t *out, int count )
 R_LoadShaders
 =================
 */
-static	void R_LoadShaders( lump_t *l ) {	
+static void R_LoadShaders( const lump_t *l ) {
 	int		i, count;
 	dshader_t	*in, *out;
 	
@@ -1499,7 +1505,7 @@ static	void R_LoadShaders( lump_t *l ) {
 R_LoadMarksurfaces
 =================
 */
-static	void R_LoadMarksurfaces (lump_t *l)
+static void R_LoadMarksurfaces( const lump_t *l )
 {	
 	int		i, j, count;
 	int		*in;
@@ -1558,13 +1564,13 @@ static	void R_LoadPlanes( lump_t *l ) {
 	}
 }
 
+
 /*
 =================
 R_LoadFogs
-
 =================
 */
-static	void R_LoadFogs( lump_t *l, lump_t *brushesLump, lump_t *sidesLump ) {
+static void R_LoadFogs( const lump_t *l, const lump_t *brushesLump, const lump_t *sidesLump ) {
 	int			i;
 	fog_t		*out;
 	dfog_t		*fogs;
@@ -1648,9 +1654,9 @@ static	void R_LoadFogs( lump_t *l, lump_t *brushesLump, lump_t *sidesLump ) {
 
 		out->parms = shader->fogParms;
 
-		out->colorInt = ColorBytes4 ( shader->fogParms.color[0] * tr.identityLight, 
-			                          shader->fogParms.color[1] * tr.identityLight, 
-			                          shader->fogParms.color[2] * tr.identityLight, 1.0 );
+		out->colorInt = ColorBytes4 ( shader->fogParms.color[0] * tr.identityLight,
+			shader->fogParms.color[1] * tr.identityLight,
+			shader->fogParms.color[2] * tr.identityLight, 1.0 );
 
 		d = shader->fogParms.depthForOpaque < 1 ? 1 : shader->fogParms.depthForOpaque;
 		out->tcScale = 1.0f / ( d * 8 );
@@ -1676,10 +1682,9 @@ static	void R_LoadFogs( lump_t *l, lump_t *brushesLump, lump_t *sidesLump ) {
 /*
 ================
 R_LoadLightGrid
-
 ================
 */
-void R_LoadLightGrid( lump_t *l ) {
+void R_LoadLightGrid( const lump_t *l ) {
 	int		i;
 	vec3_t	maxs;
 	int		numGridPoints;
@@ -1719,12 +1724,13 @@ void R_LoadLightGrid( lump_t *l ) {
 	}
 }
 
+
 /*
 ================
 R_LoadEntities
 ================
 */
-void R_LoadEntities( lump_t *l ) {
+void R_LoadEntities( const lump_t *l ) {
 	const char *p, *token;
 	char *s;
 	char keyname[MAX_TOKEN_CHARS];
@@ -1822,6 +1828,7 @@ qboolean R_GetEntityToken( char *buffer, int size ) {
 	}
 }
 
+
 /*
 =================
 RE_LoadWorldMap
@@ -1890,12 +1897,12 @@ void RE_LoadWorldMap( const char *name ) {
 	// load into heap
 	R_LoadShaders( &header->lumps[LUMP_SHADERS] );
 	R_LoadLightmaps( &header->lumps[LUMP_LIGHTMAPS] );
-	R_LoadPlanes (&header->lumps[LUMP_PLANES]);
+	R_LoadPlanes( &header->lumps[LUMP_PLANES] );
 	R_LoadFogs( &header->lumps[LUMP_FOGS], &header->lumps[LUMP_BRUSHES], &header->lumps[LUMP_BRUSHSIDES] );
 	R_LoadSurfaces( &header->lumps[LUMP_SURFACES], &header->lumps[LUMP_DRAWVERTS], &header->lumps[LUMP_DRAWINDEXES] );
-	R_LoadMarksurfaces (&header->lumps[LUMP_LEAFSURFACES]);
-	R_LoadNodesAndLeafs (&header->lumps[LUMP_NODES], &header->lumps[LUMP_LEAFS]);
-	R_LoadSubmodels (&header->lumps[LUMP_MODELS]);
+	R_LoadMarksurfaces( &header->lumps[LUMP_LEAFSURFACES] );
+	R_LoadNodesAndLeafs( &header->lumps[LUMP_NODES], &header->lumps[LUMP_LEAFS] );
+	R_LoadSubmodels( &header->lumps[LUMP_MODELS] );
 	R_LoadVisibility( &header->lumps[LUMP_VISIBILITY] );
 	R_LoadEntities( &header->lumps[LUMP_ENTITIES] );
 	R_LoadLightGrid( &header->lumps[LUMP_LIGHTGRID] );
@@ -1907,5 +1914,5 @@ void RE_LoadWorldMap( const char *name ) {
 	// only set tr.world now that we know the entire level has loaded properly
 	tr.world = &s_worldData;
 
-    ri.FS_FreeFile( buffer.v );
+	ri.FS_FreeFile( buffer.v );
 }
