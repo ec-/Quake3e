@@ -218,6 +218,7 @@ typedef struct {
 	// demo information
 	char		demoName[MAX_OSPATH];
 	char		recordName[MAX_OSPATH]; // without extension
+	qboolean	explicitRecordName;
 	char		recordNameShort[TRUNCATE_LENGTH]; // for recording message
 	qboolean	dm68compat;
 	qboolean	spDemoRecording;

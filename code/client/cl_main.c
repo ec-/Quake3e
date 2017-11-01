@@ -238,7 +238,7 @@ void CL_StopRecord_f( void ) {
 		char tempName[MAX_OSPATH];
 		char finalName[MAX_OSPATH];
 		int protocol;
-		int	len;
+		int	len, sequence;
 
 		// finish up
 		len = -1;
@@ -253,8 +253,20 @@ void CL_StopRecord_f( void ) {
 		else
 			protocol = NEW_PROTOCOL_VERSION;
 
-		Com_sprintf( finalName, sizeof( finalName ), "%s.%s%d", clc.recordName, DEMOEXT, protocol );
 		Com_sprintf( tempName, sizeof( tempName ), "%s.tmp", clc.recordName );
+
+		Com_sprintf( finalName, sizeof( finalName ), "%s.%s%d", clc.recordName, DEMOEXT, protocol );
+
+		if ( clc.explicitRecordName ) {
+			FS_Remove( finalName );
+		} else {
+			// add sequence suffix to avoid overwrite
+			sequence = 0;
+			while ( FS_FileExists( finalName ) && ++sequence < 1000 ) {
+				Com_sprintf( finalName, sizeof( finalName ), "%s-%02d.%s%d",
+					clc.recordName, sequence, DEMOEXT, protocol );
+			}
+		}
 
 		FS_Rename( tempName, finalName );
 	}
@@ -532,7 +544,7 @@ static void CL_Record_f( void ) {
 	char		name[MAX_OSPATH];
 	char		demoExt[16];
 	const char	*ext;
-	int			number;
+	qtime_t		t;
 
 	if ( Cmd_Argc() > 2 ) {
 		Com_Printf( "record <demoname>\n" );
@@ -561,6 +573,7 @@ static void CL_Record_f( void ) {
 		Q_strncpyz( demoName, Cmd_Argv( 1 ), sizeof( demoName ) );
 		ext = COM_GetExtension( demoName );
 		if ( *ext ) {
+			// strip demo extension
 			sprintf( demoExt, "%s%d", DEMOEXT, PROTOCOL_VERSION );
 			if ( Q_stricmp( ext, demoExt ) == 0 ) {
 				*(strrchr( demoName, '.' )) = '\0';
@@ -573,20 +586,15 @@ static void CL_Record_f( void ) {
 			}
 		}
 		Com_sprintf( name, sizeof( name ), "demos/%s", demoName );
+
+		clc.explicitRecordName = qtrue;
 	} else {
 
-		// scan for a free demo name
-		for ( number = 0 ; number <= 9999 ; number++ ) {
-			Com_sprintf( name, sizeof( name ), "demos/demo%04d.%s%d", number, DEMOEXT, PROTOCOL_VERSION );
-			if ( !FS_FileExists( name ) ) {
-				// check both protocols
-				Com_sprintf( name, sizeof( name ), "demos/demo%04d.%s%d", number, DEMOEXT, NEW_PROTOCOL_VERSION );
-				if ( !FS_FileExists( name ) ) {
-					break;	// file doesn't exist
-				}
-			}
-		}
-		Com_sprintf( name, sizeof( name ), "demos/demo%04d", number );
+		Com_RealTime( &t );
+		Com_sprintf( name, sizeof( name ), "demos/demo-%04d%02d%02d-%02d%02d%02d",
+			1900 + t.tm_year, 1 + t.tm_mon,	t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec );
+
+		clc.explicitRecordName = qfalse;
 	}
 
 	// save desired filename without extension
