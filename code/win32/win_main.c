@@ -767,6 +767,27 @@ static void SetDPIAwareness( void )
 
 /*
 ==================
+ExceptionFilter
+
+Restore gamma and hide fullscreen window in case of crash
+==================
+*/
+static LONG WINAPI ExceptionFilter( struct _EXCEPTION_POINTERS *ExceptionInfo )
+{
+	if ( glw_state.gammaSet )
+		GLW_RestoreGamma();
+
+	if ( g_wv.hWnd && glw_state.cdsFullscreen )
+	{
+		ShowWindow( g_wv.hWnd, SW_HIDE );
+	}
+
+	return EXCEPTION_CONTINUE_SEARCH;
+}
+
+
+/*
+==================
 WinMain
 ==================
 */
@@ -794,6 +815,10 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 	// no abort/retry/fail errors
 	SetErrorMode( SEM_FAILCRITICALERRORS );
+
+#ifndef DEDICATED
+	SetUnhandledExceptionFilter( ExceptionFilter );
+#endif
 
 	// get the initial time base
 	Sys_Milliseconds();

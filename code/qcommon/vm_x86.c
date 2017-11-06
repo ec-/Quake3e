@@ -717,7 +717,7 @@ const char *FarJumpStr( int op, int *n )
 void EmitJump( vm_t *vm, instruction_t *i, int op, int addr ) 
 {
 	const char *str;
-	int v, jump_size;
+	int v, jump_size = 0;
 
 	v = instructionOffsets[ addr ] - compiledOfs;
 
@@ -747,8 +747,12 @@ void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 #endif
 
 	str = FarJumpStr( op, &jump_size );	
-	EmitString( str );
-	Emit4( v - 4 - jump_size );
+	if ( jump_size == 0 ) {
+		Com_Error( ERR_DROP, "VM_CompileX86 error: %s\n", "bad jump size" );
+	} else {
+		EmitString( str );
+		Emit4( v - 4 - jump_size );
+	}
 }
 
 

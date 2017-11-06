@@ -2244,6 +2244,10 @@ static shader_t *GeneratePermanentShader( void ) {
 		}
 	}
 
+#ifdef USE_PMLIGHT
+	FindLightingStages( newShader );
+#endif
+
 	SortNewShader();
 
 	hash = generateHashValue(newShader->name, FILE_HASH_SIZE);
@@ -2263,27 +2267,32 @@ Find proper stage for dlight pass
 ====================
 */
 #define GLS_BLEND_BITS (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS)
-static void FindLightingStages( void )
+void FindLightingStages( shader_t *sh )
 {
+	shaderStage_t *st;
 	int i;
-	shader.lightingStage = -1;
 
-	if ( shader.isSky || ( shader.surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) || shader.sort > SS_OPAQUE )
+	sh->lightingStage = -1;
+
+	if ( sh->isSky || ( sh->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) || sh->sort > SS_OPAQUE )
 		return;
 
-	for ( i = 0; i < shader.numUnfoggedPasses; i++ ) {
-		if ( !stages[i].bundle[0].isLightmap ) {
-			if ( stages[i].bundle[0].tcGen != TCGEN_TEXTURE )
+	for ( i = 0; i < sh->numUnfoggedPasses; i++ ) {
+		st = sh->stages[ i ];
+		if ( !st )
+			break;
+		if ( !st->bundle[0].isLightmap ) {
+			if ( st->bundle[0].tcGen != TCGEN_TEXTURE )
 				continue;
-			if ( (stages[i].stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE) )
+			if ( (st->stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE) )
 				continue;
 			 // fix for q3wcp17' textures/scanctf2/bounce_white and others
-			if ( stages[i].rgbGen == CGEN_IDENTITY && (stages[i].stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO) ) {
-				if ( shader.lightingStage >= 0 ) {
+			if ( st->rgbGen == CGEN_IDENTITY && (st->stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO) ) {
+				if ( sh->lightingStage >= 0 ) {
 					continue;
 				}
 			}
-			shader.lightingStage = i;
+			sh->lightingStage = i;
 		}
 	}
 }
@@ -2581,11 +2590,9 @@ static shader_t *FinishShader( void ) {
 	// compute number of passes
 	//
 	shader.numUnfoggedPasses = stage;
-#ifdef USE_PMLIGHT
-	FindLightingStages();
-#endif
+
 	// fogonly shaders don't have any normal passes
-	if (stage == 0 && !shader.isSky)
+	if ( stage == 0 && !shader.isSky )
 		shader.sort = SS_FOG;
 
 	// determine which stage iterator function is appropriate
@@ -2936,7 +2943,8 @@ qhandle_t RE_RegisterShaderFromImage(const char *name, int lightmapIndex, image_
 	}
 
 	sh = FinishShader();
-  return sh->index; 
+
+	return sh->index;
 }
 
 

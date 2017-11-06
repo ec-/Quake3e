@@ -966,7 +966,6 @@ void RB_StageIteratorGeneric( void )
 	GL_ProgramDisable();
 #endif // USE_PMLIGHT
 
-
 	input = &tess;
 	shader = input->shader;
 
@@ -1271,6 +1270,7 @@ void RB_StageIteratorLightmappedMultitexture( void ) {
 		qglUnlockArraysEXT();
 	}
 }
+
 
 /*
 ** RB_EndSurface

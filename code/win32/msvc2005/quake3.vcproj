@@ -695,6 +695,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\glw_win.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\client\keycodes.h"
 				>
 			</File>
@@ -772,10 +776,6 @@
 			</File>
 			<File
 				RelativePath="..\..\qcommon\vm_local.h"
-				>
-			</File>
-			<File
-				RelativePath="..\glw_win.h"
 				>
 			</File>
 			<File

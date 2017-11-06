@@ -524,9 +524,6 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	// save original time for entity shader offsets
 	originalTime = backEnd.refdef.floatTime;
 
-	// clear the z buffer, set the modelview, etc
-	RB_BeginDrawingView();
-
 	// draw everything
 	oldEntityNum = -1;
 	backEnd.currentEntity = &tr.worldEntity;
@@ -697,16 +694,6 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	if ( depthRange ) {
 		qglDepthRange (0, 1);
 	}
-
-	if ( r_drawSun->integer ) { 
-		RB_DrawSun( 0.1f, tr.sunShader ); 
-	}
-
-	// darken down any stencil shadows
-	RB_ShadowFinish();		
-
-	// add light flares on lights that aren't obscured
-	RB_RenderFlares();
 }
 
 
@@ -1214,7 +1201,20 @@ static const void *RB_DrawSurfs( const void *data ) {
 	backEnd.refdef = cmd->refdef;
 	backEnd.viewParms = cmd->viewParms;
 
+	// clear the z buffer, set the modelview, etc
+	RB_BeginDrawingView();
+
 	RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
+
+	if ( r_drawSun->integer ) {
+		RB_DrawSun( 0.1f, tr.sunShader );
+	}
+
+	// darken down any stencil shadows
+	RB_ShadowFinish();
+
+	// add light flares on lights that aren't obscured
+	RB_RenderFlares();
 
 #ifdef USE_PMLIGHT
 	if ( backEnd.refdef.numLitSurfs ) {

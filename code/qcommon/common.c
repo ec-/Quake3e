@@ -2735,7 +2735,7 @@ qboolean Com_CDKeyValidate( const char *key, const char *checksum ) {
 #else
 	char	ch;
 	byte	sum;
-	char	chs[3];
+	char	chs[10];
 	int i, len;
 
 	len = strlen(key);

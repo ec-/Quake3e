@@ -314,7 +314,7 @@ static shader_t *ShaderForShaderNum( int shaderNum, int lightmapNum ) {
 ParseFace
 ===============
 */
-static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t *surf, int *indexes  ) {
+static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t *surf, int *indexes ) {
 	int			i, j;
 	srfSurfaceFace_t	*cv;
 	int			numPoints, numIndexes;
@@ -386,7 +386,7 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 ParseMesh
 ===============
 */
-static void ParseMesh ( const dsurface_t *ds, const drawVert_t *verts, msurface_t *surf ) {
+static void ParseMesh( const dsurface_t *ds, const drawVert_t *verts, msurface_t *surf ) {
 	srfGridMesh_t	*grid;
 	int				i, j;
 	int				width, height, numPoints;
@@ -1133,6 +1133,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 	return qfalse;
 }
 
+
 /*
 ===============
 R_TryStitchPatch
@@ -1809,6 +1810,7 @@ void R_LoadEntities( const lump_t *l ) {
 		}
 	}
 }
+
 
 /*
 =================

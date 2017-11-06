@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define USE_LEGACY_DLIGHTS	// vq3 dynamic lights
 #define USE_PMLIGHT			// promode dynamic lights via \r_dlightMode 1
 #define MAX_REAL_DLIGHTS	(MAX_DLIGHTS*2)
-#define MAX_LITSURFS		(MAX_DRAWSURFS*2)
+#define MAX_LITSURFS		(MAX_DRAWSURFS)
 
 #ifdef USE_RENDERER2
 #undef USE_PMLIGHT
@@ -387,12 +387,12 @@ typedef struct shader_s {
 	int	lightingStage;
 #endif
 
-	void		(*optimalStageIteratorFunc)( void );
+	void	(*optimalStageIteratorFunc)( void );
 
-	double	clampTime;                                  // time this shader is clamped to - set to double for frameloss fix -EC-
-	double	timeOffset;                                 // current time offset for this shader - set to double for frameloss fix -EC-
+	double	clampTime;						// time this shader is clamped to - set to double for frameloss fix -EC-
+	double	timeOffset;						// current time offset for this shader - set to double for frameloss fix -EC-
 
-	struct shader_s *remappedShader;                  // current shader this one is remapped too
+	struct shader_s *remappedShader;		// current shader this one is remapped too
 
 	struct	shader_s	*next;
 } shader_t;
@@ -811,7 +811,7 @@ void		R_Modellist_f (void);
 #define	MAX_SKINS				1024
 
 
-#define	MAX_DRAWSURFS			0x10000
+#define	MAX_DRAWSURFS			0x20000
 #define	DRAWSURF_MASK			(MAX_DRAWSURFS-1)
 
 /*
@@ -1303,10 +1303,11 @@ const void *RB_TakeVideoFrameCmd( const void *data );
 shader_t	*R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImage );
 shader_t	*R_GetShaderByHandle( qhandle_t hShader );
 shader_t	*R_GetShaderByState( int index, long *cycleTime );
-shader_t *R_FindShaderByName( const char *name );
+shader_t	*R_FindShaderByName( const char *name );
 void		R_InitShaders( void );
 void		R_ShaderList_f( void );
-void    R_RemapShader(const char *oldShader, const char *newShader, const char *timeOffset);
+void		R_RemapShader(const char *oldShader, const char *newShader, const char *timeOffset);
+void		FindLightingStages( shader_t *sh );
 
 /*
 ====================================================================
