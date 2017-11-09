@@ -386,6 +386,7 @@ typedef struct shader_s {
 #ifdef USE_PMLIGHT
 	int	lightingStage;
 #endif
+	qboolean	isStaticShader;
 
 	void	(*optimalStageIteratorFunc)( void );
 
@@ -577,13 +578,16 @@ typedef struct srfGridMesh_s {
 	int				lodFixed;
 	int				lodStitched;
 
+	int				vboItemIndex;
+	int				vboExpectIndices;
+	int				vboExpectVertices;
+
 	// vertexes
 	int				width, height;
 	float			*widthLodError;
 	float			*heightLodError;
 	drawVert_t		verts[1];		// variable sized
 } srfGridMesh_t;
-
 
 
 #define	VERTEXSIZE	8
@@ -595,6 +599,7 @@ typedef struct {
 #ifdef USE_LEGACY_DLIGHTS
 	int			dlightBits;
 #endif
+	int			vboItemIndex;
 
 	// triangle definitions (no normals at points)
 	int			numPoints;
@@ -613,6 +618,7 @@ typedef struct {
 #ifdef USE_LEGACY_DLIGHTS
 	int				dlightBits;
 #endif
+	int				vboItemIndex;
 
 	// culling information (FIXME: use this!)
 	vec3_t			bounds[2];
@@ -1111,6 +1117,8 @@ extern cvar_t	*r_hdr;
 extern cvar_t	*r_bloom;
 extern cvar_t	*r_dlightBacks;			// dlight non-facing surfaces for continuity
 
+extern cvar_t	*r_vbo;
+
 extern	cvar_t	*r_norefresh;			// bypasses the ref rendering
 extern	cvar_t	*r_drawentities;		// disable/enable entity rendering
 extern	cvar_t	*r_drawworld;			// disable/enable world rendering
@@ -1296,7 +1304,6 @@ int R_ComputeLOD( trRefEntity_t *ent );
 
 const void *RB_TakeVideoFrameCmd( const void *data );
 
-
 //
 // tr_shader.c
 //
@@ -1308,6 +1315,12 @@ void		R_InitShaders( void );
 void		R_ShaderList_f( void );
 void		R_RemapShader(const char *oldShader, const char *newShader, const char *timeOffset);
 void		FindLightingStages( shader_t *sh );
+
+
+//
+// tr_surface.c
+//
+void		RB_SurfaceGridEstimate( srfGridMesh_t *cv, int *numVertexes, int *numIndexes ); 
 
 /*
 ====================================================================
@@ -1341,6 +1354,7 @@ typedef struct shaderCommands_s
 #pragma pack(pop)
 	
 	surfaceType_t	surfType;
+	int			vboIndex;
 
 	shader_t	*shader;
 	double		shaderTime;	// -EC- set to double for frameloss fix
@@ -1350,6 +1364,7 @@ typedef struct shaderCommands_s
 #endif
 	int			numIndexes;
 	int			numVertexes;
+	qboolean	allowVBO;
 
 #ifdef USE_PMLIGHT
 	qboolean	dlightPass;
@@ -1760,6 +1775,19 @@ qboolean R_HaveExtension( const char *ext );
 #define GLE( ret, name, ... ) extern ret ( APIENTRY * q##name )( __VA_ARGS__ );
 	QGL_Core_PROCS;
 	QGL_Ext_PROCS;
+	QGL_VBO_PROCS;
 #undef GLE
+
+extern void RB_StageIteratorVBO( void );
+extern void R_BuildWorldVBO( msurface_t *surf, int surfCount );
+
+extern void VBO_PushData( int itemIndex, shaderCommands_t *input );
+extern void VBO_UnBind( void );
+extern int VBO_Active( void );
+
+extern void VBO_Cleanup( void );
+extern void VBO_QueueItem( int itemIndex );
+extern void VBO_ClearQueue( void );
+extern void VBO_Flush( void );
 
 #endif //TR_LOCAL_H

@@ -101,6 +101,9 @@
     <ClCompile Include="..\..\renderer\tr_surface.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\renderer\tr_vbo.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\renderer\tr_world.c">
       <Filter>Source Files</Filter>
     </ClCompile>

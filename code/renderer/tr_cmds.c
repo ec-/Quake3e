@@ -448,6 +448,8 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 		RB_EndSurface();
 	}
 
+	VBO_UnBind();
+
 	// texture swapping test
 	if ( r_showImages->integer ) {
 		RB_ShowImages();

@@ -99,6 +99,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 	GLE( void, glLockArraysEXT, GLint, GLint) \
 	GLE( void, glUnlockArraysEXT, void )
 
+#define QGL_VBO_PROCS \
+	GLE( void, glGenBuffersARB, GLsizei n, GLuint *buffers ) \
+	GLE( void, glDeleteBuffersARB, GLsizei n, const GLuint *buffers ) \
+	GLE( void, glBindBufferARB, GLenum target, GLuint buffer ) \
+	GLE( void, glBufferDataARB, GLenum target, GLsizeiptrARB size, const GLvoid *data, GLenum usage )
+
 #define QGL_Win32_PROCS \
 	GLE( HGLRC, wglCreateContext, HDC ) \
 	GLE( BOOL,  wglDeleteContext ,HGLRC ) \

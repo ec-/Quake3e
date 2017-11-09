@@ -765,6 +765,7 @@ static void SetDPIAwareness( void )
 }
 
 
+#ifndef DEDICATED
 /*
 ==================
 ExceptionFilter
@@ -784,6 +785,7 @@ static LONG WINAPI ExceptionFilter( struct _EXCEPTION_POINTERS *ExceptionInfo )
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
+#endif
 
 
 /*

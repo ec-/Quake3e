@@ -70,6 +70,7 @@ cvar_t	*r_dlightSpecColor;
 cvar_t	*r_dlightScale;
 cvar_t	*r_dlightIntensity;
 cvar_t	*r_fbo;
+cvar_t	*r_vbo;
 cvar_t	*r_hdr;
 #endif
 cvar_t	*r_bloom;
@@ -165,6 +166,7 @@ static char gl_extensions[ 32768 ];
 #define GLE( ret, name, ... ) ret ( APIENTRY * q##name )( __VA_ARGS__ );
 	QGL_Core_PROCS;
 	QGL_Ext_PROCS;
+	QGL_VBO_PROCS;
 #undef GLE
 
 // for modular renderer
@@ -367,6 +369,13 @@ static void R_InitExtensions( void )
 	else
 	{
 		ri.Printf( PRINT_ALL, "...GL_EXT_texture_filter_anisotropic not found\n" );
+	}
+
+	if ( R_HaveExtension( "ARB_vertex_buffer_object" ) && qglActiveTextureARB ) {
+#define GLE( ret, name, ... ) q##name = ri.GL_GetProcAddress( XSTRING( name ) ); // if ( !q##name ) ri.Error( ERR_FATAL, "Error resolving VBO functions" );
+		QGL_VBO_PROCS;
+#undef GLE
+		ri.Printf( PRINT_ALL, "...using ARB vertex buffer objects\n" );
 	}
 }
 
@@ -1284,6 +1293,8 @@ static void R_Register( void )
 #endif
 	r_bloom = ri.Cvar_Get( "r_bloom", "0", CVAR_ARCHIVE_ND );
 
+	r_vbo = ri.Cvar_Get( "r_vbo", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+
 	r_dlightBacks = ri.Cvar_Get( "r_dlightBacks", "1", CVAR_ARCHIVE_ND );
 	r_finish = ri.Cvar_Get( "r_finish", "0", CVAR_ARCHIVE_ND );
 	r_textureMode = ri.Cvar_Get( "r_textureMode", "GL_LINEAR_MIPMAP_NEAREST", CVAR_ARCHIVE );
@@ -1494,11 +1505,14 @@ static void RE_Shutdown( qboolean destroyWindow ) {
 #if defined(USE_PMLIGHT)
 		QGL_DoneARB();
 #endif
+		VBO_Cleanup();
+
 		ri.GLimp_Shutdown();
 
 #define GLE( ret, name, ... ) q##name = NULL;
 		QGL_Core_PROCS;
 		QGL_Ext_PROCS;
+		QGL_VBO_PROCS;
 #undef GLE
 
 		Com_Memset( &glConfig, 0, sizeof( glConfig ) );

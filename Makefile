@@ -797,6 +797,7 @@ Q3OBJ = \
   $(B)/client/tr_shadows.o \
   $(B)/client/tr_sky.o \
   $(B)/client/tr_surface.o \
+  $(B)/client/tr_vbo.o \
   $(B)/client/tr_world.o \
 
 ifeq ($(ARCH),x86)

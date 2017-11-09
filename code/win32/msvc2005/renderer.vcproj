@@ -413,6 +413,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\renderer\tr_vbo.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\renderer\tr_world.c"
 				>
 			</File>

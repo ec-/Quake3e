@@ -74,6 +74,8 @@ void RB_AddQuadStampExt( vec3_t origin, vec3_t left, vec3_t up, byte *color, flo
 	vec3_t		normal;
 	int			ndx;
 
+	VBO_Flush();
+
 	RB_CHECKOVERFLOW( 4, 6 );
 
 	tess.surfType = SF_TRIANGLES;
@@ -194,6 +196,8 @@ static void RB_SurfacePolychain( srfPoly_t *p ) {
 	int		i;
 	int		numv;
 
+	VBO_Flush();
+
 	RB_CHECKOVERFLOW( p->numVerts, 3*(p->numVerts - 2) );
 
 	tess.surfType = SF_POLY;
@@ -235,6 +239,28 @@ static void RB_SurfaceTriangles( srfTriangles_t *srf ) {
 	int			dlightBits;
 #endif
 	qboolean	needsNormal;
+
+#ifdef USE_LEGACY_DLIGHTS
+	if ( tess.allowVBO && srf->vboItemIndex && !srf->dlightBits ) {
+#else
+	if ( tess.allowVBO && srf->vboItemIndex ) {
+#endif
+		// transition to vbo render list
+		if ( !tess.vboIndex ) {
+			RB_EndSurface();
+			RB_BeginSurface( tess.shader, tess.fogNum );
+			// set some dummy parameters for RB_EndSurface
+			tess.numIndexes = 6;
+			tess.numVertexes = 4;
+			VBO_ClearQueue();
+		}
+		tess.surfType = SF_TRIANGLES;
+		tess.vboIndex = srf->vboItemIndex;
+		VBO_QueueItem( srf->vboItemIndex );
+		return; // no need to tesselate anything
+	}
+
+	VBO_Flush();
 
 	RB_CHECKOVERFLOW( srf->numVerts, srf->numIndexes );
 
@@ -699,6 +725,8 @@ static void RB_SurfaceMesh(md3Surface_t *surface) {
 	int				Bob, Doug;
 	int				numVerts;
 
+	VBO_Flush();
+
 	RB_CHECKOVERFLOW( surface->numVerts, surface->numTriangles * 3 );
 
 	tess.surfType = SF_MD3;
@@ -752,7 +780,30 @@ static void RB_SurfaceFace( const srfSurfaceFace_t *surf ) {
 	int			dlightBits;
 #endif
 
+#ifdef USE_LEGACY_DLIGHTS
+	if ( tess.allowVBO && surf->vboItemIndex && !surf->dlightBits ) {
+#else
+	if ( tess.allowVBO && surf->vboItemIndex ) {
+#endif
+		// transition to vbo render list
+		if ( !tess.vboIndex ) {
+			RB_EndSurface();
+			RB_BeginSurface( tess.shader, tess.fogNum );
+			// set some dummy parameters for RB_EndSurface
+			tess.numIndexes = 6;
+			tess.numVertexes = 4;
+			VBO_ClearQueue();
+		}
+		tess.surfType = SF_FACE;
+		tess.vboIndex = surf->vboItemIndex;
+		VBO_QueueItem( surf->vboItemIndex );
+		return; // no need to tesselate anything
+	}
+
+	VBO_Flush();
+
 	RB_CHECKOVERFLOW( surf->numPoints, surf->numIndices );
+
 	tess.surfType = SF_FACE;
 
 #ifdef USE_LEGACY_DLIGHTS
@@ -791,7 +842,6 @@ static void RB_SurfaceFace( const srfSurfaceFace_t *surf ) {
 #endif
 	}
 
-
 	tess.numVertexes += surf->numPoints;
 }
 
@@ -827,6 +877,71 @@ static float LodErrorForVolume( vec3_t local, float radius ) {
 }
 
 
+void RB_SurfaceGridEstimate( srfGridMesh_t *cv, int *numVertexes, int *numIndexes ) 
+{
+	int		lodWidth, lodHeight;
+	float	lodError;
+	int		i, used, rows;
+	int		nVertexes = 0;
+	int		nIndexes = 0;
+	int		irows, vrows;
+
+	lodError = r_lodCurveError->value; // fixed quality for VBO
+
+	lodWidth = 1;
+	for ( i = 1 ; i < cv->width-1 ; i++ ) {
+		if ( cv->widthLodError[i] <= lodError ) {
+			lodWidth++;
+		}
+	}
+	lodWidth++;
+
+	lodHeight = 1;
+	for ( i = 1 ; i < cv->height-1 ; i++ ) {
+		if ( cv->heightLodError[i] <= lodError ) {
+			lodHeight++;
+		}
+	}
+	lodHeight++;
+
+	used = 0;
+	while ( used < lodHeight - 1 ) {
+		// see how many rows of both verts and indexes we can add without overflowing
+		do {
+			vrows = ( SHADER_MAX_VERTEXES - tess.numVertexes ) / lodWidth;
+			irows = ( SHADER_MAX_INDEXES - tess.numIndexes ) / ( lodWidth * 6 );
+
+			// if we don't have enough space for at least one strip, flush the buffer
+			if ( vrows < 2 || irows < 1 ) {
+				nVertexes += tess.numVertexes;
+				nIndexes += tess.numIndexes;
+				tess.numIndexes = 0;
+				tess.numVertexes = 0;
+			} else {
+				break;
+			}
+		} while ( 1 );
+		
+		rows = irows;
+		if ( vrows < irows + 1 ) {
+			rows = vrows - 1;
+		}
+		if ( used + rows > lodHeight ) {
+			rows = lodHeight - used;
+		}
+
+		tess.numIndexes += (rows-1)*(lodWidth-1)*6;
+		tess.numVertexes += rows * lodWidth;
+		used += rows - 1;
+	}
+
+	*numVertexes = nVertexes + tess.numVertexes;
+	*numIndexes = nIndexes + tess.numIndexes;
+	tess.numVertexes = 0;
+	tess.numIndexes = 0;
+}
+
+
 /*
 =============
 RB_SurfaceGrid
@@ -852,7 +967,29 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 	int		dlightBits;
 	int		*vDlightBits;
 #endif
-	qboolean	needsNormal;
+	qboolean needsNormal;
+
+#ifdef USE_LEGACY_DLIGHTS
+	if ( tess.allowVBO && cv->vboItemIndex && !cv->dlightBits ) {
+#else
+	if ( tess.allowVBO && cv->vboItemIndex ) {
+#endif
+		// transition to vbo render list
+		if ( !tess.vboIndex ) {
+			RB_EndSurface();
+			RB_BeginSurface( tess.shader, tess.fogNum );
+			// set some dummy parameters for RB_EndSurface
+			tess.numIndexes = 6;
+			tess.numVertexes = 4;
+			VBO_ClearQueue();
+		}
+		tess.surfType = SF_GRID;
+		tess.vboIndex = cv->vboItemIndex;
+		VBO_QueueItem( cv->vboItemIndex );
+		return; // no need to tesselate anything
+	}
+
+	VBO_Flush();
 
 #ifdef USE_LEGACY_DLIGHTS
 	dlightBits = cv->dlightBits;
@@ -862,7 +999,10 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 	tess.surfType = SF_GRID;
 
 	// determine the allowable discrepance
-	lodError = LodErrorForVolume( cv->lodOrigin, cv->lodRadius );
+	if ( tr.mapLoading && cv->vboItemIndex )
+		lodError = r_lodCurveError->value; // fixed quality for VBO
+	else
+		lodError = LodErrorForVolume( cv->lodOrigin, cv->lodRadius );
 
 	// determine which rows and columns of the subdivision
 	// we are actually going to use
@@ -901,8 +1041,19 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 
 			// if we don't have enough space for at least one strip, flush the buffer
 			if ( vrows < 2 || irows < 1 ) {
-				RB_EndSurface();
-				RB_BeginSurface( tess.shader, tess.fogNum );
+				if ( tr.mapLoading ) {
+					// estimate and flush
+					if ( cv->vboItemIndex ) {
+						VBO_PushData( cv->vboItemIndex, &tess );
+						tess.numIndexes = 0;
+						tess.numVertexes = 0;
+					} else {
+						ri.Error( ERR_DROP, "Unexpected grid flush during map loading!\n" );
+					}
+				} else {
+					RB_EndSurface();
+					RB_BeginSurface( tess.shader, tess.fogNum );
+				}
 			} else {
 				break;
 			}
@@ -954,7 +1105,6 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 				color += 4;
 			}
 		}
-
 
 		// add the indexes
 		{
@@ -1038,6 +1188,7 @@ Entities that have a single procedurally generated surface
 ====================
 */
 static void RB_SurfaceEntity( surfaceType_t *surfType ) {
+	VBO_Flush();
 	switch( backEnd.currentEntity->e.reType ) {
 	case RT_SPRITE:
 		RB_SurfaceSprite();
@@ -1069,6 +1220,7 @@ static void RB_SurfaceBad( surfaceType_t *surfType ) {
 
 static void RB_SurfaceFlare( srfFlare_t *surf ) {
 	if ( r_flares->integer ) {
+		VBO_Flush();
 		tess.surfType = SF_FLARE;
 		RB_AddFlare( surf, tess.fogNum, surf->origin, surf->color, surf->normal );
 	}

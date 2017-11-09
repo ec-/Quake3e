@@ -329,6 +329,12 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 	tess.numVertexes = 0;
 	tess.shader = state;
 	tess.fogNum = fogNum;
+
+	if ( !fogNum && !tess.dlightPass && state->isStaticShader )
+		tess.allowVBO = qtrue;
+	else
+		tess.allowVBO = qfalse;
+	
 #ifdef USE_LEGACY_DLIGHTS
 	tess.dlightBits = 0;		// will be OR'd in by surface functions
 #endif
@@ -966,6 +972,14 @@ void RB_StageIteratorGeneric( void )
 	GL_ProgramDisable();
 #endif // USE_PMLIGHT
 
+	if ( tess.vboIndex )
+	{
+		RB_StageIteratorVBO();
+		return;
+	}
+
+	VBO_UnBind();
+
 	input = &tess;
 	shader = input->shader;
 
@@ -1085,6 +1099,14 @@ void RB_StageIteratorVertexLitTexture( void )
 	GL_ProgramDisable();
 #endif // USE_PMLIGHT
 
+	if ( tess.vboIndex )
+	{
+		RB_StageIteratorVBO();
+		return;
+	}
+
+	VBO_UnBind();
+
 	//
 	// compute colors
 	//
@@ -1170,6 +1192,14 @@ void RB_StageIteratorLightmappedMultitexture( void ) {
 	}
 	GL_ProgramDisable();
 #endif // USE_PMLIGHT
+
+	if ( tess.vboIndex )
+	{
+		RB_StageIteratorVBO();
+		return;
+	}
+
+	VBO_UnBind();
 
 	//
 	// set face culling appropriately
@@ -1281,6 +1311,7 @@ void RB_EndSurface( void ) {
 	input = &tess;
 
 	if ( input->numIndexes == 0 ) {
+		VBO_UnBind();
 		return;
 	}
 
@@ -1299,6 +1330,7 @@ void RB_EndSurface( void ) {
 
 	// for debugging of sort order issues, stop rendering after a given sort value
 	if ( r_debugSort->integer && r_debugSort->integer < tess.shader->sort && !backEnd.doneSurfaces ) {
+		VBO_UnBind();
 		return;
 	}
 
@@ -1327,11 +1359,13 @@ void RB_EndSurface( void ) {
 	//
 	// draw debugging stuff
 	//
-	if ( r_showtris->integer ) {
-		DrawTris( input );
-	}
-	if ( r_shownormals->integer ) {
-		DrawNormals( input );
+	if ( !VBO_Active() ) {
+		if ( r_showtris->integer ) {
+			DrawTris( input );
+		}
+		if ( r_shownormals->integer ) {
+			DrawNormals( input );
+		}
 	}
 
 	// clear shader so we can tell we don't have any unclosed surfaces

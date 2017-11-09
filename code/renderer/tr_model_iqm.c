@@ -1033,6 +1033,8 @@ void RB_IQMSurfaceAnim( surfaceType_t *surface ) {
 	glIndex_t	*ptr;
 	glIndex_t	base;
 
+	VBO_Flush();
+
 	tess.surfType = SF_IQM;
 
 	RB_CHECKOVERFLOW( surf->num_vertexes, surf->num_triangles * 3 );

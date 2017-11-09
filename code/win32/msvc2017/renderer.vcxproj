@@ -191,6 +191,7 @@
     <ClCompile Include="..\..\renderer\tr_shadows.c" />
     <ClCompile Include="..\..\renderer\tr_sky.c" />
     <ClCompile Include="..\..\renderer\tr_surface.c" />
+    <ClCompile Include="..\..\renderer\tr_vbo.c" />
     <ClCompile Include="..\..\renderer\tr_world.c" />
   </ItemGroup>
   <ItemGroup>

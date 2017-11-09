@@ -976,6 +976,7 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *
 
 	if ( tess.numIndexes ) {
 		RB_EndSurface();
+		VBO_UnBind();
 	}
 
 	// sync with gl if needed
@@ -1097,10 +1098,13 @@ static const void *RB_StretchPic( const void *data ) {
 	if ( shader != tess.shader ) {
 		if ( tess.numIndexes ) {
 			RB_EndSurface();
+			//VBO_UnBind();
 		}
 		backEnd.currentEntity = &backEnd.entity2D;
 		RB_BeginSurface( shader, 0 );
 	}
+
+	VBO_UnBind();
 	
 	if ( !backEnd.projection2D ) {
 		RB_SetGL2D();
@@ -1165,7 +1169,11 @@ static void RB_LightingPass( void )
 	dlight_t	*dl;
 	int	i;
 
+	VBO_Flush();
+
 	tess.dlightPass = qtrue;
+	tess.allowVBO = qfalse; // for now
+
 	for ( i = 0; i < backEnd.viewParms.num_dlights; i++ )
 	{
 		dl = &backEnd.viewParms.dlights[i];
@@ -1175,6 +1183,7 @@ static void RB_LightingPass( void )
 			RB_RenderLitSurfList( dl );
 		}
 	}
+
 	tess.dlightPass = qfalse;
 
 	backEnd.viewParms.num_dlights = 0;
@@ -1201,10 +1210,14 @@ static const void *RB_DrawSurfs( const void *data ) {
 	backEnd.refdef = cmd->refdef;
 	backEnd.viewParms = cmd->viewParms;
 
+	VBO_UnBind();
+
 	// clear the z buffer, set the modelview, etc
 	RB_BeginDrawingView();
 
 	RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
+
+	VBO_UnBind();
 
 	if ( r_drawSun->integer ) {
 		RB_DrawSun( 0.1f, tr.sunShader );
