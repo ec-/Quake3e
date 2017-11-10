@@ -310,6 +310,39 @@ static shader_t *ShaderForShaderNum( int shaderNum, int lightmapNum ) {
 }
 
 
+static void GenerateNormals( srfSurfaceFace_t *face )
+{
+	vec3_t ba, ca, cross;
+	float *v1, *v2, *v3, *n1, *n2, *n3;
+	int i, *indices;
+
+	indices = ((int *)((byte *)face + face->ofsIndices));
+
+	// store as vec4_t so we can simply use memcpy() during tesselation
+	face->normals = ri.Hunk_Alloc( face->numPoints * sizeof( tess.normal[0] ), h_low );
+
+	for ( i = 0; i < face->numIndices; i += 3 ) {
+		v1 = face->points[indices[i+0]];
+		v2 = face->points[indices[i+1]];
+		v3 = face->points[indices[i+2]];
+		VectorSubtract( v3, v1, ca );
+		VectorSubtract( v2, v1, ba );
+		CrossProduct( ca, ba, cross );
+		n1 = face->normals + indices[i+0]*4;
+		n2 = face->normals + indices[i+1]*4;
+		n3 = face->normals + indices[i+2]*4;
+		VectorAdd( n1, cross, n1 );
+		VectorAdd( n2, cross, n2 );
+		VectorAdd( n3, cross, n3 );
+	}
+
+	for ( i = 0; i < face->numPoints; i++ ) {
+		n1 = face->normals + i*4;
+		VectorNormalize2( n1, n1 );
+	}
+}
+
+
 /*
 ===============
 ParseFace
@@ -374,6 +407,22 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 	for ( i = 0 ; i < 3 ; i++ ) {
 		cv->plane.normal[i] = LittleFloat( ds->lightmapVecs[2][i] );
 	}
+	
+	if ( surf->shader->numUnfoggedPasses && surf->shader->lightingStage >= 0 ) {
+		if ( fabs( cv->plane.normal[0] ) < 0.01 && fabs( cv->plane.normal[0] ) < 0.01 && fabs( cv->plane.normal[0] ) < 0.01 ) {
+			// Zero-normals case:
+			// might happen if surface contains multiple non-coplanar faces for terrain simulation
+			// like in 'Pyramid of the Magician', 'tvy-bench' or 'terrast' maps
+			// which results in non-working new per-pixel dynamic lighting.
+			// So we will try to regenerate normals and apply smooth shading
+			// for normals that is shared between multiple faces.
+			// It is not a big problem for incorrectly (negative) generated normals
+			// because it is unlikely for shared ones and will result in the same non-working lighting.
+			// Also we will NOT update existing face->plane.normal to avoid potential surface culling issues
+			GenerateNormals( cv );
+		}
+	}
+
 	cv->plane.dist = DotProduct( cv->points[0], cv->plane.normal );
 	SetPlaneSignbits( &cv->plane );
 	cv->plane.type = PlaneTypeForNormal( cv->plane.normal );

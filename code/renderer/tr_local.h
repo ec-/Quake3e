@@ -600,6 +600,7 @@ typedef struct {
 	int			dlightBits;
 #endif
 	int			vboItemIndex;
+	float		*normals;
 
 	// triangle definitions (no normals at points)
 	int			numPoints;

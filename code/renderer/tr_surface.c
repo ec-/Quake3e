@@ -824,9 +824,14 @@ static void RB_SurfaceFace( const srfSurfaceFace_t *surf ) {
 	numPoints = surf->numPoints;
 
 	if ( tess.shader->needsNormal ) {
-		normal = surf->plane.normal;
-		for ( i = 0, ndx = tess.numVertexes; i < numPoints; i++, ndx++ ) {
-			VectorCopy( normal, tess.normal[ndx] );
+		if ( surf->normals ) {
+			// per-vertex normals for non-coplanar faces
+			memcpy( &tess.normal[ tess.numVertexes ], surf->normals, numPoints * sizeof( vec4_t ) );
+		} else {
+			normal = surf->plane.normal;
+			for ( i = 0, ndx = tess.numVertexes; i < numPoints; i++, ndx++ ) {
+				VectorCopy( normal, tess.normal[ndx] );
+			}
 		}
 	}
 
