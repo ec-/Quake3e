@@ -814,7 +814,12 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 	const shaderStage_t *pStage = tess.xstages[ 0 ];
 	const vbo_t *vbo = &world_vbo;
 	qboolean updateArrays;
-	
+
+	GL_SelectTexture( 0 );
+
+	qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+	qglEnableClientState( GL_COLOR_ARRAY );
+
 	if ( ( updateArrays = VBO_BindData() ) != qfalse )
 	{
 		// bind geometry
@@ -826,8 +831,6 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 
 		//setupMultitexture = qtrue;
 	}
-
-	GL_SelectTexture( 0 );
 
 	R_BindAnimatedImage( &pStage->bundle[0] );
 
