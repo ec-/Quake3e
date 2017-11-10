@@ -401,7 +401,14 @@ static void DrawMultitextured( shaderCommands_t *input, int stage ) {
 	//
 	// disable texturing on TEXTURE1, then select TEXTURE0
 	//
-	//qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	if ( r_vbo->integer ) {
+		// some drivers may try to load texcoord[1] data even with multi-texturing disabled
+		// (and actually gpu shaders doesn't care about conventional GL_TEXTURE_2D states)
+		// which doesn't cause problems while data pointer is the same or represents fixed-size set
+		// but when we switch to/from vbo - texcoord[1] data may point on larger set (it's ok)
+		// or smaller set - which will cause out-of-bounds index access/crash during non-multitexture rendering
+		qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	}
 	qglDisable( GL_TEXTURE_2D );
 
 	GL_SelectTexture( 0 );

@@ -857,11 +857,11 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 		VBO_RenderIndexQueue();
 
 		// disable texturing on TEXTURE1, then select TEXTURE0
-		//qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+		qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
 		qglDisable( GL_TEXTURE_2D );
 		GL_SelectTexture( 0 );
-	} 
-	else 
+	}
+	else
 	{
 		VBO_RenderIndexQueue();
 	}
