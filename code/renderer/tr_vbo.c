@@ -466,7 +466,7 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 	vbo->items = ri.Hunk_Alloc( ( numStaticSurfaces + 1 ) * sizeof( vbo_item_t ), h_low );
 	vbo->items_count = numStaticSurfaces;
 
-	// last item will be be used for run length termination
+	// last item will be used for run length termination
 	vbo->items_queue = ri.Hunk_Alloc( ( numStaticSurfaces + 1 ) * sizeof( int ), h_low );
 	vbo->items_queue_count = 0;
 
@@ -503,7 +503,6 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 #endif
 	vbo_size *= numStaticVertexes;
 
-	vbo_size += 1024; // for padding
 	vbo->vbo_buffer = ri.Hunk_Alloc( vbo_size, h_low );	
 
 	// index buffers
@@ -540,7 +539,8 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 
 	qsort( surfList, numStaticSurfaces, sizeof( surfList[0] ), surfSortFunc );
 
-	Com_Memset( &tess, 0, sizeof( tess ) );
+	tess.numIndexes = 0;
+	tess.numVertexes = 0;
 	Com_Memset( &backEnd.viewParms, 0, sizeof( backEnd.viewParms ) );
 
 	backEnd.currentEntity = &tr.worldEntity;
