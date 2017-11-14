@@ -99,11 +99,40 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 	GLE( void, glLockArraysEXT, GLint, GLint) \
 	GLE( void, glUnlockArraysEXT, void )
 
+#define QGL_ARB_PROGRAM_PROCS \
+	GLE( void, glGenProgramsARB, GLsizei n, GLuint *programs ) \
+	GLE( void, glDeleteProgramsARB, GLsizei n, const GLuint *programs ) \
+	GLE( void, glProgramStringARB, GLenum target, GLenum format, GLsizei len, const GLvoid *string ) \
+	GLE( void, glBindProgramARB, GLenum target, GLuint program ) \
+	GLE( void, glProgramLocalParameter4fARB, GLenum target, GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w ) \
+	GLE( void, glProgramLocalParameter4fvARB, GLenum target, GLuint index, const GLfloat *params )
+
 #define QGL_VBO_PROCS \
 	GLE( void, glGenBuffersARB, GLsizei n, GLuint *buffers ) \
 	GLE( void, glDeleteBuffersARB, GLsizei n, const GLuint *buffers ) \
 	GLE( void, glBindBufferARB, GLenum target, GLuint buffer ) \
 	GLE( void, glBufferDataARB, GLenum target, GLsizeiptrARB size, const GLvoid *data, GLenum usage )
+
+#define QGL_FBO_PROCS \
+	GLE( GLboolean, glIsRenderbuffer, GLuint renderbuffer ) \
+	GLE( void, glBindRenderbuffer, GLenum target, GLuint renderbuffer ) \
+	GLE( void, glDeleteFramebuffers, GLsizei n, const GLuint *framebuffers ) \
+	GLE( void, glDeleteRenderbuffers, GLsizei n, const GLuint *renderbuffers ) \
+	GLE( void, glGenRenderbuffers, GLsizei n, GLuint *renderbuffers ) \
+	GLE( void, glRenderbufferStorage, GLenum target, GLenum internalformat, GLsizei width, GLsizei height ) \
+	GLE( void, glGetRenderbufferParameteriv, GLenum target, GLenum pname, GLint *params ) \
+	GLE( GLboolean, glIsFramebuffer, GLuint framebuffer ) \
+	GLE( void, glBindFramebuffer, GLenum target, GLuint framebuffer ) \
+	GLE( void, glGenFramebuffers, GLsizei n, GLuint *framebuffers ) \
+	GLE( GLenum, glCheckFramebufferStatus, GLenum target ) \
+	GLE( void, glFramebufferTexture2D, GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level ) \
+	GLE( void, glFramebufferRenderbuffer, GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer ) \
+	GLE( void, glGetFramebufferAttachmentParameteriv, GLenum target, GLenum attachment, GLenum pname, GLint *params ) \
+	GLE( void, glBlitFramebuffer, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter )
+
+#define QGL_FBO_OPT_PROCS \
+	GLE( void, glRenderbufferStorageMultisample, GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height ) \
+	GLE( void, glGetInternalformativ, GLenum target, GLenum internalformat, GLenum pname, GLsizei bufSize, GLint *params )
 
 #define QGL_Win32_PROCS \
 	GLE( HGLRC, wglCreateContext, HDC ) \

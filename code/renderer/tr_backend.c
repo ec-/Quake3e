@@ -39,7 +39,7 @@ static float s_flipMatrix[16] = {
 ** GL_Bind
 */
 void GL_Bind( image_t *image ) {
-	int texnum;
+	GLuint texnum;
 
 	if ( !image ) {
 		ri.Printf( PRINT_WARNING, "GL_Bind: NULL image\n" );
@@ -88,7 +88,7 @@ void GL_SelectTexture( int unit )
 ** GL_BindMultitexture
 */
 void GL_BindMultitexture( image_t *image0, GLuint env0, image_t *image1, GLuint env1 ) {
-	int		texnum0, texnum1;
+	GLuint	texnum0, texnum1;
 
 	texnum0 = image0->texnum;
 	texnum1 = image1->texnum;
@@ -115,11 +115,14 @@ void GL_BindMultitexture( image_t *image0, GLuint env0, image_t *image1, GLuint 
 /*
 ** GL_BindTexture
 */
-void GL_BindTexture( int unit, GLuint texnum ) 
+void GL_BindTexture( int unit, GLuint texnum )
 {
-	GL_SelectTexture( unit );
-	glState.currenttextures[ unit ] = texnum;
-	qglBindTexture( GL_TEXTURE_2D, texnum );
+	if ( glState.currenttextures[ unit ] != texnum )
+	{
+		GL_SelectTexture( unit );
+		glState.currenttextures[ unit ] = texnum;
+		qglBindTexture( GL_TEXTURE_2D, texnum );
+	}
 }
 
 

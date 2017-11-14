@@ -465,6 +465,7 @@ typedef struct {
 	vec3_t		bounds[2];
 
 	unsigned	colorInt;				// in packed byte format
+	vec4_t		color;
 	float		tcScale;				// texture coordinate vector scales
 	fogParms_t	parms;
 
@@ -889,7 +890,7 @@ typedef struct {
 
 // the renderer front end should never modify glstate_t
 typedef struct {
-	int			currenttextures[ MAX_TEXTURE_UNITS ];
+	GLuint		currenttextures[ MAX_TEXTURE_UNITS ];
 	int			currenttmu;
 	qboolean	finishCalled;
 	int			texEnv[2];
@@ -1659,11 +1660,6 @@ typedef struct {
 
 typedef struct {
 	int		commandId;
-	int		buffer;
-} endFrameCommand_t;
-
-typedef struct {
-	int		commandId;
 	shader_t	*shader;
 	float	x, y;
 	float	w, h;
@@ -1678,16 +1674,6 @@ typedef struct {
 	drawSurf_t *drawSurfs;
 	int		numDrawSurfs;
 } drawSurfsCommand_t;
-
-typedef struct {
-	int commandId;
-	int x;
-	int y;
-	int width;
-	int height;
-	char *fileName;
-	qboolean jpeg;
-} screenshotCommand_t;
 
 typedef struct
 {
@@ -1776,8 +1762,13 @@ qboolean R_HaveExtension( const char *ext );
 #define GLE( ret, name, ... ) extern ret ( APIENTRY * q##name )( __VA_ARGS__ );
 	QGL_Core_PROCS;
 	QGL_Ext_PROCS;
+	QGL_ARB_PROGRAM_PROCS;
 	QGL_VBO_PROCS;
+	QGL_FBO_PROCS;
+	QGL_FBO_OPT_PROCS;
 #undef GLE
+
+// VBO functions
 
 extern void RB_StageIteratorVBO( void );
 extern void R_BuildWorldVBO( msurface_t *surf, int surfCount );
@@ -1790,5 +1781,35 @@ extern void VBO_Cleanup( void );
 extern void VBO_QueueItem( int itemIndex );
 extern void VBO_ClearQueue( void );
 extern void VBO_Flush( void );
+
+// ARB shaders definitions
+
+typedef enum {
+	DEFAULT_VERTEX,
+	DEFAULT_FRAGMENT,
+
+	PROGRAM_BASE,
+
+	DLIGHT_VERTEX = PROGRAM_BASE,
+	DLIGHT_FRAGMENT,
+
+	DLIGHT_LINEAR_VERTEX,
+	DLIGHT_LINEAR_FRAGMENT,
+
+	DUMMY_VERTEX,
+
+	SPRITE_FRAGMENT,
+	GAMMA_FRAGMENT,
+	BLOOM_EXTRACT_FRAGMENT,
+	BLUR_FRAGMENT,
+	BLENDX_FRAGMENT,
+	BLEND2_FRAGMENT,
+	BLEND2_GAMMA_FRAGMENT,
+
+	PROGRAM_COUNT
+
+} programNum;
+
+void ARB_ProgramEnable( programNum vp, programNum fp );
 
 #endif //TR_LOCAL_H

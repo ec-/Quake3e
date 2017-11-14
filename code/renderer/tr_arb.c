@@ -19,27 +19,6 @@
 #define MIN_FILTER_SIZE 1
 
 typedef enum {
-	DLIGHT_VERTEX,
-	DLIGHT_FRAGMENT,
-
-	DLIGHT_LINEAR_VERTEX,
-	DLIGHT_LINEAR_FRAGMENT,
-
-	DUMMY_VERTEX,
-
-	SPRITE_FRAGMENT,
-	GAMMA_FRAGMENT,
-	BLOOM_EXTRACT_FRAGMENT,
-	BLUR_FRAGMENT,
-	BLENDX_FRAGMENT,
-	BLEND2_FRAGMENT,
-	BLEND2_GAMMA_FRAGMENT,
-
-	PROGRAM_COUNT
-
-} programNum;
-
-typedef enum {
 	Vertex,
 	Fragment
 } programType;
@@ -62,12 +41,6 @@ static int programAvailable	= 0;
 static int programCompiled = 0;
 static int programEnabled	= 0;
 static int gl_version = 0;
-
-void ( APIENTRY * qglGenProgramsARB )( GLsizei n, GLuint *programs );
-void ( APIENTRY * qglDeleteProgramsARB)( GLsizei n, const GLuint *programs );
-void ( APIENTRY * qglProgramStringARB )( GLenum target, GLenum format, GLsizei len, const GLvoid *string );
-void ( APIENTRY * qglBindProgramARB )( GLenum target, GLuint program );
-void ( APIENTRY * qglProgramLocalParameter4fARB )( GLenum target, GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w );
 
 qboolean fboAvailable = qfalse;
 qboolean fboEnabled = qfalse;
@@ -96,26 +69,6 @@ static frameBuffer_t frameBuffers[ FBO_COUNT ];
 static qboolean frameBufferMultiSampling = qfalse;
 
 qboolean blitMSfbo = qfalse;
-
-// framebuffer functions
-GLboolean (APIENTRY *qglIsRenderbuffer)( GLuint renderbuffer );
-void ( APIENTRY *qglBindRenderbuffer )( GLenum target, GLuint renderbuffer );
-void ( APIENTRY *qglDeleteFramebuffers )( GLsizei n, const GLuint *framebuffers );
-void ( APIENTRY *qglDeleteRenderbuffers )( GLsizei n, const GLuint *renderbuffers );
-void ( APIENTRY *qglGenRenderbuffers )( GLsizei n, GLuint *renderbuffers );
-void ( APIENTRY *qglRenderbufferStorage )( GLenum target, GLenum internalformat, GLsizei width, GLsizei height );
-void ( APIENTRY *qglGetRenderbufferParameteriv )( GLenum target, GLenum pname, GLint *params );
-GLboolean ( APIENTRY *qglIsFramebuffer)( GLuint framebuffer );
-void ( APIENTRY *qglBindFramebuffer)( GLenum target, GLuint framebuffer );
-void ( APIENTRY *qglGenFramebuffers)( GLsizei n, GLuint *framebuffers );
-GLenum ( APIENTRY *qglCheckFramebufferStatus )( GLenum target );
-void ( APIENTRY *qglFramebufferTexture2D )( GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level );
-void ( APIENTRY *qglFramebufferRenderbuffer )( GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer );
-void ( APIENTRY *qglGetFramebufferAttachmentParameteriv )( GLenum target, GLenum attachment, GLenum pname, GLint *params );
-void ( APIENTRY *qglGenerateMipmap)( GLenum target );
-void ( APIENTRY *qglBlitFramebuffer)( GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter );
-void ( APIENTRY *qglRenderbufferStorageMultisample )(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
-void ( APIENTRY *qglGetInternalformativ )(GLenum target, GLenum internalformat, GLenum pname, GLsizei bufSize, GLint *params);
 
 #ifndef GL_TEXTURE_IMAGE_FORMAT
 #define GL_TEXTURE_IMAGE_FORMAT 0x828F
@@ -152,20 +105,28 @@ void GL_ProgramDisable( void )
 }
 
 
-static void ARB_ProgramEnable( programNum vp, programNum fp )
+void ARB_ProgramEnable( programNum vp, programNum fp )
 {
 	if ( programCompiled )
 	{
 		if ( current_vp != programs[ vp ] ) {
 			current_vp = programs[ vp ];
-			qglEnable( GL_VERTEX_PROGRAM_ARB );
-			qglBindProgramARB( GL_VERTEX_PROGRAM_ARB, current_vp );
+			if ( current_vp ) {
+				qglEnable( GL_VERTEX_PROGRAM_ARB );
+				qglBindProgramARB( GL_VERTEX_PROGRAM_ARB, current_vp );
+			} else {
+				qglDisable( GL_VERTEX_PROGRAM_ARB );
+			}
 		}
 
 		if ( current_fp != programs[ fp ] ) {
 			current_fp = programs[ fp ];
-			qglEnable( GL_FRAGMENT_PROGRAM_ARB );
-			qglBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, current_fp );
+			if ( current_fp ) {
+				qglEnable( GL_FRAGMENT_PROGRAM_ARB );
+				qglBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, current_fp );
+			} else {
+				qglDisable( GL_FRAGMENT_PROGRAM_ARB );
+			}
 		}
 		programEnabled = 1;
 	}
@@ -940,7 +901,7 @@ static void ARB_BloomParams( int width, int height, int ksize, qboolean horizont
 
 static void ARB_DeletePrograms( void )
 {
-	qglDeleteProgramsARB( ARRAY_LEN( programs ), programs );
+	qglDeleteProgramsARB( ARRAY_LEN( programs ) - PROGRAM_BASE, programs + PROGRAM_BASE );
 	Com_Memset( programs, 0, sizeof( programs ) );
 	programCompiled = 0;
 }
@@ -991,7 +952,7 @@ qboolean ARB_UpdatePrograms( void )
 		ARB_DeletePrograms();
 	}
 
-	qglGenProgramsARB( ARRAY_LEN( programs ), programs );
+	qglGenProgramsARB( ARRAY_LEN( programs ) - PROGRAM_BASE, programs + PROGRAM_BASE );
 
 	if ( !ARB_CompileProgram( Vertex, dlightVP, programs[ DLIGHT_VERTEX ] ) )
 		return qfalse;
@@ -1833,10 +1794,6 @@ void FBO_PostProcess( void )
 }
 
 
-static const void *fp;
-#define GPA(fn) fp = ri.GL_GetProcAddress( #fn ); if ( !fp ) { ri.Printf( PRINT_ALL, "GPA failed on '%s'\n", #fn ); goto __fail; } else { memcpy( &q##fn, &fp, sizeof( fp ) ); }
-#define GPA_(fn) { fp = ri.GL_GetProcAddress( #fn ); memcpy( &q##fn, &fp, sizeof( fp ) ); }
-
 static void QGL_InitPrograms( void )
 {
 	float version;
@@ -1861,36 +1818,15 @@ static void QGL_InitPrograms( void )
 	r_bloom2_reflection = ri.Cvar_Get( "r_bloom2_reflection", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_bloom2_reflection, "-4", "4", CV_FLOAT );
 
-	if ( !r_allowExtensions->integer )
+	if ( !qglGenProgramsARB )
 		return;
 
 	version = atof( (const char *)qglGetString( GL_VERSION ) );
 
 	gl_version = (int)version;
 
-	if ( version < 1.39 ) {
-		ri.Printf( PRINT_ALL, S_COLOR_YELLOW "...OpenGL 1.4 is not available\n" );
-		return;
-	}
-
-	if ( !R_HaveExtension( "GL_ARB_vertex_program" ) ) {
-		return;
-	}
-
-	if ( !R_HaveExtension( "GL_ARB_fragment_program" ) ) {
-		return;
-	}
-
-	GPA( glGenProgramsARB );
-	GPA( glBindProgramARB );
-	GPA( glProgramStringARB );
-	GPA( glDeleteProgramsARB );
-	GPA( glProgramLocalParameter4fARB );
 	programAvailable = 1;
 
-	ri.Printf( PRINT_ALL, "...using ARB shaders\n" );
-
-__fail:
 	return;
 }
 
@@ -1899,47 +1835,10 @@ static void QGL_EarlyInitFBO( void )
 {
 	fboAvailable = qfalse;
 
-	if ( !r_allowExtensions->integer )
+	if ( !programAvailable || !qglGenFramebuffers || !qglBlitFramebuffer )
 		return;
 
-	if ( !programAvailable )
-		return;
-
-	if ( !R_HaveExtension( "GL_EXT_framebuffer_object" ) )
-		return;
-
-	if ( !R_HaveExtension( "GL_EXT_framebuffer_blit" ) )
-		return;
-
-	if ( !R_HaveExtension( "GL_EXT_framebuffer_multisample" ) )
-		return;
-
-	if ( R_HaveExtension( "ARB_internalformat_query2" ) ) {
-		GPA_( glGetInternalformativ );
-	} else {
-		qglGetInternalformativ = NULL;
-	}
-
-	GPA( glBindRenderbuffer );
-	GPA( glBlitFramebuffer );
-	GPA( glDeleteRenderbuffers );
-	GPA( glGenRenderbuffers );
-	GPA( glGetRenderbufferParameteriv );
-	GPA( glIsFramebuffer );
-	GPA( glBindFramebuffer );
-	GPA( glDeleteFramebuffers );
-	GPA( glCheckFramebufferStatus );
-	GPA( glFramebufferTexture2D );
-	GPA( glFramebufferRenderbuffer );
-	GPA( glGenerateMipmap );
-	GPA( glGenFramebuffers );
-	GPA( glGetFramebufferAttachmentParameteriv );
-	GPA( glIsRenderbuffer );
-	GPA( glRenderbufferStorage );
-	GPA_( glRenderbufferStorageMultisample );
 	fboAvailable = qtrue;
-__fail:
-	return;
 }
 
 
@@ -2036,12 +1935,6 @@ void QGL_DoneARB( void )
 	}
 
 	programAvailable = 0;
-
-	qglGenProgramsARB		= NULL;
-	qglDeleteProgramsARB	= NULL;
-	qglProgramStringARB		= NULL;
-	qglBindProgramARB		= NULL;
-	qglProgramLocalParameter4fARB = NULL;
 }
 
 #endif // USE_PMLIGHT
