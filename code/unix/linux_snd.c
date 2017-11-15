@@ -375,8 +375,8 @@ qboolean SNDDMA_Init( void )
 
 	switch ( s_khz->integer )
 	{
-		case 48: speed = 48000; break;
-		case 44: speed = 44100; break;
+		//case 48: speed = 48000; break;
+		//case 44: speed = 44100; break;
 		case 11: speed = 11025; break;
 		case 22:
 		default: speed = 22050; break;

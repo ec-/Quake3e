@@ -189,8 +189,8 @@ qboolean SNDDMA_InitDS( void )
 	dma.samplebits = 16;
 
 	switch (s_khz->integer) {
-		case 48: dma.speed = 48000; break;
-		case 44: dma.speed = 44100; break;
+		//case 48: dma.speed = 48000; break;
+		//case 44: dma.speed = 44100; break;
 		case 11: dma.speed = 11025; break;
 		case 22:
 		default: dma.speed = 22050; break;
