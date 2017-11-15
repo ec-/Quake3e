@@ -429,7 +429,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 			for ( n = 0; n < numDlights; n++ ) {
 				dl = dlights[ n ];
 				tr.light = dl;
-				R_AddLitSurf( (void *)surface, shader /*, fogNum*/ );
+				R_AddLitSurf( (void *)surface, shader, fogNum );
 			}
 		}
 #endif

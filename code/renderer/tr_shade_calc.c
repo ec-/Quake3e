@@ -881,6 +881,65 @@ void RB_CalcFogTexCoords( float *st ) {
 
 /*
 ========================
+RB_CalcFogProgramParms
+========================
+*/
+const fogProgramParms_t *RB_CalcFogProgramParms( void )
+{
+	static fogProgramParms_t parm;
+	const fog_t	*fog;
+	vec3_t		local;
+
+	Com_Memset( parm.fogDepthVector, 0, sizeof( parm.fogDepthVector ) );
+
+	fog = tr.world->fogs + tess.fogNum;
+
+	// all fogging distance is based on world Z units
+	VectorSubtract( backEnd.or.origin, backEnd.viewParms.or.origin, local );
+	parm.fogDistanceVector[0] = -backEnd.or.modelMatrix[2];
+	parm.fogDistanceVector[1] = -backEnd.or.modelMatrix[6];
+	parm.fogDistanceVector[2] = -backEnd.or.modelMatrix[10];
+	parm.fogDistanceVector[3] = DotProduct( local, backEnd.viewParms.or.axis[0] );
+
+	// scale the fog vectors based on the fog's thickness
+	parm.fogDistanceVector[0] *= fog->tcScale;
+	parm.fogDistanceVector[1] *= fog->tcScale;
+	parm.fogDistanceVector[2] *= fog->tcScale;
+	parm.fogDistanceVector[3] *= fog->tcScale;
+
+	// rotate the gradient vector for this orientation
+	if ( fog->hasSurface ) {
+		parm.fogDepthVector[0] = fog->surface[0] * backEnd.or.axis[0][0] + 
+			fog->surface[1] * backEnd.or.axis[0][1] + fog->surface[2] * backEnd.or.axis[0][2];
+		parm.fogDepthVector[1] = fog->surface[0] * backEnd.or.axis[1][0] + 
+			fog->surface[1] * backEnd.or.axis[1][1] + fog->surface[2] * backEnd.or.axis[1][2];
+		parm.fogDepthVector[2] = fog->surface[0] * backEnd.or.axis[2][0] + 
+			fog->surface[1] * backEnd.or.axis[2][1] + fog->surface[2] * backEnd.or.axis[2][2];
+		parm.fogDepthVector[3] = -fog->surface[3] + DotProduct( backEnd.or.origin, fog->surface );
+
+		parm.eyeT = DotProduct( backEnd.or.viewOrigin, parm.fogDepthVector ) + parm.fogDepthVector[3];
+	} else {
+		parm.eyeT = 1.0f; // non-surface fog always has eye inside
+	}
+
+	// see if the viewpoint is outside
+	// this is needed for clipping distance even for constant fog
+
+	if ( parm.eyeT < 0 ) {
+		parm.eyeOutside = qtrue;
+	} else {
+		parm.eyeOutside = qfalse;
+	}
+
+	parm.fogDistanceVector[3] += 1.0/512;
+	parm.fogColor = fog->color;
+
+	return &parm;
+}
+
+
+/*
+========================
 RB_CalcEnvironmentTexCoordsFP
 
 Special version for first-person models, borrowed from OpenArena

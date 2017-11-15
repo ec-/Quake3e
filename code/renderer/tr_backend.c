@@ -560,7 +560,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				RB_EndSurface();
 			}
 #ifdef USE_PMLIGHT
-			#define INSERT_POINT SS_UNDERWATER
+			#define INSERT_POINT SS_FOG
 			if ( backEnd.refdef.numLitSurfs && oldShaderSort < INSERT_POINT && shader->sort >= INSERT_POINT ) {
 				//RB_BeginDrawingLitSurfs(); // no need, already setup in RB_BeginDrawingView()
 				qglDepthRange( 0, 1 );
@@ -753,7 +753,7 @@ RB_RenderLitSurfList
 */
 static void RB_RenderLitSurfList( dlight_t* dl ) {
 	shader_t		*shader, *oldShader;
-	//int			fogNum, oldFogNum;
+	int				fogNum, oldFogNum;
 	int				entityNum, oldEntityNum;
 	qboolean		depthRange, oldDepthRange, isCrosshair, wasCrosshair;
 	const litSurf_t	*litSurf;
@@ -767,7 +767,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 	oldEntityNum = -1;
 	backEnd.currentEntity = &tr.worldEntity;
 	oldShader = NULL;
-	//oldFogNum = -1;
+	oldFogNum = -1;
 	oldDepthRange = qfalse;
 	wasCrosshair = qfalse;
 	oldSort = MAX_UINT;
@@ -781,7 +781,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 			continue;
 		}
 		oldSort = litSurf->sort;
-		R_DecomposeLitSort( litSurf->sort, &entityNum, &shader /*, &fogNum*/ );
+		R_DecomposeLitSort( litSurf->sort, &entityNum, &shader, &fogNum );
 
 		// anything BEFORE opaque is sky/portal, anything AFTER it should never have been added
 		//assert( shader->sort == SS_OPAQUE );
@@ -793,14 +793,14 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 		// change the tess parameters if needed
 		// a "entityMergable" shader is a shader that can have surfaces from seperate
 		// entities merged into a single batch, like smoke and blood puff sprites
-		if ( shader != NULL && ( shader != oldShader /*|| fogNum != oldFogNum*/
+		if ( shader != NULL && ( shader != oldShader || fogNum != oldFogNum
 			|| ( entityNum != oldEntityNum && !shader->entityMergable ) ) ) {
 			if (oldShader != NULL) {
 				RB_EndSurface();
 			}
-			RB_BeginSurface( shader, 0 /*fogNum*/ );
+			RB_BeginSurface( shader, fogNum );
 			oldShader = shader;
-			//oldFogNum = fogNum;
+			oldFogNum = fogNum;
 		}
 
 		//

@@ -325,6 +325,12 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 		state = shader;
 	}
 
+#ifdef USE_PMLIGHT
+	if ( tess.fogNum != fogNum ) {
+		tess.dlightUpdateParams = qtrue;
+	}
+#endif
+
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
 	tess.shader = state;

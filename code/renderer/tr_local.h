@@ -475,6 +475,14 @@ typedef struct {
 } fog_t;
 
 typedef struct {
+	float		eyeT;
+	qboolean	eyeOutside;
+	vec4_t		fogDistanceVector;
+	vec4_t		fogDepthVector;
+	const float *fogColor;
+} fogProgramParms_t;
+
+typedef struct {
 	orientationr_t	or;
 	orientationr_t	world;
 	vec3_t		pvsOrigin;			// may be different than or.origin for portals
@@ -1207,8 +1215,8 @@ void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader,
 
 void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader, int fogIndex, int dlightMap );
 #ifdef USE_PMLIGHT
-void R_DecomposeLitSort( unsigned sort, int *entityNum, shader_t **shader /*, int *fogNum*/ );
-void R_AddLitSurf( surfaceType_t *surface, shader_t *shader /*, int fogIndex*/ );
+void R_DecomposeLitSort( unsigned sort, int *entityNum, shader_t **shader, int *fogNum );
+void R_AddLitSurf( surfaceType_t *surface, shader_t *shader, int fogIndex );
 #endif
 
 #define	CULL_IN		0		// completely unclipped
@@ -1369,8 +1377,9 @@ typedef struct shaderCommands_s
 	qboolean	allowVBO;
 
 #ifdef USE_PMLIGHT
-	qboolean	dlightPass;
 	const dlight_t* light;
+	qboolean	dlightPass;
+	qboolean	dlightUpdateParams;
 #endif
 
 	// info extracted from current shader
@@ -1589,6 +1598,7 @@ void	RB_DeformTessGeometry( void );
 void	RB_CalcEnvironmentTexCoords( float *dstTexCoords );
 void	RB_CalcEnvironmentTexCoordsFP( float *dstTexCoords );
 void	RB_CalcFogTexCoords( float *dstTexCoords );
+const fogProgramParms_t *RB_CalcFogProgramParms( void );
 void	RB_CalcScrollTexCoords( const float scroll[2], float *dstTexCoords );
 void	RB_CalcRotateTexCoords( float rotSpeed, float *dstTexCoords );
 void	RB_CalcScaleTexCoords( const float scale[2], float *dstTexCoords );
@@ -1790,13 +1800,23 @@ typedef enum {
 
 	PROGRAM_BASE,
 
-	DLIGHT_VERTEX = PROGRAM_BASE,
+	DUMMY_VERTEX = PROGRAM_BASE,
+
+	// locate all fog programs in predefined order (sequentially after non-fogged ones)
+	// so we can easy switch/adjust them without many if() statements
+	DLIGHT_VERTEX,
+	DLIGHT_VERTEX_FOG_IN,
+	DLIGHT_VERTEX_FOG_OUT,
+
 	DLIGHT_FRAGMENT,
+	DLIGHT_FRAGMENT_FOG,
 
 	DLIGHT_LINEAR_VERTEX,
-	DLIGHT_LINEAR_FRAGMENT,
+	DLIGHT_LINEAR_VERTEX_FOG_IN,
+	DLIGHT_LINEAR_VERTEX_FOG_OUT,
 
-	DUMMY_VERTEX,
+	DLIGHT_LINEAR_FRAGMENT,
+	DLIGHT_LINEAR_FRAGMENT_FOG,
 
 	SPRITE_FRAGMENT,
 	GAMMA_FRAGMENT,
