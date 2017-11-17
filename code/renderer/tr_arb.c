@@ -18,11 +18,6 @@
 #define MAX_FILTER_SIZE 20
 #define MIN_FILTER_SIZE 1
 
-typedef enum {
-	Vertex,
-	Fragment
-} programType;
-
 cvar_t *r_bloom2_threshold;
 cvar_t *r_bloom2_threshold_mode;
 cvar_t *r_bloom2_modulate;
@@ -105,12 +100,12 @@ void GL_ProgramDisable( void )
 }
 
 
-void ARB_ProgramEnable( programNum vp, programNum fp )
+void ARB_ProgramEnableExt( GLuint vertexProgram, GLuint fragmentProgram )
 {
 	if ( programCompiled )
 	{
-		if ( current_vp != programs[ vp ] ) {
-			current_vp = programs[ vp ];
+		if ( current_vp != vertexProgram ) {
+			current_vp = vertexProgram;
 			if ( current_vp ) {
 				qglEnable( GL_VERTEX_PROGRAM_ARB );
 				qglBindProgramARB( GL_VERTEX_PROGRAM_ARB, current_vp );
@@ -119,8 +114,8 @@ void ARB_ProgramEnable( programNum vp, programNum fp )
 			}
 		}
 
-		if ( current_fp != programs[ fp ] ) {
-			current_fp = programs[ fp ];
+		if ( current_fp != fragmentProgram ) {
+			current_fp = fragmentProgram;
 			if ( current_fp ) {
 				qglEnable( GL_FRAGMENT_PROGRAM_ARB );
 				qglBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, current_fp );
@@ -130,6 +125,12 @@ void ARB_ProgramEnable( programNum vp, programNum fp )
 		}
 		programEnabled = 1;
 	}
+}
+
+
+static void ARB_ProgramEnable( programNum vp, programNum fp )
+{
+	ARB_ProgramEnableExt( programs[ vp ], programs[ fp ] );
 }
 
 
@@ -379,7 +380,7 @@ void ARB_LightingPass( void )
 }
 
 
-static const char *fogOutVPCode = {
+const char *fogOutVPCode = {
 	"PARAM fogDistanceVector = program.local[2]; \n"
 	"PARAM fogDepthVector = program.local[3]; \n"
 	"PARAM eyeT = program.local[4]; \n"
@@ -410,7 +411,7 @@ static const char *fogOutVPCode = {
 };
 
 
-static const char *fogInVPCode = {
+const char *fogInVPCode = {
 
 	"PARAM fogDistanceVector = program.local[2]; \n"
 	"PARAM fogDepthVector = program.local[3]; \n"
@@ -1031,7 +1032,7 @@ static void ARB_DeletePrograms( void )
 }
 
 
-static qboolean ARB_CompileProgram( programType ptype, const char *text, GLuint program ) 
+qboolean ARB_CompileProgram( programType ptype, const char *text, GLuint program )
 {
 	GLint errorPos;
 	unsigned int errCode;

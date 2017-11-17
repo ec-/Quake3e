@@ -387,6 +387,8 @@ typedef struct shader_s {
 	int	lightingStage;
 #endif
 	qboolean	isStaticShader;
+	int			vboVPindex;
+	int			vboFPindex;
 
 	void	(*optimalStageIteratorFunc)( void );
 
@@ -1795,6 +1797,11 @@ extern void VBO_Flush( void );
 // ARB shaders definitions
 
 typedef enum {
+	Vertex,
+	Fragment
+} programType;
+
+typedef enum {
 	DEFAULT_VERTEX,
 	DEFAULT_FRAGMENT,
 
@@ -1830,6 +1837,10 @@ typedef enum {
 
 } programNum;
 
-void ARB_ProgramEnable( programNum vp, programNum fp );
+extern const char *fogOutVPCode;
+extern const char *fogInVPCode;
+
+qboolean ARB_CompileProgram( programType ptype, const char *text, GLuint program );
+void ARB_ProgramEnableExt( GLuint vertexProgram, GLuint fragmentProgram );
 
 #endif //TR_LOCAL_H

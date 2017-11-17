@@ -336,7 +336,7 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 	tess.shader = state;
 	tess.fogNum = fogNum;
 
-	if ( !fogNum && !tess.dlightPass && state->isStaticShader )
+	if ( !tess.dlightPass && state->isStaticShader )
 		tess.allowVBO = qtrue;
 	else
 		tess.allowVBO = qfalse;
