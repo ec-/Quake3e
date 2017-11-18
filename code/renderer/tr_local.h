@@ -387,8 +387,8 @@ typedef struct shader_s {
 	int	lightingStage;
 #endif
 	qboolean	isStaticShader;
-	int			vboVPindex;
-	int			vboFPindex;
+	short		vboVPindex;
+	short		vboFPindex;
 
 	void	(*optimalStageIteratorFunc)( void );
 

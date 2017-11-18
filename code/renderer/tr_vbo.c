@@ -144,7 +144,7 @@ static const char *genATestFP( int function )
 }
 
 
-const char *BuildVBO_VP( int multitexture, int fog ) 
+const char *BuildFogVP( int multitexture, int fogmode )
 {
 	static char buf[1024];
 
@@ -152,9 +152,9 @@ const char *BuildVBO_VP( int multitexture, int fog )
 	"!!ARBvp1.0 \n"
 	"OPTION ARB_position_invariant; \n" );
 
-	switch ( fog ) {
-		case 1: strcat( buf, fogInVPCode ); break;
-		case 2: strcat( buf, fogOutVPCode ); break;
+	switch ( fogmode ) {
+		case 0: strcat( buf, fogInVPCode ); break;
+		case 1: strcat( buf, fogOutVPCode ); break;
 		default: break;
 	}
 
@@ -183,7 +183,7 @@ const char *BuildVBO_VP( int multitexture, int fog )
 }
 
 
-const char *BuildVBO_FP( int multitexture, int alphatest, int fog )
+const char *BuildFogFP( int multitexture, int alphatest )
 {
 	static char buf[1024];
 
@@ -217,36 +217,31 @@ const char *BuildVBO_FP( int multitexture, int alphatest, int fog )
 			break;
 	}
 
-	strcat( buf, "MUL_SAT base, base, fragment.color; \n" );
-	
-	switch ( fog ) {
-		case 1:
-			strcat( buf, "TEMP fog; \n"
-			"TEX fog, fragment.texcoord[4], texture[2], 2D; \n"
-			"MUL fog, fog, program.local[0]; \n"
-			"LRP_SAT base, fog.a, fog, base; \n" );
-			break;
-		default:
-			break;
-	}
+	//strcat( buf, "MUL_SAT base, base, fragment.color; \n" );
+	strcat( buf, "MUL base, base, fragment.color; \n" );
 
-	strcat( buf, "MOV result.color, base; \n" );
+	strcat( buf, "TEMP fog; \n"
+	"TEX fog, fragment.texcoord[4], texture[2], 2D; \n"
+	"MUL fog, fog, program.local[0]; \n"
+	//"LRP_SAT base, fog.a, fog, base; \n" );
+	"LRP_SAT result.color, fog.a, fog, base; \n" );
+
+	//strcat( buf, "MOV result.color, base; \n" );
 	strcat( buf, "END \n" );
 	return buf;
 }
 
 
 // multitexture modes: disabled, add, modulate, replace
-// alpha test modes: disabled, GT0, LT80, GE80
-// fog: disabled, enabled
-static GLuint vbo_fp[4*4*2];
+// fog modes: eye-in, eye-out
+static GLuint vbo_vp[4*2];
 
 // multitexture modes: disabled, add, modulate, replace
-// fog modes: disabled, eye-in, eye-out
-static GLuint vbo_vp[4*4];
+// alpha test modes: disabled, GT0, LT80, GE80
+static GLuint vbo_fp[4*4];
 
 
-static int getVPindex( int multitexture, int fog )
+static int getVPindex( int multitexture, int fogmode )
 {
 	int index;
 	switch( multitexture )
@@ -256,14 +251,14 @@ static int getVPindex( int multitexture, int fog )
 		case GL_MODULATE:	index = 2; break;
 		case GL_REPLACE:	index = 3; break;
 	}
-	index <<= 2;
-	index |= fog & 3; // disabled | eye-in | eye-out
+	index <<= 1;
+	index |= fogmode & 1; // eye-in | eye-out
 
 	return index;
 }
 
 
-static int getFPindex( int multitexture, int atest, int fog )
+static int getFPindex( int multitexture, int atest )
 {
 	int index;
 	switch( multitexture )
@@ -281,9 +276,6 @@ static int getFPindex( int multitexture, int atest, int fog )
 		case GLS_ATEST_GE_80: index |= 3; break;
 		default: break;
 	}
-	index <<= 1;
-	if ( fog ) // disabled | enabled
-		index |= 1;
 	return index;
 }
 
@@ -401,19 +393,17 @@ static qboolean isStaticShader( shader_t *shader )
 	// generate vertex programs
 	if ( !vbo_vp[ shader->vboVPindex ] )
 	{
-		qglGenProgramsARB( 3, &vbo_vp[ shader->vboVPindex ] );
-		//ARB_CompileProgram( Vertex, BuildVBO_VP( mtx, 0 ), vbo_vp[ shader->vboVPindex + 0 ] );
-		ARB_CompileProgram( Vertex, BuildVBO_VP( mtx, 1 ), vbo_vp[ shader->vboVPindex + 1 ] );
-		ARB_CompileProgram( Vertex, BuildVBO_VP( mtx, 2 ), vbo_vp[ shader->vboVPindex + 2 ] );
+		qglGenProgramsARB( 2, &vbo_vp[ shader->vboVPindex ] );
+		ARB_CompileProgram( Vertex, BuildFogVP( mtx, 0 ), vbo_vp[ shader->vboVPindex + 0 ] );
+		ARB_CompileProgram( Vertex, BuildFogVP( mtx, 1 ), vbo_vp[ shader->vboVPindex + 1 ] );
 	}
 
-	shader->vboFPindex = getFPindex( mtx, shader->stages[0]->stateBits & GLS_ATEST_BITS, 0 );
+	shader->vboFPindex = getFPindex( mtx, shader->stages[0]->stateBits & GLS_ATEST_BITS );
 	// generate fragment programs
 	if ( !vbo_fp[ shader->vboFPindex ] )
 	{
-		qglGenProgramsARB( 2, &vbo_fp[ shader->vboFPindex ] );
-		//ARB_CompileProgram( Fragment, BuildVBO_FP( mtx, shader->stages[0]->stateBits & GLS_ATEST_BITS, 0 ), vbo_fp[ shader->vboFPindex + 0 ] );
-		ARB_CompileProgram( Fragment, BuildVBO_FP( mtx, shader->stages[0]->stateBits & GLS_ATEST_BITS, 1 ), vbo_fp[ shader->vboFPindex + 1 ] );
+		qglGenProgramsARB( 1, &vbo_fp[ shader->vboFPindex ] );
+		ARB_CompileProgram( Fragment, BuildFogFP( mtx, shader->stages[0]->stateBits & GLS_ATEST_BITS), vbo_fp[ shader->vboFPindex ] );
 	}
 
 	return qtrue;
@@ -1039,7 +1029,7 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 	int stateBits;
 	qboolean updateArrays;
 	qboolean fogPass;
-	int vpIndex, fpIndex, vp, fp;
+	GLuint vp, fp;
 
 	fogPass = ( tess.fogNum && tess.shader->fogPass );
 	stateBits = pStage->stateBits;
@@ -1050,20 +1040,16 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 	{
 		stateBits &= ~GLS_ATEST_BITS; // done in shaders
 
-		vpIndex = tess.shader->vboVPindex;
-		fpIndex = tess.shader->vboFPindex;
-
 		fparm = RB_CalcFogProgramParms();
-		if ( fparm->eyeOutside )
-			vpIndex += 2;
-		else
-			vpIndex += 1;
-		fpIndex += 1;
 
-		vp = vbo_vp[ vpIndex ];
-		fp = vbo_fp[ fpIndex ];
+		if ( fparm->eyeOutside )
+			vp = vbo_vp[ tess.shader->vboVPindex + 1 ];
+		else
+			vp = vbo_vp[ tess.shader->vboVPindex + 0 ];
+
+		fp = vbo_fp[ tess.shader->vboFPindex ];
 	}
-	else 
+	else
 	{
 		vp = fp = 0;
 	}
