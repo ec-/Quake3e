@@ -914,7 +914,7 @@ void R_ScreenShot_f( void ) {
 	if ( Q_stricmp( ri.Cmd_Argv(0), "screenshotJPEG" ) == 0 ) {
 		typeMask = SCREENSHOT_JPG;
 		ext = "jpg";
-	}else if ( Q_stricmp( ri.Cmd_Argv(0), "screenshotBMP" ) == 0 ) {
+	} else if ( Q_stricmp( ri.Cmd_Argv(0), "screenshotBMP" ) == 0 ) {
 		typeMask = SCREENSHOT_BMP;
 		ext = "bmp";
 	} else {
@@ -1628,6 +1628,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 
 	re.FinishBloom = RE_FinishBloom;
 	re.CanMinimize = RE_CanMinimize;
+	re.GetConfig = RE_GetConfig;
 
 	return &re;
 }

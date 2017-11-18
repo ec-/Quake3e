@@ -107,6 +107,8 @@ typedef struct {
 
 	qboolean (*CanMinimize)( void ); // == fbo enabled
 
+	const glconfig_t *(*GetConfig)( void );
+
 } refexport_t;
 
 //

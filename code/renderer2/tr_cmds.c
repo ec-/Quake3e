@@ -583,3 +583,15 @@ void RE_TakeVideoFrame( int width, int height,
 	cmd->encodeBuffer = encodeBuffer;
 	cmd->motionJpeg = motionJpeg;
 }
+
+
+qboolean RE_CanMinimize( void )
+{
+	return qfalse;
+}
+
+
+const glconfig_t *RE_GetConfig( void )
+{
+	return &glConfig;
+}

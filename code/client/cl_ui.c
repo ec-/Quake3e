@@ -567,6 +567,7 @@ static int LAN_ServerIsVisible(int source, int n ) {
 	return qfalse;
 }
 
+
 /*
 =======================
 LAN_UpdateVisiblePings
@@ -575,6 +576,7 @@ LAN_UpdateVisiblePings
 qboolean LAN_UpdateVisiblePings(int source ) {
 	return CL_UpdateVisiblePings_f(source);
 }
+
 
 /*
 ====================
@@ -585,14 +587,16 @@ int LAN_GetServerStatus( char *serverAddress, char *serverStatus, int maxLen ) {
 	return CL_ServerStatus( serverAddress, serverStatus, maxLen );
 }
 
+
 /*
 ====================
 CL_GetGlConfig
 ====================
 */
 static void CL_GetGlconfig( glconfig_t *config ) {
-	*config = cls.glconfig;
+	*config = *re.GetConfig();
 }
+
 
 /*
 ====================
@@ -614,6 +618,7 @@ static void CL_GetClipboardData( char *buf, int buflen ) {
 	Z_Free( cbd );
 }
 
+
 /*
 ====================
 Key_KeynumToStringBuf
@@ -622,6 +627,7 @@ Key_KeynumToStringBuf
 static void Key_KeynumToStringBuf( int keynum, char *buf, int buflen ) {
 	Q_strncpyz( buf, Key_KeynumToString( keynum ), buflen );
 }
+
 
 /*
 ====================

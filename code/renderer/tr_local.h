@@ -1433,7 +1433,7 @@ void R_ClearFlares( void );
 
 void RB_AddFlare( void *surface, int fogNum, vec3_t point, vec3_t color, vec3_t normal );
 void RB_AddDlightFlares( void );
-void RB_RenderFlares (void);
+void RB_RenderFlares( void );
 
 /*
 ============================================================
@@ -1762,6 +1762,8 @@ void RE_TakeVideoFrame( int width, int height,
 
 void RE_FinishBloom( void );
 qboolean RE_CanMinimize( void );
+const glconfig_t *RE_GetConfig( void );
+
 
 //Bloom Stuff
 void R_BloomInit( void );

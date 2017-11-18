@@ -580,3 +580,9 @@ qboolean RE_CanMinimize( void )
 	return qfalse;
 #endif
 }
+
+
+const glconfig_t *RE_GetConfig( void )
+{
+	return &glConfig;
+}

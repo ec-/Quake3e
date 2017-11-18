@@ -2430,5 +2430,7 @@ void RE_TakeVideoFrame( int width, int height,
 		byte *captureBuffer, byte *encodeBuffer, qboolean motionJpeg );
 
 void RE_FinishBloom( void );
+qboolean RE_CanMinimize( void );
+const glconfig_t *RE_GetConfig( void );
 
 #endif //TR_LOCAL_H
