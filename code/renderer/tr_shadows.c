@@ -216,7 +216,7 @@ void RB_ShadowTessEnd( void ) {
 	qglColor3f( 0.2f, 0.2f, 0.2f );
 
 	// don't write to the color buffer
-	qglGetBooleanv(GL_COLOR_WRITEMASK, rgba);
+	qglGetBooleanv( GL_COLOR_WRITEMASK, rgba );
 	qglColorMask( GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE );
 
 	qglEnable( GL_STENCIL_TEST );
@@ -258,12 +258,12 @@ void RB_ShadowFinish( void ) {
 	qglEnable( GL_STENCIL_TEST );
 	qglStencilFunc( GL_NOTEQUAL, 0, 255 );
 
-	qglDisable (GL_CLIP_PLANE0);
+	qglDisable( GL_CLIP_PLANE0 );
 	GL_Cull( CT_TWO_SIDED );
 
 	GL_Bind( tr.whiteImage );
 
-    qglLoadIdentity ();
+	qglLoadIdentity();
 
 	qglColor3f( 0.6f, 0.6f, 0.6f );
 	GL_State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO );
@@ -276,9 +276,9 @@ void RB_ShadowFinish( void ) {
 	qglVertex3f( 100, 100, -10 );
 	qglVertex3f( 100, -100, -10 );
 	qglVertex3f( -100, -100, -10 );
-	qglEnd ();
+	qglEnd();
 
-	qglColor4f(1,1,1,1);
+	qglColor4f( 1, 1, 1, 1 );
 	qglDisable( GL_STENCIL_TEST );
 }
 

@@ -882,7 +882,7 @@ static float LodErrorForVolume( vec3_t local, float radius ) {
 }
 
 
-void RB_SurfaceGridEstimate( srfGridMesh_t *cv, int *numVertexes, int *numIndexes ) 
+void RB_SurfaceGridEstimate( srfGridMesh_t *cv, int *numVertexes, int *numIndexes )
 {
 	int		lodWidth, lodHeight;
 	float	lodError;

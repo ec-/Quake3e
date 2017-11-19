@@ -564,6 +564,7 @@ float Q_rsqrt( float number )
 	return y;
 }
 
+
 float Q_fabs( float f ) {
 	floatint_t fi;
 	fi.f = f;

@@ -185,9 +185,9 @@ Passing NULL will set the color to white
 void	RE_SetColor( const float *rgba ) {
 	setColorCommand_t	*cmd;
 
-  if ( !tr.registered ) {
-    return;
-  }
+	if ( !tr.registered ) {
+		return;
+	}
 	cmd = R_GetCommandBuffer( sizeof( *cmd ) );
 	if ( !cmd ) {
 		return;

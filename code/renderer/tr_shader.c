@@ -27,7 +27,7 @@ static char *s_shaderText;
 
 // the shader is parsed into these global variables, then copied into
 // dynamically allocated memory if it is valid.
-static	shaderStage_t	stages[MAX_SHADER_STAGES];		
+static	shaderStage_t	stages[MAX_SHADER_STAGES];
 static	shader_t		shader;
 static	texModInfo_t	texMods[MAX_SHADER_STAGES][TR_MAX_TEXMODS];
 
@@ -1034,7 +1034,7 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 	//
 	if ( stage->rgbGen == CGEN_BAD ) {
 		if ( blendSrcBits == 0 ||
-			blendSrcBits == GLS_SRCBLEND_ONE || 
+			blendSrcBits == GLS_SRCBLEND_ONE ||
 			blendSrcBits == GLS_SRCBLEND_SRC_ALPHA ) {
 			stage->rgbGen = CGEN_IDENTITY_LIGHTING;
 		} else {
@@ -1046,7 +1046,7 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 	//
 	// implicitly assume that a GL_ONE GL_ZERO blend mask disables blending
 	//
-	if ( ( blendSrcBits == GLS_SRCBLEND_ONE ) && 
+	if ( ( blendSrcBits == GLS_SRCBLEND_ONE ) &&
 		 ( blendDstBits == GLS_DSTBLEND_ZERO ) )
 	{
 		blendDstBits = blendSrcBits = 0;
@@ -1069,10 +1069,10 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 	//
 	// compute state bits
 	//
-	stage->stateBits = depthMaskBits | 
-		               blendSrcBits | blendDstBits | 
-					   atestBits | 
-					   depthFuncBits;
+	stage->stateBits = depthMaskBits |
+		blendSrcBits | blendDstBits |
+		atestBits |
+		depthFuncBits;
 
 	return qtrue;
 }
@@ -1322,7 +1322,7 @@ void ParseSort( const char **text ) {
 		shader.sort = SS_ENVIRONMENT;
 	} else if ( !Q_stricmp( token, "opaque" ) ) {
 		shader.sort = SS_OPAQUE;
-	}else if ( !Q_stricmp( token, "decal" ) ) {
+	} else if ( !Q_stricmp( token, "decal" ) ) {
 		shader.sort = SS_DECAL;
 	} else if ( !Q_stricmp( token, "seeThrough" ) ) {
 		shader.sort = SS_SEE_THROUGH;
@@ -1625,7 +1625,7 @@ static qboolean ParseShader( const char **text )
 
 			token = COM_ParseExt( text, qfalse );
 			a = atof( token );
-			VectorScale( tr.sunLight, a, tr.sunLight);
+			VectorScale( tr.sunLight, a, tr.sunLight );
 
 			token = COM_ParseExt( text, qfalse );
 			a = atof( token );
@@ -1652,8 +1652,8 @@ static qboolean ParseShader( const char **text )
 		}
 		else if ( !Q_stricmp( token, "clampTime" ) ) {
 			token = COM_ParseExt( text, qfalse );
-			if (token[0]) {
-				shader.clampTime = atof(token);
+			if ( token[0] ) {
+				shader.clampTime = atof( token );
 			}
 		}
 		// skip stuff that only the q3map needs
@@ -1714,7 +1714,7 @@ static qboolean ParseShader( const char **text )
 			continue;
 		}
 		// portal
-		else if ( !Q_stricmp(token, "portal") )
+		else if ( !Q_stricmp( token, "portal" ) )
 		{
 			shader.sort = SS_PORTAL;
 			continue;
@@ -2357,7 +2357,7 @@ static void VertexLightingCollapse( void ) {
 		} else {
 			stages[0].rgbGen = CGEN_EXACT_VERTEX;
 		}
-		stages[0].alphaGen = AGEN_SKIP;		
+		stages[0].alphaGen = AGEN_SKIP;
 	} else {
 		// don't use a lightmap (tesla coils)
 		if ( stages[0].bundle[0].isLightmap ) {
@@ -2499,14 +2499,11 @@ static shader_t *FinishShader( void ) {
 			}
 		}
 
-
-    // not a true lightmap but we want to leave existing 
-    // behaviour in place and not print out a warning
-    //if (pStage->rgbGen == CGEN_VERTEX) {
-    //  vertexLightmap = qtrue;
-    //}
-
-
+		// not a true lightmap but we want to leave existing
+		// behaviour in place and not print out a warning
+		//if (pStage->rgbGen == CGEN_VERTEX) {
+		//  vertexLightmap = qtrue;
+		//}
 
 		//
 		// determine sort order and fog color adjustment
