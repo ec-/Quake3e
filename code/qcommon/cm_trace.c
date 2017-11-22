@@ -36,6 +36,11 @@ BASIC MATH
 ===============================================================================
 */
 
+// forced double-precison functions
+#define DotProductDP(x,y)		((double)(x)[0]*(y)[0]+(double)(x)[1]*(y)[1]+(double)(x)[2]*(y)[2])
+#define VectorSubtractDP(a,b,c)	((c)[0]=(double)((a)[0]-(b)[0]),(c)[1]=(double)((a)[1]-(b)[1]),(c)[2]=(double)((a)[2]-(b)[2]))
+#define VectorAddDP(a,b,c)		((c)[0]=(double)((a)[0]+(b)[0]),(c)[1]=(double)((a)[1]+(b)[1]),(c)[2]=(double)((a)[2]+(b)[2]))
+
 /*
 ================
 RotatePoint
@@ -161,10 +166,10 @@ CM_TestBoxInBrush
 void CM_TestBoxInBrush( traceWork_t *tw, cbrush_t *brush ) {
 	int			i;
 	cplane_t	*plane;
-	float		dist;
-	float		d1;
+	double		dist;
+	double		d1;
 	cbrushside_t	*side;
-	float		t;
+	double		t;
 	vec3_t		startp;
 
 	if (!brush->numsides) {
@@ -192,16 +197,16 @@ void CM_TestBoxInBrush( traceWork_t *tw, cbrush_t *brush ) {
 			// adjust the plane distance apropriately for radius
 			dist = plane->dist + tw->sphere.radius;
 			// find the closest point on the capsule to the plane
-			t = DotProduct( plane->normal, tw->sphere.offset );
+			t = DotProductDP( plane->normal, tw->sphere.offset );
 			if ( t > 0 )
 			{
-				VectorSubtract( tw->start, tw->sphere.offset, startp );
+				VectorSubtractDP( tw->start, tw->sphere.offset, startp );
 			}
 			else
 			{
-				VectorAdd( tw->start, tw->sphere.offset, startp );
+				VectorAddDP( tw->start, tw->sphere.offset, startp );
 			}
-			d1 = DotProduct( startp, plane->normal ) - dist;
+			d1 = DotProductDP( startp, plane->normal ) - dist;
 			// if completely in front of face, no intersection
 			if ( d1 > 0 ) {
 				return;
@@ -217,7 +222,7 @@ void CM_TestBoxInBrush( traceWork_t *tw, cbrush_t *brush ) {
 			// adjust the plane distance apropriately for mins/maxs
 			dist = plane->dist - DotProduct( tw->offsets[ plane->signbits ], plane->normal );
 
-			d1 = DotProduct( tw->start, plane->normal ) - dist;
+			d1 = DotProductDP( tw->start, plane->normal ) - dist;
 
 			// if completely in front of face, no intersection
 			if ( d1 > 0 ) {
@@ -474,6 +479,7 @@ void CM_TraceThroughPatch( traceWork_t *tw, cPatch_t *patch ) {
 	}
 }
 
+
 /*
 ================
 CM_TraceThroughBrush
@@ -482,13 +488,13 @@ CM_TraceThroughBrush
 void CM_TraceThroughBrush( traceWork_t *tw, cbrush_t *brush ) {
 	int			i;
 	cplane_t	*plane, *clipplane;
-	float		dist;
+	double		dist;
 	float		enterFrac, leaveFrac;
-	float		d1, d2;
+	double		d1, d2;
 	qboolean	getout, startout;
 	float		f;
 	cbrushside_t	*side, *leadside;
-	float		t;
+	double		t;
 	vec3_t		startp;
 	vec3_t		endp;
 
@@ -521,20 +527,20 @@ void CM_TraceThroughBrush( traceWork_t *tw, cbrush_t *brush ) {
 			dist = plane->dist + tw->sphere.radius;
 
 			// find the closest point on the capsule to the plane
-			t = DotProduct( plane->normal, tw->sphere.offset );
+			t = DotProductDP( plane->normal, tw->sphere.offset );
 			if ( t > 0 )
 			{
-				VectorSubtract( tw->start, tw->sphere.offset, startp );
-				VectorSubtract( tw->end, tw->sphere.offset, endp );
+				VectorSubtractDP( tw->start, tw->sphere.offset, startp );
+				VectorSubtractDP( tw->end, tw->sphere.offset, endp );
 			}
 			else
 			{
-				VectorAdd( tw->start, tw->sphere.offset, startp );
-				VectorAdd( tw->end, tw->sphere.offset, endp );
+				VectorAddDP( tw->start, tw->sphere.offset, startp );
+				VectorAddDP( tw->end, tw->sphere.offset, endp );
 			}
 
-			d1 = DotProduct( startp, plane->normal ) - dist;
-			d2 = DotProduct( endp, plane->normal ) - dist;
+			d1 = DotProductDP( startp, plane->normal ) - dist;
+			d2 = DotProductDP( endp, plane->normal ) - dist;
 
 			if (d2 > 0) {
 				getout = qtrue;	// endpoint is not in solid
@@ -585,10 +591,10 @@ void CM_TraceThroughBrush( traceWork_t *tw, cbrush_t *brush ) {
 			plane = side->plane;
 
 			// adjust the plane distance apropriately for mins/maxs
-			dist = plane->dist - DotProduct( tw->offsets[ plane->signbits ], plane->normal );
+			dist = plane->dist - DotProductDP( tw->offsets[ plane->signbits ], plane->normal );
 
-			d1 = DotProduct( tw->start, plane->normal ) - dist;
-			d2 = DotProduct( tw->end, plane->normal ) - dist;
+			d1 = DotProductDP( tw->start, plane->normal ) - dist;
+			d2 = DotProductDP( tw->end, plane->normal ) - dist;
 
 			if (d2 > 0) {
 				getout = qtrue;	// endpoint is not in solid
@@ -1035,7 +1041,7 @@ a smaller intercept fraction.
 void CM_TraceThroughTree( traceWork_t *tw, int num, float p1f, float p2f, vec3_t p1, vec3_t p2) {
 	cNode_t		*node;
 	cplane_t	*plane;
-	float		t1, t2, offset;
+	double		t1, t2, offset;
 	float		frac, frac2;
 	float		idist;
 	vec3_t		mid;
@@ -1065,8 +1071,8 @@ void CM_TraceThroughTree( traceWork_t *tw, int num, float p1f, float p2f, vec3_t
 		t2 = p2[plane->type] - plane->dist;
 		offset = tw->extents[plane->type];
 	} else {
-		t1 = DotProduct (plane->normal, p1) - plane->dist;
-		t2 = DotProduct (plane->normal, p2) - plane->dist;
+		t1 = DotProductDP( plane->normal, p1 ) - plane->dist;
+		t2 = DotProductDP( plane->normal, p2 ) - plane->dist;
 		if ( tw->isPoint ) {
 			offset = 0;
 		} else {
@@ -1117,7 +1123,6 @@ void CM_TraceThroughTree( traceWork_t *tw, int num, float p1f, float p2f, vec3_t
 	mid[2] = p1[2] + frac*(p2[2] - p1[2]);
 
 	CM_TraceThroughTree( tw, node->children[side], p1f, midf, p1, mid );
-
 
 	// go past the node
 	if ( frac2 < 0 ) {
