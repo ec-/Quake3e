@@ -743,12 +743,12 @@ void CL_ParseCommandString( msg_t *msg ) {
 	index = seq & (MAX_RELIABLE_COMMANDS-1);
 	Q_strncpyz( clc.serverCommands[ index ], s, sizeof( clc.serverCommands[ index ] ) );
 
-	
 #ifdef USE_CURL
 	if ( !clc.cURLUsed )
 #endif
-	// -EC- : we may stuck on downloading because of non-working cgvm, so handle "disconnect" here
-	if ( cls.state == CA_CONNECTED && clc.download != FS_INVALID_HANDLE && !cgvm ) {
+	// -EC- : we may stuck on downloading because of non-working cgvm
+	// or in "awaiting snapshot..." state so handle "disconnect" here
+	if ( ( !cgvm && cls.state == CA_CONNECTED && clc.download != FS_INVALID_HANDLE ) || ( cgvm && cls.state == CA_PRIMED ) ) {
 		const char *text;
 		Cmd_TokenizeString( s );
 		if ( !Q_stricmp( Cmd_Argv(0), "disconnect" ) ) {
