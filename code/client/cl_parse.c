@@ -754,8 +754,8 @@ void CL_ParseCommandString( msg_t *msg ) {
 		if ( !Q_stricmp( Cmd_Argv(0), "disconnect" ) ) {
 			text = ( Cmd_Argc() > 1 ) ? va( "Server disconnected: %s", Cmd_Argv( 1 ) ) : "Server disconnected.";
 			Cvar_Set( "com_errorMessage", text );
-			Com_Printf( "%s\n",text );
-			CL_Disconnect( qtrue );			
+			Com_Printf( "%s\n", text );
+			CL_Disconnect( qtrue );
 		}
 	}
 

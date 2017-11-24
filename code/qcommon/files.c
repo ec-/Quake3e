@@ -347,7 +347,7 @@ qboolean FS_Initialized( void ) {
 FS_PakIsPure
 =================
 */
-qboolean FS_PakIsPure( const pack_t *pack ) {
+static qboolean FS_PakIsPure( const pack_t *pack ) {
 	int i;
 
 	if ( fs_numServerPaks ) {
@@ -4207,9 +4207,6 @@ void FS_Restart( int checksumFeed ) {
 
 	// set the checksum feed
 	fs_checksumFeed = checksumFeed;
-
-	// clear pak references
-	FS_ClearPakReferences(0);
 
 	// try to start up normally
 	FS_Startup();

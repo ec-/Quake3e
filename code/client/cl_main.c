@@ -678,7 +678,6 @@ static void CL_DemoCompleted( void ) {
 	}
 
 	CL_Disconnect( qtrue );
-	CL_ShutdownCGame();
 	CL_NextDemo();
 }
 
@@ -1188,12 +1187,20 @@ This is also called on Com_Error and Com_Quit, so it shouldn't cause any errors
 =====================
 */
 void CL_Disconnect( qboolean showMainMenu ) {
+	static qboolean cl_disconnecting = qfalse;
+	
 	if ( !com_cl_running || !com_cl_running->integer ) {
 		return;
 	}
 
+	if ( cl_disconnecting ) {
+		return;
+	}
+
+	cl_disconnecting = qtrue;
+
 	// shutting down the client so enter full screen ui mode
-	Cvar_Set("r_uiFullScreen", "1");
+	Cvar_Set( "r_uiFullScreen", "1" );
 
 	// Stop demo recording
 	if ( clc.demorecording ) {
@@ -1221,6 +1228,11 @@ void CL_Disconnect( qboolean showMainMenu ) {
 		CL_CloseAVI();
 	}
 
+	if ( cgvm ) {
+		// do that right after we rendered last video frame
+		CL_ShutdownCGame();
+	}
+
 	SCR_StopCinematic();
 	S_StopAllSounds();
 	Key_ClearStates();
@@ -1241,6 +1253,8 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	// Remove pure paks
 	FS_PureServerSetLoadedPaks( "", "" );
 	FS_PureServerSetReferencedPaks( "", "" );
+
+	FS_ClearPakReferences( FS_GENERAL_REF | FS_UI_REF | FS_CGAME_REF );
 
 	CL_ClearState();
 
@@ -1263,6 +1277,8 @@ void CL_Disconnect( qboolean showMainMenu ) {
 		noGameRestart = qfalse;
 	else
 		CL_RestoreOldGame();
+
+	cl_disconnecting = qfalse;
 }
 
 
@@ -1697,7 +1713,7 @@ void CL_SendPureChecksums( void ) {
 CL_ResetPureClientAtServer
 =================
 */
-void CL_ResetPureClientAtServer( void ) {
+static void CL_ResetPureClientAtServer( void ) {
 	CL_AddReliableCommand( "vdr", qfalse );
 }
 
