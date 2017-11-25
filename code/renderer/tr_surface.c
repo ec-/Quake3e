@@ -1004,7 +1004,7 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 	tess.surfType = SF_GRID;
 
 	// determine the allowable discrepance
-	if ( cv->vboItemIndex && ( tr.mapLoading || tess.dlightPass && tess.shader->isStaticShader ) )
+	if ( cv->vboItemIndex && ( tr.mapLoading || ( tess.dlightPass && tess.shader->isStaticShader ) ) )
 		lodError = r_lodCurveError->value; // fixed quality for VBO
 	else
 		lodError = LodErrorForVolume( cv->lodOrigin, cv->lodRadius );

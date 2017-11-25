@@ -1183,7 +1183,7 @@ static void SV_Status_f( void ) {
 SV_ConSay_f
 ==================
 */
-static void SV_ConSay_f(void) {
+static void SV_ConSay_f( void ) {
 	char	*p;
 	char	text[1024];
 
@@ -1197,17 +1197,21 @@ static void SV_ConSay_f(void) {
 		return;
 	}
 
-	strcpy (text, "console: ");
+	strcpy( text, "console: " );
 	p = Cmd_Args();
+
+	if ( strlen( p ) > 1000 ) {
+		return;
+	}
 
 	if ( *p == '"' ) {
 		p++;
-		p[strlen(p)-1] = 0;
+		p[strlen(p)-1] = '\0';
 	}
 
-	strcat(text, p);
+	strcat( text, p );
 
-	SV_SendServerCommand(NULL, "chat \"%s\"", text);
+	SV_SendServerCommand( NULL, "chat \"%s\"", text );
 }
 
 

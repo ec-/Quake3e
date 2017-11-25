@@ -1417,7 +1417,7 @@ static qboolean FBO_Create( frameBuffer_t *fb, GLsizei width, GLsizei height, qb
 	fb->width = width;
 	fb->height = height;
 
-	qglClearColor( 0, 0, 0, 0 );
+	qglClearColor( 0.0, 0.0, 0.0, 1.0 );
 	if ( depthStencil )
 		qglClear( GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT );
 	else
@@ -1491,7 +1491,7 @@ static qboolean FBO_CreateMS( frameBuffer_t *fb )
 		return qfalse;
 	}
 
-	qglClearColor( 0, 0, 0, 0 );
+	qglClearColor( 0.0, 0.0, 0.0, 1.0 );
 	qglClear( GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT );
 
 	FBO_Bind( GL_FRAMEBUFFER, 0 );

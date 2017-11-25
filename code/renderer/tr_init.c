@@ -1552,6 +1552,7 @@ Touch all images to make sure they are resident
 =============
 */
 static void RE_EndRegistration( void ) {
+	FBO_BindMain(); // otherwise we may draw images to the back buffer
 	R_IssuePendingRenderCommands();
 	if ( !ri.Sys_LowPhysicalMemory() ) {
 		RB_ShowImages();
