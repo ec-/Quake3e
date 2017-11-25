@@ -1213,6 +1213,51 @@ static void SV_ConSay_f(void) {
 
 /*
 ==================
+SV_ConTell_f
+==================
+*/
+static void SV_ConTell_f( void ) {
+	char	*p;
+	char	text[1024];
+	client_t	*cl;
+
+	// make sure server is running
+	if ( !com_sv_running->integer ) {
+		Com_Printf( "Server is not running.\n" );
+		return;
+	}
+
+	if ( Cmd_Argc() < 3 ) {
+		Com_Printf( "Usage: tell <client number> <text>\n" );
+		return;
+	}
+
+	cl = SV_GetPlayerByNum();
+	if ( !cl ) {
+		return;
+	}
+
+	strcpy( text, "console_tell: " );
+	p = Cmd_ArgsFrom( 2 );
+
+	if ( strlen( p ) > 1000 ) {
+		return;
+	}
+
+	if ( *p == '"' ) {
+		p++;
+		p[strlen(p)-1] = '\0';
+	}
+
+	strcat( text, p );
+
+	Com_Printf( "%s\n", text );
+	SV_SendServerCommand( cl, "chat \"%s\"", text );
+}
+
+
+/*
+==================
 SV_Heartbeat_f
 
 Also called by SV_DropClient, SV_DirectConnect, and SV_SpawnServer
@@ -1403,6 +1448,7 @@ void SV_AddDedicatedCommands( void )
 {
 	Cmd_AddCommand( "serverinfo", SV_Serverinfo_f );
 	Cmd_AddCommand( "systeminfo", SV_Systeminfo_f );
+	Cmd_AddCommand( "tell", SV_ConTell_f );
 	Cmd_AddCommand( "say", SV_ConSay_f );
 }
 
@@ -1411,5 +1457,6 @@ void SV_RemoveDedicatedCommands( void )
 {
 	Cmd_RemoveCommand( "serverinfo" );
 	Cmd_RemoveCommand( "systeminfo" );
+	Cmd_RemoveCommand( "tell" );
 	Cmd_RemoveCommand( "say" );
 }
