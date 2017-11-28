@@ -26,6 +26,11 @@ cvar_t *r_bloom2_blend_base;
 cvar_t *r_bloom2_intensity;
 cvar_t *r_bloom2_filter_size;
 cvar_t *r_bloom2_reflection;
+
+cvar_t *r_renderWidth;
+cvar_t *r_renderHeight;
+cvar_t *r_renderScale;
+
 extern cvar_t *r_bloom;
 
 static GLuint programs[ PROGRAM_COUNT ];
@@ -47,6 +52,14 @@ GLint    fboTextureType;
 int      fboBloomPasses;
 int      fboBloomBlendBase;
 int      fboBloomFilterSize;
+
+qboolean windowAdjusted;
+int		windowWidth;
+int		windowHeight;
+int		blitX0, blitX1;
+int		blitY0, blitY1;
+int		blitClear;
+GLenum	blitFilter;
 
 typedef struct frameBuffer_s {
 	GLuint fbo;
@@ -1585,16 +1598,25 @@ void FBO_BindMain( void )
 
 static void FBO_BlitToBackBuffer( int index )
 {
-	const int w = glConfig.vidWidth;
-	const int h = glConfig.vidHeight;
-
 	const frameBuffer_t *src = &frameBuffers[ index ];
 	FBO_Bind( GL_READ_FRAMEBUFFER, src->fbo );
 	FBO_Bind( GL_DRAW_FRAMEBUFFER, 0 );
 	//qglReadBuffer( GL_COLOR_ATTACHMENT0 );
 	qglDrawBuffer( GL_BACK );
 
-	qglBlitFramebuffer( 0, 0, src->width, src->height, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST );
+	if ( windowAdjusted )
+	{
+		if ( blitClear > 0 )
+		{
+			blitClear--;
+			qglClearColor( 0.0, 0.0, 0.0, 1.0 );
+			qglClear( GL_COLOR_BUFFER_BIT );
+		}
+		qglViewport( blitX0, blitY0, blitX1 - blitX0, blitY1 - blitY0 );
+		qglScissor( blitX0, blitY0, blitX1 - blitX0, blitY1 - blitY0 );
+	}
+
+	qglBlitFramebuffer( 0, 0, src->width, src->height, blitX0, blitY0, blitX1, blitY1, GL_COLOR_BUFFER_BIT, blitFilter );
 	fboReadIndex = index;
 }
 
@@ -1824,6 +1846,10 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 		GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
 	}
 
+	if ( windowAdjusted ) {
+		finalStage = qfalse; // can't blit directly into back buffer in this case
+	}
+
 	// if we don't need to read pixels later - blend directly to back buffer
 	if ( finalStage ) {
 		if ( backEnd.screenshotMask ) {
@@ -1863,7 +1889,7 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 		fboReadIndex = BLOOM_BASE;
 	}
 
-	return qtrue;
+	return finalStage;
 }
 
 
@@ -1910,7 +1936,7 @@ void FBO_PostProcess( void )
 	}
 
 	// check if we can perform final draw directly into back buffer
-	if ( backEnd.screenshotMask == 0 ) {
+	if ( backEnd.screenshotMask == 0 && !windowAdjusted ) {
 		FBO_Bind( GL_FRAMEBUFFER, 0 );
 		GL_BindTexture( 0, frameBuffers[ fboReadIndex ].color );
 		ARB_ProgramEnable( DUMMY_VERTEX, GAMMA_FRAGMENT );
@@ -1956,6 +1982,19 @@ static void QGL_InitPrograms( void )
 	r_bloom2_reflection = ri.Cvar_Get( "r_bloom2_reflection", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_bloom2_reflection, "-4", "4", CV_FLOAT );
 
+	r_renderWidth = ri.Cvar_Get( "r_renderWidth", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_renderHeight = ri.Cvar_Get( "r_renderHeight", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_renderWidth, "0", NULL, CV_INTEGER );
+	ri.Cvar_CheckRange( r_renderHeight, "0", NULL, CV_INTEGER );
+	
+	r_renderScale = ri.Cvar_Get( "r_renderScale", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_renderScale, "0", "3", CV_INTEGER );
+	ri.Cvar_SetDescription( r_renderScale, "Scaling mode to be used with custom render resolution:\n"
+		" 0 - nearest filtering, stretch to full size\n"
+		" 1 - nearest filtering, preserve aspect ratio (black bars on sides)\n"
+		" 2 - linear filtering, stretch to full size\n"
+		" 3 - linear filtering, preserve aspect ratio (black bars on sides)\n" );
+	
 	if ( !qglGenProgramsARB )
 		return;
 
@@ -1975,6 +2014,53 @@ static void QGL_EarlyInitFBO( void )
 
 	if ( !programAvailable || !qglGenFramebuffers || !qglBlitFramebuffer )
 		return;
+
+	windowWidth = glConfig.vidWidth;
+	windowHeight = glConfig.vidHeight;
+
+	blitX0 = blitY0 = 0;
+	blitX1 = windowWidth;
+	blitY1 = windowHeight;
+
+	if ( r_renderWidth->integer >= 64 && r_renderHeight->integer >= 64 && r_fbo->integer )
+	{
+		glConfig.vidWidth = r_renderWidth->integer;
+		glConfig.vidHeight = r_renderHeight->integer;
+	}
+
+	if ( windowWidth != glConfig.vidWidth || windowHeight != glConfig.vidHeight )
+	{
+		if ( r_renderScale->integer & 1 )
+		{
+			float windowAspect = (float) windowWidth / (float) windowHeight;
+			float renderAspect = (float) glConfig.vidWidth / (float) glConfig.vidHeight;
+			if ( windowAspect >= renderAspect ) 
+			{
+				float scale = (float) windowHeight / ( float ) glConfig.vidHeight;
+				int bias = ( windowWidth - scale * (float) glConfig.vidWidth ) / 2;
+				blitX0 += bias;
+				blitX1 -= bias;
+			}
+			else
+			{
+				float scale = (float) windowWidth / ( float ) glConfig.vidWidth;
+				int bias = ( windowHeight - scale * (float) glConfig.vidHeight ) / 2;
+				blitY0 += bias;
+				blitY1 -= bias;
+			}
+		}
+
+		if ( r_renderScale->integer & 2 )
+			blitFilter = GL_LINEAR;
+		else
+			blitFilter = GL_NEAREST;
+
+		windowAdjusted = qtrue;
+	}
+	else
+	{
+		windowAdjusted = qfalse;
+	}
 
 	fboAvailable = qtrue;
 }
@@ -2015,6 +2101,11 @@ void QGL_InitFBO( void )
 
 	if ( !r_fbo->integer || !programAvailable || !fboAvailable )
 		return;
+
+	if ( windowAdjusted )
+		blitClear = 2; // front & back buffers
+	else
+		blitClear = 0;
 
 	switch ( r_hdr->integer )
 	{
