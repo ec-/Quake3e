@@ -2059,6 +2059,8 @@ static void QGL_EarlyInitFBO( void )
 	}
 	else
 	{
+		blitFilter = GL_NEAREST;
+
 		windowAdjusted = qfalse;
 	}
 
