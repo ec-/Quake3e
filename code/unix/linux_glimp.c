@@ -77,6 +77,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <X11/Sunkeysym.h>
 #endif
 
+#include <X11/extensions/Xrandr.h>
+#include <X11/extensions/Xrender.h>
+
 #ifdef _XF86DGA_H_
 #define HAVE_XF86DGA
 #endif
@@ -101,9 +104,13 @@ static Atom wmDeleteEvent = None;
 
 static int window_width = 0;
 static int window_height = 0;
+static qboolean window_created = qfalse;
 
 static int desktop_width = 0;
 static int desktop_height = 0;
+static int desktop_x = 0;
+static int desktop_y = 0;
+
 static qboolean desktop_ok = qfalse;
 
 // bk001206 - not needed anymore
@@ -138,6 +145,9 @@ cvar_t   *in_joystickDebug = NULL;
 cvar_t   *joy_threshold    = NULL;
 #endif
 
+cvar_t   *vid_xpos;
+cvar_t   *vid_ypos;
+
 static qboolean vidmode_ext = qfalse;
 static qboolean vidmode_active = qfalse;
 
@@ -150,13 +160,26 @@ static XF86VidModeGamma vidmode_InitialGamma;
 static XF86VidModeModeInfo **vidmodes = NULL;
 #endif /* HAVE_XF86DGA */
 
-
-static int win_x, win_y;
-
 static int mouse_accel_numerator;
 static int mouse_accel_denominator;
 static int mouse_threshold;
 
+// xrandr
+static qboolean xrandr_ext = qfalse;
+static qboolean xrandr_active = qfalse;
+static qboolean xrandr_gamma = qfalse;
+
+unsigned short old_gamma[3][4096]; // backup
+int old_gamma_size;
+
+static int win_x, win_y;
+
+void RestoreMonitorMode( void );
+void LocateCurrentMonitor( int x, int y, int w, int h );
+
+qboolean BackupMonitorGamma( void );
+void RestoreMonitorGamma( void );
+void SetMonitorGamma( unsigned short *red, unsigned short *green, unsigned short *blue, int size );
 
 /*****************************************************************************
 ** KEYBOARD
@@ -611,7 +634,7 @@ static qboolean WindowMinimized( Display *dpy, Window win )
 }
 
 
-static qboolean directMap( const byte chr ) 
+static qboolean directMap( const byte chr )
 {
 	if ( !in_forceCharset->integer )
 		return qtrue;
@@ -780,7 +803,7 @@ void HandleX11Events( void )
 			t = Sys_XTimeToSysTime( event.xkey.time );
 			// NOTE TTimo there seems to be a weird mapping for K_MOUSE1 K_MOUSE2 K_MOUSE3 ..
 			b = -1;
-			switch ( event.xbutton.button ) 
+			switch ( event.xbutton.button )
 			{
 				case 1: b = 0; break; // K_MOUSE1
 				case 2: b = 2; break; // K_MOUSE3
@@ -812,6 +835,16 @@ void HandleX11Events( void )
 //			Com_Printf( "ConfigureNotify minimized: %i\n", cls.soundMuted );
 			win_x = event.xconfigure.x;
 			win_y = event.xconfigure.y;
+			
+			if ( !glw_state.cdsFullscreen && window_created )
+			{
+				Cvar_Set( "vid_xpos", va( "%i", win_x ) );
+				Cvar_Set( "vid_ypos", va( "%i", win_y ) );
+				LocateCurrentMonitor( win_x, win_y,
+					event.xconfigure.width,
+					event.xconfigure.height );
+			}
+			
 			break;
 
 		case FocusIn:
@@ -853,7 +886,7 @@ void IN_ActivateMouse( void )
 
 	if ( !mouse_active )
 	{
-		if ( !in_nograb->integer ) 
+		if ( !in_nograb->integer )
 		{
 			install_grabs();
 		}
@@ -888,36 +921,25 @@ void IN_DeactivateMouse( void )
 }
 
 
-/*****************************************************************************/
-
-/*
-** GLimp_SetGamma
-**
-** This routine should only be called if glConfig.deviceSupportsGamma is TRUE
-*/
-void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned char blue[256] )
+static qboolean BuildGammaRampTable( unsigned char *red, unsigned char *green, unsigned char *blue, int gammaRampSize, unsigned short table[3][4096] )
 {
-#ifdef HAVE_XF86DGA
-	unsigned short table[3][4096];
 	int i, j;
-	int size;
 	int m, m1;
 	int shift;
 
-	XF86VidModeGetGammaRampSize( dpy, scrnum, &size );
-
-	switch ( size ) {
+	switch ( gammaRampSize )
+	{
 		case 256: shift = 0; break;
 		case 512: shift = 1; break;
 		case 1024: shift = 2; break;
 		case 2048: shift = 3; break;
 		case 4096: shift = 4; break;
 		default:
-			Com_Printf( "Unsupported gamma ramp size: %d\n", size );
-		return;
+			Com_Printf( "Unsupported gamma ramp size: %d\n", gammaRampSize );
+		return qfalse;
 	};
-
-	m = size / 256;
+	
+	m = gammaRampSize / 256;
 	m1 = 256 / m;
 
 	for ( i = 0; i < 256; i++ ) {
@@ -930,16 +952,48 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 
 	// enforce constantly increasing
 	for ( j = 0 ; j < 3 ; j++ ) {
-		for ( i = 1 ; i < size ; i++ ) {
+		for ( i = 1 ; i < gammaRampSize ; i++ ) {
 			if ( table[j][i] < table[j][i-1] ) {
 				table[j][i] = table[j][i-1];
 			}
 		}
 	}
 
-	XF86VidModeSetGammaRamp( dpy, scrnum, size, table[0], table[1], table[2] );
+	return qtrue;
+}
 
-	glw_state.gammaSet = qtrue;
+/*****************************************************************************/
+
+/*
+** GLimp_SetGamma
+**
+** This routine should only be called if glConfig.deviceSupportsGamma is TRUE
+*/
+void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned char blue[256] )
+{
+	unsigned short table[3][4096];
+	int size;
+
+	if ( xrandr_gamma )
+	{
+		if ( BuildGammaRampTable( red, green, blue, old_gamma_size, table ) )
+		{
+			SetMonitorGamma( table[0], table[1], table[2], old_gamma_size );
+			glw_state.gammaSet = qtrue;
+		}
+		return;
+	}
+
+#ifdef HAVE_XF86DGA
+	if ( vidmode_ext )
+	{
+		XF86VidModeGetGammaRampSize( dpy, scrnum, &size );
+		if ( BuildGammaRampTable( red, green, blue, size, table ) )
+		{
+			XF86VidModeSetGammaRamp( dpy, scrnum, size, table[0], table[1], table[2] );
+			glw_state.gammaSet = qtrue;
+		}
+	}
 #endif /* HAVE_XF86DGA */
 }
 
@@ -964,10 +1018,18 @@ void GLimp_Shutdown( void )
   // autorepeaton = qfalse; // bk001130 - from cvs1.17 (mkv)
 	if ( dpy )
 	{
+		if ( xrandr_gamma && glw_state.gammaSet )
+		{
+			RestoreMonitorGamma();
+			glw_state.gammaSet = qfalse;
+		}
+		RestoreMonitorMode();
+
 		if ( ctx )
 			qglXDestroyContext( dpy, ctx );
 		if ( win )
 			XDestroyWindow( dpy, win );
+
 #ifdef HAVE_XF86DGA
 		if ( vidmode_active )
 		{
@@ -995,6 +1057,8 @@ void GLimp_Shutdown( void )
 	}
 
 	vidmode_active = qfalse;
+	desktop_ok = qfalse;
+
 	dpy = NULL;
 	win = 0;
 	ctx = NULL;
@@ -1062,6 +1126,444 @@ static qboolean GLW_StartDriverAndSetMode( const char *drivername, int mode, con
 }
 
 
+#define MAX_MONITORS 16
+
+typedef struct
+{
+	int x, y;
+	int w, h;
+	RROutput outputn;
+	RRCrtc crtcn;
+	RRMode curMode;
+	RRMode oldMode;
+	char name[32];
+} monitor_t;
+
+int monitor_count;
+monitor_t monitors[ MAX_MONITORS ];
+monitor_t *current_monitor;
+monitor_t desktop_monitor;
+
+
+static qboolean monitor_in_list( int x, int y, int w, int h, RROutput outputn, RRCrtc crtcn )
+{
+	int i;
+
+	for ( i = 0; i < monitor_count; i++ )
+	{
+		if ( monitors[i].x != x || monitors[i].y != y )
+			continue;
+		if ( monitors[i].w != w || monitors[i].h != h )
+			continue;
+		if ( monitors[i].outputn != outputn )
+			continue;
+		if ( monitors[i].crtcn != crtcn )
+			continue;
+
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
+
+void monitor_add( int x, int y, int w, int h, const char *name, RROutput outputn, RRCrtc crtcn, RRMode mode )
+{
+	monitor_t *m;
+	
+	if ( monitor_count >= MAX_MONITORS )
+		return;
+
+	if ( monitor_in_list( x, y, w, h, outputn, crtcn ) )
+		return;
+
+	m = monitors + monitor_count;
+
+	m->x = x; m->y = y;
+	m->w = w; m->h = h;
+
+	Q_strncpyz( m->name, name, sizeof( m->name ) );
+
+	m->outputn = outputn;
+	m->crtcn = crtcn;
+
+	m->curMode = mode;
+	m->oldMode = mode;
+
+	monitor_count++;
+}
+
+
+static int getRefreshRate( const XRRModeInfo *mode_info )
+{
+	if ( mode_info->hTotal && mode_info->vTotal )
+		return ( (double)mode_info->dotClock / ( (double)mode_info->hTotal * (double)mode_info->vTotal ) );
+	else
+		return 0;
+}
+
+
+const XRRModeInfo* getModeInfo( const XRRScreenResources* sr, RRMode id )
+{
+	int i;
+
+	for ( i = 0; i < sr->nmode; i++ )
+		if ( sr->modes[ i ].id == id )
+			return sr->modes + i;
+
+	return NULL;
+}
+
+
+qboolean SetMonitorMode( int *width, int *height, int *rate )
+{
+	monitor_t *m = &desktop_monitor;
+	XRRScreenResources *sr;
+	const XRRModeInfo *mode_info;
+	XRROutputInfo *output_info;
+	XRRCrtcInfo *crtc_info;
+	RRMode newMode;
+	int best_fit, best_dist, best_rate;
+	int dist, r, rr;
+	int x, y, w, h;
+	int n;
+
+	xrandr_active = qfalse;
+
+	if ( !xrandr_ext )
+		return xrandr_active;
+
+	if ( *width == m->w && *height == m->h )
+	{
+		Com_Printf( "...using desktop display mode\n" );
+		xrandr_active = qtrue;
+		return xrandr_active;
+	}
+	
+	sr = XRRGetScreenResources( dpy, DefaultRootWindow( dpy ) ); // FIXME: use faster version if randr13 is available?
+	output_info = XRRGetOutputInfo( dpy, sr, m->outputn );
+	crtc_info = XRRGetCrtcInfo( dpy, sr, m->crtcn );
+
+	best_rate = 999999999;
+	best_dist = 999999999;
+	best_fit = -1;
+
+	// find best-matching mode from available
+	for ( n = 0; n < output_info->nmode; n++ )
+	{
+		mode_info = getModeInfo( sr, output_info->modes[ n ] );
+
+		if ( !mode_info || ( mode_info->modeFlags & RR_Interlace ) )
+			continue;
+	
+		if ( mode_info->width > *width || mode_info->height > *height )
+			continue;
+
+		x = *width - mode_info->width;
+		y = *height - mode_info->height;
+		dist = ( x * x ) + ( y * y );
+
+		if ( *rate ) {
+			r = *rate - getRefreshRate( mode_info );
+			r = ( r * r );
+		} else {
+			r = best_rate;
+		}
+	
+		if ( dist < best_dist || ( dist == best_dist && r < best_rate ) )
+		{
+			best_dist = dist;
+			best_rate = r;
+			best_fit = n;
+			newMode = output_info->modes[ n ];
+			w = mode_info->width; // save adjusted with
+			h = mode_info->height; // save adjusted height
+			rr = getRefreshRate( mode_info );
+			
+		}
+		//fprintf( stderr, "mode[%i]: %i x %i @ %iHz.\n", i, mode_info->width, mode_info->height, getRefreshRate( mode_info ) );
+	}
+	
+	if ( best_fit != -1 )
+	{
+		//Com_Printf( "...setting new mode 0x%x via xrandr \n", (int)newMode );
+		XRRSetCrtcConfig( dpy, sr, m->crtcn, CurrentTime, crtc_info->x, crtc_info->y,
+			newMode, crtc_info->rotation, crtc_info->outputs, crtc_info->noutput );
+
+		m->curMode = newMode;
+		xrandr_active = qtrue;
+		*width = w;
+		*height = h;
+		*rate = rr;
+	}
+
+	XRRFreeCrtcInfo( crtc_info );
+	XRRFreeOutputInfo( output_info );
+	XRRFreeScreenResources( sr );
+
+	return xrandr_active;
+}
+
+
+void RestoreMonitorMode( void )
+{
+	monitor_t *m = &desktop_monitor;
+	XRRScreenResources *sr;
+	XRROutputInfo *output_info;
+	XRRCrtcInfo *crtc_info;
+	
+	if ( !xrandr_ext || !xrandr_active )
+		return;
+
+	xrandr_active = qfalse;
+
+	if ( m->curMode == m->oldMode )
+		return;
+
+	Com_Printf( "...restoring desktop display mode\n" );
+
+	sr = XRRGetScreenResources( dpy, DefaultRootWindow( dpy ) ); // FIXME: use faster version if randr13 is available?
+	output_info = XRRGetOutputInfo( dpy, sr, m->outputn );
+	crtc_info = XRRGetCrtcInfo( dpy, sr, m->crtcn );
+
+	XRRSetCrtcConfig( dpy, sr, m->crtcn, CurrentTime, crtc_info->x, crtc_info->y,
+		m->oldMode, crtc_info->rotation, crtc_info->outputs, crtc_info->noutput );
+
+	XRRFreeCrtcInfo( crtc_info );
+	XRRFreeOutputInfo( output_info );
+	XRRFreeScreenResources( sr );
+
+	m->curMode = m->oldMode;
+
+	current_monitor = NULL;
+}
+
+
+static void BuildMonitorList( void )
+{
+	XRRScreenResources *sr;
+	XRRCrtcInfo *crtc_info;
+	XRROutputInfo *info;
+	int outn;
+
+	monitor_count = 0;
+
+	sr = XRRGetScreenResources( dpy, DefaultRootWindow( dpy ) );
+	if ( !sr )
+		return;
+
+	for ( outn = 0; outn < sr->noutput; outn++ )
+	{
+		info = XRRGetOutputInfo( dpy, sr, sr->outputs[ outn ] );
+		if ( info )
+		{
+			if ( info->connection == RR_Connected )
+			{
+				crtc_info = XRRGetCrtcInfo( dpy, sr, info->crtc );
+				if ( crtc_info )
+				{
+					//fprintf( stderr, "%ix%i @%ix%i outn:%i (crtc:%i) %s\n",
+					//		crtc_info->width, crtc_info->height,
+					//		crtc_info->x, crtc_info->y,
+					//		(int)outn, (int)info->crtc, info->name );
+					if ( crtc_info->width && crtc_info->height )
+					{
+						monitor_add( crtc_info->x, crtc_info->y, crtc_info->width, crtc_info->height,
+							info->name, sr->outputs[ outn ], info->crtc, crtc_info->mode );
+					}
+					XRRFreeCrtcInfo( crtc_info );
+				}
+			}
+			XRRFreeOutputInfo( info );
+		}
+	}
+	XRRFreeScreenResources( sr );
+}
+
+
+monitor_t *FindNearestMonitor( int x, int y, int w, int h )
+{
+	monitor_t *m, *found;
+	unsigned long dx, dy, dist, nearest;
+	int cx, cy;
+	int i;
+
+	found = NULL;
+	nearest = 0xFFFFFFFF;
+
+	cx = x + w/2;
+	cy = y + h/2;
+
+	for ( i = 0; i < monitor_count; i++ )
+	{
+		m = &monitors[ i ];
+		// window center intersection
+		if ( cx >= m->x && cx < (m->x + m->w) && cy >= m->y && cy < (m->y + m->h) )
+		{
+			//Com_Printf( "match by center on %s\n", m->name );
+			return m;
+		}
+		// nearest distance
+		//dx = MIN( abs( m->x - ( x + w ) ), abs( x - ( m->x + m->w ) ) );
+		//dy = MIN( abs( m->y - ( y + h ) ), abs( y - ( m->y + m->h ) ) );
+		// nearest distance from window center to screen center
+		dx = (m->x + m->w/2) - cx;
+		dy = (m->y + m->h/2) - cy;
+		dist = ( dx * dx ) + ( dy * dy );
+		if ( nearest > dist )
+		{
+			nearest = dist;
+			found = m;
+		}
+	}
+
+	return found;
+}
+
+
+void LocateCurrentMonitor( int x, int y, int w, int h )
+{
+	monitor_t *cm;
+//	int i;
+	
+	if ( !monitor_count || glw_state.cdsFullscreen )
+		return;
+
+	// try to find monitor to which input coordinates belongs to
+	cm = FindNearestMonitor( x, y, w, h );
+
+	if ( !cm )
+		return;
+	
+	if ( cm != current_monitor )
+	{
+		qboolean gammaSet = glw_state.gammaSet;
+
+		if ( xrandr_gamma && gammaSet ) 
+		{
+			RestoreMonitorGamma();
+		}
+
+		// save new monitor
+		current_monitor = cm;
+		memcpy( &desktop_monitor, cm, sizeof( desktop_monitor ) );
+
+		desktop_x = cm->x;
+		desktop_y = cm->y;
+		desktop_width = cm->w;
+		desktop_height = cm->h;
+
+		desktop_ok = qtrue;
+
+		Com_Printf( "...current monitor: %ix%i@%i,%i %s\n", desktop_width, desktop_height,
+			desktop_x, desktop_y, desktop_monitor.name );
+
+
+		BackupMonitorGamma();
+
+		if ( xrandr_gamma && gammaSet && re.SetColorMappings ) 
+		{
+			re.SetColorMappings();
+		}
+	}
+}
+
+
+qboolean BackupMonitorGamma( void )
+{
+	XRRCrtcGamma* gamma;
+	int gammaRampSize;
+
+	xrandr_gamma = qfalse;
+
+	if ( !monitor_count )
+	{
+		return qfalse;
+	}
+
+	gammaRampSize = XRRGetCrtcGammaSize( dpy, desktop_monitor.crtcn );
+	if ( gammaRampSize < 256 || gammaRampSize > 4096 )
+	{
+		fprintf( stderr, "...unsupported gamma ramp size: %i\n", gammaRampSize );
+		return qfalse;
+	}
+	
+	gamma = XRRGetCrtcGamma( dpy, desktop_monitor.crtcn );
+
+	if ( gamma )
+	{
+		memcpy( old_gamma[0], gamma->red,   gammaRampSize * sizeof( unsigned short ) );
+		memcpy( old_gamma[1], gamma->green, gammaRampSize * sizeof( unsigned short ) );
+		memcpy( old_gamma[2], gamma->blue,  gammaRampSize * sizeof( unsigned short ) );
+		old_gamma_size = gammaRampSize;
+
+		XRRFreeGamma( gamma );
+		xrandr_gamma = qtrue;
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
+
+void SetMonitorGamma( unsigned short *red, unsigned short *green, unsigned short *blue, int size ) 
+{
+	XRRCrtcGamma* gamma;
+
+	gamma = XRRAllocGamma( size );
+	if ( gamma )
+	{
+		memcpy( gamma->red,   red,   size * sizeof( unsigned short ) );
+		memcpy( gamma->green, green, size * sizeof( unsigned short ) );
+		memcpy( gamma->blue,  blue,  size * sizeof( unsigned short ) );
+		XRRSetCrtcGamma( dpy, desktop_monitor.crtcn, gamma );
+		XRRFreeGamma( gamma );
+	}
+}
+
+
+void RestoreMonitorGamma( void )
+{
+	if ( xrandr_gamma && old_gamma_size )
+		SetMonitorGamma( old_gamma[0], old_gamma[1], old_gamma[2], old_gamma_size );
+
+	old_gamma_size = 0;
+}
+
+
+static qboolean InitXRandr( Display *dpy, int x, int y, int w, int h )
+{
+	int event_base, error_base;
+	int ver_major = 1, ver_minor = 2;
+
+	xrandr_ext = qfalse;
+	xrandr_active = qfalse;
+
+	monitor_count = 0;
+	current_monitor = NULL;
+	memset( monitors, 0, sizeof( monitors ) );
+	memset( &desktop_monitor, 0, sizeof( desktop_monitor ) );
+
+	if ( !XRRQueryExtension( dpy, &event_base, &error_base ) || !XRRQueryVersion( dpy, &ver_major, &ver_minor ) )
+	{
+		Com_Printf( "...RandR extension is not available.\n" );
+		return qfalse;
+	}
+
+	Com_Printf( "...RandR extension version %i.%i detected.\n", ver_major, ver_minor );
+
+	xrandr_ext = qtrue;
+
+	BuildMonitorList();
+
+	LocateCurrentMonitor( x, y, w, h );
+
+	BackupMonitorGamma();
+
+	return qtrue;
+}
+
+
 /*
 ** GLW_SetMode
 */
@@ -1097,12 +1599,15 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 	int colorbits, depthbits, stencilbits;
 	int tcolorbits, tdepthbits, tstencilbits;
 	int dga_MajorVersion, dga_MinorVersion;
-	int actualWidth, actualHeight;
+	int actualWidth, actualHeight, actualRate;
 	int i;
 	//const char* glstring; // bk001130 - from cvs1.17 (mkv)
 
 	window_width = 0;
 	window_height = 0;
+	window_created = qfalse;
+
+	vidmode_ext = qfalse;
 
 	dpy = XOpenDisplay( NULL );
 
@@ -1115,45 +1620,17 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 	scrnum = DefaultScreen( dpy );
 	root = RootWindow( dpy, scrnum );
 
-  // Get video mode list
+	// Init xrandr and get desktop resolution if available
+	InitXRandr( dpy, vid_xpos->integer, vid_ypos->integer, 320, 240 );
+
+	// Get video mode list
 #ifdef HAVE_XF86DGA
-	if ( !XF86VidModeQueryVersion( dpy, &vidmode_MajorVersion, &vidmode_MinorVersion ) )
-	{
-#endif
-		vidmode_ext = qfalse;
-#ifdef HAVE_XF86DGA
-	}
-	else
+	if ( XF86VidModeQueryVersion( dpy, &vidmode_MajorVersion, &vidmode_MinorVersion ) )
 	{
 		Com_Printf( "Using XFree86-VidModeExtension Version %d.%d\n",
 			vidmode_MajorVersion, vidmode_MinorVersion );
 		vidmode_ext = qtrue;
-	}
-#endif
 
-  // Check for DGA
-#ifdef HAVE_XF86DGA
-	dga_MajorVersion = 0;
-	dga_MinorVersion = 0;
-	if ( in_dgamouse && in_dgamouse->integer )
-	{
-		if ( !XF86DGAQueryVersion( dpy, &dga_MajorVersion, &dga_MinorVersion ) )
-		{
-			// unable to query, probably not supported
-			Com_Printf( "Failed to detect XF86DGA Mouse\n" );
-			Cvar_Set( "in_dgamouse", "0" );
-		}
-		else
-		{
-			Com_Printf( "XF86DGA Mouse (Version %d.%d) initialized\n",
-				dga_MajorVersion, dga_MinorVersion );
-		}
-	}
-#endif /* HAVE_XF86DGA */
-
-#ifdef HAVE_XF86DGA
-	if ( vidmode_ext )
-	{
 		if ( desktop_ok == qfalse )
 		{
 			XF86VidModeModeLine c;
@@ -1170,7 +1647,26 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 			}
 		}
 		Com_Printf( "desktop width:%i height:%i\n", desktop_width, desktop_height );
-  }
+
+	}
+
+	// Check for DGA
+	dga_MajorVersion = 0;
+	dga_MinorVersion = 0;
+	if ( in_dgamouse && in_dgamouse->integer )
+	{
+		if ( !XF86DGAQueryVersion( dpy, &dga_MajorVersion, &dga_MinorVersion ) )
+		{
+			// unable to query, probably not supported
+			Com_Printf( "Failed to detect XF86DGA Mouse\n" );
+			Cvar_Set( "in_dgamouse", "0" );
+		}
+		else
+		{
+			Com_Printf( "XF86DGA Mouse (Version %d.%d) initialized\n",
+				dga_MajorVersion, dga_MinorVersion );
+		}
+	}
 #endif
 
 	Com_Printf( "Initializing OpenGL display\n");
@@ -1186,20 +1682,29 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 
 	actualWidth = config->vidWidth;
 	actualHeight = config->vidHeight;
+	actualRate = r_displayRefresh->integer;
 
-	Com_Printf( " %d %d\n", actualWidth, actualHeight );
+	if ( actualRate )
+		Com_Printf( " %d %d @%iHz\n", actualWidth, actualHeight, actualRate );
+	else
+		Com_Printf( " %d %d\n", actualWidth, actualHeight );
+
+	if ( fullscreen ) // try randr first
+	{
+		SetMonitorMode( &actualWidth, &actualHeight, &actualRate );
+	}
 
 #ifdef HAVE_XF86DGA
-	if ( vidmode_ext )
+	if ( vidmode_ext && !xrandr_active )
 	{
 		int best_fit, best_dist, dist, x, y;
 		int num_vidmodes;
 
-		XF86VidModeGetAllModeLines( dpy, scrnum, &num_vidmodes, &vidmodes );
-
 		// Are we going fullscreen?  If so, let's change video mode
 		if ( fullscreen )
 		{
+			XF86VidModeGetAllModeLines( dpy, scrnum, &num_vidmodes, &vidmodes );
+			
 			best_dist = 9999999;
 			best_fit = -1;
 
@@ -1370,7 +1875,7 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 	attr.border_pixel = 0;
 	attr.colormap = XCreateColormap( dpy, root, visinfo->visual, AllocNone );
 	attr.event_mask = X_MASK;
-	if ( vidmode_active )
+	if ( vidmode_active || xrandr_active )
 	{
 		mask = CWBackPixel | CWColormap | CWSaveUnder | CWBackingStore |
 			CWEventMask | CWOverrideRedirect;
@@ -1405,8 +1910,17 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 	if ( wmDeleteEvent != None )
 		XSetWMProtocols( dpy, win, &wmDeleteEvent, 1 );
 
-	if ( vidmode_active )
-		XMoveWindow( dpy, win, 0, 0 );
+	window_created = qtrue;
+
+	if ( fullscreen )
+	{
+		if ( xrandr_active || vidmode_active )
+			XMoveWindow( dpy, win, desktop_x, desktop_y );
+	}
+	else
+	{
+		XMoveWindow( dpy, win, vid_xpos->integer, vid_ypos->integer );
+	}
 
 	XFlush( dpy );
 	XSync( dpy, False );
@@ -1452,6 +1966,13 @@ void GLimp_InitGamma( glconfig_t *config )
 {
 	config->deviceSupportsGamma = qfalse;
 
+	if ( xrandr_gamma )
+	{
+		Com_Printf( "...using xrandr gamma extension\n" );
+		config->deviceSupportsGamma = qtrue;
+		return;
+	}
+
 	/* Minimum extension version required */
 	#define GAMMA_MINMAJOR 2
 	#define GAMMA_MINMINOR 0
@@ -1462,11 +1983,11 @@ void GLimp_InitGamma( glconfig_t *config )
 		if ( vidmode_MajorVersion < GAMMA_MINMAJOR || 
 			(vidmode_MajorVersion == GAMMA_MINMAJOR && vidmode_MinorVersion < GAMMA_MINMINOR) )
 		{
-			Com_Printf( "XF86 Gamma extension not supported in this version\n" );
+			Com_Printf( "XF86 Gamma extension not supported in this version.\n" );
 			return;
 		}
 		XF86VidModeGetGamma( dpy, scrnum, &vidmode_InitialGamma );
-		Com_Printf( "XF86 Gamma extension initialized\n" );
+		Com_Printf( "...using vidmode gamma extension\n" );
 		config->deviceSupportsGamma = qtrue;
 	}
 #endif /* HAVE_XF86DGA */
@@ -1524,7 +2045,7 @@ static qboolean GLW_StartOpenGL( void )
 	//
 	if ( !GLW_LoadOpenGL( r_glDriver->string ) )
 	{
-		if ( Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) != 0 ) 
+		if ( Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) != 0 )
 		{
 			// try default driver
 			if ( GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) )
@@ -1672,6 +2193,9 @@ void IN_Init( void )
 	in_joystickDebug = Cvar_Get( "in_debugjoystick", "0", CVAR_TEMP );
 	joy_threshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE_ND ); // FIXME: in_joythreshold
 #endif
+
+	vid_xpos = Cvar_Get( "vid_xpos", "3", CVAR_ARCHIVE );
+	vid_ypos = Cvar_Get( "vid_ypos", "22", CVAR_ARCHIVE );
 
 	if ( in_mouse->integer )
 	{

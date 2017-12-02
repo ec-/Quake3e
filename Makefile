@@ -226,7 +226,7 @@ ifeq ($(PLATFORM),linux)
   LDFLAGS=-ldl -lm -Wl,--hash-style=both
 
 #  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -lX11 -lXext -lXxf86dga -lXxf86vm
-  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -L/usr/$(LIB) -lX11 -lXxf86dga -lXxf86vm
+  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -L/usr/$(LIB) -lX11 -lXxf86dga -lXxf86vm -lXrandr
 
   ifeq ($(USE_STATIC_GL),1)
     CLIENT_LDFLAGS += -lGL
