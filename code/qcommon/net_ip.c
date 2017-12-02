@@ -1732,6 +1732,9 @@ void NET_Sleep( int msec )
 	}
 
 	if ( retval == SOCKET_ERROR ) {
+#ifndef _WIN32
+		if ( socketError != EINTR )
+#endif
 		Com_Printf( S_COLOR_YELLOW "Warning: select() syscall failed: %s\n", 
 			NET_ErrorString() );
 	}
