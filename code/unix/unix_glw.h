@@ -31,6 +31,8 @@ typedef struct
 	void *OpenGLLib; // instance of OpenGL library
 	FILE *log_fp;
 
+	int	monitorCount;
+
 	qboolean gammaSet;
 
 	qboolean cdsFullscreen;

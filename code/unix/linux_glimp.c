@@ -105,6 +105,7 @@ static Atom wmDeleteEvent = None;
 static int window_width = 0;
 static int window_height = 0;
 static qboolean window_created = qfalse;
+static qboolean window_focused = qfalse;
 
 static int desktop_width = 0;
 static int desktop_height = 0;
@@ -112,9 +113,6 @@ static int desktop_x = 0;
 static int desktop_y = 0;
 
 static qboolean desktop_ok = qfalse;
-
-// bk001206 - not needed anymore
-// static qboolean autorepeaton = qtrue;
 
 #define KEY_MASK (KeyPressMask | KeyReleaseMask)
 #define MOUSE_MASK (ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ButtonMotionMask )
@@ -138,7 +136,6 @@ cvar_t *in_nograb; // this is strictly for developers
 
 cvar_t *in_forceCharset;
 
-// bk001130 - from cvs1.17 (mkv), but not static
 #ifdef USE_JOYSTICK
 cvar_t   *in_joystick      = NULL;
 cvar_t   *in_joystickDebug = NULL;
@@ -207,6 +204,13 @@ static const char s_keytochar[ 128 ] =
  'O',  'P',  '{',  '}',  0x0,  0x0,  'A',  'S',  'D',  'F',  'G',  'H',  'J',  'K',  'L',  ':',  // 6
  '"',  0x0,  0x0,  '|',  'Z',  'X',  'C',  'V',  'B',  'N',  'M',  '<',  '>',  '?',  0x0,  '*',  // 7
 };
+
+
+int Sys_XTimeToSysTime( Time xtime );
+void IN_ActivateMouse( void );
+void IN_DeactivateMouse( void );
+qboolean IN_MouseActive( void );
+
 
 static char *XLateKey( XKeyEvent *ev, int *key )
 {
@@ -347,7 +351,6 @@ static char *XLateKey( XKeyEvent *ev, int *key )
   case XK_KP_Subtract: *key = K_KP_MINUS; break;
   case XK_KP_Divide: *key = K_KP_SLASH; break;
 
-    // bk001130 - from cvs1.17 (mkv)
   case XK_exclam: *key = '1'; break;
   case XK_at: *key = '2'; break;
   case XK_numbersign: *key = '3'; break;
@@ -365,7 +368,6 @@ static char *XLateKey( XKeyEvent *ev, int *key )
   //   could also add a new K_KP_CONSOLE
   //case XK_twosuperior: *key = '~'; break;
 
-  // https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=472
   case XK_space:
   case XK_KP_Space: *key = K_SPACE; break;
 
@@ -437,7 +439,7 @@ static Cursor CreateNullCursor( Display *display, Window root )
 }
 
 
-static void install_grabs( void )
+static void install_mouse_grab( void )
 {
 	int res;
 
@@ -493,6 +495,14 @@ static void install_grabs( void )
 		mx = my = 0;
 	}
 
+	XSync( dpy, False );
+}
+
+
+static void install_kb_grab( void )
+{
+	int res;
+
 	res = XGrabKeyboard( dpy, win, False, GrabModeAsync, GrabModeAsync, CurrentTime );
 	if ( res != GrabSuccess )
 	{
@@ -503,7 +513,7 @@ static void install_grabs( void )
 }
 
 
-static void uninstall_grabs( void )
+static void uninstall_mouse_grab( void )
 {
 #ifdef HAVE_XF86DGA
 	if ( in_dgamouse->integer )
@@ -527,6 +537,16 @@ static void uninstall_grabs( void )
 
 	// show cursor
 	XUndefineCursor( dpy, win );
+
+	XSync( dpy, False );
+}
+
+
+static void uninstall_kb_grab( void )
+{
+	XUngrabKeyboard( dpy, CurrentTime );
+
+	XSync( dpy, False );
 }
 
 
@@ -541,7 +561,7 @@ static void uninstall_grabs( void )
  *  with debug and windowed mode. It rests on the
  *  assumption that the X server will use the
  *  same timestamp on press/release event pairs 
- *  for key repeats. 
+ *  for key repeats.
  */
 static qboolean X11_PendingInput( void )
 {
@@ -595,9 +615,6 @@ static qboolean repeated_press( XEvent *event )
 
 	return qfalse;
 }
-
-
-int Sys_XTimeToSysTime( Time xtime );
 
 
 static qboolean WindowMinimized( Display *dpy, Window win )
@@ -751,9 +768,9 @@ void HandleX11Events( void )
 			break; // case KeyRelease
 
 		case MotionNotify:
-			t = Sys_XTimeToSysTime( event.xkey.time );
-			if ( mouse_active )
+			if ( IN_MouseActive() )
 			{
+				t = Sys_XTimeToSysTime( event.xkey.time );
 #ifdef HAVE_XF86DGA
 				if ( in_dgamouse->value )
 				{
@@ -794,6 +811,8 @@ void HandleX11Events( void )
 
 		case ButtonPress:
 		case ButtonRelease:
+			if ( !IN_MouseActive() )
+				break;
 
 			if ( event.type == ButtonPress )
 				btn_press = qtrue;
@@ -809,10 +828,10 @@ void HandleX11Events( void )
 				case 2: b = 2; break; // K_MOUSE3
 				case 3: b = 1; break; // K_MOUSE2
 				case 4: Sys_QueEvent( t, SE_KEY, K_MWHEELUP, btn_press, 0, NULL ); break;
-				case 5:	Sys_QueEvent( t, SE_KEY, K_MWHEELDOWN, btn_press, 0, NULL ); break;
+				case 5: Sys_QueEvent( t, SE_KEY, K_MWHEELDOWN, btn_press, 0, NULL ); break;
 				case 6: b = 3; break; // K_MOUSE4
 				case 7: b = 4; break; // K_MOUSE5
-				case 8:	case 9:       // K_AUX1..K_AUX8
+				case 8: case 9:       // K_AUX1..K_AUX8
 				case 10: case 11:
 				case 12: case 13:
 				case 14: case 15:
@@ -832,7 +851,7 @@ void HandleX11Events( void )
 
 		case ConfigureNotify:
 			gw_minimized = WindowMinimized( dpy, win );
-//			Com_Printf( "ConfigureNotify minimized: %i\n", cls.soundMuted );
+			Com_DPrintf( "ConfigureNotify gw_minimized: %i\n", gw_minimized );
 			win_x = event.xconfigure.x;
 			win_y = event.xconfigure.y;
 			
@@ -844,12 +863,18 @@ void HandleX11Events( void )
 					event.xconfigure.width,
 					event.xconfigure.height );
 			}
-			
+			Key_ClearStates();
 			break;
 
 		case FocusIn:
 		case FocusOut:
-			Com_DPrintf( "FocusChange: %s\n", event.type == FocusIn ? "FocusIn" : "FocusOut" );
+			if ( event.type == FocusIn ) {
+				window_focused = qtrue;
+				Com_DPrintf( "FocusIn\n" );
+			} else {
+				window_focused = qfalse;
+				Com_DPrintf( "FocusOut\n" );
+			}
 			Key_ClearStates();
 			break;
 		}
@@ -877,6 +902,11 @@ void KBD_Close( void )
 }
 
 
+/*
+================
+IN_ActivateMouse
+================
+*/
 void IN_ActivateMouse( void )
 {
 	if ( !mouse_avail || !dpy || !win )
@@ -886,19 +916,22 @@ void IN_ActivateMouse( void )
 
 	if ( !mouse_active )
 	{
-		if ( !in_nograb->integer )
+		install_mouse_grab();
+		install_kb_grab();
+		if ( in_dgamouse->integer && in_nograb->integer ) // force dga mouse to 0 if using nograb
 		{
-			install_grabs();
-		}
-		else if ( in_dgamouse->integer ) // force dga mouse to 0 if using nograb
-		{
-		    Cvar_Set( "in_dgamouse", "0" );
+			Cvar_Set( "in_dgamouse", "0" );
 		}
 		mouse_active = qtrue;
 	}
 }
 
 
+/*
+================
+IN_DeactivateMouse
+================
+*/
 void IN_DeactivateMouse( void )
 {
 	if ( !mouse_avail || !dpy || !win )
@@ -908,16 +941,25 @@ void IN_DeactivateMouse( void )
 
 	if ( mouse_active )
 	{
-		if ( !in_nograb->integer )
-		{
-			 uninstall_grabs();
-		}
-		else if ( in_dgamouse->integer ) // force dga mouse to 0 if using nograb
+		uninstall_mouse_grab();
+		uninstall_kb_grab();
+		if ( in_dgamouse->integer && in_nograb->integer ) // force dga mouse to 0 if using nograb
 		{
 			Cvar_Set( "in_dgamouse", "0" );
 		}
 		mouse_active = qfalse;
 	}
+}
+
+
+/*
+================
+IN_MouseActive
+================
+*/
+qboolean IN_MouseActive( void )
+{
+	return ( in_nograb->integer == 0 && mouse_active );
 }
 
 
@@ -1013,9 +1055,7 @@ void GLimp_Shutdown( void )
 		return;
 
 	IN_DeactivateMouse();
-  // bk001206 - replaced with H2/Fakk2 solution
-  // XAutoRepeatOn(dpy);
-  // autorepeaton = qfalse; // bk001130 - from cvs1.17 (mkv)
+
 	if ( dpy )
 	{
 		if ( xrandr_gamma && glw_state.gammaSet )
@@ -1050,9 +1090,9 @@ void GLimp_Shutdown( void )
 
 #endif /* HAVE_XF86DGA */
 		// NOTE TTimo opening/closing the display should be necessary only once per run
-		//   but it seems QGL_Shutdown gets called in a lot of occasion
-		//   in some cases, this XCloseDisplay is known to raise some X errors
-		//   ( https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=33 )
+		// but it seems QGL_Shutdown gets called in a lot of occasion
+		// in some cases, this XCloseDisplay is known to raise some X errors
+		// ( https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=33 )
 		XCloseDisplay( dpy );
 	}
 
@@ -1139,17 +1179,15 @@ typedef struct
 	char name[32];
 } monitor_t;
 
-int monitor_count;
 monitor_t monitors[ MAX_MONITORS ];
 monitor_t *current_monitor;
 monitor_t desktop_monitor;
-
 
 static qboolean monitor_in_list( int x, int y, int w, int h, RROutput outputn, RRCrtc crtcn )
 {
 	int i;
 
-	for ( i = 0; i < monitor_count; i++ )
+	for ( i = 0; i < glw_state.monitorCount; i++ )
 	{
 		if ( monitors[i].x != x || monitors[i].y != y )
 			continue;
@@ -1171,13 +1209,13 @@ void monitor_add( int x, int y, int w, int h, const char *name, RROutput outputn
 {
 	monitor_t *m;
 	
-	if ( monitor_count >= MAX_MONITORS )
+	if ( glw_state.monitorCount >= MAX_MONITORS )
 		return;
 
 	if ( monitor_in_list( x, y, w, h, outputn, crtcn ) )
 		return;
 
-	m = monitors + monitor_count;
+	m = monitors + glw_state.monitorCount;
 
 	m->x = x; m->y = y;
 	m->w = w; m->h = h;
@@ -1190,7 +1228,7 @@ void monitor_add( int x, int y, int w, int h, const char *name, RROutput outputn
 	m->curMode = mode;
 	m->oldMode = mode;
 
-	monitor_count++;
+	glw_state.monitorCount++;
 }
 
 
@@ -1346,7 +1384,7 @@ static void BuildMonitorList( void )
 	XRROutputInfo *info;
 	int outn;
 
-	monitor_count = 0;
+	glw_state.monitorCount = 0;
 
 	sr = XRRGetScreenResources( dpy, DefaultRootWindow( dpy ) );
 	if ( !sr )
@@ -1394,7 +1432,7 @@ monitor_t *FindNearestMonitor( int x, int y, int w, int h )
 	cx = x + w/2;
 	cy = y + h/2;
 
-	for ( i = 0; i < monitor_count; i++ )
+	for ( i = 0; i < glw_state.monitorCount; i++ )
 	{
 		m = &monitors[ i ];
 		// window center intersection
@@ -1426,7 +1464,7 @@ void LocateCurrentMonitor( int x, int y, int w, int h )
 	monitor_t *cm;
 //	int i;
 	
-	if ( !monitor_count || glw_state.cdsFullscreen )
+	if ( !glw_state.monitorCount || glw_state.cdsFullscreen )
 		return;
 
 	// try to find monitor to which input coordinates belongs to
@@ -1439,7 +1477,7 @@ void LocateCurrentMonitor( int x, int y, int w, int h )
 	{
 		qboolean gammaSet = glw_state.gammaSet;
 
-		if ( xrandr_gamma && gammaSet ) 
+		if ( xrandr_gamma && gammaSet )
 		{
 			RestoreMonitorGamma();
 		}
@@ -1458,7 +1496,6 @@ void LocateCurrentMonitor( int x, int y, int w, int h )
 		Com_Printf( "...current monitor: %ix%i@%i,%i %s\n", desktop_width, desktop_height,
 			desktop_x, desktop_y, desktop_monitor.name );
 
-
 		BackupMonitorGamma();
 
 		if ( xrandr_gamma && gammaSet && re.SetColorMappings ) 
@@ -1476,7 +1513,7 @@ qboolean BackupMonitorGamma( void )
 
 	xrandr_gamma = qfalse;
 
-	if ( !monitor_count )
+	if ( !glw_state.monitorCount )
 	{
 		return qfalse;
 	}
@@ -1539,7 +1576,7 @@ static qboolean InitXRandr( Display *dpy, int x, int y, int w, int h )
 	xrandr_ext = qfalse;
 	xrandr_active = qfalse;
 
-	monitor_count = 0;
+	glw_state.monitorCount = 0;
 	current_monitor = NULL;
 	memset( monitors, 0, sizeof( monitors ) );
 	memset( &desktop_monitor, 0, sizeof( desktop_monitor ) );
@@ -1958,6 +1995,8 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 #endif
 	Key_ClearStates();
 
+	XSetInputFocus( dpy, win, RevertToParent, CurrentTime );
+
 	return RSERR_OK;
 }
 
@@ -2228,25 +2267,23 @@ void IN_Frame( void )
 	IN_JoyMove(); // FIXME: disable if on desktop?
 #endif
 
-	if ( Key_GetCatcher( ) & KEYCATCH_CONSOLE )
+	if ( Key_GetCatcher() & KEYCATCH_CONSOLE )
 	{
 		// temporarily deactivate if not in the game and
-		// running on the desktop
-		// voodoo always counts as full screen
-		if ( !glw_state.cdsFullscreen )
+		// running on the desktop with multimonitor configuration
+		if ( !glw_state.cdsFullscreen || glw_state.monitorCount > 1 )
 		{
 			IN_DeactivateMouse();
 			return;
 		}
 	}
+/
+	if ( !window_focused || gw_minimized || in_nograb->integer ) {
+		IN_DeactivateMouse();
+		return;
+	}
 
 	IN_ActivateMouse();
-}
-
-
-void IN_Activate( void )
-{
-
 }
 
 

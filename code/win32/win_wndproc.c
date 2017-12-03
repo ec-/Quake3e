@@ -616,7 +616,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			Win_AddHotkey();
 
 			// We can't get correct minimized status on WM_KILLFOCUS
-			VID_AppActivate( fActive ); 
+			VID_AppActivate( fActive );
 
 			if ( glw_state.cdsFullscreen ) {
 				if ( fActive ) {
