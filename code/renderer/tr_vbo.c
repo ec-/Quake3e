@@ -373,11 +373,11 @@ static qboolean isStaticShader( shader_t *shader )
 			return qfalse;
 		if ( stage->adjustColorsForFog != ACFF_NONE )
 			return qfalse;
-		if ( stage->bundle[0].numTexMods || ( stage->bundle[1].image && stage->bundle[1].numTexMods ) )
+		if ( stage->bundle[0].numTexMods || ( stage->bundle[1].image[0] && stage->bundle[1].numTexMods ) )
 			return qfalse;
 		if ( !isStaticRGBgen( stage->rgbGen ) )
 			return qfalse;
-		if ( !isStaticTCgen( stage->bundle[0].tcGen ) || ( stage->bundle[1].image && !isStaticTCgen( stage->bundle[1].tcGen ) ) )
+		if ( !isStaticTCgen( stage->bundle[0].tcGen ) || ( stage->bundle[1].image[0] && !isStaticTCgen( stage->bundle[1].tcGen ) ) )
 			return qfalse;
 		if ( !isStaticAgen( stage->alphaGen ) )
 			return qfalse;
@@ -387,7 +387,7 @@ static qboolean isStaticShader( shader_t *shader )
 		return qfalse;
 
 	shader->isStaticShader = qtrue;
-	mtx = shader->stages[0]->bundle[1].image ? shader->multitextureEnv : 0;
+	mtx = shader->stages[0]->bundle[1].image[0] ? shader->multitextureEnv : 0;
 
 	shader->vboVPindex = getVPindex( mtx, 0 );
 	// generate vertex programs
