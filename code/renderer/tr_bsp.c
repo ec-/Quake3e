@@ -407,7 +407,8 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 	for ( i = 0 ; i < 3 ; i++ ) {
 		cv->plane.normal[i] = LittleFloat( ds->lightmapVecs[2][i] );
 	}
-	
+
+#ifdef USE_PMLIGHT
 	if ( surf->shader->numUnfoggedPasses && surf->shader->lightingStage >= 0 ) {
 		if ( fabs( cv->plane.normal[0] ) < 0.01 && fabs( cv->plane.normal[0] ) < 0.01 && fabs( cv->plane.normal[0] ) < 0.01 ) {
 			// Zero-normals case:
@@ -422,6 +423,7 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 			GenerateNormals( cv );
 		}
 	}
+#endif
 
 	cv->plane.dist = DotProduct( cv->points[0], cv->plane.normal );
 	SetPlaneSignbits( &cv->plane );

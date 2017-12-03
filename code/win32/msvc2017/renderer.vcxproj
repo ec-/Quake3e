@@ -164,7 +164,6 @@
     <ClCompile Include="..\..\renderer\tr_animation.c" />
     <ClCompile Include="..\..\renderer\tr_arb.c" />
     <ClCompile Include="..\..\renderer\tr_backend.c" />
-    <ClCompile Include="..\..\renderer\tr_bloom.c" />
     <ClCompile Include="..\..\renderer\tr_bsp.c" />
     <ClCompile Include="..\..\renderer\tr_cmds.c" />
     <ClCompile Include="..\..\renderer\tr_curve.c" />

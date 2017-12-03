@@ -28,10 +28,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define MAX_REAL_DLIGHTS	(MAX_DLIGHTS*2)
 #define MAX_LITSURFS		(MAX_DRAWSURFS)
 
-#ifdef USE_RENDERER2
-#undef USE_PMLIGHT
-#endif
-
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qfiles.h"
 #include "../qcommon/qcommon.h"
@@ -963,9 +959,6 @@ typedef struct {
 	qboolean	vertexes2D;		// shader needs to be finished
 	qboolean	doneBloom;		// done bloom this frame
 	qboolean	doneSurfaces;   // done any 3d surfaces already
-#ifdef USE_PMLIGHT
-	qboolean	doneBloom2fbo;
-#endif
 	trRefEntity_t	entity2D;	// currentEntity will point at this when doing 2D rendering
 
 	int		screenshotMask;		// tga | jpg | bmp
@@ -1123,13 +1116,25 @@ extern cvar_t	*r_dlightSpecPower;		// 1 - 32
 extern cvar_t	*r_dlightSpecColor;		// -1.0 - 1.0
 extern cvar_t	*r_dlightScale;			// 0.1 - 1.0
 extern cvar_t	*r_dlightIntensity;		// 0.1 - 1.0
+#endif
+extern cvar_t	*r_vbo;
 extern cvar_t	*r_fbo;
 extern cvar_t	*r_hdr;
-#endif
 extern cvar_t	*r_bloom;
-extern cvar_t	*r_dlightBacks;			// dlight non-facing surfaces for continuity
+extern cvar_t	*r_bloom_threshold;
+extern cvar_t	*r_bloom_threshold_mode;
+extern cvar_t	*r_bloom_modulate;
+extern cvar_t	*r_bloom_passes;
+extern cvar_t	*r_bloom_blend_base;
+extern cvar_t	*r_bloom_intensity;
+extern cvar_t	*r_bloom_filter_size;
+extern cvar_t	*r_bloom_reflection;
 
-extern cvar_t	*r_vbo;
+extern cvar_t	*r_renderWidth;
+extern cvar_t	*r_renderHeight;
+extern cvar_t	*r_renderScale;
+
+extern cvar_t	*r_dlightBacks;			// dlight non-facing surfaces for continuity
 
 extern	cvar_t	*r_norefresh;			// bypasses the ref rendering
 extern	cvar_t	*r_drawentities;		// disable/enable entity rendering
@@ -1448,13 +1453,15 @@ void R_TransformDlights( int count, dlight_t *dl, orientationr_t *or );
 int R_LightForPoint( vec3_t point, vec3_t ambientLight, vec3_t directedLight, vec3_t lightDir );
 
 #ifdef USE_PMLIGHT
+void ARB_SetupLightParams( void );
+void ARB_LightingPass( void );
+qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t maxs );
+#endif // USE_PMLIGHT
 
 void R_BindAnimatedImage( const textureBundle_t *bundle );
 void R_DrawElements( int numIndexes, const glIndex_t *indexes );
 void R_ComputeColors( const shaderStage_t *pStage );
 void R_ComputeTexCoords( const shaderStage_t *pStage );
-
-qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t maxs );
 
 void QGL_InitARB( void );
 void QGL_DoneARB( void );
@@ -1465,9 +1472,6 @@ qboolean GL_ProgramAvailable( void );
 void GL_ProgramDisable( void );
 void GL_ProgramEnable( void );
 
-void ARB_SetupLightParams( void );
-void ARB_LightingPass( void );
-
 extern qboolean		fboEnabled;
 extern qboolean		blitMSfbo;
 
@@ -1475,8 +1479,6 @@ void FBO_BindMain( void );
 void FBO_PostProcess( void );
 void FBO_BlitMS( qboolean depthOnly );
 qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalPass );
-
-#endif // USE_PMLIGHT
 
 /*
 ============================================================
@@ -1766,7 +1768,11 @@ const glconfig_t *RE_GetConfig( void );
 
 
 //Bloom Stuff
-void R_BloomInit( void );
+
+#define MAX_FILTER_SIZE 20
+#define MIN_FILTER_SIZE 1
+#define MAX_BLUR_PASSES MAX_TEXTURE_UNITS
+
 void R_BloomScreen( void );
 
 qboolean fboAvailable;
@@ -1813,6 +1819,7 @@ typedef enum {
 
 	// locate all fog programs in predefined order (sequentially after non-fogged ones)
 	// so we can easy switch/adjust them without many if() statements
+#ifdef USE_PMLIGHT
 	DLIGHT_VERTEX,
 	DLIGHT_VERTEX_FOG_IN,
 	DLIGHT_VERTEX_FOG_OUT,
@@ -1826,7 +1833,7 @@ typedef enum {
 
 	DLIGHT_LINEAR_FRAGMENT,
 	DLIGHT_LINEAR_FRAGMENT_FOG,
-
+#endif
 	SPRITE_FRAGMENT,
 	GAMMA_FRAGMENT,
 	BLOOM_EXTRACT_FRAGMENT,

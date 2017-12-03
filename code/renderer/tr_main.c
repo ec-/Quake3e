@@ -1053,7 +1053,6 @@ static qboolean R_MirrorViewBySurface( drawSurf_t *drawSurf, int entityNum ) {
 	viewParms_t		oldParms;
 	orientation_t	surface, camera;
 	qboolean		isMirror;
-	int				i;
 
 	// don't recursively mirror
 	if (tr.viewParms.isPortal) {
@@ -1087,6 +1086,7 @@ static qboolean R_MirrorViewBySurface( drawSurf_t *drawSurf, int entityNum ) {
 #ifdef USE_PMLIGHT
 	// create dedicated set for each view
 	if ( r_numdlights + oldParms.num_dlights <= ARRAY_LEN( backEndData->dlights ) ) {
+		int i;
 		newParms.dlights = oldParms.dlights + oldParms.num_dlights;
 		newParms.num_dlights = oldParms.num_dlights;
 		r_numdlights += oldParms.num_dlights;

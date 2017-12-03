@@ -1,37 +1,16 @@
 #include "tr_local.h"
 #include "tr_common.h"
 
-#ifdef USE_PMLIGHT
-
 #define COMMON_DEPTH_STENCIL
 //#define DEPTH_RENDER_BUFFER
 //#define USE_FBO_BLIT
 
-#define MAX_BLUR_PASSES MAX_TEXTURE_UNITS
 #define BLOOM_BASE 2
 #define FBO_COUNT (BLOOM_BASE+(MAX_BLUR_PASSES*2))
 
 #if BLOOM_BASE < 2
 #error no space for main/postprocess buffers
 #endif
-
-#define MAX_FILTER_SIZE 20
-#define MIN_FILTER_SIZE 1
-
-cvar_t *r_bloom2_threshold;
-cvar_t *r_bloom2_threshold_mode;
-cvar_t *r_bloom2_modulate;
-cvar_t *r_bloom2_passes;
-cvar_t *r_bloom2_blend_base;
-cvar_t *r_bloom2_intensity;
-cvar_t *r_bloom2_filter_size;
-cvar_t *r_bloom2_reflection;
-
-cvar_t *r_renderWidth;
-cvar_t *r_renderHeight;
-cvar_t *r_renderScale;
-
-extern cvar_t *r_bloom;
 
 static GLuint programs[ PROGRAM_COUNT ];
 static GLuint current_vp;
@@ -153,6 +132,7 @@ void GL_ProgramEnable( void )
 }
 
 
+#ifdef USE_PMLIGHT
 static void ARB_Lighting( const shaderStage_t* pStage )
 {
 	const dlight_t* dl;
@@ -391,6 +371,7 @@ void ARB_LightingPass( void )
 
 	qglDisableClientState( GL_NORMAL_ARRAY );
 }
+#endif // USE_PMLIGHT
 
 
 const char *fogOutVPCode = {
@@ -452,6 +433,7 @@ const char *fogInVPCode = {
 };
 
 
+#ifdef USE_PMLIGHT
 static const char *dlightVP = {
 	"!!ARBvp1.0 \n"
 	"OPTION ARB_position_invariant; \n"
@@ -694,6 +676,8 @@ static const char *ARB_BuildDlightFP( char *program, qboolean fog )
 	return program;
 }
 
+#endif // USE_PMLIGHT
+
 
 static const char *dummyVP = {
 	"!!ARBvp1.0 \n"
@@ -768,14 +752,14 @@ static char *ARB_BuildBloomProgram( char *buf ) {
 		"TEMP base; \n"
 		"TEX base, fragment.texcoord[0], texture[0], 2D; \n" );
 
-	if ( r_bloom2_threshold_mode->integer == 0 ) {
+	if ( r_bloom_threshold_mode->integer == 0 ) {
 		// (r|g|b) >= threshold
 		s = Q_stradd( s,
 			"TEMP minv; \n"
 			"SGE minv, base, thres; \n"
 			"DP3_SAT minv.w, minv, minv; \n"
 			"MUL base.rgb, base, minv.w; \n" );
-	} else if ( r_bloom2_threshold_mode->integer == 1 ) {
+	} else if ( r_bloom_threshold_mode->integer == 1 ) {
 		// (r+g+b)/3 >= threshold
 		s = Q_stradd( s,
 			"PARAM scale = { 0.3333, 0.3334, 0.3333, 1.0 }; \n"
@@ -795,8 +779,8 @@ static char *ARB_BuildBloomProgram( char *buf ) {
 	}
 
 	// modulation
-	if ( r_bloom2_modulate->integer ) {
-		if ( r_bloom2_modulate->integer == 1 ) {
+	if ( r_bloom_modulate->integer ) {
+		if ( r_bloom_modulate->integer == 1 ) {
 			// by itself
 			s = Q_stradd( s, "MUL base, base, base; \n" );
 		} else {
@@ -1078,7 +1062,9 @@ qboolean ARB_CompileProgram( programType ptype, const char *text, GLuint program
 
 qboolean ARB_UpdatePrograms( void )
 {
+#ifdef USE_PMLIGHT
 	const char *program;
+#endif
 	char buf[4096];
 
 	if ( !qglGenProgramsARB || !programAvailable )
@@ -1092,6 +1078,7 @@ qboolean ARB_UpdatePrograms( void )
 
 	qglGenProgramsARB( ARRAY_LEN( programs ) - PROGRAM_BASE, programs + PROGRAM_BASE );
 
+#ifdef USE_PMLIGHT
 	if ( !ARB_CompileProgram( Vertex, va( dlightVP, "" ), programs[ DLIGHT_VERTEX ] ) )
 		return qfalse;
 	if ( !ARB_CompileProgram( Vertex, va( dlightVP, fogInVPCode ), programs[ DLIGHT_VERTEX_FOG_IN ] ) )
@@ -1119,6 +1106,7 @@ qboolean ARB_UpdatePrograms( void )
 	program = ARB_BuildLinearDlightFP( buf, qtrue );
 	if ( !ARB_CompileProgram( Fragment, program, programs[ DLIGHT_LINEAR_FRAGMENT_FOG ] ) )
 		return qfalse;
+#endif // USE_PMLIGHT
 
 	if ( !ARB_CompileProgram( Vertex, dummyVP, programs[ DUMMY_VERTEX ] ) )
 		return qfalse;
@@ -1133,12 +1121,12 @@ qboolean ARB_UpdatePrograms( void )
 		return qfalse;
 	
 	// only 1, 2, 3, 6, 8, 10, 12, 14, 16, 18 and 20 produces real visual difference
-	fboBloomFilterSize = r_bloom2_filter_size->integer;
+	fboBloomFilterSize = r_bloom_filter_size->integer;
 	if ( !ARB_CompileProgram( Fragment, ARB_BuildBlurProgram( buf, fboBloomFilterSize ), programs[ BLUR_FRAGMENT ] ) )
 		return qfalse;
 
-	fboBloomBlendBase = r_bloom2_blend_base->integer;
-	if ( !ARB_CompileProgram( Fragment, ARB_BuildBlendProgram( buf, r_bloom2_passes->integer - fboBloomBlendBase ), programs[ BLENDX_FRAGMENT ] ) )
+	fboBloomBlendBase = r_bloom_blend_base->integer;
+	if ( !ARB_CompileProgram( Fragment, ARB_BuildBlendProgram( buf, r_bloom_passes->integer - fboBloomBlendBase ), programs[ BLENDX_FRAGMENT ] ) )
 		return qfalse;
 
 	if ( !ARB_CompileProgram( Fragment, blend2FP, programs[ BLEND2_FRAGMENT ] ) )
@@ -1521,14 +1509,14 @@ static qboolean FBO_CreateBloom( void )
 
 	fboBloomPasses = 0;
 
-	if ( glConfig.numTextureUnits < r_bloom2_passes->integer )
+	if ( glConfig.numTextureUnits < r_bloom_passes->integer )
 	{
 		ri.Printf( PRINT_WARNING, "...not enough texture units (%i) for %i-pass bloom\n",
-			glConfig.numTextureUnits, r_bloom2_passes->integer );
+			glConfig.numTextureUnits, r_bloom_passes->integer );
 		return qfalse;
 	}
 
-	for ( i = 0; i < r_bloom2_passes->integer; i++ )
+	for ( i = 0; i < r_bloom_passes->integer; i++ )
 	{
 		// we may need depth/stencil buffers for first bloom buffer in \r_bloom 2 mode
 		if ( !FBO_Create( &frameBuffers[ i*2 + BLOOM_BASE + 0 ], width, height, i == 0 ? qtrue : qfalse, NULL, NULL ) ||
@@ -1732,12 +1720,12 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 	int finalBloomFBO;
 	int i;
 
-	if ( backEnd.doneBloom2fbo || !backEnd.doneSurfaces )
+	if ( backEnd.doneBloom || !backEnd.doneSurfaces )
 	{
 		return qfalse;
 	}
 
-	backEnd.doneBloom2fbo = qtrue;
+	backEnd.doneBloom = qtrue;
 
 	if ( !fboBloomInited )
 	{
@@ -1767,8 +1755,8 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 	GL_BindTexture( 0, src->color );
 	qglViewport( 0, 0, dst->width, dst->height );
 	ARB_ProgramEnable( DUMMY_VERTEX, BLOOM_EXTRACT_FRAGMENT );
-	qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, r_bloom2_threshold->value, r_bloom2_threshold->value,
-		r_bloom2_threshold->value, 1.0 );
+	qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, r_bloom_threshold->value, r_bloom_threshold->value,
+		r_bloom_threshold->value, 1.0 );
 	RenderQuad( w, h );
 
 	// downscale and blur
@@ -1805,7 +1793,7 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 	}
 	RenderQuad( w, h );
 
-	if ( r_bloom2_reflection->value )
+	if ( r_bloom_reflection->value )
 	{
 		ARB_ProgramDisable();
 
@@ -1821,7 +1809,7 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 		GL_BindTexture( 0, dst->color );
 		GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE );
 		qglViewport( 0, 0, dst->width, dst->height );
-		R_Bloom_LensEffect( fabs( r_bloom2_reflection->value ) );
+		R_Bloom_LensEffect( fabs( r_bloom_reflection->value ) );
 		
 		// restore color and blend mode
 		qglColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
@@ -1833,7 +1821,7 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 
 		// add lens effect to final bloom buffer
 		FBO_Bind( GL_FRAMEBUFFER, src->fbo );
-		if ( r_bloom2_reflection->value > 0 ) {
+		if ( r_bloom_reflection->value > 0 ) {
 			GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE );
 		} else {
 			// negative reflection values will replace bloom texture with just lens effect
@@ -1867,11 +1855,11 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 		// blend & apply gamma in one pass
 		ARB_ProgramEnable( DUMMY_VERTEX, BLEND2_GAMMA_FRAGMENT );
 		qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, gamma, gamma, gamma, obScale );
-		qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 1, r_bloom2_intensity->value, 0, 0, 0 );
+		qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 1, r_bloom_intensity->value, 0, 0, 0 );
 	} else {
 		// just blend
 		ARB_ProgramEnable( DUMMY_VERTEX, BLEND2_FRAGMENT );
-		qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 1, r_bloom2_intensity->value, 0, 0, 0 );
+		qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 1, r_bloom_intensity->value, 0, 0, 0 );
 	}
 	RenderQuad( w, h );
 	ARB_ProgramDisable();
@@ -1890,6 +1878,23 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 	}
 
 	return finalStage;
+}
+
+
+extern void RB_SetGL2D( void );
+
+void R_BloomScreen( void )
+{
+	if ( r_bloom->integer == 1 && fboEnabled )
+	{
+		if ( !backEnd.doneBloom && backEnd.doneSurfaces )
+		{
+			if ( !backEnd.projection2D )
+				RB_SetGL2D();
+			qglColor4f( 1, 1, 1, 1 );
+			FBO_Bloom( 0, 0, qfalse );
+		}
+	}
 }
 
 
@@ -1927,10 +1932,8 @@ void FBO_PostProcess( void )
 	if ( r_anaglyphMode->integer )
 		qglColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE );
 
-	if ( r_bloom->integer > 1 && programCompiled )
-	{
-		if ( FBO_Bloom( gamma, obScale, qtrue ) )
-		{
+	if ( r_bloom->integer && programCompiled ) {
+		if ( FBO_Bloom( gamma, obScale, qtrue ) ) {
 			return;
 		}
 	}
@@ -1963,38 +1966,6 @@ static void QGL_InitPrograms( void )
 	float version;
 	programAvailable = 0;
 
-	r_bloom2_threshold = ri.Cvar_Get( "r_bloom2_threshold", "0.6", CVAR_ARCHIVE_ND );
-	ri.Cvar_SetGroup( r_bloom2_threshold, CVG_RENDERER );
-	r_bloom2_threshold_mode = ri.Cvar_Get( "r_bloom2_threshold_mode", "0", CVAR_ARCHIVE_ND );
-	ri.Cvar_SetGroup( r_bloom2_threshold_mode, CVG_RENDERER );
-	r_bloom2_intensity = ri.Cvar_Get( "r_bloom2_intensity", "0.5", CVAR_ARCHIVE_ND );
-	r_bloom2_passes = ri.Cvar_Get( "r_bloom2_passes", "5", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	ri.Cvar_CheckRange( r_bloom2_passes, "3", XSTRING( MAX_BLUR_PASSES ), CV_INTEGER );
-	r_bloom2_blend_base = ri.Cvar_Get( "r_bloom2_blend_base", "1", CVAR_ARCHIVE_ND );
-	ri.Cvar_SetGroup( r_bloom2_blend_base, CVG_RENDERER );
-	ri.Cvar_CheckRange( r_bloom2_blend_base, "0", va("%i", r_bloom2_passes->integer-1), CV_INTEGER );
-	r_bloom2_modulate = ri.Cvar_Get( "r_bloom2_modulate", "0", CVAR_ARCHIVE_ND );
-	ri.Cvar_SetGroup( r_bloom2_modulate, CVG_RENDERER );
-	r_bloom2_filter_size = ri.Cvar_Get( "r_bloom2_filter_size", "6", CVAR_ARCHIVE_ND );
-	ri.Cvar_CheckRange( r_bloom2_filter_size, XSTRING( MIN_FILTER_SIZE ), XSTRING( MAX_FILTER_SIZE ), CV_INTEGER );
-	ri.Cvar_SetGroup( r_bloom2_filter_size, CVG_RENDERER );
-
-	r_bloom2_reflection = ri.Cvar_Get( "r_bloom2_reflection", "0", CVAR_ARCHIVE_ND );
-	ri.Cvar_CheckRange( r_bloom2_reflection, "-4", "4", CV_FLOAT );
-
-	r_renderWidth = ri.Cvar_Get( "r_renderWidth", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	r_renderHeight = ri.Cvar_Get( "r_renderHeight", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	ri.Cvar_CheckRange( r_renderWidth, "0", NULL, CV_INTEGER );
-	ri.Cvar_CheckRange( r_renderHeight, "0", NULL, CV_INTEGER );
-	
-	r_renderScale = ri.Cvar_Get( "r_renderScale", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	ri.Cvar_CheckRange( r_renderScale, "0", "3", CV_INTEGER );
-	ri.Cvar_SetDescription( r_renderScale, "Scaling mode to be used with custom render resolution:\n"
-		" 0 - nearest filtering, stretch to full size\n"
-		" 1 - nearest filtering, preserve aspect ratio (black bars on sides)\n"
-		" 2 - linear filtering, stretch to full size\n"
-		" 3 - linear filtering, preserve aspect ratio (black bars on sides)\n" );
-	
 	if ( !qglGenProgramsARB )
 		return;
 
@@ -2003,8 +1974,6 @@ static void QGL_InitPrograms( void )
 	gl_version = (int)version;
 
 	programAvailable = 1;
-
-	return;
 }
 
 
@@ -2167,5 +2136,3 @@ void QGL_DoneARB( void )
 
 	programAvailable = 0;
 }
-
-#endif // USE_PMLIGHT

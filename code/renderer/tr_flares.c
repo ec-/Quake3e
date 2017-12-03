@@ -477,12 +477,9 @@ void RB_RenderFlares (void) {
 	backEnd.or = backEnd.viewParms.world;
 
 	// we can't read from multisampled renderbuffer storage
-#ifdef USE_PMLIGHT
-	if ( blitMSfbo ) 
-	{
+	if ( blitMSfbo ) {
 		FBO_BlitMS( qtrue );
 	}
-#endif
 
 	// RB_AddDlightFlares();
 
@@ -518,12 +515,9 @@ void RB_RenderFlares (void) {
 	}
 
 	// bind primary framebuffer again
-#ifdef USE_PMLIGHT
-	if ( blitMSfbo ) 
-	{
+	if ( blitMSfbo ) {
 		FBO_BindMain();
 	}
-#endif
 
 	if ( !draw ) {
 		return;		// none visible

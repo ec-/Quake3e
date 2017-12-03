@@ -336,7 +336,11 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 	tess.shader = state;
 	tess.fogNum = fogNum;
 
+#ifdef USE_PMLIGHT
 	if ( !tess.dlightPass && state->isStaticShader )
+#else
+	if ( state->isStaticShader )
+#endif
 		tess.allowVBO = qtrue;
 	else
 		tess.allowVBO = qfalse;
@@ -949,8 +953,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 			// draw
 			//
 			R_DrawElements( input->numIndexes, input->indexes );
-#ifdef USE_PMLIGHT
-			if ( pStage->depthFragment ) 
+			if ( pStage->depthFragment )
 			{
 				GL_State( pStage->stateBits | GLS_DEPTHMASK_TRUE );
 				GL_ProgramEnable();
@@ -958,7 +961,6 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 				GL_ProgramDisable();
 				//GL_State( pStage->stateBits &= ~GLS_DEPTHMASK_TRUE );
 			}
-#endif
 		}
 		// allow skipping out to show just lightmaps during development
 		if ( r_lightmap->integer && ( pStage->bundle[0].isLightmap || pStage->bundle[1].isLightmap ) )
@@ -1151,8 +1153,7 @@ void RB_StageIteratorVertexLitTexture( void )
 	R_BindAnimatedImage( &tess.xstages[0]->bundle[0] );
 	GL_State( tess.xstages[0]->stateBits );
 	R_DrawElements( input->numIndexes, input->indexes );
-#ifdef USE_PMLIGHT
-	if ( tess.xstages[0]->depthFragment ) 
+	if ( tess.xstages[0]->depthFragment )
 	{
 		GL_State( tess.xstages[0]->stateBits | GLS_DEPTHMASK_TRUE );
 		GL_ProgramEnable();
@@ -1160,7 +1161,7 @@ void RB_StageIteratorVertexLitTexture( void )
 		GL_ProgramDisable();
 		//GL_State( tess.xstages[0]->stateBits &= ~GLS_DEPTHMASK_TRUE );
 	}
-#endif
+
 	// 
 	// now do any dynamic lighting needed
 	//
@@ -1265,8 +1266,7 @@ void RB_StageIteratorLightmappedMultitexture( void ) {
 	}
 
 	R_DrawElements( input->numIndexes, input->indexes );
-#ifdef USE_PMLIGHT
-	if ( tess.xstages[0]->depthFragment ) 
+	if ( tess.xstages[0]->depthFragment )
 	{
 		GL_State( tess.xstages[0]->stateBits | GLS_DEPTHMASK_TRUE );
 		GL_ProgramEnable();
@@ -1274,7 +1274,7 @@ void RB_StageIteratorLightmappedMultitexture( void ) {
 		GL_ProgramDisable();
 		//GL_State( tess.xstages[0]->stateBits &= ~GLS_DEPTHMASK_TRUE );
 	}
-#endif
+
 	//
 	// disable texturing on TEXTURE1, then select TEXTURE0
 	//

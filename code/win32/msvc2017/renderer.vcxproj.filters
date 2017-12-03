@@ -20,9 +20,6 @@
     <ClCompile Include="..\..\renderer\tr_backend.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\renderer\tr_bloom.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\renderer\tr_bsp.c">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -296,10 +296,8 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	tr.frameCount++;
 	tr.frameSceneNum = 0;
 
-#ifdef USE_PMLIGHT
 	FBO_BindMain();
-	backEnd.doneBloom2fbo = qfalse;
-#endif
+	backEnd.doneBloom = qfalse;
 
 	//
 	// texturemode stuff
@@ -459,11 +457,7 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 		qglFinish();
 	}
 
-#ifdef USE_PMLIGHT
 	FBO_PostProcess();
-#endif
-
-	R_BloomScreen();
 
 	if ( backEnd.screenshotMask && tr.frameCount > 1 ) {
 		if ( backEnd.screenshotMask & SCREENSHOT_TGA && backEnd.screenshotTGA[0] ) {
@@ -497,11 +491,9 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 	ri.GLimp_EndFrame();
 
 	backEnd.projection2D = qfalse;
+
 	backEnd.doneBloom = qfalse;
-#ifdef USE_PMLIGHT
-	backEnd.doneBloom2fbo = qfalse;
-#endif
-	backEnd.doneSurfaces = qfalse; // for bloom
+	backEnd.doneSurfaces = qfalse;
 
 	R_InitNextFrame();
 
@@ -514,7 +506,6 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 	}
 	backEnd.pc.msec = 0;
 
-#ifdef USE_PMLIGHT
 	// recompile GPU shaders if needed
 	if ( ri.Cvar_CheckGroup( CVG_RENDERER ) )
 	{
@@ -523,7 +514,6 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 			QGL_InitFBO();
 		ri.Cvar_ResetGroup( CVG_RENDERER, qtrue );
 	}
-#endif
 }
 
 
@@ -574,11 +564,7 @@ void RE_FinishBloom( void )
 
 qboolean RE_CanMinimize( void )
 {
-#ifdef USE_PMLIGHT
 	return fboEnabled;
-#else
-	return qfalse;
-#endif
 }
 
 

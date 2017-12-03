@@ -3263,13 +3263,10 @@ static void ScanAndLoadShaderFiles( void )
 	// scan for legacy shader files
 	shaderFiles = ri.FS_ListFiles( "scripts", ".shader", &numShaderFiles );
 
-#ifdef USE_PMLIGHT
 	if ( GL_ProgramAvailable() ) {
 		// if ARB shaders available - scan for extended shader files
 		shaderxFiles = ri.FS_ListFiles( "scripts", ".shaderx", &numShaderxFiles );
-	} else 
-#endif
-	{
+	} else {
 		shaderxFiles = NULL;
 		numShaderxFiles = 0;
 	}

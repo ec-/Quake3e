@@ -599,7 +599,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 #ifdef USE_LEGACY_DLIGHTS
 #ifdef USE_PMLIGHT
 				if ( !r_dlightMode->integer )
-#endif // USE_PMLIGHT
+#endif 
 				if ( backEnd.currentEntity->needDlights ) {
 					R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 				}
@@ -1167,6 +1167,7 @@ static const void *RB_StretchPic( const void *data ) {
 }
 
 
+#ifdef USE_PMLIGHT
 static void RB_LightingPass( void )
 {
 	dlight_t	*dl;
@@ -1192,6 +1193,7 @@ static void RB_LightingPass( void )
 	backEnd.viewParms.num_dlights = 0;
 	GL_ProgramDisable();
 }
+#endif
 
 
 /*
@@ -1384,9 +1386,9 @@ static const void *RB_FinishBloom( const void *data )
 {
 	const finishBloomCommand_t *cmd = data;
 
-	if ( r_bloom->integer > 1 && fboEnabled )
+	if ( r_bloom->integer && fboEnabled )
 	{
-		if ( !backEnd.doneBloom2fbo && backEnd.doneSurfaces )
+		if ( !backEnd.doneBloom && backEnd.doneSurfaces )
 		{
 			if ( !backEnd.projection2D )
 				RB_SetGL2D();

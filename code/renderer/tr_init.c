@@ -69,11 +69,24 @@ cvar_t	*r_dlightSpecPower;
 cvar_t	*r_dlightSpecColor;
 cvar_t	*r_dlightScale;
 cvar_t	*r_dlightIntensity;
-cvar_t	*r_fbo;
-cvar_t	*r_vbo;
-cvar_t	*r_hdr;
 #endif
+cvar_t	*r_vbo;
+cvar_t	*r_fbo;
+cvar_t	*r_hdr;
 cvar_t	*r_bloom;
+cvar_t	*r_bloom_threshold;
+cvar_t	*r_bloom_threshold_mode;
+cvar_t	*r_bloom_modulate;
+cvar_t	*r_bloom_passes;
+cvar_t	*r_bloom_blend_base;
+cvar_t	*r_bloom_intensity;
+cvar_t	*r_bloom_filter_size;
+cvar_t	*r_bloom_reflection;
+
+cvar_t	*r_renderWidth;
+cvar_t	*r_renderHeight;
+cvar_t	*r_renderScale;
+
 cvar_t	*r_dlightBacks;
 
 cvar_t	*r_lodbias;
@@ -452,9 +465,8 @@ static void InitOpenGL( void )
 		if ( glConfig.numTextureUnits && max_bind_units > 0 )
 			glConfig.numTextureUnits = max_bind_units;
 
-#if defined(USE_PMLIGHT)
 		QGL_InitARB();
-#endif
+
 		glConfig.deviceSupportsGamma = qfalse;
 
 		if ( !r_ignorehwgamma->integer )
@@ -1304,14 +1316,44 @@ static void R_Register( void )
 	ri.Cvar_SetGroup( r_dlightSpecColor, CVG_RENDERER );
 	r_dlightIntensity = ri.Cvar_Get( "r_dlightIntensity", "1.0", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_dlightIntensity, "0.1", "1", CV_FLOAT );
-
+#endif // USE_PMLIGHT
+	r_vbo = ri.Cvar_Get( "r_vbo", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_fbo = ri.Cvar_Get( "r_fbo", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_hdr = ri.Cvar_Get( "r_hdr", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_SetGroup( r_hdr, CVG_RENDERER );
-#endif
+	// bloom
 	r_bloom = ri.Cvar_Get( "r_bloom", "0", CVAR_ARCHIVE_ND );
+	r_bloom_threshold = ri.Cvar_Get( "r_bloom_threshold", "0.6", CVAR_ARCHIVE_ND );
+	ri.Cvar_SetGroup( r_bloom_threshold, CVG_RENDERER );
+	r_bloom_threshold_mode = ri.Cvar_Get( "r_bloom_threshold_mode", "0", CVAR_ARCHIVE_ND );
+	ri.Cvar_SetGroup( r_bloom_threshold_mode, CVG_RENDERER );
+	r_bloom_intensity = ri.Cvar_Get( "r_bloom_intensity", "0.5", CVAR_ARCHIVE_ND );
+	r_bloom_passes = ri.Cvar_Get( "r_bloom_passes", "5", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_bloom_passes, "3", XSTRING( MAX_BLUR_PASSES ), CV_INTEGER );
+	r_bloom_blend_base = ri.Cvar_Get( "r_bloom_blend_base", "1", CVAR_ARCHIVE_ND );
+	ri.Cvar_SetGroup( r_bloom_blend_base, CVG_RENDERER );
+	ri.Cvar_CheckRange( r_bloom_blend_base, "0", va("%i", r_bloom_passes->integer-1), CV_INTEGER );
+	r_bloom_modulate = ri.Cvar_Get( "r_bloom_modulate", "0", CVAR_ARCHIVE_ND );
+	ri.Cvar_SetGroup( r_bloom_modulate, CVG_RENDERER );
+	r_bloom_filter_size = ri.Cvar_Get( "r_bloom_filter_size", "6", CVAR_ARCHIVE_ND );
+	ri.Cvar_CheckRange( r_bloom_filter_size, XSTRING( MIN_FILTER_SIZE ), XSTRING( MAX_FILTER_SIZE ), CV_INTEGER );
+	ri.Cvar_SetGroup( r_bloom_filter_size, CVG_RENDERER );
 
-	r_vbo = ri.Cvar_Get( "r_vbo", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_bloom_reflection = ri.Cvar_Get( "r_bloom_reflection", "0", CVAR_ARCHIVE_ND );
+	ri.Cvar_CheckRange( r_bloom_reflection, "-4", "4", CV_FLOAT );
+
+	r_renderWidth = ri.Cvar_Get( "r_renderWidth", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_renderHeight = ri.Cvar_Get( "r_renderHeight", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_renderWidth, "0", NULL, CV_INTEGER );
+	ri.Cvar_CheckRange( r_renderHeight, "0", NULL, CV_INTEGER );
+	
+	r_renderScale = ri.Cvar_Get( "r_renderScale", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_renderScale, "0", "3", CV_INTEGER );
+	ri.Cvar_SetDescription( r_renderScale, "Scaling mode to be used with custom render resolution:\n"
+		" 0 - nearest filtering, stretch to full size\n"
+		" 1 - nearest filtering, preserve aspect ratio (black bars on sides)\n"
+		" 2 - linear filtering, stretch to full size\n"
+		" 3 - linear filtering, preserve aspect ratio (black bars on sides)\n" );
 
 	r_dlightBacks = ri.Cvar_Get( "r_dlightBacks", "1", CVAR_ARCHIVE_ND );
 	r_finish = ri.Cvar_Get( "r_finish", "0", CVAR_ARCHIVE_ND );
@@ -1454,8 +1496,6 @@ void R_Init( void ) {
 
 	R_Register();
 
-	R_BloomInit();
-
 	max_polys = r_maxpolys->integer;
 	if (max_polys < MAX_POLYS)
 		max_polys = MAX_POLYS;
@@ -1520,9 +1560,8 @@ static void RE_Shutdown( qboolean destroyWindow ) {
 	// shut down platform specific OpenGL stuff
 	if ( destroyWindow ) {
 
-#if defined(USE_PMLIGHT)
 		QGL_DoneARB();
-#endif
+
 		VBO_Cleanup();
 
 		ri.GLimp_Shutdown();

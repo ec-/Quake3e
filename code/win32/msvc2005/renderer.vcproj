@@ -305,10 +305,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_bloom.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\renderer\tr_bsp.c"
 				>
 			</File>

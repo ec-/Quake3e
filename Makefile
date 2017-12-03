@@ -310,7 +310,7 @@ ifdef MINGW
     CNAME    = quake3e.x64
     DNAME    = quake3e.ded.x64
     BASE_CFLAGS += -m64
-    OPTIMIZE = -O3  -ffast-math -fstrength-reduce
+    OPTIMIZE = -O2 -ffast-math -fstrength-reduce
     HAVE_VM_COMPILED = true
   endif
   ifeq ($(ARCH),x86)
@@ -770,7 +770,6 @@ Q3OBJ = \
   $(B)/client/tr_animation.o \
   $(B)/client/tr_arb.o \
   $(B)/client/tr_backend.o \
-  $(B)/client/tr_bloom.o \
   $(B)/client/tr_bsp.o \
   $(B)/client/tr_cmds.o \
   $(B)/client/tr_curve.o \
