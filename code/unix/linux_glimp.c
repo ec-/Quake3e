@@ -2277,7 +2277,7 @@ void IN_Frame( void )
 			return;
 		}
 	}
-/
+
 	if ( !window_focused || gw_minimized || in_nograb->integer ) {
 		IN_DeactivateMouse();
 		return;
