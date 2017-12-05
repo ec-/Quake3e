@@ -1610,7 +1610,7 @@ void Com_TouchMemory( void ) {
 	const memzone_t *zone;
 	int		start, end;
 	int		i, j;
-	int		sum;
+	unsigned int sum;
 
 	Z_CheckHeap();
 
@@ -1620,13 +1620,13 @@ void Com_TouchMemory( void ) {
 
 	j = hunk_low.permanent >> 2;
 	for ( i = 0 ; i < j ; i+=64 ) {			// only need to touch each page
-		sum += ((int *)s_hunkData)[i];
+		sum += ((unsigned int *)s_hunkData)[i];
 	}
 
 	i = ( s_hunkTotal - hunk_high.permanent ) >> 2;
 	j = hunk_high.permanent >> 2;
 	for (  ; i < j ; i+=64 ) {			// only need to touch each page
-		sum += ((int *)s_hunkData)[i];
+		sum += ((unsigned int *)s_hunkData)[i];
 	}
 
 	zone = mainzone;
@@ -1634,7 +1634,7 @@ void Com_TouchMemory( void ) {
 		if ( block->tag != TAG_FREE ) {
 			j = block->size >> 2;
 			for ( i = 0 ; i < j ; i+=64 ) {				// only need to touch each page
-				sum += ((int *)block)[i];
+				sum += ((unsigned int *)block)[i];
 			}
 		}
 		if ( block->next == &zone->blocklist ) {

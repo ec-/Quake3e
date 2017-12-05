@@ -2239,8 +2239,10 @@ static shader_t *GeneratePermanentShader( void ) {
 
 		for ( b = 0 ; b < NUM_TEXTURE_BUNDLES ; b++ ) {
 			size = newShader->stages[i]->bundle[b].numTexMods * sizeof( texModInfo_t );
-			newShader->stages[i]->bundle[b].texMods = ri.Hunk_Alloc( size, h_low );
-			Com_Memcpy( newShader->stages[i]->bundle[b].texMods, stages[i].bundle[b].texMods, size );
+			if ( size ) {
+				newShader->stages[i]->bundle[b].texMods = ri.Hunk_Alloc( size, h_low );
+				Com_Memcpy( newShader->stages[i]->bundle[b].texMods, stages[i].bundle[b].texMods, size );
+			}
 		}
 	}
 

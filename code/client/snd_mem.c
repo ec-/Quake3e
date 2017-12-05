@@ -187,7 +187,7 @@ static void ResampleSfx( sfx_t *sfx, int inrate, int inwidth, byte *data, qboole
 				else
 					sample = (((short *)data)[i/2] + ((short *)data)[(i/2)+1])/2;
 			} else {
-				sample = (int)( (unsigned char)(data[i/2]) - 128) << 8;
+				sample = (unsigned int)( (unsigned char)(data[i/2]) - 128) << 8;
 			}
 			part  = (i&(SND_CHUNK_SIZE-1));
 			if (part == 0) {
@@ -223,7 +223,7 @@ static void ResampleSfx( sfx_t *sfx, int inrate, int inwidth, byte *data, qboole
 		if( inwidth == 2 ) {
 			sample = ( ((short *)data)[srcsample] );
 		} else {
-			sample = (int)( (unsigned char)(data[srcsample]) - 128) << 8;
+			sample = (unsigned int)( (unsigned char)(data[srcsample]) - 128) << 8;
 		}
 		part  = (i&(SND_CHUNK_SIZE-1));
 		if (part == 0) {

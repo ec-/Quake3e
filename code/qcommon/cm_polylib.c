@@ -57,7 +57,7 @@ winding_t *AllocWinding( int points )
 	if ( c_active_windings > c_peak_windings )
 		c_peak_windings = c_active_windings;
 
-	s = sizeof( int ) + sizeof( vec3_t ) * points;
+	s = sizeof( *w ) - sizeof( w->p ) + sizeof( w->p[0] ) * points;
 	w = Z_Malloc( s );
 	Com_Memset( w, 0, s );
 	return w;
@@ -277,7 +277,7 @@ winding_t *CopyWinding( const winding_t *w )
 	winding_t	*c;
 
 	c = AllocWinding( w->numpoints );
-	size = sizeof( int ) + w->numpoints * sizeof( vec3_t );
+	size = sizeof( *w ) - sizeof( w->p ) + sizeof( w->p[0] )* w->numpoints;
 	Com_Memcpy( c, w, size );
 	return c;
 }

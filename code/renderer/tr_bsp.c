@@ -369,14 +369,14 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 	numPoints = LittleLong( ds->numVerts );
 	if (numPoints > MAX_FACE_POINTS) {
 		ri.Printf( PRINT_WARNING, "WARNING: MAX_FACE_POINTS exceeded: %i\n", numPoints);
-    numPoints = MAX_FACE_POINTS;
-    surf->shader = tr.defaultShader;
+		numPoints = MAX_FACE_POINTS;
+		surf->shader = tr.defaultShader;
 	}
 
 	numIndexes = LittleLong( ds->numIndexes );
 
 	// create the srfSurfaceFace_t
-	sfaceSize = ( size_t ) &((srfSurfaceFace_t *)0)->points[numPoints];
+	sfaceSize = sizeof( *cv ) - sizeof( cv->points ) + sizeof( cv->points[0] ) * numPoints;
 	ofsIndexes = sfaceSize;
 	sfaceSize += sizeof( int ) * numIndexes;
 
