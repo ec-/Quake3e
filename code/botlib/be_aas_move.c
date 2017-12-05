@@ -405,13 +405,15 @@ void AAS_ApplyFriction(vec3_t vel, float friction, float stopspeed,
 		vel[1] *= newspeed;
 	} //end if
 } //end of the function AAS_ApplyFriction
+
+
 //===========================================================================
 //
 // Parameter:			-
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int AAS_ClipToBBox(aas_trace_t *trace, vec3_t start, vec3_t end, int presencetype, vec3_t mins, vec3_t maxs)
+static qboolean AAS_ClipToBBox( aas_trace_t *trace, const vec3_t start, const vec3_t end, int presencetype, const vec3_t mins, const vec3_t maxs )
 {
 	int i, j, side;
 	float front, back, frac, planedist;
@@ -433,6 +435,8 @@ int AAS_ClipToBBox(aas_trace_t *trace, vec3_t start, vec3_t end, int presencetyp
 	frac = 1;
 	for (i = 0; i < 3; i++)
 	{
+		if ( fabs( dir[i] ) < 0.001 ) // this may cause denormalization or division by zero
+			continue;
 		//get plane to test collision with for the current axis direction
 		if (dir[i] > 0) planedist = absmins[i];
 		else planedist = absmaxs[i];
@@ -472,6 +476,8 @@ int AAS_ClipToBBox(aas_trace_t *trace, vec3_t start, vec3_t end, int presencetyp
 	} //end if
 	return qfalse;
 } //end of the function AAS_ClipToBBox
+
+
 //===========================================================================
 // predicts the movement
 // assumes regular bounding box sizes
@@ -490,14 +496,14 @@ int AAS_ClipToBBox(aas_trace_t *trace, vec3_t start, vec3_t end, int presencetyp
 // Returns:				aas_clientmove_t
 // Changes Globals:		-
 //===========================================================================
-int AAS_ClientMovementPrediction(struct aas_clientmove_s *move,
-								int entnum, vec3_t origin,
+static int AAS_ClientMovementPrediction( aas_clientmove_t *move,
+								int entnum, const vec3_t origin,
 								int presencetype, int onground,
-								vec3_t velocity, vec3_t cmdmove,
+								const vec3_t velocity, const vec3_t cmdmove,
 								int cmdframes,
 								int maxframes, float frametime,
 								int stopevent, int stopareanum,
-								vec3_t mins, vec3_t maxs, int visualize)
+								const vec3_t mins, const vec3_t maxs, int visualize )
 {
 	float phys_friction, phys_stopspeed, phys_gravity, phys_waterfriction;
 	float phys_watergravity;
@@ -533,8 +539,8 @@ int AAS_ClientMovementPrediction(struct aas_clientmove_s *move,
 	phys_maxsteepness = aassettings.phys_maxsteepness;
 	phys_jumpvel = aassettings.phys_jumpvel * frametime;
 	//
-	Com_Memset(move, 0, sizeof(aas_clientmove_t));
-	Com_Memset(&trace, 0, sizeof(aas_trace_t));
+	Com_Memset( move, 0, sizeof( *move ) );
+	Com_Memset( &trace, 0, sizeof( trace ) );
 	//start at the current origin
 	VectorCopy(origin, org);
 	org[2] += 0.25;
