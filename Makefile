@@ -226,7 +226,7 @@ ifeq ($(PLATFORM),linux)
   LDFLAGS=-ldl -lm -Wl,--hash-style=both
 
 #  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -lX11 -lXext -lXxf86dga -lXxf86vm
-  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -L/usr/$(LIB) -lX11 -lXxf86dga -lXxf86vm -lXrandr
+  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -L/usr/$(LIB) -lX11 -lXxf86dga
 
   ifeq ($(USE_STATIC_GL),1)
     CLIENT_LDFLAGS += -lGL
@@ -840,7 +840,9 @@ else
     $(B)/client/linux_signals.o \
     $(B)/client/linux_glimp.o \
     $(B)/client/linux_qgl.o \
-    $(B)/client/linux_snd.o
+    $(B)/client/linux_snd.o \
+    $(B)/client/x11_vidmode.o \
+    $(B)/client/x11_randr.o
 
 #  ifeq ($(PLATFORM),linux)
 #    Q3OBJ += $(B)/client/linux_joystick.o

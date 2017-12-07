@@ -1134,7 +1134,7 @@ int main( int argc, const char* argv[] )
 	{
 		Com_Printf( "Started tty console (use +set ttycon 0 to disable)\n" );
 	}
-	else 
+	else
 	{
 		if ( err == TTY_ERROR )
 		{
