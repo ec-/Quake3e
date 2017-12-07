@@ -435,7 +435,7 @@ static qboolean AAS_ClipToBBox( aas_trace_t *trace, const vec3_t start, const ve
 	frac = 1;
 	for (i = 0; i < 3; i++)
 	{
-		if ( fabs( dir[i] ) < 0.001 ) // this may cause denormalization or division by zero
+		if ( fabsf( dir[i] ) < 0.001f ) // this may cause denormalization or division by zero
 			continue;
 		//get plane to test collision with for the current axis direction
 		if (dir[i] > 0) planedist = absmins[i];
