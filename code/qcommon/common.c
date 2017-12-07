@@ -3206,7 +3206,8 @@ void Com_Init( char *commandLine ) {
 
 	com_logfile = Cvar_Get ("logfile", "0", CVAR_TEMP );
 
-	com_timescale = Cvar_Get ("timescale", "1", CVAR_CHEAT | CVAR_SYSTEMINFO );
+	com_timescale = Cvar_Get( "timescale", "1", CVAR_CHEAT | CVAR_SYSTEMINFO );
+	Cvar_CheckRange( com_timescale, "0", NULL, CV_FLOAT );
 	com_fixedtime = Cvar_Get ("fixedtime", "0", CVAR_CHEAT);
 	com_showtrace = Cvar_Get ("com_showtrace", "0", CVAR_CHEAT);
 	com_viewlog = Cvar_Get( "viewlog", "0", 0 );
@@ -3539,7 +3540,7 @@ void Com_Frame( qboolean noDelay ) {
 	// main event loop
 	//
 	if ( com_speeds->integer ) {
-		timeBeforeFirstEvents = Sys_Milliseconds ();
+		timeBeforeFirstEvents = Sys_Milliseconds();
 	}
 	
 	// we may want to spin here if things are going too fast
@@ -3573,7 +3574,7 @@ void Com_Frame( qboolean noDelay ) {
 			if ( timeValSV < timeVal )
 				timeVal = timeValSV;
 		} else {
-			timeVal = Com_TimeVal(minMsec);
+			timeVal = Com_TimeVal( minMsec );
 		}
 		if ( com_dedicated->integer ) {
 			NET_Sleep( timeVal );
@@ -3604,7 +3605,7 @@ void Com_Frame( qboolean noDelay ) {
 	// server side
 	//
 	if ( com_speeds->integer ) {
-		timeBeforeServer = Sys_Milliseconds ();
+		timeBeforeServer = Sys_Milliseconds();
 	}
 
 	SV_Frame( msec );
@@ -3653,22 +3654,22 @@ void Com_Frame( qboolean noDelay ) {
 		// without a frame of latency
 		//
 		if ( com_speeds->integer ) {
-			timeBeforeEvents = Sys_Milliseconds ();
+			timeBeforeEvents = Sys_Milliseconds();
 		}
 		Com_EventLoop();
-		Cbuf_Execute ();
+		Cbuf_Execute();
 
 		//
 		// client side
 		//
 		if ( com_speeds->integer ) {
-			timeBeforeClient = Sys_Milliseconds ();
+			timeBeforeClient = Sys_Milliseconds();
 		}
 
 		CL_Frame( msec );
 
 		if ( com_speeds->integer ) {
-			timeAfter = Sys_Milliseconds ();
+			timeAfter = Sys_Milliseconds();
 		}
 	}
 #endif

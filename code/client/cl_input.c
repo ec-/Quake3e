@@ -70,8 +70,8 @@ void IN_MLookUp( void ) {
 }
 
 void IN_KeyDown( kbutton_t *b ) {
-	int		k;
-	char	*c;
+	const char *c;
+	int	k;
 	
 	c = Cmd_Argv(1);
 	if ( c[0] ) {
@@ -106,9 +106,9 @@ void IN_KeyDown( kbutton_t *b ) {
 }
 
 void IN_KeyUp( kbutton_t *b ) {
+	unsigned uptime;
+	const char *c;
 	int		k;
-	char	*c;
-	unsigned	uptime;
 
 	c = Cmd_Argv(1);
 	if ( c[0] ) {
@@ -524,13 +524,13 @@ void CL_CmdButtons( usercmd_t *cmd ) {
 		in_buttons[i].wasPressed = qfalse;
 	}
 
-	if ( Key_GetCatcher( ) ) {
+	if ( Key_GetCatcher() ) {
 		cmd->buttons |= BUTTON_TALK;
 	}
 
 	// allow the game to know if any key at all is
 	// currently pressed, even if it isn't bound to anything
-	if ( anykeydown && Key_GetCatcher( ) == 0 ) {
+	if ( anykeydown && Key_GetCatcher() == 0 ) {
 		cmd->buttons |= BUTTON_ANY;
 	}
 }

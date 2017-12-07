@@ -38,7 +38,6 @@ cvar_t	*cl_maxpackets;
 cvar_t	*cl_packetdup;
 cvar_t	*cl_timeNudge;
 cvar_t	*cl_showTimeDelta;
-cvar_t	*cl_freezeDemo;
 
 cvar_t	*cl_shownet;
 cvar_t	*cl_showSend;
@@ -2811,9 +2810,9 @@ void CL_CheckTimeout( void ) {
 	//
 	if ( ( !CL_CheckPaused() || !sv_paused->integer ) 
 		&& cls.state >= CA_CONNECTED && cls.state != CA_CINEMATIC
-	    && cls.realtime - clc.lastPacketTime > cl_timeout->value*1000) {
-		if (++cl.timeoutcount > 5) {	// timeoutcount saves debugger
-			Com_Printf ("\nServer connection timed out.\n");
+		&& cls.realtime - clc.lastPacketTime > cl_timeout->integer * 1000 ) {
+		if ( ++cl.timeoutcount > 5 ) { // timeoutcount saves debugger
+			Com_Printf( "\nServer connection timed out.\n" );
 			CL_Disconnect( qtrue );
 			return;
 		}
@@ -2895,7 +2894,7 @@ void CL_CheckUserinfo( void ) {
 CL_Frame
 ==================
 */
-void CL_Frame ( int msec ) {
+void CL_Frame( int msec ) {
 	float fps;
 	float frameDuration;
 
@@ -3006,15 +3005,16 @@ void CL_Frame ( int msec ) {
 	cls.realtime += cls.frametime;
 
 	if ( cl_timegraph->integer ) {
-		SCR_DebugGraph ( cls.realFrametime * 0.25 );
+		SCR_DebugGraph( cls.realFrametime * 0.25 );
 	}
 
 	// see if we need to update any userinfo
 	CL_CheckUserinfo();
 
-	// if we haven't gotten a packet in a long time,
-	// drop the connection
-	CL_CheckTimeout();
+	// if we haven't gotten a packet in a long time, drop the connection
+	if ( !clc.demoplaying ) {
+		CL_CheckTimeout();
+	}
 
 	// send intentions now
 	CL_SendCmd();
@@ -3555,14 +3555,14 @@ void CL_Init( void ) {
 	cl_noprint = Cvar_Get( "cl_noprint", "0", 0 );
 	cl_motd = Cvar_Get ("cl_motd", "1", 0);
 
-	cl_timeout = Cvar_Get ("cl_timeout", "200", 0);
+	cl_timeout = Cvar_Get( "cl_timeout", "200", 0 );
+	Cvar_CheckRange( cl_timeout, "5", NULL, CV_INTEGER );
 
 	cl_timeNudge = Cvar_Get ("cl_timeNudge", "0", CVAR_TEMP );
 	Cvar_CheckRange( cl_timeNudge, "-30", "30", CV_INTEGER );
 	cl_shownet = Cvar_Get ("cl_shownet", "0", CVAR_TEMP );
 	cl_showSend = Cvar_Get ("cl_showSend", "0", CVAR_TEMP );
 	cl_showTimeDelta = Cvar_Get ("cl_showTimeDelta", "0", CVAR_TEMP );
-	cl_freezeDemo = Cvar_Get ("cl_freezeDemo", "0", CVAR_TEMP );
 	rcon_client_password = Cvar_Get ("rconPassword", "", CVAR_TEMP );
 	cl_activeAction = Cvar_Get( "activeAction", "", CVAR_TEMP );
 
