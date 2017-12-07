@@ -68,13 +68,13 @@ Show the early console as an error dialog
 =============
 */
 void QDECL Sys_Error( const char *error, ... ) {
-	va_list		argptr;
-	char		text[4096];
-    MSG        msg;
+	va_list	argptr;
+	char	text[4096];
+	MSG		msg;
 
-	va_start (argptr, error);
-	vsprintf (text, error, argptr);
-	va_end (argptr);
+	va_start( argptr, error );
+	vsprintf( text, error, argptr );
+	va_end( argptr );
 
 	Conbuf_AppendText( text );
 	Conbuf_AppendText( "\n" );
@@ -90,15 +90,17 @@ void QDECL Sys_Error( const char *error, ... ) {
 
 	// wait for the user to quit
 	while ( 1 ) {
-		if ( GetMessage( &msg, NULL, 0, 0 ) <= 0 )
+		if ( GetMessage( &msg, NULL, 0, 0 ) <= 0 ) {
+			Cmd_Clear();
 			Com_Quit_f();
-		TranslateMessage (&msg);
-      	DispatchMessage (&msg);
+		}
+		TranslateMessage( &msg );
+		DispatchMessage( &msg );
 	}
 
 	Sys_DestroyConsole();
 
-	exit (1);
+	exit( 1 );
 }
 
 
@@ -116,7 +118,7 @@ void Sys_Quit( void ) {
 #endif
 
 	Sys_DestroyConsole();
-	exit (0);
+	exit( 0 );
 }
 
 
@@ -558,7 +560,6 @@ void Sys_UnloadLibrary( void *handle )
 /*
 =================
 Sys_UnloadDll
-
 =================
 */
 void Sys_UnloadDll( void *dllHandle ) {
@@ -656,10 +657,12 @@ Platform-dependent event handling
 */
 void Sys_SendKeyEvents( void ) 
 {
-    MSG	msg;
+	MSG msg;
+
 	// pump the message loop
 	while ( PeekMessage( &msg, NULL, 0, 0, PM_NOREMOVE ) ) {
 		if ( GetMessage( &msg, NULL, 0, 0 ) <= 0 ) {
+			Cmd_Clear();
 			Com_Quit_f();
 		}
 
@@ -667,8 +670,8 @@ void Sys_SendKeyEvents( void )
 		//g_wv.sysMsgTime = msg.time;
 		g_wv.sysMsgTime = Sys_Milliseconds();
 
-		TranslateMessage (&msg);
-      	DispatchMessage (&msg);
+		TranslateMessage( &msg );
+		DispatchMessage( &msg );
 	}
 }
 
@@ -853,6 +856,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 		Com_Frame( CL_NoDelay() );
 #endif
 	}
+
 	// never gets here
 	return 0;
 }

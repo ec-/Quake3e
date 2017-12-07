@@ -24,18 +24,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "q_shared.h"
 #include "qcommon.h"
 
-#define	MAX_CMD_BUFFER	65536
-#define	MAX_CMD_LINE	1024
+#define MAX_CMD_BUFFER  65536
+#define MAX_CMD_LINE    1024
 
 typedef struct {
-	byte	*data;
-	int		maxsize;
-	int		cursize;
+	byte *data;
+	int maxsize;
+	int cursize;
 } cmd_t;
 
-int			cmd_wait;
-cmd_t		cmd_text;
-byte		cmd_text_buf[MAX_CMD_BUFFER];
+int    cmd_wait;
+cmd_t  cmd_text;
+byte   cmd_text_buf[MAX_CMD_BUFFER];
 
 
 //=============================================================================
@@ -89,7 +89,7 @@ Adds command text at the end of the buffer, does NOT add a final \n
 ============
 */
 void Cbuf_AddText( const char *text ) {
-	int		l;
+	int l;
 	
 	l = strlen (text);
 	
@@ -172,12 +172,12 @@ void Cbuf_ExecuteText( cbufExec_t exec_when, const char *text )
 Cbuf_Execute
 ============
 */
-void Cbuf_Execute (void)
+void Cbuf_Execute( void )
 {
-	int		i;
-	char	*text;
-	char	line[MAX_CMD_LINE];
-	int		quotes;
+	int i;
+	char *text;
+	char line[MAX_CMD_LINE];
+	int quotes;
 
 	// This will keep // style comments all on one line by not breaking on
 	// a semicolon.  It will keep /* ... */ style comments all on one line by not
@@ -228,7 +228,7 @@ void Cbuf_Execute (void)
 
 		if ( i >= (MAX_CMD_LINE - 1) )
 			i = MAX_CMD_LINE - 1;
-				
+
 		Com_Memcpy( line, text, i );
 		line[i] = '\0';
 		
@@ -251,7 +251,7 @@ void Cbuf_Execute (void)
 		}
 
 		// execute the command line
-		Cmd_ExecuteString( line );		
+		Cmd_ExecuteString( line );
 	}
 }
 
@@ -273,10 +273,10 @@ Cmd_Exec_f
 void Cmd_Exec_f( void ) {
 	qboolean quiet;
 	union {
-		char	*c;
-		void	*v;
+		char *c;
+		void *v;
 	} f;
-	char	filename[MAX_QPATH];
+	char filename[MAX_QPATH];
 
 	quiet = !Q_stricmp(Cmd_Argv(0), "execq");
 
@@ -364,8 +364,18 @@ static	cmd_function_t	*cmd_functions;		// possible commands to execute
 Cmd_Argc
 ============
 */
-int		Cmd_Argc( void ) {
+int Cmd_Argc( void ) {
 	return cmd_argc;
+}
+
+
+/*
+============
+Cmd_Clear
+============
+*/
+void Cmd_Clear( void ) {
+	cmd_argc = 0;
 }
 
 
@@ -378,7 +388,7 @@ char	*Cmd_Argv( int arg ) {
 	if ( (unsigned)arg >= cmd_argc ) {
 		return "";
 	}
-	return cmd_argv[arg];	
+	return cmd_argv[arg];
 }
 
 
@@ -390,7 +400,7 @@ The interpreted versions use this because
 they can't have pointers returned to them
 ============
 */
-void	Cmd_ArgvBuffer( int arg, char *buffer, int bufferLength ) {
+void Cmd_ArgvBuffer( int arg, char *buffer, int bufferLength ) {
 	Q_strncpyz( buffer, Cmd_Argv( arg ), bufferLength );
 }
 
@@ -402,9 +412,9 @@ Cmd_Args
 Returns a single string containing argv(1) to argv(argc()-1)
 ============
 */
-char	*Cmd_Args( void ) {
-	static	char		cmd_args[MAX_STRING_CHARS];
-	int		i;
+char *Cmd_Args( void ) {
+	static char cmd_args[MAX_STRING_CHARS];
+	int i;
 
 	cmd_args[0] = 0;
 	for ( i = 1 ; i < cmd_argc ; i++ ) {
@@ -426,10 +436,10 @@ Returns a single string containing argv(arg) to argv(argc()-1)
 ============
 */
 char *Cmd_ArgsFrom( int arg ) {
-	static	char		cmd_args[BIG_INFO_STRING];
-	int		i;
+	static char cmd_args[BIG_INFO_STRING];
+	int i;
 
-	cmd_args[0] = 0;
+	cmd_args[0] = '\0';
 	if (arg < 0)
 		arg = 0;
 	for ( i = arg ; i < cmd_argc ; i++ ) {
@@ -451,7 +461,7 @@ The interpreted versions use this because
 they can't have pointers returned to them
 ============
 */
-void	Cmd_ArgsBuffer( char *buffer, int bufferLength ) {
+void Cmd_ArgsBuffer( char *buffer, int bufferLength ) {
 	Q_strncpyz( buffer, Cmd_Args(), bufferLength );
 }
 
@@ -465,10 +475,11 @@ For rcon use when you want to transmit without altering quoting
 https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=543
 ============
 */
-char *Cmd_Cmd(void)
+char *Cmd_Cmd( void )
 {
 	return cmd_cmd;
 }
+
 
 /*
    Replace command separators with space to prevent interpretation
@@ -477,7 +488,7 @@ char *Cmd_Cmd(void)
    https://bugzilla.icculus.org/show_bug.cgi?id=4769
 */
 
-void Cmd_Args_Sanitize(void)
+void Cmd_Args_Sanitize( void )
 {
 	int i;
 
@@ -509,8 +520,8 @@ will point into this temporary buffer.
 // NOTE TTimo define that to track tokenization issues
 //#define TKN_DBG
 static void Cmd_TokenizeString2( const char *text_in, qboolean ignoreQuotes ) {
-	const char	*text;
-	char	*textOut;
+	const char *text;
+	char *textOut;
 
 #ifdef TKN_DBG
   // FIXME TTimo blunt hook to try to find the tokenization of userinfo
@@ -563,7 +574,7 @@ static void Cmd_TokenizeString2( const char *text_in, qboolean ignoreQuotes ) {
 		}
 
 		// handle quoted strings
-    // NOTE TTimo this doesn't handle \" escaping
+		// NOTE TTimo this doesn't handle \" escaping
 		if ( !ignoreQuotes && *text == '"' ) {
 			cmd_argv[cmd_argc] = textOut;
 			cmd_argc++;
@@ -652,7 +663,7 @@ Cmd_AddCommand
 ============
 */
 void Cmd_AddCommand( const char *cmd_name, xcommand_t function ) {
-	cmd_function_t	*cmd;
+	cmd_function_t *cmd;
 	
 	// fail if the command already exists
 	if( (cmd = Cmd_FindCommand( cmd_name )) != NULL )
@@ -681,7 +692,7 @@ Cmd_SetCommandCompletionFunc
 ============
 */
 void Cmd_SetCommandCompletionFunc( const char *command, completionFunc_t complete ) {
-	cmd_function_t	*cmd;
+	cmd_function_t *cmd;
 
 	for( cmd = cmd_functions; cmd; cmd = cmd->next ) {
 		if( !Q_stricmp( command, cmd->name ) ) {
@@ -698,7 +709,7 @@ Cmd_RemoveCommand
 ============
 */
 void	Cmd_RemoveCommand( const char *cmd_name ) {
-	cmd_function_t	*cmd, **back;
+	cmd_function_t *cmd, **back;
 
 	back = &cmd_functions;
 	while( 1 ) {
@@ -750,7 +761,7 @@ Cmd_CommandCompletion
 ============
 */
 void	Cmd_CommandCompletion( void(*callback)(const char *s) ) {
-	cmd_function_t	*cmd;
+	cmd_function_t *cmd;
 	
 	for (cmd=cmd_functions ; cmd ; cmd=cmd->next) {
 		callback( cmd->name );
@@ -764,7 +775,7 @@ Cmd_CompleteArgument
 ============
 */
 void Cmd_CompleteArgument( const char *command, char *args, int argNum ) {
-	cmd_function_t	*cmd;
+	cmd_function_t *cmd;
 
 	for( cmd = cmd_functions; cmd; cmd = cmd->next ) {
 		if( !Q_stricmp( command, cmd->name ) ) {
@@ -784,16 +795,16 @@ Cmd_ExecuteString
 A complete command line has been parsed, so try to execute it
 ============
 */
-void Cmd_ExecuteString( const char *text ) {	
-	cmd_function_t	*cmd, **prev;
+void Cmd_ExecuteString( const char *text ) {
+	cmd_function_t *cmd, **prev;
 
 	// execute the command line
-	Cmd_TokenizeString( text );		
+	Cmd_TokenizeString( text );
 	if ( !Cmd_Argc() ) {
 		return;		// no tokens
 	}
 
-	// check registered command functions	
+	// check registered command functions
 	for ( prev = &cmd_functions ; *prev ; prev = &cmd->next ) {
 		cmd = *prev;
 		if ( !Q_stricmp( cmd_argv[0], cmd->name ) ) {
@@ -851,9 +862,9 @@ Cmd_List_f
 */
 void Cmd_List_f (void)
 {
-	cmd_function_t	*cmd;
-	int				i;
-	char			*match;
+	cmd_function_t *cmd;
+	int i;
+	char *match;
 
 	if ( Cmd_Argc() > 1 ) {
 		match = Cmd_Argv( 1 );

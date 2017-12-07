@@ -659,8 +659,10 @@ void HandleX11Events( void )
 
 		case ClientMessage:
 
-			if ( event.xclient.data.l[0] == wmDeleteEvent )
+			if ( event.xclient.data.l[0] == wmDeleteEvent ) {
+				Cmd_Clear();
 				Com_Quit_f();
+			}
 			break;
 
 		case KeyPress:

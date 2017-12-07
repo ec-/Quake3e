@@ -471,8 +471,9 @@ void Cmd_CompleteArgument( const char *command, char *args, int argNum );
 void Cmd_CompleteCfgName( char *args, int argNum );
 void Cmd_CompleteWriteCfgName( char *args, int argNum );
 
-int		Cmd_Argc (void);
-char	*Cmd_Argv (int arg);
+int		Cmd_Argc( void );
+void	Cmd_Clear( void );
+char	*Cmd_Argv( int arg );
 void	Cmd_ArgvBuffer( int arg, char *buffer, int bufferLength );
 char	*Cmd_Args (void);
 char	*Cmd_ArgsFrom( int arg );
