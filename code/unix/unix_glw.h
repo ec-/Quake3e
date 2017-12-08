@@ -48,6 +48,8 @@ typedef struct
 
 	glconfig_t *config; // feedback to renderer module
 
+	qboolean dga_ext;
+
 	qboolean vidmode_ext;
 	qboolean vidmode_active;
 	qboolean vidmode_gamma;
@@ -67,6 +69,11 @@ typedef struct
 extern glwstate_t glw_state;
 
 qboolean BuildGammaRampTable( unsigned char *red, unsigned char *green, unsigned char *blue, int gammaRampSize, unsigned short table[3][4096] );
+
+// DGA extension
+qboolean DGA_Init( Display *_dpy );
+void DGA_Mouse( qboolean enable );
+void DGA_Done( void );
 
 // VidMode extension
 qboolean VidMode_Init( Display *_dpy, int _scrnum );

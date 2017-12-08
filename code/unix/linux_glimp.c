@@ -45,11 +45,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <pthread.h>
 #include <semaphore.h>
 
-// bk001204
-#include <dlfcn.h>
-
-// bk001206 - from my Heretic2 by way of Ryan's Fakk2
-// Needed for the new X11_PendingInput() function.
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -433,19 +428,15 @@ static void install_mouse_grab( void )
 	mouseResetTime = Sys_Milliseconds();
 
 #ifdef HAVE_XF86DGA
-	if ( in_dgamouse->value )
+	if ( in_dgamouse->integer )
 	{
-		int MajorVersion, MinorVersion;
-
-		if ( !XF86DGAQueryVersion( dpy, &MajorVersion, &MinorVersion ) )
+		if ( !glw_state.dga_ext )
 		{
-			// unable to query, probalby not supported, force the setting to 0
-			Com_Printf( "Failed to detect XF86DGA Mouse\n" );
 			Cvar_Set( "in_dgamouse", "0" );
 		}
 		else
 		{
-			XF86DGADirectVideo( dpy, DefaultScreen( dpy ), XF86DGADirectMouse );
+			DGA_Mouse( qtrue );
 			XWarpPointer( dpy, None, win, 0, 0, 0, 0, window_width / 2, window_height / 2 );
 		}
 	}
@@ -484,7 +475,7 @@ static void uninstall_mouse_grab( void )
 		{
 			Com_Printf( "DGA Mouse - Disabling DGA DirectVideo\n" );
 		}
-		XF86DGADirectVideo( dpy, DefaultScreen( dpy ), 0 );
+		DGA_Mouse( qfalse );
 	}
 #endif /* HAVE_XF86DGA */
 
@@ -736,7 +727,7 @@ void HandleX11Events( void )
 			{
 				t = Sys_XTimeToSysTime( event.xkey.time );
 #ifdef HAVE_XF86DGA
-				if ( in_dgamouse->value )
+				if ( in_dgamouse->integer )
 				{
 					mx += event.xmotion.x_root;
 					my += event.xmotion.y_root;
@@ -745,7 +736,7 @@ void HandleX11Events( void )
 						Sys_QueEvent( t, SE_MOUSE, mx, my, 0, NULL );
 					}
 					mx = my = 0;
-				} 
+				}
 				else
 #endif // HAVE_XF86DGA
 				{
@@ -880,12 +871,12 @@ void IN_ActivateMouse( void )
 
 	if ( !mouse_active )
 	{
-		install_mouse_grab();
-		install_kb_grab();
 		if ( in_dgamouse->integer && in_nograb->integer ) // force dga mouse to 0 if using nograb
 		{
 			Cvar_Set( "in_dgamouse", "0" );
 		}
+		install_mouse_grab();
+		install_kb_grab();
 		mouse_active = qtrue;
 	}
 }
@@ -1145,7 +1136,6 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 	unsigned long mask;
 	int colorbits, depthbits, stencilbits;
 	int tcolorbits, tdepthbits, tstencilbits;
-	int dga_MajorVersion, dga_MinorVersion;
 	int actualWidth, actualHeight, actualRate;
 	int i;
 	//const char* glstring; // bk001130 - from cvs1.17 (mkv)
@@ -1154,8 +1144,9 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 	window_height = 0;
 	window_created = qfalse;
 
-	glw_state.vidmode_ext = qfalse;
+	glw_state.dga_ext = qfalse;
 	glw_state.randr_ext = qfalse;
+	glw_state.vidmode_ext = qfalse;
 
 	dpy = XOpenDisplay( NULL );
 
@@ -1171,29 +1162,21 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 	// Init xrandr and get desktop resolution if available
 	RandR_Init( dpy, vid_xpos->integer, vid_ypos->integer, 320, 240 );
 
-	VidMode_Init( dpy, scrnum );
+	if ( !glw_state.randr_ext )
+	{
+		VidMode_Init( dpy, scrnum );
+	}
 
 #ifdef HAVE_XF86DGA
-	// Check for DGA
-	dga_MajorVersion = 0;
-	dga_MinorVersion = 0;
 	if ( in_dgamouse && in_dgamouse->integer )
 	{
-		if ( !XF86DGAQueryVersion( dpy, &dga_MajorVersion, &dga_MinorVersion ) )
+		if ( !DGA_Init( dpy ) )
 		{
-			// unable to query, probably not supported
-			Com_Printf( "Failed to detect XF86DGA Mouse\n" );
 			Cvar_Set( "in_dgamouse", "0" );
-		}
-		else
-		{
-			Com_Printf( "XF86DGA Mouse (Version %d.%d) initialized\n",
-				dga_MajorVersion, dga_MinorVersion );
 		}
 	}
 #endif
-
-	Com_Printf( "Initializing OpenGL display\n");
+	Com_Printf( "Initializing OpenGL display\n" );
 
 	Com_Printf( "...setting mode %d:", mode );
 

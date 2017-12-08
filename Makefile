@@ -225,8 +225,7 @@ ifeq ($(PLATFORM),linux)
   THREAD_LDFLAGS=-lpthread
   LDFLAGS=-ldl -lm -Wl,--hash-style=both
 
-#  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -lX11 -lXext -lXxf86dga -lXxf86vm
-  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -L/usr/$(LIB) -lX11 -lXxf86dga
+  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -L/usr/$(LIB) -lX11
 
   ifeq ($(USE_STATIC_GL),1)
     CLIENT_LDFLAGS += -lGL
@@ -384,9 +383,9 @@ ifeq ($(PLATFORM),freebsd)
 
   THREAD_LDFLAGS=-lpthread
   # don't need -ldl (FreeBSD)
-  LDFLAGS=-lm -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext -lXxf86vm -lXxf86dga
+  LDFLAGS=-lm -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext
 
-  CLIENT_LDFLAGS =-lm -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext -lXxf86vm -lXxf86dga
+  CLIENT_LDFLAGS =-lm -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext
 
 else # ifeq freebsd
 
@@ -428,9 +427,9 @@ ifeq ($(PLATFORM),openbsd)
 
   THREAD_LDFLAGS=-lpthread
   # don't need -ldl (FreeBSD)
-  LDFLAGS=-lm -lSDL -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext -lXxf86vm -lXxf86dga
+  LDFLAGS=-lm -lSDL -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext
 
-  CLIENT_LDFLAGS =-lm -lSDL -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext -lXxf86vm -lXxf86dga
+  CLIENT_LDFLAGS =-lm -lSDL -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext
 
   ifeq ($(USE_CODEC_VORBIS),1)
     CLIENT_LDFLAGS += -lvorbisfile -lvorbis -logg
@@ -841,8 +840,9 @@ else
     $(B)/client/linux_glimp.o \
     $(B)/client/linux_qgl.o \
     $(B)/client/linux_snd.o \
-    $(B)/client/x11_vidmode.o \
-    $(B)/client/x11_randr.o
+    $(B)/client/x11_dga.o \
+    $(B)/client/x11_randr.o \
+    $(B)/client/x11_vidmode.o
 
 #  ifeq ($(PLATFORM),linux)
 #    Q3OBJ += $(B)/client/linux_joystick.o

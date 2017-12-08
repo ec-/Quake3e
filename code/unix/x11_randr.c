@@ -365,7 +365,7 @@ void RandR_UpdateMonitor( int x, int y, int w, int h )
 
 	if ( !cm )
 		return;
-	
+
 	if ( cm != current_monitor )
 	{
 		qboolean gammaSet = glw_state.gammaSet;
@@ -406,9 +406,7 @@ static qboolean BackupMonitorGamma( void )
 	XRRCrtcGamma* gamma;
 	int gammaRampSize;
 
-	glw_state.randr_gamma = qfalse;
-
-	if ( !glw_state.monitorCount )
+	if ( !glw_state.monitorCount || !glw_state.randr_gamma )
 	{
 		return qfalse;
 	}
@@ -416,6 +414,7 @@ static qboolean BackupMonitorGamma( void )
 	gammaRampSize = _XRRGetCrtcGammaSize( dpy, desktop_monitor.crtcn );
 	if ( gammaRampSize < 256 || gammaRampSize > 4096 )
 	{
+		glw_state.randr_gamma = qfalse;
 		fprintf( stderr, "...unsupported gamma ramp size: %i\n", gammaRampSize );
 		return qfalse;
 	}
@@ -430,7 +429,7 @@ static qboolean BackupMonitorGamma( void )
 		old_gamma_size = gammaRampSize;
 
 		_XRRFreeGamma( gamma );
-		glw_state.randr_gamma = qtrue;
+		
 		return qtrue;
 	}
 
@@ -525,17 +524,17 @@ qboolean RandR_Init( Display *_dpy, int x, int y, int w, int h )
 
 	glw_state.randr_ext = qtrue;
 
+	glw_state.randr_gamma = qtrue; // this will be reset by BackupMonitorGamma() if gamma is not available
+
 	BuildMonitorList();
 
 	RandR_UpdateMonitor( x, y, w, h );
 
-	BackupMonitorGamma();
-
 	return qtrue;
 
 __fail:
-	return qfalse;
 	RandR_Done();
+	return qfalse;
 }
 
 

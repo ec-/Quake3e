@@ -114,12 +114,12 @@ qboolean VidMode_Init( Display *_dpy, int _scrnum )
 
 	if ( ver_major < GAMMA_MINMAJOR || (ver_major == GAMMA_MINMAJOR && ver_minor < GAMMA_MINMINOR) )
 	{
-		Com_Printf( "XF86 Gamma extension not supported in this version.\n" );
+		Com_Printf( "...VidMode gamma extension not supported.\n" );
 	}
 	else
 	{
 		_XF86VidModeGetGamma( dpy, scrnum, &vidmode_InitialGamma );
-		Com_Printf( "...using VidMode gamma extension\n" );
+		Com_Printf( "...using VidMode gamma extension.\n" );
 		glw_state.vidmode_gamma = qtrue;
 	}
 
@@ -149,6 +149,9 @@ void VidMode_SetGamma( unsigned char red[256], unsigned char green[256], unsigne
 	unsigned short table[3][4096];
 	int size;
 
+	if ( !glw_state.vidmode_ext )
+		return;
+
 	_XF86VidModeGetGammaRampSize( dpy, scrnum, &size );
 
 	if ( BuildGammaRampTable( red, green, blue, size, table ) )
@@ -161,7 +164,10 @@ void VidMode_SetGamma( unsigned char red[256], unsigned char green[256], unsigne
 
 void VidMode_RestoreGamma( void )
 {
-	if ( glw_state.vidmode_gamma ) 
+	if ( !glw_state.vidmode_ext )
+		return;
+
+	if ( glw_state.vidmode_gamma )
 	{
 		_XF86VidModeSetGamma( dpy, scrnum, &vidmode_InitialGamma );
 	}
@@ -176,10 +182,8 @@ qboolean VidMode_SetMode( int *width, int *height, int *rate )
 	int num_vidmodes;
 	int i;
 	
-	if ( glw_state.vidmode_ext )
-	{
+	if ( !glw_state.vidmode_ext )
 		return qfalse;
-	}
 
 	if ( vidmodes )
 	{
@@ -237,6 +241,9 @@ qboolean VidMode_SetMode( int *width, int *height, int *rate )
 
 void VidMode_RestoreMode( void )
 {
+	if ( !glw_state.vidmode_ext )
+		return;
+
 	if ( vidmodes )
 	{
 		_XF86VidModeSwitchToMode( dpy, scrnum, vidmodes[ 0 ] );
