@@ -807,7 +807,9 @@ void SV_Shutdown( const char *finalmsg ) {
 	sv.time = 0;
 
 	Cvar_Set( "sv_running", "0" );
+#ifndef DEDICATED
 	Cvar_Set( "ui_singlePlayerActive", "0" );
+#endif
 
 	Com_Printf( "---------------------------\n" );
 

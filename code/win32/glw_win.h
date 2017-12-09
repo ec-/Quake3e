@@ -59,4 +59,7 @@ extern glwstate_t glw_state;
 
 extern void GLW_RestoreGamma( void );
 
+extern cvar_t *vid_xpos;
+extern cvar_t *vid_ypos;
+
 #endif

@@ -800,7 +800,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 {
 	static char	sys_cmdline[ MAX_STRING_CHARS ];
 	char con_title[ MAX_CVAR_VALUE_STRING ];
-	int vid_xpos, vid_ypos;
+	int xpos, ypos;
 	qboolean useXYpos;
 
 	// should never get a previous instance in Win32
@@ -813,10 +813,10 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	g_wv.hInstance = hInstance;
 	Q_strncpyz( sys_cmdline, lpCmdLine, sizeof( sys_cmdline ) );
 
-	useXYpos = Com_EarlyParseCmdLine( sys_cmdline, con_title, sizeof( con_title ), &vid_xpos, &vid_ypos );
+	useXYpos = Com_EarlyParseCmdLine( sys_cmdline, con_title, sizeof( con_title ), &xpos, &ypos );
 
 	// done before Com/Sys_Init since we need this for error output
-	Sys_CreateConsole( con_title, vid_xpos, vid_ypos, useXYpos );
+	Sys_CreateConsole( con_title, xpos, ypos, useXYpos );
 
 	// no abort/retry/fail errors
 	SetErrorMode( SEM_FAILCRITICALERRORS );

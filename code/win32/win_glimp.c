@@ -567,7 +567,6 @@ static qboolean GLW_InitDriver( const char *drivername, int colorbits )
 static qboolean GLW_CreateWindow( const char *drivername, int width, int height, int colorbits, qboolean cdsFullscreen )
 {
 	RECT			r;
-	cvar_t			*vid_xpos, *vid_ypos;
 	int				stylebits;
 	int				x, y, w, h;
 	int				exstyle;
@@ -602,8 +601,13 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		Com_Printf( "...registered window class\n" );
 	}
 
-	UpdateMonitorInfo( NULL );
+	r.left = vid_xpos->integer;
+	r.top = vid_ypos->integer;
+	r.right = r.left + width;
+	r.bottom = r.top + height;
 
+	UpdateMonitorInfo( &r );
+	
 	//
 	// create the HWND if one does not already exist
 	//
@@ -612,10 +616,10 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		//
 		// compute width and height
 		//
-		r.left = 0;
-		r.top = 0;
-		r.right  = width;
-		r.bottom = height;
+		//r.left = 0;
+		//r.top = 0;
+		//r.right  = width;
+		//r.bottom = height;
 
 		if ( cdsFullscreen )
 		{
@@ -633,8 +637,6 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		h = r.bottom - r.top;
 
 		// select monitor from window rect
-		vid_xpos = Cvar_Get( "vid_xpos", "", 0 );
-		vid_ypos = Cvar_Get( "vid_ypos", "", 0 );
 		r.left = vid_xpos->integer;
 		r.top = vid_ypos->integer;
 		r.right = r.left + w;
@@ -853,7 +855,7 @@ void UpdateMonitorInfo( const RECT *target )
 			scaleX = (devMode.dmPelsWidth * 100) / w;
 			scaleY = (devMode.dmPelsHeight * 100) / h;
 			if ( scaleX == scaleY ) {
-				Com_Printf( "...detected DPI scale: %i%%\n", scaleX );
+				Com_Printf( S_COLOR_YELLOW "...detected DPI scale: %i%%\n", scaleX );
 				w = devMode.dmPelsWidth;
 				h = devMode.dmPelsHeight;
 			}
@@ -902,17 +904,26 @@ void UpdateMonitorInfo( const RECT *target )
 static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS, int colorbits, qboolean cdsFullscreen )
 {
 	//HDC hDC;
+	RECT r;
 	const char *win_fs[] = { "W", "FS" };
 	glconfig_t *config = glw_state.config;
 	int		cdsRet;
 	DEVMODE dm;
-		
-	if ( dm_desktop.dmSize == 0 ) 
+
+	vid_xpos = Cvar_Get( "vid_xpos", "3", CVAR_ARCHIVE );
+	vid_ypos = Cvar_Get( "vid_ypos", "22", CVAR_ARCHIVE );
+
+	r.left = vid_xpos->integer;
+	r.top = vid_ypos->integer;
+	r.right = r.left + 320;
+	r.bottom = r.top + 240;
+
+	UpdateMonitorInfo( &r );
+
+	if ( dm_desktop.dmSize == 0 )
 	{
 		SetDesktopDisplaySettings();
 	}
-
-	UpdateMonitorInfo( NULL );
 
 	//
 	// print out informational messages

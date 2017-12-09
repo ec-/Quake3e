@@ -460,11 +460,13 @@ static int GetTimerMsec( void ) {
 LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam )
 {
 	#define TIMER_ID 10
+	#define TIMER_ID_1 11
 	static UINT uTimerID;
+	static UINT uTimerID_1;
 	static qboolean flip = qtrue;
 	int zDelta, i;
-	BOOL fActive;
-	BOOL fMinimized;
+	static BOOL fActive = FALSE;
+	static BOOL fMinimized = FALSE;
 
 	// http://msdn.microsoft.com/library/default.asp?url=/library/en-us/winui/winui/windowsuserinterface/userinput/mouseinput/aboutmouseinput.asp
 	// Windows 95, Windows NT 3.51 - uses MSH_MOUSEWHEEL
@@ -541,18 +543,15 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 	case WM_CREATE:
 
-		g_wv.hWnd = hWnd;
-
-		vid_xpos = Cvar_Get( "vid_xpos", "3", CVAR_ARCHIVE );
-		vid_ypos = Cvar_Get( "vid_ypos", "22", CVAR_ARCHIVE );
-		in_forceCharset = Cvar_Get( "in_forceCharset", "1", CVAR_ARCHIVE_ND );
-
 		MSH_MOUSEWHEEL = RegisterWindowMessage( TEXT( "MSWHEEL_ROLLMSG" ) ); 
 
 		WIN_EnableHook();
 
+		g_wv.hWnd = hWnd;
 		GetWindowRect( hWnd, &g_wv.winRect );
 		g_wv.winRectValid = qtrue;
+
+		in_forceCharset = Cvar_Get( "in_forceCharset", "1", CVAR_ARCHIVE_ND );
 
 		break;
 #if 0
@@ -573,6 +572,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		// let sound and input know about this?
 		Win_RemoveHotkey();
 		g_wv.hWnd = NULL;
+		g_wv.winRectValid = qfalse;
 		gw_minimized = qfalse;
 		gw_active = qfalse;
 		WIN_EnableAltTab();
@@ -599,61 +599,69 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			gw_minimized = qfalse;
 		else
 			gw_minimized = (fMinimized != FALSE);
+
+		// focus/activate messages may come in different order
+		// so process final result a bit later when we have all data set
+		if ( uTimerID_1 == 0 )
+			uTimerID_1 = SetTimer( g_wv.hWnd, TIMER_ID_1, 50, NULL );
+
 		break;
 	
 	case WM_SETFOCUS:
 	case WM_KILLFOCUS:
-		{
-			WINDOWPLACEMENT wp;
-		
-			memset( &wp, 0, sizeof( wp ) );
-			wp.length = sizeof( WINDOWPLACEMENT );
-			GetWindowPlacement( hWnd, &wp );
+		fActive = ( uMsg == WM_SETFOCUS );
 
-			fActive = ( uMsg == WM_SETFOCUS );
-			//Com_DPrintf( S_COLOR_YELLOW "%s\n", fActive ? "WM_SETFOCUS" : "WM_KILLFOCUS" );
+		if ( uTimerID_1 == 0 )
+			uTimerID_1 = SetTimer( g_wv.hWnd, TIMER_ID_1, 50, NULL );
 
-			Win_AddHotkey();
+		Win_AddHotkey();
 
-			// We can't get correct minimized status on WM_KILLFOCUS
-			VID_AppActivate( fActive );
+		// We can't get correct minimized status on WM_KILLFOCUS
+		VID_AppActivate( fActive );
 
-			if ( glw_state.cdsFullscreen ) {
-				if ( fActive ) {
-					SetGameDisplaySettings();
-					if ( re.SetColorMappings )
-						re.SetColorMappings();
-				} else {
-					GLW_RestoreGamma();
-					// Minimize if there only one monitor
-					if ( glw_state.monitorCount <= 1 || ( re.CanMinimize && re.CanMinimize() ) )
-						ShowWindow( hWnd, SW_MINIMIZE );
-					SetDesktopDisplaySettings();
-				}
-			} else {
-				if ( fActive ) {
-					if ( re.SetColorMappings )
-						re.SetColorMappings();
-				} else {
-					GLW_RestoreGamma();
-				}
-			}
-
+		if ( glw_state.cdsFullscreen ) {
 			if ( fActive ) {
-				WIN_DisableAltTab();
+				SetGameDisplaySettings();
+				if ( re.SetColorMappings )
+					re.SetColorMappings();
 			} else {
-				WIN_EnableAltTab();
+				// don't restore gamma if we have multiple monitors
+				if ( glw_state.monitorCount <= 1 || fMinimized )
+					GLW_RestoreGamma();
+				// minimize if there is only one monitor
+				if ( glw_state.monitorCount <= 1 ) {
+					if ( !CL_VideoRecording() || ( re.CanMinimize && re.CanMinimize() ) ) {
+						ShowWindow( hWnd, SW_MINIMIZE );
+						SetDesktopDisplaySettings();
+					}
+				}
 			}
-
-			SNDDMA_Activate();
+		} else {
+			if ( fActive ) {
+				if ( re.SetColorMappings )
+					re.SetColorMappings();
+			} else {
+				GLW_RestoreGamma();
+			}
 		}
+
+		if ( fActive ) {
+			WIN_DisableAltTab();
+		} else {
+			WIN_EnableAltTab();
+		}
+
+		SNDDMA_Activate();
+
 		break;
 
 	case WM_MOVE:
 		{
+			if ( !gw_active )
+				break;
 			GetWindowRect( hWnd, &g_wv.winRect );
 			g_wv.winRectValid = qtrue;
-			UpdateMonitorInfo( NULL );
+			UpdateMonitorInfo( &g_wv.winRect );
 			IN_UpdateWindow( NULL, qtrue );
 			IN_Activate( gw_active );
 			if ( !gw_active )
@@ -684,8 +692,19 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		break;
 
 	case WM_TIMER:
-		if ( wParam == TIMER_ID && uTimerID != 0 && !CL_VideoRecording() )
+		if ( wParam == TIMER_ID && uTimerID != 0 && !CL_VideoRecording() ) {
 			Com_Frame( CL_NoDelay() );
+		}
+
+		// delayed window minimize/deactivation
+		if ( wParam == TIMER_ID_1 && uTimerID_1 != 0 ) {
+			if ( fMinimized ) {
+				GLW_RestoreGamma();
+				SetDesktopDisplaySettings();
+			}
+			KillTimer( g_wv.hWnd, uTimerID_1 );
+			uTimerID_1 = 0;
+		}
 		break;
 
 	// this is complicated because Win32 seems to pack multiple mouse events into
@@ -773,9 +792,11 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		return 0;
 
 	case WM_SIZE:
+		if ( !gw_active )
+			break;
 		GetWindowRect( hWnd, &g_wv.winRect );
 		g_wv.winRectValid = qtrue;
-		UpdateMonitorInfo( NULL );
+		UpdateMonitorInfo( &g_wv.winRect );
 		IN_UpdateWindow( NULL, qtrue );
 		break;
 

@@ -3311,22 +3311,23 @@ void Com_Init( char *commandLine ) {
 		}
 	}
 
-	// start in full screen ui mode
-	Cvar_Set("r_uiFullScreen", "1");
-
 #ifndef DEDICATED
-	CL_StartHunkUsers( );
+	// start in full screen ui mode
+	Cvar_Set( "r_uiFullScreen", "1" );
+	CL_StartHunkUsers();
 #endif
 
 	if ( !com_errorEntered )
 		Sys_ShowConsole( com_viewlog->integer, qfalse );
 
+#ifndef DEDICATED
 	// make sure single player is off by default
-	Cvar_Set("ui_singlePlayerActive", "0");
+	Cvar_Set( "ui_singlePlayerActive", "0" );
+#endif
 
 	com_fullyInitialized = qtrue;
 
-	Com_Printf ("--- Common Initialization Complete ---\n");
+	Com_Printf( "--- Common Initialization Complete ---\n" );
 }
 
 
@@ -3413,6 +3414,7 @@ void Com_WriteConfig_f( void ) {
 	Com_Printf( "Writing %s.\n", filename );
 	Com_WriteConfigToFile( filename );
 }
+
 
 /*
 ================
