@@ -380,7 +380,8 @@ typedef struct shader_s {
 	shaderStage_t	*stages[MAX_SHADER_STAGES];
 
 #ifdef USE_PMLIGHT
-	int	lightingStage;
+	int			lightingStage;
+	int			lightingBundle;
 #endif
 	qboolean	isStaticShader;
 	short		vboVPindex;
