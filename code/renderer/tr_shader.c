@@ -1449,10 +1449,14 @@ if ( $cvar|<integer value> [<condition> $cvar|<integer value> [ [ || .. ] && .. 
 */
 static qboolean ParseCondition( const char **text, resultType *res )
 {
-	const char*token;
-	int lval, rval;
+	char lval_str[ MAX_CVAR_VALUE_STRING ];
+	char rval_str[ MAX_CVAR_VALUE_STRING ];
+	tokenType_t lval_type;
+	tokenType_t rval_type;
+	const char *token;
 	tokenType_t op;
 	resultMask	rm;
+	qboolean	str;
 	int r, r0;
 
 	r = 0;			// resulting value
@@ -1460,17 +1464,18 @@ static qboolean ParseCondition( const char **text, resultType *res )
 
 	for ( ;; )
 	{
+		rval_str[0] = '\0';
+		rval_type = TK_GENEGIC;
+
 		// expect l-value at least
 		token = COM_ParseComplex( text, qfalse );
 		if ( token[0] == '\0' ) {
 			ri.Printf( PRINT_WARNING, "WARNING: expecting lvalue for condition in shader %s\n", shader.name );
 			return qfalse;
 		}
-		// dereference
-		if ( token[0] == '$' )
-			lval = ri.Cvar_VariableIntegerValue( token+1 );
-		else
-			lval = atoi( token );
+	
+		Q_strncpyz( lval_str, token, sizeof( lval_str ) );
+		lval_type = com_tokentype;
 
 		// get operator
 		token = COM_ParseComplex( text, qfalse );
@@ -1484,11 +1489,9 @@ static qboolean ParseCondition( const char **text, resultType *res )
 				ri.Printf( PRINT_WARNING, "WARNING: expecting rvalue for condition in shader %s\n", shader.name );
 				return qfalse;
 			}
-			// dereference
-			if ( token[0] == '$' )
-				rval = ri.Cvar_VariableIntegerValue( token+1 );
-			else
-				rval = atoi( token );
+
+			Q_strncpyz( rval_str, token, sizeof( rval_str ) );
+			rval_type = com_tokentype;
 
 			// read next token, expect '||', '&&' or ')', allow newlines
 			token = COM_ParseComplex( text, qtrue );
@@ -1497,24 +1500,58 @@ static qboolean ParseCondition( const char **text, resultType *res )
 		{
 			// no r-value, assume 'not zero' comparison
 			op = TK_NEQ;
-			rval = 0;
 		}
 		else 
 		{
 			ri.Printf( PRINT_WARNING, "WARNING: unexpected operator '%s' for comparison in shader %s\n", token, shader.name );
 			return qfalse;
 		}
+		
+		str = qfalse;
+
+		if ( lval_type == TK_QUOTED ) {
+			str = qtrue;
+		} else {
+			// dereference l-value
+			if ( lval_str[0] == '$' ) {
+				ri.Cvar_VariableStringBuffer( lval_str+1, lval_str, sizeof( lval_str ) ); 
+			}
+		}
+
+		if ( rval_type == TK_QUOTED ) {
+			str = qtrue;
+		} else {
+			// dereference r-value
+			if ( rval_str[0] == '$' ) {
+				ri.Cvar_VariableStringBuffer( rval_str+1, rval_str, sizeof( rval_str ) ); 
+			}
+		}
 
 		// evaluate expression
-		// TODO: string comparisons
-		switch ( op ) {
-			case TK_EQ:  r0 = ( lval == rval ); break;
-			case TK_NEQ: r0 = ( lval != rval ); break;
-			case TK_GT:  r0 = ( lval >  rval ); break;
-			case TK_GTE: r0 = ( lval >= rval ); break;
-			case TK_LT:  r0 = ( lval <  rval ); break;
-			case TK_LTE: r0 = ( lval <= rval ); break;
-			default:     r0 = 0; break;
+		if ( str ) {
+			// string comparison
+			switch ( op ) {
+				case TK_EQ:  r0 = strcmp( lval_str, rval_str ) == 0; break;
+				case TK_NEQ: r0 = strcmp( lval_str, rval_str ) != 0; break;
+				case TK_GT:  r0 = strcmp( lval_str, rval_str ) >  0; break;
+				case TK_GTE: r0 = strcmp( lval_str, rval_str ) >= 0; break;
+				case TK_LT:  r0 = strcmp( lval_str, rval_str ) <  0; break;
+				case TK_LTE: r0 = strcmp( lval_str, rval_str ) <= 0; break;
+				default:     r0 = 0; break;
+			}
+		} else {
+			// integer comparison
+			int lval = atoi( lval_str );
+			int rval = atoi( rval_str );
+			switch ( op ) {
+				case TK_EQ:  r0 = ( lval == rval ); break;
+				case TK_NEQ: r0 = ( lval != rval ); break;
+				case TK_GT:  r0 = ( lval >  rval ); break;
+				case TK_GTE: r0 = ( lval >= rval ); break;
+				case TK_LT:  r0 = ( lval <  rval ); break;
+				case TK_LTE: r0 = ( lval <= rval ); break;
+				default:     r0 = 0; break;
+			}
 		}
 
 		if ( rm == maskOR )

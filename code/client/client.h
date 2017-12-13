@@ -549,6 +549,12 @@ void Con_Close( void );
 void CL_LoadConsoleHistory( void );
 void CL_SaveConsoleHistory( void );
 
+void Con_MessageMode_f( void );
+void Con_MessageMode2_f( void );
+void Con_MessageMode3_f( void );
+void Con_MessageMode4_f( void );
+
+
 //
 // cl_scrn.c
 //

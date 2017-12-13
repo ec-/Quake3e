@@ -159,7 +159,7 @@ void Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize 
 	
 	var = Cvar_FindVar (var_name);
 	if (!var) {
-		*buffer = 0;
+		*buffer = '\0';
 	}
 	else {
 		Q_strncpyz( buffer, var->string, bufsize );

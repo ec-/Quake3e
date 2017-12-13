@@ -3207,6 +3207,7 @@ void CL_InitRef( void ) {
 	ri.Cvar_SetValue = Cvar_SetValue;
 	ri.Cvar_CheckRange = Cvar_CheckRange;
 	ri.Cvar_SetDescription = Cvar_SetDescription;
+	ri.Cvar_VariableStringBuffer = Cvar_VariableStringBuffer;
 	ri.Cvar_VariableIntegerValue = Cvar_VariableIntegerValue;
 
 	ri.Cvar_SetGroup = Cvar_SetGroup;
@@ -3550,7 +3551,7 @@ void CL_Init( void ) {
 	CL_InitInput();
 
 	//
-	// register our variables
+	// register client variables
 	//
 	cl_noprint = Cvar_Get( "cl_noprint", "0", 0 );
 	cl_motd = Cvar_Get ("cl_motd", "1", 0);
@@ -3677,8 +3678,14 @@ void CL_Init( void ) {
 	Cvar_Get ("cg_stereoSeparation", "0", CVAR_ROM);
 
 	//
-	// register our commands
+	// register client commands
 	//
+	Cmd_AddCommand ("toggleconsole", Con_ToggleConsole_f);
+	Cmd_AddCommand ("messagemode", Con_MessageMode_f);
+	Cmd_AddCommand ("messagemode2", Con_MessageMode2_f);
+	Cmd_AddCommand ("messagemode3", Con_MessageMode3_f);
+	Cmd_AddCommand ("messagemode4", Con_MessageMode4_f);
+
 	Cmd_AddCommand ("cmd", CL_ForwardToServer_f);
 	Cmd_AddCommand ("configstrings", CL_Configstrings_f);
 	Cmd_AddCommand ("clientinfo", CL_Clientinfo_f);
@@ -3763,6 +3770,12 @@ void CL_Shutdown( const char *finalmsg, qboolean quit ) {
 	
 	CL_ShutdownRef();
 	
+	Cmd_RemoveCommand ("toggleconsole");
+	Cmd_RemoveCommand ("messagemode");
+	Cmd_RemoveCommand ("messagemode2");
+	Cmd_RemoveCommand ("messagemode3");
+	Cmd_RemoveCommand ("messagemode4");
+
 	Cmd_RemoveCommand ("cmd");
 	Cmd_RemoveCommand ("configstrings");
 	Cmd_RemoveCommand ("userinfo");

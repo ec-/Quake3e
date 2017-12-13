@@ -817,6 +817,7 @@ __reswitch:
 			}
 			if ( len < MAX_TOKEN_CHARS-1 ) // overflow check
 				com_token[ len++ ] = c;
+			str++;
 		}
 		if ( c != '\0' ) {
 			str++; // skip enging '"'

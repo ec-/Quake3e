@@ -362,11 +362,6 @@ void Con_Init( void )
 		return;
 	inited = qtrue;
 
-	Cmd_AddCommand ("toggleconsole", Con_ToggleConsole_f);
-	Cmd_AddCommand ("messagemode", Con_MessageMode_f);
-	Cmd_AddCommand ("messagemode2", Con_MessageMode2_f);
-	Cmd_AddCommand ("messagemode3", Con_MessageMode3_f);
-	Cmd_AddCommand ("messagemode4", Con_MessageMode4_f);
 	Cmd_AddCommand ("clear", Con_Clear_f);
 	Cmd_AddCommand ("condump", Con_Dump_f);
 	Cmd_SetCommandCompletionFunc( "condump", Cmd_CompleteTxtName );
@@ -612,7 +607,7 @@ void Con_DrawNotify( void )
 		if (time == 0)
 			continue;
 		time = cls.realtime - time;
-		if (time > con_notifytime->value*1000)
+		if ( time >= con_notifytime->value*1000 )
 			continue;
 		text = con.text + (i % con.totallines)*con.linewidth;
 
