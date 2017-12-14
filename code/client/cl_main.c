@@ -3680,12 +3680,6 @@ void CL_Init( void ) {
 	//
 	// register client commands
 	//
-	Cmd_AddCommand ("toggleconsole", Con_ToggleConsole_f);
-	Cmd_AddCommand ("messagemode", Con_MessageMode_f);
-	Cmd_AddCommand ("messagemode2", Con_MessageMode2_f);
-	Cmd_AddCommand ("messagemode3", Con_MessageMode3_f);
-	Cmd_AddCommand ("messagemode4", Con_MessageMode4_f);
-
 	Cmd_AddCommand ("cmd", CL_ForwardToServer_f);
 	Cmd_AddCommand ("configstrings", CL_Configstrings_f);
 	Cmd_AddCommand ("clientinfo", CL_Clientinfo_f);
@@ -3743,7 +3737,6 @@ void CL_Init( void ) {
 /*
 ===============
 CL_Shutdown
-
 ===============
 */
 void CL_Shutdown( const char *finalmsg, qboolean quit ) {
@@ -3756,7 +3749,7 @@ void CL_Shutdown( const char *finalmsg, qboolean quit ) {
 	Com_Printf( "----- Client Shutdown (%s) -----\n", finalmsg );
 
 	if ( recursive ) {
-		Com_Printf( "WARNING: Recursive shutdown\n" );
+		Com_Printf( "WARNING: Recursive CL_Shutdown()\n" );
 		return;
 	}
 	recursive = qtrue;
@@ -3770,11 +3763,7 @@ void CL_Shutdown( const char *finalmsg, qboolean quit ) {
 	
 	CL_ShutdownRef();
 	
-	Cmd_RemoveCommand ("toggleconsole");
-	Cmd_RemoveCommand ("messagemode");
-	Cmd_RemoveCommand ("messagemode2");
-	Cmd_RemoveCommand ("messagemode3");
-	Cmd_RemoveCommand ("messagemode4");
+	Con_Shutdown();
 
 	Cmd_RemoveCommand ("cmd");
 	Cmd_RemoveCommand ("configstrings");
@@ -3812,7 +3801,7 @@ void CL_Shutdown( const char *finalmsg, qboolean quit ) {
 #endif
 
 	CL_ClearInput();
-	
+
 	Cvar_Set( "cl_running", "0" );
 
 	recursive = qfalse;

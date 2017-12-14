@@ -94,7 +94,7 @@ void Con_ToggleConsole_f( void ) {
 Con_MessageMode_f
 ================
 */
-void Con_MessageMode_f( void ) {
+static void Con_MessageMode_f( void ) {
 	chat_playerNum = -1;
 	chat_team = qfalse;
 	Field_Clear( &chatField );
@@ -103,25 +103,27 @@ void Con_MessageMode_f( void ) {
 	Key_SetCatcher( Key_GetCatcher() ^ KEYCATCH_MESSAGE );
 }
 
+
 /*
 ================
 Con_MessageMode2_f
 ================
 */
-void Con_MessageMode2_f (void) {
+static void Con_MessageMode2_f( void ) {
 	chat_playerNum = -1;
 	chat_team = qtrue;
 	Field_Clear( &chatField );
 	chatField.widthInChars = 25;
-	Key_SetCatcher( Key_GetCatcher( ) ^ KEYCATCH_MESSAGE );
+	Key_SetCatcher( Key_GetCatcher() ^ KEYCATCH_MESSAGE );
 }
+
 
 /*
 ================
 Con_MessageMode3_f
 ================
 */
-void Con_MessageMode3_f( void ) {
+static void Con_MessageMode3_f( void ) {
 	chat_playerNum = VM_Call( cgvm, CG_CROSSHAIR_PLAYER );
 	if ( chat_playerNum < 0 || chat_playerNum >= MAX_CLIENTS ) {
 		chat_playerNum = -1;
@@ -133,12 +135,13 @@ void Con_MessageMode3_f( void ) {
 	Key_SetCatcher( Key_GetCatcher() ^ KEYCATCH_MESSAGE );
 }
 
+
 /*
 ================
 Con_MessageMode4_f
 ================
 */
-void Con_MessageMode4_f (void) {
+static void Con_MessageMode4_f( void ) {
 	chat_playerNum = VM_Call( cgvm, CG_LAST_ATTACKER );
 	if ( chat_playerNum < 0 || chat_playerNum >= MAX_CLIENTS ) {
 		chat_playerNum = -1;
@@ -147,15 +150,16 @@ void Con_MessageMode4_f (void) {
 	chat_team = qfalse;
 	Field_Clear( &chatField );
 	chatField.widthInChars = 30;
-	Key_SetCatcher( Key_GetCatcher( ) ^ KEYCATCH_MESSAGE );
+	Key_SetCatcher( Key_GetCatcher() ^ KEYCATCH_MESSAGE );
 }
+
 
 /*
 ================
 Con_Clear_f
 ================
 */
-void Con_Clear_f( void ) {
+static void Con_Clear_f( void ) {
 	int		i;
 
 	for ( i = 0 ; i < con.linewidth ; i++ ) {
@@ -177,7 +181,7 @@ Con_Dump_f
 Save the console contents out to a file
 ================
 */
-void Con_Dump_f( void )
+static void Con_Dump_f( void )
 {
 	int		l, x, i, n;
 	short	*line;
@@ -330,6 +334,7 @@ void Con_CheckResize( void )
 	con.display = con.current;
 }
 
+
 /*
 ==================
 Cmd_CompleteTxtName
@@ -349,22 +354,37 @@ Con_Init
 */
 void Con_Init( void ) 
 {
-	static qboolean inited = qfalse;
-
-	con_notifytime = Cvar_Get ("con_notifytime", "3", 0);
-	con_conspeed = Cvar_Get ("scr_conspeed", "3", 0);
+	con_notifytime = Cvar_Get( "con_notifytime", "3", 0 );
+	con_conspeed = Cvar_Get( "scr_conspeed", "3", 0 );
 
 	Field_Clear( &g_consoleField );
 	g_consoleField.widthInChars = g_console_field_width;
 
-	// don't try to add commands twice when switching back from dedicated
-	if ( inited == qtrue )
-		return;
-	inited = qtrue;
-
-	Cmd_AddCommand ("clear", Con_Clear_f);
-	Cmd_AddCommand ("condump", Con_Dump_f);
+	Cmd_AddCommand( "clear", Con_Clear_f );
+	Cmd_AddCommand( "condump", Con_Dump_f );
 	Cmd_SetCommandCompletionFunc( "condump", Cmd_CompleteTxtName );
+	Cmd_AddCommand( "toggleconsole", Con_ToggleConsole_f );
+	Cmd_AddCommand( "messagemode", Con_MessageMode_f );
+	Cmd_AddCommand( "messagemode2", Con_MessageMode2_f );
+	Cmd_AddCommand( "messagemode3", Con_MessageMode3_f );
+	Cmd_AddCommand( "messagemode4", Con_MessageMode4_f );
+}
+
+
+/*
+================
+Con_Shutdown
+================
+*/
+void Con_Shutdown( void )
+{
+	Cmd_RemoveCommand( "clear" );
+	Cmd_RemoveCommand( "condump" );
+	Cmd_RemoveCommand( "toggleconsole" );
+	Cmd_RemoveCommand( "messagemode" );
+	Cmd_RemoveCommand( "messagemode2" );
+	Cmd_RemoveCommand( "messagemode3" );
+	Cmd_RemoveCommand( "messagemode4" );
 }
 
 
@@ -813,7 +833,6 @@ void Con_DrawSolidConsole( float frac ) {
 
 	re.SetColor( NULL );
 }
-
 
 
 /*
