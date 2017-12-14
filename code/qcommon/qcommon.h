@@ -457,6 +457,7 @@ void	Cmd_AddCommand( const char *cmd_name, xcommand_t function );
 // as a clc_clientCommand instead of executed locally
 
 void	Cmd_RemoveCommand( const char *cmd_name );
+void	Cmd_RemoveCgameCommands( void );
 
 typedef void (*completionFunc_t)( char *args, int argNum );
 

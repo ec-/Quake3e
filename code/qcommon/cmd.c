@@ -384,7 +384,7 @@ void Cmd_Clear( void ) {
 Cmd_Argv
 ============
 */
-char	*Cmd_Argv( int arg ) {
+char *Cmd_Argv( int arg ) {
 	if ( (unsigned)arg >= cmd_argc ) {
 		return "";
 	}
@@ -416,7 +416,7 @@ char *Cmd_Args( void ) {
 	static char cmd_args[MAX_STRING_CHARS];
 	int i;
 
-	cmd_args[0] = 0;
+	cmd_args[0] = '\0';
 	for ( i = 1 ; i < cmd_argc ; i++ ) {
 		strcat( cmd_args, cmd_argv[i] );
 		if ( i != cmd_argc-1 ) {
@@ -612,7 +612,7 @@ static void Cmd_TokenizeString2( const char *text_in, qboolean ignoreQuotes ) {
 			*textOut++ = *text++;
 		}
 
-		*textOut++ = 0;
+		*textOut++ = '\0';
 
 		if ( !*text ) {
 			return;		// all tokens parsed
@@ -666,18 +666,16 @@ void Cmd_AddCommand( const char *cmd_name, xcommand_t function ) {
 	cmd_function_t *cmd;
 	
 	// fail if the command already exists
-	if( (cmd = Cmd_FindCommand( cmd_name )) != NULL )
+	if ( Cmd_FindCommand( cmd_name ) )
 	{
 		// allow completion-only commands to be silently doubled
 		if ( function != NULL )
 			Com_Printf( "Cmd_AddCommand: %s already defined\n", cmd_name );
-		// update function
-		cmd->function = function;
 		return;
 	}
 
 	// use a small malloc to avoid zone fragmentation
-	cmd = S_Malloc (sizeof(cmd_function_t));
+	cmd = S_Malloc( sizeof( *cmd ) );
 	cmd->name = CopyString( cmd_name );
 	cmd->function = function;
 	cmd->complete = NULL;
@@ -708,7 +706,7 @@ void Cmd_SetCommandCompletionFunc( const char *command, completionFunc_t complet
 Cmd_RemoveCommand
 ============
 */
-void	Cmd_RemoveCommand( const char *cmd_name ) {
+void Cmd_RemoveCommand( const char *cmd_name ) {
 	cmd_function_t *cmd, **back;
 
 	back = &cmd_functions;
@@ -752,6 +750,31 @@ void Cmd_RemoveCommandSafe( const char *cmd_name )
 	}
 
 	Cmd_RemoveCommand( cmd_name );
+}
+
+
+/*
+============
+Cmd_RemoveCgameCommands
+
+Remove cgame-created commands
+============
+*/
+void Cmd_RemoveCgameCommands( void )
+{
+	cmd_function_t *cmd;
+	qboolean removed;
+
+	do {
+		removed = qfalse;
+		for ( cmd = cmd_functions ; cmd ; cmd = cmd->next ) {
+			if ( cmd->function == NULL ) {
+				Cmd_RemoveCommand( cmd->name );
+				removed = qtrue;
+				break;
+			}
+		}
+	} while ( removed );
 }
 
 

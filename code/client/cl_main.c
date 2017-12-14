@@ -1270,7 +1270,8 @@ void CL_Disconnect( qboolean showMainMenu ) {
 
 	CL_UpdateGUID( NULL, 0 );
 
-	Cmd_RemoveCommand( "callvote" );
+	// Cmd_RemoveCommand( "callvote" );
+	Cmd_RemoveCgameCommands();
 
 	if ( noGameRestart )
 		noGameRestart = qfalse;
