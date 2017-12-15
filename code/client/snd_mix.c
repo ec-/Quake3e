@@ -427,6 +427,9 @@ static void S_PaintChannelFrom16_scalar( channel_t *ch, const sfx_t *sc, int cou
 
 			if (sampleOffset == SND_CHUNK_SIZE) {
 				chunk = chunk->next;
+				if (!chunk) {
+					chunk = sc->soundData;
+				}
 				samples = chunk->sndChunk;
 				sampleOffset = 0;
 			}

@@ -33,13 +33,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "snd_codec.h"
 #include "client.h"
 
-void S_Play_f(void);
-void S_SoundList_f(void);
-void S_Music_f(void);
-
-void S_Update_( void );
-void S_Base_StopAllSounds(void);
-void S_Base_StopBackgroundTrack( void );
+static void S_Update_( void );
+static void S_UpdateBackgroundTrack( void );
+static void S_Base_StopAllSounds( void );
+static void S_Base_StopBackgroundTrack( void );
 
 snd_stream_t	*s_backgroundStream = NULL;
 static char		s_backgroundLoop[MAX_QPATH];
@@ -105,7 +102,7 @@ portable_samplepair_t	s_rawsamples[MAX_RAW_SAMPLES];
 // ====================================================================
 
 
-void S_Base_SoundInfo( void ) {
+static void S_Base_SoundInfo( void ) {
 	Com_Printf("----- Sound Info -----\n" );
 	if ( !s_soundStarted ) {
 		Com_Printf ("sound system not started\n");
@@ -132,7 +129,7 @@ void S_Base_SoundInfo( void ) {
 S_Base_SoundList
 =================
 */
-void S_Base_SoundList( void ) {
+static void S_Base_SoundList( void ) {
 	int		i;
 	sfx_t	*sfx;
 	int		size, total;
@@ -158,14 +155,14 @@ void S_Base_SoundList( void ) {
 }
 
 
-void S_ChannelFree(channel_t *v) {
+static void S_ChannelFree( channel_t *v ) {
 	v->thesfx = NULL;
 	*(channel_t **)v = freelist;
 	freelist = (channel_t*)v;
 }
 
 
-channel_t*	S_ChannelMalloc( void ) {
+static channel_t* S_ChannelMalloc( void ) {
 	channel_t *v;
 	if (freelist == NULL) {
 		return NULL;
@@ -291,24 +288,6 @@ static sfx_t *S_FindName( const char *name ) {
 	return sfx;
 }
 
-/*
-=================
-S_DefaultSound
-=================
-*/
-void S_DefaultSound( sfx_t *sfx ) {
-	
-	int		i;
-
-	sfx->soundLength = 512;
-	sfx->soundData = SND_malloc();
-	sfx->soundData->next = NULL;
-
-
-	for ( i = 0 ; i < sfx->soundLength ; i++ ) {
-		sfx->soundData->sndChunk[i] = i;
-	}
-}
 
 /*
 ===================
@@ -319,10 +298,11 @@ This is called when the hunk is cleared and the sounds
 are no longer valid.
 ===================
 */
-void S_Base_DisableSounds( void ) {
+static void S_Base_DisableSounds( void ) {
 	S_Base_StopAllSounds();
 	s_soundMuted = qtrue;
 }
+
 
 /*
 ==================
@@ -331,7 +311,7 @@ S_RegisterSound
 Creates a default buzz sound if the file can't be loaded
 ==================
 */
-sfxHandle_t	S_Base_RegisterSound( const char *name, qboolean compressed ) {
+static sfxHandle_t S_Base_RegisterSound( const char *name, qboolean compressed ) {
 	sfx_t	*sfx;
 
 	compressed = qfalse;
@@ -360,7 +340,7 @@ sfxHandle_t	S_Base_RegisterSound( const char *name, qboolean compressed ) {
 	sfx->inMemory = qfalse;
 	sfx->soundCompressed = compressed;
 
-  S_memoryLoad(sfx);
+	S_memoryLoad( sfx );
 
 	if ( sfx->defaultSound ) {
 		Com_Printf( S_COLOR_YELLOW "WARNING: could not find %s - using default\n", sfx->soundName );
@@ -370,13 +350,13 @@ sfxHandle_t	S_Base_RegisterSound( const char *name, qboolean compressed ) {
 	return sfx - s_knownSfx;
 }
 
+
 /*
 =====================
 S_BeginRegistration
-
 =====================
 */
-void S_Base_BeginRegistration( void ) {
+static void S_Base_BeginRegistration( void ) {
 	s_soundMuted = qfalse;		// we can play again
 
 	if ( s_numSfx )
@@ -390,12 +370,15 @@ void S_Base_BeginRegistration( void ) {
 	S_Base_RegisterSound("sound/feedback/hit.wav", qfalse);		// changed to a sound in baseq3
 }
 
-void S_memoryLoad(sfx_t	*sfx) {
+
+void S_memoryLoad( sfx_t *sfx ) {
+
 	// load the sound file
 	if ( !S_LoadSound ( sfx ) ) {
 		Com_DPrintf( S_COLOR_YELLOW "WARNING: couldn't load sound: %s\n", sfx->soundName );
 		sfx->defaultSound = qtrue;
 	}
+
 	sfx->inMemory = qtrue;
 }
 
@@ -408,13 +391,13 @@ S_SpatializeOrigin
 Used for spatializing s_channels
 =================
 */
-void S_SpatializeOrigin (vec3_t origin, int master_vol, int *left_vol, int *right_vol)
+static void S_SpatializeOrigin( const vec3_t origin, int master_vol, int *left_vol, int *right_vol )
 {
-    vec_t		dot;
-    vec_t		dist;
-    vec_t		lscale, rscale, scale;
-    vec3_t		source_vec;
-    vec3_t		vec;
+	vec_t	dot;
+	vec_t	dist;
+	vec_t	lscale, rscale, scale;
+	vec3_t	source_vec;
+	vec3_t	vec;
 
 	const float dist_mult = SOUND_ATTENUATE;
 	
@@ -460,6 +443,7 @@ void S_SpatializeOrigin (vec3_t origin, int master_vol, int *left_vol, int *righ
 		*left_vol = 0;
 }
 
+
 // =======================================================================
 // Start a sound effect
 // =======================================================================
@@ -473,7 +457,7 @@ if pos is NULL, the sound will be dynamically sourced from the entity
 Entchannel 0 will never override a playing sound
 ====================
 */
-void S_Base_StartSound( vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfxHandle ) {
+static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfxHandle ) {
 	channel_t	*ch;
 	sfx_t		*sfx;
 	int i, oldest, chosen, time;
@@ -619,7 +603,7 @@ void S_Base_StartSound( vec3_t origin, int entityNum, int entchannel, sfxHandle_
 S_StartLocalSound
 ==================
 */
-void S_Base_StartLocalSound( sfxHandle_t sfxHandle, int channelNum ) {
+static void S_Base_StartLocalSound( sfxHandle_t sfxHandle, int channelNum ) {
 	if ( !s_soundStarted || s_soundMuted ) {
 		return;
 	}
@@ -641,7 +625,7 @@ If we are about to perform file access, clear the buffer
 so sound doesn't stutter.
 ==================
 */
-void S_Base_ClearSoundBuffer( void ) {
+static void S_Base_ClearSoundBuffer( void ) {
 	int		clear;
 		
 	if (!s_soundStarted)
@@ -675,7 +659,7 @@ void S_Base_ClearSoundBuffer( void ) {
 S_StopAllSounds
 ==================
 */
-void S_Base_StopAllSounds( void ) {
+static void S_Base_StopAllSounds( void ) {
 	if ( !s_soundStarted ) {
 		return;
 	}
@@ -1213,7 +1197,7 @@ static void S_GetSoundtime( void )
 }
 
 
-void S_Update_( void ) {
+static void S_Update_( void ) {
 	unsigned		endtime;
 	int				samps;
 	static float	lastTime = 0.0f;
@@ -1287,13 +1271,14 @@ background music functions
 S_StopBackgroundTrack
 ======================
 */
-void S_Base_StopBackgroundTrack( void ) {
+static void S_Base_StopBackgroundTrack( void ) {
 	if(!s_backgroundStream)
 		return;
 	S_CodecCloseStream(s_backgroundStream);
 	s_backgroundStream = NULL;
 	s_rawend = 0;
 }
+
 
 /*
 ======================
@@ -1321,12 +1306,13 @@ static void S_OpenBackgroundStream( const char *filename ) {
 	}
 }
 
+
 /*
 ======================
 S_StartBackgroundTrack
 ======================
 */
-void S_Base_StartBackgroundTrack( const char *intro, const char *loop ){
+static void S_Base_StartBackgroundTrack( const char *intro, const char *loop ){
 	if ( !intro ) {
 		intro = "";
 	}
@@ -1346,12 +1332,13 @@ void S_Base_StartBackgroundTrack( const char *intro, const char *loop ){
 	S_OpenBackgroundStream( intro );
 }
 
+
 /*
 ======================
 S_UpdateBackgroundTrack
 ======================
 */
-void S_UpdateBackgroundTrack( void ) {
+static void S_UpdateBackgroundTrack( void ) {
 	int		bufferSamples;
 	int		fileSamples;
 	byte	raw[30000];		// just enough to fit in a mac stack frame
@@ -1427,7 +1414,6 @@ void S_UpdateBackgroundTrack( void ) {
 S_FreeOldestSound
 ======================
 */
-
 void S_FreeOldestSound( void ) {
 	int	i, oldest, used;
 	sfx_t	*sfx;
@@ -1463,7 +1449,7 @@ void S_FreeOldestSound( void ) {
 // Shutdown sound engine
 // =======================================================================
 
-void S_Base_Shutdown( void ) {
+static void S_Base_Shutdown( void ) {
 	byte *p;
 
 	if ( !s_soundStarted ) {

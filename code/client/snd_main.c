@@ -140,7 +140,7 @@ S_StopAllSounds
 void S_StopAllSounds( void )
 {
 	if( si.StopAllSounds ) {
-		si.StopAllSounds( );
+		si.StopAllSounds();
 	}
 }
 
@@ -234,7 +234,7 @@ S_Update
 void S_Update( void )
 {
 	if( si.Update ) {
-		si.Update( );
+		si.Update();
 	}
 }
 
@@ -303,10 +303,10 @@ void S_ClearSoundBuffer( void )
 S_SoundInfo
 =================
 */
-void S_SoundInfo( void )
+static void S_SoundInfo( void )
 {
 	if( si.SoundInfo ) {
-		si.SoundInfo( );
+		si.SoundInfo();
 	}
 }
 
@@ -316,10 +316,10 @@ void S_SoundInfo( void )
 S_SoundList
 =================
 */
-void S_SoundList( void )
+static void S_SoundList( void )
 {
 	if( si.SoundList ) {
-		si.SoundList( );
+		si.SoundList();
 	}
 }
 
@@ -330,7 +330,7 @@ void S_SoundList( void )
 S_Play_f
 =================
 */
-void S_Play_f( void ) {
+static void S_Play_f( void ) {
 	int 		i;
 	int			c;
 	sfxHandle_t	h;
@@ -361,7 +361,7 @@ void S_Play_f( void ) {
 S_Music_f
 =================
 */
-void S_Music_f( void ) {
+static void S_Music_f( void ) {
 	int		c;
 
 	if( !si.StartBackgroundTrack ) {
@@ -384,12 +384,12 @@ void S_Music_f( void ) {
 
 /*
 =================
-S_Music_f
+S_StopMusic_f
 =================
 */
-void S_StopMusic_f( void )
+static void S_StopMusic_f( void )
 {
-	if(!si.StopBackgroundTrack)
+	if ( !si.StopBackgroundTrack )
 		return;
 
 	si.StopBackgroundTrack();
@@ -439,7 +439,7 @@ void S_Init( void )
 				Com_Error( ERR_FATAL, "Sound interface invalid" );
 			}
 
-			S_SoundInfo( );
+			S_SoundInfo();
 			Com_Printf( "Sound initialization successful.\n" );
 		} else {
 			Com_Printf( "Sound initialization failed.\n" );
@@ -462,7 +462,7 @@ void S_Shutdown( void )
 	}
 
 	if( si.Shutdown ) {
-		si.Shutdown( );
+		si.Shutdown();
 	}
 
 	Com_Memset( &si, 0, sizeof( soundInterface_t ) );
@@ -474,6 +474,5 @@ void S_Shutdown( void )
 	Cmd_RemoveCommand( "s_stop" );
 	Cmd_RemoveCommand( "s_info" );
 
-	S_CodecShutdown( );
+	S_CodecShutdown();
 }
-

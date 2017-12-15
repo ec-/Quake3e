@@ -68,5 +68,3 @@ void S_DisplayFreeMemory(void);
 void S_ClearSoundBuffer( void );
 
 void SNDDMA_Activate( void );
-
-void S_UpdateBackgroundTrack( void );
