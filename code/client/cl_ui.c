@@ -609,7 +609,7 @@ static void CL_GetClipboardData( char *buf, int buflen ) {
 	cbd = Sys_GetClipboardData();
 
 	if ( !cbd ) {
-		*buf = 0;
+		*buf = '\0';
 		return;
 	}
 
@@ -658,13 +658,13 @@ static void CLUI_GetCDKey( char *buf, int buflen ) {
 	fs = Cvar_Get ("fs_game", "", CVAR_INIT|CVAR_SYSTEMINFO );
 	if (UI_usesUniqueCDKey() && fs && fs->string[0] != 0) {
 		Com_Memcpy( buf, &cl_cdkey[16], 16);
-		buf[16] = 0;
+		buf[16] = '\0';
 	} else {
 		Com_Memcpy( buf, cl_cdkey, 16);
-		buf[16] = 0;
+		buf[16] = '\0';
 	}
 #else
-	*buf = 0;
+	*buf = '\0';
 #endif
 }
 
@@ -741,7 +741,7 @@ static void *VM_ArgPtr( intptr_t intValue ) {
 	  return NULL;
 
 	if ( uivm->entryPoint )
-		return (void *)(uivm->dataBase + intValue);
+		return (void *)(intValue);
 	else
 		return (void *)(uivm->dataBase + (intValue & uivm->dataMask));
 }
@@ -895,7 +895,7 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		re.DrawStretchPic( VMF(1), VMF(2), VMF(3), VMF(4), VMF(5), VMF(6), VMF(7), VMF(8), args[9] );
 		return 0;
 
-  case UI_R_MODELBOUNDS:
+	case UI_R_MODELBOUNDS:
 		re.ModelBounds( args[1], VMA(2), VMA(3) );
 		return 0;
 
@@ -944,8 +944,8 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return Key_GetCatcher();
 
 	case UI_KEY_SETCATCHER:
-    	// Don't allow the ui module to close the console
-    	Key_SetCatcher( args[1] | ( Key_GetCatcher( ) & KEYCATCH_CONSOLE ) );
+		// Don't allow the ui module to close the console
+		Key_SetCatcher( args[1] | ( Key_GetCatcher( ) & KEYCATCH_CONSOLE ) );
 		return 0;
 
 	case UI_GETCLIPBOARDDATA:
@@ -1099,22 +1099,22 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return Com_RealTime( VMA(1) );
 
 	case UI_CIN_PLAYCINEMATIC:
-	  Com_DPrintf("UI_CIN_PlayCinematic\n");
-	  return CIN_PlayCinematic(VMA(1), args[2], args[3], args[4], args[5], args[6]);
+		Com_DPrintf("UI_CIN_PlayCinematic\n");
+		return CIN_PlayCinematic(VMA(1), args[2], args[3], args[4], args[5], args[6]);
 
 	case UI_CIN_STOPCINEMATIC:
-	  return CIN_StopCinematic(args[1]);
+		return CIN_StopCinematic(args[1]);
 
 	case UI_CIN_RUNCINEMATIC:
-	  return CIN_RunCinematic(args[1]);
+		return CIN_RunCinematic(args[1]);
 
 	case UI_CIN_DRAWCINEMATIC:
-	  CIN_DrawCinematic(args[1]);
-	  return 0;
+		CIN_DrawCinematic(args[1]);
+		return 0;
 
 	case UI_CIN_SETEXTENTS:
-	  CIN_SetExtents(args[1], args[2], args[3], args[4], args[5]);
-	  return 0;
+		CIN_SetExtents(args[1], args[2], args[3], args[4], args[5]);
+		return 0;
 
 	case UI_R_REMAP_SHADER:
 		re.RemapShader( VMA(1), VMA(2), VMA(3) );
@@ -1155,13 +1155,13 @@ static intptr_t QDECL UI_DllSyscall( intptr_t arg, ... ) {
 	intptr_t	args[10]; // max.count for UI
 	va_list	ap;
 	int i;
-  
+
 	args[0] = arg;
 	va_start( ap, arg );
 	for (i = 1; i < ARRAY_LEN( args ); i++ )
 		args[ i ] = va_arg( ap, intptr_t );
 	va_end( ap );
-  
+
 	return CL_UISystemCalls( args );
 #else
 	return CL_UISystemCalls( &arg );
@@ -1188,7 +1188,7 @@ CL_ShutdownUI
 ====================
 */
 void CL_ShutdownUI( void ) {
-    Key_SetCatcher( Key_GetCatcher( ) & ~KEYCATCH_UI );
+	Key_SetCatcher( Key_GetCatcher() & ~KEYCATCH_UI );
 	cls.uiStarted = qfalse;
 	if ( !uivm ) {
 		return;

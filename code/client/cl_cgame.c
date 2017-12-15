@@ -395,7 +395,7 @@ static void *VM_ArgPtr( intptr_t intValue ) {
 	  return NULL;
 
 	if ( cgvm->entryPoint )
-		return (void *)(cgvm->dataBase + intValue);
+		return (void *)(intValue);
 	else
 		return (void *)(cgvm->dataBase + (intValue & cgvm->dataMask));
 }

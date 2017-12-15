@@ -37,6 +37,7 @@ int	SV_NumForGentity( sharedEntity_t *ent ) {
 	return num;
 }
 
+
 sharedEntity_t *SV_GentityNum( int num ) {
 	sharedEntity_t *ent;
 
@@ -44,6 +45,7 @@ sharedEntity_t *SV_GentityNum( int num ) {
 
 	return ent;
 }
+
 
 playerState_t *SV_GameClientNum( int num ) {
 	playerState_t	*ps;
@@ -53,6 +55,7 @@ playerState_t *SV_GameClientNum( int num ) {
 	return ps;
 }
 
+
 svEntity_t	*SV_SvEntityForGentity( sharedEntity_t *gEnt ) {
 	if ( !gEnt || gEnt->s.number < 0 || gEnt->s.number >= MAX_GENTITIES ) {
 		Com_Error( ERR_DROP, "SV_SvEntityForGentity: bad gEnt" );
@@ -60,12 +63,14 @@ svEntity_t	*SV_SvEntityForGentity( sharedEntity_t *gEnt ) {
 	return &sv.svEntities[ gEnt->s.number ];
 }
 
+
 sharedEntity_t *SV_GEntityForSvEntity( svEntity_t *svEnt ) {
 	int		num;
 
 	num = svEnt - sv.svEntities;
 	return SV_GentityNum( num );
 }
+
 
 /*
 ===============
@@ -133,7 +138,6 @@ void SV_SetBrushModel( sharedEntity_t *ent, const char *name ) {
 
 	SV_LinkEntity( ent );		// FIXME: remove
 }
-
 
 
 /*
@@ -244,6 +248,7 @@ void SV_GetServerinfo( char *buffer, int bufferSize ) {
 	Q_strncpyz( buffer, Cvar_InfoString( CVAR_SERVERINFO ), bufferSize );
 }
 
+
 /*
 ===============
 SV_LocateGameData
@@ -292,9 +297,10 @@ void SV_GetUsercmd( int clientNum, usercmd_t *cmd ) {
 	*cmd = svs.clients[clientNum].lastUsercmd;
 }
 
+
 //==============================================
 
-static int	FloatAsInt( float f ) {
+static int FloatAsInt( float f ) {
 	floatint_t fi;
 	fi.f = f;
 	return fi.i;
@@ -309,13 +315,14 @@ VM_ArgPtr
 static void *VM_ArgPtr( intptr_t intValue ) {
 
 	if ( !intValue || gvm == NULL )
-	  return NULL;
+		return NULL;
 
 	if ( gvm->entryPoint )
-		return (void *)(gvm->dataBase + intValue);
+		return (void *)(intValue);
 	else
 		return (void *)(gvm->dataBase + (intValue & gvm->dataMask));
 }
+
 
 /*
 ====================
@@ -922,18 +929,19 @@ static intptr_t QDECL SV_DllSyscall( intptr_t arg, ... ) {
 	intptr_t	args[14]; // max.count for qagame
 	va_list	ap;
 	int i;
-  
+
 	args[0] = arg;
 	va_start( ap, arg );
 	for (i = 1; i < ARRAY_LEN( args ); i++ )
 		args[ i ] = va_arg( ap, intptr_t );
 	va_end( ap );
-  
+
 	return SV_GameSystemCalls( args );
 #else
 	return SV_GameSystemCalls( &arg );
 #endif
 }
+
 
 static const int g_vmMainArgs[ GAME_EXPORT_LAST ] = {
 	4, // GAME_INIT, ( int levelTime, int randomSeed, int restart );
@@ -983,7 +991,7 @@ static void SV_InitGameVM( qboolean restart ) {
 	// clear all gentity pointers that might still be set from
 	// a previous level
 	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=522
-	//   now done before GAME_INIT call
+	// now done before GAME_INIT call
 	for ( i = 0 ; i < sv_maxclients->integer ; i++ ) {
 		svs.clients[i].gentity = NULL;
 	}
