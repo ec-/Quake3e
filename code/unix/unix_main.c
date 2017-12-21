@@ -403,8 +403,6 @@ void Sys_Init( void )
 
 	Cvar_Set( "arch", OS_STRING " " ARCH_STRING );
 
-	Cvar_Set( "username", Sys_GetCurrentUser() );
-
 	//IN_Init();   // rcg08312005 moved into glimp.
 }
 

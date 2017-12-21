@@ -96,28 +96,6 @@ const char *WtoA( const LPWSTR s )
 
 /*
 ================
-Sys_GetCurrentUser
-================
-*/
-char *Sys_GetCurrentUser( void )
-{
-	static char s_userName[256];
-
-	TCHAR buffer[256];
-	DWORD size = ARRAYSIZE( buffer );
-
-	if ( !GetUserName( buffer, &size ) || !s_userName[0] ) {
-		strcpy( s_userName, "player" );
-	} else {
-		strcpy( s_userName, WtoA( buffer ) );
-	}
-
-	return s_userName;
-}
-
-
-/*
-================
 Sys_DefaultHomePath
 ================
 */

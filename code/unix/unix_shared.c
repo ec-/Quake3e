@@ -479,22 +479,6 @@ void Sys_ShowConsole( int visLevel, qboolean quitOnClose )
 
 
 /*
-=================
-Sys_GetCurentUser
-=================
-*/
-char *Sys_GetCurrentUser( void )
-{
-	struct passwd *p;
-
-	if ( (p = getpwuid( getuid() )) == NULL ) {
-		return "player";
-	}
-	return p->pw_name;
-}
-
-
-/*
 ========================================================================
 
 LOAD/UNLOAD DLL

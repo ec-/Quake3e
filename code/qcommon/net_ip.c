@@ -276,6 +276,7 @@ static struct addrinfo *SearchAddrInfo(struct addrinfo *hints, sa_family_t famil
 	return NULL;
 }
 
+
 /*
 =============
 Sys_StringToSockaddr
@@ -470,9 +471,9 @@ qboolean NET_CompareBaseAdr( const netadr_t *a, const netadr_t *b )
 }
 
 
-const char	*NET_AdrToString( const netadr_t *a )
+const char *NET_AdrToString( const netadr_t *a )
 {
-	static	char	s[NET_ADDRSTRMAXLEN];
+	static char s[NET_ADDRSTRMAXLEN];
 
 	if (a->type == NA_LOOPBACK)
 		Com_sprintf (s, sizeof(s), "loopback");
@@ -491,7 +492,7 @@ const char	*NET_AdrToString( const netadr_t *a )
 }
 
 
-const char	*NET_AdrToStringwPort( const netadr_t *a )
+const char *NET_AdrToStringwPort( const netadr_t *a )
 {
 	static	char	s[NET_ADDRSTRMAXLEN];
 
@@ -539,7 +540,7 @@ NET_GetPacket
 Receive one packet
 ==================
 */
-static qboolean NET_GetPacket( netadr_t *net_from, msg_t *net_message, fd_set *fdr )
+static qboolean NET_GetPacket( netadr_t *net_from, msg_t *net_message, const fd_set *fdr )
 {
 	int 	ret;
 	struct sockaddr_storage from;
@@ -1615,7 +1616,7 @@ void NET_Init( void ) {
 
 	NET_Config( qtrue );
 	
-	Cmd_AddCommand ("net_restart", NET_Restart_f);
+	Cmd_AddCommand( "net_restart", NET_Restart_f );
 }
 
 
@@ -1646,7 +1647,7 @@ Called from NET_Sleep which uses select() to determine which sockets have seen a
 ====================
 */
 
-static void NET_Event(fd_set *fdr)
+static void NET_Event( const fd_set *fdr )
 {
 	byte bufData[ MAX_MSGLEN_BUF ];
 	netadr_t from;

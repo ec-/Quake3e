@@ -1152,8 +1152,6 @@ char	*Sys_ConsoleInput( void );
 void	*QDECL Sys_LoadDll( const char *name, dllSyscall_t *entryPoint, dllSyscall_t systemcalls );
 void	Sys_UnloadDll( void *dllHandle );
 
-char	*Sys_GetCurrentUser( void );
-
 void	QDECL Sys_Error( const char *error, ...) __attribute__ ((noreturn, format (printf, 1, 2)));
 void	Sys_Quit (void) __attribute__ ((noreturn));
 char	*Sys_GetClipboardData( void );	// note that this isn't journaled...
