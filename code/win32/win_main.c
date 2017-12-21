@@ -696,6 +696,39 @@ void Sys_In_Restart_f( void ) {
 
 
 /*
+==================
+SetTimerResolution
+
+Try to set lower timer period
+==================
+*/
+static void SetTimerResolution( void )
+{
+	typedef HRESULT (WINAPI *pfnNtQueryTimerResolution)( PULONG MinRes, PULONG MaxRes, PULONG CurRes );
+	typedef HRESULT (WINAPI *pfnNtSetTimerResolution)( ULONG NewRes, BOOLEAN SetRes, PULONG CurRes );
+	pfnNtQueryTimerResolution pNtQueryTimerResolution;
+	pfnNtSetTimerResolution pNtSetTimerResolution;
+	LONG curr, minr, maxr;
+	HMODULE dll;
+
+	dll = LoadLibrary( T( "ntdll" ) );
+	if ( dll )
+	{
+		pNtQueryTimerResolution = (pfnNtQueryTimerResolution) GetProcAddress( dll, "NtQueryTimerResolution" );
+		pNtSetTimerResolution = (pfnNtSetTimerResolution) GetProcAddress( dll, "NtSetTimerResolution" );
+		if ( pNtQueryTimerResolution && pNtSetTimerResolution )
+		{
+			pNtQueryTimerResolution( &minr, &maxr, &curr );
+			if ( maxr < 5000 ) // well, we don't need less than 0.5ms periods for select()
+				maxr = 5000;
+			pNtSetTimerResolution( maxr, TRUE, &curr );
+		}
+		FreeLibrary( dll );
+	}
+}
+
+
+/*
 ================
 Sys_Init
 
@@ -710,6 +743,7 @@ void Sys_Init( void ) {
 	timeBeginPeriod( 1 );
 
 #ifndef DEDICATED
+	SetTimerResolution();
 	Cmd_AddCommand( "in_restart", Sys_In_Restart_f );
 #endif
 
