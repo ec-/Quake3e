@@ -3194,10 +3194,10 @@ void Com_Init( char *commandLine ) {
 	//
 #ifndef DEDICATED
 	com_maxfps = Cvar_Get( "com_maxfps", "125", 0 ); // try to force that in some light way
-	com_maxfpsUnfocused = Cvar_Get ("com_maxfpsUnfocused", "60", CVAR_ARCHIVE_ND );
-	com_maxfpsMinimized = Cvar_Get ("com_maxfpsMinimized", "30", CVAR_ARCHIVE_ND );
-	com_yieldCPU = Cvar_Get( "com_yieldCPU", "1", CVAR_ARCHIVE_ND );
-	Cvar_CheckRange( com_yieldCPU, "0", "1", CV_INTEGER );
+	com_maxfpsUnfocused = Cvar_Get( "com_maxfpsUnfocused", "60", CVAR_ARCHIVE_ND );
+	com_maxfpsMinimized = Cvar_Get( "com_maxfpsMinimized", "30", CVAR_ARCHIVE_ND );
+	com_yieldCPU = Cvar_Get( "com_yieldCPU", "4", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( com_yieldCPU, "0", "4", CV_INTEGER );
 #endif
 	com_affinityMask = Cvar_Get( "com_affinityMask", "0", CVAR_ARCHIVE_ND );
 	com_affinityMask->modified = qfalse;
@@ -3579,15 +3579,15 @@ void Com_Frame( qboolean noDelay ) {
 			timeVal = Com_TimeVal( minMsec );
 		}
 		if ( com_dedicated->integer ) {
-			NET_Sleep( timeVal );
+			NET_Sleep( timeVal, 0 );
 		} else {
 #ifndef DEDICATED
 			if ( timeVal > com_yieldCPU->integer ) {
 				timeVal = com_yieldCPU->integer;
-				NET_Sleep( timeVal );
+				NET_Sleep( timeVal, -500 );
 				Com_EventLoop();
 			} else {
-				NET_Sleep( timeVal );
+				NET_Sleep( timeVal, -500 );
 			}
 #endif
 		}

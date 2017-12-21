@@ -314,26 +314,54 @@ static void BuildMonitorList( void )
 
 static monitor_t *FindNearestMonitor( int x, int y, int w, int h )
 {
-	monitor_t *m, *found;
+	monitor_t *m, *found, *list[ MAX_MONITORS ];
 	unsigned long dx, dy, dist, nearest;
 	int cx, cy;
-	int i;
-
-	found = NULL;
-	nearest = 0xFFFFFFFF;
+	int i, cnt, minx, maxx, slen;
 
 	cx = x + w/2;
+
 	cy = y + h/2;
 
+	cnt = 0;
 	for ( i = 0; i < glw_state.monitorCount; i++ )
 	{
 		m = &monitors[ i ];
 		// window center intersection
 		if ( cx >= m->x && cx < (m->x + m->w) && cy >= m->y && cy < (m->y + m->h) )
+			list[ cnt++ ] = m;
+	}
+
+	if ( cnt == 1 ) // single monitor found
+	{
+		return list[ 0 ];
+	}
+
+	if ( cnt > 1 )
+	{
+		// divide screen width on segments
+		minx = 999999999;
+		maxx = 0;
+		for ( i = 0; i < cnt ; i++ )
 		{
-			//Com_Printf( "match by center on %s\n", m->name );
-			return m;
+			m = list[ i ];
+			if ( m->x < minx )
+				minx = m->x;
+			if ( m->x + m->w > maxx )
+				maxx = m->x + m->w;
 		}
+		slen = ( maxx - minx ) / cnt;
+
+		return list[ cx / slen ];
+	}
+
+	// search by nearest distance to window center
+	found = NULL;
+	nearest = 0xFFFFFFFF;
+
+	for ( i = 0; i < glw_state.monitorCount; i++ )
+	{
+		m = &monitors[ i ];
 		// nearest distance
 		//dx = MIN( abs( m->x - ( x + w ) ), abs( x - ( m->x + m->w ) ) );
 		//dy = MIN( abs( m->y - ( y + h ) ), abs( y - ( m->y + m->h ) ) );

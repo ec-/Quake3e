@@ -1685,15 +1685,17 @@ NET_Sleep
 Sleeps msec or until something happens on the network
 ====================
 */
-void NET_Sleep( int msec )
+void NET_Sleep( int msec, int usec_bias )
 {
-	struct timeval timeout;
+	struct timeval tv;
+	int timeout;
 	fd_set fdr;
 	int retval;
 	SOCKET highestfd = INVALID_SOCKET;
 
-	if ( msec < 0 )
-		msec = 0;
+	timeout = msec * 1000 + usec_bias;
+	if ( timeout < 0 )
+		timeout = 0;
 
 	FD_ZERO( &fdr );
 
@@ -1716,15 +1718,15 @@ void NET_Sleep( int msec )
 	if ( highestfd == INVALID_SOCKET ) 
 	{
 		// windows ain't happy when select is called without valid FDs
-		Sleep( msec );
+		Sleep( timeout / 1000 );
 		return;
 	}
 #endif
 
-	timeout.tv_sec = msec/1000;
-	timeout.tv_usec = (msec%1000)*1000;
+	tv.tv_sec = timeout / 1000000;
+	tv.tv_usec = timeout - tv.tv_sec * 1000000;
 
-	retval = select( highestfd + 1, &fdr, NULL, NULL, &timeout );
+	retval = select( highestfd + 1, &fdr, NULL, NULL, &tv );
 
 	if ( retval > 0 ) {
 		NET_Event( &fdr );
@@ -1746,7 +1748,7 @@ void NET_Sleep( int msec )
 NET_Restart_f
 ====================
 */
-void NET_Restart_f(void)
+void NET_Restart_f( void )
 {
-	NET_Config(qtrue);
+	NET_Config( qtrue );
 }

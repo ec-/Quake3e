@@ -345,7 +345,10 @@ static void GLW_CreatePFD( PIXELFORMATDESCRIPTOR *pPFD, int colorbits, int depth
 	src.cDepthBits = depthbits;
 	src.cStencilBits = stencilbits;
 
-	// src.dwFlags |= PFD_SUPPORT_COMPOSITION;
+	if ( !glw_state.cdsFullscreen )
+	{
+		src.dwFlags |= PFD_SUPPORT_COMPOSITION;
+	}
 
 	if ( stereo )
 	{
