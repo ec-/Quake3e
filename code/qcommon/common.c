@@ -3196,7 +3196,10 @@ void Com_Init( char *commandLine ) {
 	com_maxfps = Cvar_Get( "com_maxfps", "125", 0 ); // try to force that in some light way
 	com_maxfpsUnfocused = Cvar_Get( "com_maxfpsUnfocused", "60", CVAR_ARCHIVE_ND );
 	com_maxfpsMinimized = Cvar_Get( "com_maxfpsMinimized", "30", CVAR_ARCHIVE_ND );
-	com_yieldCPU = Cvar_Get( "com_yieldCPU", "4", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( com_maxfps, "0", "1000", CV_INTEGER );
+	Cvar_CheckRange( com_maxfpsUnfocused, "0", "1000", CV_INTEGER );
+	Cvar_CheckRange( com_maxfpsMinimized, "0", "1000", CV_INTEGER );
+	com_yieldCPU = Cvar_Get( "com_yieldCPU", "2", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( com_yieldCPU, "0", "4", CV_INTEGER );
 #endif
 	com_affinityMask = Cvar_Get( "com_affinityMask", "0", CVAR_ARCHIVE_ND );
@@ -3215,7 +3218,8 @@ void Com_Init( char *commandLine ) {
 	com_cameraMode = Cvar_Get ("com_cameraMode", "0", CVAR_CHEAT);
 
 #ifndef DEDICATED	
-	com_timedemo = Cvar_Get ("timedemo", "0", CVAR_CHEAT);
+	com_timedemo = Cvar_Get("timedemo", "0", CVAR_CHEAT);
+	Cvar_CheckRange( com_timedemo, NULL, NULL, CV_BOOLEAN );
 	cl_paused = Cvar_Get ("cl_paused", "0", CVAR_ROM);
 	cl_packetdelay = Cvar_Get ("cl_packetdelay", "0", CVAR_CHEAT);
 	com_cl_running = Cvar_Get ("cl_running", "0", CVAR_ROM);
@@ -3495,11 +3499,14 @@ Com_Frame
 */
 void Com_Frame( qboolean noDelay ) {
 
-	int		msec, minMsec;
-	int		timeVal;
-	int		timeValSV;
-
 	static int lastTime = 0;
+#ifndef DEIDCATED
+	static int bias = 0;
+#endif
+
+	int	msec, minMsec;
+	int	timeVal;
+	int	timeValSV;
 
 	int	timeBeforeFirstEvents;
 	int	timeBeforeServer;
@@ -3548,10 +3555,14 @@ void Com_Frame( qboolean noDelay ) {
 	// we may want to spin here if things are going too fast
 	if ( com_dedicated->integer ) {
 		minMsec = SV_FrameMsec();
+#ifndef DEDICATED
+		bias = 0;
+#endif
 	} else {
 #ifndef DEDICATED
 		if ( noDelay ) {
 			minMsec = 0;
+			bias = 0;
 		} else {
 			if ( gw_minimized && com_maxfpsMinimized->integer > 0 )
 				minMsec = 1000 / com_maxfpsMinimized->integer;
@@ -3563,12 +3574,22 @@ void Com_Frame( qboolean noDelay ) {
 				minMsec = 1000 / com_maxfps->integer;
 			else
 				minMsec = 1;
+
+			timeVal = com_frameTime - lastTime;
+			bias += timeVal - minMsec;
+			
+			if ( bias > minMsec / 2 )
+				bias = minMsec / 2;
+
+			// Adjust minMsec if previous frame took too long to render so
+			// that framerate is stable at the requested value.
+			minMsec -= bias;
 		}
 #endif
 	}
 
 	// waiting for incoming packets
-	if ( minMsec )
+	if ( noDelay == qfalse )
 	do {
 		if ( com_sv_running->integer ) {
 			timeValSV = SV_SendQueuedPackets();
@@ -3578,19 +3599,11 @@ void Com_Frame( qboolean noDelay ) {
 		} else {
 			timeVal = Com_TimeVal( minMsec );
 		}
-		if ( com_dedicated->integer ) {
-			NET_Sleep( timeVal, 0 );
-		} else {
 #ifndef DEDICATED
-			if ( timeVal > com_yieldCPU->integer ) {
-				timeVal = com_yieldCPU->integer;
-				NET_Sleep( timeVal, -500 );
-				Com_EventLoop();
-			} else {
-				NET_Sleep( timeVal, -500 );
-			}
+		if ( !com_dedicated->integer && timeVal > com_yieldCPU->integer )
+			timeVal = com_yieldCPU->integer;
 #endif
-		}
+		NET_Sleep( timeVal, -500 );
 	} while( Com_TimeVal( minMsec ) );
 	
 	lastTime = com_frameTime;

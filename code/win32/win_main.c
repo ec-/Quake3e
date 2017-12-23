@@ -708,7 +708,7 @@ static void SetTimerResolution( void )
 	typedef HRESULT (WINAPI *pfnNtSetTimerResolution)( ULONG NewRes, BOOLEAN SetRes, PULONG CurRes );
 	pfnNtQueryTimerResolution pNtQueryTimerResolution;
 	pfnNtSetTimerResolution pNtSetTimerResolution;
-	LONG curr, minr, maxr;
+	ULONG curr, minr, maxr;
 	HMODULE dll;
 
 	dll = LoadLibrary( T( "ntdll" ) );
@@ -742,8 +742,9 @@ void Sys_Init( void ) {
 	// NT gets 18ms resolution
 	timeBeginPeriod( 1 );
 
-#ifndef DEDICATED
 	SetTimerResolution();
+
+#ifndef DEDICATED
 	Cmd_AddCommand( "in_restart", Sys_In_Restart_f );
 #endif
 
