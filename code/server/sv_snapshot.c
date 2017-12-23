@@ -679,15 +679,15 @@ SV_SendMessageToClient
 Called by SV_SendClientSnapshot and SV_SendClientGameState
 =======================
 */
-void SV_SendMessageToClient(msg_t *msg, client_t *client)
+void SV_SendMessageToClient( msg_t *msg, client_t *client )
 {
 	// record information about the message
 	client->frames[client->netchan.outgoingSequence & PACKET_MASK].messageSize = msg->cursize;
-	client->frames[client->netchan.outgoingSequence & PACKET_MASK].messageSent = svs.time;
+	client->frames[client->netchan.outgoingSequence & PACKET_MASK].messageSent = svs.msgTime;
 	client->frames[client->netchan.outgoingSequence & PACKET_MASK].messageAcked = -1;
 
 	// send the datagram
-	SV_Netchan_Transmit(client, msg);
+	SV_Netchan_Transmit( client, msg );
 }
 
 
@@ -747,6 +747,8 @@ void SV_SendClientMessages( void )
 	client_t	*c;
 	qboolean	lanRate;
 
+	svs.msgTime = Sys_Milliseconds();
+
 	// send a message to each connected client
 	for( i = 0; i < sv_maxclients->integer; i++ )
 	{
@@ -758,19 +760,16 @@ void SV_SendClientMessages( void )
 		if ( *c->downloadName )
 			continue;		// Client is downloading, don't send snapshots
 
+		// 1. Local clients get snapshots every server frame
+		// 2. Remote clients get snapshots depending from rate and requested number of updates
+
+		if ( svs.time - c->lastSnapshotTime < c->snapshotMsec * com_timescale->value )
+			continue;		// It's not time yet
+
 		if ( c->netchan.unsentFragments || c->netchan_start_queue )
 		{
 			c->rateDelayed = qtrue;
 			continue;		// Drop this snapshot if the packet queue is still full or delta compression will break
-		}
-
-		// 1. Local clients get snapshots every server frame
-		// 2. Remote clients get snapshots depending from rate and requested number of updates
-
-		if ( svs.time - c->lastSnapshotTime < c->snapshotMsec * com_timescale->value ) 
-		{
-			// It's not time yet
-			continue; 
 		}
 	
 		lanRate = c->netchan.remoteAddress.type == NA_LOOPBACK || (sv_lanForceRate->integer && c->netchan.isLANAddress);
