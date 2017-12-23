@@ -59,6 +59,8 @@ static logfile_t logfile;
 //===========================================================================
 void Log_Open( const char *filename )
 {
+	const char *ospath;
+
 	if ( !LibVarValue( "log", "0" ) ) 
 		return;
 
@@ -74,7 +76,8 @@ void Log_Open( const char *filename )
 		return;
 	} //end if
 
-	logfile.fp = Sys_FOpen( filename, "wb" );
+	ospath = FS_BuildOSPath( Cvar_VariableString( "fs_homepath" ), "", filename );
+	logfile.fp = Sys_FOpen( ospath, "wb" );
 	if ( !logfile.fp )
 	{
 		botimport.Print( PRT_ERROR, "can't open the log file %s\n", filename );

@@ -563,7 +563,7 @@ void BotInitLevelItems(void)
 	{
 		if (!ic->iteminfo[i].modelindex)
 		{
-			Log_Write("item %s has modelindex 0", ic->iteminfo[i].classname);
+			Log_Write("item %s has modelindex 0\n", ic->iteminfo[i].classname);
 		} //end if
 	} //end for
 

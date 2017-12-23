@@ -135,9 +135,6 @@ qboolean BotLibSetup(char *str)
 //===========================================================================
 int Export_BotLibSetup( void )
 {
-	const	char *homedir, *gamedir, *basedir;
-	const	char *base, *game;
-	char	logfilename[MAX_OSPATH];
 	int		errnum;
 	
 	botDeveloper = LibVarGetValue( "bot_developer" );
@@ -148,27 +145,7 @@ int Export_BotLibSetup( void )
 
 	if ( botDeveloper )
 	{
-		homedir = LibVarGetString( "homedir" );
-		basedir = LibVarGetString( "basedir" );
-		gamedir = LibVarGetString( "gamedir" );
-
-		if ( *homedir )
-			base = homedir;
-		else
-			base = basedir;
-
-		if ( *gamedir )
-			game = gamedir;
-		else
-			game = BASEGAME;
-
-		if ( *base ) {
-			Com_sprintf( logfilename, sizeof( logfilename ), "%s%c%s%cbotlib.log", base, PATH_SEP, game, PATH_SEP );
-		} else {
-			Com_sprintf( logfilename, sizeof( logfilename ), "%s%cbotlib.log", game, PATH_SEP );
-		}
-
-		Log_Open( logfilename );
+		Log_Open( "botlib.log" );
 	}
 
 	botimport.Print( PRT_MESSAGE, "------- BotLib Initialization -------\n" );
