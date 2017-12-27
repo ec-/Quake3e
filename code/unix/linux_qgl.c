@@ -112,7 +112,6 @@ char *do_dlerror( void );
 ** might be.
 ** 
 */
-
 qboolean QGL_Init( const char *dllname )
 {
 	Com_Printf( "...initializing QGL\n" );
@@ -121,7 +120,7 @@ qboolean QGL_Init( const char *dllname )
 
 	if ( glw_state.OpenGLLib == NULL )
 	{
-		glw_state.OpenGLLib = dlopen( dllname, RTLD_LAZY | RTLD_GLOBAL );
+		glw_state.OpenGLLib = dlopen( dllname, RTLD_NOW | RTLD_GLOBAL );
 	}
 
 	if ( glw_state.OpenGLLib == NULL )
@@ -135,7 +134,7 @@ qboolean QGL_Init( const char *dllname )
 			Q_strcat( fn, sizeof( fn ), "/" );
 			Q_strcat( fn, sizeof( fn ), dllname );
 
-			glw_state.OpenGLLib = dlopen( fn, RTLD_LAZY );
+			glw_state.OpenGLLib = dlopen( fn, RTLD_NOW );
 
 			if ( glw_state.OpenGLLib == NULL ) 
 			{

@@ -3500,11 +3500,11 @@ Com_Frame
 void Com_Frame( qboolean noDelay ) {
 
 	static int lastTime = 0;
-#ifndef DEIDCATED
+#ifndef DEDICATED
 	static int bias = 0;
 #endif
-
 	int	msec, minMsec;
+	int	sleepMsec;
 	int	timeVal;
 	int	timeValSV;
 
@@ -3599,11 +3599,14 @@ void Com_Frame( qboolean noDelay ) {
 		} else {
 			timeVal = Com_TimeVal( minMsec );
 		}
+		sleepMsec = timeVal;
 #ifndef DEDICATED
 		if ( !com_dedicated->integer && timeVal > com_yieldCPU->integer )
-			timeVal = com_yieldCPU->integer;
+			sleepMsec = com_yieldCPU->integer;
+		if ( timeVal > sleepMsec )
+			Com_EventLoop();
 #endif
-		NET_Sleep( timeVal, -500 );
+		NET_Sleep( sleepMsec, -500 );
 	} while( Com_TimeVal( minMsec ) );
 	
 	lastTime = com_frameTime;

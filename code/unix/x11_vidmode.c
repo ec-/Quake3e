@@ -7,9 +7,6 @@
 
 #include <X11/extensions/xf86vmode.h>
 
-static Display *dpy;
-static int scrnum;
-
 // gamma value of the X display before we start playing with it
 static XF86VidModeGamma vidmode_InitialGamma;
 
@@ -42,7 +39,7 @@ static sym_t v_list[] =
 	{ (void**)&_XF86VidModeSetGammaRamp, "XF86VidModeSetGammaRamp" }
 };
 
-qboolean VidMode_Init( Display *_dpy, int _scrnum )
+qboolean VidMode_Init( void )
 {
 	int ver_major = 0;
 	int ver_minor = 0;
@@ -51,6 +48,9 @@ qboolean VidMode_Init( Display *_dpy, int _scrnum )
 
 	glw_state.vidmode_ext = qfalse;
 	glw_state.vidmode_gamma = qfalse;
+
+	if ( !dpy )
+		return qfalse;
 
 	if ( v_lib == NULL )
 	{
@@ -75,9 +75,6 @@ qboolean VidMode_Init( Display *_dpy, int _scrnum )
 			goto __fail;
 		}
 	}
-
-	dpy = _dpy;
-	scrnum = _scrnum;
 	
 	if ( !_XF86VidModeQueryExtension( dpy, &event_base, &error_base ) || !_XF86VidModeQueryVersion( dpy, &ver_major, &ver_minor ) )
 	{
@@ -246,7 +243,10 @@ void VidMode_RestoreMode( void )
 
 	if ( vidmodes )
 	{
-		_XF86VidModeSwitchToMode( dpy, scrnum, vidmodes[ 0 ] );
+		if ( dpy )
+		{
+			_XF86VidModeSwitchToMode( dpy, scrnum, vidmodes[ 0 ] );
+		}
 		free( vidmodes );
 		vidmodes = NULL;
 	}

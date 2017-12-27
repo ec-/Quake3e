@@ -8,8 +8,6 @@
 #include <X11/extensions/Xrandr.h>
 #include <X11/extensions/Xrender.h>
 
-static Display *dpy;
-
 #define MAX_MONITORS 16
 
 typedef struct
@@ -241,7 +239,7 @@ void RandR_RestoreMode( void )
 	XRROutputInfo *output_info;
 	XRRCrtcInfo *crtc_info;
 	
-	if ( !glw_state.randr_ext || !glw_state.randr_active )
+	if ( !glw_state.randr_ext || !glw_state.randr_active || !dpy )
 		return;
 
 	glw_state.randr_active = qfalse;
@@ -501,7 +499,7 @@ void RandR_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 }
 
 
-qboolean RandR_Init( Display *_dpy, int x, int y, int w, int h )
+qboolean RandR_Init( int x, int y, int w, int h )
 {
 	int event_base, error_base;
 	int ver_major = 1, ver_minor = 2;
@@ -539,8 +537,6 @@ qboolean RandR_Init( Display *_dpy, int x, int y, int w, int h )
 			goto __fail;
 		}
 	}
-
-	dpy = _dpy;
 
 	if ( !_XRRQueryExtension( dpy, &event_base, &error_base ) || !_XRRQueryVersion( dpy, &ver_major, &ver_minor ) )
 	{

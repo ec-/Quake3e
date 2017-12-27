@@ -7,8 +7,6 @@
 
 #include <X11/extensions/Xxf86dga.h>
 
-static Display *dpy;
-
 static void *d_lib = NULL;
 
 Bool (*_XF86DGAQueryVersion)( Display *dpy, int *majorVersion, int *minorVersion );

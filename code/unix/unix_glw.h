@@ -67,6 +67,8 @@ typedef struct
 } glwstate_t;
 
 extern glwstate_t glw_state;
+extern Display *dpy;
+extern int scrnum;
 
 qboolean BuildGammaRampTable( unsigned char *red, unsigned char *green, unsigned char *blue, int gammaRampSize, unsigned short table[3][4096] );
 
@@ -76,7 +78,7 @@ void DGA_Mouse( qboolean enable );
 void DGA_Done( void );
 
 // VidMode extension
-qboolean VidMode_Init( Display *_dpy, int _scrnum );
+qboolean VidMode_Init( void );
 void VidMode_Done( void );
 qboolean VidMode_SetMode( int *width, int *height, int *rate );
 void VidMode_RestoreMode( void );
@@ -84,7 +86,7 @@ void VidMode_SetGamma( unsigned char red[256], unsigned char green[256], unsigne
 void VidMode_RestoreGamma( void );
 
 // XRandR extension
-qboolean RandR_Init( Display *_dpy, int x, int y, int w, int h );
+qboolean RandR_Init( int x, int y, int w, int h );
 void RandR_Done( void );
 void RandR_UpdateMonitor( int x, int y, int w, int h );
 qboolean RandR_SetMode( int *width, int *height, int *rate );
