@@ -4497,15 +4497,16 @@ const char *FS_GetHomePath( void )
 }
 
 
-const char *FS_GetGamePath( void ) 
+const char *FS_GetGamePath( void )
 {
-	static char buffer[MAX_CVAR_VALUE_STRING];
+	static char buffer[ MAX_OSPATH + MAX_CVAR_VALUE_STRING + 1 ];
 	if ( fs_gamedirvar && fs_gamedirvar->string[0] ) {
 		Com_sprintf( buffer, sizeof( buffer ), "%s%c%s", FS_GetHomePath(), 
 			PATH_SEP, fs_gamedirvar->string );
 		return buffer;
 	} else {
-		return "";
+		buffer[0] = '\0';
+		return buffer;
 	}
 }
 

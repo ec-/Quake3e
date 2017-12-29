@@ -1002,7 +1002,7 @@ void CL_ShutdownAll( void ) {
 
 	// shutdown the renderer
 	if ( re.Shutdown ) {
-		re.Shutdown( qfalse );		// don't destroy window or context
+		re.Shutdown( 0 ); // don't destroy window or context
 	}
 
 	cls.uiStarted = qfalse;
@@ -1744,7 +1744,7 @@ static void CL_Vid_Restart( void ) {
 	// shutdown sound system
 	S_Shutdown();
 	// shutdown the renderer and clear the renderer interface
-	CL_ShutdownRef();
+	CL_ShutdownRef( qfalse );
 	// client is no longer pure untill new checksums are sent
 	CL_ResetPureClientAtServer();
 	// clear pak references
@@ -3074,9 +3074,12 @@ static __attribute__ ((format (printf, 2, 3))) void QDECL CL_RefPrintf( int prin
 CL_ShutdownRef
 ============
 */
-void CL_ShutdownRef( void ) {
+void CL_ShutdownRef( qboolean unloadDLL ) {
 	if ( re.Shutdown ) {
-		re.Shutdown( qtrue );
+		if ( unloadDLL )
+			re.Shutdown( 2 );
+		else
+			re.Shutdown( 1 );
 	}
 
 	Com_Memset( &re, 0, sizeof( re ) );
@@ -3762,7 +3765,7 @@ void CL_Shutdown( const char *finalmsg, qboolean quit ) {
 
 	S_Shutdown();
 	
-	CL_ShutdownRef();
+	CL_ShutdownRef( quit );
 	
 	Con_Shutdown();
 

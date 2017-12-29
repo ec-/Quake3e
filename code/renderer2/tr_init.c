@@ -1383,7 +1383,7 @@ void R_Init( void ) {
 RE_Shutdown
 ===============
 */
-void RE_Shutdown( qboolean destroyWindow ) {
+void RE_Shutdown( int destroyWindow ) {
 
 	ri.Printf( PRINT_ALL, "RE_Shutdown( %i )\n", destroyWindow );
 
@@ -1414,7 +1414,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 
 	// shut down platform specific OpenGL stuff
 	if ( destroyWindow ) {
-		ri.GLimp_Shutdown();
+		ri.GLimp_Shutdown( destroyWindow == 2 ? qtrue: qfalse );
 
 		Com_Memset( &glConfig, 0, sizeof( glConfig ) );
 		Com_Memset( &glState, 0, sizeof( glState ) );

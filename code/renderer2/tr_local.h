@@ -1891,7 +1891,7 @@ void		RE_LoadWorldMap( const char *mapname );
 void		RE_SetWorldVisData( const byte *vis );
 qhandle_t	RE_RegisterModel( const char *name );
 qhandle_t	RE_RegisterSkin( const char *name );
-void		RE_Shutdown( qboolean destroyWindow );
+void		RE_Shutdown( int destroyWindow );
 
 qboolean	R_GetEntityToken( char *buffer, int size );
 

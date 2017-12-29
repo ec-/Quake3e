@@ -50,10 +50,13 @@ QGL_Swp_PROCS;
 **
 ** Unloads the specified DLL then nulls out all the proc pointers.
 */
-void QGL_Shutdown( void )
+void QGL_Shutdown( qboolean unloadDLL )
 {
-	if ( glw_state.OpenGLLib )
+	Com_Printf( "...shutting down QGL\n" );
+
+	if ( glw_state.OpenGLLib && unloadDLL )
 	{
+		Com_Printf( "...unloading OpenGL DLL\n" );
 		// 25/09/05 Tim Angus <tim@ngus.net>
 		// Certain combinations of hardware and software, specifically
 		// Linux/SMP/Nvidia/agpgart (OK, OK. MY combination of hardware and
@@ -116,42 +119,46 @@ qboolean QGL_Init( const char *dllname )
 {
 	Com_Printf( "...initializing QGL\n" );
 
-	Com_Printf( "...loading '%s' : ", dllname );
-
 	if ( glw_state.OpenGLLib == NULL )
 	{
+		Com_Printf( "...loading '%s' : ", dllname );
+
 		glw_state.OpenGLLib = dlopen( dllname, RTLD_NOW | RTLD_GLOBAL );
-	}
 
-	if ( glw_state.OpenGLLib == NULL )
-	{
-		// if we are not setuid, try current directory
-		if ( dllname != NULL )
+		if ( glw_state.OpenGLLib == NULL )
 		{
+#if 0
 			char fn[1024];
 
-			getcwd( fn, sizeof( fn ) );
-			Q_strcat( fn, sizeof( fn ), "/" );
-			Q_strcat( fn, sizeof( fn ), dllname );
+			Com_Printf( "\n...loading '%s' : ", dllname );
+			// if we are not setuid, try current directory
+			if ( dllname != NULL )
+			{
+				if ( getcwd( fn, sizeof( fn ) ) )
+				{
+					Q_strcat( fn, sizeof( fn ), "/" );
+					Q_strcat( fn, sizeof( fn ), dllname );
+					glw_state.OpenGLLib = dlopen( fn, RTLD_NOW );
+				}
 
-			glw_state.OpenGLLib = dlopen( fn, RTLD_NOW );
-
-			if ( glw_state.OpenGLLib == NULL ) 
+				if ( glw_state.OpenGLLib == NULL )
+				{
+					Com_Printf( "failed\n" );
+					Com_Printf( "QGL_Init: Can't load %s from /etc/ld.so.conf or current dir: %s\n", dllname, do_dlerror() );
+					return qfalse;
+				}
+			}
+			else
+#endif
 			{
 				Com_Printf( "failed\n" );
-				Com_Printf( "QGL_Init: Can't load %s from /etc/ld.so.conf or current dir: %s\n", dllname, do_dlerror() );
+				Com_Printf( "QGL_Init: Can't load %s from /etc/ld.so.conf: %s\n", dllname, do_dlerror() );
 				return qfalse;
 			}
 		}
-		else
-		{
-			Com_Printf( "failed\n" );
-			Com_Printf( "QGL_Init: Can't load %s from /etc/ld.so.conf: %s\n", dllname, do_dlerror() );
-			return qfalse;
-		}
-	}
 
-	Com_Printf( "succeeded\n" );
+		Com_Printf( "succeeded\n" );
+	}
 
 	glErrorCount = 0;
 

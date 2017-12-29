@@ -47,17 +47,16 @@ QGL_Swp_PROCS;
 ** Unloads the specified DLL then nulls out all the proc pointers.  This
 ** is only called during a hard shutdown of the OGL subsystem (e.g. vid_restart).
 */
-void QGL_Shutdown( void )
+void QGL_Shutdown( qboolean unloadDLL )
 {
 	Com_Printf( "...shutting down QGL\n" );
 
-	if ( glw_state.OpenGLLib )
+	if ( glw_state.OpenGLLib && unloadDLL )
 	{
 		Com_Printf( "...unloading OpenGL DLL\n" );
 		Sys_UnloadLibrary( glw_state.OpenGLLib );
+		glw_state.OpenGLLib = NULL;
 	}
-
-	glw_state.OpenGLLib = NULL;
 	
 #define GLE( ret, name, ... ) q##name = NULL;
 	QGL_Win32_PROCS;
@@ -104,31 +103,32 @@ qboolean QGL_Init( const char *dllname )
 #endif
 #endif
 
-	assert( glw_state.OpenGLLib == 0 );
-
 	Com_Printf( "...initializing QGL\n" );
-
-	// NOTE: this assumes that 'dllname' is lower case (and it should be)!
-#if 0
-	if ( dllname[0] != '!' )
-		Com_sprintf( libName, sizeof( libName ), "%s\\%s", systemDir, dllname );
-	else
-		Q_strncpyz( libName, dllname+1, sizeof( libName ) );
-
-	Com_Printf( "...loading '%s.dll' : ", libName );
-	glw_state.OpenGLLib = Sys_LoadLibrary( libName );
-#else
-	Com_Printf( "...loading '%s.dll' : ", dllname );
-	glw_state.OpenGLLib = Sys_LoadLibrary( va("%s.dll", dllname) );
-#endif
 
 	if ( glw_state.OpenGLLib == NULL )
 	{
-		Com_Printf( "failed\n" );
-		return qfalse;
-	}
+		// NOTE: this assumes that 'dllname' is lower case (and it should be)!
+#if 0
+		if ( dllname[0] != '!' )
+			Com_sprintf( libName, sizeof( libName ), "%s\\%s", systemDir, dllname );
+		else
+			Q_strncpyz( libName, dllname+1, sizeof( libName ) );
 
-	Com_Printf( "succeeded\n" );
+		Com_Printf( "...loading '%s.dll' : ", libName );
+		glw_state.OpenGLLib = Sys_LoadLibrary( libName );
+#else
+		Com_Printf( "...loading '%s.dll' : ", dllname );
+		glw_state.OpenGLLib = Sys_LoadLibrary( va( "%s.dll", dllname ) );
+#endif
+
+		if ( glw_state.OpenGLLib == NULL )
+		{
+			Com_Printf( "failed\n" );
+			return qfalse;
+		}
+
+		Com_Printf( "succeeded\n" );
+	}
 
 	Sys_LoadFunctionErrors(); // reset error count
 

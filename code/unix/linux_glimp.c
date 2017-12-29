@@ -992,7 +992,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 ** for the window.  The state structure is also nulled out.
 **
 */
-void GLimp_Shutdown( void )
+void GLimp_Shutdown( qboolean unloadDLL )
 {
 	IN_DeactivateMouse();
 
@@ -1044,7 +1044,7 @@ void GLimp_Shutdown( void )
 		glw_state.cdsFullscreen = qfalse;
 	}
 
-	QGL_Shutdown();
+	QGL_Shutdown( unloadDLL );
 }
 
 
@@ -1472,7 +1472,7 @@ static qboolean GLW_LoadOpenGL( const char *name )
 	}
 	fail:
 
-	QGL_Shutdown();
+	QGL_Shutdown( qtrue );
 
 	return qfalse;
 }

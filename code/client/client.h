@@ -460,7 +460,7 @@ void CL_GetPingInfo( int n, char *buf, int buflen );
 void CL_ClearPing( int n );
 int CL_GetPingQueueCount( void );
 
-void CL_ShutdownRef( void );
+void CL_ShutdownRef( qboolean unloadDLL );
 void CL_InitRef( void );
 int CL_ServerStatus( char *serverAddress, char *serverStatusString, int maxLen );
 
@@ -627,7 +627,7 @@ qboolean CL_VideoRecording( void );
 
 // platform-specific
 void	GLimp_Init( glconfig_t *config );
-void	GLimp_Shutdown( void );
+void	GLimp_Shutdown( qboolean unloadDLL );
 void	GLimp_EndFrame( void );
 
 void	GLimp_InitGamma( glconfig_t *config );

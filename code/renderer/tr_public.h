@@ -33,7 +33,7 @@ typedef struct {
 	// called before the library is unloaded
 	// if the system is just reconfiguring, pass destroyWindow = qfalse,
 	// which will keep the screen from flashing to the desktop.
-	void	(*Shutdown)( qboolean destroyWindow );
+	void	(*Shutdown)( int destroyWindow );
 
 	// All data that will be used in a level should be
 	// registered before rendering any frames to prevent disk hits,
@@ -188,7 +188,7 @@ typedef struct {
 
 	// platform-dependent functions
 	void	(*GLimp_Init)( glconfig_t *config );
-	void	(*GLimp_Shutdown)( void );
+	void	(*GLimp_Shutdown)( qboolean unloadDLL );
 	void	(*GLimp_EndFrame)( void );
 	void	(*GLimp_InitGamma)( glconfig_t *config );
 	void	(*GLimp_SetGamma)( unsigned char red[256], unsigned char green[256], unsigned char blue[256] );

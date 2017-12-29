@@ -1536,7 +1536,7 @@ void R_Init( void ) {
 RE_Shutdown
 ===============
 */
-static void RE_Shutdown( qboolean destroyWindow ) {
+static void RE_Shutdown( int destroyWindow ) {
 
 	ri.Printf( PRINT_ALL, "RE_Shutdown( %i )\n", destroyWindow );
 
@@ -1564,7 +1564,7 @@ static void RE_Shutdown( qboolean destroyWindow ) {
 
 		VBO_Cleanup();
 
-		ri.GLimp_Shutdown();
+		ri.GLimp_Shutdown( destroyWindow == 2 ? qtrue: qfalse );
 
 #define GLE( ret, name, ... ) q##name = NULL;
 		QGL_Core_PROCS;
