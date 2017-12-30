@@ -82,6 +82,7 @@ cvar_t	*cl_lanForcePackets;
 cvar_t	*cl_guidServerUniq;
 
 cvar_t	*cl_dlURL;
+cvar_t	*cl_dlDirectory;
 
 // common cvars for GLimp modules
 cvar_t *r_allowSoftwareGL;		// don't abort out if the pixelformat claims software
@@ -3541,6 +3542,8 @@ CL_Init
 ====================
 */
 void CL_Init( void ) {
+	const char *s;
+
 	Com_Printf( "----- Client Initialization -----\n" );
 
 	Con_Init();
@@ -3654,6 +3657,13 @@ void CL_Init( void ) {
 	cl_guidServerUniq = Cvar_Get( "cl_guidServerUniq", "1", CVAR_ARCHIVE_ND );
 
 	cl_dlURL = Cvar_Get( "cl_dlURL", "http://ws.q3df.org/getpk3bymapname.php/%1", CVAR_ARCHIVE_ND );
+	
+	cl_dlDirectory = Cvar_Get( "cl_dlDirectory", "0", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( cl_dlDirectory, "0", "1", CV_INTEGER );
+	s = va( "Save downloads initiated by \\dlmap and \\download commands in:\n"
+		" 0 - current game directory\n"
+		" 1 - fs_basegame (%s) directory\n", FS_GetBaseGameDir() );
+	Cvar_SetDescription( cl_dlDirectory, s );
 
 	// userinfo
 	Cvar_Get ("name", "UnnamedPlayer", CVAR_USERINFO | CVAR_ARCHIVE_ND );
@@ -4634,23 +4644,23 @@ static void CL_ServerStatus_f( void ) {
 CL_ShowIP_f
 ==================
 */
-static void CL_ShowIP_f(void) {
+static void CL_ShowIP_f( void ) {
 	Sys_ShowIP();
 }
 
 
 #ifdef USE_CURL
 
-qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownload ) 
+qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownload )
 {
 	char url[MAX_CVAR_VALUE_STRING];
 	char name[MAX_CVAR_VALUE_STRING];
 	const char *s;
 	qboolean headerCheck;
 
-	if ( !cl_dlURL->string[0] ) 
+	if ( !cl_dlURL->string[0] )
 	{
-		Com_Printf( "cl_dlURL cvar is not set\n" );
+		Com_Printf( S_COLOR_YELLOW "cl_dlURL cvar is not set\n" );
 		return qfalse;
 	}
 
@@ -4665,13 +4675,13 @@ qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownloa
 	if ( s )
 		pakname = s+1;
 
-	if ( !Com_DL_ValidFileName( pakname ) ) 
+	if ( !Com_DL_ValidFileName( pakname ) )
 	{
-		Com_Printf( "invalid file name: '%s'.\n", pakname );
+		Com_Printf( S_COLOR_YELLOW "invalid file name: '%s'.\n", pakname );
 		return qfalse;
 	}
 
-	if ( !Q_stricmp( cmd, "dlmap" ) ) 
+	if ( !Q_stricmp( cmd, "dlmap" ) )
 	{
 		Q_strncpyz( name, pakname, sizeof( name ) );
 		FS_StripExt( name, ".pk3" );
@@ -4683,16 +4693,17 @@ qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownloa
 		}
 	}
 
-	strcpy( url, cl_dlURL->string );
- 
-	if ( !Q_replace( "%1", pakname, url, sizeof( url ) ) ) 
+
+	Q_strncpyz( url, cl_dlURL->string, sizeof( url ) );
+
+	if ( !Q_replace( "%1", pakname, url, sizeof( url ) ) )
 	{
 		if ( url[strlen(url)] != '/' )
 			Q_strcat( url, sizeof( url ), "/" );
 		Q_strcat( url, sizeof( url ), pakname );
 		headerCheck = qfalse;
 	}
-	else 
+	else
 	{
 		headerCheck = qtrue;
 	}
