@@ -2874,15 +2874,10 @@ shader_t *R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImag
 			  GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA;
 	} else if ( shader.lightmapIndex == LIGHTMAP_WHITEIMAGE ) {
 		// fullbright level
-		stages[0].bundle[0].image[0] = tr.whiteImage;
 		stages[0].active = qtrue;
+		stages[0].bundle[0].image[0] = image;
 		stages[0].rgbGen = CGEN_IDENTITY_LIGHTING;
 		stages[0].stateBits = GLS_DEFAULT;
-
-		stages[1].bundle[0].image[0] = image;
-		stages[1].active = qtrue;
-		stages[1].rgbGen = CGEN_IDENTITY;
-		stages[1].stateBits |= GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO;
 	} else {
 		// two pass lightmap
 		stages[0].bundle[0].image[0] = tr.lightmaps[shader.lightmapIndex];
