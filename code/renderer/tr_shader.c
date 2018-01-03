@@ -881,7 +881,7 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 			}
 		}
 		//
-		// alphaGen 
+		// alphaGen
 		//
 		else if ( !Q_stricmp( token, "alphaGen" ) )
 		{
@@ -950,7 +950,7 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 		//
 		// tcGen <function>
 		//
-		else if ( !Q_stricmp(token, "texgen") || !Q_stricmp( token, "tcGen" ) ) 
+		else if ( !Q_stricmp(token, "texgen") || !Q_stricmp( token, "tcGen" ) )
 		{
 			token = COM_ParseExt( text, qfalse );
 			if ( token[0] == 0 )
@@ -1340,15 +1340,14 @@ void ParseSort( const char **text ) {
 }
 
 
-
 // this table is also present in q3map
 
 typedef struct {
-	char	*name;
-	int		clearSolid, surfaceFlags, contents;
+	const char *name;
+	int clearSolid, surfaceFlags, contents;
 } infoParm_t;
 
-infoParm_t	infoParms[] = {
+static const infoParm_t infoParms[] = {
 	// server relevant contents
 	{"water",		1,	0,	CONTENTS_WATER },
 	{"slime",		1,	0,	CONTENTS_SLIME },		// mildly damaging
@@ -1732,14 +1731,14 @@ static qboolean ParseShader( const char **text )
 			continue;
 		}
 		// fogParms
-		else if ( !Q_stricmp( token, "fogParms" ) ) 
+		else if ( !Q_stricmp( token, "fogParms" ) )
 		{
 			if ( !ParseVector( text, 3, shader.fogParms.color ) ) {
 				return qfalse;
 			}
 
 			token = COM_ParseExt( text, qfalse );
-			if ( !token[0] ) 
+			if ( !token[0] )
 			{
 				ri.Printf( PRINT_WARNING, "WARNING: missing parm for 'fogParms' keyword in shader '%s'\n", shader.name );
 				continue;
@@ -1767,13 +1766,13 @@ static qboolean ParseShader( const char **text )
 			continue;
 		}
 		// light <value> determines flaring in q3map, not needed here
-		else if ( !Q_stricmp(token, "light") ) 
+		else if ( !Q_stricmp(token, "light") )
 		{
 			COM_ParseExt( text, qfalse );
 			continue;
 		}
 		// cull <face>
-		else if ( !Q_stricmp( token, "cull") ) 
+		else if ( !Q_stricmp( token, "cull") )
 		{
 			token = COM_ParseExt( text, qfalse );
 			if ( token[0] == 0 )
@@ -2356,7 +2355,7 @@ void FindLightingStages( shader_t *sh )
 VertexLightingCollapse
 
 If vertex lighting is enabled, only render a single
-pass, trying to guess which is the correct one to best aproximate
+pass, trying to guess which is the correct one to best approximate
 what it is supposed to look like.
 =================
 */
@@ -2737,18 +2736,18 @@ be defined for every single image used in the game, three default
 shader behaviors can be auto-created for any image:
 
 If lightmapIndex == LIGHTMAP_NONE, then the image will have
-dynamic diffuse lighting applied to it, as apropriate for most
+dynamic diffuse lighting applied to it, as appropriate for most
 entity skin surfaces.
 
 If lightmapIndex == LIGHTMAP_2D, then the image will be used
 for 2D rendering unless an explicit shader is found
 
 If lightmapIndex == LIGHTMAP_BY_VERTEX, then the image will use
-the vertex rgba modulate values, as apropriate for misc_model
+the vertex rgba modulate values, as appropriate for misc_model
 pre-lit surfaces.
 
 Other lightmapIndex values will have a lightmap stage created
-and src*dest blending applied with the texture, as apropriate for
+and src*dest blending applied with the texture, as appropriate for
 most world construction surfaces.
 
 ===============
@@ -2760,7 +2759,7 @@ shader_t *R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImag
 	image_t		*image;
 	shader_t	*sh;
 
-	if ( name[0] == 0 ) {
+	if ( name[0] == '\0' ) {
 		return tr.defaultShader;
 	}
 
@@ -2787,7 +2786,7 @@ shader_t *R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImag
 		// have to check all default shaders otherwise for every call to R_FindShader
 		// with that same strippedName a new default shader is created.
 		if ( (sh->lightmapIndex == lightmapIndex || sh->defaultShader) &&
-		     !Q_stricmp(sh->name, strippedName)) {
+			!Q_stricmp(sh->name, strippedName)) {
 			// match found
 			return sh;
 		}
@@ -2870,8 +2869,8 @@ shader_t *R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImag
 		stages[0].rgbGen = CGEN_VERTEX;
 		stages[0].alphaGen = AGEN_VERTEX;
 		stages[0].stateBits = GLS_DEPTHTEST_DISABLE |
-			  GLS_SRCBLEND_SRC_ALPHA |
-			  GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA;
+			GLS_SRCBLEND_SRC_ALPHA |
+			GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA;
 	} else if ( shader.lightmapIndex == LIGHTMAP_WHITEIMAGE ) {
 		// fullbright level
 		stages[0].active = qtrue;
@@ -2884,7 +2883,7 @@ shader_t *R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImag
 		stages[0].bundle[0].isLightmap = qtrue;
 		stages[0].active = qtrue;
 		stages[0].rgbGen = CGEN_IDENTITY;	// lightmaps are scaled on creation
-													// for identitylight
+											// for identitylight
 		stages[0].stateBits = GLS_DEFAULT;
 
 		stages[1].bundle[0].image[0] = image;
@@ -2957,8 +2956,8 @@ qhandle_t RE_RegisterShaderFromImage(const char *name, int lightmapIndex, image_
 		stages[0].rgbGen = CGEN_VERTEX;
 		stages[0].alphaGen = AGEN_VERTEX;
 		stages[0].stateBits = GLS_DEPTHTEST_DISABLE |
-			  GLS_SRCBLEND_SRC_ALPHA |
-			  GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA;
+			GLS_SRCBLEND_SRC_ALPHA |
+			GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA;
 	} else if ( shader.lightmapIndex == LIGHTMAP_WHITEIMAGE ) {
 		// fullbright level
 		stages[0].bundle[0].image[0] = tr.whiteImage;
@@ -3171,9 +3170,9 @@ void	R_ShaderList_f (void) {
 		}
 
 		if ( shader->defaultShader ) {
-			ri.Printf (PRINT_ALL,  ": %s (DEFAULTED)\n", shader->name);
+			ri.Printf (PRINT_ALL, ": %s (DEFAULTED)\n", shader->name);
 		} else {
-			ri.Printf (PRINT_ALL,  ": %s\n", shader->name);
+			ri.Printf (PRINT_ALL, ": %s\n", shader->name);
 		}
 		count++;
 	}
@@ -3206,9 +3205,9 @@ static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char
 			ri.Error( ERR_DROP, "Couldn't load %s", filename );
 		
 		// comment some buggy shaders from pak0
-		if ( summand == 35910 && strcmp( shaderFiles[i], "sky.shader" ) == 0) 
+		if ( summand == 35910 && strcmp( shaderFiles[i], "sky.shader" ) == 0)
 		{
-			if ( memcmp( buffers[i] + 0x3D3E, "\tcloudparms ", 12 ) == 0 ) 
+			if ( memcmp( buffers[i] + 0x3D3E, "\tcloudparms ", 12 ) == 0 )
 			{
 				memcpy( buffers[i] + 0x27D7, "/*", 2 );
 				memcpy( buffers[i] + 0x2A93, "*/", 2 );
