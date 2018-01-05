@@ -116,8 +116,8 @@ qboolean	com_fullyInitialized = qfalse;
 qboolean	com_gameRestarting = qfalse;
 
 // renderer window states
+qboolean	gw_minimized = qfalse; // this will be always true for dedicated servers
 #ifndef DEDICATED
-qboolean	gw_minimized = qfalse;
 qboolean	gw_active = qtrue;
 #endif
 
@@ -3242,6 +3242,9 @@ void Com_Init( char *commandLine ) {
 		if ( !com_viewlog->integer ) {
 			Cvar_Set( "viewlog", "1" );
 		}
+		gw_minimized = qtrue;
+	} else {
+		gw_minimized = qfalse;
 	}
 
 	if ( com_developer && com_developer->integer ) {
@@ -3601,7 +3604,7 @@ void Com_Frame( qboolean noDelay ) {
 		}
 		sleepMsec = timeVal;
 #ifndef DEDICATED
-		if ( !com_dedicated->integer && timeVal > com_yieldCPU->integer )
+		if ( !gw_minimized && timeVal > com_yieldCPU->integer )
 			sleepMsec = com_yieldCPU->integer;
 		if ( timeVal > sleepMsec )
 			Com_EventLoop();
@@ -3644,6 +3647,7 @@ void Com_Frame( qboolean noDelay ) {
 #endif
 			Sys_ShowConsole( com_viewlog->integer, qfalse );
 #ifndef DEDICATED
+			gw_minimized = qfalse;
 			CL_StartHunkUsers();
 #endif
 		} else {
@@ -3653,6 +3657,7 @@ void Com_Frame( qboolean noDelay ) {
 #endif
 			Sys_ShowConsole( 1, qtrue );
 			SV_AddDedicatedCommands();
+			gw_minimized = qtrue;
 		}
 	}
 

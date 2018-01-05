@@ -603,7 +603,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		// focus/activate messages may come in different order
 		// so process final result a bit later when we have all data set
 		if ( uTimerID_1 == 0 )
-			uTimerID_1 = SetTimer( g_wv.hWnd, TIMER_ID_1, 50, NULL );
+			uTimerID_1 = SetTimer( g_wv.hWnd, TIMER_ID_1, 100, NULL );
 
 		break;
 	
@@ -612,7 +612,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		fActive = ( uMsg == WM_SETFOCUS );
 
 		if ( uTimerID_1 == 0 )
-			uTimerID_1 = SetTimer( g_wv.hWnd, TIMER_ID_1, 50, NULL );
+			uTimerID_1 = SetTimer( g_wv.hWnd, TIMER_ID_1, 100, NULL );
 
 		Win_AddHotkey();
 
@@ -698,6 +698,10 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 		// delayed window minimize/deactivation
 		if ( wParam == TIMER_ID_1 && uTimerID_1 != 0 ) {
+			// we may not receive minimized flag with WM_ACTIVE
+			// with another opened topmost window app like TaskManager
+			if ( IsIconic( hWnd ) )
+				gw_minimized = qtrue;
 			if ( fMinimized ) {
 				GLW_RestoreGamma();
 				SetDesktopDisplaySettings();
