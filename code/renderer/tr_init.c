@@ -918,6 +918,11 @@ void R_ScreenShot_f( void ) {
 	int			typeMask;
 	const char	*ext;
 
+	if ( ri.CL_IsMinimized() && !RE_CanMinimize() ) {
+		ri.Printf( PRINT_WARNING, "WARNING: unable to take screenshot when minimized because FBO is not available/enabled.\n" );
+		return;
+	}
+
 	if ( !strcmp( ri.Cmd_Argv(1), "levelshot" ) ) {
 		R_LevelShot();
 		return;

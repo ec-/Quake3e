@@ -2912,12 +2912,12 @@ void CL_Frame( int msec ) {
 	}
 
 #ifdef USE_CURL
-	if(clc.downloadCURLM) {
+	if ( clc.downloadCURLM ) {
 		CL_cURL_PerformDownload();
 		// we can't process frames normally when in disconnected
 		// download mode since the ui vm expects cls.state to be
 		// CA_CONNECTED
-		if(clc.cURLDisconnected) {
+		if ( clc.cURLDisconnected ) {
 			cls.realFrametime = msec;
 			cls.frametime = msec;
 			cls.realtime += cls.frametime;
@@ -3159,8 +3159,23 @@ void *CL_RefMalloc( int size ) {
 }
 
 
-int CL_ScaledMilliseconds(void) {
+/*
+============
+CL_ScaledMilliseconds
+============
+*/
+int CL_ScaledMilliseconds( void ) {
 	return Sys_Milliseconds()*com_timescale->value;
+}
+
+
+/*
+============
+CL_IsMinimized
+============
+*/
+static qboolean CL_IsMininized( void ) {
+	return gw_minimized;
 }
 
 
@@ -3226,6 +3241,8 @@ void CL_InitRef( void ) {
 	ri.CIN_RunCinematic = CIN_RunCinematic;
 
 	ri.CL_WriteAVIVideoFrame = CL_WriteAVIVideoFrame;
+	ri.CL_IsMinimized = CL_IsMininized;
+
 	ri.Sys_SetClipboardBitmap = Sys_SetClipboardBitmap;
 	ri.Sys_LowPhysicalMemory = Sys_LowPhysicalMemory;
 	ri.Com_RealTime = Com_RealTime;
