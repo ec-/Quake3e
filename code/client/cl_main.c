@@ -1082,6 +1082,7 @@ void CL_MapLoading( void ) {
 		Com_Memset( clc.serverMessage, 0, sizeof( clc.serverMessage ) );
 		Com_Memset( &cl.gameState, 0, sizeof( cl.gameState ) );
 		clc.lastPacketSentTime = -9999;
+		cls.framecount++;
 		SCR_UpdateScreen();
 	} else {
 		// clear nextmap so the cinematic shutdown doesn't execute it
@@ -1090,15 +1091,11 @@ void CL_MapLoading( void ) {
 		Q_strncpyz( cls.servername, "localhost", sizeof(cls.servername) );
 		cls.state = CA_CHALLENGING;		// so the connect screen is drawn
 		Key_SetCatcher( 0 );
-		/* Execute next line twice, so that the connect image gets written into both, front- and
-		 * back buffer. This is necessary to prevent a flashing screen on map startup, as the UI gets
-		 * killed for a short time and cannot update the screen. */
-		SCR_UpdateScreen();
+		cls.framecount++;
 		SCR_UpdateScreen();
 		clc.connectTime = -RETRANSMIT_TIMEOUT;
 		NET_StringToAdr( cls.servername, &clc.serverAddress, NA_UNSPEC );
 		// we don't need a challenge on the localhost
-
 		CL_CheckForResend();
 	}
 }
@@ -1224,6 +1221,7 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	// Stop recording any video
 	if ( CL_VideoRecording() ) {
 		// Finish rendering current frame
+		cls.framecount++;
 		SCR_UpdateScreen();
 		CL_CloseAVI();
 	}
@@ -2921,10 +2919,10 @@ void CL_Frame( int msec ) {
 			cls.realFrametime = msec;
 			cls.frametime = msec;
 			cls.realtime += cls.frametime;
+			cls.framecount++;
 			SCR_UpdateScreen();
 			S_Update();
 			Con_RunConsole();
-			cls.framecount++;
 			return;
 		}
 	}
@@ -3028,6 +3026,7 @@ void CL_Frame( int msec ) {
 	CL_SetCGameTime();
 
 	// update the screen
+	cls.framecount++;
 	SCR_UpdateScreen();
 
 	// update audio
@@ -3037,8 +3036,6 @@ void CL_Frame( int msec ) {
 	SCR_RunCinematic();
 
 	Con_RunConsole();
-
-	cls.framecount++;
 }
 
 

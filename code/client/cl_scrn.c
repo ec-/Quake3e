@@ -576,6 +576,7 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 	}
 }
 
+
 /*
 ==================
 SCR_UpdateScreen
@@ -585,11 +586,23 @@ text to the screen.
 ==================
 */
 void SCR_UpdateScreen( void ) {
-	static int	recursive;
+	static int recursive;
+	static int framecount;
+	static int next_frametime;
 
-	if ( !scr_initialized ) {
-		return;				// not initialized yet
+	if ( !scr_initialized )
+		return; // not initialized yet
+
+	if ( framecount == cls.framecount ) {
+		int ms = Sys_Milliseconds();
+		if ( ms < next_frametime )
+			return;
+		next_frametime = ms + 16; // limit to 60 FPS
+	} else {
+		next_frametime = 0;
 	}
+
+	framecount = cls.framecount;
 
 	if ( ++recursive > 2 ) {
 		Com_Error( ERR_FATAL, "SCR_UpdateScreen: recursively called" );
