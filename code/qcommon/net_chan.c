@@ -106,15 +106,15 @@ Send one fragment of the current message
 */
 void Netchan_TransmitNextFragment( netchan_t *chan ) {
 	msg_t		send;
-	byte		send_buf[MAX_PACKETLEN];
+	byte		send_buf[MAX_PACKETLEN+8];
 	int			fragmentLength;
 	int			outgoingSequence;
 
 	// write the packet header
-	MSG_InitOOB (&send, send_buf, sizeof(send_buf));				// <-- only do the oob here
+	MSG_InitOOB( &send, send_buf, sizeof(send_buf)-8 );
 
 	outgoingSequence = chan->outgoingSequence | FRAGMENT_BIT;
-	MSG_WriteLong(&send, outgoingSequence);
+	MSG_WriteLong( &send, outgoingSequence );
 
 	// send the qport if we are a client
 	if ( chan->sock == NS_CLIENT ) {
@@ -126,7 +126,7 @@ void Netchan_TransmitNextFragment( netchan_t *chan ) {
 
 	// copy the reliable message to the packet first
 	fragmentLength = FRAGMENT_SIZE;
-	if ( chan->unsentFragmentStart  + fragmentLength > chan->unsentLength ) {
+	if ( chan->unsentFragmentStart + fragmentLength > chan->unsentLength ) {
 		fragmentLength = chan->unsentLength - chan->unsentFragmentStart;
 	}
 
@@ -172,7 +172,7 @@ A 0 length will still generate a packet.
 */
 void Netchan_Transmit( netchan_t *chan, int length, const byte *data ) {
 	msg_t		send;
-	byte		send_buf[MAX_PACKETLEN];
+	byte		send_buf[MAX_PACKETLEN+8];
 
 	if ( length > MAX_MSGLEN ) {
 		Com_Error( ERR_DROP, "Netchan_Transmit: length = %i", length );
@@ -192,7 +192,7 @@ void Netchan_Transmit( netchan_t *chan, int length, const byte *data ) {
 	}
 
 	// write the packet header
-	MSG_InitOOB (&send, send_buf, sizeof(send_buf));
+	MSG_InitOOB( &send, send_buf, sizeof(send_buf)-8 );
 
 	MSG_WriteLong( &send, chan->outgoingSequence );
 

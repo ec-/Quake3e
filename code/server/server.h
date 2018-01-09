@@ -274,7 +274,6 @@ extern	cvar_t	*sv_privateClients;
 extern	cvar_t	*sv_hostname;
 extern	cvar_t	*sv_master[MAX_MASTER_SERVERS];
 extern	cvar_t	*sv_reconnectlimit;
-extern	cvar_t	*sv_showloss;
 extern	cvar_t	*sv_padPackets;
 extern	cvar_t	*sv_killserver;
 extern	cvar_t	*sv_mapname;

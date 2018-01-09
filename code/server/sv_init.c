@@ -686,8 +686,12 @@ void SV_Init( void )
 	sv_privatePassword = Cvar_Get ("sv_privatePassword", "", CVAR_TEMP );
 	sv_fps = Cvar_Get ("sv_fps", "20", CVAR_TEMP );
 	Cvar_CheckRange( sv_fps, "10", "125", CV_INTEGER );
-	sv_timeout = Cvar_Get ("sv_timeout", "200", CVAR_TEMP );
-	sv_zombietime = Cvar_Get ("sv_zombietime", "2", CVAR_TEMP );
+	sv_timeout = Cvar_Get( "sv_timeout", "200", CVAR_TEMP );
+	Cvar_CheckRange( sv_timeout, "4", NULL, CV_INTEGER );
+	Cvar_SetDescription( sv_timeout, "Seconds without any message before automatic client disconnect" );
+	sv_zombietime = Cvar_Get( "sv_zombietime", "2", CVAR_TEMP );
+	Cvar_CheckRange( sv_zombietime, "1", NULL, CV_INTEGER );
+	Cvar_SetDescription( sv_zombietime, "Seconds to sink messages after disconnect" );
 	Cvar_Get ("nextmap", "", CVAR_TEMP );
 
 	sv_allowDownload = Cvar_Get ("sv_allowDownload", "1", CVAR_SERVERINFO);
@@ -701,7 +705,6 @@ void SV_Init( void )
 		sv_master[index] = Cvar_Get(va("sv_master%d", index + 1), "", CVAR_ARCHIVE);
 
 	sv_reconnectlimit = Cvar_Get ("sv_reconnectlimit", "3", 0);
-	sv_showloss = Cvar_Get ("sv_showloss", "0", 0);
 	sv_padPackets = Cvar_Get ("sv_padPackets", "0", 0);
 	sv_killserver = Cvar_Get ("sv_killserver", "0", 0);
 	sv_mapChecksum = Cvar_Get ("sv_mapChecksum", "", CVAR_ROM);

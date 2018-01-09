@@ -64,10 +64,10 @@ typedef struct {
 	int		bit;				// for bitwise reads and writes
 } msg_t;
 
-void MSG_Init (msg_t *buf, byte *data, int length);
+void MSG_Init( msg_t *buf, byte *data, int length );
 void MSG_InitOOB( msg_t *buf, byte *data, int length );
-void MSG_Clear (msg_t *buf);
-void MSG_WriteData (msg_t *buf, const void *data, int length);
+void MSG_Clear( msg_t *buf );
+void MSG_WriteData( msg_t *buf, const void *data, int length );
 void MSG_Bitstream( msg_t *buf );
 
 // TTimo
