@@ -540,7 +540,7 @@ static int Load_JTS( vm_t *vm, unsigned int crc32, void *data, int vmPakIndex ) 
 	}
 
 	if ( fs_lastPakIndex != vmPakIndex ) {
-		Com_Printf( " bad pak index %i (expecting %i) for %s.\n", fs_lastPakIndex, vmPakIndex, filename );
+		Com_DPrintf( " invalid pak index %i (expecting %i) for %s.\n", fs_lastPakIndex, vmPakIndex, filename );
 		FS_FCloseFile( fh );
 		return -1;
 	}

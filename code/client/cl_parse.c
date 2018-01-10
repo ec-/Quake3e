@@ -710,7 +710,7 @@ void CL_ParseDownload( msg_t *msg ) {
 		CL_WritePacket();
 
 		// get another file if needed
-		CL_NextDownload ();
+		CL_NextDownload();
 	}
 }
 
@@ -755,7 +755,10 @@ void CL_ParseCommandString( msg_t *msg ) {
 			text = ( Cmd_Argc() > 1 ) ? va( "Server disconnected: %s", Cmd_Argv( 1 ) ) : "Server disconnected.";
 			Cvar_Set( "com_errorMessage", text );
 			Com_Printf( "%s\n", text );
-			CL_Disconnect( qtrue );
+			if ( !CL_Disconnect( qtrue ) ) { // restart client if not done already
+				CL_FlushMemory();
+			}
+			return;
 		}
 	}
 

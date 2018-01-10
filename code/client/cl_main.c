@@ -1162,14 +1162,16 @@ CL_RestoreOldGame
 change back to previous fs_game
 =====================
 */
-static void CL_RestoreOldGame( void )
+static qboolean CL_RestoreOldGame( void )
 {
 	if ( cl_oldGameSet )
 	{
 		cl_oldGameSet = qfalse;
 		Cvar_Set2( "fs_game", cl_oldGame, qtrue );
 		FS_ConditionalRestart( clc.checksumFeed, qtrue );
+		return qtrue;
 	}
+	return qfalse;
 }
 
 
@@ -1183,15 +1185,16 @@ Sends a disconnect message to the server
 This is also called on Com_Error and Com_Quit, so it shouldn't cause any errors
 =====================
 */
-void CL_Disconnect( qboolean showMainMenu ) {
+qboolean CL_Disconnect( qboolean showMainMenu ) {
 	static qboolean cl_disconnecting = qfalse;
+	qboolean cl_restarted = qfalse;
 	
 	if ( !com_cl_running || !com_cl_running->integer ) {
-		return;
+		return cl_restarted;
 	}
 
 	if ( cl_disconnecting ) {
-		return;
+		return cl_restarted;
 	}
 
 	cl_disconnecting = qtrue;
@@ -1241,7 +1244,7 @@ void CL_Disconnect( qboolean showMainMenu ) {
 
 	// send a disconnect message to the server
 	// send it a few times in case one is dropped
-	if ( cls.state >= CA_CONNECTED ) {
+	if ( cls.state >= CA_CONNECTED && cls.state != CA_CINEMATIC && !clc.demoplaying ) {
 		CL_AddReliableCommand( "disconnect", qtrue );
 		CL_WritePacket();
 		CL_WritePacket();
@@ -1275,9 +1278,11 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	if ( noGameRestart )
 		noGameRestart = qfalse;
 	else
-		CL_RestoreOldGame();
+		cl_restarted = CL_RestoreOldGame();
 
 	cl_disconnecting = qfalse;
+
+	return cl_restarted;
 }
 
 
@@ -1798,12 +1803,11 @@ void CL_Vid_Restart_f( void ) {
 			return;
 
 	if ( Com_DelayFunc && Com_DelayFunc != CL_Vid_Restart ) {
-		Com_DPrintf( "...perform vid_restart\n" );
+		Com_DPrintf( "...perform \\vid_restart\n" );
 		CL_Vid_Restart(); // something pending, direct restart
 	} else {
-		Com_DPrintf( "...delay vid_restart\n" );
+		Com_DPrintf( "...delay \\vid_restart\n" );
 		Com_DelayFunc = CL_Vid_Restart; // queue restart out of rendering cycle
-		
 	}
 }
 
