@@ -1485,7 +1485,7 @@ typedef struct {
 	void (*func)( client_t *cl );
 } ucmd_t;
 
-static ucmd_t ucmds[] = {
+static const ucmd_t ucmds[] = {
 	{"userinfo", SV_UpdateUserinfo_f},
 	{"disconnect", SV_Disconnect_f},
 	{"cp", SV_VerifyPaks_f},
@@ -1506,7 +1506,7 @@ Also called by bot code
 ==================
 */
 void SV_ExecuteClientCommand( client_t *cl, const char *s, qboolean clientOK ) {
-	ucmd_t	*u;
+	const ucmd_t *u;
 	qboolean bProcessed = qfalse;
 	
 	Cmd_TokenizeString( s );
@@ -1529,6 +1529,40 @@ void SV_ExecuteClientCommand( client_t *cl, const char *s, qboolean clientOK ) {
 	}
 	else if (!bProcessed)
 		Com_DPrintf( "client text ignored for %s: %s\n", cl->name, Cmd_Argv(0) );
+}
+
+
+/*
+================
+SV_FloodProtect
+================
+*/
+static qboolean SV_FloodProtect( client_t *cl ) {
+	if ( sv_floodProtect->integer ) {
+		const int now = svs.time;
+		const int burst = 10;
+		const int period = 400;
+
+		int interval = now - cl->cmd_time;
+		int expired = interval / period;
+		int expiredRemainder = interval % period;
+
+		if ( expired > cl->cmd_burst || interval < 0 ) {
+			cl->cmd_burst = 0;
+			cl->cmd_time = now;
+		} else {
+			cl->cmd_burst -= expired;
+			cl->cmd_time = now - expiredRemainder;
+		}
+
+		if ( cl->cmd_burst < burst ) {
+			cl->cmd_burst++;
+			return qfalse;
+		}
+		return qtrue;
+	} else {
+		return qfalse;
+	}
 }
 
 
@@ -1568,18 +1602,14 @@ static qboolean SV_ClientCommand( client_t *cl, msg_t *msg ) {
 	// We don't do this when the client hasn't been active yet since it's
 	// normal to spam a lot of commands when downloading
 #ifndef DEDICATED
-	if ( !com_cl_running->integer && cl->state >= CS_ACTIVE &&
+	if ( !com_cl_running->integer && cl->state >= CS_ACTIVE && SV_FloodProtect( cl ) ) {
 #else
-	if ( cl->state >= CS_ACTIVE &&
+	if ( cl->state >= CS_ACTIVE && SV_FloodProtect( cl ) ) {
 #endif
-		sv_floodProtect->integer && svs.time < cl->nextReliableTime ) {
 		// ignore any other text messages from this client but let them keep playing
 		// TTimo - moved the ignored verbose to the actual processing in SV_ExecuteClientCommand, only printing if the core doesn't intercept
 		clientOk = qfalse;
-	} 
-
-	// don't allow another command for one second
-	cl->nextReliableTime = svs.time + 1000;
+	}
 
 	SV_ExecuteClientCommand( cl, s, clientOk );
 
