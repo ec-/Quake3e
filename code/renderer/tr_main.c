@@ -1664,8 +1664,6 @@ void R_RenderView( const viewParms_t *parms ) {
 
 	firstDrawSurf = tr.refdef.numDrawSurfs;
 
-	//tr.viewCount++;
-
 	// set viewParms.world
 	R_RotateForViewer();
 

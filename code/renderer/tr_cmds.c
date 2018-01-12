@@ -329,6 +329,8 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 
 	if ( r_fastsky->integer ) {
 		if ( stereoFrame != STEREO_RIGHT ) {
+			qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
+			qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
 			if ( r_anaglyphMode->integer )
 				qglColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE );
 			qglClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
