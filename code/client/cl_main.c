@@ -142,6 +142,9 @@ static void CL_ServerStatusResponse( const netadr_t *from, msg_t *msg );
 static void CL_ServerInfoPacket( const netadr_t *from, msg_t *msg );
 
 static void CL_Download_f( void );
+static void CL_LocalServers_f( void );
+static void CL_GlobalServers_f( void );
+static void CL_Ping_f( void );
 
 /*
 ===============
@@ -930,20 +933,6 @@ static void CL_PlayDemo_f( void ) {
 
 
 /*
-====================
-CL_StartDemoLoop
-
-Closing the main menu will restart the demo loop
-====================
-*/
-void CL_StartDemoLoop( void ) {
-	// start the demo loop again
-	Cbuf_AddText ("d1\n");
-	Key_SetCatcher( 0 );
-}
-
-
-/*
 ==================
 CL_NextDemo
 
@@ -952,15 +941,15 @@ If the "nextdemo" cvar is set, that command will be issued
 ==================
 */
 void CL_NextDemo( void ) {
-	char v[MAX_STRING_CHARS];
+	char v[ MAX_CVAR_VALUE_STRING ];
 
-	Q_strncpyz( v, Cvar_VariableString( "nextdemo" ), sizeof( v ) );
-	Com_DPrintf("CL_NextDemo: %s\n", v );
-	if (!v[0]) {
+	Cvar_VariableStringBuffer( "nextdemo", v, sizeof( v ) ); 
+	Com_DPrintf( "CL_NextDemo: %s\n", v );
+	if ( !v[0] ) {
 		return;
 	}
 
-	Cvar_Set( "nextdemo","" );
+	Cvar_Set( "nextdemo", "" );
 	Cbuf_AddText( v );
 	Cbuf_AddText( "\n" );
 	Cbuf_Execute();
@@ -2826,7 +2815,7 @@ void CL_PacketEvent( const netadr_t *from, msg_t *msg ) {
 CL_CheckTimeout
 ==================
 */
-void CL_CheckTimeout( void ) {
+static void CL_CheckTimeout( void ) {
 	//
 	// check timeout
 	//
@@ -3298,16 +3287,16 @@ void CL_InitRef( void ) {
 
 
 void CL_SetModel_f( void ) {
-	char	*arg;
-	char	name[256];
+	const char *arg;
+	char name[ MAX_CVAR_VALUE_STRING ];
 
 	arg = Cmd_Argv( 1 );
-	if (arg[0]) {
+	if ( arg[0] ) {
 		Cvar_Set( "model", arg );
 		Cvar_Set( "headmodel", arg );
 	} else {
-		Cvar_VariableStringBuffer( "model", name, sizeof(name) );
-		Com_Printf("model is set to %s\n", name);
+		Cvar_VariableStringBuffer( "model", name, sizeof( name ) );
+		Com_Printf( "model is set to %s\n", name );
 	}
 }
 
@@ -3325,10 +3314,10 @@ video [filename]
 */
 void CL_Video_f( void )
 {
-	char  filename[ MAX_QPATH ];
+	char filename[ MAX_OSPATH ];
 	const char *ext;
 	qboolean pipe;
-	int   i;
+	int i;
 
 	if( !clc.demoplaying )
 	{
@@ -3384,7 +3373,7 @@ void CL_Video_f( void )
 CL_StopVideo_f
 ===============
 */
-void CL_StopVideo_f( void )
+static void CL_StopVideo_f( void )
 {
   CL_CloseAVI();
 }
@@ -4040,7 +4029,7 @@ static serverStatus_t *CL_GetServerStatus( const netadr_t *from ) {
 CL_ServerStatus
 ===================
 */
-int CL_ServerStatus( char *serverAddress, char *serverStatusString, int maxLen ) {
+int CL_ServerStatus( const char *serverAddress, char *serverStatusString, int maxLen ) {
 	int i;
 	netadr_t	to;
 	serverStatus_t *serverStatus;
@@ -4203,7 +4192,7 @@ static void CL_ServerStatusResponse( const netadr_t *from, msg_t *msg ) {
 CL_LocalServers_f
 ==================
 */
-void CL_LocalServers_f( void ) {
+static void CL_LocalServers_f( void ) {
 	char		*message;
 	int			i, j, n;
 	netadr_t	to;
@@ -4249,7 +4238,7 @@ void CL_LocalServers_f( void ) {
 CL_GlobalServers_f
 ==================
 */
-void CL_GlobalServers_f( void ) {
+static void CL_GlobalServers_f( void ) {
 	netadr_t	to;
 	int			count, i, masterNum;
 	char		command[1024];
@@ -4472,7 +4461,7 @@ ping_t* CL_GetFreePing( void )
 CL_Ping_f
 ==================
 */
-void CL_Ping_f( void ) {
+static void CL_Ping_f( void ) {
 	netadr_t	to;
 	ping_t*		pingptr;
 	char*		server;

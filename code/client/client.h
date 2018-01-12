@@ -442,19 +442,17 @@ extern	cvar_t	*r_drawBuffer;
 //
 void CL_AddReliableCommand( const char *cmd, qboolean isDisconnectCmd );
 
-void CL_StartHunkUsers(void);
+void CL_StartHunkUsers( void );
 
-void CL_Disconnect_f (void);
-void CL_GetChallengePacket (void);
+void CL_Disconnect_f( void );
 void CL_Vid_Restart_f( void );
-void CL_Snd_Restart_f (void);
-void CL_StartDemoLoop( void );
+void CL_Snd_Restart_f( void );
 void CL_NextDemo( void );
 void CL_ReadDemoMessage( void );
-void CL_StopRecord_f(void);
+void CL_StopRecord_f( void );
 
-void CL_InitDownloads(void);
-void CL_NextDownload(void);
+void CL_InitDownloads( void );
+void CL_NextDownload( void );
 
 void CL_GetPing( int n, char *buf, int buflen, int *pingtime );
 void CL_GetPingInfo( int n, char *buf, int buflen );
@@ -463,7 +461,7 @@ int CL_GetPingQueueCount( void );
 
 void CL_ShutdownRef( qboolean unloadDLL );
 void CL_InitRef( void );
-int CL_ServerStatus( char *serverAddress, char *serverStatusString, int maxLen );
+int CL_ServerStatus( const char *serverAddress, char *serverStatusString, int maxLen );
 
 qboolean CL_CheckPaused( void );
 qboolean CL_NoDelay( void );
@@ -490,12 +488,9 @@ void CL_InitInput (void);
 void CL_ClearInput (void);
 void CL_SendCmd (void);
 void CL_ClearState (void);
-void CL_ReadPackets (void);
 
 void CL_WritePacket( void );
 void IN_CenterView (void);
-
-void CL_VerifyCode( void );
 
 //
 // cl_keys.c
@@ -503,9 +498,6 @@ void CL_VerifyCode( void );
 extern  field_t     chatField;
 extern  field_t     g_consoleField;
 
-//char *Key_KeynumToString( int keynum );
-
-void Field_CharEvent( field_t *edit, int ch );
 void Field_Draw( field_t *edit, int x, int y, int width, qboolean showCursor, qboolean noColorEscape );
 void Field_BigDraw( field_t *edit, int x, int y, int width, qboolean showCursor, qboolean noColorEscape );
 
@@ -520,10 +512,6 @@ void CL_ParseServerMessage( msg_t *msg );
 
 //====================================================================
 
-void	CL_LocalServers_f( void );
-void	CL_GlobalServers_f( void );
-void	CL_FavoriteServers_f( void );
-void	CL_Ping_f( void );
 qboolean CL_UpdateVisiblePings_f( int source );
 qboolean CL_ValidPakSignature( const byte *data, int len );
 
@@ -531,8 +519,6 @@ qboolean CL_ValidPakSignature( const byte *data, int len );
 //
 // console
 //
-void Con_DrawCharacter (int cx, int line, int num);
-
 void Con_CheckResize( void );
 void Con_Init( void );
 void Con_Shutdown( void );
@@ -597,7 +583,6 @@ void CL_ShutdownCGame( void );
 qboolean CL_GameCommand( void );
 void CL_CGameRendering( stereoFrame_t stereo );
 void CL_SetCGameTime( void );
-void CL_ShaderStateChanged(void);
 
 //
 // cl_ui.c

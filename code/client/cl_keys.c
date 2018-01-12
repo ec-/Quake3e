@@ -33,6 +33,8 @@ qboolean	chat_team;
 
 int			chat_playerNum;
 
+static void Field_CharEvent( field_t *edit, int ch );
+
 /*
 =============================================================================
 
@@ -257,7 +259,7 @@ void Field_KeyDownEvent( field_t *edit, int key ) {
 Field_CharEvent
 ==================
 */
-void Field_CharEvent( field_t *edit, int ch ) {
+static void Field_CharEvent( field_t *edit, int ch ) {
 	int		len;
 
 	if ( ch == 'v' - 'a' + 1 ) {	// ctrl-v is paste
