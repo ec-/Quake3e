@@ -1476,9 +1476,27 @@ CL_Disconnect_f
 */
 void CL_Disconnect_f( void ) {
 	SCR_StopCinematic();
-	Cvar_Set("ui_singlePlayerActive", "0");
+	Cvar_Set( "ui_singlePlayerActive", "0" );
 	if ( cls.state != CA_DISCONNECTED && cls.state != CA_CINEMATIC ) {
-		Com_Error (ERR_DISCONNECT, "Disconnected from server");
+		if ( (uivm && uivm->callLevel) || (cgvm && cgvm->callLevel) ) {
+			Com_Error( ERR_DISCONNECT, "Disconnected from server" );
+		} else {
+			// clear any previous "server full" type messages
+			clc.serverMessage[0] = '\0';
+			if ( com_sv_running && com_sv_running->integer ) {
+				// if running a local server, kill it
+				SV_Shutdown( "Disconnected from server" );
+			} else {
+				Com_Printf( "Disconnected from %s\n", cls.servername );
+			}
+			Cvar_Set( "com_errorMessage", "" );
+			if ( !CL_Disconnect( qfalse ) ) { // restart client if not done already
+				CL_FlushMemory();
+			}
+			if ( uivm ) {
+				VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_MAIN );
+			}
+		}
 	}
 }
 
@@ -2817,7 +2835,13 @@ void CL_CheckTimeout( void ) {
 		&& cls.realtime - clc.lastPacketTime > cl_timeout->integer * 1000 ) {
 		if ( ++cl.timeoutcount > 5 ) { // timeoutcount saves debugger
 			Com_Printf( "\nServer connection timed out.\n" );
-			CL_Disconnect( qtrue );
+			Cvar_Set( "com_errorMessage", "Server connection timed out." );
+			if ( !CL_Disconnect( qfalse ) ) { // restart client if not done already
+				CL_FlushMemory();
+			}
+			if ( uivm ) {
+				VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_MAIN );
+			}
 			return;
 		}
 	} else {

@@ -829,6 +829,7 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		if(args[1] == EXEC_NOW
 		&& (!strncmp(VMA(2), "snd_restart", 11)
 		|| !strncmp(VMA(2), "vid_restart", 11)
+		|| !strncmp(VMA(2), "disconnect", 10)
 		|| !strncmp(VMA(2), "quit", 5)))
 		{
 			Com_Printf (S_COLOR_YELLOW "turning EXEC_NOW '%.11s' into EXEC_INSERT\n", (const char*)VMA(2));
