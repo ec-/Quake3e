@@ -563,10 +563,14 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 			#define INSERT_POINT SS_FOG
 			if ( backEnd.refdef.numLitSurfs && oldShaderSort < INSERT_POINT && shader->sort >= INSERT_POINT ) {
 				//RB_BeginDrawingLitSurfs(); // no need, already setup in RB_BeginDrawingView()
-				qglDepthRange( 0, 1 );
-				RB_LightingPass();
+				if ( depthRange ) {
+					qglDepthRange( 0, 1 );
+					RB_LightingPass();
+					qglDepthRange( 0, 0.3 );
+				} else {
+					RB_LightingPass();
+				}
 				oldEntityNum = -1; // force matrix setup
-				oldDepthRange = qtrue; // force depthRange setup
 			}
 			oldShaderSort = shader->sort;
 #endif
