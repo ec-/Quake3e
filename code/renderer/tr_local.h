@@ -280,6 +280,7 @@ typedef struct {
 	int				videoMapHandle;
 	qboolean		isLightmap;
 	qboolean		isVideoMap;
+	qboolean		isScreenMap;
 } textureBundle_t;
 
 #define NUM_TEXTURE_BUNDLES 2
@@ -386,6 +387,7 @@ typedef struct shader_s {
 	qboolean	isStaticShader;
 	short		vboVPindex;
 	short		vboFPindex;
+	qboolean	hasScreenMap;
 
 	void	(*optimalStageIteratorFunc)( void );
 
@@ -1072,6 +1074,7 @@ typedef struct {
 	float					fogTable[FOG_TABLE_SIZE];
 
 	qboolean				mapLoading;
+	qboolean				needScreenMap;
 } trGlobals_t;
 
 extern backEndState_t	backEnd;
@@ -1244,6 +1247,7 @@ void R_RotateForEntity( const trRefEntity_t *ent, const viewParms_t *viewParms, 
 ** GL wrapper/helper functions
 */
 void	GL_Bind( image_t *image );
+void	GL_BindTexNum( GLuint texnum );
 void	GL_SelectTexture( int unit );
 void	GL_BindTexture( int unit, GLuint texnum );
 void	GL_TextureMode( const char *string );
@@ -1480,6 +1484,8 @@ void FBO_BindMain( void );
 void FBO_PostProcess( void );
 void FBO_BlitMS( qboolean depthOnly );
 qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalPass );
+void FBO_CopyScreen( void );
+GLuint FBO_ScreenTexture( void );
 
 /*
 ============================================================
@@ -1601,7 +1607,7 @@ void	R_TransformClipToWindow( const vec4_t clip, const viewParms_t *view, vec4_t
 void	RB_DeformTessGeometry( void );
 
 void	RB_CalcEnvironmentTexCoords( float *dstTexCoords );
-void	RB_CalcEnvironmentTexCoordsFP( float *dstTexCoords );
+void	RB_CalcEnvironmentTexCoordsFP( float *dstTexCoords, qboolean screenMap );
 void	RB_CalcFogTexCoords( float *dstTexCoords );
 const fogProgramParms_t *RB_CalcFogProgramParms( void );
 void	RB_CalcScrollTexCoords( const float scroll[2], float *dstTexCoords );
@@ -1839,6 +1845,7 @@ typedef enum {
 	GAMMA_FRAGMENT,
 	BLOOM_EXTRACT_FRAGMENT,
 	BLUR_FRAGMENT,
+	BLUR2_FRAGMENT,
 	BLENDX_FRAGMENT,
 	BLEND2_FRAGMENT,
 	BLEND2_GAMMA_FRAGMENT,

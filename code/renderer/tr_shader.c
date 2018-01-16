@@ -640,15 +640,27 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 		//
 		// clampmap <name>
 		//
-		else if ( !Q_stricmp( token, "clampmap" ) )
+		else if ( !Q_stricmp( token, "clampmap" ) || !Q_stricmp( token, "screenMap" ) )
 		{
 			imgType_t type = IMGTYPE_COLORALPHA;
-			imgFlags_t flags = IMGFLAG_CLAMPTOEDGE;
+			imgFlags_t flags;
+
+			if ( !Q_stricmp( token, "screenMap" ) ) {
+				flags = IMGFLAG_NONE;
+				if ( fboEnabled ) {
+					stage->bundle[0].isScreenMap = qtrue;
+					shader.hasScreenMap = qtrue;
+					tr.needScreenMap = qtrue;
+				}
+			} else {
+				flags = IMGFLAG_CLAMPTOEDGE;
+			}
 
 			token = COM_ParseExt( text, qfalse );
 			if ( !token[0] )
 			{
-				ri.Printf( PRINT_WARNING, "WARNING: missing parameter for 'clampmap' keyword in shader '%s'\n", shader.name );
+				ri.Printf( PRINT_WARNING, "WARNING: missing parameter for '%s' keyword in shader '%s'\n",
+					stage->bundle[0].isScreenMap ? "screenMap" : "clampMap", shader.name );
 				return qfalse;
 			}
 

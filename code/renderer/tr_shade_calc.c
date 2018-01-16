@@ -25,7 +25,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // -EC-: avoid using ri.ftol
 #define	WAVEVALUE( table, base, amplitude, phase, freq )  ((base) + table[ (int64_t)( ( ( (phase) + tess.shaderTime * (freq) ) * FUNCTABLE_SIZE ) ) & FUNCTABLE_MASK ] * (amplitude))
 
-static float *TableForFunc( genFunc_t func ) 
+static float *TableForFunc( genFunc_t func )
 {
 	switch ( func )
 	{
@@ -47,6 +47,7 @@ static float *TableForFunc( genFunc_t func )
 	ri.Error( ERR_DROP, "TableForFunc called with invalid function '%d' in shader '%s'", func, tess.shader->name );
 	return NULL;
 }
+
 
 /*
 ** EvalWaveForm
@@ -79,6 +80,7 @@ static float EvalWaveFormClamped( const waveForm_t *wf )
 	return glow;
 }
 
+
 /*
 ** RB_CalcStretchTexCoords
 */
@@ -100,6 +102,7 @@ void RB_CalcStretchTexCoords( const waveForm_t *wf, float *st )
 	RB_CalcTransformTexCoords( &tmi, st );
 }
 
+
 /*
 ====================================================================
 
@@ -108,10 +111,10 @@ DEFORMATIONS
 ====================================================================
 */
 
+
 /*
 ========================
 RB_CalcDeformVertexes
-
 ========================
 */
 void RB_CalcDeformVertexes( deformStage_t *ds )
@@ -158,6 +161,7 @@ void RB_CalcDeformVertexes( deformStage_t *ds )
 	}
 }
 
+
 /*
 =========================
 RB_CalcDeformNormals
@@ -191,10 +195,10 @@ void RB_CalcDeformNormals( deformStage_t *ds ) {
 	}
 }
 
+
 /*
 ========================
 RB_CalcBulgeVertexes
-
 ========================
 */
 void RB_CalcBulgeVertexes( deformStage_t *ds ) {
@@ -326,6 +330,7 @@ void DeformText( const char *text ) {
 	}
 }
 
+
 /*
 ==================
 GlobalVectorToLocal
@@ -336,6 +341,7 @@ static void GlobalVectorToLocal( const vec3_t in, vec3_t out ) {
 	out[1] = DotProduct( in, backEnd.or.axis[1] );
 	out[2] = DotProduct( in, backEnd.or.axis[2] );
 }
+
 
 /*
 =====================
@@ -391,18 +397,18 @@ static void AutospriteDeform( void ) {
 			VectorSubtract( vec3_origin, left, left );
 		}
 
-	  // compensate for scale in the axes if necessary
-  	if ( backEnd.currentEntity->e.nonNormalizedAxes ) {
-      float axisLength;
-		  axisLength = VectorLength( backEnd.currentEntity->e.axis[0] );
-  		if ( !axisLength ) {
-	  		axisLength = 0;
-  		} else {
-	  		axisLength = 1.0f / axisLength;
-  		}
-      VectorScale(left, axisLength, left);
-      VectorScale(up, axisLength, up);
-    }
+		// compensate for scale in the axes if necessary
+		if ( backEnd.currentEntity->e.nonNormalizedAxes ) {
+			float axisLength;
+			axisLength = VectorLength( backEnd.currentEntity->e.axis[0] );
+			if ( !axisLength ) {
+				axisLength = 0;
+			} else {
+				axisLength = 1.0f / axisLength;
+			}
+			VectorScale(left, axisLength, left);
+			VectorScale(up, axisLength, up);
+		}
 
 		RB_AddQuadStamp( mid, left, up, tess.vertexColors[i] );
 	}
@@ -542,8 +548,8 @@ void RB_DeformTessGeometry( void ) {
 		ds = &tess.shader->deforms[ i ];
 
 		switch ( ds->deformation ) {
-        case DEFORM_NONE:
-            break;
+		case DEFORM_NONE:
+			break;
 		case DEFORM_NORMALS:
 			RB_CalcDeformNormals( ds );
 			break;
@@ -608,6 +614,7 @@ void RB_CalcColorFromEntity( unsigned char *dstColors )
 	}
 }
 
+
 /*
 ** RB_CalcColorFromOneMinusEntity
 */
@@ -634,6 +641,7 @@ void RB_CalcColorFromOneMinusEntity( unsigned char *dstColors )
 	}
 }
 
+
 /*
 ** RB_CalcAlphaFromEntity
 */
@@ -651,6 +659,7 @@ void RB_CalcAlphaFromEntity( unsigned char *dstColors )
 		*dstColors = backEnd.currentEntity->e.shaderRGBA[3];
 	}
 }
+
 
 /*
 ** RB_CalcAlphaFromOneMinusEntity
@@ -670,6 +679,7 @@ void RB_CalcAlphaFromOneMinusEntity( unsigned char *dstColors )
 	}
 }
 
+
 /*
 ** RB_CalcWaveColor
 */
@@ -682,13 +692,13 @@ void RB_CalcWaveColor( const waveForm_t *wf, unsigned char *dstColors )
 	byte	color[4];
 
 
-  if ( wf->func == GF_NOISE ) {
+	if ( wf->func == GF_NOISE ) {
 		glow = wf->base + R_NoiseGet4f( 0, 0, 0, ( tess.shaderTime + wf->phase ) * wf->frequency ) * wf->amplitude;
 	} else {
 		glow = EvalWaveForm( wf ) * tr.identityLight;
 	}
 
-  	v = myftol( 255 * glow );
+	v = myftol( 255 * glow );
 
 	if ( v < 0 )
 		v = 0;
@@ -703,6 +713,7 @@ void RB_CalcWaveColor( const waveForm_t *wf, unsigned char *dstColors )
 		*colors = v;
 	}
 }
+
 
 /*
 ** RB_CalcWaveAlpha
@@ -722,6 +733,7 @@ void RB_CalcWaveAlpha( const waveForm_t *wf, unsigned char *dstColors )
 		dstColors[3] = v;
 	}
 }
+
 
 /*
 ** RB_CalcModulateColorsByFog
@@ -743,6 +755,7 @@ void RB_CalcModulateColorsByFog( unsigned char *colors ) {
 	}
 }
 
+
 /*
 ** RB_CalcModulateAlphasByFog
 */
@@ -760,6 +773,7 @@ void RB_CalcModulateAlphasByFog( unsigned char *colors ) {
 		colors[3] *= f;
 	}
 }
+
 
 /*
 ** RB_CalcModulateRGBAsByFog
@@ -940,12 +954,41 @@ const fogProgramParms_t *RB_CalcFogProgramParms( void )
 
 /*
 ========================
+RB_CalcEnvironmentTexCoordsFPscr
+========================
+*/
+static void RB_CalcEnvironmentTexCoordsFPscr( float *st ) {
+	int			i;
+	const float	*v, *normal;
+	vec3_t		viewer, reflected;
+	float		d;
+
+	v = tess.xyz[0];
+	normal = tess.normal[0];
+
+	for (i = 0 ; i < tess.numVertexes ; i++, v += 4, normal += 4, st += 2 ) {
+		VectorSubtract( backEnd.or.viewOrigin, v, viewer );
+		VectorNormalizeFast( viewer );
+
+		d = DotProduct( normal, viewer ) * 0.8;
+
+		reflected[1] = normal[1]*2*d - viewer[1];
+		reflected[2] = normal[2]*2*d - viewer[2];
+
+		st[0] = 0.5 - reflected[1] * 0.5;
+		st[1] = 0.5 + reflected[2] * 0.5;
+	}
+}
+
+
+/*
+========================
 RB_CalcEnvironmentTexCoordsFP
 
 Special version for first-person models, borrowed from OpenArena
 ========================
 */
-void RB_CalcEnvironmentTexCoordsFP( float *st ) {
+void RB_CalcEnvironmentTexCoordsFP( float *st, qboolean screenMap ) {
 	int			i;
 	const float	*v, *normal;
 	vec3_t		viewer, reflected, where, what, why, who;
@@ -954,6 +997,11 @@ void RB_CalcEnvironmentTexCoordsFP( float *st ) {
 	if ( !backEnd.currentEntity || ( backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON ) == 0 )
 	{
 		RB_CalcEnvironmentTexCoords( st );
+		return;
+	}
+
+	if ( screenMap && backEnd.viewParms.frameSceneNum == 1 ) {
+		RB_CalcEnvironmentTexCoordsFPscr( st );
 		return;
 	}
 
@@ -990,7 +1038,7 @@ void RB_CalcEnvironmentTexCoordsFP( float *st ) {
 /*
 ** RB_CalcEnvironmentTexCoords
 */
-void RB_CalcEnvironmentTexCoords( float *st ) 
+void RB_CalcEnvironmentTexCoords( float *st )
 {
 	int			i;
 	float		*v, *normal;

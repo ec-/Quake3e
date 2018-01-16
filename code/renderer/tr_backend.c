@@ -63,6 +63,22 @@ void GL_Bind( image_t *image ) {
 
 
 /*
+** GL_BindTexNum
+*/
+void GL_BindTexNum( GLuint texnum ) {
+
+	if ( r_nobind->integer && tr.dlightImage ) {	// performance evaluation option
+		texnum = tr.dlightImage->texnum;
+	}
+
+	if ( glState.currenttextures[ glState.currenttmu ] != texnum ) {
+		glState.currenttextures[ glState.currenttmu ] = texnum;
+		qglBindTexture( GL_TEXTURE_2D, texnum );
+	}
+}
+
+
+/*
 ** GL_SelectTexture
 */
 void GL_SelectTexture( int unit )
@@ -1244,6 +1260,12 @@ static const void *RB_DrawSurfs( const void *data ) {
 		RB_LightingPass();
 	}
 #endif
+
+	if ( !backEnd.doneSurfaces && tr.needScreenMap ) {
+		if ( backEnd.viewParms.frameSceneNum == 1 ) {
+			FBO_CopyScreen();
+		}
+	}
 
 	//TODO Maybe check for rdf_noworld stuff but q3mme has full 3d ui
 	backEnd.doneSurfaces = qtrue; // for bloom

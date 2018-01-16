@@ -70,6 +70,7 @@ static float ProjectRadius( float r, vec3_t location )
 	return pr;
 }
 
+
 /*
 =============
 R_CullModel
@@ -160,7 +161,6 @@ static int R_CullModel( md3Header_t *header, trRefEntity_t *ent, vec3_t bounds[]
 /*
 =================
 R_ComputeLOD
-
 =================
 */
 int R_ComputeLOD( trRefEntity_t *ent ) {
@@ -236,10 +236,10 @@ int R_ComputeLOD( trRefEntity_t *ent ) {
 	return lod;
 }
 
+
 /*
 =================
 R_ComputeFogNum
-
 =================
 */
 int R_ComputeFogNum( md3Header_t *header, trRefEntity_t *ent ) {
@@ -273,10 +273,10 @@ int R_ComputeFogNum( md3Header_t *header, trRefEntity_t *ent ) {
 	return 0;
 }
 
+
 /*
 =================
 R_AddMD3Surfaces
-
 =================
 */
 void R_AddMD3Surfaces( trRefEntity_t *ent ) {
@@ -436,6 +436,4 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 
 		surface = (md3Surface_t *)( (byte *)surface + surface->ofsEnd );
 	}
-
 }
-
