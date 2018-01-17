@@ -242,7 +242,6 @@ void R_WorldToLocal (vec3_t world, vec3_t local) {
 /*
 ==========================
 R_TransformModelToClip
-
 ==========================
 */
 void R_TransformModelToClip( const vec3_t src, const float *modelMatrix, const float *projectionMatrix,
@@ -266,10 +265,10 @@ void R_TransformModelToClip( const vec3_t src, const float *modelMatrix, const f
 	}
 }
 
+
 /*
 ==========================
 R_TransformClipToWindow
-
 ==========================
 */
 void R_TransformClipToWindow( const vec4_t clip, const viewParms_t *view, vec4_t normalized, vec4_t window ) {
@@ -289,7 +288,6 @@ void R_TransformClipToWindow( const vec4_t clip, const viewParms_t *view, vec4_t
 /*
 ==========================
 myGlMultMatrix
-
 ==========================
 */
 static void myGlMultMatrix( const float *a, const float *b, float *out ) {

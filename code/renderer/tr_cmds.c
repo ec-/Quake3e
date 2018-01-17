@@ -155,7 +155,6 @@ static void *R_GetCommandBuffer( int bytes ) {
 /*
 =============
 R_AddDrawSurfCmd
-
 =============
 */
 void	R_AddDrawSurfCmd( drawSurf_t *drawSurfs, int numDrawSurfs ) {
@@ -437,65 +436,19 @@ Returns the number of msec spent in the back end
 */
 void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 
+	swapBuffersCommand_t *cmd;
+
 	if ( !tr.registered ) {
 		return;
 	}
 
+	cmd = R_GetCommandBufferReserved( sizeof( *cmd ), 0 );
+	if ( !cmd ) {
+		return;
+	}
+	cmd->commandId = RC_SWAP_BUFFERS;
+
 	R_IssueRenderCommands( qtrue );
-
-	// finish any 2D drawing if needed
-	if ( tess.numIndexes ) {
-		RB_EndSurface();
-	}
-
-	VBO_UnBind();
-
-	// texture swapping test
-	if ( r_showImages->integer ) {
-		RB_ShowImages();
-	}
-
-	if ( r_finish->integer == 1 && !glState.finishCalled ) {
-		qglFinish();
-	}
-
-	FBO_PostProcess();
-
-	if ( backEnd.screenshotMask && tr.frameCount > 1 ) {
-		if ( backEnd.screenshotMask & SCREENSHOT_TGA && backEnd.screenshotTGA[0] ) {
-			RB_TakeScreenshot( 0, 0, glConfig.vidWidth, glConfig.vidHeight, backEnd.screenshotTGA );
-			if ( !backEnd.screenShotTGAsilent ) {
-				ri.Printf( PRINT_ALL, "Wrote %s\n", backEnd.screenshotTGA );
-			}
-		}
-		if ( backEnd.screenshotMask & SCREENSHOT_JPG && backEnd.screenshotJPG[0] ) {
-			RB_TakeScreenshotJPEG( 0, 0, glConfig.vidWidth, glConfig.vidHeight, backEnd.screenshotJPG );
-			if ( !backEnd.screenShotJPGsilent ) {
-				ri.Printf( PRINT_ALL, "Wrote %s\n", backEnd.screenshotJPG );
-			}
-		}
-		if ( backEnd.screenshotMask & SCREENSHOT_BMP && ( backEnd.screenshotBMP[0] || ( backEnd.screenshotMask & SCREENSHOT_BMP_CLIPBOARD ) ) ) {
-			RB_TakeScreenshotBMP( 0, 0, glConfig.vidWidth, glConfig.vidHeight, backEnd.screenshotBMP, backEnd.screenshotMask & SCREENSHOT_BMP_CLIPBOARD );
-			if ( !backEnd.screenShotBMPsilent ) {
-				ri.Printf( PRINT_ALL, "Wrote %s\n", backEnd.screenshotBMP );
-			}
-		}
-		if ( backEnd.screenshotMask & SCREENSHOT_AVI ) {
-			RB_TakeVideoFrameCmd( &backEnd.vcmd );
-		}
-
-		backEnd.screenshotJPG[0] = '\0';
-		backEnd.screenshotTGA[0] = '\0';
-		backEnd.screenshotBMP[0] = '\0';
-		backEnd.screenshotMask = 0;
-	}
-
-	ri.GLimp_EndFrame();
-
-	backEnd.projection2D = qfalse;
-
-	backEnd.doneBloom = qfalse;
-	backEnd.doneSurfaces = qfalse;
 
 	R_InitNextFrame();
 

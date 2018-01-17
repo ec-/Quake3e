@@ -1362,7 +1362,6 @@ void RB_ShowImages( void ) {
 
 	end = ri.Milliseconds();
 	ri.Printf( PRINT_ALL, "%i msec to draw all images\n", end - start );
-
 }
 
 
@@ -1427,6 +1426,69 @@ static const void *RB_FinishBloom( const void *data )
 }
 
 
+static const void *RB_SwapBuffers( const void *data ) {
+
+	const swapBuffersCommand_t	*cmd;
+
+	// finish any 2D drawing if needed
+	if ( tess.numIndexes ) {
+		RB_EndSurface();
+	}
+
+	VBO_UnBind();
+
+	// texture swapping test
+	if ( r_showImages->integer ) {
+		RB_ShowImages();
+	}
+
+	cmd = (const swapBuffersCommand_t *)data;
+
+	if ( r_finish->integer == 1 && !glState.finishCalled ) {
+		qglFinish();
+	}
+
+	FBO_PostProcess();
+
+	if ( backEnd.screenshotMask && tr.frameCount > 1 ) {
+		if ( backEnd.screenshotMask & SCREENSHOT_TGA && backEnd.screenshotTGA[0] ) {
+			RB_TakeScreenshot( 0, 0, glConfig.vidWidth, glConfig.vidHeight, backEnd.screenshotTGA );
+			if ( !backEnd.screenShotTGAsilent ) {
+				ri.Printf( PRINT_ALL, "Wrote %s\n", backEnd.screenshotTGA );
+			}
+		}
+		if ( backEnd.screenshotMask & SCREENSHOT_JPG && backEnd.screenshotJPG[0] ) {
+			RB_TakeScreenshotJPEG( 0, 0, glConfig.vidWidth, glConfig.vidHeight, backEnd.screenshotJPG );
+			if ( !backEnd.screenShotJPGsilent ) {
+				ri.Printf( PRINT_ALL, "Wrote %s\n", backEnd.screenshotJPG );
+			}
+		}
+		if ( backEnd.screenshotMask & SCREENSHOT_BMP && ( backEnd.screenshotBMP[0] || ( backEnd.screenshotMask & SCREENSHOT_BMP_CLIPBOARD ) ) ) {
+			RB_TakeScreenshotBMP( 0, 0, glConfig.vidWidth, glConfig.vidHeight, backEnd.screenshotBMP, backEnd.screenshotMask & SCREENSHOT_BMP_CLIPBOARD );
+			if ( !backEnd.screenShotBMPsilent ) {
+				ri.Printf( PRINT_ALL, "Wrote %s\n", backEnd.screenshotBMP );
+			}
+		}
+		if ( backEnd.screenshotMask & SCREENSHOT_AVI ) {
+			RB_TakeVideoFrameCmd( &backEnd.vcmd );
+		}
+
+		backEnd.screenshotJPG[0] = '\0';
+		backEnd.screenshotTGA[0] = '\0';
+		backEnd.screenshotBMP[0] = '\0';
+		backEnd.screenshotMask = 0;
+	}
+
+	ri.GLimp_EndFrame();
+
+	backEnd.projection2D = qfalse;
+	backEnd.doneBloom = qfalse;
+	backEnd.doneSurfaces = qfalse;
+
+	return (const void *)(cmd + 1);
+}
+
+
 /*
 ====================
 RB_ExecuteRenderCommands
@@ -1452,6 +1514,9 @@ void RB_ExecuteRenderCommands( const void *data ) {
 			break;
 		case RC_DRAW_BUFFER:
 			data = RB_DrawBuffer( data );
+			break;
+		case RC_SWAP_BUFFERS:
+			data = RB_SwapBuffers( data );
 			break;
 		case RC_FINISHBLOOM:
 			data = RB_FinishBloom(data);
