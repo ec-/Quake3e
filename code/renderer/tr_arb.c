@@ -1598,6 +1598,7 @@ void FBO_BindMain( void )
 static void FBO_BlitToBackBuffer( int index )
 {
 	const frameBuffer_t *src = &frameBuffers[ index ];
+
 	FBO_Bind( GL_READ_FRAMEBUFFER, src->fbo );
 	FBO_Bind( GL_DRAW_FRAMEBUFFER, 0 );
 	//qglReadBuffer( GL_COLOR_ATTACHMENT0 );
@@ -1983,6 +1984,7 @@ void FBO_PostProcess( void )
 	const float gamma = 1.0f / r_gamma->value;
 	const float w = glConfig.vidWidth;
 	const float h = glConfig.vidHeight;
+	qboolean minimized;
 
 	if ( !fboEnabled )
 		return;
@@ -2011,14 +2013,16 @@ void FBO_PostProcess( void )
 	if ( r_anaglyphMode->integer )
 		qglColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE );
 
+	minimized = ri.CL_IsMinimized();
+
 	if ( r_bloom->integer && programCompiled ) {
-		if ( FBO_Bloom( gamma, obScale, qtrue ) ) {
+		if ( FBO_Bloom( gamma, obScale, !minimized ) ) {
 			return;
 		}
 	}
 
 	// check if we can perform final draw directly into back buffer
-	if ( backEnd.screenshotMask == 0 && !windowAdjusted ) {
+	if ( backEnd.screenshotMask == 0 && !windowAdjusted && !minimized ) {
 		FBO_Bind( GL_FRAMEBUFFER, 0 );
 		GL_BindTexture( 0, frameBuffers[ fboReadIndex ].color );
 		ARB_ProgramEnable( DUMMY_VERTEX, GAMMA_FRAGMENT );
@@ -2036,7 +2040,9 @@ void FBO_PostProcess( void )
 	RenderQuad( w, h );
 	ARB_ProgramDisable();
 
-	FBO_BlitToBackBuffer( 1 );
+	if ( !minimized ) {
+		FBO_BlitToBackBuffer( 1 );
+	}
 }
 
 

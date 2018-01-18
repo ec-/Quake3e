@@ -2957,7 +2957,7 @@ void CL_Frame( int msec ) {
 	}
 
 	// if recording an avi, lock to a fixed fps
-	if ( CL_VideoRecording() && cl_aviFrameRate->integer && msec ) {
+	if ( CL_VideoRecording() && msec ) {
 		// save the current screen
 		if ( cls.state == CA_ACTIVE || cl_forceavidemo->integer ) {
 

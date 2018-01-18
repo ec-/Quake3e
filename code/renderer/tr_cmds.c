@@ -75,19 +75,20 @@ static void R_PerformanceCounters( void ) {
 R_IssueRenderCommands
 ====================
 */
-static void R_IssueRenderCommands( qboolean runPerformanceCounters ) {
+static void R_IssueRenderCommands( void ) {
 	renderCommandList_t	*cmdList;
 
 	cmdList = &backEndData->commands;
-	assert(cmdList);
+
 	// add an end-of-list command
 	*(int *)(cmdList->cmds + cmdList->used) = RC_END_OF_LIST;
 
 	// clear it out, in case this is a sync and not a buffer flip
 	cmdList->used = 0;
 
-	if ( runPerformanceCounters ) {
-		R_PerformanceCounters();
+	// skip backend when minimized
+	if ( ri.CL_IsMinimized() && backEnd.screenshotMask == 0 ) {
+		return;
 	}
 
 	// actually start the commands going
@@ -109,7 +110,7 @@ void R_IssuePendingRenderCommands( void ) {
 	if ( !tr.registered ) {
 		return;
 	}
-	R_IssueRenderCommands( qfalse );
+	R_IssueRenderCommands();
 }
 
 
@@ -448,7 +449,9 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 	}
 	cmd->commandId = RC_SWAP_BUFFERS;
 
-	R_IssueRenderCommands( qtrue );
+	R_PerformanceCounters();
+
+	R_IssueRenderCommands();
 
 	R_InitNextFrame();
 
