@@ -811,7 +811,7 @@ void HandleX11Events( void )
 			win_x = event.xconfigure.x;
 			win_y = event.xconfigure.y;
 			
-			if ( !glw_state.cdsFullscreen && window_created )
+			if ( !glw_state.cdsFullscreen && window_created && !gw_minimized )
 			{
 				Cvar_Set( "vid_xpos", va( "%i", win_x ) );
 				Cvar_Set( "vid_ypos", va( "%i", win_y ) );

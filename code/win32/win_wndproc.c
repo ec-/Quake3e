@@ -657,7 +657,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 	case WM_MOVE:
 		{
-			if ( !gw_active )
+			if ( !gw_active || gw_minimized )
 				break;
 			GetWindowRect( hWnd, &g_wv.winRect );
 			g_wv.winRectValid = qtrue;
@@ -796,7 +796,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		return 0;
 
 	case WM_SIZE:
-		if ( !gw_active )
+		if ( !gw_active || gw_minimized )
 			break;
 		GetWindowRect( hWnd, &g_wv.winRect );
 		g_wv.winRectValid = qtrue;
