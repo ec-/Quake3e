@@ -1233,11 +1233,11 @@ void R_AddLitSurf( surfaceType_t *surface, shader_t *shader, int fogIndex );
 #define	CULL_IN		0		// completely unclipped
 #define	CULL_CLIP	1		// clipped by one or more planes
 #define	CULL_OUT	2		// completely outside the clipping planes
-void R_LocalNormalToWorld (vec3_t local, vec3_t world);
-void R_LocalPointToWorld (vec3_t local, vec3_t world);
-int R_CullLocalBox (vec3_t bounds[2]);
-int R_CullPointAndRadius( vec3_t origin, float radius );
-int R_CullLocalPointAndRadius( vec3_t origin, float radius );
+void R_LocalNormalToWorld( const vec3_t local, vec3_t world );
+void R_LocalPointToWorld( const vec3_t local, vec3_t world );
+int R_CullLocalBox( const vec3_t bounds[2] );
+int R_CullPointAndRadius( const vec3_t origin, float radius );
+int R_CullLocalPointAndRadius( const vec3_t origin, float radius );
 int R_CullDlight( const dlight_t *dl );
 
 void R_SetupProjection( viewParms_t *dest, float zProj, qboolean computeFrustum );

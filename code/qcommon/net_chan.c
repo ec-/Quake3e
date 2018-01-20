@@ -52,13 +52,13 @@ to the new value before sending out any replies.
 #define	FRAGMENT_SIZE			(MAX_PACKETLEN - 100)
 #define	PACKET_HEADER			10			// two ints and a short
 
-#define	FRAGMENT_BIT	(1<<31)
+#define	FRAGMENT_BIT			(1U<<31)
 
 cvar_t		*showpackets;
 cvar_t		*showdrop;
 cvar_t		*qport;
 
-static char *netsrcString[2] = {
+static const char *netsrcString[2] = {
 	"client",
 	"server"
 };
@@ -75,6 +75,7 @@ void Netchan_Init( int port ) {
 	showdrop = Cvar_Get ("showdrop", "0", CVAR_TEMP );
 	qport = Cvar_Get ("net_qport", va("%i", port), CVAR_INIT );
 }
+
 
 /*
 ==============
@@ -96,6 +97,7 @@ void Netchan_Setup( netsrc_t sock, netchan_t *chan, const netadr_t *adr, int por
 	chan->compat = compat;
 	chan->isLANAddress = Sys_IsLANAddress( adr );
 }
+
 
 /*
 =================
@@ -187,7 +189,6 @@ void Netchan_Transmit( netchan_t *chan, int length, const byte *data ) {
 
 		// only send the first fragment now
 		Netchan_TransmitNextFragment( chan );
-
 		return;
 	}
 
@@ -428,7 +429,7 @@ typedef struct {
 loopback_t	loopbacks[2];
 
 
-qboolean	NET_GetLoopPacket (netsrc_t sock, netadr_t *net_from, msg_t *net_message)
+qboolean NET_GetLoopPacket( netsrc_t sock, netadr_t *net_from, msg_t *net_message )
 {
 	int		i;
 	loopback_t	*loop;
@@ -453,7 +454,7 @@ qboolean	NET_GetLoopPacket (netsrc_t sock, netadr_t *net_from, msg_t *net_messag
 }
 
 
-void NET_SendLoopPacket( netsrc_t sock, int length, const void *data )
+static void NET_SendLoopPacket( netsrc_t sock, int length, const void *data )
 {
 	int		i;
 	loopback_t	*loop;
