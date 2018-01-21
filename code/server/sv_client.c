@@ -159,24 +159,19 @@ void SV_GetChallenge( const netadr_t *from ) {
 		else
 		{
 			// otherwise send their ip to the authorize server
-			cvar_t	*fs;
-			char	game[1024];
+			const char *game;
 
 			if ( com_developer->integer ) {
 				Com_Printf( "sending getIpAuthorize for %s\n", NET_AdrToString( from ) );
 			}
 		
-			strcpy(game, BASEGAME);
-			fs = Cvar_Get ("fs_game", "", CVAR_INIT|CVAR_SYSTEMINFO );
-			if (fs && fs->string[0] != 0) {
-				strcpy(game, fs->string);
-			}
-			
+			game = FS_GetCurrentGameDir();
+
 			// the 0 is for backwards compatibility with obsolete sv_allowanonymous flags
 			// getIpAuthorize <challenge> <IP> <game> 0 <auth-flag>
 			NET_OutOfBandPrint( NS_SERVER, &svs.authorizeAddress,
 				"getIpAuthorize %i %i.%i.%i.%i %s 0 %s",  challenge->challenge,
-				from.ip[0], from.ip[1], from.ip[2], from.ip[3], game, sv_strictAuth->string );
+				from->ip[0], from->ip[1], from->ip[2], from->ip[3], game, sv_strictAuth->string );
 			
 			return;
 		}

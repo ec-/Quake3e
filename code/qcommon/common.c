@@ -3367,8 +3367,8 @@ Writes key bindings and archived cvars to config file if modified
 */
 void Com_WriteConfiguration( void ) {
 #ifndef DEDICATED
-	extern cvar_t *fs_basegame;
-	extern cvar_t *fs_gamedirvar;
+	const char *basegame;
+	const char *gamedir;
 #endif
 	// if we are quiting without fully initializing, make sure
 	// we don't write out anything
@@ -3383,12 +3383,13 @@ void Com_WriteConfiguration( void ) {
 
 	Com_WriteConfigToFile( Q3CONFIG_CFG );
 
-	// bk001119 - tentative "not needed for dedicated"
 #ifndef DEDICATED
-	if ( UI_usesUniqueCDKey() && fs_gamedirvar->string[0] && Q_stricmp( fs_basegame->string, fs_gamedirvar->string ) ) {
-		Com_WriteCDKey( fs_gamedirvar->string, &cl_cdkey[16] );
+	gamedir = Cvar_VariableString( "fs_game" );
+	basegame = Cvar_VariableString( "fs_basegame" );
+	if ( UI_usesUniqueCDKey() && gamedir[0] && Q_stricmp( basegame, gamedir ) ) {
+		Com_WriteCDKey( gamedir, &cl_cdkey[16] );
 	} else {
-		Com_WriteCDKey( fs_basegame->string, cl_cdkey );
+		Com_WriteCDKey( basegame, cl_cdkey );
 	}
 #endif
 }
