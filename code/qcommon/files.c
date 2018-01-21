@@ -3330,14 +3330,33 @@ Check whether the string contains stuff like "../" to prevent directory traversa
 and return qtrue if it does.
 ================
 */
-
-qboolean FS_CheckDirTraversal(const char *checkdir)
+qboolean FS_CheckDirTraversal( const char *checkdir )
 {
 	if(strstr(checkdir, "../") || strstr(checkdir, "..\\"))
 		return qtrue;
 	
 	return qfalse;
 }
+
+
+/*
+================
+FS_InvalidGameDir
+return true if path is a reference to current directory or directory traversal
+================
+*/
+qboolean FS_InvalidGameDir( const char *gamedir ) 
+{
+	if ( !strcmp( gamedir, "." ) || !strcmp( gamedir, ".." )
+		|| !strcmp( gamedir, "/" ) || !strcmp( gamedir, "\\" )
+		|| strstr( gamedir, "/.." ) || strstr( gamedir, "\\.." )
+		|| FS_CheckDirTraversal( gamedir ) ) {
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
 
 /*
 ================
@@ -3617,7 +3636,15 @@ static void FS_Startup( void ) {
 	}
 
 	fs_homepath = Cvar_Get( "fs_homepath", homePath, CVAR_INIT | CVAR_PROTECTED );
-	fs_gamedirvar = Cvar_Get( "fs_game", "", CVAR_INIT | CVAR_SYSTEMINFO );
+	fs_gamedirvar = Cvar_Get( "fs_game", "", CVAR_LATCH | CVAR_NORESTART | CVAR_SYSTEMINFO );
+
+	if ( FS_InvalidGameDir( fs_gamedirvar->string ) ) {
+ 		Com_Error( ERR_DROP, "Invalid fs_game '%s'", fs_gamedirvar->string );
+ 	}
+
+	if ( !Q_stricmp( fs_basegame->string, fs_gamedirvar->string ) ) {
+		Cvar_ForceReset( "fs_game" );
+	}
 
 	// add search path elements in reverse priority order
 	if ( fs_steampath->string[0] ) {

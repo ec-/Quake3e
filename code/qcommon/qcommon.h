@@ -773,7 +773,8 @@ void FS_PureServerSetLoadedPaks( const char *pakSums, const char *pakNames );
 // separated checksums will be checked for files, with the
 // sole exception of .cfg files.
 
-qboolean FS_CheckDirTraversal(const char *checkdir);
+qboolean FS_CheckDirTraversal( const char *checkdir );
+qboolean FS_InvalidGameDir( const char *gamedir );
 qboolean FS_idPak( const char *pak, const char *base, int numPaks );
 qboolean FS_ComparePaks( char *neededpaks, int len, qboolean dlstring );
 
@@ -1020,10 +1021,6 @@ CLIENT / SERVER SYSTEMS
 //
 // client interface
 //
-void CL_InitKeyCommands( void );
-// the keyboard binding interface must be setup before execing
-// config files, but the rest of client startup will happen later
-
 void CL_Init( void );
 qboolean CL_Disconnect( qboolean showMainMenu );
 void CL_ResetOldGame( void );

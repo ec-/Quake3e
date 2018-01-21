@@ -1156,7 +1156,7 @@ static qboolean CL_RestoreOldGame( void )
 	if ( cl_oldGameSet )
 	{
 		cl_oldGameSet = qfalse;
-		Cvar_Set2( "fs_game", cl_oldGame, qtrue );
+		Cvar_Set( "fs_game", cl_oldGame );
 		FS_ConditionalRestart( clc.checksumFeed, qtrue );
 		return qtrue;
 	}

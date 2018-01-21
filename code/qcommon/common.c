@@ -2707,13 +2707,13 @@ Com_GameRestart_f
 Expose possibility to change current running mod to the user
 ==================
 */
-
-void Com_GameRestart_f(void)
+void Com_GameRestart_f( void )
 {
-	Cvar_Set("fs_game", Cmd_Argv(1));
+	Cvar_Set( "fs_game", Cmd_Argv( 1 ) );
 
-	Com_GameRestart(0, qtrue);
+	Com_GameRestart( 0, qtrue );
 }
+
 
 // TTimo: centralizing the cl_cdkey stuff after I discovered a buffer overflow problem with the dedicated server version
 //   not sure it's necessary to have different defaults for regular and dedicated, but I don't want to risk it
