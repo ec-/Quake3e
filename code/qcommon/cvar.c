@@ -282,12 +282,21 @@ static const char *Cvar_Validate( cvar_t *var, const char *value, qboolean warn 
 		} // Q_isanumber
 	} // CV_INTEGER || CV_FLOAT
 	// TODO: stringlist
+	else if ( var->validator == CV_FSPATH ) {
+		// check for directory traversal patterns
+		if ( FS_InvalidGameDir( value ) ) {
+			limit = var->string;
+			if ( warn ) {
+				Com_Printf( "WARNING: cvar '%s' contains invalid patterns", var->name );
+			}
+		}
+	}
 
 	if ( limit || value == intbuf ) {
 		if ( !limit )
 			limit = value;
 		if ( warn )
-			Com_Printf( ", setting to %s\n", limit );
+			Com_Printf( ", setting to '%s'\n", limit );
 		return limit;
 	} else {
 		return value;

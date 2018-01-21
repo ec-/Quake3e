@@ -3637,10 +3637,7 @@ static void FS_Startup( void ) {
 
 	fs_homepath = Cvar_Get( "fs_homepath", homePath, CVAR_INIT | CVAR_PROTECTED );
 	fs_gamedirvar = Cvar_Get( "fs_game", "", CVAR_LATCH | CVAR_NORESTART | CVAR_SYSTEMINFO );
-
-	if ( FS_InvalidGameDir( fs_gamedirvar->string ) ) {
- 		Com_Error( ERR_DROP, "Invalid fs_game '%s'", fs_gamedirvar->string );
- 	}
+	Cvar_CheckRange( fs_gamedirvar, NULL, NULL, CV_FSPATH );
 
 	if ( !Q_stricmp( fs_basegame->string, fs_gamedirvar->string ) ) {
 		Cvar_ForceReset( "fs_game" );
