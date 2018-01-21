@@ -1294,6 +1294,7 @@ static const char *glDefToStr( GLint define )
 		CASE_STR(GL_UNSIGNED_SHORT_4_4_4_4_REV);
 		CASE_STR(GL_UNSIGNED_INT_8_8_8_8_REV);
 		CASE_STR(GL_UNSIGNED_INT_2_10_10_10_REV);
+		CASE_STR(GL_UNSIGNED_NORMALIZED);
 		// error codes
 		CASE_STR(GL_NO_ERROR);
 		CASE_STR(GL_INVALID_ENUM);
@@ -1327,6 +1328,12 @@ static void getPreferredFormatAndType( GLint format, GLint *pFormat, GLint *pTyp
 		qglGetInternalformativ( GL_TEXTURE_2D, /*GL_RGBA8*/ format, GL_TEXTURE_IMAGE_TYPE, 1, &preferredType );
 		if ( preferredFormat == 0 ) // nVidia ION drivers can do that
 			preferredFormat = GL_RGBA;
+		if ( preferredType == GL_UNSIGNED_NORMALIZED ) { // Intel HD 530 drivers can do that as well
+			if ( format == GL_RGBA12 || format == GL_RGBA16 )
+				preferredType = GL_UNSIGNED_SHORT;
+			else
+				preferredType = GL_UNSIGNED_BYTE;
+		}
 	} else {
 		if ( format == GL_RGBA12 || format == GL_RGBA16 ) {
 			preferredFormat = GL_RGBA;
