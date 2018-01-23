@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "client.h"
 
 #define  DEFAULT_CONSOLE_WIDTH 78
+#define  MAX_CONSOLE_WIDTH 120
 
 #define  NUM_CON_TIMES  4
 
@@ -294,6 +295,9 @@ void Con_CheckResize( void )
 	}
 	else
 	{
+		if ( width > MAX_CONSOLE_WIDTH )
+			width = MAX_CONSOLE_WIDTH;
+
 		oldwidth = con.linewidth;
 		oldtotallines = con.totallines;
 		oldcurrent = con.current;
@@ -697,7 +701,6 @@ void Con_DrawSolidConsole( float frac ) {
 	int				lines;
 	int				currentColorIndex;
 	int				colorIndex;
-	vec4_t			color;
 	float			yf, wf;
 	char			buf[ MAX_CVAR_VALUE_STRING ], *v[4];
 
@@ -748,19 +751,12 @@ void Con_DrawSolidConsole( float frac ) {
 
 	}
 
-	color[0] = 1;
-	color[1] = 0;
-	color[2] = 0;
-	color[3] = 1;
-
-	re.SetColor( color );
+	re.SetColor( g_color_table[ ColorIndex( COLOR_RED ) ] );
 	re.DrawStretchPic( 0, yf, wf, 2, 0, 0, 1, 1, cls.whiteShader );
 
 	//y = yf;
 
 	// draw the version number
-	re.SetColor( g_color_table[ ColorIndex( COLOR_RED ) ] );
-
 	SCR_DrawSmallString( cls.glconfig.vidWidth - ( ARRAY_LEN( Q3_VERSION ) ) * SMALLCHAR_WIDTH, 
 		lines - SMALLCHAR_HEIGHT, Q3_VERSION, ARRAY_LEN( Q3_VERSION ) - 1 );
 
