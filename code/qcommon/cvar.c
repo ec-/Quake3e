@@ -770,6 +770,19 @@ void Cvar_SetValue( const char *var_name, float value) {
 
 /*
 ============
+Cvar_SetIntegerValue
+============
+*/
+void Cvar_SetIntegerValue( const char *var_name, int value ) {
+	char	val[32];
+
+	sprintf( val, "%i", value );
+	Cvar_Set( var_name, val );
+}
+
+
+/*
+============
 Cvar_SetValueSafe
 ============
 */

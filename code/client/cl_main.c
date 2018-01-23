@@ -1257,7 +1257,7 @@ qboolean CL_Disconnect( qboolean showMainMenu ) {
 	Cvar_Set( "sv_cheats", "1" );
 
 	// not connected to a pure server anymore
-	cl_connectedToPureServer = qfalse;
+	cl_connectedToPureServer = 0;
 
 	CL_UpdateGUID( NULL, 0 );
 

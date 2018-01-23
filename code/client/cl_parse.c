@@ -634,7 +634,7 @@ void CL_ParseDownload( msg_t *msg ) {
 		// block zero is special, contains file size
 		clc.downloadSize = MSG_ReadLong ( msg );
 
-		Cvar_SetValue( "cl_downloadSize", clc.downloadSize );
+		Cvar_SetIntegerValue( "cl_downloadSize", clc.downloadSize );
 
 		if (clc.downloadSize < 0)
 		{
@@ -689,7 +689,7 @@ void CL_ParseDownload( msg_t *msg ) {
 	clc.downloadCount += size;
 
 	// So UI gets access to it
-	Cvar_SetValue( "cl_downloadCount", clc.downloadCount );
+	Cvar_SetIntegerValue( "cl_downloadCount", clc.downloadCount );
 
 	if (!size) { // A zero length block means EOF
 		if ( clc.download != FS_INVALID_HANDLE ) {

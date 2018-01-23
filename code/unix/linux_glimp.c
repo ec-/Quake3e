@@ -813,8 +813,8 @@ void HandleX11Events( void )
 			
 			if ( !glw_state.cdsFullscreen && window_created && !gw_minimized )
 			{
-				Cvar_Set( "vid_xpos", va( "%i", win_x ) );
-				Cvar_Set( "vid_ypos", va( "%i", win_y ) );
+				Cvar_SetIntegerValue( "vid_xpos", win_x );
+				Cvar_SetIntegerValue( "vid_ypos", win_y );
 				RandR_UpdateMonitor( win_x, win_y,
 					event.xconfigure.width,
 					event.xconfigure.height );

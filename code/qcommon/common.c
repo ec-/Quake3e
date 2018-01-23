@@ -223,8 +223,8 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 			}
 			else
 			{
-				Com_Printf("Opening qconsole.log failed!\n");
-				Cvar_SetValue("logfile", 0);
+				Com_Printf( "Opening qconsole.log failed!\n" );
+				Cvar_Set( "logfile", "0" );
 			}
 
 			opening_qconsole = qfalse;

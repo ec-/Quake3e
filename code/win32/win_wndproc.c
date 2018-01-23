@@ -669,8 +669,8 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 			if ( !glw_state.cdsFullscreen )
 			{
-				Cvar_SetValue( "vid_xpos", g_wv.winRect.left );
-				Cvar_SetValue( "vid_ypos", g_wv.winRect.top );
+				Cvar_SetIntegerValue( "vid_xpos", g_wv.winRect.left );
+				Cvar_SetIntegerValue( "vid_ypos", g_wv.winRect.top );
 
 				vid_xpos->modified = qfalse;
 				vid_ypos->modified = qfalse;
@@ -772,7 +772,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 	case WM_SYSKEYDOWN:
 	case WM_KEYDOWN:
 		if ( wParam == VK_RETURN && ( uMsg == WM_SYSKEYDOWN || GetAsyncKeyState( VK_RMENU ) & 0x8000 ) ) {
-			Cvar_SetValue( "r_fullscreen", glw_state.cdsFullscreen? 0 : 1 );
+			Cvar_SetIntegerValue( "r_fullscreen", glw_state.cdsFullscreen ? 0 : 1 );
 				Cbuf_AddText( "vid_restart\n" );
 			return 0;
 		}
