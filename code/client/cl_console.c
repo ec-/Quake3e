@@ -190,6 +190,7 @@ static void Con_Dump_f( void )
 	int		bufferlen;
 	char	*buffer;
 	char	filename[MAX_QPATH];
+	char	path[MAX_OSPATH];
 	const char *ext;
 
 	if ( Cmd_Argc() != 2 )
@@ -206,14 +207,21 @@ static void Con_Dump_f( void )
 		return;
 	}
 
-	f = FS_FOpenFileWrite( filename );
-	if ( f == FS_INVALID_HANDLE )
-	{
-		Com_Printf( "ERROR: couldn't open %s.\n", filename );		
+	if ( strchr( filename, '/' ) || strchr( filename, '\\' ) || strchr( filename, ':' ) ) {
+		Com_Printf( "%s: Invalid filename '%s'.\n", __func__, filename );
 		return;
 	}
 
-	Com_Printf( "Dumped console text to %s.\n", filename );
+	Com_sprintf( path, sizeof( path ), "%s-%s", FS_GetCurrentGameDir(), filename );
+
+	f = FS_SV_FOpenFileWrite( path );
+	if ( f == FS_INVALID_HANDLE )
+	{
+		Com_Printf( "ERROR: couldn't open %s.\n", path );
+		return;
+	}
+
+	Com_Printf( "Dumped console text to %s.\n", path );
 
 	if ( con.current >= con.totallines ) {
 		n = con.totallines;
