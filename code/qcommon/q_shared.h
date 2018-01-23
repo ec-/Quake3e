@@ -861,6 +861,8 @@ default values.
 
 #define CVAR_NODEFAULT		0x4000	// do not write to config if matching with default value
 
+#define CVAR_PRIVATE		0x8000	// can't be read from VM
+
 #define CVAR_ARCHIVE_ND		(CVAR_ARCHIVE | CVAR_NODEFAULT)
 
 // These flags are only returned by the Cvar_Flags() function

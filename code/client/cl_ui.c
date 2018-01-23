@@ -799,7 +799,7 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return FloatAsInt( Cvar_VariableValue( VMA(1) ) );
 
 	case UI_CVAR_VARIABLESTRINGBUFFER:
-		Cvar_VariableStringBuffer( VMA(1), VMA(2), args[3] );
+		Cvar_VariableStringBufferSafe( VMA(1), VMA(2), args[3] );
 		return 0;
 
 	case UI_CVAR_SETVALUE:
