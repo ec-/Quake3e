@@ -390,6 +390,16 @@ vm_t	*VM_Restart( vm_t *vm );
 intptr_t	QDECL VM_Call( vm_t *vm, int callNum, ... );
 
 void	VM_Debug( int level );
+void	VM_CheckBounds( const vm_t *vm, unsigned int address, unsigned int length );
+void	VM_CheckBounds2( const vm_t *vm, unsigned int addr1, unsigned int addr2, unsigned int length );
+
+#if 1
+#define VM_CHECKBOUNDS VM_CheckBounds
+#define VM_CHECKBOUNDS2 VM_CheckBounds2
+#else // for performance evaluation purposes
+#define VM_CHECKBOUNDS(vm,a,b)
+#define VM_CHECKBOUNDS2(vm,a,b,c)
+#endif
 
 void	*GVM_ArgPtr( intptr_t intValue );
 

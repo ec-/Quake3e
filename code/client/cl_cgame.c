@@ -459,23 +459,28 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		Cvar_SetSafe( VMA(1), VMA(2) );
 		return 0;
 	case CG_CVAR_VARIABLESTRINGBUFFER:
+		VM_CHECKBOUNDS( cgvm, args[2], args[3] );
 		Cvar_VariableStringBufferSafe( VMA(1), VMA(2), args[3] );
 		return 0;
 	case CG_ARGC:
 		return Cmd_Argc();
 	case CG_ARGV:
+		VM_CHECKBOUNDS( cgvm, args[2], args[3] );
 		Cmd_ArgvBuffer( args[1], VMA(2), args[3] );
 		return 0;
 	case CG_ARGS:
+		VM_CHECKBOUNDS( cgvm, args[1], args[2] );
 		Cmd_ArgsBuffer( VMA(1), args[2] );
 		return 0;
 
 	case CG_FS_FOPENFILE:
 		return FS_VM_OpenFile( VMA(1), VMA(2), args[3], H_CGAME );
 	case CG_FS_READ:
+		VM_CHECKBOUNDS( cgvm, args[1], args[2] );
 		FS_VM_ReadFile( VMA(1), args[2], args[3], H_CGAME );
 		return 0;
 	case CG_FS_WRITE:
+		VM_CHECKBOUNDS( cgvm, args[1], args[2] );
 		FS_VM_WriteFile( VMA(1), args[2], args[3], H_CGAME );
 		return 0;
 	case CG_FS_FCLOSEFILE:
@@ -611,9 +616,11 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 	case CG_R_LERPTAG:
 		return re.LerpTag( VMA(1), args[2], args[3], args[4], VMF(5), VMA(6) );
 	case CG_GETGLCONFIG:
+		VM_CHECKBOUNDS( cgvm, args[1], sizeof( glconfig_t ) );
 		CL_GetGlconfig( VMA(1) );
 		return 0;
 	case CG_GETGAMESTATE:
+		VM_CHECKBOUNDS( cgvm, args[1], sizeof( gameState_t ) );
 		CL_GetGameState( VMA(1) );
 		return 0;
 	case CG_GETCURRENTSNAPSHOTNUMBER:
@@ -644,12 +651,15 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return Key_GetKey( VMA(1) );
 
 	case CG_MEMSET:
+		VM_CHECKBOUNDS( cgvm, args[1], args[3] );
 		Com_Memset( VMA(1), args[2], args[3] );
 		return args[1];
 	case CG_MEMCPY:
+		VM_CHECKBOUNDS2( cgvm, args[1], args[2], args[3] );
 		Com_Memcpy( VMA(1), VMA(2), args[3] );
 		return args[1];
 	case CG_STRNCPY:
+		VM_CHECKBOUNDS2( cgvm, args[1], args[2], args[3] );
 		strncpy( VMA(1), VMA(2), args[3] );
 		return args[1];
 	case CG_SIN:
@@ -721,6 +731,7 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return getCameraInfo(args[1], VMA(2), VMA(3));
 */
 	case CG_GET_ENTITY_TOKEN:
+		VM_CHECKBOUNDS( cgvm, args[1], args[2] );
 		return re.GetEntityToken( VMA(1), args[2] );
 
 	case CG_R_INPVS:
@@ -740,6 +751,7 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return 0;
 
 	case CG_TRAP_GETVALUE:
+		VM_CHECKBOUNDS( cgvm, args[1], args[2] );
 		return CL_GetValue( VMA(1), args[2], VMA(3) );
 
 	default:

@@ -97,8 +97,8 @@ locals from sp
 int	VM_CallInterpreted2( vm_t *vm, int nargs, int *args ) {
 	int		stack[MAX_OPSTACK_SIZE];
 	int		*opStack, *opStackTop;
-	int		programStack;
-	int		stackOnEntry;
+	unsigned int programStack;
+	unsigned int stackOnEntry;
 	byte	*image;
 	int		v1, v0;
 	int		dataMask;

@@ -2543,7 +2543,7 @@ __compile:
 	VM_FreeBuffers();
 
 #ifdef VM_X86_MMAP
-	if ( mprotect( vm->codeBase.ptr, vm->allocSize, PROT_READ|PROT_EXEC ) ) {
+	if ( mprotect( vm->codeBase.ptr, vm->codeSize, PROT_READ|PROT_EXEC ) ) {
 		VM_Destroy_Compiled( vm );
 		Com_Error( ERR_FATAL, "VM_CompileX86: mprotect failed" );
 		return qfalse;
@@ -2553,7 +2553,7 @@ __compile:
 		DWORD oldProtect = 0;
 		
 		// remove write permissions.
-		if ( !VirtualProtect( vm->codeBase.ptr, vm->allocSize, PAGE_EXECUTE_READ, &oldProtect ) ) {
+		if ( !VirtualProtect( vm->codeBase.ptr, vm->codeSize, PAGE_EXECUTE_READ, &oldProtect ) ) {
 			VM_Destroy_Compiled( vm );
 			Com_Error( ERR_FATAL, "VM_CompileX86: VirtualProtect failed" );
 			return qfalse;
@@ -2602,7 +2602,7 @@ static void *VM_Alloc_Compiled( vm_t *vm, int codeLength, int tableLength )
 #endif
 	vm->codeBase.ptr = (byte*)ptr;
 	vm->codeLength = codeLength;
-	vm->allocSize = length;
+	vm->codeSize = length;
 
 	return vm->codeBase.ptr;
 }
@@ -2636,7 +2636,7 @@ This function is called directly by the generated code
 int	VM_CallCompiled( vm_t *vm, int nargs, int *args )
 {
 	int		opStack[MAX_OPSTACK_SIZE];
-	int		stackOnEntry;
+	unsigned int stackOnEntry;
 	int		*image;
 	int		*oldOpTop;
 	int		i;

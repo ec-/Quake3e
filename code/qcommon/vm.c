@@ -224,6 +224,41 @@ void VM_Debug( int level ) {
 	vm_debugLevel = level;
 }
 
+
+/*
+==============
+VM_CheckBounds
+==============
+*/
+void VM_CheckBounds( const vm_t *vm, unsigned int address, unsigned int length )
+{
+	//if ( !vm->entryPoint )
+	{
+		if ( (address | length) > vm->dataMask || (address + length) > vm->dataAlloc )
+		{
+			Com_Error( ERR_DROP, "program tried to bypass data segment bounds" );
+		}
+	}
+}
+
+
+/*
+==============
+VM_CheckBounds2
+==============
+*/
+void VM_CheckBounds2( const vm_t *vm, unsigned int addr1, unsigned int addr2, unsigned int length )
+{
+	//if ( !vm->entryPoint )
+	{
+		if ( (addr1 | addr2 | length) > vm->dataMask || (addr1 + length) > vm->dataAlloc || (addr2+length) > vm->dataAlloc )
+		{
+			Com_Error( ERR_DROP, "program tried to bypass data segment bounds" );
+		}
+	}
+}
+
+
 /*
 ==============
 VM_Init
@@ -697,10 +732,10 @@ else
 
 =================
 */
-vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
+static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 	int					length;
-	int					dataLength;
-	int					dataAlloc;
+	unsigned int		dataLength;
+	unsigned int		dataAlloc;
 	int					i;
 	char				filename[MAX_QPATH], *errorMsg;
 	unsigned int		crc32sum;
@@ -752,9 +787,16 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 	dataLength = 1 << i;
 
 	// reserve some space for effective LOCAL+LOAD* checks
-	dataAlloc = dataLength + 256;
+	dataAlloc = dataLength + 1024;
 
-	if( alloc ) {
+	if ( dataLength >= (1U<<31) || dataAlloc >= (1U<<31) ) {
+		VM_Free( vm );
+		FS_FreeFile( header );
+		Com_Error( ERR_FATAL, "%s: data segment is too large", __func__ );
+		return NULL;
+	}
+
+	if ( alloc ) {
 		// allocate zero filled space for initialized and uninitialized data
 		vm->dataBase = Hunk_Alloc( dataAlloc, h_high );
 		vm->dataMask = dataLength - 1;
@@ -1378,6 +1420,9 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 		Com_Printf( "Loading dll file %s.\n", name );
 		vm->dllHandle = Sys_LoadDll( name, &vm->entryPoint, dllSyscalls );
 		if ( vm->dllHandle ) {
+			vm->dataAlloc = ~0U;
+			vm->dataMask = ~0U;
+			vm->dataBase = 0;
 			return vm;
 		}
 

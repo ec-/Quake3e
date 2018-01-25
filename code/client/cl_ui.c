@@ -42,6 +42,7 @@ static void GetClientState( uiClientState_t *state ) {
 	state->clientNum = cl.snap.ps.clientNum;
 }
 
+
 /*
 ====================
 LAN_LoadCachedServers
@@ -135,6 +136,7 @@ static void LAN_ResetPings(int source) {
 	}
 }
 
+
 /*
 ====================
 LAN_AddServer
@@ -181,6 +183,7 @@ static int LAN_AddServer(int source, const char *name, const char *address) {
 	}
 	return -1;
 }
+
 
 /*
 ====================
@@ -245,6 +248,7 @@ static int LAN_GetServerCount( int source ) {
 	return 0;
 }
 
+
 /*
 ====================
 LAN_GetLocalServerAddressString
@@ -274,6 +278,7 @@ static void LAN_GetServerAddressString( int source, int n, char *buf, int buflen
 	}
 	buf[0] = '\0';
 }
+
 
 /*
 ====================
@@ -325,6 +330,7 @@ static void LAN_GetServerInfo( int source, int n, char *buf, int buflen ) {
 		}
 	}
 }
+
 
 /*
 ====================
@@ -383,6 +389,7 @@ static serverInfo_t *LAN_GetServerPtr( int source, int n ) {
 	}
 	return NULL;
 }
+
 
 /*
 ====================
@@ -453,6 +460,7 @@ static int LAN_CompareServers( int source, int sortKey, int sortDir, int s1, int
 	return res;
 }
 
+
 /*
 ====================
 LAN_GetPingQueueCount
@@ -461,6 +469,7 @@ LAN_GetPingQueueCount
 static int LAN_GetPingQueueCount( void ) {
 	return (CL_GetPingQueueCount());
 }
+
 
 /*
 ====================
@@ -471,6 +480,7 @@ static void LAN_ClearPing( int n ) {
 	CL_ClearPing( n );
 }
 
+
 /*
 ====================
 LAN_GetPing
@@ -480,6 +490,7 @@ static void LAN_GetPing( int n, char *buf, int buflen, int *pingtime ) {
 	CL_GetPing( n, buf, buflen, pingtime );
 }
 
+
 /*
 ====================
 LAN_GetPingInfo
@@ -488,6 +499,7 @@ LAN_GetPingInfo
 static void LAN_GetPingInfo( int n, char *buf, int buflen ) {
 	CL_GetPingInfo( n, buf, buflen );
 }
+
 
 /*
 ====================
@@ -799,6 +811,7 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return FloatAsInt( Cvar_VariableValue( VMA(1) ) );
 
 	case UI_CVAR_VARIABLESTRINGBUFFER:
+		VM_CHECKBOUNDS( uivm, args[2], args[3] );
 		Cvar_VariableStringBufferSafe( VMA(1), VMA(2), args[3] );
 		return 0;
 
@@ -815,6 +828,7 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_CVAR_INFOSTRINGBUFFER:
+		VM_CHECKBOUNDS( uivm, args[2], args[3] );
 		Cvar_InfoStringBuffer( args[1], VMA(2), args[3] );
 		return 0;
 
@@ -822,6 +836,7 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return Cmd_Argc();
 
 	case UI_ARGV:
+		VM_CHECKBOUNDS( uivm, args[2], args[3] );
 		Cmd_ArgvBuffer( args[1], VMA(2), args[3] );
 		return 0;
 
@@ -842,10 +857,12 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return FS_VM_OpenFile( VMA(1), VMA(2), args[3], H_Q3UI );
 
 	case UI_FS_READ:
+		VM_CHECKBOUNDS( uivm, args[1], args[2] );
 		FS_VM_ReadFile( VMA(1), args[2], args[3], H_Q3UI );
 		return 0;
 
 	case UI_FS_WRITE:
+		VM_CHECKBOUNDS( uivm, args[1], args[2] );
 		FS_VM_WriteFile( VMA(1), args[2], args[3], H_Q3UI );
 		return 0;
 
@@ -857,6 +874,7 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return FS_VM_SeekFile( args[1], args[2], args[3], H_Q3UI );
 
 	case UI_FS_GETFILELIST:
+		VM_CHECKBOUNDS( uivm, args[3], args[4] );
 		return FS_GetFileList( VMA(1), VMA(2), VMA(3), args[4] );
 
 	case UI_R_REGISTERMODEL:
@@ -916,10 +934,12 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_KEY_KEYNUMTOSTRINGBUF:
+		VM_CHECKBOUNDS( uivm, args[2], args[3] );
 		Key_KeynumToStringBuf( args[1], VMA(2), args[3] );
 		return 0;
 
 	case UI_KEY_GETBINDINGBUF:
+		VM_CHECKBOUNDS( uivm, args[2], args[3] );
 		Key_GetBindingBuf( args[1], VMA(2), args[3] );
 		return 0;
 
@@ -950,6 +970,7 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_GETCLIPBOARDDATA:
+		VM_CHECKBOUNDS( uivm, args[1], args[2] );
 		CL_GetClipboardData( VMA(1), args[2] );
 		return 0;
 
@@ -958,10 +979,12 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;		
 
 	case UI_GETGLCONFIG:
+		VM_CHECKBOUNDS( uivm, args[1], sizeof( glconfig_t ) );
 		CL_GetGlconfig( VMA(1) );
 		return 0;
 
 	case UI_GETCONFIGSTRING:
+		VM_CHECKBOUNDS( uivm, args[2], args[3] );
 		return GetConfigString( args[1], VMA(2), args[3] );
 
 	case UI_LAN_LOADCACHEDSERVERS:
@@ -987,10 +1010,12 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_LAN_GETPING:
+		VM_CHECKBOUNDS( uivm, args[2], args[3] );
 		LAN_GetPing( args[1], VMA(2), args[3], VMA(4) );
 		return 0;
 
 	case UI_LAN_GETPINGINFO:
+		VM_CHECKBOUNDS( uivm, args[2], args[3] );
 		LAN_GetPingInfo( args[1], VMA(2), args[3] );
 		return 0;
 
@@ -998,10 +1023,12 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return LAN_GetServerCount(args[1]);
 
 	case UI_LAN_GETSERVERADDRESSSTRING:
+		VM_CHECKBOUNDS( uivm, args[3], args[4] );
 		LAN_GetServerAddressString( args[1], args[2], VMA(3), args[4] );
 		return 0;
 
 	case UI_LAN_GETSERVERINFO:
+		VM_CHECKBOUNDS( uivm, args[3], args[4] );
 		LAN_GetServerInfo( args[1], args[2], VMA(3), args[4] );
 		return 0;
 
@@ -1049,14 +1076,17 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_MEMSET:
+		VM_CHECKBOUNDS( uivm, args[1], args[3] );
 		Com_Memset( VMA(1), args[2], args[3] );
 		return args[1];
 
 	case UI_MEMCPY:
+		VM_CHECKBOUNDS2( uivm, args[1], args[2], args[3] );
 		Com_Memcpy( VMA(1), VMA(2), args[3] );
 		return args[1];
 
 	case UI_STRNCPY:
+		VM_CHECKBOUNDS2( uivm, args[1], args[2], args[3] );
 		strncpy( VMA(1), VMA(2), args[3] );
 		return args[1];
 
@@ -1135,6 +1165,7 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_TRAP_GETVALUE:
+		VM_CHECKBOUNDS( uivm, args[1], args[2] );
 		return UI_GetValue( VMA(1), args[2], VMA(3) );
 		
 	default:

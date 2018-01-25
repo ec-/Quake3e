@@ -36,7 +36,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define	PROGRAM_STACK_SIZE	0x10000
 
 // for some buggy mods
-#define	PROGRAM_STACK_EXTRA	(16*1024)
+#define	PROGRAM_STACK_EXTRA	(32*1024)
 
 typedef enum {
 	OP_UNDEF, 
@@ -153,10 +153,9 @@ typedef union vmFunc_u {
 } vmFunc_t;
 
 struct vm_s {
-    // DO NOT MOVE OR CHANGE THESE WITHOUT CHANGING THE VM_OFFSET_* DEFINES
-    // USED BY THE ASM CODE
-    int			programStack;		// the vm may be recursively entered
-    syscall_t	systemCall;
+
+	unsigned int programStack;		// the vm may be recursively entered
+	syscall_t	systemCall;
 	byte		*dataBase;
 	int			*opStack;			// pointer to local function stack
 
@@ -182,17 +181,16 @@ struct vm_s {
 	qboolean	compiled;
 
 	vmFunc_t	codeBase;
-	int			codeLength;
+	unsigned int codeSize;			// code + jump targets, needed for proper munmap()
+	unsigned int codeLength;		// just for information
 
-	int			allocSize;			// needed for proper munmap()
+	unsigned int dataMask;
+	unsigned int dataLength;			// data segment length
+	unsigned int exactDataLength;	// from qvm header
+	unsigned int dataAlloc;			// actually allocated
 
-	int			dataMask;
-	int			dataLength;			// data segment length
-	int			exactDataLength;	// from qvm header
-	int			dataAlloc;			// actually allocated
-
-	int			stackBottom;		// if programStack < stackBottom, error
-	int			*opStackTop;		
+	unsigned int stackBottom;		// if programStack < stackBottom, error
+	int			*opStackTop;
 
 	int			numSymbols;
 	vmSymbol_t	*symbols;
