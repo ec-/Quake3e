@@ -749,10 +749,10 @@ void Cvar_SetSafe( const char *var_name, const char *value )
 		}
 
 		// don't let VMs or server change engine latched cvars instantly
-		if ( ( flags & CVAR_LATCH ) && !( flags & CVAR_VM_CREATED ) )
-		{
-			force = qfalse;
-		}
+		//if ( ( flags & CVAR_LATCH ) && !( flags & CVAR_VM_CREATED ) )
+		//{
+		//	force = qfalse;
+		//}
 	}
 
 	Cvar_Set2( var_name, value, force );
