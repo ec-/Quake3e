@@ -303,10 +303,17 @@ static const char *Cvar_Validate( cvar_t *var, const char *value, qboolean warn 
 	else if ( var->validator == CV_FSPATH ) {
 		// check for directory traversal patterns
 		if ( FS_InvalidGameDir( value ) ) {
-			limit = var->string;
 			if ( warn ) {
 				Com_Printf( "WARNING: cvar '%s' contains invalid patterns", var->name );
 			}
+			// try to use current value if it is valid
+			if ( !FS_InvalidGameDir( var->string ) ) {
+				if ( warn ) {
+					Com_Printf( "\n" );
+				}
+				return var->string;
+			}
+			limit = var->resetString;
 		}
 	}
 
