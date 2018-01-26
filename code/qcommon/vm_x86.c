@@ -2616,7 +2616,7 @@ VM_Destroy_Compiled
 static void VM_Destroy_Compiled( vm_t* vm )
 {
 #ifdef VM_X86_MMAP
-	munmap( vm->codeBase.ptr, vm->allocSize );
+	munmap( vm->codeBase.ptr, vm->codeSize );
 #elif _WIN32
 	VirtualFree( vm->codeBase.ptr, 0, MEM_RELEASE );
 #else
