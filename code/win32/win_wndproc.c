@@ -630,6 +630,12 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		// We can't get correct minimized status on WM_KILLFOCUS
 		VID_AppActivate( fActive );
 
+		if ( fActive ) {
+			WIN_DisableAltTab();
+		} else {
+			WIN_EnableAltTab();
+		}
+
 		if ( glw_state.cdsFullscreen ) {
 			if ( fActive ) {
 				SetGameDisplaySettings();
@@ -654,12 +660,6 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			} else {
 				GLW_RestoreGamma();
 			}
-		}
-
-		if ( fActive ) {
-			WIN_DisableAltTab();
-		} else {
-			WIN_EnableAltTab();
 		}
 
 		SNDDMA_Activate();
