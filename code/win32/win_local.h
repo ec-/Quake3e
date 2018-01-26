@@ -116,8 +116,6 @@ void	IN_Frame( void );
 void	IN_UpdateWindow( RECT *window_rect, qboolean updateClipRegion );
 void	UpdateMonitorInfo( const RECT *target );
 
-qboolean IN_MouseActive( void );
-
 // window procedure
 LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM  lParam );
 

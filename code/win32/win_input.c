@@ -127,7 +127,7 @@ WIN32 MOUSE CONTROL
 IN_MouseActive
 ================
 */
-qboolean IN_MouseActive( void )
+static qboolean IN_MouseActive( void )
 {
 	return ( in_nograb->integer == 0 && s_wmv.mouseActive );
 }
@@ -817,7 +817,7 @@ void IN_Win32MouseEvent( int x, int y, int mstate )
 {
 	int dx, dy;
 
-	if ( !s_wmv.mouseInitialized )
+	if ( !IN_MouseActive() )
 		return;
 
 	if ( in_lagged->integer ) {
@@ -866,6 +866,9 @@ void IN_RawMouseEvent( LPARAM lParam )
 		BYTE lpb[40];
 		RAWINPUT raw;
 	} u;
+
+	if ( !IN_MouseActive() )
+		return;
 
 	dwSize = sizeof( u.raw );
 
