@@ -114,7 +114,7 @@ void WIN_DisableAltTab( void )
 	if ( s_alttab_disabled )
 		return;
 
-	if ( g_wv.hWnd && glw_state.cdsFullscreen ) {
+	if ( g_wv.hWnd && glw_state.cdsFullscreen && glw_state.monitorCount > 1 ) {
 		// topmost window
 		SetWindowLong( g_wv.hWnd, GWL_EXSTYLE, WINDOW_ESTYLE_FULLSCREEN );
 		SetWindowLong( g_wv.hWnd, GWL_STYLE, WINDOW_STYLE_FULLSCREEN );
@@ -141,7 +141,7 @@ void WIN_EnableAltTab( void )
 	if ( !s_alttab_disabled )
 		return;
 
-	if ( g_wv.hWnd && glw_state.cdsFullscreen ) {
+	if ( g_wv.hWnd && glw_state.cdsFullscreen && glw_state.monitorCount > 1 ) {
 		// allow moving other windows on foreground
 		SetWindowLong( g_wv.hWnd, GWL_EXSTYLE, WINDOW_ESTYLE_NORMAL );
 		SetWindowLong( g_wv.hWnd, GWL_STYLE, WINDOW_STYLE_FULLSCREEN_MIN );
