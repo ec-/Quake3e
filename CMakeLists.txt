@@ -5,6 +5,14 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
 
+if(NOT DEFINED DEDICATED)
+	set(DEDICATED OFF CACHE BOOL "choose client or dedicated server build." FORCE)
+endif()
+
+if (DEDICATED)
+	add_definitions(-DDEDICATED)
+endif()
+
 add_subdirectory(code)
 
 # TODO
