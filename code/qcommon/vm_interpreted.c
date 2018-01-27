@@ -43,6 +43,40 @@ void VM_StackTrace( vm_t *vm, int programCounter, int programStack ) {
 
 }
 
+// macro opcode sequences
+typedef enum {
+	MOP_LLOAD4 = OP_MAX
+} macro_op_t;
+
+
+/*
+=================
+VM_FindMOps
+
+Search for known macro-op sequences
+=================
+*/
+static void VM_FindMOps( instruction_t *buf, int instructionCount )
+{
+	int i, op0;
+	instruction_t *ci;
+	
+	ci = buf;
+	i = 0;
+
+	while ( i < instructionCount )
+	{
+		op0 = ci->op;
+		if ( op0 == OP_LOCAL && (ci+1)->op == OP_LOAD4 ) {
+			ci->op = MOP_LLOAD4;
+			ci += 2; i += 2;
+			continue;
+		}
+		ci++;
+		i++;
+	}
+}
+
 
 /*
 ====================
@@ -65,6 +99,8 @@ qboolean VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header )
 	}
 
 	VM_ReplaceInstructions( vm, buf );
+
+	VM_FindMOps( buf, vm->instructionCount );
 
 	vm->codeBase.ptr = (void*)buf;
 	return qtrue;
@@ -522,6 +558,13 @@ nextInstruction2:
 		case OP_CVFI:
 			*opStack = (int) r0.f;
 			break;
+
+		case MOP_LLOAD4: // combined OP_LOCAL + OP_LOAD4
+			ci++;
+			opStack++;
+			r1.i = r0.i;
+			r0.i = *opStack = *(int *)&image[ v0 + programStack ];
+			goto nextInstruction2;
 		}
 	}
 
