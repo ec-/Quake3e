@@ -438,8 +438,11 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	// clear collision map data
 	CM_ClearMap();
 
-    // Restart renderer?
-    // CL_StartHunkUsers( );
+	// timescale can be updated before SV_Frame() and cause division-by-zero in SV_RateMsec()
+	Cvar_CheckRange( com_timescale, "0.001", NULL, CV_FLOAT );
+
+	// Restart renderer?
+	// CL_StartHunkUsers( );
 
 	// init client structures and svs.numSnapshotEntities 
 	if ( !Cvar_VariableIntegerValue( "sv_running" ) ) {
@@ -485,7 +488,9 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	}
 
 	// make sure we are not paused
-	Cvar_Set("cl_paused", "0");
+#ifndef DEDICATED
+	Cvar_Set( "cl_paused", "0" );
+#endif
 
 	// get a new checksum feed and restart the file system
 	srand( Com_Milliseconds() );
@@ -811,6 +816,10 @@ void SV_Shutdown( const char *finalmsg ) {
 	sv.time = 0;
 
 	Cvar_Set( "sv_running", "0" );
+
+	// allow setting timescale 0 for demo playback
+	Cvar_CheckRange( com_timescale, "0", NULL, CV_FLOAT );
+
 #ifndef DEDICATED
 	Cvar_Set( "ui_singlePlayerActive", "0" );
 #endif

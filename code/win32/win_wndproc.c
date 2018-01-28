@@ -114,11 +114,13 @@ void WIN_DisableAltTab( void )
 	if ( s_alttab_disabled )
 		return;
 
+#if 0
 	if ( g_wv.hWnd && glw_state.cdsFullscreen && glw_state.monitorCount > 1 ) {
 		// topmost window
 		SetWindowLong( g_wv.hWnd, GWL_EXSTYLE, WINDOW_ESTYLE_FULLSCREEN );
 		SetWindowLong( g_wv.hWnd, GWL_STYLE, WINDOW_STYLE_FULLSCREEN );
 	}
+#endif
 
 	if ( !Q_stricmp( Cvar_VariableString( "arch" ), "winnt" ) )
 		RegisterHotKey( NULL, 0, MOD_ALT, VK_TAB );
@@ -141,12 +143,14 @@ void WIN_EnableAltTab( void )
 	if ( !s_alttab_disabled )
 		return;
 
+#if 0
 	if ( g_wv.hWnd && glw_state.cdsFullscreen && glw_state.monitorCount > 1 ) {
 		// allow moving other windows on foreground
 		SetWindowLong( g_wv.hWnd, GWL_EXSTYLE, WINDOW_ESTYLE_NORMAL );
 		SetWindowLong( g_wv.hWnd, GWL_STYLE, WINDOW_STYLE_FULLSCREEN_MIN );
 		SetWindowPos( g_wv.hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
 	}
+#endif
 
 	if ( !Q_stricmp( Cvar_VariableString( "arch" ), "winnt" ) )
 		UnregisterHotKey( NULL, 0 );
