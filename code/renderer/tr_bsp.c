@@ -138,12 +138,145 @@ static void R_ColorShiftLightingBytes( const byte in[4], byte out[4] ) {
 }
 
 
+#define LIGHTMAP_SIZE 128
+static const int lightmapFlags = IMGFLAG_NOLIGHTSCALE | IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE;
+static int lightmapWidth;
+static int lightmapHeight;
+
+/*
+===============
+R_LoadMergedLightmaps
+===============
+*/
+static void R_LoadMergedLightmaps( const lump_t *l )
+{
+ 	byte		*buf, *buf_p;
+ 	int			len;
+	int			offs;
+	byte		*image, *image_p;
+	int			i, j, k, x, y;
+ 	float maxIntensity = 0;
+ 	double sumIntensity = 0;
+
+	len = l->filelen;
+	if ( !len )
+		return;
+
+	buf = fileBase + l->fileofs;
+
+	// we are about to upload textures
+	R_IssuePendingRenderCommands();
+
+	// create all the lightmaps
+	tr.numLightmaps = len / (LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3);
+
+ 	// if we are in r_vertexLight mode, we don't need the lightmaps at all
+ 	if ( r_vertexLight->integer || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
+		lightmapWidth = lightmapHeight = 1;
+ 		return;
+ 	}
+
+	// see how many lightmaps we can stuff into one texture
+	lightmapWidth = lightmapHeight = 1;
+	while ( lightmapWidth * LIGHTMAP_SIZE < glConfig.maxTextureSize &&
+		lightmapWidth * lightmapHeight < tr.numLightmaps ) {
+		lightmapWidth *= 2;
+		if ( lightmapWidth * lightmapHeight >= tr.numLightmaps )
+			break;
+		lightmapHeight *= 2;
+	}
+
+	// calculate number of resulting lightmap textures
+	tr.numLightmaps = (tr.numLightmaps + lightmapWidth * lightmapHeight - 1) / (lightmapWidth * lightmapHeight);
+
+	tr.lightmaps = ri.Hunk_Alloc( tr.numLightmaps * sizeof(image_t *), h_low );
+
+	image = ri.Hunk_AllocateTempMemory( lightmapWidth * lightmapHeight * LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4 );
+
+	Com_Memset( image, 0, lightmapWidth * lightmapHeight * LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4 );
+
+	offs = 0;
+
+	for ( i = 0 ; i < tr.numLightmaps; i++ ) {
+		for ( y = 0; y < lightmapHeight; y++ ) {
+			if ( offs >= len )
+				break;
+			
+			for ( x = 0; x < lightmapWidth; x++ ) {
+				if ( offs >= len )
+					break;
+			
+				// expand the 24 bit on-disk to 32 bit
+				buf_p = buf + offs;
+				image_p = image + (y * LIGHTMAP_SIZE * lightmapWidth + x) * LIGHTMAP_SIZE * 4;
+
+				if ( r_lightmap->integer == 2 )
+				{	// color code by intensity as development tool	(FIXME: check range)
+					for ( j = 0; j < LIGHTMAP_SIZE ; j++ ) {
+						for ( k = 0; k < LIGHTMAP_SIZE; k++ ) {
+							float r = buf_p[(j * LIGHTMAP_SIZE + k)*3+0];
+							float g = buf_p[(j * LIGHTMAP_SIZE + k)*3+1];
+							float b = buf_p[(j * LIGHTMAP_SIZE + k)*3+2];
+							float intensity;
+							float out[3] = {0.0, 0.0, 0.0};
+
+							intensity = 0.33f * r + 0.685f * g + 0.063f * b;
+
+							if ( intensity > 255 )
+								intensity = 1.0f;
+							else
+								intensity /= 255.0f;
+
+							if ( intensity > maxIntensity )
+								maxIntensity = intensity;
+
+							HSVtoRGB( intensity, 1.00, 0.50, out );
+
+							image_p[k*4+0] = out[0] * 255;
+							image_p[k*4+1] = out[1] * 255;
+							image_p[k*4+2] = out[2] * 255;
+							image_p[k*4+3] = 255;
+
+							sumIntensity += intensity;
+						}
+						// go to next line
+						image_p += lightmapWidth * LIGHTMAP_SIZE * 4;
+					}
+				} else {
+					for ( j = 0; j < LIGHTMAP_SIZE ; j++ ) {
+						for ( k = 0; k < LIGHTMAP_SIZE; k++ ) {
+							R_ColorShiftLightingBytes( &buf_p[(j * LIGHTMAP_SIZE + k)*3], &image_p[k*4+0] );
+							image_p[k*4+3] = 255;
+						}
+						// go to next line
+						image_p += lightmapWidth * LIGHTMAP_SIZE * 4;
+					}
+				}
+				offs += LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3;
+ 			}
+ 		}
+
+		tr.lightmaps[i] = R_CreateImage( va( "*lightmap%d", i ), image,
+			LIGHTMAP_SIZE * lightmapWidth, 
+			LIGHTMAP_SIZE * lightmapHeight,
+			IMGTYPE_COLORALPHA, 
+			lightmapFlags, 0 );
+		ri.Printf( PRINT_DEVELOPER, "lightmaps[%i]=%i\n", i, tr.lightmaps[i]->texnum );
+	}
+
+	ri.Hunk_FreeTempMemory( image );
+
+	if ( r_lightmap->integer == 2 )	{
+		ri.Printf( PRINT_ALL, "Brightest lightmap value: %d\n", ( int ) ( maxIntensity * 255 ) );
+	}
+}
+
+
 /*
 ===============
 R_LoadLightmaps
 ===============
 */
-#define	LIGHTMAP_SIZE	128
 static void R_LoadLightmaps( const lump_t *l ) {
 	byte		*buf, *buf_p;
 	int			len;
@@ -151,6 +284,13 @@ static void R_LoadLightmaps( const lump_t *l ) {
 	int			i, j;
 	float maxIntensity = 0;
 	double sumIntensity = 0;
+
+	lightmapWidth = lightmapHeight = 1;
+
+	if ( r_mergeLightmaps->integer ) {
+		R_LoadMergedLightmaps( l );
+		return;
+	}
 
 	len = l->filelen;
 	if ( !len ) {
@@ -215,8 +355,7 @@ static void R_LoadLightmaps( const lump_t *l ) {
 			}
 		}
 		tr.lightmaps[i] = R_CreateImage( va("*lightmap%d",i), image, 
-			LIGHTMAP_SIZE, LIGHTMAP_SIZE, IMGTYPE_COLORALPHA,
-			IMGFLAG_NOLIGHTSCALE | IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE, 0 );
+			LIGHTMAP_SIZE, LIGHTMAP_SIZE, IMGTYPE_COLORALPHA, lightmapFlags, 0 );
 	}
 
 	if ( r_lightmap->integer == 2 )	{
@@ -352,10 +491,18 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 	int			i, j;
 	srfSurfaceFace_t	*cv;
 	int			numPoints, numIndexes;
-	int			lightmapNum;
+	int			lightmapNum, lightmapX, lightmapY;
 	int			sfaceSize, ofsIndexes;
 
 	lightmapNum = LittleLong( ds->lightmapNum );
+	if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
+		lightmapX = lightmapNum & (lightmapWidth - 1);
+		lightmapNum /= lightmapWidth;
+		lightmapY = lightmapNum & (lightmapHeight - 1);
+		lightmapNum /= lightmapHeight;
+	} else {
+		lightmapX = lightmapY = 0;
+	}
 
 	// get fog volume
 	surf->fogIndex = LittleLong( ds->fogNum ) + 1;
@@ -396,6 +543,11 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 			cv->points[i][5+j] = LittleFloat( verts[i].lightmap[j] );
 		}
 		R_ColorShiftLightingBytes( verts[i].color, (byte *)&cv->points[i][7] );
+		if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
+			// adjust lightmap coords
+			cv->points[i][5] = (cv->points[i][5] + lightmapX) / lightmapWidth;
+			cv->points[i][6] = (cv->points[i][6] + lightmapY) / lightmapHeight;
+		}
 	}
 
 	indexes += LittleLong( ds->firstIndex );
@@ -443,12 +595,20 @@ static void ParseMesh( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 	int				i, j;
 	int				width, height, numPoints;
 	drawVert_t points[MAX_PATCH_SIZE*MAX_PATCH_SIZE];
-	int				lightmapNum;
+	int				lightmapNum, lightmapX, lightmapY;
 	vec3_t			bounds[2];
 	vec3_t			tmpVec;
 	static surfaceType_t	skipData = SF_SKIP;
 
 	lightmapNum = LittleLong( ds->lightmapNum );
+	if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
+		lightmapX = lightmapNum & (lightmapWidth - 1);
+		lightmapNum /= lightmapWidth;
+		lightmapY = lightmapNum & (lightmapHeight - 1);
+		lightmapNum /= lightmapHeight;
+	} else {
+		lightmapX = lightmapY = 0;
+	}
 
 	// get fog volume
 	surf->fogIndex = LittleLong( ds->fogNum ) + 1;
@@ -481,6 +641,11 @@ static void ParseMesh( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 			points[i].lightmap[j] = LittleFloat( verts[i].lightmap[j] );
 		}
 		R_ColorShiftLightingBytes( verts[i].color, points[i].color );
+		if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
+			// adjust lightmap coords
+			points[i].lightmap[0] = (points[i].lightmap[0] + lightmapX) / lightmapWidth;
+			points[i].lightmap[1] = (points[i].lightmap[1] + lightmapY) / lightmapHeight;
+		}
 	}
 
 	// pre-tesseleate

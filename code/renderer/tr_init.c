@@ -63,6 +63,7 @@ cvar_t	*r_fastsky;
 cvar_t	*r_neatsky;
 cvar_t	*r_drawSun;
 cvar_t	*r_dynamiclight;
+cvar_t  *r_mergeLightmaps;
 #ifdef USE_PMLIGHT
 cvar_t	*r_dlightMode;
 cvar_t	*r_dlightSpecPower;
@@ -1304,6 +1305,7 @@ static void R_Register( void )
 	r_inGameVideo = ri.Cvar_Get( "r_inGameVideo", "1", CVAR_ARCHIVE_ND );
 	r_drawSun = ri.Cvar_Get( "r_drawSun", "0", CVAR_ARCHIVE_ND );
 	r_dynamiclight = ri.Cvar_Get( "r_dynamiclight", "1", CVAR_ARCHIVE );
+	r_mergeLightmaps = ri.Cvar_Get( "r_mergeLightmaps", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 #ifdef USE_PMLIGHT
 	r_dlightMode = ri.Cvar_Get( "r_dlightMode", "1", CVAR_ARCHIVE );
 #ifdef USE_LEGACY_DLIGHTS
