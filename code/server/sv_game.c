@@ -379,7 +379,7 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		return Cvar_VariableIntegerValue( (const char *)VMA(1) );
 	case G_CVAR_VARIABLE_STRING_BUFFER:
 		VM_CHECKBOUNDS( gvm, args[2], args[3] );
-		Cvar_VariableStringBufferSafe( VMA(1), VMA(2), args[3] );
+		Cvar_VariableStringBufferSafe( VMA(1), VMA(2), args[3], gvm->privateFlag );
 		return 0;
 	case G_ARGC:
 		return Cmd_Argc();

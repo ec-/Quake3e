@@ -205,6 +205,8 @@ struct vm_s {
 	uint32_t	crc32sum;
 
 	qboolean	forceDataMask;
+
+	int			privateFlag;
 };
 
 extern	int		vm_debugLevel;

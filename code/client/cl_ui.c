@@ -812,7 +812,7 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 
 	case UI_CVAR_VARIABLESTRINGBUFFER:
 		VM_CHECKBOUNDS( uivm, args[2], args[3] );
-		Cvar_VariableStringBufferSafe( VMA(1), VMA(2), args[3] );
+		Cvar_VariableStringBufferSafe( VMA(1), VMA(2), args[3], CVAR_PRIVATE );
 		return 0;
 
 	case UI_CVAR_SETVALUE:

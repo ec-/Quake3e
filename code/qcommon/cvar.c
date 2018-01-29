@@ -172,11 +172,11 @@ void Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize 
 Cvar_VariableStringBufferSafe
 ============
 */
-void Cvar_VariableStringBufferSafe( const char *var_name, char *buffer, int bufsize ) {
+void Cvar_VariableStringBufferSafe( const char *var_name, char *buffer, int bufsize, int flag ) {
 	cvar_t *var;
 	
 	var = Cvar_FindVar( var_name );
-	if ( !var || var->flags & CVAR_PRIVATE ) {
+	if ( !var || var->flags & flag ) {
 		*buffer = '\0';
 	}
 	else {

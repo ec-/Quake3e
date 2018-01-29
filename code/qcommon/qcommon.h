@@ -569,7 +569,7 @@ int		Cvar_VariableIntegerValue( const char *var_name );
 
 const char *Cvar_VariableString( const char *var_name );
 void	Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize );
-void	Cvar_VariableStringBufferSafe( const char *var_name, char *buffer, int bufsize );
+void	Cvar_VariableStringBufferSafe( const char *var_name, char *buffer, int bufsize, int flag );
 // returns an empty string if not defined
 
 int	Cvar_Flags(const char *var_name);

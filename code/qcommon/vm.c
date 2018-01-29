@@ -1407,6 +1407,7 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 	vm->systemCall = systemCalls;
 	vm->dllSyscall = dllSyscalls;
 	vm->vmMainArgs = vmMainArgs;
+	vm->privateFlag = CVAR_PRIVATE;
 
 	// never allow dll loading with a demo
 	if ( interpret == VMI_NATIVE ) {
@@ -1420,6 +1421,7 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 		Com_Printf( "Loading dll file %s.\n", name );
 		vm->dllHandle = Sys_LoadDll( name, &vm->entryPoint, dllSyscalls );
 		if ( vm->dllHandle ) {
+			vm->privateFlag = 0; // allow reading private cvars
 			vm->dataAlloc = ~0U;
 			vm->dataMask = ~0U;
 			vm->dataBase = 0;
