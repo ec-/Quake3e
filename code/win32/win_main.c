@@ -127,7 +127,7 @@ void Sys_Quit( void ) {
 Sys_Print
 ==============
 */
-void Sys_Print( const char *msg ) 
+void Sys_Print( const char *msg )
 {
 	Conbuf_AppendText( msg );
 }
@@ -138,7 +138,7 @@ void Sys_Print( const char *msg )
 Sys_Mkdir
 ==============
 */
-void Sys_Mkdir( const char *path ) 
+void Sys_Mkdir( const char *path )
 {
 	_mkdir( path );
 }
@@ -151,6 +151,14 @@ Sys_FOpen
 */
 FILE *Sys_FOpen( const char *ospath, const char *mode )
 {
+	size_t length;
+
+	// Windows API ignores all trailing spaces and periods which can get around Quake 3 file system restrictions.
+	length = strlen( ospath );
+	if ( length == 0 || ospath[length-1] == ' ' || ospath[length-1] == '.' ) {
+		return NULL;
+	}
+
 	return fopen( ospath, mode );
 }
 
@@ -192,7 +200,7 @@ const char *Sys_Pwd( void )
 Sys_DefaultBasePath
 ==============
 */
-const char *Sys_DefaultBasePath( void ) 
+const char *Sys_DefaultBasePath( void )
 {
 	return Sys_Pwd();
 }
