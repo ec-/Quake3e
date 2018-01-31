@@ -706,8 +706,6 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 #endif
 	vbo_size *= numStaticVertexes;
 
-	vbo->vbo_buffer = ri.Hunk_Alloc( vbo_size, h_low );	
-
 	// index buffer
 	ibo_size = numStaticIndexes * sizeof( tess.indexes[0] );
 	vbo->ibo_buffer = ri.Hunk_Alloc( ibo_size, h_low );	
@@ -722,7 +720,10 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 
 	vbo->index_base = 0;
 
+	vbo->vbo_buffer = ri.Hunk_AllocateTempMemory( vbo_size );
+
 	surfList = ri.Hunk_AllocateTempMemory( numStaticSurfaces * sizeof( msurface_t* ) );
+
 	for ( i = 0, n = 0, sf = surf; i < surfCount; i++, sf++ ) {
 		face = (srfSurfaceFace_t *) sf->data;
 		if ( face->surfaceType == SF_FACE && face->vboItemIndex ) {
@@ -814,6 +815,9 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 	}
 
 	VBO_UnBind();
+
+	ri.Hunk_FreeTempMemory( vbo->vbo_buffer );
+	vbo->vbo_buffer = NULL;
 }
 
 
