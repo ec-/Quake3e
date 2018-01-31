@@ -56,7 +56,6 @@ const int demo_protocols[] = { 66, 67, PROTOCOL_VERSION, NEW_PROTOCOL_VERSION, 0
 jmp_buf abortframe;		// an ERR_DROP occured, exit the entire frame
 
 int		CPU_Flags = 0;
-void	(*Com_DelayFunc)( void ) = NULL;
 
 FILE *debuglogfile;
 static fileHandle_t logfile = FS_INVALID_HANDLE;
@@ -123,7 +122,8 @@ qboolean	gw_active = qtrue;
 
 static char com_errorMessage[ MAXPRINTMSG ];
 
-void Com_WriteConfig_f( void );
+static void Com_Shutdown( void );
+static void Com_WriteConfig_f( void );
 void CIN_CloseAllVideos( void );
 
 //============================================================================
@@ -251,11 +251,10 @@ void QDECL Com_DPrintf( const char *fmt, ...) {
 		return;			// don't confuse non-developers with techie stuff...
 	}
 
-	va_start (argptr,fmt);	
+	va_start( argptr,fmt );
 	Q_vsnprintf( msg, sizeof( msg ), fmt, argptr );
 	va_end( argptr );
-	// sanitize
-	msg[ARRAY_LEN(msg)-1] = '\0';
+
 	Com_Printf( "%s", msg );
 }
 
@@ -595,7 +594,7 @@ Returns qtrue if any late commands were added, which
 will keep the demoloop from immediately starting
 =================
 */
-qboolean Com_AddStartupCommands( void ) {
+static qboolean Com_AddStartupCommands( void ) {
 	int		i;
 	qboolean	added;
 
@@ -2300,10 +2299,9 @@ void Sys_QueEvent( int evTime, sysEventType_t evType, int value, int value2, int
 /*
 ================
 Com_GetSystemEvent
-
 ================
 */
-sysEvent_t Com_GetSystemEvent( void )
+static sysEvent_t Com_GetSystemEvent( void )
 {
 	sysEvent_t  ev;
 	char		*s;
@@ -2353,7 +2351,7 @@ sysEvent_t Com_GetSystemEvent( void )
 Com_GetRealEvent
 =================
 */
-sysEvent_t	Com_GetRealEvent( void ) {
+static sysEvent_t Com_GetRealEvent( void ) {
 	int			r;
 	sysEvent_t	ev;
 
@@ -2397,7 +2395,7 @@ sysEvent_t	Com_GetRealEvent( void ) {
 Com_InitPushEvent
 =================
 */
-void Com_InitPushEvent( void ) {
+static void Com_InitPushEvent( void ) {
   // clear the static buffer array
   // this requires SE_NONE to be accepted as a valid but NOP event
   memset( com_pushedEvents, 0, sizeof(com_pushedEvents) );
@@ -2413,7 +2411,7 @@ void Com_InitPushEvent( void ) {
 Com_PushEvent
 =================
 */
-void Com_PushEvent( sysEvent_t *event ) {
+static void Com_PushEvent( const sysEvent_t *event ) {
 	sysEvent_t		*ev;
 	static int printedWarning = 0;
 
@@ -2445,7 +2443,7 @@ void Com_PushEvent( sysEvent_t *event ) {
 Com_GetEvent
 =================
 */
-sysEvent_t	Com_GetEvent( void ) {
+static sysEvent_t Com_GetEvent( void ) {
 	if ( com_pushedEventsHead > com_pushedEventsTail ) {
 		com_pushedEventsTail++;
 		return com_pushedEvents[ (com_pushedEventsTail-1) & (MAX_PUSHED_EVENTS-1) ];
@@ -2558,7 +2556,7 @@ Com_Milliseconds
 Can be used for profiling, but will be journaled accurately
 ================
 */
-int Com_Milliseconds (void) {
+int Com_Milliseconds( void ) {
 	sysEvent_t	ev;
 
 	// get events and push them until we get a null event with the current time
@@ -2600,7 +2598,7 @@ Just freeze in place for a given number of seconds to test
 error recovery
 =============
 */
-static void Com_Freeze_f (void) {
+static void Com_Freeze_f( void ) {
 	float	s;
 	int		start, now;
 
@@ -2707,7 +2705,7 @@ Com_GameRestart_f
 Expose possibility to change current running mod to the user
 ==================
 */
-void Com_GameRestart_f( void )
+static void Com_GameRestart_f( void )
 {
 	Cvar_Set( "fs_game", Cmd_Argv( 1 ) );
 
@@ -2792,6 +2790,7 @@ qboolean Com_CDKeyValidate( const char *key, const char *checksum ) {
 #endif
 }
 
+
 /*
 =================
 Com_ReadCDKey
@@ -2822,6 +2821,7 @@ void Com_ReadCDKey( const char *filename ) {
 	}
 }
 
+
 /*
 =================
 Com_AppendCDKey
@@ -2851,6 +2851,7 @@ void Com_AppendCDKey( const char *filename ) {
 		Q_strncpyz( &cl_cdkey[16], "                ", 17 );
 	}
 }
+
 
 #ifndef DEDICATED // bk001204
 /*
@@ -3340,7 +3341,7 @@ void Com_Init( char *commandLine ) {
 
 //==================================================================
 
-void Com_WriteConfigToFile( const char *filename ) {
+static void Com_WriteConfigToFile( const char *filename ) {
 	fileHandle_t	f;
 
 	f = FS_FOpenFileWrite( filename );
@@ -3365,7 +3366,7 @@ Com_WriteConfiguration
 Writes key bindings and archived cvars to config file if modified
 ===============
 */
-void Com_WriteConfiguration( void ) {
+static void Com_WriteConfiguration( void ) {
 #ifndef DEDICATED
 	const char *basegame;
 	const char *gamedir;
@@ -3402,7 +3403,7 @@ Com_WriteConfig_f
 Write the config file to a specific name
 ===============
 */
-void Com_WriteConfig_f( void ) {
+static void Com_WriteConfig_f( void ) {
 	char	filename[MAX_QPATH];
 	const char *ext;
 
@@ -3429,7 +3430,7 @@ void Com_WriteConfig_f( void ) {
 Com_ModifyMsec
 ================
 */
-int Com_ModifyMsec( int msec ) {
+static int Com_ModifyMsec( int msec ) {
 	int		clampTime;
 
 	//
@@ -3481,7 +3482,7 @@ int Com_ModifyMsec( int msec ) {
 Com_TimeVal
 =================
 */
-int Com_TimeVal( int minMsec )
+static int Com_TimeVal( int minMsec )
 {
 	int timeVal;
 
@@ -3733,12 +3734,6 @@ void Com_Frame( qboolean noDelay ) {
 		c_pointcontents = 0;
 	}
 
-	//execute delayed function
-	if ( Com_DelayFunc ) {
-		Com_DelayFunc();
-		Com_DelayFunc = NULL;
-	}
-
 	com_frameNumber++;
 }
 
@@ -3748,7 +3743,7 @@ void Com_Frame( qboolean noDelay ) {
 Com_Shutdown
 =================
 */
-void Com_Shutdown( void ) {
+static void Com_Shutdown( void ) {
 	if ( logfile != FS_INVALID_HANDLE ) {
 		FS_FCloseFile( logfile );
 		logfile = FS_INVALID_HANDLE;
@@ -3780,7 +3775,7 @@ Field_Clear
 ==================
 */
 void Field_Clear( field_t *edit ) {
-  memset(edit->buffer, 0, MAX_EDIT_LINE);
+	memset( edit->buffer, 0, sizeof( edit->buffer ) );
 	edit->cursor = 0;
 	edit->scroll = 0;
 }
@@ -3794,7 +3789,6 @@ static field_t *completionField;
 /*
 ===============
 FindMatches
-
 ===============
 */
 static void FindMatches( const char *s ) {
@@ -3823,10 +3817,10 @@ static void FindMatches( const char *s ) {
 	}
 }
 
+
 /*
 ===============
 PrintMatches
-
 ===============
 */
 static void PrintMatches( const char *s ) {
@@ -3835,10 +3829,10 @@ static void PrintMatches( const char *s ) {
 	}
 }
 
+
 /*
 ===============
 PrintCvarMatches
-
 ===============
 */
 static void PrintCvarMatches( const char *s ) {
@@ -3908,7 +3902,7 @@ Field_CompleteKeyname
 void Field_CompleteKeyname( void )
 {
 	matchCount = 0;
-	shortestMatch[ 0 ] = 0;
+	shortestMatch[ 0 ] = '\0';
 
 	Key_KeynameCompletion( FindMatches );
 
@@ -4025,6 +4019,7 @@ void Field_CompleteCommand( char *cmd, qboolean doCommands, qboolean doCvars )
 	}
 }
 
+
 /*
 ===============
 Field_AutoComplete
@@ -4038,6 +4033,7 @@ void Field_AutoComplete( field_t *field )
 
 	Field_CompleteCommand( completionField->buffer, qtrue, qtrue );
 }
+
 
 /*
 ==================

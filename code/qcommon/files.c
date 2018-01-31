@@ -331,6 +331,13 @@ int	fs_lastPakIndex;
 FILE*		missingFiles = NULL;
 #endif
 
+void Com_AppendCDKey( const char *filename );
+void Com_ReadCDKey( const char *filename );
+
+static int FS_GetModList( char *listbuf, int bufsize );
+static void FS_CheckIdPaks( void );
+void FS_Reload( void );
+
 
 /*
 ==============
@@ -1085,7 +1092,7 @@ fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 FS_FOpenFileAppend
 ===========
 */
-fileHandle_t FS_FOpenFileAppend( const char *filename ) {
+static fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 	char			*ospath;
 	fileHandleData_t *fd;
 	fileHandle_t	f;
@@ -1224,7 +1231,7 @@ FS_IsDemoExt
 Return qtrue if filename has a demo extension
 ===========
 */
-qboolean FS_IsDemoExt( const char *filename, int namelen )
+static qboolean FS_IsDemoExt( const char *filename, int namelen )
 {
 	char *ext_test;
 	int index, protocol;
@@ -2696,7 +2703,7 @@ static char** Sys_ConcatenateFileLists( char **list0, char **list1 )
 FS_GetModDescription
 ================
 */
-void FS_GetModDescription( const char *modDir, char *description, int descriptionLen ) {
+static void FS_GetModDescription( const char *modDir, char *description, int descriptionLen ) {
 	fileHandle_t	descHandle;
 	char			descPath[MAX_QPATH];
 	int				nDescLen;
@@ -2721,6 +2728,7 @@ void FS_GetModDescription( const char *modDir, char *description, int descriptio
 	}
 }
 
+
 /*
 ================
 FS_GetModList
@@ -2729,7 +2737,7 @@ Returns a list of mod directory names
 A mod directory is a peer to baseq3 with a pk3 in it
 ================
 */
-int	FS_GetModList( char *listbuf, int bufsize ) {
+static int FS_GetModList( char *listbuf, int bufsize ) {
 	int i, j, k;
 	int	nMods, nTotal, nLen, nPaks, nPotential, nDescLen;
 	int nDirs, nPakDirs;
@@ -2838,7 +2846,7 @@ int	FS_GetModList( char *listbuf, int bufsize ) {
 FS_Dir_f
 ================
 */
-void FS_Dir_f( void ) {
+static void FS_Dir_f( void ) {
 	const char *path;
 	const char *extension;
 	char **dirnames;
@@ -2875,7 +2883,7 @@ void FS_Dir_f( void ) {
 FS_ConvertPath
 ===========
 */
-void FS_ConvertPath( char *s ) {
+static void FS_ConvertPath( char *s ) {
 	while (*s) {
 		if ( *s == '\\' || *s == ':' ) {
 			*s = '/';
@@ -2892,7 +2900,7 @@ FS_PathCmp
 Ignore case and seprator char distinctions
 ===========
 */
-int FS_PathCmp( const char *s1, const char *s2 ) {
+static int FS_PathCmp( const char *s1, const char *s2 ) {
 	int		c1, c2;
 	
 	do {
@@ -2959,7 +2967,7 @@ static void FS_SortFileList( char **filelist, int numfiles ) {
 FS_NewDir_f
 ================
 */
-void FS_NewDir_f( void ) {
+static void FS_NewDir_f( void ) {
 	const char *filter;
 	char	**dirnames;
 	char	dirname[ MAX_STRING_CHARS ];
@@ -2994,12 +3002,11 @@ void FS_NewDir_f( void ) {
 /*
 ============
 FS_Path_f
-
 ============
 */
-void FS_Path_f( void ) {
-	searchpath_t	*s;
-	int				i;
+static void FS_Path_f( void ) {
+	const searchpath_t *s;
+	int i;
 
 	Com_Printf( "Current search path:\n" );
 	for ( s = fs_searchpaths; s; s = s->next ) {
@@ -3026,6 +3033,7 @@ void FS_Path_f( void ) {
 	}
 }
 
+
 /*
 ============
 FS_TouchFile_f
@@ -3034,7 +3042,7 @@ The only purpose of this function is to allow game script files to copy
 arbitrary files furing an "fs_copyfiles 1" run.
 ============
 */
-void FS_TouchFile_f( void ) {
+static void FS_TouchFile_f( void ) {
 	fileHandle_t	f;
 
 	if ( Cmd_Argc() != 2 ) {
@@ -3048,23 +3056,25 @@ void FS_TouchFile_f( void ) {
 	}
 }
 
+
 /*
 ============
 FS_CompleteFileName
 ============
 */
-void FS_CompleteFileName( char *args, int argNum ) {
+static void FS_CompleteFileName( char *args, int argNum ) {
 	if( argNum == 2 ) {
 		Field_CompleteFilename( "", "", qfalse, FS_MATCH_ANY );
 	}
 }
+
 
 /*
 ============
 FS_Which_f
 ============
 */
-void FS_Which_f( void ) {
+static void FS_Which_f( void ) {
 	searchpath_t	*search;
 	char			*netpath;
 	pack_t			*pak;
@@ -3330,7 +3340,7 @@ Check whether the string contains stuff like "../" to prevent directory traversa
 and return qtrue if it does.
 ================
 */
-qboolean FS_CheckDirTraversal( const char *checkdir )
+static qboolean FS_CheckDirTraversal( const char *checkdir )
 {
 	if(strstr(checkdir, "../") || strstr(checkdir, "..\\"))
 		return qtrue;
@@ -3530,9 +3540,6 @@ void FS_Shutdown( qboolean closemfp )
 	Cmd_RemoveCommand( "lsof" );
 }
 
-
-void Com_AppendCDKey( const char *filename );
-void Com_ReadCDKey( const char *filename );
  
 /*
 ================
@@ -3606,8 +3613,6 @@ static void FS_ListOpenFiles_f( void ) {
 }
 
 
-void FS_Reload( void );
-static void FS_CheckIdPaks( void );
 /*
 ================
 FS_Startup
@@ -4364,6 +4369,7 @@ int	FS_FOpenFileByMode( const char *qpath, fileHandle_t *f, fsMode_t mode ) {
 
 	return r;
 }
+
 
 int FS_FTell( fileHandle_t f ) {
 	int pos;

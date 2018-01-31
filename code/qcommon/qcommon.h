@@ -107,7 +107,6 @@ const char *MSG_ReadBigString (msg_t *sb);
 const char *MSG_ReadStringLine (msg_t *sb);
 float	MSG_ReadAngle16 (msg_t *sb);
 void	MSG_ReadData (msg_t *sb, void *buffer, int size);
-int		MSG_LookaheadByte (msg_t *msg);
 
 void MSG_WriteDeltaUsercmdKey( msg_t *msg, int key, usercmd_t *from, usercmd_t *to );
 void MSG_ReadDeltaUsercmdKey( msg_t *msg, int key, usercmd_t *from, usercmd_t *to );
@@ -182,7 +181,6 @@ typedef struct {
 
 void		NET_Init( void );
 void		NET_Shutdown( void );
-void		NET_Restart_f( void );
 void		NET_FlushPacketQueue(void);
 void		NET_SendPacket( netsrc_t sock, int length, const void *data, const netadr_t *to );
 void		QDECL NET_OutOfBandPrint( netsrc_t net_socket, const netadr_t *adr, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
@@ -431,7 +429,7 @@ files can be execed.
 
 */
 
-void Cbuf_Init (void);
+void Cbuf_Init( void );
 // allocates an initial text buffer that will grow as needed
 
 void Cbuf_AddText( const char *text );
@@ -440,7 +438,7 @@ void Cbuf_AddText( const char *text );
 void Cbuf_ExecuteText( cbufExec_t exec_when, const char *text );
 // this can be used in place of either Cbuf_AddText or Cbuf_InsertText
 
-void Cbuf_Execute (void);
+void Cbuf_Execute( void );
 // Pulls off \n terminated lines of text from the command buffer and sends
 // them through Cmd_ExecuteString.  Stops when the buffer is empty.
 // Normally called once per frame, but may be explicitly invoked.
@@ -457,7 +455,7 @@ then searches for a command or variable that matches the first token.
 
 typedef void (*xcommand_t) (void);
 
-void	Cmd_Init (void);
+void	Cmd_Init( void );
 
 void	Cmd_AddCommand( const char *cmd_name, xcommand_t function );
 // called by the init functions of other parts of the program to
@@ -476,11 +474,9 @@ void	Cmd_RemoveCommandSafe( const char *cmd_name );
 
 void	Cmd_CommandCompletion( void(*callback)(const char *s) );
 // callback with each valid string
-void Cmd_SetCommandCompletionFunc( const char *command,
-	completionFunc_t complete );
-void Cmd_CompleteArgument( const char *command, char *args, int argNum );
-void Cmd_CompleteCfgName( char *args, int argNum );
-void Cmd_CompleteWriteCfgName( char *args, int argNum );
+void	Cmd_SetCommandCompletionFunc( const char *command, completionFunc_t complete );
+void	Cmd_CompleteArgument( const char *command, char *args, int argNum );
+void	Cmd_CompleteWriteCfgName( char *args, int argNum );
 
 int		Cmd_Argc( void );
 void	Cmd_Clear( void );
@@ -553,7 +549,7 @@ cvar_t	*Cvar_Set2(const char *var_name, const char *value, qboolean force);
 void	Cvar_SetSafe( const char *var_name, const char *value );
 // sometimes we set variables from an untrusted source: fail if flags & CVAR_PROTECTED
 
-void Cvar_SetLatched( const char *var_name, const char *value);
+void	Cvar_SetLatched( const char *var_name, const char *value);
 // don't set the cvar immediately
 
 void	Cvar_SetValue( const char *var_name, float value );
@@ -572,7 +568,7 @@ void	Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize 
 void	Cvar_VariableStringBufferSafe( const char *var_name, char *buffer, int bufsize, int flag );
 // returns an empty string if not defined
 
-int	Cvar_Flags(const char *var_name);
+int		Cvar_Flags(const char *var_name);
 // returns CVAR_NONEXISTENT if cvar doesn't exist or the flags of that particular CVAR.
 
 void	Cvar_CommandCompletion( void(*callback)(const char *s) );
@@ -607,10 +603,9 @@ void	Cvar_SetGroup( cvar_t *var, cvarGroup_t group );
 int		Cvar_CheckGroup( cvarGroup_t group );
 void	Cvar_ResetGroup( cvarGroup_t group, qboolean resetModifiedFlags );
 
-void	Cvar_Restart(qboolean unsetVM);
-void	Cvar_Restart_f( void );
+void	Cvar_Restart( qboolean unsetVM );
 
-void Cvar_CompleteCvarName( char *args, int argNum );
+void	Cvar_CompleteCvarName( char *args, int argNum );
 
 extern	int			cvar_modifiedFlags;
 // whenever a cvar is modifed, its flags will be OR'd into this, so
@@ -692,7 +687,6 @@ int		FS_GetZipChecksum( const char *zipfile );
 int		FS_LoadStack( void );
 
 int		FS_GetFileList(  const char *path, const char *extension, char *listbuf, int bufsize );
-int		FS_GetModList(  char *listbuf, int bufsize );
 
 fileHandle_t	FS_FOpenFileWrite( const char *qpath );
 // will properly create any needed paths and deal with seperater character issues
@@ -785,7 +779,6 @@ void FS_PureServerSetLoadedPaks( const char *pakSums, const char *pakNames );
 // separated checksums will be checked for files, with the
 // sole exception of .cfg files.
 
-qboolean FS_CheckDirTraversal( const char *checkdir );
 qboolean FS_InvalidGameDir( const char *gamedir );
 qboolean FS_idPak( const char *pak, const char *base, int numPaks );
 qboolean FS_ComparePaks( char *neededpaks, int len, qboolean dlstring );
@@ -889,7 +882,6 @@ void 		QDECL Com_DPrintf( const char *fmt, ... ) __attribute__ ((format (printf,
 void 		QDECL Com_Error( errorParm_t code, const char *fmt, ... ) __attribute__ ((noreturn, format (printf, 2, 3)));
 void 		Com_Quit_f( void );
 void		Com_GameRestart( int checksumFeed, qboolean clientRestart );
-void		(*Com_DelayFunc)( void );
 
 int			Com_EventLoop( void );
 int			Com_Milliseconds( void );	// will be journaled properly
@@ -1020,7 +1012,6 @@ void Com_TouchMemory( void );
 // commandLine should not include the executable name (argv[0])
 void Com_Init( char *commandLine );
 void Com_Frame( qboolean noDelay );
-void Com_Shutdown( void );
 
 /*
 ==============================================================

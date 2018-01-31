@@ -157,6 +157,7 @@ typedef struct
 static nip_localaddr_t localIP[MAX_IPS];
 static int numIP;
 
+static void	NET_Restart_f( void );
 
 //=============================================================================
 
@@ -166,7 +167,7 @@ static int numIP;
 NET_ErrorString
 ====================
 */
-char *NET_ErrorString( void ) {
+static char *NET_ErrorString( void ) {
 #ifdef _WIN32
 	//FIXME: replace with FormatMessage?
 	switch( socketError ) {
@@ -1646,7 +1647,6 @@ NET_Event
 Called from NET_Sleep which uses select() to determine which sockets have seen action.
 ====================
 */
-
 static void NET_Event( const fd_set *fdr )
 {
 	byte bufData[ MAX_MSGLEN_BUF ];
@@ -1749,7 +1749,7 @@ void NET_Sleep( int msec, int usec_bias )
 NET_Restart_f
 ====================
 */
-void NET_Restart_f( void )
+static void NET_Restart_f( void )
 {
 	NET_Config( qtrue );
 }

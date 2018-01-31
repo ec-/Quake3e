@@ -459,8 +459,6 @@ void CL_GetPingInfo( int n, char *buf, int buflen );
 void CL_ClearPing( int n );
 int CL_GetPingQueueCount( void );
 
-void CL_ShutdownRef( qboolean unloadDLL );
-void CL_InitRef( void );
 int CL_ServerStatus( const char *serverAddress, char *serverStatusString, int maxLen );
 
 qboolean CL_CheckPaused( void );

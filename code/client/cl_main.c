@@ -146,6 +146,10 @@ static void CL_LocalServers_f( void );
 static void CL_GlobalServers_f( void );
 static void CL_Ping_f( void );
 
+static void CL_InitRef( void );
+static void CL_ShutdownRef( qboolean unloadDLL );
+static void CL_InitGLimp_Cvars( void );
+
 /*
 ===============
 CL_CDDialog
@@ -1809,13 +1813,7 @@ void CL_Vid_Restart_f( void ) {
 		if ( abs( cls.lastVidRestart - Sys_Milliseconds() ) < 500 )
 			return;
 
-	if ( Com_DelayFunc && Com_DelayFunc != CL_Vid_Restart ) {
-		Com_DPrintf( "...perform \\vid_restart\n" );
-		CL_Vid_Restart(); // something pending, direct restart
-	} else {
-		Com_DPrintf( "...delay \\vid_restart\n" );
-		Com_DelayFunc = CL_Vid_Restart; // queue restart out of rendering cycle
-	}
+	CL_Vid_Restart();
 }
 
 
@@ -1847,7 +1845,7 @@ void CL_Snd_Restart_f( void )
 {
 	CL_Snd_Shutdown();
 	// sound will be reinitialized by vid_restart
-	CL_Vid_Restart_f();
+	CL_Vid_Restart();
 }
 
 
@@ -2061,7 +2059,7 @@ void CL_BeginDownload( const char *localName, const char *remoteName ) {
 	Cvar_Set( "cl_downloadName", remoteName );
 	Cvar_Set( "cl_downloadSize", "0" );
 	Cvar_Set( "cl_downloadCount", "0" );
-	Cvar_Set( "cl_downloadTime", va( "%i", cls.realtime ) );
+	Cvar_SetIntegerValue( "cl_downloadTime", cls.realtime );
 
 	clc.downloadBlock = 0; // Starting new file
 	clc.downloadCount = 0;
@@ -2878,7 +2876,7 @@ qboolean CL_NoDelay( void )
 CL_CheckUserinfo
 ==================
 */
-void CL_CheckUserinfo( void ) {
+static void CL_CheckUserinfo( void ) {
 
 	// don't add reliable commands when not yet connected
 	if ( cls.state < CA_CONNECTED )
@@ -3089,7 +3087,7 @@ static __attribute__ ((format (printf, 2, 3))) void QDECL CL_RefPrintf( int prin
 CL_ShutdownRef
 ============
 */
-void CL_ShutdownRef( qboolean unloadDLL ) {
+static void CL_ShutdownRef( qboolean unloadDLL ) {
 	if ( re.Shutdown ) {
 		if ( unloadDLL )
 			re.Shutdown( 2 );
@@ -3106,7 +3104,7 @@ void CL_ShutdownRef( qboolean unloadDLL ) {
 CL_InitRenderer
 ============
 */
-void CL_InitRenderer( void ) {
+static void CL_InitRenderer( void ) {
 	// this sets up the renderer and calls R_Init
 	re.BeginRegistration( &cls.glconfig );
 
@@ -3168,7 +3166,7 @@ void CL_StartHunkUsers( void ) {
 CL_RefMalloc
 ============
 */
-void *CL_RefMalloc( int size ) {
+static void *CL_RefMalloc( int size ) {
 	return Z_TagMalloc( size, TAG_RENDERER );
 }
 
@@ -3198,8 +3196,7 @@ static qboolean CL_IsMininized( void ) {
 CL_InitRef
 ============
 */
-void CL_InitGLimp_Cvars( void );
-void CL_InitRef( void ) {
+static void CL_InitRef( void ) {
 	refimport_t	ri;
 	refexport_t	*ret;
 
@@ -3534,7 +3531,7 @@ static void CL_ModeList_f( void )
 }
 
 
-void CL_InitGLimp_Cvars( void )
+static void CL_InitGLimp_Cvars( void )
 {
 	// shared with GLimp
 	r_allowSoftwareGL = Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
@@ -4343,6 +4340,7 @@ void CL_GetPing( int n, char *buf, int buflen, int *pingtime )
 	*pingtime = time;
 }
 
+
 /*
 ==================
 CL_GetPingInfo
@@ -4360,6 +4358,7 @@ void CL_GetPingInfo( int n, char *buf, int buflen )
 
 	Q_strncpyz( buf, cl_pinglist[n].info, buflen );
 }
+
 
 /*
 ==================

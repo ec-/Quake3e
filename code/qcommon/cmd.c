@@ -647,7 +647,7 @@ void Cmd_TokenizeStringIgnoreQuotes( const char *text_in ) {
 Cmd_FindCommand
 ============
 */
-cmd_function_t *Cmd_FindCommand( const char *cmd_name )
+static cmd_function_t *Cmd_FindCommand( const char *cmd_name )
 {
 	cmd_function_t *cmd;
 	for( cmd = cmd_functions; cmd; cmd = cmd->next )
@@ -883,11 +883,11 @@ void Cmd_ExecuteString( const char *text ) {
 Cmd_List_f
 ============
 */
-void Cmd_List_f (void)
+static void Cmd_List_f( void )
 {
-	cmd_function_t *cmd;
+	const cmd_function_t *cmd;
+	const char *match;
 	int i;
-	char *match;
 
 	if ( Cmd_Argc() > 1 ) {
 		match = Cmd_Argv( 1 );
@@ -896,13 +896,13 @@ void Cmd_List_f (void)
 	}
 
 	i = 0;
-	for (cmd=cmd_functions ; cmd ; cmd=cmd->next) {
-		if (match && !Com_Filter(match, cmd->name, qfalse)) continue;
-
-		Com_Printf ("%s\n", cmd->name);
+	for ( cmd = cmd_functions ; cmd ; cmd=cmd->next ) {
+		if ( match && !Com_Filter( match, cmd->name, qfalse ) )
+			continue;
+		Com_Printf( "%s\n", cmd->name );
 		i++;
 	}
-	Com_Printf ("%i commands\n", i);
+	Com_Printf( "%i commands\n", i );
 }
 
 
@@ -911,13 +911,18 @@ void Cmd_List_f (void)
 Cmd_CompleteCfgName
 ==================
 */
-void Cmd_CompleteCfgName( char *args, int argNum ) {
+static void Cmd_CompleteCfgName( char *args, int argNum ) {
 	if( argNum == 2 ) {
 		Field_CompleteFilename( "", "cfg", qfalse, FS_MATCH_ANY );
 	}
 }
 
 
+/*
+==================
+Cmd_CompleteWriteCfgName
+==================
+*/
 void Cmd_CompleteWriteCfgName( char *args, int argNum ) {
 	if( argNum == 2 ) {
 		Field_CompleteFilename( "", "cfg", qfalse, FS_MATCH_EXTERN | FS_MATCH_STICK );

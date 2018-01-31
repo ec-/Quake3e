@@ -1636,9 +1636,9 @@ Cvar_Restart_f
 Resets all cvars to their hardcoded values
 ============
 */
-void Cvar_Restart_f(void)
+static void Cvar_Restart_f( void )
 {
-	Cvar_Restart(qfalse);
+	Cvar_Restart( qfalse );
 }
 
 
