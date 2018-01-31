@@ -675,6 +675,7 @@ static void ParseTriSurf( const dsurface_t *ds, const drawVert_t *verts, msurfac
 	srfTriangles_t	*tri;
 	int				i, j;
 	int				numVerts, numIndexes;
+	int				lightmapNum, lightmapX, lightmapY;
 
 	// get fog volume
 	surf->fogIndex = LittleLong( ds->fogNum ) + 1;
@@ -683,6 +684,16 @@ static void ParseTriSurf( const dsurface_t *ds, const drawVert_t *verts, msurfac
 	surf->shader = ShaderForShaderNum( ds->shaderNum, LIGHTMAP_BY_VERTEX );
 	if ( r_singleShader->integer && !surf->shader->isSky ) {
 		surf->shader = tr.defaultShader;
+	}
+
+	lightmapNum = LittleLong( ds->lightmapNum );
+	if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
+		lightmapX = lightmapNum & (lightmapWidth - 1);
+		lightmapNum /= lightmapWidth;
+		lightmapY = lightmapNum & (lightmapHeight - 1);
+		lightmapNum /= lightmapHeight;
+	} else {
+		lightmapX = lightmapY = 0;
 	}
 
 	numVerts = LittleLong( ds->numVerts );
@@ -713,6 +724,11 @@ static void ParseTriSurf( const dsurface_t *ds, const drawVert_t *verts, msurfac
 		}
 
 		R_ColorShiftLightingBytes( verts[i].color, tri->verts[i].color );
+		if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
+			// adjust lightmap coords
+			tri->verts[i].lightmap[0] = (tri->verts[i].lightmap[0] + lightmapX) / lightmapWidth;
+			tri->verts[i].lightmap[1] = (tri->verts[i].lightmap[1] + lightmapY) / lightmapHeight;
+		}
 	}
 
 	// copy indexes
