@@ -29,6 +29,50 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define CAPSULE_MODEL_HANDLE	254
 
 
+// forced double-precison functions
+#define DotProductDP(x,y)		((double)(x)[0]*(y)[0]+(double)(x)[1]*(y)[1]+(double)(x)[2]*(y)[2])
+#define VectorSubtractDP(a,b,c)	((c)[0]=(double)((a)[0]-(b)[0]),(c)[1]=(double)((a)[1]-(b)[1]),(c)[2]=(double)((a)[2]-(b)[2]))
+#define VectorAddDP(a,b,c)		((c)[0]=(double)((a)[0]+(b)[0]),(c)[1]=(double)((a)[1]+(b)[1]),(c)[2]=(double)((a)[2]+(b)[2]))
+
+
+static ID_INLINE double DotProductDPf( const float *v1, const float *v2 ) {
+	double x[3], y[3];
+	VectorCopy( v1, x );
+	VectorCopy( v2, y );
+	return x[0]*y[0]+x[1]*y[1]+x[2]*y[2];
+}
+
+
+static ID_INLINE void CrossProductDP( const vec3_t v1, const vec3_t v2, vec3_t cross ) {
+	double d1[3], d2[3];
+	VectorCopy( v1, d1 );
+	VectorCopy( v2, d2 );
+	cross[0] = d1[1]*d2[2] - d1[2]*d2[1];
+	cross[1] = d1[2]*d2[0] - d1[0]*d2[2];
+	cross[2] = d1[0]*d2[1] - d1[1]*d2[0];
+}
+
+
+static ID_INLINE vec_t VectorNormalizeDP( vec3_t v ) {
+	double	length, ilength, d[3];
+
+	VectorCopy( v, d );
+	length = d[0]*d[0] + d[1]*d[1] + d[2]*d[2];
+
+	if ( length ) {
+		/* writing it this way allows gcc to recognize that rsqrt can be used */
+		ilength = 1.0/(double)sqrt( length );
+		/* sqrt(length) = length * (1 / sqrt(length)) */
+		length *= ilength;
+		v[0] = d[0] * ilength;
+		v[1] = d[1] * ilength;
+		v[2] = d[2] * ilength;
+	}
+		
+	return length;
+}
+
+
 typedef struct {
 	cplane_t	*plane;
 	int			children[2];		// negative numbers are leafs

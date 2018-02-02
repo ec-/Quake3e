@@ -99,12 +99,13 @@ void CM_ClearLevelPatches( void ) {
 	debugFacet = NULL;
 }
 
+
 /*
 =================
 CM_SignbitsForNormal
 =================
 */
-static int CM_SignbitsForNormal( vec3_t normal ) {
+static int CM_SignbitsForNormal( const vec3_t normal ) {
 	int	bits, j;
 
 	bits = 0;
@@ -116,6 +117,7 @@ static int CM_SignbitsForNormal( vec3_t normal ) {
 	return bits;
 }
 
+
 /*
 =====================
 CM_PlaneFromPoints
@@ -124,17 +126,16 @@ Returns false if the triangle is degenrate.
 The normal will point out of the clock for clockwise ordered points
 =====================
 */
-static qboolean CM_PlaneFromPoints( vec4_t plane, vec3_t a, vec3_t b, vec3_t c ) {
+static qboolean CM_PlaneFromPoints( vec4_t plane, const vec3_t a, const vec3_t b, const vec3_t c ) {
 	vec3_t	d1, d2;
 
 	VectorSubtract( b, a, d1 );
 	VectorSubtract( c, a, d2 );
-	CrossProduct( d2, d1, plane );
-	if ( VectorNormalize( plane ) == 0 ) {
+	CrossProductDP( d2, d1, plane );
+	if ( VectorNormalizeDP( plane ) == 0.0 )
 		return qfalse;
-	}
 
-	plane[3] = DotProduct( a, plane );
+	plane[3] = DotProductDPf( a, plane );
 	return qtrue;
 }
 
@@ -155,7 +156,7 @@ Returns true if the given quadratic curve is not flat enough for our
 collision detection purposes
 =================
 */
-static qboolean	CM_NeedsSubdivision( vec3_t a, vec3_t b, vec3_t c ) {
+static qboolean	CM_NeedsSubdivision( const vec3_t a, const vec3_t b, const vec3_t c ) {
 	vec3_t		cmid;
 	vec3_t		lmid;
 	vec3_t		delta;
@@ -179,6 +180,7 @@ static qboolean	CM_NeedsSubdivision( vec3_t a, vec3_t b, vec3_t c ) {
 	return dist >= SUBDIVIDE_DISTANCE;
 }
 
+
 /*
 ===============
 CM_Subdivide
@@ -187,7 +189,7 @@ a, b, and c are control points.
 the subdivided sequence will be: a, out1, out2, out3, c
 ===============
 */
-static void CM_Subdivide( vec3_t a, vec3_t b, vec3_t c, vec3_t out1, vec3_t out2, vec3_t out3 ) {
+static void CM_Subdivide( const vec3_t a, const vec3_t b, const vec3_t c, vec3_t out1, vec3_t out2, vec3_t out3 ) {
 	int		i;
 
 	for ( i = 0 ; i < 3 ; i++ ) {
@@ -196,6 +198,7 @@ static void CM_Subdivide( vec3_t a, vec3_t b, vec3_t c, vec3_t out1, vec3_t out2
 		out2[i] = 0.5 * (out1[i] + out3[i]);
 	}
 }
+
 
 /*
 =================
@@ -248,6 +251,7 @@ static void CM_TransposeGrid( cGrid_t *grid ) {
 	grid->wrapHeight = tempWrap;
 }
 
+
 /*
 ===================
 CM_SetGridWrapWidth
@@ -276,6 +280,7 @@ static void CM_SetGridWrapWidth( cGrid_t *grid ) {
 		grid->wrapWidth = qfalse;
 	}
 }
+
 
 /*
 =================
@@ -348,13 +353,14 @@ static void CM_SubdivideGridColumns( cGrid_t *grid ) {
 	}
 }
 
+
 /*
 ======================
 CM_ComparePoints
 ======================
 */
 #define	POINT_EPSILON	0.1
-static qboolean CM_ComparePoints( float *a, float *b ) {
+static qboolean CM_ComparePoints( const float *a, const float *b ) {
 	float		d;
 
 	d = a[0] - b[0];
@@ -371,6 +377,7 @@ static qboolean CM_ComparePoints( float *a, float *b ) {
 	}
 	return qtrue;
 }
+
 
 /*
 =================
@@ -428,7 +435,7 @@ static	facet_t			facets[MAX_FACETS];
 CM_PlaneEqual
 ==================
 */
-int CM_PlaneEqual(patchPlane_t *p, float plane[4], int *flipped) {
+static qboolean CM_PlaneEqual( const patchPlane_t *p, float plane[4], int *flipped ) {
 	float invplane[4];
 
 	if (
@@ -457,12 +464,13 @@ int CM_PlaneEqual(patchPlane_t *p, float plane[4], int *flipped) {
 	return qfalse;
 }
 
+
 /*
 ==================
 CM_SnapVector
 ==================
 */
-void CM_SnapVector(vec3_t normal) {
+static void CM_SnapVector( vec3_t normal ) {
 	int		i;
 
 	for (i=0 ; i<3 ; i++)
@@ -482,12 +490,13 @@ void CM_SnapVector(vec3_t normal) {
 	}
 }
 
+
 /*
 ==================
 CM_FindPlane2
 ==================
 */
-int CM_FindPlane2(float plane[4], int *flipped) {
+static int CM_FindPlane2( float plane[4], int *flipped ) {
 	int i;
 
 	// see if the points are close enough to an existing plane
@@ -510,12 +519,13 @@ int CM_FindPlane2(float plane[4], int *flipped) {
 	return numPlanes-1;
 }
 
+
 /*
 ==================
 CM_FindPlane
 ==================
 */
-static int CM_FindPlane( float *p1, float *p2, float *p3 ) {
+static int CM_FindPlane( const float *p1, const float *p2, const float *p3 ) {
 	float	plane[4];
 	int		i;
 	float	d;
@@ -562,21 +572,22 @@ static int CM_FindPlane( float *p1, float *p2, float *p3 ) {
 	return numPlanes-1;
 }
 
+
 /*
 ==================
 CM_PointOnPlaneSide
 ==================
 */
-static int CM_PointOnPlaneSide( float *p, int planeNum ) {
-	float	*plane;
-	float	d;
+static int CM_PointOnPlaneSide( const float *p, int planeNum ) {
+	const float *plane;
+	double	d;
 
 	if ( planeNum == -1 ) {
 		return SIDE_ON;
 	}
 	plane = planes[ planeNum ].plane;
 
-	d = DotProduct( p, plane ) - plane[3];
+	d = DotProductDPf( p, plane ) - plane[3];
 
 	if ( d > PLANE_TRI_EPSILON ) {
 		return SIDE_FRONT;
@@ -588,6 +599,7 @@ static int CM_PointOnPlaneSide( float *p, int planeNum ) {
 
 	return SIDE_ON;
 }
+
 
 /*
 ==================
@@ -610,6 +622,7 @@ static int	CM_GridPlane( int gridPlanes[MAX_GRID_SIZE][MAX_GRID_SIZE][2], int i,
 	Com_Printf( "WARNING: CM_GridPlane unresolvable\n" );
 	return -1;
 }
+
 
 /*
 ==================
@@ -688,6 +701,7 @@ static int CM_EdgePlaneNum( cGrid_t *grid, int gridPlanes[MAX_GRID_SIZE][MAX_GRI
 	return -1;
 }
 
+
 /*
 ===================
 CM_SetBorderInward
@@ -764,6 +778,7 @@ static void CM_SetBorderInward( facet_t *facet, cGrid_t *grid, int gridPlanes[MA
 	}
 }
 
+
 /*
 ==================
 CM_ValidateFacet
@@ -771,7 +786,7 @@ CM_ValidateFacet
 If the facet isn't bounded by its borders, we screwed up.
 ==================
 */
-static qboolean CM_ValidateFacet( facet_t *facet ) {
+static qboolean CM_ValidateFacet( const facet_t *facet ) {
 	float		plane[4];
 	int			j;
 	winding_t	*w;
@@ -818,18 +833,20 @@ static qboolean CM_ValidateFacet( facet_t *facet ) {
 	return qtrue;		// winding is fine
 }
 
+
 /*
 ==================
 CM_AddFacetBevels
 ==================
 */
-void CM_AddFacetBevels( facet_t *facet ) {
+static void CM_AddFacetBevels( facet_t *facet ) {
 
 	int i, j, k, l;
 	int axis, dir, order, flipped;
-	float plane[4], d, newplane[4];
+	float plane[4], newplane[4];
 	winding_t *w, *w2;
 	vec3_t mins, maxs, vec, vec2;
+	double d, d1[3], d2[3];
 
 	Vector4Copy( planes[ facet->surfacePlane ].plane, plane );
 
@@ -894,9 +911,11 @@ void CM_AddFacetBevels( facet_t *facet ) {
 	for ( j = 0 ; j < w->numpoints ; j++ )
 	{
 		k = (j+1)%w->numpoints;
-		VectorSubtract (w->p[j], w->p[k], vec);
+		VectorCopy( w->p[j], d1 );
+		VectorCopy( w->p[k], d2 );
+		VectorSubtractDP( d1, d2, vec );
 		//if it's a degenerate edge
-		if (VectorNormalize (vec) < 0.5)
+		if ( VectorNormalizeDP( vec ) < 0.5 )
 			continue;
 		CM_SnapVector(vec);
 		for ( k = 0; k < 3 ; k++ )
@@ -911,19 +930,19 @@ void CM_AddFacetBevels( facet_t *facet ) {
 			for ( dir = -1 ; dir <= 1 ; dir += 2 )
 			{
 				// construct a plane
-				VectorClear (vec2);
+				VectorClear(vec2);
 				vec2[axis] = dir;
-				CrossProduct (vec, vec2, plane);
-				if (VectorNormalize (plane) < 0.5)
+				CrossProductDP( vec, vec2, plane );
+				if ( VectorNormalizeDP( plane ) < 0.5 )
 					continue;
-				plane[3] = DotProduct (w->p[j], plane);
+				plane[3] = DotProductDPf( w->p[j], plane );
 
 				// if all the points of the facet winding are
 				// behind this plane, it is a proper edge bevel
 				for ( l = 0 ; l < w->numpoints ; l++ )
 				{
-					d = DotProduct (w->p[l], plane) - plane[3];
-					if (d > 0.1)
+					d = DotProductDPf( w->p[l], plane ) - plane[3];
+					if ( d > 0.1 )
 						break;	// point in front
 				}
 				if ( l < w->numpoints )
@@ -1174,7 +1193,7 @@ collision detection with a patch mesh.
 Points is packed as concatenated rows.
 ===================
 */
-struct patchCollide_s	*CM_GeneratePatchCollide( int width, int height, vec3_t *points ) {
+struct patchCollide_s *CM_GeneratePatchCollide( int width, int height, vec3_t *points ) {
 	patchCollide_t	*pf;
 	cGrid_t			grid;
 	int				i, j;
@@ -1352,12 +1371,13 @@ void CM_TracePointThroughPatchCollide( traceWork_t *tw, const struct patchCollid
 	}
 }
 
+
 /*
 ====================
 CM_CheckFacetPlane
 ====================
 */
-int CM_CheckFacetPlane(float *plane, vec3_t start, vec3_t end, float *enterFrac, float *leaveFrac, int *hit) {
+static int CM_CheckFacetPlane( const float *plane, const vec3_t start, const vec3_t end, float *enterFrac, float *leaveFrac, int *hit ) {
 	float d1, d2, f;
 
 	*hit = qfalse;
@@ -1397,6 +1417,7 @@ int CM_CheckFacetPlane(float *plane, vec3_t start, vec3_t end, float *enterFrac,
 	}
 	return qtrue;
 }
+
 
 /*
 ====================
