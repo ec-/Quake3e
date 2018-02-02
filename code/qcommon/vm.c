@@ -234,7 +234,7 @@ void VM_CheckBounds( const vm_t *vm, unsigned int address, unsigned int length )
 {
 	//if ( !vm->entryPoint )
 	{
-		if ( (address | length) > vm->dataMask || (address + length) > vm->dataAlloc )
+		if ( (address | length) > vm->dataMask || (address + length) > vm->dataMask )
 		{
 			Com_Error( ERR_DROP, "program tried to bypass data segment bounds" );
 		}
@@ -251,7 +251,7 @@ void VM_CheckBounds2( const vm_t *vm, unsigned int addr1, unsigned int addr2, un
 {
 	//if ( !vm->entryPoint )
 	{
-		if ( (addr1 | addr2 | length) > vm->dataMask || (addr1 + length) > vm->dataAlloc || (addr2+length) > vm->dataAlloc )
+		if ( (addr1 | addr2 | length) > vm->dataMask || (addr1 + length) > vm->dataMask || (addr2+length) > vm->dataMask )
 		{
 			Com_Error( ERR_DROP, "program tried to bypass data segment bounds" );
 		}

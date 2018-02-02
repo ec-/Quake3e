@@ -1086,7 +1086,7 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return args[1];
 
 	case UI_STRNCPY:
-		VM_CHECKBOUNDS2( uivm, args[1], args[2], args[3] );
+		VM_CHECKBOUNDS( uivm, args[1], args[3] );
 		strncpy( VMA(1), VMA(2), args[3] );
 		return args[1];
 

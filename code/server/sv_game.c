@@ -894,7 +894,7 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		return args[1];
 
 	case TRAP_STRNCPY:
-		VM_CHECKBOUNDS2( gvm, args[1], args[2], args[3] );
+		VM_CHECKBOUNDS( gvm, args[1], args[3] );
 		strncpy( VMA(1), VMA(2), args[3] );
 		return args[1];
 

@@ -659,7 +659,7 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		Com_Memcpy( VMA(1), VMA(2), args[3] );
 		return args[1];
 	case CG_STRNCPY:
-		VM_CHECKBOUNDS2( cgvm, args[1], args[2], args[3] );
+		VM_CHECKBOUNDS( cgvm, args[1], args[3] );
 		strncpy( VMA(1), VMA(2), args[3] );
 		return args[1];
 	case CG_SIN:
