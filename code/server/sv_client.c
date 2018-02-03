@@ -1539,8 +1539,8 @@ SV_FloodProtect
 static qboolean SV_FloodProtect( client_t *cl ) {
 	if ( sv_floodProtect->integer ) {
 		const int now = svs.time;
-		const int burst = 10;
-		const int period = 400;
+		const int burst = 8;
+		const int period = 500;
 
 		int interval = now - cl->cmd_time;
 		int expired = interval / period;
