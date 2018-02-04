@@ -86,9 +86,11 @@ static void R_IssueRenderCommands( void ) {
 	// clear it out, in case this is a sync and not a buffer flip
 	cmdList->used = 0;
 
-	// skip backend when minimized
-	if ( ri.CL_IsMinimized() && backEnd.screenshotMask == 0 ) {
-		return;
+	if ( backEnd.screenshotMask == 0 ) {
+		if ( ri.CL_IsMinimized() )
+			return; // skip backend when minimized
+		if ( backEnd.throttle )
+			return; // or throttled on demand
 	}
 
 	// actually start the commands going
@@ -463,6 +465,7 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 		*backEndMsec = backEnd.pc.msec;
 	}
 	backEnd.pc.msec = 0;
+	backEnd.throttle = qfalse;
 
 	// recompile GPU shaders if needed
 	if ( ri.Cvar_CheckGroup( CVG_RENDERER ) )
@@ -500,6 +503,12 @@ void RE_TakeVideoFrame( int width, int height,
 	cmd->captureBuffer = captureBuffer;
 	cmd->encodeBuffer = encodeBuffer;
 	cmd->motionJpeg = motionJpeg;
+}
+
+
+void RE_ThrottleBackend( void )
+{
+	backEnd.throttle = qtrue;
 }
 
 

@@ -1673,6 +1673,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.TakeVideoFrame = RE_TakeVideoFrame;
 	re.SetColorMappings = R_SetColorMappings;
 
+	re.ThrottleBackend = RE_ThrottleBackend;
 	re.FinishBloom = RE_FinishBloom;
 	re.CanMinimize = RE_CanMinimize;
 	re.GetConfig = RE_GetConfig;

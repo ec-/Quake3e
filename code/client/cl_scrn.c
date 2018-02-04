@@ -595,14 +595,17 @@ void SCR_UpdateScreen( void ) {
 
 	if ( framecount == cls.framecount ) {
 		int ms = Sys_Milliseconds();
-		if ( ms < next_frametime )
-			return;
-		next_frametime = ms + 16; // limit to 60 FPS
+		if ( ms < next_frametime ) {
+			if ( re.ThrottleBackend )
+				re.ThrottleBackend();
+		} else {
+			next_frametime = ms + 16; // limit to 60 FPS
+			framecount = cls.framecount;
+		}
 	} else {
 		next_frametime = 0;
+		framecount = cls.framecount;
 	}
-
-	framecount = cls.framecount;
 
 	if ( ++recursive > 2 ) {
 		Com_Error( ERR_FATAL, "SCR_UpdateScreen: recursively called" );
