@@ -1404,8 +1404,8 @@ void CL_RequestAuthorization( void ) {
 
 		cls.authorizeServer.port = BigShort( PORT_AUTHORIZE );
 		Com_Printf( "%s resolved to %i.%i.%i.%i:%i\n", AUTHORIZE_SERVER_NAME,
-			cls.authorizeServer.ip[0], cls.authorizeServer.ip[1],
-			cls.authorizeServer.ip[2], cls.authorizeServer.ip[3],
+			cls.authorizeServer.ipv._4[0], cls.authorizeServer.ipv._4[1],
+			cls.authorizeServer.ipv._4[2], cls.authorizeServer.ipv._4[3],
 			BigShort( cls.authorizeServer.port ) );
 	}
 	if ( cls.authorizeServer.type == NA_BAD ) {
@@ -2380,8 +2380,8 @@ unsigned int hash_func( const netadr_t *addr ) {
 	unsigned int	hash = 0;
 
 	switch ( addr->type ) {
-		case NA_IP:  ip = addr->ip;  size = 4; break;
-		case NA_IP6: ip = addr->ip6; size = 16; break;
+		case NA_IP:  ip = addr->ipv._4; size = 4;  break;
+		case NA_IP6: ip = addr->ipv._6; size = 16; break;
 		default: size = 0; break;
 	}
 
@@ -2473,11 +2473,11 @@ static void CL_ServersResponsePacket( const netadr_t* from, msg_t *msg, qboolean
 		{
 			buffptr++;
 
-			if (buffend - buffptr < sizeof(addresses[numservers].ip) + sizeof(addresses[numservers].port) + 1)
+			if (buffend - buffptr < sizeof(addresses[numservers].ipv._4) + sizeof(addresses[numservers].port) + 1)
 				break;
 
-			for(i = 0; i < sizeof(addresses[numservers].ip); i++)
-				addresses[numservers].ip[i] = *buffptr++;
+			for(i = 0; i < sizeof(addresses[numservers].ipv._4); i++)
+				addresses[numservers].ipv._4[i] = *buffptr++;
 
 			addresses[numservers].type = NA_IP;
 		}
@@ -2486,11 +2486,11 @@ static void CL_ServersResponsePacket( const netadr_t* from, msg_t *msg, qboolean
 		{
 			buffptr++;
 
-			if (buffend - buffptr < sizeof(addresses[numservers].ip6) + sizeof(addresses[numservers].port) + 1)
+			if (buffend - buffptr < sizeof(addresses[numservers].ipv._6) + sizeof(addresses[numservers].port) + 1)
 				break;
 			
-			for(i = 0; i < sizeof(addresses[numservers].ip6); i++)
-				addresses[numservers].ip6[i] = *buffptr++;
+			for(i = 0; i < sizeof(addresses[numservers].ipv._6); i++)
+				addresses[numservers].ipv._6[i] = *buffptr++;
 			
 			addresses[numservers].type = NA_IP6;
 			addresses[numservers].scope_id = from->scope_id;

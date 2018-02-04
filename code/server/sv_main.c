@@ -368,8 +368,8 @@ static long SVC_HashForAddress( const netadr_t *address ) {
 	long		hash = 0;
 
 	switch ( address->type ) {
-		case NA_IP:  ip = address->ip;  size = 4; break;
-		case NA_IP6: ip = address->ip6; size = 16; break;
+		case NA_IP:  ip = address->ipv._4; size = 4;  break;
+		case NA_IP6: ip = address->ipv._6; size = 16; break;
 		default: break;
 	}
 
@@ -382,6 +382,7 @@ static long SVC_HashForAddress( const netadr_t *address ) {
 
 	return hash;
 }
+
 
 /*
 ================
@@ -399,13 +400,13 @@ static leakyBucket_t *SVC_BucketForAddress( const netadr_t *address, int burst, 
 	for ( bucket = bucketHashes[ hash ]; bucket; bucket = bucket->next ) {
 		switch ( bucket->type ) {
 			case NA_IP:
-				if ( memcmp( bucket->ipv._4, address->ip, 4 ) == 0 ) {
+				if ( memcmp( bucket->ipv._4, address->ipv._4, 4 ) == 0 ) {
 					return bucket;
 				}
 				break;
 
 			case NA_IP6:
-				if ( memcmp( bucket->ipv._6, address->ip6, 16 ) == 0 ) {
+				if ( memcmp( bucket->ipv._6, address->ipv._6, 16 ) == 0 ) {
 					return bucket;
 				}
 				break;
@@ -440,8 +441,8 @@ static leakyBucket_t *SVC_BucketForAddress( const netadr_t *address, int burst, 
 		if ( bucket->type == NA_BAD ) {
 			bucket->type = address->type;
 			switch ( address->type ) {
-				case NA_IP:  Com_Memcpy( bucket->ipv._4, address->ip, 4 );   break;
-				case NA_IP6: Com_Memcpy( bucket->ipv._6, address->ip6, 16 ); break;
+				case NA_IP:  Com_Memcpy( bucket->ipv._4, address->ipv._4, 4 );  break;
+				case NA_IP6: Com_Memcpy( bucket->ipv._6, address->ipv._6, 16 ); break;
 				default: break;
 			}
 

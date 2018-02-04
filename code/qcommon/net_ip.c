@@ -222,6 +222,7 @@ static char *NET_ErrorString( void ) {
 #endif
 }
 
+
 static void NetadrToSockadr( const netadr_t *a, struct sockaddr *s ) {
 	if( a->type == NA_BROADCAST ) {
 		((struct sockaddr_in *)s)->sin_family = AF_INET;
@@ -230,12 +231,12 @@ static void NetadrToSockadr( const netadr_t *a, struct sockaddr *s ) {
 	}
 	else if( a->type == NA_IP ) {
 		((struct sockaddr_in *)s)->sin_family = AF_INET;
-		((struct sockaddr_in *)s)->sin_addr.s_addr = *(int *)&a->ip;
+		((struct sockaddr_in *)s)->sin_addr.s_addr = *(int *)&a->ipv._4;
 		((struct sockaddr_in *)s)->sin_port = a->port;
 	}
 	else if( a->type == NA_IP6 ) {
 		((struct sockaddr_in6 *)s)->sin6_family = AF_INET6;
-		((struct sockaddr_in6 *)s)->sin6_addr = * ((struct in6_addr *) &a->ip6);
+		((struct sockaddr_in6 *)s)->sin6_addr = * ((struct in6_addr *) &a->ipv._6);
 		((struct sockaddr_in6 *)s)->sin6_port = a->port;
 		((struct sockaddr_in6 *)s)->sin6_scope_id = a->scope_id;
 	}
@@ -251,13 +252,13 @@ static void NetadrToSockadr( const netadr_t *a, struct sockaddr *s ) {
 static void SockadrToNetadr( const struct sockaddr *s, netadr_t *a ) {
 	if (s->sa_family == AF_INET) {
 		a->type = NA_IP;
-		*(int *)&a->ip = ((struct sockaddr_in *)s)->sin_addr.s_addr;
+		*(int *)&a->ipv._4 = ((struct sockaddr_in *)s)->sin_addr.s_addr;
 		a->port = ((struct sockaddr_in *)s)->sin_port;
 	}
 	else if(s->sa_family == AF_INET6)
 	{
 		a->type = NA_IP6;
-		memcpy(a->ip6, &((struct sockaddr_in6 *)s)->sin6_addr, sizeof(a->ip6));
+		memcpy(a->ipv._6, &((struct sockaddr_in6 *)s)->sin6_addr, sizeof(a->ipv._6));
 		a->port = ((struct sockaddr_in6 *)s)->sin6_port;
 		a->scope_id = ((struct sockaddr_in6 *)s)->sin6_scope_id;
 	}
@@ -418,16 +419,16 @@ qboolean NET_CompareBaseAdrMask( const netadr_t *a, const netadr_t *b, int netma
 
 	if (a->type == NA_IP)
 	{
-		addra = (byte *) &a->ip;
-		addrb = (byte *) &b->ip;
+		addra = (byte *) &a->ipv._4;
+		addrb = (byte *) &b->ipv._4;
 		
 		if(netmask < 0 || netmask > 32)
 			netmask = 32;
 	}
 	else if(a->type == NA_IP6)
 	{
-		addra = (byte *) &a->ip6;
-		addrb = (byte *) &b->ip6;
+		addra = (byte *) &a->ipv._6;
+		addrb = (byte *) &b->ipv._6;
 		
 		if(netmask < 0 || netmask > 128)
 			netmask = 128;
@@ -570,10 +571,10 @@ static qboolean NET_GetPacket( netadr_t *net_from, msg_t *net_message, const fd_
 					return qfalse;
 				}
 				net_from->type = NA_IP;
-				net_from->ip[0] = net_message->data[4];
-				net_from->ip[1] = net_message->data[5];
-				net_from->ip[2] = net_message->data[6];
-				net_from->ip[3] = net_message->data[7];
+				net_from->ipv._4[0] = net_message->data[4];
+				net_from->ipv._4[1] = net_message->data[5];
+				net_from->ipv._4[2] = net_message->data[6];
+				net_from->ipv._4[3] = net_message->data[7];
 				net_from->port = *(short *)&net_message->data[8];
 				net_message->readcount = 10;
 			}
@@ -744,21 +745,21 @@ qboolean Sys_IsLANAddress( const netadr_t *adr ) {
 		// 10.0.0.0        -   10.255.255.255  (10/8 prefix)
 		// 172.16.0.0      -   172.31.255.255  (172.16/12 prefix)
 		// 192.168.0.0     -   192.168.255.255 (192.168/16 prefix)
-		if(adr->ip[0] == 10)
+		if(adr->ipv._4[0] == 10)
 			return qtrue;
-		if(adr->ip[0] == 172 && (adr->ip[1]&0xf0) == 16)
+		if(adr->ipv._4[0] == 172 && (adr->ipv._4[1]&0xf0) == 16)
 			return qtrue;
-		if(adr->ip[0] == 192 && adr->ip[1] == 168)
+		if(adr->ipv._4[0] == 192 && adr->ipv._4[1] == 168)
 			return qtrue;
 
-		if(adr->ip[0] == 127)
+		if(adr->ipv._4[0] == 127)
 			return qtrue;
 	}
 	else if(adr->type == NA_IP6)
 	{
-		if(adr->ip6[0] == 0xfe && (adr->ip6[1] & 0xc0) == 0x80)
+		if(adr->ipv._6[0] == 0xfe && (adr->ipv._6[1] & 0xc0) == 0x80)
 			return qtrue;
-		if((adr->ip6[0] & 0xfe) == 0xfc)
+		if((adr->ipv._6[0] & 0xfe) == 0xfc)
 			return qtrue;
 	}
 	
@@ -771,9 +772,9 @@ qboolean Sys_IsLANAddress( const netadr_t *adr ) {
 			{
 				compareip = (byte *) &((struct sockaddr_in *) &localIP[index].addr)->sin_addr.s_addr;
 				comparemask = (byte *) &((struct sockaddr_in *) &localIP[index].netmask)->sin_addr.s_addr;
-				compareadr = adr->ip;
+				compareadr = adr->ipv._4;
 				
-				addrsize = sizeof(adr->ip);
+				addrsize = sizeof(adr->ipv._4);
 			}
 			else
 			{
@@ -781,9 +782,9 @@ qboolean Sys_IsLANAddress( const netadr_t *adr ) {
 
 				compareip = (byte *) &((struct sockaddr_in6 *) &localIP[index].addr)->sin6_addr;
 				comparemask = (byte *) &((struct sockaddr_in6 *) &localIP[index].netmask)->sin6_addr;
-				compareadr = adr->ip6;
+				compareadr = adr->ipv._6;
 				
-				addrsize = sizeof(adr->ip6);
+				addrsize = sizeof(adr->ipv._6);
 			}
 
 			differed = qfalse;
@@ -811,7 +812,7 @@ qboolean Sys_IsLANAddress( const netadr_t *adr ) {
 Sys_ShowIP
 ==================
 */
-void Sys_ShowIP(void) {
+void Sys_ShowIP( void ) {
 	int i;
 	char addrbuf[NET_ADDRSTRMAXLEN];
 

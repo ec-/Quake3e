@@ -169,12 +169,13 @@ typedef enum {
 
 
 #define NET_ADDRSTRMAXLEN 48	// maximum length of an IPv6 address string including trailing '\0'
+
 typedef struct {
 	netadrtype_t	type;
-
-	byte	ip[4];
-	byte	ip6[16];
-
+	union {
+		byte	_4[4];
+		byte	_6[16];
+	} ipv;
 	unsigned short	port;
 	unsigned long	scope_id;	// Needed for IPv6 link-local addresses
 } netadr_t;
