@@ -416,6 +416,9 @@ static leakyBucket_t *SVC_BucketForAddress( const netadr_t *address, int burst, 
 		}
 	}
 
+	// make sure we will never use time 0
+	now = now ? now : 1;
+
 	for ( i = 0; i < MAX_BUCKETS; i++ ) {
 		int interval;
 
@@ -423,8 +426,7 @@ static leakyBucket_t *SVC_BucketForAddress( const netadr_t *address, int burst, 
 		interval = now - bucket->lastTime;
 
 		// Reclaim expired buckets
-		if ( bucket->lastTime > 0 && ( interval > ( burst * period ) ||
-					interval < 0 ) ) {
+		if ( bucket->lastTime && (unsigned)interval > ( burst * period ) ) {
 			if ( bucket->prev != NULL ) {
 				bucket->prev->next = bucket->next;
 			} else {
