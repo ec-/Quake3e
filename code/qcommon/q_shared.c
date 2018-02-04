@@ -1090,12 +1090,14 @@ int Q_isprint( int c )
 	return ( 0 );
 }
 
+
 int Q_islower( int c )
 {
 	if (c >= 'a' && c <= 'z')
 		return ( 1 );
 	return ( 0 );
 }
+
 
 int Q_isupper( int c )
 {
@@ -1104,6 +1106,7 @@ int Q_isupper( int c )
 	return ( 0 );
 }
 
+
 int Q_isalpha( int c )
 {
 	if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
@@ -1111,7 +1114,8 @@ int Q_isalpha( int c )
 	return ( 0 );
 }
 
-char* Q_strrchr( const char* string, int c )
+
+char *Q_strrchr( const char* string, int c )
 {
 	char cc = c;
 	char *s;
@@ -1131,6 +1135,7 @@ char* Q_strrchr( const char* string, int c )
 	return sp;
 }
 
+
 qboolean Q_isanumber( const char *s )
 {
 #ifdef Q3_VM
@@ -1148,28 +1153,29 @@ qboolean Q_isanumber( const char *s )
 #endif
 }
 
+
 qboolean Q_isintegral( float f )
 {
     return (int)f == f;
 }
 
-#ifdef _MSC_VER
+
+#ifdef _WIN32
 /*
 =============
 Q_vsnprintf
  
-Special wrapper function for Microsoft's broken _vsnprintf() function.
-MinGW comes with its own snprintf() which is not broken.
+Special wrapper function for Microsoft's broken _vsnprintf() function. mingw-w64
+however, uses Microsoft's broken _vsnprintf() function.
 =============
 */
-
-int Q_vsnprintf(char *str, size_t size, const char *format, va_list ap)
+int Q_vsnprintf( char *str, size_t size, const char *format, va_list ap )
 {
 	int retval;
 	
-	retval = _vsnprintf(str, size, format, ap);
+	retval = _vsnprintf( str, size, format, ap );
 
-	if( retval < 0 || (size_t)retval == size)
+	if ( retval < 0 || (size_t)retval == size )
 	{
 		// Microsoft doesn't adhere to the C99 standard of vsnprintf,
 		// which states that the return value must be the number of

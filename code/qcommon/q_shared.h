@@ -157,11 +157,15 @@ float FloatSwap( const float *f );
 		typedef unsigned __int32 uint32_t;
 		typedef unsigned __int16 uint16_t;
 		typedef unsigned __int8 uint8_t;
-		// vsnprintf is ISO/IEC 9899:1999
-		// abstracting this to make it portable
-		int Q_vsnprintf(char *str, size_t size, const char *format, va_list ap);
 	#else
 		#include <stdint.h>
+	#endif
+
+	#ifdef _WIN32
+		// vsnprintf is ISO/IEC 9899:1999
+		// abstracting this to make it portable
+		int Q_vsnprintf( char *str, size_t size, const char *format, va_list ap );
+	#else
 		#define Q_vsnprintf vsnprintf
 	#endif
 #endif
