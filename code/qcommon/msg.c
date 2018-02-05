@@ -481,9 +481,11 @@ const char *MSG_ReadStringLine( msg_t *msg ) {
 	return string;
 }
 
+
 float MSG_ReadAngle16( msg_t *msg ) {
 	return SHORT2ANGLE(MSG_ReadShort(msg));
 }
+
 
 void MSG_ReadData( msg_t *msg, void *data, int len ) {
 	int		i;
@@ -492,6 +494,7 @@ void MSG_ReadData( msg_t *msg, void *data, int len ) {
 		((byte *)data)[i] = MSG_ReadByte (msg);
 	}
 }
+
 
 // a string hasher which gives the same hash value even if the
 // string is later modified via the legacy MSG read/write code
@@ -509,57 +512,12 @@ int MSG_HashKey(const char *string, int maxlen) {
 	return hash;
 }
 
-/*
-=============================================================================
-
-delta functions
-  
-=============================================================================
-*/
-
 #ifndef DEDICATED
 extern cvar_t *cl_shownet;
 #define	LOG(x) if( cl_shownet && cl_shownet->integer == 4 ) { Com_Printf("%s ", x ); };
 #else
 #define	LOG(x)
 #endif
-
-void MSG_WriteDelta( msg_t *msg, int oldV, int newV, int bits ) {
-	if ( oldV == newV ) {
-		MSG_WriteBits( msg, 0, 1 );
-		return;
-	}
-	MSG_WriteBits( msg, 1, 1 );
-	MSG_WriteBits( msg, newV, bits );
-}
-
-int	MSG_ReadDelta( msg_t *msg, int oldV, int bits ) {
-	if ( MSG_ReadBits( msg, 1 ) ) {
-		return MSG_ReadBits( msg, bits );
-	}
-	return oldV;
-}
-
-void MSG_WriteDeltaFloat( msg_t *msg, float oldV, float newV ) {
-	floatint_t fi;
-	if ( oldV == newV ) {
-		MSG_WriteBits( msg, 0, 1 );
-		return;
-	}
-	fi.f = newV;
-	MSG_WriteBits( msg, 1, 1 );
-	MSG_WriteBits( msg, fi.i, 32 );
-}
-
-float MSG_ReadDeltaFloat( msg_t *msg, float oldV ) {
-	if ( MSG_ReadBits( msg, 1 ) ) {
-		floatint_t fi;
-
-		fi.i = MSG_ReadBits( msg, 32 );
-		return fi.f;
-	}
-	return oldV;
-}
 
 /*
 =============================================================================
@@ -569,7 +527,7 @@ delta functions with keys
 =============================================================================
 */
 
-int kbitmask[32] = {
+static const int kbitmask[32] = {
 	0x00000001, 0x00000003, 0x00000007, 0x0000000F,
 	0x0000001F,	0x0000003F,	0x0000007F,	0x000000FF,
 	0x000001FF,	0x000003FF,	0x000007FF,	0x00000FFF,
@@ -580,6 +538,7 @@ int kbitmask[32] = {
 	0x1FFFFFFF,	0x3FFFFFFF,	0x7FFFFFFF,	0xFFFFFFFF,
 };
 
+
 void MSG_WriteDeltaKey( msg_t *msg, int key, int oldV, int newV, int bits ) {
 	if ( oldV == newV ) {
 		MSG_WriteBits( msg, 0, 1 );
@@ -589,30 +548,10 @@ void MSG_WriteDeltaKey( msg_t *msg, int key, int oldV, int newV, int bits ) {
 	MSG_WriteBits( msg, newV ^ key, bits );
 }
 
+
 int	MSG_ReadDeltaKey( msg_t *msg, int key, int oldV, int bits ) {
 	if ( MSG_ReadBits( msg, 1 ) ) {
 		return MSG_ReadBits( msg, bits ) ^ (key & kbitmask[ bits - 1 ]);
-	}
-	return oldV;
-}
-
-void MSG_WriteDeltaKeyFloat( msg_t *msg, int key, float oldV, float newV ) {
-	floatint_t fi;
-	if ( oldV == newV ) {
-		MSG_WriteBits( msg, 0, 1 );
-		return;
-	}
-	fi.f = newV;
-	MSG_WriteBits( msg, 1, 1 );
-	MSG_WriteBits( msg, fi.i ^ key, 32 );
-}
-
-float MSG_ReadDeltaKeyFloat( msg_t *msg, int key, float oldV ) {
-	if ( MSG_ReadBits( msg, 1 ) ) {
-		floatint_t fi;
-
-		fi.i = MSG_ReadBits( msg, 32 ) ^ key;
-		return fi.f;
 	}
 	return oldV;
 }
@@ -631,7 +570,7 @@ usercmd_t communication
 MSG_WriteDeltaUsercmdKey
 =====================
 */
-void MSG_WriteDeltaUsercmdKey( msg_t *msg, int key, usercmd_t *from, usercmd_t *to ) {
+void MSG_WriteDeltaUsercmdKey( msg_t *msg, int key, const usercmd_t *from, const usercmd_t *to ) {
 	if ( to->serverTime - from->serverTime < 256 ) {
 		MSG_WriteBits( msg, 1, 1 );
 		MSG_WriteBits( msg, to->serverTime - from->serverTime, 8 );
@@ -668,7 +607,7 @@ void MSG_WriteDeltaUsercmdKey( msg_t *msg, int key, usercmd_t *from, usercmd_t *
 MSG_ReadDeltaUsercmdKey
 =====================
 */
-void MSG_ReadDeltaUsercmdKey( msg_t *msg, int key, usercmd_t *from, usercmd_t *to ) {
+void MSG_ReadDeltaUsercmdKey( msg_t *msg, int key, const usercmd_t *from, usercmd_t *to ) {
 	if ( MSG_ReadBits( msg, 1 ) ) {
 		to->serverTime = from->serverTime + MSG_ReadBits( msg, 8 );
 	} else {
