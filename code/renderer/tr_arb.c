@@ -357,7 +357,7 @@ void ARB_LightingPass( void )
 	//		qglLockArraysEXT( 0, tess.numVertexes );
 
 	// CPU may limit performance in following cases
-	if ( tess.light->linear || gl_version >= 4 )
+	if ( tess.light->linear || gl_version >= 40 )
 		ARB_Lighting_Fast( pStage );
 	else
 		ARB_Lighting( pStage );
@@ -1323,9 +1323,15 @@ static void getPreferredFormatAndType( GLint format, GLint *pFormat, GLint *pTyp
 	GLint preferredFormat;
 	GLint preferredType;
 
-	if ( qglGetInternalformativ ) {
+	if ( qglGetInternalformativ && gl_version >= 43 ) {
 		qglGetInternalformativ( GL_TEXTURE_2D, /*GL_RGBA8*/ format, GL_TEXTURE_IMAGE_FORMAT, 1, &preferredFormat );
+		if ( qglGetError() != GL_NO_ERROR ) {
+			goto __fallback;
+		}
 		qglGetInternalformativ( GL_TEXTURE_2D, /*GL_RGBA8*/ format, GL_TEXTURE_IMAGE_TYPE, 1, &preferredType );
+		if ( qglGetError() != GL_NO_ERROR ) {
+			goto __fallback;
+		}
 		if ( preferredFormat == 0 ) // nVidia ION drivers can do that
 			preferredFormat = GL_RGBA;
 		if ( preferredType == GL_UNSIGNED_NORMALIZED ) { // Intel HD 530 drivers can do that as well
@@ -1335,6 +1341,7 @@ static void getPreferredFormatAndType( GLint format, GLint *pFormat, GLint *pTyp
 				preferredType = GL_UNSIGNED_BYTE;
 		}
 	} else {
+__fallback:
 		if ( format == GL_RGBA12 || format == GL_RGBA16 ) {
 			preferredFormat = GL_RGBA;
 			preferredType = GL_UNSIGNED_SHORT;
@@ -2063,7 +2070,7 @@ static void QGL_InitPrograms( void )
 
 	version = atof( (const char *)qglGetString( GL_VERSION ) );
 
-	gl_version = (int)version;
+	gl_version = (int)(version * 10.001);
 
 	programAvailable = 1;
 }
@@ -2167,6 +2174,8 @@ void QGL_InitFBO( void )
 
 	if ( !r_fbo->integer || !programAvailable || !fboAvailable )
 		return;
+
+	qglGetError(); // reset error code
 
 	if ( windowAdjusted )
 		blitClear = 2; // front & back buffers
