@@ -25,6 +25,79 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 static void SV_CloseDownload( client_t *cl );
 
+//
+// Server-side Stateless Challenges
+// backported from https://github.com/JACoders/OpenJK/pull/832
+//
+
+#define TS_SHIFT 13 // ~8 seconds to reply to the challenge
+
+static struct {
+	// size of this structure plus max.possible length of client address (18 bytes)
+	// should not exceed 56 bytes to fit in single internal 64-byte chunk for MD5
+	byte key[24]; // will be regenerated on server shutdown
+	int timestamp;
+} seed;
+
+/*
+=================
+SV_CreateChallenge
+
+Create an unforgeable, temporal challenge for the given client address
+=================
+*/
+static int SV_CreateChallenge( int timestamp, const netadr_t *from )
+{
+	int challenge;
+
+	// Create an unforgeable, temporal challenge for this client using HMAC(secretKey, clientParams + timestamp)
+	// Use first 4 bytes of the HMAC digest as an int (client only deals with numeric challenges)
+	// The most-significant bit stores whether the timestamp is odd or even. This lets later verification code handle the
+	// case where the engine timestamp has incremented between the time this challenge is sent and the client replies.
+	seed.timestamp = timestamp;
+	challenge = Com_MD5Addr( from, (byte*)&seed, sizeof( seed ) );
+	challenge &= 0x7FFFFFFF;
+	challenge |= (unsigned int)(timestamp & 0x1) << 31;
+
+	return challenge;
+}
+
+
+/*
+=================
+SV_CreateChallenge
+
+Verify a challenge received by the client matches the expected challenge
+=================
+*/
+static qboolean SV_VerifyChallenge( int receivedChallenge, const netadr_t *from )
+{
+	int currentTimestamp = svs.time >> TS_SHIFT;
+	int currentPeriod = currentTimestamp & 0x1;
+
+	// Use the current timestamp for verification if the current period matches the client challenge's period.
+	// Otherwise, use the previous timestamp in case the current timestamp incremented in the time between the
+	// client being sent a challenge and the client's reply that's being verified now.
+	int challengePeriod = ((unsigned int)receivedChallenge >> 31) & 0x1;
+	int challengeTimestamp = currentTimestamp - ( currentPeriod ^ challengePeriod );
+
+	int expectedChallenge = SV_CreateChallenge( challengeTimestamp, from );
+
+	return (receivedChallenge == expectedChallenge) ? qtrue : qfalse;
+}
+
+
+/*
+=================
+SV_InitChallenger
+=================
+*/
+void SV_InitChallenger( void )
+{
+	Sys_RandomBytes( seed.key, sizeof( seed.key ) );
+}
+
+
 /*
 =================
 SV_GetChallenge
@@ -51,13 +124,8 @@ v4-only auth server for these new types of connections.
 =================
 */
 void SV_GetChallenge( const netadr_t *from ) {
-	int		i;
-	int		oldest;
-	int		oldestTime;
-	int		oldestClientTime;
+	int		challenge;
 	int		clientChallenge;
-	challenge_t	*challenge;
-	qboolean wasfound = qfalse;
 
 	// ignore if we are in single player
 #ifndef DEDICATED
@@ -75,190 +143,15 @@ void SV_GetChallenge( const netadr_t *from ) {
 		return;
 	}
 
-	// Allow getchallenge to be DoSed relatively easily, but prevent
-	// excess outbound bandwidth usage when being flooded inbound
-	if ( SVC_RateLimit( &outboundLeakyBucket, 10, 100 ) ) {
-		Com_DPrintf( "SV_GetChallenge: rate limit exceeded, dropping request\n" );
-		return;
-	}
-
-	oldest = 0;
-	oldestClientTime = oldestTime = 0x7fffffff;
-
-	// see if we already have a challenge for this ip
-	challenge = &svs.challenges[0];
-	clientChallenge = atoi(Cmd_Argv(1));
-
-	for(i = 0 ; i < MAX_CHALLENGES ; i++, challenge++)
-	{
-		if(!challenge->connected && NET_CompareAdr(from, &challenge->adr))
-		{
-			wasfound = qtrue;
-			
-			if(challenge->time < oldestClientTime)
-				oldestClientTime = challenge->time;
-		}
-		
-		if(wasfound && i >= MAX_CHALLENGES_MULTI)
-		{
-			i = MAX_CHALLENGES;
-			break;
-		}
-		
-		if(challenge->time < oldestTime)
-		{
-			oldestTime = challenge->time;
-			oldest = i;
-		}
-	}
-
-	if (i == MAX_CHALLENGES)
-	{
-		// this is the first time this client has asked for a challenge
-		challenge = &svs.challenges[oldest];
-		challenge->clientChallenge = clientChallenge;
-		challenge->adr = *from;
-		challenge->firstTime = svs.time;
-		challenge->connected = qfalse;
-	}
-
-	// always generate a new challenge number, so the client cannot circumvent sv_maxping
-	challenge->challenge = ( (rand() << 16) ^ rand() ) ^ svs.time;
-	challenge->wasrefused = qfalse;
-	challenge->time = svs.time;
-
-#if !defined(STANDALONE) && defined (USE_AUTHORIZE)
-	// Drop the authorize stuff if this client is coming in via v6 as the auth server does not support ipv6.
-	// Drop also for addresses coming in on local LAN and for stand-alone games independent from id's assets.
-	if(challenge->adr.type == NA_IP && !Cvar_VariableIntegerValue("com_standalone") && !Sys_IsLANAddress(from))
-	{
-		// look up the authorize server's IP
-		if (svs.authorizeAddress.type == NA_BAD)
-		{
-			Com_Printf( "Resolving %s\n", AUTHORIZE_SERVER_NAME );
-			
-			if (NET_StringToAdr(AUTHORIZE_SERVER_NAME, &svs.authorizeAddress, NA_IP))
-			{
-				svs.authorizeAddress.port = BigShort( PORT_AUTHORIZE );
-				Com_Printf( "%s resolved to %i.%i.%i.%i:%i\n", AUTHORIZE_SERVER_NAME,
-					svs.authorizeAddress.ip[0], svs.authorizeAddress.ip[1],
-					svs.authorizeAddress.ip[2], svs.authorizeAddress.ip[3],
-					BigShort( svs.authorizeAddress.port ) );
-			}
-		}
-
-		// we couldn't contact the auth server, let them in.
-		if(svs.authorizeAddress.type == NA_BAD)
-			Com_Printf("Couldn't resolve auth server address\n");
-
-		// if they have been challenging for a long time and we
-		// haven't heard anything from the authorize server, go ahead and
-		// let them in, assuming the id server is down
-		else if(svs.time - oldestClientTime > AUTHORIZE_TIMEOUT)
-			Com_DPrintf( "authorize server timed out\n" );
-		else
-		{
-			// otherwise send their ip to the authorize server
-			const char *game;
-
-			if ( com_developer->integer ) {
-				Com_Printf( "sending getIpAuthorize for %s\n", NET_AdrToString( from ) );
-			}
-		
-			game = FS_GetCurrentGameDir();
-
-			// the 0 is for backwards compatibility with obsolete sv_allowanonymous flags
-			// getIpAuthorize <challenge> <IP> <game> 0 <auth-flag>
-			NET_OutOfBandPrint( NS_SERVER, &svs.authorizeAddress,
-				"getIpAuthorize %i %i.%i.%i.%i %s 0 %s",  challenge->challenge,
-				from->ip[0], from->ip[1], from->ip[2], from->ip[3], game, sv_strictAuth->string );
-			
-			return;
-		}
-	}
-#endif
-
-	challenge->pingTime = svs.time;
-	NET_OutOfBandPrint( NS_SERVER, &challenge->adr, "challengeResponse %d %d %d",
-			   challenge->challenge, clientChallenge, NEW_PROTOCOL_VERSION );
-}
-
-
-#ifndef STANDALONE
-/*
-====================
-SV_AuthorizeIpPacket
-
-A packet has been returned from the authorize server.
-If we have a challenge adr for that ip, send the
-challengeResponse to it
-====================
-*/
-void SV_AuthorizeIpPacket( const netadr_t *from ) {
-	int		challenge;
-	int		i;
-	char	*s;
-	char	*r;
-	challenge_t *challengeptr;
-
-	if ( !NET_CompareBaseAdr( from, &svs.authorizeAddress ) ) {
-		Com_Printf( "%s: not from authorize server\n", __func__ );
-		return;
-	}
-
-	challenge = atoi( Cmd_Argv( 1 ) );
-
-	for (i = 0 ; i < MAX_CHALLENGES ; i++) {
-		if ( svs.challenges[i].challenge == challenge ) {
-			break;
-		}
-	}
-	if ( i == MAX_CHALLENGES ) {
-		Com_Printf( "%s: challenge not found\n", __func__ );
-		return;
-	}
+	// Create a unique challenge for this client without storing state on the server
+	challenge = SV_CreateChallenge( svs.time >> TS_SHIFT, from );
 	
-	challengeptr = &svs.challenges[i];
+	// Grab the client's challenge to echo back (if given)
+	clientChallenge = atoi( Cmd_Argv( 1 ) );
 
-	// send a packet back to the original client
-	challengeptr->pingTime = svs.time;
-	s = Cmd_Argv( 2 );
-	r = Cmd_Argv( 3 );			// reason
-
-	if ( !Q_stricmp( s, "demo" ) ) {
-		// they are a demo client trying to connect to a real server
-		NET_OutOfBandPrint( NS_SERVER, &challengeptr->adr, "print\nServer is not a demo server\n" );
-		// clear the challenge record so it won't timeout and let them through
-		Com_Memset( challengeptr, 0, sizeof( *challengeptr ) );
-		return;
-	}
-	if ( !Q_stricmp( s, "accept" ) ) {
-		NET_OutOfBandPrint( NS_SERVER, &challengeptr->adr,
-			"challengeResponse %d %d %d", challengeptr->challenge, challengeptr->clientChallenge, NEW_PROTOCOL_VERSION );
-		return;
-	}
-	if ( !Q_stricmp( s, "unknown" ) ) {
-		if (!r) {
-			NET_OutOfBandPrint( NS_SERVER, &challengeptr->adr, "print\nAwaiting CD key authorization\n" );
-		} else {
-			NET_OutOfBandPrint( NS_SERVER, &challengeptr->adr, "print\n%s\n", r);
-		}
-		// clear the challenge record so it won't timeout and let them through
-		Com_Memset( challengeptr, 0, sizeof( *challengeptr ) );
-		return;
-	}
-
-	// authorization failed
-	if (!r) {
-		NET_OutOfBandPrint( NS_SERVER, &challengeptr->adr, "print\nSomeone is using this CD Key\n" );
-	} else {
-		NET_OutOfBandPrint( NS_SERVER, &challengeptr->adr, "print\n%s\n", r );
-	}
-
-	// clear the challenge record so it won't timeout and let them through
-	Com_Memset( challengeptr, 0, sizeof(*challengeptr) );
+	NET_OutOfBandPrint( NS_SERVER, from, "challengeResponse %i %i %i",
+		challenge, clientChallenge, NEW_PROTOCOL_VERSION );
 }
-#endif
 
 
 /*
@@ -297,6 +190,7 @@ static qboolean SV_IsBanned( const netadr_t *from, qboolean isexception )
 }
 #endif
 
+
 /*
 ==================
 SV_DirectConnect
@@ -304,7 +198,6 @@ SV_DirectConnect
 A "connect" OOB command has been received
 ==================
 */
-
 void SV_DirectConnect( const netadr_t *from ) {
 	char		userinfo[MAX_INFO_STRING];
 	int			i;
@@ -384,55 +277,15 @@ void SV_DirectConnect( const netadr_t *from ) {
 	}
 	Info_SetValueForKey( userinfo, "ip", ip );
 
-	// see if the challenge is valid (LAN clients don't need to challenge)
+	// see if the challenge is valid (localhost clients don't need to challenge)
 	if ( !NET_IsLocalAddress( from ) )
 	{
-		int ping;
-		challenge_t *challengeptr;
-
-		for (i=0; i<MAX_CHALLENGES; i++)
+		// Verify the received challenge against the expected challenge
+		if ( !SV_VerifyChallenge( challenge, from ) )
 		{
-			if (NET_CompareAdr(from, &svs.challenges[i].adr))
-			{
-				if(challenge == svs.challenges[i].challenge)
-					break;
-			}
-		}
-
-		if (i == MAX_CHALLENGES)
-		{
-			NET_OutOfBandPrint( NS_SERVER, from, "print\nNo or bad challenge for your address.\n" );
+			NET_OutOfBandPrint( NS_SERVER, from, "print\nIncorrect challenge for your address.\n" );
 			return;
 		}
-	
-		challengeptr = &svs.challenges[i];
-		
-		if(challengeptr->wasrefused)
-		{
-			// Return silently, so that error messages written by the server keep being displayed.
-			return;
-		}
-
-		ping = svs.time - challengeptr->pingTime;
-
-		// never reject a LAN client based on ping
-		if ( !Sys_IsLANAddress( from ) ) {
-			if ( sv_minPing->integer && ping < sv_minPing->integer ) {
-				NET_OutOfBandPrint( NS_SERVER, from, "print\nServer is for high pings only\n" );
-				Com_DPrintf ("Client %i rejected on a too low ping\n", i);
-				challengeptr->wasrefused = qtrue;
-				return;
-			}
-			if ( sv_maxPing->integer && ping > sv_maxPing->integer ) {
-				NET_OutOfBandPrint( NS_SERVER, from, "print\nServer is for low pings only\n" );
-				Com_DPrintf ("Client %i rejected on a too high ping\n", i);
-				challengeptr->wasrefused = qtrue;
-				return;
-			}
-		}
-
-		Com_Printf("Client %i connecting with %i challenge ping\n", i, ping);
-		challengeptr->connected = qtrue;
 	}
 
 	newcl = &temp;
@@ -608,7 +461,6 @@ or crashing -- SV_FinalMessage() will handle that
 */
 void SV_DropClient( client_t *drop, const char *reason ) {
 	char	name[ MAX_NAME_LENGTH ];
-	challenge_t	*challenge;
 	qboolean isBot;
 	int		i;
 
@@ -620,22 +472,8 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 
 	Q_strncpyz( name, drop->name, sizeof( name ) );	// for further DPrintf() because drop->name will be nuked in SV_SetUserinfo()
 
-	if ( !isBot ) {
-		// see if we already have a challenge for this ip
-		challenge = &svs.challenges[0];
-
-		for (i = 0 ; i < MAX_CHALLENGES ; i++, challenge++)
-		{
-			if(NET_CompareAdr(&drop->netchan.remoteAddress, &challenge->adr))
-			{
-				Com_Memset(challenge, 0, sizeof(*challenge));
-				break;
-			}
-		}
-	}
-	
 	// Free all allocated data on the client structure
-	SV_FreeClient(drop);
+	SV_FreeClient( drop );
 
 	// tell everyone why they got dropped
 	SV_SendServerCommand( NULL, "print \"%s" S_COLOR_WHITE " %s\n\"", name, reason );

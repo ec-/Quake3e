@@ -673,8 +673,6 @@ void SV_Init( void )
 	sv_minRate = Cvar_Get ("sv_minRate", "0", CVAR_ARCHIVE_ND | CVAR_SERVERINFO );
 	sv_maxRate = Cvar_Get ("sv_maxRate", "0", CVAR_ARCHIVE_ND | CVAR_SERVERINFO );
 	sv_dlRate = Cvar_Get("sv_dlRate", "100", CVAR_ARCHIVE | CVAR_SERVERINFO);
-	sv_minPing = Cvar_Get ("sv_minPing", "0", CVAR_ARCHIVE_ND | CVAR_SERVERINFO );
-	sv_maxPing = Cvar_Get ("sv_maxPing", "0", CVAR_ARCHIVE_ND | CVAR_SERVERINFO );
 	sv_floodProtect = Cvar_Get ("sv_floodProtect", "1", CVAR_ARCHIVE | CVAR_SERVERINFO );
 	Cvar_CheckRange( sv_floodProtect, NULL, NULL, CV_BOOLEAN );
 
@@ -739,6 +737,8 @@ void SV_Init( void )
 	// Load saved bans
 	Cbuf_AddText("rehashbans\n");
 #endif
+
+	SV_InitChallenger();
 }
 
 
@@ -799,6 +799,7 @@ void SV_Shutdown( const char *finalmsg ) {
 	SV_RemoveOperatorCommands();
 	SV_MasterShutdown();
 	SV_ShutdownGameProgs();
+	SV_InitChallenger();
 
 	// free current level
 	SV_ClearServer();

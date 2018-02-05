@@ -52,8 +52,6 @@ typedef enum {
 	SS_GAME				// actively running
 } serverState_t;
 
-#define USE_CSS			// common snapshot storage system
-
 // we might not use all MAX_GENTITIES every frame
 // so leave more room for slow-snaps clients etc.
 #define NUM_SNAPSHOT_FRAMES (PACKET_BACKUP*4)
@@ -196,28 +194,6 @@ typedef struct client_s {
 //=============================================================================
 
 
-// MAX_CHALLENGES is made large to prevent a denial
-// of service attack that could cycle all of them
-// out before legitimate users connected
-#define	MAX_CHALLENGES	2048
-// Allow a certain amount of challenges to have the same IP address
-// to make it a bit harder to DOS one single IP address from connecting
-// while not allowing a single ip to grab all challenge resources
-#define MAX_CHALLENGES_MULTI (MAX_CHALLENGES / 2)
-
-#define	AUTHORIZE_TIMEOUT	5000
-
-typedef struct {
-	netadr_t	adr;
-	int			challenge;
-	int			clientChallenge;		// challenge number coming from the client
-	int			time;				// time the last packet was sent to the autherize server
-	int			pingTime;			// time the challenge response was sent to client
-	int			firstTime;			// time the adr was first used, for authorize timeout checks
-	qboolean	wasrefused;
-	qboolean	connected;
-} challenge_t;
-
 // this structure will be cleared only when the game dll changes
 typedef struct {
 	qboolean	initialized;				// sv_init has completed
@@ -231,7 +207,6 @@ typedef struct {
 	int			numSnapshotEntities;		// PACKET_BACKUP*MAX_SNAPSHOT_ENTITIES
 	entityState_t	*snapshotEntities;		// [numSnapshotEntities]
 	int			nextHeartbeatTime;
-	challenge_t	challenges[MAX_CHALLENGES];	// to prevent invalid IPs from connecting
 	netadr_t	redirectAddress;			// for rcon return messages
 
 	netadr_t	authorizeAddress;			// for rcon return messages
@@ -285,8 +260,6 @@ extern	cvar_t	*sv_serverid;
 extern	cvar_t	*sv_minRate;
 extern	cvar_t	*sv_maxRate;
 extern	cvar_t	*sv_dlRate;
-extern	cvar_t	*sv_minPing;
-extern	cvar_t	*sv_maxPing;
 extern	cvar_t	*sv_gametype;
 extern	cvar_t	*sv_pure;
 extern	cvar_t	*sv_floodProtect;
@@ -358,12 +331,9 @@ void SV_SpawnServer( const char *mapname, qboolean killBots );
 // sv_client.c
 //
 void SV_GetChallenge( const netadr_t *from );
+void SV_InitChallenger( void );
 
 void SV_DirectConnect( const netadr_t *from );
-
-#ifndef STANDALONE
-void SV_AuthorizeIpPacket( const netadr_t *from );
-#endif
 
 void SV_ExecuteClientMessage( client_t *cl, msg_t *msg );
 void SV_UserinfoChanged( client_t *cl );

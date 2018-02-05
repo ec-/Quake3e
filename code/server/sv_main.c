@@ -46,8 +46,6 @@ cvar_t	*sv_serverid;
 cvar_t	*sv_minRate;
 cvar_t	*sv_maxRate;
 cvar_t	*sv_dlRate;
-cvar_t	*sv_minPing;
-cvar_t	*sv_maxPing;
 cvar_t	*sv_gametype;
 cvar_t	*sv_pure;
 cvar_t	*sv_floodProtect;
@@ -664,13 +662,6 @@ static void SVC_Info( const netadr_t *from ) {
 	Info_SetValueForKey( infostring, "gametype", va("%i", sv_gametype->integer ) );
 	Info_SetValueForKey( infostring, "pure", va("%i", sv_pure->integer ) );
 	Info_SetValueForKey(infostring, "g_needpass", va("%d", Cvar_VariableIntegerValue("g_needpass")));
-
-	if( sv_minPing->integer ) {
-		Info_SetValueForKey( infostring, "minPing", va("%i", sv_minPing->integer) );
-	}
-	if( sv_maxPing->integer ) {
-		Info_SetValueForKey( infostring, "maxPing", va("%i", sv_maxPing->integer) );
-	}
 	gamedir = Cvar_VariableString( "fs_game" );
 	if( *gamedir ) {
 		Info_SetValueForKey( infostring, "game", gamedir );
@@ -816,7 +807,7 @@ static void SV_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 		SV_DirectConnect( from );
 #ifndef STANDALONE
 	} else if (!Q_stricmp(c, "ipAuthorize")) {
-		SV_AuthorizeIpPacket( from );
+		// removed from codebase since stateless challenges
 #endif
 	} else if (!Q_stricmp(c, "rcon")) {
 		SVC_RemoteCommand( from, msg );

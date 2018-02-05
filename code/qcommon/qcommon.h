@@ -886,10 +886,16 @@ void		Com_GameRestart( int checksumFeed, qboolean clientRestart );
 
 int			Com_EventLoop( void );
 int			Com_Milliseconds( void );	// will be journaled properly
+
+// MD4 functions
 unsigned	Com_BlockChecksum( const void *buffer, int length );
+
+// MD5 functions
 char		*Com_MD5File(const char *filename, int length, const char *prefix, int prefix_len);
 char		*Com_MD5Buf( const char *data, int length, const char *data2, int length2 );
-qboolean    Com_CDKeyValidate( const char *key, const char *checksum );
+int			Com_MD5Addr( const netadr_t *addr, const byte *seed, int seed_len );
+
+qboolean	Com_CDKeyValidate( const char *key, const char *checksum );
 qboolean	Com_EarlyParseCmdLine( char *commandLine, char *con_title, int title_size, int *vid_xpos, int *vid_ypos );
 int			Com_Split( char *in, char **out, int outsz, int delim );
 

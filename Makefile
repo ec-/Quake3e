@@ -883,6 +883,7 @@ Q3DOBJ = \
   $(B)/ded/files.o \
   $(B)/ded/keys.o \
   $(B)/ded/md4.o \
+  $(B)/ded/md5.o \
   $(B)/ded/msg.o \
   $(B)/ded/net_chan.o \
   $(B)/ded/net_ip.o \

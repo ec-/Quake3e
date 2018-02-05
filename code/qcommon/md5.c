@@ -309,6 +309,7 @@ char *Com_MD5File( const char *fn, int length, const char *prefix, int prefix_le
 	return final;
 }
 
+
 char *Com_MD5Buf( const char *data, int length, const char *data2, int length2 )
 {
 	static char final_buf[33] = {""};
@@ -326,4 +327,31 @@ char *Com_MD5Buf( const char *data, int length, const char *data2, int length2 )
 		Q_strcat(final_buf, sizeof(final_buf), va("%02X", digest[i]));
 	}
 	return final_buf;
+}
+
+
+int Com_MD5Addr( const netadr_t *addr, const byte *seed, int seed_len )
+{
+	MD5_CTX ctx;
+	union {
+		byte buf[16];
+		int intval;
+	} digest;
+
+	MD5Init( &ctx );
+	MD5Update( &ctx, seed, seed_len );
+	switch ( addr->type ) {
+		case NA_BROADCAST:
+		case NA_IP: 
+			MD5Update( &ctx, addr->ipv._4, 4 ); break;
+		case NA_IP6: 
+		case NA_MULTICAST6:
+			MD5Update( &ctx, addr->ipv._6, 16 ); break;
+		default:
+			break;
+	}
+	MD5Update( &ctx, (byte*)&addr->port, sizeof( addr->port ) );
+	MD5Final( &ctx, digest.buf );
+
+	return digest.intval;
 }
