@@ -1576,7 +1576,12 @@ void CL_Connect_f( void ) {
 		return;
 	}
 
-	Q_strncpyz( cmd_args, Cmd_Args(), sizeof( cmd_args ) );
+	if ( argc == 2 ) {
+		Com_sprintf( cmd_args, sizeof( cmd_args ), "\"%s\"", server );
+	} else {
+		Com_sprintf( cmd_args, sizeof( cmd_args ), "%s \"%s\"", Cmd_Argv( 1 ), server );
+	}
+
 	Cvar_Set( "ui_singlePlayerActive", "0" );
 
 	// clear any previous "server full" type messages
@@ -1609,7 +1614,7 @@ void CL_Connect_f( void ) {
 
 	serverString = NET_AdrToStringwPort( &clc.serverAddress );
 
-	Com_Printf( "%s resolved to %s\n", cls.servername, serverString);
+	Com_Printf( "%s resolved to %s\n", cls.servername, serverString );
 
 	if( cl_guidServerUniq->integer )
 		CL_UpdateGUID( serverString, strlen( serverString ) );
