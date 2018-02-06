@@ -179,7 +179,8 @@ int Export_BotLibSetup( void )
 //===========================================================================
 int Export_BotLibShutdown(void)
 {
-	if (!BotLibSetup("BotLibShutdown")) return BLERR_LIBRARYNOTSETUP;
+	if ( !botlibglobals.botlibsetup )
+		return BLERR_LIBRARYNOTSETUP;
 #ifndef DEMO
 	//DumpFileCRCs();
 #endif //DEMO
