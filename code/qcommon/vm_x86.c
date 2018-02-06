@@ -152,6 +152,7 @@ typedef enum
 	FUNC_SYSC,
 	FUNC_FTOL,
 	FUNC_BCPY,
+	FUNC_NCPY,
 	FUNC_PSOF,
 	FUNC_OSOF,
 	FUNC_BADJ,
@@ -168,7 +169,7 @@ typedef enum {
 	MOP_SUB4,
 	MOP_BAND4,
 	MOP_BOR4,
-	MOP_CALCF4,
+	MOP_NCPY,
 } macro_op_t;
 
 static	byte     *code;
@@ -1076,6 +1077,86 @@ static void EmitDATAFunc( vm_t *vm )
 }
 
 
+static void EmitNCPYFunc( vm_t *vm )
+{
+	static int Lend, Lcopy, Lpadz, Lpop0, Lpop1; // jump labels
+	int n;
+
+	//EmitString( "8B 4D 10" );	// mov ecx, dword ptr [ebp+16] // counter
+	EmitString( "89 C1" );		// mov ecx, eax // get cached value from previous OP_ARG instruction
+	EmitString( "85 C9" );		// test ecx, ecx
+	EmitString( "74" );			// je +Lend
+	Emit1( Lend );	Lend = compiledOfs;
+	EmitString( "57" );			// push edi
+	EmitString( "8B 55 0C" );	// mov edx, dword ptr [ebp+12] // source
+	EmitString( "8B 7D 08" );	// mov edi, dword ptr [ebp+08] // destination
+	EmitRexString( "01 DA" );	// add edx, ebx // + vm->dataBase
+
+	if ( vm_rtChecks->integer & 8 ) // security checks
+	{
+		EmitString( "89 F8" );		// mov eax, edi
+		EmitString( "09 C8" );		// or eax, ecx
+		EmitString( "3D" );			// cmp eax, vm->dataMask
+		Emit4( vm->dataMask );
+		EmitString( "0F 87" );		// ja +errorFunction
+		n = funcOffset[FUNC_DATA] - compiledOfs;
+		Emit4( n - 6 );
+		EmitString( "8D 04 0F" );	// lea eax, dword ptr [edi + ecx]
+		EmitRexString( "01 DF" );	// add edi, ebx // + vm->dataBase
+		EmitString( "3D" );			// cmp eax, vm->dataMask
+		Emit4( vm->dataMask );
+		EmitString( "0F 87" );		// ja +errorFunction
+		n = funcOffset[FUNC_DATA] - compiledOfs;
+		Emit4( n - 6 );
+	}
+	else
+	{
+		EmitRexString( "01 DF" );	// add edi, ebx // + vm->dataBase
+	}
+
+Lcopy = compiledOfs - Lcopy;
+	EmitString( "8A 02" );		// mov al, dword ptr [edx]
+	EmitString( "88 07" );		// mov dword ptr [edi], al
+	EmitRexString( "83 C2 01" );// add edx, 1
+	EmitRexString( "83 C7 01" );// add edi, 1
+	EmitRexString( "84 C0" );	// test al, al
+	EmitString( "74" );			// je +Lpadz
+	Emit1( Lpadz );	Lpadz = compiledOfs;
+	EmitRexString( "83 E9 01" );// sub ecx, 1
+	EmitString( "75" );			// jne +Lcopy
+	Emit1( Lcopy );	Lcopy = compiledOfs;
+	EmitString( "5F" );			// pop edi
+	EmitString( "C3" );			// ret
+Lpadz = compiledOfs - Lpadz;
+	EmitString( "85 C9" );		// test ecx, ecx
+	EmitString( "74" );			// je +Lpop0
+	Emit1( Lpop0 );	Lpop0 = compiledOfs;
+#if 0
+	// zero only one char
+	EmitString( "31 C0" );		// xor eax, eax
+	EmitString( "88 07" );		// mov dword ptr [edi], al
+#else
+	// zero all remaining chars
+	EmitRexString( "83 E9 01" );// sub ecx, 1
+	EmitString( "74" );			// je +Lpop1
+	Emit1( Lpop1 );	Lpop1 = compiledOfs;
+	EmitString( "89 CA" );		// mov edx, ecx
+	EmitString( "C1 E9 02" );	// shr ecx, 2
+	EmitString( "31 C0" );		// xor eax, eax
+	EmitString( "83 E2 03" );	// and edx, 3
+	EmitString( "F3 AB" );		// rep stosd
+	EmitString( "89 D1" );		// mov ecx, edx
+	//EmitString( "83 E1 03" );	// and ecx, 3
+	EmitString( "F3 AA" );		// rep stosb
+Lpop1 = compiledOfs - Lpop1;
+#endif
+Lpop0 = compiledOfs - Lpop0;
+	EmitString( "5F" );			// pop edi
+Lend = compiledOfs - Lend;
+	EmitString( "C3" );			// ret
+}
+
+
 /*
 =================
 EmitFCalcEDI
@@ -1542,6 +1623,12 @@ static void VM_FindMOps( instruction_t *buf, int instructionCount )
 				ci += 4; i += 4;
 				continue;
 			}
+		} else if ( op0 == OP_CONST && ci > buf && (ci-1)->op == OP_ARG && !ci->jused ) {
+			if ( ci->value == ~TRAP_STRNCPY && (ci+1)->op == OP_CALL && (ci+2)->op == OP_POP ) {
+				ci->op = MOP_NCPY;
+				ci += 3; i += 3;
+				continue;
+			}
 		}
 
 		ci++;
@@ -1675,6 +1762,12 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 		// [local] = [local]
 		case MOP_IGNORE4:
 			ip += 3;
+			return qtrue;
+
+		// const + call + pop
+		case MOP_NCPY:
+			EmitCallOffset( FUNC_NCPY );
+			ip += 2;
 			return qtrue;
 
 	};
@@ -2000,6 +2093,11 @@ __compile:
 				break;
 			}
 			EmitMovEAXEDI( vm );					// mov	eax, dword ptr [edi]
+			if ( (ci+1)->op == MOP_NCPY && !(ci+1)->jused ) {
+				// we will read counter from eax
+				EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+				break;
+			}
 			v = ci->value;
 			if ( ISS8( v ) ) {
 				EmitString( "89 45" );				// mov	dword ptr [ebp + 0x7F], eax
@@ -2456,8 +2554,8 @@ __compile:
 		case MOP_SUB4:
 		case MOP_BAND4:
 		case MOP_BOR4:
-
-			if ( !EmitMOPs( vm, ci->op ) ) 
+		case MOP_NCPY:
+			if ( !EmitMOPs( vm, ci->op ) )
 				Com_Error( ERR_FATAL, "VM_CompileX86: bad opcode %02X", ci->op );
 			break;
 
@@ -2484,6 +2582,10 @@ __compile:
 		EmitAlign( 4 );
 		funcOffset[FUNC_BCPY] = compiledOfs;
 		EmitBCPYFunc( vm );
+
+		EmitAlign( 4 );
+		funcOffset[FUNC_NCPY] = compiledOfs;
+		EmitNCPYFunc( vm );
 
 		// ***************
 		// error functions
