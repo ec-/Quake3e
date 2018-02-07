@@ -1122,7 +1122,7 @@ Lcopy = compiledOfs - Lcopy;
 	EmitRexString( "84 C0" );	// test al, al
 	EmitString( "74" );			// je +Lpadz
 	Emit1( Lpadz );	Lpadz = compiledOfs;
-	EmitRexString( "83 E9 01" );// sub ecx, 1
+	EmitString( "83 E9 01" );	// sub ecx, 1
 	EmitString( "75" );			// jne +Lcopy
 	Emit1( Lcopy );	Lcopy = compiledOfs;
 	EmitString( "5F" );			// pop edi
@@ -1137,7 +1137,7 @@ Lpadz = compiledOfs - Lpadz;
 	EmitString( "88 07" );		// mov dword ptr [edi], al
 #else
 	// zero all remaining chars
-	EmitRexString( "83 E9 01" );// sub ecx, 1
+	EmitString( "83 E9 01" );	// sub ecx, 1
 	EmitString( "74" );			// je +Lpop1
 	Emit1( Lpop1 );	Lpop1 = compiledOfs;
 	EmitString( "89 CA" );		// mov edx, ecx
@@ -1623,8 +1623,9 @@ static void VM_FindMOps( instruction_t *buf, int instructionCount )
 				ci += 4; i += 4;
 				continue;
 			}
-		} else if ( op0 == OP_CONST && ci > buf && (ci-1)->op == OP_ARG && !ci->jused ) {
-			if ( ci->value == ~TRAP_STRNCPY && (ci+1)->op == OP_CALL && (ci+2)->op == OP_POP ) {
+		} else if ( op0 == OP_CONST && (ci+1)->op == OP_CALL && (ci+2)->op == OP_POP && ci >= buf+6 && (ci-1)->op == OP_ARG && !ci->jused ) {
+			// some void function( arg1, arg2, arg3 )
+			if ( ci->value == ~TRAP_STRNCPY ) {
 				ci->op = MOP_NCPY;
 				ci += 3; i += 3;
 				continue;

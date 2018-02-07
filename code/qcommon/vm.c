@@ -1164,7 +1164,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 				sprintf( errBuf, "missing proc frame for local %i at %i", v, i );
 				return errBuf;
 			}
-			if ( (ci+1)->op == OP_LOAD1 || (ci+1)->op == OP_LOAD2 || (ci+1)->op == OP_LOAD4 ) {
+			if ( (ci+1)->op == OP_LOAD1 || (ci+1)->op == OP_LOAD2 || (ci+1)->op == OP_LOAD4 || (ci+1)->op == OP_ARG ) {
 				// FIXME: alloc 256 bytes of programStack in VM_CallCompiled()?
 				if ( v < 8 || v >= proc->value + 256 ) {
 					sprintf( errBuf, "bad local address %i at %i", v, i );

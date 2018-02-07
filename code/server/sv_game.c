@@ -394,6 +394,8 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 	case G_FS_FOPEN_FILE:
 		return FS_VM_OpenFile( VMA(1), VMA(2), args[3], H_QAGAME );
 	case G_FS_READ:
+		if ( args[3] == 0 ) // UrT may pass this with args[2]=-1 and cause false bounds check error
+			return 0;
 		VM_CHECKBOUNDS( gvm, args[1], args[2] );
 		return FS_VM_ReadFile( VMA(1), args[2], args[3], H_QAGAME );
 	case G_FS_WRITE:
