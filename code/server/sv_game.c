@@ -883,6 +883,8 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 	case BOTLIB_AI_GENETIC_PARENTS_AND_CHILD_SELECTION:
 		return botlib_export->ai.GeneticParentsAndChildSelection(args[1], VMA(2), VMA(3), VMA(4), VMA(5));
 
+	// shared syscalls
+
 	case TRAP_MEMSET:
 		VM_CHECKBOUNDS( gvm, args[1], args[3] );
 		Com_Memset( VMA(1), args[2], args[3] );
@@ -910,23 +912,29 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 	case TRAP_SQRT:
 		return FloatAsInt( sqrt( VMF(1) ) );
 
-	case TRAP_MATRIXMULTIPLY:
+	case G_MATRIXMULTIPLY:
 		MatrixMultiply( VMA(1), VMA(2), VMA(3) );
 		return 0;
 
-	case TRAP_ANGLEVECTORS:
+	case G_ANGLEVECTORS:
 		AngleVectors( VMA(1), VMA(2), VMA(3), VMA(4) );
 		return 0;
 
-	case TRAP_PERPENDICULARVECTOR:
+	case G_PERPENDICULARVECTOR:
 		PerpendicularVector( VMA(1), VMA(2) );
 		return 0;
 
-	case TRAP_FLOOR:
+	case G_FLOOR:
 		return FloatAsInt( floor( VMF(1) ) );
 
-	case TRAP_CEIL:
+	case G_CEIL:
 		return FloatAsInt( ceil( VMF(1) ) );
+
+	case G_TESTPRINTINT:
+		return sprintf( VMA(1), "%i", args[2] );
+
+	case G_TESTPRINTFLOAT:
+		return sprintf( VMA(1), "%f", VMF(2) );
 
 	case G_TRAP_GETVALUE:
 		VM_CHECKBOUNDS( gvm, args[1], args[2] );

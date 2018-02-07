@@ -639,41 +639,47 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return 0;
 	case CG_MEMORY_REMAINING:
 		return Hunk_MemoryRemaining();
-  case CG_KEY_ISDOWN:
+	case CG_KEY_ISDOWN:
 		return Key_IsDown( args[1] );
-  case CG_KEY_GETCATCHER:
+	case CG_KEY_GETCATCHER:
 		return Key_GetCatcher();
-  case CG_KEY_SETCATCHER:
+	case CG_KEY_SETCATCHER:
 		// Don't allow the cgame module to close the console
 		Key_SetCatcher( args[1] | ( Key_GetCatcher( ) & KEYCATCH_CONSOLE ) );
-    return 0;
-  case CG_KEY_GETKEY:
+		return 0;
+	case CG_KEY_GETKEY:
 		return Key_GetKey( VMA(1) );
 
-	case CG_MEMSET:
+	// shared syscalls
+	case TRAP_MEMSET:
 		VM_CHECKBOUNDS( cgvm, args[1], args[3] );
 		Com_Memset( VMA(1), args[2], args[3] );
 		return args[1];
-	case CG_MEMCPY:
+	case TRAP_MEMCPY:
 		VM_CHECKBOUNDS2( cgvm, args[1], args[2], args[3] );
 		Com_Memcpy( VMA(1), VMA(2), args[3] );
 		return args[1];
-	case CG_STRNCPY:
+	case TRAP_STRNCPY:
 		VM_CHECKBOUNDS( cgvm, args[1], args[3] );
 		strncpy( VMA(1), VMA(2), args[3] );
 		return args[1];
-	case CG_SIN:
+	case TRAP_SIN:
 		return FloatAsInt( sin( VMF(1) ) );
-	case CG_COS:
+	case TRAP_COS:
 		return FloatAsInt( cos( VMF(1) ) );
-	case CG_ATAN2:
+	case TRAP_ATAN2:
 		return FloatAsInt( atan2( VMF(1), VMF(2) ) );
-	case CG_SQRT:
+	case TRAP_SQRT:
 		return FloatAsInt( sqrt( VMF(1) ) );
+
 	case CG_FLOOR:
 		return FloatAsInt( floor( VMF(1) ) );
 	case CG_CEIL:
 		return FloatAsInt( ceil( VMF(1) ) );
+	case CG_TESTPRINTINT:
+		return sprintf( VMA(1), "%i", args[2] );
+	case CG_TESTPRINTFLOAT:
+		return sprintf( VMA(1), "%f", VMF(2) );
 	case CG_ACOS:
 		return FloatAsInt( Q_acos( VMF(1) ) );
 

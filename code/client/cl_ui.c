@@ -1075,31 +1075,33 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		re.RegisterFont( VMA(1), args[2], VMA(3));
 		return 0;
 
-	case UI_MEMSET:
+	// shared syscalls
+
+	case TRAP_MEMSET:
 		VM_CHECKBOUNDS( uivm, args[1], args[3] );
 		Com_Memset( VMA(1), args[2], args[3] );
 		return args[1];
 
-	case UI_MEMCPY:
+	case TRAP_MEMCPY:
 		VM_CHECKBOUNDS2( uivm, args[1], args[2], args[3] );
 		Com_Memcpy( VMA(1), VMA(2), args[3] );
 		return args[1];
 
-	case UI_STRNCPY:
+	case TRAP_STRNCPY:
 		VM_CHECKBOUNDS( uivm, args[1], args[3] );
 		strncpy( VMA(1), VMA(2), args[3] );
 		return args[1];
 
-	case UI_SIN:
+	case TRAP_SIN:
 		return FloatAsInt( sin( VMF(1) ) );
 
-	case UI_COS:
+	case TRAP_COS:
 		return FloatAsInt( cos( VMF(1) ) );
 
-	case UI_ATAN2:
+	case TRAP_ATAN2:
 		return FloatAsInt( atan2( VMF(1), VMF(2) ) );
 
-	case UI_SQRT:
+	case TRAP_SQRT:
 		return FloatAsInt( sqrt( VMF(1) ) );
 
 	case UI_FLOOR:
