@@ -677,7 +677,7 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 	case CG_CEIL:
 		return FloatAsInt( ceil( VMF(1) ) );
 	case CG_TESTPRINTINT:
-		return sprintf( VMA(1), "%i", args[2] );
+		return sprintf( VMA(1), "%i", (int)args[2] );
 	case CG_TESTPRINTFLOAT:
 		return sprintf( VMA(1), "%f", VMF(2) );
 	case CG_ACOS:

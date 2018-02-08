@@ -933,7 +933,7 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		return FloatAsInt( ceil( VMF(1) ) );
 
 	case G_TESTPRINTINT:
-		return sprintf( VMA(1), "%i", args[2] );
+		return sprintf( VMA(1), "%i", (int)args[2] );
 
 	case G_TESTPRINTFLOAT:
 		return sprintf( VMA(1), "%f", VMF(2) );
