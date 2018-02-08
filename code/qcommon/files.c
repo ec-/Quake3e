@@ -2128,6 +2128,7 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 		}
 		if ( file_info.compression_method != 0 && file_info.compression_method != 8 /*Z_DEFLATED*/ ) {
 			Com_Printf( S_COLOR_YELLOW "%s|%s: unsupported compression method %i\n", basename, filename_inzip, (int)file_info.compression_method );
+			unzGoToNextFile( uf );
 			continue;
 		} 
 		len += strlen( filename_inzip ) + 1;
@@ -2178,6 +2179,7 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 			break;
 		}
 		if ( file_info.compression_method != 0 && file_info.compression_method != 8 /*Z_DEFLATED*/ ) {
+			unzGoToNextFile( uf );
 			continue;
 		} 
 		if (file_info.uncompressed_size > 0) {
