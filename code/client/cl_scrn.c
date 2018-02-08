@@ -596,8 +596,7 @@ void SCR_UpdateScreen( void ) {
 	if ( framecount == cls.framecount ) {
 		int ms = Sys_Milliseconds();
 		if ( ms < next_frametime ) {
-			if ( re.ThrottleBackend )
-				re.ThrottleBackend();
+			re.ThrottleBackend();
 		} else {
 			next_frametime = ms + 16; // limit to 60 FPS
 			framecount = cls.framecount;

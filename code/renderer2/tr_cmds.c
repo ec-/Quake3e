@@ -584,6 +584,10 @@ void RE_TakeVideoFrame( int width, int height,
 	cmd->motionJpeg = motionJpeg;
 }
 
+void RE_ThrottleBackend( void )
+{
+	//
+}
 
 qboolean RE_CanMinimize( void )
 {
