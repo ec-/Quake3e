@@ -73,8 +73,13 @@ void QDECL Sys_Error( const char *error, ... ) {
 	MSG		msg;
 
 	va_start( argptr, error );
-	vsprintf( text, error, argptr );
+	Q_vsnprintf( text, sizeof( text ), error, argptr );
 	va_end( argptr );
+
+#ifndef DEDICATED
+	IN_Shutdown();
+	CL_Shutdown( text, qtrue );
+#endif
 
 	Conbuf_AppendText( text );
 	Conbuf_AppendText( "\n" );
@@ -83,10 +88,6 @@ void QDECL Sys_Error( const char *error, ... ) {
 	Sys_ShowConsole( 1, qtrue );
 
 	timeEndPeriod( 1 );
-
-#ifndef DEDICATED
-	IN_Shutdown();
-#endif
 
 	// wait for the user to quit
 	while ( 1 ) {
