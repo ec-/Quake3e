@@ -554,9 +554,9 @@ static qboolean RawImage_HasAlpha( const byte *scan, int numPixels )
 }
 
 
-static GLenum RawImage_GetInternalFormat( const byte *scan, int numPixels, qboolean lightMap, qboolean allowCompression )
+static GLint RawImage_GetInternalFormat( const byte *scan, int numPixels, qboolean lightMap, qboolean allowCompression )
 {
-	GLenum internalFormat;
+	GLint internalFormat;
 
 	if ( lightMap )
 		return GL_RGB;
@@ -615,13 +615,13 @@ static void Upload32( unsigned *data,
 						qboolean picmip,
 						qboolean lightMap,
 						qboolean allowCompression,
-						GLenum *format,
+						GLint *format,
 						int *pUploadWidth, int *pUploadHeight )
 {
 	unsigned	*scaledBuffer = NULL;
 	unsigned	*resampledBuffer = NULL;
 	int			scaled_width, scaled_height;
-	GLenum		internalFormat;
+	GLint		internalFormat;
 
 	//
 	// convert to exact power of 2 sizes
@@ -1125,15 +1125,105 @@ static void R_CreateFogImage( void ) {
 }
 
 
+static int Hex( char c )
+{
+	if ( c >= '0' && c <= '9' ) {
+		return c - '0';
+	}
+	if ( c >= 'A' && c <= 'F' ) {
+		return 10 + c - 'A';
+	}
+	if ( c >= 'a' && c <= 'f' ) {
+		return 10 + c - 'a';
+	}
+
+	return -1;
+}
+
+
+/*
+==================
+R_BuildDefaultImage
+
+Create solid color texture from following input formats (hex):
+#rgb
+#rrggbb
+==================
+*/
+#define	DEFAULT_SIZE 16
+static qboolean R_BuildDefaultImage( const char *format ) {
+	byte data[DEFAULT_SIZE][DEFAULT_SIZE][4];
+	byte color[4];
+	int i, len, hex[6];
+	int x, y;
+	
+	if ( *format++ != '#' ) {
+		return qfalse;
+	}
+
+	len = (int)strlen( format );
+	if ( len <= 0 || len > 6 ) {
+		return qfalse;
+	}
+
+	for ( i = 0; i < len; i++ ) {
+		hex[i] = Hex( format[i] );
+		if ( hex[i] == -1 ) {
+			return qfalse;
+		}
+	}
+
+	switch ( len ) {
+		case 3: // #rgb
+			color[0] = hex[0] << 4 | hex[0];
+			color[1] = hex[1] << 4 | hex[1];
+			color[2] = hex[2] << 4 | hex[2];
+			color[3] = 255;
+			break;
+		case 6: // #rrggbb
+			color[0] = hex[0] << 4 | hex[1];
+			color[1] = hex[2] << 4 | hex[3];
+			color[2] = hex[4] << 4 | hex[5];
+			color[3] = 255;
+			break;
+		default: // unsupported format
+			return qfalse;
+	}
+
+	for ( y = 0; y < DEFAULT_SIZE; y++ ) {
+		for ( x = 0; x < DEFAULT_SIZE; x++ ) {
+			data[x][y][0] = color[0];
+			data[x][y][1] = color[1];
+			data[x][y][2] = color[2];
+			data[x][y][3] = color[3];
+		}
+	}
+
+	tr.defaultImage = R_CreateImage( "*default", (byte *)data, DEFAULT_SIZE, DEFAULT_SIZE, IMGTYPE_COLORALPHA, IMGFLAG_MIPMAP, 0 );
+
+	return qtrue;
+}
+
+
 /*
 ==================
 R_CreateDefaultImage
 ==================
 */
-#define	DEFAULT_SIZE	16
 static void R_CreateDefaultImage( void ) {
 	int		x;
 	byte	data[DEFAULT_SIZE][DEFAULT_SIZE][4];
+
+	if ( r_defaultImage->string[0] )
+	{
+		// build from format
+		if ( R_BuildDefaultImage( r_defaultImage->string ) )
+			return;
+		// load from external file
+		tr.defaultImage = R_FindImageFile( r_defaultImage->string, IMGTYPE_COLORALPHA, 	IMGFLAG_MIPMAP | IMGFLAG_PICMIP );
+		if ( tr.defaultImage )
+			return;
+	}
 
 	// the default image will be a box, to allow you to see the mapping coordinates
 	Com_Memset( data, 32, sizeof( data ) );

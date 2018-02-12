@@ -55,11 +55,11 @@ typedef struct image_s {
 
 	int			frameUsed;			// for texture usage in frame statistics
 
-	int			internalFormat;
+	GLint		internalFormat;
 	int			TMU;				// only needed for voodoo2
 
-	imgType_t   type;
-	imgFlags_t  flags;
+	imgType_t	type;
+	imgFlags_t	flags;
 
 	struct image_s*	next;
 } image_t;

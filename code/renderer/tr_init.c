@@ -157,6 +157,7 @@ cvar_t	*r_debugSurface;
 cvar_t	*r_simpleMipMaps;
 
 cvar_t	*r_showImages;
+cvar_t	*r_defaultImage;
 
 cvar_t	*r_ambientScale;
 cvar_t	*r_directedScale;
@@ -1288,7 +1289,8 @@ static void R_Register( void )
 	r_mapOverBrightBits = ri.Cvar_Get ("r_mapOverBrightBits", "2", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_intensity = ri.Cvar_Get ("r_intensity", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_intensity, "1", "255", CV_FLOAT );
-	r_singleShader = ri.Cvar_Get ("r_singleShader", "0", CVAR_CHEAT | CVAR_LATCH );
+	r_singleShader = ri.Cvar_Get( "r_singleShader", "0", CVAR_CHEAT | CVAR_LATCH );
+	r_defaultImage = ri.Cvar_Get( "r_defaultImage", "", CVAR_ARCHIVE_ND | CVAR_LATCH );
 
 	//
 	// archived variables that can change at any time
