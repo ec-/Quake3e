@@ -651,7 +651,7 @@ qboolean FS_AllowedExtension( const char *fileName, qboolean allowPk3s, const ch
 	const char *e;
 	int i, n;
 
-	e = Q_strrchr( fileName, '.' );
+	e = strrchr( fileName, '.' );
 
 	// check for unix '.so.[0-9]' pattern
 	if ( e >= (fileName + 3) && *(e+1) >= '0' && *(e+1) <= '9' && *(e+2) == '\0' ) 
@@ -1236,7 +1236,7 @@ static qboolean FS_IsDemoExt( const char *filename, int namelen )
 	char *ext_test;
 	int index, protocol;
 
-	ext_test = Q_strrchr( filename, '.' );
+	ext_test = strrchr( filename, '.' );
 
 	if ( !ext_test )
 		return qfalse;
@@ -1261,7 +1261,7 @@ static const char *FS_HasExt( const char *fileName, const char **extList, int ex
 	const char *e;
 	int i;
 
-	e = Q_strrchr( fileName, '.' );
+	e = strrchr( fileName, '.' );
 
 	if ( !e ) 
 		return NULL;

@@ -1115,27 +1115,6 @@ int Q_isalpha( int c )
 }
 
 
-char *Q_strrchr( const char* string, int c )
-{
-	char cc = c;
-	char *s;
-	char *sp=(char *)0;
-
-	s = (char*)string;
-
-	while (*s)
-	{
-		if (*s == cc)
-			sp = s;
-		s++;
-	}
-	if (cc == 0)
-		sp = s;
-
-	return sp;
-}
-
-
 qboolean Q_isanumber( const char *s )
 {
 #ifdef Q3_VM

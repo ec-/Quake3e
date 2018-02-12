@@ -4706,7 +4706,7 @@ qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownloa
 		pakname++;
 
 	// skip gamedir
-	s = Q_strrchr( pakname, '/' );
+	s = strrchr( pakname, '/' );
 	if ( s )
 		pakname = s+1;
 

@@ -895,7 +895,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 
 	// try to extract game path from localName
 	// dl->Name should contain only pak name without game dir and extension
-	s = Q_strrchr( localName, '/' );
+	s = strrchr( localName, '/' );
 	if ( s ) 
 		Q_strncpyz( dl->Name, s+1, sizeof( dl->Name ) );
 	else
