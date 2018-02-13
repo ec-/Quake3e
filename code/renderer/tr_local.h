@@ -850,11 +850,7 @@ the bits are allocated as follows:
 7-16  : entity index
 17-30 : sorted shader index
 */
-#ifdef USE_RENDERER2
-#define	DLIGHT_BITS 2
-#else
 #define	DLIGHT_BITS 1 // qboolean in opengl1 renderer
-#endif
 #define	DLIGHT_MASK ((1<<DLIGHT_BITS)-1)
 #define	FOGNUM_BITS 5
 #define	FOGNUM_MASK ((1<<FOGNUM_BITS)-1)
@@ -865,6 +861,7 @@ the bits are allocated as follows:
 #if (QSORT_SHADERNUM_SHIFT+SHADERNUM_BITS) > 32
 	#error "Need to update sorting, too many bits."
 #endif
+#define QSORT_REFENTITYNUM_MASK (REFENTITYNUM_MASK << QSORT_REFENTITYNUM_SHIFT)
 
 extern	int			gl_filter_min, gl_filter_max;
 

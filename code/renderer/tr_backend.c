@@ -530,9 +530,9 @@ RB_RenderDrawSurfList
 */
 static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	shader_t		*shader, *oldShader;
-	int				fogNum, oldFogNum;
+	int				fogNum;
 	int				entityNum, oldEntityNum;
-	int				dlighted, oldDlighted;
+	int				dlighted;
 	qboolean		depthRange, oldDepthRange, isCrosshair, wasCrosshair;
 	int				i;
 	drawSurf_t		*drawSurf;
@@ -547,10 +547,8 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	oldEntityNum = -1;
 	backEnd.currentEntity = &tr.worldEntity;
 	oldShader = NULL;
-	oldFogNum = -1;
 	oldDepthRange = qfalse;
 	wasCrosshair = qfalse;
-	oldDlighted = qfalse;
 	oldSort = MAX_UINT;
 	oldShaderSort = -1;
 	depthRange = qfalse;
@@ -563,15 +561,14 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 			rb_surfaceTable[ *drawSurf->surface ]( drawSurf->surface );
 			continue;
 		}
-		oldSort = drawSurf->sort;
+
 		R_DecomposeSort( drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted );
 
 		//
 		// change the tess parameters if needed
 		// a "entityMergable" shader is a shader that can have surfaces from seperate
 		// entities merged into a single batch, like smoke and blood puff sprites
-		if ( shader != NULL && ( shader != oldShader || fogNum != oldFogNum || dlighted != oldDlighted 
-			|| ( entityNum != oldEntityNum && !shader->entityMergable ) ) ) {
+		if ( ( (oldSort ^ drawSurfs->sort ) & ~QSORT_REFENTITYNUM_MASK ) || !shader->entityMergable ) {
 			if ( oldShader != NULL ) {
 				RB_EndSurface();
 			}
@@ -592,9 +589,9 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 #endif
 			RB_BeginSurface( shader, fogNum );
 			oldShader = shader;
-			oldFogNum = fogNum;
-			oldDlighted = dlighted;
 		}
+
+		oldSort = drawSurf->sort;
 
 		//
 		// change the modelview matrix if needed
@@ -773,7 +770,7 @@ RB_RenderLitSurfList
 */
 static void RB_RenderLitSurfList( dlight_t* dl ) {
 	shader_t		*shader, *oldShader;
-	int				fogNum, oldFogNum;
+	int				fogNum;
 	int				entityNum, oldEntityNum;
 	qboolean		depthRange, oldDepthRange, isCrosshair, wasCrosshair;
 	const litSurf_t	*litSurf;
@@ -787,7 +784,6 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 	oldEntityNum = -1;
 	backEnd.currentEntity = &tr.worldEntity;
 	oldShader = NULL;
-	oldFogNum = -1;
 	oldDepthRange = qfalse;
 	wasCrosshair = qfalse;
 	oldSort = MAX_UINT;
@@ -800,7 +796,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 			rb_surfaceTable[ *litSurf->surface ]( litSurf->surface );
 			continue;
 		}
-		oldSort = litSurf->sort;
+
 		R_DecomposeLitSort( litSurf->sort, &entityNum, &shader, &fogNum );
 
 		// anything BEFORE opaque is sky/portal, anything AFTER it should never have been added
@@ -813,15 +809,15 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 		// change the tess parameters if needed
 		// a "entityMergable" shader is a shader that can have surfaces from seperate
 		// entities merged into a single batch, like smoke and blood puff sprites
-		if ( shader != NULL && ( shader != oldShader || fogNum != oldFogNum
-			|| ( entityNum != oldEntityNum && !shader->entityMergable ) ) ) {
-			if (oldShader != NULL) {
+		if ( ( (oldSort ^ litSurf->sort) & ~QSORT_REFENTITYNUM_MASK ) || !shader->entityMergable ) {
+			if ( oldShader != NULL ) {
 				RB_EndSurface();
 			}
 			RB_BeginSurface( shader, fogNum );
 			oldShader = shader;
-			oldFogNum = fogNum;
 		}
+
+		oldSort = litSurf->sort;
 
 		//
 		// change the modelview matrix if needed

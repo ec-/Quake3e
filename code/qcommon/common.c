@@ -73,7 +73,6 @@ cvar_t	*com_journal;
 #ifndef DEDICATED
 cvar_t	*com_maxfps;
 cvar_t	*com_maxfpsUnfocused;
-cvar_t	*com_maxfpsMinimized;
 cvar_t	*com_yieldCPU;
 cvar_t	*com_timedemo;
 #endif
@@ -3234,10 +3233,8 @@ void Com_Init( char *commandLine ) {
 #ifndef DEDICATED
 	com_maxfps = Cvar_Get( "com_maxfps", "125", 0 ); // try to force that in some light way
 	com_maxfpsUnfocused = Cvar_Get( "com_maxfpsUnfocused", "60", CVAR_ARCHIVE_ND );
-	com_maxfpsMinimized = Cvar_Get( "com_maxfpsMinimized", "30", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( com_maxfps, "0", "1000", CV_INTEGER );
 	Cvar_CheckRange( com_maxfpsUnfocused, "0", "1000", CV_INTEGER );
-	Cvar_CheckRange( com_maxfpsMinimized, "0", "1000", CV_INTEGER );
 	com_yieldCPU = Cvar_Get( "com_yieldCPU", "2", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( com_yieldCPU, "0", "4", CV_INTEGER );
 #endif
@@ -3607,9 +3604,6 @@ void Com_Frame( qboolean noDelay ) {
 			minMsec = 0;
 			bias = 0;
 		} else {
-			if ( gw_minimized && com_maxfpsMinimized->integer > 0 )
-				minMsec = 1000 / com_maxfpsMinimized->integer;
-			else
 			if ( !gw_active && com_maxfpsUnfocused->integer > 0 )
 				minMsec = 1000 / com_maxfpsUnfocused->integer;
 			else
