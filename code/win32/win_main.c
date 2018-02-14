@@ -789,7 +789,7 @@ static void SetDPIAwareness( void )
 		pSetThreadDpiAwarenessContext = (pfnSetThreadDpiAwarenessContext) GetProcAddress( dll, "SetThreadDpiAwarenessContext" );
 		if ( pSetThreadDpiAwarenessContext )
 		{
-			pSetThreadDpiAwarenessContext( (HANDLE)(-2) ); // DPI_AWARENESS_CONTEXT_SYSTEM_AWARE
+			pSetThreadDpiAwarenessContext( (HANDLE)(intptr_t)-2 ); // DPI_AWARENESS_CONTEXT_SYSTEM_AWARE
 		}
 
 	}

@@ -580,7 +580,7 @@ static GLint RawImage_GetInternalFormat( const byte *scan, int numPixels, qboole
 	{
 		if ( allowCompression && glConfig.textureCompression == TC_S3TC_ARB )
 		{
-			internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+			internalFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 		}
 		else if ( allowCompression && glConfig.textureCompression == TC_S3TC )
 		{
