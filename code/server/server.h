@@ -71,7 +71,7 @@ typedef struct {
 	int				checksumFeed;		// the feed key that we use to compute the pure checksum strings
 	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=475
 	// the serverId associated with the current checksumFeed (always <= serverId)
-	int       checksumFeedServerId;	
+	int				checksumFeedServerId;
 	int				snapshotCounter;	// incremented for each snapshot built
 	int				timeResidual;		// <= 1000 / sv_frame->value
 	int				nextFrameTime;		// when time > nextFrameTime, process world
@@ -170,10 +170,10 @@ typedef struct client_s {
 	int				timeoutCount;		// must timeout a few frames in a row so debugging doesn't break
 	clientSnapshot_t	frames[PACKET_BACKUP];	// updates can be delta'd from here
 	int				ping;
-	int				rate;				// bytes / second
+	int				rate;				// bytes / second, 0 - unlimited
 	int				snapshotMsec;		// requests a snapshot every snapshotMsec unless rate choked
-	int				pureAuthentic;
-	qboolean  gotCP; // TTimo - additional flag to distinguish between a bad pure checksum, and no cp command at all
+	qboolean		pureAuthentic;
+	qboolean		gotCP;				// TTimo - additional flag to distinguish between a bad pure checksum, and no cp command at all
 	netchan_t		netchan;
 	// TTimo
 	// queuing outgoing fragmented messages to send them properly, without udp packet bursts
@@ -223,6 +223,7 @@ typedef struct {
 
 } serverStatic_t;
 
+#ifdef USE_BANS
 #define SERVER_MAXBANS	1024
 // Structure for managing bans
 typedef struct
@@ -233,6 +234,7 @@ typedef struct
 	
 	qboolean isexception;
 } serverBan_t;
+#endif
 
 //=============================================================================
 
@@ -271,8 +273,10 @@ extern	cvar_t	*sv_banFile;
 
 extern	cvar_t *sv_levelTimeReset;
 
+#ifdef USE_BANS
 extern	serverBan_t serverBans[SERVER_MAXBANS];
 extern	int serverBansCount;
+#endif
 
 //===========================================================
 
@@ -301,15 +305,14 @@ extern leakyBucket_t outboundLeakyBucket;
 qboolean SVC_RateLimit( leakyBucket_t *bucket, int burst, int period );
 qboolean SVC_RateLimitAddress( const netadr_t *from, int burst, int period );
 
-void SV_FinalMessage(const char *message);
+void SV_FinalMessage( const char *message );
 void QDECL SV_SendServerCommand( client_t *cl, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 
-void SV_AddOperatorCommands (void);
-void SV_RemoveOperatorCommands (void);
+void SV_AddOperatorCommands( void );
+void SV_RemoveOperatorCommands( void );
 
-void SV_MasterShutdown (void);
-int SV_RateMsec(client_t *client);
-
+void SV_MasterShutdown( void );
+int SV_RateMsec( const client_t *client );
 
 
 //
@@ -336,7 +339,7 @@ void SV_InitChallenger( void );
 void SV_DirectConnect( const netadr_t *from );
 
 void SV_ExecuteClientMessage( client_t *cl, msg_t *msg );
-void SV_UserinfoChanged( client_t *cl );
+void SV_UserinfoChanged( client_t *cl, qboolean updateUserinfo );
 
 void SV_ClientEnterWorld( client_t *client, usercmd_t *cmd );
 void SV_FreeClient( client_t *client );

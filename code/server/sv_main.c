@@ -57,8 +57,10 @@ cvar_t	*sv_banFile;
 
 cvar_t *sv_levelTimeReset;
 
+#ifdef USE_BANS
 serverBan_t serverBans[SERVER_MAXBANS];
 int serverBansCount = 0;
+#endif
 
 /*
 =============================================================================
@@ -1052,6 +1054,39 @@ int SV_FrameMsec( void )
 
 /*
 ==================
+SV_TrackCvarChanges
+==================
+*/
+void SV_TrackCvarChanges( void )
+{
+	client_t *cl;
+	int i;
+
+	if ( sv_maxRate->integer && sv_maxRate->integer < 1000 ) {
+		Cvar_Set( "sv_maxRate", "1000" );
+		Com_DPrintf( "sv_maxRate adjusted to 1000\n" );
+	}
+
+	if ( sv_minRate->integer && sv_minRate->integer < 1000 ) {
+		Cvar_Set( "sv_minRate", "1000" );
+		Com_DPrintf( "sv_minRate adjusted to 1000\n" );
+	}
+
+	Cvar_ResetGroup( CVG_SERVER, qfalse );
+
+	if ( sv.state == SS_DEAD || !svs.clients )
+		return;
+
+	for ( i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++ ) {
+		if ( cl->state >= CS_CONNECTED ) {
+			SV_UserinfoChanged( cl, qfalse );
+		}
+	}
+}
+
+
+/*
+==================
 SV_Frame
 
 Player movement occurs as a result of packet events, which
@@ -1063,9 +1098,12 @@ void SV_Frame( int msec ) {
 	int		startTime;
 	int		i, n;
 
+	if ( Cvar_CheckGroup( CVG_SERVER ) )
+		SV_TrackCvarChanges(); // update rate settings, etc.
+
 	// the menu kills the server with this cvar
 	if ( sv_killserver->integer ) {
-		SV_Shutdown ("Server was killed");
+		SV_Shutdown( "Server was killed" );
 		Cvar_Set( "sv_killserver", "0" );
 		return;
 	}
@@ -1189,6 +1227,7 @@ void SV_Frame( int msec ) {
 	SV_MasterHeartbeat(HEARTBEAT_FOR_MASTER);
 }
 
+
 /*
 ====================
 SV_RateMsec
@@ -1201,39 +1240,25 @@ a client based on its rate settings
 #define UDPIP_HEADER_SIZE 28
 #define UDPIP6_HEADER_SIZE 48
 
-int SV_RateMsec(client_t *client)
+int SV_RateMsec( const client_t *client )
 {
 	int rate, rateMsec;
 	int messageSize;
 	
+	if ( !client->rate )
+		return 0;
+
 	messageSize = client->netchan.lastSentSize;
-	rate = client->rate;
 
-	if(sv_maxRate->integer)
-	{
-		if(sv_maxRate->integer < 1000)
-			Cvar_Set( "sv_MaxRate", "1000" );
-		if(sv_maxRate->integer < rate)
-			rate = sv_maxRate->integer;
-	}
-
-	if(sv_minRate->integer)
-	{
-		if(sv_minRate->integer < 1000)
-			Cvar_Set("sv_minRate", "1000");
-		if(sv_minRate->integer > rate)
-			rate = sv_minRate->integer;
-	}
-
-	if(client->netchan.remoteAddress.type == NA_IP6)
+	if ( client->netchan.remoteAddress.type == NA_IP6 )
 		messageSize += UDPIP6_HEADER_SIZE;
 	else
 		messageSize += UDPIP_HEADER_SIZE;
 		
-	rateMsec = messageSize * 1000 / ((int) (rate * com_timescale->value));
+	rateMsec = messageSize * 1000 / ((int) (client->rate * com_timescale->value));
 	rate = Sys_Milliseconds() - client->netchan.lastSentTime;
 	
-	if(rate > rateMsec)
+	if ( rate > rateMsec )
 		return 0;
 	else
 		return rateMsec - rate;

@@ -402,7 +402,7 @@ const char *MSG_ReadString( msg_t *msg ) {
 	l = 0;
 	do {
 		c = MSG_ReadByte(msg);		// use ReadByte so -1 is out of bounds
-		if ( c <=0 /*c == -1 || c == 0 */ ) {
+		if ( c <= 0 /*c == -1 || c == 0 */ ) {
 			break;
 		}
 		// translate all fmt spec to avoid crash bugs
@@ -418,7 +418,7 @@ const char *MSG_ReadString( msg_t *msg ) {
 		l++;
 	} while (l < sizeof(string)-1);
 	
-	string[l] = 0;
+	string[l] = '\0';
 	
 	return string;
 }
@@ -447,7 +447,7 @@ const char *MSG_ReadBigString( msg_t *msg ) {
 		l++;
 	} while (l < sizeof(string)-1);
 	
-	string[l] = 0;
+	string[l] = '\0';
 	
 	return string;
 }
@@ -476,7 +476,7 @@ const char *MSG_ReadStringLine( msg_t *msg ) {
 		l++;
 	} while (l < sizeof(string)-1);
 	
-	string[l] = 0;
+	string[l] = '\0';
 	
 	return string;
 }

@@ -405,7 +405,7 @@ gotnewcl:
 		return;
 	}
 
-	SV_UserinfoChanged( newcl );
+	SV_UserinfoChanged( newcl, qtrue );
 
 	// send the connect packet to the client
 	NET_OutOfBandPrint( NS_SERVER, from, "connectResponse %d", challenge );
@@ -536,7 +536,7 @@ static void SV_SendClientGameState( client_t *client ) {
  	Com_DPrintf( "SV_SendClientGameState() for %s\n", client->name );
 	Com_DPrintf( "Going from CS_CONNECTED to CS_PRIMED for %s\n", client->name );
 	client->state = CS_PRIMED;
-	client->pureAuthentic = 0;
+	client->pureAuthentic = qfalse;
 	client->gotCP = qfalse;
 
 	// to start generating delta for packet entities
@@ -784,8 +784,8 @@ static int SV_WriteDownloadToClient( client_t *cl, msg_t *msg )
 		qboolean idPack = qfalse;
 		qboolean missionPack = qfalse;
  		// Chop off filename extension.
-		Com_sprintf(pakbuf, sizeof(pakbuf), "%s", cl->downloadName);
-		pakptr = strrchr(pakbuf, '.');
+		Q_strncpyz( pakbuf, cl->downloadName, sizeof( pakbuf ) );
+		pakptr = strrchr( pakbuf, '.' );
 		
 		if(pakptr)
 		{
@@ -1191,11 +1191,10 @@ static void SV_VerifyPaks_f( client_t *cl ) {
 
 		cl->gotCP = qtrue;
 
-		if (bGood) {
-			cl->pureAuthentic = 1;
-		} 
-		else {
-			cl->pureAuthentic = 0;
+		if ( bGood ) {
+			cl->pureAuthentic = qtrue;
+		} else {
+			cl->pureAuthentic = qfalse;
 			cl->lastSnapshotTime = 0;
 			cl->state = CS_ZOMBIE; // skip delta generation
 			SV_SendClientSnapshot( cl );
@@ -1212,7 +1211,7 @@ SV_ResetPureClient_f
 =================
 */
 static void SV_ResetPureClient_f( client_t *cl ) {
-	cl->pureAuthentic = 0;
+	cl->pureAuthentic = qfalse;
 	cl->gotCP = qfalse;
 }
 
@@ -1225,41 +1224,40 @@ Pull specific info from a newly changed userinfo string
 into a more C friendly form.
 =================
 */
-void SV_UserinfoChanged( client_t *cl ) {
+void SV_UserinfoChanged( client_t *cl, qboolean updateUserinfo ) {
 	const char *val;
 	const char *ip;
 	int	i;
 	int	len;
-	const int maxRate = 100000;
 
-	// name for C code
-	Q_strncpyz( cl->name, Info_ValueForKey (cl->userinfo, "name"), sizeof(cl->name) );
+	if ( cl->netchan.remoteAddress.type == NA_BOT ) {
+		cl->lastSnapshotTime = 0;
+		cl->snapshotMsec = 1000 / sv_fps->integer;
+		cl->rate = 0;
+		return;
+	}
 
 	// rate command
 
 	// if the client is on the same subnet as the server and we aren't running an
 	// internet public server, assume they don't need a rate choke
-	if ( cl->netchan.isLANAddress && com_dedicated->integer != 2 && sv_lanForceRate->integer ) {
-		cl->rate = maxRate;	// lans should not rate limit
+	if ( cl->netchan.remoteAddress.type == NA_LOOPBACK || ( cl->netchan.isLANAddress && com_dedicated->integer != 2 && sv_lanForceRate->integer ) ) {
+		cl->rate = 0; // lans should not rate limit
 	} else {
-		val = Info_ValueForKey (cl->userinfo, "rate");
-		if (val[0]) {
-			i = atoi(val);
-			cl->rate = i;
-			if (cl->rate < 1000) {
-				cl->rate = 1000;
-			} else if (cl->rate > maxRate) {
-				cl->rate = maxRate;
-			}
-		} else {
-			cl->rate = 5000; // was 3000
+		val = Info_ValueForKey( cl->userinfo, "rate" );
+		if ( val[0] )
+			cl->rate = atoi( val );
+		else
+			cl->rate = 10000; // was 3000
+
+		if ( sv_maxRate->integer ) {
+			if ( cl->rate > sv_maxRate->integer )
+				cl->rate = sv_maxRate->integer;
 		}
-	}
-	val = Info_ValueForKey (cl->userinfo, "handicap");
-	if (val[0]) {
-		i = atoi(val);
-		if (i<=0 || i>100 || strlen(val) > 4) {
-			Info_SetValueForKey( cl->userinfo, "handicap", "100" );
+
+		if ( sv_minRate->integer ) {
+			if ( cl->rate < sv_minRate->integer )
+				cl->rate = sv_minRate->integer;
 		}
 	}
 
@@ -1282,9 +1280,23 @@ void SV_UserinfoChanged( client_t *cl ) {
 	{
 		// Reset last sent snapshot so we avoid desync between server frame time and snapshot send time
 		cl->lastSnapshotTime = 0;
-		cl->snapshotMsec = i;		
+		cl->snapshotMsec = i;
 	}
-	
+
+	if ( !updateUserinfo )
+		return;
+
+	// name for C code
+	Q_strncpyz( cl->name, Info_ValueForKey( cl->userinfo, "name" ), sizeof( cl->name ) );
+
+	val = Info_ValueForKey( cl->userinfo, "handicap" );
+	if ( val[0] ) {
+		i = atoi( val );
+		if ( i <= 0 || i > 100 || strlen( val ) > 4 ) {
+			Info_SetValueForKey( cl->userinfo, "handicap", "100" );
+		}
+	}
+
 	// TTimo
 	// maintain the IP information
 	// the banning code relies on this being consistently present
@@ -1300,7 +1312,6 @@ void SV_UserinfoChanged( client_t *cl ) {
 		SV_DropClient( cl, "userinfo string length exceeded" );
 	else
 		Info_SetValueForKey( cl->userinfo, "ip", ip );
-
 }
 
 
@@ -1312,10 +1323,11 @@ SV_UpdateUserinfo_f
 static void SV_UpdateUserinfo_f( client_t *cl ) {
 	Q_strncpyz( cl->userinfo, Cmd_Argv(1), sizeof(cl->userinfo) );
 
-	SV_UserinfoChanged( cl );
+	SV_UserinfoChanged( cl, qtrue );
 	// call prog code to allow overrides
 	VM_Call( gvm, GAME_CLIENT_USERINFO_CHANGED, cl - svs.clients );
 }
+
 
 typedef struct {
 	const char *name;
@@ -1451,7 +1463,7 @@ static qboolean SV_ClientCommand( client_t *cl, msg_t *msg ) {
 	SV_ExecuteClientCommand( cl, s, clientOk );
 
 	cl->lastClientCommand = seq;
-	Com_sprintf(cl->lastClientCommandString, sizeof(cl->lastClientCommandString), "%s", s);
+	Q_strncpyz( cl->lastClientCommandString, s, sizeof( cl->lastClientCommandString ) );
 
 	return qtrue;		// continue procesing
 }
@@ -1538,11 +1550,10 @@ static void SV_UserMove( client_t *cl, msg_t *msg, qboolean delta ) {
 	// catch the no-cp-yet situation before SV_ClientEnterWorld
 	// if CS_ACTIVE, then it's time to trigger a new gamestate emission
 	// if not, then we are getting remaining parasite usermove commands, which we should ignore
-	if (sv_pure->integer != 0 && cl->pureAuthentic == 0 && !cl->gotCP) {
-		if (cl->state == CS_ACTIVE)
-		{
+	if ( sv_pure->integer != 0 && !cl->pureAuthentic && !cl->gotCP ) {
+		if ( cl->state == CS_ACTIVE ) {
 			// we didn't get a cp yet, don't assume anything and just send the gamestate all over again
-			Com_DPrintf( "%s: didn't get cp command, resending gamestate\n", cl->name);
+			Com_DPrintf( "%s: didn't get cp command, resending gamestate\n", cl->name );
 			SV_SendClientGameState( cl );
 		}
 		return;
@@ -1556,8 +1567,8 @@ static void SV_UserMove( client_t *cl, msg_t *msg, qboolean delta ) {
 	}
 	
 	// a bad cp command was sent, drop the client
-	if (sv_pure->integer != 0 && cl->pureAuthentic == 0) {		
-		SV_DropClient( cl, "Cannot validate pure client!");
+	if ( sv_pure->integer != 0 && !cl->pureAuthentic ) {
+		SV_DropClient( cl, "Cannot validate pure client!" );
 		return;
 	}
 

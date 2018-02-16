@@ -1444,6 +1444,6 @@ void PS_SetBaseFolder(const char *path)
 #ifdef BSPC
 	sprintf(basefolder, path);
 #else
-	Com_sprintf(basefolder, sizeof(basefolder), "%s", path);
+	Q_strncpyz( basefolder, path, sizeof( basefolder ) );
 #endif
 } //end of the function PS_SetBaseFolder

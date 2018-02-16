@@ -723,9 +723,6 @@ void SV_Init( void )
 
 	sv_levelTimeReset = Cvar_Get( "sv_levelTimeReset", "0", CVAR_ARCHIVE_ND );
 
-	//extented version marker
-	Cvar_Get( "sv_version_ex", "1", CVAR_ROM );
-
 	// initialize bot cvars so they are listed and can be set before loading the botlib
 	SV_BotInitCvars();
 
@@ -736,6 +733,15 @@ void SV_Init( void )
 	// Load saved bans
 	Cbuf_AddText("rehashbans\n");
 #endif
+
+	// track group cvar changes
+	Cvar_SetGroup( sv_lanForceRate, CVG_SERVER );
+	Cvar_SetGroup( sv_minRate, CVG_SERVER );
+	Cvar_SetGroup( sv_maxRate, CVG_SERVER );
+	Cvar_SetGroup( sv_fps, CVG_SERVER );
+
+	// force initial check
+	SV_TrackCvarChanges();
 
 	SV_InitChallenger();
 }
