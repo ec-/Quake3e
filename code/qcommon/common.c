@@ -681,7 +681,7 @@ static const char *Com_StringContains( const char *str1, const char *str2, int c
 				}
 			}
 			else {
-				if (toupper(str1[j]) != toupper(str2[j])) {
+				if (upcase[(byte)str1[j]] != upcase[(byte)str2[j]]) {
 					break;
 				}
 			}
@@ -737,8 +737,8 @@ int Com_Filter( const char *filter, const char *name, int casesensitive )
 						if (*name >= *filter && *name <= *(filter+2)) found = qtrue;
 					}
 					else {
-						if (toupper(*name) >= toupper(*filter) &&
-							toupper(*name) <= toupper(*(filter+2))) found = qtrue;
+						if (upcase[(byte)*name] >= upcase[(byte)*filter] &&
+							upcase[(byte)*name] <= upcase[(byte)*(filter+2)]) found = qtrue;
 					}
 					filter += 3;
 				}
@@ -747,7 +747,7 @@ int Com_Filter( const char *filter, const char *name, int casesensitive )
 						if (*filter == *name) found = qtrue;
 					}
 					else {
-						if (toupper(*filter) == toupper(*name)) found = qtrue;
+						if (upcase[(byte)*filter] == upcase[(byte)*name]) found = qtrue;
 					}
 					filter++;
 				}
@@ -765,7 +765,7 @@ int Com_Filter( const char *filter, const char *name, int casesensitive )
 				if (*filter != *name) return qfalse;
 			}
 			else {
-				if (toupper(*filter) != toupper(*name)) return qfalse;
+				if (upcase[(byte)*filter] != upcase[(byte)*name]) return qfalse;
 			}
 			filter++;
 			name++;

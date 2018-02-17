@@ -145,10 +145,10 @@ void SV_SetConfigstring (int index, const char *val) {
 	}
 }
 
+
 /*
 ===============
 SV_GetConfigstring
-
 ===============
 */
 void SV_GetConfigstring( int index, char *buffer, int bufferSize ) {
@@ -159,7 +159,7 @@ void SV_GetConfigstring( int index, char *buffer, int bufferSize ) {
 		Com_Error (ERR_DROP, "SV_GetConfigstring: bad index %i", index);
 	}
 	if ( !sv.configstrings[index] ) {
-		buffer[0] = 0;
+		buffer[0] = '\0';
 		return;
 	}
 

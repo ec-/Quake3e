@@ -1106,8 +1106,7 @@ void CM_TraceThroughTree( traceWork_t *tw, int num, float p1f, float p2f, vec3_t
 	// move up to the node
 	if ( frac < 0 ) {
 		frac = 0;
-	}
-	if ( frac > 1 ) {
+	} else if ( frac > 1 ) {
 		frac = 1;
 	}
 		
@@ -1122,8 +1121,7 @@ void CM_TraceThroughTree( traceWork_t *tw, int num, float p1f, float p2f, vec3_t
 	// go past the node
 	if ( frac2 < 0 ) {
 		frac2 = 0;
-	}
-	if ( frac2 > 1 ) {
+	} else if ( frac2 > 1 ) {
 		frac2 = 1;
 	}
 		

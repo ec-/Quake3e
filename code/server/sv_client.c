@@ -202,7 +202,6 @@ void SV_DirectConnect( const netadr_t *from ) {
 	char		userinfo[MAX_INFO_STRING];
 	int			i;
 	client_t	*cl, *newcl;
-	client_t	temp;
 	//sharedEntity_t *ent;
 	int			clientNum;
 	int			version;
@@ -288,9 +287,6 @@ void SV_DirectConnect( const netadr_t *from ) {
 		}
 	}
 
-	newcl = &temp;
-	Com_Memset( newcl, 0, sizeof(client_t) );
-
 	// if there is already a slot for this ip, reuse it
 	for (i=0,cl=svs.clients ; i < sv_maxclients->integer ; i++,cl++) {
 		if ( cl->state == CS_FREE ) {
@@ -374,7 +370,7 @@ gotnewcl:
 	// build a new connection
 	// accept the new client
 	// this is the only place a client_t is ever initialized
-	*newcl = temp;
+	Com_Memset( newcl, 0, sizeof( *newcl ) );
 	clientNum = newcl - svs.clients;
 #if 0 // skip this until CS_PRIMED
 	//ent = SV_GentityNum( clientNum );
@@ -401,7 +397,7 @@ gotnewcl:
 		const char *str = GVM_ArgPtr( denied );
 
 		NET_OutOfBandPrint( NS_SERVER, from, "print\n%s\n", str );
-		Com_DPrintf ("Game rejected a connection: %s.\n", str);
+		Com_DPrintf( "Game rejected a connection: %s.\n", str );
 		return;
 	}
 

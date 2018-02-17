@@ -739,6 +739,9 @@ typedef enum {
 
 //=============================================
 
+extern const byte locase[ 256 ];
+extern const byte upcase[ 256 ];
+
 int Q_isprint( int c );
 int Q_islower( int c );
 int Q_isupper( int c );

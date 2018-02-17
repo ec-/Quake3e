@@ -84,26 +84,9 @@ int Sys_MilliSeconds(void)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-qboolean ValidClientNumber(int num, char *str)
+static qboolean ValidEntityNumber(int num, const char *str)
 {
-	if (num < 0 || num > botlibglobals.maxclients)
-	{
-		//weird: the disabled stuff results in a crash
-		botimport.Print(PRT_ERROR, "%s: invalid client number %d, [0, %d]\n",
-										str, num, botlibglobals.maxclients);
-		return qfalse;
-	} //end if
-	return qtrue;
-} //end of the function BotValidateClientNumber
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-qboolean ValidEntityNumber(int num, char *str)
-{
-	if (num < 0 || num > botlibglobals.maxentities)
+	if ( /*num < 0 || */ (unsigned)num > botlibglobals.maxentities )
 	{
 		botimport.Print(PRT_ERROR, "%s: invalid entity number %d, [0, %d]\n",
 										str, num, botlibglobals.maxentities);
@@ -117,7 +100,7 @@ qboolean ValidEntityNumber(int num, char *str)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-qboolean BotLibSetup(char *str)
+static qboolean BotLibSetup(const char *str)
 {
 	if (!botlibglobals.botlibsetup)
 	{
@@ -287,7 +270,7 @@ int Export_BotLibLoadMap(const char *mapname)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int Export_BotLibUpdateEntity(int ent, bot_entitystate_t *state)
+static int Export_BotLibUpdateEntity(int ent, bot_entitystate_t *state)
 {
 	if (!BotLibSetup("BotUpdateEntity")) return BLERR_LIBRARYNOTSETUP;
 	if (!ValidEntityNumber(ent, "BotUpdateEntity")) return BLERR_INVALIDENTITYNUMBER;

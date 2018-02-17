@@ -79,7 +79,7 @@ SV_GameSendServerCommand
 Sends a command string to a client
 ===============
 */
-void SV_GameSendServerCommand( int clientNum, const char *text ) {
+static void SV_GameSendServerCommand( int clientNum, const char *text ) {
 	if ( clientNum == -1 ) {
 		SV_SendServerCommand( NULL, "%s", text );
 	} else {
@@ -98,7 +98,7 @@ SV_GameDropClient
 Disconnects the client with a message
 ===============
 */
-void SV_GameDropClient( int clientNum, const char *reason ) {
+static void SV_GameDropClient( int clientNum, const char *reason ) {
 	if ( clientNum < 0 || clientNum >= sv_maxclients->integer ) {
 		return;
 	}
@@ -113,18 +113,17 @@ SV_SetBrushModel
 sets mins and maxs for inline bmodels
 =================
 */
-void SV_SetBrushModel( sharedEntity_t *ent, const char *name ) {
+static void SV_SetBrushModel( sharedEntity_t *ent, const char *name ) {
 	clipHandle_t	h;
 	vec3_t			mins, maxs;
 
-	if (!name) {
+	if ( !name ) {
 		Com_Error( ERR_DROP, "SV_SetBrushModel: NULL" );
 	}
 
-	if (name[0] != '*') {
+	if ( name[0] != '*' ) {
 		Com_Error( ERR_DROP, "SV_SetBrushModel: %s isn't a brush model", name );
 	}
-
 
 	ent->s.modelindex = atoi( name + 1 );
 
@@ -147,7 +146,7 @@ SV_inPVS
 Also checks portalareas so that doors block sight
 =================
 */
-qboolean SV_inPVS (const vec3_t p1, const vec3_t p2)
+qboolean SV_inPVS( const vec3_t p1, const vec3_t p2 )
 {
 	int		leafnum;
 	int		cluster;
@@ -177,7 +176,7 @@ SV_inPVSIgnorePortals
 Does NOT check portalareas
 =================
 */
-qboolean SV_inPVSIgnorePortals( const vec3_t p1, const vec3_t p2)
+static qboolean SV_inPVSIgnorePortals( const vec3_t p1, const vec3_t p2 )
 {
 	int		leafnum;
 	int		cluster;
@@ -202,7 +201,7 @@ qboolean SV_inPVSIgnorePortals( const vec3_t p1, const vec3_t p2)
 SV_AdjustAreaPortalState
 ========================
 */
-void SV_AdjustAreaPortalState( sharedEntity_t *ent, qboolean open ) {
+static void SV_AdjustAreaPortalState( sharedEntity_t *ent, qboolean open ) {
 	svEntity_t	*svEnt;
 
 	svEnt = SV_SvEntityForGentity( ent );
@@ -218,7 +217,7 @@ void SV_AdjustAreaPortalState( sharedEntity_t *ent, qboolean open ) {
 SV_EntityContact
 ==================
 */
-qboolean	SV_EntityContact( vec3_t mins, vec3_t maxs, const sharedEntity_t *gEnt, int capsule ) {
+static qboolean SV_EntityContact( vec3_t mins, vec3_t maxs, const sharedEntity_t *gEnt, int capsule ) {
 	const float	*origin, *angles;
 	clipHandle_t	ch;
 	trace_t			trace;
@@ -228,7 +227,7 @@ qboolean	SV_EntityContact( vec3_t mins, vec3_t maxs, const sharedEntity_t *gEnt,
 	angles = gEnt->r.currentAngles;
 
 	ch = SV_ClipHandleForEntity( gEnt );
-	CM_TransformedBoxTrace ( &trace, vec3_origin, vec3_origin, mins, maxs,
+	CM_TransformedBoxTrace( &trace, vec3_origin, vec3_origin, mins, maxs,
 		ch, -1, origin, angles, capsule );
 
 	return trace.startsolid;
@@ -241,11 +240,19 @@ SV_GetServerinfo
 
 ===============
 */
-void SV_GetServerinfo( char *buffer, int bufferSize ) {
+static void SV_GetServerinfo( char *buffer, int bufferSize ) {
+	const char *cs;
+	
 	if ( bufferSize < 1 ) {
 		Com_Error( ERR_DROP, "SV_GetServerinfo: bufferSize == %i", bufferSize );
 	}
-	Q_strncpyz( buffer, Cvar_InfoString( CVAR_SERVERINFO ), bufferSize );
+
+	cs = sv.configstrings[ CS_SERVERINFO ];
+
+	if ( cs )
+		Q_strncpyz( buffer, cs, bufferSize );
+	else
+		*buffer = '\0';
 }
 
 
@@ -255,7 +262,7 @@ SV_LocateGameData
 
 ===============
 */
-void SV_LocateGameData( sharedEntity_t *gEnts, int numGEntities, int sizeofGEntity_t, playerState_t *clients, int sizeofGameClient ) {
+static void SV_LocateGameData( sharedEntity_t *gEnts, int numGEntities, int sizeofGEntity_t, playerState_t *clients, int sizeofGameClient ) {
 
 	if ( !gvm->entryPoint ) {
 		if ( numGEntities > MAX_GENTITIES ) {
@@ -287,10 +294,9 @@ void SV_LocateGameData( sharedEntity_t *gEnts, int numGEntities, int sizeofGEnti
 /*
 ===============
 SV_GetUsercmd
-
 ===============
 */
-void SV_GetUsercmd( int clientNum, usercmd_t *cmd ) {
+static void SV_GetUsercmd( int clientNum, usercmd_t *cmd ) {
 	if ( clientNum < 0 || clientNum >= sv_maxclients->integer ) {
 		Com_Error( ERR_DROP, "SV_GetUsercmd: bad clientNum:%i", clientNum );
 	}
@@ -1005,6 +1011,7 @@ void SV_ShutdownGameProgs( void ) {
 	FS_VM_CloseFiles( H_QAGAME );
 }
 
+
 /*
 ==================
 SV_InitGameVM
@@ -1030,7 +1037,6 @@ static void SV_InitGameVM( qboolean restart ) {
 	// init for this gamestate
 	VM_Call (gvm, GAME_INIT, sv.time, Com_Milliseconds(), restart);
 }
-
 
 
 /*
