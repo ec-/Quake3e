@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{81CB51C4-B434-4E12-B69B-BAEE102F2852}</ProjectGuid>
     <RootNamespace>quake3e</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
     <ProjectName>quake3e</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -272,7 +272,6 @@
     <ClInclude Include="..\..\client\cl_curl.h" />
     <ClInclude Include="..\..\client\keycodes.h" />
     <ClInclude Include="..\..\client\keys.h" />
-    <ClInclude Include="..\..\client\qal.h" />
     <ClInclude Include="..\..\client\snd_local.h" />
     <ClInclude Include="..\..\client\snd_public.h" />
     <ClInclude Include="..\..\game\bg_public.h" />

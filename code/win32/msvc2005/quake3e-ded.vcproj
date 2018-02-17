@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8,00"
-	Name="quake3-ded"
+	Name="quake3e-ded"
 	ProjectGUID="{81CB51C4-B434-4E12-B69B-BAEE102F2853}"
 	RootNamespace="quake3"
 	>
@@ -20,7 +20,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory=".\output"
-			IntermediateDirectory=".\build\quake3ded_debug"
+			IntermediateDirectory=".\build\quake3e_ded_debug"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -69,7 +69,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="comctl32.lib winmm.lib wsock32.lib ws2_32.lib"
-				OutputFile="$(OutDir)\quake3de.ded-debug.exe"
+				OutputFile="$(OutDir)\quake3e.ded-debug.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(IntDir)\quake3e.ded-debug.pdb"
@@ -108,7 +108,7 @@
 		<Configuration
 			Name="Debug|x64"
 			OutputDirectory=".\output"
-			IntermediateDirectory=".\build\quake3ded_debug_x64"
+			IntermediateDirectory=".\build\quake3e_ded_debug_x64"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -196,7 +196,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory=".\output"
-			IntermediateDirectory=".\build\quake3ded_release"
+			IntermediateDirectory=".\build\quake3e_ded_release"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -279,7 +279,7 @@
 		<Configuration
 			Name="Release|x64"
 			OutputDirectory=".\output"
-			IntermediateDirectory=".\build\quake3ded_release_x64"
+			IntermediateDirectory=".\build\quake3e_ded_release_x64"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"

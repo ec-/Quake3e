@@ -128,9 +128,6 @@
     <ClCompile Include="..\..\renderer2\tr_world.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\win_gamma.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\win_glimp.c">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8,00"
-	Name="quake3"
+	Name="quake3e"
 	ProjectGUID="{81CB51C4-B434-4E12-B69B-BAEE102F2852}"
-	RootNamespace="quake3"
+	RootNamespace="quake3e"
 	>
 	<Platforms>
 		<Platform

@@ -106,9 +106,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\glw_win.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\qcommon\q_shared.h">
       <Filter>Header Files</Filter>
     </ClInclude>

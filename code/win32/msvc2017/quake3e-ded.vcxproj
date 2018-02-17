@@ -22,7 +22,7 @@
     <ProjectName>quake3e-ded</ProjectName>
     <ProjectGuid>{81CB51C4-B434-4E12-B69B-BAEE102F2853}</ProjectGuid>
     <RootNamespace>quake3e</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">

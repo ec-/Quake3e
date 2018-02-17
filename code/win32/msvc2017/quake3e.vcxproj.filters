@@ -240,9 +240,6 @@
     <ClInclude Include="..\..\qcommon\q_shared.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\client\qal.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\qcommon\qcommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -285,7 +282,9 @@
     <ClInclude Include="..\win_local.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\glw_win.h" />
+    <ClInclude Include="..\glw_win.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

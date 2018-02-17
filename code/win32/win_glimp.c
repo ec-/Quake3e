@@ -737,23 +737,6 @@ static void PrintCDSError( int value )
 	}
 }
 
-#if 0
-void dmprint(DEVMODE *dm){
-Com_Printf(S_COLOR_YELLOW"%ix%i-%ibpp@%iHz",
-			dm->dmPelsWidth,
-			dm->dmPelsHeight,
-			dm->dmBitsPerPel,
-			dm->dmDisplayFrequency);
-}
-void glprint() {
-	Com_Printf(" gl %ix:%i-%ibpp@%iHz: ",
-		glConfig.vidWidth,
-		glConfig.vidHeight,
-		glConfig.colorBits,
-		glConfig.displayFrequency);
-}
-#endif
-
 static DEVMODE dm_desktop, dm_current;
 
 void ResetDisplaySettings( void ) 
