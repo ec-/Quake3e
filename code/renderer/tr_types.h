@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef __TR_TYPES_H
 #define __TR_TYPES_H
 
+#define MAX_VIDEO_HANDLES	16
 
 #define	MAX_DLIGHTS		32		// can't be increased, because bit flags are used on surfaces
 
@@ -225,9 +226,7 @@ typedef struct {
 
 #define	myftol(x) ((int)(x))
 
-// FIXME: VM should be OS agnostic .. in theory
-
-#if defined(Q3_VM) || defined(_WIN32)
+#if defined(_WIN32)
 #define OPENGL_DRIVER_NAME	"opengl32"
 #elif defined(MACOS_X)
 #define OPENGL_DRIVER_NAME	"/System/Library/Frameworks/OpenGL.framework/Libraries/libGL.dylib"

@@ -50,8 +50,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define ZA_SOUND_MONO		0x1020
 #define ZA_SOUND_STEREO		0x1021
 
-#define MAX_VIDEO_HANDLES	16
-
 extern	int		s_paintedtime;
 extern	int		s_rawend;
 
