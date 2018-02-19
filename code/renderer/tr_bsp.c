@@ -140,8 +140,6 @@ static void R_ColorShiftLightingBytes( const byte in[4], byte out[4] ) {
 
 #define LIGHTMAP_SIZE 128
 static const int lightmapFlags = IMGFLAG_NOLIGHTSCALE | IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE;
-static int lightmapWidth;
-static int lightmapHeight;
 
 /*
 ===============
@@ -169,46 +167,45 @@ static void R_LoadMergedLightmaps( const lump_t *l )
 
 	// create all the lightmaps
 	tr.numLightmaps = len / (LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3);
-
- 	// if we are in r_vertexLight mode, we don't need the lightmaps at all
- 	if ( r_vertexLight->integer || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
-		lightmapWidth = lightmapHeight = 1;
- 		return;
- 	}
+	tr.lightmapWidth = tr.lightmapHeight = 1;
+	
+	// if we are in r_vertexLight mode, we don't need the lightmaps at all
+	if ( r_vertexLight->integer || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
+		return;
+	}
 
 	// see how many lightmaps we can stuff into one texture
-	lightmapWidth = lightmapHeight = 1;
-	while ( lightmapWidth * LIGHTMAP_SIZE < glConfig.maxTextureSize &&
-		lightmapWidth * lightmapHeight < tr.numLightmaps ) {
-		lightmapWidth *= 2;
-		if ( lightmapWidth * lightmapHeight >= tr.numLightmaps )
+	while ( tr.lightmapWidth * LIGHTMAP_SIZE < glConfig.maxTextureSize &&
+		tr.lightmapWidth * tr.lightmapHeight < tr.numLightmaps ) {
+		tr.lightmapWidth *= 2;
+		if ( tr.lightmapWidth * tr.lightmapHeight >= tr.numLightmaps )
 			break;
-		lightmapHeight *= 2;
+		tr.lightmapHeight *= 2;
 	}
 
 	// calculate number of resulting lightmap textures
-	tr.numLightmaps = (tr.numLightmaps + lightmapWidth * lightmapHeight - 1) / (lightmapWidth * lightmapHeight);
+	tr.numLightmaps = (tr.numLightmaps + tr.lightmapWidth * tr.lightmapHeight - 1) / (tr.lightmapWidth * tr.lightmapHeight);
 
 	tr.lightmaps = ri.Hunk_Alloc( tr.numLightmaps * sizeof(image_t *), h_low );
 
-	image = ri.Hunk_AllocateTempMemory( lightmapWidth * lightmapHeight * LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4 );
+	image = ri.Hunk_AllocateTempMemory( tr.lightmapWidth * tr.lightmapHeight * LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4 );
 
-	Com_Memset( image, 0, lightmapWidth * lightmapHeight * LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4 );
+	Com_Memset( image, 0, tr.lightmapWidth * tr.lightmapHeight * LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4 );
 
 	offs = 0;
 
 	for ( i = 0 ; i < tr.numLightmaps; i++ ) {
-		for ( y = 0; y < lightmapHeight; y++ ) {
+		for ( y = 0; y < tr.lightmapHeight; y++ ) {
 			if ( offs >= len )
 				break;
 			
-			for ( x = 0; x < lightmapWidth; x++ ) {
+			for ( x = 0; x < tr.lightmapWidth; x++ ) {
 				if ( offs >= len )
 					break;
 			
 				// expand the 24 bit on-disk to 32 bit
 				buf_p = buf + offs;
-				image_p = image + (y * LIGHTMAP_SIZE * lightmapWidth + x) * LIGHTMAP_SIZE * 4;
+				image_p = image + (y * LIGHTMAP_SIZE * tr.lightmapWidth + x) * LIGHTMAP_SIZE * 4;
 
 				if ( r_lightmap->integer == 2 )
 				{	// color code by intensity as development tool	(FIXME: check range)
@@ -240,7 +237,7 @@ static void R_LoadMergedLightmaps( const lump_t *l )
 							sumIntensity += intensity;
 						}
 						// go to next line
-						image_p += lightmapWidth * LIGHTMAP_SIZE * 4;
+						image_p += tr.lightmapWidth * LIGHTMAP_SIZE * 4;
 					}
 				} else {
 					for ( j = 0; j < LIGHTMAP_SIZE ; j++ ) {
@@ -249,7 +246,7 @@ static void R_LoadMergedLightmaps( const lump_t *l )
 							image_p[k*4+3] = 255;
 						}
 						// go to next line
-						image_p += lightmapWidth * LIGHTMAP_SIZE * 4;
+						image_p += tr.lightmapWidth * LIGHTMAP_SIZE * 4;
 					}
 				}
 				offs += LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3;
@@ -257,8 +254,8 @@ static void R_LoadMergedLightmaps( const lump_t *l )
  		}
 
 		tr.lightmaps[i] = R_CreateImage( va( "*lightmap%d", i ), image,
-			LIGHTMAP_SIZE * lightmapWidth, 
-			LIGHTMAP_SIZE * lightmapHeight,
+			LIGHTMAP_SIZE * tr.lightmapWidth,
+			LIGHTMAP_SIZE * tr.lightmapHeight,
 			IMGTYPE_COLORALPHA, 
 			lightmapFlags, 0 );
 		ri.Printf( PRINT_DEVELOPER, "lightmaps[%i]=%i\n", i, tr.lightmaps[i]->texnum );
@@ -285,7 +282,7 @@ static void R_LoadLightmaps( const lump_t *l ) {
 	float maxIntensity = 0;
 	double sumIntensity = 0;
 
-	lightmapWidth = lightmapHeight = 1;
+	tr.lightmapWidth = tr.lightmapHeight = 1;
 
 	if ( r_mergeLightmaps->integer ) {
 		R_LoadMergedLightmaps( l );
@@ -496,10 +493,10 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 
 	lightmapNum = LittleLong( ds->lightmapNum );
 	if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
-		lightmapX = lightmapNum & (lightmapWidth - 1);
-		lightmapNum /= lightmapWidth;
-		lightmapY = lightmapNum & (lightmapHeight - 1);
-		lightmapNum /= lightmapHeight;
+		lightmapX = lightmapNum & (tr.lightmapWidth - 1);
+		lightmapNum /= tr.lightmapWidth;
+		lightmapY = lightmapNum & (tr.lightmapHeight - 1);
+		lightmapNum /= tr.lightmapHeight;
 	} else {
 		lightmapX = lightmapY = 0;
 	}
@@ -545,8 +542,8 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 		R_ColorShiftLightingBytes( verts[i].color, (byte *)&cv->points[i][7] );
 		if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
 			// adjust lightmap coords
-			cv->points[i][5] = (cv->points[i][5] + lightmapX) / lightmapWidth;
-			cv->points[i][6] = (cv->points[i][6] + lightmapY) / lightmapHeight;
+			cv->points[i][5] = (cv->points[i][5] + lightmapX) / tr.lightmapWidth;
+			cv->points[i][6] = (cv->points[i][6] + lightmapY) / tr.lightmapHeight;
 		}
 	}
 
@@ -602,10 +599,10 @@ static void ParseMesh( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 
 	lightmapNum = LittleLong( ds->lightmapNum );
 	if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
-		lightmapX = lightmapNum & (lightmapWidth - 1);
-		lightmapNum /= lightmapWidth;
-		lightmapY = lightmapNum & (lightmapHeight - 1);
-		lightmapNum /= lightmapHeight;
+		lightmapX = lightmapNum & (tr.lightmapWidth - 1);
+		lightmapNum /= tr.lightmapWidth;
+		lightmapY = lightmapNum & (tr.lightmapHeight - 1);
+		lightmapNum /= tr.lightmapHeight;
 	} else {
 		lightmapX = lightmapY = 0;
 	}
@@ -643,8 +640,8 @@ static void ParseMesh( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 		R_ColorShiftLightingBytes( verts[i].color, points[i].color );
 		if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
 			// adjust lightmap coords
-			points[i].lightmap[0] = (points[i].lightmap[0] + lightmapX) / lightmapWidth;
-			points[i].lightmap[1] = (points[i].lightmap[1] + lightmapY) / lightmapHeight;
+			points[i].lightmap[0] = (points[i].lightmap[0] + lightmapX) / tr.lightmapWidth;
+			points[i].lightmap[1] = (points[i].lightmap[1] + lightmapY) / tr.lightmapHeight;
 		}
 	}
 
@@ -688,10 +685,10 @@ static void ParseTriSurf( const dsurface_t *ds, const drawVert_t *verts, msurfac
 
 	lightmapNum = LittleLong( ds->lightmapNum );
 	if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
-		lightmapX = lightmapNum & (lightmapWidth - 1);
-		lightmapNum /= lightmapWidth;
-		lightmapY = lightmapNum & (lightmapHeight - 1);
-		lightmapNum /= lightmapHeight;
+		lightmapX = lightmapNum & (tr.lightmapWidth - 1);
+		lightmapNum /= tr.lightmapWidth;
+		lightmapY = lightmapNum & (tr.lightmapHeight - 1);
+		lightmapNum /= tr.lightmapHeight;
 	} else {
 		lightmapX = lightmapY = 0;
 	}
@@ -726,8 +723,8 @@ static void ParseTriSurf( const dsurface_t *ds, const drawVert_t *verts, msurfac
 		R_ColorShiftLightingBytes( verts[i].color, tri->verts[i].color );
 		if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
 			// adjust lightmap coords
-			tri->verts[i].lightmap[0] = (tri->verts[i].lightmap[0] + lightmapX) / lightmapWidth;
-			tri->verts[i].lightmap[1] = (tri->verts[i].lightmap[1] + lightmapY) / lightmapHeight;
+			tri->verts[i].lightmap[0] = (tri->verts[i].lightmap[0] + lightmapX) / tr.lightmapWidth;
+			tri->verts[i].lightmap[1] = (tri->verts[i].lightmap[1] + lightmapY) / tr.lightmapHeight;
 		}
 	}
 
