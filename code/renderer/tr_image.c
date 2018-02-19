@@ -339,7 +339,7 @@ Scale up the pixel values in a texture to increase the
 lighting range
 ================
 */
-void R_LightScaleTexture (unsigned *in, int inwidth, int inheight, qboolean only_gamma )
+static void R_LightScaleTexture( unsigned *in, int inwidth, int inheight, qboolean only_gamma )
 {
 	if ( only_gamma )
 	{
@@ -615,9 +615,9 @@ static void Upload32( unsigned *data, int width, int height, qboolean lightMap, 
 	qboolean allowCompression = !(image->flags & IMGFLAG_NO_COMPRESSION);
 	qboolean mipmap = image->flags & IMGFLAG_MIPMAP;
 	qboolean picmip = image->flags & IMGFLAG_PICMIP;
-	unsigned	*scaledBuffer = NULL;
 	unsigned	*resampledBuffer = NULL;
 	int			scaled_width, scaled_height;
+	GLint		miplevel;
 
 	//
 	// convert to exact power of 2 sizes
@@ -668,8 +668,6 @@ static void Upload32( unsigned *data, int width, int height, qboolean lightMap, 
 		scaled_height >>= 1;
 	}
 
-	scaledBuffer = ri.Hunk_AllocateTempMemory( sizeof( unsigned ) * scaled_width * scaled_height );
-
 	// verify if the alpha channel is being used or not
 	if ( image->internalFormat == 0 )
 		image->internalFormat = RawImage_GetInternalFormat( (byte*)data, width*height, lightMap, allowCompression );
@@ -677,12 +675,14 @@ static void Upload32( unsigned *data, int width, int height, qboolean lightMap, 
 	image->uploadWidth = scaled_width;
 	image->uploadHeight = scaled_height;
 
+	miplevel = 0;
+
 	// copy or resample data as appropriate for first MIP level
 	if ( ( scaled_width == width ) && ( scaled_height == height ) )
 	{
 		if ( !mipmap )
 		{
-			qglTexImage2D( GL_TEXTURE_2D, 0, image->internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+			qglTexImage2D( GL_TEXTURE_2D, miplevel, image->internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 			goto done;
 		}
 	}
@@ -691,48 +691,33 @@ static void Upload32( unsigned *data, int width, int height, qboolean lightMap, 
 		// use the normal mip-mapping function to go down from here
 		while ( width > scaled_width || height > scaled_height ) {
 			R_MipMap( (byte *)data, width, height );
-			width >>= 1;
-			height >>= 1;
-			if ( width < 1 ) {
-				width = 1;
-			}
-			if ( height < 1 ) {
-				height = 1;
-			}
+			width = MAX( 1, width >> 1 );
+			height = MAX( 1, height >> 1 );
 		}
 	}
 
-	Com_Memcpy( scaledBuffer, data, width * height * 4 );
-	R_LightScaleTexture( scaledBuffer, scaled_width, scaled_height, !mipmap );
+	R_LightScaleTexture( data, scaled_width, scaled_height, !mipmap );
 
-	qglTexImage2D( GL_TEXTURE_2D, 0, image->internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledBuffer );
+	qglTexImage2D( GL_TEXTURE_2D, miplevel, image->internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 
 	if ( mipmap )
 	{
-		int miplevel = 0;
-
 		while (scaled_width > 1 || scaled_height > 1)
 		{
-			R_MipMap( (byte *)scaledBuffer, scaled_width, scaled_height );
-			scaled_width >>= 1;
-			scaled_height >>= 1;
-			if (scaled_width < 1)
-				scaled_width = 1;
-			if (scaled_height < 1)
-				scaled_height = 1;
+			R_MipMap( (byte *)data, scaled_width, scaled_height );
+			scaled_width = MAX( 1, scaled_width >> 1 );
+			scaled_height = MAX( 1, scaled_height >> 1 );
 			miplevel++;
 
 			if ( r_colorMipLevels->integer ) {
-				R_BlendOverTexture( (byte *)scaledBuffer, scaled_width * scaled_height, miplevel );
+				R_BlendOverTexture( (byte *)data, scaled_width * scaled_height, miplevel );
 			}
 
-			qglTexImage2D( GL_TEXTURE_2D, miplevel, image->internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledBuffer );
+			qglTexImage2D( GL_TEXTURE_2D, miplevel, image->internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 		}
 	}
 done:
-	if ( scaledBuffer != 0 )
-		ri.Hunk_FreeTempMemory( scaledBuffer );
-	if ( resampledBuffer != 0 )
+	if ( resampledBuffer != NULL )
 		ri.Hunk_FreeTempMemory( resampledBuffer );
 
 	GL_CheckErrors();
@@ -744,6 +729,7 @@ done:
 R_CreateImage
 
 This is the only way any image_t are created
+Picture data may be modified in-place during mipmap processing
 ================
 */
 image_t *R_CreateImage( const char *name, byte *pic, int width, int height,
@@ -775,7 +761,7 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height,
 
 	image->width = width;
 	image->height = height;
-	image->internalFormat = 0;
+	image->internalFormat = internalFormat;
 
 	if ( flags & IMGFLAG_CLAMPTOEDGE )
 		glWrapClampMode = GL_CLAMP_TO_EDGE;
