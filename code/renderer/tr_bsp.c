@@ -143,18 +143,65 @@ static const int lightmapFlags = IMGFLAG_NOLIGHTSCALE | IMGFLAG_NO_COMPRESSION |
 
 /*
 ===============
+R_ProcessLightmap
+
+expand the 24 bit on-disk to 32 bit and return max.intensity
+===============
+*/
+static float R_ProcessLightmap( byte *image, const byte *buf_p, float maxIntensity )
+{
+	int j;
+
+	if ( r_lightmap->integer == 2 ) {
+		// color code by intensity as development tool	(FIXME: check range)
+		for ( j = 0; j < LIGHTMAP_SIZE * LIGHTMAP_SIZE; j++ )
+		{
+			float r = buf_p[j*3+0];
+			float g = buf_p[j*3+1];
+			float b = buf_p[j*3+2];
+			float intensity;
+			float out[3] = {0.0, 0.0, 0.0};
+
+			intensity = 0.33f * r + 0.685f * g + 0.063f * b;
+
+			if ( intensity > 255 )
+				intensity = 1.0f;
+			else
+				intensity /= 255.0f;
+
+			if ( intensity > maxIntensity )
+				maxIntensity = intensity;
+
+			HSVtoRGB( intensity, 1.00, 0.50, out );
+
+			image[j*4+0] = out[0] * 255;
+			image[j*4+1] = out[1] * 255;
+			image[j*4+2] = out[2] * 255;
+			image[j*4+3] = 255;
+		}
+	} else {
+		for ( j = 0 ; j < LIGHTMAP_SIZE * LIGHTMAP_SIZE; j++ ) {
+			R_ColorShiftLightingBytes( &buf_p[j*3], &image[j*4] );
+			image[j*4+3] = 255;
+		}
+	}
+
+	return maxIntensity;
+}
+
+
+/*
+===============
 R_LoadMergedLightmaps
 ===============
 */
-static void R_LoadMergedLightmaps( const lump_t *l )
+static void R_LoadMergedLightmaps( const lump_t *l, byte *image )
 {
- 	byte		*buf, *buf_p;
+	const byte	*buf;
  	int			len;
 	int			offs;
-	byte		*image, *image_p;
-	int			i, j, k, x, y;
- 	float maxIntensity = 0;
- 	double sumIntensity = 0;
+	int			i, x, y;
+ 	float		maxIntensity = 0;
 
 	len = l->filelen;
 	if ( !len )
@@ -162,16 +209,15 @@ static void R_LoadMergedLightmaps( const lump_t *l )
 
 	buf = fileBase + l->fileofs;
 
-	// we are about to upload textures
-	R_IssuePendingRenderCommands();
-
 	// create all the lightmaps
 	tr.numLightmaps = len / (LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3);
 	
 	// if we are in r_vertexLight mode, we don't need the lightmaps at all
-	if ( r_vertexLight->integer || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
+	if ( r_vertexLight->integer || glConfig.hardwareType == GLHW_PERMEDIA2 )
 		return;
-	}
+
+	// we are about to upload textures
+	R_IssuePendingRenderCommands();
 
 	// see how many lightmaps we can stuff into one texture
 	while ( tr.lightmapWidth * LIGHTMAP_SIZE < glConfig.maxTextureSize &&
@@ -190,80 +236,30 @@ static void R_LoadMergedLightmaps( const lump_t *l )
 
 	tr.lightmaps = ri.Hunk_Alloc( tr.numLightmaps * sizeof(image_t *), h_low );
 
-	image = ri.Hunk_AllocateTempMemory( tr.lightmapWidth * tr.lightmapHeight * LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4 );
+	for ( offs = 0, i = 0 ; i < tr.numLightmaps; i++ ) {
 
-	Com_Memset( image, 0, tr.lightmapWidth * tr.lightmapHeight * LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4 );
+		tr.lightmaps[ i ] = R_CreateImage( va( "*lightmap%d", i ), NULL,
+			LIGHTMAP_SIZE * tr.lightmapWidth, LIGHTMAP_SIZE * tr.lightmapHeight,
+			IMGTYPE_COLORALPHA, lightmapFlags, 0 );
 
-	offs = 0;
-
-	for ( i = 0 ; i < tr.numLightmaps; i++ ) {
 		for ( y = 0; y < tr.lightmapHeight; y++ ) {
 			if ( offs >= len )
 				break;
-			
+
 			for ( x = 0; x < tr.lightmapWidth; x++ ) {
 				if ( offs >= len )
 					break;
-			
-				// expand the 24 bit on-disk to 32 bit
-				buf_p = buf + offs;
-				image_p = image + (y * LIGHTMAP_SIZE * tr.lightmapWidth + x) * LIGHTMAP_SIZE * 4;
 
-				if ( r_lightmap->integer == 2 )
-				{	// color code by intensity as development tool	(FIXME: check range)
-					for ( j = 0; j < LIGHTMAP_SIZE ; j++ ) {
-						for ( k = 0; k < LIGHTMAP_SIZE; k++ ) {
-							float r = buf_p[(j * LIGHTMAP_SIZE + k)*3+0];
-							float g = buf_p[(j * LIGHTMAP_SIZE + k)*3+1];
-							float b = buf_p[(j * LIGHTMAP_SIZE + k)*3+2];
-							float intensity;
-							float out[3] = {0.0, 0.0, 0.0};
+				R_ProcessLightmap( image, buf + offs, maxIntensity );
 
-							intensity = 0.33f * r + 0.685f * g + 0.063f * b;
+				R_UploadSubImage( (unsigned*) image, x * LIGHTMAP_SIZE, y * LIGHTMAP_SIZE,
+					LIGHTMAP_SIZE, LIGHTMAP_SIZE, tr.lightmaps[ i ] );
 
-							if ( intensity > 255 )
-								intensity = 1.0f;
-							else
-								intensity /= 255.0f;
-
-							if ( intensity > maxIntensity )
-								maxIntensity = intensity;
-
-							HSVtoRGB( intensity, 1.00, 0.50, out );
-
-							image_p[k*4+0] = out[0] * 255;
-							image_p[k*4+1] = out[1] * 255;
-							image_p[k*4+2] = out[2] * 255;
-							image_p[k*4+3] = 255;
-
-							sumIntensity += intensity;
-						}
-						// go to next line
-						image_p += tr.lightmapWidth * LIGHTMAP_SIZE * 4;
-					}
-				} else {
-					for ( j = 0; j < LIGHTMAP_SIZE ; j++ ) {
-						for ( k = 0; k < LIGHTMAP_SIZE; k++ ) {
-							R_ColorShiftLightingBytes( &buf_p[(j * LIGHTMAP_SIZE + k)*3], &image_p[k*4+0] );
-							image_p[k*4+3] = 255;
-						}
-						// go to next line
-						image_p += tr.lightmapWidth * LIGHTMAP_SIZE * 4;
-					}
-				}
 				offs += LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3;
- 			}
- 		}
-
-		tr.lightmaps[i] = R_CreateImage( va( "*lightmap%d", i ), image,
-			LIGHTMAP_SIZE * tr.lightmapWidth,
-			LIGHTMAP_SIZE * tr.lightmapHeight,
-			IMGTYPE_COLORALPHA, 
-			lightmapFlags, 0 );
+			}
+		}
 		ri.Printf( PRINT_DEVELOPER, "lightmaps[%i]=%i\n", i, tr.lightmaps[i]->texnum );
 	}
-
-	ri.Hunk_FreeTempMemory( image );
 
 	if ( r_lightmap->integer == 2 )	{
 		ri.Printf( PRINT_ALL, "Brightest lightmap value: %d\n", ( int ) ( maxIntensity * 255 ) );
@@ -277,18 +273,17 @@ R_LoadLightmaps
 ===============
 */
 static void R_LoadLightmaps( const lump_t *l ) {
-	byte		*buf, *buf_p;
+	const byte	*buf;
 	int			len;
 	byte		image[LIGHTMAP_SIZE*LIGHTMAP_SIZE*4];
-	int			i, j;
-	float maxIntensity = 0;
-	double sumIntensity = 0;
+	int			i;
+	float		maxIntensity = 0;
 
 	tr.lightmapWidth = tr.lightmapHeight = 1;
 	tr.lightmapScale[0] = tr.lightmapScale[1] = 1.0f;
 
 	if ( r_mergeLightmaps->integer ) {
-		R_LoadMergedLightmaps( l );
+		R_LoadMergedLightmaps( l, image ); // reuse stack space
 		return;
 	}
 
@@ -297,9 +292,6 @@ static void R_LoadLightmaps( const lump_t *l ) {
 		return;
 	}
 	buf = fileBase + l->fileofs;
-
-	// we are about to upload textures
-	R_IssuePendingRenderCommands();
 
 	// create all the lightmaps
 	tr.numLightmaps = len / (LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3);
@@ -314,47 +306,13 @@ static void R_LoadLightmaps( const lump_t *l ) {
 		return;
 	}
 
+	// we are about to upload textures
+	R_IssuePendingRenderCommands();
+
 	tr.lightmaps = ri.Hunk_Alloc( tr.numLightmaps * sizeof(image_t *), h_low );
 	for ( i = 0 ; i < tr.numLightmaps ; i++ ) {
-		// expand the 24 bit on-disk to 32 bit
-		buf_p = buf + i * LIGHTMAP_SIZE*LIGHTMAP_SIZE * 3;
-
-		if ( r_lightmap->integer == 2 )
-		{	// color code by intensity as development tool	(FIXME: check range)
-			for ( j = 0; j < LIGHTMAP_SIZE * LIGHTMAP_SIZE; j++ )
-			{
-				float r = buf_p[j*3+0];
-				float g = buf_p[j*3+1];
-				float b = buf_p[j*3+2];
-				float intensity;
-				float out[3] = {0.0, 0.0, 0.0};
-
-				intensity = 0.33f * r + 0.685f * g + 0.063f * b;
-
-				if ( intensity > 255 )
-					intensity = 1.0f;
-				else
-					intensity /= 255.0f;
-
-				if ( intensity > maxIntensity )
-					maxIntensity = intensity;
-
-				HSVtoRGB( intensity, 1.00, 0.50, out );
-
-				image[j*4+0] = out[0] * 255;
-				image[j*4+1] = out[1] * 255;
-				image[j*4+2] = out[2] * 255;
-				image[j*4+3] = 255;
-
-				sumIntensity += intensity;
-			}
-		} else {
-			for ( j = 0 ; j < LIGHTMAP_SIZE * LIGHTMAP_SIZE; j++ ) {
-				R_ColorShiftLightingBytes( &buf_p[j*3], &image[j*4] );
-				image[j*4+3] = 255;
-			}
-		}
-		tr.lightmaps[i] = R_CreateImage( va("*lightmap%d",i), image, 
+		maxIntensity = R_ProcessLightmap( image, buf + i * LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3, maxIntensity );
+		tr.lightmaps[i] = R_CreateImage( va( "*lightmap%d", i ), image,
 			LIGHTMAP_SIZE, LIGHTMAP_SIZE, IMGTYPE_COLORALPHA, lightmapFlags, 0 );
 	}
 
