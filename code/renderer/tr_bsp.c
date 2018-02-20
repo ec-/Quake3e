@@ -139,7 +139,7 @@ static void R_ColorShiftLightingBytes( const byte in[4], byte out[4] ) {
 
 
 #define LIGHTMAP_SIZE 128
-static const int lightmapFlags = IMGFLAG_NOLIGHTSCALE | IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE;
+static const int lightmapFlags = IMGFLAG_NOLIGHTSCALE | IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE | IMGFLAG_LIGHTMAP;
 
 /*
 ===============
@@ -238,7 +238,7 @@ static void R_LoadMergedLightmaps( const lump_t *l, byte *image )
 
 	for ( offs = 0, i = 0 ; i < tr.numLightmaps; i++ ) {
 
-		tr.lightmaps[ i ] = R_CreateImage( va( "*lightmap%d", i ), NULL,
+		tr.lightmaps[ i ] = R_CreateImage( va( "*mergedLightmap%d", i ), NULL,
 			LIGHTMAP_SIZE * tr.lightmapWidth, LIGHTMAP_SIZE * tr.lightmapHeight,
 			IMGTYPE_COLORALPHA, lightmapFlags, 0 );
 

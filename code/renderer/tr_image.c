@@ -619,9 +619,10 @@ static GLint RawImage_GetInternalFormat( const byte *scan, int numPixels, qboole
 Upload32
 ===============
 */
-static void Upload32( unsigned *data, int x, int y, int width, int height, qboolean lightMap, image_t *image, qboolean subImage )
+static void Upload32( unsigned *data, int x, int y, int width, int height, image_t *image, qboolean subImage )
 {
 	qboolean allowCompression = !(image->flags & IMGFLAG_NO_COMPRESSION);
+	qboolean lightMap = image->flags & IMGFLAG_LIGHTMAP;
 	qboolean mipmap = image->flags & IMGFLAG_MIPMAP;
 	qboolean picmip = image->flags & IMGFLAG_PICMIP;
 	unsigned	*resampledBuffer = NULL;
@@ -760,7 +761,7 @@ void R_UploadSubImage( unsigned *data, int x, int y, int width, int height, imag
 	if ( image )
 	{
 		GL_Bind( image );
-		Upload32( data, x, y, width, height, qfalse, image, qtrue );
+		Upload32( data, x, y, width, height, image, qtrue );
 	}
 }
 
@@ -776,19 +777,19 @@ Picture data may be modified in-place during mipmap processing
 image_t *R_CreateImage( const char *name, byte *pic, int width, int height,
 		imgType_t type, imgFlags_t flags, GLint internalFormat ) {
 	image_t		*image;
-	qboolean	isLightmap = qfalse;
 	long		hash;
 	GLint		glWrapClampMode;
 
 	if ( strlen( name ) >= sizeof( image->imgName ) ) {
 		ri.Error( ERR_DROP, "R_CreateImage: \"%s\" is too long", name );
 	}
-	if ( !strncmp( name, "*lightmap", 9 ) ) {
-		isLightmap = qtrue;
-	}
 
 	if ( tr.numImages == MAX_DRAWIMAGES ) {
-		ri.Error( ERR_DROP, "R_CreateImage: MAX_DRAWIMAGES hit");
+		ri.Error( ERR_DROP, "R_CreateImage: MAX_DRAWIMAGES hit" );
+	}
+
+	if ( !strncmp( name, "*lightmap", 9 ) ) {
+		flags |= IMGFLAG_LIGHTMAP;
 	}
 
 	image = tr.images[tr.numImages] = ri.Hunk_Alloc( sizeof( image_t ), h_low );
@@ -810,7 +811,7 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height,
 		glWrapClampMode = GL_REPEAT;
 
 	// lightmaps are always allocated on TMU 1
-	if ( qglActiveTextureARB && isLightmap ) {
+	if ( qglActiveTextureARB && (flags & IMGFLAG_LIGHTMAP) ) {
 		image->TMU = 1;
 	} else {
 		image->TMU = 0;
@@ -822,7 +823,7 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height,
 
 	GL_Bind( image );
 
-	Upload32( (unsigned *)pic, 0, 0, image->width, image->height, isLightmap, image, qfalse );
+	Upload32( (unsigned *)pic, 0, 0, image->width, image->height, image, qfalse );
 
 	if ( image->flags & IMGFLAG_MIPMAP )
 	{
