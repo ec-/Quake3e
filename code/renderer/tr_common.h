@@ -112,6 +112,7 @@ void  R_NoiseInit( void );
 
 image_t *R_FindImageFile( const char *name, imgType_t type, imgFlags_t flags );
 image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgType_t type, imgFlags_t flags, GLint internalFormat );
+void R_UploadSubImage( unsigned *data, int x, int y, int width, int height, image_t *image );
 
 void R_IssuePendingRenderCommands( void );
 qhandle_t RE_RegisterShaderLightMap( const char *name, int lightmapIndex );

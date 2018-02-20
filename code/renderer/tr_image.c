@@ -341,6 +341,9 @@ lighting range
 */
 static void R_LightScaleTexture( unsigned *in, int inwidth, int inheight, qboolean only_gamma )
 {
+	if ( in == NULL )
+		return;
+
 	if ( only_gamma )
 	{
 		if ( !glConfig.deviceSupportsGamma )
@@ -454,10 +457,13 @@ R_MipMap
 Operates in place, quartering the size of the texture
 ================
 */
-static void R_MipMap (byte *in, int width, int height) {
+static void R_MipMap( byte *in, int width, int height ) {
 	int		i, j;
 	byte	*out;
 	int		row;
+
+	if ( in == NULL )
+		return;
 
 	if ( !r_simpleMipMaps->integer ) {
 		R_MipMap2( (unsigned *)in, width, height );
@@ -517,6 +523,9 @@ static void R_BlendOverTexture( byte *data, int pixelCount, int mipLevel ) {
 	int		i;
 	int		inverseAlpha;
 	int		premult[3];
+
+	if ( data == NULL )
+		return;
 
 	if ( mipLevel <= 0 )
 		return;
@@ -610,7 +619,7 @@ static GLint RawImage_GetInternalFormat( const byte *scan, int numPixels, qboole
 Upload32
 ===============
 */
-static void Upload32( unsigned *data, int width, int height, qboolean lightMap, image_t *image )
+static void Upload32( unsigned *data, int x, int y, int width, int height, qboolean lightMap, image_t *image, qboolean subImage )
 {
 	qboolean allowCompression = !(image->flags & IMGFLAG_NO_COMPRESSION);
 	qboolean mipmap = image->flags & IMGFLAG_MIPMAP;
@@ -632,9 +641,11 @@ static void Upload32( unsigned *data, int width, int height, qboolean lightMap, 
 		scaled_height >>= 1;
 
 	if ( scaled_width != width || scaled_height != height ) {
-		resampledBuffer = ri.Hunk_AllocateTempMemory( scaled_width * scaled_height * 4 );
-		ResampleTexture (data, width, height, resampledBuffer, scaled_width, scaled_height);
-		data = resampledBuffer;
+		if ( data ) {
+			resampledBuffer = ri.Hunk_AllocateTempMemory( scaled_width * scaled_height * 4 );
+			ResampleTexture (data, width, height, resampledBuffer, scaled_width, scaled_height);
+			data = resampledBuffer;
+		}
 		width = scaled_width;
 		height = scaled_height;
 	}
@@ -645,6 +656,8 @@ static void Upload32( unsigned *data, int width, int height, qboolean lightMap, 
 	if ( picmip && ( tr.mapLoading || r_nomip->integer == 0 ) ) {
 		scaled_width >>= r_picmip->integer;
 		scaled_height >>= r_picmip->integer;
+		x >>= r_picmip->integer;
+		y >>= r_picmip->integer;
 	}
 
 	//
@@ -666,14 +679,18 @@ static void Upload32( unsigned *data, int width, int height, qboolean lightMap, 
 		|| scaled_height > glConfig.maxTextureSize ) {
 		scaled_width >>= 1;
 		scaled_height >>= 1;
+		x >>= 1;
+		y >>= 1;
 	}
 
-	// verify if the alpha channel is being used or not
-	if ( image->internalFormat == 0 )
-		image->internalFormat = RawImage_GetInternalFormat( (byte*)data, width*height, lightMap, allowCompression );
+	if ( !subImage ) {
+		// verify if the alpha channel is being used or not
+		if ( image->internalFormat == 0 )
+			image->internalFormat = RawImage_GetInternalFormat( (byte*)data, width*height, lightMap, allowCompression );
 
-	image->uploadWidth = scaled_width;
-	image->uploadHeight = scaled_height;
+		image->uploadWidth = scaled_width;
+		image->uploadHeight = scaled_height;
+	}
 
 	miplevel = 0;
 
@@ -682,7 +699,10 @@ static void Upload32( unsigned *data, int width, int height, qboolean lightMap, 
 	{
 		if ( !mipmap )
 		{
-			qglTexImage2D( GL_TEXTURE_2D, miplevel, image->internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+			if ( subImage )
+				qglTexSubImage2D( GL_TEXTURE_2D, miplevel, x, y, scaled_width, scaled_height, GL_RGBA, GL_UNSIGNED_BYTE, data );
+			else
+				qglTexImage2D( GL_TEXTURE_2D, miplevel, image->internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 			goto done;
 		}
 	}
@@ -698,7 +718,10 @@ static void Upload32( unsigned *data, int width, int height, qboolean lightMap, 
 
 	R_LightScaleTexture( data, scaled_width, scaled_height, !mipmap );
 
-	qglTexImage2D( GL_TEXTURE_2D, miplevel, image->internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+	if ( subImage )
+		qglTexSubImage2D( GL_TEXTURE_2D, miplevel, x, y, scaled_width, scaled_height, GL_RGBA, GL_UNSIGNED_BYTE, data );
+	else
+		qglTexImage2D( GL_TEXTURE_2D, miplevel, image->internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 
 	if ( mipmap )
 	{
@@ -713,7 +736,10 @@ static void Upload32( unsigned *data, int width, int height, qboolean lightMap, 
 				R_BlendOverTexture( (byte *)data, scaled_width * scaled_height, miplevel );
 			}
 
-			qglTexImage2D( GL_TEXTURE_2D, miplevel, image->internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+			if ( subImage )
+				qglTexSubImage2D( GL_TEXTURE_2D, miplevel, x, y, scaled_width, scaled_height, GL_RGBA, GL_UNSIGNED_BYTE, data );
+			else
+				qglTexImage2D( GL_TEXTURE_2D, miplevel, image->internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 		}
 	}
 done:
@@ -721,6 +747,21 @@ done:
 		ri.Hunk_FreeTempMemory( resampledBuffer );
 
 	GL_CheckErrors();
+}
+
+
+/*
+================
+R_UploadSubImage
+================
+*/
+void R_UploadSubImage( unsigned *data, int x, int y, int width, int height, image_t *image )
+{
+	if ( image )
+	{
+		GL_Bind( image );
+		Upload32( data, x, y, width, height, qfalse, image, qtrue );
+	}
 }
 
 
@@ -781,7 +822,7 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height,
 
 	GL_Bind( image );
 
-	Upload32( (unsigned *)pic, image->width, image->height, isLightmap, image );
+	Upload32( (unsigned *)pic, 0, 0, image->width, image->height, isLightmap, image, qfalse );
 
 	if ( image->flags & IMGFLAG_MIPMAP )
 	{
@@ -1246,12 +1287,11 @@ void R_CreateBuiltinImages( void ) {
 		}
 	}
 
-	tr.identityLightImage = R_CreateImage("*identityLight", (byte *)data, 8, 8, IMGTYPE_COLORALPHA, IMGFLAG_NONE, 0);
-
+	tr.identityLightImage = R_CreateImage( "*identityLight", (byte *)data, 8, 8, IMGTYPE_COLORALPHA, IMGFLAG_NONE, 0 );
 
 	for ( x = 0; x < ARRAY_LEN( tr.scratchImage ); x++ ) {
 		// scratchimage is usually used for cinematic drawing
-		tr.scratchImage[x] = R_CreateImage( "*scratch", (byte *)data, DEFAULT_SIZE, DEFAULT_SIZE, IMGTYPE_COLORALPHA, IMGFLAG_PICMIP | IMGFLAG_CLAMPTOEDGE, 0 );
+		tr.scratchImage[x] = R_CreateImage( "*scratch", NULL, DEFAULT_SIZE, DEFAULT_SIZE, IMGTYPE_COLORALPHA, IMGFLAG_PICMIP | IMGFLAG_CLAMPTOEDGE, 0 );
 	}
 
 	R_CreateDlightImage();
