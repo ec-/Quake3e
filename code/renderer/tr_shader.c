@@ -628,6 +628,9 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 				if (!shader.noPicMip)
 					flags |= IMGFLAG_PICMIP;
 
+				if (shader.noLightScale)
+					flags |= IMGFLAG_NOLIGHTSCALE;
+
 				stage->bundle[0].image[0] = R_FindImageFile( token, type, flags );
 
 				if ( !stage->bundle[0].image[0] )
@@ -670,6 +673,9 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 			if (!shader.noPicMip)
 				flags |= IMGFLAG_PICMIP;
 
+			if (shader.noLightScale)
+				flags |= IMGFLAG_NOLIGHTSCALE;
+
 			stage->bundle[0].image[0] = R_FindImageFile( token, type, flags );
 			if ( !stage->bundle[0].image[0] )
 			{
@@ -707,6 +713,9 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 
 					if (!shader.noPicMip)
 						flags |= IMGFLAG_PICMIP;
+
+					if (shader.noLightScale)
+						flags |= IMGFLAG_NOLIGHTSCALE;
 
 					stage->bundle[0].image[num] = R_FindImageFile( token, IMGTYPE_COLORALPHA, flags );
 					if ( !stage->bundle[0].image[num] )

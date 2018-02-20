@@ -363,8 +363,10 @@ typedef struct shader_s {
 
 	cullType_t	cullType;				// CT_FRONT_SIDED, CT_BACK_SIDED, or CT_TWO_SIDED
 	qboolean	polygonOffset;			// set for decals and other items that must be offset 
-	qboolean	noMipMaps;				// for console fonts, 2D elements, etc.
-	qboolean	noPicMip;				// for images that must always be full resolution
+	
+	qboolean	noMipMaps:1;			// for console fonts, 2D elements, etc.
+	qboolean	noPicMip:1;				// for images that must always be full resolution
+	qboolean	noLightScale:1;
 
 	fogPass_t	fogPass;				// draw a blended pass, possibly with depth test equals
 

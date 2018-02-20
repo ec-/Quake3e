@@ -717,7 +717,8 @@ static void Upload32( unsigned *data, int x, int y, int width, int height, image
 		}
 	}
 
-	R_LightScaleTexture( data, scaled_width, scaled_height, !mipmap );
+	if ( !(image->flags & IMGFLAG_NOLIGHTSCALE) )
+		R_LightScaleTexture( data, scaled_width, scaled_height, !mipmap );
 
 	if ( subImage )
 		qglTexSubImage2D( GL_TEXTURE_2D, miplevel, x, y, scaled_width, scaled_height, GL_RGBA, GL_UNSIGNED_BYTE, data );
