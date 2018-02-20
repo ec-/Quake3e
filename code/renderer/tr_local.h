@@ -389,6 +389,8 @@ typedef struct shader_s {
 	short		vboFPindex;
 	qboolean	hasScreenMap;
 
+	float		lightmapOffset[2];
+
 	void	(*optimalStageIteratorFunc)( void );
 
 	double	clampTime;						// time this shader is clamped to - set to double for frameloss fix -EC-
@@ -1020,6 +1022,7 @@ typedef struct {
 	image_t					**lightmaps;
 	int						lightmapWidth;
 	int						lightmapHeight;
+	float					lightmapScale[2];
 
 	trRefEntity_t			*currentEntity;
 	trRefEntity_t			worldEntity;		// point currentEntity at this when rendering world

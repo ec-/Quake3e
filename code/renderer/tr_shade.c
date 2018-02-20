@@ -906,6 +906,14 @@ void R_ComputeTexCoords( const shaderStage_t *pStage ) {
 				break;
 			}
 		}
+
+		if ( r_mergeLightmaps->integer && pStage->bundle[b].isLightmap && pStage->bundle[b].tcGen != TCGEN_LIGHTMAP ) {
+			// adjust texture coordinates to map on proper lightmap
+			for ( i = 0 ; i < tess.numVertexes ; i++ ) {
+				tess.svars.texcoords[b][i][0] = (tess.svars.texcoords[b][i][0] * tr.lightmapScale[0] ) + tess.shader->lightmapOffset[0];
+				tess.svars.texcoords[b][i][1] = (tess.svars.texcoords[b][i][1] * tr.lightmapScale[1] ) + tess.shader->lightmapOffset[1];
+			}
+		}
 	}
 }
 

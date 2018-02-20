@@ -167,7 +167,6 @@ static void R_LoadMergedLightmaps( const lump_t *l )
 
 	// create all the lightmaps
 	tr.numLightmaps = len / (LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3);
-	tr.lightmapWidth = tr.lightmapHeight = 1;
 	
 	// if we are in r_vertexLight mode, we don't need the lightmaps at all
 	if ( r_vertexLight->integer || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
@@ -182,6 +181,9 @@ static void R_LoadMergedLightmaps( const lump_t *l )
 			break;
 		tr.lightmapHeight *= 2;
 	}
+	
+	tr.lightmapScale[0] = 1.0 / (float)tr.lightmapWidth;
+	tr.lightmapScale[1] = 1.0 / (float)tr.lightmapHeight;
 
 	// calculate number of resulting lightmap textures
 	tr.numLightmaps = (tr.numLightmaps + tr.lightmapWidth * tr.lightmapHeight - 1) / (tr.lightmapWidth * tr.lightmapHeight);
@@ -283,6 +285,7 @@ static void R_LoadLightmaps( const lump_t *l ) {
 	double sumIntensity = 0;
 
 	tr.lightmapWidth = tr.lightmapHeight = 1;
+	tr.lightmapScale[0] = tr.lightmapScale[1] = 1.0f;
 
 	if ( r_mergeLightmaps->integer ) {
 		R_LoadMergedLightmaps( l );
@@ -510,6 +513,9 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 		surf->shader = tr.defaultShader;
 	}
 
+	surf->shader->lightmapOffset[0] = lightmapX * tr.lightmapScale[0];
+	surf->shader->lightmapOffset[1] = lightmapY * tr.lightmapScale[1];
+
 	numPoints = LittleLong( ds->numVerts );
 	if (numPoints > MAX_FACE_POINTS) {
 		ri.Printf( PRINT_WARNING, "WARNING: MAX_FACE_POINTS exceeded: %i\n", numPoints);
@@ -616,6 +622,9 @@ static void ParseMesh( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 		surf->shader = tr.defaultShader;
 	}
 
+	surf->shader->lightmapOffset[0] = lightmapX * tr.lightmapScale[0];
+	surf->shader->lightmapOffset[1] = lightmapY * tr.lightmapScale[1];
+
 	// we may have a nodraw surface, because they might still need to
 	// be around for movement clipping
 	if ( s_worldData.shaders[ LittleLong( ds->shaderNum ) ].surfaceFlags & SURF_NODRAW ) {
@@ -692,6 +701,9 @@ static void ParseTriSurf( const dsurface_t *ds, const drawVert_t *verts, msurfac
 	} else {
 		lightmapX = lightmapY = 0;
 	}
+
+	surf->shader->lightmapOffset[0] = lightmapX * tr.lightmapScale[0];
+	surf->shader->lightmapOffset[1] = lightmapY * tr.lightmapScale[1];
 
 	numVerts = LittleLong( ds->numVerts );
 	numIndexes = LittleLong( ds->numIndexes );
