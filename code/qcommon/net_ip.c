@@ -668,10 +668,15 @@ void Sys_SendPacket( int length, const void *data, const netadr_t *to ) {
 	int				ret = SOCKET_ERROR;
 	struct sockaddr_storage	addr;
 
-	if( to->type != NA_BROADCAST && to->type != NA_IP && to->type != NA_IP6 && to->type != NA_MULTICAST6)
-	{
-		Com_Error( ERR_FATAL, "Sys_SendPacket: bad address type" );
-		return;
+	switch ( to->type ) {
+		case NA_BROADCAST:
+		case NA_IP:
+		case NA_IP6:
+		case NA_MULTICAST6:
+			break;
+		default:
+			Com_Error( ERR_FATAL, "Sys_SendPacket: bad address type %i", to->type );
+			return;
 	}
 
 	if( (ip_socket == INVALID_SOCKET && to->type == NA_IP) ||
