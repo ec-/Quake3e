@@ -733,6 +733,8 @@ static void Upload32( unsigned *data, int x, int y, int width, int height, image
 			R_MipMap( (byte *)data, scaled_width, scaled_height );
 			scaled_width = MAX( 1, scaled_width >> 1 );
 			scaled_height = MAX( 1, scaled_height >> 1 );
+			x >>= 1;
+			y >>= 1;
 			miplevel++;
 
 			if ( r_colorMipLevels->integer ) {
