@@ -145,8 +145,8 @@ void R_ImageList_f( void ) {
 	for ( i = 0 ; i < tr.numImages ; i++ )
 	{
 		image_t *image = tr.images[i];
-		char *format = "???? ";
-		char *sizeSuffix;
+		const char *format = "???? ";
+		const char *sizeSuffix;
 		int estSize;
 		int displaySize;
 
@@ -172,6 +172,7 @@ void R_ImageList_f( void ) {
 				// 128 bits per 16 pixels, so 1 byte per pixel
 				break;
 			case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+			case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
 				format = "DXT1 ";
 				// 64 bits per 16 pixels, so 4 bits per pixel
 				estSize /= 2;
@@ -248,30 +249,30 @@ void R_ImageList_f( void ) {
 		sizeSuffix = "b ";
 		displaySize = estSize;
 
-		if (displaySize > 1024)
+		if ( displaySize >= 2048 )
 		{
-			displaySize /= 1024;
+			displaySize = ( displaySize + 1023 ) / 1024;
 			sizeSuffix = "kb";
 		}
 
-		if (displaySize > 1024)
+		if ( displaySize >= 2048 )
 		{
-			displaySize /= 1024;
+			displaySize = ( displaySize + 1023 ) / 1024;
 			sizeSuffix = "Mb";
 		}
 
-		if (displaySize > 1024)
+		if ( displaySize >= 2048 )
 		{
-			displaySize /= 1024;
+			displaySize = ( displaySize + 1023 ) / 1024;
 			sizeSuffix = "Gb";
 		}
 
-		ri.Printf(PRINT_ALL, "%4i: %4ix%4i %s %4i%s %s\n", i, image->uploadWidth, image->uploadHeight, format, displaySize, sizeSuffix, image->imgName);
+		ri.Printf( PRINT_ALL, "%4i: %4ix%4i %s %4i%s %s\n", i, image->uploadWidth, image->uploadHeight, format, displaySize, sizeSuffix, image->imgName );
 		estTotalSize += estSize;
 	}
 
 	ri.Printf (PRINT_ALL, " ---------\n");
-	ri.Printf (PRINT_ALL, " approx %i bytes\n", estTotalSize);
+	ri.Printf (PRINT_ALL, " approx %i kbytes\n", (estTotalSize + 1023) / 1024 );
 	ri.Printf (PRINT_ALL, " %i total images\n\n", tr.numImages );
 }
 
@@ -1293,7 +1294,8 @@ void R_CreateBuiltinImages( void ) {
 
 	for ( x = 0; x < ARRAY_LEN( tr.scratchImage ); x++ ) {
 		// scratchimage is usually used for cinematic drawing
-		tr.scratchImage[x] = R_CreateImage( "*scratch", NULL, DEFAULT_SIZE, DEFAULT_SIZE, IMGTYPE_COLORALPHA, IMGFLAG_PICMIP | IMGFLAG_CLAMPTOEDGE, 0 );
+		tr.scratchImage[x] = R_CreateImage( "*scratch", NULL, DEFAULT_SIZE, DEFAULT_SIZE,
+			IMGTYPE_COLORALPHA, IMGFLAG_PICMIP | IMGFLAG_CLAMPTOEDGE, GL_RGB );
 	}
 
 	R_CreateDlightImage();

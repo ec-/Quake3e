@@ -25,7 +25,7 @@ backEndData_t	*backEndData;
 backEndState_t	backEnd;
 
 
-static float s_flipMatrix[16] = {
+static const float s_flipMatrix[16] = {
 	// convert from our coordinate system (looking down X)
 	// to OpenGL's coordinate system (looking down -Z)
 	0, 0, -1, 0,
@@ -1017,24 +1017,7 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *
 		ri.Error (ERR_DROP, "Draw_StretchRaw: size not a power of 2: %i by %i", cols, rows);
 	}
 
-	GL_Bind( tr.scratchImage[client] );
-
-	// if the scratchImage isn't in the format we want, specify it as a new texture
-	if ( cols != tr.scratchImage[client]->width || rows != tr.scratchImage[client]->height ) {
-		tr.scratchImage[client]->width = tr.scratchImage[client]->uploadWidth = cols;
-		tr.scratchImage[client]->height = tr.scratchImage[client]->uploadHeight = rows;
-		qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGB8, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
-		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );	
-	} else {
-		if (dirty) {
-			// otherwise, just subimage upload it so that drivers can tell we are going to be changing
-			// it and don't try and do a texture compression
-			qglTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, cols, rows, GL_RGBA, GL_UNSIGNED_BYTE, data );
-		}
-	}
+	RE_UploadCinematic( w, h, cols, rows, data, client, dirty );
 
 	if ( r_speeds->integer ) {
 		end = ri.Milliseconds();
@@ -1058,15 +1041,16 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *
 }
 
 
-void RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty) {
+void RE_UploadCinematic( int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty ) {
 
-	GL_Bind( tr.scratchImage[client] );
+	image_t *image = tr.scratchImage[ client ];
+	GL_Bind( image );
 
 	// if the scratchImage isn't in the format we want, specify it as a new texture
-	if ( cols != tr.scratchImage[client]->width || rows != tr.scratchImage[client]->height ) {
-		tr.scratchImage[client]->width = tr.scratchImage[client]->uploadWidth = cols;
-		tr.scratchImage[client]->height = tr.scratchImage[client]->uploadHeight = rows;
-		qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGB8, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+	if ( cols != image->width || rows != image->height ) {
+		image->width = image->uploadWidth = cols;
+		image->height = image->uploadHeight = rows;
+		qglTexImage2D( GL_TEXTURE_2D, 0, image->internalFormat, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
@@ -1084,7 +1068,6 @@ void RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int
 /*
 =============
 RB_SetColor
-
 =============
 */
 static const void *RB_SetColor( const void *data ) {
@@ -1215,7 +1198,6 @@ static void RB_LightingPass( void )
 /*
 =============
 RB_DrawSurfs
-
 =============
 */
 static const void *RB_DrawSurfs( const void *data ) {
@@ -1273,7 +1255,6 @@ static const void *RB_DrawSurfs( const void *data ) {
 /*
 =============
 RB_DrawBuffer
-
 =============
 */
 static const void *RB_DrawBuffer( const void *data ) {
