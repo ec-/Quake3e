@@ -630,26 +630,34 @@ static void Upload32( unsigned *data, int x, int y, int width, int height, image
 	int			scaled_width, scaled_height;
 	GLint		miplevel;
 
-	//
-	// convert to exact power of 2 sizes
-	//
-	for (scaled_width = 1 ; scaled_width < width ; scaled_width<<=1)
-		;
-	for (scaled_height = 1 ; scaled_height < height ; scaled_height<<=1)
-		;
-	if ( r_roundImagesDown->integer && scaled_width > width )
-		scaled_width >>= 1;
-	if ( r_roundImagesDown->integer && scaled_height > height )
-		scaled_height >>= 1;
+	if ( image->flags & IMGFLAG_NOSCALE ) {
+		//
+		// keep original dimensions
+		//
+		scaled_width = width;
+		scaled_height = height;
+	} else {
+		//
+		// convert to exact power of 2 sizes
+		//
+		for (scaled_width = 1 ; scaled_width < width ; scaled_width<<=1)
+			;
+		for (scaled_height = 1 ; scaled_height < height ; scaled_height<<=1)
+			;
+		if ( r_roundImagesDown->integer && scaled_width > width )
+			scaled_width >>= 1;
+		if ( r_roundImagesDown->integer && scaled_height > height )
+			scaled_height >>= 1;
 
-	if ( scaled_width != width || scaled_height != height ) {
-		if ( data ) {
-			resampledBuffer = ri.Hunk_AllocateTempMemory( scaled_width * scaled_height * 4 );
-			ResampleTexture (data, width, height, resampledBuffer, scaled_width, scaled_height);
-			data = resampledBuffer;
+		if ( scaled_width != width || scaled_height != height ) {
+			if ( data ) {
+				resampledBuffer = ri.Hunk_AllocateTempMemory( scaled_width * scaled_height * 4 );
+				ResampleTexture( data, width, height, resampledBuffer, scaled_width, scaled_height );
+				data = resampledBuffer;
+			}
+			width = scaled_width;
+			height = scaled_height;
 		}
-		width = scaled_width;
-		height = scaled_height;
 	}
 
 	//
@@ -809,7 +817,9 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height,
 	image->height = height;
 	image->internalFormat = internalFormat;
 
-	if ( flags & IMGFLAG_CLAMPTOEDGE )
+	if ( flags & IMGFLAG_CLAMPTOBORDER )
+		glWrapClampMode = GL_CLAMP_TO_BORDER;
+	else if ( flags & IMGFLAG_CLAMPTOEDGE )
 		glWrapClampMode = GL_CLAMP_TO_EDGE;
 	else
 		glWrapClampMode = GL_REPEAT;
