@@ -1022,8 +1022,6 @@ typedef struct {
 
 	int						numLightmaps;
 	image_t					**lightmaps;
-	int						lightmapWidth;
-	int						lightmapHeight;
 	float					lightmapScale[2];
 
 	trRefEntity_t			*currentEntity;
