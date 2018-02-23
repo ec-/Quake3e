@@ -1999,13 +1999,13 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 		return len;
 	}
 
-	fs_loadCount++;
-	fs_loadStack++;
-
 	buf = Hunk_AllocateTempMemory( len + 1 );
 	*buffer = buf;
 
 	FS_Read( buf, len, h );
+
+	fs_loadCount++;
+	fs_loadStack++;
 
 	// guarantee that it will have a trailing 0 for string operations
 	buf[len] = '\0';
