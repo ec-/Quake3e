@@ -1764,7 +1764,7 @@ char *Info_ValueForKey( const char *s, const char *key ) {
 				return "";
 			*o++ = *s++;
 		}
-		*o = 0;
+		*o = '\0';
 		s++;
 
 		o = value[valueindex];
@@ -1773,7 +1773,7 @@ char *Info_ValueForKey( const char *s, const char *key ) {
 		{
 			*o++ = *s++;
 		}
-		*o = 0;
+		*o = '\0';
 
 		if (!Q_stricmp (key, pkey) )
 			return value[valueindex];
@@ -1803,26 +1803,26 @@ void Info_NextPair( const char **head, char *key, char *value ) {
 	if ( *s == '\\' ) {
 		s++;
 	}
-	key[0] = 0;
-	value[0] = 0;
+	key[0] = '\0';
+	value[0] = '\0';
 
 	o = key;
 	while ( *s != '\\' ) {
 		if ( !*s ) {
-			*o = 0;
+			*o = '\0';
 			*head = s;
 			return;
 		}
 		*o++ = *s++;
 	}
-	*o = 0;
+	*o = '\0';
 	s++;
 
 	o = value;
 	while ( *s != '\\' && *s ) {
 		*o++ = *s++;
 	}
-	*o = 0;
+	*o = '\0';
 
 	*head = s;
 }
@@ -1859,7 +1859,7 @@ void Info_RemoveKey( char *s, const char *key ) {
 				return;
 			*o++ = *s++;
 		}
-		*o = 0;
+		*o = '\0';
 		s++;
 
 		o = value;
@@ -1869,7 +1869,7 @@ void Info_RemoveKey( char *s, const char *key ) {
 				return;
 			*o++ = *s++;
 		}
-		*o = 0;
+		*o = '\0';
 
 		if (!strcmp (key, pkey) )
 		{
@@ -1915,7 +1915,7 @@ void Info_RemoveKey_Big( char *s, const char *key ) {
 				return;
 			*o++ = *s++;
 		}
-		*o = 0;
+		*o = '\0';
 		s++;
 
 		o = value;
@@ -1925,7 +1925,7 @@ void Info_RemoveKey_Big( char *s, const char *key ) {
 				return;
 			*o++ = *s++;
 		}
-		*o = 0;
+		*o = '\0';
 
 		if (!strcmp (key, pkey) )
 		{

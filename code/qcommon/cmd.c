@@ -582,7 +582,7 @@ static void Cmd_TokenizeString2( const char *text_in, qboolean ignoreQuotes ) {
 			while ( *text && *text != '"' ) {
 				*textOut++ = *text++;
 			}
-			*textOut++ = 0;
+			*textOut++ = '\0';
 			if ( !*text ) {
 				return;		// all tokens parsed
 			}

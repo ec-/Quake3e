@@ -880,7 +880,7 @@ int BotLoadChatMessage(source_t *source, char *chatmessagestring)
 	token_t token;
 
 	ptr = chatmessagestring;
-	*ptr = 0;
+	*ptr = '\0';
 	//
 	while(1)
 	{

@@ -140,10 +140,11 @@ void Com_BeginRedirect( char *buffer, int buffersize, void (*flush)(const char *
 	rd_buffersize = buffersize;
 	rd_flush = flush;
 
-	*rd_buffer = 0;
+	*rd_buffer = '\0';
 }
 
-void Com_EndRedirect (void)
+
+void Com_EndRedirect( void )
 {
 	if ( rd_flush ) {
 		rd_flush(rd_buffer);
@@ -153,6 +154,7 @@ void Com_EndRedirect (void)
 	rd_buffersize = 0;
 	rd_flush = NULL;
 }
+
 
 /*
 =============
@@ -176,12 +178,12 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 	if ( rd_buffer ) {
 		if ((strlen (msg) + strlen(rd_buffer)) > (rd_buffersize - 1)) {
 			rd_flush(rd_buffer);
-			*rd_buffer = 0;
+			*rd_buffer = '\0';
 		}
 		Q_strcat(rd_buffer, rd_buffersize, msg);
-    // TTimo nooo .. that would defeat the purpose
-		//rd_flush(rd_buffer);			
-		//*rd_buffer = 0;
+		// TTimo nooo .. that would defeat the purpose
+		//rd_flush(rd_buffer);
+		//*rd_buffer = '\0';
 		return;
 	}
 
@@ -446,7 +448,7 @@ Break it up into multiple console lines
 */
 void Com_ParseCommandLine( char *commandLine ) {
 	static int parsed = 0;
-    int inq;
+	int inq;
 
 	if ( parsed )
 		return;
@@ -454,22 +456,22 @@ void Com_ParseCommandLine( char *commandLine ) {
 	inq = 0;
 	com_consoleLines[0] = commandLine;
 
-    while ( *commandLine ) {
-        if (*commandLine == '"') {
-            inq = !inq;
-        }
-        // look for a + separating character
-        // if commandLine came from a file, we might have real line seperators
-        if ( (*commandLine == '+' && !inq) || *commandLine == '\n'  || *commandLine == '\r' ) {
-            if ( com_numConsoleLines == MAX_CONSOLE_LINES ) {
+	while ( *commandLine ) {
+		if (*commandLine == '"') {
+			inq = !inq;
+		}
+		// look for a + separating character
+		// if commandLine came from a file, we might have real line seperators
+		if ( (*commandLine == '+' && !inq) || *commandLine == '\n'  || *commandLine == '\r' ) {
+			if ( com_numConsoleLines == MAX_CONSOLE_LINES ) {
 				break;
-            }
-            com_consoleLines[com_numConsoleLines] = commandLine + 1;
-            com_numConsoleLines++;
-            *commandLine = 0;
-        }
-        commandLine++;
-    }
+			}
+			com_consoleLines[com_numConsoleLines] = commandLine + 1;
+			com_numConsoleLines++;
+			*commandLine = '\0';
+		}
+		commandLine++;
+	}
 	parsed = 1;
 }
 
@@ -542,7 +544,7 @@ qboolean Com_SafeMode( void ) {
 		Cmd_TokenizeString( com_consoleLines[i] );
 		if ( !Q_stricmp( Cmd_Argv(0), "safe" )
 			|| !Q_stricmp( Cmd_Argv(0), "cvar_restart" ) ) {
-			com_consoleLines[i][0] = 0;
+			com_consoleLines[i][0] = '\0';
 			return qtrue;
 		}
 	}
@@ -639,10 +641,10 @@ void Info_Print( const char *s ) {
 		if (l < 20)
 		{
 			Com_Memset (o, ' ', 20-l);
-			key[20] = 0;
+			key[20] = '\0';
 		}
 		else
-			*o = 0;
+			*o = '\0';
 		Com_Printf ("%s ", key);
 
 		if (!*s)
@@ -655,7 +657,7 @@ void Info_Print( const char *s ) {
 		s++;
 		while (*s && *s != '\\')
 			*o++ = *s++;
-		*o = 0;
+		*o = '\0';
 
 		if (*s)
 			s++;
@@ -1889,6 +1891,7 @@ static void Com_InitHunkMemory( void ) {
 #endif
 }
 
+
 /*
 ====================
 Hunk_MemoryRemaining
@@ -1903,6 +1906,7 @@ int	Hunk_MemoryRemaining( void ) {
 	return s_hunkTotal - ( low + high );
 }
 
+
 /*
 ===================
 Hunk_SetMark
@@ -1915,6 +1919,7 @@ void Hunk_SetMark( void ) {
 	hunk_high.mark = hunk_high.permanent;
 }
 
+
 /*
 =================
 Hunk_ClearToMark
@@ -1926,6 +1931,7 @@ void Hunk_ClearToMark( void ) {
 	hunk_low.permanent = hunk_low.temp = hunk_low.mark;
 	hunk_high.permanent = hunk_high.temp = hunk_high.mark;
 }
+
 
 /*
 =================
@@ -1980,6 +1986,7 @@ void Hunk_Clear( void ) {
 #endif
 }
 
+
 static void Hunk_SwapBanks( void ) {
 	hunkUsed_t	*swap;
 
@@ -1997,6 +2004,7 @@ static void Hunk_SwapBanks( void ) {
 		hunk_permanent = swap;
 	}
 }
+
 
 /*
 =================
@@ -3839,12 +3847,12 @@ static void FindMatches( const char *s ) {
 	// cut shortestMatch to the amount common with s
 	for ( i = 0 ; shortestMatch[i] ; i++ ) {
 		if ( i >= n ) {
-			shortestMatch[i] = 0;
+			shortestMatch[i] = '\0';
 			break;
 		}
 
 		if ( tolower(shortestMatch[i]) != tolower(s[i]) ) {
-			shortestMatch[i] = 0;
+			shortestMatch[i] = '\0';
 		}
 	}
 }
@@ -3951,7 +3959,7 @@ Field_CompleteFilename
 void Field_CompleteFilename( const char *dir, const char *ext, qboolean stripExt, int flags )
 {
 	matchCount = 0;
-	shortestMatch[ 0 ] = 0;
+	shortestMatch[ 0 ] = '\0';
 
 	FS_FilenameCompletion( dir, ext, stripExt, FindMatches, flags );
 
@@ -4028,7 +4036,7 @@ void Field_CompleteCommand( char *cmd, qboolean doCommands, qboolean doCvars )
 			completionString++;
 
 		matchCount = 0;
-		shortestMatch[ 0 ] = 0;
+		shortestMatch[ 0 ] = '\0';
 
 		if( completionString[0] == '\0' )
 			return;
@@ -4082,7 +4090,7 @@ void Com_RandomBytes( byte *string, int len )
 		return;
 
 	Com_Printf( "Com_RandomBytes: using weak randomization\n" );
-	srand( time( 0 ) );
+	srand( time( NULL ) );
 	for( i = 0; i < len; i++ )
 		string[i] = (unsigned char)( rand() % 256 );
 }

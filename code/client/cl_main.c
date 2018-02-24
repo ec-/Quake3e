@@ -2114,10 +2114,10 @@ void CL_NextDownload( void )
 			return;
 		}
 
-		*s++ = 0;
+		*s++ = '\0';
 		localName = s;
 		if ( (s = strchr(s, '@')) != NULL )
-			*s++ = 0;
+			*s++ = '\0';
 		else
 			s = localName + strlen(localName); // point at the null byte
 
@@ -2209,7 +2209,7 @@ void CL_InitDownloads( void ) {
 			// if autodownloading is not enabled on the server
 			cls.state = CA_CONNECTED;
 
-			*clc.downloadTempName = *clc.downloadName = 0;
+			*clc.downloadTempName = *clc.downloadName = '\0';
 			Cvar_Set( "cl_downloadName", "" );
 
 			CL_NextDownload();

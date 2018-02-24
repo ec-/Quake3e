@@ -2293,7 +2293,7 @@ static int FS_ReturnPath( const char *zname, char *zpath, int *depth ) {
 	int len, at, newdep;
 
 	newdep = 0;
-	zpath[0] = 0;
+	zpath[0] = '\0';
 	len = 0;
 	at = 0;
 
@@ -2306,7 +2306,7 @@ static int FS_ReturnPath( const char *zname, char *zpath, int *depth ) {
 		at++;
 	}
 	strcpy(zpath, zname);
-	zpath[len] = 0;
+	zpath[len] = '\0';
 	*depth = newdep;
 
 	return len;
@@ -2607,7 +2607,7 @@ int	FS_GetFileList( const char *path, const char *extension, char *listbuf, int 
 	int		nFiles, i, nTotal, nLen;
 	char **pFiles = NULL;
 
-	*listbuf = 0;
+	*listbuf = '\0';
 	nFiles = 0;
 	nTotal = 0;
 
@@ -2756,7 +2756,7 @@ static int FS_GetModList( char *listbuf, int bufsize ) {
 	// paths to search for mods
 	cvar_t *const *paths[] = { &fs_basepath, &fs_homepath, &fs_steampath };
 
-	*listbuf = 0;
+	*listbuf = '\0';
 	nMods = nTotal = 0;
 
 	// iterate through paths and get list of potential mods
@@ -3404,7 +3404,7 @@ qboolean FS_ComparePaks( char *neededpaks, int len, qboolean dlstring ) {
 	if (!fs_numServerReferencedPaks)
 		return qfalse; // Server didn't send any pack information along
 
-	*neededpaks = 0;
+	*neededpaks = '\0';
 
 	for ( i = 0 ; i < fs_numServerReferencedPaks ; i++ )
 	{
@@ -3888,7 +3888,7 @@ const char *FS_LoadedPakPureChecksums( void ) {
 	static char	info[BIG_INFO_STRING];
 	searchpath_t	*search;
 
-	info[0] = 0;
+	info[0] = '\0';
 
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		// is the element a pak file? 
