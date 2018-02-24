@@ -1679,17 +1679,13 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 	// read optional clientCommand strings
 	do {
 		c = MSG_ReadByte( msg );
-		if ( c == clc_EOF ) {
-			break;
-		}
-
 		if ( c != clc_clientCommand ) {
 			break;
 		}
 		if ( !SV_ClientCommand( cl, msg ) ) {
 			return;	// we couldn't execute it because of the flood protection
 		}
-		if (cl->state == CS_ZOMBIE) {
+		if ( cl->state == CS_ZOMBIE ) {
 			return;	// disconnect command
 		}
 	} while ( 1 );
