@@ -3918,7 +3918,7 @@ static void CL_ServerInfoPacket( const netadr_t *from, msg_t *msg ) {
 
 	// if this isn't the correct protocol version, ignore it
 	prot = atoi( Info_ValueForKey( infoString, "protocol" ) );
-	if ( prot != PROTOCOL_VERSION ) {
+	if ( prot != PROTOCOL_VERSION && prot != NEW_PROTOCOL_VERSION ) {
 		Com_DPrintf( "Different protocol info packet: %s\n", infoString );
 		return;
 	}
@@ -4238,6 +4238,10 @@ static void CL_LocalServers_f( void ) {
 /*
 ==================
 CL_GlobalServers_f
+
+Originally master 0 was Internet and master 1 was MPlayer.
+ioquake3 2008; added support for requesting five separate master servers using 0-4.
+ioquake3 2017; made master 0 fetch all master servers and 1-5 request a single master server.
 ==================
 */
 static void CL_GlobalServers_f( void ) {
@@ -4245,15 +4249,37 @@ static void CL_GlobalServers_f( void ) {
 	int			count, i, masterNum;
 	char		command[1024];
 	const char	*masteraddress;
-	char		*cmdname;
 	
-	if ( (count = Cmd_Argc()) < 3 || (masterNum = atoi(Cmd_Argv(1))) < 0 || masterNum > MAX_MASTER_SERVERS - 1 )
+	if ( (count = Cmd_Argc()) < 3 || (masterNum = atoi(Cmd_Argv(1))) < 0 || masterNum > MAX_MASTER_SERVERS )
 	{
-		Com_Printf( "usage: globalservers <master# 0-%d> <protocol> [keywords]\n", MAX_MASTER_SERVERS - 1 );
-		return;	
+		Com_Printf( "usage: globalservers <master# 0-%d> <protocol> [keywords]\n", MAX_MASTER_SERVERS );
+		return;
 	}
 
-	sprintf(command, "sv_master%d", masterNum + 1);
+	// request from all master servers
+	if ( masterNum == 0 ) {
+		int numAddress = 0;
+
+		for ( i = 1; i <= MAX_MASTER_SERVERS; i++ ) {
+			sprintf( command, "sv_master%d", i );
+			masteraddress = Cvar_VariableString( command );
+
+			if ( !*masteraddress )
+				continue;
+
+			numAddress++;
+
+			Com_sprintf( command, sizeof( command ), "globalservers %d %s %s\n", i, Cmd_Argv( 2 ), Cmd_ArgsFrom( 3 ) );
+			Cbuf_AddText( command );
+		}
+
+		if ( !numAddress ) {
+			Com_Printf( "CL_GlobalServers_f: Error: No master server addresses.\n");
+		}
+		return;
+	}
+
+	sprintf( command, "sv_master%d", masterNum );
 	masteraddress = Cvar_VariableString( command );
 	
 	if ( !*masteraddress )
@@ -4267,35 +4293,42 @@ static void CL_GlobalServers_f( void ) {
 
 	i = NET_StringToAdr( masteraddress, &to, NA_UNSPEC );
 	
-	if ( !i )
+	if ( i == 0 )
 	{
-		Com_Printf( "CL_GlobalServers_f: Error: could not resolve address of master %s\n", masteraddress);
+		Com_Printf( "CL_GlobalServers_f: Error: could not resolve address of master %s\n", masteraddress );
 		return;	
 	}
 	else if ( i == 2 )
 		to.port = BigShort( PORT_MASTER );
 
-	Com_Printf( "Requesting servers from master %s...\n", masteraddress );
+	Com_Printf( "Requesting servers from %s (%s)...\n", masteraddress, NET_AdrToStringwPort( &to ) );
 
 	cls.numglobalservers = -1;
 	cls.pingUpdateSource = AS_GLOBAL;
 
 	// Use the extended query for IPv6 masters
-	if (to.type == NA_IP6 || to.type == NA_MULTICAST6)
+	if ( to.type == NA_IP6 || to.type == NA_MULTICAST6 )
 	{
-		cmdname = "getserversExt " GAMENAME_FOR_MASTER;
-
-		// TODO: test if we only have an IPv6 connection. If it's the case,
-		//       request IPv6 servers only by appending " ipv6" to the command
+		int v4enabled = Cvar_VariableIntegerValue( "net_enabled" ) & NET_ENABLEV4;
+		
+		if ( v4enabled )
+		{
+			Com_sprintf( command, sizeof( command ), "getserversExt %s %s",
+				GAMENAME_FOR_MASTER, Cmd_Argv(2) );
+		}
+		else
+		{
+			Com_sprintf( command, sizeof( command ), "getserversExt %s %s ipv6",
+				GAMENAME_FOR_MASTER, Cmd_Argv(2) );
+		}
 	}
-	else
-		cmdname = "getservers";
-	Com_sprintf( command, sizeof(command), "%s %s", cmdname, Cmd_Argv(2) );
+	else 
+		Com_sprintf( command, sizeof( command ), "getservers %s", Cmd_Argv(2) );
 
-	for (i=3; i < count; i++)
+	for ( i = 3; i < count; i++ )
 	{
-		Q_strcat(command, sizeof(command), " ");
-		Q_strcat(command, sizeof(command), Cmd_Argv(i));
+		Q_strcat( command, sizeof( command ), " " );
+		Q_strcat( command, sizeof( command ), Cmd_Argv( i ) );
 	}
 
 	NET_OutOfBandPrint( NS_SERVER, &to, "%s", command );
