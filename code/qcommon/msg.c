@@ -397,57 +397,61 @@ float MSG_ReadFloat( msg_t *msg ) {
 
 const char *MSG_ReadString( msg_t *msg ) {
 	static char	string[MAX_STRING_CHARS];
-	int		l,c;
+	int	l, c;
 	
 	l = 0;
 	do {
-		c = MSG_ReadByte(msg);		// use ReadByte so -1 is out of bounds
+		c = MSG_ReadByte( msg ); // use ReadByte so -1 is out of bounds
 		if ( c <= 0 /*c == -1 || c == 0 */ ) {
 			break;
 		}
 		// translate all fmt spec to avoid crash bugs
 		if ( c == '%' ) {
 			c = '.';
-		}
+		} else
 		// don't allow higher ascii values
 		if ( c > 127 ) {
 			c = '.';
 		}
-
-		string[l] = c;
-		l++;
-	} while (l < sizeof(string)-1);
+		// break only after reading all expected data from bitstream
+		if ( l >= sizeof(string)-1 ) {
+			break;
+		}
+		string[ l++ ] = c;
+	} while ( qtrue );
 	
-	string[l] = '\0';
+	string[ l ] = '\0';
 	
 	return string;
 }
 
 
 const char *MSG_ReadBigString( msg_t *msg ) {
-	static char	string[BIG_INFO_STRING];
-	int		l,c;
+	static char	string[ BIG_INFO_STRING ];
+	int	l, c;
 	
 	l = 0;
 	do {
-		c = MSG_ReadByte(msg);		// use ReadByte so -1 is out of bounds
+		c = MSG_ReadByte( msg ); // use ReadByte so -1 is out of bounds
 		if ( c <= 0 /*c == -1 || c == 0*/ ) {
 			break;
 		}
 		// translate all fmt spec to avoid crash bugs
 		if ( c == '%' ) {
 			c = '.';
-		}
+		} else
 		// don't allow higher ascii values
 		if ( c > 127 ) {
 			c = '.';
 		}
-
-		string[l] = c;
-		l++;
-	} while (l < sizeof(string)-1);
+		// break only after reading all expected data from bitstream
+		if ( l >= sizeof(string)-1 ) {
+			break;
+		}
+		string[ l++ ] = c;
+	} while ( qtrue );
 	
-	string[l] = '\0';
+	string[ l ] = '\0';
 	
 	return string;
 }
@@ -455,28 +459,30 @@ const char *MSG_ReadBigString( msg_t *msg ) {
 
 const char *MSG_ReadStringLine( msg_t *msg ) {
 	static char	string[MAX_STRING_CHARS];
-	int		l,c;
+	int	l, c;
 
 	l = 0;
 	do {
-		c = MSG_ReadByte(msg);		// use ReadByte so -1 is out of bounds
+		c = MSG_ReadByte( msg ); // use ReadByte so -1 is out of bounds
 		if ( c <= 0 /*c == -1 || c == 0*/ || c == '\n') {
 			break;
 		}
 		// translate all fmt spec to avoid crash bugs
 		if ( c == '%' ) {
 			c = '.';
-		}
+		} else
 		// don't allow higher ascii values
 		if ( c > 127 ) {
 			c = '.';
 		}
-
-		string[l] = c;
-		l++;
-	} while (l < sizeof(string)-1);
+		// break only after reading all expected data from bitstream
+		if ( l >= sizeof(string)-1 ) {
+			break;
+		}
+		string[ l++ ] = c;
+	} while ( qtrue );
 	
-	string[l] = '\0';
+	string[ l ] = '\0';
 	
 	return string;
 }

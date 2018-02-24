@@ -251,12 +251,15 @@ Netchan_SV_Process
 =================
 */
 qboolean SV_Netchan_Process( client_t *client, msg_t *msg ) {
-	int ret;
+	qboolean ret;
+	
 	ret = Netchan_Process( &client->netchan, msg );
-	if (!ret)
+	if ( !ret )
 		return qfalse;
+
 	if ( client->compat )
 		SV_Netchan_Decode( client, msg );
+
 	return qtrue;
 }
 

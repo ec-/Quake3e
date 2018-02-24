@@ -173,13 +173,13 @@ CL_Netchan_Process
 =================
 */
 qboolean CL_Netchan_Process( netchan_t *chan, msg_t *msg ) {
-	int ret;
+	qboolean ret;
 
 	ret = Netchan_Process( chan, msg );
-	if (!ret)
+	if ( !ret )
 		return qfalse;
 
-	if( chan->compat )
+	if ( chan->compat )
 		CL_Netchan_Decode( msg );
 
 	return qtrue;
