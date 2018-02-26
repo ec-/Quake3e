@@ -974,11 +974,18 @@ static void SV_CheckTimeouts( void ) {
 			cl->state = CS_FREE;	// can now be reused
 			continue;
 		}
+		if ( cl->state == CS_CONNECTED && svs.time - cl->lastPacketTime > 4000 ) {
+			// for real client 4 seconds is more than enough to respond
+			SVC_RateLimitAddress( &cl->netchan.remoteAddress, 10, 1000 );
+			SV_DropClient( cl, NULL ); // drop silently
+			cl->state = CS_FREE;
+			continue;
+		}
 		if ( cl->state >= CS_CONNECTED && cl->lastPacketTime < droppoint ) {
 			// wait several frames so a debugger session doesn't
 			// cause a timeout
 			if ( ++cl->timeoutCount > 5 ) {
-				SV_DropClient (cl, "timed out"); 
+				SV_DropClient( cl, "timed out" );
 				cl->state = CS_FREE;	// don't bother with zombie state
 			}
 		} else {
