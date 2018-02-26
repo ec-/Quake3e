@@ -241,18 +241,15 @@ SV_GetServerinfo
 ===============
 */
 static void SV_GetServerinfo( char *buffer, int bufferSize ) {
-	const char *cs;
-	
+
 	if ( bufferSize < 1 ) {
 		Com_Error( ERR_DROP, "SV_GetServerinfo: bufferSize == %i", bufferSize );
 	}
-
-	cs = sv.configstrings[ CS_SERVERINFO ];
-
-	if ( cs )
-		Q_strncpyz( buffer, cs, bufferSize );
-	else
-		*buffer = '\0';
+	if ( sv.state != SS_GAME || !sv.configstrings[ CS_SERVERINFO ] ) {
+		Q_strncpyz( buffer, Cvar_InfoString( CVAR_SERVERINFO ), bufferSize );
+	} else {
+		Q_strncpyz( buffer, sv.configstrings[ CS_SERVERINFO ], bufferSize );
+	}
 }
 
 
