@@ -840,6 +840,10 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		}
 		break;
 #endif
+	case WM_NCHITTEST:
+		if ( g_wv.borderless > 1 )
+			return HTCAPTION;
+		break;
 
 	case WM_ERASEBKGND: 
 		// avoid GDI clearing the OpenGL window background in Vista/7
