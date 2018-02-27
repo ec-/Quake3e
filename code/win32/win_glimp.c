@@ -1249,7 +1249,7 @@ void GLimp_Init( glconfig_t *config )
 	r_stereoEnabled = Cvar_Get( "r_stereoEnabled", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_verbose = Cvar_Get( "r_verbose", "0", 0 );
 	r_noborder = Cvar_Get( "r_noborder", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	Cvar_CheckRange( r_noborder, "0", "2", CV_INTEGER );
+	Cvar_CheckRange( r_noborder, "0", "1", CV_INTEGER );
 
 	// feedback to renderer configuration
 	glw_state.config = config;
