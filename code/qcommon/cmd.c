@@ -413,14 +413,15 @@ Returns a single string containing argv(1) to argv(argc()-1)
 ============
 */
 char *Cmd_Args( void ) {
-	static char cmd_args[MAX_STRING_CHARS];
+	static char cmd_args[BIG_INFO_STRING], *s;
 	int i;
 
-	cmd_args[0] = '\0';
+	s = cmd_args;
+	*s = '\0';
 	for ( i = 1 ; i < cmd_argc ; i++ ) {
-		strcat( cmd_args, cmd_argv[i] );
+		s = Q_stradd( s, cmd_argv[i] );
 		if ( i != cmd_argc-1 ) {
-			strcat( cmd_args, " " );
+			s = Q_stradd( s, " " );
 		}
 	}
 
@@ -436,16 +437,17 @@ Returns a single string containing argv(arg) to argv(argc()-1)
 ============
 */
 char *Cmd_ArgsFrom( int arg ) {
-	static char cmd_args[BIG_INFO_STRING];
+	static char cmd_args[BIG_INFO_STRING], *s;
 	int i;
 
-	cmd_args[0] = '\0';
+	s = cmd_args;
+	*s = '\0';
 	if (arg < 0)
 		arg = 0;
 	for ( i = arg ; i < cmd_argc ; i++ ) {
-		strcat( cmd_args, cmd_argv[i] );
+		s = Q_stradd( s, cmd_argv[i] );
 		if ( i != cmd_argc-1 ) {
-			strcat( cmd_args, " " );
+			s = Q_stradd( s, " " );
 		}
 	}
 
@@ -487,17 +489,13 @@ char *Cmd_Cmd( void )
    https://bugzilla.icculus.org/show_bug.cgi?id=3593
    https://bugzilla.icculus.org/show_bug.cgi?id=4769
 */
-
 void Cmd_Args_Sanitize( void )
 {
 	int i;
 
-	for(i = 1; i < cmd_argc; i++)
+	for( i = 1; i < cmd_argc; i++ )
 	{
 		char *c = cmd_argv[i];
-		
-		if(strlen(c) > MAX_CVAR_VALUE_STRING - 1)
-			c[MAX_CVAR_VALUE_STRING - 1] = '\0';
 		
 		while ( (c = strpbrk(c, "\n\r")) != NULL ) {
 			*c = ' ';
@@ -535,13 +533,13 @@ static void Cmd_TokenizeString2( const char *text_in, qboolean ignoreQuotes ) {
 		return;
 	}
 	
-	Q_strncpyz( cmd_cmd, text_in, sizeof(cmd_cmd) );
+	Q_strncpyz( cmd_cmd, text_in, sizeof( cmd_cmd ) );
 
-	text = text_in;
+	text = cmd_cmd; // read from safe-length buffer
 	textOut = cmd_tokenized;
 
 	while ( 1 ) {
-		if ( cmd_argc >= MAX_STRING_TOKENS ) {
+		if ( cmd_argc >= ARRAY_LEN( cmd_argv ) ) {
 			return;			// this is usually something malicious
 		}
 
@@ -618,7 +616,6 @@ static void Cmd_TokenizeString2( const char *text_in, qboolean ignoreQuotes ) {
 			return;		// all tokens parsed
 		}
 	}
-	
 }
 
 
