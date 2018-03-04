@@ -282,7 +282,10 @@ void SV_DirectConnect( const netadr_t *from ) {
 		// Verify the received challenge against the expected challenge
 		if ( !SV_VerifyChallenge( challenge, from ) )
 		{
-			NET_OutOfBandPrint( NS_SERVER, from, "print\nIncorrect challenge for your address.\n" );
+			if ( com_developer->integer )
+			{
+				NET_OutOfBandPrint( NS_SERVER, from, "print\nIncorrect challenge for your address.\n" );
+			}
 			return;
 		}
 	}
@@ -295,7 +298,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 		if ( NET_CompareBaseAdr( from, &cl->netchan.remoteAddress ) \
 			&& ( cl->netchan.qport == qport || from->port == cl->netchan.remoteAddress.port ) ) {
 
-			Com_Printf ("%s:reconnect\n", NET_AdrToString( from ) );
+			Com_Printf( "%s:reconnect\n", NET_AdrToString( from ) );
 			newcl = cl;
 
 			// this doesn't work because it nukes the players userinfo
@@ -1155,8 +1158,8 @@ static void SV_VerifyPaks_f( client_t *cl ) {
 			pPaks = FS_LoadedPakPureChecksums();
 			Cmd_TokenizeString( pPaks );
 			nServerPaks = Cmd_Argc();
-			if (nServerPaks > 1024)
-				nServerPaks = 1024;
+			if ( nServerPaks > ARRAY_LEN( nServerChkSum ) )
+				nServerPaks = ARRAY_LEN( nServerChkSum );
 
 			for (i = 0; i < nServerPaks; i++) {
 				nServerChkSum[i] = atoi(Cmd_Argv(i));

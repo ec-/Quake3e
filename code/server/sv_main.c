@@ -694,7 +694,7 @@ Shift down the remaining args
 Redirect all printfs
 ===============
 */
-static void SVC_RemoteCommand( const netadr_t *from, msg_t *msg ) {
+static void SVC_RemoteCommand( const netadr_t *from ) {
 	qboolean	valid;
 	char		remaining[1024];
 	// TTimo - scaled down to accumulate, but not overflow anything network wise, print wise etc.
@@ -812,7 +812,7 @@ static void SV_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 		// removed from codebase since stateless challenges
 #endif
 	} else if (!Q_stricmp(c, "rcon")) {
-		SVC_RemoteCommand( from, msg );
+		SVC_RemoteCommand( from );
 	} else if (!Q_stricmp(c, "disconnect")) {
 		// if a client starts up a local server, we may see some spurious
 		// server disconnect messages when their new server sees our final
