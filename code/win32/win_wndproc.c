@@ -622,7 +622,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		if ( uTimerID_1 == 0 )
 			uTimerID_1 = SetTimer( g_wv.hWnd, TIMER_ID_1, 100, NULL );
 
-		break;
+		return 0;
 	
 	case WM_SETFOCUS:
 	case WM_KILLFOCUS:
@@ -670,7 +670,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 		SNDDMA_Activate();
 
-		break;
+		return 0;
 
 	case WM_MOVE:
 		{
