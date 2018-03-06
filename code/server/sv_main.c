@@ -77,8 +77,8 @@ SV_ExpandNewlines
 Converts newlines to "\n" so a line prints nicer
 ===============
 */
-static char	*SV_ExpandNewlines( const char *in ) {
-	static	char	string[1024];
+static const char *SV_ExpandNewlines( const char *in ) {
+	static char string[MAX_STRING_CHARS*2];
 	int		l;
 
 	l = 0;
@@ -95,6 +95,7 @@ static char	*SV_ExpandNewlines( const char *in ) {
 
 	return string;
 }
+
 
 /*
 ======================
@@ -127,6 +128,7 @@ static int SV_ReplacePendingServerCommands( client_t *client, const char *cmd ) 
 	return qfalse;
 }
 #endif
+
 
 /*
 ======================
@@ -177,37 +179,37 @@ the client game module: "cp", "print", "chat", etc
 A NULL client will broadcast to all clients
 =================
 */
-void QDECL SV_SendServerCommand(client_t *cl, const char *fmt, ...) {
+void QDECL SV_SendServerCommand( client_t *cl, const char *fmt, ... ) {
 	va_list		argptr;
-	byte		message[MAX_MSGLEN];
+	char		message[MAX_STRING_CHARS+128]; // slightly larger than allowed, to detect overflows
 	client_t	*client;
 	int			j;
 	
-	va_start (argptr,fmt);
-	Q_vsnprintf ((char *)message, sizeof(message), fmt,argptr);
-	va_end (argptr);
+	va_start( argptr, fmt );
+	Q_vsnprintf( message, sizeof( message ), fmt, argptr );
+	va_end( argptr );
 
 	// Fix to http://aluigi.altervista.org/adv/q3msgboom-adv.txt
 	// The actual cause of the bug is probably further downstream
 	// and should maybe be addressed later, but this certainly
 	// fixes the problem for now
-	if ( strlen ((char *)message) > 1022 ) {
+	if ( strlen( message ) > 1022 ) {
 		return;
 	}
 
 	if ( cl != NULL ) {
-		SV_AddServerCommand( cl, (char *)message );
+		SV_AddServerCommand( cl, message );
 		return;
 	}
 
 	// hack to echo broadcast prints to console
-	if ( com_dedicated->integer && !strncmp( (char *)message, "print", 5) ) {
-		Com_Printf ("broadcast: %s\n", SV_ExpandNewlines((char *)message) );
+	if ( com_dedicated->integer && !strncmp( message, "print", 5 ) ) {
+		Com_Printf( "broadcast: %s\n", SV_ExpandNewlines( message ) );
 	}
 
-	// send the data to all relevent clients
-	for (j = 0, client = svs.clients; j < sv_maxclients->integer ; j++, client++) {
-		SV_AddServerCommand( client, (char *)message );
+	// send the data to all relevant clients
+	for ( j = 0, client = svs.clients; j < sv_maxclients->integer ; j++, client++ ) {
+		SV_AddServerCommand( client, message );
 	}
 }
 
