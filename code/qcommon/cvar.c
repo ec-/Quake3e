@@ -1676,7 +1676,7 @@ char *Cvar_InfoString_Big(int bit)
 	static char	info[BIG_INFO_STRING];
 	cvar_t	*var;
 
-	info[0] = 0;
+	info[0] = '\0';
 
 	for (var = cvar_vars; var; var = var->next)
 	{
