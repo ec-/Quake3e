@@ -1835,44 +1835,39 @@ Info_RemoveKey
 */
 static void Info_RemoveKey( char *s, const char *key ) {
 	char	*start;
-	char	pkey[BIG_INFO_KEY];
-	char	value[BIG_INFO_VALUE];
-	char	*o;
+	char 	*pkey;
+	char	*sep;
 
 	while (1)
 	{
 		start = s;
-		if (*s == '\\')
+		if ( *s == '\\' )
 			s++;
-		o = pkey;
-		while (*s != '\\')
+		pkey = s;
+		while ( *s != '\\' )
 		{
-			if (!*s)
+			if ( *s == '\0' )
 				return;
-			*o++ = *s++;
+			++s;
 		}
-		*o = '\0';
-		s++;
 
-		o = value;
-		while (*s != '\\' && *s)
-		{
-			if (!*s)
-				return;
-			*o++ = *s++;
-		}
-		*o = '\0';
+		sep  = s; // save separator position
+		 *s++ = '\0'; // terminate key name
 
-		if (!strcmp (key, pkey) )
+		while ( *s != '\\' && *s != '\0' )
+			++s;
+
+		if ( Q_stricmp( key, pkey ) == 0 )
 		{
-			memmove(start, s, strlen(s) + 1); // remove this part
+			memmove( start, s, strlen( s ) + 1 ); // remove this part
 			return;
 		}
 
-		if (!*s)
+		*sep = '\\'; // connect key-value pair again
+
+		if ( *s == '\0' )
 			return;
 	}
-
 }
 
 
@@ -1900,8 +1895,6 @@ qboolean Info_Validate( const char *s )
 			break;
 		}
 	}
-
-	return qtrue;
 }
 
 
