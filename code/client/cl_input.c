@@ -817,8 +817,9 @@ void CL_WritePacket( void ) {
 		Com_Printf( "%i ", buf.cursize );
 	}
 
-	CL_Netchan_Transmit (&clc.netchan, &buf);	
+	CL_Netchan_Transmit( &clc.netchan, &buf );
 }
+
 
 /*
 =================
@@ -851,6 +852,7 @@ void CL_SendCmd( void ) {
 
 	CL_WritePacket();
 }
+
 
 /*
 ============

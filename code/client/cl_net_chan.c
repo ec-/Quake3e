@@ -135,7 +135,7 @@ static void CL_Netchan_Decode( msg_t *msg ) {
 CL_Netchan_TransmitNextFragment
 =================
 */
-qboolean CL_Netchan_TransmitNextFragment(netchan_t *chan)
+static qboolean CL_Netchan_TransmitNextFragment( netchan_t *chan )
 {
 	if ( chan->unsentFragments )
 	{
@@ -155,14 +155,22 @@ CL_Netchan_Transmit
 void CL_Netchan_Transmit( netchan_t *chan, msg_t* msg ) {
 	MSG_WriteByte( msg, clc_EOF );
 
-	if( chan->compat )
+	if ( msg->overflowed ) {
+		if ( cls.state >= CA_CONNECTED && cls.state != CA_CINEMATIC ) {
+			cls.state = CA_CONNECTING; // to avoid recursive error
+		}
+		Com_Error( ERR_DROP, "%s: message overflowed", __func__ );
+	}
+
+	if ( chan->compat )
 		CL_Netchan_Encode( msg );
+
 	Netchan_Transmit( chan, msg->cursize, msg->data );
 	
 	// Transmit all fragments without delay
-	while(CL_Netchan_TransmitNextFragment(chan))
-	{
-		Com_DPrintf("WARNING: #462 unsent fragments (not supposed to happen!)\n");
+	while ( CL_Netchan_TransmitNextFragment( chan ) ) {
+		// might happen if server die silently but client continue adding/sending commands
+		Com_DPrintf( S_COLOR_YELLOW "%s: unsent fragments\n", __func__ );
 	}
 }
 
