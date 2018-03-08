@@ -1298,6 +1298,11 @@ void CL_ForwardCommandToServer( const char *string ) {
 		return;
 	}
 
+	// no userinfo updates from command line
+	if ( !strcmp( cmd, "userinfo" ) ) {
+		return;
+	}
+
 	if ( clc.demoplaying || cls.state < CA_CONNECTED || cmd[0] == '+' ) {
 		Com_Printf( "Unknown command \"%s" S_COLOR_WHITE "\"\n", cmd );
 		return;

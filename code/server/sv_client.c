@@ -1328,7 +1328,16 @@ SV_UpdateUserinfo_f
 ==================
 */
 static void SV_UpdateUserinfo_f( client_t *cl ) {
-	Q_strncpyz( cl->userinfo, Cmd_Argv(1), sizeof(cl->userinfo) );
+	const char *info;
+
+	info = Cmd_Argv( 1 );
+
+	if ( Cmd_Argc() != 2 || *info == '\0' ) {
+		// this is something erroneous, client should never send that
+		return;
+	}
+
+	Q_strncpyz( cl->userinfo, info, sizeof( cl->userinfo ) );
 
 	SV_UserinfoChanged( cl, qtrue );
 	// call prog code to allow overrides
