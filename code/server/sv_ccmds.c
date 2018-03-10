@@ -1198,7 +1198,7 @@ static void SV_ConSay_f( void ) {
 	}
 
 	strcpy( text, "console: " );
-	p = Cmd_Args();
+	p = Cmd_ArgsFrom( 1 );
 
 	if ( strlen( p ) > 1000 ) {
 		return;

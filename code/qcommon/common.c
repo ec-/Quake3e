@@ -398,7 +398,7 @@ do the apropriate things.
 =============
 */
 void Com_Quit_f( void ) {
-	char *p = Cmd_Args();
+	const char *p = Cmd_ArgsFrom( 1 );
 	// don't try to shutdown if we are in a recursive error
 	if ( !com_errorEntered ) {
 		// Some VMs might execute "quit" command directly,

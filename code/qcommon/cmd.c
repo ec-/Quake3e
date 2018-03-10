@@ -49,7 +49,7 @@ next frame.  This allows commands like:
 bind g "cmd use rocket ; +attack ; wait ; -attack ; cmd use blaster"
 ============
 */
-void Cmd_Wait_f( void ) {
+static void Cmd_Wait_f( void ) {
 	if ( Cmd_Argc() == 2 ) {
 		cmd_wait = atoi( Cmd_Argv( 1 ) );
 		if ( cmd_wait < 0 )
@@ -270,7 +270,7 @@ void Cbuf_Execute( void )
 Cmd_Exec_f
 ===============
 */
-void Cmd_Exec_f( void ) {
+static void Cmd_Exec_f( void ) {
 	qboolean quiet;
 	union {
 		char *c;
@@ -309,7 +309,7 @@ Cmd_Vstr_f
 Inserts the current value of a variable as command text
 ===============
 */
-void Cmd_Vstr_f( void ) {
+static void Cmd_Vstr_f( void ) {
 	const char *v;
 
 	if ( Cmd_Argc () != 2 ) {
@@ -329,9 +329,9 @@ Cmd_Echo_f
 Just prints the rest of the line to the console
 ===============
 */
-void Cmd_Echo_f (void)
+static void Cmd_Echo_f( void )
 {
-	Com_Printf ("%s\n", Cmd_Args());
+	Com_Printf( "%s\n", Cmd_ArgsFrom( 1 ) );
 }
 
 
@@ -409,30 +409,6 @@ void Cmd_ArgvBuffer( int arg, char *buffer, int bufferLength ) {
 ============
 Cmd_Args
 
-Returns a single string containing argv(1) to argv(argc()-1)
-============
-*/
-char *Cmd_Args( void ) {
-	static char cmd_args[BIG_INFO_STRING], *s;
-	int i;
-
-	s = cmd_args;
-	*s = '\0';
-	for ( i = 1 ; i < cmd_argc ; i++ ) {
-		s = Q_stradd( s, cmd_argv[i] );
-		if ( i != cmd_argc-1 ) {
-			s = Q_stradd( s, " " );
-		}
-	}
-
-	return cmd_args;
-}
-
-
-/*
-============
-Cmd_Args
-
 Returns a single string containing argv(arg) to argv(argc()-1)
 ============
 */
@@ -464,7 +440,7 @@ they can't have pointers returned to them
 ============
 */
 void Cmd_ArgsBuffer( char *buffer, int bufferLength ) {
-	Q_strncpyz( buffer, Cmd_Args(), bufferLength );
+	Q_strncpyz( buffer, Cmd_ArgsFrom( 1 ), bufferLength );
 }
 
 

@@ -1459,11 +1459,12 @@ static void CL_ForwardToServer_f( void ) {
 		Com_Printf ("Not connected to a server.\n");
 		return;
 	}
-	
+
+	if ( Cmd_Argc() <= 1 || strcmp( Cmd_Argv( 1 ), "userinfo" ) == 0 )
+		return;
+
 	// don't forward the first argument
-	if ( Cmd_Argc() > 1 ) {
-		CL_AddReliableCommand( Cmd_Args(), qfalse );
-	}
+	CL_AddReliableCommand( Cmd_ArgsFrom( 1 ), qfalse );
 }
 
 
