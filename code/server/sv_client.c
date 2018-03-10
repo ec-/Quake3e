@@ -269,12 +269,12 @@ void SV_DirectConnect( const netadr_t *from ) {
 		ip = "localhost";
 	else
 		ip = NET_AdrToString( from );
-	if( ( strlen( ip ) + strlen( userinfo ) + 4 ) >= MAX_INFO_STRING ) {
+
+	if ( !Info_SetValueForKey( userinfo, "ip", ip ) ) {
 		NET_OutOfBandPrint( NS_SERVER, from, "print\nUserinfo string length exceeded.  "
 			"Try removing setu cvars from your config.\n" );
 		return;
 	}
-	Info_SetValueForKey( userinfo, "ip", ip );
 
 	// see if the challenge is valid (localhost clients don't need to challenge)
 	if ( !NET_IsLocalAddress( from ) )
@@ -1312,13 +1312,8 @@ void SV_UserinfoChanged( client_t *cl, qboolean updateUserinfo ) {
 	else
 		ip = NET_AdrToString( &cl->netchan.remoteAddress );
 
-	val = Info_ValueForKey( cl->userinfo, "ip" );
-	len = strlen( ip ) - strlen( val ) + strlen( cl->userinfo ) + 14;
-
-	if ( len >= MAX_INFO_STRING )
+	if ( !Info_SetValueForKey( cl->userinfo, "ip", ip ) )
 		SV_DropClient( cl, "userinfo string length exceeded" );
-	else
-		Info_SetValueForKey( cl->userinfo, "ip", ip );
 }
 
 
