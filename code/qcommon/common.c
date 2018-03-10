@@ -3296,14 +3296,19 @@ void Com_Init( char *commandLine ) {
 		Cmd_AddCommand ("crash", Com_Crash_f );
 		Cmd_AddCommand ("freeze", Com_Freeze_f);
 	}
-	Cmd_AddCommand ("quit", Com_Quit_f);
-	Cmd_AddCommand ("changeVectors", MSG_ReportChangeVectors_f );
-	Cmd_AddCommand ("writeconfig", Com_WriteConfig_f );
+	Cmd_AddCommand( "quit", Com_Quit_f );
+	Cmd_AddCommand( "changeVectors", MSG_ReportChangeVectors_f );
+	Cmd_AddCommand( "writeconfig", Com_WriteConfig_f );
 	Cmd_SetCommandCompletionFunc( "writeconfig", Cmd_CompleteWriteCfgName );
-	Cmd_AddCommand("game_restart", Com_GameRestart_f);
+	Cmd_AddCommand( "game_restart", Com_GameRestart_f );
 
-	s = va("%s %s %s", Q3_VERSION, PLATFORM_STRING, __DATE__ );
-	com_version = Cvar_Get ("version", s, CVAR_ROM | CVAR_SERVERINFO );
+	s = va( "%s %s %s", Q3_VERSION, PLATFORM_STRING, __DATE__ );
+	com_version = Cvar_Get( "version", s, CVAR_INIT | CVAR_ROM | CVAR_SERVERINFO );
+
+#ifndef DEDICATED
+	// for now - this will be used to inform server about q3msgboom fix
+	Cvar_Get( "client", Q3_VERSION, CVAR_INIT | CVAR_ROM | CVAR_USERINFO );
+#endif
 
 	// this cvar is the single entry point of the entire extension system
 	Cvar_Get( "//trap_GetValue", va( "%i", COM_TRAP_GETVALUE ), CVAR_INIT | CVAR_ROM );

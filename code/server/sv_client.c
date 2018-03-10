@@ -1235,7 +1235,6 @@ void SV_UserinfoChanged( client_t *cl, qboolean updateUserinfo ) {
 	const char *val;
 	const char *ip;
 	int	i;
-	int	len;
 
 	if ( cl->netchan.remoteAddress.type == NA_BOT ) {
 		cl->lastSnapshotTime = 0;
@@ -1303,6 +1302,13 @@ void SV_UserinfoChanged( client_t *cl, qboolean updateUserinfo ) {
 			Info_SetValueForKey( cl->userinfo, "handicap", "100" );
 		}
 	}
+
+	// if "client" is present in userinfo and it is a modern client
+	// then assume it can properly decode long strings
+	if ( !cl->compat && *Info_ValueForKey( cl->userinfo, "client" ) )
+		cl->longstr = qtrue;
+	else
+		cl->longstr = qfalse;
 
 	// TTimo
 	// maintain the IP information

@@ -189,6 +189,9 @@ typedef struct client_s {
 	// flood protection
 	int				cmd_burst;
 	int				cmd_time;
+
+	// client can decode long strings
+	qboolean		longstr;
 } client_t;
 
 //=============================================================================

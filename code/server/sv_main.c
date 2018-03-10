@@ -183,22 +183,18 @@ void QDECL SV_SendServerCommand( client_t *cl, const char *fmt, ... ) {
 	va_list		argptr;
 	char		message[MAX_STRING_CHARS+128]; // slightly larger than allowed, to detect overflows
 	client_t	*client;
-	int			j;
+	int			j, len;
 	
 	va_start( argptr, fmt );
-	Q_vsnprintf( message, sizeof( message ), fmt, argptr );
+	len = Q_vsnprintf( message, sizeof( message ), fmt, argptr );
 	va_end( argptr );
 
-	// Fix to http://aluigi.altervista.org/adv/q3msgboom-adv.txt
-	// The actual cause of the bug is probably further downstream
-	// and should maybe be addressed later, but this certainly
-	// fixes the problem for now
-	if ( strlen( message ) > 1022 ) {
-		return;
-	}
-
 	if ( cl != NULL ) {
-		SV_AddServerCommand( cl, message );
+		// outdated clients can't properly decode 1023-chars-long strings
+		// http://aluigi.altervista.org/adv/q3msgboom-adv.txt
+		if ( len <= 1022 || cl->longstr ) {
+			SV_AddServerCommand( cl, message );
+		}
 		return;
 	}
 
@@ -209,7 +205,9 @@ void QDECL SV_SendServerCommand( client_t *cl, const char *fmt, ... ) {
 
 	// send the data to all relevant clients
 	for ( j = 0, client = svs.clients; j < sv_maxclients->integer ; j++, client++ ) {
-		SV_AddServerCommand( client, message );
+		if ( len <= 1022 || client->longstr ) {
+			SV_AddServerCommand( client, message );
+		}
 	}
 }
 
