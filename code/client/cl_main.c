@@ -1722,9 +1722,12 @@ void CL_Rcon_f( void ) {
 CL_SendPureChecksums
 =================
 */
-void CL_SendPureChecksums( void ) {
-	char cMsg[ MAX_STRING_CHARS ];
+static void CL_SendPureChecksums( void ) {
+	char cMsg[ MAX_STRING_CHARS-1 ];
 	int len;
+
+	if ( !cl_connectedToPureServer || clc.demoplaying )
+		return;
 
 	// if we are pure we need to send back a command with our referenced pk3 checksums
 	len = sprintf( cMsg, "cp %d ", cl.serverId );
@@ -1801,9 +1804,7 @@ static void CL_Vid_Restart( void ) {
 		cls.cgameStarted = qtrue;
 		CL_InitCGame();
 		// send pure checksums
-		if ( !clc.demoplaying ) {
-			CL_SendPureChecksums();
-		}
+		CL_SendPureChecksums();
 	}
 
 	cls.startCgame = qfalse;
