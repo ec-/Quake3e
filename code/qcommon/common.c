@@ -3303,21 +3303,21 @@ void Com_Init( char *commandLine ) {
 	Cmd_AddCommand( "game_restart", Com_GameRestart_f );
 
 	s = va( "%s %s %s", Q3_VERSION, PLATFORM_STRING, __DATE__ );
-	com_version = Cvar_Get( "version", s, CVAR_INIT | CVAR_ROM | CVAR_SERVERINFO );
+	com_version = Cvar_Get( "version", s, CVAR_PROTECTED | CVAR_ROM | CVAR_SERVERINFO );
 
 #ifndef DEDICATED
 	// for now - this will be used to inform server about q3msgboom fix
-	Cvar_Get( "client", Q3_VERSION, CVAR_INIT | CVAR_ROM | CVAR_USERINFO );
+	Cvar_Get( "client", Q3_VERSION, CVAR_PROTECTED | CVAR_ROM | CVAR_USERINFO );
 #endif
 
 	// this cvar is the single entry point of the entire extension system
-	Cvar_Get( "//trap_GetValue", va( "%i", COM_TRAP_GETVALUE ), CVAR_INIT | CVAR_ROM );
+	Cvar_Get( "//trap_GetValue", va( "%i", COM_TRAP_GETVALUE ), CVAR_PROTECTED | CVAR_ROM );
 
 	Sys_Init();
 
 #if defined (id386) || defined (idx64)
 	// CPU detection
-	Cvar_Get( "sys_cpustring", "detect", CVAR_ROM | CVAR_NORESTART );
+	Cvar_Get( "sys_cpustring", "detect", CVAR_PROTECTED | CVAR_ROM | CVAR_NORESTART );
 	if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "detect" ) )
 	{
 		static char vendor[128];
