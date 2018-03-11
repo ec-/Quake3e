@@ -310,16 +310,18 @@ static fileHandleData_t	fsh[MAX_FILE_HANDLES];
 // wether we did a reorder on the current search path when joining the server
 static qboolean fs_reordered;
 
+#define MAX_REF_PAKS	MAX_STRING_TOKENS
+
 // never load anything from pk3 files that are not present at the server when pure
 static int		fs_numServerPaks = 0;
-static int		fs_serverPaks[MAX_SEARCH_PATHS];				// checksums
-static char		*fs_serverPakNames[MAX_SEARCH_PATHS];			// pk3 names
+static int		fs_serverPaks[MAX_REF_PAKS];			// checksums
+static char		*fs_serverPakNames[MAX_REF_PAKS];		// pk3 names
 
 // only used for autodownload, to make sure the client has at least
 // all the pk3 files that are referenced at the server side
 static int		fs_numServerReferencedPaks;
-static int		fs_serverReferencedPaks[MAX_SEARCH_PATHS];			// checksums
-static char		*fs_serverReferencedPakNames[MAX_SEARCH_PATHS];		// pk3 names
+static int		fs_serverReferencedPaks[MAX_REF_PAKS];		// checksums
+static char		*fs_serverReferencedPakNames[MAX_REF_PAKS];	// pk3 names
 
 // last valid game folder used
 static char	lastValidBase[MAX_OSPATH];
@@ -3827,19 +3829,29 @@ Servers with sv_pure set will get this string and pass it to clients.
 */
 const char *FS_LoadedPakChecksums( void ) {
 	static char	info[BIG_INFO_STRING];
-	searchpath_t	*search;
+	searchpath_t *search;
+	char buf[ 32 ];
+	char *s, *max;
+	int len;
 
+	s = info;
 	info[0] = '\0';
+	max = &info[sizeof(info)-1];
 
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
-		// is the element a pak file? 
-		if ( !search->pack ) {
+		// is the element a pak file?
+		if ( !search->pack )
 			continue;
-		}
-		if ( *info ) {
-			Q_strcat( info, sizeof( info ), " " );
-		}
-		Q_strcat( info, sizeof( info ), va( "%i", search->pack->checksum ) );
+
+		if ( info[0] )
+			len = sprintf( buf, " %i", search->pack->checksum );
+		else
+			len = sprintf( buf, "%i", search->pack->checksum );
+
+		if ( s + len > max )
+			break;
+
+		s = Q_stradd( s, buf );
 	}
 
 	return info;
@@ -3856,19 +3868,29 @@ Servers with sv_pure set will get this string and pass it to clients.
 */
 const char *FS_LoadedPakNames( void ) {
 	static char	info[BIG_INFO_STRING];
-	searchpath_t	*search;
+	searchpath_t *search;
+	char buf[ sizeof(search->pack->pakBasename) + 2 ];
+	char *s, *max;
+	int len;
 
+	s = info;
 	info[0] = '\0';
+	max = &info[sizeof(info)-1];
 
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		// is the element a pak file?
-		if ( !search->pack ) {
+		if ( !search->pack )
 			continue;
-		}
-		if ( *info ) {
-			Q_strcat(info, sizeof( info ), " " );
-		}
-		Q_strcat( info, sizeof( info ), search->pack->pakBasename );
+
+		if ( info[0] )
+			len = sprintf( buf, " %s", search->pack->pakBasename );
+		else
+			len = sprintf( buf, "%s", search->pack->pakBasename );
+
+		if ( s + len > max )
+			break;
+
+		s = Q_stradd( s, buf );
 	}
 
 	return info;
@@ -3886,17 +3908,23 @@ back to the server.
 */
 const char *FS_LoadedPakPureChecksums( void ) {
 	static char	info[BIG_INFO_STRING];
-	searchpath_t	*search;
-
+	const searchpath_t *search;
+	char *s, *max, buf[32];
+	int len;
+	
+	s = info;
 	info[0] = '\0';
+	max = &info[sizeof(info)-1];
 
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		// is the element a pak file? 
 		if ( !search->pack ) {
 			continue;
 		}
-
-		Q_strcat( info, sizeof( info ), va("%i ", search->pack->pure_checksum ) );
+		len = sprintf( buf, "%i ", search->pack->pure_checksum );
+		if ( s + len > max )
+			break;
+		s = Q_stradd( s, buf );
 	}
 
 	return info;
@@ -4079,8 +4107,8 @@ void FS_PureServerSetLoadedPaks( const char *pakSums, const char *pakNames ) {
 	Cmd_TokenizeString( pakSums );
 
 	c = Cmd_Argc();
-	if ( c > MAX_SEARCH_PATHS ) {
-		c = MAX_SEARCH_PATHS;
+	if ( c > ARRAY_LEN( fs_serverPaks ) ) {
+		c = ARRAY_LEN( fs_serverPaks );
 	}
 
 	fs_numServerPaks = c;
@@ -4106,18 +4134,19 @@ void FS_PureServerSetLoadedPaks( const char *pakSums, const char *pakNames ) {
 		}
 	}
 
-	for ( i = 0 ; i < c ; i++ ) {
-		if (fs_serverPakNames[i]) {
-			Z_Free(fs_serverPakNames[i]);
+	for ( i = 0 ; i < ARRAY_LEN( fs_serverPakNames ) ; i++ ) {
+		if ( fs_serverPakNames[i] ) {
+			Z_Free( fs_serverPakNames[i] );
 		}
 		fs_serverPakNames[i] = NULL;
 	}
+
 	if ( pakNames && *pakNames ) {
 		Cmd_TokenizeString( pakNames );
 
 		d = Cmd_Argc();
-		if ( d > MAX_SEARCH_PATHS ) {
-			d = MAX_SEARCH_PATHS;
+		if ( d > ARRAY_LEN( fs_serverPakNames ) ) {
+			d = ARRAY_LEN( fs_serverPakNames );
 		}
 
 		for ( i = 0 ; i < d ; i++ ) {
@@ -4142,19 +4171,17 @@ void FS_PureServerSetReferencedPaks( const char *pakSums, const char *pakNames )
 	Cmd_TokenizeString( pakSums );
 
 	c = Cmd_Argc();
-	if ( c > MAX_SEARCH_PATHS ) {
-		c = MAX_SEARCH_PATHS;
+	if ( c > ARRAY_LEN( fs_serverReferencedPaks ) ) {
+		c = ARRAY_LEN( fs_serverReferencedPaks );
 	}
 
 	for ( i = 0 ; i < c ; i++ ) {
 		fs_serverReferencedPaks[i] = atoi( Cmd_Argv( i ) );
 	}
 
-	for (i = 0 ; i < ARRAY_LEN(fs_serverReferencedPakNames); i++)
-	{
-		if(fs_serverReferencedPakNames[i])
-			Z_Free(fs_serverReferencedPakNames[i]);
-
+	for ( i = 0 ; i < ARRAY_LEN( fs_serverReferencedPakNames ); i++ ) {
+		if ( fs_serverReferencedPakNames[i] )
+			Z_Free( fs_serverReferencedPakNames[i] );
 		fs_serverReferencedPakNames[i] = NULL;
 	}
 
@@ -4163,7 +4190,7 @@ void FS_PureServerSetReferencedPaks( const char *pakSums, const char *pakNames )
 
 		d = Cmd_Argc();
 
-		if(d > c)
+		if ( d > c )
 			d = c;
 
 		for ( i = 0 ; i < d ; i++ ) {
@@ -4177,7 +4204,7 @@ void FS_PureServerSetReferencedPaks( const char *pakSums, const char *pakNames )
 	}
 
 	// ensure that there are as many checksums as there are pak names.
-	if(d < c)
+	if ( d < c )
 		c = d;
 
 	fs_numServerReferencedPaks = c;	
