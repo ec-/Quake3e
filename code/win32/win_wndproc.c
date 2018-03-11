@@ -719,6 +719,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			// with another opened topmost window app like TaskManager
 			if ( IsIconic( hWnd ) )
 				gw_minimized = qtrue;
+			VID_AppActivate( fActive );
 			if ( fMinimized ) {
 				GLW_RestoreGamma();
 				SetDesktopDisplaySettings();
