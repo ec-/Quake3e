@@ -504,6 +504,7 @@ static void Cmd_TokenizeString2( const char *text_in, qboolean ignoreQuotes ) {
 
 	// clear previous args
 	cmd_argc = 0;
+	cmd_cmd[0] = '\0';
 
 	if ( !text_in ) {
 		return;
