@@ -707,7 +707,7 @@ char *COM_ParseExt( const char **data_p, qboolean allowLineBreaks )
 
 	com_token[ len ] = '\0';
 
-	*data_p = ( char * ) data;
+	*data_p = data;
 	return com_token;
 }
 	

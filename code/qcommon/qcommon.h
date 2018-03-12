@@ -749,7 +749,6 @@ qboolean FS_FilenameCompare( const char *s1, const char *s2 );
 
 const char *FS_LoadedPakNames( void );
 const char *FS_LoadedPakChecksums( void );
-const char *FS_LoadedPakPureChecksums( void );
 // Returns a space separated string containing the checksums of all loaded pk3 files.
 // Servers with sv_pure set will get this string and pass it to clients.
 
@@ -769,6 +768,8 @@ void FS_PureServerSetLoadedPaks( const char *pakSums, const char *pakNames );
 // If not empty, only pk3 files that match one of the space
 // separated checksums will be checked for files, with the
 // sole exception of .cfg files.
+
+qboolean FS_IsPureChecksum( int sum );
 
 qboolean FS_InvalidGameDir( const char *gamedir );
 qboolean FS_idPak( const char *pak, const char *base, int numPaks );

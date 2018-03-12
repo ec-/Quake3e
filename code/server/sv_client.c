@@ -1063,10 +1063,9 @@ This routine would be a bit simpler with a goto but i abstained
 =================
 */
 static void SV_VerifyPaks_f( client_t *cl ) {
-	int nChkSum1, nChkSum2, nClientPaks, nServerPaks, i, j, nCurArg;
-	int nClientChkSum[1024];
-	int nServerChkSum[1024];
-	const char *pPaks, *pArg;
+	int nChkSum1, nChkSum2, nClientPaks, i, j, nCurArg;
+	int nClientChkSum[512];
+	const char *pArg;
 	qboolean bGood = qtrue;
 
 	// if we are pure, we "expect" the client to load certain things from 
@@ -1083,11 +1082,14 @@ static void SV_VerifyPaks_f( client_t *cl ) {
 
 		nClientPaks = Cmd_Argc();
 
+		if ( nClientPaks > ARRAY_LEN( nClientChkSum ) )
+			nClientPaks = ARRAY_LEN( nClientChkSum );
+
 		// start at arg 2 ( skip serverId cl_paks )
 		nCurArg = 1;
 
 		pArg = Cmd_Argv(nCurArg++);
-		if(!pArg) {
+		if ( !*pArg ) {
 			bGood = qfalse;
 		}
 		else
@@ -1095,9 +1097,9 @@ static void SV_VerifyPaks_f( client_t *cl ) {
 			// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=475
 			// we may get incoming cp sequences from a previous checksumFeed, which we need to ignore
 			// since serverId is a frame count, it always goes up
-			if (atoi(pArg) < sv.checksumFeedServerId)
+			if ( atoi( pArg ) < sv.checksumFeedServerId )
 			{
-				Com_DPrintf("ignoring outdated cp command from client %s\n", cl->name);
+				Com_DPrintf( "ignoring outdated cp command from client %s\n", cl->name );
 				return;
 			}
 		}
@@ -1113,13 +1115,13 @@ static void SV_VerifyPaks_f( client_t *cl ) {
 			}
 			// verify first to be the cgame checksum
 			pArg = Cmd_Argv(nCurArg++);
-			if (!pArg || *pArg == '@' || atoi(pArg) != nChkSum1 ) {
+			if ( !*pArg || *pArg == '@' || atoi(pArg) != nChkSum1 ) {
 				bGood = qfalse;
 				break;
 			}
 			// verify the second to be the ui checksum
 			pArg = Cmd_Argv(nCurArg++);
-			if (!pArg || *pArg == '@' || atoi(pArg) != nChkSum2 ) {
+			if ( !*pArg || *pArg == '@' || atoi(pArg) != nChkSum2 ) {
 				bGood = qfalse;
 				break;
 			}
@@ -1154,25 +1156,9 @@ static void SV_VerifyPaks_f( client_t *cl ) {
 			if (bGood == qfalse)
 				break;
 
-			// get the pure checksums of the pk3 files loaded by the server
-			pPaks = FS_LoadedPakPureChecksums();
-			Cmd_TokenizeString( pPaks );
-			nServerPaks = Cmd_Argc();
-			if ( nServerPaks > ARRAY_LEN( nServerChkSum ) )
-				nServerPaks = ARRAY_LEN( nServerChkSum );
-
-			for (i = 0; i < nServerPaks; i++) {
-				nServerChkSum[i] = atoi(Cmd_Argv(i));
-			}
-
 			// check if the client has provided any pure checksums of pk3 files not loaded by the server
-			for (i = 0; i < nClientPaks; i++) {
-				for (j = 0; j < nServerPaks; j++) {
-					if (nClientChkSum[i] == nServerChkSum[j]) {
-						break;
-					}
-				}
-				if (j >= nServerPaks) {
+			for ( i = 0; i < nClientPaks; i++ ) {
+				if ( !FS_IsPureChecksum( nClientChkSum[i] ) ) {
 					bGood = qfalse;
 					break;
 				}

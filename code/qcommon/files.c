@@ -3617,6 +3617,53 @@ static void FS_ListOpenFiles_f( void ) {
 
 
 /*
+=====================
+FS_LoadedPakPureChecksums
+=====================
+*/
+static int fs_numPureChecksums;
+static int fs_pureChecksum[ 8192 ];
+
+static void FS_LoadedPakPureChecksums( void )
+{
+	const searchpath_t *search;
+
+	fs_numPureChecksums = 0;
+	for ( search = fs_searchpaths ; search ; search = search->next ) {
+		if ( search->pack ) {
+			if ( fs_numPureChecksums >= ARRAY_LEN( fs_pureChecksum ) ) {
+				Com_DPrintf( "WARNING: pure checksums overflowed\n" );
+				fs_numPureChecksums = 0;
+				return;
+			}
+			fs_pureChecksum[ fs_numPureChecksums ] = search->pack->pure_checksum;
+			fs_numPureChecksums++;
+		}
+	}
+}
+
+
+/*
+================
+FS_IsPureChecksum
+================
+*/
+qboolean FS_IsPureChecksum( int sum )
+{
+	int i;
+
+	if ( fs_numPureChecksums == 0 )
+		return qtrue;
+	
+	for ( i = 0; i < fs_numPureChecksums; i++ )
+		if ( fs_pureChecksum[i] == sum )
+			return qtrue;
+
+	return qfalse;
+}
+
+
+/*
 ================
 FS_Startup
 ================
@@ -3697,6 +3744,9 @@ static void FS_Startup( void ) {
 	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=506
 	// reorder the pure pk3 files according to server order
 	FS_ReorderPurePaks();
+
+	// get the pure checksums of the pk3 files loaded by the server
+	FS_LoadedPakPureChecksums();
 	
 	// print the current search paths
 	FS_Path_f();
@@ -3890,40 +3940,6 @@ const char *FS_LoadedPakNames( void ) {
 		if ( s + len > max )
 			break;
 
-		s = Q_stradd( s, buf );
-	}
-
-	return info;
-}
-
-
-/*
-=====================
-FS_LoadedPakPureChecksums
-
-Returns a space separated string containing the pure checksums of all loaded pk3 files.
-Servers with sv_pure use these checksums to compare with the checksums the clients send
-back to the server.
-=====================
-*/
-const char *FS_LoadedPakPureChecksums( void ) {
-	static char	info[BIG_INFO_STRING];
-	const searchpath_t *search;
-	char *s, *max, buf[32];
-	int len;
-	
-	s = info;
-	info[0] = '\0';
-	max = &info[sizeof(info)-1];
-
-	for ( search = fs_searchpaths ; search ; search = search->next ) {
-		// is the element a pak file? 
-		if ( !search->pack ) {
-			continue;
-		}
-		len = sprintf( buf, "%i ", search->pack->pure_checksum );
-		if ( s + len > max )
-			break;
 		s = Q_stradd( s, buf );
 	}
 
