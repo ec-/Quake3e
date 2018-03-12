@@ -531,7 +531,10 @@ static void Cmd_TokenizeString2( const char *text_in, qboolean ignoreQuotes ) {
 
 			// skip // comments
 			if ( text[0] == '/' && text[1] == '/' ) {
-				return;			// all tokens parsed
+				// accept protocol headers (e.g. http://) in command lines that matching "*?[a-z]://" pattern
+				if ( text < cmd_cmd + 3 || text[-1] != ':' || text[-2] < 'a' || text[-2] > 'z' ) {
+					return; // all tokens parsed
+				}
 			}
 
 			// skip /* */ comments
@@ -576,7 +579,10 @@ static void Cmd_TokenizeString2( const char *text_in, qboolean ignoreQuotes ) {
 			}
 
 			if ( text[0] == '/' && text[1] == '/' ) {
-				break;
+				// accept protocol headers (e.g. http://) in command lines that matching "*?[a-z]://" pattern
+				if ( text < cmd_cmd + 3 || text[-1] != ':' || text[-2] < 'a' || text[-2] > 'z' ) {
+					break;
+				}
 			}
 
 			// skip /* */ comments
