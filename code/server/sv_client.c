@@ -524,6 +524,84 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 
 /*
 ================
+SV_RemainingGameState
+
+estimates free space available for additional systeminfo keys
+================
+*/
+int SV_RemainingGameState( void )
+{
+	int			len;
+	int			start, i;
+	entityState_t nullstate;
+	const svEntity_t *svEnt;
+	msg_t		msg;
+	byte		msgBuffer[ MAX_MSGLEN_BUF ];
+
+	MSG_Init( &msg, msgBuffer, MAX_MSGLEN );
+
+	MSG_WriteLong( &msg, 7 ); // last client command
+
+	for ( i = 0; i < 256; i++ ) // simulate dummy client commands
+		MSG_WriteByte( &msg, i & 127 );
+
+	// send the gamestate
+	MSG_WriteByte( &msg, svc_gamestate );
+	MSG_WriteLong( &msg, 7 ); // client->reliableSequence
+
+	// write the configstrings
+	for ( start = 0 ; start < MAX_CONFIGSTRINGS ; start++ ) {
+		if ( start == CS_SERVERINFO ) {
+			MSG_WriteByte( &msg, svc_configstring );
+			MSG_WriteShort( &msg, start );
+			MSG_WriteBigString( &msg, Cvar_InfoString( CVAR_SERVERINFO ) );
+			continue;
+		}
+		if ( start == CS_SYSTEMINFO ) {
+			MSG_WriteByte( &msg, svc_configstring );
+			MSG_WriteShort( &msg, start );
+			MSG_WriteBigString( &msg, Cvar_InfoString_Big( CVAR_SYSTEMINFO ) );
+			continue;
+		}
+		if ( sv.configstrings[start][0] ) {
+			MSG_WriteByte( &msg, svc_configstring );
+			MSG_WriteShort( &msg, start );
+			MSG_WriteBigString( &msg, sv.configstrings[start] );
+		}
+	}
+
+	// write the baselines
+	Com_Memset( &nullstate, 0, sizeof( nullstate ) );
+	for ( start = 0 ; start < MAX_GENTITIES; start++ ) {
+		if ( !sv.baselineUsed[ start ] ) {
+			continue;
+		}
+		svEnt = &sv.svEntities[ start ];
+		MSG_WriteByte( &msg, svc_baseline );
+		MSG_WriteDeltaEntity( &msg, &nullstate, &svEnt->baseline, qtrue );
+	}
+
+	MSG_WriteByte( &msg, svc_EOF );
+
+	MSG_WriteLong( &msg, 7 ); // client num
+
+	// write the checksum feed
+	MSG_WriteLong( &msg, sv.checksumFeed );
+
+	// finalize packet
+	MSG_WriteByte( &msg, svc_EOF );
+
+	len = PAD( msg.bit, 8 ) / 8;
+
+	// reserve some space for potential userinfo expansion
+	len += 512;
+	
+	return MAX_MSGLEN - len;
+}
+
+
+/*
+================
 SV_SendClientGameState
 
 Sends the first message from the server to a connected client.

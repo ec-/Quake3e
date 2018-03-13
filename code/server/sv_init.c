@@ -585,31 +585,15 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	}	
 
 	// run another frame to allow things to look at all the players
-	VM_Call (gvm, GAME_RUN_FRAME, sv.time);
-	SV_BotFrame (sv.time);
+	VM_Call( gvm, GAME_RUN_FRAME, sv.time );
+	SV_BotFrame( sv.time );
 	sv.time += 100;
 	svs.time += 100;
 
-	if ( sv_pure->integer ) {
-		// the server sends these to the clients so they will only
-		// load pk3s also loaded at the server
-		p = FS_LoadedPakChecksums();
-		Cvar_Set( "sv_paks", p );
-		if ( *p == '\0' ) {
-			Com_Printf( "WARNING: sv_pure set but no PK3 files loaded\n" );
-		}
-		p = FS_LoadedPakNames();
-		Cvar_Set( "sv_pakNames", p );
-
-		// if a dedicated pure server we need to touch the cgame because it could be in a
-		// seperate pk3 file and the client will need to load the latest cgame.qvm
-		if ( com_dedicated->integer ) {
-			SV_TouchCGame();
-		}
-	}
-	else {
-		Cvar_Set( "sv_paks", "" );
-		Cvar_Set( "sv_pakNames", "" );
+	// if a dedicated pure server we need to touch the cgame because it could be in a
+	// seperate pk3 file and the client will need to load the latest cgame.qvm
+	if ( com_dedicated->integer && sv_pure->integer ) {
+		SV_TouchCGame();
 	}
 
 	// the server sends these to the clients so they can figure
@@ -618,6 +602,34 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	Cvar_Set( "sv_referencedPaks", p );
 	p = FS_ReferencedPakNames();
 	Cvar_Set( "sv_referencedPakNames", p );
+
+	Cvar_Set( "sv_paks", "" );
+	Cvar_Set( "sv_pakNames", "" ); // not used on client-side
+
+	if ( sv_pure->integer ) {
+		int freespace, pakslen, infolen;
+		const char *p;
+
+		p = FS_LoadedPakChecksums();
+
+		pakslen = strlen( p ) + 9; // + strlen( "\\sv_paks\\" )
+		freespace = SV_RemainingGameState();
+		infolen = strlen( Cvar_InfoString_Big( CVAR_SYSTEMINFO ) );
+
+		if ( pakslen > freespace || infolen + pakslen >= BIG_INFO_STRING ) {
+			// switch to degraded pure mode
+			// this could *potentially* lead to a false "unpure client" detection
+			// which is better than guaranteed drop
+			Com_DPrintf( S_COLOR_YELLOW "WARNING: skipping sv_paks setup to avoid gamestate overflow\n" );
+		} else {
+			// the server sends these to the clients so they will only
+			// load pk3s also loaded at the server
+			Cvar_Set( "sv_paks", p );
+			if ( *p == '\0' ) {
+				Com_Printf( "WARNING: sv_pure set but no PK3 files loaded\n" );
+			}
+		}
+	}
 
 	// save systeminfo and serverinfo strings
 	SV_SetConfigstring( CS_SYSTEMINFO, Cvar_InfoString_Big( CVAR_SYSTEMINFO ) );

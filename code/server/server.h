@@ -373,6 +373,8 @@ void SV_SendClientSnapshot( client_t *client );
 void SV_InitSnapshotStorage( void );
 void SV_IssueNewSnapshot( void );
 
+int SV_RemainingGameState( void );
+
 //
 // sv_game.c
 //
