@@ -174,7 +174,6 @@ qboolean Sys_RandomBytes( byte *string, int len )
 
 //============================================
 
-#define	MAX_FOUND_FILES	0x1000
 
 // bk001129 - new in 1.26
 void Sys_ListFilteredFiles( const char *basedir, const char *subdirs, const char *filter, char **list, int *numfiles ) {

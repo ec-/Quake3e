@@ -2289,8 +2289,6 @@ DIRECTORY SCANNING FUNCTIONS
 =================================================================================
 */
 
-#define	MAX_FOUND_FILES	0x1000
-
 static int FS_ReturnPath( const char *zname, char *zpath, int *depth ) {
 	int len, at, newdep;
 
@@ -2329,7 +2327,7 @@ char *FS_CopyString( const char *in ) {
 FS_AddFileToList
 ==================
 */
-static int FS_AddFileToList( const char *name, char *list[MAX_FOUND_FILES], int nfiles ) {
+static int FS_AddFileToList( const char *name, char **list, int nfiles ) {
 	int		i;
 
 	if ( nfiles == MAX_FOUND_FILES - 1 ) {
@@ -3877,7 +3875,7 @@ Returns a space separated string containing the checksums of all loaded pk3 file
 Servers with sv_pure set will get this string and pass it to clients.
 =====================
 */
-const char *FS_LoadedPakChecksums( void ) {
+const char *FS_LoadedPakChecksums( qboolean *overflowed ) {
 	static char	info[BIG_INFO_STRING];
 	searchpath_t *search;
 	char buf[ 32 ];
@@ -3887,6 +3885,7 @@ const char *FS_LoadedPakChecksums( void ) {
 	s = info;
 	info[0] = '\0';
 	max = &info[sizeof(info)-1];
+	*overflowed = qfalse;
 
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		// is the element a pak file?
@@ -3898,8 +3897,10 @@ const char *FS_LoadedPakChecksums( void ) {
 		else
 			len = sprintf( buf, "%i", search->pack->checksum );
 
-		if ( s + len > max )
+		if ( s + len > max ) {
+			*overflowed = qtrue;
 			break;
+		}
 
 		s = Q_stradd( s, buf );
 	}
@@ -3916,6 +3917,7 @@ Returns a space separated string containing the names of all loaded pk3 files.
 Servers with sv_pure set will get this string and pass it to clients.
 =====================
 */
+#ifndef DEDICATED
 const char *FS_LoadedPakNames( void ) {
 	static char	info[BIG_INFO_STRING];
 	searchpath_t *search;
@@ -3945,6 +3947,7 @@ const char *FS_LoadedPakNames( void ) {
 
 	return info;
 }
+#endif
 
 
 /*

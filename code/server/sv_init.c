@@ -608,15 +608,15 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 
 	if ( sv_pure->integer ) {
 		int freespace, pakslen, infolen;
-		const char *p;
+		qboolean overflowed = qfalse;
 
-		p = FS_LoadedPakChecksums();
+		p = FS_LoadedPakChecksums( &overflowed );
 
 		pakslen = strlen( p ) + 9; // + strlen( "\\sv_paks\\" )
 		freespace = SV_RemainingGameState();
 		infolen = strlen( Cvar_InfoString_Big( CVAR_SYSTEMINFO ) );
 
-		if ( pakslen > freespace || infolen + pakslen >= BIG_INFO_STRING ) {
+		if ( pakslen > freespace || infolen + pakslen >= BIG_INFO_STRING || overflowed ) {
 			// switch to degraded pure mode
 			// this could *potentially* lead to a false "unpure client" detection
 			// which is better than guaranteed drop
@@ -724,10 +724,6 @@ void SV_Init( void )
 	sv_killserver = Cvar_Get ("sv_killserver", "0", 0);
 	sv_mapChecksum = Cvar_Get ("sv_mapChecksum", "", CVAR_ROM);
 	sv_lanForceRate = Cvar_Get ("sv_lanForceRate", "1", CVAR_ARCHIVE_ND );
-
-#ifndef STANDALONE
-	sv_strictAuth = Cvar_Get ("sv_strictAuth", "1", CVAR_ARCHIVE_ND );
-#endif
 
 #ifdef USE_BANS
 	sv_banFile = Cvar_Get("sv_banFile", "serverbans.dat", CVAR_ARCHIVE);

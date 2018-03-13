@@ -643,6 +643,8 @@ typedef enum {
 #define	MAX_FILE_HANDLES	64
 #define	FS_INVALID_HANDLE	0
 
+#define	MAX_FOUND_FILES		0x1000
+
 #ifdef DEDICATED
 #define Q3CONFIG_CFG "q3config_server.cfg"
 #else
@@ -748,7 +750,7 @@ int		FS_Seek( fileHandle_t f, long offset, fsOrigin_t origin );
 qboolean FS_FilenameCompare( const char *s1, const char *s2 );
 
 const char *FS_LoadedPakNames( void );
-const char *FS_LoadedPakChecksums( void );
+const char *FS_LoadedPakChecksums( qboolean *overflowed );
 // Returns a space separated string containing the checksums of all loaded pk3 files.
 // Servers with sv_pure set will get this string and pass it to clients.
 
