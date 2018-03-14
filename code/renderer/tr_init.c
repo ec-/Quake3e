@@ -1259,7 +1259,7 @@ static void R_Register( void )
 	ri.Cvar_CheckRange( r_nomip, "0", "1", CV_INTEGER );
 	ri.Cvar_SetDescription( r_nomip, "Apply picmip only on worldspawn textures" );
 
-	r_neatsky = ri.Cvar_Get( "r_neatsky", "1", CVAR_ARCHIVE | CVAR_LATCH | CVAR_NODEFAULT );
+	r_neatsky = ri.Cvar_Get( "r_neatsky", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_roundImagesDown = ri.Cvar_Get ("r_roundImagesDown", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_colorMipLevels = ri.Cvar_Get ("r_colorMipLevels", "0", CVAR_LATCH );
 	r_detailTextures = ri.Cvar_Get( "r_detailtextures", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
