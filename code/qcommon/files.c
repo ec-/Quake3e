@@ -544,6 +544,26 @@ char *FS_BuildOSPath( const char *base, const char *game, const char *qpath ) {
 
 
 /*
+================
+FS_CheckDirTraversal
+
+Check whether the string contains stuff like "../" to prevent directory traversal bugs
+and return qtrue if it does.
+================
+*/
+static qboolean FS_CheckDirTraversal( const char *checkdir )
+{
+	if ( strstr( checkdir, "../" ) || strstr( checkdir, "..\\" ) )
+		return qtrue;
+
+	if ( strstr( checkdir, "::" ) )
+		return qtrue;
+	
+	return qfalse;
+}
+
+
+/*
 ============
 FS_CreatePath
 
@@ -556,7 +576,7 @@ static qboolean FS_CreatePath( const char *OSPath ) {
 	
 	// make absolutely sure that it can't back up the path
 	// FIXME: is c: allowed???
-	if ( strstr( OSPath, ".." ) || strstr( OSPath, "::" ) ) {
+	if ( FS_CheckDirTraversal( OSPath ) ) {
 		Com_Printf( "WARNING: refusing to create relative path \"%s\"\n", OSPath );
 		return qtrue;
 	}
@@ -1418,7 +1438,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	// make absolutely sure that it can't back up the path.
 	// The searchpaths do guarantee that something will always
 	// be prepended, so we don't need to worry about "c:" or "//limbo" 
-	if ( strstr( filename, ".." ) || strstr( filename, "::" ) ) {
+	if ( FS_CheckDirTraversal( filename ) ) {
 		*file = FS_INVALID_HANDLE;
 		return -1;
 	}
@@ -1856,7 +1876,7 @@ qboolean FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName ) {
 	// make absolutely sure that it can't back up the path.
 	// The searchpaths do guarantee that something will always
 	// be prepended, so we don't need to worry about "c:" or "//limbo" 
-	if ( strstr( filename, ".." ) || strstr( filename, "::" ) ) {
+	if ( FS_CheckDirTraversal( filename ) ) {
 		return qfalse;
 	}
 
@@ -3330,23 +3350,6 @@ qboolean FS_idPak(const char *pak, const char *base, int numPaks)
 	if (i < numPaks) {
 		return qtrue;
 	}
-	return qfalse;
-}
-
-
-/*
-================
-FS_CheckDirTraversal
-
-Check whether the string contains stuff like "../" to prevent directory traversal bugs
-and return qtrue if it does.
-================
-*/
-static qboolean FS_CheckDirTraversal( const char *checkdir )
-{
-	if(strstr(checkdir, "../") || strstr(checkdir, "..\\"))
-		return qtrue;
-	
 	return qfalse;
 }
 
