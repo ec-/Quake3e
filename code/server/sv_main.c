@@ -358,11 +358,11 @@ leakyBucket_t outboundLeakyBucket;
 SVC_HashForAddress
 ================
 */
-static long SVC_HashForAddress( const netadr_t *address ) {
+static int SVC_HashForAddress( const netadr_t *address ) {
 	const byte	*ip = NULL;
-	size_t	size = 0;
+	int			size = 0;
+	int			hash = 0;
 	int			i;
-	long		hash = 0;
 
 	switch ( address->type ) {
 		case NA_IP:  ip = address->ipv._4; size = 4;  break;
@@ -371,7 +371,7 @@ static long SVC_HashForAddress( const netadr_t *address ) {
 	}
 
 	for ( i = 0; i < size; i++ ) {
-		hash += (long)( ip[ i ] ) * ( i + 119 );
+		hash += (int)( ip[ i ] ) * ( i + 119 );
 	}
 
 	hash = ( hash ^ ( hash >> 10 ) ^ ( hash >> 20 ) );
@@ -390,9 +390,9 @@ Find or allocate a bucket for an address
 */
 static leakyBucket_t *SVC_BucketForAddress( const netadr_t *address, int burst, int period ) {
 	leakyBucket_t	*bucket = NULL;
-	int				i;
-	long			hash = SVC_HashForAddress( address );
+	const int		hash = SVC_HashForAddress( address );
 	int				now = Sys_Milliseconds();
+	int				i;
 
 	for ( bucket = bucketHashes[ hash ]; bucket; bucket = bucket->next ) {
 		switch ( bucket->type ) {
@@ -446,8 +446,9 @@ static leakyBucket_t *SVC_BucketForAddress( const netadr_t *address, int burst, 
 			}
 
 			bucket->lastTime = now;
-			bucket->burst = 0;
 			bucket->hash = hash;
+			bucket->burst = 0;
+			bucket->toxic = 0;
 
 			// Add to the head of the relevant hash chain
 			bucket->next = bucketHashes[ hash ];
@@ -482,6 +483,7 @@ qboolean SVC_RateLimit( leakyBucket_t *bucket, int burst, int period ) {
 		if ( expired > bucket->burst || interval < 0 ) {
 			bucket->burst = 0;
 			bucket->lastTime = now;
+			bucket->toxic  = bucket->toxic ? bucket->toxic-1 : 0;
 		} else {
 			bucket->burst -= expired;
 			bucket->lastTime = now - expiredRemainder;
@@ -500,6 +502,20 @@ qboolean SVC_RateLimit( leakyBucket_t *bucket, int burst, int period ) {
 
 /*
 ================
+SVC_RateDrop
+================
+*/
+static void SVC_RateDrop( leakyBucket_t *bucket, int burst ) {
+	if ( bucket != NULL ) {
+		bucket->toxic += 2;	// to make timing attack on rate limiter ineffective
+		bucket->burst = burst * bucket->toxic;
+		bucket->lastTime = Sys_Milliseconds();
+	}
+}
+
+
+/*
+================
 SVC_RateLimitAddress
 
 Rate limit for a particular address
@@ -509,6 +525,18 @@ qboolean SVC_RateLimitAddress( const netadr_t *from, int burst, int period ) {
 	leakyBucket_t *bucket = SVC_BucketForAddress( from, burst, period );
 
 	return SVC_RateLimit( bucket, burst, period );
+}
+
+
+/*
+================
+SVC_RateDrop
+================
+*/
+void SVC_RateDropAddress( const netadr_t *from, int burst, int period ) {
+	leakyBucket_t *bucket = SVC_BucketForAddress( from, burst, period );
+
+	SVC_RateDrop( bucket, burst );
 }
 
 
@@ -973,7 +1001,7 @@ static void SV_CheckTimeouts( void ) {
 		}
 		if ( cl->state == CS_CONNECTED && svs.time - cl->lastPacketTime > 4000 ) {
 			// for real client 4 seconds is more than enough to respond
-			SVC_RateLimitAddress( &cl->netchan.remoteAddress, 10, 1000 );
+			SVC_RateDropAddress( &cl->netchan.remoteAddress, 10, 1000 ); // enforce burst with progressive multiplier
 			SV_DropClient( cl, NULL ); // drop silently
 			cl->state = CS_FREE;
 			continue;

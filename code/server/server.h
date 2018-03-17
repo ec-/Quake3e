@@ -293,9 +293,10 @@ struct leakyBucket_s {
 	} ipv;
 
 	int			lastTime;
-	signed char	burst;
+	int			burst;
 
-	long		hash;
+	int			hash;
+	int			toxic;
 
 	leakyBucket_t *prev, *next;
 };
@@ -304,6 +305,7 @@ extern leakyBucket_t outboundLeakyBucket;
 
 qboolean SVC_RateLimit( leakyBucket_t *bucket, int burst, int period );
 qboolean SVC_RateLimitAddress( const netadr_t *from, int burst, int period );
+void SVC_RateDropAddress( const netadr_t *from, int burst, int period );
 
 void SV_FinalMessage( const char *message );
 void QDECL SV_SendServerCommand( client_t *cl, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
