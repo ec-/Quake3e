@@ -333,11 +333,11 @@ static qboolean CL_ValidatePipeFormat( const char *s )
 {
 	while ( *s != '\0' ) 
 	{
-		if ( *s == '.' && *(s+1) == '.' )
+		if ( *s == '.' && *(s+1) == '.' && ( *(s+2) == '/' || *(s+2) == '\\' ) )
 			return qfalse;
 		if ( *s == ':' && *(s+1) == ':' )
 			return qfalse;
-		if ( *s == '>' )
+		if ( *s == '>' || *s == '|' )
 			return qfalse;
 		s++;
 	}
