@@ -337,7 +337,7 @@ static qboolean CL_ValidatePipeFormat( const char *s )
 			return qfalse;
 		if ( *s == ':' && *(s+1) == ':' )
 			return qfalse;
-		if ( *s == '>' || *s == '|' )
+		if ( *s == '>' || *s == '|' || *s == '&' )
 			return qfalse;
 		s++;
 	}
