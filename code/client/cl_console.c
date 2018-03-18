@@ -731,8 +731,8 @@ void Con_DrawSolidConsole( float frac ) {
 			// track changes
 			if ( strcmp( cl_conColor->string, conColorString ) ) 
 			{
-				strcpy( conColorString, cl_conColor->string );
-				strcpy( buf, cl_conColor->string );
+				Q_strncpyz( conColorString, cl_conColor->string, sizeof( conColorString ) );
+				Q_strncpyz( buf, cl_conColor->string, sizeof( buf ) );
 				Com_Split( buf, v, 4, ' ' );
 				for ( i = 0; i < 4 ; i++ ) {
 					conColorValue[ i ] = atof( v[ i ] ) / 255.0;

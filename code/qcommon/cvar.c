@@ -1082,14 +1082,14 @@ const char *GetValue( int index, int *ival, float *fval )
 	{
 		*ival = atoi( cmd );
 		*fval = atof( cmd );
-		strcpy( buf, cmd );
+		Q_strncpyz( buf, cmd, sizeof( buf ) );
 		return buf;
 	}
 	else // found cvar, extract values
 	{
 		*ival = var->integer;
 		*fval = var->value;
-		strcpy( buf, var->string );
+		Q_strncpyz( buf, var->string, sizeof( buf ) );
 		return buf;
 	}
 }

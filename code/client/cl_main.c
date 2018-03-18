@@ -1609,7 +1609,7 @@ void CL_Connect_f( void ) {
 	Q_strncpyz( cls.servername, server, sizeof( cls.servername ) );
 
 	// save arguments for reconnect
-	strcpy( cl_reconnectArgs, cmd_args );
+	Q_strncpyz( cl_reconnectArgs, cmd_args, sizeof( cl_reconnectArgs ) );
 
 	// copy resolved address 
 	clc.serverAddress = addr;
