@@ -220,7 +220,6 @@ static const unsigned pak_checksums[] = {
 //#define PRE_RELEASE_TADEMO
 
 #define MAX_ZPATH			256
-#define	MAX_SEARCH_PATHS	4096
 #define MAX_FILEHASH_SIZE	4096
 
 typedef struct fileInPack_s {
@@ -243,6 +242,7 @@ typedef struct {
 	fileInPack_t*	*hashTable;					// hash table
 	fileInPack_t*	buildBuffer;				// buffer with the filenames etc.
 	int				index;
+	int				used;
 } pack_t;
 
 typedef struct {
@@ -273,6 +273,8 @@ static	cvar_t		*fs_basepath;
 		cvar_t		*fs_basegame;
 static	cvar_t		*fs_copyfiles;
 		cvar_t		*fs_gamedirvar;
+static	cvar_t		*fs_locked;
+
 static	searchpath_t	*fs_searchpaths;
 static	int			fs_readCount;			// total bytes read
 static	int			fs_loadCount;			// total files read
@@ -302,6 +304,7 @@ typedef struct {
 	char		name[MAX_ZPATH];
 	handleOwner_t	owner;
 	int			pakIndex;
+	pack_t		*pak;
 } fileHandleData_t;
 
 static fileHandleData_t	fsh[MAX_FILE_HANDLES];
@@ -1045,6 +1048,13 @@ void FS_FCloseFile( fileHandle_t f ) {
 		}
 		fd->handleFiles.file.z = NULL;
 		fd->zipFile = qfalse;
+		fd->pak->used--;
+		if ( !fs_locked->integer ) {
+			if ( fd->pak->handle && !fd->pak->used ) {
+				unzClose( fd->pak->handle );
+				fd->pak->handle = NULL;
+			}
+		}
 	} else {
 		if ( fd->handleFiles.file.o ) {
 			fclose( fd->handleFiles.file.o );
@@ -1491,11 +1501,20 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 							pak->referenced |= FS_GENERAL_REF;
 					}
 
-					if (!(pak->referenced & FS_CGAME_REF) && strstr(filename, "cgame.qvm")) {
+					if (!(pak->referenced & FS_CGAME_REF) && !strcmp(filename, "vm/cgame.qvm")) {
 						pak->referenced |= FS_CGAME_REF;
 					}
-					if (!(pak->referenced & FS_UI_REF) && strstr(filename, "ui.qvm")) {
+					if (!(pak->referenced & FS_UI_REF) && !strcmp(filename, "vm/ui.qvm")) {
 						pak->referenced |= FS_UI_REF;
+					}
+
+					if ( !pak->handle ) {
+						pak->handle = unzOpen( pak->pakFilename );
+						if ( !pak->handle ) {
+							Com_Printf( S_COLOR_YELLOW "Error opening %s\n", pak->pakBasename );
+							pakFile = pakFile->next;
+							continue;
+						}
 					}
 
 					if ( uniqueFILE ) {
@@ -1525,6 +1544,8 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					f->handleFiles.unique = uniqueFILE;
 					f->pakIndex = pak->index;
 					fs_lastPakIndex = pak->index;
+					f->pak = pak;
+					pak->used++;
 
 					if ( fs_debug->integer ) {
 						Com_Printf( "FS_FOpenFileRead: %s (found in '%s')\n", 
@@ -2229,6 +2250,12 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 
 	Z_Free(fs_headerLongs);
 
+	if ( !fs_locked->integer )
+	{
+		unzClose( pack->handle );
+		pack->handle = NULL;
+	}
+
 	pack->buildBuffer = buildBuffer;
 	return pack;
 }
@@ -2243,7 +2270,11 @@ Frees a pak structure and releases all associated resources
 */
 static void FS_FreePak( pack_t *pak )
 {
-	unzClose( pak->handle );
+	if ( pak->handle )
+	{
+		unzClose( pak->handle );
+		pak->handle = NULL;
+	}
 	Z_Free( pak->buildBuffer );
 	Z_Free( pak );
 }
@@ -3387,8 +3418,8 @@ The string is the format:
 @remotename@localname [repeat]
 
 static int		fs_numServerReferencedPaks;
-static int		fs_serverReferencedPaks[MAX_SEARCH_PATHS];
-static char		*fs_serverReferencedPakNames[MAX_SEARCH_PATHS];
+static int		fs_serverReferencedPaks[MAX_REF_PAKS];
+static char		*fs_serverReferencedPakNames[MAX_REF_PAKS];
 
 ----------------
 dlstring == qfalse
@@ -3623,7 +3654,7 @@ FS_LoadedPakPureChecksums
 =====================
 */
 static int fs_numPureChecksums;
-static int fs_pureChecksum[ 8192 ];
+static int fs_pureChecksum[ MAX_FOUND_FILES ];
 
 static void FS_LoadedPakPureChecksums( void )
 {
@@ -3682,6 +3713,11 @@ static void FS_Startup( void ) {
 	fs_basepath = Cvar_Get( "fs_basepath", Sys_DefaultBasePath(), CVAR_INIT | CVAR_PROTECTED | CVAR_PRIVATE );
 	fs_basegame = Cvar_Get( "fs_basegame", BASEGAME, CVAR_INIT | CVAR_PROTECTED );
 	fs_steampath = Cvar_Get( "fs_steampath", Sys_SteamPath(), CVAR_INIT | CVAR_PROTECTED | CVAR_PRIVATE );
+
+	fs_locked = Cvar_Get( "fs_locked", "0", CVAR_INIT );
+	Cvar_SetDescription( fs_locked, "Set file handle policy for pk3 files:\n"
+		" 0 - release after use, unlimited number of pk3 files can be loaded\n"
+		" 1 - keep file handle locked, more consistent, total pk3 files count limited to ~1k-4k\n" );
 
 	if ( !fs_basegame->string[0] )
 		Com_Error( ERR_FATAL, "* fs_basegame is not set *" );
@@ -4252,6 +4288,7 @@ void FS_InitFilesystem( void ) {
 	Com_StartupVariable( "fs_basegame" );
 	Com_StartupVariable( "fs_copyfiles" );
 	Com_StartupVariable( "fs_restrict" );
+	Com_StartupVariable( "fs_locked" );
 
 #ifdef _WIN32
  	_setmaxstdio( 2048 );
