@@ -1178,6 +1178,17 @@ static int unzlocal_getLong (FILE *fin, uLong *pX)
 }
 
 
+static int unzlocal_getData( FILE *fin, byte *buf, int size )
+{
+	if ( fread( buf, size, 1, fin ) != 1 )
+	{
+		return UNZ_ERRNO;
+	}
+
+	return UNZ_OK;
+}
+
+
 /* My own strcmpi / strcasecmp */
 static int strcmpcasenosensitive_internal (const char* fileName1,const char* fileName2)
 {
@@ -1476,6 +1487,7 @@ static int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 	unz_s* s;
 	unz_file_info file_info;
 	unz_file_info_internal file_info_internal;
+	byte buf[46];
 	int err=UNZ_OK;
 	uLong uMagic;
 	long lSeek=0;
@@ -1486,6 +1498,30 @@ static int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 	if (fseek(s->file,s->pos_in_central_dir+s->byte_before_the_zipfile,SEEK_SET)!=0)
 		err=UNZ_ERRNO;
 
+#if 1 // try ro reduce fread() overhead
+	if ( unzlocal_getData( s->file, buf, 46 ) != UNZ_OK )
+		return UNZ_ERRNO;
+	uMagic = LittleLong( *(int*)(buf+0) );
+	/* we check the magic */
+	if ( uMagic != 0x02014b50 )
+		return UNZ_BADZIPFILE;
+	file_info.version = LittleShort( *(short*)(buf+4) );
+	file_info.version_needed  = LittleShort( *(short*)(buf+6) );
+	file_info.flag = LittleShort( *(short*)(buf+8) );
+	file_info.compression_method = LittleShort( *(short*)(buf+10) );
+	file_info.dosDate = LittleLong( *(int*)(buf+12) );
+	unzlocal_DosDateToTmuDate( file_info.dosDate, &file_info.tmu_date );
+	file_info.crc = LittleLong( *(int*)(buf+16) );
+	file_info.compressed_size = LittleLong( *(int*)(buf+20) );
+	file_info.uncompressed_size = LittleLong( *(int*)(buf+24) );
+	file_info.size_filename = LittleShort( *(short*)(buf+28) );
+	file_info.size_file_extra = LittleShort( *(short*)(buf+30) );
+	file_info.size_file_comment = LittleShort( *(short*)(buf+32) );
+	file_info.disk_num_start = LittleShort( *(short*)(buf+34) );
+	file_info.internal_fa = LittleShort( *(short*)(buf+36) );
+	file_info.external_fa = LittleLong( *(int*)(buf+38) );
+	file_info_internal.offset_curfile = LittleLong( *(int*)(buf+42) );
+#else
 
 	/* we check the magic */
 	if (err==UNZ_OK) {
@@ -1509,7 +1545,7 @@ static int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 	if (unzlocal_getLong(s->file,&file_info.dosDate) != UNZ_OK)
 		err=UNZ_ERRNO;
 
-    unzlocal_DosDateToTmuDate(file_info.dosDate,&file_info.tmu_date);
+	unzlocal_DosDateToTmuDate(file_info.dosDate,&file_info.tmu_date);
 
 	if (unzlocal_getLong(s->file,&file_info.crc) != UNZ_OK)
 		err=UNZ_ERRNO;
@@ -1540,6 +1576,7 @@ static int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 
 	if (unzlocal_getLong(s->file,&file_info_internal.offset_curfile) != UNZ_OK)
 		err=UNZ_ERRNO;
+#endif
 
 	lSeek+=file_info.size_filename;
 	if ((err==UNZ_OK) && (szFileName!=NULL))

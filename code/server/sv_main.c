@@ -526,7 +526,7 @@ qboolean SVC_RateLimitAddress( const netadr_t *from, int burst, int period ) {
 
 /*
 ================
-SVC_RateDrop
+SVC_RateDropAddress
 ================
 */
 void SVC_RateDropAddress( const netadr_t *from, int burst, int period ) {
