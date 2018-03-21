@@ -492,7 +492,7 @@ int StringContains(char *str1, char *str2, int casesensitive)
 			} //end if
 			else
 			{
-				if (upcase[(byte)str1[j]] != upcase[(byte)str2[j]]) break;
+				if (locase[(byte)str1[j]] != locase[(byte)str2[j]]) break;
 			} //end else
 		} //end for
 		if (!str2[j]) return index;
@@ -529,7 +529,7 @@ char *StringContainsWord(char *str1, char *str2, int casesensitive)
 			} //end if
 			else
 			{
-				if (upcase[(byte)str1[j]] != upcase[(byte)str2[j]]) break;
+				if (locase[(byte)str1[j]] != locase[(byte)str2[j]]) break;
 			} //end else
 		} //end for
 		//if there was a word match
