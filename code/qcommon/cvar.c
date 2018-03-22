@@ -505,7 +505,7 @@ static void Cvar_QSortByName( cvar_t **a, int n )
 {
 	cvar_t *temp;
 	cvar_t *m;
-	int	i, j; 
+	int i, j;
 
 	i = 0;
 	j = n;

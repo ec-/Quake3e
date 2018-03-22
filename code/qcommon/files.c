@@ -2991,27 +2991,26 @@ static int FS_PathCmp( const char *s1, const char *s2 ) {
 FS_SortFileList
 ================
 */
-static void FS_SortFileList( char **filelist, int numfiles ) {
-	int i, j, k, numsortedfiles;
-	char **sortedlist;
-
-	sortedlist = Z_Malloc( ( numfiles + 1 ) * sizeof( *sortedlist ) );
-	sortedlist[0] = NULL;
-	numsortedfiles = 0;
-	for (i = 0; i < numfiles; i++) {
-		for (j = 0; j < numsortedfiles; j++) {
-			if (FS_PathCmp(filelist[i], sortedlist[j]) < 0) {
-				break;
-			}
+static void FS_SortFileList( char **list, int n ) {
+	const char *m;
+	char *temp;
+	int i, j;
+	i = 0;
+	j = n;
+	m = list[ n >> 1 ];
+	do {
+		while ( FS_PathCmp( list[i], m ) < 0 ) i++;
+		while ( FS_PathCmp( list[j], m ) > 0 ) j--;
+		if ( i <= j ) {
+			temp = list[i];
+			list[i] = list[j];
+			list[j] = temp;
+			i++; 
+			j--;
 		}
-		for (k = numsortedfiles; k > j; k--) {
-			sortedlist[k] = sortedlist[k-1];
-		}
-		sortedlist[j] = filelist[i];
-		numsortedfiles++;
-	}
-	Com_Memcpy( filelist, sortedlist, numfiles * sizeof( *filelist ) );
-	Z_Free( sortedlist );
+	} while ( i <= j );
+	if ( j > 0 ) FS_SortFileList( list, j );
+	if ( n > i ) FS_SortFileList( list+i, n-i );
 }
 
 
@@ -3039,7 +3038,8 @@ static void FS_NewDir_f( void ) {
 
 	dirnames = FS_ListFilteredFiles( "", "", filter, &ndirs, qfalse );
 
-	FS_SortFileList( dirnames, ndirs );
+	if ( ndirs >= 2 )
+		FS_SortFileList( dirnames, ndirs - 1 );
 
 	for ( i = 0; i < ndirs; i++ ) {
 		Q_strncpyz( dirname, dirnames[i], sizeof( dirname ) );
@@ -3192,29 +3192,6 @@ static void FS_Which_f( void ) {
 
 //===========================================================================
 
-static void PakSort( char **a, int n ) {
-	char *temp;
-	char *m;
-	int	i, j; 
-	i = 0;
-	j = n;
-	m = a[ n>>1 ];
-	do {
-		while ( FS_PathCmp( a[i], m ) < 0 )i++;
-		while ( FS_PathCmp( a[j], m ) > 0 ) j--;
-		if ( i <= j ) {
-			temp = a[i]; 
-			a[i] = a[j]; 
-			a[j] = temp;
-			i++; 
-			j--;
-		}
-  } while ( i <= j );
-  if ( j > 0 ) PakSort( a, j );
-  if ( n > i ) PakSort( a+i, n-i );
-}
-
-
 /*
 ================
 FS_AddGameDirectory
@@ -3266,7 +3243,7 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 	pakfiles = Sys_ListFiles(curpath, ".pk3", NULL, &numfiles, qfalse);
 
 	if ( numfiles >= 2 )
-		PakSort( pakfiles, numfiles - 1 );
+		FS_SortFileList( pakfiles, numfiles - 1 );
 
 	pakfilesi = 0;
 	pakdirsi = 0;
@@ -3278,7 +3255,7 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 		// Get top level directories (we'll filter them later since the Sys_ListFiles filtering is terrible)
 		pakdirs = Sys_ListFiles( curpath, "/", NULL, &numdirs, qfalse );
 		if ( numdirs >= 2 ) {
-			PakSort( pakdirs, numdirs - 1 );
+			FS_SortFileList( pakdirs, numdirs - 1 );
 		}
 	}
 
@@ -4484,7 +4461,8 @@ void	FS_FilenameCompletion( const char *dir, const char *ext,
 
 	filenames = FS_ListFilteredFiles( dir, ext, NULL, &nfiles, flags );
 
-	FS_SortFileList( filenames, nfiles );
+	if ( nfiles >= 2 )
+		FS_SortFileList( filenames, nfiles-1 );
 
 	for( i = 0; i < nfiles; i++ ) {
 

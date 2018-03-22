@@ -916,7 +916,7 @@ qsort_int
 */
 static void qsort_int( int *a, const int n ) {
 	int temp, m;
-	int	i, j; 
+	int i, j;
 
 	if ( n < 32 ) { // CUTOFF
 		for ( i = 1 ; i < n + 1 ; i++ ) {
