@@ -991,7 +991,7 @@ Special version for first-person models, borrowed from OpenArena
 void RB_CalcEnvironmentTexCoordsFP( float *st, qboolean screenMap ) {
 	int			i;
 	const float	*v, *normal;
-	vec3_t		viewer, reflected, where, what, why, who;
+	vec3_t		viewer, reflected, where, why, who; // what
 	float		d; 
 
 	if ( !backEnd.currentEntity || ( backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON ) == 0 )
@@ -1010,7 +1010,7 @@ void RB_CalcEnvironmentTexCoordsFP( float *st, qboolean screenMap ) {
 
 	for ( i = 0 ; i < tess.numVertexes ; i++, v += 4, normal += 4, st += 2 ) 
 	{
-		VectorSubtract( backEnd.or.axis[0], v, what );
+		//VectorSubtract( backEnd.or.axis[0], v, what );
 		VectorSubtract( backEnd.or.axis[1], v, why );
 		VectorSubtract( backEnd.or.axis[2], v, who );
 
@@ -1019,7 +1019,7 @@ void RB_CalcEnvironmentTexCoordsFP( float *st, qboolean screenMap ) {
 
 		VectorNormalizeFast( viewer );
 		VectorNormalizeFast( where );
-		VectorNormalizeFast( what );
+		//VectorNormalizeFast( what );
 		VectorNormalizeFast( why );
 		VectorNormalizeFast( who );
 
