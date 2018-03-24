@@ -1009,6 +1009,67 @@ static void CL_FirstSnapshot( void ) {
 
 /*
 ==================
+CL_AvgPing
+
+Calculates Average Ping from snapshots in buffer. Used by AutoNudge.
+==================
+*/
+static float CL_AvgPing( void ) {
+	int ping[PACKET_BACKUP];
+	int count = 0;
+	int i, j, iTemp;
+	float result;
+
+	for ( i = 0; i < PACKET_BACKUP; i++ ) {
+		if ( cl.snapshots[i].ping > 0 && cl.snapshots[i].ping < 999 ) {
+			ping[count] = cl.snapshots[i].ping;
+			count++;
+		}
+	}
+
+	if ( count == 0 )
+		return 0;
+
+	// sort ping array
+	for ( i = count - 1; i > 0; --i ) {
+		for ( j = 0; j < i; ++j ) {
+			if (ping[j] > ping[j + 1]) {
+				iTemp = ping[j];
+				ping[j] = ping[j + 1];
+				ping[j + 1] = iTemp;
+			}
+		}
+	}
+
+	// use median average ping
+	if ( (count % 2) == 0 )
+		result = (ping[count / 2] + ping[(count / 2) - 1]) / 2.0;
+	else
+		result = ping[count / 2];
+
+	return result;
+}
+
+
+/*
+==================
+CL_TimeNudge
+
+Returns either auto-nudge or cl_timeNudge value.
+==================
+*/
+static int CL_TimeNudge( void ) {
+	float autoNudge = cl_autoNudge->value;
+
+	if ( autoNudge != 0.0 )
+		return (int)((CL_AvgPing() * autoNudge) + 0.5) * -1;
+	else
+		return cl_timeNudge->integer;
+}
+
+
+/*
+==================
 CL_SetCGameTime
 ==================
 */
@@ -1063,7 +1124,7 @@ void CL_SetCGameTime( void ) {
 		// cl_timeNudge is a user adjustable cvar that allows more
 		// or less latency to be added in the interest of better 
 		// smoothness or better responsiveness.
-		cl.serverTime = cls.realtime + cl.serverTimeDelta - cl_timeNudge->integer;
+		cl.serverTime = cls.realtime + cl.serverTimeDelta - CL_TimeNudge();
 
 		// guarantee that time will never flow backwards, even if
 		// serverTimeDelta made an adjustment or cl_timeNudge was changed
