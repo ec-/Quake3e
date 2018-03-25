@@ -225,7 +225,24 @@ void SV_DirectConnect( const netadr_t *from ) {
 	}
 #endif
 
-	Q_strncpyz( userinfo, Cmd_Argv(1), sizeof(userinfo) );
+	// verify challenge in first place
+	challenge = atoi( Info_ValueForKey( Cmd_Argv( 1 ), "challenge" ) );
+
+	// see if the challenge is valid (localhost clients don't need to challenge)
+	if ( !NET_IsLocalAddress( from ) )
+	{
+		// Verify the received challenge against the expected challenge
+		if ( !SV_VerifyChallenge( challenge, from ) )
+		{
+			if ( com_developer->integer )
+			{
+				NET_OutOfBandPrint( NS_SERVER, from, "print\nIncorrect challenge for your address.\n" );
+			}
+			return;
+		}
+	}
+
+	Q_strncpyz( userinfo, Cmd_Argv( 1 ), sizeof( userinfo ) );
 
 	version = atoi( Info_ValueForKey( userinfo, "protocol" ) );
 	
@@ -242,7 +259,6 @@ void SV_DirectConnect( const netadr_t *from ) {
 		}
 	}
 
-	challenge = atoi( Info_ValueForKey( userinfo, "challenge" ) );
 	qport = atoi( Info_ValueForKey( userinfo, "qport" ) );
 
 	// quick reject
@@ -274,20 +290,6 @@ void SV_DirectConnect( const netadr_t *from ) {
 		NET_OutOfBandPrint( NS_SERVER, from, "print\nUserinfo string length exceeded.  "
 			"Try removing setu cvars from your config.\n" );
 		return;
-	}
-
-	// see if the challenge is valid (localhost clients don't need to challenge)
-	if ( !NET_IsLocalAddress( from ) )
-	{
-		// Verify the received challenge against the expected challenge
-		if ( !SV_VerifyChallenge( challenge, from ) )
-		{
-			if ( com_developer->integer )
-			{
-				NET_OutOfBandPrint( NS_SERVER, from, "print\nIncorrect challenge for your address.\n" );
-			}
-			return;
-		}
 	}
 
 	// if there is already a slot for this ip, reuse it
