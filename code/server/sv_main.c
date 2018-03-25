@@ -416,10 +416,11 @@ Find or allocate a bucket for an address
 ================
 */
 static leakyBucket_t *SVC_BucketForAddress( const netadr_t *address, int burst, int period ) {
-	leakyBucket_t	*bucket = NULL;
-	const int		hash = SVC_HashForAddress( address );
-	int				now = Sys_Milliseconds();
+	static leakyBucket_t dummy = { 0 };
 	static int		start = 0;
+	const int		hash = SVC_HashForAddress( address );
+	const int		now = Sys_Milliseconds();
+	leakyBucket_t	*bucket;
 	int				i, n;
 
 	for ( bucket = bucketHashes[ hash ], n = 0; bucket; bucket = bucket->next, n++ ) {
@@ -443,7 +444,7 @@ static leakyBucket_t *SVC_BucketForAddress( const netadr_t *address, int burst, 
 				break;
 
 			default:
-				break;
+				return &dummy;
 		}
 	}
 
@@ -456,7 +457,7 @@ static leakyBucket_t *SVC_BucketForAddress( const netadr_t *address, int burst, 
 		interval = now - bucket->lastTime;
 
 		// Reclaim expired buckets
-		if ( bucket->burst && (unsigned)interval > ( bucket->burst * period ) ) {
+		if ( bucket->type != NA_BAD && (unsigned)interval > ( bucket->burst * period ) ) {
 			if ( bucket->prev != NULL ) {
 				bucket->prev->next = bucket->next;
 			} else {
@@ -467,7 +468,7 @@ static leakyBucket_t *SVC_BucketForAddress( const netadr_t *address, int burst, 
 				bucket->next->prev = bucket->prev;
 			}
 
-			Com_Memset( bucket, 0, sizeof( *bucket ) );
+			bucket->type = NA_BAD;
 		}
 
 		if ( bucket->type == NA_BAD ) {
