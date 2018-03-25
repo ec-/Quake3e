@@ -383,6 +383,33 @@ static int SVC_HashForAddress( const netadr_t *address ) {
 
 /*
 ================
+SVC_RelinkToHead
+================
+*/
+static void SVC_RelinkToHead( leakyBucket_t *bucket, int hash ) {
+
+	if ( bucket->prev != NULL ) {
+		bucket->prev->next = bucket->next;
+	} else {
+		return;
+	}
+
+	if ( bucket->next != NULL ) {
+		bucket->next->prev = bucket->prev;
+	}
+
+	bucket->next = bucketHashes[ hash ];
+	if ( bucketHashes[ hash ] != NULL ) {
+		bucketHashes[ hash ]->prev = bucket;
+	}
+
+	bucket->prev = NULL;
+	bucketHashes[ hash ] = bucket;
+}
+
+
+/*
+================
 SVC_BucketForAddress
 
 Find or allocate a bucket for an address
@@ -392,18 +419,25 @@ static leakyBucket_t *SVC_BucketForAddress( const netadr_t *address, int burst, 
 	leakyBucket_t	*bucket = NULL;
 	const int		hash = SVC_HashForAddress( address );
 	int				now = Sys_Milliseconds();
-	int				i;
+	static int		start = 0;
+	int				i, n;
 
-	for ( bucket = bucketHashes[ hash ]; bucket; bucket = bucket->next ) {
+	for ( bucket = bucketHashes[ hash ], n = 0; bucket; bucket = bucket->next, n++ ) {
 		switch ( bucket->type ) {
 			case NA_IP:
 				if ( memcmp( bucket->ipv._4, address->ipv._4, 4 ) == 0 ) {
+					if ( n > 8 ) {
+						SVC_RelinkToHead( bucket, hash );
+					}
 					return bucket;
 				}
 				break;
 
 			case NA_IP6:
 				if ( memcmp( bucket->ipv._6, address->ipv._6, 16 ) == 0 ) {
+					if ( n > 8 ) {
+						SVC_RelinkToHead( bucket, hash );
+					}
 					return bucket;
 				}
 				break;
@@ -416,7 +450,9 @@ static leakyBucket_t *SVC_BucketForAddress( const netadr_t *address, int burst, 
 	for ( i = 0; i < MAX_BUCKETS; i++ ) {
 		int interval;
 
-		bucket = &buckets[ i ];
+		if ( start >= MAX_BUCKETS )
+			start = 0;
+		bucket = &buckets[ start++ ];
 		interval = now - bucket->lastTime;
 
 		// Reclaim expired buckets
