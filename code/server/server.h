@@ -192,6 +192,9 @@ typedef struct client_s {
 
 	// client can decode long strings
 	qboolean		longstr;
+
+	qboolean		justConnected;
+
 } client_t;
 
 //=============================================================================
@@ -252,6 +255,7 @@ extern	cvar_t	*sv_rconPassword;
 extern	cvar_t	*sv_privatePassword;
 extern	cvar_t	*sv_allowDownload;
 extern	cvar_t	*sv_maxclients;
+extern	cvar_t	*sv_maxconcurrent;
 
 extern	cvar_t	*sv_privateClients;
 extern	cvar_t	*sv_hostname;

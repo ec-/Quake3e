@@ -33,6 +33,7 @@ cvar_t	*sv_rconPassword;		// password for remote server commands
 cvar_t	*sv_privatePassword;	// password for the privateClient slots
 cvar_t	*sv_allowDownload;
 cvar_t	*sv_maxclients;
+cvar_t	*sv_maxconcurrent;
 
 cvar_t	*sv_privateClients;		// number of clients reserved for password
 cvar_t	*sv_hostname;
@@ -1032,7 +1033,7 @@ static void SV_CheckTimeouts( void ) {
 			cl->state = CS_FREE;	// can now be reused
 			continue;
 		}
-		if ( cl->state == CS_CONNECTED && svs.time - cl->lastPacketTime > 4000 ) {
+		if ( cl->justConnected && svs.time - cl->lastPacketTime > 4000 ) {
 			// for real client 4 seconds is more than enough to respond
 			SVC_RateDropAddress( &cl->netchan.remoteAddress, 10, 1000 ); // enforce burst with progressive multiplier
 			SV_DropClient( cl, NULL ); // drop silently

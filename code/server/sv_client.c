@@ -200,7 +200,7 @@ A "connect" OOB command has been received
 */
 void SV_DirectConnect( const netadr_t *from ) {
 	char		userinfo[MAX_INFO_STRING];
-	int			i;
+	int			i, n;
 	client_t	*cl, *newcl;
 	//sharedEntity_t *ent;
 	int			clientNum;
@@ -211,7 +211,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 	int			startIndex;
 	intptr_t	denied;
 	int			count;
-	const char	*ip;
+	const char	*ip, *info;
 	qboolean	compat = qfalse;
 
 	Com_DPrintf( "SVC_DirectConnect()\n" );
@@ -225,8 +225,29 @@ void SV_DirectConnect( const netadr_t *from ) {
 	}
 #endif
 
+	// Prevent using connect as an amplifier
+	if ( SVC_RateLimitAddress( from, 10, 1000 ) ) {
+		if ( com_developer->integer ) {
+			Com_Printf( "SV_DirectConnect: rate limit from %s exceeded, dropping request\n",
+				NET_AdrToString( from ) );
+		}
+		return;
+	}
+
+	// check for concurrent connections
+	for ( i = 0, n = 0; i < sv_maxclients->integer; i++ ) {
+		const netadr_t *addr = &svs.clients[ i ].netchan.remoteAddress;
+		if ( addr->type != NA_BOT && NET_CompareBaseAdr( addr, from ) && svs.clients[ i ].state >= CS_PRIMED ) {
+			if ( ++n >= sv_maxconcurrent->integer ) {
+				NET_OutOfBandPrint( NS_SERVER, from, "print\nToo many connections.\n" );
+				return;
+			}
+		}
+	}
+
 	// verify challenge in first place
-	challenge = atoi( Info_ValueForKey( Cmd_Argv( 1 ), "challenge" ) );
+	info = Cmd_Argv( 1 );
+	challenge = atoi( Info_ValueForKey( info, "challenge" ) );
 
 	// see if the challenge is valid (localhost clients don't need to challenge)
 	if ( !NET_IsLocalAddress( from ) )
@@ -242,7 +263,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 		}
 	}
 
-	Q_strncpyz( userinfo, Cmd_Argv( 1 ), sizeof( userinfo ) );
+	Q_strncpyz( userinfo, info, sizeof( userinfo ) );
 
 	version = atoi( Info_ValueForKey( userinfo, "protocol" ) );
 	
@@ -417,7 +438,9 @@ gotnewcl:
 	newcl->lastSnapshotTime = 0;
 	newcl->lastPacketTime = svs.time;
 	newcl->lastConnectTime = svs.time;
-	
+
+	newcl->justConnected = qtrue;
+
 	// when we receive the first packet from the client, we will
 	// notice that it is from a different serverid and that the
 	// gamestate message was not just sent, forcing a retransmit
@@ -1588,9 +1611,9 @@ each of the backup packets.
 static void SV_UserMove( client_t *cl, msg_t *msg, qboolean delta ) {
 	int			i, key;
 	int			cmdCount;
-	usercmd_t	nullcmd;
-	usercmd_t	cmds[MAX_PACKET_USERCMDS];
-	usercmd_t	*cmd, *oldcmd;
+	static const usercmd_t nullcmd = { 0 };
+	usercmd_t	cmds[MAX_PACKET_USERCMDS], *cmd;
+	const usercmd_t *oldcmd;
 
 	if ( delta ) {
 		cl->deltaMessage = cl->messageAcknowledge;
@@ -1617,7 +1640,6 @@ static void SV_UserMove( client_t *cl, msg_t *msg, qboolean delta ) {
 	// also use the last acknowledged server command in the key
 	key ^= MSG_HashKey(cl->reliableCommands[ cl->reliableAcknowledge & (MAX_RELIABLE_COMMANDS-1) ], 32);
 
-	Com_Memset( &nullcmd, 0, sizeof(nullcmd) );
 	oldcmd = &nullcmd;
 	for ( i = 0 ; i < cmdCount ; i++ ) {
 		cmd = &cmds[i];
@@ -1729,6 +1751,9 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 		cl->reliableAcknowledge = cl->reliableSequence;
 		return;
 	}
+
+	cl->justConnected = qfalse;
+
 	// if this is a usercmd from a previous gamestate,
 	// ignore it or retransmit the current gamestate
 	// 
