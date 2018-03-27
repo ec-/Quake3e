@@ -734,12 +734,15 @@ static void SVC_Info( const netadr_t *from ) {
 
 /*
 ================
-SVC_FlushRedirect
+SV_FlushRedirect
 ================
 */
-static void SV_FlushRedirect( const char *outputbuf ) 
+static void SV_FlushRedirect( const char *outputbuf )
 {
-	NET_OutOfBandPrint( NS_SERVER, &svs.redirectAddress, "print\n%s", outputbuf );
+	if ( *outputbuf )
+	{
+		NET_OutOfBandPrint( NS_SERVER, &svs.redirectAddress, "print\n%s", outputbuf );
+	}
 }
 
 
@@ -757,8 +760,7 @@ static void SVC_RemoteCommand( const netadr_t *from ) {
 	char		remaining[1024];
 	// TTimo - scaled down to accumulate, but not overflow anything network wise, print wise etc.
 	// (OOB messages are the bottleneck here)
-#define SV_OUTPUTBUF_LENGTH (1024 - 16)
-	char		sv_outputbuf[SV_OUTPUTBUF_LENGTH];
+	char		sv_outputbuf[1024 - 16];
 	char		*cmd_aux;
 
 	// Prevent using rcon as an amplifier and make dictionary attacks impractical
@@ -788,7 +790,7 @@ static void SVC_RemoteCommand( const netadr_t *from ) {
 
 	// start redirecting all print outputs to the packet
 	svs.redirectAddress = *from;
-	Com_BeginRedirect( sv_outputbuf, SV_OUTPUTBUF_LENGTH, SV_FlushRedirect );
+	Com_BeginRedirect( sv_outputbuf, sizeof( sv_outputbuf ), SV_FlushRedirect );
 
 	if ( !sv_rconPassword->string[0] ) {
 		Com_Printf( "No rconpassword set on the server.\n" );

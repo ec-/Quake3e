@@ -130,6 +130,7 @@ void CIN_CloseAllVideos( void );
 
 static char	*rd_buffer;
 static int	rd_buffersize;
+static qboolean rd_flushing = qfalse;
 static void	(*rd_flush)( const char *buffer );
 
 void Com_BeginRedirect( char *buffer, int buffersize, void (*flush)(const char *) )
@@ -147,7 +148,9 @@ void Com_BeginRedirect( char *buffer, int buffersize, void (*flush)(const char *
 void Com_EndRedirect( void )
 {
 	if ( rd_flush ) {
+		rd_flushing = qtrue;
 		rd_flush( rd_buffer );
+		rd_flushing = qfalse;
 	}
 
 	rd_buffer = NULL;
@@ -167,18 +170,20 @@ A raw string should NEVER be passed as fmt, because of "%f" type crashers.
 =============
 */
 void QDECL Com_Printf( const char *fmt, ... ) {
+	static qboolean opening_qconsole = qfalse;
 	va_list		argptr;
 	char		msg[MAXPRINTMSG];
 	int			len;
-	static qboolean opening_qconsole = qfalse;
 
 	va_start( argptr, fmt );
 	len = Q_vsnprintf( msg, sizeof( msg ), fmt, argptr );
 	va_end( argptr );
 
-	if ( rd_buffer ) {
+	if ( rd_buffer && !rd_flushing ) {
 		if ( len + strlen( rd_buffer ) > ( rd_buffersize - 1 ) ) {
+			rd_flushing = qtrue;
 			rd_flush( rd_buffer );
+			rd_flushing = qfalse;
 			*rd_buffer = '\0';
 		}
 		Q_strcat( rd_buffer, rd_buffersize, msg );
@@ -296,7 +301,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 
 	com_errorEntered = qtrue;
 
-	Cvar_Set("com_errorCode", va("%i", code));
+	Cvar_Set( "com_errorCode", va( "%i", code ) );
 
 	// when we are running automated scripts, make sure we
 	// know if anything failed
