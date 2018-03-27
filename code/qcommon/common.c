@@ -147,7 +147,7 @@ void Com_BeginRedirect( char *buffer, int buffersize, void (*flush)(const char *
 void Com_EndRedirect( void )
 {
 	if ( rd_flush ) {
-		rd_flush(rd_buffer);
+		rd_flush( rd_buffer );
 	}
 
 	rd_buffer = NULL;
@@ -169,18 +169,19 @@ A raw string should NEVER be passed as fmt, because of "%f" type crashers.
 void QDECL Com_Printf( const char *fmt, ... ) {
 	va_list		argptr;
 	char		msg[MAXPRINTMSG];
+	int			len;
 	static qboolean opening_qconsole = qfalse;
 
-	va_start (argptr,fmt);
-	Q_vsnprintf (msg, sizeof(msg), fmt, argptr);
-	va_end (argptr);
+	va_start( argptr, fmt );
+	len = Q_vsnprintf( msg, sizeof( msg ), fmt, argptr );
+	va_end( argptr );
 
 	if ( rd_buffer ) {
-		if ((strlen (msg) + strlen(rd_buffer)) > (rd_buffersize - 1)) {
-			rd_flush(rd_buffer);
+		if ( len + strlen( rd_buffer ) > ( rd_buffersize - 1 ) ) {
+			rd_flush( rd_buffer );
 			*rd_buffer = '\0';
 		}
-		Q_strcat(rd_buffer, rd_buffersize, msg);
+		Q_strcat( rd_buffer, rd_buffersize, msg );
 		// TTimo nooo .. that would defeat the purpose
 		//rd_flush(rd_buffer);
 		//*rd_buffer = '\0';
@@ -232,7 +233,7 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 			opening_qconsole = qfalse;
 		}
 		if ( logfile != FS_INVALID_HANDLE && FS_Initialized() ) {
-			FS_Write(msg, strlen(msg), logfile);
+			FS_Write( msg, len, logfile );
 		}
 	}
 }

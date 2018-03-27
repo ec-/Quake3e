@@ -693,7 +693,7 @@ static void SVC_Info( const netadr_t *from ) {
 	 */
 
 	// A maximum challenge length of 128 should be more than plenty.
-	if ( strlen( Cmd_Argv ( 1 ) ) > 128 )
+	if ( strlen( Cmd_Argv( 1 ) ) > 128 )
 		return;
 
 	// don't count privateclients
@@ -707,7 +707,7 @@ static void SVC_Info( const netadr_t *from ) {
 		}
 	}
 
-	infostring[0] = 0;
+	infostring[0] = '\0';
 
 	// echo back the parameter to status. so servers can use it as a challenge
 	// to prevent timed spoofed reply packets that add ghost servers
@@ -735,7 +735,6 @@ static void SVC_Info( const netadr_t *from ) {
 /*
 ================
 SVC_FlushRedirect
-
 ================
 */
 static void SV_FlushRedirect( const char *outputbuf ) 
@@ -760,7 +759,7 @@ static void SVC_RemoteCommand( const netadr_t *from ) {
 	// (OOB messages are the bottleneck here)
 #define SV_OUTPUTBUF_LENGTH (1024 - 16)
 	char		sv_outputbuf[SV_OUTPUTBUF_LENGTH];
-	char *cmd_aux;
+	char		*cmd_aux;
 
 	// Prevent using rcon as an amplifier and make dictionary attacks impractical
 	if ( SVC_RateLimitAddress( from, 10, 1000 ) ) {
@@ -771,8 +770,7 @@ static void SVC_RemoteCommand( const netadr_t *from ) {
 		return;
 	}
 
-	if ( !sv_rconPassword->string[0] ||
-		strcmp (Cmd_Argv(1), sv_rconPassword->string) ) {
+	if ( !sv_rconPassword->string[0] || strcmp( Cmd_Argv(1), sv_rconPassword->string ) ) {
 		static leakyBucket_t bucket;
 
 		// Make DoS via rcon impractical
@@ -782,20 +780,20 @@ static void SVC_RemoteCommand( const netadr_t *from ) {
 		}
 
 		valid = qfalse;
-		Com_Printf ("Bad rcon from %s: %s\n", NET_AdrToString( from ), Cmd_ArgsFrom(2) );
+		Com_Printf( "Bad rcon from %s: %s\n", NET_AdrToString( from ), Cmd_ArgsFrom( 2 ) );
 	} else {
 		valid = qtrue;
-		Com_Printf ("Rcon from %s: %s\n", NET_AdrToString( from ), Cmd_ArgsFrom(2) );
+		Com_Printf( "Rcon from %s: %s\n", NET_AdrToString( from ), Cmd_ArgsFrom( 2 ) );
 	}
 
 	// start redirecting all print outputs to the packet
 	svs.redirectAddress = *from;
-	Com_BeginRedirect (sv_outputbuf, SV_OUTPUTBUF_LENGTH, SV_FlushRedirect);
+	Com_BeginRedirect( sv_outputbuf, SV_OUTPUTBUF_LENGTH, SV_FlushRedirect );
 
 	if ( !sv_rconPassword->string[0] ) {
-		Com_Printf ("No rconpassword set on the server.\n");
+		Com_Printf( "No rconpassword set on the server.\n" );
 	} else if ( !valid ) {
-		Com_Printf ("Bad rconpassword.\n");
+		Com_Printf( "Bad rconpassword.\n" );
 	} else {
 		remaining[0] = '\0';
 		
@@ -812,13 +810,12 @@ static void SVC_RemoteCommand( const netadr_t *from ) {
 		while(cmd_aux[0]==' ')
 			cmd_aux++;
 		
-		Q_strcat( remaining, sizeof(remaining), cmd_aux);
+		Q_strcat( remaining, sizeof( remaining ), cmd_aux );
 		
-		Cmd_ExecuteString (remaining);
-
+		Cmd_ExecuteString( remaining );
 	}
 
-	Com_EndRedirect ();
+	Com_EndRedirect();
 }
 
 
@@ -834,12 +831,12 @@ connectionless packets.
 */
 static void SV_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 	const char *s;
-	char	*c;
+	const char *c;
 
 	MSG_BeginReadingOOB( msg );
 	MSG_ReadLong( msg );		// skip the -1 marker
 
-	if ( !Q_strncmp( "connect", (char *) &msg->data[4], 7 ) ) {
+	if ( !memcmp( "connect ", msg->data + 4, 8 ) ) {
 		if ( msg->cursize > MAX_INFO_STRING*2 ) { // if we assume 200% compression ratio on userinfo
 			if ( com_developer->integer ) {
 				Com_Printf( "%s : connect packet is too long - %i\n", NET_AdrToString( from ), msg->cursize );
