@@ -448,7 +448,6 @@ void CL_StartHunkUsers( void );
 void CL_Disconnect_f( void );
 void CL_Vid_Restart_f( void );
 void CL_Snd_Restart_f( void );
-void CL_NextDemo( void );
 void CL_ReadDemoMessage( void );
 void CL_StopRecord_f( void );
 
@@ -570,7 +569,6 @@ e_status CIN_StopCinematic(int handle);
 e_status CIN_RunCinematic (int handle);
 void CIN_DrawCinematic (int handle);
 void CIN_SetExtents (int handle, int x, int y, int w, int h);
-void CIN_SetLooping (int handle, qboolean loop);
 void CIN_UploadCinematic(int handle);
 void CIN_CloseAllVideos(void);
 

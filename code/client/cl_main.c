@@ -151,6 +151,8 @@ static void CL_InitRef( void );
 static void CL_ShutdownRef( qboolean unloadDLL );
 static void CL_InitGLimp_Cvars( void );
 
+static void CL_NextDemo( void );
+
 /*
 ===============
 CL_CDDialog
@@ -945,7 +947,7 @@ Called when a demo or cinematic finishes
 If the "nextdemo" cvar is set, that command will be issued
 ==================
 */
-void CL_NextDemo( void ) {
+static void CL_NextDemo( void ) {
 	char v[ MAX_CVAR_VALUE_STRING ];
 
 	Cvar_VariableStringBuffer( "nextdemo", v, sizeof( v ) ); 
@@ -1102,7 +1104,7 @@ CL_ClearState
 Called before parsing a gamestate
 =====================
 */
-void CL_ClearState (void) {
+void CL_ClearState( void ) {
 
 //	S_StopAllSounds();
 
@@ -1396,7 +1398,7 @@ in anyway.
 ===================
 */
 #ifndef STANDALONE
-void CL_RequestAuthorization( void ) {
+static void CL_RequestAuthorization( void ) {
 	char	nums[64];
 	int		i, j, l;
 	cvar_t	*fs;
@@ -1506,7 +1508,7 @@ void CL_Disconnect_f( void ) {
 CL_Reconnect_f
 ================
 */
-void CL_Reconnect_f( void ) {
+static void CL_Reconnect_f( void ) {
 	if ( cl_reconnectArgs[0] == '\0' )
 		return;
 	Cvar_Set( "ui_singlePlayerActive", "0" );
@@ -1519,7 +1521,7 @@ void CL_Reconnect_f( void ) {
 CL_Connect_f
 ================
 */
-void CL_Connect_f( void ) {
+static void CL_Connect_f( void ) {
 	netadrtype_t family;
 	netadr_t	addr;
 	char	buffer[ sizeof(cls.servername) ];  // same length as cls.servername
@@ -1675,7 +1677,7 @@ CL_Rcon_f
   an unconnected command.
 =====================
 */
-void CL_Rcon_f( void ) {
+static void CL_Rcon_f( void ) {
 	char	message[MAX_RCON_MESSAGE];
 
 	if ( !rcon_client_password->string[0] ) {

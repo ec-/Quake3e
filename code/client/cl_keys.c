@@ -52,7 +52,7 @@ Handles horizontal scrolling and cursor blinking
 x, y, and width are in pixels
 ===================
 */
-void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, qboolean showCursor,
+static void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, qboolean showCursor,
 		qboolean noColorEscape ) {
 	int		len;
 	int		drawLen;
@@ -168,7 +168,7 @@ void Field_BigDraw( field_t *edit, int x, int y, int width, qboolean showCursor,
 Field_Paste
 ================
 */
-void Field_Paste( field_t *edit ) {
+static void Field_Paste( field_t *edit ) {
 	char	*cbd;
 	int		pasteLen, i;
 
@@ -198,7 +198,7 @@ in-game talk, and menu fields
 Key events are used for non-printable characters, others are gotten from char events.
 =================
 */
-void Field_KeyDownEvent( field_t *edit, int key ) {
+static void Field_KeyDownEvent( field_t *edit, int key ) {
 	int		len;
 
 	// shift-insert is paste
@@ -349,10 +349,10 @@ Console_Key
 Handles history and console scrollback
 ====================
 */
-void Console_Key (int key) {
+static void Console_Key( int key ) {
 	// ctrl-L clears screen
 	if ( key == 'l' && keys[K_CTRL].down ) {
-		Cbuf_AddText ("clear\n");
+		Cbuf_AddText( "clear\n" );
 		return;
 	}
 
@@ -370,20 +370,20 @@ void Console_Key (int key) {
 			g_consoleField.cursor++;
 		}
 
-		Com_Printf ( "]%s\n", g_consoleField.buffer );
+		Com_Printf( "]%s\n", g_consoleField.buffer );
 
 		// leading slash is an explicit command
 		if ( g_consoleField.buffer[0] == '\\' || g_consoleField.buffer[0] == '/' ) {
 			Cbuf_AddText( g_consoleField.buffer+1 );	// valid command
-			Cbuf_AddText ("\n");
+			Cbuf_AddText( "\n" );
 		} else {
 			// other text will be chat messages
 			if ( !g_consoleField.buffer[0] ) {
 				return;	// empty lines just scroll the console without adding to history
 			} else {
-				Cbuf_AddText ("cmd say ");
+				Cbuf_AddText( "cmd say " );
 				Cbuf_AddText( g_consoleField.buffer );
-				Cbuf_AddText ("\n");
+				Cbuf_AddText( "\n" );
 			}
 		}
 
@@ -485,7 +485,7 @@ Message_Key
 In game talk message
 ================
 */
-void Message_Key( int key ) {
+static void Message_Key( int key ) {
 
 	char	buffer[MAX_STRING_CHARS];
 
@@ -528,7 +528,7 @@ CL_KeyDownEvent
 Called by CL_KeyEvent to handle a keypress
 ===================
 */
-void CL_KeyDownEvent( int key, unsigned time )
+static void CL_KeyDownEvent( int key, unsigned time )
 {
 	keys[key].down = qtrue;
 	keys[key].repeats++;
@@ -654,7 +654,7 @@ CL_KeyUpEvent
 Called by CL_KeyEvent to handle a keyrelease
 ===================
 */
-void CL_KeyUpEvent( int key, unsigned time )
+static void CL_KeyUpEvent( int key, unsigned time )
 {
 	keys[key].repeats = 0;
 	keys[key].down = qfalse;

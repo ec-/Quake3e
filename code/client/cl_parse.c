@@ -61,7 +61,7 @@ Parses deltas from the given base and adds the resulting entity
 to the current frame
 ==================
 */
-void CL_DeltaEntity (msg_t *msg, clSnapshot_t *frame, int newnum, entityState_t *old, 
+static void CL_DeltaEntity( msg_t *msg, clSnapshot_t *frame, int newnum, entityState_t *old, 
 					 qboolean unchanged) {
 	entityState_t	*state;
 
@@ -82,13 +82,13 @@ void CL_DeltaEntity (msg_t *msg, clSnapshot_t *frame, int newnum, entityState_t 
 	frame->numEntities++;
 }
 
+
 /*
 ==================
 CL_ParsePacketEntities
-
 ==================
 */
-void CL_ParsePacketEntities( msg_t *msg, clSnapshot_t *oldframe, clSnapshot_t *newframe) {
+static void CL_ParsePacketEntities( msg_t *msg, clSnapshot_t *oldframe, clSnapshot_t *newframe) {
 	int			newnum;
 	entityState_t	*oldstate;
 	int			oldindex, oldnum;
@@ -200,7 +200,7 @@ cl.snap and saved in cl.snapshots[].  If the snapshot is invalid
 for any reason, no changes to the state will be made at all.
 ================
 */
-void CL_ParseSnapshot( msg_t *msg ) {
+static void CL_ParseSnapshot( msg_t *msg ) {
 	clSnapshot_t	*old;
 	clSnapshot_t	newSnap;
 	int			deltaNum;
@@ -442,7 +442,7 @@ void CL_SystemInfoChanged( void ) {
 CL_ParseServerInfo
 ==================
 */
-static void CL_ParseServerInfo(void)
+static void CL_ParseServerInfo( void )
 {
 	const char *serverInfo;
 	size_t	len;
@@ -468,7 +468,7 @@ static void CL_ParseServerInfo(void)
 CL_ParseGamestate
 ==================
 */
-void CL_ParseGamestate( msg_t *msg ) {
+static void CL_ParseGamestate( msg_t *msg ) {
 	int				i;
 	entityState_t	*es;
 	int				newnum;
@@ -611,7 +611,7 @@ CL_ParseDownload
 A download message has been received from the server
 =====================
 */
-void CL_ParseDownload( msg_t *msg ) {
+static void CL_ParseDownload( msg_t *msg ) {
 	int		size;
 	unsigned char data[ MAX_MSGLEN ];
 	uint16_t block;
@@ -722,7 +722,7 @@ Command strings are just saved off until cgame asks for them
 when it transitions a snapshot
 =====================
 */
-void CL_ParseCommandString( msg_t *msg ) {
+static void CL_ParseCommandString( msg_t *msg ) {
 	const char *s;
 	int		seq;
 	int		index;
