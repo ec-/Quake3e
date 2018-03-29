@@ -585,7 +585,7 @@ the simple info query.
 */
 static void SVC_Status( const netadr_t *from ) {
 	char	player[MAX_NAME_LENGTH + 32]; // score + ping + name
-	char	status[1400]; // MAX_PACKETLEN
+	char	status[MAX_PACKETLEN];
 	char	*s;
 	int		i;
 	client_t	*cl;
@@ -639,7 +639,7 @@ static void SVC_Status( const netadr_t *from ) {
 			playerLength = Com_sprintf( player, sizeof( player ), "%i %i \"%s\"\n", 
 				ps->persistant[ PERS_SCORE ], cl->ping, cl->name );
 			
-			if ( statusLength + playerLength >= 1400-4 ) // MAX_PACKETLEN-4
+			if ( statusLength + playerLength >= MAX_PACKETLEN-4 )
 				break; // can't hold any more
 			
 			s = Q_stradd( s, player );
@@ -757,11 +757,10 @@ Redirect all printfs
 */
 static void SVC_RemoteCommand( const netadr_t *from ) {
 	qboolean	valid;
-	char		remaining[1024];
 	// TTimo - scaled down to accumulate, but not overflow anything network wise, print wise etc.
 	// (OOB messages are the bottleneck here)
 	char		sv_outputbuf[1024 - 16];
-	char		*cmd_aux;
+	const char	*cmd_aux;
 
 	// Prevent using rcon as an amplifier and make dictionary attacks impractical
 	if ( SVC_RateLimitAddress( from, 10, 1000 ) ) {
@@ -772,7 +771,7 @@ static void SVC_RemoteCommand( const netadr_t *from ) {
 		return;
 	}
 
-	if ( !sv_rconPassword->string[0] || strcmp( Cmd_Argv(1), sv_rconPassword->string ) ) {
+	if ( !sv_rconPassword->string[0] || strcmp( Cmd_Argv( 1 ), sv_rconPassword->string ) ) {
 		static leakyBucket_t bucket;
 
 		// Make DoS via rcon impractical
@@ -797,24 +796,30 @@ static void SVC_RemoteCommand( const netadr_t *from ) {
 	} else if ( !valid ) {
 		Com_Printf( "Bad rconpassword.\n" );
 	} else {
-		remaining[0] = '\0';
-		
 		// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=543
 		// get the command directly, "rcon <pass> <command>" to avoid quoting issues
 		// extract the command by walking
 		// since the cmd formatting can fuckup (amount of spaces), using a dumb step by step parsing
 		cmd_aux = Cmd_Cmd();
-		cmd_aux+=4;
-		while(cmd_aux[0]==' ')
+		while ( *cmd_aux && *cmd_aux <= ' ' ) // skip whitespace
 			cmd_aux++;
-		while(cmd_aux[0] && cmd_aux[0]!=' ') // password
+		cmd_aux += 4; // "rcon"
+		while ( *cmd_aux == ' ' )
 			cmd_aux++;
-		while(cmd_aux[0]==' ')
+		if ( *cmd_aux == '"' ) {
 			cmd_aux++;
-		
-		Q_strcat( remaining, sizeof( remaining ), cmd_aux );
-		
-		Cmd_ExecuteString( remaining );
+			while ( *cmd_aux && *cmd_aux != '"' ) // quoted password
+				cmd_aux++;
+			if ( *cmd_aux == '"' )
+				cmd_aux++;
+		} else {
+			while ( *cmd_aux && *cmd_aux != ' ' ) // password
+				cmd_aux++;
+		}
+		while ( *cmd_aux == ' ' )
+			cmd_aux++;
+
+		Cmd_ExecuteString( cmd_aux );
 	}
 
 	Com_EndRedirect();

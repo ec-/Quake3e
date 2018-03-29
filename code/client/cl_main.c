@@ -1649,7 +1649,7 @@ static void CL_Connect_f( void ) {
 	Cvar_Set( "cl_currentServerAddress", server );
 }
 
-#define MAX_RCON_MESSAGE 1024
+#define MAX_RCON_MESSAGE (MAX_STRING_CHARS+4)
 
 /*
 ==================
@@ -1678,12 +1678,31 @@ CL_Rcon_f
 =====================
 */
 static void CL_Rcon_f( void ) {
-	char	message[MAX_RCON_MESSAGE];
+	char message[MAX_RCON_MESSAGE];
+	const char *sp;
+	int len;
 
 	if ( !rcon_client_password->string[0] ) {
-		Com_Printf ("You must set 'rconpassword' before\n"
-					"issuing an rcon command.\n");
+		Com_Printf( "You must set 'rconpassword' before\n"
+			"issuing an rcon command.\n" );
 		return;
+	}
+
+	if ( cls.state >= CA_CONNECTED ) {
+		rcon_address = clc.netchan.remoteAddress;
+	} else {
+		if ( !rconAddress->string[0] ) {
+			Com_Printf( "You must either be connected,\n"
+				"or set the 'rconAddress' cvar\n"
+				"to issue rcon commands\n" );
+			return;
+		}
+		if ( !NET_StringToAdr( rconAddress->string, &rcon_address, NA_UNSPEC ) ) {
+			return;
+		}
+		if ( rcon_address.port == 0 ) {
+			rcon_address.port = BigShort( PORT_SERVER );
+		}
 	}
 
 	message[0] = -1;
@@ -1692,31 +1711,15 @@ static void CL_Rcon_f( void ) {
 	message[3] = -1;
 	message[4] = '\0';
 
-	Q_strcat (message, MAX_RCON_MESSAGE, "rcon ");
+	// we may need to quote password if it contains spaces
+	sp = strchr( rcon_client_password->string, ' ' );
 
-	Q_strcat (message, MAX_RCON_MESSAGE, rcon_client_password->string);
-	Q_strcat (message, MAX_RCON_MESSAGE, " ");
+	len = Com_sprintf( message+4, sizeof( message )-4,
+		sp ? "rcon \"%s\" %s" : "rcon %s %s",
+		rcon_client_password->string,
+		Cmd_Cmd() + 5 ) + 4 + 1; // including OOB marker and '\0'
 
-	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=543
-	Q_strcat (message, MAX_RCON_MESSAGE, Cmd_Cmd()+5);
-
-	if ( cls.state >= CA_CONNECTED ) {
-		rcon_address = clc.netchan.remoteAddress;
-	} else {
-		if (!strlen(rconAddress->string)) {
-			Com_Printf ("You must either be connected,\n"
-						"or set the 'rconAddress' cvar\n"
-						"to issue rcon commands\n");
-
-			return;
-		}
-		NET_StringToAdr( rconAddress->string, &rcon_address, NA_UNSPEC );
-		if (rcon_address.port == 0) {
-			rcon_address.port = BigShort (PORT_SERVER);
-		}
-	}
-	
-	NET_SendPacket( NS_CLIENT, strlen(message)+1, message, &rcon_address );
+	NET_SendPacket( NS_CLIENT, len, message, &rcon_address );
 }
 
 
@@ -1821,7 +1824,7 @@ CL_Vid_Restart_f
 Wrapper for CL_Vid_Restart
 =================
 */
-void CL_Vid_Restart_f( void ) {
+static void CL_Vid_Restart_f( void ) {
 
 	 // hack for OSP mod: do not allow vid restart right after cgame init
 	if ( cls.lastVidRestart )
@@ -1839,7 +1842,7 @@ CL_Snd_Restart
 Restart the sound subsystem
 =================
 */
-void CL_Snd_Shutdown( void )
+static void CL_Snd_Shutdown( void )
 {
 	S_StopAllSounds();
 	S_Shutdown();
@@ -1856,7 +1859,7 @@ The cgame and game must also be forced to restart because
 handles will be invalid
 =================
 */
-void CL_Snd_Restart_f( void ) 
+static void CL_Snd_Restart_f( void )
 {
 	CL_Snd_Shutdown();
 	// sound will be reinitialized by vid_restart
@@ -1879,8 +1882,8 @@ void CL_OpenedPK3List_f( void ) {
 CL_PureList_f
 ==================
 */
-void CL_ReferencedPK3List_f( void ) {
-	Com_Printf("Referenced PK3 Names: %s\n", FS_ReferencedPakNames());
+static void CL_ReferencedPK3List_f( void ) {
+	Com_Printf( "Referenced PK3 Names: %s\n", FS_ReferencedPakNames() );
 }
 
 
@@ -1889,7 +1892,7 @@ void CL_ReferencedPK3List_f( void ) {
 CL_Configstrings_f
 ==================
 */
-void CL_Configstrings_f( void ) {
+static void CL_Configstrings_f( void ) {
 	int		i;
 	int		ofs;
 
@@ -1979,7 +1982,7 @@ CL_DownloadsComplete
 Called when all downloading has been completed
 =================
 */
-void CL_DownloadsComplete( void ) {
+static void CL_DownloadsComplete( void ) {
 
 #ifdef USE_CURL
 	// if we downloaded with cURL
@@ -2060,7 +2063,7 @@ Requests a file to download from the server.  Stores it in the current
 game directory.
 =================
 */
-void CL_BeginDownload( const char *localName, const char *remoteName ) {
+static void CL_BeginDownload( const char *localName, const char *remoteName ) {
 
 	Com_DPrintf("***** CL_BeginDownload *****\n"
 				"Localname: %s\n"

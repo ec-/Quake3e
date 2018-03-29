@@ -446,8 +446,6 @@ void CL_AddReliableCommand( const char *cmd, qboolean isDisconnectCmd );
 void CL_StartHunkUsers( void );
 
 void CL_Disconnect_f( void );
-void CL_Vid_Restart_f( void );
-void CL_Snd_Restart_f( void );
 void CL_ReadDemoMessage( void );
 void CL_StopRecord_f( void );
 

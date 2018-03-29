@@ -198,6 +198,8 @@ void		NET_JoinMulticast6( void );
 void		NET_LeaveMulticast6( void );
 void		NET_Sleep( int msec, int usec_bias );
 
+#define	MAX_PACKETLEN	1400	// max size of a network packet
+
 #define	MAX_MSGLEN		16384	// max length of a message, which may
 								// be fragmented into multiple packets
 
