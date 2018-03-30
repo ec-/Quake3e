@@ -750,31 +750,39 @@ Block execution for msec or until input is recieved.
 void Sys_Sleep( int msec ) {
 	struct timeval timeout;
 	fd_set fdset;
+	int res;
 
 	if ( msec == 0 )
 		return;
 
-	if ( com_dedicated->integer ) {
+	if ( msec < 0 ) {
+		// special case: wait for console input or network packet
 		if ( ttycon_on == qtrue ) {
-			FD_ZERO( &fdset );
-			FD_SET( STDIN_FILENO, &fdset );
-			if ( msec < 0 ) {
-				select( STDIN_FILENO + 1, &fdset, NULL, NULL, NULL );
-			} else {
-				timeout.tv_sec = msec/1000;
-				timeout.tv_usec = (msec%1000)*1000;
-				select( STDIN_FILENO + 1, &fdset, NULL, NULL, &timeout );
-			}
+			msec = 300;
+			do {
+				FD_ZERO( &fdset );
+				FD_SET( STDIN_FILENO, &fdset );
+				timeout.tv_sec = msec / 1000;
+				timeout.tv_usec = (msec % 1000) * 1000;
+				res = select( STDIN_FILENO + 1, &fdset, NULL, NULL, &timeout );
+			} while ( res == 0 && NET_Sleep( 10, 0 ) );
 		} else {
-			if ( msec < 0 ) {
-				// can happen only if no map loaded
-				// which means we totally stuck as stdin is also disabled :P
-				usleep( 1000 );
-			}
+			// can happen only if no map loaded
+			// which means we totally stuck as stdin is also disabled :P
+			//usleep( 300 * 1000 );
+			while ( NET_Sleep( 3000, 0 ) )
+				;
 		}
+		return;
+	}
+
+	if ( com_dedicated->integer && ttycon_on != qfalse ) {
+		FD_ZERO( &fdset );
+		FD_SET( STDIN_FILENO, &fdset );
+		timeout.tv_sec = msec / 1000;
+		timeout.tv_usec = (msec % 1000) * 1000;
+		select( STDIN_FILENO + 1, &fdset, NULL, NULL, &timeout );
 	} else {
-		if ( msec < 0 )
-  		 	return;
 		usleep( msec * 1000 );
 	}
 }

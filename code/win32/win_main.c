@@ -291,15 +291,20 @@ Sys_Sleep
 =============
 */
 void Sys_Sleep( int msec ) {
-
-	if ( msec < 0 && com_dedicated->integer ) {
-		WaitMessage();
+	
+	if ( msec < 0 ) {
+		// special case: wait for event or network packet
+		DWORD dwResult;
+		msec = 300;
+		do {
+			dwResult = MsgWaitForMultipleObjects( 0, NULL, FALSE, msec, QS_ALLEVENTS );
+		} while ( dwResult == WAIT_TIMEOUT && NET_Sleep( 10, 0 ) );
+		//WaitMessage();
 		return;
 	}
 
-	if ( msec <= 0 ) {
+	if ( msec == 0 )
 		return;
-	}
 
 	Sleep ( msec );
 }

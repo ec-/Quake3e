@@ -862,6 +862,15 @@ static void SV_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 		Com_Printf( "SV packet %s : %s\n", NET_AdrToString( from ), c );
 	}
 
+	if ( !Q_stricmp(c, "rcon") ) {
+		SVC_RemoteCommand( from );
+		return;
+	}
+
+	if ( !com_sv_running->integer ) {
+		return;
+	}
+
 	if (!Q_stricmp(c, "getstatus")) {
 		SVC_Status( from );
 	} else if (!Q_stricmp(c, "getinfo")) {
@@ -874,8 +883,6 @@ static void SV_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 	} else if (!Q_stricmp(c, "ipAuthorize")) {
 		// removed from codebase since stateless challenges
 #endif
-	} else if (!Q_stricmp(c, "rcon")) {
-		SVC_RemoteCommand( from );
 	} else if (!Q_stricmp(c, "disconnect")) {
 		// if a client starts up a local server, we may see some spurious
 		// server disconnect messages when their new server sees our final
@@ -900,8 +907,11 @@ void SV_PacketEvent( const netadr_t *from, msg_t *msg ) {
 	client_t	*cl;
 	int			qport;
 
+	if ( msg->cursize < 6 ) // too short for anything
+		return;
+
 	// check for connectionless packet (0xffffffff) first
-	if ( msg->cursize >= 4 && *(int *)msg->data == -1) {
+	if ( *(int *)msg->data == -1 ) {
 		SV_ConnectionlessPacket( from, msg );
 		return;
 	}

@@ -567,7 +567,6 @@ static qboolean NET_GetPacket( netadr_t *net_from, msg_t *net_message, const fd_
 		}
 		else
 		{
-
 			memset( ((struct sockaddr_in *)&from)->sin_zero, 0, 8 );
 		
 			if ( usingSocks && memcmp( &from, &socksRelayAddr, fromlen ) == 0 ) {
@@ -655,7 +654,6 @@ static qboolean NET_GetPacket( netadr_t *net_from, msg_t *net_message, const fd_
 			return qtrue;
 		}
 	}
-	
 	
 	return qfalse;
 }
@@ -1675,9 +1673,11 @@ static void NET_Event( const fd_set *fdr )
 					continue; // drop this packet
 			}
 
-			if ( com_sv_running->integer )
+#ifdef DEDICATED
+			Com_RunAndTimeServerPacket( &from, &netmsg );
+#else
+			if ( com_sv_running->integer || com_dedicated->integer )
 				Com_RunAndTimeServerPacket( &from, &netmsg );
-#ifndef DEDICATED
 			else
 				CL_PacketEvent( &from, &netmsg );
 #endif
@@ -1695,7 +1695,7 @@ NET_Sleep
 Sleeps msec or until something happens on the network
 ====================
 */
-void NET_Sleep( int msec, int usec_bias )
+qboolean NET_Sleep( int msec, int usec_bias )
 {
 	struct timeval tv;
 	int timeout;
@@ -1724,14 +1724,17 @@ void NET_Sleep( int msec, int usec_bias )
 			highestfd = ip6_socket;
 	}
 
-#ifdef _WIN32
 	if ( highestfd == INVALID_SOCKET )
 	{
+#ifdef _WIN32
 		// windows ain't happy when select is called without valid FDs
 		Sleep( timeout / 1000 );
-		return;
-	}
+		return qtrue;
+#else
+		usleep( msec * 1000 );
+		return qtrue;
 #endif
+	}
 
 	tv.tv_sec = timeout / 1000000;
 	tv.tv_usec = timeout - tv.tv_sec * 1000000;
@@ -1740,7 +1743,7 @@ void NET_Sleep( int msec, int usec_bias )
 
 	if ( retval > 0 ) {
 		NET_Event( &fdr );
-		return;
+		return qfalse;
 	}
 
 	if ( retval == SOCKET_ERROR ) {
@@ -1750,6 +1753,8 @@ void NET_Sleep( int msec, int usec_bias )
 		Com_Printf( S_COLOR_YELLOW "Warning: select() syscall failed: %s\n", 
 			NET_ErrorString() );
 	}
+
+	return qtrue;
 }
 
 
