@@ -75,7 +75,6 @@ typedef struct
 	HWND		hwndButtonCopy;
 
 	HWND		hwndErrorBox;
-	HWND		hwndErrorText;
 
 	HBRUSH		hbrEditBackground;
 	HBRUSH		hbrErrorBackground;

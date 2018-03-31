@@ -1410,7 +1410,6 @@ extern unzFile unzOpen (const char* path)
 	us.central_pos = central_pos;
     us.pfile_in_zip_read = NULL;
 	
-
 	s=(unz_s*)ALLOC(sizeof(unz_s));
 	*s=us;
 //	unzGoToFirstFile((unzFile)s);	
@@ -1642,10 +1641,10 @@ static int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 			if (fread(szComment,(uInt)uSizeRead,1,s->file)!=1)
 				err=UNZ_ERRNO;
 		}
-		lSeek+=file_info.size_file_comment - uSizeRead;
+		//lSeek+=file_info.size_file_comment - uSizeRead;
 	}
-	else
-		lSeek+=file_info.size_file_comment;
+	//else
+	//	lSeek+=file_info.size_file_comment;
 
 	if ((err==UNZ_OK) && (pfile_info!=NULL))
 		*pfile_info=file_info;

@@ -899,12 +899,14 @@ all big things are allocated on the hunk.
 #define	ZONEID	0x1d4a11
 #define MINFRAGMENT	64
 
+#ifdef ZONE_DEBUG
 typedef struct zonedebug_s {
 	char *label;
 	char *file;
 	int line;
 	int allocSize;
 } zonedebug_t;
+#endif
 
 struct memzone_s;
 
@@ -1076,7 +1078,7 @@ Z_FreeTags
 ================
 */
 void Z_FreeTags( memtag_t tag ) {
-	int			count;
+	//int			count;
 	memzone_t	*zone;
 
 	if ( tag == TAG_SMALL ) {
@@ -1085,13 +1087,13 @@ void Z_FreeTags( memtag_t tag ) {
 	else {
 		zone = mainzone;
 	}
-	count = 0;
+	//count = 0;
 	// use the rover as our pointer, because
 	// Z_Free automatically adjusts it
 	zone->rover = zone->blocklist.next;
 	do {
 		if ( zone->rover->tag == tag ) {
-			count++;
+		//	count++;
 			Z_Free( (void *)(zone->rover + 1) );
 			continue;
 		}

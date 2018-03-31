@@ -262,7 +262,7 @@ unsigned int crc32_buffer( const byte *buf, unsigned int len ) {
 		{
 			c = i;
 			for ( j = 0; j < 8; j++ )
-				c = c & 1 ? (c >> 1) ^ 0xEDB88320UL : c >> 1;
+				c = (c & 1) ? (c >> 1) ^ 0xEDB88320UL : c >> 1;
 			crc32_table[i] = c;
 		}
 		crc32_inited = qtrue;

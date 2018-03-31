@@ -648,7 +648,7 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 
 #ifdef USE_PMLIGHT
 	if ( surf->shader->numUnfoggedPasses && surf->shader->lightingStage >= 0 ) {
-		if ( fabs( cv->plane.normal[0] ) < 0.01 && fabs( cv->plane.normal[0] ) < 0.01 && fabs( cv->plane.normal[0] ) < 0.01 ) {
+		if ( fabs( cv->plane.normal[0] ) < 0.01 && fabs( cv->plane.normal[1] ) < 0.01 && fabs( cv->plane.normal[2] ) < 0.01 ) {
 			// Zero-normals case:
 			// might happen if surface contains multiple non-coplanar faces for terrain simulation
 			// like in 'Pyramid of the Magician', 'tvy-bench' or 'terrast' maps
@@ -2077,7 +2077,7 @@ static void R_LoadEntities( const lump_t *l ) {
 	w->entityParsePoint = w->entityString;
 
 	token = COM_ParseExt( &p, qtrue );
-	if (!*token || *token != '{') {
+	if (*token != '{') {
 		return;
 	}
 

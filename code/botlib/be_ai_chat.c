@@ -696,14 +696,14 @@ bot_synonymlist_t *BotLoadSynonyms( const char *filename )
 							return NULL;
 						} //end if
 						StripDoubleQuotes(token.string);
-						if (strlen(token.string) <= 0)
+						len = (int)strlen(token.string);
+						if (len==0)
 						{
 							SourceError(source, "empty string");
 							FreeSource(source);
 							return NULL;
 						} //end if
-						len = strlen(token.string) + 1;
-						len = PAD(len, sizeof(long));
+						len = PAD(len+1, sizeof(long));
 						size += sizeof(bot_synonym_t) + len;
 						if (pass && ptr)
 						{

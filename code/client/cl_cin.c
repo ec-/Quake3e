@@ -118,7 +118,8 @@ typedef struct {
 	byte*				gray;
 	unsigned int		xsize, ysize, maxsize, minsize;
 
-	qboolean			half, smootheddouble, inMemory;
+	qboolean			half, smootheddouble;
+	long				inMemory;
 	long				normalBuffer0;
 	long				roq_flags;
 	long				roqF0;

@@ -412,7 +412,7 @@ NET_CompareBaseAdrMask
 Compare without port, and up to the bit number given in netmask.
 ===================
 */
-qboolean NET_CompareBaseAdrMask( const netadr_t *a, const netadr_t *b, int netmask )
+qboolean NET_CompareBaseAdrMask( const netadr_t *a, const netadr_t *b, unsigned int netmask )
 {
 	byte cmpmask, *addra, *addrb;
 	int curbyte;
@@ -428,15 +428,15 @@ qboolean NET_CompareBaseAdrMask( const netadr_t *a, const netadr_t *b, int netma
 		addra = (byte *) &a->ipv._4;
 		addrb = (byte *) &b->ipv._4;
 		
-		if(netmask < 0 || netmask > 32)
+		if (netmask > 32)
 			netmask = 32;
 	}
-	else if(a->type == NA_IP6)
+	else if (a->type == NA_IP6)
 	{
 		addra = (byte *) &a->ipv._6;
 		addrb = (byte *) &b->ipv._6;
 		
-		if(netmask < 0 || netmask > 128)
+		if (netmask > 128)
 			netmask = 128;
 	}
 	else
@@ -448,7 +448,7 @@ qboolean NET_CompareBaseAdrMask( const netadr_t *a, const netadr_t *b, int netma
 	curbyte = netmask >> 3;
 
 	if(curbyte && memcmp(addra, addrb, curbyte))
-			return qfalse;
+		return qfalse;
 
 	netmask &= 0x07;
 	if(netmask)
@@ -475,7 +475,7 @@ Compares without the port
 */
 qboolean NET_CompareBaseAdr( const netadr_t *a, const netadr_t *b )
 {
-	return NET_CompareBaseAdrMask( a, b, -1 );
+	return NET_CompareBaseAdrMask( a, b, ~0U );
 }
 
 

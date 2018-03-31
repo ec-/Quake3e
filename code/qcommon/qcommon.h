@@ -187,7 +187,7 @@ void		QDECL NET_OutOfBandPrint( netsrc_t net_socket, const netadr_t *adr, const 
 void		NET_OutOfBandCompress( netsrc_t sock, const netadr_t *adr, const byte *data, int len );
 
 qboolean	NET_CompareAdr( const netadr_t *a, const netadr_t *b );
-qboolean	NET_CompareBaseAdrMask( const netadr_t *a, const netadr_t *b, int netmask );
+qboolean	NET_CompareBaseAdrMask( const netadr_t *a, const netadr_t *b, unsigned int netmask );
 qboolean	NET_CompareBaseAdr( const netadr_t *a, const netadr_t *b );
 qboolean	NET_IsLocalAddress( const netadr_t *adr );
 const char	*NET_AdrToString( const netadr_t *a );

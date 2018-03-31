@@ -1530,9 +1530,9 @@ void CM_TraceThroughPatchCollide( traceWork_t *tw, const struct patchCollide_s *
 
 		if (enterFrac < leaveFrac && enterFrac >= 0) {
 			if (enterFrac < tw->trace.fraction) {
-				if (enterFrac < 0) {
-					enterFrac = 0;
-				}
+				//if (enterFrac < 0) {
+				//	enterFrac = 0;
+				//}
 #ifndef BSPC
 				if (!cv) {
 					cv = Cvar_Get( "r_debugSurfaceUpdate", "1", 0 );
