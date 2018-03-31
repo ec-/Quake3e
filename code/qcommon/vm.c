@@ -762,7 +762,7 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 	if ( errorMsg ) {
 		VM_Free( vm );
 		FS_FreeFile( header );
-		Com_Error( ERR_FATAL, "%s", errorMsg );
+		Com_Error( ERR_DROP, "%s", errorMsg );
 		return NULL;
 	}
 
@@ -792,7 +792,7 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 	if ( dataLength >= (1U<<31) || dataAlloc >= (1U<<31) ) {
 		VM_Free( vm );
 		FS_FreeFile( header );
-		Com_Error( ERR_FATAL, "%s: data segment is too large", __func__ );
+		Com_Error( ERR_DROP, "%s: data segment is too large", __func__ );
 		return NULL;
 	}
 
@@ -1384,7 +1384,7 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 	}
 
 	if ( (unsigned)index >= VM_COUNT ) {
-		Com_Error( ERR_FATAL, "VM_Create: bad vm index %i", index );	
+		Com_Error( ERR_DROP, "VM_Create: bad vm index %i", index );	
 	}
 
 	remaining = Hunk_MemoryRemaining();
@@ -1394,7 +1394,7 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 	// see if we already have the VM
 	if ( vm->name ) {
 		if ( vm->index != index ) {
-			Com_Error( ERR_FATAL, "VM_Create: bad allocated vm index %i", vm->index );
+			Com_Error( ERR_DROP, "VM_Create: bad allocated vm index %i", vm->index );
 			return NULL;
 		}
 		return vm;

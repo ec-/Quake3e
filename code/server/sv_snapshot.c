@@ -544,7 +544,7 @@ static void SV_BuildCommonSnapshot( void )
 
 	// should never happen but anyway
 	if ( svs.freeStorageEntities < count ) {
-		Com_Error( ERR_FATAL, "Not enough snapshot storage: %i < %i", svs.freeStorageEntities, count );
+		Com_Error( ERR_DROP, "Not enough snapshot storage: %i < %i", svs.freeStorageEntities, count );
 	}
 
 	// allocate storage
