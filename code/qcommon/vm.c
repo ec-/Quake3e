@@ -762,7 +762,7 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 	if ( errorMsg ) {
 		VM_Free( vm );
 		FS_FreeFile( header );
-		Com_Error( ERR_DROP, "%s", errorMsg );
+		Com_Printf( S_COLOR_RED "%s\n", errorMsg );
 		return NULL;
 	}
 
@@ -775,7 +775,6 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 		tryjts = qtrue;
 	}
 
-	
 	vm->exactDataLength = header->dataLength + header->litLength + header->bssLength;
 	dataLength = vm->exactDataLength + PROGRAM_STACK_EXTRA;
 	vm->dataLength = dataLength;
@@ -792,7 +791,7 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 	if ( dataLength >= (1U<<31) || dataAlloc >= (1U<<31) ) {
 		VM_Free( vm );
 		FS_FreeFile( header );
-		Com_Error( ERR_DROP, "%s: data segment is too large", __func__ );
+		Com_Printf( S_COLOR_RED "%s: data segment is too large\n", __func__ );
 		return NULL;
 	}
 
@@ -1351,12 +1350,12 @@ vm_t *VM_Restart( vm_t *vm ) {
 	}
 
 	// load the image
-	Com_Printf( "VM_Restart()\n" );
-
 	if( ( header = VM_LoadQVM( vm, qfalse ) ) == NULL ) {
-		Com_Error( ERR_DROP, "VM_Restart failed" );
+		Com_Printf( S_COLOR_RED "VM_Restart() failed\n" );
 		return NULL;
 	}
+
+	Com_Printf( "VM_Restart()\n" );
 
 	// free the original file
 	FS_FreeFile( header );
@@ -1458,11 +1457,8 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 	}
 #else
 	if ( interpret >= VMI_COMPILED ) {
-		vm->compiled = qtrue;
-		if ( !VM_Compile( vm, header ) ) {
-			FS_FreeFile( header );	// free the original file
-			VM_Free( vm );
-			return NULL;
+		if ( VM_Compile( vm, header ) ) {
+			vm->compiled = qtrue;
 		}
 	}
 #endif

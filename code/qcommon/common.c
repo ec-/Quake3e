@@ -333,6 +333,8 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		}
 	}
 
+	Cbuf_Init();
+
 	if (code == ERR_DISCONNECT || code == ERR_SERVERDISCONNECT) {
 		VM_Forced_Unload_Start();
 		SV_Shutdown( "Server disconnected" );
@@ -3299,11 +3301,12 @@ void Com_Init( char *commandLine ) {
 		gw_minimized = qfalse;
 	}
 
-	if ( com_developer && com_developer->integer ) {
-		Cmd_AddCommand ("error", Com_Error_f);
-		Cmd_AddCommand ("crash", Com_Crash_f );
-		Cmd_AddCommand ("freeze", Com_Freeze_f);
+	if ( com_developer->integer ) {
+		Cmd_AddCommand( "error", Com_Error_f );
+		Cmd_AddCommand( "crash", Com_Crash_f );
+		Cmd_AddCommand( "freeze", Com_Freeze_f );
 	}
+
 	Cmd_AddCommand( "quit", Com_Quit_f );
 	Cmd_AddCommand( "changeVectors", MSG_ReportChangeVectors_f );
 	Cmd_AddCommand( "writeconfig", Com_WriteConfig_f );

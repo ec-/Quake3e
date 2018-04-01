@@ -1052,7 +1052,7 @@ void SV_RestartGameProgs( void ) {
 	// do a restart instead of a free
 	gvm = VM_Restart( gvm );
 	if ( !gvm ) {
-		Com_Error( ERR_FATAL, "VM_Restart on game failed" );
+		Com_Error( ERR_DROP, "VM_Restart on game failed" );
 	}
 
 	SV_InitGameVM( qtrue );
@@ -1082,7 +1082,7 @@ void SV_InitGameProgs( void ) {
 	// load the dll or bytecode
 	gvm = VM_Create( VM_GAME, SV_GameSystemCalls, SV_DllSyscall, g_vmMainArgs, Cvar_VariableIntegerValue( "vm_game" ) );
 	if ( !gvm ) {
-		Com_Error( ERR_FATAL, "VM_Create on game failed" );
+		Com_Error( ERR_DROP, "VM_Create on game failed" );
 	}
 
 	SV_InitGameVM( qfalse );
