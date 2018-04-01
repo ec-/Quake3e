@@ -320,9 +320,9 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 	}
 	lastErrorTime = currentTime;
 
-	va_start (argptr,fmt);
-	Q_vsnprintf (com_errorMessage, sizeof(com_errorMessage), fmt, argptr);
-	va_end (argptr);
+	va_start( argptr, fmt );
+	Q_vsnprintf( com_errorMessage, sizeof( com_errorMessage ), fmt, argptr );
+	va_end( argptr );
 
 	if ( code != ERR_DISCONNECT && code != ERR_NEED_CD ) {
 		// we can't recover from ERR_FATAL so there is no recipients for com_errorMessage
@@ -335,9 +335,10 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 
 	Cbuf_Init();
 
-	if (code == ERR_DISCONNECT || code == ERR_SERVERDISCONNECT) {
+	if ( code == ERR_DISCONNECT || code == ERR_SERVERDISCONNECT ) {
 		VM_Forced_Unload_Start();
 		SV_Shutdown( "Server disconnected" );
+		Com_EndRedirect();
 #ifndef DEDICATED
 		CL_Disconnect( qfalse );
 		CL_FlushMemory();
@@ -354,6 +355,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 			com_errorMessage );
 		VM_Forced_Unload_Start();
 		SV_Shutdown( va( "Server crashed: %s",  com_errorMessage ) );
+		Com_EndRedirect();
 #ifndef DEDICATED
 		CL_Disconnect( qfalse );
 		CL_FlushMemory();
@@ -366,6 +368,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		longjmp( abortframe, -1 );
 	} else if ( code == ERR_NEED_CD ) {
 		SV_Shutdown( "Server didn't have CD" );
+		Com_EndRedirect();
 #ifndef DEDICATED
 		if ( com_cl_running && com_cl_running->integer ) {
 			CL_Disconnect( qfalse );
@@ -378,8 +381,8 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		}
 #endif
 		FS_PureServerSetLoadedPaks( "", "" );
-
 		com_errorEntered = qfalse;
+
 		longjmp( abortframe, -1 );
 	} else {
 		VM_Forced_Unload_Start();
@@ -387,6 +390,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		CL_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ), qtrue );
 #endif
 		SV_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ) );
+		Com_EndRedirect();
 		VM_Forced_Unload_Done();
 	}
 
