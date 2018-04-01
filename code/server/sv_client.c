@@ -237,10 +237,12 @@ void SV_DirectConnect( const netadr_t *from ) {
 	// check for concurrent connections
 	for ( i = 0, n = 0; i < sv_maxclients->integer; i++ ) {
 		const netadr_t *addr = &svs.clients[ i ].netchan.remoteAddress;
-		if ( addr->type != NA_BOT && NET_CompareBaseAdr( addr, from ) && svs.clients[ i ].state >= CS_PRIMED ) {
-			if ( ++n >= sv_maxconcurrent->integer ) {
-				NET_OutOfBandPrint( NS_SERVER, from, "print\nToo many connections.\n" );
-				return;
+		if ( addr->type != NA_BOT && NET_CompareBaseAdr( addr, from ) ) {
+			if ( svs.clients[ i ].state >= CS_CONNECTED && !svs.clients[ i ].justConnected ) {
+				if ( ++n >= sv_maxconcurrent->integer ) {
+					NET_OutOfBandPrint( NS_SERVER, from, "print\nToo many connections.\n" );
+					return;
+				}
 			}
 		}
 	}
