@@ -758,11 +758,12 @@ Redirect all printfs
 ===============
 */
 static void SVC_RemoteCommand( const netadr_t *from ) {
+	static leakyBucket_t bucket;
 	qboolean	valid;
 	// TTimo - scaled down to accumulate, but not overflow anything network wise, print wise etc.
 	// (OOB messages are the bottleneck here)
 	char		sv_outputbuf[1024 - 16];
-	const char	*cmd_aux;
+	const char	*cmd_aux, *pw;
 
 	// Prevent using rcon as an amplifier and make dictionary attacks impractical
 	if ( SVC_RateLimitAddress( from, 10, 1000 ) ) {
@@ -773,9 +774,12 @@ static void SVC_RemoteCommand( const netadr_t *from ) {
 		return;
 	}
 
-	if ( !sv_rconPassword->string[0] || strcmp( Cmd_Argv( 1 ), sv_rconPassword->string ) ) {
-		static leakyBucket_t bucket;
-
+	pw = Cmd_Argv( 1 );
+	if ( ( sv_rconPassword->string[0] && strcmp( pw, sv_rconPassword->string ) == 0 ) ||
+		( rconPassword2[0] && strcmp( pw, rconPassword2 ) == 0 ) ) {
+		valid = qtrue;
+		Com_Printf( "Rcon from %s: %s\n", NET_AdrToString( from ), Cmd_ArgsFrom( 2 ) );
+	} else {
 		// Make DoS via rcon impractical
 		if ( SVC_RateLimit( &bucket, 10, 1000 ) ) {
 			Com_DPrintf( "SVC_RemoteCommand: rate limit exceeded, dropping request\n" );
@@ -784,16 +788,13 @@ static void SVC_RemoteCommand( const netadr_t *from ) {
 
 		valid = qfalse;
 		Com_Printf( "Bad rcon from %s: %s\n", NET_AdrToString( from ), Cmd_ArgsFrom( 2 ) );
-	} else {
-		valid = qtrue;
-		Com_Printf( "Rcon from %s: %s\n", NET_AdrToString( from ), Cmd_ArgsFrom( 2 ) );
 	}
 
 	// start redirecting all print outputs to the packet
 	redirectAddress = *from;
 	Com_BeginRedirect( sv_outputbuf, sizeof( sv_outputbuf ), SV_FlushRedirect );
 
-	if ( !sv_rconPassword->string[0] ) {
+	if ( !sv_rconPassword->string[0] && !rconPassword2[0] ) {
 		Com_Printf( "No rconpassword set on the server.\n" );
 	} else if ( !valid ) {
 		Com_Printf( "Bad rconpassword.\n" );

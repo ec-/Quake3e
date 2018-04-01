@@ -450,6 +450,8 @@ quake3 set test blah + map test
 #define	MAX_CONSOLE_LINES	32
 int		com_numConsoleLines;
 char	*com_consoleLines[MAX_CONSOLE_LINES];
+// master rcon password
+char	rconPassword2[MAX_CVAR_VALUE_STRING];
 
 /*
 ==================
@@ -467,6 +469,7 @@ void Com_ParseCommandLine( char *commandLine ) {
 
 	inq = 0;
 	com_consoleLines[0] = commandLine;
+	rconPassword2[0] = '\0';
 
 	while ( *commandLine ) {
 		if (*commandLine == '"') {
@@ -533,6 +536,11 @@ qboolean Com_EarlyParseCmdLine( char *commandLine, char *con_title, int title_si
 		if ( !Q_stricmp( Cmd_Argv(0), "vid_ypos" ) ) {
 			*vid_ypos = atoi( Cmd_Argv( 1 ) );
 			flags |= 2;
+			continue;
+		}
+		if ( !Q_stricmpn( Cmd_Argv(0), "set", 3 ) && !Q_stricmp( Cmd_Argv(1), "rconPassword2" ) ) {
+			com_consoleLines[i][0] = '\0';
+			Q_strncpyz( rconPassword2, Cmd_Argv( 2 ), sizeof( rconPassword2 ) );
 			continue;
 		}
 	}

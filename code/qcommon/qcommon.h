@@ -949,6 +949,8 @@ extern	qboolean	com_errorEntered;
 
 extern	fileHandle_t	com_journalDataFile;
 
+extern	char	rconPassword2[ MAX_CVAR_VALUE_STRING ];
+
 typedef enum {
 	TAG_FREE,
 	TAG_GENERAL,
