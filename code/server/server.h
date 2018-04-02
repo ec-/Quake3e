@@ -308,6 +308,7 @@ extern leakyBucket_t outboundLeakyBucket;
 
 qboolean SVC_RateLimit( leakyBucket_t *bucket, int burst, int period );
 qboolean SVC_RateLimitAddress( const netadr_t *from, int burst, int period );
+void SVC_RateRestoreAddress( const netadr_t *from, int burst, int period );
 void SVC_RateDropAddress( const netadr_t *from, int burst, int period );
 
 void SV_FinalMessage( const char *message );

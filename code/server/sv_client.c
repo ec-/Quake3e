@@ -338,6 +338,21 @@ void SV_DirectConnect( const netadr_t *from ) {
 		}
 	}
 
+	// don't let "ip" overflow userinfo string
+	if ( NET_IsLocalAddress( from ) )
+		ip = "localhost";
+	else
+		ip = NET_AdrToString( from );
+
+	if ( !Info_SetValueForKey( userinfo, "ip", ip ) ) {
+		NET_OutOfBandPrint( NS_SERVER, from, "print\nUserinfo string length exceeded.  "
+			"Try removing setu cvars from your config.\n" );
+		return;
+	}
+
+	// restore burst capacity
+	SVC_RateRestoreAddress( from, 10, 1000 );
+
 	qport = atoi( Info_ValueForKey( userinfo, "qport" ) );
 
 	// quick reject
@@ -357,18 +372,6 @@ void SV_DirectConnect( const netadr_t *from ) {
 			}
 			break;
 		}
-	}
-	
-	// don't let "ip" overflow userinfo string
-	if ( NET_IsLocalAddress( from ) )
-		ip = "localhost";
-	else
-		ip = NET_AdrToString( from );
-
-	if ( !Info_SetValueForKey( userinfo, "ip", ip ) ) {
-		NET_OutOfBandPrint( NS_SERVER, from, "print\nUserinfo string length exceeded.  "
-			"Try removing setu cvars from your config.\n" );
-		return;
 	}
 
 	// if there is already a slot for this ip, reuse it

@@ -541,9 +541,24 @@ SVC_RateDrop
 */
 static void SVC_RateDrop( leakyBucket_t *bucket, int burst ) {
 	if ( bucket != NULL ) {
-		bucket->toxic += 2;	// to make timing attack on rate limiter ineffective
+		if ( bucket->toxic < 10000 )
+			bucket->toxic += 2; // to make timing attack on rate limiter ineffective
 		bucket->burst = burst * bucket->toxic;
 		bucket->lastTime = Sys_Milliseconds();
+	}
+}
+
+
+/*
+================
+SVC_RateRestore
+================
+*/
+static void SVC_RateRestore( leakyBucket_t *bucket ) {
+	if ( bucket != NULL ) {
+		if ( bucket->burst > 0 ) {
+			bucket->burst--;
+		}
 	}
 }
 
@@ -559,6 +574,20 @@ qboolean SVC_RateLimitAddress( const netadr_t *from, int burst, int period ) {
 	leakyBucket_t *bucket = SVC_BucketForAddress( from, burst, period );
 
 	return SVC_RateLimit( bucket, burst, period );
+}
+
+
+/*
+================
+SVC_RateRestoreAddress
+
+Decrease burst rate
+================
+*/
+void SVC_RateRestoreAddress( const netadr_t *from, int burst, int period ) {
+	leakyBucket_t *bucket = SVC_BucketForAddress( from, burst, period );
+
+	SVC_RateRestore( bucket );
 }
 
 
