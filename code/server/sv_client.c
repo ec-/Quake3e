@@ -39,6 +39,61 @@ static struct {
 	int timestamp;
 } seed;
 
+
+static void fnv1a_init( int *hash )
+{
+	*hash = 0x811c9dc5;
+}
+
+
+static void fnv1a_update( int *hash, const byte *data, int length )
+{
+	int h = *hash;
+	int i;
+	for ( i = 0; i < length; i++ )
+	{
+		h = h ^ data[i];
+		h = h * 16777619;
+	}
+	*hash = h;
+}
+
+
+static void fnv1a_final( int *hash )
+{
+	// slightly improve dispersion
+	*hash = (*hash>>1) ^ (*hash);
+}
+
+
+static int SV_HashAddress( int timestamp, const netadr_t *from )
+{
+	int hash;
+
+	fnv1a_init( &hash );
+
+	switch ( from->type )
+	{
+		case NA_BROADCAST:
+		case NA_IP:
+			fnv1a_update( &hash, from->ipv._4, 4 ); break;
+		case NA_IP6:
+		case NA_MULTICAST6:
+			fnv1a_update( &hash, from->ipv._6, 16 ); break;
+		default:
+			break;
+	}
+
+	fnv1a_update( &hash, (byte*)&from->port, sizeof( from->port ) );
+	fnv1a_update( &hash, (byte*)&timestamp, sizeof( timestamp ) );
+	fnv1a_update( &hash, seed.key, sizeof( seed.key ) );
+
+	fnv1a_final( &hash );
+
+	return hash;
+}
+
+
 /*
 =================
 SV_CreateChallenge
@@ -55,7 +110,8 @@ static int SV_CreateChallenge( int timestamp, const netadr_t *from )
 	// The most-significant bit stores whether the timestamp is odd or even. This lets later verification code handle the
 	// case where the engine timestamp has incremented between the time this challenge is sent and the client replies.
 	seed.timestamp = timestamp;
-	challenge = Com_MD5Addr( from, (byte*)&seed, sizeof( seed ) );
+	//challenge = Com_MD5Addr( from, (byte*)&seed, sizeof( seed ) );
+	challenge = SV_HashAddress( timestamp, from );
 	challenge &= 0x7FFFFFFF;
 	challenge |= (unsigned int)(timestamp & 0x1) << 31;
 
@@ -521,7 +577,9 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 
 	// nuke user info
 	SV_SetUserinfo( drop - svs.clients, "" );
-	
+
+	drop->justConnected = qfalse;
+
 	if ( isBot ) {
 		// bots shouldn't go zombie, as there's no real net connection.
 		drop->state = CS_FREE;
