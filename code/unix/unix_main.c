@@ -177,8 +177,12 @@ void Sys_In_Restart_f( void )
 // FIXME TTimo relevant?
 void tty_FlushIn( void )
 {
+#if 1
+	tcflush( STDIN_FILENO, TCIFLUSH );
+#else
 	char key;
 	while ( read( STDIN_FILENO, &key, 1 ) > 0 );
+#endif
 }
 
 
@@ -230,8 +234,6 @@ void tty_Hide( void )
 // FIXME TTimo need to position the cursor if needed??
 void tty_Show( void )
 {
-	int i;
-
 	if ( !ttycon_on )
 		return;
 
@@ -240,10 +242,10 @@ void tty_Show( void )
 	if ( ttycon_hide == 0 )
 	{
 		(void)write( STDOUT_FILENO, "]", 1 ); // -EC-
+
 		if ( tty_con.cursor > 0 )
 		{
-			for ( i = 0; i < tty_con.cursor; i++ )
-				(void)write( STDOUT_FILENO, tty_con.buffer + i, 1 );
+			(void)write( STDOUT_FILENO, tty_con.buffer, tty_con.cursor );
 		}
 	}
 }
@@ -468,25 +470,30 @@ tty_err Sys_ConsoleInputInit( void )
 		signal( SIGTSTP, CON_SigTStp );
 	}
 
-	// FIXME TTimo initialize this in Sys_Init or something?
-	//ttycon = Cvar_Get( "ttycon", "1", 0 );
-	if ( !ttycon || !ttycon->integer )
+	stdin_flags = fcntl( STDIN_FILENO, F_GETFL, 0 );
+	if ( stdin_flags == -1 )
 	{
-		stdin_active = qfalse; // -EC-
-		ttycon_on = qfalse;
-		return TTY_DISABLED;
-	}
-	term = getenv( "TERM" );
-
-	if ( isatty( STDIN_FILENO ) != 1 || !term
-		|| !strcmp( term, "dumb" ) || !strcmp( term, "raw" ) )
-	{
-		stdin_active = qfalse; // -EC-
-		ttycon_on = qfalse;
+		stdin_active = qfalse;
 		return TTY_ERROR;
 	}
 
-	stdin_flags = fcntl( STDIN_FILENO, F_GETFL, 0 );
+	// set non-blocking mode
+	fcntl( STDIN_FILENO, F_SETFL, stdin_flags | O_NONBLOCK );
+	stdin_active = qtrue;
+
+	// FIXME TTimo initialize this in Sys_Init or something?
+	if ( !ttycon || !ttycon->integer )
+	{
+		ttycon_on = qfalse;
+		return TTY_DISABLED;
+
+	}
+	term = getenv( "TERM" );
+	if ( isatty( STDIN_FILENO ) != 1 || !term || !strcmp( term, "dumb" ) || !strcmp( term, "raw" ) )
+	{
+		ttycon_on = qfalse;
+		return TTY_ERROR;
+	}
 
 	Field_Clear( &tty_con );
 	tcgetattr( STDIN_FILENO, &tty_tc );
@@ -512,16 +519,11 @@ tty_err Sys_ConsoleInputInit( void )
 	tc.c_cc[VTIME] = 0;
 	tcsetattr( STDIN_FILENO, TCSADRAIN, &tc );
 
-	//ttycon_ansicolor = Cvar_Get( "ttycon_ansicolor", "0", CVAR_ARCHIVE );
-	if( ttycon_ansicolor && ttycon_ansicolor->integer )
+	if ( ttycon_ansicolor && ttycon_ansicolor->integer )
 	{
 		ttycon_color_on = qtrue;
 	}
 
-	// set non-blocking mode
-	fcntl( STDIN_FILENO, F_SETFL, stdin_flags | O_NONBLOCK );
-
-	stdin_active = qtrue;
 	ttycon_on = qtrue;
 
 	tty_Hide();
@@ -652,30 +654,25 @@ char *Sys_ConsoleInput( void )
 		}
 		return NULL;
 	}
-	else
+	else if ( stdin_active && com_dedicated->integer )
 	{
-		int     len;
-		fd_set  fdset;
+		int len;
+		fd_set fdset;
 		struct timeval timeout;
-
-		if ( !com_dedicated || !com_dedicated->integer )
-			return NULL;
-
-		if ( !stdin_active )
-			return NULL;
 
 		FD_ZERO( &fdset );
 		FD_SET( STDIN_FILENO, &fdset ); // stdin
 		timeout.tv_sec = 0;
 		timeout.tv_usec = 0;
-		if ( select( STDIN_FILENO + 1, &fdset, NULL, NULL, &timeout) == -1 || !FD_ISSET( 0, &fdset ) )
+		if ( select( STDIN_FILENO + 1, &fdset, NULL, NULL, &timeout) == -1 || !FD_ISSET( STDIN_FILENO, &fdset ) )
 		{
 			return NULL;
 		}
 
 		len = read( STDIN_FILENO, text, sizeof( text ) );
-		if ( len == 0 )
-		{ // eof!
+		if ( len == 0 ) // eof!
+		{ 
+			fcntl( STDIN_FILENO, F_SETFL, stdin_flags );
 			stdin_active = qfalse;
 			return NULL;
 		}
@@ -683,7 +680,7 @@ char *Sys_ConsoleInput( void )
 		if ( len < 1 )
 			return NULL;
 
-		text[len-1] = '\0';    // rip off the /n and terminate
+		text[len-1] = '\0'; // rip off the /n and terminate
 		s = text;
 
 		while ( *s == '\\' || *s == '/' ) // skip leading slashes
@@ -691,6 +688,8 @@ char *Sys_ConsoleInput( void )
 
 		return s;
 	}
+
+	return NULL;
 }
 
 
@@ -757,7 +756,7 @@ void Sys_Sleep( int msec ) {
 
 	if ( msec < 0 ) {
 		// special case: wait for console input or network packet
-		if ( ttycon_on == qtrue ) {
+		if ( stdin_active ) {
 			msec = 300;
 			do {
 				FD_ZERO( &fdset );
@@ -776,7 +775,7 @@ void Sys_Sleep( int msec ) {
 		return;
 	}
 
-	if ( com_dedicated->integer && ttycon_on != qfalse ) {
+	if ( com_dedicated->integer && stdin_active ) {
 		FD_ZERO( &fdset );
 		FD_SET( STDIN_FILENO, &fdset );
 		timeout.tv_sec = msec / 1000;
