@@ -2407,22 +2407,22 @@ static qboolean FS_AllowListExternal( const char *extension )
 		return qfalse;
 
 	// allow scanning directories
-	if ( strcmp( extension, "/" ) )
+	if ( !strcmp( extension, "/" ) )
 		return qtrue;
 
-	if ( Q_stricmp( extension, ".cfg" ) )
+	if ( !Q_stricmp( extension, ".cfg" ) )
 		return qtrue;
 
-	if ( Q_stricmp( extension, ".txt" ) )
+	if ( !Q_stricmp( extension, ".txt" ) )
 		return qtrue;
 	
-	if ( Q_stricmp( extension, ".dat" ) )
+	if ( !Q_stricmp( extension, ".dat" ) )
 		return qtrue;
 
-	if ( Q_stricmp( extension, ".menu" ) )
+	if ( !Q_stricmp( extension, ".menu" ) )
 		return qtrue;
 
-	if ( Q_stricmp( extension, ".game" ) )
+	if ( !Q_stricmp( extension, ".game" ) )
 		return qtrue;
 
 	return qfalse;
