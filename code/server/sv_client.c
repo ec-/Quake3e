@@ -30,7 +30,7 @@ static void SV_CloseDownload( client_t *cl );
 // backported from https://github.com/JACoders/OpenJK/pull/832
 //
 
-#define TS_SHIFT 13 // ~8 seconds to reply to the challenge
+#define TS_SHIFT 14 // ~16 seconds to reply to the challenge
 
 static struct {
 	// size of this structure plus max.possible length of client address (18 bytes)
@@ -313,10 +313,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 		// Verify the received challenge against the expected challenge
 		if ( !SV_VerifyChallenge( challenge, from ) )
 		{
-			if ( com_developer->integer )
-			{
-				NET_OutOfBandPrint( NS_SERVER, from, "print\nIncorrect challenge for your address.\n" );
-			}
+			NET_OutOfBandPrint( NS_SERVER, from, "print\nIncorrect challenge, please reconnect.\n" );
 			return;
 		}
 	}
@@ -356,26 +353,31 @@ void SV_DirectConnect( const netadr_t *from ) {
 	qport = atoi( Info_ValueForKey( userinfo, "qport" ) );
 
 	// quick reject
-	for (i=0,cl=svs.clients ; i < sv_maxclients->integer ; i++,cl++) {
-		if ( cl->state == CS_FREE ) {
-			continue;
-		}
+	newcl = NULL;
+	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ ) {
+		//if ( cl->state == CS_FREE ) {
+		//.	continue;
+		//}
 		if ( NET_CompareBaseAdr( from, &cl->netchan.remoteAddress )
 			&& ( cl->netchan.qport == qport 
 			|| from->port == cl->netchan.remoteAddress.port ) ) {
-			if (( svs.time - cl->lastConnectTime) 
-				< (sv_reconnectlimit->integer * 1000)) {
-					if ( com_developer->integer ) {
-						Com_Printf( "%s:reconnect rejected : too soon\n", NET_AdrToString( from ) );
-					}
+			int elapsed = svs.time - cl->lastConnectTime;
+			if ( elapsed < ( sv_reconnectlimit->integer * 1000 ) ) {
+				int remains = ( ( sv_reconnectlimit->integer * 1000 ) - elapsed + 999 ) / 1000;
+				if ( com_developer->integer ) {
+					Com_Printf( "%s:reconnect rejected : too soon\n", NET_AdrToString( from ) );
+				}
+				NET_OutOfBandPrint( NS_SERVER, from, "print\nReconnecting, please wait %i second%s.\n",
+					remains, (remains != 1) ? "s" : "" );
 				return;
 			}
+			newcl = cl; // we may reuse this slot
 			break;
 		}
 	}
 
 	// if there is already a slot for this ip, reuse it
-	for (i=0,cl=svs.clients ; i < sv_maxclients->integer ; i++,cl++) {
+	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ ) {
 		if ( cl->state == CS_FREE ) {
 			continue;
 		}
@@ -414,6 +416,11 @@ void SV_DirectConnect( const netadr_t *from ) {
 		startIndex = sv_privateClients->integer;
 	}
 
+	if ( newcl >= svs.clients + startIndex && newcl->state == CS_FREE ) {
+		Com_Printf( "%s: reuse slot %i\n", NET_AdrToString( from ), newcl - svs.clients );
+		goto gotnewcl;
+	}
+
 	newcl = NULL;
 	for ( i = startIndex; i < sv_maxclients->integer ; i++ ) {
 		cl = &svs.clients[i];
@@ -449,14 +456,11 @@ void SV_DirectConnect( const netadr_t *from ) {
 		}
 	}
 
-	// we got a newcl, so reset the reliableSequence and reliableAcknowledge
-	cl->reliableAcknowledge = 0;
-	cl->reliableSequence = 0;
-
 gotnewcl:	
 	// build a new connection
 	// accept the new client
 	// this is the only place a client_t is ever initialized
+	// we got a newcl, so reset the reliableSequence and reliableAcknowledge
 	Com_Memset( newcl, 0, sizeof( *newcl ) );
 	clientNum = newcl - svs.clients;
 #if 0 // skip this until CS_PRIMED
@@ -598,7 +602,6 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 	// if this was the last client on the server, send a heartbeat
 	// to the master so it is known the server is empty
 	// send a heartbeat now so the master will get up to date info
-	// if there is already a slot for this ip, reuse it
 	for ( i = 0 ; i < sv_maxclients->integer ; i++ ) {
 		if ( svs.clients[i].state >= CS_CONNECTED ) {
 			break;

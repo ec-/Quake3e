@@ -723,7 +723,9 @@ void SV_Init( void )
 	for ( index = 3; index < MAX_MASTER_SERVERS; index++ )
 		sv_master[index] = Cvar_Get(va("sv_master%d", index + 1), "", CVAR_ARCHIVE);
 
-	sv_reconnectlimit = Cvar_Get ("sv_reconnectlimit", "3", 0);
+	sv_reconnectlimit = Cvar_Get( "sv_reconnectlimit", "3", 0 );
+	Cvar_CheckRange( sv_reconnectlimit, "0", "12", CV_INTEGER );
+
 	sv_padPackets = Cvar_Get ("sv_padPackets", "0", 0);
 	sv_killserver = Cvar_Get ("sv_killserver", "0", 0);
 	sv_mapChecksum = Cvar_Get ("sv_mapChecksum", "", CVAR_ROM);
