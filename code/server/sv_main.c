@@ -984,8 +984,8 @@ void SV_PacketEvent( const netadr_t *from, msg_t *msg ) {
 				cl->lastPacketTime = svs.time;	// don't timeout
 				SV_ExecuteClientMessage( cl, msg );
 			}
+			return;
 		}
-		return;
 	}
 }
 

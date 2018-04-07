@@ -2648,7 +2648,7 @@ static void CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 			}
 		}
 
-		// start sending challenge response instead of challenge request packets
+		// start sending connect instead of challenge request packets
 		clc.challenge = atoi(Cmd_Argv(1));
 		cls.state = CA_CHALLENGING;
 		clc.connectPacketCount = 0;
