@@ -360,12 +360,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 	// quick reject
 	newcl = NULL;
 	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ ) {
-		//if ( cl->state == CS_FREE ) {
-		//.	continue;
-		//}
-		if ( NET_CompareBaseAdr( from, &cl->netchan.remoteAddress )
-			&& ( cl->netchan.qport == qport 
-			|| from->port == cl->netchan.remoteAddress.port ) ) {
+		if ( NET_CompareAdr( from, &cl->netchan.remoteAddress ) ) {
 			int elapsed = svs.time - cl->lastConnectTime;
 			if ( elapsed < ( sv_reconnectlimit->integer * 1000 ) ) {
 				int remains = ( ( sv_reconnectlimit->integer * 1000 ) - elapsed + 999 ) / 1000;
@@ -386,9 +381,8 @@ void SV_DirectConnect( const netadr_t *from ) {
 		if ( cl->state == CS_FREE ) {
 			continue;
 		}
-		if ( NET_CompareBaseAdr( from, &cl->netchan.remoteAddress ) \
-			&& ( cl->netchan.qport == qport || from->port == cl->netchan.remoteAddress.port ) ) {
-
+		if ( NET_CompareAdr( from, &cl->netchan.remoteAddress ) && cl->netchan.qport == qport ) {
+			// both qport and netport should match for a reconnecting client
 			Com_Printf( "%s:reconnect\n", NET_AdrToString( from ) );
 			newcl = cl;
 
