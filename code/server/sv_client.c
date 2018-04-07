@@ -202,11 +202,16 @@ void SV_GetChallenge( const netadr_t *from ) {
 	// Create a unique challenge for this client without storing state on the server
 	challenge = SV_CreateChallenge( svs.time >> TS_SHIFT, from );
 	
-	// Grab the client's challenge to echo back (if given)
-	clientChallenge = atoi( Cmd_Argv( 1 ) );
+	if ( Cmd_Argc() < 2 ) {
+		// legacy client query, don't send unneeded information
+		NET_OutOfBandPrint( NS_SERVER, from, "challengeResponse %i", challenge );
+	} else {
+		// Grab the client's challenge to echo back (if given)
+		clientChallenge = atoi( Cmd_Argv( 1 ) );
 
-	NET_OutOfBandPrint( NS_SERVER, from, "challengeResponse %i %i %i",
-		challenge, clientChallenge, NEW_PROTOCOL_VERSION );
+		NET_OutOfBandPrint( NS_SERVER, from, "challengeResponse %i %i %i",
+			challenge, clientChallenge, NEW_PROTOCOL_VERSION );
+	}
 }
 
 

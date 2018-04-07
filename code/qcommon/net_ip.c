@@ -1268,13 +1268,13 @@ static void NET_OpenSocks( int port ) {
 NET_AddLocalAddress
 =====================
 */
-static void NET_AddLocalAddress(char *ifname, struct sockaddr *addr, struct sockaddr *netmask)
+static void NET_AddLocalAddress( const char *ifname, const struct sockaddr *addr, const struct sockaddr *netmask )
 {
 	int addrlen;
 	sa_family_t family;
 	
 	// only add addresses that have all required info.
-	if(!addr || !netmask || !ifname)
+	if (!addr || !netmask || !ifname)
 		return;
 	
 	family = addr->sa_family;
@@ -1305,10 +1305,17 @@ static void NET_AddLocalAddress(char *ifname, struct sockaddr *addr, struct sock
 	}
 }
 
+
 #if defined(__linux__) || defined(MACOSX) || defined(__BSD__)
-static void NET_GetLocalAddress(void)
+static void NET_GetLocalAddress( void )
 {
+	char	hostname[256];
 	struct ifaddrs *ifap, *search;
+
+	if ( gethostname( hostname, sizeof( hostname ) ) )
+		return;
+
+	Com_Printf( "Hostname: %s\n", hostname );
 
 	numIP = 0;
 
