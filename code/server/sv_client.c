@@ -353,7 +353,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 	}
 
 	// restore burst capacity
-	SVC_RateRestoreAddress( from, 10, 1000 );
+	SVC_RateRestoreBurstAddress( from, 10, 1000 );
 
 	qport = atoi( Info_ValueForKey( userinfo, "qport" ) );
 
@@ -503,6 +503,7 @@ gotnewcl:
 	newcl->lastPacketTime = svs.time;
 	newcl->lastConnectTime = svs.time;
 
+	SVC_RateRestoreToxicAddress( &newcl->netchan.remoteAddress, 10, 1000 );
 	newcl->justConnected = qtrue;
 
 	// when we receive the first packet from the client, we will
