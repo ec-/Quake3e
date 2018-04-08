@@ -136,24 +136,18 @@ static int GetStatusBarHeight( void )
 static int GetTimerMsec( void )
 {
 	int msec;
-	if ( !com_sv_running || Cvar_VariableIntegerValue( "sv_fps" ) == 0 ) {
+	if ( !com_sv_running || !com_sv_running->integer ) {
 		msec = 50; // 20fps
 	} else {
 		msec = 1000 / Cvar_VariableIntegerValue( "sv_fps" );
-		if ( msec < 1 )
-			msec = 1;
 	}
 #ifndef DEDICATED
-	if ( com_cl_running ) {
+	if ( com_cl_running && com_cl_running->integer ) {
 		if ( com_maxfps->integer ) {
 			msec = 1000 / com_maxfps->integer;
-			if ( msec < 1 )
-				msec = 1;
 		}
 		if ( Cvar_VariableIntegerValue( "com_maxfpsUnfocused" ) ) {
 			msec = 1000 / Cvar_VariableIntegerValue( "com_maxfpsUnfocused" );
-			if ( msec < 1 )
-				msec = 1;
 		}
 		if ( gw_minimized || CL_VideoRecording() ) {
 			return 0;

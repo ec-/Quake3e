@@ -416,7 +416,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 	}
 
 	if ( newcl >= svs.clients + startIndex && newcl->state == CS_FREE ) {
-		Com_Printf( "%s: reuse slot %i\n", NET_AdrToString( from ), newcl - svs.clients );
+		Com_Printf( "%s: reuse slot %i\n", NET_AdrToString( from ), (int)(newcl - svs.clients) );
 		goto gotnewcl;
 	}
 
