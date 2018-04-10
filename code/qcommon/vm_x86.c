@@ -1944,7 +1944,7 @@ __compile:
 
 		case OP_ENTER:
 			v = ci->value;
-			if ( ISS8( v ) ) {
+			if ( ISU8( v ) ) {
 				EmitString( "83 EE" );		// sub	esi, 0x12
 				Emit1( v );
 			} else {
@@ -1985,8 +1985,13 @@ __compile:
 
 			// opStack overflow check
 			if ( vm_rtChecks->integer & 2 ) {
-				EmitRexString( "8D 47" );	// lea eax, [edi+0x7F]
-				Emit1( ci->opStack );
+				if ( ISU8( ci->opStack ) ) {
+					EmitRexString( "8D 47" );		// lea eax, [edi+0x7F]
+					Emit1( ci->opStack );
+				} else {
+					EmitRexString( "8D 87" );		// lea eax, [edi+0x12345678]
+					Emit4( ci->opStack );
+				}
 #if idx64
 				EmitString( "4C 39 F0" );		// cmp rax, r14
 #else
@@ -2020,7 +2025,7 @@ __compile:
 			if ( ni->op == OP_LOAD4 ) {
 				EmitAddEDI4( vm );				// add edi, 4
 				v = ci->value;
-				if ( ISS8( v ) ) {
+				if ( ISU8( v ) ) {
 					EmitString( "8B 45" );		// mov eax, dword ptr [ebp + 0x7F]
 					Emit1( v );
 				} else {
@@ -2036,7 +2041,7 @@ __compile:
 			if ( ni->op == OP_LOAD2 ) {
 				EmitAddEDI4( vm );				// add edi, 4
 				v = ci->value;
-				if ( ISS8( v ) ) {
+				if ( ISU8( v ) ) {
 					EmitString( "0F B7 45" );	// movzx eax, word ptr [ebp + 0x7F]
 					Emit1( v );
 				} else {
@@ -2052,7 +2057,7 @@ __compile:
 			if ( ni->op == OP_LOAD1 ) {
 				EmitAddEDI4( vm );				// add edi, 4
 				v = ci->value;
-				if ( ISS8( v ) ) {
+				if ( ISU8( v ) ) {
 					EmitString( "0F B6 45" );	// movzx eax, byte ptr [ebp + 0x7F]
 					Emit1( v );
 				} else {
@@ -2069,7 +2074,7 @@ __compile:
 
 			EmitAddEDI4( vm );					// add edi, 4
 			v = ci->value;
-			if ( ISS8( v ) ) {
+			if ( ISU8( v ) ) {
 				EmitString( "8D 46" );			// lea eax, [esi + 0x7F]
 				Emit1( v );
 			} else {
@@ -2083,7 +2088,7 @@ __compile:
 			if ( LastCommand == LAST_COMMAND_STORE_FLOAT_EDI_SSE ) {
 				REWIND(4);
 				v = ci->value;
-				if ( ISS8( v ) ) {
+				if ( ISU8( v ) ) {
 					EmitString( "F3 0F 11 45" ); // movss dword ptr [ebp + 0x7F], xmm0
 					Emit1( v );
 				} else {
@@ -2100,7 +2105,7 @@ __compile:
 				break;
 			}
 			v = ci->value;
-			if ( ISS8( v ) ) {
+			if ( ISU8( v ) ) {
 				EmitString( "89 45" );				// mov	dword ptr [ebp + 0x7F], eax
 				Emit1( v );
 			} else {
@@ -2131,7 +2136,7 @@ __compile:
 		case OP_LEAVE:
 #ifdef DEBUG_VM
 			v = ci->value;
-			if ( ISS8( v ) ) {
+			if ( ISU8( v ) ) {
 				EmitString( "83 C6" );		// add	esi, 0x12
 				Emit1( v );
 			} else {
@@ -2442,7 +2447,7 @@ __compile:
 						ip++; // OP_STORE4
 					} else if ( ni->op == OP_ARG ) {
 						v = ni->value;
-						if ( ISS8( v ) ) {
+						if ( ISU8( v ) ) {
 							EmitString( "F3 0F 11 45" ); // movss dword ptr [ebp + 0x7F], xmm0
 							Emit1( v );
 						} else {
@@ -2520,14 +2525,14 @@ __compile:
 				if ( proc_base != -1 ) {
 					// allow jump within local function scope only
 					EmitString( "89 C2" );			// mov edx, eax
-					if ( ISS8( proc_base ) ) {
+					if ( ISU8( proc_base ) ) {
 						EmitString( "83 EA" );		// sub edx, 0x7F
 						Emit1( proc_base );
 					} else {
 						EmitString( "81 EA" );		// sub edx, 0x12345678
 						Emit4( proc_base );
 					}
-					if ( ISS8( proc_len ) ) {
+					if ( ISU8( proc_len ) ) {
 						EmitString( "83 FA" );		// cmp edx, 0x7F
 						Emit1( proc_len );
 					} else {
@@ -2572,19 +2577,19 @@ __compile:
 		// ****************
 		// system functions
 		// ****************
-		EmitAlign( 4 );
+		EmitAlign( 8 );
 		funcOffset[FUNC_CALL] = compiledOfs;
 		EmitCallFunc( vm );
 
-		EmitAlign( 4 );
+		EmitAlign( 8 );
 		funcOffset[FUNC_FTOL] = compiledOfs;
 		EmitFTOLFunc( vm );
 
-		EmitAlign( 4 );
+		EmitAlign( 8 );
 		funcOffset[FUNC_BCPY] = compiledOfs;
 		EmitBCPYFunc( vm );
 
-		EmitAlign( 4 );
+		EmitAlign( 8 );
 		funcOffset[FUNC_NCPY] = compiledOfs;
 		EmitNCPYFunc( vm );
 
@@ -2593,27 +2598,27 @@ __compile:
 		// ***************
 
 		// bad jump
-		EmitAlign( 4 );
+		EmitAlign( 8 );
 		funcOffset[FUNC_BADJ] = compiledOfs;
 		EmitBADJFunc( vm );
 
 		// error jump
-		EmitAlign( 4 );
+		EmitAlign( 8 );
 		funcOffset[FUNC_ERRJ] = compiledOfs;
 		EmitERRJFunc( vm );
 
 		// programStack overflow
-		EmitAlign( 4 );
+		EmitAlign( 8 );
 		funcOffset[FUNC_PSOF] = compiledOfs;
 		EmitPSOFFunc( vm );
 
 		// opStack overflow
-		EmitAlign( 4 );
+		EmitAlign( 8 );
 		funcOffset[FUNC_OSOF] = compiledOfs;
 		EmitOSOFFunc( vm );
 
 		// read/write access violation
-		EmitAlign( 4 );
+		EmitAlign( 8 );
 		funcOffset[FUNC_DATA] = compiledOfs;
 		EmitDATAFunc( vm );
 
@@ -2624,11 +2629,11 @@ __compile:
 	n = header->instructionCount * sizeof( intptr_t );
 
 	if ( code == NULL ) {
-		code = (byte*)VM_Alloc_Compiled( vm, compiledOfs, n );
+		code = (byte*)VM_Alloc_Compiled( vm, PAD(compiledOfs,8), n );
 		if ( code == NULL ) {
 			return qfalse;
 		}
-		instructionPointers = (intptr_t*)(byte*)(code + compiledOfs);
+		instructionPointers = (intptr_t*)(byte*)(code + PAD(compiledOfs,8));
 		//vm->instructionPointers = instructionPointers; // for debug purposes?
 		pass = NUM_PASSES-1; // repeat last pass
 		goto __compile;
