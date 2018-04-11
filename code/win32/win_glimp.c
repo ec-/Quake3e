@@ -747,7 +747,8 @@ static void PrintCDSError( int value )
 
 static DEVMODE dm_desktop, dm_current;
 
-void ResetDisplaySettings( void ) 
+
+static void ResetDisplaySettings( void )
 {
 	if ( glw_state.displayName[0] )
 		ChangeDisplaySettingsEx( glw_state.displayName, NULL, NULL, 0, NULL );
@@ -755,13 +756,15 @@ void ResetDisplaySettings( void )
 		ChangeDisplaySettingsEx( NULL, NULL, NULL, 0, NULL );
 }
 
-long ApplyDisplaySettings( DEVMODE *dm ) 
+
+static LONG ApplyDisplaySettings( DEVMODE *dm )
 {
-	int result;
 	DEVMODE curr;
+	LONG result;
 
 	// Get current display mode on current monitor
-	EnumDisplaySettings( glw_state.displayName, ENUM_CURRENT_SETTINGS, &curr );
+	if ( !EnumDisplaySettings( glw_state.displayName, ENUM_CURRENT_SETTINGS, &curr ) )
+		return DISP_CHANGE_FAILED;
 
 	// Check if current resolution is the same as we want to set
 	if ( curr.dmDisplayFrequency &&

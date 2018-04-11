@@ -1677,8 +1677,7 @@ int PC_OperatorPriority(int op)
 		op = &operator_heap[numoperators++];
 #define FreeOperator(op)
 
-int PC_EvaluateTokens(source_t *source, token_t *tokens, signed long int *intvalue,
-																	float *floatvalue, int integer)
+static int PC_EvaluateTokens(source_t *source, token_t *tokens, int *intvalue, float *floatvalue, int integer)
 {
 	operator_t *o, *firstoperator, *lastoperator;
 	value_t *v, *firstvalue, *lastvalue, *v1, *v2;
@@ -2130,8 +2129,7 @@ int PC_EvaluateTokens(source_t *source, token_t *tokens, signed long int *intval
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int PC_Evaluate(source_t *source, signed long int *intvalue,
-												float *floatvalue, int integer)
+static int PC_Evaluate(source_t *source, int *intvalue, float *floatvalue, int integer)
 {
 	token_t token, *firsttoken, *lasttoken;
 	token_t *t, *nexttoken;
@@ -2229,8 +2227,7 @@ int PC_Evaluate(source_t *source, signed long int *intvalue,
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int PC_DollarEvaluate(source_t *source, signed long int *intvalue,
-												float *floatvalue, int integer)
+static int PC_DollarEvaluate(source_t *source, int *intvalue, float *floatvalue, int integer)
 {
 	int indent, defined = qfalse;
 	token_t token, *firsttoken, *lasttoken;
@@ -2339,7 +2336,7 @@ int PC_DollarEvaluate(source_t *source, signed long int *intvalue,
 //============================================================================
 int PC_Directive_elif(source_t *source)
 {
-	signed long int value;
+	int value;
 	int type, skip;
 
 	PC_PopIndent(source, &type, &skip);
@@ -2361,7 +2358,7 @@ int PC_Directive_elif(source_t *source)
 //============================================================================
 int PC_Directive_if(source_t *source)
 {
-	signed long int value;
+	int value;
 	int skip;
 
 	if (!PC_Evaluate(source, &value, NULL, qtrue)) return qfalse;
@@ -2436,7 +2433,7 @@ void UnreadSignToken(source_t *source)
 //============================================================================
 int PC_Directive_eval(source_t *source)
 {
-	signed long int value;
+	int value;
 	token_t token;
 
 	if (!PC_Evaluate(source, &value, NULL, qtrue)) return qfalse;
@@ -2541,7 +2538,7 @@ int PC_ReadDirective(source_t *source)
 //============================================================================
 int PC_DollarDirective_evalint(source_t *source)
 {
-	signed long int value;
+	int value;
 	token_t token;
 
 	if (!PC_DollarEvaluate(source, &value, NULL, qtrue)) return qfalse;
@@ -3232,4 +3229,3 @@ void PC_CheckOpenSourceHandles(void)
 		} //end if
 	} //end for
 } //end of the function PC_CheckOpenSourceHandles
-

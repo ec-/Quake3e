@@ -1582,58 +1582,58 @@ Search for known macro-op sequences
 */
 static void VM_FindMOps( instruction_t *buf, int instructionCount )
 {
-	int i, v, op0;
-	instruction_t *ci;
+	int n, v, op0;
+	instruction_t *i;
 	
-	ci = buf;
-	i = 0;
+	i = buf;
+	n = 0;
 
-	while ( i < instructionCount )
+	while ( n < instructionCount )
 	{
-		op0 = ci->op;
+		op0 = i->op;
 		if ( op0 == OP_LOCAL ) {
 			// OP_LOCAL + OP_LOCAL + OP_LOAD4 + OP_CONST + OP_XXX + OP_STORE4
-			if ( (ci+1)->op == OP_LOCAL && ci->value == (ci+1)->value && (ci+2)->op == OP_LOAD4 && (ci+3)->op == OP_CONST && (ci+4)->op != OP_UNDEF && (ci+5)->op == OP_STORE4 ) {
-				v = (ci+4)->op;
+			if ( (i+1)->op == OP_LOCAL && i->value == (i+1)->value && (i+2)->op == OP_LOAD4 && (i+3)->op == OP_CONST && (i+4)->op != OP_UNDEF && (i+5)->op == OP_STORE4 ) {
+				v = (i+4)->op;
 				if ( v == OP_ADD ) {
-					ci->op = MOP_ADD4;
-					ci += 6; i += 6;
+					i->op = MOP_ADD4;
+					i += 6; n += 6;
 					continue;
 				}
 				if ( v == OP_SUB ) {
-					ci->op = MOP_SUB4;
-					ci += 6; i += 6;
+					i->op = MOP_SUB4;
+					i += 6; n += 6;
 					continue;
 				}
 				if ( v == OP_BAND ) {
-					ci->op = MOP_BAND4;
-					ci += 6; i += 6;
+					i->op = MOP_BAND4;
+					i += 6; n += 6;
 					continue;
 				}
 				if ( v == OP_BOR ) {
-					ci->op = MOP_BOR4;
-					ci += 6; i += 6;
+					i->op = MOP_BOR4;
+					i += 6; n += 6;
 					continue;
 				}
 			}
 
 			// skip useless sequences
-			if ( (ci+1)->op == OP_LOCAL && (ci+0)->value == (ci+1)->value && (ci+2)->op == OP_LOAD4 && (ci+3)->op == OP_STORE4 ) {
-				ci->op = MOP_IGNORE4;
-				ci += 4; i += 4;
+			if ( (i+1)->op == OP_LOCAL && (i+0)->value == (i+1)->value && (i+2)->op == OP_LOAD4 && (i+3)->op == OP_STORE4 ) {
+				i->op = MOP_IGNORE4;
+				i += 4; n += 4;
 				continue;
 			}
-		} else if ( op0 == OP_CONST && (ci+1)->op == OP_CALL && (ci+2)->op == OP_POP && ci >= buf+6 && (ci-1)->op == OP_ARG && !ci->jused ) {
+		} else if ( op0 == OP_CONST && (i+1)->op == OP_CALL && (i+2)->op == OP_POP && i >= buf+6 && (i-1)->op == OP_ARG && !i->jused ) {
 			// some void function( arg1, arg2, arg3 )
-			if ( ci->value == ~TRAP_STRNCPY ) {
-				ci->op = MOP_NCPY;
-				ci += 3; i += 3;
+			if ( i->value == ~TRAP_STRNCPY ) {
+				i->op = MOP_NCPY;
+				i += 3; n += 3;
 				continue;
 			}
 		}
 
-		ci++;
 		i++;
+		n++;
 	}
 }
 
@@ -2763,6 +2763,8 @@ int	VM_CallCompiled( vm_t *vm, int nargs, int *args )
 
 	image[1] =  0;	// return stack
 	image[0] = -1;	// will terminate loop on return
+
+	opStack[1] = 0;
 
 	vm->opStack = opStack;
 	vm->opStackTop = opStack + ARRAY_LEN( opStack ) - 1;

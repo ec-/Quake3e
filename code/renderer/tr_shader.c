@@ -3150,56 +3150,56 @@ A second parameter will cause it to print in sorted order
 void	R_ShaderList_f (void) {
 	int			i;
 	int			count;
-	shader_t	*shader;
+	const shader_t *sh;
 
 	ri.Printf (PRINT_ALL, "-----------------------\n");
 
 	count = 0;
 	for ( i = 0 ; i < tr.numShaders ; i++ ) {
 		if ( ri.Cmd_Argc() > 1 ) {
-			shader = tr.sortedShaders[i];
+			sh = tr.sortedShaders[i];
 		} else {
-			shader = tr.shaders[i];
+			sh = tr.shaders[i];
 		}
 
-		ri.Printf( PRINT_ALL, "%i ", shader->numUnfoggedPasses );
+		ri.Printf( PRINT_ALL, "%i ", sh->numUnfoggedPasses );
 
-		if (shader->lightmapIndex >= 0 ) {
+		if ( sh->lightmapIndex >= 0 ) {
 			ri.Printf (PRINT_ALL, "L ");
 		} else {
 			ri.Printf (PRINT_ALL, "  ");
 		}
-		if ( shader->multitextureEnv == GL_ADD ) {
+		if ( sh->multitextureEnv == GL_ADD ) {
 			ri.Printf( PRINT_ALL, "MT(a) " );
-		} else if ( shader->multitextureEnv == GL_MODULATE ) {
+		} else if ( sh->multitextureEnv == GL_MODULATE ) {
 			ri.Printf( PRINT_ALL, "MT(m) " );
-		} else if ( shader->multitextureEnv == GL_DECAL ) {
+		} else if ( sh->multitextureEnv == GL_DECAL ) {
 			ri.Printf( PRINT_ALL, "MT(d) " );
 		} else {
 			ri.Printf( PRINT_ALL, "      " );
 		}
-		if ( shader->explicitlyDefined ) {
+		if ( sh->explicitlyDefined ) {
 			ri.Printf( PRINT_ALL, "E " );
 		} else {
 			ri.Printf( PRINT_ALL, "  " );
 		}
 
-		if ( shader->optimalStageIteratorFunc == RB_StageIteratorGeneric ) {
+		if ( sh->optimalStageIteratorFunc == RB_StageIteratorGeneric ) {
 			ri.Printf( PRINT_ALL, "gen " );
-		} else if ( shader->optimalStageIteratorFunc == RB_StageIteratorSky ) {
+		} else if ( sh->optimalStageIteratorFunc == RB_StageIteratorSky ) {
 			ri.Printf( PRINT_ALL, "sky " );
-		} else if ( shader->optimalStageIteratorFunc == RB_StageIteratorLightmappedMultitexture ) {
+		} else if ( sh->optimalStageIteratorFunc == RB_StageIteratorLightmappedMultitexture ) {
 			ri.Printf( PRINT_ALL, "lmmt" );
-		} else if ( shader->optimalStageIteratorFunc == RB_StageIteratorVertexLitTexture ) {
+		} else if ( sh->optimalStageIteratorFunc == RB_StageIteratorVertexLitTexture ) {
 			ri.Printf( PRINT_ALL, "vlt " );
 		} else {
 			ri.Printf( PRINT_ALL, "    " );
 		}
 
-		if ( shader->defaultShader ) {
-			ri.Printf (PRINT_ALL, ": %s (DEFAULTED)\n", shader->name);
+		if ( sh->defaultShader ) {
+			ri.Printf( PRINT_ALL, ": %s (DEFAULTED)\n", sh->name );
 		} else {
-			ri.Printf (PRINT_ALL, ": %s\n", shader->name);
+			ri.Printf( PRINT_ALL, ": %s\n", sh->name );
 		}
 		count++;
 	}

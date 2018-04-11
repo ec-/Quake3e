@@ -4748,8 +4748,6 @@ qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownloa
 		return qfalse;
 	}
 
-	s = pakname;
-
 	// skip leading slashes
 	while ( *pakname == '/' || *pakname == '\\' )
 		pakname++;
@@ -4776,7 +4774,6 @@ qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownloa
 			return qfalse;
 		}
 	}
-
 
 	Q_strncpyz( url, cl_dlURL->string, sizeof( url ) );
 
