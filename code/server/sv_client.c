@@ -32,68 +32,6 @@ static void SV_CloseDownload( client_t *cl );
 
 #define TS_SHIFT 14 // ~16 seconds to reply to the challenge
 
-static struct {
-	// size of this structure plus max.possible length of client address (18 bytes)
-	// should not exceed 56 bytes to fit in single internal 64-byte chunk for MD5
-	byte key[24]; // will be regenerated on server shutdown
-	//int timestamp;
-} seed;
-
-
-static void fnv1a_init( int *hash )
-{
-	*hash = 0x811c9dc5;
-}
-
-
-static void fnv1a_update( int *hash, const byte *data, int length )
-{
-	int h = *hash;
-	int i;
-	for ( i = 0; i < length; i++ )
-	{
-		h = h ^ data[i];
-		h = h * 16777619;
-	}
-	*hash = h;
-}
-
-
-static void fnv1a_final( int *hash )
-{
-	// slightly improve dispersion
-	*hash = (*hash>>1) ^ (*hash);
-}
-
-
-static int SV_HashAddress( int timestamp, const netadr_t *from )
-{
-	int hash;
-
-	fnv1a_init( &hash );
-
-	switch ( from->type )
-	{
-		case NA_BROADCAST:
-		case NA_IP:
-			fnv1a_update( &hash, from->ipv._4, 4 ); break;
-		case NA_IP6:
-		case NA_MULTICAST6:
-			fnv1a_update( &hash, from->ipv._6, 16 ); break;
-		default:
-			break;
-	}
-
-	fnv1a_update( &hash, (byte*)&from->port, sizeof( from->port ) );
-	fnv1a_update( &hash, (byte*)&timestamp, sizeof( timestamp ) );
-	fnv1a_update( &hash, seed.key, sizeof( seed.key ) );
-
-	fnv1a_final( &hash );
-
-	return hash;
-}
-
-
 /*
 =================
 SV_CreateChallenge
@@ -109,9 +47,7 @@ static int SV_CreateChallenge( int timestamp, const netadr_t *from )
 	// Use first 4 bytes of the HMAC digest as an int (client only deals with numeric challenges)
 	// The most-significant bit stores whether the timestamp is odd or even. This lets later verification code handle the
 	// case where the engine timestamp has incremented between the time this challenge is sent and the client replies.
-	//seed.timestamp = timestamp;
-	//challenge = Com_MD5Addr( from, (byte*)&seed, sizeof( seed ) );
-	challenge = SV_HashAddress( timestamp, from );
+	challenge = Com_MD5Addr( from, timestamp );
 	challenge &= 0x7FFFFFFF;
 	challenge |= (unsigned int)(timestamp & 0x1) << 31;
 
@@ -150,7 +86,7 @@ SV_InitChallenger
 */
 void SV_InitChallenger( void )
 {
-	Sys_RandomBytes( (byte*)&seed, sizeof( seed ) );
+	Com_MD5Init();
 }
 
 

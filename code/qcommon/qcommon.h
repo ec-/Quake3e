@@ -886,9 +886,13 @@ int			Com_Milliseconds( void );	// will be journaled properly
 unsigned	Com_BlockChecksum( const void *buffer, int length );
 
 // MD5 functions
+
 char		*Com_MD5File(const char *filename, int length, const char *prefix, int prefix_len);
 char		*Com_MD5Buf( const char *data, int length, const char *data2, int length2 );
-int			Com_MD5Addr( const netadr_t *addr, const byte *seed, int seed_len );
+
+// stateless challenge functions
+void		Com_MD5Init( void );
+int			Com_MD5Addr( const netadr_t *addr, int timestamp );
 
 qboolean	Com_CDKeyValidate( const char *key, const char *checksum );
 qboolean	Com_EarlyParseCmdLine( char *commandLine, char *con_title, int title_size, int *vid_xpos, int *vid_ypos );

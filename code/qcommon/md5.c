@@ -17,10 +17,13 @@
 #include "q_shared.h"
 #include "qcommon.h"
 
+#define MD5_BLOCK_SIZE 64
+#define MD5_DIGEST_SIZE 16
+
 typedef struct MD5Context {
 	uint32_t buf[4];
 	uint32_t bits[2];
-	unsigned char in[64];
+	unsigned char in[MD5_BLOCK_SIZE];
 } MD5_CTX;
 
 #ifndef Q3_BIG_ENDIAN
@@ -58,6 +61,12 @@ static void MD5Init(struct MD5Context *ctx)
     ctx->bits[0] = 0;
     ctx->bits[1] = 0;
 }
+
+static void MD5Copy( struct MD5Context *to, const struct MD5Context *from )
+{
+    memcpy( to, from, sizeof( *to ) );
+}
+
 /* The four core functions - F1 is optimized somewhat */
 
 /* #define F1(x, y, z) (x & y | ~x & z) */
@@ -75,8 +84,7 @@ static void MD5Init(struct MD5Context *ctx)
  * reflect the addition of 16 longwords of new data.  MD5Update blocks
  * the data and converts bytes into longwords for this routine.
  */
-static void MD5Transform(uint32_t buf[4],
-	uint32_t const in[16])
+static void MD5Transform( uint32_t buf[4], uint32_t const in[16] )
 {
     register uint32_t a, b, c, d;
 
@@ -252,7 +260,8 @@ static void MD5Final(struct MD5Context *ctx, unsigned char *digest)
     byteReverse((unsigned char *) ctx->buf, 4);
     
     if (digest!=NULL)
-	    memcpy(digest, ctx->buf, 16);
+ 	    memcpy( digest, ctx->buf, MD5_DIGEST_SIZE );
+
     memset(ctx, 0, sizeof(*ctx));	/* In case it's sensitive */
 }
 
@@ -329,29 +338,53 @@ char *Com_MD5Buf( const char *data, int length, const char *data2, int length2 )
 	return final_buf;
 }
 
+// stateless challenges
 
-int Com_MD5Addr( const netadr_t *addr, const byte *seed, int seed_len )
+struct MD5Context hmac_ctx;
+static byte secretKey[32];
+
+void Com_MD5Init( void )
 {
-	MD5_CTX ctx;
+	byte initKey[64];
+
+	// initialize hmac context with initial secret key
+	Sys_RandomBytes( initKey, sizeof( initKey ) );
+	MD5Init( &hmac_ctx );
+	MD5Update( &hmac_ctx, initKey, sizeof( initKey ) );
+
+	// generate second secret key
+	Sys_RandomBytes( secretKey, sizeof( secretKey ) );
+}
+
+
+int Com_MD5Addr( const netadr_t *addr, int timestamp )
+{
+	struct MD5Context ctx;
 	union {
-		byte buf[16];
-		int intval;
+		byte b[MD5_DIGEST_SIZE];
+		int i[MD5_DIGEST_SIZE/sizeof(int)];
 	} digest;
 
-	MD5Init( &ctx );
-	MD5Update( &ctx, seed, seed_len );
+	MD5Copy( &ctx, &hmac_ctx );
+
 	switch ( addr->type ) {
 		case NA_BROADCAST:
 		case NA_IP: 
-			MD5Update( &ctx, addr->ipv._4, 4 ); break;
+			MD5Update( &ctx, addr->ipv._4, 4 ); 
+				break;
 		case NA_IP6: 
 		case NA_MULTICAST6:
-			MD5Update( &ctx, addr->ipv._6, 16 ); break;
+			MD5Update( &ctx, addr->ipv._6, 16 ); 
+			break;
 		default:
 			break;
 	}
-	MD5Update( &ctx, (byte*)&addr->port, sizeof( addr->port ) );
-	MD5Final( &ctx, digest.buf );
 
-	return digest.intval;
+	MD5Update( &ctx, (byte*)&addr->port, sizeof( addr->port ) );
+	MD5Update( &ctx, (byte*)&timestamp, sizeof( timestamp ) );
+	MD5Update( &ctx, secretKey, sizeof( secretKey ) );
+
+	MD5Final( &ctx, digest.b );
+
+	return digest.i[0];
 }
