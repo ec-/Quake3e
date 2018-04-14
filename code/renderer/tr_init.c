@@ -685,8 +685,9 @@ void RB_TakeScreenshotJPEG( int x, int y, int width, int height, const char *fil
 }
 
 
-static void FillBMPHeader( byte *buffer, int width, int height, int memcount, int filesize, int header_size ) 
+static void FillBMPHeader( byte *buffer, int width, int height, int memcount, int header_size )
 {
+	int filesize;
 	Com_Memset( buffer, 0, header_size );
 
 	// bitmap file header
@@ -739,7 +740,6 @@ void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *file
 	byte temp[4];
 	size_t memcount, offset;
 	const int header_size = 54; // bitmapfileheader(14) + bitmapinfoheader(40)
-	int filesize;
 	int scanlen, padlen;
 	int scanpad, len;
 
@@ -752,7 +752,6 @@ void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *file
 	scanlen = PAD( width*3, 4 );
 	scanpad = scanlen - width*3;
 	memcount = scanlen * height;
-	filesize = memcount + header_size;
 	
 	// swap rgb to bgr and add line padding
 	if ( scanpad == 0 && padlen == 0 ) {
@@ -793,7 +792,7 @@ void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *file
 	}
 
 	// fill this last to avoid data overwrite in case when we're moving destination buffer forward
-	FillBMPHeader( buffer - header_size, width, height, memcount, filesize, header_size );
+	FillBMPHeader( buffer - header_size, width, height, memcount, header_size );
 	
 	// gamma correct
 	if ( glConfig.deviceSupportsGamma )

@@ -36,7 +36,7 @@ static struct {
 	// size of this structure plus max.possible length of client address (18 bytes)
 	// should not exceed 56 bytes to fit in single internal 64-byte chunk for MD5
 	byte key[24]; // will be regenerated on server shutdown
-	int timestamp;
+	//int timestamp;
 } seed;
 
 
@@ -109,7 +109,7 @@ static int SV_CreateChallenge( int timestamp, const netadr_t *from )
 	// Use first 4 bytes of the HMAC digest as an int (client only deals with numeric challenges)
 	// The most-significant bit stores whether the timestamp is odd or even. This lets later verification code handle the
 	// case where the engine timestamp has incremented between the time this challenge is sent and the client replies.
-	seed.timestamp = timestamp;
+	//seed.timestamp = timestamp;
 	//challenge = Com_MD5Addr( from, (byte*)&seed, sizeof( seed ) );
 	challenge = SV_HashAddress( timestamp, from );
 	challenge &= 0x7FFFFFFF;
@@ -150,7 +150,7 @@ SV_InitChallenger
 */
 void SV_InitChallenger( void )
 {
-	Sys_RandomBytes( seed.key, sizeof( seed.key ) );
+	Sys_RandomBytes( (byte*)&seed, sizeof( seed ) );
 }
 
 
@@ -260,6 +260,7 @@ A "connect" OOB command has been received
 ==================
 */
 void SV_DirectConnect( const netadr_t *from ) {
+	static		leakyBucket_t bucket;
 	char		userinfo[MAX_INFO_STRING];
 	int			i, n;
 	client_t	*cl, *newcl;
@@ -301,7 +302,10 @@ void SV_DirectConnect( const netadr_t *from ) {
 		if ( addr->type != NA_BOT && NET_CompareBaseAdr( addr, from ) ) {
 			if ( svs.clients[ i ].state >= CS_CONNECTED && !svs.clients[ i ].justConnected ) {
 				if ( ++n >= sv_maxconcurrent->integer ) {
-					NET_OutOfBandPrint( NS_SERVER, from, "print\nToo many connections.\n" );
+					// avoid excessive outgoing traffic
+					if ( !SVC_RateLimit( &bucket, 10, 200 ) ) {
+						NET_OutOfBandPrint( NS_SERVER, from, "print\nToo many connections.\n" );
+					}
 					return;
 				}
 			}
@@ -318,7 +322,11 @@ void SV_DirectConnect( const netadr_t *from ) {
 		// Verify the received challenge against the expected challenge
 		if ( !SV_VerifyChallenge( challenge, from ) )
 		{
-			NET_OutOfBandPrint( NS_SERVER, from, "print\nIncorrect challenge, please reconnect.\n" );
+			// avoid excessive outgoing traffic
+			if ( !SVC_RateLimit( &bucket, 10, 200 ) )
+			{
+				NET_OutOfBandPrint( NS_SERVER, from, "print\nIncorrect challenge, please reconnect.\n" );
+			}
 			return;
 		}
 	}
@@ -333,8 +341,12 @@ void SV_DirectConnect( const netadr_t *from ) {
 	{
 		if ( version != NEW_PROTOCOL_VERSION )
 		{
-			NET_OutOfBandPrint( NS_SERVER, from, "print\nServer uses protocol version %i "
-					   "(yours is %i).\n", NEW_PROTOCOL_VERSION, version );
+			// avoid excessive outgoing traffic
+			if ( !SVC_RateLimit( &bucket, 10, 200 ) )
+			{
+				NET_OutOfBandPrint( NS_SERVER, from, "print\nServer uses protocol version %i "
+					"(yours is %i).\n", NEW_PROTOCOL_VERSION, version );
+			}
 			Com_DPrintf( "    rejected connect from version %i\n", version );
 			return;
 		}
@@ -347,8 +359,11 @@ void SV_DirectConnect( const netadr_t *from ) {
 		ip = NET_AdrToString( from );
 
 	if ( !Info_SetValueForKey( userinfo, "ip", ip ) ) {
-		NET_OutOfBandPrint( NS_SERVER, from, "print\nUserinfo string length exceeded.  "
-			"Try removing setu cvars from your config.\n" );
+		// avoid excessive outgoing traffic
+		if ( !SVC_RateLimit( &bucket, 10, 200 ) ) {
+			NET_OutOfBandPrint( NS_SERVER, from, "print\nUserinfo string length exceeded.  "
+				"Try removing setu cvars from your config.\n" );
+		}
 		return;
 	}
 
@@ -367,8 +382,11 @@ void SV_DirectConnect( const netadr_t *from ) {
 				if ( com_developer->integer ) {
 					Com_Printf( "%s:reconnect rejected : too soon\n", NET_AdrToString( from ) );
 				}
-				NET_OutOfBandPrint( NS_SERVER, from, "print\nReconnecting, please wait %i second%s.\n",
-					remains, (remains != 1) ? "s" : "" );
+				// avoid excessive outgoing traffic
+				if ( !SVC_RateLimit( &bucket, 10, 200 ) ) {
+					NET_OutOfBandPrint( NS_SERVER, from, "print\nReconnecting, please wait %i second%s.\n",
+						remains, (remains != 1) ? "s" : "" );
+				}
 				return;
 			}
 			newcl = cl; // we may reuse this slot
