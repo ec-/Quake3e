@@ -2574,11 +2574,15 @@ static void CL_ServersResponsePacket( const netadr_t* from, msg_t *msg, qboolean
 CL_ConnectionlessPacket
 
 Responses to broadcasts, etc
+
+return true only for commands indicating that our server is alive
+or connection sequence is going into the right way
 =================
 */
-static void CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
+static qboolean CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
+	qboolean fromserver;
 	const char *s;
-	char	*c;
+	const char *c;
 	int challenge = 0;
 
 	MSG_BeginReadingOOB( msg );
@@ -2602,8 +2606,8 @@ static void CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 	
 		if ( cls.state != CA_CONNECTING )
 		{
-			Com_DPrintf("Unwanted challenge response received. Ignored.\n");
-			return;
+			Com_DPrintf( "Unwanted challenge response received. Ignored.\n" );
+			return qfalse;
 		}
 		
 		c = Cmd_Argv( 2 );
@@ -2635,7 +2639,7 @@ static void CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 				if( !*c || challenge != clc.challenge )
 				{
 					Com_DPrintf( "Challenge response received from unexpected source. Ignored.\n" );
-					return;
+					return qfalse;
 				}
 			}
 		}
@@ -2643,8 +2647,8 @@ static void CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 		{
 			if( !*c || challenge != clc.challenge )
 			{
-				Com_Printf("Bad challenge for challengeResponse. Ignored.\n");
-				return;
+				Com_Printf( "Bad challenge for challengeResponse. Ignored.\n" );
+				return qfalse;
 			}
 		}
 
@@ -2657,23 +2661,23 @@ static void CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 		// take this address as the new server address.  This allows
 		// a server proxy to hand off connections to multiple servers
 		clc.serverAddress = *from;
-		Com_DPrintf ("challengeResponse: %d\n", clc.challenge);
-		return;
+		Com_DPrintf( "challengeResponse: %d\n", clc.challenge );
+		return qtrue;
 	}
 
 	// server connection
 	if ( !Q_stricmp(c, "connectResponse") ) {
 		if ( cls.state >= CA_CONNECTED ) {
-			Com_Printf ("Dup connect received.  Ignored.\n");
-			return;
+			Com_Printf( "Dup connect received. Ignored.\n" );
+			return qfalse;
 		}
 		if ( cls.state != CA_CHALLENGING ) {
-			Com_Printf ("connectResponse packet while not connecting. Ignored.\n");
-			return;
+			Com_Printf( "connectResponse packet while not connecting. Ignored.\n" );
+			return qfalse;
 		}
 		if ( !NET_CompareAdr( from, &clc.serverAddress ) ) {
 			Com_Printf( "connectResponse from wrong address. Ignored.\n" );
-			return;
+			return qfalse;
 		}
 
 		if ( !clc.compat )
@@ -2685,13 +2689,13 @@ static void CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 			else
 			{
 				Com_Printf("Bad connectResponse received. Ignored.\n");
-				return;
+				return qfalse;
 			}
 			
 			if(challenge != clc.challenge)
 			{
 				Com_Printf("ConnectResponse with bad challenge received. Ignored.\n");
-				return;
+				return qfalse;
 			}
 		}
 
@@ -2700,66 +2704,67 @@ static void CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 
 		cls.state = CA_CONNECTED;
 		clc.lastPacketSentTime = -9999;		// send first packet immediately
-		return;
+		return qtrue;
 	}
 
 	// server responding to an info broadcast
 	if ( !Q_stricmp(c, "infoResponse") ) {
 		CL_ServerInfoPacket( from, msg );
-		return;
+		return qfalse;
 	}
 
 	// server responding to a get playerlist
 	if ( !Q_stricmp(c, "statusResponse") ) {
 		CL_ServerStatusResponse( from, msg );
-		return;
+		return qfalse;
 	}
 
 	// echo request from server
 	if ( !Q_stricmp(c, "echo") ) {
 		// NOTE: we may have to add exceptions for auth and update servers
-		if ( NET_CompareAdr( from, &clc.serverAddress ) || NET_CompareAdr( from, &rcon_address ) ) {
+		if ( (fromserver = NET_CompareAdr( from, &clc.serverAddress )) || NET_CompareAdr( from, &rcon_address ) ) {
 			NET_OutOfBandPrint( NS_CLIENT, from, "%s", Cmd_Argv(1) );
 		}
-		return;
+		return fromserver;
 	}
 
 	// cd check
 	if ( !Q_stricmp(c, "keyAuthorize") ) {
 		// we don't use these now, so dump them on the floor
-		return;
+		return qfalse;
 	}
 
 	// global MOTD from id
 	if ( !Q_stricmp(c, "motd") ) {
 		CL_MotdPacket( from );
-		return;
+		return qfalse;
 	}
 
 	// print string from server
 	if ( !Q_stricmp(c, "print") ) {
 		// NOTE: we may have to add exceptions for auth and update servers
-		if ( NET_CompareAdr( from, &clc.serverAddress ) || NET_CompareAdr( from, &rcon_address ) ) {
+		if ( (fromserver = NET_CompareAdr( from, &clc.serverAddress )) || NET_CompareAdr( from, &rcon_address ) ) {
 			s = MSG_ReadString( msg );
 			Q_strncpyz( clc.serverMessage, s, sizeof( clc.serverMessage ) );
 			Com_Printf( "%s", s );
 		}
-		return;
+		return fromserver;
 	}
 
 	// list of servers sent back by a master server (classic)
 	if ( !Q_strncmp(c, "getserversResponse", 18) ) {
 		CL_ServersResponsePacket( from, msg, qfalse );
-		return;
+		return qfalse;
 	}
 
 	// list of servers sent back by a master server (extended)
 	if ( !Q_strncmp(c, "getserversExtResponse", 21) ) {
 		CL_ServersResponsePacket( from, msg, qtrue );
-		return;
+		return qfalse;
 	}
 
-	Com_DPrintf ("Unknown connectionless packet command.\n");
+	Com_DPrintf( "Unknown connectionless packet command.\n" );
+	return qfalse;
 }
 
 
@@ -2773,20 +2778,19 @@ A packet has arrived from the main event loop
 void CL_PacketEvent( const netadr_t *from, msg_t *msg ) {
 	int		headerBytes;
 
-	clc.lastPacketTime = cls.realtime; // -EC- FIXME: move down?
+	if ( msg->cursize < 5 ) {
+		Com_DPrintf( "%s: Runt packet\n", NET_AdrToStringwPort( from ) );
+		return;
+	}
 
-	if ( msg->cursize >= 4 && *(int *)msg->data == -1 ) {
-		CL_ConnectionlessPacket( from, msg );
+	if ( *(int *)msg->data == -1 ) {
+		if ( CL_ConnectionlessPacket( from, msg ) )
+			clc.lastPacketTime = cls.realtime;
 		return;
 	}
 
 	if ( cls.state < CA_CONNECTED ) {
 		return;		// can't be a valid sequenced packet
-	}
-
-	if ( msg->cursize < 4 ) {
-		Com_Printf ("%s: Runt packet\n", NET_AdrToStringwPort( from ));
-		return;
 	}
 
 	//
