@@ -2722,7 +2722,7 @@ static qboolean CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 	// echo request from server
 	if ( !Q_stricmp(c, "echo") ) {
 		// NOTE: we may have to add exceptions for auth and update servers
-		if ( (fromserver = NET_CompareAdr( from, &clc.serverAddress )) || NET_CompareAdr( from, &rcon_address ) ) {
+		if ( (fromserver = NET_CompareAdr( from, &clc.serverAddress )) != qfalse || NET_CompareAdr( from, &rcon_address ) ) {
 			NET_OutOfBandPrint( NS_CLIENT, from, "%s", Cmd_Argv(1) );
 		}
 		return fromserver;
@@ -2743,7 +2743,7 @@ static qboolean CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 	// print string from server
 	if ( !Q_stricmp(c, "print") ) {
 		// NOTE: we may have to add exceptions for auth and update servers
-		if ( (fromserver = NET_CompareAdr( from, &clc.serverAddress )) || NET_CompareAdr( from, &rcon_address ) ) {
+		if ( (fromserver = NET_CompareAdr( from, &clc.serverAddress )) != qfalse || NET_CompareAdr( from, &rcon_address ) ) {
 			s = MSG_ReadString( msg );
 			Q_strncpyz( clc.serverMessage, s, sizeof( clc.serverMessage ) );
 			Com_Printf( "%s", s );
