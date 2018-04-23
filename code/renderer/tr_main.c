@@ -1120,7 +1120,7 @@ static qboolean R_MirrorViewBySurface( const drawSurf_t *drawSurf, int entityNum
 	}
 #endif
 
-	if ( tess.numVertexes > 2 ) {
+	if ( tess.numVertexes > 2 && r_fastsky->integer ) {
 		int mins[2], maxs[2];
 		R_GetModelViewBounds( mins, maxs );
 		newParms.scissorX = newParms.viewportX + mins[0];
@@ -1471,7 +1471,9 @@ static void R_SortDrawSurfs( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 			if ( r_portalOnly->integer ) {
 				return;
 			}
-			//break;	// only one mirror view at a time
+			if ( r_fastsky->integer == 0 ) {
+				break;	// only one mirror view at a time
+			}
 		}
 	}
 
