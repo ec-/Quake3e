@@ -1895,26 +1895,28 @@ qboolean Info_Validate( const char *s )
 
 /*
 ==================
-Info_SetValueForKey
+Info_SetValueForKey_s
 
 Changes or adds a key/value pair
 ==================
 */
-qboolean Info_SetValueForKey( char *s, const char *key, const char *value ) {
-	char	newi[MAX_INFO_STRING+2];
+qboolean Info_SetValueForKey_s( char *s, int slen, const char *key, const char *value ) {
+	char	newi[BIG_INFO_STRING+2];
 	int		len1, len2;
 
 	len1 = (int)strlen( s );
-	if ( len1 >= MAX_INFO_STRING ) {
-		Com_Error( ERR_DROP, "Info_SetValueForKey: oversize infostring" );
+
+	if ( len1 >= slen ) {
+		Com_Printf( S_COLOR_YELLOW "Info_SetValueForKey(%s): oversize infostring\n", key );
+		return qfalse;
 	}
 
-	if ( !Info_Validate( key ) || *key == '\0' ) {
+	if ( !key || !Info_Validate( key ) || *key == '\0' ) {
 		Com_Printf( S_COLOR_YELLOW "Invalid key name: '%s'\n", key );
 		return qfalse;
 	}
 
-	if ( !Info_Validate( value ) ) {
+	if ( value && !Info_Validate( value ) ) {
 		Com_Printf( S_COLOR_YELLOW "Invalid value name: '%s'\n", value );
 		return qfalse;
 	}
@@ -1924,8 +1926,8 @@ qboolean Info_SetValueForKey( char *s, const char *key, const char *value ) {
 		return qtrue;
 
 	len2 = Com_sprintf( newi, sizeof( newi ), "\\%s\\%s", key, value );
-	
-	if ( len1 + len2 >= MAX_INFO_STRING )
+
+	if ( len1 + len2 >= slen )
 	{
 		Com_Printf( S_COLOR_YELLOW "Info string length exceeded for key '%s'\n", key );
 		return qfalse;
@@ -1934,51 +1936,6 @@ qboolean Info_SetValueForKey( char *s, const char *key, const char *value ) {
 	strcpy( s + len1, newi );
 	return qtrue;
 }
-
-
-/*
-==================
-Info_SetValueForKey_Big
-
-Changes or adds a key/value pair
-==================
-*/
-qboolean Info_SetValueForKey_Big( char *s, const char *key, const char *value ) {
-	char	newi[BIG_INFO_STRING+2];
-	int		len1, len2;
-
-	len1 = (int)strlen( s );
-	if ( len1 >= BIG_INFO_STRING ) {
-		Com_Error( ERR_DROP, "Info_SetValueForKey: oversize infostring" );
-	}
-
-	if ( !Info_Validate( key ) || *key == '\0' ) {
-		Com_Printf( S_COLOR_YELLOW "Invalid key name: '%s'\n", key );
-		return qfalse;
-	}
-
-	if ( !Info_Validate( value ) ) {
-		Com_Printf( S_COLOR_YELLOW "Invalid value name: '%s'\n", value );
-		return qfalse;
-	}
-
-	len1 -= Info_RemoveKey( s, key );
-	if ( !value || !*value )
-		return qtrue;
-
-	len2 = Com_sprintf( newi, sizeof( newi ), "\\%s\\%s", key, value );
-
-	if ( len1 + len2 >= BIG_INFO_STRING )
-	{
-		Com_Printf( S_COLOR_YELLOW "BIG Info string length exceeded for key '%s'\n", key );
-		return qfalse;
-	}
-
-	strcpy( s + len1, newi );
-	return qtrue;
-}
-
-
 
 
 //====================================================================

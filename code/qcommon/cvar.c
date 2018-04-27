@@ -1646,14 +1646,14 @@ static void Cvar_Restart_f( void )
 Cvar_InfoString
 =====================
 */
-char *Cvar_InfoString( int bit )
+const char *Cvar_InfoString( int bit )
 {
 	static char	info[ MAX_INFO_STRING ];
 	const cvar_t *var;
 
 	info[0] = '\0';
 
-	for( var = cvar_vars; var; var = var->next )
+	for ( var = cvar_vars; var; var = var->next )
 	{
 		if ( var->name && ( var->flags & bit ) )
 			Info_SetValueForKey( info, var->name, var->string );
@@ -1670,18 +1670,19 @@ Cvar_InfoString_Big
   handles large info strings ( CS_SYSTEMINFO )
 =====================
 */
-char *Cvar_InfoString_Big(int bit)
+const char *Cvar_InfoString_Big( int bit )
 {
 	static char	info[BIG_INFO_STRING];
-	cvar_t	*var;
+	const cvar_t *var;
 
 	info[0] = '\0';
 
-	for (var = cvar_vars; var; var = var->next)
+	for ( var = cvar_vars; var; var = var->next )
 	{
-		if(var->name && (var->flags & bit))
-			Info_SetValueForKey_Big (info, var->name, var->string);
+		if ( var->name && (var->flags & bit) )
+			Info_SetValueForKey_s( info, sizeof( info ), var->name, var->string );
 	}
+
 	return info;
 }
 

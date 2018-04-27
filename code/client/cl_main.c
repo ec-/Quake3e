@@ -2264,8 +2264,9 @@ Resend a connect message if the last one has timed out
 */
 static void CL_CheckForResend( void ) {
 	int		port, len;
-	char	info[MAX_INFO_STRING+128]; // larger buffer to detect overflows
+	char	info[MAX_INFO_STRING*2]; // larger buffer to detect overflows
 	char	data[MAX_INFO_STRING];
+	qboolean	notOverflowed;
 
 	// don't send anything if playing back a demo
 	if ( clc.demoplaying ) {
@@ -2300,18 +2301,28 @@ static void CL_CheckForResend( void ) {
 		port = Cvar_VariableIntegerValue( "net_qport" );
 
 		Q_strncpyz( info, Cvar_InfoString( CVAR_USERINFO ), sizeof( info ) );
-		
-		if ( clc.compat )
-			Info_SetValueForKey( info, "protocol", va( "%i", PROTOCOL_VERSION ) );
-		else
-			Info_SetValueForKey( info, "protocol", va( "%i", NEW_PROTOCOL_VERSION ) );
-
-		Info_SetValueForKey( info, "qport", va( "%i", port ) );
-		Info_SetValueForKey( info, "challenge", va( "%i", clc.challenge ) );
 
 		len = strlen( info );
 		if ( len > MAX_USERINFO_LENGTH ) {
-			Com_Printf( S_COLOR_YELLOW "WARNING: oversize userinfo (%i), you might be not able to join remote server!\n", len );
+			notOverflowed = qfalse;
+		} else {
+			notOverflowed = qtrue;
+		}
+
+		notOverflowed &= Info_SetValueForKey_s( info, MAX_USERINFO_LENGTH, "protocol",
+			va( "%i", clc.compat ? PROTOCOL_VERSION : NEW_PROTOCOL_VERSION ) );
+		
+		notOverflowed &= Info_SetValueForKey_s( info, MAX_USERINFO_LENGTH, "qport",
+			va( "%i", port ) );
+
+		notOverflowed &= Info_SetValueForKey_s( info, MAX_USERINFO_LENGTH, "challenge",
+			va( "%i", clc.challenge ) );
+
+		// for now - this will be used to inform server about q3msgboom fix
+		Info_SetValueForKey_s( info, MAX_USERINFO_LENGTH, "client", Q3_VERSION );
+
+		if ( !notOverflowed ) {
+			Com_Printf( S_COLOR_YELLOW "WARNING: oversize userinfo, you might be not able to join remote server!\n" );
 		}
 
 		len = Com_sprintf( data, sizeof( data ), "connect \"%s\"", info );
@@ -2911,7 +2922,7 @@ static void CL_CheckUserinfo( void ) {
 	// send a reliable userinfo update if needed
 	if ( cvar_modifiedFlags & CVAR_USERINFO )
 	{
-		char *info;
+		const char *info;
 		int len;
 
 		cvar_modifiedFlags &= ~CVAR_USERINFO;
