@@ -263,7 +263,7 @@ void QDECL Com_DPrintf( const char *fmt, ...) {
 	Q_vsnprintf( msg, sizeof( msg ), fmt, argptr );
 	va_end( argptr );
 
-	Com_Printf( "%s", msg );
+	Com_Printf( S_COLOR_CYAN "%s", msg );
 }
 
 

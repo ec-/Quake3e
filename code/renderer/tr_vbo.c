@@ -627,7 +627,7 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 		return;
 
 	if ( glConfig.numTextureUnits < 3 ) {
-		ri.Printf( PRINT_ALL, S_COLOR_YELLOW "... not enough texture units for VBO" );
+		ri.Printf( PRINT_WARNING, "... not enough texture units for VBO\n" );
 		return;
 	}
 
@@ -836,9 +836,9 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 __fail:
 
 	if ( err == GL_OUT_OF_MEMORY )
-		ri.Printf( PRINT_ALL, S_COLOR_YELLOW "%s: out of memory\n", __func__ );
+		ri.Printf( PRINT_WARNING, "%s: out of memory\n", __func__ );
 	else
-		ri.Printf( PRINT_ALL, S_COLOR_YELLOW "%s: error %i\n", __func__, err );
+		ri.Printf( PRINT_ERROR, "%s: error %i\n", __func__, err );
 
 	// reset vbo markers
 	for ( i = 0, n = 0, sf = surf; i < surfCount; i++, sf++ ) {

@@ -320,7 +320,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 
 	// if "client" is present in userinfo and it is a modern client
 	// then assume it can properly decode long strings
-	if ( !compat && Info_ValueForKey( userinfo, "client" ) != '\0' )
+	if ( !compat && *Info_ValueForKey( userinfo, "client" ) != '\0' )
 		longstr = qtrue;
 	else
 		longstr = qfalse;

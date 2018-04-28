@@ -1449,7 +1449,7 @@ static void R_Register( void )
 R_Init
 ===============
 */
-void R_Init( void ) {	
+void R_Init( void ) {
 	int	err;
 	int i;
 	byte *ptr;
@@ -1505,12 +1505,7 @@ void R_Init( void ) {
 	R_Register();
 
 	max_polys = r_maxpolys->integer;
-	if (max_polys < MAX_POLYS)
-		max_polys = MAX_POLYS;
-
 	max_polyverts = r_maxpolyverts->integer;
-	if (max_polyverts < MAX_POLYVERTS)
-		max_polyverts = MAX_POLYVERTS;
 	
 	ptr = ri.Hunk_Alloc( sizeof( *backEndData ) + sizeof(srfPoly_t) * max_polys + sizeof(polyVert_t) * max_polyverts, h_low);
 	backEndData = (backEndData_t *) ptr;
@@ -1533,7 +1528,7 @@ void R_Init( void ) {
 
 	err = qglGetError();
 	if ( err != GL_NO_ERROR )
-		ri.Printf (PRINT_ALL, "glGetError() = 0x%x\n", err);
+		ri.Printf( PRINT_WARNING, "glGetError() = 0x%x\n", err );
 
 	ri.Printf( PRINT_ALL, "----- finished R_Init -----\n" );
 }
