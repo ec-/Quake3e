@@ -326,10 +326,10 @@ void SV_DirectConnect( const netadr_t *from ) {
 		longstr = qfalse;
 
 	// we don't need these keys after connection, release some space in userinfo
-	Info_SetValueForKey( userinfo, "challenge", NULL );
-	Info_SetValueForKey( userinfo, "qport", NULL );
-	Info_SetValueForKey( userinfo, "protocol", NULL );
-	Info_SetValueForKey( userinfo, "client", NULL );
+	Info_RemoveKey( userinfo, "challenge" );
+	Info_RemoveKey( userinfo, "qport" );
+	Info_RemoveKey( userinfo, "protocol" );
+	Info_RemoveKey( userinfo, "client" );
 
 	// don't let "ip" overflow userinfo string
 	if ( NET_IsLocalAddress( from ) )

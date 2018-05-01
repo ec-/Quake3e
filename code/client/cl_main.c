@@ -2302,6 +2302,10 @@ static void CL_CheckForResend( void ) {
 
 		Q_strncpyz( info, Cvar_InfoString( CVAR_USERINFO ), sizeof( info ) );
 
+		// get rid of some bloated cvars not important for connection
+		Info_RemoveKey( info, "xp_name" );
+		Info_RemoveKey( info, "xp_country" );
+	
 		len = strlen( info );
 		if ( len > MAX_USERINFO_LENGTH ) {
 			notOverflowed = qfalse;

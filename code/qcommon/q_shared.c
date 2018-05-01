@@ -1826,7 +1826,7 @@ void Info_NextPair( const char **head, char *key, char *value ) {
 Info_RemoveKey
 ===================
 */
-static int Info_RemoveKey( char *s, const char *key )
+int Info_RemoveKey( char *s, const char *key )
 {
 	char	*start;
 	char 	*pkey;
