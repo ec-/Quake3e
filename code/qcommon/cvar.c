@@ -1309,42 +1309,32 @@ with the archive flag set to qtrue.
 void Cvar_WriteVariables( fileHandle_t f )
 {
 	cvar_t	*var;
-	char	buffer[1024];
+	char	buffer[1024]; // MAX_CMD_LINE
+	const char	*value;
 
 	if ( cvar_sort ) {
-		Com_DPrintf( "%s: sort cvars\n", __func__ );
 		cvar_sort = qfalse;
 		Cvar_Sort();
 	}
 
 	for (var = cvar_vars; var; var = var->next)
 	{
-		if(!var->name || Q_stricmp( var->name, "cl_cdkey" ) == 0)
+		if ( !var->name || Q_stricmp( var->name, "cl_cdkey" ) == 0 )
 			continue;
 
-		if( var->flags & CVAR_ARCHIVE ) {
+		if ( var->flags & CVAR_ARCHIVE ) {
 			// write the latched value, even if it hasn't taken effect yet
-			if ( var->latchedString ) {
-				if( strlen( var->name ) + strlen( var->latchedString ) + 10 > sizeof( buffer ) ) {
-					Com_Printf( S_COLOR_YELLOW "WARNING: value of variable "
-							"\"%s\" too long to write to file\n", var->name );
-					continue;
-				}
-				if ( (var->flags & CVAR_NODEFAULT) && !strcmp( var->latchedString, var->resetString ) ) {
-					continue;
-				}
-				Com_sprintf( buffer, sizeof(buffer), "seta %s \"%s\"" Q_NEWLINE, var->name, var->latchedString );
-			} else {
-				if( strlen( var->name ) + strlen( var->string ) + 10 > sizeof( buffer ) ) {
-					Com_Printf( S_COLOR_YELLOW "WARNING: value of variable "
-							"\"%s\" too long to write to file\n", var->name );
-					continue;
-				}
-				if ( (var->flags & CVAR_NODEFAULT) && !strcmp( var->string, var->resetString ) ) {
-					continue;
-				}
-				Com_sprintf( buffer, sizeof(buffer), "seta %s \"%s\"" Q_NEWLINE, var->name, var->string );
+			value = var->latchedString ? var->latchedString : var->string;
+			if ( strlen( var->name ) + strlen( value ) + 10 > sizeof( buffer ) ) {
+				Com_Printf( S_COLOR_YELLOW "WARNING: %svalue of variable \"%s\" too long to write to file\n", 
+					value == var->latchedString ? "latched " : "", var->name );
+				continue;
 			}
+			if ( (var->flags & CVAR_NODEFAULT) && !strcmp( value, var->resetString ) ) {
+				continue;
+			}
+			Com_sprintf( buffer, sizeof( buffer ), "seta %s \"%s\"" Q_NEWLINE, var->name, value );
+
 			FS_Write( buffer, strlen( buffer ), f );
 		}
 	}
@@ -1649,14 +1639,55 @@ Cvar_InfoString
 const char *Cvar_InfoString( int bit )
 {
 	static char	info[ MAX_INFO_STRING ];
+	const cvar_t *user_vars[ MAX_CVARS ];
+	const cvar_t *vm_vars[ MAX_CVARS ];
 	const cvar_t *var;
+	int user_count;
+	int vm_count;
+	int i;
+
+	// sort to get more predictable output
+	if ( cvar_sort )
+	{
+		cvar_sort = qfalse;
+		Cvar_Sort();
+	}
 
 	info[0] = '\0';
+	user_count = 0;
+	vm_count = 0;
 
 	for ( var = cvar_vars; var; var = var->next )
 	{
 		if ( var->name && ( var->flags & bit ) )
-			Info_SetValueForKey( info, var->name, var->string );
+		{
+			// put vm/user-created cvars to the end
+			if ( var->flags & ( CVAR_USER_CREATED | CVAR_VM_CREATED ) )
+			{
+				if ( var->flags & CVAR_USER_CREATED )
+					user_vars[ user_count++ ] = var;
+				else
+					vm_vars[ vm_count++ ] = var;
+			}
+			else
+			{
+				Info_SetValueForKey( info, var->name, var->string );
+			}
+		}
+	}
+
+	// add vm-created cvars
+	for ( i = 0; i < vm_count; i++ )
+	{
+		var = vm_vars[ i ];
+		Info_SetValueForKey( info, var->name, var->string );
+	}
+
+	// add user-created cvars
+	for ( i = 0; i < user_count; i++ )
+	{
+		var = user_vars[ i ];
+		Info_SetValueForKey( info, var->name, var->string );
 	}
 
 	return info;
