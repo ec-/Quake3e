@@ -609,12 +609,17 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	if ( sv_pure->integer ) {
 		int freespace, pakslen, infolen;
 		qboolean overflowed = qfalse;
+		qboolean infoTruncated = qfalse;
 
 		p = FS_LoadedPakChecksums( &overflowed );
 
 		pakslen = strlen( p ) + 9; // + strlen( "\\sv_paks\\" )
 		freespace = SV_RemainingGameState();
-		infolen = strlen( Cvar_InfoString_Big( CVAR_SYSTEMINFO ) );
+		infolen = strlen( Cvar_InfoString_Big( CVAR_SYSTEMINFO, &infoTruncated ) );
+
+		if ( infoTruncated ) {
+			Com_Printf( S_COLOR_YELLOW "WARNING: truncated systeminfo!\n" );
+		}
 
 		if ( pakslen > freespace || infolen + pakslen >= BIG_INFO_STRING || overflowed ) {
 			// switch to degraded pure mode
@@ -632,10 +637,10 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	}
 
 	// save systeminfo and serverinfo strings
-	SV_SetConfigstring( CS_SYSTEMINFO, Cvar_InfoString_Big( CVAR_SYSTEMINFO ) );
+	SV_SetConfigstring( CS_SYSTEMINFO, Cvar_InfoString_Big( CVAR_SYSTEMINFO, NULL ) );
 	cvar_modifiedFlags &= ~CVAR_SYSTEMINFO;
 
-	SV_SetConfigstring( CS_SERVERINFO, Cvar_InfoString( CVAR_SERVERINFO ) );
+	SV_SetConfigstring( CS_SERVERINFO, Cvar_InfoString( CVAR_SERVERINFO, NULL ) );
 	cvar_modifiedFlags &= ~CVAR_SERVERINFO;
 
 	// any media configstring setting now should issue a warning

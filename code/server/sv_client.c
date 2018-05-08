@@ -642,13 +642,13 @@ int SV_RemainingGameState( void )
 		if ( start == CS_SERVERINFO ) {
 			MSG_WriteByte( &msg, svc_configstring );
 			MSG_WriteShort( &msg, start );
-			MSG_WriteBigString( &msg, Cvar_InfoString( CVAR_SERVERINFO ) );
+			MSG_WriteBigString( &msg, Cvar_InfoString( CVAR_SERVERINFO, NULL ) );
 			continue;
 		}
 		if ( start == CS_SYSTEMINFO ) {
 			MSG_WriteByte( &msg, svc_configstring );
 			MSG_WriteShort( &msg, start );
-			MSG_WriteBigString( &msg, Cvar_InfoString_Big( CVAR_SYSTEMINFO ) );
+			MSG_WriteBigString( &msg, Cvar_InfoString_Big( CVAR_SYSTEMINFO, NULL ) );
 			continue;
 		}
 		if ( sv.configstrings[start][0] ) {
