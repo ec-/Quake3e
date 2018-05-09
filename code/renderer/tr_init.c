@@ -1137,19 +1137,12 @@ static void R_PrintLongString(const char *string) {
 GfxInfo_f
 ================
 */
-void GfxInfo_f( void ) 
+static void GfxInfo_f( void )
 {
-	cvar_t *sys_cpustring = ri.Cvar_Get( "sys_cpustring", "", 0 );
-	const char *enablestrings[] =
-	{
-		"disabled",
-		"enabled"
-	};
-	const char *fsstrings[] =
-	{
-		"windowed",
-		"fullscreen"
-	};
+	const char *enablestrings[] = { "disabled", "enabled" };
+	const char *fsstrings[] = { "windowed", "fullscreen" };
+	const char *fs;
+	int mode;
 
 	ri.Printf( PRINT_ALL, "\nGL_VENDOR: %s\n", glConfig.vendor_string );
 	ri.Printf( PRINT_ALL, "GL_RENDERER: %s\n", glConfig.renderer_string );
@@ -1160,7 +1153,31 @@ void GfxInfo_f( void )
 	ri.Printf( PRINT_ALL, "GL_MAX_TEXTURE_SIZE: %d\n", glConfig.maxTextureSize );
 	ri.Printf( PRINT_ALL, "GL_MAX_TEXTURE_UNITS_ARB: %d\n", glConfig.numTextureUnits );
 	ri.Printf( PRINT_ALL, "\nPIXELFORMAT: color(%d-bits) Z(%d-bit) stencil(%d-bits)\n", glConfig.colorBits, glConfig.depthBits, glConfig.stencilBits );
-	ri.Printf( PRINT_ALL, "MODE: %d, %d x %d %s hz:", ri.Cvar_VariableIntegerValue( "r_mode" ), glConfig.vidWidth, glConfig.vidHeight, fsstrings[ glConfig.isFullscreen != 0 ] );
+
+	if ( glConfig.isFullscreen )
+	{
+		const char *modefs = ri.Cvar_VariableString( "r_modeFullscreen" );
+		if ( *modefs ) 
+			mode = atoi( modefs );
+		else
+			mode = ri.Cvar_VariableIntegerValue( "r_mode" );
+		fs = fsstrings[1];
+	}
+	else 
+	{
+		mode = ri.Cvar_VariableIntegerValue( "r_mode" );
+		fs = fsstrings[0];
+	}
+	
+	if ( windowAdjusted )
+	{
+		ri.Printf( PRINT_ALL, "RENDER: %d x %d, MODE: %d, %d x %d %s hz:", glConfig.vidWidth, glConfig.vidHeight, mode, windowWidth, windowHeight, fs );
+	}
+	else 
+	{
+		ri.Printf( PRINT_ALL, "MODE: %d, %d x %d %s hz:", mode, windowWidth, windowHeight, fs );
+	}
+	
 	if ( glConfig.displayFrequency )
 	{
 		ri.Printf( PRINT_ALL, "%d\n", glConfig.displayFrequency );
@@ -1169,6 +1186,7 @@ void GfxInfo_f( void )
 	{
 		ri.Printf( PRINT_ALL, "N/A\n" );
 	}
+
 	if ( glConfig.deviceSupportsGamma )
 	{
 		ri.Printf( PRINT_ALL, "GAMMA: hardware w/ %d overbright bits\n", tr.overbrightBits );
@@ -1178,7 +1196,7 @@ void GfxInfo_f( void )
 		ri.Printf( PRINT_ALL, "GAMMA: software w/ %d overbright bits\n", tr.overbrightBits );
 	}
 
-	ri.Printf( PRINT_ALL, "CPU: %s\n", sys_cpustring->string );
+	ri.Printf( PRINT_ALL, "CPU: %s\n", ri.Cvar_VariableString( "sys_cpustring" ) );
 
 	// rendering primitives
 	{
@@ -1350,18 +1368,19 @@ static void R_Register( void )
 	r_bloom_reflection = ri.Cvar_Get( "r_bloom_reflection", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_bloom_reflection, "-4", "4", CV_FLOAT );
 
-	r_renderWidth = ri.Cvar_Get( "r_renderWidth", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	r_renderHeight = ri.Cvar_Get( "r_renderHeight", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	ri.Cvar_CheckRange( r_renderWidth, "0", NULL, CV_INTEGER );
-	ri.Cvar_CheckRange( r_renderHeight, "0", NULL, CV_INTEGER );
+	r_renderWidth = ri.Cvar_Get( "r_renderWidth", "800", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_renderHeight = ri.Cvar_Get( "r_renderHeight", "600", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_renderWidth, "96", NULL, CV_INTEGER );
+	ri.Cvar_CheckRange( r_renderHeight, "72", NULL, CV_INTEGER );
 	
-	r_renderScale = ri.Cvar_Get( "r_renderScale", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	ri.Cvar_CheckRange( r_renderScale, "0", "3", CV_INTEGER );
+	r_renderScale = ri.Cvar_Get( "r_renderScale", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_renderScale, "0", "4", CV_INTEGER );
 	ri.Cvar_SetDescription( r_renderScale, "Scaling mode to be used with custom render resolution:\n"
-		" 0 - nearest filtering, stretch to full size\n"
-		" 1 - nearest filtering, preserve aspect ratio (black bars on sides)\n"
-		" 2 - linear filtering, stretch to full size\n"
-		" 3 - linear filtering, preserve aspect ratio (black bars on sides)\n" );
+		" 0 - disabled\n"
+		" 1 - nearest filtering, stretch to full size\n"
+		" 2 - nearest filtering, preserve aspect ratio (black bars on sides)\n"
+		" 3 - linear filtering, stretch to full size\n"
+		" 4 - linear filtering, preserve aspect ratio (black bars on sides)\n" );
 
 	r_dlightBacks = ri.Cvar_Get( "r_dlightBacks", "1", CVAR_ARCHIVE_ND );
 	r_finish = ri.Cvar_Get( "r_finish", "0", CVAR_ARCHIVE_ND );

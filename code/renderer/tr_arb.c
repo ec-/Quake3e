@@ -277,7 +277,7 @@ void ARB_SetupLightParams( void )
 		} else {
 			vertexProgram += 1;
 		}
-		fragmentProgram++;
+		++fragmentProgram;
 	}
 
 	ARB_ProgramEnable( vertexProgram, fragmentProgram );
@@ -2078,11 +2078,10 @@ static void QGL_InitPrograms( void )
 
 static void QGL_EarlyInitFBO( void )
 {
+	int scaleMode;
 	fboAvailable = qfalse;
 
-	if ( !programAvailable || !qglGenFramebuffers || !qglBlitFramebuffer )
-		return;
-
+	windowAdjusted = qfalse;
 	windowWidth = glConfig.vidWidth;
 	windowHeight = glConfig.vidHeight;
 
@@ -2090,7 +2089,19 @@ static void QGL_EarlyInitFBO( void )
 	blitX1 = windowWidth;
 	blitY1 = windowHeight;
 
-	if ( r_renderWidth->integer >= 64 && r_renderHeight->integer >= 64 && r_fbo->integer )
+	if ( !programAvailable || !qglGenFramebuffers || !qglBlitFramebuffer )
+		return;
+
+	if ( !r_fbo->integer )
+	{
+		if ( r_renderScale->integer )
+		{
+			Com_Printf( "...ignoring r_renderScale due to disabled FBO\n" );
+		}
+		return;
+	}
+
+	if ( r_renderScale->integer )
 	{
 		glConfig.vidWidth = r_renderWidth->integer;
 		glConfig.vidHeight = r_renderHeight->integer;
@@ -2098,8 +2109,10 @@ static void QGL_EarlyInitFBO( void )
 
 	if ( windowWidth != glConfig.vidWidth || windowHeight != glConfig.vidHeight )
 	{
-		if ( r_renderScale->integer & 1 )
+		scaleMode = r_renderScale->integer - 1;
+		if ( scaleMode & 1 )
 		{
+			// preserve aspect ratio (black bars on sides)
 			float windowAspect = (float) windowWidth / (float) windowHeight;
 			float renderAspect = (float) glConfig.vidWidth / (float) glConfig.vidHeight;
 			if ( windowAspect >= renderAspect ) 
@@ -2117,8 +2130,8 @@ static void QGL_EarlyInitFBO( void )
 				blitY1 -= bias;
 			}
 		}
-
-		if ( r_renderScale->integer & 2 )
+		// linear filtering
+		if ( scaleMode & 2 )
 			blitFilter = GL_LINEAR;
 		else
 			blitFilter = GL_NEAREST;

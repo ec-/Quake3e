@@ -1085,6 +1085,11 @@ extern backEndState_t	backEnd;
 extern trGlobals_t	tr;
 extern glstate_t	glState;		// outside of TR since it shouldn't be cleared during ref re-init
 
+	// unmodified width/height according to actual \r_mode*
+extern	int					windowWidth;
+extern	int					windowHeight;
+extern	qboolean			windowAdjusted;
+
 //
 // cvars
 //

@@ -3280,6 +3280,7 @@ static void CL_InitRef( void ) {
 	ri.Cvar_CheckRange = Cvar_CheckRange;
 	ri.Cvar_SetDescription = Cvar_SetDescription;
 	ri.Cvar_VariableStringBuffer = Cvar_VariableStringBuffer;
+	ri.Cvar_VariableString = Cvar_VariableString;
 	ri.Cvar_VariableIntegerValue = Cvar_VariableIntegerValue;
 
 	ri.Cvar_SetGroup = Cvar_SetGroup;
