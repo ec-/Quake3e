@@ -62,19 +62,25 @@ static long generateHashValue( const char *fname ) {
 
 /*
 ============
-Cvar_ValidateString
+Cvar_ValidateName
 ============
 */
-static qboolean Cvar_ValidateString( const char *s ) {
+static qboolean Cvar_ValidateName( const char *name ) {
+	const char *s;
 	int c;
 	
-	if ( !s ) {
+	if ( !name ) {
 		return qfalse;
 	}
 
+	s = name;
 	while ( (c = *s++) != '\0' ) {
-		if ( c == '\\' || c == '\"' || c == ';' )
+		if ( c == '\\' || c == '\"' || c == ';' || c == '%' || c <= ' ' || c >= '~' )
 			return qfalse;
+	}
+
+	if ( (s - name) >= MAX_STRING_CHARS ) {
+		return qfalse;
 	}
 
 	return qtrue;
@@ -342,16 +348,16 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 	long	hash;
 	int	index;
 
-	if ( !var_name || ! var_value ) {
+	if ( !var_name || !var_value ) {
 		Com_Error( ERR_FATAL, "Cvar_Get: NULL parameter" );
 	}
 
-	if ( !Cvar_ValidateString( var_name ) ) {
-		Com_Printf("invalid cvar name string: %s\n", var_name );
+	if ( !Cvar_ValidateName( var_name ) ) {
+		Com_Printf( "invalid cvar name string: %s\n", var_name );
 		var_name = "BADNAME";
 	}
 
-#if 0		// FIXME: values with backslash happen
+#if 0 // FIXME: values with backslash happen
 	if ( !Cvar_ValidateString( var_value ) ) {
 		Com_Printf("invalid cvar value string: %s\n", var_value );
 		var_value = "BADVALUE";
@@ -575,12 +581,12 @@ Prints the value, default, and latched string of the given variable
 void Cvar_Print( const cvar_t *v ) {
 
 	Com_Printf ("\"%s\" is:\"%s" S_COLOR_WHITE "\"",
-			v->name, v->string );
+		v->name, v->string );
 
 	if ( !( v->flags & CVAR_ROM ) ) {
-			Com_Printf (" default:\"%s" S_COLOR_WHITE "\"",
-					v->resetString );
-		}
+		Com_Printf (" default:\"%s" S_COLOR_WHITE "\"",
+			v->resetString );
+	}
 
 	Com_Printf ("\n");
 
@@ -604,8 +610,8 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 
 //	Com_DPrintf( "Cvar_Set2: %s %s\n", var_name, value );
 
-	if ( !Cvar_ValidateString( var_name ) ) {
-		Com_Printf("invalid cvar name string: %s\n", var_name );
+	if ( !Cvar_ValidateName( var_name ) ) {
+		Com_Printf( "invalid cvar name string: %s\n", var_name );
 		var_name = "BADNAME";
 	}
 
