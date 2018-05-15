@@ -257,17 +257,21 @@ DrawTris
 Draws triangle outlines for debugging
 ================
 */
-static void DrawTris (shaderCommands_t *input) {
+static void DrawTris( shaderCommands_t *input ) {
+
+	GL_ProgramDisable();
+	tess.dlightUpdateParams = qtrue;
+
 	GL_Bind( tr.whiteImage );
-	qglColor3f (1,1,1);
+	qglColor3f( 1, 1, 1 );
 
 	GL_State( GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE );
 	qglDepthRange( 0, 0 );
 
-	qglDisableClientState (GL_COLOR_ARRAY);
-	qglDisableClientState (GL_TEXTURE_COORD_ARRAY);
+	qglDisableClientState( GL_COLOR_ARRAY );
+	qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
 
-	qglVertexPointer (3, GL_FLOAT, 16, input->xyz);	// padded for SIMD
+	qglVertexPointer( 3, GL_FLOAT, 16, input->xyz ); // padded for SIMD
 
 	if ( qglLockArraysEXT ) {
 		qglLockArraysEXT( 0, input->numVertexes );

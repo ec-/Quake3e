@@ -1098,7 +1098,6 @@ static void VBO_RenderIndexQueue( qboolean mtx )
 		{
 			vbo_item_t *start = vbo->items + a[ i ];
 			vbo_item_t *end = vbo->items + a[ i + item_run - 1 ];
-			VBO_BindIndex( qtrue );
 			n = (end->index_offset - start->index_offset) / sizeof(glIndex_t) + end->num_indexes;
 			VBO_AddItemRangeToIBOBuffer( start->index_offset, n );
 		}
@@ -1242,6 +1241,22 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 	else
 	{
 		VBO_RenderIndexQueue( qfalse );
+	}
+
+	if ( r_speeds->integer == 1 )
+	{
+		// update performance stats
+		const vbo_item_t *it;
+		int i;
+
+		for ( i = 0; i < vbo->items_queue_count; i++ )
+		{
+			it = vbo->items + vbo->items_queue[ i ];
+			backEnd.pc.c_totalIndexes += it->num_indexes;
+			backEnd.pc.c_indexes += it->num_indexes;
+			backEnd.pc.c_vertexes += it->num_vertexes;
+		}
+		backEnd.pc.c_shaders++;
 	}
 	
 	tess.vboIndex = 0;
