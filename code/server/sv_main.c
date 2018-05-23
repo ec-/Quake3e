@@ -975,6 +975,10 @@ void SV_PacketEvent( const netadr_t *from, msg_t *msg ) {
 		return;
 	}
 
+	if ( sv.state == SS_DEAD ) {
+		return;
+	}
+
 	// read the qport out of the message so we can fix up
 	// stupid address translating routers
 	MSG_BeginReadingOOB( msg );
