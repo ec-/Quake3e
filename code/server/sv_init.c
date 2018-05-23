@@ -385,15 +385,13 @@ static void SV_ClearServer( void ) {
 
 /*
 ================
-SV_TouchCGame
-
-  touch the cgame.vm so that a pure client can load it if it's in a seperate pk3
+SV_TouchFile
 ================
 */
-static void SV_TouchCGame( void ) {
+static void SV_TouchFile( const char *filename ) {
 	fileHandle_t	f;
 
-	FS_FOpenFileRead( "vm/cgame.qvm", &f, qfalse );
+	FS_FOpenFileRead( filename, &f, qfalse );
 	if ( f != FS_INVALID_HANDLE ) {
 		FS_FCloseFile( f );
 	}
@@ -590,11 +588,11 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	sv.time += 100;
 	svs.time += 100;
 
-	// if a dedicated pure server we need to touch the cgame because it could be in a
-	// seperate pk3 file and the client will need to load the latest cgame.qvm
-	if ( com_dedicated->integer && sv_pure->integer ) {
-		SV_TouchCGame();
-	}
+	// we need to touch the cgame and ui qvm because they could be in
+	// separate pk3 files and the client will need to download the pk3
+	// files with the latest cgame and ui qvm to pass the pure check
+	SV_TouchFile( "vm/cgame.qvm" );
+	SV_TouchFile( "vm/ui.qvm" );
 
 	// the server sends these to the clients so they can figure
 	// out which pk3s should be auto-downloaded
