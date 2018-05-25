@@ -69,12 +69,14 @@ typedef struct bot_characteristic_s
 //a bot character
 typedef struct bot_character_s
 {
+	bot_characteristic_t c[MAX_CHARACTERISTICS];
 	char filename[MAX_QPATH];
 	float skill;
-	bot_characteristic_t c[1];		//variable sized
 } bot_character_t;
 
-bot_character_t *botcharacters[MAX_CLIENTS + 1];
+#define MAX_HANDLES (MAX_CLIENTS*4)
+
+bot_character_t *botcharacters[MAX_HANDLES + 1];
 
 //========================================================================
 //
@@ -84,7 +86,7 @@ bot_character_t *botcharacters[MAX_CLIENTS + 1];
 //========================================================================
 bot_character_t *BotCharacterFromHandle(int handle)
 {
-	if (handle <= 0 || handle > MAX_CLIENTS)
+	if (handle <= 0 || handle > MAX_HANDLES)
 	{
 		botimport.Print(PRT_FATAL, "character handle %d out of range\n", handle);
 		return NULL;
@@ -146,7 +148,7 @@ void BotFreeCharacterStrings(bot_character_t *ch)
 //========================================================================
 void BotFreeCharacter2(int handle)
 {
-	if (handle <= 0 || handle > MAX_CLIENTS)
+	if (handle <= 0 || handle > MAX_HANDLES)
 	{
 		botimport.Print(PRT_FATAL, "character handle %d out of range\n", handle);
 		return;
@@ -224,11 +226,12 @@ bot_character_t *BotLoadCharacterFromFile(char *charfile, int skill)
 	{
 		botimport.Print(PRT_ERROR, "counldn't load %s\n", charfile);
 		return NULL;
-	} //end if
-	ch = (bot_character_t *) GetClearedMemory(sizeof(bot_character_t) +
-					MAX_CHARACTERISTICS * sizeof(bot_characteristic_t));
-	strcpy(ch->filename, charfile);
-	while(PC_ReadToken(source, &token))
+	}
+
+	ch = (bot_character_t *) GetClearedMemory( sizeof( *ch ) );
+	strcpy( ch->filename, charfile );
+
+	while(PC_ReadToken( source, &token))
 	{
 		if (!strcmp(token.string, "skill"))
 		{
@@ -363,7 +366,7 @@ int BotFindCachedCharacter(char *charfile, float skill)
 {
 	int handle;
 
-	for (handle = 1; handle <= MAX_CLIENTS; handle++)
+	for (handle = 1; handle <= MAX_HANDLES; handle++)
 	{
 		if ( !botcharacters[handle] ) continue;
 		if ( strcmp( botcharacters[handle]->filename, charfile ) == 0 &&
@@ -391,7 +394,7 @@ int BotLoadCachedCharacter(char *charfile, float skill, int reload)
 #endif //DEBUG
 
 	//find a free spot for a character
-	for (handle = 1; handle <= MAX_CLIENTS; handle++)
+	for (handle = 1; handle <= MAX_HANDLES; handle++)
 	{
 		if (!botcharacters[handle]) break;
 	} //end for
@@ -517,20 +520,20 @@ int BotInterpolateCharacters(int handle1, int handle2, float desiredskill)
 {
 	bot_character_t *ch1, *ch2, *out;
 	int i, handle;
-	float scale;
+	float scale, v1, v2;
 
 	ch1 = BotCharacterFromHandle(handle1);
 	ch2 = BotCharacterFromHandle(handle2);
 	if (!ch1 || !ch2)
 		return 0;
 	//find a free spot for a character
-	for (handle = 1; handle <= MAX_CLIENTS; handle++)
+	for (handle = 1; handle <= MAX_HANDLES; handle++)
 	{
 		if (!botcharacters[handle]) break;
 	} //end for
-	if (handle > MAX_CLIENTS) return 0;
-	out = (bot_character_t *) GetClearedMemory(sizeof(bot_character_t) +
-					MAX_CHARACTERISTICS * sizeof(bot_characteristic_t));
+	if (handle > MAX_HANDLES) return 0;
+
+	out = (bot_character_t *) GetClearedMemory( sizeof( *out ) );
 	out->skill = desiredskill;
 	strcpy(out->filename, ch1->filename);
 	botcharacters[handle] = out;
@@ -538,18 +541,22 @@ int BotInterpolateCharacters(int handle1, int handle2, float desiredskill)
 	scale = (float) (desiredskill - ch1->skill) / (ch2->skill - ch1->skill);
 	for (i = 0; i < MAX_CHARACTERISTICS; i++)
 	{
-		//
-		if (ch1->c[i].type == CT_FLOAT && ch2->c[i].type == CT_FLOAT)
+		if (ch1->c[i].type == CT_FLOAT && (ch2->c[i].type == CT_FLOAT || ch2->c[i].type == CT_INTEGER) )
 		{
 			out->c[i].type = CT_FLOAT;
-			out->c[i].value._float = ch1->c[i].value._float +
-								(ch2->c[i].value._float - ch1->c[i].value._float) * scale;
-		} //end if
+			v1 = ch1->c[i].value._float;
+			// convert second value from integer to float
+			if ( ch2->c[i].type == CT_INTEGER )
+				v2 = ch2->c[i].value.integer;
+			else
+				v2 = ch2->c[i].value._float;
+			out->c[i].value._float = v1 + (v2 - v1) * scale;
+		}
 		else if (ch1->c[i].type == CT_INTEGER)
 		{
 			out->c[i].type = CT_INTEGER;
 			out->c[i].value.integer = ch1->c[i].value.integer;
-		} //end else if
+		}
 		else if (ch1->c[i].type == CT_STRING)
 		{
 			out->c[i].type = CT_STRING;
@@ -775,7 +782,7 @@ void BotShutdownCharacters(void)
 {
 	int handle;
 
-	for (handle = 1; handle <= MAX_CLIENTS; handle++)
+	for (handle = 1; handle <= MAX_HANDLES; handle++)
 	{
 		if (botcharacters[handle])
 		{
