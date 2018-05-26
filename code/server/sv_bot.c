@@ -556,6 +556,8 @@ void SV_BotInitBotLib(void) {
 	botlib_import.DebugPolygonCreate = BotImport_DebugPolygonCreate;
 	botlib_import.DebugPolygonDelete = BotImport_DebugPolygonDelete;
 
+	botlib_import.Sys_Milliseconds = Sys_Milliseconds;
+
 	botlib_export = (botlib_export_t *)GetBotLibAPI( BOTLIB_API_VERSION, &botlib_import );
 	assert(botlib_export); 	// somehow we end up with a zero import.
 }
