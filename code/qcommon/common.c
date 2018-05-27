@@ -47,7 +47,7 @@ const int demo_protocols[] = { 66, 67, PROTOCOL_VERSION, NEW_PROTOCOL_VERSION, 0
 #define DEF_COMHUNKMEGS		128
 #endif
 #ifdef USE_MULTI_SEGMENT
-#define DEF_COMZONEMEGS		9
+#define DEF_COMZONEMEGS		12
 #else
 #define DEF_COMZONEMEGS		25
 #endif
