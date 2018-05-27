@@ -948,6 +948,9 @@ typedef struct memzone_s {
 	int		totalSize;
 	int		totalUsed;
 	int		segnum;
+	int		failed;	// size of last failed allocation
+					// so any following allocations with sizes
+					// greater or equal than this will also fail
 #endif
 } memzone_t;
 
@@ -985,6 +988,7 @@ static void Z_ClearZone( memzone_t *zone, int size ) {
 	block->id = ZONEID;
 #ifdef USE_MULTI_SEGMENT
 	block->parent = zone;
+	zone->failed = size - sizeof(memzone_t) + 1;
 #endif
 	block->size = size - sizeof(memzone_t);
 }
@@ -1083,6 +1087,12 @@ void Z_Free( void *ptr ) {
 		block->next = other->next;
 		block->next->prev = block;
 	}
+
+#ifdef USE_MULTI_SEGMENT
+	if ( block->size > zone->failed ) {
+		zone->failed = block->size + 1;
+	}
+#endif
 }
 
 
@@ -1156,9 +1166,9 @@ void *Z_TagMalloc( int size, memtag_t tag ) {
 
 	base = rover = zone->rover;
 	start = base->prev;
-	
+
 	do {
-		if ( rover == start ) {
+		if ( rover == start || size >= zone->failed ) {
 #ifdef USE_MULTI_SEGMENT
 			// try to swich to next zone segment
 			/*if ( tag != TAG_SMALL )*/ {
@@ -1177,6 +1187,7 @@ void *Z_TagMalloc( int size, memtag_t tag ) {
 						newz->segnum = zone->segnum + 1;
 					}
 				}
+				zone->failed = size;
 				zone = zone->next;
 				if ( zone ) {
 					// these operations will take more time than regular allocations from primary zone
