@@ -3443,7 +3443,7 @@ Com_WriteConfiguration
 Writes key bindings and archived cvars to config file if modified
 ===============
 */
-static void Com_WriteConfiguration( void ) {
+void Com_WriteConfiguration( void ) {
 #ifndef DEDICATED
 	const char *basegame;
 	const char *gamedir;
@@ -3611,7 +3611,9 @@ void Com_Frame( qboolean noDelay ) {
 	timeAfter = 0;
 
 	// write config file if anything changed
+#ifndef DELAY_WRITECONFIG
 	Com_WriteConfiguration();
+#endif
 
 	// if "viewlog" has been modified, show or hide the log console
 	if ( com_viewlog->modified ) {

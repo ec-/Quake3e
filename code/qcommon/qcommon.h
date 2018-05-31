@@ -46,6 +46,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define STRING(x)	#x
 
 //#define	PRE_RELEASE_DEMO
+#define DELAY_WRITECONFIG
 
 //============================================================================
 
@@ -908,6 +909,8 @@ void		Com_StartupVariable( const char *match );
 // checks for and removes command line "+set var arg" constructs
 // if match is NULL, all set commands will be executed, otherwise
 // only a set with the exact name.  Only used during startup.
+
+void		Com_WriteConfiguration( void );
 
 
 extern	cvar_t	*com_developer;

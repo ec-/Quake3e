@@ -3536,6 +3536,10 @@ void FS_Shutdown( qboolean closemfp )
 		}
 	}
 
+#ifdef DELAY_WRITECONFIG
+	Com_WriteConfiguration();
+#endif
+
 	// free everything
 	for( p = fs_searchpaths; p; p = next )
 	{
