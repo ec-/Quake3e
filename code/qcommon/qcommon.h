@@ -424,6 +424,8 @@ files can be execed.
 
 */
 
+#define MAX_CMD_LINE 1024
+
 void Cbuf_Init( void );
 // allocates an initial text buffer that will grow as needed
 
@@ -826,6 +828,9 @@ Edit fields and command line history/completion
 */
 
 #define	MAX_EDIT_LINE	256
+#if MAX_EDIT_LINE > MAX_CMD_LINE
+#error "MAX_EDIT_LINE > MAX_CMD_LINE"
+#endif
 typedef struct {
 	int		cursor;
 	int		scroll;

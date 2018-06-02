@@ -3,12 +3,7 @@
 #include "q_shared.h"
 #include "qcommon.h"
 
-// This must not exceed MAX_CMD_LINE
-#define     MAX_CONSOLE_SAVE_BUFFER	1024
 #define     CONSOLE_HISTORY_FILE    "q3history"
-
-static char consoleSaveBuffer[ MAX_CONSOLE_SAVE_BUFFER ];
-static int  consoleSaveBufferSize = 0;
 
 static      qboolean historyLoaded = qfalse;
 
@@ -20,6 +15,8 @@ int         nextHistoryLine; // the last line in the history buffer, not masked
 int         historyLine;     // the line being displayed from history buffer
                                  // will be <= nextHistoryLine
 
+#define     MAX_CONSOLE_SAVE_BUFFER ( COMMAND_HISTORY * (MAX_EDIT_LINE + 13) )
+
 static void Con_LoadHistory( void );
 static void Con_SaveHistory( void );
 
@@ -29,9 +26,11 @@ static void Con_SaveHistory( void );
 Con_ResetHistory
 ================
 */
-void Con_ResetHistory( void ) 
+void Con_ResetHistory( void )
 {
 	historyLoaded = qfalse;
+	nextHistoryLine = 0;
+	historyLine = 0;
 }
 
 
@@ -115,6 +114,8 @@ Con_LoadHistory
 */
 static void Con_LoadHistory( void )
 {
+	char consoleSaveBuffer[ MAX_CONSOLE_SAVE_BUFFER ];
+	int  consoleSaveBufferSize;
 	const char *token, *text_p;
 	int i, numChars, numLines = 0;
 	fileHandle_t f;
@@ -187,13 +188,15 @@ Con_SaveHistory
 */
 static void Con_SaveHistory( void )
 {
+	char            consoleSaveBuffer[ MAX_CONSOLE_SAVE_BUFFER ];
+	int             consoleSaveBufferSize;
 	int             i;
 	int             lineLength, saveBufferLength, additionalLength;
 	fileHandle_t    f;
 
 	consoleSaveBuffer[ 0 ] = '\0';
 
-	i = ( nextHistoryLine - 1 ) % COMMAND_HISTORY;
+	i = ( nextHistoryLine - 1 + COMMAND_HISTORY ) % COMMAND_HISTORY;
 	do
 	{
 		if( historyEditLines[ i ].buffer[ 0 ] )
@@ -202,7 +205,7 @@ static void Con_SaveHistory( void )
 			saveBufferLength = strlen( consoleSaveBuffer );
 
 			//ICK
-			additionalLength = lineLength + strlen( "999 999 999  " );
+			additionalLength = lineLength + 13; // strlen( "999 999 999  " )
 
 			if( saveBufferLength + additionalLength < MAX_CONSOLE_SAVE_BUFFER )
 			{
@@ -218,7 +221,7 @@ static void Con_SaveHistory( void )
 		}
 		i = ( i - 1 + COMMAND_HISTORY ) % COMMAND_HISTORY;
 	}
-	while( i != ( nextHistoryLine - 1 ) % COMMAND_HISTORY );
+	while( i != ( nextHistoryLine - 1 + COMMAND_HISTORY ) % COMMAND_HISTORY );
 
 	consoleSaveBufferSize = strlen( consoleSaveBuffer );
 

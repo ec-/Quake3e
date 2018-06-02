@@ -1315,7 +1315,7 @@ with the archive flag set to qtrue.
 void Cvar_WriteVariables( fileHandle_t f )
 {
 	cvar_t	*var;
-	char	buffer[1024]; // MAX_CMD_LINE
+	char	buffer[MAX_CMD_LINE];
 	const char	*value;
 
 	if ( cvar_sort ) {

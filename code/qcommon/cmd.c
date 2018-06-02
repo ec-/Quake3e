@@ -25,7 +25,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "qcommon.h"
 
 #define MAX_CMD_BUFFER  65536
-#define MAX_CMD_LINE    1024
 
 typedef struct {
 	byte *data;
