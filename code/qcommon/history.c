@@ -3,8 +3,6 @@
 #include "q_shared.h"
 #include "qcommon.h"
 
-#define     CONSOLE_HISTORY_FILE    "q3history"
-
 static      qboolean historyLoaded = qfalse;
 
 #define     COMMAND_HISTORY 32

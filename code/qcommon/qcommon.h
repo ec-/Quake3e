@@ -652,8 +652,10 @@ typedef enum {
 
 #ifdef DEDICATED
 #define Q3CONFIG_CFG "q3config_server.cfg"
+#define CONSOLE_HISTORY_FILE "q3history_server"
 #else
 #define Q3CONFIG_CFG "q3config.cfg"
+#define CONSOLE_HISTORY_FILE "q3history"
 #endif
 
 qboolean FS_Initialized( void );

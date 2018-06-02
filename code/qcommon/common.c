@@ -112,7 +112,6 @@ int			com_frameNumber;
 
 qboolean	com_errorEntered = qfalse;
 qboolean	com_fullyInitialized = qfalse;
-qboolean	com_gameRestarting = qfalse;
 
 // renderer window states
 qboolean	gw_minimized = qfalse; // this will be always true for dedicated servers
@@ -2739,8 +2738,10 @@ Com_GameRestart
 Change to a new mod properly with cleaning up cvars before switching.
 ==================
 */
-void Com_GameRestart(int checksumFeed, qboolean clientRestart)
+void Com_GameRestart( int checksumFeed, qboolean clientRestart )
 {
+	static qboolean com_gameRestarting = qfalse;
+
 	// make sure no recursion can be triggered
 	if(!com_gameRestarting && com_fullyInitialized)
 	{
@@ -2755,10 +2756,12 @@ void Com_GameRestart(int checksumFeed, qboolean clientRestart)
 #endif
 
 		// Kill server if we have one
-		if( com_sv_running->integer )
-			SV_Shutdown("Game directory changed");
+		if ( com_sv_running->integer )
+			SV_Shutdown( "Game directory changed" );
 
-		FS_Restart(checksumFeed);
+		Con_ResetHistory();
+
+		FS_Restart( checksumFeed );
 	
 		// Clean out any user and VM created cvars
 		Cvar_Restart(qtrue);
