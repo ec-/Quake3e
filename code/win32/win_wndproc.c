@@ -308,7 +308,9 @@ static qboolean directMap( const WPARAM chr ) {
 		case 'h'-'a'+1:
 		case 'a'-'a'+1:
 		case 'e'-'a'+1:
-		case 0xC: // CTRL+L
+		case 'n'-'a'+1:
+		case 'p'-'a'+1:
+		case 'l'-'a'+1: // CTRL+L
 			return qtrue;
 	}
 
