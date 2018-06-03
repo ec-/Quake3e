@@ -116,6 +116,7 @@ static void Con_LoadHistory( void )
 	int  consoleSaveBufferSize;
 	const char *token, *text_p;
 	int i, numChars, numLines = 0;
+	field_t *edit;
 	fileHandle_t f;
 
 	for ( i = 0 ; i < COMMAND_HISTORY ; i++ ) {
@@ -137,29 +138,41 @@ static void Con_LoadHistory( void )
 
 		for( i = COMMAND_HISTORY - 1; i >= 0; i-- )
 		{
-			if( !*( token = COM_Parse( &text_p ) ) )
+			if ( !*( token = COM_Parse( &text_p ) ) )
 				break;
 
-			historyEditLines[ i ].cursor = atoi( token );
+			edit = &historyEditLines[ i ];
 
-			if( !*( token = COM_Parse( &text_p ) ) )
+			edit->cursor = atoi( token );
+
+			if ( !*( token = COM_Parse( &text_p ) ) )
 				break;
 
-			historyEditLines[ i ].scroll = atoi( token );
+			edit->scroll = atoi( token );
 
 			if( !*( token = COM_Parse( &text_p ) ) )
 				break;
 
 			numChars = atoi( token );
 			text_p++;
-			if( numChars > ( strlen( consoleSaveBuffer ) -	( text_p - consoleSaveBuffer ) ) )
+			if ( numChars > ( consoleSaveBufferSize - ( text_p - consoleSaveBuffer ) ) || numChars >= sizeof( edit->buffer ) )
 			{
 				Com_DPrintf( S_COLOR_YELLOW "WARNING: probable corrupt history\n" );
 				break;
 			}
-			Com_Memcpy( historyEditLines[ i ].buffer,
-					text_p, numChars );
-			historyEditLines[ i ].buffer[ numChars ] = '\0';
+
+			if ( edit->cursor > sizeof( edit->buffer ) - 1 )
+				edit->cursor = sizeof( edit->buffer ) - 1;
+			else if ( edit->cursor < 0 )
+				edit->cursor = 0;
+
+			if ( edit->scroll > edit->cursor )
+				edit->scroll = edit->cursor;
+			else if ( edit->scroll < 0 )
+				edit->scroll = 0;
+
+			Com_Memcpy( edit->buffer, text_p, numChars );
+			edit->buffer[ numChars ] = '\0';
 			text_p += numChars;
 
 			numLines++;
