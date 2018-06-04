@@ -2759,7 +2759,9 @@ void Com_GameRestart( int checksumFeed, qboolean clientRestart )
 		if ( com_sv_running->integer )
 			SV_Shutdown( "Game directory changed" );
 
+#if defined(_WIN32) || !defined(DEDICATED)
 		Con_ResetHistory();
+#endif
 
 		FS_Restart( checksumFeed );
 	
