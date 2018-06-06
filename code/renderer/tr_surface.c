@@ -162,14 +162,14 @@ static void RB_SurfaceSprite( void ) {
 
 	// calculate the xyz locations for the four corners
 	radius = backEnd.currentEntity->e.radius;
-	if ( backEnd.currentEntity->e.rotation == 0 ) {
+	if ( backEnd.currentEntity->e.rotation == 0.0 ) {
 		VectorScale( backEnd.viewParms.or.axis[1], radius, left );
 		VectorScale( backEnd.viewParms.or.axis[2], radius, up );
 	} else {
 		float	s, c;
 		float	ang;
 		
-		ang = M_PI * backEnd.currentEntity->e.rotation / 180;
+		ang = M_PI * backEnd.currentEntity->e.rotation / 180.0;
 		s = sin( ang );
 		c = cos( ang );
 

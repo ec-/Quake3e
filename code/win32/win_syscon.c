@@ -422,10 +422,8 @@ static LRESULT WINAPI BufferWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 				conBufPos = 0;
 			} else {
 				// kill timer
-				if ( texTimerID != 0 ) {
-					KillTimer( hWnd, texTimerID );
-					texTimerID = 0;
-				}
+				KillTimer( hWnd, texTimerID );
+				texTimerID = 0;
 			}
 		}
 		return 0;

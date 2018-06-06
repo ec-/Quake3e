@@ -34,7 +34,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //#include <io.h>
 //#include <conio.h>
 
-#define MEM_THRESHOLD 96*1024*1024
+#define MEM_THRESHOLD (96*1024*1024)
 
 WinVars_t	g_wv;
 

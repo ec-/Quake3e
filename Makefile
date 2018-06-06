@@ -929,7 +929,6 @@ Q3DOBJ = \
 
 ifdef MINGW
   Q3DOBJ += \
-  $(B)/ded/history.o \
   $(B)/ded/win_main.o \
   $(B)/client/win_resource.o \
   $(B)/ded/win_shared.o \

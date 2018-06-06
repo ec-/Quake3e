@@ -323,8 +323,8 @@ int BotExportTest(int parm0, char *parm1, vec3_t parm2, vec3_t parm3)
 //	bot_goal_t goal;
 
 	// clock_t start_time, end_time;
-	vec3_t mins = {-16, -16, -24};
-	vec3_t maxs = {16, 16, 32};
+	//vec3_t mins = {-16, -16, -24};
+	//vec3_t maxs = {16, 16, 32};
 
 //	int areas[10], numareas;
 

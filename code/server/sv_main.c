@@ -229,8 +229,8 @@ changes from empty to non-empty, and full to non-full,
 but not on every player enter or exit.
 ================
 */
-#define	HEARTBEAT_MSEC	300*1000
-#define	MASTERDNS_MSEC	24*60*60*1000
+#define	HEARTBEAT_MSEC	(300*1000)
+#define	MASTERDNS_MSEC	(24*60*60*1000)
 static void SV_MasterHeartbeat( const char *message )
 {
 	static netadr_t	adr[MAX_MASTER_SERVERS][2]; // [2] for v4 and v6 address for the same address string.
@@ -1136,18 +1136,18 @@ SV_CheckPaused
 ==================
 */
 static qboolean SV_CheckPaused( void ) {
-	int		count;
-	client_t	*cl;
-	int		i;
 
 #ifdef DEDICATED
 	// can't pause on dedicated servers
 	return qfalse;
 #else
+	const client_t *cl;
+	int	count;
+	int	i;
+
 	if ( !cl_paused->integer ) {
 		return qfalse;
 	}
-#endif
 
 	// only pause if there is just a single client connected
 	count = 0;
@@ -1166,7 +1166,9 @@ static qboolean SV_CheckPaused( void ) {
 
 	if (!sv_paused->integer)
 		Cvar_Set("sv_paused", "1");
+
 	return qtrue;
+#endif // !DEDICATED
 }
 
 

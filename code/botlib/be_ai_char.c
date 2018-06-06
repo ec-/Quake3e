@@ -335,7 +335,7 @@ bot_character_t *BotLoadCharacterFromFile(char *charfile, int skill)
 						return NULL;
 					} //end if
 					index = token.intvalue;
-					if (index < 0 || index > MAX_CHARACTERISTICS)
+					if (index < 0 || index >= MAX_CHARACTERISTICS)
 					{
 						SourceError(source, "characteristic index out of range [0, %d]", MAX_CHARACTERISTICS);
 						FreeSource(source);

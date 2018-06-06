@@ -62,7 +62,7 @@ static void AddSkyPolygon (int nump, vec3_t vecs)
 	int		axis;
 	float	*vp;
 	// s = [0]/[2], t = [1]/[2]
-	static int	vec_to_st[6][3] =
+	static const int vec_to_st[6][3] =
 	{
 		{-2,3,1},
 		{2,3,-1},
@@ -292,7 +292,7 @@ CLOUD VERTEX GENERATION
 static void MakeSkyVec( float s, float t, int axis, float outSt[2], vec3_t outXYZ )
 {
 	// 1 = s, 2 = t, 3 = 2048
-	static int	st_to_vec[6][3] =
+	static const int st_to_vec[6][3] =
 	{
 		{3,-1,2},
 		{-3,1,2},

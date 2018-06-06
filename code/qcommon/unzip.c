@@ -1834,13 +1834,11 @@ static int unzlocal_CheckCurrentFileCoherencyHeader (unz_s* s, uInt* piSizeVar,
 								s->byte_before_the_zipfile,SEEK_SET)!=0)
 		return UNZ_ERRNO;
 
+	if (unzlocal_getLong(s->file,&uMagic) != UNZ_OK)
+		err=UNZ_ERRNO;
+	else if (uMagic!=0x04034b50)
+		err=UNZ_BADZIPFILE;
 
-	if (err==UNZ_OK) {
-		if (unzlocal_getLong(s->file,&uMagic) != UNZ_OK)
-			err=UNZ_ERRNO;
-		else if (uMagic!=0x04034b50)
-			err=UNZ_BADZIPFILE;
-	}
 	if (unzlocal_getShort(s->file,&uData) != UNZ_OK)
 		err=UNZ_ERRNO;
 /*
@@ -2041,8 +2039,8 @@ extern int unzReadCurrentFile  (unzFile file, void *buf, unsigned len)
 			uInt uReadThis = UNZ_BUFSIZE;
 			if (pfile_in_zip_read_info->rest_read_compressed<uReadThis)
 				uReadThis = (uInt)pfile_in_zip_read_info->rest_read_compressed;
-			if (uReadThis == 0)
-				return UNZ_EOF;
+			//if (uReadThis == 0)
+			//	return UNZ_EOF;
 			if (s->cur_file_info.compressed_size == pfile_in_zip_read_info->rest_read_compressed)
 				if (fseek(pfile_in_zip_read_info->file,
 						  pfile_in_zip_read_info->pos_in_zipfile + 
