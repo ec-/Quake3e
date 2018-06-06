@@ -1726,14 +1726,14 @@ static qboolean ParseShader( const char **text )
 		// no mip maps
 		else if ( !Q_stricmp( token, "nomipmaps" ) )
 		{
-			shader.noMipMaps = qtrue;
-			shader.noPicMip = qtrue;
+			shader.noMipMaps = 1;
+			shader.noPicMip = 1;
 			continue;
 		}
 		// no picmip adjustment
 		else if ( !Q_stricmp( token, "nopicmip" ) )
 		{
-			shader.noPicMip = qtrue;
+			shader.noPicMip = 1;
 			continue;
 		}
 		// polygonOffset
