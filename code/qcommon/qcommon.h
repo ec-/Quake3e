@@ -846,10 +846,10 @@ void Field_CompleteKeyname( void );
 void Field_CompleteFilename( const char *dir, const char *ext, qboolean stripExt, int flags );
 void Field_CompleteCommand( char *cmd, qboolean doCommands, qboolean doCvars );
 
-void Con_SaveField( const field_t *field );
-void Con_HistoryGetPrev( field_t *field );
-void Con_HistoryGetNext( field_t *field );
 void Con_ResetHistory( void );
+void Con_SaveField( const field_t *field );
+qboolean Con_HistoryGetPrev( field_t *field );
+qboolean Con_HistoryGetNext( field_t *field );
 
 /*
 ==============================================================

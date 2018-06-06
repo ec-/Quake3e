@@ -881,6 +881,7 @@ Q3DOBJ = \
   $(B)/ded/common.o \
   $(B)/ded/cvar.o \
   $(B)/ded/files.o \
+  $(B)/ded/history.o \
   $(B)/ded/keys.o \
   $(B)/ded/md4.o \
   $(B)/ded/md5.o \

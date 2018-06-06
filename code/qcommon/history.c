@@ -37,7 +37,7 @@ void Con_ResetHistory( void )
 Con_SaveField
 ================
 */
-void Con_SaveField( const field_t *field ) 
+void Con_SaveField( const field_t *field )
 {
 	field_t *h;
 
@@ -66,27 +66,45 @@ void Con_SaveField( const field_t *field )
 }
 
 
-void Con_HistoryGetPrev( field_t *field ) 
+/*
+================
+Con_HistoryGetPrev
+
+returns qtrue if previously returned edit field needs to be updated
+================
+*/
+qboolean Con_HistoryGetPrev( field_t *field )
 {
-	if ( !field )
-		return;
+	qboolean bresult;
 
 	if ( historyLoaded == qfalse ) {
 		historyLoaded = qtrue;
 		Con_LoadHistory();
 	}
 
-	if ( nextHistoryLine - historyLine < COMMAND_HISTORY && historyLine > 0 )
+	if ( nextHistoryLine - historyLine < COMMAND_HISTORY && historyLine > 0 ) {
+		bresult = qtrue;
 		historyLine--;
+	} else {
+		bresult = qfalse;
+	}
 
 	*field = historyEditLines[ historyLine % COMMAND_HISTORY ];
+
+	return bresult;
 }
 
 
-void Con_HistoryGetNext( field_t *field ) 
+/*
+================
+Con_HistoryGetNext
+
+returns qtrue if previously returned edit field needs to be updated
+================
+*/
+qboolean Con_HistoryGetNext( field_t *field )
 {
-	if ( !field )
-		return;
+	qboolean bresult;
 
 	if ( historyLoaded == qfalse ) {
 		historyLoaded = qtrue;
@@ -96,12 +114,18 @@ void Con_HistoryGetNext( field_t *field )
 	historyLine++;
 
 	if ( historyLine >= nextHistoryLine ) {
+		if ( historyLine == nextHistoryLine )
+			bresult = qtrue;
+		else
+			bresult = qfalse;
 		historyLine = nextHistoryLine;
 		Field_Clear( field );
-		return;
+		return bresult;
 	}
 
 	*field = historyEditLines[ historyLine % COMMAND_HISTORY ];
+
+	return qtrue;
 }
 
 

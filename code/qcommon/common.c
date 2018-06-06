@@ -1137,7 +1137,7 @@ void *Z_TagMallocDebug( int size, memtag_t tag, char *label, char *file, int lin
 void *Z_TagMalloc( int size, memtag_t tag ) {
 #endif
 	int		extra;
-	memblock_t	*start, *rover, *new, *base;
+	memblock_t	*start, *rover, *base;
 	memzone_t *zone;
 #ifdef USE_MULTI_SEGMENT
 	memzone_t *newz;
@@ -1159,7 +1159,7 @@ void *Z_TagMalloc( int size, memtag_t tag ) {
 	// scan through the block list looking for the first free block
 	// of sufficient size
 	//
-	size += sizeof(memblock_t);	// account for size of block header
+	size += sizeof( *base );	// account for size of block header
 	size += 4;					// space for memory trash tester
 	size = PAD(size, sizeof(intptr_t));		// align to 32/64 bit boundary
 
@@ -1222,19 +1222,20 @@ void *Z_TagMalloc( int size, memtag_t tag ) {
 	// found a block big enough
 	//
 	extra = base->size - size;
-	if (extra > MINFRAGMENT) {
+	if ( extra >= MINFRAGMENT ) {
+		memblock_t *fragment;
 		// there will be a free fragment after the allocated block
-		new = (memblock_t *) ((byte *)base + size );
-		new->size = extra;
-		new->tag = TAG_FREE; // free block
-		new->prev = base;
-		new->id = ZONEID;
-		new->next = base->next;
-		new->next->prev = new;
+		fragment = (memblock_t *) ((byte *)base + size );
+		fragment->size = extra;
+		fragment->tag = TAG_FREE; // free block
+		fragment->prev = base;
+		fragment->id = ZONEID;
+		fragment->next = base->next;
+		fragment->next->prev = fragment;
 #ifdef USE_MULTI_SEGMENT
-		new->parent = zone;
+		fragment->parent = zone;
 #endif
-		base->next = new;
+		base->next = fragment;
 		base->size = size;
 	}
 	
@@ -1257,7 +1258,7 @@ void *Z_TagMalloc( int size, memtag_t tag ) {
 	// marker for memory trash testing
 	*(int *)((byte *)base + base->size - 4) = ZONEID;
 
-	return (void *) ((byte *)base + sizeof(memblock_t));
+	return (void *) ( (byte *)base + sizeof( *base ) );
 }
 
 
@@ -2759,9 +2760,7 @@ void Com_GameRestart( int checksumFeed, qboolean clientRestart )
 		if ( com_sv_running->integer )
 			SV_Shutdown( "Game directory changed" );
 
-#if defined(_WIN32) || !defined(DEDICATED)
 		Con_ResetHistory();
-#endif
 
 		FS_Restart( checksumFeed );
 	
