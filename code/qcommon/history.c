@@ -39,7 +39,7 @@ Con_SaveField
 */
 void Con_SaveField( const field_t *field )
 {
-	field_t *h;
+	const field_t *h;
 
 	if ( !field || field->buffer[0] == '\0' )
 		return;
@@ -52,7 +52,7 @@ void Con_SaveField( const field_t *field )
 	// try to avoid inserting duplicates
 	if ( nextHistoryLine > 0 ) {
 		h = &historyEditLines[(nextHistoryLine-1) % COMMAND_HISTORY];
-		if ( !memcmp( field, h, sizeof( *field ) ) ) {
+		if ( field->cursor == h->cursor && field->scroll == h->scroll && !strcmp( field->buffer, h->buffer ) ) {
 			historyLine = nextHistoryLine;
 			return;
 		}
