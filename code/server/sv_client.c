@@ -496,7 +496,7 @@ gotnewcl:
 	Com_DPrintf( "Going from CS_FREE to CS_CONNECTED for %s\n", newcl->name );
 
 	newcl->state = CS_CONNECTED;
-	newcl->lastSnapshotTime = 0;
+	newcl->lastSnapshotTime = svs.time - 9999; // generate a snapshot immediately
 	newcl->lastPacketTime = svs.time;
 	newcl->lastConnectTime = svs.time;
 
@@ -804,7 +804,7 @@ void SV_ClientEnterWorld( client_t *client, usercmd_t *cmd ) {
 	client->gentity = ent;
 
 	client->deltaMessage = -1;
-	client->lastSnapshotTime = 0;	// generate a snapshot immediately
+	client->lastSnapshotTime = svs.time - 9999; // generate a snapshot immediately
 
 	if(cmd)
 		memcpy(&client->lastUsercmd, cmd, sizeof(client->lastUsercmd));
@@ -1354,7 +1354,7 @@ static void SV_VerifyPaks_f( client_t *cl ) {
 			cl->pureAuthentic = qtrue;
 		} else {
 			cl->pureAuthentic = qfalse;
-			cl->lastSnapshotTime = 0;
+			cl->lastSnapshotTime = svs.time - 9999; // generate a snapshot immediately
 			cl->state = CS_ZOMBIE; // skip delta generation
 			SV_SendClientSnapshot( cl );
 			cl->state = CS_ACTIVE;
@@ -1389,7 +1389,7 @@ void SV_UserinfoChanged( client_t *cl, qboolean updateUserinfo ) {
 	int	i;
 
 	if ( cl->netchan.remoteAddress.type == NA_BOT ) {
-		cl->lastSnapshotTime = 0;
+		cl->lastSnapshotTime = svs.time - 9999; // generate a snapshot immediately
 		cl->snapshotMsec = 1000 / sv_fps->integer;
 		cl->rate = 0;
 		return;
@@ -1437,7 +1437,7 @@ void SV_UserinfoChanged( client_t *cl, qboolean updateUserinfo ) {
 	if ( i != cl->snapshotMsec )
 	{
 		// Reset last sent snapshot so we avoid desync between server frame time and snapshot send time
-		cl->lastSnapshotTime = 0;
+		cl->lastSnapshotTime = svs.time - 9999; // generate a snapshot immediately
 		cl->snapshotMsec = i;
 	}
 

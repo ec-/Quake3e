@@ -574,7 +574,7 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 					client->gentity = ent;
 
 					client->deltaMessage = -1;
-					client->lastSnapshotTime = 0;	// generate a snapshot immediately
+					client->lastSnapshotTime = svs.time - 9999; // generate a snapshot immediately
 
 					VM_Call( gvm, GAME_CLIENT_BEGIN, i );
 				}
@@ -788,7 +788,7 @@ void SV_FinalMessage( const char *message ) {
 					SV_SendServerCommand( cl, "disconnect \"%s\"", message );
 				}
 				// force a snapshot to be sent
-				cl->lastSnapshotTime = 0;
+				cl->lastSnapshotTime = svs.time - 9999; // generate a snapshot immediately
 				cl->state = CS_ZOMBIE; // skip delta generation
 				SV_SendClientSnapshot( cl );
 			}

@@ -1268,7 +1268,7 @@ Also called by SV_DropClient, SV_DirectConnect, and SV_SpawnServer
 ==================
 */
 void SV_Heartbeat_f( void ) {
-	svs.nextHeartbeatTime = -9999999;
+	svs.nextHeartbeatTime = svs.time;
 }
 
 
