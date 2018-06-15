@@ -218,6 +218,7 @@ static void SV_Map_f( void ) {
 	}
 }
 
+
 /*
 ================
 SV_MapRestart_f
@@ -297,25 +298,27 @@ static void SV_MapRestart_f( void ) {
 	sv.state = SS_LOADING;
 	sv.restarting = qtrue;
 
+	// make sure that level time is not zero
+	sv.time = sv.time ? sv.time : 1;
+
 	SV_RestartGameProgs();
 
 	// run a few frames to allow everything to settle
-	for (i = 0; i < 3; i++)
+	for ( i = 0; i < 3; i++ )
 	{
-		VM_Call (gvm, GAME_RUN_FRAME, sv.time);
 		sv.time += 100;
-		svs.time += 100;
+		VM_Call( gvm, GAME_RUN_FRAME, sv.time );
 	}
 
 	sv.state = SS_GAME;
 	sv.restarting = qfalse;
 
 	// connect and begin all the clients
-	for (i=0 ; i<sv_maxclients->integer ; i++) {
+	for ( i = 0 ; i < sv_maxclients->integer ; i++ ) {
 		client = &svs.clients[i];
 
 		// send the new gamestate to all connected clients
-		if ( client->state < CS_CONNECTED) {
+		if ( client->state < CS_CONNECTED ) {
 			continue;
 		}
 
@@ -346,14 +349,14 @@ static void SV_MapRestart_f( void ) {
 			// which is wrong obviously.
 			SV_ClientEnterWorld( client, NULL );
 		}
-	}	
+	}
+
 	// run another frame to allow things to look at all the players
-	VM_Call (gvm, GAME_RUN_FRAME, sv.time);
 	sv.time += 100;
+	VM_Call( gvm, GAME_RUN_FRAME, sv.time );
 	svs.time += 100;
 }
 
-//===============================================================
 
 /*
 ==================
@@ -414,6 +417,7 @@ static void SV_Kick_f( void ) {
 	SV_DropClient( cl, "was kicked" );
 	cl->lastPacketTime = svs.time;	// in case there is a funny zombie
 }
+
 
 #ifndef STANDALONE
 // these functions require the auth server which of course is not available anymore for stand-alone games.

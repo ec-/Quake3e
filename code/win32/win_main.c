@@ -303,6 +303,7 @@ void Sys_Sleep( int msec ) {
 		return;
 	}
 
+	// busy wait there because Sleep(0) will relinquish CPU - which is not what we want
 	if ( msec == 0 )
 		return;
 

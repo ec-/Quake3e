@@ -510,15 +510,15 @@ void NET_FlushPacketQueue( void )
 	packetQueue_t *last;
 	int now;
 
-	while(packetQueue) {
+	while ( packetQueue ) {
 		now = Sys_Milliseconds();
-		if(packetQueue->release >= now)
+		if ( packetQueue->release - now >= 0 )
 			break;
 		Sys_SendPacket( packetQueue->length, packetQueue->data, &packetQueue->to );
 		last = packetQueue;
 		packetQueue = packetQueue->next;
-		Z_Free(last->data);
-		Z_Free(last);
+		Z_Free( last->data );
+		Z_Free( last );
 	}
 }
 

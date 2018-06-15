@@ -517,6 +517,9 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	// to load during actual gameplay
 	sv.state = SS_LOADING;
 
+	// make sure that level time is not zero
+	sv.time = sv.time ? sv.time : 1;
+
 	// load and spawn all other entities
 	SV_InitGameProgs();
 
@@ -524,12 +527,11 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	sv_gametype->modified = qfalse;
 
 	// run a few frames to allow everything to settle
-	for (i = 0;i < 3; i++)
+	for ( i = 0; i < 3; i++ )
 	{
-		VM_Call (gvm, GAME_RUN_FRAME, sv.time);
-		SV_BotFrame (sv.time);
 		sv.time += 100;
-		svs.time += 100;
+		VM_Call( gvm, GAME_RUN_FRAME, sv.time );
+		SV_BotFrame( sv.time );
 	}
 
 	// create a baseline for more efficient communications
@@ -583,9 +585,9 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	}	
 
 	// run another frame to allow things to look at all the players
+	sv.time += 100;
 	VM_Call( gvm, GAME_RUN_FRAME, sv.time );
 	SV_BotFrame( sv.time );
-	sv.time += 100;
 	svs.time += 100;
 
 	// we need to touch the cgame and ui qvm because they could be in
