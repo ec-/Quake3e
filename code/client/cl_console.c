@@ -873,7 +873,7 @@ void Con_RunConsole( void )
 	if ( Key_GetCatcher( ) & KEYCATCH_CONSOLE )
 		con.finalFrac = 0.5;	// half screen
 	else
-		con.finalFrac = 0;		// none visible
+		con.finalFrac = 0.0;	// none visible
 	
 	// scroll towards the destination height
 	if ( con.finalFrac < con.displayFrac )
@@ -938,6 +938,6 @@ void Con_Close( void )
 	Field_Clear( &g_consoleField );
 	Con_ClearNotify();
 	Key_SetCatcher( Key_GetCatcher( ) & ~KEYCATCH_CONSOLE );
-	con.finalFrac = 0;				// none visible
-	con.displayFrac = 0;
+	con.finalFrac = 0.0;			// none visible
+	con.displayFrac = 0.0;
 }

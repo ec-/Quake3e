@@ -3816,7 +3816,7 @@ void CL_Init( void ) {
 #ifdef USE_MD5
 	CL_GenerateQKey();	
 #endif
-	Cvar_Get( "cl_guid", "", CVAR_USERINFO | CVAR_ROM );
+	Cvar_Get( "cl_guid", "", CVAR_USERINFO | CVAR_ROM | CVAR_PROTECTED );
 	CL_UpdateGUID( NULL, 0 );
 
 	Com_Printf( "----- Client Initialization Complete -----\n" );

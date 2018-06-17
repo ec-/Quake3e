@@ -807,6 +807,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		break;
 
 	case WM_CONTEXTMENU:
+		// disable context menus to avoid blocking message loop
 		return 0;
 
 	case WM_HOTKEY:
@@ -884,6 +885,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		break;
 #endif
 	case WM_NCHITTEST:
+		// in borderless mode - drag using client area when holding CTRL
 		if ( g_wv.borderless && GetKeyState( VK_CONTROL ) & (1<<15) )
 			return HTCAPTION;
 		break;

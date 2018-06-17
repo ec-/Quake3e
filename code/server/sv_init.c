@@ -470,6 +470,17 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	Cvar_Set( "nextmap", "map_restart 0" );
 //	Cvar_Set( "nextmap", va("map %s", server) );
 
+	// try to reset level time if server is empty
+	if ( !sv_levelTimeReset->integer && !sv.restartTime ) {
+		for ( i = 0; i < sv_maxclients->integer; i++ ) {
+			if ( svs.clients[ i ].state != CS_FREE )
+				break;
+		}
+		if ( i == sv_maxclients->integer ) {
+			sv.time = 0;
+		}
+	}
+
 	for ( i = 0; i < sv_maxclients->integer; i++ ) {
 		// save when the server started for each client already connected
 		if ( svs.clients[i].state >= CS_CONNECTED && sv_levelTimeReset->integer ) {

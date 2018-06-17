@@ -114,7 +114,6 @@ void SCR_DrawPic( float x, float y, float width, float height, qhandle_t hShader
 }
 
 
-
 /*
 ** SCR_DrawChar
 ** chars are drawn at 640*480 virtual screen size
@@ -152,6 +151,7 @@ static void SCR_DrawChar( int x, int y, float size, int ch ) {
 					   fcol + size, frow + size, 
 					   cls.charSetShader );
 }
+
 
 /*
 ** SCR_DrawSmallChar
@@ -217,6 +217,7 @@ void SCR_DrawSmallString( int x, int y, const char *s, int len ) {
 	}
 }
 
+
 /*
 ==================
 SCR_DrawBigString[Color]
@@ -234,7 +235,7 @@ void SCR_DrawStringExt( int x, int y, float size, const char *string, const floa
 	int			xx;
 
 	// draw the drop shadow
-	color[0] = color[1] = color[2] = 0;
+	color[0] = color[1] = color[2] = 0.0;
 	color[3] = setColor[3];
 	re.SetColor( color );
 	s = string;
@@ -274,6 +275,11 @@ void SCR_DrawStringExt( int x, int y, float size, const char *string, const floa
 }
 
 
+/*
+==================
+SCR_DrawBigString
+==================
+*/
 void SCR_DrawBigString( int x, int y, const char *s, float alpha, qboolean noColorEscape ) {
 	float	color[4];
 
@@ -321,7 +327,6 @@ void SCR_DrawSmallStringExt( int x, int y, const char *string, const float *setC
 }
 
 
-
 /*
 ** SCR_Strlen -- skips color escape codes
 */
@@ -341,11 +346,12 @@ static int SCR_Strlen( const char *str ) {
 	return count;
 }
 
+
 /*
 ** SCR_GetBigStringWidth
 */ 
-int	SCR_GetBigStringWidth( const char *str ) {
-	return SCR_Strlen( str ) * 16;
+int SCR_GetBigStringWidth( const char *str ) {
+	return SCR_Strlen( str ) * BIGCHAR_WIDTH;
 }
 
 
@@ -414,8 +420,6 @@ void SCR_DrawVoipMeter( void ) {
 #endif
 
 
-
-
 /*
 ===============================================================================
 
@@ -437,6 +441,7 @@ void SCR_DebugGraph (float value)
 	values[current] = value;
 	current = (current + 1) % ARRAY_LEN(values);
 }
+
 
 /*
 ==============
