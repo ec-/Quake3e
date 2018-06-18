@@ -90,11 +90,11 @@ extern float     displayAspect;
 //
 extern cvar_t *r_stencilbits;			// number of desired stencil bits
 extern cvar_t *r_texturebits;			// number of desired texture bits
-extern cvar_t *r_ext_multisample;
 										// 0 = use framebuffer depth
 										// 16 = use 16-bit textures
 										// 32 = use 32-bit textures
 										// all else = error
+extern cvar_t *r_ext_multisample;
 
 extern cvar_t *r_ignorehwgamma;			// overrides hardware gamma capabilities
 extern cvar_t *r_drawBuffer;

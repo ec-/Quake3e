@@ -282,9 +282,7 @@ void Con_CheckResize( void )
 
 	con.viswidth = cls.glconfig.vidWidth;
 
-	width = (cls.glconfig.vidWidth / SMALLCHAR_WIDTH) - 2;
-	
-	if ( width < 1 ) // video hasn't been initialized yet
+	if ( cls.glconfig.vidWidth == 0 ) // video hasn't been initialized yet
 	{
 		width = DEFAULT_CONSOLE_WIDTH;
 		con.linewidth = width;
@@ -295,6 +293,8 @@ void Con_CheckResize( void )
 	}
 	else
 	{
+		width = (cls.glconfig.vidWidth / SMALLCHAR_WIDTH) - 2;
+
 		if ( width > MAX_CONSOLE_WIDTH )
 			width = MAX_CONSOLE_WIDTH;
 
@@ -656,30 +656,32 @@ void Con_DrawNotify( void )
 
 	re.SetColor( NULL );
 
-	if (Key_GetCatcher( ) & (KEYCATCH_UI | KEYCATCH_CGAME) ) {
+	if ( Key_GetCatcher() & (KEYCATCH_UI | KEYCATCH_CGAME) ) {
 		return;
 	}
 
 	// draw the chat line
 	if ( Key_GetCatcher( ) & KEYCATCH_MESSAGE )
 	{
+		// rescale to virtual 640x480 space
+		v /= cls.glconfig.vidHeight / 480.0;
+
 		if (chat_team)
 		{
-			SCR_DrawBigString (8, v, "say_team:", 1.0f, qfalse );
+			SCR_DrawBigString( SMALLCHAR_WIDTH, v, "say_team:", 1.0f, qfalse );
 			skip = 10;
 		}
 		else
 		{
-			SCR_DrawBigString (8, v, "say:", 1.0f, qfalse );
+			SCR_DrawBigString( SMALLCHAR_WIDTH, v, "say:", 1.0f, qfalse );
 			skip = 5;
 		}
 
 		Field_BigDraw( &chatField, skip * BIGCHAR_WIDTH, v,
 			SCREEN_WIDTH - ( skip + 1 ) * BIGCHAR_WIDTH, qtrue, qtrue );
-
 	}
-
 }
+
 
 /*
 ================
