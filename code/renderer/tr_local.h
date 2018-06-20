@@ -1079,6 +1079,9 @@ typedef struct {
 
 	qboolean				mapLoading;
 	qboolean				needScreenMap;
+
+	int						captureWidth;
+	int						captureHeight;
 } trGlobals_t;
 
 extern backEndState_t	backEnd;

@@ -339,7 +339,15 @@ typedef struct {
 
 	qboolean	startCgame;
 
+	int			captureWidth;
+	int			captureHeight;
+
 } clientStatic_t;
+
+extern int bigchar_width;
+extern int bigchar_height;
+extern int smallchar_width;
+extern int smallchar_height;
 
 extern	clientStatic_t		cls;
 

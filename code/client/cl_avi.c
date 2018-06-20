@@ -392,8 +392,9 @@ qboolean CL_OpenAVIForWriting( const char *fileName, qboolean pipe )
 
   afd.frameRate = cl_aviFrameRate->integer;
   afd.framePeriod = (int)( 1000000.0 / afd.frameRate );
-  afd.width = cls.glconfig.vidWidth;
-  afd.height = cls.glconfig.vidHeight;
+
+  afd.width = cls.captureWidth;
+  afd.height = cls.captureHeight;
 
   if ( cl_aviMotionJpeg->integer && !pipe )
     afd.motionJpeg = qtrue;

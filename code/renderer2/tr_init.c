@@ -257,6 +257,8 @@ static void InitOpenGL( void )
 		{
 			glConfig.maxTextureSize = 0;
 		}
+
+		ri.CL_SetScaling( 1.0, glConfig.vidWidth, glConfig.vidHeight );
 	}
 
 	// set default state

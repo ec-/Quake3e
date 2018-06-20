@@ -3155,7 +3155,7 @@ static void CL_InitRenderer( void ) {
 	cls.charSetShader = re.RegisterShader( "gfx/2d/bigchars" );
 	cls.whiteShader = re.RegisterShader( "white" );
 	cls.consoleShader = re.RegisterShader( "console" );
-	g_console_field_width = cls.glconfig.vidWidth / SMALLCHAR_WIDTH - 2;
+	g_console_field_width = cls.glconfig.vidWidth / smallchar_width - 2;
 	g_consoleField.widthInChars = g_console_field_width;
 }
 
@@ -3236,6 +3236,23 @@ static qboolean CL_IsMininized( void ) {
 
 /*
 ============
+CL_SetScaling
+============
+*/
+static void CL_SetScaling( float factor, int captureWidth, int captureHeight ) {
+	// set console scaling
+	smallchar_width = SMALLCHAR_WIDTH * factor;
+	smallchar_height = SMALLCHAR_HEIGHT * factor;
+	bigchar_width = BIGCHAR_WIDTH * factor;
+	bigchar_height = BIGCHAR_HEIGHT * factor;
+	// set custom capture resolution
+	cls.captureWidth = captureWidth;
+	cls.captureHeight = captureHeight;
+}
+
+
+/*
+============
 CL_InitRef
 ============
 */
@@ -3297,6 +3314,7 @@ static void CL_InitRef( void ) {
 
 	ri.CL_WriteAVIVideoFrame = CL_WriteAVIVideoFrame;
 	ri.CL_IsMinimized = CL_IsMininized;
+	ri.CL_SetScaling = CL_SetScaling;
 
 	ri.Sys_SetClipboardBitmap = Sys_SetClipboardBitmap;
 	ri.Sys_LowPhysicalMemory = Sys_LowPhysicalMemory;

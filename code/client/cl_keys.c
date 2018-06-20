@@ -110,19 +110,19 @@ static void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int 
 	}
 
 	// draw it
-	if ( size == SMALLCHAR_WIDTH ) {
-		SCR_DrawSmallStringExt( x, y, str, g_color_table[ ColorIndexFromChar( curColor ) ], 
+	if ( size == smallchar_width ) {
+		SCR_DrawSmallStringExt( x, y, str, g_color_table[ ColorIndexFromChar( curColor ) ],
 			qfalse, noColorEscape );
 		if ( len > drawLen + prestep ) {
 			SCR_DrawSmallChar( x + ( edit->widthInChars - 1 ) * size, y, '>' );
 		}
 	} else {
 		if ( len > drawLen + prestep ) {
-			SCR_DrawStringExt( x + ( edit->widthInChars - 1 ) * size, y, size, ">", 
+			SCR_DrawStringExt( x + ( edit->widthInChars - 1 ) * BIGCHAR_WIDTH, y, size, ">",
 				g_color_table[ ColorIndex( COLOR_WHITE ) ], qfalse, noColorEscape );
 		}
 		// draw big string with drop shadow
-		SCR_DrawStringExt( x, y, size, str, g_color_table[ ColorIndexFromChar( curColor ) ], 
+		SCR_DrawStringExt( x, y, BIGCHAR_WIDTH, str, g_color_table[ ColorIndexFromChar( curColor ) ],
 			qfalse, noColorEscape );
 	}
 
@@ -140,26 +140,26 @@ static void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int 
 
 		i = drawLen - strlen( str );
 
-		if ( size == SMALLCHAR_WIDTH ) {
+		if ( size == smallchar_width ) {
 			SCR_DrawSmallChar( x + ( edit->cursor - prestep - i ) * size, y, cursorChar );
 		} else {
 			str[0] = cursorChar;
 			str[1] = '\0';
-			SCR_DrawBigString( x + ( edit->cursor - prestep - i ) * size, y, str, 1.0, qfalse );
+			SCR_DrawBigString( x + ( edit->cursor - prestep - i ) * BIGCHAR_WIDTH, y, str, 1.0, qfalse );
 		}
 	}
 }
 
 
-void Field_Draw( field_t *edit, int x, int y, int width, qboolean showCursor, qboolean noColorEscape ) 
+void Field_Draw( field_t *edit, int x, int y, int width, qboolean showCursor, qboolean noColorEscape )
 {
-	Field_VariableSizeDraw( edit, x, y, width, SMALLCHAR_WIDTH, showCursor, noColorEscape );
+	Field_VariableSizeDraw( edit, x, y, width, smallchar_width, showCursor, noColorEscape );
 }
 
 
-void Field_BigDraw( field_t *edit, int x, int y, int width, qboolean showCursor, qboolean noColorEscape ) 
+void Field_BigDraw( field_t *edit, int x, int y, int width, qboolean showCursor, qboolean noColorEscape )
 {
-	Field_VariableSizeDraw( edit, x, y, width, BIGCHAR_WIDTH, showCursor, noColorEscape );
+	Field_VariableSizeDraw( edit, x, y, width, bigchar_width, showCursor, noColorEscape );
 }
 
 
@@ -361,7 +361,7 @@ static void Console_Key( int key ) {
 		// if not in the game explicitly prepend a slash if needed
 		if ( cls.state != CA_ACTIVE 
 			&& g_consoleField.buffer[0] != '\0'
-			&& g_consoleField.buffer[0] != '\\' 
+			&& g_consoleField.buffer[0] != '\\'
 			&& g_consoleField.buffer[0] != '/' ) {
 			char	temp[MAX_EDIT_LINE-1];
 
@@ -445,7 +445,7 @@ static void Console_Key( int key ) {
 		if ( keys[K_CTRL].down ) {	// hold <ctrl> to accelerate scrolling
 			Con_PageUp( 4 );
 		} else {
-			Con_PageUp( 1 );		
+			Con_PageUp( 1 );
 		}
 		return;
 	}
@@ -454,7 +454,7 @@ static void Console_Key( int key ) {
 		if ( keys[K_CTRL].down ) {	// hold <ctrl> to accelerate scrolling
 			Con_PageDown( 4 );
 		} else {
-			Con_PageDown( 1 );		
+			Con_PageDown( 1 );
 		}
 		return;
 	}

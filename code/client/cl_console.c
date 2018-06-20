@@ -30,6 +30,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define  CON_TEXTSIZE   65536
 
+int bigchar_width;
+int bigchar_height;
+int smallchar_width;
+int smallchar_height;
+
 typedef struct {
 	qboolean	initialized;
 
@@ -276,11 +281,21 @@ void Con_CheckResize( void )
 {
 	int		i, j, width, oldwidth, oldtotallines, oldcurrent, numlines, numchars;
 	short	tbuf[CON_TEXTSIZE], *src, *dst;
+	static int old_width, old_vispage;
+	int		vispage;
 
 	if ( con.viswidth == cls.glconfig.vidWidth )
 		return;
 
 	con.viswidth = cls.glconfig.vidWidth;
+
+	if ( smallchar_width == 0 ) // might happen on early init
+	{
+		smallchar_width = SMALLCHAR_WIDTH;
+		smallchar_height = SMALLCHAR_HEIGHT;
+		bigchar_width = BIGCHAR_WIDTH;
+		bigchar_height = BIGCHAR_HEIGHT;
+	}
 
 	if ( cls.glconfig.vidWidth == 0 ) // video hasn't been initialized yet
 	{
@@ -293,17 +308,25 @@ void Con_CheckResize( void )
 	}
 	else
 	{
-		width = (cls.glconfig.vidWidth / SMALLCHAR_WIDTH) - 2;
+		width = (cls.glconfig.vidWidth / smallchar_width) - 2;
 
 		if ( width > MAX_CONSOLE_WIDTH )
 			width = MAX_CONSOLE_WIDTH;
+
+		vispage = cls.glconfig.vidHeight / ( smallchar_height * 2 ) - 1;
+
+		if ( old_vispage == vispage && old_width == width )
+			return;
 
 		oldwidth = con.linewidth;
 		oldtotallines = con.totallines;
 		oldcurrent = con.current;
 		con.linewidth = width;
 		con.totallines = CON_TEXTSIZE / con.linewidth;
-		con.vispage = cls.glconfig.vidHeight / ( SMALLCHAR_HEIGHT * 2 ) - 1;
+		con.vispage = vispage;
+
+		old_vispage = vispage;
+		old_width = width;
 
 		numchars = oldwidth;
 		if ( numchars > con.linewidth )
@@ -591,14 +614,14 @@ void Con_DrawInput( void ) {
 		return;
 	}
 
-	y = con.vislines - ( SMALLCHAR_HEIGHT * 2 );
+	y = con.vislines - ( smallchar_height * 2 );
 
 	re.SetColor( con.color );
 
-	SCR_DrawSmallChar( con.xadjust + 1 * SMALLCHAR_WIDTH, y, ']' );
+	SCR_DrawSmallChar( con.xadjust + 1 * smallchar_width, y, ']' );
 
-	Field_Draw( &g_consoleField, con.xadjust + 2 * SMALLCHAR_WIDTH, y,
-		SCREEN_WIDTH - 3 * SMALLCHAR_WIDTH, qtrue, qtrue );
+	Field_Draw( &g_consoleField, con.xadjust + 2 * smallchar_width, y,
+		SCREEN_WIDTH - 3 * smallchar_width, qtrue, qtrue );
 }
 
 
@@ -648,10 +671,10 @@ void Con_DrawNotify( void )
 				currentColorIndex = colorIndex;
 				re.SetColor( g_color_table[ colorIndex ] );
 			}
-			SCR_DrawSmallChar( cl_conXOffset->integer + con.xadjust + (x+1)*SMALLCHAR_WIDTH, v, text[x] & 0xff );
+			SCR_DrawSmallChar( cl_conXOffset->integer + con.xadjust + (x+1)*smallchar_width, v, text[x] & 0xff );
 		}
 
-		v += SMALLCHAR_HEIGHT;
+		v += smallchar_height;
 	}
 
 	re.SetColor( NULL );
@@ -759,14 +782,14 @@ void Con_DrawSolidConsole( float frac ) {
 	//y = yf;
 
 	// draw the version number
-	SCR_DrawSmallString( cls.glconfig.vidWidth - ( ARRAY_LEN( Q3_VERSION ) ) * SMALLCHAR_WIDTH, 
-		lines - SMALLCHAR_HEIGHT, Q3_VERSION, ARRAY_LEN( Q3_VERSION ) - 1 );
+	SCR_DrawSmallString( cls.glconfig.vidWidth - ( ARRAY_LEN( Q3_VERSION ) ) * smallchar_width,
+		lines - smallchar_height, Q3_VERSION, ARRAY_LEN( Q3_VERSION ) - 1 );
 
 	// draw the text
 	con.vislines = lines;
-	rows = lines / SMALLCHAR_WIDTH - 1;	// rows of text to draw
+	rows = lines / smallchar_width - 1;	// rows of text to draw
 
-	y = lines - (SMALLCHAR_HEIGHT * 3);
+	y = lines - (smallchar_height * 3);
 
 	row = con.display;
 
@@ -776,8 +799,8 @@ void Con_DrawSolidConsole( float frac ) {
 		// draw arrows to show the buffer is backscrolled
 		re.SetColor( g_color_table[ ColorIndex( COLOR_RED ) ] );
 		for ( x = 0 ; x < con.linewidth ; x += 4 )
-			SCR_DrawSmallChar( con.xadjust + (x+1)*SMALLCHAR_WIDTH, y, '^' );
-		y -= SMALLCHAR_HEIGHT;
+			SCR_DrawSmallChar( con.xadjust + (x+1)*smallchar_width, y, '^' );
+		y -= smallchar_height;
 		row--;
 	}
 
@@ -790,8 +813,8 @@ void Con_DrawSolidConsole( float frac ) {
 		i = strlen( download.progress );
 		for ( x = 0 ; x < i ; x++ ) 
 		{
-			SCR_DrawSmallChar( ( x + 1 ) * SMALLCHAR_WIDTH,
-				lines - SMALLCHAR_HEIGHT, download.progress[x] );
+			SCR_DrawSmallChar( ( x + 1 ) * smallchar_width,
+				lines - smallchar_height, download.progress[x] );
 		}
 	}
 #endif
@@ -799,14 +822,14 @@ void Con_DrawSolidConsole( float frac ) {
 	currentColorIndex = ColorIndex( COLOR_WHITE );
 	re.SetColor( g_color_table[ currentColorIndex ] );
 
-	for ( i = 0 ; i < rows ; i++, y -= SMALLCHAR_HEIGHT, row-- )
+	for ( i = 0 ; i < rows ; i++, y -= smallchar_height, row-- )
 	{
 		if ( row < 0 )
 			break;
 
 		if ( con.current - row >= con.totallines ) {
 			// past scrollback wrap point
-			continue;	
+			continue;
 		}
 
 		text = con.text + (row % con.totallines) * con.linewidth;
@@ -822,7 +845,7 @@ void Con_DrawSolidConsole( float frac ) {
 				currentColorIndex = colorIndex;
 				re.SetColor( g_color_table[ colorIndex ] );
 			}
-			SCR_DrawSmallChar( con.xadjust + (x + 1) * SMALLCHAR_WIDTH, y, text[x] & 0xff );
+			SCR_DrawSmallChar( con.xadjust + (x + 1) * smallchar_width, y, text[x] & 0xff );
 		}
 	}
 
@@ -894,7 +917,7 @@ void Con_RunConsole( void )
 }
 
 
-void Con_PageUp( int lines ) 
+void Con_PageUp( int lines )
 {
 	if ( lines == 0 )
 		lines = con.vispage - 1;
@@ -905,7 +928,8 @@ void Con_PageUp( int lines )
 }
 
 
-void Con_PageDown( int lines ) {
+void Con_PageDown( int lines )
+{
 	if ( lines == 0 ) {
 		lines = con.vispage - 1;
 	}
@@ -915,7 +939,7 @@ void Con_PageDown( int lines ) {
 }
 
 
-void Con_Top( void ) 
+void Con_Top( void )
 {
 	// this is generally incorrect but will be adjusted in Con_Fixup()
 	con.display = con.current - con.totallines;
@@ -924,7 +948,7 @@ void Con_Top( void )
 }
 
 
-void Con_Bottom( void ) 
+void Con_Bottom( void )
 {
 	con.display = con.current;
 
@@ -932,9 +956,9 @@ void Con_Bottom( void )
 }
 
 
-void Con_Close( void ) 
+void Con_Close( void )
 {
-	if ( !com_cl_running->integer ) 
+	if ( !com_cl_running->integer )
 		return;
 
 	Field_Clear( &g_consoleField );
