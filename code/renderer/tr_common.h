@@ -95,6 +95,7 @@ extern cvar_t *r_texturebits;			// number of desired texture bits
 										// 32 = use 32-bit textures
 										// all else = error
 extern cvar_t *r_ext_multisample;
+extern cvar_t *r_ext_supersample;
 
 extern cvar_t *r_ignorehwgamma;			// overrides hardware gamma capabilities
 extern cvar_t *r_drawBuffer;

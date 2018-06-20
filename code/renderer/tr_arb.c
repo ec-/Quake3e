@@ -5,7 +5,7 @@
 //#define DEPTH_RENDER_BUFFER
 //#define USE_FBO_BLIT
 
-#define BLOOM_BASE 4
+#define BLOOM_BASE 5
 #define FBO_COUNT (BLOOM_BASE+(MAX_BLUR_PASSES*2))
 
 #if BLOOM_BASE < 2
@@ -1635,6 +1635,19 @@ static void FBO_BlitToBackBuffer( int index )
 }
 
 
+void FBO_BlitSS( void )
+{
+	const frameBuffer_t *src = &frameBuffers[ fboReadIndex ];
+	const frameBuffer_t *dst = &frameBuffers[ 4 ];
+
+	FBO_Bind( GL_DRAW_FRAMEBUFFER, dst->fbo );
+	
+	qglBlitFramebuffer( 0, 0, src->width, src->height, 0, 0, dst->width, dst->height, GL_COLOR_BUFFER_BIT, GL_LINEAR );
+
+	FBO_Bind( GL_READ_FRAMEBUFFER, dst->fbo );
+}
+
+
 void FBO_BlitMS( qboolean depthOnly )
 {
 	//if ( blitMSfbo )
@@ -2105,36 +2118,50 @@ static void QGL_EarlyInitFBO( void )
 	{
 		glConfig.vidWidth = r_renderWidth->integer;
 		glConfig.vidHeight = r_renderHeight->integer;
+		tr.captureWidth = glConfig.vidWidth;
+		tr.captureHeight = glConfig.vidHeight;
+	}
+
+	if ( r_ext_supersample->integer )
+	{
+		glConfig.vidWidth *= 2;
+		glConfig.vidHeight *= 2;
+		tr.superSampled = qtrue;
+		ri.CL_SetScaling( 2.0, tr.captureWidth, tr.captureHeight );
+		blitFilter = GL_LINEAR; // default value for (r_renderScale==0) case
 	}
 
 	if ( windowWidth != glConfig.vidWidth || windowHeight != glConfig.vidHeight )
 	{
-		scaleMode = r_renderScale->integer - 1;
-		if ( scaleMode & 1 )
+		if ( r_renderScale->integer > 0 )
 		{
-			// preserve aspect ratio (black bars on sides)
-			float windowAspect = (float) windowWidth / (float) windowHeight;
-			float renderAspect = (float) glConfig.vidWidth / (float) glConfig.vidHeight;
-			if ( windowAspect >= renderAspect ) 
+			scaleMode = r_renderScale->integer - 1;
+			if ( scaleMode & 1 )
 			{
-				float scale = (float) windowHeight / ( float ) glConfig.vidHeight;
-				int bias = ( windowWidth - scale * (float) glConfig.vidWidth ) / 2;
-				blitX0 += bias;
-				blitX1 -= bias;
+				// preserve aspect ratio (black bars on sides)
+				float windowAspect = (float) windowWidth / (float) windowHeight;
+				float renderAspect = (float) glConfig.vidWidth / (float) glConfig.vidHeight;
+				if ( windowAspect >= renderAspect ) 
+				{
+					float scale = (float) windowHeight / ( float ) glConfig.vidHeight;
+					int bias = ( windowWidth - scale * (float) glConfig.vidWidth ) / 2;
+					blitX0 += bias;
+					blitX1 -= bias;
+				}
+				else
+				{
+					float scale = (float) windowWidth / ( float ) glConfig.vidWidth;
+					int bias = ( windowHeight - scale * (float) glConfig.vidHeight ) / 2;
+					blitY0 += bias;
+					blitY1 -= bias;
+				}
 			}
+			// linear filtering
+			if ( scaleMode & 2 )
+				blitFilter = GL_LINEAR;
 			else
-			{
-				float scale = (float) windowWidth / ( float ) glConfig.vidWidth;
-				int bias = ( windowHeight - scale * (float) glConfig.vidHeight ) / 2;
-				blitY0 += bias;
-				blitY1 -= bias;
-			}
+				blitFilter = GL_NEAREST;
 		}
-		// linear filtering
-		if ( scaleMode & 2 )
-			blitFilter = GL_LINEAR;
-		else
-			blitFilter = GL_NEAREST;
 
 		windowAdjusted = qtrue;
 	}
@@ -2159,6 +2186,7 @@ void QGL_DoneFBO( void )
 		FBO_Clean(&frameBuffers[1]);
 		FBO_Clean(&frameBuffers[2]);
 		FBO_Clean(&frameBuffers[3]);
+		FBO_Clean(&frameBuffers[4]);
 		FBO_CleanBloom();
 		FBO_CleanDepth();
 		fboEnabled = qfalse;
@@ -2221,6 +2249,11 @@ void QGL_InitFBO( void )
 			&& FBO_Create( &frameBuffers[ 1 ], w, h, qtrue, NULL, NULL )
 			&& FBO_Create( &frameBuffers[ 2 ], SCR_SZ, SCR_SZ, qfalse, NULL, NULL )
 			&& FBO_Create( &frameBuffers[ 3 ], SCR_SZ, SCR_SZ, qfalse, NULL, NULL );
+	}
+
+	if ( result && tr.superSampled )
+	{
+		result &= FBO_Create( &frameBuffers[ 4 ], tr.captureWidth, tr.captureHeight, qfalse, NULL, NULL );
 	}
 
 	if ( result )

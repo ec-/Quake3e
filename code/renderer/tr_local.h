@@ -1082,6 +1082,8 @@ typedef struct {
 
 	int						captureWidth;
 	int						captureHeight;
+	qboolean				superSampled;
+
 } trGlobals_t;
 
 extern backEndState_t	backEnd;
@@ -1496,6 +1498,7 @@ extern qboolean		blitMSfbo;
 void FBO_BindMain( void );
 void FBO_PostProcess( void );
 void FBO_BlitMS( qboolean depthOnly );
+void FBO_BlitSS( void );
 qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalPass );
 void FBO_CopyScreen( void );
 GLuint FBO_ScreenTexture( void );

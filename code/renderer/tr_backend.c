@@ -1428,6 +1428,11 @@ static const void *RB_SwapBuffers( const void *data ) {
 	FBO_PostProcess();
 
 	if ( backEnd.screenshotMask && tr.frameCount > 1 ) {
+
+		if ( tr.superSampled ) {
+			FBO_BlitSS();
+		}
+
 		if ( backEnd.screenshotMask & SCREENSHOT_TGA && backEnd.screenshotTGA[0] ) {
 			RB_TakeScreenshot( 0, 0, tr.captureWidth, tr.captureHeight, backEnd.screenshotTGA );
 			if ( !backEnd.screenShotTGAsilent ) {
