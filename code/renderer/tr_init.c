@@ -468,10 +468,10 @@ static void InitOpenGL( void )
 		if ( glConfig.numTextureUnits && max_bind_units > 0 )
 			glConfig.numTextureUnits = max_bind_units;
 		
-		tr.captureWidth = glConfig.vidWidth;
-		tr.captureHeight = glConfig.vidHeight;
+		captureWidth = glConfig.vidWidth;
+		captureHeight = glConfig.vidHeight;
 
-		ri.CL_SetScaling( 1.0, tr.captureWidth, tr.captureHeight );
+		ri.CL_SetScaling( 1.0, captureWidth, captureHeight );
 
 		QGL_InitARB();
 

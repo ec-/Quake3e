@@ -1080,10 +1080,6 @@ typedef struct {
 	qboolean				mapLoading;
 	qboolean				needScreenMap;
 
-	int						captureWidth;
-	int						captureHeight;
-	qboolean				superSampled;
-
 } trGlobals_t;
 
 extern backEndState_t	backEnd;
@@ -1094,6 +1090,10 @@ extern glstate_t	glState;		// outside of TR since it shouldn't be cleared during
 extern	int					windowWidth;
 extern	int					windowHeight;
 extern	qboolean			windowAdjusted;
+
+extern	int					captureWidth;
+extern	int					captureHeight;
+extern	qboolean			superSampled;
 
 //
 // cvars

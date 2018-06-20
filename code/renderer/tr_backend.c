@@ -1429,24 +1429,24 @@ static const void *RB_SwapBuffers( const void *data ) {
 
 	if ( backEnd.screenshotMask && tr.frameCount > 1 ) {
 
-		if ( tr.superSampled ) {
+		if ( superSampled ) {
 			FBO_BlitSS();
 		}
 
 		if ( backEnd.screenshotMask & SCREENSHOT_TGA && backEnd.screenshotTGA[0] ) {
-			RB_TakeScreenshot( 0, 0, tr.captureWidth, tr.captureHeight, backEnd.screenshotTGA );
+			RB_TakeScreenshot( 0, 0, captureWidth, captureHeight, backEnd.screenshotTGA );
 			if ( !backEnd.screenShotTGAsilent ) {
 				ri.Printf( PRINT_ALL, "Wrote %s\n", backEnd.screenshotTGA );
 			}
 		}
 		if ( backEnd.screenshotMask & SCREENSHOT_JPG && backEnd.screenshotJPG[0] ) {
-			RB_TakeScreenshotJPEG( 0, 0, tr.captureWidth, tr.captureHeight, backEnd.screenshotJPG );
+			RB_TakeScreenshotJPEG( 0, 0, captureWidth, captureHeight, backEnd.screenshotJPG );
 			if ( !backEnd.screenShotJPGsilent ) {
 				ri.Printf( PRINT_ALL, "Wrote %s\n", backEnd.screenshotJPG );
 			}
 		}
 		if ( backEnd.screenshotMask & SCREENSHOT_BMP && ( backEnd.screenshotBMP[0] || ( backEnd.screenshotMask & SCREENSHOT_BMP_CLIPBOARD ) ) ) {
-			RB_TakeScreenshotBMP( 0, 0, tr.captureWidth, tr.captureHeight, backEnd.screenshotBMP, backEnd.screenshotMask & SCREENSHOT_BMP_CLIPBOARD );
+			RB_TakeScreenshotBMP( 0, 0, captureWidth, captureHeight, backEnd.screenshotBMP, backEnd.screenshotMask & SCREENSHOT_BMP_CLIPBOARD );
 			if ( !backEnd.screenShotBMPsilent ) {
 				ri.Printf( PRINT_ALL, "Wrote %s\n", backEnd.screenshotBMP );
 			}

@@ -40,6 +40,10 @@ int		blitY0, blitY1;
 int		blitClear;
 GLenum	blitFilter;
 
+int		captureWidth;
+int		captureHeight;
+qboolean superSampled;
+
 typedef struct frameBuffer_s {
 	GLuint fbo;
 	GLuint color;			// renderbuffer if multisampled
@@ -2102,6 +2106,8 @@ static void QGL_EarlyInitFBO( void )
 	blitX1 = windowWidth;
 	blitY1 = windowHeight;
 
+	superSampled = qfalse;
+
 	if ( !programAvailable || !qglGenFramebuffers || !qglBlitFramebuffer )
 		return;
 
@@ -2118,16 +2124,17 @@ static void QGL_EarlyInitFBO( void )
 	{
 		glConfig.vidWidth = r_renderWidth->integer;
 		glConfig.vidHeight = r_renderHeight->integer;
-		tr.captureWidth = glConfig.vidWidth;
-		tr.captureHeight = glConfig.vidHeight;
 	}
+
+	captureWidth = glConfig.vidWidth;
+	captureHeight = glConfig.vidHeight;
 
 	if ( r_ext_supersample->integer )
 	{
 		glConfig.vidWidth *= 2;
 		glConfig.vidHeight *= 2;
-		tr.superSampled = qtrue;
-		ri.CL_SetScaling( 2.0, tr.captureWidth, tr.captureHeight );
+		superSampled = qtrue;
+		ri.CL_SetScaling( 2.0, captureWidth, captureHeight );
 		blitFilter = GL_LINEAR; // default value for (r_renderScale==0) case
 	}
 
@@ -2251,9 +2258,9 @@ void QGL_InitFBO( void )
 			&& FBO_Create( &frameBuffers[ 3 ], SCR_SZ, SCR_SZ, qfalse, NULL, NULL );
 	}
 
-	if ( result && tr.superSampled )
+	if ( result && superSampled )
 	{
-		result &= FBO_Create( &frameBuffers[ 4 ], tr.captureWidth, tr.captureHeight, qfalse, NULL, NULL );
+		result &= FBO_Create( &frameBuffers[ 4 ], captureWidth, captureHeight, qfalse, NULL, NULL );
 	}
 
 	if ( result )
