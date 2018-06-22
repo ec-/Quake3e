@@ -1388,14 +1388,24 @@ static const void *RB_FinishBloom( const void *data )
 {
 	const finishBloomCommand_t *cmd = data;
 
-	if ( r_bloom->integer && fboEnabled )
+	if ( fboEnabled )
 	{
-		if ( !backEnd.doneBloom && backEnd.doneSurfaces )
+		// let's always render console with the same quality
+		if ( blitMSfbo )
 		{
-			if ( !backEnd.projection2D )
-				RB_SetGL2D();
-			qglColor4f( 1, 1, 1, 1 );
-			FBO_Bloom( 0, 0, qfalse );
+			FBO_BlitMS( qfalse );
+			blitMSfbo = qfalse;
+		}
+
+		if ( r_bloom->integer )
+		{
+			if ( !backEnd.doneBloom && backEnd.doneSurfaces )
+			{
+				if ( !backEnd.projection2D )
+					RB_SetGL2D();
+				qglColor4f( 1, 1, 1, 1 );
+				FBO_Bloom( 0, 0, qfalse );
+			}
 		}
 	}
 
@@ -1425,7 +1435,9 @@ static const void *RB_SwapBuffers( const void *data ) {
 		qglFinish();
 	}
 
-	FBO_PostProcess();
+	if ( fboEnabled ) {
+		FBO_PostProcess();
+	}
 
 	if ( backEnd.screenshotMask && tr.frameCount > 1 ) {
 
