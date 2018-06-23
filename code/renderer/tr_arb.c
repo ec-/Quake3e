@@ -1732,6 +1732,9 @@ void FBO_CopyScreen( void )
 	const frameBuffer_t *dst;
 	const frameBuffer_t *src;
 
+	qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
+	qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
+
 	// resolve multisample buffer first
 	if ( blitMSfbo )
 	{
@@ -1746,12 +1749,14 @@ void FBO_CopyScreen( void )
 	dst = &frameBuffers[ 2 ];
 	FBO_Bind( GL_READ_FRAMEBUFFER, src->fbo );
 	FBO_Bind( GL_DRAW_FRAMEBUFFER, dst->fbo );
-	qglBlitFramebuffer( 0, 0, src->width, src->height, 0, 0, dst->width, dst->height, GL_COLOR_BUFFER_BIT, GL_LINEAR );
+
+	qglBlitFramebuffer( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY,
+		backEnd.viewParms.viewportWidth + backEnd.viewParms.viewportX,
+		backEnd.viewParms.viewportHeight + backEnd.viewParms.viewportY,
+		0, 0, dst->width, dst->height, GL_COLOR_BUFFER_BIT, GL_LINEAR );
 
 	//if ( !backEnd.projection2D )
 	{
-		qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
-		qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
 		qglMatrixMode( GL_PROJECTION );
 		qglLoadIdentity();
 		qglOrtho( 0, glConfig.vidWidth, glConfig.vidHeight, 0, 0, 1 );
@@ -1765,6 +1770,7 @@ void FBO_CopyScreen( void )
 	GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
 	FBO_Blur2( dst, dst+1, dst );
 	ARB_ProgramDisable();
+
 	//restore viewport and scissor
 	qglViewport( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY,
 		backEnd.viewParms.viewportWidth, backEnd.viewParms.viewportHeight ); 
