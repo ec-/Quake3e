@@ -1222,12 +1222,6 @@ static const void *RB_DrawSurfs( const void *data ) {
 
 	VBO_UnBind();
 
-	if ( !backEnd.doneSurfaces && tr.needScreenMap ) {
-		if ( backEnd.viewParms.frameSceneNum == 1 ) {
-			FBO_CopyScreen();
-		}
-	}
-
 	if ( r_drawSun->integer ) {
 		RB_DrawSun( 0.1f, tr.sunShader );
 	}
@@ -1244,6 +1238,12 @@ static const void *RB_DrawSurfs( const void *data ) {
 		RB_LightingPass();
 	}
 #endif
+
+	if ( !backEnd.doneSurfaces && tr.needScreenMap ) {
+		if ( backEnd.viewParms.frameSceneNum == 1 ) {
+			FBO_CopyScreen();
+		}
+	}
 
 	//TODO Maybe check for rdf_noworld stuff but q3mme has full 3d ui
 	backEnd.doneSurfaces = qtrue; // for bloom

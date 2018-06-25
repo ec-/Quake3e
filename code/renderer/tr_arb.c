@@ -5,6 +5,10 @@
 //#define DEPTH_RENDER_BUFFER
 //#define USE_FBO_BLIT
 
+// screenMap texture dimensions
+#define SCR_WIDTH 128
+#define SCR_HEIGHT 64
+
 #define BLOOM_BASE 5
 #define FBO_COUNT (BLOOM_BASE+(MAX_BLUR_PASSES*2))
 
@@ -1731,6 +1735,7 @@ void FBO_CopyScreen( void )
 {
 	const frameBuffer_t *dst;
 	const frameBuffer_t *src;
+	int yCrop;
 
 	qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
 	qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
@@ -1750,7 +1755,9 @@ void FBO_CopyScreen( void )
 	FBO_Bind( GL_READ_FRAMEBUFFER, src->fbo );
 	FBO_Bind( GL_DRAW_FRAMEBUFFER, dst->fbo );
 
-	qglBlitFramebuffer( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY,
+	yCrop = backEnd.viewParms.viewportHeight / 4;
+
+	qglBlitFramebuffer( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY + yCrop,
 		backEnd.viewParms.viewportWidth + backEnd.viewParms.viewportX,
 		backEnd.viewParms.viewportHeight + backEnd.viewParms.viewportY,
 		0, 0, dst->width, dst->height, GL_COLOR_BUFFER_BIT, GL_LINEAR );
@@ -2209,7 +2216,6 @@ void QGL_DoneFBO( void )
 	}
 }
 
-#define SCR_SZ 128
 
 void QGL_InitFBO( void )
 {
@@ -2254,16 +2260,16 @@ void QGL_InitFBO( void )
 			depthStencil = qfalse;
 		result = FBO_Create( &frameBuffers[ 0 ], w, h, depthStencil, &fboTextureFormat, &fboTextureType )
 			&& FBO_Create( &frameBuffers[ 1 ], w, h, depthStencil, NULL, NULL )
-			&& FBO_Create( &frameBuffers[ 2 ], SCR_SZ, SCR_SZ, qfalse, NULL, NULL )
-			&& FBO_Create( &frameBuffers[ 3 ], SCR_SZ, SCR_SZ, qfalse, NULL, NULL );
+			&& FBO_Create( &frameBuffers[ 2 ], SCR_WIDTH, SCR_HEIGHT, qfalse, NULL, NULL )
+			&& FBO_Create( &frameBuffers[ 3 ], SCR_WIDTH, SCR_HEIGHT, qfalse, NULL, NULL );
 		frameBufferMultiSampling = result;
 	}
 	else
 	{
 		result = FBO_Create( &frameBuffers[ 0 ], w, h, qtrue, &fboTextureFormat, &fboTextureType )
 			&& FBO_Create( &frameBuffers[ 1 ], w, h, qtrue, NULL, NULL )
-			&& FBO_Create( &frameBuffers[ 2 ], SCR_SZ, SCR_SZ, qfalse, NULL, NULL )
-			&& FBO_Create( &frameBuffers[ 3 ], SCR_SZ, SCR_SZ, qfalse, NULL, NULL );
+			&& FBO_Create( &frameBuffers[ 2 ], SCR_WIDTH, SCR_HEIGHT, qfalse, NULL, NULL )
+			&& FBO_Create( &frameBuffers[ 3 ], SCR_WIDTH, SCR_HEIGHT, qfalse, NULL, NULL );
 	}
 
 	if ( result && superSampled )

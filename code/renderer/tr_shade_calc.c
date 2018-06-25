@@ -970,7 +970,7 @@ static void RB_CalcEnvironmentTexCoordsFPscr( float *st ) {
 		VectorSubtract( backEnd.or.viewOrigin, v, viewer );
 		VectorNormalizeFast( viewer );
 
-		d = DotProduct( normal, viewer ) * 0.8;
+		d = DotProduct( normal, viewer );
 
 		reflected[1] = normal[1]*2*d - viewer[1];
 		reflected[2] = normal[2]*2*d - viewer[2];
