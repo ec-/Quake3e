@@ -448,6 +448,7 @@ static void RB_BeginDrawingView( void ) {
 		qglFinish();
 		glState.finishCalled = qtrue;
 	}
+
 	if ( r_finish->integer == 0 ) {
 		glState.finishCalled = qtrue;
 	}
@@ -998,8 +999,9 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *
 		VBO_UnBind();
 	}
 
-	// sync with gl if needed
-	if ( r_finish->integer == 1 ) {
+	if ( backEnd.doneSurfaces ) {
+		// make sure that we rendered some surfaces before
+		// otherwise some (Intel GMA) drivers may stuck between two consecutive glFinish calls
 		qglFinish();
 	}
 
@@ -1300,9 +1302,7 @@ void RB_ShowImages( void ) {
 
 	qglClear( GL_COLOR_BUFFER_BIT );
 
-	if ( r_finish->integer == 1 ) {
-		qglFinish();
-	}
+	qglFinish();
 
 	start = ri.Milliseconds();
 
@@ -1333,9 +1333,7 @@ void RB_ShowImages( void ) {
 		qglEnd();
 	}
 
-	if ( r_finish->integer == 1 ) {
-		qglFinish();
-	}
+	qglFinish();
 
 	end = ri.Milliseconds();
 	ri.Printf( PRINT_ALL, "%i msec to draw all images\n", end - start );
@@ -1431,7 +1429,7 @@ static const void *RB_SwapBuffers( const void *data ) {
 
 	cmd = (const swapBuffersCommand_t *)data;
 
-	if ( r_finish->integer == 1 && !glState.finishCalled ) {
+	if ( backEnd.doneSurfaces && !glState.finishCalled ) {
 		qglFinish();
 	}
 
