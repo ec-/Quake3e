@@ -131,17 +131,11 @@ S_Base_SoundList
 */
 static void S_Base_SoundList( void ) {
 	int		i;
-	sfx_t	*sfx;
+	const sfx_t *sfx;
 	int		size, total;
-	char	type[4][16];
-	char	mem[2][16];
+	const char *type[4] = { "16bit", "adpcm", "daub4", "mulaw" };
+	const char *mem[2] = { "paged out", "resident " };
 
-	strcpy(type[0], "16bit");
-	strcpy(type[1], "adpcm");
-	strcpy(type[2], "daub4");
-	strcpy(type[3], "mulaw");
-	strcpy(mem[0], "paged out");
-	strcpy(mem[1], "resident ");
 	total = 0;
 	for (sfx=s_knownSfx, i=0 ; i<s_numSfx ; i++, sfx++) {
 		size = sfx->soundLength;
@@ -423,11 +417,11 @@ static void S_SpatializeOrigin( const vec3_t origin, int master_vol, int *left_v
 	{
 		rscale = 0.5 * (1.0 + dot);
 		lscale = 0.5 * (1.0 - dot);
-		if ( rscale < 0 ) {
-			rscale = 0;
+		if ( rscale < 0.0 ) {
+			rscale = 0.0;
 		}
-		if ( lscale < 0 ) {
-			lscale = 0;
+		if ( lscale < 0.0 ) {
+			lscale = 0.0;
 		}
 	}
 
@@ -547,7 +541,7 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 		oldest = sfx->lastTimeUsed;
 		chosen = -1;
 		for ( i = 0 ; i < MAX_CHANNELS ; i++, ch++ ) {
-			if (ch->entnum != listener_number && ch->entnum == entityNum && ch->allocTime<oldest && ch->entchannel != CHAN_ANNOUNCER) {
+			if (ch->entnum != listener_number && ch->entnum == entityNum && ch->allocTime - oldest < 0 && ch->entchannel != CHAN_ANNOUNCER) {
 				oldest = ch->allocTime;
 				chosen = i;
 			}
@@ -555,7 +549,7 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 		if (chosen == -1) {
 			ch = s_channels;
 			for ( i = 0 ; i < MAX_CHANNELS ; i++, ch++ ) {
-				if (ch->entnum != listener_number && ch->allocTime<oldest && ch->entchannel != CHAN_ANNOUNCER) {
+				if (ch->entnum != listener_number && ch->allocTime - oldest < 0 && ch->entchannel != CHAN_ANNOUNCER) {
 					oldest = ch->allocTime;
 					chosen = i;
 				}
@@ -564,7 +558,7 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 				ch = s_channels;
 				if (ch->entnum == listener_number) {
 					for ( i = 0 ; i < MAX_CHANNELS ; i++, ch++ ) {
-						if (ch->allocTime<oldest) {
+						if ( ch->allocTime - oldest < 0 ) {
 							oldest = ch->allocTime;
 							chosen = i;
 						}
@@ -1422,9 +1416,9 @@ void S_FreeOldestSound( void ) {
 	oldest = Com_Milliseconds();
 	used = 0;
 
-	for (i=1 ; i < s_numSfx ; i++) {
+	for ( i = 1 ; i < s_numSfx ; i++ ) {
 		sfx = &s_knownSfx[i];
-		if (sfx->inMemory && sfx->lastTimeUsed<oldest) {
+		if ( sfx->inMemory && sfx->lastTimeUsed - oldest < 0 ) {
 			used = i;
 			oldest = sfx->lastTimeUsed;
 		}
