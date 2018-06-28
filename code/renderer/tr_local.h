@@ -44,6 +44,7 @@ typedef unsigned int glIndex_t;
 // see QSORT_SHADERNUM_SHIFT
 #define SHADERNUM_BITS	14
 #define MAX_SHADERS		(1<<SHADERNUM_BITS)
+#define SHADERNUM_MASK	(MAX_SHADERS-1)
 
 typedef struct dlight_s {
 	vec3_t	origin;

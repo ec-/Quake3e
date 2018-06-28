@@ -1238,13 +1238,30 @@ void SV_TrackCvarChanges( void )
 SV_Restart
 ==================
 */
-static void SV_Restart( const char *reason )
-{
+static void SV_Restart( const char *reason ) {
+	qboolean sv_shutdown = qfalse;
 	char mapName[ MAX_CVAR_VALUE_STRING ];
+	int i;
+
+	if ( svs.clients ) {
+		// check if we can reset map time without full server shutdown
+		for ( i = 0; i < sv_maxclients->integer; i++ ) {
+			if ( svs.clients[i].state >= CS_CONNECTED ) {
+				sv_shutdown = qtrue;
+				break;
+			}
+		}
+	}
+
 	sv.time = 0; // force level time reset
 	sv.restartTime = 0;
+	
 	Cvar_VariableStringBuffer( "mapname", mapName, sizeof( mapName ) );
-	SV_Shutdown( reason );
+	
+	if ( sv_shutdown ) {
+		SV_Shutdown( reason );
+	}
+
 	Cbuf_AddText( va( "map %s\n", mapName ) );
 }
 
@@ -1312,8 +1329,9 @@ void SV_Frame( int msec ) {
 		SV_Restart( "Restarting server due to time wrapping" );
 		return;
 	}
+
 	// try to do silent restart earlier if possible
-	if ( sv.time > 0x40000000 || ( sv.time > (12*3600*1000) && sv_levelTimeReset->integer == 0 ) ) {
+	if ( sv.time > (12*3600*1000) && ( sv_levelTimeReset->integer == 0 || sv.time > 0x40000000 ) ) {
 		n = 0;
 		if ( svs.clients ) {
 			for ( i = 0; i < sv_maxclients->integer; i++ ) {
