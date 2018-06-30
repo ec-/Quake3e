@@ -70,7 +70,7 @@ void RB_CheckOverflow( int verts, int indexes ) {
 RB_AddQuadStampExt
 ==============
 */
-void RB_AddQuadStampExt( vec3_t origin, vec3_t left, vec3_t up, byte *color, float s1, float t1, float s2, float t2 ) {
+void RB_AddQuadStampExt( const vec3_t origin, const vec3_t left, const vec3_t up, const byte *color, float s1, float t1, float s2, float t2 ) {
 	vec3_t		normal;
 	int			ndx;
 
@@ -146,7 +146,7 @@ void RB_AddQuadStampExt( vec3_t origin, vec3_t left, vec3_t up, byte *color, flo
 RB_AddQuadStamp
 ==============
 */
-void RB_AddQuadStamp( vec3_t origin, vec3_t left, vec3_t up, byte *color ) {
+void RB_AddQuadStamp( const vec3_t origin, const vec3_t left, const vec3_t up, const byte *color ) {
 	RB_AddQuadStampExt( origin, left, up, color, 0, 0, 1, 1 );
 }
 
@@ -313,7 +313,6 @@ static void RB_SurfaceTriangles( srfTriangles_t *srf ) {
 }
 
 
-
 /*
 ==============
 RB_SurfaceBeam
@@ -322,7 +321,7 @@ RB_SurfaceBeam
 static void RB_SurfaceBeam( void )
 {
 #define NUM_BEAM_SEGS 6
-	refEntity_t *e;
+	const refEntity_t *e;
 	int	i;
 	vec3_t perpvec;
 	vec3_t direction, normalized_direction;
@@ -428,6 +427,7 @@ static void DoRailCore( const vec3_t start, const vec3_t end, const vec3_t up, f
 	tess.indexes[tess.numIndexes++] = vbase + 3;
 }
 
+
 static void DoRailDiscs( int numSegs, const vec3_t start, const vec3_t dir, const vec3_t right, const vec3_t up )
 {
 	int i;
@@ -488,11 +488,12 @@ static void DoRailDiscs( int numSegs, const vec3_t start, const vec3_t dir, cons
 	}
 }
 
+
 /*
 ** RB_SurfaceRailRinges
 */
 static void RB_SurfaceRailRings( void ) {
-	refEntity_t *e;
+	const refEntity_t *e;
 	int			numSegs;
 	int			len;
 	vec3_t		vec;
@@ -518,11 +519,12 @@ static void RB_SurfaceRailRings( void ) {
 	DoRailDiscs( numSegs, start, vec, right, up );
 }
 
+
 /*
 ** RB_SurfaceRailCore
 */
 static void RB_SurfaceRailCore( void ) {
-	refEntity_t *e;
+	const refEntity_t *e;
 	int			len;
 	vec3_t		right;
 	vec3_t		vec;
@@ -548,11 +550,12 @@ static void RB_SurfaceRailCore( void ) {
 	DoRailCore( start, end, right, len, r_railCoreWidth->integer );
 }
 
+
 /*
 ** RB_SurfaceLightningBolt
 */
 static void RB_SurfaceLightningBolt( void ) {
-	refEntity_t *e;
+	const refEntity_t *e;
 	int			len;
 	vec3_t		right;
 	vec3_t		vec;
@@ -586,6 +589,7 @@ static void RB_SurfaceLightningBolt( void ) {
 	}
 }
 
+
 /*
 ** VectorArrayNormalize
 *
@@ -601,7 +605,6 @@ static void VectorArrayNormalize(vec4_t *normals, unsigned int count)
         normals++;
     }
 }
-
 
 
 /*
@@ -704,6 +707,7 @@ static void LerpMeshVertexes_scalar(md3Surface_t *surf, float backlerp)
     	VectorArrayNormalize((vec4_t *)tess.normal[tess.numVertexes], numVerts);
    	}
 }
+
 
 static void LerpMeshVertexes(md3Surface_t *surf, float backlerp)
 {

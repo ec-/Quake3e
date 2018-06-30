@@ -151,12 +151,13 @@ vec_t	WindingArea (winding_t *w)
 	return total;
 }
 
+
 /*
 =============
 WindingBounds
 =============
 */
-void	WindingBounds (winding_t *w, vec3_t mins, vec3_t maxs)
+void WindingBounds( const winding_t *w, vec3_t mins, vec3_t maxs )
 {
 	vec_t	v;
 	int		i,j;
@@ -425,7 +426,7 @@ void	ClipWindingEpsilon (winding_t *in, vec3_t normal, vec_t dist,
 ChopWindingInPlace
 =============
 */
-void ChopWindingInPlace (winding_t **inout, vec3_t normal, vec_t dist, vec_t epsilon)
+void ChopWindingInPlace( winding_t **inout, const vec3_t normal, vec_t dist, vec_t epsilon )
 {
 	winding_t	*in;
 	vec_t	dists[MAX_POINTS_ON_WINDING+4];
@@ -618,7 +619,7 @@ void CheckWinding (winding_t *w)
 WindingOnPlaneSide
 ============
 */
-int		WindingOnPlaneSide (winding_t *w, vec3_t normal, vec_t dist)
+int WindingOnPlaneSide( const winding_t *w, vec3_t normal, vec_t dist )
 {
 	qboolean	front, back;
 	int			i;

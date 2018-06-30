@@ -435,7 +435,7 @@ static	facet_t			facets[MAX_FACETS];
 CM_PlaneEqual
 ==================
 */
-static qboolean CM_PlaneEqual( const patchPlane_t *p, float plane[4], int *flipped ) {
+static qboolean CM_PlaneEqual( const patchPlane_t *p, const float plane[4], int *flipped ) {
 	float invplane[4];
 
 	if (
@@ -496,7 +496,7 @@ static void CM_SnapVector( vec3_t normal ) {
 CM_FindPlane2
 ==================
 */
-static int CM_FindPlane2( float plane[4], int *flipped ) {
+static int CM_FindPlane2( const float plane[4], int *flipped ) {
 	int i;
 
 	// see if the points are close enough to an existing plane
@@ -629,8 +629,8 @@ static int	CM_GridPlane( int gridPlanes[MAX_GRID_SIZE][MAX_GRID_SIZE][2], int i,
 CM_EdgePlaneNum
 ==================
 */
-static int CM_EdgePlaneNum( cGrid_t *grid, int gridPlanes[MAX_GRID_SIZE][MAX_GRID_SIZE][2], int i, int j, int k ) {
-	float	*p1, *p2;
+static int CM_EdgePlaneNum( const cGrid_t *grid, int gridPlanes[MAX_GRID_SIZE][MAX_GRID_SIZE][2], int i, int j, int k ) {
+	const float *p1, *p2;
 	vec3_t		up;
 	int			p;
 
@@ -707,10 +707,10 @@ static int CM_EdgePlaneNum( cGrid_t *grid, int gridPlanes[MAX_GRID_SIZE][MAX_GRI
 CM_SetBorderInward
 ===================
 */
-static void CM_SetBorderInward( facet_t *facet, cGrid_t *grid, int gridPlanes[MAX_GRID_SIZE][MAX_GRID_SIZE][2],
+static void CM_SetBorderInward( facet_t *facet, const cGrid_t *grid, int gridPlanes[MAX_GRID_SIZE][MAX_GRID_SIZE][2],
 						  int i, int j, int which ) {
 	int		k, l;
-	float	*points[4];
+	const float *points[4];
 	int		numPoints;
 
 	switch ( which ) {
@@ -1025,9 +1025,9 @@ typedef enum {
 CM_PatchCollideFromGrid
 ==================
 */
-static void CM_PatchCollideFromGrid( cGrid_t *grid, patchCollide_t *pf ) {
+static void CM_PatchCollideFromGrid( const cGrid_t *grid, patchCollide_t *pf ) {
 	int				i, j;
-	float			*p1, *p2, *p3;
+	const float		*p1, *p2, *p3;
 	int				gridPlanes[MAX_GRID_SIZE][MAX_GRID_SIZE][2];
 	facet_t			*facet;
 	int				borders[4];

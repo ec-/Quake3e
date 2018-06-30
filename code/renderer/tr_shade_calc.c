@@ -1041,7 +1041,7 @@ void RB_CalcEnvironmentTexCoordsFP( float *st, qboolean screenMap ) {
 void RB_CalcEnvironmentTexCoords( float *st )
 {
 	int			i;
-	float		*v, *normal;
+	const float *v, *normal;
 	vec3_t		viewer, reflected;
 	float		d;
 
@@ -1184,7 +1184,7 @@ vec3_t lightOrigin = { -960, 1980, 96 };		// FIXME: track dynamically
 
 void RB_CalcSpecularAlpha( unsigned char *alphas ) {
 	int			i;
-	float		*v, *normal;
+	const float *v, *normal;
 	vec3_t		viewer,  reflected;
 	float		l, d;
 	int			b;
@@ -1245,7 +1245,7 @@ static void RB_CalcDiffuseColor_scalar( unsigned char *colors )
 	int				i, j;
 	float			*v, *normal;
 	float			incoming;
-	trRefEntity_t	*ent;
+	const trRefEntity_t *ent;
 	int				ambientLightInt;
 	vec3_t			ambientLight;
 	vec3_t			lightDir;

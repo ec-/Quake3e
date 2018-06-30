@@ -684,7 +684,7 @@ void R_ComputeColors( const shaderStage_t *pStage )
 			break;
 		case CGEN_FOG:
 			{
-				fog_t		*fog;
+				const fog_t *fog;
 
 				fog = tr.world->fogs + tess.fogNum;
 
@@ -979,6 +979,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 				//GL_State( pStage->stateBits &= ~GLS_DEPTHMASK_TRUE );
 			}
 		}
+
 		// allow skipping out to show just lightmaps during development
 		if ( r_lightmap->integer && ( pStage->bundle[0].isLightmap || pStage->bundle[1].isLightmap ) )
 			break;
