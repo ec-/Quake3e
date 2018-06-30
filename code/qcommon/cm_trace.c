@@ -41,7 +41,7 @@ BASIC MATH
 RotatePoint
 ================
 */
-static void RotatePoint( vec3_t point, const vec3_t matrix[3] ) {
+static void RotatePoint( vec3_t point, /*const*/ vec3_t matrix[3] ) {
 	vec3_t tvec;
 
 	VectorCopy(point, tvec);
@@ -56,7 +56,7 @@ static void RotatePoint( vec3_t point, const vec3_t matrix[3] ) {
 TransposeMatrix
 ================
 */
-void TransposeMatrix( const vec3_t matrix[3], vec3_t transpose[3] ) {
+static void TransposeMatrix( /*const*/ vec3_t matrix[3], vec3_t transpose[3] ) {
 	int i, j;
 	for (i = 0; i < 3; i++) {
 		for (j = 0; j < 3; j++) {
