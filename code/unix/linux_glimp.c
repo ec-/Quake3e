@@ -1707,7 +1707,7 @@ char *Sys_GetClipboardData( void )
 	XSync( dpy, False );
 	XNextEvent( dpy, &ev );
 	if ( !XFilterEvent( &ev, None ) && ev.type == SelectionNotify ) {
-		if ( XGetWindowProperty( dpy, win, XA_PRIMARY, 0, 8, False, AnyPropertyType,
+		if ( XGetWindowProperty( dpy, win, XA_PRIMARY, 0, MAX_EDIT_LINE/4, False, AnyPropertyType,
 			&type, &format, &nitems, &rem, &data ) == 0 ) {
 			if ( format == 8 ) {
 				if ( nitems > 0 ) {
