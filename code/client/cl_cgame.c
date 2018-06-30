@@ -1000,6 +1000,7 @@ static void CL_FirstSnapshot( void ) {
 	// after loading
 	if ( cl_activeAction->string[0] ) {
 		Cbuf_AddText( cl_activeAction->string );
+		Cbuf_AddText( "\n" );
 		Cvar_Set( "activeAction", "" );
 	}
 	
@@ -1097,7 +1098,7 @@ void CL_SetCGameTime( void ) {
 		if ( cls.state != CA_ACTIVE ) {
 			return;
 		}
-	}	
+	}
 
 	// if we have gotten to this point, cl.snap is guaranteed to be valid
 	if ( !cl.snap.valid ) {
