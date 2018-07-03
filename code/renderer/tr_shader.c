@@ -2014,6 +2014,7 @@ static collapse_t	collapse[] = {
 	{ -1 }
 };
 
+
 /*
 ================
 CollapseMultitexture
@@ -2022,7 +2023,7 @@ Attempt to combine two stages into a single multitexture stage
 FIXME: I think modulated add + modulated add collapses incorrectly
 =================
 */
-static qboolean CollapseMultitexture( void ) {
+static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, int num_stages ) {
 	int abits, bbits;
 	int i;
 	textureBundle_t tmpBundle;
@@ -2032,20 +2033,20 @@ static qboolean CollapseMultitexture( void ) {
 	}
 
 	// make sure both stages are active
-	if ( !stages[0].active || !stages[1].active ) {
+	if ( !st0->active || !st1->active ) {
 		return qfalse;
 	}
 
 	// on voodoo2, don't combine different tmus
 	if ( glConfig.driverType == GLDRV_VOODOO ) {
-		if ( stages[0].bundle[0].image[0]->TMU ==
-			 stages[1].bundle[0].image[0]->TMU ) {
+		if ( st0->bundle[0].image[0]->TMU ==
+			 st1->bundle[0].image[0]->TMU ) {
 			return qfalse;
 		}
 	}
 
-	abits = stages[0].stateBits;
-	bbits = stages[1].stateBits;
+	abits = st0->stateBits;
+	bbits = st1->stateBits;
 
 	// make sure that both stages have identical state other than blend modes
 	if ( ( abits & ~( GLS_DSTBLEND_BITS | GLS_SRCBLEND_BITS | GLS_DEPTHMASK_TRUE ) ) !=
@@ -2075,58 +2076,58 @@ static qboolean CollapseMultitexture( void ) {
 	}
 
 	// make sure waveforms have identical parameters
-	if ( ( stages[0].rgbGen != stages[1].rgbGen ) ||
-		( stages[0].alphaGen != stages[1].alphaGen ) )  {
+	if ( ( st0->rgbGen != st1->rgbGen ) || ( st0->alphaGen != st1->alphaGen ) ) {
 		return qfalse;
 	}
 
 	// an add collapse can only have identity colors
-	if ( collapse[i].multitextureEnv == GL_ADD && stages[0].rgbGen != CGEN_IDENTITY ) {
+	if ( collapse[i].multitextureEnv == GL_ADD && st0->rgbGen != CGEN_IDENTITY ) {
 		return qfalse;
 	}
 
-	if ( stages[0].rgbGen == CGEN_WAVEFORM )
+	if ( st0->rgbGen == CGEN_WAVEFORM )
 	{
-		if ( memcmp( &stages[0].rgbWave,
-					 &stages[1].rgbWave,
-					 sizeof( stages[0].rgbWave ) ) )
-		{
-			return qfalse;
-		}
-	}
-	if ( stages[0].alphaGen == AGEN_WAVEFORM )
-	{
-		if ( memcmp( &stages[0].alphaWave,
-					 &stages[1].alphaWave,
-					 sizeof( stages[0].alphaWave ) ) )
+		if ( memcmp( &st0->rgbWave, &st1->rgbWave, sizeof( stages[0].rgbWave ) ) )
 		{
 			return qfalse;
 		}
 	}
 
+	if ( st0->alphaGen == AGEN_WAVEFORM )
+	{
+		if ( memcmp( &st0->alphaWave, &st1->alphaWave, sizeof( stages[0].alphaWave ) ) )
+		{
+			return qfalse;
+		}
+	}
 
 	// make sure that lightmaps are in bundle 1 for 3dfx
-	if ( stages[0].bundle[0].isLightmap )
+	if ( st0->bundle[0].isLightmap )
 	{
-		tmpBundle = stages[0].bundle[0];
-		stages[0].bundle[0] = stages[1].bundle[0];
-		stages[0].bundle[1] = tmpBundle;
+		tmpBundle = st0->bundle[0];
+		st0->bundle[0] = st1->bundle[0];
+		st0->bundle[1] = tmpBundle;
 	}
 	else
 	{
-		stages[0].bundle[1] = stages[1].bundle[0];
+		st0->bundle[1] = st1->bundle[0];
 	}
 
 	// set the new blend state bits
-	shader.multitextureEnv = collapse[i].multitextureEnv;
-	stages[0].stateBits &= ~( GLS_DSTBLEND_BITS | GLS_SRCBLEND_BITS );
-	stages[0].stateBits |= collapse[i].multitextureBlend;
+	shader.multitextureEnv = qtrue;
+	st0->mtEnv = collapse[i].multitextureEnv;
+	st0->stateBits &= ~( GLS_DSTBLEND_BITS | GLS_SRCBLEND_BITS );
+	st0->stateBits |= collapse[i].multitextureBlend;
 
 	//
 	// move down subsequent shaders
 	//
-	memmove( &stages[1], &stages[2], sizeof( stages[0] ) * ( MAX_SHADER_STAGES - 2 ) );
-	Com_Memset( &stages[MAX_SHADER_STAGES-1], 0, sizeof( stages[0] ) );
+	if ( num_stages > 2 )
+	{
+		memmove( st1, st1+1, sizeof( stages[0] ) * ( num_stages - 2 ) );
+	} 
+
+	Com_Memset( st0 + num_stages - 1, 0, sizeof( stages[0] ) );
 
 	return qtrue;
 }
@@ -2224,6 +2225,7 @@ static void FixRenderCommandList( int newShader ) {
 	}
 }
 
+
 /*
 ==============
 SortNewShader
@@ -2278,12 +2280,6 @@ static shader_t *GeneratePermanentShader( void ) {
 	newShader = ri.Hunk_Alloc( sizeof( shader_t ), h_low );
 
 	*newShader = shader;
-
-	if ( shader.sort <= SS_OPAQUE ) {
-		newShader->fogPass = FP_EQUAL;
-	} else if ( shader.contentFlags & CONTENTS_FOG ) {
-		newShader->fogPass = FP_LE;
-	}
 
 	tr.shaders[ tr.numShaders ] = newShader;
 	newShader->index = tr.numShaders;
@@ -2362,12 +2358,14 @@ void FindLightingStages( shader_t *sh )
 	}
 
 	// check for collapsed multitexture with lightmap in first bundle
-	if ( sh->lightingStage == -1 && i == 1 && sh->multitextureEnv == GL_MODULATE ) {
+	if ( sh->lightingStage == -1 && i == 1 /*&& sh->multitextureEnv == GL_MODULATE*/ ) {
 		st = sh->stages[ 0 ];
-		if ( !st->bundle[0].isLightmap && st->bundle[1].image[0] && st->rgbGen == CGEN_IDENTITY ) {
-			if ( st->bundle[0].tcGen == TCGEN_LIGHTMAP && st->bundle[1].tcGen == TCGEN_TEXTURE ) {
-				sh->lightingStage = 0;
-				sh->lightingBundle = 1; // select second bundle for lighting pass
+		if ( st->mtEnv == GL_MODULATE ) {
+			if ( !st->bundle[0].isLightmap && st->bundle[1].image[0] && st->rgbGen == CGEN_IDENTITY ) {
+				if ( st->bundle[0].tcGen == TCGEN_LIGHTMAP && st->bundle[1].tcGen == TCGEN_TEXTURE ) {
+					sh->lightingStage = 0;
+					sh->lightingBundle = 1; // select second bundle for lighting pass
+				}
 			}
 		}
 	}
@@ -2497,9 +2495,9 @@ from the current global working shader
 =========================
 */
 static shader_t *FinishShader( void ) {
-	int stage;
-	qboolean		hasLightmapStage;
-	qboolean		vertexLightmap;
+	int			stage, i;
+	qboolean	hasLightmapStage;
+	qboolean	vertexLightmap;
 
 	hasLightmapStage = qfalse;
 	vertexLightmap = qfalse;
@@ -2528,7 +2526,7 @@ static shader_t *FinishShader( void ) {
 			break;
 		}
 
-    // check for a missing texture
+		// check for a missing texture
 		if ( !pStage->bundle[0].image[0] ) {
 			ri.Printf( PRINT_WARNING, "Shader %s has a stage with no image\n", shader.name );
 			pStage->active = qfalse;
@@ -2646,8 +2644,10 @@ static shader_t *FinishShader( void ) {
 	//
 	// look for multitexture potential
 	//
-	if ( stage > 1 && CollapseMultitexture() ) {
-		stage--;
+	for ( i = 0; i < stage-1; i++ ) {
+		if ( CollapseMultitexture( &stages[i+0], &stages[i+1], stage-i ) ) {
+			stage--;
+		}
 	}
 
 	if ( shader.lightmapIndex >= 0 && !hasLightmapStage ) {
@@ -2668,6 +2668,12 @@ static shader_t *FinishShader( void ) {
 	// fogonly shaders don't have any normal passes
 	if ( stage == 0 && !shader.isSky )
 		shader.sort = SS_FOG;
+
+	if ( shader.sort <= SS_OPAQUE ) {
+		shader.fogPass = FP_EQUAL;
+	} else if ( shader.contentFlags & CONTENTS_FOG ) {
+		shader.fogPass = FP_LE;
+	}
 
 	// determine which stage iterator function is appropriate
 	ComputeStageIteratorFunc();
@@ -3175,6 +3181,8 @@ void	R_ShaderList_f (void) {
 			ri.Printf( PRINT_ALL, "MT(m) " );
 		} else if ( sh->multitextureEnv == GL_DECAL ) {
 			ri.Printf( PRINT_ALL, "MT(d) " );
+		} else if ( sh->multitextureEnv ) {
+			ri.Printf( PRINT_ALL, "MT(x) " ); // TODO: per-stage statistics?
 		} else {
 			ri.Printf( PRINT_ALL, "      " );
 		}

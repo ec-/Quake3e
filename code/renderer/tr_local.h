@@ -300,6 +300,7 @@ typedef struct {
 	byte			constantColor[4];			// for CGEN_CONST and AGEN_CONST
 
 	unsigned		stateBits;					// GLS_xxxx mask
+	GLint			mtEnv;						// 0, GL_MODULATE, GL_ADD, GL_DECAL
 
 	acff_t			adjustColorsForFog;
 
@@ -360,7 +361,7 @@ typedef struct shader_s {
 
 	float		portalRange;			// distance to fog out at
 
-	GLint		multitextureEnv;		// 0, GL_MODULATE, GL_ADD (FIXME: put in stage)
+	qboolean	multitextureEnv;		// if shader has multitexture stage(s)
 
 	cullType_t	cullType;				// CT_FRONT_SIDED, CT_BACK_SIDED, or CT_TWO_SIDED
 	qboolean	polygonOffset;			// set for decals and other items that must be offset 
