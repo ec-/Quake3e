@@ -1757,7 +1757,7 @@ char *Info_ValueForKey( const char *s, const char *key )
 		if ( len == klen && Q_strkey( pkey, key, klen ) )
 		{
 			o = o2 = value[ valueindex ^= 1 ];
-			if ( (int)(s - v) >= BIG_INFO_STRING )
+			if ( (int)(s - v) >= BIG_INFO_VALUE )
 			{
 				Com_Error( ERR_DROP, "Info_ValueForKey: oversize infostring" );
 			}

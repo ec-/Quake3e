@@ -999,7 +999,11 @@ void CL_ShutdownAll( void ) {
 
 	// shutdown the renderer
 	if ( re.Shutdown ) {
-		re.Shutdown( 0 ); // don't destroy window or context
+		if ( CL_GameSwitch() ) {
+			CL_ShutdownRef( qfalse ); // shutdown renderer & GLimp
+		} else {
+			re.Shutdown( 0 ); // don't destroy window or context
+		}
 	}
 
 	cls.uiStarted = qfalse;
@@ -1238,6 +1242,18 @@ qboolean CL_Disconnect( qboolean showMainMenu ) {
 		VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_NONE );
 	}
 
+	// Remove pure paks
+	FS_PureServerSetLoadedPaks( "", "" );
+	FS_PureServerSetReferencedPaks( "", "" );
+
+	FS_ClearPakReferences( FS_GENERAL_REF | FS_UI_REF | FS_CGAME_REF );
+
+	if ( CL_GameSwitch() ) {
+		// keep current gamestate and connection
+		cl_disconnecting = qfalse;
+		return qfalse;
+	}
+
 	// send a disconnect message to the server
 	// send it a few times in case one is dropped
 	if ( cls.state >= CA_CONNECTED && cls.state != CA_CINEMATIC && !clc.demoplaying ) {
@@ -1246,12 +1262,6 @@ qboolean CL_Disconnect( qboolean showMainMenu ) {
 		CL_WritePacket();
 		CL_WritePacket();
 	}
-	
-	// Remove pure paks
-	FS_PureServerSetLoadedPaks( "", "" );
-	FS_PureServerSetReferencedPaks( "", "" );
-
-	FS_ClearPakReferences( FS_GENERAL_REF | FS_UI_REF | FS_CGAME_REF );
 
 	CL_ClearState();
 
@@ -1625,7 +1635,7 @@ static void CL_Connect_f( void ) {
 
 	Com_Printf( "%s resolved to %s\n", cls.servername, serverString );
 
-	if( cl_guidServerUniq->integer )
+	if ( cl_guidServerUniq->integer )
 		CL_UpdateGUID( serverString, strlen( serverString ) );
 	else
 		CL_UpdateGUID( NULL, 0 );

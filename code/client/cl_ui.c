@@ -1256,7 +1256,20 @@ void CL_InitUI( void ) {
 
 	uivm = VM_Create( VM_UI, CL_UISystemCalls, UI_DllSyscall, ui_vmMainArgs, interpret );
 	if ( !uivm ) {
-		Com_Error( ERR_DROP, "VM_Create on UI failed" );
+		if ( cl_connectedToPureServer && CL_GameSwitch() ) {
+			// server-side modificaton may require and reference only single custom ui.qvm
+			// so allow referencing everything until we download all files
+			// new gamestate will be requested after downloads complete
+			// which will correct filesystem permissions
+			fs_reordered = qfalse;
+			FS_PureServerSetLoadedPaks( "", "" );
+			uivm = VM_Create( VM_UI, CL_UISystemCalls, UI_DllSyscall, ui_vmMainArgs, interpret );
+			if ( !uivm ) {
+				Com_Error( ERR_DROP, "VM_Create on UI failed" );
+			}
+		} else {
+			Com_Error( ERR_DROP, "VM_Create on UI failed" );
+		}
 	}
 
 	// sanity check

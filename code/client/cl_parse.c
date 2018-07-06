@@ -340,12 +340,11 @@ new information out of it.  This will happen at every
 gamestate, and possibly during gameplay.
 ==================
 */
-void CL_SystemInfoChanged( void ) {
-	char			*systemInfo;
+void CL_SystemInfoChanged( qboolean onlyGame ) {
+	const char		*systemInfo;
 	const char		*s, *t;
 	char			key[BIG_INFO_KEY];
 	char			value[BIG_INFO_VALUE];
-	qboolean		gameSet;
 
 	systemInfo = cl.gameState.stringData + cl.gameState.stringOffsets[ CS_SYSTEMINFO ];
 	// NOTE TTimo:
@@ -357,6 +356,35 @@ void CL_SystemInfoChanged( void ) {
 	// don't set any vars when playing a demo
 	if ( clc.demoplaying ) {
 		return;
+	}
+
+	s = Info_ValueForKey( systemInfo, "sv_pure" );
+	cl_connectedToPureServer = atoi( s );
+
+	// parse/update fs_game in first place
+	s = Info_ValueForKey( systemInfo, "fs_game" );
+
+	if ( FS_InvalidGameDir( s ) ) {
+		Com_Printf( S_COLOR_YELLOW "WARNING: Server sent invalid fs_game value %s\n", s );
+	} else {
+		Cvar_Set( "fs_game", s );
+	}
+
+	// if game folder should not be set and it is set at the client side
+	if ( *s == '\0' && *Cvar_VariableString( "fs_game" ) != '\0' ) {
+		Cvar_Set( "fs_game", "" );
+	}
+
+	if ( onlyGame && Cvar_Flags( "fs_game" ) & CVAR_MODIFIED ) {
+		// game directory change is needed
+		// return early to avoid systeminfo-cvar pollution in current fs_game
+		return;
+	}
+
+	if ( CL_GameSwitch() ) {
+		// we just restored fs_game from saved systeminfo
+		// reset modified flag to avoid unwanted side-effecfs
+		Cvar_SetModified( "fs_game", qfalse );
 	}
 
 	s = Info_ValueForKey( systemInfo, "sv_cheats" );
@@ -374,10 +402,6 @@ void CL_SystemInfoChanged( void ) {
 	t = Info_ValueForKey( systemInfo, "sv_referencedPakNames" );
 	FS_PureServerSetReferencedPaks( s, t );
 
-	s = Info_ValueForKey( systemInfo, "sv_pure" );
-	cl_connectedToPureServer = atoi( s );
-
-	gameSet = qfalse;
 	// scan through all the variables in the systeminfo and locally set cvars to match
 	s = systemInfo;
 	while ( s ) {
@@ -399,15 +423,8 @@ void CL_SystemInfoChanged( void ) {
 			continue;
 		}
 		
-		// ehw!
-		if ( !Q_stricmp( key, "fs_game" ) )
-		{
-			if ( FS_InvalidGameDir( value ) )
-			{
-				Com_Printf( S_COLOR_YELLOW "WARNING: Server sent invalid fs_game value %s\n", value );
-				continue;
-			}
-			gameSet = qtrue;
+		if ( !Q_stricmp( key, "fs_game" ) ) {
+			continue; // already procesed
 		}
 
 		if((cvar_flags = Cvar_Flags(key)) == CVAR_NONEXISTENT)
@@ -430,10 +447,17 @@ void CL_SystemInfoChanged( void ) {
 			Cvar_SetSafe(key, value);
 		}
 	}
-	// if game folder should not be set and it is set at the client side
-	if ( !gameSet && *Cvar_VariableString("fs_game") ) {
-		Cvar_Set( "fs_game", "" );
-	}
+}
+
+
+/*
+==================
+CL_GameSwitch
+==================
+*/
+qboolean CL_GameSwitch( void )
+{
+	return (cls.gameSwitch && !com_errorEntered);
 }
 
 
@@ -476,6 +500,7 @@ static void CL_ParseGamestate( msg_t *msg ) {
 	int				cmd;
 	const char		*s;
 	char			oldGame[ MAX_QPATH ];
+	qboolean		gamedirModified;
 
 	Con_Close();
 
@@ -547,7 +572,7 @@ static void CL_ParseGamestate( msg_t *msg ) {
 	CL_ParseServerInfo();
 
 	// parse serverId and other cvars
-	CL_SystemInfoChanged();
+	CL_SystemInfoChanged( qtrue );
 
 	// stop recording now so the demo won't have an unnecessary level load at the end.
 	if ( cl_autoRecordDemo->integer && clc.demorecording ) {
@@ -556,13 +581,20 @@ static void CL_ParseGamestate( msg_t *msg ) {
 		}
 	}
 
-	if ( !cl_oldGameSet && (Cvar_Flags( "fs_game" ) & CVAR_MODIFIED) ) {
+	gamedirModified = ( Cvar_Flags( "fs_game" ) & CVAR_MODIFIED ) ? qtrue : qfalse;
+	
+	if ( !cl_oldGameSet && gamedirModified ) {
 		cl_oldGameSet = qtrue;
 		Q_strncpyz( cl_oldGame, oldGame, sizeof( cl_oldGame ) );
 	}
 
+	// try to keep gamestate and connection state during game switch
+	cls.gameSwitch = gamedirModified;
+
 	// reinitialize the filesystem if the game directory has changed
-	FS_ConditionalRestart( clc.checksumFeed, qfalse );
+	FS_ConditionalRestart( clc.checksumFeed, gamedirModified );
+
+	cls.gameSwitch = qfalse;
 
 	// This used to call CL_StartHunkUsers, but now we enter the download state before loading the
 	// cgame

@@ -289,6 +289,7 @@ typedef struct {
 
 typedef struct {
 	connstate_t	state;				// connection status
+	qboolean	gameSwitch;
 
 	qboolean	cddialog;			// bring up the cd needed dialog next frame
 
@@ -511,7 +512,6 @@ void Field_BigDraw( field_t *edit, int x, int y, int width, qboolean showCursor,
 extern int cl_connectedToPureServer;
 extern int cl_connectedToCheatServer;
 
-void CL_SystemInfoChanged( void );
 void CL_ParseServerMessage( msg_t *msg );
 
 //====================================================================

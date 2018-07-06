@@ -311,7 +311,7 @@ static fileHandleData_t	fsh[MAX_FILE_HANDLES];
 
 // TTimo - https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=540
 // wether we did a reorder on the current search path when joining the server
-static qboolean fs_reordered;
+qboolean fs_reordered;
 
 #define MAX_REF_PAKS	MAX_STRING_TOKENS
 
@@ -3533,7 +3533,10 @@ void FS_Shutdown( qboolean closemfp )
 	}
 
 #ifdef DELAY_WRITECONFIG
-	Com_WriteConfiguration();
+	if ( fs_searchpaths )
+	{
+		Com_WriteConfiguration();
+	}
 #endif
 
 	// free everything

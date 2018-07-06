@@ -709,8 +709,11 @@ qboolean FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName );
 // returns qtrue if a file is in the PAK file, otherwise qfalse
 
 int		FS_PakIndexForHandle( fileHandle_t f );
+
 // returns pak index or -1 if file is not in pak
-int		fs_lastPakIndex;
+extern int fs_lastPakIndex;
+
+extern qboolean fs_reordered;
 
 int		FS_Write( const void *buffer, int len, fileHandle_t f );
 
@@ -1098,6 +1101,9 @@ void Key_WriteBindings( fileHandle_t f );
 
 void S_ClearSoundBuffer( void );
 // call before filesystem access
+
+void CL_SystemInfoChanged( qboolean onlyGame );
+qboolean CL_GameSwitch( void );
 
 // AVI files have the start of pixel lines 4 byte-aligned
 #define AVI_LINE_PADDING 4
