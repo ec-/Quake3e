@@ -190,7 +190,7 @@ static char gl_extensions[ 32768 ];
 
 // for modular renderer
 #if 0
-void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) 
+void QDECL Com_Error( errorParm_t code, const char *fmt, ... )
 {
 	char buf[ 4096 ];
 	va_list	argptr;
@@ -200,7 +200,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... )
 	ri.Error( code, "%s", buf );
 }
 
-void QDECL Com_Printf( const char *fmt, ... ) 
+void QDECL Com_Printf( const char *fmt, ... )
 {
 	char buf[ MAXPRINTMSG ];
 	va_list	argptr;
@@ -390,27 +390,22 @@ static void R_InitExtensions( void )
 		ri.Printf( PRINT_ALL, "...GL_EXT_texture_filter_anisotropic not found\n" );
 	}
 
+#define GLE( ret, name, ... ) q##name = ri.GL_GetProcAddress( XSTRING( name ) ); if ( !q##name ) ri.Error( ERR_FATAL, "Error resolving %s", XSTRING( name ) );
 	if ( R_HaveExtension( "GL_ARB_vertex_program" ) && R_HaveExtension( "GL_ARB_fragment_program" ) ) {
-#define GLE( ret, name, ... ) q##name = ri.GL_GetProcAddress( XSTRING( name ) );
 		QGL_ARB_PROGRAM_PROCS;
-#undef GLE
 		ri.Printf( PRINT_ALL, "...using ARB vertex/fragment programs\n" );
 	}
 
 	if ( R_HaveExtension( "ARB_vertex_buffer_object" ) && qglActiveTextureARB ) {
-#define GLE( ret, name, ... ) q##name = ri.GL_GetProcAddress( XSTRING( name ) ); // if ( !q##name ) ri.Error( ERR_FATAL, "Error resolving VBO functions" );
 		QGL_VBO_PROCS;
-#undef GLE
 		ri.Printf( PRINT_ALL, "...using ARB vertex buffer objects\n" );
 	}
 
 	if ( R_HaveExtension( "GL_EXT_framebuffer_object" ) && R_HaveExtension( "GL_EXT_framebuffer_blit" ) ) {
-#define GLE( ret, name, ... ) q##name = ri.GL_GetProcAddress( XSTRING( name ) );
 		QGL_FBO_PROCS;
 		QGL_FBO_OPT_PROCS;
-#undef GLE
 	}
-
+#undef GLE
 }
 
 

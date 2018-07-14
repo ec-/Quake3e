@@ -318,10 +318,19 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 	}
 	listCopy[i] = NULL;
 
+	if ( nfiles > 1 ) {
+		Com_SortList( listCopy, nfiles-1 );
+	}
+
 	return listCopy;
 }
 
 
+/*
+=================
+Sys_FreeFileList
+=================
+*/
 void Sys_FreeFileList( char **list ) {
 	int		i;
 
@@ -334,6 +343,25 @@ void Sys_FreeFileList( char **list ) {
 	}
 
 	Z_Free( list );
+}
+
+
+/*
+=============
+Sys_GetFileStats
+=============
+*/
+qboolean Sys_GetFileStats( const char *filename, off_t *size, time_t *mtime, time_t *ctime ) {
+	struct stat s;
+
+	if ( stat( filename, &s ) == 0 ) {
+		*size = s.st_size;
+		*mtime = s.st_mtime;
+		*ctime = s.st_ctime;
+		return qtrue;
+	} else {
+		return qfalse;
+	}
 }
 
 

@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef _QCOMMON_H_
 #define _QCOMMON_H_
 
+#include <sys/types.h>
 #include "../qcommon/cm_public.h"
 
 //Ignore __attribute__ on non-gcc platforms
@@ -648,7 +649,7 @@ typedef enum {
 #define	MAX_FILE_HANDLES	64
 #define	FS_INVALID_HANDLE	0
 
-#define	MAX_FOUND_FILES		0x2000
+#define	MAX_FOUND_FILES		0x3000
 
 #ifdef DEDICATED
 #define Q3CONFIG_CFG "q3config_server.cfg"
@@ -1224,6 +1225,8 @@ const char *Sys_SteamPath( void );
 
 char	**Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, qboolean wantsubs );
 void	Sys_FreeFileList( char **list );
+
+qboolean Sys_GetFileStats( const char *filename, off_t *size, time_t *mtime, time_t *ctime );
 
 void	Sys_BeginProfiling( void );
 void	Sys_EndProfiling( void );

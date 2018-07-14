@@ -219,6 +219,8 @@ static const unsigned pak_checksums[] = {
 // NOW defined in build files
 //#define PRE_RELEASE_TADEMO
 
+#define USE_PK3_CACHE
+
 #define MAX_ZPATH			256
 #define MAX_FILEHASH_SIZE	4096
 
@@ -229,7 +231,7 @@ typedef struct fileInPack_s {
 	struct	fileInPack_s*	next;		// next file in the hash
 } fileInPack_t;
 
-typedef struct {
+typedef struct pack_s {
 	char			pakFilename[MAX_OSPATH];	// c:\quake3\baseq3\pak0.pk3
 	char			pakBasename[MAX_OSPATH];	// pak0
 	const char		*pakGamename;				// baseq3
@@ -243,6 +245,17 @@ typedef struct {
 	fileInPack_t*	buildBuffer;				// buffer with the filenames etc.
 	int				index;
 	int				used;
+
+	// caching subsystem
+#ifdef USE_PK3_CACHE
+	int				namehash;
+	off_t			size;
+	time_t			mtime;
+	time_t			ctime;
+	qboolean		touched;
+	struct pack_s	*next;
+	struct pack_s	*prev;
+#endif
 } pack_t;
 
 typedef struct {
@@ -820,7 +833,6 @@ qboolean FS_SV_FileExists( const char *file )
 /*
 ===========
 FS_SV_FOpenFileWrite
-
 ===========
 */
 fileHandle_t FS_SV_FOpenFileWrite( const char *filename ) {
@@ -2122,6 +2134,151 @@ ZIP FILE LOADING
 
 ==========================================================================
 */
+#ifdef USE_PK3_CACHE
+
+#define PK3_HASH_SIZE 512
+
+static void FS_FreePak( pack_t *pak );
+
+static pack_t *pakHashTable[ PK3_HASH_SIZE ];
+
+static int FS_HashPK3( const char *name )
+{
+	int c, hash = 0;
+	while ( (c = *name++) != '\0' )
+	{
+		hash = hash * 101 + c;
+	}
+	return hash & (PK3_HASH_SIZE-1);
+}
+
+
+static pack_t *FS_FindInCache( const char *zipfile )
+{
+	pack_t *pack;
+	int hash;
+
+	hash = FS_HashPK3( zipfile );
+	pack = pakHashTable[ hash ];
+	while ( pack )
+	{
+		if ( !strcmp( zipfile, pack->pakFilename ) )
+		{
+			return pack;
+		}
+		pack = pack->next;
+	}
+
+	return NULL;
+}
+
+
+static void FS_AddToCache( pack_t *pack )
+{
+	pack->namehash = FS_HashPK3( pack->pakFilename );
+	pack->next = pakHashTable[ pack->namehash ];
+	pack->prev = NULL;
+	if ( pakHashTable[ pack->namehash ] )
+		pakHashTable[ pack->namehash ]->prev = pack;
+	pakHashTable[ pack->namehash ] = pack;
+}
+
+
+static void FS_RemoveFromCache( pack_t *pack )
+{
+	if ( !pack->next && !pack->prev && pakHashTable[ pack->namehash ] != pack )
+	{
+		Com_Error( ERR_FATAL, "Invalid pak link" );
+	} 
+
+	if ( pack->prev != NULL )
+		pack->prev->next = pack->next;
+	else
+		pakHashTable[ pack->namehash ] = pack->next;
+
+	if ( pack->next != NULL )
+		pack->next->prev = pack->prev;
+}
+
+
+static pack_t *FS_LoadCachedPK3( const char *zipfile )
+{
+	off_t size;
+	time_t mtime;
+	time_t ctime;
+	pack_t *pak;
+
+	pak = FS_FindInCache( zipfile );
+	if ( pak == NULL )
+		return NULL;
+	
+	if ( !Sys_GetFileStats( zipfile, &size, &mtime, &ctime ) )
+	{
+		FS_RemoveFromCache( pak );
+		FS_FreePak( pak );
+		return NULL;
+	}
+
+	if ( pak->size != size || pak->mtime != mtime || pak->ctime != ctime )
+	{
+		// release outdated information
+		FS_RemoveFromCache( pak );
+		FS_FreePak( pak );
+		return NULL;
+	}
+
+	return pak;
+}
+
+
+static void FS_SavePK3ToCache( pack_t *pak, const char *filename )
+{
+	if ( Sys_GetFileStats( filename, &pak->size, &pak->mtime, &pak->ctime ) )
+	{
+		FS_AddToCache( pak );
+		pak->touched = qtrue;
+	}
+}
+
+
+static void FS_ResetCacheReferences( void )
+{
+	pack_t *pak;
+	int i;
+	for ( i = 0; i < ARRAY_LEN( pakHashTable ); i++ )
+	{
+		pak = pakHashTable[ i ];
+		while ( pak )
+		{
+			pak->touched = qfalse;
+			pak = pak->next;
+		}
+	}
+}
+
+
+static void FS_FreeUnusedCache( void )
+{
+	pack_t *next, *pak;
+	int i;
+
+	for ( i = 0; i < ARRAY_LEN( pakHashTable ); i++ )
+	{
+		pak = pakHashTable[ i ];
+		while ( pak ) 
+		{
+			next = pak->next;
+			if ( !pak->touched )
+			{
+				FS_RemoveFromCache( pak );
+				FS_FreePak( pak );
+			}
+			pak = next;
+		}
+	}
+}
+#endif // USE_PK3_CACHE
+
 
 /*
 =================
@@ -2146,6 +2303,22 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 	int				*fs_headerLongs;
 	int				filecount;
 	char			*namePtr;
+
+#ifdef USE_PK3_CACHE
+	pack = FS_LoadCachedPK3( zipfile );
+	if ( pack )
+	{
+		// update basename if needed
+		if ( !pack->pakBasename[0] && *basename )
+		{
+			Q_strncpyz( pack->pakBasename, basename, sizeof( pack->pakBasename ) );
+			// strip .pk3 if needed
+			FS_StripExt( pack->pakBasename, ".pk3" );
+		}
+		pack->touched = qtrue;
+		return pack; // loaded from cache
+	}
+#endif
 
 	fs_numHeaderLongs = 0;
 
@@ -2253,6 +2426,11 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 	}
 
 	pack->buildBuffer = buildBuffer;
+
+#ifdef USE_PK3_CACHE
+	FS_SavePK3ToCache( pack, zipfile );
+#endif
+
 	return pack;
 }
 
@@ -2294,7 +2472,9 @@ qboolean FS_CompareZipChecksum(const char *zipfile)
 		return qfalse;
 	
 	checksum = thepak->checksum;
+#ifndef USE_PK3_CACHE
 	FS_FreePak(thepak);
+#endif
 	
 	for(index = 0; index < fs_numServerReferencedPaks; index++)
 	{
@@ -2322,7 +2502,9 @@ int FS_GetZipChecksum( const char *zipfile )
 		return 0xFFFFFFFF;
 	
 	checksum = pak->checksum;
+#ifndef USE_PK3_CACHE
 	FS_FreePak( pak );
+#endif
 
 	return checksum;
 } 
@@ -2988,7 +3170,7 @@ static int FS_PathCmp( const char *s1, const char *s2 ) {
 FS_SortFileList
 ================
 */
-static void FS_SortFileList( char **list, int n ) {
+void FS_SortFileList( char **list, int n ) {
 	const char *m;
 	char *temp;
 	int i, j;
@@ -3539,13 +3721,22 @@ void FS_Shutdown( qboolean closemfp )
 	}
 #endif
 
+#ifdef USE_PK3_CACHE
+	FS_ResetCacheReferences();
+#endif
+
 	// free everything
 	for( p = fs_searchpaths; p; p = next )
 	{
 		next = p->next;
 
 		if ( p->pack )
+		{
+#ifndef USE_PK3_CACHE
 			FS_FreePak( p->pack );
+#endif
+			p->pack = NULL;
+		}
 
 		if ( p->dir )
 			Z_Free( p->dir );
@@ -3789,6 +3980,10 @@ static void FS_Startup( void ) {
 	if (missingFiles == NULL) {
 		missingFiles = Sys_FOpen( "\\missing.txt", "ab" );
 	}
+#endif
+
+#ifdef USE_PK3_CACHE
+	FS_FreeUnusedCache();
 #endif
 }
 

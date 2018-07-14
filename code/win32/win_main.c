@@ -26,6 +26,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "win_local.h"
 #include "glw_win.h"
 #include "resource.h"
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <errno.h>
 #include <float.h>
 #include <fcntl.h>
@@ -396,6 +398,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 	}
 	listCopy[i] = NULL;
 
+#if 0
 	do {
 		flag = 0;
 		for(i=1; i<nfiles; i++) {
@@ -407,6 +410,12 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 			}
 		}
 	} while(flag);
+#else
+	if ( nfiles > 1 ) 
+	{
+		Com_SortList( listCopy, nfiles-1 );
+	}
+#endif
 
 	return listCopy;
 }
@@ -430,6 +439,26 @@ void Sys_FreeFileList( char **list ) {
 
 	Z_Free( list );
 }
+
+
+/*
+=============
+Sys_GetFileStats
+=============
+*/
+qboolean Sys_GetFileStats( const char *filename, off_t *size, time_t *mtime, time_t *ctime ) {
+	struct _stat s;
+
+	if ( _stat( filename, &s ) == 0 ) {
+		*size = s.st_size;
+		*mtime = s.st_mtime;
+		*ctime = s.st_ctime;
+		return qtrue;
+	} else {
+		return qfalse;
+	}
+}
+
 
 //========================================================
 
