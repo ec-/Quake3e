@@ -649,7 +649,7 @@ typedef enum {
 #define	MAX_FILE_HANDLES	64
 #define	FS_INVALID_HANDLE	0
 
-#define	MAX_FOUND_FILES		0x3000
+#define	MAX_FOUND_FILES		0x5000
 
 #ifdef DEDICATED
 #define Q3CONFIG_CFG "q3config_server.cfg"

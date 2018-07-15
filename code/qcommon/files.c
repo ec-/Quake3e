@@ -3752,6 +3752,7 @@ void FS_Shutdown( qboolean closemfp )
 	Cmd_RemoveCommand( "touchFile" );
  	Cmd_RemoveCommand( "which" );
 	Cmd_RemoveCommand( "lsof" );
+	Cmd_RemoveCommand( "fs_restart" );
 }
 
  
@@ -3961,6 +3962,7 @@ static void FS_Startup( void ) {
 	Cmd_AddCommand( "lsof", FS_ListOpenFiles_f );
  	Cmd_AddCommand( "which", FS_Which_f );
 	Cmd_SetCommandCompletionFunc( "which", FS_CompleteFileName );
+	Cmd_AddCommand( "fs_restart", FS_Reload );
 
 	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=506
 	// reorder the pure pk3 files according to server order
