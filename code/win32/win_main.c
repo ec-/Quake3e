@@ -265,6 +265,7 @@ void Sys_ListFilteredFiles( const char *basedir, const char *subdirs, const char
 }
 
 
+#if 0
 static qboolean strgtr(const char *s0, const char *s1) {
 	int l0, l1, i;
 
@@ -285,6 +286,7 @@ static qboolean strgtr(const char *s0, const char *s1) {
 	}
 	return qfalse;
 }
+#endif
 
 
 /*

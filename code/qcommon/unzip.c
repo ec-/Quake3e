@@ -4338,7 +4338,8 @@ int inflateSyncPoint(z_streamp z)
 voidp zcalloc (voidp opaque, unsigned items, unsigned size)
 {
     if (opaque) items += size - size; /* make compiler happy */
-    return (voidp)Z_Malloc(items*size);
+    // use small zone to avoid main zone fragmentation
+    return (voidp)S_Malloc(items*size);
 }
 
 void  zcfree (voidp opaque, voidp ptr)
@@ -4346,5 +4347,3 @@ void  zcfree (voidp opaque, voidp ptr)
     Z_Free(ptr);
     if (opaque) return; /* make compiler happy */
 }
-
-

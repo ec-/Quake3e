@@ -3256,7 +3256,6 @@ static void FS_Path_f( void ) {
 		}
 	}
 
-
 	Com_Printf( "\n" );
 	for ( i = 1 ; i < MAX_FILE_HANDLES ; i++ ) {
 		if ( fsh[i].handleFiles.file.o ) {
@@ -3882,6 +3881,7 @@ FS_Startup
 */
 static void FS_Startup( void ) {
 	const char *homePath;
+	int start, end;
 
 	Com_Printf( "----- FS_Startup -----\n" );
 
@@ -3915,6 +3915,8 @@ static void FS_Startup( void ) {
 		Cvar_ForceReset( "fs_game" );
 	}
 
+	start = Sys_Milliseconds();
+
 	// add search path elements in reverse priority order
 	if ( fs_steampath->string[0] ) {
 		FS_AddGameDirectory( fs_steampath->string, fs_basegame->string );
@@ -3943,6 +3945,8 @@ static void FS_Startup( void ) {
 		}
 	}
 
+	end = Sys_Milliseconds();
+
 	Com_ReadCDKey( fs_basegame->string );
 
 	if ( fs_gamedirvar->string[0] && Q_stricmp( fs_gamedirvar->string, fs_basegame->string ) ) {
@@ -3966,7 +3970,9 @@ static void FS_Startup( void ) {
 	FS_LoadedPakPureChecksums();
 	
 	// print the current search paths
-	FS_Path_f();
+	//FS_Path_f();
+	Com_Printf( "...loaded in %i milliseconds\n", end - start );
+
 	Com_Printf( "----------------------\n" );
 	Com_Printf( "%d files in %d pk3 files\n", fs_packFiles, fs_packCount );
 
