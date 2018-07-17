@@ -255,6 +255,9 @@ typedef struct pack_s {
 	qboolean		touched;
 	struct pack_s	*next;
 	struct pack_s	*prev;
+	int				checksumFeed;
+	int				*headerLongs;
+	int				numHeaderLongs;
 #endif
 } pack_t;
 
@@ -2251,6 +2254,7 @@ static void FS_ResetCacheReferences( void )
 		while ( pak )
 		{
 			pak->touched = qfalse;
+			pak->referenced = 0;
 			pak = pak->next;
 		}
 	}
@@ -2315,12 +2319,20 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 			// strip .pk3 if needed
 			FS_StripExt( pack->pakBasename, ".pk3" );
 		}
+
+		// update pure checksum
+		if ( pack->checksumFeed != fs_checksumFeed )
+		{
+			pack->headerLongs[ 0 ] = LittleLong( fs_checksumFeed );
+			pack->pure_checksum = Com_BlockChecksum( pack->headerLongs, sizeof( pack->headerLongs[0] ) * pack->numHeaderLongs );
+			pack->pure_checksum = LittleLong( pack->pure_checksum );
+			pack->checksumFeed = fs_checksumFeed;
+		}
+
 		pack->touched = qtrue;
 		return pack; // loaded from cache
 	}
 #endif
-
-	fs_numHeaderLongs = 0;
 
 	uf = unzOpen(zipfile);
 	err = unzGetGlobalInfo (uf,&gi);
@@ -2353,6 +2365,7 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 		return NULL;
 	}
 
+	fs_numHeaderLongs = 0;
 	buildBuffer = Z_Malloc( ( filecount * sizeof( fileInPack_t )) + len );
 	namePtr = ((char *) buildBuffer) + filecount * sizeof( fileInPack_t );
 	fs_headerLongs = Z_Malloc( ( filecount + 1 ) * sizeof(int) );
@@ -2412,12 +2425,19 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 		filecount++;
 	}
 
-	pack->checksum = Com_BlockChecksum( &fs_headerLongs[ 1 ], sizeof(*fs_headerLongs) * ( fs_numHeaderLongs - 1 ) );
-	pack->pure_checksum = Com_BlockChecksum( fs_headerLongs, sizeof(*fs_headerLongs) * fs_numHeaderLongs );
+	pack->checksum = Com_BlockChecksum( &fs_headerLongs[ 1 ], sizeof( fs_headerLongs[0] ) * ( fs_numHeaderLongs - 1 ) );
 	pack->checksum = LittleLong( pack->checksum );
+
+	pack->pure_checksum = Com_BlockChecksum( fs_headerLongs, sizeof( fs_headerLongs[0] ) * fs_numHeaderLongs );
 	pack->pure_checksum = LittleLong( pack->pure_checksum );
 
-	Z_Free(fs_headerLongs);
+#ifdef USE_PK3_CACHE
+	pack->headerLongs = fs_headerLongs;
+	pack->numHeaderLongs = fs_numHeaderLongs;
+	pack->checksumFeed = fs_checksumFeed;
+#else
+	Z_Free( fs_headerLongs );
+#endif
 
 	if ( !fs_locked->integer )
 	{
@@ -2450,6 +2470,9 @@ static void FS_FreePak( pack_t *pak )
 		pak->handle = NULL;
 	}
 	Z_Free( pak->buildBuffer );
+#ifdef USE_PK3_CACHE
+	Z_Free( pak->headerLongs );
+#endif
 	Z_Free( pak );
 }
 
