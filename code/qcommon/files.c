@@ -3170,7 +3170,7 @@ static int FS_PathCmp( const char *s1, const char *s2 ) {
 FS_SortFileList
 ================
 */
-void FS_SortFileList( char **list, int n ) {
+static void FS_SortFileList( char **list, int n ) {
 	const char *m;
 	char *temp;
 	int i, j;
@@ -3482,6 +3482,7 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 			pak->pakGamename = gamedir;
 
 			pak->index = fs_packCount;
+			pak->referenced = 0;
 
 			fs_packFiles += pak->numfiles;
 			fs_packCount++;
