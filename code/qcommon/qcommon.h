@@ -972,6 +972,7 @@ extern	char	rconPassword2[ MAX_CVAR_VALUE_STRING ];
 typedef enum {
 	TAG_FREE,
 	TAG_GENERAL,
+	TAG_PK3,
 	TAG_BOTLIB,
 	TAG_RENDERER,
 	TAG_SMALL,

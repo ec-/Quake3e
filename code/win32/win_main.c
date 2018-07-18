@@ -341,7 +341,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 		if (!nfiles)
 			return NULL;
 
-		listCopy = Z_Malloc( ( nfiles + 1 ) * sizeof( *listCopy ) );
+		listCopy = Z_Malloc( ( nfiles + 1 ) * sizeof( listCopy[0] ) );
 		for ( i = 0 ; i < nfiles ; i++ ) {
 			listCopy[i] = list[i];
 		}
@@ -394,7 +394,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 		return NULL;
 	}
 
-	listCopy = Z_Malloc( ( nfiles + 1 ) * sizeof( *listCopy ) );
+	listCopy = Z_Malloc( ( nfiles + 1 ) * sizeof( listCopy[0] ) );
 	for ( i = 0 ; i < nfiles ; i++ ) {
 		listCopy[i] = list[i];
 	}

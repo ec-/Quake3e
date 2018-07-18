@@ -2301,7 +2301,7 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 	unz_global_info gi;
 	char			filename_inzip[MAX_ZPATH];
 	unz_file_info	file_info;
-	unsigned int	i, len;
+	unsigned int	i, namelen, hashSize, size;
 	long			hash;
 	int				fs_numHeaderLongs;
 	int				*fs_headerLongs;
@@ -2340,7 +2340,7 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 	if (err != UNZ_OK)
 		return NULL;
 
-	len = 0;
+	namelen = 0;
 	filecount = 0;
 	unzGoToFirstFile( uf );
 	for (i = 0; i < gi.number_entry; i++)
@@ -2355,36 +2355,45 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 			unzGoToNextFile( uf );
 			continue;
 		} 
-		len += strlen( filename_inzip ) + 1;
+		namelen += strlen( filename_inzip ) + 1;
 		unzGoToNextFile( uf );
 		filecount++;
 	}
 
-	if ( !filecount ) {
+	if ( filecount == 0 ) {
 		unzClose( uf );
 		return NULL;
 	}
 
-	fs_numHeaderLongs = 0;
-	buildBuffer = Z_Malloc( ( filecount * sizeof( fileInPack_t )) + len );
-	namePtr = ((char *) buildBuffer) + filecount * sizeof( fileInPack_t );
-	fs_headerLongs = Z_Malloc( ( filecount + 1 ) * sizeof(int) );
-	fs_headerLongs[ fs_numHeaderLongs++ ] = LittleLong( fs_checksumFeed );
-
 	// get the hash table size from the number of files in the zip
 	// because lots of custom pk3 files have less than 32 or 64 files
-	for ( i = 2; i < MAX_FILEHASH_SIZE; i <<= 1 ) {
-		if ( i >= filecount ) {
+	for ( hashSize = 2; hashSize < MAX_FILEHASH_SIZE; hashSize <<= 1 ) {
+		if ( hashSize >= filecount ) {
 			break;
 		}
 	}
 
-	pack = Z_Malloc( sizeof( pack_t ) + i * sizeof(fileInPack_t *) );
-	pack->hashSize = i;
-	pack->hashTable = (fileInPack_t **) (((char *) pack) + sizeof( pack_t ));
-	for( i = 0; i < pack->hashSize; i++ ) {
-		pack->hashTable[i] = NULL;
-	}
+	namelen = PAD( namelen, sizeof( void * ) );
+	size = sizeof( *pack ) + hashSize * sizeof( pack->hashTable[0] ) + filecount * sizeof( buildBuffer[0] ) + namelen;
+#ifdef USE_PK3_CACHE
+	size += ( filecount + 1 ) * sizeof( fs_headerLongs[0] );
+#endif
+	pack = Z_TagMalloc( size, TAG_PK3 );
+	Com_Memset( pack, 0, size );
+
+	pack->hashSize = hashSize;
+	pack->hashTable = (fileInPack_t **)( pack + 1 );
+
+	buildBuffer = (fileInPack_t*)( pack->hashTable + pack->hashSize );
+	namePtr = (char*)( buildBuffer + filecount );
+
+#ifdef USE_PK3_CACHE
+	fs_headerLongs = (int*)( namePtr + namelen );
+#else
+	fs_headerLongs = Z_Malloc( ( filecount + 1 ) * sizeof( fs_headerLongs[0] ) );
+#endif
+	fs_numHeaderLongs = 0;
+	fs_headerLongs[ fs_numHeaderLongs++ ] = LittleLong( fs_checksumFeed );
 
 	Q_strncpyz( pack->pakFilename, zipfile, sizeof( pack->pakFilename ) );
 	Q_strncpyz( pack->pakBasename, basename, sizeof( pack->pakBasename ) );
@@ -2407,10 +2416,10 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 			unzGoToNextFile( uf );
 			continue;
 		} 
-		if (file_info.uncompressed_size > 0) {
+		if ( file_info.uncompressed_size > 0 ) {
 			fs_headerLongs[fs_numHeaderLongs++] = LittleLong( file_info.crc );
-			buildBuffer[ filecount ].size = file_info.uncompressed_size;
 		}
+		buildBuffer[ filecount ].size = file_info.uncompressed_size;
 		Q_strlwr( filename_inzip );
 		hash = FS_HashFileName( filename_inzip, pack->hashSize );
 		buildBuffer[ filecount ].name = namePtr;
@@ -2469,10 +2478,7 @@ static void FS_FreePak( pack_t *pak )
 		unzClose( pak->handle );
 		pak->handle = NULL;
 	}
-	Z_Free( pak->buildBuffer );
-#ifdef USE_PK3_CACHE
-	Z_Free( pak->headerLongs );
-#endif
+
 	Z_Free( pak );
 }
 
@@ -3436,8 +3442,8 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 	//
 	// add the directory to the search path
 	//
-	search = Z_Malloc (sizeof(searchpath_t));
-	search->dir = Z_Malloc( sizeof( *search->dir ) );
+	search = Z_Malloc( sizeof( *search ) + sizeof( *search->dir ) );
+	search->dir = (directory_t*)( search + 1 );
 
 	Q_strncpyz( search->dir->path, path, sizeof( search->dir->path ) );
 	Q_strncpyz( search->dir->gamedir, dir, sizeof( search->dir->gamedir ) );
@@ -3510,7 +3516,7 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 			fs_packFiles += pak->numfiles;
 			fs_packCount++;
 
-			search = Z_Malloc(sizeof(searchpath_t));
+			search = Z_Malloc( sizeof( *search ) );
 			search->pack = pak;
 			search->next = fs_searchpaths;
 			fs_searchpaths = search;
@@ -3531,8 +3537,8 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 			pakfile = FS_BuildOSPath(path, dir, pakdirs[pakdirsi]);
 
 			// add the directory to the search path
-			search = Z_Malloc(sizeof(searchpath_t));
-			search->dir = Z_Malloc(sizeof(*search->dir));
+			search = Z_Malloc( sizeof( *search ) + sizeof( *search->dir ) );
+			search->dir = (directory_t*)(search + 1);
 			search->policy = DIR_ALLOW;
 
 			Q_strncpyz(search->dir->path, curpath, sizeof(search->dir->path));	// c:\quake3\baseq3
@@ -3760,9 +3766,6 @@ void FS_Shutdown( qboolean closemfp )
 #endif
 			p->pack = NULL;
 		}
-
-		if ( p->dir )
-			Z_Free( p->dir );
 
 		Z_Free( p );
 	}

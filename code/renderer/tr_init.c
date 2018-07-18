@@ -403,6 +403,8 @@ static void R_InitExtensions( void )
 
 	if ( R_HaveExtension( "GL_EXT_framebuffer_object" ) && R_HaveExtension( "GL_EXT_framebuffer_blit" ) ) {
 		QGL_FBO_PROCS;
+#undef GLE
+#define GLE( ret, name, ... ) q##name = ri.GL_GetProcAddress( XSTRING( name ) );
 		QGL_FBO_OPT_PROCS;
 	}
 #undef GLE
