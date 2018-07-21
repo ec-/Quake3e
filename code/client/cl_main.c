@@ -774,7 +774,9 @@ static int CL_WalkDemoExt( const char *arg, char *name, fileHandle_t *handle )
 	while ( demo_protocols[ i ] )
 	{
 		Com_sprintf( name, MAX_OSPATH, "demos/%s.dm_%d", arg, demo_protocols[ i ] );
+		FS_BypassPure();
 		FS_FOpenFileRead( name, handle, qtrue );
+		FS_RestorePure();
 		if ( *handle != FS_INVALID_HANDLE )
 		{
 			Com_Printf( "Demo file: %s\n", name );
@@ -864,7 +866,9 @@ static void CL_PlayDemo_f( void ) {
 		if ( demo_protocols[ i ] /* || protocol == com_protocol->integer  || protocol == com_legacyprotocol->integer */ )
 		{
 			Com_sprintf(name, sizeof(name), "demos/%s", arg);
+			FS_BypassPure();
 			FS_FOpenFileRead( name, &hFile, qtrue );
+			FS_RestorePure();
 		}
 		else
 		{
@@ -2250,7 +2254,7 @@ void CL_InitDownloads( void ) {
 		info = cl.gameState.stringData + cl.gameState.stringOffsets[ CS_SERVERINFO ];
 		mapname = Info_ValueForKey( info, "mapname" );
 		bsp = va( "maps/%s.bsp", mapname );
-		if ( !FS_FileIsInPAK( bsp, NULL, NULL ) && FS_FOpenFileRead( bsp, NULL, qfalse ) == -1 )
+		if ( !FS_FileIsInPAK( bsp, NULL, NULL ) )
 		{
 			if ( CL_Download( "dlmap", mapname, qtrue ) )
 			{

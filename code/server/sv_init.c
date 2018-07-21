@@ -452,8 +452,14 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 		}
 	}
 
+#ifndef DEDICATED
+	// remove pure paks that may left from client-side
+	FS_PureServerSetLoadedPaks( "", "" );
+	FS_PureServerSetReferencedPaks( "", "" );
+#endif
+
 	// clear pak references
-	FS_ClearPakReferences(0);
+	FS_ClearPakReferences( 0 );
 
 	// allocate the snapshot entities on the hunk
 	svs.snapshotEntities = Hunk_Alloc( sizeof(entityState_t)*svs.numSnapshotEntities, h_high );

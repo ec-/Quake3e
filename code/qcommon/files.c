@@ -1267,38 +1267,6 @@ qboolean FS_StripExt( char *filename, const char *ext )
 }
 
 
-/*
-===========
-FS_IsDemoExt
-
-Return qtrue if filename has a demo extension
-===========
-*/
-static qboolean FS_IsDemoExt( const char *filename, int namelen )
-{
-	char *ext_test;
-	int index, protocol;
-
-	ext_test = strrchr( filename, '.' );
-
-	if ( !ext_test )
-		return qfalse;
-
-	if ( !Q_stricmpn( ext_test + 1, DEMOEXT, ARRAY_LEN( DEMOEXT ) - 1 ) )
-	{
-		protocol = atoi( ext_test + ARRAY_LEN( DEMOEXT ) );
-
-		for( index = 0; demo_protocols[index]; index++ )
-		{
-			if ( demo_protocols[index] == protocol )
-				return qtrue;
-		}
-	}
-
-	return qfalse;
-}
-
-
 static const char *FS_HasExt( const char *fileName, const char **extList, int extCount ) 
 {
 	const char *e;
@@ -1358,10 +1326,31 @@ static qboolean FS_DeniedPureFile( const char *filename )
 	if ( FS_HasExt( filename, extList, ARRAY_LEN( extList ) ) )
 		return qfalse;
 	
-	if ( FS_IsDemoExt( filename, strlen( filename ) ) )
-		return qfalse;
-
 	return qtrue;
+}
+
+
+/*
+===========
+FS_BypassPure
+===========
+*/
+static int numServerPaks;
+void FS_BypassPure( void )
+{
+	numServerPaks = fs_numServerPaks;
+	fs_numServerPaks = 0;
+}
+
+
+/*
+===========
+FS_RestorePure
+===========
+*/
+void FS_RestorePure( void )
+{
+	fs_numServerPaks = numServerPaks;
 }
 
 
@@ -1389,7 +1378,6 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	FILE			*temp;
 	int				length;
 	fileHandleData_t *f;
-	int				flags;
 
 	hash = 0;
 
@@ -1401,12 +1389,6 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 		Com_Error( ERR_FATAL, "FS_FOpenFileRead: NULL 'filename' parameter passed\n" );
 	}
 
-	if ( fs_numServerPaks ) {
-		flags = FS_MATCH_EXTERN | FS_MATCH_PURE;
-	} else {
-		flags = FS_MATCH_ANY;
-	}
-
 	// qpaths are not supposed to have a leading slash
 	if ( filename[0] == '/' || filename[0] == '\\' ) {
 		filename++;
@@ -1414,21 +1396,15 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	
 	// we will calculate full hash only once then just mask it by current pack->hashSize
 	// we can do that as long as we know properties of our hash function
-	fullHash = FS_HashFileName( filename, 1U<<31 );
+	fullHash = FS_HashFileName( filename, 0U );
 
 	if ( file == NULL ) {
 		// just wants to see if file is there
 		for ( search = fs_searchpaths ; search ; search = search->next ) {
-			//
-			if ( search->pack ) {
-				//if ( !( flags & FS_MATCH_PK3s ) ) // always true?
-				//	continue;
-				hash = fullHash & (search->pack->hashSize-1);
-			}
 			// is the element a pak file?
-			if ( search->pack && search->pack->hashTable[hash] ) {
+			if ( search->pack && search->pack->hashTable[ (hash = fullHash & (search->pack->hashSize-1)) ] ) {
 				// skip non-pure files
-				if ( !FS_PakIsPure( search->pack ) && !( flags & FS_MATCH_UNPURE ) )
+				if ( !FS_PakIsPure( search->pack ) )
 					continue;
 				// look through all the pak file elements
 				pak = search->pack;
@@ -1441,7 +1417,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					}
 					pakFile = pakFile->next;
 				} while ( pakFile != NULL );
-			} else if ( search->dir /*&& ( flags & FS_MATCH_EXTERN ) */ && search->policy != DIR_DENY ) {
+			} else if ( search->dir && search->policy != DIR_DENY ) {
 				dir = search->dir;
 				netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
 				temp = Sys_FOpen( netpath, "rb" );
@@ -1466,7 +1442,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 
 	// make sure the q3key file is only readable by the quake3.exe at initialization
 	// any other time the key should only be accessed in memory using the provided functions
-	if( com_fullyInitialized && strstr( filename, "q3key" ) ) {
+	if ( com_fullyInitialized && strstr( filename, "q3key" ) ) {
 		*file = FS_INVALID_HANDLE;
 		return -1;
 	}
@@ -1481,20 +1457,12 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	fs_lastPakIndex = -1;
 
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
-		//
-		if ( search->pack ) {
-			//if ( !( flags & FS_MATCH_PK3s ) ) // always true?
-			//	continue;
-			hash = fullHash & (search->pack->hashSize-1);
-		}
 		// is the element a pak file?
-		if ( search->pack && search->pack->hashTable[hash] ) {
-
+		if ( search->pack && search->pack->hashTable[ (hash = fullHash & (search->pack->hashSize-1)) ] ) {
 			// disregard if it doesn't match one of the allowed pure pak files
-			if ( !FS_PakIsPure( search->pack ) && !( flags & FS_MATCH_UNPURE ) ) {
+			if ( !FS_PakIsPure( search->pack ) ) {
 				continue;
 			}
-
 			// look through all the pak file elements
 			pak = search->pack;
 			pakFile = pak->hashTable[hash];
@@ -1507,15 +1475,13 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					// shaders, txt, arena files  by themselves do not count as a reference as 
 					// these are loaded from all pk3s
 					// from every pk3 file..
-					if ( !( pak->referenced & FS_GENERAL_REF ) ) {
-						if ( FS_GeneralRef( filename ) ) 
-							pak->referenced |= FS_GENERAL_REF;
+					if ( !( pak->referenced & FS_GENERAL_REF ) && FS_GeneralRef( filename ) ) {
+						pak->referenced |= FS_GENERAL_REF;
 					}
-
-					if (!(pak->referenced & FS_CGAME_REF) && !strcmp(filename, "vm/cgame.qvm")) {
+					else if ( !( pak->referenced & FS_CGAME_REF ) && !strcmp( filename, "vm/cgame.qvm" ) ) {
 						pak->referenced |= FS_CGAME_REF;
 					}
-					if (!(pak->referenced & FS_UI_REF) && !strcmp(filename, "vm/ui.qvm")) {
+					else if ( !( pak->referenced & FS_UI_REF ) && !strcmp( filename, "vm/ui.qvm" ) ) {
 						pak->referenced |= FS_UI_REF;
 					}
 
@@ -1566,7 +1532,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 				}
 				pakFile = pakFile->next;
 			} while ( pakFile != NULL );
-		} else if ( search->dir /*&& ( flags & FS_MATCH_EXTERN ) */ && search->policy != DIR_DENY ) {
+		} else if ( search->dir && search->policy != DIR_DENY ) {
 			// check a file in the directory tree
 
 			// if we are running restricted, the only files we
@@ -1609,6 +1575,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 		fprintf(missingFiles, "%s\n", filename);
 	}
 #endif
+
 	*file = FS_INVALID_HANDLE;
 	return -1;
 }
@@ -1889,8 +1856,7 @@ qboolean FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName ) {
 	searchpath_t	*search;
 	pack_t			*pak;
 	fileInPack_t	*pakFile;
-	int				flags;
-	long			hash = 0;
+	long			hash;
 	long			fullHash;
 
 	if ( !fs_searchpaths ) {
@@ -1912,29 +1878,19 @@ qboolean FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName ) {
 		return qfalse;
 	}
 
-	if ( fs_numServerPaks ) 
-		flags = FS_MATCH_PURE;
-	else
-		flags = FS_MATCH_PK3s;
-
-	fullHash = FS_HashFileName( filename, 1U<<31 );
+	fullHash = FS_HashFileName( filename, 0U );
 
 	//
 	// search through the path, one element at a time
 	//
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
-		//
-		if ( search->pack ) {
-			//if ( !( flags & FS_MATCH_PK3s ) ) // always true?
-			//	continue;
-			hash = fullHash & (search->pack->hashSize-1);
-		}
+
 		// is the element a pak file?
-		if ( search->pack && search->pack->hashTable[hash] ) {
+		if ( search->pack && search->pack->hashTable[ (hash = fullHash & (search->pack->hashSize-1)) ] ) {
 			// disregard if it doesn't match one of the allowed pure pak files
-			if ( !FS_PakIsPure( search->pack ) && !( flags & FS_MATCH_UNPURE ) ) {
-				continue;
-			}
+			//if ( !FS_PakIsPure( search->pack ) ) {
+			//	continue;
+			//}
 
 			// look through all the pak file elements
 			pak = search->pack;
@@ -3244,7 +3200,7 @@ static void FS_NewDir_f( void ) {
 
 	Com_Printf( "---------------\n" );
 
-	dirnames = FS_ListFilteredFiles( "", "", filter, &ndirs, qfalse );
+	dirnames = FS_ListFilteredFiles( "", "", filter, &ndirs, FS_MATCH_ANY );
 
 	if ( ndirs >= 2 )
 		FS_SortFileList( dirnames, ndirs - 1 );

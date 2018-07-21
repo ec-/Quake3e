@@ -156,6 +156,7 @@ static void SV_Map_f( void ) {
 	qboolean	killBots, cheat;
 	char		expanded[MAX_QPATH];
 	char		mapname[MAX_QPATH];
+	int			len;
 
 	map = Cmd_Argv(1);
 	if ( !map || !*map ) {
@@ -164,9 +165,13 @@ static void SV_Map_f( void ) {
 
 	// make sure the level exists before trying to change, so that
 	// a typo at the server console won't end the game
-	Com_sprintf (expanded, sizeof(expanded), "maps/%s.bsp", map);
-	if ( FS_ReadFile (expanded, NULL) == -1 ) {
-		Com_Printf ("Can't find map %s\n", expanded);
+	Com_sprintf( expanded, sizeof( expanded ), "maps/%s.bsp", map );
+	// bypass pure check so we can open downloaded map
+	FS_BypassPure();
+	len = FS_FOpenFileRead( expanded, NULL, qfalse );
+	FS_RestorePure();
+	if ( len == -1 ) {
+		Com_Printf( "Can't find map %s\n", expanded );
 		return;
 	}
 

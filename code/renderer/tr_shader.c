@@ -3216,9 +3216,9 @@ void	R_ShaderList_f (void) {
 }
 
 
-#define	MAX_SHADER_FILES	4096
+#define	MAX_SHADER_FILES 16384
 
-static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char *buffers[ MAX_SHADER_FILES ] )
+static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char **buffers )
 {
 	char filename[MAX_QPATH+8];
 	char shaderName[MAX_QPATH];

@@ -611,7 +611,9 @@ static void CL_KeyDownEvent( int key, unsigned time )
 #else
 				Cmd_Clear();
 				Cvar_Set( "com_errorMessage", "" );
-				if ( !CL_Disconnect( qfalse ) ) { // restart client if not done already
+				if ( cls.state == CA_CINEMATIC ) {
+					SCR_StopCinematic();
+				} else if ( !CL_Disconnect( qfalse ) ) { // restart client if not done already
 					CL_FlushMemory();
 				}
 #endif
