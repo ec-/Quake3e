@@ -690,10 +690,10 @@ void Info_Print( const char *s ) {
 Com_StringContains
 ============
 */
-static const char *Com_StringContains( const char *str1, const char *str2, int casesensitive ) {
+static const char *Com_StringContains( const char *str1, const char *str2, int len2, int casesensitive ) {
 	int len, i, j;
 
-	len = strlen(str1) - strlen(str2);
+	len = strlen(str1) - len2;
 	for (i = 0; i <= len; i++, str1++) {
 		for (j = 0; str2[j]; j++) {
 			if (casesensitive) {
@@ -730,15 +730,17 @@ int Com_Filter( const char *filter, const char *name, int casesensitive )
 		if (*filter == '*') {
 			filter++;
 			for (i = 0; *filter; i++) {
-				if (*filter == '*' || *filter == '?') break;
+				if (*filter == '*' || *filter == '?')
+					break;
 				buf[i] = *filter;
 				filter++;
 			}
 			buf[i] = '\0';
-			if (strlen(buf)) {
-				ptr = Com_StringContains(name, buf, casesensitive);
-				if (!ptr) return qfalse;
-				name = ptr + strlen(buf);
+			if ( i ) {
+				ptr = Com_StringContains( name, buf, i, casesensitive );
+				if ( !ptr )
+					return qfalse;
+				name = ptr + i;
 			}
 		}
 		else if (*filter == '?') {
@@ -791,6 +793,55 @@ int Com_Filter( const char *filter, const char *name, int casesensitive )
 			filter++;
 			name++;
 		}
+	}
+	return qtrue;
+}
+
+
+/*
+============
+Com_FilterExt
+============
+*/
+qboolean Com_FilterExt( const char *filter, const char *name )
+{
+	char buf[ MAX_TOKEN_CHARS ];
+	const char *ptr;
+	int i;
+
+	while ( *filter ) {
+		if ( *filter == '*' ) {
+			filter++;
+			for ( i = 0; *filter != '\0' && i < sizeof(buf)-1; i++ ) {
+				if ( *filter == '*' || *filter == '?' )
+					break;
+				buf[i] = *filter++;
+			}
+			buf[ i ] = '\0';
+			if ( i ) {
+				ptr = Com_StringContains( name, buf, i, qfalse );
+				if ( !ptr )
+					return qfalse;
+				name = ptr + i;
+			} else if ( *filter == '\0' ) {
+				return qtrue;
+			}
+		}
+		else if ( *filter == '?' ) {
+			if ( *name == '\0' )
+				return qfalse;
+			filter++;
+			name++;
+		}
+		else {
+			if ( locase[(byte)*filter] != locase[(byte)*name] )
+				return qfalse;
+			filter++;
+			name++;
+		}
+	}
+	if ( *name ) {
+		return qfalse;
 	}
 	return qtrue;
 }
@@ -4149,12 +4200,34 @@ void Com_RandomBytes( byte *string, int len )
 }
 
 
+static qboolean strgtr(const char *s0, const char *s1) {
+	int l0, l1, i;
+
+	l0 = strlen( s0 );
+	l1 = strlen( s1 );
+
+	if ( l1 < l0 ) {
+		l0 = l1;
+	}
+
+	for( i = 0; i < l0; i++ ) {
+		if ( s1[i] > s0[i] ) {
+			return qtrue;
+		}
+		if ( s1[i] < s0[i] ) {
+			return qfalse;
+		}
+	}
+	return qfalse;
+}
+
+
 /*
 ==================
 Com_SortList
 ==================
 */
-void Com_SortList( char **list, int n )
+static void Com_SortList( char **list, int n )
 {
 	const char *m;
 	char *temp;
@@ -4178,4 +4251,33 @@ void Com_SortList( char **list, int n )
 	while ( i <= j );
 	if ( j > 0 ) Com_SortList( list, j );
 	if ( n > i ) Com_SortList( list+i, n-i );
+}
+
+
+/*
+==================
+Com_SortFileList
+==================
+*/
+void Com_SortFileList( char **list, int nfiles, int fastSort )
+{
+	if ( nfiles > 1 && fastSort )
+	{
+		Com_SortList( list, nfiles-1 );
+	}
+	else // defrag mod demo UI can't handle _properly_ sorted directories
+	{
+		int i, flag;
+		do {
+			flag = 0;
+			for( i = 1; i < nfiles; i++ ) {
+				if ( strgtr( list[i-1], list[i] ) ) {
+					char *temp = list[i];
+					list[i] = list[i-1];
+					list[i-1] = temp;
+					flag = 1;
+				}
+			}
+		} while( flag );
+	}
 }

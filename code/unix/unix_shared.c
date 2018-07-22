@@ -241,6 +241,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 	char		*list[MAX_FOUND_FILES];
 	int			i;
 	struct stat st;
+	const char	*x;
 
 	if ( filter ) {
 
@@ -269,6 +270,10 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 		extension = "";
 		dironly = qtrue;
 	}
+
+	if ( extension[0] == '.' && extension[1] != '\0' ) {
+		extension++;
+	}
 	
 	// search
 	nfiles = 0;
@@ -279,24 +284,20 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 	}
 
 	while ((d = readdir(fdir)) != NULL) {
+		if ( nfiles == MAX_FOUND_FILES - 1 )
+			break;
 		Com_sprintf(search, sizeof(search), "%s/%s", directory, d->d_name);
 		if (stat(search, &st) == -1)
 			continue;
 		if ((dironly && !(st.st_mode & S_IFDIR)) ||
 			(!dironly && (st.st_mode & S_IFDIR)))
 			continue;
-
-		if (*extension) {
-			if ( strlen( d->d_name ) < strlen( extension ) ||
-				Q_stricmp( 
-					d->d_name + strlen( d->d_name ) - strlen( extension ),
-					extension ) ) {
-				continue; // didn't match
+		if ( *extension ) {
+			x = strrchr( d->d_name, '.' );
+			if ( !x || !Com_FilterExt( extension, x+1 ) ) {
+				continue;
 			}
 		}
-
-		if ( nfiles == MAX_FOUND_FILES - 1 )
-			break;
 		list[ nfiles ] = FS_CopyString( d->d_name );
 		nfiles++;
 	}
@@ -318,9 +319,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 	}
 	listCopy[i] = NULL;
 
-	if ( nfiles > 1 ) {
-		Com_SortList( listCopy, nfiles-1 );
-	}
+	Com_SortFileList( listCopy, nfiles, extension[0] != '\0' );
 
 	return listCopy;
 }

@@ -4825,8 +4825,10 @@ qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownloa
 	{
 		Q_strncpyz( name, pakname, sizeof( name ) );
 		FS_StripExt( name, ".pk3" );
+		if ( !name[0] )
+			return qfalse;
 		s = va( "maps/%s.bsp", name );
-		if ( FS_FileIsInPAK( s, NULL, url ) ) 
+		if ( FS_FileIsInPAK( s, NULL, url ) )
 		{
 			Com_Printf( S_COLOR_YELLOW " map %s already exists in %s.pk3\n", name, url );
 			return qfalse;

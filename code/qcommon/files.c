@@ -2619,9 +2619,7 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 	pack_t			*pak;
 	fileInPack_t	*buildBuffer;
 	char			zpath[MAX_ZPATH];
-	qboolean		hasPattern;
-	const char		*nameExt;
-	int				extLen;
+	const char		*x;
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
@@ -2641,16 +2639,17 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 	if ( !extension ) {
 		extension = "";
 	}
+	extensionLength = strlen( extension );
+	if ( extension[0] == '.' && extension[1] != '\0' ) {
+		extension++;
+	}
 
 	pathLength = strlen( path );
 	if ( path[pathLength-1] == '\\' || path[pathLength-1] == '/' ) {
 		pathLength--;
 	}
-	extensionLength = strlen( extension );
 	nfiles = 0;
 	FS_ReturnPath(path, zpath, &pathDepth);
-
-	hasPattern = ( strchr( extension, '?' ) != NULL );
 
 	//
 	// search through the path, one element at a time, adding to list
@@ -2669,8 +2668,8 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 			pak = search->pack;
 			buildBuffer = pak->buildBuffer;
 			for (i = 0; i < pak->numfiles; i++) {
-				char	*name;
-				int		zpathLen, depth;
+				const char *name;
+				int zpathLen, depth;
 
 				// check for directory match
 				name = buildBuffer[i].name;
@@ -2700,18 +2699,11 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 					} else {
 						if ( length < extensionLength )
 							continue;
-						if ( !hasPattern ) {
-							if ( Q_stricmp( name + length - extensionLength, extension ) )
+						if ( *extension ) {
+							x = strrchr( name, '.' );
+							if ( !x || !Com_FilterExt( extension, x+1 ) ) {
 								continue;
-						} else { 
-							// for now - check extension length if using pattern
-							nameExt = strrchr( name, '.' );
-							if ( nameExt && nameExt > name )
-								extLen = length - ( nameExt - name ) - 1;
-							else
-								extLen = 0;
-							if ( extLen != extensionLength )
-								continue;
+							}
 						}
 					}
 					// unique the match
@@ -2739,21 +2731,8 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 					// use custom filter
 					if ( !fnamecallback( name, length ) )
 						continue;
-				} else {
-					if ( length < extensionLength )
-						continue;
-					if ( hasPattern ) {
-						// for now - check extension length if using pattern
-						nameExt = strrchr( name, '.' );
-						if ( nameExt && nameExt > name )
-							extLen = length - ( nameExt - name ) - 1;
-						else
-							extLen = 0;
-						if ( extLen != extensionLength ) {
-							continue;
-						}
-					}
-				}
+				} // else - should be already filtered by Sys_ListFiles
+
 				nfiles = FS_AddFileToList( name, list, nfiles );
 			}
 			Sys_FreeFileList( sysFiles );
@@ -2767,7 +2746,7 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 		return NULL;
 	}
 
-	listCopy = Z_Malloc( ( nfiles + 1 ) * sizeof( *listCopy ) );
+	listCopy = Z_Malloc( ( nfiles + 1 ) * sizeof( listCopy[0] ) );
 	for ( i = 0 ; i < nfiles ; i++ ) {
 		listCopy[i] = list[i];
 	}
@@ -2976,7 +2955,7 @@ static int FS_GetModList( char *listbuf, int bufsize ) {
 
 	// iterate through paths and get list of potential mods
 	for (i = 0; i < ARRAY_LEN( paths ); i++) {
-		if ( !*paths[ i ] )
+		if ( !*paths[ i ] || !(*paths[i])->string[0] )
 			continue;
 		pFiles0 = Sys_ListFiles( (*paths[i])->string, NULL, NULL, &dummy, qtrue );
 		// Sys_ConcatenateFileLists frees the lists so Sys_FreeFileList isn't required

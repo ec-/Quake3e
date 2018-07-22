@@ -265,30 +265,6 @@ void Sys_ListFilteredFiles( const char *basedir, const char *subdirs, const char
 }
 
 
-#if 0
-static qboolean strgtr(const char *s0, const char *s1) {
-	int l0, l1, i;
-
-	l0 = strlen(s0);
-	l1 = strlen(s1);
-
-	if (l1<l0) {
-		l0 = l1;
-	}
-
-	for(i=0;i<l0;i++) {
-		if (s1[i] > s0[i]) {
-			return qtrue;
-		}
-		if (s1[i] < s0[i]) {
-			return qfalse;
-		}
-	}
-	return qfalse;
-}
-#endif
-
-
 /*
 =============
 Sys_Sleep
@@ -329,13 +305,14 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 	intptr_t	findhandle;
 	int			flag;
 	int			i;
+	const char	*x;
 
 	if (filter) {
 
 		nfiles = 0;
 		Sys_ListFilteredFiles( directory, "", filter, list, &nfiles );
 
-		list[ nfiles ] = 0;
+		list[ nfiles ] = NULL;
 		*numfiles = nfiles;
 
 		if (!nfiles)
@@ -364,6 +341,10 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 
 	Com_sprintf( search, sizeof(search), "%s\\*%s", directory, extension );
 
+	if ( extension[0] == '.' && extension[1] != '\0' ) {
+		extension++;
+	}
+
 	// search
 	nfiles = 0;
 
@@ -378,12 +359,18 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 			if ( nfiles == MAX_FOUND_FILES - 1 ) {
 				break;
 			}
+			if ( *extension ) {
+				x = strrchr( findinfo.name, '.' );
+				if ( !x || !Com_FilterExt( extension, x+1 ) ) {
+					continue;
+				}
+			}
 			list[ nfiles ] = FS_CopyString( findinfo.name );
 			nfiles++;
 		}
 	} while ( _findnext (findhandle, &findinfo) != -1 );
 
-	list[ nfiles ] = 0;
+	list[ nfiles ] = NULL;
 
 	_findclose (findhandle);
 
@@ -400,24 +387,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 	}
 	listCopy[i] = NULL;
 
-#if 0
-	do {
-		flag = 0;
-		for(i=1; i<nfiles; i++) {
-			if (strgtr(listCopy[i-1], listCopy[i])) {
-				char *temp = listCopy[i];
-				listCopy[i] = listCopy[i-1];
-				listCopy[i-1] = temp;
-				flag = 1;
-			}
-		}
-	} while(flag);
-#else
-	if ( nfiles > 1 ) 
-	{
-		Com_SortList( listCopy, nfiles-1 );
-	}
-#endif
+	Com_SortFileList( listCopy, nfiles, extension[0] != '\0' );
 
 	return listCopy;
 }

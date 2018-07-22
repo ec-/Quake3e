@@ -723,7 +723,7 @@ char *Com_SkipCharset( char *s, char *sep );
 
 void Com_RandomBytes( byte *string, int len );
 
-void Com_SortList( char **list, int n );
+void Com_SortFileList( char **list, int nfiles, int fastSort );
 
 // mode parm for FS_FOpenFile
 typedef enum {
