@@ -2336,8 +2336,7 @@ static pack_t *FS_LoadZipFile( const char *zipfile )
 	}
 
 	namelen = PAD( namelen, sizeof( void * ) );
-	size = sizeof( *pack ) + hashSize * sizeof( pack->hashTable[0] ) + filecount * sizeof( buildBuffer[0] );
-	size += PAD( namelen, sizeof( intptr_t ) );
+	size = sizeof( *pack ) + hashSize * sizeof( pack->hashTable[0] ) + filecount * sizeof( buildBuffer[0] ) + namelen;
 	size += PAD( fileNameLen, sizeof( intptr_t ) );
 	size += PAD( baseNameLen, sizeof( intptr_t ) );
 #ifdef USE_PK3_CACHE
@@ -2352,7 +2351,7 @@ static pack_t *FS_LoadZipFile( const char *zipfile )
 	buildBuffer = (fileInPack_t*)( pack->hashTable + pack->hashSize );
 	namePtr = (char*)( buildBuffer + filecount );
 
-	pack->pakFilename = (char*)( namePtr + PAD( namelen, sizeof( intptr_t ) ) );
+	pack->pakFilename = (char*)( namePtr + namelen );
 	pack->pakBasename = (char*)( pack->pakFilename + PAD( fileNameLen, sizeof( intptr_t ) ) );
 
 #ifdef USE_PK3_CACHE
