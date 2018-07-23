@@ -1366,7 +1366,7 @@ void Cvar_List_f( void ) {
 	i = 0;
 	for (var = cvar_vars ; var ; var = var->next, i++)
 	{
-		if(!var->name || (match && !Com_Filter(match, var->name, qfalse)))
+		if(!var->name || (match && !Com_Filter(match, var->name)))
 			continue;
 
 		if (var->flags & CVAR_SERVERINFO) {
@@ -1451,7 +1451,7 @@ void Cvar_ListModified_f( void ) {
 
 		totalModified++;
 
-		if (match && !Com_Filter(match, var->name, qfalse))
+		if (match && !Com_Filter(match, var->name))
 			continue;
 
 		if (var->flags & CVAR_SERVERINFO) {

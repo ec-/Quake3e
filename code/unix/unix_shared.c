@@ -218,7 +218,7 @@ void Sys_ListFilteredFiles( const char *basedir, const char *subdirs, const char
 			break;
 		}
 		Com_sprintf( filename, sizeof(filename), "%s/%s", subdirs, d->d_name );
-		if (!Com_FilterPath( filter, filename, qfalse ))
+		if ( !Com_FilterPath( filter, filename ) )
 			continue;
 		list[ *numfiles ] = FS_CopyString( filename );
 		(*numfiles)++;

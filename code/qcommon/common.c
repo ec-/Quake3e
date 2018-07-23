@@ -690,21 +690,14 @@ void Info_Print( const char *s ) {
 Com_StringContains
 ============
 */
-static const char *Com_StringContains( const char *str1, const char *str2, int len2, int casesensitive ) {
+static const char *Com_StringContains( const char *str1, const char *str2, int len2 ) {
 	int len, i, j;
 
 	len = strlen(str1) - len2;
 	for (i = 0; i <= len; i++, str1++) {
 		for (j = 0; str2[j]; j++) {
-			if (casesensitive) {
-				if (str1[j] != str2[j]) {
-					break;
-				}
-			}
-			else {
-				if (locase[(byte)str1[j]] != locase[(byte)str2[j]]) {
-					break;
-				}
+			if (locase[(byte)str1[j]] != locase[(byte)str2[j]]) {
+				break;
 			}
 		}
 		if (!str2[j]) {
@@ -720,7 +713,7 @@ static const char *Com_StringContains( const char *str1, const char *str2, int l
 Com_Filter
 ============
 */
-int Com_Filter( const char *filter, const char *name, int casesensitive )
+int Com_Filter( const char *filter, const char *name )
 {
 	char buf[ MAX_TOKEN_CHARS ];
 	const char *ptr;
@@ -737,7 +730,7 @@ int Com_Filter( const char *filter, const char *name, int casesensitive )
 			}
 			buf[i] = '\0';
 			if ( i ) {
-				ptr = Com_StringContains( name, buf, i, casesensitive );
+				ptr = Com_StringContains( name, buf, i );
 				if ( !ptr )
 					return qfalse;
 				name = ptr + i;
@@ -756,22 +749,14 @@ int Com_Filter( const char *filter, const char *name, int casesensitive )
 			while(*filter && !found) {
 				if (*filter == ']' && *(filter+1) != ']') break;
 				if (*(filter+1) == '-' && *(filter+2) && (*(filter+2) != ']' || *(filter+3) == ']')) {
-					if (casesensitive) {
-						if (*name >= *filter && *name <= *(filter+2)) found = qtrue;
-					}
-					else {
-						if (locase[(byte)*name] >= locase[(byte)*filter] &&
-							locase[(byte)*name] <= locase[(byte)*(filter+2)]) found = qtrue;
-					}
+					if (locase[(byte)*name] >= locase[(byte)*filter] &&
+						locase[(byte)*name] <= locase[(byte)*(filter+2)])
+							found = qtrue;
 					filter += 3;
 				}
 				else {
-					if (casesensitive) {
-						if (*filter == *name) found = qtrue;
-					}
-					else {
-						if (locase[(byte)*filter] == locase[(byte)*name]) found = qtrue;
-					}
+					if (locase[(byte)*filter] == locase[(byte)*name])
+						found = qtrue;
 					filter++;
 				}
 			}
@@ -784,12 +769,8 @@ int Com_Filter( const char *filter, const char *name, int casesensitive )
 			name++;
 		}
 		else {
-			if (casesensitive) {
-				if (*filter != *name) return qfalse;
-			}
-			else {
-				if (locase[(byte)*filter] != locase[(byte)*name]) return qfalse;
-			}
+			if (locase[(byte)*filter] != locase[(byte)*name])
+				return qfalse;
 			filter++;
 			name++;
 		}
@@ -819,7 +800,7 @@ qboolean Com_FilterExt( const char *filter, const char *name )
 			}
 			buf[ i ] = '\0';
 			if ( i ) {
-				ptr = Com_StringContains( name, buf, i, qfalse );
+				ptr = Com_StringContains( name, buf, i );
 				if ( !ptr )
 					return qfalse;
 				name = ptr + i;
@@ -852,7 +833,7 @@ qboolean Com_FilterExt( const char *filter, const char *name )
 Com_FilterPath
 ============
 */
-int Com_FilterPath(const char *filter, const char *name, int casesensitive)
+int Com_FilterPath( const char *filter, const char *name )
 {
 	int i;
 	char new_filter[MAX_QPATH];
@@ -876,7 +857,7 @@ int Com_FilterPath(const char *filter, const char *name, int casesensitive)
 		}
 	}
 	new_name[i] = '\0';
-	return Com_Filter(new_filter, new_name, casesensitive);
+	return Com_Filter( new_filter, new_name );
 }
 
 

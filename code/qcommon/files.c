@@ -2674,9 +2674,9 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 				// check for directory match
 				name = buildBuffer[i].name;
 				//
-				if (filter) {
+				if ( filter ) {
 					// case insensitive
-					if (!Com_FilterPath( filter, name, qfalse ))
+					if ( !Com_FilterPath( filter, name ) )
 						continue;
 					// unique the match
 					nfiles = FS_AddFileToList( name, list, nfiles );
