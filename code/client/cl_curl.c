@@ -980,44 +980,44 @@ qboolean Com_DL_Perform( download_t *dl )
 	n = 128;
 
 	i = 0;
-	while( res == CURLM_CALL_MULTI_PERFORM && i < n ) 
+	while( res == CURLM_CALL_MULTI_PERFORM && i < n )
 	{
 		res = dl->func.multi_perform( dl->cURLM, &c );
 		i++;
 	}
-	if( res == CURLM_CALL_MULTI_PERFORM ) 
+	if( res == CURLM_CALL_MULTI_PERFORM )
 	{
 		return qtrue;
 	}
 
 	msg = dl->func.multi_info_read( dl->cURLM, &c );
-	if( msg == NULL ) 
+	if( msg == NULL )
 	{
 		return qtrue;
 	}
 
-	if ( dl->fHandle != FS_INVALID_HANDLE ) 
+	if ( dl->fHandle != FS_INVALID_HANDLE )
 	{
 		FS_FCloseFile( dl->fHandle );
 		dl->fHandle = FS_INVALID_HANDLE;
 	}
 
-	if ( msg->msg == CURLMSG_DONE && msg->data.result == CURLE_OK ) 
+	if ( msg->msg == CURLMSG_DONE && msg->data.result == CURLE_OK )
 	{
 		qboolean autoDownload = dl->mapAutoDownload;
 
-		Com_sprintf( name, sizeof( name ), "%s/%s.pk3", dl->gameDir, dl->Name );
+		Com_sprintf( name, sizeof( name ), "%s%c%s.pk3", dl->gameDir, PATH_SEP, dl->Name );
 
-		if ( !FS_SV_FileExists( name ) ) 
+		if ( !FS_SV_FileExists( name ) )
 		{
 			FS_SV_Rename( dl->TempName, name );
 		}
 		else
 		{
 			n = FS_GetZipChecksum( name );
-			Com_sprintf( name, sizeof( name ), "%s/%s.%08x.pk3", dl->gameDir, dl->Name, n );
+			Com_sprintf( name, sizeof( name ), "%s%c%s.%08x.pk3", dl->gameDir, PATH_SEP, dl->Name, n );
 
-			if ( FS_SV_FileExists( name ) ) 
+			if ( FS_SV_FileExists( name ) )
 				FS_Remove( name );
 
 			FS_SV_Rename( dl->TempName, name );

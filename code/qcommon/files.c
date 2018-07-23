@@ -232,8 +232,8 @@ typedef struct fileInPack_s {
 } fileInPack_t;
 
 typedef struct pack_s {
-	char			pakFilename[MAX_OSPATH];	// c:\quake3\baseq3\pak0.pk3
-	char			pakBasename[MAX_OSPATH];	// pak0
+	char			*pakFilename;				// c:\quake3\baseq3\pak0.pk3
+	char			*pakBasename;				// pak0
 	const char		*pakGamename;				// baseq3
 	unzFile			handle;						// handle to zip file
 	int				checksum;					// regular checksum
@@ -2248,7 +2248,7 @@ Creates a new pak_t in the search chain for the contents
 of a zip file.
 =================
 */
-static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
+static pack_t *FS_LoadZipFile( const char *zipfile )
 {
 	fileInPack_t	*buildBuffer;
 	pack_t			*pack;
@@ -2263,19 +2263,14 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 	int				*fs_headerLongs;
 	int				filecount;
 	char			*namePtr;
+	const char		*basename;
+	int				fileNameLen;
+	int				baseNameLen;
 
 #ifdef USE_PK3_CACHE
 	pack = FS_LoadCachedPK3( zipfile );
 	if ( pack )
 	{
-		// update basename if needed
-		if ( !pack->pakBasename[0] && *basename )
-		{
-			Q_strncpyz( pack->pakBasename, basename, sizeof( pack->pakBasename ) );
-			// strip .pk3 if needed
-			FS_StripExt( pack->pakBasename, ".pk3" );
-		}
-
 		// update pure checksum
 		if ( pack->checksumFeed != fs_checksumFeed )
 		{
@@ -2289,6 +2284,17 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 		return pack; // loaded from cache
 	}
 #endif
+
+	// extract basename from zip path
+	basename = strrchr( zipfile, PATH_SEP );
+	if ( basename == NULL ) {
+		basename = zipfile;
+	} else {
+		basename++;
+	}
+
+	fileNameLen = (int) strlen( zipfile ) + 1;
+	baseNameLen = (int) strlen( basename ) + 1;
 
 	uf = unzOpen(zipfile);
 	err = unzGetGlobalInfo (uf,&gi);
@@ -2331,6 +2337,8 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 
 	namelen = PAD( namelen, sizeof( void * ) );
 	size = sizeof( *pack ) + hashSize * sizeof( pack->hashTable[0] ) + filecount * sizeof( buildBuffer[0] ) + namelen;
+	size += PAD( fileNameLen, sizeof( intptr_t ) );
+	size += PAD( baseNameLen, sizeof( intptr_t ) );
 #ifdef USE_PK3_CACHE
 	size += ( filecount + 1 ) * sizeof( fs_headerLongs[0] );
 #endif
@@ -2343,16 +2351,20 @@ static pack_t *FS_LoadZipFile(const char *zipfile, const char *basename)
 	buildBuffer = (fileInPack_t*)( pack->hashTable + pack->hashSize );
 	namePtr = (char*)( buildBuffer + filecount );
 
+	pack->pakFilename = (char*)( namePtr + namelen );
+	pack->pakBasename = (char*)( pack->pakFilename + PAD( fileNameLen, sizeof( intptr_t ) ) );
+
 #ifdef USE_PK3_CACHE
-	fs_headerLongs = (int*)( namePtr + namelen );
+	fs_headerLongs = (int*)( pack->pakBasename + PAD( baseNameLen, sizeof( intptr_t ) ) );
 #else
 	fs_headerLongs = Z_Malloc( ( filecount + 1 ) * sizeof( fs_headerLongs[0] ) );
 #endif
+
 	fs_numHeaderLongs = 0;
 	fs_headerLongs[ fs_numHeaderLongs++ ] = LittleLong( fs_checksumFeed );
 
-	Q_strncpyz( pack->pakFilename, zipfile, sizeof( pack->pakFilename ) );
-	Q_strncpyz( pack->pakBasename, basename, sizeof( pack->pakBasename ) );
+	Com_Memcpy( pack->pakFilename, zipfile, fileNameLen );
+	Com_Memcpy( pack->pakBasename, basename, baseNameLen );
 
 	// strip .pk3 if needed
 	FS_StripExt( pack->pakBasename, ".pk3" );
@@ -2451,9 +2463,9 @@ qboolean FS_CompareZipChecksum(const char *zipfile)
 	pack_t *thepak;
 	int index, checksum;
 	
-	thepak = FS_LoadZipFile(zipfile, "");
+	thepak = FS_LoadZipFile( zipfile );
 	
-	if(!thepak)
+	if ( !thepak )
 		return qfalse;
 	
 	checksum = thepak->checksum;
@@ -2481,7 +2493,7 @@ int FS_GetZipChecksum( const char *zipfile )
 	pack_t *pak;
 	int checksum;
 	
-	pak = FS_LoadZipFile( zipfile, "" );
+	pak = FS_LoadZipFile( zipfile );
 	
 	if ( !pak )
 		return 0xFFFFFFFF;
@@ -2988,7 +3000,7 @@ static int FS_GetModList( char *listbuf, int bufsize ) {
 		// so we will try each of them here
 		nPaks = nPakDirs = 0;
 		for ( j = 0; j < ARRAY_LEN( paths ); j++ ) {
-			if ( !*paths[ j ] )
+			if ( !*paths[ j ] || !(*paths[ j ])->string[0] )
 				break;
 			path = FS_BuildOSPath( (*paths[j])->string, name, NULL );
 
@@ -3436,7 +3448,7 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 
 			// The next .pk3 file is before the next .pk3dir
 			pakfile = FS_BuildOSPath( path, dir, pakfiles[pakfilesi] );
-			if ( (pak = FS_LoadZipFile( pakfile, pakfiles[pakfilesi]) ) == NULL ) {
+			if ( (pak = FS_LoadZipFile( pakfile ) ) == NULL ) {
 				// This isn't a .pk3! Next!
 				pakfilesi++;
 				continue;
@@ -4113,8 +4125,7 @@ Servers with sv_pure set will get this string and pass it to clients.
 #ifndef DEDICATED
 const char *FS_LoadedPakNames( void ) {
 	static char	info[BIG_INFO_STRING];
-	searchpath_t *search;
-	char buf[ sizeof(search->pack->pakBasename) + 2 ];
+	const searchpath_t *search;
 	char *s, *max;
 	int len;
 
@@ -4127,15 +4138,17 @@ const char *FS_LoadedPakNames( void ) {
 		if ( !search->pack )
 			continue;
 
+		len = (int)strlen( search->pack->pakBasename );
 		if ( info[0] )
-			len = sprintf( buf, " %s", search->pack->pakBasename );
-		else
-			len = sprintf( buf, "%s", search->pack->pakBasename );
+			len++;
 
 		if ( s + len > max )
 			break;
 
-		s = Q_stradd( s, buf );
+		if ( info[0] )
+			s = Q_stradd( s, " " );
+
+		s = Q_stradd( s, search->pack->pakBasename );
 	}
 
 	return info;
