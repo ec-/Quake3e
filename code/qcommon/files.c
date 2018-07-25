@@ -1478,10 +1478,10 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					if ( !( pak->referenced & FS_GENERAL_REF ) && FS_GeneralRef( filename ) ) {
 						pak->referenced |= FS_GENERAL_REF;
 					}
-					else if ( !( pak->referenced & FS_CGAME_REF ) && !strcmp( filename, "vm/cgame.qvm" ) ) {
+					if ( !( pak->referenced & FS_CGAME_REF ) && !strcmp( filename, "vm/cgame.qvm" ) ) {
 						pak->referenced |= FS_CGAME_REF;
 					}
-					else if ( !( pak->referenced & FS_UI_REF ) && !strcmp( filename, "vm/ui.qvm" ) ) {
+					if ( !( pak->referenced & FS_UI_REF ) && !strcmp( filename, "vm/ui.qvm" ) ) {
 						pak->referenced |= FS_UI_REF;
 					}
 
@@ -2108,6 +2108,7 @@ static int FS_HashPK3( const char *name )
 	{
 		hash = hash * 101 + c;
 	}
+	hash = hash ^ (hash >> 16);
 	return hash & (PK3_HASH_SIZE-1);
 }
 
@@ -2561,7 +2562,7 @@ static int FS_AddFileToList( const char *name, char **list, int nfiles ) {
 	}
 	for ( i = 0 ; i < nfiles ; i++ ) {
 		if ( !Q_stricmp( name, list[i] ) ) {
-			return nfiles; // allready in list
+			return nfiles; // already in list
 		}
 	}
 	list[ nfiles ] = FS_CopyString( name );
@@ -2573,7 +2574,7 @@ static int FS_AddFileToList( const char *name, char **list, int nfiles ) {
 
 /*
 ===============
-FS_AllowUnpure
+FS_AllowListExternal
 ===============
 */
 static qboolean FS_AllowListExternal( const char *extension ) 
