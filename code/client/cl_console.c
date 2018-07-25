@@ -771,6 +771,7 @@ void Con_DrawSolidConsole( float frac ) {
 			re.SetColor( conColorValue );
 			re.DrawStretchPic( 0, 0, wf, yf, 0, 0, 1, 1, cls.whiteShader );
 		} else {
+			re.SetColor( g_color_table[ ColorIndex( COLOR_WHITE ) ] );
 			re.DrawStretchPic( 0, 0, wf, yf, 0, 0, 1, 1, cls.consoleShader );
 		}
 
