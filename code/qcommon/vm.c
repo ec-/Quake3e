@@ -1323,7 +1323,10 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 		// fix OSP demo UI
 		if ( vm->crc32sum == 0xCA84F31D && vm->instructionCount == 78585 && vm->exactDataLength == 542180 ) {
 			if ( memcmp( vm->dataBase + 0x3D2E, "dm_67", 5 ) == 0 ) {
-				memcpy(	vm->dataBase + 0x3D2E, "dm_??", 5 );
+				memcpy( vm->dataBase + 0x3D2E, "dm_??", 5 );
+			}
+			if ( memcmp( vm->dataBase + 0x3D50, "\"%s.%s\"\n", 8 ) == 0 ) {
+				memcpy( vm->dataBase + 0x3D50, "\"%s\"\n", 6 );
 			}
 		}
 	}
