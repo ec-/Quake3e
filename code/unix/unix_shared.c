@@ -237,10 +237,13 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 	qboolean dironly = wantsubs;
 	char		search[MAX_OSPATH*2+MAX_QPATH+1];
 	int			nfiles;
+	int			extLen;
+	int			length;
 	char		**listCopy;
 	char		*list[MAX_FOUND_FILES];
 	int			i;
 	struct stat st;
+	qboolean	hasPatterns;
 	const char	*x;
 
 	if ( filter ) {
@@ -271,17 +274,19 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 		dironly = qtrue;
 	}
 
-	if ( extension[0] == '.' && extension[1] != '\0' ) {
+	if ((fdir = opendir(directory)) == NULL) {
+		*numfiles = 0;
+		return NULL;
+	}
+
+	extLen = (int)strlen( extension );
+	hasPatterns = Com_HasPatterns( extension );
+	if ( hasPatterns && extension[0] == '.' && extension[1] != '\0' ) {
 		extension++;
 	}
 	
 	// search
 	nfiles = 0;
-
-	if ((fdir = opendir(directory)) == NULL) {
-		*numfiles = 0;
-		return NULL;
-	}
 
 	while ((d = readdir(fdir)) != NULL) {
 		if ( nfiles == MAX_FOUND_FILES - 1 )
@@ -293,9 +298,16 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 			(!dironly && (st.st_mode & S_IFDIR)))
 			continue;
 		if ( *extension ) {
-			x = strrchr( d->d_name, '.' );
-			if ( !x || !Com_FilterExt( extension, x+1 ) ) {
-				continue;
+			if ( hasPatterns ) {
+				x = strrchr( d->d_name, '.' );
+				if ( !x || !Com_FilterExt( extension, x+1 ) ) {
+					continue;
+				}
+			} else {
+				length = (int) strlen( d->d_name );
+				if ( length < extLen || Q_stricmp( d->d_name + length - extLen, extension ) ) {
+					continue;
+				}
 			}
 		}
 		list[ nfiles ] = FS_CopyString( d->d_name );
@@ -304,7 +316,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 
 	list[ nfiles ] = NULL;
 
-	closedir(fdir);
+	closedir( fdir );
 
 	// return a copy of the list
 	*numfiles = nfiles;
@@ -350,13 +362,13 @@ void Sys_FreeFileList( char **list ) {
 Sys_GetFileStats
 =============
 */
-qboolean Sys_GetFileStats( const char *filename, off_t *size, time_t *mtime, time_t *ctime ) {
+qboolean Sys_GetFileStats( const char *filename, unsigned long *size, unsigned long *mtime, unsigned long *ctime ) {
 	struct stat s;
 
 	if ( stat( filename, &s ) == 0 ) {
-		*size = s.st_size;
-		*mtime = s.st_mtime;
-		*ctime = s.st_ctime;
+		*size = (unsigned long)s.st_size;
+		*mtime = (unsigned long)s.st_mtime;
+		*ctime = (unsigned long)s.st_ctime;
 		return qtrue;
 	} else {
 		return qfalse;

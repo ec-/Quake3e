@@ -915,6 +915,7 @@ int			Com_Split( char *in, char **out, int outsz, int delim );
 
 int			Com_Filter( const char *filter, const char *name );
 qboolean	Com_FilterExt( const char *filter, const char *name );
+qboolean	Com_HasPatterns( const char *str );
 int			Com_FilterPath( const char *filter, const char *name );
 int			Com_RealTime(qtime_t *qtime);
 qboolean	Com_SafeMode( void );
@@ -1231,7 +1232,7 @@ const char *Sys_SteamPath( void );
 char	**Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, qboolean wantsubs );
 void	Sys_FreeFileList( char **list );
 
-qboolean Sys_GetFileStats( const char *filename, off_t *size, time_t *mtime, time_t *ctime );
+qboolean Sys_GetFileStats( const char *filename, unsigned long *size, unsigned long *mtime, unsigned long *ctime );
 
 void	Sys_BeginProfiling( void );
 void	Sys_EndProfiling( void );

@@ -249,9 +249,9 @@ typedef struct pack_s {
 	// caching subsystem
 #ifdef USE_PK3_CACHE
 	int				namehash;
-	off_t			size;
-	time_t			mtime;
-	time_t			ctime;
+	unsigned long	size;
+	unsigned long	mtime;
+	unsigned long	ctime;
 	qboolean		touched;
 	struct pack_s	*next;
 	struct pack_s	*prev;
@@ -1410,9 +1410,11 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 		for ( search = fs_searchpaths ; search ; search = search->next ) {
 			// is the element a pak file?
 			if ( search->pack && search->pack->hashTable[ (hash = fullHash & (search->pack->hashSize-1)) ] ) {
+#ifndef DEDICATED
 				// skip non-pure files
 				if ( !FS_PakIsPure( search->pack ) )
 					continue;
+#endif
 				// look through all the pak file elements
 				pak = search->pack;
 				pakFile = pak->hashTable[hash];
@@ -1465,10 +1467,12 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		// is the element a pak file?
 		if ( search->pack && search->pack->hashTable[ (hash = fullHash & (search->pack->hashSize-1)) ] ) {
+#ifndef DEDICATED
 			// disregard if it doesn't match one of the allowed pure pak files
 			if ( !FS_PakIsPure( search->pack ) ) {
 				continue;
 			}
+#endif
 			// look through all the pak file elements
 			pak = search->pack;
 			pakFile = pak->hashTable[hash];
@@ -2168,9 +2172,9 @@ static void FS_RemoveFromCache( pack_t *pack )
 
 static pack_t *FS_LoadCachedPK3( const char *zipfile )
 {
-	off_t size;
-	time_t mtime;
-	time_t ctime;
+	unsigned long size;
+	unsigned long mtime;
+	unsigned long ctime;
 	pack_t *pak;
 
 	pak = FS_FindInCache( zipfile );
@@ -2635,11 +2639,12 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 	searchpath_t	*search;
 	int				i;
 	int				pathLength;
-	int				extensionLength;
+	int				extLen;
 	int				length, pathDepth, temp;
 	pack_t			*pak;
 	fileInPack_t	*buildBuffer;
 	char			zpath[MAX_ZPATH];
+	qboolean		hasPatterns;
 	const char		*x;
 
 	if ( !fs_searchpaths ) {
@@ -2647,7 +2652,7 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 	}
 
 	if  ( fs_numServerPaks && !( flags & FS_MATCH_STICK ) ) {
-		flags &= ~FS_MATCH_UNPURE;		
+		flags &= ~FS_MATCH_UNPURE;
 		if ( !FS_AllowListExternal( extension ) )
 			flags &= ~FS_MATCH_EXTERN;
 	}
@@ -2660,8 +2665,10 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 	if ( !extension ) {
 		extension = "";
 	}
-	extensionLength = strlen( extension );
-	if ( extension[0] == '.' && extension[1] != '\0' ) {
+
+	extLen = (int)strlen( extension );
+	hasPatterns = Com_HasPatterns( extension );
+	if ( hasPatterns && extension[0] == '.' && extension[1] != '\0' ) {
 		extension++;
 	}
 
@@ -2711,19 +2718,25 @@ char **FS_ListFilteredFiles( const char *path, const char *extension, const char
 					}
 
 					// check for extension match
-					length = strlen( name );
+					length = (int)strlen( name );
 
 					if ( fnamecallback ) {
 						// use custom filter
 						if ( !fnamecallback( name, length ) )
 							continue;
 					} else {
-						if ( length < extensionLength )
+						if ( length < extLen )
 							continue;
 						if ( *extension ) {
-							x = strrchr( name, '.' );
-							if ( !x || !Com_FilterExt( extension, x+1 ) ) {
-								continue;
+							if ( hasPatterns ) {
+								x = strrchr( name, '.' );
+								if ( !x || !Com_FilterExt( extension, x+1 ) ) {
+									continue;
+								}
+							} else {
+								if ( Q_stricmp( name + length - extLen, extension ) ) {
+									continue;
+								}
 							}
 						}
 					}

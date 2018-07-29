@@ -1329,6 +1329,22 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 				memcpy( vm->dataBase + 0x3D50, "\"%s\"\n", 6 );
 			}
 		}
+		// fix defrag-1.91.25 demo UI - masked Q_strupr() calls for directories and filenames
+		if ( vm->crc32sum == 0x6E51985F && vm->instructionCount == 125942 && vm->exactDataLength == 1334788 ) {
+			ip = buf + 60150;
+			if ( ip[0].op == OP_LOCAL && ip[0].value == 28 && ip[1].op == OP_LOAD4 && ip[2].op == OP_ARG && ip[3].value == 124325 ) {
+				int i;
+				for ( i = 0; i < 6; i++ ) {
+					ip[i].op = OP_IGNORE;
+					ip[i].jused = 0;
+				}
+				ip = buf + 60438;
+				for ( i = 0; i < 6; i++ ) {
+					ip[i].op = OP_IGNORE;
+					ip[i].jused = 0;
+				}
+			}
+		}
 	}
 }
 

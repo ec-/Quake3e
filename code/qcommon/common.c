@@ -830,6 +830,27 @@ qboolean Com_FilterExt( const char *filter, const char *name )
 
 /*
 ============
+Com_HasPatterns
+============
+*/
+qboolean Com_HasPatterns( const char *str )
+{
+	int c;
+
+	while ( (c = *str++) != '\0' )
+	{
+		if ( c == '*' || c == '?' )
+		{
+			return qtrue;
+		}
+	}
+
+	return qfalse;
+}
+
+
+/*
+============
 Com_FilterPath
 ============
 */
