@@ -1023,6 +1023,24 @@ image_t	*R_FindImageFile( const char *name, imgType_t type, imgFlags_t flags )
 		return NULL;
 	}
 
+	if ( tr.mapLoading && r_mapGreyScale->value ) {
+		byte *img;
+		int i;
+		for ( i = 0, img = pic; i < width * height; i++, img += 4 ) {
+			if ( r_mapGreyScale->integer ) {
+				byte luma = LUMA( img[0], img[1], img[2] );
+				img[0] = luma;
+				img[1] = luma;
+				img[2] = luma;
+			} else {
+				float luma = LUMA( img[0], img[1], img[2] );
+				img[0] = LERP( img[0], luma, r_mapGreyScale->value );
+				img[1] = LERP( img[1], luma, r_mapGreyScale->value );
+				img[2] = LERP( img[2], luma, r_mapGreyScale->value );
+			}
+		}
+	}
+
 	image = R_CreateImage( name, pic, width, height, type, flags, 0 );
 	ri.Free( pic );
 	return image;

@@ -152,7 +152,7 @@ cvar_t	*r_lodCurveError;
 
 cvar_t	*r_overBrightBits;
 cvar_t	*r_mapOverBrightBits;
-cvar_t	*r_mapGrayScale;
+cvar_t	*r_mapGreyScale;
 
 cvar_t	*r_debugSurface;
 cvar_t	*r_simpleMipMaps;
@@ -1301,8 +1301,8 @@ static void R_Register( void )
 	r_greyscale = ri.Cvar_Get( "r_greyscale", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_greyscale, "-1", "1", CV_FLOAT );
 	ri.Cvar_SetGroup( r_greyscale, CVG_RENDERER );
-	r_mapGrayScale = ri.Cvar_Get( "r_mapGrayScale", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	ri.Cvar_CheckRange( r_mapGrayScale, "0", "1", CV_FLOAT );
+	r_mapGreyScale = ri.Cvar_Get( "r_mapGreyScale", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_mapGreyScale, "0", "1", CV_FLOAT );
 
 	//
 	// temporary latched variables that can only change over a restart
