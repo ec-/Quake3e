@@ -1250,7 +1250,7 @@ extern  int unzStringFileNameCompare (const char* fileName1,const char* fileName
 */
 extern uLong unzlocal_SearchCentralDir(FILE *fin)
 {
-	unsigned char* buf;
+	unsigned char buf[BUFREADCOMMENT+4];
 	uLong uSizeFile;
 	uLong uBackRead;
 	uLong uMaxBack=0xffff; /* maximum size of global comment */
@@ -1265,9 +1265,9 @@ extern uLong unzlocal_SearchCentralDir(FILE *fin)
 	if (uMaxBack>uSizeFile)
 		uMaxBack = uSizeFile;
 
-	buf = (unsigned char*)ALLOC(BUFREADCOMMENT+4);
-	if (buf==NULL)
-		return 0;
+	//buf = (unsigned char*)ALLOC(BUFREADCOMMENT+4);
+	//if (buf==NULL)
+	//	return 0;
 
 	uBackRead = 4;
 	while (uBackRead<uMaxBack)
@@ -1299,7 +1299,7 @@ extern uLong unzlocal_SearchCentralDir(FILE *fin)
 		if (uPosFound!=0)
 			break;
 	}
-	TRYFREE(buf);
+	//TRYFREE(buf);
 	return uPosFound;
 }
 
@@ -2396,8 +2396,8 @@ static  int inflate_trees_dynamic OF((
 static  int inflate_trees_fixed OF((
     uInt *,                    /* literal desired/actual bit depth */
     uInt *,                    /* distance desired/actual bit depth */
-    inflate_huft * *,       /* literal/length tree result */
-    inflate_huft * *,       /* distance tree result */
+    const inflate_huft * *,    /* literal/length tree result */
+    const inflate_huft * *,    /* distance tree result */
     z_streamp));                /* for memory allocation */
 
 
@@ -3258,10 +3258,10 @@ int inflate_trees_bits(uInt *c, uInt *bb, inflate_huft * *tb, inflate_huft *hp, 
 {
   int r;
   uInt hn = 0;          /* hufts used in space */
-  uInt *v;             /* work area for huft_build */
+  uInt v[19] = { 0 };   /* work area for huft_build */
 
-  if ((v = (uInt*)ZALLOC(z, 19, sizeof(uInt))) == Z_NULL)
-    return Z_MEM_ERROR;
+  //if ((v = (uInt*)ZALLOC(z, 19, sizeof(uInt))) == Z_NULL)
+  //  return Z_MEM_ERROR;
   r = huft_build(c, 19, 19, (uInt*)Z_NULL, (uInt*)Z_NULL,
                  tb, bb, hp, &hn, v);
   if (r == Z_DATA_ERROR)
@@ -3271,7 +3271,7 @@ int inflate_trees_bits(uInt *c, uInt *bb, inflate_huft * *tb, inflate_huft *hp, 
     z->msg = (char*)"incomplete dynamic bit lengths tree";
     r = Z_DATA_ERROR;
   }
-  ZFREE(z, v);
+  //ZFREE(z, v);
   return r;
 }
 
@@ -3289,11 +3289,11 @@ int inflate_trees_dynamic(uInt nl, uInt nd, uInt *c, uInt *bl, uInt *bd, inflate
 {
   int r;
   uInt hn = 0;          /* hufts used in space */
-  uInt *v;             /* work area for huft_build */
+  uInt v[288] = { 0 };  /* work area for huft_build */
 
   /* allocate work area */
-  if ((v = (uInt*)ZALLOC(z, 288, sizeof(uInt))) == Z_NULL)
-    return Z_MEM_ERROR;
+  //if ((v = (uInt*)ZALLOC(z, 288, sizeof(uInt))) == Z_NULL)
+ //   return Z_MEM_ERROR;
 
   /* build literal/length tree */
   r = huft_build(c, nl, 257, cplens, cplext, tl, bl, hp, &hn, v);
@@ -3306,7 +3306,7 @@ int inflate_trees_dynamic(uInt nl, uInt nd, uInt *c, uInt *bl, uInt *bd, inflate
       z->msg = (char*)"incomplete literal/length tree";
       r = Z_DATA_ERROR;
     }
-    ZFREE(z, v);
+    //ZFREE(z, v);
     return r;
   }
 
@@ -3329,13 +3329,13 @@ int inflate_trees_dynamic(uInt nl, uInt nd, uInt *c, uInt *bl, uInt *bd, inflate
       z->msg = (char*)"empty distance tree with lengths";
       r = Z_DATA_ERROR;
     }
-    ZFREE(z, v);
+    //ZFREE(z, v);
     return r;
 #endif
   }
 
   /* done */
-  ZFREE(z, v);
+  //ZFREE(z, v);
   return Z_OK;
 }
 
@@ -3350,7 +3350,7 @@ int inflate_trees_dynamic(uInt nl, uInt nd, uInt *c, uInt *bl, uInt *bd, inflate
 
 static uInt fixed_bl = 9;
 static uInt fixed_bd = 5;
-static inflate_huft fixed_tl[] = {
+static const inflate_huft fixed_tl[] = {
     {{{96,7}},256}, {{{0,8}},80}, {{{0,8}},16}, {{{84,8}},115},
     {{{82,7}},31}, {{{0,8}},112}, {{{0,8}},48}, {{{0,9}},192},
     {{{80,7}},10}, {{{0,8}},96}, {{{0,8}},32}, {{{0,9}},160},
@@ -3480,7 +3480,7 @@ static inflate_huft fixed_tl[] = {
     {{{82,7}},27}, {{{0,8}},111}, {{{0,8}},47}, {{{0,9}},191},
     {{{0,8}},15}, {{{0,8}},143}, {{{0,8}},79}, {{{0,9}},255}
   };
-static inflate_huft fixed_td[] = {
+static const inflate_huft fixed_td[] = {
     {{{80,5}},1}, {{{87,5}},257}, {{{83,5}},17}, {{{91,5}},4097},
     {{{81,5}},5}, {{{89,5}},1025}, {{{85,5}},65}, {{{93,5}},16385},
     {{{80,5}},3}, {{{88,5}},513}, {{{84,5}},33}, {{{92,5}},8193},
@@ -3491,7 +3491,7 @@ static inflate_huft fixed_td[] = {
     {{{82,5}},13}, {{{90,5}},3073}, {{{86,5}},193}, {{{192,5}},24577}
   };
 
-int inflate_trees_fixed(uInt *bl, uInt *bd, inflate_huft * *tl, inflate_huft * *td, z_streamp z)
+int inflate_trees_fixed(uInt *bl, uInt *bd, const inflate_huft * *tl, const inflate_huft * *td, z_streamp z)
 //uInt *bl;               /* literal desired/actual bit depth */
 //uInt *bd;               /* distance desired/actual bit depth */
 //inflate_huft * *tl;  /* literal/length tree result */
