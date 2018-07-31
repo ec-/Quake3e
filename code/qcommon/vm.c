@@ -378,7 +378,6 @@ const char *VM_SymbolForCompiledPointer( vm_t *vm, void *code ) {
 #endif
 
 
-
 /*
 ===============
 ParseHex
@@ -555,10 +554,23 @@ intptr_t QDECL VM_DllSyscall( intptr_t arg, ... ) {
 #endif
 
 
+static void VM_SwapLongs( void *data, int length )
+{
+#ifndef Q3_LITTLE_ENDIAN
+	int i, *ptr;
+	ptr = (int *) data;
+	length /= sizeof( int );
+	for ( i = 0; i < length; i++ ) {
+		ptr[ i ] = LittleLong( ptr[ i ] );
+	}
+#endif
+}
+
+
 static int Load_JTS( vm_t *vm, unsigned int crc32, void *data, int vmPakIndex )  {
 	char		filename[MAX_QPATH];
 	int			header[2];
-	int			length, i;
+	int			length;
 	fileHandle_t fh;
 
 	// load the image
@@ -595,9 +607,7 @@ static int Load_JTS( vm_t *vm, unsigned int crc32, void *data, int vmPakIndex ) 
 	}
 
 	// byte swap the header
-	for ( i = 0 ; i < sizeof( header  ) / sizeof( int ) ; i++ ) {
-		((int *)header)[i] = LittleLong( ((int *)header)[i] );
-	}
+	VM_SwapLongs( header, sizeof( header  ) );
 
 	if ( (unsigned int)header[0] != crc32 ) {
 		if ( data )
@@ -625,9 +635,7 @@ static int Load_JTS( vm_t *vm, unsigned int crc32, void *data, int vmPakIndex ) 
 	FS_FCloseFile( fh );
 
 	// byte swap the data
-	for ( i = 0 ; i < length / sizeof( int ); i++ ) {
-		((int *)data)[i] = LittleLong( ((int *)data)[i] );
-	}
+	VM_SwapLongs( data, length );
 
 	return length;
 }
@@ -641,7 +649,7 @@ VM_ValidateHeader
 static char *VM_ValidateHeader( vmHeader_t *header, int fileSize ) 
 {
 	static char errMsg[128];
-	int i, n;
+	int n;
 
 	// truncated
 	if ( fileSize < ( sizeof( vmHeader_t ) - sizeof( int ) ) ) {
@@ -662,14 +670,12 @@ static char *VM_ValidateHeader( vmHeader_t *header, int fileSize )
 	}
 
 	if ( LittleLong( header->vmMagic ) == VM_MAGIC_VER2 )
-		n = sizeof( vmHeader_t ) / sizeof( int );
+		n = sizeof( vmHeader_t );
 	else
-		n = ( sizeof( vmHeader_t ) - sizeof( int ) ) / sizeof( int );
+		n = ( sizeof( vmHeader_t ) - sizeof( int ) );
 
 	// byte swap the header
-	for ( i = 0 ; i < n ; i++ ) {
-		((int *)header)[i] = LittleLong( ((int *)header)[i] );
-	}
+	VM_SwapLongs( header, n );
 
 	// bad code offset
 	if ( header->codeOffset >= fileSize ) {
@@ -816,9 +822,7 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 	Com_Memcpy( vm->dataBase, (byte *)header + header->dataOffset, header->dataLength + header->litLength );
 
 	// byte swap the longs
-	for ( i = 0 ; i < header->dataLength ; i += 4 ) {
-		*(int *)(vm->dataBase + i) = LittleLong( *(int *)(vm->dataBase + i ) );
-	}
+	VM_SwapLongs( vm->dataBase, header->dataLength );
 
 	if( header->vmMagic == VM_MAGIC_VER2 ) {
 		int previousNumJumpTableTargets = vm->numJumpTableTargets;
@@ -847,9 +851,7 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 				header->dataLength + header->litLength, header->jtrgLength );
 
 		// byte swap the longs
-		for ( i = 0 ; i < header->jtrgLength ; i += 4 ) {
-			*(int *)(vm->jumpTableTargets + i) = LittleLong( *(int *)(vm->jumpTableTargets + i ) );
-		}
+		VM_SwapLongs( vm->jumpTableTargets, header->jtrgLength );
 	}
 
 	if ( tryjts == qtrue && (length = Load_JTS( vm, crc32sum, NULL, vmPakIndex )) >= 0 ) {
