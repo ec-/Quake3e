@@ -220,7 +220,7 @@ char *PunctuationFromNum(script_t *script, int num)
 	{
 		if (script->punctuations[i].n == num) return script->punctuations[i].p;
 	} //end for
-	return "unkown punctuation";
+	return "unknown punctuation";
 } //end of the function PunctuationFromNum
 //===========================================================================
 //

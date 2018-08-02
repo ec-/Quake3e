@@ -659,6 +659,9 @@ typedef enum {
 #define CONSOLE_HISTORY_FILE "q3history"
 #endif
 
+typedef	time_t fileTime_t;
+typedef	off_t  fileOffset_t;
+
 qboolean FS_Initialized( void );
 
 void	FS_InitFilesystem ( void );
@@ -730,7 +733,7 @@ void	FS_FCloseFile( fileHandle_t f );
 int		FS_ReadFile( const char *qpath, void **buffer );
 // returns the length of the file
 // a null buffer will just return the file length without loading
-// as a quick check for existance. -1 length == not present
+// as a quick check for existence. -1 length == not present
 // A 0 byte will always be appended at the end, so string ops are safe.
 // the buffer should be considered read-only, because it may be cached
 // for other uses.
@@ -1232,7 +1235,7 @@ const char *Sys_SteamPath( void );
 char	**Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, qboolean wantsubs );
 void	Sys_FreeFileList( char **list );
 
-qboolean Sys_GetFileStats( const char *filename, unsigned long *size, unsigned long *mtime, unsigned long *ctime );
+qboolean Sys_GetFileStats( const char *filename, fileOffset_t *size, fileTime_t *mtime, fileTime_t *ctime );
 
 void	Sys_BeginProfiling( void );
 void	Sys_EndProfiling( void );

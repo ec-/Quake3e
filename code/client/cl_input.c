@@ -256,10 +256,6 @@ void IN_CenterView (void) {
 
 //==========================================================================
 
-cvar_t	*cl_upspeed;
-cvar_t	*cl_forwardspeed;
-cvar_t	*cl_sidespeed;
-
 cvar_t	*cl_yawspeed;
 cvar_t	*cl_pitchspeed;
 

@@ -249,9 +249,9 @@ typedef struct pack_s {
 	// caching subsystem
 #ifdef USE_PK3_CACHE
 	int				namehash;
-	unsigned long	size;
-	unsigned long	mtime;
-	unsigned long	ctime;
+	fileOffset_t	size;
+	fileTime_t		mtime;
+	fileTime_t		ctime;
 	qboolean		touched;
 	struct pack_s	*next;
 	struct pack_s	*prev;
@@ -2102,6 +2102,19 @@ ZIP FILE LOADING
 
 ==========================================================================
 */
+static int FS_PakHashSize( const int filecount )
+{
+	int hashSize;
+
+	for ( hashSize = 2; hashSize < MAX_FILEHASH_SIZE; hashSize <<= 1 ) {
+		if ( hashSize >= filecount ) {
+			break;
+		}
+	}
+
+	return hashSize;
+}
+
 #ifdef USE_PK3_CACHE
 
 #define PK3_HASH_SIZE 512
@@ -2172,9 +2185,9 @@ static void FS_RemoveFromCache( pack_t *pack )
 
 static pack_t *FS_LoadCachedPK3( const char *zipfile )
 {
-	unsigned long size;
-	unsigned long mtime;
-	unsigned long ctime;
+	fileOffset_t size;
+	fileTime_t mtime;
+	fileTime_t ctime;
 	pack_t *pak;
 
 	pak = FS_FindInCache( zipfile );
@@ -2200,9 +2213,9 @@ static pack_t *FS_LoadCachedPK3( const char *zipfile )
 }
 
 
-static void FS_SavePK3ToCache( pack_t *pak, const char *filename )
+static void FS_InsertPK3ToCache( pack_t *pak )
 {
-	if ( Sys_GetFileStats( filename, &pak->size, &pak->mtime, &pak->ctime ) )
+	if ( Sys_GetFileStats( pak->pakFilename, &pak->size, &pak->mtime, &pak->ctime ) )
 	{
 		FS_AddToCache( pak );
 		pak->touched = qtrue;
@@ -2260,7 +2273,7 @@ of a zip file.
 */
 static pack_t *FS_LoadZipFile( const char *zipfile )
 {
-	fileInPack_t	*buildBuffer, *curFile;
+	fileInPack_t	*curFile;
 	pack_t			*pack;
 	unzFile			uf;
 	int				err;
@@ -2339,14 +2352,10 @@ static pack_t *FS_LoadZipFile( const char *zipfile )
 
 	// get the hash table size from the number of files in the zip
 	// because lots of custom pk3 files have less than 32 or 64 files
-	for ( hashSize = 2; hashSize < MAX_FILEHASH_SIZE; hashSize <<= 1 ) {
-		if ( hashSize >= filecount ) {
-			break;
-		}
-	}
+	hashSize = FS_PakHashSize( filecount );
 
 	namelen = PAD( namelen, sizeof( int ) );
-	size = sizeof( *pack ) + hashSize * sizeof( pack->hashTable[0] ) + filecount * sizeof( buildBuffer[0] ) + namelen;
+	size = sizeof( *pack ) + hashSize * sizeof( pack->hashTable[0] ) + filecount * sizeof( pack->buildBuffer[0] ) + namelen;
 	size += PAD( fileNameLen, sizeof( int ) );
 	size += PAD( baseNameLen, sizeof( int ) );
 #ifdef USE_PK3_CACHE
@@ -2360,8 +2369,8 @@ static pack_t *FS_LoadZipFile( const char *zipfile )
 	pack->hashSize = hashSize;
 	pack->hashTable = (fileInPack_t **)( pack + 1 );
 
-	buildBuffer = (fileInPack_t*)( pack->hashTable + pack->hashSize );
-	namePtr = (char*)( buildBuffer + filecount );
+	pack->buildBuffer = (fileInPack_t*)( pack->hashTable + pack->hashSize );
+	namePtr = (char*)( pack->buildBuffer + filecount );
 
 	pack->pakFilename = (char*)( namePtr + namelen );
 	pack->pakBasename = (char*)( pack->pakFilename + PAD( fileNameLen, sizeof( int ) ) );
@@ -2382,7 +2391,7 @@ static pack_t *FS_LoadZipFile( const char *zipfile )
 	FS_StripExt( pack->pakBasename, ".pk3" );
 
 	unzGoToFirstFile( uf );
-	curFile = buildBuffer;
+	curFile = pack->buildBuffer;
 	for ( i = 0; i < gi.number_entry; i++ )
 	{
 		err = unzGetCurrentFileInfo( uf, &file_info, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0 );
@@ -2435,10 +2444,8 @@ static pack_t *FS_LoadZipFile( const char *zipfile )
 		pack->handle = NULL;
 	}
 
-	pack->buildBuffer = buildBuffer;
-
 #ifdef USE_PK3_CACHE
-	FS_SavePK3ToCache( pack, zipfile );
+	FS_InsertPK3ToCache( pack );
 #endif
 
 	return pack;
