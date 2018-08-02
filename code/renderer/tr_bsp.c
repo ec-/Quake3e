@@ -1769,7 +1769,7 @@ static void R_LoadNodesAndLeafs( const lump_t *nodeLump, const lump_t *leafLump 
 		out->nummarksurfaces = LittleLong(inLeaf->numLeafSurfaces);
 	}	
 
-	// chain decendants
+	// chain descendants
 	R_SetParent (s_worldData.nodes, NULL);
 }
 

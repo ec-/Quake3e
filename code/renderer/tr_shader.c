@@ -688,6 +688,8 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 		//
 		else if ( !Q_stricmp( token, "animMap" ) )
 		{
+			int	totalImages = 0;
+
 			token = COM_ParseExt( text, qfalse );
 			if ( !token[0] )
 			{
@@ -725,6 +727,12 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 					}
 					stage->bundle[0].numImageAnimations++;
 				}
+				totalImages++;
+			}
+
+			if ( totalImages > MAX_IMAGE_ANIMATIONS ) {
+				ri.Printf( PRINT_WARNING, "WARNING: ignoring excess images for 'animMap' (found %d, max is %d) in shader '%s'\n",
+						totalImages, MAX_IMAGE_ANIMATIONS, shader.name );
 			}
 		}
 		else if ( !Q_stricmp( token, "videoMap" ) )
@@ -2960,7 +2968,7 @@ qhandle_t RE_RegisterShaderFromImage(const char *name, int lightmapIndex, image_
 
 	InitShader( name, lightmapIndex );
 
-	// FIXME: set these "need" values apropriately
+	// FIXME: set these "need" values appropriately
 	shader.needsNormal = qtrue;
 	shader.needsST1 = qtrue;
 	shader.needsST2 = qtrue;
