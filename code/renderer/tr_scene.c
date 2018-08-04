@@ -197,11 +197,17 @@ void RE_AddPolyToScene( qhandle_t hShader, int numVerts, const polyVert_t *verts
 
 //=================================================================================
 
+static int _isnan( const float *f )
+{
+	uint32_t u = *( (uint32_t*) f );
+	u = 0x7F800000 - ( u & 0x7FFFFFFF );
+	return (int)( u >> 31 );
+}
+
 
 /*
 =====================
 RE_AddRefEntityToScene
-
 =====================
 */
 void RE_AddRefEntityToScene( const refEntity_t *ent, qboolean intShaderTime ) {
@@ -209,19 +215,17 @@ void RE_AddRefEntityToScene( const refEntity_t *ent, qboolean intShaderTime ) {
 		return;
 	}
 	if ( r_numentities >= MAX_REFENTITIES ) {
-		ri.Printf(PRINT_DEVELOPER, "RE_AddRefEntityToScene: Dropping refEntity, reached MAX_REFENTITIES\n");
+		ri.Printf( PRINT_DEVELOPER, "RE_AddRefEntityToScene: Dropping refEntity, reached MAX_REFENTITIES\n" );
 		return;
 	}
-#ifdef DEBUG
-	if ( Q_isnan(ent->origin[0]) || Q_isnan(ent->origin[1]) || Q_isnan(ent->origin[2]) ) {
+	if ( _isnan( &ent->origin[0] ) || _isnan( &ent->origin[1] ) || _isnan( &ent->origin[2] ) ) {
 		static qboolean first_time = qtrue;
-		if (first_time) {
+		if ( first_time ) {
 			first_time = qfalse;
-			Com_Printf(S_COLOR_YELLOW "WARNING: You might have built ioquake3 with a buggy compiler!\n");
+			ri.Printf( PRINT_WARNING, "RE_AddRefEntityToScene passed a refEntity which has an origin with a NaN component\n" );
 		}
 		return;
 	}
-#endif
 	if ( (unsigned)ent->reType >= RT_MAX_REF_ENTITY_TYPE ) {
 		ri.Error( ERR_DROP, "RE_AddRefEntityToScene: bad reType %i", ent->reType );
 	}
