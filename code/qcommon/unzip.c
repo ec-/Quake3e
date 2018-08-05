@@ -2416,7 +2416,7 @@ typedef struct inflate_codes_state inflate_codes_statef;
 
 static inflate_codes_statef *inflate_codes_new OF((
     uInt, uInt,
-    inflate_huft *, inflate_huft *,
+    const inflate_huft *, const inflate_huft *,
     z_streamp ));
 
 static  int inflate_codes OF((
@@ -2515,7 +2515,11 @@ struct inflate_blocks_state {
 #define LOAD {LOADIN LOADOUT}
 
 /* masks for lower bits (size given to avoid silly warnings with Visual C++) */
-static  uInt inflate_mask[17];
+static const uInt inflate_mask[17] = {
+    0x0000,
+    0x0001, 0x0003, 0x0007, 0x000f, 0x001f, 0x003f, 0x007f, 0x00ff,
+    0x01ff, 0x03ff, 0x07ff, 0x0fff, 0x1fff, 0x3fff, 0x7fff, 0xffff
+} ;
 
 /* copy as much as possible from the sliding window to the output area */
 static  int inflate_flush OF((
@@ -2653,7 +2657,7 @@ int inflate_blocks(inflate_blocks_statef *s, z_streamp z, int r)
                  s->last ? " (last)" : ""));
           {
             uInt bl, bd;
-            inflate_huft *tl, *td;
+            const inflate_huft *tl, *td;
             inflate_trees_fixed(&bl, &bd, &tl, &td, z);
             s->sub.decode.codes = inflate_codes_new(bl, bd, tl, td, z);
             if (s->sub.decode.codes == Z_NULL)
@@ -2893,13 +2897,6 @@ int inflate_blocks_sync_point(inflate_blocks_statef *s)
 }
 #endif
 
-
-/* And'ing with mask[n] masks the lower n bits */
-static uInt inflate_mask[17] = {
-    0x0000,
-    0x0001, 0x0003, 0x0007, 0x000f, 0x001f, 0x003f, 0x007f, 0x00ff,
-    0x01ff, 0x03ff, 0x07ff, 0x0fff, 0x1fff, 0x3fff, 0x7fff, 0xffff
-};
 
 
 /* copy as much as possible from the sliding window to the output area */
@@ -3518,9 +3515,9 @@ int inflate_trees_fixed(uInt *bl, uInt *bd, const inflate_huft * *tl, const infl
    at least ten.  The ten bytes are six bytes for the longest length/
    distance pair plus four bytes for overloading the bit buffer. */
 
-static int inflate_fast(uInt bl, uInt bd, inflate_huft *tl, inflate_huft *td, inflate_blocks_statef *s, z_streamp z)
+static int inflate_fast(uInt bl, uInt bd, const inflate_huft *tl, const inflate_huft *td, inflate_blocks_statef *s, z_streamp z)
 {
-  inflate_huft *t;      /* temporary pointer */
+  const inflate_huft *t;/* temporary pointer */
   uInt e;               /* extra bits or operation */
   uLong b;              /* bit buffer */
   uInt k;               /* bits in bit buffer */
@@ -3702,7 +3699,7 @@ struct inflate_codes_state {
   uInt len;
   union {
     struct {
-      inflate_huft *tree;       /* pointer into tree */
+      const inflate_huft *tree; /* pointer into tree */
       uInt need;                /* bits needed */
     } code;             /* if LEN or DIST, where in tree */
     uInt lit;           /* if LIT, literal */
@@ -3715,13 +3712,13 @@ struct inflate_codes_state {
   /* mode independent information */
   Byte lbits;           /* ltree bits decoded per branch */
   Byte dbits;           /* dtree bits decoder per branch */
-  inflate_huft *ltree;          /* literal/length/eob tree */
-  inflate_huft *dtree;          /* distance tree */
+  const inflate_huft *ltree; /* literal/length/eob tree */
+  const inflate_huft *dtree; /* distance tree */
 
 };
 
 
-inflate_codes_statef *inflate_codes_new(uInt bl, uInt bd, inflate_huft *tl, inflate_huft *td, z_streamp z)
+inflate_codes_statef *inflate_codes_new(uInt bl, uInt bd, const inflate_huft *tl, const inflate_huft *td, z_streamp z)
 {
   inflate_codes_statef *c;
 
@@ -3742,7 +3739,7 @@ inflate_codes_statef *inflate_codes_new(uInt bl, uInt bd, inflate_huft *tl, infl
 int inflate_codes(inflate_blocks_statef *s, z_streamp z, int r)
 {
   uInt j;               /* temporary storage */
-  inflate_huft *t;      /* temporary pointer */
+  const inflate_huft *t;/* temporary pointer */
   uInt e;               /* extra bits or operation */
   uLong b;              /* bit buffer */
   uInt k;               /* bits in bit buffer */

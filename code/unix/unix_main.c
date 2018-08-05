@@ -1010,6 +1010,9 @@ int Sys_ParseArgs( int argc, const char* argv[] )
 
 int main( int argc, const char* argv[] )
 {
+	char con_title[ MAX_CVAR_VALUE_STRING ];
+	int xpos, ypos;
+	//qboolean useXYpos;
 	char  *cmdline;
 	int   len, i;
 	tty_err	err;
@@ -1019,7 +1022,7 @@ int main( int argc, const char* argv[] )
 
 	// merge the command line, this is kinda silly
 	for ( len = 1, i = 1; i < argc; i++ )
-    	len += strlen( argv[i] ) + 1;
+		len += strlen( argv[i] ) + 1;
 
 	cmdline = malloc( len );
 	*cmdline = '\0';
@@ -1029,6 +1032,8 @@ int main( int argc, const char* argv[] )
 			strcat( cmdline, " " );
 		strcat( cmdline, argv[i] );
 	}
+
+	/*useXYpos = */ Com_EarlyParseCmdLine( cmdline, con_title, sizeof( con_title ), &xpos, &ypos );
 
 	// bk000306 - clear queues
 //	memset( &eventQue[0], 0, sizeof( eventQue ) );
