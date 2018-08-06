@@ -197,7 +197,7 @@ void RE_AddPolyToScene( qhandle_t hShader, int numVerts, const polyVert_t *verts
 
 //=================================================================================
 
-static int _isnan( const float *f )
+static int isnan_fp( const float *f )
 {
 	uint32_t u = *( (uint32_t*) f );
 	u = 0x7F800000 - ( u & 0x7FFFFFFF );
@@ -218,7 +218,7 @@ void RE_AddRefEntityToScene( const refEntity_t *ent, qboolean intShaderTime ) {
 		ri.Printf( PRINT_DEVELOPER, "RE_AddRefEntityToScene: Dropping refEntity, reached MAX_REFENTITIES\n" );
 		return;
 	}
-	if ( _isnan( &ent->origin[0] ) || _isnan( &ent->origin[1] ) || _isnan( &ent->origin[2] ) ) {
+	if ( isnan_fp( &ent->origin[0] ) || isnan_fp( &ent->origin[1] ) || isnan_fp( &ent->origin[2] ) ) {
 		static qboolean first_time = qtrue;
 		if ( first_time ) {
 			first_time = qfalse;
