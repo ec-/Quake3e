@@ -871,6 +871,8 @@ default values.
 
 #define CVAR_PRIVATE		0x8000	// can't be read from VM
 
+#define CVAR_DEVELOPER		0x10000 // can be set only in developer mode
+
 #define CVAR_ARCHIVE_ND		(CVAR_ARCHIVE | CVAR_NODEFAULT)
 
 // These flags are only returned by the Cvar_Flags() function

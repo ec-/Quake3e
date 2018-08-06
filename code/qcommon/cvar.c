@@ -24,13 +24,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "q_shared.h"
 #include "qcommon.h"
 
-cvar_t		*cvar_vars = NULL;
-cvar_t		*cvar_cheats;
+static cvar_t	*cvar_vars = NULL;
+static cvar_t	*cvar_cheats;
+static cvar_t	*cvar_developer;
 int			cvar_modifiedFlags;
 
 #define	MAX_CVARS	2048
-cvar_t		cvar_indexes[MAX_CVARS];
-int			cvar_numIndexes;
+static cvar_t	cvar_indexes[MAX_CVARS];
+static int		cvar_numIndexes;
 
 static int	cvar_group[ CVG_MAX ];
 
@@ -390,7 +391,7 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 			Z_Free( var->resetString );
 			var->resetString = CopyString( var_value );
 
-			if(flags & CVAR_ROM)
+			if ( flags & CVAR_ROM || ( (flags & CVAR_DEVELOPER) && !cvar_developer->integer ) )
 			{
 				// this variable was set by the user,
 				// so force it to value given by the engine.
@@ -425,6 +426,7 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 			Com_DPrintf( "Warning: cvar \"%s\" given initial values: \"%s\" and \"%s\"\n",
 				var_name, var->resetString, var_value );
 		}
+
 		// if we have a latched string, take that value now
 		if ( var->latchedString ) {
 			char *s;
@@ -676,6 +678,12 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 		if ( (var->flags & CVAR_CHEAT) && !cvar_cheats->integer )
 		{
 			Com_Printf ("%s is cheat protected.\n", var_name);
+			return var;
+		}
+
+		if ( (var->flags & CVAR_DEVELOPER) && !cvar_developer->integer )
+		{
+			Com_Printf( "%s can be set only in developer mode.\n", var_name );
 			return var;
 		}
 
@@ -1977,7 +1985,8 @@ void Cvar_Init (void)
 	Com_Memset(cvar_indexes, '\0', sizeof(cvar_indexes));
 	Com_Memset(hashTable, '\0', sizeof(hashTable));
 
-	cvar_cheats = Cvar_Get("sv_cheats", "1", CVAR_ROM | CVAR_SYSTEMINFO );
+	cvar_cheats = Cvar_Get( "sv_cheats", "1", CVAR_ROM | CVAR_SYSTEMINFO );
+	cvar_developer = Cvar_Get( "developer", "0", CVAR_TEMP );
 
 	Cmd_AddCommand ("print", Cvar_Print_f);
 	Cmd_AddCommand ("toggle", Cvar_Toggle_f);
