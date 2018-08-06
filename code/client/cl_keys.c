@@ -423,7 +423,7 @@ static void Console_Key( int key ) {
 	}
 
 	// console scrolling
-	if ( key == K_PGUP ) {
+	if ( key == K_PGUP || key == K_MWHEELUP ) {
 		if ( keys[K_CTRL].down ) {	// hold <ctrl> to accelerate scrolling
 			Con_PageUp( 0 );		// by one visible page
 		} else {
@@ -432,27 +432,9 @@ static void Console_Key( int key ) {
 		return;
 	}
 
-	if ( key == K_PGDN ) {
+	if ( key == K_PGDN || key == K_MWHEELDOWN ) {
 		if ( keys[K_CTRL].down ) {	// hold <ctrl> to accelerate scrolling
 			Con_PageDown( 0 );		// by one visible page
-		} else {
-			Con_PageDown( 1 );
-		}
-		return;
-	}
-
-	if ( key == K_MWHEELUP ) {	//----(SA)	added some mousewheel functionality to the console
-		if ( keys[K_CTRL].down ) {	// hold <ctrl> to accelerate scrolling
-			Con_PageUp( 4 );
-		} else {
-			Con_PageUp( 1 );
-		}
-		return;
-	}
-
-	if ( key == K_MWHEELDOWN ) {	//----(SA)	added some mousewheel functionality to the console
-		if ( keys[K_CTRL].down ) {	// hold <ctrl> to accelerate scrolling
-			Con_PageDown( 4 );
 		} else {
 			Con_PageDown( 1 );
 		}
