@@ -1302,7 +1302,7 @@ static void R_Register( void )
 	ri.Cvar_CheckRange( r_greyscale, "-1", "1", CV_FLOAT );
 	ri.Cvar_SetGroup( r_greyscale, CVG_RENDERER );
 	r_mapGreyScale = ri.Cvar_Get( "r_mapGreyScale", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	ri.Cvar_CheckRange( r_mapGreyScale, "0", "1", CV_FLOAT );
+	ri.Cvar_CheckRange( r_mapGreyScale, "-1", "1", CV_FLOAT );
 
 	//
 	// temporary latched variables that can only change over a restart

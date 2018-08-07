@@ -521,7 +521,7 @@ static void FS_ReplaceSeparators( char *path ) {
 	char	*s;
 
 	for ( s = path ; *s ; s++ ) {
-		if ( *s == '/' || *s == '\\' ) {
+		if ( *s == PATH_SEP_FOREIGN ) {
 			*s = PATH_SEP;
 		}
 	}
@@ -547,11 +547,11 @@ char *FS_BuildOSPath( const char *base, const char *game, const char *qpath ) {
 	}
 
 	if ( qpath )
-		Com_sprintf( temp, sizeof( temp ), "/%s/%s", game, qpath );
+		Com_sprintf( temp, sizeof( temp ), "%c%s%c%s", PATH_SEP, game, PATH_SEP, qpath );
 	else
-		Com_sprintf( temp, sizeof( temp ), "/%s", game );
+		Com_sprintf( temp, sizeof( temp ), "%c%s", PATH_SEP, game );
 
-	FS_ReplaceSeparators( temp );	
+	FS_ReplaceSeparators( temp );
 	Com_sprintf( ospath[toggle], sizeof( ospath[0] ), "%s%s", base, temp );
 	
 	return ospath[toggle];
@@ -600,7 +600,7 @@ static qboolean FS_CreatePath( const char *OSPath ) {
 	// Make sure we have OS correct slashes
 	FS_ReplaceSeparators( path );
 	for ( ofs = path + 1; *ofs; ofs++ ) {
-		if ( *ofs == PATH_SEP ) {	
+		if ( *ofs == PATH_SEP ) {
 			// create the directory
 			*ofs = '\0';
 			Sys_Mkdir( path );
@@ -2945,7 +2945,7 @@ static void FS_GetModDescription( const char *modDir, char *description, int des
 	char			descPath[MAX_QPATH];
 	int				nDescLen;
 
-	Com_sprintf( descPath, sizeof ( descPath ), "%s/description.txt", modDir );
+	Com_sprintf( descPath, sizeof ( descPath ), "%s%cdescription.txt", modDir, PATH_SEP );
 	FS_ReplaceSeparators( descPath );
 	nDescLen = FS_SV_FOpenFileRead( descPath, &descHandle );
 
@@ -3258,7 +3258,7 @@ static void FS_Path_f( void ) {
 				}
 			}
 		} else {
-			Com_Printf( "%s/%s\n", s->dir->path, s->dir->gamedir );
+			Com_Printf( "%s%c%s\n", s->dir->path, PATH_SEP, s->dir->gamedir );
 		}
 	}
 
@@ -3367,7 +3367,7 @@ static void FS_Which_f( void ) {
 				continue;
 			}
 			fclose(temp);
-			Com_sprintf( buf, sizeof( buf ), "%s/%s", dir->path, dir->gamedir );
+			Com_sprintf( buf, sizeof( buf ), "%s%c%s", dir->path, PATH_SEP, dir->gamedir );
 			FS_ReplaceSeparators( buf );
 			Com_Printf( "File \"%s\" found at \"%s\"\n", filename, buf );
 			if ( ++numfound >= 32 ) {
@@ -3436,6 +3436,7 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 	strcpy( search->dir->path, path );
 	strcpy( search->dir->gamedir, dir );
 	gamedir = search->dir->gamedir;
+
 	search->next = fs_searchpaths;
 	fs_searchpaths = search;
 
@@ -3507,6 +3508,7 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 			search = Z_TagMalloc( sizeof( *search ), TAG_SEARCH_PACK );
 			Com_Memset( search, 0, sizeof( *search ) );
 			search->pack = pak;
+
 			search->next = fs_searchpaths;
 			fs_searchpaths = search;
 
@@ -3721,7 +3723,7 @@ FS_Shutdown
 Frees all resources.
 ================
 */
-void FS_Shutdown( qboolean closemfp ) 
+void FS_Shutdown( qboolean closemfp )
 {
 	searchpath_t	*p, *next;
 	int i;
@@ -3729,7 +3731,7 @@ void FS_Shutdown( qboolean closemfp )
 	// close opened files
 	if ( closemfp ) 
 	{
-		for ( i = 1; i < MAX_FILE_HANDLES; i++ ) 
+		for ( i = 1; i < MAX_FILE_HANDLES; i++ )
 		{
 			if ( !fsh[i].handleFiles.file.v  )
 				continue;

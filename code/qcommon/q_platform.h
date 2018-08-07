@@ -57,6 +57,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define ID_INLINE __inline
 #define PATH_SEP '\\'
+#define PATH_SEP_FOREIGN '/'
 #define DLL_EXT ".dll"
 
 #if defined( _M_IX86 )
@@ -89,6 +90,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define OS_STRING "linux"
 #define ID_INLINE inline
 #define PATH_SEP '/'
+#define PATH_SEP_FOREIGN '\\'
 #define DLL_EXT ".so"
 
 #if defined __i386__
@@ -117,6 +119,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define OS_STRING "freebsd"
 #define ID_INLINE inline
 #define PATH_SEP '/'
+#define PATH_SEP_FOREIGN '\\'
 #define DLL_EXT ".so"
 
 #if defined __i386__
@@ -147,6 +150,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define OS_STRING "netbsd"
 #define ID_INLINE inline
 #define PATH_SEP '/'
+#define PATH_SEP_FOREIGN '\\'
 
 #ifdef __i386__
 #define ARCH_STRING "i386"
@@ -170,6 +174,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define OS_STRING "q3vm"
 #define ID_INLINE
 #define PATH_SEP '/'
+#define PATH_SEP_FOREIGN '\\'
 
 #define ARCH_STRING "bytecode"
 
@@ -194,6 +199,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #ifndef PATH_SEP
 #error "PATH_SEP not defined"
+#endif
+
+#ifndef PATH_SEP_FOREIGN
+#error "PATH_SEP_FOREIGN not defined"
 #endif
 
 #ifndef DLL_EXT
