@@ -58,7 +58,7 @@ extern cvar_t *s_device;
 #define	_snd_pcm_hw_params_set_period_time_near snd_pcm_hw_params_set_period_time_near
 #define	_snd_pcm_hw_params_set_periods snd_pcm_hw_params_set_periods
 #define	_snd_pcm_hw_params_set_periods_near snd_pcm_hw_params_set_periods_near
-#define	_snd_pcm_hw_params_get_period_size snd_pcm_hw_params_get_period_size
+#define	_snd_pcm_hw_params_get_period_size_min snd_pcm_hw_params_get_period_size_min
 #define	_snd_pcm_hw_params snd_pcm_hw_params
 #define	_snd_pcm_sw_params_current snd_pcm_sw_params_current
 #define	_snd_pcm_sw_params_set_start_threshold snd_pcm_sw_params_set_start_threshold
@@ -118,7 +118,7 @@ static int (*_snd_pcm_hw_params_set_rate_near)(snd_pcm_t *pcm, snd_pcm_hw_params
 static int (*_snd_pcm_hw_params_set_period_time_near)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int *val, int *dir);
 static int (*_snd_pcm_hw_params_set_periods)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int val, int dir);
 static int (*_snd_pcm_hw_params_set_periods_near)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int *val, int *dir);
-static int (*_snd_pcm_hw_params_get_period_size)(const snd_pcm_hw_params_t *params, snd_pcm_uframes_t *frames, int *dir);
+static int (*_snd_pcm_hw_params_get_period_size_min)(const snd_pcm_hw_params_t *params, snd_pcm_uframes_t *frames, int *dir);
 static int (*_snd_pcm_hw_params)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params);
 static int (*_snd_pcm_sw_params_current)(snd_pcm_t *pcm, snd_pcm_sw_params_t *params);
 static int (*_snd_pcm_sw_params_set_start_threshold)(snd_pcm_t *pcm, snd_pcm_sw_params_t *params, snd_pcm_uframes_t val);
@@ -176,7 +176,7 @@ sym_t a_list[] = {
 	{ (void**)&_snd_pcm_hw_params_set_period_time_near, "snd_pcm_hw_params_set_period_time_near" },
 	{ (void**)&_snd_pcm_hw_params_set_periods, "snd_pcm_hw_params_set_periods" },
 	{ (void**)&_snd_pcm_hw_params_set_periods_near, "snd_pcm_hw_params_set_periods_near" },
-	{ (void**)&_snd_pcm_hw_params_get_period_size, "snd_pcm_hw_params_get_period_size" },
+	{ (void**)&_snd_pcm_hw_params_get_period_size_min, "snd_pcm_hw_params_get_period_size_min" },
 	{ (void**)&_snd_pcm_hw_params, "snd_pcm_hw_params" },
 	{ (void**)&_snd_pcm_sw_params_current, "snd_pcm_sw_params_current" },
 	{ (void**)&_snd_pcm_sw_params_set_start_threshold, "snd_pcm_sw_params_set_start_threshold" },
@@ -256,8 +256,13 @@ static void UnloadLibs( void )
 #endif
 }
 
+typedef enum {
+	SND_MODE_ASYNC,
+	SND_MODE_MMAP,
+	SND_MODE_DIRECT
+} smode_t;
 
-qboolean SNDDMA_Init( void )
+qboolean setup_ALSA( smode_t mode )
 {
 	snd_async_handler_t *ahandler;
 	snd_pcm_hw_params_t *hwparams;
@@ -274,6 +279,7 @@ qboolean SNDDMA_Init( void )
 
 	alsa_used = qfalse;
 	snd_async = qfalse;
+	use_mmap = qfalse;
 
 #ifndef USE_ALSA_STATIC
 	if ( t_lib == NULL )
@@ -336,7 +342,18 @@ qboolean SNDDMA_Init( void )
 	}
 
 	hwparams = alloca( _snd_pcm_hw_params_sizeof() );
-	swparams = alloca( _snd_pcm_hw_params_sizeof() );
+	if ( hwparams == NULL )
+	{
+		Com_Printf( "Error allocating %i bytes of memory for hwparams\n", _snd_pcm_hw_params_sizeof() );
+		goto __fail;
+	}
+
+	swparams = alloca( _snd_pcm_sw_params_sizeof() );
+	if ( swparams == NULL )
+	{
+		Com_Printf( "Error allocating %i bytes of memory for swparams\n", _snd_pcm_sw_params_sizeof() );
+		goto __fail;
+	}
 
 	err = _snd_pcm_hw_params_any( handle, hwparams );
 	if ( err < 0 )
@@ -346,27 +363,23 @@ qboolean SNDDMA_Init( void )
 		goto __fail;
 	}
 
-	err = _snd_async_add_pcm_handler( &ahandler, handle, async_proc, NULL );
-	if ( err >= 0 )
+	switch ( mode )
 	{
-		Com_Printf( "... using async sound handler\n" );
-		snd_async = qtrue;
-		err = _snd_pcm_hw_params_set_access( handle,
-			hwparams, SND_PCM_ACCESS_RW_INTERLEAVED );
-		use_mmap = qfalse;
-	}
-	else
-	{
-		/* set the interleaved read/write format */
-		err = _snd_pcm_hw_params_set_access( handle,
-			hwparams, SND_PCM_ACCESS_MMAP_INTERLEAVED );
-		if ( err < 0 ) {
-			err = _snd_pcm_hw_params_set_access( handle,
-			hwparams, SND_PCM_ACCESS_RW_INTERLEAVED );
-			use_mmap = qfalse;
-		} else {
-			use_mmap = qtrue;
-		}
+		case SND_MODE_ASYNC:
+					err = _snd_async_add_pcm_handler( &ahandler, handle, async_proc, NULL );
+					if ( err < 0 )
+						goto __fail;
+					/* set the interleaved read/write format */
+					err = _snd_pcm_hw_params_set_access( handle, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED );
+					snd_async = qtrue;
+					break;
+		case SND_MODE_MMAP:
+					err = _snd_pcm_hw_params_set_access( handle, hwparams, SND_PCM_ACCESS_MMAP_INTERLEAVED );
+					use_mmap = qtrue;
+					break;
+		case SND_MODE_DIRECT:
+					err = _snd_pcm_hw_params_set_access( handle, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED );
+					break;
 	}
 
 	if ( err < 0 )
@@ -374,15 +387,6 @@ qboolean SNDDMA_Init( void )
 		Com_Printf( "Access type not available for playback: %s\n",
 			_snd_strerror( err ) );
 		goto __fail;
-	}
-
-	if ( !snd_async )
-	{
-		if ( use_mmap ) {
-			Com_Printf( "Use mmap access\n" );
-		} else {
-			Com_Printf( "Use direct access\n" );
-		}
 	}
 
 	/* set hw resampling */
@@ -471,7 +475,7 @@ qboolean SNDDMA_Init( void )
 	}
 
 	/* get period size */
-	err = _snd_pcm_hw_params_get_period_size( hwparams, &period_size, &dir );
+	err = _snd_pcm_hw_params_get_period_size_min( hwparams, &period_size, &dir );
 	if ( err < 0 )
 	{
 		Com_Printf( "Unable to get period size for playback: %s\n",
@@ -624,6 +628,26 @@ __fail:
 	UnloadLibs();
 	alsa_used = qfalse;
 	return qfalse;
+}
+
+
+qboolean SNDDMA_Init( void )
+{
+	Com_Printf( "...trying ASYNC mode\n" );
+	if ( !setup_ALSA( SND_MODE_ASYNC ) )
+	{
+		Com_Printf( "...trying MMAP mode\n" );
+		if ( !setup_ALSA( SND_MODE_MMAP ) )
+		{
+			Com_Printf( "...trying DIRECT mode\n" );
+			if ( !setup_ALSA( SND_MODE_DIRECT ) )
+			{
+				Com_Printf( "...ALSA setup failed\n" );
+				return qfalse;
+			}
+		}
+	}
+	return qtrue;
 }
 
 
