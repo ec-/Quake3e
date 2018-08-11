@@ -286,7 +286,7 @@ static void BuildMonitorList( void )
 		info = _XRRGetOutputInfo( dpy, sr, sr->outputs[ outn ] );
 		if ( info )
 		{
-			if ( info->connection == RR_Connected )
+			if ( info->connection == RR_Connected && info->crtc != None )
 			{
 				crtc_info = _XRRGetCrtcInfo( dpy, sr, info->crtc );
 				if ( crtc_info )
