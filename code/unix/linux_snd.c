@@ -633,8 +633,8 @@ __fail:
 
 qboolean SNDDMA_Init( void )
 {
-	Com_Printf( "...trying ASYNC mode\n" );
-	if ( !setup_ALSA( SND_MODE_ASYNC ) )
+//	Com_Printf( "...trying ASYNC mode\n" );
+//	if ( !setup_ALSA( SND_MODE_ASYNC ) )
 	{
 		Com_Printf( "...trying MMAP mode\n" );
 		if ( !setup_ALSA( SND_MODE_MMAP ) )
