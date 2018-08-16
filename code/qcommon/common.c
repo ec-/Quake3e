@@ -965,6 +965,24 @@ all big things are allocated on the hunk.
 #define	ZONEID	0x1d4a11
 #define MINFRAGMENT	64
 
+#ifdef USE_MULTI_SEGMENT
+#if 1 // forward lookup, faster allocation
+#define DIRECTION next
+// we may have up to 4 lists to group free blocks by size
+//#define TINY_SIZE	32
+#define SMALL_SIZE	64
+#define MEDIUM_SIZE	128
+#else // backward lookup, better free space consolidation
+#define DIRECTION prev
+#define TINY_SIZE	64
+#define SMALL_SIZE	128
+#define MEDIUM_SIZE	256
+#endif
+#endif
+
+#define USE_STATIC_TAGS
+#define USE_TRASH_TEST
+
 #ifdef ZONE_DEBUG
 typedef struct zonedebug_s {
 	char *label;
@@ -974,43 +992,200 @@ typedef struct zonedebug_s {
 } zonedebug_t;
 #endif
 
-struct memzone_s;
-
 typedef struct memblock_s {
+	struct memblock_s	*next, *prev;
 	int			size;	// including the header and possibly tiny fragments
 	memtag_t	tag;	// a tag of 0 is a free block
-	struct memblock_s	*next, *prev;
-#ifdef USE_MULTI_SEGMENT
-	struct memzone_s	*parent; // required for deallocation
-#endif
 	int			id;		// should be ZONEID
 #ifdef ZONE_DEBUG
 	zonedebug_t d;
 #endif
 } memblock_t;
 
+typedef struct freeblock_s {
+	struct freeblock_s *prev;
+	struct freeblock_s *next;
+} freeblock_t;
+
 typedef struct memzone_s {
 	int		size;			// total bytes malloced, including header
 	int		used;			// total bytes used
 	memblock_t	blocklist;	// start / end cap for linked list
-	memblock_t	*rover;
 #ifdef USE_MULTI_SEGMENT
+	// really used only on first (head) segment
+	memblock_t	dummy0;		// just to allocate some space before freelist
+	freeblock_t	freelist_tiny;
+	memblock_t	dummy1;
+	freeblock_t	freelist_small;
+	memblock_t	dummy2;
+	freeblock_t	freelist_medium;
+	memblock_t	dummy3;
+	freeblock_t	freelist;
 	struct memzone_s *next;
 	struct memzone_s *head; // first segment, for updating stats
-	int		totalSize;
-	int		totalUsed;
 	int		segnum;
-	int		failed;	// size of last failed allocation
-					// so any following allocations with sizes
-					// greater or equal than this will also fail
+#else
+	memblock_t	*rover;
 #endif
 } memzone_t;
 
+int minfragment = MINFRAGMENT; // may be adjusted at runtime
+
 // main zone for all "dynamic" memory allocation
 memzone_t	*mainzone;
+
 // we also have a small zone for small allocations that would only
 // fragment the main zone (think of cvar and cmd strings)
 memzone_t	*smallzone;
+
+
+#ifdef USE_MULTI_SEGMENT
+
+static void Z_ClearZone( memzone_t *zone, memzone_t *head, int size, int segnum );
+
+static void InitFree( freeblock_t *fb )
+{
+	memblock_t *block = (memblock_t*)( (byte*)fb - sizeof( memblock_t ) );
+	Com_Memset( block, 0, sizeof( *block ) );
+}
+
+
+static void RemoveFree( memblock_t *block )
+{
+	freeblock_t *fb = (freeblock_t*)( block + 1 );
+	freeblock_t *prev;
+	freeblock_t *next;
+
+#ifdef ZONE_DEBUG
+	if ( fb->next == NULL || fb->prev == NULL || fb->next == fb || fb->prev == fb ) {
+		Com_Error( ERR_FATAL, "RemoveFree: bad pointers fb->next: %p, fb->prev: %p\n", fb->next, fb->prev );
+	}
+#endif
+	
+	prev = fb->prev;
+	next = fb->next;
+
+	prev->next = next;
+	next->prev = prev;
+}
+
+
+static void InsertFree( memzone_t *zone, memblock_t *block )
+{
+	freeblock_t *fb = (freeblock_t*)( block + 1 );
+	freeblock_t *prev, *next;
+#ifdef TINY_SIZE
+	if ( block->size <= TINY_SIZE )
+		prev = &zone->freelist_tiny;
+	else
+#endif
+#ifdef SMALL_SIZE
+	if ( block->size <= SMALL_SIZE )
+		prev = &zone->freelist_small;
+	else
+#endif
+#ifdef MEDIUM_SIZE
+	if ( block->size <= MEDIUM_SIZE )
+		prev = &zone->freelist_medium;
+	else
+#endif
+		prev = &zone->freelist;
+	
+	next = prev->next;
+
+#ifdef ZONE_DEBUG
+	if ( block->size < sizeof( *fb ) + sizeof( *block ) ) {
+		Com_Error( ERR_FATAL, "InsertFree: bad block size: %i\n", block->size );
+	}
+#endif
+
+	prev->next = fb;
+	next->prev = fb;
+
+	fb->prev = prev;
+	fb->next = next;
+}
+
+
+static void AllocZone(  memzone_t *head, int size )
+{
+	memzone_t *newz, *zone = head;
+	int newsize;
+
+	while ( zone->next != NULL )
+		zone = zone->next;
+
+	newsize = PAD( size + sizeof( *newz ), 2*(1<<20) ); // round up to 2M blocks
+	newz = calloc( newsize, 1 );
+	if ( newz ) {
+		Z_ClearZone( newz, head, newsize, zone->segnum + 1 );
+		zone->next = newz;
+	} else {
+#ifdef ZONE_DEBUG
+		Z_LogHeap();
+#endif
+		Com_Error( ERR_FATAL, "Z_Malloc: failed on allocation of %i bytes from the %s zone",
+			size, head == smallzone ? "small" : "main" );
+	}
+}
+
+
+static memblock_t *SearchFree( memzone_t *zone, int size )
+{
+	const freeblock_t *fb; 
+	memblock_t *base;
+
+#ifdef TINY_SIZE
+	if ( size <= TINY_SIZE )
+		fb = zone->freelist_tiny.DIRECTION;
+	else
+#endif
+#ifdef SMALL_SIZE
+	if ( size <= SMALL_SIZE )
+		fb = zone->freelist_small.DIRECTION;
+	else
+#endif
+#ifdef MEDIUM_SIZE
+	if ( size <= MEDIUM_SIZE )
+		fb = zone->freelist_medium.DIRECTION;
+	else
+#endif
+		fb = zone->freelist.DIRECTION;
+
+	for ( ;; ) {
+		// not found, allocate new zone?
+		if ( fb == &zone->freelist ) {
+			AllocZone( zone, size );
+			fb = zone->freelist.DIRECTION;
+		} else {
+#ifdef TINY_SIZE
+			if ( fb == &zone->freelist_tiny ) {
+				fb = zone->freelist_small.DIRECTION;
+				continue;
+			}
+#endif
+#ifdef SMALL_SIZE
+			if ( fb == &zone->freelist_small ) {
+				fb = zone->freelist_medium.DIRECTION;
+				continue;
+			}
+#endif
+#ifdef MEDIUM_SIZE
+			if ( fb == &zone->freelist_medium ) {
+				fb = zone->freelist.DIRECTION;
+				continue;
+			}
+#endif
+			base = (memblock_t*)( (byte*) fb - sizeof( *base ) );
+			fb = fb->DIRECTION;
+			if ( base->size >= size ) {
+				return base;
+			}
+		}
+	}
+	return NULL;
+}
+#endif // USE_MULTI_SEGMENT
 
 
 /*
@@ -1018,31 +1193,58 @@ memzone_t	*smallzone;
 Z_ClearZone
 ========================
 */
-static void Z_ClearZone( memzone_t *zone, int size ) {
+static void Z_ClearZone( memzone_t *zone, memzone_t *head, int size, int segnum ) {
 	memblock_t	*block;
-	
-	// set the entire zone to one free block
+	int min_fragment;
 
-	zone->blocklist.next = zone->blocklist.prev = block =
-		(memblock_t *)( (byte *)zone + sizeof(memzone_t) );
-	zone->blocklist.tag = TAG_GENERAL;	// in use block
 #ifdef USE_MULTI_SEGMENT
-	zone->blocklist.parent = zone;
+	zone->head = head;
+	zone->segnum = segnum;
+
+	min_fragment = sizeof( memblock_t ) + sizeof( freeblock_t );
+#else
+	min_fragment = sizeof( memblock_t );
 #endif
-	zone->blocklist.id = 0;
+
+	if ( minfragment < min_fragment ) {
+		// in debug mode size of memblock_t may exceed MINFRAGMENT
+		minfragment = PAD( min_fragment, sizeof( intptr_t ) );
+		Com_DPrintf( "zone.minfragment adjusted to %i bytes\n", minfragment );
+	}
+
+	// set the entire zone to one free block
+	zone->blocklist.next = zone->blocklist.prev = block = (memblock_t *)( zone + 1 );
+	zone->blocklist.tag = TAG_GENERAL; // in use block
+	zone->blocklist.id = -ZONEID;
 	zone->blocklist.size = 0;
+#ifndef USE_MULTI_SEGMENT
 	zone->rover = block;
+#endif
 	zone->size = size;
 	zone->used = 0;
 	
 	block->prev = block->next = &zone->blocklist;
 	block->tag = TAG_FREE;	// free block
 	block->id = ZONEID;
-#ifdef USE_MULTI_SEGMENT
-	block->parent = zone;
-	zone->failed = size - sizeof(memzone_t) + 1;
-#endif
+
 	block->size = size - sizeof(memzone_t);
+
+#ifdef USE_MULTI_SEGMENT
+	InitFree( &zone->freelist );
+	zone->freelist.next = zone->freelist.prev = &zone->freelist;
+
+	InitFree( &zone->freelist_medium );
+	zone->freelist_medium.next = zone->freelist_medium.prev = &zone->freelist_medium;
+
+	InitFree( &zone->freelist_small );
+	zone->freelist_small.next = zone->freelist_small.prev = &zone->freelist_small;
+
+	InitFree( &zone->freelist_tiny );
+	zone->freelist_tiny.next = zone->freelist_tiny.prev = &zone->freelist_tiny;
+	
+	// insert new free block at the head, not current zone
+	InsertFree( zone->head, block );
+#endif
 }
 
 
@@ -1053,7 +1255,7 @@ Z_AvailableZoneMemory
 */
 static int Z_AvailableZoneMemory( const memzone_t *zone ) {
 #ifdef USE_MULTI_SEGMENT
-	return zone->totalSize - zone->totalUsed;
+	return (1024*1024*1024); // unlimited
 #else
 	return zone->size - zone->used;
 #endif
@@ -1078,7 +1280,7 @@ Z_Free
 void Z_Free( void *ptr ) {
 	memblock_t	*block, *other;
 	memzone_t *zone;
-	
+
 	if (!ptr) {
 		Com_Error( ERR_DROP, "Z_Free: NULL pointer" );
 	}
@@ -1087,53 +1289,68 @@ void Z_Free( void *ptr ) {
 	if (block->id != ZONEID) {
 		Com_Error( ERR_FATAL, "Z_Free: freed a pointer without ZONEID" );
 	}
+
 	if (block->tag == TAG_FREE) {
 		Com_Error( ERR_FATAL, "Z_Free: freed a freed pointer" );
 	}
+
 	// if static memory
+#ifdef USE_STATIC_TAGS
 	if (block->tag == TAG_STATIC) {
 		return;
 	}
+#endif
 
 	// check the memory trash tester
+#ifdef USE_TRASH_TEST
 	if ( *(int *)((byte *)block + block->size - 4 ) != ZONEID ) {
 		Com_Error( ERR_FATAL, "Z_Free: memory block wrote past end" );
 	}
+#endif
 
-#ifdef USE_MULTI_SEGMENT
-	zone = block->parent;
-	zone->head->totalUsed -= block->size;
-#else
 	if ( block->tag == TAG_SMALL ) {
 		zone = smallzone;
 	} else {
 		zone = mainzone;
 	}
+
+#ifndef USE_MULTI_SEGMENT
+	zone->used -= block->size;
 #endif
 
-	zone->used -= block->size;
 	// set the block to something that should cause problems
 	// if it is referenced...
 	Com_Memset( ptr, 0xaa, block->size - sizeof( *block ) );
 
 	block->tag = TAG_FREE; // mark as free
+	block->id = ZONEID;
 	
 	other = block->prev;
 	if ( other->tag == TAG_FREE ) {
 		// merge with previous free block
+#ifdef USE_MULTI_SEGMENT
+		RemoveFree( other );
+#endif
 		other->size += block->size;
 		other->next = block->next;
 		other->next->prev = other;
-		if (block == zone->rover) {
+#ifndef USE_MULTI_SEGMENT
+		if ( block == zone->rover ) {
 			zone->rover = other;
 		}
+#endif
 		block = other;
 	}
 
+#ifndef USE_MULTI_SEGMENT
 	zone->rover = block;
+#endif
 
 	other = block->next;
 	if ( other->tag == TAG_FREE ) {
+#ifdef USE_MULTI_SEGMENT
+		RemoveFree( other );
+#endif
 		// merge the next free block onto the end
 		block->size += other->size;
 		block->next = other->next;
@@ -1141,40 +1358,8 @@ void Z_Free( void *ptr ) {
 	}
 
 #ifdef USE_MULTI_SEGMENT
-	if ( block->size > zone->failed ) {
-		zone->failed = block->size + 1;
-	}
+	InsertFree( zone, block );
 #endif
-}
-
-
-/*
-================
-Z_FreeTags
-================
-*/
-void Z_FreeTags( memtag_t tag ) {
-	//int			count;
-	memzone_t	*zone;
-
-	if ( tag == TAG_SMALL ) {
-		zone = smallzone;
-	}
-	else {
-		zone = mainzone;
-	}
-	//count = 0;
-	// use the rover as our pointer, because
-	// Z_Free automatically adjusts it
-	zone->rover = zone->blocklist.next;
-	do {
-		if ( zone->rover->tag == tag ) {
-		//	count++;
-			Z_Free( (void *)(zone->rover + 1) );
-			continue;
-		}
-		zone->rover = zone->rover->next;
-	} while ( zone->rover != &zone->blocklist );
 }
 
 
@@ -1190,11 +1375,12 @@ void *Z_TagMallocDebug( int size, memtag_t tag, char *label, char *file, int lin
 void *Z_TagMalloc( int size, memtag_t tag ) {
 #endif
 	int		extra;
-	memblock_t	*start, *rover, *base;
-	memzone_t *zone;
-#ifdef USE_MULTI_SEGMENT
-	memzone_t *newz;
+#ifndef USE_MULTI_SEGMENT
+	memblock_t	*start, *rover;
 #endif
+	memblock_t *base;
+	memzone_t *zone;
+
 	if ( tag == TAG_FREE ) {
 		Com_Error( ERR_FATAL, "Z_TagMalloc: tried to use with TAG_FREE" );
 	}
@@ -1208,51 +1394,35 @@ void *Z_TagMalloc( int size, memtag_t tag ) {
 #ifdef ZONE_DEBUG
 	allocSize = size;
 #endif
+
+#ifdef USE_MULTI_SEGMENT
+	if ( size < (sizeof( freeblock_t ) ) ) {
+		size = (sizeof( freeblock_t ) );
+	}
+#endif
+
 	//
 	// scan through the block list looking for the first free block
 	// of sufficient size
 	//
 	size += sizeof( *base );	// account for size of block header
+#ifdef USE_TRASH_TEST
 	size += 4;					// space for memory trash tester
+#endif
+
 	size = PAD(size, sizeof(intptr_t));		// align to 32/64 bit boundary
+
+#ifdef USE_MULTI_SEGMENT
+	base = SearchFree( zone, size );
+	
+	RemoveFree( base );
+#else
 
 	base = rover = zone->rover;
 	start = base->prev;
 
 	do {
-		if ( rover == start || size >= zone->failed ) {
-#ifdef USE_MULTI_SEGMENT
-			// try to swich to next zone segment
-			/*if ( tag != TAG_SMALL )*/ {
-				int newsize;
-				if ( !zone->next ) {
-					// try to allocate new zone segment
-					newsize = PAD( size + sizeof( memzone_t ), 2*(1<<20) ); // round up to 2M blocks
-					newz = calloc( newsize, 1 );
-					if ( newz ) {
-						Z_ClearZone( newz, newsize );
-						zone->next = newz;
-						// stats
-						newz->head = zone->head;
-						newz->head->totalSize += newz->size;
-						newz->head->totalUsed += newz->used;
-						newz->segnum = zone->segnum + 1;
-					}
-				}
-				zone->failed = size;
-				zone = zone->next;
-				if ( zone ) {
-					// these operations will take more time than regular allocations from primary zone
-					// but in general it will happen only for large temp blocks -
-					// which already comes with some CPU workload and/or IO-wait
-					// so we don't care :P
-					base = rover = zone->rover;
-					start = base->prev;
-					continue;
-				}
-				// if no success - passthrough to ComError()
-			}
-#endif
+		if ( rover == start ) {
 			// scaned all the way around the list
 #ifdef ZONE_DEBUG
 			Z_LogHeap();
@@ -1270,35 +1440,35 @@ void *Z_TagMalloc( int size, memtag_t tag ) {
 			rover = rover->next;
 		}
 	} while (base->tag != TAG_FREE || base->size < size);
-	
+#endif
+
 	//
 	// found a block big enough
 	//
 	extra = base->size - size;
-	if ( extra >= MINFRAGMENT ) {
+	if ( extra >= minfragment ) {
 		memblock_t *fragment;
 		// there will be a free fragment after the allocated block
-		fragment = (memblock_t *) ((byte *)base + size );
+		fragment = (memblock_t *)( (byte *)base + size );
 		fragment->size = extra;
 		fragment->tag = TAG_FREE; // free block
-		fragment->prev = base;
 		fragment->id = ZONEID;
+		fragment->prev = base;
 		fragment->next = base->next;
 		fragment->next->prev = fragment;
-#ifdef USE_MULTI_SEGMENT
-		fragment->parent = zone;
-#endif
 		base->next = fragment;
 		base->size = size;
-	}
-	
-	base->tag = tag;			// no longer a free block
-	zone->rover = base->next;	// next allocation will start looking here
-	zone->used += base->size;	//
 #ifdef USE_MULTI_SEGMENT
-	zone->head->totalUsed += base->size;
-	base->parent = zone;
+		InsertFree( zone, fragment );
 #endif
+	}
+
+#ifndef USE_MULTI_SEGMENT
+	zone->rover = base->next;	// next allocation will start looking here
+	zone->used += base->size;
+#endif
+
+	base->tag = tag;			// no longer a free block
 	base->id = ZONEID;
 
 #ifdef ZONE_DEBUG
@@ -1308,10 +1478,12 @@ void *Z_TagMalloc( int size, memtag_t tag ) {
 	base->d.allocSize = allocSize;
 #endif
 
+#ifdef USE_TRASH_TEST
 	// marker for memory trash testing
 	*(int *)((byte *)base + base->size - 4) = ZONEID;
+#endif
 
-	return (void *) ( (byte *)base + sizeof( *base ) );
+	return (void *) ( base + 1 );
 }
 
 
@@ -1471,6 +1643,7 @@ void Z_LogHeap( void ) {
 	Z_LogZoneHeap( smallzone, "SMALL" );
 }
 
+#ifdef USE_STATIC_TAGS
 
 // static mem blocks to reduce a lot of small zone overhead
 typedef struct memstatic_s {
@@ -1478,11 +1651,7 @@ typedef struct memstatic_s {
 	byte mem[2];
 } memstatic_t;
 
-#ifdef USE_MULTI_SEGMENT
-#define MEM_STATIC(chr) { { PAD(sizeof(memstatic_t),4), TAG_STATIC, NULL, NULL, NULL, ZONEID}, {chr,'\0'} }
-#else
-#define MEM_STATIC(chr) { { PAD(sizeof(memstatic_t),4), TAG_STATIC, NULL, NULL, ZONEID}, {chr,'\0'} }
-#endif
+#define MEM_STATIC(chr) { { NULL, NULL, PAD(sizeof(memstatic_t),4), TAG_STATIC, ZONEID }, {chr,'\0'} }
 
 static const memstatic_t emptystring =
 	MEM_STATIC( '\0' );
@@ -1499,7 +1668,7 @@ static const memstatic_t numberstring[] = {
 	MEM_STATIC( '8' ),
 	MEM_STATIC( '9' )
 };
-
+#endif // USE_STATIC_TAGS
 
 /*
 ========================
@@ -1511,7 +1680,7 @@ CopyString
 */
 char *CopyString( const char *in ) {
 	char	*out;
-
+#ifdef USE_STATIC_TAGS
 	if (!in[0]) {
 		return ((char *)&emptystring) + sizeof(memblock_t);
 	}
@@ -1520,6 +1689,7 @@ char *CopyString( const char *in ) {
 			return ((char *)&numberstring[in[0]-'0']) + sizeof(memblock_t);
 		}
 	}
+#endif
 	out = S_Malloc (strlen(in)+1);
 	strcpy (out, in);
 	return out;
@@ -1612,6 +1782,11 @@ typedef struct zone_stats_s {
 	int	zoneBytes;
 	int	botlibBytes;
 	int	rendererBytes;
+	int freeBytes;
+	int freeBlocks;
+	int freeSmallest;
+	int freeLargest;
+	int totalSize;
 } zone_stats_t;
 
 
@@ -1624,15 +1799,18 @@ static void Zone_Stats( const char *name, const memzone_t *z, qboolean printDeta
 	memset( &st, 0, sizeof( st ) );
 	zone = z;
 	st.zoneSegments = 1;
+	st.freeSmallest = 0x7FFFFFFF;
 	
 	//if ( printDetails ) {
 	//	Com_Printf( "---------- %s zone segment #%i ----------\n", name, zone->segnum );
 	//}
+	st.totalSize += zone->size;
 
 	for ( block = zone->blocklist.next ; ; ) {
 		if ( printDetails ) {
-			Com_Printf( "block:%p  size:%8i  tag: %s\n", (void *)block, block->size, 
-				(unsigned)block->tag < TAG_COUNT ? tagName[ block->tag ] : va( "%i", block->tag ) );
+			int tag = block->tag;
+			Com_Printf( "block:%p  size:%8i  tag: %s\n", (void *)block, block->size,
+				(unsigned)tag < TAG_COUNT ? tagName[ tag ] : va( "%i", tag ) );
 		}
 		if ( block->tag != TAG_FREE ) {
 			st.zoneBytes += block->size;
@@ -1642,6 +1820,13 @@ static void Zone_Stats( const char *name, const memzone_t *z, qboolean printDeta
 			} else if ( block->tag == TAG_RENDERER ) {
 				st.rendererBytes += block->size;
 			}
+		} else {
+			st.freeBytes += block->size;
+			st.freeBlocks++;
+			if ( block->size > st.freeLargest )
+				st.freeLargest = block->size;
+			if ( block->size < st.freeSmallest )
+				st.freeSmallest = block->size;
 		}
 		if ( block->next == &zone->blocklist ) {
 #ifdef USE_MULTI_SEGMENT
@@ -1652,6 +1837,7 @@ static void Zone_Stats( const char *name, const memzone_t *z, qboolean printDeta
 					Com_Printf( "---------- %s zone segment #%i ----------\n", name, zone->segnum );
 				}
 				st.zoneSegments++;
+				st.totalSize += zone->size;
 				continue;
 			}
 #endif
@@ -1686,7 +1872,6 @@ void Com_Meminfo_f( void ) {
 	int		unused;
 
 	Com_Printf( "%8i bytes total hunk\n", s_hunkTotal );
-	Com_Printf( "%8i bytes total zone\n", mainzone->totalSize );
 	Com_Printf( "\n" );
 	Com_Printf( "%8i low mark\n", hunk_low.mark );
 	Com_Printf( "%8i low permanent\n", hunk_low.permanent );
@@ -1714,15 +1899,25 @@ void Com_Meminfo_f( void ) {
 	Com_Printf( "\n" );
 
 	Zone_Stats( "main", mainzone, !Q_stricmp( Cmd_Argv(1), "main" ) || !Q_stricmp( Cmd_Argv(1), "all" ), &st );
+	Com_Printf( "%8i bytes total main zone\n\n", st.totalSize );
 	Com_Printf( "%8i bytes in %i main zone blocks%s\n", st.zoneBytes, st.zoneBlocks,
 		st.zoneSegments > 1 ? va( " and %i segments", st.zoneSegments ) : "" );
 	Com_Printf( "        %8i bytes in botlib\n", st.botlibBytes );
 	Com_Printf( "        %8i bytes in renderer\n", st.rendererBytes );
 	Com_Printf( "        %8i bytes in other\n", st.zoneBytes - ( st.botlibBytes + st.rendererBytes ) );
+	Com_Printf( "        %8i bytes in %i free blocks\n", st.freeBytes, st.freeBlocks );
+	if ( st.freeBlocks > 1 ) {
+		Com_Printf( "        (largest: %i bytes, smallest: %i bytes)\n\n", st.freeLargest, st.freeSmallest );
+	}
 
 	Zone_Stats( "small", smallzone, !Q_stricmp( Cmd_Argv(1), "small" ) || !Q_stricmp( Cmd_Argv(1), "all" ), &st );
+	Com_Printf( "%8i bytes total small zone\n\n", st.totalSize );
 	Com_Printf( "%8i bytes in %i small zone blocks%s\n", st.zoneBytes, st.zoneBlocks,
 		st.zoneSegments > 1 ? va( " and %i segments", st.zoneSegments ) : "" );
+	Com_Printf( "        %8i bytes in %i free blocks\n", st.freeBytes, st.freeBlocks );
+	if ( st.freeBlocks > 1 ) {
+		Com_Printf( "        (largest: %i bytes, smallest: %i bytes)\n\n", st.freeLargest, st.freeSmallest );
+	}
 }
 
 
@@ -1795,14 +1990,7 @@ void Com_InitSmallZoneMemory( void ) {
 	smallZoneSize = sizeof( s_buf );
 	Com_Memset( s_buf, 0, smallZoneSize );
 	smallzone = (memzone_t *)s_buf;
-	Z_ClearZone( smallzone, smallZoneSize );
-#ifdef USE_MULTI_SEGMENT
-	// initial segment points on itself
-	smallzone->head = smallzone;
-	smallzone->totalSize = smallzone->size;
-	smallzone->totalUsed = smallzone->used;
-	smallzone->segnum = 1; // stats
-#endif
+	Z_ClearZone( smallzone, smallzone, smallZoneSize, 1 );
 }
 
 
@@ -1833,14 +2021,7 @@ static void Com_InitZoneMemory( void ) {
 	if ( !mainzone ) {
 		Com_Error( ERR_FATAL, "Zone data failed to allocate %i megs", mainZoneSize / (1024*1024) );
 	}
-	Z_ClearZone( mainzone, mainZoneSize );
-#ifdef USE_MULTI_SEGMENT
-	// initial segment points on itself
-	mainzone->head = mainzone;
-	mainzone->totalSize = mainzone->size;
-	mainzone->totalUsed = mainzone->used;
-	mainzone->segnum = 1; // stats
-#endif
+	Z_ClearZone( mainzone, mainzone, mainZoneSize, 1 );
 }
 
 
