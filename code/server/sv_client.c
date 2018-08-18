@@ -354,7 +354,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ ) {
 		if ( NET_CompareAdr( from, &cl->netchan.remoteAddress ) ) {
 			int elapsed = svs.time - cl->lastConnectTime;
-			if ( elapsed < ( sv_reconnectlimit->integer * 1000 ) ) {
+			if ( elapsed < ( sv_reconnectlimit->integer * 1000 ) && elapsed >= 0 ) {
 				int remains = ( ( sv_reconnectlimit->integer * 1000 ) - elapsed + 999 ) / 1000;
 				if ( com_developer->integer ) {
 					Com_Printf( "%s:reconnect rejected : too soon\n", NET_AdrToString( from ) );
