@@ -1365,6 +1365,62 @@ void Z_Free( void *ptr ) {
 
 /*
 ================
+Z_FreeTags
+================
+*/
+void Z_FreeTags( memtag_t tag ) {
+	//int			count;
+	memzone_t	*zone;
+	memblock_t	*block, *freed;
+
+	if ( tag == TAG_STATIC ) {
+		Com_Error( ERR_FATAL, "Z_FreeTags( TAG_STATIC )\n" );
+		return;
+	} else if ( tag == TAG_SMALL ) {
+		zone = smallzone;
+	} else {
+		zone = mainzone;
+	}
+#ifdef USE_MULTI_SEGMENT
+	for ( block = zone->blocklist.next ; ; ) {
+		if ( block->tag == tag ) {
+			if ( block->prev->tag == TAG_FREE )
+				freed = block->prev;  // current block will be merged with previous
+			else 
+				freed = block; // will leave in place
+			Z_Free( (void*)( block + 1 ) );
+			block = freed;
+		}
+		if ( block->next == &zone->blocklist ) {
+			if ( zone->next ) {
+				zone = zone->next;
+				block = zone->blocklist.next;
+				continue;
+			}
+			break;	// all blocks have been hit
+		} else {
+			block = block->next;
+		}
+	}
+#else
+	//count = 0;
+	// use the rover as our pointer, because
+	// Z_Free automatically adjusts it
+	zone->rover = zone->blocklist.next;
+	do {
+		if ( zone->rover->tag == tag ) {
+		//	count++;
+			Z_Free( (void *)(zone->rover + 1) );
+			continue;
+		}
+		zone->rover = zone->rover->next;
+	} while ( zone->rover != &zone->blocklist );
+#endif
+}
+
+
+/*
+================
 Z_TagMalloc
 ================
 */
