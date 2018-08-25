@@ -4004,7 +4004,11 @@ static void CL_ServerInfoPacket( const netadr_t *from, msg_t *msg ) {
 		{
 			// calc ping time
 			cl_pinglist[i].time = Sys_Milliseconds() - cl_pinglist[i].start;
-			if ( com_developer->integer ) 
+			if ( cl_pinglist[i].time < 1 )
+			{
+				cl_pinglist[i].time = 1;
+			}
+			if ( com_developer->integer )
 			{
 				Com_Printf( "ping time %dms from %s\n", cl_pinglist[i].time, NET_AdrToString( from ) );
 			}

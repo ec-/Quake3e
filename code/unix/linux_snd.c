@@ -344,14 +344,14 @@ qboolean setup_ALSA( smode_t mode )
 	hwparams = alloca( _snd_pcm_hw_params_sizeof() );
 	if ( hwparams == NULL )
 	{
-		Com_Printf( "Error allocating %i bytes of memory for hwparams\n", _snd_pcm_hw_params_sizeof() );
+		Com_Printf( "Error allocating %i bytes of memory for hwparams\n", (int)_snd_pcm_hw_params_sizeof() );
 		goto __fail;
 	}
 
 	swparams = alloca( _snd_pcm_sw_params_sizeof() );
 	if ( swparams == NULL )
 	{
-		Com_Printf( "Error allocating %i bytes of memory for swparams\n", _snd_pcm_sw_params_sizeof() );
+		Com_Printf( "Error allocating %i bytes of memory for swparams\n", (int)_snd_pcm_sw_params_sizeof() );
 		goto __fail;
 	}
 

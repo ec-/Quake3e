@@ -595,7 +595,7 @@ qboolean LAN_UpdateVisiblePings(int source ) {
 LAN_GetServerStatus
 ====================
 */
-int LAN_GetServerStatus( char *serverAddress, char *serverStatus, int maxLen ) {
+static int LAN_GetServerStatus( const char *serverAddress, char *serverStatus, int maxLen ) {
 	return CL_ServerStatus( serverAddress, serverStatus, maxLen );
 }
 
@@ -975,6 +975,7 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_GETCLIENTSTATE:
+		VM_CHECKBOUNDS( uivm, args[1], sizeof( uiClientState_t ) );
 		GetClientState( VMA(1) );
 		return 0;		
 
@@ -1050,6 +1051,7 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_LAN_SERVERSTATUS:
+		VM_CHECKBOUNDS( uivm, args[2], args[3] );
 		return LAN_GetServerStatus( VMA(1), VMA(2), args[3] );
 
 	case UI_LAN_COMPARESERVERS:
@@ -1059,6 +1061,7 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return Hunk_MemoryRemaining();
 
 	case UI_GET_CDKEY:
+		VM_CHECKBOUNDS( uivm, args[1], args[2] );
 		CLUI_GetCDKey( VMA(1), args[2] );
 		return 0;
 
