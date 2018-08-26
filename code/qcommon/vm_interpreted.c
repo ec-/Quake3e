@@ -225,7 +225,8 @@ nextInstruction2:
 			if ( r0.i < 0 ) {
 				// system call
 				// save the stack to allow recursive VM entry
-				vm->programStack = programStack - 4;
+				//vm->programStack = programStack - 8;
+				vm->programStack = programStack - 8;
 				*(int *)&image[ programStack + 4 ] = ~r0.i;
 				{
 #if idx64 //__WORDSIZE == 64
