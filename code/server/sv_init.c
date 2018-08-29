@@ -282,7 +282,8 @@ static void SV_Startup( void ) {
 	}
 	SV_BoundMaxClients( 1 );
 
-	svs.clients = Z_Malloc (sizeof(client_t) * sv_maxclients->integer );
+	svs.clients = Z_TagMalloc( sv_maxclients->integer * sizeof( client_t ), TAG_CLIENTS );
+	Com_Memset( svs.clients, 0, sv_maxclients->integer * sizeof( client_t ) );
 	SV_SetSnapshotParams();
 	svs.initialized = qtrue;
 
@@ -342,7 +343,7 @@ void SV_ChangeMaxClients( void ) {
 	Z_Free( svs.clients );
 
 	// allocate new clients
-	svs.clients = Z_Malloc ( sv_maxclients->integer * sizeof(client_t) );
+	svs.clients = Z_TagMalloc( sv_maxclients->integer * sizeof(client_t), TAG_CLIENTS );
 	Com_Memset( svs.clients, 0, sv_maxclients->integer * sizeof(client_t) );
 
 	// copy the clients over
