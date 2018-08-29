@@ -3248,7 +3248,7 @@ static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char
 			ri.Error( ERR_DROP, "Couldn't load %s", filename );
 		
 		// comment some buggy shaders from pak0
-		if ( summand == 35910 && strcmp( shaderFiles[i], "sky.shader" ) == 0)
+		if ( summand == 35910 && strcmp( shaderFiles[i], "sky.shader" ) == 0 )
 		{
 			if ( memcmp( buffers[i] + 0x3D3E, "\tcloudparms ", 12 ) == 0 )
 			{
@@ -3257,6 +3257,14 @@ static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char
 
 				memcpy( buffers[i] + 0x3CA9, "/*", 2 );
 				memcpy( buffers[i] + 0x3FC2, "*/", 2 );
+			}
+		}
+		else if ( summand == 116073 && strcmp( shaderFiles[i], "sfx.shader" ) == 0 )
+		{
+			if ( memcmp( buffers[i] + 4367, "textures/sfx/xfinalfog\n\r", 24 ) == 0 )
+			{
+				memcpy( buffers[i] + 4367, "/*", 2 );
+				memcpy( buffers[i] + 4376, "*/", 2 );
 			}
 		}
 
