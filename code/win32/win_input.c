@@ -1063,25 +1063,38 @@ static void IN_GetHotkey( cvar_t *var, int *pHotKey ) {
 
 /*
 ===========
+IN_Minimize
+===========
+*/
+static void IN_Minimize( void )
+{
+	if ( !CL_VideoRecording() || ( re.CanMinimize && re.CanMinimize() ) )
+		ShowWindow( g_wv.hWnd, SW_MINIMIZE );
+}
+
+
+/*
+===========
 IN_Startup
 ===========
 */
 void IN_Startup( void ) {
-	Com_DPrintf ("\n------- Input Initialization -------\n");
-	IN_StartupMouse ();
+	Com_DPrintf( "\n------- Input Initialization -------\n" );
+	IN_StartupMouse();
 #ifdef USE_JOYSTICK
 	IN_StartupJoystick ();
 #endif
 #ifdef USE_MIDI
 	IN_StartupMIDI();
 #endif
-	Com_DPrintf ("------------------------------------\n");
+	Com_DPrintf( "------------------------------------\n" );
 
 	in_mouse->modified = qfalse;
 #ifdef USE_JOYSTICK
 	in_joystick->modified = qfalse;
 #endif
 }
+
 
 /*
 ===========
@@ -1093,8 +1106,9 @@ void IN_Shutdown( void ) {
 	IN_ShutdownDIMouse();
 #ifdef USE_MIDI
 	IN_ShutdownMIDI();
-	Cmd_RemoveCommand("midiinfo" );
+	Cmd_RemoveCommand( "midiinfo" );
 #endif
+	Cmd_RemoveCommand( "minimize" );
 }
 
 
@@ -1142,6 +1156,8 @@ void IN_Init( void ) {
 
 	in_minimize	= Cvar_Get( "in_minimize", "", CVAR_ARCHIVE | CVAR_LATCH );
 	IN_GetHotkey( in_minimize, &HotKey );
+
+	Cmd_AddCommand( "minimize", IN_Minimize );
 
 	IN_Startup();
 }

@@ -921,6 +921,21 @@ qboolean IN_MouseActive( void )
 }
 
 
+/*
+================
+IN_Minimize
+================
+*/
+void IN_Minimize( void )
+{
+	if ( !CL_VideoRecording() || ( re.CanMinimize && re.CanMinimize() ) )
+	{
+		XIconifyWindow( dpy, win, scrnum );
+		XFlush( dpy );
+	}
+}
+
+
 qboolean BuildGammaRampTable( unsigned char *red, unsigned char *green, unsigned char *blue, int gammaRampSize, unsigned short table[3][4096] )
 {
 	int i, j;
@@ -1651,6 +1666,8 @@ void IN_Init( void )
 	IN_StartupJoystick(); // bk001130 - from cvs1.17 (mkv)
 #endif
 
+	Cmd_AddCommand( "minimize", IN_Minimize );
+
 	Com_DPrintf( "------------------------------------\n" );
 }
 
@@ -1658,6 +1675,8 @@ void IN_Init( void )
 void IN_Shutdown( void )
 {
 	mouse_avail = qfalse;
+
+	Cmd_RemoveCommand( "minimize" );
 }
 
 
