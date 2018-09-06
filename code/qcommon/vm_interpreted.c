@@ -89,7 +89,7 @@ qboolean VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header )
 	instruction_t *buf;
 	buf = ( instruction_t *) Hunk_Alloc( (vm->instructionCount + 8) * sizeof( instruction_t ), h_high );
 
-	errMsg = VM_LoadInstructions( header, buf );
+	errMsg = VM_LoadInstructions( (byte *) header + header->codeOffset, header->codeLength, header->instructionCount, buf );
 	if ( !errMsg ) {
 		errMsg = VM_CheckInstructions( buf, vm->instructionCount, vm->jumpTableTargets, vm->numJumpTableTargets, vm->exactDataLength );
 	}

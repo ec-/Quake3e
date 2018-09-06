@@ -882,23 +882,22 @@ VM_LoadInstructions
 loads instructions in structured format
 =================
 */
-const char *VM_LoadInstructions( const vmHeader_t *header, instruction_t *buf ) 
+const char *VM_LoadInstructions( const byte *code_pos, int codeLength, int instructionCount, instruction_t *buf )
 {
 	static char errBuf[ 128 ];
-	byte *code_pos, *code_start, *code_end;
+	const byte *code_start, *code_end;
 	int i, n, op0, op1, opStack;
 	instruction_t *ci;
 	
-	code_pos = (byte *) header + header->codeOffset;
 	code_start = code_pos; // for printing
-	code_end =  (byte *) header + header->codeOffset + header->codeLength;
+	code_end = code_pos + codeLength;
 
 	ci = buf;
 	opStack = 0;
 	op1 = OP_UNDEF;
 
 	// load instructions and perform some initial calculations/checks
-	for ( i = 0; i < header->instructionCount; i++, ci++, op1 = op0 ) {
+	for ( i = 0; i < instructionCount; i++, ci++, op1 = op0 ) {
 		op0 = *code_pos;
 		if ( op0 < 0 || op0 >= OP_MAX ) {
 			sprintf( errBuf, "bad opcode %02X at offset %d", op0, (int)(code_pos - code_start) );
@@ -941,11 +940,11 @@ VM_CheckInstructions
 performs additional consistency and security checks
 ===============================
 */
-const char *VM_CheckInstructions( instruction_t *buf, 
-								 int instructionCount, 
-								 const byte *jumpTableTargets, 
-								 int numJumpTableTargets, 
-								 int dataLength ) 
+const char *VM_CheckInstructions( instruction_t *buf,
+								int instructionCount,
+								const byte *jumpTableTargets,
+								int numJumpTableTargets,
+								int dataLength )
 {
 	static char errBuf[ 128 ];
 	int i, n, v, op0, op1, opStack, pstack;

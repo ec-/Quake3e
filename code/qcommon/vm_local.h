@@ -39,9 +39,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define	PROGRAM_STACK_EXTRA	(32*1024)
 
 typedef enum {
-	OP_UNDEF, 
+	OP_UNDEF,
 
-	OP_IGNORE, 
+	OP_IGNORE,
 
 	OP_BREAK,
 
@@ -128,14 +128,11 @@ typedef enum {
 } opcode_t;
 
 typedef struct {
-	int   value;	// 32
-	byte  op;		// 8
-	byte  opStack;	// 8
+	int		value;	// 32
+	byte	op;		// 8
+	byte	opStack;	// 8
 	unsigned jused:1;
 	unsigned swtch:1;
-	unsigned root:1;
-	unsigned fpu:1;
-	unsigned store:1;
 } instruction_t;
 
 typedef struct vmSymbol_s {
@@ -222,7 +219,7 @@ int VM_SymbolToValue( vm_t *vm, const char *symbol );
 const char *VM_ValueToSymbol( vm_t *vm, int value );
 void VM_LogSyscalls( int *args );
 
-const char *VM_LoadInstructions( const vmHeader_t *header, instruction_t *buf );
+const char *VM_LoadInstructions( const byte *code_pos, int codeLength, int instructionCount, instruction_t *buf );
 const char *VM_CheckInstructions( instruction_t *buf, int instructionCount, 
 								 const byte *jumpTableTargets, 
 								 int numJumpTableTargets, 
