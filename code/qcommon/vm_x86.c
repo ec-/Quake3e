@@ -1093,6 +1093,7 @@ static void EmitNCPYFunc( vm_t *vm )
 	EmitString( "8B 7D 08" );	// mov edi, dword ptr [ebp+08] // destination
 	EmitRexString( "01 DA" );	// add edx, ebx // + vm->dataBase
 
+#if 0
 	if ( vm->forceDataMask )
 	{
 #ifdef idx64
@@ -1104,6 +1105,7 @@ static void EmitNCPYFunc( vm_t *vm )
 		EmitRexString( "01 DF" );	// add edi, ebx // + vm->dataBase
 	}
 	else
+#endif
 	if ( vm_rtChecks->integer & 8 ) // security checks
 	{
 		EmitString( "89 F8" );		// mov eax, edi

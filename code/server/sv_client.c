@@ -477,6 +477,8 @@ gotnewcl:
 
 	newcl->longstr = longstr;
 
+	SV_UserinfoChanged( newcl, qtrue );
+
 	// get the game a chance to reject this connection or modify the userinfo
 	denied = VM_Call( gvm, GAME_CLIENT_CONNECT, clientNum, qtrue, qfalse ); // firstTime = qtrue
 	if ( denied ) {
@@ -487,8 +489,6 @@ gotnewcl:
 		Com_DPrintf( "Game rejected a connection: %s.\n", str );
 		return;
 	}
-
-	SV_UserinfoChanged( newcl, qtrue );
 
 	// send the connect packet to the client
 	NET_OutOfBandPrint( NS_SERVER, from, "connectResponse %d", challenge );
@@ -1384,6 +1384,7 @@ into a more C friendly form.
 =================
 */
 void SV_UserinfoChanged( client_t *cl, qboolean updateUserinfo ) {
+	char buf[ MAX_NAME_LENGTH ];
 	const char *val;
 	const char *ip;
 	int	i;
@@ -1445,7 +1446,14 @@ void SV_UserinfoChanged( client_t *cl, qboolean updateUserinfo ) {
 		return;
 
 	// name for C code
-	Q_strncpyz( cl->name, Info_ValueForKey( cl->userinfo, "name" ), sizeof( cl->name ) );
+	val = Info_ValueForKey( cl->userinfo, "name" );
+	// truncate if it is too long as it may cause memory corruption in OSP mod
+	if ( gvm->forceDataMask && strlen( val ) >= sizeof( buf ) ) {
+		Q_strncpyz( buf, val, sizeof( buf ) );
+		Info_SetValueForKey( cl->userinfo, "name", buf );
+		val = buf;
+	}
+	Q_strncpyz( cl->name, val, sizeof( cl->name ) );
 
 	val = Info_ValueForKey( cl->userinfo, "handicap" );
 	if ( val[0] ) {
