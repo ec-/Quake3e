@@ -413,7 +413,7 @@ void CL_SystemInfoChanged( qboolean onlyGame ) {
 		}
 
 		// we don't really need any of these server cvars to be set on client-side
-		if ( !Q_stricmp( key, "sv_pure" ) || !Q_stricmp( key, "sv_serverid" ) ) {
+		if ( !Q_stricmp( key, "sv_pure" ) || !Q_stricmp( key, "sv_serverid" ) || !Q_stricmp( key, "sv_fps" ) ) {
 			continue;
 		}
 		if ( !Q_stricmp( key, "sv_paks" ) || !Q_stricmp( key, "sv_pakNames" ) ) {

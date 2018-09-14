@@ -1780,11 +1780,88 @@ char *Info_ValueForKey( const char *s, const char *key )
 }
 
 
+#define MAX_INFO_TOKENS ((MAX_INFO_STRING/3)+2)
+
+static const char *info_keys[ MAX_INFO_TOKENS ];
+static const char *info_values[ MAX_INFO_TOKENS ];
+static int info_tokens;
+
+/*
+===================
+Info_Tokenize
+
+Tokenizes all key/value pairs from specified infostring
+NOT suitable for big infostrings
+===================
+*/
+void Info_Tokenize( const char *s )
+{
+	static char tokenBuffer[ MAX_INFO_STRING ];
+	char *o = tokenBuffer;
+
+	info_tokens = 0;
+	*o = '\0';
+
+	for ( ;; )
+	{
+		while ( *s == '\\' ) // skip leading/trailing separators
+			s++;
+
+		if ( *s == '\0' )
+			break;
+
+		info_keys[ info_tokens ] = o;
+		while ( *s != '\\' )
+		{
+			if ( *s == '\0' )
+			{
+				*o = '\0'; // terminate key
+				info_values[ info_tokens++ ] = o;
+				return;
+			}
+			*o++ = *s++;
+		}
+		*o++ = '\0'; // terminate key
+		s++; // skip '\\'
+
+		info_values[ info_tokens++ ] = o;
+		while ( *s != '\\' && *s != '\0' )
+		{
+			*o++ = *s++;
+		}
+		*o++ = '\0';
+	}
+}
+
+
+/*
+===================
+Info_ValueForKeyToken
+
+Fast lookup from tokenized infostring
+===================
+*/
+const char *Info_ValueForKeyToken( const char *key )
+{
+	int i;
+
+	for ( i = 0; i < info_tokens; i++ ) 
+	{
+		if ( Q_stricmp( info_keys[ i ], key ) == 0 )
+		{
+			return info_values[ i ];
+		}
+	}
+
+	return "";
+}
+
+
 /*
 ===================
 Info_NextPair
 
-Used to itterate through all the key/value pairs in an info string
+Used to iterate through all the key/value pairs in an info string
 ===================
 */
 void Info_NextPair( const char **head, char *key, char *value ) {
