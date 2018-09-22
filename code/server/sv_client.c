@@ -1542,7 +1542,10 @@ void SV_ExecuteClientCommand( client_t *cl, const char *s, qboolean clientOK ) {
 	if (clientOK) {
 		// pass unknown strings to the game
 		if (!u->name && sv.state == SS_GAME && cl->state >= CS_PRIMED ) {
-			Cmd_Args_Sanitize();
+			if ( gvm->forceDataMask )
+				Cmd_Args_Sanitize( "\n\r;" ); // handle ';' for OSP
+			else
+				Cmd_Args_Sanitize( "\n\r" );
 			VM_Call( gvm, GAME_CLIENT_COMMAND, cl - svs.clients );
 		}
 	}
