@@ -3261,10 +3261,10 @@ static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char
 		}
 		else if ( summand == 116073 && strcmp( shaderFiles[i], "sfx.shader" ) == 0 )
 		{
-			if ( memcmp( buffers[i] + 4367, "textures/sfx/xfinalfog\n\r", 24 ) == 0 )
+			if ( memcmp( buffers[i] + 93457, "textures/sfx/xfinalfog\r\n", 24 ) == 0 )
 			{
-				memcpy( buffers[i] + 4367, "/*", 2 );
-				memcpy( buffers[i] + 4376, "*/", 2 );
+				memcpy( buffers[i] + 93457, "/*", 2 );
+				memcpy( buffers[i] + 93663, "*/", 2 );
 			}
 		}
 
