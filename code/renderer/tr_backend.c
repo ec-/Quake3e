@@ -1382,7 +1382,8 @@ static const void *RB_FinishBloom( const void *data )
 	if ( fboEnabled )
 	{
 		// let's always render console with the same quality
-		if ( blitMSfbo )
+		// TODO: fix this to work with multiple views and opened console
+		if ( blitMSfbo && tr.frameSceneNum == 1 )
 		{
 			FBO_BlitMS( qfalse );
 			blitMSfbo = qfalse;
