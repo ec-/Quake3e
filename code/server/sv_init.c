@@ -536,7 +536,7 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	sv.state = SS_LOADING;
 
 	// make sure that level time is not zero
-	sv.time = sv.time ? sv.time : 1;
+	sv.time = sv.time ? sv.time : 8;
 
 	// load and spawn all other entities
 	SV_InitGameProgs();
