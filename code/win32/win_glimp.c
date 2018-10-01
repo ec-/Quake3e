@@ -41,6 +41,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "glw_win.h"
 #include "../renderer/qgl_linked.h"
 
+// Enable High Performance Graphics while using Integrated Graphics.
+Q_EXPORT DWORD NvOptimusEnablement = 0x00000001;		// Nvidia
+Q_EXPORT int AmdPowerXpressRequestHighPerformance = 1;	// AMD
+
 typedef enum {
 	RSERR_OK,
 
