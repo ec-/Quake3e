@@ -90,9 +90,9 @@ void *GL_GetProcAddress( const char *name )
 */
 qboolean QGL_Init( const char *dllname )
 {
+	char libName[1024];
 #if 0
 	char systemDir[1024];
-	char libName[1024];
 
 #ifdef UNICODE
 	TCHAR buffer[1024];
@@ -113,21 +113,20 @@ qboolean QGL_Init( const char *dllname )
 			Com_sprintf( libName, sizeof( libName ), "%s\\%s", systemDir, dllname );
 		else
 			Q_strncpyz( libName, dllname+1, sizeof( libName ) );
-
-		Com_Printf( "...loading '%s.dll' : ", libName );
-		glw_state.OpenGLLib = Sys_LoadLibrary( libName );
 #else
-		Com_Printf( "...loading '%s.dll' : ", dllname );
-		glw_state.OpenGLLib = Sys_LoadLibrary( va( "%s.dll", dllname ) );
+		Q_strncpyz( libName, dllname, sizeof( libName ) );
 #endif
-
+		Q_strcat( libName, sizeof( libName ), ".dll" );
+		glw_state.OpenGLLib = Sys_LoadLibrary( libName );
 		if ( glw_state.OpenGLLib == NULL )
 		{
-			Com_Printf( "failed\n" );
+			Com_Printf( "...loading '%s' : " S_COLOR_YELLOW "failed\n", libName );
 			return qfalse;
 		}
 
-		Com_Printf( "succeeded\n" );
+		// get exact loaded module name
+		GetModuleFileNameA( glw_state.OpenGLLib, libName, sizeof( libName ) );
+		Com_Printf( "...loading '%s' : succeeded\n", libName );
 	}
 
 	Sys_LoadFunctionErrors(); // reset error count
