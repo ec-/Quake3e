@@ -100,10 +100,10 @@ static cvar_t *Cvar_FindVar( const char *var_name ) {
 	if ( !var_name )
 		return NULL;
 
-	hash = generateHashValue(var_name);
+	hash = generateHashValue( var_name );
 	
-	for (var=hashTable[hash] ; var ; var=var->hashNext) {
-		if (!Q_stricmp(var_name, var->name)) {
+	for ( var = hashTable[ hash ] ; var ; var = var->hashNext ) {
+		if ( !Q_stricmp( var_name, var->name ) ) {
 			return var;
 		}
 	}
@@ -1065,7 +1065,7 @@ void Cvar_Set_f( void ) {
 Cvar_Reset_f
 ============
 */
-void Cvar_Reset_f( void ) {
+static void Cvar_Reset_f( void ) {
 	if ( Cmd_Argc() != 2 ) {
 		Com_Printf ("usage: reset <variable>\n");
 		return;
@@ -1075,7 +1075,7 @@ void Cvar_Reset_f( void ) {
 
 
 // returns NULL for non-existent "-" agrument
-const char *GetValue( int index, int *ival, float *fval ) 
+static const char *GetValue( int index, int *ival, float *fval ) 
 {
 	static char buf[ MAX_CVAR_VALUE_STRING ];
 	const char *cmd;
@@ -1430,6 +1430,7 @@ void Cvar_List_f( void ) {
 	Com_Printf ("%i cvar indexes\n", cvar_numIndexes);
 }
 
+
 /*
 ============
 Cvar_ListModified_f
@@ -1522,8 +1523,7 @@ Cvar_Unset
 Unsets a cvar
 ============
 */
-
-cvar_t *Cvar_Unset( cvar_t *cv )
+static cvar_t *Cvar_Unset( cvar_t *cv )
 {
 	cvar_t *next = cv->next;
 
@@ -1572,8 +1572,7 @@ Cvar_Unset_f
 Unsets a userdefined cvar
 ============
 */
-
-void Cvar_Unset_f(void)
+static void Cvar_Unset_f( void )
 {
 	cvar_t *cv;
 	
@@ -1605,7 +1604,7 @@ and variables added via the VMs if requested.
 ============
 */
 
-void Cvar_Restart(qboolean unsetVM)
+void Cvar_Restart( qboolean unsetVM )
 {
 	cvar_t	*curvar;
 
@@ -1920,7 +1919,7 @@ Cvar_Update
 updates an interpreted modules' version of a cvar
 =====================
 */
-void	Cvar_Update( vmCvar_t *vmCvar ) {
+void Cvar_Update( vmCvar_t *vmCvar ) {
 	size_t	len;
 	cvar_t	*cv = NULL;
 	assert(vmCvar);

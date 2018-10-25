@@ -39,11 +39,11 @@ SV_GetPlayerByHandle
 Returns the player with player id or name from Cmd_Argv(1)
 ==================
 */
-static client_t *SV_GetPlayerByHandle( void ) {
+client_t *SV_GetPlayerByHandle( void ) {
 	client_t	*cl;
 	int			i;
 	char		*s;
-	char		cleanName[64];
+	char		cleanName[ MAX_NAME_LENGTH ];
 
 	// make sure server is running
 	if ( !com_sv_running->integer ) {
@@ -76,7 +76,7 @@ static client_t *SV_GetPlayerByHandle( void ) {
 
 	// check for a name match
 	for ( i=0, cl=svs.clients ; i < sv_maxclients->integer ; i++,cl++ ) {
-		if ( !cl->state ) {
+		if ( cl->state < CS_CONNECTED ) {
 			continue;
 		}
 		if ( !Q_stricmp( cl->name, s ) ) {
@@ -94,6 +94,7 @@ static client_t *SV_GetPlayerByHandle( void ) {
 
 	return NULL;
 }
+
 
 /*
 ==================

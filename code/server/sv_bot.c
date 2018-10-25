@@ -70,6 +70,7 @@ int SV_BotAllocateClient( void ) {
 	return i;
 }
 
+
 /*
 ==================
 SV_BotFreeClient
@@ -81,13 +82,15 @@ void SV_BotFreeClient( int clientNum ) {
 	if ( clientNum < 0 || clientNum >= sv_maxclients->integer ) {
 		Com_Error( ERR_DROP, "SV_BotFreeClient: bad clientNum: %i", clientNum );
 	}
+
 	cl = &svs.clients[clientNum];
 	cl->state = CS_FREE;
-	cl->name[0] = 0;
+	cl->name[0] = '\0';
 	if ( cl->gentity ) {
 		cl->gentity->r.svFlags &= ~SVF_BOT;
 	}
 }
+
 
 /*
 ==================
@@ -594,6 +597,7 @@ int SV_BotGetConsoleMessage( int client, char *buf, int size )
 	Q_strncpyz( buf, cl->reliableCommands[index], size );
 	return qtrue;
 }
+
 
 #if 0
 /*

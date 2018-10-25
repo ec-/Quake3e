@@ -475,7 +475,7 @@ static void RB_BeginDrawingView( void ) {
 	}
 	qglClear( clearBits );
 
-	if ( ( backEnd.refdef.rdflags & RDF_HYPERSPACE ) )
+	if ( backEnd.refdef.rdflags & RDF_HYPERSPACE )
 	{
 		RB_Hyperspace();
 		return;

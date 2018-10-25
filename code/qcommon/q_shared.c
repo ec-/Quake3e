@@ -837,8 +837,13 @@ __reswitch:
 	case '[': case ']':
 	case '?': case ',':
 	case ':': case ';':
-	case '%': case '^':
+	case '%': //case '^':
 		com_token[ len++ ] = *str++;
+		break;
+
+	case '^':
+		com_token[ len++ ] = *str++;
+		com_tokentype = TK_MATCH;
 		break;
 
 	case '(':

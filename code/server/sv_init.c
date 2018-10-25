@@ -237,7 +237,6 @@ static void SV_CreateBaseline( void ) {
 /*
 ===============
 SV_BoundMaxClients
-
 ===============
 */
 static void SV_BoundMaxClients( int minimum ) {
@@ -248,8 +247,6 @@ static void SV_BoundMaxClients( int minimum ) {
 
 	if ( sv_maxclients->integer < minimum ) {
 		Cvar_Set( "sv_maxclients", va("%i", minimum) );
-	} else if ( sv_maxclients->integer > MAX_CLIENTS ) {
-		Cvar_Set( "sv_maxclients", va("%i", MAX_CLIENTS) );
 	}
 }
 
@@ -701,9 +698,11 @@ void SV_Init( void )
 	Cvar_Get ("sv_keywords", "", CVAR_SERVERINFO);
 	Cvar_Get ("protocol", va("%i", PROTOCOL_VERSION), CVAR_SERVERINFO | CVAR_ROM);
 	sv_mapname = Cvar_Get ("mapname", "nomap", CVAR_SERVERINFO | CVAR_ROM);
-	sv_privateClients = Cvar_Get ("sv_privateClients", "0", CVAR_SERVERINFO);
+	sv_privateClients = Cvar_Get( "sv_privateClients", "0", CVAR_SERVERINFO );
+	Cvar_CheckRange( sv_privateClients, "0", va( "%i", MAX_CLIENTS-1 ), CV_INTEGER );
 	sv_hostname = Cvar_Get ("sv_hostname", "noname", CVAR_SERVERINFO | CVAR_ARCHIVE );
 	sv_maxclients = Cvar_Get ("sv_maxclients", "8", CVAR_SERVERINFO | CVAR_LATCH);
+	Cvar_CheckRange( sv_maxclients, "1", XSTRING(MAX_CLIENTS), CV_INTEGER );
 	
 	sv_maxconcurrent = Cvar_Get( "sv_maxconcurrent", "4", CVAR_ARCHIVE );
 	Cvar_CheckRange( sv_maxconcurrent, "1", NULL, CV_INTEGER );

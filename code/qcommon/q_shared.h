@@ -677,6 +677,7 @@ typedef enum {
 	TK_GTE,
 	TK_LT,
 	TK_LTE,
+	TK_MATCH,
 	TK_OR,
 	TK_AND,
 	TK_SCOPE_OPEN,

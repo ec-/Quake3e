@@ -28,8 +28,8 @@ qkey_t	 keys[MAX_KEYS];
 qboolean key_overstrikeMode;
 
 typedef struct {
-    char *name;
-    int keynum;
+	const char *name;
+	int keynum;
 } keyname_t;
 
 // names not in this list can either be lowercase ascii, or '0xnn' hex sequences

@@ -363,6 +363,7 @@ int SV_SendQueuedMessages( void );
 // sv_ccmds.c
 //
 void SV_Heartbeat_f( void );
+client_t *SV_GetPlayerByHandle( void );
 
 //
 // sv_snapshot.c
