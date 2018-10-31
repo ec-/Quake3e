@@ -477,7 +477,14 @@ gotnewcl:
 
 	newcl->longstr = longstr;
 
-	SV_UserinfoChanged( newcl, qtrue );
+	SV_UserinfoChanged( newcl, qtrue, qfalse ); // update userinfo, do not run filter
+
+	v = SV_RunFilters( userinfo, &newcl->netchan.remoteAddress );
+	if ( *v != '\0' ) {
+		NET_OutOfBandPrint( NS_SERVER, from, "print\n%s\n", v );
+		Com_DPrintf( "Engine rejected a connection: %s.\n", v );
+		return;
+	}
 
 	// get the game a chance to reject this connection or modify the userinfo
 	denied = VM_Call( gvm, GAME_CLIENT_CONNECT, clientNum, qtrue, qfalse ); // firstTime = qtrue
@@ -1383,7 +1390,7 @@ Pull specific info from a newly changed userinfo string
 into a more C friendly form.
 =================
 */
-void SV_UserinfoChanged( client_t *cl, qboolean updateUserinfo ) {
+void SV_UserinfoChanged( client_t *cl, qboolean updateUserinfo, qboolean runFilter ) {
 	char buf[ MAX_NAME_LENGTH ];
 	const char *val;
 	const char *ip;
@@ -1473,6 +1480,15 @@ void SV_UserinfoChanged( client_t *cl, qboolean updateUserinfo ) {
 
 	if ( !Info_SetValueForKey( cl->userinfo, "ip", ip ) )
 		SV_DropClient( cl, "userinfo string length exceeded" );
+
+	if ( runFilter )
+	{
+		val = SV_RunFilters( cl->userinfo, &cl->netchan.remoteAddress );
+		if ( *val != '\0' ) 
+		{
+			SV_DropClient( cl, val );
+		}
+	}
 }
 
 
@@ -1493,7 +1509,7 @@ static void SV_UpdateUserinfo_f( client_t *cl ) {
 
 	Q_strncpyz( cl->userinfo, info, sizeof( cl->userinfo ) );
 
-	SV_UserinfoChanged( cl, qtrue );
+	SV_UserinfoChanged( cl, qtrue, qtrue ); // update userinfo, run filter
 	// call prog code to allow overrides
 	VM_Call( gvm, GAME_CLIENT_USERINFO_CHANGED, cl - svs.clients );
 }

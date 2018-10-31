@@ -53,6 +53,7 @@ cvar_t	*sv_floodProtect;
 cvar_t	*sv_lanForceRate; // dedicated 1 (LAN) server forces local client rates to 99999 (bug #491)
 
 cvar_t *sv_levelTimeReset;
+cvar_t *sv_filter;
 
 #ifdef USE_BANS
 cvar_t	*sv_banFile;
@@ -1227,7 +1228,7 @@ void SV_TrackCvarChanges( void )
 
 	for ( i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++ ) {
 		if ( cl->state >= CS_CONNECTED ) {
-			SV_UserinfoChanged( cl, qfalse );
+			SV_UserinfoChanged( cl, qfalse, qfalse ); // do not update userinfo, do not run filter
 		}
 	}
 }

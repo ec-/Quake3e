@@ -371,6 +371,8 @@ qboolean Sys_GetFileStats( const char *filename, fileOffset_t *size, fileTime_t 
 		*ctime = (fileTime_t)s.st_ctime;
 		return qtrue;
 	} else {
+		*size = 0;
+		*mtime = *ctime = 0;
 		return qfalse;
 	}
 }

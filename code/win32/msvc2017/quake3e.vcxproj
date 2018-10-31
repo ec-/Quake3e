@@ -237,6 +237,7 @@
     <ClCompile Include="..\..\server\sv_bot.c" />
     <ClCompile Include="..\..\server\sv_ccmds.c" />
     <ClCompile Include="..\..\server\sv_client.c" />
+    <ClCompile Include="..\..\server\sv_filter.c" />
     <ClCompile Include="..\..\server\sv_game.c" />
     <ClCompile Include="..\..\server\sv_init.c" />
     <ClCompile Include="..\..\server\sv_main.c" />

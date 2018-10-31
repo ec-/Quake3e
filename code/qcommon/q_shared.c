@@ -832,16 +832,16 @@ __reswitch:
 
 	// single tokens:
 	case '+': case '`':
-	case '*': case '~':
+	/*case '*':*/ case '~':
 	case '{': case '}':
 	case '[': case ']':
 	case '?': case ',':
 	case ':': case ';':
-	case '%': //case '^':
+	case '%': case '^':
 		com_token[ len++ ] = *str++;
 		break;
 
-	case '^':
+	case '*':
 		com_token[ len++ ] = *str++;
 		com_tokentype = TK_MATCH;
 		break;

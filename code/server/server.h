@@ -274,6 +274,7 @@ extern	cvar_t	*sv_floodProtect;
 extern	cvar_t	*sv_lanForceRate;
 
 extern	cvar_t *sv_levelTimeReset;
+extern	cvar_t *sv_filter;
 
 #ifdef USE_BANS
 extern	cvar_t	*sv_banFile;
@@ -346,7 +347,7 @@ void SV_InitChallenger( void );
 void SV_DirectConnect( const netadr_t *from );
 
 void SV_ExecuteClientMessage( client_t *cl, msg_t *msg );
-void SV_UserinfoChanged( client_t *cl, qboolean updateUserinfo );
+void SV_UserinfoChanged( client_t *cl, qboolean updateUserinfo, qboolean runFilter );
 
 void SV_ClientEnterWorld( client_t *client, usercmd_t *cmd );
 void SV_FreeClient( client_t *client );
@@ -472,3 +473,11 @@ void SV_Netchan_Transmit( client_t *client, msg_t *msg);
 int SV_Netchan_TransmitNextFragment( client_t *client );
 qboolean SV_Netchan_Process( client_t *client, msg_t *msg );
 void SV_Netchan_FreeQueue( client_t *client );
+
+//
+// sv_filter.c
+//
+void SV_LoadFilters( const char *filename );
+const char *SV_RunFilters( const char *userinfo, const netadr_t *addr );
+void SV_AddFilter_f( void );
+void SV_AddFilterCmd_f( void );

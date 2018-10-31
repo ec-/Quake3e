@@ -576,6 +576,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\server\sv_filter.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\server\sv_game.c"
 				>
 			</File>

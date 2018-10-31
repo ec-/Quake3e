@@ -759,6 +759,8 @@ void SV_Init( void )
 
 	sv_levelTimeReset = Cvar_Get( "sv_levelTimeReset", "0", CVAR_ARCHIVE_ND );
 
+	sv_filter = Cvar_Get( "sv_filter", "filter.txt", CVAR_ARCHIVE );
+
 	// initialize bot cvars so they are listed and can be set before loading the botlib
 	SV_BotInitCvars();
 

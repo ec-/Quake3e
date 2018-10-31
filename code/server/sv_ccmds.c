@@ -1434,6 +1434,8 @@ void SV_AddOperatorCommands( void ) {
 	Cmd_AddCommand("exceptdel", SV_ExceptDel_f);
 	Cmd_AddCommand("flushbans", SV_FlushBans_f);
 #endif
+	Cmd_AddCommand( "ban", SV_AddFilter_f );
+	Cmd_AddCommand( "bancmd", SV_AddFilterCmd_f );
 }
 
 
