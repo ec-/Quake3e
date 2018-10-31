@@ -234,7 +234,7 @@ static void dump_nodes( const filter_node_t *node, int level, int skip_tagged, F
 			{
 				if ( node->fop == FOP_LT ) // do not print default action for dates
 					opstr = "";
-				n = sprintf( buf, "date %s\"%s\"", opstr, node->p2 );
+				n = sprintf( buf, "date %s\"%s\"", opstr, node->p2.string );
 			}
 			else 
 			{
