@@ -415,12 +415,14 @@ void SV_DirectConnect( const netadr_t *from ) {
 		goto gotnewcl;
 	}
 
+	// select least used free slot
+	n = 0;
 	newcl = NULL;
 	for ( i = startIndex; i < sv_maxclients->integer ; i++ ) {
 		cl = &svs.clients[i];
-		if (cl->state == CS_FREE) {
+		if ( cl->state == CS_FREE && ( newcl == NULL || svs.time - cl->lastDisconnectTime > n ) ) {
+			n = svs.time - cl->lastDisconnectTime;
 			newcl = cl;
-			break;
 		}
 	}
 
@@ -506,6 +508,7 @@ gotnewcl:
 	newcl->lastSnapshotTime = svs.time - 9999; // generate a snapshot immediately
 	newcl->lastPacketTime = svs.time;
 	newcl->lastConnectTime = svs.time;
+	newcl->lastDisconnectTime = svs.time;
 
 	SVC_RateRestoreToxicAddress( &newcl->netchan.remoteAddress, 10, 1000 );
 	newcl->justConnected = qtrue;
@@ -590,6 +593,8 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 	SV_SetUserinfo( drop - svs.clients, "" );
 
 	drop->justConnected = qfalse;
+
+	drop->lastDisconnectTime = svs.time;
 
 	if ( isBot ) {
 		// bots shouldn't go zombie, as there's no real net connection.
