@@ -669,6 +669,9 @@ qboolean CL_CloseAVI( void )
 
 	CL_FlushCaptureBuffer();
 
+	Z_Free( afd.cBuffer );
+	Z_Free( afd.eBuffer );
+
 	if ( afd.pipe )
 	{
 		Com_Printf( "Wrote %d:%d frames to pipe:%s\n", afd.numVideoFrames, afd.numAudioFrames, afd.fileName );
@@ -735,8 +738,6 @@ qboolean CL_CloseAVI( void )
 
 	SafeFS_Write( buffer, bufIndex, afd.f );
 
-	Z_Free( afd.cBuffer );
-	Z_Free( afd.eBuffer );
 	FS_FCloseFile( afd.f );
 
 	Com_DPrintf( "Wrote %d:%d frames to %s\n", afd.numVideoFrames, afd.numAudioFrames, afd.fileName );
