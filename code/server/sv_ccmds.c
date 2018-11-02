@@ -1122,11 +1122,14 @@ SV_Status_f
 ================
 */
 static void SV_Status_f( void ) {
-	int			i, j, l;
-	client_t	*cl;
-	playerState_t	*ps;
-	const char		*s;
-	int			ping;
+	int i, j, l;
+	const client_t *cl;
+	const playerState_t *ps;
+	const char *s;
+	int max_namelength;
+	int max_addrlength;
+	char names[ MAX_CLIENTS * MAX_NAME_LENGTH ], *np[ MAX_CLIENTS ], nl[ MAX_CLIENTS ], *nc;
+	char addrs[ MAX_CLIENTS * 48 ], *ap[ MAX_CLIENTS ], al[ MAX_CLIENTS ], *ac;
 
 	// make sure server is running
 	if ( !com_sv_running->integer ) {
@@ -1134,57 +1137,97 @@ static void SV_Status_f( void ) {
 		return;
 	}
 
-	Com_Printf ("map: %s\n", sv_mapname->string );
+	max_namelength = 4; // strlen( "name" )
+	max_addrlength = 7; // strlen( "address" )
 
-	Com_Printf ("cl score ping name            address                                 rate \n");
-	Com_Printf ("-- ----- ---- --------------- --------------------------------------- -----\n");
-	for (i=0,cl=svs.clients ; i < sv_maxclients->integer ; i++,cl++)
+	nc = names; *nc = '\0';
+	ac = addrs; *ac = '\0';
+
+	// first pass: save and determine max.legths of name/address fields
+	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ )
 	{
-		if (!cl->state)
+		if ( cl->state == CS_FREE )
+		{
+			np[ i ] = ap[ i ] = NULL;
+			nl[ i ] = al[ i ] = 0; // lengths
 			continue;
-		Com_Printf ("%2i ", i);
-		ps = SV_GameClientNum( i );
-		Com_Printf ("%5i ", ps->persistant[PERS_SCORE]);
-
-		if (cl->state == CS_CONNECTED)
-			Com_Printf ("CON ");
-		else if (cl->state == CS_ZOMBIE)
-			Com_Printf ("ZMB ");
-		else
-		{
-			ping = cl->ping < 9999 ? cl->ping : 9999;
-			Com_Printf ("%4i ", ping);
 		}
+		l = strlen( cl->name ) + 1;
+		strcpy( nc, cl->name );
+		np[ i ] = nc; nc += l;			// name pointer in name buffer
+		nl[ i ] = SV_Strlen( cl->name );// name length without color sequences
+		if ( nl[ i ] > max_namelength )
+			max_namelength = nl[ i ];
 
-		Com_Printf ("%s", cl->name);
-		
-		l = 16 - SV_Strlen(cl->name);
-		j = 0;
-		
-		do
-		{
-			Com_Printf (" ");
-			j++;
-		} while(j < l);
-
-
-		// TTimo adding a ^7 to reset the color
 		s = NET_AdrToString( &cl->netchan.remoteAddress );
-		Com_Printf ("^7%s", s);
-		l = 39 - strlen(s);
-		j = 0;
-		
-		do
-		{
-			Com_Printf(" ");
-			j++;
-		} while(j < l);
-		
-		Com_Printf (" %5i", cl->rate);
-
-		Com_Printf ("\n");
+		l = strlen( s ) + 1;
+		strcpy( ac, s );
+		ap[ i ] = ac; ac += l;			// address pointer in address buffer
+		al[ i ] = l - 1;				// address length
+		if ( al[ i ] > max_addrlength )
+			max_addrlength = al[ i ];
 	}
-	Com_Printf ("\n");
+
+	Com_Printf( "map: %s\n", sv_mapname->string );
+
+#if 0
+	Com_Printf( "cl score ping name                        address                     rate\n" );
+	Com_Printf( "-- ----- ---- --------------------------- --------------------------- -----\n" );
+#else // variable-length fields
+	Com_Printf( "cl score ping name" );
+	for ( i = 0; i < max_namelength - 4; i++ )
+		Com_Printf( " " );
+	Com_Printf( " address" );
+	for ( i = 0; i < max_addrlength - 7; i++ )
+		Com_Printf( " " );
+	Com_Printf( " rate\n" );
+
+	Com_Printf( "-- ----- ---- " );
+	for ( i = 0; i < max_namelength; i++ )
+		Com_Printf( "-" );
+	Com_Printf( " " );
+	for ( i = 0; i < max_addrlength; i++ )
+		Com_Printf( "-" );
+	Com_Printf( " -----\n" );
+#endif
+
+	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ )
+	{
+		if ( cl->state == CS_FREE )
+			continue;
+		Com_Printf( "%2i ", i ); // id
+		ps = SV_GameClientNum( i );
+		Com_Printf( "%5i ", ps->persistant[PERS_SCORE] );
+
+		// ping/status
+		if ( cl->state == CS_PRIMED )
+			Com_Printf( "PRM " );
+		else if ( cl->state == CS_CONNECTED )
+			Com_Printf( "CON " );
+		else if ( cl->state == CS_ZOMBIE )
+			Com_Printf( "ZMB " );
+		else
+			Com_Printf( "%4i ", cl->ping < 999 ? cl->ping : 999 );
+	
+		// variable-length name field
+		s = np[ i ];
+		Com_Printf( "%s", s );
+		l = max_namelength - nl[ i ];
+		for ( j = 0; j < l; j++ )
+			Com_Printf( " " );
+
+		// variable-length address field
+		s = ap[ i ];
+		Com_Printf( S_COLOR_WHITE " %s", s );
+		l = max_addrlength - al[ i ];
+		for ( j = 0; j < l; j++ )
+			Com_Printf( " " );
+
+		// rate
+		Com_Printf( " %5i\n", cl->rate );
+	}
+
+	Com_Printf( "\n" );
 }
 
 
