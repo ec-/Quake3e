@@ -403,7 +403,9 @@ static int is_integer( const char *s )
 		++s;
 
 	while ( *s >= '0' && *s <= '9' ) 
+	{
 		++s; ++n;
+	}
 
 	if ( n == 0 || n > 24 || *s != '\0' )
 		return 0;
@@ -416,7 +418,6 @@ static filter_node_t *new_node( const char *p1, const char *p2, filter_op fop, i
 {
 	filter_node_t *node;
 	int len, len1, len2;
-	int intval;
 	unsigned is_date = 0;
 	unsigned is_fname = 0;
 
@@ -449,8 +450,7 @@ static filter_node_t *new_node( const char *p1, const char *p2, filter_op fop, i
 	}
 
 	// right value
-	intval = is_integer( p2 );
-	if ( quoted || !intval || is_fname ) 
+	if ( quoted || is_fname || is_date || is_integer( p2 ) == 0 ) 
 		len2 = strlen( p2 ) + 1; // string value
 	else
 		len2 = 0; // integer or null value
@@ -594,7 +594,7 @@ static const char *parse_section( const char *text, int level, filter_node_t **r
 			}
 
 			//  value must be sting or quoted string, `~` must be used with quoted strings only
-			if ( com_tokentype != TK_STRING && com_tokentype != TK_QUOTED || (op == TK_MATCH && com_tokentype != TK_QUOTED ) ) 
+			if ( (com_tokentype != TK_STRING && com_tokentype != TK_QUOTED) || (op == TK_MATCH && com_tokentype != TK_QUOTED ) ) 
 			{
 				COM_ParseError( "unexpected '%s'", v0 );
 				return NULL;
