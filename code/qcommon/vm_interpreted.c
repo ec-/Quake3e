@@ -45,7 +45,10 @@ void VM_StackTrace( vm_t *vm, int programCounter, int programStack ) {
 
 // macro opcode sequences
 typedef enum {
-	MOP_LLOAD4 = OP_MAX
+	MOP_LOCAL_LOAD4 = OP_MAX,
+	MOP_LOCAL_LOAD4_CONST,
+	MOP_LOCAL_LOCAL,
+	MOP_LOCAL_LOCAL_LOAD4,
 } macro_op_t;
 
 
@@ -67,11 +70,31 @@ static void VM_FindMOps( instruction_t *buf, int instructionCount )
 	while ( i < instructionCount )
 	{
 		op0 = ci->op;
+
+		if ( op0 == OP_LOCAL && (ci+1)->op == OP_LOAD4 && (ci+2)->op == OP_CONST ) {
+			ci->op = MOP_LOCAL_LOAD4_CONST;
+			ci += 3; i += 3;
+			continue;
+		}
+
 		if ( op0 == OP_LOCAL && (ci+1)->op == OP_LOAD4 ) {
-			ci->op = MOP_LLOAD4;
+			ci->op = MOP_LOCAL_LOAD4;
 			ci += 2; i += 2;
 			continue;
 		}
+
+		if ( op0 == OP_LOCAL && (ci+1)->op == OP_LOCAL && (ci+2)->op == OP_LOAD4 ) {
+			ci->op = MOP_LOCAL_LOCAL_LOAD4;
+			ci += 3; i += 3;
+			continue;
+		}
+
+		if ( op0 == OP_LOCAL && (ci+1)->op == OP_LOCAL ) {
+			ci->op = MOP_LOCAL_LOCAL;
+			ci += 2; i += 2;
+			continue;
+		}
+
 		ci++;
 		i++;
 	}
@@ -560,11 +583,33 @@ nextInstruction2:
 			*opStack = (int) r0.f;
 			break;
 
-		case MOP_LLOAD4: // combined OP_LOCAL + OP_LOAD4
+		case MOP_LOCAL_LOAD4:
 			ci++;
 			opStack++;
 			r1.i = r0.i;
 			r0.i = *opStack = *(int *)&image[ v0 + programStack ];
+			goto nextInstruction2;
+
+		case MOP_LOCAL_LOAD4_CONST:
+			r1.i = opStack[1] = *(int *)&image[ v0 + programStack ];
+			r0.i = opStack[2] = (ci+1)->value;
+			opStack += 2;
+			ci += 2;
+			goto nextInstruction2;
+
+		case MOP_LOCAL_LOCAL:
+			r1.i = opStack[1] = v0 + programStack;
+			r0.i = opStack[2] = ci->value + programStack;
+			opStack += 2;
+			ci++;
+			goto nextInstruction2;
+
+		case MOP_LOCAL_LOCAL_LOAD4:
+			r1.i = opStack[1] = v0 + programStack;
+			r0.i /*= opStack[2]*/ = ci->value + programStack;
+			r0.i = opStack[2] = *(int *)&image[ r0.i /*& dataMask*/ ];
+			opStack += 2;
+			ci += 2;
 			goto nextInstruction2;
 		}
 	}
