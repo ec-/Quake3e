@@ -1233,6 +1233,7 @@ static qboolean ConstOptimize( vm_t *vm )
 {
 	int v;
 	int op1;
+	qboolean sign_extend;
 
 	op1 = ni->op;
 
@@ -1253,11 +1254,22 @@ static qboolean ConstOptimize( vm_t *vm )
 
 	case OP_LOAD2:
 		EmitAddEDI4( vm );
+		sign_extend = ( (ci+2)->op == OP_SEX16 );
 		if ( ISS8( ci->value ) ) {
-			EmitString( "0F B7 43" );	// movzx eax, word ptr [ebx+0x7F]
+			if ( sign_extend ) {
+				EmitString( "0F BF 43" );	// movsx eax, word ptr [ebx+0x7F]
+				ip += 1;
+			} else {
+				EmitString( "0F B7 43" );	// movzx eax, word ptr [ebx+0x7F]
+			}
 			Emit1( ci->value );
 		} else {
-			EmitString( "0F B7 83" );	// movzx eax, word ptr [ebx+0x12345678]
+			if ( sign_extend ) {
+				EmitString( "0F BF 83" );	// movsx eax, word ptr [ebx+0x12345678]
+				ip += 1;
+			} else {
+				EmitString( "0F B7 83" );	// movzx eax, word ptr [ebx+0x12345678]
+			}
 			Emit4( ci->value );
 		}
 		EmitCommand( LAST_COMMAND_MOV_EDI_EAX ); // mov dword ptr [edi], eax
@@ -1266,11 +1278,22 @@ static qboolean ConstOptimize( vm_t *vm )
 
 	case OP_LOAD1:
 		EmitAddEDI4( vm );
+		sign_extend = ( (ci+2)->op == OP_SEX8 );
 		if ( ISS8( ci->value ) ) {
-			EmitString( "0F B6 43" );	// movzx eax, byte ptr [ebx+0x7F]
-			Emit1( ci->value );			
+			if ( sign_extend ) {
+				EmitString( "0F BE 43" );	// movsx eax, byte ptr [ebx+0x7F]
+				ip += 1;
+			} else {
+				EmitString( "0F B6 43" );	// movzx eax, byte ptr [ebx+0x7F]
+			}
+			Emit1( ci->value );
 		} else {
-			EmitString( "0F B6 83" );	// movzx eax, word ptr [ebx+0x12345678]
+			if ( sign_extend ) {
+				EmitString( "0F BE 83" );	// movsx eax, word ptr [ebx+0x12345678]
+				ip += 1;
+			} else {
+				EmitString( "0F B6 83" );	// movzx eax, word ptr [ebx+0x12345678]
+			}
 			Emit4( ci->value );
 		}
 		EmitCommand( LAST_COMMAND_MOV_EDI_EAX ); // mov dword ptr [edi], eax
@@ -1286,7 +1309,7 @@ static qboolean ConstOptimize( vm_t *vm )
 			Emit4( ci->value );
 		}
 		EmitCheckReg( vm, REG_EAX, 4 );
-		EmitString( "89 0C 03" );     // mov dword ptr [ebx + eax], ecx
+		EmitString( "89 0C 03" );		// mov dword ptr [ebx + eax], ecx
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );		// sub edi, 4
 		ip += 1;
 		return qtrue;
@@ -1300,7 +1323,7 @@ static qboolean ConstOptimize( vm_t *vm )
 			Emit4( ci->value );
 		}
 		EmitCheckReg( vm, REG_EAX, 2 );
-		EmitString( "66 89 0C 03" );   // mov word ptr [ebx + eax], cx
+		EmitString( "66 89 0C 03" );	// mov word ptr [ebx + eax], cx
 		EmitCommand( LAST_COMMAND_SUB_DI_4 ); // sub edi, 4
 		ip += 1;
 		return qtrue;
@@ -1326,7 +1349,7 @@ static qboolean ConstOptimize( vm_t *vm )
 			EmitString( "83 C0" );	// add eax, 0x7F
 			Emit1( v );
 		} else {
-			EmitString( "05" );	    // add eax, 0x12345678
+			EmitString( "05" );		// add eax, 0x12345678
 			Emit4( v );
 		}
 		EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
@@ -1452,10 +1475,10 @@ static qboolean ConstOptimize( vm_t *vm )
 		v = ci->value;
 		EmitMovEAXEDI( vm );
 		if ( ISU8( v ) ) {
-			EmitString( "83 F0" ); // xor eax, 0x7F
+			EmitString( "83 F0" );	// xor eax, 0x7F
 			Emit1( v );
 		} else {
-			EmitString( "35" );    // xor eax, 0x12345678
+			EmitString( "35" );		// xor eax, 0x12345678
 			Emit4( v );
 		}
 		EmitCommand( LAST_COMMAND_MOV_EDI_EAX );
@@ -2179,13 +2202,23 @@ __compile:
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				REWIND( 2 );
 				EmitCheckReg( vm, REG_EAX, 2 );			// range check eax
-				EmitString( "0F B7 04 03" );			// movzx eax, word ptr [ebx + eax]
+				if ( ni->op == OP_SEX16 ) {
+					EmitString( "0F BF 04 03" );		// movsx eax, word ptr [ebx + eax]
+					ip++;
+				} else {
+					EmitString( "0F B7 04 03" );		// movzx eax, word ptr [ebx + eax]
+				}
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov dword ptr [edi], eax
 				break;
 			}
-			EmitMovECXEDI( vm );						// mov ecx, dword ptr [edi]		
+			EmitMovECXEDI( vm );						// mov ecx, dword ptr [edi]
 			EmitCheckReg( vm, REG_ECX, 2 );				// range check ecx
-			EmitString( "0F B7 04 0B" );				// movzx eax, word ptr [ebx + ecx]
+			if ( ni->op == OP_SEX16 ) {
+				EmitString( "0F BF 04 0B" );			// movsx eax, word ptr [ebx + ecx]
+				ip++;
+			} else {
+				EmitString( "0F B7 04 0B" );			// movzx eax, word ptr [ebx + ecx]
+			}
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov dword ptr [edi], eax
 			break;
 
@@ -2193,13 +2226,23 @@ __compile:
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				REWIND( 2 );
 				EmitCheckReg( vm, REG_EAX, 1 );			// range check eax
-				EmitString( "0F B6 04 03" );			// movzx eax, byte ptr [ebx + eax]
+				if ( ni->op == OP_SEX8 ) {
+					EmitString( "0F BE 04 03" );		// movsx eax, byte ptr [ebx + eax]
+					ip++;
+				} else {
+					EmitString( "0F B6 04 03" );		// movzx eax, byte ptr [ebx + eax]
+				}
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov dword ptr [edi], eax
 				break;
 			}
 			EmitMovECXEDI( vm );						// mov ecx, dword ptr [edi]
 			EmitCheckReg( vm, REG_ECX, 1 );				// range check ecx
-			EmitString( "0F B6 04 0B" );				// movzx eax, byte ptr [ebx + ecx]
+			if ( ni->op == OP_SEX8 ) {
+				EmitString( "0F BE 04 0B" );			// movsx eax, byte ptr [ebx + ecx]
+				ip++;
+			} else {
+				EmitString( "0F B6 04 0B" );			// movzx eax, byte ptr [ebx + ecx]
+			}
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov dword ptr [edi], eax
 			break;
 
@@ -2369,9 +2412,16 @@ __compile:
 			break;
 
 		case OP_BAND:
-			EmitMovEAXEDI( vm );					// mov eax, dword ptr [edi]
-			EmitString( "21 47 FC" );				// and dword ptr [edi-4],eax
-			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+			wantres = ( ops[ ni->op ].stack <= 0 );
+			EmitMovEAXEDI( vm );						// mov eax, dword ptr [edi]
+			if ( wantres ) {
+				EmitString( "23 47 FC" );				// and eax, dword ptr [edi-4]
+				EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov dword ptr [edi], eax
+			} else {
+				EmitString( "21 47 FC" );				// and dword ptr [edi-4],eax
+				EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
+			}
 			break;
 
 		case OP_BOR:
