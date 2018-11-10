@@ -57,7 +57,7 @@ typedef struct filter_node_s
 static filter_node_t *nodes;
 
 static char filterMessage[ MAX_FILTER_MESSAGE ];
-static char filterDate[ 32 ];  // current date string in "YYYY-MM-DD HH:mm" format
+static char filterDate[ 64 ];  // current date string in "YYYY-MM-DD HH:mm" format
 static char filterName[ 256 ]; // filtered "name" userinfo key
 static int  filterDateMsec;
 static int  filterCurrMsec;

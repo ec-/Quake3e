@@ -451,28 +451,38 @@ int PC_ReadDefineParms(source_t *source, define_t *define, token_t **parms, int 
 	} //end for
 	return qtrue;
 } //end of the function PC_ReadDefineParms
+
+
 //============================================================================
 //
 // Parameter:				-
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int PC_StringizeTokens(token_t *tokens, token_t *token)
+int PC_StringizeTokens( const token_t *tokens, token_t *token )
 {
-	token_t *t;
+	const token_t *t;
+	int len, total;
 
 	token->type = TT_STRING;
 	token->whitespace_p = NULL;
 	token->endwhitespace_p = NULL;
-	token->string[0] = '\0';
-	strcat(token->string, "\"");
+	token->string[0] = '"';
+	total = 1;
 	for (t = tokens; t; t = t->next)
 	{
-		strncat(token->string, t->string, MAX_TOKEN - strlen(token->string) - 1);
-	} //end for
-	strncat(token->string, "\"", MAX_TOKEN - strlen(token->string) - 1);
+		len = (int)strlen( t->string );
+		if ( len + total >= sizeof( token->string ) - 1 ) // reserve leave space for '"' and '\0'
+			return qfalse;
+		strcpy( token->string + total, t->string );
+		total += len;
+	}
+	strcpy( token->string + total, "\"" );
+
 	return qtrue;
-} //end of the function PC_StringizeTokens
+}
+
+
 //============================================================================
 //
 // Parameter:				-
@@ -484,21 +494,29 @@ int PC_MergeTokens(token_t *t1, token_t *t2)
 	//merging of a name with a name or number
 	if (t1->type == TT_NAME && (t2->type == TT_NAME || t2->type == TT_NUMBER))
 	{
-		strcat(t1->string, t2->string);
+		if ( strlen( t1->string ) + strlen( t2->string ) >= sizeof( t1->string ) )
+			return qfalse;
+		strcat( t1->string, t2->string );
 		return qtrue;
-	} //end if
+	}
+
 	//merging of two strings
 	if (t1->type == TT_STRING && t2->type == TT_STRING)
 	{
+		int len1 = (int)strlen( t1->string );
+		if ( strlen( t1->string ) + strlen( t2->string ) - 2 >= sizeof( t1->string ) )
+			return qfalse;
 		//remove trailing double quote
-		t1->string[strlen(t1->string)-1] = '\0';
+		t1->string[len1-1] = '\0';
 		//concat without leading double quote
 		strcat(t1->string, &t2->string[1]);
 		return qtrue;
-	} //end if
+	}
 	//FIXME: merging of two number of the same sub type
 	return qfalse;
-} //end of the function PC_MergeTokens
+}
+
+
 //============================================================================
 //
 // Parameter:				-
