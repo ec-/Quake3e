@@ -1083,6 +1083,13 @@ void SV_AddFilter_f( void )
 
 	new_node = NULL;
 	parse_section( cmd, 0, &new_node, qtrue ); // level=0,in_scope=qtrue
+	if ( new_node && new_node->fop == FOP_DROP )
+	{
+		Com_Printf( S_COLOR_YELLOW "Standalone \"drop\" nodes is not allowed!\n" );
+		Z_Free( new_node );
+		return;
+	}
+
 	if ( new_node ) // should always success
 	{
 		SV_ReloadFilters( sv_filter->string, new_node );
@@ -1118,7 +1125,14 @@ void SV_AddFilterCmd_f( void )
 
 	cmd = Cmd_Cmd() + strlen( Cmd_Argv( 0 ) ) + 1;
 	parse_section( cmd, 0, &new_node, qtrue ); // level=0,in_scope=qtrue
-	if ( new_node ) 
+	if ( new_node && new_node->fop == FOP_DROP )
+	{
+		Com_Printf( S_COLOR_YELLOW "Standalone \"drop\" nodes is not allowed!\n" );
+		Z_Free( new_node );
+		return;
+	}
+
+	if ( new_node )
 	{
 		SV_ReloadFilters( sv_filter->string, new_node );
 	}
