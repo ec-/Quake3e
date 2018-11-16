@@ -1,0 +1,14 @@
+Following custom firewall rule can be added in [Network] -> [Firewall] -> [Custom Rules]:
+
+iptables -A input_wan_rule -p udp --dport 27960 -m hashlimit --hashlimit-mode srcip --hashlimit-above 768/second --hashlimit-burst 128 --hashlimit-name q3server1 -j DROP
+
+Rate (--hashlimit-above) should be big enough to handle at least sv_maxclientsPerIP * cl_maxPackets * (cl_packetdup + 1) packets
+
+You may need to use other than input_wan_rule chains depending from your routing configuration
+
+LEDE/OpenWrt firmware MUST be built with following options:
+
+CONFIG_PACKAGE_iptables-mod-hashlimit=y
+
+CONFIG_PACKAGE_iptables-mod-u32=y (not required, but may be useful to inspect packet's contents)
+

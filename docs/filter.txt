@@ -1,0 +1,128 @@
+=================================================
+
+This section describes format of userinfo filter files pointed by \sv_filter server cvar.
+
+=================================================
+
+Common format and expression syntax:
+
+<key> [op] <value> [ { key [op] <value> { [ ... ] } } ]
+
+Where:
+
+<key> - arbitrary userinfo key to compare, special built-in keys: 
+    'drop' - action key, can be followed by ban reason string, no further ops or nested keys is allowed
+    'date' - represents current date in "YYYY-MM-DD HH:mm" format
+    'fname' - filtered 'name' userinfo key (without color sequences) 
+
+[op] - optional operator, can be '==', '!=', '>', '>=', '<', '<=', '*' (string pattern match)
+		default operator is '==' (equal) and '<' (less) for 'date' key
+
+<value> - integer or string value to compare with the <key>
+		default is integer comparison, if you want to force string comparison - use double-quoted values, i.e. "0" instead of 0
+
+Examples:
+
+	ip "127.0.0.1" { 
+		name * "Unnamed*" {
+			drop "You have bad name"
+		}
+	}
+
+	cl_guid "" { // disallow empty guids
+		drop
+	}
+
+One-line format (without brackets) is also acceptable:
+
+	ip "127.0.0.1" name * "Unnamed*" drop "You have bad name"
+	cl_guid "" drop
+
+Multiple keys/comparisons inside single scope:
+
+	ip "127.0.0.1" { 
+		name * "*^0*" {
+			drop "Black color is not allowed on this server"
+		}
+		name "SomeBadGuy" {
+			drop "Bad Guy."
+		}
+	}
+
+Date key usage example:
+
+	ip "192.168.11.12" {
+		date "2019-06-01" { // hours:minutes can be omitted for this particular case
+			drop "Banned till summer."
+		}
+	}
+
+If there is "date" keys which may expire - engine will perform regular checks and rewrite filter file contents to clear expired ban entries
+
+You can also use '$' prefix in <value> to dereference any server-side cvar, for example:
+
+	snaps < $sv_fps {
+		drop "raize your \snaps"
+	}
+
+Example of custom password cvar fltering:
+
+	xxpassword != "12345678" {
+		drop "sorry, this is a private server"
+	}
+
+	I.e. user must do "\setu xxpassword 12345678" to be able to connect
+
+
+=================================================
+
+This section describes available server-side options and commands
+
+=================================================
+
+
+-------------------------------------------------
+\sv_filter - cvar that point on filter file, if it is "" then filtering will be disabled
+-------------------------------------------------
+
+
+-------------------------------------------------
+\filter <id> [key1] [key2] ... [keyN] [date +<duration[h|d|w|m]>|<date> ] [reason <text>]
+-------------------------------------------------
+
+	this command will kick and ban player with specified <id>
+	specified key values will be extracted from his current userinfo and used to construct filter command, acceptable by filter engine
+	if no keys specified - "ip" key will be used by default
+	default duration unit used with '+' is minutes, additional h(ours), d(ays), w(eeks), m(onths) suffixes can also be specified
+
+Examples:
+	\filter 0 name cl_guid
+
+		ban client 0 by his "name" and "cl_guid" userinfo fields
+
+	\filter 0 reason "bad guy."
+		
+		ban client by his "ip" address field with a reason "bad guy." 
+
+	\filter 0 ip name date +1d 
+
+		ban client for 1 day by his ip and name
+
+
+-------------------------------------------------
+\filtercmd <filter format string>
+-------------------------------------------------
+
+	pass manually constructed filter string (described in previous section) to the engine
+
+Examples:
+	
+	\filtercmd ip "127.0.0.1" name "name" drop "reason"
+
+	\filtercmd name * "*^0*" drop "black color is not allowed"
+
+	scopes are acceptable as well:
+
+	\filtercmd name * "*^0*" { ip != "127.0.0.1" { drop "black color is not allowed" } }
+
+
