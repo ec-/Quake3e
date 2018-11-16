@@ -703,10 +703,10 @@ void SV_Init( void )
 	sv_hostname = Cvar_Get ("sv_hostname", "noname", CVAR_SERVERINFO | CVAR_ARCHIVE );
 	sv_maxclients = Cvar_Get ("sv_maxclients", "8", CVAR_SERVERINFO | CVAR_LATCH);
 	Cvar_CheckRange( sv_maxclients, "1", XSTRING(MAX_CLIENTS), CV_INTEGER );
-	
-	sv_maxconcurrent = Cvar_Get( "sv_maxconcurrent", "4", CVAR_ARCHIVE );
-	Cvar_CheckRange( sv_maxconcurrent, "1", NULL, CV_INTEGER );
-	Cvar_SetDescription( sv_maxconcurrent, "Limits number of simultaneous connections from the same IP address." );
+
+	sv_maxclientsPerIP = Cvar_Get( "sv_maxclientsPerIP", "3", CVAR_ARCHIVE );
+	Cvar_CheckRange( sv_maxclientsPerIP, "1", NULL, CV_INTEGER );
+	Cvar_SetDescription( sv_maxclientsPerIP, "Limits number of simultaneous connections from the same IP address." );
 
 	sv_minRate = Cvar_Get ("sv_minRate", "0", CVAR_ARCHIVE_ND | CVAR_SERVERINFO );
 	sv_maxRate = Cvar_Get ("sv_maxRate", "0", CVAR_ARCHIVE_ND | CVAR_SERVERINFO );

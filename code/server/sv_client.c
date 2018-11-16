@@ -238,7 +238,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 		const netadr_t *addr = &svs.clients[ i ].netchan.remoteAddress;
 		if ( addr->type != NA_BOT && NET_CompareBaseAdr( addr, from ) ) {
 			if ( svs.clients[ i ].state >= CS_CONNECTED && !svs.clients[ i ].justConnected ) {
-				if ( ++n >= sv_maxconcurrent->integer ) {
+				if ( ++n >= sv_maxclientsPerIP->integer ) {
 					// avoid excessive outgoing traffic
 					if ( !SVC_RateLimit( &bucket, 10, 200 ) ) {
 						NET_OutOfBandPrint( NS_SERVER, from, "print\nToo many connections.\n" );
