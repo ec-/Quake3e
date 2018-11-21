@@ -766,7 +766,7 @@ static qboolean UI_GetValue( char* value, int valueSize, const char* key ) {
 		return qtrue;
 	}
 
-	if ( !Q_stricmp( key, "trap_R_AddLinearLightToScene" ) && re.AddLinearLightToScene ) {
+	if ( !Q_stricmp( key, "trap_R_AddLinearLightToScene_Q3E" ) && re.AddLinearLightToScene ) {
 		Com_sprintf( value, valueSize, "%i", UI_R_ADDLINEARLIGHTTOSCENE );
 		return qtrue;
 	}

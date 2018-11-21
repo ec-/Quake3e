@@ -1652,7 +1652,8 @@ static void CL_Connect_f( void ) {
 		cls.state = CA_CONNECTING;
 
 		// Set a client challenge number that ideally is mirrored back by the server.
-		clc.challenge = ((rand() << 16) ^ rand()) ^ Com_Milliseconds();
+		//clc.challenge = ((rand() << 16) ^ rand()) ^ Com_Milliseconds();
+		Com_RandomBytes( (char*)&clc.challenge, sizeof( clc.challenge ) );
 	}
 
 	Key_SetCatcher( 0 );

@@ -413,8 +413,13 @@ static qboolean CL_GetValue( char* value, int valueSize, const char* key ) {
 		return qtrue;
 	}
 
-	if ( !Q_stricmp( key, "trap_R_AddLinearLightToScene" ) && re.AddLinearLightToScene ) {
+	if ( !Q_stricmp( key, "trap_R_AddLinearLightToScene_Q3E" ) && re.AddLinearLightToScene ) {
 		Com_sprintf( value, valueSize, "%i", CG_R_ADDLINEARLIGHTTOSCENE );
+		return qtrue;
+	}
+
+	if ( !Q_stricmp( key, "trap_IsRecordingDemo" ) ) {
+		Com_sprintf( value, valueSize, "%i", CG_IS_RECORDING_DEMO );
 		return qtrue;
 	}
 
@@ -755,6 +760,9 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 	case CG_R_FORCEFIXEDDLIGHTS:
 		CL_ForceFixedDlights();
 		return 0;
+
+	case CG_IS_RECORDING_DEMO:
+		return clc.demorecording;
 
 	case CG_TRAP_GETVALUE:
 		VM_CHECKBOUNDS( cgvm, args[1], args[2] );

@@ -342,7 +342,7 @@ void *GVM_ArgPtr( intptr_t intValue )
 
 static qboolean SV_GetValue( char* value, int valueSize, const char* key )
 {
-	if ( !Q_stricmp( key, "SVF_SELF_PORTAL2" ) )
+	if ( !Q_stricmp( key, "SVF_SELF_PORTAL2_Q3E" ) )
 	{
 		Com_sprintf( value, valueSize, "%i", SVF_SELF_PORTAL2 );
 		return qtrue;
