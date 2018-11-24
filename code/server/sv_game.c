@@ -976,21 +976,6 @@ static intptr_t QDECL SV_DllSyscall( intptr_t arg, ... ) {
 }
 
 
-static const int g_vmMainArgs[ GAME_EXPORT_LAST ] = {
-	4, // GAME_INIT, ( int levelTime, int randomSeed, int restart );
-	2, // GAME_SHUTDOWN, ( int restart );
-	4, // GAME_CLIENT_CONNECT, ( int clientNum, qboolean firstTime, qboolean isBot );
-	2, // GAME_CLIENT_BEGIN, ( int clientNum );
-	2, // GAME_CLIENT_USERINFO_CHANGED,	( int clientNum );
-	2, // GAME_CLIENT_DISCONNECT, ( int clientNum );
-	2, // GAME_CLIENT_COMMAND, ( int clientNum );
-	2, // GAME_CLIENT_THINK, ( int clientNum );
-	2, // GAME_RUN_FRAME, ( int levelTime );
-	1, // GAME_CONSOLE_COMMAND, ( void );
-	2  // BOTAI_START_FRAME	( int time );
-};
-
-
 /*
 ===============
 SV_ShutdownGameProgs
@@ -1002,7 +987,7 @@ void SV_ShutdownGameProgs( void ) {
 	if ( !gvm ) {
 		return;
 	}
-	VM_Call( gvm, GAME_SHUTDOWN, qfalse );
+	VM_Call( gvm, GAME_SHUTDOWN, 1, qfalse );
 	VM_Free( gvm );
 	gvm = NULL;
 	FS_VM_CloseFiles( H_QAGAME );
@@ -1032,7 +1017,7 @@ static void SV_InitGameVM( qboolean restart ) {
 	
 	// use the current msec count for a random seed
 	// init for this gamestate
-	VM_Call (gvm, GAME_INIT, sv.time, Com_Milliseconds(), restart);
+	VM_Call( gvm, GAME_INIT, 3, sv.time, Com_Milliseconds(), restart );
 }
 
 
@@ -1047,7 +1032,7 @@ void SV_RestartGameProgs( void ) {
 	if ( !gvm ) {
 		return;
 	}
-	VM_Call( gvm, GAME_SHUTDOWN, qtrue );
+	VM_Call( gvm, GAME_SHUTDOWN, 1, qtrue );
 
 	// do a restart instead of a free
 	gvm = VM_Restart( gvm );
@@ -1083,7 +1068,7 @@ void SV_InitGameProgs( void ) {
 	}
 
 	// load the dll or bytecode
-	gvm = VM_Create( VM_GAME, SV_GameSystemCalls, SV_DllSyscall, g_vmMainArgs, Cvar_VariableIntegerValue( "vm_game" ) );
+	gvm = VM_Create( VM_GAME, SV_GameSystemCalls, SV_DllSyscall, Cvar_VariableIntegerValue( "vm_game" ) );
 	if ( !gvm ) {
 		Com_Error( ERR_DROP, "VM_Create on game failed" );
 	}
@@ -1107,5 +1092,5 @@ qboolean SV_GameCommand( void ) {
 		return qfalse;
 	}
 
-	return VM_Call( gvm, GAME_CONSOLE_COMMAND );
+	return VM_Call( gvm, GAME_CONSOLE_COMMAND, 0 );
 }

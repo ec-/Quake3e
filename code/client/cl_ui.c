@@ -1205,19 +1205,6 @@ static intptr_t QDECL UI_DllSyscall( intptr_t arg, ... ) {
 #endif
 }
 
-static const int ui_vmMainArgs[ UI_EXPORT_LAST ] = {
-	1, // UI_GETAPIVERSION = 0
-	1, // UI_INIT, void	UI_Init( void );
-	1, // UI_SHUTDOWN, void	UI_Shutdown( void );
-	3, // UI_KEY_EVENT, void	UI_KeyEvent( int key, int down );
-	3, // UI_MOUSE_EVENT, void	UI_MouseEvent( int dx, int dy );
-	2, // UI_REFRESH, void	UI_Refresh( int time );
-	1, // UI_IS_FULLSCREEN, qboolean UI_IsFullscreen( void );
-	2, // UI_SET_ACTIVE_MENU, void UI_SetActiveMenu( uiMenuCommand_t menu );
-	2, // UI_CONSOLE_COMMAND, qboolean UI_ConsoleCommand( int realTime );
-	2, // UI_DRAW_CONNECT_SCREEN, void UI_DrawConnectScreen( qboolean overlay );
-	1  // UI_HASUNIQUECDKEY
-};
 
 /*
 ====================
@@ -1230,7 +1217,7 @@ void CL_ShutdownUI( void ) {
 	if ( !uivm ) {
 		return;
 	}
-	VM_Call( uivm, UI_SHUTDOWN );
+	VM_Call( uivm, UI_SHUTDOWN, 0 );
 	VM_Free( uivm );
 	uivm = NULL;
 	FS_VM_CloseFiles( H_Q3UI );
@@ -1257,7 +1244,7 @@ void CL_InitUI( void ) {
 			interpret = VMI_COMPILED;
 	}
 
-	uivm = VM_Create( VM_UI, CL_UISystemCalls, UI_DllSyscall, ui_vmMainArgs, interpret );
+	uivm = VM_Create( VM_UI, CL_UISystemCalls, UI_DllSyscall, interpret );
 	if ( !uivm ) {
 		if ( cl_connectedToPureServer && CL_GameSwitch() ) {
 			// server-side modificaton may require and reference only single custom ui.qvm
@@ -1266,7 +1253,7 @@ void CL_InitUI( void ) {
 			// which will correct filesystem permissions
 			fs_reordered = qfalse;
 			FS_PureServerSetLoadedPaks( "", "" );
-			uivm = VM_Create( VM_UI, CL_UISystemCalls, UI_DllSyscall, ui_vmMainArgs, interpret );
+			uivm = VM_Create( VM_UI, CL_UISystemCalls, UI_DllSyscall, interpret );
 			if ( !uivm ) {
 				Com_Error( ERR_DROP, "VM_Create on UI failed" );
 			}
@@ -1276,11 +1263,11 @@ void CL_InitUI( void ) {
 	}
 
 	// sanity check
-	v = VM_Call( uivm, UI_GETAPIVERSION );
+	v = VM_Call( uivm, UI_GETAPIVERSION, 0 );
 	if (v == UI_OLD_API_VERSION) {
 //		Com_Printf(S_COLOR_YELLOW "WARNING: loading old Quake III Arena User Interface version %d\n", v );
 		// init for this gamestate
-		VM_Call( uivm, UI_INIT, (cls.state >= CA_AUTHORIZING && cls.state < CA_ACTIVE));
+		VM_Call( uivm, UI_INIT, 1, (cls.state >= CA_AUTHORIZING && cls.state < CA_ACTIVE) );
 	}
 	else if (v != UI_API_VERSION) {
 		// Free uivm now, so UI_SHUTDOWN doesn't get called later.
@@ -1292,7 +1279,7 @@ void CL_InitUI( void ) {
 	}
 	else {
 		// init for this gamestate
-		VM_Call( uivm, UI_INIT, (cls.state >= CA_AUTHORIZING && cls.state < CA_ACTIVE) );
+		VM_Call( uivm, UI_INIT, 1, (cls.state >= CA_AUTHORIZING && cls.state < CA_ACTIVE) );
 	}
 }
 
@@ -1300,7 +1287,7 @@ void CL_InitUI( void ) {
 #ifndef STANDALONE
 qboolean UI_usesUniqueCDKey( void ) {
 	if (uivm) {
-		return (VM_Call( uivm, UI_HASUNIQUECDKEY) != 0);
+		return (VM_Call( uivm, UI_HASUNIQUECDKEY, 0 ) != 0);
 	} else {
 		return qfalse;
 	}
@@ -1320,5 +1307,5 @@ qboolean UI_GameCommand( void ) {
 		return qfalse;
 	}
 
-	return VM_Call( uivm, UI_CONSOLE_COMMAND, cls.realtime );
+	return VM_Call( uivm, UI_CONSOLE_COMMAND, 1, cls.realtime );
 }

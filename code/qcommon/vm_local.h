@@ -164,8 +164,6 @@ struct vm_s {
 	const char	*name;
 	vmIndex_t	index;
 
-	const int	*vmMainArgs;
-
 	// for dynamic linked modules
 	void		*dllHandle;
 	dllSyscall_t entryPoint;
