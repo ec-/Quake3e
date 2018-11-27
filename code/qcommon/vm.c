@@ -1593,7 +1593,7 @@ locals from sp
 ==============
 */
 
-intptr_t QDECL VM_Call( vm_t *vm, int callnum, int nargs, ... )
+intptr_t QDECL VM_Call( vm_t *vm, int nargs, int callnum, ... )
 {
 	//vm_t	*oldVM;
 	intptr_t r;
@@ -1620,7 +1620,7 @@ intptr_t QDECL VM_Call( vm_t *vm, int callnum, int nargs, ... )
 		//rcg010207 -  see dissertation at top of VM_DllSyscall() in this file.
 		int args[MAX_VMMAIN_CALL_ARGS-1];
 		va_list ap;
-		va_start( ap, nargs );
+		va_start( ap, callnum );
 		for ( i = 0; i < nargs; i++ ) {
 			args[i] = va_arg( ap, int );
 		}
@@ -1641,7 +1641,7 @@ intptr_t QDECL VM_Call( vm_t *vm, int callnum, int nargs, ... )
 		va_list ap;
 
 		args[0] = callnum;
-		va_start( ap, nargs );
+		va_start( ap, callnum );
 		for ( i = 0; i < nargs; i++ ) {
 			args[i+1] = va_arg( ap, int );
 		}

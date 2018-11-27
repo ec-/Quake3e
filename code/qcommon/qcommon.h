@@ -381,7 +381,7 @@ void	VM_Forced_Unload_Start(void);
 void	VM_Forced_Unload_Done(void);
 vm_t	*VM_Restart( vm_t *vm );
 
-intptr_t	QDECL VM_Call( vm_t *vm, int callNum, int nargs, ... );
+intptr_t	QDECL VM_Call( vm_t *vm, int nargs, int callNum, ... );
 
 void	VM_Debug( int level );
 void	VM_CheckBounds( const vm_t *vm, unsigned int address, unsigned int length );

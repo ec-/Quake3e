@@ -549,7 +549,7 @@ void CL_WriteAVIVideoFrame( const byte *imageBuffer, int size )
 
 #define PCM_BUFFER_SIZE 44100
 
-static byte pcmCaptureBuffer[ PCM_BUFFER_SIZE ] = { 0 };
+static byte pcmCaptureBuffer[ PCM_BUFFER_SIZE ];
 static int  bytesInBuffer = 0;
 
 /*

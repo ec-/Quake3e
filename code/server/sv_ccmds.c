@@ -313,7 +313,7 @@ static void SV_MapRestart_f( void ) {
 	for ( i = 0; i < 3; i++ )
 	{
 		sv.time += 100;
-		VM_Call( gvm, GAME_RUN_FRAME, 1, sv.time );
+		VM_Call( gvm, 1, GAME_RUN_FRAME, sv.time );
 	}
 
 	sv.state = SS_GAME;
@@ -338,7 +338,7 @@ static void SV_MapRestart_f( void ) {
 		SV_AddServerCommand( client, "map_restart\n" );
 
 		// connect the client again, without the firstTime flag
-		denied = GVM_ArgPtr( VM_Call( gvm, GAME_CLIENT_CONNECT, 3, i, qfalse, isBot ) );
+		denied = GVM_ArgPtr( VM_Call( gvm, 3, GAME_CLIENT_CONNECT, i, qfalse, isBot ) );
 		if ( denied ) {
 			// this generally shouldn't happen, because the client
 			// was connected before the level change
@@ -359,7 +359,7 @@ static void SV_MapRestart_f( void ) {
 
 	// run another frame to allow things to look at all the players
 	sv.time += 100;
-	VM_Call( gvm, GAME_RUN_FRAME, 1, sv.time );
+	VM_Call( gvm, 1, GAME_RUN_FRAME, sv.time );
 	svs.time += 100;
 }
 

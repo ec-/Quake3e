@@ -987,7 +987,7 @@ void SV_ShutdownGameProgs( void ) {
 	if ( !gvm ) {
 		return;
 	}
-	VM_Call( gvm, GAME_SHUTDOWN, 1, qfalse );
+	VM_Call( gvm, 1, GAME_SHUTDOWN, qfalse );
 	VM_Free( gvm );
 	gvm = NULL;
 	FS_VM_CloseFiles( H_QAGAME );
@@ -1017,7 +1017,7 @@ static void SV_InitGameVM( qboolean restart ) {
 	
 	// use the current msec count for a random seed
 	// init for this gamestate
-	VM_Call( gvm, GAME_INIT, 3, sv.time, Com_Milliseconds(), restart );
+	VM_Call( gvm, 3, GAME_INIT, sv.time, Com_Milliseconds(), restart );
 }
 
 
@@ -1032,7 +1032,7 @@ void SV_RestartGameProgs( void ) {
 	if ( !gvm ) {
 		return;
 	}
-	VM_Call( gvm, GAME_SHUTDOWN, 1, qtrue );
+	VM_Call( gvm, 1, GAME_SHUTDOWN, qtrue );
 
 	// do a restart instead of a free
 	gvm = VM_Restart( gvm );
@@ -1092,5 +1092,5 @@ qboolean SV_GameCommand( void ) {
 		return qfalse;
 	}
 
-	return VM_Call( gvm, GAME_CONSOLE_COMMAND, 0 );
+	return VM_Call( gvm, 0, GAME_CONSOLE_COMMAND );
 }
