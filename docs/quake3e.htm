@@ -31,6 +31,7 @@ It is based on ioquake3-r1160 (latest non-SDL revision) with upstream patches an
 <li><b>\com_maxfpsUnfocused</b> - will save cpu when inactive,set to your desktop refresh rate, for example</li>
 <li><b>\com_skipIdLogo</b> <font color=silver><b>0</b>|1</font>- skip playing idlogo movie at startup</li>
 <li><b>\com_yieldCPU </b>&lt;milliseconds&gt; - try to sleep specified amout of time between rendered frames when game is active, this will greatly reduce CPU load, use <b>0</b> only if you're experiencing some lags (also it is usualy reduces performance on integrated graphics because CPU steals GPU's power budget)</li>
+<li><b>\r_defaultImage</b> <font color=silver>&lt;filename&gt;|#rgb|#rrggbb</font> - replace default (missing) image texture by either exact file or solid #rgb|#rrggbb background color</li>
 <li><b>\r_vbo</b> <font color=silver><b>0</b>|1</font> - use Vertex Buffer Objects to cache static map geometry, may improve FPS on modern GPUs, increases hunk memory usage by 15-30MB (map-dependent)</li>
 <div id="r_fbo"></div>
 <li><b>\r_fbo</b> <font color=silver><b>0</b>|1</font> - use framebuffer objects, enables gamma correction in windowed mode and allows arbitrary size (i.e. greater than logical desktop resolution) screenshot/video capture, required for bloom, hdr rendering, anti-aliasing, greyscale effects, OpenGL 3.0+ required</li>
@@ -48,13 +49,14 @@ It is based on ioquake3-r1160 (latest non-SDL revision) with upstream patches an
 <li><b>\r_nomip</b> <font color=silver><b>0</b>|1</font>- apply picmip only on worldspawn textures</li>
 <li><b>\r_neatsky</b> <font color=silver><b>0</b>|1</font> - nopicmip for skyboxes</li>
 <li><b>\r_greyscale</b> <font color=silver>[<b>0</b>..1.0]</font> - desaturates rendered frame, requires <b><a href="#r_fbo">\r_fbo 1</a></b>, can be changed on 	the fly</li>
-<li><b>\r_mapGreyScale</b> <font color=silver>[<b>0</b>..1.0]</font> - desaturate world map textures only, works independently from <b>\r_greyscale</b></li>
+<li><b>\r_mapGreyScale</b> <font color=silver>[-1.0..1.0]</font> - desaturate world map textures only, works independently from <b>\r_greyscale</b>, negative values desaturates lightmaps only</li>
 <li><b>\r_ext_multisample</b> <font color=silver><b>0</b>|2|4|6|8</font> - multi-sample anti-aliasing, requires <b><a href="#r_fbo">\r_fbo 1</a></b>, can be changed on the fly</li>
 <li><b>\r_ext_supersample</b> <font color=silver><b>0</b>|1</font> - super-sample anti-aliasing, requires <b><a href="#r_fbo">\r_fbo 1</a></b></li>
 <li><b>\r_noborder</b> <font color=silver><b>0</b>|1</font> - to draw game window without border, hold CTRL to drag & drop it with opened console, win32-only</li>
+<li><b>\r_noportals</b> <font color=silver><b>0</b>|1|2</font> - disable in-game portals (1), and mirrors too (2)</li>
+<li>negative <b>\r_overBrightBits</b> - force hardware gamma in windowed mode <i>(not actual with <b><a href="#r_fbo">\r_fbo 1</a></b>)</i></li>
 <li><a href="#video-pipe"><b>\video-pipe</b></a>&nbsp;<font color=silver>&lt;filename&gt;</font> - redirect captured video to ffmpeg input pipe and save encoded file as &lt;filename&gt;</li>
 <li><a href="#arr"><b>\r_renderWidth</b> &amp; <b>\r_renderHeight</b></a> - arbitrary resolution rendering, requires <b><a href="#r_fbo">\r_fbo 1</a></b></li>
-<li>negative <b>\r_overBrightBits</b> - force hardware gamma in windowed mode <i>(not actual with <b><a href="#r_fbo">\r_fbo 1</a></b>)</i></li>
 <li><b>\cl_conColor [RRR GGG BBB AAA]</b> - custom console color, <u>non-archived, use <b>\seta</b> command to set archive flag and store in config</u></li>
 <li><b>\cl_autoNudge</b> <font color=silver>[<b>0</b>..1]</font> - automatic time nudge that uses your average ping as the time nudge, values:<br>
 &nbsp;&nbsp; 0 - use fixed <b>\cl_timeNudge</b><br>
@@ -243,7 +245,7 @@ Requires <b><a href="#r_fbo">\r_fbo 1</a></b>, available operation modes via <b>
 <ul>
 <li>0 - off (color=color, i.e. no changes)</li>
 <li>1 - by itself (color=color*color)</li>
-<li>2 - by intencity (color=color*luma(color))</li>
+<li>2 - by intensity (color=color*luma(color))</li>
 </ul>
 <b>\r_bloom_intensity</b> - final bloom blend factor, default is 0.5<br>
 <br>

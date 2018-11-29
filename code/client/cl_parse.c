@@ -201,7 +201,7 @@ for any reason, no changes to the state will be made at all.
 ================
 */
 static void CL_ParseSnapshot( msg_t *msg ) {
-	clSnapshot_t	*old;
+	const clSnapshot_t *old;
 	clSnapshot_t	newSnap;
 	int			deltaNum;
 	int			oldMessageNum;
