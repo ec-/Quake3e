@@ -244,14 +244,16 @@ static qboolean CL_GetServerCommand( int serverCommandNumber ) {
 	const char *s;
 	const char *cmd;
 	static char bigConfigString[BIG_INFO_STRING];
-	int argc;
+	int argc, index;
 
 	// if we have irretrievably lost a reliable command, drop the connection
 	if ( serverCommandNumber <= clc.serverCommandSequence - MAX_RELIABLE_COMMANDS ) {
 		// when a demo record was started after the client got a whole bunch of
 		// reliable commands then the client never got those first reliable commands
-		if ( clc.demoplaying )
+		if ( clc.demoplaying ) {
+			Cmd_Clear();
 			return qfalse;
+		}
 		Com_Error( ERR_DROP, "CL_GetServerCommand: a reliable command was cycled out" );
 		return qfalse;
 	}
@@ -261,10 +263,16 @@ static qboolean CL_GetServerCommand( int serverCommandNumber ) {
 		return qfalse;
 	}
 
-	s = clc.serverCommands[ serverCommandNumber & ( MAX_RELIABLE_COMMANDS - 1 ) ];
+	index = serverCommandNumber & ( MAX_RELIABLE_COMMANDS - 1 );
+	s = clc.serverCommands[ index ];
 	clc.lastExecutedServerCommand = serverCommandNumber;
 
 	Com_DPrintf( "serverCommand: %i : %s\n", serverCommandNumber, s );
+
+	if ( clc.serverCommandsIgnore[ index ] ) {
+		Cmd_Clear();
+		return qfalse;
+	}
 
 rescan:
 	Cmd_TokenizeString( s );

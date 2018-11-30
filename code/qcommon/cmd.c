@@ -380,6 +380,7 @@ Cmd_Clear
 ============
 */
 void Cmd_Clear( void ) {
+	cmd_cmd[0] = '\0';
 	cmd_argc = 0;
 }
 

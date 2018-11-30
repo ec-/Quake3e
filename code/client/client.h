@@ -192,6 +192,7 @@ typedef struct {
 	int			serverCommandSequence;
 	int			lastExecutedServerCommand;		// last server command grabbed or executed with CL_GetServerCommand
 	char		serverCommands[MAX_RELIABLE_COMMANDS][MAX_STRING_CHARS];
+	qboolean	serverCommandsIgnore[MAX_RELIABLE_COMMANDS];
 
 	// file transfer from server
 	fileHandle_t download;
