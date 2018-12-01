@@ -378,36 +378,13 @@ extern	refexport_t		re;		// interface to refresh .dll
 //
 // cvars
 //
-extern	cvar_t	*cl_nodelta;
-extern	cvar_t	*cl_debugMove;
 extern	cvar_t	*cl_noprint;
+extern	cvar_t	*cl_debugMove;
 extern	cvar_t	*cl_timegraph;
-extern	cvar_t	*cl_maxpackets;
-extern	cvar_t	*cl_packetdup;
 extern	cvar_t	*cl_shownet;
-extern	cvar_t	*cl_showSend;
 extern	cvar_t	*cl_autoNudge;
 extern	cvar_t	*cl_timeNudge;
 extern	cvar_t	*cl_showTimeDelta;
-
-extern	cvar_t	*cl_yawspeed;
-extern	cvar_t	*cl_pitchspeed;
-extern	cvar_t	*cl_run;
-extern	cvar_t	*cl_anglespeedkey;
-
-extern	cvar_t	*cl_sensitivity;
-extern	cvar_t	*cl_freelook;
-
-extern	cvar_t	*cl_mouseAccel;
-extern	cvar_t	*cl_mouseAccelOffset;
-extern	cvar_t	*cl_mouseAccelStyle;
-extern	cvar_t	*cl_showMouseRate;
-
-extern	cvar_t	*m_pitch;
-extern	cvar_t	*m_yaw;
-extern	cvar_t	*m_forward;
-extern	cvar_t	*m_side;
-extern	cvar_t	*m_filter;
 
 extern	cvar_t	*cl_timedemo;
 extern	cvar_t	*cl_aviFrameRate;
@@ -467,6 +444,8 @@ void CL_GetPingInfo( int n, char *buf, int buflen );
 void CL_ClearPing( int n );
 int CL_GetPingQueueCount( void );
 
+void CL_ClearState( void );
+
 int CL_ServerStatus( const char *serverAddress, char *serverStatusString, int maxLen );
 
 qboolean CL_CheckPaused( void );
@@ -478,25 +457,10 @@ qboolean CL_GetModeInfo( int *width, int *height, float *windowAspect, int mode,
 //
 // cl_input
 //
-typedef struct {
-	int			down[2];		// key nums holding it down
-	unsigned	downtime;		// msec timestamp
-	unsigned	msec;			// msec down this frame if both a down and up happened
-	qboolean	active;			// current state
-	qboolean	wasPressed;		// set when down, not cleared when up
-} kbutton_t;
-
-extern	kbutton_t	in_mlook, in_klook;
-extern 	kbutton_t 	in_strafe;
-extern 	kbutton_t 	in_speed;
-
-void CL_InitInput (void);
-void CL_ClearInput (void);
-void CL_SendCmd (void);
-void CL_ClearState (void);
-
+void CL_InitInput( void );
+void CL_ClearInput( void );
+void CL_SendCmd( void );
 void CL_WritePacket( void );
-void IN_CenterView (void);
 
 //
 // cl_keys.c
