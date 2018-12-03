@@ -557,7 +557,7 @@ MSG_WriteDeltaUsercmdKey
 =====================
 */
 void MSG_WriteDeltaUsercmdKey( msg_t *msg, int key, const usercmd_t *from, const usercmd_t *to ) {
-	if ( to->serverTime - from->serverTime < 256 ) {
+	if ( (unsigned)(to->serverTime - from->serverTime) < 256 ) {
 		MSG_WriteBits( msg, 1, 1 );
 		MSG_WriteBits( msg, to->serverTime - from->serverTime, 8 );
 	} else {
