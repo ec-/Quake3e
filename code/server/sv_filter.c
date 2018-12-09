@@ -228,29 +228,29 @@ static void dump_nodes( const filter_node_t *node, int level, int skip_tagged, F
 		}
 		else
 		{
-			const char *opstr = op2str( node->fop );
+			const char *s = op2str( node->fop );
 
 			if ( node->is_date ) 
 			{
 				if ( node->fop == FOP_LT ) // do not print default action for dates
-					opstr = "";
-				n = sprintf( buf, "date %s\"%s\"", opstr, node->p2.string );
+					s = "";
+				n = sprintf( buf, "date %s\"%s\"", s, node->p2.string );
 			}
 			else 
 			{
 				if ( node->fop == FOP_EQ ) // do not print default action for strings
-					opstr = "";
+					s = "";
 
 				if ( node->is_string ) 
 				{
 					if ( node->is_quoted )
-						n = sprintf( buf, "%s %s\"%s\"", node->p1, opstr, node->p2.string );
+						n = sprintf( buf, "%s %s\"%s\"", node->p1, s, node->p2.string );
 					else
-						n = sprintf( buf, "%s %s%s", node->p1, opstr, node->p2.string );
+						n = sprintf( buf, "%s %s%s", node->p1, s, node->p2.string );
 				}
 				else 
 				{
-					n = sprintf( buf, "%s %s%i", node->p1, opstr, node->p2.integer );
+					n = sprintf( buf, "%s %s%i", node->p1, s, node->p2.integer );
 				}
 			}
 

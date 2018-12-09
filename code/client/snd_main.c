@@ -39,28 +39,28 @@ static soundInterface_t si;
 S_ValidateInterface
 =================
 */
-static qboolean S_ValidSoundInterface( soundInterface_t *si )
+static qboolean S_ValidSoundInterface( const soundInterface_t *s )
 {
-	if( !si->Shutdown ) return qfalse;
-	if( !si->StartSound ) return qfalse;
-	if( !si->StartLocalSound ) return qfalse;
-	if( !si->StartBackgroundTrack ) return qfalse;
-	if( !si->StopBackgroundTrack ) return qfalse;
-	if( !si->RawSamples ) return qfalse;
-	if( !si->StopAllSounds ) return qfalse;
-	if( !si->ClearLoopingSounds ) return qfalse;
-	if( !si->AddLoopingSound ) return qfalse;
-	if( !si->AddRealLoopingSound ) return qfalse;
-	if( !si->StopLoopingSound ) return qfalse;
-	if( !si->Respatialize ) return qfalse;
-	if( !si->UpdateEntityPosition ) return qfalse;
-	if( !si->Update ) return qfalse;
-	if( !si->DisableSounds ) return qfalse;
-	if( !si->BeginRegistration ) return qfalse;
-	if( !si->RegisterSound ) return qfalse;
-	if( !si->ClearSoundBuffer ) return qfalse;
-	if( !si->SoundInfo ) return qfalse;
-	if( !si->SoundList ) return qfalse;
+	if( !s->Shutdown ) return qfalse;
+	if( !s->StartSound ) return qfalse;
+	if( !s->StartLocalSound ) return qfalse;
+	if( !s->StartBackgroundTrack ) return qfalse;
+	if( !s->StopBackgroundTrack ) return qfalse;
+	if( !s->RawSamples ) return qfalse;
+	if( !s->StopAllSounds ) return qfalse;
+	if( !s->ClearLoopingSounds ) return qfalse;
+	if( !s->AddLoopingSound ) return qfalse;
+	if( !s->AddRealLoopingSound ) return qfalse;
+	if( !s->StopLoopingSound ) return qfalse;
+	if( !s->Respatialize ) return qfalse;
+	if( !s->UpdateEntityPosition ) return qfalse;
+	if( !s->Update ) return qfalse;
+	if( !s->DisableSounds ) return qfalse;
+	if( !s->BeginRegistration ) return qfalse;
+	if( !s->RegisterSound ) return qfalse;
+	if( !s->ClearSoundBuffer ) return qfalse;
+	if( !s->SoundInfo ) return qfalse;
+	if( !s->SoundList ) return qfalse;
 
 	return qtrue;
 }
