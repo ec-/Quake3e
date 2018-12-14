@@ -2228,7 +2228,7 @@ void CL_InitDownloads( void ) {
 	}
 
 #ifdef USE_CURL
-	if( cl_mapAutoDownload->integer && ( !(clc.sv_allowDownload & DLF_ENABLE) || clc.demoplaying ) )
+	if ( cl_mapAutoDownload->integer && ( !(clc.sv_allowDownload & DLF_ENABLE) || clc.demoplaying ) )
 	{
 		const char *info, *mapname, *bsp;
 
@@ -2236,7 +2236,8 @@ void CL_InitDownloads( void ) {
 		info = cl.gameState.stringData + cl.gameState.stringOffsets[ CS_SERVERINFO ];
 		mapname = Info_ValueForKey( info, "mapname" );
 		bsp = va( "maps/%s.bsp", mapname );
-		if ( !FS_FileIsInPAK( bsp, NULL, NULL ) )
+
+		if ( FS_FOpenFileRead( bsp, NULL, qfalse ) == -1 )
 		{
 			if ( CL_Download( "dlmap", mapname, qtrue ) )
 			{
