@@ -1633,7 +1633,7 @@ static int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 
 		if (lSeek!=0) {
 			if (fseek(s->file,lSeek,SEEK_CUR)==0)
-				lSeek=0;
+				;//	lSeek=0;
 			else
 				err=UNZ_ERRNO;
 		}

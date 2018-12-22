@@ -1143,15 +1143,18 @@ static void SV_Status_f( void ) {
 	nc = names; *nc = '\0';
 	ac = addrs; *ac = '\0';
 
+	Com_Memset( np, 0, sizeof( np ) );
+	Com_Memset( nl, 0, sizeof( nl ) );
+
+	Com_Memset( ap, 0, sizeof( ap ) );
+	Com_Memset( al, 0, sizeof( al ) );
+
 	// first pass: save and determine max.legths of name/address fields
 	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ )
 	{
 		if ( cl->state == CS_FREE )
-		{
-			np[ i ] = ap[ i ] = NULL;
-			nl[ i ] = al[ i ] = 0; // lengths
 			continue;
-		}
+
 		l = strlen( cl->name ) + 1;
 		strcpy( nc, cl->name );
 		np[ i ] = nc; nc += l;			// name pointer in name buffer
@@ -1195,6 +1198,7 @@ static void SV_Status_f( void ) {
 	{
 		if ( cl->state == CS_FREE )
 			continue;
+
 		Com_Printf( "%2i ", i ); // id
 		ps = SV_GameClientNum( i );
 		Com_Printf( "%5i ", ps->persistant[PERS_SCORE] );

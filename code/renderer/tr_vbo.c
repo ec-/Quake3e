@@ -798,7 +798,7 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 
 	// reset error state
 	qglGetError();
-	err = GL_NO_ERROR;
+	//err = GL_NO_ERROR;
 
 	if ( !VBO_world_data ) {
 		qglGenBuffersARB( 1, &VBO_world_data );
