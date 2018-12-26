@@ -703,7 +703,7 @@ void CL_ReadDemoMessage( void ) {
 	// get the length
 	r = FS_Read( &buf.cursize, 4, clc.demofile );
 	if ( r != 4 ) {
-		CL_DemoCompleted ();
+		CL_DemoCompleted();
 		return;
 	}
 	buf.cursize = LittleLong( buf.cursize );
@@ -1183,9 +1183,6 @@ qboolean CL_Disconnect( qboolean showMainMenu ) {
 	}
 
 	cl_disconnecting = qtrue;
-
-	// shutting down the client so enter full screen ui mode
-	Cvar_Set( "r_uiFullScreen", "1" );
 
 	// Stop demo recording
 	if ( clc.demorecording ) {
@@ -2022,9 +2019,6 @@ static void CL_DownloadsComplete( void ) {
 	if ( cls.state != CA_LOADING ) {
 		return;
 	}
-
-	// starting to load a map so we get out of full screen ui mode
-	Cvar_Set("r_uiFullScreen", "0");
 
 	// flush client memory and start loading stuff
 	// this will also (re)load the UI

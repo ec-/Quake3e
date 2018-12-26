@@ -1235,6 +1235,9 @@ void CL_InitUI( void ) {
 	int		v;
 	vmInterpret_t		interpret;
 
+	// disallow vl.collapse for UI elements
+	re.VertexLighting( qfalse );
+
 	// load the dll or bytecode
 	interpret = Cvar_VariableIntegerValue( "vm_ui" );
 	if ( cl_connectedToPureServer )

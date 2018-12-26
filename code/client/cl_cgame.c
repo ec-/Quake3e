@@ -378,11 +378,16 @@ CL_ShutdonwCGame
 ====================
 */
 void CL_ShutdownCGame( void ) {
+
 	Key_SetCatcher( Key_GetCatcher( ) & ~KEYCATCH_CGAME );
 	cls.cgameStarted = qfalse;
+
 	if ( !cgvm ) {
 		return;
 	}
+	
+	re.VertexLighting( qfalse );
+
 	VM_Call( cgvm, 0, CG_SHUTDOWN );
 	VM_Free( cgvm );
 	cgvm = NULL;
@@ -829,6 +834,9 @@ void CL_InitCGame( void ) {
 	info = cl.gameState.stringData + cl.gameState.stringOffsets[ CS_SERVERINFO ];
 	mapname = Info_ValueForKey( info, "mapname" );
 	Com_sprintf( cl.mapname, sizeof( cl.mapname ), "maps/%s.bsp", mapname );
+
+	// allow vertex lighting for in-game elements
+	re.VertexLighting( qtrue );
 
 	// load the dll or bytecode
 	interpret = Cvar_VariableIntegerValue( "vm_cgame" );

@@ -110,6 +110,8 @@ typedef struct {
 
 	const glconfig_t *(*GetConfig)( void );
 
+	void	(*VertexLighting)( qboolean allowed );
+
 } refexport_t;
 
 //

@@ -351,7 +351,7 @@ static void R_LoadMergedLightmaps( const lump_t *l, byte *image )
 	tr.numLightmaps = len / (LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3);
 	
 	// if we are in r_vertexLight mode, we don't need the lightmaps at all
-	if ( r_vertexLight->integer || glConfig.hardwareType == GLHW_PERMEDIA2 )
+	if ( ( r_vertexLight->integer && tr.vertexLightingAllowed ) || glConfig.hardwareType == GLHW_PERMEDIA2 )
 		return;
 
 	// we are about to upload textures
@@ -430,7 +430,7 @@ static void R_LoadLightmaps( const lump_t *l ) {
 	}
 
 	// if we are in r_vertexLight mode, we don't need the lightmaps at all
-	if ( r_vertexLight->integer || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
+	if ( ( r_vertexLight->integer && tr.vertexLightingAllowed ) || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
 		return;
 	}
 
@@ -516,7 +516,7 @@ static shader_t *ShaderForShaderNum( int shaderNum, int lightmapNum ) {
 	}
 	dsh = &s_worldData.shaders[ _shaderNum ];
 
-	if ( r_vertexLight->integer || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
+	if ( ( r_vertexLight->integer && tr.vertexLightingAllowed ) || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
 		lightmapNum = LIGHTMAP_BY_VERTEX;
 	}
 
@@ -2114,8 +2114,8 @@ static void R_LoadEntities( const lump_t *l ) {
 				ri.Printf( PRINT_WARNING, "WARNING: no semi colon in vertexshaderremap '%s'\n", value );
 				break;
 			}
-			*s++ = 0;
-			if (r_vertexLight->integer) {
+			*s++ = '\0';
+			if ( r_vertexLight->integer && tr.vertexLightingAllowed ) {
 				R_RemapShader(value, s, "0");
 			}
 			continue;
@@ -2128,7 +2128,7 @@ static void R_LoadEntities( const lump_t *l ) {
 				ri.Printf( PRINT_WARNING, "WARNING: no semi colon in shaderremap '%s'\n", value );
 				break;
 			}
-			*s++ = 0;
+			*s++ = '\0';
 			R_RemapShader(value, s, "0");
 			continue;
 		}

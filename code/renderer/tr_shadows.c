@@ -46,7 +46,7 @@ static	int			numEdgeDefs[SHADER_MAX_VERTEXES];
 static	int			facing[SHADER_MAX_INDEXES/3];
 static	vec3_t		shadowXyz[SHADER_MAX_VERTEXES];
 
-void R_AddEdgeDef( int i1, int i2, int facing ) {
+static void R_AddEdgeDef( int i1, int i2, int f ) {
 	int		c;
 
 	c = numEdgeDefs[ i1 ];
@@ -54,7 +54,7 @@ void R_AddEdgeDef( int i1, int i2, int facing ) {
 		return;		// overflow
 	}
 	edgeDefs[ i1 ][ c ].i2 = i2;
-	edgeDefs[ i1 ][ c ].facing = facing;
+	edgeDefs[ i1 ][ c ].facing = f;
 
 	numEdgeDefs[ i1 ]++;
 }

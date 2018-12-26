@@ -2648,7 +2648,7 @@ static shader_t *FinishShader( void ) {
 	//
 	// if we are in r_vertexLight mode, never use a lightmap texture
 	//
-	if ( stage > 1 && ( (r_vertexLight->integer && !r_uiFullScreen->integer && !shader.noVLcollapse) || glConfig.hardwareType == GLHW_PERMEDIA2 ) ) {
+	if ( stage > 1 && ( (r_vertexLight->integer && tr.vertexLightingAllowed && !shader.noVLcollapse) || glConfig.hardwareType == GLHW_PERMEDIA2 ) ) {
 		VertexLightingCollapse();
 		stage = 1;
 		hasLightmapStage = qfalse;
@@ -2845,10 +2845,6 @@ shader_t *R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImag
 	shader.needsST1 = qtrue;
 	shader.needsST2 = qtrue;
 	shader.needsColor = qtrue;
-
-	if ( strcmp( name, "console" ) == 0 ) {
-		shader.noVLcollapse = 1; // never collapse console shader
-	}
 
 	//
 	// attempt to define shader from an explicit parameter file
