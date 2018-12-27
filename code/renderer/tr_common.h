@@ -51,20 +51,21 @@ typedef enum
 } imgFlags_t;
 
 typedef struct image_s {
-	char		imgName[MAX_QPATH];		// game path, including extension
-	int			width, height;				// source image
-	int			uploadWidth, uploadHeight;	// after power of two and picmip but not including clamp to MAX_TEXTURE_SIZE
-	GLuint		texnum;					// gl texture binding
+	struct image_s*	next;
+	int			width, height;		// source image
+	int			uploadWidth;		// after power of two and picmip but not including clamp to MAX_TEXTURE_SIZE
+	int			uploadHeight;
+	GLuint		texnum;				// gl texture binding
 
 	int			frameUsed;			// for texture usage in frame statistics
 
 	GLint		internalFormat;
 	int			TMU;				// only needed for voodoo2
 
+	char		imgName[MAX_QPATH];	// game path, including extension
+
 	imgType_t	type;
 	imgFlags_t	flags;
-
-	struct image_s*	next;
 } image_t;
 
 // any change in the LIGHTMAP_* defines here MUST be reflected in
