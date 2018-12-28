@@ -2113,8 +2113,10 @@ image_t *R_CreateImage2( const char *name, byte *pic, int width, int height, GLe
 	qboolean    lastMip;
 	GLenum textureTarget = cubemap ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
 	GLenum dataFormat;
+	size_t		namelen;
 
-	if (strlen(name) >= MAX_QPATH ) {
+	namelen = strlen( name );
+	if ( namelen >= MAX_QPATH ) {
 		ri.Error (ERR_DROP, "R_CreateImage: \"%s\" is too long", name);
 	}
 	if ( !strncmp( name, "*lightmap", 9 ) ) {
@@ -2125,14 +2127,15 @@ image_t *R_CreateImage2( const char *name, byte *pic, int width, int height, GLe
 		ri.Error( ERR_DROP, "R_CreateImage: MAX_DRAWIMAGES hit");
 	}
 
-	image = tr.images[tr.numImages] = ri.Hunk_Alloc( sizeof( image_t ), h_low );
+	image = tr.images[tr.numImages] = ri.Hunk_Alloc( sizeof( *image ) + namelen + 1, h_low );
 	qglGenTextures(1, &image->texnum);
 	tr.numImages++;
 
 	image->type = type;
 	image->flags = flags;
 
-	strcpy (image->imgName, name);
+	image->imgName = (char *)( image + 1 );
+	strcpy( image->imgName, name );
 
 	image->width = width;
 	image->height = height;

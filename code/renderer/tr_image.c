@@ -72,7 +72,7 @@ GL_TextureMode
 */
 void GL_TextureMode( const char *string ) {
 	const textureMode_t *mode;
-	image_t	*glt;
+	image_t	*img;
 	int		i;
 	
 	mode = NULL;
@@ -100,10 +100,9 @@ void GL_TextureMode( const char *string ) {
 	}
 
 	// change all the existing mipmap texture objects
-	for ( i = 0 ; i < tr.numImages ; i++ ) {
-		glt = tr.images[ i ];
-		if ( glt->flags & IMGFLAG_MIPMAP ) {
-			GL_Bind( glt );
+	for ( img = tr.images; img != NULL; img = img->list ) {
+		if ( img->flags & IMGFLAG_MIPMAP ) {
+			GL_Bind( img );
 			qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min );
 			qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max );
 		}
@@ -117,13 +116,12 @@ R_SumOfUsedImages
 ===============
 */
 int R_SumOfUsedImages( void ) {
-	int	total;
-	int i;
+	const image_t *img;
+	int total = 0;
 
-	total = 0;
-	for ( i = 0; i < tr.numImages; i++ ) {
-		if ( tr.images[i]->frameUsed == tr.frameCount ) {
-			total += tr.images[i]->uploadWidth * tr.images[i]->uploadHeight;
+	for ( img = tr.images; img != NULL; img = img->list ) {
+		if ( img->frameUsed == tr.frameCount ) {
+			total += img->uploadWidth * img->uploadHeight;
 		}
 	}
 
@@ -137,14 +135,13 @@ R_ImageList_f
 ===============
 */
 void R_ImageList_f( void ) {
-	int i;
+	const image_t *image;
 	int estTotalSize = 0;
 
-	ri.Printf(PRINT_ALL, "\n      -w-- -h-- type  -size- --name-------\n");
+	ri.Printf( PRINT_ALL, "\n --w-- --h-- type  -size- --name-------\n" );
 
-	for ( i = 0 ; i < tr.numImages ; i++ )
+	for ( image = tr.images ; image != NULL ; image = image->list )
 	{
-		image_t *image = tr.images[i];
 		const char *format = "???? ";
 		const char *sizeSuffix;
 		int estSize;
@@ -267,13 +264,13 @@ void R_ImageList_f( void ) {
 			sizeSuffix = "Gb";
 		}
 
-		ri.Printf( PRINT_ALL, "%4i: %4ix%4i %s %4i%s %s\n", i, image->uploadWidth, image->uploadHeight, format, displaySize, sizeSuffix, image->imgName );
+		ri.Printf( PRINT_ALL, " %5i %5i %s %4i%s %s\n", image->uploadWidth, image->uploadHeight, format, displaySize, sizeSuffix, image->imgName );
 		estTotalSize += estSize;
 	}
 
-	ri.Printf (PRINT_ALL, " ---------\n");
-	ri.Printf (PRINT_ALL, " approx %i kbytes\n", (estTotalSize + 1023) / 1024 );
-	ri.Printf (PRINT_ALL, " %i total images\n\n", tr.numImages );
+	ri.Printf( PRINT_ALL, " -----------------------\n" );
+	ri.Printf( PRINT_ALL, " approx %i kbytes\n", (estTotalSize + 1023) / 1024 );
+	ri.Printf( PRINT_ALL, " %i total images\n\n", tr.numImages );
 }
 
 //=======================================================================
@@ -791,8 +788,10 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height,
 	image_t		*image;
 	long		hash;
 	GLint		glWrapClampMode;
+	size_t		namelen;
 
-	if ( strlen( name ) >= sizeof( image->imgName ) ) {
+	namelen = strlen( name );
+	if ( namelen >= MAX_QPATH ) {
 		ri.Error( ERR_DROP, "R_CreateImage: \"%s\" is too long", name );
 	}
 
@@ -800,17 +799,17 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height,
 		ri.Error( ERR_DROP, "R_CreateImage: MAX_DRAWIMAGES hit" );
 	}
 
-	if ( !strncmp( name, "*lightmap", 9 ) ) {
-		flags |= IMGFLAG_LIGHTMAP;
-	}
-
-	image = tr.images[tr.numImages] = ri.Hunk_Alloc( sizeof( image_t ), h_low );
-	qglGenTextures( 1, &image->texnum );
+	image = ri.Hunk_Alloc( sizeof( *image ) + namelen + 1, h_low );
+	image->list = tr.images;
+	tr.images = image;
 	tr.numImages++;
+
+	qglGenTextures( 1, &image->texnum );
 
 	image->type = type;
 	image->flags = flags;
 
+	image->imgName = (char *)( image + 1 );
 	strcpy( image->imgName, name );
 
 	image->width = width;
@@ -1427,13 +1426,13 @@ R_DeleteTextures
 ===============
 */
 void R_DeleteTextures( void ) {
-	int		i;
-
-	for ( i=0; i<tr.numImages ; i++ ) {
-		qglDeleteTextures( 1, &tr.images[i]->texnum );
+	image_t *img;
+	
+	for ( img = tr.images; img != NULL; img = img->list ) {
+		qglDeleteTextures( 1, &img->texnum );
 	}
-	Com_Memset( tr.images, 0, sizeof( tr.images ) );
 
+	tr.images = NULL;
 	tr.numImages = 0;
 
 	Com_Memset( glState.currenttextures, 0, sizeof( glState.currenttextures ) );

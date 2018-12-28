@@ -51,7 +51,9 @@ typedef enum
 } imgFlags_t;
 
 typedef struct image_s {
-	struct image_s*	next;
+	char		*imgName;			// game path, including extension
+	struct image_s *next;			// for hash search
+	struct image_s *list;			// for listing
 	int			width, height;		// source image
 	int			uploadWidth;		// after power of two and picmip but not including clamp to MAX_TEXTURE_SIZE
 	int			uploadHeight;
@@ -61,8 +63,6 @@ typedef struct image_s {
 
 	GLint		internalFormat;
 	int			TMU;				// only needed for voodoo2
-
-	char		imgName[MAX_QPATH];	// game path, including extension
 
 	imgType_t	type;
 	imgFlags_t	flags;

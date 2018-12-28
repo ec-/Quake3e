@@ -1067,7 +1067,7 @@ typedef struct {
 	int						numModels;
 
 	int						numImages;
-	image_t					*images[MAX_DRAWIMAGES];
+	image_t					*images;
 
 	// shader indexes from other modules will be looked up in tr.shaders[]
 	// shader indexes from drawsurfs will be looked up in sortedShaders[]
