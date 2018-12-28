@@ -1134,7 +1134,6 @@ extern cvar_t	*r_primitives;			// "0" = based on compiled vertex array existance
 										// "2" = glDrawElements triangles
 										// "-1" = no drawing
 
-extern cvar_t	*r_inGameVideo;				// controls whether in game video should be draw
 extern cvar_t	*r_fastsky;				// controls whether sky should be cleared or drawn
 extern cvar_t	*r_neatsky;				// nomip and nopicmip for skyboxes, cnq3 like look
 extern cvar_t	*r_drawSun;				// controls drawing of sun quad
