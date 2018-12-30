@@ -769,10 +769,10 @@ void Cmd_RemoveCgameCommands( void )
 Cmd_CommandCompletion
 ============
 */
-void	Cmd_CommandCompletion( void(*callback)(const char *s) ) {
-	cmd_function_t *cmd;
+void Cmd_CommandCompletion( void(*callback)(const char *s) ) {
+	const cmd_function_t *cmd;
 	
-	for (cmd=cmd_functions ; cmd ; cmd=cmd->next) {
+	for ( cmd = cmd_functions ; cmd ; cmd=cmd->next ) {
 		callback( cmd->name );
 	}
 }
@@ -783,17 +783,19 @@ void	Cmd_CommandCompletion( void(*callback)(const char *s) ) {
 Cmd_CompleteArgument
 ============
 */
-void Cmd_CompleteArgument( const char *command, char *args, int argNum ) {
-	cmd_function_t *cmd;
+qboolean Cmd_CompleteArgument( const char *command, char *args, int argNum ) {
+	const cmd_function_t *cmd;
 
 	for( cmd = cmd_functions; cmd; cmd = cmd->next ) {
-		if( !Q_stricmp( command, cmd->name ) ) {
+		if ( !Q_stricmp( command, cmd->name ) ) {
 			if ( cmd->complete ) {
 				cmd->complete( args, argNum );
 			}
-			return;
+			return qtrue;
 		}
 	}
+
+	return qfalse;
 }
 
 

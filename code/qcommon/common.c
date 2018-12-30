@@ -4247,6 +4247,22 @@ static char *Field_FindFirstSeparator( char *s )
 
 /*
 ===============
+Field_AddSpace
+===============
+*/
+static void Field_AddSpace( void )
+{
+	size_t len = strlen( completionField->buffer );
+	if ( len && len < sizeof( completionField->buffer ) - 1 && completionField->buffer[ len - 1 ] != ' ' )
+	{
+		memcpy( completionField->buffer + len, " ", 2 );
+		completionField->cursor = (int)(len + 1);
+	}
+}
+
+
+/*
+===============
 Field_Complete
 ===============
 */
@@ -4266,8 +4282,7 @@ static qboolean Field_Complete( void )
 
 	if( matchCount == 1 )
 	{
-		Q_strcat( completionField->buffer, sizeof( completionField->buffer ), " " );
-		completionField->cursor++;
+		Field_AddSpace();
 		return qtrue;
 	}
 
@@ -4289,8 +4304,99 @@ void Field_CompleteKeyname( void )
 
 	Key_KeynameCompletion( FindMatches );
 
-	if( !Field_Complete( ) )
+	if ( !Field_Complete() )
 		Key_KeynameCompletion( PrintMatches );
+}
+
+
+/*
+===============
+Field_CompleteKeyBind
+===============
+*/
+void Field_CompleteKeyBind( int key )
+{
+	const char *value;
+	int vlen;
+	int blen;
+
+	value = Key_GetBinding( key );
+	if ( value == NULL || *value == '\0' )
+		return;
+
+	blen = (int)strlen( completionField->buffer );
+	vlen = (int)strlen( value );
+
+	if ( Field_FindFirstSeparator( (char*)value ) )
+	{
+		value = va( "\"%s\"", value );
+		vlen += 2;
+	}
+
+	if ( vlen + blen > sizeof( completionField->buffer ) - 1 )
+	{
+		//vlen = sizeof( completionField->buffer ) - 1 - blen;
+		return;	
+	}
+	
+	memcpy( completionField->buffer + blen, value, vlen + 1 );
+	completionField->cursor = blen + vlen;
+
+	Field_AddSpace();
+}
+
+
+static void Field_CompleteCvarValue( const char *value, const char *current )
+{
+	int vlen;
+	int blen;
+
+	if ( *value == '\0' )
+		return;
+
+	blen = (int)strlen( completionField->buffer );
+	vlen = (int)strlen( value );
+
+	if ( *current != '\0' )
+	{
+#if 0
+		int clen = (int) strlen( current );
+		if ( strncmp( value, current, clen ) == 0 ) // current value is a substring of new value
+		{
+			value += clen;
+			vlen -= clen;
+		}
+		else // modification, nothing to complete
+#endif
+		{
+			return;
+		}
+	}
+
+	if ( Field_FindFirstSeparator( (char*)value ) )
+	{
+		value = va( "\"%s\"", value );
+		vlen += 2;
+	}
+
+	if ( vlen + blen > sizeof( completionField->buffer ) - 1 )
+	{
+		//vlen = sizeof( completionField->buffer ) - 1 - blen;
+		return;	
+	}
+
+	if ( blen > 1 )
+	{
+		if ( completionField->buffer[ blen-1 ] == '"' && completionField->buffer[ blen-2 ] == ' ' )
+		{
+			completionField->buffer[ blen-- ] = '\0'; // strip starting quote
+		}
+	}
+
+	memcpy( completionField->buffer + blen, value, vlen + 1 );
+	completionField->cursor = vlen + blen;
+
+	Field_AddSpace();
 }
 
 
@@ -4318,13 +4424,13 @@ Field_CompleteCommand
 */
 void Field_CompleteCommand( char *cmd, qboolean doCommands, qboolean doCvars )
 {
-	int		completionArgument = 0;
+	int	completionArgument;
 
 	// Skip leading whitespace and quotes
 	cmd = Com_SkipCharset( cmd, " \"" );
 
 	Cmd_TokenizeStringIgnoreQuotes( cmd );
-	completionArgument = Cmd_Argc( );
+	completionArgument = Cmd_Argc();
 
 	// If there is trailing whitespace on the cmd
 	if( *( cmd + strlen( cmd ) - 1 ) == ' ' )
@@ -4337,68 +4443,78 @@ void Field_CompleteCommand( char *cmd, qboolean doCommands, qboolean doCvars )
 
 #ifndef DEDICATED
 	// Unconditionally add a '\' to the start of the buffer
-	if( completionField->buffer[ 0 ] &&
-			completionField->buffer[ 0 ] != '\\' )
-		{
+	if ( completionField->buffer[ 0 ] && completionField->buffer[ 0 ] != '\\' )
+	{
 		if( completionField->buffer[ 0 ] != '/' )
 		{
 			// Buffer is full, refuse to complete
-			if( strlen( completionField->buffer ) + 1 >=
-				sizeof( completionField->buffer ) )
+			if ( strlen( completionField->buffer ) + 1 >= sizeof( completionField->buffer ) )
 				return;
 
 			memmove( &completionField->buffer[ 1 ],
 				&completionField->buffer[ 0 ],
 				strlen( completionField->buffer ) + 1 );
 			completionField->cursor++;
-			}
+		}
 
 		completionField->buffer[ 0 ] = '\\';
-			}
+	}
 #endif
 
-	if( completionArgument > 1 )
-			{
+	if ( completionArgument > 1 )
+	{
 		const char *baseCmd = Cmd_Argv( 0 );
 		char *p;
 
 #ifndef DEDICATED
-		// This should always be true
-		if( baseCmd[ 0 ] == '\\' || baseCmd[ 0 ] == '/' )
-			baseCmd++;
+			// This should always be true
+			if ( baseCmd[ 0 ] == '\\' || baseCmd[ 0 ] == '/' )
+				baseCmd++;
 #endif
 
 		if( ( p = Field_FindFirstSeparator( cmd ) ) != NULL )
+		{
  			Field_CompleteCommand( p + 1, qtrue, qtrue ); // Compound command
+		}
 		else
- 			Cmd_CompleteArgument( baseCmd, cmd, completionArgument ); 
+		{
+			qboolean argumentCompleted = Cmd_CompleteArgument( baseCmd, cmd, completionArgument );
+			if ( ( matchCount == 1 || argumentCompleted ) && doCvars )
+			{
+				if ( cmd[0] == '/' || cmd[0] == '\\' )
+					cmd++;
+				Cmd_TokenizeString( cmd );
+				Field_CompleteCvarValue( Cvar_VariableString( Cmd_Argv( 0 ) ), Cmd_Argv( 1 ) );
+			}
+		}
 	}
 	else
 	{
-		if( completionString[0] == '\\' || completionString[0] == '/' )
+		if ( completionString[0] == '\\' || completionString[0] == '/' )
 			completionString++;
 
 		matchCount = 0;
 		shortestMatch[ 0 ] = '\0';
 
-		if( completionString[0] == '\0' )
+		if ( completionString[0] == '\0' ) {
 			return;
+		}
 
-		if( doCommands )
+		if ( doCommands )
 			Cmd_CommandCompletion( FindMatches );
 
-		if( doCvars )
+		if ( doCvars )
 			Cvar_CommandCompletion( FindMatches );
 
-		if( !Field_Complete( ) )
+		if ( !Field_Complete() )
 		{
-		// run through again, printing matches
-		if( doCommands )
-			Cmd_CommandCompletion( PrintMatches );
+			// run through again, printing matches
+			if ( doCommands )
+				Cmd_CommandCompletion( PrintMatches );
 
-		if( doCvars )
-			Cvar_CommandCompletion( PrintCvarMatches );
-	}
+			if ( doCvars )
+				Cvar_CommandCompletion( PrintCvarMatches );
+		}
 	}
 }
 
