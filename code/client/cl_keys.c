@@ -190,6 +190,31 @@ static void Field_Paste( field_t *edit ) {
 
 /*
 =================
+Field_NextWord
+=================
+*/
+static void Field_SeekWord( field_t *edit, int direction )
+{
+	if ( direction > 0 ) {
+		while ( edit->buffer[ edit->cursor ] == ' ' )
+			edit->cursor++;
+		while ( edit->buffer[ edit->cursor ] != '\0' && edit->buffer[ edit->cursor ] != ' ' )
+			edit->cursor++;
+		while ( edit->buffer[ edit->cursor ] == ' ' )
+			edit->cursor++;
+	} else {
+		while ( edit->cursor > 0 && edit->buffer[ edit->cursor-1 ] == ' ' )
+			edit->cursor--;
+		while ( edit->cursor > 0 && edit->buffer[ edit->cursor-1 ] != ' ' )
+			edit->cursor--;
+		if ( edit->cursor == 0 && ( edit->buffer[ 0 ] == '/' || edit->buffer[ 0 ] == '\\' ) )
+			edit->cursor++;
+	}
+}
+
+
+/*
+=================
 Field_KeyDownEvent
 
 Performs the basic line editing functions for the console,
@@ -219,13 +244,21 @@ static void Field_KeyDownEvent( field_t *edit, int key ) {
 
 		case K_RIGHTARROW:
 			if ( edit->cursor < len ) {
-				edit->cursor++;
+				if ( keys[ K_CTRL ].down ) {
+					Field_SeekWord( edit, 1 );
+				} else {
+					edit->cursor++;
+				}
 			}
 			break;
 
 		case K_LEFTARROW:
 			if ( edit->cursor > 0 ) {
-				edit->cursor--;
+				if ( keys[ K_CTRL ].down ) {
+					Field_SeekWord( edit, -1 );
+				} else {
+					edit->cursor--;
+				}
 			}
 			break;
 
