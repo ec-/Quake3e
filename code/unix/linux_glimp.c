@@ -632,7 +632,7 @@ static qboolean directMap( const byte chr )
 void HandleX11Events( void )
 {
 	XEvent event;
-	int b;
+	int btn_code;
 	int key;
 	qboolean dowarp = qfalse;
 	char *p;
@@ -769,36 +769,36 @@ void HandleX11Events( void )
 
 		case ButtonPress:
 		case ButtonRelease:
-			if ( !IN_MouseActive() )
-				break;
-
 			if ( event.type == ButtonPress )
 				btn_press = qtrue;
 			else
 				btn_press = qfalse;
-
 			t = Sys_XTimeToSysTime( event.xkey.time );
 			// NOTE TTimo there seems to be a weird mapping for K_MOUSE1 K_MOUSE2 K_MOUSE3 ..
-			b = -1;
+			btn_code = -1;
 			switch ( event.xbutton.button )
 			{
-				case 1: b = 0; break; // K_MOUSE1
-				case 2: b = 2; break; // K_MOUSE3
-				case 3: b = 1; break; // K_MOUSE2
+				case 1: btn_code = K_MOUSE1; break;
+				case 2: btn_code = K_MOUSE3; break;
+				case 3: btn_code = K_MOUSE2; break;
 				case 4: Sys_QueEvent( t, SE_KEY, K_MWHEELUP, btn_press, 0, NULL ); break;
 				case 5: Sys_QueEvent( t, SE_KEY, K_MWHEELDOWN, btn_press, 0, NULL ); break;
-				case 6: b = 3; break; // K_MOUSE4
-				case 7: b = 4; break; // K_MOUSE5
+				case 6: btn_code = K_MOUSE4; break;
+				case 7: btn_code = K_MOUSE5; break;
 				case 8: case 9:       // K_AUX1..K_AUX8
 				case 10: case 11:
 				case 12: case 13:
 				case 14: case 15:
-						Sys_QueEvent( t, SE_KEY, event.xbutton.button - 8 + K_AUX1, 
-							btn_press, 0, NULL ); break;
+					btn_code = event.xbutton.button - 8 + K_AUX1;
+					break;
 			}
-			if ( b != -1 ) // K_MOUSE1..K_MOUSE5
+
+			if ( !IN_MouseActive() )
+				break;
+
+			if ( btn_code != -1 )
 			{
-				Sys_QueEvent( t, SE_KEY, K_MOUSE1 + b, btn_press, 0, NULL );
+				Sys_QueEvent( t, SE_KEY, btn_code, btn_press, 0, NULL );
 			}
 			break; // case ButtonPress/ButtonRelease
 
@@ -991,7 +991,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 		RandR_SetGamma( red, green, blue );
 		return;
 	}
-	
+
 	if ( glw_state.vidmode_gamma )
 	{
 		VidMode_SetGamma( red, green, blue );
