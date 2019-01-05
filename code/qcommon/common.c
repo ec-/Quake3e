@@ -38,7 +38,6 @@ const int demo_protocols[] = { 66, 67, PROTOCOL_VERSION, NEW_PROTOCOL_VERSION, 0
 
 #define USE_MULTI_SEGMENT // allocate additional zone segments on demand
 
-#define MIN_DEDICATED_COMHUNKMEGS 8
 #ifdef DEDICATED
 #define MIN_COMHUNKMEGS		48
 #define DEF_COMHUNKMEGS		56
@@ -46,13 +45,12 @@ const int demo_protocols[] = { 66, 67, PROTOCOL_VERSION, NEW_PROTOCOL_VERSION, 0
 #define MIN_COMHUNKMEGS		64
 #define DEF_COMHUNKMEGS		128
 #endif
+
 #ifdef USE_MULTI_SEGMENT
 #define DEF_COMZONEMEGS		12
 #else
 #define DEF_COMZONEMEGS		25
 #endif
-#define DEF_COMHUNKMEGS_S	XSTRING(DEF_COMHUNKMEGS)
-#define DEF_COMZONEMEGS_S	XSTRING(DEF_COMZONEMEGS)
 
 jmp_buf abortframe;		// an ERR_DROP occured, exit the entire frame
 
@@ -2062,7 +2060,7 @@ static void Com_InitZoneMemory( void ) {
 	// configure the memory manager.
 
 	// allocate the random block zone
-	cv = Cvar_Get( "com_zoneMegs", DEF_COMZONEMEGS_S, CVAR_LATCH | CVAR_ARCHIVE );
+	cv = Cvar_Get( "com_zoneMegs", XSTRING( DEF_COMZONEMEGS ), CVAR_LATCH | CVAR_ARCHIVE );
 	Cvar_CheckRange( cv, "1", NULL, CV_INTEGER );
 
 #ifndef USE_MULTI_SEGMENT
@@ -2167,42 +2165,27 @@ Com_InitHunkMemory
 */
 static void Com_InitHunkMemory( void ) {
 	cvar_t	*cv;
-	int nMinAlloc;
-	char *pMsg = NULL;
 
 	// make sure the file system has allocated and "not" freed any temp blocks
 	// this allows the config and product id files ( journal files too ) to be loaded
 	// by the file system without redunant routines in the file system utilizing different 
 	// memory systems
-	if (FS_LoadStack() != 0) {
-		Com_Error( ERR_FATAL, "Hunk initialization failed. File system load stack not zero");
+	if ( FS_LoadStack() != 0 ) {
+		Com_Error( ERR_FATAL, "Hunk initialization failed. File system load stack not zero" );
 	}
 
 	// allocate the stack based hunk allocator
-	cv = Cvar_Get( "com_hunkMegs", DEF_COMHUNKMEGS_S, CVAR_LATCH | CVAR_ARCHIVE );
+	cv = Cvar_Get( "com_hunkMegs", XSTRING( DEF_COMHUNKMEGS ), CVAR_LATCH | CVAR_ARCHIVE );
+	Cvar_CheckRange( cv, XSTRING( MIN_COMHUNKMEGS ), NULL, CV_INTEGER );
 	Cvar_SetDescription( cv, "The size of the hunk memory segment" );
 
-	// if we are not dedicated min allocation is 56, otherwise min is 1
-	if (com_dedicated && com_dedicated->integer) {
-		nMinAlloc = MIN_DEDICATED_COMHUNKMEGS;
-		pMsg = "Minimum com_hunkMegs for a dedicated server is %i, allocating %i megs.\n";
-	}
-	else {
-		nMinAlloc = MIN_COMHUNKMEGS;
-		pMsg = "Minimum com_hunkMegs is %i, allocating %i megs.\n";
-	}
-
-	if ( cv->integer < nMinAlloc ) {
-		s_hunkTotal = 1024 * 1024 * nMinAlloc;
-	    Com_Printf(pMsg, nMinAlloc, s_hunkTotal / (1024 * 1024));
-	} else {
-		s_hunkTotal = cv->integer * 1024 * 1024;
-	}
+	s_hunkTotal = cv->integer * 1024 * 1024;
 
 	s_hunkData = calloc( s_hunkTotal + 63, 1 );
 	if ( !s_hunkData ) {
 		Com_Error( ERR_FATAL, "Hunk data failed to allocate %i megs", s_hunkTotal / (1024*1024) );
 	}
+
 	// cacheline align
 	s_hunkData = PADP( s_hunkData, 64 );
 	Hunk_Clear();
