@@ -74,7 +74,9 @@ cvar_t	*com_maxfpsUnfocused;
 cvar_t	*com_yieldCPU;
 cvar_t	*com_timedemo;
 #endif
+#if !defined(__FreeBSD__)
 cvar_t	*com_affinityMask;
+#endif
 cvar_t	*com_logfile;		// 1 = buffer log, 2 = flush after each print
 cvar_t	*com_showtrace;
 cvar_t	*com_version;
@@ -3571,9 +3573,10 @@ void Com_Init( char *commandLine ) {
 	com_yieldCPU = Cvar_Get( "com_yieldCPU", "2", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( com_yieldCPU, "0", "4", CV_INTEGER );
 #endif
+#if !defined(__FreeBSD__)
 	com_affinityMask = Cvar_Get( "com_affinityMask", "0", CVAR_ARCHIVE_ND );
 	com_affinityMask->modified = qfalse;
-
+#endif
 	com_blood = Cvar_Get ("com_blood", "1", CVAR_ARCHIVE_ND );
 
 	com_logfile = Cvar_Get ("logfile", "0", CVAR_TEMP );
@@ -3648,10 +3651,10 @@ void Com_Init( char *commandLine ) {
 	}
 	Com_Printf( "%s\n", Cvar_VariableString( "sys_cpustring" ) );
 #endif
-
+#if !defined(__FreeBSD__)
 	if ( com_affinityMask->integer )
 		Sys_SetAffinityMask( com_affinityMask->integer );
-
+#endif
 	// Pick a random port value
 	Com_RandomBytes( (byte*)&qport, sizeof( qport ) );
 	Netchan_Init( qport & 0xffff );
@@ -3912,13 +3915,13 @@ void Com_Frame( qboolean noDelay ) {
 		}
 		com_viewlog->modified = qfalse;
 	}
-
+#if !defined(__FreeBSD__)
 	if ( com_affinityMask->modified ) {
 		Cvar_Get( "com_affinityMask", "0", CVAR_ARCHIVE );
 		com_affinityMask->modified = qfalse;
 		Sys_SetAffinityMask( com_affinityMask->integer );
 	}
-
+#endif
 	//
 	// main event loop
 	//

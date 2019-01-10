@@ -823,7 +823,11 @@ static void thread_proc_mmap( void )
 	pid_t thread_id;
 
 	// adjust thread priority
+#if defined(__FreeBSD__)
+	thread_id = syscall( SYS_thr_self );
+#else
 	thread_id = syscall( SYS_gettid );
+#endif
 	setpriority( PRIO_PROCESS, thread_id, -10 );
 
 	// thread is running now
@@ -932,7 +936,11 @@ static void thread_proc_direct( void )
 	int err;
 
 	// adjust thread priority
+#if defined(__FreeBSD__)
+	thread_id = syscall( SYS_thr_self );
+#else
 	thread_id = syscall( SYS_gettid );
+#endif
 	setpriority( PRIO_PROCESS, thread_id, -10 );
 
 	/* buffer size in full samples */
