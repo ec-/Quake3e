@@ -1,3 +1,5 @@
+#if defined (__linux__)
+
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -823,11 +825,7 @@ static void thread_proc_mmap( void )
 	pid_t thread_id;
 
 	// adjust thread priority
-#if defined(__FreeBSD__)
-	thread_id = syscall( SYS_thr_self );
-#else
 	thread_id = syscall( SYS_gettid );
-#endif
 	setpriority( PRIO_PROCESS, thread_id, -10 );
 
 	// thread is running now
@@ -936,11 +934,7 @@ static void thread_proc_direct( void )
 	int err;
 
 	// adjust thread priority
-#if defined(__FreeBSD__)
-	thread_id = syscall( SYS_thr_self );
-#else
 	thread_id = syscall( SYS_gettid );
-#endif
 	setpriority( PRIO_PROCESS, thread_id, -10 );
 
 	/* buffer size in full samples */
@@ -1074,3 +1068,280 @@ static void async_proc( snd_async_handler_t *ahandler )
 #endif
 	}
 }
+
+#else // legacy OSS code path
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <sys/shm.h>
+#include <sys/wait.h>
+#ifdef __linux__
+#include <linux/soundcard.h>
+#endif
+#ifdef __FreeBSD__
+#include <sys/soundcard.h>
+#endif
+#include <stdio.h>
+
+#include "../client/snd_local.h"
+#include "../qcommon/q_shared.h"
+
+static qboolean snd_inited = qfalse;
+static int audio_fd;
+static int map_size;
+
+static cvar_t *snddevice;
+
+/* Some devices may work only with 48000 */
+static int tryrates[] = { 22050, 11025, 44100, 48000, 8000 };
+
+void Snd_Memset( void* dest, const int val, const size_t count )
+{
+	Com_Memset( dest, val, count );
+}
+
+qboolean SNDDMA_Init( void )
+{
+	cvar_t *sndbits;
+	cvar_t *sndspeed;
+	cvar_t *sndchannels;
+
+	struct audio_buf_info info;
+	int rc;
+	int fmt;
+	int tmp;
+	int i;
+	int caps;
+
+	if (snd_inited)
+		return qtrue;
+
+	sndbits = Cvar_Get("sndbits", "16", CVAR_ARCHIVE_ND | CVAR_LATCH);
+	sndspeed = Cvar_Get("sndspeed", "0", CVAR_ARCHIVE_ND | CVAR_LATCH);
+	sndchannels = Cvar_Get("sndchannels", "2", CVAR_ARCHIVE_ND |  CVAR_LATCH);
+	snddevice = Cvar_Get("snddevice", "/dev/dsp", CVAR_ARCHIVE_ND | CVAR_LATCH);
+
+	map_size = 0;
+
+	// open /dev/dsp, confirm capability to mmap, and get size of dma buffer
+	if (!audio_fd) {
+		audio_fd = open(snddevice->string, O_RDWR);
+
+		if (audio_fd < 0) {
+			perror(snddevice->string);
+			Com_Printf("Could not open %s\n", snddevice->string);
+			return qfalse;
+		}
+	}
+
+	if (ioctl(audio_fd, SNDCTL_DSP_GETCAPS, &caps) == -1) {
+		perror(snddevice->string);
+		Com_Printf("Sound driver too old\n");
+		close(audio_fd);
+		return qfalse;
+	}
+
+	if (!(caps & DSP_CAP_TRIGGER) || !(caps & DSP_CAP_MMAP)) {
+		Com_Printf("Sorry but your soundcard can't do this\n");
+		close(audio_fd);
+		return qfalse;
+	}
+
+	/* SNDCTL_DSP_GETOSPACE moved to be called later */
+
+	// set sample bits & speed
+	dma.samplebits = (int)sndbits->value;
+	if (dma.samplebits != 16 && dma.samplebits != 8) {
+		ioctl(audio_fd, SNDCTL_DSP_GETFMTS, &fmt);
+		if (fmt & AFMT_S16_LE) 
+			dma.samplebits = 16;
+		else if (fmt & AFMT_U8) 
+			dma.samplebits = 8;
+	}
+
+	dma.speed = (int)sndspeed->value;
+	if (!dma.speed) {
+		for (i=0 ; i<sizeof(tryrates)/4 ; i++)
+			if (!ioctl(audio_fd, SNDCTL_DSP_SPEED, &tryrates[i])) 
+				break;
+		dma.speed = tryrates[i];
+	}
+
+	dma.channels = (int)sndchannels->value;
+	if (dma.channels < 1 || dma.channels > 2)
+		dma.channels = 2;
+
+	/*  mmap() call moved forward */
+
+	tmp = 0;
+	if (dma.channels == 2)
+		tmp = 1;
+	rc = ioctl(audio_fd, SNDCTL_DSP_STEREO, &tmp);
+	if (rc < 0) {
+		perror(snddevice->string);
+		Com_Printf("Could not set %s to stereo=%d", snddevice->string, dma.channels);
+		close(audio_fd);
+		return qfalse;
+	}
+
+	if (tmp)
+		dma.channels = 2;
+	else
+		dma.channels = 1;
+
+	rc = ioctl(audio_fd, SNDCTL_DSP_SPEED, &dma.speed);
+	if (rc < 0) {
+		perror(snddevice->string);
+		Com_Printf("Could not set %s speed to %d", snddevice->string, dma.speed);
+		close(audio_fd);
+		return qfalse;
+	}
+
+	if (dma.samplebits == 16) {
+		rc = AFMT_S16_LE;
+		rc = ioctl(audio_fd, SNDCTL_DSP_SETFMT, &rc);
+		if (rc < 0) {
+			perror(snddevice->string);
+			Com_Printf("Could not support 16-bit data.  Try 8-bit.\n");
+			close(audio_fd);
+			return qfalse;
+		}
+	} else if (dma.samplebits == 8) {
+		rc = AFMT_U8;
+		rc = ioctl(audio_fd, SNDCTL_DSP_SETFMT, &rc);
+		if (rc < 0) {
+			perror(snddevice->string);
+			Com_Printf("Could not support 8-bit data.\n");
+			close(audio_fd);
+			return qfalse;
+		}
+	} else {
+		perror(snddevice->string);
+		Com_Printf("%d-bit sound not supported.", dma.samplebits);
+		close(audio_fd);
+		return qfalse;
+	}
+
+	if (ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info)==-1) {
+		perror("GETOSPACE");
+		Com_Printf("Um, can't do GETOSPACE?\n");
+		close(audio_fd);
+		return qfalse;
+	}
+
+	dma.samples = info.fragstotal * info.fragsize / (dma.samplebits/8);
+	dma.submission_chunk = 1;
+
+	map_size = info.fragstotal * info.fragsize;
+
+	// memory map the dma buffer
+
+	// TTimo 2001/10/08 added PROT_READ to the mmap
+	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=371
+	// checking Alsa bug, doesn't allow dma alloc with PROT_READ?
+
+	if (dma.buffer == NULL)
+		dma.buffer = (unsigned char *) mmap(NULL, map_size, PROT_WRITE|PROT_READ,
+			MAP_FILE|MAP_SHARED, audio_fd, 0);
+
+	if (dma.buffer == MAP_FAILED)
+	{
+		Com_Printf("Could not mmap dma buffer PROT_WRITE|PROT_READ\n");
+		Com_Printf("trying mmap PROT_WRITE (with associated better compatibility / less performance code)\n");
+		dma.buffer = (unsigned char *) mmap(NULL, map_size, PROT_WRITE,
+			MAP_FILE|MAP_SHARED, audio_fd, 0);
+	}
+
+	if (dma.buffer == MAP_FAILED) {
+		perror(snddevice->string);
+		Com_Printf("Could not mmap %s\n", snddevice->string);
+		dma.buffer = NULL;
+		close(audio_fd);
+		return qfalse;
+	}
+
+	// toggle the trigger & start her up
+	tmp = 0;
+	rc  = ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp);
+	if (rc < 0) {
+		perror(snddevice->string);
+		Com_Printf("Could not toggle.\n");
+		munmap(dma.buffer, map_size);
+		close(audio_fd);
+		return qfalse;
+	}
+
+	tmp = PCM_ENABLE_OUTPUT;
+	rc = ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp);
+	if (rc < 0) {
+		perror(snddevice->string);
+		Com_Printf("Could not toggle.\n");
+		munmap(dma.buffer, map_size);
+		close(audio_fd);
+		return qfalse;
+	}
+
+	snd_inited = qtrue;
+	return qtrue;
+}
+
+
+int SNDDMA_GetDMAPos( void )
+{
+	struct count_info count;
+
+	if (!snd_inited)
+		return 0;
+
+	if (ioctl(audio_fd, SNDCTL_DSP_GETOPTR, &count) == -1)
+	{
+		perror(snddevice->string);
+		Com_Printf("Uh, sound dead.\n");
+		close(audio_fd);
+		snd_inited = qfalse;
+		return 0;
+	}
+
+	return count.ptr / (dma.samplebits / 8);
+}
+
+
+void SNDDMA_Shutdown( void )
+{
+	if (dma.buffer)
+	{
+		munmap(dma.buffer, map_size);
+		dma.buffer = NULL;
+	}
+
+	if (audio_fd)
+	{
+		close(audio_fd);
+		audio_fd = 0;
+	}
+
+	snd_inited = qfalse;
+}
+
+
+/*
+==============
+SNDDMA_Submit
+
+Send sound to device if buffer isn't really the dma buffer
+===============
+*/
+void SNDDMA_Submit( void )
+{
+}
+
+
+void SNDDMA_BeginPainting( void )
+{
+}
+
+#endif

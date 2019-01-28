@@ -4455,12 +4455,13 @@ int CL_GetPingQueueCount( void )
 	return (count);
 }
 
+
 /*
 ==================
 CL_GetFreePing
 ==================
 */
-ping_t* CL_GetFreePing( void )
+static ping_t* CL_GetFreePing( void )
 {
 	ping_t*	pingptr;
 	ping_t*	best;	
