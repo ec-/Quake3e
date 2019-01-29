@@ -4463,27 +4463,28 @@ CL_GetFreePing
 */
 static ping_t* CL_GetFreePing( void )
 {
-	ping_t*	pingptr;
-	ping_t*	best;	
+	ping_t* pingptr;
+	ping_t* best;
 	int		oldest;
 	int		i;
-	int		time;
+	int		time, msec;
 
+	msec = Sys_Milliseconds();
 	pingptr = cl_pinglist;
-	for (i=0; i<MAX_PINGREQUESTS; i++, pingptr++ )
+	for ( i = 0; i < ARRAY_LEN( cl_pinglist ); i++, pingptr++ )
 	{
 		// find free ping slot
-		if (pingptr->adr.port)
+		if ( pingptr->adr.port )
 		{
-			if (!pingptr->time)
+			if ( pingptr->time == 0 )
 			{
-				if (Sys_Milliseconds() - pingptr->start < 500)
+				if ( msec - pingptr->start < 500 )
 				{
 					// still waiting for response
 					continue;
 				}
 			}
-			else if (pingptr->time < 500)
+			else if ( pingptr->time < 500 )
 			{
 				// results have not been queried
 				continue;
@@ -4492,25 +4493,25 @@ static ping_t* CL_GetFreePing( void )
 
 		// clear it
 		pingptr->adr.port = 0;
-		return (pingptr);
+		return pingptr;
 	}
 
 	// use oldest entry
 	pingptr = cl_pinglist;
 	best    = cl_pinglist;
 	oldest  = INT_MIN;
-	for (i=0; i<MAX_PINGREQUESTS; i++, pingptr++ )
+	for ( i = 0; i < ARRAY_LEN( cl_pinglist ); i++, pingptr++ )
 	{
 		// scan for oldest
-		time = Sys_Milliseconds() - pingptr->start;
-		if (time > oldest)
+		time = msec - pingptr->start;
+		if ( time > oldest )
 		{
 			oldest = time;
 			best   = pingptr;
 		}
 	}
 
-	return (best);
+	return best;
 }
 
 
