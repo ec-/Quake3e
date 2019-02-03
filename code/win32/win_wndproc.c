@@ -28,7 +28,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define WM_MOUSEWHEEL (WM_MOUSELAST+1)  // message that will be supported by the OS 
 #endif
 
-static UINT MSH_MOUSEWHEEL;
+//static UINT MSH_MOUSEWHEEL;
 
 // Console variables that we need to access from this module
 cvar_t		*vid_xpos;			// X coordinate of window position
@@ -492,7 +492,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 	// only relevant for non-DI input
 	//
 	// NOTE: not sure how reliable this is anymore, might trigger double wheel events
-	if (in_mouse->integer == -1)
+	/* if (in_mouse->integer == -1)
 	{
 		if ( uMsg == MSH_MOUSEWHEEL )
 		{
@@ -508,7 +508,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			}
 			return DefWindowProc( hWnd, uMsg, wParam, lParam );
 		}
-	}
+	} */
 
 	switch (uMsg)
 	{
@@ -517,7 +517,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		// Windows 98/Me, Windows NT 4.0 and later - uses WM_MOUSEWHEEL
 		// only relevant for non-DI input and when console is toggled in window mode
 		//   if console is toggled in window mode (KEYCATCH_CONSOLE) then mouse is released and DI doesn't see any mouse wheel
-		if ( in_mouse->integer || (!glw_state.cdsFullscreen && (Key_GetCatcher() & KEYCATCH_CONSOLE)) )
+		if ( in_mouse->integer == -1 || (!glw_state.cdsFullscreen && (Key_GetCatcher() & KEYCATCH_CONSOLE)) )
 		{
 			// 120 increments, might be 240 and multiples if wheel goes too fast
 			// NOTE Logitech: logitech drivers are screwed and send the message twice?
@@ -562,7 +562,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 	case WM_CREATE:
 
-		MSH_MOUSEWHEEL = RegisterWindowMessage( TEXT( "MSWHEEL_ROLLMSG" ) ); 
+		//MSH_MOUSEWHEEL = RegisterWindowMessage( TEXT( "MSWHEEL_ROLLMSG" ) ); 
 
 		WIN_EnableHook();
 
@@ -777,14 +777,18 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 	case WM_MBUTTONDOWN:
 	case WM_MBUTTONUP:
 	case WM_MOUSEMOVE:
-		{
+		if ( IN_MouseActive() ) {
 			int mstate = (wParam & (MK_LBUTTON|MK_RBUTTON)) + ((wParam & (MK_MBUTTON|MK_XBUTTON1|MK_XBUTTON2)) >> 2);
 			IN_Win32MouseEvent( LOWORD(lParam), HIWORD(lParam), mstate );
+			return 0;
 		}
 		break;
 
 	case WM_INPUT:
-		IN_RawMouseEvent( lParam );
+		if ( IN_MouseActive() ) {
+			IN_RawMouseEvent( lParam );
+			return 0;
+		}
 		break;
 
 	case WM_SYSCOMMAND:
