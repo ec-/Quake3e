@@ -334,7 +334,7 @@ const char *Key_KeynumToString( int keynum ) {
 	// check for printable ascii (don't use quote)
 	if ( keynum > ' ' && keynum < '~' && keynum != '"' && keynum != ';' ) {
 		tinystr[0] = keynum;
-		tinystr[1] = 0;
+		tinystr[1] = '\0';
 		return tinystr;
 	}
 

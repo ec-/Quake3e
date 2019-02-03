@@ -2569,9 +2569,9 @@ EVENT LOOP
 #define MASK_QUED_EVENTS	( MAX_QUED_EVENTS - 1 )
 
 static sysEvent_t			eventQue[ MAX_QUED_EVENTS ];
-static sysEvent_t			*lastEvent = NULL;
-unsigned int				eventHead = 0;
-unsigned int				eventTail = 0;
+static sysEvent_t			*lastEvent = eventQue + MAX_QUED_EVENTS - 1;
+static unsigned int			eventHead = 0;
+static unsigned int			eventTail = 0;
 
 static const char *Sys_EventName( sysEventType_t evType ) {
 
@@ -2614,16 +2614,9 @@ void Sys_QueEvent( int evTime, sysEventType_t evType, int value, int value2, int
 	}
 
 	// try to combine all sequential mouse moves in one event
-	if ( evType == SE_MOUSE && lastEvent && lastEvent->evType == SE_MOUSE ) {
-		// try to reuse already processed item
-		if ( eventTail == eventHead ) {
-			lastEvent->evValue = value;
-			lastEvent->evValue2 = value2;
-			eventTail--;
-		} else {
-			lastEvent->evValue += value;
-			lastEvent->evValue2 += value2;
-		}
+	if ( evType == SE_MOUSE && lastEvent->evType == SE_MOUSE && eventHead != eventTail ) {
+		lastEvent->evValue += value;
+		lastEvent->evValue2 += value2;
 		lastEvent->evTime = evTime;
 		return;
 	}
@@ -2660,15 +2653,12 @@ Com_GetSystemEvent
 static sysEvent_t Com_GetSystemEvent( void )
 {
 	sysEvent_t  ev;
-	char		*s;
+	const char	*s;
 	int			evTime;
 
 	// return if we have data
-	if ( eventHead > eventTail )
-	{
-		eventTail++;
-		return eventQue[ ( eventTail - 1 ) & MASK_QUED_EVENTS ];
-	}
+	if ( eventHead - eventTail > 0 )
+		return eventQue[ ( eventTail++ ) & MASK_QUED_EVENTS ];
 
 	Sys_SendKeyEvents();
 
@@ -2688,11 +2678,8 @@ static sysEvent_t Com_GetSystemEvent( void )
 	}
 
 	// return if we have data
-	if ( eventHead > eventTail )
-	{
-		eventTail++;
-		return eventQue[ ( eventTail - 1 ) & MASK_QUED_EVENTS ];
-	}
+	if ( eventHead - eventTail > 0 )
+		return eventQue[ ( eventTail++ ) & MASK_QUED_EVENTS ];
 
 	// create an empty event to return
 	memset( &ev, 0, sizeof( ev ) );
