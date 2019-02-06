@@ -20,12 +20,10 @@ static GLuint programs[ PROGRAM_COUNT ];
 static GLuint current_vp;
 static GLuint current_fp;
 
-static int programAvailable	= 0;
 static int programCompiled = 0;
 static int programEnabled	= 0;
 static int gl_version = 0;
 
-qboolean fboAvailable = qfalse;
 qboolean fboEnabled = qfalse;
 qboolean fboBloomInited = qfalse;
 int      fboReadIndex = 0;
@@ -323,9 +321,6 @@ void ARB_SetupLightParams( void )
 void ARB_LightingPass( void )
 {
 	const shaderStage_t* pStage;
-
-	if ( !programAvailable )
-		return;
 
 	if ( tess.shader->lightingStage < 0 )
 		return;
@@ -1053,12 +1048,12 @@ qboolean ARB_CompileProgram( programType ptype, const char *text, GLuint program
 	qglBindProgramARB( kind, program );
 	qglProgramStringARB( kind, GL_PROGRAM_FORMAT_ASCII_ARB, strlen( text ), text );
 	qglGetIntegerv( GL_PROGRAM_ERROR_POSITION_ARB, &errorPos );
-	if ( (errCode = qglGetError()) != GL_NO_ERROR || errorPos != -1 ) 
+	if ( (errCode = qglGetError()) != GL_NO_ERROR || errorPos != -1 )
 	{
 		// we may receive error with active FBO but compiled programs will continue to work properly
-		if ( (errCode == GL_INVALID_OPERATION && !fboAvailable) || errorPos != -1 ) 
+		if ( (errCode == GL_INVALID_OPERATION && !fboEnabled) || errorPos != -1 )
 		{
-			ri.Printf( PRINT_ALL, S_COLOR_YELLOW "%s Compile Error(%i,%i): %s\n" S_COLOR_CYAN "%s\n", (ptype == Fragment) ? "FP" : "VP", 
+			ri.Printf( PRINT_ALL, S_COLOR_YELLOW "%s Compile Error(%i,%i): %s\n" S_COLOR_CYAN "%s\n", (ptype == Fragment) ? "FP" : "VP",
 				errCode, errorPos, qglGetString( GL_PROGRAM_ERROR_STRING_ARB ), text );
 			qglBindProgramARB( kind, 0 );
 			ARB_DeletePrograms();
@@ -1077,7 +1072,7 @@ qboolean ARB_UpdatePrograms( void )
 #endif
 	char buf[4096];
 
-	if ( !qglGenProgramsARB || !programAvailable )
+	if ( !qglGenProgramsARB )
 		return qfalse;
 
 	if ( programCompiled ) // delete old programs
@@ -2095,23 +2090,16 @@ void FBO_PostProcess( void )
 static void QGL_InitPrograms( void )
 {
 	float version;
-	programAvailable = 0;
-
-	if ( !qglGenProgramsARB )
-		return;
 
 	version = atof( (const char *)qglGetString( GL_VERSION ) );
 
 	gl_version = (int)(version * 10.001);
-
-	programAvailable = 1;
 }
 
 
 static void QGL_EarlyInitFBO( void )
 {
 	int scaleMode;
-	fboAvailable = qfalse;
 
 	windowAdjusted = qfalse;
 	windowWidth = glConfig.vidWidth;
@@ -2123,7 +2111,7 @@ static void QGL_EarlyInitFBO( void )
 
 	superSampled = qfalse;
 
-	if ( !programAvailable || !qglGenFramebuffers || !qglBlitFramebuffer )
+	if ( !qglGenProgramsARB || !qglGenFramebuffers )
 		return;
 
 	if ( !r_fbo->integer )
@@ -2193,14 +2181,12 @@ static void QGL_EarlyInitFBO( void )
 
 		windowAdjusted = qfalse;
 	}
-
-	fboAvailable = qtrue;
 }
 
 
 void QGL_DoneFBO( void )
 {
-	if ( fboAvailable )
+	if ( qglGenFramebuffers )
 	{
 		FBO_Bind(GL_FRAMEBUFFER, 0);
 		FBO_Clean(&frameBufferMS);
@@ -2231,10 +2217,10 @@ void QGL_InitFBO( void )
 	fboEnabled = qfalse;
 	frameBufferMultiSampling = qfalse;
 
-	if ( r_fbo->integer && ( !programAvailable || !fboAvailable ) )
+	if ( r_fbo->integer && ( !qglGenProgramsARB || !qglGenFramebuffers ) )
 		ri.Printf( PRINT_WARNING, "...FBO is not available\n" );
 
-	if ( !r_fbo->integer || !programAvailable || !fboAvailable )
+	if ( !r_fbo->integer || !qglGenProgramsARB || !qglGenFramebuffers )
 		return;
 
 	qglGetError(); // reset error code
@@ -2310,6 +2296,4 @@ void QGL_DoneARB( void )
 		ARB_ProgramDisable();
 		ARB_DeletePrograms();
 	}
-
-	programAvailable = 0;
 }

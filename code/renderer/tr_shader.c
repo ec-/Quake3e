@@ -2348,6 +2348,9 @@ void FindLightingStages( shader_t *sh )
 
 	sh->lightingStage = -1;
 
+	if ( !qglGenProgramsARB )
+		return;
+
 	if ( sh->isSky || ( sh->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) || sh->sort > SS_OPAQUE )
 		return;
 

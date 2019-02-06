@@ -114,7 +114,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 	GLE( void, glBufferDataARB, GLenum target, GLsizeiptrARB size, const GLvoid *data, GLenum usage )
 
 #define QGL_FBO_PROCS \
-	GLE( GLboolean, glIsRenderbuffer, GLuint renderbuffer ) \
 	GLE( void, glBindRenderbuffer, GLenum target, GLuint renderbuffer ) \
 	GLE( void, glDeleteFramebuffers, GLsizei n, const GLuint *framebuffers ) \
 	GLE( void, glDeleteRenderbuffers, GLsizei n, const GLuint *renderbuffers ) \

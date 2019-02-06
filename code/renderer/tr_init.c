@@ -186,6 +186,64 @@ static char gl_extensions[ 32768 ];
 	QGL_FBO_OPT_PROCS;
 #undef GLE
 
+typedef struct {
+	void **symbol;
+	const char *name;
+} sym_t;
+
+#define GLE( ret, name, ... ) { (void**)&q##name, XSTRING(name) },
+static sym_t core_procs[] = { QGL_Core_PROCS };
+static sym_t ext_procs[] = { QGL_Ext_PROCS };
+static sym_t arb_procs[] = { QGL_ARB_PROGRAM_PROCS };
+static sym_t vbo_procs[] = { QGL_VBO_PROCS };
+static sym_t fbo_procs[] = { QGL_FBO_PROCS };
+static sym_t fbo_opt_procs[] = { QGL_FBO_OPT_PROCS };
+#undef GLE
+
+
+/*
+==================
+R_ResolveSymbols
+
+returns NULL on success or last failed symbol name otherwise
+==================
+*/
+static const char *R_ResolveSymbols( sym_t *syms, int count )
+{
+	int i;
+	for ( i = 0; i < count; i++ )
+	{
+		*syms[ i ].symbol = ri.GL_GetProcAddress( syms[ i ].name );
+		if ( *syms[ i ].symbol == NULL )
+		{
+			return syms[ i ].name;
+		}
+	}
+	return NULL;
+}
+
+
+static void R_ClearSymbols( sym_t *syms, int count )
+{
+	int i;
+	for ( i = 0; i < count; i++ )
+	{
+		*syms[ i ].symbol = NULL;
+	}
+}
+
+
+static void R_ClearSymTables( void )
+{
+	R_ClearSymbols( core_procs, ARRAY_LEN( core_procs ) );
+	R_ClearSymbols( ext_procs, ARRAY_LEN( ext_procs ) );
+	R_ClearSymbols( arb_procs, ARRAY_LEN( arb_procs ) );
+	R_ClearSymbols( vbo_procs, ARRAY_LEN( vbo_procs ) );
+	R_ClearSymbols( fbo_procs, ARRAY_LEN( fbo_procs ) );
+	R_ClearSymbols( fbo_opt_procs, ARRAY_LEN( fbo_opt_procs ) );
+}
+
+
 // for modular renderer
 #if 0
 void QDECL Com_Error( errorParm_t code, const char *fmt, ... )
@@ -230,7 +288,8 @@ qboolean R_HaveExtension( const char *ext )
 static void R_InitExtensions( void )
 {
 	size_t len;
-	
+	const char *err;
+
 	if ( !qglGetString( GL_EXTENSIONS ) )
 	{
 		ri.Error( ERR_FATAL, "OpenGL installation is broken. Please fix video drivers and/or restart your system" );
@@ -388,24 +447,48 @@ static void R_InitExtensions( void )
 		ri.Printf( PRINT_ALL, "...GL_EXT_texture_filter_anisotropic not found\n" );
 	}
 
-#define GLE( ret, name, ... ) q##name = ri.GL_GetProcAddress( XSTRING( name ) ); if ( !q##name ) ri.Error( ERR_FATAL, "Error resolving %s", XSTRING( name ) );
-	if ( R_HaveExtension( "GL_ARB_vertex_program" ) && R_HaveExtension( "GL_ARB_fragment_program" ) ) {
-		QGL_ARB_PROGRAM_PROCS;
-		ri.Printf( PRINT_ALL, "...using ARB vertex/fragment programs\n" );
+	if ( R_HaveExtension( "GL_ARB_vertex_program" ) && R_HaveExtension( "GL_ARB_fragment_program" ) )
+	{
+		err = R_ResolveSymbols( arb_procs, ARRAY_LEN( arb_procs ) );
+		if ( err )
+		{
+			ri.Printf( PRINT_WARNING, "Error resolving ARB program function '%s'\n", err );
+			qglGenProgramsARB = NULL; // indicates presense of ARB shaders functionality
+		}
+		else
+		{
+			ri.Printf( PRINT_ALL, "...using ARB vertex/fragment programs\n" );
+		}
 	}
 
-	if ( R_HaveExtension( "ARB_vertex_buffer_object" ) && qglActiveTextureARB ) {
-		QGL_VBO_PROCS;
-		ri.Printf( PRINT_ALL, "...using ARB vertex buffer objects\n" );
+	if ( R_HaveExtension( "ARB_vertex_buffer_object" ) && qglActiveTextureARB )
+	{
+		err = R_ResolveSymbols( vbo_procs, ARRAY_LEN( vbo_procs ) );
+		if ( err )
+		{
+			ri.Printf( PRINT_WARNING, "Error resolving VBO function '%s'\n", err );
+			qglBindBufferARB = NULL; // indicates presense of VBO functionality
+		}
+		else
+		{
+			ri.Printf( PRINT_ALL, "...using ARB vertex buffer objects\n" );
+		}
 	}
 
-	if ( R_HaveExtension( "GL_EXT_framebuffer_object" ) && R_HaveExtension( "GL_EXT_framebuffer_blit" ) ) {
-		QGL_FBO_PROCS;
-#undef GLE
-#define GLE( ret, name, ... ) q##name = ri.GL_GetProcAddress( XSTRING( name ) );
-		QGL_FBO_OPT_PROCS;
+	if ( R_HaveExtension( "GL_EXT_framebuffer_object" ) && R_HaveExtension( "GL_EXT_framebuffer_blit" ) )
+	{
+		err = R_ResolveSymbols( fbo_procs, ARRAY_LEN( fbo_procs ) );
+		if ( err )
+		{
+			ri.Printf( PRINT_WARNING, "Error resolving FBO function '%s'\n", err );
+			qglGenFramebuffers = NULL; // indicates presense of FBO functionality
+		}
+		else
+		{
+			// resolve optional fbo functions, without any warnings
+			R_ResolveSymbols( fbo_opt_procs, ARRAY_LEN( fbo_opt_procs ) );
+		}
 	}
-#undef GLE
 }
 
 
@@ -432,15 +515,18 @@ static void InitOpenGL( void )
 	
 	if ( glConfig.vidWidth == 0 )
 	{
+		const char *err;
 		GLint max_texture_size;
 		GLint max_shader_units = -1;
 		GLint max_bind_units = -1;
 		
 		ri.GLimp_Init( &glConfig );
 
-#define GLE( ret, name, ... ) q##name = ri.GL_GetProcAddress( XSTRING( name ) ); if ( !q##name ) ri.Error( ERR_FATAL, "Error resolving core OpenGL functions" );
-		QGL_Core_PROCS;
-#undef GLE
+		R_ClearSymTables();
+
+		err = R_ResolveSymbols( core_procs, ARRAY_LEN( core_procs ) );
+		if ( err )
+			ri.Error( ERR_FATAL, "Error resolving core OpenGL function '%s'", err );
 
 		R_InitExtensions();
 
@@ -475,7 +561,7 @@ static void InitOpenGL( void )
 		if ( !r_ignorehwgamma->integer )
 		{
 			ri.GLimp_InitGamma( &glConfig );
-			if ( fboAvailable )
+			if ( fboEnabled )
 				glConfig.deviceSupportsGamma = qtrue;
 		}
 	}
@@ -1589,14 +1675,7 @@ static void RE_Shutdown( int destroyWindow ) {
 
 		ri.GLimp_Shutdown( destroyWindow == 2 ? qtrue: qfalse );
 
-#define GLE( ret, name, ... ) q##name = NULL;
-		QGL_Core_PROCS;
-		QGL_Ext_PROCS;
-		QGL_ARB_PROGRAM_PROCS;
-		QGL_VBO_PROCS;
-		QGL_FBO_PROCS;
-		QGL_FBO_OPT_PROCS;
-#undef GLE
+		R_ClearSymTables();
 
 		Com_Memset( &glConfig, 0, sizeof( glConfig ) );
 		Com_Memset( &glState, 0, sizeof( glState ) );
