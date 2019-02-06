@@ -2516,10 +2516,10 @@ journaled file
 ===================================================================
 */
 
-#define	MAX_PUSHED_EVENTS	            1024
+#define	MAX_PUSHED_EVENTS 256
 static int com_pushedEventsHead = 0;
 static int com_pushedEventsTail = 0;
-static sysEvent_t	com_pushedEvents[MAX_PUSHED_EVENTS];
+static sysEvent_t com_pushedEvents[MAX_PUSHED_EVENTS];
 
 /*
 =================
@@ -2787,9 +2787,8 @@ Com_GetEvent
 =================
 */
 static sysEvent_t Com_GetEvent( void ) {
-	if ( com_pushedEventsHead > com_pushedEventsTail ) {
-		com_pushedEventsTail++;
-		return com_pushedEvents[ (com_pushedEventsTail-1) & (MAX_PUSHED_EVENTS-1) ];
+	if ( com_pushedEventsHead - com_pushedEventsTail > 0 ) {
+		return com_pushedEvents[ (com_pushedEventsTail++) & (MAX_PUSHED_EVENTS-1) ];
 	}
 	return Com_GetRealEvent();
 }
@@ -3843,7 +3842,7 @@ static int Com_TimeVal( int minMsec )
 {
 	int timeVal;
 
-	timeVal = Sys_Milliseconds() - com_frameTime;
+	timeVal = Com_Milliseconds() - com_frameTime;
 
 	if ( timeVal >= minMsec )
 		timeVal = 0;
