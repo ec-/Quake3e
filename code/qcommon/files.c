@@ -1942,12 +1942,12 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 	}
 
 	buf = NULL;	// quiet compiler warning
+	isConfig = qfalse;
 
 	// if this is a .cfg file and we are playing back a journal, read
 	// it from the journal file
-	if ( strstr( qpath, ".cfg" ) ) {
-		isConfig = qtrue;
-		if ( com_journal && com_journal->integer == 2 ) {
+	if ( com_journalDataFile != FS_INVALID_HANDLE && strstr( qpath, ".cfg" ) ) {
+		if ( com_journal->integer == 2 ) {
 			int		r;
 
 			Com_DPrintf( "Loading %s from journal file.\n", qpath );
@@ -1983,9 +1983,9 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 			buf[len] = '\0';
 
 			return len;
+		} else if ( com_journal->integer == 1 ) {
+			isConfig = qtrue;
 		}
-	} else {
-		isConfig = qfalse;
 	}
 
 	// look for it in the filesystem or pack files
@@ -1995,7 +1995,7 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 			*buffer = NULL;
 		}
 		// if we are journalling and it is a config file, write a zero to the journal file
-		if ( isConfig && com_journal && com_journal->integer == 1 ) {
+		if ( isConfig ) {
 			Com_DPrintf( "Writing zero for %s to journal file.\n", qpath );
 			len = 0;
 			FS_Write( &len, sizeof( len ), com_journalDataFile );
@@ -2005,7 +2005,7 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 	}
 	
 	if ( !buffer ) {
-		if ( isConfig && com_journal && com_journal->integer == 1 ) {
+		if ( isConfig ) {
 			Com_DPrintf( "Writing len for %s to journal file.\n", qpath );
 			FS_Write( &len, sizeof( len ), com_journalDataFile );
 			FS_Flush( com_journalDataFile );
@@ -2027,7 +2027,7 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 	FS_FCloseFile( h );
 
 	// if we are journalling and it is a config file, write it to the journal file
-	if ( isConfig && com_journal && com_journal->integer == 1 ) {
+	if ( isConfig ) {
 		Com_DPrintf( "Writing %s to journal file.\n", qpath );
 		FS_Write( &len, sizeof( len ), com_journalDataFile );
 		FS_Write( buf, len, com_journalDataFile );

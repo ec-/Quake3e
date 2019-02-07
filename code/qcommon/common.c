@@ -2521,40 +2521,40 @@ static int com_pushedEventsHead = 0;
 static int com_pushedEventsTail = 0;
 static sysEvent_t com_pushedEvents[MAX_PUSHED_EVENTS];
 
+
 /*
 =================
 Com_InitJournaling
 =================
 */
-void Com_InitJournaling( void ) {
-	Com_StartupVariable( "journal" );
-	com_journal = Cvar_Get ("journal", "0", CVAR_INIT);
+static void Com_InitJournaling( void ) {
 	if ( !com_journal->integer ) {
 		return;
 	}
 
 	if ( com_journal->integer == 1 ) {
-		Com_Printf( "Journaling events\n");
+		Com_Printf( "Journaling events\n" );
 		com_journalFile = FS_FOpenFileWrite( "journal.dat" );
 		com_journalDataFile = FS_FOpenFileWrite( "journaldata.dat" );
 	} else if ( com_journal->integer == 2 ) {
-		Com_Printf( "Replaying journaled events\n");
+		Com_Printf( "Replaying journaled events\n" );
 		FS_FOpenFileRead( "journal.dat", &com_journalFile, qtrue );
 		FS_FOpenFileRead( "journaldata.dat", &com_journalDataFile, qtrue );
 	}
 
-	if ( !com_journalFile || !com_journalDataFile ) {
+	if ( com_journalFile == FS_INVALID_HANDLE || com_journalDataFile == FS_INVALID_HANDLE ) {
 		Cvar_Set( "com_journal", "0" );
-		if ( com_journalFile )
+		if ( com_journalFile != FS_INVALID_HANDLE ) {
 			FS_FCloseFile( com_journalFile );
-		if ( com_journalDataFile )
+			com_journalFile = FS_INVALID_HANDLE;
+		}
+		if ( com_journalDataFile != FS_INVALID_HANDLE ) {
 			FS_FCloseFile( com_journalDataFile );
-		com_journalFile = FS_INVALID_HANDLE;
-		com_journalDataFile = FS_INVALID_HANDLE;
+			com_journalDataFile = FS_INVALID_HANDLE;
+		}
 		Com_Printf( "Couldn't open journal files\n" );
 	}
 }
-
 
 
 /*
@@ -2695,41 +2695,47 @@ Com_GetRealEvent
 =================
 */
 static sysEvent_t Com_GetRealEvent( void ) {
-	int			r;
-	sysEvent_t	ev;
+	
+	// get or save an event from/to the journal file
+	if ( com_journalFile != FS_INVALID_HANDLE ) {
+		int			r;
+		sysEvent_t	ev;
 
-	// either get an event from the system or the journal file
-	if ( com_journal->integer == 2 ) {
-		r = FS_Read( &ev, sizeof(ev), com_journalFile );
-		if ( r != sizeof(ev) ) {
-			Com_Error( ERR_FATAL, "Error reading from journal file" );
-		}
-		if ( ev.evPtrLength ) {
-			ev.evPtr = Z_Malloc( ev.evPtrLength );
-			r = FS_Read( ev.evPtr, ev.evPtrLength, com_journalFile );
-			if ( r != ev.evPtrLength ) {
+		if ( com_journal->integer == 2 ) {
+			Sys_SendKeyEvents();
+			r = FS_Read( &ev, sizeof(ev), com_journalFile );
+			if ( r != sizeof(ev) ) {
 				Com_Error( ERR_FATAL, "Error reading from journal file" );
 			}
-		}
-	} else {
-		ev = Com_GetSystemEvent();
-
-		// write the journal value out if needed
-		if ( com_journal->integer == 1 ) {
-			r = FS_Write( &ev, sizeof(ev), com_journalFile );
-			if ( r != sizeof(ev) ) {
-				Com_Error( ERR_FATAL, "Error writing to journal file" );
-			}
 			if ( ev.evPtrLength ) {
-				r = FS_Write( ev.evPtr, ev.evPtrLength, com_journalFile );
+				ev.evPtr = Z_Malloc( ev.evPtrLength );
+				r = FS_Read( ev.evPtr, ev.evPtrLength, com_journalFile );
 				if ( r != ev.evPtrLength ) {
+					Com_Error( ERR_FATAL, "Error reading from journal file" );
+				}
+			}
+		} else {
+			ev = Com_GetSystemEvent();
+
+			// write the journal value out if needed
+			if ( com_journal->integer == 1 ) {
+				r = FS_Write( &ev, sizeof(ev), com_journalFile );
+				if ( r != sizeof(ev) ) {
 					Com_Error( ERR_FATAL, "Error writing to journal file" );
+				}
+				if ( ev.evPtrLength ) {
+					r = FS_Write( ev.evPtr, ev.evPtrLength, com_journalFile );
+					if ( r != ev.evPtrLength ) {
+						Com_Error( ERR_FATAL, "Error writing to journal file" );
+					}
 				}
 			}
 		}
+
+		return ev;
 	}
 
-	return ev;
+	return Com_GetSystemEvent();
 }
 
 
@@ -2899,18 +2905,22 @@ Can be used for profiling, but will be journaled accurately
 ================
 */
 int Com_Milliseconds( void ) {
-	sysEvent_t	ev;
 
-	// get events and push them until we get a null event with the current time
-	do {
+	if ( com_journal->integer ) {
+		sysEvent_t	ev;
 
-		ev = Com_GetRealEvent();
-		if ( ev.evType != SE_NONE ) {
-			Com_PushEvent( &ev );
-		}
-	} while ( ev.evType != SE_NONE );
-	
-	return ev.evTime;
+		// get events and push them until we get a null event with the current time
+		do {
+			ev = Com_GetRealEvent();
+			if ( ev.evType != SE_NONE ) {
+				Com_PushEvent( &ev );
+			}
+		} while ( ev.evType != SE_NONE );
+
+		return ev.evTime;
+	}
+
+	return Sys_Milliseconds();
 }
 
 //============================================================================
@@ -3514,12 +3524,18 @@ void Com_Init( char *commandLine ) {
 	// get the developer cvar set as early as possible
 	Com_StartupVariable( "developer" );
 	com_developer = Cvar_Get( "developer", "0", CVAR_TEMP );
+	Cvar_CheckRange( com_developer, NULL, NULL, CV_INTEGER );
 
 	Com_StartupVariable( "vm_rtChecks" );
 	vm_rtChecks = Cvar_Get( "vm_rtChecks", "15", CVAR_INIT | CVAR_PROTECTED );
+	Cvar_CheckRange( vm_rtChecks, "0", "15", CV_INTEGER );
 	Cvar_SetDescription( vm_rtChecks, 
 		"Runtime checks in compiled vm code, bitmask:\n 1 - program stack overflow\n" \
 		" 2 - opcode stack overflow\n 4 - jump target range\n 8 - data read/write range" );
+
+	Com_StartupVariable( "journal" );
+	com_journal = Cvar_Get( "journal", "0", CVAR_INIT | CVAR_PROTECTED );
+	Cvar_CheckRange( com_journal, "0", "2", CV_INTEGER );
 
 	// done early so bind command exists
 	Com_InitKeyCommands();
