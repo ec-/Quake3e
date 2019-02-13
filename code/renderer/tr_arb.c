@@ -2131,6 +2131,7 @@ static void QGL_EarlyInitFBO( void )
 
 	captureWidth = glConfig.vidWidth;
 	captureHeight = glConfig.vidHeight;
+	ri.CL_SetScaling( 1.0, captureWidth, captureHeight );
 
 	if ( r_ext_supersample->integer )
 	{
