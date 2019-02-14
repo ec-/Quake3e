@@ -2111,6 +2111,23 @@ static int FS_PakHashSize( const int filecount )
 	return hashSize;
 }
 
+
+/*
+============
+FS_DeniedPakFile
+
+Check if file should NOT be added to hash search table
+============
+*/
+static qboolean FS_BannedPakFile( const char *filename )
+{
+	if ( !strcmp( filename, "autoexec.cfg" ) || !strcmp( filename, Q3CONFIG_CFG ) )
+		return qtrue;
+	else
+		return qfalse;
+}
+
+
 #ifdef USE_PK3_CACHE
 
 #define PK3_HASH_SIZE 512
@@ -2433,6 +2450,7 @@ static qboolean FS_LoadPakFromFile( FILE *f )
 	fileInPack_t *curFile;
 	char pakName[ PAD( MAX_OSPATH*3+1, sizeof( int ) ) ];
 	char pakBase[ PAD( MAX_OSPATH, sizeof( int ) ) ], *basename;
+	char *filename_inzip;
 	pk3cacheHeader_t pk;
 	pk3cacheFileItem_t it;
 	pack_t *pack;
@@ -2559,7 +2577,7 @@ static qboolean FS_LoadPakFromFile( FILE *f )
 	}
 
 	curFile = pack->buildBuffer;
-	for ( i = 0; i < pack->numfiles; i++ )
+	for ( i = 0; i < pk.numFiles; i++ )
 	{
 		if ( fread( &it, sizeof( it ), 1, f ) != 1 )
 		{
@@ -2571,16 +2589,22 @@ static qboolean FS_LoadPakFromFile( FILE *f )
 			//Com_Printf( "bad name offset: %i (expecting less than %i)\n", it.name, pk.namesLen );
 			goto __error;
 		}
-		curFile->name = namePtr + it.name;
-		curFile->size = it.size;
-		curFile->pos = it.pos;
 
-		// update hash table
-		hash = FS_HashFileName( curFile->name, pack->hashSize );
-		curFile->next = pack->hashTable[ hash ];
-		pack->hashTable[ hash ] = curFile;
+		filename_inzip = namePtr + it.name;
+		if ( !FS_BannedPakFile( filename_inzip ) ) {
+			// store the file position in the zip
+			curFile->name = filename_inzip;
+			curFile->size = it.size;
+			curFile->pos = it.pos;
 
-		curFile++;
+			// update hash table
+			hash = FS_HashFileName( curFile->name, pack->hashSize );
+			curFile->next = pack->hashTable[ hash ];
+			pack->hashTable[ hash ] = curFile;
+			curFile++;
+		} else {
+			pack->numfiles--;
+		}
 	}
 
 	if ( fread( pack->headerLongs + 1, ( pack->numHeaderLongs - 1 ) * sizeof( pack->headerLongs[0] ), 1, f ) != 1 )
@@ -2879,20 +2903,24 @@ static pack_t *FS_LoadZipFile( const char *zipfile )
 		}
 
 		Q_strlwr( filename_inzip );
+		if ( !FS_BannedPakFile( filename_inzip ) ) {
+			// store the file position in the zip
+			unzGetCurrentFileInfoPosition( uf, &curFile->pos );
+			curFile->size = file_info.uncompressed_size;
+			curFile->name = namePtr;
+			strcpy( curFile->name, filename_inzip );
+			namePtr += strlen( filename_inzip ) + 1;
 
-		// store the file position in the zip
-		unzGetCurrentFileInfoPosition( uf, &curFile->pos );
-		curFile->size = file_info.uncompressed_size;
-		curFile->name = namePtr;
-		strcpy( curFile->name, filename_inzip );
-		namePtr += strlen( filename_inzip ) + 1;
+			// update hash table
+			hash = FS_HashFileName( filename_inzip, pack->hashSize );
+			curFile->next = pack->hashTable[ hash ];
+			pack->hashTable[ hash ] = curFile; 
+			curFile++;
+		} else {
+			pack->numfiles--;
+		}
 
-		// update hash table
-		hash = FS_HashFileName( filename_inzip, pack->hashSize );
-		curFile->next = pack->hashTable[ hash ];
-		pack->hashTable[ hash ] = curFile;
 		unzGoToNextFile( uf );
-		curFile++;
 	}
 
 	pack->checksum = Com_BlockChecksum( fs_headerLongs + 1, sizeof( fs_headerLongs[0] ) * ( fs_numHeaderLongs - 1 ) );
