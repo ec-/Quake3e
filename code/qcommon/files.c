@@ -2114,7 +2114,7 @@ static int FS_PakHashSize( const int filecount )
 
 /*
 ============
-FS_DeniedPakFile
+FS_BannedPakFile
 
 Check if file should NOT be added to hash search table
 ============

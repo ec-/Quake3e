@@ -558,12 +558,13 @@ static void InitOpenGL( void )
 
 		glConfig.deviceSupportsGamma = qfalse;
 
-		if ( !r_ignorehwgamma->integer )
-		{
-			ri.GLimp_InitGamma( &glConfig );
-			if ( fboEnabled )
-				glConfig.deviceSupportsGamma = qtrue;
-		}
+		ri.GLimp_InitGamma( &glConfig );
+
+		if ( fboEnabled )
+			glConfig.deviceSupportsGamma = qtrue;
+
+		if ( r_ignorehwgamma->integer )
+			glConfig.deviceSupportsGamma = qfalse;
 	}
 
 	// print info
