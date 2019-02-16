@@ -344,6 +344,10 @@ typedef struct {
 	int			captureWidth;
 	int			captureHeight;
 
+	float		scale;
+	float		biasX;
+	float		biasY;
+
 } clientStatic_t;
 
 extern int bigchar_width;

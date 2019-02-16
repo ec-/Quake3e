@@ -1613,7 +1613,20 @@ void CIN_DrawCinematic( int handle ) {
 	w = cinTable[handle].width;
 	h = cinTable[handle].height;
 	buf = cinTable[handle].buf;
+
+#if 0 // keep aspect ratio for cinematics
+	if ( cls.biasX || cls.biasY ) {
+		// clear side areas
+		re.SetColor( colorBlack );
+		re.DrawStretchPic( 0, 0, cls.glconfig.vidWidth, cls.glconfig.vidHeight, 0, 0, 1, 1, cls.whiteShader );
+	}
+	x = x * cls.scale + cls.biasX;
+	y = y * cls.scale + cls.biasY;
+	w = w * cls.scale;
+	h = h * cls.scale;
+#else
 	SCR_AdjustFrom640( &x, &y, &w, &h );
+#endif
 
 	if (cinTable[handle].dirty && (cinTable[handle].CIN_WIDTH != cinTable[handle].drawX || cinTable[handle].CIN_HEIGHT != cinTable[handle].drawY)) {
 		int *buf2;

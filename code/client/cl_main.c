@@ -3148,6 +3148,19 @@ static void CL_InitRenderer( void ) {
 	cls.consoleShader = re.RegisterShader( "console" );
 	g_console_field_width = cls.glconfig.vidWidth / smallchar_width - 2;
 	g_consoleField.widthInChars = g_console_field_width;
+
+	// for 640x480 virtualized screen
+	cls.biasY = 0;
+	cls.biasX = 0;
+	if ( cls.glconfig.vidWidth * 480 > cls.glconfig.vidHeight * 640 ) {
+		// wide screen, scale by height
+		cls.scale = cls.glconfig.vidHeight * (1.0/480.0);
+		cls.biasX = 0.5 * ( cls.glconfig.vidWidth - ( cls.glconfig.vidHeight * (640.0/480.0) ) );
+	} else {
+		// no wide screen, scale by width
+		cls.scale = cls.glconfig.vidWidth * (1.0/640.0);
+		cls.biasY = 0.5 * ( cls.glconfig.vidHeight - ( cls.glconfig.vidWidth * (480.0/640) ) );
+	}
 }
 
 
