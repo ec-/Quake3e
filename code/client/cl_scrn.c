@@ -604,7 +604,6 @@ void SCR_UpdateScreen( void ) {
 			re.ThrottleBackend();
 		} else {
 			next_frametime = ms + 16; // limit to 60 FPS
-			framecount = cls.framecount;
 		}
 	} else {
 		next_frametime = 0;

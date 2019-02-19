@@ -634,17 +634,32 @@ static void Upload32( unsigned *data, int x, int y, int width, int height, image
 		scaled_width = width;
 		scaled_height = height;
 	} else {
-		//
-		// convert to exact power of 2 sizes
-		//
-		for (scaled_width = 1 ; scaled_width < width ; scaled_width<<=1)
-			;
-		for (scaled_height = 1 ; scaled_height < height ; scaled_height<<=1)
-			;
-		if ( r_roundImagesDown->integer && scaled_width > width )
-			scaled_width >>= 1;
-		if ( r_roundImagesDown->integer && scaled_height > height )
-			scaled_height >>= 1;
+		if ( nonPowerOfTwoTextures ) {
+			if ( r_roundImagesDown->integer ) {
+				// round down to next power of 2
+				for ( scaled_width = 1 ; scaled_width <= width ; scaled_width <<= 1 )
+					;
+				scaled_width >>= 1;
+				for ( scaled_height = 1 ; scaled_height <= height; scaled_height <<= 1 )
+					;
+				scaled_height >>= 1;
+			} else {
+				scaled_width = width;
+				scaled_height = height;
+			}
+		} else {
+			//
+			// convert to exact power of 2 sizes
+			//
+			for (scaled_width = 1 ; scaled_width < width ; scaled_width<<=1)
+				;
+			for (scaled_height = 1 ; scaled_height < height ; scaled_height<<=1)
+				;
+			if ( r_roundImagesDown->integer && scaled_width > width )
+				scaled_width >>= 1;
+			if ( r_roundImagesDown->integer && scaled_height > height )
+				scaled_height >>= 1;
+		}
 
 		if ( scaled_width != width || scaled_height != height ) {
 			if ( data ) {
