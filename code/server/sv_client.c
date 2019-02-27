@@ -977,13 +977,11 @@ static int SV_WriteDownloadToClient( client_t *cl, msg_t *msg )
 			*pakptr = '\0';
 
 			// Check for pk3 filename extension
-			if(!Q_stricmp(pakptr + 1, "pk3"))
+			if ( !Q_stricmp( pakptr + 1, "pk3" ) )
 			{
-				const char *referencedPaks = FS_ReferencedPakNames();
-
 				// Check whether the file appears in the list of referenced
 				// paks to prevent downloading of arbitrary files.
-				Cmd_TokenizeStringIgnoreQuotes(referencedPaks);
+				Cmd_TokenizeStringIgnoreQuotes( sv_referencedPakNames->string );
 				numRefPaks = Cmd_Argc();
 
 				for(curindex = 0; curindex < numRefPaks; curindex++)
