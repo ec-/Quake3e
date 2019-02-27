@@ -446,6 +446,7 @@ float Q_exp2f( float f );
 #define SQRTFAST( x ) ( (x) * Q_rsqrt( x ) )
 
 signed char ClampChar( int i );
+signed char ClampCharMove( int i );
 signed short ClampShort( int i );
 
 // this isn't a real cheap function to call!

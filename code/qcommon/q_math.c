@@ -222,6 +222,16 @@ signed char ClampChar( int i ) {
 	return i;
 }
 
+signed char ClampCharMove( int i ) {
+	if ( i < -127 ) {
+		return -127;
+	}
+	if ( i > 127 ) {
+		return 127;
+	}
+	return i;
+}
+
 signed short ClampShort( int i ) {
 	if ( i < -32768 ) {
 		return -32768;

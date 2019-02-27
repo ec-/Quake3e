@@ -356,9 +356,9 @@ static void CL_KeyMove( usercmd_t *cmd ) {
 	forward += movespeed * CL_KeyState (&in_forward);
 	forward -= movespeed * CL_KeyState (&in_back);
 
-	cmd->forwardmove = ClampChar( forward );
-	cmd->rightmove = ClampChar( side );
-	cmd->upmove = ClampChar( up );
+	cmd->forwardmove = ClampCharMove( forward );
+	cmd->rightmove = ClampCharMove( side );
+	cmd->upmove = ClampCharMove( up );
 }
 
 
@@ -419,16 +419,16 @@ static void CL_JoystickMove( usercmd_t *cmd ) {
 	if ( !in_strafe.active ) {
 		cl.viewangles[YAW] += anglespeed * cl_yawspeed->value * cl.joystickAxis[AXIS_SIDE];
 	} else {
-		cmd->rightmove = ClampChar( cmd->rightmove + cl.joystickAxis[AXIS_SIDE] );
+		cmd->rightmove = ClampCharMove( cmd->rightmove + cl.joystickAxis[AXIS_SIDE] );
 	}
 
 	if ( in_mlooking ) {
 		cl.viewangles[PITCH] += anglespeed * cl_pitchspeed->value * cl.joystickAxis[AXIS_FORWARD];
 	} else {
-		cmd->forwardmove = ClampChar( cmd->forwardmove + cl.joystickAxis[AXIS_FORWARD] );
+		cmd->forwardmove = ClampCharMove( cmd->forwardmove + cl.joystickAxis[AXIS_FORWARD] );
 	}
 
-	cmd->upmove = ClampChar( cmd->upmove + cl.joystickAxis[AXIS_UP] );
+	cmd->upmove = ClampCharMove( cmd->upmove + cl.joystickAxis[AXIS_UP] );
 }
 
 
@@ -516,15 +516,15 @@ static void CL_MouseMove( usercmd_t *cmd )
 	my *= cl.cgameSensitivity;
 
 	// add mouse X/Y movement to cmd
-	if(in_strafe.active)
-		cmd->rightmove = ClampChar(cmd->rightmove + m_side->value * mx);
+	if ( in_strafe.active )
+		cmd->rightmove = ClampCharMove( cmd->rightmove + m_side->value * mx );
 	else
 		cl.viewangles[YAW] -= m_yaw->value * mx;
 
-	if ((in_mlooking || cl_freelook->integer) && !in_strafe.active)
+	if ( (in_mlooking || cl_freelook->integer) && !in_strafe.active )
 		cl.viewangles[PITCH] += m_pitch->value * my;
 	else
-		cmd->forwardmove = ClampChar(cmd->forwardmove - m_forward->value * my);
+		cmd->forwardmove = ClampCharMove( cmd->forwardmove - m_forward->value * my );
 }
 
 
