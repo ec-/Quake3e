@@ -634,6 +634,7 @@ static void Upload32( unsigned *data, int x, int y, int width, int height, image
 		scaled_width = width;
 		scaled_height = height;
 	} else {
+#if 0
 		if ( nonPowerOfTwoTextures ) {
 			if ( r_roundImagesDown->integer ) {
 				// round down to next power of 2
@@ -647,7 +648,9 @@ static void Upload32( unsigned *data, int x, int y, int width, int height, image
 				scaled_width = width;
 				scaled_height = height;
 			}
-		} else {
+		} else
+#endif
+		{
 			//
 			// convert to exact power of 2 sizes
 			//

@@ -460,7 +460,7 @@ static void R_InitExtensions( void )
 	{
 		ri.Printf( PRINT_ALL, "...GL_EXT_texture_filter_anisotropic not found\n" );
 	}
-
+#if 0
 	if ( R_HaveExtension( "GL_ARB_texture_non_power_of_two" ) )
 	{
 		if ( gl_version >= 30 )	// old hardware might work slower with npot-textures
@@ -469,7 +469,7 @@ static void R_InitExtensions( void )
 			ri.Printf( PRINT_ALL, "...using non-power-of-two textures\n" );
 		}
 	}
-
+#endif
 	if ( R_HaveExtension( "GL_ARB_vertex_program" ) && R_HaveExtension( "GL_ARB_fragment_program" ) )
 	{
 		err = R_ResolveSymbols( arb_procs, ARRAY_LEN( arb_procs ) );
