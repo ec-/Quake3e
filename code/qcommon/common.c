@@ -2906,21 +2906,17 @@ Can be used for profiling, but will be journaled accurately
 */
 int Com_Milliseconds( void ) {
 
-	if ( com_journal->integer ) {
-		sysEvent_t	ev;
+	sysEvent_t	ev;
 
-		// get events and push them until we get a null event with the current time
-		do {
-			ev = Com_GetRealEvent();
-			if ( ev.evType != SE_NONE ) {
-				Com_PushEvent( &ev );
-			}
-		} while ( ev.evType != SE_NONE );
+	// get events and push them until we get a null event with the current time
+	do {
+		ev = Com_GetRealEvent();
+		if ( ev.evType != SE_NONE ) {
+			Com_PushEvent( &ev );
+		}
+	} while ( ev.evType != SE_NONE );
 
-		return ev.evTime;
-	}
-
-	return Sys_Milliseconds();
+	return ev.evTime;
 }
 
 //============================================================================

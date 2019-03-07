@@ -4098,12 +4098,12 @@ int CL_ServerStatus( const char *serverAddress, char *serverStatusString, int ma
 			return qtrue;
 		}
 		// resend the request regularly
-		else if ( serverStatus->startTime < Com_Milliseconds() - cl_serverStatusResendTime->integer ) {
+		else if ( Sys_Milliseconds() - serverStatus->startTime > cl_serverStatusResendTime->integer ) {
 			serverStatus->print = qfalse;
 			serverStatus->pending = qtrue;
 			serverStatus->retrieved = qfalse;
 			serverStatus->time = 0;
-			serverStatus->startTime = Com_Milliseconds();
+			serverStatus->startTime = Sys_Milliseconds();
 			NET_OutOfBandPrint( NS_CLIENT, &to, "getstatus" );
 			return qfalse;
 		}
@@ -4114,7 +4114,7 @@ int CL_ServerStatus( const char *serverAddress, char *serverStatusString, int ma
 		serverStatus->print = qfalse;
 		serverStatus->pending = qtrue;
 		serverStatus->retrieved = qfalse;
-		serverStatus->startTime = Com_Milliseconds();
+		serverStatus->startTime = Sys_Milliseconds();
 		serverStatus->time = 0;
 		NET_OutOfBandPrint( NS_CLIENT, &to, "getstatus" );
 		return qfalse;
@@ -4213,7 +4213,7 @@ static void CL_ServerStatusResponse( const netadr_t *from, msg_t *msg ) {
 	len = strlen(serverStatus->string);
 	Com_sprintf(&serverStatus->string[len], sizeof(serverStatus->string)-len, "\\");
 
-	serverStatus->time = Com_Milliseconds();
+	serverStatus->time = Sys_Milliseconds();
 	serverStatus->address = *from;
 	serverStatus->pending = qfalse;
 	if (serverStatus->print) {
