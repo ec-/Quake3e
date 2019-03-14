@@ -335,7 +335,8 @@ typedef struct {
 
 typedef struct shader_s {
 	char		name[MAX_QPATH];		// game path, including extension
-	int			lightmapIndex;			// for a shader to match, both name and lightmapIndex must match
+	int			lightmapSearchIndex;	// for a shader to match, both name and lightmapIndex must match
+	int			lightmapIndex;			// for rendering
 
 	int			index;					// this shader == tr.shaders[index]
 	int			sortedIndex;			// this shader == tr.sortedShaders[sortedIndex]
