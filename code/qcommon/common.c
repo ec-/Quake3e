@@ -41,6 +41,7 @@ const int demo_protocols[] = { 66, 67, PROTOCOL_VERSION, NEW_PROTOCOL_VERSION, 0
 #ifdef DEDICATED
 #define MIN_COMHUNKMEGS		48
 #define DEF_COMHUNKMEGS		56
+#define DEF_COMZONEMEGS		25
 #else
 #define MIN_COMHUNKMEGS		64
 #define DEF_COMHUNKMEGS		128
@@ -49,7 +50,7 @@ const int demo_protocols[] = { 66, 67, PROTOCOL_VERSION, NEW_PROTOCOL_VERSION, 0
 #ifdef USE_MULTI_SEGMENT
 #define DEF_COMZONEMEGS		12
 #else
-#define DEF_COMZONEMEGS		25
+#define DEF_COMZONEMEGS		48
 #endif
 
 jmp_buf abortframe;		// an ERR_DROP occured, exit the entire frame
