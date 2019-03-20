@@ -66,6 +66,9 @@ cvar_t	*cl_guidServerUniq;
 cvar_t	*cl_dlURL;
 cvar_t	*cl_dlDirectory;
 
+cvar_t	*vid_height;
+cvar_t	*vid_width;
+
 // common cvars for GLimp modules
 cvar_t *r_allowSoftwareGL;		// don't abort out if the pixelformat claims software
 cvar_t *r_swapInterval;
@@ -3142,6 +3145,9 @@ static void CL_InitRenderer( void ) {
 	// this sets up the renderer and calls R_Init
 	re.BeginRegistration( &cls.glconfig );
 
+	Cvar_SetValue( "vid_height", cls.glconfig.vidHeight );
+	Cvar_SetValue( "vid_width", cls.glconfig.vidWidth );
+
 	// load character sets
 	cls.charSetShader = re.RegisterShader( "gfx/2d/bigchars" );
 	cls.whiteShader = re.RegisterShader( "white" );
@@ -3752,6 +3758,9 @@ void CL_Init( void ) {
 	Cvar_Get ("cg_viewsize", "100", CVAR_ARCHIVE_ND );
 	// Make sure cg_stereoSeparation is zero as that variable is deprecated and should not be used anymore.
 	Cvar_Get ("cg_stereoSeparation", "0", CVAR_ROM);
+
+	Cvar_Get( "vid_height", "", CVAR_ROM );
+	Cvar_Get( "vid_width", "", CVAR_ROM );
 
 	//
 	// register client commands
