@@ -1287,8 +1287,7 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 			if ( buf[4358].op == OP_LOCAL && buf[4358].value == 308 && buf[4359].op == OP_CONST && !buf[4359].value ) {
 				buf[4359].value++;
 			}
-		} 
-		else
+		} else
 		if ( vm->crc32sum == 0xF0F1AE90 && vm->instructionCount == 123552 && vm->exactDataLength == 2007520 ) {
 			ip = buf + 110177;
 			if ( ip->op == OP_ENTER && (ip+183)->op == OP_LEAVE && ip->value == (ip+183)->value ) {
@@ -1300,7 +1299,7 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 			if ( buf[4358].op == OP_LOCAL && buf[4358].value == 308 && buf[4359].op == OP_CONST && !buf[4359].value ) {
 				buf[4359].value++;
 			}
-		}
+		} else
 		if ( vm->crc32sum == 0x051D4668 && vm->instructionCount == 267812 && vm->exactDataLength == 38064376 ) {
 			int i;
 			ip = buf + 235;
@@ -1308,6 +1307,14 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 				for ( i = 0; i < 8; i++ ) {
 					ip[i].op = OP_IGNORE;
 				}
+			}
+		} else
+		if ( vm->crc32sum == 0x04150518 && vm->instructionCount == 207224 && vm->exactDataLength == 5619272 ) {
+			ip = buf + 7093;
+			if ( ip[0].op == OP_LOCAL && ip[0].value == 40 && ip[1].op == OP_LOAD4 && ip[2].value == 140 && ip[3].value == 7120 ) {
+				ip[0].op = ip[1].op = OP_IGNORE;
+				ip[2].op = OP_CONST; ip[2].value = ip[3].value;
+				ip[3].op = OP_JUMP;
 			}
 		}
 	}
