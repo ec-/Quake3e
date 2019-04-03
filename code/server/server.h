@@ -129,6 +129,29 @@ typedef struct netchan_buffer_s {
 	struct netchan_buffer_s *next;
 } netchan_buffer_t;
 
+typedef struct rateLimit_s {
+	int			lastTime;
+	int			burst;
+} rateLimit_t;
+
+typedef struct leakyBucket_s leakyBucket_t;
+struct leakyBucket_s {
+	netadrtype_t	type;
+
+	union {
+		byte	_4[4];
+		byte	_6[16];
+	} ipv;
+
+	rateLimit_t rate;
+
+	int			hash;
+	int			toxic;
+
+	leakyBucket_t *prev, *next;
+};
+
+
 typedef struct client_s {
 	clientState_t	state;
 	char			userinfo[MAX_INFO_STRING];		// name, etc
@@ -188,8 +211,8 @@ typedef struct client_s {
 	qboolean		compat;
 
 	// flood protection
-	int				cmd_burst;
-	int				cmd_time;
+	rateLimit_t		cmd_rate;
+	rateLimit_t		info_rate;
 
 	// client can decode long strings
 	qboolean		longstr;
@@ -289,27 +312,7 @@ extern	int serverBansCount;
 //
 // sv_main.c
 //
-typedef struct leakyBucket_s leakyBucket_t;
-struct leakyBucket_s {
-	netadrtype_t	type;
-
-	union {
-		byte	_4[4];
-		byte	_6[16];
-	} ipv;
-
-	int			lastTime;
-	int			burst;
-
-	int			hash;
-	int			toxic;
-
-	leakyBucket_t *prev, *next;
-};
-
-extern leakyBucket_t outboundLeakyBucket;
-
-qboolean SVC_RateLimit( leakyBucket_t *bucket, int burst, int period );
+qboolean SVC_RateLimit( rateLimit_t *bucket, int burst, int period );
 qboolean SVC_RateLimitAddress( const netadr_t *from, int burst, int period );
 void SVC_RateRestoreBurstAddress( const netadr_t *from, int burst, int period );
 void SVC_RateRestoreToxicAddress( const netadr_t *from, int burst, int period );
@@ -355,7 +358,7 @@ void SV_ClientEnterWorld( client_t *client, usercmd_t *cmd );
 void SV_FreeClient( client_t *client );
 void SV_DropClient( client_t *drop, const char *reason );
 
-void SV_ExecuteClientCommand( client_t *cl, const char *s, qboolean clientOK );
+qboolean SV_ExecuteClientCommand( client_t *cl, const char *s );
 void SV_ClientThink( client_t *cl, usercmd_t *cmd );
 
 int SV_SendDownloadMessages( void );
