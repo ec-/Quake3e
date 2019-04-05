@@ -281,13 +281,15 @@ static void Cmd_Exec_f( void ) {
 
 	if (Cmd_Argc () != 2) {
 		Com_Printf ("exec%s <filename> : execute a script file%s\n",
-		            quiet ? "q" : "", quiet ? " without notification" : "");
+			quiet ? "q" : "", quiet ? " without notification" : "");
 		return;
 	}
 
 	Q_strncpyz( filename, Cmd_Argv(1), sizeof( filename ) );
 	COM_DefaultExtension( filename, sizeof( filename ), ".cfg" );
+	FS_BypassPure();
 	FS_ReadFile( filename, &f.v );
+	FS_RestorePure();
 	if ( f.v == NULL ) {
 		Com_Printf( "couldn't exec %s\n", filename );
 		return;
@@ -901,7 +903,7 @@ Cmd_CompleteCfgName
 */
 static void Cmd_CompleteCfgName( char *args, int argNum ) {
 	if( argNum == 2 ) {
-		Field_CompleteFilename( "", "cfg", qfalse, FS_MATCH_ANY );
+		Field_CompleteFilename( "", "cfg", qfalse, FS_MATCH_ANY | FS_MATCH_STICK );
 	}
 }
 

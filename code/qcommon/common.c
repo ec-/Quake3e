@@ -284,7 +284,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 #if defined(_WIN32) && defined(_DEBUG)
 	if ( code != ERR_DISCONNECT && code != ERR_NEED_CD ) {
 		if (!com_noErrorInterrupt->integer) {
-			__debugbreak();
+			DebugBreak();
 		}
 	}
 #endif
