@@ -237,4 +237,4 @@
 { "ZA", "South Africa" },
 { "ZM", "Zambia" },
 { "ZW", "Zimbabwe" },
-{ "ZZ", "Reserved" }
+{ "ZZ", "Unknown Location" }

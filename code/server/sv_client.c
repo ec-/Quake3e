@@ -243,7 +243,7 @@ SV_LoadIP4DB
 Loads geoip database into memory
 ==================
 */
-static void SV_LoadIP4DB( const char *filename )
+static qboolean SV_LoadIP4DB( const char *filename )
 {
 	fileHandle_t fh = FS_INVALID_HANDLE;
 	void *buf;
@@ -255,15 +255,15 @@ static void SV_LoadIP4DB( const char *filename )
 	{
 		if ( fh != FS_INVALID_HANDLE )
 			FS_FCloseFile( fh );
-		return;
+		return qfalse;
 	}
 
 	if ( len % 10 ) // should be a power of IP4:IP4:TLD2
 	{
-		Com_Printf( "%s(%s): invalid file size %i\n", __func__, filename, len );
+		Com_DPrintf( "%s(%s): invalid file size %i\n", __func__, filename, len );
 		if ( fh != FS_INVALID_HANDLE )
 			FS_FCloseFile( fh );
-		return;
+		return qfalse;
 	}
 
 	SV_FreeIP4DB();
@@ -302,10 +302,11 @@ static void SV_LoadIP4DB( const char *filename )
 			Com_Printf( S_COLOR_YELLOW "invalid ip4db entry #%i: range=[%08x..%08x], tld=%c%c\n", 
 				i, ipdb_range[i].from, ipdb_range[i].to, ipdb_tld[i].tld[0], ipdb_tld[i].tld[1] );
 			SV_FreeIP4DB();
-			return;
+			return qtrue; // to not try to load it again
 	}
 
 	Com_Printf( "ip4db: %i entries loaded\n", num_tlds );
+	return qtrue;
 }
 
 
@@ -324,10 +325,7 @@ static void SV_SetClientTLD( client_t *cl, const netadr_t *from )
 		return;
 
 	if ( !ipdb_loaded )
-	{
-		ipdb_loaded = qtrue;
-		SV_LoadIP4DB( "ip4db.dat" );
-	}
+		ipdb_loaded = SV_LoadIP4DB( "ip4db.dat" );
 
 	if ( !ipdb_range )
 		return;
@@ -361,6 +359,50 @@ static void SV_SetClientTLD( client_t *cl, const netadr_t *from )
 		else
 			lo = m + 1;
 	}
+}
+
+
+static int seq[ MAX_CLIENTS ];
+
+static void SV_SaveSeuqences( void ) {
+	int i;
+	for ( i = 0; i < sv_maxclients->integer; i++ ) {
+		seq[i] = svs.clients[i].reliableSequence;
+	}
+}
+
+
+static void SV_InjectLocation( const char *tld, const char *country ) {
+	char *cmd, *str;
+	int i, n;
+	for ( i = 0; i < sv_maxclients->integer; i++ ) {
+		if ( seq[i] != svs.clients[i].reliableSequence ) {
+			for ( n = seq[i]; n != svs.clients[i].reliableSequence + 1; n++ ) {
+				cmd = svs.clients[i].reliableCommands[n & (MAX_RELIABLE_COMMANDS-1)];
+				str = strstr( cmd, "connected\n\"" );
+				if ( str && str[11] == '\0' && str < cmd + 512 ) {
+					sprintf( str, S_COLOR_WHITE "connected (" S_COLOR_RED "%s" S_COLOR_WHITE ", %s)\n\"", tld, country );
+					break;
+				}
+			}
+		}
+	}
+}
+
+
+static const char *SV_FindCountry( const char *tld ) {
+	int i;
+
+	if ( *tld == '\0' )
+		return "Unknown Location";
+
+	for ( i = 0; i < ARRAY_LEN( tld_info ); i++ ) {
+		if ( !strcmp( tld, tld_info[i].tld ) ) {
+			return tld_info[i].country;
+		}
+	}
+
+	return "Unknown top-level domain";
 }
 
 
@@ -666,6 +708,11 @@ gotnewcl:
 		return;
 	}
 
+	if ( sv_clientTLD->integer ) {
+		newcl->country = SV_FindCountry( newcl->tld );
+		SV_SaveSeuqences();
+	}
+
 	// get the game a chance to reject this connection or modify the userinfo
 	denied = VM_Call( gvm, 3, GAME_CLIENT_CONNECT, clientNum, qtrue, qfalse ); // firstTime = qtrue
 	if ( denied ) {
@@ -675,6 +722,10 @@ gotnewcl:
 		NET_OutOfBandPrint( NS_SERVER, from, "print\n%s\n", str );
 		Com_DPrintf( "Game rejected a connection: %s.\n", str );
 		return;
+	}
+
+	if ( sv_clientTLD->integer && !newcl->netchan.isLANAddress ) {
+		SV_InjectLocation( newcl->tld, newcl->country );
 	}
 
 	// send the connect packet to the client
@@ -1699,23 +1750,6 @@ static void SV_UpdateUserinfo_f( client_t *cl ) {
 
 extern int SV_Strlen( const char *str );
 
-
-static const char *SV_FindCountry( const char *tld ) {
-	int i;
-
-	if ( *tld == '\0' )
-		return "";
-
-	for ( i = 0; i < ARRAY_LEN( tld_info ); i++ ) {
-		if ( !strcmp( tld, tld_info[i].tld ) ) {
-			return tld_info[i].country;
-		}
-	}
-
-	return "";
-}
-
-
 static void SV_Locations_f( client_t *client ) {
 	int i, len;
 	client_t *cl;
@@ -1741,10 +1775,6 @@ static void SV_Locations_f( client_t *client ) {
 		len = SV_Strlen( cl->name );// name length without color sequences
 		if ( len > max_namelength )
 			max_namelength = len;
-
-		if ( cl->country == NULL ) {
-			cl->country = SV_FindCountry( cl->tld );
-		}
 
 		len = strlen( cl->country );
 		if ( len > max_ctrylength )
