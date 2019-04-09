@@ -708,8 +708,8 @@ gotnewcl:
 		return;
 	}
 
+	newcl->country = SV_FindCountry( newcl->tld );
 	if ( sv_clientTLD->integer ) {
-		newcl->country = SV_FindCountry( newcl->tld );
 		SV_SaveSeuqences();
 	}
 
@@ -1785,7 +1785,7 @@ static void SV_Locations_f( client_t *client ) {
 
 	memset( filln, '-',  max_namelength ); filln[max_namelength] = '\0';
 	memset( fillc, '-',  max_ctrylength ); fillc[max_ctrylength] = '\0';
-	Com_sprintf( line, sizeof( line ), "ID %*s CC Country\n", max_namelength, "Name" );
+	Com_sprintf( line, sizeof( line ), "ID %-*s CC Country\n", max_namelength, "Name" );
 	s = Q_stradd( s, line );
 	Com_sprintf( line, sizeof( line ), "-- %s -- %s\n", filln, fillc );
 	s = Q_stradd( s, line );
