@@ -219,6 +219,9 @@ typedef struct client_s {
 
 	qboolean		justConnected;
 
+	char			tld[3]; // "XX\0"
+	const char		*country;
+
 } client_t;
 
 //=============================================================================
@@ -279,6 +282,7 @@ extern	cvar_t	*sv_privatePassword;
 extern	cvar_t	*sv_allowDownload;
 extern	cvar_t	*sv_maxclients;
 extern	cvar_t	*sv_maxclientsPerIP;
+extern	cvar_t	*sv_clientTLD;
 
 extern	cvar_t	*sv_privateClients;
 extern	cvar_t	*sv_hostname;
@@ -364,6 +368,7 @@ void SV_ClientThink( client_t *cl, usercmd_t *cmd );
 int SV_SendDownloadMessages( void );
 int SV_SendQueuedMessages( void );
 
+void SV_FreeIP4DB( void );
 
 //
 // sv_ccmds.c

@@ -1099,7 +1099,7 @@ static void SV_KickNum_f( void ) {
 /*
 ** SV_Strlen -- skips color escape codes
 */
-static int SV_Strlen( const char *str ) {
+int SV_Strlen( const char *str ) {
 	const char *s = str;
 	int count = 0;
 
