@@ -310,7 +310,7 @@ static qboolean SV_LoadIP4DB( const char *filename )
 }
 
 
-static void SV_SetClientTLD( client_t *cl, const netadr_t *from )
+static void SV_SetClientTLD( client_t *cl, const netadr_t *from, qboolean isLAN )
 {
 	const iprange_t *e;
 	int lo, hi, m;
@@ -320,6 +320,12 @@ static void SV_SetClientTLD( client_t *cl, const netadr_t *from )
 
 	if ( sv_clientTLD->integer == 0 )
 		return;
+
+	if ( isLAN )
+	{
+		strcpy( cl->tld, "**" );
+		return;
+	}
 
 	if ( from->type != NA_IP ) // ipv4-only
 		return;
@@ -697,7 +703,7 @@ gotnewcl:
 
 	newcl->longstr = longstr;
 
-	SV_SetClientTLD( newcl, from );
+	SV_SetClientTLD( newcl, from, newcl->netchan.isLANAddress );
 
 	SV_UserinfoChanged( newcl, qtrue, qfalse ); // update userinfo, do not run filter
 
@@ -724,7 +730,7 @@ gotnewcl:
 		return;
 	}
 
-	if ( sv_clientTLD->integer && !newcl->netchan.isLANAddress ) {
+	if ( sv_clientTLD->integer ) {
 		SV_InjectLocation( newcl->tld, newcl->country );
 	}
 

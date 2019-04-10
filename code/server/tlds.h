@@ -1,3 +1,4 @@
+{ "**", "LAN" },
 { "AD", "Andorra" },
 { "AE", "United Arab Emirates" },
 { "AF", "Afghanistan" },

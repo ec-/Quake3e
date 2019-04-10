@@ -67,6 +67,9 @@ int SV_BotAllocateClient( void ) {
 	cl->netchan.remoteAddress.type = NA_BOT;
 	cl->rate = 0;
 
+	cl->tld[0] = '\0';
+	cl->country = "BOT";
+
 	return i;
 }
 
