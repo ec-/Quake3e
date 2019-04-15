@@ -1756,7 +1756,12 @@ static void SV_UpdateUserinfo_f( client_t *cl ) {
 
 extern int SV_Strlen( const char *str );
 
-static void SV_Locations_f( client_t *client ) {
+/*
+==================
+SV_PrintLocations_f
+==================
+*/
+void SV_PrintLocations_f( client_t *client ) {
 	int i, len;
 	client_t *cl;
 	int max_namelength;
@@ -1803,9 +1808,14 @@ static void SV_Locations_f( client_t *client ) {
 
 		len = Com_sprintf( line, sizeof( line ), "%2i %-*s" S_COLOR_WHITE " %2s %s\n",
 			i, max_namelength, cl->name, cl->tld, cl->country );
+
 		if ( s - buf + len >= sizeof( buf )-1 ) // flush accumulated buffer
 		{
-			NET_OutOfBandPrint( NS_SERVER, &client->netchan.remoteAddress, "print\n%s", buf );
+			if ( client )
+				NET_OutOfBandPrint( NS_SERVER, &client->netchan.remoteAddress, "print\n%s", buf );
+			else
+				Com_Printf( "%s", buf );
+
 			s = buf; *s = '\0';
 		}
 
@@ -1814,7 +1824,10 @@ static void SV_Locations_f( client_t *client ) {
 	
 	if ( buf[0] )
 	{
-		NET_OutOfBandPrint( NS_SERVER, &client->netchan.remoteAddress, "print\n%s", buf );
+		if ( client )
+			NET_OutOfBandPrint( NS_SERVER, &client->netchan.remoteAddress, "print\n%s", buf );
+		else
+			Com_Printf( "%s", buf );
 	}
 }
 
@@ -1833,7 +1846,7 @@ static const ucmd_t ucmds[] = {
 	{"nextdl", SV_NextDownload_f},
 	{"stopdl", SV_StopDownload_f},
 	{"donedl", SV_DoneDownload_f},
-	{"locations", SV_Locations_f},
+	{"locations", SV_PrintLocations_f},
 
 	{NULL, NULL}
 };
@@ -1885,7 +1898,7 @@ qboolean SV_ExecuteClientCommand( client_t *cl, const char *s ) {
 						return qfalse; // lag flooder
 					}
 				}
-			} else if ( ucmd->func == SV_Locations_f && !sv_clientTLD->integer ) {
+			} else if ( ucmd->func == SV_PrintLocations_f && !sv_clientTLD->integer ) {
 				continue; // bypass this command to the gamecode
 			}
 			ucmd->func( cl );

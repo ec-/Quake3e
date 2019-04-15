@@ -369,6 +369,7 @@ int SV_SendDownloadMessages( void );
 int SV_SendQueuedMessages( void );
 
 void SV_FreeIP4DB( void );
+void SV_PrintLocations_f( client_t *client );
 
 //
 // sv_ccmds.c
