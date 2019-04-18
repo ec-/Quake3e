@@ -370,7 +370,7 @@ static void SV_SetClientTLD( client_t *cl, const netadr_t *from, qboolean isLAN 
 
 static int seq[ MAX_CLIENTS ];
 
-static void SV_SaveSeuqences( void ) {
+static void SV_SaveSequences( void ) {
 	int i;
 	for ( i = 0; i < sv_maxclients->integer; i++ ) {
 		seq[i] = svs.clients[i].reliableSequence;
@@ -716,7 +716,7 @@ gotnewcl:
 
 	newcl->country = SV_FindCountry( newcl->tld );
 	if ( sv_clientTLD->integer ) {
-		SV_SaveSeuqences();
+		SV_SaveSequences();
 	}
 
 	// get the game a chance to reject this connection or modify the userinfo
