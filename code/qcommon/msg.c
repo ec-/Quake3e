@@ -39,6 +39,7 @@ void MSG_Init( msg_t *buf, byte *data, int length ) {
 	buf->maxbits = length * 8;
 }
 
+
 void MSG_InitOOB( msg_t *buf, byte *data, int length ) {
 	Com_Memset (buf, 0, sizeof(*buf));
 	buf->data = data;
@@ -46,6 +47,7 @@ void MSG_InitOOB( msg_t *buf, byte *data, int length ) {
 	buf->maxbits = length * 8;
 	buf->oob = qtrue;
 }
+
 
 void MSG_Clear( msg_t *buf ) {
 	buf->cursize = 0;
@@ -58,17 +60,20 @@ void MSG_Bitstream( msg_t *buf ) {
 	buf->oob = qfalse;
 }
 
+
 void MSG_BeginReading( msg_t *msg ) {
 	msg->readcount = 0;
 	msg->bit = 0;
 	msg->oob = qfalse;
 }
 
+
 void MSG_BeginReadingOOB( msg_t *msg ) {
 	msg->readcount = 0;
 	msg->bit = 0;
 	msg->oob = qtrue;
 }
+
 
 void MSG_Copy(msg_t *buf, byte *data, int length, msg_t *src)
 {
@@ -160,7 +165,7 @@ int MSG_ReadBits( msg_t *msg, int bits ) {
 	value = 0;
 
 	if ( bits < 0 ) {
-		bits = -bits;
+		bits = -bits; // always greater than zero
 		sgn = qtrue;
 	} else {
 		sgn = qfalse;
@@ -211,7 +216,8 @@ int MSG_ReadBits( msg_t *msg, int bits ) {
 		msg->bit = bitIndex;
 		msg->readcount = (bitIndex >> 3) + 1;
 	}
-	if ( sgn && bits > 0 && bits < 32 ) {
+
+	if ( sgn && bits < 32 ) {
 		if ( value & ( 1 << ( bits - 1 ) ) ) {
 			value |= -1 ^ ( ( 1 << bits ) - 1 );
 		}
