@@ -1438,6 +1438,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					pakFile = pakFile->next;
 				} while ( pakFile != NULL );
 			} else if ( search->dir && search->policy != DIR_DENY ) {
+#ifndef DEDICATED
 				if ( fs_numServerPaks ) {
 					if ( !checked ) {
 						checked = qtrue;
@@ -1447,6 +1448,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 						continue;
 					}
 				}
+#endif
 				dir = search->dir;
 				netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
 				temp = Sys_FOpen( netpath, "rb" );
@@ -1562,6 +1564,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 			//   this test can make the search fail although the file is in the directory
 			// I had the problem on https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=8
 			// turned out I used FS_FileExists instead
+#ifndef DEDICATED
 			if ( fs_numServerPaks ) {
 				if ( !checked ) {
 					checked = qtrue;
@@ -1571,7 +1574,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					continue;
 				}
 			}
-
+#endif
 			dir = search->dir;
 			
 			netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
@@ -3538,8 +3541,12 @@ static int FS_GetModList( char *listbuf, int bufsize ) {
 				}
 			}
 		}
-		// we also drop "baseq3" "." and ".."
-		if ( bDrop || Q_stricmp( name, fs_basegame->string ) == 0 || Q_stricmpn(name, ".", 1) == 0 ) {
+
+		// we also drop BASEGAME, "." and ".."
+		if ( bDrop || Q_stricmp( name, fs_basegame->string ) == 0 ) {
+			continue;
+		}
+		if ( strcmp( name, "." ) == 0 || strcmp( name, ".." ) == 0 ) {
 			continue;
 		}
 
@@ -4743,15 +4750,13 @@ The server will send this to the clients so they can check which files should be
 const char *FS_ReferencedPakChecksums( void ) {
 	static char	info[BIG_INFO_STRING];
 	searchpath_t *search;
-	size_t len;
 
 	info[0] = '\0';
-	len = strlen( fs_basegame->string );
 
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		// is the element a pak file?
 		if ( search->pack ) {
-			if ( search->pack->referenced || Q_stricmpn( search->pack->pakGamename, fs_basegame->string, len ) ) {
+			if ( search->pack->referenced || Q_stricmp( search->pack->pakGamename, fs_basegame->string ) ) {
 				Q_strcat( info, sizeof( info ), va( "%i ", search->pack->checksum ) );
 			}
 		}
@@ -4829,17 +4834,15 @@ The server will send this to the clients so they can check which files should be
 const char *FS_ReferencedPakNames( void ) {
 	static char	info[BIG_INFO_STRING];
 	const searchpath_t *search;
-	size_t	len;
 
 	info[0] = '\0';
-	len = strlen( fs_basegame->string );
 
 	// we want to return ALL pk3's from the fs_game path
 	// and referenced one's from baseq3
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		// is the element a pak file?
 		if ( search->pack ) {
-			if ( search->pack->referenced || Q_stricmpn( search->pack->pakGamename, fs_basegame->string, len ) ) {
+			if ( search->pack->referenced || Q_stricmp( search->pack->pakGamename, fs_basegame->string ) ) {
 				if ( *info ) {
 					Q_strcat( info, sizeof( info ), " " );
 				}
