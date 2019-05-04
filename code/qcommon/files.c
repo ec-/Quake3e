@@ -2891,11 +2891,14 @@ static pack_t *FS_LoadZipFile( const char *zipfile )
 	fileNameLen = (int) strlen( zipfile ) + 1;
 	baseNameLen = (int) strlen( basename ) + 1;
 
-	uf = unzOpen(zipfile);
-	err = unzGetGlobalInfo (uf,&gi);
+	uf = unzOpen( zipfile );
+	err = unzGetGlobalInfo( uf, &gi );
 
-	if (err != UNZ_OK)
+	if ( err != UNZ_OK ) {
+		if ( uf )
+			unzClose( uf );
 		return NULL;
+	}
 
 	namelen = 0;
 	filecount = 0;
