@@ -2895,8 +2895,6 @@ static pack_t *FS_LoadZipFile( const char *zipfile )
 	err = unzGetGlobalInfo( uf, &gi );
 
 	if ( err != UNZ_OK ) {
-		if ( uf )
-			unzClose( uf );
 		return NULL;
 	}
 
