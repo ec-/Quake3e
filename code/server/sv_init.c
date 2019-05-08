@@ -529,6 +529,8 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	// don't allow a map_restart if game is modified
 	sv_gametype->modified = qfalse;
 
+	sv_pure->modified = qfalse;
+
 	// run a few frames to allow everything to settle
 	for ( i = 0; i < 3; i++ )
 	{
@@ -540,10 +542,10 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	// create a baseline for more efficient communications
 	SV_CreateBaseline();
 
-	for (i=0 ; i<sv_maxclients->integer ; i++) {
+	for ( i = 0; i < sv_maxclients->integer; i++ ) {
 		// send the new gamestate to all connected clients
-		if (svs.clients[i].state >= CS_CONNECTED) {
-			char	*denied;
+		if ( svs.clients[i].state >= CS_CONNECTED ) {
+			const char *denied;
 
 			if ( svs.clients[i].netchan.remoteAddress.type == NA_BOT ) {
 				if ( killBots ) {
