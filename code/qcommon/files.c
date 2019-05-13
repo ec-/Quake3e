@@ -1148,7 +1148,7 @@ fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 FS_FOpenFileAppend
 ===========
 */
-static fileHandle_t FS_FOpenFileAppend( const char *filename ) {
+fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 	char			*ospath;
 	fileHandleData_t *fd;
 	fileHandle_t	f;
