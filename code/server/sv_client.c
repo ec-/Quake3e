@@ -387,7 +387,10 @@ static void SV_InjectLocation( const char *tld, const char *country ) {
 				cmd = svs.clients[i].reliableCommands[n & (MAX_RELIABLE_COMMANDS-1)];
 				str = strstr( cmd, "connected\n\"" );
 				if ( str && str[11] == '\0' && str < cmd + 512 ) {
-					sprintf( str, S_COLOR_WHITE "connected (" S_COLOR_RED "%s" S_COLOR_WHITE ", %s)\n\"", tld, country );
+					if ( *tld == '\0' )
+						sprintf( str, S_COLOR_WHITE "connected (%s)\n\"", country );
+					else
+						sprintf( str, S_COLOR_WHITE "connected (" S_COLOR_RED "%s" S_COLOR_WHITE ", %s)\n\"", tld, country );
 					break;
 				}
 			}
@@ -408,7 +411,7 @@ static const char *SV_FindCountry( const char *tld ) {
 		}
 	}
 
-	return "Unknown top-level domain";
+	return "Unknown Location";
 }
 
 
@@ -715,6 +718,9 @@ gotnewcl:
 	}
 
 	newcl->country = SV_FindCountry( newcl->tld );
+	if ( !strcmp( newcl->tld, "**" ) ) {
+		newcl->tld[0] = '\0'; // clear tld field for LAN connections
+	}
 	if ( sv_clientTLD->integer ) {
 		SV_SaveSequences();
 	}
