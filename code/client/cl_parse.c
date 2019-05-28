@@ -393,7 +393,7 @@ void CL_SystemInfoChanged( qboolean onlyGame ) {
 		Cvar_SetCheatState();
 	}
 
-	if ( clc.netchan.remoteAddress.type == NA_LOOPBACK ) {
+	if ( com_sv_running->integer ) {
 		// no filesystem restrictions for localhost
 		FS_PureServerSetLoadedPaks( "", "" );
 		FS_PureServerSetReferencedPaks( "", "" );
