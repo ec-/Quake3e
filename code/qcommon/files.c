@@ -1332,12 +1332,17 @@ static qboolean FS_DeniedPureFile( const char *filename )
 		"tga",	// external hud images
 		"png",	// external hud images
 		"menu",	// menu files
-		"game" // menu files
+		"game", // menu files
+#if PROTOCOL_VERSION != 68 || NEW_PROTOCOL_VERSION != 71
+#erro	please, update demo extension list
+#endif
+		DEMOEXT "68",
+		DEMOEXT "71",
 	};
 
 	if ( FS_HasExt( filename, extList, ARRAY_LEN( extList ) ) )
 		return qfalse;
-	
+
 	return qtrue;
 }
 
@@ -4741,6 +4746,9 @@ const char *FS_LoadedPakChecksums( qboolean *overflowed ) {
 		if ( !search->pack )
 			continue;
 
+		if ( search->pack->exclude )
+			continue;
+
 		if ( info[0] )
 			len = sprintf( buf, " %i", search->pack->checksum );
 		else
@@ -4780,6 +4788,9 @@ const char *FS_LoadedPakNames( void ) {
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		// is the element a pak file?
 		if ( !search->pack )
+			continue;
+
+		if ( search->pack->exclude )
 			continue;
 
 		len = (int)strlen( search->pack->pakBasename );
