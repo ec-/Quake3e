@@ -246,7 +246,7 @@ typedef struct pack_s {
 	fileInPack_t*	*hashTable;					// hash table
 	fileInPack_t*	buildBuffer;				// buffer with the filenames etc.
 	int				index;
-	int				used;
+	int				handleUsed;
 
 	// caching subsystem
 #ifdef USE_PK3_CACHE
@@ -298,10 +298,13 @@ static	searchpath_t	*fs_searchpaths;
 static	int			fs_readCount;			// total bytes read
 static	int			fs_loadCount;			// total files read
 static	int			fs_loadStack;			// total files in memory
-static	int			fs_packFiles = 0;			// total number of files in packs
-static	int			fs_packCount = 0;			// total number of packs
+static	int			fs_packFiles;			// total number of files in all loaded packs
 
-static int fs_checksumFeed;
+static	int			fs_pk3dirCount;			// total number of pk3 directories in searchpath
+static	int			fs_packCount;			// total number of packs in searchpath
+static	int			fs_dirCount;			// total number of directories in searchpath
+
+static	int			fs_checksumFeed;
 
 typedef union qfile_gus {
 	FILE*		o;
@@ -1073,9 +1076,9 @@ void FS_FCloseFile( fileHandle_t f ) {
 		}
 		fd->handleFiles.file.z = NULL;
 		fd->zipFile = qfalse;
-		fd->pak->used--;
+		fd->pak->handleUsed--;
 		if ( !fs_locked->integer ) {
-			if ( fd->pak->handle && !fd->pak->used ) {
+			if ( fd->pak->handle && !fd->pak->handleUsed ) {
 				unzClose( fd->pak->handle );
 				fd->pak->handle = NULL;
 			}
@@ -1317,36 +1320,6 @@ static qboolean FS_GeneralRef( const char *filename )
 }
 
 
-static qboolean FS_DeniedPureFile( const char *filename ) 
-{
-	// allowed non-ref extensions
-	static const char *extList[] = {
-		"cfg",	// config files
-		"txt",	// config/text files
-		"dat",	// misc. data files
-		"bot", // bot files
-		"c",	// bot files
-		"add",	// custom entities
-		"set",	// custom entities
-		"jpg",	// external hud images
-		"tga",	// external hud images
-		"png",	// external hud images
-		"menu",	// menu files
-		"game", // menu files
-#if PROTOCOL_VERSION != 68 || NEW_PROTOCOL_VERSION != 71
-#erro	please, update demo extension list
-#endif
-		DEMOEXT "68",
-		DEMOEXT "71",
-	};
-
-	if ( FS_HasExt( filename, extList, ARRAY_LEN( extList ) ) )
-		return qfalse;
-
-	return qtrue;
-}
-
-
 /*
 ===========
 FS_BypassPure
@@ -1395,10 +1368,6 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	FILE			*temp;
 	int				length;
 	fileHandleData_t *f;
-#ifndef DEDICATED
-	qboolean		deniedPureFile;
-	qboolean		checked;
-#endif
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
@@ -1421,10 +1390,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 		return -1;
 	}
 
-#ifndef DEDICATED
-	checked = deniedPureFile = qfalse;
-#endif
-	
+
 	// we will calculate full hash only once then just mask it by current pack->hashSize
 	// we can do that as long as we know properties of our hash function
 	fullHash = FS_HashFileName( filename, 0U );
@@ -1449,17 +1415,6 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					pakFile = pakFile->next;
 				} while ( pakFile != NULL );
 			} else if ( search->dir && search->policy != DIR_DENY ) {
-#ifndef DEDICATED
-				if ( fs_numServerPaks ) {
-					if ( !checked ) {
-						checked = qtrue;
-						deniedPureFile = FS_DeniedPureFile( filename );
-					}
-					if ( deniedPureFile ) {
-						continue;
-					}
-				}
-#endif
 				dir = search->dir;
 				netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
 				temp = Sys_FOpen( netpath, "rb" );
@@ -1554,7 +1509,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					f->pakIndex = pak->index;
 					fs_lastPakIndex = pak->index;
 					f->pak = pak;
-					pak->used++;
+					pak->handleUsed++;
 
 					if ( fs_debug->integer ) {
 						Com_Printf( "FS_FOpenFileRead: %s (found in '%s')\n", 
@@ -1566,26 +1521,6 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 			} while ( pakFile != NULL );
 		} else if ( search->dir && search->policy != DIR_DENY ) {
 			// check a file in the directory tree
-
-			// if we are running restricted, the only files we
-			// will allow to come from the directory are .cfg files
-
-			// FIXME TTimo I'm not sure about the fs_numServerPaks test
-			// if you are using FS_ReadFile to find out if a file exists,
-			//   this test can make the search fail although the file is in the directory
-			// I had the problem on https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=8
-			// turned out I used FS_FileExists instead
-#ifndef DEDICATED
-			if ( fs_numServerPaks ) {
-				if ( !checked ) {
-					checked = qtrue;
-					deniedPureFile = FS_DeniedPureFile( filename );
-				}
-				if ( deniedPureFile ) {
-					continue;
-				}
-			}
-#endif
 			dir = search->dir;
 			
 			netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
@@ -4027,6 +3962,7 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 
 	search->next = fs_searchpaths;
 	fs_searchpaths = search;
+	fs_dirCount++;
 
 	// find all pak files in this directory
 	Q_strncpyz( curpath, FS_BuildOSPath( path, dir, NULL ), sizeof( curpath ) );
@@ -4132,6 +4068,7 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 
 			search->next = fs_searchpaths;
 			fs_searchpaths = search;
+			fs_pk3dirCount++;
 
 			pakdirsi++;
 		}
@@ -4357,6 +4294,11 @@ void FS_Shutdown( qboolean closemfp )
 
 	// any FS_ calls will now be an error until reinitialized
 	fs_searchpaths = NULL;
+	fs_packFiles = 0;
+
+	fs_pk3dirCount = 0;
+	fs_packCount = 0;
+	fs_dirCount = 0;
 
 	Cmd_RemoveCommand( "path" );
 	Cmd_RemoveCommand( "dir" );
@@ -4367,7 +4309,49 @@ void FS_Shutdown( qboolean closemfp )
 	Cmd_RemoveCommand( "fs_restart" );
 }
 
- 
+
+/*
+================
+FS_ReorderSearchPaths
+================
+*/
+static void FS_ReorderSearchPaths( void ) {
+	searchpath_t **list, **paks, **dirs;
+	searchpath_t *path;
+	int i, ndirs, npaks, cnt;
+
+	cnt = fs_packCount + fs_dirCount + fs_pk3dirCount;
+	if ( cnt == 0 )
+		return;
+
+	// relink path chains in following order:
+	// 1. pk3dirs @ pak files
+	// 2. directories
+	list = (searchpath_t **)Z_Malloc( cnt * sizeof( list[0] ) );
+	paks = list;
+	dirs = list + fs_pk3dirCount + fs_packCount;
+
+	npaks = ndirs = 0;
+	path = fs_searchpaths;
+	while ( path ) {
+		if ( path->pack || path->policy != DIR_STATIC ) {
+			paks[npaks++] = path;
+		} else {
+			dirs[ndirs++] = path;
+		}
+		path = path->next;
+	}
+
+	fs_searchpaths = list[0];
+	for ( i = 0; i < cnt-1; i++ ) {
+		list[i]->next = list[i+1];
+	}
+	list[cnt-1]->next = NULL;
+
+	Z_Free( list );
+}
+
+
 /*
 ================
 FS_ReorderPurePaks
@@ -4498,9 +4482,6 @@ static void FS_Startup( void ) {
 
 	Com_Printf( "----- FS_Startup -----\n" );
 
-	fs_packFiles = 0;
-	fs_packCount = 0;
-
 	fs_debug = Cvar_Get( "fs_debug", "0", 0 );
 	fs_copyfiles = Cvar_Get( "fs_copyfiles", "0", CVAR_INIT );
 	fs_basepath = Cvar_Get( "fs_basepath", Sys_DefaultBasePath(), CVAR_INIT | CVAR_PROTECTED | CVAR_PRIVATE );
@@ -4565,6 +4546,9 @@ static void FS_Startup( void ) {
 			FS_AddGameDirectory( fs_homepath->string, fs_gamedirvar->string );
 		}
 	}
+
+	// reorder search paths to minimize further changes
+	FS_ReorderSearchPaths();
 
 	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=506
 	// reorder the pure pk3 files according to server order
