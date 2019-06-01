@@ -3121,26 +3121,16 @@ static qboolean FS_AllowListExternal( const char *extension )
 	if ( !extension )
 		return qfalse;
 
-	// allow scanning directories
-	if ( !strcmp( extension, "/" ) )
-		return qtrue;
+	if ( !Q_stricmp( extension, ".shader" ) )
+		return qfalse;
 
-	if ( !Q_stricmp( extension, ".cfg" ) )
-		return qtrue;
-
-	if ( !Q_stricmp( extension, ".txt" ) )
-		return qtrue;
+	if ( !Q_stricmp( extension, ".shaderx" ) )
+		return qfalse;
 	
-	if ( !Q_stricmp( extension, ".dat" ) )
-		return qtrue;
+	//if ( !Q_stricmp( extension, ".mtr" ) )
+	//	return qfalse;
 
-	if ( !Q_stricmp( extension, ".menu" ) )
-		return qtrue;
-
-	if ( !Q_stricmp( extension, ".game" ) )
-		return qtrue;
-
-	return qfalse;
+	return qtrue;
 }
 
 static fnamecallback_f fnamecallback = NULL;
