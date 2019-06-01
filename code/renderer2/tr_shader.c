@@ -1115,6 +1115,7 @@ static qboolean ParseStage( shaderStage_t *stage, char **text )
 					stage->specularScale[1] = (stage->specularScale[0] < 0.5f) ? 0.0f : 1.0f;
 					stage->specularScale[0] = smoothness;
 				}
+				else
 				{
 					// two values, rgb then gloss
 					stage->specularScale[3] = stage->specularScale[1];
@@ -2232,7 +2233,7 @@ static void CollapseStagesToLightall(shaderStage_t *diffuse,
 		defs |= LIGHTDEF_USE_LIGHT_VERTEX;
 	}
 
-	if (r_deluxeMapping->integer && tr.worldDeluxeMapping && lightmap)
+	if (r_deluxeMapping->integer && tr.worldDeluxeMapping && lightmap && shader.lightmapIndex >= 0)
 	{
 		//ri.Printf(PRINT_ALL, ", deluxemap");
 		diffuse->bundle[TB_DELUXEMAP] = lightmap->bundle[0];
@@ -2421,6 +2422,8 @@ static int CollapseStagesToGLSL(void)
 
 	if (!skip)
 	{
+		qboolean usedLightmap = qfalse;
+
 		for (i = 0; i < MAX_SHADER_STAGES; i++)
 		{
 			shaderStage_t *pStage = &stages[i];
@@ -2479,7 +2482,16 @@ static int CollapseStagesToGLSL(void)
 					case ST_COLORMAP:
 						if (pStage2->bundle[0].tcGen == TCGEN_LIGHTMAP)
 						{
-							lightmap = pStage2;
+							int blendBits = pStage->stateBits & ( GLS_DSTBLEND_BITS | GLS_SRCBLEND_BITS );
+
+							// Only add lightmap to blendfunc filter stage if it's the first time lightmap is used
+							// otherwise it will cause the shader to be darkened by the lightmap multiple times.
+							if (!usedLightmap || (blendBits != (GLS_DSTBLEND_SRC_COLOR | GLS_SRCBLEND_ZERO)
+								&& blendBits != (GLS_DSTBLEND_ZERO | GLS_SRCBLEND_DST_COLOR)))
+							{
+								lightmap = pStage2;
+								usedLightmap = qtrue;
+							}
 						}
 						break;
 
@@ -2702,7 +2714,7 @@ static void FixRenderCommandList( int newShader ) {
 SortNewShader
 
 Positions the most recently created shader in the tr.sortedShaders[]
-array so that the shader->sort key is sorted relative to the other
+array so that the shader->sort key is sorted reletive to the other
 shaders.
 
 Sets shader->sortedIndex
@@ -2828,7 +2840,7 @@ static void FindLightingStages( void )
 VertexLightingCollapse
 
 If vertex lighting is enabled, only render a single
-pass, trying to guess which is the correct one to best aproximate
+pass, trying to guess which is the correct one to best approximate
 what it is supposed to look like.
 =================
 */
@@ -3250,18 +3262,18 @@ be defined for every single image used in the game, three default
 shader behaviors can be auto-created for any image:
 
 If lightmapIndex == LIGHTMAP_NONE, then the image will have
-dynamic diffuse lighting applied to it, as apropriate for most
+dynamic diffuse lighting applied to it, as appropriate for most
 entity skin surfaces.
 
 If lightmapIndex == LIGHTMAP_2D, then the image will be used
 for 2D rendering unless an explicit shader is found
 
 If lightmapIndex == LIGHTMAP_BY_VERTEX, then the image will use
-the vertex rgba modulate values, as apropriate for misc_model
+the vertex rgba modulate values, as appropriate for misc_model
 pre-lit surfaces.
 
 Other lightmapIndex values will have a lightmap stage created
-and src*dest blending applied with the texture, as apropriate for
+and src*dest blending applied with the texture, as appropriate for
 most world construction surfaces.
 
 ===============
