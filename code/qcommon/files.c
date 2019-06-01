@@ -1305,7 +1305,7 @@ static const char *FS_HasExt( const char *fileName, const char **extList, int ex
 static qboolean FS_GeneralRef( const char *filename ) 
 {
 	// allowed non-ref extensions
-	static const char *extList[] = { "config", "shader", "arena", "menu", "bot", "cfg", "txt" };
+	static const char *extList[] = { "config", "shader", "shaderx", "mtr", "arena", "menu", "bot", "cfg", "txt" };
 
 	if ( FS_HasExt( filename, extList, ARRAY_LEN( extList ) ) )
 		return qfalse;
@@ -3127,8 +3127,8 @@ static qboolean FS_AllowListExternal( const char *extension )
 	if ( !Q_stricmp( extension, ".shaderx" ) )
 		return qfalse;
 	
-	//if ( !Q_stricmp( extension, ".mtr" ) )
-	//	return qfalse;
+	if ( !Q_stricmp( extension, ".mtr" ) )
+		return qfalse;
 
 	return qtrue;
 }

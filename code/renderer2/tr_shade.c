@@ -1400,6 +1400,7 @@ static void RB_RenderShadowmap( shaderCommands_t *input )
 
 	{
 		shaderProgram_t *sp = &tr.shadowmapShader[0];
+		vec4_t vector;
 
 		if (glState.vertexAnimation)
 		{
@@ -1409,8 +1410,6 @@ static void RB_RenderShadowmap( shaderCommands_t *input )
 		{
 			sp = &tr.shadowmapShader[SHADOWMAPDEF_USE_BONE_ANIMATION];
 		}
-
-		vec4_t vector;
 
 		GLSL_BindProgram(sp);
 

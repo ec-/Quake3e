@@ -210,6 +210,11 @@ static	void R_LoadLightmaps( lump_t *l, lump_t *surfs ) {
 	float maxIntensity = 0;
 	double sumIntensity = 0;
 
+	// if we are in r_vertexLight mode, we don't need the lightmaps at all
+	if ( ( r_vertexLight->integer && tr.vertexLightingAllowed ) || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
+		return;
+	}
+
 	len = l->filelen;
 	if ( !len ) {
 		return;
@@ -608,7 +613,8 @@ static shader_t *ShaderForShaderNum( int shaderNum, int lightmapNum ) {
 	}
 	dsh = &s_worldData.shaders[ _shaderNum ];
 
-	if ( r_vertexLight->integer || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
+
+	if ( ( r_vertexLight->integer && tr.vertexLightingAllowed ) || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
 		lightmapNum = LIGHTMAP_BY_VERTEX;
 	}
 
@@ -2322,7 +2328,7 @@ void R_LoadEntities( lump_t *l ) {
 				break;
 			}
 			*s++ = 0;
-			if (r_vertexLight->integer) {
+			if ( r_vertexLight->integer && tr.vertexLightingAllowed ) {
 				R_RemapShader(value, s, "0");
 			}
 			continue;

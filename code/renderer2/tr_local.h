@@ -255,6 +255,7 @@ typedef enum {
 	TCGEN_LIGHTMAP,
 	TCGEN_TEXTURE,
 	TCGEN_ENVIRONMENT_MAPPED,
+	TCGEN_ENVIRONMENT_MAPPED_FP, // with correct first-person mapping
 	TCGEN_FOG,
 	TCGEN_VECTOR			// S and T from world coordinates
 } texCoordGen_t;
@@ -345,6 +346,7 @@ typedef struct {
 	qboolean		isVideoMap;
 } textureBundle_t;
 
+
 enum
 {
 	TB_COLORMAP    = 0,
@@ -425,10 +427,10 @@ typedef struct {
 	float	depthForOpaque;
 } fogParms_t;
 
-
 typedef struct shader_s {
 	char		name[MAX_QPATH];		// game path, including extension
-	int			lightmapIndex;			// for a shader to match, both name and lightmapIndex must match
+	int			lightmapSearchIndex;	// for a shader to match, both name and lightmapIndex must match
+	int			lightmapIndex;			// for rendering
 
 	int			index;					// this shader == tr.shaders[index]
 	int			sortedIndex;			// this shader == tr.sortedShaders[sortedIndex]
@@ -1451,7 +1453,7 @@ typedef struct {
 	orientationr_t	or;
 	backEndCounters_t	pc;
 	qboolean	isHyperspace;
-	trRefEntity_t	*currentEntity;
+	trRefEntity_t *currentEntity;
 	qboolean	skyRenderedThisView;	// flag for drawing sun
 
 	qboolean	projection2D;	// if qtrue, drawstretchpic doesn't need to change modes
@@ -1646,6 +1648,7 @@ typedef struct {
 	float					sawToothTable[FUNCTABLE_SIZE];
 	float					inverseSawToothTable[FUNCTABLE_SIZE];
 	float					fogTable[FOG_TABLE_SIZE];
+	qboolean				vertexLightingAllowed;
 } trGlobals_t;
 
 extern backEndState_t	backEnd;
@@ -1716,7 +1719,6 @@ extern	cvar_t	*r_offsetUnits;
 extern	cvar_t	*r_fullbright;					// avoid lightmap pass
 extern	cvar_t	*r_lightmap;					// render lightmaps only
 extern	cvar_t	*r_vertexLight;					// vertex lighting mode for better performance
-extern	cvar_t	*r_uiFullScreen;				// ui is running fullscreen
 
 extern	cvar_t	*r_showtris;					// enables wireframe rendering of the world
 extern	cvar_t	*r_showsky;						// forces sky in front of all surfaces
@@ -1904,7 +1906,7 @@ void	GL_Cull( int cullType );
 #define GLS_SRCBLEND_DST_ALPHA					0x00000007
 #define GLS_SRCBLEND_ONE_MINUS_DST_ALPHA		0x00000008
 #define GLS_SRCBLEND_ALPHA_SATURATE				0x00000009
-#define		GLS_SRCBLEND_BITS					0x0000000f
+#define GLS_SRCBLEND_BITS						0x0000000f
 
 #define GLS_DSTBLEND_ZERO						0x00000010
 #define GLS_DSTBLEND_ONE						0x00000020
@@ -1914,7 +1916,7 @@ void	GL_Cull( int cullType );
 #define GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA		0x00000060
 #define GLS_DSTBLEND_DST_ALPHA					0x00000070
 #define GLS_DSTBLEND_ONE_MINUS_DST_ALPHA		0x00000080
-#define		GLS_DSTBLEND_BITS					0x000000f0
+#define GLS_DSTBLEND_BITS						0x000000f0
 
 #define GLS_DEPTHMASK_TRUE						0x00000100
 
@@ -1928,7 +1930,7 @@ void	GL_Cull( int cullType );
 #define GLS_ATEST_GT_0							0x10000000
 #define GLS_ATEST_LT_80							0x20000000
 #define GLS_ATEST_GE_80							0x40000000
-#define		GLS_ATEST_BITS						0x70000000
+#define GLS_ATEST_BITS							0x70000000
 
 #define GLS_DEFAULT			GLS_DEPTHMASK_TRUE
 
@@ -2220,6 +2222,7 @@ void GLSL_SetUniformVec2(shaderProgram_t *program, int uniformNum, const vec2_t 
 void GLSL_SetUniformVec3(shaderProgram_t *program, int uniformNum, const vec3_t v);
 void GLSL_SetUniformVec4(shaderProgram_t *program, int uniformNum, const vec4_t v);
 void GLSL_SetUniformMat4(shaderProgram_t *program, int uniformNum, const mat4_t matrix);
+void GLSL_SetUniformMat4BoneMatrix(shaderProgram_t *program, int uniformNum, /*const*/ mat4_t *matrix, int numMatricies);
 
 shaderProgram_t *GLSL_GetGenericShaderProgram(int stage);
 
@@ -2484,5 +2487,6 @@ void RE_FinishBloom( void );
 void RE_ThrottleBackend( void );
 qboolean RE_CanMinimize( void );
 const glconfig_t *RE_GetConfig( void );
+void RE_VertexLighting( qboolean allowed );
 
 #endif //TR_LOCAL_H
