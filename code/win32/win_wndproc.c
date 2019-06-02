@@ -517,7 +517,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		// Windows 98/Me, Windows NT 4.0 and later - uses WM_MOUSEWHEEL
 		// only relevant for non-DI input and when console is toggled in window mode
 		//   if console is toggled in window mode (KEYCATCH_CONSOLE) then mouse is released and DI doesn't see any mouse wheel
-		if ( in_mouse->integer == -1 || (!glw_state.cdsFullscreen && (Key_GetCatcher() & KEYCATCH_CONSOLE)) )
+		if ( in_mouse->integer == -1 || ((!glw_state.cdsFullscreen || glw_state.monitorCount > 1) && (Key_GetCatcher() & KEYCATCH_CONSOLE)) )
 		{
 			// 120 increments, might be 240 and multiples if wheel goes too fast
 			// NOTE Logitech: logitech drivers are screwed and send the message twice?
@@ -713,6 +713,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 	case WM_TIMER:
 		if ( wParam == TIMER_ID && uTimerID != 0 && !CL_VideoRecording() ) {
 			Com_Frame( CL_NoDelay() );
+			return 0;
 		}
 
 		// delayed window minimize/deactivation
@@ -728,6 +729,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			}
 			KillTimer( g_wv.hWnd, uTimerID_1 );
 			uTimerID_1 = 0;
+			return 0;
 		}
 		break;
 
