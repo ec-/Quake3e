@@ -292,7 +292,7 @@ static qboolean SV_LoadIP4DB( const char *filename )
 #endif
 		if ( last_ip && last_ip >= ipdb_range[i].from )
 			break;
-		if ( ipdb_range[i].from >= ipdb_range[i].to )
+		if ( ipdb_range[i].from > ipdb_range[i].to )
 			break;
 		if ( ipdb_tld[i].tld[0] < 'A' || ipdb_tld[i].tld[0] > 'Z' || ipdb_tld[i].tld[1] < 'A' || ipdb_tld[i].tld[1] > 'Z' )
 			break;
