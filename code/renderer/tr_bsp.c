@@ -1907,6 +1907,7 @@ static void R_LoadFogs( const lump_t *l, const lump_t *brushesLump, const lump_t
 	shader_t	*shader;
 	float		d;
 	int			firstSide;
+	vec3_t		fogColor;
 
 	fogs = (void *)(fileBase + l->fileofs);
 	if (l->filelen % sizeof(*fogs)) {
@@ -1976,12 +1977,21 @@ static void R_LoadFogs( const lump_t *l, const lump_t *brushesLump, const lump_t
 
 		// get information from the shader for fog parameters
 		shader = R_FindShader( fogs->shader, LIGHTMAP_NONE, qtrue );
+	
+		VectorCopy( shader->fogParms.color, fogColor );
+
+		if ( r_mapGreyScale->value > 0 ) {
+			float luminance;
+			luminance = LUMA( fogColor[0], fogColor[1], fogColor[2] );
+			fogColor[0] = LERP( fogColor[0], luminance, r_mapGreyScale->value );
+			fogColor[1] = LERP( fogColor[1], luminance, r_mapGreyScale->value );
+			fogColor[2] = LERP( fogColor[2], luminance, r_mapGreyScale->value );
+		}
 
 		out->parms = shader->fogParms;
 
-		out->colorInt = ColorBytes4 ( shader->fogParms.color[0] * tr.identityLight,
-			shader->fogParms.color[1] * tr.identityLight,
-			shader->fogParms.color[2] * tr.identityLight, 1.0 );
+		out->colorInt = ColorBytes4( fogColor[0] * tr.identityLight,
+			fogColor[1] * tr.identityLight, fogColor[2] * tr.identityLight, 1.0 );
 
 		for ( n = 0; n < 4; n++ )
 			out->color[ n ] = ( ( out->colorInt >> (n*8) ) & 255 ) / 255.0f;
