@@ -1799,9 +1799,10 @@ void SV_PrintLocations_f( client_t *client ) {
 	}
 
 	s = buf; *s = '\0';
-
 	memset( filln, '-',  max_namelength ); filln[max_namelength] = '\0';
 	memset( fillc, '-',  max_ctrylength ); fillc[max_ctrylength] = '\0';
+	// Start this on a new line to be viewed properly in console
+	s = Q_stradd( s, "\n" );
 	Com_sprintf( line, sizeof( line ), "ID %-*s CC Country\n", max_namelength, "Name" );
 	s = Q_stradd( s, line );
 	Com_sprintf( line, sizeof( line ), "-- %s -- %s\n", filln, fillc );
@@ -1812,8 +1813,9 @@ void SV_PrintLocations_f( client_t *client ) {
 		if ( cl->state == CS_FREE )
 			continue;
 
-		len = Com_sprintf( line, sizeof( line ), "%2i %-*s" S_COLOR_WHITE " %2s %s\n",
-			i, max_namelength, cl->name, cl->tld, cl->country );
+		len = Com_sprintf( line, sizeof( line ), "%2i %s%-*s" S_COLOR_WHITE " %2s %s\n",
+			i, cl->name, max_namelength-SV_Strlen(cl->name), "", cl->tld, cl->country );
+
 
 		if ( s - buf + len >= sizeof( buf )-1 ) // flush accumulated buffer
 		{
