@@ -41,8 +41,6 @@ int		blitY0, blitY1;
 int		blitClear;
 GLenum	blitFilter;
 
-int		captureWidth;
-int		captureHeight;
 qboolean superSampled;
 
 typedef struct frameBuffer_s {

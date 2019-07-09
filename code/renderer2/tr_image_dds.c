@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
 
-#include "../renderer/tr_common.h"
+#include "tr_common.h"
 
 typedef unsigned int   ui32_t;
 

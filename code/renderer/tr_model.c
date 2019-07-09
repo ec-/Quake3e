@@ -184,7 +184,7 @@ qhandle_t R_RegisterIQM(const char *name, model_t *mod)
 
 typedef struct
 {
-	char *ext;
+	const char *ext;
 	qhandle_t (*ModelLoader)( const char *, model_t * );
 } modelExtToLoaderMap_t;
 

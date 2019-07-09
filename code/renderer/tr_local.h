@@ -1075,7 +1075,7 @@ typedef struct {
 	int						numModels;
 
 	int						numImages;
-	image_t					*images;
+	image_t					*images[MAX_DRAWIMAGES];
 
 	// shader indexes from other modules will be looked up in tr.shaders[]
 	// shader indexes from drawsurfs will be looked up in sortedShaders[]
@@ -1103,6 +1103,7 @@ typedef struct {
 
 extern backEndState_t	backEnd;
 extern trGlobals_t	tr;
+
 extern glstate_t	glState;		// outside of TR since it shouldn't be cleared during ref re-init
 
 	// unmodified width/height according to actual \r_mode*
@@ -1127,7 +1128,6 @@ extern cvar_t	*r_railWidth;
 extern cvar_t	*r_railCoreWidth;
 extern cvar_t	*r_railSegmentLength;
 
-extern cvar_t	*r_ignore;				// used for debugging anything
 extern cvar_t	*r_ignoreFastPath;		// allows us to ignore our Tess fast paths
 
 extern cvar_t	*r_znear;				// near Z clip plane
@@ -1334,7 +1334,7 @@ void		RE_SetWorldVisData( const byte *vis );
 qhandle_t	RE_RegisterModel( const char *name );
 qhandle_t	RE_RegisterSkin( const char *name );
 
-qboolean	R_GetEntityToken( char *buffer, int size );
+qboolean	RE_GetEntityToken( char *buffer, int size );
 
 model_t		*R_AllocModel( void );
 
@@ -1367,7 +1367,7 @@ shader_t	*R_GetShaderByState( int index, long *cycleTime );
 shader_t	*R_FindShaderByName( const char *name );
 void		R_InitShaders( void );
 void		R_ShaderList_f( void );
-void		R_RemapShader(const char *oldShader, const char *newShader, const char *timeOffset);
+void		RE_RemapShader(const char *oldShader, const char *newShader, const char *timeOffset);
 void		FindLightingStages( shader_t *sh );
 
 

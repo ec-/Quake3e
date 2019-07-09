@@ -32,18 +32,20 @@ typedef enum
 	IMGFLAG_NONE           = 0x0000,
 	IMGFLAG_MIPMAP         = 0x0001,
 	IMGFLAG_PICMIP         = 0x0002,
-	IMGFLAG_NO_COMPRESSION = 0x0004,
-	IMGFLAG_NOLIGHTSCALE   = 0x0008,
-	IMGFLAG_CLAMPTOEDGE    = 0x0010,
-	IMGFLAG_LIGHTMAP       = 0x0020,
-	IMGFLAG_NOSCALE        = 0x0040,
-	IMGFLAG_CLAMPTOBORDER  = 0x0080,
-	IMGFLAG_RGB            = 0x0100,
+	IMGFLAG_CUBEMAP        = 0x0004,
+	IMGFLAG_NO_COMPRESSION = 0x0010,
+	IMGFLAG_NOLIGHTSCALE   = 0x0020,
+	IMGFLAG_CLAMPTOEDGE    = 0x0040,
+	IMGFLAG_GENNORMALMAP   = 0x0080,
+	IMGFLAG_LIGHTMAP       = 0x0100,
+	IMGFLAG_NOSCALE        = 0x0200,
+	IMGFLAG_CLAMPTOBORDER  = 0x0400,
 } imgFlags_t;
 
 typedef struct image_s {
 	char		*imgName;			// image path, including extension
 	struct image_s *next;			// for hash search
+	struct image_s *list;			// for listing
 	int			width, height;		// source image
 	int			uploadWidth;		// after power of two and picmip but not including clamp to MAX_TEXTURE_SIZE
 	int			uploadHeight;
@@ -54,7 +56,23 @@ typedef struct image_s {
 	GLint		internalFormat;
 	int			TMU;				// only needed for voodoo2
 
+    uint32_t    index;
+
 	imgFlags_t	flags;
+
+	VkImage handle;
+    // To use any VkImage, including those in the swap chain, in the render pipeline
+    // we have to create a VkImageView object. An image view is quite literally a
+    // view into image. It describe how to access the image and which part of the
+    // image to access, if it should be treated as a 2D texture depth texture without
+    // any mipmapping levels.
+    
+    VkImageView view;
+
+    // Descriptor set that contains single descriptor used to access the given image.
+	// It is updated only once during image initialization.
+	VkDescriptorSet descriptor_set;
+
 } image_t;
 
 // any change in the LIGHTMAP_* defines here MUST be reflected in
@@ -71,7 +89,6 @@ extern glconfig_t	glConfig;		// outside of TR since it shouldn't be cleared duri
 // compatibility issues to the original ID vms.  If you release a stand-alone
 // game and your mod uses tr_types.h from this build you can safely move them
 // to the glconfig_t struct.
-extern qboolean  nonPowerOfTwoTextures;
 extern qboolean  textureFilterAnisotropic;
 extern int       maxAnisotropy;
 extern int       gl_version;
@@ -84,8 +101,6 @@ extern cvar_t *r_texturebits;			// number of desired texture bits
 										// 16 = use 16-bit textures
 										// 32 = use 32-bit textures
 										// all else = error
-extern cvar_t *r_ext_multisample;
-extern cvar_t *r_ext_supersample;
 
 extern cvar_t *r_ignorehwgamma;			// overrides hardware gamma capabilities
 extern cvar_t *r_drawBuffer;
@@ -105,8 +120,8 @@ float R_NoiseGet4f( float x, float y, float z, double t );
 void  R_NoiseInit( void );
 
 image_t *R_FindImageFile( const char *name, imgFlags_t flags );
-image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgFlags_t flags );
-void R_UploadSubImage( byte *data, int x, int y, int width, int height, image_t *image );
+image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgFlags_t flags, GLint internalFormat );
+void R_UploadSubImage( unsigned *data, int x, int y, int width, int height, image_t *image );
 
 void R_IssuePendingRenderCommands( void );
 qhandle_t RE_RegisterShaderLightMap( const char *name, int lightmapIndex );

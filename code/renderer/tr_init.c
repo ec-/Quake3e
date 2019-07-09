@@ -44,8 +44,6 @@ cvar_t	*r_railSegmentLength;
 
 cvar_t	*r_ignoreFastPath;
 
-cvar_t	*r_ignore;
-
 cvar_t	*r_detailTextures;
 
 cvar_t	*r_znear;
@@ -176,6 +174,9 @@ cvar_t	*r_maxpolys;
 int		max_polys;
 cvar_t	*r_maxpolyverts;
 int		max_polyverts;
+
+int		captureWidth;
+int		captureHeight;
 
 static char gl_extensions[ 32768 ];
 
@@ -460,16 +461,7 @@ static void R_InitExtensions( void )
 	{
 		ri.Printf( PRINT_ALL, "...GL_EXT_texture_filter_anisotropic not found\n" );
 	}
-#if 0
-	if ( R_HaveExtension( "GL_ARB_texture_non_power_of_two" ) )
-	{
-		if ( gl_version >= 30 )	// old hardware might work slower with npot-textures
-		{
-			nonPowerOfTwoTextures = qtrue;
-			ri.Printf( PRINT_ALL, "...using non-power-of-two textures\n" );
-		}
-	}
-#endif
+
 	if ( R_HaveExtension( "GL_ARB_vertex_program" ) && R_HaveExtension( "GL_ARB_fragment_program" ) )
 	{
 		err = R_ResolveSymbols( arb_procs, ARRAY_LEN( arb_procs ) );
@@ -705,7 +697,7 @@ static byte *RB_ReadPixels(int x, int y, int width, int height, size_t *offset, 
 	
 	*offset = bufstart - buffer;
 	*padlen = PAD(linelen, packAlign) - linelen;
-	
+
 	return buffer;
 }
 
@@ -1101,14 +1093,14 @@ RB_TakeVideoFrameCmd
 */
 const void *RB_TakeVideoFrameCmd( const void *data )
 {
-	const videoFrameCommand_t	*cmd;
-	byte				*cBuf;
-	size_t				memcount, linelen;
-	int				padwidth, avipadwidth, padlen, avipadlen;
-	GLint packAlign;
+	const videoFrameCommand_t *cmd;
+	byte		*cBuf;
+	size_t		memcount, linelen;
+	int			padwidth, avipadwidth, padlen, avipadlen;
+	int			packAlign;
 	
 	cmd = (const videoFrameCommand_t *)data;
-	
+
 	qglGetIntegerv(GL_PACK_ALIGNMENT, &packAlign);
 
 	linelen = cmd->width * 3;
@@ -1128,10 +1120,10 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 	memcount = padwidth * cmd->height;
 
 	// gamma correct
-	if(glConfig.deviceSupportsGamma)
+	if (glConfig.deviceSupportsGamma)
 		R_GammaCorrect(cBuf, memcount);
 
-	if(cmd->motionJpeg)
+	if (cmd->motionJpeg)
 	{
 		memcount = RE_SaveJPGToBuffer(cmd->encodeBuffer, linelen * cmd->height,
 			r_aviMotionJpegQuality->integer,
@@ -1535,7 +1527,6 @@ static void R_Register( void )
 	r_lodscale = ri.Cvar_Get( "r_lodscale", "5", CVAR_CHEAT );
 	r_norefresh = ri.Cvar_Get ("r_norefresh", "0", CVAR_CHEAT);
 	r_drawentities = ri.Cvar_Get ("r_drawentities", "1", CVAR_CHEAT );
-	r_ignore = ri.Cvar_Get( "r_ignore", "1", CVAR_CHEAT );
 	r_nocull = ri.Cvar_Get ("r_nocull", "0", CVAR_CHEAT);
 	r_novis = ri.Cvar_Get ("r_novis", "0", CVAR_CHEAT);
 	r_showcluster = ri.Cvar_Get ("r_showcluster", "0", CVAR_CHEAT);
@@ -1728,7 +1719,6 @@ static void RE_EndRegistration( void ) {
 /*
 @@@@@@@@@@@@@@@@@@@@@
 GetRefAPI
-
 @@@@@@@@@@@@@@@@@@@@@
 */
 #ifdef USE_RENDERER_DLOPEN
@@ -1785,8 +1775,8 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.UploadCinematic = RE_UploadCinematic;
 
 	re.RegisterFont = RE_RegisterFont;
-	re.RemapShader = R_RemapShader;
-	re.GetEntityToken = R_GetEntityToken;
+	re.RemapShader = RE_RemapShader;
+	re.GetEntityToken = RE_GetEntityToken;
 	re.inPVS = R_inPVS;
 
 	re.TakeVideoFrame = RE_TakeVideoFrame;

@@ -455,7 +455,7 @@ static void ProjectDlightTexture_scalar( void ) {
 	float	scale;
 	float	radius;
 	float	modulate = 0.0f;
-	dlight_t *dl;
+	const dlight_t *dl;
 
 	if ( !backEnd.refdef.num_dlights ) {
 		return;
@@ -485,7 +485,7 @@ static void ProjectDlightTexture_scalar( void ) {
 			texCoords[0] = 0.5f + dist[0] * scale;
 			texCoords[1] = 0.5f + dist[1] * scale;
 
-			if( !r_dlightBacks->integer &&
+			if ( !r_dlightBacks->integer &&
 					// dist . tess.normal[i]
 					( dist[0] * tess.normal[i][0] +
 					dist[1] * tess.normal[i][1] +
