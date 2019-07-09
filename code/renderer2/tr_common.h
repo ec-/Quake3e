@@ -59,20 +59,6 @@ typedef struct image_s {
     uint32_t    index;
 
 	imgFlags_t	flags;
-
-	VkImage handle;
-    // To use any VkImage, including those in the swap chain, in the render pipeline
-    // we have to create a VkImageView object. An image view is quite literally a
-    // view into image. It describe how to access the image and which part of the
-    // image to access, if it should be treated as a 2D texture depth texture without
-    // any mipmapping levels.
-    
-    VkImageView view;
-
-    // Descriptor set that contains single descriptor used to access the given image.
-	// It is updated only once during image initialization.
-	VkDescriptorSet descriptor_set;
-
 } image_t;
 
 // any change in the LIGHTMAP_* defines here MUST be reflected in

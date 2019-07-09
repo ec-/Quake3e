@@ -436,7 +436,7 @@ static int GLW_MakeContext( PIXELFORMATDESCRIPTOR *pPFD )
 ** - get a DC if one doesn't exist
 ** - create an HGLRC if one doesn't exist
 */
-static qboolean GLW_InitDriver( const char *drivername, int colorbits )
+static qboolean GLW_InitDriver( int colorbits )
 {
 	int		tpfd;
 	int		depthbits, stencilbits;
@@ -698,7 +698,7 @@ static qboolean GLW_CreateWindow( int width, int height, int colorbits, qboolean
 		Com_Printf( "...window already present, CreateWindowEx skipped\n" );
 	}
 
-	if ( !GLW_InitDriver( drivername, colorbits ) )
+	if ( !GLW_InitDriver( colorbits ) )
 	{
 		//ShowWindow( g_wv.hWnd, SW_HIDE );
 		DestroyWindow( g_wv.hWnd );
