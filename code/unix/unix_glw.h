@@ -68,6 +68,7 @@ typedef struct
 
 extern glwstate_t glw_state;
 extern Display *dpy;
+extern Window win;
 extern int scrnum;
 
 qboolean BuildGammaRampTable( unsigned char *red, unsigned char *green, unsigned char *blue, int gammaRampSize, unsigned short table[3][4096] );

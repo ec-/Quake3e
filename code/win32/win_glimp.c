@@ -62,10 +62,7 @@ typedef enum {
 #define PFD_SUPPORT_COMPOSITION 0x00008000
 #endif
 
-static rserr_t	GLW_SetMode( const char *drivername,
-							 int mode,
-							 const char *modeFS,
-							 int colorbits,
+static rserr_t	GLW_SetMode( int mode, const char *modeFS, int colorbits,
 							 qboolean cdsFullscreen );
 
 static qboolean s_classRegistered = qfalse;
@@ -90,15 +87,12 @@ static cvar_t *r_noborder;
 /*
 ** GLW_StartDriverAndSetMode
 */
-static qboolean GLW_StartDriverAndSetMode( const char *drivername, 
-										   int mode, 
-										   const char *modeFS,
-										   int colorbits,
+static qboolean GLW_StartDriverAndSetMode( int mode, const char *modeFS, int colorbits,
 										   qboolean cdsFullscreen )
 {
 	rserr_t err;
 
-	err = GLW_SetMode( drivername, mode, modeFS, colorbits, cdsFullscreen );
+	err = GLW_SetMode( mode, modeFS, colorbits, cdsFullscreen );
 
 	switch ( err )
 	{
@@ -113,6 +107,7 @@ static qboolean GLW_StartDriverAndSetMode( const char *drivername,
 	}
 	return qtrue;
 }
+
 
 /*
 ** ChoosePFD
@@ -572,7 +567,7 @@ static qboolean GLW_InitDriver( const char *drivername, int colorbits )
 **
 ** Responsible for creating the Win32 window and initializing the OpenGL driver.
 */
-static qboolean GLW_CreateWindow( const char *drivername, int width, int height, int colorbits, qboolean cdsFullscreen )
+static qboolean GLW_CreateWindow( int width, int height, int colorbits, qboolean cdsFullscreen )
 {
 	RECT			r;
 	int				stylebits;
@@ -916,7 +911,7 @@ void UpdateMonitorInfo( const RECT *target )
 /*
 ** GLW_SetMode
 */
-static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS, int colorbits, qboolean cdsFullscreen )
+static rserr_t GLW_SetMode( int mode, const char *modeFS, int colorbits, qboolean cdsFullscreen )
 {
 	//HDC hDC;
 	RECT r;
@@ -1022,7 +1017,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS
 		{
 			Com_Printf( "...already fullscreen, avoiding redundant CDS\n" );
 
-			if ( !GLW_CreateWindow( drivername, config->vidWidth, config->vidHeight, colorbits, qtrue ) )
+			if ( !GLW_CreateWindow( config->vidWidth, config->vidHeight, colorbits, qtrue ) )
 			{
 				ResetDisplaySettings( qtrue );
 				glw_state.cdsFullscreen = qfalse;
@@ -1042,7 +1037,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS
 			{
 				Com_Printf( "ok\n" );
 
-				if ( !GLW_CreateWindow( drivername, config->vidWidth, config->vidHeight, colorbits, qtrue) )
+				if ( !GLW_CreateWindow( config->vidWidth, config->vidHeight, colorbits, qtrue ) )
 				{
 					ResetDisplaySettings( qtrue );
 					glw_state.cdsFullscreen = qfalse;
@@ -1084,7 +1079,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS
 				if ( modeNum != -1 && ( cdsRet = ApplyDisplaySettings( &devmode ) ) == DISP_CHANGE_SUCCESSFUL )
 				{
 					Com_Printf( " ok\n" );
-					if ( !GLW_CreateWindow( drivername, config->vidWidth, config->vidHeight, colorbits, qtrue) )
+					if ( !GLW_CreateWindow( config->vidWidth, config->vidHeight, colorbits, qtrue ) )
 					{
 						ResetDisplaySettings( qtrue );
 						glw_state.cdsFullscreen = qfalse;
@@ -1100,7 +1095,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS
 					ResetDisplaySettings( qtrue );
 					glw_state.cdsFullscreen = qfalse;
 					glw_state.config->isFullscreen = qfalse;
-					if ( !GLW_CreateWindow( drivername, config->vidWidth, config->vidHeight, colorbits, qfalse ) )
+					if ( !GLW_CreateWindow( config->vidWidth, config->vidHeight, colorbits, qfalse ) )
 					{
 						return RSERR_INVALID_MODE;
 					}
@@ -1117,7 +1112,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS
 			glw_state.cdsFullscreen = qfalse;
 		}
 
-		if ( !GLW_CreateWindow( drivername, config->vidWidth, config->vidHeight, colorbits, qfalse ) )
+		if ( !GLW_CreateWindow( config->vidWidth, config->vidHeight, colorbits, qfalse ) )
 		{
 			return RSERR_INVALID_MODE;
 		}
@@ -1135,6 +1130,7 @@ static rserr_t GLW_SetMode( const char *drivername, int mode, const char *modeFS
 
 	// NOTE: this is overridden later on standalone 3Dfx drivers
 	glw_state.config->isFullscreen = cdsFullscreen;
+	glw_state.config->colorBits = dm.dmBitsPerPel;
 
 	return RSERR_OK;
 }
@@ -1169,17 +1165,17 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 	//
 	// load the driver and bind our function pointers to it
 	// 
-	if ( QGL_Init( buffer ) ) 
+	if ( QGL_Init( buffer ) )
 	{
 		cdsFullscreen = (r_fullscreen->integer != 0);
 
 		// create the window and set up the context
-		if ( !GLW_StartDriverAndSetMode( drivername, r_mode->integer, r_modeFullscreen->string, r_colorbits->integer, cdsFullscreen ) )
+		if ( !GLW_StartDriverAndSetMode( r_mode->integer, r_modeFullscreen->string, r_colorbits->integer, cdsFullscreen ) )
 		{
 			// if we're on a 24/32-bit desktop try it again but with a 16-bit desktop
 			if ( r_colorbits->integer != 16 || cdsFullscreen != qtrue || r_mode->integer != 3 )
 			{
-				if ( !GLW_StartDriverAndSetMode( drivername, 3, "", 16, qtrue ) )
+				if ( !GLW_StartDriverAndSetMode( 3, "", 16, qtrue ) )
 				{
 					goto fail;
 				}
@@ -1195,9 +1191,9 @@ fail:
 }
 
 
-static void GLimp_SwapBuffers( void ) 
+static void GLimp_SwapBuffers( void )
 {
-	if ( !SwapBuffers( glw_state.hDC ) ) 
+	if ( !SwapBuffers( glw_state.hDC ) )
 	{
 		Com_Error( ERR_FATAL, "GLimp_EndFrame() - SwapBuffers() failed!\n" );
 	}

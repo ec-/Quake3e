@@ -90,7 +90,7 @@ glwstate_t glw_state;
 Display *dpy = NULL;
 int scrnum;
 
-static Window win = 0;
+Window win = 0;
 static GLXContext ctx = NULL;
 static Atom wmDeleteEvent = None;
 
@@ -1080,10 +1080,9 @@ void GLimp_LogComment( char *comment )
 /*
 ** GLW_StartDriverAndSetMode
 */
-// bk001204 - prototype needed
-int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean fullscreen );
+int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen );
 
-static qboolean GLW_StartDriverAndSetMode( const char *drivername, int mode, const char *modeFS, qboolean fullscreen )
+static qboolean GLW_StartDriverAndSetMode( int mode, const char *modeFS, qboolean fullscreen )
 {
 	rserr_t err;
 	
@@ -1095,7 +1094,7 @@ static qboolean GLW_StartDriverAndSetMode( const char *drivername, int mode, con
 		fullscreen = qfalse;
 	}
 
-	err = GLW_SetMode( drivername, mode, modeFS, fullscreen );
+	err = GLW_SetMode( mode, modeFS, fullscreen );
 
 	switch ( err )
 	{
@@ -1120,7 +1119,7 @@ static qboolean GLW_StartDriverAndSetMode( const char *drivername, int mode, con
 /*
 ** GLW_SetMode
 */
-int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean fullscreen )
+int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen )
 {
 	// these match in the array
 	#define ATTR_RED_IDX 2
@@ -1153,7 +1152,6 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 	int tcolorbits, tdepthbits, tstencilbits;
 	int actualWidth, actualHeight, actualRate;
 	int i;
-	//const char* glstring; // bk001130 - from cvs1.17 (mkv)
 
 	window_width = 0;
 	window_height = 0;
@@ -1191,7 +1189,7 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 		}
 	}
 #endif
-	Com_Printf( "Initializing OpenGL display\n" );
+	Com_Printf( "Initializing display\n" );
 
 	Com_Printf( "...setting mode %d:", mode );
 
@@ -1224,12 +1222,12 @@ int GLW_SetMode( const char *drivername, int mode, const char *modeFS, qboolean 
 			Com_Printf( "XFree86-VidModeExtension: Ignored on non-fullscreen\n" );
 	}
 
-	if ( !r_colorbits->integer )
+	if ( r_colorbits->integer == 0 )
 		colorbits = 24;
 	else
 		colorbits = r_colorbits->integer;
 
-	if ( !r_depthbits->integer )
+	if ( r_depthbits->integer == 0 )
 		depthbits = 24;
 	else
 		depthbits = r_depthbits->integer;
@@ -1471,11 +1469,11 @@ static qboolean GLW_LoadOpenGL( const char *name )
 	{
 		fullscreen = (r_fullscreen->integer != 0);
 		// create the window and set up the context
-		if ( !GLW_StartDriverAndSetMode( name, r_mode->integer, r_modeFullscreen->string, fullscreen ) )
+		if ( !GLW_StartDriverAndSetMode( r_mode->integer, r_modeFullscreen->string, fullscreen ) )
 		{
 			if ( r_mode->integer != 3 )
 			{
-				if ( !GLW_StartDriverAndSetMode( name, 3, "", fullscreen ) )
+				if ( !GLW_StartDriverAndSetMode( 3, "", fullscreen ) )
 				{
 					goto fail;
 				}
