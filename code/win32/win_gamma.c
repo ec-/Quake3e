@@ -126,7 +126,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	BOOL	ret;
 	HDC		hDC;
 
-	if ( !glw_state.hDC || !gw_active )
+	if ( /*!glw_state.hDC* ||*/ !gw_active )
 		return;
 
 //mapGammaMax();
