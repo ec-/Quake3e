@@ -114,9 +114,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 //===========================================================================
 
-// non-dlopening systems will just redefine qgl* to gl*
-#include "qgl_linked.h"
-
 // renderer2 extensions
 #include "glext.h"
 
