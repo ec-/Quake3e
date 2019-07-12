@@ -166,6 +166,9 @@ void CL_AddReliableCommand( const char *cmd, qboolean isDisconnectCmd ) {
 	int		index;
 	int		unacknowledged = clc.reliableSequence - clc.reliableAcknowledge;
 
+	if ( clc.serverAddress.type == NA_BAD )
+		return;
+
 	// if we would be losing an old command that hasn't been acknowledged,
 	// we must drop the connection
 	// also leave one slot open for the disconnect command in this case.
