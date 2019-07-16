@@ -62,6 +62,9 @@ typedef enum {
 #define PFD_SUPPORT_COMPOSITION 0x00008000
 #endif
 
+static DEVMODE dm_desktop;
+static DEVMODE dm_current;
+
 static rserr_t	GLW_SetMode( int mode, const char *modeFS, int colorbits,
 							 qboolean cdsFullscreen );
 
@@ -459,11 +462,6 @@ static qboolean GLW_InitDriver( int colorbits )
 		Com_Printf( "succeeded\n" );
 	}
 
-	if ( colorbits == 0 )
-	{
-		colorbits = glw_state.desktopBitsPixel;
-	}
-
 	//
 	// implicitly assume Z-buffer depth == desktop color depth
 	//
@@ -698,6 +696,9 @@ static qboolean GLW_CreateWindow( int width, int height, int colorbits, qboolean
 		Com_Printf( "...window already present, CreateWindowEx skipped\n" );
 	}
 
+	if ( colorbits == 0 )
+		colorbits = dm_desktop.dmBitsPerPel;
+
 	if ( !GLW_InitDriver( colorbits ) )
 	{
 		//ShowWindow( g_wv.hWnd, SW_HIDE );
@@ -743,8 +744,6 @@ static void PrintCDSError( int value )
 		break;
 	}
 }
-
-static DEVMODE dm_desktop, dm_current;
 
 
 static void ResetDisplaySettings( qboolean verbose )
