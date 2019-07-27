@@ -204,6 +204,7 @@ typedef struct {
 
 } refimport_t;
 
+extern	refimport_t	ri;
 
 // this is the only function actually exported at the linker level
 // If the module can't init to a valid rendering state, NULL will be

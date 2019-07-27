@@ -148,6 +148,7 @@ ADIR=$(MOUNT_DIR)/asm
 CDIR=$(MOUNT_DIR)/client
 SDIR=$(MOUNT_DIR)/server
 RDIR=$(MOUNT_DIR)/renderer
+RCDIR=$(MOUNT_DIR)/renderercommon
 CMDIR=$(MOUNT_DIR)/qcommon
 UDIR=$(MOUNT_DIR)/unix
 W32DIR=$(MOUNT_DIR)/win32
@@ -979,6 +980,9 @@ $(B)/client/%.o: $(JPDIR)/%.c
 	$(DO_CC)
 
 $(B)/client/%.o: $(RDIR)/%.c
+	$(DO_CC)
+
+$(B)/client/%.o: $(RCDIR)/%.c
 	$(DO_CC)
 
 $(B)/client/%.o: $(UDIR)/%.c

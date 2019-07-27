@@ -23,9 +23,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define TR_COMMON_H
 
 #include "../qcommon/q_shared.h"
-#include "tr_public.h"
+#include "../renderercommon/tr_public.h"
 #include "qgl.h"
 #include <math.h>
+
+typedef enum
+{
+	IMGTYPE_COLORALPHA, // for color, lightmap, diffuse, and specular
+	IMGTYPE_NORMAL,
+	IMGTYPE_NORMALHEIGHT,
+	IMGTYPE_DELUXE, // normals are swizzled, deluxe are not
+} imgType_t;
 
 typedef enum
 {
@@ -58,6 +66,7 @@ typedef struct image_s {
 
     uint32_t    index;
 
+	imgType_t	type;
 	imgFlags_t	flags;
 } image_t;
 
@@ -105,8 +114,8 @@ extern	cvar_t	*r_saveFontData;
 float R_NoiseGet4f( float x, float y, float z, double t );
 void  R_NoiseInit( void );
 
-image_t *R_FindImageFile( const char *name, imgFlags_t flags );
-image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgFlags_t flags, GLint internalFormat );
+image_t *R_FindImageFile( const char *name, imgType_t type, imgFlags_t flags );
+image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgType_t type, imgFlags_t flags, GLint internalFormat );
 void R_UploadSubImage( unsigned *data, int x, int y, int width, int height, image_t *image );
 
 void R_IssuePendingRenderCommands( void );

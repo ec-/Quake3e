@@ -23,9 +23,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define TR_COMMON_H
 
 #include "../qcommon/q_shared.h"
-#include "tr_public.h"
+#include "../renderercommon/tr_public.h"
 #include "qgl.h"
-#include <math.h>
 
 typedef enum
 {
@@ -64,7 +63,6 @@ typedef struct image_s {
 #define LIGHTMAP_WHITEIMAGE -2
 #define LIGHTMAP_NONE       -1
 
-extern	refimport_t		ri;
 extern glconfig_t	glConfig;		// outside of TR since it shouldn't be cleared during ref re-init
 
 // These variables should live inside glConfig but can't because of

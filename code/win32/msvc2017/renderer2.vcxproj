@@ -20,7 +20,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{AB424155-FBED-4D8D-B007-5B6CF93EA396}</ProjectGuid>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -329,13 +329,13 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
     <ClCompile Include="..\..\renderer2\tr_surface.c" />
     <ClCompile Include="..\..\renderer2\tr_vbo.c" />
     <ClCompile Include="..\..\renderer2\tr_world.c" />
-    <ClCompile Include="..\..\renderer\tr_font.c" />
-    <ClCompile Include="..\..\renderer\tr_image_bmp.c" />
-    <ClCompile Include="..\..\renderer\tr_image_jpg.c" />
-    <ClCompile Include="..\..\renderer\tr_image_pcx.c" />
-    <ClCompile Include="..\..\renderer\tr_image_png.c" />
-    <ClCompile Include="..\..\renderer\tr_image_tga.c" />
-    <ClCompile Include="..\..\renderer\tr_noise.c" />
+    <ClCompile Include="..\..\renderercommon\tr_font.c" />
+    <ClCompile Include="..\..\renderercommon\tr_image_bmp.c" />
+    <ClCompile Include="..\..\renderercommon\tr_image_jpg.c" />
+    <ClCompile Include="..\..\renderercommon\tr_image_pcx.c" />
+    <ClCompile Include="..\..\renderercommon\tr_image_png.c" />
+    <ClCompile Include="..\..\renderercommon\tr_image_tga.c" />
+    <ClCompile Include="..\..\renderercommon\tr_noise.c" />
     <ClCompile Include="..\win_glimp.c" />
     <ClCompile Include="..\win_qgl.c" />
     <ClCompile Include="build\dynamic\renderer2\bokeh_fp.c" />
@@ -378,10 +378,10 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
     <ClInclude Include="..\..\renderer2\tr_fbo.h" />
     <ClInclude Include="..\..\renderer2\tr_local.h" />
     <ClInclude Include="..\..\renderer2\tr_postprocess.h" />
-    <ClInclude Include="..\..\renderer\qgl.h" />
+    <ClInclude Include="..\..\renderer2\qgl.h" />
     <ClInclude Include="..\..\renderer\tr_common.h" />
-    <ClInclude Include="..\..\renderer\tr_public.h" />
-    <ClInclude Include="..\..\renderer\tr_types.h" />
+    <ClInclude Include="..\..\renderercommon\tr_public.h" />
+    <ClInclude Include="..\..\renderercommon\tr_types.h" />
     <ClInclude Include="..\glw_win.h" />
     <ClInclude Include="..\win_local.h" />
   </ItemGroup>
