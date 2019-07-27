@@ -644,6 +644,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\win_qvk.c"
+				>
+			</File>
+			<File
 				RelativePath="..\win_shared.c"
 				>
 			</File>

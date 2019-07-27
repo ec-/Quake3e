@@ -53,6 +53,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "linux_local.h"
 #include "unix_glw.h"
 #include "../renderer/qgl.h"
+#include "../renderer/qgl.h"
 
 #include <GL/glx.h>
 
@@ -1065,6 +1066,62 @@ void GLimp_Shutdown( qboolean unloadDLL )
 
 
 /*
+** VKimp_Shutdown
+*/
+void VKimp_Shutdown( qboolean unloadDLL )
+{
+	IN_DeactivateMouse();
+
+	if ( dpy )
+	{
+		if ( glw_state.randr_gamma && glw_state.gammaSet )
+		{
+			RandR_RestoreGamma();
+			glw_state.gammaSet = qfalse;
+		}
+
+		RandR_RestoreMode();
+
+		if ( win )
+			XDestroyWindow( dpy, win );
+
+		if ( glw_state.gammaSet )
+		{
+			VidMode_RestoreGamma();
+			glw_state.gammaSet = qfalse;
+		}
+
+		if ( glw_state.vidmode_active )
+			VidMode_RestoreMode();
+
+		// NOTE TTimo opening/closing the display should be necessary only once per run
+		// but it seems QGL_Shutdown gets called in a lot of occasion
+		// in some cases, this XCloseDisplay is known to raise some X errors
+		// ( https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=33 )
+		XCloseDisplay( dpy );
+	}
+
+	RandR_Done();
+	VidMode_Done();
+
+	glw_state.desktop_ok = qfalse;
+
+	dpy = NULL;
+	win = 0;
+	ctx = NULL;
+
+	unsetenv( "vblank_mode" );
+
+	//if ( glw_state.cdsFullscreen )
+	{
+		glw_state.cdsFullscreen = qfalse;
+	}
+
+	QVK_Shutdown( unloadDLL );
+}
+
+
+/*
 ** GLimp_LogComment
 */
 void GLimp_LogComment( char *comment )
@@ -1079,9 +1136,9 @@ void GLimp_LogComment( char *comment )
 /*
 ** GLW_StartDriverAndSetMode
 */
-int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen );
+int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vulkan );
 
-static qboolean GLW_StartDriverAndSetMode( int mode, const char *modeFS, qboolean fullscreen )
+static qboolean GLW_StartDriverAndSetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vulkan )
 {
 	rserr_t err;
 	
@@ -1093,7 +1150,7 @@ static qboolean GLW_StartDriverAndSetMode( int mode, const char *modeFS, qboolea
 		fullscreen = qfalse;
 	}
 
-	err = GLW_SetMode( mode, modeFS, fullscreen );
+	err = GLW_SetMode( mode, modeFS, fullscreen, vulkan );
 
 	switch ( err )
 	{
@@ -1115,10 +1172,7 @@ static qboolean GLW_StartDriverAndSetMode( int mode, const char *modeFS, qboolea
 }
 
 
-/*
-** GLW_SetMode
-*/
-int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen )
+static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbits, glconfig_t *config )
 {
 	// these match in the array
 	#define ATTR_RED_IDX 2
@@ -1139,6 +1193,163 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen )
 		None
 	};
 
+	int tcolorbits, tdepthbits, tstencilbits, i;
+	XVisualInfo *visinfo = NULL;
+
+	for ( i = 0; i < 16; i++ )
+	{
+		// 0 - default
+		// 1 - minus colorbits
+		// 2 - minus depthbits
+		// 3 - minus stencil
+		if ( (i % 4) == 0 && i )
+		{
+			// one pass, reduce
+			switch (i / 4)
+			{
+			case 2 :
+				if ( colorbits == 24 )
+					colorbits = 16;
+				break;
+			case 1 :
+				if ( depthbits == 24 )
+					depthbits = 16;
+				else if ( depthbits == 16 )
+					depthbits = 8;
+			case 3 :
+				if ( stencilbits == 24 )
+					stencilbits = 16;
+				else if ( stencilbits == 16 )
+					stencilbits = 8;
+			}
+		}
+
+		tcolorbits = colorbits;
+		tdepthbits = depthbits;
+		tstencilbits = stencilbits;
+
+		if ( (i % 4) == 3 )
+		{ // reduce colorbits
+			if ( tcolorbits == 24 )
+				tcolorbits = 16;
+		}
+
+		if ( (i % 4) == 2 )
+		{ // reduce depthbits
+			if ( tdepthbits == 24 )
+				tdepthbits = 16;
+			else if ( tdepthbits == 16 )
+				tdepthbits = 8;
+		}
+
+		if ((i % 4) == 1)
+		{ // reduce stencilbits
+			if ( tstencilbits == 24 )
+				tstencilbits = 16;
+			else if ( tstencilbits == 16 )
+				tstencilbits = 8;
+			else
+				tstencilbits = 0;
+		}
+
+		if (tcolorbits == 24)
+		{
+			attrib[ATTR_RED_IDX] = 8;
+			attrib[ATTR_GREEN_IDX] = 8;
+			attrib[ATTR_BLUE_IDX] = 8;
+		}
+		else
+		{
+			// must be 16 bit
+			attrib[ATTR_RED_IDX] = 4;
+			attrib[ATTR_GREEN_IDX] = 4;
+			attrib[ATTR_BLUE_IDX] = 4;
+		}
+
+		attrib[ATTR_DEPTH_IDX] = tdepthbits; // default to 24 depth
+		attrib[ATTR_STENCIL_IDX] = tstencilbits;
+
+		visinfo = qglXChooseVisual( dpy, scrnum, attrib );
+		if ( !visinfo )
+			continue;
+
+		Com_Printf( "Using %d/%d/%d Color bits, %d depth, %d stencil display.\n", 
+			attrib[ATTR_RED_IDX], attrib[ATTR_GREEN_IDX], attrib[ATTR_BLUE_IDX],
+			attrib[ATTR_DEPTH_IDX], attrib[ATTR_STENCIL_IDX]);
+
+		config->colorBits = tcolorbits;
+		config->depthBits = tdepthbits;
+		config->stencilBits = tstencilbits;
+		
+		break;
+	}
+
+	return visinfo;
+}
+
+
+static XVisualInfo *VK_SelectVisual( int colorbits, int depthbits, int stencilbits, glconfig_t *config )
+{
+	static XVisualInfo visinfo;
+	XVisualInfo template;
+	XVisualInfo *list;
+	int i, nvisuals;
+
+	template.screen = scrnum;
+	list = XGetVisualInfo( dpy, VisualScreenMask, &template, &nvisuals );
+
+	for ( i = 0; i < nvisuals; i++ )
+	{
+#if 0
+		printf("  %3d: screen %i  visual 0x%lx class %d (%s) depth %d bits_per_rgb %d\n",
+			i,
+			list[i].screen,
+			list[i].visualid,
+			list[i].class,
+			list[i].class == TrueColor ? "TrueColor" : "unknown",
+			list[i].depth,
+			list[i].bits_per_rgb );
+#endif
+		if ( list[i].depth == colorbits ) {
+			//if ( list[i] == TrueColor )
+			break;
+		}
+	}
+
+	if ( i != nvisuals )
+	{
+		memcpy( &visinfo, &list[i], sizeof( visinfo ) );
+	}
+
+	config->colorBits = colorbits;
+	config->depthBits = depthbits;
+	config->stencilBits = stencilbits;
+
+	XFree( list );
+
+//	return NULL; // debug
+
+	if ( i == nvisuals )
+		return NULL;
+	else
+		return &visinfo;
+
+//	for ( ;; ) {
+//		if ( XMatchVisualInfo( dpy, scrnum, colorbits, &vinfo ) )
+//		{
+//		
+//		}
+//	}
+
+
+}
+
+
+/*
+** GLW_SetMode
+*/
+int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vulkan )
+{
 	glconfig_t *config = glw_state.config;
 
 	Window root;
@@ -1148,9 +1359,7 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen )
 	XSizeHints sizehints;
 	unsigned long mask;
 	int colorbits, depthbits, stencilbits;
-	int tcolorbits, tdepthbits, tstencilbits;
 	int actualWidth, actualHeight, actualRate;
-	int i;
 
 	window_width = 0;
 	window_height = 0;
@@ -1233,94 +1442,10 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen )
 
 	stencilbits = r_stencilbits->integer;
 
-	for ( i = 0; i < 16; i++ )
-	{
-		// 0 - default
-		// 1 - minus colorbits
-		// 2 - minus depthbits
-		// 3 - minus stencil
-		if ( (i % 4) == 0 && i )
-		{
-			// one pass, reduce
-			switch (i / 4)
-			{
-			case 2 :
-				if ( colorbits == 24 )
-					colorbits = 16;
-				break;
-			case 1 :
-				if ( depthbits == 24 )
-					depthbits = 16;
-				else if ( depthbits == 16 )
-					depthbits = 8;
-			case 3 :
-				if ( stencilbits == 24 )
-					stencilbits = 16;
-				else if ( stencilbits == 16 )
-					stencilbits = 8;
-			}
-		}
-
-		tcolorbits = colorbits;
-		tdepthbits = depthbits;
-		tstencilbits = stencilbits;
-
-		if ( (i % 4) == 3 )
-		{ // reduce colorbits
-			if ( tcolorbits == 24 )
-				tcolorbits = 16;
-		}
-
-		if ( (i % 4) == 2 )
-		{ // reduce depthbits
-			if ( tdepthbits == 24 )
-				tdepthbits = 16;
-			else if ( tdepthbits == 16 )
-				tdepthbits = 8;
-		}
-
-		if ((i % 4) == 1)
-		{ // reduce stencilbits
-			if ( tstencilbits == 24 )
-				tstencilbits = 16;
-			else if ( tstencilbits == 16 )
-				tstencilbits = 8;
-			else
-				tstencilbits = 0;
-		}
-
-		if (tcolorbits == 24)
-		{
-			attrib[ATTR_RED_IDX] = 8;
-			attrib[ATTR_GREEN_IDX] = 8;
-			attrib[ATTR_BLUE_IDX] = 8;
-		}
-		else
-		{
-			// must be 16 bit
-			attrib[ATTR_RED_IDX] = 4;
-			attrib[ATTR_GREEN_IDX] = 4;
-			attrib[ATTR_BLUE_IDX] = 4;
-		}
-
-		attrib[ATTR_DEPTH_IDX] = tdepthbits; // default to 24 depth
-		attrib[ATTR_STENCIL_IDX] = tstencilbits;
-
-		visinfo = qglXChooseVisual( dpy, scrnum, attrib );
-		if ( !visinfo )
-		{
-			continue;
-		}
-
-		Com_Printf( "Using %d/%d/%d Color bits, %d depth, %d stencil display.\n", 
-			attrib[ATTR_RED_IDX], attrib[ATTR_GREEN_IDX], attrib[ATTR_BLUE_IDX],
-			attrib[ATTR_DEPTH_IDX], attrib[ATTR_STENCIL_IDX]);
-
-		config->colorBits = tcolorbits;
-		config->depthBits = tdepthbits;
-		config->stencilBits = tstencilbits;
-		break;
-	}
+	if ( vulkan )
+		visinfo = VK_SelectVisual( colorbits, depthbits, stencilbits, config );
+	else
+		visinfo = GL_SelectVisual( colorbits, depthbits, stencilbits, config );
 
 	if ( !visinfo )
 	{
@@ -1388,13 +1513,20 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen )
 
 	XFlush( dpy );
 	XSync( dpy, False );
-	ctx = qglXCreateContext( dpy, visinfo, NULL, True );
-	XSync( dpy, False );
 
-	/* GH: Free the visinfo after we're done with it */
-	XFree( visinfo );
+	if ( vulkan )
+	{
+		// nothing to do
+	}
+	else
+	{
+		ctx = qglXCreateContext( dpy, visinfo, NULL, True );
+		XSync( dpy, False );
 
-	qglXMakeCurrent( dpy, win, ctx );
+		/* GH: Free the visinfo after we're done with it */
+		XFree( visinfo );
+
+		qglXMakeCurrent( dpy, win, ctx );
 
 #if 0
 	glstring = (char *)qglGetString( GL_RENDERER );
@@ -1420,6 +1552,9 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen )
 		}
 	}
 #endif
+
+	}
+
 	Key_ClearStates();
 
 	XSetInputFocus( dpy, win, RevertToParent, CurrentTime );
@@ -1492,6 +1627,32 @@ static qboolean GLW_LoadOpenGL( const char *name )
 }
 
 
+
+/*
+** GLW_LoadVulkan
+*/
+static qboolean GLW_LoadVulkan( const char *name )
+{
+	if ( r_swapInterval->integer )
+		setenv( "vblank_mode", "2", 1 );
+	else
+		setenv( "vblank_mode", "1", 1 );
+
+	// load the QVK layer
+	if ( QVK_Init( name ) )
+	{
+		qboolean fullscreen = (r_fullscreen->integer != 0);
+		// create the window and set up the context
+		if ( GLW_StartDriverAndSetMode( name, r_mode->integer, r_modeFullscreen->string, fullscreen, qtrue /* vulkan */) )
+			return qtrue;
+	}
+
+	QVK_Shutdown( qtrue );
+
+	return qfalse;
+}
+
+
 static qboolean GLW_StartOpenGL( void )
 {
 	//
@@ -1511,6 +1672,21 @@ static qboolean GLW_StartOpenGL( void )
 		}
 
 		Com_Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
+		return qfalse;
+	}
+
+	return qtrue;
+}
+
+
+static qboolean GLW_StartVulkan( void )
+{
+	//
+	// load and initialize the specific Vulkan driver
+	//
+	if ( !GLW_LoadVulkan( "libvulkan.so" ) )
+	{
+		Com_Error( ERR_FATAL, "GLW_StartVulkan() - could not load Vulkan subsystem\n" );
 		return qfalse;
 	}
 
@@ -1583,6 +1759,40 @@ void GLimp_Init( glconfig_t *config )
 	{
 		Com_Printf( "...GLX_EXT_swap_control not found\n" );
 	}
+}
+
+
+/*
+** VKimp_Init
+**
+** This routine is responsible for initializing the OS specific portions
+** of Vulkan.
+*/
+void VKimp_Init( glconfig_t *config )
+{
+	InitSig();
+
+	IN_Init();
+
+	// set up our custom error handler for X failures
+	XSetErrorHandler( &qXErrorHandler );
+
+	// feedback to renderer configuration
+	glw_state.config = config;
+
+	//
+	// load and initialize the specific Vulkan driver
+	//
+	if ( !GLW_StartVulkan() )
+	{
+		return;
+	}
+
+	// This values force the UI to disable driver selection
+	config->driverType = GLDRV_ICD;
+	config->hardwareType = GLHW_GENERIC;
+
+	InitSig(); // not clear why this is at begin & end of function
 }
 
 

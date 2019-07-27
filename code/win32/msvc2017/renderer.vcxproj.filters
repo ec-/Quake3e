@@ -32,25 +32,25 @@
     <ClCompile Include="..\..\renderer\tr_flares.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\renderer\tr_font.c">
+    <ClCompile Include="..\..\renderercommon\tr_font.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\renderer\tr_image.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\renderer\tr_image_bmp.c">
+    <ClCompile Include="..\..\renderercommon\tr_image_bmp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\renderer\tr_image_jpg.c">
+    <ClCompile Include="..\..\renderercommon\tr_image_jpg.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\renderer\tr_image_pcx.c">
+    <ClCompile Include="..\..\renderercommon\tr_image_pcx.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\renderer\tr_image_png.c">
+    <ClCompile Include="..\..\renderercommon\tr_image_png.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\renderer\tr_image_tga.c">
+    <ClCompile Include="..\..\renderercommon\tr_image_tga.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\renderer\tr_init.c">
@@ -74,7 +74,7 @@
     <ClCompile Include="..\..\renderer\tr_model_iqm.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\renderer\tr_noise.c">
+    <ClCompile Include="..\..\renderercommon\tr_noise.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\renderer\tr_scene.c">
@@ -127,10 +127,10 @@
     <ClInclude Include="..\..\renderer\tr_local.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\renderer\tr_public.h">
+    <ClInclude Include="..\..\renderercommon\tr_public.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\renderer\tr_types.h">
+    <ClInclude Include="..\..\renderercommon\tr_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -829,6 +829,7 @@ ifdef MINGW
     $(B)/client/win_main.o \
     $(B)/client/win_minimize.o \
     $(B)/client/win_qgl.o \
+    $(B)/client/win_qvk.o \
     $(B)/client/win_shared.o \
     $(B)/client/win_snd.o \
     $(B)/client/win_syscon.o \

@@ -846,7 +846,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 
 			// set up the dynamic lighting
 			R_TransformDlights( 1, dl, &backEnd.or );
-			ARB_SetupLightParams();
+			tess.dlightUpdateParams = qtrue;
 
 			qglLoadMatrixf( backEnd.or.modelMatrix );
 

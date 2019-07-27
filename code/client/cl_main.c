@@ -3327,12 +3327,20 @@ static void CL_InitRef( void ) {
 	ri.Sys_LowPhysicalMemory = Sys_LowPhysicalMemory;
 	ri.Com_RealTime = Com_RealTime;
 
+	// OpenGL API
 	ri.GLimp_Init = GLimp_Init;
 	ri.GLimp_Shutdown = GLimp_Shutdown;
+	ri.GL_GetProcAddress = GL_GetProcAddress;
+
 	ri.GLimp_EndFrame = GLimp_EndFrame;
 	ri.GLimp_InitGamma = GLimp_InitGamma;
 	ri.GLimp_SetGamma = GLimp_SetGamma;
-	ri.GL_GetProcAddress = GL_GetProcAddress;
+
+	// Vulkan API
+	ri.VKimp_Init = VKimp_Init;
+	ri.VKimp_Shutdown = VKimp_Shutdown;
+	ri.VK_GetInstanceProcAddr = VK_GetInstanceProcAddr;
+	ri.VK_CreateSurface = VK_CreateSurface;
 
 	ret = GetRefAPI( REF_API_VERSION, &ri );
 

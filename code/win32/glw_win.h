@@ -34,6 +34,7 @@ typedef struct
 	HGLRC   hGLRC;			// handle to GL rendering context
 
 	HINSTANCE   OpenGLLib;  // HINSTANCE for the OpenGL library
+	HINSTANCE   VulkanLib;  // HINSTANCE for the Vulkan library
 
 	qboolean	pixelFormatSet;
 

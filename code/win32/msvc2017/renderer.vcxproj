@@ -168,13 +168,13 @@
     <ClCompile Include="..\..\renderer\tr_cmds.c" />
     <ClCompile Include="..\..\renderer\tr_curve.c" />
     <ClCompile Include="..\..\renderer\tr_flares.c" />
-    <ClCompile Include="..\..\renderer\tr_font.c" />
+    <ClCompile Include="..\..\renderercommon\tr_font.c" />
     <ClCompile Include="..\..\renderer\tr_image.c" />
-    <ClCompile Include="..\..\renderer\tr_image_bmp.c" />
-    <ClCompile Include="..\..\renderer\tr_image_jpg.c" />
-    <ClCompile Include="..\..\renderer\tr_image_pcx.c" />
-    <ClCompile Include="..\..\renderer\tr_image_png.c" />
-    <ClCompile Include="..\..\renderer\tr_image_tga.c" />
+    <ClCompile Include="..\..\renderercommon\tr_image_bmp.c" />
+    <ClCompile Include="..\..\renderercommon\tr_image_jpg.c" />
+    <ClCompile Include="..\..\renderercommon\tr_image_pcx.c" />
+    <ClCompile Include="..\..\renderercommon\tr_image_png.c" />
+    <ClCompile Include="..\..\renderercommon\tr_image_tga.c" />
     <ClCompile Include="..\..\renderer\tr_init.c" />
     <ClCompile Include="..\..\renderer\tr_light.c" />
     <ClCompile Include="..\..\renderer\tr_main.c" />
@@ -182,7 +182,7 @@
     <ClCompile Include="..\..\renderer\tr_mesh.c" />
     <ClCompile Include="..\..\renderer\tr_model.c" />
     <ClCompile Include="..\..\renderer\tr_model_iqm.c" />
-    <ClCompile Include="..\..\renderer\tr_noise.c" />
+    <ClCompile Include="..\..\renderercommon\tr_noise.c" />
     <ClCompile Include="..\..\renderer\tr_scene.c" />
     <ClCompile Include="..\..\renderer\tr_shade.c" />
     <ClCompile Include="..\..\renderer\tr_shader.c" />
@@ -201,8 +201,8 @@
     <ClInclude Include="..\..\renderer\qgl.h" />
     <ClInclude Include="..\..\renderer\tr_common.h" />
     <ClInclude Include="..\..\renderer\tr_local.h" />
-    <ClInclude Include="..\..\renderer\tr_public.h" />
-    <ClInclude Include="..\..\renderer\tr_types.h" />
+    <ClInclude Include="..\..\renderercommon\tr_public.h" />
+    <ClInclude Include="..\..\renderercommon\tr_types.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="libjpeg.vcxproj">

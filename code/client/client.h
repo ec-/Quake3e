@@ -592,3 +592,9 @@ void	GLimp_InitGamma( glconfig_t *config );
 void	GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned char blue[256] );
 
 void	*GL_GetProcAddress( const char *name );
+
+// Vulkan
+void	VKimp_Init( glconfig_t *config );
+void	VKimp_Shutdown( qboolean unloadDLL );
+void	*VK_GetInstanceProcAddr( VkInstance instance, const char *name );
+qboolean VK_CreateSurface( VkInstance instance, VkSurfaceKHR* pSurface );

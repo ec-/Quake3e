@@ -247,6 +247,7 @@
     <ClCompile Include="..\win_input.c" />
     <ClCompile Include="..\win_main.c" />
     <ClCompile Include="..\win_minimize.c" />
+    <ClCompile Include="..\win_qvk.c" />
     <ClCompile Include="..\win_shared.c" />
     <ClCompile Include="..\win_snd.c" />
     <ClCompile Include="..\win_syscon.c" />
