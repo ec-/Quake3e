@@ -25,37 +25,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define MAX_VIDEO_HANDLES	16
 
-#define	MAX_DLIGHTS		32		// can't be increased, because bit flags are used on surfaces
-
-#ifdef USE_RENDERER2
-#define	REFENTITYNUM_BITS	11	// can't be increased without changing drawsurf bit packing
-#else
-#define	REFENTITYNUM_BITS	12	// as we actually using only 1 bit for dlight mask in opengl1 renderer
-#endif
-
-#define	REFENTITYNUM_MASK	((1<<REFENTITYNUM_BITS) - 1)
-// the last N-bit number (2^REFENTITYNUM_BITS - 1) is reserved for the special world refentity,
-//  and this is reflected by the value of MAX_REFENTITIES (which therefore is not a power-of-2)
-#define	MAX_REFENTITIES		((1<<REFENTITYNUM_BITS) - 1)
-#define	REFENTITYNUM_WORLD	((1<<REFENTITYNUM_BITS) - 1)
+#define	MAX_DLIGHTS			32			// can't be increased, because bit flags are used on surfaces
 
 // renderfx flags
-#define	RF_MINLIGHT		0x0001		// allways have some light (viewmodel, some items)
+#define	RF_MINLIGHT			0x0001		// allways have some light (viewmodel, some items)
 #define	RF_THIRD_PERSON		0x0002		// don't draw through eyes, only mirrors (player bodies, chat sprites)
 #define	RF_FIRST_PERSON		0x0004		// only draw through eyes (view weapon, damage blood blob)
 #define	RF_DEPTHHACK		0x0008		// for view weapon Z crunching
 
 #define RF_CROSSHAIR		0x0010		// This item is a cross hair and will draw over everything similar to
-						// DEPTHHACK in stereo rendering mode, with the difference that the
-						// projection matrix won't be hacked to reduce the stereo separation as
-						// is done for the gun.
+										// DEPTHHACK in stereo rendering mode, with the difference that the
+										// projection matrix won't be hacked to reduce the stereo separation as
+										// is done for the gun.
 
-#define	RF_NOSHADOW		0x0040		// don't add stencil shadows
+#define	RF_NOSHADOW			0x0040		// don't add stencil shadows
 
 #define RF_LIGHTING_ORIGIN	0x0080		// use refEntity->lightingOrigin instead of refEntity->origin
-						// for lighting.  This allows entities to sink into the floor
-						// with their origin going solid, and allows all parts of a
-						// player to get the same lighting
+										// for lighting.  This allows entities to sink into the floor
+										// with their origin going solid, and allows all parts of a
+										// player to get the same lighting
 
 #define	RF_SHADOW_PLANE		0x0100		// use refEntity->shadowPlane
 #define	RF_WRAP_FRAMES		0x0200		// mod the model frames by the maxframes to allow continuous
