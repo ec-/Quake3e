@@ -291,8 +291,8 @@
     <ClInclude Include="..\..\qcommon\unzip.h" />
     <ClInclude Include="..\..\qcommon\vm_local.h" />
     <ClInclude Include="..\..\renderer\qgl.h" />
-    <ClInclude Include="..\..\renderer\tr_public.h" />
-    <ClInclude Include="..\..\renderer\tr_types.h" />
+    <ClInclude Include="..\..\renderercommon\tr_public.h" />
+    <ClInclude Include="..\..\renderercommon\tr_types.h" />
     <ClInclude Include="..\..\server\server.h" />
     <ClInclude Include="..\..\ui\ui_public.h" />
     <ClInclude Include="..\resource.h" />

@@ -773,11 +773,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_public.h"
+				RelativePath="..\..\renderercommon\tr_public.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderer\tr_types.h"
+				RelativePath="..\..\renderercommon\tr_types.h"
 				>
 			</File>
 			<File

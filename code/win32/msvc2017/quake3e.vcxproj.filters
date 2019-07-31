@@ -270,10 +270,10 @@
     <ClInclude Include="..\..\qcommon\surfaceflags.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\renderer\tr_public.h">
+    <ClInclude Include="..\..\renderercommon\tr_public.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\renderer\tr_types.h">
+    <ClInclude Include="..\..\renderercommon\tr_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\ui\ui_public.h">
