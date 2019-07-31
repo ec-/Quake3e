@@ -780,6 +780,8 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 	oldSort = MAX_UINT;
 	depthRange = qfalse;
 
+	tess.dlightUpdateParams = qtrue;
+
 	for ( litSurf = dl->head; litSurf; litSurf = litSurf->next ) {
 		//if ( litSurf->sort == sort ) {
 		if ( litSurf->sort == oldSort ) {
