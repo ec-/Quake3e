@@ -1603,11 +1603,11 @@ static qboolean GLW_LoadOpenGL( const char *name )
 	{
 		fullscreen = (r_fullscreen->integer != 0);
 		// create the window and set up the context
-		if ( !GLW_StartDriverAndSetMode( r_mode->integer, r_modeFullscreen->string, fullscreen ) )
+		if ( !GLW_StartDriverAndSetMode( r_mode->integer, r_modeFullscreen->string, fullscreen, qfalse /* vulkan */ ) )
 		{
 			if ( r_mode->integer != 3 )
 			{
-				if ( !GLW_StartDriverAndSetMode( 3, "", fullscreen ) )
+				if ( !GLW_StartDriverAndSetMode( 3, "", fullscreen, qfalse /* vulkan */ ) )
 				{
 					goto fail;
 				}
@@ -1643,7 +1643,7 @@ static qboolean GLW_LoadVulkan( const char *name )
 	{
 		qboolean fullscreen = (r_fullscreen->integer != 0);
 		// create the window and set up the context
-		if ( GLW_StartDriverAndSetMode( name, r_mode->integer, r_modeFullscreen->string, fullscreen, qtrue /* vulkan */) )
+		if ( GLW_StartDriverAndSetMode( r_mode->integer, r_modeFullscreen->string, fullscreen, qtrue /* vulkan */) )
 			return qtrue;
 	}
 

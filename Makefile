@@ -254,7 +254,7 @@ else # ifeq Linux
 #############################################################################
 
 ifdef MINGW
- 
+
   ifeq ($(CROSS_COMPILING),1)
     # If CC is already set to something generic, we probably want to use
     # something more specific
@@ -842,6 +842,7 @@ else
     $(B)/client/linux_signals.o \
     $(B)/client/linux_glimp.o \
     $(B)/client/linux_qgl.o \
+    $(B)/client/linux_qvk.o \
     $(B)/client/linux_snd.o \
     $(B)/client/x11_dga.o \
     $(B)/client/x11_randr.o \
