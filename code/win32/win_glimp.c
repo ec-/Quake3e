@@ -726,6 +726,11 @@ static qboolean GLW_CreateWindow( int width, int height, int colorbits, qboolean
 			return qfalse;
 		}
 
+		// we must reflect actual drawable dimensions in glconfig
+		GetClientRect( g_wv.hWnd, &r );
+		glw_state.config->vidWidth =  r.right - r.left;
+		glw_state.config->vidHeight =  r.bottom - r.top;
+
 		Com_Printf( "...created window@%d,%d (%dx%d)\n", x, y, w, h );
 	}
 	else
