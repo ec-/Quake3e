@@ -3264,85 +3264,85 @@ CL_InitRef
 ============
 */
 static void CL_InitRef( void ) {
-	refimport_t	ri;
+	refimport_t	rimp;
 	refexport_t	*ret;
 
 	CL_InitGLimp_Cvars();
 
 	Com_Printf( "----- Initializing Renderer ----\n" );
 
-	ri.Cmd_AddCommand = Cmd_AddCommand;
-	ri.Cmd_RemoveCommand = Cmd_RemoveCommand;
-	ri.Cmd_Argc = Cmd_Argc;
-	ri.Cmd_Argv = Cmd_Argv;
-	ri.Cmd_ExecuteText = Cbuf_ExecuteText;
-	ri.Printf = CL_RefPrintf;
-	ri.Error = Com_Error;
-	ri.Milliseconds = CL_ScaledMilliseconds;
-	ri.Malloc = CL_RefMalloc;
-	ri.Free = Z_Free;
+	rimp.Cmd_AddCommand = Cmd_AddCommand;
+	rimp.Cmd_RemoveCommand = Cmd_RemoveCommand;
+	rimp.Cmd_Argc = Cmd_Argc;
+	rimp.Cmd_Argv = Cmd_Argv;
+	rimp.Cmd_ExecuteText = Cbuf_ExecuteText;
+	rimp.Printf = CL_RefPrintf;
+	rimp.Error = Com_Error;
+	rimp.Milliseconds = CL_ScaledMilliseconds;
+	rimp.Malloc = CL_RefMalloc;
+	rimp.Free = Z_Free;
 #ifdef HUNK_DEBUG
-	ri.Hunk_AllocDebug = Hunk_AllocDebug;
+	rimp.Hunk_AllocDebug = Hunk_AllocDebug;
 #else
-	ri.Hunk_Alloc = Hunk_Alloc;
+	rimp.Hunk_Alloc = Hunk_Alloc;
 #endif
-	ri.Hunk_AllocateTempMemory = Hunk_AllocateTempMemory;
-	ri.Hunk_FreeTempMemory = Hunk_FreeTempMemory;
+	rimp.Hunk_AllocateTempMemory = Hunk_AllocateTempMemory;
+	rimp.Hunk_FreeTempMemory = Hunk_FreeTempMemory;
 	
-	ri.CM_ClusterPVS = CM_ClusterPVS;
-	ri.CM_DrawDebugSurface = CM_DrawDebugSurface;
+	rimp.CM_ClusterPVS = CM_ClusterPVS;
+	rimp.CM_DrawDebugSurface = CM_DrawDebugSurface;
 
-	ri.FS_ReadFile = FS_ReadFile;
-	ri.FS_FreeFile = FS_FreeFile;
-	ri.FS_WriteFile = FS_WriteFile;
-	ri.FS_FreeFileList = FS_FreeFileList;
-	ri.FS_ListFiles = FS_ListFiles;
-	//ri.FS_FileIsInPAK = FS_FileIsInPAK;
-	ri.FS_FileExists = FS_FileExists;
+	rimp.FS_ReadFile = FS_ReadFile;
+	rimp.FS_FreeFile = FS_FreeFile;
+	rimp.FS_WriteFile = FS_WriteFile;
+	rimp.FS_FreeFileList = FS_FreeFileList;
+	rimp.FS_ListFiles = FS_ListFiles;
+	//rimp.FS_FileIsInPAK = FS_FileIsInPAK;
+	rimp.FS_FileExists = FS_FileExists;
 
-	ri.Cvar_Get = Cvar_Get;
-	ri.Cvar_Set = Cvar_Set;
-	ri.Cvar_SetValue = Cvar_SetValue;
-	ri.Cvar_CheckRange = Cvar_CheckRange;
-	ri.Cvar_SetDescription = Cvar_SetDescription;
-	ri.Cvar_VariableStringBuffer = Cvar_VariableStringBuffer;
-	ri.Cvar_VariableString = Cvar_VariableString;
-	ri.Cvar_VariableIntegerValue = Cvar_VariableIntegerValue;
+	rimp.Cvar_Get = Cvar_Get;
+	rimp.Cvar_Set = Cvar_Set;
+	rimp.Cvar_SetValue = Cvar_SetValue;
+	rimp.Cvar_CheckRange = Cvar_CheckRange;
+	rimp.Cvar_SetDescription = Cvar_SetDescription;
+	rimp.Cvar_VariableStringBuffer = Cvar_VariableStringBuffer;
+	rimp.Cvar_VariableString = Cvar_VariableString;
+	rimp.Cvar_VariableIntegerValue = Cvar_VariableIntegerValue;
 
-	ri.Cvar_SetGroup = Cvar_SetGroup;
-	ri.Cvar_CheckGroup = Cvar_CheckGroup;
-	ri.Cvar_ResetGroup = Cvar_ResetGroup;
+	rimp.Cvar_SetGroup = Cvar_SetGroup;
+	rimp.Cvar_CheckGroup = Cvar_CheckGroup;
+	rimp.Cvar_ResetGroup = Cvar_ResetGroup;
 
 	// cinematic stuff
 
-	ri.CIN_UploadCinematic = CIN_UploadCinematic;
-	ri.CIN_PlayCinematic = CIN_PlayCinematic;
-	ri.CIN_RunCinematic = CIN_RunCinematic;
+	rimp.CIN_UploadCinematic = CIN_UploadCinematic;
+	rimp.CIN_PlayCinematic = CIN_PlayCinematic;
+	rimp.CIN_RunCinematic = CIN_RunCinematic;
 
-	ri.CL_WriteAVIVideoFrame = CL_WriteAVIVideoFrame;
-	ri.CL_IsMinimized = CL_IsMininized;
-	ri.CL_SetScaling = CL_SetScaling;
+	rimp.CL_WriteAVIVideoFrame = CL_WriteAVIVideoFrame;
+	rimp.CL_IsMinimized = CL_IsMininized;
+	rimp.CL_SetScaling = CL_SetScaling;
 
-	ri.Sys_SetClipboardBitmap = Sys_SetClipboardBitmap;
-	ri.Sys_LowPhysicalMemory = Sys_LowPhysicalMemory;
-	ri.Com_RealTime = Com_RealTime;
+	rimp.Sys_SetClipboardBitmap = Sys_SetClipboardBitmap;
+	rimp.Sys_LowPhysicalMemory = Sys_LowPhysicalMemory;
+	rimp.Com_RealTime = Com_RealTime;
 
 	// OpenGL API
-	ri.GLimp_Init = GLimp_Init;
-	ri.GLimp_Shutdown = GLimp_Shutdown;
-	ri.GL_GetProcAddress = GL_GetProcAddress;
+	rimp.GLimp_Init = GLimp_Init;
+	rimp.GLimp_Shutdown = GLimp_Shutdown;
+	rimp.GL_GetProcAddress = GL_GetProcAddress;
 
-	ri.GLimp_EndFrame = GLimp_EndFrame;
-	ri.GLimp_InitGamma = GLimp_InitGamma;
-	ri.GLimp_SetGamma = GLimp_SetGamma;
+	rimp.GLimp_EndFrame = GLimp_EndFrame;
+	rimp.GLimp_InitGamma = GLimp_InitGamma;
+	rimp.GLimp_SetGamma = GLimp_SetGamma;
 
 	// Vulkan API
-	ri.VKimp_Init = VKimp_Init;
-	ri.VKimp_Shutdown = VKimp_Shutdown;
-	ri.VK_GetInstanceProcAddr = VK_GetInstanceProcAddr;
-	ri.VK_CreateSurface = VK_CreateSurface;
+	rimp.VKimp_Init = VKimp_Init;
+	rimp.VKimp_Shutdown = VKimp_Shutdown;
+	rimp.VK_GetInstanceProcAddr = VK_GetInstanceProcAddr;
+	rimp.VK_CreateSurface = VK_CreateSurface;
 
-	ret = GetRefAPI( REF_API_VERSION, &ri );
+	ret = GetRefAPI( REF_API_VERSION, &rimp );
 
 	Com_Printf( "-------------------------------\n");
 
