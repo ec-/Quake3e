@@ -85,6 +85,15 @@ typedef enum
   RSERR_UNKNOWN
 } rserr_t;
 
+typedef struct motifHints_s
+{
+	unsigned long flags;
+	unsigned long functions;
+	unsigned long decorations;
+	long input_mode;
+	unsigned long status;
+} motifHints_t;
+
 glwstate_t glw_state;
 
 Display *dpy = NULL;
@@ -93,6 +102,7 @@ int scrnum;
 Window win = 0;
 static GLXContext ctx = NULL;
 static Atom wmDeleteEvent = None;
+static Atom motifWMHints = None;
 
 static int window_width = 0;
 static int window_height = 0;
@@ -126,6 +136,8 @@ cvar_t   *in_joystick      = NULL;
 cvar_t   *in_joystickDebug = NULL;
 cvar_t   *joy_threshold    = NULL;
 #endif
+
+static cvar_t *r_noborder;
 
 cvar_t   *vid_xpos;
 cvar_t   *vid_ypos;
@@ -1074,6 +1086,9 @@ void VKimp_Shutdown( qboolean unloadDLL )
 
 	if ( dpy )
 	{
+		XFlush( dpy );
+		XSync( dpy, True );
+
 		if ( glw_state.randr_gamma && glw_state.gammaSet )
 		{
 			RandR_RestoreGamma();
@@ -1093,6 +1108,9 @@ void VKimp_Shutdown( qboolean unloadDLL )
 
 		if ( glw_state.vidmode_active )
 			VidMode_RestoreMode();
+
+		XFlush( dpy );
+		XSync( dpy, False );
 
 		// NOTE TTimo opening/closing the display should be necessary only once per run
 		// but it seems QGL_Shutdown gets called in a lot of occasion
@@ -1388,6 +1406,8 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 		VidMode_Init();
 	}
 
+	XSync( dpy, False );
+
 #ifdef HAVE_XF86DGA
 	if ( in_dgamouse && in_dgamouse->integer )
 	{
@@ -1482,6 +1502,21 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 		0, visinfo->depth, InputOutput,
 		visinfo->visual, mask, &attr );
 
+	motifWMHints = XInternAtom( dpy, "_MOTIF_WM_HINTS", True );
+
+	if ( motifWMHints != None )
+	{
+		motifHints_t decohint;
+		decohint.flags = (1L << 1);
+		decohint.functions = 0;
+		decohint.decorations = r_noborder->integer == qtrue ? 0 : 1;
+		decohint.input_mode = decohint.status = 0;
+
+		XChangeProperty( dpy, win, motifWMHints, motifWMHints, 32,
+			PropModeReplace, (unsigned char*)& decohint,
+			sizeof(decohint) / sizeof(long) );
+	}
+
 	XStoreName( dpy, win, CLIENT_WINDOW_TITLE );
 
 	/* GH: Don't let the window be resized */
@@ -1521,7 +1556,13 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 	else
 	{
 		ctx = qglXCreateContext( dpy, visinfo, NULL, True );
+
 		XSync( dpy, False );
+
+		if ( ctx == NULL )
+		{
+			Com_Error( ERR_FATAL, "Error creating GLX context" );
+		}
 
 		/* GH: Free the visinfo after we're done with it */
 		XFree( visinfo );
@@ -1558,6 +1599,8 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 	Key_ClearStates();
 
 	XSetInputFocus( dpy, win, RevertToParent, CurrentTime );
+
+	XSync( dpy, False );
 
 	return RSERR_OK;
 }
@@ -1724,6 +1767,9 @@ void GLimp_Init( glconfig_t *config )
 	InitSig();
 
 	IN_Init();   // rcg08312005 moved into glimp.
+
+	r_noborder = Cvar_Get( "r_noborder", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_CheckRange( r_noborder, "0", "1", CV_INTEGER );
 
 	// set up our custom error handler for X failures
 	XSetErrorHandler( &qXErrorHandler );
