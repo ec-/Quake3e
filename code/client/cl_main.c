@@ -3949,7 +3949,7 @@ CL_ServerInfoPacket
 ===================
 */
 static void CL_ServerInfoPacket( const netadr_t *from, msg_t *msg ) {
-	int		i, type;
+	int		i, type, len;
 	char	info[MAX_INFO_STRING];
 	const char *infoString;
 	int		prot;
@@ -4029,13 +4029,14 @@ static void CL_ServerInfoPacket( const netadr_t *from, msg_t *msg ) {
 	// add this to the list
 	cls.numlocalservers = i+1;
 	CL_InitServerInfo( &cls.localServers[i], from );
-									 
+
 	Q_strncpyz( info, MSG_ReadString( msg ), sizeof( info ) );
-	if (strlen(info)) {
-		if (info[strlen(info)-1] != '\n') {
-			Q_strcat(info, sizeof(info), "\n");
+	len = (int) strlen( info );
+	if ( len > 0 ) {
+		if ( info[ len-1 ] == '\n' ) {
+			info[ len-1 ] = '\0';
 		}
-		Com_Printf( "%s: %s", NET_AdrToStringwPort( from ), info );
+		Com_Printf( "%s: %s\n", NET_AdrToStringwPort( from ), info );
 	}
 }
 
