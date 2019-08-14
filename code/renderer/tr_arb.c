@@ -2106,7 +2106,7 @@ static void QGL_EarlyInitFBO( void )
 	{
 		if ( r_renderScale->integer )
 		{
-			Com_Printf( "...ignoring r_renderScale due to disabled FBO\n" );
+			ri.Printf( PRINT_ALL, "...ignoring r_renderScale due to disabled FBO\n" );
 		}
 		return;
 	}
