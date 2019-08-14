@@ -23,6 +23,7 @@ BUILD_SERVER     = 1
 
 USE_CURL         = 1
 USE_LOCAL_HEADERS= 0
+USE_VULKAN       = 0
 
 CNAME            = quake3e
 DNAME            = quake3e.ded
@@ -147,8 +148,11 @@ BR=$(BUILD_DIR)/release-$(PLATFORM)-$(ARCH)
 ADIR=$(MOUNT_DIR)/asm
 CDIR=$(MOUNT_DIR)/client
 SDIR=$(MOUNT_DIR)/server
-RDIR=$(MOUNT_DIR)/renderer
 RCDIR=$(MOUNT_DIR)/renderercommon
+R1DIR=$(MOUNT_DIR)/renderer
+RVDIR=$(MOUNT_DIR)/renderervk
+RVSDIR=$(MOUNT_DIR)/renderervk/shaders/spirv
+
 CMDIR=$(MOUNT_DIR)/qcommon
 UDIR=$(MOUNT_DIR)/unix
 W32DIR=$(MOUNT_DIR)/win32
@@ -623,11 +627,99 @@ makedirs:
 	@if [ ! -d $(BUILD_DIR) ];then $(MKDIR) $(BUILD_DIR);fi
 	@if [ ! -d $(B) ];then $(MKDIR) $(B);fi
 	@if [ ! -d $(B)/client ];then $(MKDIR) $(B)/client;fi
+	@if [ ! -d $(B)/rend1 ];then $(MKDIR) $(B)/rend1;fi
+	@if [ ! -d $(B)/rendv ];then $(MKDIR) $(B)/rendv;fi
 	@if [ ! -d $(B)/ded ];then $(MKDIR) $(B)/ded;fi
 
 #############################################################################
 # CLIENT/SERVER
 #############################################################################
+
+Q3REND1OBJ = \
+  $(B)/rend1/tr_animation.o \
+  $(B)/rend1/tr_arb.o \
+  $(B)/rend1/tr_backend.o \
+  $(B)/rend1/tr_bsp.o \
+  $(B)/rend1/tr_cmds.o \
+  $(B)/rend1/tr_curve.o \
+  $(B)/rend1/tr_flares.o \
+  $(B)/rend1/tr_font.o \
+  $(B)/rend1/tr_image.o \
+  $(B)/rend1/tr_image_png.o \
+  $(B)/rend1/tr_image_jpg.o \
+  $(B)/rend1/tr_image_bmp.o \
+  $(B)/rend1/tr_image_tga.o \
+  $(B)/rend1/tr_image_pcx.o \
+  $(B)/rend1/tr_init.o \
+  $(B)/rend1/tr_light.o \
+  $(B)/rend1/tr_main.o \
+  $(B)/rend1/tr_marks.o \
+  $(B)/rend1/tr_mesh.o \
+  $(B)/rend1/tr_model.o \
+  $(B)/rend1/tr_model_iqm.o \
+  $(B)/rend1/tr_noise.o \
+  $(B)/rend1/tr_scene.o \
+  $(B)/rend1/tr_shade.o \
+  $(B)/rend1/tr_shade_calc.o \
+  $(B)/rend1/tr_shader.o \
+  $(B)/rend1/tr_shadows.o \
+  $(B)/rend1/tr_sky.o \
+  $(B)/rend1/tr_surface.o \
+  $(B)/rend1/tr_vbo.o \
+  $(B)/rend1/tr_world.o
+
+Q3RENDVOBJ = \
+  $(B)/rendv/tr_animation.o \
+  $(B)/rendv/tr_backend.o \
+  $(B)/rendv/tr_bsp.o \
+  $(B)/rendv/tr_cmds.o \
+  $(B)/rendv/tr_curve.o \
+  $(B)/rendv/tr_font.o \
+  $(B)/rendv/tr_image.o \
+  $(B)/rendv/tr_image_png.o \
+  $(B)/rendv/tr_image_jpg.o \
+  $(B)/rendv/tr_image_bmp.o \
+  $(B)/rendv/tr_image_tga.o \
+  $(B)/rendv/tr_image_pcx.o \
+  $(B)/rendv/tr_init.o \
+  $(B)/rendv/tr_light.o \
+  $(B)/rendv/tr_main.o \
+  $(B)/rendv/tr_marks.o \
+  $(B)/rendv/tr_mesh.o \
+  $(B)/rendv/tr_model.o \
+  $(B)/rendv/tr_model_iqm.o \
+  $(B)/rendv/tr_noise.o \
+  $(B)/rendv/tr_scene.o \
+  $(B)/rendv/tr_shade.o \
+  $(B)/rendv/tr_shade_calc.o \
+  $(B)/rendv/tr_shader.o \
+  $(B)/rendv/tr_shadows.o \
+  $(B)/rendv/tr_sky.o \
+  $(B)/rendv/tr_surface.o \
+  $(B)/rendv/tr_world.o \
+  $(B)/rendv/vk.o \
+  $(B)/rendv/vk_vbo.o \
+  \
+  $(B)/rendv/fog_frag.o \
+  $(B)/rendv/fog_vert.o \
+  $(B)/rendv/gamma_frag.o \
+  $(B)/rendv/gamma_vert.o \
+  $(B)/rendv/light_clip_fog_vert.o \
+  $(B)/rendv/light_clip_vert.o \
+  $(B)/rendv/light_fog_frag.o \
+  $(B)/rendv/light_frag.o \
+  $(B)/rendv/mt_add_fog_frag.o \
+  $(B)/rendv/mt_add_frag.o \
+  $(B)/rendv/mt_clip_fog_vert.o \
+  $(B)/rendv/mt_clip_vert.o \
+  $(B)/rendv/mt_mul_fog_frag.o \
+  $(B)/rendv/mt_mul_frag.o \
+  $(B)/rendv/st_clip_fog_vert.o \
+  $(B)/rendv/st_clip_vert.o \
+  $(B)/rendv/st_enviro_fog_vert.o \
+  $(B)/rendv/st_enviro_vert.o \
+  $(B)/rendv/st_fog_frag.o \
+  $(B)/rendv/st_frag.o
 
 Q3OBJ = \
   $(B)/client/cl_cgame.o \
@@ -766,39 +858,13 @@ Q3OBJ = \
   $(B)/client/jmemnobs.o \
   $(B)/client/jquant1.o \
   $(B)/client/jquant2.o \
-  $(B)/client/jutils.o \
-  \
-  $(B)/client/tr_animation.o \
-  $(B)/client/tr_arb.o \
-  $(B)/client/tr_backend.o \
-  $(B)/client/tr_bsp.o \
-  $(B)/client/tr_cmds.o \
-  $(B)/client/tr_curve.o \
-  $(B)/client/tr_flares.o \
-  $(B)/client/tr_font.o \
-  $(B)/client/tr_image.o \
-  $(B)/client/tr_image_png.o \
-  $(B)/client/tr_image_jpg.o \
-  $(B)/client/tr_image_bmp.o \
-  $(B)/client/tr_image_tga.o \
-  $(B)/client/tr_image_pcx.o \
-  $(B)/client/tr_init.o \
-  $(B)/client/tr_light.o \
-  $(B)/client/tr_main.o \
-  $(B)/client/tr_marks.o \
-  $(B)/client/tr_mesh.o \
-  $(B)/client/tr_model.o \
-  $(B)/client/tr_model_iqm.o \
-  $(B)/client/tr_noise.o \
-  $(B)/client/tr_scene.o \
-  $(B)/client/tr_shade.o \
-  $(B)/client/tr_shade_calc.o \
-  $(B)/client/tr_shader.o \
-  $(B)/client/tr_shadows.o \
-  $(B)/client/tr_sky.o \
-  $(B)/client/tr_surface.o \
-  $(B)/client/tr_vbo.o \
-  $(B)/client/tr_world.o \
+  $(B)/client/jutils.o
+
+ifeq ($(USE_VULKAN),1)
+  Q3OBJ += $(Q3RENDVOBJ)
+else
+  Q3OBJ += $(Q3REND1OBJ)
+endif
 
 ifeq ($(ARCH),x86)
 ifndef MINGW
@@ -981,10 +1047,19 @@ $(B)/client/%.o: $(BLIBDIR)/%.c
 $(B)/client/%.o: $(JPDIR)/%.c
 	$(DO_CC)
 
-$(B)/client/%.o: $(RDIR)/%.c
+$(B)/rend1/%.o: $(R1DIR)/%.c
 	$(DO_CC)
 
-$(B)/client/%.o: $(RCDIR)/%.c
+$(B)/rend1/%.o: $(RCDIR)/%.c
+	$(DO_CC)
+
+$(B)/rendv/%.o: $(RVDIR)/%.c
+	$(DO_CC)
+
+$(B)/rendv/%.o: $(RCDIR)/%.c
+	$(DO_CC)
+
+$(B)/rendv/%.o: $(RVSDIR)/%.c
 	$(DO_CC)
 
 $(B)/client/%.o: $(UDIR)/%.c
