@@ -158,7 +158,6 @@ static VkSwapchainKHR create_swapchain(VkPhysicalDevice physical_device, VkDevic
 	VkSwapchainKHR swapchain;
 	qboolean mailbox_supported = qfalse;
 	qboolean immediate_supported = qfalse;
-	qboolean fifo_supported = qfalse;
 	qboolean fifo_relaxed_supported = qfalse;
 	int vsync;
 
@@ -191,8 +190,6 @@ static VkSwapchainKHR create_swapchain(VkPhysicalDevice physical_device, VkDevic
 			mailbox_supported = qtrue;
 		else if ( present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR )
 			immediate_supported = qtrue;
-		else if ( present_modes[i] ==  VK_PRESENT_MODE_FIFO_KHR )
-			fifo_supported = qtrue;
 		else if ( present_modes[i] ==  VK_PRESENT_MODE_FIFO_RELAXED_KHR )
 			fifo_relaxed_supported = qtrue;
 
@@ -202,12 +199,9 @@ static VkSwapchainKHR create_swapchain(VkPhysicalDevice physical_device, VkDevic
 	free(present_modes);
 
 	vsync = ri.Cvar_VariableIntegerValue( "r_swapInterval" );
-	if ( vsync && fifo_supported ) {
+	if ( vsync ) {
 		present_mode = VK_PRESENT_MODE_FIFO_KHR;
 		image_count = MAX(MIN_SWAPCHAIN_IMAGES_FIFO, surface_caps.minImageCount);
-	} else if ( vsync && mailbox_supported ) {
-		present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
-		image_count = MAX(MIN_SWAPCHAIN_IMAGES_MAILBOX, surface_caps.minImageCount);
 	} else {
 		if ( immediate_supported ) {
 			present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
