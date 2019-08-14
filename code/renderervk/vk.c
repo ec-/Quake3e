@@ -2077,7 +2077,7 @@ static unsigned int log2pad( unsigned int v )
 
 void vk_initialize( void )
 {
-	char buf[64];
+	char buf[64], driver_version[64];
 	const char *vendor_name;
 	const char *device_type;
 	VkPhysicalDeviceProperties props;
@@ -2134,8 +2134,29 @@ void vk_initialize( void )
 	minor = VK_VERSION_MINOR(props.apiVersion);
 	patch = VK_VERSION_PATCH(props.apiVersion);
 
-	Com_sprintf( glConfig.version_string, sizeof( glConfig.version_string ), "API: %i.%i.%i, Driver: %x",
-		major, minor, patch, props.driverVersion );
+	// decode driver version
+	switch ( props.vendorID ) {
+		case 0x10DE: // NVidia
+			Com_sprintf( driver_version, sizeof( driver_version ), "%i.%i.%i.%i",
+				(props.driverVersion >> 22) & 0x3FF,
+				(props.driverVersion >> 14) & 0x0FF,
+				(props.driverVersion >> 6) & 0x0FF,
+				(props.driverVersion >> 0) & 0x03F );
+			break;
+		case 0x8086: // Intel
+			Com_sprintf( driver_version, sizeof( driver_version ), "%i.%i",
+				(props.driverVersion >> 14),
+				(props.driverVersion >> 0) & 0x3FFF );
+			break;
+		default:
+			Com_sprintf( driver_version, sizeof( driver_version ), "%i.%i.%i",
+				(props.driverVersion >> 22),
+				(props.driverVersion >> 12) & 0x3FF,
+				(props.driverVersion >> 0) & 0xFFF );
+	}
+	
+	Com_sprintf( glConfig.version_string, sizeof( glConfig.version_string ), "API: %i.%i.%i, Driver: %s",
+		major, minor, patch, driver_version );
 
 	if ( props.vendorID == 0x1002 ) {
 		vendor_name = "Advanced Micro Devices, Inc.";
@@ -2147,6 +2168,7 @@ void vk_initialize( void )
 		Com_sprintf( buf, sizeof( buf ), "VendorID: %04x", props.vendorID );
 		vendor_name = buf;
 	}
+
 	switch ( props.deviceType ) {
 		case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: device_type = "Integrated"; break;
 		case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: device_type = "Discrete"; break;
@@ -2158,8 +2180,6 @@ void vk_initialize( void )
 	Q_strncpyz( glConfig.vendor_string, vendor_name, sizeof( glConfig.vendor_string ) );
 	Com_sprintf( glConfig.renderer_string, sizeof(	glConfig.renderer_string ),
 		"%s %s, 0x%04x", device_type, props.deviceName, props.deviceID );
-
-	// TODO: fill glConfig.extensions_string?
 
 	//
 	// Swapchain.
