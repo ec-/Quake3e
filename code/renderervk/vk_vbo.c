@@ -116,9 +116,9 @@ static qboolean isStaticRGBgen( colorGen_t cgen )
 }
 
 
-static qboolean isStaticTCgen( texCoordGen_t tcgen, int bundle )
+static qboolean isStaticTCgen( const shaderStage_t *stage, int bundle )
 {
-	switch ( tcgen )
+	switch ( stage->bundle[bundle].tcGen )
 	{
 		case TCGEN_BAD:
 		case TCGEN_IDENTITY:	// clear to 0,0
@@ -130,7 +130,7 @@ static qboolean isStaticTCgen( texCoordGen_t tcgen, int bundle )
 		case TCGEN_VECTOR:		// S and T from world coordinates
 			return qtrue;
 		case TCGEN_ENVIRONMENT_MAPPED:
-			if ( bundle == 0 )
+			if ( bundle == 0 && (stage->tessFlags & TESS_ENV) )
 				return qtrue;
 			else
 				return qfalse;
@@ -213,9 +213,9 @@ static qboolean isStaticShader( shader_t *shader )
 			return qfalse;
 		if ( !isStaticRGBgen( stage->rgbGen ) )
 			return qfalse;
-		if ( !isStaticTCgen( stage->bundle[0].tcGen, 0 ) || ( stage->bundle[0].tcGen == TCGEN_ENVIRONMENT_MAPPED && stage->bundle->numTexMods ) )
+		if ( !isStaticTCgen( stage, 0 ) )
 			return qfalse;
-		if ( !isStaticTCgen( stage->bundle[1].tcGen, 1 ) )
+		if ( !isStaticTCgen( stage, 1 ) )
 			return qfalse;
 		if ( !isStaticAgen( stage->alphaGen ) )
 			return qfalse;

@@ -2453,6 +2453,8 @@ void FindLightingStages( shader_t *sh )
 		st = sh->stages[ i ];
 		if ( !st )
 			break;
+		if ( st->tessFlags & TESS_ENV )
+			continue;
 		if ( !st->bundle[0].isLightmap ) {
 			if ( st->bundle[0].tcGen != TCGEN_TEXTURE )
 				continue;
@@ -2837,6 +2839,7 @@ static shader_t *FinishShader( void ) {
 					def.shader_type = TYPE_SIGNLE_TEXTURE_ENVIRO;
 					shader.tessFlags |= TESS_NNN | TESS_VPOS;
 					pStage->tessFlags &= ~TESS_ST0;
+					pStage->tessFlags |= TESS_ENV;
 					pStage->bundle[0].tcGen = TCGEN_BAD;
 				}
 			}

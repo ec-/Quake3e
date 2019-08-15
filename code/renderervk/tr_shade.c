@@ -1278,6 +1278,7 @@ void VK_LightingPass( void )
 		R_ComputeTexCoords( 0, &pStage->bundle[ tess.shader->lightingBundle ] );
 		vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_ST0 | TESS_NNN );
 	} else {
+		tess.vboStage = tess.shader->lightingStage;
 		if ( tess.shader->lightingBundle )
 			vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_ST0_1 | TESS_NNN );
 		else

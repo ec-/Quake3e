@@ -100,8 +100,9 @@ typedef struct vkUniform_s {
 #define TESS_ST0   (8)
 #define TESS_ST1   (16)
 #define TESS_NNN   (32)
-#define TESS_ST0_1 (64) // use data from TMU1
+#define TESS_ST0_1 (64)  // use data from TMU1
 #define TESS_VPOS  (128) // uniform with eyePos
+#define TESS_ENV   (256) // mark shader stage with environment mapping
 
 //
 // Initialization.
