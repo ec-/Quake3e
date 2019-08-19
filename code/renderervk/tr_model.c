@@ -882,7 +882,7 @@ void RE_BeginRegistration( glconfig_t *glconfigOut ) {
 	R_IssuePendingRenderCommands();
 
 	tr.viewCluster = -1;		// force markleafs to regenerate
-
+	R_ClearFlares();
 	RE_ClearScene();
 
 	tr.registered = qtrue;

@@ -36,6 +36,10 @@ static void VkInfo_f( void );
 static void GfxInfo_f( void );
 static void GL_SetDefaultState( void );
 
+cvar_t	*r_flareSize;
+cvar_t	*r_flareFade;
+cvar_t	*r_flareCoeff;
+
 cvar_t	*r_railWidth;
 cvar_t	*r_railCoreWidth;
 cvar_t	*r_railSegmentLength;
@@ -105,6 +109,7 @@ cvar_t	*r_drawBuffer;
 cvar_t	*r_lightmap;
 cvar_t	*r_vertexLight;
 cvar_t	*r_shadows;
+cvar_t	*r_flares;
 cvar_t	*r_nobind;
 cvar_t	*r_singleShader;
 cvar_t	*r_roundImagesDown;
@@ -1418,6 +1423,7 @@ static void R_Register( void )
 	//
 	r_lodCurveError = ri.Cvar_Get( "r_lodCurveError", "250", CVAR_ARCHIVE_ND | CVAR_CHEAT );
 	r_lodbias = ri.Cvar_Get( "r_lodbias", "0", CVAR_ARCHIVE_ND );
+	r_flares = ri.Cvar_Get ("r_flares", "0", CVAR_ARCHIVE_ND );
 	r_znear = ri.Cvar_Get( "r_znear", "4", CVAR_CHEAT );
 	ri.Cvar_CheckRange( r_znear, "0.001", "200", CV_FLOAT );
 	r_zproj = ri.Cvar_Get( "r_zproj", "64", CVAR_ARCHIVE_ND );
@@ -1480,6 +1486,11 @@ static void R_Register( void )
 	r_drawworld = ri.Cvar_Get ("r_drawworld", "1", CVAR_CHEAT );
 	r_lightmap = ri.Cvar_Get ("r_lightmap", "0", 0 );
 	r_portalOnly = ri.Cvar_Get ("r_portalOnly", "0", CVAR_CHEAT );
+
+	r_flareSize = ri.Cvar_Get( "r_flareSize", "40", CVAR_CHEAT );
+	r_flareFade = ri.Cvar_Get( "r_flareFade", "10", CVAR_CHEAT );
+	r_flareCoeff = ri.Cvar_Get( "r_flareCoeff", "150", CVAR_CHEAT );
+	ri.Cvar_CheckRange( r_flareCoeff, "0.1", NULL, CV_FLOAT );
 
 	r_skipBackEnd = ri.Cvar_Get ("r_skipBackEnd", "0", CVAR_CHEAT);
 

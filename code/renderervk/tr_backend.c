@@ -644,7 +644,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 #ifdef USE_VULKAN
 			Com_Memcpy( vk_world.modelview_transform, backEnd.or.modelMatrix, 64 );
 			tess.depthRange = depthRange ? DEPTH_RANGE_WEAPON : DEPTH_RANGE_NORMAL;
-			vk_update_mvp();
+			vk_update_mvp( NULL );
 #else
 			qglLoadMatrixf( backEnd.or.modelMatrix );
 #endif
@@ -880,7 +880,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 #ifdef USE_VULKAN
 			tess.depthRange = depthRange ? DEPTH_RANGE_WEAPON : DEPTH_RANGE_NORMAL;
 			Com_Memcpy( vk_world.modelview_transform, backEnd.or.modelMatrix, 64 );
-			vk_update_mvp();
+			vk_update_mvp( NULL );
 #else
 			qglLoadMatrixf( backEnd.or.modelMatrix );
 
@@ -982,7 +982,7 @@ void RB_SetGL2D( void ) {
 	backEnd.projection2D = qtrue;
 
 #ifdef USE_VULKAN
-	vk_update_mvp();
+	vk_update_mvp( NULL );
 #else
 	// set 2D virtual screen size
 	qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
@@ -1286,9 +1286,9 @@ static const void *RB_DrawSurfs( const void *data ) {
 	RB_ShadowFinish();
 
 	// add light flares on lights that aren't obscured
-#ifndef USE_VULKAN
-	//RB_RenderFlares();
-#endif
+//#ifndef USE_VULKAN
+	RB_RenderFlares();
+//#endif
 
 #ifdef USE_PMLIGHT
 	if ( backEnd.refdef.numLitSurfs ) {

@@ -409,12 +409,24 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\renderervk\vk_flares.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\renderervk\vk_vbo.c"
 				>
 			</File>
 			<Filter
 				Name="Shaders"
 				>
+				<File
+					RelativePath="..\..\renderervk\shaders\spirv\dot_frag.c"
+					>
+				</File>
+				<File
+					RelativePath="..\..\renderervk\shaders\spirv\dot_vert.c"
+					>
+				</File>
 				<File
 					RelativePath="..\..\renderervk\shaders\spirv\fog_frag.c"
 					>

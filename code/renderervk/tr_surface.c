@@ -1326,11 +1326,11 @@ static void RB_SurfaceBad( surfaceType_t *surfType ) {
 
 static void RB_SurfaceFlare( srfFlare_t *surf ) {
 	// not yet supported on vulkan
-	//if ( r_flares->integer ) {
-	//	VBO_Flush();
-	//	tess.surfType = SF_FLARE;
-	//	RB_AddFlare( surf, tess.fogNum, surf->origin, surf->color, surf->normal );
-	//}
+	if ( r_flares->integer ) {
+		VBO_Flush();
+		tess.surfType = SF_FLARE;
+		RB_AddFlare( surf, tess.fogNum, surf->origin, surf->color, surf->normal );
+	}
 }
 
 

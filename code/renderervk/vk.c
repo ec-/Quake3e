@@ -845,6 +845,11 @@ static void create_device( void ) {
 			vk.wideLines = qtrue;
 		}
 
+		if ( device_features.fragmentStoresAndAtomics ) {
+			features.fragmentStoresAndAtomics = VK_TRUE;
+			vk.fragmentStores = qtrue;
+		}
+
 		if ( r_ext_texture_filter_anisotropic->integer && device_features.samplerAnisotropy ) {
 			features.samplerAnisotropy = VK_TRUE;
 			vk.samplerAnisotropy = qtrue;
@@ -1163,15 +1168,39 @@ static void vk_create_layout_binding( int binding, VkDescriptorType type, VkShad
 
 void vk_init_buffers( void )
 {
+	VkDescriptorSetAllocateInfo alloc;
+	VkDescriptorBufferInfo info;
+	VkWriteDescriptorSet desc;
 	int i;
+
+	alloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	alloc.pNext = NULL;
+	alloc.descriptorPool = vk.descriptor_pool;
+	alloc.descriptorSetCount = 1;
+	alloc.pSetLayouts = &vk.set_layout_storage;
+
+	VK_CHECK( qvkAllocateDescriptorSets( vk.device, &alloc, &vk.storage.descriptor ) );
+
+	info.buffer = vk.storage.buffer;
+	info.offset = 0;
+	info.range = sizeof( uint32_t );
+
+	desc.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	desc.dstSet = vk.storage.descriptor;
+	desc.dstBinding = 0;
+	desc.dstArrayElement = 0;
+	desc.descriptorCount = 1;
+	desc.pNext = NULL;
+	desc.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+	desc.pImageInfo = NULL;
+	desc.pBufferInfo = &info;
+	desc.pTexelBufferView = NULL;
+
+	qvkUpdateDescriptorSets( vk.device, 1, &desc, 0, NULL );
 
 	// allocated and update descriptor set
 	for ( i = 0; i < NUM_COMMAND_BUFFERS; i++ )
 	{
-		VkDescriptorSetAllocateInfo alloc;
-		VkDescriptorBufferInfo info;
-		VkWriteDescriptorSet desc;
-
 		alloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		alloc.pNext = NULL;
 		alloc.descriptorPool = vk.descriptor_pool;
@@ -1232,6 +1261,8 @@ void vk_init_buffers( void )
 			}
 		}
 	}
+
+
 
 //	vk_world.current_descriptor_sets[0] = tr.whiteImage->descriptor;
 //	vk_world.current_descriptor_sets[1] = tr.whiteImage->descriptor;
@@ -1351,6 +1382,46 @@ static void vk_create_geometry_buffers( uint32_t size )
 	vk.geometry_buffer_size = vb_memory_requirements.size;
 
 	Com_Memset( &vk.stats, 0, sizeof( vk.stats ) );
+}
+
+
+static void vk_create_storage_buffer( uint32_t size )
+{
+	VkMemoryRequirements memory_requirements;
+	VkMemoryAllocateInfo alloc_info;
+	VkBufferCreateInfo desc;
+	uint32_t memory_type_bits;
+	uint32_t memory_type;
+
+	desc.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	desc.pNext = NULL;
+	desc.flags = 0;
+	desc.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	desc.queueFamilyIndexCount = 0;
+	desc.pQueueFamilyIndices = NULL;
+
+	Com_Memset( &memory_requirements, 0, sizeof( memory_requirements ) );
+
+	desc.size = size;
+	desc.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+	VK_CHECK( qvkCreateBuffer( vk.device, &desc, NULL, &vk.storage.buffer ) );
+
+	qvkGetBufferMemoryRequirements( vk.device, vk.storage.buffer, &memory_requirements );
+
+	memory_type_bits = memory_requirements.memoryTypeBits;
+	memory_type = find_memory_type( vk.physical_device, memory_type_bits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT );
+
+	alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	alloc_info.pNext = NULL;
+	alloc_info.allocationSize = memory_requirements.size;
+	alloc_info.memoryTypeIndex = memory_type;
+
+	VK_CHECK( qvkAllocateMemory( vk.device, &alloc_info, NULL, &vk.storage.memory ) );
+	VK_CHECK( qvkMapMemory( vk.device, vk.storage.memory, 0, VK_WHOLE_SIZE, 0, (void**)&vk.storage.buffer_ptr ) );
+
+	Com_Memset( vk.storage.buffer_ptr, 0, memory_requirements.size ); 
+
+	qvkBindBufferMemory( vk.device, vk.storage.buffer, vk.storage.memory, 0 );
 }
 
 
@@ -1485,6 +1556,11 @@ static void vk_create_shader_modules( void )
 	extern const unsigned char fog_frag_spv[];
 	extern const int fog_frag_spv_size;
 
+	extern const unsigned char dot_vert_spv[];
+	extern const int dot_vert_spv_size;
+	extern const unsigned char dot_frag_spv[];
+	extern const int dot_frag_spv_size;
+
 	extern const unsigned char light_clip_vert_spv[];
 	extern const int light_clip_vert_spv_size;
 	extern const unsigned char light_clip_fog_vert_spv[];
@@ -1520,6 +1596,9 @@ static void vk_create_shader_modules( void )
 
 	vk.modules.fog_vs = create_shader_module(fog_vert_spv, fog_vert_spv_size);
 	vk.modules.fog_fs = create_shader_module(fog_frag_spv, fog_frag_spv_size);
+
+	vk.modules.dot_vs = create_shader_module(dot_vert_spv, dot_vert_spv_size);
+	vk.modules.dot_fs = create_shader_module(dot_frag_spv, dot_frag_spv_size);
 
 	vk.modules.light.vs_clip[0] = create_shader_module(light_clip_vert_spv, light_clip_vert_spv_size);
 	vk.modules.light.vs_clip[1] = create_shader_module(light_clip_fog_vert_spv, light_clip_fog_vert_spv_size);
@@ -1678,6 +1757,17 @@ static void vk_create_persistent_pipelines( void )
 
 			vk.surface_axis_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
 		}
+
+		{
+			Vk_Pipeline_Def def;
+
+			Com_Memset( &def, 0, sizeof( def ) );
+			//def.state_bits = GLS_DEFAULT;
+			def.face_culling = CT_TWO_SIDED;
+			def.shader_type = TYPE_DOT;
+			vk.dot_pipeline = vk_find_pipeline_ext( 0, &def, qtrue );
+		}
+
 
 		// debug pipelines
 		{
@@ -2097,6 +2187,9 @@ void vk_initialize( void )
 	vk.uniform_alignment = props.limits.minUniformBufferOffsetAlignment;
 	vk.uniform_item_size = PAD( sizeof( vkUniform_t ), vk.uniform_alignment );
 
+	// for flare visibility tests
+	vk.storage_alignment = MAX( props.limits.minStorageBufferOffsetAlignment, sizeof( uint32_t ) );
+
 	vk.maxAnisotropy = props.limits.maxSamplerAnisotropy;
 	vk.maxLodBias = props.limits.maxSamplerLodBias;
 
@@ -2349,7 +2442,7 @@ void vk_initialize( void )
 	// Descriptor pool.
 	//
 	{
-		VkDescriptorPoolSize pool_size[3];
+		VkDescriptorPoolSize pool_size[4];
 		VkDescriptorPoolCreateInfo desc;
 
 		pool_size[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -2361,10 +2454,13 @@ void vk_initialize( void )
 		pool_size[2].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 		pool_size[2].descriptorCount = NUM_COMMAND_BUFFERS;
 
+		pool_size[3].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+		pool_size[3].descriptorCount = 1;
+
 		desc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		desc.pNext = NULL;
 		desc.flags = 0;
-		desc.maxSets = MAX_DRAWIMAGES + NUM_COMMAND_BUFFERS + NUM_COMMAND_BUFFERS;
+		desc.maxSets = MAX_DRAWIMAGES + 2 * NUM_COMMAND_BUFFERS + 1;
 		desc.poolSizeCount = ARRAY_LEN( pool_size );
 		desc.pPoolSizes = pool_size;
 
@@ -2376,13 +2472,14 @@ void vk_initialize( void )
 	//
 	vk_create_layout_binding( 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, &vk.set_layout_sampler );
 	vk_create_layout_binding( 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, &vk.set_layout_uniform );
+	vk_create_layout_binding( 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, VK_SHADER_STAGE_FRAGMENT_BIT, &vk.set_layout_storage );
 	vk_create_layout_binding( 0, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT, &vk.set_layout_input );
 
 	//
 	// Pipeline layouts.
 	//
 	{
-		VkDescriptorSetLayout set_layouts[4];
+		VkDescriptorSetLayout set_layouts[5];
 		VkPipelineLayoutCreateInfo desc;
 		VkPushConstantRange push_range;
 
@@ -2396,16 +2493,32 @@ void vk_initialize( void )
 		set_layouts[1] = vk.set_layout_sampler; // diffuse
 		set_layouts[2] = vk.set_layout_sampler; // lightmap
 		set_layouts[3] = vk.set_layout_sampler; // fog 
+		set_layouts[4] = vk.set_layout_storage; // storage
 
 		desc.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		desc.pNext = NULL;
 		desc.flags = 0;
-		desc.setLayoutCount = 4;
+		desc.setLayoutCount = 5;
 		desc.pSetLayouts = set_layouts;
 		desc.pushConstantRangeCount = 1;
 		desc.pPushConstantRanges = &push_range;
 
 		VK_CHECK(qvkCreatePipelineLayout(vk.device, &desc, NULL, &vk.pipeline_layout));
+
+		// flare test pipeline
+#if 0
+		set_layouts[0] = vk.set_layout_storage; // dynamic storage buffer
+		
+		desc.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		desc.pNext = NULL;
+		desc.flags = 0;
+		desc.setLayoutCount = 1;
+		desc.pSetLayouts = set_layouts;
+		desc.pushConstantRangeCount = 1;
+		desc.pPushConstantRanges = &push_range;
+
+		VK_CHECK(qvkCreatePipelineLayout(vk.device, &desc, NULL, &vk.pipeline_layout_storage));
+#endif
 
 		// post-processing pipeline
 
@@ -2429,6 +2542,8 @@ void vk_initialize( void )
 
 	vk.geometry_buffer_size = VERTEX_BUFFER_SIZE;
 	vk_create_geometry_buffers( vk.geometry_buffer_size );
+
+	vk_create_storage_buffer( MAX_FLARES * vk.storage_alignment );
 
 	vk_create_shader_modules();
 
@@ -2503,9 +2618,11 @@ void vk_shutdown( void )
 
 	qvkDestroyDescriptorSetLayout(vk.device, vk.set_layout_sampler, NULL);
 	qvkDestroyDescriptorSetLayout(vk.device, vk.set_layout_uniform, NULL);
+	qvkDestroyDescriptorSetLayout(vk.device, vk.set_layout_storage, NULL);
 	qvkDestroyDescriptorSetLayout(vk.device, vk.set_layout_input, NULL);
 	
 	qvkDestroyPipelineLayout(vk.device, vk.pipeline_layout, NULL);
+	//qvkDestroyPipelineLayout(vk.device, vk.pipeline_layout_storage, NULL);
 	qvkDestroyPipelineLayout(vk.device, vk.pipeline_layout_gamma, NULL);
 
 #ifdef USE_VBO	
@@ -2515,8 +2632,11 @@ void vk_shutdown( void )
 	for ( i = 0; i < NUM_COMMAND_BUFFERS; i++ ) {
 		qvkDestroyBuffer(vk.device, vk.tess[i].vertex_buffer, NULL);
 	}
-
 	qvkFreeMemory(vk.device, vk.geometry_buffer_memory, NULL);
+
+	qvkDestroyBuffer( vk.device, vk.storage.buffer, NULL );
+	qvkFreeMemory( vk.device, vk.storage.memory, NULL );
+
 	qvkDestroySemaphore( vk.device, vk.image_acquired, NULL );
 
 	for ( i = 0; i < NUM_COMMAND_BUFFERS; i++ ) {
@@ -2544,6 +2664,9 @@ void vk_shutdown( void )
 
 	qvkDestroyShaderModule(vk.device, vk.modules.fog_vs, NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.fog_fs, NULL);
+
+	qvkDestroyShaderModule(vk.device, vk.modules.dot_vs, NULL);
+	qvkDestroyShaderModule(vk.device, vk.modules.dot_fs, NULL);
 
 	qvkDestroyShaderModule(vk.device, vk.modules.light.vs_clip[0], NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.light.vs_clip[1], NULL);
@@ -3005,13 +3128,16 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 			vs_module = &vk.modules.fog_vs;
 			fs_module = &vk.modules.fog_fs;
 			break;
-
+		case TYPE_DOT:
+			vs_module = &vk.modules.dot_vs;
+			fs_module = &vk.modules.dot_fs;
+			break;
 		default:
 			ri.Error(ERR_DROP, "create_pipeline: unknown shader type %i\n", def->shader_type);
 			return 0;
 	}
 
-	if ( def->fog_stage && def->shader_type != TYPE_FOG_ONLY ) {
+	if ( def->fog_stage && def->shader_type != TYPE_FOG_ONLY && def->shader_type != TYPE_DOT ) {
 		// switch to fogged modules
 		vs_module++;
 		fs_module++;
@@ -3060,6 +3186,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	num_binds = num_attrs = 0;
 	switch ( def->shader_type ) {
 		case TYPE_FOG_ONLY:
+		case TYPE_DOT:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_attr( 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT );
 				break;
@@ -3112,7 +3239,10 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	input_assembly_state.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	input_assembly_state.pNext = NULL;
 	input_assembly_state.flags = 0;
-	input_assembly_state.topology = def->line_primitives ? VK_PRIMITIVE_TOPOLOGY_LINE_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	if ( def->shader_type == TYPE_DOT )
+		input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+	else
+		input_assembly_state.topology = def->line_primitives ? VK_PRIMITIVE_TOPOLOGY_LINE_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	input_assembly_state.primitiveRestartEnable = VK_FALSE;
 
 	//
@@ -3134,7 +3264,12 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	rasterization_state.flags = 0;
 	rasterization_state.depthClampEnable = VK_FALSE;
 	rasterization_state.rasterizerDiscardEnable = VK_FALSE;
-	rasterization_state.polygonMode = (def->state_bits & GLS_POLYMODE_LINE) ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
+	if ( def->shader_type == TYPE_DOT ) {
+		rasterization_state.polygonMode = VK_POLYGON_MODE_POINT;
+	} else {
+		rasterization_state.polygonMode = (def->state_bits & GLS_POLYMODE_LINE) ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
+		rasterization_state.rasterizerDiscardEnable = VK_FALSE;
+	}
 
 	switch ( def->face_culling ) {
 		case CT_TWO_SIDED:
@@ -3333,7 +3468,10 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	create_info.pColorBlendState = &blend_state;
 	create_info.pDynamicState = &dynamic_state;
 
-	create_info.layout = vk.pipeline_layout;
+	//if ( def->shader_type == TYPE_DOT )
+	//	create_info.layout = vk.pipeline_layout_storage;
+	//else
+		create_info.layout = vk.pipeline_layout;
 
 	create_info.renderPass = vk.render_pass;
 	create_info.subpass = 0;
@@ -3686,7 +3824,7 @@ void vk_clear_attachments(qboolean clear_depth, qboolean clear_stencil, qboolean
 }
 
 
-void vk_update_mvp( void ) {
+void vk_update_mvp( const float *m ) {
 	float push_constants[16 + 12 + 4]; // mvp transform + eye transform + clipping plane in eye space
 	int push_constants_size = 64;
 	int i;
@@ -3694,7 +3832,10 @@ void vk_update_mvp( void ) {
 	//
 	// Specify push constants.
 	//
-	get_mvp_transform( push_constants );
+	if ( m )
+		Com_Memcpy( push_constants, m, push_constants_size );
+	else
+		get_mvp_transform( push_constants );
 
 	if ( backEnd.viewParms.isPortal ) {
 		// Eye space transform.
@@ -3863,7 +4004,7 @@ void vk_bind_geometry_ext( int flags )
 }
 
 
-void vk_draw_geometry(uint32_t pipeline, uint32_t set_count, Vk_Depth_Range depth_range, qboolean indexed) {
+void vk_draw_geometry(uint32_t pipeline, int32_t set_count, Vk_Depth_Range depth_range, qboolean indexed) {
 	VkPipeline vkpipe;
 	VkRect2D scissor_rect;
 	VkViewport viewport;

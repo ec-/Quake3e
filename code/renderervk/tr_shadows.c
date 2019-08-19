@@ -405,7 +405,7 @@ void RB_ShadowFinish( void ) {
 	vk_world.modelview_transform[10] = 1.0f;
 	vk_world.modelview_transform[15] = 1.0f;
 
-	vk_update_mvp();
+	vk_update_mvp( NULL );
 
 	vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_RGBA /*| TESS_ST0 */ );
 	vk_draw_geometry( vk.shadow_finish_pipeline, 1, DEPTH_RANGE_NORMAL, qtrue );

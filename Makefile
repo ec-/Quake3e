@@ -698,8 +698,11 @@ Q3RENDVOBJ = \
   $(B)/rendv/tr_surface.o \
   $(B)/rendv/tr_world.o \
   $(B)/rendv/vk.o \
+  $(B)/rendv/vk_flares.o \
   $(B)/rendv/vk_vbo.o \
   \
+  $(B)/rendv/dot_frag.o \
+  $(B)/rendv/dot_vert.o \
   $(B)/rendv/fog_frag.o \
   $(B)/rendv/fog_vert.o \
   $(B)/rendv/gamma_frag.o \

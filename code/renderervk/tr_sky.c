@@ -780,7 +780,7 @@ void RB_DrawSun( float scale, shader_t *shader ) {
 #ifdef USE_VULKAN
 	VectorCopy( backEnd.viewParms.or.origin, skybox_translate + 12 );
 	myGlMultMatrix( skybox_translate, backEnd.viewParms.world.modelMatrix, vk_world.modelview_transform );
-	vk_update_mvp();
+	vk_update_mvp( NULL );
 #else
 	qglLoadMatrixf( backEnd.viewParms.world.modelMatrix );
 	qglTranslatef (backEnd.viewParms.or.origin[0], backEnd.viewParms.or.origin[1], backEnd.viewParms.or.origin[2]);
@@ -859,12 +859,12 @@ void RB_StageIteratorSky( void ) {
 		VectorCopy( backEnd.viewParms.or.origin, skybox_translate + 12 );
 		myGlMultMatrix( skybox_translate, modelMatrix_original, vk_world.modelview_transform );
 
-		vk_update_mvp();
+		vk_update_mvp( NULL );
 
 		DrawSkyBox( tess.shader );
 		Com_Memcpy( vk_world.modelview_transform, modelMatrix_original, sizeof( modelMatrix_original ) );
 
-		vk_update_mvp();
+		vk_update_mvp( NULL );
 #else
 		qglColor3f( tr.identityLight, tr.identityLight, tr.identityLight );
 		

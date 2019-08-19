@@ -33,6 +33,7 @@ typedef enum {
 	TYPE_MULTI_TEXTURE_MUL,
 	TYPE_MULTI_TEXTURE_ADD,
 	TYPE_FOG_ONLY,
+	TYPE_DOT,
 } Vk_Shader_Type;
 
 // used with cg_shadows == 2
@@ -144,7 +145,7 @@ void vk_begin_frame( void );
 void vk_end_frame( void );
 
 void vk_bind_geometry_ext(int flags);
-void vk_draw_geometry( uint32_t pipeline, uint32_t set_count, Vk_Depth_Range depth_range, qboolean indexed);
+void vk_draw_geometry( uint32_t pipeline, int32_t set_count, Vk_Depth_Range depth_range, qboolean indexed);
 
 void vk_draw_light( uint32_t pipeline, Vk_Depth_Range depth_range, uint32_t uniform_offset, int fog);
 
@@ -152,7 +153,7 @@ void vk_read_pixels( byte* buffer, uint32_t width, uint32_t height ); // screens
 
 qboolean vk_alloc_vbo( const byte *vbo_data, int vbo_size );
 void vk_bind_fog_image( void );
-void vk_update_mvp( void );
+void vk_update_mvp( const float *m );
 
 uint32_t vk_tess_index( uint32_t numIndexes, const void *src );
 
@@ -233,17 +234,27 @@ typedef struct {
 
 	VkDescriptorPool descriptor_pool;
 	VkDescriptorSetLayout set_layout_sampler;	// combined image sampler
-	VkDescriptorSetLayout set_layout_uniform;	// uniform buffer
+	VkDescriptorSetLayout set_layout_uniform;	// dynamic uniform buffer
+	VkDescriptorSetLayout set_layout_storage;	// color input attachment
 	VkDescriptorSetLayout set_layout_input;		// color input attachment
 
 	VkPipelineLayout pipeline_layout;			// default shaders
+	//VkPipelineLayout pipeline_layout_storage;	// flare test shader layout
 	VkPipelineLayout pipeline_layout_gamma;		// gamma post-processing
 
 	vk_tess_t tess[ NUM_COMMAND_BUFFERS ], *cmd;
 	int cmd_index;
 
+	struct {
+		VkBuffer		buffer;
+		byte			*buffer_ptr;
+		VkDeviceMemory	memory;
+		VkDescriptorSet	descriptor;
+	} storage;
+
 	uint32_t uniform_item_size;
 	uint32_t uniform_alignment;
+	uint32_t storage_alignment;
 
 	struct {
 		VkBuffer vertex_buffer;
@@ -278,6 +289,9 @@ typedef struct {
 
 		VkShaderModule fog_fs;
 		VkShaderModule fog_vs;
+
+		VkShaderModule dot_fs;
+		VkShaderModule dot_vs;
 
 		struct {
 			VkShaderModule vs_clip[2];
@@ -326,6 +340,7 @@ typedef struct {
 	uint32_t images_debug_pipeline;
 	uint32_t surface_beam_pipeline;
 	uint32_t surface_axis_pipeline;
+	uint32_t dot_pipeline;
 
 	VkPipeline gamma_pipeline;
 
@@ -337,6 +352,7 @@ typedef struct {
 	qboolean active;
 	qboolean wideLines;
 	qboolean samplerAnisotropy;
+	qboolean fragmentStores;
 	float maxAnisotropy;
 	float maxLodBias;
 
@@ -407,3 +423,4 @@ extern PFN_vkDestroyImage qvkDestroyImage;
 extern PFN_vkDestroyImageView qvkDestroyImageView;
 extern PFN_vkCmdBindIndexBuffer qvkCmdBindIndexBuffer;
 extern PFN_vkCmdDrawIndexed qvkCmdDrawIndexed;
+extern PFN_vkCmdBindDescriptorSets qvkCmdBindDescriptorSets;
