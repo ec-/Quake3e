@@ -315,7 +315,7 @@ void RB_ShadowTessEnd( void ) {
 	R_ExtrudeShadowEdges();
 
 	// mirrors have the culling order reversed
-	if ( backEnd.viewParms.isMirror ) {
+	if ( backEnd.viewParms.portalView == PV_MIRROR ) {
 		R_Vk_RenderShadowEdges(vk.shadow_volume_pipelines[0][1]);
 		R_Vk_RenderShadowEdges(vk.shadow_volume_pipelines[1][1]);
 	} else {

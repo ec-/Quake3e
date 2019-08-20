@@ -260,7 +260,7 @@ static void DrawTris( shaderCommands_t *input ) {
 
 	Com_Memset( tess.svars.colors, tr.identityLightByte, tess.numVertexes * 4 );
 
-	pipeline = backEnd.viewParms.isMirror ? vk.tris_mirror_debug_pipeline : vk.tris_debug_pipeline;
+	pipeline = backEnd.viewParms.portalView == PV_MIRROR ? vk.tris_mirror_debug_pipeline : vk.tris_debug_pipeline;
 
 	vk_bind_geometry_ext( TESS_RGBA );
 	vk_draw_geometry( pipeline, 1, DEPTH_RANGE_ZERO, qtrue );
@@ -1097,12 +1097,10 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 			set_count = 1; // diffuse
 		}
 	
-		if ( backEnd.viewParms.isMirror ) {
-			pipeline = pStage->vk_mirror_pipeline[ fog_stage ];
-		} else if ( backEnd.viewParms.isPortal ) {
-			pipeline = pStage->vk_portal_pipeline[ fog_stage ];
-		} else {
-			pipeline = pStage->vk_pipeline[ fog_stage ];
+		switch ( backEnd.viewParms.portalView ) {
+			default: pipeline = pStage->vk_pipeline[ fog_stage ]; break;
+			case PV_PORTAL: pipeline = pStage->vk_portal_pipeline[ fog_stage ]; break;
+			case PV_MIRROR: pipeline = pStage->vk_mirror_pipeline[ fog_stage ]; break;
 		}
 
 		GL_SelectTexture( 0 );
@@ -1252,8 +1250,8 @@ void VK_LightingPass( void )
 		return; // no space left...
 
 	cull = tess.shader->cullType;
-	if ( backEnd.viewParms.isPortal ) {
-		if ( backEnd.viewParms.isMirror ) {
+	if ( backEnd.viewParms.portalView ) {
+		if ( backEnd.viewParms.portalView == PV_MIRROR ) {
 			switch ( cull ) {
 				case CT_FRONT_SIDED: cull = CT_BACK_SIDED; break;
 				case CT_BACK_SIDED: cull = CT_FRONT_SIDED; break;

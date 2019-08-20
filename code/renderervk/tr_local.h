@@ -551,12 +551,18 @@ typedef struct {
 	const float *fogColor; // vec4_t
 } fogProgramParms_t;
 
+typedef enum {
+	PV_NONE = 0,
+	PV_PORTAL,
+	PV_MIRROR, // portal + inverted face culling
+	PV_COUNT
+} portalView_t;
+
 typedef struct {
 	orientationr_t	or;
 	orientationr_t	world;
 	vec3_t		pvsOrigin;			// may be different than or.origin for portals
-	qboolean	isPortal;			// true if this view is through a portal
-	qboolean	isMirror;			// the portal is a mirror, invert the face culling
+	portalView_t portalView;
 	int			frameSceneNum;		// copied from tr.frameSceneNum
 	int			frameCount;			// copied from tr.frameCount
 	cplane_t	portalPlane;		// clip anything behind this if mirroring

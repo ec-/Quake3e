@@ -63,7 +63,7 @@ typedef struct flare_s {
 	int			addedFrame;
 	uint32_t	testCount;
 
-	qboolean	inPortal;				// true if in a portal view of the scene
+	portalView_t portalView;
 	int			frameSceneNum;
 	void		*surface;
 	int			fogNum;
@@ -112,7 +112,7 @@ static flare_t *R_SearchFlare( void *surface )
 
 	// see if a flare with a matching surface, scene, and view exists
 	for ( f = r_activeFlares ; f ; f = f->next ) {
-		if ( f->surface == surface && f->frameSceneNum == backEnd.viewParms.frameSceneNum && f->inPortal == backEnd.viewParms.isPortal ) {
+		if ( f->surface == surface && f->frameSceneNum == backEnd.viewParms.frameSceneNum && f->portalView == backEnd.viewParms.portalView ) {
 			return f;
 		}
 	}
@@ -179,7 +179,7 @@ void RB_AddFlare( void *surface, int fogNum, vec3_t point, vec3_t color, vec3_t 
 
 		f->surface = surface;
 		f->frameSceneNum = backEnd.viewParms.frameSceneNum;
-		f->inPortal = backEnd.viewParms.isPortal;
+		f->portalView = backEnd.viewParms.portalView;
 		f->visible = qfalse;
 		f->fadeTime = backEnd.refdef.time - 2000;
 		f->testCount = 0;
@@ -547,7 +547,7 @@ void RB_RenderFlares( void ) {
 
 		// don't draw any here that aren't from this scene / portal
 		f->drawIntensity = 0;
-		if ( f->frameSceneNum == backEnd.viewParms.frameSceneNum && f->inPortal == backEnd.viewParms.isPortal ) {
+		if ( f->frameSceneNum == backEnd.viewParms.frameSceneNum && f->portalView == backEnd.viewParms.portalView ) {
 			RB_TestFlare( f );
 			if ( f->testCount == 0 ) {
 				// recently added, wait 1 frame for test result
@@ -575,7 +575,7 @@ void RB_RenderFlares( void ) {
 	vk_update_mvp( m );
 
 	for ( f = r_activeFlares ; f ; f = f->next ) {
-		if ( f->frameSceneNum == backEnd.viewParms.frameSceneNum && f->inPortal == backEnd.viewParms.isPortal && f->drawIntensity ) {
+		if ( f->frameSceneNum == backEnd.viewParms.frameSceneNum && f->portalView == backEnd.viewParms.portalView && f->drawIntensity ) {
 			RB_RenderFlare( f );
 		}
 	}

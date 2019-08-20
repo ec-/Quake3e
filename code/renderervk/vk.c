@@ -3653,7 +3653,7 @@ void vk_get_pipeline_def( uint32_t pipeline, Vk_Pipeline_Def *def ) {
 
 static void get_viewport_rect(VkRect2D *r)
 {
-	if (backEnd.projection2D)
+	if ( backEnd.projection2D )
 	{
 		r->offset.x = 0.0f;
 		r->offset.y = 0.0f;
@@ -3696,7 +3696,7 @@ static void get_viewport(VkViewport *viewport, Vk_Depth_Range depth_range) {
 
 static void get_scissor_rect(VkRect2D *r) {
 
-	if ((backEnd.viewParms.isMirror || backEnd.viewParms.isPortal))
+	if ( backEnd.viewParms.portalView )
 	{
 		r->offset.x = backEnd.viewParms.scissorX;
 		r->offset.y = glConfig.vidHeight - backEnd.viewParms.scissorY - backEnd.viewParms.scissorHeight;
@@ -3837,7 +3837,7 @@ void vk_update_mvp( const float *m ) {
 	else
 		get_mvp_transform( push_constants );
 
-	if ( backEnd.viewParms.isPortal ) {
+	if ( backEnd.viewParms.portalView ) {
 		// Eye space transform.
 		// NOTE: backEnd.or.modelMatrix incorporates s_flipMatrix, so it should be taken into account 
 		// when computing clipping plane too.
@@ -4123,7 +4123,9 @@ void vk_begin_frame( void )
 	vk.stats.push_size = 0;
 
 	if ( r_fastsky->integer ) {
+		backEnd.projection2D = qtrue; // to ensure we have viewport that occupies entire window
 		vk_clear_attachments( qtrue, qfalse, qfalse, colorBlack );
+		backEnd.projection2D = qfalse;
 	}
 }
 

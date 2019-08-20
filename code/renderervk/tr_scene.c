@@ -460,7 +460,7 @@ void RE_RenderScene( const refdef_t *fd ) {
 	parms.scissorWidth = parms.viewportWidth;
 	parms.scissorHeight = parms.viewportHeight;
 
-	parms.isPortal = qfalse;
+	parms.portalView = PV_NONE;
 
 #ifdef USE_PMLIGHT
 	parms.dlights = tr.refdef.dlights;

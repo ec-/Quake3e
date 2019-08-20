@@ -1320,8 +1320,9 @@ static const void *RB_DrawBuffer( const void *data ) {
 	if ( r_clear->integer ) {
 		//const float color[4] = {1, 0, 0.5, 1};
 		const float color[4] = {0, 0, 0, 1};
-		RB_SetGL2D(); // to ensure we have viewport that occupies entire window
-		vk_clear_attachments(qfalse, qfalse, qtrue, color);
+		backEnd.projection2D = qtrue; // to ensure we have viewport that occupies entire window
+		vk_clear_attachments( qfalse, qfalse, qtrue, color );
+		backEnd.projection2D = qfalse;
 	}
 #else
 	qglDrawBuffer( cmd->buffer );

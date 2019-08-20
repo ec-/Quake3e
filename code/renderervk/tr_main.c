@@ -752,7 +752,7 @@ Returns qtrue if it should be mirrored
 */
 static qboolean R_GetPortalOrientations( const drawSurf_t *drawSurf, int entityNum,
 							 orientation_t *surface, orientation_t *camera,
-							 vec3_t pvsOrigin, qboolean *mirror ) {
+							 vec3_t pvsOrigin, portalView_t *portalView ) {
 	int			i;
 	cplane_t	originalPlane, plane;
 	trRefEntity_t	*e;
@@ -812,7 +812,7 @@ static qboolean R_GetPortalOrientations( const drawSurf_t *drawSurf, int entityN
 			VectorCopy( surface->axis[1], camera->axis[1] );
 			VectorCopy( surface->axis[2], camera->axis[2] );
 
-			*mirror = qtrue;
+			*portalView = PV_MIRROR;
 			return qtrue;
 		}
 
@@ -851,7 +851,8 @@ static qboolean R_GetPortalOrientations( const drawSurf_t *drawSurf, int entityN
 			RotatePointAroundVector( camera->axis[1], camera->axis[0], transformed, d );
 			CrossProduct( camera->axis[0], camera->axis[1], camera->axis[2] );
 		}
-		*mirror = qfalse;
+
+		*portalView = PV_PORTAL;
 		return qtrue;
 	}
 
@@ -1104,7 +1105,7 @@ static qboolean R_MirrorViewBySurface( const drawSurf_t *drawSurf, int entityNum
 	qboolean		isMirror;
 
 	// don't recursively mirror
-	if (tr.viewParms.isPortal) {
+	if ( tr.viewParms.portalView ) {
 		ri.Printf( PRINT_DEVELOPER, "WARNING: recursive mirror/portal found\n" );
 		return qfalse;
 	}
@@ -1126,9 +1127,10 @@ static qboolean R_MirrorViewBySurface( const drawSurf_t *drawSurf, int entityNum
 	oldParms = tr.viewParms;
 
 	newParms = tr.viewParms;
-	newParms.isPortal = qtrue;
+	newParms.portalView = PV_NONE;
+
 	if ( !R_GetPortalOrientations( drawSurf, entityNum, &surface, &camera, 
-		newParms.pvsOrigin, &newParms.isMirror ) ) {
+		newParms.pvsOrigin, &newParms.portalView ) ) {
 		return qfalse;		// bad portal, no portalentity
 	}
 
@@ -1550,7 +1552,7 @@ void R_AddEntitySurfaces( void ) {
 		// we don't want the hacked weapon position showing in 
 		// mirrors, because the true body position will already be drawn
 		//
-		if ( (ent->e.renderfx & RF_FIRST_PERSON) && tr.viewParms.isPortal) {
+		if ( (ent->e.renderfx & RF_FIRST_PERSON) && tr.viewParms.portalView ) {
 			continue;
 		}
 
@@ -1566,7 +1568,7 @@ void R_AddEntitySurfaces( void ) {
 			// self blood sprites, talk balloons, etc should not be drawn in the primary
 			// view.  We can't just do this check for all entities, because md3
 			// entities may still want to cast shadows from them
-			if ( (ent->e.renderfx & RF_THIRD_PERSON) && !tr.viewParms.isPortal) {
+			if ( (ent->e.renderfx & RF_THIRD_PERSON) && !tr.viewParms.portalView ) {
 				continue;
 			}
 			shader = R_GetShaderByHandle( ent->e.customShader );
@@ -1595,7 +1597,7 @@ void R_AddEntitySurfaces( void ) {
 					R_AddBrushModelSurfaces( ent );
 					break;
 				case MOD_BAD:		// null model axis
-					if ( (ent->e.renderfx & RF_THIRD_PERSON) && !tr.viewParms.isPortal) {
+					if ( (ent->e.renderfx & RF_THIRD_PERSON) && !tr.viewParms.portalView ) {
 						break;
 					}
 					R_AddDrawSurf( &entitySurface, tr.defaultShader, 0, 0 );
