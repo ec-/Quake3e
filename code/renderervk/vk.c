@@ -4122,7 +4122,7 @@ void vk_begin_frame( void )
 	// other stats
 	vk.stats.push_size = 0;
 
-	if ( r_fastsky->iteger ) {
+	if ( r_fastsky->integer ) {
 		vk_clear_attachments( qtrue, qfalse, qfalse, colorBlack );
 	}
 }
