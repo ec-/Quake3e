@@ -382,17 +382,6 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 #endif
 	}
 
-#ifdef USE_VULKAN
-	if ( r_fastsky->integer ) {
-		if ( stereoFrame != STEREO_RIGHT ) {
-			clearColorCommand_t	*cc;
-			if ( ( cc = R_GetCommandBuffer( sizeof( *cc ) ) ) != NULL ) {
-				cc->commandId = RC_CLEARCOLOR;
-			}
-		}
-	}
-#endif
-	
 	tr.refdef.stereoFrame = stereoFrame;
 }
 

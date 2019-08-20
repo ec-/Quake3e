@@ -1316,6 +1316,7 @@ static const void *RB_DrawBuffer( const void *data ) {
 
 #ifdef USE_VULKAN
 	vk_begin_frame();
+
 	if ( r_clear->integer ) {
 		//const float color[4] = {1, 0, 0.5, 1};
 		const float color[4] = {0, 0, 0, 1};

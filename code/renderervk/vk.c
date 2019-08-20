@@ -2214,7 +2214,7 @@ void vk_initialize( void )
 	// fill glConfig information
 
 	// maxTextureSize must not exceed IMAGE_CHUNK_SIZE
-	maxSize = sqrt( IMAGE_CHUNK_SIZE / 4 );
+	maxSize = sqrtf( IMAGE_CHUNK_SIZE / 4 );
 	// round down to next power of 2
 	i = log2pad( maxSize );
 	while ( i > maxSize )
@@ -2229,7 +2229,7 @@ void vk_initialize( void )
 		glConfig.numTextureUnits = MAX_TEXTURE_UNITS;
 
 	glConfig.textureEnvAddAvailable = qtrue;
-	glConfig.textureCompression = qfalse;
+	glConfig.textureCompression = TC_NONE;
 
 	major = VK_VERSION_MAJOR(props.apiVersion);
 	minor = VK_VERSION_MINOR(props.apiVersion);
@@ -4121,6 +4121,10 @@ void vk_begin_frame( void )
 
 	// other stats
 	vk.stats.push_size = 0;
+
+	if ( r_fastsky->iteger ) {
+		vk_clear_attachments( qtrue, qfalse, qfalse, colorBlack );
+	}
 }
 
 
