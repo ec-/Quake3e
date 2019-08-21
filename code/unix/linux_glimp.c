@@ -104,14 +104,16 @@ static GLXContext ctx = NULL;
 static Atom wmDeleteEvent = None;
 static Atom motifWMHints = None;
 
+
 static int window_width = 0;
 static int window_height = 0;
-static qboolean window_created = qfalse;
-static qboolean window_focused = qfalse;
+static qboolean window_created;
+static qboolean window_focused;
+static qboolean window_exposed;
 
 #define KEY_MASK (KeyPressMask | KeyReleaseMask)
 #define MOUSE_MASK (ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ButtonMotionMask )
-#define X_MASK (KEY_MASK | MOUSE_MASK | VisibilityChangeMask | StructureNotifyMask | FocusChangeMask )
+#define X_MASK (KEY_MASK | MOUSE_MASK | VisibilityChangeMask | StructureNotifyMask | FocusChangeMask | ExposureMask )
 
 static qboolean mouse_avail;
 static qboolean mouse_active = qfalse;
@@ -817,14 +819,17 @@ void HandleX11Events( void )
 		case CreateNotify:
 			win_x = event.xcreatewindow.x;
 			win_y = event.xcreatewindow.y;
+			Com_DPrintf( "CreateNotify: x=%i, y=%i\n", win_x, win_y );
 			break;
 
 		case ConfigureNotify:
 			gw_minimized = WindowMinimized( dpy, win );
-			Com_DPrintf( "ConfigureNotify gw_minimized: %i\n", gw_minimized );
 			win_x = event.xconfigure.x;
 			win_y = event.xconfigure.y;
-			
+
+			Com_DPrintf( "ConfigureNotify: gw_minimized=%i, x=%i, y=%i\n",
+				gw_minimized, win_x, win_y );
+
 			if ( !glw_state.cdsFullscreen && window_created && !gw_minimized )
 			{
 				Cvar_SetIntegerValue( "vid_xpos", win_x );
@@ -847,8 +852,11 @@ void HandleX11Events( void )
 			}
 			Key_ClearStates();
 			break;
-		}
 
+		case Expose:
+			window_exposed = qtrue;
+			break;
+		}
 	}
 
 	if ( dowarp )
@@ -1027,6 +1035,8 @@ void GLimp_Shutdown( qboolean unloadDLL )
 
 	if ( dpy )
 	{
+		XSync( dpy, True );
+
 		if ( glw_state.randr_gamma && glw_state.gammaSet )
 		{
 			RandR_RestoreGamma();
@@ -1036,10 +1046,16 @@ void GLimp_Shutdown( qboolean unloadDLL )
 		RandR_RestoreMode();
 
 		if ( ctx )
+		{
 			qglXDestroyContext( dpy, ctx );
+			ctx = NULL;
+		}
 
 		if ( win )
+		{
 			XDestroyWindow( dpy, win );
+			win = 0;
+		}
 
 		if ( glw_state.gammaSet )
 		{
@@ -1050,28 +1066,29 @@ void GLimp_Shutdown( qboolean unloadDLL )
 		if ( glw_state.vidmode_active )
 			VidMode_RestoreMode();
 
+		XSync( dpy, False );
+
 		// NOTE TTimo opening/closing the display should be necessary only once per run
 		// but it seems QGL_Shutdown gets called in a lot of occasion
 		// in some cases, this XCloseDisplay is known to raise some X errors
 		// ( https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=33 )
-		XCloseDisplay( dpy );
+		if ( unloadDLL )
+		{
+			XCloseDisplay( dpy );
+			dpy = NULL;
+		}
 	}
 
-	RandR_Done();
-	VidMode_Done();
+	//if ( unloadDLL )
+	{
+		RandR_Done();
+		VidMode_Done();
+	}
 
 	glw_state.desktop_ok = qfalse;
-
-	dpy = NULL;
-	win = 0;
-	ctx = NULL;
+	glw_state.cdsFullscreen = qfalse;
 
 	unsetenv( "vblank_mode" );
-	
-	//if ( glw_state.cdsFullscreen )
-	{
-		glw_state.cdsFullscreen = qfalse;
-	}
 
 	QGL_Shutdown( unloadDLL );
 }
@@ -1086,7 +1103,6 @@ void VKimp_Shutdown( qboolean unloadDLL )
 
 	if ( dpy )
 	{
-		XFlush( dpy );
 		XSync( dpy, True );
 
 		if ( glw_state.randr_gamma && glw_state.gammaSet )
@@ -1098,7 +1114,10 @@ void VKimp_Shutdown( qboolean unloadDLL )
 		RandR_RestoreMode();
 
 		if ( win )
+		{
 			XDestroyWindow( dpy, win );
+			win = 0;
+		}
 
 		if ( glw_state.gammaSet )
 		{
@@ -1109,31 +1128,29 @@ void VKimp_Shutdown( qboolean unloadDLL )
 		if ( glw_state.vidmode_active )
 			VidMode_RestoreMode();
 
-		XFlush( dpy );
 		XSync( dpy, False );
 
 		// NOTE TTimo opening/closing the display should be necessary only once per run
 		// but it seems QGL_Shutdown gets called in a lot of occasion
 		// in some cases, this XCloseDisplay is known to raise some X errors
 		// ( https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=33 )
-		XCloseDisplay( dpy );
+		if ( unloadDLL )
+		{
+			XCloseDisplay( dpy );
+			dpy = NULL;
+		}
 	}
 
-	RandR_Done();
-	VidMode_Done();
+	//if ( unloadDLL )
+	{
+		RandR_Done();
+		VidMode_Done();
+	}
 
 	glw_state.desktop_ok = qfalse;
-
-	dpy = NULL;
-	win = 0;
-	ctx = NULL;
+	glw_state.cdsFullscreen = qfalse;
 
 	unsetenv( "vblank_mode" );
-
-	//if ( glw_state.cdsFullscreen )
-	{
-		glw_state.cdsFullscreen = qfalse;
-	}
 
 	QVK_Shutdown( unloadDLL );
 }
@@ -1369,7 +1386,6 @@ static XVisualInfo *VK_SelectVisual( int colorbits, int depthbits, int stencilbi
 int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vulkan )
 {
 	glconfig_t *config = glw_state.config;
-
 	Window root;
 	XVisualInfo *visinfo;
 
@@ -1387,13 +1403,17 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 	glw_state.randr_ext = qfalse;
 	glw_state.vidmode_ext = qfalse;
 
-	dpy = XOpenDisplay( NULL );
-
 	if ( dpy == NULL )
 	{
-		fprintf( stderr, "Error: couldn't open the X display\n" );
-		return RSERR_INVALID_MODE;
+		dpy = XOpenDisplay( NULL );
+		if ( dpy == NULL )
+		{
+			fprintf( stderr, "Error: couldn't open the X display\n" );
+			return RSERR_INVALID_MODE;
+		}
 	}
+
+	//XSync( dpy, True );
 
 	scrnum = DefaultScreen( dpy );
 	root = RootWindow( dpy, scrnum );
@@ -1437,9 +1457,12 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 	else
 		Com_Printf( " %d %d\n", actualWidth, actualHeight );
 
-	if ( fullscreen ) // try randr first
+	if ( glw_state.randr_ext ) // try randr first
 	{
-		RandR_SetMode( &actualWidth, &actualHeight, &actualRate );
+		if ( fullscreen )
+			RandR_SetMode( &actualWidth, &actualHeight, &actualRate );
+		else
+			glw_state.randr_active = qtrue;
 	}
 
 	if ( glw_state.vidmode_ext && !glw_state.randr_active )
@@ -1497,10 +1520,12 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 		mask = CWBackPixel | CWBorderPixel | CWColormap | CWEventMask;
 	}
 
-	win = XCreateWindow( dpy, root, 0, 0,
-		actualWidth, actualHeight,
-		0, visinfo->depth, InputOutput,
-		visinfo->visual, mask, &attr );
+	window_exposed = qfalse;
+	window_created = qfalse;
+	window_focused = qfalse;
+
+	win = XCreateWindow( dpy, root, 0, 0, actualWidth, actualHeight,
+		0, visinfo->depth, InputOutput, visinfo->visual, mask, &attr );
 
 	motifWMHints = XInternAtom( dpy, "_MOTIF_WM_HINTS", True );
 
@@ -1546,8 +1571,7 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 		XMoveWindow( dpy, win, vid_xpos->integer, vid_ypos->integer );
 	}
 
-	XFlush( dpy );
-	XSync( dpy, False );
+//	XSync( dpy, False );
 
 	if ( vulkan )
 	{
@@ -1557,8 +1581,6 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 	{
 		ctx = qglXCreateContext( dpy, visinfo, NULL, True );
 
-		XSync( dpy, False );
-
 		if ( ctx == NULL )
 		{
 			Com_Error( ERR_FATAL, "Error creating GLX context" );
@@ -1567,40 +1589,24 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 		/* GH: Free the visinfo after we're done with it */
 		XFree( visinfo );
 
-		qglXMakeCurrent( dpy, win, ctx );
-
-#if 0
-	glstring = (char *)qglGetString( GL_RENDERER );
-
-	if ( !Q_stricmp( glstring, "Mesa X11") || !Q_stricmp( glstring, "Mesa GLX Indirect") )
-	{
-		if ( !r_allowSoftwareGL->integer )
+		if ( !qglXMakeCurrent( dpy, win, ctx ) )
 		{
-			Com_Printf( "GL_RENDERER: %s\n", glstring );
-			Com_Printf( "\n\n***********************************************************\n" );
-			Com_Printf( " You are using software Mesa (no hardware acceleration)!   \n" );
-			Com_Printf( " Driver DLL used: %s\n", drivername ); 
-			Com_Printf( " If this is intentional, add\n" );
-			Com_Printf( "       \"+set r_allowSoftwareGL 1\"\n" );
-			Com_Printf( " to the command line when starting the game.\n" );
-			Com_Printf( "***********************************************************\n");
-			GLimp_Shutdown();
-			return RSERR_INVALID_MODE;
+			Com_Error( ERR_FATAL, "Error setting GLX context" );
 		}
-		else
-		{
-			Com_Printf( "...using software Mesa (r_allowSoftwareGL==1).\n" );
-		}
-	}
-#endif
-
 	}
 
 	Key_ClearStates();
 
-	XSetInputFocus( dpy, win, RevertToParent, CurrentTime );
+	if ( fullscreen )
+	{
+		XSetInputFocus( dpy, win, RevertToParent, CurrentTime );
+	}
 
-	XSync( dpy, False );
+//	XSync( dpy, False );
+	while ( window_exposed == qfalse )
+	{
+		HandleX11Events();
+	}
 
 	return RSERR_OK;
 }
@@ -1747,11 +1753,15 @@ static qboolean GLW_StartVulkan( void )
 int qXErrorHandler( Display *dpy, XErrorEvent *ev )
 {
 	static char buf[1024];
+
 	XGetErrorText( dpy, ev->error_code, buf, sizeof( buf ) );
 	Com_Printf( "X Error of failed request: %s\n", buf) ;
 	Com_Printf( "  Major opcode of failed request: %d\n", ev->request_code );
 	Com_Printf( "  Minor opcode of failed request: %d\n", ev->minor_code );
 	Com_Printf( "  Serial number of failed request: %d\n", (int)ev->serial );
+
+	//raise( SIGABRT );
+
 	return 0;
 }
 
@@ -1789,7 +1799,7 @@ void GLimp_Init( glconfig_t *config )
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
 
-	InitSig(); // not clear why this is at begin & end of function
+	//InitSig(); // not clear why this is at begin & end of function
 
 	// optional
 #define GLE( ret, name, ... ) q##name = GL_GetProcAddress( XSTRING( name ) );
@@ -1838,7 +1848,7 @@ void VKimp_Init( glconfig_t *config )
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
 
-	InitSig(); // not clear why this is at begin & end of function
+	//InitSig(); // not clear why this is at begin & end of function
 }
 
 
