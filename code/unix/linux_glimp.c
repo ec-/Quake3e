@@ -1047,6 +1047,7 @@ void GLimp_Shutdown( qboolean unloadDLL )
 
 		if ( ctx )
 		{
+			qglXMakeCurrent( dpy, None, NULL );
 			qglXDestroyContext( dpy, ctx );
 			ctx = NULL;
 		}
@@ -1315,7 +1316,7 @@ static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbi
 		config->colorBits = tcolorbits;
 		config->depthBits = tdepthbits;
 		config->stencilBits = tstencilbits;
-		
+
 		break;
 	}
 
