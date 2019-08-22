@@ -27,6 +27,7 @@ USE_VULKAN       = 0
 
 CNAME            = quake3e
 DNAME            = quake3e.ded
+ARCHEXT          =
 
 #USE_ALSA_STATIC = 1
 #USE_STATIC_GL   = 1
@@ -207,8 +208,7 @@ ifeq ($(PLATFORM),linux)
   OPTIMIZE = -O2 -fvisibility=hidden
 
   ifeq ($(ARCH),x86_64)
-    CNAME    = quake3e.x64
-    DNAME    = quake3e.ded.x64
+    ARCHEXT = .x64
   else
   ifeq ($(ARCH),x86)
     OPTIMIZE += -march=i586 -mtune=i686
@@ -219,13 +219,13 @@ ifeq ($(PLATFORM),linux)
     BASE_CFLAGS += -DNO_VM_COMPILED
   endif
 
-  DEBUG_CFLAGS = $(BASE_CFLAGS) -g -O0
+  DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -ggdb -O0
 
-  RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
+  RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
 
-  SHLIBEXT=so
-  SHLIBCFLAGS=-fPIC
-  SHLIBLDFLAGS=-shared $(LDFLAGS)
+  SHLIBEXT = so
+  SHLIBCFLAGS = -fPIC
+  SHLIBLDFLAGS = -shared $(LDFLAGS)
 
   THREAD_LDFLAGS=-lpthread
   LDFLAGS=-ldl -lm -Wl,--hash-style=both
@@ -247,7 +247,7 @@ ifeq ($(PLATFORM),linux)
   ifeq ($(ARCH),x86)
     # linux32 make ...
     BASE_CFLAGS += -m32
-    LDFLAGS+=-m32
+    LDFLAGS += -m32
   endif
 
 else # ifeq Linux
@@ -311,8 +311,7 @@ ifdef MINGW
 #    -funroll-loops -falign-jumps=2 -falign-functions=2 -fstrength-reduce
 
   ifeq ($(ARCH),x86_64)
-    CNAME    = quake3e.x64
-    DNAME    = quake3e.ded.x64
+    ARCHEXT = .x64
     BASE_CFLAGS += -m64
     OPTIMIZE = -O2 -ffast-math -fstrength-reduce
     HAVE_VM_COMPILED = true
@@ -323,17 +322,17 @@ ifdef MINGW
     HAVE_VM_COMPILED = true
   endif
 
-  DEBUG_CFLAGS=$(BASE_CFLAGS) -g -O0
+  DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -ggdb -O0
 
-  RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
+  RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
 
   SHLIBEXT=dll
   SHLIBCFLAGS=
   SHLIBLDFLAGS=-shared $(LDFLAGS)
 
-  BINEXT=.exe
+  BINEXT = .exe
 
-  LDFLAGS= -mwindows -Wl,--dynamicbase -Wl,--nxcompat
+  LDFLAGS = -mwindows -Wl,--dynamicbase -Wl,--nxcompat
   LDFLAGS += -lwsock32 -lgdi32 -lwinmm -lole32 -lws2_32 -lpsapi -lcomctl32
 
   CLIENT_LDFLAGS=$(LDFLAGS)
@@ -469,13 +468,13 @@ else # ifeq netbsd
 # SETUP AND BUILD -- GENERIC
 #############################################################################
 
-  BASE_CFLAGS=-DNO_VM_COMPILED
-  DEBUG_CFLAGS=$(BASE_CFLAGS) -g
-  RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O3
+  BASE_CFLAGS = -DNO_VM_COMPILED
+  DEBUG_CFLAGS = $(BASE_CFLAGS) -ggdb -O0
+  RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG -O2
 
-  SHLIBEXT=so
-  SHLIBCFLAGS=-fPIC
-  SHLIBLDFLAGS=-shared
+  SHLIBEXT = so
+  SHLIBCFLAGS = -fPIC
+  SHLIBLDFLAGS = -shared
 
 endif #Linux
 endif #mingw32
@@ -483,11 +482,8 @@ endif #FreeBSD
 endif #OpenBSD
 endif #NetBSD
 
-#TARGET_CLIENT=$(CNAME).$(ARCH)$(BINEXT)
-#TARGET_SERVER=$(DNAME).$(ARCH)$(BINEXT)
-
-TARGET_CLIENT=$(CNAME)$(BINEXT)
-TARGET_SERVER=$(DNAME)$(BINEXT)
+TARGET_CLIENT = $(CNAME)$(ARCHEXT)$(BINEXT)
+TARGET_SERVER = $(DNAME)$(ARCHEXT)$(BINEXT)
 
 TARGETS =
 
@@ -590,6 +586,10 @@ debug:
 
 release:
 	@$(MAKE) targets B=$(BR) CFLAGS="$(CFLAGS) $(RELEASE_CFLAGS)" V=$(V)
+	@for i in $(TARGETS); \
+	do \
+		$(STRIP) "$(BR)$$i"; \
+	done
 
 # Create the build directories and tools, print out
 # an informational message, then start building
@@ -927,8 +927,6 @@ $(B)/$(TARGET_CLIENT): $(Q3OBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) -o $@ $(Q3OBJ) $(CLIENT_LDFLAGS) \
 		$(LDFLAGS)
-	$(STRIP) $@
-
 
 #############################################################################
 # DEDICATED SERVER
@@ -1026,7 +1024,6 @@ endif
 $(B)/$(TARGET_SERVER): $(Q3DOBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) -o $@ $(Q3DOBJ) $(LDFLAGS)
-	$(STRIP) $@
 
 #############################################################################
 ## CLIENT/SERVER RULES

@@ -1079,7 +1079,7 @@ void GLimp_Shutdown( qboolean unloadDLL )
 		}
 	}
 
-	//if ( unloadDLL )
+	if ( unloadDLL )
 	{
 		RandR_Done();
 		VidMode_Done();
@@ -1141,7 +1141,7 @@ void VKimp_Shutdown( qboolean unloadDLL )
 		}
 	}
 
-	//if ( unloadDLL )
+	if ( unloadDLL )
 	{
 		RandR_Done();
 		VidMode_Done();
@@ -1761,7 +1761,9 @@ int qXErrorHandler( Display *dpy, XErrorEvent *ev )
 	Com_Printf( "  Minor opcode of failed request: %d\n", ev->minor_code );
 	Com_Printf( "  Serial number of failed request: %d\n", (int)ev->serial );
 
-	//raise( SIGABRT );
+#ifdef DEBUG
+	raise( SIGABRT );
+#endif
 
 	return 0;
 }
