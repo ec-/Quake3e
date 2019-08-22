@@ -1502,6 +1502,7 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 	glw_state.cdsFullscreen = fullscreen;
 
 	/* window attributes */
+	memset( &attr, 0, sizeof( attr ) );
 	attr.background_pixel = BlackPixel( dpy, scrnum );
 	attr.border_pixel = 0;
 	attr.colormap = XCreateColormap( dpy, root, visinfo->visual, AllocNone );
