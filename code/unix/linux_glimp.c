@@ -1534,7 +1534,7 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 		motifHints_t decohint;
 		decohint.flags = (1L << 1);
 		decohint.functions = 0;
-		decohint.decorations = r_noborder->integer == qtrue ? 0 : 1;
+		decohint.decorations = r_noborder->integer ? 0 : 1;
 		decohint.input_mode = decohint.status = 0;
 
 		XChangeProperty( dpy, win, motifWMHints, motifWMHints, 32,
@@ -1787,9 +1787,7 @@ void GLimp_Init( glconfig_t *config )
 	// feedback to renderer configuration
 	glw_state.config = config;
 
-	//
 	// load and initialize the specific OpenGL driver
-	//
 	if ( !GLW_StartOpenGL() )
 	{
 		return;
@@ -1830,15 +1828,16 @@ void VKimp_Init( glconfig_t *config )
 
 	IN_Init();
 
+	r_noborder = Cvar_Get( "r_noborder", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_CheckRange( r_noborder, "0", "1", CV_INTEGER );
+
 	// set up our custom error handler for X failures
 	XSetErrorHandler( &qXErrorHandler );
 
 	// feedback to renderer configuration
 	glw_state.config = config;
 
-	//
 	// load and initialize the specific Vulkan driver
-	//
 	if ( !GLW_StartVulkan() )
 	{
 		return;

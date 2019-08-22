@@ -1,4 +1,4 @@
-#if defined (__linux__)
+#if defined (__linux__) // ALSA sound path
 
 #include <stdio.h>
 #include <unistd.h>
@@ -681,22 +681,27 @@ void SNDDMA_Shutdown( void )
 	UnloadLibs();
 }
 
+#define CASE_STR(x) case (x): s = #x; break;
 
-void print_state( snd_pcm_state_t state )
+static void print_state( snd_pcm_state_t state )
 {
+	const char *s;
+
 	switch( state )
 	{
-	case(SND_PCM_STATE_OPEN):     Com_Printf("SND_PCM_STATE_OPEN\n");     break;
-	case(SND_PCM_STATE_SETUP):    Com_Printf("SND_PCM_STATE_SETUP\n");    break;
-	case(SND_PCM_STATE_PREPARED): Com_Printf("SND_PCM_STATE_PREPARED\n"); break;
-	case(SND_PCM_STATE_RUNNING):  Com_Printf("SND_PCM_STATE_RUNNING\n");  break;
-	case(SND_PCM_STATE_XRUN):     Com_Printf("SND_PCM_STATE_XRUN\n");     break;
-	case(SND_PCM_STATE_DRAINING): Com_Printf("SND_PCM_STATE_DRAINING\n"); break;
-	case(SND_PCM_STATE_PAUSED):   Com_Printf("SND_PCM_STATE_PAUSED\n");   break;
-	case(SND_PCM_STATE_SUSPENDED):Com_Printf("SND_PCM_STATE_SUSPENDED\n");break;
-	case(SND_PCM_STATE_DISCONNECTED):Com_Printf("SND_PCM_STATE_DISCONNECTED\n");break;
-	case(SND_PCM_STATE_PRIVATE1):Com_Printf("SND_PCM_STATE_PRIVATE1\n");break;
+	CASE_STR(SND_PCM_STATE_OPEN);
+	CASE_STR(SND_PCM_STATE_SETUP);
+	CASE_STR(SND_PCM_STATE_PREPARED);
+	CASE_STR(SND_PCM_STATE_RUNNING);
+	CASE_STR(SND_PCM_STATE_XRUN);
+	CASE_STR(SND_PCM_STATE_DRAINING);
+	CASE_STR(SND_PCM_STATE_PAUSED);
+	CASE_STR(SND_PCM_STATE_SUSPENDED);
+	CASE_STR(SND_PCM_STATE_DISCONNECTED);
+	default: s = "SND_PCM_STATE_PRIVATE1"; break;
 	};
+
+	Com_Printf( "%s\n", s );
 }
 
 static int xrun_recovery( snd_pcm_t *handle, int err )
@@ -1345,4 +1350,4 @@ void SNDDMA_BeginPainting( void )
 {
 }
 
-#endif
+#endif // !defined (__linux__)
