@@ -1241,13 +1241,13 @@ const char *Sys_DefaultBasePath( void );
 const char *Sys_DefaultHomePath( void );
 const char *Sys_SteamPath( void );
 
-char	**Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, qboolean wantsubs );
-void	Sys_FreeFileList( char **list );
+char **Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, qboolean wantsubs );
+void Sys_FreeFileList( char **list );
 
 qboolean Sys_GetFileStats( const char *filename, fileOffset_t *size, fileTime_t *mtime, fileTime_t *ctime );
 
-void	Sys_BeginProfiling( void );
-void	Sys_EndProfiling( void );
+void Sys_BeginProfiling( void );
+void Sys_EndProfiling( void );
 
 qboolean Sys_LowPhysicalMemory( void );
 
@@ -1259,14 +1259,14 @@ int   Sys_LoadFunctionErrors( void );
 void  Sys_UnloadLibrary( void *handle );
 
 // adaptive huffman functions
-void	Huff_Compress( msg_t *buf, int offset );
-void	Huff_Decompress( msg_t *buf, int offset );
+void Huff_Compress( msg_t *buf, int offset );
+void Huff_Decompress( msg_t *buf, int offset );
 
 // static huffman functions
 void HuffmanPutBit( byte* fout, int32_t bitIndex, int bit );
 int HuffmanPutSymbol( byte* fout, uint32_t offset, int symbol );
 int HuffmanGetBit( const byte* buffer, int bitIndex );
-int HuffmanGetSymbol( int* symbol, const byte* buffer, int bitIndex );
+int HuffmanGetSymbol( unsigned int* symbol, const byte* buffer, int bitIndex );
 
 #define	SV_ENCODE_START		4
 #define	SV_DECODE_START		12

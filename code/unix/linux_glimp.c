@@ -53,7 +53,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "linux_local.h"
 #include "unix_glw.h"
 #include "../renderer/qgl.h"
-#include "../renderer/qgl.h"
 
 #include <GL/glx.h>
 

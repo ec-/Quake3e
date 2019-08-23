@@ -153,10 +153,10 @@ void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 
 
 int MSG_ReadBits( msg_t *msg, int bits ) {
-	int			value;
+	int		value;
 	qboolean	sgn;
-	int			i;
-	int			sym;
+	int		i;
+	unsigned int	sym;
 	const byte *buffer = msg->data; // dereference optimization
 
 	if ( msg->bit >= msg->maxbits )

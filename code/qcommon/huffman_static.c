@@ -194,18 +194,18 @@ int HuffmanPutSymbol( byte* fout, uint32_t offset, int symbol )
 }
 
 
-int	HuffmanGetBit( const byte* buffer, int bitIndex )
+int HuffmanGetBit( const byte* buffer, int bitIndex )
 {
 	return (buffer[(bitIndex >> 3)] >> (bitIndex & 7)) & 0x1;
 }
 
 
-int HuffmanGetSymbol( int* symbol, const byte* buffer, int bitIndex )
+int HuffmanGetSymbol( unsigned int* symbol, const byte* buffer, int bitIndex )
 {
 	const uint16_t code = ((*(const uint32_t*)(buffer + (bitIndex >> 3))) >> ((uint32_t)bitIndex & 7)) & 0x7FF;
 	const uint16_t entry = HuffmanDecoderTable[ code ];
 
-	*symbol = (int)(entry & 0xFF);
+	*symbol = (unsigned int)(entry & 0xFF);
 
 	return (int)(entry >> 8);
 }
