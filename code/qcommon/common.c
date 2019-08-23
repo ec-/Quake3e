@@ -3574,7 +3574,7 @@ void Com_Init( char *commandLine ) {
 	com_maxfpsUnfocused = Cvar_Get( "com_maxfpsUnfocused", "60", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( com_maxfps, "0", "1000", CV_INTEGER );
 	Cvar_CheckRange( com_maxfpsUnfocused, "0", "1000", CV_INTEGER );
-	com_yieldCPU = Cvar_Get( "com_yieldCPU", "2", CVAR_ARCHIVE_ND );
+	com_yieldCPU = Cvar_Get( "com_yieldCPU", "1", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( com_yieldCPU, "0", "4", CV_INTEGER );
 #endif
 #if !defined(__FreeBSD__)
