@@ -186,6 +186,11 @@ typedef struct {
 	e_status (*CIN_RunCinematic)( int handle );
 
 	void	(*CL_WriteAVIVideoFrame)( const byte *buffer, int size );
+	
+	size_t	(*CL_SaveJPGToBuffer)( byte *buffer, size_t bufSize, int quality, int image_width, int image_height, byte *image_buffer, int padding );
+	void	(*CL_SaveJPG)( const char *filename, int quality, int image_width, int image_height, byte *image_buffer, int padding );
+	void	(*CL_LoadJPG)( const char *filename, unsigned char **pic, int *width, int *height );
+
 	qboolean (*CL_IsMinimized)( void );
 	void	(*CL_SetScaling)( float factor, int captureWidth, int captureHeight );
 

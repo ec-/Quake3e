@@ -396,6 +396,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\client\cl_jpeg.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\client\cl_keys.c"
 				>
 			</File>

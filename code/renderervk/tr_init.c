@@ -753,7 +753,7 @@ void RB_TakeScreenshotJPEG( int x, int y, int width, int height, const char *fil
 	if(glConfig.deviceSupportsGamma)
 		R_GammaCorrect(buffer + offset, memcount);
 
-	RE_SaveJPG(fileName, r_screenshotJpegQuality->integer, width, height, buffer + offset, padlen);
+	ri.CL_SaveJPG( fileName, r_screenshotJpegQuality->integer, width, height, buffer + offset, padlen );
 	ri.Hunk_FreeTempMemory(buffer);
 }
 
@@ -1102,7 +1102,7 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 
 	if (cmd->motionJpeg)
 	{
-		memcount = RE_SaveJPGToBuffer(cmd->encodeBuffer, linelen * cmd->height,
+		memcount = ri.CL_SaveJPGToBuffer(cmd->encodeBuffer, linelen * cmd->height,
 			r_aviMotionJpegQuality->integer,
 			cmd->width, cmd->height, cBuf, padlen);
 		ri.CL_WriteAVIVideoFrame(cmd->encodeBuffer, memcount);

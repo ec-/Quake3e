@@ -780,11 +780,11 @@ void RB_TakeScreenshotJPEG( int x, int y, int width, int height, const char *fil
 	memcount = (width * 3 + padlen) * height;
 
 	// gamma correct
-	if(glConfig.deviceSupportsGamma)
-		R_GammaCorrect(buffer + offset, memcount);
+	if ( glConfig.deviceSupportsGamma )
+		R_GammaCorrect( buffer + offset, memcount );
 
-	RE_SaveJPG(fileName, r_screenshotJpegQuality->integer, width, height, buffer + offset, padlen);
-	ri.Hunk_FreeTempMemory(buffer);
+	ri.CL_SaveJPG( fileName, r_screenshotJpegQuality->integer, width, height, buffer + offset, padlen );
+	ri.Hunk_FreeTempMemory( buffer );
 }
 
 
@@ -1120,14 +1120,14 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 	memcount = padwidth * cmd->height;
 
 	// gamma correct
-	if (glConfig.deviceSupportsGamma)
-		R_GammaCorrect(cBuf, memcount);
+	if ( glConfig.deviceSupportsGamma )
+		R_GammaCorrect( cBuf, memcount );
 
-	if (cmd->motionJpeg)
+	if ( cmd->motionJpeg )
 	{
-		memcount = RE_SaveJPGToBuffer(cmd->encodeBuffer, linelen * cmd->height,
+		memcount = ri.CL_SaveJPGToBuffer( cmd->encodeBuffer, linelen * cmd->height,
 			r_aviMotionJpegQuality->integer,
-			cmd->width, cmd->height, cBuf, padlen);
+			cmd->width, cmd->height, cBuf, padlen );
 		ri.CL_WriteAVIVideoFrame(cmd->encodeBuffer, memcount);
 	}
 	else

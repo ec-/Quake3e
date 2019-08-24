@@ -3369,6 +3369,10 @@ static void CL_InitRef( void ) {
 	rimp.CIN_RunCinematic = CIN_RunCinematic;
 
 	rimp.CL_WriteAVIVideoFrame = CL_WriteAVIVideoFrame;
+	rimp.CL_SaveJPGToBuffer = CL_SaveJPGToBuffer;
+	rimp.CL_SaveJPG = CL_SaveJPG;
+	rimp.CL_LoadJPG = CL_LoadJPG;
+
 	rimp.CL_IsMinimized = CL_IsMininized;
 	rimp.CL_SetScaling = CL_SetScaling;
 

@@ -798,6 +798,7 @@ Q3OBJ = \
   $(B)/client/cl_scrn.o \
   $(B)/client/cl_ui.o \
   $(B)/client/cl_avi.o \
+  $(B)/client/cl_jpeg.o \
   \
   $(B)/client/cm_load.o \
   $(B)/client/cm_patch.o \
@@ -876,11 +877,11 @@ Q3OBJ = \
   $(B)/client/l_memory.o \
   $(B)/client/l_precomp.o \
   $(B)/client/l_script.o \
-  $(B)/client/l_struct.o \
-
-ifeq ($(USE_RENDERER_DLOPEN),0)
+  $(B)/client/l_struct.o
 
   Q3OBJ += $(JPGOBJ)
+
+ifeq ($(USE_RENDERER_DLOPEN),0)
 
   ifeq ($(USE_VULKAN),1)
     Q3OBJ += $(Q3RENDVOBJ)
@@ -1046,13 +1047,13 @@ $(B)/$(TARGET_SERVER): $(Q3DOBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) -o $@ $(Q3DOBJ) $(LDFLAGS)
 
-$(B)/renderer_opengl_$(SHLIBNAME): $(Q3REND1OBJ) $(JPGOBJ)
+$(B)/renderer_opengl_$(SHLIBNAME): $(Q3REND1OBJ)
 	$(echo_cmd) "LD $@"
-	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3REND1OBJ) $(JPGOBJ)
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3REND1OBJ)
 
-$(B)/renderer_vulkan_$(SHLIBNAME): $(Q3RENDVOBJ) $(JPGOBJ)
+$(B)/renderer_vulkan_$(SHLIBNAME): $(Q3RENDVOBJ)
 	$(echo_cmd) "LD $@"
-	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3RENDVOBJ) $(JPGOBJ)
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3RENDVOBJ)
 
 #############################################################################
 ## CLIENT/SERVER RULES
