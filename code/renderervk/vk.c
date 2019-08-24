@@ -114,7 +114,6 @@ PFN_vkQueuePresentKHR							qvkQueuePresentKHR;
 
 // forward declaration
 VkPipeline create_pipeline( const Vk_Pipeline_Def *def );
-VkPipeline create_gamma_pipeline( void );
 
 static uint32_t find_memory_type(VkPhysicalDevice physical_device, uint32_t memory_type_bits, VkMemoryPropertyFlags properties) {
 	VkPhysicalDeviceMemoryProperties memory_properties;
@@ -1821,10 +1820,6 @@ static void vk_create_persistent_pipelines( void )
 			vk.images_debug_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
 		}
 	}
-
-	if ( vk.fboActive ) {
-		vk.gamma_pipeline = create_gamma_pipeline();
-	}
 }
 
 
@@ -2521,11 +2516,6 @@ void vk_initialize( void )
 #endif
 
 		// post-processing pipeline
-
-		push_range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		push_range.offset = 0;
-		push_range.size = sizeof(vec4_t); // 32 bytes, gamma correction parameters
-
 		set_layouts[0] = vk.set_layout_input; // input color attachment
 
 		desc.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -2533,8 +2523,8 @@ void vk_initialize( void )
 		desc.flags = 0;
 		desc.setLayoutCount = 1;
 		desc.pSetLayouts = set_layouts;
-		desc.pushConstantRangeCount = 1;
-		desc.pPushConstantRanges = &push_range;
+		desc.pushConstantRangeCount = 0;
+		desc.pPushConstantRanges = NULL;
 
 		VK_CHECK( qvkCreatePipelineLayout( vk.device, &desc, NULL, &vk.pipeline_layout_gamma ) );
 
@@ -2931,7 +2921,7 @@ static void set_shader_stage_desc(VkPipelineShaderStageCreateInfo *desc, VkShade
 }
 
 
-VkPipeline create_gamma_pipeline( void ) {
+void vk_create_gamma_pipeline( void ) {
 	VkPipelineShaderStageCreateInfo shader_stages[2];
 	VkPipelineVertexInputStateCreateInfo vertex_input_state;
 	VkPipelineInputAssemblyStateCreateInfo input_assembly_state;
@@ -2943,7 +2933,15 @@ VkPipeline create_gamma_pipeline( void ) {
 	VkGraphicsPipelineCreateInfo create_info;
 	VkViewport viewport;
 	VkRect2D scissor;
-	VkPipeline pipeline;
+	float frag_spec_data[3]; // gamma,overbright,greyscale
+	VkSpecializationMapEntry spec_entries[3];
+	VkSpecializationInfo frag_spec_info;
+
+	if ( vk.gamma_pipeline ) {
+		vk_wait_idle();
+		qvkDestroyPipeline( vk.device, vk.gamma_pipeline, NULL );
+		vk.gamma_pipeline = VK_NULL_HANDLE;
+	}
 
 	vertex_input_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertex_input_state.pNext = NULL;
@@ -2956,6 +2954,29 @@ VkPipeline create_gamma_pipeline( void ) {
 	// shaders
 	set_shader_stage_desc( shader_stages+0, VK_SHADER_STAGE_VERTEX_BIT, vk.modules.gamma_vs, "main" );
 	set_shader_stage_desc( shader_stages+1, VK_SHADER_STAGE_FRAGMENT_BIT, vk.modules.gamma_fs, "main" );
+
+	frag_spec_data[0] = 1.0 / (r_gamma->value);
+	frag_spec_data[1] = (float)(1 << tr.overbrightBits);
+	frag_spec_data[2] = r_greyscale->value;
+
+	spec_entries[0].constantID = 0;
+	spec_entries[0].offset = 0 * sizeof( float );
+	spec_entries[0].size = sizeof( float );
+	
+	spec_entries[1].constantID = 1;
+	spec_entries[1].offset = 1 * sizeof( float );
+	spec_entries[1].size = sizeof( float );
+
+	spec_entries[2].constantID = 2;
+	spec_entries[2].offset = 2 * sizeof( float );
+	spec_entries[2].size = sizeof( float );
+
+	frag_spec_info.mapEntryCount = 3;
+	frag_spec_info.pMapEntries = spec_entries;
+	frag_spec_info.dataSize = 3 * sizeof( float );
+	frag_spec_info.pData = &frag_spec_data[0];
+
+	shader_stages[1].pSpecializationInfo = &frag_spec_info;
 
 	//
 	// Primitive assembly.
@@ -3022,7 +3043,6 @@ VkPipeline create_gamma_pipeline( void ) {
 	Com_Memset(&attachment_blend_state, 0, sizeof(attachment_blend_state));
 	attachment_blend_state.blendEnable = VK_FALSE;
 	attachment_blend_state.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-//	attachment_blend_state.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT;
 
 	blend_state.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	blend_state.pNext = NULL;
@@ -3056,10 +3076,9 @@ VkPipeline create_gamma_pipeline( void ) {
 	create_info.basePipelineHandle = VK_NULL_HANDLE;
 	create_info.basePipelineIndex = -1;
 
-	VK_CHECK(qvkCreateGraphicsPipelines(vk.device, VK_NULL_HANDLE, 1, &create_info, NULL, &pipeline));
-
-	return pipeline;
+	VK_CHECK( qvkCreateGraphicsPipelines( vk.device, VK_NULL_HANDLE, 1, &create_info, NULL, &vk.gamma_pipeline ) );
 }
+
 
 static VkVertexInputBindingDescription bindings[5];
 static VkVertexInputAttributeDescription attribs[5];
@@ -4142,16 +4161,8 @@ void vk_end_frame( void )
 
 	if ( vk.fboActive )
 	{
-		const float obScale = 1 << tr.overbrightBits;
-		const float gamma = 1.0f / (r_gamma->value);
-		vec4_t pconst;
-
-		pconst[0] = pconst[1] = pconst[2] = gamma;
-		pconst[3] = obScale;
-
 		qvkCmdNextSubpass( vk.cmd->command_buffer, VK_SUBPASS_CONTENTS_INLINE );
 		qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.gamma_pipeline );
-		qvkCmdPushConstants( vk.cmd->command_buffer, vk.pipeline_layout_gamma, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof( pconst ), &pconst );
 		qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout_gamma, 0, 1, &vk.cmd->color_descriptor, 0, NULL );
 		qvkCmdDraw( vk.cmd->command_buffer, 3, 1, 0, 0 );
 	}

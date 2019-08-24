@@ -1575,6 +1575,9 @@ void R_SetColorMappings( void ) {
 	}
 
 #ifdef USE_VULKAN
+	if ( vk.fboActive )
+		vk_create_gamma_pipeline();	// update gamma shader
+	
 	if ( glConfig.deviceSupportsGamma && !vk.fboActive )
 #else
 	if ( glConfig.deviceSupportsGamma )
@@ -1588,8 +1591,10 @@ void R_SetColorMappings( void ) {
 R_InitImages
 ===============
 */
-void	R_InitImages( void ) {
-	Com_Memset(hashTable, 0, sizeof(hashTable));
+void R_InitImages( void ) {
+
+	Com_Memset( hashTable, 0, sizeof( hashTable ) );
+
 	// build brightness translation tables
 	R_SetColorMappings();
 

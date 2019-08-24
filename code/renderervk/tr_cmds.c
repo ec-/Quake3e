@@ -322,8 +322,9 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	//
 	// gamma stuff
 	//
-	if ( r_gamma->modified ) {
+	if ( r_gamma->modified || r_greyscale->modified ) {
 		r_gamma->modified = qfalse;
+		r_greyscale->modified = qfalse;
 #ifndef USE_VULKAN
 		R_IssuePendingRenderCommands();
 #endif

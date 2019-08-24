@@ -53,6 +53,9 @@ cvar_t	*r_stereoSeparation;
 cvar_t	*r_skipBackEnd;
 
 cvar_t	*r_anaglyphMode;
+
+cvar_t	*r_greyscale;
+
 cvar_t	*r_ignorehwgamma;
 
 cvar_t	*r_fastsky;
@@ -1404,7 +1407,8 @@ static void R_Register( void )
 	r_simpleMipMaps = ri.Cvar_Get( "r_simpleMipMaps", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_vertexLight = ri.Cvar_Get( "r_vertexLight", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_subdivisions = ri.Cvar_Get ("r_subdivisions", "4", CVAR_ARCHIVE_ND | CVAR_LATCH );
-
+	r_greyscale = ri.Cvar_Get( "r_greyscale", "0", CVAR_ARCHIVE_ND );
+	ri.Cvar_CheckRange( r_greyscale, "-1", "1", CV_FLOAT );
 	r_mapGreyScale = ri.Cvar_Get( "r_mapGreyScale", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_mapGreyScale, "-1", "1", CV_FLOAT );
 
