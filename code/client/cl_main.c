@@ -28,6 +28,10 @@ cvar_t	*cl_noprint;
 cvar_t	*cl_debugMove;
 cvar_t	*cl_motd;
 
+#ifdef USE_RENDERER_DLOPEN
+cvar_t	*cl_renderer;
+#endif
+
 cvar_t	*rcon_client_password;
 cvar_t	*rconAddress;
 
@@ -102,6 +106,9 @@ download_t			download;
 
 // Structure containing functions exported from refresh DLL
 refexport_t	re;
+#ifdef USE_RENDERER_DLOPEN
+static void	*rendererLib;
+#endif
 
 ping_t	cl_pinglist[MAX_PINGREQUESTS];
 
@@ -3125,12 +3132,26 @@ CL_ShutdownRef
 ============
 */
 static void CL_ShutdownRef( qboolean unloadDLL ) {
+
+#ifdef USE_RENDERER_DLOPEN
+	if ( cl_renderer->modified ) {
+		unloadDLL = qtrue;
+	}
+#endif
+	
 	if ( re.Shutdown ) {
 		if ( unloadDLL )
 			re.Shutdown( 2 );
 		else
 			re.Shutdown( 1 );
 	}
+
+#ifdef USE_RENDERER_DLOPEN
+	if ( rendererLib ) {
+		Sys_UnloadLibrary( rendererLib );
+		rendererLib = NULL;
+	}
+#endif
 
 	Com_Memset( &re, 0, sizeof( re ) );
 }
@@ -3266,10 +3287,38 @@ CL_InitRef
 static void CL_InitRef( void ) {
 	refimport_t	rimp;
 	refexport_t	*ret;
+#ifdef USE_RENDERER_DLOPEN
+	GetRefAPI_t		GetRefAPI;
+	char			dllName[ MAX_OSPATH ];
+#endif
 
 	CL_InitGLimp_Cvars();
 
 	Com_Printf( "----- Initializing Renderer ----\n" );
+
+#ifdef USE_RENDERER_DLOPEN
+	Com_sprintf( dllName, sizeof( dllName ), "renderer_%s_" ARCH_STRING DLL_EXT, cl_renderer->string );
+	rendererLib = Sys_LoadLibrary( dllName );
+	if ( !rendererLib )
+	{
+		Cvar_ForceReset( "cl_renderer" );
+		Com_sprintf( dllName, sizeof( dllName ), "renderer_%s_" ARCH_STRING DLL_EXT, cl_renderer->string );
+		rendererLib = Sys_LoadLibrary( dllName );
+		if ( !rendererLib )
+		{
+			Com_Error( ERR_FATAL, "Failed to load renderer %s", dllName );
+		}
+	}
+
+	GetRefAPI = Sys_LoadFunction( rendererLib, "GetRefAPI" );
+	if( !GetRefAPI )
+	{
+		Com_Error( ERR_FATAL, "Can't load symbol GetRefAPI" );
+		return;
+	}
+
+	cl_renderer->modified = qfalse;
+#endif
 
 	rimp.Cmd_AddCommand = Cmd_AddCommand;
 	rimp.Cmd_RemoveCommand = Cmd_RemoveCommand;
@@ -3608,6 +3657,18 @@ static void CL_ModeList_f( void )
 }
 
 
+#ifdef USE_RENDERER_DLOPEN
+static qboolean isValidRenderer( const char *s ) {
+	while ( *s ) {
+		if ( !((*s >= 'a' && *s <= 'z') || (*s >= 'A' && *s <= 'Z') ))
+			return qfalse;
+		++s;
+	}
+	return qtrue;
+}
+#endif
+
+
 static void CL_InitGLimp_Cvars( void )
 {
 	// shared with GLimp
@@ -3638,6 +3699,13 @@ static void CL_InitGLimp_Cvars( void )
 	r_stencilbits = Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_depthbits = Cvar_Get( "r_depthbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_drawBuffer = Cvar_Get( "r_drawBuffer", "GL_BACK", CVAR_CHEAT );
+
+#ifdef USE_RENDERER_DLOPEN
+	cl_renderer = Cvar_Get( "cl_renderer", "opengl", CVAR_ARCHIVE | CVAR_LATCH );
+	if ( !isValidRenderer( cl_renderer->string ) ) {
+		Cvar_ForceReset( "cl_renderer" );
+	}
+#endif
 }
 
 
