@@ -823,11 +823,14 @@ const char *FS_GetGamePath( void );
 qboolean FS_StripExt( char *filename, const char *ext );
 qboolean FS_AllowedExtension( const char *fileName, qboolean allowPk3s, const char **ext );
 
+void *FS_LoadLibrary( const char *name );
+
 typedef qboolean ( *fnamecallback_f )( const char *filename, int length );
 
 void FS_SetFilenameCallback( fnamecallback_f func ); 
 
 char *FS_CopyString( const char *in );
+
 
 // AVI pipes
 
@@ -1191,10 +1194,6 @@ void	Sys_QueEvent( int evTime, sysEventType_t evType, int value, int value2, int
 void	Sys_SendKeyEvents( void );
 void	Sys_Sleep( int msec );
 char	*Sys_ConsoleInput( void );
-
-// general development dll loading for virtual machine testing
-void	*QDECL Sys_LoadDll( const char *name, dllSyscall_t *entryPoint, dllSyscall_t systemcalls );
-void	Sys_UnloadDll( void *dllHandle );
 
 void	QDECL Sys_Error( const char *error, ...) __attribute__ ((noreturn, format (printf, 1, 2)));
 void	Sys_Quit (void) __attribute__ ((noreturn));

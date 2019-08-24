@@ -1400,6 +1400,56 @@ vm_t *VM_Restart( vm_t *vm ) {
 
 
 /*
+=================
+Sys_LoadDll
+
+Used to load a development dll instead of a virtual machine
+
+TTimo: added some verbosity in debug
+=================
+*/
+static void * QDECL VM_LoadDll( const char *name, dllSyscall_t *entryPoint, dllSyscall_t systemcalls ) {
+
+	const char	*gamedir = Cvar_VariableString( "fs_game" );
+	char		filename[ MAX_QPATH ];
+	void		*libHandle;
+	dllEntry_t	dllEntry;
+	
+	if ( !*gamedir ) {
+		gamedir = Cvar_VariableString( "fs_basegame" );
+	}
+
+#if id386 && !defined(_WIN32)
+	Com_sprintf( filename, sizeof( filename ), "%s/%s" "i386" DLL_EXT, gamedir, name );
+#else
+	Com_sprintf( filename, sizeof( filename ), "%s/%s" ARCH_STRING DLL_EXT, gamedir, name );
+#endif
+
+	libHandle = FS_LoadLibrary( filename );
+
+	if ( !libHandle ) {
+		Com_Printf( "VM_LoadDLL '%s' failed\n", filename );
+		return NULL;
+	}
+
+	Com_Printf( "VM_LoadDLL '%s' ok\n", filename );
+
+	dllEntry = /* ( dllEntry_t ) */ Sys_LoadFunction( libHandle, "dllEntry" ); 
+	*entryPoint = /* ( dllSyscall_t ) */ Sys_LoadFunction( libHandle, "vmMain" );
+	if ( !*entryPoint || !dllEntry ) {
+		Sys_UnloadLibrary( libHandle );
+		return NULL;
+	}
+
+	Com_Printf( "VM_LoadDll(%s) found **vmMain** at %p\n", name, *entryPoint );
+	dllEntry( systemcalls );
+	Com_Printf( "VM_LoadDll(%s) succeeded!\n", name );
+
+	return libHandle;
+}
+
+
+/*
 ================
 VM_Create
 
@@ -1452,7 +1502,7 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 	if ( interpret == VMI_NATIVE ) {
 		// try to load as a system dll
 		Com_Printf( "Loading dll file %s.\n", name );
-		vm->dllHandle = Sys_LoadDll( name, &vm->entryPoint, dllSyscalls );
+		vm->dllHandle = VM_LoadDll( name, &vm->entryPoint, dllSyscalls );
 		if ( vm->dllHandle ) {
 			vm->privateFlag = 0; // allow reading private cvars
 			vm->dataAlloc = ~0U;
@@ -1541,7 +1591,7 @@ void VM_Free( vm_t *vm ) {
 		vm->destroy( vm );
 
 	if ( vm->dllHandle )
-		Sys_UnloadDll( vm->dllHandle );
+		Sys_UnloadLibrary( vm->dllHandle );
 
 #if 0	// now automatically freed by hunk
 	if ( vm->codeBase.ptr ) {

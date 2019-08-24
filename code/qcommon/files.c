@@ -5519,3 +5519,40 @@ void FS_PipeClose( fileHandle_t f )
 
 	Com_Memset( &fsh[f], 0, sizeof( fsh[f] ) );
 }
+
+
+/*
+=================
+FS_LoadLibrary
+
+Tries to load libraries within known searchpaths
+=================
+*/
+void *FS_LoadLibrary( const char *name )
+{
+	const searchpath_t *sp = fs_searchpaths;
+	void *libHandle = NULL;
+	char *fn;
+
+#ifdef DEBUG
+	fn = FS_BuildOSPath( Sys_Pwd(), name, NULL );
+	libHandle = Sys_LoadLibrary( fn );
+#endif
+
+	while ( !libHandle && sp ) {
+		while ( sp && ( sp->policy != DIR_STATIC || !sp->dir ) ) {
+			sp = sp->next;
+		}
+		if ( sp ) {
+			fn = FS_BuildOSPath( sp->dir->path, name, NULL );
+			libHandle = Sys_LoadLibrary( fn );
+			sp = sp->next;
+		}
+	}
+
+	if ( !libHandle ) {
+		return NULL;
+	}
+
+	return libHandle;
+}
