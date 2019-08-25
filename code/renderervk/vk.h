@@ -350,7 +350,6 @@ typedef struct {
 	VkDebugReportCallbackEXT debug_callback;
 #endif
 	uint32_t frame_count;
-	uint32_t frame_skip_count;
 	qboolean active;
 	qboolean wideLines;
 	qboolean samplerAnisotropy;

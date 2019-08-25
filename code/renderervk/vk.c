@@ -4075,8 +4075,6 @@ void vk_begin_frame( void )
 	if ( vk.frame_count++ ) // might happen during stereo rendering
 		return;
 
-	vk.frame_skip_count = 0;
-	
 	// TODO: do not swotch with r_swapInterval?
 	vk.cmd = &vk.tess[ vk.cmd_index++ ];
 	vk.cmd_index %= NUM_COMMAND_BUFFERS;
