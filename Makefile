@@ -527,7 +527,7 @@ endif
 
 ifneq ($(BUILD_CLIENT),0)
   TARGETS += $(B)/$(TARGET_CLIENT)
-  ifneq ($(USE_RENDERER_DLOPEN),0)  
+  ifneq ($(USE_RENDERER_DLOPEN),0)
     TARGETS += $(B)/$(TARGET_REND1)
     TARGETS += $(B)/$(TARGET_RENDV)
   endif
@@ -537,9 +537,20 @@ ifeq ($(USE_CCACHE),1)
   CC := ccache $(CC)
 endif
 
+ifneq ($(USE_RENDERER_DLOPEN),0)
+    RENDCFLAGS=$(SHLIBCFLAGS)
+else
+    RENDCFLAGS=$(NOTSHLIBCFLAGS)
+endif
+
 define DO_CC
 $(echo_cmd) "CC $<"
 $(Q)$(CC) $(NOTSHLIBCFLAGS) $(CFLAGS) -o $@ -c $<
+endef
+
+define DO_REND_CC
+$(echo_cmd) "REND_CC $<"
+$(Q)$(CC) $(RENDCFLAGS) $(CFLAGS) -o $@ -c $<
 endef
 
 define DO_BOT_CC
@@ -964,11 +975,11 @@ $(B)/$(TARGET_CLIENT): $(Q3OBJ)
 
 $(B)/$(TARGET_REND1): $(Q3REND1OBJ)
 	$(echo_cmd) "LD $@"
-	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3REND1OBJ)
+	$(Q)$(CC) $(SHLIBCFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3REND1OBJ)
 
 $(B)/$(TARGET_RENDV): $(Q3RENDVOBJ)
 	$(echo_cmd) "LD $@"
-	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3RENDVOBJ)
+	$(Q)$(CC) $(SHLIBCFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3RENDVOBJ)
 
 #############################################################################
 # DEDICATED SERVER
@@ -1090,25 +1101,25 @@ $(B)/client/%.o: $(JPDIR)/%.c
 	$(DO_CC)
 
 $(B)/rend1/%.o: $(R1DIR)/%.c
-	$(DO_CC)
+	$(DO_REND_CC)
 
 $(B)/rend1/%.o: $(RCDIR)/%.c
-	$(DO_CC)
+	$(DO_REND_CC)
 
 $(B)/rend1/%.o: $(CMDIR)/%.c
-	$(DO_CC)
+	$(DO_REND_CC)
 
 $(B)/rendv/%.o: $(RVDIR)/%.c
-	$(DO_CC)
+	$(DO_REND_CC)
 
 $(B)/rendv/%.o: $(RCDIR)/%.c
-	$(DO_CC)
+	$(DO_REND_CC)
 
 $(B)/rendv/%.o: $(RVSDIR)/%.c
-	$(DO_CC)
+	$(DO_REND_CC)
 
 $(B)/rendv/%.o: $(CMDIR)/%.c
-	$(DO_CC)
+	$(DO_REND_CC)
 
 $(B)/client/%.o: $(UDIR)/%.c
 	$(DO_CC)

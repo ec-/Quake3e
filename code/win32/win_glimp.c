@@ -120,7 +120,7 @@ static qboolean GLW_StartDriverAndSetMode( int mode, const char *modeFS, int col
 **
 ** Helper function that replaces ChoosePixelFormat.
 */
-#define MAX_PFDS 256
+#define MAX_PFDS 384
 
 static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 {

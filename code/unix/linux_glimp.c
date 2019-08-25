@@ -176,8 +176,6 @@ static const char s_keytochar[ 128 ] =
  '"',  0x0,  0x0,  '|',  'Z',  'X',  'C',  'V',  'B',  'N',  'M',  '<',  '>',  '?',  0x0,  '*',  // 7
 };
 
-
-int Sys_XTimeToSysTime( Time xtime );
 void IN_ActivateMouse( void );
 void IN_DeactivateMouse( void );
 qboolean IN_MouseActive( void );
@@ -639,6 +637,68 @@ static qboolean directMap( const byte chr )
 		return qfalse;
 	else
 		return qtrue;
+}
+
+
+/*
+================
+Sys_XTimeToSysTime
+sub-frame timing of events returned by X
+X uses the Time typedef - unsigned long
+disable with in_subframe 0
+
+ sys_timeBase*1000 is the number of ms since the Epoch of our origin
+ xtime is in ms and uses the Epoch as origin
+   Time data type is an unsigned long: 0xffffffff ms - ~49 days period
+ I didn't find much info in the XWindow documentation about the wrapping
+   we clamp sys_timeBase*1000 to unsigned long, that gives us the current origin for xtime
+   the computation will still work if xtime wraps (at ~49 days period since the Epoch) after we set sys_timeBase
+
+================
+*/
+static int Sys_XTimeToSysTime( Time xtime )
+{
+	extern unsigned long sys_timeBase;
+	int ret, t, test;
+
+	if ( !in_subframe->integer )
+	{
+		// if you don't want to do any event times corrections
+		return Sys_Milliseconds();
+	}
+
+	// test the wrap issue
+#if 0
+	// reference values for test: sys_timeBase 0x3dc7b5e9 xtime 0x541ea451 (read these from a test run)
+	// xtime will wrap in 0xabe15bae ms >~ 0x2c0056 s (33 days from Nov 5 2002 -> 8 Dec)
+	//   NOTE: date -d '1970-01-01 UTC 1039384002 seconds' +%c
+	// use sys_timeBase 0x3dc7b5e9+0x2c0056 = 0x3df3b63f
+	// after around 5s, xtime would have wrapped around
+	// we get 7132, the formula handles the wrap safely
+	unsigned long xtime_aux,base_aux;
+	int test;
+//	Com_Printf("sys_timeBase: %p\n", sys_timeBase);
+//	Com_Printf("xtime: %p\n", xtime);
+	xtime_aux = 500; // 500 ms after wrap
+	base_aux = 0x3df3b63f; // the base a few seconds before wrap
+	test = xtime_aux - (unsigned long)(base_aux*1000);
+	Com_Printf("xtime wrap test: %d\n", test);
+#endif
+
+	// some X servers (like suse 8.1's) report weird event times
+	// if the game is loading, resolving DNS, etc. we are also getting old events
+	// so we only deal with subframe corrections that look 'normal'
+	ret = xtime - (unsigned long)(sys_timeBase * 1000);
+	t = Sys_Milliseconds();
+	test = t - ret;
+
+	//printf("delta: %d\n", test);
+	if (test < 0 || test > 30) // in normal conditions I've never seen this go above
+	{
+		return t;
+	}
+
+	return ret;
 }
 
 

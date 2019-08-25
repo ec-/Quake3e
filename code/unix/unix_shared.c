@@ -53,88 +53,26 @@ unsigned long sys_timeBase = 0;
      0x7fffffff ms - ~24 days
    although timeval:tv_usec is an int, I'm not sure wether it is actually used as an unsigned int
      (which would affect the wrap period) */
-int curtime;
-int Sys_Milliseconds (void)
+int Sys_Milliseconds( void )
 {
 	struct timeval tp;
+	int curtime;
 
-	gettimeofday(&tp, NULL);
+	gettimeofday( &tp, NULL );
 	
-	if (!sys_timeBase)
+	if ( !sys_timeBase )
 	{
 		sys_timeBase = tp.tv_sec;
 		return tp.tv_usec/1000;
 	}
 
-	curtime = (tp.tv_sec - sys_timeBase)*1000 + tp.tv_usec/1000;
+	curtime = (tp.tv_sec - sys_timeBase) * 1000 + tp.tv_usec / 1000;
 	
 	return curtime;
 }
 
-#if (defined(__linux__) || defined(__FreeBSD__) || defined(__sun)) && !defined(DEDICATED)
-/*
-================
-Sys_XTimeToSysTime
-sub-frame timing of events returned by X
-X uses the Time typedef - unsigned long
-disable with in_subframe 0
 
- sys_timeBase*1000 is the number of ms since the Epoch of our origin
- xtime is in ms and uses the Epoch as origin
-   Time data type is an unsigned long: 0xffffffff ms - ~49 days period
- I didn't find much info in the XWindow documentation about the wrapping
-   we clamp sys_timeBase*1000 to unsigned long, that gives us the current origin for xtime
-   the computation will still work if xtime wraps (at ~49 days period since the Epoch) after we set sys_timeBase
-
-================
-*/
-extern cvar_t *in_subframe;
-int Sys_XTimeToSysTime (unsigned long xtime)
-{
-	int ret, time, test;
-	
-	if ( !in_subframe->integer )
-	{
-		// if you don't want to do any event times corrections
-		return Sys_Milliseconds();
-	}
-
-	// test the wrap issue
-#if 0	
-	// reference values for test: sys_timeBase 0x3dc7b5e9 xtime 0x541ea451 (read these from a test run)
-	// xtime will wrap in 0xabe15bae ms >~ 0x2c0056 s (33 days from Nov 5 2002 -> 8 Dec)
-	//   NOTE: date -d '1970-01-01 UTC 1039384002 seconds' +%c
-	// use sys_timeBase 0x3dc7b5e9+0x2c0056 = 0x3df3b63f
-	// after around 5s, xtime would have wrapped around
-	// we get 7132, the formula handles the wrap safely
-	unsigned long xtime_aux,base_aux;
-	int test;
-//	Com_Printf("sys_timeBase: %p\n", sys_timeBase);
-//	Com_Printf("xtime: %p\n", xtime);
-	xtime_aux = 500; // 500 ms after wrap
-	base_aux = 0x3df3b63f; // the base a few seconds before wrap
-	test = xtime_aux - (unsigned long)(base_aux*1000);
-	Com_Printf("xtime wrap test: %d\n", test);
-#endif
-
-  // some X servers (like suse 8.1's) report weird event times
-  // if the game is loading, resolving DNS, etc. we are also getting old events
-  // so we only deal with subframe corrections that look 'normal'
-  ret = xtime - (unsigned long)(sys_timeBase*1000);
-  time = Sys_Milliseconds();
-  test = time - ret;
-  //printf("delta: %d\n", test);
-  if (test < 0 || test > 30) // in normal conditions I've never seen this go above
-  {
-    return time;
-  }
-
-	return ret;
-}
-#endif
-
-
-char *strlwr (char *s) {
+char *strlwr( char *s ) {
   if ( s==NULL ) { // bk001204 - paranoia
     assert(0);
     return s;
@@ -162,7 +100,7 @@ qboolean Sys_RandomBytes( byte *string, int len )
 
 	setvbuf( fp, NULL, _IONBF, 0 ); // don't buffer reads from /dev/urandom
 
-	if( fread( string, sizeof( byte ), len, fp ) != len ) {
+	if ( fread( string, sizeof( byte ), len, fp ) != len ) {
 		fclose( fp );
 		return qfalse;
 	}
