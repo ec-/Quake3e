@@ -29,7 +29,8 @@ USE_RENDERER_DLOPEN = 0
 
 CNAME            = quake3e
 DNAME            = quake3e.ded
-ARCHEXT          =
+
+RENDERER_PREFIX  = $(CNAME)
 
 #USE_ALSA_STATIC = 1
 #USE_STATIC_GL   = 1
@@ -195,6 +196,7 @@ endif
 
 ifneq ($(USE_RENDERER_DLOPEN),0)
   BASE_CFLAGS += -DUSE_RENDERER_DLOPEN
+  BASE_CFLAGS += -DRENDERER_PREFIX=\\\"$(RENDERER_PREFIX)\\\"
 endif
 
 ifeq ($(USE_CODEC_VORBIS),1)
@@ -237,6 +239,8 @@ endif
 ## Defaults
 INSTALL=install
 MKDIR=mkdir
+
+ARCHEXT=
 
 ifeq ($(PLATFORM),linux)
 
@@ -509,6 +513,10 @@ endif #OpenBSD
 endif #NetBSD
 
 TARGET_CLIENT = $(CNAME)$(ARCHEXT)$(BINEXT)
+
+TARGET_REND1 = $(RENDERER_PREFIX)_opengl_$(SHLIBNAME)
+TARGET_RENDV = $(RENDERER_PREFIX)_vulkan_$(SHLIBNAME)
+
 TARGET_SERVER = $(DNAME)$(ARCHEXT)$(BINEXT)
 
 TARGETS =
@@ -520,8 +528,8 @@ endif
 ifneq ($(BUILD_CLIENT),0)
   TARGETS += $(B)/$(TARGET_CLIENT)
   ifneq ($(USE_RENDERER_DLOPEN),0)  
-    TARGETS += $(B)/renderer_opengl_$(SHLIBNAME)
-    TARGETS += $(B)/renderer_vulkan_$(SHLIBNAME)
+    TARGETS += $(B)/$(TARGET_REND1)
+    TARGETS += $(B)/$(TARGET_RENDV)
   endif
 endif
 
@@ -945,10 +953,22 @@ else
 
 endif
 
+# client binary
+
 $(B)/$(TARGET_CLIENT): $(Q3OBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) -o $@ $(Q3OBJ) $(CLIENT_LDFLAGS) \
 		$(LDFLAGS)
+
+# modular renderers
+
+$(B)/$(TARGET_REND1): $(Q3REND1OBJ)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3REND1OBJ)
+
+$(B)/$(TARGET_RENDV): $(Q3RENDVOBJ)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3RENDVOBJ)
 
 #############################################################################
 # DEDICATED SERVER
@@ -1046,14 +1066,6 @@ endif
 $(B)/$(TARGET_SERVER): $(Q3DOBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) -o $@ $(Q3DOBJ) $(LDFLAGS)
-
-$(B)/renderer_opengl_$(SHLIBNAME): $(Q3REND1OBJ)
-	$(echo_cmd) "LD $@"
-	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3REND1OBJ)
-
-$(B)/renderer_vulkan_$(SHLIBNAME): $(Q3RENDVOBJ)
-	$(echo_cmd) "LD $@"
-	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3RENDVOBJ)
 
 #############################################################################
 ## CLIENT/SERVER RULES

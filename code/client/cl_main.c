@@ -3297,12 +3297,12 @@ static void CL_InitRef( void ) {
 	Com_Printf( "----- Initializing Renderer ----\n" );
 
 #ifdef USE_RENDERER_DLOPEN
-	Com_sprintf( dllName, sizeof( dllName ), "renderer_%s_" ARCH_STRING DLL_EXT, cl_renderer->string );
+	Com_sprintf( dllName, sizeof( dllName ), RENDERER_PREFIX "_%s_" ARCH_STRING DLL_EXT, cl_renderer->string );
 	rendererLib = FS_LoadLibrary( dllName );
 	if ( !rendererLib )
 	{
 		Cvar_ForceReset( "cl_renderer" );
-		Com_sprintf( dllName, sizeof( dllName ), "renderer_%s_" ARCH_STRING DLL_EXT, cl_renderer->string );
+		Com_sprintf( dllName, sizeof( dllName ), RENDERER_PREFIX "_%s_" ARCH_STRING DLL_EXT, cl_renderer->string );
 		rendererLib = FS_LoadLibrary( dllName );
 		if ( !rendererLib )
 		{
