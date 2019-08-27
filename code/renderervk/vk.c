@@ -2239,15 +2239,6 @@ void vk_restart_swapchain( const char *funcname )
 }
 
 
-static unsigned int log2pad( unsigned int v )
-{
-	unsigned int x;
-	for ( x = 1 ; x < v ; x <<= 1 )
-		;
-	return x;
-}
-
-
 void vk_initialize( void )
 {
 	char buf[64], driver_version[64];
@@ -2286,7 +2277,7 @@ void vk_initialize( void )
 	if ( /*vk.fboActive &&*/ vk.msaaActive ) {
 		VkSampleCountFlags mask;
 		mask = MIN( props.limits.sampledImageColorSampleCounts, props.limits.sampledImageDepthSampleCounts );
-		vkSamples = MAX( log2pad( r_ext_multisample->integer ), VK_SAMPLE_COUNT_2_BIT );
+		vkSamples = MAX( log2pad( r_ext_multisample->integer, 1 ), VK_SAMPLE_COUNT_2_BIT );
 		while ( vkSamples > mask )
 				vkSamples >>= 1;
 		ri.Printf( PRINT_ALL, "...using %ix MSAA\n", vkSamples );
@@ -2299,10 +2290,7 @@ void vk_initialize( void )
 	// maxTextureSize must not exceed IMAGE_CHUNK_SIZE
 	maxSize = sqrtf( IMAGE_CHUNK_SIZE / 4 );
 	// round down to next power of 2
-	i = log2pad( maxSize );
-	while ( i > maxSize )
-		i >>= 1;
-	glConfig.maxTextureSize = MIN(props.limits.maxImageDimension2D, i);
+	glConfig.maxTextureSize = MIN( props.limits.maxImageDimension2D, log2pad( maxSize, 0 ) );
 
 	if ( props.limits.maxPerStageDescriptorSamplers != 0xFFFFFFFF )
 		glConfig.numTextureUnits = props.limits.maxPerStageDescriptorSamplers;

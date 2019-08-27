@@ -941,6 +941,22 @@ void		Com_WriteConfiguration( void );
 int			Com_HexStrToInt( const char *str );
 
 
+static ID_INLINE unsigned int log2pad( unsigned int v, int roundup )
+{
+	unsigned int x = 1;
+
+	while ( x < v ) x <<= 1;
+
+	if ( roundup == 0 ) {
+		if ( x > v ) {
+			x >>= 1;
+		}
+	}
+
+	return x;
+}
+
+
 extern	cvar_t	*com_developer;
 extern	cvar_t	*com_dedicated;
 extern	cvar_t	*com_speeds;
