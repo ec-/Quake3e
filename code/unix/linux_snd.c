@@ -540,9 +540,11 @@ qboolean setup_ALSA( smode_t mode )
 	Com_Printf( "period_size=%i\n", (int)period_size );
 #endif
 
+	dma.isfloat = qfalse;
 	dma.channels = channels;
 	dma.speed = speed;
 	dma.samples = NUM_SAMPLES;
+	dma.fullsamples = dma.samples / dma.channels;
 	dma.samplebits = bps;
 	dma.submission_chunk = 1;
 	dma.buffer = buffer;

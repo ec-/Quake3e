@@ -253,10 +253,12 @@ qboolean SNDDMA_InitDS( void )
 	
 	gSndBufSize = dsbcaps.dwBufferBytes;
 
+	dma.isfloat = qfalse;
 	dma.channels = format.nChannels;
 	dma.samplebits = format.wBitsPerSample;
 	dma.speed = format.nSamplesPerSec;
 	dma.samples = gSndBufSize/(dma.samplebits/8);
+	dma.fullsamples = dma.samples / dma.channels;
 	dma.submission_chunk = 1;
 	dma.buffer = NULL;			// must be locked first
 

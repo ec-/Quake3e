@@ -421,7 +421,7 @@ void S_Init( void )
 		Com_Printf( "Sound disabled.\n" );
 	} else {
 
-		S_CodecInit( );
+		S_CodecInit();
 
 		Cmd_AddCommand( "play", S_Play_f );
 		Cmd_AddCommand( "music", S_Music_f );

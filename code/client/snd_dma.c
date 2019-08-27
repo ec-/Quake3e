@@ -76,7 +76,7 @@ int   		s_paintedtime; 		// sample PAIRS
 // of custom player sounds
 #define		MAX_SFX			4096
 sfx_t		s_knownSfx[MAX_SFX];
-int		s_numSfx = 0;
+int			s_numSfx = 0;
 
 #define		LOOP_HASH		128
 sfx_t		*sfxHash[LOOP_HASH];
@@ -109,7 +109,7 @@ static void S_Base_SoundInfo( void ) {
 	} else {
 		Com_Printf("%5d channels\n", dma.channels);
 		Com_Printf("%5d samples\n", dma.samples);
-		Com_Printf("%5d samplebits\n", dma.samplebits);
+		Com_Printf("%5d samplebits (%s)\n", dma.samplebits, dma.isfloat ? "float" : "int");
 		Com_Printf("%5d submission_chunk\n", dma.submission_chunk);
 		Com_Printf("%5d speed\n", dma.speed);
 		Com_Printf("%p dma buffer\n", dma.buffer);
@@ -395,7 +395,7 @@ static void S_SpatializeOrigin( const vec3_t origin, int master_vol, int *left_v
 
 	const float dist_mult = SOUND_ATTENUATE;
 	
-	// calculate stereo seperation and distance attenuation
+	// calculate stereo separation and distance attenuation
 	VectorSubtract(origin, listener_origin, source_vec);
 
 	dist = VectorNormalize(source_vec);
@@ -444,10 +444,10 @@ static void S_SpatializeOrigin( const vec3_t origin, int master_vol, int *left_v
 
 /*
 ====================
-S_StartSound
+S_Base_StartSound
 
 Validates the parms and ques the sound up
-if pos is NULL, the sound will be dynamically sourced from the entity
+if origin is NULL, the sound will be dynamically sourced from the entity
 Entchannel 0 will never override a playing sound
 ====================
 */
@@ -1138,12 +1138,9 @@ static void S_GetSoundtime( void )
 	int		samplepos;
 	static	int		buffers;
 	static	int		oldsamplepos;
-	int		fullsamples;
 	float	fps;
 	float	frameDuration;
 	int		msec;
-	
-	fullsamples = dma.samples / dma.channels;
 
 	if( CL_VideoRecording( ) )
 	{
@@ -1166,13 +1163,13 @@ static void S_GetSoundtime( void )
 		if (s_paintedtime > 0x40000000)
 		{	// time to chop things off to avoid 32 bit limits
 			buffers = 0;
-			s_paintedtime = fullsamples;
+			s_paintedtime = dma.fullsamples;
 			S_Base_StopAllSounds ();
 		}
 	}
 	oldsamplepos = samplepos;
 
-	s_soundtime = buffers*fullsamples + samplepos/dma.channels;
+	s_soundtime = buffers * dma.fullsamples + samplepos/dma.channels;
 
 #if 0
 // check to make sure that we haven't overshot
@@ -1193,7 +1190,6 @@ static void S_GetSoundtime( void )
 
 static void S_Update_( void ) {
 	unsigned		endtime;
-	int				samps;
 	static float	lastTime = 0.0f;
 	float			ma, op;
 	float			thisTime, sane;
@@ -1237,9 +1233,8 @@ static void S_Update_( void ) {
 		& ~(dma.submission_chunk-1);
 
 	// never mix more than the complete buffer
-	samps = dma.samples >> (dma.channels-1);
-	if (endtime - s_soundtime > samps)
-		endtime = s_soundtime + samps;
+	if (endtime - s_soundtime > dma.fullsamples)
+		endtime = s_soundtime + dma.fullsamples;
 
 	SNDDMA_BeginPainting();
 
@@ -1462,11 +1457,11 @@ static void S_Base_Shutdown( void ) {
 	s_soundStarted = qfalse;
 
 	s_numSfx = 0; // clean up sound cache -EC-
-	
+
 	if ( p && p != buffer2 )
 		free( p );
 	dma.buffer2 = NULL;
-	
+
 	Cmd_RemoveCommand( "s_info" );
 }
 

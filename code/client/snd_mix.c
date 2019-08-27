@@ -351,13 +351,28 @@ static void S_TransferPaintBuffer( int endtime, byte *buffer )
 		out_idx = s_paintedtime * dma.channels & out_mask;
 		step = 3 - dma.channels;
 
-		if (dma.samplebits == 16)
+		if ( dma.samplebits == 32 && dma.isfloat )
 		{
-			short *out = (short *) pbuf;
-			while (count--)
+			float *out = (float *) pbuf;
+			while ( count-- > 0 )
 			{
 				val = *p >> 8;
-				p+= step;
+				p += step;
+				if (val > 0x7fff)
+					val = 0x7fff;
+				else if (val < -32767)  /* clamp to one less than max to make division max out at -1.0f. */
+					val = -32767;
+				out[out_idx] = ((float) val) / 32767.0f;
+				out_idx = (out_idx + 1) & out_mask;
+			}
+		} 
+		else if (dma.samplebits == 16)
+		{
+			short *out = (short *) pbuf;
+			while ( count-- > 0 )
+			{
+				val = *p >> 8;
+				p += step;
 				if (val > 0x7fff)
 					val = 0x7fff;
 				else if (val < -32768)
@@ -369,10 +384,10 @@ static void S_TransferPaintBuffer( int endtime, byte *buffer )
 		else if (dma.samplebits == 8)
 		{
 			unsigned char *out = (unsigned char *) pbuf;
-			while (count--)
+			while ( count-- > 0 )
 			{
 				val = *p >> 8;
-				p+= step;
+				p += step;
 				if (val > 0x7fff)
 					val = 0x7fff;
 				else if (val < -32768)
