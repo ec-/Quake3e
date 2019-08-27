@@ -597,7 +597,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		g_wv.winRectValid = qfalse;
 		gw_minimized = qfalse;
 		gw_active = qfalse;
-		WIN_EnableAltTab();
+		//WIN_EnableAltTab();
 		break;
 
 	case WM_CLOSE:
@@ -641,11 +641,11 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		// We can't get correct minimized status on WM_KILLFOCUS
 		VID_AppActivate( fActive );
 
-		if ( fActive ) {
-			WIN_DisableAltTab();
-		} else {
-			WIN_EnableAltTab();
-		}
+		//if ( fActive ) {
+		//	WIN_DisableAltTab();
+		//} else {
+		//	WIN_EnableAltTab();
+		//}
 
 		if ( glw_state.cdsFullscreen ) {
 			if ( fActive ) {
@@ -894,8 +894,8 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		break;
 #endif
 	case WM_NCHITTEST:
-		// in borderless mode - drag using client area when holding CTRL
-		if ( g_wv.borderless && GetKeyState( VK_CONTROL ) & (1<<15) )
+		// in borderless mode - drag using client area when holding ALT
+		if ( g_wv.borderless && GetKeyState( VK_MENU ) & (1<<15) )
 			return HTCAPTION;
 		break;
 

@@ -1214,7 +1214,7 @@ void IN_Frame( void ) {
 		if ( !glw_state.cdsFullscreen || glw_state.monitorCount > 1 )
 		{
 			IN_DeactivateMouse();
-			WIN_EnableAltTab();
+			//WIN_EnableAltTab();
 			//WIN_DisableHook();
 			return;
 		}
@@ -1227,7 +1227,7 @@ void IN_Frame( void ) {
 
 	IN_ActivateMouse();
 
-	WIN_DisableAltTab();
+	//WIN_DisableAltTab();
 	WIN_EnableHook();
 
 	// post events to the system que
