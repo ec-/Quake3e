@@ -521,7 +521,7 @@ static int dll_err_count = 0;
 Sys_LoadLibrary
 =================
 */
-void *Sys_LoadLibrary( const char *name ) 
+void *Sys_LoadLibrary( const char *name )
 {
 	const char *ext;
 
@@ -542,7 +542,7 @@ void *Sys_LoadLibrary( const char *name )
 Sys_LoadFunction
 =================
 */
-void *Sys_LoadFunction( void *handle, const char *name ) 
+void *Sys_LoadFunction( void *handle, const char *name )
 {
 	void *symbol;
 
@@ -565,7 +565,7 @@ void *Sys_LoadFunction( void *handle, const char *name )
 Sys_LoadFunctionErrors
 =================
 */
-int Sys_LoadFunctionErrors( void ) 
+int Sys_LoadFunctionErrors( void )
 {
 	int result = dll_err_count;
 	dll_err_count = 0;
@@ -578,9 +578,9 @@ int Sys_LoadFunctionErrors( void )
 Sys_UnloadLibrary
 =================
 */
-void Sys_UnloadLibrary( void *handle ) 
+void Sys_UnloadLibrary( void *handle )
 {
-	if ( handle ) 
+	if ( handle )
 		FreeLibrary( handle );
 }
 
@@ -592,24 +592,11 @@ Sys_SendKeyEvents
 Platform-dependent event handling
 =================
 */
-void Sys_SendKeyEvents( void ) 
+void Sys_SendKeyEvents( void )
 {
-	MSG msg;
-
-	// pump the message loop
-	while ( PeekMessage( &msg, NULL, 0, 0, PM_NOREMOVE ) ) {
-		if ( GetMessage( &msg, NULL, 0, 0 ) <= 0 ) {
-			Cmd_Clear();
-			Com_Quit_f();
-		}
-
-		// save the msg time, because wndprocs don't have access to the timestamp
-		//g_wv.sysMsgTime = msg.time;
-		g_wv.sysMsgTime = Sys_Milliseconds();
-
-		TranslateMessage( &msg );
-		DispatchMessage( &msg );
-	}
+#ifndef DEDICATED
+	HandleEvents();
+#endif
 }
 
 

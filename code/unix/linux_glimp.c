@@ -702,7 +702,7 @@ static int Sys_XTimeToSysTime( Time xtime )
 }
 
 
-void HandleX11Events( void )
+void HandleEvents( void )
 {
 	XEvent event;
 	int btn_code;
@@ -1666,7 +1666,7 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 //	XSync( dpy, False );
 	while ( window_exposed == qfalse )
 	{
-		HandleX11Events();
+		HandleEvents();
 	}
 
 	return RSERR_OK;

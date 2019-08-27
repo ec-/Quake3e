@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 // linux_local.h: Linux-specific Quake3 header file
 
-void HandleX11Events( void );
+void HandleEvents( void );
 
 // Input subsystem
 

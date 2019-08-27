@@ -938,6 +938,7 @@ void		Com_StartupVariable( const char *match );
 // only a set with the exact name.  Only used during startup.
 
 void		Com_WriteConfiguration( void );
+int			Com_HexStrToInt( const char *str );
 
 
 extern	cvar_t	*com_developer;

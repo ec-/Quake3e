@@ -203,7 +203,7 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 	// determine present mode and swapchain image count
 	VK_CHECK(qvkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_mode_count, NULL));
 	
-	present_modes = (VkPresentModeKHR *) malloc( present_mode_count * sizeof( VkPresentModeKHR ) );
+	present_modes = (VkPresentModeKHR *) ri.Malloc( present_mode_count * sizeof( VkPresentModeKHR ) );
 	VK_CHECK(qvkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_mode_count, present_modes));
 	
 	ri.Printf( PRINT_ALL, "...presentation modes:" );
@@ -219,7 +219,7 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 	}
 	ri.Printf( PRINT_ALL, "\n" );
 
-	free( present_modes );
+	ri.Free( present_modes );
 
 	if ( ri.Cvar_VariableIntegerValue( "r_swapInterval" ) ) {
 		present_mode = VK_PRESENT_MODE_FIFO_KHR;
@@ -622,8 +622,8 @@ static void create_instance( void )
 	count = 0;
 	VK_CHECK(qvkEnumerateInstanceExtensionProperties(NULL, &count, NULL));
 
-	extension_properties = (VkExtensionProperties *)malloc(sizeof(VkExtensionProperties) * count);
-	extension_names = (const char**)malloc(sizeof(char *) * count);
+	extension_properties = (VkExtensionProperties *)ri.Malloc(sizeof(VkExtensionProperties) * count);
+	extension_names = (const char**)ri.Malloc(sizeof(char *) * count);
 
 	VK_CHECK( qvkEnumerateInstanceExtensionProperties( NULL, &count, extension_properties ) );
 	for ( i = 0; i < count; i++ ) {
@@ -662,8 +662,8 @@ static void create_instance( void )
 		str = Q_stradd( str, extension_names[i] );
 	}
 
-	free( (void*)extension_names );
-	free( extension_properties );
+	ri.Free( (void*)extension_names );
+	ri.Free( extension_properties );
 }
 
 
@@ -755,7 +755,7 @@ static void create_device( void ) {
 		ri.Error( ERR_FATAL, "vkEnumeratePhysicalDevices returned error %i", res );
 	}
 
-	physical_devices = (VkPhysicalDevice*)malloc( device_count * sizeof( VkPhysicalDevice ) );
+	physical_devices = (VkPhysicalDevice*)ri.Malloc( device_count * sizeof( VkPhysicalDevice ) );
 	VK_CHECK(qvkEnumeratePhysicalDevices( vk.instance, &device_count, physical_devices ) );
 
 	// select physical device
@@ -765,7 +765,7 @@ static void create_device( void ) {
 
 	vk.physical_device = physical_devices[ device_index ];
 
-	free( physical_devices );
+	ri.Free( physical_devices );
 
 	ri.Printf( PRINT_ALL, "...selected physical device #%i\n", device_index );
 
@@ -783,7 +783,7 @@ static void create_device( void ) {
 		if ( format_count == 0 )
 			ri.Error( ERR_FATAL, "Vulkan: no surface formats found" );
 
-		candidates = (VkSurfaceFormatKHR*) malloc( format_count * sizeof(VkSurfaceFormatKHR) );
+		candidates = (VkSurfaceFormatKHR*) ri.Malloc( format_count * sizeof(VkSurfaceFormatKHR) );
 
 		VK_CHECK( qvkGetPhysicalDeviceSurfaceFormatsKHR( vk.physical_device, vk.surface, &format_count, candidates ) );
 		
@@ -806,7 +806,7 @@ static void create_device( void ) {
 			}
 		}
 
-		free( candidates );
+		ri.Free( candidates );
 	}
 
 	get_surface_formats();
@@ -818,7 +818,7 @@ static void create_device( void ) {
 		uint32_t i;
 
 		qvkGetPhysicalDeviceQueueFamilyProperties(vk.physical_device, &queue_family_count, NULL);
-		queue_families = (VkQueueFamilyProperties*)malloc(queue_family_count * sizeof(VkQueueFamilyProperties));
+		queue_families = (VkQueueFamilyProperties*)ri.Malloc(queue_family_count * sizeof(VkQueueFamilyProperties));
 		qvkGetPhysicalDeviceQueueFamilyProperties(vk.physical_device, &queue_family_count, queue_families);
 
 		// select queue family with presentation and graphics support
@@ -833,9 +833,9 @@ static void create_device( void ) {
 			}
 		}
 		
-		free(queue_families);
+		ri.Free( queue_families );
 
-		if (vk.queue_family_index == ~0U)
+		if ( vk.queue_family_index == ~0U )
 			ri.Error(ERR_FATAL, "Vulkan: failed to find queue family");
 	}
 
@@ -852,7 +852,7 @@ static void create_device( void ) {
 		uint32_t i, count = 0;
 
 		VK_CHECK(qvkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &count, NULL));
-		extension_properties = (VkExtensionProperties*)malloc(count * sizeof(VkExtensionProperties));
+		extension_properties = (VkExtensionProperties*)ri.Malloc(count * sizeof(VkExtensionProperties));
 		VK_CHECK(qvkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &count, extension_properties));
 
 		for (i = 0; i < count; i++) {
@@ -863,7 +863,7 @@ static void create_device( void ) {
 			}
 		}
 
-		free(extension_properties);
+		ri.Free( extension_properties );
 
 		if ( !supported )
 			ri.Error( ERR_FATAL, "Vulkan: required device extension is not available: %s", device_extensions[0] );
@@ -4147,7 +4147,7 @@ void vk_begin_frame( void )
 			// swapchain re-creation needed
 			vk_restart_swapchain( __func__ );
 		} else {
-			Com_Error( ERR_FATAL, "vkAcquireNextImageKHR returned error code %x", res );
+			ri.Error( ERR_FATAL, "vkAcquireNextImageKHR returned error code %x", res );
 		}
 	}
 

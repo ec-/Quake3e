@@ -534,7 +534,7 @@ static void InitOpenGL( void )
 		GLint max_texture_size;
 		GLint max_shader_units = -1;
 		GLint max_bind_units = -1;
-		
+
 		ri.GLimp_Init( &glConfig );
 
 		R_ClearSymTables();

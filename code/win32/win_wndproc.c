@@ -903,3 +903,23 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 	return DefWindowProc( hWnd, uMsg, wParam, lParam );
 }
+
+
+void HandleEvents( void ) {
+	MSG msg;
+
+	// pump the message loop
+	while ( PeekMessage( &msg, NULL, 0, 0, PM_NOREMOVE ) ) {
+		if ( GetMessage( &msg, NULL, 0, 0 ) <= 0 ) {
+			Cmd_Clear();
+			Com_Quit_f();
+		}
+
+		// save the msg time, because wndprocs don't have access to the timestamp
+		//g_wv.sysMsgTime = msg.time;
+		g_wv.sysMsgTime = Sys_Milliseconds();
+
+		TranslateMessage( &msg );
+		DispatchMessage( &msg );
+	}
+}

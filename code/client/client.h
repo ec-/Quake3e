@@ -590,7 +590,6 @@ size_t	CL_SaveJPGToBuffer( byte *buffer, size_t bufSize, int quality, int image_
 void	CL_SaveJPG( const char *filename, int quality, int image_width, int image_height, byte *image_buffer, int padding );
 void	CL_LoadJPG( const char *filename, unsigned char **pic, int *width, int *height );
 
-
 // platform-specific
 void	GLimp_Init( glconfig_t *config );
 void	GLimp_Shutdown( qboolean unloadDLL );

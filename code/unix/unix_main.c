@@ -620,7 +620,7 @@ Platform-dependent event handling
 void Sys_SendKeyEvents( void )
 {
 #ifndef DEDICATED
-	HandleX11Events();
+	HandleEvents();
 #endif
 }
 
