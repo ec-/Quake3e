@@ -1103,6 +1103,7 @@ void IN_Shutdown( void ) {
 	Cmd_RemoveCommand( "midiinfo" );
 #endif
 	Cmd_RemoveCommand( "minimize" );
+	Cmd_RemoveCommand( "in_restart" );
 }
 
 
@@ -1111,6 +1112,8 @@ void IN_Shutdown( void ) {
 IN_Init
 ===========
 */
+void IN_Restart_f( void );
+
 void IN_Init( void ) {
 
 #ifdef USE_MIDI
@@ -1149,9 +1152,11 @@ void IN_Init( void ) {
 	in_logitechbug = Cvar_Get( "in_logitechbug", "0", CVAR_ARCHIVE_ND );
 
 	in_minimize	= Cvar_Get( "in_minimize", "", CVAR_ARCHIVE | CVAR_LATCH );
-	IN_GetHotkey( in_minimize, &HotKey );
 
 	Cmd_AddCommand( "minimize", IN_Minimize );
+	Cmd_AddCommand( "in_restart", IN_Restart_f );
+
+	IN_GetHotkey( in_minimize, &HotKey );
 
 	IN_Startup();
 }
@@ -1227,6 +1232,19 @@ void IN_Frame( void ) {
 
 	// post events to the system que
 	IN_MouseMove();
+}
+
+
+/*
+=================
+In_Restart_f
+
+Restart the input subsystem
+=================
+*/
+void IN_Restart_f( void ) {
+	IN_Shutdown();
+	IN_Init();
 }
 
 

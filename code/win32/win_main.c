@@ -448,64 +448,6 @@ qboolean Sys_GetFileStats( const char *filename, fileOffset_t *size, fileTime_t 
 
 //========================================================
 
-
-/*
-================
-Sys_GetClipboardData
-================
-*/
-char *Sys_GetClipboardData( void ) {
-	char *data = NULL;
-	char *cliptext;
-
-	if ( OpenClipboard( NULL ) ) {
-		HANDLE hClipboardData;
-		DWORD size;
-
-		// GetClipboardData performs implicit CF_UNICODETEXT => CF_TEXT conversion
-		if ( ( hClipboardData = GetClipboardData( CF_TEXT ) ) != 0 ) {
-			if ( ( cliptext = GlobalLock( hClipboardData ) ) != 0 ) {
-				size = GlobalSize( hClipboardData ) + 1;
-				data = Z_Malloc( size );
-				Q_strncpyz( data, cliptext, size );
-				GlobalUnlock( hClipboardData );
-				
-				strtok( data, "\n\r\b" );
-			}
-		}
-		CloseClipboard();
-	}
-	return data;
-}
-
-
-/*
-================
-Sys_SetClipboardBitmap
-================
-*/
-void Sys_SetClipboardBitmap( const byte *bitmap, int length )
-{
-	HGLOBAL hMem;
-	byte *ptr;
-
-	if ( !g_wv.hWnd || !OpenClipboard( g_wv.hWnd ) )
-		return;
-
-	EmptyClipboard();
-	hMem = GlobalAlloc( GMEM_MOVEABLE | GMEM_DDESHARE, length );
-	if ( hMem != NULL ) {
-		ptr = ( byte* )GlobalLock( hMem );
-		if ( ptr != NULL ) {
-			memcpy( ptr, bitmap, length ); 
-		}
-		GlobalUnlock( hMem );
-		SetClipboardData( CF_DIB, hMem );
-	}
-	CloseClipboard();
-}
-
-
 /*
 ========================================================================
 
@@ -602,22 +544,6 @@ void Sys_SendKeyEvents( void )
 
 //================================================================
 
-/*
-=================
-Sys_In_Restart_f
-
-Restart the input subsystem
-=================
-*/
-#ifndef DEDICATED
-
-void Sys_In_Restart_f( void ) {
-	IN_Shutdown();
-	IN_Init();
-}
-
-#endif
-
 
 /*
 ==================
@@ -668,17 +594,7 @@ void Sys_Init( void ) {
 
 	SetTimerResolution();
 
-#ifndef DEDICATED
-	Cmd_AddCommand( "in_restart", Sys_In_Restart_f );
-#endif
-
 	Cvar_Set( "arch", "winnt" );
-
-#ifndef DEDICATED
-	glw_state.wndproc = MainWndProc;
-
-	IN_Init();
-#endif
 }
 
 //=======================================================================

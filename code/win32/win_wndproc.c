@@ -572,6 +572,8 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 		in_forceCharset = Cvar_Get( "in_forceCharset", "1", CVAR_ARCHIVE_ND );
 
+		IN_Init();
+
 		break;
 #if 0
 	case WM_DISPLAYCHANGE:
@@ -590,6 +592,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 	case WM_DESTROY:
 		// let sound and input know about this?
 		Win_RemoveHotkey();
+		IN_Shutdown();
 		g_wv.hWnd = NULL;
 		g_wv.winRectValid = qfalse;
 		gw_minimized = qfalse;
@@ -905,6 +908,11 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 }
 
 
+/*
+================
+HandleEvents
+================
+*/
 void HandleEvents( void ) {
 	MSG msg;
 
@@ -922,4 +930,61 @@ void HandleEvents( void ) {
 		TranslateMessage( &msg );
 		DispatchMessage( &msg );
 	}
+}
+
+
+/*
+================
+Sys_GetClipboardData
+================
+*/
+char *Sys_GetClipboardData( void ) {
+	char *data = NULL;
+	char *cliptext;
+
+	if ( OpenClipboard( NULL ) ) {
+		HANDLE hClipboardData;
+		DWORD size;
+
+		// GetClipboardData performs implicit CF_UNICODETEXT => CF_TEXT conversion
+		if ( ( hClipboardData = GetClipboardData( CF_TEXT ) ) != 0 ) {
+			if ( ( cliptext = GlobalLock( hClipboardData ) ) != 0 ) {
+				size = GlobalSize( hClipboardData ) + 1;
+				data = Z_Malloc( size );
+				Q_strncpyz( data, cliptext, size );
+				GlobalUnlock( hClipboardData );
+				
+				strtok( data, "\n\r\b" );
+			}
+		}
+		CloseClipboard();
+	}
+	return data;
+}
+
+
+/*
+================
+Sys_SetClipboardBitmap
+================
+*/
+void Sys_SetClipboardBitmap( const byte *bitmap, int length )
+{
+	HGLOBAL hMem;
+	byte *ptr;
+
+	if ( !g_wv.hWnd || !OpenClipboard( g_wv.hWnd ) )
+		return;
+
+	EmptyClipboard();
+	hMem = GlobalAlloc( GMEM_MOVEABLE | GMEM_DDESHARE, length );
+	if ( hMem != NULL ) {
+		ptr = ( byte* )GlobalLock( hMem );
+		if ( ptr != NULL ) {
+			memcpy( ptr, bitmap, length ); 
+		}
+		GlobalUnlock( hMem );
+		SetClipboardData( CF_DIB, hMem );
+	}
+	CloseClipboard();
 }
