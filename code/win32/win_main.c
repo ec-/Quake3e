@@ -537,8 +537,11 @@ Platform-dependent event handling
 void Sys_SendKeyEvents( void )
 {
 #ifndef DEDICATED
-	HandleEvents();
+	if ( !com_dedicated->integer )
+		HandleEvents();
+	else
 #endif
+	HandleConsoleEvents();
 }
 
 

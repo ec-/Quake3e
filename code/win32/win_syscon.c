@@ -1091,3 +1091,19 @@ void Sys_SetErrorText( const char *buf )
 
 	Sys_SetStatus( "Fatal error occured" );
 }
+
+
+void HandleConsoleEvents( void ) {
+	MSG msg;
+
+	// pump the message loop
+	while ( PeekMessage( &msg, NULL, 0, 0, PM_NOREMOVE ) ) {
+		if ( GetMessage( &msg, NULL, 0, 0 ) <= 0 ) {
+			Cmd_Clear();
+			Com_Quit_f();
+		}
+
+		TranslateMessage( &msg );
+		DispatchMessage( &msg );
+	}
+}

@@ -119,6 +119,7 @@ void	UpdateMonitorInfo( const RECT *target );
 
 // window procedure
 LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM  lParam );
+void HandleConsoleEvents( void );
 
 void Conbuf_AppendText( const char *msg );
 void Conbuf_BeginPrint( void );
