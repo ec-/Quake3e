@@ -1364,6 +1364,15 @@ static void VkInfo_f( void )
 #endif
 
 
+static void RE_SyncRender( void )
+{
+#ifdef USE_VULKAN
+	if ( vk.device )
+		vk_wait_idle();
+#endif
+}
+
+
 /*
 ===============
 R_Register
@@ -1788,8 +1797,8 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.FinishBloom = RE_FinishBloom;
 	re.CanMinimize = RE_CanMinimize;
 	re.GetConfig = RE_GetConfig;
-
 	re.VertexLighting = RE_VertexLighting;
+	re.SyncRender = RE_SyncRender;
 
 	return &re;
 }

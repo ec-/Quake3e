@@ -1273,6 +1273,13 @@ void R_ShutDownQueries(void)
 		qglDeleteQueries(ARRAY_LEN(tr.sunFlareQuery), tr.sunFlareQuery);
 }
 
+
+static void RE_SyncRender( void )
+{
+
+}
+
+
 /*
 ===============
 R_Init
@@ -1509,6 +1516,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.CanMinimize = RE_CanMinimize;
 	re.GetConfig = RE_GetConfig;
 	re.VertexLighting = RE_VertexLighting;
+	re.SyncRender = RE_SyncRender;
 
 	return &re;
 }

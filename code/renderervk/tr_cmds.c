@@ -76,7 +76,6 @@ R_IssueRenderCommands
 ====================
 */
 static void R_IssueRenderCommands( void ) {
-	static int skipCount = 0;
 	renderCommandList_t	*cmdList;
 
 	cmdList = &backEndData->commands;
@@ -88,19 +87,10 @@ static void R_IssueRenderCommands( void ) {
 	cmdList->used = 0;
 
 	if ( backEnd.screenshotMask == 0 ) {
-		if ( ri.CL_IsMinimized() ) {
-			// we need to render a few frames in minimized state
-			// otherwize \in_minimize may not work in fullscreen mode
-			if ( skipCount++ > 3 ) {
-				return; // skip backend when minimized
-			}
-		} else {
-			skipCount = 0;
-		}
+		if ( ri.CL_IsMinimized() )
+			return; // skip backend when minimized
 		if ( backEnd.throttle )
 			return; // or throttled on demand
-	} else {
-		skipCount = 0;
 	}
 
 	// actually start the commands going

@@ -166,25 +166,17 @@ void WIN_EnableAltTab( void )
 VID_AppActivate
 ==================
 */
-static void VID_AppActivate( BOOL fActive )
+static void VID_AppActivate( qboolean active )
 {
-	Com_DPrintf( "VID_AppActivate: %i %i\n", fActive, gw_minimized );
+	Key_ClearStates();
 
-	Key_ClearStates();	// FIXME!!!
+	IN_Activate( active );
 
-	// we don't want to act like we're active if we're minimized
-	if ( fActive && !gw_minimized )
-		gw_active = qtrue;
-	else
-		gw_active = qfalse;
-
-	// minimize/restore mouse-capture on demand
-	IN_Activate( gw_active );
-
-	if ( !gw_active )
-		WIN_DisableHook();
-	else
+	if ( gw_active )
 		WIN_EnableHook();
+	else
+		WIN_DisableHook();
+		
 }
 
 //==========================================================================
@@ -476,16 +468,28 @@ static int GetTimerMsec( void ) {
 }
 
 
+static HWINEVENTHOOK hWinEventHook;
+
+static VOID CALLBACK WinEventProc( HWINEVENTHOOK hWinEventHook, DWORD dwEvent, HWND hWnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime )
+{
+	if ( glw_state.cdsFullscreen && gw_active ) {
+		if ( glw_state.monitorCount <= 1 ) {
+			if ( !CL_VideoRecording() || ( re.CanMinimize && re.CanMinimize() ) ) {
+				ShowWindow( g_wv.hWnd, SW_MINIMIZE );
+			}
+		}
+	}
+}
+
+
 LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam )
 {
 	#define TIMER_ID 10
-	#define TIMER_ID_1 11
 	static UINT uTimerID;
-	static UINT uTimerID_1;
 	static qboolean flip = qtrue;
+	qboolean active;
+	qboolean minimized;
 	int zDelta, i;
-	static BOOL fActive = FALSE;
-	static BOOL fMinimized = FALSE;
 
 	// http://msdn.microsoft.com/library/default.asp?url=/library/en-us/winui/winui/windowsuserinterface/userinput/mouseinput/aboutmouseinput.asp
 	// Windows 95, Windows NT 3.51 - uses MSH_MOUSEWHEEL
@@ -565,10 +569,12 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		//MSH_MOUSEWHEEL = RegisterWindowMessage( TEXT( "MSWHEEL_ROLLMSG" ) ); 
 
 		WIN_EnableHook();
-
+		hWinEventHook = SetWinEventHook( EVENT_SYSTEM_SWITCHSTART, EVENT_SYSTEM_SWITCHSTART, NULL, WinEventProc, 
+			0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS );
 		g_wv.hWnd = hWnd;
 		GetWindowRect( hWnd, &g_wv.winRect );
 		g_wv.winRectValid = qtrue;
+		gw_minimized = qfalse;
 
 		in_forceCharset = Cvar_Get( "in_forceCharset", "1", CVAR_ARCHIVE_ND );
 
@@ -590,9 +596,11 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		break;
 #endif
 	case WM_DESTROY:
-		// let sound and input know about this?
 		Win_RemoveHotkey();
 		IN_Shutdown();
+		if ( hWinEventHook )
+			UnhookWinEvent( hWinEventHook );
+		hWinEventHook = NULL;
 		g_wv.hWnd = NULL;
 		g_wv.winRectValid = qfalse;
 		gw_minimized = qfalse;
@@ -613,59 +621,47 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 	*/
 
 	case WM_ACTIVATE:
-		fActive = (LOWORD( wParam ) != WA_INACTIVE) ? TRUE : FALSE;
-		fMinimized = (BOOL)HIWORD( wParam ) ? TRUE : FALSE;
-		//Com_DPrintf( S_COLOR_YELLOW "%WM_ACTIVATE active=%i minimized=%i\n", fActive, fMinimized  );
+		active = (LOWORD( wParam ) != WA_INACTIVE) ? qtrue : qfalse;
+		minimized = (BOOL)HIWORD( wParam ) ? qtrue : qfalse;
+
+		if ( IsIconic( hWnd ) )
+			minimized = qtrue;
+
 		// We can recieve Active & Minimized when restoring from minimized state
-		if ( fActive && fMinimized )
-			gw_minimized = qfalse;
-		else
-			gw_minimized = (fMinimized != FALSE);
+		if ( active && minimized )
+			break;
 
-		// focus/activate messages may come in different order
-		// so process final result a bit later when we have all data set
-		if ( uTimerID_1 == 0 )
-			uTimerID_1 = SetTimer( g_wv.hWnd, TIMER_ID_1, 100, NULL );
+		//Com_DPrintf( "WM_ACTIVATE: active=%i minimized=%i\n", active, minimized  );
 
-		return 0;
-	
-	case WM_SETFOCUS:
-	case WM_KILLFOCUS:
-		fActive = ( uMsg == WM_SETFOCUS );
+		gw_active = active;
+		gw_minimized = minimized;
 
-		if ( uTimerID_1 == 0 )
-			uTimerID_1 = SetTimer( g_wv.hWnd, TIMER_ID_1, 100, NULL );
-
+		VID_AppActivate( gw_active );
 		Win_AddHotkey();
 
-		// We can't get correct minimized status on WM_KILLFOCUS
-		VID_AppActivate( fActive );
-
-		//if ( fActive ) {
-		//	WIN_DisableAltTab();
-		//} else {
-		//	WIN_EnableAltTab();
-		//}
-
 		if ( glw_state.cdsFullscreen ) {
-			if ( fActive ) {
+			if ( gw_active ) {
 				SetGameDisplaySettings();
 				if ( re.SetColorMappings )
 					re.SetColorMappings();
 			} else {
+				re.SyncRender();
 				// don't restore gamma if we have multiple monitors
-				if ( glw_state.monitorCount <= 1 || fMinimized )
+				if ( glw_state.monitorCount <= 1 || gw_minimized )
 					GLW_RestoreGamma();
 				// minimize if there is only one monitor
 				if ( glw_state.monitorCount <= 1 ) {
 					if ( !CL_VideoRecording() || ( re.CanMinimize && re.CanMinimize() ) ) {
-						ShowWindow( hWnd, SW_MINIMIZE );
+						if ( !gw_minimized ) {
+							ShowWindow( hWnd, SW_MINIMIZE );
+							gw_minimized = qtrue;
+						}
 						SetDesktopDisplaySettings();
 					}
 				}
 			}
 		} else {
-			if ( fActive ) {
+			if ( gw_active ) {
 				if ( re.SetColorMappings )
 					re.SetColorMappings();
 			} else {
@@ -674,8 +670,19 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		}
 
 		SNDDMA_Activate();
+		break; // return 0;
 
-		return 0;
+	case WM_KILLFOCUS:
+		// it is important for vulkan backend to finish all pending work
+		// right BEFORE minimizing/hiding presentation window
+		// because swapchain surfaces may become not available
+		// and cause uncorrectable VK_ERROR_OUT_OF_DATE_KHR errors
+		// (at least with current nvidia drivers)
+		if ( gw_active )
+			re.SyncRender();
+		else
+			VID_AppActivate( gw_active );
+		break;
 
 	case WM_MOVE:
 		{
@@ -686,8 +693,6 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			UpdateMonitorInfo( &g_wv.winRect );
 			IN_UpdateWindow( NULL, qtrue );
 			IN_Activate( gw_active );
-			if ( !gw_active )
-				ClipCursor( NULL );
 
 			if ( !glw_state.cdsFullscreen )
 			{
@@ -716,22 +721,6 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 	case WM_TIMER:
 		if ( wParam == TIMER_ID && uTimerID != 0 && !CL_VideoRecording() ) {
 			Com_Frame( CL_NoDelay() );
-			return 0;
-		}
-
-		// delayed window minimize/deactivation
-		if ( wParam == TIMER_ID_1 && uTimerID_1 != 0 ) {
-			// we may not receive minimized flag with WM_ACTIVE
-			// with another opened topmost window app like TaskManager
-			if ( IsIconic( hWnd ) )
-				gw_minimized = qtrue;
-			VID_AppActivate( fActive );
-			if ( fMinimized ) {
-				GLW_RestoreGamma();
-				SetDesktopDisplaySettings();
-			}
-			KillTimer( g_wv.hWnd, uTimerID_1 );
-			uTimerID_1 = 0;
 			return 0;
 		}
 		break;
@@ -864,6 +853,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		}
 		return 0;
 
+#if 0
 	case WM_SIZE:
 		if ( !gw_active || gw_minimized )
 			break;
@@ -872,6 +862,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		UpdateMonitorInfo( &g_wv.winRect );
 		IN_UpdateWindow( NULL, qtrue );
 		break;
+#endif
 
 #if 0 // looks like people have troubles with it
 	case WM_SIZE:

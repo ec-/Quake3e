@@ -1212,6 +1212,15 @@ static void GL_SetDefaultState( void )
 }
 
 
+static void RE_SyncRender( void )
+{
+	if ( backEnd.doneSurfaces )
+	{
+		qglFinish();
+	}
+}
+
+
 /*
 ================
 R_PrintLongString
@@ -1788,6 +1797,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.GetConfig = RE_GetConfig;
 
 	re.VertexLighting = RE_VertexLighting;
+	re.SyncRender = RE_SyncRender;
 
 	return &re;
 }

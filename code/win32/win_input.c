@@ -101,8 +101,6 @@ cvar_t	*in_debugJoystick;
 cvar_t	*joy_threshold;
 #endif
 
-qboolean	in_appactive;
-
 // forward-referenced functions
 #ifdef USE_JOYSTICK
 void IN_StartupJoystick (void);
@@ -202,12 +200,16 @@ static void IN_ActivateWin32Mouse( void )
 IN_DeactivateWin32Mouse
 ================
 */
-static void IN_DeactivateWin32Mouse( void ) 
+static void IN_DeactivateWin32Mouse( void )
 {
-	IN_UpdateWindow( NULL, qfalse );
-	ClipCursor( NULL );
-	SetCursorPos( window_center.x, window_center.y );
+	if ( !gw_minimized )
+	{
+		IN_UpdateWindow( NULL, qfalse );
+		SetCursorPos( window_center.x, window_center.y );
+	}
+
 	ReleaseCapture();
+	ClipCursor( NULL );
 	while ( ShowCursor( TRUE ) < 0 )
 		;
 }
@@ -259,7 +261,7 @@ IN_InitRawMouse
 */
 static BOOL IN_InitRawMouse( void ) {
 
-    HMODULE dll;
+	HMODULE dll;
 
 #ifndef idx64
 	if ( !ISWINXP( g_wv.osversion ) ) {
@@ -267,9 +269,9 @@ static BOOL IN_InitRawMouse( void ) {
 	}
 #endif
 
-    if ( raw_inited ) {
+	if ( raw_inited ) {
 		return TRUE; // already inited
-    }
+	}
 
 	GRRID = NULL;
 	RRID  = NULL;
@@ -308,7 +310,7 @@ static void IN_ActivateRawMouse( void )
 	UINT num;
 	int cnt;
 
-	if ( raw_activated ) 
+	if ( raw_activated )
 	{
 		return; // already activated
 	}
@@ -323,18 +325,18 @@ static void IN_ActivateRawMouse( void )
 
 	IN_UpdateWindow( &window_rect, qfalse );
 
-	if ( cnt >= 1 && Rid.hwndTarget == g_wv.hWnd ) 
+	if ( cnt >= 1 && Rid.hwndTarget == g_wv.hWnd )
 	{
 		// device already exists?
 	}
-	else 
+	else
 	{
 		Rid.usUsagePage = HID_USAGE_PAGE_GENERIC;
 		Rid.usUsage = HID_USAGE_GENERIC_MOUSE;
 		Rid.dwFlags = RIDEV_NOLEGACY; // skip all WM_*BUTTON* and WM_MOUSEMOVE stuff
 		Rid.hwndTarget = g_wv.hWnd;
 
-		if( !RRID( &Rid, 1, sizeof( Rid ) ) ) 
+		if( !RRID( &Rid, 1, sizeof( Rid ) ) )
 		{
 			Com_Printf( S_COLOR_YELLOW "Error registering raw input device\n" );
 			return;
@@ -364,9 +366,9 @@ static void IN_RawMouse( int *mx, int *my ) {
 IN_DeactivateRawMouse
 ================
 */
-static void IN_DeactivateRawMouse( void ) 
+static void IN_DeactivateRawMouse( void )
 {
-	if ( raw_activated ) 
+	if ( raw_activated )
 	{
 		RAWINPUTDEVICE Rid;
 
@@ -374,13 +376,13 @@ static void IN_DeactivateRawMouse( void )
 		Rid.usUsage = HID_USAGE_GENERIC_MOUSE;
 		Rid.dwFlags = RIDEV_REMOVE;
 		Rid.hwndTarget = NULL;
-		if( !RRID( &Rid, 1, sizeof( Rid ) ) ) 
+		if ( !RRID( &Rid, 1, sizeof( Rid ) ) )
 		{
 			Com_Printf( S_COLOR_YELLOW "Error removing raw input device\n" );
 			return;
 		}
-		
 	}
+
 	raw_activated = FALSE;
 }
 
@@ -1172,10 +1174,8 @@ between a deactivate and an activate.
 ===========
 */
 void IN_Activate( qboolean active ) {
-	in_appactive = active;
 
-	if ( !active )
-	{
+	if ( !active ) {
 		IN_DeactivateMouse();
 	}
 }
@@ -1220,7 +1220,7 @@ void IN_Frame( void ) {
 		}
 	}
 
-	if ( !in_appactive || in_nograb->integer ) {
+	if ( !gw_active || in_nograb->integer ) {
 		IN_DeactivateMouse();
 		return;
 	}
