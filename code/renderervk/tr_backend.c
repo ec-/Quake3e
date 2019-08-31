@@ -428,11 +428,11 @@ static void RB_BeginDrawingView( void ) {
 		qglFinish();
 		glState.finishCalled = qtrue;
 	}
-#endif
 
 	if ( r_finish->integer == 0 ) {
 		glState.finishCalled = qtrue;
 	}
+#endif
 
 	// we will need to change the projection matrix before drawing
 	// 2D images again

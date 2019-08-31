@@ -1215,11 +1215,10 @@ extern cvar_t	*r_device;
 #ifdef USE_VBO
 extern cvar_t	*r_vbo;
 #endif
-#endif
-
 extern cvar_t	*r_fbo;
 extern cvar_t	*r_hdr;
 extern cvar_t	*r_ext_multisample;
+#endif
 
 extern cvar_t	*r_dlightBacks;			// dlight non-facing surfaces for continuity
 
