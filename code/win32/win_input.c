@@ -949,7 +949,8 @@ static void IN_MouseMove( void ) {
 		g_wv.raw_my = 0;
 
 		// force the mouse to the center, so there's room to move
-		SetCursorPos( window_center.x, window_center.y );
+		if ( in_mouse->integer == -1 )
+			SetCursorPos( window_center.x, window_center.y );
 
 		// reset delta base
 		g_wv.mouse = client_center;
@@ -1065,7 +1066,7 @@ IN_Minimize
 static void IN_Minimize( void )
 {
 	if ( !CL_VideoRecording() || ( re.CanMinimize && re.CanMinimize() ) )
-		ShowWindow( g_wv.hWnd, SW_MINIMIZE );
+		WIN_Minimize();
 }
 
 
@@ -1195,6 +1196,7 @@ void IN_Frame( void ) {
 #endif
 
 	if ( !s_wmv.mouseInitialized ) {
+#if 0
 		if ( s_wmv.mouseStartupDelayed && g_wv.hWnd ) {
 			// some application may steal our keyboard input focus and foreground state
 			// but windows will NOT send any WM_KILLFOCUS or WM_ACTIVATE messages to us
@@ -1205,6 +1207,7 @@ void IN_Frame( void ) {
 				s_wmv.mouseStartupDelayed = qfalse;
 			}
 		}
+#endif
 		return;
 	}
 

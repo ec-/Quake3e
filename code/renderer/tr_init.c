@@ -1214,7 +1214,7 @@ static void GL_SetDefaultState( void )
 
 static void RE_SyncRender( void )
 {
-	if ( backEnd.doneSurfaces )
+	if ( qglFinish && backEnd.doneSurfaces )
 	{
 		qglFinish();
 	}

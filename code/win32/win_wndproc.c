@@ -172,11 +172,13 @@ static void VID_AppActivate( qboolean active )
 
 	IN_Activate( active );
 
-	if ( gw_active )
+	if ( active ) {
 		WIN_EnableHook();
-	else
+		SetWindowPos( g_wv.hWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
+	} else {
 		WIN_DisableHook();
-		
+		SetWindowPos( g_wv.hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
+	}
 }
 
 //==========================================================================
@@ -472,13 +474,21 @@ static HWINEVENTHOOK hWinEventHook;
 
 static VOID CALLBACK WinEventProc( HWINEVENTHOOK hWinEventHook, DWORD dwEvent, HWND hWnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime )
 {
-	if ( glw_state.cdsFullscreen && gw_active ) {
-		if ( glw_state.monitorCount <= 1 ) {
-			if ( !CL_VideoRecording() || ( re.CanMinimize && re.CanMinimize() ) ) {
-				ShowWindow( g_wv.hWnd, SW_MINIMIZE );
-			}
-		}
+	if ( gw_active )
+	{
+		SetForegroundWindow( hWnd );
 	}
+}
+
+#define TIMER_M 11
+static UINT uTimerM;
+
+void WIN_Minimize( void ) {
+	// move game window to background
+	SetForegroundWindow( GetDesktopWindow() );
+	// and wait some time before minimizing
+	uTimerM = SetTimer( g_wv.hWnd, TIMER_M, 50, NULL );
+	//ShowWindow( g_wv.hWnd, SW_MINIMIZE );
 }
 
 
@@ -624,14 +634,9 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		active = (LOWORD( wParam ) != WA_INACTIVE) ? qtrue : qfalse;
 		minimized = (BOOL)HIWORD( wParam ) ? qtrue : qfalse;
 
-		if ( IsIconic( hWnd ) )
-			minimized = qtrue;
-
 		// We can recieve Active & Minimized when restoring from minimized state
 		if ( active && minimized )
 			break;
-
-		//Com_DPrintf( "WM_ACTIVATE: active=%i minimized=%i\n", active, minimized  );
 
 		gw_active = active;
 		gw_minimized = minimized;
@@ -645,7 +650,6 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 				if ( re.SetColorMappings )
 					re.SetColorMappings();
 			} else {
-				re.SyncRender();
 				// don't restore gamma if we have multiple monitors
 				if ( glw_state.monitorCount <= 1 || gw_minimized )
 					GLW_RestoreGamma();
@@ -653,8 +657,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 				if ( glw_state.monitorCount <= 1 ) {
 					if ( !CL_VideoRecording() || ( re.CanMinimize && re.CanMinimize() ) ) {
 						if ( !gw_minimized ) {
-							ShowWindow( hWnd, SW_MINIMIZE );
-							gw_minimized = qtrue;
+							WIN_Minimize();
 						}
 						SetDesktopDisplaySettings();
 					}
@@ -670,24 +673,13 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		}
 
 		SNDDMA_Activate();
-		break; // return 0;
-
-	case WM_KILLFOCUS:
-		// it is important for vulkan backend to finish all pending work
-		// right BEFORE minimizing/hiding presentation window
-		// because swapchain surfaces may become not available
-		// and cause uncorrectable VK_ERROR_OUT_OF_DATE_KHR errors
-		// (at least with current nvidia drivers)
-		if ( gw_active )
-			re.SyncRender();
-		else
-			VID_AppActivate( gw_active );
 		break;
 
 	case WM_MOVE:
 		{
 			if ( !gw_active || gw_minimized )
 				break;
+
 			GetWindowRect( hWnd, &g_wv.winRect );
 			g_wv.winRectValid = qtrue;
 			UpdateMonitorInfo( &g_wv.winRect );
@@ -721,6 +713,11 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 	case WM_TIMER:
 		if ( wParam == TIMER_ID && uTimerID != 0 && !CL_VideoRecording() ) {
 			Com_Frame( CL_NoDelay() );
+			return 0;
+		}
+		if ( wParam == TIMER_M ) {
+			KillTimer( g_wv.hWnd, uTimerM );
+			ShowWindow( hWnd, SW_MINIMIZE );
 			return 0;
 		}
 		break;
@@ -815,7 +812,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			if ( gw_active )
 			{
 				if ( !CL_VideoRecording() || ( re.CanMinimize && re.CanMinimize() ) )
-					ShowWindow( hWnd, SW_MINIMIZE );
+					WIN_Minimize();
 			}
 			else
 			{
@@ -853,37 +850,31 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		}
 		return 0;
 
-#if 0
 	case WM_SIZE:
-		if ( !gw_active || gw_minimized )
-			break;
-		GetWindowRect( hWnd, &g_wv.winRect );
-		g_wv.winRectValid = qtrue;
-		UpdateMonitorInfo( &g_wv.winRect );
-		IN_UpdateWindow( NULL, qtrue );
-		break;
-#endif
-
-#if 0 // looks like people have troubles with it
-	case WM_SIZE:
-
-		if ( LOWORD(lParam) > 0 && HIWORD(lParam) > 0 )
-		if ( LOWORD(lParam) != glConfig.vidWidth || glConfig.vidHeight != HIWORD(lParam) ) {
-			glConfig.vidWidth = LOWORD(lParam);
-			glConfig.vidHeight = HIWORD(lParam);
-			if ( r_customPixelAspect )
-				glConfig.windowAspect = (float)glConfig.vidWidth / ( glConfig.vidHeight * r_customPixelAspect->value );
-			else
-				glConfig.windowAspect = (float)glConfig.vidWidth / glConfig.vidHeight;
-			Cvar_Set( "r_customwidth", va( "%i", glConfig.vidWidth ) );
-			Cvar_Set( "r_customheight", va( "%i", glConfig.vidHeight ) );
-			Cvar_Set( "r_mode", "-1" );
-			memcpy( &cls.glconfig, &glConfig, sizeof( cls.glconfig ) );
-			g_consoleField.widthInChars = cls.glconfig.vidWidth / SMALLCHAR_WIDTH - 2;
-			Con_CheckResize();
+		if ( wParam == SIZE_MINIMIZED ) {
+			// it is important for vulkan backend to finish all pending work
+			// before minimizing/hiding presentation window
+			// because swapchain surfaces may become not available
+			// and cause uncorrectable VK_ERROR_OUT_OF_DATE_KHR errors
+			// (at least with current nvidia drivers)
+			re.SyncRender();
+			gw_active = qfalse;
+			gw_minimized = qtrue; 
+		} else if ( wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED ) {
+			gw_minimized = qfalse;
+			//gw_active = qtrue;
 		}
+
+		if ( gw_active )
+		{
+			GetWindowRect( hWnd, &g_wv.winRect );
+			g_wv.winRectValid = qtrue;
+			UpdateMonitorInfo( &g_wv.winRect );
+			IN_UpdateWindow( NULL, qtrue );
+		}
+
 		break;
-#endif
+
 	case WM_NCHITTEST:
 		// in borderless mode - drag using client area when holding ALT
 		if ( g_wv.borderless && GetKeyState( VK_MENU ) & (1<<15) )

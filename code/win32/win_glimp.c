@@ -1495,6 +1495,13 @@ void VKimp_Shutdown( qboolean unloadDLL )
 {
 	Com_Printf( "Shutting down Vulkan subsystem\n" );
 
+	// restore gamma
+	if ( glw_state.gammaSet )
+	{
+		GLW_RestoreGamma();
+		glw_state.gammaSet = qfalse;
+	}
+
 	// destroy window
 	if ( g_wv.hWnd )
 	{
