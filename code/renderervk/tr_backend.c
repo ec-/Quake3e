@@ -982,7 +982,8 @@ void RB_SetGL2D( void ) {
 	backEnd.projection2D = qtrue;
 
 #ifdef USE_VULKAN
-	vk_update_mvp( NULL );
+	if ( vk.frame_count )
+		vk_update_mvp( NULL );
 #else
 	// set 2D virtual screen size
 	qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
