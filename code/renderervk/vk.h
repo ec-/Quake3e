@@ -365,6 +365,8 @@ typedef struct {
 	qboolean fboActive;
 	qboolean msaaActive;
 
+	qboolean offscreenRender;
+
 } Vk_Instance;
 
 typedef struct {

@@ -2332,9 +2332,16 @@ void vk_initialize( void )
 	Com_sprintf( glConfig.version_string, sizeof( glConfig.version_string ), "API: %i.%i.%i, Driver: %s",
 		major, minor, patch, driver_version );
 
+	vk.offscreenRender = qtrue;
+
 	if ( props.vendorID == 0x1002 ) {
 		vendor_name = "Advanced Micro Devices, Inc.";
 	} else if ( props.vendorID == 0x10DE ) {
+#ifdef _WIN32
+		// https://github.com/SaschaWillems/Vulkan/issues/493
+		// don't bother implementing offscreen rendering for now
+		vk.offscreenRender = qfalse;
+#endif
 		vendor_name = "NVIDIA";
 	} else if ( props.vendorID == 0x8086 ) {
 		vendor_name = "Intel Corporation";

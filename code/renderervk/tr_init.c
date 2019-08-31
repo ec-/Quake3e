@@ -1667,6 +1667,9 @@ static void RE_Shutdown( int destroyWindow ) {
 	ri.Cmd_RemoveCommand ("skinlist");
 	ri.Cmd_RemoveCommand ("gfxinfo");
 	ri.Cmd_RemoveCommand( "shaderstate" );
+#ifdef USE_VULKAN
+	ri.Cmd_RemoveCommand( "vkinfo" );
+#endif
 
 	if ( tr.registered ) {
 		R_IssuePendingRenderCommands();

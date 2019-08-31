@@ -91,6 +91,13 @@ static void R_IssueRenderCommands( void ) {
 			return; // skip backend when minimized
 		if ( backEnd.throttle )
 			return; // or throttled on demand
+	} else {
+#ifdef USE_VULKAN
+		if ( !vk.offscreenRender && ri.CL_IsMinimized() ) {
+			backEnd.screenshotMask = 0;
+			return;
+		}
+#endif
 	}
 
 	// actually start the commands going
@@ -474,7 +481,7 @@ void RE_FinishBloom( void )
 qboolean RE_CanMinimize( void )
 {
 #ifdef USE_VULKAN
-	return qtrue; // offscreen rendering is always available in vulkan
+	return vk.offscreenRender;
 #else
 	return qfalse;
 #endif
