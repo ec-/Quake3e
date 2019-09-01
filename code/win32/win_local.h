@@ -23,6 +23,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define RAW_INPUT
 
+#define FAST_MODE_SWITCH
+
 #ifdef RAW_INPUT
 
 #ifndef HID_USAGE_GENERIC_MOUSE

@@ -820,6 +820,7 @@ static LONG ApplyDisplaySettings( DEVMODE *dm )
 	if ( !bResult )
 		return DISP_CHANGE_FAILED;
 
+#ifdef FAST_MODE_SWITCH
 	// Check if current resolution is the same as we want to set
 	if ( curr.dmDisplayFrequency &&
 		curr.dmPelsWidth == dm->dmPelsWidth &&
@@ -830,6 +831,7 @@ static LONG ApplyDisplaySettings( DEVMODE *dm )
 		memcpy( &dm_current, &curr, sizeof( dm_current ) );
 		return DISP_CHANGE_SUCCESSFUL; // simulate success
 	}
+#endif
 
 	// Uninitialized?
 	if ( dm->dmDisplayFrequency == 0 && dm->dmPelsWidth == 0 && 

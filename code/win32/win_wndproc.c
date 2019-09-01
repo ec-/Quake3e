@@ -484,11 +484,23 @@ static VOID CALLBACK WinEventProc( HWINEVENTHOOK hWinEventHook, DWORD dwEvent, H
 static UINT uTimerM;
 
 void WIN_Minimize( void ) {
+	static int minimize = 0;
+
+	if ( minimize )
+		return;
+
+	minimize = 1;
+
+#ifdef FAST_MODE_SWITCH
 	// move game window to background
 	SetForegroundWindow( GetDesktopWindow() );
 	// and wait some time before minimizing
 	uTimerM = SetTimer( g_wv.hWnd, TIMER_M, 50, NULL );
-	//ShowWindow( g_wv.hWnd, SW_MINIMIZE );
+#else
+	ShowWindow( g_wv.hWnd, SW_MINIMIZE );
+#endif
+
+	minimize = 0;
 }
 
 
@@ -624,10 +636,32 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		return 0;
 
 	/*
-		on minimize: WM_KILLFOCUS, WM_ACTIVATE A:0 M:1
-		on restore: WM_ACTIVATE A:1 M:1, WM_SETFOCUS, WM_ACTIVATE A:1 M:0
-		on click in: WM_ACTIVATE A:1 M:0, WM_SETFOCUS
-		on click out: WM_ACTIVATE A:0 M:0, WM_KILLFOCUS
+		on minimize:
+			WM_KILLFOCUS
+			WM_MOVE (x:33536 y:33536)
+			WM_SIZE (SIZE_MINIMIZED w=0 h=0)
+			WM_ACTIVATE (active=0 minimized=1)
+
+		on restore:
+			WM_ACTIVATE (active=1 minimized=1)
+			WM_MOVE (x, y)
+			WM_SIZE (SIZE_RESTORED width height)
+			WM_SETFOCUS
+			WM_ACTIVATE (active=1 minimized=0)
+
+		on click in:
+			WM_ACTIVATE (active=1 minimized=0)
+			WM_SETFOCUS
+
+		on click out, destroy:
+			WM_ACTIVATE (active=0 minimized=0)
+			WM_KILLFOCUS
+
+		on create:
+			WM_ACTIVATE (active=1 minimized=0)
+			WM_SETFOCUS
+			WM_SIZE (SIZE_RESTORED width height)
+			WM_MOVE (x, y)
 	*/
 
 	case WM_ACTIVATE:
@@ -675,26 +709,50 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		SNDDMA_Activate();
 		break;
 
-	case WM_MOVE:
-		{
-			if ( !gw_active || gw_minimized )
-				break;
+	case WM_KILLFOCUS:
+		gw_active = qfalse;
+		break;
 
+	case WM_MOVE:
+		if ( !gw_active || gw_minimized )
+			break;
+
+		GetWindowRect( hWnd, &g_wv.winRect );
+		g_wv.winRectValid = qtrue;
+		UpdateMonitorInfo( &g_wv.winRect );
+		IN_UpdateWindow( NULL, qtrue );
+		IN_Activate( gw_active );
+
+		if ( !glw_state.cdsFullscreen )	{
+			Cvar_SetIntegerValue( "vid_xpos", g_wv.winRect.left );
+			Cvar_SetIntegerValue( "vid_ypos", g_wv.winRect.top );
+			vid_xpos->modified = qfalse;
+			vid_ypos->modified = qfalse;
+		}
+		break;
+
+	case WM_SIZE:
+		if ( wParam == SIZE_MINIMIZED ) {
+			// it is important for vulkan backend to finish all pending work
+			// before minimizing/hiding presentation window
+			// because swapchain surfaces may become not available
+			// and cause uncorrectable VK_ERROR_OUT_OF_DATE_KHR errors
+			// (at least with current nvidia drivers)
+			re.SyncRender();
+			gw_active = qfalse;
+			gw_minimized = qtrue; 
+		} else if ( wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED ) {
+			gw_minimized = qfalse;
+			//gw_active = qtrue;
+		}
+
+		if ( gw_active ) {
 			GetWindowRect( hWnd, &g_wv.winRect );
 			g_wv.winRectValid = qtrue;
 			UpdateMonitorInfo( &g_wv.winRect );
 			IN_UpdateWindow( NULL, qtrue );
-			IN_Activate( gw_active );
-
-			if ( !glw_state.cdsFullscreen )
-			{
-				Cvar_SetIntegerValue( "vid_xpos", g_wv.winRect.left );
-				Cvar_SetIntegerValue( "vid_ypos", g_wv.winRect.top );
-
-				vid_xpos->modified = qfalse;
-				vid_ypos->modified = qfalse;
-			}
 		}
+
 		break;
 
 	case WM_ENTERSIZEMOVE:
@@ -828,7 +886,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 	case WM_KEYDOWN:
 		if ( wParam == VK_RETURN && ( uMsg == WM_SYSKEYDOWN || GetAsyncKeyState( VK_RMENU ) & 0x8000 ) ) {
 			Cvar_SetIntegerValue( "r_fullscreen", glw_state.cdsFullscreen ? 0 : 1 );
-				Cbuf_AddText( "vid_restart\n" );
+			Cbuf_AddText( "vid_restart\n" );
 			return 0;
 		}
 		//Com_Printf( "^2k+^7 wParam:%08x lParam:%08x\n", wParam, lParam );
@@ -849,31 +907,6 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			}
 		}
 		return 0;
-
-	case WM_SIZE:
-		if ( wParam == SIZE_MINIMIZED ) {
-			// it is important for vulkan backend to finish all pending work
-			// before minimizing/hiding presentation window
-			// because swapchain surfaces may become not available
-			// and cause uncorrectable VK_ERROR_OUT_OF_DATE_KHR errors
-			// (at least with current nvidia drivers)
-			re.SyncRender();
-			gw_active = qfalse;
-			gw_minimized = qtrue; 
-		} else if ( wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED ) {
-			gw_minimized = qfalse;
-			//gw_active = qtrue;
-		}
-
-		if ( gw_active )
-		{
-			GetWindowRect( hWnd, &g_wv.winRect );
-			g_wv.winRectValid = qtrue;
-			UpdateMonitorInfo( &g_wv.winRect );
-			IN_UpdateWindow( NULL, qtrue );
-		}
-
-		break;
 
 	case WM_NCHITTEST:
 		// in borderless mode - drag using client area when holding ALT
