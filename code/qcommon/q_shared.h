@@ -367,6 +367,15 @@ typedef	int	fixed16_t;
 #define M_LN2      0.693147180559945309417
 #endif
 
+#ifdef __linux__
+#if idx64
+// force version for better runtime compatibility
+__asm__(".symver powf,powf@GLIBC_2.2.5");
+__asm__(".symver expf,expf@GLIBC_2.2.5");
+__asm__(".symver memcpy,memcpy@GLIBC_2.2.5");
+#endif
+#endif
+
 #define NUMVERTEXNORMALS	162
 extern	vec3_t	bytedirs[NUMVERTEXNORMALS];
 

@@ -1079,7 +1079,7 @@ int Q_isnan( float x )
 Q_log2f
 ================
 */
-float Q_log2f( float f ) 
+float Q_log2f( float f )
 {
 	return logf( f ) / M_LN2;
 }
@@ -1090,7 +1090,7 @@ float Q_log2f( float f )
 Q_exp2f
 ================
 */
-float Q_exp2f( float f ) 
+float Q_exp2f( float f )
 {
 	return powf( 2.0f, f );
 }
