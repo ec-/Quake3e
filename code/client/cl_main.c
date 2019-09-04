@@ -988,13 +988,12 @@ void CL_ShutdownAll( void ) {
 	// shutdown VMs
 	CL_ShutdownVMs();
 
-	// shutdown sound system before renderer -EC-
-	S_Shutdown();
-	cls.soundStarted = qfalse;
-
 	// shutdown the renderer
 	if ( re.Shutdown ) {
 		if ( CL_GameSwitch() ) {
+			// shutdown sound system before renderer
+			S_Shutdown();
+			cls.soundStarted = qfalse;
 			CL_ShutdownRef( qfalse ); // shutdown renderer & GLimp
 		} else {
 			re.Shutdown( 0 ); // don't destroy window or context
@@ -3900,11 +3899,11 @@ CL_Shutdown
 */
 void CL_Shutdown( const char *finalmsg, qboolean quit ) {
 	static qboolean recursive = qfalse;
-	
+
 	// check whether the client is running at all.
 	if ( !( com_cl_running && com_cl_running->integer ) )
 		return;
-	
+
 	Com_Printf( "----- Client Shutdown (%s) -----\n", finalmsg );
 
 	if ( recursive ) {
@@ -3919,9 +3918,9 @@ void CL_Shutdown( const char *finalmsg, qboolean quit ) {
 	CL_ShutdownVMs();
 
 	S_Shutdown();
-	
+
 	CL_ShutdownRef( quit );
-	
+
 	Con_Shutdown();
 
 	Cmd_RemoveCommand ("cmd");
