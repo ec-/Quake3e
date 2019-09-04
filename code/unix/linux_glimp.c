@@ -1536,12 +1536,12 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 	if ( r_colorbits->integer == 0 )
 		colorbits = 24;
 	else
-		colorbits = r_colorbits->integer;
+		colorbits = MIN( r_colorbits->integer, 24);
 
 	if ( r_depthbits->integer == 0 )
 		depthbits = 24;
 	else
-		depthbits = r_depthbits->integer;
+		depthbits = MIN( r_depthbits->integer, 32);
 
 	stencilbits = r_stencilbits->integer;
 
