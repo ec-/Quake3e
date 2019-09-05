@@ -1075,28 +1075,27 @@ Loads any of the supported image types into a cannonical
 32 bit format.
 =================
 */
-void R_LoadImage( const char *name, byte **pic, int *width, int *height )
+static const char *R_LoadImage( const char *name, byte **pic, int *width, int *height )
 {
+	static char localName[ MAX_QPATH ];
+	const char *altName, *ext;
 	qboolean orgNameFailed = qfalse;
 	int orgLoader = -1;
 	int i;
-	char localName[ MAX_QPATH ];
-	const char *ext;
-	const char *altName;
 
 	*pic = NULL;
 	*width = 0;
 	*height = 0;
 
-	Q_strncpyz( localName, name, MAX_QPATH );
+	Q_strncpyz( localName, name, sizeof( localName ) );
 
 	ext = COM_GetExtension( localName );
 	if ( *ext )
 	{
 		// Look for the correct loader and use it
-		for( i = 0; i < numImageLoaders; i++ )
+		for ( i = 0; i < numImageLoaders; i++ )
 		{
-			if( !Q_stricmp( ext, imageLoaders[ i ].ext ) )
+			if ( !Q_stricmp( ext, imageLoaders[ i ].ext ) )
 			{
 				// Load
 				imageLoaders[ i ].ImageLoader( localName, pic, width, height );
@@ -1107,7 +1106,7 @@ void R_LoadImage( const char *name, byte **pic, int *width, int *height )
 		// A loader was found
 		if ( i < numImageLoaders )
 		{
-			if( *pic == NULL )
+			if ( *pic == NULL )
 			{
 				// Loader failed, most likely because the file isn't there;
 				// try again without the extension
@@ -1118,7 +1117,7 @@ void R_LoadImage( const char *name, byte **pic, int *width, int *height )
 			else
 			{
 				// Something loaded
-				return;
+				return localName;
 			}
 		}
 	}
@@ -1142,10 +1141,12 @@ void R_LoadImage( const char *name, byte **pic, int *width, int *height )
 				ri.Printf( PRINT_DEVELOPER, S_COLOR_YELLOW "WARNING: %s not present, using %s instead\n",
 						name, altName );
 			}
-
+			Q_strncpyz( localName, altName, sizeof( localName ) );
 			break;
 		}
 	}
+
+	return localName;
 }
 
 
@@ -1159,6 +1160,7 @@ Returns NULL if it fails, not a default image.
 */
 image_t	*R_FindImageFile( const char *name, imgFlags_t flags )
 {
+	const char *localName;
 	image_t	*image;
 	int		width, height;
 	byte	*pic;
@@ -1188,7 +1190,7 @@ image_t	*R_FindImageFile( const char *name, imgFlags_t flags )
 	//
 	// load the pic from disk
 	//
-	R_LoadImage( name, &pic, &width, &height );
+	localName = R_LoadImage( name, &pic, &width, &height );
 	if ( pic == NULL ) {
 		return NULL;
 	}
@@ -1211,7 +1213,7 @@ image_t	*R_FindImageFile( const char *name, imgFlags_t flags )
 		}
 	}
 
-	image = R_CreateImage( name, pic, width, height, flags );
+	image = R_CreateImage( localName, pic, width, height, flags );
 	ri.Free( pic );
 	return image;
 }
