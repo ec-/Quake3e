@@ -138,11 +138,6 @@ cvar_t   *in_joystickDebug = NULL;
 cvar_t   *joy_threshold    = NULL;
 #endif
 
-static cvar_t *r_noborder;
-
-cvar_t   *vid_xpos;
-cvar_t   *vid_ypos;
-
 static int mouse_accel_numerator;
 static int mouse_accel_denominator;
 static int mouse_threshold;
@@ -1841,9 +1836,6 @@ void GLimp_Init( glconfig_t *config )
 
 	IN_Init();   // rcg08312005 moved into glimp.
 
-	r_noborder = Cvar_Get( "r_noborder", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	Cvar_CheckRange( r_noborder, "0", "1", CV_INTEGER );
-
 	// set up our custom error handler for X failures
 	XSetErrorHandler( &qXErrorHandler );
 
@@ -1890,9 +1882,6 @@ void VKimp_Init( glconfig_t *config )
 	InitSig();
 
 	IN_Init();
-
-	r_noborder = Cvar_Get( "r_noborder", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	Cvar_CheckRange( r_noborder, "0", "1", CV_INTEGER );
 
 	// set up our custom error handler for X failures
 	XSetErrorHandler( &qXErrorHandler );
@@ -1974,9 +1963,6 @@ void IN_Init( void )
 	in_joystickDebug = Cvar_Get( "in_debugjoystick", "0", CVAR_TEMP );
 	joy_threshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE_ND ); // FIXME: in_joythreshold
 #endif
-
-	vid_xpos = Cvar_Get( "vid_xpos", "3", CVAR_ARCHIVE );
-	vid_ypos = Cvar_Get( "vid_ypos", "22", CVAR_ARCHIVE );
 
 	if ( in_mouse->integer )
 	{

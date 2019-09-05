@@ -88,7 +88,6 @@ glwstate_t glw_state;
 static cvar_t *r_maskMinidriver;		// allow a different dll name to be treated as if it were opengl32.dll
 static cvar_t *r_stereoEnabled;
 static cvar_t *r_verbose;				// used for verbose debug spew
-static cvar_t *r_noborder;
 
 /*
 ** GLW_StartDriverAndSetMode
@@ -968,9 +967,6 @@ static rserr_t GLW_SetMode( int mode, const char *modeFS, int colorbits, qboolea
 	int		cdsRet;
 	DEVMODE dm;
 
-	vid_xpos = Cvar_Get( "vid_xpos", "3", CVAR_ARCHIVE );
-	vid_ypos = Cvar_Get( "vid_ypos", "22", CVAR_ARCHIVE );
-
 	r.left = vid_xpos->integer;
 	r.top = vid_ypos->integer;
 	r.right = r.left + 320;
@@ -1355,8 +1351,6 @@ void GLimp_Init( glconfig_t *config )
 	r_maskMinidriver = Cvar_Get( "r_maskMinidriver", "0", CVAR_LATCH );
 	r_stereoEnabled = Cvar_Get( "r_stereoEnabled", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_verbose = Cvar_Get( "r_verbose", "0", 0 );
-	r_noborder = Cvar_Get( "r_noborder", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	Cvar_CheckRange( r_noborder, "0", "1", CV_INTEGER );
 
 	// feedback to renderer configuration
 	glw_state.config = config;
@@ -1398,9 +1392,6 @@ void GLimp_Init( glconfig_t *config )
 void VKimp_Init( glconfig_t *config )
 {
 	Com_Printf( "Initializing Vulkan subsystem\n" );
-
-	r_noborder = Cvar_Get( "r_noborder", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	Cvar_CheckRange( r_noborder, "0", "1", CV_INTEGER );
 
 	// feedback to renderer configuration
 	glw_state.config = config;

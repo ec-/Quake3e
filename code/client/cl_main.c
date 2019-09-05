@@ -71,7 +71,11 @@ cvar_t	*cl_dlURL;
 cvar_t	*cl_dlDirectory;
 
 // common cvars for GLimp modules
-cvar_t *r_allowSoftwareGL;		// don't abort out if the pixelformat claims software
+cvar_t	*vid_xpos;			// X coordinate of window position
+cvar_t	*vid_ypos;			// Y coordinate of window position
+cvar_t	*r_noborder;
+
+cvar_t *r_allowSoftwareGL;	// don't abort out if the pixelformat claims software
 cvar_t *r_swapInterval;
 cvar_t *r_glDriver;
 cvar_t *r_displayRefresh;
@@ -3682,6 +3686,14 @@ static void CL_InitGLimp_Cvars( void )
 	r_displayRefresh = Cvar_Get( "r_displayRefresh", "0", CVAR_LATCH );
 	Cvar_CheckRange( r_displayRefresh, "0", "250", CV_INTEGER );
 
+	vid_xpos = Cvar_Get( "vid_xpos", "3", CVAR_ARCHIVE );
+	vid_ypos = Cvar_Get( "vid_ypos", "22", CVAR_ARCHIVE );
+	Cvar_CheckRange( vid_xpos, NULL, NULL, CV_INTEGER );
+	Cvar_CheckRange( vid_ypos, NULL, NULL, CV_INTEGER );
+
+	r_noborder = Cvar_Get( "r_noborder", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_CheckRange( r_noborder, "0", "1", CV_INTEGER );
+
 	r_mode = Cvar_Get( "r_mode", "-2", CVAR_ARCHIVE | CVAR_LATCH );
 	r_modeFullscreen = Cvar_Get( "r_modeFullscreen", "-2", CVAR_ARCHIVE | CVAR_LATCH );
 	Cvar_CheckRange( r_mode, "-2", va( "%i", s_numVidModes-1 ), CV_INTEGER );
@@ -3698,9 +3710,14 @@ static void CL_InitGLimp_Cvars( void )
 	Cvar_SetDescription( r_customheight, "Custom height to use with \\r_mode -1" );
 
 	r_colorbits = Cvar_Get( "r_colorbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_CheckRange( r_colorbits, "0", "32", CV_INTEGER );
+
 	// shared with renderer:
 	r_stencilbits = Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_CheckRange( r_stencilbits, "0", "8", CV_INTEGER );
 	r_depthbits = Cvar_Get( "r_depthbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_CheckRange( r_depthbits, "0", "32", CV_INTEGER );
+
 	r_drawBuffer = Cvar_Get( "r_drawBuffer", "GL_BACK", CVAR_CHEAT );
 
 #ifdef USE_RENDERER_DLOPEN

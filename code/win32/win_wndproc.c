@@ -31,8 +31,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //static UINT MSH_MOUSEWHEEL;
 
 // Console variables that we need to access from this module
-cvar_t		*vid_xpos;			// X coordinate of window position
-cvar_t		*vid_ypos;			// Y coordinate of window position
 cvar_t		*in_forceCharset;
 
 static HHOOK WinHook;
