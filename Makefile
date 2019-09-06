@@ -21,6 +21,7 @@ endif
 BUILD_CLIENT     = 1
 BUILD_SERVER     = 1
 
+USE_SDL          = 0
 USE_CURL         = 1
 USE_LOCAL_HEADERS= 0
 USE_VULKAN       = 0
@@ -31,9 +32,6 @@ CNAME            = quake3e
 DNAME            = quake3e.ded
 
 RENDERER_PREFIX  = $(CNAME)
-
-#USE_ALSA_STATIC = 1
-#USE_STATIC_GL   = 1
 
 ifeq ($(V),1)
 echo_cmd=@:
@@ -137,14 +135,6 @@ ifndef USE_CURL_DLOPEN
   endif
 endif
 
-ifndef USE_ALSA_STATIC
-USE_ALSA_STATIC=0
-endif
-
-ifndef USE_STATIC_GL
-USE_STATIC_GL=0
-endif
-
 ifneq ($(USE_RENDERER_DLOPEN),0)
 USE_VULKAN=1
 endif
@@ -160,6 +150,7 @@ RCDIR=$(MOUNT_DIR)/renderercommon
 R1DIR=$(MOUNT_DIR)/renderer
 RVDIR=$(MOUNT_DIR)/renderervk
 RVSDIR=$(MOUNT_DIR)/renderervk/shaders/spirv
+SDLDIR=$(MOUNT_DIR)/sdl
 
 CMDIR=$(MOUNT_DIR)/qcommon
 UDIR=$(MOUNT_DIR)/unix
@@ -220,14 +211,6 @@ else
 endif
 endif
 
-ifeq ($(USE_ALSA_STATIC),1)
-  BASE_CFLAGS += -DUSE_ALSA_STATIC
-endif
-
-ifeq ($(USE_STATIC_GL),1)
-  BASE_CFLAGS += -DUSE_STATIC_GL
-endif
-
 ifeq ($(GENERATE_DEPENDENCIES),1)
   BASE_CFLAGS += -MMD
 endif
@@ -241,6 +224,8 @@ INSTALL=install
 MKDIR=mkdir
 
 ARCHEXT=
+
+CLIENT_EXTRA_FILES=
 
 ifeq ($(PLATFORM),linux)
 
@@ -275,14 +260,11 @@ ifeq ($(PLATFORM),linux)
   THREAD_LDFLAGS=-lpthread
   LDFLAGS=-ldl -lm -Wl,--hash-style=both
 
-  CLIENT_LDFLAGS=-L/usr/X11R7/$(LIB) -L/usr/$(LIB) -lX11
-
-  ifeq ($(USE_STATIC_GL),1)
-    CLIENT_LDFLAGS += -lGL
-  endif
-
-  ifeq ($(USE_ALSA_STATIC),1)
-    CLIENT_LDFLAGS += -lasound -lpthread
+  ifeq ($(USE_SDL),1)
+    BASE_CFLAGS += -I/usr/include/SDL2
+    CLIENT_LDFLAGS = -L/usr/$(LIB) -lSDL2
+  else
+    CLIENT_LDFLAGS = -L/usr/X11R7/$(LIB) -L/usr/$(LIB) -lX11
   endif
 
   ifeq ($(USE_CODEC_VORBIS),1)
@@ -381,6 +363,20 @@ ifdef MINGW
   LDFLAGS += -lwsock32 -lgdi32 -lwinmm -lole32 -lws2_32 -lpsapi -lcomctl32
 
   CLIENT_LDFLAGS=$(LDFLAGS)
+
+  ifeq ($(USE_SDL),1)
+	BASE_CFLAGS += -DUSE_LOCAL_HEADERS=1 -I$(MOUNT_DIR)/libsdl/windows/include/SDL2
+	#CLIENT_CFLAGS += -DUSE_LOCAL_HEADERS=1
+    ifeq ($(ARCH),x86)
+      CLIENT_LDFLAGS += -L$(MOUNT_DIR)/libsdl/windows/mingw/lib32
+      CLIENT_LDFLAGS += -lSDL2
+	  CLIENT_EXTRA_FILES += $(MOUNT_DIR)/libsdl/windows/mingw/lib32/SDL2.dll
+    else
+      CLIENT_LDFLAGS += -L$(MOUNT_DIR)/libsdl/windows/mingw/lib64
+      CLIENT_LDFLAGS += -lSDL264
+      CLIENT_EXTRA_FILES += $(MOUNT_DIR)/libsdl/windows/mingw/lib64/SDL264.dll
+    endif
+  endif
 
   ifeq ($(USE_CODEC_VORBIS),1)
     CLIENT_LDFLAGS += -lvorbisfile -lvorbis -logg
@@ -609,6 +605,27 @@ release:
 	do \
 		$(STRIP) "$(BR)$$i"; \
 	done
+
+define ADD_COPY_TARGET
+TARGETS += $2
+$2: $1
+	$(echo_cmd) "CP $$<"
+	@cp $1 $2
+endef
+
+# These functions allow us to generate rules for copying a list of files
+# into the base directory of the build; this is useful for bundling libs,
+# README files or whatever else
+define GENERATE_COPY_TARGETS
+$(foreach FILE,$1, \
+  $(eval $(call ADD_COPY_TARGET, \
+    $(FILE), \
+    $(addprefix $(B)/,$(notdir $(FILE))))))
+endef
+
+ifneq ($(BUILD_CLIENT),0)
+  $(call GENERATE_COPY_TARGETS,$(CLIENT_EXTRA_FILES))
+endif
 
 # Create the build directories and tools, print out
 # an informational message, then start building
@@ -932,37 +949,60 @@ ifeq ($(USE_CURL),1)
 endif
 
 ifdef MINGW
+
   Q3OBJ += \
-    $(B)/client/win_gamma.o \
-    $(B)/client/win_glimp.o \
-    $(B)/client/win_input.o \
     $(B)/client/win_main.o \
-    $(B)/client/win_minimize.o \
-    $(B)/client/win_qgl.o \
-    $(B)/client/win_qvk.o \
     $(B)/client/win_shared.o \
-    $(B)/client/win_snd.o \
     $(B)/client/win_syscon.o \
-    $(B)/client/win_wndproc.o \
     $(B)/client/win_resource.o
-else
+
+ifeq ($(USE_SDL),1)
+    Q3OBJ += \
+        $(B)/client/sdl_glimp.o \
+        $(B)/client/sdl_gamma.o \
+        $(B)/client/sdl_input.o \
+        $(B)/client/sdl_snd.o
+else # !USE_SDL
+    Q3OBJ += \
+        $(B)/client/win_gamma.o \
+        $(B)/client/win_glimp.o \
+        $(B)/client/win_input.o \
+        $(B)/client/win_minimize.o \
+        $(B)/client/win_qgl.o \
+        $(B)/client/win_qvk.o \
+        $(B)/client/win_snd.o \
+        $(B)/client/win_wndproc.o
+endif # !USE_SDL
+
+else # !MINGW
+
   Q3OBJ += \
     $(B)/client/unix_main.o \
     $(B)/client/unix_shared.o \
-    $(B)/client/linux_signals.o \
-    $(B)/client/linux_glimp.o \
-    $(B)/client/linux_qgl.o \
-    $(B)/client/linux_qvk.o \
-    $(B)/client/linux_snd.o \
-    $(B)/client/x11_dga.o \
-    $(B)/client/x11_randr.o \
-    $(B)/client/x11_vidmode.o
+    $(B)/client/linux_signals.o
+
+ifeq ($(USE_SDL),1)
+    Q3OBJ += \
+        $(B)/client/sdl_glimp.o \
+        $(B)/client/sdl_gamma.o \
+        $(B)/client/sdl_input.o \
+        $(B)/client/sdl_snd.o
+else # !USE_SDL
+    Q3OBJ += \
+        $(B)/client/linux_glimp.o \
+        $(B)/client/linux_qgl.o \
+        $(B)/client/linux_qvk.o \
+        $(B)/client/linux_snd.o \
+        $(B)/client/x11_dga.o \
+        $(B)/client/x11_randr.o \
+        $(B)/client/x11_vidmode.o
+endif # !USE_SDL
 
 #  ifeq ($(PLATFORM),linux)
 #    Q3OBJ += $(B)/client/linux_joystick.o
 #  endif
 
-endif
+endif # !MINGW
 
 # client binary
 
@@ -1098,6 +1138,9 @@ $(B)/client/%.o: $(BLIBDIR)/%.c
 	$(DO_BOT_CC)
 
 $(B)/client/%.o: $(JPDIR)/%.c
+	$(DO_CC)
+
+$(B)/client/%.o: $(SDLDIR)/%.c
 	$(DO_CC)
 
 $(B)/rend1/%.o: $(R1DIR)/%.c
