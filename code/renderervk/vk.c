@@ -4208,7 +4208,7 @@ void vk_begin_frame( void )
 
 	if ( r_fastsky->integer ) {
 		backEnd.projection2D = qtrue; // to ensure we have viewport that occupies entire window
-		vk_clear_attachments( qtrue, qfalse, qfalse, colorBlack );
+		vk_clear_attachments( qfalse, qfalse, qtrue, colorBlack );
 		backEnd.projection2D = qfalse;
 	}
 }
