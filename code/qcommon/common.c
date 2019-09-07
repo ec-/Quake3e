@@ -179,7 +179,7 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 	va_end( argptr );
 
 	if ( rd_buffer && !rd_flushing ) {
-		if ( len + strlen( rd_buffer ) > ( rd_buffersize - 1 ) ) {
+		if ( len + (int)strlen( rd_buffer ) > ( rd_buffersize - 1 ) ) {
 			rd_flushing = qtrue;
 			rd_flush( rd_buffer );
 			rd_flushing = qfalse;
@@ -2953,20 +2953,20 @@ error recovery
 =============
 */
 static void Com_Freeze_f( void ) {
-	float	s;
+	int		s;
 	int		start, now;
 
 	if ( Cmd_Argc() != 2 ) {
 		Com_Printf( "freeze <seconds>\n" );
 		return;
 	}
-	s = atof( Cmd_Argv(1) );
+	s = atoi( Cmd_Argv(1) ) * 1000;
 
 	start = Com_Milliseconds();
 
 	while ( 1 ) {
 		now = Com_Milliseconds();
-		if ( ( now - start ) * 0.001 > s ) {
+		if ( now - start > s ) {
 			break;
 		}
 	}

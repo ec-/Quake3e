@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 extern	botlib_export_t	*botlib_export;
 
-vm_t *uivm;
+vm_t *uivm = NULL;
 
 /*
 ====================

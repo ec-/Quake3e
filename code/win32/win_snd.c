@@ -119,7 +119,9 @@ qboolean SNDDMA_Init( void ) {
 	memset ((void *)&dma, 0, sizeof (dma));
 	dsound_init = qfalse;
 
-	CoInitialize( NULL );
+	if ( CoInitialize( NULL ) != S_OK ) {
+		return qfalse;
+	}
 
 	if ( !SNDDMA_InitDS() ) {
 		return qfalse;

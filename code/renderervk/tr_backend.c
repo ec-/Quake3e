@@ -46,7 +46,7 @@ static float fast_sky_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 */
 void GL_Bind( image_t *image ) {
 #ifdef USE_VULKAN
-	if (!image) {
+	if ( !image ) {
 		ri.Printf( PRINT_WARNING, "GL_Bind: NULL image\n" );
 		image = tr.defaultImage;
 	}
@@ -145,13 +145,12 @@ void GL_Cull( int cullType ) {
 */
 void GL_TexEnv( GLint env )
 {
-	if ( env == glState.texEnv[glState.currenttmu] )
-	{
-		return;
-	}
-
-	glState.texEnv[glState.currenttmu] = env;
 #ifndef USE_VULKAN
+	if ( env == glState.texEnv[ glState.currenttmu ] )
+		return;
+
+	glState.texEnv[ glState.currenttmu ] = env;
+
 	switch ( env )
 	{
 	case GL_MODULATE:

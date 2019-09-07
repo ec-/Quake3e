@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "tr_local.h"
 
-glconfig_t	glConfig;
+glconfig_t	glConfig = { 0 };
 qboolean	nonPowerOfTwoTextures;
 qboolean	textureFilterAnisotropic;
 int			maxAnisotropy;
@@ -532,7 +532,7 @@ static void InitOpenGL( void )
 	if ( glConfig.vidWidth == 0 )
 	{
 		const char *err;
-		GLint max_texture_size;
+		GLint max_texture_size = 0;
 		GLint max_shader_units = -1;
 		GLint max_bind_units = -1;
 
@@ -1623,6 +1623,7 @@ void R_Init( void ) {
 	Com_Memset( &tr, 0, sizeof( tr ) );
 	Com_Memset( &backEnd, 0, sizeof( backEnd ) );
 	Com_Memset( &tess, 0, sizeof( tess ) );
+	Com_Memset( &glState, 0, sizeof( glState ) );
 
 	if (sizeof(glconfig_t) != 11332)
 		ri.Error( ERR_FATAL, "Mod ABI incompatible: sizeof(glconfig_t) == %u != 11332", (unsigned int) sizeof(glconfig_t));

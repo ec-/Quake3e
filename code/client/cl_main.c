@@ -95,7 +95,7 @@ cvar_t *r_drawBuffer;
 clientActive_t		cl;
 clientConnection_t	clc;
 clientStatic_t		cls;
-vm_t				*cgvm;
+vm_t				*cgvm = NULL;
 
 netadr_t			rcon_address;
 
