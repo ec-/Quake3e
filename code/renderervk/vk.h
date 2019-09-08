@@ -1,11 +1,5 @@
 #pragma once
 
-#ifdef _WIN32
-#define VK_USE_PLATFORM_WIN32_KHR
-#define NOMINMAX
-#endif
-
-#define VK_NO_PROTOTYPES
 #include "../renderercommon/vulkan/vulkan.h"
 #include "tr_common.h"
 
@@ -402,11 +396,6 @@ typedef struct {
 
 	// Descriptor sets corresponding to bound texture images.
 	VkDescriptorSet current_descriptor_sets[ MAX_TEXTURE_UNITS ];
-
-	//VkDescriptorSet uniform_descriptor;
-	//uint32_t		uniform_offset;
-
-	//VkDescriptorSet color_descriptor;
 
 	// This flag is used to decide whether framebuffer's depth attachment should be cleared
 	// with vmCmdClearAttachment (dirty_depth_attachment == true), or it have just been

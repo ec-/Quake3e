@@ -204,8 +204,6 @@ struct vm_s {
 	int			privateFlag;
 };
 
-extern	int		vm_debugLevel;
-
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header );
 int	VM_CallCompiled( vm_t *vm, int nargs, int *args );
 

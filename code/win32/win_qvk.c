@@ -103,26 +103,12 @@ qboolean VK_CreateSurface( VkInstance instance, VkSurfaceKHR *pSurface )
 qboolean QVK_Init( const char *dllname )
 {
 	char libName[1024];
-#if 0
-	char systemDir[1024];
-
-#ifdef UNICODE
-	TCHAR buffer[1024];
-	GetSystemDirectory( buffer, ARRAYSIZE( buffer ) );
-	strcpy( systemDir, WtoA( buffer ) );
-#else
-	GetSystemDirectory( systemDir, sizeof( systemDir ) );
-#endif
-#endif
 
 	Com_Printf( "...initializing QVK\n" );
 
 	if ( glw_state.VulkanLib == NULL )
 	{
-		// NOTE: this assumes that 'dllname' is lower case (and it should be)!
-		Q_strncpyz( libName, dllname, sizeof( libName ) );
-		Q_strcat( libName, sizeof( libName ), ".dll" );
-		glw_state.VulkanLib = Sys_LoadLibrary( libName );
+		glw_state.VulkanLib = Sys_LoadLibrary( dllname );
 		if ( glw_state.VulkanLib == NULL )
 		{
 			Com_Printf( "...loading '%s' : " S_COLOR_YELLOW "failed\n", libName );
@@ -138,7 +124,6 @@ qboolean QVK_Init( const char *dllname )
 	qvkGetInstanceProcAddr = /*(PFN_vkGetInstanceProcAddr)*/ Sys_LoadFunction( glw_state.VulkanLib, "vkGetInstanceProcAddr" );
 	if ( qvkGetInstanceProcAddr == NULL )
 	{
-
 		Sys_UnloadLibrary( glw_state.VulkanLib );
 		glw_state.VulkanLib = NULL;
 

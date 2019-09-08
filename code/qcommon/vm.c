@@ -203,7 +203,9 @@ const char *opname[ 256 ] = {
 
 cvar_t	*vm_rtChecks;
 
+#ifdef DEBUG
 int		vm_debugLevel;
+#endif
 
 // used by Com_Error to get rid of running vm's before longjmp
 static int forced_unload;
@@ -216,14 +218,14 @@ static const char *vmName[ VM_COUNT ] = {
 	"ui"
 };
 
-void VM_VmInfo_f( void );
-void VM_VmProfile_f( void );
+static void VM_VmInfo_f( void );
+static void VM_VmProfile_f( void );
 
-
+#ifdef DEBUG
 void VM_Debug( int level ) {
 	vm_debugLevel = level;
 }
-
+#endif
 
 /*
 ==============
@@ -1660,11 +1662,11 @@ intptr_t QDECL VM_Call( vm_t *vm, int nargs, int callnum, ... )
 		Com_Error( ERR_FATAL, "VM_Call with NULL vm" );
 	}
 
+#ifdef DEBUG
 	if ( vm_debugLevel ) {
 	  Com_Printf( "VM_Call( %d )\n", callnum );
 	}
 
-#ifdef DEBUG
 	if ( nargs >= MAX_VMMAIN_CALL_ARGS ) {
 		Com_Error( ERR_DROP, "VM_Call: nargs >= MAX_VMMAIN_CALL_ARGS" );
 	}
@@ -1740,7 +1742,7 @@ static int QDECL VM_ProfileSort( const void *a, const void *b ) {
 VM_NameToVM
 ==============
 */
-vm_t *VM_NameToVM( const char *name ) 
+static vm_t *VM_NameToVM( const char *name ) 
 {
 	vmIndex_t index;
 
@@ -1770,7 +1772,7 @@ VM_VmProfile_f
 
 ==============
 */
-void VM_VmProfile_f( void ) {
+static void VM_VmProfile_f( void ) {
 	vm_t		*vm;
 	vmSymbol_t	**sorted, *sym;
 	int			i;
@@ -1821,7 +1823,7 @@ void VM_VmProfile_f( void ) {
 VM_VmInfo_f
 ==============
 */
-void VM_VmInfo_f( void ) {
+static void VM_VmInfo_f( void ) {
 	vm_t	*vm;
 	int		i;
 

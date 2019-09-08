@@ -1245,10 +1245,6 @@ fail:
 
 static qboolean GLW_LoadVulkan( const char *drivername )
 {
-	glconfig_t *config = glw_state.config;
-
-	config->driverType = GLDRV_ICD;
-
 	//
 	// load the driver and bind our function pointers to it
 	// 
@@ -1331,7 +1327,7 @@ static qboolean GLW_StartVulkan( void )
 	//
 	// load and initialize Vulkan driver
 	//
-	if ( !GLW_LoadVulkan( "vulkan-1" ) ) {
+	if ( !GLW_LoadVulkan( "vulkan-1.dll" ) ) {
 		Com_Error( ERR_FATAL, "GLW_StartVulkan() - could not load Vulkan subsystem\n" );
 		return qfalse;
 	}

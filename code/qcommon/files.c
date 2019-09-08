@@ -250,7 +250,7 @@ typedef struct pack_s {
 
 	// caching subsystem
 #ifdef USE_PK3_CACHE
-	int				namehash;
+	unsigned int	namehash;
 	fileOffset_t	size;
 	fileTime_t		mtime;
 	fileTime_t		ctime;
@@ -2211,7 +2211,7 @@ typedef struct pk3cacheFileItem_s {
 
 static int FS_HashPK3( const char *name )
 {
-	int c, hash = 0;
+	unsigned int c, hash = 0;
 	while ( (c = *name++) != '\0' )
 	{
 		hash = hash * 101 + c;
@@ -2224,7 +2224,7 @@ static int FS_HashPK3( const char *name )
 static pack_t *FS_FindInCache( const char *zipfile )
 {
 	pack_t *pack;
-	int hash;
+	unsigned int hash;
 
 	hash = FS_HashPK3( zipfile );
 	pack = pakHashTable[ hash ];
