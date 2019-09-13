@@ -470,7 +470,7 @@ static int GetTimerMsec( void ) {
 
 static HWINEVENTHOOK hWinEventHook;
 
-static VOID CALLBACK WinEventProc( HWINEVENTHOOK hWinEventHook, DWORD dwEvent, HWND hWnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime )
+static VOID CALLBACK WinEventProc( HWINEVENTHOOK h_WinEventHook, DWORD dwEvent, HWND hWnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime )
 {
 	if ( gw_active )
 	{

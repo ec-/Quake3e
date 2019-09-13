@@ -33,7 +33,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <ConfigurationType>StaticLibrary</ConfigurationType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -44,7 +43,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <ConfigurationType>StaticLibrary</ConfigurationType>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -65,7 +63,22 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>.\build\renderervk_release_x64\</OutDir>
+    <IntDir>.\build\renderervk_release_x64\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>.\build\renderervk_release\</OutDir>
+    <IntDir>.\build\renderervk_release\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>.\build\renderervk_debug\</OutDir>
+    <IntDir>.\build\renderervk_debug\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>.\build\renderervk_debug_x64\</OutDir>
+    <IntDir>.\build\renderervk_debug_x64\</IntDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -84,15 +97,18 @@
     </ClCompile>
     <ProjectReference />
     <Lib />
+    <Lib>
+      <OutputFile>$(OutDir)renderervk.lib</OutputFile>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -105,10 +121,10 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -116,34 +132,35 @@
     </Link>
     <ProjectReference />
     <Lib />
-    <ProjectReference>
-      <LinkLibraryDependencies>true</LinkLibraryDependencies>
-    </ProjectReference>
+    <ProjectReference />
+    <Lib>
+      <OutputFile>$(OutDir)renderervk.lib</OutputFile>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\renderercommon\tr_noise.c" />
+    <ClCompile Include="..\..\renderervk\shaders\spirv\dot_frag.c" />
+    <ClCompile Include="..\..\renderervk\shaders\spirv\dot_vert.c" />
+    <ClCompile Include="..\..\renderervk\shaders\spirv\fog_frag.c" />
+    <ClCompile Include="..\..\renderervk\shaders\spirv\fog_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\gamma_frag.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\gamma_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\light_clip_fog_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\light_clip_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\light_fog_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\light_fog_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\light_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\light_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\mt_add_fog_frag.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\mt_add_frag.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\mt_clip_fog_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\mt_clip_vert.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt_fog_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\mt_mul_fog_frag.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\mt_mul_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\st_clip_fog_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\st_clip_vert.c" />
+    <ClCompile Include="..\..\renderervk\shaders\spirv\st_enviro_fog_vert.c" />
+    <ClCompile Include="..\..\renderervk\shaders\spirv\st_enviro_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\st_fog_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\st_fog_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\st_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\st_vert.c" />
     <ClCompile Include="..\..\renderervk\tr_animation.c" />
     <ClCompile Include="..\..\renderervk\tr_backend.c" />
     <ClCompile Include="..\..\renderervk\tr_bsp.c" />
@@ -177,6 +194,8 @@
       <RuntimeLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MultiThreadedDebug</RuntimeLibrary>
       <RuntimeLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
+    <ClCompile Include="..\..\renderervk\vk_flares.c" />
+    <ClCompile Include="..\..\renderervk\vk_vbo.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\renderervk\iqm.h" />

@@ -368,12 +368,12 @@ static void SV_SetClientTLD( client_t *cl, const netadr_t *from, qboolean isLAN 
 }
 
 
-static int seq[ MAX_CLIENTS ];
+static int seqs[ MAX_CLIENTS ];
 
 static void SV_SaveSequences( void ) {
 	int i;
 	for ( i = 0; i < sv_maxclients->integer; i++ ) {
-		seq[i] = svs.clients[i].reliableSequence;
+		seqs[i] = svs.clients[i].reliableSequence;
 	}
 }
 
@@ -382,8 +382,8 @@ static void SV_InjectLocation( const char *tld, const char *country ) {
 	char *cmd, *str;
 	int i, n;
 	for ( i = 0; i < sv_maxclients->integer; i++ ) {
-		if ( seq[i] != svs.clients[i].reliableSequence ) {
-			for ( n = seq[i]; n != svs.clients[i].reliableSequence + 1; n++ ) {
+		if ( seqs[i] != svs.clients[i].reliableSequence ) {
+			for ( n = seqs[i]; n != svs.clients[i].reliableSequence + 1; n++ ) {
 				cmd = svs.clients[i].reliableCommands[n & (MAX_RELIABLE_COMMANDS-1)];
 				str = strstr( cmd, "connected\n\"" );
 				if ( str && str[11] == '\0' && str < cmd + 512 ) {

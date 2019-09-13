@@ -194,6 +194,7 @@
     <ClCompile Include="..\..\client\cl_console.c" />
     <ClCompile Include="..\..\client\cl_curl.c" />
     <ClCompile Include="..\..\client\cl_input.c" />
+    <ClCompile Include="..\..\client\cl_jpeg.c" />
     <ClCompile Include="..\..\client\cl_keys.c" />
     <ClCompile Include="..\..\client\cl_main.c" />
     <ClCompile Include="..\..\client\cl_net_chan.c" />

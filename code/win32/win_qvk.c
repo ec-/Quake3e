@@ -111,7 +111,7 @@ qboolean QVK_Init( const char *dllname )
 		glw_state.VulkanLib = Sys_LoadLibrary( dllname );
 		if ( glw_state.VulkanLib == NULL )
 		{
-			Com_Printf( "...loading '%s' : " S_COLOR_YELLOW "failed\n", dllName );
+			Com_Printf( "...loading '%s' : " S_COLOR_YELLOW "failed\n", dllname );
 			return qfalse;
 		}
 

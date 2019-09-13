@@ -14,6 +14,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "renderer2", "renderer2.vcxp
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "quake3e-ded", "quake3e-ded.vcxproj", "{81CB51C4-B434-4E12-B69B-BAEE102F2853}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "renderervk", "renderervk.vcxproj", "{157AD8A8-E8BD-41C1-9139-F4687A8E3668}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -70,8 +72,19 @@ Global
 		{81CB51C4-B434-4E12-B69B-BAEE102F2853}.Release|Win32.Build.0 = Release|Win32
 		{81CB51C4-B434-4E12-B69B-BAEE102F2853}.Release|Win64.ActiveCfg = Release|x64
 		{81CB51C4-B434-4E12-B69B-BAEE102F2853}.Release|Win64.Build.0 = Release|x64
+		{157AD8A8-E8BD-41C1-9139-F4687A8E3668}.Debug|Win32.ActiveCfg = Debug|Win32
+		{157AD8A8-E8BD-41C1-9139-F4687A8E3668}.Debug|Win32.Build.0 = Debug|Win32
+		{157AD8A8-E8BD-41C1-9139-F4687A8E3668}.Debug|Win64.ActiveCfg = Debug|x64
+		{157AD8A8-E8BD-41C1-9139-F4687A8E3668}.Debug|Win64.Build.0 = Debug|x64
+		{157AD8A8-E8BD-41C1-9139-F4687A8E3668}.Release|Win32.ActiveCfg = Release|Win32
+		{157AD8A8-E8BD-41C1-9139-F4687A8E3668}.Release|Win32.Build.0 = Release|Win32
+		{157AD8A8-E8BD-41C1-9139-F4687A8E3668}.Release|Win64.ActiveCfg = Release|x64
+		{157AD8A8-E8BD-41C1-9139-F4687A8E3668}.Release|Win64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C42A286D-2EC8-409B-91F9-0DE6E344F40D}
 	EndGlobalSection
 EndGlobal
