@@ -167,6 +167,45 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #endif
 
+//================================================================ OpenBSD ===
+
+// This is very much like the FreeBSD one and can probably be merged
+#ifdef __OpenBSD__
+
+#include <sys/types.h>
+#include <sys/types.h>
+#include <machine/endian.h>
+
+#define OS_STRING "openbsd"
+#define ID_INLINE inline
+#define PATH_SEP '/'
+#define PATH_SEP_FOREIGN '\\'
+
+#ifdef __i386__
+#define ARCH_STRING "i386"
+// OpenBSD has alot of platforms
+#define Q3_LITTLE_ENDIAN
+#undef id386
+#define id386 1
+#endif
+
+#ifdef __amd64__
+#define ARCH_STRING "x86_64"
+#define Q3_LITTLE_ENDIAN
+#undef idx64
+#define idx64 1
+#endif
+
+#if BYTE_ORDER == BIG_ENDIAN
+#define Q3_BIG_ENDIAN
+#else
+#define Q3_LITTLE_ENDIAN
+#endif
+
+#define DLL_EXT ".so"
+
+#endif
+
 //================================================================== Q3VM ===
 
 #ifdef Q3_VM
