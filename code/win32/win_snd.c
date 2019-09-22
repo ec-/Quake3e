@@ -19,25 +19,25 @@ along with Quake III Arena source code; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
-#include <float.h>
 
 #include "../client/snd_local.h"
 #include "win_local.h"
+
+extern cvar_t *s_khz;
+
+static qboolean	dsound_init;
 
 HRESULT (WINAPI *pDirectSoundCreate)(GUID FAR *lpGUID, LPDIRECTSOUND FAR *lplpDS, IUnknown FAR *pUnkOuter);
 #define iDirectSoundCreate(a,b,c)	pDirectSoundCreate(a,b,c)
 
 #define SECONDARY_BUFFER_SIZE	0x10000
 
-
-static qboolean	dsound_init;
 static int		sample16;
 static DWORD	gSndBufSize;
 static DWORD	locksize;
 static LPDIRECTSOUND pDS;
 static LPDIRECTSOUNDBUFFER pDSBuf, pDSPBuf;
 static HINSTANCE hInstDS;
-extern cvar_t	*s_khz;
 
 static const char *DSoundError( int error ) {
 	switch ( error ) {
@@ -62,7 +62,6 @@ SNDDMA_Shutdown
 */
 void SNDDMA_Shutdown( void ) {
 	Com_DPrintf( "Shutting down sound system\n" );
-
 	if ( pDS ) {
 		Com_DPrintf( "Destroying DS buffers\n" );
 		if ( pDS ) {
@@ -84,8 +83,6 @@ void SNDDMA_Shutdown( void ) {
 		pDSBuf = NULL;
 		pDSPBuf = NULL;
 
-		dma.buffer = NULL;
-
 		Com_DPrintf( "...releasing DS object\n" );
 		pDS->lpVtbl->Release( pDS );
 	}
@@ -99,8 +96,10 @@ void SNDDMA_Shutdown( void ) {
 	pDS = NULL;
 	pDSBuf = NULL;
 	pDSPBuf = NULL;
+
 	dsound_init = qfalse;
-	memset ((void *)&dma, 0, sizeof (dma));
+
+	memset( &dma, 0, sizeof( dma ) );
 
 	CoUninitialize();
 }
@@ -116,22 +115,22 @@ Returns false if failed
 */
 qboolean SNDDMA_Init( void ) {
 
-	memset ((void *)&dma, 0, sizeof (dma));
+	memset( &dma, 0, sizeof( dma ) );
+
 	dsound_init = qfalse;
 
 	if ( CoInitialize( NULL ) != S_OK ) {
 		return qfalse;
 	}
 
-	if ( !SNDDMA_InitDS() ) {
-		return qfalse;
+	if ( SNDDMA_InitDS() ) {
+		dsound_init = qtrue;
+		return qtrue;
 	}
 
-	dsound_init = qtrue;
+	Com_DPrintf( "Failed\n" );
 
-	Com_DPrintf("Completed successfully\n" );
-
-    return qtrue;
+	return qfalse;
 }
 
 
@@ -190,9 +189,9 @@ qboolean SNDDMA_InitDS( void )
 	dma.channels = 2;
 	dma.samplebits = 16;
 
-	switch (s_khz->integer) {
-		//case 48: dma.speed = 48000; break;
-		//case 44: dma.speed = 44100; break;
+	switch ( s_khz->integer ) {
+		case 48: dma.speed = 48000; break;
+		case 44: dma.speed = 44100; break;
 		case 11: dma.speed = 11025; break;
 		case 22:
 		default: dma.speed = 22050; break;
@@ -287,24 +286,24 @@ how many sample are required to fill it up.
 ===============
 */
 int SNDDMA_GetDMAPos( void ) {
-	MMTIME	mmtime;
-	int		s;
-	DWORD	dwWrite;
 
-	if ( !dsound_init ) {
-		return 0;
+	if ( dsound_init ) {
+		MMTIME	mmtime;
+		int		s;
+		DWORD	dwWrite;
+
+		mmtime.wType = TIME_SAMPLES;
+		pDSBuf->lpVtbl->GetCurrentPosition( pDSBuf, &mmtime.u.sample, &dwWrite );
+
+		s = mmtime.u.sample;
+
+		s >>= sample16;
+		s &= ( dma.samples - 1 );
+
+		return s;
 	}
 
-	mmtime.wType = TIME_SAMPLES;
-	pDSBuf->lpVtbl->GetCurrentPosition(pDSBuf, &mmtime.u.sample, &dwWrite);
-
-	s = mmtime.u.sample;
-
-	s >>= sample16;
-
-	s &= (dma.samples-1);
-
-	return s;
+	return 0;
 }
 
 
@@ -358,7 +357,7 @@ void SNDDMA_BeginPainting( void ) {
 		if (++reps > 2)
 			return;
 	}
-	dma.buffer = (unsigned char *)pbuf;
+	dma.buffer = (byte *)pbuf;
 }
 
 
@@ -371,7 +370,7 @@ Also unlocks the dsound buffer
 ===============
 */
 void SNDDMA_Submit( void ) {
-    // unlock the dsound buffer
+	// unlock the dsound buffer
 	if ( pDSBuf ) {
 		pDSBuf->lpVtbl->Unlock(pDSBuf, dma.buffer, locksize, NULL, 0);
 	}

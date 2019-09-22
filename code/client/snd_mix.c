@@ -28,9 +28,9 @@ static portable_samplepair_t paintbuffer[PAINTBUFFER_SIZE];
 static int snd_vol;
 
 // bk001119 - these not static, required by unix/snd_mixa.s
-int*     snd_p;
-int      snd_linear_count;
-short*   snd_out;
+int		*snd_p;
+int		snd_linear_count;
+short	*snd_out;
 
 void S_WriteLinearBlastStereo16( void )
 {
@@ -651,7 +651,7 @@ void S_PaintChannels( int endtime ) {
 	snd_vol = s_volume->value * 255;
 
 	if ( (!gw_active && !gw_minimized && s_muteWhenUnfocused->integer) || (gw_minimized && s_muteWhenMinimized->integer) ) {
-		buffer = dma.buffer2;
+		buffer = dma_buffer2;
 		if ( !muted ) {
 			// switching to muted, clear hardware buffer
 			Com_Memset( dma.buffer, 0, dma.samples * dma.samplebits/8 );
@@ -662,7 +662,7 @@ void S_PaintChannels( int endtime ) {
 		// switching to unmuted, clear both buffers
 		if ( muted ) {
 			Com_Memset( dma.buffer, 0, dma.samples * dma.samplebits/8 );
-			Com_Memset( dma.buffer2, 0, dma.samples * dma.samplebits/8 );
+			Com_Memset( dma_buffer2, 0, dma.samples * dma.samplebits/8 );
 		}
 		muted = qfalse;
 	}
