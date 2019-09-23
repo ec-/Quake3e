@@ -36,7 +36,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 /* need this on NX enabled systems (i386 with PAE kernel or
  * noexec32=on x86_64) */
-#if defined(__linux__) || defined(__FreeBSD__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__)
 #define VM_X86_MMAP
 #endif
 
@@ -2753,7 +2753,7 @@ static void *VM_Alloc_Compiled( vm_t *vm, int codeLength, int tableLength )
 
 	length = codeLength + tableLength;
 #ifdef VM_X86_MMAP
-	ptr = mmap( NULL, length, PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0 );
+	ptr = mmap( NULL, length, PROT_READ|PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0 );
 	if ( ptr == MAP_FAILED ) {
 		Com_Error( ERR_FATAL, "VM_CompileX86: mmap failed" );
 		return NULL;

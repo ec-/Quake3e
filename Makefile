@@ -438,7 +438,7 @@ ifeq ($(PLATFORM),openbsd)
 
   BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
                 -I/usr/X11R6/include -I/usr/local/include \
-                -I/usr/local/include/SDL -fvisibility=hidden
+                -fvisibility=hidden
 
   DEBUG_CFLAGS=$(BASE_CFLAGS) -g
 
@@ -460,9 +460,16 @@ ifeq ($(PLATFORM),openbsd)
 
   THREAD_LDFLAGS=-lpthread
   # don't need -ldl (FreeBSD)
-  LDFLAGS=-lm -lSDL -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext
+  LDFLAGS=-lm
 
-  CLIENT_LDFLAGS =-lm -lSDL -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext
+  ifeq ($(USE_SDL),1)
+    BASE_CFLAGS += -I/usr/local/include/SDL2
+    CLIENT_LDFLAGS = -L/usr/X11R6/lib -L/usr/local/lib -lSDL2
+  else
+    CLIENT_LDFLAGS = -L/usr/X11R6/lib -L/usr/lib -lX11
+  endif
+
+  CLIENT_LDFLAGS += -lm -lGL -L/usr/local/lib
 
   ifeq ($(USE_CODEC_VORBIS),1)
     CLIENT_LDFLAGS += -lvorbisfile -lvorbis -logg
