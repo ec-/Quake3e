@@ -105,9 +105,9 @@ portable_samplepair_t	s_rawsamples[MAX_RAW_SAMPLES];
 
 
 static void S_Base_SoundInfo( void ) {
-	Com_Printf("----- Sound Info -----\n" );
+	Com_Printf( "----- Sound Info -----\n" );
 	if ( !s_soundStarted ) {
-		Com_Printf("sound system not started\n");
+		Com_Printf( "sound system not started\n" );
 	} else {
 		Com_Printf("%5d channels\n", dma.channels);
 		Com_Printf("%5d samples\n", dma.samples);
@@ -115,6 +115,9 @@ static void S_Base_SoundInfo( void ) {
 		Com_Printf("%5d submission_chunk\n", dma.submission_chunk);
 		Com_Printf("%5d speed\n", dma.speed);
 		Com_Printf("%p dma buffer\n", dma.buffer);
+		if ( dma.driver ) {
+			Com_Printf( "Using %s subsystem\n", dma.driver );
+		}
 		if ( s_backgroundStream ) {
 			Com_Printf("Background file: %s\n", s_backgroundLoop );
 		} else {

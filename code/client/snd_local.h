@@ -70,6 +70,7 @@ typedef struct {
 	int			isfloat;
 	int			speed;
 	byte		*buffer;
+	const char	*driver;
 } dma_t;
 
 extern byte *dma_buffer2;

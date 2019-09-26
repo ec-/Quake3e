@@ -332,7 +332,7 @@ ifdef MINGW
   endif
 
   BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
-    -DUSE_ICON
+    -DUSE_ICON -DMINGW=1
 
 #  OPTIMIZE = -O3 -march=i586 -fomit-frame-pointer -ffast-math -falign-loops=2 \
 #    -funroll-loops -falign-jumps=2 -falign-functions=2 -fstrength-reduce
