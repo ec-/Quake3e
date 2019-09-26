@@ -28,7 +28,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define id386 0
 #define idx64 0
 
-//================================================================= WIN32 ===
+// ============================== Win32 ====================================
 
 #ifdef _WIN32
 
@@ -77,11 +77,31 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #else // !defined _WIN32
 
+// common unix platforms parameters
+
 #define Q_NEWLINE "\n"
+#define PATH_SEP '/'
+#define PATH_SEP_FOREIGN '\\'
+#define DLL_EXT ".so"
 
-#endif
+#if defined (__i386__)
+#define ARCH_STRING "i386"
+#define Q3_LITTLE_ENDIAN
+#undef id386
+#define id386 1
+#endif // __i386__
 
-//================================================================= LINUX ===
+
+#if defined (__x86_64__) || defined (__amd64__)
+#define ARCH_STRING "x86_64"
+#define Q3_LITTLE_ENDIAN
+#undef idx64
+#define idx64 1
+#endif // __x86_64__ || __amd64__
+
+#endif // !_WIN32
+
+// ============================== Linux ====================================
 
 #ifdef __linux__
 
@@ -89,139 +109,50 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define OS_STRING "linux"
 #define ID_INLINE inline
-#define PATH_SEP '/'
-#define PATH_SEP_FOREIGN '\\'
-#define DLL_EXT ".so"
 
-#if defined __i386__
-#define ARCH_STRING "i386"
-#define Q3_LITTLE_ENDIAN
-#undef id386
-#define id386 1
-#endif
+#endif // __linux___
 
-#if defined __x86_64__
-#define ARCH_STRING "x86_64"
-#define Q3_LITTLE_ENDIAN
-#undef idx64
-#define idx64 1
-#endif
+// =============================== BSD =====================================
 
-#endif
-
-//=============================================================== FreeBSD ===
-
-#ifdef __FreeBSD__
+#if defined (__FreeBSD__) || defined (__NetBSD__) || defined (__OpenBSD__)
 
 #include <sys/types.h>
 #include <machine/endian.h>
 
+
+#if defined (__FreeBSD__)_
 #define OS_STRING "freebsd"
-#define ID_INLINE inline
-#define PATH_SEP '/'
-#define PATH_SEP_FOREIGN '\\'
-#define DLL_EXT ".so"
-
-#if defined __i386__
-#define ARCH_STRING "i386"
-#define Q3_LITTLE_ENDIAN
-#undef id386
-#define id386 1
-#endif
-
-#if defined __x86_64__
-#define ARCH_STRING "x86_64"
-#define Q3_LITTLE_ENDIAN
-#undef idx64
-#define idx64 1
-#endif
-
-#endif
-
-//================================================================ NetBSD ===
-
-// This is very much like the FreeBSD one and can probably be merged
-#ifdef __NetBSD__
-
-#include <sys/types.h>
-#include <sys/types.h>
-#include <machine/endian.h>
-
+#elif defined (__NetBSD__)
 #define OS_STRING "netbsd"
-#define ID_INLINE inline
-#define PATH_SEP '/'
-#define PATH_SEP_FOREIGN '\\'
-
-#ifdef __i386__
-#define ARCH_STRING "i386"
-// Netbsd has alot of platforms
-#endif
-
-#if BYTE_ORDER == BIG_ENDIAN
-#define Q3_BIG_ENDIAN
-#else
-#define Q3_LITTLE_ENDIAN
-#endif
-
-#define DLL_EXT ".so"
-
-#endif
-
-//================================================================ OpenBSD ===
-
-// This is very much like the FreeBSD one and can probably be merged
-#ifdef __OpenBSD__
-
-#include <sys/types.h>
-#include <sys/types.h>
-#include <machine/endian.h>
-
+#elif defined (__OpenBSD__)
 #define OS_STRING "openbsd"
+#endif
+
 #define ID_INLINE inline
-#define PATH_SEP '/'
-#define PATH_SEP_FOREIGN '\\'
-
-#ifdef __i386__
-#define ARCH_STRING "i386"
-// OpenBSD has alot of platforms
-#define Q3_LITTLE_ENDIAN
-#undef id386
-#define id386 1
-#endif
-
-#ifdef __amd64__
-#define ARCH_STRING "x86_64"
-#define Q3_LITTLE_ENDIAN
-#undef idx64
-#define idx64 1
-#endif
-
 #if BYTE_ORDER == BIG_ENDIAN
 #define Q3_BIG_ENDIAN
 #else
 #define Q3_LITTLE_ENDIAN
 #endif
 
-#define DLL_EXT ".so"
+#endif // __FreeBSD__ || __NetBSD__ || __OpenBSD__
 
-#endif
-
-//================================================================== Q3VM ===
+// ================================ Q3VM ===================================
 
 #ifdef Q3_VM
 
 #define OS_STRING "q3vm"
 #define ID_INLINE
-#define PATH_SEP '/'
-#define PATH_SEP_FOREIGN '\\'
 
 #define ARCH_STRING "bytecode"
+#define Q3_LITTLE_ENDIAN
 
+#undef DLL_EXT
 #define DLL_EXT ".qvm"
 
 #endif
 
-//===========================================================================
+// =========================================================================
 
 //catch missing defines in above blocks
 #if !defined( OS_STRING )
@@ -265,7 +196,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define BigLong
 #define BigFloat
 
-#elif defined( Q3_LITTLE_ENDIAN ) || defined ( Q3_VM )
+#elif defined( Q3_LITTLE_ENDIAN )
 
 #define CopyLittleShort(dest, src) Com_Memcpy(dest, src, 2)
 #define CopyLittleLong(dest, src) Com_Memcpy(dest, src, 4)
@@ -282,8 +213,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #endif
 
+// Platform string
 
-//platform string
 #ifdef NDEBUG
 #define PLATFORM_STRING OS_STRING "-" ARCH_STRING
 #else
