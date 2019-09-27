@@ -722,9 +722,16 @@ Returns false if failed
 qboolean SNDDMA_Init( void ) {
 
 #ifdef USE_WASAPI
+	const char *defdrv;
 	cvar_t *s_driver;
 
-	s_driver = Cvar_Get( "s_driver", "dsound", CVAR_LATCH | CVAR_ARCHIVE_ND );
+	if ( IsWindows7OrGreater() )
+		defdrv = "wasapi";
+	else
+		defdrv = "dsound";
+
+	s_driver = Cvar_Get( "s_driver", defdrv, CVAR_LATCH | CVAR_ARCHIVE_ND );
+
 	Cvar_SetDescription( s_driver, "Specify sound subsystem in win32 environment:\n"
 		" dsound - DirectSound\n"
 		" wasapi - WASAPI\n" );
