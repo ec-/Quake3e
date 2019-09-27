@@ -888,6 +888,7 @@ extern	int	CPU_Flags;
 #define CPU_SSE    0x04
 #define CPU_SSE2   0x08
 #define CPU_SSE3   0x10
+#define CPU_SSE41  0x20
 
 // TTimo
 // centralized and cleaned, that's the max string you can send to a Com_Printf / Com_DPrintf (above gets truncated)

@@ -3345,6 +3345,10 @@ int Sys_GetProcessorId( char *vendor )
 	if ( regs[2] & ( 1 << 0 ) )
 		CPU_Flags |= CPU_SSE3;
 
+	// bit 19 of ECX denotes SSE41 existence
+	if ( regs[ 2 ] & ( 1 << 19 ) )
+		CPU_Flags |= CPU_SSE41;
+
 	if ( vendor ) {
 #if idx64
 		strcpy( vendor, "64-bit " );
@@ -3373,6 +3377,8 @@ int Sys_GetProcessorId( char *vendor )
 #endif
 			//if ( CPU_Flags & CPU_SSE3 )
 			//	strcat( vendor, " SSE3" );
+			if ( CPU_Flags & CPU_SSE41 )
+				strcat( vendor, " SSE4.1" );
 		}
 	}
 	return 1;
