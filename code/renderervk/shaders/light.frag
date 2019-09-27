@@ -19,7 +19,8 @@ layout(location = 1) in vec3 N;  // normalized object-space normal vector
 layout(location = 2) in vec4 L;  // object-space light vector
 layout(location = 3) in vec4 V;  // object-space view vector
 
-layout(constant_id = 0) const int alpha_test_func = 0;
+layout (constant_id = 0) const int alpha_test_func = 0;
+layout (constant_id = 1) const float alpha_test_value = 0.0;
 
 layout(location = 0) out vec4 out_color;
 
@@ -28,11 +29,11 @@ void main() {
 
 	// specialization: alpha-test function
 	if (alpha_test_func == 1) {
-		if (out_color.a == 0.0f) discard;
+		if (base.a == alpha_test_value) discard;
 	} else if (alpha_test_func == 2) {
-		if (out_color.a >= 0.5f) discard;
+		if (base.a >= alpha_test_value) discard;
 	} else if (alpha_test_func == 3) {
-		if (out_color.a < 0.5f) discard;
+		if (base.a < alpha_test_value) discard;
 	}
 
 	vec4 lightColorRadius = lightColor;

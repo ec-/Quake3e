@@ -52,4 +52,3 @@ void main() {
 	L = lightPos - vec4(in_position, 1.0);
 	V = eyePos - vec4(in_position, 1.0);
 }
-

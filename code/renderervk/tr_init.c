@@ -108,6 +108,7 @@ cvar_t	*r_ignoreGLErrors;
 cvar_t	*r_stencilbits;
 cvar_t	*r_texturebits;
 cvar_t	*r_ext_multisample;
+cvar_t	*r_ext_alpha_to_coverage;
 
 cvar_t	*r_drawBuffer;
 cvar_t	*r_lightmap;
@@ -1590,6 +1591,9 @@ static void R_Register( void )
 
 	r_ext_multisample = ri.Cvar_Get( "r_ext_multisample", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_ext_multisample, "0", "64", CV_INTEGER );
+
+	r_ext_alpha_to_coverage = ri.Cvar_Get( "r_ext_alpha_to_coverage", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_ext_alpha_to_coverage, "0", "1", CV_INTEGER );
 #endif
 }
 

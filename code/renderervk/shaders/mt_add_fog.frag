@@ -24,20 +24,21 @@ layout(location = 3) in vec2 fog_tex_coord; // fog txcoords
 layout(location = 0) out vec4 out_color;
 
 layout (constant_id = 0) const int alpha_test_func = 0;
+layout (constant_id = 1) const float alpha_test_value = 0.0;
 
 void main() {
-    vec4 color_a = frag_color * texture(texture0, frag_tex_coord0);
-    vec4 color_b = texture(texture1, frag_tex_coord1);
+	vec4 color_a = frag_color * texture(texture0, frag_tex_coord0);
+	vec4 color_b = texture(texture1, frag_tex_coord1);
 	vec4 fog = texture(texture2, fog_tex_coord);
 	vec4 base = vec4(color_a.rgb + color_b.rgb, color_a.a * color_b.a);
 
-    if (alpha_test_func == 1) {
-        if (base.a == 0.0f) discard;
-    } else if (alpha_test_func == 2) {
-        if (base.a >= 0.5f) discard;
-    } else if (alpha_test_func == 3) {
-        if (base.a < 0.5f) discard;
-    }
+	if (alpha_test_func == 1) {
+		if (base.a == alpha_test_value) discard;
+	} else if (alpha_test_func == 2) {
+		if (base.a >= alpha_test_value) discard;
+	} else if (alpha_test_func == 3) {
+		if (base.a < alpha_test_value) discard;
+	}
 
 	fog = fog * fogColor;
 

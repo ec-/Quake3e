@@ -176,8 +176,8 @@ typedef enum { qfalse = 0, qtrue } qboolean;
 
 typedef union floatint_u
 {
-	int i;
-	unsigned int u;
+	int32_t i;
+	uint32_t u;
 	float f;
 	byte b[4];
 }

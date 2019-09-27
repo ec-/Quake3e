@@ -3165,8 +3165,8 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	VkShaderModule *vs_module = NULL;
 	VkShaderModule *fs_module = NULL;
 	int32_t vert_spec_data[1]; // clippping
-	int32_t frag_spec_data[1]; // alpha-test-func
-	VkSpecializationMapEntry spec_entries[2];
+	floatint_t frag_spec_data[2]; // alpha-test-func
+	VkSpecializationMapEntry spec_entries[3];
 	VkSpecializationInfo vert_spec_info;
 	VkSpecializationInfo frag_spec_info;
 	VkPipelineVertexInputStateCreateInfo vertex_input_state;
@@ -3182,6 +3182,8 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	VkGraphicsPipelineCreateInfo create_info;
 	VkPipeline pipeline;
 	VkPipelineShaderStageCreateInfo shader_stages[2];
+	VkBool32 alphaToCoverage = VK_FALSE;
+	unsigned int atest_bits;
 
 	switch ( def->shader_type ) {
 		case TYPE_SIGNLE_TEXTURE:
@@ -3228,12 +3230,34 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	vert_spec_data[0] = def->clipping_plane ? 1 : 0;
 
 	// fragment shader specialization data
-	switch (def->state_bits & GLS_ATEST_BITS) {
-		case GLS_ATEST_GT_0: frag_spec_data[0] = 1; break;
-		case GLS_ATEST_LT_80: frag_spec_data[0] = 2; break;
-		case GLS_ATEST_GE_80: frag_spec_data[0] = 3; break;
-		default: frag_spec_data[0] = 0; break;
+	atest_bits = def->state_bits & GLS_ATEST_BITS;
+	switch ( atest_bits ) {
+		case GLS_ATEST_GT_0:
+			frag_spec_data[0].i = 1; // not equal
+			frag_spec_data[1].f = 0.0f;
+			break;
+		case GLS_ATEST_LT_80:
+			frag_spec_data[0].i = 2; // less than
+			frag_spec_data[1].f = 0.5f;
+			break;
+		case GLS_ATEST_GE_80:
+			frag_spec_data[0].i = 3; // greater or equal
+			frag_spec_data[1].f = 0.5f;
+			break;
+		default:
+			frag_spec_data[0].i = 0;
+			frag_spec_data[1].f = 0.0f;
+			break;
 	};
+
+	if ( r_ext_alpha_to_coverage->integer && vkSamples != VK_SAMPLE_COUNT_1_BIT ) {
+		if ( atest_bits == GLS_ATEST_GT_0 ) {
+			alphaToCoverage = VK_TRUE;
+		} else if ( atest_bits == GLS_ATEST_GE_80 ) {
+			alphaToCoverage = VK_TRUE;
+			frag_spec_data[1].f = 0.33f;
+		}
+	}
 
 	// vertex module specialization data
 	spec_entries[0].constantID = 0; // clip_plane
@@ -3250,10 +3274,13 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	spec_entries[1].constantID = 0;  // alpha-test-function
 	spec_entries[1].offset = 0 * sizeof( int32_t );
 	spec_entries[1].size = sizeof( int32_t );
+	spec_entries[2].constantID = 1; // alpha-test-value
+	spec_entries[2].offset = 1 * sizeof( int32_t );
+	spec_entries[2].size = sizeof( float );
 
-	frag_spec_info.mapEntryCount = 1;
+	frag_spec_info.mapEntryCount = 2;
 	frag_spec_info.pMapEntries = spec_entries + 1;
-	frag_spec_info.dataSize = 1 * sizeof( int32_t );
+	frag_spec_info.dataSize = sizeof( int32_t ) + sizeof( float );
 	frag_spec_info.pData = &frag_spec_data[0];
 	shader_stages[1].pSpecializationInfo = &frag_spec_info;
 
@@ -3387,15 +3414,12 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	multisample_state.pNext = NULL;
 	multisample_state.flags = 0;
 
-	//if ( vk.fboActive && vk.msaaActive )
-		multisample_state.rasterizationSamples = vkSamples;
-	//else
-	//	multisample_state.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	multisample_state.rasterizationSamples = vkSamples;
 
 	multisample_state.sampleShadingEnable = VK_FALSE;
 	multisample_state.minSampleShading = 1.0f;
 	multisample_state.pSampleMask = NULL;
-	multisample_state.alphaToCoverageEnable = VK_FALSE;
+	multisample_state.alphaToCoverageEnable = alphaToCoverage;
 	multisample_state.alphaToOneEnable = VK_FALSE;
 
 	Com_Memset( &depth_stencil_state, 0, sizeof( depth_stencil_state ) );
