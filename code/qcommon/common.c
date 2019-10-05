@@ -3353,6 +3353,8 @@ int Sys_GetProcessorId( char *vendor )
 #if idx64
 		strcpy( vendor, "64-bit " );
 		vendor += strlen( vendor );
+		// do not print default 64-bit features in 32-bit mode
+		CPU_Flags &= ~(CPU_FCOM | CPU_MMX | CPU_SSE | CPU_SSE2);
 #else
 		vendor[0] = '\0';
 #endif
@@ -3362,9 +3364,9 @@ int Sys_GetProcessorId( char *vendor )
 		memcpy( vendor+4, (char*) &regs[3], 4 );
 		memcpy( vendor+8, (char*) &regs[2], 4 );
 		vendor[12] = '\0'; vendor += 12;
+
 		if ( CPU_Flags ) {
 			// print features
-#if !idx64	// do not print default 64-bit features in 32-bit mode
 			strcat( vendor, " w/" );
 			if ( CPU_Flags & CPU_FCOM )
 				strcat( vendor, " CMOV" );
@@ -3374,7 +3376,6 @@ int Sys_GetProcessorId( char *vendor )
 				strcat( vendor, " SSE" );
 			if ( CPU_Flags & CPU_SSE2 )
 				strcat( vendor, " SSE2" );
-#endif
 			//if ( CPU_Flags & CPU_SSE3 )
 			//	strcat( vendor, " SSE3" );
 			if ( CPU_Flags & CPU_SSE41 )

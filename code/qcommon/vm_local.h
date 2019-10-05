@@ -151,16 +151,16 @@ typedef union vmFunc_u {
 
 struct vm_s {
 
-	unsigned int programStack;		// the vm may be recursively entered
 	syscall_t	systemCall;
 	byte		*dataBase;
 	int			*opStack;			// pointer to local function stack
+	int			*opStackTop;
 
-	int			instructionCount;
-	intptr_t	*instructionPointers;
+	unsigned int programStack;		// the vm may be recursively entered
+	unsigned int stackBottom;		// if programStack < stackBottom, error
 
 	//------------------------------------
-   
+
 	const char	*name;
 	vmIndex_t	index;
 
@@ -179,13 +179,13 @@ struct vm_s {
 	unsigned int codeSize;			// code + jump targets, needed for proper munmap()
 	unsigned int codeLength;		// just for information
 
+	int			instructionCount;
+	intptr_t	*instructionPointers;
+
 	unsigned int dataMask;
 	unsigned int dataLength;			// data segment length
 	unsigned int exactDataLength;	// from qvm header
 	unsigned int dataAlloc;			// actually allocated
-
-	unsigned int stackBottom;		// if programStack < stackBottom, error
-	int			*opStackTop;
 
 	int			numSymbols;
 	vmSymbol_t	*symbols;
