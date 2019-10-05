@@ -3342,19 +3342,20 @@ int Sys_GetProcessorId( char *vendor )
 		CPU_Flags |= CPU_SSE2;
 
 	// bit 0 of ECX denotes SSE3 existence
-	if ( regs[2] & ( 1 << 0 ) )
-		CPU_Flags |= CPU_SSE3;
+	//if ( regs[2] & ( 1 << 0 ) )
+	//	CPU_Flags |= CPU_SSE3;
 
 	// bit 19 of ECX denotes SSE41 existence
 	if ( regs[ 2 ] & ( 1 << 19 ) )
 		CPU_Flags |= CPU_SSE41;
 
 	if ( vendor ) {
+		int print_flags = CPU_Flags;
 #if idx64
 		strcpy( vendor, "64-bit " );
 		vendor += strlen( vendor );
 		// do not print default 64-bit features in 32-bit mode
-		CPU_Flags &= ~(CPU_FCOM | CPU_MMX | CPU_SSE | CPU_SSE2);
+		print_flags &= ~(CPU_FCOM | CPU_MMX | CPU_SSE | CPU_SSE2);
 #else
 		vendor[0] = '\0';
 #endif
@@ -3365,20 +3366,20 @@ int Sys_GetProcessorId( char *vendor )
 		memcpy( vendor+8, (char*) &regs[2], 4 );
 		vendor[12] = '\0'; vendor += 12;
 
-		if ( CPU_Flags ) {
+		if ( print_flags ) {
 			// print features
 			strcat( vendor, " w/" );
-			if ( CPU_Flags & CPU_FCOM )
+			if ( print_flags & CPU_FCOM )
 				strcat( vendor, " CMOV" );
-			if ( CPU_Flags & CPU_MMX )
+			if ( print_flags & CPU_MMX )
 				strcat( vendor, " MMX" );
-			if ( CPU_Flags & CPU_SSE )
+			if ( print_flags & CPU_SSE )
 				strcat( vendor, " SSE" );
-			if ( CPU_Flags & CPU_SSE2 )
+			if ( print_flags & CPU_SSE2 )
 				strcat( vendor, " SSE2" );
 			//if ( CPU_Flags & CPU_SSE3 )
 			//	strcat( vendor, " SSE3" );
-			if ( CPU_Flags & CPU_SSE41 )
+			if ( print_flags & CPU_SSE41 )
 				strcat( vendor, " SSE4.1" );
 		}
 	}

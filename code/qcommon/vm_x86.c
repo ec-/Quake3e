@@ -22,6 +22,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // load time compiler and execution environment for x86, 32-bit and 64-bit
 
 #include "vm_local.h"
+#include "../ui/ui_public.h"
+#include "../cgame/cg_public.h"
+#include "../game/g_public.h"
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -1240,6 +1244,36 @@ static int CommuteFloatOp( int op )
 }
 
 
+static qboolean IsFloorTrap( const vm_t *vm, const int trap )
+{
+	if ( trap == ~CG_FLOOR && vm->index == VM_CGAME )
+		return qtrue;
+
+	if ( trap == ~UI_FLOOR && vm->index == VM_UI )
+		return qtrue;
+
+	if ( trap == ~G_FLOOR && vm->index == VM_GAME )
+		return qtrue;
+
+	return qfalse;
+}
+
+
+static qboolean IsCeilTrap( const vm_t *vm, const int trap )
+{
+	if ( trap == ~CG_CEIL && vm->index == VM_CGAME )
+		return qtrue;
+
+	if ( trap == ~UI_CEIL && vm->index == VM_UI )
+		return qtrue;
+
+	if ( trap == ~G_CEIL && vm->index == VM_GAME )
+		return qtrue;
+
+	return qfalse;
+}
+
+
 /*
 =================
 ConstOptimize
@@ -1533,6 +1567,20 @@ static qboolean ConstOptimize( vm_t *vm )
 			EmitCommand( LAST_COMMAND_STORE_FLOAT_EDI_X87 );// fstp dword ptr[edi]
 			ip += 1;
 			return qtrue;
+		} else if ( IsFloorTrap( vm, v ) && (CPU_Flags & CPU_SSE41) ) {
+			EmitString( "F3 0F 10 45 08" );		// movss xmm0, dword ptr [ebp + 8]
+			EmitAddEDI4( vm );
+			EmitString( "66 0F 3A 0A C0 01" );	// roundss xmm0, xmm0, 1 (exceptions not masked)
+			EmitCommand( LAST_COMMAND_STORE_FLOAT_EDI );
+			ip += 1;
+			return qtrue;
+		} else if ( IsCeilTrap( vm, v ) && (CPU_Flags & CPU_SSE41) ) {
+			EmitString( "F3 0F 10 45 08" );		// movss xmm0, dword ptr [ebp + 8]
+			EmitAddEDI4( vm );
+			EmitString( "66 0F 3A 0A C0 02" );	// roundss xmm0, xmm0, 2 (exceptions not masked)
+			EmitCommand( LAST_COMMAND_STORE_FLOAT_EDI );
+			ip += 1;
+			return qtrue;		
 		}
 
 		if ( v < 0 ) // syscall
