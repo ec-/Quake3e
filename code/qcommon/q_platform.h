@@ -120,7 +120,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <machine/endian.h>
 
 
-#if defined (__FreeBSD__)_
+#if defined (__FreeBSD__)
 #define OS_STRING "freebsd"
 #elif defined (__NetBSD__)
 #define OS_STRING "netbsd"
