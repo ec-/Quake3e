@@ -816,7 +816,7 @@ static void EmitCallOffset( func_t Func )
 }
 
 
-#ifdef idx64
+#if idx64
 static qboolean above4G( const void *ptr )
 {
 	if ( (unsigned long long)ptr > 0xFFFFFFFFULL )
@@ -1116,7 +1116,7 @@ static void EmitNCPYFunc( vm_t *vm )
 #if 0
 	if ( vm->forceDataMask )
 	{
-#ifdef idx64
+#if idx64
 		EmitString( "44 21 CF" );	// and edi, r9d
 #else
 		EmitString( "81 E7" );		// and edi, vm->dataMask
@@ -2907,14 +2907,14 @@ int	VM_CallCompiled( vm_t *vm, int nargs, int *args )
 	int		opStack[MAX_OPSTACK_SIZE];
 	unsigned int stackOnEntry;
 	int		*image;
-#ifndef idx64
+#if id386
 	int		*oldOpTop;
 #endif
 	int		i;
 
 	// we might be called recursively, so this might not be the very top
 	stackOnEntry = vm->programStack;
-#ifndef idx64
+#if id386
 	oldOpTop = vm->opStackTop;
 #endif
 
@@ -2932,7 +2932,7 @@ int	VM_CallCompiled( vm_t *vm, int nargs, int *args )
 	opStack[1] = 0;
 
 	vm->opStack = opStack;
-#ifndef idx64
+#if id386
 	vm->opStackTop = opStack + ARRAY_LEN( opStack ) - 1;
 #endif
 
@@ -2949,7 +2949,7 @@ int	VM_CallCompiled( vm_t *vm, int nargs, int *args )
 #endif
 
 	vm->programStack = stackOnEntry;
-#ifndef idx64
+#if id386
 	vm->opStackTop = oldOpTop;
 #endif
 
