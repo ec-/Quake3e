@@ -1267,6 +1267,18 @@ __noJTS:
 }
 
 
+void VM_IgnoreInstructions( instruction_t *buf, int count ) {
+	int i;
+	
+	for ( i = 0; i < count; i++ ) {
+		Com_Memset( buf + i, 0, sizeof( *buf ) );
+		buf[i].op = OP_IGNORE;
+	}
+
+	buf[0].value = count > 0 ? count - 1 : 0;
+}
+
+
 /*
 =================
 VM_ReplaceInstructions
@@ -1306,15 +1318,13 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 			int i;
 			ip = buf + 235;
 			if ( ip->value == 70943 ) {
-				for ( i = 0; i < 8; i++ ) {
-					ip[i].op = OP_IGNORE;
-				}
+				VM_IgnoreInstructions( ip, 8 );
 			}
 		} else
 		if ( vm->crc32sum == 0x04150518 && vm->instructionCount == 207224 && vm->exactDataLength == 5619272 ) {
 			ip = buf + 7093;
 			if ( ip[0].op == OP_LOCAL && ip[0].value == 40 && ip[1].op == OP_LOAD4 && ip[2].value == 140 && ip[3].value == 7120 ) {
-				ip[0].op = ip[1].op = OP_IGNORE;
+				VM_IgnoreInstructions( ip, 2 );
 				ip[2].op = OP_CONST; ip[2].value = ip[3].value;
 				ip[3].op = OP_JUMP;
 			}
@@ -1343,16 +1353,9 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 		if ( vm->crc32sum == 0x6E51985F && vm->instructionCount == 125942 && vm->exactDataLength == 1334788 ) {
 			ip = buf + 60150;
 			if ( ip[0].op == OP_LOCAL && ip[0].value == 28 && ip[1].op == OP_LOAD4 && ip[2].op == OP_ARG && ip[3].value == 124325 ) {
-				int i;
-				for ( i = 0; i < 6; i++ ) {
-					ip[i].op = OP_IGNORE;
-					ip[i].jused = 0;
-				}
+				VM_IgnoreInstructions( ip, 6 );
 				ip = buf + 60438;
-				for ( i = 0; i < 6; i++ ) {
-					ip[i].op = OP_IGNORE;
-					ip[i].jused = 0;
-				}
+				VM_IgnoreInstructions( ip, 6 );
 			}
 		}
 	}

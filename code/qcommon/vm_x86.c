@@ -168,7 +168,6 @@ typedef enum
 // macro opcode sequences
 typedef enum {
 	MOP_UNDEF = OP_MAX,
-	MOP_IGNORE4,
 	MOP_ADD4,
 	MOP_SUB4,
 	MOP_BAND4,
@@ -1674,6 +1673,18 @@ static qboolean ConstOptimize( vm_t *vm )
 }
 
 
+static qboolean FindLocal( int addr, const instruction_t *buf, const instruction_t *end ) {
+	while ( buf < end ) {
+		if ( buf->op == OP_LOCAL && buf->value == addr )
+			return qtrue;
+		if ( buf->op == OP_PUSH && (buf+1)->op == OP_LEAVE )
+			break;
+		++buf;
+	}
+	return qfalse;
+} 
+
+
 /*
 =================
 VM_FindMOps
@@ -1720,9 +1731,27 @@ static void VM_FindMOps( instruction_t *buf, int instructionCount )
 
 			// skip useless sequences
 			if ( (i+1)->op == OP_LOCAL && (i+0)->value == (i+1)->value && (i+2)->op == OP_LOAD4 && (i+3)->op == OP_STORE4 ) {
-				i->op = MOP_IGNORE4;
+				VM_IgnoreInstructions( i, 4 );
 				i += 4; n += 4;
 				continue;
+			}
+
+			// OP_LOCAL + OP_CONST + OP_CALL + OP_STORE4
+			if ( (i+1)->op == OP_CONST && (i+2)->op == OP_CALL && (i+3)->op == OP_STORE4 && !(i+4)->jused ) {
+				// OP_CONST|OP_LOCAL + OP_LOCAL + OP_LOAD4 + OP_STORE4
+				if ( (i+4)->op == OP_CONST || (i+4)->op == OP_LOCAL ) {
+					if (( i+5)->op == OP_LOCAL && (i+5)->value == (i+0)->value && (i+6)->op == OP_LOAD4 && (i+7)->op == OP_STORE4 ) {
+						// make sure that address of temporary variable is not referenced anymore in this function
+						if ( !FindLocal( i->value, i + 8, buf + instructionCount ) ) {
+							(i+0)->op = (i+4)->op;
+							(i+0)->value = (i+4)->value;
+							VM_IgnoreInstructions( i + 4, 4 );
+							i += 8;
+							n += 8;
+							continue;
+						}
+					}
+				}
 			}
 		} else if ( op0 == OP_CONST && (i+1)->op == OP_CALL && (i+2)->op == OP_POP && i >= buf+6 && (i-1)->op == OP_ARG && !i->jused ) {
 			// some void function( arg1, arg2, arg3 )
@@ -1859,11 +1888,6 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 				}
 			}
 			ip += 5;
-			return qtrue;
-
-		// [local] = [local]
-		case MOP_IGNORE4:
-			ip += 3;
 			return qtrue;
 
 		// const + call + pop
@@ -2068,7 +2092,10 @@ __compile:
 		switch ( ci->op ) {
 
 		case OP_UNDEF:
+			break;
+
 		case OP_IGNORE:
+			ip += ci->value;
 			break;
 
 		case OP_BREAK:
@@ -2716,7 +2743,6 @@ __compile:
 #endif
 			break;
 
-		case MOP_IGNORE4:
 		case MOP_ADD4:
 		case MOP_SUB4:
 		case MOP_BAND4:

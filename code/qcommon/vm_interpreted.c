@@ -52,6 +52,18 @@ typedef enum {
 } macro_op_t;
 
 
+static qboolean FindLocal( int addr, const instruction_t *buf, const instruction_t *end ) {
+	while ( buf < end ) {
+		if ( buf->op == OP_LOCAL && buf->value == addr )
+			return qtrue;
+		if ( buf->op == OP_PUSH && (buf+1)->op == OP_LEAVE )
+			break;
+		++buf;
+	}
+	return qfalse;
+} 
+
+
 /*
 =================
 VM_FindMOps
@@ -71,28 +83,54 @@ static void VM_FindMOps( instruction_t *buf, int instructionCount )
 	{
 		op0 = ci->op;
 
-		if ( op0 == OP_LOCAL && (ci+1)->op == OP_LOAD4 && (ci+2)->op == OP_CONST ) {
-			ci->op = MOP_LOCAL_LOAD4_CONST;
-			ci += 3; i += 3;
-			continue;
-		}
+		if ( op0 == OP_LOCAL ) {
+			if ( (ci+1)->op == OP_LOAD4 && (ci+2)->op == OP_CONST ) {
+				ci->op = MOP_LOCAL_LOAD4_CONST;
+				ci += 3; i += 3;
+				continue;
+			}
+			if ( (ci+1)->op == OP_LOAD4 ) {
+				ci->op = MOP_LOCAL_LOAD4;
+				ci += 2; i += 2;
+				continue;
+			}
 
-		if ( op0 == OP_LOCAL && (ci+1)->op == OP_LOAD4 ) {
-			ci->op = MOP_LOCAL_LOAD4;
-			ci += 2; i += 2;
-			continue;
-		}
+			if ( (ci+1)->op == OP_LOCAL && (ci+2)->op == OP_LOAD4 ) {
+				ci->op = MOP_LOCAL_LOCAL_LOAD4;
+				ci += 3; i += 3;
+				continue;
+			}
+			if ( (ci+1)->op == OP_LOCAL ) {
+				ci->op = MOP_LOCAL_LOCAL;
+				ci += 2; i += 2;
+				continue;
+			}
 
-		if ( op0 == OP_LOCAL && (ci+1)->op == OP_LOCAL && (ci+2)->op == OP_LOAD4 ) {
-			ci->op = MOP_LOCAL_LOCAL_LOAD4;
-			ci += 3; i += 3;
-			continue;
-		}
+			// skip useless sequences
+			if ( (ci+1)->op == OP_LOCAL && (ci+0)->value == (ci+1)->value && (ci+2)->op == OP_LOAD4 && (ci+3)->op == OP_STORE4 ) {
+				VM_IgnoreInstructions( ci, 4 );
+				ci += 4; i += 4;
+				continue;
+			}
 
-		if ( op0 == OP_LOCAL && (ci+1)->op == OP_LOCAL ) {
-			ci->op = MOP_LOCAL_LOCAL;
-			ci += 2; i += 2;
-			continue;
+			// OP_LOCAL + OP_CONST + OP_CALL + OP_STORE4
+			if ( (ci+1)->op == OP_CONST && (ci+2)->op == OP_CALL && (ci+3)->op == OP_STORE4 && !(ci+4)->jused ) {
+				// OP_CONST|OP_LOCAL + OP_LOCAL + OP_LOAD4 + OP_STORE4
+				if ( (ci+4)->op == OP_CONST || (ci+4)->op == OP_LOCAL ) {
+					if ( (ci+5)->op == OP_LOCAL && (ci+5)->value == (ci+0)->value && (ci+6)->op == OP_LOAD4 && (ci+7)->op == OP_STORE4 ) {
+						// make sure that address of temporary variable is not referenced anymore in this function
+						if ( !FindLocal( ci->value, ci + 8, buf + instructionCount ) ) {
+							(ci+0)->op = (ci+4)->op;
+							(ci+0)->value = (ci+4)->value;
+							VM_IgnoreInstructions( ci + 4, 4 );
+							ci += 8;
+							i += 8;
+							continue;
+						}
+					}
+				}
+			}
+
 		}
 
 		ci++;
@@ -209,6 +247,10 @@ nextInstruction2:
 		ci++;
 
 		switch ( opcode ) {
+
+		case OP_IGNORE:
+			ci += v0;
+			goto nextInstruction2;
 
 		case OP_BREAK:
 			vm->breakCount++;
