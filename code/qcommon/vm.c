@@ -1315,7 +1315,6 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 			}
 		} else
 		if ( vm->crc32sum == 0x051D4668 && vm->instructionCount == 267812 && vm->exactDataLength == 38064376 ) {
-			int i;
 			ip = buf + 235;
 			if ( ip->value == 70943 ) {
 				VM_IgnoreInstructions( ip, 8 );

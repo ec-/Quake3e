@@ -294,7 +294,7 @@ nextInstruction2:
 				vm->programStack = programStack - 8;
 				*(int *)&image[ programStack + 4 ] = ~r0.i;
 				{
-#if idx64 //__WORDSIZE == 64
+#if __WORDSIZE == 64
 					// the vm has ints on the stack, we expect
 					// longs so we have to convert it
 					intptr_t argarr[16];

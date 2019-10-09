@@ -65,6 +65,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define Q3_LITTLE_ENDIAN
 #undef id386
 #define id386 1
+#ifndef __WORDSIZE
+#define __WORDSIZE 32
+#endif
 #endif
 
 #if defined( _M_AMD64 )
@@ -73,6 +76,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #undef idx64
 #define idx64 1
 //#define UNICODE
+#ifndef __WORDSIZE
+#define __WORDSIZE 64
+#endif
 #endif
 
 #else // !defined _WIN32
