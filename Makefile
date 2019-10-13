@@ -772,6 +772,7 @@ Q3RENDVOBJ = \
   $(B)/rendv/st_enviro_fog_vert.o \
   $(B)/rendv/st_enviro_vert.o \
   $(B)/rendv/st_fog_frag.o \
+  $(B)/rendv/st_df_frag.o \
   $(B)/rendv/st_frag.o
 
 ifneq ($(USE_RENDERER_DLOPEN), 0)
