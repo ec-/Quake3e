@@ -1578,6 +1578,8 @@ static void vk_create_shader_modules( void )
 
 	extern const unsigned char st_frag_spv[];
 	extern const int st_frag_spv_size;
+	extern const unsigned char st_df_frag_spv[];
+	extern const int st_df_frag_spv_size;
 	extern const unsigned char st_fog_frag_spv[];
 	extern const int st_fog_frag_spv_size;
 
@@ -1632,6 +1634,7 @@ static void vk_create_shader_modules( void )
 		
 	vk.modules.st_fs[0] = create_shader_module(st_frag_spv, st_frag_spv_size);
 	vk.modules.st_fs[1] = create_shader_module(st_fog_frag_spv, st_fog_frag_spv_size);
+	vk.modules.st_df_fs = create_shader_module(st_df_frag_spv, st_df_frag_spv_size);
 
 	vk.modules.mt_mul_fs[0] = create_shader_module(mt_mul_frag_spv, mt_mul_frag_spv_size);
 	vk.modules.mt_mul_fs[1] = create_shader_module(mt_mul_fog_frag_spv, mt_mul_fog_frag_spv_size);
@@ -2698,6 +2701,7 @@ void vk_shutdown( void )
 
 	qvkDestroyShaderModule(vk.device, vk.modules.st_fs[0], NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.st_fs[1], NULL);
+	qvkDestroyShaderModule(vk.device, vk.modules.st_df_fs, NULL);
 
 	qvkDestroyShaderModule(vk.device, vk.modules.mt_clip_vs[0], NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.mt_clip_vs[1], NULL);
@@ -3190,6 +3194,10 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 			vs_module = &vk.modules.st_clip_vs[0];
 			fs_module = &vk.modules.st_fs[0];
 			break;
+		case TYPE_SIGNLE_TEXTURE_DF:
+			vs_module = &vk.modules.st_clip_vs[0];
+			fs_module = &vk.modules.st_df_fs;
+			break;
 		case TYPE_SIGNLE_TEXTURE_ENVIRO:
 			vs_module = &vk.modules.st_enviro_vs[0];
 			fs_module = &vk.modules.st_fs[0];
@@ -3216,7 +3224,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 			return 0;
 	}
 
-	if ( def->fog_stage && def->shader_type != TYPE_FOG_ONLY && def->shader_type != TYPE_DOT ) {
+	if ( def->fog_stage && def->shader_type != TYPE_FOG_ONLY && def->shader_type != TYPE_DOT && def->shader_type != TYPE_SIGNLE_TEXTURE_DF ) {
 		// switch to fogged modules
 		vs_module++;
 		fs_module++;
@@ -3294,7 +3302,8 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_attr( 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT );
 				break;
-		case TYPE_SIGNLE_TEXTURE: 
+		case TYPE_SIGNLE_TEXTURE:
+		case TYPE_SIGNLE_TEXTURE_DF:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_bind( 1, sizeof( color4ub_t ) );				// color array
 			push_bind( 2, sizeof( vec2_t ) );					// st0 array

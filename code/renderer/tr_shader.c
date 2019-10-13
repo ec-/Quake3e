@@ -2050,6 +2050,10 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 		return qfalse;
 	}
 
+	if ( st0->depthFragment ) {
+		return qfalse;
+	}
+
 	// on voodoo2, don't combine different tmus
 	if ( glConfig.driverType == GLDRV_VOODOO ) {
 		if ( st0->bundle[0].image[0]->TMU ==

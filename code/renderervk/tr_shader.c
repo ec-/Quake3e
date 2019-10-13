@@ -1986,6 +1986,10 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 		return qfalse;
 	}
 
+	if ( st0->depthFragment ) {
+		return qfalse;
+	}
+
 #ifndef USE_VULKAN
 	// on voodoo2, don't combine different tmus
 	if ( glConfig.driverType == GLDRV_VOODOO ) {
@@ -2446,7 +2450,7 @@ void FindLightingStages( shader_t *sh )
 		return;
 #endif
 
-	if ( sh->isSky || ( sh->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) || sh->sort > SS_OPAQUE )
+	if ( sh->isSky || ( sh->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) || sh->sort == SS_ENVIRONMENT )
 		return;
 
 	for ( i = 0; i < sh->numUnfoggedPasses; i++ ) {
@@ -2812,11 +2816,14 @@ static shader_t *FinishShader( void ) {
 
 	{
 		Vk_Pipeline_Def def;
+		Vk_Shader_Type stype;
 		int i;
 
 		Com_Memset( &def, 0, sizeof( def ) );
 		def.face_culling = shader.cullType;
 		def.polygon_offset = shader.polygonOffset;
+
+		stype = def.shader_type;
 
 		for ( i = 0; i < stage; i++ ) {
 			shaderStage_t *pStage = &stages[i];
@@ -2847,14 +2854,29 @@ static shader_t *FinishShader( void ) {
 			def.clipping_plane = qfalse;
 			def.mirror = qfalse;
 			pStage->vk_pipeline[0] = vk_find_pipeline_ext( 0, &def, qtrue );
+			if ( pStage->depthFragment ) {
+				def.shader_type = TYPE_SIGNLE_TEXTURE_DF;
+				pStage->vk_pipeline_df = vk_find_pipeline_ext( 0, &def, qtrue );
+				def.shader_type = stype;
+			}
 
 			def.clipping_plane = qtrue;
 			def.mirror = qfalse;
 			pStage->vk_portal_pipeline[0] = vk_find_pipeline_ext( 0, &def, qtrue );
+			if ( pStage->depthFragment ) {
+				def.shader_type = TYPE_SIGNLE_TEXTURE_DF;
+				pStage->vk_portal_pipeline_df = vk_find_pipeline_ext( 0, &def, qtrue );
+				def.shader_type = stype;
+			}
 
 			def.clipping_plane = qtrue;
 			def.mirror = qtrue;
 			pStage->vk_mirror_pipeline[0] = vk_find_pipeline_ext( 0, &def, qtrue );
+			if ( pStage->depthFragment ) {
+				def.shader_type = TYPE_SIGNLE_TEXTURE_DF;
+				pStage->vk_mirror_pipeline_df = vk_find_pipeline_ext( 0, &def, qtrue );
+				def.shader_type = stype;
+			}
 		}
 	}
 
@@ -3494,9 +3516,10 @@ a single large text block that can be scanned for shader names
 */
 static void ScanAndLoadShaderFiles( void )
 {
-	char **shaderFiles;
+	char **shaderFiles, **shaderxFiles;
 	char *buffers[MAX_SHADER_FILES];
-	int numShaderFiles;
+	char *xbuffers[MAX_SHADER_FILES];
+	int numShaderFiles, numShaderxFiles;
 	int i;
 	char *token, *hashMem, *textEnd;
 	const char *p, *oldp;
@@ -3507,7 +3530,15 @@ static void ScanAndLoadShaderFiles( void )
 	// scan for legacy shader files
 	shaderFiles = ri.FS_ListFiles( "scripts", ".shader", &numShaderFiles );
 
-	if ( !shaderFiles || !numShaderFiles ) {
+	if ( 0 ) {
+		// if ARB shaders available - scan for extended shader files
+		shaderxFiles = ri.FS_ListFiles( "scripts", ".shaderx", &numShaderxFiles );
+	} else {
+		shaderxFiles = NULL;
+		numShaderxFiles = 0;
+	}
+
+	if ( (!shaderFiles || !numShaderFiles) && (!shaderxFiles || !numShaderxFiles) ) {
 		ri.Printf( PRINT_WARNING, "WARNING: no shader files found\n" );
 		return;
 	}
@@ -3515,12 +3546,16 @@ static void ScanAndLoadShaderFiles( void )
 	if ( numShaderFiles > MAX_SHADER_FILES ) {
 		numShaderFiles = MAX_SHADER_FILES;
 	}
+	if ( numShaderxFiles > MAX_SHADER_FILES ) {
+		numShaderxFiles = MAX_SHADER_FILES;
+	}
 
 	sum = 0;
+	sum += loadShaderBuffers( shaderxFiles, numShaderxFiles, xbuffers );
 	sum += loadShaderBuffers( shaderFiles, numShaderFiles, buffers );
 
 	// build single large buffer
-	s_shaderText = ri.Hunk_Alloc( sum + numShaderFiles*2 + 1, h_low );
+	s_shaderText = ri.Hunk_Alloc( sum + numShaderxFiles*2 + numShaderFiles*2 + 1, h_low );
 	s_shaderText[ 0 ] = '\0';
 
 	textEnd = s_shaderText;
@@ -3534,8 +3569,18 @@ static void ScanAndLoadShaderFiles( void )
 			ri.FS_FreeFile( buffers[ i ] );
 		}
 	}
+	// extended shaders
+	for ( i = numShaderxFiles - 1; i >= 0 ; i-- ) {
+		if ( xbuffers[ i ] ) {
+			textEnd = Q_stradd( textEnd, xbuffers[ i ] );
+			textEnd = Q_stradd( textEnd, "\n" );
+			ri.FS_FreeFile( xbuffers[ i ] );
+		}
+	}
 
 	// free up memory
+	if ( shaderxFiles )
+		ri.FS_FreeFileList( shaderxFiles );
 	if ( shaderFiles )
 		ri.FS_FreeFileList( shaderFiles );
 

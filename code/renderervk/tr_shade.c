@@ -1111,6 +1111,14 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 
 		vk_bind_geometry_ext( tess_flags );
 		vk_draw_geometry( pipeline, set_count, depth_range, qtrue );
+		if ( pStage->depthFragment ) {
+			switch ( backEnd.viewParms.portalView ) {
+				default: pipeline = pStage->vk_pipeline_df; break;
+				case PV_PORTAL: pipeline = pStage->vk_portal_pipeline_df; break;
+				case PV_MIRROR: pipeline = pStage->vk_mirror_pipeline_df; break;
+			}
+			vk_draw_geometry( pipeline, set_count, depth_range, qtrue );
+		}
 #else
 		if (!setArraysOnce)
 		{
