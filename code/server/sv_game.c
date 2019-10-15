@@ -488,11 +488,18 @@ static intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		return 0;
 	case G_GET_ENTITY_TOKEN:
 		{
-			const char	*s;
-			s = COM_Parse( &sv.entityParsePoint );
+			const char *s = COM_Parse( &sv.entityParsePoint );
 			VM_CHECKBOUNDS( gvm, args[1], args[2] );
-			Q_strncpyz( VMA(1), s, args[2] );
-			if ( !sv.entityParsePoint && !s[0] ) {
+			//Q_strncpyz( VMA(1), s, args[2] );
+			// we can't use our optimized Q_strncpyz() function
+			// because of uninitialized memory bug in defrag mod
+			{
+				char *dst = (char*)VMA(1);
+				const int size = args[2]-1;
+				strncpy( dst, s, size );
+				dst[ size ] = '\0';
+			}
+			if ( !sv.entityParsePoint && s[0] == '\0' ) {
 				return qfalse;
 			} else {
 				return qtrue;
