@@ -492,6 +492,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\renderervk\shaders\spirv\st_df_frag.c"
+					>
+				</File>
+				<File
 					RelativePath="..\..\renderervk\shaders\spirv\st_enviro_fog_vert.c"
 					>
 				</File>
