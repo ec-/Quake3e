@@ -103,6 +103,9 @@ qboolean VK_CreateSurface( VkInstance instance, VkSurfaceKHR *pSurface )
 qboolean QVK_Init( const char *dllname )
 {
 	char libName[1024];
+#ifdef UNICODE
+	TCHAR buffer[1024];
+#endif
 
 	Com_Printf( "...initializing QVK\n" );
 
@@ -116,9 +119,15 @@ qboolean QVK_Init( const char *dllname )
 		}
 
 		// get exact loaded module name
-		GetModuleFileNameA( glw_state.VulkanLib, libName, sizeof( libName ) );
+#ifdef UNICODE
+		GetModuleFileName( glw_state.VulkanLib, buffer, ARRAY_LEN( buffer ) );
+		buffer[ ARRAY_LEN( buffer ) - 1 ] = '\0';
+		Q_strncpyz( libName, WtoA( buffer ), sizeof( libName ) );
+#else
+		GetModuleFileName( glw_state.VulkanLib, libName, sizeof( libName ) );
+		libName[ sizeof( libName ) - 1 ] = '\0';
+#endif
 		Com_Printf( "...loading '%s' : succeeded\n", libName );
-
 	}
 
 	qvkGetInstanceProcAddr = /*(PFN_vkGetInstanceProcAddr)*/ Sys_LoadFunction( glw_state.VulkanLib, "vkGetInstanceProcAddr" );

@@ -91,6 +91,10 @@ void *GL_GetProcAddress( const char *name )
 qboolean QGL_Init( const char *dllname )
 {
 	char libName[1024];
+#ifdef UNICODE
+	TCHAR buffer[1024];
+#endif
+
 #if 0
 	char systemDir[1024];
 
@@ -125,7 +129,14 @@ qboolean QGL_Init( const char *dllname )
 		}
 
 		// get exact loaded module name
-		GetModuleFileNameA( glw_state.OpenGLLib, libName, sizeof( libName ) );
+#ifdef UNICODE
+		GetModuleFileName( glw_state.OpenGLLib, buffer, ARRAY_LEN( buffer ) );
+		buffer[ ARRAY_LEN( buffer ) - 1 ] = '\0';
+		Q_strncpyz( libName, WtoA( buffer ), sizeof( libName ) );
+#else
+		GetModuleFileName( glw_state.OpenGLLib, libName, sizeof( libName ) );
+		libName[ sizeof( libName ) - 1 ] = '\0';
+#endif
 		Com_Printf( "...loading '%s' : succeeded\n", libName );
 	}
 
