@@ -28,13 +28,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "resource.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <errno.h>
-#include <float.h>
-#include <fcntl.h>
-#include <stdio.h>
 #include <direct.h>
-//#include <io.h>
-//#include <conio.h>
 
 #define MEM_THRESHOLD (96*1024*1024)
 
@@ -180,10 +174,10 @@ const char *Sys_Pwd( void )
 	if ( pwd[0] )
 		return pwd;
 
-	GetModuleFileName( NULL, buffer, ARRAY_LEN( buffer ) -1 );
+	GetModuleFileName( NULL, buffer, ARRAY_LEN( buffer ) );
 	buffer[ ARRAY_LEN( buffer ) - 1 ] = '\0';
 
-	strcpy( pwd, WtoA( buffer ) );
+	Q_strncpyz( pwd, WtoA( buffer ), sizeof( pwd ) );
 
 	s = strrchr( pwd, PATH_SEP );
 	if ( s ) 

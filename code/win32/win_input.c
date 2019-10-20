@@ -776,16 +776,6 @@ static void IN_StartupMouse( void )
 		return;
 	}
 
-#ifndef idx64
-	// nt4.0 direct input is screwed up
-	if ( ( g_wv.osversion.dwPlatformId == VER_PLATFORM_WIN32_NT ) &&
-		 ( g_wv.osversion.dwMajorVersion == 4 ) )
-	{
-		Com_DPrintf( "Disallowing DirectInput on NT 4.0\n" );
-		Cvar_Set( "in_mouse", "-1" );
-	}
-#endif
-
 	if ( in_mouse->integer == -1 ) {
 		Com_DPrintf( "Skipping check for Raw/DirectInput\n" ); 
 	} else {
