@@ -529,7 +529,7 @@ static void allocate_and_bind_image_memory(VkImage image) {
 		VkDeviceMemory memory;
 
 		if (vk_world.num_image_chunks >= MAX_IMAGE_CHUNKS) {
-			ri.Error(ERR_FATAL, "Vulkan: image chunk limit has been reached");
+			ri.Error(ERR_FATAL, "Vulkan: image chunk limit has been reached" );
 		}
 
 		alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;

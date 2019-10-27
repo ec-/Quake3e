@@ -723,6 +723,9 @@ void upload_vk_image(Image_Upload_Data *upload_data, VkSamplerAddressMode addres
 	image->view = VK_NULL_HANDLE;
 	image->descriptor = VK_NULL_HANDLE;
 
+	image->uploadWidth = upload_data->base_level_width;
+	image->uploadHeight = upload_data->base_level_height;
+
 	vk_create_image( w, h, format, upload_data->mip_levels, address_mode, image );
 	vk_upload_image_data( image->handle, 0, 0, w, h, upload_data->mip_levels > 1, buffer, bytes_per_pixel );
 
