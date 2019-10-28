@@ -2823,8 +2823,6 @@ static shader_t *FinishShader( void ) {
 		def.face_culling = shader.cullType;
 		def.polygon_offset = shader.polygonOffset;
 
-		stype = def.shader_type;
-
 		for ( i = 0; i < stage; i++ ) {
 			shaderStage_t *pStage = &stages[i];
 			def.state_bits = pStage->stateBits;
@@ -2850,7 +2848,7 @@ static shader_t *FinishShader( void ) {
 					pStage->bundle[0].tcGen = TCGEN_BAD;
 				}
 			}
-
+			stype = def.shader_type;
 			def.clipping_plane = qfalse;
 			def.mirror = qfalse;
 			pStage->vk_pipeline[0] = vk_find_pipeline_ext( 0, &def, qtrue );

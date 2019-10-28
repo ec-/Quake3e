@@ -1461,7 +1461,7 @@ static void R_Register( void )
 
 	r_mergeLightmaps = ri.Cvar_Get( "r_mergeLightmaps", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 #if defined (USE_VULKAN) && defined (USE_VBO)
-	r_vbo = ri.Cvar_Get( "r_vbo", "1", CVAR_ARCHIVE_ND | CVAR_LATCH | CVAR_DEVELOPER );
+	r_vbo = ri.Cvar_Get( "r_vbo", "1", CVAR_ARCHIVE | CVAR_LATCH | CVAR_DEVELOPER );
 #endif
 
 	r_mapGreyScale = ri.Cvar_Get( "r_mapGreyScale", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );

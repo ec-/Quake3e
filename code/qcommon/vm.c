@@ -1319,14 +1319,6 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 			if ( ip->value == 70943 ) {
 				VM_IgnoreInstructions( ip, 8 );
 			}
-		} else
-		if ( vm->crc32sum == 0x04150518 && vm->instructionCount == 207224 && vm->exactDataLength == 5619272 ) {
-			ip = buf + 7093;
-			if ( ip[0].op == OP_LOCAL && ip[0].value == 40 && ip[1].op == OP_LOAD4 && ip[2].value == 140 && ip[3].value == 7120 ) {
-				VM_IgnoreInstructions( ip, 2 );
-				ip[2].op = OP_CONST; ip[2].value = ip[3].value;
-				ip[3].op = OP_JUMP;
-			}
 		}
 	}
 

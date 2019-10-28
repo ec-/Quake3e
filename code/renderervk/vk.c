@@ -1631,7 +1631,7 @@ static void vk_create_shader_modules( void )
 
 	vk.modules.mt_clip_vs[0] = create_shader_module(mt_clip_vert_spv, mt_clip_vert_spv_size);
 	vk.modules.mt_clip_vs[1] = create_shader_module(mt_clip_fog_vert_spv, mt_clip_fog_vert_spv_size);
-		
+
 	vk.modules.st_fs[0] = create_shader_module(st_frag_spv, st_frag_spv_size);
 	vk.modules.st_fs[1] = create_shader_module(st_fog_frag_spv, st_fog_frag_spv_size);
 	vk.modules.st_df_fs = create_shader_module(st_df_frag_spv, st_df_frag_spv_size);
@@ -2701,6 +2701,7 @@ void vk_shutdown( void )
 
 	qvkDestroyShaderModule(vk.device, vk.modules.st_fs[0], NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.st_fs[1], NULL);
+
 	qvkDestroyShaderModule(vk.device, vk.modules.st_df_fs, NULL);
 
 	qvkDestroyShaderModule(vk.device, vk.modules.mt_clip_vs[0], NULL);
@@ -3188,6 +3189,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	VkPipelineShaderStageCreateInfo shader_stages[2];
 	VkBool32 alphaToCoverage = VK_FALSE;
 	unsigned int atest_bits;
+	unsigned int state_bits = def->state_bits;
 
 	switch ( def->shader_type ) {
 		case TYPE_SIGNLE_TEXTURE:
@@ -3195,6 +3197,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 			fs_module = &vk.modules.st_fs[0];
 			break;
 		case TYPE_SIGNLE_TEXTURE_DF:
+			state_bits |= GLS_DEPTHMASK_TRUE;
 			vs_module = &vk.modules.st_clip_vs[0];
 			fs_module = &vk.modules.st_df_fs;
 			break;
@@ -3238,7 +3241,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	vert_spec_data[0] = def->clipping_plane ? 1 : 0;
 
 	// fragment shader specialization data
-	atest_bits = def->state_bits & GLS_ATEST_BITS;
+	atest_bits = state_bits & GLS_ATEST_BITS;
 	switch ( atest_bits ) {
 		case GLS_ATEST_GT_0:
 			frag_spec_data[0].i = 1; // not equal
@@ -3380,7 +3383,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	if ( def->shader_type == TYPE_DOT ) {
 		rasterization_state.polygonMode = VK_POLYGON_MODE_POINT;
 	} else {
-		rasterization_state.polygonMode = (def->state_bits & GLS_POLYMODE_LINE) ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
+		rasterization_state.polygonMode = (state_bits & GLS_POLYMODE_LINE) ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
 		rasterization_state.rasterizerDiscardEnable = VK_FALSE;
 	}
 
@@ -3436,9 +3439,9 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	depth_stencil_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	depth_stencil_state.pNext = NULL;
 	depth_stencil_state.flags = 0;
-	depth_stencil_state.depthTestEnable = (def->state_bits & GLS_DEPTHTEST_DISABLE) ? VK_FALSE : VK_TRUE;
-	depth_stencil_state.depthWriteEnable = (def->state_bits & GLS_DEPTHMASK_TRUE) ? VK_TRUE : VK_FALSE;
-	depth_stencil_state.depthCompareOp = (def->state_bits & GLS_DEPTHFUNC_EQUAL) ? VK_COMPARE_OP_EQUAL : VK_COMPARE_OP_LESS_OR_EQUAL;
+	depth_stencil_state.depthTestEnable = (state_bits & GLS_DEPTHTEST_DISABLE) ? VK_FALSE : VK_TRUE;
+	depth_stencil_state.depthWriteEnable = (state_bits & GLS_DEPTHMASK_TRUE) ? VK_TRUE : VK_FALSE;
+	depth_stencil_state.depthCompareOp = (state_bits & GLS_DEPTHFUNC_EQUAL) ? VK_COMPARE_OP_EQUAL : VK_COMPARE_OP_LESS_OR_EQUAL;
 	depth_stencil_state.depthBoundsTestEnable = VK_FALSE;
 	depth_stencil_state.stencilTestEnable = (def->shadow_phase != SHADOW_DISABLED) ? VK_TRUE : VK_FALSE;
 
@@ -3469,15 +3472,15 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	depth_stencil_state.maxDepthBounds = 1.0f;
 
 	Com_Memset(&attachment_blend_state, 0, sizeof(attachment_blend_state));
-	attachment_blend_state.blendEnable = (def->state_bits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS)) ? VK_TRUE : VK_FALSE;
+	attachment_blend_state.blendEnable = (state_bits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS)) ? VK_TRUE : VK_FALSE;
 
-	if (def->shadow_phase == SHADOW_EDGES)
+	if (def->shadow_phase == SHADOW_EDGES || def->shader_type == TYPE_SIGNLE_TEXTURE_DF)
 		attachment_blend_state.colorWriteMask = 0;
 	else
 		attachment_blend_state.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 	
 	if (attachment_blend_state.blendEnable) {
-		switch (def->state_bits & GLS_SRCBLEND_BITS) {
+		switch (state_bits & GLS_SRCBLEND_BITS) {
 			case GLS_SRCBLEND_ZERO:
 				attachment_blend_state.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
 				break;
@@ -3509,7 +3512,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 				ri.Error( ERR_DROP, "create_pipeline: invalid src blend state bits\n" );
 				break;
 		}
-		switch (def->state_bits & GLS_DSTBLEND_BITS) {
+		switch (state_bits & GLS_DSTBLEND_BITS) {
 			case GLS_DSTBLEND_ZERO:
 				attachment_blend_state.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
 				break;

@@ -7,7 +7,7 @@ layout(location = 1) in vec2 frag_tex_coord;
 
 //layout(location = 0) out vec4 out_color;
 //layout(location = 1) out float fragDepth;
-layout(depth_unchanged) out float gl_FragDepth;
+layout(depth_less) out float gl_FragDepth;
 
 layout (constant_id = 0) const int alpha_test_func = 0;
 layout (constant_id = 1) const float alpha_test_value = 0.0;

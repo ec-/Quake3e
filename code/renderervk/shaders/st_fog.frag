@@ -13,7 +13,7 @@ layout(set = 0, binding = 0) uniform UBO {
 	vec4 fogColor;
 };
 layout(set = 1, binding = 0) uniform sampler2D texture0; // diffuse
-layout(set = 2, binding = 0) uniform sampler2D texture1; // lightmap
+//layout(set = 2, binding = 0) uniform sampler2D texture1; // lightmap
 layout(set = 3, binding = 0) uniform sampler2D texture2; // fog
 
 layout(location = 0) in vec4 frag_color;
