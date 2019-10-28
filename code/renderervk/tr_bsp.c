@@ -544,7 +544,7 @@ static void GenerateNormals( srfSurfaceFace_t *face )
 {
 	vec3_t ba, ca, cross;
 	float *v1, *v2, *v3, *n1, *n2, *n3;
-	int i, *indices;
+	int i, *indices, i0, i1, i2;
 
 	indices = ((int *)((byte *)face + face->ofsIndices));
 
@@ -552,9 +552,14 @@ static void GenerateNormals( srfSurfaceFace_t *face )
 	face->normals = ri.Hunk_Alloc( face->numPoints * sizeof( tess.normal[0] ), h_low );
 
 	for ( i = 0; i < face->numIndices; i += 3 ) {
-		v1 = face->points[indices[i+0]];
-		v2 = face->points[indices[i+1]];
-		v3 = face->points[indices[i+2]];
+		i0 = indices[i+0];
+		i1 = indices[i+1];
+		i2 = indices[i+2];
+		if ( i0 >= face->numPoints || i1 >= face->numPoints || i2 >= face->numPoints )
+			continue;
+		v1 = face->points[i0];
+		v2 = face->points[i1];
+		v3 = face->points[i2];
 		VectorSubtract( v3, v1, ca );
 		VectorSubtract( v2, v1, ba );
 		CrossProduct( ca, ba, cross );
