@@ -1051,11 +1051,14 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 
 	tess_flags = input->shader->tessFlags;
 
+#ifdef USE_FOG_COLLAPSE
 	if ( fogCollapse ) {
 		VK_SetFogParams( &uniform, &fog_stage );
-		VK_PushUniform( &uniform ); // TODO: check return value?
+		VK_PushUniform( &uniform );
 		vk_bind_fog_image();
-	} else {
+	} else
+#endif
+	{
 		fog_stage = 0;
 		if ( input->shader->tessFlags & TESS_VPOS ) {
 			VectorCopy( backEnd.or.viewOrigin, uniform.eyePos );
@@ -1111,6 +1114,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 
 		vk_bind_geometry_ext( tess_flags );
 		vk_draw_geometry( pipeline, set_count, depth_range, qtrue );
+
 		if ( pStage->depthFragment ) {
 			switch ( backEnd.viewParms.portalView ) {
 				default: pipeline = pStage->vk_pipeline_df; break;
@@ -1189,6 +1193,7 @@ void VK_SetFogParams( vkUniform_t *uniform, int *fogStage )
 }
 
 
+#ifdef USE_PMLIGHT
 static void VK_SetLightParams( vkUniform_t *uniform, const dlight_t *dl ) {
 	float radius;
 
@@ -1206,6 +1211,7 @@ static void VK_SetLightParams( vkUniform_t *uniform, const dlight_t *dl ) {
 	// fragment data
 	uniform->lightColor[3] = 1.0f / Square( radius );
 }
+#endif
 
 
 uint32_t VK_PushUniform( const vkUniform_t *uniform ) {
@@ -1278,17 +1284,20 @@ void VK_LightingPass( void )
 
 	GL_SelectTexture( 0 );
 	R_BindAnimatedImage( &pStage->bundle[ tess.shader->lightingBundle ] );
-	
-	if ( tess.vboIndex == 0 ) {
-		pStage = tess.xstages[ tess.shader->lightingStage ];
-		R_ComputeTexCoords( 0, &pStage->bundle[ tess.shader->lightingBundle ] );
-		vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_ST0 | TESS_NNN );
-	} else {
+
+#ifdef USE_VBO
+	if ( tess.vboIndex ) {
 		tess.vboStage = tess.shader->lightingStage;
 		if ( tess.shader->lightingBundle )
 			vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_ST0_1 | TESS_NNN );
 		else
 			vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_ST0 | TESS_NNN );
+	} else
+#endif
+	{
+		pStage = tess.xstages[ tess.shader->lightingStage ];
+		R_ComputeTexCoords( 0, &pStage->bundle[ tess.shader->lightingBundle ] );
+		vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_ST0 | TESS_NNN );
 	}
 
 	vk_draw_geometry( pipeline, 1, tess.depthRange, qtrue );
@@ -1298,7 +1307,7 @@ void VK_LightingPass( void )
 
 void RB_StageIteratorGeneric( void )
 {
-	qboolean fogCollapse;
+	qboolean fogCollapse = qfalse;
 
 #ifdef USE_VBO
 	if ( tess.vboIndex != 0 ) {
@@ -1315,8 +1324,9 @@ void RB_StageIteratorGeneric( void )
 	}
 #endif
 
+#ifdef USE_FOG_COLLAPSE
 	fogCollapse = tess.fogNum && tess.shader->fogPass && tess.shader->fogCollapse;
-
+#endif
 	// call shader function
 	RB_IterateStagesGeneric( &tess, fogCollapse );
 

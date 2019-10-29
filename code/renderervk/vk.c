@@ -1761,11 +1761,16 @@ static void vk_create_persistent_pipelines( void )
 
 						def.shader_type = TYPE_SIGNLE_TEXTURE;
 						def.state_bits = dlight_state;
+#ifdef USE_PMLIGHT
 						vk.dlight_pipelines[i][j][k] = vk_find_pipeline_ext( 0, &def, r_dlightMode->integer == 0 ? qtrue : qfalse );
+#else
+						vk.dlight_pipelines[i][j][k] = vk_find_pipeline_ext( 0, &def, qtrue );
+#endif
 					}
 				}
 			}
 
+#ifdef USE_PMLIGHT
 			def.state_bits = GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL;
 			def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING;
 			for ( i = 0; i < 2; i++ ) { // clipping plane off/on
@@ -1781,6 +1786,7 @@ static void vk_create_persistent_pipelines( void )
 					}
 				}
 			}
+#endif // USE_PMLIGHT
 		}
 
 		{

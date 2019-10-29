@@ -2878,8 +2878,9 @@ static shader_t *FinishShader( void ) {
 		}
 	}
 
+#ifdef USE_FOG_COLLAPSE
 	// single-stage, combined fog pipelines for world surfaces
-	if ( stage == 1 && tr.mapLoading ) {
+	if ( stage == 1 && tr.mapLoading && !(shader.contentFlags & CONTENTS_FOG) ) {
 		Vk_Pipeline_Def def;
 		Vk_Pipeline_Def def_mirror;
 		Vk_Pipeline_Def def_portal;
@@ -2901,6 +2902,7 @@ static shader_t *FinishShader( void ) {
 
 		stages[0].adjustColorsForFog = ACFF_NONE;
 	}
+#endif // USE_FOG_COLLAPSE
 #endif // USE_VULKAN
 
 	// determine which stage iterator function is appropriate

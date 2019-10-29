@@ -327,8 +327,10 @@ typedef struct {
 	// dim 2 is a polygon offset value (0 - off, 1 - on).
 	uint32_t dlight_pipelines[2][3][2];
 
-	// clippingPlane[2], cullType[3], polygonOffset[2], fogStage[3], 
-	uint32_t dlight_pipelines_x[2][3][2][3];
+	// clippingPlane[2], cullType[3], polygonOffset[2], fogStage[3]
+#ifdef USE_PMLIGHT
+	uint32_t dlight_pipelines_x[2][3][2][2];
+#endif
 
 	// debug visualization pipelines
 	uint32_t tris_debug_pipeline;

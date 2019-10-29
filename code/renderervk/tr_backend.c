@@ -642,7 +642,9 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 
 #ifdef USE_VULKAN
 			Com_Memcpy( vk_world.modelview_transform, backEnd.or.modelMatrix, 64 );
+#ifdef USE_PMLIGHT
 			tess.depthRange = depthRange ? DEPTH_RANGE_WEAPON : DEPTH_RANGE_NORMAL;
+#endif
 			vk_update_mvp( NULL );
 #else
 			qglLoadMatrixf( backEnd.or.modelMatrix );

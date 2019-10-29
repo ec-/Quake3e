@@ -340,7 +340,9 @@ void RB_TestFlare( flare_t *f ) {
 	qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, 4, 1, sets, 1, &offset );
 	//qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout_storage, 0, 1, sets, 1, &offset );
 
+#ifdef USE_VBO
 	tess.vboIndex = 0;
+#endif
 	vk_bind_geometry_ext( TESS_XYZ );
 	vk_draw_geometry( vk.dot_pipeline, -1, DEPTH_RANGE_NORMAL, qfalse );
 
