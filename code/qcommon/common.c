@@ -1404,21 +1404,21 @@ void Z_Free( void *ptr ) {
 Z_FreeTags
 ================
 */
-void Z_FreeTags( memtag_t tag ) {
-	//int			count;
+int Z_FreeTags( memtag_t tag ) {
+	int			count;
 	memzone_t	*zone;
 	memblock_t	*block, *freed;
 
 	if ( tag == TAG_STATIC ) {
 		Com_Error( ERR_FATAL, "Z_FreeTags( TAG_STATIC )" );
-		return;
+		return 0;
 	} else if ( tag == TAG_SMALL ) {
 		zone = smallzone;
 	} else {
 		zone = mainzone;
 	}
 
-	//count = 0;
+	count = 0;
 	for ( block = zone->blocklist.next ; ; ) {
 		if ( block->tag == tag && block->id == ZONEID ) {
 			if ( block->prev->tag == TAG_FREE )
@@ -1427,13 +1427,15 @@ void Z_FreeTags( memtag_t tag ) {
 				freed = block; // will leave in place
 			Z_Free( (void*)( block + 1 ) );
 			block = freed;
-			//count++;
+			count++;
 		}
 		if ( block->next == &zone->blocklist ) {
 			break;	// all blocks have been hit
 		}
 		block = block->next;
 	}
+
+	return count;
 }
 
 

@@ -1054,7 +1054,7 @@ void *Z_Malloc( int size );			// returns 0 filled memory
 void *S_Malloc( int size );			// NOT 0 filled memory only for small allocations
 #endif
 void Z_Free( void *ptr );
-void Z_FreeTags( memtag_t tag );
+int Z_FreeTags( memtag_t tag );
 int Z_AvailableMemory( void );
 void Z_LogHeap( void );
 
