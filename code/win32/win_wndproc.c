@@ -505,7 +505,7 @@ void WIN_Minimize( void ) {
 LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam )
 {
 	#define TIMER_ID 10
-	static UINT uTimerID;
+	//static UINT uTimerID;
 	static qboolean flip = qtrue;
 	qboolean active;
 	qboolean minimized;
@@ -753,24 +753,24 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 		break;
 
-	case WM_ENTERSIZEMOVE:
-		if ( uTimerID == 0 && (i = GetTimerMsec()) > 0 ) {
-			uTimerID = SetTimer( g_wv.hWnd, TIMER_ID, i, NULL );
-		}
-		break;
+	//case WM_ENTERSIZEMOVE:
+	//	if ( uTimerID == 0 && (i = GetTimerMsec()) > 0 ) {
+	//		uTimerID = SetTimer( g_wv.hWnd, TIMER_ID, i, NULL );
+	//	}
+	//	break;
 
-	case WM_EXITSIZEMOVE:
-		if ( uTimerID != 0 ) {
-			KillTimer( g_wv.hWnd, uTimerID );
-			uTimerID = 0;
-		}
-		break;
+	//case WM_EXITSIZEMOVE:
+	//	if ( uTimerID != 0 ) {
+	//		KillTimer( g_wv.hWnd, uTimerID );
+	//		uTimerID = 0;
+	//	}
+	//	break;
 
 	case WM_TIMER:
-		if ( wParam == TIMER_ID && uTimerID != 0 && !CL_VideoRecording() ) {
-			Com_Frame( CL_NoDelay() );
-			return 0;
-		}
+		//if ( wParam == TIMER_ID && uTimerID != 0 && !CL_VideoRecording() ) {
+		//	Com_Frame( CL_NoDelay() );
+		//	return 0;
+		//}
 		if ( wParam == TIMER_M ) {
 			KillTimer( g_wv.hWnd, uTimerM );
 			ShowWindow( hWnd, SW_MINIMIZE );
