@@ -1583,6 +1583,11 @@ static void vk_create_shader_modules( void )
 	extern const unsigned char st_fog_frag_spv[];
 	extern const int st_fog_frag_spv_size;
 
+	extern const unsigned char color_frag_spv[];
+	extern const int color_frag_spv_size;
+	extern const unsigned char color_clip_vert_spv[];
+	extern const int color_clip_vert_spv_size;
+
 	extern const unsigned char mt_clip_vert_spv[];
 	extern const int mt_clip_vert_spv_size;
 	extern const unsigned char mt_clip_fog_vert_spv[];
@@ -1636,6 +1641,9 @@ static void vk_create_shader_modules( void )
 	vk.modules.st_fs[1] = create_shader_module(st_fog_frag_spv, st_fog_frag_spv_size);
 	vk.modules.st_df_fs = create_shader_module(st_df_frag_spv, st_df_frag_spv_size);
 
+	vk.modules.color_fs = create_shader_module(color_frag_spv, color_frag_spv_size);
+	vk.modules.color_clip_vs = create_shader_module(color_clip_vert_spv, color_clip_vert_spv_size);
+
 	vk.modules.mt_mul_fs[0] = create_shader_module(mt_mul_frag_spv, mt_mul_frag_spv_size);
 	vk.modules.mt_mul_fs[1] = create_shader_module(mt_mul_fog_frag_spv, mt_mul_fog_frag_spv_size);
 
@@ -1661,6 +1669,7 @@ static void vk_create_shader_modules( void )
 
 static void vk_create_persistent_pipelines( void )
 {
+	unsigned int state_bits;
 	Com_Memset( &vk.pipelines, 0, sizeof( vk.pipelines ) );
 	
 	vk.pipelines_count = 0;
@@ -1824,23 +1833,61 @@ static void vk_create_persistent_pipelines( void )
 
 
 		// debug pipelines
+		state_bits = GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE;
 		{
 			Vk_Pipeline_Def def;
 
 			Com_Memset(&def, 0, sizeof(def));
-			def.state_bits = GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE;
-
+			def.state_bits = state_bits;
+			def.shader_type = TYPE_COLOR_WHITE;
 			vk.tris_debug_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
 		}
 		{
 			Vk_Pipeline_Def def;
 
 			Com_Memset(&def, 0, sizeof(def));
-			def.state_bits = GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE;
+			def.state_bits = state_bits;
+			def.shader_type = TYPE_COLOR_WHITE;
 			def.face_culling = CT_BACK_SIDED;
 
 			vk.tris_mirror_debug_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
 		}
+		{
+			Vk_Pipeline_Def def;
+
+			Com_Memset(&def, 0, sizeof(def));
+			def.state_bits = state_bits;
+			def.shader_type = TYPE_COLOR_GREEN;
+			vk.tris_debug_green_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		}
+		{
+			Vk_Pipeline_Def def;
+
+			Com_Memset(&def, 0, sizeof(def));
+			def.state_bits = state_bits;
+			def.shader_type = TYPE_COLOR_GREEN;
+			def.face_culling = CT_BACK_SIDED;
+			
+			vk.tris_mirror_debug_green_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		}
+		{
+			Vk_Pipeline_Def def;
+
+			Com_Memset(&def, 0, sizeof(def));
+			def.state_bits = state_bits;
+			def.shader_type = TYPE_COLOR_RED;
+			vk.tris_debug_red_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		}
+		{
+			Vk_Pipeline_Def def;
+
+			Com_Memset(&def, 0, sizeof(def));
+			def.state_bits = state_bits;
+			def.shader_type = TYPE_COLOR_RED;
+			def.face_culling = CT_BACK_SIDED;
+			vk.tris_mirror_debug_red_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		}
+
 		{
 			Vk_Pipeline_Def def;
 
@@ -2710,6 +2757,9 @@ void vk_shutdown( void )
 
 	qvkDestroyShaderModule(vk.device, vk.modules.st_df_fs, NULL);
 
+	qvkDestroyShaderModule(vk.device, vk.modules.color_fs, NULL);
+	qvkDestroyShaderModule(vk.device, vk.modules.color_clip_vs, NULL);
+
 	qvkDestroyShaderModule(vk.device, vk.modules.mt_clip_vs[0], NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.mt_clip_vs[1], NULL);
 
@@ -3176,8 +3226,8 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	VkShaderModule *vs_module = NULL;
 	VkShaderModule *fs_module = NULL;
 	int32_t vert_spec_data[1]; // clippping
-	floatint_t frag_spec_data[2]; // alpha-test-func
-	VkSpecializationMapEntry spec_entries[3];
+	floatint_t frag_spec_data[4]; // alpha-test-func, alpha-test-value, depth-fragment, color_mode
+	VkSpecializationMapEntry spec_entries[5];
 	VkSpecializationInfo vert_spec_info;
 	VkSpecializationInfo frag_spec_info;
 	VkPipelineVertexInputStateCreateInfo vertex_input_state;
@@ -3220,6 +3270,12 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 			vs_module = &vk.modules.mt_clip_vs[0];
 			fs_module = (def->shader_type == TYPE_MULTI_TEXTURE_MUL) ? &vk.modules.mt_mul_fs[0] : &vk.modules.mt_add_fs[0];
 			break;
+		case TYPE_COLOR_WHITE:
+		case TYPE_COLOR_GREEN:
+		case TYPE_COLOR_RED:
+			vs_module = &vk.modules.color_clip_vs;
+			fs_module = &vk.modules.color_fs;
+			break;
 		case TYPE_FOG_ONLY:
 			vs_module = &vk.modules.fog_vs;
 			fs_module = &vk.modules.fog_fs;
@@ -3233,16 +3289,28 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 			return 0;
 	}
 
-	if ( def->fog_stage && def->shader_type != TYPE_FOG_ONLY && def->shader_type != TYPE_DOT && def->shader_type != TYPE_SIGNLE_TEXTURE_DF ) {
-		// switch to fogged modules
-		vs_module++;
-		fs_module++;
+	if ( def->fog_stage ) {
+		switch ( def->shader_type ) {
+			case TYPE_FOG_ONLY:
+			case TYPE_DOT:
+			case TYPE_SIGNLE_TEXTURE_DF:
+			case TYPE_COLOR_WHITE:
+			case TYPE_COLOR_GREEN:
+			case TYPE_COLOR_RED:
+				break;
+			default:
+				// switch to fogged modules
+				vs_module++;
+				fs_module++;
+				break;
+		}
 	}
 
 	set_shader_stage_desc(shader_stages+0, VK_SHADER_STAGE_VERTEX_BIT, *vs_module, "main");
 	set_shader_stage_desc(shader_stages+1, VK_SHADER_STAGE_FRAGMENT_BIT, *fs_module, "main");
 
 	Com_Memset( vert_spec_data, 0, sizeof( vert_spec_data ) );
+	Com_Memset( frag_spec_data, 0, sizeof( frag_spec_data ) );
 	
 	vert_spec_data[0] = def->clipping_plane ? 1 : 0;
 
@@ -3276,6 +3344,14 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 		}
 	}
 
+	frag_spec_data[2].f = 0.85f;
+	frag_spec_data[3].i = 0;
+
+	switch ( def->shader_type ) {
+		case TYPE_COLOR_GREEN: frag_spec_data[3].i = 1; break;
+		case TYPE_COLOR_RED:   frag_spec_data[3].i = 2; break;
+	}
+
 	// vertex module specialization data
 	spec_entries[0].constantID = 0; // clip_plane
 	spec_entries[0].offset = 0 * sizeof( int32_t );
@@ -3291,13 +3367,22 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	spec_entries[1].constantID = 0;  // alpha-test-function
 	spec_entries[1].offset = 0 * sizeof( int32_t );
 	spec_entries[1].size = sizeof( int32_t );
+
 	spec_entries[2].constantID = 1; // alpha-test-value
 	spec_entries[2].offset = 1 * sizeof( int32_t );
 	spec_entries[2].size = sizeof( float );
 
-	frag_spec_info.mapEntryCount = 2;
+	spec_entries[3].constantID = 2; // depth-fragment
+	spec_entries[3].offset = 2 * sizeof( int32_t );
+	spec_entries[3].size = sizeof( float );
+
+	spec_entries[4].constantID = 3; // color_mode
+	spec_entries[4].offset = 3 * sizeof( int32_t );
+	spec_entries[4].size = sizeof( int32_t );
+
+	frag_spec_info.mapEntryCount = 4;
 	frag_spec_info.pMapEntries = spec_entries + 1;
-	frag_spec_info.dataSize = sizeof( int32_t ) + sizeof( float );
+	frag_spec_info.dataSize = sizeof( int32_t ) + sizeof( float ) + sizeof( float ) + sizeof( int32_t );
 	frag_spec_info.pData = &frag_spec_data[0];
 	shader_stages[1].pSpecializationInfo = &frag_spec_info;
 
@@ -3335,6 +3420,12 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 			push_attr( 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT );
 			push_attr( 2, 2, VK_FORMAT_R32G32_SFLOAT );
 			push_attr( 4, 4, VK_FORMAT_R32G32B32A32_SFLOAT );
+			break;
+		case TYPE_COLOR_WHITE:
+		case TYPE_COLOR_GREEN:
+		case TYPE_COLOR_RED:
+			push_bind( 0, sizeof( vec4_t ) );					// xyz array
+			push_attr( 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT );
 			break;
 		default: // multitexture variations
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array

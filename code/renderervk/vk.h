@@ -27,6 +27,9 @@ typedef enum {
 	TYPE_SIGNLE_TEXTURE_LIGHTING,
 	TYPE_MULTI_TEXTURE_MUL,
 	TYPE_MULTI_TEXTURE_ADD,
+	TYPE_COLOR_WHITE,
+	TYPE_COLOR_GREEN,
+	TYPE_COLOR_RED,
 	TYPE_FOG_ONLY,
 	TYPE_DOT,
 } Vk_Shader_Type;
@@ -283,6 +286,9 @@ typedef struct {
 		VkShaderModule mt_mul_fs[2];
 		VkShaderModule mt_add_fs[2];
 
+		VkShaderModule color_fs;
+		VkShaderModule color_clip_vs;
+
 		VkShaderModule gamma_fs;
 		VkShaderModule gamma_vs;
 
@@ -335,6 +341,11 @@ typedef struct {
 	// debug visualization pipelines
 	uint32_t tris_debug_pipeline;
 	uint32_t tris_mirror_debug_pipeline;
+	uint32_t tris_debug_green_pipeline;
+	uint32_t tris_mirror_debug_green_pipeline;
+	uint32_t tris_debug_red_pipeline;
+	uint32_t tris_mirror_debug_red_pipeline;
+
 	uint32_t normals_debug_pipeline;
 	uint32_t surface_debug_pipeline_solid;
 	uint32_t surface_debug_pipeline_outline;

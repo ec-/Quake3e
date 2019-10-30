@@ -139,6 +139,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\renderercommon\tr_noise.c" />
+    <ClCompile Include="..\..\renderervk\shaders\spirv\color_clip_vert.c" />
+    <ClCompile Include="..\..\renderervk\shaders\spirv\color_frag.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\dot_frag.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\dot_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\fog_frag.c" />

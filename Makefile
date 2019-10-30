@@ -771,6 +771,8 @@ Q3RENDVOBJ = \
   $(B)/rendv/st_clip_vert.o \
   $(B)/rendv/st_enviro_fog_vert.o \
   $(B)/rendv/st_enviro_vert.o \
+  $(B)/rendv/color_frag.o \
+  $(B)/rendv/color_clip_vert.o \
   $(B)/rendv/st_fog_frag.o \
   $(B)/rendv/st_df_frag.o \
   $(B)/rendv/st_frag.o

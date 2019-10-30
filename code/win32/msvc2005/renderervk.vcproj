@@ -420,6 +420,14 @@
 				Name="Shaders"
 				>
 				<File
+					RelativePath="..\..\renderervk\shaders\spirv\color_clip_vert.c"
+					>
+				</File>
+				<File
+					RelativePath="..\..\renderervk\shaders\spirv\color_frag.c"
+					>
+				</File>
+				<File
 					RelativePath="..\..\renderervk\shaders\spirv\dot_frag.c"
 					>
 				</File>

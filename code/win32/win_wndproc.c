@@ -450,6 +450,7 @@ BOOL Win_CheckHotkeyMod( void ) {
 }
 
 
+#if 0
 static int GetTimerMsec( void ) {
 	int msec;
 	
@@ -466,6 +467,7 @@ static int GetTimerMsec( void ) {
 
 	return msec;
 }
+#endif
 
 
 static HWINEVENTHOOK hWinEventHook;

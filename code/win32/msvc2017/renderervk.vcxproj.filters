@@ -177,6 +177,12 @@
     <ClCompile Include="..\..\renderervk\vk_vbo.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\renderervk\shaders\spirv\color_clip_vert.c">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderervk\shaders\spirv\color_frag.c">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\renderervk\iqm.h">

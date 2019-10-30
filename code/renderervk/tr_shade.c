@@ -252,18 +252,23 @@ static void DrawTris( shaderCommands_t *input ) {
 	uint32_t pipeline;
 
 #ifdef USE_VBO
-	if ( tess.vboIndex )
-		return; // must be handled specially
+	if ( tess.vboIndex ) {
+#ifdef USE_PMLIGHT
+		if ( tess.dlightPass )
+			pipeline = backEnd.viewParms.portalView == PV_MIRROR ? vk.tris_mirror_debug_red_pipeline : vk.tris_debug_red_pipeline;
+		else
 #endif
-
-	GL_Bind( tr.whiteImage );
-
-	Com_Memset( tess.svars.colors, tr.identityLightByte, tess.numVertexes * 4 );
-
+		pipeline = backEnd.viewParms.portalView == PV_MIRROR ? vk.tris_mirror_debug_green_pipeline : vk.tris_debug_green_pipeline;
+	} else
+#endif
+#ifdef USE_PMLIGHT
+	if ( tess.dlightPass )
+		pipeline = backEnd.viewParms.portalView == PV_MIRROR ? vk.tris_mirror_debug_red_pipeline : vk.tris_debug_red_pipeline;
+	else
+#endif
 	pipeline = backEnd.viewParms.portalView == PV_MIRROR ? vk.tris_mirror_debug_pipeline : vk.tris_debug_pipeline;
 
-	vk_bind_geometry_ext( TESS_RGBA );
-	vk_draw_geometry( pipeline, 1, DEPTH_RANGE_ZERO, qtrue );
+	vk_draw_geometry( pipeline, -1, DEPTH_RANGE_ZERO, qtrue );
 #else
 	GL_Bind( tr.whiteImage );
 	qglColor3f( 1, 1, 1 );
