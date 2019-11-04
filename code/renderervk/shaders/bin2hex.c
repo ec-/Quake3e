@@ -32,7 +32,7 @@ int main(int argc, const char* argv[]) {
     }
 
     printf("\n};\n");
-    printf("const int %s_size = %i;", argv[2], size);
+    printf("const int %s_size = %i;\n", argv[2], size);
 
     if (!feof(f)) {
         printf("Could not read entire file: %s", argv[1]);

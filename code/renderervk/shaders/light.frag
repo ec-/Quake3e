@@ -42,8 +42,10 @@ void main() {
 	vec3 nV = normalize(V.xyz);	// normalized view vector
 
 	// light intensity
-	float intensFactor = dot(L.xyz, L.xyz) * lightColorRadius.w;
-	vec3 intens = lightColorRadius.rgb * (1.0 - intensFactor);
+	float intensFactor = 1.0 - dot(L.xyz, L.xyz) * lightColorRadius.w;
+	if (intensFactor <= 0.0)
+		discard;
+	vec3 intens = lightColorRadius.rgb * intensFactor;
 
 	// Lambertian diffuse reflection term (N.L)
 	float diffuse = dot(N, nL);
