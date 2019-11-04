@@ -3345,9 +3345,9 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	}
 
 	frag_spec_data[2].f = 0.85f;
-	frag_spec_data[3].i = 0;
 
 	switch ( def->shader_type ) {
+		default: frag_spec_data[3].i = 0; break;
 		case TYPE_COLOR_GREEN: frag_spec_data[3].i = 1; break;
 		case TYPE_COLOR_RED:   frag_spec_data[3].i = 2; break;
 	}

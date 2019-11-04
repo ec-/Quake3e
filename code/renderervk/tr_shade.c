@@ -251,6 +251,9 @@ static void DrawTris( shaderCommands_t *input ) {
 #ifdef USE_VULKAN
 	uint32_t pipeline;
 
+	if ( (r_showtris->integer == 1 && backEnd.doneSurfaces) || (r_showtris->integer == 2 && backEnd.drawConsole) )
+		return;
+
 #ifdef USE_VBO
 	if ( tess.vboIndex ) {
 #ifdef USE_PMLIGHT

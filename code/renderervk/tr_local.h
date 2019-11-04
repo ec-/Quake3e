@@ -1063,6 +1063,7 @@ typedef struct {
 	videoFrameCommand_t	vcmd;	// avi capture
 	
 	qboolean throttle;
+	qboolean drawConsole;
 
 } backEndState_t;
 

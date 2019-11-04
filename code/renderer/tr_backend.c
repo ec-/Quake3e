@@ -1394,6 +1394,8 @@ static const void *RB_FinishBloom( const void *data )
 		}
 	}
 
+	backEnd.drawConsole = qtrue;
+
 	return (const void *)(cmd + 1);
 }
 
@@ -1463,6 +1465,7 @@ static const void *RB_SwapBuffers( const void *data ) {
 	backEnd.projection2D = qfalse;
 	backEnd.doneBloom = qfalse;
 	backEnd.doneSurfaces = qfalse;
+	backEnd.drawConsole = qfalse;
 
 	return (const void *)(cmd + 1);
 }

@@ -259,10 +259,18 @@ Draws triangle outlines for debugging
 */
 static void DrawTris( shaderCommands_t *input ) {
 
+	if ( (r_showtris->integer == 1 && backEnd.doneSurfaces) || (r_showtris->integer == 2 && backEnd.drawConsole) )
+		return;
+
 	GL_ProgramDisable();
 	tess.dlightUpdateParams = qtrue;
 
 	GL_Bind( tr.whiteImage );
+#ifdef USE_PMLIGHT
+	if ( tess.dlightPass )
+		qglColor3f( 1.0f, 0.33f, 0.2f );
+	else
+#endif
 	qglColor3f( 1, 1, 1 );
 
 	GL_State( GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE );

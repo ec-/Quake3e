@@ -1106,8 +1106,12 @@ static void VBO_RenderIndexQueue( qboolean mtx )
 
 	VBO_RenderBuffers();
 
-	if ( r_showtris->integer ) 
+	if ( r_showtris->integer )
 	{
+
+		if ( (r_showtris->integer == 1 && backEnd.doneSurfaces) || (r_showtris->integer == 2 && backEnd.drawConsole) )
+			return;
+
 		if ( mtx )
 		{
 			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
