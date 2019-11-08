@@ -1213,11 +1213,19 @@ static void VK_SetLightParams( vkUniform_t *uniform, const dlight_t *dl ) {
 	radius = dl->radius * r_dlightScale->value;
 
 	// vertex data
-	VectorCopy( backEnd.or.viewOrigin, uniform->eyePos );
-	VectorCopy( dl->transformed, uniform->lightPos );
+	VectorCopy( backEnd.or.viewOrigin, uniform->eyePos ); uniform->eyePos[3] = 0.0f;
+	VectorCopy( dl->transformed, uniform->lightPos ); uniform->lightPos[3] = 0.0f;
 
 	// fragment data
 	uniform->lightColor[3] = 1.0f / Square( radius );
+
+	if ( dl->linear )
+	{
+		vec4_t ab;
+		VectorSubtract( dl->transformed2, dl->transformed, ab );
+		ab[3] = 1.0f / DotProduct( ab, ab );
+		Vector4Copy( ab, uniform->lightVector );
+	}
 }
 #endif
 
@@ -1288,7 +1296,10 @@ void VK_LightingPass( void )
 	if ( fog_stage )
 		vk_bind_fog_image();
 
-	pipeline = vk.dlight_pipelines_x[clip][cull][tess.shader->polygonOffset][fog_stage];
+	if ( dl->linear )
+		pipeline = vk.dlight1_pipelines_x[clip][cull][tess.shader->polygonOffset][fog_stage];
+	else
+		pipeline = vk.dlight_pipelines_x[clip][cull][tess.shader->polygonOffset][fog_stage];
 
 	GL_SelectTexture( 0 );
 	R_BindAnimatedImage( &pStage->bundle[ tess.shader->lightingBundle ] );

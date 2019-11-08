@@ -300,11 +300,11 @@ void RE_AddLinearLightToScene( const vec3_t start, const vec3_t end, float inten
 		return;
 	}
 #ifdef USE_PMLIGHT
-	//if ( r_dlightMode->integer ) {
-	//	r *= r_dlightIntensity->value;
-	//	g *= r_dlightIntensity->value;
-	//	b *= r_dlightIntensity->value;
-	//}
+	if ( r_dlightMode->integer ) {
+		r *= r_dlightIntensity->value;
+		g *= r_dlightIntensity->value;
+		b *= r_dlightIntensity->value;
+	}
 #endif
 	dl = &backEndData->dlights[ r_numdlights++ ];
 	VectorCopy( start, dl->origin );

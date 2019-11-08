@@ -147,6 +147,8 @@
     <ClCompile Include="..\..\renderervk\shaders\spirv\fog_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\gamma_frag.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\gamma_vert.c" />
+    <ClCompile Include="..\..\renderervk\shaders\spirv\light1_fog_frag.c" />
+    <ClCompile Include="..\..\renderervk\shaders\spirv\light1_frag.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\light_clip_fog_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\light_clip_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\light_fog_frag.c" />

@@ -269,7 +269,6 @@ void ARB_SetupLightParams( void )
 	if ( dl->linear ) {
 		fragmentProgram = DLIGHT_LINEAR_FRAGMENT;
 	} else {
-		
 		fragmentProgram = DLIGHT_FRAGMENT;
 	}
 
@@ -286,8 +285,8 @@ void ARB_SetupLightParams( void )
 
 	ARB_ProgramEnable( vertexProgram, fragmentProgram );
 
-	qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, lightRGB[0], lightRGB[1], lightRGB[2], 1.0f );
-	qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 1, 1.0f / Square( radius ), 0, 0, 0 );
+	qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, lightRGB[0], lightRGB[1], lightRGB[2], 1.0f / Square( radius ) );
+	//qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 1, 1.0f / Square( radius ), 0, 0, 0 );
 
 	if ( dl->linear )
 	{
@@ -458,7 +457,7 @@ static const char *ARB_BuildDlightFP( char *program, qboolean fog, qboolean line
 	"!!ARBfp1.0 \n"
 	"OPTION ARB_precision_hint_fastest; \n"
 	"PARAM lightRGB = program.local[0]; \n"
-	"PARAM lightRange2recip = program.local[1]; \n"
+	//"PARAM lightRange2recip = program.local[1]; \n"
 	//"PARAM fogColor = program.local[5]; \n" // fogColor
 	"TEMP base, tmp; \n"
 	"TEX base, fragment.texcoord[0], texture[0], 2D; \n" );
@@ -490,7 +489,7 @@ static const char *ARB_BuildDlightFP( char *program, qboolean fog, qboolean line
 
 	// calculate light intensity
 	"TEMP light; \n"
-	"MUL tmp.x, tmp.w, lightRange2recip; \n"
+	"MUL tmp.x, tmp.w, lightRGB.w; \n"
 	"SUB tmp.x, {1.0}, tmp.x; \n"
 	"MUL light, lightRGB, tmp.x; \n" // light.rgb
 	);

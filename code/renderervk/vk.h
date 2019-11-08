@@ -25,6 +25,7 @@ typedef enum {
 	TYPE_SIGNLE_TEXTURE_DF,
 	TYPE_SIGNLE_TEXTURE_ENVIRO,
 	TYPE_SIGNLE_TEXTURE_LIGHTING,
+	TYPE_SIGNLE_TEXTURE_LIGHTING1,
 	TYPE_MULTI_TEXTURE_MUL,
 	TYPE_MULTI_TEXTURE_ADD,
 	TYPE_COLOR_WHITE,
@@ -73,16 +74,20 @@ typedef struct VK_Pipeline {
 	VkPipeline handle;
 } VK_Pipeline_t;
 	
+// this structure must be in sync with shader uniforms!
 typedef struct vkUniform_s {
 	// vertex shader reference
 	vec4_t eyePos;
 	vec4_t lightPos;
+	// vertex - fog parameters
 	vec4_t fogDistanceVector;
 	vec4_t fogDepthVector;
 	vec4_t fogEyeT;
 	// fragment shader reference
 	vec4_t lightColor; // rgb + 1/(r*r)
 	vec4_t fogColor;
+	// fragment - linear dynamic light
+	vec4_t lightVector;
 } vkUniform_t;
 
 #define VERTEX_BUFFER_SIZE (8 * 1024 * 1024)
@@ -303,6 +308,10 @@ typedef struct {
 			VkShaderModule fs[2];
 		} light;
 
+		struct {
+			VkShaderModule fs[2];
+		} light1;
+
 	} modules;
 
 	VK_Pipeline_t pipelines[ MAX_VK_PIPELINES ];
@@ -336,6 +345,7 @@ typedef struct {
 	// clippingPlane[2], cullType[3], polygonOffset[2], fogStage[3]
 #ifdef USE_PMLIGHT
 	uint32_t dlight_pipelines_x[2][3][2][2];
+	uint32_t dlight1_pipelines_x[2][3][2][2];
 #endif
 
 	// debug visualization pipelines

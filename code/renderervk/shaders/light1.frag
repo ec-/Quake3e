@@ -20,6 +20,7 @@ layout(location = 0) in vec2 frag_tex_coord;
 layout(location = 1) in vec3 N;  // normalized object-space normal vector
 layout(location = 2) in vec4 L;  // object-space light vector
 layout(location = 3) in vec4 V;  // object-space view vector
+//layout(location = 4) in vec2 fog_tex_coord;
 
 layout (constant_id = 0) const int alpha_test_func = 0;
 layout (constant_id = 1) const float alpha_test_value = 0.0;
@@ -40,11 +41,16 @@ void main() {
 
 	vec4 lightColorRadius = lightColor;
 
-	vec3 nL = normalize(L.xyz);	// normalized light vector
+	// project fragment on light vector
+	float scale = clamp( dot( -L.xyz, lightVector.xyz ) * lightVector.w, 0.0, 1.0 );
+	//
+	vec4 LL = lightVector * scale + L;
+
+	vec3 nL = normalize(LL.xyz); // normalized light vector
 	vec3 nV = normalize(V.xyz);	// normalized view vector
 
 	// light intensity
-	float intensFactor = 1.0 - dot(L.xyz, L.xyz) * lightColorRadius.w;
+	float intensFactor = 1.0 - (dot(LL.xyz, LL.xyz) * lightColorRadius.w);
 	if (intensFactor <= 0.0)
 		discard;
 	vec3 intens = lightColorRadius.rgb * intensFactor;
@@ -53,7 +59,7 @@ void main() {
 	float diffuse = dot(N, nL);
 
 	// specular reflection term (N.H)
-	float specFactor = abs(dot(N, normalize(nL + nV)));
+	float specFactor = abs(dot(N, normalize(nL + nV))); // --- 
 
 	// make sure light and eye vectors are on the same plane side
 	if ( diffuse * dot(N, nV) <= 0 )
@@ -61,7 +67,6 @@ void main() {
 
 	//float spec = pow(specFactor, 8.0) * 0.25;
 	vec4 spec = vec4(pow(specFactor, 10.0)*0.25) * base * 0.8;
-
 
 	out_color = (base * vec4(abs(diffuse)) + vec4(spec)) * vec4(intens, 1.0);
 }

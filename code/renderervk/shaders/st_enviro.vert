@@ -18,6 +18,8 @@ layout(set = 0, binding = 0) uniform UBO {
 	// FRAGMENT
 	vec4 lightColor;
 	vec4 fogColor;
+	// linear dynamic light
+	vec4 lightVector;
 };
 
 layout(location = 0) in vec3 in_position;

@@ -1623,6 +1623,11 @@ static void vk_create_shader_modules( void )
 	extern const unsigned char light_fog_frag_spv[];
 	extern const int light_fog_frag_spv_size;
 
+	extern const unsigned char light1_frag_spv[];
+	extern const int light1_frag_spv_size;
+	extern const unsigned char light1_fog_frag_spv[];
+	extern const int light1_fog_frag_spv_size;
+
 	extern const unsigned char gamma_frag_spv[];
 	extern const int gamma_frag_spv_size;
 	extern const unsigned char gamma_vert_spv[];
@@ -1661,6 +1666,9 @@ static void vk_create_shader_modules( void )
 
 	vk.modules.light.fs[0] = create_shader_module(light_frag_spv, light_frag_spv_size);
 	vk.modules.light.fs[1] = create_shader_module(light_fog_frag_spv, light_fog_frag_spv_size);
+
+	vk.modules.light1.fs[0] = create_shader_module(light1_frag_spv, light1_frag_spv_size);
+	vk.modules.light1.fs[1] = create_shader_module(light1_fog_frag_spv, light1_fog_frag_spv_size);
 
 	vk.modules.gamma_fs = create_shader_module(gamma_frag_spv, gamma_frag_spv_size);
 	vk.modules.gamma_vs = create_shader_module(gamma_vert_spv, gamma_vert_spv_size);
@@ -1781,7 +1789,7 @@ static void vk_create_persistent_pipelines( void )
 
 #ifdef USE_PMLIGHT
 			def.state_bits = GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL;
-			def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING;
+			//def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING;
 			for ( i = 0; i < 2; i++ ) { // clipping plane off/on
 				def.clipping_plane = clipping_plane[i];
 				for (j = 0; j < 3; j++) { // cullType
@@ -1790,7 +1798,10 @@ static void vk_create_persistent_pipelines( void )
 						def.polygon_offset = polygon_offset[k];
 						for ( l = 0; l < 2; l++ ) {
 							def.fog_stage = l; // fogStage
+							def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING;
 							vk.dlight_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, r_dlightMode->integer != 0 ? qtrue : qfalse );
+							def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING1;
+							vk.dlight1_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, r_dlightMode->integer != 0 ? qtrue : qfalse );
 						}
 					}
 				}
@@ -2781,6 +2792,9 @@ void vk_shutdown( void )
 	qvkDestroyShaderModule(vk.device, vk.modules.light.fs[0], NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.light.fs[1], NULL);
 
+	qvkDestroyShaderModule(vk.device, vk.modules.light1.fs[0], NULL);
+	qvkDestroyShaderModule(vk.device, vk.modules.light1.fs[1], NULL);
+
 	qvkDestroyShaderModule(vk.device, vk.modules.gamma_vs, NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.gamma_fs, NULL);
 
@@ -3265,6 +3279,10 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 			vs_module = &vk.modules.light.vs_clip[0];
 			fs_module = &vk.modules.light.fs[0];
 			break;
+		case TYPE_SIGNLE_TEXTURE_LIGHTING1:
+			vs_module = &vk.modules.light.vs_clip[0];
+			fs_module = &vk.modules.light1.fs[0];
+			break;
 		case TYPE_MULTI_TEXTURE_MUL:
 		case TYPE_MULTI_TEXTURE_ADD:
 			vs_module = &vk.modules.mt_clip_vs[0];
@@ -3414,6 +3432,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 			push_attr( 4, 4, VK_FORMAT_R32G32B32A32_SFLOAT );
 				break;
 		case TYPE_SIGNLE_TEXTURE_LIGHTING:
+		case TYPE_SIGNLE_TEXTURE_LIGHTING1:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_bind( 2, sizeof( vec2_t ) );					// st0 array
 			push_bind( 4, sizeof( vec4_t ) );					// normals array

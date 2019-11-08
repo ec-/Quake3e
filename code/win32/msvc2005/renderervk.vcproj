@@ -452,6 +452,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\renderervk\shaders\spirv\light1_fog_frag.c"
+					>
+				</File>
+				<File
+					RelativePath="..\..\renderervk\shaders\spirv\light1_frag.c"
+					>
+				</File>
+				<File
 					RelativePath="..\..\renderervk\shaders\spirv\light_clip_fog_vert.c"
 					>
 				</File>
