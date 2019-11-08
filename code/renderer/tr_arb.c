@@ -264,11 +264,12 @@ void ARB_SetupLightParams( void )
 	fogPass = ( tess.fogNum && tess.shader->fogPass );
 	fp = NULL;
 
+	vertexProgram = DLIGHT_VERTEX;
+
 	if ( dl->linear ) {
-		vertexProgram = DLIGHT_LINEAR_VERTEX;
 		fragmentProgram = DLIGHT_LINEAR_FRAGMENT;
 	} else {
-		vertexProgram = DLIGHT_VERTEX;
+		
 		fragmentProgram = DLIGHT_FRAGMENT;
 	}
 
@@ -292,16 +293,13 @@ void ARB_SetupLightParams( void )
 	{
 		vec3_t ab;
 		VectorSubtract( dl->transformed2, dl->transformed, ab );
-		qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 2, dl->transformed[0], dl->transformed[1], dl->transformed[2], 0 );
-		qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 3, dl->transformed2[0], dl->transformed2[1], dl->transformed2[2], 0 );
+		//qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 2, dl->transformed[0], dl->transformed[1], dl->transformed[2], 0 );
+		//qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 3, dl->transformed2[0], dl->transformed2[1], dl->transformed2[2], 0 );
 		qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 4, ab[0], ab[1], ab[2], 1.0f / DotProduct( ab, ab ) );
-	}
-	else
-	{
-		qglProgramLocalParameter4fARB( GL_VERTEX_PROGRAM_ARB, 1, dl->transformed[0], dl->transformed[1], dl->transformed[2], 0 );
 	}
 
 	qglProgramLocalParameter4fARB( GL_VERTEX_PROGRAM_ARB, 0, backEnd.or.viewOrigin[0], backEnd.or.viewOrigin[1], backEnd.or.viewOrigin[2], 0 );
+	qglProgramLocalParameter4fARB( GL_VERTEX_PROGRAM_ARB, 1, dl->transformed[0], dl->transformed[1], dl->transformed[2], 0 );
 
 	if ( fogPass )
 	{
@@ -445,23 +443,7 @@ static const char *dlightVP = {
 	"OUTPUT ev = result.texcoord[2]; \n" // 2
 	"OUTPUT n = result.texcoord[3]; \n"  // 3
 	"MOV result.texcoord[0], vertex.texcoord; \n" // 0
-	"MOV n, vertex.normal; \n"
-	"SUB ev, posEye, vertex.position; \n"
 	"SUB lv, posLight, vertex.position; \n"
-	"%s" // fog shader if needed
-	"END \n"
-};
-
-
-static const char *dlightVP_linear = {
-	"!!ARBvp1.0 \n"
-	"OPTION ARB_position_invariant; \n"
-	"PARAM posEye = program.local[0]; \n"
-	"OUTPUT fp = result.texcoord[1]; \n"
-	"OUTPUT ev = result.texcoord[2]; \n"
-	"OUTPUT n = result.texcoord[3]; \n"
-	"MOV result.texcoord[0], vertex.texcoord; \n" // 0
-	"MOV fp, vertex.position; \n"
 	"SUB ev, posEye, vertex.position; \n"
 	"MOV n, vertex.normal; \n"
 	"%s" // fog shader if needed
@@ -469,35 +451,37 @@ static const char *dlightVP_linear = {
 };
 
 
-static const char *ARB_BuildLinearDlightFP( char *program, qboolean fog )
+static const char *ARB_BuildDlightFP( char *program, qboolean fog, qboolean linear )
 {
 	program[0] = '\0';
 	strcat( program,
-	
 	"!!ARBfp1.0 \n"
 	"OPTION ARB_precision_hint_fastest; \n"
 	"PARAM lightRGB = program.local[0]; \n"
 	"PARAM lightRange2recip = program.local[1]; \n"
-	"PARAM lightOrigin = program.local[2]; \n"
-	"PARAM lightOrigin2 = program.local[3]; \n"
-	"PARAM lightVector = program.local[4]; \n"
-	//"PARAM fogColor = program.local[5]; \n" // fog color
+	//"PARAM fogColor = program.local[5]; \n" // fogColor
+	"TEMP base, tmp; \n"
+	"TEX base, fragment.texcoord[0], texture[0], 2D; \n" );
 
-	"TEMP base; \n"
-	"TEX base, fragment.texcoord[0], texture[0], 2D; \n"
-	"ATTRIB fragmentPos = fragment.texcoord[1]; \n"
-	"ATTRIB dnEV = fragment.texcoord[2]; \n"
-	"ATTRIB n = fragment.texcoord[3]; \n"
+	if ( linear ) {
+		strcat( program,
+		"PARAM lightVector = program.local[4]; \n"
+		"ATTRIB LV = fragment.texcoord[1]; \n"
+		"TEMP dnLV; \n"
+		// project fragment on light vector
+		"DP3 tmp.w, -LV, lightVector; \n"
+		"MUL_SAT tmp.x, tmp.w, lightVector.w; \n"
+		// calculate light vector from projection point
+		"MAD dnLV, lightVector, tmp.x, LV; \n"
+		);
+	} else {
+		strcat( program, "ATTRIB dnLV = fragment.texcoord[1]; \n" );
+	}
 
-	// project fragment on light vector
-	"TEMP dnLV, tmp; \n"
-	"SUB tmp, fragmentPos, lightOrigin; \n"
-	"DP3 tmp.w, tmp, lightVector; \n"
-	"MUL_SAT tmp.x, tmp.w, lightVector.w; \n"
-	"MAD dnLV, lightVector, tmp.x, lightOrigin; \n"
-	// calculate light vector from projection point
-	"SUB dnLV, dnLV, fragmentPos; \n"
-		
+	strcat( program,
+	"ATTRIB dnEV = fragment.texcoord[2]; \n" // 2
+	"ATTRIB n = fragment.texcoord[3]; \n"    // 3
+	
 	// normalize light vector
 	"TEMP lv; \n"
 	"DP3 tmp.w, dnLV, dnLV; \n"
@@ -532,9 +516,7 @@ static const char *ARB_BuildLinearDlightFP( char *program, qboolean fog )
 	// modulate specular strength
 	"DP3_SAT tmp.w, n, tmp; \n"
 	"POW tmp.w, tmp.w, specEXP.w; \n"
-	"TEMP spec; \n"
-	);
-
+	"TEMP spec; \n" );
 	if ( r_dlightSpecColor->value > 0 ) {
 		// by constant
 		strcat( program, "MUL spec, specRGB, tmp.w; \n" );
@@ -568,92 +550,6 @@ static const char *ARB_BuildLinearDlightFP( char *program, qboolean fog )
 	"MAX bump.w, bump.w, tmp.w; \n"
 #endif
 
-	"MAD base, base, bump.w, spec; \n" );
-
-	if ( fog ) {
-		strcat( program,
-		"TEMP fog; \n"
-		"TEX fog, fragment.texcoord[4], texture[1], 2D; \n" // fog texture
-		//"MUL fog, fog, fogColor; \n"
-		// blend with fog
-		//"LRP_SAT base, fog.a, fog, base; \n"
-		// modulate by inverted fog alpha
-		"SUB fog.a, {1.0}, fog.a; \n"
-		"MUL base, base, fog.a; \n" );
-	}
-
-	strcat( program,
-	"MUL_SAT result.color, base, light; \n"
-	"END \n" );
-
-	return program;
-};
-
-
-static const char *ARB_BuildDlightFP( char *program, qboolean fog )
-{
-	program[0] = '\0';
-	strcat( program,
-	"!!ARBfp1.0 \n"
-	"OPTION ARB_precision_hint_fastest; \n"
-	"PARAM lightRGB = program.local[0]; \n"
-	"PARAM lightRange2recip = program.local[1]; \n"
-	//"PARAM fogColor = program.local[5]; \n" // fogColor
-	"TEMP base; \n"
-	"TEX base, fragment.texcoord[0], texture[0], 2D; \n"
-	"ATTRIB dnLV = fragment.texcoord[1]; \n" // 1
-	"ATTRIB dnEV = fragment.texcoord[2]; \n" // 2
-	"ATTRIB n = fragment.texcoord[3]; \n"    // 3
-	
-	// normalize light vector
-	"TEMP tmp, lv; \n"
-	"DP3 tmp.w, dnLV, dnLV; \n"
-	"RSQ lv.w, tmp.w; \n"
-	"MUL lv.xyz, dnLV, lv.w; \n"
-
-	// calculate light intensity
-	"TEMP light; \n"
-	"MUL tmp.x, tmp.w, lightRange2recip; \n"
-	"SUB tmp.x, {1.0}, tmp.x; \n"
-	"MUL light, lightRGB, tmp.x; \n" // light.rgb
-	);
-
-	if ( r_dlightSpecColor->value > 0 ) {
-		strcat( program, va( "PARAM specRGB = %1.2f; \n", r_dlightSpecColor->value ) );
-	}
-
-	strcat( program, va( "PARAM specEXP = %1.2f; \n", r_dlightSpecPower->value ) );
-
-	strcat( program,
-	// normalize eye vector
-	"TEMP ev; \n"
-	"DP3 ev.w, dnEV, dnEV; \n"
-	"RSQ ev.w, ev.w; \n"
-	"MUL ev.xyz, dnEV, ev.w; \n"
-
-	// normalize (eye + light) vector
-	"ADD tmp, lv, ev; \n"
-	"DP3 tmp.w, tmp, tmp; \n"
-	"RSQ tmp.w, tmp.w; \n"
-	"MUL tmp.xyz, tmp, tmp.w; \n"
-
-	// modulate specular strength
-	"DP3_SAT tmp.w, n, tmp; \n"
-	"POW tmp.w, tmp.w, specEXP.w; \n"
-	"TEMP spec; \n" );
-	if ( r_dlightSpecColor->value > 0 ) {
-		// by constant
-		strcat( program, "MUL spec, specRGB, tmp.w; \n" );
-	} else {
-		// by texture
-		strcat( program, va( "MUL tmp.w, tmp.w, %1.2f; \n", -r_dlightSpecColor->value ) );
-		strcat( program, "MUL spec, base, tmp.w; \n" );
-	}
-
-	strcat( program,
-	// bump color
-	"TEMP bump; \n"
-	"DP3_SAT bump.w, n, lv; \n"
 	"MAD base, base, bump.w, spec; \n" );
 
 	if ( fog ) {
@@ -1088,24 +984,17 @@ qboolean ARB_UpdatePrograms( void )
 	if ( !ARB_CompileProgram( Vertex, va( dlightVP, fogOutVPCode ), programs[ DLIGHT_VERTEX_FOG_OUT ] ) )
 		return qfalse;
 
-	program = ARB_BuildDlightFP( buf, qfalse );
+	program = ARB_BuildDlightFP( buf, qfalse, qfalse );
 	if ( !ARB_CompileProgram( Fragment, program, programs[ DLIGHT_FRAGMENT ] ) )
 		return qfalse;
-	program = ARB_BuildDlightFP( buf, qtrue );
+	program = ARB_BuildDlightFP( buf, qtrue, qfalse );
 	if ( !ARB_CompileProgram( Fragment, program, programs[ DLIGHT_FRAGMENT_FOG ] ) )
 		return qfalse;
 
-	if ( !ARB_CompileProgram( Vertex, va( dlightVP_linear, "" ), programs[ DLIGHT_LINEAR_VERTEX ] ) )
-		return qfalse;
-	if ( !ARB_CompileProgram( Vertex, va( dlightVP_linear, fogInVPCode ), programs[ DLIGHT_LINEAR_VERTEX_FOG_IN ] ) )
-		return qfalse;
-	if ( !ARB_CompileProgram( Vertex, va( dlightVP_linear, fogOutVPCode ), programs[ DLIGHT_LINEAR_VERTEX_FOG_OUT ] ) )
-		return qfalse;
-
-	program = ARB_BuildLinearDlightFP( buf, qfalse );
+	program = ARB_BuildDlightFP( buf, qfalse, qtrue );
 	if ( !ARB_CompileProgram( Fragment, program, programs[ DLIGHT_LINEAR_FRAGMENT ] ) )
 		return qfalse;
-	program = ARB_BuildLinearDlightFP( buf, qtrue );
+	program = ARB_BuildDlightFP( buf, qtrue, qtrue );
 	if ( !ARB_CompileProgram( Fragment, program, programs[ DLIGHT_LINEAR_FRAGMENT_FOG ] ) )
 		return qfalse;
 #endif // USE_PMLIGHT

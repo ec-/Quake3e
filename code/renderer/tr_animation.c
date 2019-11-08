@@ -188,22 +188,22 @@ void R_MDRAddAnimSurfaces( trRefEntity_t *ent ) {
 	qboolean	personalModel;
 
 	header = (mdrHeader_t *) tr.currentModel->modelData;
-	
+
 	personalModel = (ent->e.renderfx & RF_THIRD_PERSON) && !tr.viewParms.isPortal;
-	
+
 	if ( ent->e.renderfx & RF_WRAP_FRAMES )
 	{
 		ent->e.frame %= header->numFrames;
 		ent->e.oldframe %= header->numFrames;
-	}	
-	
+	}
+
 	//
 	// Validate the frames so there is no chance of a crash.
 	// This will write directly into the entity structure, so
 	// when the surfaces are rendered, they don't need to be
 	// range checked again.
 	//
-	if ((ent->e.frame >= header->numFrames) 
+	if ((ent->e.frame >= header->numFrames)
 		|| (ent->e.frame < 0)
 		|| (ent->e.oldframe >= header->numFrames)
 		|| (ent->e.oldframe < 0) )
@@ -221,7 +221,7 @@ void R_MDRAddAnimSurfaces( trRefEntity_t *ent ) {
 	cull = R_MDRCullModel (header, ent);
 	if ( cull == CULL_OUT ) {
 		return;
-	}	
+	}
 
 	// figure out the current LOD of the model we're rendering, and set the lod pointer respectively.
 	lodnum = R_ComputeLOD(ent);
