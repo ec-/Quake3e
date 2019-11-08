@@ -141,20 +141,27 @@ Updates window center and clip region
 */
 void IN_UpdateWindow( RECT *window_rect, qboolean updateClipRegion )
 {
-	RECT		rect, rc;
+	RECT rect;
 
 	if ( !window_rect ) 
 		window_rect = &rect;
 
-	if ( !GetWindowRect( g_wv.hWnd, window_rect ) )
-		return;
-
-	if ( GetClientRect( g_wv.hWnd, &rc ) ) {
-		client_center.x = rc.right / 2;
-		client_center.y = rc.bottom / 2;
+	if ( GetClientRect( g_wv.hWnd, window_rect ) ) {
+		POINT pos;
+		client_center.x = window_rect->right / 2;
+		client_center.y = window_rect->bottom / 2;
 		window_center = client_center;
 		ClientToScreen( g_wv.hWnd, &window_center );
+		pos.x = window_rect->left;
+		pos.y = window_rect->top;
+		ClientToScreen( g_wv.hWnd, &pos );
+		window_rect->left = pos.x + 1;
+		window_rect->top = pos.y + 1;
+		window_rect->right += pos.x - 1;
+		window_rect->bottom += pos.y - 1;
 	} else {
+		if ( !GetWindowRect( g_wv.hWnd, window_rect ) )
+			return;
 		window_center.x = ( window_rect->right + window_rect->left )/2;
 		window_center.y = ( window_rect->top + window_rect->bottom )/2;
 		client_center = window_center;
