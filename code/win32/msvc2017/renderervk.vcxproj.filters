@@ -189,6 +189,9 @@
     <ClCompile Include="..\..\renderervk\shaders\spirv\light1_frag.c">
       <Filter>Source Files\Shaders</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\renderervk\shaders\spirv\st_df_frag.c">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\renderervk\iqm.h">
