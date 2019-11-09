@@ -41,6 +41,9 @@ typedef struct
 	int			desktopHeight;
 	int			desktopX;		// can be negative
 	int			desktopY;		// can be negative
+
+	RECT		workArea;
+
 	HMONITOR	hMonitor;		// current monitor
 	TCHAR		displayName[CCHDEVICENAME];
 	qboolean	gammaSet;

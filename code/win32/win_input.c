@@ -148,17 +148,34 @@ void IN_UpdateWindow( RECT *window_rect, qboolean updateClipRegion )
 
 	if ( GetClientRect( g_wv.hWnd, window_rect ) ) {
 		POINT pos;
-		client_center.x = window_rect->right / 2;
-		client_center.y = window_rect->bottom / 2;
-		window_center = client_center;
-		ClientToScreen( g_wv.hWnd, &window_center );
+		int sx = 0, sy = 0;
+
 		pos.x = window_rect->left;
 		pos.y = window_rect->top;
 		ClientToScreen( g_wv.hWnd, &pos );
-		window_rect->left = pos.x + 1;
-		window_rect->top = pos.y + 1;
-		window_rect->right += pos.x - 1;
-		window_rect->bottom += pos.y - 1;
+		window_rect->left = pos.x;
+		window_rect->top = pos.y;
+		window_rect->right += pos.x;
+		window_rect->bottom += pos.y;
+
+		// do not overlap with taskbar
+		if ( window_rect->bottom > glw_state.workArea.bottom )
+			window_rect->bottom = glw_state.workArea.bottom;
+		// ... and with 90 degrees clockwise rotation
+		if ( window_rect->right > glw_state.workArea.right )
+			window_rect->right = glw_state.workArea.right;
+
+		if ( window_rect->top < glw_state.workArea.top )
+			sy = glw_state.workArea.top - window_rect->top;
+
+		if ( window_rect->left < glw_state.workArea.left )
+			sx = glw_state.workArea.left - window_rect->left;
+
+		client_center.x = (window_rect->right - window_rect->left + sx) / 2;
+		client_center.y = (window_rect->bottom - window_rect->top + sy) / 2;
+		window_center = client_center;
+		ClientToScreen( g_wv.hWnd, &window_center );
+
 	} else {
 		if ( !GetWindowRect( g_wv.hWnd, window_rect ) )
 			return;

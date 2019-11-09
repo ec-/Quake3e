@@ -945,6 +945,9 @@ void UpdateMonitorInfo( const RECT *target )
 					re.SetColorMappings();
 				}
 		}
+
+		glw_state.workArea = mInfo.rcWork;
+
 	} else {
 		// no information about current monitor, get desktop settings
 		HDC hDC = GetDC( GetDesktopWindow() );
@@ -953,7 +956,10 @@ void UpdateMonitorInfo( const RECT *target )
 		glw_state.desktopWidth = GetDeviceCaps( hDC, HORZRES );
 		glw_state.desktopHeight = GetDeviceCaps( hDC, VERTRES );
 		ReleaseDC( GetDesktopWindow(), hDC );
+
 		glw_state.displayName[0] = '\0';
+
+		SystemParametersInfo( SPI_GETWORKAREA, 0, &glw_state.workArea, 0 );
 	}
 }
 
