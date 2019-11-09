@@ -59,14 +59,10 @@ void main() {
 	float diffuse = dot(N, nL);
 
 	// specular reflection term (N.H)
-	float specFactor = abs(dot(N, normalize(nL + nV))); // --- 
-
-	// make sure light and eye vectors are on the same plane side
-	if ( diffuse * dot(N, nV) <= 0 )
-		discard;
+	float specFactor = dot(N, normalize(nL + nV));
 
 	//float spec = pow(specFactor, 8.0) * 0.25;
 	vec4 spec = vec4(pow(specFactor, 10.0)*0.25) * base * 0.8;
 
-	out_color = (base * vec4(abs(diffuse)) + vec4(spec)) * vec4(intens, 1.0);
+	out_color = (base * vec4(diffuse) + spec) * vec4(intens, 1.0);
 }
