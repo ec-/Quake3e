@@ -1545,6 +1545,8 @@ static const void *RB_FinishBloom( const void *data )
 {
 	const finishBloomCommand_t *cmd = data;
 
+	RB_EndSurface();
+
 	backEnd.drawConsole = qtrue;
 
 	return (const void *)(cmd + 1);
@@ -1556,9 +1558,7 @@ static const void *RB_SwapBuffers( const void *data ) {
 	const swapBuffersCommand_t	*cmd;
 
 	// finish any 2D drawing if needed
-	if ( tess.numIndexes ) {
-		RB_EndSurface();
-	}
+	RB_EndSurface();
 
 	cmd = (const swapBuffersCommand_t *)data;
 

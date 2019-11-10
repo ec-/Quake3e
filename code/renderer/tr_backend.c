@@ -1372,6 +1372,8 @@ static const void *RB_FinishBloom( const void *data )
 {
 	const finishBloomCommand_t *cmd = data;
 
+	RB_EndSurface();
+
 	if ( fboEnabled )
 	{
 		// let's always render console with the same quality
@@ -1405,10 +1407,7 @@ static const void *RB_SwapBuffers( const void *data ) {
 	const swapBuffersCommand_t	*cmd;
 
 	// finish any 2D drawing if needed
-	if ( tess.numIndexes ) {
-		RB_EndSurface();
-	}
-
+	RB_EndSurface();
 	VBO_UnBind();
 
 	// texture swapping test

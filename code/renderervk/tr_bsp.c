@@ -406,12 +406,18 @@ static void R_LoadLightmaps( const lump_t *l ) {
 	int			i;
 	float		maxIntensity = 0;
 
+	tr.numLightmaps = 0;
 	tr.lightmapScale[0] = tr.lightmapScale[1] = 1.0;
 	lightmapWidth = LIGHTMAP_SIZE;
 	lightmapHeight = LIGHTMAP_SIZE;
 	lightmapCountX = 1;
 	lightmapCountY = 1;
 	lightmapMod = 1;
+
+	// if we are in r_vertexLight mode, we don't need the lightmaps at all
+	if ( r_vertexLight->integer || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
+		return;
+	}
 
 	if ( r_mergeLightmaps->integer ) {
 		R_LoadMergedLightmaps( l, image ); // reuse stack space
@@ -430,11 +436,6 @@ static void R_LoadLightmaps( const lump_t *l ) {
 		//FIXME: HACK: maps with only one lightmap turn up fullbright for some reason.
 		//this avoids this, but isn't the correct solution.
 		tr.numLightmaps++;
-	}
-
-	// if we are in r_vertexLight mode, we don't need the lightmaps at all
-	if ( ( r_vertexLight->integer && tr.vertexLightingAllowed ) || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
-		return;
 	}
 
 	// we are about to upload textures
