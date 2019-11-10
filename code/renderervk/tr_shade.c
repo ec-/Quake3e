@@ -376,6 +376,14 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 
 	shader_t *state;
 	
+#ifdef USE_VBO
+	if ( shader->isStaticShader && !shader->remappedShader ) {
+		tess.allowVBO = qtrue;
+	} else {
+		tess.allowVBO = qfalse;
+	}
+#endif
+
 	if ( shader->remappedShader ) {
 		state = shader->remappedShader;
 	} else {
@@ -392,19 +400,6 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 	tess.numVertexes = 0;
 	tess.shader = state;
 	tess.fogNum = fogNum;
-
-#ifdef USE_VBO
-	if ( (shader->isStaticShader && !shader->remappedShader) /*|| tess.dlightPass*/ ) {
-	//if ( state->isStaticShader && !tess.shader->remappedShader && !tess.dlightPass ) {
-		//if ( !tess.dlightPass && tess.fogNum && tess.shader->fogPass ) {
-		//if ( tess.fogNum && tess.shader->fogPass ) {
-		//	tess.allowVBO = tess.shader->fogCollapse;
-		//} else {
-			tess.allowVBO = qtrue;
-		//}
-	} else
-		tess.allowVBO = qfalse;
-#endif
 
 #ifdef USE_LEGACY_DLIGHTS
 	tess.dlightBits = 0;		// will be OR'd in by surface functions

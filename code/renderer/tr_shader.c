@@ -2409,6 +2409,7 @@ static void VertexLightingCollapse( void ) {
 	shaderStage_t	*bestStage;
 	int		bestImageRank;
 	int		rank;
+	qboolean vertexColors;
 
 	// if we aren't opaque, just use the first pass
 	if ( shader.sort == SS_OPAQUE ) {
@@ -2416,6 +2417,7 @@ static void VertexLightingCollapse( void ) {
 		// pick the best texture for the single pass
 		bestStage = &stages[0];
 		bestImageRank = -999999;
+		vertexColors = qfalse;
 
 		for ( stage = 0; stage < MAX_SHADER_STAGES; stage++ ) {
 			shaderStage_t *pStage = &stages[stage];
@@ -2442,6 +2444,10 @@ static void VertexLightingCollapse( void ) {
 				bestImageRank = rank;
 				bestStage = pStage;
 			}
+
+			if ( pStage->rgbGen == CGEN_EXACT_VERTEX || pStage->rgbGen == CGEN_VERTEX || pStage->rgbGen == CGEN_ONE_MINUS_VERTEX ) {
+				vertexColors = qtrue;
+			}
 		}
 
 		stages[0].bundle[0] = bestStage->bundle[0];
@@ -2450,7 +2456,11 @@ static void VertexLightingCollapse( void ) {
 		if ( shader.lightmapIndex == LIGHTMAP_NONE ) {
 			stages[0].rgbGen = CGEN_LIGHTING_DIFFUSE;
 		} else {
-			stages[0].rgbGen = CGEN_EXACT_VERTEX;
+			if ( vertexColors ) {
+				stages[0].rgbGen = CGEN_EXACT_VERTEX;
+			} else {
+				stages[0].rgbGen = CGEN_IDENTITY_LIGHTING;
+			}
 		}
 		stages[0].alphaGen = AGEN_SKIP;
 	} else {

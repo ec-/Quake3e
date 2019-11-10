@@ -192,7 +192,7 @@ static qboolean isStaticShader( shader_t *shader )
 	if ( shader->isStaticShader )
 		return qtrue;
 
-	if ( shader->isSky )
+	if ( shader->isSky || shader->remappedShader )
 		return qfalse;
 
 	if ( shader->numDeforms || shader->numUnfoggedPasses > MAX_VBO_STAGES )
