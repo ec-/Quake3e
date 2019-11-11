@@ -1009,26 +1009,6 @@ void R_ComputeTexCoords( int b, const textureBundle_t *bundle ) {
 }
 
 
-#ifdef USE_VULKAN
-static Vk_Depth_Range get_depth_range( const shaderCommands_t *input ) {
-	Vk_Depth_Range depth_range;
-
-	if ( input->shader->isSky ) {
-		if ( r_showsky->integer )
-			depth_range = DEPTH_RANGE_ZERO;
-		else
-			depth_range = DEPTH_RANGE_ONE;
-	} else if ( backEnd.currentEntity->e.renderfx & RF_DEPTHHACK ) {
-		depth_range = DEPTH_RANGE_WEAPON;
-	} else {
-		depth_range = DEPTH_RANGE_NORMAL;
-	}
-
-	return depth_range;
-}
-#endif
-
-
 /*
 ** RB_IterateStagesGeneric
 */
@@ -1044,13 +1024,10 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 	int stage;
 	
 #ifdef USE_VULKAN
-	Vk_Depth_Range depth_range;
 	vkUniform_t uniform;
 	uint32_t set_count;
 	uint32_t pipeline;
 	int fog_stage;
-
-	depth_range = get_depth_range( input );
 
 	tess_flags = input->shader->tessFlags;
 
@@ -1116,7 +1093,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 			R_BindAnimatedImage( &pStage->bundle[0] );
 
 		vk_bind_geometry_ext( tess_flags );
-		vk_draw_geometry( pipeline, set_count, depth_range, qtrue );
+		vk_draw_geometry( pipeline, set_count, tess.depthRange, qtrue );
 
 		if ( pStage->depthFragment ) {
 			switch ( backEnd.viewParms.portalView ) {
@@ -1124,7 +1101,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 				case PV_PORTAL: pipeline = pStage->vk_portal_pipeline_df; break;
 				case PV_MIRROR: pipeline = pStage->vk_mirror_pipeline_df; break;
 			}
-			vk_draw_geometry( pipeline, set_count, depth_range, qtrue );
+			vk_draw_geometry( pipeline, set_count, tess.depthRange, qtrue );
 		}
 #else
 		if (!setArraysOnce)
@@ -1341,6 +1318,7 @@ void RB_StageIteratorGeneric( void )
 #ifdef USE_FOG_COLLAPSE
 	fogCollapse = tess.fogNum && tess.shader->fogPass && tess.shader->fogCollapse;
 #endif
+
 	// call shader function
 	RB_IterateStagesGeneric( &tess, fogCollapse );
 

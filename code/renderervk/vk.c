@@ -3908,18 +3908,23 @@ static void get_viewport(VkViewport *viewport, Vk_Depth_Range depth_range) {
 	viewport->width = (float)r.extent.width;
 	viewport->height = (float)r.extent.height;
 
-	if (depth_range == DEPTH_RANGE_ZERO) {
-		viewport->minDepth = 0.0f;
-		viewport->maxDepth = 0.0f;
-	} else if (depth_range == DEPTH_RANGE_ONE) {
-		viewport->minDepth = 1.0f;
-		viewport->maxDepth = 1.0f;
-	} else if (depth_range == DEPTH_RANGE_WEAPON) {
-		viewport->minDepth = 0.0f;
-		viewport->maxDepth = 0.3f;
-	} else {
-		viewport->minDepth = 0.0f;
-		viewport->maxDepth = 1.0f;
+	switch ( depth_range ) {
+		case DEPTH_RANGE_NORMAL:
+			viewport->minDepth = 0.0f;
+			viewport->maxDepth = 1.0f;
+			break;
+		case DEPTH_RANGE_ZERO:
+			viewport->minDepth = 0.0f;
+			viewport->maxDepth = 0.0f;
+			break;
+		case DEPTH_RANGE_ONE:
+			viewport->minDepth = 1.0f;
+			viewport->maxDepth = 1.0f;
+			break;
+		case DEPTH_RANGE_WEAPON:
+			viewport->minDepth = 0.0f;
+			viewport->maxDepth = 0.3f;
+			break;
 	}
 }
 

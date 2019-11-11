@@ -796,8 +796,10 @@ void RB_DrawSun( float scale, shader_t *shader ) {
 	VectorScale( vec1, size, vec1 );
 	VectorScale( vec2, size, vec2 );
 
-#ifndef USE_VULKAN
 	// farthest depth range
+#ifdef USE_VULKAN
+	tess.depthRange = DEPTH_RANGE_ONE;
+#else
 	qglDepthRange( 1.0, 1.0 );
 #endif
 
@@ -807,8 +809,10 @@ void RB_DrawSun( float scale, shader_t *shader ) {
 
 	RB_EndSurface();
 
-#ifndef USE_VULKAN
 	// back to normal depth range
+#ifdef USE_VULKAN
+	tess.depthRange = DEPTH_RANGE_NORMAL;
+#else
 	qglDepthRange( 0.0, 1.0 );
 #endif
 }
@@ -841,7 +845,14 @@ void RB_StageIteratorSky( void ) {
 	// r_showsky will let all the sky blocks be drawn in
 	// front of everything to allow developers to see how
 	// much sky is getting sucked in
-#ifndef USE_VULKAN
+
+#ifdef USE_VULKAN
+	if ( r_showsky->integer ) {
+		tess.depthRange = DEPTH_RANGE_ZERO;
+	} else {
+		tess.depthRange = DEPTH_RANGE_ONE;
+	}
+#else
 	if ( r_showsky->integer ) {
 		qglDepthRange( 0.0, 0.0 );
 	} else {
@@ -889,8 +900,10 @@ void RB_StageIteratorSky( void ) {
 
 	// draw the inner skybox
 
-#ifndef USE_VULKAN
 	// back to normal depth range
+#ifdef USE_VULKAN
+	tess.depthRange = DEPTH_RANGE_NORMAL;
+#else
 	qglDepthRange( 0.0, 1.0 );
 #endif
 

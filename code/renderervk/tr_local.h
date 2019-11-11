@@ -1481,9 +1481,10 @@ typedef struct shaderCommands_s
 	const dlight_t* light;
 	qboolean	dlightPass;
 	qboolean	dlightUpdateParams;
+#endif
+
 #ifdef USE_VULKAN
 	Vk_Depth_Range depthRange;
-#endif
 #endif
 
 	// info extracted from current shader

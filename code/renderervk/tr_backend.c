@@ -571,7 +571,6 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 			if ( backEnd.refdef.numLitSurfs && oldShaderSort < INSERT_POINT && shader->sort >= INSERT_POINT ) {
 				//RB_BeginDrawingLitSurfs(); // no need, already setup in RB_BeginDrawingView()
 #ifdef USE_VULKAN
-				 // FIXME: depth range?
 				RB_LightingPass();
 #else
 				if ( depthRange ) {
@@ -642,9 +641,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 
 #ifdef USE_VULKAN
 			Com_Memcpy( vk_world.modelview_transform, backEnd.or.modelMatrix, 64 );
-#ifdef USE_PMLIGHT
 			tess.depthRange = depthRange ? DEPTH_RANGE_WEAPON : DEPTH_RANGE_NORMAL;
-#endif
 			vk_update_mvp( NULL );
 #else
 			qglLoadMatrixf( backEnd.or.modelMatrix );
@@ -719,6 +716,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	// go back to the world modelview matrix
 #ifdef USE_VULKAN
 	Com_Memcpy( vk_world.modelview_transform, backEnd.viewParms.world.modelMatrix, 64 );
+	tess.depthRange = DEPTH_RANGE_NORMAL;
 	//vk_update_mvp();
 #else
 	qglLoadMatrixf( backEnd.viewParms.world.modelMatrix );
@@ -954,6 +952,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 	// go back to the world modelview matrix
 #ifdef USE_VULKAN
 	Com_Memcpy( vk_world.modelview_transform, backEnd.viewParms.world.modelMatrix, 64 );
+	tess.depthRange = DEPTH_RANGE_NORMAL;
 	//vk_update_mvp();
 #else
 	qglLoadMatrixf( backEnd.viewParms.world.modelMatrix );
@@ -1230,7 +1229,6 @@ static void RB_LightingPass( void )
 
 	tess.dlightPass = qtrue;
 
-
 	for ( i = 0; i < backEnd.viewParms.num_dlights; i++ )
 	{
 		dl = &backEnd.viewParms.dlights[i];
@@ -1244,7 +1242,6 @@ static void RB_LightingPass( void )
 	tess.dlightPass = qfalse;
 
 	backEnd.viewParms.num_dlights = 0;
-	//GL_ProgramDisable();
 }
 #endif
 
@@ -1319,6 +1316,8 @@ static const void *RB_DrawBuffer( const void *data ) {
 #ifdef USE_VULKAN
 	vk_begin_frame();
 
+	tess.depthRange = DEPTH_RANGE_NORMAL;
+
 	if ( r_clear->integer ) {
 		//const float color[4] = {1, 0, 0.5, 1};
 		const float color[4] = {0, 0, 0, 1};
@@ -1335,6 +1334,7 @@ static const void *RB_DrawBuffer( const void *data ) {
 		qglClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 	}
 #endif
+
 	return (const void *)(cmd + 1);
 }
 
