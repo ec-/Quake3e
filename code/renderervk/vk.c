@@ -4386,7 +4386,7 @@ void vk_end_frame( void )
 		qvkCmdNextSubpass( vk.cmd->command_buffer, VK_SUBPASS_CONTENTS_INLINE );
 		qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.gamma_pipeline );
 		qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout_gamma, 0, 1, &vk.cmd->color_descriptor, 0, NULL );
-		qvkCmdDraw( vk.cmd->command_buffer, 3, 1, 0, 0 );
+		qvkCmdDraw( vk.cmd->command_buffer, 6, 1, 0, 0 );
 	}
 
 	qvkCmdEndRenderPass( vk.cmd->command_buffer );

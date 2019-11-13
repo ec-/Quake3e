@@ -1,10 +1,16 @@
 #version 450
 
-//out gl_PerVertex {
-//	vec4 gl_Position;
-//};
+const vec2 v[6] = vec2[6](
+	vec2(-1.0f,-1.0f),
+	vec2( 1.0f,-1.0f),
+	vec2( 1.0f, 1.0f),
+
+	vec2( 1.0f, 1.0f),
+	vec2(-1.0f, 1.0f),
+	vec2(-1.0f,-1.0f)
+);
 
 void main() {
-	gl_Position = vec4(vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2) * 2.0f - 1.0f, 0.0f, 1.0f);
+	gl_Position = vec4( v[ gl_VertexIndex ], 0.0f, 1.0f );
 }
 
