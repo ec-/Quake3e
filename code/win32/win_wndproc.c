@@ -476,12 +476,18 @@ static VOID CALLBACK WinEventProc( HWINEVENTHOOK h_WinEventHook, DWORD dwEvent, 
 {
 	if ( gw_active )
 	{
+		if ( glw_state.cdsFullscreen )// disable topmost window style
+		{
+			SetWindowPos( g_wv.hWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
+		}
 		SetForegroundWindow( hWnd );
 	}
 }
 
 #define TIMER_M 11
+#define TIMER_T 12
 static UINT uTimerM;
+static UINT uTimerT;
 
 void WIN_Minimize( void ) {
 	static int minimize = 0;
@@ -493,7 +499,8 @@ void WIN_Minimize( void ) {
 
 #ifdef FAST_MODE_SWITCH
 	// move game window to background
-	SetForegroundWindow( GetDesktopWindow() );
+	if ( gw_active )
+		SetForegroundWindow( GetDesktopWindow() );
 	// and wait some time before minimizing
 	uTimerM = SetTimer( g_wv.hWnd, TIMER_M, 50, NULL );
 #else
@@ -706,6 +713,16 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			}
 		}
 
+		// after ALT+TAB, even if we selected other window we may receive WM_ACTIVATE 1 and then WM_ACTIVATE 0
+		// if we set HWND_TOPMOST in VID_AppActivate() other window will be not visible despite obtained input focus
+		// so delay HWND_TOPMOST setup to make sure we have no such bogus activation
+		if ( gw_active && glw_state.cdsFullscreen ) {
+			if ( uTimerT ) {
+				KillTimer( g_wv.hWnd, uTimerT );
+			}
+			uTimerT = SetTimer( g_wv.hWnd, TIMER_T, 20, NULL );
+		}
+
 		SNDDMA_Activate();
 		break;
 
@@ -774,8 +791,17 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		//	return 0;
 		//}
 		if ( wParam == TIMER_M ) {
-			KillTimer( g_wv.hWnd, uTimerM );
+			KillTimer( g_wv.hWnd, uTimerM ); uTimerM = 0;
 			ShowWindow( hWnd, SW_MINIMIZE );
+			return 0;
+		}
+		if ( wParam == TIMER_T ) {
+			KillTimer( g_wv.hWnd, uTimerT ); uTimerT = 0;
+			if ( gw_active && glw_state.cdsFullscreen ) {
+				// set TOPMOST style to avoid losing input focus because of other underlying topmost windows
+				// such as on-screen keyboard
+				SetWindowPos( g_wv.hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE );
+			}
 			return 0;
 		}
 		break;
