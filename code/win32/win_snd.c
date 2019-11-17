@@ -588,6 +588,8 @@ error2:
 error1:
 	DeleteCriticalSection( &cs );
 
+	Com_Memset( &dma, 0, sizeof( dma ) );
+
 	return qfalse;
 }
 

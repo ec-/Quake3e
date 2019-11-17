@@ -306,9 +306,6 @@ void S_TransferStereo16( unsigned long *pbuf, int endtime )
 #endif
 		snd_p += snd_linear_count;
 		ls_paintedtime += (snd_linear_count>>1);
-
-		if ( CL_VideoRecording() )
-			CL_WriteAVIAudioFrame( (byte *)snd_out, snd_linear_count << 1 );
 	}
 }
 
@@ -338,7 +335,6 @@ static void S_TransferPaintBuffer( int endtime, byte *buffer )
 			paintbuffer[i].left = paintbuffer[i].right = sin((s_paintedtime+i)*0.1)*20000*256;
 	}
 
-
 	if ( dma.samplebits == 16 && dma.channels == 2 )
 	{	// optimized case
 		S_TransferStereo16( pbuf, endtime );
@@ -365,7 +361,7 @@ static void S_TransferPaintBuffer( int endtime, byte *buffer )
 				out[out_idx] = ((float) val) / 32767.0f;
 				out_idx = (out_idx + 1) & out_mask;
 			}
-		} 
+		}
 		else if (dma.samplebits == 16)
 		{
 			short *out = (short *) pbuf;
@@ -397,6 +393,20 @@ static void S_TransferPaintBuffer( int endtime, byte *buffer )
 			}
 		}
 	}
+
+	if ( CL_VideoRecording() ) {
+		count = (endtime - s_paintedtime) * dma.channels;
+		out_idx = s_paintedtime * dma.channels % dma.samples;
+		while ( count > 0 ) {
+			int n = count;
+			if ( n + out_idx > dma.samples )
+				n = dma.samples - out_idx;
+			CL_WriteAVIAudioFrame( buffer + out_idx * dma.samplebits / 8, n * dma.samplebits / 8 );
+			out_idx = (out_idx + n) % dma.samples;
+			count -= n;
+		}
+	}
+
 }
 
 
