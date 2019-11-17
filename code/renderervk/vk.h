@@ -92,7 +92,8 @@ typedef struct vkUniform_s {
 
 #define VERTEX_BUFFER_SIZE (8 * 1024 * 1024)
 
-#define NUM_COMMAND_BUFFERS 2
+#define NUM_COMMAND_BUFFERS 2	// number of command buffers / render semaphores / framebuffer sets
+#define USE_SINGLE_FBO			// use single framebuffer set for all command buffers
 
 #define MIN_SWAPCHAIN_IMAGES_IMM 2
 #define MIN_SWAPCHAIN_IMAGES_FIFO 3
@@ -186,6 +187,7 @@ typedef struct vk_tess_s {
 
 	qboolean		fog_bound;
 
+#ifndef USE_SINGLE_FBO
 	VkDescriptorSet color_descriptor;
 
 	VkImage color_image;
@@ -207,6 +209,7 @@ typedef struct vk_tess_s {
 	VkImageView msaa_image_view;
 
 	VkFramebuffer framebuffers[MAX_SWAPCHAIN_IMAGES];
+#endif
 
 } vk_tess_t;
 
@@ -247,6 +250,30 @@ typedef struct {
 	VkPipelineLayout pipeline_layout;			// default shaders
 	//VkPipelineLayout pipeline_layout_storage;	// flare test shader layout
 	VkPipelineLayout pipeline_layout_gamma;		// gamma post-processing
+
+#ifdef USE_SINGLE_FBO
+	VkDescriptorSet color_descriptor;
+
+	VkImage color_image;
+//#ifndef USE_IMAGE_POOL
+	VkDeviceMemory color_image_memory;
+//#endif
+	VkImageView color_image_view;
+
+	VkImage depth_image;
+//#ifndef USE_IMAGE_POOL
+	VkDeviceMemory depth_image_memory;
+//#endif
+	VkImageView depth_image_view;
+
+	VkImage msaa_image;
+//#ifndef USE_IMAGE_POOL
+	VkDeviceMemory msaa_image_memory;
+//#endif
+	VkImageView msaa_image_view;
+
+	VkFramebuffer framebuffers[MAX_SWAPCHAIN_IMAGES];
+#endif
 
 	vk_tess_t tess[ NUM_COMMAND_BUFFERS ], *cmd;
 	int cmd_index;
