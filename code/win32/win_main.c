@@ -669,10 +669,17 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	char con_title[ MAX_CVAR_VALUE_STRING ];
 	int xpos, ypos;
 	qboolean useXYpos;
+	HANDLE hProcess;
 
 	// should never get a previous instance in Win32
 	if ( hPrevInstance ) {
 		return 0;
+	}
+
+	// slightly boost process priority if it set to default
+	hProcess = GetCurrentProcess();
+	if ( GetPriorityClass( hProcess ) == NORMAL_PRIORITY_CLASS ) {
+		SetPriorityClass( hProcess, ABOVE_NORMAL_PRIORITY_CLASS );
 	}
 
 	SetDPIAwareness();

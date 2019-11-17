@@ -1,5 +1,8 @@
 #include "tr_local.h"
 #include "vk.h"
+#if defined (_WIN32) && !defined (NDEBUG)
+#include <windows.h> // for win32 debug callback
+#endif
 
 static int vkSamples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -608,7 +611,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugReportFlagsEXT flags
 static void create_instance( void )
 {
 #ifndef NDEBUG
-	const char* validation_layer_name = "VK_LAYER_LUNARG_standard_validation";
+	const char* validation_layer_name = "VK_LAYER_KHRONOS_validation";
 #endif
 	VkInstanceCreateInfo desc;
 	VkExtensionProperties *extension_properties;
