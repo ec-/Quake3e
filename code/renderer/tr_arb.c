@@ -491,6 +491,9 @@ static const char *ARB_BuildDlightFP( char *program, qboolean fog, qboolean line
 	"TEMP light; \n"
 	"MUL tmp.x, tmp.w, lightRGB.w; \n"
 	"SUB tmp.x, {1.0}, tmp.x; \n"
+	// discard blank fragments
+	"KIL tmp.x; \n"
+
 	"MUL light, lightRGB, tmp.x; \n" // light.rgb
 	);
 

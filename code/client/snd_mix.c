@@ -406,7 +406,6 @@ static void S_TransferPaintBuffer( int endtime, byte *buffer )
 			count -= n;
 		}
 	}
-
 }
 
 
