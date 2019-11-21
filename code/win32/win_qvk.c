@@ -100,8 +100,9 @@ qboolean VK_CreateSurface( VkInstance instance, VkSurfaceKHR *pSurface )
 ** operating systems we need to do the right thing, whatever that
 ** might be.
 */
-qboolean QVK_Init( const char *dllname )
+qboolean QVK_Init( void )
 {
+	const char *dllname = "vulkan-1.dll";
 	char libName[1024];
 #ifdef UNICODE
 	TCHAR buffer[1024];
@@ -114,8 +115,16 @@ qboolean QVK_Init( const char *dllname )
 		glw_state.VulkanLib = Sys_LoadLibrary( dllname );
 		if ( glw_state.VulkanLib == NULL )
 		{
-			Com_Printf( "...loading '%s' : " S_COLOR_YELLOW "failed\n", dllname );
-			return qfalse;
+#if idx64
+			glw_state.VulkanLib = Sys_LoadLibrary( "amdvlk64.dll" );
+#else
+			glw_state.VulkanLib = Sys_LoadLibrary( "amdvlk32.dll" );
+#endif
+			if ( glw_state.VulkanLib == NULL )
+			{
+				Com_Printf( "...loading '%s' : " S_COLOR_YELLOW "failed\n", dllname );
+				return qfalse;
+			}
 		}
 
 		// get exact loaded module name

@@ -29,9 +29,10 @@ PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR	qvkGetPhysicalDeviceSurfaceCapabil
 PFN_vkGetPhysicalDeviceSurfaceFormatsKHR		qvkGetPhysicalDeviceSurfaceFormatsKHR;
 PFN_vkGetPhysicalDeviceSurfacePresentModesKHR	qvkGetPhysicalDeviceSurfacePresentModesKHR;
 PFN_vkGetPhysicalDeviceSurfaceSupportKHR		qvkGetPhysicalDeviceSurfaceSupportKHR;
+#ifndef NDEBUG
 PFN_vkCreateDebugReportCallbackEXT				qvkCreateDebugReportCallbackEXT;
 PFN_vkDestroyDebugReportCallbackEXT				qvkDestroyDebugReportCallbackEXT;
-
+#endif
 PFN_vkAllocateCommandBuffers					qvkAllocateCommandBuffers;
 PFN_vkAllocateDescriptorSets					qvkAllocateDescriptorSets;
 PFN_vkAllocateMemory							qvkAllocateMemory;
@@ -956,13 +957,14 @@ static void init_vulkan_library( void )
 	INIT_INSTANCE_FUNCTION(vkGetPhysicalDeviceSurfaceFormatsKHR)
 	INIT_INSTANCE_FUNCTION(vkGetPhysicalDeviceSurfacePresentModesKHR)
 	INIT_INSTANCE_FUNCTION(vkGetPhysicalDeviceSurfaceSupportKHR)
+
+#ifndef NDEBUG
 	INIT_INSTANCE_FUNCTION(vkCreateDebugReportCallbackEXT)
 	INIT_INSTANCE_FUNCTION(vkDestroyDebugReportCallbackEXT)
 
 	//
 	// Create debug callback.
 	//
-#ifndef NDEBUG
 	{
 		VkDebugReportCallbackCreateInfoEXT desc;
 		desc.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;

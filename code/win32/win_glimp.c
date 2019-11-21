@@ -76,7 +76,7 @@ static qboolean s_classRegistered = qfalse;
 qboolean QGL_Init( const char *dllname );
 void     QGL_Shutdown( qboolean unloadDLL );
 
-qboolean QVK_Init( const char *dllname );
+qboolean QVK_Init( void );
 void     QVK_Shutdown( qboolean unloadDLL );
 
 //
@@ -1249,12 +1249,12 @@ fail:
 }
 
 
-static qboolean GLW_LoadVulkan( const char *drivername )
+static qboolean GLW_LoadVulkan( void )
 {
 	//
 	// load the driver and bind our function pointers to it
 	// 
-	if ( QVK_Init( drivername ) )
+	if ( QVK_Init() )
 	{
 		qboolean cdsFullscreen = (r_fullscreen->integer != 0);
 		// create the window and set up the context
@@ -1333,7 +1333,7 @@ static qboolean GLW_StartVulkan( void )
 	//
 	// load and initialize Vulkan driver
 	//
-	if ( !GLW_LoadVulkan( "vulkan-1.dll" ) ) {
+	if ( !GLW_LoadVulkan() ) {
 		Com_Error( ERR_FATAL, "GLW_StartVulkan() - could not load Vulkan subsystem\n" );
 		return qfalse;
 	}
