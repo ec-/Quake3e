@@ -2445,7 +2445,7 @@ static void VertexLightingCollapse( void ) {
 				bestStage = pStage;
 			}
 
-			if ( pStage->rgbGen == CGEN_EXACT_VERTEX || pStage->rgbGen == CGEN_VERTEX || pStage->rgbGen == CGEN_ONE_MINUS_VERTEX ) {
+			if ( pStage->rgbGen == CGEN_EXACT_VERTEX || pStage->rgbGen == CGEN_VERTEX || pStage->rgbGen == CGEN_ONE_MINUS_VERTEX || pStage->bundle[0].tcGen == TCGEN_LIGHTMAP ) {
 				vertexColors = qtrue;
 			}
 		}
