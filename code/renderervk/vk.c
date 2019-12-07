@@ -2376,7 +2376,7 @@ static void vk_set_render_scale( void )
 {
 	int scaleMode;
 
-	if ( r_fbo->integer != 2 )
+	if ( r_fbo->integer == 0 )
 		return;
 
 	if ( vk.windowWidth != glConfig.vidWidth || vk.windowHeight != glConfig.vidHeight )
@@ -2533,7 +2533,7 @@ void vk_initialize( void )
 	} else if ( props.vendorID == 0x10DE ) {
 #ifdef _WIN32
 		// https://github.com/SaschaWillems/Vulkan/issues/493
-		// don't bother implementing offscreen rendering for now
+		// we can't render to offscreen presentation surfaces on nvidia
 		vk.offscreenRender = qfalse;
 #endif
 		vendor_name = "NVIDIA";
