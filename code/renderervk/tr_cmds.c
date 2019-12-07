@@ -93,7 +93,7 @@ static void R_IssueRenderCommands( void ) {
 			return; // or throttled on demand
 	} else {
 #ifdef USE_VULKAN
-		if ( !vk.offscreenRender && ri.CL_IsMinimized() ) {
+		if ( ri.CL_IsMinimized() && !RE_CanMinimize() ) {
 			backEnd.screenshotMask = 0;
 			return;
 		}
@@ -481,10 +481,10 @@ void RE_FinishBloom( void )
 qboolean RE_CanMinimize( void )
 {
 #ifdef USE_VULKAN
-	return vk.offscreenRender;
-#else
-	return qfalse;
+	if ( vk.fboActive || vk.offscreenRender )
+		return qtrue;
 #endif
+	return qfalse;
 }
 
 

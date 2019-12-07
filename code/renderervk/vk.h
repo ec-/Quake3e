@@ -66,7 +66,6 @@ typedef struct {
 	Vk_Shadow_Phase shadow_phase;
 	int fog_stage; // off, fog-in / fog-out
 	int line_width;
-	qboolean gamma;
 } Vk_Pipeline_Def;
 
 typedef struct VK_Pipeline {
@@ -209,6 +208,7 @@ typedef struct vk_tess_s {
 	VkImageView msaa_image_view;
 
 	VkFramebuffer framebuffers[MAX_SWAPCHAIN_IMAGES];
+	VkFramebuffer framebuffers2[MAX_SWAPCHAIN_IMAGES];
 #endif
 
 } vk_tess_t;
@@ -240,12 +240,12 @@ typedef struct {
 #endif
 
 	VkRenderPass render_pass;
+	VkRenderPass render_pass2;
 
 	VkDescriptorPool descriptor_pool;
 	VkDescriptorSetLayout set_layout_sampler;	// combined image sampler
 	VkDescriptorSetLayout set_layout_uniform;	// dynamic uniform buffer
-	VkDescriptorSetLayout set_layout_storage;	// color input attachment
-	VkDescriptorSetLayout set_layout_input;		// color input attachment
+	VkDescriptorSetLayout set_layout_storage;	// feedback buffer
 
 	VkPipelineLayout pipeline_layout;			// default shaders
 	//VkPipelineLayout pipeline_layout_storage;	// flare test shader layout
@@ -273,6 +273,7 @@ typedef struct {
 	VkImageView msaa_image_view;
 
 	VkFramebuffer framebuffers[MAX_SWAPCHAIN_IMAGES];
+	VkFramebuffer framebuffers2[MAX_SWAPCHAIN_IMAGES];
 #endif
 
 	vk_tess_t tess[ NUM_COMMAND_BUFFERS ], *cmd;
@@ -412,6 +413,13 @@ typedef struct {
 	qboolean msaaActive;
 
 	qboolean offscreenRender;
+
+	qboolean windowAdjusted;
+	int		windowWidth;
+	int		windowHeight;
+	int		blitX0;
+	int		blitY0;
+	int		blitFilter;
 
 } Vk_Instance;
 

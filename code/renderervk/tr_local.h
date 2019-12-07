@@ -1225,6 +1225,9 @@ extern cvar_t	*r_fbo;
 extern cvar_t	*r_hdr;
 extern cvar_t	*r_ext_multisample;
 extern cvar_t	*r_ext_alpha_to_coverage;
+extern cvar_t	*r_renderWidth;
+extern cvar_t	*r_renderHeight;
+extern cvar_t	*r_renderScale;
 #endif
 
 extern cvar_t	*r_dlightBacks;			// dlight non-facing surfaces for continuity

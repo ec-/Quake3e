@@ -1,6 +1,8 @@
 #version 450
 
-layout(input_attachment_index = 0, set = 0, binding = 0) uniform subpassInput in_color;
+layout(set = 0, binding = 0) uniform sampler2D texture0;
+
+layout(location = 0) in vec2 frag_tex_coord;
 
 layout(location = 0) out vec4 out_color;
 
@@ -11,7 +13,7 @@ layout(constant_id = 2) const float greyscale = 0.0;
 const vec3 sRGB = { 0.2126, 0.7152, 0.0722 };
 
 void main() {
-	vec3 base = subpassLoad(in_color).rgb;
+	vec3 base = texture(texture0, frag_tex_coord).rgb;
 
 	if ( greyscale == 1 )
 	{

@@ -76,6 +76,9 @@ cvar_t	*r_vbo;
 #endif
 cvar_t	*r_fbo;
 cvar_t	*r_hdr;
+cvar_t	*r_renderWidth;
+cvar_t	*r_renderHeight;
+cvar_t	*r_renderScale;
 #endif
 
 cvar_t	*r_dlightBacks;
@@ -475,6 +478,8 @@ static void InitOpenGL( void )
 		// This function is responsible for initializing a valid Vulkan subsystem.
 		ri.VKimp_Init( &glConfig );
 
+		ri.CL_SetScaling( 1.0, glConfig.vidWidth, glConfig.vidHeight );
+
 		vk_initialize();
 #else
 		const char *err;
@@ -510,8 +515,9 @@ static void InitOpenGL( void )
 
 		if ( glConfig.numTextureUnits && max_bind_units > 0 )
 			glConfig.numTextureUnits = max_bind_units;
-#endif
+
 		ri.CL_SetScaling( 1.0, glConfig.vidWidth, glConfig.vidHeight );
+#endif
 
 		glConfig.deviceSupportsGamma = qfalse;
 
@@ -1594,6 +1600,20 @@ static void R_Register( void )
 
 	r_ext_alpha_to_coverage = ri.Cvar_Get( "r_ext_alpha_to_coverage", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_ext_alpha_to_coverage, "0", "1", CV_INTEGER );
+
+	r_renderWidth = ri.Cvar_Get( "r_renderWidth", "800", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_renderHeight = ri.Cvar_Get( "r_renderHeight", "600", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_renderWidth, "96", NULL, CV_INTEGER );
+	ri.Cvar_CheckRange( r_renderHeight, "72", NULL, CV_INTEGER );
+
+	r_renderScale = ri.Cvar_Get( "r_renderScale", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_renderScale, "0", "4", CV_INTEGER );
+	ri.Cvar_SetDescription( r_renderScale, "Scaling mode to be used with custom render resolution:\n"
+		" 0 - disabled\n"
+		" 1 - nearest filtering, stretch to full size\n"
+		" 2 - nearest filtering, preserve aspect ratio (black bars on sides)\n"
+		" 3 - linear filtering, stretch to full size\n"
+		" 4 - linear filtering, preserve aspect ratio (black bars on sides)\n" );
 #endif
 }
 

@@ -1285,9 +1285,7 @@ static const void *RB_DrawSurfs( const void *data ) {
 	RB_ShadowFinish();
 
 	// add light flares on lights that aren't obscured
-//#ifndef USE_VULKAN
 	RB_RenderFlares();
-//#endif
 
 #ifdef USE_PMLIGHT
 	if ( backEnd.refdef.numLitSurfs ) {
