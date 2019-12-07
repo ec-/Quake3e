@@ -1415,11 +1415,7 @@ static void * QDECL VM_LoadDll( const char *name, dllSyscall_t *entryPoint, dllS
 		gamedir = Cvar_VariableString( "fs_basegame" );
 	}
 
-#if id386 && !defined(_WIN32)
-	Com_sprintf( filename, sizeof( filename ), "%s/%s" "i386" DLL_EXT, gamedir, name );
-#else
-	Com_sprintf( filename, sizeof( filename ), "%s/%s" ARCH_STRING DLL_EXT, gamedir, name );
-#endif
+	Com_sprintf( filename, sizeof( filename ), "%s%c%s" ARCH_STRING DLL_EXT, gamedir, PATH_SEP, name );
 
 	libHandle = FS_LoadLibrary( filename );
 
