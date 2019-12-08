@@ -1257,13 +1257,16 @@ void vk_init_buffers( void )
 	
 			// update descriptor set
 			{
-
 				VkDescriptorImageInfo info;
 				VkWriteDescriptorSet desc;
 				Vk_Sampler_Def sd;
 
+				Com_Memset( &sd, 0, sizeof( sd ) );
 				sd.gl_mag_filter = sd.gl_min_filter = vk.blitFilter;
 				sd.address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+				sd.max_lod_1_0 = qtrue;
+				sd.noAnisotropy = qtrue;
+
 				info.sampler = vk_find_sampler( &sd );
 				info.imageView = vk.tess[i].color_image_view;
 				info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -1298,13 +1301,16 @@ void vk_init_buffers( void )
 	
 		// update descriptor set
 		{
-
 			VkDescriptorImageInfo info;
 			VkWriteDescriptorSet desc;
 			Vk_Sampler_Def sd;
 
+			Com_Memset( &sd, 0, sizeof( sd ) );
 			sd.gl_mag_filter = sd.gl_min_filter = vk.blitFilter;
 			sd.address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			sd.max_lod_1_0 = qtrue;
+			sd.noAnisotropy = qtrue;
+
 			info.sampler = vk_find_sampler( &sd );
 			info.imageView = vk.color_image_view;
 			info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -3928,7 +3934,7 @@ VkPipeline vk_gen_pipeline( uint32_t index ) {
 }
 
 
-VkSampler vk_find_sampler(const Vk_Sampler_Def *def) {
+VkSampler vk_find_sampler( const Vk_Sampler_Def *def ) {
 	VkSamplerAddressMode address_mode;
 	VkSamplerCreateInfo desc;
 	VkSampler sampler;
@@ -3999,15 +4005,20 @@ VkSampler vk_find_sampler(const Vk_Sampler_Def *def) {
 	desc.addressModeW = address_mode;
 	desc.mipLodBias = 0.0f;
 
-	desc.anisotropyEnable = (r_ext_texture_filter_anisotropic->integer && vk.samplerAnisotropy) ? VK_TRUE : VK_FALSE;
-	if ( desc.anisotropyEnable ) {
-		desc.maxAnisotropy = MIN( r_ext_max_anisotropy->integer, vk.maxAnisotropy );
+	if ( def->noAnisotropy ) {
+		desc.anisotropyEnable = VK_FALSE;
+		desc.maxAnisotropy = 1.0f;
+	} else {
+		desc.anisotropyEnable = (r_ext_texture_filter_anisotropic->integer && vk.samplerAnisotropy) ? VK_TRUE : VK_FALSE;
+		if ( desc.anisotropyEnable ) {
+			desc.maxAnisotropy = MIN( r_ext_max_anisotropy->integer, vk.maxAnisotropy );
+		}
 	}
 
 	desc.compareEnable = VK_FALSE;
 	desc.compareOp = VK_COMPARE_OP_ALWAYS;
 	desc.minLod = 0.0f;
-	desc.maxLod = max_lod_0_25 ? 0.25f : vk.maxLodBias;
+	desc.maxLod = (def->max_lod_1_0) ? 1.0f : (max_lod_0_25 ? 0.25f : vk.maxLodBias);
 	desc.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 	desc.unnormalizedCoordinates = VK_FALSE;
 
@@ -4660,7 +4671,7 @@ void vk_end_frame( void )
 			// or we don't
 			ri.Error( ERR_FATAL, "vkQueuePresentKHR: error %i", res );
 		}
-	} 
+	}
 }
 
 

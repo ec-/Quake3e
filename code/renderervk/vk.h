@@ -53,6 +53,8 @@ typedef struct {
 	VkSamplerAddressMode address_mode; // clamp/repeat texture addressing mode
 	int gl_mag_filter; // GL_XXX mag filter
 	int gl_min_filter; // GL_XXX min filter
+	qboolean max_lod_1_0; // fixed 1.0 lod
+	qboolean noAnisotropy;
 } Vk_Sampler_Def;
 
 typedef struct {
