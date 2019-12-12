@@ -4317,7 +4317,7 @@ static void vk_bind_attr( int index, unsigned int item_size, const void *src ) {
 
 	vk.cmd->buf_offset[ index ] = offset;
 	Com_Memcpy( vk.cmd->vertex_buffer_ptr + offset, src, size );
-	vk.cmd->vertex_buffer_offset = offset + size;
+	vk.cmd->vertex_buffer_offset = (VkDeviceSize)offset + size;
 	vk_bind_index( index );
 }
 
@@ -4331,7 +4331,7 @@ uint32_t vk_tess_index( uint32_t numIndexes, const void *src ) {
 	}
 
 	Com_Memcpy( vk.cmd->vertex_buffer_ptr + offset, src, size );
-	vk.cmd->vertex_buffer_offset = offset + size;
+	vk.cmd->vertex_buffer_offset = (VkDeviceSize)offset + size;
 
 	return offset;
 }
