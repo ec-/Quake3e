@@ -2,7 +2,7 @@
 
 layout(location = 0) out vec4 out_color;
 
-layout (constant_id = 3) const int color_mode = 0;
+layout (constant_id = 4) const int color_mode = 0;
 
 void main()
 {

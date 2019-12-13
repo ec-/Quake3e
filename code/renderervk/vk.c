@@ -3433,8 +3433,8 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	VkShaderModule *vs_module = NULL;
 	VkShaderModule *fs_module = NULL;
 	int32_t vert_spec_data[1]; // clippping
-	floatint_t frag_spec_data[4]; // alpha-test-func, alpha-test-value, depth-fragment, color_mode
-	VkSpecializationMapEntry spec_entries[5];
+	floatint_t frag_spec_data[5]; // alpha-test-func, alpha-test-value, depth-fragment, alpha-to-coverage, color_mode
+	VkSpecializationMapEntry spec_entries[6];
 	VkSpecializationInfo vert_spec_info;
 	VkSpecializationInfo frag_spec_info;
 	VkPipelineVertexInputStateCreateInfo vertex_input_state;
@@ -3546,21 +3546,17 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 			break;
 	};
 
-	if ( r_ext_alpha_to_coverage->integer && vkSamples != VK_SAMPLE_COUNT_1_BIT ) {
-		if ( atest_bits == GLS_ATEST_GT_0 ) {
-			alphaToCoverage = VK_TRUE;
-		} else if ( atest_bits == GLS_ATEST_GE_80 ) {
-			alphaToCoverage = VK_TRUE;
-			frag_spec_data[1].f = 0.33f;
-		}
-	}
-
 	frag_spec_data[2].f = 0.85f;
 
+	if ( r_ext_alpha_to_coverage->integer && vkSamples != VK_SAMPLE_COUNT_1_BIT && frag_spec_data[0].i ) {
+		frag_spec_data[3].i = 1;
+		alphaToCoverage = VK_TRUE;
+	}
+
 	switch ( def->shader_type ) {
-		default: frag_spec_data[3].i = 0; break;
-		case TYPE_COLOR_GREEN: frag_spec_data[3].i = 1; break;
-		case TYPE_COLOR_RED:   frag_spec_data[3].i = 2; break;
+		default: frag_spec_data[4].i = 0; break;
+		case TYPE_COLOR_GREEN: frag_spec_data[4].i = 1; break;
+		case TYPE_COLOR_RED:   frag_spec_data[4].i = 2; break;
 	}
 
 	// vertex module specialization data
@@ -3587,13 +3583,17 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	spec_entries[3].offset = 2 * sizeof( int32_t );
 	spec_entries[3].size = sizeof( float );
 
-	spec_entries[4].constantID = 3; // color_mode
+	spec_entries[4].constantID = 3; // alpha-to-coverage
 	spec_entries[4].offset = 3 * sizeof( int32_t );
 	spec_entries[4].size = sizeof( int32_t );
 
-	frag_spec_info.mapEntryCount = 4;
+	spec_entries[5].constantID = 4; // color_mode
+	spec_entries[5].offset = 4 * sizeof( int32_t );
+	spec_entries[5].size = sizeof( int32_t );
+
+	frag_spec_info.mapEntryCount = 5;
 	frag_spec_info.pMapEntries = spec_entries + 1;
-	frag_spec_info.dataSize = sizeof( int32_t ) + sizeof( float ) + sizeof( float ) + sizeof( int32_t );
+	frag_spec_info.dataSize = sizeof( int32_t ) + sizeof( float ) + sizeof( float ) + sizeof( int32_t ) + sizeof( int32_t );
 	frag_spec_info.pData = &frag_spec_data[0];
 	shader_stages[1].pSpecializationInfo = &frag_spec_info;
 
