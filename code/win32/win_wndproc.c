@@ -638,7 +638,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		break;
 
 	case WM_CLOSE:
-		Cbuf_ExecuteText( EXEC_APPEND, "quit" );
+		Cbuf_ExecuteText( EXEC_APPEND, "quit\n" );
 		// filter this message or we may lose window before renderer shutdown ?
 		return 0;
 
