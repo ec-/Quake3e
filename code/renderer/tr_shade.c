@@ -339,7 +339,7 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 #ifdef USE_PMLIGHT
 	if ( !tess.dlightPass && shader->isStaticShader && !shader->remappedShader )
 #else
-	if ( state->isStaticShader )
+	if ( shader->isStaticShader )
 #endif
 		tess.allowVBO = qtrue;
 	else
