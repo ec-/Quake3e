@@ -2355,7 +2355,7 @@ void FindLightingStages( shader_t *sh )
 	if ( !qglGenProgramsARB )
 		return;
 
-	if ( sh->isSky || ( sh->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) || sh->sort > SS_OPAQUE )
+	if ( sh->isSky || ( sh->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) || sh->sort == SS_ENVIRONMENT )
 		return;
 
 	for ( i = 0; i < sh->numUnfoggedPasses; i++ ) {
@@ -2533,9 +2533,13 @@ static shader_t *FinishShader( void ) {
 	int			stage, i;
 	qboolean	hasLightmapStage;
 	qboolean	vertexLightmap;
+	qboolean	colorBlend;
+	qboolean	depthMask;
 
 	hasLightmapStage = qfalse;
 	vertexLightmap = qfalse;
+	colorBlend = qfalse;
+	depthMask = qfalse;
 
 	//
 	// set sky stuff appropriate
@@ -2615,8 +2619,12 @@ static shader_t *FinishShader( void ) {
 		//  vertexLightmap = qtrue;
 		//}
 
+		if ( pStage->stateBits & GLS_DEPTHMASK_TRUE ) {
+			depthMask = qtrue;
+		}
+
 		//
-		// determine sort order and fog color adjustment
+		// determine fog color adjustment
 		//
 		if ( ( pStage->stateBits & ( GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS ) ) &&
 			 ( stages[0].stateBits & ( GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS ) ) ) {
@@ -2647,15 +2655,7 @@ static shader_t *FinishShader( void ) {
 				// we can't adjust this one correctly, so it won't be exactly correct in fog
 			}
 
-			// don't screw with sort order if this is a portal or environment
-			if ( shader.sort == SS_BAD ) {
-				// see through item, like a grill or grate
-				if ( pStage->stateBits & GLS_DEPTHMASK_TRUE ) {
-					shader.sort = SS_SEE_THROUGH;
-				} else {
-					shader.sort = SS_BLEND0;
-				}
-			}
+			colorBlend = qtrue;
 		}
 		
 		stage++;
@@ -2664,7 +2664,16 @@ static shader_t *FinishShader( void ) {
 	// there are times when you will need to manually apply a sort to
 	// opaque alpha tested shaders that have later blend passes
 	if ( shader.sort == SS_BAD ) {
-		shader.sort = SS_OPAQUE;
+		if ( colorBlend ) {
+			// see through item, like a grill or grate
+			if ( depthMask ) {
+				shader.sort = SS_SEE_THROUGH;
+			} else {
+				shader.sort = SS_BLEND0;
+			}
+		} else {
+			shader.sort = SS_OPAQUE;
+		}
 	}
 
 	// fix alphaGen flags to avoid redundant comparisons in R_ComputeColors()
