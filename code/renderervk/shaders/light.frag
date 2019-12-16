@@ -16,7 +16,7 @@ layout(set = 0, binding = 0) uniform UBO {
 };
 layout(set = 1, binding = 0) uniform sampler2D texture0;
 
-layout(location = 0) in vec2 frag_tex_coord;
+layout(location = 0) centroid in vec2 frag_tex_coord;
 layout(location = 1) in vec3 N;  // normalized object-space normal vector
 layout(location = 2) in vec4 L;  // object-space light vector
 layout(location = 3) in vec4 V;  // object-space view vector

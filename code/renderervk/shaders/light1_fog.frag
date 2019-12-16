@@ -19,11 +19,11 @@ layout(set = 1, binding = 0) uniform sampler2D texture0;
 //layout(set = 2, binding = 0) uniform sampler2D texture1;
 layout(set = 3, binding = 0) uniform sampler2D fogtexture;
 
-layout(location = 0) in vec2 frag_tex_coord;
+layout(location = 0) centroid in vec2 frag_tex_coord;
 layout(location = 1) in vec3 N;  // normalized object-space normal vector
 layout(location = 2) in vec4 L;  // object-space light vector
 layout(location = 3) in vec4 V;  // object-space view vector
-layout(location = 4) in vec2 fog_tex_coord;
+layout(location = 4) centroid in vec2 fog_tex_coord;
 
 layout(location = 0) out vec4 out_color;
 

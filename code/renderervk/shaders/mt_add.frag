@@ -4,8 +4,8 @@ layout(set = 1, binding = 0) uniform sampler2D texture0;
 layout(set = 2, binding = 0) uniform sampler2D texture1;
 
 layout(location = 0) in vec4 frag_color;
-layout(location = 1) in vec2 frag_tex_coord;
-layout(location = 2) in vec2 frag_tex_coord1;
+layout(location = 1) centroid in vec2 frag_tex_coord;
+layout(location = 2) centroid in vec2 frag_tex_coord1;
 
 layout(location = 0) out vec4 out_color;
 

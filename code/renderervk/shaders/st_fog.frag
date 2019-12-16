@@ -19,9 +19,9 @@ layout(set = 1, binding = 0) uniform sampler2D texture0; // diffuse
 layout(set = 3, binding = 0) uniform sampler2D texture2; // fog
 
 layout(location = 0) in vec4 frag_color;
-layout(location = 1) in vec2 frag_tex_coord;
-//layout(location = 2) in vec2 frag_tex_coord1;
-layout(location = 3) in vec2 fog_tex_coord; // fog
+layout(location = 1) centroid in vec2 frag_tex_coord;
+//layout(location = 2) centroid in vec2 frag_tex_coord1;
+layout(location = 3) centroid in vec2 fog_tex_coord; // fog
 
 layout(location = 0) out vec4 out_color;
 
