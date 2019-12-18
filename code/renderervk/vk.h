@@ -423,6 +423,8 @@ typedef struct {
 	int		blitY0;
 	int		blitFilter;
 
+	qboolean updateViewport;
+
 } Vk_Instance;
 
 typedef struct {

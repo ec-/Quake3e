@@ -396,6 +396,7 @@ static void SetViewportAndScissor( void ) {
 #ifdef USE_VULKAN
 	//Com_Memcpy( vk_world.modelview_transform, backEnd.or.modelMatrix, 64 );
 	//vk_update_mvp();
+	vk.updateViewport = qtrue;
 #else
 	qglMatrixMode(GL_PROJECTION);
 	qglLoadMatrixf( backEnd.viewParms.projectionMatrix );
@@ -742,11 +743,12 @@ static void RB_BeginDrawingLitSurfs( void )
 	// we will only draw a sun if there was sky rendered in this view
 	backEnd.skyRenderedThisView = qfalse;
 
-#ifndef USE_VULKAN
 	//
 	// set the modelview matrix for the viewer
 	//
 	SetViewportAndScissor();
+
+#ifndef USE_VULKAN
 
 	glState.faceCulling = -1;		// force face culling to set next time
 
@@ -984,6 +986,8 @@ void RB_SetGL2D( void ) {
 #ifdef USE_VULKAN
 	if ( vk.frame_count )
 		vk_update_mvp( NULL );
+
+	vk.updateViewport = qtrue;
 #else
 	// set 2D virtual screen size
 	qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
@@ -1315,6 +1319,7 @@ static const void *RB_DrawBuffer( const void *data ) {
 	vk_begin_frame();
 
 	tess.depthRange = DEPTH_RANGE_NORMAL;
+	vk.updateViewport = qtrue;
 
 	if ( r_clear->integer ) {
 		//const float color[4] = {1, 0, 0.5, 1};

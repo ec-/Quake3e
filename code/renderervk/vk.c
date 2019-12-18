@@ -4421,7 +4421,8 @@ void vk_bind_geometry_ext( int flags )
 }
 
 
-void vk_draw_geometry(uint32_t pipeline, int32_t set_count, Vk_Depth_Range depth_range, qboolean indexed) {
+void vk_draw_geometry( uint32_t pipeline, int32_t set_count, Vk_Depth_Range depth_range, qboolean indexed ) {
+	static Vk_Depth_Range old_range = DEPTH_RANGE_NORMAL;
 	VkPipeline vkpipe;
 	VkRect2D scissor_rect;
 	VkViewport viewport;
@@ -4440,13 +4441,16 @@ void vk_draw_geometry(uint32_t pipeline, int32_t set_count, Vk_Depth_Range depth
 	qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkpipe );
 
 	// configure pipeline's dynamic state
-	get_scissor_rect( &scissor_rect );
+	if ( vk.updateViewport || depth_range != old_range ) {
+		vk.updateViewport = qfalse;
+		old_range = depth_range;
 
-	qvkCmdSetScissor( vk.cmd->command_buffer, 0, 1, &scissor_rect );
+		get_scissor_rect( &scissor_rect );
+		qvkCmdSetScissor( vk.cmd->command_buffer, 0, 1, &scissor_rect );
 
-	get_viewport( &viewport, depth_range );
-
-	qvkCmdSetViewport( vk.cmd->command_buffer, 0, 1, &viewport );
+		get_viewport( &viewport, depth_range );
+		qvkCmdSetViewport( vk.cmd->command_buffer, 0, 1, &viewport );
+	}
 
 	// issue draw call(s)
 #ifdef USE_VBO
