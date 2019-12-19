@@ -1,0 +1,277 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{ef82ec05-2c70-4e4d-b264-972238590b52}</UniqueIdentifier>
+      <Extensions>cpp;c;def;bat</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{b6d0bbbe-fa47-4ef8-bbcf-ee75f089304d}</UniqueIdentifier>
+      <Extensions>h;hpp;inc</Extensions>
+    </Filter>
+    <Filter Include="Tools">
+      <UniqueIdentifier>{b1412ba1-8cea-4311-ac3a-c43659a86917}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GLSL">
+      <UniqueIdentifier>{e307218c-3b2f-48e2-8a09-5d4e6443bdfc}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\renderer2\tr_animation.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_backend.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_bsp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_cmds.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_curve.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_dsa.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_extensions.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_extramath.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_fbo.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_flares.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderercommon\tr_font.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_glsl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_image.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderercommon\tr_image_bmp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_image_dds.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderercommon\tr_image_jpg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderercommon\tr_image_pcx.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderercommon\tr_image_png.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderercommon\tr_image_tga.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_init.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_light.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_marks.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_mesh.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_model.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_model_iqm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderercommon\tr_noise.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_postprocess.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_scene.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_shade.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_shade_calc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_shader.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_shadows.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_sky.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_surface.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_vbo.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer2\tr_world.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\win_glimp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\win_qgl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\bokeh_fp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\bokeh_vp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\calclevels4x_fp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\calclevels4x_vp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\depthblur_fp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\depthblur_vp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\dlight_fp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\dlight_vp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\down4x_fp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\down4x_vp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\fogpass_fp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\fogpass_vp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\generic_fp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\generic_vp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\lightall_fp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\lightall_vp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\pshadow_fp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\pshadow_vp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\shadowfill_fp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\shadowfill_vp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\shadowmask_fp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\shadowmask_vp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\ssao_fp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\ssao_vp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\texturecolor_fp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\texturecolor_vp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\tonemap_fp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+    <ClCompile Include="build\dynamic\renderer2\tonemap_vp.c">
+      <Filter>GLSL</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\glw_win.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\qcommon\q_shared.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\qcommon\qcommon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\qcommon\qfiles.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\qcommon\surfaceflags.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderer\tr_common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderer2\tr_dsa.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderer2\tr_extramath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderer2\tr_extratypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderer2\tr_fbo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderer2\tr_local.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderer2\tr_postprocess.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderercommon\tr_public.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderercommon\tr_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\win_local.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderer2\qgl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="glsl_stringify.vbs">
+      <Filter>Tools</Filter>
+    </None>
+  </ItemGroup>
+</Project>

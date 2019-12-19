@@ -46,6 +46,7 @@ typedef struct
 
 	HMONITOR	hMonitor;		// current monitor
 	TCHAR		displayName[CCHDEVICENAME];
+	qboolean	deviceSupportsGamma;
 	qboolean	gammaSet;
 
 	qboolean	cdsFullscreen;

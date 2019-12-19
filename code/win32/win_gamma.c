@@ -99,6 +99,8 @@ void GLimp_InitGamma( glconfig_t *config )
 			}
 		}
 	} // if ( config->deviceSupportsGamma )
+
+	glw_state.deviceSupportsGamma = config->deviceSupportsGamma;
 }
 
 
@@ -199,6 +201,11 @@ void GLW_RestoreGamma( void )
 {
 	HDC hDC;
 	BOOL ret;
+
+	if ( !glw_state.deviceSupportsGamma ) {
+		return;
+	}	
+
 	if ( glw_state.displayName[0] ) {
 		hDC = CreateDC( TEXT( "DISPLAY" ), glw_state.displayName, NULL, NULL );
 		ret = SetDeviceGammaRamp( hDC, s_oldHardwareGamma );
@@ -208,6 +215,8 @@ void GLW_RestoreGamma( void )
 		ret = SetDeviceGammaRamp( hDC, s_oldHardwareGamma );
 		ReleaseDC( GetDesktopWindow(), hDC );
 	}
-	if ( ret )
+
+	if ( ret ) {
 		glw_state.gammaSet = qfalse;
+	}
 }

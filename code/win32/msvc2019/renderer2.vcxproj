@@ -1,0 +1,399 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{AB424155-FBED-4D8D-B007-5B6CF93EA396}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v142</PlatformToolset>
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v142</PlatformToolset>
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>14.0.25431.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>.\output\</OutDir>
+    <IntDir>.\build\renderer2_release\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>.\output\</OutDir>
+    <IntDir>.\build\renderer2_release_x64\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>.\output\</OutDir>
+    <IntDir>.\build\renderer2_debug\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>.\output\</OutDir>
+    <IntDir>.\build\renderer2_debug_x64\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <PreBuildEvent>
+      <Message>Stringify GLSL files</Message>
+      <Command>mkdir .\build\dynamic
+mkdir .\build\dynamic\renderer2
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\bokeh_fp.glsl .\build\dynamic\renderer2\bokeh_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\bokeh_vp.glsl .\build\dynamic\renderer2\bokeh_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\calclevels4x_fp.glsl .\build\dynamic\renderer2\calclevels4x_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\calclevels4x_vp.glsl .\build\dynamic\renderer2\calclevels4x_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\depthblur_fp.glsl .\build\dynamic\renderer2\depthblur_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\depthblur_vp.glsl .\build\dynamic\renderer2\depthblur_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\dlight_fp.glsl .\build\dynamic\renderer2\dlight_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\dlight_vp.glsl .\build\dynamic\renderer2\dlight_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\down4x_fp.glsl .\build\dynamic\renderer2\down4x_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\down4x_vp.glsl .\build\dynamic\renderer2\down4x_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\fogpass_fp.glsl .\build\dynamic\renderer2\fogpass_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\fogpass_vp.glsl .\build\dynamic\renderer2\fogpass_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\generic_fp.glsl .\build\dynamic\renderer2\generic_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\generic_vp.glsl .\build\dynamic\renderer2\generic_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\lightall_fp.glsl .\build\dynamic\renderer2\lightall_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\lightall_vp.glsl .\build\dynamic\renderer2\lightall_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\pshadow_fp.glsl .\build\dynamic\renderer2\pshadow_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\pshadow_vp.glsl .\build\dynamic\renderer2\pshadow_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowfill_fp.glsl .\build\dynamic\renderer2\shadowfill_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowfill_vp.glsl .\build\dynamic\renderer2\shadowfill_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowmask_fp.glsl .\build\dynamic\renderer2\shadowmask_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowmask_vp.glsl .\build\dynamic\renderer2\shadowmask_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\ssao_fp.glsl .\build\dynamic\renderer2\ssao_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\ssao_vp.glsl .\build\dynamic\renderer2\ssao_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\texturecolor_fp.glsl .\build\dynamic\renderer2\texturecolor_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\texturecolor_vp.glsl .\build\dynamic\renderer2\texturecolor_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_fp.glsl .\build\dynamic\renderer2\tonemap_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\build\dynamic\renderer2\tonemap_vp.c
+</Command>
+    </PreBuildEvent>
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;USE_RENDERER2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)renderer2.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PreBuildEvent>
+      <Message>Stringify GLSL files</Message>
+      <Command>mkdir .\build\dynamic
+mkdir .\build\dynamic\renderer2
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\bokeh_fp.glsl .\build\dynamic\renderer2\bokeh_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\bokeh_vp.glsl .\build\dynamic\renderer2\bokeh_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\calclevels4x_fp.glsl .\build\dynamic\renderer2\calclevels4x_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\calclevels4x_vp.glsl .\build\dynamic\renderer2\calclevels4x_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\depthblur_fp.glsl .\build\dynamic\renderer2\depthblur_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\depthblur_vp.glsl .\build\dynamic\renderer2\depthblur_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\dlight_fp.glsl .\build\dynamic\renderer2\dlight_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\dlight_vp.glsl .\build\dynamic\renderer2\dlight_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\down4x_fp.glsl .\build\dynamic\renderer2\down4x_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\down4x_vp.glsl .\build\dynamic\renderer2\down4x_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\fogpass_fp.glsl .\build\dynamic\renderer2\fogpass_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\fogpass_vp.glsl .\build\dynamic\renderer2\fogpass_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\generic_fp.glsl .\build\dynamic\renderer2\generic_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\generic_vp.glsl .\build\dynamic\renderer2\generic_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\lightall_fp.glsl .\build\dynamic\renderer2\lightall_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\lightall_vp.glsl .\build\dynamic\renderer2\lightall_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\pshadow_fp.glsl .\build\dynamic\renderer2\pshadow_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\pshadow_vp.glsl .\build\dynamic\renderer2\pshadow_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowfill_fp.glsl .\build\dynamic\renderer2\shadowfill_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowfill_vp.glsl .\build\dynamic\renderer2\shadowfill_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowmask_fp.glsl .\build\dynamic\renderer2\shadowmask_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowmask_vp.glsl .\build\dynamic\renderer2\shadowmask_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\ssao_fp.glsl .\build\dynamic\renderer2\ssao_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\ssao_vp.glsl .\build\dynamic\renderer2\ssao_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\texturecolor_fp.glsl .\build\dynamic\renderer2\texturecolor_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\texturecolor_vp.glsl .\build\dynamic\renderer2\texturecolor_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_fp.glsl .\build\dynamic\renderer2\tonemap_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\build\dynamic\renderer2\tonemap_vp.c
+</Command>
+    </PreBuildEvent>
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;USE_RENDERER2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)renderer2.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <PreBuildEvent>
+      <Message>Stringify GLSL files</Message>
+      <Command>mkdir .\build\dynamic
+mkdir .\build\dynamic\renderer2
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\bokeh_fp.glsl .\build\dynamic\renderer2\bokeh_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\bokeh_vp.glsl .\build\dynamic\renderer2\bokeh_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\calclevels4x_fp.glsl .\build\dynamic\renderer2\calclevels4x_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\calclevels4x_vp.glsl .\build\dynamic\renderer2\calclevels4x_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\depthblur_fp.glsl .\build\dynamic\renderer2\depthblur_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\depthblur_vp.glsl .\build\dynamic\renderer2\depthblur_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\dlight_fp.glsl .\build\dynamic\renderer2\dlight_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\dlight_vp.glsl .\build\dynamic\renderer2\dlight_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\down4x_fp.glsl .\build\dynamic\renderer2\down4x_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\down4x_vp.glsl .\build\dynamic\renderer2\down4x_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\fogpass_fp.glsl .\build\dynamic\renderer2\fogpass_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\fogpass_vp.glsl .\build\dynamic\renderer2\fogpass_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\generic_fp.glsl .\build\dynamic\renderer2\generic_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\generic_vp.glsl .\build\dynamic\renderer2\generic_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\lightall_fp.glsl .\build\dynamic\renderer2\lightall_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\lightall_vp.glsl .\build\dynamic\renderer2\lightall_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\pshadow_fp.glsl .\build\dynamic\renderer2\pshadow_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\pshadow_vp.glsl .\build\dynamic\renderer2\pshadow_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowfill_fp.glsl .\build\dynamic\renderer2\shadowfill_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowfill_vp.glsl .\build\dynamic\renderer2\shadowfill_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowmask_fp.glsl .\build\dynamic\renderer2\shadowmask_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowmask_vp.glsl .\build\dynamic\renderer2\shadowmask_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\ssao_fp.glsl .\build\dynamic\renderer2\ssao_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\ssao_vp.glsl .\build\dynamic\renderer2\ssao_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\texturecolor_fp.glsl .\build\dynamic\renderer2\texturecolor_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\texturecolor_vp.glsl .\build\dynamic\renderer2\texturecolor_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_fp.glsl .\build\dynamic\renderer2\tonemap_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\build\dynamic\renderer2\tonemap_vp.c
+</Command>
+    </PreBuildEvent>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;USE_RENDERER2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
+      <BrowseInformation>true</BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)renderer2.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PreBuildEvent>
+      <Message>Stringify GLSL files</Message>
+      <Command>mkdir .\build\dynamic
+mkdir .\build\dynamic\renderer2
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\bokeh_fp.glsl .\build\dynamic\renderer2\bokeh_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\bokeh_vp.glsl .\build\dynamic\renderer2\bokeh_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\calclevels4x_fp.glsl .\build\dynamic\renderer2\calclevels4x_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\calclevels4x_vp.glsl .\build\dynamic\renderer2\calclevels4x_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\depthblur_fp.glsl .\build\dynamic\renderer2\depthblur_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\depthblur_vp.glsl .\build\dynamic\renderer2\depthblur_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\dlight_fp.glsl .\build\dynamic\renderer2\dlight_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\dlight_vp.glsl .\build\dynamic\renderer2\dlight_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\down4x_fp.glsl .\build\dynamic\renderer2\down4x_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\down4x_vp.glsl .\build\dynamic\renderer2\down4x_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\fogpass_fp.glsl .\build\dynamic\renderer2\fogpass_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\fogpass_vp.glsl .\build\dynamic\renderer2\fogpass_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\generic_fp.glsl .\build\dynamic\renderer2\generic_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\generic_vp.glsl .\build\dynamic\renderer2\generic_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\lightall_fp.glsl .\build\dynamic\renderer2\lightall_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\lightall_vp.glsl .\build\dynamic\renderer2\lightall_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\pshadow_fp.glsl .\build\dynamic\renderer2\pshadow_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\pshadow_vp.glsl .\build\dynamic\renderer2\pshadow_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowfill_fp.glsl .\build\dynamic\renderer2\shadowfill_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowfill_vp.glsl .\build\dynamic\renderer2\shadowfill_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowmask_fp.glsl .\build\dynamic\renderer2\shadowmask_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowmask_vp.glsl .\build\dynamic\renderer2\shadowmask_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\ssao_fp.glsl .\build\dynamic\renderer2\ssao_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\ssao_vp.glsl .\build\dynamic\renderer2\ssao_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\texturecolor_fp.glsl .\build\dynamic\renderer2\texturecolor_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\texturecolor_vp.glsl .\build\dynamic\renderer2\texturecolor_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_fp.glsl .\build\dynamic\renderer2\tonemap_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\build\dynamic\renderer2\tonemap_vp.c
+</Command>
+    </PreBuildEvent>
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;USE_RENDERER2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
+      <BrowseInformation>true</BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)renderer2.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\renderer2\tr_animation.c" />
+    <ClCompile Include="..\..\renderer2\tr_backend.c" />
+    <ClCompile Include="..\..\renderer2\tr_bsp.c" />
+    <ClCompile Include="..\..\renderer2\tr_cmds.c" />
+    <ClCompile Include="..\..\renderer2\tr_curve.c" />
+    <ClCompile Include="..\..\renderer2\tr_dsa.c" />
+    <ClCompile Include="..\..\renderer2\tr_extensions.c" />
+    <ClCompile Include="..\..\renderer2\tr_extramath.c" />
+    <ClCompile Include="..\..\renderer2\tr_fbo.c" />
+    <ClCompile Include="..\..\renderer2\tr_flares.c" />
+    <ClCompile Include="..\..\renderer2\tr_glsl.c" />
+    <ClCompile Include="..\..\renderer2\tr_image.c" />
+    <ClCompile Include="..\..\renderer2\tr_image_dds.c" />
+    <ClCompile Include="..\..\renderer2\tr_init.c" />
+    <ClCompile Include="..\..\renderer2\tr_light.c" />
+    <ClCompile Include="..\..\renderer2\tr_main.c" />
+    <ClCompile Include="..\..\renderer2\tr_marks.c" />
+    <ClCompile Include="..\..\renderer2\tr_mesh.c" />
+    <ClCompile Include="..\..\renderer2\tr_model.c" />
+    <ClCompile Include="..\..\renderer2\tr_model_iqm.c" />
+    <ClCompile Include="..\..\renderer2\tr_postprocess.c" />
+    <ClCompile Include="..\..\renderer2\tr_scene.c" />
+    <ClCompile Include="..\..\renderer2\tr_shade.c" />
+    <ClCompile Include="..\..\renderer2\tr_shader.c" />
+    <ClCompile Include="..\..\renderer2\tr_shade_calc.c" />
+    <ClCompile Include="..\..\renderer2\tr_shadows.c" />
+    <ClCompile Include="..\..\renderer2\tr_sky.c" />
+    <ClCompile Include="..\..\renderer2\tr_surface.c" />
+    <ClCompile Include="..\..\renderer2\tr_vbo.c" />
+    <ClCompile Include="..\..\renderer2\tr_world.c" />
+    <ClCompile Include="..\..\renderercommon\tr_font.c" />
+    <ClCompile Include="..\..\renderercommon\tr_image_bmp.c" />
+    <ClCompile Include="..\..\renderercommon\tr_image_jpg.c" />
+    <ClCompile Include="..\..\renderercommon\tr_image_pcx.c" />
+    <ClCompile Include="..\..\renderercommon\tr_image_png.c" />
+    <ClCompile Include="..\..\renderercommon\tr_image_tga.c" />
+    <ClCompile Include="..\..\renderercommon\tr_noise.c" />
+    <ClCompile Include="..\win_glimp.c" />
+    <ClCompile Include="..\win_qgl.c" />
+    <ClCompile Include="build\dynamic\renderer2\bokeh_fp.c" />
+    <ClCompile Include="build\dynamic\renderer2\bokeh_vp.c" />
+    <ClCompile Include="build\dynamic\renderer2\calclevels4x_fp.c" />
+    <ClCompile Include="build\dynamic\renderer2\calclevels4x_vp.c" />
+    <ClCompile Include="build\dynamic\renderer2\depthblur_fp.c" />
+    <ClCompile Include="build\dynamic\renderer2\depthblur_vp.c" />
+    <ClCompile Include="build\dynamic\renderer2\dlight_fp.c" />
+    <ClCompile Include="build\dynamic\renderer2\dlight_vp.c" />
+    <ClCompile Include="build\dynamic\renderer2\down4x_fp.c" />
+    <ClCompile Include="build\dynamic\renderer2\down4x_vp.c" />
+    <ClCompile Include="build\dynamic\renderer2\fogpass_fp.c" />
+    <ClCompile Include="build\dynamic\renderer2\fogpass_vp.c" />
+    <ClCompile Include="build\dynamic\renderer2\generic_fp.c" />
+    <ClCompile Include="build\dynamic\renderer2\generic_vp.c" />
+    <ClCompile Include="build\dynamic\renderer2\lightall_fp.c" />
+    <ClCompile Include="build\dynamic\renderer2\lightall_vp.c" />
+    <ClCompile Include="build\dynamic\renderer2\pshadow_fp.c" />
+    <ClCompile Include="build\dynamic\renderer2\pshadow_vp.c" />
+    <ClCompile Include="build\dynamic\renderer2\shadowfill_fp.c" />
+    <ClCompile Include="build\dynamic\renderer2\shadowfill_vp.c" />
+    <ClCompile Include="build\dynamic\renderer2\shadowmask_fp.c" />
+    <ClCompile Include="build\dynamic\renderer2\shadowmask_vp.c" />
+    <ClCompile Include="build\dynamic\renderer2\ssao_fp.c" />
+    <ClCompile Include="build\dynamic\renderer2\ssao_vp.c" />
+    <ClCompile Include="build\dynamic\renderer2\texturecolor_fp.c" />
+    <ClCompile Include="build\dynamic\renderer2\texturecolor_vp.c" />
+    <ClCompile Include="build\dynamic\renderer2\tonemap_fp.c" />
+    <ClCompile Include="build\dynamic\renderer2\tonemap_vp.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\qcommon\qcommon.h" />
+    <ClInclude Include="..\..\qcommon\qfiles.h" />
+    <ClInclude Include="..\..\qcommon\q_shared.h" />
+    <ClInclude Include="..\..\qcommon\surfaceflags.h" />
+    <ClInclude Include="..\..\renderer2\tr_dsa.h" />
+    <ClInclude Include="..\..\renderer2\tr_extramath.h" />
+    <ClInclude Include="..\..\renderer2\tr_extratypes.h" />
+    <ClInclude Include="..\..\renderer2\tr_fbo.h" />
+    <ClInclude Include="..\..\renderer2\tr_local.h" />
+    <ClInclude Include="..\..\renderer2\tr_postprocess.h" />
+    <ClInclude Include="..\..\renderer2\qgl.h" />
+    <ClInclude Include="..\..\renderer\tr_common.h" />
+    <ClInclude Include="..\..\renderercommon\tr_public.h" />
+    <ClInclude Include="..\..\renderercommon\tr_types.h" />
+    <ClInclude Include="..\glw_win.h" />
+    <ClInclude Include="..\win_local.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="glsl_stringify.vbs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="libjpeg.vcxproj">
+      <Project>{17867af4-12cb-4847-a13e-bf37d8bdf597}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

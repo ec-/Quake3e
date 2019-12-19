@@ -370,6 +370,7 @@ typedef	int	fixed16_t;
 #ifdef __linux__
 #if idx64
 // force version for better runtime compatibility
+__asm__(".symver logf,logf@GLIBC_2.2.5");
 __asm__(".symver powf,powf@GLIBC_2.2.5");
 __asm__(".symver expf,expf@GLIBC_2.2.5");
 __asm__(".symver memcpy,memcpy@GLIBC_2.2.5");
