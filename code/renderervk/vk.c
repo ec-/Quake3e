@@ -4337,6 +4337,16 @@ uint32_t vk_tess_index( uint32_t numIndexes, const void *src ) {
 }
 
 
+void vk_bind_index_buffer( VkBuffer buffer, uint32_t offset )
+{
+	if ( vk.cmd->curr_index_buffer != buffer || vk.cmd->curr_index_offset != offset )
+		qvkCmdBindIndexBuffer( vk.cmd->command_buffer, buffer, offset, VK_INDEX_TYPE_UINT32 );
+
+	vk.cmd->curr_index_buffer = buffer;
+	vk.cmd->curr_index_offset = offset;
+}
+
+
 void vk_bind_geometry_ext( int flags )
 {
 	//unsigned int size;
@@ -4391,7 +4401,7 @@ void vk_bind_geometry_ext( int flags )
 
 		if ( flags & TESS_IDX ) {
 			uint32_t offset = vk_tess_index( tess.numIndexes, tess.indexes );
-			qvkCmdBindIndexBuffer( vk.cmd->command_buffer, vk.cmd->vertex_buffer, offset, VK_INDEX_TYPE_UINT32 );
+			vk_bind_index_buffer( vk.cmd->vertex_buffer, offset );
 		}
 
 		if ( flags & TESS_XYZ ) {
@@ -4581,6 +4591,8 @@ void vk_begin_frame( void )
 	vk.cmd->vertex_buffer_offset = 0;
 	Com_Memset( vk.cmd->buf_offset, 0, sizeof( vk.cmd->buf_offset ) );
 	Com_Memset( vk.cmd->vbo_offset, 0, sizeof( vk.cmd->vbo_offset ) );
+	vk.cmd->curr_index_buffer = VK_NULL_HANDLE;
+	vk.cmd->curr_index_offset = 0;
 
 	vk.cmd->fog_bound = qfalse;
 

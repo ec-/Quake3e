@@ -750,7 +750,8 @@ void VBO_RenderIBOItems( void )
 	// from device-local memory
 	if ( vbo->ibo_items_count )
 	{
-		qvkCmdBindIndexBuffer( vk.cmd->command_buffer, vk.vbo.vertex_buffer, tess.shader->iboOffset, VK_INDEX_TYPE_UINT32 );
+		vk_bind_index_buffer( vk.vbo.vertex_buffer, tess.shader->iboOffset );
+
 		for ( i = 0; i < vbo->ibo_items_count; i++ )
 		{
 			qvkCmdDrawIndexed( vk.cmd->command_buffer, vbo->ibo_items[ i ].length, 1,  vbo->ibo_items[ i ].offset, 0, 0 );
@@ -760,7 +761,8 @@ void VBO_RenderIBOItems( void )
 	// from host-visible memory
 	if ( vbo->soft_buffer_indexes )
 	{
-		qvkCmdBindIndexBuffer( vk.cmd->command_buffer, vk.cmd->vertex_buffer, vbo->soft_buffer_offset, VK_INDEX_TYPE_UINT32 );
+		vk_bind_index_buffer( vk.cmd->vertex_buffer, vbo->soft_buffer_offset );
+
 		qvkCmdDrawIndexed( vk.cmd->command_buffer, vbo->soft_buffer_indexes, 1, 0, 0, 0 );
 	}
 }

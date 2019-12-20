@@ -164,6 +164,7 @@ void vk_bind_fog_image( void );
 void vk_update_mvp( const float *m );
 
 uint32_t vk_tess_index( uint32_t numIndexes, const void *src );
+void vk_bind_index_buffer( VkBuffer buffer, uint32_t offset );
 
 const char *vk_get_format_name( VkFormat format );
 
@@ -185,6 +186,9 @@ typedef struct vk_tess_s {
 	uint32_t		uniform_read_offset;
 	VkDeviceSize	buf_offset[5];
 	VkDeviceSize	vbo_offset[5];
+
+	VkBuffer		curr_index_buffer;
+	uint32_t		curr_index_offset;
 
 	qboolean		fog_bound;
 
@@ -478,6 +482,5 @@ extern Vk_World		vk_world;		// this data is cleared during ref re-init
 extern PFN_vkGetPhysicalDeviceProperties qvkGetPhysicalDeviceProperties;
 extern PFN_vkDestroyImage qvkDestroyImage;
 extern PFN_vkDestroyImageView qvkDestroyImageView;
-extern PFN_vkCmdBindIndexBuffer qvkCmdBindIndexBuffer;
 extern PFN_vkCmdDrawIndexed qvkCmdDrawIndexed;
 extern PFN_vkCmdBindDescriptorSets qvkCmdBindDescriptorSets;
