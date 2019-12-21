@@ -1705,7 +1705,7 @@ void R_DebugPolygon( int color, int numPoints, float *points ) {
 	}
 
 	vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_RGBA | TESS_ST0 );
-	vk_draw_geometry( vk.surface_debug_pipeline_solid, 1, DEPTH_RANGE_NORMAL, qtrue ); 
+	vk_draw_geometry( vk.surface_debug_pipeline_solid, DEPTH_RANGE_NORMAL, qtrue );
 
 	// Outline.
 	Com_Memset( tess.svars.colors, tr.identityLightByte, numPoints * 2 * sizeof(tess.svars.colors[0] ) );
@@ -1718,8 +1718,7 @@ void R_DebugPolygon( int color, int numPoints, float *points ) {
 	tess.numIndexes = 0;
 
 	vk_bind_geometry_ext( TESS_XYZ | TESS_RGBA );
-	vk_draw_geometry( vk.surface_debug_pipeline_outline, 0, DEPTH_RANGE_ZERO, qfalse ); 
-
+	vk_draw_geometry( vk.surface_debug_pipeline_outline, DEPTH_RANGE_ZERO, qfalse );
 	tess.numVertexes = 0;
 #else
 	int		i;

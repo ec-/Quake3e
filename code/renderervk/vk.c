@@ -1329,21 +1329,12 @@ void vk_init_buffers( void )
 		}
 	}
 #endif
-
-
-//	vk_world.current_descriptor_sets[0] = tr.whiteImage->descriptor;
-//	vk_world.current_descriptor_sets[1] = tr.whiteImage->descriptor;
-//	vk_world.current_descriptor_sets[2] = tr.fogImage->descriptor;
 }
 
 
 void vk_bind_fog_image( void )
 {
-	if ( !vk.cmd->fog_bound ) {
-		VkDescriptorSet fog_desc = tr.fogImage->descriptor;
-		qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, 3, 1, &fog_desc, 0, NULL );
-		vk.cmd->fog_bound = qtrue;
-	}
+	vk_update_descriptor( 3, tr.fogImage->descriptor );
 }
 
 static VkCommandBuffer begin_command_buffer( void )
@@ -4431,20 +4422,67 @@ void vk_bind_geometry_ext( int flags )
 }
 
 
-void vk_draw_geometry( uint32_t pipeline, int32_t set_count, Vk_Depth_Range depth_range, qboolean indexed ) {
+void vk_reset_descriptor( int index )
+{
+	vk.cmd->descriptor_set.current[ index ] = VK_NULL_HANDLE;
+}
+
+
+void vk_update_descriptor( int index, VkDescriptorSet descriptor )
+{
+	if ( vk.cmd->descriptor_set.current[ index ] != descriptor ) {
+		//if ( index > vk.cmd->descriptor_set.end )
+		//	vk.cmd->descriptor_set.end = index;
+		//if ( index < vk.cmd->descriptor_set.start )
+		//	vk.cmd->descriptor_set.start = index;
+		vk.cmd->descriptor_set.start = ( index < vk.cmd->descriptor_set.start ) ? index : vk.cmd->descriptor_set.start;
+		vk.cmd->descriptor_set.end = ( index > vk.cmd->descriptor_set.end ) ? index : vk.cmd->descriptor_set.end;
+	}
+	vk.cmd->descriptor_set.current[ index ] = descriptor;
+}
+
+
+void vk_update_descriptor_offset( int index, uint32_t offset )
+{
+	vk.cmd->descriptor_set.offset[ index ] = offset;
+}
+
+
+void vk_bind_descriptor_sets( void )
+{
+	uint32_t offsets[2], offset_count;
+	int start, end, count;
+
+	start = vk.cmd->descriptor_set.start;
+	if ( start == ~0U )
+		return;
+
+	end = vk.cmd->descriptor_set.end;
+
+	offset_count = 0;
+	if ( start == 0 ) {
+		offsets[ offset_count++ ] = vk.cmd->descriptor_set.offset[ 0 ];
+	}
+	if ( end >= 4 ) {
+		offsets[ offset_count++ ] = vk.cmd->descriptor_set.offset[ 1 ];
+	}
+
+	count = end - start + 1;
+
+	qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, start, count, vk.cmd->descriptor_set.current + start, offset_count, offsets );
+
+	vk.cmd->descriptor_set.end = 0;
+	vk.cmd->descriptor_set.start = ~0U;
+}
+
+
+void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean indexed ) {
 	static Vk_Depth_Range old_range = DEPTH_RANGE_NORMAL;
 	VkPipeline vkpipe;
 	VkRect2D scissor_rect;
 	VkViewport viewport;
-	VkDescriptorSet sets[4];
 
-	// bind descriptor sets
-	if ( set_count >= 0 ) {
-		sets[0] = vk.cmd->uniform_descriptor;
-		sets[1] = vk_world.current_descriptor_sets[0]; // diffuse
-		sets[2] = vk_world.current_descriptor_sets[1]; // lightmap
-		qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, 0, set_count+1, sets, 1, &vk.cmd->uniform_read_offset );
-	}
+	vk_bind_descriptor_sets();
 
 	// bind pipeline
 	vkpipe = vk_gen_pipeline( pipeline );
@@ -4594,7 +4632,11 @@ void vk_begin_frame( void )
 	vk.cmd->curr_index_buffer = VK_NULL_HANDLE;
 	vk.cmd->curr_index_offset = 0;
 
-	vk.cmd->fog_bound = qfalse;
+	Com_Memset( &vk.cmd->descriptor_set, 0, sizeof( vk.cmd->descriptor_set ) );
+	vk.cmd->descriptor_set.start = ~0U;
+	vk.cmd->descriptor_set.end = 0;
+
+	vk_update_descriptor( 2, tr.whiteImage->descriptor );
 
 	// other stats
 	vk.stats.push_size = 0;
@@ -4613,8 +4655,6 @@ void vk_end_frame( void )
 	VkPresentInfoKHR present_info;
 	VkSubmitInfo submit_info;
 	VkResult res;
-
-	Com_Memset( vk_world.current_descriptor_sets, 0, sizeof( vk_world.current_descriptor_sets ) );
 
 	if ( vk.frame_count == 0 )
 		return;

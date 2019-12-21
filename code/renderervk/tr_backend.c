@@ -57,8 +57,8 @@ void GL_Bind( image_t *image ) {
 
 	//if ( glState.currenttextures[glState.currenttmu] != texnum ) {
 		image->frameUsed = tr.frameCount;
-		//glState.currenttextures[glState.currenttmu] = texnum;
-		vk_world.current_descriptor_sets[ glState.currenttmu ] = image->descriptor;
+		vk_update_descriptor( glState.currenttmu + 1, image->descriptor );
+
 	//}
 #else
 	GLuint texnum;
@@ -1412,7 +1412,7 @@ void RB_ShowImages( void )
 		tess.svars.texcoords[0][3][1] = 1;
 
 		vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_RGBA | TESS_ST0 );
-		vk_draw_geometry( vk.images_debug_pipeline, 1, DEPTH_RANGE_NORMAL, qtrue );
+		vk_draw_geometry( vk.images_debug_pipeline, DEPTH_RANGE_NORMAL, qtrue );
 	}
 
 	tess.numIndexes = 0;

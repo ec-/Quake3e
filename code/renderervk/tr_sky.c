@@ -500,8 +500,7 @@ static void DrawSkyBox( const shader_t *shader )
 			} else {
 				vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_ST0 );
 			}
-
-			vk_draw_geometry( vk.skybox_pipeline, 1, r_showsky->integer ? DEPTH_RANGE_ZERO : DEPTH_RANGE_ONE, qtrue );
+			vk_draw_geometry( vk.skybox_pipeline, r_showsky->integer ? DEPTH_RANGE_ZERO : DEPTH_RANGE_ONE, qtrue );
 		}
 #else
 		DrawSkySide(shader->sky.outerbox[sky_texorder[i]],

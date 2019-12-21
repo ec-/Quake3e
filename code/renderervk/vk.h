@@ -153,7 +153,7 @@ void vk_begin_frame( void );
 void vk_end_frame( void );
 
 void vk_bind_geometry_ext(int flags);
-void vk_draw_geometry( uint32_t pipeline, int32_t set_count, Vk_Depth_Range depth_range, qboolean indexed);
+void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean indexed);
 
 void vk_draw_light( uint32_t pipeline, Vk_Depth_Range depth_range, uint32_t uniform_offset, int fog);
 
@@ -165,6 +165,10 @@ void vk_update_mvp( const float *m );
 
 uint32_t vk_tess_index( uint32_t numIndexes, const void *src );
 void vk_bind_index_buffer( VkBuffer buffer, uint32_t offset );
+
+void vk_reset_descriptor( int index );
+void vk_update_descriptor( int index, VkDescriptorSet descriptor );
+void vk_update_descriptor_offset( int index, uint32_t offset );
 
 const char *vk_get_format_name( VkFormat format );
 
@@ -190,7 +194,11 @@ typedef struct vk_tess_s {
 	VkBuffer		curr_index_buffer;
 	uint32_t		curr_index_offset;
 
-	qboolean		fog_bound;
+	struct {
+		uint32_t		start, end;
+		VkDescriptorSet	current[5];
+		uint32_t		offset[2]; // 0 and 4
+	} descriptor_set;
 
 #ifndef USE_SINGLE_FBO
 	VkDescriptorSet color_descriptor;
@@ -463,7 +471,7 @@ typedef struct {
 	//
 
 	// Descriptor sets corresponding to bound texture images.
-	VkDescriptorSet current_descriptor_sets[ MAX_TEXTURE_UNITS ];
+	//VkDescriptorSet current_descriptor_sets[ MAX_TEXTURE_UNITS ];
 
 	// This flag is used to decide whether framebuffer's depth attachment should be cleared
 	// with vmCmdClearAttachment (dirty_depth_attachment == true), or it have just been

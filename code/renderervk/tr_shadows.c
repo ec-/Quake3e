@@ -223,8 +223,7 @@ static void R_Vk_RenderShadowEdges( uint32_t pipeline ) {
 
 		//vk_bind_geometry_ext( TESS_XYZ | TESS_RGBA | TESS_ST0);
 		vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_RGBA); // TODO: optimize RGBA!
-		vk_draw_geometry( pipeline, 1, DEPTH_RANGE_NORMAL, qtrue );
-
+		vk_draw_geometry( pipeline, DEPTH_RANGE_NORMAL, qtrue );
 		i += count;
 	}
 }
@@ -408,7 +407,7 @@ void RB_ShadowFinish( void ) {
 	vk_update_mvp( NULL );
 
 	vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_RGBA /*| TESS_ST0 */ );
-	vk_draw_geometry( vk.shadow_finish_pipeline, 1, DEPTH_RANGE_NORMAL, qtrue );
+	vk_draw_geometry( vk.shadow_finish_pipeline, DEPTH_RANGE_NORMAL, qtrue );
 
 	Com_Memcpy( vk_world.modelview_transform, tmp, 64 );
 

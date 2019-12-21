@@ -288,7 +288,6 @@ void RB_TestFlare( flare_t *f ) {
 	float			fade;
 	//float			modelMatrix_original[16];
 	float			*m, z;
-	VkDescriptorSet sets[1];
 	uint32_t		offset;
 
 	backEnd.pc.c_flareTests++;
@@ -335,16 +334,16 @@ void RB_TestFlare( flare_t *f ) {
 	tess.xyz[0][2] = -(z * ( backEnd.viewParms.projectionMatrix[11] + backEnd.viewParms.projectionMatrix[10] ) + backEnd.viewParms.projectionMatrix[14] ) / (2 * backEnd.viewParms.projectionMatrix[11] * z );
 	tess.numVertexes = 1;
 
-	// render test dot
-	sets[0] = vk.storage.descriptor;
-	qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, 4, 1, sets, 1, &offset );
-	//qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout_storage, 0, 1, sets, 1, &offset );
-
 #ifdef USE_VBO
 	tess.vboIndex = 0;
 #endif
+	// render test dot
+	vk_reset_descriptor( 4 );
+	vk_update_descriptor( 4, vk.storage.descriptor );
+	vk_update_descriptor_offset( 1, offset );
+
 	vk_bind_geometry_ext( TESS_XYZ );
-	vk_draw_geometry( vk.dot_pipeline, -1, DEPTH_RANGE_NORMAL, qfalse );
+	vk_draw_geometry( vk.dot_pipeline, DEPTH_RANGE_NORMAL, qfalse );
 
 	//Com_Memcpy( vk_world.modelview_transform, modelMatrix_original, sizeof( modelMatrix_original ) );
 	//vk_update_mvp( NULL );

@@ -1699,11 +1699,7 @@ void R_Init( void ) {
 
 	R_InitFreeType();
 
-#ifdef USE_VULKAN
-	vk_world.current_descriptor_sets[0] = tr.whiteImage->descriptor;
-	vk_world.current_descriptor_sets[1] = tr.whiteImage->descriptor;
-	//vk_world.current_descriptor_sets[2] = tr.fogImage->descriptor;
-#else
+#ifndef USE_VULKAN
 	err = qglGetError();
 	if ( err != GL_NO_ERROR )
 		ri.Printf( PRINT_WARNING, "glGetError() = 0x%x\n", err );

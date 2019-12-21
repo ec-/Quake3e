@@ -271,7 +271,8 @@ static void DrawTris( shaderCommands_t *input ) {
 #endif
 	pipeline = backEnd.viewParms.portalView == PV_MIRROR ? vk.tris_mirror_debug_pipeline : vk.tris_debug_pipeline;
 
-	vk_draw_geometry( pipeline, -1, DEPTH_RANGE_ZERO, qtrue );
+	vk_draw_geometry( pipeline, DEPTH_RANGE_ZERO, qtrue );
+
 #else
 	GL_Bind( tr.whiteImage );
 	qglColor3f( 1, 1, 1 );
@@ -340,7 +341,7 @@ static void DrawNormals( const shaderCommands_t *input ) {
 		tess.numVertexes = 2 * count;
 		tess.numIndexes = 0;
 		vk_bind_geometry_ext( TESS_IDX | TESS_XYZ );
-		vk_draw_geometry( vk.normals_debug_pipeline, 1, DEPTH_RANGE_ZERO, qfalse );
+		vk_draw_geometry( vk.normals_debug_pipeline, DEPTH_RANGE_ZERO, qfalse );
 		i += count;
 	}
 #else
@@ -660,7 +661,7 @@ static void RB_FogPass( void ) {
 	VK_SetFogParams( &uniform, &fog_stage );
 	VK_PushUniform( &uniform );
 	vk_bind_fog_image();
-	vk_draw_geometry( pipeline, 0, DEPTH_RANGE_NORMAL, qtrue );
+	vk_draw_geometry( pipeline, DEPTH_RANGE_NORMAL, qtrue );
 #else
 	const fog_t	*fog;
 	int			i;
@@ -672,7 +673,7 @@ static void RB_FogPass( void ) {
 	RB_CalcFogTexCoords( ( float * ) tess.svars.texcoords[0] );
 	GL_Bind( tr.fogImage );
 	vk_bind_geometry_ext( TESS_ST0 | TESS_RGBA );
-	vk_draw_geometry( pipeline, 1, DEPTH_RANGE_NORMAL, qtrue );
+	vk_draw_geometry( pipeline, DEPTH_RANGE_NORMAL, qtrue );
 #endif
 #else
 	const fog_t	*fog;
@@ -1025,7 +1026,6 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 	
 #ifdef USE_VULKAN
 	vkUniform_t uniform;
-	uint32_t set_count;
 	uint32_t pipeline;
 	int fog_stage;
 
@@ -1075,9 +1075,6 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 			R_ComputeTexCoords( 1, &pStage->bundle[1] );
 			GL_SelectTexture( 1 );
 			R_BindAnimatedImage( &pStage->bundle[1] );
-			set_count = 2; // diffuse + lightmap
-		} else {
-			set_count = 1; // diffuse
 		}
 	
 		switch ( backEnd.viewParms.portalView ) {
@@ -1093,7 +1090,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 			R_BindAnimatedImage( &pStage->bundle[0] );
 
 		vk_bind_geometry_ext( tess_flags );
-		vk_draw_geometry( pipeline, set_count, tess.depthRange, qtrue );
+		vk_draw_geometry( pipeline, tess.depthRange, qtrue );
 
 		if ( pStage->depthFragment ) {
 			switch ( backEnd.viewParms.portalView ) {
@@ -1101,7 +1098,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 				case PV_PORTAL: pipeline = pStage->vk_portal_pipeline_df; break;
 				case PV_MIRROR: pipeline = pStage->vk_mirror_pipeline_df; break;
 			}
-			vk_draw_geometry( pipeline, set_count, tess.depthRange, qtrue );
+			vk_draw_geometry( pipeline, tess.depthRange, qtrue );
 		}
 #else
 		if (!setArraysOnce)
@@ -1212,6 +1209,10 @@ uint32_t VK_PushUniform( const vkUniform_t *uniform ) {
 	Com_Memcpy( vk.cmd->vertex_buffer_ptr + offset, uniform, sizeof( *uniform ) );
 	vk.cmd->vertex_buffer_offset = offset + vk.uniform_item_size;
 
+	vk_reset_descriptor( 0 );
+	vk_update_descriptor( 0,  vk.cmd->uniform_descriptor );
+	vk_update_descriptor_offset( 0, vk.cmd->uniform_read_offset );
+
 	return offset;
 }
 
@@ -1291,7 +1292,7 @@ void VK_LightingPass( void )
 		vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_ST0 | TESS_NNN );
 	}
 
-	vk_draw_geometry( pipeline, 1, tess.depthRange, qtrue );
+	vk_draw_geometry( pipeline, tess.depthRange, qtrue );
 }
 #endif // USE_PMLIGHT
 
