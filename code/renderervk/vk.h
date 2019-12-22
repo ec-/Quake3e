@@ -254,7 +254,7 @@ typedef struct {
 #endif
 
 	VkRenderPass render_pass;
-	VkRenderPass render_pass2;
+	VkRenderPass render_pass_gamma;
 
 	VkDescriptorPool descriptor_pool;
 	VkDescriptorSetLayout set_layout_sampler;	// combined image sampler
@@ -416,6 +416,7 @@ typedef struct {
 	qboolean wideLines;
 	qboolean samplerAnisotropy;
 	qboolean fragmentStores;
+	qboolean dedicatedAllocation;
 	float maxAnisotropy;
 	float maxLodBias;
 

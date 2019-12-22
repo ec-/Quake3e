@@ -111,6 +111,10 @@ PFN_vkCreateSwapchainKHR						qvkCreateSwapchainKHR;
 PFN_vkDestroySwapchainKHR						qvkDestroySwapchainKHR;
 PFN_vkGetSwapchainImagesKHR						qvkGetSwapchainImagesKHR;
 PFN_vkQueuePresentKHR							qvkQueuePresentKHR;
+
+PFN_vkGetBufferMemoryRequirements2KHR			qvkGetBufferMemoryRequirements2KHR;
+PFN_vkGetImageMemoryRequirements2KHR			qvkGetImageMemoryRequirements2KHR;
+
 ////////////////////////////////////////////////////////////////////////////
 
 // forward declaration
@@ -442,7 +446,7 @@ static void create_render_pass( VkDevice device, VkFormat depth_format )
 	attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-	VK_CHECK( qvkCreateRenderPass( device, &desc, NULL, &vk.render_pass2 ) );
+	VK_CHECK( qvkCreateRenderPass( device, &desc, NULL, &vk.render_pass_gamma ) );
 }
 
 
@@ -713,7 +717,7 @@ static void get_surface_formats( void )
 }
 
 
-static void create_device( void ) {
+static void vk_create_device( void ) {
 
 	VkPhysicalDevice *physical_devices;
 	uint32_t device_count;
@@ -753,7 +757,7 @@ static void create_device( void ) {
 
 		VK_CHECK( qvkGetPhysicalDeviceSurfaceFormatsKHR( vk.physical_device, vk.surface, &format_count, NULL ) );
 		if ( format_count == 0 )
-			ri.Error( ERR_FATAL, "Vulkan: no surface formats found" );
+			ri.Error( ERR_FATAL, "%s: no surface formats found", __func__ );
 
 		candidates = (VkSurfaceFormatKHR*) ri.Malloc( format_count * sizeof(VkSurfaceFormatKHR) );
 
@@ -808,19 +812,25 @@ static void create_device( void ) {
 		ri.Free( queue_families );
 
 		if ( vk.queue_family_index == ~0U )
-			ri.Error(ERR_FATAL, "Vulkan: failed to find queue family");
+			ri.Error( ERR_FATAL, "%s: failed to find queue family", __func__ );
 	}
 
 	// create VkDevice
 	{
-		const char* device_extensions[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME	};
+		const char *device_extensions[3] = {
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+			VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
+			VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME
+		};
 		const float priority = 1.0;
-		VkExtensionProperties *extension_properties, *p;
+		VkExtensionProperties *extension_properties;
 		VkDeviceQueueCreateInfo queue_desc;
 		VkPhysicalDeviceFeatures device_features;
 		VkPhysicalDeviceFeatures features;
 		VkDeviceCreateInfo device_desc;
-		qboolean supported = qfalse;
+		qboolean swapchainSupported = qfalse;
+		qboolean dedicatedAllocation = qfalse;
+		qboolean memoryRequirements2 = qfalse;
 		uint32_t i, count = 0;
 
 		VK_CHECK(qvkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &count, NULL));
@@ -828,23 +838,30 @@ static void create_device( void ) {
 		VK_CHECK(qvkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &count, extension_properties));
 
 		for (i = 0; i < count; i++) {
-			p = extension_properties + i;
-			if (strcmp(p->extensionName, device_extensions[0]) == 0) {
-				supported = qtrue;
-				break;
+			if ( strcmp( extension_properties[i].extensionName, device_extensions[0] ) == 0 ) {
+				swapchainSupported = qtrue;
+			} else if ( strcmp( extension_properties[i].extensionName, device_extensions[1] ) == 0 ) {
+				dedicatedAllocation = qtrue;
+			} else if ( strcmp( extension_properties[i].extensionName, device_extensions[2] ) == 0 ) {
+				memoryRequirements2 = qtrue;
 			}
 		}
 
 		ri.Free( extension_properties );
 
-		if ( !supported )
-			ri.Error( ERR_FATAL, "Vulkan: required device extension is not available: %s", device_extensions[0] );
+		if ( !swapchainSupported )
+			ri.Error( ERR_FATAL, "%s: required device extension is not available: %s", __func__, device_extensions[0] );
+
+		if ( !memoryRequirements2 )
+			dedicatedAllocation = qfalse;
+		else
+			vk.dedicatedAllocation = dedicatedAllocation;
 
 		qvkGetPhysicalDeviceFeatures( vk.physical_device, &device_features );
 		if ( device_features.shaderClipDistance == VK_FALSE )
-			ri.Error( ERR_FATAL, "vk_create_device: shaderClipDistance feature is not supported" );
+			ri.Error( ERR_FATAL, "%s: shaderClipDistance feature is not supported", __func__ );
 		if ( device_features.fillModeNonSolid == VK_FALSE )
-			ri.Error( ERR_FATAL, "vk_create_device: fillModeNonSolid feature is not supported" );
+			ri.Error( ERR_FATAL, "%s: fillModeNonSolid feature is not supported", __func__ );
 
 		queue_desc.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queue_desc.pNext = NULL;
@@ -879,7 +896,7 @@ static void create_device( void ) {
 		device_desc.pQueueCreateInfos = &queue_desc;
 		device_desc.enabledLayerCount = 0;
 		device_desc.ppEnabledLayerNames = NULL;
-		device_desc.enabledExtensionCount = ARRAY_LEN( device_extensions );
+		device_desc.enabledExtensionCount = vk.dedicatedAllocation ? 3 : 1;
 		device_desc.ppEnabledExtensionNames = device_extensions;
 		device_desc.pEnabledFeatures = &features;
 
@@ -890,15 +907,19 @@ static void create_device( void ) {
 
 #define INIT_INSTANCE_FUNCTION(func) \
 	q##func = /*(PFN_ ## func)*/ ri.VK_GetInstanceProcAddr(vk.instance, #func); \
-    if (q##func == NULL) {                                                 \
-        ri.Error(ERR_FATAL, "Failed to find entrypoint %s", #func);        \
+	if (q##func == NULL) {											\
+		ri.Error(ERR_FATAL, "Failed to find entrypoint %s", #func);	\
 	}
 
 #define INIT_DEVICE_FUNCTION(func) \
 	q##func = (PFN_ ## func) qvkGetDeviceProcAddr(vk.device, #func);\
-    if (q##func == NULL) {											\
-        ri.Error(ERR_FATAL, "Failed to find entrypoint %s", #func);	\
+	if (q##func == NULL) {											\
+		ri.Error(ERR_FATAL, "Failed to find entrypoint %s", #func);	\
 	}
+
+#define INIT_DEVICE_FUNCTION_EXT(func) \
+	q##func = (PFN_ ## func) qvkGetDeviceProcAddr(vk.device, #func);
+
 
 static void init_vulkan_library( void )
 {
@@ -953,7 +974,7 @@ static void init_vulkan_library( void )
 	//
 	// Get device level functions.
 	//
-	create_device();
+	vk_create_device();
 
 	INIT_DEVICE_FUNCTION(vkAllocateCommandBuffers)
 	INIT_DEVICE_FUNCTION(vkAllocateDescriptorSets)
@@ -1033,10 +1054,19 @@ static void init_vulkan_library( void )
 	INIT_DEVICE_FUNCTION(vkDestroySwapchainKHR)
 	INIT_DEVICE_FUNCTION(vkGetSwapchainImagesKHR)
 	INIT_DEVICE_FUNCTION(vkQueuePresentKHR)
+
+	if ( vk.dedicatedAllocation ) {
+		INIT_DEVICE_FUNCTION_EXT(vkGetBufferMemoryRequirements2KHR);
+		INIT_DEVICE_FUNCTION_EXT(vkGetImageMemoryRequirements2KHR);
+		if ( !qvkGetBufferMemoryRequirements2KHR || !qvkGetImageMemoryRequirements2KHR ) {
+			vk.dedicatedAllocation = qfalse;
+		}
+	}
 }
 
 #undef INIT_INSTANCE_FUNCTION
 #undef INIT_DEVICE_FUNCTION
+#undef INIT_DEVICE_FUNCTION_EXT
 
 static void deinit_vulkan_library( void )
 {
@@ -1140,6 +1170,9 @@ static void deinit_vulkan_library( void )
 	qvkDestroySwapchainKHR						= NULL;
 	qvkGetSwapchainImagesKHR					= NULL;
 	qvkQueuePresentKHR							= NULL;
+
+	qvkGetBufferMemoryRequirements2KHR			= NULL;
+	qvkGetImageMemoryRequirements2KHR			= NULL;
 }
 
 
@@ -2077,12 +2110,42 @@ static void vk_add_attachment_desc( VkImage desc, VkImageView *image_view, VkMem
 	}
 }
 
+
+static void vk_get_image_memory_erquirements( VkImage image, VkMemoryRequirements *memory_requirements )
+{
+	if ( vk.dedicatedAllocation ) {
+		VkMemoryRequirements2KHR memory_requirements2;
+		VkImageMemoryRequirementsInfo2KHR image_requirements2;
+		VkMemoryDedicatedRequirementsKHR mem_req2;
+
+		Com_Memset( &mem_req2, 0, sizeof( mem_req2 ) );
+		mem_req2.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR;
+
+		image_requirements2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR;
+		image_requirements2.image = image;
+		image_requirements2.pNext = NULL;
+
+		Com_Memset( &memory_requirements2, 0, sizeof( memory_requirements2 ) );
+		memory_requirements2.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR;
+		memory_requirements2.pNext = &mem_req2;
+
+		qvkGetImageMemoryRequirements2KHR( vk.device, &image_requirements2, &memory_requirements2 );
+
+		*memory_requirements = memory_requirements2.memoryRequirements;
+	} else {
+		qvkGetImageMemoryRequirements( vk.device, image, memory_requirements );
+	}
+}
+
+
 static void create_color_attachment( uint32_t width, uint32_t height, VkSampleCountFlagBits samples, VkFormat format,
 	VkImageUsageFlags usage, VkImage *image, VkImageView *image_view, VkDeviceMemory *image_memory, qboolean multisample )
 {
 	VkImageCreateInfo create_desc;
 	VkMemoryRequirements memory_requirements;
+
 #ifndef USE_IMAGE_POOL
+	VkMemoryDedicatedAllocateInfoKHR alloc_info2;
 	VkMemoryAllocateInfo alloc_info;
 	VkImageViewCreateInfo view_desc;
 	VkCommandBuffer command_buffer;
@@ -2108,7 +2171,7 @@ static void create_color_attachment( uint32_t width, uint32_t height, VkSampleCo
 	create_desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	VK_CHECK( qvkCreateImage( vk.device, &create_desc, NULL, image ) );
 
-	qvkGetImageMemoryRequirements( vk.device, *image, &memory_requirements );
+	vk_get_image_memory_erquirements( *image, &memory_requirements );
 
 #ifdef USE_IMAGE_POOL
 	if ( !multisample )
@@ -2116,11 +2179,20 @@ static void create_color_attachment( uint32_t width, uint32_t height, VkSampleCo
 	else
 		vk_add_attachment_desc( *image, image_view, &memory_requirements, format, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
 #else
+
 	// allocate color image memory
 	alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	alloc_info.pNext = NULL;
 	alloc_info.allocationSize = memory_requirements.size;
 	alloc_info.memoryTypeIndex = find_memory_type( vk.physical_device, memory_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+
+	if ( vk.dedicatedAllocation ) {
+		Com_Memset( &alloc_info2, 0, sizeof( alloc_info2 ) );
+		alloc_info2.sType =  VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR;
+		alloc_info2.image = *image;
+		alloc_info.pNext = &alloc_info2;
+	}
+
 	VK_CHECK( qvkAllocateMemory( vk.device, &alloc_info, NULL, image_memory ) );
 	VK_CHECK( qvkBindImageMemory( vk.device, *image, *image_memory, 0 ) );
 
@@ -2161,6 +2233,7 @@ static void create_depth_attachment( uint32_t width, uint32_t height, VkSampleCo
 	VkMemoryRequirements memory_requirements;
 	VkImageAspectFlags image_aspect_flags;
 #ifndef USE_IMAGE_POOL
+	VkMemoryDedicatedAllocateInfoKHR alloc_info2;
 	VkMemoryAllocateInfo alloc_info;
 	VkImageViewCreateInfo view_desc;
 	VkCommandBuffer command_buffer;
@@ -2191,7 +2264,7 @@ static void create_depth_attachment( uint32_t width, uint32_t height, VkSampleCo
 
 	VK_CHECK( qvkCreateImage( vk.device, &create_desc, NULL, image ) );
 
-	qvkGetImageMemoryRequirements( vk.device, *image, &memory_requirements );
+	vk_get_image_memory_erquirements( *image, &memory_requirements );
 
 #ifdef USE_IMAGE_POOL
 	vk_add_attachment_desc( *image, image_view, &memory_requirements, vk.depth_format, image_aspect_flags, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL );
@@ -2201,6 +2274,14 @@ static void create_depth_attachment( uint32_t width, uint32_t height, VkSampleCo
 	alloc_info.pNext = NULL;
 	alloc_info.allocationSize = memory_requirements.size;
 	alloc_info.memoryTypeIndex = find_memory_type( vk.physical_device, memory_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+
+	if ( vk.dedicatedAllocation ) {
+		Com_Memset( &alloc_info2, 0, sizeof( alloc_info2 ) );
+		alloc_info2.sType =  VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR;
+		alloc_info2.image = *image;
+		alloc_info.pNext = &alloc_info2;
+	}
+
 	VK_CHECK( qvkAllocateMemory( vk.device, &alloc_info, NULL, image_memory ) );
 	VK_CHECK( qvkBindImageMemory( vk.device, *image, *image_memory, 0 ) );
 
@@ -2298,7 +2379,7 @@ static void vk_create_framebuffers( void )
 #else
 			VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.tess[i].framebuffers[n] ) );
 #endif
-			desc.renderPass = vk.render_pass2;
+			desc.renderPass = vk.render_pass_gamma;
 			desc.attachmentCount = 1;
 			desc.width = vk.windowWidth;
 			desc.height = vk.windowHeight;
@@ -2671,12 +2752,12 @@ void vk_initialize( void )
 		// post-processing/msaa-resolve
 		create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, VK_SAMPLE_COUNT_1_BIT, vk.resolve_format,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
-			&vk.color_image, &vk.color_image_view, &vk.color_image_memory );
+			&vk.color_image, &vk.color_image_view, &vk.color_image_memory, qfalse );
 	}
 	if ( /* vk.fboActive && */ vk.msaaActive ) {
 		// msaa
 		create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, vkSamples, vk.color_format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-			&vk.msaa_image, &vk.msaa_image_view, &vk.msaa_image_memory );
+			&vk.msaa_image, &vk.msaa_image_view, &vk.msaa_image_memory, qtrue );
 	}
 	// depth
 	create_depth_attachment( glConfig.vidWidth, glConfig.vidHeight, vkSamples, &vk.depth_image, &vk.depth_image_view, &vk.depth_image_memory );
@@ -2890,8 +2971,8 @@ void vk_shutdown( void )
 	if ( vk.render_pass != VK_NULL_HANDLE )
 		qvkDestroyRenderPass( vk.device, vk.render_pass, NULL );
 
-	if ( vk.render_pass2 != VK_NULL_HANDLE )
-		qvkDestroyRenderPass( vk.device, vk.render_pass2, NULL );
+	if ( vk.render_pass_gamma != VK_NULL_HANDLE )
+		qvkDestroyRenderPass( vk.device, vk.render_pass_gamma, NULL );
 
 	qvkDestroyCommandPool( vk.device, vk.command_pool, NULL );
 
@@ -3388,7 +3469,7 @@ void vk_create_gamma_pipeline( void ) {
 	create_info.pColorBlendState = &blend_state;
 	create_info.pDynamicState = NULL;
 	create_info.layout = vk.pipeline_layout_gamma;
-	create_info.renderPass = vk.render_pass2;
+	create_info.renderPass = vk.render_pass_gamma;
 	create_info.subpass = 0;
 	create_info.basePipelineHandle = VK_NULL_HANDLE;
 	create_info.basePipelineIndex = -1;
@@ -4665,11 +4746,11 @@ void vk_end_frame( void )
 		{
 			qvkCmdEndRenderPass( vk.cmd->command_buffer );
 #ifdef USE_SINGLE_FBO
-			vk_begin_render_pass( vk.render_pass2, vk.framebuffers2[ vk.swapchain_image_index ], qfalse, vk.windowWidth, vk.windowHeight );
+			vk_begin_render_pass( vk.render_pass_gamma, vk.framebuffers2[ vk.swapchain_image_index ], qfalse, vk.windowWidth, vk.windowHeight );
 			qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.gamma_pipeline );
 			qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout_gamma, 0, 1, &vk.color_descriptor, 0, NULL );
 #else
-			vk_begin_render_pass( vk.render_pass2, vk.cmd->framebuffers2[ vk.swapchain_image_index ], qfalse, vk.windowWidth, vk.windowHeight );
+			vk_begin_render_pass( vk.render_pass_gamma, vk.cmd->framebuffers2[ vk.swapchain_image_index ], qfalse, vk.windowWidth, vk.windowHeight );
 			qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.gamma_pipeline );
 			qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout_gamma, 0, 1, &vk.cmd->color_descriptor, 0, NULL );
 #endif
