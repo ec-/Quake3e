@@ -68,6 +68,7 @@ PFN_vkCreateGraphicsPipelines					qvkCreateGraphicsPipelines;
 PFN_vkCreateImage								qvkCreateImage;
 PFN_vkCreateImageView							qvkCreateImageView;
 PFN_vkCreatePipelineLayout						qvkCreatePipelineLayout;
+PFN_vkCreatePipelineCache						qvkCreatePipelineCache;
 PFN_vkCreateRenderPass							qvkCreateRenderPass;
 PFN_vkCreateSampler								qvkCreateSampler;
 PFN_vkCreateSemaphore							qvkCreateSemaphore;
@@ -82,6 +83,7 @@ PFN_vkDestroyFramebuffer						qvkDestroyFramebuffer;
 PFN_vkDestroyImage								qvkDestroyImage;
 PFN_vkDestroyImageView							qvkDestroyImageView;
 PFN_vkDestroyPipeline							qvkDestroyPipeline;
+PFN_vkDestroyPipelineCache						qvkDestroyPipelineCache;
 PFN_vkDestroyPipelineLayout						qvkDestroyPipelineLayout;
 PFN_vkDestroyRenderPass							qvkDestroyRenderPass;
 PFN_vkDestroySampler							qvkDestroySampler;
@@ -1010,6 +1012,7 @@ static void init_vulkan_library( void )
 	INIT_DEVICE_FUNCTION(vkCreateGraphicsPipelines)
 	INIT_DEVICE_FUNCTION(vkCreateImage)
 	INIT_DEVICE_FUNCTION(vkCreateImageView)
+	INIT_DEVICE_FUNCTION(vkCreatePipelineCache)
 	INIT_DEVICE_FUNCTION(vkCreatePipelineLayout)
 	INIT_DEVICE_FUNCTION(vkCreateRenderPass)
 	INIT_DEVICE_FUNCTION(vkCreateSampler)
@@ -1025,6 +1028,7 @@ static void init_vulkan_library( void )
 	INIT_DEVICE_FUNCTION(vkDestroyImage)
 	INIT_DEVICE_FUNCTION(vkDestroyImageView)
 	INIT_DEVICE_FUNCTION(vkDestroyPipeline)
+	INIT_DEVICE_FUNCTION(vkDestroyPipelineCache)
 	INIT_DEVICE_FUNCTION(vkDestroyPipelineLayout)
 	INIT_DEVICE_FUNCTION(vkDestroyRenderPass)
 	INIT_DEVICE_FUNCTION(vkDestroySampler)
@@ -1126,6 +1130,7 @@ static void deinit_vulkan_library( void )
 	qvkCreateGraphicsPipelines					= NULL;
 	qvkCreateImage								= NULL;
 	qvkCreateImageView							= NULL;
+	qvkCreatePipelineCache						= NULL;
 	qvkCreatePipelineLayout						= NULL;
 	qvkCreateRenderPass							= NULL;
 	qvkCreateSampler							= NULL;
@@ -1141,6 +1146,7 @@ static void deinit_vulkan_library( void )
 	qvkDestroyImage								= NULL;
 	qvkDestroyImageView							= NULL;
 	qvkDestroyPipeline							= NULL;
+	qvkDestroyPipelineCache						= NULL;
 	qvkDestroyPipelineLayout					= NULL;
 	qvkDestroyRenderPass						= NULL;
 	qvkDestroySampler							= NULL;
@@ -1845,9 +1851,9 @@ static void vk_create_persistent_pipelines( void )
 						for ( l = 0; l < 2; l++ ) {
 							def.fog_stage = l; // fogStage
 							def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING;
-							vk.dlight_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, r_dlightMode->integer != 0 ? qtrue : qfalse );
+							vk.dlight_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, qfalse );
 							def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING1;
-							vk.dlight1_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, r_dlightMode->integer != 0 ? qtrue : qfalse );
+							vk.dlight_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, qfalse );
 						}
 					}
 				}
@@ -2897,6 +2903,13 @@ void vk_initialize( void )
 
 	vk_create_shader_modules();
 
+	{
+		VkPipelineCacheCreateInfo ci;
+		Com_Memset( &ci, 0, sizeof( ci ) );
+		ci.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+		VK_CHECK( qvkCreatePipelineCache( vk.device, &ci, NULL, &vk.pipelineCache ) );
+	}
+
 	vk_create_persistent_pipelines();
 
 	vk.pipelines_world_base = vk.pipelines_count;
@@ -2987,6 +3000,10 @@ void vk_shutdown( void )
 		Com_Memset( &vk.pipelines[i], 0, sizeof( vk.pipelines[0] ) );
 	}
 	vk.pipelines_count = 0;
+
+	if ( vk.pipelineCache != VK_NULL_HANDLE ) {
+		qvkDestroyPipelineCache( vk.device, vk.pipelineCache, NULL );
+	}
 
 	if ( vk.gamma_pipeline ) {
 		qvkDestroyPipeline( vk.device, vk.gamma_pipeline, NULL );
@@ -3972,7 +3989,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def ) {
 	create_info.basePipelineHandle = VK_NULL_HANDLE;
 	create_info.basePipelineIndex = -1;
 
-	VK_CHECK( qvkCreateGraphicsPipelines( vk.device, VK_NULL_HANDLE, 1, &create_info, NULL, &pipeline ) );
+	VK_CHECK( qvkCreateGraphicsPipelines( vk.device, vk.pipelineCache, 1, &create_info, NULL, &pipeline ) );
 
 	vk.pipeline_create_count++;
 		

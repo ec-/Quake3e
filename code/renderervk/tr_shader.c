@@ -2858,7 +2858,7 @@ static shader_t *FinishShader( void ) {
 					def.shader_type = TYPE_SIGNLE_TEXTURE; break;
 			}
 
-			if ( def.shader_type == TYPE_SIGNLE_TEXTURE && pStage->bundle[0].tcGen == TCGEN_ENVIRONMENT_MAPPED ) {
+			if ( def.shader_type == TYPE_SIGNLE_TEXTURE && pStage->bundle[0].tcGen == TCGEN_ENVIRONMENT_MAPPED && !pStage->bundle[0].isLightmap ) {
 				if ( pStage->bundle[0].numTexMods == 0 ) {
 					def.shader_type = TYPE_SIGNLE_TEXTURE_ENVIRO;
 					shader.tessFlags |= TESS_NNN | TESS_VPOS;
@@ -2879,19 +2879,19 @@ static shader_t *FinishShader( void ) {
 
 			def.clipping_plane = qtrue;
 			def.mirror = qfalse;
-			pStage->vk_portal_pipeline[0] = vk_find_pipeline_ext( 0, &def, qtrue );
+			pStage->vk_portal_pipeline[0] = vk_find_pipeline_ext( 0, &def, qfalse );
 			if ( pStage->depthFragment ) {
 				def.shader_type = TYPE_SIGNLE_TEXTURE_DF;
-				pStage->vk_portal_pipeline_df = vk_find_pipeline_ext( 0, &def, qtrue );
+				pStage->vk_portal_pipeline_df = vk_find_pipeline_ext( 0, &def, qfalse );
 				def.shader_type = stype;
 			}
 
 			def.clipping_plane = qtrue;
 			def.mirror = qtrue;
-			pStage->vk_mirror_pipeline[0] = vk_find_pipeline_ext( 0, &def, qtrue );
+			pStage->vk_mirror_pipeline[0] = vk_find_pipeline_ext( 0, &def, qfalse );
 			if ( pStage->depthFragment ) {
 				def.shader_type = TYPE_SIGNLE_TEXTURE_DF;
-				pStage->vk_mirror_pipeline_df = vk_find_pipeline_ext( 0, &def, qtrue );
+				pStage->vk_mirror_pipeline_df = vk_find_pipeline_ext( 0, &def, qfalse );
 				def.shader_type = stype;
 			}
 		}
@@ -2913,7 +2913,7 @@ static shader_t *FinishShader( void ) {
 		def.fog_stage = 1;
 		def_mirror.fog_stage = 1;
 		def_portal.fog_stage = 1;
-		pStage->vk_pipeline[1] = vk_find_pipeline_ext( 0, &def, qtrue );
+		pStage->vk_pipeline[1] = vk_find_pipeline_ext( 0, &def, qfalse );
 		pStage->vk_mirror_pipeline[1] = vk_find_pipeline_ext( 0, &def_mirror, qfalse );
 		pStage->vk_portal_pipeline[1] = vk_find_pipeline_ext( 0, &def_portal, qfalse );
 

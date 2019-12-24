@@ -356,6 +356,8 @@ typedef struct {
 
 	} modules;
 
+	VkPipelineCache pipelineCache;
+
 	VK_Pipeline_t pipelines[ MAX_VK_PIPELINES ];
 	uint32_t pipelines_count;
 	uint32_t pipelines_created_count;
