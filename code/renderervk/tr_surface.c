@@ -260,8 +260,8 @@ static void RB_SurfaceTriangles( srfTriangles_t *srf ) {
 			RB_EndSurface();
 			RB_BeginSurface( tess.shader, tess.fogNum );
 			// set some dummy parameters for RB_EndSurface
-			tess.numIndexes = 3;
-			tess.numVertexes = 3;
+			tess.numIndexes = 1;
+			tess.numVertexes = 0;
 			VBO_ClearQueue();
 		}
 		tess.surfType = SF_TRIANGLES;
@@ -845,8 +845,8 @@ static void RB_SurfaceFace( const srfSurfaceFace_t *surf ) {
 			RB_EndSurface();
 			RB_BeginSurface( tess.shader, tess.fogNum );
 			// set some dummy parameters for RB_EndSurface
-			tess.numIndexes = 3;
-			tess.numVertexes = 3;
+			tess.numIndexes = 1;
+			tess.numVertexes = 0;
 			VBO_ClearQueue();
 		}
 		tess.surfType = SF_FACE;
@@ -1043,8 +1043,8 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 			RB_EndSurface();
 			RB_BeginSurface( tess.shader, tess.fogNum );
 			// set some dummy parameters for RB_EndSurface
-			tess.numIndexes = 3;
-			tess.numVertexes = 3;
+			tess.numIndexes = 1;
+			tess.numVertexes = 0;
 			VBO_ClearQueue();
 		}
 		tess.surfType = SF_GRID;
