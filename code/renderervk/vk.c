@@ -1853,7 +1853,7 @@ static void vk_create_persistent_pipelines( void )
 							def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING;
 							vk.dlight_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, qfalse );
 							def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING1;
-							vk.dlight_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, qfalse );
+							vk.dlight1_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, qfalse );
 						}
 					}
 				}
@@ -3001,12 +3001,12 @@ void vk_shutdown( void )
 	}
 	vk.pipelines_count = 0;
 
-	if ( vk.pipelineCache != VK_NULL_HANDLE ) {
-		qvkDestroyPipelineCache( vk.device, vk.pipelineCache, NULL );
-	}
-
 	if ( vk.gamma_pipeline ) {
 		qvkDestroyPipeline( vk.device, vk.gamma_pipeline, NULL );
+	}
+
+	if ( vk.pipelineCache != VK_NULL_HANDLE ) {
+		qvkDestroyPipelineCache( vk.device, vk.pipelineCache, NULL );
 	}
 
 	qvkDestroyDescriptorPool(vk.device, vk.descriptor_pool, NULL);
@@ -4123,18 +4123,17 @@ VkSampler vk_find_sampler( const Vk_Sampler_Def *def ) {
 
 uint32_t vk_find_pipeline_ext( uint32_t base, const Vk_Pipeline_Def *def, qboolean use ) {
 	const Vk_Pipeline_Def *cur_def;
-	uint32_t index, i;
+	uint32_t index;
 
-	for ( i = base; i < vk.pipelines_count; i++ ) {
-		cur_def = &vk.pipelines[i].def;
+	for ( index = base; index < vk.pipelines_count; index++ ) {
+		cur_def = &vk.pipelines[ index ].def;
 		if ( memcmp( cur_def, def, sizeof( *def ) ) == 0 ) {
-			if ( use )
-				vk_gen_pipeline( i );
-			return i;
+			goto found;
 		}
 	}
 
 	index = vk_alloc_pipeline( def );
+found:
 
 	if ( use )
 		vk_gen_pipeline( index );
