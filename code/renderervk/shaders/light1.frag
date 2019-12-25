@@ -32,8 +32,8 @@ layout (constant_id = 3) const int alpha_to_coverage = 0;
 float CorrectAlpha(float threshold, float alpha, vec2 tc)
 {
 	ivec2 ts = textureSize(texture0, 0);
-	float dx = max(dFdx(tc.x * float(ts.x)), 0.001);
-	float dy = max(dFdy(tc.y * float(ts.y)), 0.001);
+	float dx = max(abs(dFdx(tc.x * float(ts.x))), 0.001);
+	float dy = max(abs(dFdy(tc.y * float(ts.y))), 0.001);
 	float dxy = max(dx, dy); // apply the smallest boost
 	float scale = max(1.0 / dxy, 1.0);
 	float ac = threshold + (alpha - threshold) * scale;
