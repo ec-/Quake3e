@@ -509,7 +509,7 @@ static void RB_BeginDrawingView( void ) {
 }
 
 #ifdef USE_PMLIGHT
-static void RB_LightingPass( void );
+static void RB_LightingPass( qboolean skipWeapon );
 #endif
 
 /*
@@ -517,7 +517,7 @@ static void RB_LightingPass( void );
 RB_RenderDrawSurfList
 ==================
 */
-static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
+static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs, qboolean skipWeapon ) {
 	shader_t		*shader, *oldShader;
 	int				fogNum;
 	int				entityNum, oldEntityNum;
@@ -558,6 +558,10 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 
 		R_DecomposeSort( drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted );
 
+		if ( skipWeapon && entityNum != REFENTITYNUM_WORLD && backEnd.refdef.entities[ entityNum ].e.renderfx & RF_DEPTHHACK ) {
+			continue;
+		}
+
 		//
 		// change the tess parameters if needed
 		// a "entityMergable" shader is a shader that can have surfaces from seperate
@@ -566,13 +570,12 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 			if ( oldShader != NULL ) {
 				RB_EndSurface();
 			}
-#if 1
 #ifdef USE_PMLIGHT
 			#define INSERT_POINT SS_FOG
 			if ( backEnd.refdef.numLitSurfs && oldShaderSort < INSERT_POINT && shader->sort >= INSERT_POINT ) {
 				//RB_BeginDrawingLitSurfs(); // no need, already setup in RB_BeginDrawingView()
 #ifdef USE_VULKAN
-				RB_LightingPass();
+				RB_LightingPass( skipWeapon );
 #else
 				if ( depthRange ) {
 					qglDepthRange( 0, 1 );
@@ -585,7 +588,6 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				oldEntityNum = -1; // force matrix setup
 			}
 			oldShaderSort = shader->sort;
-#endif
 #endif
 			RB_BeginSurface( shader, fogNum );
 			oldShader = shader;
@@ -782,7 +784,7 @@ static void RB_BeginDrawingLitSurfs( void )
 RB_RenderLitSurfList
 ==================
 */
-static void RB_RenderLitSurfList( dlight_t* dl ) {
+static void RB_RenderLitSurfList( dlight_t* dl, qboolean skipWeapon ) {
 	shader_t		*shader, *oldShader;
 	int				fogNum;
 	int				entityNum, oldEntityNum;
@@ -819,6 +821,10 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 		}
 
 		R_DecomposeLitSort( litSurf->sort, &entityNum, &shader, &fogNum );
+
+		if ( skipWeapon && entityNum != REFENTITYNUM_WORLD && backEnd.refdef.entities[ entityNum ].e.renderfx & RF_DEPTHHACK ) {
+			continue;
+		}
 
 		// anything BEFORE opaque is sky/portal, anything AFTER it should never have been added
 		//assert( shader->sort == SS_OPAQUE );
@@ -1221,7 +1227,7 @@ static const void *RB_StretchPic( const void *data ) {
 
 
 #ifdef USE_PMLIGHT
-static void RB_LightingPass( void )
+static void RB_LightingPass( qboolean skipWeapon )
 {
 	dlight_t	*dl;
 	int	i;
@@ -1239,7 +1245,7 @@ static void RB_LightingPass( void )
 		if ( dl->head )
 		{
 			tess.light = dl;
-			RB_RenderLitSurfList( dl );
+			RB_RenderLitSurfList( dl, skipWeapon );
 		}
 	}
 
@@ -1256,7 +1262,8 @@ RB_DrawSurfs
 =============
 */
 static const void *RB_DrawSurfs( const void *data ) {
-	const drawSurfsCommand_t	*cmd;
+	const drawSurfsCommand_t *cmd;
+	qboolean skipWeapon;
 
 	// finish any 2D drawing if needed
 	if ( tess.numIndexes ) {
@@ -1268,6 +1275,10 @@ static const void *RB_DrawSurfs( const void *data ) {
 	backEnd.refdef = cmd->refdef;
 	backEnd.viewParms = cmd->viewParms;
 
+	skipWeapon = (vk.renderPassIndex == RENDER_PASS_SCREENMAP) ? qtrue : qfalse;
+
+__redraw:
+
 #ifdef USE_VBO
 	VBO_UnBind();
 #endif
@@ -1275,7 +1286,7 @@ static const void *RB_DrawSurfs( const void *data ) {
 	// clear the z buffer, set the modelview, etc
 	RB_BeginDrawingView();
 
-	RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
+	RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs, skipWeapon );
 
 #ifdef USE_VBO
 	VBO_UnBind();
@@ -1294,9 +1305,21 @@ static const void *RB_DrawSurfs( const void *data ) {
 #ifdef USE_PMLIGHT
 	if ( backEnd.refdef.numLitSurfs ) {
 		RB_BeginDrawingLitSurfs();
-		RB_LightingPass();
+		RB_LightingPass( skipWeapon );
 	}
 #endif
+
+	if ( skipWeapon ) {
+		vk_end_render_pass();
+		vk_begin_main_render_pass();
+
+		backEnd.refdef = cmd->refdef;
+		backEnd.viewParms = cmd->viewParms;
+
+		skipWeapon = qfalse;
+
+		goto __redraw;
+	}
 
 	//TODO Maybe check for rdf_noworld stuff but q3mme has full 3d ui
 	backEnd.doneSurfaces = qtrue; // for bloom
@@ -1569,6 +1592,8 @@ static const void *RB_SwapBuffers( const void *data ) {
 	if ( r_showImages->integer ) {
 		RB_ShowImages();
 	}
+
+	tr.needScreenMap = 0;
 
 #ifdef USE_VULKAN
 	vk_end_frame();

@@ -1438,6 +1438,8 @@ void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader,
 		| tr.shiftedEntityNum | ( fogIndex << QSORT_FOGNUM_SHIFT ) | (int)dlightMap;
 	tr.refdef.drawSurfs[index].surface = surface;
 	tr.refdef.numDrawSurfs++;
+
+	tr.needScreenMap |= shader->hasScreenMap;
 }
 
 

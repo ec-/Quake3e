@@ -642,16 +642,25 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 		//
 		// clampmap <name>
 		//
-		else if ( !Q_stricmp( token, "clampmap" ) )
+		else if ( !Q_stricmp( token, "clampmap" ) || !Q_stricmp( token, "screenMap" ) )
 		{
 			imgFlags_t flags;
 
-			flags = IMGFLAG_CLAMPTOEDGE;
+			if ( !Q_stricmp( token, "screenMap" ) ) {
+				flags = IMGFLAG_NONE;
+				if ( vk.fboActive ) {
+					stage->bundle[0].isScreenMap = 1;
+					shader.hasScreenMap = 1;
+				}
+			} else {
+				flags = IMGFLAG_CLAMPTOEDGE;
+			}
 
 			token = COM_ParseExt( text, qfalse );
 			if ( !token[0] )
 			{
-				ri.Printf( PRINT_WARNING, "WARNING: missing parameter for '%s' keyword in shader '%s'\n", "clampMap", shader.name );
+				ri.Printf( PRINT_WARNING, "WARNING: missing parameter for '%s' keyword in shader '%s'\n",
+					stage->bundle[0].isScreenMap ? "screenMap" : "clampMap", shader.name );
 				return qfalse;
 			}
 
@@ -3549,7 +3558,7 @@ static void ScanAndLoadShaderFiles( void )
 	// scan for legacy shader files
 	shaderFiles = ri.FS_ListFiles( "scripts", ".shader", &numShaderFiles );
 
-	if ( 0 ) {
+	if ( 1 ) {
 		// if ARB shaders available - scan for extended shader files
 		shaderxFiles = ri.FS_ListFiles( "scripts", ".shaderx", &numShaderxFiles );
 	} else {

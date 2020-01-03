@@ -343,7 +343,7 @@ static void R_LoadMergedLightmaps( const lump_t *l, byte *image )
 
 	// create all the lightmaps
 	tr.numLightmaps = len / (LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3);
-	
+
 	// if we are in r_vertexLight mode, we don't need the lightmaps at all
 	if ( ( r_vertexLight->integer && tr.vertexLightingAllowed ) /*|| glConfig.hardwareType == GLHW_PERMEDIA2*/ )
 		return;

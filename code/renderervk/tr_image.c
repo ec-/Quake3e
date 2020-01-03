@@ -1481,6 +1481,9 @@ void R_CreateBuiltinImages( void ) {
 
 	R_CreateDefaultImage();
 
+	Com_Memset( data, 0, sizeof( data ) );
+	tr.blackImage = R_CreateImage( "*black", (byte *)data, 8, 8, IMGFLAG_NONE );
+
 	// we use a solid white image instead of disabling texturing
 	Com_Memset( data, 255, sizeof( data ) );
 	tr.whiteImage = R_CreateImage( "*white", (byte *)data, 8, 8, IMGFLAG_NONE );

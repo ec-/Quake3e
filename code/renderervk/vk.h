@@ -57,6 +57,12 @@ typedef struct {
 	qboolean noAnisotropy;
 } Vk_Sampler_Def;
 
+enum {
+	RENDER_PASS_MAIN,
+	RENDER_PASS_SCREENMAP,
+	RENDER_PASS_COUNT
+};
+
 typedef struct {
 	Vk_Shader_Type shader_type;
 	unsigned int state_bits; // GLS_XXX flags
@@ -72,7 +78,7 @@ typedef struct {
 
 typedef struct VK_Pipeline {
 	Vk_Pipeline_Def def;
-	VkPipeline handle;
+	VkPipeline handle[ RENDER_PASS_COUNT ];
 } VK_Pipeline_t;
 	
 // this structure must be in sync with shader uniforms!
@@ -151,6 +157,10 @@ void vk_clear_attachments(qboolean clear_depth, qboolean clear_stencil, qboolean
 void vk_bind_geometry( void );
 void vk_begin_frame( void );
 void vk_end_frame( void );
+
+void vk_end_render_pass( void );
+void vk_begin_main_render_pass( void );
+void vk_begin_screenmap_render_pass( void );
 
 void vk_bind_geometry_ext(int flags);
 void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean indexed);
@@ -254,6 +264,7 @@ typedef struct {
 #endif
 
 	VkRenderPass render_pass;
+	VkRenderPass render_pass_screenmap;
 	VkRenderPass render_pass_gamma;
 
 	VkDescriptorPool descriptor_pool;
@@ -269,25 +280,37 @@ typedef struct {
 	VkDescriptorSet color_descriptor;
 
 	VkImage color_image;
-//#ifndef USE_IMAGE_POOL
 	VkDeviceMemory color_image_memory;
-//#endif
 	VkImageView color_image_view;
 
 	VkImage depth_image;
-//#ifndef USE_IMAGE_POOL
 	VkDeviceMemory depth_image_memory;
-//#endif
 	VkImageView depth_image_view;
 
 	VkImage msaa_image;
-//#ifndef USE_IMAGE_POOL
 	VkDeviceMemory msaa_image_memory;
-//#endif
 	VkImageView msaa_image_view;
 
 	VkFramebuffer framebuffers[MAX_SWAPCHAIN_IMAGES];
-	VkFramebuffer framebuffers2[MAX_SWAPCHAIN_IMAGES];
+	VkFramebuffer framebuffers2[MAX_SWAPCHAIN_IMAGES]; // post-process
+	VkFramebuffer framebuffers3[MAX_SWAPCHAIN_IMAGES]; // screenmap
+
+	// screenMap
+
+	VkDescriptorSet color_descriptor3;
+
+	VkImage color_image3;
+	VkDeviceMemory color_image_memory3;
+	VkImageView color_image_view3;
+
+	VkImage color_image3_msaa;
+	VkDeviceMemory color_image_memory3_msaa;
+	VkImageView color_image_view3_msaa;
+
+	VkImage depth_image3;
+	VkDeviceMemory depth_image_memory3;
+	VkImageView depth_image_view3;
+
 #endif
 
 	vk_tess_t tess[ NUM_COMMAND_BUFFERS ], *cmd;
@@ -439,6 +462,18 @@ typedef struct {
 	int		blitFilter;
 
 	qboolean updateViewport;
+
+	uint32_t renderWidth;
+	uint32_t renderHeight;
+
+	float renderScaleX;
+	float renderScaleY;
+
+	int		renderPassIndex;
+
+	uint32_t screenMapWidth;
+	uint32_t screenMapHeight;
+	uint32_t screenMapSamples;
 
 } Vk_Instance;
 

@@ -988,7 +988,7 @@ RB_CalcEnvironmentTexCoordsFP
 Special version for first-person models, borrowed from OpenArena
 ========================
 */
-void RB_CalcEnvironmentTexCoordsFP( float *st, qboolean screenMap ) {
+void RB_CalcEnvironmentTexCoordsFP( float *st, int screenMap ) {
 	int			i;
 	const float	*v, *normal;
 	vec3_t		viewer, reflected, where, why, who; // what

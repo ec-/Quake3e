@@ -323,6 +323,7 @@ typedef struct {
 	texModInfo_t	*texMods;
 
 	int				videoMapHandle;
+	int				isScreenMap;
 	qboolean		isLightmap;
 	qboolean		isVideoMap;
 } textureBundle_t;
@@ -459,6 +460,8 @@ typedef struct shader_s {
 	int			curVertexes;
 	int			curIndexes;
 #endif
+
+	int			hasScreenMap;
 
 	float		lightmapOffset[2];	// within merged lightmap
 
@@ -1099,6 +1102,7 @@ typedef struct {
 	image_t					*fogImage;
 	image_t					*dlightImage;	// inverse-quare highlight for projective adding
 	image_t					*flareImage;
+	image_t					*blackImage;
 	image_t					*whiteImage;			// full of 0xff
 	image_t					*identityLightImage;	// full of tr.identityLightByte
 
@@ -1680,7 +1684,7 @@ void	R_TransformClipToWindow( const vec4_t clip, const viewParms_t *view, vec4_t
 void	RB_DeformTessGeometry( void );
 
 void	RB_CalcEnvironmentTexCoords( float *dstTexCoords );
-void	RB_CalcEnvironmentTexCoordsFP( float *dstTexCoords, qboolean screenMap );
+void	RB_CalcEnvironmentTexCoordsFP( float *dstTexCoords, int screenMap );
 void	RB_CalcFogTexCoords( float *dstTexCoords );
 const fogProgramParms_t *RB_CalcFogProgramParms( void );
 void	RB_CalcScrollTexCoords( const float scroll[2], float *dstTexCoords );

@@ -217,6 +217,14 @@ void R_BindAnimatedImage( const textureBundle_t *bundle ) {
 		return;
 	}
 
+	if ( bundle->isScreenMap && backEnd.viewParms.frameSceneNum == 1 ) {
+		if ( vk.renderPassIndex == RENDER_PASS_SCREENMAP )
+			GL_Bind( tr.blackImage );
+		else
+			vk_update_descriptor( 1, vk.color_descriptor3 );
+		return;
+	}
+
 	if ( bundle->numImageAnimations <= 1 ) {
 		GL_Bind( bundle->image[0] );
 		return;
@@ -943,7 +951,7 @@ void R_ComputeTexCoords( int b, const textureBundle_t *bundle ) {
 		RB_CalcEnvironmentTexCoords( ( float * ) tess.svars.texcoords[b] );
 		break;
 	case TCGEN_ENVIRONMENT_MAPPED_FP:
-		RB_CalcEnvironmentTexCoordsFP( ( float * ) tess.svars.texcoords[b], qfalse /* screenMap*/ );
+		RB_CalcEnvironmentTexCoordsFP( ( float * ) tess.svars.texcoords[b], bundle->isScreenMap );
 		break;
 	case TCGEN_BAD:
 		return;
