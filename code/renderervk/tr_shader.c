@@ -2551,7 +2551,8 @@ static void VertexLightingCollapse( void ) {
 				bestStage = pStage;
 			}
 
-			if ( pStage->rgbGen == CGEN_EXACT_VERTEX || pStage->rgbGen == CGEN_VERTEX || pStage->rgbGen == CGEN_ONE_MINUS_VERTEX || pStage->bundle[0].tcGen == TCGEN_LIGHTMAP ) {
+			// detect missing vertex colors on ojfc-17 for green/dark pink flags
+			if ( pStage->rgbGen != CGEN_IDENTITY || pStage->bundle[0].tcGen == TCGEN_LIGHTMAP || pStage->stateBits & GLS_ATEST_BITS ) {
 				vertexColors = qtrue;
 			}
 		}
