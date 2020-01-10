@@ -2118,8 +2118,8 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 		}
 	}
 
-	// make sure that lightmaps are in bundle 1 for 3dfx
-	if ( st0->bundle[0].isLightmap )
+	// make sure that lightmaps are in bundle 1
+	if ( st0->bundle[0].isLightmap || st0->bundle[0].tcGen == TCGEN_LIGHTMAP && st1->bundle[0].tcGen != TCGEN_LIGHTMAP )
 	{
 		tmpBundle = st0->bundle[0];
 		st0->bundle[0] = st1->bundle[0];
@@ -2374,19 +2374,6 @@ void FindLightingStages( shader_t *sh )
 				}
 			}
 			sh->lightingStage = i;
-		}
-	}
-
-	// check for collapsed multitexture with lightmap in first bundle
-	if ( sh->lightingStage == -1 && i == 1 /*&& sh->multitextureEnv == GL_MODULATE*/ ) {
-		st = sh->stages[ 0 ];
-		if ( st->mtEnv == GL_MODULATE ) {
-			if ( !st->bundle[0].isLightmap && st->bundle[1].image[0] && st->rgbGen == CGEN_IDENTITY ) {
-				if ( st->bundle[0].tcGen == TCGEN_LIGHTMAP && st->bundle[1].tcGen == TCGEN_TEXTURE ) {
-					sh->lightingStage = 0;
-					sh->lightingBundle = 1; // select second bundle for lighting pass
-				}
-			}
 		}
 	}
 }

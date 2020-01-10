@@ -4646,9 +4646,6 @@ void vk_bind_geometry_ext( int flags )
 		if ( flags & TESS_ST0 ) {  // 2
 			vk.cmd->vbo_offset[2] = tess.shader->stages[ tess.vboStage ]->tex_offset[0];
 			vk_bind_index( 2 );
-		} else if ( flags & TESS_ST0_1 ) {
-			vk.cmd->vbo_offset[2] = tess.shader->stages[ tess.vboStage ]->tex_offset[1];
-			vk_bind_index( 2 );
 		}
 
 		if ( flags & TESS_ST1 ) {  // 3
@@ -4683,8 +4680,6 @@ void vk_bind_geometry_ext( int flags )
 
 		if ( flags & TESS_ST0 ) {
 			vk_bind_attr(2, sizeof(tess.svars.texcoords[0][0]), &tess.svars.texcoords[0][0]);
-		} else if ( flags & TESS_ST0_1 ) {
-			vk_bind_attr(2, sizeof(tess.svars.texcoords[0][0]), &tess.svars.texcoords[1][0]);
 		}
 
 		if ( flags & TESS_ST1 ) {

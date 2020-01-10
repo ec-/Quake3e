@@ -219,11 +219,11 @@ static qboolean isStaticShader( shader_t *shader )
 			return qfalse;
 		if ( !isStaticAgen( stage->alphaGen ) )
 			return qfalse;
-		if ( stage->bundle[1].image[0] )
-			svarsSize += sizeof( tess.svars.texcoords[1][0] );
-
 		svarsSize += sizeof( tess.svars.colors[0] );
-		svarsSize += sizeof( tess.svars.texcoords[0][0] );
+		if ( stage->tessFlags & TESS_ST1 )
+			svarsSize += sizeof( tess.svars.texcoords[1][0] );
+		if ( stage->tessFlags & TESS_ST0 )
+			svarsSize += sizeof( tess.svars.texcoords[0][0] );
 	}
 
 	if ( i == 0 )
@@ -270,8 +270,11 @@ static void VBO_AddGeometry( vbo_t *vbo, vbo_item_t *vi, shaderCommands_t *input
 			if ( !pStage )
 				break;
 			pStage->color_offset = offs; offs += input->shader->numVertexes * sizeof( tess.svars.colors[0] );
-			pStage->tex_offset[0] = offs; offs += input->shader->numVertexes * sizeof( tess.svars.texcoords[0][0] );
-			if ( pStage->bundle[1].image[0] )
+			if ( pStage->tessFlags & TESS_ST0 )
+			{
+				pStage->tex_offset[0] = offs; offs += input->shader->numVertexes * sizeof( tess.svars.texcoords[0][0] );
+			}
+			if ( pStage->tessFlags & TESS_ST1 )
 			{
 				pStage->tex_offset[1] = offs; offs += input->shader->numVertexes * sizeof( tess.svars.texcoords[1][0] );
 			}
@@ -364,9 +367,12 @@ void VBO_PushData( int itemIndex, shaderCommands_t *input )
 			break;
 		R_ComputeColors( pStage );
 		VBO_AddStageColors( vbo, i, input );
-		R_ComputeTexCoords( 0, &pStage->bundle[0] );
-		VBO_AddStageTxCoords( vbo, i, input, 0 );
-		if ( pStage->bundle[1].image[0] )
+		if ( pStage->tessFlags & TESS_ST0 )
+		{
+			R_ComputeTexCoords( 0, &pStage->bundle[0] );
+			VBO_AddStageTxCoords( vbo, i, input, 0 );
+		}
+		if ( pStage->tessFlags & TESS_ST1 )
 		{
 			R_ComputeTexCoords( 1, &pStage->bundle[1] );
 			VBO_AddStageTxCoords( vbo, i, input, 1 );

@@ -1074,13 +1074,15 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 			tess_flags |= TESS_ST0;
 			R_ComputeTexCoords( 0, &pStage->bundle[0] );
 		}
-	
+
 		multitexture = (pStage->bundle[1].image[0] != NULL) ? qtrue : qfalse;
 
 #ifdef USE_VULKAN
 		if ( multitexture ) {
-			tess_flags |= TESS_ST1;
-			R_ComputeTexCoords( 1, &pStage->bundle[1] );
+			if ( pStage->tessFlags & TESS_ST1 ) {
+				tess_flags |= TESS_ST1;
+				R_ComputeTexCoords( 1, &pStage->bundle[1] );
+			}
 			GL_SelectTexture( 1 );
 			R_BindAnimatedImage( &pStage->bundle[1] );
 		}
@@ -1283,23 +1285,19 @@ void VK_LightingPass( void )
 		pipeline = vk.dlight_pipelines_x[clip][cull][tess.shader->polygonOffset][fog_stage];
 
 	GL_SelectTexture( 0 );
-	R_BindAnimatedImage( &pStage->bundle[ tess.shader->lightingBundle ] );
+	R_BindAnimatedImage( &pStage->bundle[ 0 ] );
 
 #ifdef USE_VBO
 	if ( tess.vboIndex ) {
 		tess.vboStage = tess.shader->lightingStage;
-		if ( tess.shader->lightingBundle )
-			vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_ST0_1 | TESS_NNN );
-		else
-			vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_ST0 | TESS_NNN );
 	} else
 #endif
 	{
 		pStage = tess.xstages[ tess.shader->lightingStage ];
-		R_ComputeTexCoords( 0, &pStage->bundle[ tess.shader->lightingBundle ] );
-		vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_ST0 | TESS_NNN );
+		R_ComputeTexCoords( 0, &pStage->bundle[ 0 ] );
 	}
 
+	vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_ST0 | TESS_NNN );
 	vk_draw_geometry( pipeline, tess.depthRange, qtrue );
 }
 #endif // USE_PMLIGHT

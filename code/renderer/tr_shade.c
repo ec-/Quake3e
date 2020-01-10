@@ -361,7 +361,7 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 	tess.numVertexes = 0;
 	tess.shader = state;
 	tess.fogNum = fogNum;
-	
+
 #ifdef USE_LEGACY_DLIGHTS
 	tess.dlightBits = 0;		// will be OR'd in by surface functions
 #endif

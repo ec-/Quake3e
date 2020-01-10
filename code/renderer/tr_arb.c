@@ -212,7 +212,7 @@ static void ARB_Lighting( const shaderStage_t* pStage )
 
 	GL_SelectTexture( 0 );
 
-	R_BindAnimatedImage( &pStage->bundle[ tess.shader->lightingBundle ] );
+	R_BindAnimatedImage( &pStage->bundle[ 0 ] );
 	
 	R_DrawElements( numIndexes, hitIndexes );
 }
@@ -231,7 +231,7 @@ static void ARB_Lighting_Fast( const shaderStage_t* pStage )
 
 	GL_SelectTexture( 0 );
 
-	R_BindAnimatedImage( &pStage->bundle[ tess.shader->lightingBundle ] );
+	R_BindAnimatedImage( &pStage->bundle[ 0 ] );
 	
 	R_DrawElements( tess.numIndexes, tess.indexes );
 }

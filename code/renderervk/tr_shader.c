@@ -2067,8 +2067,8 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 		}
 	}
 
-	// make sure that lightmaps are in bundle 1 for 3dfx
-	if ( st0->bundle[0].isLightmap )
+	// make sure that lightmaps are in bundle 1
+	if ( st0->bundle[0].isLightmap || st0->bundle[0].tcGen == TCGEN_LIGHTMAP && st1->bundle[0].tcGen != TCGEN_LIGHTMAP )
 	{
 		tmpBundle = st0->bundle[0];
 		st0->bundle[0] = st1->bundle[0];
@@ -2254,6 +2254,9 @@ static qboolean EqualTCgen( int bundle, const shaderStage_t *st1, const shaderSt
 	const texModInfo_t *tm1, *tm2;
 	int tm;
 
+	if ( st1 == NULL || st2 == NULL )
+		return qfalse;
+
 	if ( st1->active != st2->active )
 		return qfalse;
 
@@ -2374,6 +2377,7 @@ GeneratePermanentShader
 */
 static shader_t *GeneratePermanentShader( void ) {
 	shader_t	*newShader;
+	shaderStage_t *lastMT;
 	int			i, b;
 	int			size, hash;
 
@@ -2416,7 +2420,7 @@ static shader_t *GeneratePermanentShader( void ) {
 
 #if 1
 	// try to avoid redundant per-stage computations
-	for ( i = 0; i < newShader->numUnfoggedPasses - 1; i++ ) {
+	for ( i = 0, lastMT = NULL; i < newShader->numUnfoggedPasses - 1; i++ ) {
 		if ( !newShader->stages[ i+1 ] )
 			break;
 		if ( EqualRGBgen( newShader->stages[ i ], newShader->stages[ i+1 ] ) && EqualACgen( newShader->stages[ i ], newShader->stages[ i+1 ] ) ) {
@@ -2424,6 +2428,14 @@ static shader_t *GeneratePermanentShader( void ) {
 		}
 		if ( EqualTCgen( 0, newShader->stages[ i ], newShader->stages[ i+1 ] ) ) {
 			newShader->stages[ i+1 ]->tessFlags &= ~TESS_ST0;
+		}
+		if ( newShader->stages[ i ]->mtEnv ) {
+			lastMT = newShader->stages[ i ];
+		}
+		if ( newShader->stages[ i+1 ]->mtEnv ) {
+			if ( EqualTCgen( 1, lastMT, newShader->stages[ i+1 ] ) ) {
+				newShader->stages[ i+1 ]->tessFlags &= ~TESS_ST1;
+			}
 		}
 	}
 #endif
@@ -2480,19 +2492,6 @@ void FindLightingStages( shader_t *sh )
 				}
 			}
 			sh->lightingStage = i;
-		}
-	}
-
-	// check for collapsed multitexture with lightmap in first bundle
-	if ( sh->lightingStage == -1 && i == 1 /*&& sh->multitextureEnv == GL_MODULATE*/ ) {
-		st = sh->stages[ 0 ];
-		if ( st->mtEnv == GL_MODULATE ) {
-			if ( !st->bundle[0].isLightmap && st->bundle[1].image[0] && st->rgbGen == CGEN_IDENTITY ) {
-				if ( st->bundle[0].tcGen == TCGEN_LIGHTMAP && st->bundle[1].tcGen == TCGEN_TEXTURE ) {
-					sh->lightingStage = 0;
-					sh->lightingBundle = 1; // select second bundle for lighting pass
-				}
-			}
 		}
 	}
 }
