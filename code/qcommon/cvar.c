@@ -1608,9 +1608,7 @@ and variables added via the VMs if requested.
 
 void Cvar_Restart( qboolean unsetVM )
 {
-	cvar_t	*curvar;
-
-	curvar = cvar_vars;
+	cvar_t *curvar = cvar_vars;
 
 	while(curvar)
 	{
@@ -1633,6 +1631,26 @@ void Cvar_Restart( qboolean unsetVM )
 }
 
 
+static void Cvar_Trim( qboolean verbose )
+{
+	cvar_t *curvar = cvar_vars;
+	while ( curvar )
+	{
+		if ( curvar->flags & CVAR_USER_CREATED )
+		{
+			// throw out any variables the user created
+			if ( verbose )
+				Com_Printf( "removed cvar" S_COLOR_YELLOW " %s\n", curvar->name );
+
+			curvar = Cvar_Unset( curvar );
+			continue;
+		}
+
+		curvar = curvar->next;
+	}
+}
+
+
 /*
 ============
 Cvar_Restart_f
@@ -1643,6 +1661,51 @@ Resets all cvars to their hardcoded values
 static void Cvar_Restart_f( void )
 {
 	Cvar_Restart( qfalse );
+}
+
+
+/*
+============
+Cvar_Trim_f
+
+Removes all user-created cvars
+This will only accept to run when both the server and client are running unless forced
+============
+*/
+static void Cvar_Trim_f( void )
+{
+	qboolean forced = qfalse;
+	qboolean verbose = qfalse;
+	int i;
+
+	for ( i = 1; i < Cmd_Argc(); i++ )
+	{
+		const char *s = Cmd_Argv( i );
+		if ( *s == '-' )
+		{
+			s++;
+			while ( *s != '\0' )
+			{
+				if ( *s == 'f' )
+					forced = qtrue;
+				else if ( *s == 'v' )
+					verbose = qtrue;
+				s++;
+			}
+		}
+	}
+
+	if ( (com_cl_running && com_cl_running->integer &&
+		com_sv_running && com_sv_running->integer ) || forced )
+	{
+		Cvar_Trim( verbose );
+		return;
+	}
+
+	Com_Printf( S_COLOR_YELLOW " You're not running a listen server, so not all subsystems/VMs are loaded.\n" );
+	Com_Printf( S_COLOR_YELLOW " This means you'd remove cvars that are probably best kept around.\n" );
+	Com_Printf( S_COLOR_YELLOW " If you don't care, you can force the call by running '\\%s -f'.\n", Cmd_Argv(0) );
+	Com_Printf( S_COLOR_YELLOW " You've been warned.\n" );
 }
 
 
@@ -2010,4 +2073,5 @@ void Cvar_Init (void)
 	Cmd_AddCommand ("cvarlist", Cvar_List_f);
 	Cmd_AddCommand ("cvar_modified", Cvar_ListModified_f);
 	Cmd_AddCommand ("cvar_restart", Cvar_Restart_f);
+	Cmd_AddCommand ("cvar_trim", Cvar_Trim_f);
 }
