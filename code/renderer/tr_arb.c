@@ -343,7 +343,7 @@ void ARB_LightingPass( void )
 	qglDisableClientState( GL_COLOR_ARRAY );
 
 	qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
-	qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[ tess.shader->lightingBundle ] );
+	qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[ 0 ] );
 
 	qglEnableClientState( GL_NORMAL_ARRAY );
 	qglNormalPointer( GL_FLOAT, 16, tess.normal );
