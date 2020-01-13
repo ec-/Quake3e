@@ -1640,7 +1640,7 @@ static void Cvar_Trim( qboolean verbose )
 		{
 			// throw out any variables the user created
 			if ( verbose )
-				Com_Printf( "removed cvar" S_COLOR_YELLOW " %s\n", curvar->name );
+				Com_Printf( "unset cvar" S_COLOR_YELLOW " %s\n", curvar->name );
 
 			curvar = Cvar_Unset( curvar );
 			continue;
@@ -1675,7 +1675,7 @@ This will only accept to run when both the server and client are running unless 
 static void Cvar_Trim_f( void )
 {
 	qboolean forced = qfalse;
-	qboolean verbose = qfalse;
+	qboolean verbose = qtrue;
 	int i;
 
 	for ( i = 1; i < Cmd_Argc(); i++ )
@@ -1686,23 +1686,30 @@ static void Cvar_Trim_f( void )
 			s++;
 			while ( *s != '\0' )
 			{
-				if ( *s == 'f' )
+				if ( *s == 'f' ) // force cleanup
 					forced = qtrue;
-				else if ( *s == 'v' )
-					verbose = qtrue;
+				else if ( *s == 's' ) // silent mode
+					verbose = qfalse;
 				s++;
 			}
 		}
 	}
 
-	if ( (com_cl_running && com_cl_running->integer &&
-		com_sv_running && com_sv_running->integer ) || forced )
+#ifdef DEDICATED
+	if ( ( com_sv_running && com_sv_running->integer ) || forced )
+#else
+	if ( ( com_cl_running && com_cl_running->integer && com_sv_running && com_sv_running->integer ) || forced )
+#endif
 	{
 		Cvar_Trim( verbose );
 		return;
 	}
 
+#ifdef DEDICATED	
+	Com_Printf( S_COLOR_YELLOW " You're not running a server, so not all subsystems/VMs are loaded.\n" );
+#else
 	Com_Printf( S_COLOR_YELLOW " You're not running a listen server, so not all subsystems/VMs are loaded.\n" );
+#endif
 	Com_Printf( S_COLOR_YELLOW " This means you'd remove cvars that are probably best kept around.\n" );
 	Com_Printf( S_COLOR_YELLOW " If you don't care, you can force the call by running '\\%s -f'.\n", Cmd_Argv(0) );
 	Com_Printf( S_COLOR_YELLOW " You've been warned.\n" );

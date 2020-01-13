@@ -3973,8 +3973,8 @@ void Com_Frame( qboolean noDelay ) {
 			timeVal = com_frameTime - lastTime;
 			bias += timeVal - minMsec;
 			
-			if ( bias > minMsec / 2 )
-				bias = minMsec / 2;
+			if ( bias > minMsec )
+				bias = minMsec;
 
 			// Adjust minMsec if previous frame took too long to render so
 			// that framerate is stable at the requested value.
