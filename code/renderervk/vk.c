@@ -5034,6 +5034,9 @@ void vk_end_frame( void )
 
 	vk.frame_count = 0;
 
+	// presentation may take undefined time to complete, we can't measure it in a reliable way
+	backEnd.pc.msec = ri.Milliseconds() - backEnd.pc.msec;
+
 	if ( ri.CL_IsMinimized() )
 		return;
 

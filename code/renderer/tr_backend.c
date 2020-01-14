@@ -1425,6 +1425,9 @@ static const void *RB_SwapBuffers( const void *data ) {
 		FBO_PostProcess();
 	}
 
+	// buffer swap may take undefined time to complete, we can't measure it in a reliable way
+	backEnd.pc.msec = ri.Milliseconds() - backEnd.pc.msec;
+
 	if ( backEnd.screenshotMask && tr.frameCount > 1 ) {
 
 		if ( superSampled ) {
@@ -1476,9 +1479,8 @@ RB_ExecuteRenderCommands
 ====================
 */
 void RB_ExecuteRenderCommands( const void *data ) {
-	int		t1, t2;
 
-	t1 = ri.Milliseconds ();
+	backEnd.pc.msec = ri.Milliseconds();
 
 	while ( 1 ) {
 		data = PADP(data, sizeof(void *));
@@ -1511,8 +1513,6 @@ void RB_ExecuteRenderCommands( const void *data ) {
 		case RC_END_OF_LIST:
 		default:
 			// stop rendering
-			t2 = ri.Milliseconds();
-			backEnd.pc.msec = t2 - t1;
 			return;
 		}
 	}

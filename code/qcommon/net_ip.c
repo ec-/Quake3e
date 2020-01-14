@@ -1699,18 +1699,18 @@ static void NET_Event( const fd_set *fdr )
 ====================
 NET_Sleep
 
-Sleeps msec or until something happens on the network
+Sleeps usec or until something happens on the network
+
+Returns qfalse on network event or qtrue in all other cases
 ====================
 */
-qboolean NET_Sleep( int msec, int usec_bias )
+qboolean NET_Sleep( int timeout )
 {
 	struct timeval tv;
-	int timeout;
 	fd_set fdr;
 	int retval;
 	SOCKET highestfd = INVALID_SOCKET;
 
-	timeout = msec * 1000 + usec_bias;
 	if ( timeout < 0 )
 		timeout = 0;
 
@@ -1738,7 +1738,7 @@ qboolean NET_Sleep( int msec, int usec_bias )
 		Sleep( timeout / 1000 );
 		return qtrue;
 #else
-		usleep( msec * 1000 );
+		usleep( timeout );
 		return qtrue;
 #endif
 	}

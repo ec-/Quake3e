@@ -3331,6 +3331,7 @@ static void CL_InitRef( void ) {
 	rimp.Printf = CL_RefPrintf;
 	rimp.Error = Com_Error;
 	rimp.Milliseconds = CL_ScaledMilliseconds;
+	rimp.Microseconds = Sys_Microseconds;
 	rimp.Malloc = CL_RefMalloc;
 	rimp.Free = Z_Free;
 #ifdef HUNK_DEBUG

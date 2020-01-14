@@ -131,6 +131,8 @@ typedef struct {
 	// for anything game related.  Get time from the refdef
 	int		(*Milliseconds)( void );
 
+	int64_t	(*Microseconds)( void );
+
 	// stack based memory allocation for per-level things that
 	// won't be freed
 #ifdef HUNK_DEBUG

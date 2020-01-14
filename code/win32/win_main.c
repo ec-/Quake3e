@@ -272,7 +272,7 @@ void Sys_Sleep( int msec ) {
 		msec = 300;
 		do {
 			dwResult = MsgWaitForMultipleObjects( 0, NULL, FALSE, msec, QS_ALLEVENTS );
-		} while ( dwResult == WAIT_TIMEOUT && NET_Sleep( 10, 0 ) );
+		} while ( dwResult == WAIT_TIMEOUT && NET_Sleep( 10 * 1000 ) );
 		//WaitMessage();
 		return;
 	}

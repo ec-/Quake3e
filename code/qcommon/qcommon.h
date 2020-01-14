@@ -198,7 +198,7 @@ int         NET_StringToAdr( const char *s, netadr_t *a, netadrtype_t family );
 qboolean	NET_GetLoopPacket( netsrc_t sock, netadr_t *net_from, msg_t *net_message );
 void		NET_JoinMulticast6( void );
 void		NET_LeaveMulticast6( void );
-qboolean	NET_Sleep( int msec, int usec_bias );
+qboolean	NET_Sleep( int timeout );
 
 #define	MAX_PACKETLEN	1400	// max size of a network packet
 
