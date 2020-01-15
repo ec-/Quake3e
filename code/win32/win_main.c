@@ -670,6 +670,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	int xpos, ypos;
 	qboolean useXYpos;
 	HANDLE hProcess;
+	DWORD dwPriority;
 
 	// should never get a previous instance in Win32
 	if ( hPrevInstance ) {
@@ -678,8 +679,9 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 	// slightly boost process priority if it set to default
 	hProcess = GetCurrentProcess();
-	if ( GetPriorityClass( hProcess ) == NORMAL_PRIORITY_CLASS ) {
-		SetPriorityClass( hProcess, ABOVE_NORMAL_PRIORITY_CLASS );
+	dwPriority = GetPriorityClass( hProcess );
+	if ( dwPriority == NORMAL_PRIORITY_CLASS || dwPriority == ABOVE_NORMAL_PRIORITY_CLASS ) {
+		SetPriorityClass( hProcess, HIGH_PRIORITY_CLASS );
 	}
 
 	SetDPIAwareness();

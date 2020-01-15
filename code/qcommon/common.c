@@ -106,6 +106,7 @@ int		time_game;
 int		time_frontend;		// renderer frontend time
 int		time_backend;		// renderer backend time
 
+static int	lastTime;
 int			com_frameTime;
 int			com_frameMsec;
 int			com_frameNumber;
@@ -3585,7 +3586,7 @@ void Com_Init( char *commandLine ) {
 	Cvar_CheckRange( com_maxfps, "0", "1000", CV_INTEGER );
 	Cvar_CheckRange( com_maxfpsUnfocused, "0", "1000", CV_INTEGER );
 	com_yieldCPU = Cvar_Get( "com_yieldCPU", "1", CVAR_ARCHIVE_ND );
-	Cvar_CheckRange( com_yieldCPU, "0", "8", CV_INTEGER );
+	Cvar_CheckRange( com_yieldCPU, "0", "16", CV_INTEGER );
 #endif
 #if !defined(__FreeBSD__) && !defined(__OpenBSD__)
 	com_affinityMask = Cvar_Get( "com_affinityMask", "0", CVAR_ARCHIVE_ND );
@@ -3714,7 +3715,7 @@ void Com_Init( char *commandLine ) {
 	// set com_frameTime so that if a map is started on the
 	// command line it will still be able to count on com_frameTime
 	// being random enough for a serverid
-	com_frameTime = Com_Milliseconds();
+	lastTime = com_frameTime = Com_Milliseconds();
 
 	if ( !com_errorEntered )
 		Sys_ShowConsole( com_viewlog->integer, qfalse );
@@ -3895,7 +3896,6 @@ Com_Frame
 */
 void Com_Frame( qboolean noDelay ) {
 
-	static int lastTime = 0;
 #ifndef DEDICATED
 	static int bias = 0;
 #endif
@@ -4001,12 +4001,11 @@ void Com_Frame( qboolean noDelay ) {
 		if ( timeVal > sleepMsec )
 			Com_EventLoop();
 #endif
-		NET_Sleep( sleepMsec * 1000 - ( com_dedicated->integer ? 500 : 1000 ) );
+		NET_Sleep( sleepMsec * 1000 - 500 );
 	} while( Com_TimeVal( minMsec ) );
 
 	lastTime = com_frameTime;
 	com_frameTime = Com_EventLoop();
-	
 	msec = com_frameTime - lastTime;
 
 	Cbuf_Execute();
