@@ -59,19 +59,19 @@
     <_ProjectFileVersion>14.0.25431.1</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>.\build\renderer2_release\</OutDir>
+    <OutDir>.\output\</OutDir>
     <IntDir>.\build\renderer2_release\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>.\build\renderer2_release_x64\</OutDir>
+    <OutDir>.\output\</OutDir>
     <IntDir>.\build\renderer2_release_x64\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>.\build\renderer2_debug\</OutDir>
+    <OutDir>.\output\</OutDir>
     <IntDir>.\build\renderer2_debug\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>.\build\renderer2_debug_x64\</OutDir>
+    <OutDir>.\output\</OutDir>
     <IntDir>.\build\renderer2_debug_x64\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -123,7 +123,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)renderer2.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -178,7 +178,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)renderer2.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -234,7 +234,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)renderer2.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -293,7 +293,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)renderer2.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>

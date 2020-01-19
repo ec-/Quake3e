@@ -59,19 +59,19 @@
     <_ProjectFileVersion>14.0.25431.1</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>.\build\renderer_release\</OutDir>
+    <OutDir>.\output\</OutDir>
     <IntDir>.\build\renderer_release\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>.\build\renderer_release_x64\</OutDir>
+    <OutDir>.\output\</OutDir>
     <IntDir>.\build\renderer_release_x64\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>.\build\renderer_debug\</OutDir>
+    <OutDir>.\output\</OutDir>
     <IntDir>.\build\renderer_debug\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>.\build\renderer_debug_x64\</OutDir>
+    <OutDir>.\output\</OutDir>
     <IntDir>.\build\renderer_debug_x64\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -89,7 +89,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)renderer.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -110,7 +110,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)renderer.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -132,7 +132,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)renderer.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -157,7 +157,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)renderer.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -203,12 +203,6 @@
     <ClInclude Include="..\..\renderer\tr_local.h" />
     <ClInclude Include="..\..\renderercommon\tr_public.h" />
     <ClInclude Include="..\..\renderercommon\tr_types.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="libjpeg.vcxproj">
-      <Project>{17867af4-12cb-4847-a13e-bf37d8bdf597}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

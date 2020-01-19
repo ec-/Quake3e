@@ -64,19 +64,19 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>.\build\renderervk_release_x64\</OutDir>
+    <OutDir>.\output\</OutDir>
     <IntDir>.\build\renderervk_release_x64\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>.\build\renderervk_release\</OutDir>
+    <OutDir>.\output\</OutDir>
     <IntDir>.\build\renderervk_release\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>.\build\renderervk_debug\</OutDir>
+    <OutDir>.\output\</OutDir>
     <IntDir>.\build\renderervk_debug\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>.\build\renderervk_debug_x64\</OutDir>
+    <OutDir>.\output\</OutDir>
     <IntDir>.\build\renderervk_debug_x64\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -87,6 +87,9 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ProjectReference />
+    <Lib>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -96,9 +99,8 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ProjectReference />
-    <Lib />
     <Lib>
-      <OutputFile>$(OutDir)renderervk.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -115,7 +117,9 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <ProjectReference />
-    <Lib />
+    <Lib>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -131,10 +135,8 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <ProjectReference />
-    <Lib />
-    <ProjectReference />
     <Lib>
-      <OutputFile>$(OutDir)renderervk.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>

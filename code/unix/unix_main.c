@@ -655,7 +655,7 @@ void Sys_Sleep( int msec ) {
 			// can happen only if no map loaded
 			// which means we totally stuck as stdin is also disabled :P
 			//usleep( 300 * 1000 );
-			while ( NET_Sleep( 3000, 0 ) )
+			while ( NET_Sleep( 3000 * 1000 ) )
 				;
 		}
 		return;
