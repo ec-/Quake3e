@@ -609,7 +609,9 @@ static void Done_WASAPI( void )
 //error6:
 	iAudioRenderClient->lpVtbl->Release( iAudioRenderClient ); iAudioRenderClient = NULL;
 //error5:
-	CloseHandle( hEvent ); hEvent = NULL;
+	if ( hEvent )
+		CloseHandle( hEvent );
+	hEvent = NULL;
 //error4:
 	iAudioClient->lpVtbl->Release( iAudioClient ); iAudioClient = NULL;
 //error3:
