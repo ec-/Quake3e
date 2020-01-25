@@ -342,7 +342,7 @@ static void R_LoadMergedLightmaps( const lump_t *l, byte *image )
 	tr.numLightmaps = len / (LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3);
 
 	// we are about to upload textures
-	R_IssuePendingRenderCommands();
+	//R_IssuePendingRenderCommands();
 
 	tr.numLightmaps = SetLightmapParams( tr.numLightmaps, glConfig.maxTextureSize );
 
@@ -423,7 +423,7 @@ static void R_LoadLightmaps( const lump_t *l ) {
 	}
 
 	// we are about to upload textures
-	R_IssuePendingRenderCommands();
+	//R_IssuePendingRenderCommands();
 
 	tr.lightmaps = ri.Hunk_Alloc( tr.numLightmaps * sizeof(image_t *), h_low );
 	for ( i = 0 ; i < tr.numLightmaps ; i++ ) {

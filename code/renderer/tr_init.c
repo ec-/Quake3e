@@ -1501,8 +1501,10 @@ static void R_Register( void )
 	r_dlightBacks = ri.Cvar_Get( "r_dlightBacks", "1", CVAR_ARCHIVE_ND );
 	r_finish = ri.Cvar_Get( "r_finish", "0", CVAR_ARCHIVE_ND );
 	r_textureMode = ri.Cvar_Get( "r_textureMode", "GL_LINEAR_MIPMAP_NEAREST", CVAR_ARCHIVE );
+	ri.Cvar_SetGroup( r_textureMode, CVG_RENDERER );
 	r_gamma = ri.Cvar_Get( "r_gamma", "1", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_gamma, "0.5", "3", CV_FLOAT );
+	ri.Cvar_SetGroup( r_gamma, CVG_RENDERER );
 	r_facePlaneCull = ri.Cvar_Get ("r_facePlaneCull", "1", CVAR_ARCHIVE_ND );
 
 	r_railWidth = ri.Cvar_Get( "r_railWidth", "16", CVAR_ARCHIVE_ND );
@@ -1716,7 +1718,7 @@ static void RE_Shutdown( int destroyWindow ) {
 	ri.Cmd_RemoveCommand( "shaderstate" );
 
 	if ( tr.registered ) {
-		R_IssuePendingRenderCommands();
+		//R_IssuePendingRenderCommands();
 		R_DeleteTextures();
 	}
 
@@ -1745,15 +1747,15 @@ static void RE_Shutdown( int destroyWindow ) {
 =============
 RE_EndRegistration
 
-Touch all images to make sure they are resident
+Touch all images to make sure they are resident (probably obsolete on modern systems)
 =============
 */
 static void RE_EndRegistration( void ) {
-	FBO_BindMain(); // otherwise we may draw images to the back buffer
-	R_IssuePendingRenderCommands();
-	if ( !ri.Sys_LowPhysicalMemory() ) {
-		RB_ShowImages();
-	}
+	//FBO_BindMain(); // otherwise we may draw images to the back buffer
+	//R_IssuePendingRenderCommands();
+	//if ( !ri.Sys_LowPhysicalMemory() ) {
+	//	RB_ShowImages();
+	//}
 }
 
 

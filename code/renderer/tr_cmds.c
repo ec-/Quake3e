@@ -301,25 +301,6 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	FBO_BindMain();
 	backEnd.doneBloom = qfalse;
 
-	//
-	// texturemode stuff
-	//
-	if ( r_textureMode->modified ) {
-		R_IssuePendingRenderCommands();
-		GL_TextureMode( r_textureMode->string );
-		r_textureMode->modified = qfalse;
-	}
-
-	//
-	// gamma stuff
-	//
-	if ( r_gamma->modified ) {
-		r_gamma->modified = qfalse;
-
-		R_IssuePendingRenderCommands();
-		R_SetColorMappings();
-	}
-
 	// check for errors
 	if ( !r_ignoreGLErrors->integer ) {
 		int	err;
@@ -473,6 +454,13 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 		ARB_UpdatePrograms();
 		if ( r_ext_multisample->modified || r_hdr->modified )
 			QGL_InitFBO();
+
+		if ( r_textureMode->modified )
+			GL_TextureMode( r_textureMode->string );
+
+		if ( r_gamma->modified )
+			R_SetColorMappings();
+
 		ri.Cvar_ResetGroup( CVG_RENDERER, qtrue );
 	}
 }
