@@ -3457,9 +3457,9 @@ __asm {
 
 void Sys_SnapVector( vec3_t vec )
 {
-	vec[0] = round(vec[0]);
-	vec[1] = round(vec[1]);
-	vec[2] = round(vec[2]);
+	vec[0] = rint(vec[0]);
+	vec[1] = rint(vec[1]);
+	vec[2] = rint(vec[2]);
 }
 
 #else // id386
