@@ -993,6 +993,10 @@ static void vk_create_device( void ) {
 		ri.Error(ERR_FATAL, "Failed to find entrypoint %s", #func);	\
 	}
 
+#define INIT_INSTANCE_FUNCTION_EXT(func) \
+	q##func = /*(PFN_ ## func)*/ ri.VK_GetInstanceProcAddr(vk.instance, #func);
+
+
 #define INIT_DEVICE_FUNCTION(func) \
 	q##func = (PFN_ ## func) qvkGetDeviceProcAddr(vk.device, #func);\
 	if (q##func == NULL) {											\
@@ -1033,12 +1037,13 @@ static void init_vulkan_library( void )
 	INIT_INSTANCE_FUNCTION(vkGetPhysicalDeviceSurfaceSupportKHR)
 
 #ifndef NDEBUG
-	INIT_INSTANCE_FUNCTION(vkCreateDebugReportCallbackEXT)
-	INIT_INSTANCE_FUNCTION(vkDestroyDebugReportCallbackEXT)
+	INIT_INSTANCE_FUNCTION_EXT(vkCreateDebugReportCallbackEXT)
+	INIT_INSTANCE_FUNCTION_EXT(vkDestroyDebugReportCallbackEXT)
 
 	//
 	// Create debug callback.
 	//
+	if ( qvkCreateDebugReportCallbackEXT )
 	{
 		VkDebugReportCallbackCreateInfoEXT desc;
 		desc.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
@@ -3257,7 +3262,8 @@ void vk_shutdown( void )
 	qvkDestroySurfaceKHR( vk.instance, vk.surface, NULL );
 
 #ifndef NDEBUG
-	qvkDestroyDebugReportCallbackEXT(vk.instance, vk.debug_callback, NULL);
+	if ( qvkDestroyDebugReportCallbackEXT && vk.debug_callback )
+		qvkDestroyDebugReportCallbackEXT( vk.instance, vk.debug_callback, NULL );
 #endif
 
 	qvkDestroyInstance(vk.instance, NULL);
@@ -4762,9 +4768,8 @@ void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean i
 	qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkpipe );
 
 	// configure pipeline's dynamic state
-	if ( vk.updateViewport || depth_range != old_range ) {
-		vk.updateViewport = qfalse;
-		old_range = depth_range;
+	if ( vk.cmd->depth_range != depth_range ) {
+		vk.cmd->depth_range = depth_range;
 
 		get_scissor_rect( &scissor_rect );
 		qvkCmdSetScissor( vk.cmd->command_buffer, 0, 1, &scissor_rect );
@@ -4963,6 +4968,9 @@ void vk_begin_frame( void )
 		vk_clear_attachments( qfalse, qfalse, qtrue, colorBlack );
 		backEnd.projection2D = qfalse;
 	}
+
+	// force depth range and viewport/scissor updates
+	vk.cmd->depth_range = DEPTH_RANGE_COUNT;
 }
 
 

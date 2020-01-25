@@ -46,7 +46,8 @@ typedef enum {
 	DEPTH_RANGE_NORMAL, // [0..1]
 	DEPTH_RANGE_ZERO, // [0..0]
 	DEPTH_RANGE_ONE, // [1..1]
-	DEPTH_RANGE_WEAPON // [0..0.3]
+	DEPTH_RANGE_WEAPON, // [0..0.3]
+	DEPTH_RANGE_COUNT
 }  Vk_Depth_Range;
 
 typedef struct {
@@ -208,6 +209,8 @@ typedef struct vk_tess_s {
 		VkDescriptorSet	current[5];
 		uint32_t		offset[2]; // 0 and 4
 	} descriptor_set;
+
+	Vk_Depth_Range depth_range;
 
 #ifndef USE_SINGLE_FBO
 	VkDescriptorSet color_descriptor;
@@ -459,8 +462,6 @@ typedef struct {
 	int		blitX0;
 	int		blitY0;
 	int		blitFilter;
-
-	qboolean updateViewport;
 
 	uint32_t renderWidth;
 	uint32_t renderHeight;

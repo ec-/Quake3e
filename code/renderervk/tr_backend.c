@@ -396,7 +396,8 @@ static void SetViewportAndScissor( void ) {
 #ifdef USE_VULKAN
 	//Com_Memcpy( vk_world.modelview_transform, backEnd.or.modelMatrix, 64 );
 	//vk_update_mvp();
-	vk.updateViewport = qtrue;
+	// force depth range and viewport/scissor updates
+	vk.cmd->depth_range = DEPTH_RANGE_COUNT;
 #else
 	qglMatrixMode(GL_PROJECTION);
 	qglLoadMatrixf( backEnd.viewParms.projectionMatrix );
@@ -983,17 +984,16 @@ RENDER BACK END FUNCTIONS
 /*
 ================
 RB_SetGL2D
-
 ================
 */
-void RB_SetGL2D( void ) {
+static void RB_SetGL2D( void ) {
 	backEnd.projection2D = qtrue;
 
 #ifdef USE_VULKAN
-	if ( vk.frame_count )
-		vk_update_mvp( NULL );
+	vk_update_mvp( NULL );
 
-	vk.updateViewport = qtrue;
+	// force depth range and viewport/scissor updates
+	vk.cmd->depth_range = DEPTH_RANGE_COUNT;
 #else
 	// set 2D virtual screen size
 	qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
@@ -1035,20 +1035,6 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *
 	if ( !tr.registered ) {
 		return;
 	}
-	R_IssuePendingRenderCommands();
-
-	if ( tess.numIndexes ) {
-		RB_EndSurface();
-		//VBO_UnBind();
-	}
-
-#ifndef USE_VULKAN
-	if ( backEnd.doneSurfaces ) {
-		// make sure that we rendered some surfaces before
-		// otherwise some (Intel GMA) drivers may stuck between two consecutive glFinish calls
-		qglFinish();
-	}
-#endif
 
 	start = 0;
 	if ( r_speeds->integer ) {
@@ -1071,30 +1057,16 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *
 		ri.Printf( PRINT_ALL, "qglTexSubImage2D %i, %i: %i msec\n", cols, rows, end - start );
 	}
 
-	RB_SetGL2D();
-#ifdef USE_VULKAN
 	tr.cinematicShader->stages[0]->bundle[0].image[0] = tr.scratchImage[client];
-	RE_StretchPic(x, y, w, h, 0.5f / cols, 0.5f / rows, 1.0f - 0.5f / cols, 1.0f - 0.5 / rows, tr.cinematicShader->index);
-#else
-	qglColor3f( tr.identityLight, tr.identityLight, tr.identityLight );
-
-	qglBegin (GL_QUADS);
-	qglTexCoord2f ( 0.5f / cols,  0.5f / rows );
-	qglVertex2f (x, y);
-	qglTexCoord2f ( ( cols - 0.5f ) / cols ,  0.5f / rows );
-	qglVertex2f (x+w, y);
-	qglTexCoord2f ( ( cols - 0.5f ) / cols, ( rows - 0.5f ) / rows );
-	qglVertex2f (x+w, y+h);
-	qglTexCoord2f ( 0.5f / cols, ( rows - 0.5f ) / rows );
-	qglVertex2f (x, y+h);
-	qglEnd ();
-#endif
+	RE_StretchPic( x, y, w, h, 0.5f / cols, 0.5f / rows, 1.0f - 0.5f / cols, 1.0f - 0.5 / rows, tr.cinematicShader->index );
 }
 
 
 void RE_UploadCinematic( int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty ) {
 
 	image_t *image = tr.scratchImage[ client ];
+
+	GL_SelectTexture( 0 );
 	GL_Bind( image );
 
 	// if the scratchImage isn't in the format we want, specify it as a new texture
@@ -1113,16 +1085,14 @@ void RE_UploadCinematic( int w, int h, int cols, int rows, const byte *data, int
 		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
 		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );	
 #endif
-	} else {
-		if (dirty) {
-			// otherwise, just subimage upload it so that drivers can tell we are going to be changing
-			// it and don't try and do a texture compression
+	} else if ( dirty ) {
+		// otherwise, just subimage upload it so that drivers can tell we are going to be changing
+		// it and don't try and do a texture compression
 #ifdef USE_VULKAN
-			vk_upload_image_data( image->handle, 0, 0, cols, rows, qfalse, data, 4 );
+		vk_upload_image_data( image->handle, 0, 0, cols, rows, qfalse, data, 4 );
 #else
-			qglTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, cols, rows, GL_RGBA, GL_UNSIGNED_BYTE, data );
+		qglTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, cols, rows, GL_RGBA, GL_UNSIGNED_BYTE, data );
 #endif
-		}
 	}
 }
 
@@ -1266,9 +1236,7 @@ static const void *RB_DrawSurfs( const void *data ) {
 	qboolean skipWeapon;
 
 	// finish any 2D drawing if needed
-	if ( tess.numIndexes ) {
-		RB_EndSurface();
-	}
+	RB_EndSurface();
 
 	cmd = (const drawSurfsCommand_t *)data;
 
@@ -1342,7 +1310,6 @@ static const void *RB_DrawBuffer( const void *data ) {
 	vk_begin_frame();
 
 	tess.depthRange = DEPTH_RANGE_NORMAL;
-	vk.updateViewport = qtrue;
 
 	if ( r_clear->integer ) {
 		//const float color[4] = {1, 0, 0.5, 1};
@@ -1545,8 +1512,7 @@ static const void *RB_ClearColor( const void *data )
 {
 	const clearColorCommand_t *cmd = data;
 
-	if ( tess.numIndexes )
-		RB_EndSurface();
+	RB_EndSurface();
 
 #ifdef USE_VULKAN
 	RB_SetGL2D();

@@ -3467,9 +3467,19 @@ static void CreateInternalShaders( void ) {
 	tr.defaultShader = FinishShader();
 
 	// shadow shader is just a marker
-	Q_strncpyz( shader.name, "<stencil shadow>", sizeof( shader.name ) );
+	InitShader( "<stencil shadow>", LIGHTMAP_NONE );
+	stages[0].bundle[0].image[0] = tr.defaultImage;
+	stages[0].active = qtrue;
+	stages[0].stateBits = GLS_DEFAULT;
 	shader.sort = SS_STENCIL_SHADOW;
 	tr.shadowShader = FinishShader();
+
+	InitShader( "<cinematic>", LIGHTMAP_NONE );
+	stages[0].bundle[0].image[0] = tr.defaultImage; // will be updated by specific cinematic images
+	stages[0].active = qtrue;
+	stages[0].rgbGen = CGEN_IDENTITY_LIGHTING;
+	stages[0].stateBits = GLS_DEPTHTEST_DISABLE;
+	tr.cinematicShader = FinishShader();
 }
 
 
