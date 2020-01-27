@@ -945,8 +945,8 @@ image_t	*R_FindImageFile( const char *name, imgFlags_t flags )
 	//
 	// see if the image is already loaded
 	//
-	for (image=hashTable[hash]; image; image=image->next) {
-		if ( !strcmp( name, image->imgName ) ) {
+	for ( image = hashTable[hash]; image; image = image->next ) {
+		if ( !Q_stricmp( name, image->imgName ) ) {
 			// the white image can be used with any set of parms, but other mismatches are errors
 			if ( strcmp( name, "*white" ) ) {
 				if ( image->flags != flags ) {
