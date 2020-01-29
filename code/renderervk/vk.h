@@ -153,7 +153,9 @@ void vk_restart_swapchain( const char *funcname );
 //
 // Rendering setup.
 //
-void vk_clear_attachments(qboolean clear_depth, qboolean clear_stencil, qboolean clear_color, const vec4_t color);
+
+void vk_clear_color( const vec4_t color );
+void vk_clear_depth( qboolean clear_stencil );
 void vk_bind_geometry( void );
 void vk_begin_frame( void );
 void vk_end_frame( void );

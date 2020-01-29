@@ -184,7 +184,7 @@ RE_SetColor
 Passing NULL will set the color to white
 =============
 */
-void	RE_SetColor( const float *rgba ) {
+void RE_SetColor( const float *rgba ) {
 	setColorCommand_t	*cmd;
 
 	if ( !tr.registered ) {
@@ -211,13 +211,13 @@ void	RE_SetColor( const float *rgba ) {
 RE_StretchPic
 =============
 */
-void RE_StretchPic ( float x, float y, float w, float h, 
-					  float s1, float t1, float s2, float t2, qhandle_t hShader ) {
+void RE_StretchPic( float x, float y, float w, float h, 
+					float s1, float t1, float s2, float t2, qhandle_t hShader ) {
 	stretchPicCommand_t	*cmd;
 
-  if (!tr.registered) {
-    return;
-  }
+	if (!tr.registered) {
+		return;
+	}
 	cmd = R_GetCommandBuffer( sizeof( *cmd ) );
 	if ( !cmd ) {
 		return;
@@ -243,17 +243,17 @@ void RE_StretchPic ( float x, float y, float w, float h,
 static void R_SetColorMode(GLboolean *rgba, stereoFrame_t stereoFrame, int colormode)
 {
 	rgba[0] = rgba[1] = rgba[2] = rgba[3] = GL_TRUE;
-	
+
 	if(colormode > MODE_MAX)
 	{
 		if(stereoFrame == STEREO_LEFT)
 			stereoFrame = STEREO_RIGHT;
 		else if(stereoFrame == STEREO_RIGHT)
 			stereoFrame = STEREO_LEFT;
-		
+
 		colormode -= MODE_MAX;
 	}
-	
+
 	if(colormode == MODE_GREEN_MAGENTA)
 	{
 		if(stereoFrame == STEREO_LEFT)
@@ -268,7 +268,7 @@ static void R_SetColorMode(GLboolean *rgba, stereoFrame_t stereoFrame, int color
 		else if(stereoFrame == STEREO_RIGHT)
 		{
 			rgba[0] = GL_FALSE;
-		
+
 			if(colormode == MODE_RED_BLUE)
 				rgba[1] = GL_FALSE;
 			else if(colormode == MODE_RED_GREEN)
@@ -289,16 +289,26 @@ for each RE_EndFrame
 void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	drawBufferCommand_t	*cmd = NULL;
 	colorMaskCommand_t *colcmd = NULL;
+	clearColorCommand_t *clrcmd = NULL;
 
 	if ( !tr.registered ) {
 		return;
 	}
+
 	glState.finishCalled = qfalse;
 
 	tr.frameCount++;
 	tr.frameSceneNum = 0;
 
-	FBO_BindMain();
+	if ( fboEnabled ) {
+		bindBufferCommand_t *bindcmd = R_GetCommandBuffer( sizeof( *bindcmd ) );
+		if ( bindcmd ) {
+			bindcmd->commandId = RC_BIND_BUFFER;
+		} else {
+			return;
+		}
+	}
+
 	backEnd.doneBloom = qfalse;
 
 	// check for errors
@@ -310,23 +320,11 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 			ri.Error(ERR_FATAL, "RE_BeginFrame() - glGetError() failed (0x%x)!", err);
 	}
 
-	if ( r_fastsky->integer ) {
-		if ( stereoFrame != STEREO_RIGHT ) {
-			qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
-			qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
-			if ( r_anaglyphMode->integer )
-				qglColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE );
-			qglClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
-			qglClear( GL_COLOR_BUFFER_BIT );
-		}
-	}
+	if ( ( cmd = R_GetCommandBuffer( sizeof( *cmd ) ) ) == NULL )
+		return;
+	cmd->commandId = RC_DRAW_BUFFER;
 
-	if (glConfig.stereoEnabled) {
-		if( (cmd = R_GetCommandBuffer(sizeof(*cmd))) == NULL )
-			return;
-			
-		cmd->commandId = RC_DRAW_BUFFER;
-		
+	if ( glConfig.stereoEnabled ) {
 		if ( stereoFrame == STEREO_LEFT ) {
 			cmd->buffer = (int)GL_BACK_LEFT;
 		} else if ( stereoFrame == STEREO_RIGHT ) {
@@ -337,76 +335,85 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	}
 	else
 	{
-		if(r_anaglyphMode->integer)
+		if ( !Q_stricmp( r_drawBuffer->string, "GL_FRONT" ) )
+			cmd->buffer = (int)GL_FRONT;
+		else
+			cmd->buffer = (int)GL_BACK;
+
+		if ( r_anaglyphMode->integer )
 		{
-			if(r_anaglyphMode->modified)
+			if ( r_anaglyphMode->modified )
 			{
-				// clear both, front and backbuffer.
-				qglColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-				qglClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-				if ( !fboEnabled )
-				{
-					qglDrawBuffer(GL_FRONT);
-					qglClear(GL_COLOR_BUFFER_BIT);
-					qglDrawBuffer(GL_BACK);
+				clrcmd = R_GetCommandBuffer( sizeof( *clrcmd ) );
+				if ( clrcmd ) {
+					Com_Memset( clrcmd, 0, sizeof( *clrcmd ) );
+					clrcmd->commandId = RC_CLEARCOLOR;
+				} else {
+					return;
 				}
-				qglClear(GL_COLOR_BUFFER_BIT);
-				
-				r_anaglyphMode->modified = qfalse;
+				clrcmd->colorMask = qtrue;
+				if ( !fboEnabled ) {
+					// clear both, front and backbuffer.
+					clrcmd->frontAndBack = qtrue;
+				}
 			}
-			
-			if(stereoFrame == STEREO_LEFT)
+
+			if ( stereoFrame == STEREO_LEFT )
 			{
-				if( (cmd = R_GetCommandBuffer(sizeof(*cmd))) == NULL )
-					return;
-				
-				if( (colcmd = R_GetCommandBuffer(sizeof(*colcmd))) == NULL )
-					return;
+				// first frame
 			}
-			else if(stereoFrame == STEREO_RIGHT)
+			else if ( stereoFrame == STEREO_RIGHT )
 			{
 				clearDepthCommand_t *cldcmd;
 				
-				if( (cldcmd = R_GetCommandBuffer(sizeof(*cldcmd))) == NULL )
+				if ( (cldcmd = R_GetCommandBuffer(sizeof(*cldcmd))) == NULL )
 					return;
 
 				cldcmd->commandId = RC_CLEARDEPTH;
-
-				if( (colcmd = R_GetCommandBuffer(sizeof(*colcmd))) == NULL )
-					return;
 			}
 			else
 				ri.Error( ERR_FATAL, "RE_BeginFrame: Stereo is enabled, but stereoFrame was %i", stereoFrame );
 
-			R_SetColorMode(colcmd->rgba, stereoFrame, r_anaglyphMode->integer);
+			if ( (colcmd = R_GetCommandBuffer(sizeof(*colcmd))) == NULL )
+				return;
+
+			R_SetColorMode( colcmd->rgba, stereoFrame, r_anaglyphMode->integer );
 			colcmd->commandId = RC_COLORMASK;
 		}
-		else
+		else // !r_anaglyphMode->integer
 		{
-			if(stereoFrame != STEREO_CENTER)
+			if ( stereoFrame != STEREO_CENTER )
 				ri.Error( ERR_FATAL, "RE_BeginFrame: Stereo is disabled, but stereoFrame was %i", stereoFrame );
 
-			if( (cmd = R_GetCommandBuffer(sizeof(*cmd))) == NULL )
-				return;
-		}
+			// reset color mask
+			if ( r_anaglyphMode->modified )	{
+				if ( ( colcmd = R_GetCommandBuffer( sizeof( *colcmd ) ) ) == NULL )
+					return;
 
-		if(cmd)
-		{
-			cmd->commandId = RC_DRAW_BUFFER;
-
-			if(r_anaglyphMode->modified)
-			{
-				qglColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-				r_anaglyphMode->modified = qfalse;
+				R_SetColorMode( colcmd->rgba, stereoFrame, r_anaglyphMode->integer );
+				colcmd->commandId = RC_COLORMASK;
 			}
-
-			if (!Q_stricmp(r_drawBuffer->string, "GL_FRONT"))
-				cmd->buffer = (int)GL_FRONT;
-			else
-				cmd->buffer = (int)GL_BACK;
 		}
 	}
-	
+
+	if ( r_fastsky->integer ) {
+		if ( stereoFrame != STEREO_RIGHT ) {
+			if ( !clrcmd ) {
+				clrcmd = R_GetCommandBuffer( sizeof( *clrcmd ) );
+				if ( clrcmd ) {
+					Com_Memset( clrcmd, 0, sizeof( *clrcmd ) );
+					clrcmd->commandId = RC_CLEARCOLOR;
+				} else {
+					return;
+				}
+			}
+			clrcmd->fullscreen = qtrue;
+			if ( r_anaglyphMode->integer ) {
+				clrcmd->colorMask = qtrue;
+			}
+		}
+	}
+
 	tr.refdef.stereoFrame = stereoFrame;
 }
 

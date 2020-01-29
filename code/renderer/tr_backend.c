@@ -440,9 +440,7 @@ static void RB_BeginDrawingView( void ) {
 	if ( r_finish->integer == 1 && !glState.finishCalled ) {
 		qglFinish();
 		glState.finishCalled = qtrue;
-	}
-
-	if ( r_finish->integer == 0 ) {
+	} else if ( r_finish->integer == 0 ) {
 		glState.finishCalled = qtrue;
 	}
 
@@ -1219,6 +1217,22 @@ static const void *RB_DrawSurfs( const void *data ) {
 
 /*
 =============
+RB_BindBuffer
+=============
+*/
+static const void *RB_BindBuffer( const void *data ) {
+	const bindBufferCommand_t	*cmd;
+
+	cmd = (const bindBufferCommand_t *)data;
+
+	FBO_BindMain();
+
+	return (const void *)(cmd + 1);
+}
+
+
+/*
+=============
 RB_DrawBuffer
 =============
 */
@@ -1341,6 +1355,41 @@ static const void *RB_ClearDepth( const void *data )
 
 /*
 =============
+RB_ClearColor
+=============
+*/
+static const void *RB_ClearColor( const void *data )
+{
+	const clearColorCommand_t *cmd = data;
+
+	if ( cmd->fullscreen )
+	{
+		qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
+		qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
+	}
+
+	if ( cmd->colorMask )
+	{
+		qglColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE );
+	}
+
+	qglClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
+
+	if ( cmd->frontAndBack )
+	{
+		qglDrawBuffer( GL_FRONT );
+		qglClear( GL_COLOR_BUFFER_BIT );
+		qglDrawBuffer( GL_BACK );
+	}
+
+	qglClear( GL_COLOR_BUFFER_BIT );
+
+	return (const void *)(cmd + 1);
+}
+
+
+/*
+=============
 RB_FinishBloom
 =============
 */
@@ -1445,6 +1494,8 @@ static const void *RB_SwapBuffers( const void *data ) {
 	backEnd.doneSurfaces = qfalse;
 	backEnd.drawConsole = qfalse;
 
+	r_anaglyphMode->modified = qfalse;
+
 	return (const void *)(cmd + 1);
 }
 
@@ -1471,6 +1522,9 @@ void RB_ExecuteRenderCommands( const void *data ) {
 		case RC_DRAW_SURFS:
 			data = RB_DrawSurfs( data );
 			break;
+		case RC_BIND_BUFFER:
+			data = RB_BindBuffer( data );
+			break;
 		case RC_DRAW_BUFFER:
 			data = RB_DrawBuffer( data );
 			break;
@@ -1485,6 +1539,9 @@ void RB_ExecuteRenderCommands( const void *data ) {
 			break;
 		case RC_CLEARDEPTH:
 			data = RB_ClearDepth(data);
+			break;
+		case RC_CLEARCOLOR:
+			data = RB_ClearColor(data);
 			break;
 		case RC_END_OF_LIST:
 		default:

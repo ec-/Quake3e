@@ -348,7 +348,7 @@ static void DrawNormals( const shaderCommands_t *input ) {
 		}
 		tess.numVertexes = 2 * count;
 		tess.numIndexes = 0;
-		vk_bind_geometry_ext( TESS_IDX | TESS_XYZ );
+		vk_bind_geometry_ext( TESS_XYZ );
 		vk_draw_geometry( vk.normals_debug_pipeline, DEPTH_RANGE_ZERO, qfalse );
 		i += count;
 	}

@@ -376,11 +376,11 @@ static void RB_Hyperspace( void ) {
 
 #ifdef USE_VULKAN
 	{
-		float color[4];
+		vec4_t color;
 		c = ( backEnd.refdef.time & 255 ) / 255.0f;
 		color[0] = color[1] = color[2] = c;
 		color[3] = 1.0;
-		vk_clear_attachments(qfalse, qfalse, qtrue, color);
+		vk_clear_color( color );
 	}
 #else
 	c = ( backEnd.refdef.time & 255 ) / 255.0f;
@@ -428,9 +428,7 @@ static void RB_BeginDrawingView( void ) {
 	if ( r_finish->integer == 1 && !glState.finishCalled ) {
 		qglFinish();
 		glState.finishCalled = qtrue;
-	}
-
-	if ( r_finish->integer == 0 ) {
+	} else if ( r_finish->integer == 0 ) {
 		glState.finishCalled = qtrue;
 	}
 #endif
@@ -445,7 +443,7 @@ static void RB_BeginDrawingView( void ) {
 	SetViewportAndScissor();
 
 #ifdef USE_VULKAN
-	vk_clear_attachments(vk_world.dirty_depth_attachment, qtrue, qfalse, fast_sky_color);
+	vk_clear_depth( qtrue );
 #else
 	// ensures that depth writes are enabled for the depth clear
 	GL_State( GLS_DEFAULT );
@@ -1311,11 +1309,13 @@ static const void *RB_DrawBuffer( const void *data ) {
 
 	tess.depthRange = DEPTH_RANGE_NORMAL;
 
+	// force depth range and viewport/scissor updates
+	vk.cmd->depth_range = DEPTH_RANGE_COUNT;
+
 	if ( r_clear->integer ) {
-		//const float color[4] = {1, 0, 0.5, 1};
-		const float color[4] = {0, 0, 0, 1};
+		const vec4_t color = {1, 0, 0.5, 1};
 		backEnd.projection2D = qtrue; // to ensure we have viewport that occupies entire window
-		vk_clear_attachments( qfalse, qfalse, qtrue, color );
+		vk_clear_color( color );
 		backEnd.projection2D = qfalse;
 	}
 #else
@@ -1351,7 +1351,7 @@ void RB_ShowImages( void )
 		RB_SetGL2D();
 	}
 
-	vk_clear_attachments(qfalse, qfalse, qtrue, colorBlack);
+	vk_clear_color( colorBlack );
 
 	for (i = 0 ; i < tr.numImages ; i++) {
 		image_t *image = tr.images[i];
@@ -1486,15 +1486,14 @@ static const void *RB_ClearDepth( const void *data )
 {
 	const clearDepthCommand_t *cmd = data;
 	
-	if ( tess.numIndexes )
-		RB_EndSurface();
+	RB_EndSurface();
 
 	// texture swapping test
 	//if ( r_showImages->integer )
 	//	RB_ShowImages();
 
 #ifdef USE_VULKAN
-	vk_clear_attachments(qtrue, r_shadows->integer == 2 ? qtrue: qfalse, qfalse, colorBlack);
+	vk_clear_depth( r_shadows->integer == 2 ? qtrue : qfalse );
 #else
 	qglClear( GL_DEPTH_BUFFER_BIT );
 #endif
@@ -1515,8 +1514,9 @@ static const void *RB_ClearColor( const void *data )
 	RB_EndSurface();
 
 #ifdef USE_VULKAN
-	RB_SetGL2D();
-	vk_clear_attachments(qtrue, qfalse, qtrue, colorBlack);
+	backEnd.projection2D = qtrue;
+	vk_clear_color( colorBlack );
+	backEnd.projection2D = qfalse;
 #else
 	qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
 	qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );

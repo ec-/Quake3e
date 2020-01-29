@@ -4449,54 +4449,27 @@ static void get_mvp_transform( float *mvp )
 }
 
 
-void vk_clear_attachments(qboolean clear_depth, qboolean clear_stencil, qboolean clear_color, const vec4_t color) {
+void vk_clear_color( const vec4_t color ) {
 	
-	VkClearAttachment attachments[2], *a;
+	VkClearAttachment attachment;
 	VkClearRect clear_rect[2];
-	uint32_t attachment_count;
-	int rect_count;
+	uint32_t rect_count;
 
-	if (!vk.active)
+	if ( !vk.active )
 		return;
 
-	Com_Memset(&attachments, 0, sizeof(attachments));
-	Com_Memset(&clear_rect, 0, sizeof(clear_rect));
-	attachment_count = 0;
-	a = attachments;
-
-	if (clear_color) {
-		a->aspectMask |= VK_IMAGE_ASPECT_COLOR_BIT;
-		a->colorAttachment = 0;
-		a->clearValue.color.float32[0] = color[0];
-		a->clearValue.color.float32[1] = color[1];
-		a->clearValue.color.float32[2] = color[2];
-		a->clearValue.color.float32[3] = color[3];
-		attachment_count++;
-		a++;
-	}
-
-	if ( clear_depth /*|| clear_stencil*/ ) {
-		//if (clear_depth) {
-		a->aspectMask |= VK_IMAGE_ASPECT_DEPTH_BIT;
-		a->clearValue.depthStencil.depth = 1.0f;
-		a->clearValue.depthStencil.stencil = 0;
-		//}
-		if ( clear_stencil ) {
-			a->aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-		}
-		attachment_count++;
-		a++;
-	}
-
-	if ( attachment_count == 0 ) {
-		return;
-	}
+	attachment.colorAttachment = 0;
+	attachment.clearValue.color.float32[0] = color[0];
+	attachment.clearValue.color.float32[1] = color[1];
+	attachment.clearValue.color.float32[2] = color[2];
+	attachment.clearValue.color.float32[3] = color[3];
+	attachment.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
 	get_scissor_rect( &clear_rect[0].rect );
 	clear_rect[0].baseArrayLayer = 0;
 	clear_rect[0].layerCount = 1;
 	rect_count = 1;
-#if 1
+#ifdef DEBUG
 	// Split viewport rectangle into two non-overlapping rectangles.
 	// It's a HACK to prevent Vulkan validation layer's performance warning:
 	//		"vkCmdClearAttachments() issued on command buffer object XXX prior to any Draw Cmds.
@@ -4504,7 +4477,7 @@ void vk_clear_attachments(qboolean clear_depth, qboolean clear_stencil, qboolean
 	// 
 	// NOTE: we don't use LOAD_OP_CLEAR for color attachment when we begin renderpass
 	// since at that point we don't know whether we need collor buffer clear (usually we don't).
-	if (clear_color) {
+	{
 		uint32_t h = clear_rect[0].rect.extent.height / 2;
 		clear_rect[0].rect.extent.height = h;
 		clear_rect[1] = clear_rect[0];
@@ -4512,7 +4485,35 @@ void vk_clear_attachments(qboolean clear_depth, qboolean clear_stencil, qboolean
 		rect_count = 2;
 	}
 #endif
-	qvkCmdClearAttachments( vk.cmd->command_buffer, attachment_count, attachments, rect_count, clear_rect );
+	qvkCmdClearAttachments( vk.cmd->command_buffer, 1, &attachment, rect_count, clear_rect );
+}
+
+
+void vk_clear_depth( qboolean clear_stencil ) {
+	
+	VkClearAttachment attachment;
+	VkClearRect clear_rect[1];
+
+	if ( !vk.active )
+		return;
+
+	if ( !vk_world.dirty_depth_attachment )
+		return;
+
+	attachment.colorAttachment = 0;
+	attachment.clearValue.depthStencil.depth = 1.0f;
+	attachment.clearValue.depthStencil.stencil = 0;
+	if ( clear_stencil ) {
+		attachment.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	} else {
+		attachment.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	}
+
+	get_scissor_rect( &clear_rect[0].rect );
+	clear_rect[0].baseArrayLayer = 0;
+	clear_rect[0].layerCount = 1;
+
+	qvkCmdClearAttachments( vk.cmd->command_buffer, 1, &attachment, 1, clear_rect );
 }
 
 
@@ -4739,10 +4740,10 @@ void vk_bind_descriptor_sets( void )
 	end = vk.cmd->descriptor_set.end;
 
 	offset_count = 0;
-	if ( start == 0 ) {
+	if ( start == 0 ) { // uniform offset
 		offsets[ offset_count++ ] = vk.cmd->descriptor_set.offset[ 0 ];
 	}
-	if ( end >= 4 ) {
+	if ( end >= 4 ) { // storage offset
 		offsets[ offset_count++ ] = vk.cmd->descriptor_set.offset[ 1 ];
 	}
 
@@ -4756,7 +4757,6 @@ void vk_bind_descriptor_sets( void )
 
 
 void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean indexed ) {
-	static Vk_Depth_Range old_range = DEPTH_RANGE_NORMAL;
 	VkPipeline vkpipe;
 	VkRect2D scissor_rect;
 	VkViewport viewport;
@@ -4963,14 +4963,11 @@ void vk_begin_frame( void )
 	// other stats
 	vk.stats.push_size = 0;
 
-	if ( r_fastsky->integer ) {
-		backEnd.projection2D = qtrue; // to ensure we have viewport that occupies entire window
-		vk_clear_attachments( qfalse, qfalse, qtrue, colorBlack );
-		backEnd.projection2D = qfalse;
-	}
-
-	// force depth range and viewport/scissor updates
-	vk.cmd->depth_range = DEPTH_RANGE_COUNT;
+	//if ( r_fastsky->integer ) {
+	//	backEnd.projection2D = qtrue; // to ensure we have viewport that occupies entire window
+	//	vk_clear_color( colorBlack );
+	//	backEnd.projection2D = qfalse;
+	//}
 }
 
 

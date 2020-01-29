@@ -191,7 +191,7 @@ RE_SetColor
 Passing NULL will set the color to white
 =============
 */
-void	RE_SetColor( const float *rgba ) {
+void RE_SetColor( const float *rgba ) {
 	setColorCommand_t	*cmd;
 
 	if ( !tr.registered ) {
@@ -218,13 +218,13 @@ void	RE_SetColor( const float *rgba ) {
 RE_StretchPic
 =============
 */
-void RE_StretchPic ( float x, float y, float w, float h, 
-					  float s1, float t1, float s2, float t2, qhandle_t hShader ) {
+void RE_StretchPic( float x, float y, float w, float h,
+					float s1, float t1, float s2, float t2, qhandle_t hShader ) {
 	stretchPicCommand_t	*cmd;
 
-  if (!tr.registered) {
-    return;
-  }
+	if ( !tr.registered ) {
+		return;
+	}
 	cmd = R_GetCommandBuffer( sizeof( *cmd ) );
 	if ( !cmd ) {
 		return;
@@ -251,17 +251,17 @@ void RE_StretchPic ( float x, float y, float w, float h,
 static void R_SetColorMode(GLboolean *rgba, stereoFrame_t stereoFrame, int colormode)
 {
 	rgba[0] = rgba[1] = rgba[2] = rgba[3] = GL_TRUE;
-	
+
 	if(colormode > MODE_MAX)
 	{
 		if(stereoFrame == STEREO_LEFT)
 			stereoFrame = STEREO_RIGHT;
 		else if(stereoFrame == STEREO_RIGHT)
 			stereoFrame = STEREO_LEFT;
-		
+
 		colormode -= MODE_MAX;
 	}
-	
+
 	if(colormode == MODE_GREEN_MAGENTA)
 	{
 		if(stereoFrame == STEREO_LEFT)
@@ -276,7 +276,7 @@ static void R_SetColorMode(GLboolean *rgba, stereoFrame_t stereoFrame, int color
 		else if(stereoFrame == STEREO_RIGHT)
 		{
 			rgba[0] = GL_FALSE;
-		
+
 			if(colormode == MODE_RED_BLUE)
 				rgba[1] = GL_FALSE;
 			else if(colormode == MODE_RED_GREEN)
@@ -313,9 +313,6 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	// texturemode stuff
 	//
 	if ( r_textureMode->modified ) {
-#ifndef USE_VULKAN
-		R_IssuePendingRenderCommands();
-#endif
 		GL_TextureMode( r_textureMode->string );
 		r_textureMode->modified = qfalse;
 	}
@@ -326,37 +323,15 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	if ( r_gamma->modified || r_greyscale->modified ) {
 		r_gamma->modified = qfalse;
 		r_greyscale->modified = qfalse;
-#ifndef USE_VULKAN
-		R_IssuePendingRenderCommands();
-#endif
 		R_SetColorMappings();
 	}
 
-#ifndef USE_VULKAN
-	// check for errors
-	if ( !r_ignoreGLErrors->integer ) {
-		int	err;
+	if ( (cmd = R_GetCommandBuffer( sizeof( *cmd ) ) ) == NULL )
+		return;
 
-		R_IssuePendingRenderCommands();
-		if ((err = qglGetError()) != GL_NO_ERROR)
-			ri.Error(ERR_FATAL, "RE_BeginFrame() - glGetError() failed (0x%x)!", err);
-	}
-
-	if ( r_fastsky->integer ) {
-		if ( stereoFrame != STEREO_RIGHT ) {
-			if( (cmd = R_GetCommandBuffer(sizeof(*cmd))) == NULL )
-				return;
-			cmd->commandId = RC_CLEARCOLOR;
-		}
-	}
-#endif
+	cmd->commandId = RC_DRAW_BUFFER;
 
 	if ( glConfig.stereoEnabled ) {
-		if( (cmd = R_GetCommandBuffer(sizeof(*cmd))) == NULL )
-			return;
-			
-		cmd->commandId = RC_DRAW_BUFFER;
-		
 		if ( stereoFrame == STEREO_LEFT ) {
 			cmd->buffer = (int)GL_BACK_LEFT;
 		} else if ( stereoFrame == STEREO_RIGHT ) {
@@ -364,16 +339,11 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 		} else {
 			ri.Error( ERR_FATAL, "RE_BeginFrame: Stereo is enabled, but stereoFrame was %i", stereoFrame );
 		}
-	}
-	else
-	{
-		if ( stereoFrame != STEREO_CENTER )
+	} else {
+		if ( stereoFrame != STEREO_CENTER ) {
 			ri.Error( ERR_FATAL, "RE_BeginFrame: Stereo is disabled, but stereoFrame was %i", stereoFrame );
+		}
 
-		if ( (cmd = R_GetCommandBuffer(sizeof(*cmd))) == NULL )
-			return;
-
-		cmd->commandId = RC_DRAW_BUFFER;
 #ifdef USE_VULKAN
 		cmd->buffer = 0;
 #else
@@ -382,6 +352,15 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 		else
 			cmd->buffer = (int)GL_BACK;
 #endif
+	}
+
+	if ( r_fastsky->integer ) {
+		if ( stereoFrame != STEREO_RIGHT ) {
+			clearColorCommand_t *clrcmd; 
+			if ( ( clrcmd = R_GetCommandBuffer( sizeof( *clrcmd ) ) ) == NULL )
+				return;
+			clrcmd->commandId = RC_CLEARCOLOR;
+		}
 	}
 
 	tr.refdef.stereoFrame = stereoFrame;

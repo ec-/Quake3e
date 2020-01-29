@@ -1705,6 +1705,10 @@ typedef struct {
 
 typedef struct {
 	int		commandId;
+} bindBufferCommand_t;
+
+typedef struct {
+	int		commandId;
 	image_t	*image;
 	int		width;
 	int		height;
@@ -1748,16 +1752,26 @@ typedef struct
 	int commandId;
 } clearDepthCommand_t;
 
+typedef struct
+{
+	int commandId;
+	qboolean fullscreen;
+	qboolean frontAndBack;
+	qboolean colorMask;
+} clearColorCommand_t;
+
 typedef enum {
 	RC_END_OF_LIST,
 	RC_SET_COLOR,
 	RC_STRETCH_PIC,
 	RC_DRAW_SURFS,
+	RC_BIND_BUFFER,
 	RC_DRAW_BUFFER,
 	RC_SWAP_BUFFERS,
 	RC_FINISHBLOOM,
 	RC_COLORMASK,
-	RC_CLEARDEPTH
+	RC_CLEARDEPTH,
+	RC_CLEARCOLOR
 } renderCommand_t;
 
 
