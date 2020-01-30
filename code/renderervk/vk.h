@@ -98,7 +98,7 @@ typedef struct vkUniform_s {
 	vec4_t lightVector;
 } vkUniform_t;
 
-#define VERTEX_BUFFER_SIZE (8 * 1024 * 1024)
+#define VERTEX_BUFFER_SIZE (4 * 1024 * 1024)
 
 #define NUM_COMMAND_BUFFERS 2	// number of command buffers / render semaphores / framebuffer sets
 #define USE_SINGLE_FBO			// use single framebuffer set for all command buffers
@@ -156,7 +156,6 @@ void vk_restart_swapchain( const char *funcname );
 
 void vk_clear_color( const vec4_t color );
 void vk_clear_depth( qboolean clear_stencil );
-void vk_bind_geometry( void );
 void vk_begin_frame( void );
 void vk_end_frame( void );
 
@@ -193,6 +192,7 @@ typedef struct vk_tess_s {
 
 	VkSemaphore rendering_finished;
 	VkFence rendering_finished_fence;
+	qboolean waitForFence;
 
 	VkBuffer vertex_buffer;
 	byte *vertex_buffer_ptr; // pointer to mapped vertex buffer
@@ -339,6 +339,7 @@ typedef struct {
 	// host visible memory that holds vertex, index and uniform data
 	VkDeviceMemory geometry_buffer_memory;
 	VkDeviceSize geometry_buffer_size;
+	VkDeviceSize geometry_buffer_size_new;
 
 	// statistics
 	struct {
@@ -525,10 +526,8 @@ extern Vk_Instance	vk;				// shouldn't be cleared during ref re-init
 extern Vk_World		vk_world;		// this data is cleared during ref re-init
 
 // Most of the renderer's code uses Vulkan API via function provides in this file but 
-// there are few places outside of vk.cpp where we use Vulkan commands directly.
+// there are few places outside of vk.c where we use Vulkan commands directly.
 
-extern PFN_vkGetPhysicalDeviceProperties qvkGetPhysicalDeviceProperties;
 extern PFN_vkDestroyImage qvkDestroyImage;
 extern PFN_vkDestroyImageView qvkDestroyImageView;
 extern PFN_vkCmdDrawIndexed qvkCmdDrawIndexed;
-extern PFN_vkCmdBindDescriptorSets qvkCmdBindDescriptorSets;

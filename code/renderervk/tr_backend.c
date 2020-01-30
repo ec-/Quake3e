@@ -35,12 +35,6 @@ static const float s_flipMatrix[16] = {
 };
 #endif
 
-#ifdef _DEBUG
-static float fast_sky_color[4] = { 0.8f, 0.7f, 0.4f, 1.0f };
-#else
-static float fast_sky_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-#endif
-
 /*
 ** GL_Bind
 */
@@ -1569,7 +1563,11 @@ static const void *RB_SwapBuffers( const void *data ) {
 	}
 #endif
 
+#ifdef USE_VULKAN
+	if ( backEnd.screenshotMask && vk.cmd->waitForFence ) {
+#else
 	if ( backEnd.screenshotMask && tr.frameCount > 1 ) {
+#endif
 		if ( backEnd.screenshotMask & SCREENSHOT_TGA && backEnd.screenshotTGA[0] ) {
 			RB_TakeScreenshot( 0, 0, glConfig.vidWidth, glConfig.vidHeight, backEnd.screenshotTGA );
 			if ( !backEnd.screenShotTGAsilent ) {
