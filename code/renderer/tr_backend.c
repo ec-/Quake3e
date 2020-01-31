@@ -1008,7 +1008,6 @@ void RE_UploadCinematic( int w, int h, int cols, int rows, const byte *data, int
 
 	image_t *image = tr.scratchImage[ client ];
 
-	GL_SelectTexture( 0 );
 	GL_Bind( image );
 
 	// if the scratchImage isn't in the format we want, specify it as a new texture
