@@ -774,6 +774,14 @@ static qboolean UI_GetValue( char* value, int valueSize, const char* key ) {
 	return qfalse;
 }
 
+/*
+====================
+CL_AddUICommand
+====================
+*/
+void CL_AddUICommand( const char *cmdName ) {
+	Cmd_AddCommand( cmdName, NULL );
+}
 
 /*
 ====================
@@ -1072,6 +1080,14 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 	
 	case UI_SET_PBCLSTATUS:
+		return 0;
+
+	case UI_ADDCOMMAND:
+		CL_AddUICommand(VMA(1));
+		return 0;
+
+	case UI_REMOVECOMMAND:
+		Cmd_RemoveCommandSafe(VMA(1));
 		return 0;
 
 	case UI_R_REGISTERFONT:

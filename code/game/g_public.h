@@ -228,6 +228,8 @@ typedef enum {
 	
 	// 1.32
 	G_FS_SEEK,
+	G_ADDCOMMAND,				// (const char *cmdName);
+	G_REMOVECOMMAND,			// (const char *cmdName);
 
 	G_MATRIXMULTIPLY = 107,
 	G_ANGLEVECTORS,

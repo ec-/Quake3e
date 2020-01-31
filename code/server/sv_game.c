@@ -411,6 +411,12 @@ static intptr_t SV_GameSystemCalls( intptr_t *args ) {
 	case G_FS_SEEK:
 		return FS_VM_SeekFile( args[1], args[2], args[3], H_QAGAME );
 
+	case G_ADDCOMMAND:
+		Cmd_AddCommand( VMA(1), NULL );
+		return 0;
+	case G_REMOVECOMMAND:
+		Cmd_RemoveCommandSafe( VMA(1) );
+		return 0;
 	case G_FS_GETFILELIST:
 		VM_CHECKBOUNDS( gvm, args[3], args[4] );
 		return FS_GetFileList( VMA(1), VMA(2), VMA(3), args[4] );
