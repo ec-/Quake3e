@@ -532,65 +532,62 @@ int COM_Compress( char *data_p ) {
 	qboolean newline = qfalse, whitespace = qfalse;
 
 	in = out = data_p;
-	if (in) {
-		while ((c = *in) != 0) {
-			// skip double slash comments
-			if ( c == '/' && in[1] == '/' ) {
-				while (*in && *in != '\n') {
-					in++;
-				}
-			// skip /* */ comments
-			} else if ( c == '/' && in[1] == '*' ) {
-				while ( *in && ( *in != '*' || in[1] != '/' ) ) 
-					in++;
-				if ( *in ) 
-					in += 2;
-				// record when we hit a newline
-			} else if ( c == '\n' || c == '\r' ) {
-				newline = qtrue;
+	while ((c = *in) != '\0') {
+		// skip double slash comments
+		if ( c == '/' && in[1] == '/' ) {
+			while (*in && *in != '\n') {
 				in++;
-				// record when we hit whitespace
-			} else if ( c == ' ' || c == '\t') {
-				whitespace = qtrue;
+			}
+		// skip /* */ comments
+		} else if ( c == '/' && in[1] == '*' ) {
+			while ( *in && ( *in != '*' || in[1] != '/' ) ) 
 				in++;
-				// an actual token
-			} else {
-				// if we have a pending newline, emit it (and it counts as whitespace)
-				if (newline) {
-					*out++ = '\n';
-					newline = qfalse;
-					whitespace = qfalse;
-				} else if (whitespace) {
-					*out++ = ' ';
-					whitespace = qfalse;
+			if ( *in ) 
+				in += 2;
+			// record when we hit a newline
+		} else if ( c == '\n' || c == '\r' ) {
+			newline = qtrue;
+			in++;
+			// record when we hit whitespace
+		} else if ( c == ' ' || c == '\t') {
+			whitespace = qtrue;
+			in++;
+			// an actual token
+		} else {
+			// if we have a pending newline, emit it (and it counts as whitespace)
+			if (newline) {
+				*out++ = '\n';
+				newline = qfalse;
+				whitespace = qfalse;
+			} else if (whitespace) {
+				*out++ = ' ';
+				whitespace = qfalse;
+			}
+			// copy quoted strings unmolested
+			if (c == '"') {
+				*out++ = c;
+				in++;
+				while (1) {
+					c = *in;
+					if (c && c != '"') {
+						*out++ = c;
+						in++;
+					} else {
+						break;
+					}
 				}
-
-				// copy quoted strings unmolested
 				if (c == '"') {
 					*out++ = c;
 					in++;
-					while (1) {
-						c = *in;
-						if (c && c != '"') {
-							*out++ = c;
-							in++;
-						} else {
-							break;
-						}
-					}
-					if (c == '"') {
-						*out++ = c;
-						in++;
-					}
-				} else {
-					*out++ = c;
-					in++;
 				}
+			} else {
+				*out++ = c;
+				in++;
 			}
 		}
-
-		*out = '\0';
 	}
+
+	*out = '\0';
 
 	return out - data_p;
 }
@@ -1044,6 +1041,24 @@ void Parse3DMatrix( const char **buf_p, int z, int y, int x, float *m ) {
 }
 
 
+static int Hex( char c )
+{
+	if ( c >= '0' && c <= '9' ) {
+		return c - '0';
+	}
+	else
+	if ( c >= 'A' && c <= 'F' ) {
+		return 10 + c - 'A';
+	}
+	else
+	if ( c >= 'a' && c <= 'f' ) {
+		return 10 + c - 'a';
+	}
+
+	return -1;
+}
+
+
 /*
 ===================
 Com_HexStrToInt
@@ -1055,23 +1070,17 @@ int Com_HexStrToInt( const char *str )
 		return -1;
 
 	// check for hex code
-	if( str[ 0 ] == '0' && str[ 1 ] == 'x' )
+	if ( str[ 0 ] == '0' && str[ 1 ] == 'x' )
 	{
-		int i, n = 0, len = strlen( str );
+		int i, digit, n = 0, len = strlen( str );
 
 		for( i = 2; i < len; i++ )
 		{
-			char digit;
-
 			n *= 16;
 
-			digit = tolower( str[ i ] );
+			digit = Hex( str[ i ] );
 
-			if( digit >= '0' && digit <= '9' )
-				digit -= '0';
-			else if( digit >= 'a' && digit <= 'f' )
-				digit = digit - 'a' + 10;
-			else
+			if ( digit < 0 )
 				return -1;
 
 			n += digit;
@@ -1082,6 +1091,48 @@ int Com_HexStrToInt( const char *str )
 
 	return -1;
 }
+
+
+qboolean Com_GetHashColor( const char *str, byte *color )
+{
+	int i, len, hex[6];
+
+	color[0] = color[1] = color[2] = 0;
+
+	if ( *str++ != '#' ) {
+		return qfalse;
+	}
+
+	len = (int)strlen( str );
+	if ( len <= 0 || len > 6 ) {
+		return qfalse;
+	}
+
+	for ( i = 0; i < len; i++ ) {
+		hex[i] = Hex( str[i] );
+		if ( hex[i] < 0 ) {
+			return qfalse;
+		}
+	}
+
+	switch ( len ) {
+		case 3: // #rgb
+			color[0] = hex[0] << 4 | hex[0];
+			color[1] = hex[1] << 4 | hex[1];
+			color[2] = hex[2] << 4 | hex[2];
+			break;
+		case 6: // #rrggbb
+			color[0] = hex[0] << 4 | hex[1];
+			color[1] = hex[2] << 4 | hex[3];
+			color[2] = hex[4] << 4 | hex[5];
+			break;
+		default: // unsupported format
+			return qfalse;
+	}
+
+	return qtrue;
+}
+
 
 /*
 ============================================================================
@@ -1594,6 +1645,7 @@ int Q_CountChar(const char *string, char tocount)
 	
 	return count;
 }
+
 
 #if	defined(_DEBUG) && defined(_WIN32)
 #include <windows.h>

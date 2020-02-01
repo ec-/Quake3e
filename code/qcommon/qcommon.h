@@ -940,6 +940,7 @@ void		Com_StartupVariable( const char *match );
 
 void		Com_WriteConfiguration( void );
 int			Com_HexStrToInt( const char *str );
+qboolean	Com_GetHashColor( const char *str, byte *color );
 
 
 static ID_INLINE unsigned int log2pad( unsigned int v, int roundup )

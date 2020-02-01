@@ -1190,10 +1190,10 @@ static void Cvar_Op( funcType_t ftype, int *ival, float *fval )
 				*fval /= fmod;
 			break;
 		case FT_MOD:
-			if ( imod )
+			if ( imod ) {
 				*ival %= imod;
-			if ( imod )
 				*fval = (float)( (int)*fval % imod ); // FIXME: use float
+			}
 			break;
 
 		case FT_SIN:

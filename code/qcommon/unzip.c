@@ -1903,7 +1903,7 @@ static int unzlocal_CheckCurrentFileCoherencyHeader (unz_s* s, uInt* piSizeVar,
 */
 extern int unzOpenCurrentFile (unzFile file)
 {
-	int err=UNZ_OK;
+	int err/*=UNZ_OK*/;
 	int Store;
 	uInt iSizeVar;
 	unz_s* s;
