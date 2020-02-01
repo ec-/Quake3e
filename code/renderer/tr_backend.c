@@ -1488,6 +1488,8 @@ static const void *RB_SwapBuffers( const void *data ) {
 
 	ri.GLimp_EndFrame();
 
+	FBO_BindMain();
+
 	backEnd.projection2D = qfalse;
 	backEnd.doneBloom = qfalse;
 	backEnd.doneSurfaces = qfalse;
