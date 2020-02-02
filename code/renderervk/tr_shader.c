@@ -2837,6 +2837,12 @@ static shader_t *FinishShader( void ) {
 		shader.fogPass = FP_LE;
 	}
 
+	// modify search index to allow potential sky shader duplication
+	// for each skybox side to prevent geometry overflow
+	if ( shader.isSky ) {
+		shader.lightmapSearchIndex = shader.lightmapIndex;
+	}
+
 #ifdef USE_VULKAN
 
 	shader.tessFlags = TESS_IDX | TESS_XYZ;
