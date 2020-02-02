@@ -1066,11 +1066,11 @@ Com_HexStrToInt
 */
 int Com_HexStrToInt( const char *str )
 {
-	if ( !str || !str[ 0 ] )
+	if ( !str )
 		return -1;
 
 	// check for hex code
-	if ( str[ 0 ] == '0' && str[ 1 ] == 'x' )
+	if ( str[ 0 ] == '0' && str[ 1 ] == 'x' && str[ 2 ] != '\0' )
 	{
 		int i, digit, n = 0, len = strlen( str );
 

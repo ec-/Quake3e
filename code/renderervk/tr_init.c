@@ -1732,7 +1732,7 @@ static void RE_Shutdown( int destroyWindow ) {
 #endif
 
 	if ( tr.registered ) {
-		R_IssuePendingRenderCommands();
+		//R_IssuePendingRenderCommands();
 		R_DeleteTextures();
 #ifdef USE_VULKAN
 		vk_release_resources();

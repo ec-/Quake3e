@@ -348,11 +348,6 @@ static void R_LoadMergedLightmaps( const lump_t *l, byte *image )
 	if ( ( r_vertexLight->integer && tr.vertexLightingAllowed ) /*|| glConfig.hardwareType == GLHW_PERMEDIA2*/ )
 		return;
 
-#ifndef USE_VULKAN // we don't need that in Vulkan
-	// we are about to upload textures
-	R_IssuePendingRenderCommands();
-#endif
-
 	tr.numLightmaps = SetLightmapParams( tr.numLightmaps, glConfig.maxTextureSize );
 
 	tr.lightmaps = ri.Hunk_Alloc( tr.numLightmaps * sizeof(image_t *), h_low );
@@ -437,11 +432,6 @@ static void R_LoadLightmaps( const lump_t *l ) {
 		//this avoids this, but isn't the correct solution.
 		tr.numLightmaps++;
 	}
-
-	// we are about to upload textures
-#ifndef USE_VULKAN // FIXME: is this correct?
-	R_IssuePendingRenderCommands();
-#endif
 
 	tr.lightmaps = ri.Hunk_Alloc( tr.numLightmaps * sizeof(image_t *), h_low );
 	for ( i = 0 ; i < tr.numLightmaps ; i++ ) {

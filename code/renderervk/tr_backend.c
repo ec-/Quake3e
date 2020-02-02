@@ -1217,6 +1217,137 @@ static void RB_LightingPass( qboolean skipWeapon )
 #endif
 
 
+#ifdef USE_VULKAN
+static void transform_to_eye_space( const vec3_t v, vec3_t v_eye )
+{
+	const float *m = vk_world.modelview_transform;
+	v_eye[0] = m[0]*v[0] + m[4]*v[1] + m[8 ]*v[2] + m[12];
+	v_eye[1] = m[1]*v[0] + m[5]*v[1] + m[9 ]*v[2] + m[13];
+	v_eye[2] = m[2]*v[0] + m[6]*v[1] + m[10]*v[2] + m[14];
+};
+#endif
+
+
+/*
+================
+RB_DebugPolygon
+================
+*/
+void RB_DebugPolygon( int color, int numPoints, float *points ) {
+#ifdef USE_VULKAN
+	vec3_t pa;
+	vec3_t pb;
+	vec3_t p;
+	vec3_t q;
+	vec3_t n;
+	int i;
+
+	if ( numPoints < 3 )
+		return;
+
+	transform_to_eye_space( &points[0], pa );
+	transform_to_eye_space( &points[3], pb );
+	VectorSubtract( pb, pa, p );
+
+	for ( i = 2; i < numPoints; i++ ) {
+		transform_to_eye_space( &points[3*i], pb );
+		VectorSubtract( pb, pa, q );
+		CrossProduct( q, p, n );
+		if ( VectorLength( n ) > 1e-5 ) {
+			break;
+		}
+	}
+
+	if ( DotProduct(n, pa) >= 0 ) {
+		return; // discard backfacing polygon
+	}
+
+	// Solid shade.
+	for (i = 0; i < numPoints; i++) {
+		VectorCopy(&points[3*i], tess.xyz[i]);
+
+		tess.svars.colors[i][0] = (color&1) ? 255 : 0;
+		tess.svars.colors[i][1] = (color&2) ? 255 : 0;
+		tess.svars.colors[i][2] = (color&4) ? 255 : 0;
+		tess.svars.colors[i][3] = 255;
+	}
+	tess.numVertexes = numPoints;
+
+	tess.numIndexes = 0;
+	for (i = 1; i < numPoints - 1; i++) {
+		tess.indexes[tess.numIndexes + 0] = 0;
+		tess.indexes[tess.numIndexes + 1] = i;
+		tess.indexes[tess.numIndexes + 2] = i + 1;
+		tess.numIndexes += 3;
+	}
+
+	vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_RGBA | TESS_ST0 );
+	vk_draw_geometry( vk.surface_debug_pipeline_solid, DEPTH_RANGE_NORMAL, qtrue );
+
+	// Outline.
+	Com_Memset( tess.svars.colors, tr.identityLightByte, numPoints * 2 * sizeof(tess.svars.colors[0] ) );
+
+	for ( i = 0; i < numPoints; i++ ) {
+		VectorCopy( &points[3*i], tess.xyz[2*i] );
+		VectorCopy( &points[3*((i + 1) % numPoints)], tess.xyz[2*i + 1] );
+	}
+	tess.numVertexes = numPoints * 2;
+	tess.numIndexes = 0;
+
+	vk_bind_geometry_ext( TESS_XYZ | TESS_RGBA );
+	vk_draw_geometry( vk.surface_debug_pipeline_outline, DEPTH_RANGE_ZERO, qfalse );
+	tess.numVertexes = 0;
+#else
+	int		i;
+
+	GL_State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE );
+
+	// draw solid shade
+
+	qglColor3f( color&1, (color>>1)&1, (color>>2)&1 );
+	qglBegin( GL_POLYGON );
+	for ( i = 0 ; i < numPoints ; i++ ) {
+		qglVertex3fv( points + i * 3 );
+	}
+	qglEnd();
+
+	// draw wireframe outline
+	GL_State( GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE );
+	qglDepthRange( 0, 0 );
+	qglColor3f( 1, 1, 1 );
+	qglBegin( GL_POLYGON );
+	for ( i = 0 ; i < numPoints ; i++ ) {
+		qglVertex3fv( points + i * 3 );
+	}
+	qglEnd();
+	qglDepthRange( 0, 1 );
+#endif
+}
+
+
+/*
+====================
+RB_DebugGraphics
+
+Visualization aid for movement clipping debugging
+====================
+*/
+static void RB_DebugGraphics( void ) {
+
+	if ( !r_debugSurface->integer ) {
+		return;
+	}
+
+	GL_Bind( tr.whiteImage );
+#ifdef USE_VULKAN
+	vk_update_mvp( NULL );
+#else
+	GL_Cull( CT_FRONT_SIDED );
+#endif
+	ri.CM_DrawDebugSurface( RB_DebugPolygon );
+}
+
+
 /*
 =============
 RB_DrawSurfs
@@ -1279,6 +1410,9 @@ __redraw:
 
 		goto __redraw;
 	}
+
+	// draw main system development information (surface outlines, etc)
+	RB_DebugGraphics();
 
 	//TODO Maybe check for rdf_noworld stuff but q3mme has full 3d ui
 	backEnd.doneSurfaces = qtrue; // for bloom

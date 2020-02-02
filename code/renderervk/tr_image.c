@@ -1825,10 +1825,6 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 	Q_strncpyz( skin->name, name, sizeof( skin->name ) );
 	skin->numSurfaces = 0;
 
-#ifndef USE_VULKAN // FIXME: is this correct?
-	R_IssuePendingRenderCommands();
-#endif
-
 	// If not a .skin file, load as a single shader
 	if ( strcmp( name + strlen( name ) - 5, ".skin" ) ) {
 		skin->numSurfaces = 1;

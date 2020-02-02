@@ -312,13 +312,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	backEnd.doneBloom = qfalse;
 
 	// check for errors
-	if ( !r_ignoreGLErrors->integer ) {
-		int	err;
-
-		R_IssuePendingRenderCommands();
-		if ((err = qglGetError()) != GL_NO_ERROR)
-			ri.Error(ERR_FATAL, "RE_BeginFrame() - glGetError() failed (0x%x)!", err);
-	}
+	GL_CheckErrors();
 
 	if ( ( cmd = R_GetCommandBuffer( sizeof( *cmd ) ) ) == NULL )
 		return;
