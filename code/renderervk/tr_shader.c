@@ -2845,7 +2845,6 @@ static shader_t *FinishShader( void ) {
 	{
 		Vk_Pipeline_Def def;
 		Vk_Shader_Type stype;
-		int i;
 
 		Com_Memset( &def, 0, sizeof( def ) );
 		def.face_culling = shader.cullType;

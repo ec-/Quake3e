@@ -695,7 +695,7 @@ static char *ARB_BuildBloomProgram( char *buf ) {
 		}
 	}
 
-	s = Q_stradd( s,
+	/*s = */ Q_stradd( s,
 		"MOV base.w, 1.0; \n"
 		"MOV result.color, base; \n"
 		"END \n" );
@@ -736,7 +736,7 @@ static char *ARB_BuildBlurProgram( char *buf, int taps ) {
 		s = Q_stradd( s, va( "MAD cc, c%i, p%i.w, cc; \n", i, i ) ); // cc = cc + cN + pN.w
 	}
 
-	s = Q_stradd( s,
+	/*s = */ Q_stradd( s,
 		"MOV cc.a, 1.0; \n"
 		"MOV_SAT result.color, cc; \n"
 		"END \n" );
@@ -762,7 +762,7 @@ static char *ARB_BuildBlendProgram( char *buf, int count ) {
 			"ADD cc, cx, cc; \n", i ) );
 	}
 
-	s = Q_stradd( s,
+	/*s = */ Q_stradd( s,
 		"MOV cc.a, 1.0; \n"
 		"MOV_SAT result.color, cc; \n"
 		"END \n" );

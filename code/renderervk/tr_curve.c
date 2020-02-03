@@ -113,7 +113,7 @@ static void MakeMeshNormals( int width, int height, drawVert_t ctrl[MAX_GRID_SIZ
 	int		i, j, k, dist;
 	vec3_t	normal;
 	vec3_t	sum;
-	int		count = 0;
+	int		count;
 	vec3_t	base;
 	vec3_t	delta;
 	int		x, y;

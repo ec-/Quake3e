@@ -275,7 +275,7 @@ char *Com_MD5File( const char *fn, int length, const char *prefix, int prefix_le
 	byte buffer[2048];
 	int i;
 	int filelen = 0;
-	int r = 0;
+	int r;
 	int total = 0;
 
 	final[0] = '\0';
