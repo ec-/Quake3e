@@ -189,7 +189,7 @@ void R_MDRAddAnimSurfaces( trRefEntity_t *ent ) {
 
 	header = (mdrHeader_t *) tr.currentModel->modelData;
 
-	personalModel = (ent->e.renderfx & RF_THIRD_PERSON) && !tr.viewParms.isPortal;
+	personalModel = (ent->e.renderfx & RF_THIRD_PERSON) && (tr.viewParms.portalView == PV_NONE);
 
 	if ( ent->e.renderfx & RF_WRAP_FRAMES )
 	{

@@ -4409,7 +4409,7 @@ static void get_viewport(VkViewport *viewport, Vk_Depth_Range depth_range) {
 
 static void get_scissor_rect(VkRect2D *r) {
 
-	if ( backEnd.viewParms.portalView )
+	if ( backEnd.viewParms.portalView != PV_NONE )
 	{
 		r->offset.x = backEnd.viewParms.scissorX;
 		r->offset.y = glConfig.vidHeight - backEnd.viewParms.scissorY - backEnd.viewParms.scissorHeight;
@@ -4551,7 +4551,7 @@ void vk_update_mvp( const float *m ) {
 	else
 		get_mvp_transform( push_constants );
 
-	if ( backEnd.viewParms.portalView ) {
+	if ( backEnd.viewParms.portalView != PV_NONE ) {
 		// Eye space transform.
 		// NOTE: backEnd.or.modelMatrix incorporates s_flipMatrix, so it should be taken into account 
 		// when computing clipping plane too.

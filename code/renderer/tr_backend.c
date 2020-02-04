@@ -145,7 +145,7 @@ void GL_BindTexture( int unit, GLuint texnum )
 /*
 ** GL_Cull
 */
-void GL_Cull( int cullType ) {
+void GL_Cull( cullType_t cullType ) {
 	if ( glState.faceCulling == cullType ) {
 		return;
 	}
@@ -162,7 +162,7 @@ void GL_Cull( int cullType ) {
 		qglEnable( GL_CULL_FACE );
 
 		cullFront = (cullType == CT_FRONT_SIDED);
-		if ( backEnd.viewParms.isMirror )
+		if ( backEnd.viewParms.portalView == PV_MIRROR )
 		{
 			cullFront = !cullFront;
 		}
@@ -489,7 +489,7 @@ static void RB_BeginDrawingView( void ) {
 	backEnd.skyRenderedThisView = qfalse;
 
 	// clip to the plane of the portal
-	if ( backEnd.viewParms.isPortal ) {
+	if ( backEnd.viewParms.portalView != PV_NONE ) {
 		float	plane[4];
 		GLdouble plane2[4];
 
@@ -729,7 +729,7 @@ static void RB_BeginDrawingLitSurfs( void )
 	glState.faceCulling = -1;		// force face culling to set next time
 
 	// clip to the plane of the portal
-	if ( backEnd.viewParms.isPortal ) {
+	if ( backEnd.viewParms.portalView != PV_NONE ) {
 		float	plane[4];
 		GLdouble plane2[4];
 
@@ -738,10 +738,10 @@ static void RB_BeginDrawingLitSurfs( void )
 		plane[2] = backEnd.viewParms.portalPlane.normal[2];
 		plane[3] = backEnd.viewParms.portalPlane.dist;
 
-		plane2[0] = DotProduct (backEnd.viewParms.or.axis[0], plane);
-		plane2[1] = DotProduct (backEnd.viewParms.or.axis[1], plane);
-		plane2[2] = DotProduct (backEnd.viewParms.or.axis[2], plane);
-		plane2[3] = DotProduct (plane, backEnd.viewParms.or.origin) - plane[3];
+		plane2[0] = DotProduct( backEnd.viewParms.or.axis[0], plane );
+		plane2[1] = DotProduct( backEnd.viewParms.or.axis[1], plane );
+		plane2[2] = DotProduct( backEnd.viewParms.or.axis[2], plane );
+		plane2[3] = DotProduct( plane, backEnd.viewParms.or.origin ) - plane[3];
 
 		qglLoadMatrixf( s_flipMatrix );
 		qglClipPlane( GL_CLIP_PLANE0, plane2 );

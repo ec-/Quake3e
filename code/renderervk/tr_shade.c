@@ -1263,7 +1263,7 @@ void VK_LightingPass( void )
 		return; // no space left...
 
 	cull = tess.shader->cullType;
-	if ( backEnd.viewParms.portalView ) {
+	if ( backEnd.viewParms.portalView != PV_NONE ) {
 		if ( backEnd.viewParms.portalView == PV_MIRROR ) {
 			switch ( cull ) {
 				case CT_FRONT_SIDED: cull = CT_BACK_SIDED; break;

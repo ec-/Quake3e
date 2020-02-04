@@ -560,7 +560,7 @@ typedef struct {
 
 typedef enum {
 	PV_NONE = 0,
-	PV_PORTAL,
+	PV_PORTAL, // this view is through a portal
 	PV_MIRROR, // portal + inverted face culling
 	PV_COUNT
 } portalView_t;
