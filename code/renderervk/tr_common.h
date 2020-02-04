@@ -82,7 +82,6 @@ typedef struct image_s {
 #define LIGHTMAP_WHITEIMAGE -2
 #define LIGHTMAP_NONE       -1
 
-//extern	refimport_t		ri;
 extern glconfig_t	glConfig;		// outside of TR since it shouldn't be cleared during ref re-init
 
 // These variables should live inside glConfig but can't because of

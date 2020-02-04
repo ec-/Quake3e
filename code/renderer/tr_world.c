@@ -329,6 +329,7 @@ static int R_DlightTrisurf( srfTriangles_t *surf, int dlightBits ) {
 #endif
 }
 
+
 /*
 ====================
 R_DlightSurface
@@ -682,7 +683,7 @@ static void R_RecursiveWorldNode( mnode_t *node, unsigned int planeBits, unsigne
 #endif // USE_LEGACY_DLIGHTS
 
 		// recurse down the children, front side first
-		R_RecursiveWorldNode (node->children[0], planeBits, newDlights[0] );
+		R_RecursiveWorldNode( node->children[0], planeBits, newDlights[0] );
 
 		// tail recurse
 		node = node->children[1];
@@ -911,6 +912,7 @@ void R_AddWorldSurfaces( void ) {
 	}
 
 	R_RecursiveWorldNode( tr.world->nodes, 15, ( 1ULL << tr.refdef.num_dlights ) - 1 );
+
 #ifdef USE_PMLIGHT
 #ifdef USE_LEGACY_DLIGHTS
 	if ( !r_dlightMode->integer )

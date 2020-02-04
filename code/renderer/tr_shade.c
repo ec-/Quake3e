@@ -186,7 +186,7 @@ void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 		R_DrawStripElements( numIndexes,  indexes, qglArrayElement );
 		return;
 	}
-	
+
 	if ( primitives == 3 ) {
 		R_DrawStripElements( numIndexes,  indexes, R_ArrayElementDiscrete );
 		return;

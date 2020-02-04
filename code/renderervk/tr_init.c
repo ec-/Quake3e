@@ -486,7 +486,7 @@ static void InitOpenGL( void )
 		GLint max_texture_size;
 		GLint max_shader_units = -1;
 		GLint max_bind_units = -1;
-		
+
 		ri.GLimp_Init( &glConfig );
 
 		R_ClearSymTables();
@@ -762,11 +762,11 @@ void RB_TakeScreenshotJPEG( int x, int y, int width, int height, const char *fil
 	memcount = (width * 3 + padlen) * height;
 
 	// gamma correct
-	if(glConfig.deviceSupportsGamma)
-		R_GammaCorrect(buffer + offset, memcount);
+	if ( glConfig.deviceSupportsGamma )
+		R_GammaCorrect( buffer + offset, memcount );
 
 	ri.CL_SaveJPG( fileName, r_screenshotJpegQuality->integer, width, height, buffer + offset, padlen );
-	ri.Hunk_FreeTempMemory(buffer);
+	ri.Hunk_FreeTempMemory( buffer );
 }
 
 
@@ -1109,14 +1109,14 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 	memcount = padwidth * cmd->height;
 
 	// gamma correct
-	if (glConfig.deviceSupportsGamma)
-		R_GammaCorrect(cBuf, memcount);
+	if ( glConfig.deviceSupportsGamma )
+		R_GammaCorrect( cBuf, memcount );
 
-	if (cmd->motionJpeg)
+	if ( cmd->motionJpeg )
 	{
-		memcount = ri.CL_SaveJPGToBuffer(cmd->encodeBuffer, linelen * cmd->height,
+		memcount = ri.CL_SaveJPGToBuffer( cmd->encodeBuffer, linelen * cmd->height,
 			r_aviMotionJpegQuality->integer,
-			cmd->width, cmd->height, cBuf, padlen);
+			cmd->width, cmd->height, cBuf, padlen );
 		ri.CL_WriteAVIVideoFrame(cmd->encodeBuffer, memcount);
 	}
 	else
@@ -1231,6 +1231,8 @@ static void R_PrintLongString(const char *string) {
 /*
 ================
 GfxInfo
+
+Prints persistent rendering configuration
 ================
 */
 static void GfxInfo( void )
@@ -1634,10 +1636,8 @@ void R_Init( void ) {
 	Com_Memset( &tess, 0, sizeof( tess ) );
 	Com_Memset( &glState, 0, sizeof( glState ) );
 
-	if(sizeof(glconfig_t) != 11332)
+	if (sizeof(glconfig_t) != 11332)
 		ri.Error( ERR_FATAL, "Mod ABI incompatible: sizeof(glconfig_t) == %u != 11332", (unsigned int) sizeof(glconfig_t));
-
-//	Swap_Init();
 
 	if ( (intptr_t)tess.xyz & 15 ) {
 		ri.Printf( PRINT_WARNING, "tess.xyz not 16 byte aligned\n" );
@@ -1718,14 +1718,14 @@ static void RE_Shutdown( int destroyWindow ) {
 
 	ri.Printf( PRINT_ALL, "RE_Shutdown( %i )\n", destroyWindow );
 
-	ri.Cmd_RemoveCommand ("modellist");
-	ri.Cmd_RemoveCommand ("screenshotBMP");
-	ri.Cmd_RemoveCommand ("screenshotJPEG");
-	ri.Cmd_RemoveCommand ("screenshot");
-	ri.Cmd_RemoveCommand ("imagelist");
-	ri.Cmd_RemoveCommand ("shaderlist");
-	ri.Cmd_RemoveCommand ("skinlist");
-	ri.Cmd_RemoveCommand ("gfxinfo");
+	ri.Cmd_RemoveCommand( "modellist" );
+	ri.Cmd_RemoveCommand( "screenshotBMP" );
+	ri.Cmd_RemoveCommand( "screenshotJPEG" );
+	ri.Cmd_RemoveCommand( "screenshot" );
+	ri.Cmd_RemoveCommand( "imagelist" );
+	ri.Cmd_RemoveCommand( "shaderlist" );
+	ri.Cmd_RemoveCommand( "skinlist" );
+	ri.Cmd_RemoveCommand( "gfxinfo" );
 	ri.Cmd_RemoveCommand( "shaderstate" );
 #ifdef USE_VULKAN
 	ri.Cmd_RemoveCommand( "vkinfo" );

@@ -246,7 +246,7 @@ static void RB_SurfaceTriangles( srfTriangles_t *srf ) {
 	if ( tess.allowVBO && srf->vboItemIndex ) {
 #endif
 		// transition to vbo render list
-		if ( !tess.vboIndex ) {
+		if ( tess.vboIndex == 0 ) {
 			RB_EndSurface();
 			RB_BeginSurface( tess.shader, tess.fogNum );
 			// set some dummy parameters for RB_EndSurface
@@ -790,7 +790,7 @@ static void RB_SurfaceFace( const srfSurfaceFace_t *surf ) {
 	if ( tess.allowVBO && surf->vboItemIndex ) {
 #endif
 		// transition to vbo render list
-		if ( !tess.vboIndex ) {
+		if ( tess.vboIndex == 0 ) {
 			RB_EndSurface();
 			RB_BeginSurface( tess.shader, tess.fogNum );
 			// set some dummy parameters for RB_EndSurface
@@ -984,7 +984,7 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 	if ( tess.allowVBO && cv->vboItemIndex ) {
 #endif
 		// transition to vbo render list
-		if ( !tess.vboIndex ) {
+		if ( tess.vboIndex == 0 ) {
 			RB_EndSurface();
 			RB_BeginSurface( tess.shader, tess.fogNum );
 			// set some dummy parameters for RB_EndSurface

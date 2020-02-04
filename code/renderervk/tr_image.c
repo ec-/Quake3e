@@ -1163,8 +1163,8 @@ Returns NULL if it fails, not a default image.
 */
 image_t	*R_FindImageFile( const char *name, imgFlags_t flags )
 {
-	const char *localName;
 	image_t	*image;
+	const char *localName;
 	int		width, height;
 	byte	*pic;
 	int		hash;

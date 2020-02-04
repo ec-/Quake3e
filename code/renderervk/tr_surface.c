@@ -358,8 +358,6 @@ static void RB_SurfaceBeam( void )
 	if ( VectorNormalize( normalized_direction ) == 0 )
 		return;
 
-	RB_EndSurface();
-
 	PerpendicularVector( perpvec, normalized_direction );
 
 	VectorScale( perpvec, 4, perpvec );

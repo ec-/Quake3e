@@ -718,15 +718,15 @@ static void RB_BeginDrawingLitSurfs( void )
 	// 2D images again
 	backEnd.projection2D = qfalse;
 
+	// we will only draw a sun if there was sky rendered in this view
+	backEnd.skyRenderedThisView = qfalse;
+
 	//
 	// set the modelview matrix for the viewer
 	//
 	SetViewportAndScissor();
 
 	glState.faceCulling = -1;		// force face culling to set next time
-
-	// we will only draw a sun if there was sky rendered in this view
-	backEnd.skyRenderedThisView = qfalse;
 
 	// clip to the plane of the portal
 	if ( backEnd.viewParms.isPortal ) {
@@ -1062,14 +1062,13 @@ static const void *RB_StretchPic( const void *data ) {
 	if ( shader != tess.shader ) {
 		if ( tess.numIndexes ) {
 			RB_EndSurface();
-			//VBO_UnBind();
 		}
 		backEnd.currentEntity = &backEnd.entity2D;
 		RB_BeginSurface( shader, 0 );
 	}
 
 	VBO_UnBind();
-	
+
 	if ( !backEnd.projection2D ) {
 		RB_SetGL2D();
 	}
@@ -1166,8 +1165,10 @@ static void RB_DebugPolygon( int color, int numPoints, float *points ) {
 
 	int		i;
 
-	// draw solid shade
 	GL_State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE );
+
+	// draw solid shade
+
 	qglColor3f( color&1, (color>>1)&1, (color>>2)&1 );
 	qglBegin( GL_POLYGON );
 	for ( i = 0 ; i < numPoints ; i++ ) {
@@ -1217,9 +1218,7 @@ static const void *RB_DrawSurfs( const void *data ) {
 	const drawSurfsCommand_t	*cmd;
 
 	// finish any 2D drawing if needed
-	if ( tess.numIndexes ) {
-		RB_EndSurface();
-	}
+	RB_EndSurface();
 
 	cmd = (const drawSurfsCommand_t *)data;
 
@@ -1377,7 +1376,7 @@ RB_ColorMask
 static const void *RB_ColorMask( const void *data )
 {
 	const colorMaskCommand_t *cmd = data;
-	
+
 	qglColorMask( cmd->rgba[0], cmd->rgba[1], cmd->rgba[2], cmd->rgba[3] );
 	
 	return (const void *)(cmd + 1);
@@ -1393,8 +1392,7 @@ static const void *RB_ClearDepth( const void *data )
 {
 	const clearDepthCommand_t *cmd = data;
 	
-	if ( tess.numIndexes )
-		RB_EndSurface();
+	RB_EndSurface();
 
 	// texture swapping test
 	if ( r_showImages->integer )

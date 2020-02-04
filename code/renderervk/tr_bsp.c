@@ -143,7 +143,7 @@ static void R_ColorShiftLightingBytes( const byte in[4], byte out[4] ) {
 
 
 #define LIGHTMAP_SIZE 128
-#define LIGHTMAP_BORDER 4
+#define LIGHTMAP_BORDER 2
 #define LIGHTMAP_LEN (LIGHTMAP_SIZE + LIGHTMAP_BORDER*2)
 
 static const int lightmapFlags = IMGFLAG_NOLIGHTSCALE | IMGFLAG_NO_COMPRESSION | IMGFLAG_LIGHTMAP | IMGFLAG_NOSCALE;

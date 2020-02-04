@@ -1001,7 +1001,6 @@ static void RB_SetGL2D( void ) {
 		GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA );
 
 	GL_Cull( CT_TWO_SIDED );
-
 	qglDisable( GL_CLIP_PLANE0 );
 #endif
 
@@ -1638,7 +1637,7 @@ static const void *RB_ClearColor( const void *data )
 {
 	const clearColorCommand_t *cmd = data;
 
-	RB_EndSurface();
+
 
 #ifdef USE_VULKAN
 	backEnd.projection2D = qtrue;
@@ -1650,7 +1649,7 @@ static const void *RB_ClearColor( const void *data )
 	qglClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
 	qglClear( GL_COLOR_BUFFER_BIT );
 #endif
-	
+
 	return (const void *)(cmd + 1);
 }
 

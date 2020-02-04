@@ -1318,7 +1318,7 @@ void R_SetColorMappings( void ) {
 
 	shift = tr.overbrightBits;
 
-	for ( i = 0; i < 256; i++ ) {
+	for ( i = 0; i < ARRAY_LEN( s_gammatable ); i++ ) {
 		if ( g == 1.0f ) {
 			inf = i;
 		} else {
@@ -1334,9 +1334,9 @@ void R_SetColorMappings( void ) {
 		s_gammatable[i] = inf;
 	}
 
-	for (i=0 ; i<256 ; i++) {
+	for ( i = 0; i < ARRAY_LEN( s_intensitytable ); i++ ) {
 		j = i * r_intensity->value;
-		if (j > 255) {
+		if ( j > 255 ) {
 			j = 255;
 		}
 		s_intensitytable[i] = j;
@@ -1354,8 +1354,10 @@ void R_SetColorMappings( void ) {
 R_InitImages
 ===============
 */
-void	R_InitImages( void ) {
-	Com_Memset(hashTable, 0, sizeof(hashTable));
+void R_InitImages( void ) {
+
+	Com_Memset( hashTable, 0, sizeof( hashTable ) );
+
 	// build brightness translation tables
 	R_SetColorMappings();
 

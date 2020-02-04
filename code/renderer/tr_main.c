@@ -633,11 +633,9 @@ Sets the z-component transformation part in the projection matrix
 */
 static void R_SetupProjectionZ( viewParms_t *dest )
 {
-	float zNear, zFar, depth;
-	
-	zNear	= r_znear->value;
-	zFar	= dest->zFar;	
-	depth	= zFar - zNear;
+	const float zNear = r_znear->value;
+	const float zFar = dest->zFar;
+	const float depth = zFar - zNear;
 
 	dest->projectionMatrix[2] = 0;
 	dest->projectionMatrix[6] = 0;
@@ -1515,9 +1513,9 @@ void R_AddEntitySurfaces( void ) {
 		return;
 	}
 
-	for ( tr.currentEntityNum = 0; 
-	      tr.currentEntityNum < tr.refdef.num_entities; 
-		  tr.currentEntityNum++ ) {
+	for ( tr.currentEntityNum = 0;
+			tr.currentEntityNum < tr.refdef.num_entities;
+			tr.currentEntityNum++ ) {
 		ent = tr.currentEntity = &tr.refdef.entities[tr.currentEntityNum];
 #ifdef USE_LEGACY_DLIGHTS
 		ent->needDlights = qfalse;

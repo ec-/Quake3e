@@ -293,7 +293,7 @@ qhandle_t RE_RegisterModel( const char *name ) {
 	Q_strncpyz( mod->name, name, sizeof( mod->name ) );
 
 #ifndef USE_VULKAN
-	R_IssuePendingRenderCommands();
+	//R_IssuePendingRenderCommands();
 #endif
 
 	mod->type = MOD_BAD;

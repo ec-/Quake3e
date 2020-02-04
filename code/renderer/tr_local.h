@@ -493,7 +493,7 @@ typedef struct {
 	qboolean	eyeOutside;
 	vec4_t		fogDistanceVector;
 	vec4_t		fogDepthVector;
-	const float *fogColor;
+	const float *fogColor; // vec4_t
 } fogProgramParms_t;
 
 typedef struct {
@@ -1326,8 +1326,8 @@ void	GL_Cull( int cullType );
 
 #define GLS_ATEST_GT_0							0x10000000
 #define GLS_ATEST_LT_80							0x20000000
-#define GLS_ATEST_GE_80							0x40000000
-#define GLS_ATEST_BITS							0x70000000
+#define GLS_ATEST_GE_80							0x30000000
+#define GLS_ATEST_BITS							0x30000000
 
 #define GLS_DEFAULT			GLS_DEPTHMASK_TRUE
 
@@ -1413,9 +1413,10 @@ typedef struct shaderCommands_s
 
 	color4ub_t	constantColor255[SHADER_MAX_VERTEXES] QALIGN(16);
 #pragma pack(pop)
-	
+
 	surfaceType_t	surfType;
 	int			vboIndex;
+	qboolean	allowVBO;
 
 	shader_t	*shader;
 	double		shaderTime;	// -EC- set to double for frameloss fix
@@ -1425,7 +1426,6 @@ typedef struct shaderCommands_s
 #endif
 	int			numIndexes;
 	int			numVertexes;
-	qboolean	allowVBO;
 
 #ifdef USE_PMLIGHT
 	const dlight_t* light;
