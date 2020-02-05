@@ -218,25 +218,36 @@ typedef struct vk_tess_s {
 	VkDescriptorSet color_descriptor;
 
 	VkImage color_image;
-//#ifndef USE_IMAGE_POOL
 	VkDeviceMemory color_image_memory;
-//#endif
 	VkImageView color_image_view;
 
 	VkImage depth_image;
-//#ifndef USE_IMAGE_POOL
 	VkDeviceMemory depth_image_memory;
-//#endif
 	VkImageView depth_image_view;
 
 	VkImage msaa_image;
-//#ifndef USE_IMAGE_POOL
 	VkDeviceMemory msaa_image_memory;
-//#endif
 	VkImageView msaa_image_view;
 
+	// screenMap
+
+	VkDescriptorSet color_descriptor3;
+
+	VkImage color_image3;
+	VkDeviceMemory color_image_memory3;
+	VkImageView color_image_view3;
+
+	VkImage color_image3_msaa;
+	VkDeviceMemory color_image_memory3_msaa;
+	VkImageView color_image_view3_msaa;
+
+	VkImage depth_image3;
+	VkDeviceMemory depth_image_memory3;
+	VkImageView depth_image_view3;
+
 	VkFramebuffer framebuffers[MAX_SWAPCHAIN_IMAGES];
-	VkFramebuffer framebuffers2[MAX_SWAPCHAIN_IMAGES];
+	VkFramebuffer framebuffers2[MAX_SWAPCHAIN_IMAGES]; // post-process
+	VkFramebuffer framebuffers3[MAX_SWAPCHAIN_IMAGES]; // screenmap
 #endif
 
 } vk_tess_t;

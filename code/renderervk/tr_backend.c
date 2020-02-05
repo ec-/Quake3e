@@ -1066,7 +1066,7 @@ void RE_UploadCinematic( int w, int h, int cols, int rows, const byte *data, int
 #ifdef USE_VULKAN
 		qvkDestroyImage( vk.device, image->handle, NULL );
 		qvkDestroyImageView( vk.device, image->view, NULL );
-		vk_create_image( cols, rows, VK_FORMAT_R8G8B8A8_UNORM, 1, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, image );
+		vk_create_image( cols, rows, VK_FORMAT_R8G8B8A8_UNORM, 1, image->wrapClampMode, image );
 		vk_upload_image_data( image->handle, 0, 0, cols, rows, qfalse, data, 4 );
 #else
 		qglTexImage2D( GL_TEXTURE_2D, 0, image->internalFormat, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );

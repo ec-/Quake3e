@@ -61,7 +61,7 @@ typedef struct image_s {
 #ifdef USE_VULKAN
 	int			internalFormat;
 
-	int			wrapClampMode;
+	VkSamplerAddressMode wrapClampMode;
 	VkImage		handle;
 	VkImageView	view;
 	// Descriptor set that contains single descriptor used to access the given image.

@@ -221,7 +221,11 @@ void R_BindAnimatedImage( const textureBundle_t *bundle ) {
 		if ( vk.renderPassIndex == RENDER_PASS_SCREENMAP )
 			GL_Bind( tr.blackImage );
 		else
+#ifdef USE_SINGLE_FBO
 			vk_update_descriptor( 1, vk.color_descriptor3 );
+#else
+			vk_update_descriptor( 1, vk.cmd->color_descriptor3 );
+#endif
 		return;
 	}
 
