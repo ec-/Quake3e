@@ -566,6 +566,12 @@ static void R_SetupFrustum( viewParms_t *dest, float xmin, float xmax, float yma
 		dest->frustum[i].dist = DotProduct (ofsorigin, dest->frustum[i].normal);
 		SetPlaneSignbits( &dest->frustum[i] );
 	}
+
+	// near clipping plane
+	VectorCopy( dest->or.axis[0], dest->frustum[4].normal );
+	dest->frustum[4].type = PLANE_NON_AXIAL;
+	dest->frustum[4].dist = DotProduct( ofsorigin, dest->frustum[4].normal ) + r_znear->value;
+	SetPlaneSignbits( &dest->frustum[4] );
 }
 
 
