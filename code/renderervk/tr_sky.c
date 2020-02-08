@@ -370,20 +370,28 @@ CullPoints
 */
 static qboolean CullPoints( const vec4_t v[], const int count )
 {
-	int	i;
+	const cplane_t *frust;
+	int i, j, k;
+	float dist;
 
-	if ( r_nocull->integer ) {
-		return qfalse;
-	}
-
-	for ( i = 0; i < 4; i++ ) {
-		const cplane_t *frust = backEnd.viewParms.frustum + 4; // near plane
-		float dist = DotProduct( v[i], frust->normal ) - frust->dist;
-		if ( dist >= 0 ) {
-			// at least one point is in front of near plane
+	for ( i = 0, k = -1; i < count; i++ ) {
+		for ( j = 0; j < 5; j++ ) {
+			frust = &backEnd.viewParms.frustum[j]; // near plane
+			dist = DotProduct( v[i], frust->normal ) - frust->dist;
+			if ( dist < 0 ) {
+				break;
+			}
+		}
+		if ( j == 5 ) {
+			// at least one point is completely inside frustum
+			return qfalse;
+		} else if ( k >= 0 && j != k ) {
+			// points located behind different planes so might intersect frustum
 			return qfalse;
 		}
+		k = j;
 	}
+
 	return qtrue;
 }
 
@@ -392,6 +400,9 @@ static qboolean CullSkySide( const int mins[2], const int maxs[2] )
 {
 	int s, t;
 	vec4_t v[4];
+
+	if ( r_nocull->integer )
+		return qfalse;
 
 	s = mins[0] + HALF_SKY_SUBDIVISIONS;
 	t = mins[1] + HALF_SKY_SUBDIVISIONS;
@@ -426,8 +437,15 @@ static void FillSkySide( const int mins[2], const int maxs[2], qboolean svars )
 	if ( CullSkySide( mins, maxs ) )
 		return;
 
+#if ( (SKY_SUBDIVISIONS+1) * (SKY_SUBDIVISIONS+1) * 6 > SHADER_MAX_VERTEXES )
 	if ( tess.numVertexes + tHeight * sWidth > SHADER_MAX_VERTEXES )
-		ri.Error( ERR_DROP, "SHADER_MAX_VERTEXES hit in FillSkySideExt()" );
+		ri.Error( ERR_DROP, "SHADER_MAX_VERTEXES hit in %s()", __func__ );
+#endif
+
+#if ( SKY_SUBDIVISIONS * SKY_SUBDIVISIONS * 6 * 6 > SHADER_MAX_INDEXES )
+	if ( tess.numIndexes + (tHeight - 1) * (sWidth - 1) * 6 > SHADER_MAX_INDEXES )
+		ri.Error( ERR_DROP, "SHADER_MAX_INDEXES hit in %s()", __func__ );
+#endif
 
 	for ( t = mins[1]+HALF_SKY_SUBDIVISIONS; t <= maxs[1]+HALF_SKY_SUBDIVISIONS; t++ )
 	{
