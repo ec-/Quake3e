@@ -371,28 +371,24 @@ CullPoints
 static qboolean CullPoints( const vec4_t v[], const int count )
 {
 	const cplane_t *frust;
-	int i, j, k;
+	int i, j;
 	float dist;
 
-	for ( i = 0, k = -1; i < count; i++ ) {
-		for ( j = 0; j < 5; j++ ) {
-			frust = &backEnd.viewParms.frustum[j]; // near plane
-			dist = DotProduct( v[i], frust->normal ) - frust->dist;
-			if ( dist < 0 ) {
+	for ( i = 0; i < 5; i++ ) {
+		frust = &backEnd.viewParms.frustum[i];
+		for ( j = 0; j < count; j++ ) {
+			dist = DotProduct( v[j], frust->normal ) - frust->dist;
+			if ( dist >= 0 ) {
 				break;
 			}
 		}
-		if ( j == 5 ) {
-			// at least one point is completely inside frustum
-			return qfalse;
-		} else if ( k >= 0 && j != k ) {
-			// points located behind different planes so might intersect frustum
-			return qfalse;
+		// it is completely behind at least of one frustum plane
+		if ( j == count ) {
+			return qtrue;
 		}
-		k = j;
 	}
 
-	return qtrue;
+	return qfalse;
 }
 
 
