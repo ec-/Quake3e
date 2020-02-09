@@ -2204,12 +2204,6 @@ static void FixRenderCommandList( int newShader ) {
 				curCmd = (const void *)(ds_cmd + 1);
 				break;
 				}
-			case RC_BIND_BUFFER:
-				{
-				const bindBufferCommand_t *db_cmd = (const bindBufferCommand_t *)curCmd;
-				curCmd = (const void *)(db_cmd + 1);
-				break;
-				}
 			case RC_DRAW_BUFFER:
 				{
 				const drawBufferCommand_t *db_cmd = (const drawBufferCommand_t *)curCmd;

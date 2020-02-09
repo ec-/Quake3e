@@ -1294,6 +1294,7 @@ static const void *RB_DrawBuffer( const void *data ) {
 	cmd = (const drawBufferCommand_t *)data;
 
 	if ( fboEnabled ) {
+		FBO_BindMain();
 		qglDrawBuffer( GL_COLOR_ATTACHMENT0 );
 	} else {
 		qglDrawBuffer( cmd->buffer );
@@ -1574,9 +1575,6 @@ void RB_ExecuteRenderCommands( const void *data ) {
 			break;
 		case RC_DRAW_SURFS:
 			data = RB_DrawSurfs( data );
-			break;
-		case RC_BIND_BUFFER:
-			data = RB_BindBuffer( data );
 			break;
 		case RC_DRAW_BUFFER:
 			data = RB_DrawBuffer( data );

@@ -300,15 +300,6 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	tr.frameCount++;
 	tr.frameSceneNum = 0;
 
-	if ( fboEnabled ) {
-		bindBufferCommand_t *bindcmd = R_GetCommandBuffer( sizeof( *bindcmd ) );
-		if ( bindcmd ) {
-			bindcmd->commandId = RC_BIND_BUFFER;
-		} else {
-			return;
-		}
-	}
-
 	backEnd.doneBloom = qfalse;
 
 	// check for errors
