@@ -447,7 +447,7 @@ static void DrawMultitextured( const shaderCommands_t *input, int stage ) {
 
 	// this is an ugly hack to work around a GeForce driver
 	// bug with multitexture and clip planes
-	if ( backEnd.viewParms.isPortal ) {
+	if ( backEnd.viewParms.portalView != PV_NONE ) {
 		qglPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 	}
 

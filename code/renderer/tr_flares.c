@@ -84,21 +84,6 @@ typedef struct flare_s {
 flare_t		r_flareStructs[MAX_FLARES];
 flare_t		*r_activeFlares, *r_inactiveFlares;
 
-static float flareCoeff;
-
-/*
-==================
-R_SetFlareCoeff
-==================
-*/
-static void R_SetFlareCoeff( void ) {
-
-	if(r_flareCoeff->value == 0.0f)
-		flareCoeff = atof(FLARE_STDCOEFF);
-	else
-		flareCoeff = r_flareCoeff->value;
-}
-
 /*
 ==================
 R_ClearFlares
@@ -115,8 +100,6 @@ void R_ClearFlares( void ) {
 		r_flareStructs[i].next = r_inactiveFlares;
 		r_inactiveFlares = &r_flareStructs[i];
 	}
-
-	R_SetFlareCoeff();
 }
 
 
@@ -362,9 +345,9 @@ void RB_RenderFlare( flare_t *f ) {
  * The coefficient flareCoeff will determine the falloff speed with increasing distance.
  */
 
-	factor = distance + size * sqrt(flareCoeff);
+	factor = distance + size * sqrt( r_flareCoeff->value );
 	
-	intensity = flareCoeff * size * size / (factor * factor);
+	intensity = r_flareCoeff->value * size * size / (factor * factor);
 
 	VectorScale(f->color, f->drawIntensity * intensity, color);
 
@@ -463,12 +446,6 @@ void RB_RenderFlares (void) {
 
 	if ( !r_flares->integer ) {
 		return;
-	}
-
-	if(r_flareCoeff->modified)
-	{
-		R_SetFlareCoeff();
-		r_flareCoeff->modified = qfalse;
 	}
 
 	// Reset currentEntity to world so that any previously referenced entities

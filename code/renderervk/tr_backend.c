@@ -167,16 +167,16 @@ void GL_TexEnv( GLint env )
 ** This routine is responsible for setting the most commonly changed state
 ** in Q3.
 */
-void GL_State( unsigned long stateBits )
+void GL_State( unsigned stateBits )
 {
-	unsigned long diff = stateBits ^ glState.glStateBits;
+#ifndef USE_VULKAN
+	unsigned diff = stateBits ^ glState.glStateBits;
 
 	if ( !diff )
 	{
 		return;
 	}
 
-#ifndef USE_VULKAN
 	//
 	// check depthFunc bits
 	//
@@ -347,9 +347,9 @@ void GL_State( unsigned long stateBits )
 			break;
 		}
 	}
-#endif
 
 	glState.glStateBits = stateBits;
+#endif // USE_VULKAN
 }
 
 
@@ -748,7 +748,7 @@ static void RB_BeginDrawingLitSurfs( void )
 	glState.faceCulling = -1;		// force face culling to set next time
 
 	// clip to the plane of the portal
-	if ( backEnd.viewParms.isPortal ) {
+	if ( backEnd.viewParms.portalView != PV_NONE ) {
 		float	plane[4];
 		GLdouble plane2[4];
 

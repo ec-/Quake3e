@@ -483,7 +483,7 @@ static void InitOpenGL( void )
 		vk_initialize();
 #else
 		const char *err;
-		GLint max_texture_size;
+		GLint max_texture_size = 0;
 		GLint max_shader_units = -1;
 		GLint max_bind_units = -1;
 

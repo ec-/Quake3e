@@ -996,8 +996,8 @@ typedef struct {
 	int			currenttmu;
 	qboolean	finishCalled;
 	GLint		texEnv[2];
-	int			faceCulling;
-	unsigned long	glStateBits;
+	cullType_t	faceCulling;
+	unsigned	glStateBits;
 } glstate_t;
 
 typedef struct {
@@ -1343,10 +1343,10 @@ void	GL_Bind( image_t *image );
 void	GL_SelectTexture( int unit );
 void	GL_TextureMode( const char *string );
 void	GL_CheckErrors( void );
-void	GL_State( unsigned long stateVector );
+void	GL_State( unsigned stateVector );
 #ifndef USE_VULKAN
 void	GL_TexEnv( GLint env );
-void	GL_Cull( int cullType );
+void	GL_Cull( cullType_t cullType );
 #endif
 
 #define GLS_SRCBLEND_ZERO						0x00000001
@@ -1370,19 +1370,21 @@ void	GL_Cull( int cullType );
 #define GLS_DSTBLEND_ONE_MINUS_DST_ALPHA		0x00000080
 #define GLS_DSTBLEND_BITS						0x000000f0
 
+#define GLS_BLEND_BITS							(GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS)
+
 #define GLS_DEPTHMASK_TRUE						0x00000100
 
-#define GLS_POLYMODE_LINE						0x00001000
+#define GLS_POLYMODE_LINE						0x00000200
 
-#define GLS_DEPTHTEST_DISABLE					0x00010000
-#define GLS_DEPTHFUNC_EQUAL						0x00020000
+#define GLS_DEPTHTEST_DISABLE					0x00000400
+#define GLS_DEPTHFUNC_EQUAL						0x00000800
 
-#define GLS_ATEST_GT_0							0x10000000
-#define GLS_ATEST_LT_80							0x20000000
-#define GLS_ATEST_GE_80							0x30000000
-#define GLS_ATEST_BITS							0x30000000
+#define GLS_ATEST_GT_0							0x00001000
+#define GLS_ATEST_LT_80							0x00002000
+#define GLS_ATEST_GE_80							0x00003000
+#define GLS_ATEST_BITS							0x00003000
 
-#define GLS_DEFAULT			GLS_DEPTHMASK_TRUE
+#define GLS_DEFAULT								GLS_DEPTHMASK_TRUE
 
 void	RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty);
 void	RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty);
@@ -1428,7 +1430,6 @@ shader_t	*R_FindShaderByName( const char *name );
 void		R_InitShaders( void );
 void		R_ShaderList_f( void );
 void		RE_RemapShader(const char *oldShader, const char *newShader, const char *timeOffset);
-void		FindLightingStages( shader_t *sh );
 
 
 //

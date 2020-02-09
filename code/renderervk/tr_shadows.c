@@ -309,7 +309,6 @@ void RB_ShadowTessEnd( void ) {
 	// draw the silhouette edges
 #ifdef USE_VULKAN
 	GL_Bind( tr.whiteImage );
-	GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
 
 	R_ExtrudeShadowEdges();
 

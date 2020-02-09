@@ -355,7 +355,7 @@ static void R_LoadMergedLightmaps( const lump_t *l, byte *image )
 	for ( offs = 0, i = 0 ; i < tr.numLightmaps; i++ ) {
 
 		tr.lightmaps[ i ] = R_CreateImage( va( "*mergedLightmap%d", i ), NULL,
-			lightmapWidth, lightmapHeight, lightmapFlags | IMGFLAG_CLAMPTOBORDER | IMGFLAG_LIGHTMAP );
+			lightmapWidth, lightmapHeight, lightmapFlags | IMGFLAG_CLAMPTOBORDER );
 
 		for ( y = 0; y < lightmapCountY; y++ ) {
 			if ( offs >= len )

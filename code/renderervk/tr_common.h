@@ -44,7 +44,7 @@ typedef enum
 } imgFlags_t;
 
 typedef enum {
-	CT_FRONT_SIDED,
+	CT_FRONT_SIDED = 0,
 	CT_BACK_SIDED,
 	CT_TWO_SIDED
 } cullType_t;

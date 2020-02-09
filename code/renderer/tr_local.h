@@ -318,12 +318,6 @@ typedef struct {
 struct shaderCommands_s;
 
 typedef enum {
-	CT_FRONT_SIDED,
-	CT_BACK_SIDED,
-	CT_TWO_SIDED
-} cullType_t;
-
-typedef enum {
 	FP_NONE,		// surface is translucent and will just be adjusted properly
 	FP_EQUAL,		// surface is opaque but possibly alpha tested
 	FP_LE			// surface is trnaslucent, but still needs a fog pass (fog surface)
@@ -924,8 +918,6 @@ typedef struct {
 #define FUNCTABLE_SIZE2		10
 #define FUNCTABLE_MASK		(FUNCTABLE_SIZE-1)
 
-#define MAX_TEXTURE_UNITS	8
-
 // the renderer front end should never modify glstate_t
 typedef struct {
 	GLuint		currenttextures[ MAX_TEXTURE_UNITS ];
@@ -933,7 +925,7 @@ typedef struct {
 	qboolean	finishCalled;
 	GLint		texEnv[2];
 	cullType_t	faceCulling;
-	unsigned long	glStateBits;
+	unsigned	glStateBits;
 } glstate_t;
 
 typedef struct {
@@ -988,7 +980,6 @@ typedef struct {
 
 	qboolean	projection2D;	// if qtrue, drawstretchpic doesn't need to change modes
 	byte		color2D[4];
-	qboolean	vertexes2D;		// shader needs to be finished
 	qboolean	doneBloom;		// done bloom this frame
 	qboolean	doneSurfaces;   // done any 3d surfaces already
 	trRefEntity_t	entity2D;	// currentEntity will point at this when doing 2D rendering
@@ -1133,9 +1124,7 @@ extern	qboolean			superSampled;
 //
 extern cvar_t	*r_flareSize;
 extern cvar_t	*r_flareFade;
-// coefficient for the flare intensity falloff function.
-#define FLARE_STDCOEFF "150"
-extern cvar_t	*r_flareCoeff;
+extern cvar_t	*r_flareCoeff;			// coefficient for the flare intensity falloff function. 
 
 extern cvar_t	*r_railWidth;
 extern cvar_t	*r_railCoreWidth;
@@ -1298,7 +1287,7 @@ void	GL_SelectTexture( int unit );
 void	GL_BindTexture( int unit, GLuint texnum );
 void	GL_TextureMode( const char *string );
 void	GL_CheckErrors( void );
-void	GL_State( unsigned long stateVector );
+void	GL_State( unsigned stateVector );
 void	GL_TexEnv( GLint env );
 void	GL_Cull( cullType_t cullType );
 
@@ -1323,19 +1312,21 @@ void	GL_Cull( cullType_t cullType );
 #define GLS_DSTBLEND_ONE_MINUS_DST_ALPHA		0x00000080
 #define GLS_DSTBLEND_BITS						0x000000f0
 
+#define GLS_BLEND_BITS							(GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS)
+
 #define GLS_DEPTHMASK_TRUE						0x00000100
 
-#define GLS_POLYMODE_LINE						0x00001000
+#define GLS_POLYMODE_LINE						0x00000200
 
-#define GLS_DEPTHTEST_DISABLE					0x00010000
-#define GLS_DEPTHFUNC_EQUAL						0x00020000
+#define GLS_DEPTHTEST_DISABLE					0x00000400
+#define GLS_DEPTHFUNC_EQUAL						0x00000800
 
-#define GLS_ATEST_GT_0							0x10000000
-#define GLS_ATEST_LT_80							0x20000000
-#define GLS_ATEST_GE_80							0x30000000
-#define GLS_ATEST_BITS							0x30000000
+#define GLS_ATEST_GT_0							0x00001000
+#define GLS_ATEST_LT_80							0x00002000
+#define GLS_ATEST_GE_80							0x00003000
+#define GLS_ATEST_BITS							0x00003000
 
-#define GLS_DEFAULT			GLS_DEPTHMASK_TRUE
+#define GLS_DEFAULT								GLS_DEPTHMASK_TRUE
 
 void	RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty);
 void	RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty);
@@ -1381,7 +1372,6 @@ shader_t	*R_FindShaderByName( const char *name );
 void		R_InitShaders( void );
 void		R_ShaderList_f( void );
 void		RE_RemapShader(const char *oldShader, const char *newShader, const char *timeOffset);
-void		FindLightingStages( shader_t *sh );
 
 
 //
@@ -1708,10 +1698,6 @@ typedef struct {
 	int		commandId;
 	int		buffer;
 } drawBufferCommand_t;
-
-typedef struct {
-	int		commandId;
-} bindBufferCommand_t;
 
 typedef struct {
 	int		commandId;

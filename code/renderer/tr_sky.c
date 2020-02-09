@@ -382,7 +382,7 @@ static qboolean CullPoints( const vec4_t v[], const int count )
 				break;
 			}
 		}
-		// it is completely behind at least of one frustum plane
+		// all points is completely behind at least of one frustum plane
 		if ( j == count ) {
 			return qtrue;
 		}
@@ -841,7 +841,7 @@ void RB_StageIteratorSky( void ) {
 		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
 		qglColor3f( tr.identityLight, tr.identityLight, tr.identityLight );
-		
+	
 		GL_State( 0 );
 		GL_Cull( CT_FRONT_SIDED );
 

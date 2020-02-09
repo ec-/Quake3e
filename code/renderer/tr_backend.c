@@ -205,9 +205,9 @@ void GL_TexEnv( GLint env )
 ** This routine is responsible for setting the most commonly changed state
 ** in Q3.
 */
-void GL_State( unsigned long stateBits )
+void GL_State( unsigned stateBits )
 {
-	unsigned long diff = stateBits ^ glState.glStateBits;
+	unsigned diff = stateBits ^ glState.glStateBits;
 
 	if ( !diff )
 	{
@@ -1262,22 +1262,6 @@ static const void *RB_DrawSurfs( const void *data ) {
 
 	//TODO Maybe check for rdf_noworld stuff but q3mme has full 3d ui
 	backEnd.doneSurfaces = qtrue; // for bloom
-
-	return (const void *)(cmd + 1);
-}
-
-
-/*
-=============
-RB_BindBuffer
-=============
-*/
-static const void *RB_BindBuffer( const void *data ) {
-	const bindBufferCommand_t	*cmd;
-
-	cmd = (const bindBufferCommand_t *)data;
-
-	FBO_BindMain();
 
 	return (const void *)(cmd + 1);
 }

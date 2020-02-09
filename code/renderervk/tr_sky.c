@@ -895,16 +895,17 @@ void RB_StageIteratorSky( void ) {
 		// vk_update_mvp( NULL );
 		DrawSkyBox( tess.shader );
 #else
+		qglDisableClientState( GL_COLOR_ARRAY );
+		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+
 		qglColor3f( tr.identityLight, tr.identityLight, tr.identityLight );
-		
-		qglPushMatrix ();
+
 		GL_State( 0 );
 		GL_Cull( CT_FRONT_SIDED );
-		qglTranslatef (backEnd.viewParms.or.origin[0], backEnd.viewParms.or.origin[1], backEnd.viewParms.or.origin[2]);
 
 		DrawSkyBox( tess.shader );
 
-		qglPopMatrix();
+		qglEnableClientState( GL_COLOR_ARRAY );
 #endif
 	}
 

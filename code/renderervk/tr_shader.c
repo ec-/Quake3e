@@ -2013,13 +2013,13 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 	bbits = st1->stateBits;
 
 	// make sure that both stages have identical state other than blend modes
-	if ( ( abits & ~( GLS_DSTBLEND_BITS | GLS_SRCBLEND_BITS | GLS_DEPTHMASK_TRUE ) ) !=
-		( bbits & ~( GLS_DSTBLEND_BITS | GLS_SRCBLEND_BITS | GLS_DEPTHMASK_TRUE ) ) ) {
+	if ( ( abits & ~( GLS_BLEND_BITS | GLS_DEPTHMASK_TRUE ) ) !=
+		( bbits & ~( GLS_BLEND_BITS | GLS_DEPTHMASK_TRUE ) ) ) {
 		return qfalse;
 	}
 
-	abits &= ( GLS_DSTBLEND_BITS | GLS_SRCBLEND_BITS );
-	bbits &= ( GLS_DSTBLEND_BITS | GLS_SRCBLEND_BITS );
+	abits &= GLS_BLEND_BITS;
+	bbits &= GLS_BLEND_BITS;
 
 	// search for a valid multitexture blend function
 	for ( i = 0; collapse[i].blendA != -1 ; i++ ) {
@@ -2097,6 +2097,45 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 
 	return qtrue;
 }
+
+#ifdef USE_PMLIGHT
+/*
+====================
+FindLightingStages
+
+Find proper stage for dlight pass
+====================
+*/
+static void FindLightingStages( void )
+{
+	const shaderStage_t *st;
+	int i;
+
+	shader.lightingStage = -1;
+
+	if ( shader.isSky || ( shader.surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) || shader.sort == SS_ENVIRONMENT )
+		return;
+
+	for ( i = 0; i < shader.numUnfoggedPasses; i++ ) {
+		st = &stages[ i ];
+		if ( !st->active )
+			break;
+		if ( !st->bundle[0].isLightmap ) {
+			if ( st->bundle[0].tcGen != TCGEN_TEXTURE )
+				continue;
+			if ( (st->stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE) )
+				continue;
+			 // fix for q3wcp17' textures/scanctf2/bounce_white and others
+			if ( st->rgbGen == CGEN_IDENTITY && (st->stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO) ) {
+				if ( shader.lightingStage >= 0 ) {
+					continue;
+				}
+			}
+			shader.lightingStage = i;
+		}
+	}
+}
+#endif
 
 
 /*
@@ -2377,7 +2416,6 @@ GeneratePermanentShader
 */
 static shader_t *GeneratePermanentShader( void ) {
 	shader_t	*newShader;
-	shaderStage_t *lastMT;
 	int			i, b;
 	int			size, hash;
 
@@ -2414,32 +2452,6 @@ static shader_t *GeneratePermanentShader( void ) {
 		}
 	}
 
-#ifdef USE_PMLIGHT
-	FindLightingStages( newShader );
-#endif
-
-#if 1
-	// try to avoid redundant per-stage computations
-	for ( i = 0, lastMT = NULL; i < newShader->numUnfoggedPasses - 1; i++ ) {
-		if ( !newShader->stages[ i+1 ] )
-			break;
-		if ( EqualRGBgen( newShader->stages[ i ], newShader->stages[ i+1 ] ) && EqualACgen( newShader->stages[ i ], newShader->stages[ i+1 ] ) ) {
-			newShader->stages[ i+1 ]->tessFlags &= ~TESS_RGBA;
-		}
-		if ( EqualTCgen( 0, newShader->stages[ i ], newShader->stages[ i+1 ] ) ) {
-			newShader->stages[ i+1 ]->tessFlags &= ~TESS_ST0;
-		}
-		if ( newShader->stages[ i ]->mtEnv ) {
-			lastMT = newShader->stages[ i ];
-		}
-		if ( newShader->stages[ i+1 ]->mtEnv ) {
-			if ( EqualTCgen( 1, lastMT, newShader->stages[ i+1 ] ) ) {
-				newShader->stages[ i+1 ]->tessFlags &= ~TESS_ST1;
-			}
-		}
-	}
-#endif
-
 	SortNewShader();
 
 	hash = generateHashValue(newShader->name, FILE_HASH_SIZE);
@@ -2448,56 +2460,6 @@ static shader_t *GeneratePermanentShader( void ) {
 
 	return newShader;
 }
-
-
-#ifdef USE_PMLIGHT
-/*
-====================
-FindLightingStages
-
-Find proper stage for dlight pass
-====================
-*/
-#define GLS_BLEND_BITS (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS)
-void FindLightingStages( shader_t *sh )
-{
-	shaderStage_t *st;
-	int i;
-
-	sh->lightingStage = -1;
-
-#ifndef USE_VULKAN
-	if ( !qglGenProgramsARB )
-		return;
-#endif
-
-	if ( sh->isSky || ( sh->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) || sh->sort == SS_ENVIRONMENT )
-		return;
-
-	for ( i = 0; i < sh->numUnfoggedPasses; i++ ) {
-		st = sh->stages[ i ];
-		if ( !st )
-			break;
-		if ( st->tessFlags & TESS_ENV )
-			continue;
-		if ( !st->bundle[0].isLightmap ) {
-			if ( st->bundle[0].tcGen != TCGEN_TEXTURE )
-				continue;
-			if ( (st->stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE) )
-				continue;
-			 // fix for q3wcp17' textures/scanctf2/bounce_white and others
-			if ( st->rgbGen == CGEN_IDENTITY && (st->stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO) ) {
-				if ( sh->lightingStage >= 0 ) {
-					continue;
-				}
-			}
-			sh->lightingStage = i;
-		}
-	}
-}
-
-#undef GLS_BLEND_BITS
-#endif // USE_PMLIGHT
 
 
 /*
@@ -2641,6 +2603,7 @@ static shader_t *FinishShader( void ) {
 	qboolean	vertexLightmap;
 	qboolean	colorBlend;
 	qboolean	depthMask;
+	shaderStage_t *lastMT;
 
 	hasLightmapStage = qfalse;
 	vertexLightmap = qfalse;
@@ -2931,6 +2894,32 @@ static shader_t *FinishShader( void ) {
 	}
 #endif // USE_FOG_COLLAPSE
 #endif // USE_VULKAN
+
+#ifdef USE_PMLIGHT
+	FindLightingStages();
+#endif
+
+#if 1
+	// try to avoid redundant per-stage computations
+	for ( i = 0, lastMT = NULL; i < shader.numUnfoggedPasses - 1; i++ ) {
+		if ( !stages[ i+1 ].active )
+			break;
+		if ( EqualRGBgen( &stages[ i ], &stages[ i+1 ] ) && EqualACgen( &stages[ i ], &stages[ i+1 ] ) ) {
+			stages[ i+1 ].tessFlags &= ~TESS_RGBA;
+		}
+		if ( EqualTCgen( 0, &stages[ i ], &stages[ i+1 ] ) ) {
+			stages[ i+1 ].tessFlags &= ~TESS_ST0;
+		}
+		if ( stages[ i ].mtEnv ) {
+			lastMT = &stages[ i ];
+		}
+		if ( stages[ i+1 ].mtEnv ) {
+			if ( EqualTCgen( 1, lastMT, &stages[ i+1 ] ) ) {
+				stages[ i+1 ].tessFlags &= ~TESS_ST1;
+			}
+		}
+	}
+#endif
 
 	// determine which stage iterator function is appropriate
 	ComputeStageIteratorFunc();
