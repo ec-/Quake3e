@@ -492,7 +492,7 @@ static void DrawSkySide( image_t *image, const int mins[2], const int maxs[2], i
 
 	FillSkySide( mins, maxs, qtrue );
 
-	if ( tess.numVertexes )
+	if ( tess.numIndexes )
 	{
 		int tess_flags;
 

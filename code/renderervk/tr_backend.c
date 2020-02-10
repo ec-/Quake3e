@@ -105,6 +105,7 @@ void GL_SelectTexture( int unit )
 /*
 ** GL_SelectClientTexture
 */
+#ifndef USE_VULKAN
 static void GL_SelectClientTexture( int unit )
 {
 	if ( glState.currentArray == unit )
@@ -121,6 +122,7 @@ static void GL_SelectClientTexture( int unit )
 
 	glState.currentArray = unit;
 }
+#endif
 
 
 /*
@@ -373,6 +375,7 @@ void GL_State( unsigned stateBits )
 }
 
 
+#ifndef USE_VULKAN
 void GL_ClientState( int unit, unsigned stateBits )
 {
 	unsigned diff = stateBits ^ glState.glClientStateBits[ unit ];
@@ -414,6 +417,7 @@ void GL_ClientState( int unit, unsigned stateBits )
 
 	glState.glClientStateBits[ unit ] = stateBits;
 }
+#endif
 
 
 /*

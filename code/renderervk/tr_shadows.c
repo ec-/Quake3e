@@ -44,10 +44,7 @@ typedef struct {
 static	edgeDef_t	edgeDefs[SHADER_MAX_VERTEXES][MAX_EDGE_DEFS];
 static	int			numEdgeDefs[SHADER_MAX_VERTEXES];
 static	int			facing[SHADER_MAX_INDEXES/3];
-#ifdef USE_VULKAN
-static vec4_t		extrudedEdges[SHADER_MAX_VERTEXES * 4];
-static int			numExtrudedEdges;
-#else
+#ifndef USE_VULKAN
 static	vec3_t		shadowXyz[SHADER_MAX_VERTEXES];
 #endif
 
@@ -74,7 +71,7 @@ static void R_ExtrudeShadowEdges( void ) {
 	int		j, k;
 	int		i2;
 
-	numExtrudedEdges = 0;
+	tess.numIndexes = 0;
 
 	// an edge is NOT a silhouette edge if its face doesn't face the light,
 	// or if it has a reverse paired edge that also faces the light.
@@ -100,13 +97,21 @@ static void R_ExtrudeShadowEdges( void ) {
 			// if it doesn't share the edge with another front facing
 			// triangle, it is a sil edge
 			if ( sil_edge ) {
-				VectorCopy(tess.xyz[ i ],						extrudedEdges[numExtrudedEdges * 4 + 0]);
-				VectorCopy(tess.xyz[ i + tess.numVertexes ],	extrudedEdges[numExtrudedEdges * 4 + 1]);
-				VectorCopy(tess.xyz[ i2 ],						extrudedEdges[numExtrudedEdges * 4 + 2]);
-				VectorCopy(tess.xyz[ i2 + tess.numVertexes ],	extrudedEdges[numExtrudedEdges * 4 + 3]);
-				numExtrudedEdges++;
+				tess.indexes[ tess.numIndexes + 0 ] = i;
+				tess.indexes[ tess.numIndexes + 1 ] = i2;
+				tess.indexes[ tess.numIndexes + 2 ] = i + tess.numVertexes;
+				tess.indexes[ tess.numIndexes + 3 ] = i2;
+				tess.indexes[ tess.numIndexes + 4 ] = i2 + tess.numVertexes;
+				tess.indexes[ tess.numIndexes + 5 ] = i + tess.numVertexes;
+				tess.numIndexes += 6;
 			}
 		}
+	}
+
+	tess.numVertexes *= 2;
+	for ( i = 0; i < tess.numVertexes; i++ ) {
+		VectorSet(tess.svars.colors[i], 50, 50, 50);
+		tess.svars.colors[i][3] = 255;
 	}
 }
 #else
@@ -193,43 +198,6 @@ void R_RenderShadowEdges( void ) {
 #endif
 
 
-#ifdef USE_VULKAN
-static void R_Vk_RenderShadowEdges( uint32_t pipeline ) {
-	int k, i = 0;
-
-	while (i < numExtrudedEdges) {
-		int count = numExtrudedEdges - i;
-		if (count > (SHADER_MAX_VERTEXES - 1) / 4)
-			count = (SHADER_MAX_VERTEXES - 1) / 4;
-
-		Com_Memcpy(tess.xyz, extrudedEdges[i*4], 4 * count * sizeof(vec4_t));
-		tess.numVertexes = count * 4;
-
-		for (k = 0; k < count; k++) {
-			tess.indexes[k * 6 + 0] = k * 4 + 0;
-			tess.indexes[k * 6 + 1] = k * 4 + 2;
-			tess.indexes[k * 6 + 2] = k * 4 + 1;
-
-			tess.indexes[k * 6 + 3] = k * 4 + 2;
-			tess.indexes[k * 6 + 4] = k * 4 + 3;
-			tess.indexes[k * 6 + 5] = k * 4 + 1;
-		}
-		tess.numIndexes = count * 6;
-
-		for (k = 0; k < tess.numVertexes; k++) {
-			VectorSet(tess.svars.colors[k], 50, 50, 50);
-			tess.svars.colors[k][3] = 255;
-		}
-
-		//vk_bind_geometry_ext( TESS_XYZ | TESS_RGBA | TESS_ST0);
-		vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_RGBA); // TODO: optimize RGBA!
-		vk_draw_geometry( pipeline, DEPTH_RANGE_NORMAL, qtrue );
-		i += count;
-	}
-}
-#endif
-
-
 /*
 =================
 RB_ShadowTessEnd
@@ -249,12 +217,6 @@ void RB_ShadowTessEnd( void ) {
 #ifndef USE_VULKAN
 	GLboolean rgba[4];
 #endif
-
-	// we can only do this if we have enough space in the vertex buffers
-	if ( tess.numVertexes >= SHADER_MAX_VERTEXES / 2 ) {
-		return;
-	}
-
 
 	if ( glConfig.stencilBits < 4 ) {
 		return;
@@ -312,13 +274,15 @@ void RB_ShadowTessEnd( void ) {
 
 	R_ExtrudeShadowEdges();
 
+	vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_RGBA );
+
 	// mirrors have the culling order reversed
 	if ( backEnd.viewParms.portalView == PV_MIRROR ) {
-		R_Vk_RenderShadowEdges(vk.shadow_volume_pipelines[0][1]);
-		R_Vk_RenderShadowEdges(vk.shadow_volume_pipelines[1][1]);
+		vk_draw_geometry( vk.shadow_volume_pipelines[0][1], DEPTH_RANGE_NORMAL, qtrue );
+		vk_draw_geometry( vk.shadow_volume_pipelines[1][1], DEPTH_RANGE_NORMAL, qtrue );
 	} else {
-		R_Vk_RenderShadowEdges(vk.shadow_volume_pipelines[0][0]);
-		R_Vk_RenderShadowEdges(vk.shadow_volume_pipelines[1][0]);
+		vk_draw_geometry( vk.shadow_volume_pipelines[0][0], DEPTH_RANGE_NORMAL, qtrue );
+		vk_draw_geometry( vk.shadow_volume_pipelines[1][0], DEPTH_RANGE_NORMAL, qtrue );
 	}
 #else
 	GL_Bind( tr.whiteImage );
@@ -342,10 +306,12 @@ void RB_ShadowTessEnd( void ) {
 
 	R_RenderShadowEdges();
 
-
 	// reenable writing to the color buffer
 	qglColorMask(rgba[0], rgba[1], rgba[2], rgba[3]);
 #endif
+
+	tess.numIndexes = 0;
+	tess.numVertexes = 0;
 }
 
 

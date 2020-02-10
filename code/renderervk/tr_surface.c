@@ -1242,7 +1242,6 @@ static void RB_SurfaceAxis( void ) {
 	tess.xyz[3][1] = 16.0;
 	tess.xyz[5][2] = 16.0;
 
-	Com_Memset( tess.svars.colors, 0, 6 * sizeof( tess.svars.colors[0] ) );
 	for ( i = 0; i < 6; i++ )
 		tess.svars.colors[i][3] = 255;
 
