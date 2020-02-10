@@ -785,9 +785,12 @@ static GLint RawImage_GetInternalFormat( const byte *scan, int numPixels, qboole
 }
 
 
-static void LoadTexture( int miplevel, int x, int y, int width, int height, const byte *data, image_t *image )
+static void LoadTexture( int miplevel, int x, int y, int width, int height, const byte *data, qboolean subImage, image_t *image )
 {
-	qglTexImage2D( GL_TEXTURE_2D, miplevel, image->internalFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+	if ( subImage )
+		qglTexSubImage2D( GL_TEXTURE_2D, miplevel, x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data );
+	else
+		qglTexImage2D( GL_TEXTURE_2D, miplevel, image->internalFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 }
 
 
@@ -796,7 +799,7 @@ static void LoadTexture( int miplevel, int x, int y, int width, int height, cons
 Upload32
 ===============
 */
-static void Upload32( byte *data, int x, int y, int width, int height, image_t *image )
+static void Upload32( byte *data, int x, int y, int width, int height, image_t *image, qboolean subImage )
 {
 	qboolean allowCompression = !(image->flags & IMGFLAG_NO_COMPRESSION);
 	qboolean lightMap = image->flags & IMGFLAG_LIGHTMAP;
@@ -868,8 +871,7 @@ static void Upload32( byte *data, int x, int y, int width, int height, image_t *
 		y >>= 1;
 	}
 
-	//if ( !subImage ) 
-	{
+	if ( !subImage ) {
 		// verify if the alpha channel is being used or not
 		if ( image->internalFormat == 0 )
 			image->internalFormat = RawImage_GetInternalFormat( data, width*height, lightMap, allowCompression );
@@ -883,7 +885,7 @@ static void Upload32( byte *data, int x, int y, int width, int height, image_t *
 	{
 		if ( !mipmap )
 		{
-			LoadTexture( 0, x, y, scaled_width, scaled_height, data, image );
+			LoadTexture( 0, x, y, scaled_width, scaled_height, data, subImage, image );
 			goto done;
 		}
 	}
@@ -900,7 +902,7 @@ static void Upload32( byte *data, int x, int y, int width, int height, image_t *
 	if ( !(image->flags & IMGFLAG_NOLIGHTSCALE) )
 		R_LightScaleTexture( data, scaled_width, scaled_height, !mipmap );
 
-	LoadTexture( 0, x, y, scaled_width, scaled_height, data, image );
+	LoadTexture( 0, x, y, scaled_width, scaled_height, data, subImage, image );
 
 	if ( mipmap )
 	{
@@ -918,7 +920,7 @@ static void Upload32( byte *data, int x, int y, int width, int height, image_t *
 				R_BlendOverTexture( data, scaled_width * scaled_height, miplevel );
 			}
 
-			LoadTexture( miplevel, x, y, scaled_width, scaled_height, data, image );
+			LoadTexture( miplevel, x, y, scaled_width, scaled_height, data, subImage, image );
 		}
 	}
 done:
@@ -926,6 +928,21 @@ done:
 		ri.Hunk_FreeTempMemory( resampledBuffer );
 
 	GL_CheckErrors();
+}
+
+
+/*
+================
+R_UploadSubImage
+================
+*/
+void R_UploadSubImage( byte *data, int x, int y, int width, int height, image_t *image )
+{
+	if ( image )
+	{
+		GL_Bind( image );
+		Upload32( data, x, y, width, height, image, qtrue ); // subImage = qtrue
+	}
 }
 #endif // !USE_VULKAN
 
@@ -1014,7 +1031,7 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgF
 	}
 
 	GL_Bind( image );
-	Upload32( pic, 0, 0, image->width, image->height, image );
+	Upload32( pic, 0, 0, image->width, image->height, image, qfalse ); // subImage = qfalse
 
 	if ( image->flags & IMGFLAG_MIPMAP )
 	{

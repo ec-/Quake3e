@@ -71,7 +71,6 @@ typedef enum {
 #define GLuint				unsigned int
 #define GLboolean			VkBool32
 #else
-#include "qgl.h"
 #define GL_INDEX_TYPE		GL_UNSIGNED_INT
 #endif
 
@@ -998,6 +997,8 @@ typedef struct {
 	GLint		texEnv[2];
 	cullType_t	faceCulling;
 	unsigned	glStateBits;
+	unsigned	glClientStateBits[ MAX_TEXTURE_UNITS ];
+	int			currentArray;
 } glstate_t;
 
 typedef struct {
@@ -1344,6 +1345,7 @@ void	GL_SelectTexture( int unit );
 void	GL_TextureMode( const char *string );
 void	GL_CheckErrors( void );
 void	GL_State( unsigned stateVector );
+void	GL_ClientState( int unit, unsigned stateVector );
 #ifndef USE_VULKAN
 void	GL_TexEnv( GLint env );
 void	GL_Cull( cullType_t cullType );
@@ -1385,6 +1387,13 @@ void	GL_Cull( cullType_t cullType );
 #define GLS_ATEST_BITS							0x00003000
 
 #define GLS_DEFAULT								GLS_DEPTHMASK_TRUE
+
+// vertex array states
+
+#define CLS_NONE								0x00000000
+#define CLS_COLOR_ARRAY							0x00000001
+#define CLS_TEXCOORD_ARRAY						0x00000002
+#define CLS_NORMAL_ARRAY						0x00000004
 
 void	RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty);
 void	RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty);

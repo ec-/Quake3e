@@ -326,7 +326,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 		R_SetColorMappings();
 	}
 
-	if ( (cmd = R_GetCommandBuffer( sizeof( *cmd ) ) ) == NULL )
+	if ( ( cmd = R_GetCommandBuffer( sizeof( *cmd ) ) ) == NULL )
 		return;
 
 	cmd->commandId = RC_DRAW_BUFFER;

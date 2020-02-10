@@ -43,8 +43,6 @@ cvar_t	*r_railWidth;
 cvar_t	*r_railCoreWidth;
 cvar_t	*r_railSegmentLength;
 
-cvar_t	*r_ignoreFastPath;
-
 cvar_t	*r_detailTextures;
 
 cvar_t	*r_znear;
@@ -116,7 +114,6 @@ cvar_t	*r_ext_max_anisotropy;
 cvar_t	*r_ignoreGLErrors;
 
 cvar_t	*r_stencilbits;
-cvar_t	*r_primitives;
 cvar_t	*r_texturebits;
 cvar_t	*r_ext_multisample;
 cvar_t	*r_ext_supersample;
@@ -390,7 +387,7 @@ static void R_InitExtensions( void )
 			qglActiveTextureARB = ri.GL_GetProcAddress( "glActiveTextureARB" );
 			qglClientActiveTextureARB = ri.GL_GetProcAddress( "glClientActiveTextureARB" );
 
-			if ( qglActiveTextureARB )
+			if ( qglActiveTextureARB && qglClientActiveTextureARB )
 			{
 				qglGetIntegerv( GL_MAX_ACTIVE_TEXTURES_ARB, &glConfig.numTextureUnits );
 
@@ -680,16 +677,16 @@ static byte *RB_ReadPixels(int x, int y, int width, int height, size_t *offset, 
 	int padwidth, linelen;
 	int	bufAlign;
 	GLint packAlign;
-	
+
 	qglGetIntegerv(GL_PACK_ALIGNMENT, &packAlign);
-	
+
 	linelen = width * 3;
 
 	if ( packAlign < lineAlign )
 		padwidth = PAD(linelen, lineAlign);
 	else
 		padwidth = PAD(linelen, packAlign);
-	
+
 	bufAlign = MAX( packAlign, 16 ); // for SIMD
 
 	// Allocate a few more bytes so that we can choose an alignment we like
@@ -697,7 +694,7 @@ static byte *RB_ReadPixels(int x, int y, int width, int height, size_t *offset, 
 	bufstart = PADP((intptr_t) buffer + *offset, bufAlign);
 
 	qglReadPixels( x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, bufstart );
-	
+
 	*offset = bufstart - buffer;
 	*padlen = PAD(linelen, packAlign) - linelen;
 
@@ -719,11 +716,11 @@ void RB_TakeScreenshot( int x, int y, int width, int height, const char *fileNam
 	byte temp;
 	int linelen, padlen;
 	size_t offset, memcount;
-		
+
 	offset = header_size;
 	allbuf = RB_ReadPixels( x, y, width, height, &offset, &padlen, 0 );
 	buffer = allbuf + offset - header_size;
-	
+
 	Com_Memset( buffer, 0, header_size );
 	buffer[2] = 2;		// uncompressed type
 	buffer[12] = width & 255;
@@ -734,10 +731,10 @@ void RB_TakeScreenshot( int x, int y, int width, int height, const char *fileNam
 
 	// swap rgb to bgr and remove padding from line endings
 	linelen = width * 3;
-	
+
 	srcptr = destptr = allbuf + offset;
 	endmem = srcptr + (linelen + padlen) * height;
-	
+
 	while(srcptr < endmem)
 	{
 		endline = srcptr + linelen;
@@ -858,7 +855,7 @@ void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *file
 	scanlen = PAD( width*3, 4 );
 	scanpad = scanlen - width*3;
 	memcount = scanlen * height;
-	
+
 	// swap rgb to bgr and add line padding
 	if ( scanpad == 0 && padlen == 0 ) {
 		// fastest case
@@ -1084,7 +1081,7 @@ static void R_ScreenShot_f( void ) {
 		backEnd.screenShotTGAsilent = silent;
 		Q_strncpyz( backEnd.screenshotTGA, checkname, sizeof( backEnd.screenshotTGA ) );
 	}
-} 
+}
 
 
 //============================================================================
@@ -1101,7 +1098,7 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 	size_t		memcount, linelen;
 	int			padwidth, avipadwidth, padlen, avipadlen;
 	int			packAlign;
-	
+
 	cmd = (const videoFrameCommand_t *)data;
 
 	qglGetIntegerv(GL_PACK_ALIGNMENT, &packAlign);
@@ -1116,7 +1113,7 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 	avipadlen = avipadwidth - linelen;
 
 	cBuf = PADP(cmd->captureBuffer, packAlign);
-	
+
 	qglReadPixels(0, 0, cmd->width, cmd->height, GL_RGB,
 		GL_UNSIGNED_BYTE, cBuf);
 
@@ -1137,11 +1134,11 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 	{
 		byte *lineend, *memend;
 		byte *srcptr, *destptr;
-	
+
 		srcptr = cBuf;
 		destptr = cmd->encodeBuffer;
 		memend = srcptr + memcount;
-		
+
 		// swap R and B and remove line paddings
 		while(srcptr < memend)
 		{
@@ -1159,11 +1156,11 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 			
 			srcptr += padlen;
 		}
-		
+
 		ri.CL_WriteAVIVideoFrame(cmd->encodeBuffer, avipadwidth * cmd->height);
 	}
 
-	return (const void *)(cmd + 1);	
+	return (const void *)(cmd + 1);
 }
 
 
@@ -1174,23 +1171,37 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 */
 static void GL_SetDefaultState( void )
 {
+	int i;
+
+	glState.currenttmu = 0;
+	glState.currentArray = 0;
+
+	for ( i = 0; i < MAX_TEXTURE_UNITS; i++ )
+	{
+		glState.currenttextures[ i ] = 0;
+		glState.glClientStateBits[ i ] = 0;
+	}
+
 	qglClearDepth( 1.0f );
 
-	qglCullFace(GL_FRONT);
+	qglCullFace( GL_FRONT );
+	glState.faceCulling = -1;
 
-	qglColor4f (1,1,1,1);
+	qglColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
 
 	// initialize downstream texture unit if we're running
 	// in a multitexture environment
-	if ( qglActiveTextureARB ) {
-		GL_SelectTexture( 1 );
+	if ( qglActiveTextureARB )
+	{
+		qglActiveTextureARB( GL_TEXTURE1_ARB );
 		GL_TextureMode( r_textureMode->string );
 		GL_TexEnv( GL_MODULATE );
 		qglDisable( GL_TEXTURE_2D );
-		GL_SelectTexture( 0 );
+		qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+		qglActiveTextureARB( GL_TEXTURE0_ARB );
 	}
 
-	qglEnable(GL_TEXTURE_2D);
+	qglEnable( GL_TEXTURE_2D );
 	GL_TextureMode( r_textureMode->string );
 	GL_TexEnv( GL_MODULATE );
 
@@ -1199,14 +1210,18 @@ static void GL_SetDefaultState( void )
 
 	// the vertex array is always enabled, but the color and texture
 	// arrays are enabled and disabled around the compiled vertex array call
-	qglEnableClientState (GL_VERTEX_ARRAY);
+	qglEnableClientState( GL_VERTEX_ARRAY );
+
+	qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	qglDisableClientState( GL_COLOR_ARRAY );
+	qglDisableClientState( GL_NORMAL_ARRAY );
 
 	//
 	// make sure our GL state vector is set correctly
 	//
 	glState.glStateBits = GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_TRUE;
 
-	qglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
+	qglPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 	qglDepthMask( GL_TRUE );
 	qglDisable( GL_DEPTH_TEST );
 	qglEnable( GL_SCISSOR_TEST );
@@ -1285,12 +1300,12 @@ static void GfxInfo( void )
 			mode = ri.Cvar_VariableIntegerValue( "r_mode" );
 		fs = fsstrings[1];
 	}
-	else 
+	else
 	{
 		mode = ri.Cvar_VariableIntegerValue( "r_mode" );
 		fs = fsstrings[0];
 	}
-	
+
 	if ( windowAdjusted )
 	{
 		ri.Printf( PRINT_ALL, "RENDER: %d x %d, MODE: %d, %d x %d %s hz:", glConfig.vidWidth, glConfig.vidHeight, mode, windowWidth, windowHeight, fs );
@@ -1299,7 +1314,7 @@ static void GfxInfo( void )
 	{
 		ri.Printf( PRINT_ALL, "MODE: %d, %d x %d %s hz:", mode, windowWidth, windowHeight, fs );
 	}
-	
+
 	if ( glConfig.displayFrequency )
 	{
 		ri.Printf( PRINT_ALL, "%d\n", glConfig.displayFrequency );
@@ -1325,34 +1340,12 @@ Prints info that may change every R_Init() call
 */
 static void VarInfo( void )
 {
-	int	primitives;
-
 	if ( glConfig.deviceSupportsGamma ) {
 		ri.Printf( PRINT_ALL, "GAMMA: hardware w/ %d overbright bits\n", tr.overbrightBits );
 	} else {
 		ri.Printf( PRINT_ALL, "GAMMA: software w/ %d overbright bits\n", tr.overbrightBits );
 	}
 
-	// rendering primitives
-	// default is to use triangles if compiled vertex arrays are present
-	ri.Printf( PRINT_ALL, "rendering primitives: " );
-	primitives = r_primitives->integer;
-	if ( primitives == 0 ) {
-		if ( qglLockArraysEXT ) {
-			primitives = 2;
-		} else {
-			primitives = 1;
-		}
-	}
-	if ( primitives == -1 ) {
-		ri.Printf( PRINT_ALL, "none\n" );
-	} else if ( primitives == 2 ) {
-		ri.Printf( PRINT_ALL, "single glDrawElements\n" );
-	} else if ( primitives == 1 ) {
-		ri.Printf( PRINT_ALL, "multiple glArrayElement\n" );
-	} else if ( primitives == 3 ) {
-		ri.Printf( PRINT_ALL, "multiple glColor4ubv + glTexCoord2fv + glVertex3fv\n" );
-	}
 
 	ri.Printf( PRINT_ALL, "texturemode: %s\n", r_textureMode->string );
 	ri.Printf( PRINT_ALL, "texture bits: %d\n", r_texturebits->integer ? r_texturebits->integer : 32 );
@@ -1436,7 +1429,6 @@ static void R_Register( void )
 	ri.Cvar_CheckRange( r_mapGreyScale, "-1", "1", CV_FLOAT );
 
 	r_subdivisions = ri.Cvar_Get( "r_subdivisions", "4", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	r_ignoreFastPath = ri.Cvar_Get( "r_ignoreFastPath", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 
 	r_maxpolys = ri.Cvar_Get( "r_maxpolys", XSTRING( MAX_POLYS ), CVAR_LATCH );
 	r_maxpolyverts = ri.Cvar_Get( "r_maxpolyverts", XSTRING( MAX_POLYVERTS ), CVAR_LATCH );
@@ -1510,8 +1502,6 @@ static void R_Register( void )
 	r_railWidth = ri.Cvar_Get( "r_railWidth", "16", CVAR_ARCHIVE_ND );
 	r_railCoreWidth = ri.Cvar_Get( "r_railCoreWidth", "6", CVAR_ARCHIVE_ND );
 	r_railSegmentLength = ri.Cvar_Get( "r_railSegmentLength", "32", CVAR_ARCHIVE_ND );
-
-	r_primitives = ri.Cvar_Get( "r_primitives", "0", CVAR_ARCHIVE_ND | CVAR_DEVELOPER );
 
 	r_ambientScale = ri.Cvar_Get( "r_ambientScale", "0.6", CVAR_CHEAT );
 	r_directedScale = ri.Cvar_Get( "r_directedScale", "1", CVAR_CHEAT );
@@ -1671,12 +1661,12 @@ void R_Init( void ) {
 
 	max_polys = r_maxpolys->integer;
 	max_polyverts = r_maxpolyverts->integer;
-	
+
 	ptr = ri.Hunk_Alloc( sizeof( *backEndData ) + sizeof(srfPoly_t) * max_polys + sizeof(polyVert_t) * max_polyverts, h_low);
 	backEndData = (backEndData_t *) ptr;
 	backEndData->polys = (srfPoly_t *) ((char *) ptr + sizeof( *backEndData ));
 	backEndData->polyVerts = (polyVert_t *) ((char *) ptr + sizeof( *backEndData ) + sizeof(srfPoly_t) * max_polys);
-	
+
 	R_InitNextFrame();
 
 	InitOpenGL();

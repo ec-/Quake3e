@@ -1918,15 +1918,16 @@ otherwise set to the generic stage function
 */
 static void ComputeStageIteratorFunc( void )
 {
-	shader.optimalStageIteratorFunc = RB_StageIteratorGeneric;
-
 	//
 	// see if this should go into the sky path
 	//
 	if ( shader.isSky )
 	{
 		shader.optimalStageIteratorFunc = RB_StageIteratorSky;
-		return;
+	}
+	else
+	{
+		shader.optimalStageIteratorFunc = RB_StageIteratorGeneric;
 	}
 }
 

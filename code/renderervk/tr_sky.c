@@ -895,8 +895,8 @@ void RB_StageIteratorSky( void ) {
 		// vk_update_mvp( NULL );
 		DrawSkyBox( tess.shader );
 #else
-		qglDisableClientState( GL_COLOR_ARRAY );
-		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+		GL_ClientState( 1, CLS_NONE );
+		GL_ClientState( 0, CLS_TEXCOORD_ARRAY );
 
 		qglColor3f( tr.identityLight, tr.identityLight, tr.identityLight );
 
@@ -904,8 +904,6 @@ void RB_StageIteratorSky( void ) {
 		GL_Cull( CT_FRONT_SIDED );
 
 		DrawSkyBox( tess.shader );
-
-		qglEnableClientState( GL_COLOR_ARRAY );
 #endif
 	}
 

@@ -926,6 +926,8 @@ typedef struct {
 	GLint		texEnv[2];
 	cullType_t	faceCulling;
 	unsigned	glStateBits;
+	unsigned	glClientStateBits[ MAX_TEXTURE_UNITS ];
+	int			currentArray;
 } glstate_t;
 
 typedef struct {
@@ -1130,19 +1132,12 @@ extern cvar_t	*r_railWidth;
 extern cvar_t	*r_railCoreWidth;
 extern cvar_t	*r_railSegmentLength;
 
-extern cvar_t	*r_ignoreFastPath;		// allows us to ignore our Tess fast paths
-
 extern cvar_t	*r_znear;				// near Z clip plane
 extern cvar_t	*r_zproj;				// z distance of projection plane
 extern cvar_t	*r_stereoSeparation;			// separation of cameras for stereo rendering
 
 extern cvar_t	*r_lodbias;				// push/pull LOD transitions
 extern cvar_t	*r_lodscale;
-
-extern cvar_t	*r_primitives;			// "0" = based on compiled vertex array existance
-										// "1" = glDrawElemet tristrips
-										// "2" = glDrawElements triangles
-										// "-1" = no drawing
 
 extern cvar_t	*r_fastsky;				// controls whether sky should be cleared or drawn
 extern cvar_t	*r_neatsky;				// nomip and nopicmip for skyboxes, cnq3 like look
@@ -1288,6 +1283,7 @@ void	GL_BindTexture( int unit, GLuint texnum );
 void	GL_TextureMode( const char *string );
 void	GL_CheckErrors( void );
 void	GL_State( unsigned stateVector );
+void	GL_ClientState( int unit, unsigned stateVector );
 void	GL_TexEnv( GLint env );
 void	GL_Cull( cullType_t cullType );
 
@@ -1327,6 +1323,12 @@ void	GL_Cull( cullType_t cullType );
 #define GLS_ATEST_BITS							0x00003000
 
 #define GLS_DEFAULT								GLS_DEPTHMASK_TRUE
+
+// vertex array states
+#define CLS_NONE								0x00000000
+#define CLS_COLOR_ARRAY							0x00000001
+#define CLS_TEXCOORD_ARRAY						0x00000002
+#define CLS_NORMAL_ARRAY						0x00000004
 
 void	RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty);
 void	RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty);
@@ -1444,8 +1446,6 @@ void RB_CheckOverflow( int verts, int indexes );
 
 void RB_StageIteratorGeneric( void );
 void RB_StageIteratorSky( void );
-void RB_StageIteratorVertexLitTexture( void );
-void RB_StageIteratorLightmappedMultitexture( void );
 
 void RB_AddQuadStamp( const vec3_t origin, const vec3_t left, const vec3_t up, const byte *color );
 void RB_AddQuadStampExt( const vec3_t origin, const vec3_t left, const vec3_t up, const byte *color, float s1, float t1, float s2, float t2 );

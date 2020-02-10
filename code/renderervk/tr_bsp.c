@@ -370,7 +370,7 @@ static void R_LoadMergedLightmaps( const lump_t *l, byte *image )
 #ifdef USE_VULKAN
 				vk_upload_image_data( tr.lightmaps[ i ]->handle, x * LIGHTMAP_LEN, y * LIGHTMAP_LEN, LIGHTMAP_LEN, LIGHTMAP_LEN, qfalse, image, 4 );
 #else
-				//R_UploadSubImage( image, x * LIGHTMAP_LEN, y * LIGHTMAP_LEN, LIGHTMAP_LEN, LIGHTMAP_LEN, tr.lightmaps[ i ] );
+				R_UploadSubImage( image, x * LIGHTMAP_LEN, y * LIGHTMAP_LEN, LIGHTMAP_LEN, LIGHTMAP_LEN, tr.lightmaps[ i ] );
 #endif
 
 				offs += LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3;

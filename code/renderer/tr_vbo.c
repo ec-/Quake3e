@@ -1108,29 +1108,29 @@ static void VBO_RenderIndexQueue( qboolean mtx )
 
 	if ( r_showtris->integer )
 	{
-
 		if ( (r_showtris->integer == 1 && backEnd.doneSurfaces) || (r_showtris->integer == 2 && backEnd.drawConsole) )
 			return;
 
 		if ( mtx )
 		{
-			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+			GL_ClientState( 1, CLS_NONE );
+			GL_SelectTexture( 1 );
 			qglDisable( GL_TEXTURE_2D );
-			GL_SelectTexture( 0 );
 		}
+
+		GL_SelectTexture( 0 );
 		GL_Bind( tr.whiteImage );
+
 		qglColor3f( 0.25f, 1.0f, 0.25f );
 		GL_State( GLS_POLYMODE_LINE | GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_TRUE );
 		qglDepthRange( 0, 0 );
-		qglDisableClientState( GL_COLOR_ARRAY );
-		qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+
+		GL_ClientState( 0, CLS_NONE );
 		qglColor3f( 0.25f, 1.0f, 0.25f );
+
 		VBO_RenderBuffers();
+
 		qglDepthRange( 0, 1 );
-		if ( mtx )
-		{
-			GL_SelectTexture( 1 );
-		}
 	}
 
 	//vbo->soft_buffer_indexes = 0;
@@ -1189,10 +1189,7 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 		qglProgramLocalParameter4fvARB( GL_FRAGMENT_PROGRAM_ARB, 0, fparm->fogColor );
 	}
 
-	GL_SelectTexture( 0 );
-
-	qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
-	qglEnableClientState( GL_COLOR_ARRAY );
+	GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
 
 	if ( ( updateArrays = VBO_BindData() ) != qfalse )
 	{
@@ -1206,6 +1203,7 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 		//setupMultitexture = qtrue;
 	}
 
+	GL_SelectTexture( 0 );
 	R_BindAnimatedImage( &pStage->bundle[0] );
 
 	GL_State( stateBits );
@@ -1215,7 +1213,8 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 		// bind second texture array
 		GL_SelectTexture( 1 );
 		qglEnable( GL_TEXTURE_2D );
-		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+
+		R_BindAnimatedImage( &pStage->bundle[1] );
 
 		if ( fp == 0 )
 		{
@@ -1229,21 +1228,18 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 			}
 		}
 
-		//if ( updateArrays || setupMultitexture )
-			qglTexCoordPointer( 2, GL_FLOAT, vbo->texture_stride, (const GLvoid *)vbo->tex_base[1] );
-		//setupMultitexture = qfalse;
-	
-		R_BindAnimatedImage( &pStage->bundle[1] );
+		GL_ClientState( 1, CLS_TEXCOORD_ARRAY );
+		qglTexCoordPointer( 2, GL_FLOAT, vbo->texture_stride, (const GLvoid *)vbo->tex_base[1] );
 
 		VBO_RenderIndexQueue( qtrue );
 
 		// disable texturing on TEXTURE1, then select TEXTURE0
-		qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
 		qglDisable( GL_TEXTURE_2D );
 		GL_SelectTexture( 0 );
 	}
 	else
 	{
+		GL_ClientState( 1, CLS_NONE );
 		VBO_RenderIndexQueue( qfalse );
 	}
 
@@ -1262,7 +1258,7 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 		}
 		backEnd.pc.c_shaders++;
 	}
-	
+
 	tess.vboIndex = 0;
 	VBO_ClearQueue();
 }

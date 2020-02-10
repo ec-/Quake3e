@@ -837,17 +837,15 @@ void RB_StageIteratorSky( void ) {
 	// draw the outer skybox
 	if ( tess.shader->sky.outerbox[0] && tess.shader->sky.outerbox[0] != tr.defaultImage ) {
 
-		qglDisableClientState( GL_COLOR_ARRAY );
-		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+		GL_ClientState( 1, CLS_NONE );
+		GL_ClientState( 0, CLS_TEXCOORD_ARRAY );
 
 		qglColor3f( tr.identityLight, tr.identityLight, tr.identityLight );
-	
+
 		GL_State( 0 );
 		GL_Cull( CT_FRONT_SIDED );
 
 		DrawSkyBox( tess.shader );
-
-		qglEnableClientState( GL_COLOR_ARRAY );
 	}
 
 	// generate the vertexes for all the clouds, which will be drawn

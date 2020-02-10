@@ -338,20 +338,17 @@ void ARB_LightingPass( void )
 
 	R_ComputeTexCoords( pStage );
 
+	GL_ClientState( 1, CLS_NONE );
+	GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_NORMAL_ARRAY );
+
 	// since this is guaranteed to be a single pass, fill and lock all the arrays
-	
-	qglDisableClientState( GL_COLOR_ARRAY );
 
-	qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
 	qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[ 0 ] );
-
-	qglEnableClientState( GL_NORMAL_ARRAY );
 	qglNormalPointer( GL_FLOAT, 16, tess.normal );
-
 	qglVertexPointer( 3, GL_FLOAT, 16, tess.xyz );
 
-	//if ( qglLockArraysEXT )
-	//		qglLockArraysEXT( 0, tess.numVertexes );
+	if ( qglLockArraysEXT )
+		qglLockArraysEXT( 0, tess.numVertexes );
 
 	// CPU may limit performance in following cases
 	if ( tess.light->linear || gl_version >= 40 )
@@ -359,16 +356,14 @@ void ARB_LightingPass( void )
 	else
 		ARB_Lighting( pStage );
 
-	//if ( qglUnlockArraysEXT )
-	//		qglUnlockArraysEXT();
+	if ( qglUnlockArraysEXT )
+		qglUnlockArraysEXT();
 
 	// reset polygon offset
 	if ( tess.shader->polygonOffset ) 
 	{
 		qglDisable( GL_POLYGON_OFFSET_FILL );
 	}
-
-	qglDisableClientState( GL_NORMAL_ARRAY );
 }
 #endif // USE_PMLIGHT
 

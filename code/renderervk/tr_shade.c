@@ -149,44 +149,22 @@ static void R_DrawStripElements( int numIndexes, const glIndex_t *indexes, void 
 
 	qglEnd();
 }
-#endif
 
 
 /*
 ==================
 R_DrawElements
-
-Optionally performs our own glDrawElements that looks for strip conditions
-instead of using the single glDrawElements call that may be inefficient
-without compiled vertex arrays.
 ==================
 */
 void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
-#ifndef USE_VULKAN
-	int		primitives;
 
-	// default is to use triangles if compiled vertex arrays are present
-	if ( qglLockArraysEXT ) {
-		primitives = 2;
-	} else {
-		primitives = 1;
-	}
-
-	if ( primitives == 2 ) {
-		qglDrawElements( GL_TRIANGLES, 
-						numIndexes,
-						GL_INDEX_TYPE,
-						indexes );
-		return;
-	}
-
-	if ( primitives == 1 ) {
-		R_DrawStripElements( numIndexes,  indexes, qglArrayElement );
-		return;
-	}
-#endif	
-	// anything else will cause no drawing
+	//if ( qglLockArraysEXT ) {
+		qglDrawElements( GL_TRIANGLES, numIndexes, GL_INDEX_TYPE, indexes );
+	//} else {
+	//	R_DrawStripElements( numIndexes,  indexes, qglArrayElement );
+	//}
 }
+#endif
 
 
 /*
@@ -292,8 +270,7 @@ static void DrawTris( shaderCommands_t *input ) {
 	GL_State( GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE );
 	qglDepthRange( 0, 0 );
 
-	qglDisableClientState( GL_COLOR_ARRAY );
-	qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	GL_ClientState( 0, CLS_NONE );
 
 	qglVertexPointer( 3, GL_FLOAT, 16, input->xyz ); // padded for SIMD
 
@@ -303,7 +280,7 @@ static void DrawTris( shaderCommands_t *input ) {
 
 	R_DrawElements( input->numIndexes, input->indexes );
 
-	if ( qglUnlockArraysEXT ) { 
+	if ( qglUnlockArraysEXT ) {
 		qglUnlockArraysEXT();
 	}
 
@@ -451,12 +428,22 @@ static void DrawMultitextured( const shaderCommands_t *input, int stage ) {
 		qglPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 	}
 
+	if ( !setArraysOnce ) {
+		R_ComputeColors( pStage );
+		R_ComputeTexCoords( pStage );
+		GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
+
+		qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[0] );
+		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors );
+
+		GL_ClientState( 1, CLS_TEXCOORD_ARRAY );
+		qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[1] );
+	}
+
 	//
 	// base
 	//
 	GL_SelectTexture( 0 );
-	qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[0] );
-
 	R_BindAnimatedImage( &pStage->bundle[0] );
 
 	//
@@ -464,7 +451,7 @@ static void DrawMultitextured( const shaderCommands_t *input, int stage ) {
 	//
 	GL_SelectTexture( 1 );
 	qglEnable( GL_TEXTURE_2D );
-	qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+	R_BindAnimatedImage( &pStage->bundle[1] );
 
 	if ( r_lightmap->integer ) {
 		GL_TexEnv( GL_REPLACE );
@@ -472,16 +459,13 @@ static void DrawMultitextured( const shaderCommands_t *input, int stage ) {
 		GL_TexEnv( pStage->mtEnv );
 	}
 
-	qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[1] );
-
-	R_BindAnimatedImage( &pStage->bundle[1] );
-
 	R_DrawElements( input->numIndexes, input->indexes );
 
 	//
 	// disable texturing on TEXTURE1, then select TEXTURE0
 	//
-	qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	//GL_ClientState( 1, CLS_NONE );
+
 	qglDisable( GL_TEXTURE_2D );
 	GL_SelectTexture( 0 );
 }
@@ -614,10 +598,10 @@ static void ProjectDlightTexture_scalar( void ) {
 		}
 
 #ifndef USE_VULKAN
-		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
-		qglTexCoordPointer( 2, GL_FLOAT, 0, texCoordsArray[0] );
+		GL_ClientState( 1, CLS_NONE );
+		GL_ClientState( 0, CLS_TEXCOORD_ARRAY | GLS_COLOR_ARRAY );
 
-		qglEnableClientState( GL_COLOR_ARRAY );
+		qglTexCoordPointer( 2, GL_FLOAT, 0, texCoordsArray[0] );
 		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, colorArray );
 #endif
 
@@ -628,7 +612,6 @@ static void ProjectDlightTexture_scalar( void ) {
 		vk_bind_geometry_ext( TESS_RGBA | TESS_ST0 );
 		vk_draw_geometry( pipeline, 1, DEPTH_RANGE_NORMAL, qtrue );
 #else
-
 		// include GLS_DEPTHFUNC_EQUAL so alpha tested surfaces don't add light
 		// where they aren't rendered
 
@@ -642,7 +625,6 @@ static void ProjectDlightTexture_scalar( void ) {
 #endif
 		backEnd.pc.c_totalIndexes += numIndexes;
 		backEnd.pc.c_dlightIndexes += numIndexes;
-
 	}
 }
 
@@ -679,9 +661,11 @@ static void RB_FogPass( void ) {
 	int			i;
 
 	fog = tr.world->fogs + tess.fogNum;
+
 	for ( i = 0; i < tess.numVertexes; i++ ) {
 		* ( int * )&tess.svars.colors[i] = fog->colorInt;
 	}
+
 	RB_CalcFogTexCoords( ( float * ) tess.svars.texcoords[0] );
 	GL_Bind( tr.fogImage );
 	vk_bind_geometry_ext( TESS_ST0 | TESS_RGBA );
@@ -691,20 +675,15 @@ static void RB_FogPass( void ) {
 	const fog_t	*fog;
 	int			i;
 
-	qglEnableClientState( GL_COLOR_ARRAY );
-	qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors );
-
-	qglEnableClientState( GL_TEXTURE_COORD_ARRAY);
-	qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[0] );
-
-	fog = tr.world->fogs + tess.fogNum;
-
-	for ( i = 0; i < tess.numVertexes; i++ ) {
-		* ( int * )&tess.svars.colors[i] = fog->colorInt;
-	}
-
 	RB_CalcFogTexCoords( ( float * ) tess.svars.texcoords[0] );
 
+	GL_ClientState( 1, CLS_NONE );
+	GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
+
+	qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors );
+	qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[0] );
+
+	GL_SelectTexture( 0 );
 	GL_Bind( tr.fogImage );
 
 	if ( tess.shader->fogPass == FP_EQUAL ) {
@@ -1115,15 +1094,10 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 			vk_draw_geometry( pipeline, tess.depthRange, qtrue );
 		}
 #else
-		if (!setArraysOnce)
-		{
-			qglEnableClientState(GL_COLOR_ARRAY);
-			qglColorPointer(4, GL_UNSIGNED_BYTE, 0, input->svars.colors);
-		}
 		//
 		// do multitexture
 		//
-		if (multitexture)
+		if ( multitexture )
 		{
 			DrawMultitextured( input, stage );
 		}
@@ -1131,7 +1105,14 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 		{
 			if ( !setArraysOnce )
 			{
+				R_ComputeTexCoords( pStage );
+				R_ComputeColors( pStage );
+
+				GL_ClientState( 1, CLS_NONE );
+				GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
+
 				qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[0] );
+				qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors );
 			}
 
 			//
@@ -1144,7 +1125,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 			//
 			// draw
 			//
-			R_DrawElements(input->numIndexes, input->indexes);
+			R_DrawElements( input->numIndexes, input->indexes );
 		}
 #endif
 
@@ -1155,8 +1136,10 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 		tess_flags = 0;
 	}
 
+#ifdef USE_VULKAN
 	if ( tess_flags ) // fog-only shaders?
 		vk_bind_geometry_ext( tess_flags );
+#endif
 }
 
 
@@ -1384,41 +1367,48 @@ void RB_StageIteratorGeneric( void )
 	// to avoid compiling those arrays since they will change
 	// during multipass rendering
 	//
-	if ( tess.numPasses > 1 || shader->multitextureEnv )
+	if ( tess.numPasses > 1 )
 	{
 		setArraysOnce = qfalse;
-		qglDisableClientState( GL_COLOR_ARRAY );
-		qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+
+		GL_ClientState( 1, CLS_NONE );
+		GL_ClientState( 0, CLS_NONE );
 	}
 	else
 	{
+		// FIXME: we can't do that if going to lighting/fog later?
 		setArraysOnce = qtrue;
 
-		qglEnableClientState( GL_COLOR_ARRAY );
-		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors );
+		if ( tess.xstages[0] )
+		{
+			R_ComputeColors( tess.xstages[0] );
+			R_ComputeTexCoords( tess.xstages[0] );
+			if ( shader->multitextureEnv )
+			{
+				GL_ClientState( 1, CLS_TEXCOORD_ARRAY );
+				qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[1] );
+			}
+			else
+			{
+				GL_ClientState( 1, CLS_NONE );
+			}
+		}
 
-		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+		GL_ClientState( 0, CLS_COLOR_ARRAY | CLS_TEXCOORD_ARRAY );
+		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors );
 		qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[0] );
 	}
+
+	qglVertexPointer( 3, GL_FLOAT, sizeof( input->xyz[0] ), input->xyz ); // padded for SIMD
 
 	//
 	// lock XYZ
 	//
-	qglVertexPointer( 3, GL_FLOAT, sizeof( input->xyz[0] ), input->xyz ); // padded for SIMD
 	if ( qglLockArraysEXT )
 	{
 		qglLockArraysEXT( 0, input->numVertexes );
 	}
 
-	//
-	// enable color and texcoord arrays after the lock if necessary
-	//
-	if ( !setArraysOnce )
-	{
-		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
-		qglEnableClientState( GL_COLOR_ARRAY );
-	}
-	
 	//
 	// call shader function
 	//
@@ -1427,7 +1417,8 @@ void RB_StageIteratorGeneric( void )
 	// 
 	// now do any dynamic lighting needed
 	//
-	if ( tess.dlightBits && tess.shader->sort <= SS_OPAQUE && !(tess.shader->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) ) {
+	if ( tess.dlightBits && tess.shader->sort <= SS_OPAQUE && !(tess.shader->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) )
+	{
 		ProjectDlightTexture();
 	}
 
@@ -1446,6 +1437,8 @@ void RB_StageIteratorGeneric( void )
 	{
 		qglUnlockArraysEXT();
 	}
+
+	GL_ClientState( 1, CLS_NONE );
 
 	//
 	// reset polygon offset
