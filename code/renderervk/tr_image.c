@@ -1015,7 +1015,7 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgF
 	if ( flags & IMGFLAG_CLAMPTOBORDER )
 		glWrapClampMode = GL_CLAMP_TO_BORDER;
 	else if ( flags & IMGFLAG_CLAMPTOEDGE )
-		glWrapClampMode = GL_CLAMP_TO_EDGE;
+		glWrapClampMode = gl_clamp_mode;
 	else
 		glWrapClampMode = GL_REPEAT;
 

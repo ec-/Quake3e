@@ -1181,6 +1181,8 @@ typedef struct {
 extern backEndState_t	backEnd;
 extern trGlobals_t	tr;
 
+extern int					gl_clamp_mode;
+
 extern glstate_t	glState;		// outside of TR since it shouldn't be cleared during ref re-init
 
 extern void myGlMultMatrix(const float *a, const float *b, float *out);
@@ -1523,6 +1525,7 @@ void RB_AddQuadStamp( const vec3_t origin, const vec3_t left, const vec3_t up, c
 void RB_AddQuadStampExt( const vec3_t origin, const vec3_t left, const vec3_t up, const byte *color, float s1, float t1, float s2, float t2 );
 
 void RB_ShowImages( void );
+
 
 /*
 ============================================================

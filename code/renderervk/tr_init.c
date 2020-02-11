@@ -27,6 +27,7 @@ glconfig_t	glConfig = { 0 };
 qboolean	textureFilterAnisotropic;
 int			maxAnisotropy;
 int			gl_version;
+int			gl_clamp_mode;	// GL_CLAMP or GL_CLAMP_TO_EGGE
 
 glstate_t	glState;
 
@@ -316,6 +317,8 @@ static void R_InitExtensions( void )
 	qglActiveTextureARB = NULL;
 	qglClientActiveTextureARB = NULL;
 
+	gl_clamp_mode = GL_CLAMP; // by default
+
 	if ( !r_allowExtensions->integer )
 	{
 		ri.Printf( PRINT_ALL, "*** IGNORING OPENGL EXTENSIONS ***\n" );
@@ -323,6 +326,11 @@ static void R_InitExtensions( void )
 	}
 
 	ri.Printf( PRINT_ALL, "Initializing OpenGL extensions\n" );
+
+	if ( R_HaveExtension( "GL_EXT_texture_edge_clamp" ) ) {
+		gl_clamp_mode = GL_CLAMP_TO_EDGE;
+		ri.Printf( PRINT_ALL, "...using GL_EXT_texture_edge_clamp\n" );
+	}
 
 	// GL_EXT_texture_compression_s3tc
 	if ( R_HaveExtension( "GL_ARB_texture_compression" ) &&
@@ -1063,7 +1071,7 @@ static void R_ScreenShot_f( void ) {
 		backEnd.screenShotTGAsilent = silent;
 		Q_strncpyz( backEnd.screenshotTGA, checkname, sizeof( backEnd.screenshotTGA ) );
 	}
-} 
+}
 
 
 //============================================================================
@@ -1080,7 +1088,7 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 	size_t		memcount, linelen;
 	int			padwidth, avipadwidth, padlen, avipadlen;
 	int			packAlign;
-	
+
 	cmd = (const videoFrameCommand_t *)data;
 
 #ifdef USE_VULKAN
@@ -1123,11 +1131,11 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 	{
 		byte *lineend, *memend;
 		byte *srcptr, *destptr;
-	
+
 		srcptr = cBuf;
 		destptr = cmd->encodeBuffer;
 		memend = srcptr + memcount;
-		
+
 		// swap R and B and remove line paddings
 		while(srcptr < memend)
 		{
@@ -1145,11 +1153,11 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 			
 			srcptr += padlen;
 		}
-		
+
 		ri.CL_WriteAVIVideoFrame(cmd->encodeBuffer, avipadwidth * cmd->height);
 	}
 
-	return (const void *)(cmd + 1);	
+	return (const void *)(cmd + 1);
 }
 
 
@@ -1303,12 +1311,12 @@ static void GfxInfo( void )
 			mode = ri.Cvar_VariableIntegerValue( "r_mode" );
 		fs = fsstrings[1];
 	}
-	else 
+	else
 	{
 		mode = ri.Cvar_VariableIntegerValue( "r_mode" );
 		fs = fsstrings[0];
 	}
-	
+
 	ri.Printf( PRINT_ALL, "MODE: %d, %d x %d %s hz:", mode, glConfig.vidWidth, glConfig.vidHeight, fs );
 	
 	if ( glConfig.displayFrequency )

@@ -28,6 +28,7 @@ qboolean	nonPowerOfTwoTextures;
 qboolean	textureFilterAnisotropic;
 int			maxAnisotropy;
 int			gl_version;
+int			gl_clamp_mode;	// GL_CLAMP or GL_CLAMP_TO_EGGE
 
 glstate_t	glState;
 
@@ -328,6 +329,8 @@ static void R_InitExtensions( void )
 	qglActiveTextureARB = NULL;
 	qglClientActiveTextureARB = NULL;
 
+	gl_clamp_mode = GL_CLAMP; // by default
+
 	if ( !r_allowExtensions->integer )
 	{
 		ri.Printf( PRINT_ALL, "*** IGNORING OPENGL EXTENSIONS ***\n" );
@@ -335,6 +338,11 @@ static void R_InitExtensions( void )
 	}
 
 	ri.Printf( PRINT_ALL, "Initializing OpenGL extensions\n" );
+
+	if ( R_HaveExtension( "GL_EXT_texture_edge_clamp" ) ) {
+		gl_clamp_mode = GL_CLAMP_TO_EDGE;
+		ri.Printf( PRINT_ALL, "...using GL_EXT_texture_edge_clamp\n" );
+	}
 
 	// GL_EXT_texture_compression_s3tc
 	if ( R_HaveExtension( "GL_ARB_texture_compression" ) &&
@@ -847,7 +855,7 @@ void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *file
 	int scanpad, len;
 
 	offset = header_size;
-		
+
 	allbuf = RB_ReadPixels( x, y, width, height, &offset, &padlen, 4 );
 	buffer = allbuf + offset;
 
@@ -896,7 +904,7 @@ void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *file
 
 	// fill this last to avoid data overwrite in case when we're moving destination buffer forward
 	FillBMPHeader( buffer - header_size, width, height, memcount, header_size );
-	
+
 	// gamma correct
 	if ( glConfig.deviceSupportsGamma )
 		R_GammaCorrect( buffer, memcount );

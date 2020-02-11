@@ -1110,6 +1110,8 @@ typedef struct {
 extern backEndState_t	backEnd;
 extern trGlobals_t	tr;
 
+extern int					gl_clamp_mode;
+
 extern glstate_t	glState;		// outside of TR since it shouldn't be cleared during ref re-init
 
 	// unmodified width/height according to actual \r_mode*
@@ -1325,6 +1327,7 @@ void	GL_Cull( cullType_t cullType );
 #define GLS_DEFAULT								GLS_DEPTHMASK_TRUE
 
 // vertex array states
+
 #define CLS_NONE								0x00000000
 #define CLS_COLOR_ARRAY							0x00000001
 #define CLS_TEXCOORD_ARRAY						0x00000002
