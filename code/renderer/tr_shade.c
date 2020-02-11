@@ -236,7 +236,9 @@ static void DrawTris( shaderCommands_t *input ) {
 	GL_ProgramDisable();
 	tess.dlightUpdateParams = qtrue;
 
-	GL_Bind( tr.whiteImage );
+	GL_ClientState( 0, CLS_NONE );
+	qglDisable( GL_TEXTURE_2D );
+
 #ifdef USE_PMLIGHT
 	if ( tess.dlightPass )
 		qglColor3f( 1.0f, 0.33f, 0.2f );
@@ -247,9 +249,7 @@ static void DrawTris( shaderCommands_t *input ) {
 	GL_State( GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE );
 	qglDepthRange( 0, 0 );
 
-	GL_ClientState( 0, CLS_NONE );
-
-	qglVertexPointer( 3, GL_FLOAT, 16, input->xyz ); // padded for SIMD
+	qglVertexPointer( 3, GL_FLOAT, sizeof( input->xyz[0] ), input->xyz );
 
 	if ( qglLockArraysEXT ) {
 		qglLockArraysEXT( 0, input->numVertexes );
@@ -260,6 +260,8 @@ static void DrawTris( shaderCommands_t *input ) {
 	if ( qglUnlockArraysEXT ) {
 		qglUnlockArraysEXT();
 	}
+
+	qglEnable( GL_TEXTURE_2D );
 
 	qglDepthRange( 0, 1 );
 }
@@ -274,20 +276,37 @@ Draws vertex normals for debugging
 */
 static void DrawNormals( const shaderCommands_t *input ) {
 	int		i;
-	vec3_t	temp;
 
-	GL_Bind( tr.whiteImage );
-	qglColor3f (1,1,1);
+	GL_ClientState( 0, CLS_NONE );
+
+	qglDisable( GL_TEXTURE_2D );
+	qglColor3f( 1, 1, 1 );
+
 	qglDepthRange( 0, 0 );	// never occluded
+
 	GL_State( GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE );
 
-	qglBegin (GL_LINES);
-	for (i = 0 ; i < input->numVertexes ; i++) {
-		qglVertex3fv (input->xyz[i]);
-		VectorMA (input->xyz[i], 2, input->normal[i], temp);
-		qglVertex3fv (temp);
+	tess.numIndexes = 0;
+	for ( i = 0; i < tess.numVertexes; i++ ) {
+		VectorMA( tess.xyz[i], 2.0, tess.normal[i], tess.xyz[i + tess.numVertexes] );
+		tess.indexes[  tess.numIndexes + 0 ] = i;
+		tess.indexes[  tess.numIndexes + 1 ] = i + tess.numVertexes;
+		tess.numIndexes += 2;
 	}
-	qglEnd ();
+
+	qglVertexPointer( 3, GL_FLOAT, sizeof( tess.xyz[0] ), tess.xyz );
+
+	if ( qglLockArraysEXT ) {
+		qglLockArraysEXT( 0, tess.numVertexes * 2 );
+	}
+
+	qglDrawElements( GL_LINES, tess.numIndexes, GL_INDEX_TYPE, tess.indexes );
+
+	if ( qglUnlockArraysEXT ) {
+		qglUnlockArraysEXT();
+	}
+
+	qglEnable( GL_TEXTURE_2D );
 
 	qglDepthRange( 0, 1 );
 }

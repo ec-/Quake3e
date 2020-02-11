@@ -1118,19 +1118,20 @@ static void VBO_RenderIndexQueue( qboolean mtx )
 			qglDisable( GL_TEXTURE_2D );
 		}
 
-		GL_SelectTexture( 0 );
-		GL_Bind( tr.whiteImage );
-
-		qglColor3f( 0.25f, 1.0f, 0.25f );
-		GL_State( GLS_POLYMODE_LINE | GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_TRUE );
-		qglDepthRange( 0, 0 );
-
 		GL_ClientState( 0, CLS_NONE );
+
+		GL_SelectTexture( 0 );
+		qglDisable( GL_TEXTURE_2D );
 		qglColor3f( 0.25f, 1.0f, 0.25f );
+
+		GL_State( GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE );
+		qglDepthRange( 0, 0 );
 
 		VBO_RenderBuffers();
 
 		qglDepthRange( 0, 1 );
+
+		qglEnable( GL_TEXTURE_2D );
 	}
 
 	//vbo->soft_buffer_indexes = 0;
@@ -1234,6 +1235,7 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 		VBO_RenderIndexQueue( qtrue );
 
 		// disable texturing on TEXTURE1, then select TEXTURE0
+		GL_SelectTexture( 1 );
 		qglDisable( GL_TEXTURE_2D );
 		GL_SelectTexture( 0 );
 	}
