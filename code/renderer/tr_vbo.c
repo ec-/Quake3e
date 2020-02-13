@@ -85,6 +85,9 @@ typedef struct vbo_s {
 	int *items_queue;
 	int items_queue_count;
 
+	int items_queue_vertexes;
+	int items_queue_indexes;
+
 	short fogFPindex; // fog-only
 	short fogVPindex; // eye-in/eye-out
 
@@ -1126,6 +1129,7 @@ static void VBO_PrepareQueues( void )
 {
 	vbo_t *vbo = &world_vbo;
 	int i, item_run, index_run, n;
+	const vbo_item_t *vi;
 	const int *a;
 	
 	vbo->items_queue[ vbo->items_queue_count ] = 0; // terminate run
@@ -1136,6 +1140,15 @@ static void VBO_PrepareQueues( void )
 	
 	vbo->soft_buffer_indexes = 0;
 	vbo->ibo_items_count = 0;
+
+	vbo->items_queue_vertexes = 0;
+	vbo->items_queue_indexes = 0;
+
+	for ( i = 0; i < vbo->items_queue_count; i++ ) {
+		vi = &vbo->items[ vbo->items_queue[ i ] ];
+		vbo->items_queue_vertexes += vi->num_vertexes;
+		vbo->items_queue_indexes += vi->num_indexes;
+	}
 
 	a = vbo->items_queue;
 	i = 0;
@@ -1210,6 +1223,11 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 
 	qglVertexPointer( 3, GL_FLOAT, 16, (const GLvoid *)(intptr_t)tess.shader->vboOffset );
 
+	if ( qglLockArraysEXT ) {
+		// FIXME: not needed for VBOs?
+		qglLockArraysEXT( 0, world_vbo.items_queue_vertexes );
+	}
+
 	for ( i = 0; i < MAX_VBO_STAGES; i++ ) {
 		if ( !input->xstages[i] )
 			break;
@@ -1230,7 +1248,7 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, (const GLvoid *)(intptr_t)pStage->color_offset );
 		qglTexCoordPointer( 2, GL_FLOAT, 0, (const GLvoid *)(intptr_t)pStage->tex_offset[0] );
 
-		GL_SelectTexture( 0 );
+		//GL_SelectTexture( 0 );
 		R_BindAnimatedImage( &pStage->bundle[0] );
 
 		if ( pStage->mtEnv ) // multitexture
@@ -1311,6 +1329,17 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 		qglEnable( GL_TEXTURE_2D );
 	}
 
+	if ( qglUnlockArraysEXT ) {
+		qglUnlockArraysEXT();
+	}
+
+	if ( r_speeds->integer == 1 ) {
+		// update performance stats
+		backEnd.pc.c_totalIndexes += world_vbo.items_queue_indexes;
+		backEnd.pc.c_indexes += world_vbo.items_queue_indexes;
+		backEnd.pc.c_vertexes += world_vbo.items_queue_vertexes;
+		backEnd.pc.c_shaders++;
+	}
 	//VBO_UnBind();
 }
 
