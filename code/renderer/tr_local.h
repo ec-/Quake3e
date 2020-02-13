@@ -313,6 +313,12 @@ typedef struct {
 	qboolean		isDetail;
 	qboolean		depthFragment;
 
+	short			vboVPindex;			// combined fog programs
+	short			vboFPindex;			// combined fog programs
+	
+	uint32_t		color_offset;		// within current shader
+	uint32_t		tex_offset[2];		// within current shader
+
 } shaderStage_t;
 
 struct shaderCommands_s;
@@ -390,8 +396,15 @@ typedef struct shader_s {
 	int			lightingStage;
 #endif
 	qboolean	isStaticShader;
-	short		vboVPindex;
-	short		vboFPindex;
+	int			svarsSize;
+	int			iboOffset;
+	int			vboOffset;
+	int			normalOffset;
+	int			numIndexes;
+	int			numVertexes;
+	int			curVertexes;
+	int			curIndexes;
+
 	qboolean	hasScreenMap;
 
 	float		lightmapOffset[2];	// within merged lightmap
@@ -1504,7 +1517,7 @@ qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t 
 void R_BindAnimatedImage( const textureBundle_t *bundle );
 void R_DrawElements( int numIndexes, const glIndex_t *indexes );
 void R_ComputeColors( const shaderStage_t *pStage );
-void R_ComputeTexCoords( const shaderStage_t *pStage );
+void R_ComputeTexCoords( int b, const textureBundle_t *bundle );
 
 void QGL_InitARB( void );
 void QGL_DoneARB( void );

@@ -24,9 +24,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 /*
 
 General concept of this VBO implementation is to store all possible static data 
-(vertexes,colors,tex.coords[2]) in VBO and accessing it via indexes ONLY.
-Static data in current meaning is a world surfaces with 1-stage shaders
-that can be evaluated at map load time.
+(vertexes,colors,tex.coords[0..1],normals) in VBO and accessing it via indexes ONLY.
+
+Static data in current meaning is a world surfaces whose shader data
+can be evaluated at map load time.
 
 Every static surface gets unique item index which will be added to queue 
 instead of tesselation like for regular surfaces. Using items queue also
@@ -44,22 +45,16 @@ No performance differences from 'Array of Structures' were observed.
 
 */
 
-//#define USE_NORMALS
-#define MAX_VBO_STAGES 1
+#define MAX_VBO_STAGES MAX_SHADER_STAGES
 
-#define MIN_IBO_RUN 256
+#define MIN_IBO_RUN 320
 
-typedef struct vbo_stage_s {
-	int color_offset;
-	int tex_offset[2];
-} vbo_stage_t;
+//[ibo]: [index0][index1]...
+//[vbo]: [vertex0][color0][tx0][vertex1][color1][tx1]...
 
 typedef struct vbo_item_s {
-	vbo_stage_t	stages[ MAX_VBO_STAGES ];
-	int			index_offset;
-#ifdef USE_NORMALS
-	int			normal_offset;	
-#endif
+	int			index_offset;  // int glIndex_t units, device-local, relative to current shader
+	int			soft_offset;   // host-visible, absolute
 	int			num_indexes;
 	int			num_vertexes;
 } vbo_item_t;
@@ -70,21 +65,19 @@ typedef struct ibo_item_s {
 } ibo_item_t;
 
 typedef struct vbo_s {
+	byte *vbo_buffer;
+	int vbo_offset;
+	int vbo_size;
+
 	byte *ibo_buffer;
-	int ibo_buffer_used;
-	int ibo_buffer_size;
-	int ibo_index_count;
+	int ibo_offset;
+	int ibo_size;
 
 	glIndex_t *soft_buffer;
-	int soft_buffer_indexes;
+	uint32_t soft_buffer_indexes;
 
 	ibo_item_t *ibo_items;
 	int ibo_items_count;
-
-	byte *vbo_buffer;
-	int vbo_buffer_used;
-	int vbo_buffer_size;
-	int vbo_vertex_count;
 
 	vbo_item_t *items;
 	int items_count;
@@ -92,40 +85,15 @@ typedef struct vbo_s {
 	int *items_queue;
 	int items_queue_count;
 
-	intptr_t index_base;
-	int index_used;
-
-	intptr_t vertex_base;
-	int vertex_used;
-	int vertex_stride;
-
-#ifdef USE_NORMALS
-	intptr_t normal_base;
-	int normal_used;
-	int normal_stride;
-#endif
-
-	intptr_t color_base;
-	int color_used;
-	int color_stride;
-
-	intptr_t tex_base[2];
-	int tex_used[2];
-	int texture_stride;
+	short fogFPindex; // fog-only
+	short fogVPindex; // eye-in/eye-out
 
 } vbo_t;
 
-vbo_t world_vbo;
+static vbo_t world_vbo;
 
 GLuint VBO_world_data;
 GLuint VBO_world_indexes;
-
-int VBO_indices_total;
-int VBO_indices_longest_sw_run;
-int VBO_indices_longest_hw_run;
-int VBO_indices_num_sw_items;
-int VBO_indices_num_hw_items;
-
 void VBO_Cleanup( void );
 
 static const char *genATestFP( int function )
@@ -169,6 +137,9 @@ const char *BuildFogVP( int multitexture, int fogmode )
 	}
 
 	switch ( multitexture ) {
+		case -1: // pure fog-only vertex program
+			strcat( buf, "END \n" );
+			return buf;
 		case GL_ADD:
 		case GL_MODULATE:
 			strcat( buf,
@@ -199,20 +170,28 @@ const char *BuildFogFP( int multitexture, int alphatest )
 
 	strcpy( buf, "!!ARBfp1.0 \n"
 	"OPTION ARB_precision_hint_fastest; \n"
-	"TEMP base, t; \n" );
+	"TEMP base; \n" );
 
 	switch ( multitexture ) {
+		case -1:
+			strcat( buf, "TEX base, fragment.texcoord[4], texture[2], 2D; \n" );
+			strcat( buf, "MUL result.color, base, program.local[0]; \n" );
+			strcat( buf, "END \n" );
+			return buf;
 		case 0:
+			strcat( buf, "TEMP t; \n" );
 			strcat( buf, "TEX base, fragment.texcoord[0], texture[0], 2D; \n" );
 			strcat( buf, genATestFP( alphatest ) );
 			break;
 		case GL_ADD:
+			strcat( buf, "TEMP t; \n" );
 			strcat( buf, "TEX base, fragment.texcoord[0], texture[0], 2D; \n" );
 			strcat( buf, genATestFP( alphatest ) );
 			strcat( buf, "TEX t,    fragment.texcoord[1], texture[1], 2D; \n"
 			"ADD base, base, t; \n" );
 			break;
 		case GL_MODULATE:
+			strcat( buf, "TEMP t; \n" );
 			strcat( buf, "TEX base, fragment.texcoord[0], texture[0], 2D; \n" );
 			strcat( buf, genATestFP( alphatest ) );
 			strcat( buf, "TEX t,    fragment.texcoord[1], texture[1], 2D; \n" );
@@ -236,20 +215,18 @@ const char *BuildFogFP( int multitexture, int alphatest )
 	//"LRP_SAT base, fog.a, fog, base; \n" );
 	"LRP_SAT result.color, fog.a, fog, base; \n" );
 
-	//strcat( buf, "MOV result.color, base; \n" );
 	strcat( buf, "END \n" );
 	return buf;
 }
 
 
-// multitexture modes: disabled, add, modulate, replace
+// multitexture modes: disabled, add, modulate, replace, fog-only, unused, unused, unused
 // fog modes: eye-in, eye-out
-static GLuint vbo_vp[4*2];
+static GLuint vbo_vp[8*2];
 
-// multitexture modes: disabled, add, modulate, replace
+// multitexture modes: fog-only, single-texture, mtx-add, mtx-modulate, mtx-replace, unused, unused, unused
 // alpha test modes: disabled, GT0, LT80, GE80
-static GLuint vbo_fp[4*4];
-
+static GLuint vbo_fp[8*4];
 
 static int getVPindex( int multitexture, int fogmode )
 {
@@ -260,8 +237,10 @@ static int getVPindex( int multitexture, int fogmode )
 		case GL_ADD:		index = 1; break;
 		case GL_MODULATE:	index = 2; break;
 		case GL_REPLACE:	index = 3; break;
+		case -1:			index = 4; break; // fog-only
 	}
-	index <<= 1;
+	index <<= 1;  // reserve bits for fogmode
+
 	index |= fogmode & 1; // eye-in | eye-out
 
 	return index;
@@ -277,8 +256,9 @@ static int getFPindex( int multitexture, int atest )
 		case GL_ADD:		index = 1; break;
 		case GL_MODULATE:	index = 2; break;
 		case GL_REPLACE:	index = 3; break;
+		case -1:			index = 4; break; // fog-only
 	}
-	index <<= 2;
+	index <<= 2; // reserve bits for atest
 	switch ( atest )
 	{
 		case GLS_ATEST_GT_0: index |= 1; break;
@@ -313,9 +293,9 @@ static qboolean isStaticRGBgen( colorGen_t cgen )
 }
 
 
-static qboolean isStaticTCgen( texCoordGen_t tcgen )
+static qboolean isStaticTCgen( const shaderStage_t *stage, int bundle )
 {
-	switch ( tcgen )
+	switch ( stage->bundle[bundle].tcGen )
 	{
 		case TCGEN_BAD:
 		case TCGEN_IDENTITY:	// clear to 0,0
@@ -329,7 +309,23 @@ static qboolean isStaticTCgen( texCoordGen_t tcgen )
 		default:
 			return qfalse;
 	}
-} 
+}
+
+
+static qboolean isStaticTCmod( const textureBundle_t *bundle )
+{
+	texMod_t type;
+	int i;
+
+	for ( i = 0; i < bundle->numTexMods; i++ ) {
+		type = bundle->texMods[i].type;
+		if ( type != TMOD_NONE && type != TMOD_SCALE && type != TMOD_TRANSFORM ) {
+			return qfalse;
+		}
+	}
+
+	return qtrue;
+}
 
 
 static qboolean isStaticAgen( alphaGen_t agen )
@@ -353,6 +349,25 @@ static qboolean isStaticAgen( alphaGen_t agen )
 }
 
 
+static void CompilePrograms( int VPindex, int FPindex, int mtx, int atestBits )
+{
+	// generate vertex programs
+	if ( !vbo_vp[ VPindex ] )
+	{
+		qglGenProgramsARB( 2, &vbo_vp[ VPindex ] );
+		ARB_CompileProgram( Vertex, BuildFogVP( mtx, 0 ), vbo_vp[ VPindex + 0 ] ); // eye-in
+		ARB_CompileProgram( Vertex, BuildFogVP( mtx, 1 ), vbo_vp[ VPindex + 1 ] ); // eye-out
+	}
+
+	// generate fragment programs
+	if ( !vbo_fp[ FPindex ] )
+	{
+		qglGenProgramsARB( 1, &vbo_fp[ FPindex ] );
+		ARB_CompileProgram( Fragment, BuildFogFP( mtx, atestBits ), vbo_fp[ FPindex ] );
+	}
+}
+
+
 /*
 =============
 isStaticShader
@@ -362,8 +377,8 @@ Decide if we can put surface in static vbo
 */
 static qboolean isStaticShader( shader_t *shader )
 {
-	const shaderStage_t* stage;
-	int i, mtx;
+	shaderStage_t* stage;
+	int i, svarsSize, mtx, atestBits;
 
 	if ( shader->isStaticShader )
 		return qtrue;
@@ -374,6 +389,8 @@ static qboolean isStaticShader( shader_t *shader )
 	if ( shader->numDeforms || shader->numUnfoggedPasses > MAX_VBO_STAGES )
 		return qfalse;
 
+	svarsSize = 0;
+
 	for ( i = 0; i < shader->numUnfoggedPasses; i++ )
 	{
 		stage = shader->stages[ i ];
@@ -381,40 +398,59 @@ static qboolean isStaticShader( shader_t *shader )
 			break;
 		if ( stage->depthFragment )
 			return qfalse;
-		if ( stage->adjustColorsForFog != ACFF_NONE )
-			return qfalse;
-		if ( stage->bundle[0].numTexMods || ( stage->bundle[1].image[0] && stage->bundle[1].numTexMods ) )
+		//if ( stage->adjustColorsForFog != ACFF_NONE )
+		//	return qfalse;
+		if ( !isStaticTCmod( &stage->bundle[0] ) || !isStaticTCmod( &stage->bundle[1] ) )
 			return qfalse;
 		if ( !isStaticRGBgen( stage->rgbGen ) )
 			return qfalse;
-		if ( !isStaticTCgen( stage->bundle[0].tcGen ) || ( stage->bundle[1].image[0] && !isStaticTCgen( stage->bundle[1].tcGen ) ) )
+		if ( !isStaticTCgen( stage, 0 ) )
+			return qfalse;
+		if ( !isStaticTCgen( stage, 1 ) )
 			return qfalse;
 		if ( !isStaticAgen( stage->alphaGen ) )
 			return qfalse;
+		svarsSize += sizeof( tess.svars.colors[0] );
+		//if ( stage->tessFlags & TESS_ST1 )
+		if ( stage->mtEnv )
+			svarsSize += sizeof( tess.svars.texcoords[1][0] );
+		//if ( stage->tessFlags & TESS_ST0 )
+			svarsSize += sizeof( tess.svars.texcoords[0][0] );
 	}
 
 	if ( i == 0 )
 		return qfalse;
 
 	shader->isStaticShader = qtrue;
-	mtx = shader->stages[0]->bundle[1].image[0] ? shader->stages[0]->mtEnv : 0;
 
-	shader->vboVPindex = getVPindex( mtx, 0 );
-	// generate vertex programs
-	if ( !vbo_vp[ shader->vboVPindex ] )
+	// TODO: alloc separate structure?
+	shader->svarsSize = svarsSize;
+	shader->iboOffset = -1;
+	shader->vboOffset = -1;
+	shader->curIndexes = 0;
+	shader->curVertexes = 0;
+	shader->numIndexes = 0;
+	shader->numVertexes = 0;
+
+	for ( i = 0; i < shader->numUnfoggedPasses; i++ )
 	{
-		qglGenProgramsARB( 2, &vbo_vp[ shader->vboVPindex ] );
-		ARB_CompileProgram( Vertex, BuildFogVP( mtx, 0 ), vbo_vp[ shader->vboVPindex + 0 ] );
-		ARB_CompileProgram( Vertex, BuildFogVP( mtx, 1 ), vbo_vp[ shader->vboVPindex + 1 ] );
+		stage = shader->stages[ i ];
+		if ( !stage || !stage->active )
+			break;
+		
+		mtx = stage->mtEnv;
+		atestBits = stage->stateBits & GLS_ATEST_BITS;
+
+		stage->vboVPindex = getVPindex( mtx, 0 );
+		stage->vboFPindex = getFPindex( mtx, atestBits );
+
+		CompilePrograms( stage->vboVPindex, stage->vboFPindex, mtx, atestBits );
 	}
 
-	shader->vboFPindex = getFPindex( mtx, shader->stages[0]->stateBits & GLS_ATEST_BITS );
-	// generate fragment programs
-	if ( !vbo_fp[ shader->vboFPindex ] )
-	{
-		qglGenProgramsARB( 1, &vbo_fp[ shader->vboFPindex ] );
-		ARB_CompileProgram( Fragment, BuildFogFP( mtx, shader->stages[0]->stateBits & GLS_ATEST_BITS), vbo_fp[ shader->vboFPindex ] );
-	}
+	world_vbo.fogVPindex = getVPindex( -1, 0 );
+	world_vbo.fogFPindex = getFPindex( -1, 0 );
+
+	CompilePrograms( world_vbo.fogVPindex, world_vbo.fogFPindex, -1, 0 );
 
 	return qtrue;
 }
@@ -422,103 +458,142 @@ static qboolean isStaticShader( shader_t *shader )
 
 static void VBO_AddGeometry( vbo_t *vbo, vbo_item_t *vi, shaderCommands_t *input )
 {
-	int i, size, offs;
-	glIndex_t *idx;
+	uint32_t size, offs;
+	int i;
 
-	// shift indexes
+	if ( input->shader->iboOffset == -1 || input->shader->vboOffset == -1 ) {
+
+		// allocate indexes
+		input->shader->iboOffset = vbo->ibo_offset;
+		vbo->ibo_offset += input->shader->numIndexes * sizeof( input->indexes[0] );
+
+		// allocate xyz + normals + svars
+		input->shader->vboOffset = vbo->vbo_offset;
+		vbo->vbo_offset += input->shader->numVertexes * ( sizeof( input->xyz[0] ) + sizeof( input->normal[0] ) + input->shader->svarsSize );
+
+		// go to normals offset
+		input->shader->normalOffset = input->shader->vboOffset + input->shader->numVertexes * sizeof( input->xyz[0] );
+
+		// go to first color offset
+		offs = input->shader->normalOffset + input->shader->numVertexes * sizeof( input->normal[0] );
+
+		for ( i = 0; i < MAX_VBO_STAGES; i++ )
+		{
+			shaderStage_t *pStage = input->xstages[ i ];
+			if ( !pStage )
+				break;
+			pStage->color_offset = offs; offs += input->shader->numVertexes * sizeof( tess.svars.colors[0] );
+			//if ( pStage->tessFlags & TESS_ST0 )
+			{
+				pStage->tex_offset[0] = offs; offs += input->shader->numVertexes * sizeof( tess.svars.texcoords[0][0] );
+			}
+			//if ( pStage->tessFlags & TESS_ST1 )
+			if ( pStage->mtEnv )
+			{
+				pStage->tex_offset[1] = offs; offs += input->shader->numVertexes * sizeof( tess.svars.texcoords[1][0] );
+			}
+		}
+
+		input->shader->curVertexes = 0;
+		input->shader->curIndexes = 0;
+	}
+
+	// shift indexes relative to current shader
 	for ( i = 0; i < input->numIndexes; i++ )
-		input->indexes[ i ] += vbo->vbo_vertex_count;
+		input->indexes[ i ] += input->shader->curVertexes;
 
-	offs = vbo->index_base + vbo->index_used;
-	if ( vi->index_offset == -1 ) // set only once
-		vi->index_offset = offs;
+	if ( vi->index_offset == -1 ) // one-time initialization
+	{
+		// initialize geometry offsets relative to current shader
+		vi->index_offset = input->shader->curIndexes;
+		//vi->soft_offset = input->shader->iboOffset;
+		vi->soft_offset = input->shader->iboOffset + input->shader->curIndexes * sizeof( input->indexes[0] );
+	}
 
 	size = input->numIndexes * sizeof( input->indexes[ 0 ] );
-	idx = (glIndex_t*)(vbo->ibo_buffer + offs);
-	for ( i = 0; i < input->numIndexes; i++ )
-		idx[ i ] = input->indexes[ i ];
-	vbo->index_used += size;
-	vi->num_indexes += input->numIndexes;
-	vbo->ibo_index_count += input->numIndexes;
+	offs = input->shader->iboOffset + input->shader->curIndexes * sizeof( input->indexes[0] );
+	if ( offs + size > vbo->ibo_size ) {
+		ri.Error( ERR_DROP, "Index0 overflow" );
+	}
+	memcpy( vbo->ibo_buffer + offs, input->indexes, size );
+	//Com_Printf( "i offs=%i size=%i\n", offs, size );
 
 	// vertexes
-	offs = vbo->vertex_base + vbo->vertex_used;
-
-	if ( vbo->vertex_stride == sizeof( input->xyz[ 0 ] ) )
-	{
-		// better for potential re-tesselation
-		size = input->numVertexes * sizeof( input->xyz[ 0 ] );
-		memcpy( vbo->vbo_buffer + offs, input->xyz, size );
+	offs = input->shader->vboOffset + input->shader->curVertexes * sizeof( input->xyz[0] );
+	size = input->numVertexes * sizeof( input->xyz[ 0 ] );
+	if ( offs + size > vbo->vbo_size ) {
+		ri.Error( ERR_DROP, "Vertex overflow" );
 	}
-	else
-	{
-		// compact vec3_t representation 
-		float *v;
-		size = input->numVertexes * sizeof( vec3_t );
-		v = (float*)(vbo->vbo_buffer + offs);
-		for ( i = 0; i < input->numVertexes ; i++ ) {
-			v[0] = input->xyz[i][0];
-			v[1] = input->xyz[i][1];
-			v[2] = input->xyz[i][2];
-			v += 3;
-		}
-	}
-
-	vi->num_vertexes += input->numVertexes; // increase instead of assign
-	vbo->vertex_used += size;
+	//Com_Printf( "v offs=%i size=%i\n", offs, size );
+	memcpy( vbo->vbo_buffer + offs, input->xyz, size );
 
 	// normals
-#ifdef USE_NORMALS
-	offs = vbo->normal_base + vbo->normal_used;
-	vi->normal_offset = offs;
+	offs = input->shader->normalOffset + input->shader->curVertexes * sizeof( input->normal[0] );
 	size = input->numVertexes * sizeof( input->normal[ 0 ] );
+	if ( offs + size > vbo->vbo_size ) {
+		ri.Error( ERR_DROP, "Normals overflow" );
+	}
+	//Com_Printf( "v offs=%i size=%i\n", offs, size );
 	memcpy( vbo->vbo_buffer + offs, input->normal, size );
-	vbo->normal_used += size;
-#endif
 
-	vbo->vbo_vertex_count += input->numVertexes; // update for index base
+	vi->num_indexes += input->numIndexes;
+	vi->num_vertexes += input->numVertexes;
 }
 
 
-static void VBO_AddStageColors( vbo_t *vbo, vbo_item_t *vi, const shaderCommands_t *input )
+static void VBO_AddStageColors( vbo_t *vbo, int stage, const shaderCommands_t *input )
 {
-	vbo_stage_t *st = vi->stages + 0;
-	int offs = vbo->color_base + vbo->color_used;
-	int size;
-	if ( st->color_offset == -1 ) // set only once
-		st->color_offset = offs;
-	size = input->numVertexes * sizeof( input->vertexColors[ 0 ] );
+	const int offs = input->xstages[ stage ]->color_offset + input->shader->curVertexes * sizeof( input->svars.colors[0] );
+	const int size = input->numVertexes * sizeof( input->svars.colors[ 0 ] );
+
 	memcpy( vbo->vbo_buffer + offs, input->svars.colors, size );
-	vbo->color_used += size;
 }
 
 
-static void VBO_AddStageTxCoords( vbo_t *vbo, vbo_item_t *vi, const shaderCommands_t *input, int unit )
+static void VBO_AddStageTxCoords( vbo_t *vbo, int stage, const shaderCommands_t *input, int unit )
 {
-	vbo_stage_t *st = vi->stages + 0;
-	int offs = vbo->tex_base[ unit ] + vbo->tex_used[ unit ];
-	int size;
-	if ( st->tex_offset[ unit ] == -1 ) // set only once
-		st->tex_offset[ unit ] = offs;
-	size = input->numVertexes * sizeof( input->svars.texcoords[ 0 ][ 0 ] );
+	const int offs = input->xstages[ stage ]->tex_offset[ unit ] + input->shader->curVertexes * sizeof( input->svars.texcoords[unit][0] );
+	const int size = input->numVertexes * sizeof( input->svars.texcoords[unit][0] );
+	
 	memcpy( vbo->vbo_buffer + offs, &input->svars.texcoords[ unit ][ 0 ], size );
-	vbo->tex_used[ unit ] += size;
 }
 
 
 void VBO_PushData( int itemIndex, shaderCommands_t *input )
 {
-	const shaderStage_t *pStage = input->xstages[ 0 ];
+	const shaderStage_t *pStage;
 	vbo_t *vbo = &world_vbo;
 	vbo_item_t *vi = vbo->items + itemIndex;
-	
+	int i;
+
 	VBO_AddGeometry( vbo, vi, input );
 
-	R_ComputeColors( pStage );
-	R_ComputeTexCoords( pStage );
-	VBO_AddStageColors( vbo, vi, input );
-	VBO_AddStageTxCoords( vbo, vi, input, 0 );
-	VBO_AddStageTxCoords( vbo, vi, input, 1 );
+	for ( i = 0; i < MAX_VBO_STAGES; i++ )
+	{
+		pStage = input->xstages[ i ];
+		if ( !pStage )
+			break;
+		R_ComputeColors( pStage );
+		VBO_AddStageColors( vbo, i, input );
+		//if ( pStage->tessFlags & TESS_ST0 )
+		{
+			R_ComputeTexCoords( 0, &pStage->bundle[0] );
+			VBO_AddStageTxCoords( vbo, i, input, 0 );
+		}
+		//if ( pStage->tessFlags & TESS_ST1 )
+		if ( pStage->mtEnv )
+		{
+			R_ComputeTexCoords( 1, &pStage->bundle[1] );
+			VBO_AddStageTxCoords( vbo, i, input, 1 );
+		}
+	}
+
+	input->shader->curVertexes += input->numVertexes;
+	input->shader->curIndexes += input->numIndexes;
+
+	//Com_Printf( "%s: vert %i (of %i), ind %i (of %i)\n", input->shader->name, 
+	//	input->shader->curVertexes, input->shader->numVertexes,
+	//	input->shader->curIndexes, input->shader->numIndexes );
 }
 
 
@@ -593,10 +668,9 @@ static void initItem( vbo_item_t *item )
 {
 	item->num_vertexes = 0;
 	item->num_indexes = 0;
+
 	item->index_offset = -1;
-	item->stages[0].color_offset = -1;
-	item->stages[0].tex_offset[0] = -1;
-	item->stages[0].tex_offset[1] = -1;
+	item->soft_offset = -1;
 }
 
 
@@ -611,12 +685,6 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 	int ibo_size;
 	int vbo_size;
 	int i, n;
-	int tex_size;
-	int col_size;
-	int vert_size;
-#ifdef USE_NORMALS
-	int norm_size;
-#endif
 	GLenum err;
 
 	int numStaticSurfaces = 0;
@@ -633,6 +701,9 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 
 	VBO_Cleanup();
 
+	vbo_size = 0;
+	ibo_size = 0;
+
 	// initial scan to count surfaces/indexes/vertexes for memory allocation
 	for ( i = 0, sf = surf; i < surfCount; i++, sf++ ) {
 		face = (srfSurfaceFace_t *) sf->data;
@@ -640,6 +711,10 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 			face->vboItemIndex = ++numStaticSurfaces;
 			numStaticVertexes += face->numPoints;	
 			numStaticIndexes += face->numIndices;
+	
+			vbo_size += face->numPoints * (sf->shader->svarsSize + sizeof( tess.xyz[0] ) + sizeof( tess.normal[0] ) );
+			sf->shader->numVertexes += face->numPoints;
+			sf->shader->numIndexes += face->numIndices;
 			continue;
 		}
 		tris = (srfTriangles_t *) sf->data;
@@ -647,6 +722,10 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 			tris->vboItemIndex = ++numStaticSurfaces;
 			numStaticVertexes += tris->numVerts;
 			numStaticIndexes += tris->numIndexes;
+
+			vbo_size += tris->numVerts * (sf->shader->svarsSize + sizeof( tess.xyz[0] ) + sizeof( tess.normal[0] ) );
+			sf->shader->numVertexes += tris->numVerts;
+			sf->shader->numIndexes += tris->numIndexes;
 			continue;
 		}
 		grid = (srfGridMesh_t *) sf->data;
@@ -655,16 +734,23 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 			RB_SurfaceGridEstimate( grid, &grid->vboExpectVertices, &grid->vboExpectIndices );
 			numStaticVertexes += grid->vboExpectVertices;
 			numStaticIndexes += grid->vboExpectIndices;
+
+			vbo_size += grid->vboExpectVertices * (sf->shader->svarsSize + sizeof( tess.xyz[0] ) + sizeof( tess.normal[0] ) );
+			sf->shader->numVertexes += grid->vboExpectVertices;
+			sf->shader->numIndexes += grid->vboExpectIndices;
 			continue;
 		}
 	}
 
-	if ( !numStaticSurfaces ) {
+	if ( numStaticSurfaces == 0 ) {
 		ri.Printf( PRINT_ALL, "...no static surfaces for VBO\n" );
 		return;
 	}
 
-	Com_Memset( vbo, 0, sizeof( *vbo ) );
+	vbo_size = PAD( vbo_size, 32 );
+
+	ibo_size = numStaticIndexes * sizeof( tess.indexes[0] );
+	ibo_size = PAD( ibo_size, 32 );
 
 	// 0 item is unused
 	vbo->items = ri.Hunk_Alloc( ( numStaticSurfaces + 1 ) * sizeof( vbo_item_t ), h_low );
@@ -674,42 +760,21 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 	vbo->items_queue = ri.Hunk_Alloc( ( numStaticSurfaces + 1 ) * sizeof( int ), h_low );
 	vbo->items_queue_count = 0;
 
-	ri.Printf( PRINT_ALL, "...found %i VBO surfaces (%i vertexes, %i indexes)\n", 
+	ri.Printf( PRINT_ALL, "...found %i VBO surfaces (%i vertexes, %i indexes)\n",
 		numStaticSurfaces, numStaticVertexes, numStaticIndexes );
 	
-	// setup vertex buffers
-	vbo->vertex_stride = sizeof( vec3_t ); // compact
-	//vbo->vertex_stride = sizeof( tess.xyz[0] ); // better for re-tesselation
-	vert_size = numStaticVertexes * vbo->vertex_stride;
+	//Com_Printf( S_COLOR_CYAN "VBO size: %i\n", vbo_size );
+	//Com_Printf( S_COLOR_CYAN "IBO size: %i\n", ibo_size );
 
-#ifdef USE_NORMALS
-	vbo->normal_stride = sizeof( tess.normal[0] );
-	norm_size = numStaticVertexes * vbo->normal_stride;
-#endif
-
-	col_size = numStaticVertexes * sizeof( tess.vertexColors[0] );
-	tex_size = numStaticVertexes * sizeof( tess.texCoords[0][0] );
-
-	vbo->vertex_base = 0;
-#ifdef USE_NORMALS
-	vbo->normal_base = vbo->vertex_base + vert_size;
-	vbo->color_base = vbo->normal_base + norm_size;
-#else
-	vbo->color_base = vbo->vertex_base + vert_size;
-#endif
-	vbo->tex_base[0] = vbo->color_base + col_size;
-	vbo->tex_base[1] = vbo->tex_base[0] + tex_size;
-
-#ifdef USE_NORMALS	
-	vbo_size = vbo->vertex_stride + vbo->normal_stride + 1 * ( sizeof( tess.vertexColors[0] ) + sizeof( tess.texCoords[0] ) );
-#else
-	vbo_size = vbo->vertex_stride + 1 * ( sizeof( tess.vertexColors[0] ) + sizeof( tess.texCoords[0] ) );
-#endif
-	vbo_size *= numStaticVertexes;
+	// vertex buffer
+	vbo->vbo_buffer = ri.Hunk_AllocateTempMemory( vbo_size );
+	vbo->vbo_offset = 0;
+	vbo->vbo_size = vbo_size;
 
 	// index buffer
-	ibo_size = numStaticIndexes * sizeof( tess.indexes[0] );
 	vbo->ibo_buffer = ri.Hunk_Alloc( ibo_size, h_low );	
+	vbo->ibo_offset = 0;
+	vbo->ibo_size = ibo_size;
 
 	// soft index buffer
 	vbo->soft_buffer = ri.Hunk_Alloc( ibo_size, h_low );
@@ -718,10 +783,6 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 	// ibo runs buffer
 	vbo->ibo_items = ri.Hunk_Alloc( ( (numStaticIndexes / MIN_IBO_RUN) + 1 ) * sizeof( ibo_item_t ), h_low );
 	vbo->ibo_items_count = 0;
-
-	vbo->index_base = 0;
-
-	vbo->vbo_buffer = ri.Hunk_AllocateTempMemory( vbo_size );
 
 	surfList = ri.Hunk_AllocateTempMemory( numStaticSurfaces * sizeof( msurface_t* ) );
 
@@ -747,12 +808,13 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 		ri.Error( ERR_DROP, "Invalid VBO surface count" );
 	}
 
+	// sort surfaces by shader
 	qsort( surfList, numStaticSurfaces, sizeof( surfList[0] ), surfSortFunc );
 
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
-	Com_Memset( &backEnd.viewParms, 0, sizeof( backEnd.viewParms ) );
 
+	Com_Memset( &backEnd.viewParms, 0, sizeof( backEnd.viewParms ) );
 	backEnd.currentEntity = &tr.worldEntity;
 
 	for ( i = 0; i < numStaticSurfaces; i++ )
@@ -762,11 +824,11 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 		tris = (srfTriangles_t *) sf->data;
 		grid = (srfGridMesh_t *) sf->data;
 		if ( face->surfaceType == SF_FACE )
-			face->vboItemIndex = i+1;
+			face->vboItemIndex = i + 1;
 		else if ( tris->surfaceType == SF_TRIANGLES ) {
-			tris->vboItemIndex = i+1;
+			tris->vboItemIndex = i + 1;
 		} else if ( grid->surfaceType == SF_GRID ){
-			grid->vboItemIndex = i+1;
+			grid->vboItemIndex = i + 1;
 		} else {
 			ri.Error( ERR_DROP, "Unexpected surface type" );
 		}
@@ -786,19 +848,11 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 		tess.numIndexes = 0;
 		tess.numVertexes = 0;
 	}
-	
+
 	ri.Hunk_FreeTempMemory( surfList );
-
-	 // fixup vertex stride
-	if ( vbo->vertex_stride == sizeof( vec3_t ) )
-		vbo->vertex_stride = 0;
-
-	vbo->ibo_buffer_used = ibo_size;
-	vbo->vbo_buffer_used = vbo_size;
 
 	// reset error state
 	qglGetError();
-	//err = GL_NO_ERROR;
 
 	if ( !VBO_world_data ) {
 		qglGenBuffersARB( 1, &VBO_world_data );
@@ -809,7 +863,7 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 	// upload vertex array & colors & textures
 	if ( VBO_world_data ) {
 		VBO_BindData();
-		qglBufferDataARB( GL_ARRAY_BUFFER_ARB, vbo->vbo_buffer_used, vbo->vbo_buffer, GL_STATIC_DRAW_ARB );
+		qglBufferDataARB( GL_ARRAY_BUFFER_ARB, vbo->vbo_size, vbo->vbo_buffer, GL_STATIC_DRAW_ARB );
 		if ( (err = qglGetError()) != GL_NO_ERROR )
 			goto __fail;
 	}
@@ -823,7 +877,7 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 	// upload index array
 	if ( VBO_world_indexes ) {
 		VBO_BindIndex( qtrue );
-		qglBufferDataARB( GL_ELEMENT_ARRAY_BUFFER_ARB, vbo->ibo_buffer_used, vbo->ibo_buffer, GL_STATIC_DRAW_ARB );
+		qglBufferDataARB( GL_ELEMENT_ARRAY_BUFFER_ARB, vbo->ibo_size, vbo->ibo_buffer, GL_STATIC_DRAW_ARB );
 		if ( (err = qglGetError()) != GL_NO_ERROR )
 			goto __fail;
 	}
@@ -863,7 +917,8 @@ __fail:
 
 	// release host memory
 	ri.Hunk_FreeTempMemory( vbo->vbo_buffer );
-	
+	vbo->vbo_buffer = NULL;
+
 	// release GPU resources
 	VBO_Cleanup();
 }
@@ -1003,11 +1058,9 @@ void VBO_Flush( void )
 static void VBO_AddItemDataToSoftBuffer( int itemIndex )
 {
 	vbo_t *vbo = &world_vbo;
-	vbo_item_t *vi = vbo->items + itemIndex;
+	const vbo_item_t *vi = vbo->items + itemIndex;
 
-	memcpy( &vbo->soft_buffer[ vbo->soft_buffer_indexes ],
-		vbo->ibo_buffer + vi->index_offset,
-		vi->num_indexes * sizeof( glIndex_t ) );
+	memcpy( &vbo->soft_buffer[ vbo->soft_buffer_indexes ], vbo->ibo_buffer + vi->soft_offset, vi->num_indexes * sizeof( glIndex_t ) );
 
 	vbo->soft_buffer_indexes += vi->num_indexes;
 }
@@ -1020,14 +1073,31 @@ static void VBO_AddItemRangeToIBOBuffer( int offset, int length )
 
 	it = vbo->ibo_items + vbo->ibo_items_count++;
 
-	it->offset = offset;
+	it->offset = offset * sizeof( glIndex_t ) + tess.shader->iboOffset;
 	it->length = length;
 }
 
 
-static void VBO_RenderSoftBuffer( void )
+static void VBO_RenderIBOItems( void )
 {
-	vbo_t *vbo = &world_vbo;
+	const vbo_t *vbo = &world_vbo;
+	int i;
+
+	// from device-local memory
+	if ( vbo->ibo_items_count )
+	{
+		VBO_BindIndex( qtrue );
+		for ( i = 0; i < vbo->ibo_items_count; i++ )
+		{
+			qglDrawElements( GL_TRIANGLES, vbo->ibo_items[ i ].length, GL_INDEX_TYPE, (const GLvoid *)(intptr_t) vbo->ibo_items[ i ].offset );
+		}
+	}
+}
+
+
+static void VBO_RenderSoftItems( void )
+{
+	const vbo_t *vbo = &world_vbo;
 
 	if ( vbo->soft_buffer_indexes )
 	{
@@ -1037,39 +1107,22 @@ static void VBO_RenderSoftBuffer( void )
 }
 
 
-static void VBO_RenderIBOBuffer( void )
-{
-	vbo_t *vbo = &world_vbo;
-	int i;
-
-	if ( vbo->ibo_items_count )
-	{ 
-		VBO_BindIndex( qtrue );
-
-		for ( i = 0; i < vbo->ibo_items_count; i++ )
-		{
-			qglDrawElements( GL_TRIANGLES, vbo->ibo_items[ i ].length, GL_INDEX_TYPE, (const GLvoid *)(intptr_t) vbo->ibo_items[ i ].offset );
-		}
-	}
-}
-
-
-static void VBO_RenderBuffers( void )
+static void VBO_RenderIndexes( void )
 {
 	if ( curr_index_bind )
 	{
-		VBO_RenderIBOBuffer();
-		VBO_RenderSoftBuffer();
+		VBO_RenderIBOItems();
+		VBO_RenderSoftItems();
 	}
 	else
 	{
-		VBO_RenderSoftBuffer();
-		VBO_RenderIBOBuffer();
+		VBO_RenderSoftItems();
+		VBO_RenderIBOItems();
 	}
 }
 
 
-static void VBO_RenderIndexQueue( qboolean mtx )
+static void VBO_PrepareQueues( void )
 {
 	vbo_t *vbo = &world_vbo;
 	int i, item_run, index_run, n;
@@ -1098,45 +1151,36 @@ static void VBO_RenderIndexQueue( qboolean mtx )
 		{
 			vbo_item_t *start = vbo->items + a[ i ];
 			vbo_item_t *end = vbo->items + a[ i + item_run - 1 ];
-			n = (end->index_offset - start->index_offset) / sizeof(glIndex_t) + end->num_indexes;
+			n = (end->index_offset - start->index_offset) + end->num_indexes;
 			VBO_AddItemRangeToIBOBuffer( start->index_offset, n );
 		}
 		i += item_run;
 	}
+}
 
-	VBO_RenderBuffers();
 
-	if ( r_showtris->integer )
-	{
-		if ( (r_showtris->integer == 1 && backEnd.doneSurfaces) || (r_showtris->integer == 2 && backEnd.drawConsole) )
-			return;
+static const fogProgramParms_t *VBO_SetupFog( int VPindex, int FPindex )
+{
+	const fogProgramParms_t *fparm;
+	GLuint vp, fp;
 
-		if ( mtx )
-		{
-			GL_ClientState( 1, CLS_NONE );
-			GL_SelectTexture( 1 );
-			qglDisable( GL_TEXTURE_2D );
-		}
+	GL_BindTexture( 2, tr.fogImage->texnum );
+	fparm = RB_CalcFogProgramParms();
+	if ( fparm->eyeOutside )
+		vp = vbo_vp[ VPindex + 1 ];
+	else
+		vp = vbo_vp[ VPindex + 0 ];
 
-		GL_ClientState( 0, CLS_NONE );
+	fp = vbo_fp[ FPindex ];
 
-		GL_SelectTexture( 0 );
-		qglDisable( GL_TEXTURE_2D );
-		qglColor3f( 0.25f, 1.0f, 0.25f );
+	ARB_ProgramEnableExt( vp, fp );
 
-		GL_State( GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE );
-		qglDepthRange( 0, 0 );
+	qglProgramLocalParameter4fvARB( GL_VERTEX_PROGRAM_ARB, 2, fparm->fogDistanceVector );
+	qglProgramLocalParameter4fvARB( GL_VERTEX_PROGRAM_ARB, 3, fparm->fogDepthVector );
+	qglProgramLocalParameter4fARB( GL_VERTEX_PROGRAM_ARB, 4, fparm->eyeT, 0.0f, 0.0f, 0.0f );
+	qglProgramLocalParameter4fvARB( GL_FRAGMENT_PROGRAM_ARB, 0, fparm->fogColor );
 
-		VBO_RenderBuffers();
-
-		qglDepthRange( 0, 1 );
-
-		qglEnable( GL_TEXTURE_2D );
-	}
-
-	//vbo->soft_buffer_indexes = 0;
-	//vbo->ibo_items_count = 0;
-	// VBO_UnBind();
+	return fparm;
 }
 
 
@@ -1145,124 +1189,129 @@ static void VBO_RenderIndexQueue( qboolean mtx )
 */
 static void RB_IterateStagesVBO( const shaderCommands_t *input )
 {
-	//static qboolean setupMultitexture = qtrue;
-	const shaderStage_t *pStage = tess.xstages[ 0 ];
-	const vbo_t *vbo = &world_vbo;
+	const shaderStage_t *pStage;
 	const fogProgramParms_t *fparm;
-	int stateBits;
-	qboolean updateArrays;
+	int i, stateBits;
 	qboolean fogPass;
-	GLuint vp, fp;
 
 	fogPass = ( tess.fogNum && tess.shader->fogPass );
-	stateBits = pStage->stateBits;
 
-	fparm = NULL;
-
-	if ( fogPass )
-	{
-		stateBits &= ~GLS_ATEST_BITS; // done in shaders
-
-		fparm = RB_CalcFogProgramParms();
-
-		if ( fparm->eyeOutside )
-			vp = vbo_vp[ tess.shader->vboVPindex + 1 ];
-		else
-			vp = vbo_vp[ tess.shader->vboVPindex + 0 ];
-
-		fp = vbo_fp[ tess.shader->vboFPindex ];
-	}
-	else
-	{
-		vp = fp = 0;
+	if ( fogPass && tess.shader->numUnfoggedPasses == 1 ) {
+		pStage = input->xstages[ 0 ];
+		fparm = VBO_SetupFog( pStage->vboVPindex, pStage->vboFPindex ); 
+	} else {
+		ARB_ProgramEnableExt( 0, 0 );
+		fparm = NULL;
 	}
 
-	ARB_ProgramEnableExt( vp, fp );
+	VBO_PrepareQueues();
 
-	if ( fogPass )
-	{
-		GL_BindTexture( 2, tr.fogImage->texnum );
-		
-		qglProgramLocalParameter4fvARB( GL_VERTEX_PROGRAM_ARB, 2, fparm->fogDistanceVector );
-		qglProgramLocalParameter4fvARB( GL_VERTEX_PROGRAM_ARB, 3, fparm->fogDepthVector );
-		qglProgramLocalParameter4fARB( GL_VERTEX_PROGRAM_ARB, 4, fparm->eyeT, 0.0f, 0.0f, 0.0f );
+	VBO_BindData();
 
-		qglProgramLocalParameter4fvARB( GL_FRAGMENT_PROGRAM_ARB, 0, fparm->fogColor );
-	}
+	qglVertexPointer( 3, GL_FLOAT, 16, (const GLvoid *)(intptr_t)tess.shader->vboOffset );
 
-	GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
+	for ( i = 0; i < MAX_VBO_STAGES; i++ ) {
+		if ( !input->xstages[i] )
+			break;
 
-	if ( ( updateArrays = VBO_BindData() ) != qfalse )
-	{
-		// bind geometry
-		qglVertexPointer( 3, GL_FLOAT, vbo->vertex_stride, (const GLvoid *)vbo->vertex_base );
-		// bind colors
-		qglColorPointer( 4, GL_UNSIGNED_BYTE, vbo->color_stride, (const GLvoid *)vbo->color_base );
-		// bind first texture array
-		qglTexCoordPointer( 2, GL_FLOAT, vbo->texture_stride, (const GLvoid *)vbo->tex_base[0] );
+		pStage = input->xstages[i];
 
-		//setupMultitexture = qtrue;
-	}
+		stateBits = pStage->stateBits;
 
-	GL_SelectTexture( 0 );
-	R_BindAnimatedImage( &pStage->bundle[0] );
-
-	GL_State( stateBits );
-
-	if ( pStage->bundle[1].image[0] != NULL ) // multitexture
-	{
-		// bind second texture array
-		GL_SelectTexture( 1 );
-		qglEnable( GL_TEXTURE_2D );
-
-		R_BindAnimatedImage( &pStage->bundle[1] );
-
-		if ( fp == 0 )
-		{
-			if ( r_lightmap->integer )
-			{
-				GL_TexEnv( GL_REPLACE );
-			}
-			else
-			{
-				GL_TexEnv( pStage->mtEnv );
-			}
+		if ( fparm ) {
+			stateBits &= ~GLS_ATEST_BITS; // done in shaders
 		}
 
-		GL_ClientState( 1, CLS_TEXCOORD_ARRAY );
-		qglTexCoordPointer( 2, GL_FLOAT, vbo->texture_stride, (const GLvoid *)vbo->tex_base[1] );
+		GL_State( stateBits );
 
-		VBO_RenderIndexQueue( qtrue );
+		GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
 
-		// disable texturing on TEXTURE1, then select TEXTURE0
-		GL_SelectTexture( 1 );
-		qglDisable( GL_TEXTURE_2D );
+		// bind colors and first texture array
+		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, (const GLvoid *)(intptr_t)pStage->color_offset );
+		qglTexCoordPointer( 2, GL_FLOAT, 0, (const GLvoid *)(intptr_t)pStage->tex_offset[0] );
+
 		GL_SelectTexture( 0 );
-	}
-	else
-	{
-		GL_ClientState( 1, CLS_NONE );
-		VBO_RenderIndexQueue( qfalse );
-	}
+		R_BindAnimatedImage( &pStage->bundle[0] );
 
-	if ( r_speeds->integer == 1 )
-	{
-		// update performance stats
-		const vbo_item_t *it;
-		int i;
-
-		for ( i = 0; i < vbo->items_queue_count; i++ )
+		if ( pStage->mtEnv ) // multitexture
 		{
-			it = vbo->items + vbo->items_queue[ i ];
-			backEnd.pc.c_totalIndexes += it->num_indexes;
-			backEnd.pc.c_indexes += it->num_indexes;
-			backEnd.pc.c_vertexes += it->num_vertexes;
+			GL_ClientState( 1, CLS_TEXCOORD_ARRAY );
+			qglTexCoordPointer( 2, GL_FLOAT, 0, (const GLvoid *)(intptr_t)pStage->tex_offset[1] );
+
+			// bind second texture array
+			GL_SelectTexture( 1 );
+			qglEnable( GL_TEXTURE_2D );
+			R_BindAnimatedImage( &pStage->bundle[1] );
+
+			if ( fparm == NULL )
+			{
+				if ( r_lightmap->integer )
+					GL_TexEnv( GL_REPLACE );
+				else
+					GL_TexEnv( pStage->mtEnv );
+			}
+
+			VBO_RenderIndexes();
+
+			// disable texturing on TEXTURE1, then select TEXTURE0
+			qglDisable( GL_TEXTURE_2D );
+			GL_SelectTexture( 0 );
 		}
-		backEnd.pc.c_shaders++;
+		else
+		{
+			GL_ClientState( 1, CLS_NONE );
+
+			VBO_RenderIndexes();
+		}
 	}
 
-	tess.vboIndex = 0;
-	VBO_ClearQueue();
+	GL_ClientState( 1, CLS_NONE );
+
+	if ( fogPass && fparm == NULL ) {
+
+		VBO_SetupFog( world_vbo.fogVPindex, world_vbo.fogFPindex );
+
+		GL_ClientState( 0, CLS_NONE );
+
+		if ( tess.shader->fogPass == FP_EQUAL ) {
+			GL_State( GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_DEPTHFUNC_EQUAL );
+		} else {
+			GL_State( GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA );
+		}
+
+		VBO_RenderIndexes();
+	}
+
+	ARB_ProgramEnableExt( 0, 0 );
+
+	if ( r_showtris->integer ) {
+		if ( (r_showtris->integer == 1 && backEnd.doneSurfaces) || (r_showtris->integer == 2 && backEnd.drawConsole) )
+			return;
+
+		ARB_ProgramEnableExt( 0, 0 );
+
+		GL_ClientState( 0, CLS_NONE );
+
+		GL_SelectTexture( 0 );
+		qglDisable( GL_TEXTURE_2D );
+
+		GL_State( GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE );
+		qglDepthRange( 0, 0 );
+
+		// green for IBO items
+		qglColor3f( 0.25f, 1.0f, 0.25f );
+		VBO_RenderIBOItems();
+		
+		// cyan for soft-index items
+		qglColor3f( 0.25f, 1.0f, 0.55f );
+		VBO_RenderSoftItems();
+
+		qglDepthRange( 0, 1 );
+
+		qglEnable( GL_TEXTURE_2D );
+	}
+
+	//VBO_UnBind();
 }
 
 
@@ -1291,4 +1340,7 @@ void RB_StageIteratorVBO( void )
 	{
 		qglDisable( GL_POLYGON_OFFSET_FILL );
 	}
+
+	tess.vboIndex = 0;
+	VBO_ClearQueue();
 }

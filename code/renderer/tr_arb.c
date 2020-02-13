@@ -336,7 +336,7 @@ void ARB_LightingPass( void )
 
 	pStage = tess.xstages[ tess.shader->lightingStage ];
 
-	R_ComputeTexCoords( pStage );
+	R_ComputeTexCoords( 0, &pStage->bundle[0] );
 
 	GL_ClientState( 1, CLS_NONE );
 	GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_NORMAL_ARRAY );

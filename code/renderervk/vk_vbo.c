@@ -46,7 +46,6 @@ host-visible index buffer which is finally rendered via single draw call.
 
 */
 
-//#define MAX_VBO_STAGES 1
 #define MAX_VBO_STAGES MAX_SHADER_STAGES
 
 #define MIN_IBO_RUN 320
@@ -251,6 +250,7 @@ static void VBO_AddGeometry( vbo_t *vbo, vbo_item_t *vi, shaderCommands_t *input
 
 	if ( input->shader->iboOffset == -1 || input->shader->vboOffset == -1 ) {
 
+		// allocate indexes
 		input->shader->iboOffset = vbo->vbo_offset;
 		vbo->vbo_offset += input->shader->numIndexes * sizeof( input->indexes[0] );
 
@@ -310,7 +310,7 @@ static void VBO_AddGeometry( vbo_t *vbo, vbo_item_t *vi, shaderCommands_t *input
 	vbo->ibo_offset += size;
 	//Com_Printf( "i offs=%i size=%i\n", offs, size );
 
-
+	// vertexes
 	offs = input->shader->vboOffset + input->shader->curVertexes * sizeof( input->xyz[0] );
 	size = input->numVertexes * sizeof( input->xyz[ 0 ] );
 	if ( offs + size > vbo->vbo_size ) {
@@ -319,6 +319,7 @@ static void VBO_AddGeometry( vbo_t *vbo, vbo_item_t *vi, shaderCommands_t *input
 	//Com_Printf( "v offs=%i size=%i\n", offs, size );
 	memcpy( vbo->vbo_buffer + offs, input->xyz, size );
 
+	// normals
 	offs = input->shader->normalOffset + input->shader->curVertexes * sizeof( input->normal[0] );
 	size = input->numVertexes * sizeof( input->normal[ 0 ] );
 	if ( offs + size > vbo->vbo_size ) {
@@ -326,7 +327,6 @@ static void VBO_AddGeometry( vbo_t *vbo, vbo_item_t *vi, shaderCommands_t *input
 	}
 	//Com_Printf( "v offs=%i size=%i\n", offs, size );
 	memcpy( vbo->vbo_buffer + offs, input->normal, size );
-
 
 	vi->num_indexes += input->numIndexes;
 	vi->num_vertexes += input->numVertexes;
@@ -357,7 +357,7 @@ void VBO_PushData( int itemIndex, shaderCommands_t *input )
 	vbo_t *vbo = &world_vbo;
 	vbo_item_t *vi = vbo->items + itemIndex;
 	int i;
-	
+
 	VBO_AddGeometry( vbo, vi, input );
 
 	for ( i = 0; i < MAX_VBO_STAGES; i++ )
@@ -448,7 +448,7 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 			face->vboItemIndex = ++numStaticSurfaces;
 			numStaticVertexes += face->numPoints;	
 			numStaticIndexes += face->numIndices;
-			
+	
 			vbo_size += face->numPoints * (sf->shader->svarsSize + sizeof( tess.xyz[0] ) + sizeof( tess.normal[0] ) );
 			sf->shader->numVertexes += face->numPoints;
 			sf->shader->numIndexes += face->numIndices;
@@ -459,7 +459,7 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 			tris->vboItemIndex = ++numStaticSurfaces;
 			numStaticVertexes += tris->numVerts;
 			numStaticIndexes += tris->numIndexes;
-			
+
 			vbo_size += tris->numVerts * (sf->shader->svarsSize + sizeof( tess.xyz[0] ) + sizeof( tess.normal[0] ) );
 			sf->shader->numVertexes += tris->numVerts;
 			sf->shader->numIndexes += tris->numIndexes;
@@ -471,7 +471,7 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 			RB_SurfaceGridEstimate( grid, &grid->vboExpectVertices, &grid->vboExpectIndices );
 			numStaticVertexes += grid->vboExpectVertices;
 			numStaticIndexes += grid->vboExpectIndices;
-			
+
 			vbo_size += grid->vboExpectVertices * (sf->shader->svarsSize + sizeof( tess.xyz[0] ) + sizeof( tess.normal[0] ) );
 			sf->shader->numVertexes += grid->vboExpectVertices;
 			sf->shader->numIndexes += grid->vboExpectIndices;
@@ -484,8 +484,6 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 		return;
 	}
 
-	Com_Memset( vbo, 0, sizeof( *vbo ) );
-	
 	vbo_size = PAD( vbo_size, 32 );
 
 	ibo_size = numStaticIndexes * sizeof( tess.indexes[0] );
@@ -618,7 +616,7 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 	// release host memory
 	ri.Hunk_FreeTempMemory( vbo->vbo_buffer );
 	vbo->vbo_buffer = NULL;
-	
+
 	// release GPU resources
 	//VBO_Cleanup();
 }
@@ -724,6 +722,7 @@ static void VBO_AddItemDataToSoftBuffer( int itemIndex )
 {
 	vbo_t *vbo = &world_vbo;
 	const vbo_item_t *vi = vbo->items + itemIndex;
+
 	const uint32_t offset = vk_tess_index( vi->num_indexes, vbo->ibo_buffer + vi->soft_offset );
 
 	if ( vbo->soft_buffer_indexes == 0 )
@@ -750,7 +749,7 @@ static void VBO_AddItemRangeToIBOBuffer( int offset, int length )
 
 void VBO_RenderIBOItems( void )
 {
-	vbo_t *vbo = &world_vbo;
+	const vbo_t *vbo = &world_vbo;
 	int i;
 
 	// from device-local memory

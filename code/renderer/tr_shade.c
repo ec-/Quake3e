@@ -389,7 +389,8 @@ static void DrawMultitextured( const shaderCommands_t *input, int stage ) {
 
 	if ( !setArraysOnce ) {
 		R_ComputeColors( pStage );
-		R_ComputeTexCoords( pStage );
+		R_ComputeTexCoords( 0, &pStage->bundle[0] );
+		R_ComputeTexCoords( 1, &pStage->bundle[1] );
 		GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
 
 		qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[0] );
@@ -818,109 +819,108 @@ void R_ComputeColors( const shaderStage_t *pStage )
 R_ComputeTexCoords
 ===============
 */
-void R_ComputeTexCoords( const shaderStage_t *pStage ) {
-	int		i;
-	int		b;
+void R_ComputeTexCoords( int b, const textureBundle_t *bundle ) {
+	int	i;
+	int tm;
 
-	for ( b = 0; b < NUM_TEXTURE_BUNDLES; b++ ) {
-		int tm;
+	if ( !tess.numVertexes )
+		return;
 
-		//
-		// generate the texture coordinates
-		//
-		switch ( pStage->bundle[b].tcGen )
+	//
+	// generate the texture coordinates
+	//
+	switch ( bundle->tcGen )
+	{
+	case TCGEN_IDENTITY:
+		Com_Memset( tess.svars.texcoords[b], 0, sizeof( float ) * 2 * tess.numVertexes );
+		break;
+	case TCGEN_TEXTURE:
+		for ( i = 0 ; i < tess.numVertexes ; i++ ) {
+			tess.svars.texcoords[b][i][0] = tess.texCoords[i][0][0];
+			tess.svars.texcoords[b][i][1] = tess.texCoords[i][0][1];
+		}
+		break;
+	case TCGEN_LIGHTMAP:
+		for ( i = 0 ; i < tess.numVertexes ; i++ ) {
+			tess.svars.texcoords[b][i][0] = tess.texCoords[i][1][0];
+			tess.svars.texcoords[b][i][1] = tess.texCoords[i][1][1];
+		}
+		break;
+	case TCGEN_VECTOR:
+		for ( i = 0 ; i < tess.numVertexes ; i++ ) {
+			tess.svars.texcoords[b][i][0] = DotProduct( tess.xyz[i], bundle->tcGenVectors[0] );
+			tess.svars.texcoords[b][i][1] = DotProduct( tess.xyz[i], bundle->tcGenVectors[1] );
+		}
+		break;
+	case TCGEN_FOG:
+		RB_CalcFogTexCoords( ( float * ) tess.svars.texcoords[b] );
+		break;
+	case TCGEN_ENVIRONMENT_MAPPED:
+		RB_CalcEnvironmentTexCoords( ( float * ) tess.svars.texcoords[b] );
+		break;
+	case TCGEN_ENVIRONMENT_MAPPED_FP:
+		RB_CalcEnvironmentTexCoordsFP( ( float * ) tess.svars.texcoords[b], bundle->isScreenMap );
+		break;
+	case TCGEN_BAD:
+		return;
+	}
+
+	//
+	// alter texture coordinates
+	//
+	for ( tm = 0; tm < bundle->numTexMods ; tm++ ) {
+		switch ( bundle->texMods[tm].type )
 		{
-		case TCGEN_IDENTITY:
-			Com_Memset( tess.svars.texcoords[b], 0, sizeof( float ) * 2 * tess.numVertexes );
+		case TMOD_NONE:
+			tm = TR_MAX_TEXMODS; // break out of for loop
 			break;
-		case TCGEN_TEXTURE:
-			for ( i = 0 ; i < tess.numVertexes ; i++ ) {
-				tess.svars.texcoords[b][i][0] = tess.texCoords[i][0][0];
-				tess.svars.texcoords[b][i][1] = tess.texCoords[i][0][1];
-			}
-			break;
-		case TCGEN_LIGHTMAP:
-			for ( i = 0 ; i < tess.numVertexes ; i++ ) {
-				tess.svars.texcoords[b][i][0] = tess.texCoords[i][1][0];
-				tess.svars.texcoords[b][i][1] = tess.texCoords[i][1][1];
-			}
-			break;
-		case TCGEN_VECTOR:
-			for ( i = 0 ; i < tess.numVertexes ; i++ ) {
-				tess.svars.texcoords[b][i][0] = DotProduct( tess.xyz[i], pStage->bundle[b].tcGenVectors[0] );
-				tess.svars.texcoords[b][i][1] = DotProduct( tess.xyz[i], pStage->bundle[b].tcGenVectors[1] );
-			}
-			break;
-		case TCGEN_FOG:
-			RB_CalcFogTexCoords( ( float * ) tess.svars.texcoords[b] );
-			break;
-		case TCGEN_ENVIRONMENT_MAPPED:
-			RB_CalcEnvironmentTexCoords( ( float * ) tess.svars.texcoords[b] );
-			break;
-		case TCGEN_ENVIRONMENT_MAPPED_FP:
-			RB_CalcEnvironmentTexCoordsFP( ( float * ) tess.svars.texcoords[b], pStage->bundle[b].isScreenMap );
-			break;
-		case TCGEN_BAD:
-			return;
-		}
 
-		//
-		// alter texture coordinates
-		//
-		for ( tm = 0; tm < pStage->bundle[b].numTexMods ; tm++ ) {
-			switch ( pStage->bundle[b].texMods[tm].type )
-			{
-			case TMOD_NONE:
-				tm = TR_MAX_TEXMODS; // break out of for loop
-				break;
+		case TMOD_TURBULENT:
+			RB_CalcTurbulentTexCoords( &bundle->texMods[tm].wave, 
+				( float * ) tess.svars.texcoords[b] );
+			break;
 
-			case TMOD_TURBULENT:
-				RB_CalcTurbulentTexCoords( &pStage->bundle[b].texMods[tm].wave, 
-					( float * ) tess.svars.texcoords[b] );
-				break;
+		case TMOD_ENTITY_TRANSLATE:
+			RB_CalcScrollTexCoords( backEnd.currentEntity->e.shaderTexCoord,
+				( float * ) tess.svars.texcoords[b] );
+			break;
 
-			case TMOD_ENTITY_TRANSLATE:
-				RB_CalcScrollTexCoords( backEnd.currentEntity->e.shaderTexCoord,
-					( float * ) tess.svars.texcoords[b] );
-				break;
+		case TMOD_SCROLL:
+			RB_CalcScrollTexCoords( bundle->texMods[tm].scroll,
+				 ( float * ) tess.svars.texcoords[b] );
+			break;
 
-			case TMOD_SCROLL:
-				RB_CalcScrollTexCoords( pStage->bundle[b].texMods[tm].scroll,
-					 ( float * ) tess.svars.texcoords[b] );
-				break;
-
-			case TMOD_SCALE:
-				RB_CalcScaleTexCoords( pStage->bundle[b].texMods[tm].scale,
-					( float * ) tess.svars.texcoords[b] );
-				break;
+		case TMOD_SCALE:
+			RB_CalcScaleTexCoords( bundle->texMods[tm].scale,
+				( float * ) tess.svars.texcoords[b] );
+			break;
 			
-			case TMOD_STRETCH:
-				RB_CalcStretchTexCoords( &pStage->bundle[b].texMods[tm].wave, 
-					( float * ) tess.svars.texcoords[b] );
-				break;
+		case TMOD_STRETCH:
+			RB_CalcStretchTexCoords( &bundle->texMods[tm].wave, 
+				( float * ) tess.svars.texcoords[b] );
+			break;
 
-			case TMOD_TRANSFORM:
-				RB_CalcTransformTexCoords( &pStage->bundle[b].texMods[tm],
-					( float * ) tess.svars.texcoords[b] );
-				break;
+		case TMOD_TRANSFORM:
+			RB_CalcTransformTexCoords( &bundle->texMods[tm],
+				( float * ) tess.svars.texcoords[b] );
+			break;
 
-			case TMOD_ROTATE:
-				RB_CalcRotateTexCoords( pStage->bundle[b].texMods[tm].rotateSpeed,
-					( float * ) tess.svars.texcoords[b] );
-				break;
+		case TMOD_ROTATE:
+			RB_CalcRotateTexCoords( bundle->texMods[tm].rotateSpeed,
+				( float * ) tess.svars.texcoords[b] );
+			break;
 
-			default:
-				ri.Error( ERR_DROP, "ERROR: unknown texmod '%d' in shader '%s'", pStage->bundle[b].texMods[tm].type, tess.shader->name );
-				break;
-			}
+		default:
+			ri.Error( ERR_DROP, "ERROR: unknown texmod '%d' in shader '%s'", bundle->texMods[tm].type, tess.shader->name );
+			break;
 		}
+	}
 
-		if ( r_mergeLightmaps->integer && pStage->bundle[b].isLightmap && pStage->bundle[b].tcGen != TCGEN_LIGHTMAP ) {
-			// adjust texture coordinates to map on proper lightmap
-			for ( i = 0 ; i < tess.numVertexes ; i++ ) {
-				tess.svars.texcoords[b][i][0] = (tess.svars.texcoords[b][i][0] * tr.lightmapScale[0] ) + tess.shader->lightmapOffset[0];
-				tess.svars.texcoords[b][i][1] = (tess.svars.texcoords[b][i][1] * tr.lightmapScale[1] ) + tess.shader->lightmapOffset[1];
-			}
+	if ( r_mergeLightmaps->integer && bundle->isLightmap && bundle->tcGen != TCGEN_LIGHTMAP ) {
+		// adjust texture coordinates to map on proper lightmap
+		for ( i = 0 ; i < tess.numVertexes ; i++ ) {
+			tess.svars.texcoords[b][i][0] = (tess.svars.texcoords[b][i][0] * tr.lightmapScale[0] ) + tess.shader->lightmapOffset[0];
+			tess.svars.texcoords[b][i][1] = (tess.svars.texcoords[b][i][1] * tr.lightmapScale[1] ) + tess.shader->lightmapOffset[1];
 		}
 	}
 }
@@ -951,7 +951,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 		{
 			if ( !setArraysOnce )
 			{
-				R_ComputeTexCoords( pStage );
+				R_ComputeTexCoords( 0, &pStage->bundle[0] );
 				R_ComputeColors( pStage );
 
 				GL_ClientState( 1, CLS_NONE );
@@ -1052,10 +1052,11 @@ void RB_StageIteratorGeneric( void )
 		if ( tess.xstages[0] )
 		{
 			R_ComputeColors( tess.xstages[0] );
-			R_ComputeTexCoords( tess.xstages[0] );
+			R_ComputeTexCoords( 0, &tess.xstages[0]->bundle[0] );
 			if ( shader->multitextureEnv )
 			{
 				GL_ClientState( 1, CLS_TEXCOORD_ARRAY );
+				R_ComputeTexCoords( 1, &tess.xstages[0]->bundle[1] );
 				qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[1] );
 			}
 			else

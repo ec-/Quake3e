@@ -606,7 +606,7 @@ static void ProjectDlightTexture_scalar( void ) {
 
 #ifndef USE_VULKAN
 		GL_ClientState( 1, CLS_NONE );
-		GL_ClientState( 0, CLS_TEXCOORD_ARRAY | GLS_COLOR_ARRAY );
+		GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
 
 		qglTexCoordPointer( 2, GL_FLOAT, 0, texCoordsArray[0] );
 		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, colorArray );
