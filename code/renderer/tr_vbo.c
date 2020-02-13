@@ -1178,6 +1178,8 @@ static const fogProgramParms_t *VBO_SetupFog( int VPindex, int FPindex )
 	GLuint vp, fp;
 
 	GL_BindTexture( 2, tr.fogImage->texnum );
+	GL_SelectTexture( 0 );
+
 	fparm = RB_CalcFogProgramParms();
 	if ( fparm->eyeOutside )
 		vp = vbo_vp[ VPindex + 1 ];
