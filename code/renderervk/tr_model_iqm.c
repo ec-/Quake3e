@@ -1264,7 +1264,7 @@ void RB_IQMSurfaceAnim( surfaceType_t *surface ) {
 	byte		*color;
 	vec4_t		*outXYZ;
 	vec4_t		*outNormal;
-	vec2_t		(*outTexCoord)[2];
+	float		*outTexCoord;
 	color4ub_t	*outColor;
 
 	int	frame = data->num_frames ? backEnd.currentEntity->e.frame % data->num_frames : 0;
@@ -1289,7 +1289,7 @@ void RB_IQMSurfaceAnim( surfaceType_t *surface ) {
 
 	outXYZ = &tess.xyz[tess.numVertexes];
 	outNormal = &tess.normal[tess.numVertexes];
-	outTexCoord = &tess.texCoords[tess.numVertexes];
+	outTexCoord = &tess.texCoords[0][tess.numVertexes][0];
 	outColor = &tess.vertexColors[tess.numVertexes];
 
 	if ( data->num_poses > 0 ) {
@@ -1382,13 +1382,13 @@ void RB_IQMSurfaceAnim( surfaceType_t *surface ) {
 		// transform vertexes and fill other data
 		for( i = 0; i < surf->num_vertexes;
 		     i++, xyz+=3, normal+=3, texCoords+=2,
-		     outXYZ++, outNormal++, outTexCoord++ ) {
+		     outXYZ++, outNormal++, outTexCoord+=2 ) {
 			int influence = data->influences[surf->first_vertex + i] - surf->first_influence;
 			float *vtxMat = &influenceVtxMat[12*influence];
 			float *nrmMat = &influenceNrmMat[9*influence];
 
-			(*outTexCoord)[0][0] = texCoords[0];
-			(*outTexCoord)[0][1] = texCoords[1];
+			outTexCoord[0] = texCoords[0];
+			outTexCoord[1] = texCoords[1];
 
 			(*outXYZ)[0] =
 				vtxMat[ 0] * xyz[0] +
@@ -1422,10 +1422,10 @@ void RB_IQMSurfaceAnim( surfaceType_t *surface ) {
 	} else {
 		// copy vertexes and fill other data
 		for( i = 0; i < surf->num_vertexes;
-		     i++, xyz+=3, normal+=3, texCoords+=2,
-		     outXYZ++, outNormal++, outTexCoord++ ) {
-			(*outTexCoord)[0][0] = texCoords[0];
-			(*outTexCoord)[0][1] = texCoords[1];
+			i++, xyz+=3, normal+=3, texCoords+=2,
+			outXYZ++, outNormal++, outTexCoord+=2 ) {
+			outTexCoord[0] = texCoords[0];
+			outTexCoord[1] = texCoords[1];
 
 			(*outXYZ)[0] = xyz[0];
 			(*outXYZ)[1] = xyz[1];

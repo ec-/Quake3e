@@ -30,127 +30,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
   This file deals with applying shaders to surface data in the tess struct.
 */
 
-/*
-================
-R_ArrayElementDiscrete
-
-This is just for OpenGL conformance testing, it should never be the fastest
-================
-*/
-#if 0
-static void APIENTRY R_ArrayElementDiscrete( GLint index ) {
-	qglColor4ubv( tess.svars.colors[ index ] );
-	if ( glState.currenttmu ) {
-		qglMultiTexCoord2fARB( 0, tess.svars.texcoords[ 0 ][ index ][0], tess.svars.texcoords[ 0 ][ index ][1] );
-		qglMultiTexCoord2fARB( 1, tess.svars.texcoords[ 1 ][ index ][0], tess.svars.texcoords[ 1 ][ index ][1] );
-	} else {
-		qglTexCoord2fv( tess.svars.texcoords[ 0 ][ index ] );
-	}
-	qglVertex3fv( tess.xyz[ index ] );
-}
-
-
-/*
-===================
-R_DrawStripElements
-===================
-*/
-static int		c_vertexes;		// for seeing how long our average strips are
-static int		c_begins;
-static void R_DrawStripElements( int numIndexes, const glIndex_t *indexes, void ( APIENTRY *element )(GLint) ) {
-	int i;
-	glIndex_t last[3] = { MAX_UINT, MAX_UINT, MAX_UINT };
-	qboolean even;
-
-	c_begins++;
-
-	if ( numIndexes <= 0 ) {
-		return;
-	}
-
-	qglBegin( GL_TRIANGLE_STRIP );
-
-	// prime the strip
-	element( indexes[0] );
-	element( indexes[1] );
-	element( indexes[2] );
-	c_vertexes += 3;
-
-	last[0] = indexes[0];
-	last[1] = indexes[1];
-	last[2] = indexes[2];
-
-	even = qfalse;
-
-	for ( i = 3; i < numIndexes; i += 3 )
-	{
-		// odd numbered triangle in potential strip
-		if ( !even )
-		{
-			// check previous triangle to see if we're continuing a strip
-			if ( ( indexes[i+0] == last[2] ) && ( indexes[i+1] == last[1] ) )
-			{
-				element( indexes[i+2] );
-				c_vertexes++;
-				assert( indexes[i+2] < tess.numVertexes );
-				even = qtrue;
-			}
-			// otherwise we're done with this strip so finish it and start
-			// a new one
-			else
-			{
-				qglEnd();
-
-				qglBegin( GL_TRIANGLE_STRIP );
-				c_begins++;
-
-				element( indexes[i+0] );
-				element( indexes[i+1] );
-				element( indexes[i+2] );
-
-				c_vertexes += 3;
-
-				even = qfalse;
-			}
-		}
-		else
-		{
-			// check previous triangle to see if we're continuing a strip
-			if ( ( last[2] == indexes[i+1] ) && ( last[0] == indexes[i+0] ) )
-			{
-				element( indexes[i+2] );
-				c_vertexes++;
-
-				even = qfalse;
-			}
-			// otherwise we're done with this strip so finish it and start
-			// a new one
-			else
-			{
-				qglEnd();
-
-				qglBegin( GL_TRIANGLE_STRIP );
-				c_begins++;
-
-				element( indexes[i+0] );
-				element( indexes[i+1] );
-				element( indexes[i+2] );
-				c_vertexes += 3;
-
-				even = qfalse;
-			}
-		}
-
-		// cache the last three vertices
-		last[0] = indexes[i+0];
-		last[1] = indexes[i+1];
-		last[2] = indexes[i+2];
-	}
-
-	qglEnd();
-}
-#endif
-
 
 /*
 ==================
@@ -158,12 +37,7 @@ R_DrawElements
 ==================
 */
 void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
-
-	//if ( qglLockArraysEXT ) {
-		qglDrawElements( GL_TRIANGLES, numIndexes, GL_INDEX_TYPE, indexes );
-	//} else {
-	//	R_DrawStripElements( numIndexes,  indexes, qglArrayElement );
-	//}
+	qglDrawElements( GL_TRIANGLES, numIndexes, GL_INDEX_TYPE, indexes );
 }
 
 
@@ -344,7 +218,11 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 	if ( tess.fogNum != fogNum ) {
 		tess.dlightUpdateParams = qtrue;
 	}
+	tess.needsNormal = state->needsNormal || tess.dlightPass || r_shownormals->integer;
+#else
+	tess.needsNormal = state->needsNormal || r_shownormals->integer;
 #endif
+	tess.needsST2 = state->needsST2;
 
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
@@ -393,11 +271,11 @@ static void DrawMultitextured( const shaderCommands_t *input, int stage ) {
 		R_ComputeTexCoords( 1, &pStage->bundle[1] );
 		GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
 
-		qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[0] );
+		qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoordPtr[0] );
 		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors );
 
 		GL_ClientState( 1, CLS_TEXCOORD_ARRAY );
-		qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[1] );
+		qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoordPtr[1] );
 	}
 
 	//
@@ -819,12 +697,15 @@ void R_ComputeColors( const shaderStage_t *pStage )
 R_ComputeTexCoords
 ===============
 */
-void R_ComputeTexCoords( int b, const textureBundle_t *bundle ) {
+void R_ComputeTexCoords( const int b, const textureBundle_t *bundle ) {
 	int	i;
 	int tm;
+	vec2_t *src, *dst;
 
 	if ( !tess.numVertexes )
 		return;
+
+	src = dst = tess.svars.texcoords[b];
 
 	//
 	// generate the texture coordinates
@@ -832,34 +713,28 @@ void R_ComputeTexCoords( int b, const textureBundle_t *bundle ) {
 	switch ( bundle->tcGen )
 	{
 	case TCGEN_IDENTITY:
-		Com_Memset( tess.svars.texcoords[b], 0, sizeof( float ) * 2 * tess.numVertexes );
+		src = tess.texCoords00;
 		break;
 	case TCGEN_TEXTURE:
-		for ( i = 0 ; i < tess.numVertexes ; i++ ) {
-			tess.svars.texcoords[b][i][0] = tess.texCoords[i][0][0];
-			tess.svars.texcoords[b][i][1] = tess.texCoords[i][0][1];
-		}
+		src = tess.texCoords[0];
 		break;
 	case TCGEN_LIGHTMAP:
-		for ( i = 0 ; i < tess.numVertexes ; i++ ) {
-			tess.svars.texcoords[b][i][0] = tess.texCoords[i][1][0];
-			tess.svars.texcoords[b][i][1] = tess.texCoords[i][1][1];
-		}
+		src = tess.texCoords[1];
 		break;
 	case TCGEN_VECTOR:
 		for ( i = 0 ; i < tess.numVertexes ; i++ ) {
-			tess.svars.texcoords[b][i][0] = DotProduct( tess.xyz[i], bundle->tcGenVectors[0] );
-			tess.svars.texcoords[b][i][1] = DotProduct( tess.xyz[i], bundle->tcGenVectors[1] );
+			dst[i][0] = DotProduct( tess.xyz[i], bundle->tcGenVectors[0] );
+			dst[i][1] = DotProduct( tess.xyz[i], bundle->tcGenVectors[1] );
 		}
 		break;
 	case TCGEN_FOG:
-		RB_CalcFogTexCoords( ( float * ) tess.svars.texcoords[b] );
+		RB_CalcFogTexCoords( ( float * ) dst );
 		break;
 	case TCGEN_ENVIRONMENT_MAPPED:
-		RB_CalcEnvironmentTexCoords( ( float * ) tess.svars.texcoords[b] );
+		RB_CalcEnvironmentTexCoords( ( float * ) dst );
 		break;
 	case TCGEN_ENVIRONMENT_MAPPED_FP:
-		RB_CalcEnvironmentTexCoordsFP( ( float * ) tess.svars.texcoords[b], bundle->isScreenMap );
+		RB_CalcEnvironmentTexCoordsFP( ( float * ) dst, bundle->isScreenMap );
 		break;
 	case TCGEN_BAD:
 		return;
@@ -876,38 +751,38 @@ void R_ComputeTexCoords( int b, const textureBundle_t *bundle ) {
 			break;
 
 		case TMOD_TURBULENT:
-			RB_CalcTurbulentTexCoords( &bundle->texMods[tm].wave, 
-				( float * ) tess.svars.texcoords[b] );
+			RB_CalcTurbulentTexCoords( &bundle->texMods[tm].wave, (float *)src, (float *) dst );
+			src = dst;
 			break;
 
 		case TMOD_ENTITY_TRANSLATE:
-			RB_CalcScrollTexCoords( backEnd.currentEntity->e.shaderTexCoord,
-				( float * ) tess.svars.texcoords[b] );
+			RB_CalcScrollTexCoords( backEnd.currentEntity->e.shaderTexCoord, (float *)src, (float *) dst );
+			src = dst;
 			break;
 
 		case TMOD_SCROLL:
-			RB_CalcScrollTexCoords( bundle->texMods[tm].scroll,
-				 ( float * ) tess.svars.texcoords[b] );
+			RB_CalcScrollTexCoords( bundle->texMods[tm].scroll, (float *)src, (float *) dst );
+			src = dst;
 			break;
 
 		case TMOD_SCALE:
-			RB_CalcScaleTexCoords( bundle->texMods[tm].scale,
-				( float * ) tess.svars.texcoords[b] );
+			RB_CalcScaleTexCoords( bundle->texMods[tm].scale, (float *) src, (float *) dst );
+			src = dst;
 			break;
 			
 		case TMOD_STRETCH:
-			RB_CalcStretchTexCoords( &bundle->texMods[tm].wave, 
-				( float * ) tess.svars.texcoords[b] );
+			RB_CalcStretchTexCoords( &bundle->texMods[tm].wave, (float *)src, (float *) dst );
+			src = dst;
 			break;
 
 		case TMOD_TRANSFORM:
-			RB_CalcTransformTexCoords( &bundle->texMods[tm],
-				( float * ) tess.svars.texcoords[b] );
+			RB_CalcTransformTexCoords( &bundle->texMods[tm], (float *)src, (float *) dst );
+			src = dst;
 			break;
 
 		case TMOD_ROTATE:
-			RB_CalcRotateTexCoords( bundle->texMods[tm].rotateSpeed,
-				( float * ) tess.svars.texcoords[b] );
+			RB_CalcRotateTexCoords( bundle->texMods[tm].rotateSpeed, (float *) src, (float *) dst );
+			src = dst;
 			break;
 
 		default:
@@ -919,10 +794,13 @@ void R_ComputeTexCoords( int b, const textureBundle_t *bundle ) {
 	if ( r_mergeLightmaps->integer && bundle->isLightmap && bundle->tcGen != TCGEN_LIGHTMAP ) {
 		// adjust texture coordinates to map on proper lightmap
 		for ( i = 0 ; i < tess.numVertexes ; i++ ) {
-			tess.svars.texcoords[b][i][0] = (tess.svars.texcoords[b][i][0] * tr.lightmapScale[0] ) + tess.shader->lightmapOffset[0];
-			tess.svars.texcoords[b][i][1] = (tess.svars.texcoords[b][i][1] * tr.lightmapScale[1] ) + tess.shader->lightmapOffset[1];
+			dst[i][0] = (src[i][0] * tr.lightmapScale[0] ) + tess.shader->lightmapOffset[0];
+			dst[i][1] = (src[i][1] * tr.lightmapScale[1] ) + tess.shader->lightmapOffset[1];
 		}
+		src = dst;
 	}
+
+	tess.svars.texcoordPtr[ b ] = src;
 }
 
 
@@ -957,7 +835,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 				GL_ClientState( 1, CLS_NONE );
 				GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
 
-				qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[0] );
+				qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoordPtr[0] );
 				qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors );
 			}
 
@@ -1049,25 +927,25 @@ void RB_StageIteratorGeneric( void )
 		// FIXME: we can't do that if going to lighting/fog later?
 		setArraysOnce = qtrue;
 
+		GL_ClientState( 0, CLS_COLOR_ARRAY | CLS_TEXCOORD_ARRAY );
+
 		if ( tess.xstages[0] )
 		{
 			R_ComputeColors( tess.xstages[0] );
+			qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors );
 			R_ComputeTexCoords( 0, &tess.xstages[0]->bundle[0] );
+			qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoordPtr[0] );
 			if ( shader->multitextureEnv )
 			{
 				GL_ClientState( 1, CLS_TEXCOORD_ARRAY );
 				R_ComputeTexCoords( 1, &tess.xstages[0]->bundle[1] );
-				qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[1] );
+				qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoordPtr[1] );
 			}
 			else
 			{
 				GL_ClientState( 1, CLS_NONE );
 			}
 		}
-
-		GL_ClientState( 0, CLS_COLOR_ARRAY | CLS_TEXCOORD_ARRAY );
-		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors );
-		qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[0] );
 	}
 
 	qglVertexPointer( 3, GL_FLOAT, sizeof( input->xyz[0] ), input->xyz ); // padded for SIMD

@@ -4789,11 +4789,11 @@ void vk_bind_geometry_ext( int flags )
 		}
 
 		if ( flags & TESS_ST0 ) {
-			vk_bind_attr(2, sizeof(tess.svars.texcoords[0][0]), &tess.svars.texcoords[0][0]);
+			vk_bind_attr(2, sizeof(tess.svars.texcoords[0][0]), tess.svars.texcoordPtr[0]);
 		}
 
 		if ( flags & TESS_ST1 ) {
-			vk_bind_attr(3, sizeof(tess.svars.texcoords[1][0]), &tess.svars.texcoords[1][0]);
+			vk_bind_attr(3, sizeof(tess.svars.texcoords[1][0]), tess.svars.texcoordPtr[1]);
 		}
 
 		if ( flags & TESS_NNN ) {

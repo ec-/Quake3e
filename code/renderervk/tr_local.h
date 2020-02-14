@@ -27,7 +27,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define USE_FOG_ONLY
 #define USE_FOG_COLLAPSE
 //#define USE_LEGACY_DLIGHTS	// vq3 dynamic lights
-#define USE_PMLIGHT			// promode dynamic lights via \r_dlightMode 1
+#define USE_PMLIGHT			// promode dynamic lights via \r_dlightMode 1|2
 #define MAX_REAL_DLIGHTS	(MAX_DLIGHTS*2)
 #define MAX_LITSURFS		(MAX_DRAWSURFS)
 #define	MAX_FLARES			256
@@ -429,9 +429,9 @@ typedef struct shader_s {
 	fogPass_t	fogPass;				// draw a blended pass, possibly with depth test equals
 
 	qboolean	needsNormal;			// not all shaders will need all data to be gathered
-	qboolean	needsST1;
+	//qboolean	needsST1;
 	qboolean	needsST2;
-	qboolean	needsColor;
+	//qboolean	needsColor;
 
 	int			numDeforms;
 	deformStage_t	deforms[MAX_SHADER_DEFORMS];
@@ -1459,17 +1459,19 @@ typedef byte color4ub_t[4];
 
 typedef struct stageVars
 {
-	color4ub_t	colors[SHADER_MAX_VERTEXES*2];
+	color4ub_t	colors[SHADER_MAX_VERTEXES*2]; // 2x needed for shadows
 	vec2_t		texcoords[NUM_TEXTURE_BUNDLES][SHADER_MAX_VERTEXES];
+	vec2_t		*texcoordPtr[2];
 } stageVars_t;
 
 typedef struct shaderCommands_s 
 {
 #pragma pack(push,16)
 	glIndex_t	indexes[SHADER_MAX_INDEXES] QALIGN(16);
-	vec4_t		xyz[SHADER_MAX_VERTEXES*2] QALIGN(16);
+	vec4_t		xyz[SHADER_MAX_VERTEXES*2] QALIGN(16); // 2x needed for shadows
 	vec4_t		normal[SHADER_MAX_VERTEXES] QALIGN(16);
-	vec2_t		texCoords[SHADER_MAX_VERTEXES][2] QALIGN(16);
+	vec2_t		texCoords[2][SHADER_MAX_VERTEXES] QALIGN(16);
+	vec2_t		texCoords00[SHADER_MAX_VERTEXES] QALIGN(16);
 	color4ub_t	vertexColors[SHADER_MAX_VERTEXES] QALIGN(16);
 #ifdef USE_LEGACY_DLIGHTS
 	int			vertexDlightBits[SHADER_MAX_VERTEXES] QALIGN(16);
@@ -1506,6 +1508,9 @@ typedef struct shaderCommands_s
 #endif
 
 	// info extracted from current shader
+	int			needsNormal;
+	int			needsST2;
+
 	int			numPasses;
 	shaderStage_t **xstages;
 
@@ -1574,7 +1579,7 @@ qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t 
 void R_BindAnimatedImage( const textureBundle_t *bundle );
 void R_DrawElements( int numIndexes, const glIndex_t *indexes );
 void R_ComputeColors( const shaderStage_t *pStage );
-void R_ComputeTexCoords( int b, const textureBundle_t *bundle );
+void R_ComputeTexCoords( const int b, const textureBundle_t *bundle );
 
 /*
 ============================================================
@@ -1699,11 +1704,11 @@ void	RB_CalcEnvironmentTexCoords( float *dstTexCoords );
 void	RB_CalcEnvironmentTexCoordsFP( float *dstTexCoords, int screenMap );
 void	RB_CalcFogTexCoords( float *dstTexCoords );
 const fogProgramParms_t *RB_CalcFogProgramParms( void );
-void	RB_CalcScrollTexCoords( const float scroll[2], float *dstTexCoords );
-void	RB_CalcRotateTexCoords( float rotSpeed, float *dstTexCoords );
-void	RB_CalcScaleTexCoords( const float scale[2], float *dstTexCoords );
-void	RB_CalcTurbulentTexCoords( const waveForm_t *wf, float *dstTexCoords );
-void	RB_CalcTransformTexCoords( const texModInfo_t *tmi, float *dstTexCoords );
+void	RB_CalcScrollTexCoords( const float scroll[2], float *srcTexCoords, float *dstTexCoords );
+void	RB_CalcRotateTexCoords( float rotSpeed, float *srcTexCoords, float *dstTexCoords );
+void	RB_CalcScaleTexCoords( const float scale[2], float *srcTexCoords, float *dstTexCoords );
+void	RB_CalcTurbulentTexCoords( const waveForm_t *wf, float *srcTexCoords, float *dstTexCoords );
+void	RB_CalcTransformTexCoords( const texModInfo_t *tmi, float *srcTexCoords, float *dstTexCoords );
 void	RB_CalcModulateColorsByFog( unsigned char *dstColors );
 void	RB_CalcModulateAlphasByFog( unsigned char *dstColors );
 void	RB_CalcModulateRGBAsByFog( unsigned char *dstColors );
@@ -1711,7 +1716,7 @@ void	RB_CalcWaveAlpha( const waveForm_t *wf, unsigned char *dstColors );
 void	RB_CalcWaveColor( const waveForm_t *wf, unsigned char *dstColors );
 void	RB_CalcAlphaFromEntity( unsigned char *dstColors );
 void	RB_CalcAlphaFromOneMinusEntity( unsigned char *dstColors );
-void	RB_CalcStretchTexCoords( const waveForm_t *wf, float *texCoords );
+void	RB_CalcStretchTexCoords( const waveForm_t *wf, float *srcTexCoords, float *dstTexCoords );
 void	RB_CalcColorFromEntity( unsigned char *dstColors );
 void	RB_CalcColorFromOneMinusEntity( unsigned char *dstColors );
 void	RB_CalcSpecularAlpha( unsigned char *alphas );

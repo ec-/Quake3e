@@ -343,7 +343,7 @@ void ARB_LightingPass( void )
 
 	// since this is guaranteed to be a single pass, fill and lock all the arrays
 
-	qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[ 0 ] );
+	qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoordPtr[0] );
 	qglNormalPointer( GL_FLOAT, 16, tess.normal );
 	qglVertexPointer( 3, GL_FLOAT, 16, tess.xyz );
 

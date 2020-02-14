@@ -423,7 +423,7 @@ static qboolean CullSkySide( const int mins[2], const int maxs[2] )
 }
 
 
-static void FillSkySide( const int mins[2], const int maxs[2], qboolean svars )
+static void FillSkySide( const int mins[2], const int maxs[2] )
 {
 	const int vertexStart = tess.numVertexes;
 	const int tHeight = maxs[1] - mins[1] + 1;
@@ -448,16 +448,8 @@ static void FillSkySide( const int mins[2], const int maxs[2], qboolean svars )
 		for ( s = mins[0]+HALF_SKY_SUBDIVISIONS; s <= maxs[0]+HALF_SKY_SUBDIVISIONS; s++ )
 		{
 			VectorAdd( s_skyPoints[t][s], backEnd.viewParms.or.origin, tess.xyz[ tess.numVertexes ] );
-			if ( svars )
-			{
-				tess.svars.texcoords[0][tess.numVertexes][0] = s_skyTexCoords[t][s][0];
-				tess.svars.texcoords[0][tess.numVertexes][1] = s_skyTexCoords[t][s][1];
-			}
-			else
-			{
-				tess.texCoords[tess.numVertexes][0][0] = s_skyTexCoords[t][s][0];
-				tess.texCoords[tess.numVertexes][0][1] = s_skyTexCoords[t][s][1];
-			}
+			tess.texCoords[0][tess.numVertexes][0] = s_skyTexCoords[t][s][0];
+			tess.texCoords[0][tess.numVertexes][1] = s_skyTexCoords[t][s][1];
 			tess.numVertexes++;
 		}
 	}
@@ -489,14 +481,14 @@ static void DrawSkySide( image_t *image, const int mins[2], const int maxs[2] )
 	tess.numVertexes = 0;
 	tess.numIndexes = 0;
 
-	FillSkySide( mins, maxs, qtrue );
+	FillSkySide( mins, maxs );
 
 	if ( tess.numIndexes )
 	{
 		GL_Bind( image );
 
 		qglVertexPointer( 3, GL_FLOAT, 16, tess.xyz );
-		qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[0] );
+		qglTexCoordPointer( 2, GL_FLOAT, 0, tess.texCoords[0] );
 
 		R_DrawElements( tess.numIndexes, tess.indexes );
 
@@ -662,7 +654,7 @@ static void FillCloudBox( void )
 			}
 		}
 
-		FillSkySide( sky_mins_subd, sky_maxs_subd, qfalse );
+		FillSkySide( sky_mins_subd, sky_maxs_subd );
 	}
 }
 

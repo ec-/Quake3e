@@ -37,7 +37,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "qgl.h"
 
 #define GL_INDEX_TYPE		GL_UNSIGNED_INT
-typedef unsigned int glIndex_t;
+
+typedef uint32_t glIndex_t;
 
 #define	REFENTITYNUM_BITS	12	// as we actually using only 1 bit for dlight mask in opengl1 renderer
 #define	REFENTITYNUM_MASK	((1<<REFENTITYNUM_BITS) - 1)
@@ -381,9 +382,9 @@ typedef struct shader_s {
 	fogPass_t	fogPass;				// draw a blended pass, possibly with depth test equals
 
 	qboolean	needsNormal;			// not all shaders will need all data to be gathered
-	qboolean	needsST1;
+	//qboolean	needsST1;
 	qboolean	needsST2;
-	qboolean	needsColor;
+	//qboolean	needsColor;
 
 	int			numDeforms;
 	deformStage_t	deforms[MAX_SHADER_DEFORMS];
@@ -405,7 +406,7 @@ typedef struct shader_s {
 	int			curVertexes;
 	int			curIndexes;
 
-	qboolean	hasScreenMap;
+	int			hasScreenMap;
 
 	float		lightmapOffset[2];	// within merged lightmap
 
@@ -1410,15 +1411,17 @@ typedef struct stageVars
 {
 	color4ub_t	colors[SHADER_MAX_VERTEXES];
 	vec2_t		texcoords[NUM_TEXTURE_BUNDLES][SHADER_MAX_VERTEXES];
+	vec2_t		*texcoordPtr[2];
 } stageVars_t;
 
 typedef struct shaderCommands_s 
 {
 #pragma pack(push,16)
 	glIndex_t	indexes[SHADER_MAX_INDEXES] QALIGN(16);
-	vec4_t		xyz[SHADER_MAX_VERTEXES*2] QALIGN(16);
+	vec4_t		xyz[SHADER_MAX_VERTEXES*2] QALIGN(16); // 2x needed for shadows
 	vec4_t		normal[SHADER_MAX_VERTEXES] QALIGN(16);
-	vec2_t		texCoords[SHADER_MAX_VERTEXES][2] QALIGN(16);
+	vec2_t		texCoords[2][SHADER_MAX_VERTEXES] QALIGN(16);
+	vec2_t		texCoords00[SHADER_MAX_VERTEXES] QALIGN(16);
 	color4ub_t	vertexColors[SHADER_MAX_VERTEXES] QALIGN(16);
 #ifdef USE_LEGACY_DLIGHTS
 	int			vertexDlightBits[SHADER_MAX_VERTEXES] QALIGN(16);
@@ -1448,6 +1451,9 @@ typedef struct shaderCommands_s
 #endif
 
 	// info extracted from current shader
+	int			needsNormal;
+	int			needsST2;
+
 	int			numPasses;
 	shaderStage_t **xstages;
 
@@ -1517,7 +1523,7 @@ qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t 
 void R_BindAnimatedImage( const textureBundle_t *bundle );
 void R_DrawElements( int numIndexes, const glIndex_t *indexes );
 void R_ComputeColors( const shaderStage_t *pStage );
-void R_ComputeTexCoords( int b, const textureBundle_t *bundle );
+void R_ComputeTexCoords( const int b, const textureBundle_t *bundle );
 
 void QGL_InitARB( void );
 void QGL_DoneARB( void );
@@ -1662,11 +1668,11 @@ void	RB_CalcEnvironmentTexCoords( float *dstTexCoords );
 void	RB_CalcEnvironmentTexCoordsFP( float *dstTexCoords, qboolean screenMap );
 void	RB_CalcFogTexCoords( float *dstTexCoords );
 const fogProgramParms_t *RB_CalcFogProgramParms( void );
-void	RB_CalcScrollTexCoords( const float scroll[2], float *dstTexCoords );
-void	RB_CalcRotateTexCoords( float rotSpeed, float *dstTexCoords );
-void	RB_CalcScaleTexCoords( const float scale[2], float *dstTexCoords );
-void	RB_CalcTurbulentTexCoords( const waveForm_t *wf, float *dstTexCoords );
-void	RB_CalcTransformTexCoords( const texModInfo_t *tmi, float *dstTexCoords );
+void	RB_CalcScrollTexCoords( const float scroll[2], float *srcTexCoords, float *dstTexCoords );
+void	RB_CalcRotateTexCoords( float rotSpeed, float *srcTexCoords, float *dstTexCoords );
+void	RB_CalcScaleTexCoords( const float scale[2], float *srcTexCoords, float *dstTexCoords );
+void	RB_CalcTurbulentTexCoords( const waveForm_t *wf, float *srcTexCoords, float *dstTexCoords );
+void	RB_CalcTransformTexCoords( const texModInfo_t *tmi, float *srcTexCoords, float *dstTexCoords );
 void	RB_CalcModulateColorsByFog( unsigned char *dstColors );
 void	RB_CalcModulateAlphasByFog( unsigned char *dstColors );
 void	RB_CalcModulateRGBAsByFog( unsigned char *dstColors );
@@ -1674,7 +1680,7 @@ void	RB_CalcWaveAlpha( const waveForm_t *wf, unsigned char *dstColors );
 void	RB_CalcWaveColor( const waveForm_t *wf, unsigned char *dstColors );
 void	RB_CalcAlphaFromEntity( unsigned char *dstColors );
 void	RB_CalcAlphaFromOneMinusEntity( unsigned char *dstColors );
-void	RB_CalcStretchTexCoords( const waveForm_t *wf, float *texCoords );
+void	RB_CalcStretchTexCoords( const waveForm_t *wf, float *srcTexCoords, float *dstTexCoords );
 void	RB_CalcColorFromEntity( unsigned char *dstColors );
 void	RB_CalcColorFromOneMinusEntity( unsigned char *dstColors );
 void	RB_CalcSpecularAlpha( unsigned char *alphas );

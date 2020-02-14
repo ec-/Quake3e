@@ -217,11 +217,11 @@ void GL_State( unsigned stateBits )
 	//
 	// check blend bits
 	//
-	if ( diff & ( GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS ) )
+	if ( diff & GLS_BLEND_BITS )
 	{
 		GLenum srcFactor = GL_ONE, dstFactor = GL_ONE;
 
-		if ( stateBits & ( GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS ) )
+		if ( stateBits & GLS_BLEND_BITS )
 		{
 			switch ( stateBits & GLS_SRCBLEND_BITS )
 			{
@@ -391,25 +391,25 @@ void GL_ClientState( int unit, unsigned stateBits )
 
 	GL_SelectClientTexture( unit );
 
-	if ( diff & GLS_COLOR_ARRAY )
+	if ( diff & CLS_COLOR_ARRAY )
 	{
-		if ( stateBits & GLS_COLOR_ARRAY )
+		if ( stateBits & CLS_COLOR_ARRAY )
 			qglEnableClientState( GL_COLOR_ARRAY );
 		else
 			qglDisableClientState( GL_COLOR_ARRAY );
 	}
 
-	if ( diff & GLS_NORMAL_ARRAY )
+	if ( diff & CLS_NORMAL_ARRAY )
 	{
-		if ( stateBits & GLS_NORMAL_ARRAY )
+		if ( stateBits & CLS_NORMAL_ARRAY )
 			qglEnableClientState( GL_NORMAL_ARRAY );
 		else
 			qglDisableClientState( GL_NORMAL_ARRAY );
 	}
 
-	if ( diff & GLS_TEXCOORD_ARRAY )
+	if ( diff & CLS_TEXCOORD_ARRAY )
 	{
-		if ( stateBits & GLS_TEXCOORD_ARRAY )
+		if ( stateBits & CLS_TEXCOORD_ARRAY )
 			qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
 		else
 			qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -1224,29 +1224,29 @@ static const void *RB_StretchPic( const void *data ) {
 	tess.xyz[ numVerts ][1] = cmd->y;
 	tess.xyz[ numVerts ][2] = 0;
 
-	tess.texCoords[ numVerts ][0][0] = cmd->s1;
-	tess.texCoords[ numVerts ][0][1] = cmd->t1;
+	tess.texCoords[0][ numVerts + 0][0] = cmd->s1;
+	tess.texCoords[0][ numVerts + 0][1] = cmd->t1;
 
 	tess.xyz[ numVerts + 1 ][0] = cmd->x + cmd->w;
 	tess.xyz[ numVerts + 1 ][1] = cmd->y;
 	tess.xyz[ numVerts + 1 ][2] = 0;
 
-	tess.texCoords[ numVerts + 1 ][0][0] = cmd->s2;
-	tess.texCoords[ numVerts + 1 ][0][1] = cmd->t1;
+	tess.texCoords[0][numVerts + 1][0] = cmd->s2;
+	tess.texCoords[0][numVerts + 1][1] = cmd->t1;
 
 	tess.xyz[ numVerts + 2 ][0] = cmd->x + cmd->w;
 	tess.xyz[ numVerts + 2 ][1] = cmd->y + cmd->h;
 	tess.xyz[ numVerts + 2 ][2] = 0;
 
-	tess.texCoords[ numVerts + 2 ][0][0] = cmd->s2;
-	tess.texCoords[ numVerts + 2 ][0][1] = cmd->t2;
+	tess.texCoords[0][numVerts + 2][0] = cmd->s2;
+	tess.texCoords[0][numVerts + 2][1] = cmd->t2;
 
 	tess.xyz[ numVerts + 3 ][0] = cmd->x;
 	tess.xyz[ numVerts + 3 ][1] = cmd->y + cmd->h;
 	tess.xyz[ numVerts + 3 ][2] = 0;
 
-	tess.texCoords[ numVerts + 3 ][0][0] = cmd->s1;
-	tess.texCoords[ numVerts + 3 ][0][1] = cmd->t2;
+	tess.texCoords[0][numVerts + 3][0] = cmd->s1;
+	tess.texCoords[0][numVerts + 3][1] = cmd->t2;
 
 	return (const void *)(cmd + 1);
 }
@@ -1298,7 +1298,7 @@ static void transform_to_eye_space( const vec3_t v, vec3_t v_eye )
 RB_DebugPolygon
 ================
 */
-void RB_DebugPolygon( int color, int numPoints, float *points ) {
+static void RB_DebugPolygon( int color, int numPoints, float *points ) {
 #ifdef USE_VULKAN
 	vec3_t pa;
 	vec3_t pb;
@@ -1561,7 +1561,7 @@ void RB_ShowImages( void )
 
 		GL_Bind( image );
 
-		Com_Memset( tess.svars.colors, tr.identityLightByte, tess.numVertexes * 4 );
+		Com_Memset( tess.svars.colors, tr.identityLightByte, tess.numVertexes * sizeof( tess.svars.colors[0] ) );
 
 		tess.numIndexes = 6;
 		tess.numVertexes = 4;
@@ -1592,6 +1592,8 @@ void RB_ShowImages( void )
 		tess.xyz[3][1] = y + h;
 		tess.svars.texcoords[0][3][0] = 0;
 		tess.svars.texcoords[0][3][1] = 1;
+
+		tess.svars.texcoordPtr[0] = tess.svars.texcoords[0];
 
 		vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_RGBA | TESS_ST0 );
 		vk_draw_geometry( vk.images_debug_pipeline, DEPTH_RANGE_NORMAL, qtrue );

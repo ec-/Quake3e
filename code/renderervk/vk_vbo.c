@@ -346,8 +346,8 @@ static void VBO_AddStageTxCoords( vbo_t *vbo, int stage, const shaderCommands_t 
 {
 	const int offs = input->xstages[ stage ]->tex_offset[ unit ] + input->shader->curVertexes * sizeof( input->svars.texcoords[unit][0] );
 	const int size = input->numVertexes * sizeof( input->svars.texcoords[unit][0] );
-	
-	memcpy( vbo->vbo_buffer + offs, &input->svars.texcoords[ unit ][ 0 ], size );
+
+	memcpy( vbo->vbo_buffer + offs, input->svars.texcoordPtr[ unit ], size );
 }
 
 
@@ -569,6 +569,8 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 		initItem( vbo->items + i + 1 );
 		RB_BeginSurface( sf->shader, 0 );
 		tess.allowVBO = qfalse; // block execution of VBO path as we need to tesselate geometry
+		tess.needsNormal = qtrue;
+		tess.needsST2 = qtrue;
 		// tesselate
 		rb_surfaceTable[ *sf->data ]( sf->data ); // VBO_PushData() may be called multiple times there
 		// setup colors and texture coordinates
