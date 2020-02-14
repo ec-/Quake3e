@@ -218,11 +218,19 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 	if ( tess.fogNum != fogNum ) {
 		tess.dlightUpdateParams = qtrue;
 	}
+#endif
+
+#ifdef USE_TESS_NEEDS_NORMAL
+#ifdef USE_PMLIGHT
 	tess.needsNormal = state->needsNormal || tess.dlightPass || r_shownormals->integer;
 #else
 	tess.needsNormal = state->needsNormal || r_shownormals->integer;
 #endif
+#endif
+
+#ifdef USE_TESS_NEEDS_ST2
 	tess.needsST2 = state->needsST2;
+#endif
 
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;

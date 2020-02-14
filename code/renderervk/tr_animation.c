@@ -403,7 +403,10 @@ void RB_MDRSurfaceAnim( mdrSurface_t *surface )
 			tempVert[1] += w->boneWeight * ( DotProduct( bone->matrix[1], w->offset ) + bone->matrix[1][3] );
 			tempVert[2] += w->boneWeight * ( DotProduct( bone->matrix[2], w->offset ) + bone->matrix[2][3] );
 			
-			if ( tess.needsNormal ) {
+#ifdef USE_TESS_NEEDS_NORMAL
+			if ( tess.needsNormal )
+#endif
+			{
 				tempNormal[0] += w->boneWeight * DotProduct( bone->matrix[0], v->normal );
 				tempNormal[1] += w->boneWeight * DotProduct( bone->matrix[1], v->normal );
 				tempNormal[2] += w->boneWeight * DotProduct( bone->matrix[2], v->normal );
@@ -414,7 +417,10 @@ void RB_MDRSurfaceAnim( mdrSurface_t *surface )
 		tess.xyz[baseVertex + j][1] = tempVert[1];
 		tess.xyz[baseVertex + j][2] = tempVert[2];
 
-		if ( tess.needsNormal ) {
+#ifdef USE_TESS_NEEDS_NORMAL
+		if ( tess.needsNormal )
+#endif
+		{
 			tess.normal[baseVertex + j][0] = tempNormal[0];
 			tess.normal[baseVertex + j][1] = tempNormal[1];
 			tess.normal[baseVertex + j][2] = tempNormal[2];

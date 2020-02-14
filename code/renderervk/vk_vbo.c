@@ -569,8 +569,12 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 		initItem( vbo->items + i + 1 );
 		RB_BeginSurface( sf->shader, 0 );
 		tess.allowVBO = qfalse; // block execution of VBO path as we need to tesselate geometry
+#ifdef USE_TESS_NEEDS_NORMAL
 		tess.needsNormal = qtrue;
+#endif
+#ifdef USE_TESS_NEEDS_ST2
 		tess.needsST2 = qtrue;
+#endif
 		// tesselate
 		rb_surfaceTable[ *sf->data ]( sf->data ); // VBO_PushData() may be called multiple times there
 		// setup colors and texture coordinates

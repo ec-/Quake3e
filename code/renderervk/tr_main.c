@@ -963,7 +963,9 @@ static qboolean SurfIsOffscreen( const drawSurf_t *drawSurf, qboolean *isMirror 
 #ifdef USE_VBO
 	tess.allowVBO = qfalse;
 #endif
+#ifdef USE_TESS_NEEDS_NORMAL
 	tess.needsNormal = qtrue;
+#endif
 	rb_surfaceTable[ *drawSurf->surface ]( drawSurf->surface );
 
 	for ( i = 0; i < tess.numVertexes; i++ )

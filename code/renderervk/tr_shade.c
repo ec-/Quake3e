@@ -391,11 +391,19 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 	if ( tess.fogNum != fogNum ) {
 		tess.dlightUpdateParams = qtrue;
 	}
+#endif
+
+#ifdef USE_TESS_NEEDS_NORMAL
+#ifdef USE_PMLIGHT
 	tess.needsNormal = state->needsNormal || tess.dlightPass || r_shownormals->integer;
 #else
 	tess.needsNormal = state->needsNormal || r_shownormals->integer;
 #endif
+#endif
+
+#ifdef USE_TESS_NEEDS_ST2
 	tess.needsST2 = state->needsST2;
+#endif
 
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
@@ -445,11 +453,11 @@ static void DrawMultitextured( const shaderCommands_t *input, int stage ) {
 		R_ComputeTexCoords( 1, &pStage->bundle[1] );
 		GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
 
-		qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[0] );
+		qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoordPtr[0] );
 		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors );
 
 		GL_ClientState( 1, CLS_TEXCOORD_ARRAY );
-		qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[1] );
+		qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoordPtr[1] );
 	}
 
 	//
