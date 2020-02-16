@@ -632,7 +632,7 @@ static void Upload32( byte *data, int x, int y, int width, int height, image_t *
 	}
 
 	//
-	// clamp to the current upper OpenGL limit
+	// clamp to the current texture size limit
 	// scale both axis down equally so we don't have to
 	// deal with a half mip resampling
 	//
@@ -646,9 +646,9 @@ static void Upload32( byte *data, int x, int y, int width, int height, image_t *
 
 	if ( !subImage ) {
 		// verify if the alpha channel is being used or not
-		if ( image->internalFormat == 0 )
+		if ( image->internalFormat == 0 ) {
 			image->internalFormat = RawImage_GetInternalFormat( data, width*height, lightMap, allowCompression );
-
+		}
 		image->uploadWidth = scaled_width;
 		image->uploadHeight = scaled_height;
 	}
@@ -731,6 +731,8 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgF
 	image_t		*image;
 	long		hash;
 	GLint		glWrapClampMode;
+	GLuint		currTexture;
+	int			currTMU;
 	int			namelen;
 
 	namelen = (int)strlen( name );
@@ -756,8 +758,6 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgF
 	image->width = width;
 	image->height = height;
 
-	qglGenTextures( 1, &image->texnum );
-
 	if ( flags & IMGFLAG_RGB )
 		image->internalFormat = GL_RGB;
 	else
@@ -769,6 +769,12 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgF
 		glWrapClampMode = gl_clamp_mode;
 	else
 		glWrapClampMode = GL_REPEAT;
+
+	// save current state
+	currTMU = glState.currenttmu;
+	currTexture = glState.currenttextures[ glState.currenttmu ];
+
+	qglGenTextures( 1, &image->texnum );
 
 	// lightmaps are always allocated on TMU 1
 	if ( qglActiveTextureARB && (flags & IMGFLAG_LIGHTMAP) ) {
@@ -805,13 +811,16 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgF
 	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, glWrapClampMode );
 	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, glWrapClampMode );
 
-	glState.currenttextures[ glState.currenttmu ] = 0;
-	qglBindTexture( GL_TEXTURE_2D, 0 );
+	// restore original state
+	GL_SelectTexture( currTMU );
+	glState.currenttextures[ glState.currenttmu ] = currTexture;
+	qglBindTexture( GL_TEXTURE_2D, currTexture );
 
-	if ( image->TMU == 1 ) {
-		GL_SelectTexture( 0 );
-	}
-
+	//if ( image->TMU == 1 ) {
+	//	GL_SelectTexture( 0 );
+	//}
+	//qglBindTexture( GL_TEXTURE_2D, 0 );
+	
 	return image;
 }
 
@@ -1016,7 +1025,7 @@ static void R_CreateDlightImage( void ) {
 			data[y][x][0] = 
 			data[y][x][1] = 
 			data[y][x][2] = b;
-			data[y][x][3] = 255;			
+			data[y][x][3] = 255;
 		}
 	}
 	tr.dlightImage = R_CreateImage("*dlight", (byte*)data, DLIGHT_SIZE, DLIGHT_SIZE, IMGFLAG_CLAMPTOEDGE );
@@ -1032,7 +1041,7 @@ void R_InitFogTable( void ) {
 	int		i;
 	float	d;
 	float	exp;
-	
+
 	exp = 0.5;
 
 	for ( i = 0 ; i < FOG_TABLE_SIZE ; i++ ) {
@@ -1140,7 +1149,7 @@ static qboolean R_BuildDefaultImage( const char *format ) {
 	byte color[4];
 	int i, len, hex[6];
 	int x, y;
-	
+
 	if ( *format++ != '#' ) {
 		return qfalse;
 	}
@@ -1259,17 +1268,17 @@ void R_CreateBuiltinImages( void ) {
 			data[y][x][0] = 
 			data[y][x][1] = 
 			data[y][x][2] = tr.identityLightByte;
-			data[y][x][3] = 255;			
+			data[y][x][3] = 255;
 		}
 	}
 
 	tr.identityLightImage = R_CreateImage( "*identityLight", (byte *)data, 8, 8, IMGFLAG_NONE );
 
-	for ( x = 0; x < ARRAY_LEN( tr.scratchImage ); x++ ) {
+	//for ( x = 0; x < ARRAY_LEN( tr.scratchImage ); x++ ) {
 		// scratchimage is usually used for cinematic drawing
-		tr.scratchImage[x] = R_CreateImage( "*scratch", NULL, DEFAULT_SIZE, DEFAULT_SIZE,
-			IMGFLAG_PICMIP | IMGFLAG_CLAMPTOEDGE | IMGFLAG_RGB );
-	}
+		//tr.scratchImage[x] = R_CreateImage( "*scratch", NULL, DEFAULT_SIZE, DEFAULT_SIZE,
+		//	IMGFLAG_PICMIP | IMGFLAG_CLAMPTOEDGE | IMGFLAG_RGB );
+	//}
 
 	R_CreateDlightImage();
 	R_CreateFogImage();
@@ -1381,6 +1390,7 @@ void R_DeleteTextures( void ) {
 	}
 
 	Com_Memset( tr.images, 0, sizeof( tr.images ) );
+	Com_Memset( tr.scratchImage, 0, sizeof( tr.scratchImage ) );
 	tr.numImages = 0;
 
 	Com_Memset( glState.currenttextures, 0, sizeof( glState.currenttextures ) );
@@ -1434,7 +1444,6 @@ static char *CommaParse( char **data_p ) {
 			}
 			data++;
 		}
-
 
 		c = *data;
 
@@ -1572,7 +1581,7 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 	}
 
 	// load and parse the skin file
-    ri.FS_ReadFile( name, &text.v );
+	ri.FS_ReadFile( name, &text.v );
 	if ( !text.c ) {
 		return 0;
 	}
@@ -1597,7 +1606,7 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 		if ( strstr( token, "tag_" ) ) {
 			continue;
 		}
-		
+
 		// parse the shader name
 		token = CommaParse( &text_p );
 

@@ -1003,7 +1003,7 @@ Stretches a raw 32 bit power of 2 bitmap image over the given screen rectangle.
 Used for cinematics.
 =============
 */
-void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty ) {
+void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, byte *data, int client, qboolean dirty ) {
 	int			i, j;
 	int			start, end;
 
@@ -1037,9 +1037,15 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *
 }
 
 
-void RE_UploadCinematic( int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty ) {
+void RE_UploadCinematic( int w, int h, int cols, int rows, byte *data, int client, qboolean dirty ) {
 
-	image_t *image = tr.scratchImage[ client ];
+	image_t *image;
+
+	if ( !tr.scratchImage[ client ] ) {
+		tr.scratchImage[ client ] = R_CreateImage( va( "*scratch%i", client ), data, cols, rows, IMGFLAG_CLAMPTOEDGE | IMGFLAG_RGB | IMGFLAG_NOSCALE );
+	}
+
+	image = tr.scratchImage[ client ];
 
 	GL_Bind( image );
 

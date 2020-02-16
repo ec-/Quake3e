@@ -529,28 +529,39 @@ typedef struct {
 	int base_level_height;
 } Image_Upload_Data;
 
-void generate_image_upload_data(byte *data, int width, int height, qboolean mipmap, qboolean picmip, Image_Upload_Data *upload_data) {
+static void generate_image_upload_data( image_t *image, byte *data, Image_Upload_Data *upload_data ) {
 	
+	qboolean mipmap = image->flags & IMGFLAG_MIPMAP;
+	qboolean picmip = image->flags & IMGFLAG_PICMIP;
 	byte* resampled_buffer = NULL;
-	unsigned* scaled_buffer;
-	int miplevel;
-	int mip_level_size;
-
-	//
-	// convert to exact power of 2 sizes
-	//
 	int scaled_width, scaled_height;
+	int width = image->width;
+	int height = image->height;
+	unsigned* scaled_buffer;
 	int max_texture_size;
+	int mip_level_size;
+	int miplevel;
 
-	for (scaled_width = 1 ; scaled_width < width ; scaled_width<<=1)
-		;
-	for (scaled_height = 1 ; scaled_height < height ; scaled_height<<=1)
-		;
+	if ( image->flags & IMGFLAG_NOSCALE ) {
+		//
+		// keep original dimensions
+		//
+		scaled_width = width;
+		scaled_height = height;
+	} else {
+		//
+		// convert to exact power of 2 sizes
+		//
+		for (scaled_width = 1 ; scaled_width < width ; scaled_width<<=1)
+			;
+		for (scaled_height = 1 ; scaled_height < height ; scaled_height<<=1)
+			;
 
-	if ( r_roundImagesDown->integer && scaled_width > width )
-		scaled_width >>= 1;
-	if ( r_roundImagesDown->integer && scaled_height > height )
-		scaled_height >>= 1;
+		if ( r_roundImagesDown->integer && scaled_width > width )
+			scaled_width >>= 1;
+		if ( r_roundImagesDown->integer && scaled_height > height )
+			scaled_height >>= 1;
+	}
 
 	Com_Memset( upload_data, 0, sizeof( *upload_data ) );
 
@@ -664,6 +675,7 @@ void generate_image_upload_data(byte *data, int width, int height, qboolean mipm
 			upload_data->buffer_size += mip_level_size;
 		}
 	}
+
 	upload_data->mip_levels = miplevel + 1;
 
 	ri.Hunk_FreeTempMemory(scaled_buffer);
@@ -859,7 +871,7 @@ static void Upload32( byte *data, int x, int y, int width, int height, image_t *
 	}
 
 	//
-	// clamp to the current upper OpenGL limit
+	// clamp to the current texture size limit
 	// scale both axis down equally so we don't have to
 	// deal with a half mip resampling
 	//
@@ -962,10 +974,10 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgF
 	Image_Upload_Data upload_data;
 #else
 	GLint		glWrapClampMode;
+	GLuint		currTexture;
+	int			currTMU;
 #endif
 	int			namelen;
-	qboolean mipmap = flags & IMGFLAG_MIPMAP;
-	qboolean picmip = flags & IMGFLAG_PICMIP;
 
 	namelen = (int)strlen( name );
 	if ( namelen >= MAX_QPATH ) {
@@ -991,7 +1003,6 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgF
 	image->height = height;
 
 #ifdef USE_VULKAN
-
 	if ( flags & IMGFLAG_CLAMPTOBORDER )
 		image->wrapClampMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
 	else if ( flags & IMGFLAG_CLAMPTOEDGE )
@@ -999,14 +1010,12 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgF
 	else
 		image->wrapClampMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
-	generate_image_upload_data( pic, width, height, mipmap, picmip, &upload_data );
+	generate_image_upload_data( image, pic, &upload_data );
 
 	upload_vk_image( &upload_data, image->wrapClampMode, image );
 
 	ri.Hunk_FreeTempMemory( upload_data.buffer );
 #else
-	qglGenTextures( 1, &image->texnum );
-
 	if ( flags & IMGFLAG_RGB )
 		image->internalFormat = GL_RGB;
 	else
@@ -1018,6 +1027,12 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgF
 		glWrapClampMode = gl_clamp_mode;
 	else
 		glWrapClampMode = GL_REPEAT;
+
+	// save current state
+	currTMU = glState.currenttmu;
+	currTexture = glState.currenttextures[ glState.currenttmu ];
+
+	qglGenTextures( 1, &image->texnum );
 
 	// lightmaps are always allocated on TMU 1
 	if ( qglActiveTextureARB && (flags & IMGFLAG_LIGHTMAP) ) {
@@ -1054,14 +1069,12 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgF
 	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, glWrapClampMode );
 	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, glWrapClampMode );
 
-	glState.currenttextures[ glState.currenttmu ] = 0;
-	qglBindTexture( GL_TEXTURE_2D, 0 );
+	// restore original state
+	GL_SelectTexture( currTMU );
+	glState.currenttextures[ glState.currenttmu ] = currTexture;
+	qglBindTexture( GL_TEXTURE_2D, currTexture );
 
-	if ( image->TMU == 1 ) {
-		GL_SelectTexture( 0 );
-	}
 #endif
-
 	return image;
 }
 
@@ -1266,7 +1279,7 @@ static void R_CreateDlightImage( void ) {
 			data[y][x][0] = 
 			data[y][x][1] = 
 			data[y][x][2] = b;
-			data[y][x][3] = 255;			
+			data[y][x][3] = 255;
 		}
 	}
 	tr.dlightImage = R_CreateImage("*dlight", (byte*)data, DLIGHT_SIZE, DLIGHT_SIZE, IMGFLAG_CLAMPTOEDGE );
@@ -1282,7 +1295,7 @@ void R_InitFogTable( void ) {
 	int		i;
 	float	d;
 	float	exp;
-	
+
 	exp = 0.5;
 
 	for ( i = 0 ; i < FOG_TABLE_SIZE ; i++ ) {
@@ -1390,7 +1403,7 @@ static qboolean R_BuildDefaultImage( const char *format ) {
 	byte color[4];
 	int i, len, hex[6];
 	int x, y;
-	
+
 	if ( *format++ != '#' ) {
 		return qfalse;
 	}
@@ -1512,17 +1525,17 @@ void R_CreateBuiltinImages( void ) {
 			data[y][x][0] = 
 			data[y][x][1] = 
 			data[y][x][2] = tr.identityLightByte;
-			data[y][x][3] = 255;			
+			data[y][x][3] = 255;
 		}
 	}
 
 	tr.identityLightImage = R_CreateImage( "*identityLight", (byte *)data, 8, 8, IMGFLAG_NONE );
 
-	for ( x = 0; x < ARRAY_LEN( tr.scratchImage ); x++ ) {
+	//for ( x = 0; x < ARRAY_LEN( tr.scratchImage ); x++ ) {
 		// scratchimage is usually used for cinematic drawing
-		tr.scratchImage[x] = R_CreateImage( "*scratch", (byte*)data, DEFAULT_SIZE, DEFAULT_SIZE,
-			IMGFLAG_PICMIP | IMGFLAG_CLAMPTOEDGE | IMGFLAG_RGB );
-	}
+		//tr.scratchImage[x] = R_CreateImage( "*scratch", (byte*)data, DEFAULT_SIZE, DEFAULT_SIZE,
+		//	IMGFLAG_PICMIP | IMGFLAG_CLAMPTOEDGE | IMGFLAG_RGB );
+	//}
 
 	R_CreateDlightImage();
 	R_CreateFogImage();
@@ -1660,9 +1673,11 @@ void R_DeleteTextures( void ) {
 	}
 
 	Com_Memset( tr.images, 0, sizeof( tr.images ) );
+	Com_Memset( tr.scratchImage, 0, sizeof( tr.scratchImage ) );
 	tr.numImages = 0;
 
 	Com_Memset( glState.currenttextures, 0, sizeof( glState.currenttextures ) );
+
 #ifndef USE_VULKAN
 	if ( qglActiveTextureARB ) {
 		GL_SelectTexture( 1 );
@@ -1715,7 +1730,6 @@ static char *CommaParse( char **data_p ) {
 			}
 			data++;
 		}
-
 
 		c = *data;
 
@@ -1851,7 +1865,7 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 	}
 
 	// load and parse the skin file
-    ri.FS_ReadFile( name, &text.v );
+	ri.FS_ReadFile( name, &text.v );
 	if ( !text.c ) {
 		return 0;
 	}
@@ -1876,7 +1890,7 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 		if ( strstr( token, "tag_" ) ) {
 			continue;
 		}
-		
+
 		// parse the shader name
 		token = CommaParse( &text_p );
 
