@@ -1153,8 +1153,11 @@ void R_AddIQMSurfaces( trRefEntity_t *ent ) {
 			R_AddDrawSurf( (void *)surface, tr.projectionShadowShader, 0, 0 );
 		}
 
-		if( !personalModel ) {
+		if ( !personalModel ) {
 			R_AddDrawSurf( (void *)surface, shader, fogNum, 0 );
+			if ( ent->e.renderfx & RF_FIRST_PERSON ) {
+				tr.needScreenMap |= shader->hasScreenMap;
+			}
 		}
 
 		surface++;
