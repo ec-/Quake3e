@@ -970,6 +970,13 @@ void VBO_Cleanup( void )
 	memset( vbo_fp, 0, sizeof( vbo_fp ) );
 
 	memset( &world_vbo, 0, sizeof( world_vbo ) );
+
+	for ( i = 0; i < tr.numShaders; i++ )
+	{
+		tr.shaders[ i ]->isStaticShader = qfalse;
+		tr.shaders[ i ]->iboOffset = -1;
+		tr.shaders[ i ]->vboOffset = -1;
+	}
 }
 
 

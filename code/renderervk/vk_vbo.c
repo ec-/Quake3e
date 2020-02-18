@@ -630,7 +630,16 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 
 void VBO_Cleanup( void )
 {
+	int i;
+
 	memset( &world_vbo, 0, sizeof( world_vbo ) );
+
+	for ( i = 0; i < tr.numShaders; i++ )
+	{
+		tr.shaders[ i ]->isStaticShader = qfalse;
+		tr.shaders[ i ]->iboOffset = -1;
+		tr.shaders[ i ]->vboOffset = -1;
+	}
 }
 
 
