@@ -1494,6 +1494,7 @@ static char *CommaParse( const char **data_p ) {
 				*data_p = data;
 				return com_token;
 			}
+			data++;
 			if ( len < MAX_TOKEN_CHARS-1 )
 			{
 				com_token[ len ] = c;
