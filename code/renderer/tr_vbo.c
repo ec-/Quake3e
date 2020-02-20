@@ -88,8 +88,8 @@ typedef struct vbo_s {
 	int items_queue_vertexes;
 	int items_queue_indexes;
 
-	short fogFPindex; // fog-only
-	short fogVPindex; // eye-in/eye-out
+	short fogFPindex;	// fog-only
+	short fogVPindex[2];// eye-in/eye-out
 
 } vbo_t;
 
@@ -124,40 +124,91 @@ static const char *genATestFP( int function )
 	}
 }
 
+enum {
+	VP_FOG_NONE,
+	VP_FOG_EYE_IN,
+	VP_FOG_EYE_OUT,
+};
 
-const char *BuildFogVP( int multitexture, int fogmode )
+enum {
+	FP_FOG_NONE,
+	FP_FOG_BLEND,
+	FP_FOG_ONLY
+};
+
+static const char *BuildVP( int multitexture, int fogmode, int texgen )
 {
-	static char buf[1024];
+	static char buf[2048], b[256];
+	const char *tex0;
+	const char *tex1;
 
 	strcpy( buf,
 	"!!ARBvp1.0 \n"
 	"OPTION ARB_position_invariant; \n" );
 
 	switch ( fogmode ) {
-		case 0: strcat( buf, fogInVPCode ); break;
-		case 1: strcat( buf, fogOutVPCode ); break;
-		default: break;
+		default:
+		case VP_FOG_NONE:
+			break;
+		case VP_FOG_EYE_IN:
+			strcat( buf, fogInVPCode ); break;
+		case VP_FOG_EYE_OUT:
+			strcat( buf, fogOutVPCode ); break;
+	}
+
+	if ( texgen ) {
+
+		// environment mapping
+
+		strcat( buf,
+		"TEMP viewer, d; \n"
+
+		// VectorSubtract( backEnd.or.viewOrigin, v, viewer );
+		"SUB viewer, program.local[0], vertex.position;\n"
+
+		// VectorNormalize( viewer )
+		"DP3 viewer.w, viewer, viewer; \n"
+		"RSQ viewer.w, viewer.w; \n"
+		"MUL viewer.xyz, viewer.w, viewer; \n"
+
+		// d = DotProduct( normal, viewer );
+		"DP3 d, vertex.normal, viewer; \n"
+
+		//reflected[] = normal[]*2*d - viewer[];
+		"MUL d, d, 2.0; \n"
+		"MAD d, vertex.normal, d, -viewer; \n"
+
+		//st[0] = 0.5 + reflected[1] * 0.5;
+		//st[1] = 0.5 - reflected[2] * 0.5;
+		//"MAD st.x, d.y,  0.5, 0.5; \n"
+		//"MAD st.y, d.z, -0.5, 0.5; \n"
+		"PARAM m = { 0.0, 0.5, -0.5, 0.0 }; \n"
+		"MAD d, d, m, 0.5; \n" );
+
+		tex0 = "d.yzwx";
+		tex1 = "d.yzwx";
+	} else {
+		tex0 = "vertex.texcoord[0]";
+		tex1 = "vertex.texcoord[1]";
 	}
 
 	switch ( multitexture ) {
-		case -1: // pure fog-only vertex program
-			strcat( buf, "END \n" );
-			return buf;
 		case GL_ADD:
 		case GL_MODULATE:
-			strcat( buf,
-			"MOV result.texcoord[0], vertex.texcoord[0]; \n"
-			"MOV result.texcoord[1], vertex.texcoord[1]; \n" );
+			sprintf( b,
+				"MOV result.texcoord[0], %s; \n"
+				"MOV result.texcoord[1], %s; \n",
+				tex0, tex1 );
 			break;
 		case GL_REPLACE:
-			strcat( buf,
-			"MOV result.texcoord[1], vertex.texcoord[1]; \n" );
+			sprintf( b, "MOV result.texcoord[1], %s; \n", tex1 );
 			break;
 		default:
-			strcat( buf,
-			"MOV result.texcoord[0], vertex.texcoord[0]; \n" );
+			sprintf( b, "MOV result.texcoord[0], %s; \n", tex0 );
 			break;
 	}
+
+	strcat( buf, b );
 
 	strcat( buf,
 	"MOV result.color, vertex.color; \n"
@@ -167,7 +218,7 @@ const char *BuildFogVP( int multitexture, int fogmode )
 }
 
 
-const char *BuildFogFP( int multitexture, int alphatest )
+const char *BuildFP( int multitexture, int alphatest, int fogMode )
 {
 	static char buf[1024];
 
@@ -175,12 +226,14 @@ const char *BuildFogFP( int multitexture, int alphatest )
 	"OPTION ARB_precision_hint_fastest; \n"
 	"TEMP base; \n" );
 
+	if ( fogMode == FP_FOG_ONLY ) {
+		strcat( buf, "TEX base, fragment.texcoord[4], texture[2], 2D; \n" );
+		strcat( buf, "MUL result.color, base, program.local[0]; \n" );
+		strcat( buf, "END \n" );
+		return buf;
+	}
+
 	switch ( multitexture ) {
-		case -1:
-			strcat( buf, "TEX base, fragment.texcoord[4], texture[2], 2D; \n" );
-			strcat( buf, "MUL result.color, base, program.local[0]; \n" );
-			strcat( buf, "END \n" );
-			return buf;
 		case 0:
 			strcat( buf, "TEMP t; \n" );
 			strcat( buf, "TEX base, fragment.texcoord[0], texture[0], 2D; \n" );
@@ -209,58 +262,67 @@ const char *BuildFogFP( int multitexture, int alphatest )
 			break;
 	}
 
-	//strcat( buf, "MUL_SAT base, base, fragment.color; \n" );
-	strcat( buf, "MUL base, base, fragment.color; \n" );
+	if ( fogMode == FP_FOG_BLEND ) {
+		strcat( buf, "MUL base, base, fragment.color; \n" );
+		strcat( buf, "TEMP fog; \n"
+		"TEX fog, fragment.texcoord[4], texture[2], 2D; \n"
+		"MUL fog, fog, program.local[0]; \n"
+		"LRP_SAT result.color, fog.a, fog, base; \n"
+		"END \n" );
+	} else {
+		strcat( buf,
+		"MUL result.color, base, fragment.color; \n"
+		"END \n" );
+	}
 
-	strcat( buf, "TEMP fog; \n"
-	"TEX fog, fragment.texcoord[4], texture[2], 2D; \n"
-	"MUL fog, fog, program.local[0]; \n"
-	//"LRP_SAT base, fog.a, fog, base; \n" );
-	"LRP_SAT result.color, fog.a, fog, base; \n" );
-
-	strcat( buf, "END \n" );
 	return buf;
 }
 
 
-// multitexture modes: disabled, add, modulate, replace, fog-only, unused, unused, unused
-// fog modes: eye-in, eye-out
-static GLuint vbo_vp[8*2];
+// multitexture modes: single, mt-add, mt-modulate, mt-replace
+// texgen: array, environment mapping
+// fog modes: disabled, eye-in, eye-out, fog-only
+static GLuint vbo_vp[4*2*4+1];
 
-// multitexture modes: fog-only, single-texture, mtx-add, mtx-modulate, mtx-replace, unused, unused, unused
+// multitexture modes: single, mt-add, mt-modulate, mt-replace
 // alpha test modes: disabled, GT0, LT80, GE80
-static GLuint vbo_fp[8*4];
+// fog modes: disabled, enabled, fog-only, unused
+static GLuint vbo_fp[4*4*4+1];
 
-static int getVPindex( int multitexture, int fogmode )
+static int getVPindex( int multitexture, int fogmode, int texgen )
 {
 	int index;
+
 	switch( multitexture )
 	{
 		default:			index = 0; break;
 		case GL_ADD:		index = 1; break;
 		case GL_MODULATE:	index = 2; break;
 		case GL_REPLACE:	index = 3; break;
-		case -1:			index = 4; break; // fog-only
 	}
-	index <<= 1;  // reserve bits for fogmode
 
-	index |= fogmode & 1; // eye-in | eye-out
+	index <<= 1;  // reserve bits for texgen
+	index |= texgen & 1; // array, environment mapping
 
-	return index;
+	index <<= 2;  // reserve bits for fogmode
+	index |= fogmode & 3; // disabled, eye-in, eye-out, fog-only
+
+	return index + 1;
 }
 
 
-static int getFPindex( int multitexture, int atest )
+static int getFPindex( int multitexture, int atest, int fogmode )
 {
 	int index;
+
 	switch( multitexture )
 	{
 		default:			index = 0; break;
 		case GL_ADD:		index = 1; break;
 		case GL_MODULATE:	index = 2; break;
 		case GL_REPLACE:	index = 3; break;
-		case -1:			index = 4; break; // fog-only
 	}
+
 	index <<= 2; // reserve bits for atest
 	switch ( atest )
 	{
@@ -269,7 +331,11 @@ static int getFPindex( int multitexture, int atest )
 		case GLS_ATEST_GE_80: index |= 3; break;
 		default: break;
 	}
-	return index;
+
+	index <<= 2; // reserve bits for fog mode
+	index |= fogmode & 3; // disabled, blend, fog-only
+
+	return index + 1;
 }
 
 
@@ -304,7 +370,7 @@ static qboolean isStaticTCgen( const shaderStage_t *stage, int bundle )
 		case TCGEN_IDENTITY:	// clear to 0,0
 		case TCGEN_LIGHTMAP:
 		case TCGEN_TEXTURE:
-		//case TCGEN_ENVIRONMENT_MAPPED:
+		case TCGEN_ENVIRONMENT_MAPPED:
 		//case TCGEN_ENVIRONMENT_MAPPED_FP:
 		//case TCGEN_FOG:
 		case TCGEN_VECTOR:		// S and T from world coordinates
@@ -352,21 +418,24 @@ static qboolean isStaticAgen( alphaGen_t agen )
 }
 
 
-static void CompilePrograms( int VPindex, int FPindex, int mtx, int atestBits )
+static void CompileVertexProgram( int VPindex, int mtx, int fogMode, int texgen )
 {
-	// generate vertex programs
-	if ( !vbo_vp[ VPindex ] )
+	if ( vbo_vp[ VPindex ] == 0 )
 	{
-		qglGenProgramsARB( 2, &vbo_vp[ VPindex ] );
-		ARB_CompileProgram( Vertex, BuildFogVP( mtx, 0 ), vbo_vp[ VPindex + 0 ] ); // eye-in
-		ARB_CompileProgram( Vertex, BuildFogVP( mtx, 1 ), vbo_vp[ VPindex + 1 ] ); // eye-out
+		// generate vertex program
+		qglGenProgramsARB( 1, &vbo_vp[ VPindex ] );
+		ARB_CompileProgram( Vertex, BuildVP( mtx, fogMode, texgen ), vbo_vp[ VPindex ] );
 	}
+}
 
-	// generate fragment programs
-	if ( !vbo_fp[ FPindex ] )
+
+static void CompileFragmentProgram( int FPindex, int mtx, int atestBits, int fogMode )
+{
+	if ( vbo_fp[ FPindex ] == 0 )
 	{
+		// generate fragment program
 		qglGenProgramsARB( 1, &vbo_fp[ FPindex ] );
-		ARB_CompileProgram( Fragment, BuildFogFP( mtx, atestBits ), vbo_fp[ FPindex ] );
+		ARB_CompileProgram( Fragment, BuildFP( mtx, atestBits, fogMode ), vbo_fp[ FPindex ] );
 	}
 }
 
@@ -437,23 +506,45 @@ static qboolean isStaticShader( shader_t *shader )
 
 	for ( i = 0; i < shader->numUnfoggedPasses; i++ )
 	{
+		int texgen;
 		stage = shader->stages[ i ];
 		if ( !stage || !stage->active )
 			break;
 		
 		mtx = stage->mtEnv;
 		atestBits = stage->stateBits & GLS_ATEST_BITS;
+		if ( stage->bundle[0].tcGen == TCGEN_ENVIRONMENT_MAPPED ) {
+			stage->needViewPos = qtrue;
+			texgen = 1;
+		} else {
+			texgen = 0;
+		}
 
-		stage->vboVPindex = getVPindex( mtx, 0 );
-		stage->vboFPindex = getFPindex( mtx, atestBits );
-
-		CompilePrograms( stage->vboVPindex, stage->vboFPindex, mtx, atestBits );
+		if ( texgen || shader->numUnfoggedPasses == 1 ) {
+			stage->vboVPindex[1] = getVPindex( mtx, VP_FOG_EYE_IN, texgen );
+			stage->vboVPindex[2] = getVPindex( mtx, VP_FOG_EYE_OUT, texgen );
+			stage->vboFPindex[1] = getFPindex( mtx, atestBits, FP_FOG_BLEND );
+			CompileVertexProgram( stage->vboVPindex[1], mtx, VP_FOG_EYE_IN, texgen );
+			CompileVertexProgram( stage->vboVPindex[2], mtx, VP_FOG_EYE_OUT, texgen );
+			CompileFragmentProgram( stage->vboFPindex[1], mtx, atestBits, FP_FOG_BLEND );
+			if ( texgen ) {
+				stage->vboVPindex[0] = getVPindex( mtx, VP_FOG_NONE, texgen );
+				stage->vboFPindex[0] = getFPindex( mtx, atestBits, FP_FOG_NONE );
+				CompileVertexProgram( stage->vboVPindex[0], mtx, VP_FOG_NONE, texgen );
+				CompileFragmentProgram( stage->vboFPindex[0], mtx, atestBits, FP_FOG_NONE );
+			}
+		}
 	}
 
-	world_vbo.fogVPindex = getVPindex( -1, 0 );
-	world_vbo.fogFPindex = getFPindex( -1, 0 );
+	world_vbo.fogVPindex[0] = getVPindex( 0, VP_FOG_EYE_IN, 0 );
+	world_vbo.fogVPindex[1] = getVPindex( 0, VP_FOG_EYE_OUT, 0 );
 
-	CompilePrograms( world_vbo.fogVPindex, world_vbo.fogFPindex, -1, 0 );
+	world_vbo.fogFPindex = getFPindex( 0, 0, FP_FOG_ONLY );
+
+	CompileVertexProgram( world_vbo.fogVPindex[0], 0, VP_FOG_EYE_IN, 0 );
+	CompileVertexProgram( world_vbo.fogVPindex[0], 0, VP_FOG_EYE_OUT, 0 );
+
+	CompileFragmentProgram( world_vbo.fogFPindex, 0 /*mtx*/, 0 /*atest*/, FP_FOG_ONLY );
 
 	return qtrue;
 }
@@ -1185,7 +1276,7 @@ static void VBO_PrepareQueues( void )
 }
 
 
-static const fogProgramParms_t *VBO_SetupFog( int VPindex, int FPindex )
+static const fogProgramParms_t *VBO_SetupFog( int VPindex, int FPindex, GLuint *pvp, GLuint *pfp )
 {
 	const fogProgramParms_t *fparm;
 	GLuint vp, fp;
@@ -1208,6 +1299,9 @@ static const fogProgramParms_t *VBO_SetupFog( int VPindex, int FPindex )
 	qglProgramLocalParameter4fARB( GL_VERTEX_PROGRAM_ARB, 4, fparm->eyeT, 0.0f, 0.0f, 0.0f );
 	qglProgramLocalParameter4fvARB( GL_FRAGMENT_PROGRAM_ARB, 0, fparm->fogColor );
 
+	*pvp = vp;
+	*pfp = fp;
+
 	return fparm;
 }
 
@@ -1218,18 +1312,20 @@ static const fogProgramParms_t *VBO_SetupFog( int VPindex, int FPindex )
 static void RB_IterateStagesVBO( const shaderCommands_t *input )
 {
 	const shaderStage_t *pStage;
-	const fogProgramParms_t *fparm;
+	const fogProgramParms_t *fparm = NULL;
 	int i, stateBits;
 	qboolean fogPass;
+	GLuint vp, fp;
 
 	fogPass = ( tess.fogNum && tess.shader->fogPass );
 
 	if ( fogPass && tess.shader->numUnfoggedPasses == 1 ) {
+		// combined fog + single stage program
 		pStage = input->xstages[ 0 ];
-		fparm = VBO_SetupFog( pStage->vboVPindex, pStage->vboFPindex ); 
+		fparm = VBO_SetupFog( pStage->vboVPindex[1], pStage->vboFPindex[1], &vp, &fp ); 
 	} else {
-		ARB_ProgramEnableExt( 0, 0 );
 		fparm = NULL;
+		vp = fp = 0;
 	}
 
 	VBO_PrepareQueues();
@@ -1251,60 +1347,84 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 
 		stateBits = pStage->stateBits;
 
-		if ( fparm ) {
+		if ( fparm == NULL ) {
+			vp = vbo_vp[ pStage->vboVPindex[0] ];
+			fp = vbo_fp[ pStage->vboFPindex[0] ];
+			ARB_ProgramEnableExt( vp, fp );
+		}
+
+		if ( fp ) {
 			stateBits &= ~GLS_ATEST_BITS; // done in shaders
 		}
 
 		GL_State( stateBits );
 
-		GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
+		if ( pStage->needViewPos ) {
+			GL_ClientState( 0, CLS_NORMAL_ARRAY | CLS_COLOR_ARRAY );
+			// bind color and normals array
+			qglNormalPointer( GL_FLOAT, 16, (const GLvoid *)(intptr_t)tess.shader->normalOffset );
+			// setup viewpos needed for environment mapping program
+			qglProgramLocalParameter4fARB( GL_VERTEX_PROGRAM_ARB, 0, 
+				backEnd.or.viewOrigin[0],
+				backEnd.or.viewOrigin[1],
+				backEnd.or.viewOrigin[2],
+				0.0 );
+		} else {
+			GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
+			// bind colors and first texture array
+			qglTexCoordPointer( 2, GL_FLOAT, 0, (const GLvoid *)(intptr_t)pStage->tex_offset[0] );
+		}
 
-		// bind colors and first texture array
 		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, (const GLvoid *)(intptr_t)pStage->color_offset );
-		qglTexCoordPointer( 2, GL_FLOAT, 0, (const GLvoid *)(intptr_t)pStage->tex_offset[0] );
 
-		//GL_SelectTexture( 0 );
+		GL_SelectTexture( 0 );
 		R_BindAnimatedImage( &pStage->bundle[0] );
 
-		if ( pStage->mtEnv ) // multitexture
-		{
-			GL_ClientState( 1, CLS_TEXCOORD_ARRAY );
-			qglTexCoordPointer( 2, GL_FLOAT, 0, (const GLvoid *)(intptr_t)pStage->tex_offset[1] );
-
-			// bind second texture array
-			GL_SelectTexture( 1 );
-			qglEnable( GL_TEXTURE_2D );
-			R_BindAnimatedImage( &pStage->bundle[1] );
-
-			if ( fparm == NULL )
-			{
-				if ( r_lightmap->integer )
-					GL_TexEnv( GL_REPLACE );
-				else
-					GL_TexEnv( pStage->mtEnv );
+		if ( pStage->mtEnv ) { // multitexture
+			if ( fp == 0 ) {
+				// bind second texture array
+				GL_ClientState( 1, CLS_TEXCOORD_ARRAY );
+				qglTexCoordPointer( 2, GL_FLOAT, 0, (const GLvoid *)(intptr_t)pStage->tex_offset[1] );
+				GL_SelectTexture( 1 );
+				qglEnable( GL_TEXTURE_2D );
+				R_BindAnimatedImage( &pStage->bundle[1] );
+				if ( fparm == NULL ) {
+					if ( r_lightmap->integer )
+						GL_TexEnv( GL_REPLACE );
+					else
+						GL_TexEnv( pStage->mtEnv );
+				}
+				VBO_RenderIndexes();
+				qglDisable( GL_TEXTURE_2D );
+				GL_SelectTexture( 0 );
+			} else {
+				if ( pStage->needViewPos ) {
+					GL_ClientState( 1, CLS_NONE );
+				} else {
+					GL_ClientState( 1, CLS_TEXCOORD_ARRAY );
+					qglTexCoordPointer( 2, GL_FLOAT, 0, (const GLvoid *)(intptr_t)pStage->tex_offset[1] );
+				}
+				GL_SelectTexture( 1 );
+				// fragment programs have explicit control over texturing
+				// so no need to enable/disable GL_TEXTURE_2D
+				R_BindAnimatedImage( &pStage->bundle[1] );
+				VBO_RenderIndexes();
+				GL_SelectTexture( 0 );
 			}
-
-			VBO_RenderIndexes();
-
-			// disable texturing on TEXTURE1, then select TEXTURE0
-			qglDisable( GL_TEXTURE_2D );
-			GL_SelectTexture( 0 );
-		}
-		else
-		{
+		} else {
 			GL_ClientState( 1, CLS_NONE );
-
 			VBO_RenderIndexes();
 		}
 	}
 
 	GL_ClientState( 1, CLS_NONE );
 
+	//fog-only pass
 	if ( fogPass && fparm == NULL ) {
 
-		VBO_SetupFog( world_vbo.fogVPindex, world_vbo.fogFPindex );
-
 		GL_ClientState( 0, CLS_NONE );
+
+		VBO_SetupFog( world_vbo.fogVPindex[0], world_vbo.fogFPindex, &vp, &fp );
 
 		if ( tess.shader->fogPass == FP_EQUAL ) {
 			GL_State( GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_DEPTHFUNC_EQUAL );

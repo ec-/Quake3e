@@ -286,7 +286,6 @@ void ARB_SetupLightParams( void )
 	ARB_ProgramEnable( vertexProgram, fragmentProgram );
 
 	qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, lightRGB[0], lightRGB[1], lightRGB[2], 1.0f / Square( radius ) );
-	//qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 1, 1.0f / Square( radius ), 0, 0, 0 );
 
 	if ( dl->linear )
 	{
@@ -344,8 +343,8 @@ void ARB_LightingPass( void )
 	// since this is guaranteed to be a single pass, fill and lock all the arrays
 
 	qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoordPtr[0] );
-	qglNormalPointer( GL_FLOAT, 16, tess.normal );
-	qglVertexPointer( 3, GL_FLOAT, 16, tess.xyz );
+	qglNormalPointer( GL_FLOAT, sizeof( tess.normal[0] ), tess.normal );
+	qglVertexPointer( 3, GL_FLOAT, sizeof( tess.xyz[0] ), tess.xyz );
 
 	if ( qglLockArraysEXT )
 		qglLockArraysEXT( 0, tess.numVertexes );

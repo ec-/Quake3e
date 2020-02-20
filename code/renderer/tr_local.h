@@ -317,11 +317,13 @@ typedef struct {
 	qboolean		isDetail;
 	qboolean		depthFragment;
 
-	short			vboVPindex;			// combined fog programs
-	short			vboFPindex;			// combined fog programs
+	short			vboVPindex[3];		// normal, eye-in, eye-out
+	short			vboFPindex[2];		// normal, fog-blend
 	
 	uint32_t		color_offset;		// within current shader
 	uint32_t		tex_offset[2];		// within current shader
+
+	qboolean		needViewPos;
 
 } shaderStage_t;
 
