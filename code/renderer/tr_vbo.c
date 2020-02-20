@@ -370,7 +370,12 @@ static qboolean isStaticTCgen( const shaderStage_t *stage, int bundle )
 		case TCGEN_IDENTITY:	// clear to 0,0
 		case TCGEN_LIGHTMAP:
 		case TCGEN_TEXTURE:
+			return qtrue;
 		case TCGEN_ENVIRONMENT_MAPPED:
+			if ( stage->bundle[bundle].numTexMods == 0 )
+				return qtrue;
+			else
+				return qfalse;
 		//case TCGEN_ENVIRONMENT_MAPPED_FP:
 		//case TCGEN_FOG:
 		case TCGEN_VECTOR:		// S and T from world coordinates

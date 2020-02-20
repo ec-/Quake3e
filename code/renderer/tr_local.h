@@ -29,7 +29,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define MAX_LITSURFS		(MAX_DRAWSURFS)
 
 #define USE_TESS_NEEDS_NORMAL
-#define USE_TESS_NEEDS_ST2
+//#define USE_TESS_NEEDS_ST2
 
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qfiles.h"
