@@ -139,6 +139,7 @@ R_ImageList_f
 void R_ImageList_f( void ) {
 	const image_t *image;
 	int i, estTotalSize = 0;
+	char *name, buf[MAX_QPATH*2 + 5];
 
 	ri.Printf( PRINT_ALL, "\n -n- --w-- --h-- type  -size- --name-------\n" );
 
@@ -206,7 +207,15 @@ void R_ImageList_f( void ) {
 			sizeSuffix = "Gb";
 		}
 
-		ri.Printf( PRINT_ALL, " %3i %5i %5i %s %4i%s %s\n", i, image->uploadWidth, image->uploadHeight, format, displaySize, sizeSuffix, image->imgName );
+		if ( Q_stricmp( image->imgName, image->imgName2 ) == 0 ) {
+			name = image->imgName;
+		} else {
+			Com_sprintf( buf, sizeof( buf ), "%s => " S_COLOR_YELLOW "%s",
+				image->imgName, image->imgName2 );
+			name = buf;
+		}
+
+		ri.Printf( PRINT_ALL, " %3i %5i %5i %s %4i%s %s\n", i, image->uploadWidth, image->uploadHeight, format, displaySize, sizeSuffix, name );
 		estTotalSize += estSize;
 	}
 
@@ -727,26 +736,41 @@ This is the only way any image_t are created
 Picture data may be modified in-place during mipmap processing
 ================
 */
-image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgFlags_t flags ) {
+image_t *R_CreateImage( const char *name, const char *name2, byte *pic, int width, int height, imgFlags_t flags ) {
 	image_t		*image;
 	long		hash;
 	GLint		glWrapClampMode;
 	GLuint		currTexture;
 	int			currTMU;
-	int			namelen;
+	int			namelen, namelen2;
+	const char	*slash;
 
-	namelen = (int)strlen( name );
-	if ( namelen >= MAX_QPATH ) {
+	namelen = (int)strlen( name ) + 1;
+	if ( namelen > MAX_QPATH ) {
 		ri.Error( ERR_DROP, "R_CreateImage: \"%s\" is too long", name );
+	}
+
+	if ( name2 && Q_stricmp( name, name2 ) != 0 ) {
+		// leave only file name
+		name2 = ( slash = strrchr( name2, '/' ) ) ? slash + 1 : name2;
+		namelen2 = (int)strlen( name2 ) + 1;
+	} else {
+		namelen2 = 0;
 	}
 
 	if ( tr.numImages == MAX_DRAWIMAGES ) {
 		ri.Error( ERR_DROP, "R_CreateImage: MAX_DRAWIMAGES hit" );
 	}
 
-	image = ri.Hunk_Alloc( sizeof( *image ) + namelen + 1, h_low );
+	image = ri.Hunk_Alloc( sizeof( *image ) + namelen + namelen2, h_low );
 	image->imgName = (char *)( image + 1 );
 	strcpy( image->imgName, name );
+	if ( namelen2 ) {
+		image->imgName2 = image->imgName + namelen;
+		strcpy( image->imgName2, name2 );
+	} else {
+		image->imgName2 = image->imgName; 
+	}
 
 	hash = generateHashValue( name );
 	image->next = hashTable[ hash ];
@@ -853,7 +877,7 @@ static const char *R_LoadImage( const char *name, byte **pic, int *width, int *h
 {
 	static char localName[ MAX_QPATH ];
 	const char *altName, *ext;
-	qboolean orgNameFailed = qfalse;
+	//qboolean orgNameFailed = qfalse;
 	int orgLoader = -1;
 	int i;
 
@@ -884,7 +908,7 @@ static const char *R_LoadImage( const char *name, byte **pic, int *width, int *h
 			{
 				// Loader failed, most likely because the file isn't there;
 				// try again without the extension
-				orgNameFailed = qtrue;
+				//orgNameFailed = qtrue;
 				orgLoader = i;
 				COM_StripExtension( name, localName, MAX_QPATH );
 			}
@@ -910,11 +934,13 @@ static const char *R_LoadImage( const char *name, byte **pic, int *width, int *h
 
 		if ( *pic )
 		{
+#if 0
 			if ( orgNameFailed )
 			{
 				ri.Printf( PRINT_DEVELOPER, S_COLOR_YELLOW "WARNING: %s not present, using %s instead\n",
 						name, altName );
 			}
+#endif
 			Q_strncpyz( localName, altName, sizeof( localName ) );
 			break;
 		}
@@ -987,7 +1013,7 @@ image_t	*R_FindImageFile( const char *name, imgFlags_t flags )
 		}
 	}
 
-	image = R_CreateImage( localName, pic, width, height, flags );
+	image = R_CreateImage( name, localName, pic, width, height, flags );
 	ri.Free( pic );
 	return image;
 }
@@ -1023,7 +1049,7 @@ static void R_CreateDlightImage( void ) {
 			data[y][x][3] = 255;
 		}
 	}
-	tr.dlightImage = R_CreateImage("*dlight", (byte*)data, DLIGHT_SIZE, DLIGHT_SIZE, IMGFLAG_CLAMPTOEDGE );
+	tr.dlightImage = R_CreateImage( "*dlight", NULL, (byte*)data, DLIGHT_SIZE, DLIGHT_SIZE, IMGFLAG_CLAMPTOEDGE );
 }
 
 
@@ -1108,7 +1134,7 @@ static void R_CreateFogImage( void ) {
 			data[(y*FOG_S+x)*4+3] = 255*d;
 		}
 	}
-	tr.fogImage = R_CreateImage( "*fog", data, FOG_S, FOG_T, IMGFLAG_CLAMPTOEDGE );
+	tr.fogImage = R_CreateImage( "*fog", NULL, data, FOG_S, FOG_T, IMGFLAG_CLAMPTOEDGE );
 	ri.Hunk_FreeTempMemory( data );
 }
 
@@ -1187,7 +1213,7 @@ static qboolean R_BuildDefaultImage( const char *format ) {
 		}
 	}
 
-	tr.defaultImage = R_CreateImage( "*default", (byte *)data, DEFAULT_SIZE, DEFAULT_SIZE, IMGFLAG_MIPMAP );
+	tr.defaultImage = R_CreateImage( "*default", NULL, (byte *)data, DEFAULT_SIZE, DEFAULT_SIZE, IMGFLAG_MIPMAP );
 
 	return qtrue;
 }
@@ -1237,7 +1263,7 @@ static void R_CreateDefaultImage( void ) {
 		data[x][DEFAULT_SIZE-1][3] = 255;
 	}
 
-	tr.defaultImage = R_CreateImage( "*default", (byte *)data, DEFAULT_SIZE, DEFAULT_SIZE, IMGFLAG_MIPMAP );
+	tr.defaultImage = R_CreateImage( "*default", NULL, (byte *)data, DEFAULT_SIZE, DEFAULT_SIZE, IMGFLAG_MIPMAP );
 }
 
 
@@ -1254,7 +1280,7 @@ void R_CreateBuiltinImages( void ) {
 
 	// we use a solid white image instead of disabling texturing
 	Com_Memset( data, 255, sizeof( data ) );
-	tr.whiteImage = R_CreateImage( "*white", (byte *)data, 8, 8, IMGFLAG_NONE );
+	tr.whiteImage = R_CreateImage( "*white", NULL, (byte *)data, 8, 8, IMGFLAG_NONE );
 
 	// with overbright bits active, we need an image which is some fraction of full color,
 	// for default lightmaps, etc
@@ -1267,7 +1293,7 @@ void R_CreateBuiltinImages( void ) {
 		}
 	}
 
-	tr.identityLightImage = R_CreateImage( "*identityLight", (byte *)data, 8, 8, IMGFLAG_NONE );
+	tr.identityLightImage = R_CreateImage( "*identityLight", NULL, (byte *)data, 8, 8, IMGFLAG_NONE );
 
 	//for ( x = 0; x < ARRAY_LEN( tr.scratchImage ); x++ ) {
 		// scratchimage is usually used for cinematic drawing
