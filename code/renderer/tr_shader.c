@@ -2187,10 +2187,10 @@ static void FixRenderCommandList( int newShader ) {
 
 				for( i = 0, drawSurf = ds_cmd->drawSurfs; i < ds_cmd->numDrawSurfs; i++, drawSurf++ ) {
 					R_DecomposeSort( drawSurf->sort, &entityNum, &sh, &fogNum, &dlightMap );
-					sortedIndex = (( drawSurf->sort >> QSORT_SHADERNUM_SHIFT ) & (MAX_SHADERS-1));
-					if( sortedIndex >= newShader ) {
+					sortedIndex = (( drawSurf->sort >> QSORT_SHADERNUM_SHIFT ) & SHADERNUM_MASK);
+					if ( sortedIndex >= newShader ) {
 						sortedIndex++;
-						drawSurf->sort = (sortedIndex << QSORT_SHADERNUM_SHIFT) | entityNum | ( fogNum << QSORT_FOGNUM_SHIFT ) | (int)dlightMap;
+						drawSurf->sort = (sortedIndex << QSORT_SHADERNUM_SHIFT) | (entityNum << QSORT_REFENTITYNUM_SHIFT) | ( fogNum << QSORT_FOGNUM_SHIFT ) | (int)dlightMap;
 					}
 				}
 				curCmd = (const void *)(ds_cmd + 1);
@@ -2204,14 +2204,14 @@ static void FixRenderCommandList( int newShader ) {
 				}
 			case RC_SWAP_BUFFERS:
 				{
-				const swapBuffersCommand_t *db_cmd = (const swapBuffersCommand_t *)curCmd;
-				curCmd = (const void *)(db_cmd + 1);
+				const swapBuffersCommand_t *sb_cmd = (const swapBuffersCommand_t *)curCmd;
+				curCmd = (const void *)(sb_cmd + 1);
 				break;
 				}
 			case RC_FINISHBLOOM:
 				{
-				const finishBloomCommand_t *db_cmd = (const finishBloomCommand_t *)curCmd;
-				curCmd = (const void *)(db_cmd + 1);
+				const finishBloomCommand_t *fb_cmd = (const finishBloomCommand_t *)curCmd;
+				curCmd = (const void *)(fb_cmd + 1);
 				break;
 				}
 			case RC_COLORMASK:
@@ -2222,14 +2222,14 @@ static void FixRenderCommandList( int newShader ) {
 				}
 			case RC_CLEARDEPTH:
 				{
-				const clearDepthCommand_t *db_cmd = (const clearDepthCommand_t *)curCmd;
-				curCmd = (const void *)(db_cmd + 1);
+				const clearDepthCommand_t *cd_cmd = (const clearDepthCommand_t *)curCmd;
+				curCmd = (const void *)(cd_cmd + 1);
 				break;
 				}
 			case RC_CLEARCOLOR:
 				{
-				const clearColorCommand_t *db_cmd = (const clearColorCommand_t *)curCmd;
-				curCmd = (const void *)(db_cmd + 1);
+				const clearColorCommand_t *cc_cmd = (const clearColorCommand_t *)curCmd;
+				curCmd = (const void *)(cc_cmd + 1);
 				break;
 				}
 			case RC_END_OF_LIST:
