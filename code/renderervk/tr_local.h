@@ -1345,6 +1345,7 @@ void R_RotateForEntity( const trRefEntity_t *ent, const viewParms_t *viewParms, 
 /*
 ** GL wrapper/helper functions
 */
+const float *GL_Ortho( const float left, const float right, const float bottom, const float top, const float znear, const float zfar );
 void	GL_Bind( image_t *image );
 void	GL_SelectTexture( int unit );
 void	GL_TextureMode( const char *string );

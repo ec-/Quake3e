@@ -982,7 +982,6 @@ RENDER BACK END FUNCTIONS
 /*
 ================
 RB_SetGL2D
-
 ================
 */
 void RB_SetGL2D( void ) {

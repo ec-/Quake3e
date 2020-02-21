@@ -30,139 +30,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
   This file deals with applying shaders to surface data in the tess struct.
 */
 
-/*
-================
-R_ArrayElementDiscrete
-
-This is just for OpenGL conformance testing, it should never be the fastest
-================
-*/
-#ifndef USE_VULKAN
-static void APIENTRY R_ArrayElementDiscrete( GLint index ) {
-	qglColor4ubv( tess.svars.colors[ index ] );
-	if ( glState.currenttmu ) {
-		qglMultiTexCoord2fARB( 0, tess.svars.texcoords[ 0 ][ index ][0], tess.svars.texcoords[ 0 ][ index ][1] );
-		qglMultiTexCoord2fARB( 1, tess.svars.texcoords[ 1 ][ index ][0], tess.svars.texcoords[ 1 ][ index ][1] );
-	} else {
-		qglTexCoord2fv( tess.svars.texcoords[ 0 ][ index ] );
-	}
-	qglVertex3fv( tess.xyz[ index ] );
-}
-
-
-/*
-===================
-R_DrawStripElements
-===================
-*/
-static int		c_vertexes;		// for seeing how long our average strips are
-static int		c_begins;
-static void R_DrawStripElements( int numIndexes, const glIndex_t *indexes, void ( APIENTRY *element )(GLint) ) {
-	int i;
-	glIndex_t last[3] = { MAX_UINT, MAX_UINT, MAX_UINT };
-	qboolean even;
-
-	c_begins++;
-
-	if ( numIndexes <= 0 ) {
-		return;
-	}
-
-	qglBegin( GL_TRIANGLE_STRIP );
-
-	// prime the strip
-	element( indexes[0] );
-	element( indexes[1] );
-	element( indexes[2] );
-	c_vertexes += 3;
-
-	last[0] = indexes[0];
-	last[1] = indexes[1];
-	last[2] = indexes[2];
-
-	even = qfalse;
-
-	for ( i = 3; i < numIndexes; i += 3 )
-	{
-		// odd numbered triangle in potential strip
-		if ( !even )
-		{
-			// check previous triangle to see if we're continuing a strip
-			if ( ( indexes[i+0] == last[2] ) && ( indexes[i+1] == last[1] ) )
-			{
-				element( indexes[i+2] );
-				c_vertexes++;
-				assert( indexes[i+2] < tess.numVertexes );
-				even = qtrue;
-			}
-			// otherwise we're done with this strip so finish it and start
-			// a new one
-			else
-			{
-				qglEnd();
-
-				qglBegin( GL_TRIANGLE_STRIP );
-				c_begins++;
-
-				element( indexes[i+0] );
-				element( indexes[i+1] );
-				element( indexes[i+2] );
-
-				c_vertexes += 3;
-
-				even = qfalse;
-			}
-		}
-		else
-		{
-			// check previous triangle to see if we're continuing a strip
-			if ( ( last[2] == indexes[i+1] ) && ( last[0] == indexes[i+0] ) )
-			{
-				element( indexes[i+2] );
-				c_vertexes++;
-
-				even = qfalse;
-			}
-			// otherwise we're done with this strip so finish it and start
-			// a new one
-			else
-			{
-				qglEnd();
-
-				qglBegin( GL_TRIANGLE_STRIP );
-				c_begins++;
-
-				element( indexes[i+0] );
-				element( indexes[i+1] );
-				element( indexes[i+2] );
-				c_vertexes += 3;
-
-				even = qfalse;
-			}
-		}
-
-		// cache the last three vertices
-		last[0] = indexes[i+0];
-		last[1] = indexes[i+1];
-		last[2] = indexes[i+2];
-	}
-
-	qglEnd();
-}
-
 
 /*
 ==================
 R_DrawElements
 ==================
 */
+#ifndef USE_VULKAN
 void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
-
-	//if ( qglLockArraysEXT ) {
-		qglDrawElements( GL_TRIANGLES, numIndexes, GL_INDEX_TYPE, indexes );
-	//} else {
-	//	R_DrawStripElements( numIndexes,  indexes, qglArrayElement );
-	//}
+	qglDrawElements( GL_TRIANGLES, numIndexes, GL_INDEX_TYPE, indexes );
 }
 #endif
 
@@ -333,13 +209,10 @@ static void DrawNormals( const shaderCommands_t *input ) {
 
 	GL_State( GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE );
 
-	tess.numIndexes = 0;
-	for ( i = 0; i < tess.numVertexes; i++ ) {
-		VectorMA( tess.xyz[i], 2.0, tess.normal[i], tess.xyz[i + tess.numVertexes] );
-		tess.indexes[  tess.numIndexes + 0 ] = i;
-		tess.indexes[  tess.numIndexes + 1 ] = i + tess.numVertexes;
-		tess.numIndexes += 2;
-	}
+	for ( i = tess.numVertexes-1; i >= 0; i-- ) {
+		VectorMA( tess.xyz[i], 2.0, tess.normal[i], tess.xyz[i*2 + 1] );
+		VectorCopy( tess.xyz[i], tess.xyz[i*2] );
+	} 
 
 	qglVertexPointer( 3, GL_FLOAT, sizeof( tess.xyz[0] ), tess.xyz );
 
@@ -347,7 +220,7 @@ static void DrawNormals( const shaderCommands_t *input ) {
 		qglLockArraysEXT( 0, tess.numVertexes * 2 );
 	}
 
-	qglDrawElements( GL_LINES, tess.numIndexes, GL_INDEX_TYPE, tess.indexes );
+	qglDrawArrays( GL_LINES, 0, tess.numVertexes * 2 );
 
 	if ( qglUnlockArraysEXT ) {
 		qglUnlockArraysEXT();
@@ -1133,7 +1006,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 				GL_ClientState( 1, CLS_NONE );
 				GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
 
-				qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[0] );
+				qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoordPtr[0] );
 				qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors );
 			}
 
@@ -1401,25 +1274,25 @@ void RB_StageIteratorGeneric( void )
 		// FIXME: we can't do that if going to lighting/fog later?
 		setArraysOnce = qtrue;
 
+		GL_ClientState( 0, CLS_COLOR_ARRAY | CLS_TEXCOORD_ARRAY );
+
 		if ( tess.xstages[0] )
 		{
 			R_ComputeColors( tess.xstages[0] );
+			qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors );
 			R_ComputeTexCoords( 0, &tess.xstages[0]->bundle[0] );
+			qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoordPtr[0] );
 			if ( shader->multitextureEnv )
 			{
 				GL_ClientState( 1, CLS_TEXCOORD_ARRAY );
 				R_ComputeTexCoords( 1, &tess.xstages[0]->bundle[1] );
-				qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[1] );
+				qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoordPtr[1] );
 			}
 			else
 			{
 				GL_ClientState( 1, CLS_NONE );
 			}
 		}
-
-		GL_ClientState( 0, CLS_COLOR_ARRAY | CLS_TEXCOORD_ARRAY );
-		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors );
-		qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[0] );
 	}
 
 	qglVertexPointer( 3, GL_FLOAT, sizeof( input->xyz[0] ), input->xyz ); // padded for SIMD

@@ -1822,8 +1822,8 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 		char *c;
 		void *v;
 	} text;
-	char		*text_p;
-	char		*token;
+	const char	*text_p;
+	const char	*token;
 	char		surfName[MAX_QPATH];
 	int			totalSurfaces;
 

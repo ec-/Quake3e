@@ -191,6 +191,7 @@ typedef char GLchar;
 	GLE( void, glDepthRange, GLclampd zNear, GLclampd zFar ) \
 	GLE( void, glDisable, GLenum cap ) \
 	GLE( void, glDisableClientState, GLenum array ) \
+	GLE( void, glDrawArrays, GLenum mode, GLint first, GLsizei count ) \
 	GLE( void, glDrawBuffer, GLenum mode ) \
 	GLE( void, glDrawElements, GLenum mode, GLsizei count, GLenum type, const GLvoid *indices ) \
 	GLE( void, glEnable, GLenum cap ) \

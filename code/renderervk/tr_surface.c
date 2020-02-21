@@ -1286,21 +1286,42 @@ static void RB_SurfaceAxis( void ) {
 
 	tess.numVertexes = 0;
 #else
-	GL_Bind( tr.whiteImage );
+	vec3_t xyz[6];
+	color4ub_t colors[6];
+	int i;
+
+	GL_ClientState( 0, CLS_COLOR_ARRAY );
+
+	qglDisable( GL_TEXTURE_2D );
 	GL_State( GLS_DEFAULT );
+
 	qglLineWidth( 3 );
-	qglBegin( GL_LINES );
-	qglColor3f( 1,0,0 );
-	qglVertex3f( 0,0,0 );
-	qglVertex3f( 16,0,0 );
-	qglColor3f( 0,1,0 );
-	qglVertex3f( 0,0,0 );
-	qglVertex3f( 0,16,0 );
-	qglColor3f( 0,0,1 );
-	qglVertex3f( 0,0,0 );
-	qglVertex3f( 0,0,16 );
-	qglEnd();
+
+	Com_Memset( xyz, 0, sizeof( xyz ) );
+	xyz[1][0] = 16.0;
+	xyz[3][1] = 16.0;
+	xyz[5][2] = 16.0;
+
+	Com_Memset( colors, 0, sizeof( colors ) );
+	for ( i = 0; i < 6; i++ ) {
+		colors[i][3] = 255;
+	}
+
+	colors[0][0] = 255;
+	colors[1][0] = 255;
+	colors[2][1] = 255;
+	colors[3][1] = 255;
+	colors[4][2] = 255;
+	colors[5][2] = 255;
+
+	qglVertexPointer( 3, GL_FLOAT, 0, xyz );
+	qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, colors );
+
+	qglDrawArrays( GL_LINES, 0, 6 );
+
 	qglLineWidth( 1 );
+
+	qglEnable( GL_TEXTURE_2D );
 #endif
 }
 

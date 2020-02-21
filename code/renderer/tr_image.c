@@ -816,11 +816,6 @@ image_t *R_CreateImage( const char *name, byte *pic, int width, int height, imgF
 	glState.currenttextures[ glState.currenttmu ] = currTexture;
 	qglBindTexture( GL_TEXTURE_2D, currTexture );
 
-	//if ( image->TMU == 1 ) {
-	//	GL_SelectTexture( 0 );
-	//}
-	//qglBindTexture( GL_TEXTURE_2D, 0 );
-	
 	return image;
 }
 
@@ -1536,8 +1531,8 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 		char *c;
 		void *v;
 	} text;
-	char		*text_p;
-	char		*token;
+	const char	*text_p;
+	const char	*token;
 	char		surfName[MAX_QPATH];
 	int			totalSurfaces;
 

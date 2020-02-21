@@ -160,13 +160,10 @@ static void DrawNormals( const shaderCommands_t *input ) {
 
 	GL_State( GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE );
 
-	tess.numIndexes = 0;
-	for ( i = 0; i < tess.numVertexes; i++ ) {
-		VectorMA( tess.xyz[i], 2.0, tess.normal[i], tess.xyz[i + tess.numVertexes] );
-		tess.indexes[  tess.numIndexes + 0 ] = i;
-		tess.indexes[  tess.numIndexes + 1 ] = i + tess.numVertexes;
-		tess.numIndexes += 2;
-	}
+	for ( i = tess.numVertexes-1; i >= 0; i-- ) {
+		VectorMA( tess.xyz[i], 2.0, tess.normal[i], tess.xyz[i*2 + 1] );
+		VectorCopy( tess.xyz[i], tess.xyz[i*2] );
+	} 
 
 	qglVertexPointer( 3, GL_FLOAT, sizeof( tess.xyz[0] ), tess.xyz );
 
@@ -174,7 +171,7 @@ static void DrawNormals( const shaderCommands_t *input ) {
 		qglLockArraysEXT( 0, tess.numVertexes * 2 );
 	}
 
-	qglDrawElements( GL_LINES, tess.numIndexes, GL_INDEX_TYPE, tess.indexes );
+	qglDrawArrays( GL_LINES, 0, tess.numVertexes * 2 );
 
 	if ( qglUnlockArraysEXT ) {
 		qglUnlockArraysEXT();
