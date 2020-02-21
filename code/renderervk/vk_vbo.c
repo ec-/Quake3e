@@ -246,6 +246,8 @@ static qboolean isStaticShader( shader_t *shader )
 static void VBO_AddGeometry( vbo_t *vbo, vbo_item_t *vi, shaderCommands_t *input )
 {
 	uint32_t size, offs;
+	uint32_t offs_st0 = 0;
+	uint32_t offs_st1 = 0;
 	int i;
 
 	if ( input->shader->iboOffset == -1 || input->shader->vboOffset == -1 ) {
@@ -272,11 +274,21 @@ static void VBO_AddGeometry( vbo_t *vbo, vbo_item_t *vi, shaderCommands_t *input
 			pStage->color_offset = offs; offs += input->shader->numVertexes * sizeof( tess.svars.colors[0] );
 			if ( pStage->tessFlags & TESS_ST0 )
 			{
+				offs_st0 = offs;
 				pStage->tex_offset[0] = offs; offs += input->shader->numVertexes * sizeof( tess.svars.texcoords[0][0] );
+			}
+			else
+			{
+				pStage->tex_offset[0] = offs_st0;
 			}
 			if ( pStage->tessFlags & TESS_ST1 )
 			{
+				offs_st1 = offs;
 				pStage->tex_offset[1] = offs; offs += input->shader->numVertexes * sizeof( tess.svars.texcoords[1][0] );
+			}
+			else
+			{
+				pStage->tex_offset[1] = offs_st1;
 			}
 		}
 

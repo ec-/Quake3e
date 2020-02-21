@@ -1938,7 +1938,7 @@ static void vk_create_persistent_pipelines( void )
 			};
 			qboolean polygon_offset[2] = { qfalse, qtrue };
 			qboolean clipping_plane[2] = { qfalse, qtrue };
-			int i, j, k, l;
+			int i, j, k, l, m;
 
 			Com_Memset(&def, 0, sizeof(def));
 			def.shader_type = TYPE_SIGNLE_TEXTURE;
@@ -1984,10 +1984,13 @@ static void vk_create_persistent_pipelines( void )
 						def.polygon_offset = polygon_offset[k];
 						for ( l = 0; l < 2; l++ ) {
 							def.fog_stage = l; // fogStage
-							def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING;
-							vk.dlight_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, qfalse );
-							def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING1;
-							vk.dlight1_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, qfalse );
+							for ( m = 0; m < 2; m++ ) {
+								def.abs_light = m;
+								def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING;
+								vk.dlight_pipelines_x[i][j][k][l][m] = vk_find_pipeline_ext( 0, &def, qfalse );
+								def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING1;
+								vk.dlight1_pipelines_x[i][j][k][l][m] = vk_find_pipeline_ext( 0, &def, qfalse );
+							}
 						}
 					}
 				}
@@ -3801,8 +3804,8 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 	VkShaderModule *vs_module = NULL;
 	VkShaderModule *fs_module = NULL;
 	int32_t vert_spec_data[1]; // clippping
-	floatint_t frag_spec_data[5]; // alpha-test-func, alpha-test-value, depth-fragment, alpha-to-coverage, color_mode
-	VkSpecializationMapEntry spec_entries[6];
+	floatint_t frag_spec_data[6]; // alpha-test-func, alpha-test-value, depth-fragment, alpha-to-coverage, color_mode, abs_light
+	VkSpecializationMapEntry spec_entries[7];
 	VkSpecializationInfo vert_spec_info;
 	VkSpecializationInfo frag_spec_info;
 	VkPipelineVertexInputStateCreateInfo vertex_input_state;
@@ -3927,7 +3930,18 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_COLOR_RED:   frag_spec_data[4].i = 2; break;
 	}
 
+	switch ( def->shader_type ) {
+		case TYPE_SIGNLE_TEXTURE_LIGHTING:
+		case TYPE_SIGNLE_TEXTURE_LIGHTING1:
+			frag_spec_data[5].i = def->abs_light ? 1 : 0;
+		default:
+			break;
+	}
+
+	//
 	// vertex module specialization data
+	//
+
 	spec_entries[0].constantID = 0; // clip_plane
 	spec_entries[0].offset = 0 * sizeof( int32_t );
 	spec_entries[0].size = sizeof( int32_t );
@@ -3938,7 +3952,10 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 	vert_spec_info.pData = &vert_spec_data[0];
 	shader_stages[0].pSpecializationInfo = &vert_spec_info;
 
+	//
 	// fragment module specialization data
+	//
+
 	spec_entries[1].constantID = 0;  // alpha-test-function
 	spec_entries[1].offset = 0 * sizeof( int32_t );
 	spec_entries[1].size = sizeof( int32_t );
@@ -3959,9 +3976,13 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 	spec_entries[5].offset = 4 * sizeof( int32_t );
 	spec_entries[5].size = sizeof( int32_t );
 
-	frag_spec_info.mapEntryCount = 5;
+	spec_entries[6].constantID = 5; // abs_light
+	spec_entries[6].offset = 5 * sizeof( int32_t );
+	spec_entries[6].size = sizeof( int32_t );
+
+	frag_spec_info.mapEntryCount = 6;
 	frag_spec_info.pMapEntries = spec_entries + 1;
-	frag_spec_info.dataSize = sizeof( int32_t ) + sizeof( float ) + sizeof( float ) + sizeof( int32_t ) + sizeof( int32_t );
+	frag_spec_info.dataSize = sizeof( int32_t ) * 6;
 	frag_spec_info.pData = &frag_spec_data[0];
 	shader_stages[1].pSpecializationInfo = &frag_spec_info;
 

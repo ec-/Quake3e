@@ -996,7 +996,7 @@ image_t *R_CreateImage( const char *name, const char *name2, byte *pic, int widt
 
 	if ( name2 && Q_stricmp( name, name2 ) != 0 ) {
 		// leave only file name
-		name2 = ( slash = strrchr( name2, '/' ) ) ? slash + 1 : name2;
+		name2 = ( slash = strrchr( name2, '/' ) ) != NULL ? slash + 1 : name2;
 		namelen2 = (int)strlen( name2 ) + 1;
 	} else {
 		namelen2 = 0;

@@ -31,6 +31,8 @@ layout (constant_id = 0) const int alpha_test_func = 0;
 layout (constant_id = 1) const float alpha_test_value = 0.0;
 //layout (constant_id = 2) const float depth_fragment = 0.85;
 layout (constant_id = 3) const int alpha_to_coverage = 0;
+//layout (constant_id = 4) const int color_mode = 0;
+layout (constant_id = 5) const int abs_light = 0;
 
 float CorrectAlpha(float threshold, float alpha, vec2 tc)
 {
@@ -83,7 +85,17 @@ void main() {
 	float diffuse = dot(N, nL);
 
 	// specular reflection term (N.H)
-	float specFactor = abs(dot(N, normalize(nL + nV)));
+	float specFactor = dot(N, normalize(nL + nV));
+
+	if ( abs_light != 0 )
+	{
+		// make sure that light and eye vectors are on the same plane side
+		if ( diffuse * dot(N, nV) <= 0 )
+			discard;
+
+		diffuse = abs( diffuse );
+		specFactor = abs( specFactor );
+	}
 
 	//float spec = pow(specFactor, 8.0) * 0.25;
 	vec4 spec = vec4(pow(specFactor, 10.0)*0.25) * base * 0.8;

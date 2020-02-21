@@ -1118,6 +1118,7 @@ void VK_LightingPass( void )
 	const shaderStage_t *pStage;
 	const dlight_t *dl;
 	cullType_t cull;
+	int abs_light;
 	int clip;
 
 	if ( tess.shader->lightingStage < 0 )
@@ -1158,13 +1159,15 @@ void VK_LightingPass( void )
 		clip = 0;
 	}
 
+	abs_light = /* (pStage->stateBits & GLS_ATEST_BITS) && */ (cull == CT_TWO_SIDED) ? 1 : 0;
+
 	if ( fog_stage )
 		vk_bind_fog_image();
 
 	if ( dl->linear )
-		pipeline = vk.dlight1_pipelines_x[clip][cull][tess.shader->polygonOffset][fog_stage];
+		pipeline = vk.dlight1_pipelines_x[clip][cull][tess.shader->polygonOffset][fog_stage][abs_light];
 	else
-		pipeline = vk.dlight_pipelines_x[clip][cull][tess.shader->polygonOffset][fog_stage];
+		pipeline = vk.dlight_pipelines_x[clip][cull][tess.shader->polygonOffset][fog_stage][abs_light];
 
 	GL_SelectTexture( 0 );
 	R_BindAnimatedImage( &pStage->bundle[ 0 ] );
@@ -1175,7 +1178,6 @@ void VK_LightingPass( void )
 	} else
 #endif
 	{
-		pStage = tess.xstages[ tess.shader->lightingStage ];
 		R_ComputeTexCoords( 0, &pStage->bundle[ 0 ] );
 	}
 

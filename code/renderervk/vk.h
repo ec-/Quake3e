@@ -75,6 +75,7 @@ typedef struct {
 	Vk_Shadow_Phase shadow_phase;
 	int fog_stage; // off, fog-in / fog-out
 	int line_width;
+	int abs_light;
 } Vk_Pipeline_Def;
 
 typedef struct VK_Pipeline {
@@ -425,10 +426,10 @@ typedef struct {
 	// dim 2 is a polygon offset value (0 - off, 1 - on).
 	uint32_t dlight_pipelines[2][3][2];
 
-	// clippingPlane[2], cullType[3], polygonOffset[2], fogStage[3]
+	// clippingPlane[2], cullType[3], polygonOffset[2], fogStage[2], absLight[2]
 #ifdef USE_PMLIGHT
-	uint32_t dlight_pipelines_x[2][3][2][2];
-	uint32_t dlight1_pipelines_x[2][3][2][2];
+	uint32_t dlight_pipelines_x[2][3][2][2][2];
+	uint32_t dlight1_pipelines_x[2][3][2][2][2];
 #endif
 
 	// debug visualization pipelines
