@@ -208,7 +208,6 @@ typedef char GLchar;
 	GLE( void, glLoadMatrixf, const GLfloat *m ) \
 	GLE( void, glMatrixMode, GLenum mode ) \
 	GLE( void, glNormalPointer, GLenum type, GLsizei stride, const GLvoid *pointer ) \
-	GLE( void, glOrtho, GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar ) \
 	GLE( void, glPolygonMode, GLenum face, GLenum mode ) \
 	GLE( void, glPolygonOffset, GLfloat factor, GLfloat units ) \
 	GLE( void, glPopMatrix, void ) \

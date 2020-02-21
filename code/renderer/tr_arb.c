@@ -1642,8 +1642,7 @@ void FBO_CopyScreen( void )
 	//if ( !backEnd.projection2D )
 	{
 		qglMatrixMode( GL_PROJECTION );
-		qglLoadIdentity();
-		qglOrtho( 0, glConfig.vidWidth, glConfig.vidHeight, 0, 0, 1 );
+		qglLoadMatrixf( GL_Ortho( 0, glConfig.vidWidth, glConfig.vidHeight, 0, 0, 1 ) );
 		qglMatrixMode( GL_MODELVIEW );
 		qglLoadIdentity();
 		GL_Cull( CT_TWO_SIDED );
@@ -1917,8 +1916,7 @@ void FBO_PostProcess( void )
 		qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
 		qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
 		qglMatrixMode( GL_PROJECTION );
-		qglLoadIdentity();
-		qglOrtho( 0, glConfig.vidWidth, glConfig.vidHeight, 0, 0, 1 );
+		qglLoadMatrixf( GL_Ortho( 0, glConfig.vidWidth, glConfig.vidHeight, 0, 0, 1 ) );
 		qglMatrixMode( GL_MODELVIEW );
 		qglLoadIdentity();
 		backEnd.projection2D = qtrue;
