@@ -1099,6 +1099,8 @@ typedef struct {
 	qboolean throttle;
 	qboolean drawConsole;
 
+	qboolean screenMapDone;
+
 } backEndState_t;
 
 /*

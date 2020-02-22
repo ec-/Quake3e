@@ -5004,6 +5004,26 @@ void vk_end_render_pass( void )
 //	vk.renderPassIndex = RENDER_PASS_MAIN;
 }
 
+static qboolean vk_find_drawsurfs( void )
+{
+	const void *curCmd = &backEndData->commands.cmds;
+	const drawBufferCommand_t *db_cmd;
+
+	for ( ;; ) {
+		curCmd = PADP( curCmd, sizeof(void *) );
+		switch ( *(const int *)curCmd ) {
+			case RC_DRAW_BUFFER:
+				db_cmd = (const drawBufferCommand_t *)curCmd;
+				curCmd = (const void *)(db_cmd + 1);
+				break;
+			case RC_DRAW_SURFS:
+				return qtrue;
+			default:
+				return qfalse;
+		}
+	}
+}
+
 
 void vk_begin_frame( void )
 {
@@ -5073,12 +5093,6 @@ void vk_begin_frame( void )
 	}
 #endif
 
-	if ( tr.needScreenMap ) {
-		vk_begin_screenmap_render_pass();
-	} else {
-		vk_begin_main_render_pass();
-	}
-
 	if ( vk.cmd->vertex_buffer_offset > vk.stats.vertex_buffer_max ) {
 		vk.stats.vertex_buffer_max = vk.cmd->vertex_buffer_offset;
 	}
@@ -5088,6 +5102,14 @@ void vk_begin_frame( void )
 	}
 
 	vk_world.dirty_depth_attachment = qfalse;
+
+	backEnd.screenMapDone = qfalse;
+
+	if ( tr.needScreenMap && vk_find_drawsurfs() ) {
+		vk_begin_screenmap_render_pass();
+	} else {
+		vk_begin_main_render_pass();
+	}
 
 	// dynamic vertex buffer layout
 	vk.cmd->uniform_read_offset = 0;

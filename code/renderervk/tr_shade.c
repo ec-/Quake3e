@@ -72,7 +72,7 @@ void R_BindAnimatedImage( const textureBundle_t *bundle ) {
 	}
 
 	if ( bundle->isScreenMap && backEnd.viewParms.frameSceneNum == 1 ) {
-		if ( vk.renderPassIndex == RENDER_PASS_SCREENMAP )
+		if ( !backEnd.screenMapDone )
 			GL_Bind( tr.blackImage );
 		else
 #ifdef USE_SINGLE_FBO

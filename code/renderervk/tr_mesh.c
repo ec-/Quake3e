@@ -422,9 +422,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 		// don't add third_person objects if not viewing through a portal
 		if ( !personalModel ) {
 			R_AddDrawSurf( (void *)surface, shader, fogNum, 0 );
-			if ( ent->e.renderfx & RF_FIRST_PERSON ) {
-				tr.needScreenMap |= shader->hasScreenMap;
-			}
+			tr.needScreenMap |= shader->hasScreenMap;
 		}
 
 #ifdef USE_PMLIGHT

@@ -1441,13 +1441,11 @@ RB_DrawSurfs
 =============
 */
 static const void *RB_DrawSurfs( const void *data ) {
-	const drawSurfsCommand_t *cmd;
+	const drawSurfsCommand_t *cmd = (const drawSurfsCommand_t *)data;
 	qboolean skipWeapon;
 
 	// finish any 2D drawing if needed
 	RB_EndSurface();
-
-	cmd = (const drawSurfsCommand_t *)data;
 
 	backEnd.refdef = cmd->refdef;
 	backEnd.viewParms = cmd->viewParms;
@@ -1492,6 +1490,7 @@ __redraw:
 
 		backEnd.refdef = cmd->refdef;
 		backEnd.viewParms = cmd->viewParms;
+		backEnd.screenMapDone = qtrue;
 
 		skipWeapon = qfalse;
 
@@ -1726,8 +1725,6 @@ RB_ClearColor
 static const void *RB_ClearColor( const void *data )
 {
 	const clearColorCommand_t *cmd = data;
-
-
 
 #ifdef USE_VULKAN
 	backEnd.projection2D = qtrue;
