@@ -466,6 +466,24 @@ typedef struct {
 } trRefdef_t;
 
 
+typedef struct image_s {
+	char		*imgName;			// image path, including extension
+	char		*imgName2;			// image path with real file extension
+	struct image_s *next;			// for hash search
+	int			width, height;		// source image
+	int			uploadWidth;		// after power of two and picmip but not including clamp to MAX_TEXTURE_SIZE
+	int			uploadHeight;
+	imgFlags_t	flags;
+	GLuint		texnum;				// gl texture binding
+
+	int			frameUsed;			// for texture usage in frame statistics
+
+	GLint		internalFormat;
+	int			TMU;				// only needed for voodoo2
+
+} image_t;
+
+
 //=================================================================================
 
 // max surfaces per-skin

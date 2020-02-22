@@ -1149,6 +1149,7 @@ void GLimp_Shutdown( qboolean unloadDLL )
 }
 
 
+#ifdef USE_VULKAN_API
 /*
 ** VKimp_Shutdown
 */
@@ -1209,6 +1210,7 @@ void VKimp_Shutdown( qboolean unloadDLL )
 
 	QVK_Shutdown( unloadDLL );
 }
+#endif // USE_VULKAN_API
 
 
 /*
@@ -1378,6 +1380,7 @@ static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbi
 }
 
 
+#ifdef USE_VULKAN_API
 static XVisualInfo *VK_SelectVisual( int colorbits, int depthbits, int stencilbits, glconfig_t *config )
 {
 	static XVisualInfo visinfo;
@@ -1430,9 +1433,8 @@ static XVisualInfo *VK_SelectVisual( int colorbits, int depthbits, int stencilbi
 //		
 //		}
 //	}
-
-
 }
+#endif
 
 
 /*
@@ -1540,9 +1542,11 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 
 	stencilbits = r_stencilbits->integer;
 
+#ifdef USE_VULKAN_API
 	if ( vulkan )
 		visinfo = VK_SelectVisual( colorbits, depthbits, stencilbits, config );
 	else
+#endif
 		visinfo = GL_SelectVisual( colorbits, depthbits, stencilbits, config );
 
 	if ( !visinfo )
@@ -1628,12 +1632,13 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 	}
 
 //	XSync( dpy, False );
-
+#ifdef USE_VULKAN_API
 	if ( vulkan )
 	{
 		// nothing to do
 	}
 	else
+#endif
 	{
 		ctx = qglXCreateContext( dpy, visinfo, NULL, True );
 
@@ -1732,32 +1737,6 @@ static qboolean GLW_LoadOpenGL( const char *name )
 }
 
 
-
-/*
-** GLW_LoadVulkan
-*/
-static qboolean GLW_LoadVulkan( const char *name )
-{
-	if ( r_swapInterval->integer )
-		setenv( "vblank_mode", "2", 1 );
-	else
-		setenv( "vblank_mode", "1", 1 );
-
-	// load the QVK layer
-	if ( QVK_Init( name ) )
-	{
-		qboolean fullscreen = (r_fullscreen->integer != 0);
-		// create the window and set up the context
-		if ( GLW_StartDriverAndSetMode( r_mode->integer, r_modeFullscreen->string, fullscreen, qtrue /* vulkan */) )
-			return qtrue;
-	}
-
-	QVK_Shutdown( qtrue );
-
-	return qfalse;
-}
-
-
 static qboolean GLW_StartOpenGL( void )
 {
 	//
@@ -1777,21 +1756,6 @@ static qboolean GLW_StartOpenGL( void )
 		}
 
 		Com_Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
-		return qfalse;
-	}
-
-	return qtrue;
-}
-
-
-static qboolean GLW_StartVulkan( void )
-{
-	//
-	// load and initialize the specific Vulkan driver
-	//
-	if ( !GLW_LoadVulkan( "libvulkan.so" ) )
-	{
-		Com_Error( ERR_FATAL, "GLW_StartVulkan() - could not load Vulkan subsystem\n" );
 		return qfalse;
 	}
 
@@ -1871,6 +1835,47 @@ void GLimp_Init( glconfig_t *config )
 }
 
 
+#ifdef USE_VULKAN_API
+/*
+** GLW_LoadVulkan
+*/
+static qboolean GLW_LoadVulkan( const char *name )
+{
+	if ( r_swapInterval->integer )
+		setenv( "vblank_mode", "2", 1 );
+	else
+		setenv( "vblank_mode", "1", 1 );
+
+	// load the QVK layer
+	if ( QVK_Init( name ) )
+	{
+		qboolean fullscreen = (r_fullscreen->integer != 0);
+		// create the window and set up the context
+		if ( GLW_StartDriverAndSetMode( r_mode->integer, r_modeFullscreen->string, fullscreen, qtrue /* vulkan */) )
+			return qtrue;
+	}
+
+	QVK_Shutdown( qtrue );
+
+	return qfalse;
+}
+
+
+static qboolean GLW_StartVulkan( void )
+{
+	//
+	// load and initialize the specific Vulkan driver
+	//
+	if ( !GLW_LoadVulkan( "libvulkan.so" ) )
+	{
+		Com_Error( ERR_FATAL, "GLW_StartVulkan() - could not load Vulkan subsystem\n" );
+		return qfalse;
+	}
+
+	return qtrue;
+}
+
+
 /*
 ** VKimp_Init
 **
@@ -1901,6 +1906,7 @@ void VKimp_Init( glconfig_t *config )
 
 	//InitSig(); // not clear why this is at begin & end of function
 }
+#endif // USE_VULKAN_API
 
 
 /*

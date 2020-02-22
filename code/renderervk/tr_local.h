@@ -517,6 +517,34 @@ typedef struct {
 } trRefdef_t;
 
 
+typedef struct image_s {
+	char		*imgName;			// image path, including extension
+	char		*imgName2;			// image path with real file extension
+	struct image_s *next;			// for hash search
+	int			width, height;		// source image
+	int			uploadWidth;		// after power of two and picmip but not including clamp to MAX_TEXTURE_SIZE
+	int			uploadHeight;
+	imgFlags_t	flags;
+	int			frameUsed;			// for texture usage in frame statistics
+
+#ifdef USE_VULKAN
+	int			internalFormat;
+
+	VkSamplerAddressMode wrapClampMode;
+	VkImage		handle;
+	VkImageView	view;
+	// Descriptor set that contains single descriptor used to access the given image.
+	// It is updated only once during image initialization.
+	VkDescriptorSet descriptor;
+#else
+	GLuint		texnum;				// gl texture binding
+	GLint		internalFormat;
+	int			TMU;				// only needed for voodoo2
+#endif
+
+} image_t;
+
+
 //=================================================================================
 
 // max surfaces per-skin

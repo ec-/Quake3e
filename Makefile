@@ -25,6 +25,7 @@ USE_SDL          = 0
 USE_CURL         = 1
 USE_LOCAL_HEADERS= 0
 USE_VULKAN       = 0
+#USE_VULKAN_API   = 0
 
 USE_RENDERER_DLOPEN = 0
 
@@ -139,6 +140,11 @@ ifneq ($(USE_RENDERER_DLOPEN),0)
 USE_VULKAN=1
 endif
 
+ifneq ($(USE_VULKAN),0)
+USE_VULKAN_API=1
+endif
+
+
 #############################################################################
 
 BD=$(BUILD_DIR)/debug-$(PLATFORM)-$(ARCH)
@@ -209,6 +215,10 @@ ifeq ($(USE_CURL_DLOPEN),1)
 else
   BASE_CFLAGS += -DCURL_STATICLIB
 endif
+endif
+
+ifeq ($(USE_VULKAN_API),1)
+  BASE_CFLAGS += -DUSE_VULKAN_API
 endif
 
 ifeq ($(GENERATE_DEPENDENCIES),1)
@@ -981,9 +991,12 @@ else # !USE_SDL
         $(B)/client/win_input.o \
         $(B)/client/win_minimize.o \
         $(B)/client/win_qgl.o \
-        $(B)/client/win_qvk.o \
         $(B)/client/win_snd.o \
         $(B)/client/win_wndproc.o
+ifeq ($(USE_VULKAN_API),1)
+    Q3OBJ += \
+        $(B)/client/win_qvk.o
+endif
 endif # !USE_SDL
 
 else # !MINGW
@@ -1003,11 +1016,14 @@ else # !USE_SDL
     Q3OBJ += \
         $(B)/client/linux_glimp.o \
         $(B)/client/linux_qgl.o \
-        $(B)/client/linux_qvk.o \
         $(B)/client/linux_snd.o \
         $(B)/client/x11_dga.o \
         $(B)/client/x11_randr.o \
         $(B)/client/x11_vidmode.o
+ifeq ($(USE_VULKAN_API),1)
+    Q3OBJ += \
+        $(B)/client/linux_qvk.o
+endif
 endif # !USE_SDL
 
 #  ifeq ($(PLATFORM),linux)

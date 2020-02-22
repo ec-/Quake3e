@@ -22,10 +22,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #ifdef USE_LOCAL_HEADERS
 #	include "SDL.h"
+#ifdef USE_VULKAN_API
 #	include "SDL_vulkan.h"
+#endif
 #else
 #	include <SDL.h>
+#ifdef USE_VULKAN_API
 #	include <SDL_vulkan.h>
+#endif
 #endif
 
 #include "../client/client.h"
@@ -44,8 +48,9 @@ glwstate_t glw_state;
 
 SDL_Window *SDL_window = NULL;
 static SDL_GLContext SDL_glContext = NULL;
-
+#ifdef USE_VULKAN_API
 static PFN_vkGetInstanceProcAddr qvkGetInstanceProcAddr;
+#endif
 
 cvar_t *r_allowSoftwareGL; // Don't abort out if a hardware visual can't be obtained
 cvar_t *r_swapInterval;
@@ -189,11 +194,13 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 	int x;
 	int y;
 	Uint32 flags = SDL_WINDOW_SHOWN;
-
+#ifdef USE_VULKAN_API
 	if ( vulkan ) {
 		flags |= SDL_WINDOW_VULKAN;
 		Com_Printf( "Initializing Vulkan display\n");
-	} else {
+	} else
+#endif
+	{
 		flags |= SDL_WINDOW_OPENGL;
 		Com_Printf( "Initializing OpenGL display\n");
 	}
@@ -361,7 +368,9 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 		else
 			perChannelColorBits = 4;
 
+#ifdef USE_VULKAN_API
 		if ( !vulkan )
+#endif
 		{
 	
 #ifdef __sgi /* Fix for SGIs grabbing too many bits of color */
@@ -441,6 +450,7 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 
 		SDL_glContext = NULL;
 
+#ifdef USE_VULKAN_API
 		if ( vulkan )
 		{
 			config->colorBits = testColorBits;
@@ -448,6 +458,7 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 			config->stencilBits = testStencilBits;
 		}
 		else
+#endif
 		{
 			if ( !SDL_glContext )
 			{
@@ -491,9 +502,11 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 	if ( !config->isFullscreen && r_noborder->integer )
 		SDL_SetWindowHitTest( SDL_window, SDL_HitTestFunc, NULL );
 
+#ifdef USE_VULKAN_API
 	if ( vulkan )
 		SDL_Vulkan_GetDrawableSize( SDL_window, &config->vidWidth, &config->vidHeight );
 	else
+#endif
 		SDL_GL_GetDrawableSize( SDL_window, &config->vidWidth, &config->vidHeight );
 
 	glw_state.isFullscreen = config->isFullscreen;
@@ -635,6 +648,7 @@ void *GL_GetProcAddress( const char *symbol )
 }
 
 
+#ifdef USE_VULKAN_API
 /*
 ===============
 VKimp_Init
@@ -729,6 +743,7 @@ void VKimp_Shutdown( qboolean unloadDLL )
 	if ( unloadDLL )
 		SDL_QuitSubSystem( SDL_INIT_VIDEO );
 }
+#endif // USE_VULKAN_API
 
 
 /*

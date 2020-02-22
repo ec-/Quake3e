@@ -483,6 +483,11 @@ static void InitOpenGL( void )
 	if ( glConfig.vidWidth == 0 )
 	{
 #ifdef USE_VULKAN
+		if ( !ri.VKimp_Init )
+		{
+			ri.Error( ERR_FATAL, "Vulkan interface is not initialized" );
+		}
+
 		// This function is responsible for initializing a valid Vulkan subsystem.
 		ri.VKimp_Init( &glConfig );
 
