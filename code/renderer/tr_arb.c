@@ -248,6 +248,7 @@ void ARB_SetupLightParams( void )
 	float radius;
 
 	tess.dlightUpdateParams = qfalse;
+	tess.cullType = tess.shader->cullType;
 
 	if ( !programCompiled )
 		return;
@@ -255,7 +256,7 @@ void ARB_SetupLightParams( void )
 	dl = tess.light;
 
 	if ( !glConfig.deviceSupportsGamma )
-		VectorScale( dl->color, 2 * pow( r_intensity->value, r_gamma->value ), lightRGB );
+		VectorScale( dl->color, 2 * powf( r_intensity->value, r_gamma->value ), lightRGB );
 	else
 		VectorCopy( dl->color, lightRGB );
 
@@ -267,9 +268,9 @@ void ARB_SetupLightParams( void )
 	vertexProgram = DLIGHT_VERTEX;
 
 	if ( dl->linear ) {
-		fragmentProgram = DLIGHT_LINEAR_FRAGMENT;
+		fragmentProgram = (tess.shader->cullType == CT_TWO_SIDED) ? DLIGHT_LINEAR_ABS_FRAGMENT : DLIGHT_LINEAR_FRAGMENT;
 	} else {
-		fragmentProgram = DLIGHT_FRAGMENT;
+		fragmentProgram = (tess.shader->cullType == CT_TWO_SIDED) ? DLIGHT_ABS_FRAGMENT : DLIGHT_FRAGMENT;
 	}
 
 	if ( fogPass ) {
@@ -444,9 +445,41 @@ static const char *dlightVP = {
 };
 
 
-static const char *ARB_BuildDlightFP( char *program, qboolean fog, qboolean linear )
+static const char *ARB_BuildDlightFP( char *program, int programIndex )
 {
+	qboolean fog = qfalse;
+	qboolean linear = qfalse;
+	qboolean abslight = qfalse;
+
 	program[0] = '\0';
+
+	switch ( programIndex ) {
+		case DLIGHT_FRAGMENT_FOG:
+		case DLIGHT_ABS_FRAGMENT_FOG:
+		case DLIGHT_LINEAR_FRAGMENT_FOG:
+		case DLIGHT_LINEAR_ABS_FRAGMENT_FOG:
+			fog = qtrue;
+			break;
+	}
+
+	switch ( programIndex ) {
+		case DLIGHT_LINEAR_FRAGMENT:
+		case DLIGHT_LINEAR_FRAGMENT_FOG:
+		case DLIGHT_LINEAR_ABS_FRAGMENT:
+		case DLIGHT_LINEAR_ABS_FRAGMENT_FOG:
+			linear = qtrue;
+			break;
+	}
+
+	switch ( programIndex ) {
+		case DLIGHT_ABS_FRAGMENT:
+		case DLIGHT_ABS_FRAGMENT_FOG:
+		case DLIGHT_LINEAR_ABS_FRAGMENT:
+		case DLIGHT_LINEAR_ABS_FRAGMENT_FOG:
+			abslight = qtrue;
+			break;
+	}
+
 	strcat( program,
 	"!!ARBfp1.0 \n"
 	"OPTION ARB_precision_hint_fastest; \n"
@@ -488,8 +521,7 @@ static const char *ARB_BuildDlightFP( char *program, qboolean fog, qboolean line
 	// discard blank fragments
 	"KIL tmp.x; \n"
 
-	"MUL light, lightRGB, tmp.x; \n" // light.rgb
-	);
+	"MUL light, lightRGB, tmp.x; \n" ); // light.rgb
 
 	if ( r_dlightSpecColor->value > 0 )
 		strcat( program, va( "PARAM specRGB = %1.2f; \n", r_dlightSpecColor->value ) );
@@ -507,12 +539,22 @@ static const char *ARB_BuildDlightFP( char *program, qboolean fog, qboolean line
 	"ADD tmp, lv, ev; \n"
 	"DP3 tmp.w, tmp, tmp; \n"
 	"RSQ tmp.w, tmp.w; \n"
-	"MUL tmp.xyz, tmp, tmp.w; \n"
+	"MUL tmp.xyz, tmp, tmp.w; \n" );
 
 	// modulate specular strength
-	"DP3_SAT tmp.w, n, tmp; \n"
+	if ( abslight ) {
+		strcat( program,
+		"DP3 tmp.w, n, tmp; \n"
+		"ABS tmp.w, tmp.w; \n" );
+	} else {
+		strcat( program,
+		"DP3_SAT tmp.w, n, tmp; \n" );
+	}
+
+	strcat( program,
 	"POW tmp.w, tmp.w, specEXP.w; \n"
 	"TEMP spec; \n" );
+
 	if ( r_dlightSpecColor->value > 0 ) {
 		// by constant
 		strcat( program, "MUL spec, specRGB, tmp.w; \n" );
@@ -522,31 +564,23 @@ static const char *ARB_BuildDlightFP( char *program, qboolean fog, qboolean line
 		strcat( program, "MUL spec, base, tmp.w; \n" );
 	}
 
-	strcat( program,
-	// bump color
-	"TEMP bump; \n"
-	"DP3_SAT bump.w, n, lv; \n"
+	// diffuse
+	if ( abslight ) {
+		strcat( program,
+		"TEMP bump; \n"
+		"DP3 bump.w, n, lv; \n"
+		// make sure that light and eye vectors are on the same plane side
+		"DP3 tmp.w, n, ev; \n"
+		"MUL tmp.w, tmp.w, bump.w; \n"
+		"KIL tmp.w; \n"
+		"ABS bump.w, bump.w; \n" );
+	} else {
+		strcat( program,
+		"TEMP bump; \n"
+		"DP3_SAT bump.w, n, lv; \n" );
+	}
 
-#if 0
-	// add some light leaks from line plane
-	"SUB tmp, fragmentPos, lightOrigin; \n"
-	"DP3 tmp.w, tmp, tmp;\n"
-	"RSQ tmp.w, tmp.w; \n"
-	"MUL tmp.xyz, tmp, tmp.w; \n"
-	"DP3_SAT tmp.w, n, tmp; \n"
-	//"MUL tmp.w, tmp, 0.5; \n"
-	"MAX bump.w, bump.w, tmp.w; \n"
-
-	"SUB tmp, fragmentPos, lightOrigin2; \n"
-	"DP3 tmp.w, tmp, tmp;\n"
-	"RSQ tmp.w, tmp.w; \n"
-	"MUL tmp.xyz, tmp, tmp.w; \n"
-	"DP3_SAT tmp.w, n, tmp; \n"
-	//"MUL tmp.w, tmp, 0.5; \n"
-	"MAX bump.w, bump.w, tmp.w; \n"
-#endif
-
-	"MAD base, base, bump.w, spec; \n" );
+	strcat( program, "MAD base, base, bump.w, spec; \n" );
 
 	if ( fog ) {
 		strcat( program,
@@ -958,6 +992,7 @@ qboolean ARB_UpdatePrograms( void )
 {
 #ifdef USE_PMLIGHT
 	const char *program;
+	int i;
 #endif
 	char buf[4096];
 
@@ -980,19 +1015,12 @@ qboolean ARB_UpdatePrograms( void )
 	if ( !ARB_CompileProgram( Vertex, va( dlightVP, fogOutVPCode ), programs[ DLIGHT_VERTEX_FOG_OUT ] ) )
 		return qfalse;
 
-	program = ARB_BuildDlightFP( buf, qfalse, qfalse );
-	if ( !ARB_CompileProgram( Fragment, program, programs[ DLIGHT_FRAGMENT ] ) )
-		return qfalse;
-	program = ARB_BuildDlightFP( buf, qtrue, qfalse );
-	if ( !ARB_CompileProgram( Fragment, program, programs[ DLIGHT_FRAGMENT_FOG ] ) )
-		return qfalse;
-
-	program = ARB_BuildDlightFP( buf, qfalse, qtrue );
-	if ( !ARB_CompileProgram( Fragment, program, programs[ DLIGHT_LINEAR_FRAGMENT ] ) )
-		return qfalse;
-	program = ARB_BuildDlightFP( buf, qtrue, qtrue );
-	if ( !ARB_CompileProgram( Fragment, program, programs[ DLIGHT_LINEAR_FRAGMENT_FOG ] ) )
-		return qfalse;
+	for ( i = DLIGHT_FRAGMENT; i <= DLIGHT_LINEAR_ABS_FRAGMENT_FOG; i++ ) {
+		program = ARB_BuildDlightFP( buf, i );
+		if ( !ARB_CompileProgram( Fragment, program, programs[ i ] ) ) {
+			return qfalse;
+		}
+	}
 #endif // USE_PMLIGHT
 
 	if ( !ARB_CompileProgram( Vertex, dummyVP, programs[ DUMMY_VERTEX ] ) )

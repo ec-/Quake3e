@@ -212,7 +212,7 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 	}
 
 #ifdef USE_PMLIGHT
-	if ( tess.fogNum != fogNum ) {
+	if ( tess.fogNum != fogNum || tess.cullType != state->cullType ) {
 		tess.dlightUpdateParams = qtrue;
 	}
 #endif

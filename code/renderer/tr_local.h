@@ -1472,6 +1472,7 @@ typedef struct shaderCommands_s
 	const dlight_t* light;
 	qboolean	dlightPass;
 	qboolean	dlightUpdateParams;
+	cullType_t	cullType;
 #endif
 
 	// info extracted from current shader
@@ -1926,8 +1927,14 @@ typedef enum {
 	DLIGHT_FRAGMENT,
 	DLIGHT_FRAGMENT_FOG,
 
+	DLIGHT_ABS_FRAGMENT,
+	DLIGHT_ABS_FRAGMENT_FOG,
+
 	DLIGHT_LINEAR_FRAGMENT,
 	DLIGHT_LINEAR_FRAGMENT_FOG,
+
+	DLIGHT_LINEAR_ABS_FRAGMENT,
+	DLIGHT_LINEAR_ABS_FRAGMENT_FOG,
 #endif
 	SPRITE_FRAGMENT,
 	GAMMA_FRAGMENT,
