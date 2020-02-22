@@ -76,7 +76,7 @@ void R_DlightBmodel( bmodel_t *bmodel ) {
 	R_TransformDlights( tr.refdef.num_dlights, tr.refdef.dlights, &tr.or );
 
 	mask = 0;
-	for ( i=0 ; i<tr.refdef.num_dlights ; i++ ) {
+	for ( i = 0; i < tr.refdef.num_dlights; i++ ) {
 		dl = &tr.refdef.dlights[i];
 
 		// see if the point is close enough to the bounds to matter
@@ -87,14 +87,6 @@ void R_DlightBmodel( bmodel_t *bmodel ) {
 			if ( bmodel->bounds[0][j] - dl->transformed[j] > dl->radius ) {
 				break;
 			}
-			if ( dl->linear ) {
-				if ( dl->transformed2[j] - bmodel->bounds[1][j] > dl->radius ) {
-					break;
-				}
-				if ( bmodel->bounds[0][j] - dl->transformed2[j] > dl->radius ) {
-					break;
-				}
-			}
 		}
 		if ( j < 3 ) {
 			continue;
@@ -104,7 +96,7 @@ void R_DlightBmodel( bmodel_t *bmodel ) {
 		mask |= 1 << i;
 	}
 
-	tr.currentEntity->needDlights = (mask != 0);
+	tr.currentEntity->needDlights = (mask != 0) ? 1 : 0;
 
 	// set the dlight bits in all the surfaces
 	for ( i = 0 ; i < bmodel->numSurfaces ; i++ ) {
@@ -280,6 +272,7 @@ static void LogLight( trRefEntity_t *ent ) {
 
 	ri.Printf( PRINT_ALL, "amb:%i  dir:%i\n", max1, max2 );
 }
+
 
 /*
 =================

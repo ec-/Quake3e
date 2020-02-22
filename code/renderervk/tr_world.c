@@ -202,10 +202,10 @@ qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t 
 
 static qboolean R_LightCullFace( const srfSurfaceFace_t* face, const dlight_t* dl )
 {
-	float d = DotProduct( dl->origin, face->plane.normal ) - face->plane.dist;
+	float d = DotProduct( dl->transformed, face->plane.normal ) - face->plane.dist;
 	if ( dl->linear )
 	{
-		float d2 = DotProduct( dl->origin2, face->plane.normal ) - face->plane.dist;
+		float d2 = DotProduct( dl->transformed2, face->plane.normal ) - face->plane.dist;
 		if ( (d < -dl->radius) && (d2 < -dl->radius) )
 			return qtrue;
 		if ( (d > dl->radius) && (d2 > dl->radius) ) 
@@ -247,12 +247,12 @@ static int R_DlightFace( srfSurfaceFace_t *face, int dlightBits ) {
 	int			i;
 	dlight_t	*dl;
 
-	for ( i = 0 ; i < tr.refdef.num_dlights ; i++ ) {
+	for ( i = 0; i < tr.refdef.num_dlights; i++ ) {
 		if ( ! ( dlightBits & ( 1 << i ) ) ) {
 			continue;
 		}
 		dl = &tr.refdef.dlights[i];
-		d = DotProduct( dl->origin, face->plane.normal ) - face->plane.dist;
+		d = DotProduct( dl->transformed, face->plane.normal ) - face->plane.dist;
 		if ( d < -dl->radius || d > dl->radius ) {
 			// dlight doesn't reach the plane
 			dlightBits &= ~( 1 << i );
@@ -266,6 +266,7 @@ static int R_DlightFace( srfSurfaceFace_t *face, int dlightBits ) {
 	face->dlightBits = dlightBits;
 	return dlightBits;
 }
+
 
 static int R_DlightGrid( srfGridMesh_t *grid, int dlightBits ) {
 	int			i;
@@ -542,7 +543,7 @@ void R_AddBrushModelSurfaces ( trRefEntity_t *ent ) {
 		int s;
 
 		for ( s = 0; s < bmodel->numSurfaces; s++ ) {
-			R_AddWorldSurface( bmodel->firstSurface + s, qfalse );
+			R_AddWorldSurface( bmodel->firstSurface + s, 0 );
 		}
 
 		R_SetupEntityLighting( &tr.refdef, ent );

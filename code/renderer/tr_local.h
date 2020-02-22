@@ -82,7 +82,7 @@ typedef struct {
 
 	float		axisLength;		// compensate for non-normalized axis
 #ifdef USE_LEGACY_DLIGHTS
-	qboolean	needDlights;	// true for bmodels that touch a dlight
+	int			needDlights;	// 1 for bmodels that touch a dlight
 #endif
 	qboolean	lightingCalculated;
 	vec3_t		lightDir;		// normalized direction towards light

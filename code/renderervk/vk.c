@@ -3137,6 +3137,8 @@ void vk_initialize( void )
 		VK_CHECK( qvkCreatePipelineCache( vk.device, &ci, NULL, &vk.pipelineCache ) );
 	}
 
+	vk.renderPassIndex = RENDER_PASS_MAIN; // default render pass
+
 	vk_create_persistent_pipelines();
 
 	vk.pipelines_world_base = vk.pipelines_count;
@@ -4124,7 +4126,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 	multisample_state.pNext = NULL;
 	multisample_state.flags = 0;
 
-	multisample_state.rasterizationSamples = vk.renderPassIndex == RENDER_PASS_SCREENMAP ? vk.screenMapSamples : vkSamples;
+	multisample_state.rasterizationSamples = (vk.renderPassIndex == RENDER_PASS_SCREENMAP) ? vk.screenMapSamples : vkSamples;
 
 	multisample_state.sampleShadingEnable = VK_FALSE;
 	multisample_state.minSampleShading = 1.0f;
@@ -5176,7 +5178,7 @@ void vk_end_frame( void )
 	{
 		if ( !ri.CL_IsMinimized() )
 		{
-			if ( vk.renderPassIndex )
+			if ( vk.renderPassIndex == RENDER_PASS_SCREENMAP )
 			{
 				// just to make proper layout transition
 				vk_end_render_pass();

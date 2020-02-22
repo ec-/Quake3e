@@ -59,8 +59,8 @@ typedef struct {
 } Vk_Sampler_Def;
 
 enum {
+	RENDER_PASS_SCREENMAP = 0,
 	RENDER_PASS_MAIN,
-	RENDER_PASS_SCREENMAP,
 	RENDER_PASS_COUNT
 };
 

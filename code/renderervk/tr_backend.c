@@ -585,7 +585,7 @@ static void RB_BeginDrawingView( void ) {
 }
 
 #ifdef USE_PMLIGHT
-static void RB_LightingPass( qboolean skipWeapon );
+static void RB_LightingPass( void );
 #endif
 
 /*
@@ -593,7 +593,7 @@ static void RB_LightingPass( qboolean skipWeapon );
 RB_RenderDrawSurfList
 ==================
 */
-static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs, qboolean skipWeapon ) {
+static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	shader_t		*shader, *oldShader;
 	int				fogNum;
 	int				entityNum, oldEntityNum;
@@ -633,11 +633,11 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs, qboo
 		}
 
 		R_DecomposeSort( drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted );
-
-		if ( skipWeapon && entityNum != REFENTITYNUM_WORLD && backEnd.refdef.entities[ entityNum ].e.renderfx & RF_DEPTHHACK ) {
+#ifdef USE_VULKAN
+		if ( vk.renderPassIndex == RENDER_PASS_SCREENMAP && entityNum != REFENTITYNUM_WORLD && backEnd.refdef.entities[ entityNum ].e.renderfx & RF_DEPTHHACK ) {
 			continue;
 		}
-
+#endif
 		//
 		// change the tess parameters if needed
 		// a "entityMergable" shader is a shader that can have surfaces from seperate
@@ -651,7 +651,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs, qboo
 			if ( backEnd.refdef.numLitSurfs && oldShaderSort < INSERT_POINT && shader->sort >= INSERT_POINT ) {
 				//RB_BeginDrawingLitSurfs(); // no need, already setup in RB_BeginDrawingView()
 #ifdef USE_VULKAN
-				RB_LightingPass( skipWeapon );
+				RB_LightingPass();
 #else
 				if ( depthRange ) {
 					qglDepthRange( 0, 1 );
@@ -860,7 +860,7 @@ static void RB_BeginDrawingLitSurfs( void )
 RB_RenderLitSurfList
 ==================
 */
-static void RB_RenderLitSurfList( dlight_t* dl, qboolean skipWeapon ) {
+static void RB_RenderLitSurfList( dlight_t* dl ) {
 	shader_t		*shader, *oldShader;
 	int				fogNum;
 	int				entityNum, oldEntityNum;
@@ -897,11 +897,11 @@ static void RB_RenderLitSurfList( dlight_t* dl, qboolean skipWeapon ) {
 		}
 
 		R_DecomposeLitSort( litSurf->sort, &entityNum, &shader, &fogNum );
-
-		if ( skipWeapon && entityNum != REFENTITYNUM_WORLD && backEnd.refdef.entities[ entityNum ].e.renderfx & RF_DEPTHHACK ) {
+#ifdef USE_VULKAN
+		if ( vk.renderPassIndex == RENDER_PASS_SCREENMAP && entityNum != REFENTITYNUM_WORLD && backEnd.refdef.entities[ entityNum ].e.renderfx & RF_DEPTHHACK ) {
 			continue;
 		}
-
+#endif
 		// anything BEFORE opaque is sky/portal, anything AFTER it should never have been added
 		//assert( shader->sort == SS_OPAQUE );
 		// !!! but MIRRORS can trip that assert, so just do this for now
@@ -1275,7 +1275,7 @@ static const void *RB_StretchPic( const void *data ) {
 
 
 #ifdef USE_PMLIGHT
-static void RB_LightingPass( qboolean skipWeapon )
+static void RB_LightingPass( void )
 {
 	dlight_t	*dl;
 	int	i;
@@ -1293,7 +1293,7 @@ static void RB_LightingPass( qboolean skipWeapon )
 		if ( dl->head )
 		{
 			tess.light = dl;
-			RB_RenderLitSurfList( dl, skipWeapon );
+			RB_RenderLitSurfList( dl );
 		}
 	}
 
@@ -1442,15 +1442,12 @@ RB_DrawSurfs
 */
 static const void *RB_DrawSurfs( const void *data ) {
 	const drawSurfsCommand_t *cmd = (const drawSurfsCommand_t *)data;
-	qboolean skipWeapon;
 
 	// finish any 2D drawing if needed
 	RB_EndSurface();
 
 	backEnd.refdef = cmd->refdef;
 	backEnd.viewParms = cmd->viewParms;
-
-	skipWeapon = (vk.renderPassIndex == RENDER_PASS_SCREENMAP) ? qtrue : qfalse;
 
 __redraw:
 
@@ -1461,7 +1458,7 @@ __redraw:
 	// clear the z buffer, set the modelview, etc
 	RB_BeginDrawingView();
 
-	RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs, skipWeapon );
+	RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
 
 #ifdef USE_VBO
 	VBO_UnBind();
@@ -1480,11 +1477,12 @@ __redraw:
 #ifdef USE_PMLIGHT
 	if ( backEnd.refdef.numLitSurfs ) {
 		RB_BeginDrawingLitSurfs();
-		RB_LightingPass( skipWeapon );
+		RB_LightingPass();
 	}
 #endif
 
-	if ( skipWeapon ) {
+#ifdef USE_VULKAN
+	if ( vk.renderPassIndex == RENDER_PASS_SCREENMAP ) {
 		vk_end_render_pass();
 		vk_begin_main_render_pass();
 
@@ -1492,10 +1490,9 @@ __redraw:
 		backEnd.viewParms = cmd->viewParms;
 		backEnd.screenMapDone = qtrue;
 
-		skipWeapon = qfalse;
-
 		goto __redraw;
 	}
+#endif
 
 	// draw main system development information (surface outlines, etc)
 	RB_DebugGraphics();
