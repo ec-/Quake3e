@@ -230,7 +230,7 @@ void RB_ShadowTessEnd( void ) {
 	qglDisable( GL_TEXTURE_2D );
 	//GL_Bind( tr.whiteImage );
 	GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
-	qglColor3f( 0.2f, 0.2f, 0.2f );
+	qglColor4f( 0.2f, 0.2f, 0.2f, 1.0f );
 
 	// don't write to the color buffer
 	qglGetBooleanv( GL_COLOR_WRITEMASK, rgba );
@@ -276,7 +276,15 @@ void RB_ShadowFinish( void ) {
 #ifdef USE_VULKAN
 	float tmp[16];
 	int i;
+#else
+	static const vec3_t verts[4] = {
+		{ -100, 100, -10 },
+		{  100, 100, -10 },
+		{ -100,-100, -10 },
+		{  100,-100, -10 }
+	};
 #endif
+
 	if ( r_shadows->integer != 2 ) {
 		return;
 	}
@@ -333,25 +341,24 @@ void RB_ShadowFinish( void ) {
 	qglDisable( GL_CLIP_PLANE0 );
 	GL_Cull( CT_TWO_SIDED );
 
-	GL_Bind( tr.whiteImage );
+	qglDisable( GL_TEXTURE_2D );
 
 	qglLoadIdentity();
 
-	qglColor3f( 0.6f, 0.6f, 0.6f );
+	qglColor4f( 0.6f, 0.6f, 0.6f, 1 );
 	GL_State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO );
 
-//	qglColor3f( 1, 0, 0 );
-//	GL_State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
+	//qglColor4f( 1, 0, 0, 1 );
+	//GL_State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
 
-	qglBegin( GL_QUADS );
-	qglVertex3f( -100, 100, -10 );
-	qglVertex3f( 100, 100, -10 );
-	qglVertex3f( 100, -100, -10 );
-	qglVertex3f( -100, -100, -10 );
-	qglEnd();
+	GL_ClientState( 0, CLS_NONE );
+	qglVertexPointer( 3, GL_FLOAT, 0, verts );
+	qglDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
 
 	qglColor4f( 1, 1, 1, 1 );
 	qglDisable( GL_STENCIL_TEST );
+
+	qglEnable( GL_TEXTURE_2D );
 #endif
 }
 

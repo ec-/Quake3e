@@ -1457,11 +1457,11 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 		qglDepthRange( 0, 0 );
 
 		// green for IBO items
-		qglColor3f( 0.25f, 1.0f, 0.25f );
+		qglColor4f( 0.25f, 1.0f, 0.25f, 1.0f );
 		VBO_RenderIBOItems();
 		
 		// cyan for soft-index items
-		qglColor3f( 0.25f, 1.0f, 0.55f );
+		qglColor4f( 0.25f, 1.0f, 0.55f, 1.0f );
 		VBO_RenderSoftItems();
 
 		qglDepthRange( 0, 1 );

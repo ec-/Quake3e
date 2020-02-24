@@ -336,7 +336,7 @@ static void RB_SurfaceBeam( void )
 	int	i;
 	vec3_t perpvec;
 	vec3_t direction, normalized_direction;
-	vec3_t	start_points[NUM_BEAM_SEGS], end_points[NUM_BEAM_SEGS];
+	vec3_t points[NUM_BEAM_SEGS+1][2]; // [startPoint,endPoint]
 	vec3_t oldorigin, origin;
 
 	e = &backEnd.currentEntity->e;
@@ -360,25 +360,24 @@ static void RB_SurfaceBeam( void )
 
 	VectorScale( perpvec, 4, perpvec );
 
-	for ( i = 0; i < NUM_BEAM_SEGS ; i++ )
+	for ( i = 0; i <= NUM_BEAM_SEGS; i++ )
 	{
-		RotatePointAroundVector( start_points[i], normalized_direction, perpvec, (360.0/NUM_BEAM_SEGS)*i );
-//		VectorAdd( start_points[i], origin, start_points[i] );
-		VectorAdd( start_points[i], direction, end_points[i] );
+		RotatePointAroundVector( points[i][0], normalized_direction, perpvec, (360.0/NUM_BEAM_SEGS)*i );
+		VectorAdd( points[i][0], direction, points[i][1] );
 	}
 
-	GL_Bind( tr.whiteImage );
+	qglDisable( GL_TEXTURE_2D );
 
 	GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE );
 
-	qglColor3f( 1, 0, 0 );
+	qglColor4f( 1, 0, 0, 1 );
 
-	qglBegin( GL_TRIANGLE_STRIP );
-	for ( i = 0; i <= NUM_BEAM_SEGS; i++ ) {
-		qglVertex3fv( start_points[ i % NUM_BEAM_SEGS] );
-		qglVertex3fv( end_points[ i % NUM_BEAM_SEGS] );
-	}
-	qglEnd();
+	GL_ClientState( 0, CLS_NONE );
+
+	qglVertexPointer( 3, GL_FLOAT, 0, &points[0][0] );
+	qglDrawArrays( GL_TRIANGLE_STRIP, 0, (NUM_BEAM_SEGS+1)*2 );
+
+	qglEnable( GL_TEXTURE_2D );
 }
 
 //================================================================================

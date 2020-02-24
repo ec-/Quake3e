@@ -115,10 +115,10 @@ static void DrawTris( shaderCommands_t *input ) {
 
 #ifdef USE_PMLIGHT
 	if ( tess.dlightPass )
-		qglColor3f( 1.0f, 0.33f, 0.2f );
+		qglColor4f( 1.0f, 0.33f, 0.2f, 1.0f );
 	else
 #endif
-	qglColor3f( 1, 1, 1 );
+	qglColor4f( 1, 1, 1, 1 );
 
 	GL_State( GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE );
 	qglDepthRange( 0, 0 );
@@ -154,11 +154,11 @@ static void DrawNormals( const shaderCommands_t *input ) {
 	GL_ClientState( 0, CLS_NONE );
 
 	qglDisable( GL_TEXTURE_2D );
-	qglColor3f( 1, 1, 1 );
+	qglColor4f( 1, 1, 1, 1 );
 
 	qglDepthRange( 0, 0 );	// never occluded
 
-	GL_State( GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE );
+	GL_State( GLS_DEPTHMASK_TRUE );
 
 	for ( i = tess.numVertexes-1; i >= 0; i-- ) {
 		VectorMA( tess.xyz[i], 2.0, tess.normal[i], tess.xyz[i*2 + 1] );

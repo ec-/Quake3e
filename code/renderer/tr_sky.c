@@ -837,7 +837,7 @@ void RB_StageIteratorSky( void ) {
 		GL_ClientState( 1, CLS_NONE );
 		GL_ClientState( 0, CLS_TEXCOORD_ARRAY );
 
-		qglColor3f( tr.identityLight, tr.identityLight, tr.identityLight );
+		qglColor4f( tr.identityLight, tr.identityLight, tr.identityLight, 1.0 );
 
 		GL_State( 0 );
 		GL_Cull( CT_FRONT_SIDED );

@@ -348,7 +348,7 @@ static void RB_SurfaceBeam( void )
 	int	i;
 	vec3_t perpvec;
 	vec3_t direction, normalized_direction;
-	vec3_t	start_points[NUM_BEAM_SEGS], end_points[NUM_BEAM_SEGS];
+	vec3_t	points[NUM_BEAM_SEGS+1][2];
 	vec3_t oldorigin, origin;
 
 	e = &backEnd.currentEntity->e;
@@ -372,55 +372,49 @@ static void RB_SurfaceBeam( void )
 
 	VectorScale( perpvec, 4, perpvec );
 
-	for ( i = 0; i < NUM_BEAM_SEGS ; i++ )
+	for ( i = 0; i <= NUM_BEAM_SEGS; i++ )
 	{
-		RotatePointAroundVector( start_points[i], normalized_direction, perpvec, (360.0/NUM_BEAM_SEGS)*i );
-//		VectorAdd( start_points[i], origin, start_points[i] );
-		VectorAdd( start_points[i], direction, end_points[i] );
+		RotatePointAroundVector( points[i][0], normalized_direction, perpvec, (360.0/NUM_BEAM_SEGS)*i );
+		VectorAdd( points[i][0], direction, points[i][1] );
 	}
-
-	GL_Bind( tr.whiteImage );
 
 #ifdef USE_VULKAN
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
 
-	Com_Memset( &tess.svars.colors[0], 0, (NUM_BEAM_SEGS+1) * 2 * sizeof( tess.svars.colors[0] ) );
+	GL_Bind( tr.whiteImage );
+
 	for ( i = 0; i < (NUM_BEAM_SEGS+1)*2; i++ ) {
 		tess.svars.colors[i][0] = 255;
+		tess.svars.colors[i][1] = 0;
+		tess.svars.colors[i][2] = 0;
+		tess.svars.colors[i][3] = 255;
 	}
 
 	for ( i = 0; i <= NUM_BEAM_SEGS; i++ ) {
-		VectorCopy( start_points[ i % NUM_BEAM_SEGS ], tess.xyz[ i * 2 + 0 ] );
-		VectorCopy( end_points[ i % NUM_BEAM_SEGS ], tess.xyz[ i * 2 + 1 ] );
+		VectorCopy( points[i][0], tess.xyz[ i * 2 + 0 ] );
+		VectorCopy( points[i][1], tess.xyz[ i * 2 + 1 ] );
 	}
-	tess.numVertexes = (NUM_BEAM_SEGS + 1)* 2;
+	tess.numVertexes = (NUM_BEAM_SEGS + 1) * 2;
 
-	for ( i = 0; i < NUM_BEAM_SEGS; i++ ) {
-		tess.indexes[i * 6 + 0] = i * 2 + 0;
-		tess.indexes[i * 6 + 1] = i * 2 + 1;
-		tess.indexes[i * 6 + 2] = i * 2 + 3;
-		tess.indexes[i * 6 + 3] = i * 2 + 3;
-		tess.indexes[i * 6 + 4] = i * 2 + 2;
-		tess.indexes[i * 6 + 5] = i * 2 + 0;
-	}
-	tess.numIndexes = NUM_BEAM_SEGS * 6;
-
-	vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_RGBA );
-	vk_draw_geometry( vk.surface_beam_pipeline, DEPTH_RANGE_NORMAL, qtrue );
+	vk_bind_geometry_ext( TESS_XYZ | TESS_RGBA );
+	vk_draw_geometry( vk.surface_beam_pipeline, DEPTH_RANGE_NORMAL, qfalse );
 
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
 #else
-	GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE );
-	qglColor3f( 1, 0, 0 );
+	qglDisable( GL_TEXTURE_2D );
 
-	qglBegin( GL_TRIANGLE_STRIP );
-	for ( i = 0; i <= NUM_BEAM_SEGS; i++ ) {
-		qglVertex3fv( start_points[ i % NUM_BEAM_SEGS] );
-		qglVertex3fv( end_points[ i % NUM_BEAM_SEGS] );
-	}
-	qglEnd();
+	GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE );
+
+	qglColor4f( 1, 0, 0, 1 );
+
+	GL_ClientState( 0, CLS_NONE );
+
+	qglVertexPointer( 3, GL_FLOAT, 0, &points[0][0] );
+	qglDrawArrays( GL_TRIANGLE_STRIP, 0, (NUM_BEAM_SEGS+1)*2 );
+
+	qglEnable( GL_TEXTURE_2D );
 #endif
 }
 

@@ -2003,7 +2003,8 @@ static void vk_create_persistent_pipelines( void )
 
 			Com_Memset(&def, 0, sizeof(def));
 			def.state_bits = GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE;
-			def.face_culling = CT_TWO_SIDED;
+			def.face_culling = CT_FRONT_SIDED;
+			def.primitives = TRIANGLE_STRIP;
 
 			vk.surface_beam_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
 		}
@@ -2014,7 +2015,7 @@ static void vk_create_persistent_pipelines( void )
 			Com_Memset( &def, 0, sizeof( def ) );
 			def.state_bits = GLS_DEFAULT;
 			def.face_culling = CT_TWO_SIDED;
-			def.line_primitives = qtrue;
+			def.primitives = LINE_LIST;
 			if ( vk.wideLines )
 				def.line_width = 3;
 
@@ -2028,6 +2029,7 @@ static void vk_create_persistent_pipelines( void )
 			//def.state_bits = GLS_DEFAULT;
 			def.face_culling = CT_TWO_SIDED;
 			def.shader_type = TYPE_DOT;
+			def.primitives = POINT_LIST;
 			vk.dot_pipeline = vk_find_pipeline_ext( 0, &def, qtrue );
 		}
 
@@ -2093,7 +2095,7 @@ static void vk_create_persistent_pipelines( void )
 
 			Com_Memset(&def, 0, sizeof(def));
 			def.state_bits = GLS_DEPTHMASK_TRUE;
-			def.line_primitives = qtrue;
+			def.primitives = LINE_LIST;
 
 			vk.normals_debug_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
 		}
@@ -2110,7 +2112,7 @@ static void vk_create_persistent_pipelines( void )
 
 			Com_Memset(&def, 0, sizeof(def));
 			def.state_bits = GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE;
-			def.line_primitives = qtrue;
+			def.primitives = LINE_LIST;
 			vk.surface_debug_pipeline_outline = vk_find_pipeline_ext( 0, &def, qfalse );
 		}
 		{
@@ -4055,11 +4057,14 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 	input_assembly_state.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	input_assembly_state.pNext = NULL;
 	input_assembly_state.flags = 0;
-	if ( def->shader_type == TYPE_DOT )
-		input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-	else
-		input_assembly_state.topology = def->line_primitives ? VK_PRIMITIVE_TOPOLOGY_LINE_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	input_assembly_state.primitiveRestartEnable = VK_FALSE;
+
+	switch ( def->primitives ) {
+		case LINE_LIST: input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST; break;
+		case POINT_LIST: input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; break;
+		case TRIANGLE_STRIP: input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP; break;
+		default: input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; break;
+	}
 
 	//
 	// Viewport.

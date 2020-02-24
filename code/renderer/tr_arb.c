@@ -840,16 +840,20 @@ static const char *blend2gammaFP = {
 
 static void RenderQuad( int w, int h )
 {
-	qglBegin( GL_QUADS );
-		qglTexCoord2f( 0.0f, 0.0f );
-		qglVertex2f( 0.0f, h );
-		qglTexCoord2f( 0.0f, 1.0f );
-		qglVertex2f( 0.0f, 0.0f );
-		qglTexCoord2f( 1.0f, 1.0f );
-		qglVertex2f( w, 0.0f );
-		qglTexCoord2f( 1.0f, 0.0f );
-		qglVertex2f( w, h );
-	qglEnd();
+	static const vec2_t t[4] = { {0.0, 1.0}, {1.0, 1.0}, {0.0, 0.0}, {1.0, 0.0} };
+	static vec3_t v[4] = { 0 };
+	
+	v[1][0] = w;
+	v[2][1] = h;
+	v[3][0] = w;
+	v[3][1] = h;
+
+	GL_ClientState( 0, CLS_TEXCOORD_ARRAY );
+
+	qglVertexPointer( 3, GL_FLOAT, 0, v );
+	qglTexCoordPointer( 2, GL_FLOAT, 0, t );
+
+	qglDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
 }
 
 
@@ -1692,24 +1696,38 @@ void FBO_CopyScreen( void )
 }
 
 
-static void R_Bloom_Quad_Lens( float offset )
+static void R_Setup_Quad_Lens( float offset, vec4_t color, vec3_t *verts, vec2_t *coords, vec4_t *colors )
 {
-	const int width = glConfig.vidWidth;
-	const int height = glConfig.vidHeight;
+	static const vec2_t t[6] = { {1.0, 0.0}, {0.0, 0.0}, {0.0, 1.0}, {0.0, 1.0}, {1.0, 1.0}, {1.0, 0.0} };
 
-	qglBegin( GL_QUADS );
-	qglTexCoord2f( 0.0f, 1.0f );
-	qglVertex2f( width + offset, height + offset );
+	const float width = (float)glConfig.vidWidth;
+	const float height = (float)glConfig.vidHeight;
+	int i;
+	
+	for ( i = 0; i < 6; i++ ) {
+		coords[i][0] = t[i][0];
+		coords[i][1] = t[i][1];
+		Vector4Copy( color, colors[i] );
+		verts[i][2] = 0.0;
+	}
 
-	qglTexCoord2f( 0.0f, 0.0f );
-	qglVertex2f( width + offset, -offset );
+	verts[0][0] = -offset;
+	verts[0][1] = -offset;
 
-	qglTexCoord2f( 1.0f, 0.0f );
-	qglVertex2f( -offset, -offset );
+	verts[1][0] = width + offset;
+	verts[1][1] = -offset;
 
-	qglTexCoord2f( 1.0f, 1.0f );
-	qglVertex2f( -offset, height + offset );
-	qglEnd();
+	verts[2][0] = width + offset;
+	verts[2][1] = height + offset;
+
+	verts[3][0] = width + offset;
+	verts[3][1] = height + offset;
+
+	verts[4][0] = -offset;
+	verts[4][1] = height + offset;
+
+	verts[5][0] = -offset;
+	verts[5][1] = -offset;
 }
 
 
@@ -1735,12 +1753,25 @@ static void R_Bloom_LensEffect( float alpha )
 		{ 0.78f, 0.21f, 0.59f },
 	};
 	int i;
-	
+
+	vec3_t verts[ ARRAY_LEN(lc) * 6 ];
+	vec2_t coords[ ARRAY_LEN(lc) * 6 ];
+	vec4_t colors[ ARRAY_LEN(lc) * 6 ];
+	vec4_t color;
+
 	alpha /= (float)ARRAY_LEN( lc );
 	for ( i = 0; i < ARRAY_LEN( lc ); i++ ) {
-		qglColor4f( lc[i][0], lc[i][1], lc[i][2], alpha );
-		R_Bloom_Quad_Lens( (i+1)*144 );
+		VectorCopy( lc[i], color ); color[3] = alpha;
+		R_Setup_Quad_Lens( (i+1)*144, color, &verts[i*6], &coords[i*6], &colors[i*6] );
 	}
+
+	GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
+
+	qglVertexPointer( 3, GL_FLOAT, 0, verts );
+	qglTexCoordPointer( 2, GL_FLOAT, 0, coords );
+	qglColorPointer( 4, GL_FLOAT, 0, colors );
+
+	qglDrawArrays( GL_TRIANGLES, 0, ARRAY_LEN( verts ) );
 }
 
 

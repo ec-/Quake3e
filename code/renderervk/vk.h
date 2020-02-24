@@ -43,6 +43,13 @@ typedef enum {
 } Vk_Shadow_Phase;
 
 typedef enum {
+	TRIANGLE_LIST = 0,
+	TRIANGLE_STRIP,
+	LINE_LIST,
+	POINT_LIST
+} Vk_Primitive_Topology;
+
+typedef enum {
 	DEPTH_RANGE_NORMAL, // [0..1]
 	DEPTH_RANGE_ZERO, // [0..0]
 	DEPTH_RANGE_ONE, // [1..1]
@@ -71,8 +78,8 @@ typedef struct {
 	qboolean polygon_offset;
 	qboolean clipping_plane;
 	qboolean mirror;
-	qboolean line_primitives;
 	Vk_Shadow_Phase shadow_phase;
+	Vk_Primitive_Topology primitives;
 	int fog_stage; // off, fog-in / fog-out
 	int line_width;
 	int abs_light;
