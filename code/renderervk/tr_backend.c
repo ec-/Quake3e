@@ -1559,7 +1559,7 @@ void RB_ShowImages( void )
 
 	vk_clear_color( colorBlack );
 
-	for (i = 0 ; i < tr.numImages ; i++) {
+	for ( i = 0; i < tr.numImages; i++ ) {
 		image_t *image = tr.images[i];
 
 		float w = glConfig.vidWidth / 20;
@@ -1575,17 +1575,9 @@ void RB_ShowImages( void )
 
 		GL_Bind( image );
 
-		Com_Memset( tess.svars.colors, tr.identityLightByte, tess.numVertexes * sizeof( tess.svars.colors[0] ) );
+		Com_Memset( tess.svars.colors, 255, 4 * sizeof( tess.svars.colors[0] ) );
 
-		tess.numIndexes = 6;
 		tess.numVertexes = 4;
-
-		tess.indexes[0] = 0;
-		tess.indexes[1] = 1;
-		tess.indexes[2] = 2;
-		tess.indexes[3] = 0;
-		tess.indexes[4] = 2;
-		tess.indexes[5] = 3;
 
 		tess.xyz[0][0] = x;
 		tess.xyz[0][1] = y;
@@ -1597,20 +1589,20 @@ void RB_ShowImages( void )
 		tess.svars.texcoords[0][1][0] = 1;
 		tess.svars.texcoords[0][1][1] = 0;
 
-		tess.xyz[2][0] = x + w;
+		tess.xyz[2][0] = x;
 		tess.xyz[2][1] = y + h;
-		tess.svars.texcoords[0][2][0] = 1;
+		tess.svars.texcoords[0][2][0] = 0;
 		tess.svars.texcoords[0][2][1] = 1;
 
-		tess.xyz[3][0] = x;
+		tess.xyz[3][0] = x + w;
 		tess.xyz[3][1] = y + h;
-		tess.svars.texcoords[0][3][0] = 0;
+		tess.svars.texcoords[0][3][0] = 1;
 		tess.svars.texcoords[0][3][1] = 1;
 
 		tess.svars.texcoordPtr[0] = tess.svars.texcoords[0];
 
-		vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_RGBA | TESS_ST0 );
-		vk_draw_geometry( vk.images_debug_pipeline, DEPTH_RANGE_NORMAL, qtrue );
+		vk_bind_geometry_ext( TESS_XYZ | TESS_RGBA | TESS_ST0 );
+		vk_draw_geometry( vk.images_debug_pipeline, DEPTH_RANGE_NORMAL, qfalse );
 	}
 
 	tess.numIndexes = 0;

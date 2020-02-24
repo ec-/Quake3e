@@ -2120,6 +2120,7 @@ static void vk_create_persistent_pipelines( void )
 
 			Com_Memset(&def, 0, sizeof(def));
 			def.state_bits = GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA;
+			def.primitives = TRIANGLE_STRIP;
 
 			vk.images_debug_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
 		}
