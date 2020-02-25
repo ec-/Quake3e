@@ -166,13 +166,11 @@ typedef char GLchar;
 
 #define QGL_Core_PROCS \
 	GLE( void, glAlphaFunc, GLenum func, GLclampf ref ) \
-	GLE( void, glArrayElement, GLint i ) \
 	GLE( void, glBindTexture, GLenum target, GLuint texture ) \
 	GLE( void, glBlendFunc, GLenum sfactor, GLenum dfactor ) \
 	GLE( void, glClear, GLbitfield mask ) \
 	GLE( void, glClearColor, GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha ) \
 	GLE( void, glClearDepth, GLclampd depth ) \
-	GLE( void, glClearStencil, GLint s ) \
 	GLE( void, glClipPlane, GLenum plane, const GLdouble *equation ) \
 	GLE( void, glColor4f, GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha ) \
 	GLE( void, glColorMask, GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha ) \
@@ -209,7 +207,6 @@ typedef char GLchar;
 	GLE( void, glScissor, GLint x, GLint y, GLsizei width, GLsizei height ) \
 	GLE( void, glShadeModel, GLenum mode ) \
 	GLE( void, glStencilFunc, GLenum func, GLint ref, GLuint mask ) \
-	GLE( void, glStencilMask, GLuint mask ) \
 	GLE( void, glStencilOp, GLenum fail, GLenum zfail, GLenum zpass ) \
 	GLE( void, glTexCoordPointer, GLint size, GLenum type, GLsizei stride, const GLvoid *pointer ) \
 	GLE( void, glTexEnvi, GLenum target, GLenum pname, GLint param ) \

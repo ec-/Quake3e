@@ -1098,6 +1098,7 @@ typedef struct {
 	
 	qboolean throttle;
 	qboolean drawConsole;
+	qboolean doneShadows;
 
 	qboolean screenMapDone;
 

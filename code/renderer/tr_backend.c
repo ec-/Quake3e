@@ -1542,6 +1542,11 @@ static const void *RB_FinishBloom( const void *data )
 		}
 	}
 
+	// texture swapping test
+	if ( r_showImages->integer ) {
+		RB_ShowImages();
+	}
+
 	backEnd.drawConsole = qtrue;
 
 	return (const void *)(cmd + 1);
@@ -1557,7 +1562,7 @@ static const void *RB_SwapBuffers( const void *data ) {
 	VBO_UnBind();
 
 	// texture swapping test
-	if ( r_showImages->integer ) {
+	if ( r_showImages->integer && !backEnd.drawConsole ) {
 		RB_ShowImages();
 	}
 

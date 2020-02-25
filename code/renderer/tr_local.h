@@ -1034,6 +1034,7 @@ typedef struct {
 	
 	qboolean throttle;
 	qboolean drawConsole;
+	qboolean doneShadows;
 
 } backEndState_t;
 

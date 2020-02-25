@@ -1920,6 +1920,7 @@ static void vk_create_persistent_pipelines( void )
 				def.clipping_plane = qfalse;
 				def.mirror = qfalse;
 				def.shadow_phase = SHADOW_FS_QUAD;
+				def.primitives = TRIANGLE_STRIP;
 
 				vk.shadow_finish_pipeline = vk_find_pipeline_ext( 0, &def, r_shadows->integer ? qtrue: qfalse );
 			}

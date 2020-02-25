@@ -138,6 +138,12 @@ void RB_ShadowTessEnd( void ) {
 #endif
 		VectorCopy( backEnd.currentEntity->lightDir, lightDir );
 
+	// clamp projection by height
+	if ( lightDir[2] > 0.1 ) {
+		float s = 0.1 / lightDir[2];
+		VectorScale( lightDir, s, lightDir );
+	}
+
 	// project vertexes away from light direction
 	for ( i = 0; i < tess.numVertexes; i++ ) {
 		VectorMA( tess.xyz[i], -512, lightDir, tess.xyz[i+tess.numVertexes] );
@@ -220,6 +226,8 @@ void RB_ShadowTessEnd( void ) {
 
 	qglEnable( GL_TEXTURE_2D );
 
+	backEnd.doneShadows = qtrue;
+
 	tess.numIndexes = 0;
 }
 
@@ -242,6 +250,12 @@ void RB_ShadowFinish( void ) {
 		{ -100,-100, -10 },
 		{  100,-100, -10 }
 	};
+
+	if ( !backEnd.doneShadows ) {
+		return;
+	}
+
+	backEnd.doneShadows = qfalse;
 
 	if ( r_shadows->integer != 2 ) {
 		return;
