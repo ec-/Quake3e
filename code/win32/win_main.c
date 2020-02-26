@@ -602,6 +602,7 @@ void Sys_Init( void ) {
 SetDPIAwareness
 ==================
 */
+#if 0
 static void SetDPIAwareness( void ) 
 {
 	typedef HANDLE (WINAPI *pfnSetThreadDpiAwarenessContext)( HANDLE dpiContext );
@@ -633,6 +634,7 @@ static void SetDPIAwareness( void )
 		FreeLibrary( dll );
 	}
 }
+#endif
 
 
 #ifndef DEDICATED
@@ -684,7 +686,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 		SetPriorityClass( hProcess, HIGH_PRIORITY_CLASS );
 	}
 
-	SetDPIAwareness();
+	//SetDPIAwareness();
 
 	g_wv.hInstance = hInstance;
 	Q_strncpyz( sys_cmdline, lpCmdLine, sizeof( sys_cmdline ) );

@@ -29,7 +29,7 @@ extern cvar_t *cl_cURLLib;
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #define DEFAULT_CURL_LIB "libcurl-3.dll"
 #elif defined(MACOS_X)
 #define DEFAULT_CURL_LIB "libcurl.dylib"

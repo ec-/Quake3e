@@ -78,7 +78,7 @@ END
 // Applicatioin manifest
 //
 #ifndef __MINGW32__
-2 RT_MANIFEST "q3.manifest"
+1 RT_MANIFEST "q3.manifest"
 #else
-2 RT_MANIFEST "code/win32/q3.manifest"
+1 RT_MANIFEST "code/win32/q3.manifest"
 #endif
