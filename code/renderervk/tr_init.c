@@ -1402,6 +1402,7 @@ static void VkInfo_f( void )
 
 	ri.Printf(PRINT_ALL, "created pipelines: %i\n", vk.pipeline_create_count );
 	ri.Printf(PRINT_ALL, "allocated pipelines: %i\n", vk.pipelines_count );
+	ri.Printf(PRINT_ALL, "image chunks: %i\n", vk_world.num_image_chunks );
 }
 #endif
 

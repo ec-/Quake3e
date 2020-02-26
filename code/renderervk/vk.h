@@ -498,6 +498,8 @@ typedef struct {
 	uint32_t screenMapHeight;
 	uint32_t screenMapSamples;
 
+	uint32_t image_chunk_size;
+
 } Vk_Instance;
 
 typedef struct {

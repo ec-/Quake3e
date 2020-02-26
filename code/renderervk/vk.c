@@ -562,19 +562,20 @@ static void allocate_and_bind_image_memory(VkImage image) {
 
 	qvkGetImageMemoryRequirements(vk.device, image, &memory_requirements);
 
-	if (memory_requirements.size > IMAGE_CHUNK_SIZE) {
-		ri.Error(ERR_FATAL, "Vulkan: could not allocate memory, image is too large.");
+	if ( memory_requirements.size > vk.image_chunk_size ) {
+		ri.Error( ERR_FATAL, "Vulkan: could not allocate memory, image is too large (%ikbytes).",
+			(int)(memory_requirements.size/1024) );
 	}
 
 	chunk = NULL;
 
 	// Try to find an existing chunk of sufficient capacity.
 	alignment = memory_requirements.alignment;
-	for (i = 0; i < vk_world.num_image_chunks; i++) {
+	for ( i = 0; i < vk_world.num_image_chunks; i++ ) {
 		// ensure that memory region has proper alignment
 		VkDeviceSize offset = PAD( vk_world.image_chunks[i].used, alignment );
 
-		if ( offset + memory_requirements.size <= IMAGE_CHUNK_SIZE ) {
+		if ( offset + memory_requirements.size <= vk.image_chunk_size ) {
 			chunk = &vk_world.image_chunks[i];
 			chunk->used = offset + memory_requirements.size;
 			break;
@@ -592,7 +593,7 @@ static void allocate_and_bind_image_memory(VkImage image) {
 
 		alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		alloc_info.pNext = NULL;
-		alloc_info.allocationSize = IMAGE_CHUNK_SIZE;
+		alloc_info.allocationSize = vk.image_chunk_size;
 		alloc_info.memoryTypeIndex = find_memory_type(vk.physical_device, memory_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 		VK_CHECK(qvkAllocateMemory(vk.device, &alloc_info, NULL, &memory));
@@ -2748,6 +2749,9 @@ void vk_initialize( void )
 	// round down to next power of 2
 	glConfig.maxTextureSize = MIN( props.limits.maxImageDimension2D, log2pad( maxSize, 0 ) );
 
+	// default chunk size, may be doubled on demand
+	vk.image_chunk_size = IMAGE_CHUNK_SIZE;
+
 	if ( props.limits.maxPerStageDescriptorSamplers != 0xFFFFFFFF )
 		glConfig.numTextureUnits = props.limits.maxPerStageDescriptorSamplers;
 	else
@@ -3417,6 +3421,16 @@ void vk_release_resources( void ) {
 	vk.pipelines_count = vk.pipelines_world_base;
 
 	VK_CHECK( qvkResetDescriptorPool( vk.device, vk.descriptor_pool, 0 ) );
+
+	if ( vk_world.num_image_chunks > 1 ) {
+		// if we allocated more than 2 image chunks - use doubled default size
+		vk.image_chunk_size = (IMAGE_CHUNK_SIZE * 2);
+	} else if ( vk_world.num_image_chunks == 1 ) {
+		// otherwise set to default if used less than a half
+		if ( vk_world.image_chunks[0].used < ( IMAGE_CHUNK_SIZE - (IMAGE_CHUNK_SIZE / 10) ) ) {
+			vk.image_chunk_size = IMAGE_CHUNK_SIZE;
+		}
+	}
 
 	Com_Memset( &vk_world, 0, sizeof( vk_world ) );
 
