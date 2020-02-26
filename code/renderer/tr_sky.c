@@ -338,7 +338,7 @@ static float	s_skyTexCoords[SKY_SUBDIVISIONS+1][SKY_SUBDIVISIONS+1][2];
 CullPoints
 =================
 */
-static qboolean CullPoints( const vec4_t v[], const int count )
+static qboolean CullPoints( vec4_t v[], const int count )
 {
 	const cplane_t *frust;
 	int i, j;
@@ -393,7 +393,7 @@ static qboolean CullSkySide( const int mins[2], const int maxs[2] )
 }
 
 
-static void FillSkySide( const int mins[2], const int maxs[2], const vec2_t skyTexCoords[SKY_SUBDIVISIONS+1][SKY_SUBDIVISIONS+1] )
+static void FillSkySide( const int mins[2], const int maxs[2], float skyTexCoords[SKY_SUBDIVISIONS+1][SKY_SUBDIVISIONS+1][2] )
 {
 	const int vertexStart = tess.numVertexes;
 	const int tHeight = maxs[1] - mins[1] + 1;
