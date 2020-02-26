@@ -221,6 +221,7 @@ typedef struct vk_tess_s {
 	} descriptor_set;
 
 	Vk_Depth_Range depth_range;
+	VkPipeline last_pipeline;
 
 #ifndef USE_SINGLE_FBO
 	VkDescriptorSet color_descriptor;

@@ -4899,7 +4899,10 @@ void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean i
 
 	// bind pipeline
 	vkpipe = vk_gen_pipeline( pipeline );
-	qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkpipe );
+	if ( vkpipe != vk.cmd->last_pipeline ) {
+		qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkpipe );
+		vk.cmd->last_pipeline = vkpipe;
+	}
 
 	// configure pipeline's dynamic state
 	if ( vk.cmd->depth_range != depth_range ) {
@@ -5111,6 +5114,8 @@ void vk_begin_frame( void )
 	}
 
 	vk_world.dirty_depth_attachment = qfalse;
+
+	vk.cmd->last_pipeline = VK_NULL_HANDLE;
 
 	backEnd.screenMapDone = qfalse;
 
