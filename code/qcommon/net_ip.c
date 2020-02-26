@@ -1621,12 +1621,12 @@ void NET_Init( void ) {
 
 	r = WSAStartup( MAKEWORD( 2, 0 ), &winsockdata );
 	if( r ) {
-		Com_Printf( "WARNING: Winsock initialization failed, returned %d\n", r );
+		Com_Printf( S_COLOR_YELLOW "WARNING: Winsock initialization failed, returned %d\n", r );
 		return;
 	}
 
 	winsockInitialized = qtrue;
-	Com_Printf( "Winsock Initialized\n" );
+	Com_DPrintf( "Winsock Initialized\n" );
 #endif
 
 	NET_Config( qtrue );

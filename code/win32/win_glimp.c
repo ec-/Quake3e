@@ -635,11 +635,11 @@ static qboolean GLW_CreateWindow( int width, int height, int colorbits, qboolean
 
 		if ( !RegisterClass( &wc ) )
 		{
-			Com_Error( ERR_FATAL, "GLW_CreateWindow: could not register window class" );
+			Com_Error( ERR_FATAL, "%s: could not register window class", __func__ );
 			return qfalse;
 		}
 		s_classRegistered = qtrue;
-		Com_Printf( "...registered window class\n" );
+		// Com_Printf( "...registered window class\n" );
 	}
 
 	r.left = vid_xpos->integer;
