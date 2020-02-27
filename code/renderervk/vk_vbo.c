@@ -204,8 +204,8 @@ static qboolean isStaticShader( shader_t *shader )
 		stage = shader->stages[ i ];
 		if ( !stage || !stage->active )
 			break;
-		//if ( stage->depthFragment )
-		//	return qfalse;
+		if ( stage->depthFragment )
+			return qfalse;
 		if ( stage->adjustColorsForFog != ACFF_NONE )
 			return qfalse;
 		if ( !isStaticTCmod( &stage->bundle[0] ) || !isStaticTCmod( &stage->bundle[1] ) )

@@ -2940,8 +2940,7 @@ static shader_t *FinishShader( void ) {
 		pStage->vk_portal_pipeline[1] = vk_find_pipeline_ext( 0, &def_portal, qfalse );
 
 		shader.fogCollapse = qtrue;
-
-		stages[0].adjustColorsForFog = ACFF_NONE;
+		//stages[0].adjustColorsForFog = ACFF_NONE;
 	}
 #endif // USE_FOG_COLLAPSE
 #endif // USE_VULKAN
