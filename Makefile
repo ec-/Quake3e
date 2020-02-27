@@ -99,6 +99,10 @@ ifndef COPYDIR
 COPYDIR="/usr/local/games/quake3"
 endif
 
+ifndef DESTDIR
+DESTDIR=/usr/local/games/quake3
+endif
+
 ifndef MOUNT_DIR
 MOUNT_DIR=code
 endif
@@ -162,13 +166,35 @@ CMDIR=$(MOUNT_DIR)/qcommon
 UDIR=$(MOUNT_DIR)/unix
 W32DIR=$(MOUNT_DIR)/win32
 BLIBDIR=$(MOUNT_DIR)/botlib
-NDIR=$(MOUNT_DIR)/null
 UIDIR=$(MOUNT_DIR)/ui
 JPDIR=$(MOUNT_DIR)/jpeg-8c
 LOKISETUPDIR=$(UDIR)/setup
 
 bin_path=$(shell which $(1) 2> /dev/null)
+
 STRIP=strip
+
+ifneq ($(PKG_CONFIG_PATH),)
+  PKG_CONFIG ?= pkg-config
+endif
+
+ifneq ($(call bin_path, $(PKG_CONFIG)),)
+  SDL_INCLUDE ?= $(shell $(PKG_CONFIG) --silence-errors --cflags-only-I sdl2)
+  SDL_LIBS ?= $(shell $(PKG_CONFIG) --silence-errors --libs sdl2)
+  X11_INCLUDE ?= $(shell $(PKG_CONFIG) --silence-errors --cflags-only-I x11)
+  X11_LIBS ?= $(shell $(PKG_CONFIG) --silence-errors --libs x11)
+endif
+
+# supply some reasonable defaults for SDL/X11?
+ifeq ($(X11_INCLUDE),)
+X11_INCLUDE = -I/usr/X11R6/include
+endif
+ifeq ($(X11_LIBS),)
+X11_LIBS = -lX11
+endif
+ifeq ($(SDL_LIBS),)
+SDL_LIBS = -lSDL2
+endif
 
 # extract version info
 VERSION=$(shell grep "\#define Q3_VERSION" $(CMDIR)/q_shared.h | \
@@ -239,15 +265,9 @@ CLIENT_EXTRA_FILES=
 
 ifeq ($(PLATFORM),linux)
 
-  ifeq ($(ARCH),x86_64)
-    LIB=lib64
-  else
-    LIB=lib
-  endif
-
   BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
 
-  BASE_CFLAGS += -I/usr/X11R7/include -I/usr/include
+  BASE_CFLAGS += -I/usr/include
 
   OPTIMIZE = -O2 -fvisibility=hidden
 
@@ -259,22 +279,18 @@ ifeq ($(PLATFORM),linux)
   endif
   endif
 
-  DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -ggdb -O0
-
-  RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
-
   SHLIBEXT = so
   SHLIBCFLAGS = -fPIC
   SHLIBLDFLAGS = -shared $(LDFLAGS)
 
-  THREAD_LDFLAGS=-lpthread
   LDFLAGS=-ldl -lm -Wl,--hash-style=both
 
   ifeq ($(USE_SDL),1)
-    BASE_CFLAGS += -I/usr/include/SDL2
-    CLIENT_LDFLAGS = -L/usr/$(LIB) -lSDL2
+    BASE_CFLAGS += $(SDL_INCLUDE)
+    CLIENT_LDFLAGS = $(SDL_LIBS)
   else
-    CLIENT_LDFLAGS = -L/usr/X11R7/$(LIB) -L/usr/$(LIB) -lX11
+    BASE_CFLAGS += $(X11_INCLUDE)
+    CLIENT_LDFLAGS = $(X11_LIBS)
   endif
 
   ifeq ($(USE_CODEC_VORBIS),1)
@@ -286,6 +302,9 @@ ifeq ($(PLATFORM),linux)
     BASE_CFLAGS += -m32
     LDFLAGS += -m32
   endif
+
+  DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -ggdb -O0
+  RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
 
 else # ifeq Linux
 
@@ -344,24 +363,15 @@ ifdef MINGW
   BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
     -DUSE_ICON -DMINGW=1
 
-#  OPTIMIZE = -O3 -march=i586 -fomit-frame-pointer -ffast-math -falign-loops=2 \
-#    -funroll-loops -falign-jumps=2 -falign-functions=2 -fstrength-reduce
-
   ifeq ($(ARCH),x86_64)
     ARCHEXT = .x64
     BASE_CFLAGS += -m64
     OPTIMIZE = -O2 -ffast-math -fstrength-reduce
-    HAVE_VM_COMPILED = true
   endif
   ifeq ($(ARCH),x86)
     BASE_CFLAGS += -m32
     OPTIMIZE = -O2 -march=i586 -mtune=i686 -ffast-math -fstrength-reduce
-    HAVE_VM_COMPILED = true
   endif
-
-  DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -ggdb -O0
-
-  RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
 
   SHLIBEXT = dll
   SHLIBCFLAGS = -fPIC -fvisibility=hidden
@@ -375,12 +385,12 @@ ifdef MINGW
   CLIENT_LDFLAGS=$(LDFLAGS)
 
   ifeq ($(USE_SDL),1)
-	BASE_CFLAGS += -DUSE_LOCAL_HEADERS=1 -I$(MOUNT_DIR)/libsdl/windows/include/SDL2
-	#CLIENT_CFLAGS += -DUSE_LOCAL_HEADERS=1
+    BASE_CFLAGS += -DUSE_LOCAL_HEADERS=1 -I$(MOUNT_DIR)/libsdl/windows/include/SDL2
+    #CLIENT_CFLAGS += -DUSE_LOCAL_HEADERS=1
     ifeq ($(ARCH),x86)
       CLIENT_LDFLAGS += -L$(MOUNT_DIR)/libsdl/windows/mingw/lib32
       CLIENT_LDFLAGS += -lSDL2
-	  CLIENT_EXTRA_FILES += $(MOUNT_DIR)/libsdl/windows/mingw/lib32/SDL2.dll
+      CLIENT_EXTRA_FILES += $(MOUNT_DIR)/libsdl/windows/mingw/lib32/SDL2.dll
     else
       CLIENT_LDFLAGS += -L$(MOUNT_DIR)/libsdl/windows/mingw/lib64
       CLIENT_LDFLAGS += -lSDL264
@@ -401,6 +411,9 @@ ifdef MINGW
     endif
     CLIENT_LDFLAGS += -lcurl -lwldap32 -lcrypt32
   endif
+
+  DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -ggdb -O0
+  RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
 
 else # ifeq mingw32
 
@@ -423,7 +436,6 @@ ifeq ($(PLATFORM),freebsd)
   ifeq ($(ARCH),x86)
     RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O3 -mtune=pentiumpro \
       -march=pentium -fomit-frame-pointer -pipe -ffast-math \
-      -falign-loops=2 -falign-jumps=2 -falign-functions=2 \
       -funroll-loops -fstrength-reduce
   endif
   endif
@@ -432,7 +444,6 @@ ifeq ($(PLATFORM),freebsd)
   SHLIBCFLAGS = -fPIC -fvisibility=hidden
   SHLIBLDFLAGS = -shared $(LDFLAGS)
 
-  THREAD_LDFLAGS=-lpthread
   # don't need -ldl (FreeBSD)
   LDFLAGS=-lm -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext
 
@@ -459,7 +470,6 @@ ifeq ($(PLATFORM),openbsd)
   ifeq ($(ARCH),x86)
     RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O3 -mtune=pentiumpro \
       -march=pentium -fomit-frame-pointer -pipe -ffast-math \
-      -falign-loops=2 -falign-jumps=2 -falign-functions=2 \
       -funroll-loops -fstrength-reduce
   endif
   endif
@@ -468,7 +478,6 @@ ifeq ($(PLATFORM),openbsd)
   SHLIBCFLAGS = -fPIC
   SHLIBLDFLAGS = -shared $(LDFLAGS)
 
-  THREAD_LDFLAGS=-lpthread
   # don't need -ldl (FreeBSD)
   LDFLAGS=-lm
 
@@ -498,7 +507,6 @@ ifeq ($(PLATFORM),netbsd)
   SHLIBEXT = so
   SHLIBCFLAGS = -fPIC -fvisibility=hidden
   SHLIBLDFLAGS = -shared $(LDFLAGS)
-  THREAD_LDFLAGS = -lpthread
 
   BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes
   DEBUG_CFLAGS = $(BASE_CFLAGS) -g
@@ -511,7 +519,6 @@ else # ifeq netbsd
 # SETUP AND BUILD -- GENERIC
 #############################################################################
 
-# BASE_CFLAGS += -DNO_VM_COMPILED
   DEBUG_CFLAGS = $(BASE_CFLAGS) -ggdb -O0
   RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG -O2
 
@@ -618,10 +625,6 @@ debug:
 
 release:
 	@$(MAKE) targets B=$(BR) CFLAGS="$(CFLAGS) $(RELEASE_CFLAGS)" V=$(V)
-	@for i in $(TARGETS); \
-	do \
-		$(STRIP) "$(BR)$$i"; \
-	done
 
 define ADD_COPY_TARGET
 TARGETS += $2
@@ -1026,10 +1029,6 @@ ifeq ($(USE_VULKAN_API),1)
 endif
 endif # !USE_SDL
 
-#  ifeq ($(PLATFORM),linux)
-#    Q3OBJ += $(B)/client/linux_joystick.o
-#  endif
-
 endif # !MINGW
 
 # client binary
@@ -1217,9 +1216,6 @@ $(B)/ded/%.o: $(BLIBDIR)/%.c
 $(B)/ded/%.o: $(UDIR)/%.c
 	$(DO_DED_CC)
 
-$(B)/ded/%.o: $(NDIR)/%.c
-	$(DO_DED_CC)
-
 $(B)/ded/%.o: $(W32DIR)/%.c
 	$(DO_DED_CC)
 
@@ -1229,6 +1225,14 @@ $(B)/ded/%.o: $(W32DIR)/%.rc
 #############################################################################
 # MISC
 #############################################################################
+
+install: release
+	@for i in $(TARGETS); do \
+		if [ -f $(BR)$$i ]; then \
+			$(INSTALL) -D -m 0755 "$(BR)/$$i" "$(DESTDIR)$$i"; \
+			$(STRIP) "$(DESTDIR)$$i"; \
+		fi \
+	done
 
 copyfiles: release
 	@if [ ! -d $(COPYDIR)/baseq3 ]; then echo "You need to set COPYDIR to where your Quake3 data is!"; fi
@@ -1255,10 +1259,11 @@ clean2:
 	@rm -f $(TARGETS)
 
 clean-debug:
-	@$(MAKE) clean2 B=$(BD)
+	@rm -rf $(BD)
 
 clean-release:
-	@$(MAKE) clean2 B=$(BR)
+	@echo $(BR)
+	@rm -rf $(BR)
 
 distclean: clean
 	@rm -rf $(BUILD_DIR)
