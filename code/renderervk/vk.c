@@ -4976,6 +4976,8 @@ static void vk_begin_render_pass( VkRenderPass renderPass, VkFramebuffer frameBu
 	}
 
 	qvkCmdBeginRenderPass( vk.cmd->command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE );
+
+	vk_world.dirty_depth_attachment = qfalse;
 }
 
 
@@ -5128,8 +5130,6 @@ void vk_begin_frame( void )
 	if ( vk.stats.push_size > vk.stats.push_size_max ) {
 		vk.stats.push_size_max = vk.stats.push_size;
 	}
-
-	vk_world.dirty_depth_attachment = qfalse;
 
 	vk.cmd->last_pipeline = VK_NULL_HANDLE;
 
