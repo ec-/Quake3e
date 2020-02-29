@@ -1351,6 +1351,83 @@ void FS_RestorePure( void )
 }
 
 
+static int FS_OpenFileInPak( fileHandle_t *file, pack_t *pak, fileInPack_t *pakFile, qboolean uniqueFILE ) {
+	fileHandleData_t *f;
+	unz_s *zfi;
+	FILE *temp;
+
+	// mark the pak as having been referenced and mark specifics on cgame and ui
+	// these are loaded from all pk3s
+	// from every pk3 file.
+
+	if ( !( pak->referenced & FS_GENERAL_REF ) && FS_GeneralRef( pakFile->name ) ) {
+		pak->referenced |= FS_GENERAL_REF;
+	}
+	if ( !( pak->referenced & FS_CGAME_REF ) && !strcmp( pakFile->name, "vm/cgame.qvm" ) ) {
+		pak->referenced |= FS_CGAME_REF;
+	}
+	if ( !( pak->referenced & FS_UI_REF ) && !strcmp( pakFile->name, "vm/ui.qvm" ) ) {
+		pak->referenced |= FS_UI_REF;
+	}
+
+	if ( !pak->handle ) {
+		pak->handle = unzOpen( pak->pakFilename );
+		if ( !pak->handle ) {
+			Com_Printf( S_COLOR_RED "Error opening %s@%s\n", pak->pakBasename, pakFile->name );
+			*file = FS_INVALID_HANDLE;
+			return -1;
+		}
+	}
+
+	if ( uniqueFILE ) {
+		// open a new file on the pakfile
+		temp = unzReOpen( pak->pakFilename, pak->handle );
+		if ( temp == NULL ) {
+			Com_Printf( S_COLOR_RED "Couldn't reopen %s", pak->pakFilename );
+			*file = FS_INVALID_HANDLE;
+			return -1;
+		}
+	} else {
+		temp = pak->handle;
+	}
+
+	*file = FS_HandleForFile();
+	f = &fsh[ *file ];
+	FS_InitHandle( f );
+
+	f->zipFile = qtrue;
+	f->handleFiles.file.z = temp;
+	f->handleFiles.unique = uniqueFILE;
+
+	Q_strncpyz( f->name, pakFile->name, sizeof( f->name ) );
+	zfi = (unz_s *)f->handleFiles.file.z;
+	// in case the file was new
+	temp = zfi->file;
+	// set the file position in the zip file (also sets the current file info)
+	unzSetCurrentFileInfoPosition( pak->handle, pakFile->pos );
+	// copy the file info into the unzip structure
+	Com_Memcpy( zfi, pak->handle, sizeof( *zfi ) );
+	// we copy this back into the structure
+	zfi->file = temp;
+	// open the file in the zip
+	unzOpenCurrentFile( f->handleFiles.file.z );
+	f->zipFilePos = pakFile->pos;
+	f->zipFileLen = pakFile->size;
+	f->pakIndex = pak->index;
+	fs_lastPakIndex = pak->index;
+	f->pak = pak;
+
+	pak->handleUsed++;
+
+	if ( fs_debug->integer ) {
+		Com_Printf( "FS_FOpenFileRead: %s (found in '%s')\n",
+			pakFile->name, pak->pakFilename );
+	}
+
+	return zfi->cur_file_info.uncompressed_size;
+}
+
+
 /*
 ===========
 FS_FOpenFileRead
@@ -1371,7 +1448,6 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	directory_t		*dir;
 	long			hash;
 	long			fullHash;
-	unz_s			*zfi;
 	FILE			*temp;
 	int				length;
 	fileHandleData_t *f;
@@ -1396,7 +1472,6 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 		*file = FS_INVALID_HANDLE;
 		return -1;
 	}
-
 
 	// we will calculate full hash only once then just mask it by current pack->hashSize
 	// we can do that as long as we know properties of our hash function
@@ -1445,11 +1520,6 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	//
 	// search through the path, one element at a time
 	//
-
-	*file = FS_HandleForFile();
-	f = &fsh[ *file ];
-	FS_InitHandle( f );
-
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		// is the element a pak file?
 		if ( search->pack && search->pack->hashTable[ (hash = fullHash & (search->pack->hashSize-1)) ] ) {
@@ -1464,79 +1534,26 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 				// case and separator insensitive comparisons
 				if ( !FS_FilenameCompare( pakFile->name, filename ) ) {
 					// found it!
-
-					// mark the pak as having been referenced and mark specifics on cgame and ui
-					// shaders, txt, arena files  by themselves do not count as a reference as 
-					// these are loaded from all pk3s
-					// from every pk3 file..
-					if ( !( pak->referenced & FS_GENERAL_REF ) && FS_GeneralRef( filename ) ) {
-						pak->referenced |= FS_GENERAL_REF;
-					}
-					if ( !( pak->referenced & FS_CGAME_REF ) && !strcmp( filename, "vm/cgame.qvm" ) ) {
-						pak->referenced |= FS_CGAME_REF;
-					}
-					if ( !( pak->referenced & FS_UI_REF ) && !strcmp( filename, "vm/ui.qvm" ) ) {
-						pak->referenced |= FS_UI_REF;
-					}
-
-					if ( !pak->handle ) {
-						pak->handle = unzOpen( pak->pakFilename );
-						if ( !pak->handle ) {
-							Com_Printf( S_COLOR_RED "Error opening %s@%s\n", pak->pakBasename, filename );
-							*file = FS_INVALID_HANDLE;
-							return -1;
-						}
-					}
-
-					if ( uniqueFILE ) {
-						// open a new file on the pakfile
-						f->handleFiles.file.z = unzReOpen( pak->pakFilename, pak->handle );
-						if ( f->handleFiles.file.z == NULL ) {
-							Com_Error( ERR_FATAL, "Couldn't reopen %s", pak->pakFilename );
-						}
-					} else {
-						f->handleFiles.file.z = pak->handle;
-					}
-					Q_strncpyz( f->name, filename, sizeof( f->name ) );
-					zfi = (unz_s *)f->handleFiles.file.z;
-					// in case the file was new
-					temp = zfi->file;
-					// set the file position in the zip file (also sets the current file info)
-					unzSetCurrentFileInfoPosition(pak->handle, pakFile->pos);
-					// copy the file info into the unzip structure
-					Com_Memcpy( zfi, pak->handle, sizeof(unz_s) );
-					// we copy this back into the structure
-					zfi->file = temp;
-					// open the file in the zip
-					unzOpenCurrentFile( f->handleFiles.file.z );
-					f->zipFilePos = pakFile->pos;
-					f->zipFileLen = pakFile->size;
-					f->zipFile = qtrue;
-					f->handleFiles.unique = uniqueFILE;
-					f->pakIndex = pak->index;
-					fs_lastPakIndex = pak->index;
-					f->pak = pak;
-					pak->handleUsed++;
-
-					if ( fs_debug->integer ) {
-						Com_Printf( "FS_FOpenFileRead: %s (found in '%s')\n", 
-							filename, pak->pakFilename );
-					}
-					return zfi->cur_file_info.uncompressed_size;
+					return FS_OpenFileInPak( file, pak, pakFile, uniqueFILE );
 				}
 				pakFile = pakFile->next;
 			} while ( pakFile != NULL );
 		} else if ( search->dir && search->policy != DIR_DENY ) {
 			// check a file in the directory tree
 			dir = search->dir;
-			
+
 			netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
-			
-			f->handleFiles.file.o = Sys_FOpen( netpath, "rb" );
-			if ( f->handleFiles.file.o == NULL ) {
+
+			temp = Sys_FOpen( netpath, "rb" );
+			if ( temp == NULL ) {
 				continue;
 			}
 
+			*file = FS_HandleForFile();
+			f = &fsh[ *file ];
+			FS_InitHandle( f );
+
+			f->handleFiles.file.o = temp;
 			Q_strncpyz( f->name, filename, sizeof( f->name ) );
 			f->zipFile = qfalse;
 
@@ -1546,12 +1563,12 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 			}
 
 			return FS_FileLength( f->handleFiles.file.o );
-		}		
+		}
 	}
-	
+
 #ifdef FS_MISSING
-	if (missingFiles) {
-		fprintf(missingFiles, "%s\n", filename);
+	if ( missingFiles ) {
+		fprintf( missingFiles, "%s\n", filename );
 	}
 #endif
 
@@ -2027,7 +2044,7 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 		}
 		return -1;
 	}
-	
+
 	if ( !buffer ) {
 		if ( isConfig ) {
 			Com_DPrintf( "Writing len for %s to journal file.\n", qpath );
@@ -2622,7 +2639,7 @@ static qboolean FS_LoadPakFromFile( FILE *f )
 			curFile->pos = it.pos;
 
 			// update hash table
-			hash = FS_HashFileName( curFile->name, pack->hashSize );
+			hash = FS_HashFileName( filename_inzip, pack->hashSize );
 			curFile->next = pack->hashTable[ hash ];
 			pack->hashTable[ hash ] = curFile;
 			curFile++;
