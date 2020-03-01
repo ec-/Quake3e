@@ -2375,6 +2375,27 @@ static void FS_FreeUnusedCache( void )
 }
 
 
+/*
+=================
+FS_ConvertFilename
+
+lower case and replace '\\' ':' with '/'
+=================
+*/
+static void FS_ConvertFilename( char *name )
+{
+	int c;
+	while ( (c = *name) != '\0' ) {
+		if ( c <= 'Z' && c >= 'A' ) {
+			*name = c - 'A' + 'a';
+		} else if ( c == '\\' || c == ':' ) {
+			*name = '/';
+		}
+		name++;
+	}
+}
+
+
 #ifdef USE_PK3_CACHE_FILE
 
 void FS_WriteCacheHeader( FILE *f )
@@ -2632,6 +2653,7 @@ static qboolean FS_LoadPakFromFile( FILE *f )
 		}
 
 		filename_inzip = namePtr + it.name;
+		FS_ConvertFilename( filename_inzip );
 		if ( !FS_BannedPakFile( filename_inzip ) ) {
 			// store the file position in the zip
 			curFile->name = filename_inzip;
@@ -2944,7 +2966,7 @@ static pack_t *FS_LoadZipFile( const char *zipfile )
 			fs_headerLongs[fs_numHeaderLongs++] = LittleLong( file_info.crc );
 		}
 
-		Q_strlwr( filename_inzip );
+		FS_ConvertFilename( filename_inzip );
 		if ( !FS_BannedPakFile( filename_inzip ) ) {
 			// store the file position in the zip
 			unzGetCurrentFileInfoPosition( uf, &curFile->pos );
