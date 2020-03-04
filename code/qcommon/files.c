@@ -222,6 +222,9 @@ static const unsigned pak_checksums[] = {
 #define USE_PK3_CACHE
 #define USE_PK3_CACHE_FILE
 
+#define USE_HANDLE_CACHE
+#define MAX_CACHED_HANDLES 384
+
 #define MAX_ZPATH			256
 #define MAX_FILEHASH_SIZE	4096
 
@@ -246,7 +249,13 @@ typedef struct pack_s {
 	fileInPack_t*	*hashTable;					// hash table
 	fileInPack_t*	buildBuffer;				// buffer with the filenames etc.
 	int				index;
+
 	int				handleUsed;
+
+#ifdef USE_HANDLE_CACHE
+	struct pack_s	*next_h;						// double-linked list of unreferenced paks with open file handles
+	struct pack_s	*prev_h;
+#endif
 
 	// caching subsystem
 #ifdef USE_PK3_CACHE
@@ -291,7 +300,9 @@ static	cvar_t		*fs_basepath;
 static	cvar_t		*fs_basegame;
 static	cvar_t		*fs_copyfiles;
 static	cvar_t		*fs_gamedirvar;
+#ifndef USE_HANDLE_CACHE
 static	cvar_t		*fs_locked;
+#endif
 static	cvar_t		*fs_excludeReference;
 
 static	searchpath_t	*fs_searchpaths;
@@ -1056,6 +1067,82 @@ void FS_Rename( const char *from, const char *to ) {
 	}
 }
 
+#ifdef USE_HANDLE_CACHE
+
+static int		hpaksCount;
+static pack_t	*hhead;
+
+static void FS_RemoveFromHandleList( pack_t *pak )
+{
+	if ( pak->next_h != pak ) {
+		// cut pak from list
+		pak->next_h->prev_h = pak->prev_h;
+		pak->prev_h->next_h = pak->next_h;
+		if ( hhead == pak ) {
+			hhead = pak->next_h;
+		}
+	} else {
+#ifdef _DEBUG
+		if ( hhead != pak )
+			Com_Error( ERR_DROP, "%s(): invalid head pointer", __func__ );
+#endif
+		hhead = NULL;
+	}
+
+	pak->next_h = NULL;
+	pak->prev_h = NULL;
+	
+	hpaksCount--;
+
+#ifdef _DEBUG
+	if ( hpaksCount < 0 ) {
+		Com_Error( ERR_DROP, "%s(): negative paks count", __func__ );
+	}
+
+	if ( hpaksCount == 0 && hhead != NULL ) {
+		Com_Error( ERR_DROP, "%s(): non-null head with zero paks count", __func__ );
+	}
+#endif
+}
+
+
+static void FS_AddToHandleList( pack_t *pak )
+{
+#ifdef _DEBUG
+	if ( !pak->handle ) {
+		Com_Error( ERR_DROP, "%s(): invalid pak handle", __func__ );
+	}
+	if ( pak->next_h || pak->prev_h ) {
+		Com_Error( ERR_DROP, "%s(): invalid pak pointers", __func__ );
+	}
+#endif
+	while ( hpaksCount >= MAX_CACHED_HANDLES ) {
+		pack_t *pk = hhead->prev_h; // tail item
+#ifdef _DEBUG
+		if ( pk->handle == NULL || pk->handleUsed != 0 ) {
+			Com_Error( ERR_DROP, "%s(): invalid pak handle", __func__ );
+		}
+#endif
+		unzClose( pk->handle );
+		pk->handle = NULL;
+		FS_RemoveFromHandleList( pk );
+	} 
+
+	if ( hhead == NULL ) {
+		pak->next_h = pak;
+		pak->prev_h = pak;
+	} else {
+		hhead->prev_h->next_h = pak;
+		pak->prev_h = hhead->prev_h;
+		hhead->prev_h = pak;
+		pak->next_h = hhead;
+	}
+
+	hhead = pak;
+	hpaksCount++;
+}
+#endif
+
 
 /*
 ==============
@@ -1084,12 +1171,18 @@ void FS_FCloseFile( fileHandle_t f ) {
 		fd->handleFiles.file.z = NULL;
 		fd->zipFile = qfalse;
 		fd->pak->handleUsed--;
+#ifdef USE_HANDLE_CACHE
+		if ( fd->pak->handleUsed == 0 ) {
+			FS_AddToHandleList( fd->pak );
+		}
+#else
 		if ( !fs_locked->integer ) {
 			if ( fd->pak->handle && !fd->pak->handleUsed ) {
 				unzClose( fd->pak->handle );
 				fd->pak->handle = NULL;
 			}
 		}
+#endif
 	} else {
 		if ( fd->handleFiles.file.o ) {
 			fclose( fd->handleFiles.file.o );
@@ -1416,6 +1509,12 @@ static int FS_OpenFileInPak( fileHandle_t *file, pack_t *pak, fileInPack_t *pakF
 	f->pakIndex = pak->index;
 	fs_lastPakIndex = pak->index;
 	f->pak = pak;
+
+#ifdef USE_HANDLE_CACHE
+	if ( pak->next_h ) {
+		FS_RemoveFromHandleList( pak );
+	}
+#endif
 
 	pak->handleUsed++;
 
@@ -2169,6 +2268,27 @@ static qboolean FS_BannedPakFile( const char *filename )
 }
 
 
+/*
+=================
+FS_ConvertFilename
+
+lower case and replace '\\' ':' with '/'
+=================
+*/
+static void FS_ConvertFilename( char *name )
+{
+	int c;
+	while ( (c = *name) != '\0' ) {
+		if ( c <= 'Z' && c >= 'A' ) {
+			*name = c - 'A' + 'a';
+		} else if ( c == '\\' || c == ':' ) {
+			*name = '/';
+		}
+		name++;
+	}
+}
+
+
 #ifdef USE_PK3_CACHE
 
 #define PK3_HASH_SIZE 512
@@ -2373,28 +2493,6 @@ static void FS_FreeUnusedCache( void )
 		}
 	}
 }
-
-
-/*
-=================
-FS_ConvertFilename
-
-lower case and replace '\\' ':' with '/'
-=================
-*/
-static void FS_ConvertFilename( char *name )
-{
-	int c;
-	while ( (c = *name) != '\0' ) {
-		if ( c <= 'Z' && c >= 'A' ) {
-			*name = c - 'A' + 'a';
-		} else if ( c == '\\' || c == ':' ) {
-			*name = '/';
-		}
-		name++;
-	}
-}
-
 
 #ifdef USE_PK3_CACHE_FILE
 
@@ -3001,11 +3099,15 @@ static pack_t *FS_LoadZipFile( const char *zipfile )
 	Z_Free( fs_headerLongs );
 #endif
 
-	if ( !fs_locked->integer )
+#ifdef USE_HANDLE_CACHE
+	FS_AddToHandleList( pack );
+#else
+	if ( fs_locked->integer == 0 )
 	{
 		unzClose( pack->handle );
 		pack->handle = NULL;
 	}
+#endif
 
 #ifdef USE_PK3_CACHE
 	FS_InsertPK3ToCache( pack );
@@ -3029,6 +3131,10 @@ static void FS_FreePak( pack_t *pak )
 {
 	if ( pak->handle )
 	{
+#ifdef USE_HANDLE_CACHE
+		if ( pak->next_h )
+			FS_RemoveFromHandleList( pak );
+#endif
 		unzClose( pak->handle );
 		pak->handle = NULL;
 	}
@@ -4319,7 +4425,12 @@ void FS_Shutdown( qboolean closemfp )
 
 		if ( p->pack )
 		{
-#ifndef USE_PK3_CACHE
+#ifdef USE_PK3_CACHE
+#ifdef USE_HANDLE_CACHE
+			if ( p->pack->next_h )
+				FS_RemoveFromHandleList( p->pack );
+#endif
+#else
 			FS_FreePak( p->pack );
 #endif
 			p->pack = NULL;
@@ -4524,10 +4635,12 @@ static void FS_Startup( void ) {
 	fs_basegame = Cvar_Get( "fs_basegame", BASEGAME, CVAR_INIT | CVAR_PROTECTED );
 	fs_steampath = Cvar_Get( "fs_steampath", Sys_SteamPath(), CVAR_INIT | CVAR_PROTECTED | CVAR_PRIVATE );
 
+#ifndef USE_HANDLE_CACHE
 	fs_locked = Cvar_Get( "fs_locked", "0", CVAR_INIT );
 	Cvar_SetDescription( fs_locked, "Set file handle policy for pk3 files:\n"
 		" 0 - release after use, unlimited number of pk3 files can be loaded\n"
 		" 1 - keep file handle locked, more consistent, total pk3 files count limited to ~1k-4k\n" );
+#endif
 
 	if ( !fs_basegame->string[0] )
 		Com_Error( ERR_FATAL, "* fs_basegame is not set *" );
@@ -5169,7 +5282,9 @@ void FS_InitFilesystem( void ) {
 	Com_StartupVariable( "fs_basegame" );
 	Com_StartupVariable( "fs_copyfiles" );
 	Com_StartupVariable( "fs_restrict" );
+#ifndef USE_HANDLE_CACHE
 	Com_StartupVariable( "fs_locked" );
+#endif
 
 #ifdef _WIN32
  	_setmaxstdio( 2048 );
