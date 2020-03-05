@@ -47,7 +47,6 @@ static const vec3_t sky_clip[6] =
 
 static float	sky_mins[2][6], sky_maxs[2][6];
 static float	sky_min, sky_max;
-static float	sky_min_depth;
 
 /*
 ================
@@ -474,7 +473,7 @@ static void DrawSkySide( image_t *image, const int mins[2], const int maxs[2], i
 		tess.svars.texcoordPtr[0] = tess.texCoords[0];
 
 		vk_bind_geometry_ext( tess_flags );	
-		vk_draw_geometry( vk.skybox_pipeline, r_showsky->integer ? DEPTH_RANGE_ZERO : DEPTH_RANGE_ONE, qtrue );
+		vk_draw_geometry( vk.skybox_pipeline, tess.depthRange, qtrue );
 
 		tess.numVertexes = 0;
 		tess.numIndexes = 0;
@@ -745,13 +744,6 @@ void R_InitSkyTexCoords( float heightCloud )
 	vec3_t skyVec;
 	vec3_t v;
 
-	if ( !Q_stricmp( glConfig.renderer_string, "GDI Generic" ) && !Q_stricmp( glConfig.version_string, "1.1.0" ) ) {
-		// fix skybox rendering on MS software GL implementation
-		sky_min_depth = 0.999f;
-	} else {
-		sky_min_depth = 1.0;
-	}
-
 	// init zfar so MakeSkyVec works even though
 	// a world hasn't been bounded
 	backEnd.viewParms.zFar = 1024;
@@ -828,25 +820,11 @@ void RB_DrawSun( float scale, shader_t *shader ) {
 	VectorScale( vec1, size, vec1 );
 	VectorScale( vec2, size, vec2 );
 
-	// farthest depth range
-#ifdef USE_VULKAN
-	tess.depthRange = DEPTH_RANGE_ONE;
-#else
-	qglDepthRange( sky_min_depth, 1.0 );
-#endif
-
 	RB_BeginSurface( shader, 0 );
 
 	RB_AddQuadStamp( origin, vec1, vec2, sunColor );
 
 	RB_EndSurface();
-
-	// back to normal depth range
-#ifdef USE_VULKAN
-	tess.depthRange = DEPTH_RANGE_NORMAL;
-#else
-	qglDepthRange( 0.0, 1.0 );
-#endif
 }
 
 
@@ -874,28 +852,9 @@ void RB_StageIteratorSky( void ) {
 	// to be drawn
 	RB_ClipSkyPolygons( &tess );
 
-	// r_showsky will let all the sky blocks be drawn in
-	// front of everything to allow developers to see how
-	// much sky is getting sucked in
-
-#ifdef USE_VULKAN
-	if ( r_showsky->integer ) {
-		tess.depthRange = DEPTH_RANGE_ZERO;
-	} else {
-		tess.depthRange = DEPTH_RANGE_ONE;
-	}
-#else
-	if ( r_showsky->integer ) {
-		qglDepthRange( 0.0, 0.0 );
-	} else {
-		qglDepthRange( sky_min_depth, 1.0 );
-	}
-#endif
-
 	// draw the outer skybox
 	if ( tess.shader->sky.outerbox[0] && tess.shader->sky.outerbox[0] != tr.defaultImage ) {
 #ifdef USE_VULKAN
-		// vk_update_mvp( NULL );
 		DrawSkyBox( tess.shader );
 #else
 		GL_ClientState( 1, CLS_NONE );
@@ -903,7 +862,7 @@ void RB_StageIteratorSky( void ) {
 
 		qglColor4f( tr.identityLight, tr.identityLight, tr.identityLight, 1.0 );
 
-		GL_State( 0 );
+		GL_State( GLS_DEPTHTEST_DISABLE );
 		GL_Cull( CT_FRONT_SIDED );
 
 		DrawSkyBox( tess.shader );
@@ -918,13 +877,6 @@ void RB_StageIteratorSky( void ) {
 	if ( tess.numVertexes ) {
 		RB_StageIteratorGeneric();
 	}
-
-	// back to normal depth range
-#ifdef USE_VULKAN
-	tess.depthRange = DEPTH_RANGE_NORMAL;
-#else
-	qglDepthRange( 0.0, 1.0 );
-#endif
 
 	// note that sky was drawn so we will draw a sun later
 	backEnd.skyRenderedThisView = qtrue;

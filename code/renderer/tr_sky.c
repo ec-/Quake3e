@@ -47,7 +47,6 @@ static const vec3_t sky_clip[6] =
 
 static float	sky_mins[2][6], sky_maxs[2][6];
 static float	sky_min, sky_max;
-static float	sky_min_depth;
 
 /*
 ================
@@ -702,13 +701,6 @@ void R_InitSkyTexCoords( float heightCloud )
 	vec3_t skyVec;
 	vec3_t v;
 
-	if ( !Q_stricmp( glConfig.renderer_string, "GDI Generic" ) && !Q_stricmp( glConfig.version_string, "1.1.0" ) ) {
-		// fix skybox rendering on MS software GL implementation
-		sky_min_depth = 0.999f;
-	} else {
-		sky_min_depth = 1.0;
-	}
-
 	// init zfar so MakeSkyVec works even though
 	// a world hasn't been bounded
 	backEnd.viewParms.zFar = 1024;
@@ -781,17 +773,11 @@ void RB_DrawSun( float scale, shader_t *shader ) {
 	VectorScale( vec1, size, vec1 );
 	VectorScale( vec2, size, vec2 );
 
-	// farthest depth range
-	qglDepthRange( sky_min_depth, 1.0 );
-
 	RB_BeginSurface( shader, 0 );
 
 	RB_AddQuadStamp( origin, vec1, vec2, sunColor );
 
 	RB_EndSurface();
-
-	// back to normal depth range
-	qglDepthRange( 0.0, 1.0 );
 }
 
 
@@ -826,15 +812,6 @@ void RB_StageIteratorSky( void ) {
 	// to be drawn
 	RB_ClipSkyPolygons( &tess );
 
-	// r_showsky will let all the sky blocks be drawn in
-	// front of everything to allow developers to see how
-	// much sky is getting sucked in
-	if ( r_showsky->integer ) {
-		qglDepthRange( 0.0, 0.0 );
-	} else {
-		qglDepthRange( sky_min_depth, 1.0 );
-	}
-
 	// draw the outer skybox
 	if ( tess.shader->sky.outerbox[0] && tess.shader->sky.outerbox[0] != tr.defaultImage ) {
 
@@ -843,7 +820,7 @@ void RB_StageIteratorSky( void ) {
 
 		qglColor4f( tr.identityLight, tr.identityLight, tr.identityLight, 1.0 );
 
-		GL_State( 0 );
+		GL_State( GLS_DEPTHTEST_DISABLE );
 		GL_Cull( CT_FRONT_SIDED );
 
 		DrawSkyBox( tess.shader );
@@ -857,9 +834,6 @@ void RB_StageIteratorSky( void ) {
 	if ( tess.numVertexes ) {
 		RB_StageIteratorGeneric();
 	}
-
-	// back to normal depth range
-	qglDepthRange( 0.0, 1.0 );
 
 	// note that sky was drawn so we will draw a sun later
 	backEnd.skyRenderedThisView = qtrue;
