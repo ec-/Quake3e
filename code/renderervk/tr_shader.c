@@ -2053,9 +2053,11 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 	}
 
 	// an add collapse can only have identity colors
+#ifndef USE_VULKAN
 	if ( collapse[i].multitextureEnv == GL_ADD && st0->rgbGen != CGEN_IDENTITY ) {
 		return qfalse;
 	}
+#endif
 
 	if ( st0->rgbGen == CGEN_WAVEFORM )
 	{
@@ -2088,7 +2090,7 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 	// set the new blend state bits
 	shader.multitextureEnv = qtrue;
 	st0->mtEnv = collapse[i].multitextureEnv;
-	st0->stateBits &= ~( GLS_DSTBLEND_BITS | GLS_SRCBLEND_BITS );
+	st0->stateBits &= ~GLS_BLEND_BITS;
 	st0->stateBits |= collapse[i].multitextureBlend;
 
 	//
@@ -2900,7 +2902,11 @@ static shader_t *FinishShader( void ) {
 					def.shader_type = TYPE_MULTI_TEXTURE_MUL; break;
 				case GL_ADD:
 					pStage->tessFlags = TESS_RGBA | TESS_ST0 | TESS_ST1;
-					def.shader_type = TYPE_MULTI_TEXTURE_ADD; break;
+					def.shader_type = TYPE_MULTI_TEXTURE_ADD;
+					if ( pStage->rgbGen != CGEN_IDENTITY ) {
+						def.shader_type = TYPE_MULTI_TEXTURE_ADD2;
+					}
+					break;
 				default:
 					pStage->tessFlags = TESS_RGBA | TESS_ST0;
 					def.shader_type = TYPE_SIGNLE_TEXTURE; break;

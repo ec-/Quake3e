@@ -135,6 +135,12 @@
     <ClCompile Include="..\..\renderervk\shaders\spirv\light_frag.c">
       <Filter>Source Files\Shaders</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\renderervk\shaders\spirv\mt_add2_fog_frag.c">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderervk\shaders\spirv\mt_add2_frag.c">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\renderervk\shaders\spirv\mt_add_fog_frag.c">
       <Filter>Source Files\Shaders</Filter>
     </ClCompile>

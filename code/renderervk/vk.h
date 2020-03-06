@@ -28,6 +28,7 @@ typedef enum {
 	TYPE_SIGNLE_TEXTURE_LIGHTING1,
 	TYPE_MULTI_TEXTURE_MUL,
 	TYPE_MULTI_TEXTURE_ADD,
+	TYPE_MULTI_TEXTURE_ADD2,
 	TYPE_COLOR_WHITE,
 	TYPE_COLOR_GREEN,
 	TYPE_COLOR_RED,
@@ -380,6 +381,7 @@ typedef struct {
 		VkShaderModule st_df_fs;
 		VkShaderModule mt_mul_fs[2];
 		VkShaderModule mt_add_fs[2];
+		VkShaderModule mt_add2_fs[2];
 
 		VkShaderModule color_fs;
 		VkShaderModule color_clip_vs;

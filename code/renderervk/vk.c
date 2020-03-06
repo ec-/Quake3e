@@ -1790,6 +1790,11 @@ static void vk_create_shader_modules( void )
 	extern const unsigned char mt_add_fog_frag_spv[];
 	extern const int mt_add_fog_frag_spv_size;
 
+	extern const unsigned char mt_add2_frag_spv[];
+	extern const int mt_add2_frag_spv_size;
+	extern const unsigned char mt_add2_fog_frag_spv[];
+	extern const int mt_add2_fog_frag_spv_size;
+
 	extern const unsigned char fog_vert_spv[];
 	extern const int fog_vert_spv_size;
 	extern const unsigned char fog_frag_spv[];
@@ -1841,6 +1846,9 @@ static void vk_create_shader_modules( void )
 
 	vk.modules.mt_add_fs[0] = create_shader_module(mt_add_frag_spv, mt_add_frag_spv_size);
 	vk.modules.mt_add_fs[1] = create_shader_module(mt_add_fog_frag_spv, mt_add_fog_frag_spv_size);
+
+	vk.modules.mt_add2_fs[0] = create_shader_module(mt_add2_frag_spv, mt_add2_frag_spv_size);
+	vk.modules.mt_add2_fs[1] = create_shader_module(mt_add2_fog_frag_spv, mt_add2_fog_frag_spv_size);
 
 	vk.modules.fog_vs = create_shader_module(fog_vert_spv, fog_vert_spv_size);
 	vk.modules.fog_fs = create_shader_module(fog_frag_spv, fog_frag_spv_size);
@@ -3350,6 +3358,9 @@ void vk_shutdown( void )
 	qvkDestroyShaderModule(vk.device, vk.modules.mt_add_fs[0], NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.mt_add_fs[1], NULL);
 
+	qvkDestroyShaderModule(vk.device, vk.modules.mt_add2_fs[0], NULL);
+	qvkDestroyShaderModule(vk.device, vk.modules.mt_add2_fs[1], NULL);
+
 	qvkDestroyShaderModule(vk.device, vk.modules.fog_vs, NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.fog_fs, NULL);
 
@@ -3872,6 +3883,10 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_MULTI_TEXTURE_ADD:
 			vs_module = &vk.modules.mt_clip_vs[0];
 			fs_module = (def->shader_type == TYPE_MULTI_TEXTURE_MUL) ? &vk.modules.mt_mul_fs[0] : &vk.modules.mt_add_fs[0];
+			break;
+		case TYPE_MULTI_TEXTURE_ADD2:
+			vs_module = &vk.modules.mt_clip_vs[0];
+			fs_module = &vk.modules.mt_add2_fs[0];
 			break;
 		case TYPE_COLOR_WHITE:
 		case TYPE_COLOR_GREEN:
