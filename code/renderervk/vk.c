@@ -4006,9 +4006,9 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 	spec_entries[6].offset = 5 * sizeof( int32_t );
 	spec_entries[6].size = sizeof( int32_t );
 
-	spec_entries[6].constantID = 6; // multitexture mode
-	spec_entries[6].offset = 6 * sizeof( int32_t );
-	spec_entries[6].size = sizeof( int32_t );
+	spec_entries[7].constantID = 6; // multitexture mode
+	spec_entries[7].offset = 6 * sizeof( int32_t );
+	spec_entries[7].size = sizeof( int32_t );
 
 	frag_spec_info.mapEntryCount = 7;
 	frag_spec_info.pMapEntries = spec_entries + 1;
