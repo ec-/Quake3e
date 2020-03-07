@@ -19,9 +19,12 @@ layout(set = 2, binding = 0) uniform sampler2D texture1;
 layout(set = 3, binding = 0) uniform sampler2D texture2; // fog texture
 
 layout(location = 0) in vec4 frag_color;
-layout(location = 1) centroid in vec2 frag_tex_coord;
-layout(location = 2) centroid in vec2 frag_tex_coord2;
+layout(location = 1) centroid in vec2 frag_tex_coord0;
+layout(location = 2) centroid in vec2 frag_tex_coord1;
 layout(location = 3) centroid in vec2 fog_tex_coord; // fog txcoords
+//layout (constant_id = 4) const int color_mode = 0;
+//layout (constant_id = 5) const int abs_light = 0;
+layout (constant_id = 6) const int tex_mode = 0; // modulate, add, add2
 
 layout(location = 0) out vec4 out_color;
 
@@ -42,18 +45,27 @@ float CorrectAlpha(float threshold, float alpha, vec2 tc)
 }
 
 void main() {
-	vec4 color_a = frag_color * texture(texture0, frag_tex_coord);
-	vec4 color_b = texture(texture1, frag_tex_coord2);
+	vec4 base;
 	vec4 fog = texture(texture2, fog_tex_coord);
-	vec4 base = vec4(color_a.rgb + color_b.rgb, color_a.a * color_b.a);
+	vec4 color_a = frag_color * texture(texture0, frag_tex_coord0);
+	vec4 color_b = texture(texture1, frag_tex_coord1);
+
+	if ( tex_mode == 1 ) { // add
+		base = vec4(color_a.rgb + color_b.rgb, color_a.a * color_b.a);
+	} else if ( tex_mode == 2 )	{ // add2
+		color_b *= frag_color;
+		base = vec4(color_a.rgb + color_b.rgb, color_a.a * color_b.a);
+	}else { // modulate
+		base = color_a * color_b;
+	}
 
 	if (alpha_to_coverage != 0) {
 		if (alpha_test_func == 1) {
-			base.a = CorrectAlpha(alpha_test_value, base.a, frag_tex_coord);
+			base.a = CorrectAlpha(alpha_test_value, base.a, frag_tex_coord0);
 		} else if (alpha_test_func == 2) {
-			base.a = CorrectAlpha(alpha_test_value, 1.0 - base.a, frag_tex_coord);
+			base.a = CorrectAlpha(alpha_test_value, 1.0 - base.a, frag_tex_coord0);
 		} else if (alpha_test_func == 3) {
-			base.a = CorrectAlpha(alpha_test_value, base.a, frag_tex_coord);
+			base.a = CorrectAlpha(alpha_test_value, base.a, frag_tex_coord0);
 		}
 	} else
 	// specialization: alpha-test function

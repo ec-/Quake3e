@@ -4,7 +4,7 @@ layout(set = 1, binding = 0) uniform sampler2D texture0;
 layout(set = 2, binding = 0) uniform sampler2D texture1;
 
 layout(location = 0) in vec4 frag_color;
-layout(location = 1) centroid in vec2 frag_tex_coord;
+layout(location = 1) centroid in vec2 frag_tex_coord0;
 layout(location = 2) centroid in vec2 frag_tex_coord1;
 
 layout(location = 0) out vec4 out_color;
@@ -13,6 +13,9 @@ layout (constant_id = 0) const int alpha_test_func = 0;
 layout (constant_id = 1) const float alpha_test_value = 0.0;
 //layout (constant_id = 2) const float depth_fragment = 0.85;
 layout (constant_id = 3) const int alpha_to_coverage = 0;
+//layout (constant_id = 4) const int color_mode = 0;
+//layout (constant_id = 5) const int abs_light = 0;
+layout (constant_id = 6) const int tex_mode = 0; // modulate, add, add2
 
 float CorrectAlpha(float threshold, float alpha, vec2 tc)
 {
@@ -26,17 +29,25 @@ float CorrectAlpha(float threshold, float alpha, vec2 tc)
 }
 
 void main() {
-	vec4 color_a = frag_color * texture(texture0, frag_tex_coord);
+	vec4 color_a = frag_color * texture(texture0, frag_tex_coord0);
 	vec4 color_b = texture(texture1, frag_tex_coord1);
-	out_color = vec4(color_a.rgb + color_b.rgb, color_a.a * color_b.a);
+
+	if ( tex_mode == 1 ) { // add
+		out_color = vec4(color_a.rgb + color_b.rgb, color_a.a * color_b.a);
+	} else if ( tex_mode == 2 )	{ // add2
+		color_b *= frag_color;
+		out_color = vec4(color_a.rgb + color_b.rgb, color_a.a * color_b.a);
+	}else { // modulate
+		out_color = color_a * color_b;
+	}
 
 	if (alpha_to_coverage != 0) {
 		if (alpha_test_func == 1) {
-			out_color.a = CorrectAlpha(alpha_test_value, out_color.a, frag_tex_coord);
+			out_color.a = CorrectAlpha(alpha_test_value, out_color.a, frag_tex_coord0);
 		} else if (alpha_test_func == 2) {
-			out_color.a = CorrectAlpha(alpha_test_value, 1.0 - out_color.a, frag_tex_coord);
+			out_color.a = CorrectAlpha(alpha_test_value, 1.0 - out_color.a, frag_tex_coord0);
 		} else if (alpha_test_func == 3) {
-			out_color.a = CorrectAlpha(alpha_test_value, out_color.a, frag_tex_coord);
+			out_color.a = CorrectAlpha(alpha_test_value, out_color.a, frag_tex_coord0);
 		}
 	} else
 	// specialization: alpha-test function

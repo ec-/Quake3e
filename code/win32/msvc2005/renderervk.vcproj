@@ -476,22 +476,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\renderervk\shaders\spirv\mt_add2_fog_frag.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\renderervk\shaders\spirv\mt_add2_frag.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\renderervk\shaders\spirv\mt_add_fog_frag.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\renderervk\shaders\spirv\mt_add_frag.c"
-					>
-				</File>
-				<File
 					RelativePath="..\..\renderervk\shaders\spirv\mt_clip_fog_vert.c"
 					>
 				</File>
@@ -500,11 +484,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\renderervk\shaders\spirv\mt_mul_fog_frag.c"
+					RelativePath="..\..\renderervk\shaders\spirv\mt_fog_frag.c"
 					>
 				</File>
 				<File
-					RelativePath="..\..\renderervk\shaders\spirv\mt_mul_frag.c"
+					RelativePath="..\..\renderervk\shaders\spirv\mt_frag.c"
 					>
 				</File>
 				<File

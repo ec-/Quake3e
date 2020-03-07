@@ -379,9 +379,7 @@ typedef struct {
 
 		VkShaderModule st_fs[2];
 		VkShaderModule st_df_fs;
-		VkShaderModule mt_mul_fs[2];
-		VkShaderModule mt_add_fs[2];
-		VkShaderModule mt_add2_fs[2];
+		VkShaderModule mt_fs[2];
 
 		VkShaderModule color_fs;
 		VkShaderModule color_clip_vs;
