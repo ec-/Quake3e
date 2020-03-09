@@ -4,11 +4,20 @@
 #include "tr_common.h"
 
 #define MAX_SWAPCHAIN_IMAGES 4
+#define MIN_SWAPCHAIN_IMAGES_IMM 2
+#define MIN_SWAPCHAIN_IMAGES_FIFO 3
+#define MIN_SWAPCHAIN_IMAGES_MAILBOX 2
+
 #define MAX_VK_SAMPLERS 32
 #define MAX_VK_PIPELINES (1024 + 128)
 
+#define VERTEX_BUFFER_SIZE (4 * 1024 * 1024)
 #define IMAGE_CHUNK_SIZE (32 * 1024 * 1024)
 #define MAX_IMAGE_CHUNKS 48
+
+#define NUM_COMMAND_BUFFERS 2	// number of command buffers / render semaphores / framebuffer sets
+#define USE_SINGLE_FBO		// use single framebuffer set for all command buffers
+//#define USE_DEDICATED_ALLOCATION
 
 #define USE_IMAGE_POOL
 #define USE_IMAGE_LAYOUT_1
@@ -106,15 +115,6 @@ typedef struct vkUniform_s {
 	// fragment - linear dynamic light
 	vec4_t lightVector;
 } vkUniform_t;
-
-#define VERTEX_BUFFER_SIZE (4 * 1024 * 1024)
-
-#define NUM_COMMAND_BUFFERS 2	// number of command buffers / render semaphores / framebuffer sets
-#define USE_SINGLE_FBO			// use single framebuffer set for all command buffers
-
-#define MIN_SWAPCHAIN_IMAGES_IMM 2
-#define MIN_SWAPCHAIN_IMAGES_FIFO 3
-#define MIN_SWAPCHAIN_IMAGES_MAILBOX 2
 
 #define TESS_IDX   (1)
 #define TESS_XYZ   (2)

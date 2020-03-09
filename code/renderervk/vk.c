@@ -154,6 +154,7 @@ static const char *pmode_to_str( VkPresentModeKHR mode )
 }
 
 
+/*
 static VkFlags get_composite_alpha( VkCompositeAlphaFlagsKHR flags )
 {
 	const VkCompositeAlphaFlagBitsKHR compositeFlags[] = {
@@ -172,6 +173,7 @@ static VkFlags get_composite_alpha( VkCompositeAlphaFlagsKHR flags )
 
 	return compositeFlags[0];
 }
+*/
 
 
 static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice device, VkSurfaceKHR surface, VkSurfaceFormatKHR surface_format, VkSwapchainKHR *swapchain ) {
@@ -269,7 +271,8 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 	desc.queueFamilyIndexCount = 0;
 	desc.pQueueFamilyIndices = NULL;
 	desc.preTransform = surface_caps.currentTransform;
-	desc.compositeAlpha = get_composite_alpha( surface_caps.supportedCompositeAlpha );
+	//desc.compositeAlpha = get_composite_alpha( surface_caps.supportedCompositeAlpha );
+	desc.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	desc.presentMode = present_mode;
 	desc.clipped = VK_TRUE;
 	desc.oldSwapchain = VK_NULL_HANDLE;
@@ -667,6 +670,30 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugReportFlagsEXT flags
 #endif
 
 
+static qboolean used_extension( const char *ext )
+{
+	const char *u;
+
+	// allow all VK_*_surface extensions
+	u = strrchr( ext, '_' );
+	if ( u && Q_stricmp( u + 1, "surface" ) == 0 )
+		return qtrue;
+
+	if ( Q_stricmp( ext, VK_KHR_SWAPCHAIN_EXTENSION_NAME ) == 0 )
+		return qtrue;
+
+#ifdef _DEBUG
+	//if ( Q_stricmp( ext, VK_EXT_DEBUG_REPORT_EXTENSION_NAME ) == 0 )
+	//	return qtrue;
+
+	if ( Q_stricmp( ext, VK_EXT_DEBUG_UTILS_EXTENSION_NAME ) == 0 )
+		return qtrue;
+#endif
+
+	return qfalse;
+}
+
+
 static void create_instance( void )
 {
 #ifndef NDEBUG
@@ -675,18 +702,37 @@ static void create_instance( void )
 	VkInstanceCreateInfo desc;
 	VkExtensionProperties *extension_properties;
 	const char **extension_names, *end;
-	char *str;
-	uint32_t i, len, count;
+	char *str, *ext;
+	uint32_t i, len, count, extension_count;
 
 	count = 0;
+	extension_count = 0;
 	VK_CHECK(qvkEnumerateInstanceExtensionProperties(NULL, &count, NULL));
 
 	extension_properties = (VkExtensionProperties *)ri.Malloc(sizeof(VkExtensionProperties) * count);
 	extension_names = (const char**)ri.Malloc(sizeof(char *) * count);
 
+	// fill glConfig.extensions_string
+	str = glConfig.extensions_string; *str = '\0';
+	end = &glConfig.extensions_string[ sizeof( glConfig.extensions_string ) - 1];
+
 	VK_CHECK( qvkEnumerateInstanceExtensionProperties( NULL, &count, extension_properties ) );
 	for ( i = 0; i < count; i++ ) {
-		extension_names[i] = extension_properties[i].extensionName;
+		ext = extension_properties[i].extensionName;
+		if ( !used_extension( ext ) )
+			continue;
+
+		if ( i != 0 ) {
+			if ( str + 1 >= end )
+				break;
+			str = Q_stradd( str, " " );
+		}
+		len = (uint32_t)strlen( ext );
+		if ( str + len >= end )
+			break;
+		str = Q_stradd( str, ext );
+
+		extension_names[extension_count++] = ext;
 	}
 
 	// create instance
@@ -696,7 +742,7 @@ static void create_instance( void )
 	desc.pApplicationInfo = NULL;
 	desc.enabledLayerCount = 0;
 	desc.ppEnabledLayerNames = NULL;
-	desc.enabledExtensionCount = count;
+	desc.enabledExtensionCount = extension_count;
 	desc.ppEnabledExtensionNames = extension_names;
 
 #ifndef NDEBUG
@@ -705,21 +751,6 @@ static void create_instance( void )
 #endif
 
 	VK_CHECK( qvkCreateInstance( &desc, NULL, &vk.instance ) );
-
-	// fill glConfig.extensions_string
-	str = glConfig.extensions_string; *str = '\0';
-	end = &glConfig.extensions_string[ sizeof( glConfig.extensions_string ) - 1];
-	for ( i = 0; i < count; i++ ) {
-		if ( i != 0 ) {
-			if ( str + 1 >= end )
-				break;
-			str = Q_stradd( str, " " );
-		}
-		len = (uint32_t)strlen( extension_names[i] );
-		if ( str + len >= end )
-			break;
-		str = Q_stradd( str, extension_names[i] );
-	}
 
 	ri.Free( (void*)extension_names );
 	ri.Free( extension_properties );
@@ -971,6 +1002,10 @@ static void vk_create_device( void ) {
 			features.samplerAnisotropy = VK_TRUE;
 			vk.samplerAnisotropy = qtrue;
 		}
+
+#ifndef USE_DEDICATED_ALLOCATION
+		vk.dedicatedAllocation = qfalse;
+#endif
 
 		device_desc.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		device_desc.pNext = NULL;
@@ -2996,12 +3031,12 @@ void vk_initialize( void )
 			// post-processing/msaa-resolve
 			create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, VK_SAMPLE_COUNT_1_BIT, vk.resolve_format,
 				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
-				&vk.tess[i].color_image, &vk.tess[i].color_image_view, &vk.tess[i].color_image_memory );
+				&vk.tess[i].color_image, &vk.tess[i].color_image_view, &vk.tess[i].color_image_memory, qfalse );
 		}
 		if ( /* vk.fboActive && */ vk.msaaActive ) {
 			// msaa
 			create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, vkSamples, vk.color_format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-				&vk.tess[i].msaa_image,	&vk.tess[i].msaa_image_view, &vk.tess[i].msaa_image_memory );
+				&vk.tess[i].msaa_image,	&vk.tess[i].msaa_image_view, &vk.tess[i].msaa_image_memory, qtrue );
 		}
 		// depth
 		create_depth_attachment( glConfig.vidWidth, glConfig.vidHeight, vkSamples, &vk.tess[i].depth_image, &vk.tess[i].depth_image_view, &vk.tess[i].depth_image_memory );
@@ -3227,7 +3262,7 @@ void vk_shutdown( void )
 		if ( vk.tess[i].color_image3_msaa ) {
 			qvkDestroyImage( vk.device, vk.tess[i].color_image3_msaa, NULL );
 #ifndef USE_IMAGE_POOL
-			qvkFreeMemory( vk.device, vk.tess[i].color_image3_memory_msaa, NULL );
+			qvkFreeMemory( vk.device, vk.tess[i].color_image_memory3_msaa, NULL );
 #endif
 			qvkDestroyImageView( vk.device, vk.tess[i].color_image_view3_msaa, NULL );
 		}
