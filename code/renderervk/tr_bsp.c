@@ -581,6 +581,8 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 	int			lightmapNum;
 	float		lightmapX, lightmapY;
 	int			sfaceSize, ofsIndexes;
+	static const int idx_pattern[] = {2, 3, 4, 3, 5, 4};
+	static const int idx_pattern2[] = {5, 4, 3, 2, 3, 4};
 
 	lightmapNum = LittleLong( ds->lightmapNum );
 	if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
@@ -641,6 +643,12 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 	indexes += LittleLong( ds->firstIndex );
 	for ( i = 0 ; i < numIndexes ; i++ ) {
 		((int *)((byte *)cv + cv->ofsIndices ))[i] = LittleLong( indexes[ i ] );
+	}
+
+	// reorder certain indexes to avoid bug on intel gen 9.5 hardware/vulkan driver
+	// can be observed on lun3dm5 map
+	if ( memcmp( ( (byte *) cv + cv->ofsIndices ), idx_pattern, sizeof( idx_pattern ) ) == 0 ) {
+		memcpy( ( (byte *) cv + cv->ofsIndices ), idx_pattern2, sizeof( idx_pattern2 ) );
 	}
 
 	// take the plane information from the lightmap vector

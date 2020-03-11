@@ -561,8 +561,8 @@ static void RB_FogPass( void ) {
 	}
 
 	RB_CalcFogTexCoords( ( float * ) tess.svars.texcoords[0] );
+	tess.svars.texcoordPtr[ 0 ] = tess.svars.texcoords[ 0 ];
 	GL_Bind( tr.fogImage );
-	tess.svars = tess.svars.texcoords[0]; // FIXMEEE!
 	vk_bind_geometry_ext( TESS_ST0 | TESS_RGBA );
 	vk_draw_geometry( pipeline, DEPTH_RANGE_NORMAL, qtrue );
 #endif
