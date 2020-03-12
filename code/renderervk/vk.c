@@ -1905,8 +1905,6 @@ static void vk_create_persistent_pipelines( void )
 
 			Com_Memset(&def, 0, sizeof(def));
 			def.shader_type = TYPE_SIGNLE_TEXTURE;
-			if ( r_showsky->integer == 0 )
-				def.state_bits = GLS_DEPTHTEST_DISABLE;
 			def.face_culling = CT_FRONT_SIDED;
 			def.polygon_offset = qfalse;
 			def.clipping_plane = qfalse;
