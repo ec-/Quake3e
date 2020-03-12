@@ -2655,32 +2655,6 @@ static shader_t *FinishShader( void ) {
 		}
 	}
 
-	if ( shader.isSky || Q_stricmp( shader.name, "sun" ) == 0 ) {
-		if ( shader.isSky ) {
-			// r_showsky will let all the sky blocks be drawn in
-			// front of everything to allow developers to see how
-			// much sky is getting sucked in
-			if ( r_showsky->integer ) {
-				// disable depth tests, set highest sort level to draw on top of everything
-				shader.sort = SS_NEAREST;
-				for ( i = 0; i < stage; i++ ) {
-					stages[i].stateBits |= GLS_DEPTHTEST_DISABLE;
-				}
-			} else {
-				// disable depth tests and writes for skybox shaders
-				for ( i = 0; i < stage; i++ ) {
-					stages[i].stateBits &= ~GLS_DEPTHMASK_TRUE;
-					stages[i].stateBits |= GLS_DEPTHTEST_DISABLE;
-				}
-			}
-		} else {
-			// disable depth writes for sun shader
-			for ( i = 0; i < stage; i++ ) {
-				stages[i].stateBits &= ~GLS_DEPTHMASK_TRUE;
-			}
-		}
-	}
-
 	DetectNeeds();
 
 	// fix alphaGen flags to avoid redundant comparisons in R_ComputeColors()
