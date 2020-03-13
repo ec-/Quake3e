@@ -537,9 +537,9 @@ typedef struct {
 	//VkDescriptorSet current_descriptor_sets[ MAX_TEXTURE_UNITS ];
 
 	// This flag is used to decide whether framebuffer's depth attachment should be cleared
-	// with vmCmdClearAttachment (dirty_depth_attachment == true), or it have just been
-	// cleared by render pass instance clear op (dirty_depth_attachment == false).
-	qboolean dirty_depth_attachment;
+	// with vmCmdClearAttachment (dirty_depth_attachment != 0), or it have just been
+	// cleared by render pass instance clear op (dirty_depth_attachment == 0).
+	int dirty_depth_attachment;
 
 	float modelview_transform[16];
 } Vk_World;

@@ -4687,7 +4687,7 @@ void vk_clear_depth( qboolean clear_stencil ) {
 	if ( !vk.active )
 		return;
 
-	if ( !vk_world.dirty_depth_attachment )
+	if ( vk_world.dirty_depth_attachment == 0 )
 		return;
 
 	attachment.colorAttachment = 0;
@@ -4987,7 +4987,7 @@ void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean i
 		qvkCmdDraw( vk.cmd->command_buffer, tess.numVertexes, 1, 0, 0 );
 	}
 
-	vk_world.dirty_depth_attachment = qtrue;
+	vk_world.dirty_depth_attachment |= ( vk.pipelines[ pipeline ].def.state_bits & GLS_DEPTHMASK_TRUE );
 }
 
 
@@ -5023,7 +5023,7 @@ static void vk_begin_render_pass( VkRenderPass renderPass, VkFramebuffer frameBu
 
 	qvkCmdBeginRenderPass( vk.cmd->command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE );
 
-	vk_world.dirty_depth_attachment = qfalse;
+	vk_world.dirty_depth_attachment = 0;
 }
 
 
@@ -5101,6 +5101,10 @@ static qboolean vk_find_drawsurfs( void )
 }
 
 
+#ifndef UINT64_MAX
+#define UINT64_MAX 0xFFFFFFFFFFFFFFFFULL
+#endif
+
 void vk_begin_frame( void )
 {
 	VkCommandBufferBeginInfo begin_info;
@@ -5112,7 +5116,7 @@ void vk_begin_frame( void )
 
 	if ( vk.cmd->waitForFence ) {
 		if ( !ri.CL_IsMinimized() ) {
-			res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, 1e10, vk.image_acquired, VK_NULL_HANDLE, &vk.swapchain_image_index );
+			res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, UINT64_MAX, vk.image_acquired, VK_NULL_HANDLE, &vk.swapchain_image_index );
 			// when running via RDP: "Application has already acquired the maximum number of images (0x2)"
 			// probably caused by "device lost" errors
 			if ( res < 0 ) {
@@ -5133,7 +5137,7 @@ void vk_begin_frame( void )
 		vk.cmd_index %= NUM_COMMAND_BUFFERS;
 		
 		vk.cmd->waitForFence = qfalse;
-		VK_CHECK( qvkWaitForFences( vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e12 ) );
+		VK_CHECK( qvkWaitForFences( vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e10 ) );
 	} else {
 		// current command buffer has been reset due to geometry buffer overflow/update
 		// so we will reuse it with current swapchain image as well
