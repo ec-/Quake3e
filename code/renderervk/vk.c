@@ -478,7 +478,6 @@ static void create_render_pass( VkDevice device, VkFormat depth_format )
 	attachments[1].flags = 0;
 	attachments[1].format = depth_format;
 	attachments[1].samples = vk.screenMapSamples;
-	//attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
 	attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // Need empty depth buffer before use
 	attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -673,7 +672,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugReportFlagsEXT flags
 #endif
 
 
-static qboolean used_extension( const char *ext )
+static qboolean used_instance_extension( const char *ext )
 {
 	const char *u;
 
@@ -686,8 +685,8 @@ static qboolean used_extension( const char *ext )
 		return qtrue;
 
 #ifdef _DEBUG
-	//if ( Q_stricmp( ext, VK_EXT_DEBUG_REPORT_EXTENSION_NAME ) == 0 )
-	//	return qtrue;
+	if ( Q_stricmp( ext, VK_EXT_DEBUG_REPORT_EXTENSION_NAME ) == 0 )
+		return qtrue;
 
 	if ( Q_stricmp( ext, VK_EXT_DEBUG_UTILS_EXTENSION_NAME ) == 0 )
 		return qtrue;
@@ -704,9 +703,8 @@ static void create_instance( void )
 #endif
 	VkInstanceCreateInfo desc;
 	VkExtensionProperties *extension_properties;
-	const char **extension_names, *end;
-	char *str, *ext;
-	uint32_t i, len, count, extension_count;
+	const char **extension_names, *ext;
+	uint32_t i, count, extension_count;
 
 	count = 0;
 	extension_count = 0;
@@ -715,26 +713,11 @@ static void create_instance( void )
 	extension_properties = (VkExtensionProperties *)ri.Malloc(sizeof(VkExtensionProperties) * count);
 	extension_names = (const char**)ri.Malloc(sizeof(char *) * count);
 
-	// fill glConfig.extensions_string
-	str = glConfig.extensions_string; *str = '\0';
-	end = &glConfig.extensions_string[ sizeof( glConfig.extensions_string ) - 1];
-
 	VK_CHECK( qvkEnumerateInstanceExtensionProperties( NULL, &count, extension_properties ) );
 	for ( i = 0; i < count; i++ ) {
 		ext = extension_properties[i].extensionName;
-		if ( !used_extension( ext ) )
+		if ( !used_instance_extension( ext ) )
 			continue;
-
-		if ( i != 0 ) {
-			if ( str + 1 >= end )
-				break;
-			str = Q_stradd( str, " " );
-		}
-		len = (uint32_t)strlen( ext );
-		if ( str + len >= end )
-			break;
-		str = Q_stradd( str, ext );
-
 		extension_names[extension_count++] = ext;
 	}
 
@@ -939,6 +922,8 @@ static void vk_create_device( void ) {
 			VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
 			VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME
 		};
+		const char *ext, *end;
+		char *str;
 		const float priority = 1.0;
 		VkExtensionProperties *extension_properties;
 		VkDeviceQueueCreateInfo queue_desc;
@@ -948,20 +933,35 @@ static void vk_create_device( void ) {
 		qboolean swapchainSupported = qfalse;
 		qboolean dedicatedAllocation = qfalse;
 		qboolean memoryRequirements2 = qfalse;
-		uint32_t i, count = 0;
+		uint32_t i, len, count = 0;
 
 		VK_CHECK(qvkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &count, NULL));
 		extension_properties = (VkExtensionProperties*)ri.Malloc(count * sizeof(VkExtensionProperties));
 		VK_CHECK(qvkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &count, extension_properties));
 
-		for (i = 0; i < count; i++) {
-			if ( strcmp( extension_properties[i].extensionName, device_extensions[0] ) == 0 ) {
+		// fill glConfig.extensions_string
+		str = glConfig.extensions_string; *str = '\0';
+		end = &glConfig.extensions_string[ sizeof( glConfig.extensions_string ) - 1];
+
+		for ( i = 0; i < count; i++ ) {
+			ext = extension_properties[i].extensionName;
+			if ( strcmp( ext, device_extensions[0] ) == 0 ) {
 				swapchainSupported = qtrue;
-			} else if ( strcmp( extension_properties[i].extensionName, device_extensions[1] ) == 0 ) {
+			} else if ( strcmp( ext, device_extensions[1] ) == 0 ) {
 				dedicatedAllocation = qtrue;
-			} else if ( strcmp( extension_properties[i].extensionName, device_extensions[2] ) == 0 ) {
+			} else if ( strcmp( ext, device_extensions[2] ) == 0 ) {
 				memoryRequirements2 = qtrue;
 			}
+			// add this device extension to glConfig
+			if ( i != 0 ) {
+				if ( str + 1 >= end )
+					continue;
+				str = Q_stradd( str, " " );
+			}
+			len = (uint32_t)strlen( ext );
+			if ( str + len >= end )
+				continue;
+			str = Q_stradd( str, ext );
 		}
 
 		ri.Free( extension_properties );
@@ -2328,7 +2328,7 @@ static void create_color_attachment( uint32_t width, uint32_t height, VkSampleCo
 	VkCommandBuffer command_buffer;
 #endif
 
-	if ( multisample )
+	if ( multisample && !( usage & VK_IMAGE_USAGE_SAMPLED_BIT ) )
 		usage |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
 
 	// create color image
@@ -2357,7 +2357,7 @@ static void create_color_attachment( uint32_t width, uint32_t height, VkSampleCo
 	if ( !multisample )
 		vk_add_attachment_desc( *image, image_view, &memory_requirements, format, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
 	else
-		vk_add_attachment_desc( *image, image_view, &memory_requirements, format, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
+		vk_add_attachment_desc( *image, image_view, &memory_requirements, format, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
 #else
 
 	// allocate color image memory
@@ -4662,7 +4662,8 @@ void vk_clear_color( const vec4_t color ) {
 	clear_rect[0].baseArrayLayer = 0;
 	clear_rect[0].layerCount = 1;
 	rect_count = 1;
-#ifdef DEBUG
+
+#ifdef _DEBUG
 	// Split viewport rectangle into two non-overlapping rectangles.
 	// It's a HACK to prevent Vulkan validation layer's performance warning:
 	//		"vkCmdClearAttachments() issued on command buffer object XXX prior to any Draw Cmds.
@@ -4678,6 +4679,7 @@ void vk_clear_color( const vec4_t color ) {
 		rect_count = 2;
 	}
 #endif
+
 	qvkCmdClearAttachments( vk.cmd->command_buffer, 1, &attachment, rect_count, clear_rect );
 }
 
