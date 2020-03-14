@@ -25,5 +25,12 @@ void main() {
 		base = mix(base, luma, greyscale);
 	}
 
-	out_color.rgb = pow(base, vec3(gamma)) * obScale;
+	if ( gamma != 1.0 )
+	{
+		out_color.rgb = pow(base, vec3(gamma)) * obScale;
+	}
+	else
+	{
+		out_color.rgb = base * obScale;
+	}
 }

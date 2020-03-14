@@ -248,6 +248,9 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 			present_mode = VK_PRESENT_MODE_FIFO_KHR;
 			image_count = MAX(MIN_SWAPCHAIN_IMAGES_FIFO, surface_caps.minImageCount);
 		}
+		if ( image_count < 2 ) {
+			image_count = 2;
+		}
 	}
 
 	if ( surface_caps.maxImageCount > 0 ) {
@@ -383,7 +386,7 @@ static void create_render_pass( VkDevice device, VkFormat depth_format )
 		attachments[2].flags = 0;
 		attachments[2].format = vk.color_format;
 		attachments[2].samples = vkSamples;
-		attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // Intermediate storage (not written)
 		attachments[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -513,7 +516,7 @@ static void create_render_pass( VkDevice device, VkFormat depth_format )
 		attachments[2].flags = 0;
 		attachments[2].format = vk.color_format;
 		attachments[2].samples = vk.screenMapSamples;
-		attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachments[2].loadOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachments[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -2325,6 +2328,9 @@ static void create_color_attachment( uint32_t width, uint32_t height, VkSampleCo
 	VkCommandBuffer command_buffer;
 #endif
 
+	if ( multisample )
+		usage |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+
 	// create color image
 	create_desc.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	create_desc.pNext = NULL;
@@ -2344,9 +2350,6 @@ static void create_color_attachment( uint32_t width, uint32_t height, VkSampleCo
 	create_desc.pQueueFamilyIndices = NULL;
 	create_desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	VK_CHECK( qvkCreateImage( vk.device, &create_desc, NULL, image ) );
-
-	if ( multisample )
-		usage |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
 
 	vk_get_image_memory_erquirements( *image, &memory_requirements );
 
