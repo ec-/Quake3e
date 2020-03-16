@@ -570,6 +570,39 @@ static void GenerateNormals( srfSurfaceFace_t *face )
 
 
 /*
+=============
+qsort_idx
+=============
+*/
+static void qsort_idx( int *a, const int n ) {
+	int temp[3], m;
+	int i, j, x;
+
+	i = 0;
+	j = n;
+	x = (n >> 1)*3;
+	m = a[ x + 0 ] + a[ x + 1 ] + a[ x + 2 ];
+
+	do {
+		while ( a[i*3+0]+a[i*3+1]+a[i*3+2] < m )
+			i++;
+		while ( a[j*3+0]+a[j*3+1]+a[j*3+2] > m )
+			j--;
+		if ( i <= j ) {
+			memcpy( temp, &a[i*3], sizeof( temp ) );
+			memcpy( &a[i*3], &a[j*3], sizeof( temp ) );
+			memcpy( &a[j*3], temp, sizeof( temp ) );
+			i++;
+			j--;
+		}
+	} while ( i <= j );
+
+	if ( j > 0 ) qsort_idx( a, j );
+	if ( n > i ) qsort_idx( a+i*3, n-i );
+}
+
+
+/*
 ===============
 ParseFace
 ===============
@@ -581,8 +614,8 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 	int			lightmapNum;
 	float		lightmapX, lightmapY;
 	int			sfaceSize, ofsIndexes;
-	static const int idx_pattern[] = {2, 3, 4, 3, 5, 4};
-	static const int idx_pattern2[] = {5, 4, 3, 2, 3, 4};
+	//static const int idx_pattern[] = {2, 3, 4, 3, 5, 4};
+	//static const int idx_pattern2[] = {5, 4, 3, 2, 3, 4};
 
 	lightmapNum = LittleLong( ds->lightmapNum );
 	if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
@@ -645,10 +678,16 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 		((int *)((byte *)cv + cv->ofsIndices ))[i] = LittleLong( indexes[ i ] );
 	}
 
+	indexes = (int*)((byte *) cv + cv->ofsIndices);
+
 	// reorder certain indexes to avoid bug on intel gen 9.5 hardware/vulkan driver
 	// can be observed on lun3dm5 map
-	if ( memcmp( ( (byte *) cv + cv->ofsIndices ), idx_pattern, sizeof( idx_pattern ) ) == 0 ) {
-		memcpy( ( (byte *) cv + cv->ofsIndices ), idx_pattern2, sizeof( idx_pattern2 ) );
+	//if ( numIndexes >=6 && memcmp( indexes, idx_pattern, sizeof( idx_pattern ) ) == 0 ) {
+	//	memcpy( indexes, idx_pattern2, sizeof( idx_pattern2 ) );
+	//}
+
+	if ( numIndexes >= 6 ) {
+		qsort_idx( indexes, (numIndexes / 3) - 1 );
 	}
 
 	// take the plane information from the lightmap vector
