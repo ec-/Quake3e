@@ -4620,24 +4620,15 @@ static void get_mvp_transform( float *mvp )
 	else
 	{
 		const float *p = backEnd.viewParms.projectionMatrix;
-#if 0
-		myGlMultMatrix( vk_world.modelview_transform, p, mvp );
-#else
-		// update q3's proj matrix (opengl) to vulkan conventions: z - [0, 1] instead of [-1, 1] and invert y direction
-		float zNear	= r_znear->value;
-		float zFar = backEnd.viewParms.zFar;
-		float P10 = -zFar / (zFar - zNear);
-		float P14 = -zFar*zNear / (zFar - zNear);
-		float P5 = -p[5];
 		float proj[16];
-
 		Com_Memcpy( proj, p, 64 );
-		proj[5] = P5;
-		proj[10] = P10;
-		proj[14] = P14;
 
-		myGlMultMatrix(vk_world.modelview_transform, proj, mvp);
-#endif
+		// update q3's proj matrix (opengl) to vulkan conventions: z - [0, 1] instead of [-1, 1] and invert y direction
+		proj[5] = -p[5];
+		proj[10] = ( p[10] - 1.0f ) / 2.0f;
+		proj[14] = p[14] / 2.0f;
+
+		myGlMultMatrix( vk_world.modelview_transform, proj, mvp );
 	}
 }
 

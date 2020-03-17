@@ -653,18 +653,8 @@ static void R_SetupProjectionZ( viewParms_t *dest )
 
 	dest->projectionMatrix[2] = 0;
 	dest->projectionMatrix[6] = 0;
-#ifdef USE_VULKAN
-#if 1
 	dest->projectionMatrix[10] = -( zFar + zNear ) / depth;
 	dest->projectionMatrix[14] = -2 * zFar * zNear / depth;
-#else
-	dest->projectionMatrix[10] = -zFar / depth;
-	dest->projectionMatrix[14] = -zFar * zNear / depth;
-#endif
-#else
-	dest->projectionMatrix[10] = -( zFar + zNear ) / depth;
-	dest->projectionMatrix[14] = -2 * zFar * zNear / depth;
-#endif
 }
 
 
