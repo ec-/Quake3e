@@ -1910,7 +1910,6 @@ static void vk_create_persistent_pipelines( void )
 			def.shader_type = TYPE_SIGNLE_TEXTURE;
 			def.face_culling = CT_FRONT_SIDED;
 			def.polygon_offset = qfalse;
-			def.clipping_plane = qfalse;
 			def.mirror = qfalse;
 			vk.skybox_pipeline = vk_find_pipeline_ext( 0, &def, qtrue );
 		}
@@ -1927,7 +1926,6 @@ static void vk_create_persistent_pipelines( void )
 				def.polygon_offset = qfalse;
 				def.state_bits = 0;
 				def.shader_type = TYPE_SIGNLE_TEXTURE;
-				def.clipping_plane = qfalse;
 				def.shadow_phase = SHADOW_EDGES;
 
 				for (i = 0; i < 2; i++) {
@@ -1947,7 +1945,6 @@ static void vk_create_persistent_pipelines( void )
 				def.polygon_offset = qfalse;
 				def.state_bits = GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO;
 				def.shader_type = TYPE_SIGNLE_TEXTURE;
-				def.clipping_plane = qfalse;
 				def.mirror = qfalse;
 				def.shadow_phase = SHADOW_FS_QUAD;
 				def.primitives = TRIANGLE_STRIP;
@@ -1968,12 +1965,10 @@ static void vk_create_persistent_pipelines( void )
 				GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL			// additive
 			};
 			qboolean polygon_offset[2] = { qfalse, qtrue };
-			qboolean clipping_plane[2] = { qfalse, qtrue };
-			int i, j, k, l, m;
+			int i, j, k, l;
 
 			Com_Memset(&def, 0, sizeof(def));
 			def.shader_type = TYPE_SIGNLE_TEXTURE;
-			def.clipping_plane = qfalse;
 			def.mirror = qfalse;
 
 			for (i = 0; i < 2; i++) {
@@ -2007,21 +2002,18 @@ static void vk_create_persistent_pipelines( void )
 #ifdef USE_PMLIGHT
 			def.state_bits = GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL;
 			//def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING;
-			for ( i = 0; i < 2; i++ ) { // clipping plane off/on
-				def.clipping_plane = clipping_plane[i];
-				for (j = 0; j < 3; j++) { // cullType
-					def.face_culling = j;
-					for ( k = 0; k < 2; k++ ) { // polygonOffset
-						def.polygon_offset = polygon_offset[k];
+			for (i = 0; i < 3; i++) { // cullType
+				def.face_culling = i;
+				for ( j = 0; j < 2; j++ ) { // polygonOffset
+					def.polygon_offset = polygon_offset[j];
+					for ( k = 0; k < 2; k++ ) {
+						def.fog_stage = k; // fogStage
 						for ( l = 0; l < 2; l++ ) {
-							def.fog_stage = l; // fogStage
-							for ( m = 0; m < 2; m++ ) {
-								def.abs_light = m;
-								def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING;
-								vk.dlight_pipelines_x[i][j][k][l][m] = vk_find_pipeline_ext( 0, &def, qfalse );
-								def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING1;
-								vk.dlight1_pipelines_x[i][j][k][l][m] = vk_find_pipeline_ext( 0, &def, qfalse );
-							}
+							def.abs_light = l;
+							def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING;
+							vk.dlight_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, qfalse );
+							def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING1;
+							vk.dlight1_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, qfalse );
 						}
 					}
 				}
@@ -3944,7 +3936,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 	Com_Memset( vert_spec_data, 0, sizeof( vert_spec_data ) );
 	Com_Memset( frag_spec_data, 0, sizeof( frag_spec_data ) );
 	
-	vert_spec_data[0] = def->clipping_plane ? 1 : 0;
+	//vert_spec_data[0] = def->clipping_plane ? 1 : 0;
 
 	// fragment shader specialization data
 	atest_bits = state_bits & GLS_ATEST_BITS;
@@ -4625,9 +4617,11 @@ static void get_mvp_transform( float *mvp )
 
 		// update q3's proj matrix (opengl) to vulkan conventions: z - [0, 1] instead of [-1, 1] and invert y direction
 		proj[5] = -p[5];
-		proj[10] = ( p[10] - 1.0f ) / 2.0f;
-		proj[14] = p[14] / 2.0f;
-
+		if ( backEnd.viewParms.portalView == PV_NONE )
+		{
+			proj[10] = ( p[10] - 1.0f ) / 2.0f;
+			proj[14] = p[14] / 2.0f;
+		}
 		myGlMultMatrix( vk_world.modelview_transform, proj, mvp );
 	}
 }
@@ -4706,7 +4700,6 @@ void vk_clear_depth( qboolean clear_stencil ) {
 void vk_update_mvp( const float *m ) {
 	float push_constants[16 + 12 + 4]; // mvp transform + eye transform + clipping plane in eye space
 	int push_constants_size = 64;
-	int i;
 
 	//
 	// Specify push constants.
@@ -4715,37 +4708,6 @@ void vk_update_mvp( const float *m ) {
 		Com_Memcpy( push_constants, m, push_constants_size );
 	else
 		get_mvp_transform( push_constants );
-
-	if ( backEnd.viewParms.portalView != PV_NONE ) {
-		// Eye space transform.
-		// NOTE: backEnd.or.modelMatrix incorporates s_flipMatrix, so it should be taken into account 
-		// when computing clipping plane too.
-		float* eye_xform = push_constants + 16;
-		float world_plane[4];
-		float eye_plane[4];
-		for (i = 0; i < 12; i++) {
-			eye_xform[i] = backEnd.or.modelMatrix[(i%4)*4 + i/4 ];
-		}
-
-		// Clipping plane in eye coordinates.
-		world_plane[0] = backEnd.viewParms.portalPlane.normal[0];
-		world_plane[1] = backEnd.viewParms.portalPlane.normal[1];
-		world_plane[2] = backEnd.viewParms.portalPlane.normal[2];
-		world_plane[3] = backEnd.viewParms.portalPlane.dist;
-
-		eye_plane[0] = DotProduct (backEnd.viewParms.or.axis[0], world_plane);
-		eye_plane[1] = DotProduct (backEnd.viewParms.or.axis[1], world_plane);
-		eye_plane[2] = DotProduct (backEnd.viewParms.or.axis[2], world_plane);
-		eye_plane[3] = DotProduct (world_plane, backEnd.viewParms.or.origin) - world_plane[3];
-
-		// Apply s_flipMatrix to be in the same coordinate system as eye_xfrom.
-		push_constants[28] = -eye_plane[1];
-		push_constants[29] =  eye_plane[2];
-		push_constants[30] = -eye_plane[0];
-		push_constants[31] =  eye_plane[3];
-
-		push_constants_size += 64;
-	}
 
 	qvkCmdPushConstants( vk.cmd->command_buffer, vk.pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, push_constants_size, push_constants );
 

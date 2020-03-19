@@ -16,22 +16,13 @@ layout(location = 0) out vec4 frag_color;
 layout(location = 1) out vec2 frag_tex_coord0;
 layout(location = 2) out vec2 frag_tex_coord1;
 
-layout (constant_id = 0) const int do_clip = 0;
-
-//out gl_PerVertex {
-//	vec4 gl_Position;
-//	float gl_ClipDistance[1];
-//};
+out gl_PerVertex {
+	vec4 gl_Position;
+};
 
 void main() {
 	vec4 p = vec4(in_position, 1.0);
 	gl_Position = clip_space_xform * p;
-
-	if ( do_clip == 1 ) {
-		gl_ClipDistance[0] = dot(clipping_plane, vec4(p * eye_space_xform, 1.0));
-	} else {
-		gl_ClipDistance[0] = 0.0;
-	}
 
 	frag_color = in_color;
 	frag_tex_coord0 = in_tex_coord0;

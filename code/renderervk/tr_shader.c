@@ -2896,7 +2896,6 @@ static shader_t *FinishShader( void ) {
 				}
 			}
 			stype = def.shader_type;
-			def.clipping_plane = qfalse;
 			def.mirror = qfalse;
 			pStage->vk_pipeline[0] = vk_find_pipeline_ext( 0, &def, qtrue );
 			if ( pStage->depthFragment ) {
@@ -2904,17 +2903,6 @@ static shader_t *FinishShader( void ) {
 				pStage->vk_pipeline_df = vk_find_pipeline_ext( 0, &def, qtrue );
 				def.shader_type = stype;
 			}
-
-			def.clipping_plane = qtrue;
-			def.mirror = qfalse;
-			pStage->vk_portal_pipeline[0] = vk_find_pipeline_ext( 0, &def, qfalse );
-			if ( pStage->depthFragment ) {
-				def.shader_type = TYPE_SIGNLE_TEXTURE_DF;
-				pStage->vk_portal_pipeline_df = vk_find_pipeline_ext( 0, &def, qfalse );
-				def.shader_type = stype;
-			}
-
-			def.clipping_plane = qtrue;
 			def.mirror = qtrue;
 			pStage->vk_mirror_pipeline[0] = vk_find_pipeline_ext( 0, &def, qfalse );
 			if ( pStage->depthFragment ) {
@@ -2930,20 +2918,16 @@ static shader_t *FinishShader( void ) {
 	if ( stage == 1 && tr.mapLoading && !(shader.contentFlags & CONTENTS_FOG) ) {
 		Vk_Pipeline_Def def;
 		Vk_Pipeline_Def def_mirror;
-		Vk_Pipeline_Def def_portal;
 
 		shaderStage_t *pStage = &stages[0];
 
 		vk_get_pipeline_def( pStage->vk_pipeline[0], &def );
 		vk_get_pipeline_def( pStage->vk_mirror_pipeline[0], &def_mirror );
-		vk_get_pipeline_def( pStage->vk_portal_pipeline[0], &def_portal );
 
 		def.fog_stage = 1;
 		def_mirror.fog_stage = 1;
-		def_portal.fog_stage = 1;
 		pStage->vk_pipeline[1] = vk_find_pipeline_ext( 0, &def, qfalse );
 		pStage->vk_mirror_pipeline[1] = vk_find_pipeline_ext( 0, &def_mirror, qfalse );
-		pStage->vk_portal_pipeline[1] = vk_find_pipeline_ext( 0, &def_portal, qfalse );
 
 		shader.fogCollapse = qtrue;
 		//stages[0].adjustColorsForFog = ACFF_NONE;

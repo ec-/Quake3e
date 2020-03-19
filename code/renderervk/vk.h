@@ -86,7 +86,6 @@ typedef struct {
 	unsigned int state_bits; // GLS_XXX flags
 	cullType_t face_culling;
 	qboolean polygon_offset;
-	qboolean clipping_plane;
 	qboolean mirror;
 	Vk_Shadow_Phase shadow_phase;
 	Vk_Primitive_Topology primitives;
@@ -434,10 +433,10 @@ typedef struct {
 	// dim 2 is a polygon offset value (0 - off, 1 - on).
 	uint32_t dlight_pipelines[2][3][2];
 
-	// clippingPlane[2], cullType[3], polygonOffset[2], fogStage[2], absLight[2]
+	// cullType[3], polygonOffset[2], fogStage[2], absLight[2]
 #ifdef USE_PMLIGHT
-	uint32_t dlight_pipelines_x[2][3][2][2][2];
-	uint32_t dlight1_pipelines_x[2][3][2][2][2];
+	uint32_t dlight_pipelines_x[3][2][2][2];
+	uint32_t dlight1_pipelines_x[3][2][2][2];
 #endif
 
 	// debug visualization pipelines

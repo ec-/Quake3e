@@ -32,22 +32,13 @@ layout(location = 2) out vec4 L; // object-space light vector
 layout(location = 3) out vec4 V; // object-space view vector
 //layout(location = 4) out vec2 fog_tex_coord;
 
-layout (constant_id = 0) const int clip_plane = 0;
-
-//out gl_PerVertex {
-//	vec4 gl_Position;
-//	float gl_ClipDistance[1];
-//};
+out gl_PerVertex {
+	vec4 gl_Position;
+};
 
 void main() {
 	vec4 p = vec4(in_position, 1.0);
 	gl_Position = clip_space_xform * p;
-
-	if ( clip_plane != 0 ) {
-		gl_ClipDistance[0] = dot(clipping_plane, vec4(p * eye_space_xform, 1.0));
-	} else {
-		gl_ClipDistance[0] = 0.0;
-	}
 
 	frag_tex_coord = in_tex_coord;
 	N = in_normal;

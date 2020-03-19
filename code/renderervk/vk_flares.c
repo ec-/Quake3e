@@ -75,6 +75,7 @@ typedef struct flare_s {
 
 	int			windowX, windowY;
 	float		eyeZ;
+	float		drawZ;
 
 	vec3_t		origin;
 	vec3_t		color;
@@ -202,6 +203,12 @@ void RB_AddFlare( void *surface, int fogNum, vec3_t point, vec3_t color, vec3_t 
 	f->windowY = backEnd.viewParms.viewportY + window[1];
 
 	f->eyeZ = eye[2];
+
+	if ( backEnd.viewParms.portalView ) {
+		f->drawZ = (clip[2]) / (clip[3] + 4);
+	} else {
+		f->drawZ = window[2];
+	}
 }
 
 
@@ -261,18 +268,18 @@ FLARE BACK END
 
 
 static float *vk_ortho( float x1, float x2,
-                        float y2, float y1,
-                        float z1, float z2 ) {
+						float y2, float y1,
+						float z1, float z2 ) {
 
 	static float m[16] = { 0 };
-	
+
 	m[0] = 2.0f / (x2 - x1);
-    m[5] = 2.0f / (y2 - y1);
-    m[10] = 1.0f / (z1 - z2);
-    m[12] = -(x2 + x1) / (x2 - x1);
-    m[13] = -(y2 + y1) / (y2 - y1);
-    m[14] = z1 / (z1 - z2);
-    m[15] = 1.0f;
+	m[5] = 2.0f / (y2 - y1);
+	m[10] = 1.0f / (z1 - z2);
+	m[12] = -(x2 + x1) / (x2 - x1);
+	m[13] = -(y2 + y1) / (y2 - y1);
+	m[14] = z1 / (z1 - z2);
+	m[15] = 1.0f;
 
 	return m;
 }
@@ -286,8 +293,7 @@ RB_TestFlare
 void RB_TestFlare( flare_t *f ) {
 	qboolean		visible;
 	float			fade;
-	//float			modelMatrix_original[16];
-	float			*m, z;
+	float			*m;
 	uint32_t		offset;
 
 	backEnd.pc.c_flareTests++;
@@ -328,10 +334,9 @@ void RB_TestFlare( flare_t *f ) {
 		backEnd.viewParms.viewportY, backEnd.viewParms.viewportY + backEnd.viewParms.viewportHeight, 0, 1 );
 	vk_update_mvp( m );
 
-	z = f->eyeZ;
 	tess.xyz[0][0] = f->windowX;
 	tess.xyz[0][1] = f->windowY;
-	tess.xyz[0][2] = -(z * ( backEnd.viewParms.projectionMatrix[11] + backEnd.viewParms.projectionMatrix[10] ) + backEnd.viewParms.projectionMatrix[14] ) / (2 * backEnd.viewParms.projectionMatrix[11] * z );
+	tess.xyz[0][2] = -f->drawZ;
 	tess.numVertexes = 1;
 
 #ifdef USE_VBO

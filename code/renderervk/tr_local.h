@@ -357,11 +357,9 @@ typedef struct {
 	uint32_t		tessFlags;
 
 	uint32_t		vk_pipeline[2]; // normal,fogged
-	uint32_t		vk_portal_pipeline[2];
 	uint32_t		vk_mirror_pipeline[2];
 
 	uint32_t		vk_pipeline_df; // depthFragment
-	uint32_t		vk_portal_pipeline_df;
 	uint32_t		vk_mirror_pipeline_df;
 #endif
 

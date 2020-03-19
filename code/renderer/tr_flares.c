@@ -74,6 +74,7 @@ typedef struct flare_s {
 
 	int			windowX, windowY;
 	float		eyeZ;
+	float		drawZ;
 
 	vec3_t		origin;
 	vec3_t		color;
@@ -119,14 +120,14 @@ void RB_AddFlare( void *surface, int fogNum, vec3_t point, vec3_t color, vec3_t 
 
 	backEnd.pc.c_flareAdds++;
 
-	if(normal && (normal[0] || normal[1] || normal[2]))
+	if ( normal && (normal[0] || normal[1] || normal[2]) )
 	{
 		VectorSubtract( backEnd.viewParms.or.origin, point, local );
-		VectorNormalizeFast(local);
-		d = DotProduct(local, normal);
+		VectorNormalizeFast( local );
+		d = DotProduct( local, normal );
 
 		// If the viewer is behind the flare don't add it.
-		if(d < 0)
+		if ( d < 0 )
 			return;
 	}
 
@@ -158,7 +159,7 @@ void RB_AddFlare( void *surface, int fogNum, vec3_t point, vec3_t color, vec3_t 
 	}
 
 	// allocate a new one
-	if (!f ) {
+	if ( !f ) {
 		if ( !r_inactiveFlares ) {
 			// the list is completely full
 			return;
@@ -182,7 +183,7 @@ void RB_AddFlare( void *surface, int fogNum, vec3_t point, vec3_t color, vec3_t 
 	f->addedFrame = backEnd.viewParms.frameCount;
 	f->fogNum = fogNum;
 
-	VectorCopy(point, f->origin);
+	VectorCopy( point, f->origin );
 	VectorCopy( color, f->color );
 
 	// fade the intensity of the flare down as the
@@ -194,6 +195,11 @@ void RB_AddFlare( void *surface, int fogNum, vec3_t point, vec3_t color, vec3_t 
 	f->windowY = backEnd.viewParms.viewportY + window[1];
 
 	f->eyeZ = eye[2];
+
+	if ( backEnd.viewParms.portalView )
+		f->drawZ = (clip[2] + clip[3] - 4 ) / ( 2 * clip[3] );
+	else
+		f->drawZ = (clip[2] + clip[3] - 1 ) / ( 2 * clip[3] );
 }
 
 
@@ -260,7 +266,6 @@ void RB_TestFlare( flare_t *f ) {
 	float			depth;
 	qboolean		visible;
 	float			fade;
-	float			screenZ;
 
 	backEnd.pc.c_flareTests++;
 
@@ -270,12 +275,7 @@ void RB_TestFlare( flare_t *f ) {
 
 	// read back the z buffer contents
 	qglReadPixels( f->windowX, f->windowY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth );
-
-	screenZ = backEnd.viewParms.projectionMatrix[14] / 
-		( ( 2*depth - 1 ) * backEnd.viewParms.projectionMatrix[11] - backEnd.viewParms.projectionMatrix[10] );
-
-	visible = ( -f->eyeZ - -screenZ ) < 24;
-
+	visible = (depth > f->drawZ);
 	if ( visible ) {
 		if ( !f->visible ) {
 			f->visible = qtrue;
@@ -316,7 +316,7 @@ void RB_RenderFlare( flare_t *f ) {
 	backEnd.pc.c_flareRenders++;
 
 	// We don't want too big values anyways when dividing by distance.
-	if(f->eyeZ > -1.0f)
+	if ( f->eyeZ > -1.0f )
 		distance = 1.0f;
 	else
 		distance = -f->eyeZ;
@@ -504,7 +504,7 @@ void RB_RenderFlares (void) {
 	}
 
 	qglPushMatrix();
-    qglLoadIdentity();
+	qglLoadIdentity();
 	qglMatrixMode( GL_PROJECTION );
 	qglPushMatrix();
 	qglLoadMatrixf( GL_Ortho( backEnd.viewParms.viewportX, backEnd.viewParms.viewportX + backEnd.viewParms.viewportWidth,
@@ -520,4 +520,3 @@ void RB_RenderFlares (void) {
 	qglMatrixMode( GL_MODELVIEW );
 	qglPopMatrix();
 }
-
