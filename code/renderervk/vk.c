@@ -3104,7 +3104,7 @@ void vk_initialize( void )
 
 		push_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		push_range.offset = 0;
-		push_range.size = 128; // 32 floats
+		push_range.size = 64; // 16 floats
 
 		// standard pipelines
 
@@ -4617,11 +4617,8 @@ static void get_mvp_transform( float *mvp )
 
 		// update q3's proj matrix (opengl) to vulkan conventions: z - [0, 1] instead of [-1, 1] and invert y direction
 		proj[5] = -p[5];
-		if ( backEnd.viewParms.portalView == PV_NONE )
-		{
-			proj[10] = ( p[10] - 1.0f ) / 2.0f;
-			proj[14] = p[14] / 2.0f;
-		}
+		//proj[10] = ( p[10] - 1.0f ) / 2.0f;
+		//proj[14] = p[14] / 2.0f;
 		myGlMultMatrix( vk_world.modelview_transform, proj, mvp );
 	}
 }

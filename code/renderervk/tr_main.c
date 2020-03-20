@@ -653,14 +653,18 @@ static void R_SetupProjectionZ( viewParms_t *dest )
 
 	dest->projectionMatrix[2] = 0;
 	dest->projectionMatrix[6] = 0;
+#ifdef USE_VULKAN
+	dest->projectionMatrix[10] = - zFar / depth;
+	dest->projectionMatrix[14] = - zFar * zNear / depth;
+#else
 	dest->projectionMatrix[10] = -( zFar + zNear ) / depth;
 	dest->projectionMatrix[14] = -2 * zFar * zNear / depth;
+#endif
 
 	if ( dest->portalView != PV_NONE )
 	{
 		float	plane[4];
 		float	plane2[4];
-		float	proj[16];
 		vec4_t q, c;
 
 		// transform portal plane into camera space
@@ -674,17 +678,15 @@ static void R_SetupProjectionZ( viewParms_t *dest )
 		plane2[2] = -DotProduct( dest->or.axis[0], plane );
 		plane2[3] =  DotProduct( plane, dest->or.origin) - plane[3];
 
-		Com_Memcpy( proj, dest->projectionMatrix, sizeof( proj ) );
 #ifdef USE_VULKAN
-		proj[10] = -zNear / (zFar - zNear);
-		proj[14] = -zFar * zNear / (zFar - zNear);
+		dest->projectionMatrix[10] = -zNear / depth;
 #endif
 		// Lengyel, Eric. "Modifying the Projection Matrix to Perform Oblique Near-plane Clipping".
 		// Terathon Software 3D Graphics Library, 2004. http://www.terathon.com/code/oblique.html
-		q[0] = (SGN(plane2[0]) + proj[8]) / proj[0];
-		q[1] = (SGN(plane2[1]) + proj[9]) / proj[5];
+		q[0] = (SGN(plane2[0]) + dest->projectionMatrix[8]) / dest->projectionMatrix[0];
+		q[1] = (SGN(plane2[1]) + dest->projectionMatrix[9]) / dest->projectionMatrix[5];
 		q[2] = -1.0f;
-		q[3] = (1.0f + proj[10]) / proj[14];
+		q[3] = (1.0f + dest->projectionMatrix[10]) / dest->projectionMatrix[14];
 
 		VectorScale4( plane2, 2.0f / DotProduct4(plane2, q), c );
 

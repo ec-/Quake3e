@@ -1,10 +1,8 @@
 #version 450
 
-// 128 bytes
+// 64 bytes
 layout(push_constant) uniform Transform {
-	mat4 clip_space_xform;
-	mat3x4 eye_space_xform;
-	vec4 clipping_plane; // in eye space
+	mat4 mvp;
 };
 
 layout(location = 0) in vec3 in_position;
@@ -21,8 +19,7 @@ out gl_PerVertex {
 };
 
 void main() {
-	vec4 p = vec4(in_position, 1.0);
-	gl_Position = clip_space_xform * p;
+	gl_Position = mvp * vec4(in_position, 1.0);
 
 	//frag_color = in_color;
 	//frag_tex_coord0 = in_tex_coord0;

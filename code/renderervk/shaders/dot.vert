@@ -2,7 +2,7 @@
 
 // 128 bytes
 layout(push_constant) uniform Transform {
-	mat4 clip_space_xform;
+	mat4 mvp;
 };
 
 layout(location = 0) in vec3 in_position;
@@ -13,7 +13,6 @@ out gl_PerVertex {
 };
 
 void main() {
-	vec4 p = vec4(in_position, 1.0);
-	gl_Position = clip_space_xform * p;
+	gl_Position = mvp * vec4(in_position, 1.0);
 	gl_PointSize = 1.0;
 }
