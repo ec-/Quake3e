@@ -4695,20 +4695,19 @@ void vk_clear_depth( qboolean clear_stencil ) {
 
 
 void vk_update_mvp( const float *m ) {
-	float push_constants[16 + 12 + 4]; // mvp transform + eye transform + clipping plane in eye space
-	int push_constants_size = 64;
+	float push_constants[16]; // mvp transform
 
 	//
 	// Specify push constants.
 	//
 	if ( m )
-		Com_Memcpy( push_constants, m, push_constants_size );
+		Com_Memcpy( push_constants, m, sizeof( push_constants ) );
 	else
 		get_mvp_transform( push_constants );
 
-	qvkCmdPushConstants( vk.cmd->command_buffer, vk.pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, push_constants_size, push_constants );
+	qvkCmdPushConstants( vk.cmd->command_buffer, vk.pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof( push_constants ), push_constants );
 
-	vk.stats.push_size += push_constants_size;
+	vk.stats.push_size += sizeof( push_constants );
 }
 
 

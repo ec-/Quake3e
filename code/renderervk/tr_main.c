@@ -678,16 +678,16 @@ static void R_SetupProjectionZ( viewParms_t *dest )
 		plane2[2] = -DotProduct( dest->or.axis[0], plane );
 		plane2[3] =  DotProduct( plane, dest->or.origin) - plane[3];
 
-#ifdef USE_VULKAN
-		dest->projectionMatrix[10] = -zNear / depth;
-#endif
 		// Lengyel, Eric. "Modifying the Projection Matrix to Perform Oblique Near-plane Clipping".
 		// Terathon Software 3D Graphics Library, 2004. http://www.terathon.com/code/oblique.html
 		q[0] = (SGN(plane2[0]) + dest->projectionMatrix[8]) / dest->projectionMatrix[0];
 		q[1] = (SGN(plane2[1]) + dest->projectionMatrix[9]) / dest->projectionMatrix[5];
 		q[2] = -1.0f;
+#ifdef USE_VULKAN
+		q[3] = - dest->projectionMatrix[10] / dest->projectionMatrix[14];
+#else
 		q[3] = (1.0f + dest->projectionMatrix[10]) / dest->projectionMatrix[14];
-
+#endif
 		VectorScale4( plane2, 2.0f / DotProduct4(plane2, q), c );
 
 		dest->projectionMatrix[2]  = c[0];
