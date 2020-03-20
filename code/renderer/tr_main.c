@@ -1080,14 +1080,29 @@ static void R_GetModelViewBounds( int *mins, int *maxs )
 	for ( i = 0; i < tess.numVertexes; i++ ) {
 		R_TransformModelToClipMVP( tess.xyz[i], mvp, clip );
 		if ( clip[3] <= 0.0 ) {
-			dist[0] = DotProduct( tess.xyz[i], tr.viewParms.frustum[0].normal );
-			dist[1] = DotProduct( tess.xyz[i], tr.viewParms.frustum[1].normal );
-			dist[2] = DotProduct( tess.xyz[i], tr.viewParms.frustum[2].normal );
-			dist[3] = DotProduct( tess.xyz[i], tr.viewParms.frustum[3].normal );
-			if ( dist[0] <= tr.viewParms.frustum[0].dist ) maxn[0] =  1.0f;
-			if ( dist[1] <= tr.viewParms.frustum[1].dist ) minn[0] = -1.0f;
-			if ( dist[2] <= tr.viewParms.frustum[2].dist ) minn[1] = -1.0f;
-			if ( dist[3] <= tr.viewParms.frustum[3].dist ) maxn[1] =  1.0f;
+			dist[0] = DotProduct( tess.xyz[i], tr.viewParms.frustum[0].normal ) - tr.viewParms.frustum[0].dist; // right
+			dist[1] = DotProduct( tess.xyz[i], tr.viewParms.frustum[1].normal ) - tr.viewParms.frustum[1].dist; // left
+			dist[2] = DotProduct( tess.xyz[i], tr.viewParms.frustum[2].normal ) - tr.viewParms.frustum[2].dist; // bottom
+			dist[3] = DotProduct( tess.xyz[i], tr.viewParms.frustum[3].normal ) - tr.viewParms.frustum[3].dist; // top
+			if ( dist[0] <= 0 && dist[1] <= 0 ) {
+				if ( dist[0] < dist[1] ) {
+					maxn[0] =  1.0f;
+				} else {
+					minn[0] = -1.0f;
+				}
+			} else {
+				if ( dist[0] <= 0 ) maxn[0] =  1.0f;
+				if ( dist[1] <= 0 ) minn[0] = -1.0f;
+			}
+			if ( dist[2] <= 0 && dist[3] <= 0 ) {
+				if ( dist[2] < dist[3] )
+					minn[1] = -1.0f;
+				else
+					maxn[1] =  1.0f;
+			} else {
+				if ( dist[2] <= 0 ) minn[1] = -1.0f;
+				if ( dist[3] <= 0 ) maxn[1] =  1.0f;
+			}
 		} else {
 			for ( j = 0; j < 2; j++ ) {
 				if ( clip[j] >  clip[3] ) clip[j] =  clip[3]; else

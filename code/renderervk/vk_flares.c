@@ -205,9 +205,9 @@ void RB_AddFlare( void *surface, int fogNum, vec3_t point, vec3_t color, vec3_t 
 	f->eyeZ = eye[2];
 
 	if ( backEnd.viewParms.portalView ) {
-		f->drawZ = (clip[2]) / (clip[3] + 3);
+		f->drawZ = clip[2] / (clip[3] + 2);
 	} else {
-		f->drawZ = (clip[2]) / (clip[3] + 2);
+		f->drawZ = (clip[2]-0.1) / clip[3];
 	}
 }
 
