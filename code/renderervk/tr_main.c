@@ -593,15 +593,7 @@ void R_SetupProjection( viewParms_t *dest, float zProj, qboolean computeFrustum 
 	dest->projectionMatrix[12] = 2 * zProj * stereoSep / width;
 
 	dest->projectionMatrix[1] = 0;
-#ifdef USE_VULKAN
-#if 0
-	dest->projectionMatrix[5] = -2 * zProj / height;
-#else
 	dest->projectionMatrix[5] = 2 * zProj / height;
-#endif
-#else
-	dest->projectionMatrix[5] = 2 * zProj / height;
-#endif
 	dest->projectionMatrix[9] = ( ymax + ymin ) / height;	// normally 0
 	dest->projectionMatrix[13] = 0;
 
