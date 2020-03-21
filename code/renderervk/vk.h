@@ -23,6 +23,8 @@
 #define USE_IMAGE_LAYOUT_1
 #define MIN_IMAGE_ALIGN (128*1024)
 
+#define USE_REVERSED_DEPTH
+
 #define VK_CHECK(function_call) { \
 	VkResult result = function_call; \
 	if (result < 0) \

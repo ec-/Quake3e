@@ -204,11 +204,7 @@ void RB_AddFlare( void *surface, int fogNum, vec3_t point, vec3_t color, vec3_t 
 
 	f->eyeZ = eye[2];
 
-	if ( backEnd.viewParms.portalView ) {
-		f->drawZ = clip[2] / (clip[3] + 2);
-	} else {
-		f->drawZ = (clip[2]-0.1) / clip[3];
-	}
+	f->drawZ = clip[2] / clip[3];
 }
 
 
@@ -575,8 +571,13 @@ void RB_RenderFlares( void ) {
 		return;		// none visible
 	}
 
+#ifdef USE_REVERSED_DEPTH
+	m = vk_ortho( backEnd.viewParms.viewportX, backEnd.viewParms.viewportX + backEnd.viewParms.viewportWidth,
+		backEnd.viewParms.viewportY, backEnd.viewParms.viewportY + backEnd.viewParms.viewportHeight, 1.0, 0.0 );
+#else
 	m = vk_ortho( backEnd.viewParms.viewportX, backEnd.viewParms.viewportX + backEnd.viewParms.viewportWidth,
 		backEnd.viewParms.viewportY, backEnd.viewParms.viewportY + backEnd.viewParms.viewportHeight, 0.0, 1.0 );
+#endif
 	
 	vk_update_mvp( m );
 

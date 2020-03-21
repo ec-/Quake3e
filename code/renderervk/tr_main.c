@@ -465,42 +465,20 @@ static void R_SetFarClip( void )
 		vec3_t vecTo;
 		float distance;
 
-		if ( i & 1 )
-		{
-			v[0] = tr.viewParms.visBounds[0][0];
-		}
-		else
-		{
-			v[0] = tr.viewParms.visBounds[1][0];
-		}
-
-		if ( i & 2 )
-		{
-			v[1] = tr.viewParms.visBounds[0][1];
-		}
-		else
-		{
-			v[1] = tr.viewParms.visBounds[1][1];
-		}
-
-		if ( i & 4 )
-		{
-			v[2] = tr.viewParms.visBounds[0][2];
-		}
-		else
-		{
-			v[2] = tr.viewParms.visBounds[1][2];
-		}
+		v[0] = tr.viewParms.visBounds[(i>>0)&1][0];
+		v[1] = tr.viewParms.visBounds[(i>>1)&1][1];
+		v[2] = tr.viewParms.visBounds[(i>>2)&1][2];
 
 		VectorSubtract( v, tr.viewParms.or.origin, vecTo );
 
-		distance = vecTo[0] * vecTo[0] + vecTo[1] * vecTo[1] + vecTo[2] * vecTo[2];
+		distance = DotProduct( vecTo, vecTo );
 
 		if ( distance > farthestCornerDistance )
 		{
 			farthestCornerDistance = distance;
 		}
 	}
+
 	tr.viewParms.zFar = sqrt( farthestCornerDistance );
 }
 
@@ -654,8 +632,13 @@ static void R_SetupProjectionZ( viewParms_t *dest )
 	dest->projectionMatrix[2] = 0;
 	dest->projectionMatrix[6] = 0;
 #ifdef USE_VULKAN
+#ifdef USE_REVERSED_DEPTH
+	dest->projectionMatrix[10] = zNear / depth;
+	dest->projectionMatrix[14] = zFar * zNear / depth;
+#else
 	dest->projectionMatrix[10] = - zFar / depth;
 	dest->projectionMatrix[14] = - zFar * zNear / depth;
+#endif
 #else
 	dest->projectionMatrix[10] = -( zFar + zNear ) / depth;
 	dest->projectionMatrix[14] = -2 * zFar * zNear / depth;
@@ -667,6 +650,12 @@ static void R_SetupProjectionZ( viewParms_t *dest )
 		float	plane2[4];
 		vec4_t q, c;
 
+#ifdef USE_VULKAN
+#ifdef USE_REVERSED_DEPTH
+		dest->projectionMatrix[10] = - zFar / depth;
+		dest->projectionMatrix[14] = - zFar * zNear / depth;
+#endif
+#endif
 		// transform portal plane into camera space
 		plane[0] = dest->portalPlane.normal[0];
 		plane[1] = dest->portalPlane.normal[1];
@@ -698,6 +687,13 @@ static void R_SetupProjectionZ( viewParms_t *dest )
 		dest->projectionMatrix[10] = c[2] + 1.0f;
 #endif
 		dest->projectionMatrix[14] = c[3];
+
+#ifdef USE_REVERSED_DEPTH
+		dest->projectionMatrix[2] = -dest->projectionMatrix[2];
+		dest->projectionMatrix[6] = -dest->projectionMatrix[6];
+		dest->projectionMatrix[10] = -(dest->projectionMatrix[10] + 1.0);
+		dest->projectionMatrix[14] = -dest->projectionMatrix[14];
+#endif
 	}
 }
 

@@ -4203,7 +4203,11 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 	depth_stencil_state.flags = 0;
 	depth_stencil_state.depthTestEnable = (state_bits & GLS_DEPTHTEST_DISABLE) ? VK_FALSE : VK_TRUE;
 	depth_stencil_state.depthWriteEnable = (state_bits & GLS_DEPTHMASK_TRUE) ? VK_TRUE : VK_FALSE;
+#ifdef USE_REVERSED_DEPTH
+	depth_stencil_state.depthCompareOp = (state_bits & GLS_DEPTHFUNC_EQUAL) ? VK_COMPARE_OP_EQUAL : VK_COMPARE_OP_GREATER_OR_EQUAL;
+#else
 	depth_stencil_state.depthCompareOp = (state_bits & GLS_DEPTHFUNC_EQUAL) ? VK_COMPARE_OP_EQUAL : VK_COMPARE_OP_LESS_OR_EQUAL;
+#endif
 	depth_stencil_state.depthBoundsTestEnable = VK_FALSE;
 	depth_stencil_state.stencilTestEnable = (def->shadow_phase != SHADOW_DISABLED) ? VK_TRUE : VK_FALSE;
 
@@ -4552,6 +4556,24 @@ static void get_viewport(VkViewport *viewport, Vk_Depth_Range depth_range) {
 
 	switch ( depth_range ) {
 		default:
+#ifdef USE_REVERSED_DEPTH
+		//case DEPTH_RANGE_NORMAL:
+			viewport->minDepth = 0.0f;
+			viewport->maxDepth = 1.0f;
+			break;
+		case DEPTH_RANGE_ZERO:
+			viewport->minDepth = 1.0f;
+			viewport->maxDepth = 1.0f;
+			break;
+		case DEPTH_RANGE_ONE:
+			viewport->minDepth = 0.0f;
+			viewport->maxDepth = 0.0f;
+			break;
+		case DEPTH_RANGE_WEAPON:
+			viewport->minDepth = 0.6f;
+			viewport->maxDepth = 1.0f;
+			break;
+#else
 		//case DEPTH_RANGE_NORMAL:
 			viewport->minDepth = 0.0f;
 			viewport->maxDepth = 1.0f;
@@ -4568,6 +4590,7 @@ static void get_viewport(VkViewport *viewport, Vk_Depth_Range depth_range) {
 			viewport->minDepth = 0.0f;
 			viewport->maxDepth = 0.3f;
 			break;
+#endif
 	}
 }
 
@@ -4606,8 +4629,13 @@ static void get_mvp_transform( float *mvp )
 
 		mvp[0]  =  mvp0; mvp[1]  =  0.0f; mvp[2]  = 0.0f; mvp[3]  = 0.0f;
 		mvp[4]  =  0.0f; mvp[5]  =  mvp5; mvp[6]  = 0.0f; mvp[7]  = 0.0f;
+#ifdef USE_REVERSED_DEPTH
+		mvp[8]  =  0.0f; mvp[9]  =  0.0f; mvp[10] = 0.0f; mvp[11] = 0.0f;
+		mvp[12] = -1.0f; mvp[13] = -1.0f; mvp[14] = 1.0f; mvp[15] = 1.0f;
+#else
 		mvp[8]  =  0.0f; mvp[9]  =  0.0f; mvp[10] = 1.0f; mvp[11] = 0.0f;
 		mvp[12] = -1.0f; mvp[13] = -1.0f; mvp[14] = 0.0f; mvp[15] = 1.0f;
+#endif
 	}
 	else
 	{
@@ -4678,7 +4706,11 @@ void vk_clear_depth( qboolean clear_stencil ) {
 		return;
 
 	attachment.colorAttachment = 0;
+#ifdef USE_REVERSED_DEPTH
+	attachment.clearValue.depthStencil.depth = 0.0f;
+#else
 	attachment.clearValue.depthStencil.depth = 1.0f;
+#endif
 	attachment.clearValue.depthStencil.stencil = 0;
 	if ( clear_stencil ) {
 		attachment.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
@@ -4967,7 +4999,9 @@ static void vk_begin_render_pass( VkRenderPass renderPass, VkFramebuffer frameBu
 		// [1] - depth/stencil
 		// [2] - multisampled color, optional
 		Com_Memset( clear_values, 0, sizeof( clear_values ) );
+#ifndef USE_REVERSED_DEPTH
 		clear_values[1].depthStencil.depth = 1.0;
+#endif
 		render_pass_begin_info.clearValueCount = ARRAY_LEN( clear_values );
 		render_pass_begin_info.pClearValues = clear_values;
 	} else {
