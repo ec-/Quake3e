@@ -71,14 +71,14 @@ void R_BindAnimatedImage( const textureBundle_t *bundle ) {
 		return;
 	}
 
-	if ( bundle->isScreenMap && backEnd.viewParms.frameSceneNum == 1 ) {
+	if ( bundle->isScreenMap /*&& backEnd.viewParms.frameSceneNum == 1*/ ) {
 		if ( !backEnd.screenMapDone )
 			GL_Bind( tr.blackImage );
 		else
 #ifdef USE_SINGLE_FBO
-			vk_update_descriptor( 1, vk.color_descriptor3 );
+			vk_update_descriptor( glState.currenttmu + 1, vk.color_descriptor3 );
 #else
-			vk_update_descriptor( 1, vk.cmd->color_descriptor3 );
+			vk_update_descriptor( glState.currenttmu + 1, vk.cmd->color_descriptor3 );
 #endif
 		return;
 	}
