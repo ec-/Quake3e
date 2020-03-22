@@ -2083,7 +2083,7 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 	// set the new blend state bits
 	shader.multitextureEnv = qtrue;
 	st0->mtEnv = collapse[i].multitextureEnv;
-	st0->stateBits &= ~( GLS_DSTBLEND_BITS | GLS_SRCBLEND_BITS );
+	st0->stateBits &= ~GLS_BLEND_BITS;
 	st0->stateBits |= collapse[i].multitextureBlend;
 
 	//
@@ -2654,6 +2654,35 @@ static shader_t *FinishShader( void ) {
 			shader.sort = SS_OPAQUE;
 		}
 	}
+
+#ifndef USE_SKY_DEPTH_WRITE
+	if ( shader.isSky || Q_stricmp( shader.name, "sun" ) == 0 ) {
+		if ( shader.isSky ) {
+			// r_showsky will let all the sky blocks be drawn in
+			// front of everything to allow developers to see how
+			// much sky is getting sucked in
+			if ( r_showsky->integer ) {
+				// disable depth tests, set highest sort level to draw on top of everything
+				shader.sort = SS_NEAREST;
+				for ( i = 0; i < stage; i++ ) {
+					stages[i].stateBits |= GLS_DEPTHTEST_DISABLE;
+				}
+			} else {
+				// disable depth writes for skybox shaders
+				// but we still needs depth tests for portal views
+				for ( i = 0; i < stage; i++ ) {
+					stages[i].stateBits &= ~GLS_DEPTHMASK_TRUE;
+					// stages[i].stateBits |= GLS_DEPTHTEST_DISABLE;
+				}
+			}
+		} else {
+			// disable depth writes for sun shader
+			for ( i = 0; i < stage; i++ ) {
+				stages[i].stateBits &= ~GLS_DEPTHMASK_TRUE;
+			}
+		}
+	}
+#endif
 
 	DetectNeeds();
 
