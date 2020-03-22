@@ -192,7 +192,6 @@ typedef char GLchar;
 	GLE( GLenum, glGetError, void ) \
 	GLE( void, glGetIntegerv, GLenum pname, GLint *params ) \
 	GLE( const GLubyte*, glGetString, GLenum name ) \
-	GLE( void, glHint, GLenum target, GLenum mode ) \
 	GLE( void, glLineWidth, GLfloat width ) \
 	GLE( void, glLoadIdentity, void ) \
 	GLE( void, glLoadMatrixf, const GLfloat *m ) \

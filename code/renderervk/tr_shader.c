@@ -2886,7 +2886,7 @@ static shader_t *FinishShader( void ) {
 					def.shader_type = TYPE_SIGNLE_TEXTURE; break;
 			}
 
-			if ( def.shader_type == TYPE_SIGNLE_TEXTURE && pStage->bundle[0].tcGen == TCGEN_ENVIRONMENT_MAPPED && !pStage->bundle[0].isLightmap ) {
+			if ( def.shader_type == TYPE_SIGNLE_TEXTURE && pStage->bundle[0].tcGen == TCGEN_ENVIRONMENT_MAPPED && ( !pStage->bundle[0].isLightmap || r_mergeLightmaps->integer == 0 ) ) {
 				if ( pStage->bundle[0].numTexMods == 0 ) {
 					def.shader_type = TYPE_SIGNLE_TEXTURE_ENVIRO;
 					shader.tessFlags |= TESS_NNN | TESS_VPOS;
