@@ -341,6 +341,8 @@ void RE_AddAdditiveLightToScene( const vec3_t org, float intensity, float r, flo
 }
 
 
+void *R_GetCommandBuffer( int bytes );
+
 /*
 @@@@@@@@@@@@@@@@@@@@@
 RE_RenderScene
@@ -353,6 +355,9 @@ to handle mirrors,
 @@@@@@@@@@@@@@@@@@@@@
 */
 void RE_RenderScene( const refdef_t *fd ) {
+#ifdef USE_VULKAN
+	renderCommand_t	lastRenderCommand;
+#endif
 	viewParms_t		parms;
 	int				startTime;
 
@@ -479,7 +484,34 @@ void RE_RenderScene( const refdef_t *fd ) {
 
 	VectorCopy( fd->vieworg, parms.pvsOrigin );
 
+#ifdef USE_VULKAN
+	lastRenderCommand = tr.lastRenderCommand;
+	tr.drawSurfCmd = NULL;
+	tr.numDrawSurfCmds = 0;
+#endif
+
 	R_RenderView( &parms );
+
+#ifdef USE_VULKAN
+	if ( tr.needScreenMap )
+	{
+		if ( lastRenderCommand == RC_DRAW_BUFFER )
+		{
+			// duplicate all views, including portals
+			drawSurfsCommand_t *cmd, *src = NULL;
+			int i;
+
+			for ( i = 0; i < tr.numDrawSurfCmds; i++ )
+			{
+				cmd = R_GetCommandBuffer( sizeof( *cmd ) );
+				src = tr.drawSurfCmd + i;
+				*cmd = *src;
+			}
+
+			src->refdef.switchRenderPass = qtrue;
+		}
+	}
+#endif
 
 	// the next scene rendered in this frame will tack on after this one
 	r_firstSceneDrawSurf = tr.refdef.numDrawSurfs;

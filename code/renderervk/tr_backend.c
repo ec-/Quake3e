@@ -1396,8 +1396,6 @@ static const void *RB_DrawSurfs( const void *data ) {
 	backEnd.refdef = cmd->refdef;
 	backEnd.viewParms = cmd->viewParms;
 
-__redraw:
-
 #ifdef USE_VBO
 	VBO_UnBind();
 #endif
@@ -1428,21 +1426,16 @@ __redraw:
 	}
 #endif
 
-#ifdef USE_VULKAN
-	if ( vk.renderPassIndex == RENDER_PASS_SCREENMAP ) {
-		vk_end_render_pass();
-		vk_begin_main_render_pass();
-
-		backEnd.refdef = cmd->refdef;
-		backEnd.viewParms = cmd->viewParms;
-		backEnd.screenMapDone = qtrue;
-
-		goto __redraw;
-	}
-#endif
-
 	// draw main system development information (surface outlines, etc)
 	RB_DebugGraphics();
+
+#ifdef USE_VULKAN
+	if ( cmd->refdef.switchRenderPass ) {
+		vk_end_render_pass();
+		vk_begin_main_render_pass();
+		backEnd.screenMapDone = qtrue;
+	}
+#endif
 
 	//TODO Maybe check for rdf_noworld stuff but q3mme has full 3d ui
 	backEnd.doneSurfaces = qtrue; // for bloom

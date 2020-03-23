@@ -514,6 +514,9 @@ typedef struct {
 	int			numLitSurfs;
 	struct litSurf_s	*litSurfs;
 #endif
+#ifdef USE_VULKAN
+	qboolean	switchRenderPass;
+#endif
 } trRefdef_t;
 
 
@@ -1104,6 +1107,8 @@ typedef struct {
 
 } backEndState_t;
 
+typedef struct drawSurfsCommand_s drawSurfsCommand_t;
+
 /*
 ** trGlobals_t 
 **
@@ -1206,10 +1211,15 @@ typedef struct {
 	float					fogTable[FOG_TABLE_SIZE];
 
 	qboolean				mapLoading;
-	qboolean				needScreenMap;
+
+	int						needScreenMap;
+#ifdef USE_VULKAN
+	drawSurfsCommand_t		*drawSurfCmd;
+	int						numDrawSurfCmds;
+	int						lastRenderCommand;
+#endif
 
 	qboolean				vertexLightingAllowed;
-
 } trGlobals_t;
 
 extern backEndState_t	backEnd;
@@ -1821,7 +1831,7 @@ typedef struct {
 	float	s2, t2;
 } stretchPicCommand_t;
 
-typedef struct {
+typedef struct drawSurfsCommand_s {
 	int		commandId;
 	trRefdef_t	refdef;
 	viewParms_t	viewParms;

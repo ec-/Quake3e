@@ -157,7 +157,10 @@ R_GetCommandBuffer
 returns NULL if there is not enough space for important commands
 =============
 */
-static void *R_GetCommandBuffer( int bytes ) {
+void *R_GetCommandBuffer( int bytes ) {
+#ifdef USE_VULKAN
+	tr.lastRenderCommand = RC_END_OF_LIST;
+#endif
 	return R_GetCommandBufferReserved( bytes, PAD( sizeof( swapBuffersCommand_t ), sizeof(void *) ) );
 }
 
@@ -167,7 +170,7 @@ static void *R_GetCommandBuffer( int bytes ) {
 R_AddDrawSurfCmd
 =============
 */
-void	R_AddDrawSurfCmd( drawSurf_t *drawSurfs, int numDrawSurfs ) {
+void R_AddDrawSurfCmd( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	drawSurfsCommand_t	*cmd;
 
 	cmd = R_GetCommandBuffer( sizeof( *cmd ) );
@@ -181,6 +184,13 @@ void	R_AddDrawSurfCmd( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 
 	cmd->refdef = tr.refdef;
 	cmd->viewParms = tr.viewParms;
+
+#ifdef USE_VULKAN
+	tr.numDrawSurfCmds++;
+	if ( tr.drawSurfCmd == NULL ) {
+		tr.drawSurfCmd = cmd;
+	}
+#endif
 }
 
 
@@ -330,6 +340,10 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 		return;
 
 	cmd->commandId = RC_DRAW_BUFFER;
+
+#ifdef USE_VULKAN
+	tr.lastRenderCommand = RC_DRAW_BUFFER;
+#endif
 
 	if ( glConfig.stereoEnabled ) {
 		if ( stereoFrame == STEREO_LEFT ) {
