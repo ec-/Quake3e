@@ -24,23 +24,25 @@ float CorrectAlpha(float threshold, float alpha, vec2 tc)
 }
 
 void main() {
-	out_color = frag_color * texture(texture0, frag_tex_coord);
+	vec4 base = texture(texture0, frag_tex_coord) * frag_color;
 
 	if (alpha_to_coverage != 0) {
 		if (alpha_test_func == 1) {
-			out_color.a = CorrectAlpha(alpha_test_value, out_color.a, frag_tex_coord);
+			base.a = CorrectAlpha(alpha_test_value, base.a, frag_tex_coord);
 		} else if (alpha_test_func == 2) {
-			out_color.a = CorrectAlpha(alpha_test_value, 1.0 - out_color.a, frag_tex_coord);
+			base.a = CorrectAlpha(alpha_test_value, 1.0 - base.a, frag_tex_coord);
 		} else if (alpha_test_func == 3) {
-			out_color.a = CorrectAlpha(alpha_test_value, out_color.a, frag_tex_coord);
+			base.a = CorrectAlpha(alpha_test_value, base.a, frag_tex_coord);
 		}
 	} else
 	// specialization: alpha-test function
 	if (alpha_test_func == 1) {
-		if (out_color.a == alpha_test_value) discard;
+		if (base.a == alpha_test_value) discard;
 	} else if (alpha_test_func == 2) {
-		if (out_color.a >= alpha_test_value) discard;
+		if (base.a >= alpha_test_value) discard;
 	} else if (alpha_test_func == 3) {
-		if (out_color.a < alpha_test_value) discard;
+		if (base.a < alpha_test_value) discard;
 	}
+
+	out_color = base;
 }

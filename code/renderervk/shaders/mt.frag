@@ -29,33 +29,37 @@ float CorrectAlpha(float threshold, float alpha, vec2 tc)
 }
 
 void main() {
-	vec4 color_a = frag_color * texture(texture0, frag_tex_coord0);
-	vec4 color_b = texture(texture1, frag_tex_coord1);
+	vec4 base;
 
 	if ( tex_mode == 1 ) { // add
-		out_color = vec4(color_a.rgb + color_b.rgb, color_a.a * color_b.a);
+		vec4 color_a = texture(texture0, frag_tex_coord0) * frag_color;
+		vec4 color_b = texture(texture1, frag_tex_coord1);
+		base = vec4(color_a.rgb + color_b.rgb, color_a.a * color_b.a);
 	} else if ( tex_mode == 2 )	{ // add2
-		color_b *= frag_color;
-		out_color = vec4(color_a.rgb + color_b.rgb, color_a.a * color_b.a);
+		vec4 color_a = texture(texture0, frag_tex_coord0) * frag_color;
+		vec4 color_b = texture(texture1, frag_tex_coord1) * frag_color;
+		base = vec4(color_a.rgb + color_b.rgb, color_a.a * color_b.a);
 	}else { // modulate
-		out_color = color_a * color_b;
+		base = texture(texture0, frag_tex_coord0) * texture(texture1, frag_tex_coord1) * frag_color;
 	}
 
 	if (alpha_to_coverage != 0) {
 		if (alpha_test_func == 1) {
-			out_color.a = CorrectAlpha(alpha_test_value, out_color.a, frag_tex_coord0);
+			base.a = CorrectAlpha(alpha_test_value, base.a, frag_tex_coord0);
 		} else if (alpha_test_func == 2) {
-			out_color.a = CorrectAlpha(alpha_test_value, 1.0 - out_color.a, frag_tex_coord0);
+			base.a = CorrectAlpha(alpha_test_value, 1.0 - base.a, frag_tex_coord0);
 		} else if (alpha_test_func == 3) {
-			out_color.a = CorrectAlpha(alpha_test_value, out_color.a, frag_tex_coord0);
+			base.a = CorrectAlpha(alpha_test_value, base.a, frag_tex_coord0);
 		}
 	} else
 	// specialization: alpha-test function
 	if (alpha_test_func == 1) {
-		if (out_color.a == alpha_test_value) discard;
+		if (base.a == alpha_test_value) discard;
 	} else if (alpha_test_func == 2) {
-		if (out_color.a >= alpha_test_value) discard;
+		if (base.a >= alpha_test_value) discard;
 	} else if (alpha_test_func == 3) {
-		if (out_color.a < alpha_test_value) discard;
+		if (base.a < alpha_test_value) discard;
 	}
+
+	out_color = base;
 }

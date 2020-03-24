@@ -27,10 +27,10 @@ void main() {
 
 	if ( gamma != 1.0 )
 	{
-		out_color.rgb = pow(base, vec3(gamma)) * obScale;
+		out_color = vec4(pow(base, vec3(gamma)) * obScale, 1);
 	}
 	else
 	{
-		out_color.rgb = base * obScale;
+		out_color = vec4(base * obScale, 1);
 	}
 }
