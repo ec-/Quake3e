@@ -420,7 +420,7 @@
 				Name="Shaders"
 				>
 				<File
-					RelativePath="..\..\renderervk\shaders\spirv\color_clip_vert.c"
+					RelativePath="..\..\renderervk\shaders\spirv\color_vert.c"
 					>
 				</File>
 				<File
@@ -460,11 +460,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\renderervk\shaders\spirv\light_clip_fog_vert.c"
+					RelativePath="..\..\renderervk\shaders\spirv\light_fog_vert.c"
 					>
 				</File>
 				<File
-					RelativePath="..\..\renderervk\shaders\spirv\light_clip_vert.c"
+					RelativePath="..\..\renderervk\shaders\spirv\light_vert.c"
 					>
 				</File>
 				<File
@@ -476,11 +476,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\renderervk\shaders\spirv\mt_clip_fog_vert.c"
+					RelativePath="..\..\renderervk\shaders\spirv\mt_fog_vert.c"
 					>
 				</File>
 				<File
-					RelativePath="..\..\renderervk\shaders\spirv\mt_clip_vert.c"
+					RelativePath="..\..\renderervk\shaders\spirv\mt_vert.c"
 					>
 				</File>
 				<File
@@ -492,11 +492,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\renderervk\shaders\spirv\st_clip_fog_vert.c"
+					RelativePath="..\..\renderervk\shaders\spirv\st_fog_vert.c"
 					>
 				</File>
 				<File
-					RelativePath="..\..\renderervk\shaders\spirv\st_clip_vert.c"
+					RelativePath="..\..\renderervk\shaders\spirv\st_vert.c"
 					>
 				</File>
 				<File

@@ -374,16 +374,16 @@ typedef struct {
 	// Shader modules.
 	//
 	struct {
-		VkShaderModule st_clip_vs[2];
+		VkShaderModule st_vs[2];
 		VkShaderModule st_enviro_vs[2];
-		VkShaderModule mt_clip_vs[2];
+		VkShaderModule mt_vs[2];
 
 		VkShaderModule st_fs[2];
 		VkShaderModule st_df_fs;
 		VkShaderModule mt_fs[2];
 
 		VkShaderModule color_fs;
-		VkShaderModule color_clip_vs;
+		VkShaderModule color_vs;
 
 		VkShaderModule gamma_fs;
 		VkShaderModule gamma_vs;

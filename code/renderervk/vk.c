@@ -1805,10 +1805,10 @@ qboolean vk_alloc_vbo( const byte *vbo_data, int vbo_size )
 
 static void vk_create_shader_modules( void )
 {
-	extern const unsigned char st_clip_vert_spv[];
-	extern const int st_clip_vert_spv_size;
-	extern const unsigned char st_clip_fog_vert_spv[];
-	extern const int st_clip_fog_vert_spv_size;
+	extern const unsigned char st_vert_spv[];
+	extern const int st_vert_spv_size;
+	extern const unsigned char st_fog_vert_spv[];
+	extern const int st_fog_vert_spv_size;
 
 	extern const unsigned char st_enviro_vert_spv[];
 	extern const int st_enviro_vert_spv_size;
@@ -1824,13 +1824,13 @@ static void vk_create_shader_modules( void )
 
 	extern const unsigned char color_frag_spv[];
 	extern const int color_frag_spv_size;
-	extern const unsigned char color_clip_vert_spv[];
-	extern const int color_clip_vert_spv_size;
+	extern const unsigned char color_vert_spv[];
+	extern const int color_vert_spv_size;
 
-	extern const unsigned char mt_clip_vert_spv[];
-	extern const int mt_clip_vert_spv_size;
-	extern const unsigned char mt_clip_fog_vert_spv[];
-	extern const int mt_clip_fog_vert_spv_size;
+	extern const unsigned char mt_vert_spv[];
+	extern const int mt_vert_spv_size;
+	extern const unsigned char mt_fog_vert_spv[];
+	extern const int mt_fog_vert_spv_size;
 
 	extern const unsigned char mt_frag_spv[];
 	extern const int mt_frag_spv_size;
@@ -1847,10 +1847,10 @@ static void vk_create_shader_modules( void )
 	extern const unsigned char dot_frag_spv[];
 	extern const int dot_frag_spv_size;
 
-	extern const unsigned char light_clip_vert_spv[];
-	extern const int light_clip_vert_spv_size;
-	extern const unsigned char light_clip_fog_vert_spv[];
-	extern const int light_clip_fog_vert_spv_size;
+	extern const unsigned char light_vert_spv[];
+	extern const int light_vert_spv_size;
+	extern const unsigned char light_fog_vert_spv[];
+	extern const int light_fog_vert_spv_size;
 
 	extern const unsigned char light_frag_spv[];
 	extern const int light_frag_spv_size;
@@ -1867,21 +1867,21 @@ static void vk_create_shader_modules( void )
 	extern const unsigned char gamma_vert_spv[];
 	extern const int gamma_vert_spv_size;
 
-	vk.modules.st_clip_vs[0] = create_shader_module(st_clip_vert_spv, st_clip_vert_spv_size);
-	vk.modules.st_clip_vs[1] = create_shader_module(st_clip_fog_vert_spv, st_clip_fog_vert_spv_size);
+	vk.modules.st_vs[0] = create_shader_module(st_vert_spv, st_vert_spv_size);
+	vk.modules.st_vs[1] = create_shader_module(st_fog_vert_spv, st_fog_vert_spv_size);
 
 	vk.modules.st_enviro_vs[0] = create_shader_module(st_enviro_vert_spv, st_enviro_vert_spv_size);
 	vk.modules.st_enviro_vs[1] = create_shader_module(st_enviro_fog_vert_spv, st_enviro_fog_vert_spv_size);
 
-	vk.modules.mt_clip_vs[0] = create_shader_module(mt_clip_vert_spv, mt_clip_vert_spv_size);
-	vk.modules.mt_clip_vs[1] = create_shader_module(mt_clip_fog_vert_spv, mt_clip_fog_vert_spv_size);
+	vk.modules.mt_vs[0] = create_shader_module(mt_vert_spv, mt_vert_spv_size);
+	vk.modules.mt_vs[1] = create_shader_module(mt_fog_vert_spv, mt_fog_vert_spv_size);
 
 	vk.modules.st_fs[0] = create_shader_module(st_frag_spv, st_frag_spv_size);
 	vk.modules.st_fs[1] = create_shader_module(st_fog_frag_spv, st_fog_frag_spv_size);
 	vk.modules.st_df_fs = create_shader_module(st_df_frag_spv, st_df_frag_spv_size);
 
 	vk.modules.color_fs = create_shader_module(color_frag_spv, color_frag_spv_size);
-	vk.modules.color_clip_vs = create_shader_module(color_clip_vert_spv, color_clip_vert_spv_size);
+	vk.modules.color_vs = create_shader_module(color_vert_spv, color_vert_spv_size);
 
 	vk.modules.mt_fs[0] = create_shader_module(mt_frag_spv, mt_frag_spv_size);
 	vk.modules.mt_fs[1] = create_shader_module(mt_fog_frag_spv, mt_fog_frag_spv_size);
@@ -1892,8 +1892,8 @@ static void vk_create_shader_modules( void )
 	vk.modules.dot_vs = create_shader_module(dot_vert_spv, dot_vert_spv_size);
 	vk.modules.dot_fs = create_shader_module(dot_frag_spv, dot_frag_spv_size);
 
-	vk.modules.light.vs_clip[0] = create_shader_module(light_clip_vert_spv, light_clip_vert_spv_size);
-	vk.modules.light.vs_clip[1] = create_shader_module(light_clip_fog_vert_spv, light_clip_fog_vert_spv_size);
+	vk.modules.light.vs_clip[0] = create_shader_module(light_vert_spv, light_vert_spv_size);
+	vk.modules.light.vs_clip[1] = create_shader_module(light_fog_vert_spv, light_fog_vert_spv_size);
 
 	vk.modules.light.fs[0] = create_shader_module(light_frag_spv, light_frag_spv_size);
 	vk.modules.light.fs[1] = create_shader_module(light_fog_frag_spv, light_fog_frag_spv_size);
@@ -3364,8 +3364,8 @@ void vk_shutdown( void )
 		qvkDestroyFence( vk.device, vk.tess[i].rendering_finished_fence, NULL );
 	}
 	
-	qvkDestroyShaderModule(vk.device, vk.modules.st_clip_vs[0], NULL);
-	qvkDestroyShaderModule(vk.device, vk.modules.st_clip_vs[1], NULL);
+	qvkDestroyShaderModule(vk.device, vk.modules.st_vs[0], NULL);
+	qvkDestroyShaderModule(vk.device, vk.modules.st_vs[1], NULL);
 
 	qvkDestroyShaderModule(vk.device, vk.modules.st_enviro_vs[0], NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.st_enviro_vs[1], NULL);
@@ -3376,10 +3376,10 @@ void vk_shutdown( void )
 	qvkDestroyShaderModule(vk.device, vk.modules.st_df_fs, NULL);
 
 	qvkDestroyShaderModule(vk.device, vk.modules.color_fs, NULL);
-	qvkDestroyShaderModule(vk.device, vk.modules.color_clip_vs, NULL);
+	qvkDestroyShaderModule(vk.device, vk.modules.color_vs, NULL);
 
-	qvkDestroyShaderModule(vk.device, vk.modules.mt_clip_vs[0], NULL);
-	qvkDestroyShaderModule(vk.device, vk.modules.mt_clip_vs[1], NULL);
+	qvkDestroyShaderModule(vk.device, vk.modules.mt_vs[0], NULL);
+	qvkDestroyShaderModule(vk.device, vk.modules.mt_vs[1], NULL);
 
 	qvkDestroyShaderModule(vk.device, vk.modules.mt_fs[0], NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.mt_fs[1], NULL);
@@ -3882,12 +3882,12 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 
 	switch ( def->shader_type ) {
 		case TYPE_SIGNLE_TEXTURE:
-			vs_module = &vk.modules.st_clip_vs[0];
+			vs_module = &vk.modules.st_vs[0];
 			fs_module = &vk.modules.st_fs[0];
 			break;
 		case TYPE_SIGNLE_TEXTURE_DF:
 			state_bits |= GLS_DEPTHMASK_TRUE;
-			vs_module = &vk.modules.st_clip_vs[0];
+			vs_module = &vk.modules.st_vs[0];
 			fs_module = &vk.modules.st_df_fs;
 			break;
 		case TYPE_SIGNLE_TEXTURE_ENVIRO:
@@ -3905,13 +3905,13 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_MULTI_TEXTURE_MUL:
 		case TYPE_MULTI_TEXTURE_ADD:
 		case TYPE_MULTI_TEXTURE_ADD2:
-			vs_module = &vk.modules.mt_clip_vs[0];
+			vs_module = &vk.modules.mt_vs[0];
 			fs_module = &vk.modules.mt_fs[0];
 			break;
 		case TYPE_COLOR_WHITE:
 		case TYPE_COLOR_GREEN:
 		case TYPE_COLOR_RED:
-			vs_module = &vk.modules.color_clip_vs;
+			vs_module = &vk.modules.color_vs;
 			fs_module = &vk.modules.color_fs;
 			break;
 		case TYPE_FOG_ONLY:

@@ -62,7 +62,7 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG"
 				Culture="1033"
-				ResourceOutputFileName="..\winquake.res"
+				ResourceOutputFileName="$(IntDir)\winquake.res"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -151,7 +151,7 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG"
 				Culture="1033"
-				ResourceOutputFileName="..\winquake.res"
+				ResourceOutputFileName="$(IntDir)\winquake.res"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
