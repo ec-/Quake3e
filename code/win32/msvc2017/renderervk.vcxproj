@@ -153,6 +153,10 @@
     <ClCompile Include="..\..\renderervk\shaders\spirv\light_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\light_fog_frag.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\light_frag.c" />
+    <ClCompile Include="..\..\renderervk\shaders\spirv\mt2_fog_frag.c" />
+    <ClCompile Include="..\..\renderervk\shaders\spirv\mt2_fog_vert.c" />
+    <ClCompile Include="..\..\renderervk\shaders\spirv\mt2_frag.c" />
+    <ClCompile Include="..\..\renderervk\shaders\spirv\mt2_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\mt_fog_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\mt_vert.c" />
     <ClCompile Include="..\..\renderervk\shaders\spirv\mt_fog_frag.c" />

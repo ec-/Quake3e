@@ -1597,7 +1597,7 @@ void vk_init_buffers( void )
 
 void vk_bind_fog_image( void )
 {
-	vk_update_descriptor( 3, tr.fogImage->descriptor );
+	vk_update_descriptor( 4, tr.fogImage->descriptor );
 }
 
 
@@ -1832,10 +1832,20 @@ static void vk_create_shader_modules( void )
 	extern const unsigned char mt_fog_vert_spv[];
 	extern const int mt_fog_vert_spv_size;
 
+	extern const unsigned char mt2_vert_spv[];
+	extern const int mt2_vert_spv_size;
+	extern const unsigned char mt2_fog_vert_spv[];
+	extern const int mt2_fog_vert_spv_size;
+
 	extern const unsigned char mt_frag_spv[];
 	extern const int mt_frag_spv_size;
 	extern const unsigned char mt_fog_frag_spv[];
 	extern const int mt_fog_frag_spv_size;
+
+	extern const unsigned char mt2_frag_spv[];
+	extern const int mt2_frag_spv_size;
+	extern const unsigned char mt2_fog_frag_spv[];
+	extern const int mt2_fog_frag_spv_size;
 
 	extern const unsigned char fog_vert_spv[];
 	extern const int fog_vert_spv_size;
@@ -1876,6 +1886,9 @@ static void vk_create_shader_modules( void )
 	vk.modules.mt_vs[0] = create_shader_module(mt_vert_spv, mt_vert_spv_size);
 	vk.modules.mt_vs[1] = create_shader_module(mt_fog_vert_spv, mt_fog_vert_spv_size);
 
+	vk.modules.mt2_vs[0] = create_shader_module(mt2_vert_spv, mt2_vert_spv_size);
+	vk.modules.mt2_vs[1] = create_shader_module(mt2_fog_vert_spv, mt2_fog_vert_spv_size);
+
 	vk.modules.st_fs[0] = create_shader_module(st_frag_spv, st_frag_spv_size);
 	vk.modules.st_fs[1] = create_shader_module(st_fog_frag_spv, st_fog_frag_spv_size);
 	vk.modules.st_df_fs = create_shader_module(st_df_frag_spv, st_df_frag_spv_size);
@@ -1885,6 +1898,9 @@ static void vk_create_shader_modules( void )
 
 	vk.modules.mt_fs[0] = create_shader_module(mt_frag_spv, mt_frag_spv_size);
 	vk.modules.mt_fs[1] = create_shader_module(mt_fog_frag_spv, mt_fog_frag_spv_size);
+
+	vk.modules.mt2_fs[0] = create_shader_module(mt2_frag_spv, mt2_frag_spv_size);
+	vk.modules.mt2_fs[1] = create_shader_module(mt2_fog_frag_spv, mt2_fog_frag_spv_size);
 
 	vk.modules.fog_vs = create_shader_module(fog_vert_spv, fog_vert_spv_size);
 	vk.modules.fog_fs = create_shader_module(fog_frag_spv, fog_frag_spv_size);
@@ -3112,7 +3128,7 @@ void vk_initialize( void )
 	// Pipeline layouts.
 	//
 	{
-		VkDescriptorSetLayout set_layouts[5];
+		VkDescriptorSetLayout set_layouts[6];
 		VkPipelineLayoutCreateInfo desc;
 		VkPushConstantRange push_range;
 
@@ -3125,13 +3141,14 @@ void vk_initialize( void )
 		set_layouts[0] = vk.set_layout_uniform; // fog/dlight parameters
 		set_layouts[1] = vk.set_layout_sampler; // diffuse
 		set_layouts[2] = vk.set_layout_sampler; // lightmap
-		set_layouts[3] = vk.set_layout_sampler; // fog 
-		set_layouts[4] = vk.set_layout_storage; // storage
+		set_layouts[3] = vk.set_layout_sampler; // blend
+		set_layouts[4] = vk.set_layout_sampler; // fog 
+		set_layouts[5] = vk.set_layout_storage; // storage
 
 		desc.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		desc.pNext = NULL;
 		desc.flags = 0;
-		desc.setLayoutCount = 5;
+		desc.setLayoutCount = 6;
 		desc.pSetLayouts = set_layouts;
 		desc.pushConstantRangeCount = 1;
 		desc.pPushConstantRanges = &push_range;
@@ -3383,6 +3400,12 @@ void vk_shutdown( void )
 
 	qvkDestroyShaderModule(vk.device, vk.modules.mt_fs[0], NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.mt_fs[1], NULL);
+
+	qvkDestroyShaderModule(vk.device, vk.modules.mt2_vs[0], NULL);
+	qvkDestroyShaderModule(vk.device, vk.modules.mt2_vs[1], NULL);
+
+	qvkDestroyShaderModule(vk.device, vk.modules.mt2_fs[0], NULL);
+	qvkDestroyShaderModule(vk.device, vk.modules.mt2_fs[1], NULL);
 
 	qvkDestroyShaderModule(vk.device, vk.modules.fog_vs, NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.fog_fs, NULL);
@@ -3904,9 +3927,15 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 			break;
 		case TYPE_MULTI_TEXTURE_MUL:
 		case TYPE_MULTI_TEXTURE_ADD:
-		case TYPE_MULTI_TEXTURE_ADD2:
+		case TYPE_MULTI_TEXTURE_ADD_IDENTITY:
 			vs_module = &vk.modules.mt_vs[0];
 			fs_module = &vk.modules.mt_fs[0];
+			break;
+		case TYPE_MULTI_TEXTURE_MUL2:
+		case TYPE_MULTI_TEXTURE_ADD2:
+		case TYPE_MULTI_TEXTURE_ADD2_IDENTITY:
+			vs_module = &vk.modules.mt2_vs[0];
+			fs_module = &vk.modules.mt2_fs[0];
 			break;
 		case TYPE_COLOR_WHITE:
 		case TYPE_COLOR_GREEN:
@@ -4000,10 +4029,13 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 	// multutexture mode
 	switch ( def->shader_type ) {
 		case TYPE_MULTI_TEXTURE_MUL:
+		case TYPE_MULTI_TEXTURE_MUL2:
 			frag_spec_data[6].i = 0; break;
 		case TYPE_MULTI_TEXTURE_ADD:
-			frag_spec_data[6].i = 1; break;
 		case TYPE_MULTI_TEXTURE_ADD2:
+			frag_spec_data[6].i = 1; break;
+		case TYPE_MULTI_TEXTURE_ADD_IDENTITY:
+		case TYPE_MULTI_TEXTURE_ADD2_IDENTITY:
 			frag_spec_data[6].i = 2; break;
 		default: 
 			break;
@@ -4083,19 +4115,19 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_SIGNLE_TEXTURE_ENVIRO:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_bind( 1, sizeof( color4ub_t ) );				// color array
-			push_bind( 4, sizeof( vec4_t ) );					// normals
+			push_bind( 5, sizeof( vec4_t ) );					// normals
 			push_attr( 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT );
 			push_attr( 1, 1, VK_FORMAT_R8G8B8A8_UNORM );
-			push_attr( 4, 4, VK_FORMAT_R32G32B32A32_SFLOAT );
+			push_attr( 5, 5, VK_FORMAT_R32G32B32A32_SFLOAT );
 				break;
 		case TYPE_SIGNLE_TEXTURE_LIGHTING:
 		case TYPE_SIGNLE_TEXTURE_LIGHTING1:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_bind( 2, sizeof( vec2_t ) );					// st0 array
-			push_bind( 4, sizeof( vec4_t ) );					// normals array
+			push_bind( 5, sizeof( vec4_t ) );					// normals array
 			push_attr( 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT );
 			push_attr( 2, 2, VK_FORMAT_R32G32_SFLOAT );
-			push_attr( 4, 4, VK_FORMAT_R32G32B32A32_SFLOAT );
+			push_attr( 5, 5, VK_FORMAT_R32G32B32A32_SFLOAT );
 			break;
 		case TYPE_COLOR_WHITE:
 		case TYPE_COLOR_GREEN:
@@ -4103,7 +4135,9 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_attr( 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT );
 			break;
-		default: // multitexture variations
+		case TYPE_MULTI_TEXTURE_ADD:
+		case TYPE_MULTI_TEXTURE_ADD_IDENTITY:
+		case TYPE_MULTI_TEXTURE_MUL:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_bind( 1, sizeof( color4ub_t ) );				// color array
 			push_bind( 2, sizeof( vec2_t ) );					// st0 array
@@ -4112,6 +4146,23 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 			push_attr( 1, 1, VK_FORMAT_R8G8B8A8_UNORM );
 			push_attr( 2, 2, VK_FORMAT_R32G32_SFLOAT );
 			push_attr( 3, 3, VK_FORMAT_R32G32_SFLOAT );
+			break;
+		case TYPE_MULTI_TEXTURE_ADD2:
+		case TYPE_MULTI_TEXTURE_ADD2_IDENTITY:
+		case TYPE_MULTI_TEXTURE_MUL2:
+			push_bind( 0, sizeof( vec4_t ) );					// xyz array
+			push_bind( 1, sizeof( color4ub_t ) );				// color array
+			push_bind( 2, sizeof( vec2_t ) );					// st0 array
+			push_bind( 3, sizeof( vec2_t ) );					// st1 array
+			push_bind( 4, sizeof( vec2_t ) );					// st2 array
+			push_attr( 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT );
+			push_attr( 1, 1, VK_FORMAT_R8G8B8A8_UNORM );
+			push_attr( 2, 2, VK_FORMAT_R32G32_SFLOAT );
+			push_attr( 3, 3, VK_FORMAT_R32G32_SFLOAT );
+			push_attr( 4, 4, VK_FORMAT_R32G32_SFLOAT );
+			break;
+		default:
+			ri.Error( ERR_DROP, "%s: invalid shader type - %i", __func__, def->shader_type );
 			break;
 	}
 	vertex_input_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -4758,7 +4809,7 @@ void vk_update_mvp( const float *m ) {
 
 
 //static VkDeviceSize shade_offs[5];
-static VkBuffer shade_bufs[5];
+static VkBuffer shade_bufs[6];
 static int bind_base;
 static int bind_count;
 
@@ -4827,7 +4878,7 @@ void vk_bind_geometry_ext( int flags )
 
 #ifdef USE_VBO
 	if ( tess.vboIndex ) {
-		shade_bufs[0] = shade_bufs[1] = shade_bufs[2] = shade_bufs[3] = shade_bufs[4] = vk.vbo.vertex_buffer;
+		shade_bufs[0] = shade_bufs[1] = shade_bufs[2] = shade_bufs[3] = shade_bufs[4] = shade_bufs[5] = vk.vbo.vertex_buffer;
 
 		//if ( flags & TESS_IDX ) {  // index
 			//qvkCmdBindIndexBuffer( vk.cmd->command_buffer, vk.vbo.index_buffer, tess.shader->iboOffset, VK_INDEX_TYPE_UINT32 );
@@ -4853,9 +4904,14 @@ void vk_bind_geometry_ext( int flags )
 			vk_bind_index( 3 );
 		}
 
-		if ( flags & TESS_NNN ) {
-			vk.cmd->vbo_offset[4] = tess.shader->normalOffset;
+		if ( flags & TESS_ST2 ) {  // 3
+			vk.cmd->vbo_offset[4] = tess.shader->stages[ tess.vboStage ]->tex_offset[1];
 			vk_bind_index( 4 );
+		}
+
+		if ( flags & TESS_NNN ) {
+			vk.cmd->vbo_offset[5] = tess.shader->normalOffset;
+			vk_bind_index( 5 );
 		}
 
 		qvkCmdBindVertexBuffers( vk.cmd->command_buffer, bind_base, bind_count, shade_bufs, vk.cmd->vbo_offset + bind_base );
@@ -4863,7 +4919,7 @@ void vk_bind_geometry_ext( int flags )
 	} else
 #endif // USE_VBO
 	{
-		shade_bufs[0] = shade_bufs[1] = shade_bufs[2] = shade_bufs[3] = shade_bufs[4] = vk.cmd->vertex_buffer;
+		shade_bufs[0] = shade_bufs[1] = shade_bufs[2] = shade_bufs[3] = shade_bufs[4] = shade_bufs[5] = vk.cmd->vertex_buffer;
 
 		if ( flags & TESS_IDX ) {
 			uint32_t offset = vk_tess_index( tess.numIndexes, tess.indexes );
@@ -4886,8 +4942,12 @@ void vk_bind_geometry_ext( int flags )
 			vk_bind_attr(3, sizeof(tess.svars.texcoords[1][0]), tess.svars.texcoordPtr[1]);
 		}
 
+		if ( flags & TESS_ST2 ) {
+			vk_bind_attr(4, sizeof(tess.svars.texcoords[2][0]), tess.svars.texcoordPtr[2]);
+		}
+
 		if ( flags & TESS_NNN ) {
-			vk_bind_attr(4, sizeof(tess.normal[0]), tess.normal);
+			vk_bind_attr(5, sizeof(tess.normal[0]), tess.normal);
 		}
 
 		qvkCmdBindVertexBuffers( vk.cmd->command_buffer, bind_base, bind_count, shade_bufs, vk.cmd->buf_offset + bind_base );
@@ -4932,7 +4992,7 @@ void vk_bind_descriptor_sets( void )
 	if ( start == 0 ) { // uniform offset
 		offsets[ offset_count++ ] = vk.cmd->descriptor_set.offset[ 0 ];
 	}
-	if ( end >= 4 ) { // storage offset
+	if ( end >= 5 ) { // storage offset
 		offsets[ offset_count++ ] = vk.cmd->descriptor_set.offset[ 1 ];
 	}
 
@@ -5207,7 +5267,10 @@ void vk_begin_frame( void )
 	vk.cmd->descriptor_set.start = ~0U;
 	vk.cmd->descriptor_set.end = 0;
 
+	vk_update_descriptor( 1, tr.whiteImage->descriptor ); 
 	vk_update_descriptor( 2, tr.whiteImage->descriptor );
+	vk_update_descriptor( 3, tr.whiteImage->descriptor );
+	vk_update_descriptor( 4, tr.fogImage->descriptor );
 
 	// other stats
 	vk.stats.push_size = 0;

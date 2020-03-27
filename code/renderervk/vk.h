@@ -39,7 +39,10 @@ typedef enum {
 	TYPE_SIGNLE_TEXTURE_LIGHTING1,
 	TYPE_MULTI_TEXTURE_MUL,
 	TYPE_MULTI_TEXTURE_ADD,
+	TYPE_MULTI_TEXTURE_ADD_IDENTITY,
+	TYPE_MULTI_TEXTURE_MUL2,
 	TYPE_MULTI_TEXTURE_ADD2,
+	TYPE_MULTI_TEXTURE_ADD2_IDENTITY,
 	TYPE_COLOR_WHITE,
 	TYPE_COLOR_GREEN,
 	TYPE_COLOR_RED,
@@ -122,9 +125,10 @@ typedef struct vkUniform_s {
 #define TESS_RGBA  (4)
 #define TESS_ST0   (8)
 #define TESS_ST1   (16)
-#define TESS_NNN   (32)
-#define TESS_VPOS  (64) // uniform with eyePos
-#define TESS_ENV   (128) // mark shader stage with environment mapping
+#define TESS_ST2   (32)
+#define TESS_NNN   (64)
+#define TESS_VPOS  (128) // uniform with eyePos
+#define TESS_ENV   (256) // mark shader stage with environment mapping
 
 //
 // Initialization.
@@ -210,16 +214,16 @@ typedef struct vk_tess_s {
 
 	VkDescriptorSet uniform_descriptor;
 	uint32_t		uniform_read_offset;
-	VkDeviceSize	buf_offset[5];
-	VkDeviceSize	vbo_offset[5];
+	VkDeviceSize	buf_offset[6];
+	VkDeviceSize	vbo_offset[6];
 
 	VkBuffer		curr_index_buffer;
 	uint32_t		curr_index_offset;
 
 	struct {
 		uint32_t		start, end;
-		VkDescriptorSet	current[5];
-		uint32_t		offset[2]; // 0 and 4
+		VkDescriptorSet	current[6];
+		uint32_t		offset[2]; // 0 (uniform) and 5 (storage)
 	} descriptor_set;
 
 	Vk_Depth_Range depth_range;
@@ -377,10 +381,12 @@ typedef struct {
 		VkShaderModule st_vs[2];
 		VkShaderModule st_enviro_vs[2];
 		VkShaderModule mt_vs[2];
+		VkShaderModule mt2_vs[2];
 
 		VkShaderModule st_fs[2];
 		VkShaderModule st_df_fs;
 		VkShaderModule mt_fs[2];
+		VkShaderModule mt2_fs[2];
 
 		VkShaderModule color_fs;
 		VkShaderModule color_vs;

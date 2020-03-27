@@ -1946,7 +1946,7 @@ typedef struct {
 } collapse_t;
 
 static collapse_t	collapse[] = {
-	{ 0, GLS_DSTBLEND_SRC_COLOR | GLS_SRCBLEND_ZERO,	
+	{ 0, GLS_DSTBLEND_SRC_COLOR | GLS_SRCBLEND_ZERO,
 		GL_MODULATE, 0 },
 
 	{ 0, GLS_DSTBLEND_ZERO | GLS_SRCBLEND_DST_COLOR,
@@ -1985,24 +1985,24 @@ Attempt to combine two stages into a single multitexture stage
 FIXME: I think modulated add + modulated add collapses incorrectly
 =================
 */
-static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, int num_stages ) {
+static int CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, int num_stages ) {
 	int abits, bbits;
-	int i;
+	int i, mtEnv;
 	textureBundle_t tmpBundle;
 
 #ifndef USE_VULKAN
 	if ( !qglActiveTextureARB ) {
-		return qfalse;
+		return 0;
 	}
 #endif
 
 	// make sure both stages are active
 	if ( !st0->active || !st1->active ) {
-		return qfalse;
+		return 0;
 	}
 
 	if ( st0->depthFragment ) {
-		return qfalse;
+		return 0;
 	}
 
 #ifndef USE_VULKAN
@@ -2010,7 +2010,7 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 	if ( glConfig.driverType == GLDRV_VOODOO ) {
 		if ( st0->bundle[0].image[0]->TMU ==
 			 st1->bundle[0].image[0]->TMU ) {
-			return qfalse;
+			return 0;
 		}
 	}
 #endif
@@ -2021,7 +2021,7 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 	// make sure that both stages have identical state other than blend modes
 	if ( ( abits & ~( GLS_BLEND_BITS | GLS_DEPTHMASK_TRUE ) ) !=
 		( bbits & ~( GLS_BLEND_BITS | GLS_DEPTHMASK_TRUE ) ) ) {
-		return qfalse;
+		return 0;
 	}
 
 	abits &= GLS_BLEND_BITS;
@@ -2029,41 +2029,48 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 
 	// search for a valid multitexture blend function
 	for ( i = 0; collapse[i].blendA != -1 ; i++ ) {
-		if ( abits == collapse[i].blendA
-			&& bbits == collapse[i].blendB ) {
+		if ( abits == collapse[i].blendA && bbits == collapse[i].blendB ) {
 			break;
 		}
 	}
 
 	// nothing found
 	if ( collapse[i].blendA == -1 ) {
-		return qfalse;
+		return 0;
 	}
 
-#ifndef USE_VULKAN
+	mtEnv = collapse[i].multitextureEnv;
+
+#ifdef USE_VULKAN
+	if ( mtEnv == GL_ADD && st0->rgbGen != CGEN_IDENTITY ) {
+		mtEnv =	GL_ADD_2;
+	}
+
+	if ( st0->mtEnv && st0->mtEnv != mtEnv ) {
+		return 0;
+	}
+#else
 	// GL_ADD is a separate extension
-	if ( collapse[i].multitextureEnv == GL_ADD && !glConfig.textureEnvAddAvailable ) {
-		return qfalse;
+	if ( mtEnv == GL_ADD && !glConfig.textureEnvAddAvailable ) {
+		return 0;
+	}
+
+	// an add collapse can only have identity colors
+	if ( mtEnv == GL_ADD && st0->rgbGen != CGEN_IDENTITY ) {
+		return 0;
 	}
 #endif
 
 	// make sure waveforms have identical parameters
 	if ( ( st0->rgbGen != st1->rgbGen ) || ( st0->alphaGen != st1->alphaGen ) ) {
-		return qfalse;
+		return 0;
 	}
-
-	// an add collapse can only have identity colors
-#ifndef USE_VULKAN
-	if ( collapse[i].multitextureEnv == GL_ADD && st0->rgbGen != CGEN_IDENTITY ) {
-		return qfalse;
-	}
-#endif
 
 	if ( st0->rgbGen == CGEN_WAVEFORM )
 	{
 		if ( memcmp( &st0->rgbWave, &st1->rgbWave, sizeof( stages[0].rgbWave ) ) )
 		{
-			return qfalse;
+			return 0;
 		}
 	}
 
@@ -2071,12 +2078,12 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 	{
 		if ( memcmp( &st0->alphaWave, &st1->alphaWave, sizeof( stages[0].alphaWave ) ) )
 		{
-			return qfalse;
+			return 0;
 		}
 	}
 
 	// make sure that lightmaps are in bundle 1
-	if ( st0->bundle[0].isLightmap || ( st0->bundle[0].tcGen == TCGEN_LIGHTMAP && st1->bundle[0].tcGen != TCGEN_LIGHTMAP ) )
+	if ( !st0->mtEnv && ( st0->bundle[0].isLightmap || ( st0->bundle[0].tcGen == TCGEN_LIGHTMAP && st1->bundle[0].tcGen != TCGEN_LIGHTMAP ) ) )
 	{
 		tmpBundle = st0->bundle[0];
 		st0->bundle[0] = st1->bundle[0];
@@ -2084,14 +2091,29 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 	}
 	else
 	{
-		st0->bundle[1] = st1->bundle[0];
+#ifdef USE_VULKAN
+		if ( st0->mtEnv )
+			st0->bundle[2] = st1->bundle[0]; // add to third bundle
+		else
+#endif
+			st0->bundle[1] = st1->bundle[0];
 	}
 
-	// set the new blend state bits
-	shader.multitextureEnv = qtrue;
-	st0->mtEnv = collapse[i].multitextureEnv;
-	st0->stateBits &= ~GLS_BLEND_BITS;
-	st0->stateBits |= collapse[i].multitextureBlend;
+#ifdef USE_VULKAN
+	if ( st0->mtEnv )
+	{
+		st0->mtEnv2 = mtEnv;
+	}
+	else
+#endif
+	{
+		// set the new blend state bits
+		st0->stateBits &= ~GLS_BLEND_BITS;
+		st0->stateBits |= collapse[i].multitextureBlend;
+
+		st0->mtEnv = mtEnv;
+		shader.multitextureEnv = qtrue;
+	}
 
 	//
 	// move down subsequent shaders
@@ -2103,8 +2125,16 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 
 	Com_Memset( st0 + num_stages - 1, 0, sizeof( stages[0] ) );
 
-	return qtrue;
+#ifdef USE_VULKAN
+	if ( num_stages >= 3 && abits == 0 && !st0->mtEnv2 )
+	{
+		return 1 + CollapseMultitexture( st0, st1, num_stages - 1 );
+	}
+#endif
+
+	return 1;
 }
+
 
 #ifdef USE_PMLIGHT
 /*
@@ -2295,6 +2325,7 @@ static qboolean EqualRGBgen( const shaderStage_t *st1, const shaderStage_t *st2 
 }
 
 
+/*
 static qboolean EqualTCgen( int bundle, const shaderStage_t *st1, const shaderStage_t *st2 )
 {
 	const textureBundle_t *b1, *b2;
@@ -2379,6 +2410,7 @@ static qboolean EqualTCgen( int bundle, const shaderStage_t *st1, const shaderSt
 
 	return qtrue;
 }
+*/
 
 
 /*
@@ -2654,7 +2686,7 @@ static shader_t *FinishShader( void ) {
 	qboolean	vertexLightmap;
 	qboolean	colorBlend;
 	qboolean	depthMask;
-	shaderStage_t *lastMT;
+	//shaderStage_t *lastMT;
 
 	hasLightmapStage = qfalse;
 	vertexLightmap = qfalse;
@@ -2853,9 +2885,7 @@ static shader_t *FinishShader( void ) {
 	// look for multitexture potential
 	//
 	for ( i = 0; i < stage-1; i++ ) {
-		if ( CollapseMultitexture( &stages[i+0], &stages[i+1], stage-i ) ) {
-			stage--;
-		}
+		stage -= CollapseMultitexture( &stages[i+0], &stages[i+1], stage-i );
 	}
 
 	if ( shader.lightmapIndex >= 0 && !hasLightmapStage ) {
@@ -2899,17 +2929,32 @@ static shader_t *FinishShader( void ) {
 			shaderStage_t *pStage = &stages[i];
 			def.state_bits = pStage->stateBits;
 
+			if ( pStage->mtEnv2 ) {
+				switch ( pStage->mtEnv2 ) {
+					case GL_MODULATE:
+						pStage->tessFlags = TESS_RGBA | TESS_ST0 | TESS_ST1 | TESS_ST2;
+						def.shader_type = TYPE_MULTI_TEXTURE_MUL2; break;
+					case GL_ADD:
+						pStage->tessFlags = TESS_RGBA | TESS_ST0 | TESS_ST1 | TESS_ST2;
+						def.shader_type = TYPE_MULTI_TEXTURE_ADD2; break;
+					case GL_ADD_2:
+						pStage->tessFlags = TESS_RGBA | TESS_ST0 | TESS_ST1 | TESS_ST2;
+						def.shader_type = TYPE_MULTI_TEXTURE_ADD2_IDENTITY; break;
+					default:
+						break;
+				}
+			}
+			else
 			switch ( pStage->mtEnv ) {
 				case GL_MODULATE:
 					pStage->tessFlags = TESS_RGBA | TESS_ST0 | TESS_ST1;
 					def.shader_type = TYPE_MULTI_TEXTURE_MUL; break;
 				case GL_ADD:
 					pStage->tessFlags = TESS_RGBA | TESS_ST0 | TESS_ST1;
-					def.shader_type = TYPE_MULTI_TEXTURE_ADD;
-					if ( pStage->rgbGen != CGEN_IDENTITY ) {
-						def.shader_type = TYPE_MULTI_TEXTURE_ADD2;
-					}
-					break;
+					def.shader_type = TYPE_MULTI_TEXTURE_ADD; break;
+				case GL_ADD_2:
+					pStage->tessFlags = TESS_RGBA | TESS_ST0 | TESS_ST1;
+					def.shader_type = TYPE_MULTI_TEXTURE_ADD_IDENTITY; break;
 				default:
 					pStage->tessFlags = TESS_RGBA | TESS_ST0;
 					def.shader_type = TYPE_SIGNLE_TEXTURE; break;
@@ -2970,23 +3015,24 @@ static shader_t *FinishShader( void ) {
 
 #if 1
 	// try to avoid redundant per-stage computations
-	for ( i = 0, lastMT = NULL; i < shader.numUnfoggedPasses - 1; i++ ) {
+	// lastMT = NULL;
+	for ( i = 0; i < shader.numUnfoggedPasses - 1; i++ ) {
 		if ( !stages[ i+1 ].active )
 			break;
 		if ( EqualRGBgen( &stages[ i ], &stages[ i+1 ] ) && EqualACgen( &stages[ i ], &stages[ i+1 ] ) ) {
 			stages[ i+1 ].tessFlags &= ~TESS_RGBA;
 		}
-		if ( EqualTCgen( 0, &stages[ i ], &stages[ i+1 ] ) ) {
-			stages[ i+1 ].tessFlags &= ~TESS_ST0;
-		}
-		if ( stages[ i ].mtEnv ) {
-			lastMT = &stages[ i ];
-		}
-		if ( stages[ i+1 ].mtEnv ) {
-			if ( EqualTCgen( 1, lastMT, &stages[ i+1 ] ) ) {
-				stages[ i+1 ].tessFlags &= ~TESS_ST1;
-			}
-		}
+		//if ( EqualTCgen( 0, &stages[ i ], &stages[ i+1 ] ) ) {
+		//	stages[ i+1 ].tessFlags &= ~TESS_ST0;
+		//}
+		//if ( stages[ i ].mtEnv ) {
+		//	lastMT = &stages[ i ];
+		//}
+		//if ( stages[ i+1 ].mtEnv ) {
+		//	if ( EqualTCgen( 1, lastMT, &stages[ i+1 ] ) ) {
+		//		stages[ i+1 ].tessFlags &= ~TESS_ST1;
+		//	}
+		//}
 	}
 #endif
 

@@ -1,13 +1,29 @@
 #version 450
 
+layout(set = 0, binding = 0) uniform UBO {
+	// VERTEX
+	vec4 eyePos;
+	vec4 lightPos;
+	//  VERTEX-FOG
+	vec4 fogDistanceVector;
+	vec4 fogDepthVector;
+	vec4 fogEyeT;
+	// FRAGMENT
+	vec4 lightColor;
+	vec4 fogColor;
+	// linear dynamic light
+	vec4 lightVector;
+};
 layout(set = 1, binding = 0) uniform sampler2D texture0;
 layout(set = 2, binding = 0) uniform sampler2D texture1;
+layout(set = 3, binding = 0) uniform sampler2D texture2;
+layout(set = 4, binding = 0) uniform sampler2D fog_texture;
 
 layout(location = 0) in vec4 frag_color;
 layout(location = 1) centroid in vec2 frag_tex_coord0;
 layout(location = 2) centroid in vec2 frag_tex_coord1;
-//layout(location = 3) centroid in vec2 frag_tex_coord2;
-//layout(location = 4) in vec2 fog_tex_coord2;
+layout(location = 3) centroid in vec2 frag_tex_coord2;
+layout(location = 4) in vec2 fog_tex_coord;
 
 layout(location = 0) out vec4 out_color;
 
@@ -32,20 +48,24 @@ float CorrectAlpha(float threshold, float alpha, vec2 tc)
 
 void main() {
 	vec4 color_a = texture(texture0, frag_tex_coord0) * frag_color;
+	vec4 fog = texture(fog_texture, fog_tex_coord);
 	vec4 base;
 
 	if ( tex_mode == 1 ) {
 		// add
 		vec4 color_b = texture(texture1, frag_tex_coord1);
-		base = vec4(color_a.rgb + color_b.rgb, color_a.a * color_b.a);
+		vec4 color_c = texture(texture2, frag_tex_coord2);
+		base = vec4(color_a.rgb + color_b.rgb + color_c.rgb, color_a.a * color_b.a * color_c.a);
 	} else if ( tex_mode == 2 )	{
 		// add2
 		vec4 color_b = texture(texture1, frag_tex_coord1) * frag_color;
-		base = vec4(color_a.rgb + color_b.rgb, color_a.a * color_b.a);
+		vec4 color_c = texture(texture2, frag_tex_coord2) * frag_color;
+		base = vec4(color_a.rgb + color_b.rgb + color_c.rgb, color_a.a * color_b.a * color_c.a);
 	}else {
 		// modulate
 		vec4 color_b = texture(texture1, frag_tex_coord1);
-		base = color_a * color_b;
+		vec4 color_c = texture(texture2, frag_tex_coord2);
+		base = color_a * color_b * color_c;
 	}
 
 	if (alpha_to_coverage != 0) {
@@ -66,5 +86,7 @@ void main() {
 		if (color_a.a < alpha_test_value) discard;
 	}
 
-	out_color = base;
+	fog = fog * fogColor;
+
+	out_color = mix( base, fog, fog.a );
 }

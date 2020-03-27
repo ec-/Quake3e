@@ -205,12 +205,6 @@
     <ClInclude Include="..\..\renderercommon\tr_public.h" />
     <ClInclude Include="..\..\renderercommon\tr_types.h" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="libjpeg.vcxproj">
-      <Project>{17867af4-12cb-4847-a13e-bf37d8bdf597}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

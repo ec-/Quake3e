@@ -186,6 +186,18 @@
     <ClCompile Include="..\..\renderervk\shaders\spirv\st_df_frag.c">
       <Filter>Source Files\Shaders</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\renderervk\shaders\spirv\mt2_fog_frag.c">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderervk\shaders\spirv\mt2_fog_vert.c">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderervk\shaders\spirv\mt2_frag.c">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderervk\shaders\spirv\mt2_vert.c">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\renderervk\iqm.h">

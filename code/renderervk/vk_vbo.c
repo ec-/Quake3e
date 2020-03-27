@@ -186,7 +186,7 @@ Decide if we can put surface in static vbo
 static qboolean isStaticShader( shader_t *shader )
 {
 	const shaderStage_t* stage;
-	int i, svarsSize;
+	int i, b, svarsSize;
 
 	if ( shader->isStaticShader )
 		return qtrue;
@@ -208,21 +208,23 @@ static qboolean isStaticShader( shader_t *shader )
 			return qfalse;
 		if ( stage->adjustColorsForFog != ACFF_NONE )
 			return qfalse;
-		if ( !isStaticTCmod( &stage->bundle[0] ) || !isStaticTCmod( &stage->bundle[1] ) )
-			return qfalse;
 		if ( !isStaticRGBgen( stage->rgbGen ) )
-			return qfalse;
-		if ( !isStaticTCgen( stage, 0 ) )
-			return qfalse;
-		if ( !isStaticTCgen( stage, 1 ) )
 			return qfalse;
 		if ( !isStaticAgen( stage->alphaGen ) )
 			return qfalse;
+		for ( b = 0; b < NUM_TEXTURE_BUNDLES; b++ ) {
+			if ( !isStaticTCmod( &stage->bundle[b] ) )
+				return qfalse;
+			if ( !isStaticTCgen( stage, b ) )
+				return qfalse;
+		}
 		svarsSize += sizeof( tess.svars.colors[0] );
-		if ( stage->tessFlags & TESS_ST1 )
-			svarsSize += sizeof( tess.svars.texcoords[1][0] );
 		if ( stage->tessFlags & TESS_ST0 )
 			svarsSize += sizeof( tess.svars.texcoords[0][0] );
+		if ( stage->tessFlags & TESS_ST1 )
+			svarsSize += sizeof( tess.svars.texcoords[1][0] );
+		if ( stage->tessFlags & TESS_ST2 )
+			svarsSize += sizeof( tess.svars.texcoords[2][0] );
 	}
 
 	if ( i == 0 )
@@ -246,9 +248,10 @@ static qboolean isStaticShader( shader_t *shader )
 static void VBO_AddGeometry( vbo_t *vbo, vbo_item_t *vi, shaderCommands_t *input )
 {
 	uint32_t size, offs;
-	uint32_t offs_st0 = 0;
-	uint32_t offs_st1 = 0;
+	uint32_t offs_st[NUM_TEXTURE_BUNDLES];
 	int i;
+
+	offs_st[0] = offs_st[1] = offs_st[2] = 0;
 
 	if ( input->shader->iboOffset == -1 || input->shader->vboOffset == -1 ) {
 
@@ -272,23 +275,23 @@ static void VBO_AddGeometry( vbo_t *vbo, vbo_item_t *vi, shaderCommands_t *input
 			if ( !pStage )
 				break;
 			pStage->color_offset = offs; offs += input->shader->numVertexes * sizeof( tess.svars.colors[0] );
-			if ( pStage->tessFlags & TESS_ST0 )
-			{
-				offs_st0 = offs;
+			if ( pStage->tessFlags & TESS_ST0 )	{
+				offs_st[0] = offs;
 				pStage->tex_offset[0] = offs; offs += input->shader->numVertexes * sizeof( tess.svars.texcoords[0][0] );
+			} else {
+				pStage->tex_offset[0] = offs_st[0];
 			}
-			else
-			{
-				pStage->tex_offset[0] = offs_st0;
-			}
-			if ( pStage->tessFlags & TESS_ST1 )
-			{
-				offs_st1 = offs;
+			if ( pStage->tessFlags & TESS_ST1 ) {
+				offs_st[1] = offs;
 				pStage->tex_offset[1] = offs; offs += input->shader->numVertexes * sizeof( tess.svars.texcoords[1][0] );
+			} else {
+				pStage->tex_offset[1] = offs_st[1];
 			}
-			else
-			{
-				pStage->tex_offset[1] = offs_st1;
+			if ( pStage->tessFlags & TESS_ST2 ) {
+				offs_st[2] = offs;
+				pStage->tex_offset[2] = offs; offs += input->shader->numVertexes * sizeof( tess.svars.texcoords[2][0] );
+			} else {
+				pStage->tex_offset[2] = offs_st[2];
 			}
 		}
 
@@ -388,6 +391,11 @@ void VBO_PushData( int itemIndex, shaderCommands_t *input )
 		{
 			R_ComputeTexCoords( 1, &pStage->bundle[1] );
 			VBO_AddStageTxCoords( vbo, i, input, 1 );
+		}
+		if ( pStage->tessFlags & TESS_ST2 )
+		{
+			R_ComputeTexCoords( 2, &pStage->bundle[2] );
+			VBO_AddStageTxCoords( vbo, i, input, 2 );
 		}
 	}
 

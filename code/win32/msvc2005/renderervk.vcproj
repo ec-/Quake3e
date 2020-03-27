@@ -420,11 +420,11 @@
 				Name="Shaders"
 				>
 				<File
-					RelativePath="..\..\renderervk\shaders\spirv\color_vert.c"
+					RelativePath="..\..\renderervk\shaders\spirv\color_frag.c"
 					>
 				</File>
 				<File
-					RelativePath="..\..\renderervk\shaders\spirv\color_frag.c"
+					RelativePath="..\..\renderervk\shaders\spirv\color_vert.c"
 					>
 				</File>
 				<File
@@ -460,15 +460,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\renderervk\shaders\spirv\light_fog_vert.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\renderervk\shaders\spirv\light_vert.c"
-					>
-				</File>
-				<File
 					RelativePath="..\..\renderervk\shaders\spirv\light_fog_frag.c"
+					>
+				</File>
+				<File
+					RelativePath="..\..\renderervk\shaders\spirv\light_fog_vert.c"
 					>
 				</File>
 				<File
@@ -476,11 +472,23 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\renderervk\shaders\spirv\mt_fog_vert.c"
+					RelativePath="..\..\renderervk\shaders\spirv\light_vert.c"
 					>
 				</File>
 				<File
-					RelativePath="..\..\renderervk\shaders\spirv\mt_vert.c"
+					RelativePath="..\..\renderervk\shaders\spirv\mt2_fog_frag.c"
+					>
+				</File>
+				<File
+					RelativePath="..\..\renderervk\shaders\spirv\mt2_fog_vert.c"
+					>
+				</File>
+				<File
+					RelativePath="..\..\renderervk\shaders\spirv\mt2_frag.c"
+					>
+				</File>
+				<File
+					RelativePath="..\..\renderervk\shaders\spirv\mt2_vert.c"
 					>
 				</File>
 				<File
@@ -488,15 +496,15 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\renderervk\shaders\spirv\mt_fog_vert.c"
+					>
+				</File>
+				<File
 					RelativePath="..\..\renderervk\shaders\spirv\mt_frag.c"
 					>
 				</File>
 				<File
-					RelativePath="..\..\renderervk\shaders\spirv\st_fog_vert.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\renderervk\shaders\spirv\st_vert.c"
+					RelativePath="..\..\renderervk\shaders\spirv\mt_vert.c"
 					>
 				</File>
 				<File
@@ -516,7 +524,15 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\renderervk\shaders\spirv\st_fog_vert.c"
+					>
+				</File>
+				<File
 					RelativePath="..\..\renderervk\shaders\spirv\st_frag.c"
+					>
+				</File>
+				<File
+					RelativePath="..\..\renderervk\shaders\spirv\st_vert.c"
 					>
 				</File>
 			</Filter>

@@ -542,7 +542,7 @@ static void RB_FogPass( void ) {
 	// fog parameters
 	VK_SetFogParams( &uniform, &fog_stage );
 	VK_PushUniform( &uniform );
-	vk_bind_fog_image();
+	//vk_bind_fog_image();
 	vk_draw_geometry( pipeline, DEPTH_RANGE_NORMAL, qtrue );
 #else
 	const fog_t	*fog;
@@ -915,7 +915,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 	if ( fogCollapse ) {
 		VK_SetFogParams( &uniform, &fog_stage );
 		VK_PushUniform( &uniform );
-		vk_bind_fog_image();
+		//vk_bind_fog_image();
 	} else
 #endif
 	{
@@ -957,6 +957,13 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 			}
 			GL_SelectTexture( 1 );
 			R_BindAnimatedImage( &pStage->bundle[1] );
+
+			if ( pStage->tessFlags & TESS_ST2 ) {
+				tess_flags |= TESS_ST2;
+				R_ComputeTexCoords( 2, &pStage->bundle[2] );
+				GL_SelectTexture( 2 );
+				R_BindAnimatedImage( &pStage->bundle[2] );
+			}
 		}
 
 		if ( backEnd.viewParms.portalView == PV_MIRROR )
@@ -1147,8 +1154,8 @@ void VK_LightingPass( void )
 
 	abs_light = /* (pStage->stateBits & GLS_ATEST_BITS) && */ (cull == CT_TWO_SIDED) ? 1 : 0;
 
-	if ( fog_stage )
-		vk_bind_fog_image();
+	//if ( fog_stage )
+	//	vk_bind_fog_image();
 
 	if ( dl->linear )
 		pipeline = vk.dlight1_pipelines_x[cull][tess.shader->polygonOffset][fog_stage][abs_light];

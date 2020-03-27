@@ -17,7 +17,8 @@ layout(set = 0, binding = 0) uniform UBO {
 
 layout(set = 1, binding = 0) uniform sampler2D texture0;
 //layout(set = 2, binding = 0) uniform sampler2D texture1;
-layout(set = 3, binding = 0) uniform sampler2D fogtexture;
+//layout(set = 3, binding = 0) uniform sampler2D texture2;
+layout(set = 4, binding = 0) uniform sampler2D fogtexture;
 
 layout(location = 0) centroid in vec2 frag_tex_coord;
 layout(location = 1) in vec3 N;  // normalized object-space normal vector

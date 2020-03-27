@@ -21,13 +21,16 @@ layout(set = 0, binding = 0) uniform UBO {
 };
 
 layout(location = 0) in vec3 in_position;
-layout(location = 2) in vec2 in_tex_coord;
-layout(location = 5) in vec3 in_normal;
+layout(location = 1) in vec4 in_color;
+layout(location = 2) in vec2 in_tex_coord0;
+layout(location = 3) in vec2 in_tex_coord1;
+layout(location = 4) in vec2 in_tex_coord2;
+//layout(location = 5) in vec2 in_normal;
 
-layout(location = 0) out vec2 frag_tex_coord;
-layout(location = 1) out vec3 N; // normal array 
-layout(location = 2) out vec4 L; // object-space light vector
-layout(location = 3) out vec4 V; // object-space view vector
+layout(location = 0) out vec4 frag_color;
+layout(location = 1) out vec2 frag_tex_coord0;
+layout(location = 2) out vec2 frag_tex_coord1;
+layout(location = 3) out vec2 frag_tex_coord2;
 layout(location = 4) out vec2 fog_tex_coord;
 
 out gl_PerVertex {
@@ -37,10 +40,10 @@ out gl_PerVertex {
 void main() {
 	gl_Position = mvp * vec4(in_position, 1.0);
 
-	frag_tex_coord = in_tex_coord;
-	N = in_normal;
-	L = lightPos - vec4(in_position, 1.0);
-	V = eyePos - vec4(in_position, 1.0);
+	frag_color = in_color;
+	frag_tex_coord0 = in_tex_coord0;
+	frag_tex_coord1 = in_tex_coord1;
+	frag_tex_coord2 = in_tex_coord2;
 
 	// fog calculations...
 

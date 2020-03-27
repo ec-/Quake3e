@@ -66,6 +66,7 @@ typedef enum {
 	GL_LINEAR_MIPMAP_LINEAR,
 	GL_MODULATE,
 	GL_ADD,
+	GL_ADD_2,
 	GL_DECAL,
 	GL_BACK_LEFT,
 	GL_BACK_RIGHT
@@ -332,7 +333,11 @@ typedef struct {
 	qboolean		isScreenMap;
 } textureBundle_t;
 
+#ifdef USE_VULKAN
+#define NUM_TEXTURE_BUNDLES 3
+#else
 #define NUM_TEXTURE_BUNDLES 2
+#endif
 
 typedef struct {
 	qboolean		active;
@@ -349,6 +354,7 @@ typedef struct {
 
 	unsigned		stateBits;					// GLS_xxxx mask
 	GLint			mtEnv;						// 0, GL_MODULATE, GL_ADD, GL_DECAL
+	GLint			mtEnv2;						// 0, GL_MODULATE, GL_ADD, GL_DECAL
 
 	acff_t			adjustColorsForFog;
 
@@ -367,7 +373,7 @@ typedef struct {
 
 #ifdef USE_VBO
 	uint32_t		color_offset; // within current shader
-	uint32_t		tex_offset[2]; // within current shader
+	uint32_t		tex_offset[NUM_TEXTURE_BUNDLES]; // within current shader
 #endif
 
 } shaderStage_t;
@@ -1506,7 +1512,7 @@ typedef struct stageVars
 {
 	color4ub_t	colors[SHADER_MAX_VERTEXES*2]; // 2x needed for shadows
 	vec2_t		texcoords[NUM_TEXTURE_BUNDLES][SHADER_MAX_VERTEXES];
-	vec2_t		*texcoordPtr[2];
+	vec2_t		*texcoordPtr[NUM_TEXTURE_BUNDLES];
 } stageVars_t;
 
 typedef struct shaderCommands_s 

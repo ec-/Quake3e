@@ -339,8 +339,8 @@ void RB_TestFlare( flare_t *f ) {
 	tess.vboIndex = 0;
 #endif
 	// render test dot
-	vk_reset_descriptor( 4 );
-	vk_update_descriptor( 4, vk.storage.descriptor );
+	vk_reset_descriptor( 5 );
+	vk_update_descriptor( 5, vk.storage.descriptor );
 	vk_update_descriptor_offset( 1, offset );
 
 	vk_bind_geometry_ext( TESS_XYZ );

@@ -22,7 +22,7 @@ layout(set = 0, binding = 0) uniform UBO {
 
 layout(location = 0) in vec3 in_position;
 layout(location = 2) in vec2 in_tex_coord;
-layout(location = 4) in vec3 in_normal;
+layout(location = 5) in vec3 in_normal;
 
 layout(location = 0) out vec2 frag_tex_coord;
 layout(location = 1) out vec3 N; // normal array 
