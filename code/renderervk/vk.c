@@ -2813,6 +2813,11 @@ void vk_initialize( void )
 	if ( glConfig.numTextureUnits > MAX_TEXTURE_UNITS )
 		glConfig.numTextureUnits = MAX_TEXTURE_UNITS;
 
+	if ( props.limits.maxBoundDescriptorSets < 6 ) // uniform + image[3] + fog + storage
+	{
+		ri.Error( ERR_DROP, "%s: maxBoundDescriptorSets < 6, please update your vulkan driver", __func__ );
+	}
+
 	glConfig.textureEnvAddAvailable = qtrue;
 	glConfig.textureCompression = TC_NONE;
 
