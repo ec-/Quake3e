@@ -4230,13 +4230,18 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 	 // depth bias state
 	if ( def->polygon_offset ) {
 		rasterization_state.depthBiasEnable = VK_TRUE;
-		rasterization_state.depthBiasConstantFactor = r_offsetUnits->value;
 		rasterization_state.depthBiasClamp = 0.0f;
+#ifdef USE_REVERSED_DEPTH
+		rasterization_state.depthBiasConstantFactor = -r_offsetUnits->value;
+		rasterization_state.depthBiasSlopeFactor = -r_offsetFactor->value;
+#else
+		rasterization_state.depthBiasConstantFactor = r_offsetUnits->value;
 		rasterization_state.depthBiasSlopeFactor = r_offsetFactor->value;
+#endif
 	} else {
 		rasterization_state.depthBiasEnable = VK_FALSE;
-		rasterization_state.depthBiasConstantFactor = 0.0f;
 		rasterization_state.depthBiasClamp = 0.0f;
+		rasterization_state.depthBiasConstantFactor = 0.0f;
 		rasterization_state.depthBiasSlopeFactor = 0.0f;
 	}
 
