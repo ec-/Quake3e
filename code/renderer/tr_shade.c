@@ -104,7 +104,10 @@ Draws triangle outlines for debugging
 */
 static void DrawTris( shaderCommands_t *input ) {
 
-	if ( (r_showtris->integer == 1 && backEnd.doneSurfaces) || (r_showtris->integer == 2 && backEnd.drawConsole) )
+	if ( r_showtris->integer == 1 && backEnd.drawConsole )
+		return;
+
+	if ( tess.numIndexes == 0 )
 		return;
 
 	GL_ProgramDisable();

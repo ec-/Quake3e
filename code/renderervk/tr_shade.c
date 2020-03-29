@@ -117,7 +117,10 @@ static void DrawTris( shaderCommands_t *input ) {
 #ifdef USE_VULKAN
 	uint32_t pipeline;
 
-	if ( (r_showtris->integer == 1 && backEnd.doneSurfaces) || (r_showtris->integer == 2 && backEnd.drawConsole) )
+	if ( r_showtris->integer == 1 && backEnd.drawConsole )
+		return;
+
+	if ( tess.numIndexes == 0 )
 		return;
 
 #ifdef USE_VBO
@@ -127,20 +130,22 @@ static void DrawTris( shaderCommands_t *input ) {
 			pipeline = backEnd.viewParms.portalView == PV_MIRROR ? vk.tris_mirror_debug_red_pipeline : vk.tris_debug_red_pipeline;
 		else
 #endif
-		pipeline = backEnd.viewParms.portalView == PV_MIRROR ? vk.tris_mirror_debug_green_pipeline : vk.tris_debug_green_pipeline;
+			pipeline = backEnd.viewParms.portalView == PV_MIRROR ? vk.tris_mirror_debug_green_pipeline : vk.tris_debug_green_pipeline;
 	} else
 #endif
-#ifdef USE_PMLIGHT
-	if ( tess.dlightPass )
-		pipeline = backEnd.viewParms.portalView == PV_MIRROR ? vk.tris_mirror_debug_red_pipeline : vk.tris_debug_red_pipeline;
-	else
+	{
+#ifdef USE_PMLIGHT 
+		if ( tess.dlightPass )
+			pipeline = backEnd.viewParms.portalView == PV_MIRROR ? vk.tris_mirror_debug_red_pipeline : vk.tris_debug_red_pipeline;
+		else
 #endif
-	pipeline = backEnd.viewParms.portalView == PV_MIRROR ? vk.tris_mirror_debug_pipeline : vk.tris_debug_pipeline;
+			pipeline = backEnd.viewParms.portalView == PV_MIRROR ? vk.tris_mirror_debug_pipeline : vk.tris_debug_pipeline;
+	}
 
 	vk_draw_geometry( pipeline, DEPTH_RANGE_ZERO, qtrue );
 
 #else
-	if ( (r_showtris->integer == 1 && backEnd.doneSurfaces) || (r_showtris->integer == 2 && backEnd.drawConsole) )
+	if ( r_showtris->integer == 1 && backEnd.drawConsole )
 		return;
 
 	GL_ClientState( 0, CLS_NONE );
