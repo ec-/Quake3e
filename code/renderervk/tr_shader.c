@@ -2126,7 +2126,7 @@ static int CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, int num
 	Com_Memset( st0 + num_stages - 1, 0, sizeof( stages[0] ) );
 
 #ifdef USE_VULKAN
-	if ( num_stages >= 3 && abits == 0 && !st0->mtEnv2 )
+	if ( vk.maxBoundDescriptorSets >= 6 && num_stages >= 3 && abits == 0 && !st0->mtEnv2 )
 	{
 		return 1 + CollapseMultitexture( st0, st1, num_stages - 1 );
 	}
@@ -2989,7 +2989,7 @@ static shader_t *FinishShader( void ) {
 
 #ifdef USE_FOG_COLLAPSE
 	// single-stage, combined fog pipelines for world surfaces
-	if ( stage == 1 && tr.mapLoading && !(shader.contentFlags & CONTENTS_FOG) ) {
+	if ( vk.maxBoundDescriptorSets >= 6 && stage == 1 && tr.mapLoading && !(shader.contentFlags & CONTENTS_FOG) ) {
 		Vk_Pipeline_Def def;
 		Vk_Pipeline_Def def_mirror;
 

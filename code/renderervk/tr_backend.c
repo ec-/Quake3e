@@ -68,7 +68,7 @@ void GL_Bind( image_t *image ) {
 
 	//if ( glState.currenttextures[glState.currenttmu] != texnum ) {
 		image->frameUsed = tr.frameCount;
-		vk_update_descriptor( glState.currenttmu + 1, image->descriptor );
+		vk_update_descriptor( glState.currenttmu + 2, image->descriptor );
 
 	//}
 #else

@@ -76,9 +76,9 @@ void R_BindAnimatedImage( const textureBundle_t *bundle ) {
 			GL_Bind( tr.blackImage );
 		else
 #ifdef USE_SINGLE_FBO
-			vk_update_descriptor( glState.currenttmu + 1, vk.color_descriptor3 );
+			vk_update_descriptor( glState.currenttmu + 2, vk.color_descriptor3 );
 #else
-			vk_update_descriptor( glState.currenttmu + 1, vk.cmd->color_descriptor3 );
+			vk_update_descriptor( glState.currenttmu + 2, vk.cmd->color_descriptor3 );
 #endif
 		return;
 	}
@@ -542,7 +542,7 @@ static void RB_FogPass( void ) {
 	// fog parameters
 	VK_SetFogParams( &uniform, &fog_stage );
 	VK_PushUniform( &uniform );
-	//vk_bind_fog_image();
+	vk_update_descriptor( 3, tr.fogImage->descriptor );
 	vk_draw_geometry( pipeline, DEPTH_RANGE_NORMAL, qtrue );
 #else
 	const fog_t	*fog;
@@ -915,7 +915,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 	if ( fogCollapse ) {
 		VK_SetFogParams( &uniform, &fog_stage );
 		VK_PushUniform( &uniform );
-		//vk_bind_fog_image();
+		vk_update_descriptor( 5, tr.fogImage->descriptor );
 	} else
 #endif
 	{
@@ -1100,9 +1100,9 @@ uint32_t VK_PushUniform( const vkUniform_t *uniform ) {
 	Com_Memcpy( vk.cmd->vertex_buffer_ptr + offset, uniform, sizeof( *uniform ) );
 	vk.cmd->vertex_buffer_offset = offset + vk.uniform_item_size;
 
-	vk_reset_descriptor( 0 );
-	vk_update_descriptor( 0,  vk.cmd->uniform_descriptor );
-	vk_update_descriptor_offset( 0, vk.cmd->uniform_read_offset );
+	vk_reset_descriptor( 1 );
+	vk_update_descriptor( 1,  vk.cmd->uniform_descriptor );
+	vk_update_descriptor_offset( 1, vk.cmd->uniform_read_offset );
 
 	return offset;
 }
@@ -1154,8 +1154,8 @@ void VK_LightingPass( void )
 
 	abs_light = /* (pStage->stateBits & GLS_ATEST_BITS) && */ (cull == CT_TWO_SIDED) ? 1 : 0;
 
-	//if ( fog_stage )
-	//	vk_bind_fog_image();
+	if ( fog_stage )
+		vk_update_descriptor( 3, tr.fogImage->descriptor );
 
 	if ( dl->linear )
 		pipeline = vk.dlight1_pipelines_x[cull][tess.shader->polygonOffset][fog_stage][abs_light];
