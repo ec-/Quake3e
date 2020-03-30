@@ -895,15 +895,10 @@ static void get_surface_formats( void )
 	vk.capture_format = VK_FORMAT_R8G8B8A8_UNORM;
 
 	vk.blitEnabled = vk_blit_enabled( vk.color_format, vk.capture_format );
-	if ( !vk.blitEnabled ) {
-		// try to change capture format
-		vk.capture_format = VK_FORMAT_B8G8R8A8_UNORM;
-		vk.blitEnabled = vk_blit_enabled( vk.color_format, vk.capture_format );
-		if ( !vk.blitEnabled && r_hdr->integer ) {
-			// we can't perform HDR surface conversion so must disable HDR
-			vk.color_format = vk.surface_format.format;
-			vk.capture_format = vk.surface_format.format;
-		}
+
+	if ( !vk.blitEnabled )
+	{
+		vk.capture_format = vk.color_format;
 	}
 }
 
@@ -5452,6 +5447,7 @@ static qboolean is_bgr( VkFormat format ) {
 		case VK_FORMAT_B8G8R8A8_UINT:
 		case VK_FORMAT_B8G8R8A8_SINT:
 		case VK_FORMAT_B8G8R8A8_SRGB:
+		case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
 			return qtrue;
 		default:
 			return qfalse;
@@ -5474,7 +5470,8 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 	VkImage dstImage;
 	byte *buffer_ptr;
 	byte *data;
-	int i;
+	uint32_t pixel_width;
+	uint32_t i, n;
 
 	VK_CHECK( qvkWaitForFences( vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e12 ) );
 
@@ -5588,29 +5585,56 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 
 	qvkGetImageSubresourceLayout( vk.device, dstImage, &subresource, &layout );
 
-	VK_CHECK(qvkMapMemory(vk.device, memory, 0, VK_WHOLE_SIZE, 0, (void**)&data));
+	VK_CHECK( qvkMapMemory( vk.device, memory, 0, VK_WHOLE_SIZE, 0, (void**)&data ) );
 	data += layout.offset;
 
-	buffer_ptr = buffer + width * (height - 1) * 4;
-	for (i = 0; i < height; i++) {
-		Com_Memcpy(buffer_ptr, data, width * 4);
-		buffer_ptr -= width * 4;
+	switch ( vk.capture_format ) {
+		case VK_FORMAT_B4G4R4A4_UNORM_PACK16: pixel_width = 2; break;
+		case VK_FORMAT_R16G16B16A16_UNORM: pixel_width = 8; break;
+		default: pixel_width = 4; break;
+	}
+
+	buffer_ptr = buffer + width * (height - 1) * 3;
+	for ( i = 0; i < height; i++ ) {
+		switch ( pixel_width ) {
+			case 2: {
+				uint16_t *src = (uint16_t*)data;
+				for ( n = 0; n < width; n++ ) {
+					buffer_ptr[n*3+0] = ((src[n]>>12)&0xF)<<4;
+					buffer_ptr[n*3+1] = ((src[n]>>8)&0xF)<<4;
+					buffer_ptr[n*3+2] = ((src[n]>>4)&0xF)<<4;
+				}
+			} break;
+
+			case 4: {
+				for ( n = 0; n < width; n++ ) {
+					buffer_ptr[n*3+0] = data[n*4+0];
+					buffer_ptr[n*3+1] = data[n*4+1];
+					buffer_ptr[n*3+2] = data[n*4+2];
+				}
+			} break;
+
+			case 8: {
+				const uint16_t *src = (uint16_t*)data;
+				for ( n = 0; n < width; n++ ) {
+					buffer_ptr[n*3+0] = src[n*4+0]>>8;
+					buffer_ptr[n*3+1] = src[n*4+1]>>8;
+					buffer_ptr[n*3+2] = src[n*4+2]>>8;
+				}
+			} break;
+		}
+		buffer_ptr -= width * 3;
 		data += layout.rowPitch;
 	}
 
-	if ( is_bgr( vk.blitEnabled ? vk.capture_format : vk.color_format ) ) {
+	if ( is_bgr( vk.capture_format ) ) {
 		buffer_ptr = buffer;
 		for ( i = 0; i < width * height; i++ ) {
 			byte tmp = buffer_ptr[0];
 			buffer_ptr[0] = buffer_ptr[2];
 			buffer_ptr[2] = tmp;
-			buffer_ptr += 4;
+			buffer_ptr += 3;
 		}
-	}
-
-	// strip alpha component
-	for ( i = 0; i < width * height; i++ ) {
-		Com_Memcpy( buffer + i*3, buffer + i*4, 3 );
 	}
 
 	qvkDestroyImage( vk.device, dstImage, NULL );
