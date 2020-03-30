@@ -766,6 +766,8 @@ Q3RENDVOBJ = \
   \
   $(B)/rendv/dot_frag.o \
   $(B)/rendv/dot_vert.o \
+  $(B)/rendv/color_frag.o \
+  $(B)/rendv/color_vert.o \
   $(B)/rendv/fog_frag.o \
   $(B)/rendv/fog_vert.o \
   $(B)/rendv/gamma_frag.o \
@@ -780,12 +782,14 @@ Q3RENDVOBJ = \
   $(B)/rendv/mt_vert.o \
   $(B)/rendv/mt_fog_frag.o \
   $(B)/rendv/mt_frag.o \
+  $(B)/rendv/mt2_fog_vert.o \
+  $(B)/rendv/mt2_vert.o \
+  $(B)/rendv/mt2_fog_frag.o \
+  $(B)/rendv/mt2_frag.o \
   $(B)/rendv/st_fog_vert.o \
   $(B)/rendv/st_vert.o \
   $(B)/rendv/st_enviro_fog_vert.o \
   $(B)/rendv/st_enviro_vert.o \
-  $(B)/rendv/color_frag.o \
-  $(B)/rendv/color_vert.o \
   $(B)/rendv/st_fog_frag.o \
   $(B)/rendv/st_df_frag.o \
   $(B)/rendv/st_frag.o
