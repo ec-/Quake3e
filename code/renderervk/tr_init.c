@@ -1301,9 +1301,6 @@ static void GfxInfo( void )
 		if ( vk.color_format != vk.surface_format.format ) {
 			ri.Printf( PRINT_ALL, " color: %s\n", vk_get_format_name( vk.color_format ) );
 		}
-		//if ( r_ext_multisample->integer ) {
-		//	ri.Printf( PRINT_ALL, " resolve: %s\n", vk_get_format_name( vk.resolve_format ) );
-		//}
 	}
 	ri.Printf( PRINT_ALL, " depth: %s\n", vk_get_format_name( vk.depth_format ) );
 #endif

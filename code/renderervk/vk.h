@@ -478,7 +478,6 @@ typedef struct {
 
 	VkFormat color_format;
 	VkFormat capture_format;
-	VkFormat resolve_format;
 	VkFormat depth_format;
 
 	qboolean fboActive;

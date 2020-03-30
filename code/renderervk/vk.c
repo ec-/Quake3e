@@ -466,8 +466,6 @@ static void create_render_pass( VkDevice device, VkFormat depth_format )
 
 	if ( vk.msaaActive )
 	{
-		attachments[0].format = vk.resolve_format;
-
 		attachments[2].flags = 0;
 		attachments[2].format = vk.color_format;
 		attachments[2].samples = vkSamples;
@@ -594,8 +592,6 @@ static void create_render_pass( VkDevice device, VkFormat depth_format )
 	desc.pDependencies = deps;
 
 	if ( vk.screenMapSamples > VK_SAMPLE_COUNT_1_BIT ) {
-
-		attachments[0].format = vk.resolve_format;
 
 		attachments[2].flags = 0;
 		attachments[2].format = vk.color_format;
@@ -896,23 +892,16 @@ static void get_surface_formats( void )
 
 	vk.color_format = get_hdr_format( vk.surface_format.format );
 
-	vk.resolve_format = vk.color_format;
-
 	vk.capture_format = VK_FORMAT_R8G8B8A8_UNORM;
 
-	if ( r_fbo->integer && r_ext_multisample->integer ) {
-		vk.resolve_format = vk.surface_format.format;
-	}
-
-	vk.blitEnabled = vk_blit_enabled( vk.resolve_format, vk.capture_format );
+	vk.blitEnabled = vk_blit_enabled( vk.color_format, vk.capture_format );
 	if ( !vk.blitEnabled ) {
 		// try to change capture format
 		vk.capture_format = VK_FORMAT_B8G8R8A8_UNORM;
-		vk.blitEnabled = vk_blit_enabled( vk.resolve_format, vk.capture_format );
+		vk.blitEnabled = vk_blit_enabled( vk.color_format, vk.capture_format );
 		if ( !vk.blitEnabled && r_hdr->integer ) {
 			// we can't perform HDR surface conversion so must disable HDR
 			vk.color_format = vk.surface_format.format;
-			vk.resolve_format = vk.surface_format.format;
 			vk.capture_format = vk.surface_format.format;
 		}
 	}
@@ -3002,7 +2991,7 @@ void vk_initialize( void )
 		// post-processing/msaa-resolve
 		VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
-		create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, VK_SAMPLE_COUNT_1_BIT, vk.resolve_format,
+		create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, VK_SAMPLE_COUNT_1_BIT, vk.color_format,
 			usage, &vk.color_image, &vk.color_image_view, &vk.color_image_memory, qfalse );
 
 		// screenmap
@@ -3013,7 +3002,7 @@ void vk_initialize( void )
 				usage, &vk.color_image3_msaa, &vk.color_image_view3_msaa, &vk.color_image_memory3_msaa, qtrue );
 		}
 
-		create_color_attachment( vk.screenMapWidth, vk.screenMapHeight, VK_SAMPLE_COUNT_1_BIT, vk.resolve_format,
+		create_color_attachment( vk.screenMapWidth, vk.screenMapHeight, VK_SAMPLE_COUNT_1_BIT, vk.color_format,
 			usage, &vk.color_image3, &vk.color_image_view3, &vk.color_image_memory3, qfalse );
 
 		// screenmap
@@ -5609,7 +5598,7 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 		data += layout.rowPitch;
 	}
 
-	if ( is_bgr( vk.blitEnabled ? vk.capture_format : vk.resolve_format ) ) {
+	if ( is_bgr( vk.blitEnabled ? vk.capture_format : vk.color_format ) ) {
 		buffer_ptr = buffer;
 		for ( i = 0; i < width * height; i++ ) {
 			byte tmp = buffer_ptr[0];
