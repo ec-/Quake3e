@@ -34,6 +34,7 @@ layout (constant_id = 3) const int alpha_to_coverage = 0;
 //layout (constant_id = 4) const int color_mode = 0;
 //layout (constant_id = 5) const int abs_light = 0;
 layout (constant_id = 6) const int tex_mode = 0; // modulate, add, add2
+layout (constant_id = 7) const int discard_mode = 0;
 
 float CorrectAlpha(float threshold, float alpha, vec2 tc)
 {
@@ -80,7 +81,17 @@ void main() {
 		if (color_a.a < alpha_test_value) discard;
 	}
 
-	fog = fog * fogColor;
+	base = mix( base, fog * fogColor, fog.a );
 
-	out_color = mix( base, fog, fog.a );
+	if ( discard_mode == 1 ) {
+		if ( base.a == 0.0 ) {
+			discard;
+		}
+	} else if ( discard_mode == 2 ) {
+		if ( dot( base.rgb, base.rgb ) == 0.0 ) {
+			discard;
+		}
+	}
+
+	out_color = base;
 }

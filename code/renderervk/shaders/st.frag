@@ -11,6 +11,7 @@ layout (constant_id = 0) const int alpha_test_func = 0;
 layout (constant_id = 1) const float alpha_test_value = 0.0;
 //layout (constant_id = 2) const float depth_fragment = 0.85;
 layout (constant_id = 3) const int alpha_to_coverage = 0;
+layout (constant_id = 7) const int discard_mode = 0;
 
 float CorrectAlpha(float threshold, float alpha, vec2 tc)
 {
@@ -42,6 +43,16 @@ void main() {
 		if (base.a >= alpha_test_value) discard;
 	} else if (alpha_test_func == 3) {
 		if (base.a < alpha_test_value) discard;
+	}
+
+	if ( discard_mode == 1 ) {
+		if ( base.a == 0.0 ) {
+			discard;
+		}
+	} else if ( discard_mode == 2 ) {
+		if ( dot( base.rgb, base.rgb ) == 0.0 ) {
+			discard;
+		}
 	}
 
 	out_color = base;
