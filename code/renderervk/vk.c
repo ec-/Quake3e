@@ -841,6 +841,9 @@ const char *vk_get_format_name( VkFormat format )
 	switch ( format ) {
 		// color formats
 		CASE_STR( VK_FORMAT_B8G8R8A8_SRGB );
+		CASE_STR( VK_FORMAT_R8G8B8A8_SRGB );
+		CASE_STR( VK_FORMAT_B8G8R8A8_SNORM );
+		CASE_STR( VK_FORMAT_R8G8B8A8_SNORM );
 		CASE_STR( VK_FORMAT_B8G8R8A8_UNORM );
 		CASE_STR( VK_FORMAT_R8G8B8A8_UNORM );
 		CASE_STR( VK_FORMAT_B4G4R4A4_UNORM_PACK16 );
@@ -859,22 +862,58 @@ const char *vk_get_format_name( VkFormat format )
 }
 
 
+// Check if we can use vkCmdBlitImage for the given source and destination image formats.
+static qboolean vk_blit_enabled( const VkFormat srcFormat, const VkFormat dstFormat )
+{
+	VkFormatProperties formatProps;
+	qboolean blit_enabled = qtrue;
+
+	qvkGetPhysicalDeviceFormatProperties( vk.physical_device, srcFormat, &formatProps );
+	if ( ( formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT ) == 0 )
+		blit_enabled = qfalse;
+
+	qvkGetPhysicalDeviceFormatProperties( vk.physical_device, dstFormat, &formatProps );
+	if ( ( formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT ) == 0 )
+		blit_enabled = qfalse;
+
+	return blit_enabled;
+}
+
+
+static VkFormat get_hdr_format( VkFormat base_format )
+{
+	switch ( r_hdr->integer ) {
+		case -1: return VK_FORMAT_B4G4R4A4_UNORM_PACK16;
+		case 1: return VK_FORMAT_R16G16B16A16_UNORM;
+		default: return base_format;
+	}
+}
+
+
 static void get_surface_formats( void )
 {
 	vk.depth_format = get_depth_format( vk.physical_device );
-	
-	// primary buffer
-	switch ( r_hdr->integer ) {
-		case -1: vk.color_format = VK_FORMAT_B4G4R4A4_UNORM_PACK16; break;
-		case 1:	vk.color_format = VK_FORMAT_R16G16B16A16_UNORM; break;
-		default: vk.color_format = vk.surface_format.format; break;
-	}
+
+	vk.color_format = get_hdr_format( vk.surface_format.format );
 
 	vk.resolve_format = vk.color_format;
 
-	if ( vk.fboActive ) {
-		if ( vk.msaaActive ) {
+	vk.capture_format = VK_FORMAT_R8G8B8A8_UNORM;
+
+	if ( r_fbo->integer && r_ext_multisample->integer ) {
+		vk.resolve_format = vk.surface_format.format;
+	}
+
+	vk.blitEnabled = vk_blit_enabled( vk.resolve_format, vk.capture_format );
+	if ( !vk.blitEnabled ) {
+		// try to change capture format
+		vk.capture_format = VK_FORMAT_B8G8R8A8_UNORM;
+		vk.blitEnabled = vk_blit_enabled( vk.resolve_format, vk.capture_format );
+		if ( !vk.blitEnabled && r_hdr->integer ) {
+			// we can't perform HDR surface conversion so must disable HDR
+			vk.color_format = vk.surface_format.format;
 			vk.resolve_format = vk.surface_format.format;
+			vk.capture_format = vk.surface_format.format;
 		}
 	}
 }
@@ -5406,9 +5445,22 @@ void vk_end_frame( void )
 }
 
 
+static qboolean is_bgr( VkFormat format ) {
+	switch ( format ) {
+		case VK_FORMAT_B8G8R8A8_UNORM:
+		case VK_FORMAT_B8G8R8A8_SNORM:
+		case VK_FORMAT_B8G8R8A8_UINT:
+		case VK_FORMAT_B8G8R8A8_SINT:
+		case VK_FORMAT_B8G8R8A8_SRGB:
+			return qtrue;
+		default:
+			return qfalse;
+	}
+}
+
+
 void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 {
-	VkFormatProperties formatProps;
 	VkCommandBuffer command_buffer;
 	VkDeviceMemory memory;
 	VkMemoryRequirements memory_requirements;
@@ -5418,17 +5470,16 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 	VkImageCreateInfo desc;
 	VkImage srcImage;
 	VkImageLayout srcImageLayout;
+	VkAccessFlagBits srcImageAccess;
 	VkImage dstImage;
-	qboolean blit_enabled;
 	byte *buffer_ptr;
 	byte *data;
 	int i;
 
-	//vk_wait_idle();
 	VK_CHECK( qvkWaitForFences( vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e12 ) );
 
 	if ( vk.fboActive ) {
-		
+		srcImageAccess = VK_ACCESS_SHADER_READ_BIT;
 		srcImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 #ifdef USE_SINGLE_FBO
 		srcImage = vk.color_image;
@@ -5436,7 +5487,7 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 		srcImage = vk.cmd->color_image;
 #endif
 	} else {
-
+		srcImageAccess = VK_ACCESS_MEMORY_READ_BIT;
 		srcImageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		srcImage = vk.swapchain_images[ vk.swapchain_image_index ];
 	}
@@ -5448,7 +5499,7 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 	desc.pNext = NULL;
 	desc.flags = 0;
 	desc.imageType = VK_IMAGE_TYPE_2D;
-	desc.format = VK_FORMAT_R8G8B8A8_UNORM;
+	desc.format = vk.capture_format;
 	desc.extent.width = width;
 	desc.extent.height = height;
 	desc.extent.depth = 1;
@@ -5476,25 +5527,21 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 
 	command_buffer = begin_command_buffer();
 
-	record_image_layout_transition( command_buffer, srcImage, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_MEMORY_READ_BIT, srcImageLayout, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL );
-	record_image_layout_transition( command_buffer, dstImage, VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_IMAGE_LAYOUT_UNDEFINED, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL ); 
+	record_image_layout_transition( command_buffer, srcImage,
+		VK_IMAGE_ASPECT_COLOR_BIT,
+		srcImageAccess, srcImageLayout,
+		VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL );
 
-	//end_command_buffer( command_buffer );
+	record_image_layout_transition( command_buffer, dstImage,
+		VK_IMAGE_ASPECT_COLOR_BIT,
+		0, VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL ); 
 
-	// Check if we can use vkCmdBlitImage for the given source and destination image formats.
-	blit_enabled = qtrue;
+	// end_command_buffer( command_buffer );
 
-	qvkGetPhysicalDeviceFormatProperties(vk.physical_device, vk.surface_format.format, &formatProps);
-	if ((formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT) == 0)
-		blit_enabled = qfalse;
+	// command_buffer = begin_command_buffer();
 
-	qvkGetPhysicalDeviceFormatProperties(vk.physical_device, VK_FORMAT_R8G8B8A8_UNORM, &formatProps);
-	if ((formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT) == 0)
-		blit_enabled = qfalse;
-
-	//command_buffer = begin_command_buffer();
-
-	if ( blit_enabled ) {
+	if ( vk.blitEnabled ) {
 		VkImageBlit region;
 
 		region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -5551,17 +5598,13 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 		data += layout.rowPitch;
 	}
 
-	if (!blit_enabled) {
-		VkFormat fmt = vk.surface_format.format;
-		int swizzle_components = (fmt == VK_FORMAT_B8G8R8A8_SRGB || fmt == VK_FORMAT_B8G8R8A8_UNORM || fmt == VK_FORMAT_B8G8R8A8_SNORM);
-		if (swizzle_components) {
-			buffer_ptr = buffer;
-			for (i = 0; i < width * height; i++) {
-				byte tmp = buffer_ptr[0];
-				buffer_ptr[0] = buffer_ptr[2];
-				buffer_ptr[2] = tmp;
-				buffer_ptr += 4;
-			}
+	if ( is_bgr( vk.blitEnabled ? vk.capture_format : vk.resolve_format ) ) {
+		buffer_ptr = buffer;
+		for ( i = 0; i < width * height; i++ ) {
+			byte tmp = buffer_ptr[0];
+			buffer_ptr[0] = buffer_ptr[2];
+			buffer_ptr[2] = tmp;
+			buffer_ptr += 4;
 		}
 	}
 
@@ -5575,6 +5618,11 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 
 	// restore previous layout
 	command_buffer = begin_command_buffer();
-	record_image_layout_transition( command_buffer, srcImage, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_MEMORY_READ_BIT, srcImageLayout );
+
+	record_image_layout_transition( command_buffer, srcImage,
+		VK_IMAGE_ASPECT_COLOR_BIT,
+		VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		srcImageAccess, srcImageLayout );
+
 	end_command_buffer( command_buffer );
 }

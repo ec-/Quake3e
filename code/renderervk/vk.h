@@ -477,10 +477,12 @@ typedef struct {
 	float maxLodBias;
 
 	VkFormat color_format;
+	VkFormat capture_format;
 	VkFormat resolve_format;
 	VkFormat depth_format;
 
 	qboolean fboActive;
+	qboolean blitEnabled;
 	qboolean msaaActive;
 
 	qboolean offscreenRender;
