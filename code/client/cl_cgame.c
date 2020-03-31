@@ -824,6 +824,7 @@ void CL_InitCGame( void ) {
 	const char			*mapname;
 	int					t1, t2;
 	vmInterpret_t		interpret;
+	unsigned result;
 
 	t1 = Sys_Milliseconds();
 
@@ -856,8 +857,50 @@ void CL_InitCGame( void ) {
 	// init for this gamestate
 	// use the lastExecutedServerCommand instead of the serverCommandSequence
 	// otherwise server commands sent just before a gamestate are dropped
-	VM_Call( cgvm, 3, CG_INIT, clc.serverMessageSequence, clc.lastExecutedServerCommand, clc.clientNum );
+	result = VM_Call( cgvm, 3, CG_INIT, clc.serverMessageSequence, clc.lastExecutedServerCommand, clc.clientNum );
 
+#ifdef EMSCRIPTEN
+	// if the VM was suspended during initialization, we'll finish initialization later
+	if (result == 0xDEADBEEF) {
+		return;
+	}
+
+	CL_InitCGameFinished();
+}
+
+int CL_GetClientState( void ) {
+	return clc.state;
+}
+
+void CL_UpdateShader( void ) {
+	char *lazyShader = Sys_UpdateShader();
+	if(strlen(lazyShader) == 0) return;
+	lazyShader[12] = '\0';
+	re.UpdateShader(&lazyShader[13], atoi(&lazyShader[0]));
+}
+
+
+void CL_UpdateSound( void ) {
+	char *lazySound = Sys_UpdateSound();
+	if(strlen(lazySound) == 0) return;
+	S_RegisterSound(lazySound, qtrue);
+}
+
+
+void CL_UpdateModel( void ) {
+	char *lazyModel = Sys_UpdateModel();
+	if(strlen(lazyModel) == 0) return;
+	re.RegisterModel(lazyModel);
+}
+
+/*
+====================
+CL_InitCGameFinished
+====================
+*/
+void CL_InitCGameFinished() {
+#endif
+;
 	// reset any CVAR_CHEAT cvars registered by cgame
 	if ( !clc.demoplaying && !cl_connectedToCheatServer )
 		Cvar_SetCheatState();
@@ -898,6 +941,14 @@ qboolean CL_GameCommand( void ) {
 	if ( !cgvm ) {
 		return qfalse;
 	}
+
+#ifdef EMSCRIPTEN
+		// it's possible (and happened in Q3F) that the game executes a console command
+		// before the frame has resumed the vm
+		if (VM_IsSuspended(cgvm)) {
+			return qfalse;
+		}
+#endif
 
 	return VM_Call( cgvm, 0, CG_CONSOLE_COMMAND );
 }

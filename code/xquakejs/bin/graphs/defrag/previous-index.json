@@ -1,0 +1,614 @@
+{
+  "menu/pak11menu": {
+    "name": "pak11menu.pk3",
+    "size": 0
+  },
+  "menu/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 0
+  },
+  "menu/pak852d": {
+    "name": "pak852d.pk3",
+    "size": 0
+  },
+  "menu/pak14levelshots": {
+    "name": "pak14levelshots.pk3",
+    "size": 0
+  },
+  "menu/pak13art": {
+    "name": "pak13art.pk3",
+    "size": 0
+  },
+  "menu/pak88cfgs": {
+    "name": "pak88cfgs.pk3",
+    "size": 0
+  },
+  "menu/pak41player": {
+    "name": "pak41player.pk3",
+    "size": 0
+  },
+  "menu/pak82scripts": {
+    "name": "pak82scripts.pk3",
+    "size": 0
+  },
+  "menu/pak12scripts": {
+    "name": "pak12scripts.pk3",
+    "size": 0
+  },
+  "menu/pak61model": {
+    "name": "pak61model.pk3",
+    "size": 0
+  },
+  "menu/pak91maps": {
+    "name": "pak91maps.pk3",
+    "size": 0
+  },
+  "menu/pak89replayscripts": {
+    "name": "pak89replayscripts.pk3",
+    "size": 0
+  },
+  "menu/pak80help": {
+    "name": "pak80help.pk3",
+    "size": 0
+  },
+  "menu/pak31powerup": {
+    "name": "pak31powerup.pk3",
+    "size": 0
+  },
+  "menu/pak86lick-serenity": {
+    "name": "pak86lick-serenity.pk3",
+    "size": 0
+  },
+  "menu/pak15help": {
+    "name": "pak15help.pk3",
+    "size": 0
+  },
+  "menu/pak22help": {
+    "name": "pak22help.pk3",
+    "size": 0
+  },
+  "menu/pak51weapon": {
+    "name": "pak51weapon.pk3",
+    "size": 0
+  },
+  "game/pak21game": {
+    "name": "pak21game.pk3",
+    "size": 0
+  },
+  "game/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 0
+  },
+  "game/pak23df_hud": {
+    "name": "pak23df_hud.pk3",
+    "size": 0
+  },
+  "game/pak24characters": {
+    "name": "pak24characters.pk3",
+    "size": 0
+  },
+  "game/pak852d": {
+    "name": "pak852d.pk3",
+    "size": 0
+  },
+  "game/pak22help": {
+    "name": "pak22help.pk3",
+    "size": 0
+  },
+  "game/pak252d": {
+    "name": "pak252d.pk3",
+    "size": 0
+  },
+  "game/pak26numbers": {
+    "name": "pak26numbers.pk3",
+    "size": 0
+  },
+  "game/pak80help": {
+    "name": "pak80help.pk3",
+    "size": 0
+  },
+  "game/pak27AMT": {
+    "name": "pak27AMT.pk3",
+    "size": 0
+  },
+  "game/pak28amt-fs5_base": {
+    "name": "pak28amt-fs5_base.pk3",
+    "size": 0
+  },
+  "game/pak29amt-fs5_trim": {
+    "name": "pak29amt-fs5_trim.pk3",
+    "size": 0
+  },
+  "game/pak20licktorr": {
+    "name": "pak20licktorr.pk3",
+    "size": 0
+  },
+  "game/pak221serene_winds": {
+    "name": "pak221serene_winds.pk3",
+    "size": 0
+  },
+  "game/pak222env": {
+    "name": "pak222env.pk3",
+    "size": 0
+  },
+  "game/pak22388": {
+    "name": "pak22388.pk3",
+    "size": 0
+  },
+  "game/pak224cos1": {
+    "name": "pak224cos1.pk3",
+    "size": 0
+  },
+  "game/pak225_rusher_map`s_": {
+    "name": "pak225_rusher_map`s_.pk3",
+    "size": 0
+  },
+  "game/pak226_DF_RuSHeR_PAK_": {
+    "name": "pak226_DF_RuSHeR_PAK_.pk3",
+    "size": 0
+  },
+  "game/pak227egyptsoc_trim": {
+    "name": "pak227egyptsoc_trim.pk3",
+    "size": 0
+  },
+  "game/pak228egyptsoc_wall": {
+    "name": "pak228egyptsoc_wall.pk3",
+    "size": 0
+  },
+  "game/pak229_cpma3x": {
+    "name": "pak229_cpma3x.pk3",
+    "size": 0
+  },
+  "game/pak220rusher": {
+    "name": "pak220rusher.pk3",
+    "size": 0
+  },
+  "game/pak2221swelt_evil8_trim": {
+    "name": "pak2221swelt_evil8_trim.pk3",
+    "size": 0
+  },
+  "game/pak2222gbchallenge": {
+    "name": "pak2222gbchallenge.pk3",
+    "size": 0
+  },
+  "game/pak2223andy": {
+    "name": "pak2223andy.pk3",
+    "size": 0
+  },
+  "game/pak2224common": {
+    "name": "pak2224common.pk3",
+    "size": 0
+  },
+  "game/pak2225flavy_metal_1": {
+    "name": "pak2225flavy_metal_1.pk3",
+    "size": 0
+  },
+  "game/pak2226flavy_metal_2": {
+    "name": "pak2226flavy_metal_2.pk3",
+    "size": 0
+  },
+  "game/pak2227flavy_metal_3": {
+    "name": "pak2227flavy_metal_3.pk3",
+    "size": 0
+  },
+  "game/pak2228flavy_metal_4": {
+    "name": "pak2228flavy_metal_4.pk3",
+    "size": 0
+  },
+  "game/pak2229flavy_soft_1": {
+    "name": "pak2229flavy_soft_1.pk3",
+    "size": 0
+  },
+  "game/pak2220flavy_soft_2": {
+    "name": "pak2220flavy_soft_2.pk3",
+    "size": 0
+  },
+  "game/pak22221flavy_soft_3": {
+    "name": "pak22221flavy_soft_3.pk3",
+    "size": 0
+  },
+  "game/pak22222flavy_soft_4": {
+    "name": "pak22222flavy_soft_4.pk3",
+    "size": 0
+  },
+  "game/pak22223flavy_tga_5": {
+    "name": "pak22223flavy_tga_5.pk3",
+    "size": 0
+  },
+  "game/pak22224numbs": {
+    "name": "pak22224numbs.pk3",
+    "size": 0
+  },
+  "game/pak22225ptech_checkpoints": {
+    "name": "pak22225ptech_checkpoints.pk3",
+    "size": 0
+  },
+  "game/pak22226poon-tech": {
+    "name": "pak22226poon-tech.pk3",
+    "size": 0
+  },
+  "game/pak22227message": {
+    "name": "pak22227message.pk3",
+    "size": 0
+  },
+  "game/pak22228ayx2": {
+    "name": "pak22228ayx2.pk3",
+    "size": 0
+  },
+  "game/pak22229costanza1": {
+    "name": "pak22229costanza1.pk3",
+    "size": 0
+  },
+  "game/pak83costanza1": {
+    "name": "pak83costanza1.pk3",
+    "size": 0
+  },
+  "game/pak22220WoWtextures": {
+    "name": "pak22220WoWtextures.pk3",
+    "size": 0
+  },
+  "game/pak222221wub-telefon": {
+    "name": "pak222221wub-telefon.pk3",
+    "size": 0
+  },
+  "game/pak222222amt-fs5_decal": {
+    "name": "pak222222amt-fs5_decal.pk3",
+    "size": 0
+  },
+  "game/pak222223amt-fs5_sky": {
+    "name": "pak222223amt-fs5_sky.pk3",
+    "size": 0
+  },
+  "game/pak881coldsky": {
+    "name": "pak881coldsky.pk3",
+    "size": 0
+  },
+  "game/pak84cpmrlt1": {
+    "name": "pak84cpmrlt1.pk3",
+    "size": 0
+  },
+  "game/pak86lick-serenity": {
+    "name": "pak86lick-serenity.pk3",
+    "size": 0
+  },
+  "game/pak222224lick-serenity": {
+    "name": "pak222224lick-serenity.pk3",
+    "size": 0
+  },
+  "game/pak222225cellar2": {
+    "name": "pak222225cellar2.pk3",
+    "size": 0
+  },
+  "game/pak222226cpmrlt1": {
+    "name": "pak222226cpmrlt1.pk3",
+    "size": 0
+  },
+  "game/pak87skies": {
+    "name": "pak87skies.pk3",
+    "size": 0
+  },
+  "game/pak71telestecki": {
+    "name": "pak71telestecki.pk3",
+    "size": 0
+  },
+  "game/pak222227nightsky": {
+    "name": "pak222227nightsky.pk3",
+    "size": 0
+  },
+  "game/pak222228aYx": {
+    "name": "pak222228aYx.pk3",
+    "size": 0
+  },
+  "maps/AMT-Freestyle5/pak92AMT-Freestyle5": {
+    "name": "pak92AMT-Freestyle5.pk3",
+    "size": 0
+  },
+  "maps/Chronos_cpmrun1/pak93Chronos_cpmrun1": {
+    "name": "pak93Chronos_cpmrun1.pk3",
+    "size": 0
+  },
+  "maps/chronos_cpmrun3/pak94chronos_cpmrun3": {
+    "name": "pak94chronos_cpmrun3.pk3",
+    "size": 0
+  },
+  "maps/chronos_cpmrun4/pak95chronos_cpmrun4": {
+    "name": "pak95chronos_cpmrun4.pk3",
+    "size": 0
+  },
+  "maps/chronos_cpmrun5/pak96chronos_cpmrun5": {
+    "name": "pak96chronos_cpmrun5.pk3",
+    "size": 0
+  },
+  "maps/cpm_1/pak97cpm_1": {
+    "name": "pak97cpm_1.pk3",
+    "size": 0
+  },
+  "maps/cpm_1/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 0
+  },
+  "maps/cpm_10/pak98cpm_10": {
+    "name": "pak98cpm_10.pk3",
+    "size": 0
+  },
+  "maps/cpm_2/pak99cpm_2": {
+    "name": "pak99cpm_2.pk3",
+    "size": 0
+  },
+  "maps/cpm_3/pak90cpm_3": {
+    "name": "pak90cpm_3.pk3",
+    "size": 0
+  },
+  "maps/cpm_4/pak991cpm_4": {
+    "name": "pak991cpm_4.pk3",
+    "size": 0
+  },
+  "maps/cpm_4/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 0
+  },
+  "maps/cpm_5/pak992cpm_5": {
+    "name": "pak992cpm_5.pk3",
+    "size": 0
+  },
+  "maps/cpm_6/pak993cpm_6": {
+    "name": "pak993cpm_6.pk3",
+    "size": 0
+  },
+  "maps/cpm_7/pak994cpm_7": {
+    "name": "pak994cpm_7.pk3",
+    "size": 0
+  },
+  "maps/cpm_8/pak995cpm_8": {
+    "name": "pak995cpm_8.pk3",
+    "size": 0
+  },
+  "maps/cpm_9/pak996cpm_9": {
+    "name": "pak996cpm_9.pk3",
+    "size": 0
+  },
+  "maps/defrag_gallery/pak997defrag_gallery": {
+    "name": "pak997defrag_gallery.pk3",
+    "size": 0
+  },
+  "maps/defrag_gallery/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 0
+  },
+  "maps/df_cpma3x-1/pak998df_cpma3x-1": {
+    "name": "pak998df_cpma3x-1.pk3",
+    "size": 0
+  },
+  "maps/df_cpma3x-2/pak999df_cpma3x-2": {
+    "name": "pak999df_cpma3x-2.pk3",
+    "size": 0
+  },
+  "maps/df_cpma3x-3/pak990df_cpma3x-3": {
+    "name": "pak990df_cpma3x-3.pk3",
+    "size": 0
+  },
+  "maps/df_cpma3x-4/pak9991df_cpma3x-4": {
+    "name": "pak9991df_cpma3x-4.pk3",
+    "size": 0
+  },
+  "maps/df_cpma3x-5/pak9992df_cpma3x-5": {
+    "name": "pak9992df_cpma3x-5.pk3",
+    "size": 0
+  },
+  "maps/df_cpma3x-5/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 0
+  },
+  "maps/df_vq3x-1/pak9993df_vq3x-1": {
+    "name": "pak9993df_vq3x-1.pk3",
+    "size": 0
+  },
+  "maps/df_vq3x-1/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 0
+  },
+  "maps/df_vq3x-2/pak9994df_vq3x-2": {
+    "name": "pak9994df_vq3x-2.pk3",
+    "size": 0
+  },
+  "maps/df_vq3x-2/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 0
+  },
+  "maps/df_vq3x-3/pak9995df_vq3x-3": {
+    "name": "pak9995df_vq3x-3.pk3",
+    "size": 0
+  },
+  "maps/df_vq3x-4/pak9996df_vq3x-4": {
+    "name": "pak9996df_vq3x-4.pk3",
+    "size": 0
+  },
+  "maps/df_vq3x-4/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 0
+  },
+  "maps/df_vq3x-5/pak9997df_vq3x-5": {
+    "name": "pak9997df_vq3x-5.pk3",
+    "size": 0
+  },
+  "maps/df-black-grid/pak9998df-black-grid": {
+    "name": "pak9998df-black-grid.pk3",
+    "size": 0
+  },
+  "maps/df-black/pak9999df-black": {
+    "name": "pak9999df-black.pk3",
+    "size": 0
+  },
+  "maps/df-shooter1/pak9990df-shooter1": {
+    "name": "pak9990df-shooter1.pk3",
+    "size": 0
+  },
+  "maps/df-velopad1/pak99991df-velopad1": {
+    "name": "pak99991df-velopad1.pk3",
+    "size": 0
+  },
+  "maps/df-weapon1/pak99992df-weapon1": {
+    "name": "pak99992df-weapon1.pk3",
+    "size": 0
+  },
+  "maps/dftest-items/pak99993dftest-items": {
+    "name": "pak99993dftest-items.pk3",
+    "size": 0
+  },
+  "maps/DFWC2019-6/pak99994DFWC2019-6": {
+    "name": "pak99994DFWC2019-6.pk3",
+    "size": 0
+  },
+  "maps/elco-gbparadise/pak99995elco-gbparadise": {
+    "name": "pak99995elco-gbparadise.pk3",
+    "size": 0
+  },
+  "maps/Freestyle_88/pak99996Freestyle_88": {
+    "name": "pak99996Freestyle_88.pk3",
+    "size": 0
+  },
+  "maps/hangtime2-df/pak99997hangtime2-df": {
+    "name": "pak99997hangtime2-df.pk3",
+    "size": 0
+  },
+  "maps/hangtime2-df/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 0
+  },
+  "maps/HOLOGRAM/pak99998HOLOGRAM": {
+    "name": "pak99998HOLOGRAM.pk3",
+    "size": 0
+  },
+  "maps/poon-tech/pak99999poon-tech": {
+    "name": "pak99999poon-tech.pk3",
+    "size": 0
+  },
+  "maps/SLAVA/pak99990SLAVA": {
+    "name": "pak99990SLAVA.pk3",
+    "size": 0
+  },
+  "maps/slixteen/pak999991slixteen": {
+    "name": "pak999991slixteen.pk3",
+    "size": 0
+  },
+  "maps/tatmt-s1/pak999992tatmt-s1": {
+    "name": "pak999992tatmt-s1.pk3",
+    "size": 0
+  },
+  "maps/tatmt-s10/pak999993tatmt-s10": {
+    "name": "pak999993tatmt-s10.pk3",
+    "size": 0
+  },
+  "maps/tatmt-s11/pak999994tatmt-s11": {
+    "name": "pak999994tatmt-s11.pk3",
+    "size": 0
+  },
+  "maps/tatmt-s12/pak999995tatmt-s12": {
+    "name": "pak999995tatmt-s12.pk3",
+    "size": 0
+  },
+  "maps/tatmt-s2/pak999996tatmt-s2": {
+    "name": "pak999996tatmt-s2.pk3",
+    "size": 0
+  },
+  "maps/tatmt-s3/pak999997tatmt-s3": {
+    "name": "pak999997tatmt-s3.pk3",
+    "size": 0
+  },
+  "maps/tatmt-s3/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 0
+  },
+  "maps/tatmt-s4/pak999998tatmt-s4": {
+    "name": "pak999998tatmt-s4.pk3",
+    "size": 0
+  },
+  "maps/tatmt-s4/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 0
+  },
+  "maps/tatmt-s5/pak999999tatmt-s5": {
+    "name": "pak999999tatmt-s5.pk3",
+    "size": 0
+  },
+  "maps/tatmt-s6/pak999990tatmt-s6": {
+    "name": "pak999990tatmt-s6.pk3",
+    "size": 0
+  },
+  "maps/tatmt-s7/pak9999991tatmt-s7": {
+    "name": "pak9999991tatmt-s7.pk3",
+    "size": 0
+  },
+  "maps/tatmt-s7/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 0
+  },
+  "maps/tatmt-s8/pak9999992tatmt-s8": {
+    "name": "pak9999992tatmt-s8.pk3",
+    "size": 0
+  },
+  "maps/tatmt-s9/pak9999993tatmt-s9": {
+    "name": "pak9999993tatmt-s9.pk3",
+    "size": 0
+  },
+  "maps/toptuk-3/pak9999994toptuk-3": {
+    "name": "pak9999994toptuk-3.pk3",
+    "size": 0
+  },
+  "maps/tr1ckhouse-beta3/pak9999995tr1ckhouse-beta3": {
+    "name": "pak9999995tr1ckhouse-beta3.pk3",
+    "size": 0
+  },
+  "maps/vanilla_01/pak9999996vanilla_01": {
+    "name": "pak9999996vanilla_01.pk3",
+    "size": 0
+  },
+  "maps/vanilla_01/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 0
+  },
+  "maps/vanilla_02/pak9999997vanilla_02": {
+    "name": "pak9999997vanilla_02.pk3",
+    "size": 0
+  },
+  "maps/vanilla_03/pak9999998vanilla_03": {
+    "name": "pak9999998vanilla_03.pk3",
+    "size": 0
+  },
+  "maps/vanilla_04/pak9999999vanilla_04": {
+    "name": "pak9999999vanilla_04.pk3",
+    "size": 0
+  },
+  "maps/vanilla_05/pak9999990vanilla_05": {
+    "name": "pak9999990vanilla_05.pk3",
+    "size": 0
+  },
+  "maps/vanilla_06/pak99999991vanilla_06": {
+    "name": "pak99999991vanilla_06.pk3",
+    "size": 0
+  },
+  "maps/vanilla_07/pak99999992vanilla_07": {
+    "name": "pak99999992vanilla_07.pk3",
+    "size": 0
+  },
+  "maps/vanilla_08/pak99999993vanilla_08": {
+    "name": "pak99999993vanilla_08.pk3",
+    "size": 0
+  },
+  "maps/vanilla_09/pak99999994vanilla_09": {
+    "name": "pak99999994vanilla_09.pk3",
+    "size": 0
+  },
+  "maps/vanilla_10/pak99999995vanilla_10": {
+    "name": "pak99999995vanilla_10.pk3",
+    "size": 0
+  },
+  "maps/wow-stqrm/pak99999996wow-stqrm": {
+    "name": "pak99999996wow-stqrm.pk3",
+    "size": 0
+  },
+  "maps/wub-telefon/pak99999997wub-telefon": {
+    "name": "pak99999997wub-telefon.pk3",
+    "size": 0
+  }
+}

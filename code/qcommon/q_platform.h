@@ -143,6 +143,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #endif // __FreeBSD__ || __NetBSD__ || __OpenBSD__
 
+//===============================EMSCRIPTEN=================================
+
+#ifdef EMSCRIPTEN
+
+#define OS_STRING "emscripten"
+#define ID_INLINE inline
+#define PATH_SEP '/'
+#define PATH_SEP_FOREIGN '\\'
+
+#define ARCH_STRING "js"
+
+#define Q3_LITTLE_ENDIAN
+
+#undef DLL_EXT
+#define DLL_EXT ".wasm"
+
+#endif
+
 // ================================ Q3VM ===================================
 
 #ifdef Q3_VM

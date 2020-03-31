@@ -52,10 +52,7 @@ static SDL_GLContext SDL_glContext = NULL;
 static PFN_vkGetInstanceProcAddr qvkGetInstanceProcAddr;
 #endif
 
-cvar_t *r_allowSoftwareGL; // Don't abort out if a hardware visual can't be obtained
-cvar_t *r_swapInterval;
 cvar_t *r_stereoEnabled;
-cvar_t *r_ignorehwgamma;
 cvar_t *in_nograb;
 
 /*
@@ -579,8 +576,10 @@ of OpenGL
 */
 void GLimp_Init( glconfig_t *config )
 {
+#ifndef EMSCRIPTEN
 #ifndef _WIN32
 	InitSig();
+#endif
 #endif
 
 	Com_DPrintf( "GLimp_Init()\n" );
@@ -660,7 +659,9 @@ of Vulkan
 void VKimp_Init( glconfig_t *config )
 {
 #ifndef _WIN32
+#ifndef EMSCRIPTEN
 	InitSig();
+#endif
 #endif
 
 	Com_DPrintf( "VKimp_Init()\n" );

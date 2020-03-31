@@ -165,6 +165,7 @@ SDLDIR=$(MOUNT_DIR)/sdl
 CMDIR=$(MOUNT_DIR)/qcommon
 UDIR=$(MOUNT_DIR)/unix
 W32DIR=$(MOUNT_DIR)/win32
+QUAKEJS=$(MOUNT_DIR)/xquakejs
 BLIBDIR=$(MOUNT_DIR)/botlib
 UIDIR=$(MOUNT_DIR)/ui
 JPDIR=$(MOUNT_DIR)/jpeg-8c
@@ -514,6 +515,124 @@ ifeq ($(PLATFORM),netbsd)
   BUILD_CLIENT = 0
 
 else # ifeq netbsd
+#############################################################################
+# SETUP AND BUILD -- JS
+#############################################################################
+
+ifeq ($(PLATFORM),js)
+  EMSDK=$(MOUNT_DIR)/xquakejs/lib/emsdk
+  NODE_JS=$(EMSDK)/node/12.9.1_64bit/bin/node
+  BINARYEN_ROOT=$(EMSDK)/upstream
+  EMSCRIPTEN=$(EMSDK)/upstream/emscripten
+define EM_CONFIG
+"LLVM_ROOT = '$(EMSDK)/upstream/bin';NODE_JS = '$(NODE_JS)';BINARYEN_ROOT = '$(BINARYEN_ROOT)';EMSCRIPTEN_ROOT = '$(EMSCRIPTEN)'"
+endef
+  EMSCRIPTEN_CACHE=$(EMSDK)/cache
+
+  CC=$(EMSCRIPTEN)/emcc
+  RANLIB=$(EMSCRIPTEN)/emranlib
+  ARCH=js
+  BINEXT=.js
+
+
+  DEBUG=0
+  EMCC_DEBUG=0
+
+  HAVE_VM_COMPILED=0
+  BUILD_SERVER=0
+  BUILD_GAME_QVM=1
+  BUILD_GAME_SO=0
+  BUILD_STANDALONE=0
+  BUILD_RENDERER_OPENGL=1
+  BUILD_RENDERER_OPENGL2=0
+  BUILD_RENDERER_OPENGLES=0
+
+  USE_SDL=1
+  USE_VULKAN=0
+  USE_CURL=0
+  USE_CODEC_VORBIS=0
+  USE_CODEC_OPUS=1
+  USE_FREETYPE=0
+  USE_MUMBLE=0
+  USE_VOIP=0
+  SDL_LOADSO_DLOPEN=0
+  USE_CURL_DLOPEN=0
+  USE_OPENAL_DLOPEN=0
+  USE_RENDERER_DLOPEN=0
+  USE_LOCAL_HEADERS=0
+  USE_INTERNAL_LIBS=1
+  GL_EXT_direct_state_access=1
+  GL_ARB_ES2_compatibility=1
+  GL_GLEXT_PROTOTYPES=1
+
+  LIBSYSCOMMON=$(QUAKEJS)/sys_common.js
+  LIBSYSBROWSER=$(QUAKEJS)/sys_browser.js
+  LIBSYSNODE=$(QUAKEJS)/sys_node.js
+  LIBVMJS=$(CMDIR)/vm_js.js
+
+  BASE_CFLAGS = \
+	  -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
+    -I$(EMSCRIPTEN_CACHE)/wasm-obj/include/SDL2 \
+    -I$(EMSCRIPTEN)/system/include \
+    -I$(EMSCRIPTEN)/system/lib
+
+# debug optimize flags: --closure 0 --minify 0 -g -g4 || -O1 --closure 0 --minify 0 -g -g3
+  DEBUG_CFLAGS=$(BASE_CFLAGS) \
+    -O1 --closure 0 --minify 0 -g -g3 \
+    -s SAFE_HEAP=0
+    -s DEMANGLE_SUPPORT=0 \
+    -s ASSERTIONS=1 \
+    -s AGGRESSIVE_VARIABLE_ELIMINATION=0 \
+    --source-map-base http://localhost:8080/ \
+    -frtti \
+    -fPIC
+
+  RELEASE_CFLAGS=$(BASE_CFLAGS) \
+    -O3 -Oz --llvm-lto 3 \
+    -s WASM=1 \
+    -s SAFE_HEAP=0 \
+    -s DEMANGLE_SUPPORT=0 \
+    -s ASSERTIONS=0 \
+    -s AGGRESSIVE_VARIABLE_ELIMINATION=1 \
+    -fPIC
+
+#   -s USE_WEBGL2=1
+#   -s MIN_WEBGL_VERSION=2
+#   -s MAX_WEBGL_VERSION=2
+#   -s USE_SDL_IMAGE=2 \
+#   -s SDL2_IMAGE_FORMATS='["bmp","png","xpm"]' \
+# --em-config $(EM_CONFIG) \
+# --cache $(EMSCRIPTEN_CACHE) \
+
+  CLIENT_LDFLAGS += \
+    --js-library $(LIBSYSCOMMON) \
+    --js-library $(LIBSYSBROWSER) \
+    --js-library $(LIBVMJS) \
+    -lidbfs.js \
+    -lsdl.js \
+    -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
+    -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 \
+    -s ERROR_ON_UNDEFINED_SYMBOLS=1 \
+    -s INVOKE_RUN=1 \
+    -s NO_EXIT_RUNTIME=1 \
+    -s EXIT_RUNTIME=1 \
+    -s GL_UNSAFE_OPTS=0 \
+    -s EXTRA_EXPORTED_RUNTIME_METHODS="['callMain', 'addFunction', 'stackSave', 'stackRestore', 'dynCall']" \
+    -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_free', '_atof', '_strncpy', '_memset', '_memcpy', '_fopen', '_CL_UpdateSound', '_CL_UpdateShader', '_CL_GetClientState', '_Com_Printf', '_CL_NextDownload', '_SOCKS_Frame_Proxy', '_Com_Frame_Proxy_Arg1', '_Com_Frame_Proxy', '_Com_Error', '_Z_Malloc', '_Z_Free', '_S_Malloc', '_Cvar_Set', '_Cvar_SetValue', '_Cvar_VariableString', '_Cvar_VariableIntegerValue', '_Sys_GLimpInit', '_Cbuf_ExecuteText', '_Cbuf_Execute', '_Cbuf_AddText', '_Com_ExecuteCfg']" \
+    -s ALLOW_TABLE_GROWTH=1 \
+    -s MEMFS_APPEND_TO_TYPED_ARRAYS=1 \
+    -s TOTAL_MEMORY=256MB \
+    -s ALLOW_MEMORY_GROWTH=1 \
+    -s LEGACY_GL_EMULATION=1 \
+    -s WEBGL2_BACKWARDS_COMPATIBILITY_EMULATION=0 \
+    -s USE_WEBGL2=0 \
+    -s FULL_ES2=0 \
+    -s FULL_ES3=0 \
+    -s USE_SDL=2 \
+    -s FORCE_FILESYSTEM=1 \
+    -s EXPORT_NAME=\"quake3e\"
+
+else # ifeq js
 
 #############################################################################
 # SETUP AND BUILD -- GENERIC
@@ -531,6 +650,7 @@ endif #mingw32
 endif #FreeBSD
 endif #OpenBSD
 endif #NetBSD
+endif #js
 
 TARGET_CLIENT = $(CNAME)$(ARCHEXT)$(BINEXT)
 
@@ -1001,11 +1121,16 @@ endif
 endif # !USE_SDL
 
 else # !MINGW
+ifeq ($(PLATFORM),js)
+Q3OBJ += \
+	$(B)/client/sys_main.o \
 
+else
   Q3OBJ += \
     $(B)/client/unix_main.o \
     $(B)/client/unix_shared.o \
     $(B)/client/linux_signals.o
+endif
 
 ifeq ($(USE_SDL),1)
     Q3OBJ += \
@@ -1086,7 +1211,6 @@ Q3DOBJ = \
   \
   $(B)/ded/unzip.o \
   $(B)/ded/vm.o \
-  $(B)/ded/vm_interpreted.o \
   \
   $(B)/ded/be_aas_bspq3.o \
   $(B)/ded/be_aas_cluster.o \
@@ -1197,6 +1321,9 @@ $(B)/client/%.o: $(W32DIR)/%.c
 
 $(B)/client/%.o: $(W32DIR)/%.rc
 	$(DO_WINDRES)
+
+$(B)/client/%.o: $(QUAKEJS)/%.c
+	$(DO_CC)
 
 
 $(B)/ded/%.o: $(ADIR)/%.s

@@ -204,6 +204,10 @@ struct vm_s {
 	int			privateFlag;
 };
 
+extern	vm_t			*gvm;				// game virtual machine
+extern	vm_t			*cgvm;	// interface to cgame dll or vm
+extern	vm_t			*uivm;	// interface to ui dll or vm
+
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header );
 int	VM_CallCompiled( vm_t *vm, int nargs, int *args );
 
@@ -233,7 +237,5 @@ typedef struct opcode_info_s
 	int   nargs;
 	int   flags;
 } opcode_info_t ;
-
-opcode_info_t ops[ OP_MAX ];
 
 #endif // VM_LOCAL_H

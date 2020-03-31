@@ -1,0 +1,3 @@
+[submodule "xquakejs/lib/emsdk"]
+	path = xquakejs/lib/emsdk
+	url = git://github.com/emscripten-core/emsdk.git

@@ -3,3 +3,14 @@ output/
 .vs/
 .vscode/
 *.user
+*tags
+*.tags*
+
+# emscripten
+####################
+base
+code/xquakejs/lib/emsdk
+code/xquakejs/lib/emsdk/node_modules/
+node_modules
+.resources
+data
