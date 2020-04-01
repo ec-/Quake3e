@@ -819,10 +819,10 @@ CL_InitCGame
 Should only be called by CL_StartHunkUsers
 ====================
 */
+static int				t1, t2;
 void CL_InitCGame( void ) {
 	const char			*info;
 	const char			*mapname;
-	int					t1, t2;
 	vmInterpret_t		interpret;
 	unsigned result;
 
@@ -869,7 +869,7 @@ void CL_InitCGame( void ) {
 }
 
 int CL_GetClientState( void ) {
-	return clc.state;
+	return cls.state;
 }
 
 void CL_UpdateShader( void ) {

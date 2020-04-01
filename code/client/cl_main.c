@@ -698,7 +698,7 @@ void CL_DemoCompleted_After_Startup( void ) {
 }
 
 void CL_DemoCompleted_After_Shutdown( void ) {
-	FS_Startup(com_basegame->string);
+	FS_Restart( 0 );
 	Com_Frame_Callback(Sys_FS_Startup, CL_DemoCompleted_After_Startup);	
 #endif
 }
@@ -1280,11 +1280,14 @@ qboolean CL_Disconnect( qboolean showMainMenu ) {
 
 #ifdef EMSCRIPTEN
 	if(FS_Initialized()) {
-		CL_Disconnect_After_Restart();
+		return CL_Disconnect_After_Restart();
 	}
+	return qtrue;
 }
 
-void CL_Disconnect_After_Restart() {
+qboolean CL_Disconnect_After_Restart() {
+	static qboolean cl_disconnecting = qfalse;
+	qboolean cl_restarted = qfalse;
 #endif
 ;
 	
@@ -1558,8 +1561,8 @@ CL_Connect_f
 */
 #ifdef EMSCRIPTEN
 char	servero[MAX_OSPATH];
-const char	*serverStringo;
 netadrtype_t familyo = NA_UNSPEC;
+char	cmd_argso[ sizeof(cl_reconnectArgs) ];
 #endif
 static void CL_Connect_f( void ) {
 	netadrtype_t family;
@@ -1567,7 +1570,6 @@ static void CL_Connect_f( void ) {
 	char	buffer[ sizeof(cls.servername) ];  // same length as cls.servername
 	char	cmd_args[ sizeof(cl_reconnectArgs) ];
 	char	*server;	
-	const char	*serverString;
 	int		len;
 	int		argc;
 
@@ -1648,10 +1650,19 @@ static void CL_Connect_f( void ) {
 	noGameRestart = qtrue;
 	CL_Disconnect( qtrue );
 
+	Con_Close();
+
+	Q_strncpyz( cls.servername, server, sizeof( cls.servername ) );
+
+	// save arguments for reconnect
+	Q_strncpyz( cl_reconnectArgs, cmd_args, sizeof( cl_reconnectArgs ) );
+
+	// copy resolved address 
+	clc.serverAddress = addr;
+
 #ifdef EMSCRIPTEN
 	familyo = family;
 	Q_strncpyz( servero, server, sizeof( server ) );
-	serverStringo = serverString;
 	
 	if(!FS_Initialized()) {
 		Com_Frame_Callback(Sys_FS_Shutdown, CL_Connect_After_Shutdown);
@@ -1661,7 +1672,7 @@ static void CL_Connect_f( void ) {
 }
 
 void CL_Connect_After_Shutdown( void ) {
-	FS_Startup(com_basegame->string);
+	FS_Restart( 0 );
 	Com_Frame_Callback(Sys_FS_Startup, CL_Connect_After_Startup);
 }
 
@@ -1674,21 +1685,9 @@ void CL_Connect_After_Startup( void ) {
 void CL_Connect_After_Restart( void ) {
 	char	server[MAX_OSPATH];
 	const char	*serverString;
-	netadrtype_t family = NA_UNSPEC;
-	family = familyo;
 	Q_strncpyz( server, servero, sizeof( server ) );
-	serverString = serverStringo;
 #endif
 ;
-	Con_Close();
-
-	Q_strncpyz( cls.servername, server, sizeof( cls.servername ) );
-
-	// save arguments for reconnect
-	Q_strncpyz( cl_reconnectArgs, cmd_args, sizeof( cl_reconnectArgs ) );
-
-	// copy resolved address 
-	clc.serverAddress = addr;
 
 	if (clc.serverAddress.port == 0) {
 		clc.serverAddress.port = BigShort( PORT_SERVER );
@@ -1882,7 +1881,7 @@ static void CL_Vid_Restart( void ) {
 }
 
 void CL_Vid_Restart_After_Shutdown( void ) {
-	FS_Startup(com_basegame->string);
+	FS_Restart( 0 );
 	Com_Frame_Callback(Sys_FS_Startup, CL_Vid_Restart_After_Startup);
 }
 
@@ -2080,7 +2079,7 @@ void CL_DownloadsComplete_Disconnected_After_Startup( void ) {
 }
 
 void CL_DownloadsComplete_Disconnected_After_Shutdown( void ) {
-	FS_Startup(com_basegame->string);
+	FS_Restart( 0 );
 	Com_Frame_Callback(Sys_FS_Startup, CL_DownloadsComplete_Disconnected_After_Startup);
 }
 
@@ -2090,7 +2089,7 @@ void CL_DownloadsComplete_After_Startup( void ) {
 }
 
 void CL_DownloadsComplete_After_Shutdown( void ) {
-	FS_Startup(com_basegame->string);
+	FS_Restart( 0 );
 	Com_Frame_Callback(Sys_FS_Startup, CL_DownloadsComplete_After_Startup);
 }
 
@@ -3165,7 +3164,7 @@ void CL_Frame( int msec ) {
 			return;
 		}
 
-		if (clc.state == CA_LOADING) {
+		if (cls.state == CA_LOADING) {
 			CL_InitCGameFinished();
 		}
 	}

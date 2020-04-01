@@ -114,6 +114,10 @@ typedef struct {
 	void	(*VertexLighting)( qboolean allowed );
 	void	(*SyncRender)( void );
 
+#ifdef EMSCRIPTEN
+	void (*UpdateMode)(glconfig_t *glconfigOut);
+	void (*UpdateShader)(char *shaderName, int lightmapIndex);
+#endif
 
 } refexport_t;
 

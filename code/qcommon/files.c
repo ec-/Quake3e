@@ -5304,11 +5304,13 @@ FS_Restart
 */
 void FS_Restart( int checksumFeed ) {
 
+#ifndef EMSCRIPTEN
 	// last valid game folder used
 	static char lastValidBase[MAX_OSPATH];
 	static char lastValidGame[MAX_OSPATH];
 
 	static qboolean execConfig = qfalse;
+#endif
 
 	// free anything we currently have loaded
 	FS_Shutdown( qfalse );
@@ -5316,9 +5318,19 @@ void FS_Restart( int checksumFeed ) {
 	// set the checksum feed
 	fs_checksumFeed = checksumFeed;
 
+#ifndef EMSCRIPTEN
 	// try to start up normally
 	FS_Startup();
+#else
+}
 
+void FS_Restart_After_Async( void ) {
+	static char lastValidBase[MAX_OSPATH];
+	static char lastValidGame[MAX_OSPATH];
+	static qboolean execConfig = qfalse;
+	const char *lastGameDir;
+#endif
+;
 	// if we can't find default.cfg, assume that the paths are
 	// busted and error out now, rather than getting an unreadable
 	// graphics screen when the font fails to load
@@ -5333,7 +5345,7 @@ void FS_Restart( int checksumFeed ) {
 			lastValidGame[0] = '\0';
 			Cvar_Set( "fs_restrict", "0" );
 			execConfig = qtrue;
-			FS_Restart( checksumFeed );
+			FS_Restart( fs_checksumFeed );
 			Com_Error( ERR_DROP, "Invalid game folder" );
 			return;
 		}

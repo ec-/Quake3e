@@ -1959,3 +1959,8 @@ qboolean ARB_CompileProgram( programType ptype, const char *text, GLuint program
 void ARB_ProgramEnableExt( GLuint vertexProgram, GLuint fragmentProgram );
 
 #endif //TR_LOCAL_H
+
+#ifdef EMSCRIPEN
+void RE_UpdateMode(glconfig_t *glconfigOut);
+void RE_UpdateShader(char *shaderName, int lightmapIndex);
+#endif

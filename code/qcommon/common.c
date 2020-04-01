@@ -3068,7 +3068,8 @@ void Com_GameRestart( int checksumFeed, qboolean clientRestart )
 
 void Com_GameRestart_After_Restart( void )
 {
-	qboolean disconnect = qfalse;
+	static qboolean com_gameRestarting = qtrue;
+	qboolean clientRestart = qtrue;
 	{
 #endif
 		// Load new configuration
@@ -3105,7 +3106,7 @@ static void Com_GameRestart_f( void )
 
 void Com_GameRestart_User_After_Shutdown( void )
 {
-	FS_Startup(com_basegame->string);
+	FS_Restart( 0 );
 	Com_Frame_Callback(Sys_FS_Startup, Com_GameRestart_User_After_Startup);
 }
 
@@ -3545,8 +3546,10 @@ Com_Init
 =================
 */
 void Com_Init( char *commandLine ) {
+#ifndef EMSCRIPTEN
 	const char *s;
 	int	qport;
+#endif
 
 	Com_Printf( "%s %s %s\n", SVN_VERSION, PLATFORM_STRING, __DATE__ );
 
@@ -3607,13 +3610,11 @@ Com_Frame_Callback(Sys_FS_Startup, Com_Init_After_Filesystem);
 }
 
 void Com_Init_After_Filesystem( void ) {
-	char	*s;
+	const char	*s;
 	int	qport;
 	// TODO: starting to see a pattern, split up every function in the tree to make asynchronous
 	//   Then call the leafs from the top function in the same order
-	FS_Startup_After_Async(com_basegame->string);
-	FS_InitFilesystem_After_Async();
-	
+	FS_Restart_After_Async();
 #endif
 ;
 
@@ -3792,7 +3793,7 @@ void Com_Init_After_Filesystem( void ) {
 	Com_Printf( "--- Common Initialization Complete ---\n" );
 #ifdef EMSCRIPTEN
 	if(Cvar_VariableIntegerValue("net_socksLoading")) {
-		NET_Config( qtrue );
+		NET_Init( );
 	}
 #endif
 }
@@ -3996,7 +3997,7 @@ void Com_Frame_After_Startup() {
 }
 
 void Com_Frame_After_Shutdown() {
-	FS_Startup(com_basegame->string);
+	FS_Restart( 0 );
 	Com_Frame_Callback(Sys_FS_Startup, Com_Frame_After_Startup);
 }
 
@@ -4145,14 +4146,28 @@ void Com_Frame( qboolean noDelay ) {
 			Com_EventLoop();
 #endif
 		NET_Sleep( sleepMsec * 1000 - 500 );
+#ifndef EMSCRIPTEN
 	} while( Com_TimeVal( minMsec ) );
 
+#else
+;
+	} while(0);
+
+	if(Cvar_Get("net_socksLoading", "1", CVAR_ROM)->integer) {
+		return;
+	}
+#endif
 	lastTime = com_frameTime;
 	com_frameTime = Com_EventLoop();
 	msec = com_frameTime - lastTime;
 
 	Cbuf_Execute();
-
+#ifdef EMSCRIPTEN
+	// if an execution invoked a callback event, run the rest next frame
+	if(CB_Frame_Proxy || CB_Frame_After) {
+		return;
+	}
+#endif
 	// mess with msec if needed
 	msec = Com_ModifyMsec( msec );
 

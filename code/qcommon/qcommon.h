@@ -51,6 +51,58 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 //============================================================================
 
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+void Com_Frame_Callback(void (*cb)( void ), void (*af)( void ));
+void Com_Frame_Proxy( void );
+
+void SOCKS_Frame_Callback(void (*cb)( void ), void (*af)( void ));
+void SOCKS_Frame_Proxy( void );
+static void (*SOCKS_Proxy)( void ) = NULL;
+static void (*SOCKS_After)( void ) = NULL;
+
+static void (*CB_Frame_Proxy)( void ) = NULL;
+static void (*CB_Frame_After)( void ) = NULL;
+
+
+extern char **Sys_CmdArgs( void );
+extern int Sys_CmdArgsC( void );
+
+extern void Sys_FS_Startup( void );
+extern void Sys_FS_Shutdown( void );
+extern void Sys_BeginDownload( void );
+extern char *Sys_UpdateShader( void );
+extern char *Sys_UpdateSound( void );
+extern char *Sys_UpdateModel( void );
+
+void Com_Init_After_Filesystem( void );
+void FS_Restart_After_Async( void );
+void CL_ParseGamestate_After_Restart( void );
+void Com_GameRestart_After_Restart( void );
+void CL_Vid_Restart_After_Restart( void );
+void CL_Connect_After_Shutdown( void );
+void CL_Connect_After_Restart( void );
+void CL_Connect_After_Startup( void );
+qboolean CL_Disconnect_After_Restart( void );
+
+void Com_Frame_After_Startup( void );
+void Com_Frame_After_Shutdown( void );
+void Com_GameRestart_User_After_Shutdown( void );
+void Com_GameRestart_User_After_Startup( void );
+void SV_SpawnServer_After_Shutdown( void );
+void SV_SpawnServer_After_Startup( void );
+void CL_ParseGamestate_Game_After_Shutdown( void );
+void CL_ParseGamestate_Game_After_Startup( void );
+void CL_ParseGamestate_After_Shutdown( void );
+void CL_ParseGamestate_After_Startup( void );
+void CL_Vid_Restart_After_Shutdown( void );
+void CL_Vid_Restart_After_Startup( void );
+
+void CL_DemoCompleted_After_Startup( void );
+void CL_DemoCompleted_After_Shutdown( void );
+
+#endif
+
 //
 // msg.c
 //
@@ -406,6 +458,19 @@ static ID_INLINE float _vmf(intptr_t x)
 }
 #define	VMF(x)	_vmf(args[x])
 
+#ifdef EMSCRIPTEN
+typedef struct {
+	int					frametime;
+	int					realtime;
+	int					cursorx;
+	int					cursory;
+} ui_hack;
+
+byte *VM_GetStaticAtoms(vm_t *vm, int refreshCmd, int mouseCmd, int realtimeMarker);
+qboolean VM_IsSuspended(vm_t *vm);
+void VM_Suspend(vm_t *vm, unsigned pc, unsigned sp);
+int VM_Resume(vm_t *vm);
+#endif
 
 /*
 ==============================================================
