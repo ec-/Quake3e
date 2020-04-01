@@ -980,7 +980,7 @@ const char *Sys_BinName( const char *arg0 )
 }
 
 
-int Sys_ParseArgs( int argc, const char* argv[] )
+int Sys_ParseArgs( int argc, char* argv[] )
 {
 	if ( argc == 2 )
 	{
@@ -995,7 +995,7 @@ int Sys_ParseArgs( int argc, const char* argv[] )
 }
 
 
-int main( int argc, const char* argv[] )
+int main( int argc, char* argv[] )
 {
 	char con_title[ MAX_CVAR_VALUE_STRING ];
 	int xpos, ypos;
@@ -1003,7 +1003,13 @@ int main( int argc, const char* argv[] )
 	char  *cmdline;
 	int   len, i;
 	tty_err	err;
-
+	
+	// bullshit because onRuntimeInitialized does execute consistently
+	//   held up by some sort of WarningHandler race condition
+	argc = Sys_CmdArgsC();
+	Com_Printf("Getting args %i", argc);
+	argv = Sys_CmdArgs();
+		
 	if ( Sys_ParseArgs( argc, argv ) ) // added this for support
 		return 0;
 
@@ -1053,22 +1059,9 @@ int main( int argc, const char* argv[] )
 		}
 	}
 
-	while (1)
-	{
-#ifdef __linux__
-		Sys_ConfigureFPU();
-#endif
-
-#ifdef DEDICATED
-		// run the game
-		Com_Frame( qfalse );
-#else
-		// check for other input devices
-		IN_Frame();
-		// run the game
-		Com_Frame( CL_NoDelay() );
-#endif
-	}
-	// never gets here
+	// HACK for now to prevent Browser lib from calling
+	// requestAnimationFrame on dedicated builds.
+	emscripten_set_main_loop(Com_Frame, 0, 0);
+	emscripten_exit_with_live_runtime();
 	return 0;
 }

@@ -3106,7 +3106,7 @@ static void Com_GameRestart_f( void )
 
 void Com_GameRestart_User_After_Shutdown( void )
 {
-	FS_Restart( 0 );
+	FS_Startup();
 	Com_Frame_Callback(Sys_FS_Startup, Com_GameRestart_User_After_Startup);
 }
 
@@ -3614,6 +3614,7 @@ void Com_Init_After_Filesystem( void ) {
 	int	qport;
 	// TODO: starting to see a pattern, split up every function in the tree to make asynchronous
 	//   Then call the leafs from the top function in the same order
+	FS_Startup_After_Async();
 	FS_Restart_After_Async();
 #endif
 ;
@@ -3997,7 +3998,7 @@ void Com_Frame_After_Startup() {
 }
 
 void Com_Frame_After_Shutdown() {
-	FS_Restart( 0 );
+	FS_Startup();
 	Com_Frame_Callback(Sys_FS_Startup, Com_Frame_After_Startup);
 }
 
@@ -4007,7 +4008,12 @@ void Com_Frame_After_Shutdown() {
 Com_Frame
 =================
 */
+#ifndef EMSCRIPTEN
 void Com_Frame( qboolean noDelay ) {
+#else
+void Com_Frame( void ) {
+	qboolean noDelay = qtrue;
+#endif
 
 #ifndef DEDICATED
 	static int bias = 0;

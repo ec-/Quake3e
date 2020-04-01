@@ -75,6 +75,8 @@ extern char *Sys_UpdateShader( void );
 extern char *Sys_UpdateSound( void );
 extern char *Sys_UpdateModel( void );
 
+void FS_Startup( void );
+void FS_Startup_After_Async( void );
 void Com_Init_After_Filesystem( void );
 void FS_Restart_After_Async( void );
 void CL_ParseGamestate_After_Restart( void );
@@ -1138,7 +1140,11 @@ void Com_TouchMemory( void );
 
 // commandLine should not include the executable name (argv[0])
 void Com_Init( char *commandLine );
+#ifdef EMSCRIPTEN
+void Com_Frame( void );
+#else
 void Com_Frame( qboolean noDelay );
+#endif
 
 /*
 ==============================================================

@@ -698,7 +698,7 @@ void CL_DemoCompleted_After_Startup( void ) {
 }
 
 void CL_DemoCompleted_After_Shutdown( void ) {
-	FS_Restart( 0 );
+	FS_Startup();
 	Com_Frame_Callback(Sys_FS_Startup, CL_DemoCompleted_After_Startup);	
 #endif
 }
@@ -1672,7 +1672,7 @@ static void CL_Connect_f( void ) {
 }
 
 void CL_Connect_After_Shutdown( void ) {
-	FS_Restart( 0 );
+	FS_Startup();
 	Com_Frame_Callback(Sys_FS_Startup, CL_Connect_After_Startup);
 }
 
@@ -1881,7 +1881,7 @@ static void CL_Vid_Restart( void ) {
 }
 
 void CL_Vid_Restart_After_Shutdown( void ) {
-	FS_Restart( 0 );
+	FS_Startup();
 	Com_Frame_Callback(Sys_FS_Startup, CL_Vid_Restart_After_Startup);
 }
 
@@ -2079,7 +2079,7 @@ void CL_DownloadsComplete_Disconnected_After_Startup( void ) {
 }
 
 void CL_DownloadsComplete_Disconnected_After_Shutdown( void ) {
-	FS_Restart( 0 );
+	FS_Startup();
 	Com_Frame_Callback(Sys_FS_Startup, CL_DownloadsComplete_Disconnected_After_Startup);
 }
 
@@ -2089,7 +2089,7 @@ void CL_DownloadsComplete_After_Startup( void ) {
 }
 
 void CL_DownloadsComplete_After_Shutdown( void ) {
-	FS_Restart( 0 );
+	FS_Startup();
 	Com_Frame_Callback(Sys_FS_Startup, CL_DownloadsComplete_After_Startup);
 }
 

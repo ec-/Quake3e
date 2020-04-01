@@ -630,7 +630,7 @@ static void CL_ParseGamestate( msg_t *msg ) {
 }
 
 void CL_ParseGamestate_Game_After_Shutdown( void ) {
-	FS_Restart( 0 );
+	FS_Startup();
 	Com_Frame_Callback(Sys_FS_Startup, CL_ParseGamestate_Game_After_Startup);
 }
 
@@ -641,7 +641,7 @@ void CL_ParseGamestate_Game_After_Startup( void ) {
 }
 
 void CL_ParseGamestate_After_Shutdown( void ) {
-	FS_Restart( 0 );
+	FS_Startup();
 	Com_Frame_Callback(Sys_FS_Startup, CL_ParseGamestate_After_Startup);
 }
 

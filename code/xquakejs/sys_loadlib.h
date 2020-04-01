@@ -28,7 +28,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #		include <SDL_loadso.h>
 #	endif
 extern void *Sys_LoadLibrary(const char *f);
-extern void *Sys_UnloadLibrary(const char *h);
+//extern void *Sys_UnloadLibrary(void *h);
 #	define Sys_LoadFunction(h,fn) SDL_LoadFunction(h,fn)
 #	define Sys_LibraryError() SDL_GetError()
 

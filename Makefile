@@ -630,7 +630,8 @@ endef
     -s FULL_ES3=0 \
     -s USE_SDL=2 \
     -s FORCE_FILESYSTEM=1 \
-    -s EXPORT_NAME=\"quake3e\"
+    -s EXPORT_NAME=\"quake3e\" \
+		$(DEBUG_CFLAGS)
 
 else # ifeq js
 

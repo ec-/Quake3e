@@ -4623,9 +4623,15 @@ qboolean FS_IsPureChecksum( int sum )
 FS_Startup
 ================
 */
+#ifndef EMSCRIPTEN
 static void FS_Startup( void ) {
 	const char *homePath;
 	int start, end;
+#else
+void FS_Startup( void ) {
+	const char *homePath;
+#endif
+;
 
 	Com_Printf( "----- FS_Startup -----\n" );
 
@@ -4655,7 +4661,14 @@ static void FS_Startup( void ) {
 	fs_homepath = Cvar_Get( "fs_homepath", homePath, CVAR_INIT | CVAR_PROTECTED | CVAR_PRIVATE );
 	fs_gamedirvar = Cvar_Get( "fs_game", "", CVAR_INIT | CVAR_SYSTEMINFO );
 	Cvar_CheckRange( fs_gamedirvar, NULL, NULL, CV_FSPATH );
+#ifdef EMSCRIPTEN
+}
 
+void FS_Startup_After_Async( void )
+{
+	int start, end;
+#endif
+;
 	if ( !Q_stricmp( fs_basegame->string, fs_gamedirvar->string ) ) {
 		Cvar_ForceReset( "fs_game" );
 	}
@@ -5294,6 +5307,9 @@ void FS_InitFilesystem( void ) {
 
 	// try to start up normally
 	FS_Restart( 0 );
+#ifdef EMSCRIPTEN
+	FS_Startup();
+#endif
 }
 
 
@@ -5328,7 +5344,7 @@ void FS_Restart_After_Async( void ) {
 	static char lastValidBase[MAX_OSPATH];
 	static char lastValidGame[MAX_OSPATH];
 	static qboolean execConfig = qfalse;
-	const char *lastGameDir;
+	FS_Startup_After_Async();
 #endif
 ;
 	// if we can't find default.cfg, assume that the paths are
