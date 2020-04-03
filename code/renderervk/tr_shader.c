@@ -2925,6 +2925,9 @@ static shader_t *FinishShader( void ) {
 		def.face_culling = shader.cullType;
 		def.polygon_offset = shader.polygonOffset;
 
+		if ( stage == 1 )
+			def.allow_discard = 1;
+
 		for ( i = 0; i < stage; i++ ) {
 			shaderStage_t *pStage = &stages[i];
 			def.state_bits = pStage->stateBits;
