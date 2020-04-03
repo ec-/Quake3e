@@ -1031,6 +1031,7 @@ int main( int argc, char* argv[] )
 	// bk000306 - clear queues
 //	memset( &eventQue[0], 0, sizeof( eventQue ) );
 //	memset( &sys_packetReceived[0], 0, sizeof( sys_packetReceived ) );
+	Sys_PlatformInit( );
 
 	// get the initial time base
 	Sys_Milliseconds();

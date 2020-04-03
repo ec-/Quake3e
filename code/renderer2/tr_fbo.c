@@ -232,7 +232,7 @@ void FBO_Bind(FBO_t * fbo)
 	//if (r_logFile->integer)
 	//{
 		// don't just call LogComment, or we will get a call to va() every frame!
-		//GLimp_LogComment(va("--- FBO_Bind( %s ) ---\n", fbo ? fbo->name : "NULL"));
+		//ri.Printf(PRINT_DEVELOPER, va("--- FBO_Bind( %s ) ---\n", fbo ? fbo->name : "NULL"));
 	//}
 
 	GL_BindFramebuffer(GL_FRAMEBUFFER, fbo ? fbo->frameBuffer : 0);

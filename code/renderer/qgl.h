@@ -43,9 +43,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #elif EMSCRIPTEN
 #include <SDL_opengl.h>
 #include <SDL_opengl_glext.h>
-#include <SDL_opengles2.h>
-#include <SDL_opengles2_gl2.h>
-#include <SDL_opengles2_gl2ext.h>
 #endif
 
 #ifndef APIENTRY

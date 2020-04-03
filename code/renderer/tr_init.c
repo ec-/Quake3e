@@ -193,6 +193,11 @@ typedef struct {
 	const char *name;
 } sym_t;
 
+#ifdef EMSCRIPTEN
+//#define GLE(ret, name, ...) name##proc * qgl##name;
+//QGL_Core_PROCS;
+//#undef GLE
+#else
 #define GLE( ret, name, ... ) { (void**)&q##name, XSTRING(name) },
 static sym_t core_procs[] = { QGL_Core_PROCS };
 static sym_t ext_procs[] = { QGL_Ext_PROCS };
@@ -201,6 +206,7 @@ static sym_t vbo_procs[] = { QGL_VBO_PROCS };
 static sym_t fbo_procs[] = { QGL_FBO_PROCS };
 static sym_t fbo_opt_procs[] = { QGL_FBO_OPT_PROCS };
 #undef GLE
+#endif
 
 
 /*
@@ -237,12 +243,14 @@ static void R_ClearSymbols( sym_t *syms, int count )
 
 static void R_ClearSymTables( void )
 {
+#ifndef EMSCRIPTEN
 	R_ClearSymbols( core_procs, ARRAY_LEN( core_procs ) );
 	R_ClearSymbols( ext_procs, ARRAY_LEN( ext_procs ) );
 	R_ClearSymbols( arb_procs, ARRAY_LEN( arb_procs ) );
 	R_ClearSymbols( vbo_procs, ARRAY_LEN( vbo_procs ) );
 	R_ClearSymbols( fbo_procs, ARRAY_LEN( fbo_procs ) );
 	R_ClearSymbols( fbo_opt_procs, ARRAY_LEN( fbo_opt_procs ) );
+#endif
 }
 
 
@@ -386,6 +394,7 @@ static void R_InitExtensions( void )
 		ri.Printf( PRINT_ALL, "...GL_EXT_texture_env_add not found\n" );
 	}
 
+	#ifndef EMSCRIPTEN
 	// GL_ARB_multitexture
 	if ( R_HaveExtension( "GL_ARB_multitexture" ) )
 	{
@@ -510,6 +519,7 @@ static void R_InitExtensions( void )
 			R_ResolveSymbols( fbo_opt_procs, ARRAY_LEN( fbo_opt_procs ) );
 		}
 	}
+#endif
 }
 
 
@@ -545,20 +555,29 @@ static void InitOpenGL( void )
 
 		R_ClearSymTables();
 
+#ifdef EMSCRIPTEN
+//#define GLE( ret, name, ... ) q##name = (void *)#name;
+//QGL_Core_PROCS;
+//#undef GLE
+#else
 		err = R_ResolveSymbols( core_procs, ARRAY_LEN( core_procs ) );
 		if ( err )
 			ri.Error( ERR_FATAL, "Error resolving core OpenGL function '%s'", err );
 
 		R_InitExtensions();
+#endif
+
+ri.Printf( PRINT_ALL, "GetIntegerv\n" );
 
 		// OpenGL driver constants
-		qglGetIntegerv( GL_MAX_TEXTURE_SIZE, &max_texture_size );
+		glGetIntegerv( GL_MAX_TEXTURE_SIZE, &max_texture_size );
 		glConfig.maxTextureSize = max_texture_size;
 
 		// stubbed or broken drivers may have reported 0...
 		if ( glConfig.maxTextureSize <= 0 ) 
 			glConfig.maxTextureSize = 0;
 
+ri.Printf( PRINT_ALL, "GetIntegerv\n" );
 		qglGetIntegerv( GL_MAX_TEXTURE_IMAGE_UNITS, &max_shader_units );
 		qglGetIntegerv( GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &max_bind_units );
 
@@ -1190,10 +1209,14 @@ static void GL_SetDefaultState( void )
 		glState.glClientStateBits[ i ] = 0;
 	}
 
+ri.Printf( PRINT_ALL, "ClearDepth\n" );
+
 	qglClearDepth( 1.0f );
 
 	qglCullFace( GL_FRONT );
 	glState.faceCulling = -1;
+
+ri.Printf( PRINT_ALL, "Color4\n" );
 
 	qglColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
 

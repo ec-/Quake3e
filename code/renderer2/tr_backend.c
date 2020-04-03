@@ -1400,7 +1400,7 @@ const void	*RB_SwapBuffers( const void *data ) {
 		qglFinish();
 	}
 
-//	GLimp_LogComment( "***************** RB_SwapBuffers *****************\n\n\n" );
+//	ri.Printf(PRINT_DEVELOPER,  "***************** RB_SwapBuffers *****************\n\n\n" );
 
 	ri.GLimp_EndFrame();
 

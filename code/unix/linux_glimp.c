@@ -1216,7 +1216,7 @@ void VKimp_Shutdown( qboolean unloadDLL )
 /*
 ** GLimp_LogComment
 */
-void GLimp_LogComment( char *comment )
+void ri.Printf(PRINT_DEVELOPER,  char *comment )
 {
 	if ( glw_state.log_fp )
 	{

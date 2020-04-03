@@ -68,6 +68,7 @@ static void (*CB_Frame_After)( void ) = NULL;
 extern char **Sys_CmdArgs( void );
 extern int Sys_CmdArgsC( void );
 
+extern void	Sys_GLimpInit( void );
 extern void Sys_FS_Startup( void );
 extern void Sys_FS_Shutdown( void );
 extern void Sys_BeginDownload( void );

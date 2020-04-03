@@ -594,6 +594,10 @@ void GLimp_Init( glconfig_t *config )
 	r_stereoEnabled = Cvar_Get( "r_stereoEnabled", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_ignorehwgamma = Cvar_Get( "r_ignorehwgamma", "0", CVAR_ARCHIVE | CVAR_LATCH );
 
+#ifdef EMSCRIPTEN
+	Sys_GLimpInit();
+#endif
+
 	// Create the window and set up the context
 	if ( !GLimp_StartDriverAndSetMode( r_mode->integer, r_modeFullscreen->string, r_fullscreen->integer, qfalse ) )
 	{

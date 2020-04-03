@@ -45,7 +45,7 @@ cvar_t	*r_railSegmentLength;
 
 cvar_t	*r_ignore;
 
-cvar_t  *r_displayRefresh;
+cvar_t  *r_renderRefresh;
 
 cvar_t	*r_detailTextures;
 
@@ -880,11 +880,13 @@ void GL_SetDefaultState( void )
 	if (glRefConfig.vertexArrayObject)
 		qglBindVertexArray(0);
 
+ri.Printf( PRINT_ALL, "BindBuffer\n" );
 	qglBindBuffer(GL_ARRAY_BUFFER, 0);
 	qglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glState.currentVao = NULL;
 	glState.vertexAttribsEnabled = 0;
 
+ri.Printf( PRINT_ALL, "PolygonMode\n" );
 	qglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 	qglDepthMask( GL_TRUE );
 	qglDisable( GL_DEPTH_TEST );
@@ -898,6 +900,7 @@ void GL_SetDefaultState( void )
 	// GL_POLYGON_OFFSET_FILL will be glEnable()d when this is used
 	qglPolygonOffset( r_offsetFactor->value, r_offsetUnits->value );
 
+ri.Printf( PRINT_ALL, "ClearColor\n" );
 	qglClearColor( 0.0f, 0.0f, 0.0f, 1.0f );	// FIXME: get color of sky
 }
 
@@ -1154,8 +1157,8 @@ void R_Register( void )
 	//
 	// temporary latched variables that can only change over a restart
 	//
-	r_displayRefresh = ri.Cvar_Get( "r_displayRefresh", "0", CVAR_LATCH );
-	ri.Cvar_CheckRange( r_displayRefresh, "0", "250", CV_INTEGER );
+	r_renderRefresh = ri.Cvar_Get( "r_displayRefresh", "0", CVAR_LATCH );
+	ri.Cvar_CheckRange( r_renderRefresh, "0", "250", CV_INTEGER );
 	r_fullbright = ri.Cvar_Get ("r_fullbright", "0", CVAR_LATCH|CVAR_CHEAT );
 	r_mapOverBrightBits = ri.Cvar_Get ("r_mapOverBrightBits", "2", CVAR_LATCH );
 	r_intensity = ri.Cvar_Get ("r_intensity", "1", CVAR_LATCH );
