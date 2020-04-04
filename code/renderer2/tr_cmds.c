@@ -410,6 +410,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 			ri.Error(ERR_FATAL, "RE_BeginFrame() - glGetError() failed (0x%x)!", err);
 	}
 
+#ifndef EMSCRIPTEN
 	if (glConfig.stereoEnabled) {
 		if( !(cmd = R_GetCommandBuffer(sizeof(*cmd))) )
 			return;
@@ -518,6 +519,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 				cmd->buffer = (int)GL_BACK;
 		}
 	}
+#endif
 	
 	tr.refdef.stereoFrame = stereoFrame;
 }

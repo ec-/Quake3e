@@ -235,7 +235,7 @@ void R_LoadDDS ( const char *filename, byte **pic, int *width, int *height, GLen
 	if (height)
 		*height = 0;
 	if (picFormat)
-		*picFormat = GL_RGBA8;
+		*picFormat = GL_RGBA;
 	if (numMips)
 		*numMips = 1;
 
@@ -386,7 +386,7 @@ void R_LoadDDS ( const char *filename, byte **pic, int *width, int *height, GLen
 
 			case DXGI_FORMAT_R8G8B8A8_UNORM:
 			case DXGI_FORMAT_R8G8B8A8_SNORM:
-				*picFormat = GL_RGBA8;
+				*picFormat = GL_RGBA;
 				break;
 
 			default:
@@ -436,7 +436,7 @@ void R_LoadDDS ( const char *filename, byte **pic, int *width, int *height, GLen
 			&& ddsHeader->bBitMask == 0x00ff0000
 			&& ddsHeader->aBitMask == 0xff000000)
 		{
-			*picFormat = GL_RGBA8;
+			*picFormat = GL_RGBA;
 		}
 		else
 		{

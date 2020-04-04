@@ -1444,6 +1444,10 @@ static void NET_OpenIP( void ) {
 
 				if (net_socksEnabled->integer)
 					NET_OpenSocks( port + i );
+#ifdef EMSCRIPTEN
+        else
+          Cvar_Set("net_socksLoading", "0");
+#endif
 
 				break;
 			}
