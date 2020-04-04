@@ -4164,7 +4164,7 @@ void Com_Frame( void ) {
 ;
 	} while(0);
 
-	if(Cvar_Get("net_socksLoading", "1", CVAR_ROM)->integer) {
+	if(Cvar_VariableIntegerValue("net_socksLoading")) {
 		Com_Printf( "--- SOCKS Loading ---\n" );
 		return;
 	}
