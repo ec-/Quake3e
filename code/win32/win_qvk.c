@@ -91,7 +91,27 @@ qboolean VK_CreateSurface( VkInstance instance, VkSurfaceKHR *pSurface )
 		return qtrue;
 	else
 		return qfalse;
-} 
+}
+
+
+static HINSTANCE load_vulkan_library( const char *dllname )
+{
+	HINSTANCE lib;
+
+	lib = Sys_LoadLibrary( dllname );
+
+	if ( lib )
+	{
+		qvkGetInstanceProcAddr = /*(PFN_vkGetInstanceProcAddr)*/ Sys_LoadFunction( lib, "vkGetInstanceProcAddr" );
+		if ( qvkGetInstanceProcAddr )
+		{
+			return lib;
+		}
+		Sys_UnloadLibrary( lib );
+	}
+
+	return NULL;
+}
 
 
 /*
@@ -105,54 +125,54 @@ qboolean VK_CreateSurface( VkInstance instance, VkSurfaceKHR *pSurface )
 */
 qboolean QVK_Init( void )
 {
-	const char *dllname = "vulkan-1.dll";
-	char libName[1024];
-#ifdef UNICODE
-	TCHAR buffer[1024];
-#endif
-
 	Com_Printf( "...initializing QVK\n" );
 
 	if ( glw_state.VulkanLib == NULL )
 	{
-		glw_state.VulkanLib = Sys_LoadLibrary( dllname );
-		if ( glw_state.VulkanLib == NULL )
-		{
+		const char *dllnames[] = {
+			"vulkan-1.dll",
 #if idx64
-			glw_state.VulkanLib = Sys_LoadLibrary( "amdvlk64.dll" );
+			"amdvlk64.dll",
+			"igvk64.dll"
 #else
-			glw_state.VulkanLib = Sys_LoadLibrary( "amdvlk32.dll" );
+			"amdvlk32.dll",
+			"igvk32.dll"
 #endif
-			if ( glw_state.VulkanLib == NULL )
+		};
+		int i;
+
+		for ( i = 0; i < ARRAY_LEN( dllnames ); i++ )
+		{
+			glw_state.VulkanLib = load_vulkan_library( dllnames[i] );
+
+			//Com_Printf( "...loading '%s' : %s\n", dllnames[i], glw_state.VulkanLib ? "succeeded" : "failed" );
+			if ( glw_state.VulkanLib )
 			{
-				Com_Printf( "...loading '%s' : " S_COLOR_YELLOW "failed\n", dllname );
-				return qfalse;
+				char libName[1024];
+#ifdef UNICODE
+				TCHAR buffer[1024];
+
+				GetModuleFileName( glw_state.VulkanLib, buffer, ARRAY_LEN( buffer ) );
+				buffer[ ARRAY_LEN( buffer ) - 1 ] = '\0';
+				Q_strncpyz( libName, WtoA( buffer ), sizeof( libName ) );
+#else
+				GetModuleFileName( glw_state.VulkanLib, libName, sizeof( libName ) );
+				libName[ sizeof( libName ) - 1 ] = '\0';
+#endif
+				Com_Printf( "...loading '%s' : %s\n", libName, "succeeded" );
+				break;
+			} else {
+				Com_Printf( "...loading '%s' : %s\n", dllnames[i], "failed" );
 			}
 		}
 
-		// get exact loaded module name
-#ifdef UNICODE
-		GetModuleFileName( glw_state.VulkanLib, buffer, ARRAY_LEN( buffer ) );
-		buffer[ ARRAY_LEN( buffer ) - 1 ] = '\0';
-		Q_strncpyz( libName, WtoA( buffer ), sizeof( libName ) );
-#else
-		GetModuleFileName( glw_state.VulkanLib, libName, sizeof( libName ) );
-		libName[ sizeof( libName ) - 1 ] = '\0';
-#endif
-		Com_Printf( "...loading '%s' : succeeded\n", libName );
+		if ( !glw_state.VulkanLib )
+		{
+			return qfalse;
+		}
 	}
 
-	qvkGetInstanceProcAddr = /*(PFN_vkGetInstanceProcAddr)*/ Sys_LoadFunction( glw_state.VulkanLib, "vkGetInstanceProcAddr" );
-	if ( qvkGetInstanceProcAddr == NULL )
-	{
-		Sys_UnloadLibrary( glw_state.VulkanLib );
-		glw_state.VulkanLib = NULL;
-
-		Com_Printf( "...loading '%s' : " S_COLOR_YELLOW "failed\n", libName );
-		return qfalse;
-	}
-
-	Sys_LoadFunctionErrors(); // reset error count
+	Sys_LoadFunctionErrors(); // reset error counter
 
 	return qtrue;
 }

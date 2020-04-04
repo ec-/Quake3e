@@ -97,38 +97,57 @@ qboolean VK_CreateSurface( VkInstance instance, VkSurfaceKHR *surface )
 }
 
 
+static void *load_vulkan_library( const char *dllname )
+{
+	void *lib;
+
+	lib = Sys_LoadLibrary( dllname );
+	if ( lib )
+	{
+		qvkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr) Sys_LoadFunction( lib, "vkGetInstanceProcAddr" );
+		if ( qvkGetInstanceProcAddr )
+		{
+			return lib;
+		}
+		Sys_UnloadLibrary( lib );
+	}
+
+	return NULL;
+}
+
+
 /*
 ** QVK_Init
 **
 */
-qboolean QVK_Init( const char *dllname )
+qboolean QVK_Init( void )
 {
+
 	Com_Printf( "...initializing QVK\n" );
 
 	if ( glw_state.VulkanLib == NULL )
 	{
-		Com_Printf( "...loading '%s' : ", dllname );
+		const char *dllnames[] = { "libvulkan.so.1", "libvulkan.so" };
+		int i;
 
-		glw_state.VulkanLib = dlopen( dllname, RTLD_NOW | RTLD_GLOBAL );
-
-		if ( glw_state.VulkanLib == NULL )
+		for ( i = 0; i < ARRAY_LEN( dllnames ); i++ )
 		{
-			Com_Printf( "failed\n" );
+			glw_state.VulkanLib = load_vulkan_library( dllnames[i] );
+
+			Com_Printf( "...loading '%s' : %s\n", dllnames[i], glw_state.VulkanLib ? "succesed" : "failed" );
+			if ( glw_state.VulkanLib )
+			{
+				break;
+			}
+		}
+
+		if ( !glw_state.VulkanLib )
+		{
 			return qfalse;
 		}
 	}
 
-	qvkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr) dlsym( glw_state.VulkanLib, "vkGetInstanceProcAddr" );
-	if ( qvkGetInstanceProcAddr == NULL )
-	{
-		dlclose( glw_state.VulkanLib );
-		glw_state.VulkanLib = NULL;
-
-		Com_Printf( S_COLOR_YELLOW "failed\n" );
-		return qfalse;
-	}
-
-	Com_Printf( "succeeded\n" );
+	Sys_LoadFunctionErrors(); // reset error counter
 
 	return qtrue;
 }

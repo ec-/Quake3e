@@ -38,7 +38,7 @@ qboolean QGL_Init( const char *dllname );
 void QGL_Shutdown( qboolean unloadDLL );
 
 // Vulkan subsystem
-qboolean QVK_Init( const char *dllname );
+qboolean QVK_Init( void );
 void QVK_Shutdown( qboolean unloadDLL );
 
 

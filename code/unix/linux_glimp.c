@@ -1839,7 +1839,7 @@ void GLimp_Init( glconfig_t *config )
 /*
 ** GLW_LoadVulkan
 */
-static qboolean GLW_LoadVulkan( const char *name )
+static qboolean GLW_LoadVulkan( void )
 {
 	if ( r_swapInterval->integer )
 		setenv( "vblank_mode", "2", 1 );
@@ -1847,7 +1847,7 @@ static qboolean GLW_LoadVulkan( const char *name )
 		setenv( "vblank_mode", "1", 1 );
 
 	// load the QVK layer
-	if ( QVK_Init( name ) )
+	if ( QVK_Init() )
 	{
 		qboolean fullscreen = (r_fullscreen->integer != 0);
 		// create the window and set up the context
@@ -1866,7 +1866,7 @@ static qboolean GLW_StartVulkan( void )
 	//
 	// load and initialize the specific Vulkan driver
 	//
-	if ( !GLW_LoadVulkan( "libvulkan.so" ) )
+	if ( !GLW_LoadVulkan() )
 	{
 		Com_Error( ERR_FATAL, "GLW_StartVulkan() - could not load Vulkan subsystem\n" );
 		return qfalse;
