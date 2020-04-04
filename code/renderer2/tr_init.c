@@ -880,13 +880,11 @@ void GL_SetDefaultState( void )
 	if (glRefConfig.vertexArrayObject)
 		qglBindVertexArray(0);
 
-ri.Printf( PRINT_ALL, "BindBuffer\n" );
 	qglBindBuffer(GL_ARRAY_BUFFER, 0);
 	qglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glState.currentVao = NULL;
 	glState.vertexAttribsEnabled = 0;
 
-ri.Printf( PRINT_ALL, "PolygonMode\n" );
 	qglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 	qglDepthMask( GL_TRUE );
 	qglDisable( GL_DEPTH_TEST );
@@ -900,7 +898,6 @@ ri.Printf( PRINT_ALL, "PolygonMode\n" );
 	// GL_POLYGON_OFFSET_FILL will be glEnable()d when this is used
 	qglPolygonOffset( r_offsetFactor->value, r_offsetUnits->value );
 
-ri.Printf( PRINT_ALL, "ClearColor\n" );
 	qglClearColor( 0.0f, 0.0f, 0.0f, 1.0f );	// FIXME: get color of sky
 }
 
