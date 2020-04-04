@@ -4910,11 +4910,12 @@ void vk_bind_geometry_ext( int flags )
 	bind_base = -1;
 	bind_count = 0;
 
-	if ( !flags )
-		return;
-
 #ifdef USE_VBO
 	if ( tess.vboIndex ) {
+		
+		if ( ( flags & (TESS_XYZ | TESS_RGBA | TESS_ST0 | TESS_ST1 | TESS_ST2 | TESS_NNN ) ) == 0 )
+			return;
+
 		shade_bufs[0] = shade_bufs[1] = shade_bufs[2] = shade_bufs[3] = shade_bufs[4] = shade_bufs[5] = vk.vbo.vertex_buffer;
 
 		//if ( flags & TESS_IDX ) {  // index
@@ -4942,7 +4943,7 @@ void vk_bind_geometry_ext( int flags )
 		}
 
 		if ( flags & TESS_ST2 ) {  // 3
-			vk.cmd->vbo_offset[4] = tess.shader->stages[ tess.vboStage ]->tex_offset[1];
+			vk.cmd->vbo_offset[4] = tess.shader->stages[ tess.vboStage ]->tex_offset[2];
 			vk_bind_index( 4 );
 		}
 
@@ -4962,6 +4963,9 @@ void vk_bind_geometry_ext( int flags )
 			uint32_t offset = vk_tess_index( tess.numIndexes, tess.indexes );
 			vk_bind_index_buffer( vk.cmd->vertex_buffer, offset );
 		}
+
+		if ( ( flags & ( TESS_XYZ | TESS_RGBA | TESS_ST0 | TESS_ST1 | TESS_ST2 | TESS_NNN ) ) == 0 )
+			return;
 
 		if ( flags & TESS_XYZ ) {
 			vk_bind_attr(0, sizeof(tess.xyz[0]), &tess.xyz[0]);

@@ -148,7 +148,7 @@
 { "ML", "Mali" },
 { "MM", "Myanmar" },
 { "MN", "Mongolia" },
-{ "MO", "Macau" },
+{ "MO", "Macao" },
 { "MP", "Northern Mariana Islands" },
 { "MQ", "Martinique" },
 { "MR", "Mauritania" },

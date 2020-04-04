@@ -2325,7 +2325,6 @@ static qboolean EqualRGBgen( const shaderStage_t *st1, const shaderStage_t *st2 
 }
 
 
-/*
 static qboolean EqualTCgen( int bundle, const shaderStage_t *st1, const shaderStage_t *st2 )
 {
 	const textureBundle_t *b1, *b2;
@@ -2410,7 +2409,6 @@ static qboolean EqualTCgen( int bundle, const shaderStage_t *st1, const shaderSt
 
 	return qtrue;
 }
-*/
 
 
 /*
@@ -2681,12 +2679,12 @@ from the current global working shader
 =========================
 */
 static shader_t *FinishShader( void ) {
-	int			stage, i;
+	int			stage, i, n;
 	qboolean	hasLightmapStage;
 	qboolean	vertexLightmap;
 	qboolean	colorBlend;
 	qboolean	depthMask;
-	//shaderStage_t *lastMT;
+	shaderStage_t *lastTCgen[NUM_TEXTURE_BUNDLES];
 
 	hasLightmapStage = qfalse;
 	vertexLightmap = qfalse;
@@ -3018,24 +3016,21 @@ static shader_t *FinishShader( void ) {
 
 #if 1
 	// try to avoid redundant per-stage computations
-	// lastMT = NULL;
+	Com_Memset( lastTCgen, 0, sizeof( lastTCgen ) );
 	for ( i = 0; i < shader.numUnfoggedPasses - 1; i++ ) {
 		if ( !stages[ i+1 ].active )
 			break;
 		if ( EqualRGBgen( &stages[ i ], &stages[ i+1 ] ) && EqualACgen( &stages[ i ], &stages[ i+1 ] ) ) {
 			stages[ i+1 ].tessFlags &= ~TESS_RGBA;
 		}
-		//if ( EqualTCgen( 0, &stages[ i ], &stages[ i+1 ] ) ) {
-		//	stages[ i+1 ].tessFlags &= ~TESS_ST0;
-		//}
-		//if ( stages[ i ].mtEnv ) {
-		//	lastMT = &stages[ i ];
-		//}
-		//if ( stages[ i+1 ].mtEnv ) {
-		//	if ( EqualTCgen( 1, lastMT, &stages[ i+1 ] ) ) {
-		//		stages[ i+1 ].tessFlags &= ~TESS_ST1;
-		//	}
-		//}
+		for ( n = 0; n < NUM_TEXTURE_BUNDLES; n++ ) {
+			if ( EqualTCgen( n, lastTCgen[ n ], &stages[ i+1 ] ) ) {
+				stages[ i+1 ].tessFlags &= ~(TESS_ST0 << n);
+			}
+			if ( stages[ i ].bundle[ n ].image != NULL ) {
+				lastTCgen[ n ] = &stages[ i ];
+			}
+		}
 	}
 #endif
 
