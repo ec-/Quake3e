@@ -4133,6 +4133,11 @@ void Com_Frame( void ) {
 #endif
 	}
 
+#ifdef EMSCRIPTEN
+	// TODO: push events?
+	IN_Frame();
+#endif
+
 	// waiting for incoming packets
 	if ( noDelay == qfalse )
 	do {

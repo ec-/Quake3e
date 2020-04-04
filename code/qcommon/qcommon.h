@@ -64,6 +64,9 @@ static void (*SOCKS_After)( void ) = NULL;
 static void (*CB_Frame_Proxy)( void ) = NULL;
 static void (*CB_Frame_After)( void ) = NULL;
 
+void IN_Init (void);
+void IN_Frame (void);
+void IN_Shutdown (void);
 
 extern char **Sys_CmdArgs( void );
 extern int Sys_CmdArgsC( void );

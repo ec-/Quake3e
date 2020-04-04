@@ -1227,7 +1227,7 @@ void IN_Frame( void )
 		IN_ActivateMouse( fullscreen );
 
 	//IN_ProcessEvents();
-	//HandleEvents();
+	HandleEvents();
 
 	// Set event time for next frame to earliest possible time an event could happen
 	//in_eventTime = Sys_Milliseconds();
