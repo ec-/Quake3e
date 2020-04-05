@@ -311,20 +311,20 @@ static qboolean SV_LoadIP4DB( const char *filename )
 }
 
 
-static void SV_SetClientTLD( client_t *cl, const netadr_t *from, qboolean isLAN )
+static void SV_SetTLD( char *str, const netadr_t *from, qboolean isLAN )
 {
 	const iprange_t *e;
 	int lo, hi, m;
 	int ip;
 
-	cl->tld[0] = '\0';
+	str[0] = '\0';
 
 	if ( sv_clientTLD->integer == 0 )
 		return;
 
 	if ( isLAN )
 	{
-		strcpy( cl->tld, "**" );
+		strcpy( str, "**" );
 		return;
 	}
 
@@ -355,9 +355,9 @@ static void SV_SetClientTLD( client_t *cl, const netadr_t *from, qboolean isLAN 
 		if ( ip >= e->from && ip <= e->to )
 		{
 			const iprange_tld_t *tld = ipdb_tld + m;
-			cl->tld[0] = tld->tld[0];
-			cl->tld[1] = tld->tld[1];
-			cl->tld[2] = '\0';
+			str[0] = tld->tld[0];
+			str[1] = tld->tld[1];
+			str[2] = '\0';
 			return;
 		}
 
@@ -425,7 +425,7 @@ A "connect" OOB command has been received
 */
 void SV_DirectConnect( const netadr_t *from ) {
 	static		rateLimit_t bucket;
-	char		userinfo[MAX_INFO_STRING];
+	char		userinfo[MAX_INFO_STRING], tld[3];
 	int			i, n;
 	client_t	*cl, *newcl;
 	//sharedEntity_t *ent;
@@ -517,7 +517,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 		return;
 	}
 	version = atoi( v );
-	
+
 	if ( version == PROTOCOL_VERSION )
 		compat = qtrue;
 	else
@@ -571,6 +571,16 @@ void SV_DirectConnect( const netadr_t *from ) {
 			NET_OutOfBandPrint( NS_SERVER, from, "print\nUserinfo string length exceeded.  "
 				"Try removing setu cvars from your config.\n" );
 		}
+		return;
+	}
+
+	// run userinfo filter
+	SV_SetTLD( tld, from, Sys_IsLANAddress( from ) );
+	Info_SetValueForKey( userinfo, "tld", tld );
+	v = SV_RunFilters( userinfo, from );
+	if ( *v != '\0' ) {
+		NET_OutOfBandPrint( NS_SERVER, from, "print\n%s\n", v );
+		Com_DPrintf( "Engine rejected a connection: %s.\n", v );
 		return;
 	}
 
@@ -680,7 +690,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 		}
 	}
 
-gotnewcl:	
+gotnewcl:
 	// build a new connection
 	// accept the new client
 	// this is the only place a client_t is ever initialized
@@ -707,21 +717,11 @@ gotnewcl:
 
 	newcl->longstr = longstr;
 
-	SV_SetClientTLD( newcl, from, newcl->netchan.isLANAddress );
+	strcpy( newcl->tld, tld );
+	newcl->country = SV_FindCountry( newcl->tld );
 
 	SV_UserinfoChanged( newcl, qtrue, qfalse ); // update userinfo, do not run filter
 
-	v = SV_RunFilters( userinfo, &newcl->netchan.remoteAddress );
-	if ( *v != '\0' ) {
-		NET_OutOfBandPrint( NS_SERVER, from, "print\n%s\n", v );
-		Com_DPrintf( "Engine rejected a connection: %s.\n", v );
-		return;
-	}
-
-	newcl->country = SV_FindCountry( newcl->tld );
-	if ( !strcmp( newcl->tld, "**" ) ) {
-		newcl->tld[0] = '\0'; // clear tld field for LAN connections
-	}
 	if ( sv_clientTLD->integer ) {
 		SV_SaveSequences();
 	}
@@ -1816,7 +1816,6 @@ void SV_PrintLocations_f( client_t *client ) {
 
 		len = Com_sprintf( line, sizeof( line ), "%2i %s%-*s" S_COLOR_WHITE " %2s %s\n",
 			i, cl->name, max_namelength-SV_Strlen(cl->name), "", cl->tld, cl->country );
-
 
 		if ( s - buf + len >= sizeof( buf )-1 ) // flush accumulated buffer
 		{
