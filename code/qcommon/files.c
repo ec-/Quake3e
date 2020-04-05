@@ -356,14 +356,10 @@ static char		*fs_serverPakNames[MAX_REF_PAKS];		// pk3 names
 // only used for autodownload, to make sure the client has at least
 // all the pk3 files that are referenced at the server side
 static int		fs_numServerReferencedPaks;
-static int		fs_numIndexedPakNames;
-static int		fs_numMenuGamePakNames;
 static int		fs_numMapPakNames;
 static int		fs_serverReferencedPaks[MAX_REF_PAKS];		// checksums
 static char		*fs_serverReferencedPakNames[MAX_REF_PAKS];	// pk3 names
-static char		*fs_indexedPakNames[MAX_SEARCH_PATHS];		// pk3 names
-static char		*fs_menuGamePakNames[MAX_SEARCH_PATHS];		// pk3 names
-static char		*fs_mapPakNames[MAX_SEARCH_PATHS];		// pk3 names
+static char		*fs_mapPakNames[MAX_REF_PAKS];		// pk3 names
 
 int	fs_lastPakIndex;
 
@@ -374,6 +370,9 @@ FILE*		missingFiles = NULL;
 void Com_AppendCDKey( const char *filename );
 void Com_ReadCDKey( const char *filename );
 
+static void FS_SetMapIndex(const char *mapname);
+static qboolean FS_InMapIndex(const char *filename);
+static qboolean FS_IsExt( const char *filename, const char *ext, size_t namelen );
 static int FS_GetModList( char *listbuf, int bufsize );
 static void FS_CheckIdPaks( void );
 void FS_Reload( void );
@@ -4731,6 +4730,8 @@ void FS_Startup_After_Async( void )
 	// reorder the pure pk3 files according to server order
 	FS_ReorderPurePaks();
 
+	FS_SetMapIndex( "" );
+
 	// get the pure checksums of the pk3 files loaded by the server
 	FS_LoadedPakPureChecksums();
 
@@ -5761,4 +5762,104 @@ void *FS_LoadLibrary( const char *name )
 	}
 
 	return libHandle;
+}
+
+static void FS_SetMapIndex(const char *mapname) {
+	searchpath_t	*search;
+	int len, r, i, ki = 0, pi = 0, level = 0, mgi = 0, mpi = 0;
+	fileHandle_t indexfile;
+	char buf[MAX_OSPATH], key[MAX_OSPATH], pak[MAX_OSPATH];
+	qboolean isKey = qfalse, isPak = qfalse;
+	char *mapsMatch = va("maps/%s", mapname);
+	char *menuMatch = "menu/";
+	char *gameMatch = "game/";
+
+	//	Com_sprintf( descPath, sizeof ( descPath ), "%s%cdescription.txt", modDir, PATH_SEP );
+	FS_FOpenFileRead("index.json", &indexfile, qtrue);
+
+	// set by server, don't interfere
+	if ( fs_debug->integer ) {
+		Com_Printf( "FS_SetMapIndex: Searching index for map %s\n", mapname );
+	}
+	
+	fs_numMapPakNames = 0;
+	for (i = 0 ; i < ARRAY_LEN(fs_mapPakNames); i++)
+	{
+		if(fs_mapPakNames[i])
+			Z_Free(fs_mapPakNames[i]);
+
+		fs_mapPakNames[i] = NULL;
+	}
+
+	if(indexfile)
+	{
+		do {
+			r = FS_Read(buf, MAX_OSPATH, indexfile);
+			// Do simple JSON parse to find just the paks required for the map
+			for(i = 0; i < r; i++) {
+				if(buf[i] == '{') {
+					level++;
+				} else if(buf[i] == '}') {
+					level--;
+				} else if(buf[i] == '"' && level == 1 && !isKey && !isPak) {
+					isKey = qtrue;
+				} else if(buf[i] == '"' && level == 1 && isKey && !isPak) {
+					isKey = qfalse;
+					key[ki] = 0;
+					ki = 0;
+					if(Q_stristr(key, "maps/") != NULL && (Q_stristr(key, "pak9") != NULL || Q_stristr(key, ".bsp") != NULL)) {
+						const char *bspext = Q_stristr(key, ".bsp");
+						if(bspext) {
+							key[strlen(key) - 4] = '\0';
+						}
+						fs_mapPakNames[mpi] = CopyString( &key[Q_stristr(key, "maps/") - key + 5] );
+						Q_strlwr(fs_mapPakNames[mpi]);
+						mpi++;
+						if ( fs_debug->integer ) {
+							Com_Printf( "FS_SetMapIndex: Map in index %s\n", key );
+						}
+					}
+				} else if(isKey) {
+					key[ki] = buf[i];
+					ki++;
+				}
+			}
+		} while(r > 0);
+		// set by server, don't interfere
+		fs_numMapPakNames = mpi;
+		FS_FCloseFile( indexfile );
+	}
+}
+
+static qboolean FS_InMapIndex(const char *filename) {
+	int			i, len, extpos, start;
+	char mapname[MAX_QPATH];
+	len = strlen(filename);
+	Com_Printf( "FS_InMapIndex: Searching %i maps for %s\n", fs_numMapPakNames, filename );
+	if(len < 1) {
+		return qfalse;
+	}
+	extpos = strlen(strrchr(filename, '.'));
+	len -= extpos;
+	start = 0;
+	if(Q_stristr(filename, "maps/")) {
+		start = 5;
+	}
+	if(len - start < 1) {
+		return qfalse;
+	}
+	Q_strncpyz(mapname, &filename[start], len - start + 1);
+	Q_strlwr(mapname);
+	for(i = 0; i < fs_numMapPakNames; i++) {
+		if(Q_stristr(fs_mapPakNames[i], mapname) != NULL) {
+			if ( fs_debug->integer ) {
+				Com_Printf( "FS_InMapIndex: Map in index %s\n", mapname );
+			}
+			return qtrue;
+		}
+	}
+	if ( fs_debug->integer ) {
+		Com_Printf( "FS_InMapIndex: Map NOT in index %s\n", mapname );
+	}
+	return qfalse;
 }
