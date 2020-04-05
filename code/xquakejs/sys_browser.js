@@ -399,8 +399,13 @@ var LibrarySys = {
 					obj[k.toLowerCase()].shaders = []
 					return obj
 				}, SYS.index || {})
-				FS.writeFile(PATH.join(SYS.fs_basepath, index, "index.json"), Uint8Array.from(JSON.stringify(SYS.index).split('').map(c => c.charCodeAt(0))), {
-					encoding: 'binary', flags: 'w', canOwn: true })				
+				var bits = ('{' + Object.keys(SYS.index)
+					.map(k => '"' + k + '":' + JSON.stringify(SYS.index[k])).join(',')
+					+ '}')
+					.split('').map(c => c.charCodeAt(0))
+				FS.writeFile(PATH.join(SYS.fs_basepath, index, "index.json"),
+				 	Uint8Array.from(bits),
+					{encoding: 'binary', flags: 'w', canOwn: true })
 				cb()
 			})
 		},

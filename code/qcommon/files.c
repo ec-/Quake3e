@@ -5765,14 +5765,11 @@ void *FS_LoadLibrary( const char *name )
 }
 
 static void FS_SetMapIndex(const char *mapname) {
-	searchpath_t	*search;
-	int len, r, i, ki = 0, pi = 0, level = 0, mgi = 0, mpi = 0;
+	int r, i, ki = 0, level = 0, mpi = 0;
 	fileHandle_t indexfile;
-	char buf[MAX_OSPATH], key[MAX_OSPATH], pak[MAX_OSPATH];
+	char buf[MAX_OSPATH], key[MAX_OSPATH];
 	qboolean isKey = qfalse, isPak = qfalse;
-	char *mapsMatch = va("maps/%s", mapname);
-	char *menuMatch = "menu/";
-	char *gameMatch = "game/";
+	//char *mapsMatch = va("maps/%s", mapname);
 
 	//	Com_sprintf( descPath, sizeof ( descPath ), "%s%cdescription.txt", modDir, PATH_SEP );
 	FS_FOpenFileRead("index.json", &indexfile, qtrue);
@@ -5780,15 +5777,6 @@ static void FS_SetMapIndex(const char *mapname) {
 	// set by server, don't interfere
 	if ( fs_debug->integer ) {
 		Com_Printf( "FS_SetMapIndex: Searching index for map %s\n", mapname );
-	}
-	
-	fs_numMapPakNames = 0;
-	for (i = 0 ; i < ARRAY_LEN(fs_mapPakNames); i++)
-	{
-		if(fs_mapPakNames[i])
-			Z_Free(fs_mapPakNames[i]);
-
-		fs_mapPakNames[i] = NULL;
 	}
 
 	if(indexfile)
