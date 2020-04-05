@@ -3954,9 +3954,6 @@ static int Com_TimeVal( int minMsec )
 	else
 		timeVal = minMsec - timeVal;
 
-#ifdef EMSCRIPTEN
-	return 0;
-#endif
 	return timeVal;
 }
 
@@ -3985,7 +3982,6 @@ void Com_Frame_Proxy( void ) {
 
 void Com_Frame_After_Startup() {
 	FS_Restart_After_Async();
-	CL_Disconnect_After_Restart();
 	if(!FS_Initialized()) {
 		Com_Frame_Callback(Sys_FS_Shutdown, Com_Frame_After_Shutdown);		
 	} else {
@@ -3994,7 +3990,6 @@ void Com_Frame_After_Startup() {
 		VM_Forced_Unload_Done();
 		Com_GameRestart_After_Restart();
 	}
-	//
 }
 
 void Com_Frame_After_Shutdown() {
@@ -4012,7 +4007,7 @@ Com_Frame
 void Com_Frame( qboolean noDelay ) {
 #else
 void Com_Frame( void ) {
-	qboolean noDelay = qtrue;
+	qboolean noDelay = qfalse;
 #endif
 
 #ifndef DEDICATED
@@ -4133,11 +4128,6 @@ void Com_Frame( void ) {
 #endif
 	}
 
-#ifdef EMSCRIPTEN
-	// TODO: push events?
-	IN_Frame();
-#endif
-
 	// waiting for incoming packets
 	if ( noDelay == qfalse )
 	do {
@@ -4162,7 +4152,7 @@ void Com_Frame( void ) {
 
 #else
 ;
-	} while(0);
+	} while( 0 );
 
 	if(Cvar_VariableIntegerValue("net_socksLoading")) {
 		Com_Printf( "--- SOCKS Loading ---\n" );

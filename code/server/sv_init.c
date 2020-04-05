@@ -691,6 +691,10 @@ void SV_SpawnServer_After_Startup( void ) {
 	SV_Heartbeat_f();
 
 	Hunk_SetMark();
+	
+#ifdef EMSCRIPTEN
+	//CL_StartHunkUsers( );
+#endif
 
 	Com_Printf ("-----------------------------------\n");
 

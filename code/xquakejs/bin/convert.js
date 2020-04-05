@@ -54,11 +54,11 @@ async function convertNonAlpha(inFile, project, output, noOverwrite) {
 }
 
 async function convertAudio(inFile, project, output, noOverwrite) {
-  var outFile = chroot(chext(inFile, '.opus'), project, output)
+  var outFile = chroot(chext(inFile, '.ogg'), project, output)
   mkdirpSync(path.dirname(outFile))
   if(noOverwrite && ufs.existsSync(outFile)) return outFile
   try {
-    execSync(`opusenc --quiet --ignorelength --bitrate 24 --vbr "${inFile}" "${outFile}"`, {stdio : 'pipe'})
+    execSync(`oggenc --quiet "${inFile}" -n "${outFile}"`, {stdio : 'pipe'})
   } catch (e) {
     console.error(e.message, (e.output || '').toString('utf-8').substr(0, 1000))
   }

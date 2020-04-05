@@ -131,6 +131,7 @@ void GLimp_InitExtraExtensions( void )
 	if ( strstr((char *)qglGetString(GL_RENDERER), "Intel") )
 		glRefConfig.intelGraphics = qtrue;
 
+#ifndef EMSCRIPTEN
 	// OpenGL 3.0 - GL_ARB_framebuffer_object
 	extension = "GL_ARB_framebuffer_object";
 	glRefConfig.framebufferObject = qfalse;
@@ -146,7 +147,7 @@ void GLimp_InitExtraExtensions( void )
 		qglGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &glRefConfig.maxRenderbufferSize);
 		qglGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &glRefConfig.maxColorAttachments);
 
-//		QGL_ARB_framebuffer_object_PROCS;
+		QGL_ARB_framebuffer_object_PROCS;
 
 		ri.Printf(PRINT_ALL, result[glRefConfig.framebufferObject], extension);
 	}
@@ -154,6 +155,7 @@ void GLimp_InitExtraExtensions( void )
 	{
 		ri.Printf(PRINT_ALL, result[2], extension);
 	}
+#endif
 
 	// OpenGL 3.0 - GL_ARB_vertex_array_object
 	extension = "GL_ARB_vertex_array_object";

@@ -561,7 +561,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 
 	// don't let "ip" overflow userinfo string
 	if ( NET_IsLocalAddress( from ) )
-		ip = "localhost";
+		ip = "127.0.0.1";
 	else
 		ip = NET_AdrToString( from );
 
@@ -1396,11 +1396,11 @@ int SV_SendQueuedMessages( void )
 {
 	int i, retval = -1, nextFragT;
 	client_t *cl;
-	
+
 	for( i = 0; i < sv_maxclients->integer; i++ )
 	{
 		cl = &svs.clients[i];
-		
+
 		if ( cl->state )
 		{
 			nextFragT = SV_RateMsec(cl);

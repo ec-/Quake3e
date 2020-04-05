@@ -385,7 +385,13 @@ void CL_ShutdownCGame( void ) {
 	if ( !cgvm ) {
 		return;
 	}
-	
+
+#ifdef EMSCRIPTEN
+	while (VM_IsSuspended(cgvm)) {
+		VM_Resume(cgvm);
+	}
+#endif
+
 	re.VertexLighting( qfalse );
 
 	VM_Call( cgvm, 0, CG_SHUTDOWN );
@@ -458,6 +464,7 @@ The cgame module is making a system call
 ====================
 */
 static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
+	intptr_t result;
 	switch( args[0] ) {
 	case CG_PRINT:
 		Com_Printf( "%s", (const char*)VMA(1) );
@@ -492,7 +499,33 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return 0;
 
 	case CG_FS_FOPENFILE:
-		return FS_VM_OpenFile( VMA(1), VMA(2), args[3], H_CGAME );
+		result = FS_VM_OpenFile( VMA(1), VMA(2), args[3], H_CGAME );
+		// read the fucking icon file, checks for TGA only, stupid fucking design, 
+		//   obviously it's there the renderer showed the png on the loading screen
+		//if((FS_IsExt(qpath, ".md3", len) || Q_stristr(qpath, "icon_")) && Q_stristr(qpath, "players")) {
+			// TODO: check index for players
+		//	return 1;
+		//}
+		if((int)result <= 0) {
+			char altFilename[MAX_QPATH];
+			char *filename = (char *)VMA(1);
+			if(Q_stristr(filename, "players") && Q_stristr(filename, ".tga")) {
+				COM_StripExtension(filename, altFilename, sizeof(altFilename));
+				result = FS_VM_OpenFile( va("%s.png", altFilename), VMA(2), args[3], H_CGAME );
+				if(VMA(2) == NULL && result > 0)
+					return result;
+				else if(result >= 0 && (void *)VMA(2))
+					return result;
+				else {
+					result = FS_VM_OpenFile( va("%s.jpg", altFilename), VMA(2), args[3], H_CGAME );
+					if(VMA(2) == NULL && result > 0)
+						return result;
+					else if(result >= 0 && (void *)VMA(2))
+						return result;
+				}
+			}
+		}
+		return result;
 	case CG_FS_READ:
 		VM_CHECKBOUNDS( cgvm, args[1], args[2] );
 		FS_VM_ReadFile( VMA(1), args[2], args[3], H_CGAME );

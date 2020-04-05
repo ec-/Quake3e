@@ -290,6 +290,10 @@ void Sys_Exit( int code )
 #else
 	// Give me a backtrace on error exits.
 	assert( code == 0 );
+#ifdef EMSCRIPTEN
+	Sys_PlatformExit( );
+	emscripten_cancel_main_loop();
+#endif
 	exit( code );
 #endif
 }
@@ -994,6 +998,15 @@ int Sys_ParseArgs( int argc, char* argv[] )
 	return 0;
 }
 
+/*
+=================
+Sys_Frame
+=================
+*/
+void Sys_Frame() {
+	IN_Frame();
+	Com_Frame();
+}
 
 int main( int argc, char* argv[] )
 {
@@ -1007,7 +1020,6 @@ int main( int argc, char* argv[] )
 	// bullshit because onRuntimeInitialized does execute consistently
 	//   held up by some sort of WarningHandler race condition
 	argc = Sys_CmdArgsC();
-	Com_Printf("Getting args %i", argc);
 	argv = Sys_CmdArgs();
 		
 	if ( Sys_ParseArgs( argc, argv ) ) // added this for support
@@ -1062,7 +1074,7 @@ int main( int argc, char* argv[] )
 
 	// HACK for now to prevent Browser lib from calling
 	// requestAnimationFrame on dedicated builds.
-	emscripten_set_main_loop(Com_Frame, 0, 0);
+	emscripten_set_main_loop(Sys_Frame, Cvar_VariableIntegerValue("com_maxfps"), 0);
 	emscripten_exit_with_live_runtime();
 	return 0;
 }

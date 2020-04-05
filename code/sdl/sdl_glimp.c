@@ -468,10 +468,12 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 				}
 			}
 
+#ifndef EMSCRIPTEN
 			if ( SDL_GL_SetSwapInterval( r_swapInterval->integer ) == -1 )
 			{
 				Com_DPrintf( "SDL_GL_SetSwapInterval failed: %s\n", SDL_GetError( ) );
 			}
+#endif
 
 			SDL_GL_GetAttribute( SDL_GL_RED_SIZE, &realColorBits[0] );
 			SDL_GL_GetAttribute( SDL_GL_GREEN_SIZE, &realColorBits[1] );

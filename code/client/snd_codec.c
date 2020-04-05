@@ -86,7 +86,7 @@ static void *S_CodecGetSound(const char *filename, snd_info_t *info)
 	// Try and find a suitable match using all
 	// the sound codecs supported
 	for( codec = codecs; codec; codec = codec->next )
-	{
+	{		
 		if( codec == orgCodec )
 			continue;
 

@@ -1278,19 +1278,6 @@ qboolean CL_Disconnect( qboolean showMainMenu ) {
 		CL_WritePacket();
 	}
 
-#ifdef EMSCRIPTEN
-	if(FS_Initialized()) {
-		return CL_Disconnect_After_Restart();
-	}
-	return qtrue;
-}
-
-qboolean CL_Disconnect_After_Restart() {
-	static qboolean cl_disconnecting = qfalse;
-	qboolean cl_restarted = qfalse;
-#endif
-;
-	
 	CL_ClearState();
 
 	// wipe the client connection
@@ -1678,7 +1665,6 @@ void CL_Connect_After_Shutdown( void ) {
 
 void CL_Connect_After_Startup( void ) {
 	FS_Restart_After_Async();
-	CL_Disconnect_After_Restart();
 	CL_Connect_After_Restart();
 }
 
@@ -2103,6 +2089,8 @@ Called when all downloading has been completed
 =================
 */
 static void CL_DownloadsComplete( void ) {
+
+Com_Printf("Downloads complete\n");
 
 #ifdef EMSCRIPTEN
 if(clc.dlDisconnect) {

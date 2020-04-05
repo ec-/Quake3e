@@ -89,7 +89,6 @@ void CL_Vid_Restart_After_Restart( void );
 void CL_Connect_After_Shutdown( void );
 void CL_Connect_After_Restart( void );
 void CL_Connect_After_Startup( void );
-qboolean CL_Disconnect_After_Restart( void );
 
 void Com_Frame_After_Startup( void );
 void Com_Frame_After_Shutdown( void );

@@ -80,9 +80,9 @@ var LibrarySys = {
 			//'+set', 'r_normalMapping', '0',
 			//'+set', 'r_specularMapping', '0',
 			//'+set', 'r_deluxeMapping', '0',
-			//'+set', 'r_hdr', '0',
-			//'+set', 'r_picmip', '0',
-			//'+set', 'r_postProcess', '0',
+			'+set', 'r_hdr', '0',
+			'+set', 'r_picmip', '0',
+			'+set', 'r_postProcess', '0',
 			'+set', 'cg_drawfps', '1',
 			//'+connect', 'proxy.quake.games:443',
 			/*

@@ -356,8 +356,14 @@ static char		*fs_serverPakNames[MAX_REF_PAKS];		// pk3 names
 // only used for autodownload, to make sure the client has at least
 // all the pk3 files that are referenced at the server side
 static int		fs_numServerReferencedPaks;
+static int		fs_numIndexedPakNames;
+static int		fs_numMenuGamePakNames;
+static int		fs_numMapPakNames;
 static int		fs_serverReferencedPaks[MAX_REF_PAKS];		// checksums
 static char		*fs_serverReferencedPakNames[MAX_REF_PAKS];	// pk3 names
+static char		*fs_indexedPakNames[MAX_SEARCH_PATHS];		// pk3 names
+static char		*fs_menuGamePakNames[MAX_SEARCH_PATHS];		// pk3 names
+static char		*fs_mapPakNames[MAX_SEARCH_PATHS];		// pk3 names
 
 int	fs_lastPakIndex;
 
@@ -805,6 +811,7 @@ qboolean FS_FileExists( const char *file )
 {
 	FILE *f;
 	char *testpath;
+	int len;
 
 	testpath = FS_BuildOSPath( fs_homepath->string, fs_gamedir, file );
 
@@ -813,6 +820,12 @@ qboolean FS_FileExists( const char *file )
 		fclose( f );
 		return qtrue;
 	}
+
+	len = strlen(file);
+	if(FS_IsExt(file, ".bsp", len) && FS_InMapIndex(file)) {
+		return 1;
+	}
+
 	return qfalse;
 }
 
