@@ -1517,7 +1517,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.SyncRender = RE_SyncRender;
 
 	//re.UpdateMode = RE_UpdateMode;
-	//re.UpdateShader = RE_UpdateShader;
+	re.UpdateShader = RE_UpdateShader;
 
 	return &re;
 }

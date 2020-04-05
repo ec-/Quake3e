@@ -1618,6 +1618,12 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 				}
 			}
 		}
+		
+		length = strlen(filename);
+		if(FS_IsExt(filename, ".bsp", length) && FS_InMapIndex(filename)) {
+			return 1;
+		}
+		
 		return -1;
 	}
 
@@ -5803,9 +5809,9 @@ static void FS_SetMapIndex(const char *mapname) {
 						fs_mapPakNames[mpi] = CopyString( &key[Q_stristr(key, "maps/") - key + 5] );
 						Q_strlwr(fs_mapPakNames[mpi]);
 						mpi++;
-						if ( fs_debug->integer ) {
+						//if ( fs_debug->integer ) {
 							Com_Printf( "FS_SetMapIndex: Map in index %s\n", key );
-						}
+						//}
 					}
 				} else if(isKey) {
 					key[ki] = buf[i];

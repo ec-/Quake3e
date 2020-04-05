@@ -63,7 +63,7 @@ void R_RemapShaderInternal(const char *shaderName, const char *newShaderName, co
 
   sh = R_FindDefaultShaderByName( shaderName );
   if (sh == NULL) {
-    sh = R_FindShaderByName( shaderName );    
+    sh = R_FindShaderByName( shaderName );
   }
 	if (sh == NULL || sh == tr.defaultShader) {
 		h = RE_RegisterShaderLightMap(shaderName, 0);
@@ -2294,7 +2294,7 @@ static void ComputeVertexAttribs(void)
 	int i, stage;
 
 	// dlights always need ATTR_NORMAL
-	shader.vertexAttribs = ATTR_POSITION | ATTR_NORMAL; // | ATTR_COLOR;
+	shader.vertexAttribs = ATTR_POSITION | ATTR_NORMAL | ATTR_COLOR;
 
 	// portals always need normals, for SurfIsOffscreen()
 	if (shader.isPortal)
@@ -3208,7 +3208,7 @@ static shader_t *FinishShader( void ) {
 	qboolean		hasLightmapStage;
 	qboolean		vertexLightmap;
 
-  //ri.Cvar_Set("r_loadingShader", "");
+  ri.Cvar_Set("r_loadingShader", "");
 
 	hasLightmapStage = qfalse;
 	vertexLightmap = qfalse;
@@ -3536,13 +3536,11 @@ shader_t *R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImag
 		}
 	}
 
-/*
   if(numLazyStrings + 1024 < sizeof(lazyStrings)) { // && !Q_stristr(strippedName, "texture")) {
     Q_strncpyz(&lazyStrings[numLazyStrings], name, strlen(name)+1);
     ri.Cvar_Set( "r_loadingShader", va("%12i;%s", lightmapIndex, name) );
     numLazyStrings+=strlen(name)+1;
   }
-*/
 
 	InitShader( strippedName, lightmapIndex );
 
@@ -3763,7 +3761,7 @@ qhandle_t RE_RegisterShaderLightMap( const char *name, int lightmapIndex ) {
 	// something calls RE_RegisterShader again with
 	// the same name, we don't try looking for it again
 	if ( sh->defaultShader ) {
-		return 0;
+	//	return 0;
 	}
 
 	return sh->index;
@@ -3802,7 +3800,7 @@ qhandle_t RE_RegisterShader( const char *name ) {
 	// something calls RE_RegisterShader again with
 	// the same name, we don't try looking for it again
 	if ( sh->defaultShader ) {
-		return 0;
+	//	return 0;
 	}
 
 	return sh->index;
@@ -3832,7 +3830,7 @@ qhandle_t RE_RegisterShaderNoMip( const char *name ) {
 	// something calls RE_RegisterShader again with
 	// the same name, we don't try looking for it again
 	if ( sh->defaultShader ) {
-		return 0;
+	//	return 0;
 	}
 
 	return sh->index;
@@ -4207,7 +4205,7 @@ static void CreateExternalShaders( void ) {
 }
 
 void RE_UpdateShader(char *shaderName, int lightmapIndex) {
-//  R_RemapShaderInternal(shaderName, shaderName, va("%i", ri.Milliseconds()), lightmapIndex, qtrue);
+  R_RemapShaderInternal(shaderName, shaderName, va("%i", ri.Milliseconds()), lightmapIndex, qtrue);
 }
 
 /*

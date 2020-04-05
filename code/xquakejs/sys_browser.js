@@ -702,7 +702,7 @@ var LibrarySys = {
 			if(handle === 0) {
 				// use the index to make a case insensitive lookup
 				var indexFilename = filename.toLowerCase()
-				if(SYS.index && typeof SYS.index[indexFilename] !== 'undefined') {
+				if(SYS.index && typeof SYS.index[indexFilename] != 'undefined') {
 					var altName = filename.substr(0, filename.length - SYS.index[indexFilename].name.length) 
 						+ SYS.index[indexFilename].name
 					handle = _fopen(allocate(intArrayFromString(altName), 'i8', ALLOC_STACK), mode)

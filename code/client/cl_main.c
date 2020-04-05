@@ -3159,9 +3159,9 @@ void CL_Frame( int msec ) {
 	
 	if(secondTimer > 100) {
 		secondTimer = 0;
-//		CL_UpdateShader();
+		CL_UpdateShader();
 //		CL_UpdateSound();
-//		CL_UpdateModel();
+		CL_UpdateModel();
 	} else {
 		secondTimer += msec;
 	}
