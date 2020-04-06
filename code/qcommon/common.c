@@ -4170,6 +4170,7 @@ void Com_Frame( void ) {
 		return;
 	}
 #endif
+
 	// mess with msec if needed
 	msec = Com_ModifyMsec( msec );
 

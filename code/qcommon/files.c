@@ -3187,6 +3187,12 @@ qboolean FS_CompareZipChecksum(const char *zipfile)
 	{
 		if(checksum == fs_serverReferencedPaks[index])
 			return qtrue;
+#ifdef EMSCRIPTEN
+		else if (Q_stristr(zipfile, fs_serverReferencedPakNames[index])) {
+			return qtrue;
+		}
+#endif
+
 	}
 	
 	return qfalse;
@@ -4337,6 +4343,12 @@ qboolean FS_ComparePaks( char *neededpaks, int len, qboolean dlstring ) {
 				havepak = qtrue; // This is it!
 				break;
 			}
+#ifdef EMSCRIPTEN
+			else if (Q_stristr(sp->pack->pakFilename, fs_serverReferencedPakNames[i])) {
+				havepak = qtrue; // Accept that the checksums don't match and move on
+				break;
+			}
+#endif
 		}
 
 		if ( !havepak && fs_serverReferencedPakNames[i] && *fs_serverReferencedPakNames[i] ) { 
@@ -5809,9 +5821,9 @@ static void FS_SetMapIndex(const char *mapname) {
 						fs_mapPakNames[mpi] = CopyString( &key[Q_stristr(key, "maps/") - key + 5] );
 						Q_strlwr(fs_mapPakNames[mpi]);
 						mpi++;
-						//if ( fs_debug->integer ) {
+						if ( fs_debug->integer ) {
 							Com_Printf( "FS_SetMapIndex: Map in index %s\n", key );
-						//}
+						}
 					}
 				} else if(isKey) {
 					key[ki] = buf[i];

@@ -2313,6 +2313,7 @@ void CL_NextDownload( void )
 					"have sv_dlURL set\n");
 			}
 			else {
+				Cvar_Set( "sv_dlURL", clc.sv_dlURL );
 				CL_BeginDownload( localName, remoteName );
 				useCURL = qtrue;
 			}

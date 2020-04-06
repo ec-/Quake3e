@@ -4,6 +4,7 @@ var {ufs} = require('unionfs')
 var express = require('express')
 var {pathToAbsolute, makeIndexJson, repackPk3Dir} = require('./content.js')
 var {sendCompressed} = require('./compress.js')
+var serveStatic = require('../lib/serve-static.js')
 
 var app = express()
 app.enable('etag')
@@ -47,8 +48,16 @@ async function serveUnionFs(req, res, next) {
 	}
 }
 
-app.use('/', express.static(path.join(__dirname), { extensions: ['html'] }))
-app.use('/', express.static(path.join(__dirname, '../../../build/release-js-js'), { extensions: ['wasm'] }))
+app.use(serveStatic(path.join(__dirname), {
+  setHeaders: (res, path) => {
+    res.setHeader('Access-Control-Allow-Origin', '*')
+  }
+}))
+app.use(serveStatic(path.join(__dirname, '../../../build/release-js-js'), {
+  setHeaders: (res, path) => {
+    res.setHeader('Access-Control-Allow-Origin', '*')
+  }
+}))
 app.use(serveUnionFs)
 
 app.listen(8080)

@@ -34,7 +34,6 @@ GetClientState
 ====================
 */
 static void GetClientState( uiClientState_t *state ) {
-	Com_Printf("Client state %i\n", cls.state );
 	state->connectPacketCount = clc.connectPacketCount;
 	state->connState = cls.state;
 	Q_strncpyz( state->servername, cls.servername, sizeof( state->servername ) );
