@@ -11,6 +11,7 @@ var LibrarySys = {
 		shaderCallback: [],
 		soundCallback: [],
 		modelCallback: [],
+		lasyIterval: 0,
 		downloadLazy: [],
 		downloadCount: 0,
 		downloads: [],
@@ -57,32 +58,32 @@ var LibrarySys = {
 		],
 		args: [
 			'+set', 'fs_basepath', '/base',
-			'+set', 'sv_dlURL', '"http://localhost:8080/assets"',
-			'+set', 'cl_allowDownload', '1',
+			//'+set', 'sv_dlURL', '"http://localhost:8080/assets"',
+			//'+set', 'cl_allowDownload', '1',
 			'+set', 'fs_basegame', 'baseq3-ccr',
 			'+set', 'fs_game', 'baseq3-ccr',
-			'+set', 'developer', '0',
-			'+set', 'fs_debug', '0',
+			//'+set', 'developer', '0',
+			//'+set', 'fs_debug', '0',
 			'+set', 'r_mode', '-1',
 			'+set', 'r_customPixelAspect', '1',
 			'+set', 'sv_pure', '0',
-			'+set', 'cg_simpleItems', '0',
+			//'+set', 'cg_simpleItems', '0',
 			// these control the proxy server
 			'+set', 'net_enabled', '1', // 1 for IPv4
 			'+set', 'net_socksServer', '127.0.0.1',
 			'+set', 'net_socksPort', '1081', // default 1080 but 1081 for websocket
 			'+set', 'net_socksEnabled', '1',
-			'+set', 'com_hunkMegs', '256',
-			'+set', 'com_maxfps', '125',
-			'+set', 'com_maxfpsUnfocused', '10',
-			'+set', 'com_maxfpsMinimized', '10',
+			//'+set', 'com_hunkMegs', '256',
+			//'+set', 'com_maxfps', '125',
+			//'+set', 'com_maxfpsUnfocused', '10',
+			//'+set', 'com_maxfpsMinimized', '10',
 			// these settings were set by the emscripten build
 			//'+set', 'r_normalMapping', '0',
 			//'+set', 'r_specularMapping', '0',
 			//'+set', 'r_deluxeMapping', '0',
-			'+set', 'r_hdr', '0',
-			'+set', 'r_picmip', '0',
-			'+set', 'r_postProcess', '0',
+			//'+set', 'r_hdr', '0',
+			//'+set', 'r_picmip', '0',
+			//'+set', 'r_postProcess', '0',
 			'+set', 'cg_drawfps', '1',
 			//'+connect', 'proxy.quake.games:443',
 			/*
@@ -163,6 +164,19 @@ var LibrarySys = {
 					'+set', 'in_joystick', '1',
 					'+set', 'in_nograb', '1',
 					'+set', 'in_mouse', '0',
+					'+bind', 'mouse1', '+attack',
+					'+bind', 'UPARROW', '+attack',
+					'+bind', 'DOWNARROW', '+jump',
+					'+bind', 'LEFTARROW', '-strafe',
+					'+bind', 'RIGHTARROW', '+strafe',
+					'+unbind', 'A',
+					'+unbind', 'D',
+				])
+			} else {
+				args.unshift.apply(args, [
+					'+set', 'in_joystick', '0',
+					'+set', 'in_nograb', '0',
+					'+set', 'in_mouse', '1',
 				])
 			}
 			if(window.location.hostname.match(/quake\.games/i)) {
@@ -260,6 +274,29 @@ var LibrarySys = {
 					}
 				}
 				
+				if(id == 2) {
+					if (data.angle && Math.round(y / 40) > 0) {
+						keydown.handlerFunc({repeat: true, keyCode: 40, preventDefault: () => {}});
+					} else {
+						keyup.handlerFunc({keyCode: 40, preventDefault: () => {}});
+					}
+					if (data.angle && Math.round(y / 40) < 0) {
+						keydown.handlerFunc({repeat: true, keyCode: 38, preventDefault: () => {}});
+					} else {
+						keyup.handlerFunc({keyCode: 38, preventDefault: () => {}});
+					}
+					if (data.angle && Math.round(x / 40) < 0) {
+						keydown.handlerFunc({repeat: true, keyCode: 37, preventDefault: () => {}});
+					} else {
+						keyup.handlerFunc({keyCode: 37, preventDefault: () => {}});
+					}
+					if (data.angle && Math.round(x / 40) > 0) {
+						keydown.handlerFunc({repeat: true, keyCode: 39, preventDefault: () => {}});
+					} else {
+						keyup.handlerFunc({keyCode: 39, preventDefault: () => {}});
+					}
+				}
+				
 				var touches = [{
 					identifier: id,
 					screenX: x,
@@ -285,6 +322,12 @@ var LibrarySys = {
 			})
 		},
 		InitNippleJoysticks: function() {
+			var in_joystick = _Cvar_VariableIntegerValue(
+				allocate(intArrayFromString('in_joystick'), 'i8', ALLOC_STACK))
+			if(!in_joystick) {
+				return
+			}
+			document.body.classList.add('joysticks')
 			if(SYS.joysticks.length > 0) {
 				for(var i = 0; i < SYS.joysticks.length; i++) {
 					SYS.joysticks[i].destroy()
@@ -436,7 +479,7 @@ var LibrarySys = {
 			})
 		})
 		window.addEventListener('resize', SYS.resizeViewport)
-		setInterval(SYS.DownloadLazy, 10)
+		SYS.lazyInterval = setInterval(SYS.DownloadLazy, 10)
 	},
 	Sys_PlatformExit: function () {
 		flipper.style.display = 'block'
@@ -450,11 +493,10 @@ var LibrarySys = {
 		if(typeof Module.exitHandler != 'undefined') {
 			Module.exitHandler()
 		}
+		clearInterval(SYS.lazyInterval)
 	},
 	Sys_GLimpInit__deps: ['$SDL', '$SYS'],
 	Sys_GLimpInit: function () {
-		var in_joystick = _Cvar_VariableIntegerValue(
-			allocate(intArrayFromString('in_joystick'), 'i8', ALLOC_STACK))
 		var viewport = document.getElementById('viewport-frame')
 		// create a canvas element at this point if one doesnt' already exist
 		if (!Module['canvas']) {
@@ -464,10 +506,7 @@ var LibrarySys = {
 			canvas.height = viewport.offsetHeight
 			Module['canvas'] = viewport.appendChild(canvas)
 		}
-		if(in_joystick) {
-			document.body.classList.add('joysticks')
-			setTimeout(SYS.InitNippleJoysticks, 100)
-		}
+		setTimeout(SYS.InitNippleJoysticks, 100)
 	},
 	Sys_GLimpSafeInit: function () {
 	},

@@ -367,7 +367,32 @@ static void CL_KeyMove( usercmd_t *cmd ) {
 CL_MouseEvent
 =================
 */
+#ifndef EMSCRIPTEN
 void CL_MouseEvent( int dx, int dy, int time ) {
+#else
+void CL_MouseEvent( int dx, int dy, int time, qboolean absolute ) {
+
+	if ( Key_GetCatcher( ) & KEYCATCH_UI ) {
+		if(absolute) {
+			if(!cls.menuUIhack) {
+				cls.menuUIhack = VM_GetStaticAtoms(uivm, UI_REFRESH, UI_MOUSE_EVENT, cls.realtime);
+			}
+			cls.menuUIhack[11] = (dx >> 24) & 0xFF;
+			cls.menuUIhack[10] = (dx >> 16) & 0xFF;
+			cls.menuUIhack[9] = (dx >> 8) & 0xFF;
+			cls.menuUIhack[8] = dx & 0xFF;
+			cls.menuUIhack[15] = (dy >> 24) & 0xFF;
+			cls.menuUIhack[14] = (dy >> 16) & 0xFF;
+			cls.menuUIhack[13] = (dy >> 8) & 0xFF;
+			cls.menuUIhack[12] = dy & 0xFF;
+			VM_Call( uivm, 2, UI_MOUSE_EVENT, 0, 0 );
+		} else {
+			VM_Call( uivm, 2, UI_MOUSE_EVENT, dx, dy );
+		}
+		return;
+	}
+#endif
+;
 	if ( Key_GetCatcher( ) & KEYCATCH_UI ) {
 		VM_Call( uivm, 2, UI_MOUSE_EVENT, dx, dy );
 	} else if ( Key_GetCatcher( ) & KEYCATCH_CGAME ) {

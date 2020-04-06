@@ -1875,20 +1875,12 @@ int GetIntFromByte(byte *offset) {
 byte *VM_GetStaticAtoms(vm_t *vm, int refreshCmd, int mouseCmd, int realtimeMarker) {
 	int i;
 	int diff = realtimeMarker ^ 0x7FFFFFFF;
-	//int frame = diff - realtimeMarker;
 	byte *ret = 0;
-	//struct vmSymbol_s *sym;
-	//Com_Printf("Searching for UI cursorx at %i %i was %i\n", diff, frame, realtimeMarker);
-	
-	//VM_Call( vm, mouseCmd, 1, 1 );
-	VM_Call( vm, refreshCmd, diff);
+	VM_Call( vm, 1, refreshCmd, diff);
 
 	for(i = vm->dataAlloc - 32; i >= 0; i--) {
-		//int frameTime = GetIntFromByte(&vm->dataBase[i]);
 		int realTime = GetIntFromByte(&vm->dataBase[i-4]);
-		if(realTime == diff) { // && ) {
-			//Com_Printf("Found UI cursorx at %p %i %i\n", &vm->dataBase[i], frameTime, realTime);
-			//VM_Call( vm, refreshCmd, realtimeMarker);
+		if(realTime == diff) {
 			ret = &vm->dataBase[i-8];
 		}
 	}

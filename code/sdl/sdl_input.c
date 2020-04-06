@@ -41,9 +41,9 @@ static qboolean mouseActive = qfalse;
 
 static cvar_t *in_mouse;
 
-#ifdef USE_JOYSTICK
 static cvar_t *in_joystick;
 static cvar_t *in_joystickThreshold;
+#ifdef USE_JOYSTICK
 static cvar_t *in_joystickNo;
 static cvar_t *in_joystickUseAnalog;
 
@@ -1003,9 +1003,11 @@ static void IN_JoyMove( void )
 HandleEvents
 ===============
 */
+float touchhats[5][2] = {};
 //static void IN_ProcessEvents( void )
 void HandleEvents( void )
 {
+	int i;
 	SDL_Event e;
 	keyNum_t key = 0;
 	static keyNum_t lastKeyDown = 0;
@@ -1103,7 +1105,7 @@ void HandleEvents( void )
 			case SDL_MOUSEMOTION:
 				if( mouseActive )
 				{
-					if( !e.motion.xrel && !e.motion.yrel )
+					if( !e.motion.xrel && !e.motion.yrel && !in_joystick->integer )
 						break;
 					Com_QueueEvent( in_eventTime, SE_MOUSE, e.motion.xrel, e.motion.yrel, 0, NULL );
 				}
@@ -1122,8 +1124,10 @@ void HandleEvents( void )
 						case SDL_BUTTON_X2:     b = K_MOUSE5;     break;
 						default:                b = K_AUX1 + ( e.button.button - SDL_BUTTON_X2 + 1 ) % 16; break;
 					}
-					Com_QueueEvent( in_eventTime, SE_KEY, b,
-						( e.type == SDL_MOUSEBUTTONDOWN ? qtrue : qfalse ), 0, NULL );
+					if(!in_joystick->integer) {
+						Com_QueueEvent( in_eventTime, SE_KEY, b,
+							( e.type == SDL_MOUSEBUTTONDOWN ? qtrue : qfalse ), 0, NULL );
+					}
 				}
 				break;
 
@@ -1169,8 +1173,63 @@ void HandleEvents( void )
 					case SDL_WINDOWEVENT_FOCUS_GAINED:	gw_active = qtrue;  gw_minimized = qfalse; break;
 				}
 				break;
+#ifdef EMSCRIPTEN
+			case SDL_FINGERMOTION:
+				{
+					//Com_QueueEvent( in_eventTime, SE_MOUSE_ABS, fingerMinusGap, e.tfinger.y * 480, 0, NULL );
+					float ratio = (float)cls.glconfig.vidWidth / (float)cls.glconfig.vidHeight;
+					touchhats[e.tfinger.fingerId][0] = (e.tfinger.x * ratio) * 50;
+					touchhats[e.tfinger.fingerId][1] = e.tfinger.y * 50;
+				}
+				break;
+
+			case SDL_FINGERDOWN:
+			case SDL_FINGERUP:
+				Com_Printf("Mouse event %s, %i\n", e.type == SDL_FINGERDOWN ? "down": "up", e.motion.which);
+				if (e.type == SDL_FINGERDOWN && Key_GetCatcher( ) & KEYCATCH_UI
+					&& e.tfinger.fingerId == 3) {
+					// Source: https://github.com/tomkidd/Quake3-iOS/blob/master/Quake3/sdl/sdl_input.c#L1162
+					float ratio43 = 640.0f / 480.0f;
+					float ratio = (float)cls.glconfig.vidWidth / (float)cls.glconfig.vidHeight;
+
+					// If we're not on a 4:3 screen, do the math to figure out how to
+					// translate coordinates to a 4:3 equivalent
+					if (ratio43 != ratio) {
+						float width43 = 480 * ratio;
+						float gap = 0.5 * (width43 - (480.0f*(640.0f/480.0f)));
+						float fingerMinusGap = (e.tfinger.x * width43) - gap;
+
+						Com_QueueEvent( in_eventTime, SE_MOUSE_ABS, fingerMinusGap, e.tfinger.y * 480, 0, NULL );
+					} else {
+						Com_QueueEvent( in_eventTime, SE_MOUSE_ABS, e.tfinger.x * 640, e.tfinger.y * 480, 0, NULL );
+					}
+					Com_QueueEvent( in_eventTime+1, SE_KEY, K_MOUSE1, qtrue, 0, NULL );
+				}
+				if(e.type == SDL_FINGERUP) {
+					Com_QueueEvent( in_eventTime+1, SE_KEY, K_MOUSE1, qfalse, 0, NULL );
+					touchhats[e.tfinger.fingerId][0] = 0;
+					touchhats[e.tfinger.fingerId][1] = 0;
+				}
+				break;
+#endif
 			default:
 				break;
+		}
+	}
+		
+	for(i = 1; i < 4; i++) {
+		/*
+		if(i == 2 && !(Key_GetCatcher( ) & KEYCATCH_UI)) {
+			if(touchhats[i][0] != 0 || touchhats[i][1] != 0) {
+				Com_QueueEvent( in_eventTime, SE_MOUSE, touchhats[i][0], touchhats[i][1], 0, NULL );
+			}
+		}
+		*/
+		// TODO: make config options for this?
+		if(i == 1 && !(Key_GetCatcher( ) & KEYCATCH_UI)) {
+			if(touchhats[i][0] != 0 || touchhats[i][1] != 0) {
+				Com_QueueEvent( in_eventTime, SE_MOUSE, touchhats[i][0], 0, 0, NULL );
+			}
 		}
 	}
 }
@@ -1255,10 +1314,9 @@ void IN_Init( void )
 	in_mouse = Cvar_Get( "in_mouse", "1", CVAR_ARCHIVE );
 	Cvar_CheckRange( in_mouse, "-1", "1", CV_INTEGER );
 
-#ifdef USE_JOYSTICK
 	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE|CVAR_LATCH );
 	in_joystickThreshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE );
-
+#ifdef USE_JOYSTICK
 	j_pitch =        Cvar_Get( "j_pitch",        "0.022", CVAR_ARCHIVE_ND );
 	j_yaw =          Cvar_Get( "j_yaw",          "-0.022", CVAR_ARCHIVE_ND );
 	j_forward =      Cvar_Get( "j_forward",      "-0.25", CVAR_ARCHIVE_ND );

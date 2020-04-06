@@ -2888,8 +2888,17 @@ int Com_EventLoop( void ) {
 			CL_CharEvent( ev.evValue );
 			break;
 		case SE_MOUSE:
+#ifdef EMSCRIPTEN
+			CL_MouseEvent( ev.evValue, ev.evValue2, ev.evTime, qfalse );
+#else
 			CL_MouseEvent( ev.evValue, ev.evValue2, ev.evTime );
+#endif
 			break;
+#ifdef EMSCRIPTEN
+		case SE_MOUSE_ABS:
+			CL_MouseEvent( ev.evValue, ev.evValue2, ev.evTime, qtrue );
+			break;
+#endif
 		case SE_JOYSTICK_AXIS:
 			CL_JoystickEvent( ev.evValue, ev.evValue2, ev.evTime );
 			break;

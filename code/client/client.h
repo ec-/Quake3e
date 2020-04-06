@@ -351,6 +351,9 @@ typedef struct {
 	float		biasX;
 	float		biasY;
 
+#ifdef EMSCRIPTEN
+	byte		 *menuUIhack;
+#endif
 } clientStatic_t;
 
 extern int bigchar_width;

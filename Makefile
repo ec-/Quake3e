@@ -562,9 +562,7 @@ endef
 
   BASE_CFLAGS = \
 	  -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
-    -I$(EMSCRIPTEN_CACHE)/wasm-obj/include/SDL2 \
-    -I$(EMSCRIPTEN)/system/include \
-    -I$(EMSCRIPTEN)/system/lib
+    -I$(EMSCRIPTEN_CACHE)/wasm-obj/include/SDL2
 
 # debug optimize flags: --closure 0 --minify 0 -g -g4 || -O1 --closure 0 --minify 0 -g -g3
   DEBUG_CFLAGS=$(BASE_CFLAGS) \
