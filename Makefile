@@ -622,7 +622,7 @@ endef
 		-s USE_OGG=1 \
     -s FORCE_FILESYSTEM=1 \
     -s EXPORT_NAME=\"quake3e\" \
-		$(DEBUG_CFLAGS)
+		$(RELEASE_CFLAGS)
 
 else # ifeq js
 
