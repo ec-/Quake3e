@@ -38,6 +38,7 @@ QGL_1_3_PROCS;
 QGL_1_5_PROCS;
 QGL_2_0_PROCS;
 QGL_3_0_PROCS;
+QGL_ARB_occlusion_query_PROCS;
 QGL_ARB_framebuffer_object_PROCS;
 QGL_ARB_vertex_array_object_PROCS;
 QGL_EXT_direct_state_access_PROCS;
@@ -74,7 +75,11 @@ void GLimp_InitExtraExtensions( void )
 #undef GLE
 
 	// GL function loader, based on https://gist.github.com/rygorous/16796a0c876cf8a5f542caddb55bce8a
-#define GLE(ret, name, ...) qgl##name = (name##proc *) ri.GL_GetProcAddress( "gl" #name );
+#ifdef EMSCRIPTEN
+	#define GLE( ret, name, ... ) qgl##name = (void *)gl##name;
+#else
+	#define GLE(ret, name, ...) qgl##name = (name##proc *) ri.GL_GetProcAddress( "gl" #name );
+#endif
 
 	QGL_1_1_PROCS;
 	QGL_DESKTOP_1_1_PROCS;
@@ -89,7 +94,7 @@ void GLimp_InitExtraExtensions( void )
 	// OpenGL 2.0, was GL_ARB_shading_language_100, GL_ARB_vertex_program, GL_ARB_shader_objects, and GL_ARB_vertex_shader
 	QGL_2_0_PROCS;
 
-	QGL_3_0_PROCS;
+//	QGL_3_0_PROCS;
 
 	if ( !qglGetString ) {
 		ri.Error( ERR_FATAL, "glGetString is NULL" );
@@ -126,6 +131,7 @@ void GLimp_InitExtraExtensions( void )
 	if ( strstr((char *)qglGetString(GL_RENDERER), "Intel") )
 		glRefConfig.intelGraphics = qtrue;
 
+#ifndef EMSCRIPTEN
 	// OpenGL 3.0 - GL_ARB_framebuffer_object
 	extension = "GL_ARB_framebuffer_object";
 	glRefConfig.framebufferObject = qfalse;
@@ -149,6 +155,7 @@ void GLimp_InitExtraExtensions( void )
 	{
 		ri.Printf(PRINT_ALL, result[2], extension);
 	}
+#endif
 
 	// OpenGL 3.0 - GL_ARB_vertex_array_object
 	extension = "GL_ARB_vertex_array_object";
@@ -165,7 +172,7 @@ void GLimp_InitExtraExtensions( void )
 			glRefConfig.vertexArrayObject = !!r_arb_vertex_array_object->integer;
 		}
 
-		QGL_ARB_vertex_array_object_PROCS;
+//		QGL_ARB_vertex_array_object_PROCS;
 
 		ri.Printf(PRINT_ALL, result[glRefConfig.vertexArrayObject], extension);
 	}
@@ -309,7 +316,7 @@ void GLimp_InitExtraExtensions( void )
 		// QGL_*_PROCS becomes several functions, do not remove {}
 		if (glRefConfig.directStateAccess)
 		{
-			QGL_EXT_direct_state_access_PROCS;
+//			QGL_EXT_direct_state_access_PROCS;
 		}
 
 		ri.Printf(PRINT_ALL, result[glRefConfig.directStateAccess], extension);

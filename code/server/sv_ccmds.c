@@ -160,7 +160,7 @@ static void SV_Map_f( void ) {
 	int			len;
 
 	map = Cmd_Argv(1);
-	if ( !map || !*map ) {
+	if ( !map || !*map || strlen(map) == 0 ) {
 		return;
 	}
 

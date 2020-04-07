@@ -205,6 +205,9 @@ typedef struct {
 	int			downloadCount;	// how many bytes we got
 	int			downloadSize;	// how many bytes we got
 	char		downloadList[BIG_INFO_STRING]; // list of paks we need to download
+#ifdef EMSCRIPTEN
+	qboolean  dlDisconnect;
+#endif
 	qboolean	downloadRestart;	// if true, we need to do another FS_Restart because we downloaded a pak
 
 #ifdef USE_CURL
@@ -348,6 +351,9 @@ typedef struct {
 	float		biasX;
 	float		biasY;
 
+#ifdef EMSCRIPTEN
+	byte		 *menuUIhack;
+#endif
 } clientStatic_t;
 
 extern int bigchar_width;
@@ -374,8 +380,6 @@ qboolean	CL_Download( const char *cmd, const char *pakname, qboolean autoDownloa
 
 //=============================================================================
 
-extern	vm_t			*cgvm;	// interface to cgame dll or vm
-extern	vm_t			*uivm;	// interface to ui dll or vm
 extern	refexport_t		re;		// interface to refresh .dll
 
 
@@ -554,6 +558,12 @@ void CIN_CloseAllVideos(void);
 //
 // cl_cgame.c
 //
+#ifdef EMSCRIPTEN
+void CL_UpdateShader( void );
+void CL_UpdateSound( void );
+void CL_UpdateModel( void );
+void CL_InitCGameFinished( void );
+#endif
 void CL_InitCGame( void );
 void CL_ShutdownCGame( void );
 qboolean CL_GameCommand( void );

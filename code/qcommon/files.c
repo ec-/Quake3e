@@ -356,8 +356,10 @@ static char		*fs_serverPakNames[MAX_REF_PAKS];		// pk3 names
 // only used for autodownload, to make sure the client has at least
 // all the pk3 files that are referenced at the server side
 static int		fs_numServerReferencedPaks;
+static int		fs_numMapPakNames;
 static int		fs_serverReferencedPaks[MAX_REF_PAKS];		// checksums
 static char		*fs_serverReferencedPakNames[MAX_REF_PAKS];	// pk3 names
+static char		*fs_mapPakNames[MAX_REF_PAKS];		// pk3 names
 
 int	fs_lastPakIndex;
 
@@ -368,6 +370,9 @@ FILE*		missingFiles = NULL;
 void Com_AppendCDKey( const char *filename );
 void Com_ReadCDKey( const char *filename );
 
+static void FS_SetMapIndex(const char *mapname);
+static qboolean FS_InMapIndex(const char *filename);
+static qboolean FS_IsExt( const char *filename, const char *ext, size_t namelen );
 static int FS_GetModList( char *listbuf, int bufsize );
 static void FS_CheckIdPaks( void );
 void FS_Reload( void );
@@ -805,6 +810,7 @@ qboolean FS_FileExists( const char *file )
 {
 	FILE *f;
 	char *testpath;
+	int len;
 
 	testpath = FS_BuildOSPath( fs_homepath->string, fs_gamedir, file );
 
@@ -813,6 +819,12 @@ qboolean FS_FileExists( const char *file )
 		fclose( f );
 		return qtrue;
 	}
+
+	len = strlen(file);
+	if(FS_IsExt(file, ".bsp", len) && FS_InMapIndex(file)) {
+		return 1;
+	}
+
 	return qfalse;
 }
 
@@ -1606,6 +1618,12 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 				}
 			}
 		}
+		
+		length = strlen(filename);
+		if(FS_IsExt(filename, ".bsp", length) && FS_InMapIndex(filename)) {
+			return 1;
+		}
+		
 		return -1;
 	}
 
@@ -3169,6 +3187,12 @@ qboolean FS_CompareZipChecksum(const char *zipfile)
 	{
 		if(checksum == fs_serverReferencedPaks[index])
 			return qtrue;
+#ifdef EMSCRIPTEN
+		else if (Q_stristr(zipfile, fs_serverReferencedPakNames[index])) {
+			return qtrue;
+		}
+#endif
+
 	}
 	
 	return qfalse;
@@ -4319,6 +4343,12 @@ qboolean FS_ComparePaks( char *neededpaks, int len, qboolean dlstring ) {
 				havepak = qtrue; // This is it!
 				break;
 			}
+#ifdef EMSCRIPTEN
+			else if (Q_stristr(sp->pack->pakFilename, fs_serverReferencedPakNames[i])) {
+				havepak = qtrue; // Accept that the checksums don't match and move on
+				break;
+			}
+#endif
 		}
 
 		if ( !havepak && fs_serverReferencedPakNames[i] && *fs_serverReferencedPakNames[i] ) { 
@@ -4623,9 +4653,15 @@ qboolean FS_IsPureChecksum( int sum )
 FS_Startup
 ================
 */
+#ifndef EMSCRIPTEN
 static void FS_Startup( void ) {
 	const char *homePath;
 	int start, end;
+#else
+void FS_Startup( void ) {
+	const char *homePath;
+#endif
+;
 
 	Com_Printf( "----- FS_Startup -----\n" );
 
@@ -4633,7 +4669,9 @@ static void FS_Startup( void ) {
 	fs_copyfiles = Cvar_Get( "fs_copyfiles", "0", CVAR_INIT );
 	fs_basepath = Cvar_Get( "fs_basepath", Sys_DefaultBasePath(), CVAR_INIT | CVAR_PROTECTED | CVAR_PRIVATE );
 	fs_basegame = Cvar_Get( "fs_basegame", BASEGAME, CVAR_INIT | CVAR_PROTECTED );
+#ifndef EMSCRIPTEN
 	fs_steampath = Cvar_Get( "fs_steampath", Sys_SteamPath(), CVAR_INIT | CVAR_PROTECTED | CVAR_PRIVATE );
+#endif
 
 #ifndef USE_HANDLE_CACHE
 	fs_locked = Cvar_Get( "fs_locked", "0", CVAR_INIT );
@@ -4653,7 +4691,14 @@ static void FS_Startup( void ) {
 	fs_homepath = Cvar_Get( "fs_homepath", homePath, CVAR_INIT | CVAR_PROTECTED | CVAR_PRIVATE );
 	fs_gamedirvar = Cvar_Get( "fs_game", "", CVAR_INIT | CVAR_SYSTEMINFO );
 	Cvar_CheckRange( fs_gamedirvar, NULL, NULL, CV_FSPATH );
+#ifdef EMSCRIPTEN
+}
 
+void FS_Startup_After_Async( void )
+{
+	int start, end;
+#endif
+;
 	if ( !Q_stricmp( fs_basegame->string, fs_gamedirvar->string ) ) {
 		Cvar_ForceReset( "fs_game" );
 	}
@@ -4702,6 +4747,8 @@ static void FS_Startup( void ) {
 	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=506
 	// reorder the pure pk3 files according to server order
 	FS_ReorderPurePaks();
+
+	FS_SetMapIndex( "" );
 
 	// get the pure checksums of the pk3 files loaded by the server
 	FS_LoadedPakPureChecksums();
@@ -5292,6 +5339,9 @@ void FS_InitFilesystem( void ) {
 
 	// try to start up normally
 	FS_Restart( 0 );
+#ifdef EMSCRIPTEN
+	FS_Startup();
+#endif
 }
 
 
@@ -5302,11 +5352,13 @@ FS_Restart
 */
 void FS_Restart( int checksumFeed ) {
 
+#ifndef EMSCRIPTEN
 	// last valid game folder used
 	static char lastValidBase[MAX_OSPATH];
 	static char lastValidGame[MAX_OSPATH];
 
 	static qboolean execConfig = qfalse;
+#endif
 
 	// free anything we currently have loaded
 	FS_Shutdown( qfalse );
@@ -5314,9 +5366,19 @@ void FS_Restart( int checksumFeed ) {
 	// set the checksum feed
 	fs_checksumFeed = checksumFeed;
 
+#ifndef EMSCRIPTEN
 	// try to start up normally
 	FS_Startup();
+#else
+}
 
+void FS_Restart_After_Async( void ) {
+	static char lastValidBase[MAX_OSPATH];
+	static char lastValidGame[MAX_OSPATH];
+	static qboolean execConfig = qfalse;
+	FS_Startup_After_Async();
+#endif
+;
 	// if we can't find default.cfg, assume that the paths are
 	// busted and error out now, rather than getting an unreadable
 	// graphics screen when the font fails to load
@@ -5331,7 +5393,7 @@ void FS_Restart( int checksumFeed ) {
 			lastValidGame[0] = '\0';
 			Cvar_Set( "fs_restrict", "0" );
 			execConfig = qtrue;
-			FS_Restart( checksumFeed );
+			FS_Restart( fs_checksumFeed );
 			Com_Error( ERR_DROP, "Invalid game folder" );
 			return;
 		}
@@ -5644,10 +5706,12 @@ fileHandle_t FS_PipeOpenWrite( const char *cmd, const char *filename ) {
 		return FS_INVALID_HANDLE;
 	}
 
+#ifndef EMSCRIPTEN
 #ifdef _WIN32
 	fd->handleFiles.file.o = _popen( cmd, "wb" );
 #else
 	fd->handleFiles.file.o = popen( cmd, "w" );
+#endif
 #endif
 
 	if ( fd->handleFiles.file.o == NULL ) {
@@ -5716,4 +5780,92 @@ void *FS_LoadLibrary( const char *name )
 	}
 
 	return libHandle;
+}
+
+static void FS_SetMapIndex(const char *mapname) {
+	int r, i, ki = 0, level = 0, mpi = 0;
+	fileHandle_t indexfile;
+	char buf[MAX_OSPATH], key[MAX_OSPATH];
+	qboolean isKey = qfalse, isPak = qfalse;
+	//char *mapsMatch = va("maps/%s", mapname);
+
+	//	Com_sprintf( descPath, sizeof ( descPath ), "%s%cdescription.txt", modDir, PATH_SEP );
+	FS_FOpenFileRead("index.json", &indexfile, qtrue);
+
+	// set by server, don't interfere
+	if ( fs_debug->integer ) {
+		Com_Printf( "FS_SetMapIndex: Searching index for map %s\n", mapname );
+	}
+
+	if(indexfile)
+	{
+		do {
+			r = FS_Read(buf, MAX_OSPATH, indexfile);
+			// Do simple JSON parse to find just the paks required for the map
+			for(i = 0; i < r; i++) {
+				if(buf[i] == '{') {
+					level++;
+				} else if(buf[i] == '}') {
+					level--;
+				} else if(buf[i] == '"' && level == 1 && !isKey && !isPak) {
+					isKey = qtrue;
+				} else if(buf[i] == '"' && level == 1 && isKey && !isPak) {
+					isKey = qfalse;
+					key[ki] = 0;
+					ki = 0;
+					if(Q_stristr(key, "maps/") != NULL && (Q_stristr(key, "pak9") != NULL || Q_stristr(key, ".bsp") != NULL)) {
+						const char *bspext = Q_stristr(key, ".bsp");
+						if(bspext) {
+							key[strlen(key) - 4] = '\0';
+						}
+						fs_mapPakNames[mpi] = CopyString( &key[Q_stristr(key, "maps/") - key + 5] );
+						Q_strlwr(fs_mapPakNames[mpi]);
+						mpi++;
+						if ( fs_debug->integer ) {
+							Com_Printf( "FS_SetMapIndex: Map in index %s\n", key );
+						}
+					}
+				} else if(isKey) {
+					key[ki] = buf[i];
+					ki++;
+				}
+			}
+		} while(r > 0);
+		// set by server, don't interfere
+		fs_numMapPakNames = mpi;
+		FS_FCloseFile( indexfile );
+	}
+}
+
+static qboolean FS_InMapIndex(const char *filename) {
+	int			i, len, extpos, start;
+	char mapname[MAX_QPATH];
+	len = strlen(filename);
+	Com_Printf( "FS_InMapIndex: Searching %i maps for %s\n", fs_numMapPakNames, filename );
+	if(len < 1) {
+		return qfalse;
+	}
+	extpos = strlen(strrchr(filename, '.'));
+	len -= extpos;
+	start = 0;
+	if(Q_stristr(filename, "maps/")) {
+		start = 5;
+	}
+	if(len - start < 1) {
+		return qfalse;
+	}
+	Q_strncpyz(mapname, &filename[start], len - start + 1);
+	Q_strlwr(mapname);
+	for(i = 0; i < fs_numMapPakNames; i++) {
+		if(Q_stristr(fs_mapPakNames[i], mapname) != NULL) {
+			if ( fs_debug->integer ) {
+				Com_Printf( "FS_InMapIndex: Map in index %s\n", mapname );
+			}
+			return qtrue;
+		}
+	}
+	if ( fs_debug->integer ) {
+		Com_Printf( "FS_InMapIndex: Map NOT in index %s\n", mapname );
+	}
+	return qfalse;
 }

@@ -390,11 +390,17 @@ clients along with it.
 This is NOT called for map_restart
 ================
 */
-void SV_SpawnServer( const char *mapname, qboolean killBots ) {
+qboolean killBots;
+
+void SV_SpawnServer( const char *mapname, qboolean kb ) {
 	int			i;
+#ifndef EMSCRIPTEN
 	int			checksum;
 	qboolean	isBot;
 	const char	*p;
+#endif
+
+	killBots = kb;
 
 	// shut down the existing game if it is running
 	SV_ShutdownGameProgs();
@@ -498,11 +504,31 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	Com_RandomBytes( (byte*)&sv.checksumFeed, sizeof( sv.checksumFeed ) );
 	FS_Restart( sv.checksumFeed );
 
-	Sys_SetStatus( "Loading map %s", mapname );
-	CM_LoadMap( va( "maps/%s.bsp", mapname ), qfalse, &checksum );
-
 	// set serverinfo visible name
 	Cvar_Set( "mapname", mapname );
+
+#ifdef EMSCRIPTEN
+
+	Com_Frame_Callback(Sys_FS_Shutdown, SV_SpawnServer_After_Shutdown);
+}
+
+void SV_SpawnServer_After_Shutdown( void ) {
+	FS_Startup();
+	Com_Frame_Callback(Sys_FS_Startup, SV_SpawnServer_After_Startup);
+}
+
+void SV_SpawnServer_After_Startup( void ) {
+	int			i;
+	int			checksum;
+	qboolean	isBot;
+	const char	*p;
+	const char *mapname = Cvar_VariableString("mapname");
+	FS_Restart_After_Async();
+#endif
+;
+
+	Sys_SetStatus( "Loading map %s", mapname );
+	CM_LoadMap( va( "maps/%s.bsp", mapname ), qfalse, &checksum );
 
 	Cvar_Set( "sv_mapChecksum", va( "%i",checksum ) );
 
@@ -665,6 +691,10 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	SV_Heartbeat_f();
 
 	Hunk_SetMark();
+	
+#ifdef EMSCRIPTEN
+	//CL_StartHunkUsers( );
+#endif
 
 	Com_Printf ("-----------------------------------\n");
 

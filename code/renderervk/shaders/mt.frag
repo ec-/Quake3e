@@ -1,7 +1,7 @@
 #version 450
 
-layout(set = 1, binding = 0) uniform sampler2D texture0;
-layout(set = 2, binding = 0) uniform sampler2D texture1;
+layout(set = 2, binding = 0) uniform sampler2D texture0;
+layout(set = 3, binding = 0) uniform sampler2D texture1;
 
 layout(location = 0) in vec4 frag_color;
 layout(location = 1) centroid in vec2 frag_tex_coord0;

@@ -1,0 +1,472 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<title>
+Quake 3 Virtual Machine (Q3VM) Specifications
+</title>
+</head>
+<body>
+<h1>Quake 3 Virtual Machine (Q3VM) Specifications</h1>
+
+<h2>Synopsis</h2><p>A description of the Q3VM architecture and operations.</p>
+
+<a name="intro"></a><h3>Introduction</h3>
+<p>
+The Q3VM is a virtual machine used by Quake III to run the game module.
+The VM is a sort of sandbox to limit the damage a rogue or malicious QVM program can wreak.
+Though not perfect, it certainly is much safer than full access to native machine language, which could otherwise more easily allow the spread of viruses or the corruption of system resources.
+In addition, Q3VM programs, similar to JVM's, are write-once run-on-many-platforms (at least for which a Q3VM interpreter or compiler exists).
+
+
+<p>
+The instruction set for the Q3VM is derived from the bytecode interpreter target of LCC, with minor differences.
+The VM heavily relies on stack operations (stack-based machine).
+
+
+<a name="memory"></a><h3>Memory</h3>
+<p>
+Memory bus of little-endian, unsigned 32 bits, flat memory space, zero-based addressing, octet-accessible.
+
+
+<p>
+Memory is accessible in words of 4 octets (32 bits), 2 octets (16 bits), and single octect (8 bits).
+
+
+<p>
+Code and data occupy distinct address spaces.
+Thus code address 0 is not the same as data address 0.
+This separation also precludes self-modifying code.
+
+
+<h4>Code segment</h4>
+<p>
+Q3VM is CISC-like in the sense that opcodes do not occupy equal amounts of space.
+Some opcodes take a parameter embedded in the code segment.
+As a result, the length of the code segment has no bearing on the number of instructions in the code segment.
+The QVM file format header manifests this distinction.
+
+
+<p>
+Jump addresses are specified in terms of instructions, rather than bytes.
+Thus, the VM code memory requires special processing when loading the code segment to identify instruction offsets.
+
+
+<a name="processor"></a><h3>Processor/CPU</h3>
+<p>
+While the Q3VM is currently implemented only in emulation, the concept of a VM's CPU is a convenient notion.
+
+
+<h4>Registers</h4>
+<p>
+Theses are guesses derived from modern machines, other fictional machines, and Forth.
+<ul>
+<li>Program Counter (PC)</li>
+<li>Stack Pointer (SP) (&quot;the stack&quot;)</li>
+<li>Local Pointer (LP) (&quot;start of local variable space&quot;)</li>
+<li>Frame Pointer (FP) (&quot;start of subroutine stack space&quot;)</li>
+</ul>
+
+
+<h4>Opcodes</h4>
+<p>
+List of opcodes recognized by the Q3VM.
+All opcodes occupy one octet, and take 1 or 4 additional octets as parameters.
+All multi-octet values are treated as little-endian (a legacy of Id's MS-DOS days).
+
+
+<p>
+Opcode mnemonics (&quot;names&quot;) follow a pattern (intriguingly, the opcode values don't, as they do on other architectures).
+Up to four letters for the operation name, then a letter indicating a data type, then a digit indicating data size (usually the number of required octets).
+
+
+
+
+<p>
+Data type and size codes:
+<dl>
+<dt><a name="processor.B">B</a></dt><dd>block (sequence of octets, of arbitrary length (e.g. character strings or structs))</dd>
+<dt><a name="processor.F4">F4</a></dt><dd>little-endian IEEE-754 32-bit single-precision floating point value.</dd>
+<dt><a name="processor.P4">P4</a></dt><dd>Four-octet pointer (memory address) value.</dd>
+<dt><a name="processor.I4">I4</a></dt><dd>Four-octet signed integer.  Corresponds to Q3VM's C data type &quot;signed int&quot;.</dd>
+<dt><a name="processor.I2">I2</a></dt><dd>Two-octet signed integer.  Corresponds to Q3VM's C data type &quot;signed short&quot;.</dd>
+<dt><a name="processor.I1">I1</a></dt><dd>One-octet signed integer.  Corresponds to Q3VM's C data type &quot;signed char&quot;.</dd>
+<dt><a name="processor.U4">U4</a></dt><dd>Four-octet unsigned integer.  Corresponds to Q3VM's C data type &quot;unsigned int&quot;.</dd>
+<dt><a name="processor.U2">U2</a></dt><dd>Two-octet unsigned integer.  Corresponds to Q3VM's C data type &quot;unsigned short&quot;.</dd>
+<dt><a name="processor.U1">U1</a></dt><dd>One-octet unsigned integer.  Corresponds to Q3VM's C data type &quot;unsigned char&quot;.</dd>
+</dl>
+
+
+<p>
+Generalized opcodes list (lcc bytecode):
+<dl>
+<dt><a name="processor.CNST<em>t</em> <em>v</em>">CNST<em>t</em> <em>v</em></a></dt><dd>
+CONSTANT.
+Reads <em>v</em> as a value of type <em>t</em>.
+For floats, <em>v</em> is the bit pattern of the float value.
+</dd>
+<dt><a name="processor.ASGN<em>t</em>">ASGN<em>t</em></a></dt><dd>
+ASSIGN.
+Pops a value from stack, interpreted according to <em>t</em>, to use as the assignment value.
+Pops another value from stack, interpreted as a pointer value (memory address) to use as the assignment destination.
+</dd>
+<dt><a name="processor.INDIR<em>t</em>">INDIR<em>t</em></a></dt><dd>
+INDIRECTION.
+Pops a value from stack, interpreted as a pointer value (memory address).
+Retrieves the 32-bit value from the indicated memory location, and interprets the 32-bit value according to <em>t</em>, then pushes to stack.
+(think of it as pointer dereferencing)
+</dd>
+<dt><a name="processor.CVF<em>t</em>">CVF<em>t</em></a></dt><dd>
+CONVERT TO FLOAT.
+Pops a value from stack, interpreted according to <em>t</em>, converted to its equivalent float (F4) form, then pushed to stack.
+</dd>
+<dt><a name="processor.CVI<em>t</em>">CVI<em>t</em></a></dt><dd>
+CONVERT TO (signed) INTEGER.
+Pops a value from stack, interpreted according to <em>t</em>, converted to its equivalent signed integer (I4) form, then pushed to stack.
+</dd>
+<dt><a name="processor.CVU<em>t</em>">CVU<em>t</em></a></dt><dd>
+CONVERT TO UNSIGNED INTEGER.
+Pops a value from stack, interpreted according to <em>t</em>, converted to its equivalent unsigned integer (U4) form, then pushed to stack.
+</dd>
+<dt><a name="processor.CVP<em>t</em>">CVP<em>t</em></a></dt><dd>
+CONVERT TO UNSIGNED INTEGER.
+Pops a value from stack, interpreted according to <em>t</em>, converted to its equivalent pointer (P4) form, then pushed to stack.
+</dd>
+<dt><a name="processor.NEG<em>t</em>">NEG<em>t</em></a></dt><dd>
+ARITHMETIC NEGATE.
+Pops a value from stack, interpreted according to <em>t</em>, negated arithmeticaly (multiplied by -1 or -1.0), then pushed to stack.
+</dd>
+<dt><a name="processor.ADDRGP4 <em>v</em>">ADDRGP4 <em>v</em></a></dt><dd>
+ADDRESS OF GLOBAL (pointer).
+Takes <em>v</em> as a memory address, takes the 32-bit value at the address, pushes the 32-bit value to stack (i.e. get value of a global variable/function/symbol).
+</dd>
+<dt><a name="processor.ADDRLP4 <em>v</em>">ADDRLP4 <em>v</em></a></dt><dd>
+ADDRESS OF (from?) LOCAL (pointer).
+Address of a local variable.
+Local Pointer(?) plus <em>v</em>.
+First local variable is at 0.
+</dd>
+<dt><a name="processor.ADDRFP4 <em>v</em>">ADDRFP4 <em>v</em></a></dt><dd>
+ADDRESS (from?) FRAME (pointer).
+Address of an argument (with repect to the frame pointer).
+Frame Pointer plus (minus?) <em>v</em>.
+First argument is at 0, second argument at 4, etc (XXX: verify).
+</dd>
+<dt><a name="processor.ADD<em>t</em>">ADD<em>t</em></a></dt><dd>
+ADD.
+Pops a value from stack, interpreted according to <em>t</em>, as second operand.
+Pops another value from stack, interpreted <em>t</em>, as first operand.
+The two values are arithmeticaly added, pushes sum to stack.
+</dd>
+<dt><a name="processor.SUB<em>t</em>">SUB<em>t</em></a></dt><dd>
+SUBTRACT.
+Pops a value from stack, interpreted <em>t</em>, as second operand.
+Pops another value from stack, interpreted <em>t</em>, as first operand.
+Subtracts second operand from first operand, pushes difference to stack.
+</dd>
+<dt><a name="processor.MUL<em>t</em>">MUL<em>t</em></a></dt><dd>
+MULTIPLY.
+Pops a value from stack, interpreted <em>t</em>, as second operand.
+Pops another value from stack, interpreted <em>t</em>, as first operand.
+Multiplies the values together, pushes product to stack.
+</dd>
+<dt><a name="processor.DIV<em>t</em>">DIV<em>t</em></a></dt><dd>
+DIVIDE.
+Pops a value from stack, interpreted <em>t</em>, as second operand.
+Pops another value from stack, interpreted <em>t</em>, as first operand.
+Second operand divides into first operand, pushes quotient to stack
+(XXX: integer division C style?).
+</dd>
+<dt><a name="processor.MOD<em>t</em>">MOD<em>t</em></a></dt><dd>
+MODULUS.
+Pops a value from stack, as <em>t</em>, as second operand.
+Pops another value from stack, as <em>t</em>, as first operand.
+The second operand divides into the first operand, pushes remainder to stack.
+</dd>
+<dt><a name="processor.LSH<em>t</em>">LSH<em>t</em></a></dt><dd>
+LEFT SHIFT.
+Pops a value from stack, as <em>t</em>, as second operand.
+Pops another value from stack, as <em>t</em>, as first operand.
+First operand bit-wise shifts left by number of bits specified by second operand, pushes result to stack.
+</dd>
+<dt><a name="processor.RSH<em>t</em>">RSH<em>t</em></a></dt><dd>
+RIGHT SHIFT.
+Pops a value from stack, as <em>t</em>, as second operand.
+Pops another value from stack, as <em>t</em>, as first operand.
+First operand bit-wise shifts right by number of bits specified by second operand, pushes result to stack.
+Sign-extension depends on <em>t</em>.
+</dd>
+<dt><a name="processor.BAND<em>t</em>">BAND<em>t</em></a></dt><dd>
+BINARY/BITWISE AND.
+Pops a value from stack (<em>t</em>) as second operand.
+Pops another value from stack (<em>t</em>) as first operand.
+The two operands combine by bitwise AND, pushes result to stack.
+</dd>
+<dt><a name="processor.BCOM<em>t</em>">BCOM<em>t</em></a></dt><dd>
+BINARY/BITWISE COMPLEMENT.
+Pops a value from stack (<em>t</em>).
+Flips (almost-)every bit to its opposite value.
+Changing the high bit (bit 31) depends on <em>t</em>.
+</dd>
+<dt><a name="processor.BOR<em>t</em>">BOR<em>t</em></a></dt><dd>
+BINARY/BITWISE OR.
+Pops a value from stack (<em>t</em>) as second operand.
+Pops another value from stack (<em>t</em>) as first operand.
+Combines the two operands by bitwise OR, pushes result to stack.
+</dd>
+<dt><a name="processor.BXOR<em>t</em>">BXOR<em>t</em></a></dt><dd>
+BINARY/BITWISE XOR.
+Pops two values, XORs, pushes result to stack.
+</dd>
+<dt><a name="processor.EQ<em>t</em> <em>v</em>">EQ<em>t</em> <em>v</em></a></dt><dd>
+EQUAL-TO.
+Pops two values from stack (as type <em>t</em>), compares the two values.
+Jumps to address <em>v</em> if true.
+</dd>
+<dt><a name="processor.GE<em>t</em> <em>v</em>">GE<em>t</em> <em>v</em></a></dt><dd>
+GREATER-THAN OR EQUAL-TO.
+Pops a value from stack (type <em>t</em>) as second operand.
+Pops another value from stack (type <em>t</em>) as first operand.
+Compares if first operand is equal to the second operand.
+Jumps to address <em>v</em> if true.
+</dd>
+<dt><a name="processor.GT<em>t</em> <em>v</em>">GT<em>t</em> <em>v</em></a></dt><dd>
+GREATER-THAN.
+Pops a second operand (type <em>t</em>) then a first operand (type <em>t</em>).
+Compares if first operand is greater than the second operand.
+Jumps to address <em>v</em> if true.
+</dd>
+<dt><a name="processor.LE<em>t</em> <em>v</em>">LE<em>t</em> <em>v</em></a></dt><dd>
+LESS-THAN OR EQUAL-TO.
+Pops a second operand (type <em>t</em>) then a first operand (type <em>t</em>).
+Compares if first operand is less than or equal to the second operand.
+Jumps to address <em>v</em> if true.
+</dd>
+<dt><a name="processor.LT<em>t</em> <em>v</em>">LT<em>t</em> <em>v</em></a></dt><dd>
+LESS-THAN.
+Pops a second operand (<em>t</em>) then a first operand (<em>t</em>).
+Compares if first operand is less than the second operand.
+Jumps to address <em>v</em> if true.
+</dd>
+<dt><a name="processor.NE<em>t</em> <em>v</em>">NE<em>t</em> <em>v</em></a></dt><dd>
+NOT-EQUAL.
+Pops two values (<em>t</em>), compares the two values.
+Compares if first operand is not equal to the second operand.
+Jumps to address <em>v</em> if true.
+</dd>
+<dt><a name="processor.JUMPV">JUMPV</a></dt><dd>
+Pops a pointer value from stack, sets PC to the value (jump).
+</dd>
+<dt><a name="processor.RET<em>t</em>">RET<em>t</em></a></dt><dd>
+Pop value from stack,
+shrink stack to eliminate local frame,
+push value back to stack.
+Or copy top of stack to bottom of frame and shrink stack size/pointer?
+</dd>
+<dt><a name="processor.ARG<em>t</em>">ARG<em>t</em></a></dt><dd>
+Pop value from stack as type <em>t</em>,
+store into arguments-marshalling space.
+</dd>
+<dt><a name="processor.CALL<em>t</em>">CALL<em>t</em></a></dt><dd>
+Pops value from stack as address of a function.
+Makes a procedure call to the function, which is expected to return a value of type <em>t</em>.
+</dd>
+<dt><a name="processor.pop">pop</a></dt><dd>
+Pop stack (discard top of stack).
+(functions of void type still return a (nonsense) 32-bit value)
+</dd>
+</dl>
+
+<p>
+List of assembly directives:
+<dl>
+<dt><a name="processor.equ <em>s</em> <em>v</em>">equ <em>s</em> <em>v</em></a></dt><dd>
+Assign integer value <em>v</em> to symbol <em>s</em>.
+</dd>
+<dt><a name="processor.data">data</a></dt><dd>
+Assemble to DATA segment (initialized 32-bit variables).
+</dd>
+<dt><a name="processor.code">code</a></dt><dd>
+Assemble to CODE segment (instructions).
+</dd>
+<dt><a name="processor.lit">lit</a></dt><dd>
+Assemble to LIT segment (initialized 8-bit variables).
+</dd>
+<dt><a name="processor.bss">bss</a></dt><dd>
+Assemble to BSS segment (uninitialized block storage segment).
+</dd>
+<dt><a name="processor.LABELV <em>symbol</em>">LABELV <em>symbol</em></a></dt><dd>
+Assigns the value of the currently computed Program Counter to the symbol named <em>symbol</em>.
+(i.e. the current assembled address value is assigned to <em>symbol</em>).
+</dd>
+<dt><a name="processor.byte <em>l</em> <em>v</em>">byte <em>l</em> <em>v</em></a></dt><dd>
+Write initialized value <em>v</em> of <em>l</em> octets.
+1-octet values go into LIT segment.
+2-octet values are invalid (fatal error).
+4-octet values go into DATA segment.
+</dd>
+<dt><a name="processor.skip <em>v</em>">skip <em>v</em></a></dt><dd>
+Skip <em>v</em> octets in the segment, leaving the octets uninitialized.
+</dd>
+<dt><a name="processor.export <em>s</em>">export <em>s</em></a></dt><dd>
+Export symbol <em>s</em> for external linkage.
+</dd>
+<dt><a name="processor.import <em>s</em>">import <em>s</em></a></dt><dd>
+Import symbol <em>s</em>.
+</dd>
+<dt><a name="processor.align <em>v</em>">align <em>v</em></a></dt><dd>
+Ensure memory alignment at a multiple of <em>v</em>, skipping octets if needed.
+</dd>
+<dt><a name="processor.address <em>x</em>">address <em>x</em></a></dt><dd>
+???
+(evaluates expression <em>x</em> and append result to DATA segment)
+</dd>
+<dt><a name="processor.file <em>filename</em>">file <em>filename</em></a></dt><dd>
+Set filename to <em>filename</em> for status and error reporting.
+</dd>
+<dt><a name="processor.line <em>lineno</em>">line <em>lineno</em></a></dt><dd>
+Indicates current source line of <em>lineno</em>.
+</dd>
+<dt><a name="processor.proc <em>locals</em> <em>args</em>">proc <em>locals</em> <em>args</em></a></dt><dd>
+Start of procedure (function) body.
+Set aside <em>locals</em> octets for local variables, and <em>args</em> octets for arguments marshalling (for all possible subcalls within this procedure).
+</dd>
+<dt><a name="processor.endproc <em>locals</em> <em>args</em>">endproc <em>locals</em> <em>args</em></a></dt><dd>
+End of procedure body.
+Clean up <em>args</em> bytes (for arguments marshalling) and <em>locals</em> bytes (for local variables).
+</dd>
+</dl>
+
+<h4>Q3VM Bytecodes</h4>
+<p>
+Specific opcodes (Q3VM bytecode):
+
+(TOS = Top Of Stack; NIS = Next In Stack (next value after TOS))
+(Hack syntax: $PARM = code parameter)
+<TABLE BORDER=1>
+<TR>
+<TH>Byte</TH><TH>Opcode</TH><TH>Parameter size</TH><TH>Description</TH>
+</TR>
+<TR><TD>0 </TD><TD> UNDEF </TD><TD ALIGN="CENTER"> - </TD><TD> undefined opcode.</TD></TR>
+<TR><TD>1 </TD><TD> IGNORE </TD><TD ALIGN="CENTER"> - </TD><TD> no-operation (nop) instruction.</TD></TR>
+<TR><TD>2 </TD><TD> BREAK </TD><TD ALIGN="CENTER"> - </TD><TD> ??</TD></TR>
+<TR><TD>3 </TD><TD> ENTER </TD><TD ALIGN="CENTER"> 4 </TD><TD> Begin procedure body, adjust stack $PARM octets for frame (always at least 8 (i.e. 2 words)).  Frame contains all local storage/variables and arguments space for any calls within this procedure.</TD></TR>
+<TR><TD>4 </TD><TD> LEAVE </TD><TD ALIGN="CENTER"> 4 </TD><TD> End procedure body, $PARM is same as that of the matching ENTER.</TD></TR>
+<TR><TD>5 </TD><TD> CALL </TD><TD ALIGN="CENTER"> - </TD><TD> make call to procedure (code address <- TOS).</TD></TR>
+<TR><TD>6 </TD><TD> PUSH </TD><TD ALIGN="CENTER"> - </TD><TD> push nonsense (void) value to opstack (TOS <- 0).</TD></TR>
+<TR><TD>7 </TD><TD> POP </TD><TD ALIGN="CENTER"> - </TD><TD> pop a value from stack (remove TOS, decrease stack by 1).</TD></TR>
+<TR><TD>8 </TD><TD> CONST </TD><TD ALIGN="CENTER"> 4 </TD><TD> push literal value onto stack (TOS <- $PARM)</TD></TR>
+<TR><TD>9 </TD><TD> LOCAL </TD><TD ALIGN="CENTER"> 4 </TD><TD> get address of local storage (local variable or argument) (TOS <- (frame + $PARM)).</TD></TR>
+<TR><TD>10 </TD><TD> JUMP </TD><TD ALIGN="CENTER"> - </TD><TD> branch (code address <- TOS)</TD></TR>
+<TR><TD>11 </TD><TD> EQ </TD><TD ALIGN="CENTER"> 4 </TD><TD> check equality (signed integer) (compares NIS vs TOS, jump to $PARM if true).</TD></TR>
+<TR><TD>12 </TD><TD> NE </TD><TD ALIGN="CENTER"> 4 </TD><TD> check inequality (signed integer) (NIS vs TOS, jump to $PARM if true).</TD></TR>
+<TR><TD>13 </TD><TD> LTI </TD><TD ALIGN="CENTER"> 4 </TD><TD> check less-than (signed integer) (NIS vs TOS, jump to $PARM if true).</TD></TR>
+<TR><TD>14 </TD><TD> LEI </TD><TD ALIGN="CENTER"> 4 </TD><TD> check less-than or equal-to (signed integer) (NIS vs TOS, jump to $PARM if true).</TD></TR>
+<TR><TD>15 </TD><TD> GTI </TD><TD ALIGN="CENTER"> 4 </TD><TD> check greater-than (signed integer) (NIS vs TOS), jump to $PARM if true.</TD></TR>
+<TR><TD>16 </TD><TD> GEI </TD><TD ALIGN="CENTER"> 4 </TD><TD> check greater-than or equal-to (signed integer) (NIS vs TOS), jump to $PARM if true.</TD></TR>
+<TR><TD>17 </TD><TD> LTU </TD><TD ALIGN="CENTER"> 4 </TD><TD> check less-than (unsigned integer) (NIS vs TOS), jump to $PARM if true.</TD></TR>
+<TR><TD>18 </TD><TD> LEU </TD><TD ALIGN="CENTER"> 4 </TD><TD> check less-than or equal-to (unsigned integer) (NIS vs TOS), jump to $PARM if true.</TD></TR>
+<TR><TD>19 </TD><TD> GTU </TD><TD ALIGN="CENTER"> 4 </TD><TD> check greater-than (unsigned integer) (NIS vs TOS), jump to $PARM if true.</TD></TR>
+<TR><TD>20 </TD><TD> GEU </TD><TD ALIGN="CENTER"> 4 </TD><TD> check greater-than or equal-to (unsigned integer) (NIS vs TOS), jump to $PARM if true.</TD></TR>
+<TR><TD>21 </TD><TD> EQF </TD><TD ALIGN="CENTER"> 4 </TD><TD> check equality (float) (NIS vs TOS, jump to $PARM if true).</TD></TR>
+<TR><TD>22 </TD><TD> NEF </TD><TD ALIGN="CENTER"> 4 </TD><TD> check inequality (float) (NIS vs TOS, jump to $PARM if true).</TD></TR>
+<TR><TD>23 </TD><TD> LTF </TD><TD ALIGN="CENTER"> 4 </TD><TD> check less-than (float) (NIS vs TOS, jump to $PARM if true).</TD></TR>
+<TR><TD>24 </TD><TD> LEF </TD><TD ALIGN="CENTER"> 4 </TD><TD> check less-than or equal-to (float) (NIS vs TOS, jump to $PARM if true).</TD></TR>
+<TR><TD>25 </TD><TD> GTF </TD><TD ALIGN="CENTER"> 4 </TD><TD> check greater-than (float) (NIS vs TOS, jump to $PARM if true).</TD></TR>
+<TR><TD>26 </TD><TD> GEF </TD><TD ALIGN="CENTER"> 4 </TD><TD> check greater-than or equal-to (float) (NIS vs TOS, jump to $PARM if true).</TD></TR>
+<TR><TD>27 </TD><TD> LOAD1 </TD><TD ALIGN="CENTER"> - </TD><TD> Load 1-octet value from address in TOS (TOS <- [TOS])</TD></TR>
+<TR><TD>28 </TD><TD> LOAD2 </TD><TD ALIGN="CENTER"> - </TD><TD> Load 2-octet value from address in TOS (TOS <- [TOS])</TD></TR>
+<TR><TD>29 </TD><TD> LOAD4 </TD><TD ALIGN="CENTER"> - </TD><TD> Load 4-octet value from address in TOS (TOS <- [TOS])</TD></TR>
+<TR><TD>30 </TD><TD> STORE1 </TD><TD ALIGN="CENTER"> - </TD><TD> lowest octet of TOS is 1-octet value to store, destination address in next-in-stack ([NIS] <- TOS).</TD></TR>
+<TR><TD>31 </TD><TD> STORE2 </TD><TD ALIGN="CENTER"> - </TD><TD> lowest two octets of TOS is 2-octet value to store, destination address in next-in-stack ([NIS] <- TOS).</TD></TR>
+<TR><TD>32 </TD><TD> STORE4 </TD><TD ALIGN="CENTER"> - </TD><TD> TOS is 4-octet value to store, destination address in next-in-stack ([NIS] <- TOS).</TD></TR>
+<TR><TD>33 </TD><TD> ARG </TD><TD ALIGN="CENTER"> 1 </TD><TD> TOS is 4-octet value to store into arguments-marshalling space of the indicated octet offset (ARGS[offset] <- TOS).</TD></TR>
+<TR><TD>34 </TD><TD> BLOCK_COPY </TD><TD ALIGN="CENTER"> - </TD><TD> ???</TD></TR>
+<TR><TD>35 </TD><TD> SEX8 </TD><TD ALIGN="CENTER"> - </TD><TD> Sign-extend 8-bit (TOS <- TOS).</TD></TR>
+<TR><TD>36 </TD><TD> SEX16 </TD><TD ALIGN="CENTER"> - </TD><TD> Sign-extend 16-bit (TOS <- TOS).</TD></TR>
+<TR><TD>37 </TD><TD> NEGI </TD><TD ALIGN="CENTER"> - </TD><TD> Negate signed integer (TOS <- -TOS).</TD></TR>
+<TR><TD>38 </TD><TD> ADD </TD><TD ALIGN="CENTER"> - </TD><TD> Add integer-wise (TOS <- NIS + TOS).</TD></TR>
+<TR><TD>39 </TD><TD> SUB </TD><TD ALIGN="CENTER"> - </TD><TD> Subtract integer-wise (TOS <- NIS - TOS).</TD></TR>
+<TR><TD>40 </TD><TD> DIVI </TD><TD ALIGN="CENTER"> - </TD><TD> Divide integer-wise (TOS <- NIS / TOS).</TD></TR>
+<TR><TD>41 </TD><TD> DIVU </TD><TD ALIGN="CENTER"> - </TD><TD> Divide unsigned integer (TOS <- NIS / TOS).</TD></TR>
+<TR><TD>42 </TD><TD> MODI </TD><TD ALIGN="CENTER"> - </TD><TD> Modulo (signed integer) (TOS <- NIS mod TOS).</TD></TR>
+<TR><TD>43 </TD><TD> MODU </TD><TD ALIGN="CENTER"> - </TD><TD> Modulo (unsigned integer) (TOS <- NIS mod TOS).</TD></TR>
+<TR><TD>44 </TD><TD> MULI </TD><TD ALIGN="CENTER"> - </TD><TD> Multiply (signed integer) (TOS <- NIS * TOS).</TD></TR>
+<TR><TD>45 </TD><TD> MULU </TD><TD ALIGN="CENTER"> - </TD><TD> Multiply (unsigned integer) (TOS <- NIS * TOS).</TD></TR>
+<TR><TD>46 </TD><TD> BAND </TD><TD ALIGN="CENTER"> - </TD><TD> Bitwise AND (TOS <- NIS & TOS).</TD></TR>
+<TR><TD>47 </TD><TD> BOR </TD><TD ALIGN="CENTER"> - </TD><TD> Bitwise OR (TOS <- NIS | TOS).</TD></TR>
+<TR><TD>48 </TD><TD> BXOR </TD><TD ALIGN="CENTER"> - </TD><TD> Bitwise XOR (TOS <- NIS ^ TOS).</TD></TR>
+<TR><TD>49 </TD><TD> BCOM </TD><TD ALIGN="CENTER"> - </TD><TD> Bitwise complement (TOS <- ~TOS).</TD></TR>
+<TR><TD>50 </TD><TD> LSH </TD><TD ALIGN="CENTER"> - </TD><TD> Bitwise left-shift (TOS <- NIS << TOS).</TD></TR>
+<TR><TD>51 </TD><TD> RSHI </TD><TD ALIGN="CENTER"> - </TD><TD> Algebraic (signed) right-shift (TOS <- NIS >> TOS).</TD></TR>
+<TR><TD>52 </TD><TD> RSHU </TD><TD ALIGN="CENTER"> - </TD><TD> Bitwise (unsigned) right-shift (TOS <- NIS >> TOS).</TD></TR>
+<TR><TD>53 </TD><TD> NEGF </TD><TD ALIGN="CENTER"> - </TD><TD> Negate float value (TOS <- -TOS).</TD></TR>
+<TR><TD>54 </TD><TD> ADDF </TD><TD ALIGN="CENTER"> - </TD><TD> Add floats (TOS <- NIS + TOS).</TD></TR>
+<TR><TD>55 </TD><TD> SUBF </TD><TD ALIGN="CENTER"> - </TD><TD> Subtract floats (TOS <- NIS - TOS).</TD></TR>
+<TR><TD>56 </TD><TD> DIVF </TD><TD ALIGN="CENTER"> - </TD><TD> Divide floats (TOS <- NIS / TOS).</TD></TR>
+<TR><TD>57 </TD><TD> MULF </TD><TD ALIGN="CENTER"> - </TD><TD> Multiply floats (TOS <- NIS x TOS).</TD></TR>
+<TR><TD>58 </TD><TD> CVIF </TD><TD ALIGN="CENTER"> - </TD><TD> Convert signed integer to float (TOS <- TOS).</TD></TR>
+<TR><TD>59 </TD><TD> CVFI </TD><TD ALIGN="CENTER"> - </TD><TD> Convert float to signed integer (TOS <- TOS).</TD></TR>
+</TABLE>
+
+ 
+
+<a name="qvmfile"></a><h3>QVM File Format</h3>
+<p>
+QVM file format.
+Multi-octet words are little-endian (LE).
+
+<TABLE BORDER=1>
+<TR><TD COLSPAN=3>QVM header</TD></TR>
+<TR><TD ALIGN="RIGHT">offset</TD><TD ALIGN="CENTER">size</TD><TD>description</TD></TR>
+<TR><TD ALIGN="RIGHT">0</TD><TD ALIGN="CENTER">4</TD><TD>magic (0x12721444 LE, 0x44147212 BE)</TD></TR>
+<TR><TD ALIGN="RIGHT">4</TD><TD ALIGN="CENTER">4</TD><TD>instruction count</TD></TR>
+<TR><TD ALIGN="RIGHT">8</TD><TD ALIGN="CENTER">4</TD><TD>length of CODE segment</TD></TR>
+<TR><TD ALIGN="RIGHT">12</TD><TD ALIGN="CENTER">4</TD><TD>offset of CODE segment</TD></TR>
+<TR><TD ALIGN="RIGHT">16</TD><TD ALIGN="CENTER">4</TD><TD>lenth of DATA segment</TD></TR>
+<TR><TD ALIGN="RIGHT">20</TD><TD ALIGN="CENTER">4</TD><TD>offset of DATA segment</TD></TR>
+<TR><TD ALIGN="RIGHT">24</TD><TD ALIGN="CENTER">4</TD><TD>length of LIT segment</TD></TR>
+<TR><TD ALIGN="RIGHT">28</TD><TD ALIGN="CENTER">4</TD><TD>length of BSS segment</TD></TR>
+</TABLE>
+
+ 
+<p>
+Following the header is the code segment, aligned on a 4-byte boundary.
+The code segment can be processed octet-by-octet to identify instructions.
+For bytecodes that take a multi-octet parameter, the parameter is stored in LE order.
+Big-endian machines may want to byte-swap the parameter for native-arithmetic purposes.
+The instruction count field in the header identifies when the sequence of instructions end.
+Comparisons of code length, instruction counts, and file positions can be used to verify proper processing.
+ 
+<p>
+The data segment follows the code segment.
+The assembler (qvm generator) needs to ensure the data segment begins on a 4-octet boundary (by padding with zeroes).
+The data segment consists of a series of 4-octet LE values that are copied into VM memory.
+For big-endian machines, each word may be optionally byte-swapped (for native arithmetic) on copy.
+ <p>
+
+<p>
+The lit segment immediately follows the data segment.
+This segment should already be aligned on a 4-octet boundary.
+The lit segment consists of a series of 1-octet values, copied verbatim to VM memory.
+No byte-swapping is needed.
+
+
+<p>
+The bss segment is not stored in the qvm file, since this segment consists of unitialized values (i.e. values that don't need to be stored).
+The VM must ensure there is still sufficient memory to accomodate the bss segment.
+The QVM header specifies the size of the bss segment.
+The VM may optionally initialize the bss portion of memory with zeroes.
+
+
+<hr id="footer" width="42%" align="left">
+<p>
+Updated 2003.02.23 <br>
+Updated 2011.07.11 - change of contact e-mail <br>
+<address>
+PhaethonH
+&lt; PhaethonH@gmail.com &gt;
+</address>
+
+</body>
+</html>

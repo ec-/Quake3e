@@ -1595,12 +1595,6 @@ void vk_init_buffers( void )
 }
 
 
-void vk_bind_fog_image( void )
-{
-	vk_update_descriptor( 4, tr.fogImage->descriptor );
-}
-
-
 static void vk_release_geometry_buffers( void )
 {
 	int i;
@@ -2813,6 +2807,8 @@ void vk_initialize( void )
 	if ( glConfig.numTextureUnits > MAX_TEXTURE_UNITS )
 		glConfig.numTextureUnits = MAX_TEXTURE_UNITS;
 
+	vk.maxBoundDescriptorSets = props.limits.maxBoundDescriptorSets;
+
 	glConfig.textureEnvAddAvailable = qtrue;
 	glConfig.textureCompression = TC_NONE;
 
@@ -3138,17 +3134,17 @@ void vk_initialize( void )
 
 		// standard pipelines
 
-		set_layouts[0] = vk.set_layout_uniform; // fog/dlight parameters
-		set_layouts[1] = vk.set_layout_sampler; // diffuse
-		set_layouts[2] = vk.set_layout_sampler; // lightmap
-		set_layouts[3] = vk.set_layout_sampler; // blend
-		set_layouts[4] = vk.set_layout_sampler; // fog 
-		set_layouts[5] = vk.set_layout_storage; // storage
+		set_layouts[0] = vk.set_layout_storage; // storage for testing flare visibility
+		set_layouts[1] = vk.set_layout_uniform; // fog/dlight parameters
+		set_layouts[2] = vk.set_layout_sampler; // diffuse
+		set_layouts[3] = vk.set_layout_sampler; // lightmap / fog-only
+		set_layouts[4] = vk.set_layout_sampler; // blend
+		set_layouts[5] = vk.set_layout_sampler; // collapsed fog texture
 
 		desc.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		desc.pNext = NULL;
 		desc.flags = 0;
-		desc.setLayoutCount = 6;
+		desc.setLayoutCount = (vk.maxBoundDescriptorSets >= 6) ? 6 : 4;
 		desc.pSetLayouts = set_layouts;
 		desc.pushConstantRangeCount = 1;
 		desc.pPushConstantRanges = &push_range;
@@ -4234,13 +4230,18 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 	 // depth bias state
 	if ( def->polygon_offset ) {
 		rasterization_state.depthBiasEnable = VK_TRUE;
-		rasterization_state.depthBiasConstantFactor = r_offsetUnits->value;
 		rasterization_state.depthBiasClamp = 0.0f;
+#ifdef USE_REVERSED_DEPTH
+		rasterization_state.depthBiasConstantFactor = -r_offsetUnits->value;
+		rasterization_state.depthBiasSlopeFactor = -r_offsetFactor->value;
+#else
+		rasterization_state.depthBiasConstantFactor = r_offsetUnits->value;
 		rasterization_state.depthBiasSlopeFactor = r_offsetFactor->value;
+#endif
 	} else {
 		rasterization_state.depthBiasEnable = VK_FALSE;
-		rasterization_state.depthBiasConstantFactor = 0.0f;
 		rasterization_state.depthBiasClamp = 0.0f;
+		rasterization_state.depthBiasConstantFactor = 0.0f;
 		rasterization_state.depthBiasSlopeFactor = 0.0f;
 	}
 
@@ -4980,7 +4981,7 @@ void vk_update_descriptor_offset( int index, uint32_t offset )
 void vk_bind_descriptor_sets( void )
 {
 	uint32_t offsets[2], offset_count;
-	int start, end, count;
+	uint32_t start, end, count;
 
 	start = vk.cmd->descriptor_set.start;
 	if ( start == ~0U )
@@ -4989,11 +4990,8 @@ void vk_bind_descriptor_sets( void )
 	end = vk.cmd->descriptor_set.end;
 
 	offset_count = 0;
-	if ( start == 0 ) { // uniform offset
-		offsets[ offset_count++ ] = vk.cmd->descriptor_set.offset[ 0 ];
-	}
-	if ( end >= 5 ) { // storage offset
-		offsets[ offset_count++ ] = vk.cmd->descriptor_set.offset[ 1 ];
+	if ( start <= 1 ) { // uniform offset or storage offset
+		offsets[ offset_count++ ] = vk.cmd->descriptor_set.offset[ start ];
 	}
 
 	count = end - start + 1;
@@ -5267,10 +5265,11 @@ void vk_begin_frame( void )
 	vk.cmd->descriptor_set.start = ~0U;
 	vk.cmd->descriptor_set.end = 0;
 
-	vk_update_descriptor( 1, tr.whiteImage->descriptor ); 
 	vk_update_descriptor( 2, tr.whiteImage->descriptor );
 	vk_update_descriptor( 3, tr.whiteImage->descriptor );
-	vk_update_descriptor( 4, tr.fogImage->descriptor );
+	if ( vk.maxBoundDescriptorSets >= 6 ) {
+		vk_update_descriptor( 4, tr.whiteImage->descriptor );
+	}
 
 	// other stats
 	vk.stats.push_size = 0;

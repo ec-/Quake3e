@@ -37,6 +37,13 @@ static	shader_t*		hashTable[FILE_HASH_SIZE];
 #define MAX_SHADERTEXT_HASH		2048
 static char **shaderTextHashTable[MAX_SHADERTEXT_HASH];
 
+qboolean mapShaders = qfalse;
+char lazyStrings[2048*1024];
+int numLazyStrings = 0;
+int start = 0;
+qboolean skipShader = qfalse;
+qboolean hasFile = qfalse;
+
 /*
 ================
 return a hash value for the filename
@@ -48,13 +55,16 @@ return a hash value for the filename
 
 #define generateHashValue Com_GenerateHashValue
 
-void R_RemapShader(const char *shaderName, const char *newShaderName, const char *timeOffset) {
+void R_RemapShaderInternal(const char *shaderName, const char *newShaderName, const char *timeOffset, int index, qboolean ms) {
 	char		strippedName[MAX_QPATH];
 	int			hash;
 	shader_t	*sh, *sh2;
 	qhandle_t	h;
 
-	sh = R_FindShaderByName( shaderName );
+  sh = R_FindDefaultShaderByName( shaderName );
+  if (sh == NULL) {
+    sh = R_FindShaderByName( shaderName );
+  }
 	if (sh == NULL || sh == tr.defaultShader) {
 		h = RE_RegisterShaderLightMap(shaderName, 0);
 		sh = R_GetShaderByHandle(h);
@@ -64,9 +74,11 @@ void R_RemapShader(const char *shaderName, const char *newShaderName, const char
 		return;
 	}
 
+  mapShaders = ms;
+
 	sh2 = R_FindShaderByName( newShaderName );
-	if (sh2 == NULL || sh2 == tr.defaultShader) {
-		h = RE_RegisterShaderLightMap(newShaderName, 0);
+  if (sh2 == NULL || sh2 == tr.defaultShader || mapShaders) {
+		h = RE_RegisterShaderLightMap(newShaderName, index);
 		sh2 = R_GetShaderByHandle(h);
 	}
 
@@ -74,6 +86,8 @@ void R_RemapShader(const char *shaderName, const char *newShaderName, const char
 		ri.Printf( PRINT_WARNING, "WARNING: R_RemapShader: new shader %s not found\n", newShaderName );
 		return;
 	}
+
+  mapShaders = qfalse;
 
 	// remap all the shaders with the given name
 	// even tho they might have different lightmaps
@@ -91,6 +105,10 @@ void R_RemapShader(const char *shaderName, const char *newShaderName, const char
 	if (timeOffset) {
 		sh2->timeOffset = atof(timeOffset);
 	}
+}
+
+void R_RemapShader(const char *shaderName, const char *newShaderName, const char *timeOffset) {
+  R_RemapShaderInternal(shaderName, newShaderName, timeOffset, 0, qfalse);
 }
 
 /*
@@ -2155,6 +2173,12 @@ static qboolean ParseShader( const char **text )
 			}
 			continue;
 		}
+    else if ( !Q_stricmp( token, "novlcollapse" ) )
+		{
+			// new in quakelive
+			shader.noVertexLightingCollapse = qtrue;
+			continue;
+		}
 		// sort
 		else if ( !Q_stricmp( token, "sort" ) )
 		{
@@ -2270,7 +2294,7 @@ static void ComputeVertexAttribs(void)
 	int i, stage;
 
 	// dlights always need ATTR_NORMAL
-	shader.vertexAttribs = ATTR_POSITION | ATTR_NORMAL;
+	shader.vertexAttribs = ATTR_POSITION | ATTR_NORMAL | ATTR_COLOR;
 
 	// portals always need normals, for SurfIsOffscreen()
 	if (shader.isPortal)
@@ -3184,6 +3208,8 @@ static shader_t *FinishShader( void ) {
 	qboolean		hasLightmapStage;
 	qboolean		vertexLightmap;
 
+  ri.Cvar_Set("r_loadingShader", "");
+
 	hasLightmapStage = qfalse;
 	vertexLightmap = qfalse;
 
@@ -3320,7 +3346,7 @@ static shader_t *FinishShader( void ) {
 	//
 	// if we are in r_vertexLight mode, never use a lightmap texture
 	//
-	if ( stage > 1 && ( (r_vertexLight->integer && tr.vertexLightingAllowed) || glConfig.hardwareType == GLHW_PERMEDIA2 ) ) {
+	if ( stage > 1 && ( (r_vertexLight->integer && tr.vertexLightingAllowed) || glConfig.hardwareType == GLHW_PERMEDIA2 ) && !shader.noVertexLightingCollapse ) {
 		VertexLightingCollapse();
 		hasLightmapStage = qfalse;
 	}
@@ -3405,7 +3431,7 @@ Will always return a valid shader, but it might be the
 default shader if the real one can't be found.
 ==================
 */
-shader_t *R_FindShaderByName( const char *name ) {
+shader_t *R_FindShaderByNameInternal( const char *name, qboolean isDefault ) {
 	char		strippedName[MAX_QPATH];
 	int			hash;
 	shader_t	*sh;
@@ -3426,7 +3452,7 @@ shader_t *R_FindShaderByName( const char *name ) {
 		// then a default shader is created with lightmapIndex == LIGHTMAP_NONE, so we
 		// have to check all default shaders otherwise for every call to R_FindShader
 		// with that same strippedName a new default shader is created.
-		if (Q_stricmp(sh->name, strippedName) == 0) {
+		if (Q_stricmp(sh->name, strippedName) == 0 && sh->defaultShader == isDefault) {
 			// match found
 			return sh;
 		}
@@ -3435,6 +3461,13 @@ shader_t *R_FindShaderByName( const char *name ) {
 	return tr.defaultShader;
 }
 
+shader_t *R_FindShaderByName( const char *name ) {
+  return R_FindShaderByNameInternal(name, qfalse);
+}
+
+shader_t *R_FindDefaultShaderByName( const char *name ) {
+  return R_FindShaderByNameInternal(name, qtrue);
+}
 
 /*
 ===============
@@ -3497,11 +3530,17 @@ shader_t *R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImag
 		// then a default shader is created with lightmapIndex == LIGHTMAP_NONE, so we
 		// have to check all default shaders otherwise for every call to R_FindShader
 		// with that same strippedName a new default shader is created.
-		if ( (sh->lightmapSearchIndex == lightmapIndex || sh->defaultShader) &&	!Q_stricmp(sh->name, strippedName)) {
+		if ( (sh->lightmapSearchIndex == lightmapIndex || sh->defaultShader) &&	!Q_stricmp(sh->name, strippedName) && (!mapShaders || !sh->defaultShader)) {
 			// match found
 			return sh;
 		}
 	}
+
+  if(numLazyStrings + 1024 < sizeof(lazyStrings)) { // && !Q_stristr(strippedName, "texture")) {
+    Q_strncpyz(&lazyStrings[numLazyStrings], name, strlen(name)+1);
+    ri.Cvar_Set( "r_loadingShader", va("%12i;%s", lightmapIndex, name) );
+    numLazyStrings+=strlen(name)+1;
+  }
 
 	InitShader( strippedName, lightmapIndex );
 
@@ -3519,7 +3558,9 @@ shader_t *R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImag
 		if ( !ParseShader( &shaderText ) ) {
 			// had errors, so use default shader
 			shader.defaultShader = qtrue;
-		}
+		} else {
+      shader.defaultShader = qfalse;
+    }
 		sh = FinishShader();
 		return sh;
 	}
@@ -3720,7 +3761,7 @@ qhandle_t RE_RegisterShaderLightMap( const char *name, int lightmapIndex ) {
 	// something calls RE_RegisterShader again with
 	// the same name, we don't try looking for it again
 	if ( sh->defaultShader ) {
-		return 0;
+	//	return 0;
 	}
 
 	return sh->index;
@@ -3759,7 +3800,7 @@ qhandle_t RE_RegisterShader( const char *name ) {
 	// something calls RE_RegisterShader again with
 	// the same name, we don't try looking for it again
 	if ( sh->defaultShader ) {
-		return 0;
+	//	return 0;
 	}
 
 	return sh->index;
@@ -3789,7 +3830,7 @@ qhandle_t RE_RegisterShaderNoMip( const char *name ) {
 	// something calls RE_RegisterShader again with
 	// the same name, we don't try looking for it again
 	if ( sh->defaultShader ) {
-		return 0;
+	//	return 0;
 	}
 
 	return sh->index;
@@ -4161,6 +4202,10 @@ static void CreateExternalShaders( void ) {
 		tr.sunFlareShader = FinishShader();
 	}
 
+}
+
+void RE_UpdateShader(char *shaderName, int lightmapIndex) {
+  R_RemapShaderInternal(shaderName, shaderName, va("%i", ri.Milliseconds()), lightmapIndex, qtrue);
 }
 
 /*

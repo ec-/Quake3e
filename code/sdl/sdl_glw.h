@@ -57,6 +57,8 @@ void IN_Init( void );
 void IN_Shutdown( void );
 
 // signals.c
+#ifndef EMSCRIPTEN
 void InitSig( void );
+#endif
 
 #endif

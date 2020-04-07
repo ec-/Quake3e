@@ -298,10 +298,13 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 
 	if(com_errorEntered)
 	{
-		if(!calledSysError)
-        {
+		char	another_errorMessage[MAXPRINTMSG];
+		va_start (argptr,fmt);
+		Q_vsnprintf (another_errorMessage, sizeof(another_errorMessage),fmt,argptr);
+		va_end (argptr);
+		if(!calledSysError) {
 			calledSysError = qtrue;
-			Sys_Error("recursive error after: %s", com_errorMessage);
+			Sys_Error("recursive error after: %s\n and %s", com_errorMessage, another_errorMessage);
 		}
 	}
 
@@ -432,7 +435,11 @@ void Com_Quit_f( void ) {
 		Com_Shutdown();
 		FS_Shutdown( qtrue );
 	}
-	Sys_Quit();
+#ifndef EMSCRIPTEN
+	Sys_Quit ();
+#else
+	Com_Frame_Callback(Sys_FS_Shutdown, Sys_Quit);
+#endif
 }
 
 
@@ -2881,8 +2888,17 @@ int Com_EventLoop( void ) {
 			CL_CharEvent( ev.evValue );
 			break;
 		case SE_MOUSE:
+#ifdef EMSCRIPTEN
+			CL_MouseEvent( ev.evValue, ev.evValue2, ev.evTime, qfalse );
+#else
 			CL_MouseEvent( ev.evValue, ev.evValue2, ev.evTime );
+#endif
 			break;
+#ifdef EMSCRIPTEN
+		case SE_MOUSE_ABS:
+			CL_MouseEvent( ev.evValue, ev.evValue2, ev.evTime, qtrue );
+			break;
+#endif
 		case SE_JOYSTICK_AXIS:
 			CL_JoystickEvent( ev.evValue, ev.evValue2, ev.evTime );
 			break;
@@ -3055,7 +3071,16 @@ void Com_GameRestart( int checksumFeed, qboolean clientRestart )
 #endif
 
 		FS_Restart( checksumFeed );
-	
+#ifdef EMSCRIPTEN
+	}
+}
+
+void Com_GameRestart_After_Restart( void )
+{
+	static qboolean com_gameRestarting = qtrue;
+	qboolean clientRestart = qtrue;
+	{
+#endif
 		// Load new configuration
 		Com_ExecuteCfg();
 	
@@ -3083,6 +3108,21 @@ static void Com_GameRestart_f( void )
 	Cvar_Set( "fs_game", Cmd_Argv( 1 ) );
 
 	Com_GameRestart( 0, qtrue );
+
+#ifdef EMSCRIPTEN
+	Com_Frame_Callback(Sys_FS_Shutdown, Com_GameRestart_User_After_Shutdown);
+}
+
+void Com_GameRestart_User_After_Shutdown( void )
+{
+	FS_Startup();
+	Com_Frame_Callback(Sys_FS_Startup, Com_GameRestart_User_After_Startup);
+}
+
+void Com_GameRestart_User_After_Startup( void ) {
+	FS_Restart_After_Async();
+	Com_GameRestart_After_Restart();
+#endif
 }
 
 
@@ -3302,6 +3342,12 @@ static void CPUID( int func, unsigned int *regs )
 }
 
 #else
+#ifdef EMSCRIPTEN
+static void CPUID( int func, unsigned int *regs )
+{
+}
+
+#else
 
 static void CPUID( int func, unsigned int *regs )
 {
@@ -3312,6 +3358,7 @@ static void CPUID( int func, unsigned int *regs )
 		"=d"(regs[3]) :
 		"a"(func) );
 }
+#endif
 #endif
 
 int Sys_GetProcessorId( char *vendor )
@@ -3462,7 +3509,7 @@ void Sys_SnapVector( vec3_t vec )
 	vec[2] = rint(vec[2]);
 }
 
-#else // id386
+#elif id386
 
 #define QROUNDX87(src) \
 	"flds " src "\n" \
@@ -3488,6 +3535,16 @@ void Sys_SnapVector( vec3_t vector )
 		: "memory", "st"
 	);
 }
+
+#else
+
+void Sys_SnapVector( vec3_t vec )
+{
+	vec[0] = rint(vec[0]);
+	vec[1] = rint(vec[1]);
+	vec[2] = rint(vec[2]);
+}
+
 #endif // id386
 #endif // linux/mingw
 
@@ -3498,8 +3555,10 @@ Com_Init
 =================
 */
 void Com_Init( char *commandLine ) {
+#ifndef EMSCRIPTEN
 	const char *s;
 	int	qport;
+#endif
 
 	Com_Printf( "%s %s %s\n", SVN_VERSION, PLATFORM_STRING, __DATE__ );
 
@@ -3554,6 +3613,20 @@ void Com_Init( char *commandLine ) {
 	Com_InitKeyCommands();
 
 	FS_InitFilesystem();
+
+#ifdef EMSCRIPTEN
+Com_Frame_Callback(Sys_FS_Startup, Com_Init_After_Filesystem);
+}
+
+void Com_Init_After_Filesystem( void ) {
+	const char	*s;
+	int	qport;
+	// TODO: starting to see a pattern, split up every function in the tree to make asynchronous
+	//   Then call the leafs from the top function in the same order
+	FS_Startup_After_Async();
+	FS_Restart_After_Async();
+#endif
+;
 
 	Com_InitJournaling();
 
@@ -3728,6 +3801,11 @@ void Com_Init( char *commandLine ) {
 	com_fullyInitialized = qtrue;
 
 	Com_Printf( "--- Common Initialization Complete ---\n" );
+#ifdef EMSCRIPTEN
+	if(Cvar_VariableIntegerValue("net_socksLoading")) {
+		NET_Init( );
+	}
+#endif
 }
 
 
@@ -3888,13 +3966,58 @@ static int Com_TimeVal( int minMsec )
 	return timeVal;
 }
 
+#ifdef EMSCRIPTEN
+qboolean invokeFrameAfter = qfalse;
+void Com_Frame_Callback(void (*cb)( void ), void (*af)( void )) {
+	Com_Printf( "--------- Frame Setup (%p) --------\n", &cb);
+	invokeFrameAfter = qfalse;
+	if(!CB_Frame_Proxy) {
+		CB_Frame_Proxy = cb;
+	} else {
+		Com_Error( ERR_FATAL, "Already calling a frame proxy." );
+	}
+	if(!CB_Frame_After) {
+		CB_Frame_After = af;
+	} else {
+		Com_Error( ERR_FATAL, "Already calling back to frame." );
+	}
+}
 
+void Com_Frame_Proxy( void ) {
+	if(CB_Frame_After) {
+		invokeFrameAfter = qtrue;
+	}
+}
+
+void Com_Frame_After_Startup() {
+	FS_Restart_After_Async();
+	if(!FS_Initialized()) {
+		Com_Frame_Callback(Sys_FS_Shutdown, Com_Frame_After_Shutdown);		
+	} else {
+		VM_Forced_Unload_Start();
+		CL_FlushMemory();
+		VM_Forced_Unload_Done();
+		Com_GameRestart_After_Restart();
+	}
+}
+
+void Com_Frame_After_Shutdown() {
+	FS_Startup();
+	Com_Frame_Callback(Sys_FS_Startup, Com_Frame_After_Startup);
+}
+
+#endif
 /*
 =================
 Com_Frame
 =================
 */
+#ifndef EMSCRIPTEN
 void Com_Frame( qboolean noDelay ) {
+#else
+void Com_Frame( void ) {
+	qboolean noDelay = qfalse;
+#endif
 
 #ifndef DEDICATED
 	static int bias = 0;
@@ -3911,6 +4034,14 @@ void Com_Frame( qboolean noDelay ) {
 	int	timeAfter;
 
 	if ( setjmp( abortframe ) ) {
+#ifdef EMSCRIPTEN
+		CB_Frame_Proxy = NULL;
+		CB_Frame_After = NULL;
+		invokeFrameAfter = qfalse;
+		if(!FS_Initialized()) {
+			Com_Frame_Callback(Sys_FS_Shutdown, Com_Frame_After_Shutdown);
+		}
+#endif
 		return;			// an ERR_DROP was thrown
 	}
 
@@ -3923,6 +4054,29 @@ void Com_Frame( qboolean noDelay ) {
 	timeBeforeEvents = 0;
 	timeBeforeClient = 0;
 	timeAfter = 0;
+
+#ifdef EMSCRIPTEN
+	// used by cl_parsegamestate/cl_initcgame
+	if(CB_Frame_Proxy) {
+		Com_Printf( "--------- Frame Callback (%p) --------\n", &CB_Frame_Proxy);
+		void (*cb)( void ) = CB_Frame_Proxy;
+		CB_Frame_Proxy = NULL;
+		(*cb)();
+		return;
+	}
+	
+	if(CB_Frame_After) {
+		if(!invokeFrameAfter) {
+			return;			
+		}
+		invokeFrameAfter = qfalse;
+		Com_Printf( "--------- Frame After (%p) --------\n", &CB_Frame_After);
+		void (*cb)( void ) = CB_Frame_After;
+		CB_Frame_After = NULL; // start frame runner again
+		(*cb)();
+		return;
+	}
+#endif
 
 	// write config file if anything changed
 #ifndef DELAY_WRITECONFIG
@@ -4002,13 +4156,29 @@ void Com_Frame( qboolean noDelay ) {
 			Com_EventLoop();
 #endif
 		NET_Sleep( sleepMsec * 1000 - 500 );
+#ifndef EMSCRIPTEN
 	} while( Com_TimeVal( minMsec ) );
 
+#else
+;
+	} while( 0 );
+
+	if(Cvar_VariableIntegerValue("net_socksLoading")) {
+		Com_Printf( "--- SOCKS Loading ---\n" );
+		return;
+	}
+#endif
 	lastTime = com_frameTime;
 	com_frameTime = Com_EventLoop();
 	msec = com_frameTime - lastTime;
 
 	Cbuf_Execute();
+#ifdef EMSCRIPTEN
+	// if an execution invoked a callback event, run the rest next frame
+	if(CB_Frame_Proxy || CB_Frame_After) {
+		return;
+	}
+#endif
 
 	// mess with msec if needed
 	msec = Com_ModifyMsec( msec );

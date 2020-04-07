@@ -1865,3 +1865,62 @@ void VM_LogSyscalls( int *args ) {
 		args[0], args[1], args[2], args[3], args[4] );
 #endif
 }
+
+#ifdef EMSCRIPTEN
+int GetIntFromByte(byte *offset) {
+	return (offset[3] << 24) | (offset[2] << 16)
+		| (offset[1] << 8) | offset[0];
+}
+
+byte *VM_GetStaticAtoms(vm_t *vm, int refreshCmd, int mouseCmd, int realtimeMarker) {
+	int i;
+	int diff = realtimeMarker ^ 0x7FFFFFFF;
+	byte *ret = 0;
+	VM_Call( vm, 1, refreshCmd, diff);
+
+	for(i = vm->dataAlloc - 32; i >= 0; i--) {
+		int realTime = GetIntFromByte(&vm->dataBase[i-4]);
+		if(realTime == diff) {
+			ret = &vm->dataBase[i-8];
+		}
+	}
+	if(!ret) {
+		Com_Error(ERR_FATAL, "Couldn't locate UI cursor %i\n", diff);
+	}
+	return ret;
+}
+
+
+qboolean VM_IsSuspended(vm_t * vm) {
+#ifndef NO_VM_COMPILED
+		if (vm->compiled) {
+			return VM_IsSuspendedCompiled(vm);
+		}
+#endif
+		// return VM_IsSuspendedInterpreted(vm);
+		return qfalse;
+}
+
+void VM_Suspend(vm_t *vm, unsigned pc, unsigned sp) {
+#ifndef NO_VM_COMPILED
+		if (vm->compiled) {
+			VM_SuspendCompiled(vm, pc, sp);
+			return;
+		}
+#endif
+		// VM_SuspendInterpreted(vm, pc, sp);
+		// return;
+		Com_Error(ERR_FATAL, "VM_SuspendInterpreted not implemented");
+}
+
+int VM_Resume(vm_t *vm) {
+#ifndef NO_VM_COMPILED
+		if (vm->compiled) {
+			return VM_ResumeCompiled(vm);
+		}
+#endif
+		// return VM_ResumeInterpreted(vm);
+		Com_Error(ERR_FATAL, "VM_ResumeInterpreted not implemented");
+
+}
+#endif

@@ -51,6 +51,63 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 //============================================================================
 
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+void Com_Frame_Callback(void (*cb)( void ), void (*af)( void ));
+void Com_Frame_Proxy( void );
+
+void SOCKS_Frame_Callback(void (*cb)( void ), void (*af)( void ));
+void SOCKS_Frame_Proxy( void );
+static void (*SOCKS_Proxy)( void ) = NULL;
+static void (*SOCKS_After)( void ) = NULL;
+
+static void (*CB_Frame_Proxy)( void ) = NULL;
+static void (*CB_Frame_After)( void ) = NULL;
+
+void IN_Init (void);
+void IN_Frame (void);
+void IN_Shutdown (void);
+
+extern char **Sys_CmdArgs( void );
+extern int Sys_CmdArgsC( void );
+
+extern void	Sys_GLimpInit( void );
+extern void Sys_FS_Startup( void );
+extern void Sys_FS_Shutdown( void );
+extern void Sys_BeginDownload( void );
+extern char *Sys_UpdateShader( void );
+extern char *Sys_UpdateSound( void );
+extern char *Sys_UpdateModel( void );
+
+void FS_Startup( void );
+void FS_Startup_After_Async( void );
+void Com_Init_After_Filesystem( void );
+void FS_Restart_After_Async( void );
+void CL_ParseGamestate_After_Restart( void );
+void Com_GameRestart_After_Restart( void );
+void CL_Vid_Restart_After_Restart( void );
+void CL_Connect_After_Shutdown( void );
+void CL_Connect_After_Restart( void );
+void CL_Connect_After_Startup( void );
+
+void Com_Frame_After_Startup( void );
+void Com_Frame_After_Shutdown( void );
+void Com_GameRestart_User_After_Shutdown( void );
+void Com_GameRestart_User_After_Startup( void );
+void SV_SpawnServer_After_Shutdown( void );
+void SV_SpawnServer_After_Startup( void );
+void CL_ParseGamestate_Game_After_Shutdown( void );
+void CL_ParseGamestate_Game_After_Startup( void );
+void CL_ParseGamestate_After_Shutdown( void );
+void CL_ParseGamestate_After_Startup( void );
+void CL_Vid_Restart_After_Shutdown( void );
+void CL_Vid_Restart_After_Startup( void );
+
+void CL_DemoCompleted_After_Startup( void );
+void CL_DemoCompleted_After_Shutdown( void );
+
+#endif
+
 //
 // msg.c
 //
@@ -406,6 +463,19 @@ static ID_INLINE float _vmf(intptr_t x)
 }
 #define	VMF(x)	_vmf(args[x])
 
+#ifdef EMSCRIPTEN
+typedef struct {
+	int					frametime;
+	int					realtime;
+	int					cursorx;
+	int					cursory;
+} ui_hack;
+
+byte *VM_GetStaticAtoms(vm_t *vm, int refreshCmd, int mouseCmd, int realtimeMarker);
+qboolean VM_IsSuspended(vm_t *vm);
+void VM_Suspend(vm_t *vm, unsigned pc, unsigned sp);
+int VM_Resume(vm_t *vm);
+#endif
 
 /*
 ==============================================================
@@ -1073,7 +1143,11 @@ void Com_TouchMemory( void );
 
 // commandLine should not include the executable name (argv[0])
 void Com_Init( char *commandLine );
+#ifdef EMSCRIPTEN
+void Com_Frame( void );
+#else
 void Com_Frame( qboolean noDelay );
+#endif
 
 /*
 ==============================================================
@@ -1097,7 +1171,11 @@ void CL_KeyEvent (int key, qboolean down, unsigned time);
 void CL_CharEvent( int key );
 // char events are for field typing, not game control
 
+#ifdef EMSCRIPTEN
+void CL_MouseEvent( int dx, int dy, int time, qboolean absolute );
+#else
 void CL_MouseEvent( int dx, int dy, int time );
+#endif
 
 void CL_JoystickEvent( int axis, int value, int time );
 
@@ -1195,6 +1273,7 @@ typedef enum {
 	SE_KEY,		// evValue is a key code, evValue2 is the down flag
 	SE_CHAR,	// evValue is an ascii char
 	SE_MOUSE,	// evValue and evValue2 are relative signed x / y moves
+	SE_MOUSE_ABS,
 	SE_JOYSTICK_AXIS,	// evValue is an axis number and evValue2 is the current state (-127 to 127)
 	SE_CONSOLE,	// evPtr is a char*
 	SE_MAX,

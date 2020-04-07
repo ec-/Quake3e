@@ -1,6 +1,6 @@
 #version 450
 
-layout(set = 0, binding = 0) uniform UBO {
+layout(set = 1, binding = 0) uniform UBO {
 	// VERTEX
 	vec4 eyePos;
 	vec4 lightPos;
@@ -14,7 +14,7 @@ layout(set = 0, binding = 0) uniform UBO {
 	// linear dynamic light
 	vec4 lightVector;
 };
-layout(set = 1, binding = 0) uniform sampler2D texture0;
+layout(set = 2, binding = 0) uniform sampler2D texture0;
 
 layout(location = 0) centroid in vec2 frag_tex_coord;
 layout(location = 1) in vec3 N;  // normalized object-space normal vector

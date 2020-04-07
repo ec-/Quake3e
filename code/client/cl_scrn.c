@@ -598,6 +598,7 @@ void SCR_UpdateScreen( void ) {
 	if ( !scr_initialized )
 		return; // not initialized yet
 
+#ifndef EMSCRIPTEN
 	if ( framecount == cls.framecount ) {
 		int ms = Sys_Milliseconds();
 		if ( next_frametime && ms - next_frametime < 0 ) {
@@ -609,6 +610,7 @@ void SCR_UpdateScreen( void ) {
 		next_frametime = 0;
 		framecount = cls.framecount;
 	}
+#endif
 
 	if ( ++recursive > 2 ) {
 		Com_Error( ERR_FATAL, "SCR_UpdateScreen: recursively called" );

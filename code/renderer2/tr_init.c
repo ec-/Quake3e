@@ -45,7 +45,7 @@ cvar_t	*r_railSegmentLength;
 
 cvar_t	*r_ignore;
 
-cvar_t  *r_displayRefresh;
+cvar_t  *r_renderRefresh;
 
 cvar_t	*r_detailTextures;
 
@@ -1154,8 +1154,8 @@ void R_Register( void )
 	//
 	// temporary latched variables that can only change over a restart
 	//
-	r_displayRefresh = ri.Cvar_Get( "r_displayRefresh", "0", CVAR_LATCH );
-	ri.Cvar_CheckRange( r_displayRefresh, "0", "250", CV_INTEGER );
+	r_renderRefresh = ri.Cvar_Get( "r_displayRefresh", "0", CVAR_LATCH );
+	ri.Cvar_CheckRange( r_renderRefresh, "0", "250", CV_INTEGER );
 	r_fullbright = ri.Cvar_Get ("r_fullbright", "0", CVAR_LATCH|CVAR_CHEAT );
 	r_mapOverBrightBits = ri.Cvar_Get ("r_mapOverBrightBits", "2", CVAR_LATCH );
 	r_intensity = ri.Cvar_Get ("r_intensity", "1", CVAR_LATCH );
@@ -1515,6 +1515,9 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.GetConfig = RE_GetConfig;
 	re.VertexLighting = RE_VertexLighting;
 	re.SyncRender = RE_SyncRender;
+
+	//re.UpdateMode = RE_UpdateMode;
+	re.UpdateShader = RE_UpdateShader;
 
 	return &re;
 }

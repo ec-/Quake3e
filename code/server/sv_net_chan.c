@@ -262,4 +262,3 @@ qboolean SV_Netchan_Process( client_t *client, msg_t *msg ) {
 
 	return qtrue;
 }
-

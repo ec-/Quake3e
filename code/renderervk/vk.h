@@ -185,7 +185,6 @@ void vk_draw_light( uint32_t pipeline, Vk_Depth_Range depth_range, uint32_t unif
 void vk_read_pixels( byte* buffer, uint32_t width, uint32_t height ); // screenshots
 
 qboolean vk_alloc_vbo( const byte *vbo_data, int vbo_size );
-void vk_bind_fog_image( void );
 void vk_update_mvp( const float *m );
 
 uint32_t vk_tess_index( uint32_t numIndexes, const void *src );
@@ -506,6 +505,8 @@ typedef struct {
 	uint32_t screenMapSamples;
 
 	uint32_t image_chunk_size;
+
+	uint32_t maxBoundDescriptorSets;
 
 } Vk_Instance;
 

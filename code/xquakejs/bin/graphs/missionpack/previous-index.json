@@ -1,0 +1,3250 @@
+{
+  "menu/pak11menu": {
+    "name": "pak11menu.pk3",
+    "size": 98795
+  },
+  "menu/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "menu/pak8880bots": {
+    "name": "pak8880bots.pk3",
+    "size": 215801
+  },
+  "menu/pak88881botfiles": {
+    "name": "pak88881botfiles.pk3",
+    "size": 112045
+  },
+  "menu/pak21game": {
+    "name": "pak21game.pk3",
+    "size": 341578
+  },
+  "menu/pak51weapon": {
+    "name": "pak51weapon.pk3",
+    "size": 64439
+  },
+  "menu/pak8802d": {
+    "name": "pak8802d.pk3",
+    "size": 25172
+  },
+  "menu/pak91maps": {
+    "name": "pak91maps.pk3",
+    "size": 1334
+  },
+  "menu/pak18levelshots": {
+    "name": "pak18levelshots.pk3",
+    "size": 443410
+  },
+  "menu/pak88882levelshots": {
+    "name": "pak88882levelshots.pk3",
+    "size": 829653
+  },
+  "menu/pak65flag2": {
+    "name": "pak65flag2.pk3",
+    "size": 85954
+  },
+  "menu/pak3337harvester": {
+    "name": "pak3337harvester.pk3",
+    "size": 50165
+  },
+  "menu/pak53nailgun": {
+    "name": "pak53nailgun.pk3",
+    "size": 188022
+  },
+  "menu/pak554proxmine": {
+    "name": "pak554proxmine.pk3",
+    "size": 10948
+  },
+  "menu/pak555vulcan": {
+    "name": "pak555vulcan.pk3",
+    "size": 41412
+  },
+  "menu/pak55bfg": {
+    "name": "pak55bfg.pk3",
+    "size": 186831
+  },
+  "menu/pak553gauntlet": {
+    "name": "pak553gauntlet.pk3",
+    "size": 51212
+  },
+  "menu/pak58lightning": {
+    "name": "pak58lightning.pk3",
+    "size": 53194
+  },
+  "menu/pak551machinegun": {
+    "name": "pak551machinegun.pk3",
+    "size": 42624
+  },
+  "menu/pak556plasma": {
+    "name": "pak556plasma.pk3",
+    "size": 10015
+  },
+  "menu/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "menu/pak552shotgun": {
+    "name": "pak552shotgun.pk3",
+    "size": 27303
+  },
+  "menu/pak83scripts": {
+    "name": "pak83scripts.pk3",
+    "size": 126691
+  },
+  "menu/pak12scripts": {
+    "name": "pak12scripts.pk3",
+    "size": 13610
+  },
+  "menu/pak24scripts": {
+    "name": "pak24scripts.pk3",
+    "size": 16845
+  },
+  "menu/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 41908
+  },
+  "menu/pak88883feedback": {
+    "name": "pak88883feedback.pk3",
+    "size": 206774
+  },
+  "menu/pak17ui": {
+    "name": "pak17ui.pk3",
+    "size": 93119
+  },
+  "menu/pak8889assets": {
+    "name": "pak8889assets.pk3",
+    "size": 450648
+  },
+  "menu/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "menu/pak80base_trim": {
+    "name": "pak80base_trim.pk3",
+    "size": 110459
+  },
+  "menu/pak74mapobject": {
+    "name": "pak74mapobject.pk3",
+    "size": 274481
+  },
+  "menu/pak16art": {
+    "name": "pak16art.pk3",
+    "size": 192625
+  },
+  "menu/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "menu/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "menu/pak84base_floor": {
+    "name": "pak84base_floor.pk3",
+    "size": 44151
+  },
+  "menu/pak4444442assets": {
+    "name": "pak4444442assets.pk3",
+    "size": 219572
+  },
+  "menu/pak15assets": {
+    "name": "pak15assets.pk3",
+    "size": 170569
+  },
+  "menu/pak88888video": {
+    "name": "pak88888video.pk3",
+    "size": 29859213
+  },
+  "menu/pak22assets": {
+    "name": "pak22assets.pk3",
+    "size": 29035
+  },
+  "menu/pak888ctf": {
+    "name": "pak888ctf.pk3",
+    "size": 193698
+  },
+  "menu/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "menu/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "menu/pak889ctf2": {
+    "name": "pak889ctf2.pk3",
+    "size": 107041
+  },
+  "menu/pak88887statusbar": {
+    "name": "pak88887statusbar.pk3",
+    "size": 10412
+  },
+  "menu/pak88885teamplay": {
+    "name": "pak88885teamplay.pk3",
+    "size": 136557
+  },
+  "menu/pak13medals": {
+    "name": "pak13medals.pk3",
+    "size": 20808
+  },
+  "game/pak21game": {
+    "name": "pak21game.pk3",
+    "size": 341578
+  },
+  "game/pak232d": {
+    "name": "pak232d.pk3",
+    "size": 3454
+  },
+  "game/pak8802d": {
+    "name": "pak8802d.pk3",
+    "size": 25172
+  },
+  "game/pak16art": {
+    "name": "pak16art.pk3",
+    "size": 192625
+  },
+  "game/pak14tab": {
+    "name": "pak14tab.pk3",
+    "size": 16599
+  },
+  "game/pak63ammo": {
+    "name": "pak63ammo.pk3",
+    "size": 2389
+  },
+  "game/pak64rocket": {
+    "name": "pak64rocket.pk3",
+    "size": 5919
+  },
+  "game/pak65flag2": {
+    "name": "pak65flag2.pk3",
+    "size": 85954
+  },
+  "game/pak67gibs": {
+    "name": "pak67gibs.pk3",
+    "size": 25233
+  },
+  "game/pak72flagbase": {
+    "name": "pak72flagbase.pk3",
+    "size": 73572
+  },
+  "game/pak3336powerups": {
+    "name": "pak3336powerups.pk3",
+    "size": 33202
+  },
+  "game/pak3338obelisk": {
+    "name": "pak3338obelisk.pk3",
+    "size": 53612
+  },
+  "game/pak3339shield": {
+    "name": "pak3339shield.pk3",
+    "size": 9546
+  },
+  "game/pak68weaphits": {
+    "name": "pak68weaphits.pk3",
+    "size": 59881
+  },
+  "game/pak52prox": {
+    "name": "pak52prox.pk3",
+    "size": 74707
+  },
+  "game/pak53nailgun": {
+    "name": "pak53nailgun.pk3",
+    "size": 188022
+  },
+  "game/pak557shells": {
+    "name": "pak557shells.pk3",
+    "size": 3608
+  },
+  "game/pak552shotgun": {
+    "name": "pak552shotgun.pk3",
+    "size": 27303
+  },
+  "game/pak24scripts": {
+    "name": "pak24scripts.pk3",
+    "size": 16845
+  },
+  "game/pak88883feedback": {
+    "name": "pak88883feedback.pk3",
+    "size": 206774
+  },
+  "game/pak88884items": {
+    "name": "pak88884items.pk3",
+    "size": 135806
+  },
+  "game/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "game/pak88885teamplay": {
+    "name": "pak88885teamplay.pk3",
+    "size": 136557
+  },
+  "game/pak55bfg": {
+    "name": "pak55bfg.pk3",
+    "size": 186831
+  },
+  "game/pak51weapon": {
+    "name": "pak51weapon.pk3",
+    "size": 64439
+  },
+  "game/pak58lightning": {
+    "name": "pak58lightning.pk3",
+    "size": 53194
+  },
+  "game/pak551machinegun": {
+    "name": "pak551machinegun.pk3",
+    "size": 42624
+  },
+  "game/pak556plasma": {
+    "name": "pak556plasma.pk3",
+    "size": 10015
+  },
+  "game/pak554proxmine": {
+    "name": "pak554proxmine.pk3",
+    "size": 10948
+  },
+  "game/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "game/pak555vulcan": {
+    "name": "pak555vulcan.pk3",
+    "size": 41412
+  },
+  "game/pak88886world": {
+    "name": "pak88886world.pk3",
+    "size": 17367
+  },
+  "game/pak8889assets": {
+    "name": "pak8889assets.pk3",
+    "size": 450648
+  },
+  "game/pak88887statusbar": {
+    "name": "pak88887statusbar.pk3",
+    "size": 10412
+  },
+  "game/pak25numbers": {
+    "name": "pak25numbers.pk3",
+    "size": 21002
+  },
+  "game/pak26damage": {
+    "name": "pak26damage.pk3",
+    "size": 29013
+  },
+  "game/pak27icons": {
+    "name": "pak27icons.pk3",
+    "size": 4535
+  },
+  "game/pak28weaphits": {
+    "name": "pak28weaphits.pk3",
+    "size": 81363
+  },
+  "game/pak29misc": {
+    "name": "pak29misc.pk3",
+    "size": 95330
+  },
+  "game/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 41908
+  },
+  "game/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "game/pak20effects": {
+    "name": "pak20effects.pk3",
+    "size": 8582
+  },
+  "game/pak69rlboom": {
+    "name": "pak69rlboom.pk3",
+    "size": 7377
+  },
+  "game/pak446james": {
+    "name": "pak446james.pk3",
+    "size": 1799641
+  },
+  "game/pak4444Crusaders": {
+    "name": "pak4444Crusaders.pk3",
+    "size": 730219
+  },
+  "game/pak4445Intruders": {
+    "name": "pak4445Intruders.pk3",
+    "size": 662560
+  },
+  "game/pak4446Pagans": {
+    "name": "pak4446Pagans.pk3",
+    "size": 658508
+  },
+  "game/pak4447Stroggs": {
+    "name": "pak4447Stroggs.pk3",
+    "size": 657252
+  },
+  "game/pak4448The Fallen": {
+    "name": "pak4448The Fallen.pk3",
+    "size": 549426
+  },
+  "game/pak4449janet": {
+    "name": "pak4449janet.pk3",
+    "size": 2021138
+  },
+  "game/pak444441sarge": {
+    "name": "pak444441sarge.pk3",
+    "size": 1695258
+  },
+  "game/pak4444441player": {
+    "name": "pak4444441player.pk3",
+    "size": 24449
+  },
+  "game/pak444440footsteps": {
+    "name": "pak444440footsteps.pk3",
+    "size": 57395
+  },
+  "game/pak553gauntlet": {
+    "name": "pak553gauntlet.pk3",
+    "size": 51212
+  },
+  "game/pak83scripts": {
+    "name": "pak83scripts.pk3",
+    "size": 126691
+  },
+  "game/pak12scripts": {
+    "name": "pak12scripts.pk3",
+    "size": 13610
+  },
+  "game/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "game/pak4444442assets": {
+    "name": "pak4444442assets.pk3",
+    "size": 219572
+  },
+  "game/pak15assets": {
+    "name": "pak15assets.pk3",
+    "size": 170569
+  },
+  "game/pak22assets": {
+    "name": "pak22assets.pk3",
+    "size": 29035
+  },
+  "game/pak73podium": {
+    "name": "pak73podium.pk3",
+    "size": 297588
+  },
+  "game/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpq3ctf1/pak92mpq3ctf1": {
+    "name": "pak92mpq3ctf1.pk3",
+    "size": 7258748
+  },
+  "maps/mpq3ctf1/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mpq3ctf1/pak71spawn": {
+    "name": "pak71spawn.pk3",
+    "size": 95356
+  },
+  "maps/mpq3ctf1/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mpq3ctf1/pak888ctf": {
+    "name": "pak888ctf.pk3",
+    "size": 193698
+  },
+  "maps/mpq3ctf1/pak886gothic_block": {
+    "name": "pak886gothic_block.pk3",
+    "size": 455819
+  },
+  "maps/mpq3ctf1/pak8883gothic_floor": {
+    "name": "pak8883gothic_floor.pk3",
+    "size": 7717
+  },
+  "maps/mpq3ctf1/pak8884gothic_trim": {
+    "name": "pak8884gothic_trim.pk3",
+    "size": 76938
+  },
+  "maps/mpq3ctf1/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mpq3ctf1/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpq3ctf1/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mpq3ctf1/pak38mines": {
+    "name": "pak38mines.pk3",
+    "size": 36469
+  },
+  "maps/mpq3ctf1/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mpq3ctf1/pak88884items": {
+    "name": "pak88884items.pk3",
+    "size": 135806
+  },
+  "maps/mpq3ctf1/pak39invulnerability": {
+    "name": "pak39invulnerability.pk3",
+    "size": 10738
+  },
+  "maps/mpq3ctf1/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mpq3ctf1/pak34doubler": {
+    "name": "pak34doubler.pk3",
+    "size": 14373
+  },
+  "maps/mpq3ctf1/pak35guard": {
+    "name": "pak35guard.pk3",
+    "size": 15290
+  },
+  "maps/mpq3ctf1/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mpq3ctf1/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 65944
+  },
+  "maps/mpq3ctf1/pak66flags": {
+    "name": "pak66flags.pk3",
+    "size": 70024
+  },
+  "maps/mpq3ctf1/pak51weapon": {
+    "name": "pak51weapon.pk3",
+    "size": 64439
+  },
+  "maps/mpq3ctf1/pak52prox": {
+    "name": "pak52prox.pk3",
+    "size": 74707
+  },
+  "maps/mpq3ctf1/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mpq3ctf1/pak552shotgun": {
+    "name": "pak552shotgun.pk3",
+    "size": 27303
+  },
+  "maps/mpq3ctf1/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mpq3ctf1/pak889ctf2": {
+    "name": "pak889ctf2.pk3",
+    "size": 107041
+  },
+  "maps/mpq3ctf1/pak884gothic_light": {
+    "name": "pak884gothic_light.pk3",
+    "size": 12204
+  },
+  "maps/mpq3ctf1/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mpq3ctf1/pak883skies": {
+    "name": "pak883skies.pk3",
+    "size": 26569
+  },
+  "maps/mpq3ctf1/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mpq3ctf2/pak93mpq3ctf2": {
+    "name": "pak93mpq3ctf2.pk3",
+    "size": 5176662
+  },
+  "maps/mpq3ctf2/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mpq3ctf2/pak71spawn": {
+    "name": "pak71spawn.pk3",
+    "size": 95356
+  },
+  "maps/mpq3ctf2/pak82ambient": {
+    "name": "pak82ambient.pk3",
+    "size": 32424
+  },
+  "maps/mpq3ctf2/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mpq3ctf2/pak89base_light": {
+    "name": "pak89base_light.pk3",
+    "size": 102183
+  },
+  "maps/mpq3ctf2/pak888ctf": {
+    "name": "pak888ctf.pk3",
+    "size": 193698
+  },
+  "maps/mpq3ctf2/pak886gothic_block": {
+    "name": "pak886gothic_block.pk3",
+    "size": 455819
+  },
+  "maps/mpq3ctf2/pak8884gothic_trim": {
+    "name": "pak8884gothic_trim.pk3",
+    "size": 76938
+  },
+  "maps/mpq3ctf2/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mpq3ctf2/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpq3ctf2/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mpq3ctf2/pak3332cells": {
+    "name": "pak3332cells.pk3",
+    "size": 41490
+  },
+  "maps/mpq3ctf2/pak3333grenades": {
+    "name": "pak3333grenades.pk3",
+    "size": 45137
+  },
+  "maps/mpq3ctf2/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mpq3ctf2/pak88884items": {
+    "name": "pak88884items.pk3",
+    "size": 135806
+  },
+  "maps/mpq3ctf2/pak338medkit": {
+    "name": "pak338medkit.pk3",
+    "size": 8601
+  },
+  "maps/mpq3ctf2/pak33ammoregen": {
+    "name": "pak33ammoregen.pk3",
+    "size": 8490
+  },
+  "maps/mpq3ctf2/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mpq3ctf2/pak34doubler": {
+    "name": "pak34doubler.pk3",
+    "size": 14373
+  },
+  "maps/mpq3ctf2/pak35guard": {
+    "name": "pak35guard.pk3",
+    "size": 15290
+  },
+  "maps/mpq3ctf2/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mpq3ctf2/pak333regen": {
+    "name": "pak333regen.pk3",
+    "size": 16049
+  },
+  "maps/mpq3ctf2/pak36scout": {
+    "name": "pak36scout.pk3",
+    "size": 14989
+  },
+  "maps/mpq3ctf2/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 65944
+  },
+  "maps/mpq3ctf2/pak66flags": {
+    "name": "pak66flags.pk3",
+    "size": 70024
+  },
+  "maps/mpq3ctf2/pak50grenadelauncher": {
+    "name": "pak50grenadelauncher.pk3",
+    "size": 17919
+  },
+  "maps/mpq3ctf2/pak53nailgun": {
+    "name": "pak53nailgun.pk3",
+    "size": 188022
+  },
+  "maps/mpq3ctf2/pak56plasmagun": {
+    "name": "pak56plasmagun.pk3",
+    "size": 21483
+  },
+  "maps/mpq3ctf2/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mpq3ctf2/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mpq3ctf2/pak552shotgun": {
+    "name": "pak552shotgun.pk3",
+    "size": 27303
+  },
+  "maps/mpq3ctf2/pak339bfg": {
+    "name": "pak339bfg.pk3",
+    "size": 38660
+  },
+  "maps/mpq3ctf2/pak80base_trim": {
+    "name": "pak80base_trim.pk3",
+    "size": 110459
+  },
+  "maps/mpq3ctf2/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mpq3ctf2/pak889ctf2": {
+    "name": "pak889ctf2.pk3",
+    "size": 107041
+  },
+  "maps/mpq3ctf2/pak884gothic_light": {
+    "name": "pak884gothic_light.pk3",
+    "size": 12204
+  },
+  "maps/mpq3ctf2/pak87liquids": {
+    "name": "pak87liquids.pk3",
+    "size": 135094
+  },
+  "maps/mpq3ctf2/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "maps/mpq3ctf2/pak883skies": {
+    "name": "pak883skies.pk3",
+    "size": 26569
+  },
+  "maps/mpq3ctf2/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mpq3ctf3/pak94mpq3ctf3": {
+    "name": "pak94mpq3ctf3.pk3",
+    "size": 4613460
+  },
+  "maps/mpq3ctf3/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mpq3ctf3/pak71spawn": {
+    "name": "pak71spawn.pk3",
+    "size": 95356
+  },
+  "maps/mpq3ctf3/pak82ambient": {
+    "name": "pak82ambient.pk3",
+    "size": 32424
+  },
+  "maps/mpq3ctf3/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mpq3ctf3/pak80base_trim": {
+    "name": "pak80base_trim.pk3",
+    "size": 110459
+  },
+  "maps/mpq3ctf3/pak888ctf": {
+    "name": "pak888ctf.pk3",
+    "size": 193698
+  },
+  "maps/mpq3ctf3/pak886gothic_block": {
+    "name": "pak886gothic_block.pk3",
+    "size": 455819
+  },
+  "maps/mpq3ctf3/pak8883gothic_floor": {
+    "name": "pak8883gothic_floor.pk3",
+    "size": 7717
+  },
+  "maps/mpq3ctf3/pak8884gothic_trim": {
+    "name": "pak8884gothic_trim.pk3",
+    "size": 76938
+  },
+  "maps/mpq3ctf3/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mpq3ctf3/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpq3ctf3/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mpq3ctf3/pak3332cells": {
+    "name": "pak3332cells.pk3",
+    "size": 41490
+  },
+  "maps/mpq3ctf3/pak38mines": {
+    "name": "pak38mines.pk3",
+    "size": 36469
+  },
+  "maps/mpq3ctf3/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mpq3ctf3/pak33ammoregen": {
+    "name": "pak33ammoregen.pk3",
+    "size": 8490
+  },
+  "maps/mpq3ctf3/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mpq3ctf3/pak34doubler": {
+    "name": "pak34doubler.pk3",
+    "size": 14373
+  },
+  "maps/mpq3ctf3/pak35guard": {
+    "name": "pak35guard.pk3",
+    "size": 15290
+  },
+  "maps/mpq3ctf3/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mpq3ctf3/pak334invis": {
+    "name": "pak334invis.pk3",
+    "size": 11853
+  },
+  "maps/mpq3ctf3/pak337quad": {
+    "name": "pak337quad.pk3",
+    "size": 29271
+  },
+  "maps/mpq3ctf3/pak333regen": {
+    "name": "pak333regen.pk3",
+    "size": 16049
+  },
+  "maps/mpq3ctf3/pak36scout": {
+    "name": "pak36scout.pk3",
+    "size": 14989
+  },
+  "maps/mpq3ctf3/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 65944
+  },
+  "maps/mpq3ctf3/pak66flags": {
+    "name": "pak66flags.pk3",
+    "size": 70024
+  },
+  "maps/mpq3ctf3/pak56plasmagun": {
+    "name": "pak56plasmagun.pk3",
+    "size": 21483
+  },
+  "maps/mpq3ctf3/pak52prox": {
+    "name": "pak52prox.pk3",
+    "size": 74707
+  },
+  "maps/mpq3ctf3/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mpq3ctf3/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mpq3ctf3/pak552shotgun": {
+    "name": "pak552shotgun.pk3",
+    "size": 27303
+  },
+  "maps/mpq3ctf3/pak84base_floor": {
+    "name": "pak84base_floor.pk3",
+    "size": 44151
+  },
+  "maps/mpq3ctf3/pak89base_light": {
+    "name": "pak89base_light.pk3",
+    "size": 102183
+  },
+  "maps/mpq3ctf3/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mpq3ctf3/pak889ctf2": {
+    "name": "pak889ctf2.pk3",
+    "size": 107041
+  },
+  "maps/mpq3ctf3/pak87liquids": {
+    "name": "pak87liquids.pk3",
+    "size": 135094
+  },
+  "maps/mpq3ctf3/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mpq3ctf3/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/mpq3ctf3/pak883skies": {
+    "name": "pak883skies.pk3",
+    "size": 26569
+  },
+  "maps/mpq3ctf3/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mpq3ctf4/pak95mpq3ctf4": {
+    "name": "pak95mpq3ctf4.pk3",
+    "size": 1647837
+  },
+  "maps/mpq3ctf4/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mpq3ctf4/pak71spawn": {
+    "name": "pak71spawn.pk3",
+    "size": 95356
+  },
+  "maps/mpq3ctf4/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mpq3ctf4/pak84base_floor": {
+    "name": "pak84base_floor.pk3",
+    "size": 44151
+  },
+  "maps/mpq3ctf4/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "maps/mpq3ctf4/pak80base_trim": {
+    "name": "pak80base_trim.pk3",
+    "size": 110459
+  },
+  "maps/mpq3ctf4/pak88base_wall": {
+    "name": "pak88base_wall.pk3",
+    "size": 224003
+  },
+  "maps/mpq3ctf4/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mpq3ctf4/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpq3ctf4/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mpq3ctf4/pak88884items": {
+    "name": "pak88884items.pk3",
+    "size": 135806
+  },
+  "maps/mpq3ctf4/pak331kamikaze": {
+    "name": "pak331kamikaze.pk3",
+    "size": 17676
+  },
+  "maps/mpq3ctf4/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mpq3ctf4/pak35guard": {
+    "name": "pak35guard.pk3",
+    "size": 15290
+  },
+  "maps/mpq3ctf4/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mpq3ctf4/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 65944
+  },
+  "maps/mpq3ctf4/pak66flags": {
+    "name": "pak66flags.pk3",
+    "size": 70024
+  },
+  "maps/mpq3ctf4/pak55bfg": {
+    "name": "pak55bfg.pk3",
+    "size": 186831
+  },
+  "maps/mpq3ctf4/pak53nailgun": {
+    "name": "pak53nailgun.pk3",
+    "size": 188022
+  },
+  "maps/mpq3ctf4/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mpq3ctf4/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mpq3ctf4/pak552shotgun": {
+    "name": "pak552shotgun.pk3",
+    "size": 27303
+  },
+  "maps/mpq3ctf4/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mpq3ctf4/pak89base_light": {
+    "name": "pak89base_light.pk3",
+    "size": 102183
+  },
+  "maps/mpq3ctf4/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mpq3ctf4/pak888ctf": {
+    "name": "pak888ctf.pk3",
+    "size": 193698
+  },
+  "maps/mpq3ctf4/pak889ctf2": {
+    "name": "pak889ctf2.pk3",
+    "size": 107041
+  },
+  "maps/mpq3ctf4/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mpq3ctf4/pak886gothic_block": {
+    "name": "pak886gothic_block.pk3",
+    "size": 455819
+  },
+  "maps/mpq3tourney6/pak96mpq3tourney6": {
+    "name": "pak96mpq3tourney6.pk3",
+    "size": 3653145
+  },
+  "maps/mpq3tourney6/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mpq3tourney6/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mpq3tourney6/pak84base_floor": {
+    "name": "pak84base_floor.pk3",
+    "size": 44151
+  },
+  "maps/mpq3tourney6/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "maps/mpq3tourney6/pak80base_trim": {
+    "name": "pak80base_trim.pk3",
+    "size": 110459
+  },
+  "maps/mpq3tourney6/pak88base_wall": {
+    "name": "pak88base_wall.pk3",
+    "size": 224003
+  },
+  "maps/mpq3tourney6/pak886gothic_block": {
+    "name": "pak886gothic_block.pk3",
+    "size": 455819
+  },
+  "maps/mpq3tourney6/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mpq3tourney6/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpq3tourney6/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mpq3tourney6/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mpq3tourney6/pak88884items": {
+    "name": "pak88884items.pk3",
+    "size": 135806
+  },
+  "maps/mpq3tourney6/pak331kamikaze": {
+    "name": "pak331kamikaze.pk3",
+    "size": 17676
+  },
+  "maps/mpq3tourney6/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mpq3tourney6/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mpq3tourney6/pak337quad": {
+    "name": "pak337quad.pk3",
+    "size": 29271
+  },
+  "maps/mpq3tourney6/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 65944
+  },
+  "maps/mpq3tourney6/pak66flags": {
+    "name": "pak66flags.pk3",
+    "size": 70024
+  },
+  "maps/mpq3tourney6/pak55bfg": {
+    "name": "pak55bfg.pk3",
+    "size": 186831
+  },
+  "maps/mpq3tourney6/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mpq3tourney6/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mpq3tourney6/pak74mapobject": {
+    "name": "pak74mapobject.pk3",
+    "size": 274481
+  },
+  "maps/mpq3tourney6/pak89base_light": {
+    "name": "pak89base_light.pk3",
+    "size": 102183
+  },
+  "maps/mpq3tourney6/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mpq3tourney6/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mpq3tourney6/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mpq3tourney6/pak8884gothic_trim": {
+    "name": "pak8884gothic_trim.pk3",
+    "size": 76938
+  },
+  "maps/mpteam1/pak97mpteam1": {
+    "name": "pak97mpteam1.pk3",
+    "size": 3692402
+  },
+  "maps/mpteam1/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mpteam1/pak71spawn": {
+    "name": "pak71spawn.pk3",
+    "size": 95356
+  },
+  "maps/mpteam1/pak82ambient": {
+    "name": "pak82ambient.pk3",
+    "size": 32424
+  },
+  "maps/mpteam1/pak74mapobject": {
+    "name": "pak74mapobject.pk3",
+    "size": 274481
+  },
+  "maps/mpteam1/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mpteam1/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "maps/mpteam1/pak80base_trim": {
+    "name": "pak80base_trim.pk3",
+    "size": 110459
+  },
+  "maps/mpteam1/pak88base_wall": {
+    "name": "pak88base_wall.pk3",
+    "size": 224003
+  },
+  "maps/mpteam1/pak8884gothic_trim": {
+    "name": "pak8884gothic_trim.pk3",
+    "size": 76938
+  },
+  "maps/mpteam1/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mpteam1/pak3332cells": {
+    "name": "pak3332cells.pk3",
+    "size": 41490
+  },
+  "maps/mpteam1/pak38mines": {
+    "name": "pak38mines.pk3",
+    "size": 36469
+  },
+  "maps/mpteam1/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpteam1/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mpteam1/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mpteam1/pak88884items": {
+    "name": "pak88884items.pk3",
+    "size": 135806
+  },
+  "maps/mpteam1/pak39invulnerability": {
+    "name": "pak39invulnerability.pk3",
+    "size": 10738
+  },
+  "maps/mpteam1/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mpteam1/pak34doubler": {
+    "name": "pak34doubler.pk3",
+    "size": 14373
+  },
+  "maps/mpteam1/pak35guard": {
+    "name": "pak35guard.pk3",
+    "size": 15290
+  },
+  "maps/mpteam1/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mpteam1/pak337quad": {
+    "name": "pak337quad.pk3",
+    "size": 29271
+  },
+  "maps/mpteam1/pak36scout": {
+    "name": "pak36scout.pk3",
+    "size": 14989
+  },
+  "maps/mpteam1/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 65944
+  },
+  "maps/mpteam1/pak66flags": {
+    "name": "pak66flags.pk3",
+    "size": 70024
+  },
+  "maps/mpteam1/pak53nailgun": {
+    "name": "pak53nailgun.pk3",
+    "size": 188022
+  },
+  "maps/mpteam1/pak56plasmagun": {
+    "name": "pak56plasmagun.pk3",
+    "size": 21483
+  },
+  "maps/mpteam1/pak52prox": {
+    "name": "pak52prox.pk3",
+    "size": 74707
+  },
+  "maps/mpteam1/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mpteam1/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mpteam1/pak75techlamp": {
+    "name": "pak75techlamp.pk3",
+    "size": 63128
+  },
+  "maps/mpteam1/pak84base_floor": {
+    "name": "pak84base_floor.pk3",
+    "size": 44151
+  },
+  "maps/mpteam1/pak89base_light": {
+    "name": "pak89base_light.pk3",
+    "size": 102183
+  },
+  "maps/mpteam1/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mpteam1/pak889ctf2": {
+    "name": "pak889ctf2.pk3",
+    "size": 107041
+  },
+  "maps/mpteam1/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mpteam1/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/mpteam1/pak883skies": {
+    "name": "pak883skies.pk3",
+    "size": 26569
+  },
+  "maps/mpteam2/pak98mpteam2": {
+    "name": "pak98mpteam2.pk3",
+    "size": 3619015
+  },
+  "maps/mpteam2/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mpteam2/pak71spawn": {
+    "name": "pak71spawn.pk3",
+    "size": 95356
+  },
+  "maps/mpteam2/pak82ambient": {
+    "name": "pak82ambient.pk3",
+    "size": 32424
+  },
+  "maps/mpteam2/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mpteam2/pak80base_trim": {
+    "name": "pak80base_trim.pk3",
+    "size": 110459
+  },
+  "maps/mpteam2/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mpteam2/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpteam2/pak38mines": {
+    "name": "pak38mines.pk3",
+    "size": 36469
+  },
+  "maps/mpteam2/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mpteam2/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mpteam2/pak33ammoregen": {
+    "name": "pak33ammoregen.pk3",
+    "size": 8490
+  },
+  "maps/mpteam2/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mpteam2/pak34doubler": {
+    "name": "pak34doubler.pk3",
+    "size": 14373
+  },
+  "maps/mpteam2/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mpteam2/pak36scout": {
+    "name": "pak36scout.pk3",
+    "size": 14989
+  },
+  "maps/mpteam2/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 65944
+  },
+  "maps/mpteam2/pak66flags": {
+    "name": "pak66flags.pk3",
+    "size": 70024
+  },
+  "maps/mpteam2/pak51weapon": {
+    "name": "pak51weapon.pk3",
+    "size": 64439
+  },
+  "maps/mpteam2/pak52prox": {
+    "name": "pak52prox.pk3",
+    "size": 74707
+  },
+  "maps/mpteam2/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mpteam2/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mpteam2/pak552shotgun": {
+    "name": "pak552shotgun.pk3",
+    "size": 27303
+  },
+  "maps/mpteam2/pak74mapobject": {
+    "name": "pak74mapobject.pk3",
+    "size": 274481
+  },
+  "maps/mpteam2/pak89base_light": {
+    "name": "pak89base_light.pk3",
+    "size": 102183
+  },
+  "maps/mpteam2/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mpteam2/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mpteam2/pak889ctf2": {
+    "name": "pak889ctf2.pk3",
+    "size": 107041
+  },
+  "maps/mpteam2/pak8884gothic_trim": {
+    "name": "pak8884gothic_trim.pk3",
+    "size": 76938
+  },
+  "maps/mpteam2/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mpteam2/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/mpteam2/pak883skies": {
+    "name": "pak883skies.pk3",
+    "size": 26569
+  },
+  "maps/mpteam3/pak99mpteam3": {
+    "name": "pak99mpteam3.pk3",
+    "size": 2580059
+  },
+  "maps/mpteam3/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mpteam3/pak71spawn": {
+    "name": "pak71spawn.pk3",
+    "size": 95356
+  },
+  "maps/mpteam3/pak82ambient": {
+    "name": "pak82ambient.pk3",
+    "size": 32424
+  },
+  "maps/mpteam3/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mpteam3/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mpteam3/pak38mines": {
+    "name": "pak38mines.pk3",
+    "size": 36469
+  },
+  "maps/mpteam3/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mpteam3/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpteam3/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mpteam3/pak88884items": {
+    "name": "pak88884items.pk3",
+    "size": 135806
+  },
+  "maps/mpteam3/pak331kamikaze": {
+    "name": "pak331kamikaze.pk3",
+    "size": 17676
+  },
+  "maps/mpteam3/pak33ammoregen": {
+    "name": "pak33ammoregen.pk3",
+    "size": 8490
+  },
+  "maps/mpteam3/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mpteam3/pak34doubler": {
+    "name": "pak34doubler.pk3",
+    "size": 14373
+  },
+  "maps/mpteam3/pak35guard": {
+    "name": "pak35guard.pk3",
+    "size": 15290
+  },
+  "maps/mpteam3/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mpteam3/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 65944
+  },
+  "maps/mpteam3/pak66flags": {
+    "name": "pak66flags.pk3",
+    "size": 70024
+  },
+  "maps/mpteam3/pak52prox": {
+    "name": "pak52prox.pk3",
+    "size": 74707
+  },
+  "maps/mpteam3/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mpteam3/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mpteam3/pak552shotgun": {
+    "name": "pak552shotgun.pk3",
+    "size": 27303
+  },
+  "maps/mpteam3/pak74mapobject": {
+    "name": "pak74mapobject.pk3",
+    "size": 274481
+  },
+  "maps/mpteam3/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "maps/mpteam3/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mpteam3/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/mpteam3/pak889ctf2": {
+    "name": "pak889ctf2.pk3",
+    "size": 107041
+  },
+  "maps/mpteam3/pak884gothic_light": {
+    "name": "pak884gothic_light.pk3",
+    "size": 12204
+  },
+  "maps/mpteam3/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mpteam3/pak8884gothic_trim": {
+    "name": "pak8884gothic_trim.pk3",
+    "size": 76938
+  },
+  "maps/mpteam3/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mpteam3/pak8886env": {
+    "name": "pak8886env.pk3",
+    "size": 86495
+  },
+  "maps/mpteam4/pak90mpteam4": {
+    "name": "pak90mpteam4.pk3",
+    "size": 4842469
+  },
+  "maps/mpteam4/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mpteam4/pak71spawn": {
+    "name": "pak71spawn.pk3",
+    "size": 95356
+  },
+  "maps/mpteam4/pak82ambient": {
+    "name": "pak82ambient.pk3",
+    "size": 32424
+  },
+  "maps/mpteam4/pak74mapobject": {
+    "name": "pak74mapobject.pk3",
+    "size": 274481
+  },
+  "maps/mpteam4/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mpteam4/pak886gothic_block": {
+    "name": "pak886gothic_block.pk3",
+    "size": 455819
+  },
+  "maps/mpteam4/pak8884gothic_trim": {
+    "name": "pak8884gothic_trim.pk3",
+    "size": 76938
+  },
+  "maps/mpteam4/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mpteam4/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpteam4/pak38mines": {
+    "name": "pak38mines.pk3",
+    "size": 36469
+  },
+  "maps/mpteam4/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mpteam4/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mpteam4/pak88884items": {
+    "name": "pak88884items.pk3",
+    "size": 135806
+  },
+  "maps/mpteam4/pak331kamikaze": {
+    "name": "pak331kamikaze.pk3",
+    "size": 17676
+  },
+  "maps/mpteam4/pak33ammoregen": {
+    "name": "pak33ammoregen.pk3",
+    "size": 8490
+  },
+  "maps/mpteam4/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mpteam4/pak34doubler": {
+    "name": "pak34doubler.pk3",
+    "size": 14373
+  },
+  "maps/mpteam4/pak35guard": {
+    "name": "pak35guard.pk3",
+    "size": 15290
+  },
+  "maps/mpteam4/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mpteam4/pak36scout": {
+    "name": "pak36scout.pk3",
+    "size": 14989
+  },
+  "maps/mpteam4/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 65944
+  },
+  "maps/mpteam4/pak66flags": {
+    "name": "pak66flags.pk3",
+    "size": 70024
+  },
+  "maps/mpteam4/pak55bfg": {
+    "name": "pak55bfg.pk3",
+    "size": 186831
+  },
+  "maps/mpteam4/pak51weapon": {
+    "name": "pak51weapon.pk3",
+    "size": 64439
+  },
+  "maps/mpteam4/pak58lightning": {
+    "name": "pak58lightning.pk3",
+    "size": 53194
+  },
+  "maps/mpteam4/pak56plasmagun": {
+    "name": "pak56plasmagun.pk3",
+    "size": 21483
+  },
+  "maps/mpteam4/pak52prox": {
+    "name": "pak52prox.pk3",
+    "size": 74707
+  },
+  "maps/mpteam4/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mpteam4/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mpteam4/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mpteam4/pak75techlamp": {
+    "name": "pak75techlamp.pk3",
+    "size": 63128
+  },
+  "maps/mpteam4/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mpteam4/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/mpteam4/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mpteam4/pak889ctf2": {
+    "name": "pak889ctf2.pk3",
+    "size": 107041
+  },
+  "maps/mpteam4/pak884gothic_light": {
+    "name": "pak884gothic_light.pk3",
+    "size": 12204
+  },
+  "maps/mpteam4/pak87liquids": {
+    "name": "pak87liquids.pk3",
+    "size": 135094
+  },
+  "maps/mpteam4/pak883skies": {
+    "name": "pak883skies.pk3",
+    "size": 26569
+  },
+  "maps/mpteam5/pak991mpteam5": {
+    "name": "pak991mpteam5.pk3",
+    "size": 4748872
+  },
+  "maps/mpteam5/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mpteam5/pak71spawn": {
+    "name": "pak71spawn.pk3",
+    "size": 95356
+  },
+  "maps/mpteam5/pak82ambient": {
+    "name": "pak82ambient.pk3",
+    "size": 32424
+  },
+  "maps/mpteam5/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mpteam5/pak80base_trim": {
+    "name": "pak80base_trim.pk3",
+    "size": 110459
+  },
+  "maps/mpteam5/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mpteam5/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpteam5/pak3332cells": {
+    "name": "pak3332cells.pk3",
+    "size": 41490
+  },
+  "maps/mpteam5/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mpteam5/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mpteam5/pak88884items": {
+    "name": "pak88884items.pk3",
+    "size": 135806
+  },
+  "maps/mpteam5/pak39invulnerability": {
+    "name": "pak39invulnerability.pk3",
+    "size": 10738
+  },
+  "maps/mpteam5/pak331kamikaze": {
+    "name": "pak331kamikaze.pk3",
+    "size": 17676
+  },
+  "maps/mpteam5/pak338medkit": {
+    "name": "pak338medkit.pk3",
+    "size": 8601
+  },
+  "maps/mpteam5/pak33ammoregen": {
+    "name": "pak33ammoregen.pk3",
+    "size": 8490
+  },
+  "maps/mpteam5/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mpteam5/pak34doubler": {
+    "name": "pak34doubler.pk3",
+    "size": 14373
+  },
+  "maps/mpteam5/pak35guard": {
+    "name": "pak35guard.pk3",
+    "size": 15290
+  },
+  "maps/mpteam5/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mpteam5/pak333regen": {
+    "name": "pak333regen.pk3",
+    "size": 16049
+  },
+  "maps/mpteam5/pak36scout": {
+    "name": "pak36scout.pk3",
+    "size": 14989
+  },
+  "maps/mpteam5/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 65944
+  },
+  "maps/mpteam5/pak66flags": {
+    "name": "pak66flags.pk3",
+    "size": 70024
+  },
+  "maps/mpteam5/pak51weapon": {
+    "name": "pak51weapon.pk3",
+    "size": 64439
+  },
+  "maps/mpteam5/pak53nailgun": {
+    "name": "pak53nailgun.pk3",
+    "size": 188022
+  },
+  "maps/mpteam5/pak56plasmagun": {
+    "name": "pak56plasmagun.pk3",
+    "size": 21483
+  },
+  "maps/mpteam5/pak52prox": {
+    "name": "pak52prox.pk3",
+    "size": 74707
+  },
+  "maps/mpteam5/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mpteam5/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mpteam5/pak74mapobject": {
+    "name": "pak74mapobject.pk3",
+    "size": 274481
+  },
+  "maps/mpteam5/pak89base_light": {
+    "name": "pak89base_light.pk3",
+    "size": 102183
+  },
+  "maps/mpteam5/pak88base_wall": {
+    "name": "pak88base_wall.pk3",
+    "size": 224003
+  },
+  "maps/mpteam5/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mpteam5/pak889ctf2": {
+    "name": "pak889ctf2.pk3",
+    "size": 107041
+  },
+  "maps/mpteam5/pak884gothic_light": {
+    "name": "pak884gothic_light.pk3",
+    "size": 12204
+  },
+  "maps/mpteam5/pak87liquids": {
+    "name": "pak87liquids.pk3",
+    "size": 135094
+  },
+  "maps/mpteam5/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "maps/mpteam5/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mpteam5/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/mpteam5/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mpteam6/pak992mpteam6": {
+    "name": "pak992mpteam6.pk3",
+    "size": 3345264
+  },
+  "maps/mpteam6/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mpteam6/pak71spawn": {
+    "name": "pak71spawn.pk3",
+    "size": 95356
+  },
+  "maps/mpteam6/pak82ambient": {
+    "name": "pak82ambient.pk3",
+    "size": 32424
+  },
+  "maps/mpteam6/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mpteam6/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "maps/mpteam6/pak80base_trim": {
+    "name": "pak80base_trim.pk3",
+    "size": 110459
+  },
+  "maps/mpteam6/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mpteam6/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpteam6/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mpteam6/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mpteam6/pak88884items": {
+    "name": "pak88884items.pk3",
+    "size": 135806
+  },
+  "maps/mpteam6/pak39invulnerability": {
+    "name": "pak39invulnerability.pk3",
+    "size": 10738
+  },
+  "maps/mpteam6/pak331kamikaze": {
+    "name": "pak331kamikaze.pk3",
+    "size": 17676
+  },
+  "maps/mpteam6/pak33ammoregen": {
+    "name": "pak33ammoregen.pk3",
+    "size": 8490
+  },
+  "maps/mpteam6/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mpteam6/pak34doubler": {
+    "name": "pak34doubler.pk3",
+    "size": 14373
+  },
+  "maps/mpteam6/pak35guard": {
+    "name": "pak35guard.pk3",
+    "size": 15290
+  },
+  "maps/mpteam6/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mpteam6/pak36scout": {
+    "name": "pak36scout.pk3",
+    "size": 14989
+  },
+  "maps/mpteam6/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 65944
+  },
+  "maps/mpteam6/pak66flags": {
+    "name": "pak66flags.pk3",
+    "size": 70024
+  },
+  "maps/mpteam6/pak53nailgun": {
+    "name": "pak53nailgun.pk3",
+    "size": 188022
+  },
+  "maps/mpteam6/pak56plasmagun": {
+    "name": "pak56plasmagun.pk3",
+    "size": 21483
+  },
+  "maps/mpteam6/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mpteam6/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mpteam6/pak74mapobject": {
+    "name": "pak74mapobject.pk3",
+    "size": 274481
+  },
+  "maps/mpteam6/pak89base_light": {
+    "name": "pak89base_light.pk3",
+    "size": 102183
+  },
+  "maps/mpteam6/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mpteam6/pak88base_wall": {
+    "name": "pak88base_wall.pk3",
+    "size": 224003
+  },
+  "maps/mpteam6/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mpteam6/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/mpteam6/pak8884gothic_trim": {
+    "name": "pak8884gothic_trim.pk3",
+    "size": 76938
+  },
+  "maps/mpteam6/pak886gothic_block": {
+    "name": "pak886gothic_block.pk3",
+    "size": 455819
+  },
+  "maps/mpteam6/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mpteam7/pak993mpteam7": {
+    "name": "pak993mpteam7.pk3",
+    "size": 3463235
+  },
+  "maps/mpteam7/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mpteam7/pak71spawn": {
+    "name": "pak71spawn.pk3",
+    "size": 95356
+  },
+  "maps/mpteam7/pak82ambient": {
+    "name": "pak82ambient.pk3",
+    "size": 32424
+  },
+  "maps/mpteam7/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mpteam7/pak80base_trim": {
+    "name": "pak80base_trim.pk3",
+    "size": 110459
+  },
+  "maps/mpteam7/pak88base_wall": {
+    "name": "pak88base_wall.pk3",
+    "size": 224003
+  },
+  "maps/mpteam7/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mpteam7/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpteam7/pak3332cells": {
+    "name": "pak3332cells.pk3",
+    "size": 41490
+  },
+  "maps/mpteam7/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mpteam7/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mpteam7/pak88884items": {
+    "name": "pak88884items.pk3",
+    "size": 135806
+  },
+  "maps/mpteam7/pak39invulnerability": {
+    "name": "pak39invulnerability.pk3",
+    "size": 10738
+  },
+  "maps/mpteam7/pak331kamikaze": {
+    "name": "pak331kamikaze.pk3",
+    "size": 17676
+  },
+  "maps/mpteam7/pak338medkit": {
+    "name": "pak338medkit.pk3",
+    "size": 8601
+  },
+  "maps/mpteam7/pak33ammoregen": {
+    "name": "pak33ammoregen.pk3",
+    "size": 8490
+  },
+  "maps/mpteam7/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mpteam7/pak34doubler": {
+    "name": "pak34doubler.pk3",
+    "size": 14373
+  },
+  "maps/mpteam7/pak35guard": {
+    "name": "pak35guard.pk3",
+    "size": 15290
+  },
+  "maps/mpteam7/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mpteam7/pak333regen": {
+    "name": "pak333regen.pk3",
+    "size": 16049
+  },
+  "maps/mpteam7/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 65944
+  },
+  "maps/mpteam7/pak66flags": {
+    "name": "pak66flags.pk3",
+    "size": 70024
+  },
+  "maps/mpteam7/pak51weapon": {
+    "name": "pak51weapon.pk3",
+    "size": 64439
+  },
+  "maps/mpteam7/pak56plasmagun": {
+    "name": "pak56plasmagun.pk3",
+    "size": 21483
+  },
+  "maps/mpteam7/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mpteam7/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mpteam7/pak74mapobject": {
+    "name": "pak74mapobject.pk3",
+    "size": 274481
+  },
+  "maps/mpteam7/pak84base_floor": {
+    "name": "pak84base_floor.pk3",
+    "size": 44151
+  },
+  "maps/mpteam7/pak89base_light": {
+    "name": "pak89base_light.pk3",
+    "size": 102183
+  },
+  "maps/mpteam7/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "maps/mpteam7/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mpteam7/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mpteam7/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mpteam7/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/mpteam7/pak889ctf2": {
+    "name": "pak889ctf2.pk3",
+    "size": 107041
+  },
+  "maps/mpteam7/pak8886env": {
+    "name": "pak8886env.pk3",
+    "size": 86495
+  },
+  "maps/mpteam8/pak994mpteam8": {
+    "name": "pak994mpteam8.pk3",
+    "size": 5222768
+  },
+  "maps/mpteam8/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mpteam8/pak71spawn": {
+    "name": "pak71spawn.pk3",
+    "size": 95356
+  },
+  "maps/mpteam8/pak82ambient": {
+    "name": "pak82ambient.pk3",
+    "size": 32424
+  },
+  "maps/mpteam8/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mpteam8/pak8884gothic_trim": {
+    "name": "pak8884gothic_trim.pk3",
+    "size": 76938
+  },
+  "maps/mpteam8/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mpteam8/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpteam8/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mpteam8/pak3332cells": {
+    "name": "pak3332cells.pk3",
+    "size": 41490
+  },
+  "maps/mpteam8/pak38mines": {
+    "name": "pak38mines.pk3",
+    "size": 36469
+  },
+  "maps/mpteam8/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mpteam8/pak88884items": {
+    "name": "pak88884items.pk3",
+    "size": 135806
+  },
+  "maps/mpteam8/pak33ammoregen": {
+    "name": "pak33ammoregen.pk3",
+    "size": 8490
+  },
+  "maps/mpteam8/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mpteam8/pak34doubler": {
+    "name": "pak34doubler.pk3",
+    "size": 14373
+  },
+  "maps/mpteam8/pak35guard": {
+    "name": "pak35guard.pk3",
+    "size": 15290
+  },
+  "maps/mpteam8/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mpteam8/pak337quad": {
+    "name": "pak337quad.pk3",
+    "size": 29271
+  },
+  "maps/mpteam8/pak36scout": {
+    "name": "pak36scout.pk3",
+    "size": 14989
+  },
+  "maps/mpteam8/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 65944
+  },
+  "maps/mpteam8/pak66flags": {
+    "name": "pak66flags.pk3",
+    "size": 70024
+  },
+  "maps/mpteam8/pak53nailgun": {
+    "name": "pak53nailgun.pk3",
+    "size": 188022
+  },
+  "maps/mpteam8/pak56plasmagun": {
+    "name": "pak56plasmagun.pk3",
+    "size": 21483
+  },
+  "maps/mpteam8/pak52prox": {
+    "name": "pak52prox.pk3",
+    "size": 74707
+  },
+  "maps/mpteam8/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mpteam8/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mpteam8/pak84base_floor": {
+    "name": "pak84base_floor.pk3",
+    "size": 44151
+  },
+  "maps/mpteam8/pak89base_light": {
+    "name": "pak89base_light.pk3",
+    "size": 102183
+  },
+  "maps/mpteam8/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "maps/mpteam8/pak80base_trim": {
+    "name": "pak80base_trim.pk3",
+    "size": 110459
+  },
+  "maps/mpteam8/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mpteam8/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mpteam8/pak889ctf2": {
+    "name": "pak889ctf2.pk3",
+    "size": 107041
+  },
+  "maps/mpteam8/pak888ctf": {
+    "name": "pak888ctf.pk3",
+    "size": 193698
+  },
+  "maps/mpteam8/pak884gothic_light": {
+    "name": "pak884gothic_light.pk3",
+    "size": 12204
+  },
+  "maps/mpteam8/pak87liquids": {
+    "name": "pak87liquids.pk3",
+    "size": 135094
+  },
+  "maps/mpteam8/pak339bfg": {
+    "name": "pak339bfg.pk3",
+    "size": 38660
+  },
+  "maps/mpteam8/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mpteam8/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/mpterra1/pak995mpterra1": {
+    "name": "pak995mpterra1.pk3",
+    "size": 5414329
+  },
+  "maps/mpterra1/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mpterra1/pak71spawn": {
+    "name": "pak71spawn.pk3",
+    "size": 95356
+  },
+  "maps/mpterra1/pak82ambient": {
+    "name": "pak82ambient.pk3",
+    "size": 32424
+  },
+  "maps/mpterra1/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mpterra1/pak886gothic_block": {
+    "name": "pak886gothic_block.pk3",
+    "size": 455819
+  },
+  "maps/mpterra1/pak8883gothic_floor": {
+    "name": "pak8883gothic_floor.pk3",
+    "size": 7717
+  },
+  "maps/mpterra1/pak8884gothic_trim": {
+    "name": "pak8884gothic_trim.pk3",
+    "size": 76938
+  },
+  "maps/mpterra1/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "maps/mpterra1/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mpterra1/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpterra1/pak3332cells": {
+    "name": "pak3332cells.pk3",
+    "size": 41490
+  },
+  "maps/mpterra1/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mpterra1/pak88884items": {
+    "name": "pak88884items.pk3",
+    "size": 135806
+  },
+  "maps/mpterra1/pak331kamikaze": {
+    "name": "pak331kamikaze.pk3",
+    "size": 17676
+  },
+  "maps/mpterra1/pak338medkit": {
+    "name": "pak338medkit.pk3",
+    "size": 8601
+  },
+  "maps/mpterra1/pak33ammoregen": {
+    "name": "pak33ammoregen.pk3",
+    "size": 8490
+  },
+  "maps/mpterra1/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mpterra1/pak34doubler": {
+    "name": "pak34doubler.pk3",
+    "size": 14373
+  },
+  "maps/mpterra1/pak35guard": {
+    "name": "pak35guard.pk3",
+    "size": 15290
+  },
+  "maps/mpterra1/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mpterra1/pak334invis": {
+    "name": "pak334invis.pk3",
+    "size": 11853
+  },
+  "maps/mpterra1/pak36scout": {
+    "name": "pak36scout.pk3",
+    "size": 14989
+  },
+  "maps/mpterra1/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 65944
+  },
+  "maps/mpterra1/pak66flags": {
+    "name": "pak66flags.pk3",
+    "size": 70024
+  },
+  "maps/mpterra1/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mpterra1/pak55bfg": {
+    "name": "pak55bfg.pk3",
+    "size": 186831
+  },
+  "maps/mpterra1/pak51weapon": {
+    "name": "pak51weapon.pk3",
+    "size": 64439
+  },
+  "maps/mpterra1/pak56plasmagun": {
+    "name": "pak56plasmagun.pk3",
+    "size": 21483
+  },
+  "maps/mpterra1/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mpterra1/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mpterra1/pak552shotgun": {
+    "name": "pak552shotgun.pk3",
+    "size": 27303
+  },
+  "maps/mpterra1/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mpterra1/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mpterra1/pak889ctf2": {
+    "name": "pak889ctf2.pk3",
+    "size": 107041
+  },
+  "maps/mpterra1/pak884gothic_light": {
+    "name": "pak884gothic_light.pk3",
+    "size": 12204
+  },
+  "maps/mpterra1/pak87liquids": {
+    "name": "pak87liquids.pk3",
+    "size": 135094
+  },
+  "maps/mpterra1/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/mpterra1/pak883skies": {
+    "name": "pak883skies.pk3",
+    "size": 26569
+  },
+  "maps/mpterra1/pak8885stone": {
+    "name": "pak8885stone.pk3",
+    "size": 90475
+  },
+  "maps/mpterra1/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mpterra2/pak996mpterra2": {
+    "name": "pak996mpterra2.pk3",
+    "size": 5139891
+  },
+  "maps/mpterra2/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mpterra2/pak71spawn": {
+    "name": "pak71spawn.pk3",
+    "size": 95356
+  },
+  "maps/mpterra2/pak82ambient": {
+    "name": "pak82ambient.pk3",
+    "size": 32424
+  },
+  "maps/mpterra2/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mpterra2/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mpterra2/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpterra2/pak339bfg": {
+    "name": "pak339bfg.pk3",
+    "size": 38660
+  },
+  "maps/mpterra2/pak3332cells": {
+    "name": "pak3332cells.pk3",
+    "size": 41490
+  },
+  "maps/mpterra2/pak38mines": {
+    "name": "pak38mines.pk3",
+    "size": 36469
+  },
+  "maps/mpterra2/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mpterra2/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mpterra2/pak88884items": {
+    "name": "pak88884items.pk3",
+    "size": 135806
+  },
+  "maps/mpterra2/pak331kamikaze": {
+    "name": "pak331kamikaze.pk3",
+    "size": 17676
+  },
+  "maps/mpterra2/pak338medkit": {
+    "name": "pak338medkit.pk3",
+    "size": 8601
+  },
+  "maps/mpterra2/pak33ammoregen": {
+    "name": "pak33ammoregen.pk3",
+    "size": 8490
+  },
+  "maps/mpterra2/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mpterra2/pak34doubler": {
+    "name": "pak34doubler.pk3",
+    "size": 14373
+  },
+  "maps/mpterra2/pak35guard": {
+    "name": "pak35guard.pk3",
+    "size": 15290
+  },
+  "maps/mpterra2/pak335haste": {
+    "name": "pak335haste.pk3",
+    "size": 8032
+  },
+  "maps/mpterra2/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mpterra2/pak337quad": {
+    "name": "pak337quad.pk3",
+    "size": 29271
+  },
+  "maps/mpterra2/pak36scout": {
+    "name": "pak36scout.pk3",
+    "size": 14989
+  },
+  "maps/mpterra2/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 65944
+  },
+  "maps/mpterra2/pak66flags": {
+    "name": "pak66flags.pk3",
+    "size": 70024
+  },
+  "maps/mpterra2/pak55bfg": {
+    "name": "pak55bfg.pk3",
+    "size": 186831
+  },
+  "maps/mpterra2/pak51weapon": {
+    "name": "pak51weapon.pk3",
+    "size": 64439
+  },
+  "maps/mpterra2/pak53nailgun": {
+    "name": "pak53nailgun.pk3",
+    "size": 188022
+  },
+  "maps/mpterra2/pak56plasmagun": {
+    "name": "pak56plasmagun.pk3",
+    "size": 21483
+  },
+  "maps/mpterra2/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mpterra2/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mpterra2/pak552shotgun": {
+    "name": "pak552shotgun.pk3",
+    "size": 27303
+  },
+  "maps/mpterra2/pak8885stone": {
+    "name": "pak8885stone.pk3",
+    "size": 90475
+  },
+  "maps/mpterra2/pak89base_light": {
+    "name": "pak89base_light.pk3",
+    "size": 102183
+  },
+  "maps/mpterra2/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mpterra2/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/mpterra2/pak889ctf2": {
+    "name": "pak889ctf2.pk3",
+    "size": 107041
+  },
+  "maps/mpterra2/pak87liquids": {
+    "name": "pak87liquids.pk3",
+    "size": 135094
+  },
+  "maps/mpterra2/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "maps/mpterra2/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mpterra2/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mpterra3/pak997mpterra3": {
+    "name": "pak997mpterra3.pk3",
+    "size": 3476693
+  },
+  "maps/mpterra3/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mpterra3/pak71spawn": {
+    "name": "pak71spawn.pk3",
+    "size": 95356
+  },
+  "maps/mpterra3/pak82ambient": {
+    "name": "pak82ambient.pk3",
+    "size": 32424
+  },
+  "maps/mpterra3/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mpterra3/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mpterra3/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mpterra3/pak339bfg": {
+    "name": "pak339bfg.pk3",
+    "size": 38660
+  },
+  "maps/mpterra3/pak3332cells": {
+    "name": "pak3332cells.pk3",
+    "size": 41490
+  },
+  "maps/mpterra3/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mpterra3/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mpterra3/pak88884items": {
+    "name": "pak88884items.pk3",
+    "size": 135806
+  },
+  "maps/mpterra3/pak331kamikaze": {
+    "name": "pak331kamikaze.pk3",
+    "size": 17676
+  },
+  "maps/mpterra3/pak33ammoregen": {
+    "name": "pak33ammoregen.pk3",
+    "size": 8490
+  },
+  "maps/mpterra3/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mpterra3/pak34doubler": {
+    "name": "pak34doubler.pk3",
+    "size": 14373
+  },
+  "maps/mpterra3/pak336enviro": {
+    "name": "pak336enviro.pk3",
+    "size": 25181
+  },
+  "maps/mpterra3/pak35guard": {
+    "name": "pak35guard.pk3",
+    "size": 15290
+  },
+  "maps/mpterra3/pak335haste": {
+    "name": "pak335haste.pk3",
+    "size": 8032
+  },
+  "maps/mpterra3/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mpterra3/pak36scout": {
+    "name": "pak36scout.pk3",
+    "size": 14989
+  },
+  "maps/mpterra3/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 65944
+  },
+  "maps/mpterra3/pak66flags": {
+    "name": "pak66flags.pk3",
+    "size": 70024
+  },
+  "maps/mpterra3/pak55bfg": {
+    "name": "pak55bfg.pk3",
+    "size": 186831
+  },
+  "maps/mpterra3/pak51weapon": {
+    "name": "pak51weapon.pk3",
+    "size": 64439
+  },
+  "maps/mpterra3/pak56plasmagun": {
+    "name": "pak56plasmagun.pk3",
+    "size": 21483
+  },
+  "maps/mpterra3/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mpterra3/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mpterra3/pak552shotgun": {
+    "name": "pak552shotgun.pk3",
+    "size": 27303
+  },
+  "maps/mpterra3/pak75techlamp": {
+    "name": "pak75techlamp.pk3",
+    "size": 63128
+  },
+  "maps/mpterra3/pak74mapobject": {
+    "name": "pak74mapobject.pk3",
+    "size": 274481
+  },
+  "maps/mpterra3/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "maps/mpterra3/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mpterra3/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/mpterra3/pak889ctf2": {
+    "name": "pak889ctf2.pk3",
+    "size": 107041
+  },
+  "maps/mpterra3/pak884gothic_light": {
+    "name": "pak884gothic_light.pk3",
+    "size": 12204
+  },
+  "maps/mpterra3/pak87liquids": {
+    "name": "pak87liquids.pk3",
+    "size": 135094
+  },
+  "maps/mpterra3/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mpterra3/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mpterra3/pak8886env": {
+    "name": "pak8886env.pk3",
+    "size": 86495
+  },
+  "maps/mptourney1/pak998mptourney1": {
+    "name": "pak998mptourney1.pk3",
+    "size": 1633719
+  },
+  "maps/mptourney1/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mptourney1/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mptourney1/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mptourney1/pak3332cells": {
+    "name": "pak3332cells.pk3",
+    "size": 41490
+  },
+  "maps/mptourney1/pak3331lightning": {
+    "name": "pak3331lightning.pk3",
+    "size": 38971
+  },
+  "maps/mptourney1/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mptourney1/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mptourney1/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mptourney1/pak58lightning": {
+    "name": "pak58lightning.pk3",
+    "size": 53194
+  },
+  "maps/mptourney1/pak56plasmagun": {
+    "name": "pak56plasmagun.pk3",
+    "size": 21483
+  },
+  "maps/mptourney1/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mptourney1/pak74mapobject": {
+    "name": "pak74mapobject.pk3",
+    "size": 274481
+  },
+  "maps/mptourney1/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "maps/mptourney1/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mptourney1/pak884gothic_light": {
+    "name": "pak884gothic_light.pk3",
+    "size": 12204
+  },
+  "maps/mptourney1/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mptourney1/pak87liquids": {
+    "name": "pak87liquids.pk3",
+    "size": 135094
+  },
+  "maps/mptourney1/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/mptourney1/pak883skies": {
+    "name": "pak883skies.pk3",
+    "size": 26569
+  },
+  "maps/mptourney1/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mptourney2/pak999mptourney2": {
+    "name": "pak999mptourney2.pk3",
+    "size": 2640134
+  },
+  "maps/mptourney2/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mptourney2/pak82ambient": {
+    "name": "pak82ambient.pk3",
+    "size": 32424
+  },
+  "maps/mptourney2/pak74mapobject": {
+    "name": "pak74mapobject.pk3",
+    "size": 274481
+  },
+  "maps/mptourney2/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mptourney2/pak80base_trim": {
+    "name": "pak80base_trim.pk3",
+    "size": 110459
+  },
+  "maps/mptourney2/pak88base_wall": {
+    "name": "pak88base_wall.pk3",
+    "size": 224003
+  },
+  "maps/mptourney2/pak8883gothic_floor": {
+    "name": "pak8883gothic_floor.pk3",
+    "size": 7717
+  },
+  "maps/mptourney2/pak8884gothic_trim": {
+    "name": "pak8884gothic_trim.pk3",
+    "size": 76938
+  },
+  "maps/mptourney2/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mptourney2/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mptourney2/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mptourney2/pak3333grenades": {
+    "name": "pak3333grenades.pk3",
+    "size": 45137
+  },
+  "maps/mptourney2/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mptourney2/pak88884items": {
+    "name": "pak88884items.pk3",
+    "size": 135806
+  },
+  "maps/mptourney2/pak338medkit": {
+    "name": "pak338medkit.pk3",
+    "size": 8601
+  },
+  "maps/mptourney2/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mptourney2/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mptourney2/pak50grenadelauncher": {
+    "name": "pak50grenadelauncher.pk3",
+    "size": 17919
+  },
+  "maps/mptourney2/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mptourney2/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mptourney2/pak552shotgun": {
+    "name": "pak552shotgun.pk3",
+    "size": 27303
+  },
+  "maps/mptourney2/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mptourney2/pak75techlamp": {
+    "name": "pak75techlamp.pk3",
+    "size": 63128
+  },
+  "maps/mptourney2/pak84base_floor": {
+    "name": "pak84base_floor.pk3",
+    "size": 44151
+  },
+  "maps/mptourney2/pak89base_light": {
+    "name": "pak89base_light.pk3",
+    "size": 102183
+  },
+  "maps/mptourney2/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "maps/mptourney2/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mptourney2/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/mptourney2/pak884gothic_light": {
+    "name": "pak884gothic_light.pk3",
+    "size": 12204
+  },
+  "maps/mptourney2/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mptourney2/pak883skies": {
+    "name": "pak883skies.pk3",
+    "size": 26569
+  },
+  "maps/mptourney3/pak990mptourney3": {
+    "name": "pak990mptourney3.pk3",
+    "size": 2020915
+  },
+  "maps/mptourney3/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mptourney3/pak82ambient": {
+    "name": "pak82ambient.pk3",
+    "size": 32424
+  },
+  "maps/mptourney3/pak74mapobject": {
+    "name": "pak74mapobject.pk3",
+    "size": 274481
+  },
+  "maps/mptourney3/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mptourney3/pak80base_trim": {
+    "name": "pak80base_trim.pk3",
+    "size": 110459
+  },
+  "maps/mptourney3/pak886gothic_block": {
+    "name": "pak886gothic_block.pk3",
+    "size": 455819
+  },
+  "maps/mptourney3/pak8883gothic_floor": {
+    "name": "pak8883gothic_floor.pk3",
+    "size": 7717
+  },
+  "maps/mptourney3/pak8884gothic_trim": {
+    "name": "pak8884gothic_trim.pk3",
+    "size": 76938
+  },
+  "maps/mptourney3/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mptourney3/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mptourney3/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mptourney3/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mptourney3/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mptourney3/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mptourney3/pak53nailgun": {
+    "name": "pak53nailgun.pk3",
+    "size": 188022
+  },
+  "maps/mptourney3/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mptourney3/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mptourney3/pak552shotgun": {
+    "name": "pak552shotgun.pk3",
+    "size": 27303
+  },
+  "maps/mptourney3/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/mptourney3/pak75techlamp": {
+    "name": "pak75techlamp.pk3",
+    "size": 63128
+  },
+  "maps/mptourney3/pak89base_light": {
+    "name": "pak89base_light.pk3",
+    "size": 102183
+  },
+  "maps/mptourney3/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mptourney3/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/mptourney3/pak884gothic_light": {
+    "name": "pak884gothic_light.pk3",
+    "size": 12204
+  },
+  "maps/mptourney3/pak883skies": {
+    "name": "pak883skies.pk3",
+    "size": 26569
+  },
+  "maps/mptourney3/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mptourney4/pak9991mptourney4": {
+    "name": "pak9991mptourney4.pk3",
+    "size": 2427300
+  },
+  "maps/mptourney4/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/mptourney4/pak82ambient": {
+    "name": "pak82ambient.pk3",
+    "size": 32424
+  },
+  "maps/mptourney4/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/mptourney4/pak80base_trim": {
+    "name": "pak80base_trim.pk3",
+    "size": 110459
+  },
+  "maps/mptourney4/pak8883gothic_floor": {
+    "name": "pak8883gothic_floor.pk3",
+    "size": 7717
+  },
+  "maps/mptourney4/pak8884gothic_trim": {
+    "name": "pak8884gothic_trim.pk3",
+    "size": 76938
+  },
+  "maps/mptourney4/pak8881misc": {
+    "name": "pak8881misc.pk3",
+    "size": 125366
+  },
+  "maps/mptourney4/pak3332cells": {
+    "name": "pak3332cells.pk3",
+    "size": 41490
+  },
+  "maps/mptourney4/pak330rockets": {
+    "name": "pak330rockets.pk3",
+    "size": 41674
+  },
+  "maps/mptourney4/pak37powerup": {
+    "name": "pak37powerup.pk3",
+    "size": 216307
+  },
+  "maps/mptourney4/pak8882icons": {
+    "name": "pak8882icons.pk3",
+    "size": 7095
+  },
+  "maps/mptourney4/pak3335armor": {
+    "name": "pak3335armor.pk3",
+    "size": 106941
+  },
+  "maps/mptourney4/pak3334health": {
+    "name": "pak3334health.pk3",
+    "size": 27181
+  },
+  "maps/mptourney4/pak56plasmagun": {
+    "name": "pak56plasmagun.pk3",
+    "size": 21483
+  },
+  "maps/mptourney4/pak57railgun": {
+    "name": "pak57railgun.pk3",
+    "size": 30072
+  },
+  "maps/mptourney4/pak59rocketlauncher": {
+    "name": "pak59rocketlauncher.pk3",
+    "size": 15359
+  },
+  "maps/mptourney4/pak552shotgun": {
+    "name": "pak552shotgun.pk3",
+    "size": 27303
+  },
+  "maps/mptourney4/pak88889base_wall2": {
+    "name": "pak88889base_wall2.pk3",
+    "size": 503654
+  },
+  "maps/mptourney4/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/mptourney4/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/mptourney4/pak883skies": {
+    "name": "pak883skies.pk3",
+    "size": 26569
+  },
+  "maps/mptourney4/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/texturegrab/pak9992texturegrab": {
+    "name": "pak9992texturegrab.pk3",
+    "size": 1412795
+  },
+  "maps/texturegrab/pak332flight": {
+    "name": "pak332flight.pk3",
+    "size": 10515
+  },
+  "maps/texturegrab/pak881proto2": {
+    "name": "pak881proto2.pk3",
+    "size": 369667
+  },
+  "maps/texturegrab/pak74mapobject": {
+    "name": "pak74mapobject.pk3",
+    "size": 274481
+  },
+  "maps/texturegrab/pak81other": {
+    "name": "pak81other.pk3",
+    "size": 1801217
+  },
+  "maps/texturegrab/pak889ctf2": {
+    "name": "pak889ctf2.pk3",
+    "size": 107041
+  },
+  "maps/texturegrab/pak86effects": {
+    "name": "pak86effects.pk3",
+    "size": 20290
+  },
+  "maps/texturegrab/pak85sfx": {
+    "name": "pak85sfx.pk3",
+    "size": 243936
+  },
+  "maps/texturegrab/pak882sfx2": {
+    "name": "pak882sfx2.pk3",
+    "size": 826073
+  },
+  "maps/texturegrab/pak8886env": {
+    "name": "pak8886env.pk3",
+    "size": 86495
+  }
+}

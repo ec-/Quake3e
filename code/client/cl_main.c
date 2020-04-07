@@ -88,9 +88,7 @@ cvar_t *r_customPixelAspect;
 
 cvar_t *r_colorbits;
 // these also shared with renderers:
-cvar_t *r_stencilbits;
 cvar_t *r_depthbits;
-cvar_t *r_drawBuffer;
 
 clientActive_t		cl;
 clientConnection_t	clc;
@@ -683,7 +681,26 @@ static void CL_DemoCompleted( void ) {
 	}
 
 	CL_Disconnect( qtrue );
+#ifndef EMSCRIPTEN
 	CL_NextDemo();
+
+#else
+	if(!FS_Initialized()) {
+		Com_Frame_Callback(Sys_FS_Shutdown, CL_DemoCompleted_After_Shutdown);
+	} else {
+		CL_NextDemo();
+	}
+}
+
+void CL_DemoCompleted_After_Startup( void ) {
+	FS_Restart_After_Async();
+	CL_NextDemo();
+}
+
+void CL_DemoCompleted_After_Shutdown( void ) {
+	FS_Startup();
+	Com_Frame_Callback(Sys_FS_Startup, CL_DemoCompleted_After_Startup);	
+#endif
 }
 
 
@@ -1040,6 +1057,9 @@ Also called by Com_Error
 =================
 */
 void CL_FlushMemory( void ) {
+#ifdef EMSCRIPTEN
+	if(!FS_Initialized()) return;
+#endif
 
 	// shutdown all the client stuff
 	CL_ShutdownAll();
@@ -1526,13 +1546,17 @@ static void CL_Reconnect_f( void ) {
 CL_Connect_f
 ================
 */
+#ifdef EMSCRIPTEN
+char	servero[MAX_OSPATH];
+netadrtype_t familyo = NA_UNSPEC;
+char	cmd_argso[ sizeof(cl_reconnectArgs) ];
+#endif
 static void CL_Connect_f( void ) {
 	netadrtype_t family;
 	netadr_t	addr;
 	char	buffer[ sizeof(cls.servername) ];  // same length as cls.servername
 	char	cmd_args[ sizeof(cl_reconnectArgs) ];
 	char	*server;	
-	const char	*serverString;
 	int		len;
 	int		argc;
 
@@ -1612,6 +1636,7 @@ static void CL_Connect_f( void ) {
 
 	noGameRestart = qtrue;
 	CL_Disconnect( qtrue );
+
 	Con_Close();
 
 	Q_strncpyz( cls.servername, server, sizeof( cls.servername ) );
@@ -1621,6 +1646,34 @@ static void CL_Connect_f( void ) {
 
 	// copy resolved address 
 	clc.serverAddress = addr;
+
+#ifdef EMSCRIPTEN
+	familyo = family;
+	Q_strncpyz( servero, server, sizeof( server ) );
+	
+	if(!FS_Initialized()) {
+		Com_Frame_Callback(Sys_FS_Shutdown, CL_Connect_After_Shutdown);
+	} else {
+		CL_Connect_After_Restart();
+	}
+}
+
+void CL_Connect_After_Shutdown( void ) {
+	FS_Startup();
+	Com_Frame_Callback(Sys_FS_Startup, CL_Connect_After_Startup);
+}
+
+void CL_Connect_After_Startup( void ) {
+	FS_Restart_After_Async();
+	CL_Connect_After_Restart();
+}
+
+void CL_Connect_After_Restart( void ) {
+	char	server[MAX_OSPATH];
+	const char	*serverString;
+	Q_strncpyz( server, servero, sizeof( server ) );
+#endif
+;
 
 	if (clc.serverAddress.port == 0) {
 		clc.serverAddress.port = BigShort( PORT_SERVER );
@@ -1805,6 +1858,28 @@ static void CL_Vid_Restart( void ) {
 
 	CL_ClearMemory();
 
+#ifdef EMSCRIPTEN
+	if(!FS_Initialized()) {
+		Com_Frame_Callback(Sys_FS_Shutdown, CL_Vid_Restart_After_Shutdown);
+	} else {
+		CL_Vid_Restart_After_Restart();
+	}
+}
+
+void CL_Vid_Restart_After_Shutdown( void ) {
+	FS_Startup();
+	Com_Frame_Callback(Sys_FS_Startup, CL_Vid_Restart_After_Startup);
+}
+
+void CL_Vid_Restart_After_Startup( void ) {
+	FS_Restart_After_Async();
+	CL_Vid_Restart_After_Restart();
+}
+
+void CL_Vid_Restart_After_Restart( void ) {
+#endif
+;
+
 	// initialize the renderer interface
 	CL_InitRef();
 
@@ -1981,6 +2056,31 @@ static void CL_CompleteCallvote( char *args, int argNum )
 
 //====================================================================
 
+#ifdef EMSCRIPTEN
+
+void CL_DownloadsComplete_Disconnected_After_Startup( void ) {
+	FS_Restart_After_Async();
+	clc.dlDisconnect = qfalse;
+	CL_Reconnect_f();
+}
+
+void CL_DownloadsComplete_Disconnected_After_Shutdown( void ) {
+	FS_Startup();
+	Com_Frame_Callback(Sys_FS_Startup, CL_DownloadsComplete_Disconnected_After_Startup);
+}
+
+void CL_DownloadsComplete_After_Startup( void ) {
+	FS_Restart_After_Async();
+	CL_AddReliableCommand("donedl", qfalse);
+}
+
+void CL_DownloadsComplete_After_Shutdown( void ) {
+	FS_Startup();
+	Com_Frame_Callback(Sys_FS_Startup, CL_DownloadsComplete_After_Startup);
+}
+
+#endif
+
 /*
 =================
 CL_DownloadsComplete
@@ -1989,6 +2089,19 @@ Called when all downloading has been completed
 =================
 */
 static void CL_DownloadsComplete( void ) {
+
+Com_Printf("Downloads complete\n");
+
+#ifdef EMSCRIPTEN
+if(clc.dlDisconnect) {
+	if(clc.downloadRestart) {
+		FS_Restart(clc.checksumFeed);
+		clc.downloadRestart = qfalse;
+		Com_Frame_Callback(Sys_FS_Shutdown, CL_DownloadsComplete_Disconnected_After_Shutdown);
+	}
+	return;
+}
+#endif
 
 #ifdef USE_CURL
 	// if we downloaded with cURL
@@ -2012,6 +2125,11 @@ static void CL_DownloadsComplete( void ) {
 		clc.downloadRestart = qfalse;
 
 		FS_Restart(clc.checksumFeed); // We possibly downloaded a pak, restart the file system to load it
+
+#ifdef EMSCRIPTEN
+		Com_Frame_Callback(Sys_FS_Shutdown, CL_DownloadsComplete_After_Shutdown);
+		return;
+#endif
 
 		// inform the server so we get new gamestate info
 		CL_AddReliableCommand( "donedl", qfalse );
@@ -2085,7 +2203,20 @@ static void CL_BeginDownload( const char *localName, const char *remoteName ) {
 	clc.downloadBlock = 0; // Starting new file
 	clc.downloadCount = 0;
 
+#ifdef EMSCRIPTEN
+	Sys_BeginDownload();
+	if(!(clc.sv_allowDownload & DLF_NO_DISCONNECT) &&
+		!clc.dlDisconnect) {
+
+		CL_AddReliableCommand("disconnect", qtrue);
+		CL_WritePacket();
+		CL_WritePacket();
+		CL_WritePacket();
+		clc.dlDisconnect = qtrue;
+	}
+#else
 	CL_AddReliableCommand( va("download %s", remoteName), qfalse );
+#endif
 }
 
 
@@ -2167,7 +2298,33 @@ void CL_NextDownload( void )
 				cl_allowDownload->integer);
 		}
 #endif /* USE_CURL */
-
+#ifdef EMSCRIPTEN
+// TODO: add check for HTTP only using strcmp
+		if(!(cl_allowDownload->integer & DLF_NO_REDIRECT)) {
+			if(clc.sv_allowDownload & DLF_NO_REDIRECT) {
+				Com_Printf("WARNING: server does not "
+					"allow download redirection "
+					"(sv_allowDownload is %d)\n",
+					clc.sv_allowDownload);
+			}
+			else if(!*clc.sv_dlURL) {
+				Com_Printf("WARNING: server allows "
+					"download redirection, but does not "
+					"have sv_dlURL set\n");
+			}
+			else {
+				Cvar_Set( "sv_dlURL", clc.sv_dlURL );
+				CL_BeginDownload( localName, remoteName );
+				useCURL = qtrue;
+			}
+		}
+		else if(!(clc.sv_allowDownload & DLF_NO_REDIRECT)) {
+			Com_Printf("WARNING: server allows download "
+				"redirection, but it disabled by client "
+				"configuration (cl_allowDownload is %d)\n",
+				cl_allowDownload->integer);
+		}
+#endif /* EMSCRIPTEN */
 		if( !useCURL ) {
 		if( (cl_allowDownload->integer & DLF_NO_UDP) ) {
 				Com_Error(ERR_DROP, "UDP Downloads are "
@@ -2960,6 +3117,7 @@ static void CL_CheckUserinfo( void ) {
 CL_Frame
 ==================
 */
+static int secondTimer = 0;
 void CL_Frame( int msec ) {
 	float fps;
 	float frameDuration;
@@ -2974,6 +3132,41 @@ void CL_Frame( int msec ) {
 	if ( !com_cl_running->integer ) {
 		return;
 	}
+
+#ifdef EMSCRIPTEN
+	// quake3's loading process is entirely synchronous. throughout this
+	// process it will call trap_UpdateScreen to force an immediate buffer
+	// swap. however, in WebGL we can't force an immediate buffer swap,
+	// it only occurs once we've yielded to the event loop. due to the
+	// synchronous design however, the event loop is blocked and the
+	// loading screen is therefor never rendered
+	//
+	// to get around this, the JS VM code has a special case for trap_UpdateScreen
+	// that suspends the execution of the VM after it has been invoked,
+	// enabling the event loop to breath. we're checking here if it has
+	// been suspended, and resuming it if so now that we've successfully
+	// swapped buffers
+	if (cgvm && VM_IsSuspended(cgvm)) {
+		unsigned result = VM_Resume(cgvm);
+
+		if (result == 0xDEADBEEF) {
+			return;
+		}
+
+		if (cls.state == CA_LOADING) {
+			CL_InitCGameFinished();
+		}
+	}
+	
+	if(secondTimer > 100) {
+		secondTimer = 0;
+		CL_UpdateShader();
+//		CL_UpdateSound();
+		CL_UpdateModel();
+	} else {
+		secondTimer += msec;
+	}
+#endif
 
 #ifdef USE_CURL
 	if ( clc.downloadCURLM ) {
@@ -4941,4 +5134,3 @@ static void CL_Download_f( void )
 	CL_Download( Cmd_Argv( 0 ), Cmd_Argv( 1 ), qfalse );
 }
 #endif // USE_CURL
-

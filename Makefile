@@ -158,6 +158,8 @@ CDIR=$(MOUNT_DIR)/client
 SDIR=$(MOUNT_DIR)/server
 RCDIR=$(MOUNT_DIR)/renderercommon
 R1DIR=$(MOUNT_DIR)/renderer
+R2DIR=$(MOUNT_DIR)/renderer2
+RJSDIR=$(MOUNT_DIR)/rendererjs
 RVDIR=$(MOUNT_DIR)/renderervk
 RVSDIR=$(MOUNT_DIR)/renderervk/shaders/spirv
 SDLDIR=$(MOUNT_DIR)/sdl
@@ -165,6 +167,7 @@ SDLDIR=$(MOUNT_DIR)/sdl
 CMDIR=$(MOUNT_DIR)/qcommon
 UDIR=$(MOUNT_DIR)/unix
 W32DIR=$(MOUNT_DIR)/win32
+QUAKEJS=$(MOUNT_DIR)/xquakejs
 BLIBDIR=$(MOUNT_DIR)/botlib
 UIDIR=$(MOUNT_DIR)/ui
 JPDIR=$(MOUNT_DIR)/jpeg-8c
@@ -212,19 +215,6 @@ endif
 endif
 
 BASE_CFLAGS =
-
-ifneq ($(HAVE_VM_COMPILED),true)
-  BASE_CFLAGS += -DNO_VM_COMPILED
-endif
-
-ifneq ($(USE_RENDERER_DLOPEN),0)
-  BASE_CFLAGS += -DUSE_RENDERER_DLOPEN
-  BASE_CFLAGS += -DRENDERER_PREFIX=\\\"$(RENDERER_PREFIX)\\\"
-endif
-
-ifeq ($(USE_CODEC_VORBIS),1)
-  BASE_CFLAGS += -DUSE_CODEC_VORBIS=1
-endif
 
 ifdef DEFAULT_BASEDIR
   BASE_CFLAGS += -DDEFAULT_BASEDIR=\\\"$(DEFAULT_BASEDIR)\\\"
@@ -302,7 +292,7 @@ ifeq ($(PLATFORM),linux)
     BASE_CFLAGS += -m32
     LDFLAGS += -m32
   endif
-
+	
   DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -ggdb -O0
   RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
 
@@ -514,6 +504,127 @@ ifeq ($(PLATFORM),netbsd)
   BUILD_CLIENT = 0
 
 else # ifeq netbsd
+#############################################################################
+# SETUP AND BUILD -- JS
+#############################################################################
+
+ifeq ($(PLATFORM),js)
+  EMSDK=$(MOUNT_DIR)/xquakejs/lib/emsdk
+  NODE_JS=$(EMSDK)/node/12.9.1_64bit/bin/node
+  BINARYEN_ROOT=$(EMSDK)/upstream
+  EMSCRIPTEN=$(EMSDK)/upstream/emscripten
+define EM_CONFIG
+"LLVM_ROOT = '$(EMSDK)/upstream/bin';NODE_JS = '$(NODE_JS)';BINARYEN_ROOT = '$(BINARYEN_ROOT)';EMSCRIPTEN_ROOT = '$(EMSCRIPTEN)'"
+endef
+  EMSCRIPTEN_CACHE=$(EMSDK)/cache
+
+  CC=$(EMSCRIPTEN)/emcc
+  RANLIB=$(EMSCRIPTEN)/emranlib
+  ARCH=js
+  BINEXT=.js
+
+
+  DEBUG=0
+  EMCC_DEBUG=0
+
+  HAVE_VM_COMPILED=0
+  BUILD_SERVER=0
+  BUILD_GAME_QVM=1
+  BUILD_GAME_SO=0
+  BUILD_STANDALONE=0
+  BUILD_RENDERER_OPENGL=0
+  BUILD_RENDERER_JS=0
+  BUILD_RENDERER_OPENGL2=1
+  BUILD_RENDERER_OPENGLES=0
+
+  USE_SDL=1
+  USE_VULKAN=0
+  USE_CURL=0
+  USE_CODEC_VORBIS=1
+  USE_CODEC_OPUS=1
+  USE_FREETYPE=0
+  USE_MUMBLE=0
+  USE_VOIP=0
+  SDL_LOADSO_DLOPEN=0
+  USE_CURL_DLOPEN=0
+  USE_OPENAL_DLOPEN=0
+  USE_RENDERER_DLOPEN=0
+  USE_LOCAL_HEADERS=0
+  USE_INTERNAL_LIBS=1
+  GL_EXT_direct_state_access=1
+  GL_ARB_ES2_compatibility=1
+  GL_GLEXT_PROTOTYPES=1
+
+  LIBSYSCOMMON=$(QUAKEJS)/sys_common.js
+  LIBSYSBROWSER=$(QUAKEJS)/sys_browser.js
+  LIBSYSNODE=$(QUAKEJS)/sys_node.js
+  LIBVMJS=$(CMDIR)/vm_js.js
+
+  BASE_CFLAGS = \
+	  -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
+    -I$(EMSCRIPTEN_CACHE)/wasm-obj/include/SDL2
+
+# debug optimize flags: --closure 0 --minify 0 -g -g4 || -O1 --closure 0 --minify 0 -g -g3
+  DEBUG_CFLAGS=$(BASE_CFLAGS) \
+    -O1 --closure 0 --minify 0 -g -g3 \
+    -s SAFE_HEAP=0
+    -s DEMANGLE_SUPPORT=1 \
+    -s ASSERTIONS=1 \
+    -s AGGRESSIVE_VARIABLE_ELIMINATION=0 \
+    --source-map-base http://localhost:8080/ \
+    -frtti \
+    -fPIC
+
+  RELEASE_CFLAGS=$(BASE_CFLAGS) \
+    -O3 -Oz --llvm-lto 3 \
+    -s WASM=1 \
+    -s SAFE_HEAP=0 \
+    -s DEMANGLE_SUPPORT=0 \
+    -s ASSERTIONS=0 \
+    -s AGGRESSIVE_VARIABLE_ELIMINATION=1 \
+    -fPIC
+
+#   -s USE_WEBGL2=1
+#   -s MIN_WEBGL_VERSION=2
+#   -s MAX_WEBGL_VERSION=2
+#   -s USE_SDL_IMAGE=2 \
+#   -s SDL2_IMAGE_FORMATS='["bmp","png","xpm"]' \
+# --em-config $(EM_CONFIG) \
+# --cache $(EMSCRIPTEN_CACHE) \
+
+  CLIENT_LDFLAGS += \
+    --js-library $(LIBSYSCOMMON) \
+    --js-library $(LIBSYSBROWSER) \
+    --js-library $(LIBVMJS) \
+    -lidbfs.js \
+    -lsdl.js \
+    -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
+    -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 \
+    -s ERROR_ON_UNDEFINED_SYMBOLS=1 \
+    -s INVOKE_RUN=1 \
+    -s NO_EXIT_RUNTIME=1 \
+    -s EXIT_RUNTIME=1 \
+    -s GL_UNSAFE_OPTS=0 \
+    -s EXTRA_EXPORTED_RUNTIME_METHODS="['callMain', 'addFunction', 'stackSave', 'stackRestore', 'dynCall']" \
+    -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_free', '_atof', '_strncpy', '_memset', '_memcpy', '_fopen', '_CL_UpdateSound', '_CL_UpdateShader', '_CL_GetClientState', '_Com_Printf', '_CL_NextDownload', '_Com_Frame_Proxy', '_Com_Error', '_Z_Malloc', '_Z_Free', '_S_Malloc', '_Cvar_Set', '_Cvar_SetValue', '_Cvar_VariableString', '_Cvar_VariableIntegerValue', '_Cbuf_ExecuteText', '_Cbuf_Execute', '_Cbuf_AddText']" \
+    -s ALLOW_TABLE_GROWTH=1 \
+    -s MEMFS_APPEND_TO_TYPED_ARRAYS=1 \
+    -s TOTAL_MEMORY=256MB \
+    -s ALLOW_MEMORY_GROWTH=1 \
+    -s LEGACY_GL_EMULATION=1 \
+    -s WEBGL2_BACKWARDS_COMPATIBILITY_EMULATION=0 \
+    -s USE_WEBGL2=0 \
+    -s FULL_ES2=0 \
+    -s FULL_ES3=0 \
+    -s USE_SDL=2 \
+		-s USE_VORBIS=1 \
+		-s USE_ZLIB=1 \
+		-s USE_OGG=1 \
+    -s FORCE_FILESYSTEM=1 \
+    -s EXPORT_NAME=\"quake3e\" \
+		$(DEBUG_CFLAGS)
+
+else # ifeq js
 
 #############################################################################
 # SETUP AND BUILD -- GENERIC
@@ -531,10 +642,13 @@ endif #mingw32
 endif #FreeBSD
 endif #OpenBSD
 endif #NetBSD
+endif #js
 
 TARGET_CLIENT = $(CNAME)$(ARCHEXT)$(BINEXT)
 
 TARGET_REND1 = $(RENDERER_PREFIX)_opengl_$(SHLIBNAME)
+TARGET_REND2 = $(RENDERER_PREFIX)_opengl2_$(SHLIBNAME)
+TARGET_RENDJS = $(RENDERER_PREFIX)_js_$(SHLIBNAME)
 TARGET_RENDV = $(RENDERER_PREFIX)_vulkan_$(SHLIBNAME)
 
 TARGET_SERVER = $(DNAME)$(ARCHEXT)$(BINEXT)
@@ -549,8 +663,27 @@ ifneq ($(BUILD_CLIENT),0)
   TARGETS += $(B)/$(TARGET_CLIENT)
   ifneq ($(USE_RENDERER_DLOPEN),0)
     TARGETS += $(B)/$(TARGET_REND1)
+    TARGETS += $(B)/$(TARGET_REND2)
+    TARGETS += $(B)/$(TARGET_RENDJS)
     TARGETS += $(B)/$(TARGET_RENDV)
   endif
+endif
+
+ifneq ($(HAVE_VM_COMPILED),true)
+  BASE_CFLAGS += -DNO_VM_COMPILED
+endif
+
+ifeq ($(NOFPU),1)
+  BASE_CFLAGS += -DNOFPU
+endif
+
+ifneq ($(USE_RENDERER_DLOPEN),0)
+  BASE_CFLAGS += -DUSE_RENDERER_DLOPEN
+  BASE_CFLAGS += -DRENDERER_PREFIX=\\\"$(RENDERER_PREFIX)\\\"
+endif
+
+ifeq ($(USE_CODEC_VORBIS),1)
+  BASE_CFLAGS += -DUSE_CODEC_VORBIS=1
 endif
 
 ifeq ($(USE_CCACHE),1)
@@ -571,6 +704,14 @@ endef
 define DO_REND_CC
 $(echo_cmd) "REND_CC $<"
 $(Q)$(CC) $(RENDCFLAGS) $(CFLAGS) -o $@ -c $<
+endef
+
+define DO_REF_STR
+$(echo_cmd) "REF_STR $<"
+$(Q)rm -f $@
+$(Q)echo "const char *fallbackShader_$(notdir $(basename $<)) =" >> $@
+$(Q)cat $< | sed -e 's/^/\"/;s/$$/\\n\"/' | tr -d '\r' >> $@
+$(Q)echo ";" >> $@
 endef
 
 define DO_BOT_CC
@@ -684,6 +825,10 @@ makedirs:
 	@if [ ! -d $(B) ];then $(MKDIR) $(B);fi
 	@if [ ! -d $(B)/client ];then $(MKDIR) $(B)/client;fi
 	@if [ ! -d $(B)/rend1 ];then $(MKDIR) $(B)/rend1;fi
+	@if [ ! -d $(B)/rend2 ];then $(MKDIR) $(B)/rend2;fi
+	@if [ ! -d $(B)/rend2/glsl ];then $(MKDIR) $(B)/rend2/glsl;fi
+	@if [ ! -d $(B)/rendjs ];then $(MKDIR) $(B)/rendjs;fi
+	@if [ ! -d $(B)/rendjs/glsl ];then $(MKDIR) $(B)/rendjs/glsl;fi
 	@if [ ! -d $(B)/rendv ];then $(MKDIR) $(B)/rendv;fi
 	@if [ ! -d $(B)/ded ];then $(MKDIR) $(B)/ded;fi
 
@@ -723,6 +868,144 @@ Q3REND1OBJ = \
   $(B)/rend1/tr_surface.o \
   $(B)/rend1/tr_vbo.o \
   $(B)/rend1/tr_world.o
+
+Q3REND2OBJ = \
+  $(B)/rend2/tr_animation.o \
+  $(B)/rend2/tr_backend.o \
+  $(B)/rend2/tr_bsp.o \
+  $(B)/rend2/tr_cmds.o \
+  $(B)/rend2/tr_curve.o \
+  $(B)/rend2/tr_dsa.o \
+  $(B)/rend2/tr_extramath.o \
+  $(B)/rend2/tr_extensions.o \
+  $(B)/rend2/tr_fbo.o \
+  $(B)/rend2/tr_flares.o \
+  $(B)/rend2/tr_font.o \
+  $(B)/rend2/tr_glsl.o \
+  $(B)/rend2/tr_image.o \
+  $(B)/rend2/tr_image_bmp.o \
+  $(B)/rend2/tr_image_jpg.o \
+  $(B)/rend2/tr_image_pcx.o \
+  $(B)/rend2/tr_image_png.o \
+  $(B)/rend2/tr_image_tga.o \
+  $(B)/rend2/tr_image_dds.o \
+  $(B)/rend2/tr_init.o \
+  $(B)/rend2/tr_light.o \
+  $(B)/rend2/tr_main.o \
+  $(B)/rend2/tr_marks.o \
+  $(B)/rend2/tr_mesh.o \
+  $(B)/rend2/tr_model.o \
+  $(B)/rend2/tr_model_iqm.o \
+  $(B)/rend2/tr_noise.o \
+  $(B)/rend2/tr_postprocess.o \
+  $(B)/rend2/tr_scene.o \
+  $(B)/rend2/tr_shade.o \
+  $(B)/rend2/tr_shade_calc.o \
+  $(B)/rend2/tr_shader.o \
+  $(B)/rend2/tr_shadows.o \
+  $(B)/rend2/tr_sky.o \
+  $(B)/rend2/tr_surface.o \
+  $(B)/rend2/tr_vbo.o \
+  $(B)/rend2/tr_world.o
+
+Q3R2STRINGOBJ = \
+  $(B)/rend2/glsl/bokeh_fp.o \
+  $(B)/rend2/glsl/bokeh_vp.o \
+  $(B)/rend2/glsl/calclevels4x_fp.o \
+  $(B)/rend2/glsl/calclevels4x_vp.o \
+  $(B)/rend2/glsl/depthblur_fp.o \
+  $(B)/rend2/glsl/depthblur_vp.o \
+  $(B)/rend2/glsl/dlight_fp.o \
+  $(B)/rend2/glsl/dlight_vp.o \
+  $(B)/rend2/glsl/down4x_fp.o \
+  $(B)/rend2/glsl/down4x_vp.o \
+  $(B)/rend2/glsl/fogpass_fp.o \
+  $(B)/rend2/glsl/fogpass_vp.o \
+  $(B)/rend2/glsl/generic_fp.o \
+  $(B)/rend2/glsl/generic_vp.o \
+  $(B)/rend2/glsl/lightall_fp.o \
+  $(B)/rend2/glsl/lightall_vp.o \
+  $(B)/rend2/glsl/pshadow_fp.o \
+  $(B)/rend2/glsl/pshadow_vp.o \
+  $(B)/rend2/glsl/shadowfill_fp.o \
+  $(B)/rend2/glsl/shadowfill_vp.o \
+  $(B)/rend2/glsl/shadowmask_fp.o \
+  $(B)/rend2/glsl/shadowmask_vp.o \
+  $(B)/rend2/glsl/ssao_fp.o \
+  $(B)/rend2/glsl/ssao_vp.o \
+  $(B)/rend2/glsl/texturecolor_fp.o \
+  $(B)/rend2/glsl/texturecolor_vp.o \
+  $(B)/rend2/glsl/tonemap_fp.o \
+  $(B)/rend2/glsl/tonemap_vp.o
+
+Q3RENDJSOBJ = \
+  $(B)/rendjs/tr_animation.o \
+  $(B)/rendjs/tr_backend.o \
+  $(B)/rendjs/tr_bsp.o \
+  $(B)/rendjs/tr_cmds.o \
+  $(B)/rendjs/tr_curve.o \
+  $(B)/rendjs/tr_dsa.o \
+  $(B)/rendjs/tr_extramath.o \
+  $(B)/rendjs/tr_extensions.o \
+  $(B)/rendjs/tr_fbo.o \
+  $(B)/rendjs/tr_flares.o \
+  $(B)/rendjs/tr_font.o \
+  $(B)/rendjs/tr_glsl.o \
+  $(B)/rendjs/tr_image.o \
+  $(B)/rendjs/tr_image_bmp.o \
+  $(B)/rendjs/tr_image_jpg.o \
+  $(B)/rendjs/tr_image_pcx.o \
+  $(B)/rendjs/tr_image_png.o \
+  $(B)/rendjs/tr_image_tga.o \
+  $(B)/rendjs/tr_image_dds.o \
+  $(B)/rendjs/tr_init.o \
+  $(B)/rendjs/tr_light.o \
+  $(B)/rendjs/tr_main.o \
+  $(B)/rendjs/tr_marks.o \
+  $(B)/rendjs/tr_mesh.o \
+  $(B)/rendjs/tr_model.o \
+  $(B)/rendjs/tr_model_iqm.o \
+  $(B)/rendjs/tr_noise.o \
+  $(B)/rendjs/tr_postprocess.o \
+  $(B)/rendjs/tr_scene.o \
+  $(B)/rendjs/tr_shade.o \
+  $(B)/rendjs/tr_shade_calc.o \
+  $(B)/rendjs/tr_shader.o \
+  $(B)/rendjs/tr_shadows.o \
+  $(B)/rendjs/tr_sky.o \
+  $(B)/rendjs/tr_surface.o \
+  $(B)/rendjs/tr_vbo.o \
+  $(B)/rendjs/tr_world.o
+
+Q3RJSSTRINGOBJ = \
+  $(B)/rendjs/glsl/bokeh_fp.o \
+  $(B)/rendjs/glsl/bokeh_vp.o \
+  $(B)/rendjs/glsl/calclevels4x_fp.o \
+  $(B)/rendjs/glsl/calclevels4x_vp.o \
+  $(B)/rendjs/glsl/depthblur_fp.o \
+  $(B)/rendjs/glsl/depthblur_vp.o \
+  $(B)/rendjs/glsl/dlight_fp.o \
+  $(B)/rendjs/glsl/dlight_vp.o \
+  $(B)/rendjs/glsl/down4x_fp.o \
+  $(B)/rendjs/glsl/down4x_vp.o \
+  $(B)/rendjs/glsl/fogpass_fp.o \
+  $(B)/rendjs/glsl/fogpass_vp.o \
+  $(B)/rendjs/glsl/generic_fp.o \
+  $(B)/rendjs/glsl/generic_vp.o \
+  $(B)/rendjs/glsl/lightall_fp.o \
+  $(B)/rendjs/glsl/lightall_vp.o \
+  $(B)/rendjs/glsl/pshadow_fp.o \
+  $(B)/rendjs/glsl/pshadow_vp.o \
+  $(B)/rendjs/glsl/shadowfill_fp.o \
+  $(B)/rendjs/glsl/shadowfill_vp.o \
+  $(B)/rendjs/glsl/shadowmask_fp.o \
+  $(B)/rendjs/glsl/shadowmask_vp.o \
+  $(B)/rendjs/glsl/ssao_fp.o \
+  $(B)/rendjs/glsl/ssao_vp.o \
+  $(B)/rendjs/glsl/texturecolor_fp.o \
+  $(B)/rendjs/glsl/texturecolor_vp.o \
+  $(B)/rendjs/glsl/tonemap_fp.o \
+  $(B)/rendjs/glsl/tonemap_vp.o
 
 ifneq ($(USE_RENDERER_DLOPEN), 0)
   Q3REND1OBJ += \
@@ -945,8 +1228,16 @@ ifeq ($(USE_RENDERER_DLOPEN),0)
   ifeq ($(USE_VULKAN),1)
     Q3OBJ += $(Q3RENDVOBJ)
   else
+	ifeq ($(BUILD_RENDERER_JS),1)
+    Q3OBJ += $(Q3RENDJSOBJ) $(Q3RJSSTRINGOBJ)
+	else
+	ifeq ($(BUILD_RENDERER_OPENGL2),1)
+    Q3OBJ += $(Q3REND2OBJ) $(Q3R2STRINGOBJ)
+	else
     Q3OBJ += $(Q3REND1OBJ)
+	endif
   endif
+	endif
 
 endif
 
@@ -1001,11 +1292,16 @@ endif
 endif # !USE_SDL
 
 else # !MINGW
+ifeq ($(PLATFORM),js)
+Q3OBJ += \
+	$(B)/client/sys_main.o \
 
+else
   Q3OBJ += \
     $(B)/client/unix_main.o \
     $(B)/client/unix_shared.o \
     $(B)/client/linux_signals.o
+endif
 
 ifeq ($(USE_SDL),1)
     Q3OBJ += \
@@ -1041,6 +1337,14 @@ $(B)/$(TARGET_CLIENT): $(Q3OBJ)
 $(B)/$(TARGET_REND1): $(Q3REND1OBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) $(SHLIBCFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3REND1OBJ)
+
+$(B)/$(TARGET_REND2): $(Q3REND2OBJ) $(Q3R2STRINGOBJ)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) $(SHLIBCFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3REND2OBJ) $(Q3R2STRINGOBJ)
+
+$(B)/$(TARGET_RENDJS): $(Q3RENDJSOBJ) $(Q3R2STRINGOBJ)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) $(SHLIBCFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3RENDJSOBJ) $(Q3RJSSTRINGOBJ)
 
 $(B)/$(TARGET_RENDV): $(Q3RENDVOBJ)
 	$(echo_cmd) "LD $@"
@@ -1086,7 +1390,6 @@ Q3DOBJ = \
   \
   $(B)/ded/unzip.o \
   $(B)/ded/vm.o \
-  $(B)/ded/vm_interpreted.o \
   \
   $(B)/ded/be_aas_bspq3.o \
   $(B)/ded/be_aas_cluster.o \
@@ -1177,6 +1480,30 @@ $(B)/rend1/%.o: $(RCDIR)/%.c
 $(B)/rend1/%.o: $(CMDIR)/%.c
 	$(DO_REND_CC)
 
+$(B)/rend2/glsl/%.c: $(R2DIR)/glsl/%.glsl
+	$(DO_REF_STR)
+
+$(B)/rend2/glsl/%.o: $(B)/renderer2/glsl/%.c
+	$(DO_REND_CC)
+
+$(B)/rend2/%.o: $(RCDIR)/%.c
+	$(DO_REND_CC)
+
+$(B)/rend2/%.o: $(R2DIR)/%.c
+	$(DO_REND_CC)
+
+$(B)/rendjs/glsl/%.c: $(RJSDIR)/glsl/%.glsl
+	$(DO_REF_STR)
+
+$(B)/rendjs/glsl/%.o: $(B)/rendererjs/glsl/%.c
+	$(DO_REND_CC)
+
+$(B)/rendjs/%.o: $(RCDIR)/%.c
+	$(DO_REND_CC)
+
+$(B)/rendjs/%.o: $(RJSDIR)/%.c
+	$(DO_REND_CC)
+
 $(B)/rendv/%.o: $(RVDIR)/%.c
 	$(DO_REND_CC)
 
@@ -1197,6 +1524,9 @@ $(B)/client/%.o: $(W32DIR)/%.c
 
 $(B)/client/%.o: $(W32DIR)/%.rc
 	$(DO_WINDRES)
+
+$(B)/client/%.o: $(QUAKEJS)/%.c
+	$(DO_CC)
 
 
 $(B)/ded/%.o: $(ADIR)/%.s

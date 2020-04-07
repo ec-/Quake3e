@@ -845,8 +845,10 @@ NET_IPSocket
 static SOCKET NET_IPSocket( const char *net_interface, int port, int *err ) {
 	SOCKET				newsocket;
 	struct sockaddr_in	address;
+#ifndef EMSCRIPTEN
 	ioctlarg_t			_true = 1;
 	int					i = 1;
+#endif
 
 	*err = 0;
 
@@ -862,6 +864,7 @@ static SOCKET NET_IPSocket( const char *net_interface, int port, int *err ) {
 		Com_Printf( "WARNING: NET_IPSocket: socket: %s\n", NET_ErrorString() );
 		return newsocket;
 	}
+#ifndef EMSCRIPTEN
 	// make it non-blocking
 	if( ioctlsocket( newsocket, FIONBIO, &_true ) == SOCKET_ERROR ) {
 		Com_Printf( "WARNING: NET_IPSocket: ioctl FIONBIO: %s\n", NET_ErrorString() );
@@ -874,6 +877,7 @@ static SOCKET NET_IPSocket( const char *net_interface, int port, int *err ) {
 	if( setsockopt( newsocket, SOL_SOCKET, SO_BROADCAST, (char *) &i, sizeof(i) ) == SOCKET_ERROR ) {
 		Com_Printf( "WARNING: NET_IPSocket: setsockopt SO_BROADCAST: %s\n", NET_ErrorString() );
 	}
+#endif
 
 	if( !net_interface || !net_interface[0]) {
 		address.sin_family = AF_INET;
@@ -914,7 +918,9 @@ NET_IP6Socket
 static SOCKET NET_IP6Socket( const char *net_interface, int port, struct sockaddr_in6 *bindto, int *err ) {
 	SOCKET				newsocket;
 	struct sockaddr_in6	address;
+#ifndef EMSCRIPTEN
 	ioctlarg_t			_true = 1;
+#endif
 
 	*err = 0;
 
@@ -935,6 +941,7 @@ static SOCKET NET_IP6Socket( const char *net_interface, int port, struct sockadd
 		return newsocket;
 	}
 
+#ifndef EMSCRIPTEN
 	// make it non-blocking
 	if( ioctlsocket( newsocket, FIONBIO, &_true ) == SOCKET_ERROR ) {
 		Com_Printf( "WARNING: NET_IP6Socket: ioctl FIONBIO: %s\n", NET_ErrorString() );
@@ -942,6 +949,7 @@ static SOCKET NET_IP6Socket( const char *net_interface, int port, struct sockadd
 		closesocket(newsocket);
 		return INVALID_SOCKET;
 	}
+#endif
 
 #ifdef IPV6_V6ONLY
 	{
@@ -1436,6 +1444,10 @@ static void NET_OpenIP( void ) {
 
 				if (net_socksEnabled->integer)
 					NET_OpenSocks( port + i );
+#ifdef EMSCRIPTEN
+        else
+          Cvar_Set("net_socksLoading", "0");
+#endif
 
 				break;
 			}

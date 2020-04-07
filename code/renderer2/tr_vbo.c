@@ -382,7 +382,7 @@ R_BindNullVao
 */
 void R_BindNullVao(void)
 {
-//	GLimp_LogComment("--- R_BindNullVao ---\n");
+//	ri.Printf(PRINT_DEVELOPER, "--- R_BindNullVao ---\n");
 
 	if(glState.currentVao)
 	{
@@ -588,7 +588,7 @@ Update the default VAO to replace the client side vertex arrays
 */
 void RB_UpdateTessVao(unsigned int attribBits)
 {
-//	GLimp_LogComment("--- RB_UpdateTessVao ---\n");
+//	ri.Printf(PRINT_DEVELOPER, "--- RB_UpdateTessVao ---\n");
 
 	backEnd.pc.c_dynamicVaoDraws++;
 

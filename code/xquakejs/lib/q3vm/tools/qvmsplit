@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+
+# Copyright (C) 2012, 2020 Angelo Cano
+#
+# This file is part of Qvmdis.
+#
+# Qvmdis is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Qvmdis is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Qvmdis.  If not, see <https://www.gnu.org/licenses/>.
+
+import sys
+#from LEBinFile import LEBinFile
+from QvmFile import QvmFile
+
+QVM_MAGIC = 0x12721444
+
+def usage ():
+    print "%s <qvm file>" % sys.argv[0]
+    sys.exit (1)
+
+def main ():
+    if len(sys.argv) < 2:
+        usage ()
+
+    qvm = QvmFile(sys.argv[1])
+    qvm.print_header ()
+
+    f = open("header-info.txt", "w")
+    f.write ("instruction count: %d\n" % qvm.instructionCount)
+    f.write ("bss segment length: %d\n" % qvm.bssSegLength)
+    f.close()
+
+    fcodew = open("x.code", "w")
+    # unpadded code
+    fcodew.write(qvm.get_code())
+    fcodew.close()
+
+    fcode = open("xpadded.code", "w")
+    fcode.write(qvm.codeData[:qvm.codeSegLength])
+    fcode.close()
+
+    fdata = open("x.data", "w")
+    fdata.write (qvm.dataData[:qvm.dataSegLength])
+    fdata.close()
+
+    flit = open("x.lit", "w")
+    flit.write (qvm.litData[:qvm.litSegLength])
+    flit.close()
+
+    qvm.close()
+
+if __name__ == "__main__":
+    main ()

@@ -1,0 +1,101 @@
+#!/usr/bin/env python
+
+# Copyright (C) 2012, 2020 Angelo Cano
+#
+# This file is part of Qvmdis.
+#
+# Qvmdis is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Qvmdis is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Qvmdis.  If not, see <https://www.gnu.org/licenses/>.
+
+from QvmFile import opcodes, OP_NAME, OP_PARM_SIZE
+import sys, string, struct
+
+QVM_MAGIC = 0x12721444
+
+def usage ():
+    print "%s <output qvm name>" % sys.argv[0]
+    sys.exit (1)
+
+def main ():
+    if len(sys.argv) < 2:
+        usage ()
+
+    f = open("header-info.txt")
+    lines = f.readlines()
+    f.close()
+    line = lines[1]
+    words = string.split(line)
+    bssSegLength = string.atoi(words[-1])
+    #print "0x%x" % bssSegLength
+
+    f = open("x.code")
+    codeData = f.read()
+    f.close()
+
+    ins = 0
+    pos = 0
+    while 1:
+        if pos >= len(codeData):
+            break
+        opcStr = codeData[pos]
+        opc = ord(opcStr)
+        ins = ins + 1
+        pos = pos + 1
+        name = opcodes[opc][OP_NAME]
+        psize = opcodes[opc][OP_PARM_SIZE]
+        if psize:
+            parmStr = codeData[pos : pos + psize]
+        else:
+            parmStr = None
+        pos = pos + psize
+
+    #print "0x%x  %d instructions" % (ins, ins)
+
+    f = open("x.data")
+    dataData = f.read()
+    f.close()
+
+    f = open("x.lit")
+    litData = f.read()
+    f.close()
+
+    codeSegLength = len(codeData) + len(codeData) % 4
+    dataSegLength = len(dataData) + len(dataData) % 4
+    litSegLength = len(litData) + len(litData) % 4
+
+    codeSegOffset = 0x20
+    dataSegOffset = codeSegOffset + codeSegLength
+
+    of = open(sys.argv[1], "w")
+    #of.write ('\x44\x14\x72\x12')  # qvm magic 0x12721444
+    of.write(struct.pack("<l", QVM_MAGIC))
+    of.write(struct.pack("<l", ins))   # instruction count
+    of.write(struct.pack("<l", codeSegOffset))
+    of.write(struct.pack("<l", codeSegLength))
+    of.write(struct.pack("<l", dataSegOffset))
+    of.write(struct.pack("<l", dataSegLength))
+    of.write(struct.pack("<l", litSegLength))
+    of.write(struct.pack("<l", bssSegLength))
+
+    of.write(codeData)
+    of.write('\x00' * (len(codeData) % 4))
+
+    of.write(dataData)
+    of.write('\x00' * (len(dataData) % 4))
+
+    of.write(litData)
+    of.write('\x00' * (len(litData) % 4))
+    of.close()
+
+if __name__ == "__main__":
+    main ()

@@ -1,0 +1,8622 @@
+{
+  "menu/pak11menu": {
+    "name": "pak11menu.pk3",
+    "size": 0
+  },
+  "menu/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "menu/pak8887bots": {
+    "name": "pak8887bots.pk3",
+    "size": 0
+  },
+  "menu/pak8888botfiles": {
+    "name": "pak8888botfiles.pk3",
+    "size": 0
+  },
+  "menu/pak21game": {
+    "name": "pak21game.pk3",
+    "size": 0
+  },
+  "menu/pak17botfiles": {
+    "name": "pak17botfiles.pk3",
+    "size": 0
+  },
+  "menu/pak551weapon": {
+    "name": "pak551weapon.pk3",
+    "size": 0
+  },
+  "menu/pak8802d": {
+    "name": "pak8802d.pk3",
+    "size": 0
+  },
+  "menu/pak18levelshots": {
+    "name": "pak18levelshots.pk3",
+    "size": 0
+  },
+  "menu/pak8889levelshots": {
+    "name": "pak8889levelshots.pk3",
+    "size": 0
+  },
+  "menu/pak14art": {
+    "name": "pak14art.pk3",
+    "size": 0
+  },
+  "menu/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "menu/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "menu/pak50gauntlet": {
+    "name": "pak50gauntlet.pk3",
+    "size": 0
+  },
+  "menu/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "menu/pak58machinegun": {
+    "name": "pak58machinegun.pk3",
+    "size": 0
+  },
+  "menu/pak552plasma": {
+    "name": "pak552plasma.pk3",
+    "size": 0
+  },
+  "menu/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "menu/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "menu/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "menu/pak85scripts": {
+    "name": "pak85scripts.pk3",
+    "size": 0
+  },
+  "menu/pak12scripts": {
+    "name": "pak12scripts.pk3",
+    "size": 0
+  },
+  "menu/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "menu/pak8880feedback": {
+    "name": "pak8880feedback.pk3",
+    "size": 0
+  },
+  "menu/pak15misc": {
+    "name": "pak15misc.pk3",
+    "size": 0
+  },
+  "menu/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "menu/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "menu/pak16medals": {
+    "name": "pak16medals.pk3",
+    "size": 0
+  },
+  "menu/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "menu/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "menu/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "game/pak21game": {
+    "name": "pak21game.pk3",
+    "size": 0
+  },
+  "game/pak8802d": {
+    "name": "pak8802d.pk3",
+    "size": 0
+  },
+  "game/pak14art": {
+    "name": "pak14art.pk3",
+    "size": 0
+  },
+  "game/pak13tab": {
+    "name": "pak13tab.pk3",
+    "size": 0
+  },
+  "game/pak63ammo": {
+    "name": "pak63ammo.pk3",
+    "size": 0
+  },
+  "game/pak64rocket": {
+    "name": "pak64rocket.pk3",
+    "size": 0
+  },
+  "game/pak65gibs": {
+    "name": "pak65gibs.pk3",
+    "size": 0
+  },
+  "game/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "game/pak66weaphits": {
+    "name": "pak66weaphits.pk3",
+    "size": 0
+  },
+  "game/pak22weaphits": {
+    "name": "pak22weaphits.pk3",
+    "size": 0
+  },
+  "game/pak553shells": {
+    "name": "pak553shells.pk3",
+    "size": 0
+  },
+  "game/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "game/pak8880feedback": {
+    "name": "pak8880feedback.pk3",
+    "size": 0
+  },
+  "game/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "game/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "game/pak551weapon": {
+    "name": "pak551weapon.pk3",
+    "size": 0
+  },
+  "game/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "game/pak58machinegun": {
+    "name": "pak58machinegun.pk3",
+    "size": 0
+  },
+  "game/pak552plasma": {
+    "name": "pak552plasma.pk3",
+    "size": 0
+  },
+  "game/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "game/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "game/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "game/pak232d": {
+    "name": "pak232d.pk3",
+    "size": 0
+  },
+  "game/pak24numbers": {
+    "name": "pak24numbers.pk3",
+    "size": 0
+  },
+  "game/pak25damage": {
+    "name": "pak25damage.pk3",
+    "size": 0
+  },
+  "game/pak26misc": {
+    "name": "pak26misc.pk3",
+    "size": 0
+  },
+  "game/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "game/pak27rlboom": {
+    "name": "pak27rlboom.pk3",
+    "size": 0
+  },
+  "game/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "game/pak445major": {
+    "name": "pak445major.pk3",
+    "size": 0
+  },
+  "game/pak4442sarge": {
+    "name": "pak4442sarge.pk3",
+    "size": 0
+  },
+  "game/pak44442player": {
+    "name": "pak44442player.pk3",
+    "size": 0
+  },
+  "game/pak44441footsteps": {
+    "name": "pak44441footsteps.pk3",
+    "size": 0
+  },
+  "game/pak50gauntlet": {
+    "name": "pak50gauntlet.pk3",
+    "size": 0
+  },
+  "game/pak85scripts": {
+    "name": "pak85scripts.pk3",
+    "size": 0
+  },
+  "game/pak12scripts": {
+    "name": "pak12scripts.pk3",
+    "size": 0
+  },
+  "game/pak73podium": {
+    "name": "pak73podium.pk3",
+    "size": 0
+  },
+  "game/pak38powerup": {
+    "name": "pak38powerup.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak91drasticcity": {
+    "name": "pak91drasticcity.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak39bfg": {
+    "name": "pak39bfg.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak31flight": {
+    "name": "pak31flight.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak51grapplinghook": {
+    "name": "pak51grapplinghook.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/drasticcity/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/glass/pak92glass": {
+    "name": "pak92glass.pk3",
+    "size": 0
+  },
+  "maps/glass/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/glass/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/glass/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/glass/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak93HMTfinal": {
+    "name": "pak93HMTfinal.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak39bfg": {
+    "name": "pak39bfg.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak37medkit": {
+    "name": "pak37medkit.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak38powerup": {
+    "name": "pak38powerup.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak35enviro": {
+    "name": "pak35enviro.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak31flight": {
+    "name": "pak31flight.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak34haste": {
+    "name": "pak34haste.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak33invis": {
+    "name": "pak33invis.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak8884env": {
+    "name": "pak8884env.pk3",
+    "size": 0
+  },
+  "maps/HMTfinal/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak94obiwanshouse": {
+    "name": "pak94obiwanshouse.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak39bfg": {
+    "name": "pak39bfg.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak37medkit": {
+    "name": "pak37medkit.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak38powerup": {
+    "name": "pak38powerup.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak31flight": {
+    "name": "pak31flight.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak33invis": {
+    "name": "pak33invis.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak71teleporter": {
+    "name": "pak71teleporter.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/obiwanshouse/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/pirate/pak95pirate": {
+    "name": "pak95pirate.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak96pro-q3dm13": {
+    "name": "pak96pro-q3dm13.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak71teleporter": {
+    "name": "pak71teleporter.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm13/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak97pro-q3dm6": {
+    "name": "pak97pro-q3dm6.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/pro-q3dm6/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak98pro-q3tourney2": {
+    "name": "pak98pro-q3tourney2.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak71teleporter": {
+    "name": "pak71teleporter.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney2/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak99pro-q3tourney4": {
+    "name": "pak99pro-q3tourney4.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak71teleporter": {
+    "name": "pak71teleporter.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak75lamps": {
+    "name": "pak75lamps.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/pro-q3tourney4/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak90q3ctf1": {
+    "name": "pak90q3ctf1.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak889ctf": {
+    "name": "pak889ctf.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3ctf1/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak991q3ctf2": {
+    "name": "pak991q3ctf2.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak889ctf": {
+    "name": "pak889ctf.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak37medkit": {
+    "name": "pak37medkit.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak39bfg": {
+    "name": "pak39bfg.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3ctf2/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak992q3ctf3": {
+    "name": "pak992q3ctf3.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak889ctf": {
+    "name": "pak889ctf.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak33invis": {
+    "name": "pak33invis.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3ctf3/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak993q3ctf4": {
+    "name": "pak993q3ctf4.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak75lamps": {
+    "name": "pak75lamps.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak889ctf": {
+    "name": "pak889ctf.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3ctf4/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak994q3ctf555": {
+    "name": "pak994q3ctf555.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak71teleporter": {
+    "name": "pak71teleporter.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak889ctf": {
+    "name": "pak889ctf.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak39bfg": {
+    "name": "pak39bfg.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak75lamps": {
+    "name": "pak75lamps.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3ctf555/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak995q3dm0": {
+    "name": "pak995q3dm0.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak75lamps": {
+    "name": "pak75lamps.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak39bfg": {
+    "name": "pak39bfg.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm0/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak996q3dm1": {
+    "name": "pak996q3dm1.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak8886compscreen": {
+    "name": "pak8886compscreen.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm1/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak997q3dm10": {
+    "name": "pak997q3dm10.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak33invis": {
+    "name": "pak33invis.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak8884env": {
+    "name": "pak8884env.pk3",
+    "size": 0
+  },
+  "maps/q3dm10/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak998q3dm11": {
+    "name": "pak998q3dm11.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak71teleporter": {
+    "name": "pak71teleporter.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak37medkit": {
+    "name": "pak37medkit.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak35enviro": {
+    "name": "pak35enviro.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak34haste": {
+    "name": "pak34haste.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak39bfg": {
+    "name": "pak39bfg.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3dm11/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak999q3dm12": {
+    "name": "pak999q3dm12.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak71teleporter": {
+    "name": "pak71teleporter.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak39bfg": {
+    "name": "pak39bfg.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak38powerup": {
+    "name": "pak38powerup.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak75lamps": {
+    "name": "pak75lamps.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm12/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak990q3dm13": {
+    "name": "pak990q3dm13.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak71teleporter": {
+    "name": "pak71teleporter.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak96pro-q3dm13": {
+    "name": "pak96pro-q3dm13.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak37medkit": {
+    "name": "pak37medkit.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3dm13/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak9991q3dm14": {
+    "name": "pak9991q3dm14.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak39bfg": {
+    "name": "pak39bfg.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak38powerup": {
+    "name": "pak38powerup.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3dm14/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak9992q3dm15": {
+    "name": "pak9992q3dm15.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak71teleporter": {
+    "name": "pak71teleporter.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak39bfg": {
+    "name": "pak39bfg.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak38powerup": {
+    "name": "pak38powerup.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak35enviro": {
+    "name": "pak35enviro.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm15/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak9993q3dm16": {
+    "name": "pak9993q3dm16.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak75lamps": {
+    "name": "pak75lamps.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3dm16/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak9994q3dm17": {
+    "name": "pak9994q3dm17.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak71teleporter": {
+    "name": "pak71teleporter.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak75lamps": {
+    "name": "pak75lamps.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3dm17/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak9995q3dm18": {
+    "name": "pak9995q3dm18.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak38powerup": {
+    "name": "pak38powerup.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm18/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak9996q3dm19": {
+    "name": "pak9996q3dm19.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak38powerup": {
+    "name": "pak38powerup.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak31flight": {
+    "name": "pak31flight.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak75lamps": {
+    "name": "pak75lamps.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm19/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak9997q3dm2": {
+    "name": "pak9997q3dm2.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak34haste": {
+    "name": "pak34haste.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm2/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak9998q3dm3": {
+    "name": "pak9998q3dm3.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak8886compscreen": {
+    "name": "pak8886compscreen.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3dm3/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak9999q3dm4": {
+    "name": "pak9999q3dm4.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak71teleporter": {
+    "name": "pak71teleporter.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm4/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak9990q3dm5": {
+    "name": "pak9990q3dm5.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm5/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak99991q3dm6": {
+    "name": "pak99991q3dm6.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak97pro-q3dm6": {
+    "name": "pak97pro-q3dm6.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak38powerup": {
+    "name": "pak38powerup.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm6/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak99992q3dm7": {
+    "name": "pak99992q3dm7.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak38powerup": {
+    "name": "pak38powerup.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak8886compscreen": {
+    "name": "pak8886compscreen.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3dm7/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak99993q3dm8": {
+    "name": "pak99993q3dm8.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak33invis": {
+    "name": "pak33invis.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak39bfg": {
+    "name": "pak39bfg.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak8886compscreen": {
+    "name": "pak8886compscreen.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3dm8/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak99994q3dm9": {
+    "name": "pak99994q3dm9.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3dm9/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak99995q3tourney1": {
+    "name": "pak99995q3tourney1.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak8884env": {
+    "name": "pak8884env.pk3",
+    "size": 0
+  },
+  "maps/q3tourney1/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak99996q3tourney2": {
+    "name": "pak99996q3tourney2.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak71teleporter": {
+    "name": "pak71teleporter.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak98pro-q3tourney2": {
+    "name": "pak98pro-q3tourney2.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3tourney2/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak99997q3tourney3": {
+    "name": "pak99997q3tourney3.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak35enviro": {
+    "name": "pak35enviro.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3tourney3/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak99998q3tourney4": {
+    "name": "pak99998q3tourney4.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak75lamps": {
+    "name": "pak75lamps.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3tourney4/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak99999q3tourney5": {
+    "name": "pak99999q3tourney5.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3tourney5/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak99990q3tourney6_ctf": {
+    "name": "pak99990q3tourney6_ctf.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak71teleporter": {
+    "name": "pak71teleporter.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak75lamps": {
+    "name": "pak75lamps.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak889ctf": {
+    "name": "pak889ctf.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6_ctf/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak999991q3tourney6": {
+    "name": "pak999991q3tourney6.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak99990q3tourney6_ctf": {
+    "name": "pak99990q3tourney6_ctf.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak71teleporter": {
+    "name": "pak71teleporter.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak39bfg": {
+    "name": "pak39bfg.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak38powerup": {
+    "name": "pak38powerup.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak75lamps": {
+    "name": "pak75lamps.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3tourney6/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak999992q3wcp1": {
+    "name": "pak999992q3wcp1.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak39bfg": {
+    "name": "pak39bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp1/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak999993q3wcp10": {
+    "name": "pak999993q3wcp10.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak889ctf": {
+    "name": "pak889ctf.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp10/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak999994q3wcp11": {
+    "name": "pak999994q3wcp11.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak37medkit": {
+    "name": "pak37medkit.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak8884env": {
+    "name": "pak8884env.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp11/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak999995q3wcp12": {
+    "name": "pak999995q3wcp12.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak889ctf": {
+    "name": "pak889ctf.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak33invis": {
+    "name": "pak33invis.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp12/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak999996q3wcp13": {
+    "name": "pak999996q3wcp13.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak8884env": {
+    "name": "pak8884env.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp13/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak999997q3wcp14": {
+    "name": "pak999997q3wcp14.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak71teleporter": {
+    "name": "pak71teleporter.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak39bfg": {
+    "name": "pak39bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3wcp14/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak999998q3wcp15": {
+    "name": "pak999998q3wcp15.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak37medkit": {
+    "name": "pak37medkit.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak8885revolution_ctf": {
+    "name": "pak8885revolution_ctf.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp15/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak999999q3wcp16": {
+    "name": "pak999999q3wcp16.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak37medkit": {
+    "name": "pak37medkit.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp16/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak999990q3wcp17": {
+    "name": "pak999990q3wcp17.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak889ctf": {
+    "name": "pak889ctf.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp17/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak9999991q3wcp18": {
+    "name": "pak9999991q3wcp18.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak75lamps": {
+    "name": "pak75lamps.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak39bfg": {
+    "name": "pak39bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp18/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak9999992q3wcp19": {
+    "name": "pak9999992q3wcp19.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp19/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak9999993q3wcp2": {
+    "name": "pak9999993q3wcp2.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak889ctf": {
+    "name": "pak889ctf.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak34haste": {
+    "name": "pak34haste.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak886ctf_q3w": {
+    "name": "pak886ctf_q3w.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp2/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak9999994q3wcp20": {
+    "name": "pak9999994q3wcp20.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak34haste": {
+    "name": "pak34haste.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak889ctf": {
+    "name": "pak889ctf.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak8884env": {
+    "name": "pak8884env.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3wcp20/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak9999995q3wcp21": {
+    "name": "pak9999995q3wcp21.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak34haste": {
+    "name": "pak34haste.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp21/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak9999996q3wcp22": {
+    "name": "pak9999996q3wcp22.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak33invis": {
+    "name": "pak33invis.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak58machinegun": {
+    "name": "pak58machinegun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp22/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak9999997q3wcp23": {
+    "name": "pak9999997q3wcp23.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak889ctf": {
+    "name": "pak889ctf.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp23/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak9999998q3wcp24": {
+    "name": "pak9999998q3wcp24.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak33invis": {
+    "name": "pak33invis.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak886ctf_q3w": {
+    "name": "pak886ctf_q3w.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp24/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak9999999q3wcp3": {
+    "name": "pak9999999q3wcp3.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak889ctf": {
+    "name": "pak889ctf.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak886ctf_q3w": {
+    "name": "pak886ctf_q3w.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp3/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak9999990q3wcp4": {
+    "name": "pak9999990q3wcp4.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak33invis": {
+    "name": "pak33invis.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp4/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak99999991q3wcp5": {
+    "name": "pak99999991q3wcp5.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak34haste": {
+    "name": "pak34haste.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp5/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak99999992q3wcp6": {
+    "name": "pak99999992q3wcp6.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak71teleporter": {
+    "name": "pak71teleporter.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak33invis": {
+    "name": "pak33invis.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak886ctf_q3w": {
+    "name": "pak886ctf_q3w.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp6/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak99999993q3wcp7": {
+    "name": "pak99999993q3wcp7.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak889ctf": {
+    "name": "pak889ctf.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak88883gothic_door": {
+    "name": "pak88883gothic_door.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak8886compscreen": {
+    "name": "pak8886compscreen.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp7/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak99999994q3wcp8": {
+    "name": "pak99999994q3wcp8.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak81world": {
+    "name": "pak81world.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak74gratelamp": {
+    "name": "pak74gratelamp.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak335bullets": {
+    "name": "pak335bullets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak88881items": {
+    "name": "pak88881items.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak37medkit": {
+    "name": "pak37medkit.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak35enviro": {
+    "name": "pak35enviro.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak33invis": {
+    "name": "pak33invis.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp8/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak99999995q3wcp9": {
+    "name": "pak99999995q3wcp9.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak883base_support": {
+    "name": "pak883base_support.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak333cells": {
+    "name": "pak333cells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak332lightning": {
+    "name": "pak332lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak331rockets": {
+    "name": "pak331rockets.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak34haste": {
+    "name": "pak34haste.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak32regen": {
+    "name": "pak32regen.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak55lightning": {
+    "name": "pak55lightning.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak53plasmagun": {
+    "name": "pak53plasmagun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak56rocketlauncher": {
+    "name": "pak56rocketlauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3wcp9/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak99999996q3wxs1": {
+    "name": "pak99999996q3wxs1.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak86base_floor": {
+    "name": "pak86base_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak882base_trim": {
+    "name": "pak882base_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak80base_wall": {
+    "name": "pak80base_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak88882gothic_ceiling": {
+    "name": "pak88882gothic_ceiling.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak30slugs": {
+    "name": "pak30slugs.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak338armor": {
+    "name": "pak338armor.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak54railgun": {
+    "name": "pak54railgun.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak52bfg": {
+    "name": "pak52bfg.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wxs1/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak99999997q3wxs2": {
+    "name": "pak99999997q3wxs2.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak82music": {
+    "name": "pak82music.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak72mapobject": {
+    "name": "pak72mapobject.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak889ctf": {
+    "name": "pak889ctf.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak887gothic_block": {
+    "name": "pak887gothic_block.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak8881gothic_floor": {
+    "name": "pak8881gothic_floor.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak8882gothic_trim": {
+    "name": "pak8882gothic_trim.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak8883gothic_wall": {
+    "name": "pak8883gothic_wall.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak83other": {
+    "name": "pak83other.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak84misc": {
+    "name": "pak84misc.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak334grenades": {
+    "name": "pak334grenades.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak336shells": {
+    "name": "pak336shells.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak337health": {
+    "name": "pak337health.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak36quad": {
+    "name": "pak36quad.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak61CTF": {
+    "name": "pak61CTF.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak57grenadelauncher": {
+    "name": "pak57grenadelauncher.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak59shotgun": {
+    "name": "pak59shotgun.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak881base_light": {
+    "name": "pak881base_light.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak888ctf_unified": {
+    "name": "pak888ctf_unified.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak885gothic_light": {
+    "name": "pak885gothic_light.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak87sfx": {
+    "name": "pak87sfx.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak89liquids": {
+    "name": "pak89liquids.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak884skies": {
+    "name": "pak884skies.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak88effects": {
+    "name": "pak88effects.pk3",
+    "size": 0
+  },
+  "maps/q3wxs2/pak62model": {
+    "name": "pak62model.pk3",
+    "size": 0
+  },
+  "maps/test_bigbox/pak99999998test_bigbox": {
+    "name": "pak99999998test_bigbox.pk3",
+    "size": 0
+  },
+  "maps/test/pak99999999test": {
+    "name": "pak99999999test.pk3",
+    "size": 0
+  }
+}

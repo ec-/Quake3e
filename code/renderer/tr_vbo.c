@@ -1443,7 +1443,8 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 	ARB_ProgramEnableExt( 0, 0 );
 
 	if ( r_showtris->integer ) {
-		if ( (r_showtris->integer == 1 && backEnd.doneSurfaces) || (r_showtris->integer == 2 && backEnd.drawConsole) )
+
+		if ( r_showtris->integer == 1 && backEnd.drawConsole )
 			return;
 
 		ARB_ProgramEnableExt( 0, 0 );

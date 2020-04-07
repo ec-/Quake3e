@@ -385,7 +385,13 @@ void CL_ShutdownCGame( void ) {
 	if ( !cgvm ) {
 		return;
 	}
-	
+
+#ifdef EMSCRIPTEN
+	while (VM_IsSuspended(cgvm)) {
+		VM_Resume(cgvm);
+	}
+#endif
+
 	re.VertexLighting( qfalse );
 
 	VM_Call( cgvm, 0, CG_SHUTDOWN );
@@ -458,6 +464,7 @@ The cgame module is making a system call
 ====================
 */
 static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
+	intptr_t result;
 	switch( args[0] ) {
 	case CG_PRINT:
 		Com_Printf( "%s", (const char*)VMA(1) );
@@ -492,7 +499,33 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return 0;
 
 	case CG_FS_FOPENFILE:
-		return FS_VM_OpenFile( VMA(1), VMA(2), args[3], H_CGAME );
+		result = FS_VM_OpenFile( VMA(1), VMA(2), args[3], H_CGAME );
+		// read the fucking icon file, checks for TGA only, stupid fucking design, 
+		//   obviously it's there the renderer showed the png on the loading screen
+		//if((FS_IsExt(qpath, ".md3", len) || Q_stristr(qpath, "icon_")) && Q_stristr(qpath, "players")) {
+			// TODO: check index for players
+		//	return 1;
+		//}
+		if((int)result <= 0) {
+			char altFilename[MAX_QPATH];
+			char *filename = (char *)VMA(1);
+			if(Q_stristr(filename, "players") && Q_stristr(filename, ".tga")) {
+				COM_StripExtension(filename, altFilename, sizeof(altFilename));
+				result = FS_VM_OpenFile( va("%s.png", altFilename), VMA(2), args[3], H_CGAME );
+				if(VMA(2) == NULL && result > 0)
+					return result;
+				else if(result >= 0 && (void *)VMA(2))
+					return result;
+				else {
+					result = FS_VM_OpenFile( va("%s.jpg", altFilename), VMA(2), args[3], H_CGAME );
+					if(VMA(2) == NULL && result > 0)
+						return result;
+					else if(result >= 0 && (void *)VMA(2))
+						return result;
+				}
+			}
+		}
+		return result;
 	case CG_FS_READ:
 		VM_CHECKBOUNDS( cgvm, args[1], args[2] );
 		FS_VM_ReadFile( VMA(1), args[2], args[3], H_CGAME );
@@ -819,11 +852,12 @@ CL_InitCGame
 Should only be called by CL_StartHunkUsers
 ====================
 */
+static int				t1, t2;
 void CL_InitCGame( void ) {
 	const char			*info;
 	const char			*mapname;
-	int					t1, t2;
 	vmInterpret_t		interpret;
+	unsigned result;
 
 	t1 = Sys_Milliseconds();
 
@@ -856,8 +890,50 @@ void CL_InitCGame( void ) {
 	// init for this gamestate
 	// use the lastExecutedServerCommand instead of the serverCommandSequence
 	// otherwise server commands sent just before a gamestate are dropped
-	VM_Call( cgvm, 3, CG_INIT, clc.serverMessageSequence, clc.lastExecutedServerCommand, clc.clientNum );
+	result = VM_Call( cgvm, 3, CG_INIT, clc.serverMessageSequence, clc.lastExecutedServerCommand, clc.clientNum );
 
+#ifdef EMSCRIPTEN
+	// if the VM was suspended during initialization, we'll finish initialization later
+	if (result == 0xDEADBEEF) {
+		return;
+	}
+
+	CL_InitCGameFinished();
+}
+
+int CL_GetClientState( void ) {
+	return cls.state;
+}
+
+void CL_UpdateShader( void ) {
+	char *lazyShader = Sys_UpdateShader();
+	if(strlen(lazyShader) == 0) return;
+	lazyShader[12] = '\0';
+	re.UpdateShader(&lazyShader[13], atoi(&lazyShader[0]));
+}
+
+
+void CL_UpdateSound( void ) {
+	char *lazySound = Sys_UpdateSound();
+	if(strlen(lazySound) == 0) return;
+	S_RegisterSound(lazySound, qtrue);
+}
+
+
+void CL_UpdateModel( void ) {
+	char *lazyModel = Sys_UpdateModel();
+	if(strlen(lazyModel) == 0) return;
+	re.RegisterModel(lazyModel);
+}
+
+/*
+====================
+CL_InitCGameFinished
+====================
+*/
+void CL_InitCGameFinished() {
+#endif
+;
 	// reset any CVAR_CHEAT cvars registered by cgame
 	if ( !clc.demoplaying && !cl_connectedToCheatServer )
 		Cvar_SetCheatState();
@@ -898,6 +974,14 @@ qboolean CL_GameCommand( void ) {
 	if ( !cgvm ) {
 		return qfalse;
 	}
+
+#ifdef EMSCRIPTEN
+		// it's possible (and happened in Q3F) that the game executes a console command
+		// before the frame has resumed the vm
+		if (VM_IsSuspended(cgvm)) {
+			return qfalse;
+		}
+#endif
 
 	return VM_Call( cgvm, 0, CG_CONSOLE_COMMAND );
 }

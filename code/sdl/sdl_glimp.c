@@ -52,10 +52,7 @@ static SDL_GLContext SDL_glContext = NULL;
 static PFN_vkGetInstanceProcAddr qvkGetInstanceProcAddr;
 #endif
 
-cvar_t *r_allowSoftwareGL; // Don't abort out if a hardware visual can't be obtained
-cvar_t *r_swapInterval;
 cvar_t *r_stereoEnabled;
-cvar_t *r_ignorehwgamma;
 cvar_t *in_nograb;
 
 /*
@@ -471,10 +468,12 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 				}
 			}
 
+#ifndef EMSCRIPTEN
 			if ( SDL_GL_SetSwapInterval( r_swapInterval->integer ) == -1 )
 			{
 				Com_DPrintf( "SDL_GL_SetSwapInterval failed: %s\n", SDL_GetError( ) );
 			}
+#endif
 
 			SDL_GL_GetAttribute( SDL_GL_RED_SIZE, &realColorBits[0] );
 			SDL_GL_GetAttribute( SDL_GL_GREEN_SIZE, &realColorBits[1] );
@@ -579,8 +578,10 @@ of OpenGL
 */
 void GLimp_Init( glconfig_t *config )
 {
+#ifndef EMSCRIPTEN
 #ifndef _WIN32
 	InitSig();
+#endif
 #endif
 
 	Com_DPrintf( "GLimp_Init()\n" );
@@ -594,6 +595,10 @@ void GLimp_Init( glconfig_t *config )
 	r_swapInterval = Cvar_Get( "r_swapInterval", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_stereoEnabled = Cvar_Get( "r_stereoEnabled", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_ignorehwgamma = Cvar_Get( "r_ignorehwgamma", "0", CVAR_ARCHIVE | CVAR_LATCH );
+
+#ifdef EMSCRIPTEN
+	Sys_GLimpInit();
+#endif
 
 	// Create the window and set up the context
 	if ( !GLimp_StartDriverAndSetMode( r_mode->integer, r_modeFullscreen->string, r_fullscreen->integer, qfalse ) )
@@ -660,7 +665,9 @@ of Vulkan
 void VKimp_Init( glconfig_t *config )
 {
 #ifndef _WIN32
+#ifndef EMSCRIPTEN
 	InitSig();
+#endif
 #endif
 
 	Com_DPrintf( "VKimp_Init()\n" );
