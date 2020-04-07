@@ -292,10 +292,6 @@ ifeq ($(PLATFORM),linux)
     BASE_CFLAGS += -m32
     LDFLAGS += -m32
   endif
-
-	ifeq ($(NOFPU),1)
-		BASE_CFLAGS += -DNOFPU
-	endif
 	
   DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -ggdb -O0
   RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
@@ -675,6 +671,10 @@ endif
 
 ifneq ($(HAVE_VM_COMPILED),true)
   BASE_CFLAGS += -DNO_VM_COMPILED
+endif
+
+ifeq ($(NOFPU),1)
+  BASE_CFLAGS += -DNOFPU
 endif
 
 ifneq ($(USE_RENDERER_DLOPEN),0)

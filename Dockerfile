@@ -11,7 +11,7 @@ RUN \
 RUN \
   echo "# NOW THE INSTALLATION ##########################################" && \
   cd /tmp/build/Quake3e && \
-  make BUILD_CLIENT=0 && \
+  make BUILD_CLIENT=0 NOFPU=1 && \
   make PLATFORM=js && \
   cp -r /tmp/build/* ~/ioquake3
 
