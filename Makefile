@@ -293,6 +293,10 @@ ifeq ($(PLATFORM),linux)
     LDFLAGS += -m32
   endif
 
+	ifeq ($(NOFPU),1)
+		BASE_CFLAGS += -DNOFPU
+	endif
+	
   DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -ggdb -O0
   RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
 
@@ -622,7 +626,7 @@ endef
 		-s USE_OGG=1 \
     -s FORCE_FILESYSTEM=1 \
     -s EXPORT_NAME=\"quake3e\" \
-		$(RELEASE_CFLAGS)
+		$(DEBUG_CFLAGS)
 
 else # ifeq js
 

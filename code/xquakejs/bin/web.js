@@ -48,12 +48,12 @@ async function serveUnionFs(req, res, next) {
 	}
 }
 
-app.use(serveStatic(path.join(__dirname), {
+app.use(serveStatic(path.join(__dirname, '../../../build/release-js-js'), {
   setHeaders: (res, path) => {
     res.setHeader('Access-Control-Allow-Origin', '*')
   }
 }))
-app.use(serveStatic(path.join(__dirname, '../../../build/release-js-js'), {
+app.use(serveStatic(path.join(__dirname), {
   setHeaders: (res, path) => {
     res.setHeader('Access-Control-Allow-Origin', '*')
   }
