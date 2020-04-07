@@ -1,8 +1,9 @@
-FROM alpine:latest AS builder
+FROM debian:bullseye-slim AS builder
 
 RUN \
   echo "# INSTALL DEPENDENCIES ##########################################" && \
-  apk --no-cache add alpine-sdk build-base linux-headers curl-dev curl g++ gcc git make && \
+  apt-get update && \
+  apt-get install -y build-essential linux-headers-5.4.0-4-common libcurl4-gnutls-dev curl g++ gcc git make && \
   mkdir -p /tmp/build
 RUN \
   echo "# FETCH INSTALLATION FILES ######################################" && \

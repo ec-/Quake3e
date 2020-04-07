@@ -1390,6 +1390,7 @@ Q3DOBJ = \
   \
   $(B)/ded/unzip.o \
   $(B)/ded/vm.o \
+	$(B)/ded/vm_interpreted.o \
   \
   $(B)/ded/be_aas_bspq3.o \
   $(B)/ded/be_aas_cluster.o \
