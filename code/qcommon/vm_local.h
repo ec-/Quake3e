@@ -238,6 +238,10 @@ typedef struct opcode_info_s
 	int   flags;
 } opcode_info_t ;
 
+#ifndef EMSCRIPTEN
+opcode_info_t ops[ OP_MAX ];
+#endif
+
 #endif // VM_LOCAL_H
 
 #ifdef EMSCRIPTEN
