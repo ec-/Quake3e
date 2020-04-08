@@ -59,15 +59,15 @@ RUN \
   npm install --only=dev && \
   echo "cd /home/ioq3srv/quakejs" > /home/ioq3srv/start.sh && \
   echo "npm run repack -- --no-graph --no-overwrite /home/ioq3srv/baseq3" >> /home/ioq3srv/start.sh && \
-  echo "node /home/ioq3srv/quakejs/bin/web.js -R /assets/baseq3-cc /tmp/baseq3-cc &
-    node /home/ioq3srv/quakejs/bin/proxy.js 8081 &
-    /home/ioq3srv/Quake3e/quake3e.ded.x64 \
-    +cvar_restart +set net_port 27960 +set fs_basepath /home/ioq3srv \
-    +set dedicated 2 +set fs_homepath /home/ioq3srv \
-    +set fs_basegame ${BASEGAME} +set fs_game ${GAME} \
-    +set logfile 2 +set com_hunkmegs 150 +set vm_rtChecks 0 \
-    +set ttycon 0 +set rconpassword ${RCON} \
-    +set sv_maxclients 32 +exec server.cfg" >> /home/ioq3srv/start.sh && \
+  echo "node /home/ioq3srv/quakejs/bin/web.js -R /assets/baseq3-cc /tmp/baseq3-cc &" >> /home/ioq3srv/start.sh && \
+  echo "node /home/ioq3srv/quakejs/bin/proxy.js 8081 &" >> /home/ioq3srv/start.sh && \
+  echo "/home/ioq3srv/Quake3e/quake3e.ded.x64 \\" >> /home/ioq3srv/start.sh && \
+  echo "  +cvar_restart +set net_port 27960 +set fs_basepath /home/ioq3srv \\" >> /home/ioq3srv/start.sh && \
+  echo "  +set dedicated 2 +set fs_homepath /home/ioq3srv \\" >> /home/ioq3srv/start.sh && \
+  echo "  +set fs_basegame \${BASEGAME} +set fs_game \${GAME} \\" >> /home/ioq3srv/start.sh && \
+  echo "  +set logfile 2 +set com_hunkmegs 150 +set vm_rtChecks 0 \\" >> /home/ioq3srv/start.sh && \
+  echo "  +set ttycon 0 +set rconpassword ${RCON} \\" >> /home/ioq3srv/start.sh && \
+  echo "  +set sv_maxclients 32 +exec server.cfg" >> /home/ioq3srv/start.sh && \
   chmod a+x /home/ioq3srv/start.sh && \
   chown -R ioq3srv /home/ioq3srv
 USER ioq3srv

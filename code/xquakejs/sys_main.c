@@ -1003,7 +1003,7 @@ int Sys_ParseArgs( int argc, char* argv[] )
 Sys_Frame
 =================
 */
-void Sys_Frame() {
+void Sys_Frame( void ) {
 	IN_Frame();
 	Com_Frame();
 }
