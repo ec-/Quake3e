@@ -1,0 +1,8 @@
+[Unit]
+Description=Quake proxy service.
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /home/ioq3srv/Quake3e/quakejs/bin/proxy.js
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
