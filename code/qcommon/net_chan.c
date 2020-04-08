@@ -665,6 +665,7 @@ int NET_StringToAdr( const char *s, netadr_t *a, netadrtype_t family )
 		search = base;
 	}
 
+	Q_strncpyz( a->name, search, sizeof( base ) );
 	if(!Sys_StringToAdr(search, a, family))
 	{
 		a->type = NA_BAD;
