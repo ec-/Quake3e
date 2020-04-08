@@ -47,12 +47,18 @@ COPY --from=builder /root/Quake3e /home/ioq3srv/Quake3e
 RUN \
   apt-get install systemd && \
   useradd ioq3srv && \
-  mkdir /home/ioq3srv/Quake3e/baseq3 && \
-  cp /home/ioq3srv/Quake3e/quakejs/bin/quake.service /etc/systemd/system \
-  cp /home/ioq3srv/Quake3e/quakejs/bin/q3eded.service /etc/systemd/system
+  mkdir /home/ioq3srv/baseq3 && \
+  cp /home/ioq3srv/Quake3e/quakejs/bin/quake.service /etc/systemd/system && \
+  cp /home/ioq3srv/Quake3e/quakejs/bin/q3eded.service /etc/systemd/system && \
+  cp /home/ioq3srv/Quake3e/quakejs/bin/proxy.service /etc/systemd/system && \
+  cd /home/ioq3srv && \
+  npm install && \
+  npm run repack -- --no-graph --no-overwrite /home/ioq3srv/baseq3
 USER ioq3srv
 EXPOSE 27960/udp
-VOLUME [ "/home/ioq3srv/Quake3e/baseq3" ]
+EXPOSE 1081/tcp
+EXPOSE 8080/udp
+VOLUME [ "/home/ioq3srv/baseq3" ]
 ENV RCON rconpass
 ENV GAME baseq3
 ENV BASEGAME baseq3
