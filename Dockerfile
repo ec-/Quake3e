@@ -64,7 +64,7 @@ RUN \
   echo "/home/ioq3srv/Quake3e/quake3e.ded.x64 \\" >> /home/ioq3srv/start.sh && \
   echo "  +cvar_restart +set net_port 27960 +set fs_basepath /home/ioq3srv \\" >> /home/ioq3srv/start.sh && \
   echo "  +set dedicated 2 +set fs_homepath /home/ioq3srv \\" >> /home/ioq3srv/start.sh && \
-  echo "  +set fs_basegame \${BASEGAME} +set fs_game \${GAME} \\" >> /home/ioq3srv/start.sh && \
+  echo "  +set fs_basegame \\${BASEGAME} +set fs_game \\${GAME} \\" >> /home/ioq3srv/start.sh && \
   echo "  +set logfile 2 +set com_hunkmegs 150 +set vm_rtChecks 0 \\" >> /home/ioq3srv/start.sh && \
   echo "  +set ttycon 0 +set rconpassword ${RCON} \\" >> /home/ioq3srv/start.sh && \
   echo "  +set sv_maxclients 32 +exec server.cfg" >> /home/ioq3srv/start.sh && \
