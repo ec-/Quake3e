@@ -25,6 +25,8 @@ Add websocket piping back in for quakejs servers
 e.g. npm run proxy -- --max 10
 `
 
+var ports = [1081, 80]
+var specifyPorts = false
 var slaves = []
 for(var i = 0; i < process.argv.length; i++) {
   var a = process.argv[i]
@@ -34,6 +36,12 @@ for(var i = 0; i < process.argv.length; i++) {
   if(a == '--help' || a == '-h') {
 		console.log(help)
     process.exit(0)
+  } else if (parseInt(a) + '' === a) {
+    if(!specifyPorts) {
+      ports = []
+      specifyPorts = true
+    }
+    ports.push(parseInt(a))
 	} else {
     try {
       var ipv6 = ip6addr.parse(a)
@@ -47,6 +55,7 @@ for(var i = 0; i < process.argv.length; i++) {
 var socks = new Server({slaves}) // TODO: add password authentication
 
 // redirect http attempts to loading page
+/*
 const server = createServer(function(socket) {
 	try {
 		socks._onConnection(socket)
@@ -54,8 +63,9 @@ const server = createServer(function(socket) {
 		console.log(e)
 	}
 })
+server.listen(1080, () => console.log(`Server running at http://0.0.0.0:1080`))
+*/
 
-const ports = [1081, 80]
 ports.forEach((p, i, ports) => {
   var httpServer = http.createServer(function(req, res) {
   	res.writeHead(200, {'Location': 'https://quake.games' + req.url})
@@ -75,4 +85,3 @@ ports.forEach((p, i, ports) => {
 
   httpServer.listen(ports[i],  () => console.log(`Http running at http://0.0.0.0:${ports[i]}`))
 })
-server.listen(1080, () => console.log(`Server running at http://0.0.0.0:1080`))

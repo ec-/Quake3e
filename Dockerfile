@@ -9,9 +9,9 @@ RUN \
   echo "# FETCH INSTALLATION FILES ######################################" && \
   cd /tmp/build && \
   git clone --recursive --progress https://github.com/briancullinan/Quake3e && \
+  cd /tmp/build/Quake3e && \
   git submodule add -f git://github.com/emscripten-core/emsdk.git code/xquakejs/lib/emsdk && \
-  git submodule update --init --recursive --progress && \
-  cd /tmp/build/Quake3e
+  git submodule update --init --recursive --progress
 RUN \
   echo "# BUILD NATIVE SERVER ##########################################" && \
   cd /tmp/build/Quake3e && \
@@ -31,35 +31,51 @@ RUN \
 RUN \
   echo "# COPY OUTPUT ##########################################" && \
   mkdir ~/Quake3e && \
-  mkdir ~/Quake3e/quakejs && \
-  mkdir ~/Quake3e/quakejs/bin && \
-  mkdir ~/Quake3e/quakejs/lib && \
-  cp /tmp/build/Quake3e/package.json ~/Quake3e/quakejs && \
-  cp /tmp/build/Quake3e/build/release-js-js/quake3e.js ~/Quake3e/quakejs/bin && \
-  cp /tmp/build/Quake3e/build/release-js-js/quake3e.wasm ~/Quake3e/quakejs/bin && \
+  mkdir ~/quakejs && \
+  mkdir ~/quakejs/bin && \
+  mkdir ~/quakejs/lib && \
+  cp /tmp/build/Quake3e/package.json ~/quakejs && \
+  cp /tmp/build/Quake3e/build/release-js-js/quake3e.js ~/quakejs/bin && \
+  cp /tmp/build/Quake3e/build/release-js-js/quake3e.wasm ~/quakejs/bin && \
   cp /tmp/build/Quake3e/build/release-linux-x86_64/quake3e.ded.x64 ~/Quake3e && \
-  cp /tmp/build/Quake3e/code/xquakejs/bin/* ~/Quake3e/quakejs/bin && \
-  cp /tmp/build/Quake3e/code/xquakejs/lib/* ~/Quake3e/quakejs/lib && \
-  cp -R /tmp/build/Quake3e/code/xquakejs/lib/q3vm ~/Quake3e/quakejs/lib
+  rm -R /tmp/build/Quake3e/code/xquakejs/lib/emsdk && \
+  cp -R /tmp/build/Quake3e/code/xquakejs/bin/* ~/quakejs/bin && \
+  cp -R /tmp/build/Quake3e/code/xquakejs/lib/* ~/quakejs/lib
 
+#  cp /home/ioq3srv/Quake3e/quakejs/bin/q3eded.service /etc/systemd/system && \
 FROM node:12.15-slim AS server
 COPY --from=builder /root/Quake3e /home/ioq3srv/Quake3e
+COPY --from=builder /root/quakejs /home/ioq3srv/quakejs
 RUN \
-  apt-get install systemd && \
+  apt-get update && \
+  apt-get install -y systemd imagemagick vorbis-tools vim && \
   useradd ioq3srv && \
   mkdir /home/ioq3srv/baseq3 && \
-  cp /home/ioq3srv/Quake3e/quakejs/bin/quake.service /etc/systemd/system && \
-  cp /home/ioq3srv/Quake3e/quakejs/bin/q3eded.service /etc/systemd/system && \
-  cp /home/ioq3srv/Quake3e/quakejs/bin/proxy.service /etc/systemd/system && \
-  cd /home/ioq3srv && \
+  sed -i -e 's/code\/xquakejs\///g' /home/ioq3srv/quakejs/package.json && \
+  cp /home/ioq3srv/quakejs/bin/http.service /etc/systemd/system && \
+  cp /home/ioq3srv/quakejs/bin/proxy.service /etc/systemd/system && \
+  cd /home/ioq3srv/quakejs && \
   npm install && \
-  npm run repack -- --no-graph --no-overwrite /home/ioq3srv/baseq3
+  npm install --only=dev && \
+  echo "cd /home/ioq3srv/quakejs" > /home/ioq3srv/start.sh && \
+  echo "npm run repack -- --no-graph --no-overwrite /home/ioq3srv/baseq3" >> /home/ioq3srv/start.sh && \
+  echo "node /home/ioq3srv/quakejs/bin/web.js -R /assets/baseq3-cc /tmp/baseq3-cc &
+    node /home/ioq3srv/quakejs/bin/proxy.js 8081 &
+    /home/ioq3srv/Quake3e/quake3e.ded.x64 \
+    +cvar_restart +set net_port 27960 +set fs_basepath /home/ioq3srv \
+    +set dedicated 2 +set fs_homepath /home/ioq3srv \
+    +set fs_basegame ${BASEGAME} +set fs_game ${GAME} \
+    +set logfile 2 +set com_hunkmegs 150 +set vm_rtChecks 0 \
+    +set ttycon 0 +set rconpassword ${RCON} \
+    +set sv_maxclients 32 +exec server.cfg" >> /home/ioq3srv/start.sh && \
+  chmod a+x /home/ioq3srv/start.sh && \
+  chown -R ioq3srv /home/ioq3srv
 USER ioq3srv
 EXPOSE 27960/udp
 EXPOSE 1081/tcp
-EXPOSE 8080/udp
+EXPOSE 8080/tcp
 VOLUME [ "/home/ioq3srv/baseq3" ]
-ENV RCON rconpass
-ENV GAME baseq3
-ENV BASEGAME baseq3
-CMD ["/usr/sbin/init"]
+ENV RCON=rconpass
+ENV GAME=baseq3
+ENV BASEGAME=baseq3
+CMD ["/home/ioq3srv/start.sh"]
