@@ -4344,7 +4344,7 @@ qboolean FS_ComparePaks( char *neededpaks, int len, qboolean dlstring ) {
 				break;
 			}
 #ifdef EMSCRIPTEN
-			else if (Q_stristr(sp->pack->pakFilename, fs_serverReferencedPakNames[i])) {
+			else if (sp->pack && Q_stristr(sp->pack->pakFilename, fs_serverReferencedPakNames[i])) {
 				havepak = qtrue; // Accept that the checksums don't match and move on
 				break;
 			}
