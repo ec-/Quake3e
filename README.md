@@ -88,9 +88,9 @@ Grab latest from dockerhub
 
 After the image is built and running, you can skip repeating the conversion process:
 
-`docker commit -t quake3e quake3e`
+`docker commit quake3e quake3e`
 
-`docker start -it quake3e`
+`docker start -i quake3e`
 
 # Running content server and repacking
 
