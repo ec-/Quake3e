@@ -15,7 +15,7 @@ RUN \
 RUN \
   echo "# BUILD NATIVE SERVER ##########################################" && \
   cd /tmp/build/Quake3e && \
-  make BUILD_CLIENT=0 NOFPU=1
+  make release BUILD_CLIENT=0 NOFPU=1
 RUN \
   echo "# BUILD JS CLIENT ##########################################" && \
   cd /tmp/build/Quake3e && \
@@ -28,7 +28,7 @@ RUN \
   export EM_CACHE=/tmp/build/Quake3e/code/xquakejs/lib/emsdk/cache && \
   /usr/bin/python2.7 ./code/xquakejs/lib/emsdk/upstream/emscripten/embuilder.py build sdl2 vorbis ogg zlib && \
   export STANDALONE=1 && \
-  make PLATFORM=js
+  make release PLATFORM=js
 RUN \
   echo "# COPY OUTPUT ##########################################" && \
   mkdir ~/Quake3e && \
@@ -48,7 +48,7 @@ COPY --from=builder /root/Quake3e /home/ioq3srv/Quake3e
 COPY --from=builder /root/quakejs /home/ioq3srv/quakejs
 RUN \
   apt-get update && \
-  apt-get install -y systemd imagemagick vorbis-tools vim && \
+  apt-get install -y systemd imagemagick imagemagick-common vorbis-tools vim && \
   useradd ioq3srv && \
   mkdir /home/ioq3srv/baseq3 && \
   sed -i -e 's/code\/xquakejs\///g' /home/ioq3srv/quakejs/package.json && \

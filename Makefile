@@ -624,8 +624,7 @@ endef
 		-s USE_ZLIB=1 \
 		-s USE_OGG=1 \
     -s FORCE_FILESYSTEM=1 \
-    -s EXPORT_NAME=\"quake3e\" \
-		$(DEBUG_CFLAGS)
+    -s EXPORT_NAME=\"quake3e\"
 
 else # ifeq js
 

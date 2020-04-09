@@ -1,5 +1,6 @@
 cd /home/ioq3srv/
 node /home/ioq3srv/quakejs/bin/repack.js --no-graph --no-overwrite /tmp/baseq3
+rm /home/ioq3srv/baseq3-cc
 ln -s /tmp/baseq3-cc /home/ioq3srv/baseq3-cc
 sleep 1
 for pid in $(pidof -x node); do
@@ -7,7 +8,7 @@ for pid in $(pidof -x node); do
     kill -9 $pid
   fi 
 done
-node /home/ioq3srv/quakejs/bin/web.js -R /assets/baseq3-cc /tmp/baseq3-cc &
+node /home/ioq3srv/quakejs/bin/web.js -R -wr /assets/baseq3-cc /tmp/baseq3-cc &
 sleep 1
 node /home/ioq3srv/quakejs/bin/proxy.js 1081 &
 sleep 1
