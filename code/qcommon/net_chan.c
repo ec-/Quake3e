@@ -665,7 +665,6 @@ int NET_StringToAdr( const char *s, netadr_t *a, netadrtype_t family )
 		search = base;
 	}
 
-Com_Printf("NET_StringToAdr: %s\n", search);
 	Q_strncpyz( a->name, search, strlen( search ) + 1 );
 	if(!Sys_StringToAdr(search, a, family))
 	{

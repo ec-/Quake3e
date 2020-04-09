@@ -35,13 +35,12 @@ RUN \
   mkdir ~/quakejs && \
   mkdir ~/quakejs/bin && \
   mkdir ~/quakejs/lib && \
-  cp /tmp/build/Quake3e/package.json ~/quakejs && \
-  cp /tmp/build/Quake3e/build/release-js-js/quake3e.js ~/quakejs/bin && \
-  cp /tmp/build/Quake3e/build/release-js-js/quake3e.wasm ~/quakejs/bin && \
-  cp /tmp/build/Quake3e/build/release-linux-x86_64/quake3e.ded.x64 ~/Quake3e && \
   rm -R /tmp/build/Quake3e/code/xquakejs/lib/emsdk && \
   cp -R /tmp/build/Quake3e/code/xquakejs/bin/* ~/quakejs/bin && \
-  cp -R /tmp/build/Quake3e/code/xquakejs/lib/* ~/quakejs/lib
+  cp -R /tmp/build/Quake3e/code/xquakejs/lib/* ~/quakejs/lib && \
+  cp /tmp/build/Quake3e/package.json ~/quakejs && \
+  cp /tmp/build/Quake3e/build/release-js-js/quake3e.* ~/quakejs/bin && \
+  cp /tmp/build/Quake3e/build/release-linux-x86_64/quake3e.ded.x64 ~/Quake3e
 
 #  cp /home/ioq3srv/Quake3e/quakejs/bin/q3eded.service /etc/systemd/system && \
 FROM node:12.15-slim AS server
