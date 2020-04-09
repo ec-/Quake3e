@@ -4780,9 +4780,11 @@ void FS_Startup_After_Async( void )
 
 	fs_gamedirvar->modified = qfalse; // We just loaded, it's not modified
 
+#ifndef EMSCRIPTEN
 	// check original q3a files
 	if ( !Q_stricmp( fs_basegame->string, BASEGAME ) || !Q_stricmp( fs_basegame->string, BASEDEMO ) )
 		FS_CheckIdPaks();
+#endif
 
 #ifdef FS_MISSING
 	if (missingFiles == NULL) {

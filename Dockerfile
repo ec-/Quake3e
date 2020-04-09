@@ -27,6 +27,7 @@ RUN \
   echo "EM_CACHE = '/tmp/build/Quake3e/code/xquakejs/lib/emsdk/cache'" >> /root/.emscripten && \
   export EM_CACHE=/tmp/build/Quake3e/code/xquakejs/lib/emsdk/cache && \
   /usr/bin/python2.7 ./code/xquakejs/lib/emsdk/upstream/emscripten/embuilder.py build sdl2 vorbis ogg zlib && \
+  export STANDALONE=1 && \
   make PLATFORM=js
 RUN \
   echo "# COPY OUTPUT ##########################################" && \
@@ -57,17 +58,17 @@ RUN \
   cd /home/ioq3srv/quakejs && \
   npm install && \
   npm install --only=dev && \
-  echo "cd /home/ioq3srv/quakejs" > /home/ioq3srv/start.sh && \
-  echo "npm run repack -- --no-graph --no-overwrite /home/ioq3srv/baseq3" >> /home/ioq3srv/start.sh && \
-  echo "node /home/ioq3srv/quakejs/bin/web.js -R /assets/baseq3-cc /tmp/baseq3-cc &" >> /home/ioq3srv/start.sh && \
-  echo "node /home/ioq3srv/quakejs/bin/proxy.js 8081 &" >> /home/ioq3srv/start.sh && \
-  echo "/home/ioq3srv/Quake3e/quake3e.ded.x64 \\" >> /home/ioq3srv/start.sh && \
-  echo "  +cvar_restart +set net_port 27960 +set fs_basepath /home/ioq3srv \\" >> /home/ioq3srv/start.sh && \
-  echo "  +set dedicated 2 +set fs_homepath /home/ioq3srv \\" >> /home/ioq3srv/start.sh && \
-  echo "  +set fs_basegame \\${BASEGAME} +set fs_game \\${GAME} \\" >> /home/ioq3srv/start.sh && \
-  echo "  +set logfile 2 +set com_hunkmegs 150 +set vm_rtChecks 0 \\" >> /home/ioq3srv/start.sh && \
-  echo "  +set ttycon 0 +set rconpassword ${RCON} \\" >> /home/ioq3srv/start.sh && \
-  echo "  +set sv_maxclients 32 +exec server.cfg" >> /home/ioq3srv/start.sh && \
+  echo "cd /home/ioq3srv/quakejs\n\
+npm run repack -- --no-graph --no-overwrite /home/ioq3srv/baseq3\n\
+node /home/ioq3srv/quakejs/bin/web.js -R /assets/baseq3-cc /tmp/baseq3-cc &\n\
+node /home/ioq3srv/quakejs/bin/proxy.js 8081 &\n\
+/home/ioq3srv/Quake3e/quake3e.ded.x64 \\\n\
+  +cvar_restart +set net_port 27960 +set fs_basepath /home/ioq3srv \\\n\
+  +set dedicated 2 +set fs_homepath /home/ioq3srv \\\n\
+  +set fs_basegame \\\${BASEGAME} +set fs_game \\\${GAME} \\\n\
+  +set logfile 2 +set com_hunkmegs 150 +set vm_rtChecks 0 \\\n\
+  +set ttycon 0 +set rconpassword \\\${RCON} \\\n\
+  +set sv_maxclients 32 +exec server.cfg" >> /home/ioq3srv/start.sh && \
   chmod a+x /home/ioq3srv/start.sh && \
   chown -R ioq3srv /home/ioq3srv
 USER ioq3srv
@@ -75,6 +76,8 @@ EXPOSE 27960/udp
 EXPOSE 1081/tcp
 EXPOSE 8080/tcp
 VOLUME [ "/home/ioq3srv/baseq3" ]
+VOLUME [ "/tmp/Quake3e" ]
+VOLUME [ "/tmp/quakejs" ]
 ENV RCON=rconpass
 ENV GAME=baseq3
 ENV BASEGAME=baseq3

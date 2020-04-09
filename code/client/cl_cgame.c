@@ -907,7 +907,7 @@ int CL_GetClientState( void ) {
 
 void CL_UpdateShader( void ) {
 	char *lazyShader = Sys_UpdateShader();
-	if(strlen(lazyShader) == 0) return;
+	if(!lazyShader || strlen(lazyShader) == 0) return;
 	lazyShader[12] = '\0';
 	re.UpdateShader(&lazyShader[13], atoi(&lazyShader[0]));
 }
@@ -922,7 +922,7 @@ void CL_UpdateSound( void ) {
 
 void CL_UpdateModel( void ) {
 	char *lazyModel = Sys_UpdateModel();
-	if(strlen(lazyModel) == 0) return;
+	if(!lazyModel || strlen(lazyModel) == 0) return;
 	re.RegisterModel(lazyModel);
 }
 
