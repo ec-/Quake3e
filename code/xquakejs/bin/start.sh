@@ -1,15 +1,15 @@
+cd /home/ioq3srv/
+node /home/ioq3srv/quakejs/bin/repack.js --no-graph --no-overwrite /tmp/baseq3
+ln -s /tmp/baseq3-cc /home/ioq3srv/baseq3-cc
+sleep 1
 for pid in $(pidof -x node); do
   if [ $pid != $$ ]; then
     kill -9 $pid
   fi 
 done
-cd /home/ioq3srv/
-node /home/ioq3srv/quakejs/bin/repack.js --no-graph --no-overwrite /tmp/baseq3
-sleep 1
-ln -s /tmp/baseq3-cc /home/ioq3srv/baseq3-cc
 node /home/ioq3srv/quakejs/bin/web.js -R /assets/baseq3-cc /tmp/baseq3-cc &
 sleep 1
-node /home/ioq3srv/quakejs/bin/proxy.js 8081 &
+node /home/ioq3srv/quakejs/bin/proxy.js 1081 &
 sleep 1
 /home/ioq3srv/Quake3e/quake3e.ded.x64 \
   +cvar_restart +set net_port 27960 +set fs_basepath /home/ioq3srv \
