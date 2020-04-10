@@ -948,7 +948,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 			R_ComputeColors( pStage );
 		}
 
-		for ( i = 0; i < NUM_TEXTURE_BUNDLES; i++ ) {
+		for ( i = NUM_TEXTURE_BUNDLES-1; i >= 0; i-- ) {
 			if ( pStage->bundle[i].image[0] != NULL ) {
 				GL_SelectTexture( i );
 				R_BindAnimatedImage( &pStage->bundle[i] );
