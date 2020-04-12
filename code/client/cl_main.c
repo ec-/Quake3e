@@ -3159,18 +3159,18 @@ void CL_Frame( int msec ) {
 		}
 	}
 	
-	if((uivm || cgvm) && secondTimer > 10) {
+	if((uivm || cgvm) && secondTimer > 20) {
 		secondTimer = 0;
 		CL_UpdateShader();
-		CL_UpdateShader();
-		CL_UpdateShader();
 		S_UpdateSounds( qtrue );
-//		CL_UpdateSound();
 	} else {
 		secondTimer += msec;
 	}
 	if((uivm || cgvm) && thirdTimer > 100) {
 		thirdTimer = 0;
+		if(cls.soundRegistered) {
+		//	CL_UpdateSound();
+		}
 		CL_UpdateModel();
 	} else {
 		thirdTimer += msec;
@@ -3422,13 +3422,18 @@ void CL_StartHunkUsers( void ) {
 
 	if ( !cls.soundStarted ) {
 		cls.soundStarted = qtrue;
+		cls.firstClick = qtrue;
+#ifndef EMSCRIPTEN
 		S_Init();
+#endif
 	}
 
+#ifndef EMSCRIPTEN
 	if ( !cls.soundRegistered ) {
 		cls.soundRegistered = qtrue;
 		S_BeginRegistration();
 	}
+#endif
 
 	if ( !cls.uiStarted ) {
 		cls.uiStarted = qtrue;

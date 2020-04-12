@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 static snd_codec_t *codecs;
 
-qboolean updateSound;
+qboolean updateSound = qfalse;
 void S_UpdateSounds( qboolean update )
 {
 	updateSound = update;

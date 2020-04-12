@@ -641,6 +641,16 @@ static void CL_KeyDownEvent( int key, unsigned time )
 		return;
 	}
 
+	if(cls.soundStarted && cls.firstClick && (key == K_MOUSE1 || key == K_MOUSE2 || key == K_MOUSE3 || 
+		key == K_MOUSE4 || key == K_MOUSE5)) {
+		cls.firstClick = qfalse;
+		S_Init();
+		if(!cls.soundRegistered) {
+			cls.soundRegistered = qtrue;
+			S_BeginRegistration();			
+		}
+		S_UpdateSounds(qtrue);
+	}
 
 	// distribute the key down event to the apropriate handler
 	if ( Key_GetCatcher( ) & KEYCATCH_CONSOLE ) {
