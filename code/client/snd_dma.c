@@ -379,7 +379,6 @@ void S_memoryLoad( sfx_t *sfx ) {
 		sfx->inMemory = qfalse;
 		return;
 	}
-	Com_Printf("S_memoryLoad: %s\n", sfx);
 	sfx->defaultSound = qfalse;
 	sfx->inMemory = qtrue;
 }
