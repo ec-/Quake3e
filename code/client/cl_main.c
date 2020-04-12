@@ -3161,6 +3161,8 @@ void CL_Frame( int msec ) {
 	if((uivm || cgvm) && secondTimer > 10) {
 		secondTimer = 0;
 		CL_UpdateShader();
+		CL_UpdateShader();
+		CL_UpdateShader();
 //		CL_UpdateSound();
 		CL_UpdateModel();
 	} else {
