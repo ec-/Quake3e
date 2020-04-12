@@ -262,6 +262,7 @@ void S_BeginRegistration( void )
 	if( si.BeginRegistration ) {
 		si.BeginRegistration();
 	}
+	S_UpdateSounds( qfalse );
 }
 
 

@@ -3118,6 +3118,7 @@ CL_Frame
 ==================
 */
 static int secondTimer = 0;
+static int thirdTimer = 0;
 void CL_Frame( int msec ) {
 	float fps;
 	float frameDuration;
@@ -3163,10 +3164,16 @@ void CL_Frame( int msec ) {
 		CL_UpdateShader();
 		CL_UpdateShader();
 		CL_UpdateShader();
+		S_UpdateSounds( qtrue );
 //		CL_UpdateSound();
-		CL_UpdateModel();
 	} else {
 		secondTimer += msec;
+	}
+	if((uivm || cgvm) && thirdTimer > 100) {
+		thirdTimer = 0;
+		CL_UpdateModel();
+	} else {
+		thirdTimer += msec;
 	}
 #endif
 

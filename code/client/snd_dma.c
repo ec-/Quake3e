@@ -377,7 +377,9 @@ void S_memoryLoad( sfx_t *sfx ) {
 	//	Com_DPrintf( S_COLOR_YELLOW "WARNING: couldn't load sound: %s\n", sfx->soundName );
 		sfx->defaultSound = qtrue;
 		sfx->inMemory = qfalse;
+		return;
 	}
+	Com_Printf("S_memoryLoad: %s\n", sfx);
 	sfx->defaultSound = qfalse;
 	sfx->inMemory = qtrue;
 }

@@ -26,7 +26,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 static snd_codec_t *codecs;
 
-qboolean updateSound = qfalse;
+qboolean updateSound;
+void S_UpdateSounds( qboolean update )
+{
+	updateSound = update;
+}
+
 
 /*
 =================
@@ -49,7 +54,7 @@ static void *S_CodecGetSound(const char *filename, snd_info_t *info)
 	Q_strncpyz( localName, filename, sizeof( localName ) );
 
 	ext = COM_GetExtension(localName);
-
+	
 	if( *ext )
 	{
 		// Look for the correct loader and use it
@@ -59,7 +64,7 @@ static void *S_CodecGetSound(const char *filename, snd_info_t *info)
 			{
 				// Load
 				if(!updateSound) {
-					if(FS_FileExists(localName)) {
+					if(FS_FOpenFileRead(localName, NULL, qfalse) > -1) {
 						return NULL;
 					}
 				} else {
@@ -102,7 +107,7 @@ static void *S_CodecGetSound(const char *filename, snd_info_t *info)
 
 		// Load
 		if(!updateSound) {
-			if(FS_FileExists(altName)) {
+			if(FS_FOpenFileRead(altName, NULL, qfalse) > -1) {
 				return NULL;
 			}
 		} else {
