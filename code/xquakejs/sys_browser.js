@@ -82,7 +82,8 @@ var LibrarySys = {
 			//'+set', 'r_specularMapping', '0',
 			//'+set', 'r_deluxeMapping', '0',
 			//'+set', 'r_hdr', '0',
-			//'+set', 'r_picmip', '0',
+			//'+set', 'r_lodbias', '0',
+			//'+set', 'r_picmip', '4',
 			//'+set', 'r_postProcess', '0',
 			'+set', 'cg_drawfps', '1',
 			//'+connect', 'proxy.quake.games:443',
@@ -479,7 +480,7 @@ var LibrarySys = {
 			})
 		})
 		window.addEventListener('resize', SYS.resizeViewport)
-		SYS.lazyInterval = setInterval(SYS.DownloadLazy, 10)
+		SYS.lazyInterval = setInterval(SYS.DownloadLazy, 1)
 	},
 	Sys_PlatformExit: function () {
 		flipper.style.display = 'block'
@@ -738,15 +739,18 @@ var LibrarySys = {
 			mode = allocate(intArrayFromString(UTF8ToString(mode)
 				.replace('b', '')), 'i8', ALLOC_STACK);
 			handle = _fopen(ospath, mode)
-			if(handle === 0) {
+			//if(handle === 0) {
 				// use the index to make a case insensitive lookup
 				var indexFilename = filename.toLowerCase()
 				if(SYS.index && typeof SYS.index[indexFilename] != 'undefined') {
-					var altName = filename.substr(0, filename.length - SYS.index[indexFilename].name.length) 
+					var altName = filename.substr(0, filename.length
+					  - SYS.index[indexFilename].name.length) 
 						+ SYS.index[indexFilename].name
-					handle = _fopen(allocate(intArrayFromString(altName), 'i8', ALLOC_STACK), mode)
-					if(handle > 0) {
-						return handle
+					if(handle === 0 && altName != filename) {
+						handle = _fopen(allocate(intArrayFromString(altName), 'i8', ALLOC_STACK), mode)
+						//if(handle > 0) {
+						//	return handle
+						//}
 					}
 					var loadingShader = UTF8ToString(_Cvar_VariableString(
 						allocate(intArrayFromString('r_loadingShader'), 'i8', ALLOC_STACK)))
@@ -758,7 +762,7 @@ var LibrarySys = {
 						SYS.index[indexFilename].shaders.push(loadingShader)
 					}
 				}
-			}
+			//}
 		} catch (e) {
 			// short for fstat check in sys_unix.c!!!
 			if(e.code == 'ENOENT') {

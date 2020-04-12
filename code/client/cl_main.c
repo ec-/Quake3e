@@ -3158,7 +3158,7 @@ void CL_Frame( int msec ) {
 		}
 	}
 	
-	if(secondTimer > 100) {
+	if((uivm || cgvm) && secondTimer > 10) {
 		secondTimer = 0;
 		CL_UpdateShader();
 //		CL_UpdateSound();
@@ -3547,6 +3547,7 @@ static void CL_InitRef( void ) {
 	rimp.FS_ListFiles = FS_ListFiles;
 	//rimp.FS_FileIsInPAK = FS_FileIsInPAK;
 	rimp.FS_FileExists = FS_FileExists;
+	rimp.FS_FOpenFileRead = FS_FOpenFileRead;
 
 	rimp.Cvar_Get = Cvar_Get;
 	rimp.Cvar_Set = Cvar_Set;

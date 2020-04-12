@@ -1413,13 +1413,13 @@ void RE_Shutdown( int destroyWindow ) {
 			FBO_Shutdown();
 		R_DeleteTextures();
 		R_ShutdownVaos();
-		GLSL_ShutdownGPUShaders();
 	}
 
 	R_DoneFreeType();
 
 	// shut down platform specific OpenGL stuff
 	if ( destroyWindow ) {
+		GLSL_ShutdownGPUShaders();
 		ri.GLimp_Shutdown( destroyWindow == 2 ? qtrue: qfalse );
 
 		Com_Memset( &glConfig, 0, sizeof( glConfig ) );

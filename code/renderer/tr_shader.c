@@ -3541,9 +3541,3 @@ void R_InitShaders( void ) {
 
 	CreateExternalShaders();
 }
-
-#ifdef EMSCRIPTEN
-void RE_UpdateShader(char *shaderName, int lightmapIndex) {
-  //R_RemapShaderInternal(shaderName, shaderName, va("%i", ri.Milliseconds()), lightmapIndex, qtrue);
-}
-#endif

@@ -2293,7 +2293,7 @@ Loads any of the supported image types into a canonical
 32 bit format.
 =================
 */
-void R_LoadImage( const char *name, byte **pic, int *width, int *height, GLenum *picFormat, int *numMips )
+void R_LoadImage( const char *name, byte **pic, int *width, int *height, GLenum *picFormat, int *numMips, qboolean checkOnly )
 {
 	qboolean orgNameFailed = qfalse;
 	int orgLoader = -1;
@@ -2302,6 +2302,9 @@ void R_LoadImage( const char *name, byte **pic, int *width, int *height, GLenum 
 	const char *ext;
 	const char *altName;
 
+	if(!name || strlen(name) == 0) {
+		return;
+	}
 	*pic = NULL;
 	*width = 0;
 	*height = 0;
@@ -2320,7 +2323,13 @@ void R_LoadImage( const char *name, byte **pic, int *width, int *height, GLenum 
 		COM_StripExtension(name, ddsName, MAX_QPATH);
 		Q_strcat(ddsName, MAX_QPATH, ".dds");
 
-		R_LoadDDS(ddsName, pic, width, height, picFormat, numMips);
+		if(checkOnly) {
+			if ( ri.FS_FOpenFileRead(ddsName, NULL, qfalse) > -1 ) {
+				return;
+			}
+		} else {
+			R_LoadDDS(ddsName, pic, width, height, picFormat, numMips);
+		}
 
 		// If loaded, we're done.
 		if (*pic)
@@ -2335,7 +2344,13 @@ void R_LoadImage( const char *name, byte **pic, int *width, int *height, GLenum 
 			if( !Q_stricmp( ext, imageLoaders[ i ].ext ) )
 			{
 				// Load
-				imageLoaders[ i ].ImageLoader( localName, pic, width, height );
+				if(checkOnly) {
+					if ( ri.FS_FOpenFileRead(localName, NULL, qfalse) > -1 ) {
+						return;
+					}
+				} else {
+					imageLoaders[ i ].ImageLoader( localName, pic, width, height );
+				}
 				break;
 			}
 		}
@@ -2369,7 +2384,13 @@ void R_LoadImage( const char *name, byte **pic, int *width, int *height, GLenum 
 		altName = va( "%s.%s", localName, imageLoaders[ i ].ext );
 
 		// Load
-		imageLoaders[ i ].ImageLoader( altName, pic, width, height );
+		if(checkOnly) {
+			if ( ri.FS_FOpenFileRead(altName, NULL, qfalse) > -1 ) {
+				return;
+			}
+		} else {
+			imageLoaders[ i ].ImageLoader( altName, pic, width, height );
+		}
 
 		if( *pic )
 		{
@@ -2383,7 +2404,6 @@ void R_LoadImage( const char *name, byte **pic, int *width, int *height, GLenum 
 		}
 	}
 }
-
 
 /*
 ===============
@@ -2427,7 +2447,7 @@ image_t	*R_FindImageFile( const char *name, imgType_t type, imgFlags_t flags )
 	//
 	// load the pic from disk
 	//
-	R_LoadImage( name, &pic, &width, &height, &picFormat, &picNumMips );
+	R_LoadImage( name, &pic, &width, &height, &picFormat, &picNumMips, qfalse );
 	if ( pic == NULL ) {
 		return NULL;
 	}

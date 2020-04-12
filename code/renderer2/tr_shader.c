@@ -55,7 +55,7 @@ return a hash value for the filename
 
 #define generateHashValue Com_GenerateHashValue
 
-void R_RemapShaderInternal(const char *shaderName, const char *newShaderName, const char *timeOffset, int index, qboolean ms) {
+void R_RemapShaderInternal(const char *shaderName, const char *newShaderName, const char *timeOffset, int index) {
 	char		strippedName[MAX_QPATH];
 	int			hash;
 	shader_t	*sh, *sh2;
@@ -74,8 +74,6 @@ void R_RemapShaderInternal(const char *shaderName, const char *newShaderName, co
 		return;
 	}
 
-  mapShaders = ms;
-
 	sh2 = R_FindShaderByName( newShaderName );
   if (sh2 == NULL || sh2 == tr.defaultShader || mapShaders) {
 		h = RE_RegisterShaderLightMap(newShaderName, index);
@@ -86,8 +84,6 @@ void R_RemapShaderInternal(const char *shaderName, const char *newShaderName, co
 		ri.Printf( PRINT_WARNING, "WARNING: R_RemapShader: new shader %s not found\n", newShaderName );
 		return;
 	}
-
-  mapShaders = qfalse;
 
 	// remap all the shaders with the given name
 	// even tho they might have different lightmaps
@@ -107,8 +103,9 @@ void R_RemapShaderInternal(const char *shaderName, const char *newShaderName, co
 	}
 }
 
-void R_RemapShader(const char *shaderName, const char *newShaderName, const char *timeOffset) {
-  R_RemapShaderInternal(shaderName, newShaderName, timeOffset, 0, qfalse);
+void R_RemapShader(const char *shaderName, const char *newShaderName, const char *timeOffset)
+{
+  R_RemapShaderInternal(shaderName, newShaderName, timeOffset, 0);
 }
 
 /*
@@ -687,8 +684,15 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 					if (r_genNormalMaps->integer)
 						flags |= IMGFLAG_GENNORMALMAP;
 				}
-
-				stage->bundle[0].image[0] = R_FindImageFile( token, type, flags );
+        
+        if(!mapShaders) {
+          byte *pic;
+          int len;
+          R_LoadImage(token, &pic, &len, &len, &len, &len, qtrue);
+          return qfalse;
+        } else {
+          stage->bundle[0].image[0] = R_FindImageFile( token, type, flags );
+        }
 
 				if ( !stage->bundle[0].image[0] )
 				{
@@ -733,7 +737,14 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 			}
 
 
-			stage->bundle[0].image[0] = R_FindImageFile( token, type, flags );
+      if(!mapShaders) {
+        int len;
+        byte *pic;
+        R_LoadImage(token, &pic, &len, &len, &len, &len, qtrue);
+        return qfalse;
+      } else {
+  			stage->bundle[0].image[0] = R_FindImageFile( token, type, flags );
+      }
 			if ( !stage->bundle[0].image[0] )
 			{
 				ri.Printf( PRINT_WARNING, "WARNING: R_FindImageFile could not find '%s' in shader '%s'\n", token, shader.name );
@@ -773,7 +784,14 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 					if (!shader.noPicMip)
 						flags |= IMGFLAG_PICMIP;
 
-					stage->bundle[0].image[num] = R_FindImageFile( token, IMGTYPE_COLORALPHA, flags );
+          if(!mapShaders) {
+            int len;
+            byte *pic;
+            R_LoadImage(token, &pic, &len, &len, &len, &len, qtrue);
+            return qfalse;
+          } else {
+					  stage->bundle[0].image[num] = R_FindImageFile( token, IMGTYPE_COLORALPHA, flags );
+          }
 					if ( !stage->bundle[0].image[num] )
 					{
 						ri.Printf( PRINT_WARNING, "WARNING: R_FindImageFile could not find '%s' in shader '%s'\n", token, shader.name );
@@ -1588,7 +1606,15 @@ static void ParseSkyParms( const char **text ) {
 		for (i=0 ; i<6 ; i++) {
 			Com_sprintf( pathname, sizeof(pathname), "%s_%s.tga"
 				, token, suf[i] );
-			shader.sky.outerbox[i] = R_FindImageFile( ( char * ) pathname, IMGTYPE_COLORALPHA, imgFlags | IMGFLAG_CLAMPTOEDGE );
+        
+      if(!mapShaders) {
+        int len;
+        byte *pic;
+        R_LoadImage((char *) pathname, &pic, &len, &len, &len, &len, qtrue);
+        shader.sky.outerbox[i] = tr.defaultImage;
+      } else {
+  			shader.sky.outerbox[i] = R_FindImageFile( ( char * ) pathname, IMGTYPE_COLORALPHA, imgFlags | IMGFLAG_CLAMPTOEDGE );
+      }
 
 			if ( !shader.sky.outerbox[i] ) {
 				shader.sky.outerbox[i] = tr.defaultImage;
@@ -1619,7 +1645,14 @@ static void ParseSkyParms( const char **text ) {
 		for (i=0 ; i<6 ; i++) {
 			Com_sprintf( pathname, sizeof(pathname), "%s_%s.tga"
 				, token, suf[i] );
-			shader.sky.innerbox[i] = R_FindImageFile( ( char * ) pathname, IMGTYPE_COLORALPHA, imgFlags );
+      if(!mapShaders) {
+        int len;
+        byte *pic;
+        R_LoadImage((char *) pathname, &pic, &len, &len, &len, &len, qtrue);
+        shader.sky.innerbox[i] = tr.defaultImage;
+      } else {
+			  shader.sky.innerbox[i] = R_FindImageFile( ( char * ) pathname, IMGTYPE_COLORALPHA, imgFlags );
+      }
 			if ( !shader.sky.innerbox[i] ) {
 				shader.sky.innerbox[i] = tr.defaultImage;
 			}
@@ -2484,14 +2517,21 @@ static void CollapseStagesToLightall(shaderStage_t *diffuse,
 		else if ((lightmap || useLightVector || useLightVertex) && (diffuseImg = diffuse->bundle[TB_DIFFUSEMAP].image[0]) != NULL)
 		{
 			char normalName[MAX_QPATH];
-			image_t *normalImg;
+			image_t *normalImg = NULL;
 			imgFlags_t normalFlags = (diffuseImg->flags & ~IMGFLAG_GENNORMALMAP) | IMGFLAG_NOLIGHTSCALE;
 
 			// try a normalheight image first
 			COM_StripExtension(diffuseImg->imgName, normalName, MAX_QPATH);
 			Q_strcat(normalName, MAX_QPATH, "_nh");
 
-			normalImg = R_FindImageFile(normalName, IMGTYPE_NORMALHEIGHT, normalFlags);
+      if(!mapShaders) {
+        int len;
+        byte *pic;
+        R_LoadImage(normalName, &pic, &len, &len, &len, &len, qtrue);
+        normalImg = NULL;
+      } else {
+	      normalImg = R_FindImageFile(normalName, IMGTYPE_NORMALHEIGHT, normalFlags);
+      }
 
 			if (normalImg)
 			{
@@ -2501,7 +2541,14 @@ static void CollapseStagesToLightall(shaderStage_t *diffuse,
 			{
 				// try a normal image ("_n" suffix)
 				normalName[strlen(normalName) - 1] = '\0';
-				normalImg = R_FindImageFile(normalName, IMGTYPE_NORMAL, normalFlags);
+        if(!mapShaders) {
+          byte *pic;
+          int len;
+          R_LoadImage(normalName, &pic, &len, &len, &len, &len, qtrue);
+          normalImg = NULL;
+        } else {
+				  normalImg = R_FindImageFile(normalName, IMGTYPE_NORMAL, normalFlags);
+        }
 			}
 
 			if (normalImg)
@@ -2530,13 +2577,20 @@ static void CollapseStagesToLightall(shaderStage_t *diffuse,
 		else if ((lightmap || useLightVector || useLightVertex) && (diffuseImg = diffuse->bundle[TB_DIFFUSEMAP].image[0]) != NULL)
 		{
 			char specularName[MAX_QPATH];
-			image_t *specularImg;
+			image_t *specularImg = NULL;
 			imgFlags_t specularFlags = (diffuseImg->flags & ~IMGFLAG_GENNORMALMAP) | IMGFLAG_NOLIGHTSCALE;
 
 			COM_StripExtension(diffuseImg->imgName, specularName, MAX_QPATH);
 			Q_strcat(specularName, MAX_QPATH, "_s");
 
-			specularImg = R_FindImageFile(specularName, IMGTYPE_COLORALPHA, specularFlags);
+      if(!mapShaders) {
+        byte *pic;
+        int len;
+        R_LoadImage(specularName, &pic, &len, &len, &len, &len, qtrue);
+        specularImg = NULL;
+      } else {
+			  specularImg = R_FindImageFile(specularName, IMGTYPE_COLORALPHA, specularFlags);
+      }
 
 			if (specularImg)
 			{
@@ -3501,7 +3555,7 @@ shader_t *R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImag
 	char		strippedName[MAX_QPATH];
 	unsigned long hash;
 	const char	*shaderText;
-	image_t		*image;
+	image_t		*image = NULL;
 	shader_t	*sh;
 
 	if ( name[0] == '\0' ) {
@@ -3586,12 +3640,23 @@ shader_t *R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImag
 			flags |= IMGFLAG_CLAMPTOEDGE;
 		}
 
-		image = R_FindImageFile( name, IMGTYPE_COLORALPHA, flags );
+    if(!mapShaders) {
+      byte *pic = NULL;
+      int len = 0;
+      R_LoadImage( name, &pic, &len, &len, &len, &len, qtrue );
+      image = NULL;
+      shader.defaultShader = qtrue;
+			return FinishShader();
+    } else {
+		  image = R_FindImageFile( name, IMGTYPE_COLORALPHA, flags );
+    }
 		if ( !image ) {
 			ri.Printf( PRINT_DEVELOPER, "Couldn't find image file for shader %s\n", name );
 			shader.defaultShader = qtrue;
 			return FinishShader();
-		}
+		} else {
+      shader.defaultShader = qfalse;
+    }
 	}
 
 	//
@@ -4205,7 +4270,11 @@ static void CreateExternalShaders( void ) {
 }
 
 void RE_UpdateShader(char *shaderName, int lightmapIndex) {
-  R_RemapShaderInternal(shaderName, shaderName, va("%i", ri.Milliseconds()), lightmapIndex, qtrue);
+  mapShaders = qtrue;
+
+  R_RemapShaderInternal(shaderName, shaderName, va("%i", ri.Milliseconds()), lightmapIndex);
+  
+  mapShaders = qfalse;
 }
 
 /*

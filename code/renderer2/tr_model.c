@@ -28,6 +28,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 static qboolean R_LoadMD3(model_t *mod, int lod, void *buffer, int bufferSize, const char *modName);
 static qboolean R_LoadMDR(model_t *mod, void *buffer, int filesize, const char *name );
 
+qboolean updateModels = qfalse;
 /*
 ====================
 R_RegisterMD3
@@ -316,7 +317,13 @@ qhandle_t RE_RegisterModel( const char *name ) {
 			if( !Q_stricmp( ext, modelLoaders[ i ].ext ) )
 			{
 				// Load
-				hModel = modelLoaders[ i ].ModelLoader( localName, mod );
+				if ( !updateModels ) {
+					if(ri.FS_FileExists(localName)) {
+						return mod->index;
+					}
+				} else {
+					hModel = modelLoaders[ i ].ModelLoader( localName, mod );
+				}
 				break;
 			}
 		}
@@ -350,7 +357,13 @@ qhandle_t RE_RegisterModel( const char *name ) {
 		Com_sprintf( altName, sizeof (altName), "%s.%s", localName, modelLoaders[ i ].ext );
 
 		// Load
-		hModel = modelLoaders[ i ].ModelLoader( altName, mod );
+		if ( !updateModels ) {
+			if(ri.FS_FileExists(altName)) {
+				return mod->index;
+			}
+		} else {
+			hModel = modelLoaders[ i ].ModelLoader( altName, mod );
+		}
 
 		if( hModel )
 		{
