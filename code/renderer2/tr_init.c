@@ -1475,6 +1475,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 
 	re.BeginRegistration = RE_BeginRegistration;
 	re.RegisterModel = RE_RegisterModel;
+	re.UpdateModel = R_UpdateModel;
 	re.RegisterSkin = RE_RegisterSkin;
 	re.RegisterShader = RE_RegisterShader;
 	re.RegisterShaderNoMip = RE_RegisterShaderNoMip;
@@ -1518,6 +1519,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 
 	//re.UpdateMode = RE_UpdateMode;
 	re.UpdateShader = RE_UpdateShader;
+	re.UpdateModel = R_UpdateModel;
 
 	return &re;
 }

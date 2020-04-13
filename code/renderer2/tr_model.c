@@ -239,6 +239,15 @@ model_t *R_AllocModel( void ) {
 	return mod;
 }
 
+void R_UpdateModel( const char *name )
+{
+	updateModels = qtrue;
+	
+	RE_RegisterModel(name);
+	
+	updateModels = qfalse;
+}
+
 /*
 ====================
 RE_RegisterModel
@@ -306,6 +315,7 @@ qhandle_t RE_RegisterModel( const char *name ) {
 	// load the files
 	//
 	Q_strncpyz( localName, name, sizeof( localName ) );
+	ri.Cvar_Set("r_loadingModel", name);
 
 	ext = COM_GetExtension( localName );
 
@@ -318,8 +328,8 @@ qhandle_t RE_RegisterModel( const char *name ) {
 			{
 				// Load
 				if ( !updateModels ) {
-					if(ri.FS_FileExists(localName)) {
-						return mod->index;
+					if(ri.FS_FOpenFileRead(localName, NULL, qfalse)) {
+						hModel = mod;
 					}
 				} else {
 					hModel = modelLoaders[ i ].ModelLoader( localName, mod );
@@ -358,8 +368,8 @@ qhandle_t RE_RegisterModel( const char *name ) {
 
 		// Load
 		if ( !updateModels ) {
-			if(ri.FS_FileExists(altName)) {
-				return mod->index;
+			if(ri.FS_FOpenFileRead(altName, NULL, qfalse)) {
+				hModel = mod;
 			}
 		} else {
 			hModel = modelLoaders[ i ].ModelLoader( altName, mod );
@@ -376,6 +386,8 @@ qhandle_t RE_RegisterModel( const char *name ) {
 			break;
 		}
 	}
+	
+	ri.Cvar_Set("r_loadingModel", "");
 
 	return mod->index;
 }

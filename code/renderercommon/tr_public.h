@@ -115,6 +115,7 @@ typedef struct {
 	void	(*SyncRender)( void );
 
 	void (*UpdateMode)(glconfig_t *glconfigOut);
+	void (*UpdateModel)(char *name);
 	void (*UpdateShader)(char *shaderName, int lightmapIndex);
 
 } refexport_t;

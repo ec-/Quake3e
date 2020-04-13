@@ -1045,24 +1045,24 @@ void S_Base_Respatialize( int entityNum, const vec3_t head, vec3_t axis[3], int 
 	VectorCopy(axis[2], listener_axis[2]);
 
 	// update spatialization for dynamic sounds	
-	ch = s_channels;
-	for ( i = 0 ; i < MAX_CHANNELS ; i++, ch++ ) {
-		if ( !ch->thesfx ) {
-			continue;
-		}
-		// anything coming from the view entity will always be full volume
-		if (ch->entnum == listener_number) {
-			ch->leftvol = ch->master_vol;
-			ch->rightvol = ch->master_vol;
-		} else {
-			if (ch->fixed_origin) {
-				VectorCopy( ch->origin, origin );
-			} else {
-				VectorCopy( loopSounds[ ch->entnum ].origin, origin );
+	if(newTime - prevTime > 10) {
+		prevTime = newTime;
+		ch = s_channels;
+		for ( i = 0 ; i < MAX_CHANNELS ; i++, ch++ ) {
+			if ( !ch->thesfx ) {
+				continue;
 			}
+			// anything coming from the view entity will always be full volume
+			if (ch->entnum == listener_number) {
+				ch->leftvol = ch->master_vol;
+				ch->rightvol = ch->master_vol;
+			} else {
+				if (ch->fixed_origin) {
+					VectorCopy( ch->origin, origin );
+				} else {
+					VectorCopy( loopSounds[ ch->entnum ].origin, origin );
+				}
 
-			if(newTime - prevTime > 25) {
-				prevTime = newTime;
 				S_SpatializeOrigin (origin, ch->master_vol, &ch->leftvol, &ch->rightvol);
 			}
 		}

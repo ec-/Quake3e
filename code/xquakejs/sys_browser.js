@@ -771,7 +771,11 @@ var LibrarySys = {
 					if(loading.length === 0) {
 						loading = UTF8ToString(_Cvar_VariableString(
 							allocate(intArrayFromString('snd_loadingSound'), 'i8', ALLOC_STACK)))
-					} 
+						if(loading.length === 0) {
+							loading = UTF8ToString(_Cvar_VariableString(
+								allocate(intArrayFromString('r_loadingModel'), 'i8', ALLOC_STACK)))
+						}
+					}
 					if(!SYS.index[indexFilename].downloading) {
 						SYS.downloadLazy.push([loading, SYS.index[indexFilename].name])
 						SYS.index[indexFilename].shaders.push(loading)
