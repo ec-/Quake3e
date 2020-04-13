@@ -4164,10 +4164,16 @@ void Com_Frame( void ) {
 	} while( 0 );
 
 	if(Cvar_VariableIntegerValue("net_socksLoading")) {
-		Com_Printf( "--- SOCKS Loading ---\n" );
+		if(Sys_Milliseconds() - com_frameTime > 5000) {
+			SOCKS_Frame_Proxy();
+		} else if (Sys_Milliseconds() - com_frameTime < 100) {
+			Com_Printf( "--- SOCKS Loading ---\n" );
+		}
 		return;
 	}
 #endif
+;
+
 	lastTime = com_frameTime;
 	com_frameTime = Com_EventLoop();
 	msec = com_frameTime - lastTime;

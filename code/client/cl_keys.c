@@ -649,7 +649,6 @@ static void CL_KeyDownEvent( int key, unsigned time )
 			cls.soundRegistered = qtrue;
 			S_BeginRegistration();			
 		}
-		S_UpdateSounds(qtrue);
 	}
 
 	// distribute the key down event to the apropriate handler

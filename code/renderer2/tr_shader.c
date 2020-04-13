@@ -38,8 +38,6 @@ static	shader_t*		hashTable[FILE_HASH_SIZE];
 static char **shaderTextHashTable[MAX_SHADERTEXT_HASH];
 
 qboolean mapShaders = qfalse;
-char lazyStrings[2048*1024];
-int numLazyStrings = 0;
 int start = 0;
 qboolean skipShader = qfalse;
 qboolean hasFile = qfalse;
@@ -3590,11 +3588,7 @@ shader_t *R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImag
 		}
 	}
 
-  if(numLazyStrings + 1024 < sizeof(lazyStrings)) { // && !Q_stristr(strippedName, "texture")) {
-    Q_strncpyz(&lazyStrings[numLazyStrings], name, strlen(name)+1);
-    ri.Cvar_Set( "r_loadingShader", va("%12i;%s", lightmapIndex, name) );
-    numLazyStrings+=strlen(name)+1;
-  }
+  ri.Cvar_Set( "r_loadingShader", va("%12i;%s", lightmapIndex, name) );
 
 	InitShader( strippedName, lightmapIndex );
 

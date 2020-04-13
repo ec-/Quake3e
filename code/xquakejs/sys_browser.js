@@ -368,13 +368,22 @@ var LibrarySys = {
 		DownloadLazyFinish: function (indexFilename, file) {
 			SYS.index[indexFilename].downloading = false
 			if(file[1].match(/\.opus|\.wav|\.ogg/i)) {
-				SYS.soundCallback.unshift(file[1].replace('/' + SYS.fs_game + '/', ''))
+				if(file[0]) {
+					SYS.soundCallback.unshift(file[0].replace('/' + SYS.fs_game + '/', ''))
+				} else {
+					SYS.soundCallback.unshift(file[1].replace('/' + SYS.fs_game + '/', ''))
+				}
+				SYS.soundCallback = SYS.soundCallback.filter((s, i, arr) => arr.indexOf(s) === i)
 			} else if(file[1].match(/\.md3|\.iqm|\.mdr/i)) {
 				SYS.modelCallback.unshift(file[1].replace('/' + SYS.fs_game + '/', ''))
-			} else if(file[0]) {
-				SYS.shaderCallback.unshift.apply(SYS.shaderCallback, [file[0]].concat(SYS.index[indexFilename].shaders))
+				SYS.modelCallback = SYS.modelCallback.filter((s, i, arr) => arr.indexOf(s) === i)
 			} else if(SYS.index[indexFilename].shaders.length > 0) {
-				SYS.shaderCallback.unshift.apply(SYS.shaderCallback, SYS.index[indexFilename].shaders)
+				if(file[0]) {
+					SYS.shaderCallback.unshift.apply(SYS.shaderCallback, [file[0]].concat(SYS.index[indexFilename].shaders))
+				} else {
+					SYS.shaderCallback.unshift.apply(SYS.shaderCallback, SYS.index[indexFilename].shaders)
+				}
+				SYS.shaderCallback = SYS.shaderCallback.filter((s, i, arr) => arr.indexOf(s) === i)
 			}
 		},
 		DownloadLazySort: function () {
@@ -752,14 +761,18 @@ var LibrarySys = {
 						//	return handle
 						//}
 					}
-					var loadingShader = UTF8ToString(_Cvar_VariableString(
+					var loading = UTF8ToString(_Cvar_VariableString(
 						allocate(intArrayFromString('r_loadingShader'), 'i8', ALLOC_STACK)))
+					if(loading.length === 0) {
+						loading = UTF8ToString(_Cvar_VariableString(
+							allocate(intArrayFromString('snd_loadingSound'), 'i8', ALLOC_STACK)))
+					} 
 					if(!SYS.index[indexFilename].downloading) {
-						SYS.downloadLazy.push([loadingShader, SYS.index[indexFilename].name])
-						SYS.index[indexFilename].shaders.push(loadingShader)
+						SYS.downloadLazy.push([loading, SYS.index[indexFilename].name])
+						SYS.index[indexFilename].shaders.push(loading)
 						SYS.index[indexFilename].downloading = true
-					} else if (!SYS.index[indexFilename].shaders.includes(loadingShader)) {
-						SYS.index[indexFilename].shaders.push(loadingShader)
+					} else if (!SYS.index[indexFilename].shaders.includes(loading)) {
+						SYS.index[indexFilename].shaders.push(loading)
 					}
 				}
 			//}
@@ -876,9 +889,14 @@ var LibrarySys = {
 	},
 	Sys_SocksConnect__deps: ['$Browser', '$SOCKFS'],
 	Sys_SocksConnect: function () {
-		Module['websocket'].on('open', Browser.safeCallback(_SOCKS_Frame_Proxy))
-		Module['websocket'].on('message', Browser.safeCallback(_SOCKS_Frame_Proxy))
-		Module['websocket'].on('error', Browser.safeCallback(_SOCKS_Frame_Proxy))
+		var timer = setTimeout(Browser.safeCallback(_SOCKS_Frame_Proxy), 10000)
+		var callback = () => {
+			clearTimeout(timer)
+			Browser.safeCallback(_SOCKS_Frame_Proxy)
+		}
+		Module['websocket'].on('open', callback)
+		Module['websocket'].on('message', callback)
+		Module['websocket'].on('error', callback)
 	},
 	Sys_SocksMessage__deps: ['$Browser', '$SOCKFS'],
 	Sys_SocksMessage: function () {

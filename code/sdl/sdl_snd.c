@@ -187,8 +187,8 @@ qboolean SNDDMA_Init( void )
 	SDL_AudioSpec obtained;
 	int tmp;
 
-	if ( snd_inited )
-		return qtrue;
+	//if ( snd_inited )
+	//	return qtrue;
 
 	//if ( !s_sdlBits )
 	{
@@ -249,6 +249,11 @@ qboolean SNDDMA_Init( void )
 
 	desired.channels = s_sdlChannels->integer;
 	desired.callback = SNDDMA_AudioCallback;
+
+	if(snd_inited) {
+		SDL_CloseAudioDevice(sdlPlaybackDevice);
+		SDL_QuitSubSystem(SDL_INIT_AUDIO);
+	}
 
 	sdlPlaybackDevice = SDL_OpenAudioDevice( NULL, SDL_FALSE, &desired, &obtained, SDL_AUDIO_ALLOW_ANY_CHANGE );
 	if ( sdlPlaybackDevice == 0 )

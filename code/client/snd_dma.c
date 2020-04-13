@@ -339,12 +339,16 @@ static sfxHandle_t S_Base_RegisterSound( const char *name, qboolean compressed )
 	sfx->inMemory = qfalse;
 	sfx->soundCompressed = compressed;
 
+	ri.Cvar_Set( "snd_loadingSound", sfx->soundName );	
+
 	S_memoryLoad( sfx );
 
 	if ( sfx->defaultSound ) {
 		//Com_Printf( S_COLOR_YELLOW "WARNING: could not find %s - using default\n", sfx->soundName );
 		//return 0;
 	}
+	
+	ri.Cvar_Set( "snd_loadingSound", "" );	
 
 	return sfx - s_knownSfx;
 }
@@ -374,11 +378,12 @@ void S_memoryLoad( sfx_t *sfx ) {
 
 	// load the sound file
 	if ( !S_LoadSound ( sfx ) ) {
-	//	Com_DPrintf( S_COLOR_YELLOW "WARNING: couldn't load sound: %s\n", sfx->soundName );
+	//	Com_Printf( S_COLOR_YELLOW "WARNING: couldn't load sound: %s\n", sfx->soundName );
 		sfx->defaultSound = qtrue;
 		sfx->inMemory = qfalse;
 		return;
 	}
+	//Com_Printf( S_COLOR_YELLOW "WARNING: load sound: %s\n", sfx->soundName );
 	sfx->defaultSound = qfalse;
 	sfx->inMemory = qtrue;
 }
@@ -1486,7 +1491,7 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 	qboolean	r;
 
 	if ( !si ) {
-		return qfalse;
+	//	return qfalse;
 	}
 
 	s_khz = Cvar_Get( "s_khz", "22", CVAR_ARCHIVE_ND | CVAR_LATCH );
@@ -1524,7 +1529,7 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 			memset( dma_buffer2, 0, dma.samples * dma.samplebits/8 );
 		}
 	} else {
-		return qfalse;
+	//	return qfalse;
 	}
 
 	si->Shutdown = S_Base_Shutdown;

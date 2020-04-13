@@ -915,8 +915,10 @@ void CL_UpdateShader( void ) {
 
 void CL_UpdateSound( void ) {
 	char *lazySound = Sys_UpdateSound();
-	if(strlen(lazySound) == 0) return;
+	if(!lazySound || strlen(lazySound) == 0) return;
+	S_UpdateSounds(qtrue);
 	S_RegisterSound(lazySound, qtrue);
+	S_UpdateSounds(qfalse);
 }
 
 
