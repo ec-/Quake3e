@@ -367,8 +367,8 @@ static void S_Base_BeginRegistration( void ) {
 
 	SND_setup();
 
-	Com_Memset( s_knownSfx, 0, sizeof( s_knownSfx ) );
-	Com_Memset( sfxHash, 0, sizeof( sfxHash ) );
+	//Com_Memset( s_knownSfx, 0, sizeof( s_knownSfx ) );
+	//Com_Memset( sfxHash, 0, sizeof( sfxHash ) );
 
 	S_Base_RegisterSound("sound/feedback/hit.wav", qfalse);		// changed to a sound in baseq3
 }
@@ -1491,7 +1491,7 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 	qboolean	r;
 
 	if ( !si ) {
-	//	return qfalse;
+		return qfalse;
 	}
 
 	s_khz = Cvar_Get( "s_khz", "22", CVAR_ARCHIVE_ND | CVAR_LATCH );
@@ -1514,7 +1514,7 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 		s_soundMuted = qtrue;
 //		s_numSfx = 0;
 
-		Com_Memset( sfxHash, 0, sizeof( sfxHash ) );
+		//Com_Memset( sfxHash, 0, sizeof( sfxHash ) );
 
 		s_soundtime = 0;
 		s_paintedtime = 0;

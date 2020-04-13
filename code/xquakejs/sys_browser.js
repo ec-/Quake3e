@@ -744,10 +744,14 @@ var LibrarySys = {
 		var handle = 0
 		try {
 			var filename = UTF8ToString(ospath).replace(/\/\//ig, '/')
-			ospath = allocate(intArrayFromString(filename), 'i8', ALLOC_STACK)
-			mode = allocate(intArrayFromString(UTF8ToString(mode)
-				.replace('b', '')), 'i8', ALLOC_STACK);
-			handle = _fopen(ospath, mode)
+			var exists = false
+			try { exists = FS.lookupPath(filename) } catch (e) { exists = false }
+			if(exists) {
+				ospath = allocate(intArrayFromString(filename), 'i8', ALLOC_STACK)
+				mode = allocate(intArrayFromString(UTF8ToString(mode)
+					.replace('b', '')), 'i8', ALLOC_STACK);
+				handle = _fopen(ospath, mode)
+			}
 			//if(handle === 0) {
 				// use the index to make a case insensitive lookup
 				var indexFilename = filename.toLowerCase()
@@ -755,7 +759,8 @@ var LibrarySys = {
 					var altName = filename.substr(0, filename.length
 					  - SYS.index[indexFilename].name.length) 
 						+ SYS.index[indexFilename].name
-					if(handle === 0 && altName != filename) {
+					try { exists = FS.lookupPath(altName) } catch (e) { exists = false }
+					if(handle === 0 && altName != filename && exists) {
 						handle = _fopen(allocate(intArrayFromString(altName), 'i8', ALLOC_STACK), mode)
 						//if(handle > 0) {
 						//	return handle

@@ -620,6 +620,7 @@ endef
     -s FULL_ES2=0 \
     -s FULL_ES3=0 \
     -s USE_SDL=2 \
+		-s USE_SDL_MIXER=2 \
 		-s USE_VORBIS=1 \
 		-s USE_ZLIB=1 \
 		-s USE_OGG=1 \

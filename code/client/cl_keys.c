@@ -645,10 +645,8 @@ static void CL_KeyDownEvent( int key, unsigned time )
 		key == K_MOUSE4 || key == K_MOUSE5)) {
 		cls.firstClick = qfalse;
 		S_Init();
-		if(!cls.soundRegistered) {
-			cls.soundRegistered = qtrue;
-			S_BeginRegistration();			
-		}
+		cls.soundRegistered = qtrue;
+		S_BeginRegistration();			
 	}
 
 	// distribute the key down event to the apropriate handler
