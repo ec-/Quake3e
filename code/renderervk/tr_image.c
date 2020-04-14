@@ -168,6 +168,10 @@ void R_ImageList_f( void ) {
 		switch ( image->internalFormat )
 		{
 #ifdef USE_VULKAN
+			case VK_FORMAT_B8G8R8A8_UNORM:
+				format = "BGRA ";
+				estSize *= 4;
+				break;
 			case VK_FORMAT_R8G8B8A8_UNORM:
 				format = "RGBA ";
 				estSize *= 4;
@@ -746,6 +750,17 @@ byte *resample_image_data( const image_t *image, byte *data, const int data_size
 			*bytes_per_pixel = 2;
 			return buffer; // must be freed after upload!
 
+		case VK_FORMAT_B8G8R8A8_UNORM:
+			buffer = (byte*) ri.Hunk_AllocateTempMemory( data_size );
+			for ( i = 0; i < data_size; i += 4 ) {
+				buffer[i+0] = data[i+2];
+				buffer[i+1] = data[i+1];
+				buffer[i+2] = data[i+0];
+				buffer[i+3] = data[i+3];
+			}
+			*bytes_per_pixel = 4;
+			return buffer;
+
 		default:
 			*bytes_per_pixel = 4;
 			return data;
@@ -761,6 +776,7 @@ static void upload_vk_image( Image_Upload_Data *upload_data, image_t *image ) {
 
 	if ( r_texturebits->integer > 16 || r_texturebits->integer == 0 || ( image->flags & IMGFLAG_LIGHTMAP ) ) {
 		image->internalFormat = VK_FORMAT_R8G8B8A8_UNORM;
+		//image->internalFormat = VK_FORMAT_B8G8R8A8_UNORM;
 	} else {
 		qboolean has_alpha = RawImage_HasAlpha( upload_data->buffer, w * h );
 		image->internalFormat = has_alpha ? VK_FORMAT_B4G4R4A4_UNORM_PACK16 : VK_FORMAT_A1R5G5B5_UNORM_PACK16;
