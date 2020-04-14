@@ -58,7 +58,7 @@ static void *S_CodecGetSound(const char *filename, snd_info_t *info)
 	Q_strncpyz( localName, filename, sizeof( localName ) );
 
 	ext = COM_GetExtension(localName);
-	
+
 	if( *ext )
 	{
 		// Look for the correct loader and use it

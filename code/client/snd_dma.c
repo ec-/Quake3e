@@ -1037,7 +1037,7 @@ void S_Base_Respatialize( int entityNum, const vec3_t head, vec3_t axis[3], int 
 	if ( !s_soundStarted || s_soundMuted ) {
 		return;
 	}
-	
+
 	listener_number = entityNum;
 	VectorCopy(head, listener_origin);
 	VectorCopy(axis[0], listener_axis[0]);
