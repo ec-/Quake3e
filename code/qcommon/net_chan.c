@@ -527,7 +527,7 @@ void NET_SendPacket( netsrc_t sock, int length, const void *data, const netadr_t
 
 	// sequenced packets are shown in netchan, so just show oob
 	if ( showpackets->integer && *(int *)data == -1 )	{
-		Com_Printf ("send packet %4i\n", length);
+		Com_Printf ("send %s packet %4i\n", to->name, length);
 	}
 
 	if ( to->type == NA_LOOPBACK ) {
@@ -665,6 +665,7 @@ int NET_StringToAdr( const char *s, netadr_t *a, netadrtype_t family )
 		search = base;
 	}
 
+	Q_strncpyz( a->name, search, strlen( search ) + 1 );
 	if(!Sys_StringToAdr(search, a, family))
 	{
 		a->type = NA_BAD;

@@ -1,0 +1,46 @@
+{
+  "name": "quakejs",
+  "version": "0.0.1",
+  "scripts": {
+    "start": "node ./bin/web.js",
+    "content": "node ./bin/content.js",
+    "proxy": "node ./bin/proxy.js",
+    "repack": "node --max_old_space_size=4096 ./bin/repack.js",
+    "build": "make PLATFORM=js USE_LOCAL_HEADERS=1",
+    "install:emsdk": "./lib/emsdk/emsdk install latest-upstream"
+  },
+  "bin": {
+    "quakejs-content": "bin/content.js",
+    "quakejs-master": "bin/master.js",
+    "quakejs-repak": "bin/repak.js",
+    "quakejs-proxy": "bin/proxy.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/inolen/quakejs.git"
+  },
+  "author": "Anthony Pesch",
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dgram": "^1.0.1",
+    "express": "^4.17.1",
+    "ip6addr": "^0.2.3",
+    "nipplejs": "^0.8.5",
+    "node-stream-zip": "^1.9.1",
+    "ws": "^7.2.1"
+  },
+  "devDependencies": {
+    "glob": "^7.1.6",
+    "minimatch": "^3.0.4",
+    "cli-progress": "^3.6.0",
+    "balanced-match": "^1.0.0",
+    "archiver": "^3.1.1",
+    "buffer-crc32": "~0.2.1",
+    "chokidar": "^3.3.1",
+    "memfs": "^3.0.3",
+    "unionfs": "^4.2.1",
+    "zlib": "^1.0.5"
+  }
+}

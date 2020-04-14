@@ -562,12 +562,15 @@ endef
 
   BASE_CFLAGS = \
 	  -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
-    -I$(EMSCRIPTEN_CACHE)/wasm-obj/include/SDL2
+    -I$(EMSCRIPTEN_CACHE)/wasm/include/SDL2 \
+		-I$(EMSCRIPTEN_CACHE)/wasm/include \
+		-I$(EMSCRIPTEN_CACHE)/wasm-obj/include/SDL2 \
+		-I$(EMSCRIPTEN_CACHE)/wasm-obj/include
 
 # debug optimize flags: --closure 0 --minify 0 -g -g4 || -O1 --closure 0 --minify 0 -g -g3
   DEBUG_CFLAGS=$(BASE_CFLAGS) \
     -O1 --closure 0 --minify 0 -g -g3 \
-    -s SAFE_HEAP=0
+    -s SAFE_HEAP=0 \
     -s DEMANGLE_SUPPORT=1 \
     -s ASSERTIONS=1 \
     -s AGGRESSIVE_VARIABLE_ELIMINATION=0 \
@@ -606,7 +609,7 @@ endef
     -s EXIT_RUNTIME=1 \
     -s GL_UNSAFE_OPTS=0 \
     -s EXTRA_EXPORTED_RUNTIME_METHODS="['callMain', 'addFunction', 'stackSave', 'stackRestore', 'dynCall']" \
-    -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_free', '_atof', '_strncpy', '_memset', '_memcpy', '_fopen', '_CL_UpdateSound', '_CL_UpdateShader', '_CL_GetClientState', '_Com_Printf', '_CL_NextDownload', '_Com_Frame_Proxy', '_Com_Error', '_Z_Malloc', '_Z_Free', '_S_Malloc', '_Cvar_Set', '_Cvar_SetValue', '_Cvar_VariableString', '_Cvar_VariableIntegerValue', '_Cbuf_ExecuteText', '_Cbuf_Execute', '_Cbuf_AddText']" \
+    -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_free', '_atof', '_strncpy', '_memset', '_memcpy', '_fopen', '_CL_UpdateSound', '_CL_UpdateShader', '_CL_GetClientState', '_Com_Printf', '_CL_NextDownload', '_SOCKS_Frame_Proxy', '_Com_Frame_Proxy', '_Com_Error', '_Z_Malloc', '_Z_Free', '_S_Malloc', '_Cvar_Set', '_Cvar_SetValue', '_Cvar_VariableString', '_Cvar_VariableIntegerValue', '_Cbuf_ExecuteText', '_Cbuf_Execute', '_Cbuf_AddText']" \
     -s ALLOW_TABLE_GROWTH=1 \
     -s MEMFS_APPEND_TO_TYPED_ARRAYS=1 \
     -s TOTAL_MEMORY=256MB \
@@ -621,8 +624,7 @@ endef
 		-s USE_ZLIB=1 \
 		-s USE_OGG=1 \
     -s FORCE_FILESYSTEM=1 \
-    -s EXPORT_NAME=\"quake3e\" \
-		$(DEBUG_CFLAGS)
+    -s EXPORT_NAME=\"quake3e\"
 
 else # ifeq js
 
@@ -1390,6 +1392,7 @@ Q3DOBJ = \
   \
   $(B)/ded/unzip.o \
   $(B)/ded/vm.o \
+	$(B)/ded/vm_interpreted.o \
   \
   $(B)/ded/be_aas_bspq3.o \
   $(B)/ded/be_aas_cluster.o \

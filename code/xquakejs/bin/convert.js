@@ -31,7 +31,7 @@ async function convertNonAlpha(inFile, project, output, noOverwrite) {
     console.error(e.message, (e.output || '').toString('utf-8').substr(0, 1000))
   }
   // if it is alpha
-  if(alphaCmd.localeCompare('False') === 0) {
+  if(alphaCmd.localeCompare('False', 'en', { sensitivity: 'base' }) === 0) {
     // convert everything else to png to support transparency
     outFile = chroot(chext(inFile, '.png'), project, output)
   } else {

@@ -4344,7 +4344,7 @@ qboolean FS_ComparePaks( char *neededpaks, int len, qboolean dlstring ) {
 				break;
 			}
 #ifdef EMSCRIPTEN
-			else if (Q_stristr(sp->pack->pakFilename, fs_serverReferencedPakNames[i])) {
+			else if (sp->pack && Q_stristr(sp->pack->pakFilename, fs_serverReferencedPakNames[i])) {
 				havepak = qtrue; // Accept that the checksums don't match and move on
 				break;
 			}
@@ -4780,9 +4780,11 @@ void FS_Startup_After_Async( void )
 
 	fs_gamedirvar->modified = qfalse; // We just loaded, it's not modified
 
+#ifndef EMSCRIPTEN
 	// check original q3a files
 	if ( !Q_stricmp( fs_basegame->string, BASEGAME ) || !Q_stricmp( fs_basegame->string, BASEDEMO ) )
 		FS_CheckIdPaks();
+#endif
 
 #ifdef FS_MISSING
 	if (missingFiles == NULL) {

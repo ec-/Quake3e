@@ -236,6 +236,7 @@ typedef struct {
 	} ipv;
 	unsigned short	port;
 	unsigned long	scope_id;	// Needed for IPv6 link-local addresses
+	char name[MAX_STRING_CHARS];
 } netadr_t;
 
 void		NET_Init( void );

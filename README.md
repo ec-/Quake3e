@@ -29,6 +29,7 @@ Some of the major features currently implemented are:
   * Various mod disassemblies for associating hard-coded shaders with files even if the mod isn't open source
   * Various graphs of mods, including file names for repacked content
   * PNG support
+  * Docker support
   * Many, many bug fixes
 
 Coming soon!
@@ -57,8 +58,9 @@ git submodule update --init
 ```
 then
 ```
-./misc/quakejs/lib/emsdk/emsdk install latest-upstream
-./misc/quakejs/lib/emsdk/emsdk activate latest
+./code/xquakejs/lib/emsdk/emsdk install latest-upstream
+./code/xquakejs/lib/emsdk/emsdk activate latest
+
 make PLATFORM=js
 ```
 
@@ -73,6 +75,22 @@ See the console commands from ioq3 https://github.com/ioquake/ioq3#console
 
 Some client variables have been set by default for compatibility, those are listed here:
 https://github.com/briancullinan/planet_quake/blob/ioq3-quakejs/code/sys/sys_browser.js
+
+# Docker
+
+Build the image from this repository:
+
+`docker build -t quake3e .`
+
+Grab latest from dockerhub
+
+`docker run -ti -v ~/Quake3e:/tmp/Quake3e -v /Applications/ioquake3/baseq3:/tmp/baseq3 -p 8080:8080 -p 1081:1081 -p 27960:27960/udp --name quake3e briancullinan/quake3e:latest`
+
+After the image is built and running, you can skip repeating the conversion process:
+
+`docker commit quake3e quake3e`
+
+`docker start -i quake3e`
 
 # Running content server and repacking
 

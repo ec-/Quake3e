@@ -1,0 +1,14 @@
+[Unit]
+Description=Quake dedicated server.
+[Service]
+Type=simple
+ExecStart=/home/ioq3srv/Quake3e/quake3e.ded.x64 \
+  +cvar_restart +set net_port 27960 +set fs_basepath /home/ioq3srv \
+  +set dedicated 2 +set fs_homepath /home/ioq3srv \
+  +set fs_basegame ${BASEGAME} +set fs_game ${GAME} \
+  +set logfile 2 +set com_hunkmegs 150 +set vm_rtChecks 0 \
+  +set ttycon 0 +set rconpassword ${RCON} \
+  +set sv_maxclients 32 +exec server.cfg
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target

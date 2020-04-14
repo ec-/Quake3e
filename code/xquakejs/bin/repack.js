@@ -219,6 +219,10 @@ try {
 } catch (err) {
   noProgress = true
 }
+if (!process.stdout.isTTY && !noProgress) {
+  console.log('WARNING not a tty, using --no-progress')
+  noProgress = true
+}
 if(!noProgress) {
   var cliProgress = require('cli-progress')
   var multibar = new cliProgress.MultiBar({
