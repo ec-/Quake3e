@@ -3543,7 +3543,7 @@ static void record_buffer_memory_barrier(VkCommandBuffer cb, VkBuffer buffer, Vk
 }
 
 
-void vk_create_image(int width, int height, VkFormat format, int mip_levels, VkSamplerAddressMode address_mode, image_t *image) {
+void vk_create_image( int width, int height, VkFormat format, int mip_levels, image_t *image ) {
 	// create image
 	{
 		VkImageCreateInfo desc;
@@ -3607,7 +3607,7 @@ void vk_create_image(int width, int height, VkFormat format, int mip_levels, VkS
 		VK_CHECK( qvkAllocateDescriptorSets( vk.device, &desc, &image->descriptor ) );
 	}
 
-	vk_update_descriptor_set( image->descriptor, image->view, mip_levels > 1 ? qtrue : qfalse, address_mode );
+	vk_update_descriptor_set( image->descriptor, image->view, mip_levels > 1 ? qtrue : qfalse, image->wrapClampMode );
 }
 
 

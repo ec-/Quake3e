@@ -154,8 +154,9 @@ void vk_wait_idle( void );
 //
 // Resources allocation.
 //
-void vk_create_image( int width, int height, VkFormat format, int mip_levels, VkSamplerAddressMode address_mode, image_t *image );
+void vk_create_image( int width, int height, VkFormat format, int mip_levels, image_t *image );
 void vk_upload_image_data( VkImage image, int x, int y, int width, int height, qboolean mipmap, const uint8_t* pixels, int bytes_per_pixel );
+byte *resample_image_data( const image_t *image, byte *data, const int data_size, int *bytes_per_pixel );
 void vk_update_descriptor_set( VkDescriptorSet desc, VkImageView image_view, qboolean mipmap, VkSamplerAddressMode address_mode );
 VkSampler vk_find_sampler( const Vk_Sampler_Def *def );
 	
