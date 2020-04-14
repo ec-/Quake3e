@@ -1074,7 +1074,7 @@ int main( int argc, char* argv[] )
 
 	// HACK for now to prevent Browser lib from calling
 	// requestAnimationFrame on dedicated builds.
-	emscripten_set_main_loop(Sys_Frame, Cvar_VariableIntegerValue("com_maxfps"), 0);
+	emscripten_set_main_loop(Sys_Frame, 130, 0);
 	emscripten_exit_with_live_runtime();
 	return 0;
 }
