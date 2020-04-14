@@ -915,15 +915,15 @@ void CL_UpdateShader( void ) {
 
 void CL_UpdateSound( void ) {
 	char *lazySound = Sys_UpdateSound();
-	if(strlen(lazySound) == 0) return;
-	S_RegisterSound(lazySound, qtrue);
+	if(!lazySound || strlen(lazySound) == 0) return;
+	S_UpdateSound(lazySound, qtrue);
 }
 
 
 void CL_UpdateModel( void ) {
 	char *lazyModel = Sys_UpdateModel();
 	if(!lazyModel || strlen(lazyModel) == 0) return;
-	re.RegisterModel(lazyModel);
+	re.UpdateModel(lazyModel);
 }
 
 /*

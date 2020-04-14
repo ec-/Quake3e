@@ -115,6 +115,7 @@ typedef struct {
 	void	(*SyncRender)( void );
 
 	void (*UpdateMode)(glconfig_t *glconfigOut);
+	void (*UpdateModel)(char *name);
 	void (*UpdateShader)(char *shaderName, int lightmapIndex);
 
 } refexport_t;
@@ -180,6 +181,7 @@ typedef struct {
 	// NULL can be passed for buf to just determine existance
 	//int		(*FS_FileIsInPAK)( const char *name, int *pCheckSum );
 	int		(*FS_ReadFile)( const char *name, void **buf );
+	int   (*FS_FOpenFileRead)( const char *filename, fileHandle_t *file, qboolean uniqueFILE );
 	void	(*FS_FreeFile)( void *buf );
 	char **	(*FS_ListFiles)( const char *name, const char *extension, int *numfilesfound );
 	void	(*FS_FreeFileList)( char **filelist );

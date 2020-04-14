@@ -82,7 +82,8 @@ var LibrarySys = {
 			//'+set', 'r_specularMapping', '0',
 			//'+set', 'r_deluxeMapping', '0',
 			//'+set', 'r_hdr', '0',
-			//'+set', 'r_picmip', '0',
+			//'+set', 'r_lodbias', '0',
+			//'+set', 'r_picmip', '4',
 			//'+set', 'r_postProcess', '0',
 			'+set', 'cg_drawfps', '1',
 			//'+connect', 'proxy.quake.games:443',
@@ -367,13 +368,22 @@ var LibrarySys = {
 		DownloadLazyFinish: function (indexFilename, file) {
 			SYS.index[indexFilename].downloading = false
 			if(file[1].match(/\.opus|\.wav|\.ogg/i)) {
-				SYS.soundCallback.unshift(file[1].replace('/' + SYS.fs_game + '/', ''))
+				if(file[0]) {
+					SYS.soundCallback.unshift(file[0].replace('/' + SYS.fs_game + '/', ''))
+				} else {
+					SYS.soundCallback.unshift(file[1].replace('/' + SYS.fs_game + '/', ''))
+				}
+				SYS.soundCallback = SYS.soundCallback.filter((s, i, arr) => arr.indexOf(s) === i)
 			} else if(file[1].match(/\.md3|\.iqm|\.mdr/i)) {
 				SYS.modelCallback.unshift(file[1].replace('/' + SYS.fs_game + '/', ''))
-			} else if(file[0]) {
-				SYS.shaderCallback.unshift.apply(SYS.shaderCallback, [file[0]].concat(SYS.index[indexFilename].shaders))
+				SYS.modelCallback = SYS.modelCallback.filter((s, i, arr) => arr.indexOf(s) === i)
 			} else if(SYS.index[indexFilename].shaders.length > 0) {
-				SYS.shaderCallback.unshift.apply(SYS.shaderCallback, SYS.index[indexFilename].shaders)
+				if(file[0]) {
+					SYS.shaderCallback.unshift.apply(SYS.shaderCallback, [file[0]].concat(SYS.index[indexFilename].shaders))
+				} else {
+					SYS.shaderCallback.unshift.apply(SYS.shaderCallback, SYS.index[indexFilename].shaders)
+				}
+				SYS.shaderCallback = SYS.shaderCallback.filter((s, i, arr) => arr.indexOf(s) === i)
 			}
 		},
 		DownloadLazySort: function () {
@@ -479,7 +489,7 @@ var LibrarySys = {
 			})
 		})
 		window.addEventListener('resize', SYS.resizeViewport)
-		SYS.lazyInterval = setInterval(SYS.DownloadLazy, 10)
+		SYS.lazyInterval = setInterval(SYS.DownloadLazy, 1)
 	},
 	Sys_PlatformExit: function () {
 		flipper.style.display = 'block'
@@ -734,31 +744,47 @@ var LibrarySys = {
 		var handle = 0
 		try {
 			var filename = UTF8ToString(ospath).replace(/\/\//ig, '/')
-			ospath = allocate(intArrayFromString(filename), 'i8', ALLOC_STACK)
-			mode = allocate(intArrayFromString(UTF8ToString(mode)
-				.replace('b', '')), 'i8', ALLOC_STACK);
-			handle = _fopen(ospath, mode)
-			if(handle === 0) {
+			var exists = false
+			try { exists = FS.lookupPath(filename) } catch (e) { exists = false }
+			if(exists) {
+				ospath = allocate(intArrayFromString(filename), 'i8', ALLOC_STACK)
+				mode = allocate(intArrayFromString(UTF8ToString(mode)
+					.replace('b', '')), 'i8', ALLOC_STACK);
+				handle = _fopen(ospath, mode)
+			}
+			//if(handle === 0) {
 				// use the index to make a case insensitive lookup
 				var indexFilename = filename.toLowerCase()
 				if(SYS.index && typeof SYS.index[indexFilename] != 'undefined') {
-					var altName = filename.substr(0, filename.length - SYS.index[indexFilename].name.length) 
+					var altName = filename.substr(0, filename.length
+					  - SYS.index[indexFilename].name.length) 
 						+ SYS.index[indexFilename].name
-					handle = _fopen(allocate(intArrayFromString(altName), 'i8', ALLOC_STACK), mode)
-					if(handle > 0) {
-						return handle
+					try { exists = FS.lookupPath(altName) } catch (e) { exists = false }
+					if(handle === 0 && altName != filename && exists) {
+						handle = _fopen(allocate(intArrayFromString(altName), 'i8', ALLOC_STACK), mode)
+						//if(handle > 0) {
+						//	return handle
+						//}
 					}
-					var loadingShader = UTF8ToString(_Cvar_VariableString(
+					var loading = UTF8ToString(_Cvar_VariableString(
 						allocate(intArrayFromString('r_loadingShader'), 'i8', ALLOC_STACK)))
+					if(loading.length === 0) {
+						loading = UTF8ToString(_Cvar_VariableString(
+							allocate(intArrayFromString('snd_loadingSound'), 'i8', ALLOC_STACK)))
+						if(loading.length === 0) {
+							loading = UTF8ToString(_Cvar_VariableString(
+								allocate(intArrayFromString('r_loadingModel'), 'i8', ALLOC_STACK)))
+						}
+					}
 					if(!SYS.index[indexFilename].downloading) {
-						SYS.downloadLazy.push([loadingShader, SYS.index[indexFilename].name])
-						SYS.index[indexFilename].shaders.push(loadingShader)
+						SYS.downloadLazy.push([loading, SYS.index[indexFilename].name])
+						SYS.index[indexFilename].shaders.push(loading)
 						SYS.index[indexFilename].downloading = true
-					} else if (!SYS.index[indexFilename].shaders.includes(loadingShader)) {
-						SYS.index[indexFilename].shaders.push(loadingShader)
+					} else if (!SYS.index[indexFilename].shaders.includes(loading)) {
+						SYS.index[indexFilename].shaders.push(loading)
 					}
 				}
-			}
+			//}
 		} catch (e) {
 			// short for fstat check in sys_unix.c!!!
 			if(e.code == 'ENOENT') {
@@ -872,9 +898,14 @@ var LibrarySys = {
 	},
 	Sys_SocksConnect__deps: ['$Browser', '$SOCKFS'],
 	Sys_SocksConnect: function () {
-		Module['websocket'].on('open', Browser.safeCallback(_SOCKS_Frame_Proxy))
-		Module['websocket'].on('message', Browser.safeCallback(_SOCKS_Frame_Proxy))
-		Module['websocket'].on('error', Browser.safeCallback(_SOCKS_Frame_Proxy))
+		var timer = setTimeout(Browser.safeCallback(_SOCKS_Frame_Proxy), 10000)
+		var callback = () => {
+			clearTimeout(timer)
+			Browser.safeCallback(_SOCKS_Frame_Proxy)
+		}
+		Module['websocket'].on('open', callback)
+		Module['websocket'].on('message', callback)
+		Module['websocket'].on('error', callback)
 	},
 	Sys_SocksMessage__deps: ['$Browser', '$SOCKFS'],
 	Sys_SocksMessage: function () {

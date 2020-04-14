@@ -570,6 +570,7 @@ endef
 # debug optimize flags: --closure 0 --minify 0 -g -g4 || -O1 --closure 0 --minify 0 -g -g3
   DEBUG_CFLAGS=$(BASE_CFLAGS) \
     -O1 --closure 0 --minify 0 -g -g3 \
+		-s WASM=1 \
     -s SAFE_HEAP=0 \
     -s DEMANGLE_SUPPORT=1 \
     -s ASSERTIONS=1 \
@@ -620,6 +621,7 @@ endef
     -s FULL_ES2=0 \
     -s FULL_ES3=0 \
     -s USE_SDL=2 \
+		-s USE_SDL_MIXER=2 \
 		-s USE_VORBIS=1 \
 		-s USE_ZLIB=1 \
 		-s USE_OGG=1 \
@@ -1331,7 +1333,7 @@ endif # !MINGW
 
 $(B)/$(TARGET_CLIENT): $(Q3OBJ)
 	$(echo_cmd) "LD $@"
-	$(Q)$(CC) -o $@ $(Q3OBJ) $(CLIENT_LDFLAGS) \
+	$(Q)$(CC) -o $@ $(Q3OBJ) $(CLIENT_LDFLAGS) $(CFLAGS) \
 		$(LDFLAGS)
 
 # modular renderers

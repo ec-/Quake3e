@@ -3118,6 +3118,7 @@ CL_Frame
 ==================
 */
 static int secondTimer = 0;
+static int thirdTimer = 0;
 void CL_Frame( int msec ) {
 	float fps;
 	float frameDuration;
@@ -3158,13 +3159,20 @@ void CL_Frame( int msec ) {
 		}
 	}
 	
-	if(secondTimer > 100) {
+	if((uivm || cgvm) && secondTimer > 20) {
 		secondTimer = 0;
 		CL_UpdateShader();
-//		CL_UpdateSound();
-		CL_UpdateModel();
 	} else {
 		secondTimer += msec;
+	}
+	if((uivm || cgvm) && thirdTimer > 100) {
+		thirdTimer = 0;
+		if(cls.soundRegistered && !cls.firstClick) {
+			CL_UpdateSound();
+		}
+		CL_UpdateModel();
+	} else {
+		thirdTimer += msec;
 	}
 #endif
 
@@ -3413,6 +3421,7 @@ void CL_StartHunkUsers( void ) {
 
 	if ( !cls.soundStarted ) {
 		cls.soundStarted = qtrue;
+		cls.firstClick = qtrue;
 		S_Init();
 	}
 
@@ -3547,6 +3556,7 @@ static void CL_InitRef( void ) {
 	rimp.FS_ListFiles = FS_ListFiles;
 	//rimp.FS_FileIsInPAK = FS_FileIsInPAK;
 	rimp.FS_FileExists = FS_FileExists;
+	rimp.FS_FOpenFileRead = FS_FOpenFileRead;
 
 	rimp.Cvar_Get = Cvar_Get;
 	rimp.Cvar_Set = Cvar_Set;

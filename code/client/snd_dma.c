@@ -339,12 +339,16 @@ static sfxHandle_t S_Base_RegisterSound( const char *name, qboolean compressed )
 	sfx->inMemory = qfalse;
 	sfx->soundCompressed = compressed;
 
+	ri.Cvar_Set( "snd_loadingSound", sfx->soundName );	
+
 	S_memoryLoad( sfx );
 
 	if ( sfx->defaultSound ) {
 		//Com_Printf( S_COLOR_YELLOW "WARNING: could not find %s - using default\n", sfx->soundName );
 		//return 0;
 	}
+	
+	ri.Cvar_Set( "snd_loadingSound", "" );	
 
 	return sfx - s_knownSfx;
 }
@@ -363,8 +367,8 @@ static void S_Base_BeginRegistration( void ) {
 
 	SND_setup();
 
-	Com_Memset( s_knownSfx, 0, sizeof( s_knownSfx ) );
-	Com_Memset( sfxHash, 0, sizeof( sfxHash ) );
+	//Com_Memset( s_knownSfx, 0, sizeof( s_knownSfx ) );
+	//Com_Memset( sfxHash, 0, sizeof( sfxHash ) );
 
 	S_Base_RegisterSound("sound/feedback/hit.wav", qfalse);		// changed to a sound in baseq3
 }
@@ -374,10 +378,12 @@ void S_memoryLoad( sfx_t *sfx ) {
 
 	// load the sound file
 	if ( !S_LoadSound ( sfx ) ) {
-	//	Com_DPrintf( S_COLOR_YELLOW "WARNING: couldn't load sound: %s\n", sfx->soundName );
+	//	Com_Printf( S_COLOR_YELLOW "WARNING: couldn't load sound: %s\n", sfx->soundName );
 		sfx->defaultSound = qtrue;
 		sfx->inMemory = qfalse;
+		return;
 	}
+	//Com_Printf( S_COLOR_YELLOW "WARNING: load sound: %s\n", sfx->soundName );
 	sfx->defaultSound = qfalse;
 	sfx->inMemory = qtrue;
 }
@@ -1021,10 +1027,12 @@ S_Respatialize
 Change the volumes of all the playing sounds for changes in their positions
 ============
 */
+int prevTime;
 void S_Base_Respatialize( int entityNum, const vec3_t head, vec3_t axis[3], int inwater ) {
 	int			i;
 	channel_t	*ch;
 	vec3_t		origin;
+	int 		newTime = Sys_Milliseconds();
 
 	if ( !s_soundStarted || s_soundMuted ) {
 		return;
@@ -1037,23 +1045,26 @@ void S_Base_Respatialize( int entityNum, const vec3_t head, vec3_t axis[3], int 
 	VectorCopy(axis[2], listener_axis[2]);
 
 	// update spatialization for dynamic sounds	
-	ch = s_channels;
-	for ( i = 0 ; i < MAX_CHANNELS ; i++, ch++ ) {
-		if ( !ch->thesfx ) {
-			continue;
-		}
-		// anything coming from the view entity will always be full volume
-		if (ch->entnum == listener_number) {
-			ch->leftvol = ch->master_vol;
-			ch->rightvol = ch->master_vol;
-		} else {
-			if (ch->fixed_origin) {
-				VectorCopy( ch->origin, origin );
-			} else {
-				VectorCopy( loopSounds[ ch->entnum ].origin, origin );
+	if(newTime - prevTime > 10) {
+		prevTime = newTime;
+		ch = s_channels;
+		for ( i = 0 ; i < MAX_CHANNELS ; i++, ch++ ) {
+			if ( !ch->thesfx ) {
+				continue;
 			}
+			// anything coming from the view entity will always be full volume
+			if (ch->entnum == listener_number) {
+				ch->leftvol = ch->master_vol;
+				ch->rightvol = ch->master_vol;
+			} else {
+				if (ch->fixed_origin) {
+					VectorCopy( ch->origin, origin );
+				} else {
+					VectorCopy( loopSounds[ ch->entnum ].origin, origin );
+				}
 
-			S_SpatializeOrigin (origin, ch->master_vol, &ch->leftvol, &ch->rightvol);
+				S_SpatializeOrigin (origin, ch->master_vol, &ch->leftvol, &ch->rightvol);
+			}
 		}
 	}
 
@@ -1416,7 +1427,7 @@ void S_FreeOldestSound( void ) {
 	sfx_t	*sfx;
 	sndBuffer	*buffer, *nbuffer;
 
-	oldest = Com_Milliseconds();
+	oldest = Sys_Milliseconds();
 	used = 0;
 
 	for ( i = 1 ; i < s_numSfx ; i++ ) {
@@ -1503,7 +1514,7 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 		s_soundMuted = qtrue;
 //		s_numSfx = 0;
 
-		Com_Memset( sfxHash, 0, sizeof( sfxHash ) );
+		//Com_Memset( sfxHash, 0, sizeof( sfxHash ) );
 
 		s_soundtime = 0;
 		s_paintedtime = 0;
@@ -1518,7 +1529,7 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 			memset( dma_buffer2, 0, dma.samples * dma.samplebits/8 );
 		}
 	} else {
-		return qfalse;
+	//	return qfalse;
 	}
 
 	si->Shutdown = S_Base_Shutdown;

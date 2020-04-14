@@ -6,7 +6,8 @@ var Parser = require('./socks.parser')
 var ip6addr = require('ip6addr')
 var WebSocket = require('ws')
 
-var UDP_TIMEOUT = 30 * 1000 // clear stale listeners so we don't run out of ports
+var UDP_TIMEOUT = 240 * 1000 // clear stale listeners so we don't run out of ports,
+  // must be longer than any typical client timeout, maybe the map takes too long to load?
 var ATYP = {
   IPv4: 0x01,
   NAME: 0x03,

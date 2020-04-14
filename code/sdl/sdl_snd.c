@@ -187,8 +187,12 @@ qboolean SNDDMA_Init( void )
 	SDL_AudioSpec obtained;
 	int tmp;
 
-	if ( snd_inited )
-		return qtrue;
+	if(snd_inited) {
+		SNDDMA_Shutdown();
+	}
+
+	//if ( snd_inited )
+	//	return qtrue;
 
 	//if ( !s_sdlBits )
 	{

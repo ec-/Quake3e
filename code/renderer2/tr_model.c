@@ -28,6 +28,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 static qboolean R_LoadMD3(model_t *mod, int lod, void *buffer, int bufferSize, const char *modName);
 static qboolean R_LoadMDR(model_t *mod, void *buffer, int filesize, const char *name );
 
+qboolean updateModels = qfalse;
 /*
 ====================
 R_RegisterMD3
@@ -238,6 +239,15 @@ model_t *R_AllocModel( void ) {
 	return mod;
 }
 
+void R_UpdateModel( const char *name )
+{
+	updateModels = qtrue;
+	
+	RE_RegisterModel(name);
+	
+	updateModels = qfalse;
+}
+
 /*
 ====================
 RE_RegisterModel
@@ -305,6 +315,7 @@ qhandle_t RE_RegisterModel( const char *name ) {
 	// load the files
 	//
 	Q_strncpyz( localName, name, sizeof( localName ) );
+	ri.Cvar_Set("r_loadingModel", name);
 
 	ext = COM_GetExtension( localName );
 
@@ -316,7 +327,13 @@ qhandle_t RE_RegisterModel( const char *name ) {
 			if( !Q_stricmp( ext, modelLoaders[ i ].ext ) )
 			{
 				// Load
-				hModel = modelLoaders[ i ].ModelLoader( localName, mod );
+				if ( !updateModels ) {
+					if(ri.FS_FOpenFileRead(localName, NULL, qfalse)) {
+						hModel = mod;
+					}
+				} else {
+					hModel = modelLoaders[ i ].ModelLoader( localName, mod );
+				}
 				break;
 			}
 		}
@@ -350,7 +367,13 @@ qhandle_t RE_RegisterModel( const char *name ) {
 		Com_sprintf( altName, sizeof (altName), "%s.%s", localName, modelLoaders[ i ].ext );
 
 		// Load
-		hModel = modelLoaders[ i ].ModelLoader( altName, mod );
+		if ( !updateModels ) {
+			if(ri.FS_FOpenFileRead(altName, NULL, qfalse)) {
+				hModel = mod;
+			}
+		} else {
+			hModel = modelLoaders[ i ].ModelLoader( altName, mod );
+		}
 
 		if( hModel )
 		{
@@ -363,6 +386,8 @@ qhandle_t RE_RegisterModel( const char *name ) {
 			break;
 		}
 	}
+	
+	ri.Cvar_Set("r_loadingModel", "");
 
 	return mod->index;
 }
