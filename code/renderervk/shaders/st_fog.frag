@@ -22,7 +22,7 @@ layout(set = 5, binding = 0) uniform sampler2D fog_texture;
 layout(location = 0) in vec4 frag_color;
 layout(location = 1) centroid in vec2 frag_tex_coord;
 //layout(location = 2) centroid in vec2 frag_tex_coord1;
-layout(location = 3) centroid in vec2 fog_tex_coord; // fog
+layout(location = 4) in vec2 fog_tex_coord; // fog
 
 layout(location = 0) out vec4 out_color;
 
