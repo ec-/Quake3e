@@ -51,16 +51,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "vk.h"
 // GL constants substitutions
 typedef enum {
-	GL_RGBA4,
-	GL_RGBA8,
-	GL_RGBA,
-	GL_RGB4_S3TC,
-	GL_RGB5,
-	GL_RGB8,
-	GL_RGB,
-	GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,
-	GL_COMPRESSED_RGB_S3TC_DXT1_EXT,
-	GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
 	GL_NEAREST,
 	GL_LINEAR,
 	GL_NEAREST_MIPMAP_NEAREST,

@@ -167,6 +167,20 @@ void R_ImageList_f( void ) {
 
 		switch ( image->internalFormat )
 		{
+#ifdef USE_VULKAN
+			case VK_FORMAT_R8G8B8A8_UNORM:
+				format = "RGBA ";
+				estSize *= 4;
+				break;
+			case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
+				format = "RGBA ";
+				estSize *= 2;
+				break;
+			case VK_FORMAT_A1R5G5B5_UNORM_PACK16:
+				format = "RGB  ";
+				estSize *= 2;
+				break;
+#else
 			case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
 			case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
 				format = "DXT1 ";
@@ -192,6 +206,7 @@ void R_ImageList_f( void ) {
 				// 3 bytes per pixel?
 				estSize *= 3;
 				break;
+#endif
 		}
 
 		// mipmap adds about 50%
