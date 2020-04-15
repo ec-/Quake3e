@@ -302,7 +302,7 @@ static keyNum_t IN_TranslateSDLToQ3Key( SDL_Keysym *keysym, qboolean down )
 		}
 	}
 
-	//if( in_keyboardDebug->integer )
+	if( in_keyboardDebug->integer )
 		IN_PrintKey( keysym, key, down );
 
 	if( IN_IsConsoleKey( key, 0 ) )
@@ -321,8 +321,6 @@ void IN_PushKeyDown(SDL_KeyboardEvent e)
   if ( e.repeat && Key_GetCatcher() == 0 )
     return;
   key = IN_TranslateSDLToQ3Key( &e.keysym, qtrue );
-
-	Com_Printf("KeyDown: %i\n", key);
 	
   if ( key == K_ENTER && keys[K_ALT].down ) {
     Cvar_SetIntegerValue( "r_fullscreen", glw_state.isFullscreen ? 0 : 1 );

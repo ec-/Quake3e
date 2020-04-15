@@ -73,7 +73,7 @@ var LibrarySysCommon = {
 					? (window.location.protocol + '//' + sv_dlURL)
 					: ('https://' + sv_dlURL)) + '/' + name;
 
-			SYS.DoXHR(url, {
+			SYSN.DoXHR(url, {
 				dataType: 'arraybuffer',
 				onprogress: onprogress,
 				onload: onload

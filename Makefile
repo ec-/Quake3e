@@ -555,11 +555,6 @@ endef
   GL_ARB_ES2_compatibility=1
   GL_GLEXT_PROTOTYPES=1
 
-  LIBSYSCOMMON=$(QUAKEJS)/sys_common.js
-  LIBSYSBROWSER=$(QUAKEJS)/sys_browser.js
-  LIBSYSNODE=$(QUAKEJS)/sys_node.js
-  LIBVMJS=$(CMDIR)/vm_js.js
-
   BASE_CFLAGS = \
 	  -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
     -I$(EMSCRIPTEN_CACHE)/wasm/include/SDL2 \
@@ -597,9 +592,13 @@ endef
 # --cache $(EMSCRIPTEN_CACHE) \
 
   CLIENT_LDFLAGS += \
-    --js-library $(LIBSYSCOMMON) \
-    --js-library $(LIBSYSBROWSER) \
-    --js-library $(LIBVMJS) \
+    --js-library $(QUAKEJS)/sys_common.js \
+    --js-library $(QUAKEJS)/sys_browser.js \
+    --js-library $(QUAKEJS)/sys_net.js \
+		--js-library $(QUAKEJS)/sys_files.js \
+		--js-library $(QUAKEJS)/sys_input.js \
+		--js-library $(QUAKEJS)/sys_main.js \
+		--js-library $(CMDIR)/vm_js.js \
     -lidbfs.js \
     -lsdl.js \
     -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
