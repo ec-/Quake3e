@@ -155,18 +155,80 @@ var LibrarySysInput = {
         Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[1], event)
       stackRestore(stack)
     },
-    InputTextInputEvent: function (evt) {
+    InputPushTextEvent: function (evt) {
       var stack = stackSave()
       var event = stackAlloc(16)
-      
+      var text = intArrayFromString(evt.key)
       HEAP32[((event+0)>>2)]= 0x303; //Uint32 type; ::SDL_TEXTINPUT
       HEAP32[((event+4)>>2)]=_Sys_Milliseconds();
       HEAP32[((event+8)>>2)]=0; // windowID
-      HEAP32[((event+12)>>2)]=intArrayFromString(evt.key); // The input text
-      
+      var cStr = intArrayFromString(String.fromCharCode(evt.charCode));
+      for (var i = 0; i < cStr.length; ++i) {
+        HEAP8[((event+(12 + i))>>0)]=cStr[i];
+      }
       Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[2], event)
-      
       stackRestore(stack)
+    },
+    InputPushMouseEvent: function (evt) {
+      debugger
+      var stack = stackSave()
+      var event = stackAlloc(32)
+      if (evt.type != 'mousemove') {
+        var down = evt.type === 'mousedown';
+        HEAP32[((event+0)>>2)]=down ? 0x401 : 0x402;
+        HEAP32[((event+4)>>2)]=0; // timestamp
+        HEAP32[((event+8)>>2)]=0; // windowid
+        HEAP32[((event+12)>>2)]=0; // mouseid
+        HEAP32[((event+16)>>2)]=evt.button+1; // DOM buttons are 0-2, SDL 1-3
+        HEAP32[((event+17)>>2)]=down ? 1 : 0;
+        // padding
+        HEAP32[((event+20)>>2)]=Browser.mouseX;
+        HEAP32[((event+24)>>2)]=Browser.mouseY;
+      } else {
+        HEAP32[((event+0)>>2)]=0x400;
+        HEAP32[((event+4)>>2)]=0;
+        HEAP32[((event+8)>>2)]=0;
+        HEAP32[((event+12)>>2)]=0;
+        HEAP32[((event+16)>>2)]=SDL.buttonState;
+        HEAP32[((event+20)>>2)]=Browser.mouseX;
+        HEAP32[((event+24)>>2)]=Browser.mouseY;
+        HEAP32[((event+28)>>2)]=Browser.mouseMovementX;
+        HEAP32[((event+32)>>2)]=Browser.mouseMovementY;
+      }
+      if (evt.type == 'mousemove')
+        Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[3], event)
+      else
+        Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[4], event)
+      stackRestore(stack)
+    },
+    InputPushTouchEvent: function (evt) {
+      /*
+      var touch = event.touch;
+      if (!Browser.touches[touch.identifier]) break;
+      var w = Module['canvas'].width;
+      var h = Module['canvas'].height;
+      var x = Browser.touches[touch.identifier].x / w;
+      var y = Browser.touches[touch.identifier].y / h;
+      var lx = Browser.lastTouches[touch.identifier].x / w;
+      var ly = Browser.lastTouches[touch.identifier].y / h;
+      var dx = x - lx;
+      var dy = y - ly;
+      if (touch['deviceID'] === undefined) touch.deviceID = SDL.TOUCH_DEFAULT_ID;
+      if (dx === 0 && dy === 0 && event.type === 'touchmove') return false; // don't send these if nothing happened
+      HEAP32[(event>>2)]=SDL.DOMEventToSDLEvent[event.type];
+      HEAP32[((event+(4))>>2)]=_SDL_GetTicks();
+      (tempI64 = [touch.deviceID>>>0,(tempDouble=touch.deviceID,(+(Math_abs(tempDouble))) >= 1.0 ? (tempDouble > 0.0 ? ((Math_min((+(Math_floor((tempDouble)/4294967296.0))), 4294967295.0))|0)>>>0 : (~~((+(Math_ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296.0)))))>>>0) : 0)],HEAP32[((event+(8))>>2)]=tempI64[0],HEAP32[((event+(12))>>2)]=tempI64[1]);
+      (tempI64 = [touch.identifier>>>0,(tempDouble=touch.identifier,(+(Math_abs(tempDouble))) >= 1.0 ? (tempDouble > 0.0 ? ((Math_min((+(Math_floor((tempDouble)/4294967296.0))), 4294967295.0))|0)>>>0 : (~~((+(Math_ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296.0)))))>>>0) : 0)],HEAP32[((event+(16))>>2)]=tempI64[0],HEAP32[((event+(20))>>2)]=tempI64[1]);
+      HEAPF32[((event+(24))>>2)]=x;
+      HEAPF32[((event+(28))>>2)]=y;
+      HEAPF32[((event+(32))>>2)]=dx;
+      HEAPF32[((event+(36))>>2)]=dy;
+      if (touch.force !== undefined) {
+        HEAPF32[((event+(40))>>2)]=touch.force;
+      } else { // No pressure data, send a digital 0/1 pressure.
+        HEAPF32[((event+(40))>>2)]=event.type == "touchend" ? 0 : 1;
+      }
+      */
     },
     InputInit: function () {
       // TODO: clear JSEvents.eventHandlers
@@ -178,7 +240,7 @@ var LibrarySysInput = {
       }
       window.addEventListener('keydown', SYSI.InputPushKeyEvent, false)
       window.addEventListener('keyup', SYSI.InputPushKeyEvent, false)
-      window.addEventListener('keypress', SYSI.InputTextInputEvent, false)
+      window.addEventListener('keypress', SYSI.InputPushTextEvent, false)
     },
   },
 	Sys_GLimpInit__deps: ['$SDL', '$SYS'],

@@ -401,6 +401,32 @@ void IN_PushTextEntry(SDL_TextInputEvent e) {
 	}
 }
 
+void IN_PushMouseMove(SDL_MouseMotionEvent e) {
+	if( mouseActive && !in_joystick->integer )
+	{
+		if( !e.xrel && !e.yrel )
+			break;
+		Com_QueueEvent( in_eventTime, SE_MOUSE, e.xrel, e.yrel, 0, NULL );
+	}
+}
+
+void IN_PushMouseButton(SDL_MouseButtonEvent e) {
+	int b;
+	switch( e.button )
+	{
+		case SDL_BUTTON_LEFT:   b = K_MOUSE1;     break;
+		case SDL_BUTTON_MIDDLE: b = K_MOUSE3;     break;
+		case SDL_BUTTON_RIGHT:  b = K_MOUSE2;     break;
+		case SDL_BUTTON_X1:     b = K_MOUSE4;     break;
+		case SDL_BUTTON_X2:     b = K_MOUSE5;     break;
+		default:                b = K_AUX1 + ( e.button - SDL_BUTTON_X2 + 1 ) % 16; break;
+	}
+	if(!in_joystick->integer) {
+		Com_QueueEvent( in_eventTime, SE_KEY, b,
+			( e.type == SDL_MOUSEBUTTONDOWN ? qtrue : qfalse ), 0, NULL );
+	}
+}
+
 void IN_PushEvent(int type, int *event)
 {
   if(type == (int)&IN_PushKeyDown) {
@@ -410,8 +436,14 @@ void IN_PushEvent(int type, int *event)
     IN_PushKeyUp(*(SDL_KeyboardEvent *)event);
   }
 	if(type == (int)&IN_PushTextEntry) {
-    IN_PushKeyUp(*(SDL_TextInputEvent *)event);
+    IN_PushTextEntry(*(SDL_TextInputEvent *)event);
   }
+	if(type == (int)&IN_PushMouseMove) {
+		IN_PushMouseMove(*(SDL_MouseMotionEvent *)event);
+	}
+	if(type == (int)&IN_PushMouseButton) {
+		IN_PushMouseButton(*(SDL_MouseButtonEvent *)event);
+	}
 }
 
 void IN_PushInit(int *inputInterface)
@@ -419,4 +451,6 @@ void IN_PushInit(int *inputInterface)
   inputInterface[0] = (int)&IN_PushKeyDown;
   inputInterface[1] = (int)&IN_PushKeyUp;
 	inputInterface[2] = (int)&IN_PushTextEntry;
+	inputInterface[3] = (int)&IN_PushMouseMove;
+	inputInterface[4] = (int)&IN_PushMouseButton;
 }
