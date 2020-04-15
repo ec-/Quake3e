@@ -128,6 +128,46 @@ var LibrarySysInput = {
       SYSI.InitJoystick(SYSI.joysticks[1], 2)
       SYSI.InitJoystick(SYSI.joysticks[2], 3)
     },
+    InputPushKeyEvent: function (evt) {
+      var stack = stackSave()
+      var event = stackAlloc(32)
+
+      HEAP32[((event+0)>>2)]= evt.type == 'keydown' ? 0x300 : 0x301; //Uint32 type; ::SDL_KEYDOWN or ::SDL_KEYUP
+      HEAP32[((event+4)>>2)]=_Sys_Milliseconds();
+      HEAP32[((event+8)>>2)]=0; // windowID
+      HEAP32[((event+12)>>2)]=(1 << 2) + (evt.repeat ? 1 : 0); // ::SDL_PRESSED or ::SDL_RELEASED
+      
+      var key = SDL.lookupKeyCodeForEvent(evt);
+      var scan;
+      if (key >= 1024) {
+        scan = key - 1024;
+      } else {
+        scan = SDL.scanCodes[key] || key;
+      }
+
+      HEAP32[((event+16)>>2)]=scan;
+      HEAP32[((event+20)>>2)]=key;
+      HEAP32[((event+24)>>2)]=SDL.modState;
+      HEAP32[((event+28)>>2)]=0;
+      if(evt.type == 'keydown')
+        Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[0], event)
+      if(evt.type == 'keyup')
+        Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[1], event)
+      stackRestore(stack)
+    },
+    InputTextInputEvent: function (evt) {
+      var stack = stackSave()
+      var event = stackAlloc(16)
+      
+      HEAP32[((event+0)>>2)]= 0x303; //Uint32 type; ::SDL_TEXTINPUT
+      HEAP32[((event+4)>>2)]=_Sys_Milliseconds();
+      HEAP32[((event+8)>>2)]=0; // windowID
+      HEAP32[((event+12)>>2)]=intArrayFromString(evt.key); // The input text
+      
+      Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[2], event)
+      
+      stackRestore(stack)
+    },
     InputInit: function () {
       // TODO: clear JSEvents.eventHandlers
       var inputInterface = allocate(new Int32Array(20), 'i32', ALLOC_NORMAL);
@@ -136,30 +176,9 @@ var LibrarySysInput = {
       for(var ei = 0; ei < 20; ei++) {
         SYSI.inputInterface[ei] = getValue(inputInterface + 4 * ei, 'i32', true)
       }
-      window.addEventListener('keydown', function(evt) {
-        var stack = stackSave()
-        var event = stackAlloc(32)
-
-        HEAP32[((event+0)>>2)]=0x300; //Uint32 type; ::SDL_KEYDOWN or ::SDL_KEYUP
-        HEAP32[((event+4)>>2)]=_Sys_Milliseconds();
-        HEAP32[((event+8)>>2)]=0; // windowID
-        HEAP32[((event+12)>>2)]=(1 << 2) + (evt.repeat ? 1 : 0); // ::SDL_PRESSED or ::SDL_RELEASED
-        
-        var key = SDL.lookupKeyCodeForEvent(evt);
-        var scan;
-        if (key >= 1024) {
-          scan = key - 1024;
-        } else {
-          scan = SDL.scanCodes[key] || key;
-        }
-
-        HEAP32[((event+16)>>2)]=scan;
-        HEAP32[((event+20)>>2)]=key;
-        HEAP32[((event+24)>>2)]=SDL.modState;
-        HEAP32[((event+28)>>2)]=0;
-        Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[0], event)
-        stackRestore(stack)
-      }, false)
+      window.addEventListener('keydown', SYSI.InputPushKeyEvent, false)
+      window.addEventListener('keyup', SYSI.InputPushKeyEvent, false)
+      window.addEventListener('keypress', SYSI.InputTextInputEvent, false)
     },
   },
 	Sys_GLimpInit__deps: ['$SDL', '$SYS'],

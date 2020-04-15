@@ -351,6 +351,56 @@ void IN_PushKeyUp(SDL_KeyboardEvent e)
   lastKeyDown = 0;
 }
 
+void IN_PushTextEntry(SDL_TextInputEvent e) {
+	if( lastKeyDown != K_CONSOLE )
+	{
+		char *c = e.text;
+
+		// Quick and dirty UTF-8 to UTF-32 conversion
+		while ( *c )
+		{
+			int utf32 = 0;
+
+			if( ( *c & 0x80 ) == 0 )
+				utf32 = *c++;
+			else if( ( *c & 0xE0 ) == 0xC0 ) // 110x xxxx
+			{
+				utf32 |= ( *c++ & 0x1F ) << 6;
+				utf32 |= ( *c++ & 0x3F );
+			}
+			else if( ( *c & 0xF0 ) == 0xE0 ) // 1110 xxxx
+			{
+				utf32 |= ( *c++ & 0x0F ) << 12;
+				utf32 |= ( *c++ & 0x3F ) << 6;
+				utf32 |= ( *c++ & 0x3F );
+			}
+			else if( ( *c & 0xF8 ) == 0xF0 ) // 1111 0xxx
+			{
+				utf32 |= ( *c++ & 0x07 ) << 18;
+				utf32 |= ( *c++ & 0x3F ) << 12;
+				utf32 |= ( *c++ & 0x3F ) << 6;
+				utf32 |= ( *c++ & 0x3F );
+			}
+			else
+			{
+				Com_DPrintf( "Unrecognised UTF-8 lead byte: 0x%x\n", (unsigned int)*c );
+				c++;
+			}
+
+			if( utf32 != 0 )
+			{
+				if ( IN_IsConsoleKey( 0, utf32 ) )
+				{
+					Com_QueueEvent( in_eventTime, SE_KEY, K_CONSOLE, qtrue, 0, NULL );
+					Com_QueueEvent( in_eventTime, SE_KEY, K_CONSOLE, qfalse, 0, NULL );
+				}
+				else
+					Com_QueueEvent( in_eventTime, SE_CHAR, utf32, 0, 0, NULL );
+			}
+		}
+	}
+}
+
 void IN_PushEvent(int type, int *event)
 {
   if(type == (int)&IN_PushKeyDown) {
@@ -359,10 +409,14 @@ void IN_PushEvent(int type, int *event)
   if(type == (int)&IN_PushKeyUp) {
     IN_PushKeyUp(*(SDL_KeyboardEvent *)event);
   }
+	if(type == (int)&IN_PushTextEntry) {
+    IN_PushKeyUp(*(SDL_TextInputEvent *)event);
+  }
 }
 
 void IN_PushInit(int *inputInterface)
 {
   inputInterface[0] = (int)&IN_PushKeyDown;
   inputInterface[1] = (int)&IN_PushKeyUp;
+	inputInterface[2] = (int)&IN_PushTextEntry;
 }
