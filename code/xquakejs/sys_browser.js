@@ -16,6 +16,7 @@ var LibrarySys = {
 		downloadCount: 0,
 		downloads: [],
 		downloadSort: 0,
+		inputInterface: 0,
 		// Lets make a list of supported mods, 'dirname-ccr' (-ccr means combined converted repacked)
 		//   To the right is the description text, atomatically creates a placeholder.pk3dir with description.txt inside
 		// We use a list here because Object keys have no guarantee of order
@@ -197,8 +198,8 @@ var LibrarySys = {
 				.replace('%fs', window.fullscreen ? '1' : '0')
 				.replace('%w', window.innerWidth)
 				.replace('%h', window.innerHeight)
-			Module._Cbuf_AddText(allocate(intArrayFromString(update), 'i8', ALLOC_STACK));
-			Module._Cbuf_Execute();
+			_Cbuf_AddText(allocate(intArrayFromString(update), 'i8', ALLOC_STACK));
+			_Cbuf_Execute();
 		},
 		resizeDelay: null,
 		resizeViewport: function () {
@@ -212,8 +213,8 @@ var LibrarySys = {
 		},
 		quitGameOnUnload: function (e) {
 			if(Module['canvas']) {
-				Module._Cbuf_AddText(allocate(intArrayFromString('quit;'), 'i8', ALLOC_STACK));
-				Module._Cbuf_Execute();
+				_Cbuf_AddText(allocate(intArrayFromString('quit;'), 'i8', ALLOC_STACK));
+				_Cbuf_Execute();
 				Module['canvas'].remove()
 				Module['canvas'] = null
 			}
@@ -323,8 +324,7 @@ var LibrarySys = {
 			})
 		},
 		InitNippleJoysticks: function() {
-			var in_joystick = _Cvar_VariableIntegerValue(
-				allocate(intArrayFromString('in_joystick'), 'i8', ALLOC_STACK))
+			var in_joystick = SYSC.Cvar_VariableIntegerValue('in_joystick')
 			if(!in_joystick) {
 				return
 			}
@@ -375,7 +375,11 @@ var LibrarySys = {
 				}
 				SYS.soundCallback = SYS.soundCallback.filter((s, i, arr) => arr.indexOf(s) === i)
 			} else if(file[1].match(/\.md3|\.iqm|\.mdr/i)) {
-				SYS.modelCallback.unshift(file[1].replace('/' + SYS.fs_game + '/', ''))
+				if(file[0]) {
+					SYS.modelCallback.unshift(file[0].replace('/' + SYS.fs_game + '/', ''))
+				} else {
+					SYS.modelCallback.unshift(file[1].replace('/' + SYS.fs_game + '/', ''))
+				}
 				SYS.modelCallback = SYS.modelCallback.filter((s, i, arr) => arr.indexOf(s) === i)
 			} else if(SYS.index[indexFilename].shaders.length > 0) {
 				if(file[0]) {
@@ -452,17 +456,50 @@ var LibrarySys = {
 					obj[k.toLowerCase()].shaders = []
 					return obj
 				}, SYS.index || {})
-				var bits = ('{' + Object.keys(SYS.index)
+				var bits = intArrayFromString('{' + Object.keys(SYS.index)
 					.map(k => '"' + k + '":' + JSON.stringify(SYS.index[k])).join(',')
 					+ '}')
-					.split('').map(c => c.charCodeAt(0))
 				FS.writeFile(PATH.join(SYS.fs_basepath, index, "index.json"),
 				 	Uint8Array.from(bits),
 					{encoding: 'binary', flags: 'w', canOwn: true })
 				cb()
 			})
 		},
+		InputInit: function () {
+			// TODO: clear JSEvents.eventHandlers
+			var inputInterface = allocate(new Int32Array(20), 'i32', ALLOC_NORMAL);
+			Browser.safeCallback(_IN_PushInit)(inputInterface)
+			SYS.inputInterface = []
+			for(var ei = 0; ei < 20; ei++) {
+				SYS.inputInterface[ei] = getValue(inputInterface + 4 * ei, 'i32', true)
+			}
+			window.addEventListener('keydown', function(evt) {
+				var stack = stackSave()
+				var event = stackAlloc(32)
+
+				HEAP32[((event+0)>>2)]=0x300; //Uint32 type; ::SDL_KEYDOWN or ::SDL_KEYUP
+	      HEAP32[((event+4)>>2)]=_Sys_Milliseconds();
+	      HEAP32[((event+8)>>2)]=0; // windowID
+	      HEAP32[((event+12)>>2)]=(1 << 2) + (evt.repeat ? 1 : 0); // ::SDL_PRESSED or ::SDL_RELEASED
+				
+				var key = SDL.lookupKeyCodeForEvent(evt);
+				var scan;
+				if (key >= 1024) {
+					scan = key - 1024;
+				} else {
+					scan = SDL.scanCodes[key] || key;
+				}
+
+	      HEAP32[((event+16)>>2)]=scan;
+	      HEAP32[((event+20)>>2)]=key;
+	      HEAP32[((event+24)>>2)]=SDL.modState;
+				HEAP32[((event+28)>>2)]=0;
+				Browser.safeCallback(_IN_PushEvent)(SYS.inputInterface[0], event)
+				stackRestore(stack)
+		  }, false)
+		},
 	},
+	Sys_PlatformInit__deps: ['stackAlloc'],
 	Sys_PlatformInit: function () {
 		SYS.loading = document.getElementById('loading')
 		SYS.dialog = document.getElementById('dialog')
@@ -489,7 +526,7 @@ var LibrarySys = {
 			})
 		})
 		window.addEventListener('resize', SYS.resizeViewport)
-		SYS.lazyInterval = setInterval(SYS.DownloadLazy, 1)
+		SYS.lazyInterval = setInterval(SYS.DownloadLazy, 10)
 	},
 	Sys_PlatformExit: function () {
 		flipper.style.display = 'block'
@@ -516,24 +553,22 @@ var LibrarySys = {
 			canvas.height = viewport.offsetHeight
 			Module['canvas'] = viewport.appendChild(canvas)
 		}
+		setTimeout(SYS.InputInit, 100)
 		setTimeout(SYS.InitNippleJoysticks, 100)
 	},
 	Sys_GLimpSafeInit: function () {
 	},
 	Sys_BeginDownload__deps: ['$Browser', '$FS', '$PATH', '$IDBFS', '$SYSC'],
 	Sys_BeginDownload: function () {
-		var cl_downloadName = UTF8ToString(_Cvar_VariableString(
-			allocate(intArrayFromString('cl_downloadName'), 'i8', ALLOC_STACK)))
-		var fs_basepath = UTF8ToString(_Cvar_VariableString(
-			allocate(intArrayFromString('fs_basepath'), 'i8', ALLOC_STACK)))
-		var fs_game = UTF8ToString(_Cvar_VariableString(
-			allocate(intArrayFromString('fs_game'), 'i8', ALLOC_STACK)))
+		var cl_downloadName = SYSC.Cvar_VariableString('cl_downloadName')
+		var fs_basepath = SYSC.Cvar_VariableString('fs_basepath')
+		var fs_game = SYSC.Cvar_VariableString('fs_game')
 		
 		SYSC.mkdirp(PATH.join(fs_basepath, PATH.dirname(cl_downloadName)))
 		
 		SYSC.DownloadAsset(cl_downloadName, (loaded, total) => {
-			_Cvar_SetValue(allocate(intArrayFromString('cl_downloadSize'), 'i8', ALLOC_STACK), total );
-			_Cvar_SetValue(allocate(intArrayFromString('cl_downloadCount'), 'i8', ALLOC_STACK), loaded );
+			SYSC.Cvar_SetValue('cl_downloadSize', total);
+			SYSC.Cvar_SetValue('cl_downloadCount', loaded);
 		}, (err, data) => {
 			if(err) {
 				SYSC.Error('drop', 'Download Error: ' + err.message)
@@ -547,20 +582,14 @@ var LibrarySys = {
 	},
 	Sys_FS_Startup__deps: ['$SYS', '$Browser', '$FS', '$PATH', '$IDBFS', '$SYSC'],
 	Sys_FS_Startup: function (cb) {
-		var fs_homepath = UTF8ToString(_Cvar_VariableString(
-			allocate(intArrayFromString('fs_homepath'), 'i8', ALLOC_STACK)))
-		fs_basepath = UTF8ToString(_Cvar_VariableString(
-			allocate(intArrayFromString('fs_basepath'), 'i8', ALLOC_STACK)))
+		var fs_homepath = SYSC.Cvar_VariableString('fs_homepath')
+		var fs_basepath = SYSC.Cvar_VariableString('fs_basepath')
 		SYS.fs_basepath = fs_basepath;
-		var fs_basegame = UTF8ToString(_Cvar_VariableString(
-			allocate(intArrayFromString('fs_basegame'), 'i8', ALLOC_STACK)))
-		var sv_pure = _Cvar_VariableIntegerValue(
-			allocate(intArrayFromString('sv_pure'), 'i8', ALLOC_STACK))
-		var fs_game = UTF8ToString(_Cvar_VariableString(
-			allocate(intArrayFromString('fs_game'), 'i8', ALLOC_STACK)))
+		var fs_basegame = SYSC.Cvar_VariableString('fs_basegame')
+		var sv_pure = SYSC.Cvar_VariableString('sv_pure')
+		var fs_game = SYSC.Cvar_VariableString('fs_game')
 		SYS.fs_game = fs_game;
-		var mapname = UTF8ToString(_Cvar_VariableString(
-			allocate(intArrayFromString('mapname'), 'i8', ALLOC_STACK)))
+		var mapname = SYSC.Cvar_VariableString('mapname')
 		var clcState = _CL_GetClientState()
 		const blankFile = new Uint8Array(4)
 		
@@ -596,7 +625,7 @@ var LibrarySys = {
 			for(var i = 0; i < (SYS.mods || []).length; i++) {
 				var desc = PATH.join(fs_basepath, SYS.mods[i][0], 'description.txt')
 				SYSC.mkdirp(PATH.join(PATH.dirname(desc), '0000placeholder.pk3dir'))
-				FS.writeFile(desc, Uint8Array.from(SYS.mods[i][1].split('').map(c => c.charCodeAt(0))), {
+				FS.writeFile(desc, Uint8Array.from(intArrayFromString(SYS.mods[i][1])), {
 					encoding: 'binary', flags: 'w', canOwn: true })
 			}
 
@@ -741,6 +770,7 @@ var LibrarySys = {
 	},
 	Sys_FOpen__deps: ['$SYS', '$FS', '$PATH', 'fopen'],
 	Sys_FOpen: function (ospath, mode) {
+		var stack = stackSave()
 		var handle = 0
 		try {
 			var filename = UTF8ToString(ospath).replace(/\/\//ig, '/')
@@ -761,19 +791,17 @@ var LibrarySys = {
 						+ SYS.index[indexFilename].name
 					try { exists = FS.lookupPath(altName) } catch (e) { exists = false }
 					if(handle === 0 && altName != filename && exists) {
-						handle = _fopen(allocate(intArrayFromString(altName), 'i8', ALLOC_STACK), mode)
+						ospath = allocate(intArrayFromString(altName), 'i8', ALLOC_STACK)
+						handle = _fopen(ospath, mode)
 						//if(handle > 0) {
 						//	return handle
 						//}
 					}
-					var loading = UTF8ToString(_Cvar_VariableString(
-						allocate(intArrayFromString('r_loadingShader'), 'i8', ALLOC_STACK)))
+					var loading = SYSC.Cvar_VariableString('r_loadingShader')
 					if(loading.length === 0) {
-						loading = UTF8ToString(_Cvar_VariableString(
-							allocate(intArrayFromString('snd_loadingSound'), 'i8', ALLOC_STACK)))
+						loading = SYSC.Cvar_VariableString('snd_loadingSound')
 						if(loading.length === 0) {
-							loading = UTF8ToString(_Cvar_VariableString(
-								allocate(intArrayFromString('r_loadingModel'), 'i8', ALLOC_STACK)))
+							loading = SYSC.Cvar_VariableString('r_loadingModel')
 						}
 					}
 					if(!SYS.index[indexFilename].downloading) {
@@ -792,6 +820,7 @@ var LibrarySys = {
 			}
 			throw e
 		}
+		stackRestore(stack)
 		return handle
 	},
 	Sys_UpdateShader: function () {

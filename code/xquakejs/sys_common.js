@@ -1,6 +1,27 @@
 var LibrarySysCommon = {
 	$SYSC__deps: ['$Browser', '$FS', '$PATH', '$SYS', 'Com_Printf', 'Com_Error'],
 	$SYSC: {
+		Cvar_VariableString: function (str) {
+			var stack = stackSave()
+			var key = allocate(intArrayFromString(str), 'i8', ALLOC_STACK)
+			var value = UTF8ToString(_Cvar_VariableString(key))
+			stackRestore(stack)
+			return value
+		},
+		Cvar_VariableIntegerValue: function (str) {
+			var stack = stackSave()
+			var key = allocate(intArrayFromString(str), 'i8', ALLOC_STACK)
+			var value = _Cvar_VariableIntegerValue(key)
+			stackRestore(stack)
+			return value
+		},
+		Cvar_SetValue: function (str, value) {
+			var stack = stackSave()
+			var key = allocate(intArrayFromString(str), 'i8', ALLOC_STACK)
+			var value = _Cvar_SetValue(key, value)
+			stackRestore(stack)
+			return value
+		},
 		Print: function (str) {
 			str = allocate(intArrayFromString(str + '\n'), 'i8', ALLOC_STACK);
 

@@ -1286,7 +1286,7 @@ void IN_Frame( void )
 		IN_ActivateMouse( fullscreen );
 
 	//IN_ProcessEvents();
-	HandleEvents();
+	//HandleEvents();
 
 	// Set event time for next frame to earliest possible time an event could happen
 	//in_eventTime = Sys_Milliseconds();
@@ -1339,7 +1339,9 @@ void IN_Init( void )
 	// ~ and `, as keys and characters
 	cl_consoleKeys = Cvar_Get( "cl_consoleKeys", "~ ` 0x7e 0x60", CVAR_ARCHIVE );
 
+#ifndef EMSCRIPTEN
 	SDL_StartTextInput();
+#endif
 
 	mouseAvailable = ( in_mouse->value != 0 ) ? qtrue : qfalse;
 
