@@ -99,7 +99,7 @@ var LibrarySysInput = {
     },
     InputPushTouchEvent: function (joystick, id, evt, data) {
       var stack = stackSave()
-      var event = stackAlloc(56)
+      var event = stackAlloc(44)
       /*
       Uint32 type;        < ::SDL_FINGERMOTION or ::SDL_FINGERDOWN or ::SDL_FINGERUP
       Uint32 timestamp;   < In milliseconds, populated using SDL_GetTicks()
@@ -156,7 +156,8 @@ var LibrarySysInput = {
         }
       }
       */
-
+      var w = Module['canvas'].width;
+      var h = Module['canvas'].height;
       var dx = data.angle ? (Math.cos(data.angle.radian) * data.distance) : 0
       var dy = data.angle ? (Math.sin(data.angle.radian) * data.distance) : 0
       var x = data.angle ? dx : Math.round(data.position.x)
@@ -165,15 +166,17 @@ var LibrarySysInput = {
       HEAP32[((event+0)>>2)]=evt.type == 'start' ? 0x700 : evt.type == 'end' ? 0x701 : 0x702
       HEAP32[((event+4)>>2)]=_Sys_Milliseconds()
       HEAP32[((event+8)>>2)] = id
-      HEAP32[((event+24)>>2)] = id
-      HEAPF32[((event+40)>>2)]=x
-      HEAPF32[((event+44)>>2)]=y
-      HEAPF32[((event+48)>>2)]=dx
-      HEAPF32[((event+52)>>2)]=dy
+      HEAP32[((event+12)>>2)] = 0
+      HEAP32[((event+16)>>2)] = id
+      HEAP32[((event+20)>>2)] = 0
+      HEAPF32[((event+24)>>2)]=x / w
+      HEAPF32[((event+28)>>2)]=y / h
+      HEAPF32[((event+32)>>2)]=dx / w
+      HEAPF32[((event+36)>>2)]=dy / h
       if (data.force !== undefined) {
-        HEAPF32[((event+(56))>>2)]=data.force
+        HEAPF32[((event+(40))>>2)]=data.force
       } else { // No pressure data, send a digital 0/1 pressure.
-        HEAPF32[((event+(56))>>2)]=data.type == 'end' ? 0 : 1
+        HEAPF32[((event+(40))>>2)]=data.type == 'end' ? 0 : 1
       }
       Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[6], event)
       stackRestore(stack)
@@ -242,8 +245,8 @@ var LibrarySysInput = {
         maxNumberOfNipples: 1,
       })
       SYSI.joysticks[0].on('start end move', SYSI.InputPushTouchEvent.bind(null, SYSI.joysticks[0], 1))
-      SYSI.joysticks[1].on('start end move', SYSI.InputPushTouchEvent.bind(null, SYSI.joysticks[1], 1))
-      SYSI.joysticks[2].on('start end move', SYSI.InputPushTouchEvent.bind(null, SYSI.joysticks[2], 1))
+      SYSI.joysticks[1].on('start end move', SYSI.InputPushTouchEvent.bind(null, SYSI.joysticks[1], 2))
+      SYSI.joysticks[2].on('start end move', SYSI.InputPushTouchEvent.bind(null, SYSI.joysticks[2], 3))
     },
   },
 	Sys_GLimpInit__deps: ['$SDL', '$SYS'],

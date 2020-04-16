@@ -512,7 +512,6 @@ void IN_PushMouseWheel(SDL_MouseWheelEvent e)
 
 void IN_PushTouchFinger(SDL_TouchFingerEvent e)
 {
-	Com_Printf("Touch: %lli %lli\n", e.fingerId, e.touchId);
 	if(e.type == SDL_FINGERMOTION) {
 		//Com_QueueEvent( in_eventTime, SE_MOUSE_ABS, fingerMinusGap, e.tfinger.y * 480, 0, NULL );
 		float ratio = (float)cls.glconfig.vidWidth / (float)cls.glconfig.vidHeight;
@@ -520,7 +519,7 @@ void IN_PushTouchFinger(SDL_TouchFingerEvent e)
 		touchhats[e.fingerId][1] = e.y * 50;
 	}
 	else if (e.type == SDL_FINGERDOWN) {
-		if(Key_GetCatcher( ) & KEYCATCH_UI && e.fingerId == 3) {
+		if(!(Key_GetCatcher( ) & KEYCATCH_CGAME) && e.fingerId == 3) {
 			// Source: https://github.com/tomkidd/Quake3-iOS/blob/master/Quake3/sdl/sdl_input.c#L1162
 			float ratio43 = 640.0f / 480.0f;
 			float ratio = (float)cls.glconfig.vidWidth / (float)cls.glconfig.vidHeight;
@@ -548,6 +547,8 @@ void IN_PushTouchFinger(SDL_TouchFingerEvent e)
 
 void IN_PushEvent(int type, int *event)
 {
+	in_eventTime = Sys_Milliseconds();
+	
   if(type == (int)&IN_PushKeyDown) {
     IN_PushKeyDown(*(SDL_KeyboardEvent *)event);
   }
