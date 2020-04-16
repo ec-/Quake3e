@@ -11,122 +11,8 @@ var LibrarySysInput = {
       var keydown = JSEvents.eventHandlers.filter(e => e.eventTypeString == 'keydown')[0]
       var keyup = JSEvents.eventHandlers.filter(e => e.eventTypeString == 'keyup')[0]
       joystick.on('start end move', function(evt, data) {
-        var dx = data.angle ? (Math.cos(data.angle.radian) * data.distance) : 0
-        var dy = data.angle ? (Math.sin(data.angle.radian) * data.distance) : 0
-        var x = data.angle ? dx : Math.round(data.position.x)
-        var y = data.angle ? dy : Math.round(data.position.y)
-        //var id = joystick.ids.indexOf(data.identifier) + 1
-        if(id == 1) {
-          if (data.angle && Math.round(y / 40) > 0) {
-            keydown.handlerFunc({repeat: true, keyCode: 87, preventDefault: () => {}})
-          } else {
-            keyup.handlerFunc({keyCode: 87, preventDefault: () => {}})
-          }
-          if (data.angle && Math.round(y / 40) < 0) {
-            keydown.handlerFunc({repeat: true, keyCode: 83, preventDefault: () => {}})
-          } else {
-            keyup.handlerFunc({keyCode: 83, preventDefault: () => {}})
-          }
-          if (data.angle && Math.round(x / 40) < 0) {
-            keydown.handlerFunc({repeat: true, keyCode: 65, preventDefault: () => {}})
-          } else {
-            keyup.handlerFunc({keyCode: 65, preventDefault: () => {}})
-          }
-          if (data.angle && Math.round(x / 40) > 0) {
-            keydown.handlerFunc({repeat: true, keyCode: 68, preventDefault: () => {}})
-          } else {
-            keyup.handlerFunc({keyCode: 68, preventDefault: () => {}})
-          }
-        }
         
-        if(id == 2) {
-          if (data.angle && Math.round(y / 40) > 0) {
-            keydown.handlerFunc({repeat: true, keyCode: 40, preventDefault: () => {}})
-          } else {
-            keyup.handlerFunc({keyCode: 40, preventDefault: () => {}})
-          }
-          if (data.angle && Math.round(y / 40) < 0) {
-            keydown.handlerFunc({repeat: true, keyCode: 38, preventDefault: () => {}})
-          } else {
-            keyup.handlerFunc({keyCode: 38, preventDefault: () => {}})
-          }
-          if (data.angle && Math.round(x / 40) < 0) {
-            keydown.handlerFunc({repeat: true, keyCode: 37, preventDefault: () => {}})
-          } else {
-            keyup.handlerFunc({keyCode: 37, preventDefault: () => {}})
-          }
-          if (data.angle && Math.round(x / 40) > 0) {
-            keydown.handlerFunc({repeat: true, keyCode: 39, preventDefault: () => {}})
-          } else {
-            keyup.handlerFunc({keyCode: 39, preventDefault: () => {}})
-          }
-        }
-        
-        var touches = [{
-          identifier: id,
-          screenX: x,
-          screenY: y,
-          clientX: x,
-          clientY: y,
-          pageX: x,
-          pageY: y,
-          movementX: dx,
-          movementY: dy,
-        }]
-        var touchevent = {
-          type: 'touch' + evt.type,
-          touches: touches,
-          preventDefault: () => {},
-          changedTouches: touches,
-          targetTouches: touches,
-        }
-        Object.assign(touchevent, touches[0])
-        if(evt.type == 'start') start.handlerFunc(touchevent)
-        else if (evt.type == 'end') end.handlerFunc(touchevent)
-        else if (evt.type == 'move') move.handlerFunc(touchevent)
       })
-    },
-    InitNippleJoysticks: function() {
-      var in_joystick = SYSC.Cvar_VariableIntegerValue('in_joystick')
-      if(!in_joystick) {
-        return
-      }
-      document.body.classList.add('joysticks')
-      if(SYSI.joysticks.length > 0) {
-        for(var i = 0; i < SYSI.joysticks.length; i++) {
-          SYSI.joysticks[i].destroy()
-        }
-      }
-      SYSI.joysticks[0] = nipplejs.create({
-        zone: document.getElementById('left-joystick'),
-        multitouch: false,
-        mode: 'semi',
-        size: 100,
-        catchDistance: 50,
-        maxNumberOfNipples: 1,
-        position: {bottom: '50px', left: '50px'},
-      })
-      SYSI.joysticks[1] = nipplejs.create({
-        zone: document.getElementById('right-joystick'),
-        multitouch: false,
-        mode: 'semi',
-        size: 100,
-        catchDistance: 50,
-        maxNumberOfNipples: 1,
-        position: {bottom: '50px', right: '50px'},
-      })
-      SYSI.joysticks[2] = nipplejs.create({
-        dataOnly: true,
-        zone: document.body,
-        multitouch: false,
-        mode: 'dynamic',
-        size: 2,
-        catchDistance: 2,
-        maxNumberOfNipples: 1,
-      })
-      SYSI.InitJoystick(SYSI.joysticks[0], 1)
-      SYSI.InitJoystick(SYSI.joysticks[1], 2)
-      SYSI.InitJoystick(SYSI.joysticks[2], 3)
     },
     InputPushKeyEvent: function (evt) {
       var stack = stackSave()
@@ -172,7 +58,7 @@ var LibrarySysInput = {
     },
     InputPushMouseEvent: function (evt) {
       var stack = stackSave()
-      var event = stackAlloc(34)
+      var event = stackAlloc(36)
       if (evt.type != 'mousemove') {
         var down = evt.type == 'mousedown'
         HEAP32[((event+0)>>2)]=down ? 0x401 : 0x402
@@ -199,38 +85,102 @@ var LibrarySysInput = {
         Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[4], event)
       stackRestore(stack)
     },
-    InputPushTouchEvent: function (evt) {
+    InputPushWheelEvent: function (evt) {
+      var stack = stackSave()
+      var event = stackAlloc(24)
+      HEAP32[((event+0)>>2)]=0x403;
+      HEAP32[((event+4)>>2)]=_Sys_Milliseconds(); // timestamp
+      HEAP32[((event+8)>>2)]=0; // windowid
+      HEAP32[((event+12)>>2)]=0; // mouseid
+      HEAP32[((event+16)>>2)]=evt.deltaX;
+      HEAP32[((event+20)>>2)]=evt.deltaY;
+      Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[5], event)
+      stackRestore(stack)
+    },
+    InputPushTouchEvent: function (joystick, id, evt, data) {
+      var stack = stackSave()
+      var event = stackAlloc(56)
       /*
-      var touch = event.touch
-      if (!Browser.touches[touch.identifier]) break
-      var w = Module['canvas'].width
-      var h = Module['canvas'].height
-      var x = Browser.touches[touch.identifier].x / w
-      var y = Browser.touches[touch.identifier].y / h
-      var lx = Browser.lastTouches[touch.identifier].x / w
-      var ly = Browser.lastTouches[touch.identifier].y / h
-      var dx = x - lx
-      var dy = y - ly
-      if (touch['deviceID'] === undefined) touch.deviceID = SDL.TOUCH_DEFAULT_ID
-      if (dx === 0 && dy === 0 && event.type === 'touchmove') return false; // don't send these if nothing happened
-      HEAP32[(event>>2)]=SDL.DOMEventToSDLEvent[event.type]
-      HEAP32[((event+(4))>>2)]=_SDL_GetTicks()
-      (tempI64 = [touch.deviceID>>>0,(tempDouble=touch.deviceID,(+(Math_abs(tempDouble))) >= 1.0 ? (tempDouble > 0.0 ? ((Math_min((+(Math_floor((tempDouble)/4294967296.0))), 4294967295.0))|0)>>>0 : (~~((+(Math_ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296.0)))))>>>0) : 0)],HEAP32[((event+(8))>>2)]=tempI64[0],HEAP32[((event+(12))>>2)]=tempI64[1])
-      (tempI64 = [touch.identifier>>>0,(tempDouble=touch.identifier,(+(Math_abs(tempDouble))) >= 1.0 ? (tempDouble > 0.0 ? ((Math_min((+(Math_floor((tempDouble)/4294967296.0))), 4294967295.0))|0)>>>0 : (~~((+(Math_ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296.0)))))>>>0) : 0)],HEAP32[((event+(16))>>2)]=tempI64[0],HEAP32[((event+(20))>>2)]=tempI64[1])
-      HEAPF32[((event+(24))>>2)]=x
-      HEAPF32[((event+(28))>>2)]=y
-      HEAPF32[((event+(32))>>2)]=dx
-      HEAPF32[((event+(36))>>2)]=dy
-      if (touch.force !== undefined) {
-        HEAPF32[((event+(40))>>2)]=touch.force
-      } else { // No pressure data, send a digital 0/1 pressure.
-        HEAPF32[((event+(40))>>2)]=event.type == "touchend" ? 0 : 1
+      Uint32 type;        < ::SDL_FINGERMOTION or ::SDL_FINGERDOWN or ::SDL_FINGERUP
+      Uint32 timestamp;   < In milliseconds, populated using SDL_GetTicks()
+      SDL_TouchID touchId; < The touch device id
+      SDL_FingerID fingerId;
+      float x;            < Normalized in the range 0...1
+      float y;            < Normalized in the range 0...1
+      float dx;           < Normalized in the range -1...1
+      float dy;           < Normalized in the range -1...1
+      float pressure;     < Normalized in the range 0...1
+      if(id == 1) {
+        if (evt.angle && Math.round(y / 40) > 0) {
+          keydown.handlerFunc({repeat: true, keyCode: 87, preventDefault: () => {}})
+        } else {
+          keyup.handlerFunc({keyCode: 87, preventDefault: () => {}})
+        }
+        if (evt.angle && Math.round(y / 40) < 0) {
+          keydown.handlerFunc({repeat: true, keyCode: 83, preventDefault: () => {}})
+        } else {
+          keyup.handlerFunc({keyCode: 83, preventDefault: () => {}})
+        }
+        if (evt.angle && Math.round(x / 40) < 0) {
+          keydown.handlerFunc({repeat: true, keyCode: 65, preventDefault: () => {}})
+        } else {
+          keyup.handlerFunc({keyCode: 65, preventDefault: () => {}})
+        }
+        if (evt.angle && Math.round(x / 40) > 0) {
+          keydown.handlerFunc({repeat: true, keyCode: 68, preventDefault: () => {}})
+        } else {
+          keyup.handlerFunc({keyCode: 68, preventDefault: () => {}})
+        }
+      }
+      
+      if(id == 2) {
+        if (evt.angle && Math.round(y / 40) > 0) {
+          keydown.handlerFunc({repeat: true, keyCode: 40, preventDefault: () => {}})
+        } else {
+          keyup.handlerFunc({keyCode: 40, preventDefault: () => {}})
+        }
+        if (evt.angle && Math.round(y / 40) < 0) {
+          keydown.handlerFunc({repeat: true, keyCode: 38, preventDefault: () => {}})
+        } else {
+          keyup.handlerFunc({keyCode: 38, preventDefault: () => {}})
+        }
+        if (evt.angle && Math.round(x / 40) < 0) {
+          keydown.handlerFunc({repeat: true, keyCode: 37, preventDefault: () => {}})
+        } else {
+          keyup.handlerFunc({keyCode: 37, preventDefault: () => {}})
+        }
+        if (evt.angle && Math.round(x / 40) > 0) {
+          keydown.handlerFunc({repeat: true, keyCode: 39, preventDefault: () => {}})
+        } else {
+          keyup.handlerFunc({keyCode: 39, preventDefault: () => {}})
+        }
       }
       */
+
+      var dx = data.angle ? (Math.cos(data.angle.radian) * data.distance) : 0
+      var dy = data.angle ? (Math.sin(data.angle.radian) * data.distance) : 0
+      var x = data.angle ? dx : Math.round(data.position.x)
+      var y = data.angle ? dy : Math.round(data.position.y)
+
+      HEAP32[((event+0)>>2)]=evt.type == 'start' ? 0x700 : evt.type == 'end' ? 0x701 : 0x702
+      HEAP32[((event+4)>>2)]=_Sys_Milliseconds()
+      HEAP32[((event+8)>>2)] = id
+      HEAP32[((event+24)>>2)] = id
+      HEAPF32[((event+40)>>2)]=x
+      HEAPF32[((event+44)>>2)]=y
+      HEAPF32[((event+48)>>2)]=dx
+      HEAPF32[((event+52)>>2)]=dy
+      if (data.force !== undefined) {
+        HEAPF32[((event+(56))>>2)]=data.force
+      } else { // No pressure data, send a digital 0/1 pressure.
+        HEAPF32[((event+(56))>>2)]=data.type == 'end' ? 0 : 1
+      }
+      Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[6], event)
+      stackRestore(stack)
     },
     InputInit: function () {
       // TODO: clear JSEvents.eventHandlers
-      var inputInterface = allocate(new Int32Array(20), 'i32', ALLOC_NORMAL)
+      var inputInterface = allocate(new Int32Array(20), 'i32', ALLOC_DYNAMIC)
       Browser.safeCallback(_IN_PushInit)(inputInterface)
       SYSI.inputInterface = []
       for(var ei = 0; ei < 20; ei++) {
@@ -239,9 +189,61 @@ var LibrarySysInput = {
       window.addEventListener('keydown', SYSI.InputPushKeyEvent, false)
       window.addEventListener('keyup', SYSI.InputPushKeyEvent, false)
       window.addEventListener('keypress', SYSI.InputPushTextEvent, false)
+      
       Module['canvas'].addEventListener('mousemove', SYSI.InputPushMouseEvent, false)
       Module['canvas'].addEventListener('mousedown', SYSI.InputPushMouseEvent, false)
       Module['canvas'].addEventListener('mouseup', SYSI.InputPushMouseEvent, false)
+      Module['canvas'].addEventListener('mousewheel', SYSI.InputPushWheelEvent, false)
+      /*
+      let nipple handle touch events
+      Module['canvas'].addEventListener('touchstart', SYSI.InputPushTouchEvent, false)
+      Module['canvas'].addEventListener('touchend', SYSI.InputPushTouchEvent, false)
+      Module['canvas'].addEventListener('touchmove', SYSI.InputPushTouchEvent, false)
+      Module['canvas'].addEventListener('touchcancel', SYSI.InputPushTouchEvent, false)
+      */
+      SYSI.InitNippleJoysticks()
+    },
+    InitNippleJoysticks: function() {
+      var in_joystick = SYSC.Cvar_VariableIntegerValue('in_joystick')
+      if(!in_joystick) {
+        return
+      }
+      document.body.classList.add('joysticks')
+      if(SYSI.joysticks.length > 0) {
+        for(var i = 0; i < SYSI.joysticks.length; i++) {
+          SYSI.joysticks[i].destroy()
+        }
+      }
+      SYSI.joysticks[0] = nipplejs.create({
+        zone: document.getElementById('left-joystick'),
+        multitouch: false,
+        mode: 'semi',
+        size: 100,
+        catchDistance: 50,
+        maxNumberOfNipples: 1,
+        position: {bottom: '50px', left: '50px'},
+      })
+      SYSI.joysticks[1] = nipplejs.create({
+        zone: document.getElementById('right-joystick'),
+        multitouch: false,
+        mode: 'semi',
+        size: 100,
+        catchDistance: 50,
+        maxNumberOfNipples: 1,
+        position: {bottom: '50px', right: '50px'},
+      })
+      SYSI.joysticks[2] = nipplejs.create({
+        dataOnly: true,
+        zone: document.body,
+        multitouch: false,
+        mode: 'dynamic',
+        size: 2,
+        catchDistance: 2,
+        maxNumberOfNipples: 1,
+      })
+      SYSI.joysticks[0].on('start end move', SYSI.InputPushTouchEvent.bind(null, SYSI.joysticks[0], 1))
+      SYSI.joysticks[1].on('start end move', SYSI.InputPushTouchEvent.bind(null, SYSI.joysticks[1], 1))
+      SYSI.joysticks[2].on('start end move', SYSI.InputPushTouchEvent.bind(null, SYSI.joysticks[2], 1))
     },
   },
 	Sys_GLimpInit__deps: ['$SDL', '$SYS'],
@@ -256,7 +258,6 @@ var LibrarySysInput = {
 			Module['canvas'] = viewport.appendChild(canvas)
 		}
 		setTimeout(SYSI.InputInit, 100)
-		setTimeout(SYSI.InitNippleJoysticks, 100)
 	},
 	Sys_GLimpSafeInit: function () {
 	},

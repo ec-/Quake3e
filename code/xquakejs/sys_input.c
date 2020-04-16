@@ -47,6 +47,7 @@ static int in_eventTime = 0;
 #define CTRL(a) ((a)-'a'+1)
 
 static keyNum_t lastKeyDown = 0;
+static float touchhats[5][2] = {};
 
 /*
 ===============
@@ -495,6 +496,56 @@ void IN_PushMouseButton(SDL_MouseButtonEvent e) {
 	}
 }
 
+void IN_PushMouseWheel(SDL_MouseWheelEvent e)
+{
+	if( e.y > 0 )
+	{
+		Com_QueueEvent( in_eventTime, SE_KEY, K_MWHEELUP, qtrue, 0, NULL );
+		Com_QueueEvent( in_eventTime, SE_KEY, K_MWHEELUP, qfalse, 0, NULL );
+	}
+	else if( e.y < 0 )
+	{
+		Com_QueueEvent( in_eventTime, SE_KEY, K_MWHEELDOWN, qtrue, 0, NULL );
+		Com_QueueEvent( in_eventTime, SE_KEY, K_MWHEELDOWN, qfalse, 0, NULL );
+	}
+}
+
+void IN_PushTouchFinger(SDL_TouchFingerEvent e)
+{
+	Com_Printf("Touch: %lli %lli\n", e.fingerId, e.touchId);
+	if(e.type == SDL_FINGERMOTION) {
+		//Com_QueueEvent( in_eventTime, SE_MOUSE_ABS, fingerMinusGap, e.tfinger.y * 480, 0, NULL );
+		float ratio = (float)cls.glconfig.vidWidth / (float)cls.glconfig.vidHeight;
+		touchhats[e.fingerId][0] = (e.x * ratio) * 50;
+		touchhats[e.fingerId][1] = e.y * 50;
+	}
+	else if (e.type == SDL_FINGERDOWN) {
+		if(Key_GetCatcher( ) & KEYCATCH_UI && e.fingerId == 3) {
+			// Source: https://github.com/tomkidd/Quake3-iOS/blob/master/Quake3/sdl/sdl_input.c#L1162
+			float ratio43 = 640.0f / 480.0f;
+			float ratio = (float)cls.glconfig.vidWidth / (float)cls.glconfig.vidHeight;
+
+			// If we're not on a 4:3 screen, do the math to figure out how to
+			// translate coordinates to a 4:3 equivalent
+			if (ratio43 != ratio) {
+				float width43 = 480 * ratio;
+				float gap = 0.5 * (width43 - (480.0f*(640.0f/480.0f)));
+				float fingerMinusGap = (e.x * width43) - gap;
+
+				Com_QueueEvent( in_eventTime, SE_MOUSE_ABS, fingerMinusGap, e.y * 480, 0, NULL );
+			} else {
+				Com_QueueEvent( in_eventTime, SE_MOUSE_ABS, e.x * 640, e.y * 480, 0, NULL );
+			}
+			Com_QueueEvent( in_eventTime+1, SE_KEY, K_MOUSE1, qtrue, 0, NULL );
+		}
+	}
+	else if(e.type == SDL_FINGERUP) {
+		Com_QueueEvent( in_eventTime+1, SE_KEY, K_MOUSE1, qfalse, 0, NULL );
+		touchhats[e.fingerId][0] = 0;
+		touchhats[e.fingerId][1] = 0;
+	}
+}
+
 void IN_PushEvent(int type, int *event)
 {
   if(type == (int)&IN_PushKeyDown) {
@@ -512,6 +563,12 @@ void IN_PushEvent(int type, int *event)
 	if(type == (int)&IN_PushMouseButton) {
 		IN_PushMouseButton(*(SDL_MouseButtonEvent *)event);
 	}
+	if(type == (int)&IN_PushMouseWheel) {
+		IN_PushMouseWheel(*(SDL_MouseWheelEvent *)event);
+	}
+	if(type == (int)&IN_PushTouchFinger) {
+		IN_PushTouchFinger(*(SDL_TouchFingerEvent *)event);
+	}
 }
 
 void IN_PushInit(int *inputInterface)
@@ -521,6 +578,8 @@ void IN_PushInit(int *inputInterface)
 	inputInterface[2] = (int)&IN_PushTextEntry;
 	inputInterface[3] = (int)&IN_PushMouseMove;
 	inputInterface[4] = (int)&IN_PushMouseButton;
+	inputInterface[5] = (int)&IN_PushMouseWheel;
+	inputInterface[6] = (int)&IN_PushTouchFinger;
 }
 
 /*
@@ -544,6 +603,7 @@ void IN_Frame( void )
 {
 	qboolean loading;
 	qboolean fullscreen;
+	int i;
 
 #ifdef USE_JOYSTICK
 	IN_JoyMove();
@@ -571,6 +631,22 @@ void IN_Frame( void )
 	}
 	else
 		IN_ActivateMouse( fullscreen );
+
+	for(i = 1; i < 4; i++) {
+		/*
+		if(i == 2 && !(Key_GetCatcher( ) & KEYCATCH_UI)) {
+			if(touchhats[i][0] != 0 || touchhats[i][1] != 0) {
+				Com_QueueEvent( in_eventTime, SE_MOUSE, touchhats[i][0], touchhats[i][1], 0, NULL );
+			}
+		}
+		*/
+		// TODO: make config options for this?
+		if(i == 1 && !(Key_GetCatcher( ) & KEYCATCH_UI)) {
+			if(touchhats[i][0] != 0 || touchhats[i][1] != 0) {
+				Com_QueueEvent( in_eventTime, SE_MOUSE, touchhats[i][0], 0, 0, NULL );
+			}
+		}
+	}
 }
 
 
