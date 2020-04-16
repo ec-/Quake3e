@@ -314,6 +314,74 @@ static keyNum_t IN_TranslateSDLToQ3Key( SDL_Keysym *keysym, qboolean down )
 	return key;
 }
 
+/*
+===============
+IN_ActivateMouse
+===============
+*/
+static void IN_ActivateMouse( qboolean isFullscreen )
+{
+	if ( !mouseAvailable || !SDL_WasInit( SDL_INIT_VIDEO ) )
+		return;
+
+	if ( !mouseActive )
+	{
+		SDL_SetRelativeMouseMode( in_mouse->integer == 1 ? SDL_TRUE : SDL_FALSE );
+		SDL_SetWindowGrab( SDL_window, SDL_TRUE );
+	}
+
+	// in_nograb makes no sense in fullscreen mode
+	if ( !isFullscreen )
+	{
+		if ( in_nograb->modified || !mouseActive )
+		{
+			if ( in_nograb->integer ) {
+				SDL_SetRelativeMouseMode( SDL_FALSE );
+				SDL_SetWindowGrab( SDL_window, SDL_FALSE );
+			} else {
+				SDL_SetRelativeMouseMode( in_mouse->integer == 1 ? SDL_TRUE : SDL_FALSE );
+				SDL_SetWindowGrab( SDL_window, SDL_TRUE );
+			}
+
+			in_nograb->modified = qfalse;
+		}
+	}
+
+	mouseActive = qtrue;
+}
+
+
+/*
+===============
+IN_DeactivateMouse
+===============
+*/
+static void IN_DeactivateMouse( qboolean isFullscreen )
+{
+	if ( !SDL_WasInit( SDL_INIT_VIDEO ) )
+		return;
+
+	// Always show the cursor when the mouse is disabled,
+	// but not when fullscreen
+	if ( !isFullscreen )
+		SDL_ShowCursor( SDL_TRUE );
+
+	if ( !mouseAvailable )
+		return;
+
+	if ( mouseActive )
+	{
+		SDL_SetWindowGrab( SDL_window, SDL_FALSE );
+		SDL_SetRelativeMouseMode( SDL_FALSE );
+
+		// Don't warp the mouse unless the cursor is within the window
+		if ( SDL_GetWindowFlags( SDL_window ) & SDL_WINDOW_MOUSE_FOCUS )
+			SDL_WarpMouseInWindow( SDL_window, glw_state.window_width / 2, glw_state.window_height / 2 );
+
+		mouseActive = qfalse;
+	}
+}
+
 void IN_PushKeyDown(SDL_KeyboardEvent e)
 {
   keyNum_t key = 0;
@@ -405,7 +473,7 @@ void IN_PushMouseMove(SDL_MouseMotionEvent e) {
 	if( mouseActive && !in_joystick->integer )
 	{
 		if( !e.xrel && !e.yrel )
-			break;
+			return;
 		Com_QueueEvent( in_eventTime, SE_MOUSE, e.xrel, e.yrel, 0, NULL );
 	}
 }
@@ -453,4 +521,151 @@ void IN_PushInit(int *inputInterface)
 	inputInterface[2] = (int)&IN_PushTextEntry;
 	inputInterface[3] = (int)&IN_PushMouseMove;
 	inputInterface[4] = (int)&IN_PushMouseButton;
+}
+
+/*
+===============
+IN_Minimize
+
+Minimize the game so that user is back at the desktop
+===============
+*/
+static void IN_Minimize( void )
+{
+	SDL_MinimizeWindow( SDL_window );
+}
+
+/*
+===============
+IN_Frame
+===============
+*/
+void IN_Frame( void )
+{
+	qboolean loading;
+	qboolean fullscreen;
+
+#ifdef USE_JOYSTICK
+	IN_JoyMove();
+#endif
+
+	// If not DISCONNECTED (main menu) or ACTIVE (in game), we're loading
+	loading = ( cls.state != CA_DISCONNECTED && cls.state != CA_ACTIVE );
+
+	fullscreen = glw_state.isFullscreen;
+
+	if ( !fullscreen && ( Key_GetCatcher() & KEYCATCH_CONSOLE ) )
+	{
+		// Console is down in windowed mode
+		IN_DeactivateMouse( fullscreen );
+	}
+	else if( !fullscreen && loading )
+	{
+		// Loading in windowed mode
+		IN_DeactivateMouse( fullscreen );
+	}
+	else if ( !( SDL_GetWindowFlags( SDL_window ) & SDL_WINDOW_INPUT_FOCUS ) )
+	{
+		// Window not got focus
+		IN_DeactivateMouse( fullscreen );
+	}
+	else
+		IN_ActivateMouse( fullscreen );
+}
+
+
+/*
+===============
+IN_Init
+===============
+*/
+void IN_Init( void )
+{
+	if ( !SDL_WasInit( SDL_INIT_VIDEO ) )
+	{
+		Com_Error( ERR_FATAL, "IN_Init called before SDL_Init( SDL_INIT_VIDEO )" );
+		return;
+	}
+
+	Com_DPrintf( "\n------- Input Initialization -------\n" );
+
+	in_keyboardDebug = Cvar_Get( "in_keyboardDebug", "0", CVAR_ARCHIVE );
+
+	// mouse variables
+	in_mouse = Cvar_Get( "in_mouse", "1", CVAR_ARCHIVE );
+	Cvar_CheckRange( in_mouse, "-1", "1", CV_INTEGER );
+
+	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE|CVAR_LATCH );
+	in_joystickThreshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE );
+#ifdef USE_JOYSTICK
+	j_pitch =        Cvar_Get( "j_pitch",        "0.022", CVAR_ARCHIVE_ND );
+	j_yaw =          Cvar_Get( "j_yaw",          "-0.022", CVAR_ARCHIVE_ND );
+	j_forward =      Cvar_Get( "j_forward",      "-0.25", CVAR_ARCHIVE_ND );
+	j_side =         Cvar_Get( "j_side",         "0.25", CVAR_ARCHIVE_ND );
+	j_up =           Cvar_Get( "j_up",           "0", CVAR_ARCHIVE_ND );
+
+	j_pitch_axis =   Cvar_Get( "j_pitch_axis",   "3", CVAR_ARCHIVE_ND );
+	j_yaw_axis =     Cvar_Get( "j_yaw_axis",     "2", CVAR_ARCHIVE_ND );
+	j_forward_axis = Cvar_Get( "j_forward_axis", "1", CVAR_ARCHIVE_ND );
+	j_side_axis =    Cvar_Get( "j_side_axis",    "0", CVAR_ARCHIVE_ND );
+	j_up_axis =      Cvar_Get( "j_up_axis",      "4", CVAR_ARCHIVE_ND );
+
+	Cvar_CheckRange( j_pitch_axis,   "0", va("%i",MAX_JOYSTICK_AXIS-1), CV_INTEGER );
+	Cvar_CheckRange( j_yaw_axis,     "0", va("%i",MAX_JOYSTICK_AXIS-1), CV_INTEGER );
+	Cvar_CheckRange( j_forward_axis, "0", va("%i",MAX_JOYSTICK_AXIS-1), CV_INTEGER );
+	Cvar_CheckRange( j_side_axis,    "0", va("%i",MAX_JOYSTICK_AXIS-1), CV_INTEGER );
+	Cvar_CheckRange( j_up_axis,      "0", va("%i",MAX_JOYSTICK_AXIS-1), CV_INTEGER );
+#endif
+
+	// ~ and `, as keys and characters
+	cl_consoleKeys = Cvar_Get( "cl_consoleKeys", "~ ` 0x7e 0x60", CVAR_ARCHIVE );
+
+#ifndef EMSCRIPTEN
+	SDL_StartTextInput();
+#endif
+
+	mouseAvailable = ( in_mouse->value != 0 ) ? qtrue : qfalse;
+
+	IN_DeactivateMouse( glw_state.isFullscreen );
+
+#ifdef USE_JOYSTICK
+	IN_InitJoystick( );
+#endif
+
+	Cmd_AddCommand( "minimize", IN_Minimize );
+
+	Com_DPrintf( "------------------------------------\n" );
+}
+
+
+/*
+===============
+IN_Shutdown
+===============
+*/
+void IN_Shutdown( void )
+{
+	SDL_StopTextInput();
+
+	IN_DeactivateMouse( glw_state.isFullscreen );
+
+	mouseAvailable = qfalse;
+
+#ifdef USE_JOYSTICK
+	IN_ShutdownJoystick();
+#endif
+}
+
+
+/*
+===============
+IN_Restart
+===============
+*/
+void IN_Restart( void )
+{
+#ifdef USE_JOYSTICK
+	IN_ShutdownJoystick();
+#endif
+	IN_Init();
 }

@@ -1274,11 +1274,13 @@ ifdef MINGW
     $(B)/client/win_resource.o
 
 ifeq ($(USE_SDL),1)
+ifneq ($(PLATFORM),js)
     Q3OBJ += \
         $(B)/client/sdl_glimp.o \
         $(B)/client/sdl_gamma.o \
         $(B)/client/sdl_input.o \
         $(B)/client/sdl_snd.o
+endif
 else # !USE_SDL
     Q3OBJ += \
         $(B)/client/win_gamma.o \
@@ -1297,6 +1299,9 @@ endif # !USE_SDL
 else # !MINGW
 ifeq ($(PLATFORM),js)
 Q3OBJ += \
+	$(B)/client/sdl_glimp.o \
+	$(B)/client/sdl_gamma.o \
+	$(B)/client/sdl_snd.o \
 	$(B)/client/sys_main.o \
 	$(B)/client/sys_input.o
 
@@ -1308,11 +1313,13 @@ else
 endif
 
 ifeq ($(USE_SDL),1)
+ifneq ($(PLATFORM),js)
     Q3OBJ += \
         $(B)/client/sdl_glimp.o \
         $(B)/client/sdl_gamma.o \
         $(B)/client/sdl_input.o \
         $(B)/client/sdl_snd.o
+endif
 else # !USE_SDL
     Q3OBJ += \
         $(B)/client/linux_glimp.o \
