@@ -1867,30 +1867,6 @@ void VM_LogSyscalls( int *args ) {
 }
 
 #ifdef EMSCRIPTEN
-int GetIntFromByte(byte *offset) {
-	return (offset[3] << 24) | (offset[2] << 16)
-		| (offset[1] << 8) | offset[0];
-}
-
-byte *VM_GetStaticAtoms(vm_t *vm, int refreshCmd, int mouseCmd, int realtimeMarker) {
-	int i;
-	int diff = realtimeMarker ^ 0x7FFFFFFF;
-	byte *ret = 0;
-	VM_Call( vm, 1, refreshCmd, diff);
-
-	for(i = vm->dataAlloc - 32; i >= 0; i--) {
-		int realTime = GetIntFromByte(&vm->dataBase[i-4]);
-		if(realTime == diff) {
-			ret = &vm->dataBase[i-8];
-		}
-	}
-	if(!ret) {
-		Com_Error(ERR_FATAL, "Couldn't locate UI cursor %i\n", diff);
-	}
-	return ret;
-}
-
-
 qboolean VM_IsSuspended(vm_t * vm) {
 #ifndef NO_VM_COMPILED
 		if (vm->compiled) {

@@ -222,6 +222,7 @@ typedef struct {
 	void*	(*VK_GetInstanceProcAddr)( VkInstance instance, const char *name );
 	qboolean (*VK_CreateSurface)( VkInstance instance, VkSurfaceKHR *pSurface );
 
+	void (*Spy_CursorPosition)(float x, float y);
 } refimport_t;
 
 extern	refimport_t	ri;

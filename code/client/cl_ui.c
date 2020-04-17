@@ -1222,7 +1222,8 @@ void CL_ShutdownUI( void ) {
 	uivm = NULL;
 	FS_VM_CloseFiles( H_Q3UI );
 #ifdef EMSCRIPTEN
-	cls.menuUIhack = 0;
+	cls.cursorx = 0;
+	cls.cursory = 0;
 #endif
 }
 

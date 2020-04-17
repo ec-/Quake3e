@@ -520,21 +520,7 @@ void IN_PushTouchFinger(SDL_TouchFingerEvent e)
 	}
 	else if (e.type == SDL_FINGERDOWN) {
 		if(!(Key_GetCatcher( ) & KEYCATCH_CGAME) && e.fingerId == 3) {
-			// Source: https://github.com/tomkidd/Quake3-iOS/blob/master/Quake3/sdl/sdl_input.c#L1162
-			float ratio43 = 640.0f / 480.0f;
-			float ratio = (float)cls.glconfig.vidWidth / (float)cls.glconfig.vidHeight;
-
-			// If we're not on a 4:3 screen, do the math to figure out how to
-			// translate coordinates to a 4:3 equivalent
-			if (ratio43 != ratio) {
-				float width43 = 480 * ratio;
-				float gap = 0.5 * (width43 - (480.0f*(640.0f/480.0f)));
-				float fingerMinusGap = (e.x * width43) - gap;
-
-				Com_QueueEvent( in_eventTime, SE_MOUSE_ABS, fingerMinusGap, e.y * 480, 0, NULL );
-			} else {
-				Com_QueueEvent( in_eventTime, SE_MOUSE_ABS, e.x * 640, e.y * 480, 0, NULL );
-			}
+			Com_QueueEvent( in_eventTime, SE_MOUSE_ABS, e.x * cls.glconfig.vidWidth, e.y * cls.glconfig.vidHeight, 0, NULL );
 			Com_QueueEvent( in_eventTime+1, SE_KEY, K_MOUSE1, qtrue, 0, NULL );
 		}
 	}

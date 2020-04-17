@@ -353,7 +353,8 @@ typedef struct {
 	float		biasY;
 
 #ifdef EMSCRIPTEN
-	byte		 *menuUIhack;
+	float		 cursorx;
+	float    cursory;
 #endif
 } clientStatic_t;
 

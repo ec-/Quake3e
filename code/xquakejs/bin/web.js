@@ -53,6 +53,11 @@ app.use(serveStatic(path.join(__dirname, '../../../build/release-js-js'), {
     res.setHeader('Access-Control-Allow-Origin', '*')
   }
 }))
+app.use(serveStatic(path.join(__dirname, '../../../build/debug-js-js'), {
+  setHeaders: (res, path) => {
+    res.setHeader('Access-Control-Allow-Origin', '*')
+  }
+}))
 app.use(serveStatic(path.join(__dirname), {
   setHeaders: (res, path) => {
     res.setHeader('Access-Control-Allow-Origin', '*')
