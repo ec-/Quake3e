@@ -155,12 +155,10 @@ var LibrarySysInput = {
     },
     InputInit: function () {
       // TODO: clear JSEvents.eventHandlers
-      SYSI.inputHeap = allocate(new Int32Array(60>>2), 'i32', ALLOC_DYNAMIC)
-      var inputInterface = allocate(new Int32Array(20), 'i32', ALLOC_STACK)
-      Browser.safeCallback(_IN_PushInit)(inputInterface)
+      Browser.safeCallback(_IN_PushInit)(SYSI.inputHeap)
       SYSI.inputInterface = []
       for(var ei = 0; ei < 20; ei++) {
-        SYSI.inputInterface[ei] = getValue(inputInterface + 4 * ei, 'i32', true)
+        SYSI.inputInterface[ei] = getValue(SYSI.inputHeap + 4 * ei, 'i32', true)
       }
       window.addEventListener('keydown', SYSI.InputPushKeyEvent, false)
       window.addEventListener('keyup', SYSI.InputPushKeyEvent, false)
@@ -177,13 +175,8 @@ var LibrarySysInput = {
       Module['canvas'].addEventListener('touchmove', SYSI.InputPushTouchEvent, false)
       Module['canvas'].addEventListener('touchcancel', SYSI.InputPushTouchEvent, false)
       */
-      SYSI.InitNippleJoysticks()
     },
     InitNippleJoysticks: function() {
-      var in_joystick = SYSC.Cvar_VariableIntegerValue('in_joystick')
-      if(!in_joystick) {
-        return
-      }
       document.body.classList.add('joysticks')
       if(SYSI.joysticks.length > 0) {
         for(var i = 0; i < SYSI.joysticks.length; i++) {
@@ -224,6 +217,8 @@ var LibrarySysInput = {
   },
 	Sys_GLimpInit__deps: ['$SDL', '$SYS'],
 	Sys_GLimpInit: function () {
+    SYSI.inputHeap = allocate(new Int32Array(60>>2), 'i32', ALLOC_DYNAMIC)
+    var in_joystick = SYSC.Cvar_VariableIntegerValue('in_joystick')
 		var viewport = document.getElementById('viewport-frame')
 		// create a canvas element at this point if one doesnt' already exist
 		if (!Module['canvas']) {
@@ -233,6 +228,9 @@ var LibrarySysInput = {
 			canvas.height = viewport.offsetHeight
 			Module['canvas'] = viewport.appendChild(canvas)
 		}
+    if(in_joystick) {
+      setTimeout(SYSI.InitNippleJoysticks, 200)
+    }
 		setTimeout(SYSI.InputInit, 100)
 	},
 	Sys_GLimpSafeInit: function () {

@@ -1,31 +1,22 @@
 var LibrarySysCommon = {
 	$SYSC__deps: ['$Browser', '$FS', '$PATH', '$SYS', 'Com_Printf', 'Com_Error'],
 	$SYSC: {
+		varStr: 0,
 		Cvar_VariableString: function (str) {
-			var stack = stackSave()
-			var key = allocate(intArrayFromString(str), 'i8', ALLOC_STACK)
-			var value = UTF8ToString(_Cvar_VariableString(key))
-			stackRestore(stack)
-			return value
+			intArrayFromString(str).forEach((c, i) => HEAP8[(SYSC.varStr+i)] = c)
+			return UTF8ToString(_Cvar_VariableString(SYSC.varStr))
 		},
 		Cvar_VariableIntegerValue: function (str) {
-			var stack = stackSave()
-			var key = allocate(intArrayFromString(str), 'i8', ALLOC_STACK)
-			var value = _Cvar_VariableIntegerValue(key)
-			stackRestore(stack)
-			return value
+			intArrayFromString(str).forEach((c, i) => HEAP8[(SYSC.varStr+i)] = c)
+			return _Cvar_VariableIntegerValue(SYSC.varStr)
 		},
 		Cvar_SetValue: function (str, value) {
-			var stack = stackSave()
-			var key = allocate(intArrayFromString(str), 'i8', ALLOC_STACK)
-			var value = _Cvar_SetValue(key, value)
-			stackRestore(stack)
-			return value
+			intArrayFromString(str).forEach((c, i) => HEAP8[(SYSC.varStr+i)] = c)
+			return _Cvar_SetValue(SYSC.varStr, value)
 		},
 		Print: function (str) {
 			str = allocate(intArrayFromString(str + '\n'), 'i8', ALLOC_STACK);
-
-			_Com_Printf(str);
+			_Com_Printf(str)
 		},
 		Error: function (level, err) {
 			if (level === 'fatal') {
@@ -64,14 +55,13 @@ var LibrarySysCommon = {
 			})()
 		},
 		DownloadAsset: function (asset, onprogress, onload) {
-			var sv_dlURL = UTF8ToString(_Cvar_VariableString(
-				allocate(intArrayFromString('sv_dlURL'), 'i8', ALLOC_STACK)));
-			var name = asset.replace(/^\//, ''); //.replace(/(.+\/|)(.+?)$/, '$1' + asset.checksum + '-$2');
+			var sv_dlURL = SYSC.Cvar_VariableString('sv_dlURL')
+			var name = asset.replace(/^\//, '') //.replace(/(.+\/|)(.+?)$/, '$1' + asset.checksum + '-$2');
 			var url = (sv_dlURL.includes('://')
 				? sv_dlURL
 				: window
 					? (window.location.protocol + '//' + sv_dlURL)
-					: ('https://' + sv_dlURL)) + '/' + name;
+					: ('https://' + sv_dlURL)) + '/' + name
 
 			SYSN.DoXHR(url, {
 				dataType: 'arraybuffer',
@@ -126,22 +116,17 @@ var LibrarySysCommon = {
 	},
 	Sys_Basename__deps: ['$PATH'],
 	Sys_Basename: function (path) {
-		path = UTF8ToString(path);
-		path = PATH.basename(path);
-		var basename = allocate(intArrayFromString(path), 'i8', ALLOC_STACK);
-		return basename;
+		path = PATH.basename(UTF8ToString(path));
+		return allocate(intArrayFromString(path), 'i8', ALLOC_STACK);
 	},
 	Sys_DllExtension__deps: ['$PATH'],
 	Sys_DllExtension: function (path) {
-		path = UTF8ToString(path);
-		return PATH.extname(path) == '.wasm';
+		return PATH.extname(UTF8ToString(path)) == '.wasm';
 	},
 	Sys_Dirname__deps: ['$PATH'],
 	Sys_Dirname: function (path) {
-		path = UTF8ToString(path);
-		path = PATH.dirname(path);
-		var dirname = allocate(intArrayFromString(path), 'i8', ALLOC_STACK);
-		return dirname;
+		path = PATH.dirname(UTF8ToString(path));
+		return allocate(intArrayFromString(path), 'i8', ALLOC_STACK);
 	},
 	Sys_Mkfifo: function (path) {
 		return 0;

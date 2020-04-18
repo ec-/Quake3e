@@ -116,6 +116,7 @@ var LibrarySysMain = {
   },
   Sys_PlatformInit__deps: ['stackAlloc'],
   Sys_PlatformInit: function () {
+    SYSC.varStr = allocate(new Int8Array(4096), 'i8', ALLOC_DYNAMIC)
     SYSM.loading = document.getElementById('loading')
     SYSM.dialog = document.getElementById('dialog')
     
@@ -171,10 +172,7 @@ var LibrarySysMain = {
 		}
 	},
 	Sys_GetCurrentUser: function () {
-		var stack = stackSave()
-		var ret = allocate(intArrayFromString('player'), 'i8', ALLOC_STACK)
-		stackRestore(stack)
-		return ret
+		return allocate(intArrayFromString('player'), 'i8', ALLOC_STACK)
 	},
   Sys_Dialog: function (type, message, title) {
     SYSC.Error('SYS_Dialog not implemented')

@@ -4,6 +4,8 @@ var LibrarySysFiles = {
     index: [],
     fs_basepath: '/base',
 		fs_game: 'baseq3-ccr',
+    pathname: 0,
+    modeStr: 0,
     mods: [
       // Lets make a list of supported mods, 'dirname-ccr' (-ccr means combined converted repacked)
   		//   To the right is the description text, atomatically creates a placeholder.pk3dir with description.txt inside
@@ -47,6 +49,8 @@ var LibrarySysFiles = {
   },
   Sys_FS_Startup__deps: ['$SYS', '$Browser', '$FS', '$PATH', '$IDBFS', '$SYSC'],
   Sys_FS_Startup: function (cb) {
+    SYSF.pathname = allocate(new Int8Array(4096), 'i8', ALLOC_DYNAMIC)
+    SYSF.modeStr = allocate(new Int8Array(4), 'i8', ALLOC_DYNAMIC)
     var fs_homepath = SYSC.Cvar_VariableString('fs_homepath')
     var fs_basepath = SYSC.Cvar_VariableString('fs_basepath')
     SYSF.fs_basepath = fs_basepath;
@@ -241,10 +245,10 @@ var LibrarySysFiles = {
       var exists = false
       try { exists = FS.lookupPath(filename) } catch (e) { exists = false }
       if(exists) {
-        ospath = allocate(intArrayFromString(filename), 'i8', ALLOC_STACK)
-        mode = allocate(intArrayFromString(UTF8ToString(mode)
-          .replace('b', '')), 'i8', ALLOC_STACK);
-        handle = _fopen(ospath, mode)
+        intArrayFromString(filename).forEach((c, i) => HEAP8[(SYSF.pathname+i)] = c)
+        intArrayFromString(UTF8ToString(mode)
+          .replace('b', '')).forEach((c, i) => HEAP8[(SYSF.modeStr+i)] = c)
+        handle = _fopen(SYSF.pathname, SYSF.modeStr)
       }
       //if(handle === 0) {
         // use the index to make a case insensitive lookup
@@ -255,8 +259,8 @@ var LibrarySysFiles = {
             + SYSF.index[indexFilename].name
           try { exists = FS.lookupPath(altName) } catch (e) { exists = false }
           if(handle === 0 && altName != filename && exists) {
-            ospath = allocate(intArrayFromString(altName), 'i8', ALLOC_STACK)
-            handle = _fopen(ospath, mode)
+            intArrayFromString(altName).forEach((c, i) => HEAP8[(SYSF.pathname+i)] = c)
+            handle = _fopen(SYSF.pathname, SYSF.modeStr)
             //if(handle > 0) {
             //	return handle
             //}
@@ -351,6 +355,16 @@ var LibrarySysFiles = {
   },
   Sys_FS_Shutdown__deps: ['$Browser', '$FS', '$SYSC'],
   Sys_FS_Shutdown: function (cb) {
+    /*
+    if(SYSF.pathname) {
+      _free(SYSF.pathname)
+      SYSF.pathname = 0
+    }
+    if(SYSF.modeStr) {
+      _free(SYSF.modeStr)
+      SYSF.modeStr = 0
+    }
+    */
     // save to drive
     FS.syncfs(function (err) {
       SYSC.FS_Shutdown(function (err) {
