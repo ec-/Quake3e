@@ -235,7 +235,6 @@ var LibrarySysFiles = {
   },
   Sys_FOpen__deps: ['$SYS', '$FS', '$PATH', 'fopen'],
   Sys_FOpen: function (ospath, mode) {
-    var stack = stackSave()
     var handle = 0
     try {
       var filename = UTF8ToString(ospath).replace(/\/\//ig, '/')
@@ -285,7 +284,6 @@ var LibrarySysFiles = {
       }
       throw e
     }
-    stackRestore(stack)
     return handle
   },
   Sys_ListFiles__deps: ['$PATH', 'Z_Malloc', 'S_Malloc'],

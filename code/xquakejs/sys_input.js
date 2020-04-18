@@ -3,14 +3,15 @@ var LibrarySysInput = {
   $SYSI: {
     joysticks: [],
     inputInterface: 0,
+    inputHeap: 0,
+    //inputCount: 0,
     InputPushKeyEvent: function (evt) {
-      var stack = stackSave()
-      var event = stackAlloc(32)
+      var event = SYSI.inputHeap
 
-      HEAP32[((event+0)>>2)]= evt.type == 'keydown' ? 0x300 : 0x301; //Uint32 type; ::SDL_KEYDOWN or ::SDL_KEYUP
+      HEAP32[((event+0)>>2)]= evt.type == 'keydown' ? 0x300 : 0x301 //Uint32 type; ::SDL_KEYDOWN or ::SDL_KEYUP
       HEAP32[((event+4)>>2)]=_Sys_Milliseconds()
-      HEAP32[((event+8)>>2)]=0; // windowID
-      HEAP32[((event+12)>>2)]=(1 << 2) + (evt.repeat ? 1 : 0); // ::SDL_PRESSED or ::SDL_RELEASED
+      HEAP32[((event+8)>>2)]=0 // windowID
+      HEAP32[((event+12)>>2)]=(1 << 2) + (evt.repeat ? 1 : 0) // ::SDL_PRESSED or ::SDL_RELEASED
       
       var key = SDL.lookupKeyCodeForEvent(evt)
       var scan
@@ -28,11 +29,9 @@ var LibrarySysInput = {
         Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[0], event)
       if(evt.type == 'keyup')
         Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[1], event)
-      stackRestore(stack)
     },
     InputPushTextEvent: function (evt) {
-      var stack = stackSave()
-      var event = stackAlloc(24)
+      var event = SYSI.inputHeap
       HEAP32[((event+0)>>2)]= 0x303; //Uint32 type; ::SDL_TEXTINPUT
       HEAP32[((event+4)>>2)]=_Sys_Milliseconds()
       HEAP32[((event+8)>>2)]=0; // windowID
@@ -43,18 +42,16 @@ var LibrarySysInput = {
         j++
       }
       Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[2], event)
-      stackRestore(stack)
     },
     InputPushMouseEvent: function (evt) {
-      var stack = stackSave()
-      var event = stackAlloc(36)
+      var event = SYSI.inputHeap
       if (evt.type != 'mousemove') {
         var down = evt.type == 'mousedown'
         HEAP32[((event+0)>>2)]=down ? 0x401 : 0x402
-        HEAP32[((event+4)>>2)]=_Sys_Milliseconds(); // timestamp
-        HEAP32[((event+8)>>2)]=0; // windowid
-        HEAP32[((event+12)>>2)]=0; // mouseid
-        HEAP32[((event+16)>>2)]=((down ? 1 : 0) << 8) + (evt.button+1); // DOM buttons are 0-2, SDL 1-3
+        HEAP32[((event+4)>>2)]=_Sys_Milliseconds() // timestamp
+        HEAP32[((event+8)>>2)]=0 // windowid
+        HEAP32[((event+12)>>2)]=0 // mouseid
+        HEAP32[((event+16)>>2)]=((down ? 1 : 0) << 8) + (evt.button+1) // DOM buttons are 0-2, SDL 1-3
         HEAP32[((event+20)>>2)]=evt.pageX
         HEAP32[((event+24)>>2)]=evt.pageY
       } else {
@@ -72,11 +69,9 @@ var LibrarySysInput = {
         Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[3], event)
       else
         Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[4], event)
-      stackRestore(stack)
     },
     InputPushWheelEvent: function (evt) {
-      var stack = stackSave()
-      var event = stackAlloc(24)
+      var event = SYSI.inputHeap
       HEAP32[((event+0)>>2)]=0x403;
       HEAP32[((event+4)>>2)]=_Sys_Milliseconds(); // timestamp
       HEAP32[((event+8)>>2)]=0; // windowid
@@ -84,11 +79,9 @@ var LibrarySysInput = {
       HEAP32[((event+16)>>2)]=evt.deltaX;
       HEAP32[((event+20)>>2)]=evt.deltaY;
       Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[5], event)
-      stackRestore(stack)
     },
     InputPushTouchEvent: function (joystick, id, evt, data) {
-      var stack = stackSave()
-      var event = stackAlloc(44)
+      var event = SYSI.inputHeap
 
       if(id == 1) {
         if (evt.angle && Math.round(y / 40) > 0) {
@@ -159,11 +152,11 @@ var LibrarySysInput = {
         HEAPF32[((event+(40))>>2)]=data.type == 'end' ? 0 : 1
       }
       Browser.safeCallback(_IN_PushEvent)(SYSI.inputInterface[6], event)
-      stackRestore(stack)
     },
     InputInit: function () {
       // TODO: clear JSEvents.eventHandlers
-      var inputInterface = allocate(new Int32Array(20), 'i32', ALLOC_DYNAMIC)
+      SYSI.inputHeap = allocate(new Int32Array(60>>2), 'i32', ALLOC_DYNAMIC)
+      var inputInterface = allocate(new Int32Array(20), 'i32', ALLOC_STACK)
       Browser.safeCallback(_IN_PushInit)(inputInterface)
       SYSI.inputInterface = []
       for(var ei = 0; ei < 20; ei++) {
