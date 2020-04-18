@@ -2881,9 +2881,21 @@ int Com_EventLoop( void ) {
 
 		switch ( ev.evType ) {
 #ifndef DEDICATED
+#ifdef EMSCRIPTEN
+		case SE_FINGER_DOWN:
+			CL_KeyEvent( ev.evValue, qtrue, ev.evTime, ev.evValue2 );
+			break;
+		case SE_FINGER_UP:
+			CL_KeyEvent( ev.evValue, qfalse, ev.evTime, ev.evValue2 );
+			break;
+		case SE_KEY:
+			CL_KeyEvent( ev.evValue, ev.evValue2, ev.evTime, 0 );
+			break;
+#else
 		case SE_KEY:
 			CL_KeyEvent( ev.evValue, ev.evValue2, ev.evTime );
 			break;
+#endif
 		case SE_CHAR:
 			CL_CharEvent( ev.evValue );
 			break;

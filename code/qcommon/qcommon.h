@@ -1168,7 +1168,11 @@ void CL_ResetOldGame( void );
 void CL_Shutdown( const char *finalmsg, qboolean quit );
 void CL_Frame( int msec );
 qboolean CL_GameCommand( void );
+#ifdef EMSCRIPTEN
+void CL_KeyEvent (int key, qboolean down, unsigned time, int fingerId);
+#else
 void CL_KeyEvent (int key, qboolean down, unsigned time);
+#endif
 
 void CL_CharEvent( int key );
 // char events are for field typing, not game control
@@ -1273,6 +1277,8 @@ typedef enum {
   // bk001129 - make sure SE_NONE is zero
 	SE_NONE = 0,	// evTime is still valid
 	SE_KEY,		// evValue is a key code, evValue2 is the down flag
+	SE_FINGER_DOWN,
+	SE_FINGER_UP,
 	SE_CHAR,	// evValue is an ascii char
 	SE_MOUSE,	// evValue and evValue2 are relative signed x / y moves
 	SE_MOUSE_ABS,

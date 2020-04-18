@@ -521,13 +521,13 @@ void IN_PushTouchFinger(SDL_TouchFingerEvent e)
 	}
 	else if (e.type == SDL_FINGERDOWN) {
 		if((Key_GetCatcher( ) & KEYCATCH_UI) && e.fingerId == 3) {
-			Com_Printf( "Finger down %i\n", Key_GetCatcher( ) );
 			Com_QueueEvent( in_eventTime, SE_MOUSE_ABS, e.x * cls.glconfig.vidWidth, e.y * cls.glconfig.vidHeight, 0, NULL );
-			Com_QueueEvent( in_eventTime+1, SE_KEY, K_MOUSE1, qtrue, 0, NULL );
 		}
+		Com_QueueEvent( in_eventTime+1, SE_FINGER_DOWN, K_MOUSE1, e.fingerId, 0, NULL );
 	}
 	else if(e.type == SDL_FINGERUP) {
-		Com_QueueEvent( in_eventTime+1, SE_KEY, K_MOUSE1, qfalse, 0, NULL );
+		//Com_QueueEvent( in_eventTime+1, SE_KEY, K_MOUSE1, qfalse, 0, NULL );
+		Com_QueueEvent( in_eventTime+1, SE_FINGER_UP, K_MOUSE1, e.fingerId, 0, NULL );
 		touchhats[e.fingerId][0] = 0;
 		touchhats[e.fingerId][1] = 0;
 	}

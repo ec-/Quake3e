@@ -543,7 +543,7 @@ CL_KeyDownEvent
 Called by CL_KeyEvent to handle a keypress
 ===================
 */
-static void CL_KeyDownEvent( int key, unsigned time )
+static void CL_KeyDownEvent( int key, unsigned time, int fingerId )
 {
 	keys[key].down = qtrue;
 	keys[key].repeats++;
@@ -641,13 +641,22 @@ static void CL_KeyDownEvent( int key, unsigned time )
 		return;
 	}
 
-	if(cls.soundStarted && cls.firstClick && (key == K_MOUSE1 || key == K_MOUSE2 || key == K_MOUSE3 || 
-		key == K_MOUSE4 || key == K_MOUSE5)) {
+#ifdef EMSCRIPTEN
+	if(cls.soundStarted && cls.firstClick
+	  && (key == K_MOUSE1 || key == K_MOUSE2 || key == K_MOUSE3
+		  || key == K_MOUSE4 || key == K_MOUSE5)) {
 		cls.firstClick = qfalse;
 		S_Init();
 		cls.soundRegistered = qtrue;
-		S_BeginRegistration();			
+		S_BeginRegistration();
+	// only process touch events for 3rd device which is hidden on screen
+	//   this simulates tapping on the menu screen
+	// TODO: use second finger as K_MOUSE2 for zooming on weapons?
 	}
+	if (fingerId > 0 && (fingerId != 3 || !(Key_GetCatcher( ) & KEYCATCH_UI))) {
+		return;
+	}
+#endif
 
 	// distribute the key down event to the apropriate handler
 	if ( Key_GetCatcher( ) & KEYCATCH_CONSOLE ) {
@@ -678,7 +687,7 @@ CL_KeyUpEvent
 Called by CL_KeyEvent to handle a keyrelease
 ===================
 */
-static void CL_KeyUpEvent( int key, unsigned time )
+static void CL_KeyUpEvent( int key, unsigned time, int fingerId )
 {
 	keys[key].repeats = 0;
 	keys[key].down = qfalse;
@@ -719,12 +728,12 @@ CL_KeyEvent
 Called by the system for both key up and key down events
 ===================
 */
-void CL_KeyEvent( int key, qboolean down, unsigned time )
+void CL_KeyEvent( int key, qboolean down, unsigned time, int finger )
 {
 	if ( down )
-		CL_KeyDownEvent( key, time );
+		CL_KeyDownEvent( key, time, finger );
 	else
-		CL_KeyUpEvent( key, time );
+		CL_KeyUpEvent( key, time, finger );
 }
 
 
@@ -776,7 +785,7 @@ void Key_ClearStates( void )
 	for ( i = 0 ; i < MAX_KEYS ; i++ )
 	{
 		if ( keys[i].down )
-			CL_KeyEvent( i, qfalse, 0 );
+			CL_KeyEvent( i, qfalse, 0, 0 );
 
 		keys[i].down = qfalse;
 		keys[i].repeats = 0;
