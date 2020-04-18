@@ -229,7 +229,7 @@ var LibrarySysInput = {
 			Module['canvas'] = viewport.appendChild(canvas)
 		}
     if(in_joystick) {
-      setTimeout(SYSI.InitNippleJoysticks, 200)
+    //  setTimeout(SYSI.InitNippleJoysticks, 200)
     }
 		setTimeout(SYSI.InputInit, 100)
 	},
