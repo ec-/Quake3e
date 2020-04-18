@@ -3167,7 +3167,7 @@ void CL_Frame( int msec ) {
 	}
 	if((uivm || cgvm) && thirdTimer > 100) {
 		thirdTimer = 0;
-		if(cls.soundRegistered && !cls.firstClick) {
+		if(cls.soundRegistered) { // && !cls.firstClick) {
 			CL_UpdateSound();
 		}
 		CL_UpdateModel();

@@ -116,7 +116,7 @@ var LibrarySysMain = {
   },
   Sys_PlatformInit__deps: ['stackAlloc'],
   Sys_PlatformInit: function () {
-    SYSC.varStr = allocate(new Int8Array(4096), 'i8', ALLOC_DYNAMIC)
+    SYSC.varStr = allocate(new Int8Array(4096), 'i8', ALLOC_NORMAL)
     SYSM.loading = document.getElementById('loading')
     SYSM.dialog = document.getElementById('dialog')
     
@@ -145,6 +145,16 @@ var LibrarySysMain = {
     SYSN.lazyInterval = setInterval(SYSN.DownloadLazy, 10)
   },
   Sys_PlatformExit: function () {
+    /*
+    if(SYSC.varStr) {
+      _free(SYSC.varStr)
+      SYSC.varStr = 0
+    }
+    if(SYSI.inputHeap) {
+      _free(SYSI.inputHeap)
+      SYSI.inputHeap = 0
+    }
+    */
     flipper.style.display = 'block'
     flipper.style.animation = 'none'
     SYSM.exited = true

@@ -217,7 +217,7 @@ var LibrarySysInput = {
   },
 	Sys_GLimpInit__deps: ['$SDL', '$SYS'],
 	Sys_GLimpInit: function () {
-    SYSI.inputHeap = allocate(new Int32Array(60>>2), 'i32', ALLOC_DYNAMIC)
+    SYSI.inputHeap = allocate(new Int32Array(60>>2), 'i32', ALLOC_NORMAL)
     var in_joystick = SYSC.Cvar_VariableIntegerValue('in_joystick')
 		var viewport = document.getElementById('viewport-frame')
 		// create a canvas element at this point if one doesnt' already exist

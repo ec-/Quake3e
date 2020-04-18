@@ -49,8 +49,8 @@ var LibrarySysFiles = {
   },
   Sys_FS_Startup__deps: ['$SYS', '$Browser', '$FS', '$PATH', '$IDBFS', '$SYSC'],
   Sys_FS_Startup: function (cb) {
-    SYSF.pathname = allocate(new Int8Array(4096), 'i8', ALLOC_DYNAMIC)
-    SYSF.modeStr = allocate(new Int8Array(4), 'i8', ALLOC_DYNAMIC)
+    SYSF.pathname = allocate(new Int8Array(4096), 'i8', ALLOC_NORMAL)
+    SYSF.modeStr = allocate(new Int8Array(4), 'i8', ALLOC_NORMAL)
     var fs_homepath = SYSC.Cvar_VariableString('fs_homepath')
     var fs_basepath = SYSC.Cvar_VariableString('fs_basepath')
     SYSF.fs_basepath = fs_basepath;

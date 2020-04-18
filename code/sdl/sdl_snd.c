@@ -188,7 +188,7 @@ qboolean SNDDMA_Init( void )
 	int tmp;
 
 	if(snd_inited) {
-	//	SNDDMA_Shutdown();
+		SNDDMA_Shutdown();
 	}
 
 	//if ( snd_inited )

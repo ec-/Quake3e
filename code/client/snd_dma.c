@@ -339,16 +339,12 @@ static sfxHandle_t S_Base_RegisterSound( const char *name, qboolean compressed )
 	sfx->inMemory = qfalse;
 	sfx->soundCompressed = compressed;
 
-	ri.Cvar_Set( "snd_loadingSound", sfx->soundName );	
-
 	S_memoryLoad( sfx );
 
 	if ( sfx->defaultSound ) {
 		//Com_Printf( S_COLOR_YELLOW "WARNING: could not find %s - using default\n", sfx->soundName );
 		//return 0;
 	}
-	
-	ri.Cvar_Set( "snd_loadingSound", "" );	
 
 	return sfx - s_knownSfx;
 }
@@ -375,17 +371,20 @@ static void S_Base_BeginRegistration( void ) {
 
 
 void S_memoryLoad( sfx_t *sfx ) {
+	ri.Cvar_Set( "snd_loadingSound", sfx->soundName );	
 
 	// load the sound file
 	if ( !S_LoadSound ( sfx ) ) {
 	//	Com_Printf( S_COLOR_YELLOW "WARNING: couldn't load sound: %s\n", sfx->soundName );
 		sfx->defaultSound = qtrue;
 		sfx->inMemory = qfalse;
-		return;
+	} else {
+		//Com_Printf( S_COLOR_YELLOW "WARNING: load sound: %s\n", sfx->soundName );
+		sfx->defaultSound = qfalse;
+		sfx->inMemory = qtrue;
 	}
-	//Com_Printf( S_COLOR_YELLOW "WARNING: load sound: %s\n", sfx->soundName );
-	sfx->defaultSound = qfalse;
-	sfx->inMemory = qtrue;
+	
+	ri.Cvar_Set( "snd_loadingSound", "" );	
 }
 
 //=============================================================================
