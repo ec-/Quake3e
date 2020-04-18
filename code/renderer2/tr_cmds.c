@@ -279,10 +279,7 @@ void RE_StretchPic ( float x, float y, float w, float h,
 	cmd->t1 = t1;
 	cmd->s2 = s2;
 	cmd->t2 = t2;
-	if(!cursor && Q_stristr(cmd->shader->name, "cursor")) {
-		cursor = cmd->shader;
-	}
-	if(cursor && cmd->shader == cursor) {
+	if(Q_stristr(cmd->shader->name, "cursor")) {
 		ri.Spy_CursorPosition(x, y);
 	}
 }

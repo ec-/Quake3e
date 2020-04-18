@@ -481,6 +481,9 @@ void IN_PushMouseMove(SDL_MouseMotionEvent e) {
 
 void IN_PushMouseButton(SDL_MouseButtonEvent e) {
 	int b;
+	if(!mouseActive || in_joystick->integer) {
+		return;
+	}
 	switch( e.button )
 	{
 		case SDL_BUTTON_LEFT:   b = K_MOUSE1;     break;
@@ -490,10 +493,8 @@ void IN_PushMouseButton(SDL_MouseButtonEvent e) {
 		case SDL_BUTTON_X2:     b = K_MOUSE5;     break;
 		default:                b = K_AUX1 + ( e.button - SDL_BUTTON_X2 + 1 ) % 16; break;
 	}
-	if(!in_joystick->integer) {
-		Com_QueueEvent( in_eventTime, SE_KEY, b,
-			( e.type == SDL_MOUSEBUTTONDOWN ? qtrue : qfalse ), 0, NULL );
-	}
+	Com_QueueEvent( in_eventTime, SE_KEY, b,
+		( e.type == SDL_MOUSEBUTTONDOWN ? qtrue : qfalse ), 0, NULL );
 }
 
 void IN_PushMouseWheel(SDL_MouseWheelEvent e)
@@ -519,7 +520,8 @@ void IN_PushTouchFinger(SDL_TouchFingerEvent e)
 		touchhats[e.fingerId][1] = e.y * 50;
 	}
 	else if (e.type == SDL_FINGERDOWN) {
-		if(!(Key_GetCatcher( ) & KEYCATCH_CGAME) && e.fingerId == 3) {
+		if((Key_GetCatcher( ) & KEYCATCH_UI) && e.fingerId == 3) {
+			Com_Printf( "Finger down %i\n", Key_GetCatcher( ) );
 			Com_QueueEvent( in_eventTime, SE_MOUSE_ABS, e.x * cls.glconfig.vidWidth, e.y * cls.glconfig.vidHeight, 0, NULL );
 			Com_QueueEvent( in_eventTime+1, SE_KEY, K_MOUSE1, qtrue, 0, NULL );
 		}

@@ -3,17 +3,6 @@ var LibrarySysInput = {
   $SYSI: {
     joysticks: [],
     inputInterface: 0,
-    InitJoystick: function (joystick, id) {
-      // tap into native event handlers because SDL events are too slow
-      var start = JSEvents.eventHandlers.filter(e => e.eventTypeString == 'touchstart')[0]
-      var end = JSEvents.eventHandlers.filter(e => e.eventTypeString == 'touchend')[0]
-      var move = JSEvents.eventHandlers.filter(e => e.eventTypeString == 'touchmove')[0]
-      var keydown = JSEvents.eventHandlers.filter(e => e.eventTypeString == 'keydown')[0]
-      var keyup = JSEvents.eventHandlers.filter(e => e.eventTypeString == 'keyup')[0]
-      joystick.on('start end move', function(evt, data) {
-        
-      })
-    },
     InputPushKeyEvent: function (evt) {
       var stack = stackSave()
       var event = stackAlloc(32)
@@ -100,62 +89,53 @@ var LibrarySysInput = {
     InputPushTouchEvent: function (joystick, id, evt, data) {
       var stack = stackSave()
       var event = stackAlloc(44)
-      /*
-      Uint32 type;        < ::SDL_FINGERMOTION or ::SDL_FINGERDOWN or ::SDL_FINGERUP
-      Uint32 timestamp;   < In milliseconds, populated using SDL_GetTicks()
-      SDL_TouchID touchId; < The touch device id
-      SDL_FingerID fingerId;
-      float x;            < Normalized in the range 0...1
-      float y;            < Normalized in the range 0...1
-      float dx;           < Normalized in the range -1...1
-      float dy;           < Normalized in the range -1...1
-      float pressure;     < Normalized in the range 0...1
+
       if(id == 1) {
         if (evt.angle && Math.round(y / 40) > 0) {
-          keydown.handlerFunc({repeat: true, keyCode: 87, preventDefault: () => {}})
+          SYSI.InputPushKeyEvent({type: 'keydown', repeat: true, keyCode: 87})
         } else {
-          keyup.handlerFunc({keyCode: 87, preventDefault: () => {}})
+          SYSI.InputPushKeyEvent({type: 'keyup', keyCode: 87})
         }
         if (evt.angle && Math.round(y / 40) < 0) {
-          keydown.handlerFunc({repeat: true, keyCode: 83, preventDefault: () => {}})
+          SYSI.InputPushKeyEvent({type: 'keydown', repeat: true, keyCode: 83})
         } else {
-          keyup.handlerFunc({keyCode: 83, preventDefault: () => {}})
+          SYSI.InputPushKeyEvent({type: 'keyup', keyCode: 83})
         }
         if (evt.angle && Math.round(x / 40) < 0) {
-          keydown.handlerFunc({repeat: true, keyCode: 65, preventDefault: () => {}})
+          SYSI.InputPushKeyEvent({type: 'keydown', repeat: true, keyCode: 65})
         } else {
-          keyup.handlerFunc({keyCode: 65, preventDefault: () => {}})
+          SYSI.InputPushKeyEvent({type: 'keyup', keyCode: 65})
         }
         if (evt.angle && Math.round(x / 40) > 0) {
-          keydown.handlerFunc({repeat: true, keyCode: 68, preventDefault: () => {}})
+          SYSI.InputPushKeyEvent({type: 'keydown', repeat: true, keyCode: 68})
         } else {
-          keyup.handlerFunc({keyCode: 68, preventDefault: () => {}})
+          SYSI.InputPushKeyEvent({type: 'keyup', keyCode: 68})
         }
       }
       
       if(id == 2) {
         if (evt.angle && Math.round(y / 40) > 0) {
-          keydown.handlerFunc({repeat: true, keyCode: 40, preventDefault: () => {}})
+          SYSI.InputPushKeyEvent({type: 'keydown', repeat: true, keyCode: 40})
         } else {
-          keyup.handlerFunc({keyCode: 40, preventDefault: () => {}})
+          SYSI.InputPushKeyEvent({type: 'keyup', keyCode: 40})
         }
         if (evt.angle && Math.round(y / 40) < 0) {
-          keydown.handlerFunc({repeat: true, keyCode: 38, preventDefault: () => {}})
+          SYSI.InputPushKeyEvent({type: 'keydown', repeat: true, keyCode: 38})
         } else {
-          keyup.handlerFunc({keyCode: 38, preventDefault: () => {}})
+          SYSI.InputPushKeyEvent({type: 'keyup', keyCode: 38})
         }
         if (evt.angle && Math.round(x / 40) < 0) {
-          keydown.handlerFunc({repeat: true, keyCode: 37, preventDefault: () => {}})
+          SYSI.InputPushKeyEvent({type: 'keydown', repeat: true, keyCode: 37})
         } else {
-          keyup.handlerFunc({keyCode: 37, preventDefault: () => {}})
+          SYSI.InputPushKeyEvent({type: 'keyup', keyCode: 37})
         }
         if (evt.angle && Math.round(x / 40) > 0) {
-          keydown.handlerFunc({repeat: true, keyCode: 39, preventDefault: () => {}})
+          SYSI.InputPushKeyEvent({type: 'keydown', repeat: true, keyCode: 39})
         } else {
-          keyup.handlerFunc({keyCode: 39, preventDefault: () => {}})
+          SYSI.InputPushKeyEvent({type: 'keyup', keyCode: 39})
         }
       }
-      */
+
       var w = Module['canvas'].width;
       var h = Module['canvas'].height;
       var dx = data.angle ? (Math.cos(data.angle.radian) * data.distance) : 0
