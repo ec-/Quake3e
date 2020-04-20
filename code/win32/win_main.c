@@ -162,6 +162,28 @@ FILE *Sys_FOpen( const char *ospath, const char *mode )
 
 /*
 ==============
+Sys_ResetReadOnlyAttribute
+==============
+*/
+qboolean Sys_ResetReadOnlyAttribute( const char *ospath ) {
+	DWORD dwAttr;
+
+	dwAttr = GetFileAttributesA( ospath );
+	if ( dwAttr & FILE_ATTRIBUTE_READONLY ) {
+		dwAttr &= ~FILE_ATTRIBUTE_READONLY;
+		if ( SetFileAttributesA( ospath, dwAttr ) ) {
+			return qtrue;
+		} else {
+			return qfalse;
+		}
+	} else {
+		return qfalse;
+	}
+}
+
+
+/*
+==============
 Sys_Pwd
 ==============
 */

@@ -696,6 +696,8 @@ fileHandle_t	FS_FOpenFileWrite( const char *qpath );
 fileHandle_t	FS_FOpenFileAppend( const char *filename );
 // will properly create any needed paths and deal with seperater character issues
 
+qboolean FS_ResetReadOnlyAttribute( const char *filename );
+
 qboolean FS_SV_FileExists( const char *file );
 
 fileHandle_t FS_SV_FOpenFileWrite( const char *filename );
@@ -1253,6 +1255,7 @@ void		Sys_ShowIP(void);
 
 void	Sys_Mkdir( const char *path );
 FILE	*Sys_FOpen( const char *ospath, const char *mode );
+qboolean Sys_ResetReadOnlyAttribute( const char *ospath );
 
 const char *Sys_Pwd( void );
 const char *Sys_DefaultBasePath( void );

@@ -345,6 +345,17 @@ FILE *Sys_FOpen( const char *ospath, const char *mode )
 
 
 /*
+==============
+Sys_ResetReadOnlyAttribute
+==============
+*/
+qboolean Sys_ResetReadOnlyAttribute( const char *ospath )
+{
+	return qfalse;
+}
+
+
+/*
 =================
 Sys_Pwd
 =================

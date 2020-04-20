@@ -1196,6 +1196,20 @@ void FS_FCloseFile( fileHandle_t f ) {
 
 /*
 ===========
+FS_ResetReadOnlyAttribute
+===========
+*/
+qboolean FS_ResetReadOnlyAttribute( const char *filename ) {
+	char *ospath;
+	
+	ospath = FS_BuildOSPath( fs_homepath->string, fs_gamedir, filename );
+
+	return Sys_ResetReadOnlyAttribute( ospath );
+}
+
+
+/*
+===========
 FS_FOpenFileWrite
 ===========
 */
