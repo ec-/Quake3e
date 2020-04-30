@@ -172,11 +172,8 @@ LOKISETUPDIR=$(UDIR)/setup
 
 bin_path=$(shell which $(1) 2> /dev/null)
 
-STRIP=strip
-
-ifneq ($(PKG_CONFIG_PATH),)
-  PKG_CONFIG ?= pkg-config
-endif
+STRIP ?= strip
+PKG_CONFIG ?= pkg-config
 
 ifneq ($(call bin_path, $(PKG_CONFIG)),)
   SDL_INCLUDE ?= $(shell $(PKG_CONFIG) --silence-errors --cflags-only-I sdl2)
