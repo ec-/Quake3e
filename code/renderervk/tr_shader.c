@@ -2692,12 +2692,14 @@ static shader_t *FinishShader( void ) {
 	qboolean	vertexLightmap;
 	qboolean	colorBlend;
 	qboolean	depthMask;
+	qboolean	agenPortal;
 	shaderStage_t *lastTCgen[NUM_TEXTURE_BUNDLES];
 
 	hasLightmapStage = qfalse;
 	vertexLightmap = qfalse;
 	colorBlend = qfalse;
 	depthMask = qfalse;
+	agenPortal = qfalse;
 
 	//
 	// set sky stuff appropriate
@@ -2721,6 +2723,10 @@ static shader_t *FinishShader( void ) {
 
 		if ( !pStage->active ) {
 			break;
+		}
+
+		if ( pStage->alphaGen == AGEN_PORTAL ) {
+			agenPortal = qtrue;
 		}
 
 		// check for a missing texture
@@ -2931,8 +2937,9 @@ static shader_t *FinishShader( void ) {
 		def.face_culling = shader.cullType;
 		def.polygon_offset = shader.polygonOffset;
 
-		if ( stage == 1 )
+		if ( stage == 1 && !agenPortal ) {
 			def.allow_discard = 1;
+		}
 
 		for ( i = 0; i < stage; i++ ) {
 			shaderStage_t *pStage = &stages[i];
