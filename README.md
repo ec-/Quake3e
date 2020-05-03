@@ -1,7 +1,7 @@
 # Quake3e
 
 This is a modern Quake III Arena engine aimed to be fast, secure and compatible with all existing Q3A mods.
-It is based on last non-SDL source dump of ioquake3 with latest upstream fixed applied.
+It is based on last non-SDL source dump of ioquake3 with latest upstream fixes applied.
 
 **Key features**:
 
@@ -53,9 +53,11 @@ Copy resulting binaries from created `build` directory or use command:
 Several make options available for linux/mingw builds:
 
 `BUILD_CLIENT=1` - build unified client/server executable, enabled by default
+
 `BUILD_SERVER=1` - build dedicated server executable, enabled by default
 
 `USE_SDL=0`- use SDL2 backend for video, audio, input subsystems, disabled by default
+
 `USE_VULKAN=0` - link client with vulkan renderer instead of OpenGL, disabled by default
 
 `USE_RENDERER_DLOPEN=0` - do not link single renderer into client binary, compile all renderers as dynamic libraries and allow to switch them on the fly via `\cl_renderer` cvar, disabled by default - *not recommented due to not stable renderer API*
