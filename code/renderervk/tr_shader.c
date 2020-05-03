@@ -3039,11 +3039,11 @@ static shader_t *FinishShader( void ) {
 			stages[ i+1 ].tessFlags &= ~TESS_RGBA;
 		}
 		for ( n = 0; n < NUM_TEXTURE_BUNDLES; n++ ) {
-			if ( EqualTCgen( n, lastTCgen[ n ], &stages[ i+1 ] ) ) {
-				stages[ i+1 ].tessFlags &= ~(TESS_ST0 << n);
-			}
 			if ( stages[ i ].bundle[ n ].image != NULL ) {
 				lastTCgen[ n ] = &stages[ i ];
+			}
+			if ( EqualTCgen( n, lastTCgen[ n ], &stages[ i+1 ] ) ) {
+				stages[ i+1 ].tessFlags &= ~(TESS_ST0 << n);
 			}
 		}
 	}
