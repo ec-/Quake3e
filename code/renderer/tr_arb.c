@@ -841,7 +841,7 @@ static const char *blend2gammaFP = {
 static void RenderQuad( int w, int h )
 {
 	static const vec2_t t[4] = { {0.0, 1.0}, {1.0, 1.0}, {0.0, 0.0}, {1.0, 0.0} };
-	static vec3_t v[4] = { 0 };
+	static vec3_t v[4] = { { 0 } };
 	
 	v[1][0] = w;
 	v[2][1] = h;

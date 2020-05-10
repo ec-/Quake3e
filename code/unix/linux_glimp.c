@@ -1535,12 +1535,12 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 	else
 		colorbits = MIN( r_colorbits->integer, 24);
 
-	if ( r_depthbits->integer == 0 )
+	if ( cl_depthbits->integer == 0 )
 		depthbits = 24;
 	else
-		depthbits = MIN( r_depthbits->integer, 32);
+		depthbits = MIN( cl_depthbits->integer, 32);
 
-	stencilbits = r_stencilbits->integer;
+	stencilbits = cl_stencilbits->integer;
 
 #ifdef USE_VULKAN_API
 	if ( vulkan )
@@ -1934,7 +1934,7 @@ void GLimp_EndFrame( void )
 	}
 
 	// don't flip if drawing to front buffer
-	if ( Q_stricmp( r_drawBuffer->string, "GL_FRONT" ) != 0 )
+	if ( Q_stricmp( cl_drawBuffer->string, "GL_FRONT" ) != 0 )
 	{
 		qglXSwapBuffers( dpy, win );
 	}

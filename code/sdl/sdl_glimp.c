@@ -52,10 +52,7 @@ static SDL_GLContext SDL_glContext = NULL;
 static PFN_vkGetInstanceProcAddr qvkGetInstanceProcAddr;
 #endif
 
-cvar_t *r_allowSoftwareGL; // Don't abort out if a hardware visual can't be obtained
-cvar_t *r_swapInterval;
 cvar_t *r_stereoEnabled;
-cvar_t *r_ignorehwgamma;
 cvar_t *in_nograb;
 
 /*
@@ -296,12 +293,12 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 	if ( colorBits == 0 || colorBits >= 32 )
 		colorBits = 24;
 
-	if ( r_depthbits->value == 0 )
+	if ( cl_depthbits->integer == 0 )
 		depthBits = 24;
 	else
-		depthBits = r_depthbits->value;
+		depthBits = cl_depthbits->integer;
 
-	stencilBits = r_stencilbits->value;
+	stencilBits = cl_stencilbits->integer;
 	samples = 0; // r_ext_multisample->integer;
 
 	for ( i = 0; i < 16; i++ )
@@ -628,7 +625,7 @@ Responsible for doing a swapbuffers
 void GLimp_EndFrame( void )
 {
 	// don't flip if drawing to front buffer
-	if ( Q_stricmp( r_drawBuffer->string, "GL_FRONT" ) != 0 )
+	if ( Q_stricmp( cl_drawBuffer->string, "GL_FRONT" ) != 0 )
 	{
 		SDL_GL_SwapWindow( SDL_window );
 	}

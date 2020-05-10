@@ -469,20 +469,20 @@ static qboolean GLW_InitOpenGLDriver( int colorbits )
 	//
 	// implicitly assume Z-buffer depth == desktop color depth
 	//
-	if ( r_depthbits->integer == 0 ) {
+	if ( cl_depthbits->integer == 0 ) {
 		if ( colorbits > 16 ) {
 			depthbits = 24;
 		} else {
 			depthbits = 16;
 		}
 	} else {
-		depthbits = r_depthbits->integer;
+		depthbits = cl_depthbits->integer;
 	}
 
 	//
 	// do not allow stencil if Z-buffer depth likely won't contain it
 	//
-	stencilbits = r_stencilbits->integer;
+	stencilbits = cl_stencilbits->integer;
 	if ( depthbits < 24 )
 	{
 		stencilbits = 0;
@@ -574,18 +574,18 @@ static qboolean GLW_InitVulkanDriver( int colorbits )
 	int stencilbits;
 
 	// implicitly assume Z-buffer depth == desktop color depth
-	if ( r_depthbits->integer == 0 ) {
+	if ( cl_depthbits->integer == 0 ) {
 		if ( colorbits > 16 ) {
 			depthbits = 24;
 		} else {
 			depthbits = 16;
 		}
 	} else {
-		depthbits = r_depthbits->integer;
+		depthbits = cl_depthbits->integer;
 	}
 
 	// do not allow stencil if Z-buffer depth likely won't contain it
-	stencilbits = r_stencilbits->integer;
+	stencilbits = cl_stencilbits->integer;
 	if ( depthbits < 24 ) {
 		stencilbits = 0;
 	}
@@ -1283,7 +1283,7 @@ void GLimp_EndFrame( void )
 	}
 
 	// don't flip if drawing to front buffer
-	if ( Q_stricmp( r_drawBuffer->string, "GL_FRONT" ) != 0 ) {
+	if ( Q_stricmp( cl_drawBuffer->string, "GL_FRONT" ) != 0 ) {
 		GLimp_SwapBuffers();
 	}
 }
