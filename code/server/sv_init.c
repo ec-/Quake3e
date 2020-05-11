@@ -491,7 +491,7 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 #endif
 
 	// get latched value
-	Cvar_Get( "sv_pure", "1", 0 );
+	Cvar_Get( "sv_pure", "1", CVAR_SYSTEMINFO | CVAR_LATCH );
 
 	// get a new checksum feed and restart the file system
 	srand( Com_Milliseconds() );

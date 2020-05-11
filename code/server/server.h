@@ -213,6 +213,7 @@ typedef struct client_s {
 	// flood protection
 	rateLimit_t		cmd_rate;
 	rateLimit_t		info_rate;
+	rateLimit_t		gamestate_rate;
 
 	// client can decode long strings
 	qboolean		longstr;
