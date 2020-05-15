@@ -305,7 +305,10 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 	ri.Free( present_modes );
 
 	if ( ri.Cvar_VariableIntegerValue( "r_swapInterval" ) ) {
-		present_mode = VK_PRESENT_MODE_FIFO_KHR;
+		if ( fifo_relaxed_supported )
+			present_mode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+		else
+			present_mode = VK_PRESENT_MODE_FIFO_KHR;
 		image_count = MAX(MIN_SWAPCHAIN_IMAGES_FIFO, surface_caps.minImageCount);
 	} else {
 		if ( immediate_supported ) {
