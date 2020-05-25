@@ -261,6 +261,7 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 	qboolean mailbox_supported = qfalse;
 	qboolean immediate_supported = qfalse;
 	qboolean fifo_relaxed_supported = qfalse;
+	int v;
 
 	//physical_device = vk.physical_device;
 	//device = vk.device;
@@ -304,8 +305,10 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 
 	ri.Free( present_modes );
 
-	if ( ri.Cvar_VariableIntegerValue( "r_swapInterval" ) ) {
-		if ( fifo_relaxed_supported )
+	if ( ( v = ri.Cvar_VariableIntegerValue( "r_swapInterval" ) ) != 0 ) {
+		if ( v == 2 && mailbox_supported )
+			present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+		else if ( fifo_relaxed_supported )
 			present_mode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
 		else
 			present_mode = VK_PRESENT_MODE_FIFO_KHR;
