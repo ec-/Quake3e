@@ -29,7 +29,7 @@ void main() {
 
 	if (alpha_to_coverage != 0) {
 		if (alpha_test_func == 1) {
-			base.a = CorrectAlpha(alpha_test_value, base.a, frag_tex_coord);
+			base.a =  base.a > 0.0 ? 1.0 : 0.0;
 		} else if (alpha_test_func == 2) {
 			base.a = CorrectAlpha(alpha_test_value, 1.0 - base.a, frag_tex_coord);
 		} else if (alpha_test_func == 3) {
