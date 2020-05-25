@@ -129,7 +129,7 @@ typedef enum {
 	K_KP_MINUS,
 	K_KP_PLUS,
 	K_KP_NUMLOCK,
-	K_KP_STAR,
+	//K_KP_STAR,
 	K_KP_EQUALS,
 
 	K_MOUSE1,

@@ -280,8 +280,8 @@ static int MapKey( int nVirtKey, int key )
 			return K_KP_SLASH;
 		case 0xAF:
 			return K_KP_PLUS;
-		case '*':
-			return K_KP_STAR;
+		//case '*':
+		//	return K_KP_STAR;
 		}
 		return result;
 	}
