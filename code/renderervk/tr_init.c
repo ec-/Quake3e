@@ -1297,10 +1297,8 @@ static void GfxInfo( void )
 	ri.Printf( PRINT_ALL, "\nPIXELFORMAT: color(%d-bits) Z(%d-bit) stencil(%d-bits)\n", glConfig.colorBits, glConfig.depthBits, glConfig.stencilBits );
 #ifdef USE_VULKAN
 	ri.Printf( PRINT_ALL, " presentation: %s\n", vk_get_format_name( vk.surface_format.format ) );
-	if ( vk.fboActive ) {
-		if ( vk.color_format != vk.surface_format.format ) {
-			ri.Printf( PRINT_ALL, " color: %s\n", vk_get_format_name( vk.color_format ) );
-		}
+	if ( vk.color_format != vk.surface_format.format ) {
+		ri.Printf( PRINT_ALL, " color: %s\n", vk_get_format_name( vk.color_format ) );
 	}
 	ri.Printf( PRINT_ALL, " depth: %s\n", vk_get_format_name( vk.depth_format ) );
 #endif
