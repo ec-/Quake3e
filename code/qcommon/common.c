@@ -3301,18 +3301,24 @@ static void CPUID( int func, unsigned int *regs )
 #endif
 }
 
-#else
+#else // clang/gcc/mingw
 
 static void CPUID( int func, unsigned int *regs )
 {
+#if (idx64 || id386)
 	__asm__ __volatile__( "cpuid" :
 		"=a"(regs[0]),
 		"=b"(regs[1]),
 		"=c"(regs[2]),
 		"=d"(regs[3]) :
 		"a"(func) );
-}
+#else	// non-x86
+		regs[0] = regs[1] = regs[2] = regs[3] = 0;
 #endif
+}
+
+#endif  // clang/gcc/mingw
+
 
 int Sys_GetProcessorId( char *vendor )
 {
@@ -3451,18 +3457,9 @@ __asm {
 }
 #endif // id386
 
-#else // linux/mingw
+#else // clang/gcc/mingw
 
-#if idx64
-
-void Sys_SnapVector( vec3_t vec )
-{
-	vec[0] = rint(vec[0]);
-	vec[1] = rint(vec[1]);
-	vec[2] = rint(vec[2]);
-}
-
-#else // id386
+#if id386
 
 #define QROUNDX87(src) \
 	"flds " src "\n" \
@@ -3488,8 +3485,19 @@ void Sys_SnapVector( vec3_t vector )
 		: "memory", "st"
 	);
 }
-#endif // id386
-#endif // linux/mingw
+
+#else // idx64, non-x86
+
+void Sys_SnapVector( vec3_t vec )
+{
+	vec[0] = rint(vec[0]);
+	vec[1] = rint(vec[1]);
+	vec[2] = rint(vec[2]);
+}
+
+#endif
+
+#endif // clang/gcc/mingw
 
 
 /*
