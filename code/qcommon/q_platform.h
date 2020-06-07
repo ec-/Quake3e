@@ -97,13 +97,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define id386 1
 #endif // __i386__
 
-
 #if defined (__x86_64__) || defined (__amd64__)
 #define ARCH_STRING "x86_64"
 #define Q3_LITTLE_ENDIAN
 #undef idx64
 #define idx64 1
 #endif // __x86_64__ || __amd64__
+
+#if defined (__e2k__)
+#define ARCH_STRING "e2k"
+#define Q3_LITTLE_ENDIAN
+#undef ide2k
+#define ide2k 1
+#endif // __e2k__
 
 #endif // !_WIN32
 
