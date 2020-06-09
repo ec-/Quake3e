@@ -284,11 +284,11 @@ static void SockadrToNetadr( const struct sockaddr_storage *s, netadr_t *a ) {
 }
 
 
-static struct addrinfo *SearchAddrInfo(struct addrinfo *hints, sa_family_t family)
+static struct addrinfo *SearchAddrInfo( struct addrinfo *hints, sa_family_t family )
 {
-	while(hints)
+	while ( hints )
 	{
-		if(hints->ai_family == family)
+		if ( hints->ai_family == family )
 			return hints;
 
 		hints = hints->ai_next;
@@ -300,10 +300,31 @@ static struct addrinfo *SearchAddrInfo(struct addrinfo *hints, sa_family_t famil
 
 /*
 =============
+gai_error_str
+
+wrapper over gai_strerror() to describe common error code(s)
+because in-game console can't properly render non-ascii characters
+on systems with locales other than US/UK
+=============
+*/
+static const char *gai_error_str( int ecode )
+{
+	switch ( ecode )
+	{
+		case EAI_NONAME:
+			return "Unknown host.";
+		default:
+			return gai_strerror( ecode );
+	}
+}
+
+
+/*
+=============
 Sys_StringToSockaddr
 =============
 */
-static qboolean Sys_StringToSockaddr(const char *s, struct sockaddr *sadr, int sadr_len, sa_family_t family)
+static qboolean Sys_StringToSockaddr( const char *s, struct sockaddr *sadr, int sadr_len, sa_family_t family )
 {
 	struct addrinfo hints;
 	struct addrinfo *res = NULL;
@@ -311,8 +332,8 @@ static qboolean Sys_StringToSockaddr(const char *s, struct sockaddr *sadr, int s
 	struct addrinfo *hintsp;
 	int retval;
 
-	memset(sadr, '\0', sadr_len);
-	memset(&hints, '\0', sizeof(hints));
+	memset( sadr, '\0', sadr_len );
+	memset( &hints, '\0', sizeof( hints ) );
 
 	hintsp = &hints;
 	hintsp->ai_family = family;
@@ -320,52 +341,52 @@ static qboolean Sys_StringToSockaddr(const char *s, struct sockaddr *sadr, int s
 
 	retval = getaddrinfo(s, NULL, hintsp, &res);
 
-	if(!retval)
+	if ( !retval )
 	{
-		if(family == AF_UNSPEC)
+		if ( family == AF_UNSPEC )
 		{
 			// Decide here and now which protocol family to use
 #ifdef USE_IPV6
-			if(net_enabled->integer & NET_PRIOV6)
+			if ( net_enabled->integer & NET_PRIOV6 )
 			{
-				if(net_enabled->integer & NET_ENABLEV6)
-					search = SearchAddrInfo(res, AF_INET6);
+				if ( net_enabled->integer & NET_ENABLEV6 )
+					search = SearchAddrInfo( res, AF_INET6 );
 				
-				if(!search && (net_enabled->integer & NET_ENABLEV4))
-					search = SearchAddrInfo(res, AF_INET);
+				if ( !search && ( net_enabled->integer & NET_ENABLEV4 ) )
+					search = SearchAddrInfo( res, AF_INET );
 			}
 			else
 #endif
 			{
-				if(net_enabled->integer & NET_ENABLEV4)
-					search = SearchAddrInfo(res, AF_INET);
+				if ( net_enabled->integer & NET_ENABLEV4 )
+					search = SearchAddrInfo( res, AF_INET );
 #ifdef USE_IPV6
-				if(!search && (net_enabled->integer & NET_ENABLEV6))
-					search = SearchAddrInfo(res, AF_INET6);
+				if ( !search && ( net_enabled->integer & NET_ENABLEV6 ) )
+					search = SearchAddrInfo( res, AF_INET6 );
 #endif
 			}
 		}
 		else
-			search = SearchAddrInfo(res, family);
+			search = SearchAddrInfo( res, family );
 
-		if(search)
+		if ( search )
 		{
-			if(search->ai_addrlen > sadr_len)
+			if ( search->ai_addrlen > sadr_len )
 				search->ai_addrlen = sadr_len;
 
-			memcpy(sadr, search->ai_addr, search->ai_addrlen);
-			freeaddrinfo(res);
+			memcpy ( sadr, search->ai_addr, search->ai_addrlen );
+			freeaddrinfo( res );
 
 			return qtrue;
 		}
 		else
-			Com_Printf("Sys_StringToSockaddr: Error resolving %s: No address of required type found.\n", s);
+			Com_Printf( "%s: Error resolving %s: No address of required type found.\n", __func__, s );
 	}
 	else
-		Com_Printf("Sys_StringToSockaddr: Error resolving %s: %s\n", s, gai_strerror(retval));
+		Com_Printf( "%s: Error resolving %s: %s\n", __func__, s, gai_error_str( retval ) );
 
-	if(res)
-		freeaddrinfo(res);
+	if ( res )
+		freeaddrinfo( res );
 
 	return qfalse;
 }
