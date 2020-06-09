@@ -25,6 +25,7 @@ USE_SDL          = 0
 USE_CURL         = 1
 USE_LOCAL_HEADERS= 0
 USE_VULKAN       = 0
+USE_SYSTEM_JPEG  = 0
 #USE_VULKAN_API   = 0
 
 USE_RENDERER_DLOPEN = 0
@@ -167,7 +168,9 @@ UDIR=$(MOUNT_DIR)/unix
 W32DIR=$(MOUNT_DIR)/win32
 BLIBDIR=$(MOUNT_DIR)/botlib
 UIDIR=$(MOUNT_DIR)/ui
-JPDIR=$(MOUNT_DIR)/jpeg-8c
+ifeq ($(USE_SYSTEM_JPEG),0)
+	JPDIR=$(MOUNT_DIR)/jpeg-8c
+endif
 LOKISETUPDIR=$(UDIR)/setup
 
 bin_path=$(shell which $(1) 2> /dev/null)
@@ -209,6 +212,10 @@ endif
 endif
 
 BASE_CFLAGS =
+
+ifeq ($(USE_SYSTEM_JPEG),1)
+  BASE_CFLAGS += -DUSE_SYSTEM_JPEG
+endif
 
 ifneq ($(HAVE_VM_COMPILED),true)
   BASE_CFLAGS += -DNO_VM_COMPILED
@@ -939,7 +946,11 @@ Q3OBJ = \
   $(B)/client/l_script.o \
   $(B)/client/l_struct.o
 
+ifeq ($(USE_SYSTEM_JPEG),0)
   Q3OBJ += $(JPGOBJ)
+else
+  CLIENT_LDFLAGS += -ljpeg
+endif
 
 ifeq ($(USE_RENDERER_DLOPEN),0)
 
