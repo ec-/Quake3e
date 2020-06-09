@@ -1549,11 +1549,14 @@ static void CL_Connect_f( void ) {
 	} else {
 		if( !strcmp( Cmd_Argv(1), "-4" ) )
 			family = NA_IP;
+#ifdef USE_IPV6
 		else if( !strcmp( Cmd_Argv(1), "-6" ) )
 			family = NA_IP6;
 		else
-			Com_Printf( "warning: only -4 or -6 as address type understood.\n" );
-		
+			Com_Printf( S_COLOR_YELLOW "warning: only -4 or -6 as address type understood.\n" );
+#else
+			Com_Printf( S_COLOR_YELLOW "warning: only -4 as address type understood.\n" );
+#endif
 		server = Cmd_Argv(2);
 	}
 
@@ -2428,7 +2431,9 @@ unsigned int hash_func( const netadr_t *addr ) {
 
 	switch ( addr->type ) {
 		case NA_IP:  ip = addr->ipv._4; size = 4;  break;
+#ifdef USE_IPV6
 		case NA_IP6: ip = addr->ipv._6; size = 16; break;
+#endif
 		default: size = 0; break;
 	}
 
@@ -2528,6 +2533,7 @@ static void CL_ServersResponsePacket( const netadr_t* from, msg_t *msg, qboolean
 
 			addresses[numservers].type = NA_IP;
 		}
+#ifdef USE_IPV6
 		// IPv6 address, if it's an extended response
 		else if (extended && *buffptr == '/')
 		{
@@ -2542,6 +2548,7 @@ static void CL_ServersResponsePacket( const netadr_t* from, msg_t *msg, qboolean
 			addresses[numservers].type = NA_IP6;
 			addresses[numservers].scope_id = from->scope_id;
 		}
+#endif
 		else
 			// syntax error!
 			break;
@@ -4083,15 +4090,18 @@ static void CL_ServerInfoPacket( const netadr_t *from, msg_t *msg ) {
 				case NA_IP:
 					type = 1;
 					break;
+#ifdef USE_IPV6
 				case NA_IP6:
 					type = 2;
 					break;
+#endif
 				default:
 					type = 0;
 					break;
 			}
-			Info_SetValueForKey( cl_pinglist[i].info, "nettype", va("%d", type) );
-			CL_SetServerInfoByAddress(from, infoString, cl_pinglist[i].time);
+
+			Info_SetValueForKey( cl_pinglist[i].info, "nettype", va( "%d", type ) );
+			CL_SetServerInfoByAddress( from, infoString, cl_pinglist[i].time );
 
 			return;
 		}
@@ -4366,8 +4376,10 @@ static void CL_LocalServers_f( void ) {
 
 			to.type = NA_BROADCAST;
 			NET_SendPacket( NS_CLIENT, n, message, &to );
+#ifdef USE_IPV6
 			to.type = NA_MULTICAST6;
 			NET_SendPacket( NS_CLIENT, n, message, &to );
+#endif
 		}
 	}
 }
@@ -4445,6 +4457,7 @@ static void CL_GlobalServers_f( void ) {
 	cls.pingUpdateSource = AS_GLOBAL;
 
 	// Use the extended query for IPv6 masters
+#ifdef USE_IPV6
 	if ( to.type == NA_IP6 || to.type == NA_MULTICAST6 )
 	{
 		int v4enabled = Cvar_VariableIntegerValue( "net_enabled" ) & NET_ENABLEV4;
@@ -4460,7 +4473,8 @@ static void CL_GlobalServers_f( void ) {
 				GAMENAME_FOR_MASTER, Cmd_Argv(2) );
 		}
 	}
-	else 
+	else
+#endif
 		Com_sprintf( command, sizeof( command ), "getservers %s", Cmd_Argv(2) );
 
 	for ( i = 3; i < count; i++ )
@@ -4658,10 +4672,15 @@ static void CL_Ping_f( void ) {
 	{
 		if(!strcmp(Cmd_Argv(1), "-4"))
 			family = NA_IP;
+#ifdef USE_IPV6
 		else if(!strcmp(Cmd_Argv(1), "-6"))
 			family = NA_IP6;
 		else
 			Com_Printf( "warning: only -4 or -6 as address type understood.\n");
+#else
+		else
+			Com_Printf( "warning: only -4 as address type understood.\n");
+#endif
 		
 		server = Cmd_Argv(2);
 	}
@@ -4823,12 +4842,17 @@ static void CL_ServerStatus_f( void ) {
 			server = Cmd_Argv(1);
 		else
 		{
-			if(!strcmp(Cmd_Argv(1), "-4"))
+			if ( !strcmp( Cmd_Argv(1), "-4" ) )
 				family = NA_IP;
-			else if(!strcmp(Cmd_Argv(1), "-6"))
+#ifdef USE_IPV6
+			else if ( !strcmp( Cmd_Argv(1), "-6" ) )
 				family = NA_IP6;
 			else
-				Com_Printf( "warning: only -4 or -6 as address type understood.\n");
+				Com_Printf( "warning: only -4 or -6 as address type understood.\n" );
+#else
+			else
+				Com_Printf( "warning: only -4 as address type understood.\n" );
+#endif
 		
 			server = Cmd_Argv(2);
 		}

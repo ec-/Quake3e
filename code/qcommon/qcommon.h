@@ -130,6 +130,7 @@ NET
 
 ==============================================================
 */
+#define USE_IPV6
 
 #define NET_ENABLEV4            0x01
 #define NET_ENABLEV6            0x02
@@ -157,8 +158,10 @@ typedef enum {
 	NA_LOOPBACK,
 	NA_BROADCAST,
 	NA_IP,
+#ifdef USE_IPV6
 	NA_IP6,
 	NA_MULTICAST6,
+#endif
 	NA_UNSPEC
 } netadrtype_t;
 
@@ -175,10 +178,14 @@ typedef struct {
 	netadrtype_t	type;
 	union {
 		byte	_4[4];
+#ifdef USE_IPV6
 		byte	_6[16];
+#endif
 	} ipv;
 	unsigned short	port;
+#ifdef USE_IPV6
 	unsigned long	scope_id;	// Needed for IPv6 link-local addresses
+#endif
 } netadr_t;
 
 void		NET_Init( void );
@@ -196,8 +203,10 @@ const char	*NET_AdrToString( const netadr_t *a );
 const char	*NET_AdrToStringwPort( const netadr_t *a );
 int         NET_StringToAdr( const char *s, netadr_t *a, netadrtype_t family );
 qboolean	NET_GetLoopPacket( netsrc_t sock, netadr_t *net_from, msg_t *net_message );
+#ifdef USE_IPV6
 void		NET_JoinMulticast6( void );
 void		NET_LeaveMulticast6( void );
+#endif
 qboolean	NET_Sleep( int timeout );
 
 #define	MAX_PACKETLEN	1400	// max size of a network packet
