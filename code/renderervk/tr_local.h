@@ -516,6 +516,7 @@ typedef struct {
 #endif
 #ifdef USE_VULKAN
 	qboolean	switchRenderPass;
+	qboolean	needScreenMap;
 #endif
 } trRefdef_t;
 
