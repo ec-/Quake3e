@@ -168,9 +168,7 @@ UDIR=$(MOUNT_DIR)/unix
 W32DIR=$(MOUNT_DIR)/win32
 BLIBDIR=$(MOUNT_DIR)/botlib
 UIDIR=$(MOUNT_DIR)/ui
-ifeq ($(USE_SYSTEM_JPEG),0)
-	JPDIR=$(MOUNT_DIR)/jpeg-8c
-endif
+JPDIR=$(MOUNT_DIR)/jpeg-8c
 LOKISETUPDIR=$(UDIR)/setup
 
 bin_path=$(shell which $(1) 2> /dev/null)
@@ -255,10 +253,6 @@ ifeq ($(GENERATE_DEPENDENCIES),1)
   BASE_CFLAGS += -MMD
 endif
 
-#############################################################################
-# SETUP AND BUILD -- LINUX
-#############################################################################
-
 ## Defaults
 INSTALL=install
 MKDIR=mkdir
@@ -266,51 +260,6 @@ MKDIR=mkdir
 ARCHEXT=
 
 CLIENT_EXTRA_FILES=
-
-ifeq ($(PLATFORM),linux)
-
-  BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
-
-  BASE_CFLAGS += -I/usr/include
-
-  OPTIMIZE = -O2 -fvisibility=hidden
-
-  ifeq ($(ARCH),x86_64)
-    ARCHEXT = .x64
-  else
-  ifeq ($(ARCH),x86)
-    OPTIMIZE += -march=i586 -mtune=i686
-  endif
-  endif
-
-  SHLIBEXT = so
-  SHLIBCFLAGS = -fPIC
-  SHLIBLDFLAGS = -shared $(LDFLAGS)
-
-  LDFLAGS=-ldl -lm -Wl,--hash-style=both
-
-  ifeq ($(USE_SDL),1)
-    BASE_CFLAGS += $(SDL_INCLUDE)
-    CLIENT_LDFLAGS = $(SDL_LIBS)
-  else
-    BASE_CFLAGS += $(X11_INCLUDE)
-    CLIENT_LDFLAGS = $(X11_LIBS)
-  endif
-
-  ifeq ($(USE_CODEC_VORBIS),1)
-    CLIENT_LDFLAGS += -lvorbisfile -lvorbis -logg
-  endif
-
-  ifeq ($(ARCH),x86)
-    # linux32 make ...
-    BASE_CFLAGS += -m32
-    LDFLAGS += -m32
-  endif
-
-  DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -ggdb -O0
-  RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
-
-else # ifeq Linux
 
 
 #############################################################################
@@ -416,31 +365,26 @@ ifdef MINGW
     CLIENT_LDFLAGS += -lcurl -lwldap32 -lcrypt32
   endif
 
-  DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -ggdb -O0
+  DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -g -O0
   RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
 
-else # ifeq mingw32
+else # !MINGW
 
 #############################################################################
-# SETUP AND BUILD -- FREEBSD
+# SETUP AND BUILD -- *NIX PLATFORMS
 #############################################################################
 
-ifeq ($(PLATFORM),freebsd)
+  BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
 
-  BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
-                -I/usr/X11R6/include -I/usr/local/include \
-                -fvisibility=hidden
+  BASE_CFLAGS += -I/usr/include -I/usr/local/include
 
-  DEBUG_CFLAGS=$(BASE_CFLAGS) -g
+  OPTIMIZE = -O2 -fvisibility=hidden
 
   ifeq ($(ARCH),x86_64)
-    RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O3 -ffast-math -funroll-loops \
-      -fomit-frame-pointer -fexpensive-optimizations
+    ARCHEXT = .x64
   else
   ifeq ($(ARCH),x86)
-    RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O3 -mtune=pentiumpro \
-      -march=pentium -fomit-frame-pointer -pipe -ffast-math \
-      -funroll-loops -fstrength-reduce
+    OPTIMIZE += -march=i586 -mtune=i686
   endif
   endif
 
@@ -448,93 +392,38 @@ ifeq ($(PLATFORM),freebsd)
   SHLIBCFLAGS = -fPIC -fvisibility=hidden
   SHLIBLDFLAGS = -shared $(LDFLAGS)
 
-  # don't need -ldl (FreeBSD)
-  LDFLAGS=-lm -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext
-
-  CLIENT_LDFLAGS =-lm -lGL -lX11 -L/usr/local/lib -L/usr/X11R6/lib -lX11 -lXext
-
-else # ifeq freebsd
-
-#############################################################################
-# SETUP AND BUILD -- OPENBSD
-#############################################################################
-
-ifeq ($(PLATFORM),openbsd)
-
-  BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
-                -I/usr/X11R6/include -I/usr/local/include \
-                -fvisibility=hidden
-
-  DEBUG_CFLAGS=$(BASE_CFLAGS) -g
-
-  ifeq ($(ARCH),x86_64)
-    RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O3 -ffast-math -funroll-loops \
-      -fomit-frame-pointer -fexpensive-optimizations
-  else
-  ifeq ($(ARCH),x86)
-    RELEASE_CFLAGS=$(BASE_CFLAGS) -DNDEBUG -O3 -mtune=pentiumpro \
-      -march=pentium -fomit-frame-pointer -pipe -ffast-math \
-      -funroll-loops -fstrength-reduce
-  endif
-  endif
-
-  SHLIBEXT = so
-  SHLIBCFLAGS = -fPIC
-  SHLIBLDFLAGS = -shared $(LDFLAGS)
-
-  # don't need -ldl (FreeBSD)
-  LDFLAGS=-lm
+  LDFLAGS = -lm
 
   ifeq ($(USE_SDL),1)
-    BASE_CFLAGS += -I/usr/local/include/SDL2
-    CLIENT_LDFLAGS = -L/usr/X11R6/lib -L/usr/local/lib -lSDL2
+    BASE_CFLAGS += $(SDL_INCLUDE)
+    CLIENT_LDFLAGS = $(SDL_LIBS)
   else
-    CLIENT_LDFLAGS = -L/usr/X11R6/lib -L/usr/lib -lX11
+    BASE_CFLAGS += $(X11_INCLUDE)
+    CLIENT_LDFLAGS = $(X11_LIBS)
   endif
-
-  CLIENT_LDFLAGS += -lm -lGL -L/usr/local/lib
 
   ifeq ($(USE_CODEC_VORBIS),1)
     CLIENT_LDFLAGS += -lvorbisfile -lvorbis -logg
   endif
 
-else # ifeq openbsd
+  ifeq ($(USE_SYSTEM_JPEG),1)
+    CLIENT_LDFLAGS += -ljpeg
+  endif
 
-#############################################################################
-# SETUP AND BUILD -- NETBSD
-#############################################################################
+  ifeq ($(PLATFORM),linux)
+    LDFLAGS += -ldl -Wl,--hash-style=both
+    ifeq ($(ARCH),x86)
+      # linux32 make ...
+      BASE_CFLAGS += -m32
+      LDFLAGS += -m32
+    endif
+  endif
 
-ifeq ($(PLATFORM),netbsd)
+  DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -g -O0
+  RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
 
-  LDFLAGS = -lm
+endif # *NIX platforms
 
-  SHLIBEXT = so
-  SHLIBCFLAGS = -fPIC -fvisibility=hidden
-  SHLIBLDFLAGS = -shared $(LDFLAGS)
-
-  BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes
-  DEBUG_CFLAGS = $(BASE_CFLAGS) -g
-
-  BUILD_CLIENT = 0
-
-else # ifeq netbsd
-
-#############################################################################
-# SETUP AND BUILD -- GENERIC
-#############################################################################
-
-  DEBUG_CFLAGS = $(BASE_CFLAGS) -ggdb -O0
-  RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG -O2
-
-  SHLIBEXT = so
-  SHLIBCFLAGS = -fPIC -fvisibility=hidden
-  SHLIBLDFLAGS = -shared
-
-endif #Linux
-endif #mingw32
-endif #FreeBSD
-endif #OpenBSD
-endif #NetBSD
 
 TARGET_CLIENT = $(CNAME)$(ARCHEXT)$(BINEXT)
 
@@ -946,20 +835,16 @@ Q3OBJ = \
   $(B)/client/l_script.o \
   $(B)/client/l_struct.o
 
-ifeq ($(USE_SYSTEM_JPEG),0)
+ifneq ($(USE_SYSTEM_JPEG),1)
   Q3OBJ += $(JPGOBJ)
-else
-  CLIENT_LDFLAGS += -ljpeg
 endif
 
-ifeq ($(USE_RENDERER_DLOPEN),0)
-
+ifneq ($(USE_RENDERER_DLOPEN),1)
   ifeq ($(USE_VULKAN),1)
     Q3OBJ += $(Q3RENDVOBJ)
   else
     Q3OBJ += $(Q3REND1OBJ)
   endif
-
 endif
 
 ifeq ($(ARCH),x86)
