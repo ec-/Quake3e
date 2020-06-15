@@ -391,10 +391,12 @@ int Com_MD5Addr( const netadr_t *addr, int timestamp )
 		case NA_IP: 
 			MD5Update( &ctx_in, addr->ipv._4, 4 ); 
 				break;
-		case NA_IP6: 
+#ifdef USE_UPV6
+		case NA_IP6:
 		case NA_MULTICAST6:
 			MD5Update( &ctx_in, addr->ipv._6, 16 ); 
 			break;
+#endif
 		default:
 			break;
 	}

@@ -508,8 +508,16 @@ void RE_RenderScene( const refdef_t *fd ) {
 				*cmd = *src;
 			}
 
-			src->refdef.switchRenderPass = qtrue;
+			if ( src )
+			{
+				// first drawsurface
+				tr.drawSurfCmd[0].refdef.needScreenMap = qtrue;
+				// last drawsurface
+				src->refdef.switchRenderPass = qtrue;
+			}
 		}
+
+		tr.needScreenMap = 0;
 	}
 #endif
 

@@ -5190,10 +5190,11 @@ void vk_end_render_pass( void )
 //	vk.renderPassIndex = RENDER_PASS_MAIN;
 }
 
-static qboolean vk_find_drawsurfs( void )
+static qboolean vk_find_screenmap_drawsurfs( void )
 {
 	const void *curCmd = &backEndData->commands.cmds;
 	const drawBufferCommand_t *db_cmd;
+	const drawSurfsCommand_t *ds_cmd;
 
 	for ( ;; ) {
 		curCmd = PADP( curCmd, sizeof(void *) );
@@ -5203,7 +5204,8 @@ static qboolean vk_find_drawsurfs( void )
 				curCmd = (const void *)(db_cmd + 1);
 				break;
 			case RC_DRAW_SURFS:
-				return qtrue;
+				ds_cmd = (const drawSurfsCommand_t *)curCmd;
+				return ds_cmd->refdef.needScreenMap;
 			default:
 				return qfalse;
 		}
@@ -5297,7 +5299,7 @@ void vk_begin_frame( void )
 
 	backEnd.screenMapDone = qfalse;
 
-	if ( tr.needScreenMap && vk_find_drawsurfs() ) {
+	if ( vk_find_screenmap_drawsurfs() ) {
 		vk_begin_screenmap_render_pass();
 	} else {
 		vk_begin_main_render_pass();
