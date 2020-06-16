@@ -2016,6 +2016,32 @@ qboolean Info_Validate( const char *s )
 		{
 		case '\0':
 			return qtrue;
+		case '\"':
+		case ';':
+			return qfalse;
+		default:
+			break;
+		}
+	}
+}
+
+
+/*
+==================
+Info_ValidateKeyValue
+
+Some characters are illegal in key values because they
+can mess up the server's parsing
+==================
+*/
+qboolean Info_ValidateKeyValue( const char *s )
+{
+	for ( ;; )
+	{
+		switch ( *s++ )
+		{
+		case '\0':
+			return qtrue;
 		case '\\':
 		case '\"':
 		case ';':
@@ -2045,12 +2071,12 @@ qboolean Info_SetValueForKey_s( char *s, int slen, const char *key, const char *
 		return qfalse;
 	}
 
-	if ( !key || !Info_Validate( key ) || *key == '\0' ) {
+	if ( !key || !Info_ValidateKeyValue( key ) || *key == '\0' ) {
 		Com_Printf( S_COLOR_YELLOW "Invalid key name: '%s'\n", key );
 		return qfalse;
 	}
 
-	if ( value && !Info_Validate( value ) ) {
+	if ( value && !Info_ValidateKeyValue( value ) ) {
 		Com_Printf( S_COLOR_YELLOW "Invalid value name: '%s'\n", value );
 		return qfalse;
 	}
