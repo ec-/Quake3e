@@ -238,11 +238,13 @@ endif
 
 ifeq ($(USE_CURL),1)
   BASE_CFLAGS += -DUSE_CURL
-ifeq ($(USE_CURL_DLOPEN),1)
-  BASE_CFLAGS += -DUSE_CURL_DLOPEN
-else
-  BASE_CFLAGS += -DCURL_STATICLIB
-endif
+  ifeq ($(USE_CURL_DLOPEN),1)
+    BASE_CFLAGS += -DUSE_CURL_DLOPEN
+  else
+    ifeq ($(MINGW),1)
+      BASE_CFLAGS += -DCURL_STATICLIB
+    endif
+  endif
 endif
 
 ifeq ($(USE_VULKAN_API),1)
@@ -408,6 +410,12 @@ else # !MINGW
 
   ifeq ($(USE_SYSTEM_JPEG),1)
     CLIENT_LDFLAGS += -ljpeg
+  endif
+
+  ifeq ($(USE_CURL),1)
+    ifeq ($(USE_CURL_DLOPEN),0)
+      CLIENT_LDFLAGS += -lcurl
+    endif
   endif
 
   ifeq ($(PLATFORM),linux)
