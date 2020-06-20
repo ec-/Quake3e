@@ -32,8 +32,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 qboolean snd_inited = qfalse;
 
+extern cvar_t *s_khz;
 cvar_t *s_sdlBits;
-cvar_t *s_sdlSpeed;
 cvar_t *s_sdlChannels;
 cvar_t *s_sdlDevSamps;
 cvar_t *s_sdlMixSamps;
@@ -176,6 +176,19 @@ static void SNDDMA_PrintAudiospec(const char *str, const SDL_AudioSpec *spec)
 }
 
 
+static int SNDDMA_KHzToHz( int khz )
+{
+	switch ( khz )
+	{
+		default:
+		case 22: return 22050;
+		case 48: return 48000;
+		case 44: return 44100;
+		case 11: return 11025;
+	}
+}
+
+
 /*
 ===============
 SNDDMA_Init
@@ -194,9 +207,6 @@ qboolean SNDDMA_Init( void )
 	{
 		s_sdlBits = Cvar_Get( "s_sdlBits", "16", CVAR_ARCHIVE_ND | CVAR_LATCH );
 		Cvar_CheckRange( s_sdlBits, "8", "16", CV_INTEGER );
-
-		s_sdlSpeed = Cvar_Get( "s_sdlSpeed", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-		Cvar_CheckRange( s_sdlSpeed, "0", "48000", CV_INTEGER );
 
 		s_sdlChannels = Cvar_Get( "s_sdlChannels", "2", CVAR_ARCHIVE_ND | CVAR_LATCH );
 		Cvar_CheckRange( s_sdlChannels, "1", "2", CV_INTEGER );
@@ -220,7 +230,7 @@ qboolean SNDDMA_Init( void )
 	memset( &desired, '\0', sizeof (desired) );
 	memset( &obtained, '\0', sizeof (obtained) );
 
-	desired.freq = s_sdlSpeed->integer;
+	desired.freq = SNDDMA_KHzToHz( s_khz->integer );
 	if ( desired.freq == 0 )
 		desired.freq = 22050;
 

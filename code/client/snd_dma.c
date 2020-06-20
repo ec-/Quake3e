@@ -81,14 +81,14 @@ sfx_t		s_knownSfx[MAX_SFX];
 int			s_numSfx = 0;
 
 #define		LOOP_HASH		128
-sfx_t		*sfxHash[LOOP_HASH];
+static sfx_t *sfxHash[LOOP_HASH];
 
 cvar_t		*s_testsound;
 cvar_t		*s_khz;
 cvar_t		*s_show;
 cvar_t		*s_mixahead;
 cvar_t		*s_mixPreStep;
-#ifdef __linux__
+#if defined(__linux__) && !defined(USE_SDL)
 cvar_t		*s_device;
 #endif
 
@@ -366,7 +366,7 @@ static void S_Base_BeginRegistration( void ) {
 	Com_Memset( s_knownSfx, 0, sizeof( s_knownSfx ) );
 	Com_Memset( sfxHash, 0, sizeof( sfxHash ) );
 
-	S_Base_RegisterSound("sound/feedback/hit.wav", qfalse);		// changed to a sound in baseq3
+	S_Base_RegisterSound( "sound/feedback/hit.wav", qfalse ); // changed to a sound in baseq3
 }
 
 
@@ -1481,11 +1481,27 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 	}
 
 	s_khz = Cvar_Get( "s_khz", "22", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_CheckRange( s_khz, "0", "48", CV_INTEGER );
+
+	switch( s_khz->integer ) {
+		case 48:
+		case 44:
+		case 22:
+		case 11:
+			// these are legal values
+			break;
+		default:
+			// anything else is illegal
+			Com_Printf( "WARNING: cvar 's_khz' must be one of (11, 22, 44, 48), setting to '%s'\n", s_khz->resetString );
+			Cvar_ForceReset( "s_khz" );
+			break;
+	}
+
 	s_mixahead = Cvar_Get( "s_mixahead", "0.2", CVAR_ARCHIVE_ND );
 	s_mixPreStep = Cvar_Get( "s_mixPreStep", "0.05", CVAR_ARCHIVE_ND );
 	s_show = Cvar_Get( "s_show", "0", CVAR_CHEAT );
 	s_testsound = Cvar_Get( "s_testsound", "0", CVAR_CHEAT );
-#ifdef __linux__
+#if defined(__linux__) && !defined(USE_SDL)
 	s_device = Cvar_Get( "s_device", "default", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	Cvar_SetDescription( s_device, "Set ALSA output device\n"
 		" Use \"default\", \"sysdefault\", \"front\", etc.\n"
