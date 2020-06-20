@@ -609,6 +609,14 @@ static void generate_image_upload_data( image_t *image, byte *data, Image_Upload
 
 	if ( data == NULL ) {
 		data = upload_data->buffer;
+	} else {
+		if ( image->flags & IMGFLAG_COLORSHIFT ) {
+			byte *p = data;
+			int i, n = width * height;
+			for ( i = 0; i < n; i++, p+=4 ) {
+				R_ColorShiftLightingBytes( p, p );
+			}
+		}
 	}
 
 	//
@@ -647,16 +655,19 @@ static void generate_image_upload_data( image_t *image, byte *data, Image_Upload
 	upload_data->base_level_width = scaled_width;
 	upload_data->base_level_height = scaled_height;
 
-	if (scaled_width == width && scaled_height == height && !mipmap) {
+	if ( scaled_width == width && scaled_height == height && !mipmap ) {
 		upload_data->mip_levels = 1;
 		upload_data->buffer_size = scaled_width * scaled_height * 4;
+
 		if ( data != NULL ) {
-			Com_Memcpy(upload_data->buffer, data, upload_data->buffer_size);
+			Com_Memcpy( upload_data->buffer, data, upload_data->buffer_size );
 		}
-		if (resampled_buffer != NULL)
-			ri.Hunk_FreeTempMemory(resampled_buffer);
-		//return upload_data;
-		return;
+
+		if ( resampled_buffer != NULL ) {
+			ri.Hunk_FreeTempMemory( resampled_buffer );
+		}
+
+		return;	//return upload_data;
 	}
 
 	// Use the normal mip-mapping to go down from [width, height] to [scaled_width, scaled_height] dimensions.
@@ -674,7 +685,10 @@ static void generate_image_upload_data( image_t *image, byte *data, Image_Upload
 
 	scaled_buffer = (unsigned int*) ri.Hunk_AllocateTempMemory( sizeof( unsigned ) * scaled_width * scaled_height );
 	Com_Memcpy(scaled_buffer, data, scaled_width * scaled_height * 4);
-	R_LightScaleTexture((byte*)scaled_buffer, scaled_width, scaled_height, (qboolean) !mipmap);
+
+	if ( !(image->flags & IMGFLAG_NOLIGHTSCALE ) ) {
+		R_LightScaleTexture( (byte*)scaled_buffer, scaled_width, scaled_height, !mipmap );
+	}
 
 	miplevel = 0;
 	mip_level_size = scaled_width * scaled_height * 4;
@@ -682,7 +696,7 @@ static void generate_image_upload_data( image_t *image, byte *data, Image_Upload
 	Com_Memcpy(upload_data->buffer, scaled_buffer, mip_level_size);
 	upload_data->buffer_size = mip_level_size;
 	
-	if (mipmap) {
+	if ( mipmap ) {
 		while (scaled_width > 1 || scaled_height > 1) {
 			R_MipMap((byte *)scaled_buffer, (byte *)scaled_buffer, scaled_width, scaled_height);
 
@@ -706,7 +720,8 @@ static void generate_image_upload_data( image_t *image, byte *data, Image_Upload
 
 	upload_data->mip_levels = miplevel + 1;
 
-	ri.Hunk_FreeTempMemory(scaled_buffer);
+	ri.Hunk_FreeTempMemory( scaled_buffer );
+
 	if ( resampled_buffer != NULL )
 		ri.Hunk_FreeTempMemory( resampled_buffer );
 }
@@ -902,6 +917,14 @@ static void Upload32( byte *data, int x, int y, int width, int height, image_t *
 		}
 	}
 
+	if ( image->flags & IMGFLAG_COLORSHIFT ) {
+		byte *p = data;
+		int i, n = width * height;
+		for ( i = 0; i < n; i++, p+=4 ) {
+			R_ColorShiftLightingBytes( p, p );
+		}
+	}
+
 	//
 	// perform optional picmip operation
 	//
@@ -1069,6 +1092,11 @@ image_t *R_CreateImage( const char *name, const char *name2, byte *pic, int widt
 	image->width = width;
 	image->height = height;
 
+	if ( namelen > 6 && Q_stristr( image->imgName, "maps/" ) == image->imgName && Q_stristr( image->imgName + 6, "/lm_" ) != NULL ) {
+		// external lightmap atlases stored in maps/<mapname>/lm_XXXX textures
+		image->flags = IMGFLAG_NOLIGHTSCALE | IMGFLAG_NO_COMPRESSION | IMGFLAG_NOSCALE | IMGFLAG_COLORSHIFT;
+	}
+
 #ifdef USE_VULKAN
 	if ( flags & IMGFLAG_CLAMPTOBORDER )
 		image->wrapClampMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
@@ -1117,9 +1145,9 @@ image_t *R_CreateImage( const char *name, const char *name2, byte *pic, int widt
 
 	if ( image->flags & IMGFLAG_MIPMAP )
 	{
-		if ( textureFilterAnisotropic )
-			qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT,
-					(GLint)Com_Clamp( 1, maxAnisotropy, r_ext_max_anisotropy->integer ) );
+		if ( textureFilterAnisotropic ) {
+			qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, (GLint) maxAnisotropy );
+		}
 
 		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min );
 		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max );
@@ -1351,7 +1379,7 @@ static void R_CreateDlightImage( void ) {
 			data[y][x][3] = 255;
 		}
 	}
-	tr.dlightImage = R_CreateImage("*dlight", NULL, (byte*)data, DLIGHT_SIZE, DLIGHT_SIZE, IMGFLAG_CLAMPTOEDGE );
+	tr.dlightImage = R_CreateImage( "*dlight", NULL, (byte*)data, DLIGHT_SIZE, DLIGHT_SIZE, IMGFLAG_CLAMPTOEDGE );
 }
 
 

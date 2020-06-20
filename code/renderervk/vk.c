@@ -1557,7 +1557,7 @@ void vk_init_buffers( void )
 				// screenmap
 				sd.gl_mag_filter = sd.gl_min_filter = GL_LINEAR;
 				sd.max_lod_1_0 = qfalse;
-				sd.noAnisotropy = qfalse;
+				sd.noAnisotropy = qtrue;
 
 				info.sampler = vk_find_sampler( &sd );
 				info.imageView = vk.tess[i].color_image_view3;
@@ -1614,7 +1614,7 @@ void vk_init_buffers( void )
 			// screenmap
 			sd.gl_mag_filter = sd.gl_min_filter = GL_LINEAR;
 			sd.max_lod_1_0 = qfalse;
-			sd.noAnisotropy = qfalse;
+			sd.noAnisotropy = qtrue;
 
 			info.sampler = vk_find_sampler( &sd );
 			info.imageView = vk.color_image_view3;
@@ -3621,7 +3621,7 @@ void vk_create_image( int width, int height, VkFormat format, int mip_levels, im
 }
 
 
-void vk_upload_image_data(VkImage image, int x, int y, int width, int height, qboolean mipmap, const uint8_t *pixels, int bytes_per_pixel) {
+void vk_upload_image_data( VkImage image, int x, int y, int width, int height, qboolean mipmap, const uint8_t *pixels, int bytes_per_pixel ) {
 
 	VkCommandBuffer command_buffer;
 	VkBufferImageCopy regions[16];

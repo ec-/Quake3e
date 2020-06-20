@@ -100,7 +100,7 @@ static void HSVtoRGB( float h, float s, float v, float rgb[3] )
 R_ColorShiftLightingBytes
 ===============
 */
-static void R_ColorShiftLightingBytes( const byte in[4], byte out[4] ) {
+void R_ColorShiftLightingBytes( const byte in[4], byte out[4] ) {
 	int		shift, r, g, b;
 
 	// shift the color data based on overbright range

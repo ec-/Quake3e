@@ -1461,6 +1461,7 @@ void		R_Init( void );
 
 void		R_SetColorMappings( void );
 void		R_GammaCorrect( byte *buffer, int bufSize );
+void		R_ColorShiftLightingBytes( const byte in[4], byte out[4] );
 
 void	R_ImageList_f( void );
 void	R_SkinList_f( void );

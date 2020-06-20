@@ -40,6 +40,7 @@ typedef enum
 	IMGFLAG_LIGHTMAP       = 0x0040,
 	IMGFLAG_NOSCALE        = 0x0080,
 	IMGFLAG_RGB            = 0x0100,
+	IMGFLAG_COLORSHIFT     = 0x0200,
 } imgFlags_t;
 
 typedef enum {

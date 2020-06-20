@@ -1393,6 +1393,7 @@ void		R_Init( void );
 
 void		R_SetColorMappings( void );
 void		R_GammaCorrect( byte *buffer, int bufSize );
+void		R_ColorShiftLightingBytes( const byte in[4], byte out[4] );
 
 void	R_ImageList_f( void );
 void	R_SkinList_f( void );
@@ -1439,7 +1440,7 @@ typedef struct stageVars
 {
 	color4ub_t	colors[SHADER_MAX_VERTEXES];
 	vec2_t		texcoords[NUM_TEXTURE_BUNDLES][SHADER_MAX_VERTEXES];
-	vec2_t		*texcoordPtr[2];
+	vec2_t		*texcoordPtr[NUM_TEXTURE_BUNDLES];
 } stageVars_t;
 
 typedef struct shaderCommands_s 
