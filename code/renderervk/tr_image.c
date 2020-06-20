@@ -98,7 +98,7 @@ void GL_TextureMode( const char *string ) {
 	for ( i = 0 ; i < tr.numImages ; i++ ) {
 		img = tr.images[i];
 		if ( img->flags & IMGFLAG_MIPMAP ) {
-			vk_update_descriptor_set( img->descriptor, img->view, qtrue, img->wrapClampMode );
+			vk_update_descriptor_set( img, qtrue );
 		}
 	}
 #else

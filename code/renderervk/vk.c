@@ -1467,6 +1467,104 @@ void vk_update_uniform_descriptor( VkDescriptorSet descriptor, VkBuffer buffer )
 }
 
 
+static VkSampler vk_find_sampler( const Vk_Sampler_Def *def ) {
+	VkSamplerAddressMode address_mode;
+	VkSamplerCreateInfo desc;
+	VkSampler sampler;
+	VkFilter mag_filter;
+	VkFilter min_filter;
+	VkSamplerMipmapMode mipmap_mode;
+	qboolean max_lod_0_25 = qfalse; // used to emulate OpenGL's GL_LINEAR/GL_NEAREST minification filter
+	int i;
+
+	// Look for sampler among existing samplers.
+	for (i = 0; i < vk_world.num_samplers; i++) {
+		const Vk_Sampler_Def *cur_def = &vk_world.sampler_defs[i];
+		if ( memcmp( cur_def, def, sizeof( *def ) ) == 0 )
+		{
+			return vk_world.samplers[i];
+		}
+	}
+
+	// Create new sampler.
+	if ( vk_world.num_samplers >= MAX_VK_SAMPLERS ) {
+		ri.Error( ERR_DROP, "vk_find_sampler: MAX_VK_SAMPLERS hit\n" );
+	}
+
+	address_mode = def->address_mode;
+
+	if (def->gl_mag_filter == GL_NEAREST) {
+		mag_filter = VK_FILTER_NEAREST;
+	} else if (def->gl_mag_filter == GL_LINEAR) {
+		mag_filter = VK_FILTER_LINEAR;
+	} else {
+		ri.Error(ERR_FATAL, "vk_find_sampler: invalid gl_mag_filter");
+		return VK_NULL_HANDLE;
+	}
+
+	if (def->gl_min_filter == GL_NEAREST) {
+		min_filter = VK_FILTER_NEAREST;
+		mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		max_lod_0_25 = qtrue;
+	} else if (def->gl_min_filter == GL_LINEAR) {
+		min_filter = VK_FILTER_LINEAR;
+		mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		max_lod_0_25 = qtrue;
+	} else if (def->gl_min_filter == GL_NEAREST_MIPMAP_NEAREST) {
+		min_filter = VK_FILTER_NEAREST;
+		mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	} else if (def->gl_min_filter == GL_LINEAR_MIPMAP_NEAREST) {
+		min_filter = VK_FILTER_LINEAR;
+		mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	} else if (def->gl_min_filter == GL_NEAREST_MIPMAP_LINEAR) {
+		min_filter = VK_FILTER_NEAREST;
+		mipmap_mode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	} else if (def->gl_min_filter == GL_LINEAR_MIPMAP_LINEAR) {
+		min_filter = VK_FILTER_LINEAR;
+		mipmap_mode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	} else {
+		ri.Error(ERR_FATAL, "vk_find_sampler: invalid gl_min_filter");
+		return VK_NULL_HANDLE;
+	}
+
+	desc.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	desc.pNext = NULL;
+	desc.flags = 0;
+	desc.magFilter = mag_filter;
+	desc.minFilter = min_filter;
+	desc.mipmapMode = mipmap_mode;
+	desc.addressModeU = address_mode;
+	desc.addressModeV = address_mode;
+	desc.addressModeW = address_mode;
+	desc.mipLodBias = 0.0f;
+
+	if ( def->noAnisotropy ) {
+		desc.anisotropyEnable = VK_FALSE;
+		desc.maxAnisotropy = 1.0f;
+	} else {
+		desc.anisotropyEnable = (r_ext_texture_filter_anisotropic->integer && vk.samplerAnisotropy) ? VK_TRUE : VK_FALSE;
+		if ( desc.anisotropyEnable ) {
+			desc.maxAnisotropy = MIN( r_ext_max_anisotropy->integer, vk.maxAnisotropy );
+		}
+	}
+
+	desc.compareEnable = VK_FALSE;
+	desc.compareOp = VK_COMPARE_OP_ALWAYS;
+	desc.minLod = 0.0f;
+	desc.maxLod = (def->max_lod_1_0) ? 1.0f : (max_lod_0_25 ? 0.25f : vk.maxLodBias);
+	desc.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	desc.unnormalizedCoordinates = VK_FALSE;
+
+	VK_CHECK( qvkCreateSampler( vk.device, &desc, NULL, &sampler ) );
+
+	vk_world.sampler_defs[ vk_world.num_samplers ] = *def;
+	vk_world.samplers[ vk_world.num_samplers ] = sampler;
+	vk_world.num_samplers++;
+
+	return sampler;
+}
+
+
 void vk_init_buffers( void )
 {
 	VkDescriptorSetAllocateInfo alloc;
@@ -3617,7 +3715,7 @@ void vk_create_image( int width, int height, VkFormat format, int mip_levels, im
 		VK_CHECK( qvkAllocateDescriptorSets( vk.device, &desc, &image->descriptor ) );
 	}
 
-	vk_update_descriptor_set( image->descriptor, image->view, mip_levels > 1 ? qtrue : qfalse, image->wrapClampMode );
+	vk_update_descriptor_set( image, mip_levels > 1 ? qtrue : qfalse );
 }
 
 
@@ -3678,28 +3776,31 @@ void vk_upload_image_data( VkImage image, int x, int y, int width, int height, q
 }
 
 
-void vk_update_descriptor_set(VkDescriptorSet set, VkImageView image_view, qboolean mipmap, VkSamplerAddressMode address_mode) {
+void vk_update_descriptor_set( image_t *image, qboolean mipmap ) {
 	Vk_Sampler_Def sampler_def;
 	VkDescriptorImageInfo image_info;
 	VkWriteDescriptorSet descriptor_write;
 
-	Com_Memset(&sampler_def, 0, sizeof(sampler_def));
-	sampler_def.address_mode = address_mode;
+	Com_Memset( &sampler_def, 0, sizeof( sampler_def ) );
+	
+	sampler_def.address_mode = image->wrapClampMode;
 
-	if (mipmap) {
+	if ( mipmap ) {
 		sampler_def.gl_mag_filter = gl_filter_max;
 		sampler_def.gl_min_filter = gl_filter_min;
 	} else {
 		sampler_def.gl_mag_filter = GL_LINEAR;
 		sampler_def.gl_min_filter = GL_LINEAR;
+		// no anisotropy without mipmaps
+		sampler_def.noAnisotropy = qtrue;
 	}
 
-	image_info.sampler = vk_find_sampler(&sampler_def);
-	image_info.imageView = image_view;
+	image_info.sampler = vk_find_sampler( &sampler_def );
+	image_info.imageView = image->view;
 	image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptor_write.dstSet = set;
+	descriptor_write.dstSet = image->descriptor;
 	descriptor_write.dstBinding = 0;
 	descriptor_write.dstArrayElement = 0;
 	descriptor_write.descriptorCount = 1;
@@ -3709,7 +3810,7 @@ void vk_update_descriptor_set(VkDescriptorSet set, VkImageView image_view, qbool
 	descriptor_write.pBufferInfo = NULL;
 	descriptor_write.pTexelBufferView = NULL;
 
-	qvkUpdateDescriptorSets(vk.device, 1, &descriptor_write, 0, NULL);
+	qvkUpdateDescriptorSets( vk.device, 1, &descriptor_write, 0, NULL );
 }
 
 
@@ -4507,104 +4608,6 @@ VkPipeline vk_gen_pipeline( uint32_t index ) {
 	} else {
 		return VK_NULL_HANDLE;
 	}
-}
-
-
-VkSampler vk_find_sampler( const Vk_Sampler_Def *def ) {
-	VkSamplerAddressMode address_mode;
-	VkSamplerCreateInfo desc;
-	VkSampler sampler;
-	VkFilter mag_filter;
-	VkFilter min_filter;
-	VkSamplerMipmapMode mipmap_mode;
-	qboolean max_lod_0_25 = qfalse; // used to emulate OpenGL's GL_LINEAR/GL_NEAREST minification filter
-	int i;
-
-	// Look for sampler among existing samplers.
-	for (i = 0; i < vk_world.num_samplers; i++) {
-		const Vk_Sampler_Def *cur_def = &vk_world.sampler_defs[i];
-		if ( memcmp( cur_def, def, sizeof( *def ) ) == 0 )
-		{
-			return vk_world.samplers[i];
-		}
-	}
-
-	// Create new sampler.
-	if ( vk_world.num_samplers >= MAX_VK_SAMPLERS ) {
-		ri.Error( ERR_DROP, "vk_find_sampler: MAX_VK_SAMPLERS hit\n" );
-	}
-
-	address_mode = def->address_mode;
-
-	if (def->gl_mag_filter == GL_NEAREST) {
-		mag_filter = VK_FILTER_NEAREST;
-	} else if (def->gl_mag_filter == GL_LINEAR) {
-		mag_filter = VK_FILTER_LINEAR;
-	} else {
-		ri.Error(ERR_FATAL, "vk_find_sampler: invalid gl_mag_filter");
-		return VK_NULL_HANDLE;
-	}
-
-	if (def->gl_min_filter == GL_NEAREST) {
-		min_filter = VK_FILTER_NEAREST;
-		mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-		max_lod_0_25 = qtrue;
-	} else if (def->gl_min_filter == GL_LINEAR) {
-		min_filter = VK_FILTER_LINEAR;
-		mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-		max_lod_0_25 = qtrue;
-	} else if (def->gl_min_filter == GL_NEAREST_MIPMAP_NEAREST) {
-		min_filter = VK_FILTER_NEAREST;
-		mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-	} else if (def->gl_min_filter == GL_LINEAR_MIPMAP_NEAREST) {
-		min_filter = VK_FILTER_LINEAR;
-		mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-	} else if (def->gl_min_filter == GL_NEAREST_MIPMAP_LINEAR) {
-		min_filter = VK_FILTER_NEAREST;
-		mipmap_mode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	} else if (def->gl_min_filter == GL_LINEAR_MIPMAP_LINEAR) {
-		min_filter = VK_FILTER_LINEAR;
-		mipmap_mode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	} else {
-		ri.Error(ERR_FATAL, "vk_find_sampler: invalid gl_min_filter");
-		return VK_NULL_HANDLE;
-	}
-
-	desc.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	desc.pNext = NULL;
-	desc.flags = 0;
-	desc.magFilter = mag_filter;
-	desc.minFilter = min_filter;
-	desc.mipmapMode = mipmap_mode;
-	desc.addressModeU = address_mode;
-	desc.addressModeV = address_mode;
-	desc.addressModeW = address_mode;
-	desc.mipLodBias = 0.0f;
-
-	if ( def->noAnisotropy ) {
-		desc.anisotropyEnable = VK_FALSE;
-		desc.maxAnisotropy = 1.0f;
-	} else {
-		desc.anisotropyEnable = (r_ext_texture_filter_anisotropic->integer && vk.samplerAnisotropy) ? VK_TRUE : VK_FALSE;
-		if ( desc.anisotropyEnable ) {
-			desc.maxAnisotropy = MIN( r_ext_max_anisotropy->integer, vk.maxAnisotropy );
-		}
-	}
-
-	desc.compareEnable = VK_FALSE;
-	desc.compareOp = VK_COMPARE_OP_ALWAYS;
-	desc.minLod = 0.0f;
-	desc.maxLod = (def->max_lod_1_0) ? 1.0f : (max_lod_0_25 ? 0.25f : vk.maxLodBias);
-	desc.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-	desc.unnormalizedCoordinates = VK_FALSE;
-
-	VK_CHECK( qvkCreateSampler( vk.device, &desc, NULL, &sampler ) );
-
-	vk_world.sampler_defs[vk_world.num_samplers] = *def;
-	vk_world.samplers[vk_world.num_samplers] = sampler;
-	vk_world.num_samplers++;
-
-	return sampler;
 }
 
 

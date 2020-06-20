@@ -157,8 +157,7 @@ void vk_wait_idle( void );
 void vk_create_image( int width, int height, VkFormat format, int mip_levels, image_t *image );
 void vk_upload_image_data( VkImage image, int x, int y, int width, int height, qboolean mipmap, const uint8_t* pixels, int bytes_per_pixel );
 byte *resample_image_data( const image_t *image, byte *data, const int data_size, int *bytes_per_pixel );
-void vk_update_descriptor_set( VkDescriptorSet desc, VkImageView image_view, qboolean mipmap, VkSamplerAddressMode address_mode );
-VkSampler vk_find_sampler( const Vk_Sampler_Def *def );
+void vk_update_descriptor_set( image_t *image, qboolean mipmap );
 	
 uint32_t vk_find_pipeline_ext( uint32_t base, const Vk_Pipeline_Def *def, qboolean use );
 void vk_get_pipeline_def( uint32_t pipeline, Vk_Pipeline_Def *def );
