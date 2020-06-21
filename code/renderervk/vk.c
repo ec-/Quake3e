@@ -118,6 +118,8 @@ PFN_vkQueuePresentKHR							qvkQueuePresentKHR;
 PFN_vkGetBufferMemoryRequirements2KHR			qvkGetBufferMemoryRequirements2KHR;
 PFN_vkGetImageMemoryRequirements2KHR			qvkGetImageMemoryRequirements2KHR;
 
+PFN_vkDebugMarkerSetObjectNameEXT				qvkDebugMarkerSetObjectNameEXT;
+
 ////////////////////////////////////////////////////////////////////////////
 
 // forward declaration
@@ -245,6 +247,75 @@ static void record_image_layout_transition(VkCommandBuffer command_buffer, VkIma
 	barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
 	qvkCmdPipelineBarrier( command_buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0, NULL, 1, &barrier );
+}
+
+// debug markers
+
+static void vk_set_image_name( const VkImage image, const char *name )
+{
+	VkDebugMarkerObjectNameInfoEXT info;
+
+	if ( !qvkDebugMarkerSetObjectNameEXT )
+		return;
+
+	info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
+	info.pNext = NULL;
+	info.objectType = VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT; 
+	info.object = (uint64_t) image;
+	info.pObjectName = name;
+
+	qvkDebugMarkerSetObjectNameEXT( vk.device, &info );
+}
+
+
+static void vk_set_image_view_name( const VkImageView image, const char *name )
+{
+	VkDebugMarkerObjectNameInfoEXT info;
+
+	if ( !qvkDebugMarkerSetObjectNameEXT )
+		return;
+
+	info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
+	info.pNext = NULL;
+	info.objectType = VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT; 
+	info.object = (uint64_t) image;
+	info.pObjectName = name;
+
+	qvkDebugMarkerSetObjectNameEXT( vk.device, &info );
+}
+
+
+static void vk_set_descriptor_name( const VkDescriptorSet desc, const char *name )
+{
+	VkDebugMarkerObjectNameInfoEXT info;
+
+	if ( !qvkDebugMarkerSetObjectNameEXT )
+		return;
+
+	info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
+	info.pNext = NULL;
+	info.objectType = VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_EXT; 
+	info.object = (uint64_t) desc;
+	info.pObjectName = name;
+
+	qvkDebugMarkerSetObjectNameEXT( vk.device, &info );
+}
+
+
+static void vk_set_buffer_name( const VkBuffer obj, const char *name )
+{
+	VkDebugMarkerObjectNameInfoEXT info;
+
+	if ( !qvkDebugMarkerSetObjectNameEXT )
+		return;
+
+	info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
+	info.pNext = NULL;
+	info.objectType = VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT; 
+	info.object = (uint64_t) obj;
+	info.pObjectName = name;
+
+	qvkDebugMarkerSetObjectNameEXT( vk.device, &info );
 }
 
 
@@ -720,6 +791,8 @@ static void ensure_staging_buffer_allocation(VkDeviceSize size) {
 
 	VK_CHECK(qvkMapMemory(vk.device, vk_world.staging_buffer_memory, 0, VK_WHOLE_SIZE, 0, &data));
 	vk_world.staging_buffer_ptr = (byte*)data;
+
+	vk_set_buffer_name( vk_world.staging_buffer, "staging buffer" );
 }
 
 
@@ -752,10 +825,10 @@ static qboolean used_instance_extension( const char *ext )
 #ifdef _DEBUG
 	if ( Q_stricmp( ext, VK_EXT_DEBUG_REPORT_EXTENSION_NAME ) == 0 )
 		return qtrue;
+#endif
 
 	if ( Q_stricmp( ext, VK_EXT_DEBUG_UTILS_EXTENSION_NAME ) == 0 )
 		return qtrue;
-#endif
 
 	return qfalse;
 }
@@ -1013,11 +1086,8 @@ static void vk_create_device( void ) {
 
 	// create VkDevice
 	{
-		const char *device_extensions[3] = {
-			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-			VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
-			VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME
-		};
+		const char *device_extension_list[4];
+		uint32_t device_extension_count;
 		const char *ext, *end;
 		char *str;
 		const float priority = 1.0;
@@ -1029,6 +1099,7 @@ static void vk_create_device( void ) {
 		qboolean swapchainSupported = qfalse;
 		qboolean dedicatedAllocation = qfalse;
 		qboolean memoryRequirements2 = qfalse;
+		qboolean debugMarker = qfalse;
 		uint32_t i, len, count = 0;
 
 		VK_CHECK(qvkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &count, NULL));
@@ -1041,12 +1112,14 @@ static void vk_create_device( void ) {
 
 		for ( i = 0; i < count; i++ ) {
 			ext = extension_properties[i].extensionName;
-			if ( strcmp( ext, device_extensions[0] ) == 0 ) {
+			if ( strcmp( ext, VK_KHR_SWAPCHAIN_EXTENSION_NAME ) == 0 ) {
 				swapchainSupported = qtrue;
-			} else if ( strcmp( ext, device_extensions[1] ) == 0 ) {
+			} else if ( strcmp( ext, VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME ) == 0 ) {
 				dedicatedAllocation = qtrue;
-			} else if ( strcmp( ext, device_extensions[2] ) == 0 ) {
+			} else if ( strcmp( ext, VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME ) == 0 ) {
 				memoryRequirements2 = qtrue;
+			} else if ( strcmp( ext, VK_EXT_DEBUG_MARKER_EXTENSION_NAME ) == 0 ) {
+				debugMarker = qtrue;
 			}
 			// add this device extension to glConfig
 			if ( i != 0 ) {
@@ -1062,17 +1135,34 @@ static void vk_create_device( void ) {
 
 		ri.Free( extension_properties );
 
+		device_extension_count = 0;
+
 		if ( !swapchainSupported )
-			ri.Error( ERR_FATAL, "%s: required device extension is not available: %s", __func__, device_extensions[0] );
+			ri.Error( ERR_FATAL, "%s: required device extension is not available: %s", __func__, VK_KHR_SWAPCHAIN_EXTENSION_NAME );
 
 		if ( !memoryRequirements2 )
 			dedicatedAllocation = qfalse;
 		else
 			vk.dedicatedAllocation = dedicatedAllocation;
 
+#ifndef USE_DEDICATED_ALLOCATION
+		vk.dedicatedAllocation = qfalse;
+#endif
+
+		device_extension_list[ device_extension_count++ ] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+
+		if ( vk.dedicatedAllocation ) {
+			device_extension_list[ device_extension_count++ ] = VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME;
+			device_extension_list[ device_extension_count++ ] = VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME;
+		}
+
+		if ( debugMarker ) {
+			device_extension_list[ device_extension_count++ ] = VK_EXT_DEBUG_MARKER_EXTENSION_NAME;
+			vk.debugMarkers = qtrue;
+		}
+
 		qvkGetPhysicalDeviceFeatures( vk.physical_device, &device_features );
-		if ( device_features.shaderClipDistance == VK_FALSE )
-			ri.Error( ERR_FATAL, "%s: shaderClipDistance feature is not supported", __func__ );
+
 		if ( device_features.fillModeNonSolid == VK_FALSE )
 			ri.Error( ERR_FATAL, "%s: fillModeNonSolid feature is not supported", __func__ );
 
@@ -1084,7 +1174,6 @@ static void vk_create_device( void ) {
 		queue_desc.pQueuePriorities = &priority;
 
 		Com_Memset( &features, 0, sizeof( features ) );
-		features.shaderClipDistance = VK_TRUE;
 		features.fillModeNonSolid = VK_TRUE;
 
 		if ( device_features.wideLines ) { // needed for RB_SurfaceAxis
@@ -1102,10 +1191,6 @@ static void vk_create_device( void ) {
 			vk.samplerAnisotropy = qtrue;
 		}
 
-#ifndef USE_DEDICATED_ALLOCATION
-		vk.dedicatedAllocation = qfalse;
-#endif
-
 		device_desc.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		device_desc.pNext = NULL;
 		device_desc.flags = 0;
@@ -1113,8 +1198,8 @@ static void vk_create_device( void ) {
 		device_desc.pQueueCreateInfos = &queue_desc;
 		device_desc.enabledLayerCount = 0;
 		device_desc.ppEnabledLayerNames = NULL;
-		device_desc.enabledExtensionCount = vk.dedicatedAllocation ? 3 : 1;
-		device_desc.ppEnabledExtensionNames = device_extensions;
+		device_desc.enabledExtensionCount = device_extension_count;
+		device_desc.ppEnabledExtensionNames = device_extension_list;
 		device_desc.pEnabledFeatures = &features;
 
 		VK_CHECK( qvkCreateDevice( vk.physical_device, &device_desc, NULL, &vk.device ) );
@@ -1286,6 +1371,10 @@ static void init_vulkan_library( void )
 			vk.dedicatedAllocation = qfalse;
 		}
 	}
+
+	if ( vk.debugMarkers ) {
+		INIT_DEVICE_FUNCTION_EXT(vkDebugMarkerSetObjectNameEXT)
+	}
 }
 
 #undef INIT_INSTANCE_FUNCTION
@@ -1399,6 +1488,8 @@ static void deinit_vulkan_library( void )
 
 	qvkGetBufferMemoryRequirements2KHR			= NULL;
 	qvkGetImageMemoryRequirements2KHR			= NULL;
+
+	qvkDebugMarkerSetObjectNameEXT				= NULL;
 }
 
 
@@ -1786,6 +1877,8 @@ static void vk_create_geometry_buffers( VkDeviceSize size )
 		vk.tess[i].vertex_buffer_ptr = (byte*)data + vertex_buffer_offset;
 		vk.tess[i].vertex_buffer_offset = 0;
 		vertex_buffer_offset += vb_memory_requirements.size;
+
+		vk_set_buffer_name( vk.tess[i].vertex_buffer, va( "geometry buffer %i", i ) );
 	}
 
 	vk.geometry_buffer_size = vb_memory_requirements.size;
@@ -1922,6 +2015,8 @@ qboolean vk_alloc_vbo( const byte *vbo_data, int vbo_size )
 
 	qvkDestroyBuffer( vk.device, staging_vertex_buffer, NULL );
 	qvkFreeMemory( vk.device, staging_buffer_memory, NULL );
+
+	vk_set_buffer_name( vk.vbo.vertex_buffer, "static VBO" );
 
 	return qtrue;
 }
@@ -2898,7 +2993,6 @@ void vk_initialize( void )
 			vk.msaaActive = qtrue;
 		}
 
-		// TODO: set renderScale there!
 		if ( r_renderScale->integer ) {
 			glConfig.vidWidth = r_renderWidth->integer;
 			glConfig.vidHeight = r_renderHeight->integer;
@@ -2908,6 +3002,8 @@ void vk_initialize( void )
 
 		vk_set_render_scale();
 	}
+
+	// multisampling
 
 	vkMaxSamples = MIN( props.limits.sampledImageColorSampleCounts, props.limits.sampledImageDepthSampleCounts );
 
@@ -3097,23 +3193,33 @@ void vk_initialize( void )
 		create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, VK_SAMPLE_COUNT_1_BIT, vk.color_format,
 			usage, &vk.color_image, &vk.color_image_view, &vk.color_image_memory, qfalse );
 
+		vk_set_image_name( vk.color_image, "color attachment" );
+
 		// screenmap
 		usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 		if ( vk.screenMapSamples > VK_SAMPLE_COUNT_1_BIT ) {
 			create_color_attachment( vk.screenMapWidth, vk.screenMapHeight, vk.screenMapSamples, vk.color_format,
 				usage, &vk.color_image3_msaa, &vk.color_image_view3_msaa, &vk.color_image_memory3_msaa, qtrue );
+
+			vk_set_image_name( vk.color_image3_msaa, "screenmap msaa color attachment" );
 		}
 
 		create_color_attachment( vk.screenMapWidth, vk.screenMapHeight, VK_SAMPLE_COUNT_1_BIT, vk.color_format,
 			usage, &vk.color_image3, &vk.color_image_view3, &vk.color_image_memory3, qfalse );
 
+		vk_set_image_name( vk.color_image3, "screenmap color attachment" );
+
 		// screenmap
 		create_depth_attachment( vk.screenMapWidth, vk.screenMapHeight, vk.screenMapSamples, &vk.depth_image3, &vk.depth_image_view3, &vk.depth_image_memory3 );
+
+		vk_set_image_name( vk.depth_image3, "screenmap depth attachment" );
 
 		if ( vk.msaaActive ) {
 			create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, vkSamples, vk.color_format, 
 				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &vk.msaa_image, &vk.msaa_image_view, &vk.msaa_image_memory, qtrue );
+
+			vk_set_image_name( vk.msaa_image, "msaa color attachment" );
 		}
 	}
 
@@ -3675,6 +3781,7 @@ void vk_create_image( int width, int height, VkFormat format, int mip_levels, im
 		desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 		VK_CHECK( qvkCreateImage( vk.device, &desc, NULL, &image->handle ) );
+
 		allocate_and_bind_image_memory( image->handle );
 	}
 
@@ -3716,6 +3823,10 @@ void vk_create_image( int width, int height, VkFormat format, int mip_levels, im
 	}
 
 	vk_update_descriptor_set( image, mip_levels > 1 ? qtrue : qfalse );
+
+	vk_set_image_name( image->handle, image->imgName );
+	vk_set_image_view_name( image->view, image->imgName );
+	vk_set_descriptor_name( image->descriptor, image->imgName );
 }
 
 

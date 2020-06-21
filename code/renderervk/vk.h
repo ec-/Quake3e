@@ -468,12 +468,15 @@ typedef struct {
 #ifndef NDEBUG
 	VkDebugReportCallbackEXT debug_callback;
 #endif
+
 	uint32_t frame_count;
 	qboolean active;
 	qboolean wideLines;
 	qboolean samplerAnisotropy;
 	qboolean fragmentStores;
 	qboolean dedicatedAllocation;
+	qboolean debugMarkers;
+
 	float maxAnisotropy;
 	float maxLodBias;
 
