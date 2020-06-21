@@ -401,7 +401,7 @@ typedef struct {
 		VkShaderModule dot_vs;
 
 		struct {
-			VkShaderModule vs_clip[2];
+			VkShaderModule vs[2];
 			VkShaderModule fs[2];
 		} light;
 
