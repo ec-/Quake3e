@@ -251,73 +251,16 @@ static void record_image_layout_transition(VkCommandBuffer command_buffer, VkIma
 
 // debug markers
 
-static void vk_set_image_name( const VkImage image, const char *name )
-{
-	VkDebugMarkerObjectNameInfoEXT info;
-
-	if ( !qvkDebugMarkerSetObjectNameEXT )
-		return;
-
-	info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
-	info.pNext = NULL;
-	info.objectType = VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT; 
-	info.object = (uint64_t) image;
-	info.pObjectName = name;
-
-	qvkDebugMarkerSetObjectNameEXT( vk.device, &info );
-}
-
-
-static void vk_set_image_view_name( const VkImageView image, const char *name )
-{
-	VkDebugMarkerObjectNameInfoEXT info;
-
-	if ( !qvkDebugMarkerSetObjectNameEXT )
-		return;
-
-	info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
-	info.pNext = NULL;
-	info.objectType = VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT; 
-	info.object = (uint64_t) image;
-	info.pObjectName = name;
-
-	qvkDebugMarkerSetObjectNameEXT( vk.device, &info );
-}
-
-
-static void vk_set_descriptor_name( const VkDescriptorSet desc, const char *name )
-{
-	VkDebugMarkerObjectNameInfoEXT info;
-
-	if ( !qvkDebugMarkerSetObjectNameEXT )
-		return;
-
-	info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
-	info.pNext = NULL;
-	info.objectType = VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_EXT; 
-	info.object = (uint64_t) desc;
-	info.pObjectName = name;
-
-	qvkDebugMarkerSetObjectNameEXT( vk.device, &info );
-}
-
-
-static void vk_set_buffer_name( const VkBuffer obj, const char *name )
-{
-	VkDebugMarkerObjectNameInfoEXT info;
-
-	if ( !qvkDebugMarkerSetObjectNameEXT )
-		return;
-
-	info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
-	info.pNext = NULL;
-	info.objectType = VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT; 
-	info.object = (uint64_t) obj;
-	info.pObjectName = name;
-
-	qvkDebugMarkerSetObjectNameEXT( vk.device, &info );
-}
-
+#define SET_OBJECT_NAME(obj,objName,objType) \
+	if ( qvkDebugMarkerSetObjectNameEXT && obj != VK_NULL_HANDLE ) { \
+		VkDebugMarkerObjectNameInfoEXT info; \
+		info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT; \
+		info.pNext = NULL; \
+		info.objectType = (objType); \
+		info.object = (uint64_t)(obj); \
+		info.pObjectName = (objName); \
+		qvkDebugMarkerSetObjectNameEXT( vk.device, &info ); \
+	}
 
 static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice device, VkSurfaceKHR surface, VkSurfaceFormatKHR surface_format, VkSwapchainKHR *swapchain ) {
 	VkImageViewCreateInfo view;
@@ -591,6 +534,8 @@ static void create_render_pass( VkDevice device, VkFormat depth_format )
 
 	VK_CHECK( qvkCreateRenderPass( device, &desc, NULL, &vk.render_pass ) );
 
+	SET_OBJECT_NAME( vk.render_pass, "render pass - main", VK_DEBUG_REPORT_OBJECT_TYPE_RENDER_PASS_EXT );
+
 	if ( r_fbo->integer == 0 )
 		return;
 
@@ -616,6 +561,8 @@ static void create_render_pass( VkDevice device, VkFormat depth_format )
 	attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 	VK_CHECK( qvkCreateRenderPass( device, &desc, NULL, &vk.render_pass_gamma ) );
+
+	SET_OBJECT_NAME( vk.render_pass_gamma, "render pass - gamma", VK_DEBUG_REPORT_OBJECT_TYPE_RENDER_PASS_EXT );
 
 	// screenmap
 
@@ -692,6 +639,8 @@ static void create_render_pass( VkDevice device, VkFormat depth_format )
 	}
 
 	VK_CHECK( qvkCreateRenderPass( device, &desc, NULL, &vk.render_pass_screenmap ) );
+
+	SET_OBJECT_NAME( vk.render_pass_screenmap, "render pass - screenmap", VK_DEBUG_REPORT_OBJECT_TYPE_RENDER_PASS_EXT );
 }
 
 
@@ -740,9 +689,12 @@ static void allocate_and_bind_image_memory(VkImage image) {
 		VK_CHECK(qvkAllocateMemory(vk.device, &alloc_info, NULL, &memory));
 
 		chunk = &vk_world.image_chunks[vk_world.num_image_chunks];
-		vk_world.num_image_chunks++;
 		chunk->memory = memory;
 		chunk->used = memory_requirements.size;
+
+		SET_OBJECT_NAME( memory, va( "image memory chunk %i", vk_world.num_image_chunks ), VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT ); 
+
+		vk_world.num_image_chunks++;
 	}
 
 	VK_CHECK(qvkBindImageMemory(vk.device, image, chunk->memory, chunk->used - memory_requirements.size));
@@ -792,7 +744,8 @@ static void ensure_staging_buffer_allocation(VkDeviceSize size) {
 	VK_CHECK(qvkMapMemory(vk.device, vk_world.staging_buffer_memory, 0, VK_WHOLE_SIZE, 0, &data));
 	vk_world.staging_buffer_ptr = (byte*)data;
 
-	vk_set_buffer_name( vk_world.staging_buffer, "staging buffer" );
+	SET_OBJECT_NAME( vk_world.staging_buffer, "staging buffer", VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT );
+	SET_OBJECT_NAME( vk_world.staging_buffer_memory, "staging buffer memory", VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT );
 }
 
 
@@ -1701,6 +1654,8 @@ void vk_init_buffers( void )
 
 		vk_update_uniform_descriptor( vk.tess[ i ].uniform_descriptor, vk.tess[ i ].vertex_buffer );
 
+		SET_OBJECT_NAME( vk.tess[ i ].uniform_descriptor, va( "uniform descriptor %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_EXT );
+
 		// allocate color attachment descriptor if post-processing enabled
 #ifndef USE_SINGLE_FBO
 		if ( vk.tess[i].color_image_view )
@@ -1878,8 +1833,10 @@ static void vk_create_geometry_buffers( VkDeviceSize size )
 		vk.tess[i].vertex_buffer_offset = 0;
 		vertex_buffer_offset += vb_memory_requirements.size;
 
-		vk_set_buffer_name( vk.tess[i].vertex_buffer, va( "geometry buffer %i", i ) );
+		SET_OBJECT_NAME( vk.tess[i].vertex_buffer, va( "geometry buffer %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT );
 	}
+
+	SET_OBJECT_NAME( vk.geometry_buffer_memory, "geometry buffer memory", VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT );
 
 	vk.geometry_buffer_size = vb_memory_requirements.size;
 
@@ -1924,6 +1881,10 @@ static void vk_create_storage_buffer( uint32_t size )
 	Com_Memset( vk.storage.buffer_ptr, 0, memory_requirements.size ); 
 
 	qvkBindBufferMemory( vk.device, vk.storage.buffer, vk.storage.memory, 0 );
+
+	SET_OBJECT_NAME( vk.storage.buffer, "storage buffer", VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT );
+	SET_OBJECT_NAME( vk.storage.descriptor, "storage buffer", VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_EXT );
+	SET_OBJECT_NAME( vk.storage.memory, "storage buffer memory", VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT );
 }
 
 
@@ -2016,7 +1977,8 @@ qboolean vk_alloc_vbo( const byte *vbo_data, int vbo_size )
 	qvkDestroyBuffer( vk.device, staging_vertex_buffer, NULL );
 	qvkFreeMemory( vk.device, staging_buffer_memory, NULL );
 
-	vk_set_buffer_name( vk.vbo.vertex_buffer, "static VBO" );
+	SET_OBJECT_NAME( vk.vbo.vertex_buffer, "static VBO", VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT );
+	SET_OBJECT_NAME( vk.vbo.buffer_memory, "static VBO memory", VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT );
 
 	return qtrue;
 }
@@ -3128,6 +3090,8 @@ void vk_initialize( void )
 
 			VK_CHECK( qvkCreateFence( vk.device, &fence_desc, NULL, &vk.tess[i].rendering_finished_fence ) );
 			vk.tess[i].waitForFence = qtrue;
+
+			SET_OBJECT_NAME( vk.tess[i].rendering_finished_fence, va( "rendering finished fence %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_FENCE_EXT );
 		}
 	}
 
@@ -3143,6 +3107,8 @@ void vk_initialize( void )
 		desc.queueFamilyIndex = vk.queue_family_index;
 
 		VK_CHECK(qvkCreateCommandPool(vk.device, &desc, NULL, &vk.command_pool));
+
+		SET_OBJECT_NAME( vk.command_pool, "command pool", VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_POOL_EXT );
 	}
 
 	//
@@ -3159,6 +3125,8 @@ void vk_initialize( void )
 		alloc_info.commandBufferCount = 1;
 
 		VK_CHECK( qvkAllocateCommandBuffers( vk.device, &alloc_info, &vk.tess[i].command_buffer ) );
+
+		//SET_OBJECT_NAME( vk.tess[i].command_buffer, va( "command buffer %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT );
 	}
 
 	//
@@ -3192,34 +3160,24 @@ void vk_initialize( void )
 
 		create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, VK_SAMPLE_COUNT_1_BIT, vk.color_format,
 			usage, &vk.color_image, &vk.color_image_view, &vk.color_image_memory, qfalse );
-
-		vk_set_image_name( vk.color_image, "color attachment" );
-
+	
 		// screenmap
 		usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 		if ( vk.screenMapSamples > VK_SAMPLE_COUNT_1_BIT ) {
 			create_color_attachment( vk.screenMapWidth, vk.screenMapHeight, vk.screenMapSamples, vk.color_format,
 				usage, &vk.color_image3_msaa, &vk.color_image_view3_msaa, &vk.color_image_memory3_msaa, qtrue );
-
-			vk_set_image_name( vk.color_image3_msaa, "screenmap msaa color attachment" );
 		}
 
 		create_color_attachment( vk.screenMapWidth, vk.screenMapHeight, VK_SAMPLE_COUNT_1_BIT, vk.color_format,
 			usage, &vk.color_image3, &vk.color_image_view3, &vk.color_image_memory3, qfalse );
 
-		vk_set_image_name( vk.color_image3, "screenmap color attachment" );
-
 		// screenmap
 		create_depth_attachment( vk.screenMapWidth, vk.screenMapHeight, vk.screenMapSamples, &vk.depth_image3, &vk.depth_image_view3, &vk.depth_image_memory3 );
-
-		vk_set_image_name( vk.depth_image3, "screenmap depth attachment" );
 
 		if ( vk.msaaActive ) {
 			create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, vkSamples, vk.color_format, 
 				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &vk.msaa_image, &vk.msaa_image_view, &vk.msaa_image_memory, qtrue );
-
-			vk_set_image_name( vk.msaa_image, "msaa color attachment" );
 		}
 	}
 
@@ -3304,6 +3262,8 @@ void vk_initialize( void )
 #endif // !USE_IMAGE_LAYOUT_1
 
 	vk_alloc_attachment_memory();
+
+	SET_OBJECT_NAME( vk.image_memory, "framebuffer memory", VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT );
 
 	//
 	// Renderpass.
@@ -3416,6 +3376,8 @@ void vk_initialize( void )
 
 		VK_CHECK( qvkCreatePipelineLayout( vk.device, &desc, NULL, &vk.pipeline_layout_gamma ) );
 
+		SET_OBJECT_NAME( vk.pipeline_layout, "pipeline layout - main", VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_LAYOUT_EXT );
+		SET_OBJECT_NAME( vk.pipeline_layout_gamma, "pipeline layout - gamma", VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_LAYOUT_EXT );
 	}
 
 	vk.geometry_buffer_size_new = VERTEX_BUFFER_SIZE;
@@ -3824,9 +3786,9 @@ void vk_create_image( int width, int height, VkFormat format, int mip_levels, im
 
 	vk_update_descriptor_set( image, mip_levels > 1 ? qtrue : qfalse );
 
-	vk_set_image_name( image->handle, image->imgName );
-	vk_set_image_view_name( image->view, image->imgName );
-	vk_set_descriptor_name( image->descriptor, image->imgName );
+	SET_OBJECT_NAME( image->handle, image->imgName, VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT );
+	SET_OBJECT_NAME( image->view, image->imgName, VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_VIEW_EXT );
+	SET_OBJECT_NAME( image->descriptor, image->imgName, VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_EXT );
 }
 
 
