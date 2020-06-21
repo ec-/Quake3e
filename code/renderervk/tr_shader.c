@@ -2177,6 +2177,8 @@ static void FindLightingStages( void )
 				continue;
 			if ( (st->stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE) )
 				continue;
+			if ( st->bundle[0].image[0] == tr.whiteImage )
+				continue;
 			 // fix for q3wcp17' textures/scanctf2/bounce_white and others
 			if ( st->rgbGen == CGEN_IDENTITY && (st->stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO) ) {
 				if ( shader.lightingStage >= 0 ) {

@@ -260,7 +260,7 @@ void ARB_SetupLightParams( void )
 	else
 		VectorCopy( dl->color, lightRGB );
 
-	radius = dl->radius * r_dlightScale->value;
+	radius = dl->radius;
 
 	fogPass = ( tess.fogNum && tess.shader->fogPass );
 	fp = NULL;

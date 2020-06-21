@@ -266,10 +266,11 @@ void RE_AddDynamicLightToScene( const vec3_t org, float intensity, float r, floa
 		r *= r_dlightIntensity->value;
 		g *= r_dlightIntensity->value;
 		b *= r_dlightIntensity->value;
+		intensity *= r_dlightScale->value;
 	}
 #endif
 	dl = &backEndData->dlights[r_numdlights++];
-	VectorCopy (org, dl->origin);
+	VectorCopy( org, dl->origin );
 	dl->radius = intensity;
 	dl->color[0] = r;
 	dl->color[1] = g;
@@ -304,6 +305,7 @@ void RE_AddLinearLightToScene( const vec3_t start, const vec3_t end, float inten
 		r *= r_dlightIntensity->value;
 		g *= r_dlightIntensity->value;
 		b *= r_dlightIntensity->value;
+		intensity *= r_dlightScale->value;
 	}
 #endif
 	dl = &backEndData->dlights[ r_numdlights++ ];

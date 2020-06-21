@@ -1065,7 +1065,7 @@ static void VK_SetLightParams( vkUniform_t *uniform, const dlight_t *dl ) {
 	else
 		VectorCopy( dl->color, uniform->lightColor );
 
-	radius = dl->radius * r_dlightScale->value;
+	radius = dl->radius;
 
 	// vertex data
 	VectorCopy( backEnd.or.viewOrigin, uniform->eyePos ); uniform->eyePos[3] = 0.0f;
