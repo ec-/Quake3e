@@ -38,9 +38,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <sys/mman.h>
 #include <errno.h>
 #include <libgen.h> // dirname
-#ifdef __linux__ // rb010123
-  #include <mntent.h>
-#endif
 
 #include <dlfcn.h>
 
