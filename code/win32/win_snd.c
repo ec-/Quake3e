@@ -35,10 +35,36 @@ static qboolean	dsound_init;
 #ifdef USE_WASAPI
 static qboolean wasapi_init;
 
-#include <VersionHelpers.h>
 #include <mmreg.h>
 #include <mmdeviceapi.h>
 #include <audioclient.h>
+
+// Ugly hack to detect Win10 without manifest
+// http://www.codeproject.com/Articles/678606/Part-Overcoming-Windows-s-deprecation-of-GetVe?msg=5080848#xx5080848xx
+typedef LONG( WINAPI *RtlGetVersionPtr )( RTL_OSVERSIONINFOEXW* );
+static qboolean IsWindows7OrGreater( void ) {
+	RtlGetVersionPtr rtl_get_version_f = NULL;
+	HMODULE ntdll = GetModuleHandle( T( "ntdll" ) );
+	RTL_OSVERSIONINFOEXW osver;
+
+	if ( !ntdll )
+		return qfalse; // will never happen
+
+	rtl_get_version_f = (RtlGetVersionPtr)GetProcAddress( ntdll, "RtlGetVersion" );
+
+	if ( !rtl_get_version_f )
+		return qfalse; // will never happen
+
+	osver.dwOSVersionInfoSize = sizeof( RTL_OSVERSIONINFOEXW );
+
+	if ( rtl_get_version_f( &osver ) == 0 ) {
+		if ( osver.dwMajorVersion >= 7 )
+			return qtrue;
+	}
+
+	return qfalse;
+}
+
 
 UINT32				bufferFrameCount;
 UINT32				bufferPosition; // in fullsamples
