@@ -60,9 +60,10 @@ void QVK_Shutdown( qboolean unloadDLL )
 		Com_Printf( "...unloading Vulkan DLL\n" );
 		Sys_UnloadLibrary( glw_state.VulkanLib );
 		glw_state.VulkanLib = NULL;
+
+		qvkGetInstanceProcAddr = NULL;
 	}
-	
-	qvkGetInstanceProcAddr = NULL;
+
 	qvkCreateWin32SurfaceKHR = NULL;
 }
 

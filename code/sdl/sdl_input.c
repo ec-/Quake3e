@@ -1236,6 +1236,21 @@ void IN_Frame( void )
 
 /*
 ===============
+IN_Restart
+===============
+*/
+static void IN_Restart( void )
+{
+#ifdef USE_JOYSTICK
+	IN_ShutdownJoystick();
+#endif
+	IN_Shutdown();
+	IN_Init();
+}
+
+
+/*
+===============
 IN_Init
 ===============
 */
@@ -1288,10 +1303,11 @@ void IN_Init( void )
 	IN_DeactivateMouse( glw_state.isFullscreen );
 
 #ifdef USE_JOYSTICK
-	IN_InitJoystick( );
+	IN_InitJoystick();
 #endif
 
 	Cmd_AddCommand( "minimize", IN_Minimize );
+	Cmd_AddCommand( "in_restart", IN_Restart );
 
 	Com_DPrintf( "------------------------------------\n" );
 }
@@ -1313,18 +1329,7 @@ void IN_Shutdown( void )
 #ifdef USE_JOYSTICK
 	IN_ShutdownJoystick();
 #endif
-}
 
-
-/*
-===============
-IN_Restart
-===============
-*/
-void IN_Restart( void )
-{
-#ifdef USE_JOYSTICK
-	IN_ShutdownJoystick();
-#endif
-	IN_Init();
+	Cmd_RemoveCommand( "minimize" );
+	Cmd_RemoveCommand( "in_restart" );
 }

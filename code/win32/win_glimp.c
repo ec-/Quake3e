@@ -1528,7 +1528,7 @@ void VKimp_Shutdown( qboolean unloadDLL )
 		glw_state.cdsFullscreen = qfalse;
 	}
 
-	// shutdown QGL subsystem
+	// shutdown QVK subsystem
 	QVK_Shutdown( unloadDLL );
 }
 #endif // USE_VULKAN_API

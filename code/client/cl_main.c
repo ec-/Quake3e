@@ -1000,7 +1000,7 @@ void CL_ShutdownAll( void ) {
 			cls.soundStarted = qfalse;
 			CL_ShutdownRef( qfalse ); // shutdown renderer & GLimp
 		} else {
-			re.Shutdown( 0 ); // don't destroy window or context
+			re.Shutdown( REF_KEEP_CONTEXT ); // don't destroy window or context
 		}
 	}
 
@@ -3151,9 +3151,9 @@ static void CL_ShutdownRef( qboolean unloadDLL ) {
 	
 	if ( re.Shutdown ) {
 		if ( unloadDLL )
-			re.Shutdown( 2 );
+			re.Shutdown( REF_UNLOAD_DLL );
 		else
-			re.Shutdown( 1 );
+			re.Shutdown( REF_DESTROY_WINDOW );
 	}
 
 #ifdef USE_RENDERER_DLOPEN

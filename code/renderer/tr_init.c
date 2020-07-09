@@ -1712,9 +1712,9 @@ void R_Init( void ) {
 RE_Shutdown
 ===============
 */
-static void RE_Shutdown( int destroyWindow ) {
+static void RE_Shutdown( refShutdownCode_t code ) {
 
-	ri.Printf( PRINT_ALL, "RE_Shutdown( %i )\n", destroyWindow );
+	ri.Printf( PRINT_ALL, "RE_Shutdown( %i )\n", code );
 
 	ri.Cmd_RemoveCommand( "modellist" );
 	ri.Cmd_RemoveCommand( "screenshotBMP" );
@@ -1734,13 +1734,13 @@ static void RE_Shutdown( int destroyWindow ) {
 	R_DoneFreeType();
 
 	// shut down platform specific OpenGL stuff
-	if ( destroyWindow ) {
+	if ( code != REF_KEEP_CONTEXT ) {
 
 		QGL_DoneARB();
 
 		VBO_Cleanup();
 
-		ri.GLimp_Shutdown( destroyWindow == 2 ? qtrue: qfalse );
+		ri.GLimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue: qfalse );
 
 		R_ClearSymTables();
 

@@ -1604,6 +1604,7 @@ static void R_Register( void )
 #ifdef USE_VULKAN
 	r_device = ri.Cvar_Get( "r_device", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_device, "0", NULL, CV_INTEGER );
+	r_device->modified = qfalse;
 
 	r_fbo = ri.Cvar_Get( "r_fbo", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_hdr = ri.Cvar_Get( "r_hdr", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
@@ -1729,9 +1730,9 @@ void R_Init( void ) {
 RE_Shutdown
 ===============
 */
-static void RE_Shutdown( int destroyWindow ) {
+static void RE_Shutdown( refShutdownCode_t code ) {
 
-	ri.Printf( PRINT_ALL, "RE_Shutdown( %i )\n", destroyWindow );
+	ri.Printf( PRINT_ALL, "RE_Shutdown( %i )\n", code );
 
 	ri.Cmd_RemoveCommand( "modellist" );
 	ri.Cmd_RemoveCommand( "screenshotBMP" );
@@ -1757,14 +1758,17 @@ static void RE_Shutdown( int destroyWindow ) {
 	R_DoneFreeType();
 
 	// shut down platform specific OpenGL/Vulkan stuff
-	if ( destroyWindow ) {
+	if ( code != REF_KEEP_CONTEXT ) {
 #ifdef USE_VULKAN
+		if ( r_device->modified ) {
+			code = REF_UNLOAD_DLL;
+		}
 		vk_shutdown();
-		ri.VKimp_Shutdown( destroyWindow ? qtrue: qfalse );
+		ri.VKimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue: qfalse );
 		Com_Memset( &vk, 0, sizeof( vk ) );
 		Com_Memset( &vk_world, 0, sizeof( vk_world ) );
 #else
-		ri.GLimp_Shutdown( destroyWindow == 2 ? qtrue: qfalse );
+		ri.GLimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue: qfalse );
 
 		R_ClearSymTables();
 #endif
