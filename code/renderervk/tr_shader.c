@@ -2887,7 +2887,7 @@ static shader_t *FinishShader( void ) {
 	}
 
 	// whiteimage + "filter" texture == texture
-	if ( stage > 1 && stages[0].bundle[0].image[0] == tr.whiteImage && !stages[0].bundle[0].isVideoMap && stages[0].rgbGen == CGEN_IDENTITY && stages[0].alphaGen == AGEN_SKIP ) {
+	if ( stage > 1 && stages[0].bundle[0].image[0] == tr.whiteImage && !stages[0].bundle[0].numImageAnimations <= 1 && stages[0].rgbGen == CGEN_IDENTITY && stages[0].alphaGen == AGEN_SKIP ) {
 		if ( stages[1].stateBits == (GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO) ) {
 			stages[1].stateBits = 0;
 			memmove( &stages[0], &stages[1], sizeof(stages[0]) * (stage-1) );
