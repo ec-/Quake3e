@@ -868,7 +868,11 @@ Other things could be stuck in here, like birds in the sky, etc
 */
 void RB_StageIteratorSky( void ) {
 
+#ifdef USE_VULKAN
+	if ( r_fastsky->integer && vk.fastSky ) {
+#else
 	if ( r_fastsky->integer ) {
+#endif
 		return;
 	}
 

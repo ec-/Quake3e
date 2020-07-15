@@ -484,6 +484,7 @@ typedef struct {
 	VkFormat capture_format;
 	VkFormat depth_format;
 
+	qboolean fastSky;		// requires VK_IMAGE_USAGE_TRANSFER_DST_BIT
 	qboolean fboActive;
 	qboolean blitEnabled;
 	qboolean msaaActive;
