@@ -632,7 +632,7 @@ static void create_render_pass( VkDevice device, VkFormat depth_format )
 		attachments[2].flags = 0;
 		attachments[2].format = vk.color_format;
 		attachments[2].samples = vk.screenMapSamples;
-		attachments[2].loadOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachments[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;

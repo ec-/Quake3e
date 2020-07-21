@@ -4665,6 +4665,8 @@ static void FS_Startup( void ) {
 	}
 
 	fs_homepath = Cvar_Get( "fs_homepath", homePath, CVAR_INIT | CVAR_PROTECTED | CVAR_PRIVATE );
+	Cvar_SetDescription( fs_homepath, "Directory to store user configuration and downloaded files." );
+
 	fs_gamedirvar = Cvar_Get( "fs_game", "", CVAR_INIT | CVAR_SYSTEMINFO );
 	Cvar_CheckRange( fs_gamedirvar, NULL, NULL, CV_FSPATH );
 
@@ -4673,6 +4675,9 @@ static void FS_Startup( void ) {
 	}
 
 	fs_excludeReference = Cvar_Get( "fs_excludeReference", "", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_SetDescription( fs_excludeReference,
+		"Exclude specified pak files from download list on client side.\n"
+		"Format is <moddir>/<pakname> (without .pk3 suffix), you may list multiple entries separated by space." );
 
 	start = Sys_Milliseconds();
 
