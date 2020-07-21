@@ -474,11 +474,8 @@ static void DrawSkySide( image_t *image, const int mins[2], const int maxs[2], i
 		tess.svars.texcoordPtr[0] = tess.texCoords[0];
 
 		vk_bind_geometry_ext( tess_flags );
-#ifdef USE_SKY_DEPTH_WRITE
 		vk_draw_geometry( vk.skybox_pipeline, r_showsky->integer ? DEPTH_RANGE_ZERO : DEPTH_RANGE_ONE, qtrue );
-#else
-		vk_draw_geometry( vk.skybox_pipeline, tess.depthRange, qtrue );
-#endif
+
 		tess.numVertexes = 0;
 		tess.numIndexes = 0;
 	}
@@ -832,12 +829,10 @@ void RB_DrawSun( float scale, shader_t *shader ) {
 	VectorScale( vec2, size, vec2 );
 
 	// farthest depth range
-#ifdef USE_SKY_DEPTH_WRITE
 #ifdef USE_VULKAN
 	tess.depthRange = DEPTH_RANGE_ONE;
 #else
 	qglDepthRange( sky_min_depth, 1.0 );
-#endif
 #endif
 
 	RB_BeginSurface( shader, 0 );
@@ -847,12 +842,10 @@ void RB_DrawSun( float scale, shader_t *shader ) {
 	RB_EndSurface();
 
 	// back to normal depth range
-#ifdef USE_SKY_DEPTH_WRITE
 #ifdef USE_VULKAN
 	tess.depthRange = DEPTH_RANGE_NORMAL;
 #else
 	qglDepthRange( 0.0, 1.0 );
-#endif
 #endif
 }
 
@@ -889,7 +882,6 @@ void RB_StageIteratorSky( void ) {
 	// front of everything to allow developers to see how
 	// much sky is getting sucked in
 
-#ifdef USE_SKY_DEPTH_WRITE
 #ifdef USE_VULKAN
 	if ( r_showsky->integer ) {
 		tess.depthRange = DEPTH_RANGE_ZERO;
@@ -902,7 +894,6 @@ void RB_StageIteratorSky( void ) {
 	} else {
 		qglDepthRange( sky_min_depth, 1.0 );
 	}
-#endif
 #endif
 
 	// draw the outer skybox
@@ -932,12 +923,10 @@ void RB_StageIteratorSky( void ) {
 	}
 
 	// back to normal depth range
-#ifdef USE_SKY_DEPTH_WRITE
 #ifdef USE_VULKAN
 	tess.depthRange = DEPTH_RANGE_NORMAL;
 #else
 	qglDepthRange( 0.0, 1.0 );
-#endif
 #endif
 
 	// note that sky was drawn so we will draw a sun later

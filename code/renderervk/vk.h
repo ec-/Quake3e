@@ -16,7 +16,6 @@
 #define MAX_IMAGE_CHUNKS 48
 
 #define NUM_COMMAND_BUFFERS 2	// number of command buffers / render semaphores / framebuffer sets
-#define USE_SINGLE_FBO		// use single framebuffer set for all command buffers
 //#define USE_DEDICATED_ALLOCATION
 
 #define USE_IMAGE_POOL
@@ -228,43 +227,6 @@ typedef struct vk_tess_s {
 
 	Vk_Depth_Range depth_range;
 	VkPipeline last_pipeline;
-
-#ifndef USE_SINGLE_FBO
-	VkDescriptorSet color_descriptor;
-
-	VkImage color_image;
-	VkDeviceMemory color_image_memory;
-	VkImageView color_image_view;
-
-	VkImage depth_image;
-	VkDeviceMemory depth_image_memory;
-	VkImageView depth_image_view;
-
-	VkImage msaa_image;
-	VkDeviceMemory msaa_image_memory;
-	VkImageView msaa_image_view;
-
-	// screenMap
-
-	VkDescriptorSet color_descriptor3;
-
-	VkImage color_image3;
-	VkDeviceMemory color_image_memory3;
-	VkImageView color_image_view3;
-
-	VkImage color_image3_msaa;
-	VkDeviceMemory color_image_memory3_msaa;
-	VkImageView color_image_view3_msaa;
-
-	VkImage depth_image3;
-	VkDeviceMemory depth_image_memory3;
-	VkImageView depth_image_view3;
-
-	VkFramebuffer framebuffers[MAX_SWAPCHAIN_IMAGES];
-	VkFramebuffer framebuffers2[MAX_SWAPCHAIN_IMAGES]; // post-process
-	VkFramebuffer framebuffers3[MAX_SWAPCHAIN_IMAGES]; // screenmap
-#endif
-
 } vk_tess_t;
 
 
@@ -306,7 +268,6 @@ typedef struct {
 	//VkPipelineLayout pipeline_layout_storage;	// flare test shader layout
 	VkPipelineLayout pipeline_layout_gamma;		// gamma post-processing
 
-#ifdef USE_SINGLE_FBO
 	VkDescriptorSet color_descriptor;
 
 	VkImage color_image;
@@ -340,8 +301,6 @@ typedef struct {
 	VkImage depth_image3;
 	VkDeviceMemory depth_image_memory3;
 	VkImageView depth_image_view3;
-
-#endif
 
 	vk_tess_t tess[ NUM_COMMAND_BUFFERS ], *cmd;
 	int cmd_index;

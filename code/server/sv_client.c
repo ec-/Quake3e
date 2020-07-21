@@ -246,8 +246,9 @@ Loads geoip database into memory
 static qboolean SV_LoadIP4DB( const char *filename )
 {
 	fileHandle_t fh = FS_INVALID_HANDLE;
+	uint32_t last_ip;
 	void *buf;
-	int len, i, last_ip;
+	int len, i;
 	
 	len = FS_SV_FOpenFileRead( filename, &fh );
 	
@@ -315,7 +316,7 @@ static void SV_SetTLD( char *str, const netadr_t *from, qboolean isLAN )
 {
 	const iprange_t *e;
 	int lo, hi, m;
-	int ip;
+	uint32_t ip;
 
 	str[0] = '\0';
 
