@@ -456,7 +456,7 @@ static void R_InitExtensions( void )
 			{
 				ri.Printf( PRINT_ALL, "...using GL_EXT_texture_filter_anisotropic (max: %i)\n", maxAnisotropy );
 				textureFilterAnisotropic = qtrue;
-				maxAnisotropy = MIN( r_ext_texture_filter_anisotropic->integer, maxAnisotropy );
+				maxAnisotropy = MIN( r_ext_max_anisotropy->integer, maxAnisotropy );
 			}
 		}
 		else
