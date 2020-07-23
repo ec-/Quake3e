@@ -1175,8 +1175,8 @@ void CL_SetCGameTime( void ) {
 	// no matter what speed machine it is run on,
 	// while a normal demo may have different time samples
 	// each time it is played back
-	if ( cl_timedemo->integer ) {
-		if (!clc.timeDemoStart) {
+	if ( com_timedemo->integer ) {
+		if ( !clc.timeDemoStart ) {
 			clc.timeDemoStart = Sys_Milliseconds();
 		}
 		clc.timeDemoFrames++;

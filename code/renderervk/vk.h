@@ -255,9 +255,11 @@ typedef struct {
 	VkDeviceMemory image_memory;
 #endif
 
-	VkRenderPass render_pass;
-	VkRenderPass render_pass_screenmap;
-	VkRenderPass render_pass_gamma;
+	struct {
+		VkRenderPass main;
+		VkRenderPass screenmap;
+		VkRenderPass gamma;
+	} render_pass;
 
 	VkDescriptorPool descriptor_pool;
 	VkDescriptorSetLayout set_layout_sampler;	// combined image sampler
@@ -282,25 +284,27 @@ typedef struct {
 	VkDeviceMemory msaa_image_memory;
 	VkImageView msaa_image_view;
 
-	VkFramebuffer framebuffers[MAX_SWAPCHAIN_IMAGES];
-	VkFramebuffer framebuffers2[MAX_SWAPCHAIN_IMAGES]; // post-process
-	VkFramebuffer framebuffers3[MAX_SWAPCHAIN_IMAGES]; // screenmap
+	struct {
+		VkFramebuffer main[MAX_SWAPCHAIN_IMAGES];
+		VkFramebuffer gamma[MAX_SWAPCHAIN_IMAGES];
+		VkFramebuffer screenmap[MAX_SWAPCHAIN_IMAGES];
+	} framebuffers;
 
 	// screenMap
 
 	VkDescriptorSet color_descriptor3;
 
 	VkImage color_image3;
-	VkDeviceMemory color_image_memory3;
-	VkImageView color_image_view3;
+	VkDeviceMemory color_image3_memory;
+	VkImageView color_image3_view;
 
 	VkImage color_image3_msaa;
-	VkDeviceMemory color_image_memory3_msaa;
-	VkImageView color_image_view3_msaa;
+	VkDeviceMemory color_image3_memory_msaa;
+	VkImageView color_image3_view_msaa;
 
 	VkImage depth_image3;
-	VkDeviceMemory depth_image_memory3;
-	VkImageView depth_image_view3;
+	VkDeviceMemory depth_image3_memory;
+	VkImageView depth_image3_view;
 
 	vk_tess_t tess[ NUM_COMMAND_BUFFERS ], *cmd;
 	int cmd_index;

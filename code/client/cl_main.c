@@ -41,7 +41,6 @@ cvar_t	*cl_timeNudge;
 cvar_t	*cl_showTimeDelta;
 
 cvar_t	*cl_shownet;
-cvar_t	*cl_timedemo;
 cvar_t	*cl_autoRecordDemo;
 
 cvar_t	*cl_aviFrameRate;
@@ -672,7 +671,7 @@ CL_DemoCompleted
 =================
 */
 static void CL_DemoCompleted( void ) {
-	if (cl_timedemo && cl_timedemo->integer) {
+	if ( com_timedemo->integer ) {
 		int	time;
 		
 		time = Sys_Milliseconds() - clc.timeDemoStart;
@@ -2920,8 +2919,6 @@ CL_NoDelay
 */
 qboolean CL_NoDelay( void )
 {
-	extern cvar_t *com_timedemo;
-
 	if ( CL_VideoRecording() || ( com_timedemo->integer && clc.demofile != FS_INVALID_HANDLE ) )
 		return qtrue;
 	
@@ -3781,7 +3778,6 @@ void CL_Init( void ) {
 	rcon_client_password = Cvar_Get ("rconPassword", "", CVAR_TEMP );
 	cl_activeAction = Cvar_Get( "activeAction", "", CVAR_TEMP );
 
-	cl_timedemo = Cvar_Get ("timedemo", "0", 0);
 	cl_autoRecordDemo = Cvar_Get ("cl_autoRecordDemo", "0", CVAR_ARCHIVE);
 
 	cl_aviFrameRate = Cvar_Get ("cl_aviFrameRate", "25", CVAR_ARCHIVE);

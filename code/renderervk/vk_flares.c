@@ -533,7 +533,7 @@ void RB_RenderFlares( void ) {
 		return;
 	}
 
-	if ( vk.renderPassIndex != RENDER_PASS_MAIN ) {
+	if ( vk.renderPassIndex == RENDER_PASS_SCREENMAP ) {
 		return;
 	}
 

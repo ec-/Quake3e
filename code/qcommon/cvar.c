@@ -1853,16 +1853,11 @@ void Cvar_CheckRange( cvar_t *var, const char *mins, const char *maxs, cvarValid
 	if ( type == CV_NONE )
 		return;
 
-	if ( type == CV_BOOLEAN ) {
-		var->mins = CopyString( "0" );
-		var->maxs = CopyString( "1" );
-		var->validator = CV_INTEGER;
-	} else {
-		if ( mins )
-			var->mins = CopyString( mins );
-		if ( maxs )
-			var->maxs = CopyString( maxs );
-	}
+	if ( mins )
+		var->mins = CopyString( mins );
+
+	if ( maxs )
+		var->maxs = CopyString( maxs );
 
 	// Force an initial range check
 	Cvar_Set( var->name, var->string );

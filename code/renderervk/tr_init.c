@@ -1592,7 +1592,10 @@ static void R_Register( void )
 	ri.Cvar_CheckRange( r_ext_max_anisotropy, "1", NULL, CV_INTEGER );
 
 	r_stencilbits = ri.Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_stencilbits, "0", "8", CV_INTEGER );
+
 	r_ignorehwgamma = ri.Cvar_Get( "r_ignorehwgamma", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_ignorehwgamma, "0", "1", CV_INTEGER );
 
 	r_showsky = ri.Cvar_Get( "r_showsky", "0", CVAR_LATCH );
 
