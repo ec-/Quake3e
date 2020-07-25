@@ -42,6 +42,7 @@ Based on Quake-III-Arena-Kenny-Edition with many additions:
 * per-window gamma-correction which is important for screen-capture tools like OBS
 * you can minimize game window any time during **\video**|**\video-pipe** recording
 * high dynamic range render targets (**\r_hdr 1**) to avoid color banding
+* bloom post-processing effect
 * arbitrary resolution rendering
 * greyscale mode
 
@@ -58,7 +59,7 @@ Based on classic OpenGL renderers from id/ioq3/cnq3/openarena, features:
 * merged lightmaps (atlases)
 * static world surfaces cached in VBO (**\r_vbo 1**)
 * all set of offscreen rendering features mentioned in Vulkan renderer, plus:
-* high-quality bloom/reflection post-processing effects
+* bloom reflection post-processing effect
 * supersample anti-aliasing (**\r_ext_supersample**)
 
 Performance is usually greater or equal to other opengl1 renderers

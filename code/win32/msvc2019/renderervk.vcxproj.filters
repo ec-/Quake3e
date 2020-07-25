@@ -171,6 +171,15 @@
     <ClCompile Include="..\..\renderervk\vk_vbo.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\renderervk\shaders\spirv\bloom_frag.c">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderervk\shaders\spirv\blur_frag.c">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderervk\shaders\spirv\blend_frag.c">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\renderervk\shaders\spirv\color_vert.c">
       <Filter>Source Files\Shaders</Filter>
     </ClCompile>

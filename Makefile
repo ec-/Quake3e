@@ -665,6 +665,9 @@ Q3RENDVOBJ = \
   $(B)/rendv/vk_flares.o \
   $(B)/rendv/vk_vbo.o \
   \
+  $(B)/rendv/bloom_frag.o \
+  $(B)/rendv/blur_frag.o \
+  $(B)/rendv/blend_frag.o \
   $(B)/rendv/dot_frag.o \
   $(B)/rendv/dot_vert.o \
   $(B)/rendv/color_frag.o \

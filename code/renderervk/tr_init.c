@@ -77,6 +77,9 @@ cvar_t	*r_vbo;
 #endif
 cvar_t	*r_fbo;
 cvar_t	*r_hdr;
+cvar_t	*r_bloom;
+cvar_t	*r_bloom_threshold;
+cvar_t	*r_bloom_intensity;
 cvar_t	*r_renderWidth;
 cvar_t	*r_renderHeight;
 cvar_t	*r_renderScale;
@@ -1606,6 +1609,14 @@ static void R_Register( void )
 
 	r_fbo = ri.Cvar_Get( "r_fbo", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_hdr = ri.Cvar_Get( "r_hdr", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_bloom = ri.Cvar_Get( "r_bloom", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_CheckRange( r_bloom, "0", "1", CV_INTEGER );
+
+	r_bloom_threshold = ri.Cvar_Get( "r_bloom_threshold", "0.6", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_CheckRange( r_bloom_threshold, "0.01", "1", CV_FLOAT );
+
+	r_bloom_intensity = ri.Cvar_Get( "r_bloom_intensity", "0.5", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_CheckRange( r_bloom_intensity, "0.01", "2", CV_FLOAT );
 
 	r_ext_multisample = ri.Cvar_Get( "r_ext_multisample", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_ext_multisample, "0", "64", CV_INTEGER );

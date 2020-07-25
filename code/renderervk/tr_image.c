@@ -1712,7 +1712,7 @@ void R_SetColorMappings( void ) {
 #ifdef USE_VULKAN
 	if ( vk.fboActive ) {
 		// update gamma shader
-		vk_create_gamma_pipeline();
+		vk_create_post_process_pipeline( 0 );
 	}
 	
 	if ( glConfig.deviceSupportsGamma && !vk.fboActive )

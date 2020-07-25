@@ -1189,6 +1189,12 @@ static const void *RB_StretchPic( const void *data ) {
 		RB_SetGL2D();
 	}
 
+#ifdef USE_VULKAN
+	if ( r_bloom->integer ) {
+		vk_bloom();
+	}
+#endif
+
 	RB_CHECKOVERFLOW( 4, 6 );
 	numVerts = tess.numVertexes;
 	numIndexes = tess.numIndexes;
@@ -1695,6 +1701,12 @@ static const void *RB_FinishBloom( const void *data )
 
 	RB_EndSurface();
 
+#ifdef USE_VULKAN
+	if ( r_bloom->integer ) {
+		vk_bloom();
+	}
+#endif
+
 	// texture swapping test
 	if ( r_showImages->integer ) {
 		RB_ShowImages();
@@ -1770,6 +1782,9 @@ static const void *RB_SwapBuffers( const void *data ) {
 	backEnd.projection2D = qfalse;
 	backEnd.doneSurfaces = qfalse;
 	backEnd.drawConsole = qfalse;
+#ifdef USE_VULKAN
+	backEnd.doneBloom = qfalse;
+#endif
 
 	return (const void *)(cmd + 1);
 }

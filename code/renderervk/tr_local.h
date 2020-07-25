@@ -1103,6 +1103,7 @@ typedef struct {
 	qboolean doneShadows;
 
 	qboolean screenMapDone;
+	qboolean doneBloom;
 
 } backEndState_t;
 
@@ -1272,6 +1273,9 @@ extern cvar_t	*r_vbo;
 #endif
 extern cvar_t	*r_fbo;
 extern cvar_t	*r_hdr;
+extern cvar_t	*r_bloom;
+extern cvar_t	*r_bloom_threshold;
+extern cvar_t	*r_bloom_intensity;
 extern cvar_t	*r_ext_multisample;
 extern cvar_t	*r_ext_alpha_to_coverage;
 extern cvar_t	*r_renderWidth;

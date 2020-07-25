@@ -24,6 +24,8 @@
 
 #define USE_REVERSED_DEPTH
 
+#define VK_NUM_BLOOM_PASSES 4
+
 #define VK_CHECK(function_call) { \
 	VkResult result = function_call; \
 	if (result < 0) \
@@ -82,6 +84,7 @@ typedef struct {
 enum {
 	RENDER_PASS_SCREENMAP = 0,
 	RENDER_PASS_MAIN,
+	RENDER_PASS_POST_BLOOM,
 	RENDER_PASS_COUNT
 };
 
@@ -161,7 +164,7 @@ void vk_update_descriptor_set( image_t *image, qboolean mipmap );
 uint32_t vk_find_pipeline_ext( uint32_t base, const Vk_Pipeline_Def *def, qboolean use );
 void vk_get_pipeline_def( uint32_t pipeline, Vk_Pipeline_Def *def );
 
-void vk_create_gamma_pipeline( void );
+void vk_create_post_process_pipeline( int program_index );
 void vk_restart_swapchain( const char *funcname );
 
 //
@@ -183,6 +186,7 @@ void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean i
 void vk_draw_light( uint32_t pipeline, Vk_Depth_Range depth_range, uint32_t uniform_offset, int fog);
 
 void vk_read_pixels( byte* buffer, uint32_t width, uint32_t height ); // screenshots
+qboolean vk_bloom( void );
 
 qboolean vk_alloc_vbo( const byte *vbo_data, int vbo_size );
 void vk_update_mvp( const float *m );
@@ -259,6 +263,9 @@ typedef struct {
 		VkRenderPass main;
 		VkRenderPass screenmap;
 		VkRenderPass gamma;
+		VkRenderPass bloom_extract;
+		VkRenderPass blur[VK_NUM_BLOOM_PASSES*2]; // horizontal-vertical pairs
+		VkRenderPass post_bloom;
 	} render_pass;
 
 	VkDescriptorPool descriptor_pool;
@@ -268,13 +275,20 @@ typedef struct {
 
 	VkPipelineLayout pipeline_layout;			// default shaders
 	//VkPipelineLayout pipeline_layout_storage;	// flare test shader layout
-	VkPipelineLayout pipeline_layout_gamma;		// gamma post-processing
+	VkPipelineLayout pipeline_layout_post_process;	// post-processing
+	VkPipelineLayout pipeline_layout_blend;		// post-processing
 
 	VkDescriptorSet color_descriptor;
 
 	VkImage color_image;
 	VkDeviceMemory color_image_memory;
 	VkImageView color_image_view;
+
+	VkImage bloom_image[1+VK_NUM_BLOOM_PASSES*2];
+	VkDeviceMemory bloom_image_memory[1+VK_NUM_BLOOM_PASSES*2];
+	VkImageView bloom_image_view[1+VK_NUM_BLOOM_PASSES*2];
+
+	VkDescriptorSet bloom_image_descriptor[1+VK_NUM_BLOOM_PASSES*2];
 
 	VkImage depth_image;
 	VkDeviceMemory depth_image_memory;
@@ -285,6 +299,8 @@ typedef struct {
 	VkImageView msaa_image_view;
 
 	struct {
+		VkFramebuffer blur[VK_NUM_BLOOM_PASSES*2];
+		VkFramebuffer bloom_extract[MAX_SWAPCHAIN_IMAGES];
 		VkFramebuffer main[MAX_SWAPCHAIN_IMAGES];
 		VkFramebuffer gamma[MAX_SWAPCHAIN_IMAGES];
 		VkFramebuffer screenmap[MAX_SWAPCHAIN_IMAGES];
@@ -353,6 +369,10 @@ typedef struct {
 
 		VkShaderModule color_fs;
 		VkShaderModule color_vs;
+
+		VkShaderModule bloom_fs;
+		VkShaderModule blur_fs;
+		VkShaderModule blend_fs;
 
 		VkShaderModule gamma_fs;
 		VkShaderModule gamma_vs;
@@ -427,6 +447,9 @@ typedef struct {
 	uint32_t dot_pipeline;
 
 	VkPipeline gamma_pipeline;
+	VkPipeline bloom_extract_pipeline;
+	VkPipeline blur_pipeline[VK_NUM_BLOOM_PASSES*2]; // horizontal & vertical pairs
+	VkPipeline bloom_blend_pipeline;
 
 #ifndef NDEBUG
 	VkDebugReportCallbackEXT debug_callback;
@@ -446,6 +469,7 @@ typedef struct {
 	VkFormat color_format;
 	VkFormat capture_format;
 	VkFormat depth_format;
+	VkFormat bloom_format;
 
 	qboolean fastSky;		// requires VK_IMAGE_USAGE_TRANSFER_DST_BIT
 	qboolean fboActive;

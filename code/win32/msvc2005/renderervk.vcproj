@@ -420,6 +420,18 @@
 				Name="Shaders"
 				>
 				<File
+					RelativePath="..\..\renderervk\shaders\spirv\blend_frag.c"
+					>
+				</File>
+				<File
+					RelativePath="..\..\renderervk\shaders\spirv\bloom_frag.c"
+					>
+				</File>
+				<File
+					RelativePath="..\..\renderervk\shaders\spirv\blur_frag.c"
+					>
+				</File>
+				<File
 					RelativePath="..\..\renderervk\shaders\spirv\color_frag.c"
 					>
 				</File>

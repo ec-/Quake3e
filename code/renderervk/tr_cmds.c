@@ -316,6 +316,10 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	glState.finishCalled = qfalse;
 #endif
 
+#ifdef USE_VULKAN
+	backEnd.doneBloom = qfalse;
+#endif
+
 	tr.frameCount++;
 	tr.frameSceneNum = 0;
 
