@@ -300,10 +300,10 @@ typedef struct {
 
 	struct {
 		VkFramebuffer blur[VK_NUM_BLOOM_PASSES*2];
-		VkFramebuffer bloom_extract[MAX_SWAPCHAIN_IMAGES];
+		VkFramebuffer bloom_extract;
 		VkFramebuffer main[MAX_SWAPCHAIN_IMAGES];
 		VkFramebuffer gamma[MAX_SWAPCHAIN_IMAGES];
-		VkFramebuffer screenmap[MAX_SWAPCHAIN_IMAGES];
+		VkFramebuffer screenmap;
 	} framebuffers;
 
 	// screenMap

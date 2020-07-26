@@ -249,18 +249,24 @@ static void record_image_layout_transition(VkCommandBuffer command_buffer, VkIma
 	qvkCmdPipelineBarrier( command_buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0, NULL, 1, &barrier );
 }
 
-// debug markers
 
-#define SET_OBJECT_NAME(obj,objName,objType) \
-	if ( qvkDebugMarkerSetObjectNameEXT && obj != VK_NULL_HANDLE ) { \
-		VkDebugMarkerObjectNameInfoEXT info; \
-		info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT; \
-		info.pNext = NULL; \
-		info.objectType = (objType); \
-		info.object = (uint64_t)(obj); \
-		info.pObjectName = (objName); \
-		qvkDebugMarkerSetObjectNameEXT( vk.device, &info ); \
+// debug markers
+#define SET_OBJECT_NAME(obj,objName,objType) vk_set_object_name( (uint64_t)(obj), (objName), (objType) )
+
+static void vk_set_object_name( uint64_t obj, const char *objName, VkDebugReportObjectTypeEXT objType )
+{
+	if ( qvkDebugMarkerSetObjectNameEXT && obj )
+	{
+		VkDebugMarkerObjectNameInfoEXT info;
+		info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
+		info.pNext = NULL;
+		info.objectType = objType;
+		info.object = obj;
+		info.pObjectName = objName;
+		qvkDebugMarkerSetObjectNameEXT( vk.device, &info );
 	}
+}
+
 
 static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice device, VkSurfaceKHR surface, VkSurfaceFormatKHR surface_format, VkSwapchainKHR *swapchain ) {
 	VkImageViewCreateInfo view;
@@ -2194,7 +2200,7 @@ static void vk_create_shader_modules( void )
 	vk.modules.gamma_fs = create_shader_module(gamma_frag_spv, gamma_frag_spv_size);
 	vk.modules.gamma_vs = create_shader_module(gamma_vert_spv, gamma_vert_spv_size);
 
-	SET_OBJECT_NAME( vk.modules.gamma_fs, "gamma  post-processing fragment module", VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT );
+	SET_OBJECT_NAME( vk.modules.gamma_fs, "gamma post-processing fragment module", VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT );
 	SET_OBJECT_NAME( vk.modules.gamma_vs, "gamma post-processing vertex module", VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT );
 }
 
@@ -2937,29 +2943,29 @@ static void vk_create_framebuffers( void )
 			attachments[0] = vk.swapchain_image_views[n];
 			attachments[1] = vk.depth_image_view;
 			VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.main[n] ) );
+
+			SET_OBJECT_NAME( vk.framebuffers.main[n], va( "framebuffer - main %i", n ), VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT );
 		}
 		else
 		{
 			// same framebuffer configuration for main and post-bloom render passes
-			desc.width = glConfig.vidWidth;
-			desc.height = glConfig.vidHeight;
-			attachments[0] = vk.color_image_view;
-			attachments[1] = vk.depth_image_view;
-			if ( vk.msaaActive )
+			if ( n == 0 ) 
 			{
-				desc.attachmentCount = 3;
-				attachments[2] = vk.msaa_image_view;
-			}
-			VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.main[n] ) );
-
-			if ( r_bloom->integer ) {
-				// bloom color extraction
-				desc.renderPass = vk.render_pass.bloom_extract;
-				desc.attachmentCount = 1;
-				attachments[0] = vk.bloom_image_view[0];
 				desc.width = glConfig.vidWidth;
 				desc.height = glConfig.vidHeight;
-				VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.bloom_extract[n] ) );
+				attachments[0] = vk.color_image_view;
+				attachments[1] = vk.depth_image_view;
+				if ( vk.msaaActive )
+				{
+					desc.attachmentCount = 3;
+					attachments[2] = vk.msaa_image_view;
+				}
+				VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.main[n] ) );
+				SET_OBJECT_NAME( vk.framebuffers.main[n], "framebuffer - main", VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT );
+			}
+			else
+			{
+				vk.framebuffers.main[n] = vk.framebuffers.main[0];
 			}
 
 			// gamma correction
@@ -2970,41 +2976,63 @@ static void vk_create_framebuffers( void )
 			attachments[0] = vk.swapchain_image_views[n];
 			VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.gamma[n] ) );
 
-			// screenmap
-			desc.renderPass = vk.render_pass.screenmap;
-			desc.attachmentCount = 2;
-			desc.width = vk.screenMapWidth;
-			desc.height = vk.screenMapHeight;
-			attachments[0] = vk.color_image3_view;
-			attachments[1] = vk.depth_image3_view;
-			if ( vk.screenMapSamples > VK_SAMPLE_COUNT_1_BIT )
-			{
-				desc.attachmentCount = 3;
-				attachments[2] = vk.color_image3_view_msaa;
-			}
-			VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.screenmap[n] ) );
+			SET_OBJECT_NAME( vk.framebuffers.gamma[n], "framebuffer - gamma-correction", VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT );
 		}
 	}
 
-	if ( r_bloom->integer && vk.fboActive ) {
-		uint32_t width = glConfig.vidWidth;
-		uint32_t height = glConfig.vidHeight;
+	if ( vk.fboActive )
+	{
+		// screenmap
+		desc.renderPass = vk.render_pass.screenmap;
+		desc.attachmentCount = 2;
+		desc.width = vk.screenMapWidth;
+		desc.height = vk.screenMapHeight;
+		attachments[0] = vk.color_image3_view;
+		attachments[1] = vk.depth_image3_view;
+		if ( vk.screenMapSamples > VK_SAMPLE_COUNT_1_BIT )
+		{
+			desc.attachmentCount = 3;
+			attachments[2] = vk.color_image3_view_msaa;
+		}
+		VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.screenmap ) );
 
-		for ( n = 0; n < ARRAY_LEN( vk.framebuffers.blur ); n += 2 ) {
-			width /= 2;
-			height /= 2;
+		SET_OBJECT_NAME( vk.framebuffers.screenmap, "framebuffer - screenmap", VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT );
 
+		if ( r_bloom->integer )
+		{
+			uint32_t width = glConfig.vidWidth;
+			uint32_t height = glConfig.vidHeight;
+
+			// bloom color extraction
+			desc.renderPass = vk.render_pass.bloom_extract;
+			desc.attachmentCount = 1;
+			attachments[0] = vk.bloom_image_view[0];
 			desc.width = width;
 			desc.height = height;
+			VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.bloom_extract ) );
 
-			desc.renderPass = vk.render_pass.blur[n];
-			desc.attachmentCount = 1;
+			SET_OBJECT_NAME( vk.framebuffers.bloom_extract, "framebuffer - bloom extraction", VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT );
 
-			attachments[0] = vk.bloom_image_view[n+0+1];
-			VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.blur[n+0] ) );
+			for ( n = 0; n < ARRAY_LEN( vk.framebuffers.blur ); n += 2 )
+			{
+				width /= 2;
+				height /= 2;
+
+				desc.width = width;
+				desc.height = height;
+
+				desc.renderPass = vk.render_pass.blur[n];
+				desc.attachmentCount = 1;
+
+				attachments[0] = vk.bloom_image_view[n+0+1];
+				VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.blur[n+0] ) );
 			
-			attachments[0] = vk.bloom_image_view[n+1+1];
-			VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.blur[n+1] ) );
+				attachments[0] = vk.bloom_image_view[n+1+1];
+				VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.blur[n+1] ) );
+
+				SET_OBJECT_NAME( vk.framebuffers.blur[n+0], va( "framebuffer - blur %i", n+0 ), VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT );
+				SET_OBJECT_NAME( vk.framebuffers.blur[n+1], va( "framebuffer - blur %i", n+1 ), VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT );
+			}
 		}
 	}
 }
@@ -3012,23 +3040,28 @@ static void vk_create_framebuffers( void )
 
 static void vk_destroy_framebuffers( void ) {
 	uint32_t n;
+
 	for ( n = 0; n < vk.swapchain_image_count; n++ ) {
 		if ( vk.framebuffers.main[n] != VK_NULL_HANDLE ) {
-			qvkDestroyFramebuffer( vk.device, vk.framebuffers.main[n], NULL );
+			if ( !vk.fboActive || n == 0 ) {
+				qvkDestroyFramebuffer( vk.device, vk.framebuffers.main[n], NULL );
+			}
 			vk.framebuffers.main[n] = VK_NULL_HANDLE;
 		}
 		if ( vk.framebuffers.gamma[n] != VK_NULL_HANDLE ) {
 			qvkDestroyFramebuffer( vk.device, vk.framebuffers.gamma[n], NULL );
 			vk.framebuffers.gamma[n] = VK_NULL_HANDLE;
 		}
-		if ( vk.framebuffers.screenmap[n] != VK_NULL_HANDLE ) {
-			qvkDestroyFramebuffer( vk.device, vk.framebuffers.screenmap[n], NULL );
-			vk.framebuffers.screenmap[n] = VK_NULL_HANDLE;
-		}
-		if ( vk.framebuffers.bloom_extract[n] != VK_NULL_HANDLE ) {
-			qvkDestroyFramebuffer( vk.device, vk.framebuffers.bloom_extract[n], NULL );
-			vk.framebuffers.bloom_extract[n] = VK_NULL_HANDLE;
-		}
+	}
+
+	if ( vk.framebuffers.bloom_extract != VK_NULL_HANDLE ) {
+		qvkDestroyFramebuffer( vk.device, vk.framebuffers.bloom_extract, NULL );
+		vk.framebuffers.bloom_extract = VK_NULL_HANDLE;
+	}
+
+	if ( vk.framebuffers.screenmap != VK_NULL_HANDLE ) {
+		qvkDestroyFramebuffer( vk.device, vk.framebuffers.screenmap, NULL );
+		vk.framebuffers.screenmap = VK_NULL_HANDLE;
 	}
 
 	for ( n = 0; n < ARRAY_LEN( vk.framebuffers.blur ); n++ ) {
@@ -4003,6 +4036,7 @@ void vk_create_post_process_pipeline( int program_index )
 	VkRenderPass renderpass;
 	VkPipelineLayout layout;
 	VkSampleCountFlagBits samples;
+	const char *pipeline_name;
 	qboolean blend;
 
 	switch ( program_index ) {
@@ -4012,6 +4046,7 @@ void vk_create_post_process_pipeline( int program_index )
 			renderpass = vk.render_pass.bloom_extract;
 			layout = vk.pipeline_layout_post_process;
 			samples = VK_SAMPLE_COUNT_1_BIT;
+			pipeline_name = "bloom extraction pipeline";
 			blend = qfalse;
 			break;
 		case 2: // final bloom blend
@@ -4020,6 +4055,7 @@ void vk_create_post_process_pipeline( int program_index )
 			renderpass = vk.render_pass.post_bloom;
 			layout = vk.pipeline_layout_blend;
 			samples = vkSamples;
+			pipeline_name = "bloom blend pipeline";
 			blend = qtrue;
 			break;
 		default: // gamma correction
@@ -4028,6 +4064,7 @@ void vk_create_post_process_pipeline( int program_index )
 			renderpass = vk.render_pass.gamma;
 			layout = vk.pipeline_layout_post_process;
 			samples = VK_SAMPLE_COUNT_1_BIT;
+			pipeline_name = "gamma-correction pipeline";
 			blend = qfalse;
 			break;
 	}
@@ -4200,6 +4237,8 @@ void vk_create_post_process_pipeline( int program_index )
 	create_info.basePipelineIndex = -1;
 
 	VK_CHECK( qvkCreateGraphicsPipelines( vk.device, VK_NULL_HANDLE, 1, &create_info, NULL, pipeline ) );
+
+	SET_OBJECT_NAME( *pipeline, pipeline_name, VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_EXT );
 }
 
 
@@ -4367,6 +4406,8 @@ void vk_create_blur_pipeline( uint32_t index, uint32_t width, uint32_t height, q
 	create_info.basePipelineIndex = -1;
 
 	VK_CHECK( qvkCreateGraphicsPipelines( vk.device, VK_NULL_HANDLE, 1, &create_info, NULL, pipeline ) );
+
+	SET_OBJECT_NAME( *pipeline, va( "%s blur pipeline %i", horizontal_pass ? "horizontal" : "vertical", index/2 + 1 ), VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_EXT );
 }
 
 
@@ -5560,7 +5601,7 @@ void vk_begin_post_bloom_render_pass( void )
 
 void vk_begin_bloom_extract_render_pass( void )
 {
-	VkFramebuffer frameBuffer = vk.framebuffers.bloom_extract[ vk.swapchain_image_index ];
+	VkFramebuffer frameBuffer = vk.framebuffers.bloom_extract;
 
 	//vk.renderPassIndex = RENDER_PASS_BLOOM_EXTRACT; // doesn't matter, we will use dedicated pipelines
 
@@ -5594,7 +5635,7 @@ void vk_begin_blur_render_pass( uint32_t index )
 
 void vk_begin_screenmap_render_pass( void )
 {
-	VkFramebuffer frameBuffer = vk.framebuffers.screenmap[ vk.swapchain_image_index ];
+	VkFramebuffer frameBuffer = vk.framebuffers.screenmap;
 
 	record_image_layout_transition( vk.cmd->command_buffer, vk.color_image3, VK_IMAGE_ASPECT_COLOR_BIT,
 		0, VK_IMAGE_LAYOUT_UNDEFINED, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
