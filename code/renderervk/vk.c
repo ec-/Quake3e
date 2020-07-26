@@ -6074,9 +6074,10 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 
 			case 4: {
 				for ( n = 0; n < width; n++ ) {
-					buffer_ptr[n*3+0] = data[n*4+0];
-					buffer_ptr[n*3+1] = data[n*4+1];
-					buffer_ptr[n*3+2] = data[n*4+2];
+					Com_Memcpy( &buffer_ptr[n*3], &data[n*4], 3 );
+					//buffer_ptr[n*3+0] = data[n*4+0];
+					//buffer_ptr[n*3+1] = data[n*4+1];
+					//buffer_ptr[n*3+2] = data[n*4+2];
 				}
 			} break;
 

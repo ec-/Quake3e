@@ -1304,6 +1304,9 @@ static void GfxInfo( void )
 	if ( vk.color_format != vk.surface_format.format ) {
 		ri.Printf( PRINT_ALL, " color: %s\n", vk_get_format_name( vk.color_format ) );
 	}
+	if ( vk.capture_format != vk.surface_format.format || vk.capture_format != vk.color_format ) {
+		ri.Printf( PRINT_ALL, " capture: %s\n", vk_get_format_name( vk.capture_format ) );
+	}
 	ri.Printf( PRINT_ALL, " depth: %s\n", vk_get_format_name( vk.depth_format ) );
 #endif
 	if ( glConfig.isFullscreen )
