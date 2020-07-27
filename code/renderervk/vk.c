@@ -100,6 +100,7 @@ PFN_vkGetBufferMemoryRequirements				qvkGetBufferMemoryRequirements;
 PFN_vkGetDeviceQueue							qvkGetDeviceQueue;
 PFN_vkGetImageMemoryRequirements				qvkGetImageMemoryRequirements;
 PFN_vkGetImageSubresourceLayout					qvkGetImageSubresourceLayout;
+PFN_vkInvalidateMappedMemoryRanges				qvkInvalidateMappedMemoryRanges;
 PFN_vkMapMemory									qvkMapMemory;
 PFN_vkQueueSubmit								qvkQueueSubmit;
 PFN_vkQueueWaitIdle								qvkQueueWaitIdle;
@@ -125,19 +126,35 @@ PFN_vkDebugMarkerSetObjectNameEXT				qvkDebugMarkerSetObjectNameEXT;
 // forward declaration
 VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex );
 
-static uint32_t find_memory_type(VkPhysicalDevice physical_device, uint32_t memory_type_bits, VkMemoryPropertyFlags properties) {
+static uint32_t find_memory_type( VkPhysicalDevice physical_device, uint32_t memory_type_bits, VkMemoryPropertyFlags properties ) {
 	VkPhysicalDeviceMemoryProperties memory_properties;
 	uint32_t i;
 
-	qvkGetPhysicalDeviceMemoryProperties( physical_device, &memory_properties );
+	qvkGetPhysicalDeviceMemoryProperties( vk.physical_device, &memory_properties );
 
-	for (i = 0; i < memory_properties.memoryTypeCount; i++) {
+	for ( i = 0; i < memory_properties.memoryTypeCount; i++ ) {
 		if ((memory_type_bits & (1 << i)) != 0 &&
 			(memory_properties.memoryTypes[i].propertyFlags & properties) == properties) {
 			return i;
 		}
 	}
-	ri.Error(ERR_FATAL, "Vulkan: failed to find matching memory type with requested properties");
+	ri.Error( ERR_FATAL, "Vulkan: failed to find matching memory type with requested properties" );
+	return ~0U;
+}
+
+
+static uint32_t find_memory_type2( uint32_t memory_type_bits, VkMemoryPropertyFlags properties, VkMemoryPropertyFlags *outprops ) {
+	VkPhysicalDeviceMemoryProperties memory_properties;
+	uint32_t i;
+
+	qvkGetPhysicalDeviceMemoryProperties( vk.physical_device, &memory_properties );
+
+	for ( i = 0; i < memory_properties.memoryTypeCount; i++ ) {
+		if ((memory_type_bits & (1 << i)) != 0 && (memory_properties.memoryTypes[i].propertyFlags & properties) == properties) {
+			*outprops = memory_properties.memoryTypes[i].propertyFlags;
+			return i;
+		}
+	}
 	return ~0U;
 }
 
@@ -1381,6 +1398,7 @@ static void init_vulkan_library( void )
 	INIT_DEVICE_FUNCTION(vkGetDeviceQueue)
 	INIT_DEVICE_FUNCTION(vkGetImageMemoryRequirements)
 	INIT_DEVICE_FUNCTION(vkGetImageSubresourceLayout)
+	INIT_DEVICE_FUNCTION(vkInvalidateMappedMemoryRanges)
 	INIT_DEVICE_FUNCTION(vkMapMemory)
 	INIT_DEVICE_FUNCTION(vkQueueSubmit)
 	INIT_DEVICE_FUNCTION(vkQueueWaitIdle)
@@ -1503,6 +1521,7 @@ static void deinit_vulkan_library( void )
 	qvkGetDeviceQueue							= NULL;
 	qvkGetImageMemoryRequirements				= NULL;
 	qvkGetImageSubresourceLayout				= NULL;
+	qvkInvalidateMappedMemoryRanges				= NULL;
 	qvkMapMemory								= NULL;
 	qvkQueueSubmit								= NULL;
 	qvkQueueWaitIdle							= NULL;
@@ -5620,7 +5639,7 @@ void vk_begin_blur_render_pass( uint32_t index )
 {
 	VkFramebuffer frameBuffer = vk.framebuffers.blur[ index ];
 
-	//vk.renderPassIndex = RENDER_PASS_BLOOM_EXTRACT; // doesn't matter, we will use dedicated pipeliens
+	//vk.renderPassIndex = RENDER_PASS_BLOOM_EXTRACT; // doesn't matter, we will use dedicated pipelines
 
 	vk.renderWidth = glConfig.vidWidth / (2<<(index/2));
 	vk.renderHeight = glConfig.vidHeight / (2<<(index/2));
@@ -5930,6 +5949,8 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 	VkCommandBuffer command_buffer;
 	VkDeviceMemory memory;
 	VkMemoryRequirements memory_requirements;
+	VkMemoryPropertyFlags memory_reqs;
+	VkMemoryPropertyFlags memory_flags;
 	VkMemoryAllocateInfo alloc_info;
 	VkImageSubresource subresource;
 	VkSubresourceLayout layout;
@@ -5942,6 +5963,7 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 	byte *data;
 	uint32_t pixel_width;
 	uint32_t i, n;
+	qboolean invalidate_ptr;
 
 	VK_CHECK( qvkWaitForFences( vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e12 ) );
 
@@ -5983,7 +6005,30 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 	alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	alloc_info.pNext = NULL;
 	alloc_info.allocationSize = memory_requirements.size;
-	alloc_info.memoryTypeIndex = find_memory_type(vk.physical_device, memory_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	// host_cached bit is desirable for fast reads
+	memory_reqs = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+	alloc_info.memoryTypeIndex = find_memory_type2( memory_requirements.memoryTypeBits, memory_reqs, &memory_flags );
+	if ( alloc_info.memoryTypeIndex == ~0 ) {
+		// try less explicit flags, without host_coherent
+		memory_reqs = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+		alloc_info.memoryTypeIndex = find_memory_type2( memory_requirements.memoryTypeBits, memory_reqs, &memory_flags );
+		if ( alloc_info.memoryTypeIndex == ~0U ) {
+			// slowest case
+			memory_reqs = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+			alloc_info.memoryTypeIndex = find_memory_type2( memory_requirements.memoryTypeBits, memory_reqs, &memory_flags );
+			if ( alloc_info.memoryTypeIndex == ~0U ) {
+				ri.Error( ERR_FATAL, "%s(): failed to find matching memory type for image capture", __func__ );
+			}
+		}
+	}
+
+	if ( memory_flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT ) {
+		invalidate_ptr = qfalse;
+	} else {
+		 // according to specification - must be performed if host_coherent is not set
+		invalidate_ptr = qtrue;
+	}
 
 	VK_CHECK(qvkAllocateMemory(vk.device, &alloc_info, NULL, &memory));
 	VK_CHECK(qvkBindImageMemory(vk.device, dstImage, memory, 0));
@@ -6052,6 +6097,18 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 	qvkGetImageSubresourceLayout( vk.device, dstImage, &subresource, &layout );
 
 	VK_CHECK( qvkMapMemory( vk.device, memory, 0, VK_WHOLE_SIZE, 0, (void**)&data ) );
+
+	if ( invalidate_ptr )
+	{
+		VkMappedMemoryRange range;
+		range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range.pNext = NULL;
+		range.memory = memory;
+		range.size = VK_WHOLE_SIZE;
+		range.offset = 0;
+		qvkInvalidateMappedMemoryRanges( vk.device, 1, &range );
+	}
+
 	data += layout.offset;
 
 	switch ( vk.capture_format ) {
