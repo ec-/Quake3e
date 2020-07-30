@@ -889,7 +889,7 @@ static void create_instance( void )
 	VkInstanceCreateInfo desc;
 	VkExtensionProperties *extension_properties;
 	const char **extension_names, *ext;
-	uint32_t i, count, extension_count;
+	uint32_t i, n, count, extension_count;
 
 	count = 0;
 	extension_count = 0;
@@ -901,9 +901,18 @@ static void create_instance( void )
 	VK_CHECK( qvkEnumerateInstanceExtensionProperties( NULL, &count, extension_properties ) );
 	for ( i = 0; i < count; i++ ) {
 		ext = extension_properties[i].extensionName;
-		if ( !used_instance_extension( ext ) )
+		if ( !used_instance_extension( ext ) ) {
 			continue;
-		extension_names[extension_count++] = ext;
+		}
+		for ( n = 0; n < extension_count; n++ ) {
+			if ( Q_stricmp( ext, extension_names[ n ] ) == 0 ) {
+				break;
+			}
+		}
+		if ( n != extension_count ) {
+			continue; // skip duplicate
+		}
+		extension_names[ extension_count++ ] = ext;
 	}
 
 	// create instance
