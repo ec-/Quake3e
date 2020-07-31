@@ -1423,19 +1423,20 @@ void R_DeleteTextures( void ) {
 		qglDeleteTextures( 1, &img->texnum );
 	}
 
+	if ( qglActiveTextureARB ) {
+		for ( i = glConfig.numTextureUnits - 1; i >= 0; i-- ) {
+			qglActiveTextureARB( GL_TEXTURE0_ARB + i );
+			qglBindTexture( GL_TEXTURE_2D, 0 );
+		}
+	} else {
+		qglBindTexture( GL_TEXTURE_2D, 0 );
+	}
+
 	Com_Memset( tr.images, 0, sizeof( tr.images ) );
 	Com_Memset( tr.scratchImage, 0, sizeof( tr.scratchImage ) );
 	tr.numImages = 0;
 
 	Com_Memset( glState.currenttextures, 0, sizeof( glState.currenttextures ) );
-	if ( qglActiveTextureARB ) {
-		GL_SelectTexture( 1 );
-		qglBindTexture( GL_TEXTURE_2D, 0 );
-		GL_SelectTexture( 0 );
-		qglBindTexture( GL_TEXTURE_2D, 0 );
-	} else {
-		qglBindTexture( GL_TEXTURE_2D, 0 );
-	}
 }
 
 
