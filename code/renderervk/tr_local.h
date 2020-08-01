@@ -35,6 +35,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define MAX_LITSURFS		(MAX_DRAWSURFS)
 #define	MAX_FLARES			256
 
+#define USE_FLARES
+
+#ifdef __APPLE__
+#ifdef USE_VULKAN
+#undef USE_FLARES // "[mvk-error] VK_ERROR_FORMAT_NOT_SUPPORTED: VkPolygonMode value VK_POLYGON_MODE_POINT is not supported for render pipelines."
+#endif
+#endif
+
 //#define USE_TESS_NEEDS_NORMAL
 //#define USE_TESS_NEEDS_ST2
 

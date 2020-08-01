@@ -444,8 +444,9 @@ typedef struct {
 	uint32_t images_debug_pipeline;
 	uint32_t surface_beam_pipeline;
 	uint32_t surface_axis_pipeline;
+#ifdef USE_FLARES
 	uint32_t dot_pipeline;
-
+#endif
 	VkPipeline gamma_pipeline;
 	VkPipeline bloom_extract_pipeline;
 	VkPipeline blur_pipeline[VK_NUM_BLOOM_PASSES*2]; // horizontal & vertical pairs
