@@ -102,13 +102,22 @@ Copy resulting binaries from created `build` directory or use command:
 
 `make install DESTDIR=<path_to_game_files>`
 
-Several make options available for linux/mingw builds:
+### macos
+
+* install official SDL2 framework to /Library/Frameworks
+* install Vulkan SDK to use MoltenVK library
+
+Build with: `make`
+
+Copy resulting binaries from created `build` directory
+
+Several make options available for linux/mingw/macos builds:
 
 `BUILD_CLIENT=1` - build unified client/server executable, enabled by default
 
 `BUILD_SERVER=1` - build dedicated server executable, enabled by default
 
-`USE_SDL=0`- use SDL2 backend for video, audio, input subsystems, disabled by default
+`USE_SDL=0`- use SDL2 backend for video, audio, input subsystems, disabled by default, enforced for macos
 
 `USE_VULKAN=0` - link client with vulkan renderer instead of OpenGL, disabled by default
 
