@@ -1945,6 +1945,8 @@ void GLimp_EndFrame( void )
 /* MOUSE                                                                     */
 /*****************************************************************************/
 
+void IN_Restart_f( void );
+
 void IN_Init( void )
 {
 	Com_DPrintf( "\n------- Input Initialization -------\n" );
@@ -1984,6 +1986,7 @@ void IN_Init( void )
 #endif
 
 	Cmd_AddCommand( "minimize", IN_Minimize );
+	Cmd_AddCommand( "in_restart", IN_Restart_f );
 
 	Com_DPrintf( "------------------------------------\n" );
 }
@@ -1994,6 +1997,21 @@ void IN_Shutdown( void )
 	mouse_avail = qfalse;
 
 	Cmd_RemoveCommand( "minimize" );
+	Cmd_RemoveCommand( "in_restart" );
+}
+
+
+/*
+=================
+IM_Restart
+
+Restart the input subsystem
+=================
+*/
+void IN_Restart_f( void )
+{
+	IN_Shutdown();
+	IN_Init();
 }
 
 

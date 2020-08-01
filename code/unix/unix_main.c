@@ -132,22 +132,6 @@ void Sys_BeginProfiling( void )
 }
 
 
-/*
-=================
-Sys_In_Restart_f
-
-Restart the input subsystem
-=================
-*/
-#ifndef DEDICATED
-void Sys_In_Restart_f( void )
-{
-	IN_Shutdown();
-	IN_Init();
-}
-#endif
-
-
 // =============================================================
 // tty console routines
 // NOTE: if the user is editing a line when something gets printed to the early console then it won't look good
@@ -317,13 +301,7 @@ void Sys_Quit( void )
 
 void Sys_Init( void )
 {
-
-#ifndef DEDICATED
-	Cmd_AddCommand( "in_restart", Sys_In_Restart_f );
-#endif
-
 	Cvar_Set( "arch", OS_STRING " " ARCH_STRING );
-
 	//IN_Init();   // rcg08312005 moved into glimp.
 }
 
