@@ -42,6 +42,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 #endif
 
+#if defined (_WIN32) || defined(__linux__)
+#define USE_AFFINITY_MASK
+#endif
+
 // stringify macro
 #define XSTRING(x)	STRING(x)
 #define STRING(x)	#x
@@ -994,7 +998,9 @@ extern	cvar_t	*com_yieldCPU;
 #endif
 
 extern	cvar_t	*vm_rtChecks;
+#ifdef USE_AFFINITY_MASK
 extern	cvar_t	*com_affinityMask;
+#endif
 
 // com_speeds times
 extern	int		time_game;
@@ -1235,7 +1241,9 @@ void	Sys_Print( const char *msg );
 // dedicated console status, win32-only at the moment
 void	QDECL Sys_SetStatus( const char *format, ...) __attribute__ ((format (printf, 1, 2)));
 
+#ifdef USE_AFFINITY_MASK
 void	Sys_SetAffinityMask( int mask );
+#endif
 
 // Sys_Milliseconds should only be used for profiling purposes,
 // any game related timing information should come from event timestamps

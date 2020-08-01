@@ -211,7 +211,8 @@ const char *Sys_SteamPath( void )
 Sys_SetAffinityMask
 ================
 */
-void Sys_SetAffinityMask( int mask ) 
+#ifdef USE_AFFINITY_MASK
+void Sys_SetAffinityMask( int mask )
 {
 	static DWORD_PTR dwOldProcessMask;
 	static DWORD_PTR dwSystemMask;
@@ -238,3 +239,4 @@ void Sys_SetAffinityMask( int mask )
 		Com_Printf( S_COLOR_YELLOW "error setting CPU affinity mask %i\n", mask );
 	}
 }
+#endif // USE_AFFINITY_MASK
