@@ -53,6 +53,10 @@ endif
 #############################################################################
 -include Makefile.local
 
+ifeq ($(COMPILE_PLATFORM),darwin)
+  USE_SDL=1
+endif
+
 ifeq ($(COMPILE_PLATFORM),cygwin)
   PLATFORM=mingw32
 endif
@@ -372,6 +376,31 @@ ifdef MINGW
 
 else # !MINGW
 
+ifeq ($(COMPILE_PLATFORM),darwin)
+
+#############################################################################
+# SETUP AND BUILD -- MACOS
+#############################################################################
+
+  BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
+
+  BASE_CFLAGS += -I/Library/Frameworks/SDL2.framework/Headers
+
+  OPTIMIZE = -O2 -fvisibility=hidden
+
+  SHLIBEXT = dylib
+  SHLIBCFLAGS = -fPIC -fvisibility=hidden
+  SHLIBLDFLAGS = -dynamiclib $(LDFLAGS)
+
+  LDFLAGS =
+
+  CLIENT_LDFLAGS =  -F/Library/Frameworks -framework SDL2
+
+  DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -g -O0
+  RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
+
+else
+
 #############################################################################
 # SETUP AND BUILD -- *NIX PLATFORMS
 #############################################################################
@@ -431,6 +460,8 @@ else # !MINGW
   RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
 
 endif # *NIX platforms
+
+endif # !MINGW
 
 
 TARGET_CLIENT = $(CNAME)$(ARCHEXT)$(BINEXT)

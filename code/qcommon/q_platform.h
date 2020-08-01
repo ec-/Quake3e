@@ -149,6 +149,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #endif // __FreeBSD__ || __NetBSD__ || __OpenBSD__
 
+// ================================ APPLE ===================================
+
+#ifdef __APPLE__
+
+#define OS_STRING "macos"
+#define ID_INLINE inline
+#undef DLL_EXT
+#define DLL_EXT ".dylib"
+
+#endif // __APPLE__
+
 // ================================ Q3VM ===================================
 
 #ifdef Q3_VM
