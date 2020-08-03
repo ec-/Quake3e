@@ -42,7 +42,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <dlfcn.h>
 
 #ifdef __linux__
-#ifdef _GNU_SOURCE
+#ifdef __GLIBC__
   #include <fpu_control.h> // bk001213 - force dumps on divide by zero
 #endif
 #endif
@@ -756,7 +756,7 @@ void Sys_ConfigureFPU( void )  // bk001213 - divide by zero
 {
 #ifdef __linux__
 #ifdef __i386
-#ifdef _GNU_SOURCE
+#ifdef __GLIBC__
 #ifndef NDEBUG
 	// bk0101022 - enable FPE's in debug mode
 	static int fpu_word = _FPU_DEFAULT & ~(_FPU_MASK_ZM | _FPU_MASK_IM);
@@ -775,7 +775,7 @@ void Sys_ConfigureFPU( void )  // bk001213 - divide by zero
 	static int fpu_word = _FPU_DEFAULT;
 	_FPU_SETCW( fpu_word );
 #endif // NDEBUG
-#endif // _GNU_SOURCE
+#endif // __GLIBC__
 #endif // __i386 
 #endif // __linux
 }
