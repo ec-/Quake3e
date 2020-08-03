@@ -97,8 +97,8 @@ typedef struct {
 	qboolean			looping, holdAtEnd, dirty, alterGameState, silent, shader;
 	fileHandle_t		iFile;
 	e_status			status;
-	unsigned int		startTime;
-	unsigned int		lastTime;
+	int					startTime;
+	int					lastTime;
 	long				tfps;
 	long				RoQPlayed;
 	long				ROQSize;
@@ -1354,8 +1354,8 @@ Fetch and decompress the pending frame
 */
 e_status CIN_RunCinematic( int handle )
 {
-	unsigned int start = 0;
-	int     thisTime = 0;
+	int start = 0;
+	int thisTime = 0;
 
 	if (handle < 0 || handle>= MAX_VIDEO_HANDLES || cinTable[handle].status == FMV_EOF) return FMV_EOF;
 

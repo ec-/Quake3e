@@ -308,8 +308,8 @@ void Sys_Init( void )
 
 void Sys_Error( const char *format, ... )
 {
-	va_list     argptr;
-	char        text[1024];
+	va_list argptr;
+	char text[1024];
 
 	// change stdin to non blocking
 	// NOTE TTimo not sure how well that goes with tty console mode
@@ -807,28 +807,35 @@ builds because there are situations where you are likely to want
 to symlink to binaries and /not/ have the links resolved.
 =================
 */
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 const char *Sys_BinName( const char *arg0 )
 {
-	static char   dst[ PATH_MAX ];
+	static char dst[ PATH_MAX ];
 
 #ifdef NDEBUG
 
-#ifdef __linux__
+#if defined (__linux__)
 	int n = readlink( "/proc/self/exe", dst, PATH_MAX - 1 );
 
 	if ( n >= 0 && n < PATH_MAX )
 		dst[ n ] = '\0';
 	else
 		Q_strncpyz( dst, arg0, PATH_MAX );
+#elif defined (__APPLE__)
+	uint32_t bufsize = sizeof( dst );
+
+	_NSGetExecutablePath( dst, &bufsize );
 #else
+
 #warning Sys_BinName not implemented
 	Q_strncpyz( dst, arg0, PATH_MAX );
 #endif
 
-#else
+#else // DEBUG
 	Q_strncpyz( dst, arg0, PATH_MAX );
 #endif
-
 	return dst;
 }
 
