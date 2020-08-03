@@ -368,7 +368,7 @@ typedef	int	fixed16_t;
 #endif
 
 #ifdef __linux__
-#ifdef _GNU_SOURCE
+#ifdef __GLIBC__
 #if idx64
 // force version for better runtime compatibility
 __asm__(".symver logf,logf@GLIBC_2.2.5");
