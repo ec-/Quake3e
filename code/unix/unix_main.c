@@ -826,7 +826,10 @@ const char *Sys_BinName( const char *arg0 )
 #elif defined (__APPLE__)
 	uint32_t bufsize = sizeof( dst );
 
-	_NSGetExecutablePath( dst, &bufsize );
+	if ( _NSGetExecutablePath( dst, &bufsize ) == -1 )
+	{
+		Q_strncpyz( dst, arg0, PATH_MAX );
+	}
 #else
 
 #warning Sys_BinName not implemented
