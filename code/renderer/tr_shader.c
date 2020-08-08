@@ -2687,16 +2687,14 @@ static shader_t *FinishShader( void ) {
 	}
 
 	// whiteimage + "filter" texture == texture
-#if 0 // do not works well in vertexlighting mode, disabled for now
 	if ( stage > 1 && stages[0].bundle[0].image[0] == tr.whiteImage && stages[0].bundle[0].numImageAnimations <= 1 && stages[0].rgbGen == CGEN_IDENTITY && stages[0].alphaGen == AGEN_SKIP ) {
 		if ( stages[1].stateBits == (GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO) ) {
-			stages[1].stateBits = 0;
+			stages[1].stateBits = stages[0].stateBits & (GLS_DEPTHMASK_TRUE | GLS_DEPTHTEST_DISABLE | GLS_DEPTHFUNC_EQUAL);
 			memmove( &stages[0], &stages[1], sizeof(stages[0]) * (stage-1) );
 			stages[stage-1].active = qfalse;
 			stage--;
 		}
 	}
-#endif
 
 	//
 	// if we are in r_vertexLight mode, never use a lightmap texture
