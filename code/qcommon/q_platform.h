@@ -104,6 +104,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define idx64 1
 #endif // __x86_64__ || __amd64__
 
+#if defined (__arm__)
+#define ARCH_STRING "arm"
+#define Q3_LITTLE_ENDIAN
+#endif // __arm__
+
 #if defined (__e2k__)
 #define ARCH_STRING "e2k"
 #define Q3_LITTLE_ENDIAN
