@@ -3307,6 +3307,8 @@ void vk_initialize( void )
 		vk.offscreenRender = qfalse;
 #endif
 		vendor_name = "NVIDIA";
+	} else if ( props.vendorID == 0x14E4 ) {
+		vendor_name = "Broadcom Inc.";
 	} else if ( props.vendorID == 0x1AE0 ) {
 		vendor_name = "Google Inc.";
 	} else if ( props.vendorID == 0x8086 ) {
