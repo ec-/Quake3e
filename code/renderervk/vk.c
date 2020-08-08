@@ -2104,12 +2104,12 @@ static void vk_create_shader_modules( void )
 	extern const int fog_vert_spv_size;
 	extern const unsigned char fog_frag_spv[];
 	extern const int fog_frag_spv_size;
-#ifdef USE_FLARES
+
 	extern const unsigned char dot_vert_spv[];
 	extern const int dot_vert_spv_size;
 	extern const unsigned char dot_frag_spv[];
 	extern const int dot_frag_spv_size;
-#endif
+
 	extern const unsigned char light_vert_spv[];
 	extern const int light_vert_spv_size;
 	extern const unsigned char light_fog_vert_spv[];
@@ -2192,13 +2192,13 @@ static void vk_create_shader_modules( void )
 
 	SET_OBJECT_NAME( vk.modules.fog_vs, "fog-only vertex module", VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT );
 	SET_OBJECT_NAME( vk.modules.fog_fs, "fog-only fragment module", VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT );
-#ifdef USE_FLARES
+
 	vk.modules.dot_vs = create_shader_module(dot_vert_spv, dot_vert_spv_size);
 	vk.modules.dot_fs = create_shader_module(dot_frag_spv, dot_frag_spv_size);
 
 	SET_OBJECT_NAME( vk.modules.dot_vs, "dot vertex module", VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT );
 	SET_OBJECT_NAME( vk.modules.dot_fs, "dot fragment module", VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT );
-#endif
+
 	vk.modules.light.vs[0] = create_shader_module(light_vert_spv, light_vert_spv_size);
 	vk.modules.light.vs[1] = create_shader_module(light_fog_vert_spv, light_fog_vert_spv_size);
 
@@ -2387,7 +2387,6 @@ static void vk_create_persistent_pipelines( void )
 			vk.surface_axis_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
 		}
 
-#ifdef USE_FLARES
 		{
 			Vk_Pipeline_Def def;
 
@@ -2398,7 +2397,6 @@ static void vk_create_persistent_pipelines( void )
 			def.primitives = POINT_LIST;
 			vk.dot_pipeline = vk_find_pipeline_ext( 0, &def, qtrue );
 		}
-#endif
 
 		// debug pipelines
 		state_bits = GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE;
@@ -3745,10 +3743,10 @@ void vk_shutdown( void )
 
 	qvkDestroyShaderModule(vk.device, vk.modules.fog_vs, NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.fog_fs, NULL);
-#ifdef USE_FLARES
+
 	qvkDestroyShaderModule(vk.device, vk.modules.dot_vs, NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.dot_fs, NULL);
-#endif
+
 	qvkDestroyShaderModule(vk.device, vk.modules.light.vs[0], NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.light.vs[1], NULL);
 
@@ -4532,12 +4530,10 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 			vs_module = &vk.modules.fog_vs;
 			fs_module = &vk.modules.fog_fs;
 			break;
-#ifdef USE_FLARES
 		case TYPE_DOT:
 			vs_module = &vk.modules.dot_vs;
 			fs_module = &vk.modules.dot_fs;
 			break;
-#endif
 		default:
 			ri.Error(ERR_DROP, "create_pipeline: unknown shader type %i\n", def->shader_type);
 			return 0;

@@ -1364,7 +1364,6 @@ static void RB_SurfaceBad( surfaceType_t *surfType ) {
 
 
 static void RB_SurfaceFlare( srfFlare_t *surf ) {
-#ifdef USE_FLARES
 	if ( r_flares->integer ) {
 #ifdef USE_VBO
 		VBO_Flush();
@@ -1372,7 +1371,6 @@ static void RB_SurfaceFlare( srfFlare_t *surf ) {
 #endif
 		RB_AddFlare( surf, tess.fogNum, surf->origin, surf->color, surf->normal );
 	}
-#endif
 }
 
 

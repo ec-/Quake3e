@@ -45,13 +45,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "tr_common.h"
 #include "iqm.h"
 
-#define USE_FLARES
-
-#ifdef __APPLE__
-#ifdef USE_VULKAN
-#undef USE_FLARES // "[mvk-error] VK_ERROR_FORMAT_NOT_SUPPORTED: VkPolygonMode value VK_POLYGON_MODE_POINT is not supported for render pipelines."
-#endif
-#endif
 
 #ifdef USE_VULKAN
 #include "vk.h"

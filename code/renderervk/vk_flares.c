@@ -23,7 +23,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "tr_local.h"
 
-#ifdef USE_FLARES
 /*
 =============================================================================
 
@@ -600,5 +599,3 @@ void RB_RenderFlares( void ) {
 	//Com_Memcpy( vk_world.modelview_transform, modelMatrix_original, sizeof( modelMatrix_original ) );
 	//vk_update_mvp( NULL );
 }
-
-#endif // USE_FLARES
