@@ -213,6 +213,13 @@ else
 endif
 endif
 
+ifeq ($(ARCH),arm)
+# check non-stripped CPU architecture string
+ifeq ($(shell uname -m),armv7l)
+  HAVE_VM_COMPILED = true
+endif
+endif
+
 BASE_CFLAGS =
 
 ifeq ($(USE_SYSTEM_JPEG),1)
@@ -904,6 +911,9 @@ ifeq ($(HAVE_VM_COMPILED),true)
   ifeq ($(ARCH),x86_64)
     Q3OBJ += $(B)/client/vm_x86.o
   endif
+  ifeq ($(ARCH),arm)
+    Q3OBJ += $(B)/client/vm_armv7l.o
+  endif
 endif
 
 ifeq ($(USE_CURL),1)
@@ -1075,6 +1085,9 @@ ifeq ($(HAVE_VM_COMPILED),true)
   endif
   ifeq ($(ARCH),x86_64)
     Q3DOBJ += $(B)/ded/vm_x86.o
+  endif
+  ifeq ($(ARCH),arm)
+    Q3DOBJ += $(B)/ded/vm_armv7l.o
   endif
 endif
 

@@ -128,7 +128,7 @@ typedef enum {
 } opcode_t;
 
 typedef struct {
-	int		value;	// 32
+	int	value;	// 32
 	byte	op;		// 8
 	byte	opStack;	// 8
 	unsigned jused:1;
@@ -228,10 +228,10 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf );
 
 typedef struct opcode_info_s 
 {
-	int   size; 
-	int	  stack;
-	int   nargs;
-	int   flags;
+	int	size;
+	int	stack;
+	int	nargs;
+	int	flags;
 } opcode_info_t ;
 
 extern opcode_info_t ops[ OP_MAX ];

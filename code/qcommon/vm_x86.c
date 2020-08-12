@@ -127,14 +127,14 @@ static void VM_Destroy_Compiled( vm_t *vm );
 
 #define REWIND(N) { compiledOfs -= (N); instructionOffsets[ ip-1 ] = compiledOfs; };
 
-typedef enum 
+typedef enum
 {
 	REG_EAX = 0,
 	REG_ECX
 } reg_t;
 
 
-typedef enum 
+typedef enum
 {
 	LAST_COMMAND_NONE = 0,
 	LAST_COMMAND_MOV_EDI_EAX,
@@ -149,7 +149,7 @@ typedef enum
 	LAST_COMMAND_STORE_FLOAT_EDI_SSE
 } ELastCommand;
 
-typedef enum 
+typedef enum
 {
 	FUNC_ENTR = 0,
 	FUNC_CALL,
@@ -243,7 +243,7 @@ static void VM_FreeBuffers( void )
 {
 	// should be freed in reversed allocation order
 	Z_Free( instructionOffsets );
-	Z_Free( inst ); 
+	Z_Free( inst );
 }
 
 
@@ -268,7 +268,7 @@ static const ID_INLINE qboolean HasSSEFP( void )
 
 static void Emit1( int v )
 {
-	if ( code ) 
+	if ( code )
 	{
 		code[ compiledOfs ] = v;
 	}
@@ -312,7 +312,7 @@ static void EmitPtr( const void *ptr )
 }
 
 
-static int Hex( int c ) 
+static int Hex( int c )
 {
 	if ( c >= '0' && c <= '9' ) {
 		return c - '0';
@@ -1907,12 +1907,12 @@ VM_Compile
 =================
 */
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
-	const char *errMsg;
-	int     instructionCount;
+	const char	*errMsg;
+	int		instructionCount;
 	int		proc_base;
 	int		proc_len;
 	int		i, n, v;
-	qboolean wantres;
+	qboolean	wantres;
 
 	inst = (instruction_t*)Z_Malloc( (header->instructionCount + 8 ) * sizeof( instruction_t ) );
 	instructionOffsets = (int*)Z_Malloc( header->instructionCount * sizeof( int ) );
@@ -1926,7 +1926,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 		Com_Printf( "VM_CompileX86 error: %s\n", errMsg );
 		return qfalse;
 	}
-	
+
 	VM_ReplaceInstructions( vm, inst );
 
 	VM_FindMOps( inst, vm->instructionCount );
@@ -1938,7 +1938,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 
 	instructionCount = header->instructionCount;
 
-	for( pass = 0; pass < NUM_PASSES; pass++ ) 
+	for( pass = 0; pass < NUM_PASSES; pass++ )
 	{
 __compile:
 	pop1 = OP_UNDEF;
@@ -2068,14 +2068,14 @@ __compile:
 
 	EmitString( "61" );				// popad
 #endif
-	
+
 	EmitString( "C3" );				// ret
-	
+
 	EmitAlign( 4 );
 
-	 // main function entry offset
+	// main function entry offset
 	funcOffset[FUNC_ENTR] = compiledOfs;
-	
+
 	while ( ip < instructionCount )
 	{
 		instructionOffsets[ ip ] = compiledOfs;
@@ -2088,7 +2088,7 @@ __compile:
 			LastCommand = LAST_COMMAND_NONE;
 			pop1 = OP_UNDEF;
 		}
-	
+
 		switch ( ci->op ) {
 
 		case OP_UNDEF:
@@ -2168,8 +2168,8 @@ __compile:
 			break;
 
 		case OP_CONST:
-			
-			// we can safely perform optimizations only in case if 
+
+			// we can safely perform optimizations only in case if
 			// we are 100% sure that next instruction is not a jump label
 			if ( !ni->jused && ConstOptimize( vm ) )
 				break;
@@ -2438,7 +2438,7 @@ __compile:
 				EmitFloatJump( vm, ci, ci->op, ci->value );
 			}
 			pop1 = OP_UNDEF;
-			break;			
+			break;
 
 		case OP_NEGI:
 			EmitMovEAXEDI( vm );					// mov eax, dword ptr [edi]
@@ -2928,7 +2928,7 @@ VM_CallCompiled
 This function is called directly by the generated code
 ==============
 */
-int	VM_CallCompiled( vm_t *vm, int nargs, int *args )
+int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 {
 	int		opStack[MAX_OPSTACK_SIZE];
 	unsigned int stackOnEntry;

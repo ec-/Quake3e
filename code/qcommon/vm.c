@@ -1529,8 +1529,8 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 	vm->compiled = qfalse;
 
 #ifdef NO_VM_COMPILED
-	if(interpret >= VMI_COMPILED) {
-		Com_Printf("Architecture doesn't have a bytecode compiler, using interpreter\n");
+	if ( interpret >= VMI_COMPILED ) {
+		Com_Printf( "Architecture doesn't have a bytecode compiler, using interpreter\n" );
 		interpret = VMI_BYTECODE;
 	}
 #else
