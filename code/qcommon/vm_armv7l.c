@@ -52,10 +52,10 @@ static	uint32_t  compiledOfs;
 
 static  instruction_t *inst = NULL;
 static  instruction_t *ci;
-//static  instruction_t *ni;
+static  instruction_t *ni;
 
 static	uint32_t	ip;
-//static	int	pass;
+static	uint32_t	pass;
 //static	int	lastConst;
 //static	opcode_t	pop1;
 //static	ELastCommand	LastCommand;
@@ -96,11 +96,12 @@ static void VM_FreeBuffers( void )
 #define S15     15
 
 #define rOPSTACK	5
-#define rOPSTACKBASE	6
+#define rOPSTACKTOP	6
 #define rCODEBASE	7
 #define rPSTACK		8
 #define rDATABASE	9
 #define rDATAMASK	10
+#define rPROCBASE	FP
 
 #define bit(x) (1<<x)
 
@@ -362,17 +363,28 @@ static unsigned short can_encode(unsigned val)
 #define STRaiw(dst, base, off) (AL | (0b010<<25) | (0b1101<<21) | (0<<20) | base<<16 | dst<<12 | rimm(off))
 #define STRxiw(dst, base, off) (AL | (0b010<<25) | (0b1001<<21) | (0<<20) | base<<16 | dst<<12 | rimm(off))
 
+/* Load / Store Multiple
+   P: 0 - increment after data read, 1 - before data read
+   U: 0 - descending addressing, 1 - ascending
+   W: 0 - do not update base address, 1 - update
+   L: 0 - store, 1 - load
+*/
+#define STMDA(base,regs) ( AL | (0b100 << 25) | 0<<24 /*P*/ | 0<<23 /*U*/ | 0<<22 /*S*/ | 1<<21 /*W*/ | 0<<20 /*L*/ | base<<16 | ((regs)&~(1<<16)) )
+#define STMDB(base,regs) ( AL | (0b100 << 25) | 1<<24 /*P*/ | 0<<23 /*U*/ | 0<<22 /*S*/ | 1<<21 /*W*/ | 0<<20 /*L*/ | base<<16 | ((regs)&~(1<<16)) )
+#define LDMIA(base,regs) ( AL | (0b100 << 25) | 0<<24 /*P*/ | 1<<23 /*U*/ | 0<<22 /*S*/ | 1<<21 /*W*/ | 1<<20 /*L*/ | base<<16 | ((regs)&~(1<<16)) )
+#define LDMIB(base,regs) ( AL | (0b100 << 25) | 1<<24 /*P*/ | 1<<23 /*U*/ | 0<<22 /*S*/ | 1<<21 /*W*/ | 1<<20 /*L*/ | base<<16 | ((regs)&~(1<<16)) )
+
 // load with post-increment
 #define POP1(reg)              (AL | (0b010<<25) | (0b0100<<21) | (1<<20) |   SP<<16 | reg<<12 | reg)
 // store with post-increment
 #define PUSH1(reg)             (AL | (0b010<<25) | (0b1001<<21) | (0<<20) |   SP<<16 | reg<<12 | 4)
 
 // branch to target address (for small jumps)
-#define Bi(i) \
-	(AL | (0b10)<<26 | (1<<25) /*I*/ | (0<<24) /*L*/ | (i))
+#define Bi(imm24) \
+	(AL | (0b10)<<26 | (1<<25) /*I*/ | (0<<24) /*L*/ | (imm24))
 // call subroutine
-#define BLi(i) \
-	(AL | (0b10)<<26 | (1<<25) /*I*/ | (1<<24) /*L*/ | (i))
+#define BLi(imm24) \
+	(AL | (0b10)<<26 | (1<<25) /*I*/ | (1<<24) /*L*/ | (imm24))
 // branch and exchange (register)
 #define BX(reg) \
 	(AL | 0b00010010<<20 | 0b1111<<16 | 0b1111<<12 | 0b1111<<8| 0b0001<<4 | reg)
@@ -382,12 +394,10 @@ static unsigned short can_encode(unsigned val)
 
 #define PUSH(mask)    (AL | (0b100100<<22) | (0b10<<20) | (0b1101<<16) |  mask)
 #define PUSH2(r1, r2) (AL | (0b100100<<22) | (0b10<<20) | (0b1101<<16) |  1<<r1 | 1<<r2)
+
 //#define PUSH1(reg) STRxiw(SP, reg, 4)
 
 #define POP(mask)     (0xe8bd0000|mask)
-
-#define STM(base, regs) \
-	(AL | 0b100<<25 | 0<<24/*P*/| 0<<24/*U*/| 0<<24/*S*/| 0<<24/*W*/ | (base<<16) | (regs&~(1<<16)))
 
 // note: op1 and op2 must not be the same
 #define MUL(op1, op2, op3) \
@@ -497,6 +507,28 @@ err:
 }
 
 
+static qboolean ConstOptimize( vm_t *vm )
+{
+	uint32_t x, t;
+
+	switch ( ni->op ) {
+
+	case OP_JUMP:
+		x = (vm->instructionPointers[ ci->value ] - compiledOfs - 8) >> 2;
+		t = x >> 24;
+		if ( t != 0x3F && t != 0x00 ) {
+			return qfalse; // offset can't be encoded in 24 bits...
+		}
+		emit(Bi(x&0xFFFFFF));
+		ip += 1; // OP_JUMP
+		return qtrue;
+
+	default:
+		return qfalse;
+	}
+}
+
+
 /*
 =================
 VM_BlockCopy
@@ -521,7 +553,6 @@ static void VM_BlockCopy( uint32_t dest, uint32_t src, uint32_t n )
 
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 {
-	int pass;
 	int codeoffsets[2]; // was 1024 but it's only used for OFF_CODE and OFF_IMMEDIATES
 
 	const char *errMsg;
@@ -572,23 +603,24 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 
 	compiledOfs = 0;
 
-	//int (*entry)(vm_t*, unsigned int*, int*);
-	emit(PUSH((((1<<8)-1)<<4)|(1<<14))); // push R4-R11, LR
+	emit(PUSH((((1<<8)-1)<<4)|(1<<LR))); // push R4-R11, LR
 	emit(SUBi(SP, SP, 12)); // align stack!
-	emit(LDRai(rCODEBASE, R0, offsetof(vm_t, codeBase)));
-	emit(LDRai(rDATABASE, R0, offsetof(vm_t, dataBase)));
-	emit(LDRai(rDATAMASK, R0, offsetof(vm_t, dataMask)));
-	emit(LDRai(rPSTACK, R1, 0));
-	emit(MOV(rOPSTACK, R2)); // TODO: reverse opstack to avoid writing to return address
-	emit(MOV(rOPSTACKBASE, rOPSTACK));
 
+	emit_MOVRxi(R2, (unsigned)vm); // constant at compile-time
+	emit(LDRai(rCODEBASE, R2, offsetof(vm_t, codeBase)));
+	emit(LDRai(rDATABASE, R2, offsetof(vm_t, dataBase)));
+	emit(LDRai(rDATAMASK, R2, offsetof(vm_t, dataMask)));
+	//int (*entry)(unsigned int*, int*);
+	emit(LDRai(rPSTACK, R0, 0));
+	emit(MOV(rOPSTACK, R1)); // TODO: reverse opstack to avoid writing to return address
+	//emit(MOV(rOPSTACKBASE, rOPSTACK));
 	emit(BLi(OFFSET(OFF_CODE)));
 
 	// save return value in r0
 	emit(LDRTxi(R0, rOPSTACK, 4));  // r0 = *opstack; rOPSTACK -= 4
 
 	emit(ADDi(SP, SP, 12)); // align stack!
-	emit(POP((((1<<8)-1)<<4)|(1<<15))); // pop R4-R11, LR -> PC
+	emit(POP((((1<<8)-1)<<4)|(1<<PC))); // pop R4-R11, LR -> PC
 
 	/* save some immediates here */
 	emit(BKPT(0));
@@ -608,7 +640,9 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 		uint32_t v;
 		vm->instructionPointers[ ip ] = compiledOfs;
 
-		ci = &inst[ ip ];
+		ci = &inst[ ip + 0 ];
+		ni = &inst[ ip + 1 ];
+
 		ip++;
 		v = ci->value;
 
@@ -626,8 +660,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 				break;
 
 			case OP_ENTER:
-				emit(PUSH1(LR));
-				emit(SUBi(SP, SP, 12)); // align stack
+				emit(PUSH((1<<R12)|(1<<rPSTACK)|(1<<rPROCBASE)|(1<<LR)));
 				if ( can_encode( v ) )
 				{
 					emit(SUBi(rPSTACK, rPSTACK, v)); // pstack -= arg
@@ -637,20 +670,11 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 					emit_MOVR0i(v);
 					emit(SUB(rPSTACK, rPSTACK, R0)); // pstack -= arg
 				}
+				emit(ADD(rPROCBASE, rPSTACK, rDATABASE));
 				break;
 
 			case OP_LEAVE:
-				if ( can_encode( v ) )
-				{
-					emit(ADDi(rPSTACK, rPSTACK, v)); // pstack += arg
-				}
-				else
-				{
-					emit_MOVR0i(v);
-					emit(ADD(rPSTACK, rPSTACK, R0)); // pstack += arg
-				}
-				emit(ADDi(SP, SP, 12));
-				emit(0xe49df004); // pop pc
+				emit(POP((1<<R12)|(1<<rPSTACK)|(1<<rPROCBASE)|(1<<PC)));
 				break;
 
 			case OP_CALL:
@@ -693,11 +717,32 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 				break;
 
 			case OP_CONST:
+				// we can safely perform optimizations only in case if
+				// we are 100% sure that next instruction is not a jump label
+				if ( !ni->jused && ConstOptimize( vm ) )
+					break;
+
 				emit_MOVR0i(v);
 				emit(STRaiw(R0, rOPSTACK, 4));      // opstack+=4; *opstack = r0
 				break;
 
 			case OP_LOCAL:
+				if ( ni->op == OP_LOAD4 ) // merge OP_LOCAL + OP_LOAD4
+				{
+					if ( v < 256 )
+					{
+						emit(LDRai(R0, rPROCBASE, v)); // r0 = [procBase + v]
+					}
+					else
+					{
+						emit_MOVRxi(R1, v);
+						emit(LDRa(R0, rPROCBASE, R1)); // r0 = [procBase+r1]
+					}
+					emit(STRaiw(R0, rOPSTACK, 4));      // opstack+=4; *opstack = r0
+					ip++; // OP_LOAD4
+					break;
+				}
+
 				if ( can_encode( v ) )
 				{
 					emit(ADDi(R0, rPSTACK, v));     // r0 = pstack+arg
@@ -1069,16 +1114,8 @@ int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 	vm->opStackTop = opStack + ARRAY_LEN( opStack ) - 1; // unused atm
 
 	/* call generated code */
-	{
-		//int (*entry)(void *, int, void *, int);
-		int (*entry)( vm_t*, unsigned int*, int* );
-
-		entry = (void *)( vm->codeBase.ptr );
-		//__asm__ volatile("bkpt");
-		vm->opStack[0] = entry( vm, &vm->programStack, opStack );
-	}
-
-	//vm->codeBase.func(); // go into generated code
+	//__asm__ volatile("bkpt");
+	vm->opStack[0] = vm->codeBase.func2( &vm->programStack, opStack );
 
 	//if ( vm->opStack != &opStack[1] ) { // not works atm
 	//	Com_Error( ERR_DROP, "opStack corrupted in compiled code" );

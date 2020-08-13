@@ -422,7 +422,7 @@ static void EmitCommand( ELastCommand command )
 
 static void EmitAddEDI4( vm_t *vm )
 {
-	if ( LastCommand == LAST_COMMAND_NONE ) 
+	if ( LastCommand == LAST_COMMAND_NONE )
 	{
 		EmitRexString( "83 C7 04" );			// add edi,4
 		return;
@@ -511,7 +511,7 @@ static void EmitMovEAXEDI( vm_t *vm )
 }
 
 
-void EmitMovECXEDI( vm_t *vm ) 
+void EmitMovECXEDI( vm_t *vm )
 {
 	opcode_t pop = pop1;
 	pop1 = OP_UNDEF;
@@ -685,7 +685,7 @@ const char *NearJumpStr( int op )
 #endif
 
 
-const char *FarJumpStr( int op, int *n ) 
+const char *FarJumpStr( int op, int *n )
 {
 	switch ( op )
 	{
@@ -707,7 +707,7 @@ const char *FarJumpStr( int op, int *n )
 		case OP_LEU: *n = 2; return "0F 86"; // jbe
 		
 		case OP_GTF:
-		case OP_GTU: *n = 2; return "0F 87"; // ja 
+		case OP_GTU: *n = 2; return "0F 87"; // ja
 		
 		case OP_GEF:
 		case OP_GEU: *n = 2; return "0F 83"; // jae
@@ -718,7 +718,7 @@ const char *FarJumpStr( int op, int *n )
 }
 
 
-void EmitJump( vm_t *vm, instruction_t *i, int op, int addr ) 
+void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 {
 	const char *str;
 	int v, jump_size = 0;
@@ -729,7 +729,7 @@ void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 	if ( i->njump ) {
 		// can happen
 		if ( v < -126 || v > 129 ) {
-			str = FarJumpStr( op, &jump_size );	
+			str = FarJumpStr( op, &jump_size );
 			EmitString( str );
 			Emit4( v - 4 - jump_size ); 
 			i->njump = 0;
@@ -750,7 +750,7 @@ void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 	}
 #endif
 
-	str = FarJumpStr( op, &jump_size );	
+	str = FarJumpStr( op, &jump_size );
 	if ( jump_size == 0 ) {
 		Com_Error( ERR_DROP, "VM_CompileX86 error: %s\n", "bad jump size" );
 	} else {
@@ -760,7 +760,7 @@ void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 }
 
 
-void EmitFloatJump( vm_t *vm, instruction_t *i, int op, int addr ) 
+void EmitFloatJump( vm_t *vm, instruction_t *i, int op, int addr )
 {
 	switch ( op ) {
 		case OP_EQF:
@@ -1231,7 +1231,7 @@ static void EmitFCalcPop( int op )
 CommuteFloatOp
 =================
 */
-static int CommuteFloatOp( int op ) 
+static int CommuteFloatOp( int op )
 {
 	switch ( op ) {
 		case OP_LEF: return OP_GEF;
@@ -1278,7 +1278,7 @@ static qboolean IsCeilTrap( const vm_t *vm, const int trap )
 ConstOptimize
 =================
 */
-static qboolean ConstOptimize( vm_t *vm ) 
+static qboolean ConstOptimize( vm_t *vm )
 {
 	int v;
 	int op1;
@@ -2022,7 +2022,7 @@ __compile:
 
 	EmitString( "8B 35" );			// mov esi, [vm->programStack]
 	EmitPtr( &vm->programStack );
-	
+
 	EmitString( "8B 3D" );			// mov edi, [vm->opStack]
 	EmitPtr( &vm->opStack );
 

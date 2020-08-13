@@ -542,14 +542,14 @@ intptr_t QDECL VM_DllSyscall( intptr_t arg, ... ) {
   intptr_t	args[16];
   va_list	ap;
   int i;
-  
+
   args[0] = arg;
-  
+
   va_start( ap, arg );
   for (i = 1; i < ARRAY_LEN( args ); i++ )
     args[ i ] = va_arg( ap, intptr_t );
   va_end( ap );
-  
+
   return currentVM->systemCall( args );
 #else // original id code
 	return currentVM->systemCall( &arg );
@@ -571,7 +571,7 @@ static void VM_SwapLongs( void *data, int length )
 }
 
 
-static int Load_JTS( vm_t *vm, unsigned int crc32, void *data, int vmPakIndex )  {
+static int Load_JTS( vm_t *vm, unsigned int crc32, void *data, int vmPakIndex ) {
 	char		filename[MAX_QPATH];
 	int			header[2];
 	int			length;
@@ -583,7 +583,7 @@ static int Load_JTS( vm_t *vm, unsigned int crc32, void *data, int vmPakIndex ) 
 		Com_Printf( "Loading jts file %s...\n", filename );
 
 	length = FS_FOpenFileRead( filename, &fh, qtrue );
-	
+
 	if ( fh == FS_INVALID_HANDLE ) {
 		if ( data )
 			Com_Printf( " not found.\n" );
@@ -892,7 +892,7 @@ const char *VM_LoadInstructions( const byte *code_pos, int codeLength, int instr
 	const byte *code_start, *code_end;
 	int i, n, op0, op1, opStack;
 	instruction_t *ci;
-	
+
 	code_start = code_pos; // for printing
 	code_end = code_pos + codeLength;
 
@@ -962,11 +962,11 @@ const char *VM_CheckInstructions( instruction_t *buf,
 	for ( i = 0; i < instructionCount; i++, ci++ ) {
 		opStack += ops[ ci->op ].stack;
 		if ( opStack < 0 ) {
-			sprintf( errBuf, "opStack underflow at %i", i ); 
+			sprintf( errBuf, "opStack underflow at %i", i );
 			return errBuf;
 		}
 		if ( opStack >= PROC_OPSTACK_SIZE * 4 ) {
-			sprintf( errBuf, "opStack overflow at %i", i ); 
+			sprintf( errBuf, "opStack overflow at %i", i );
 			return errBuf;
 		}
 	}
@@ -986,24 +986,24 @@ const char *VM_CheckInstructions( instruction_t *buf,
 
 		// function entry
 		if ( op0 == OP_ENTER ) {
-			// missing block end 
+			// missing block end
 			if ( proc || ( pstack && op1 != OP_LEAVE ) ) {
-				sprintf( errBuf, "missing proc end before %i", i ); 
+				sprintf( errBuf, "missing proc end before %i", i );
 				return errBuf;
 			}
 			if ( ci->opStack != 0 ) {
 				v = ci->opStack;
-				sprintf( errBuf, "bad entry opstack %i at %i", v, i ); 
+				sprintf( errBuf, "bad entry opstack %i at %i", v, i );
 				return errBuf;
 			}
 			v = ci->value;
 			if ( v < 0 || v >= PROGRAM_STACK_SIZE || (v & 3) ) {
-				sprintf( errBuf, "bad entry programStack %i at %i", v, i ); 
+				sprintf( errBuf, "bad entry programStack %i at %i", v, i );
 				return errBuf;
 			}
-			
+
 			pstack = ci->value;
-			
+
 			// mark jump target
 			ci->jused = 1;
 			proc = ci;
@@ -1026,7 +1026,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 		}
 
 		// proc opstack will carry max.possible opstack value
-		if ( proc && ci->opStack > proc->opStack ) 
+		if ( proc && ci->opStack > proc->opStack )
 			proc->opStack = ci->opStack;
 
 		// function return
@@ -1034,7 +1034,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 			// bad return programStack
 			if ( pstack != ci->value ) {
 				v = ci->value;
-				sprintf( errBuf, "bad programStack %i at %i", v, i ); 
+				sprintf( errBuf, "bad programStack %i at %i", v, i );
 				return errBuf;
 			}
 			// bad opStack before return
@@ -1125,7 +1125,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 
 		if ( op0 == OP_CALL ) {
 			if ( ci->opStack < 4 ) {
-				sprintf( errBuf, "bad call opStack at %i", i ); 
+				sprintf( errBuf, "bad call opStack at %i", i );
 				return errBuf;
 			}
 			if ( op1 == OP_CONST ) {
@@ -1133,7 +1133,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 				// analyse only local function calls
 				if ( v >= 0 ) {
 					if ( v >= instructionCount ) {
-						sprintf( errBuf, "call target %i is out of range", v ); 
+						sprintf( errBuf, "call target %i is out of range", v );
 						return errBuf;
 					}
 					if ( buf[v].op != OP_ENTER ) {
@@ -1271,7 +1271,7 @@ __noJTS:
 
 void VM_IgnoreInstructions( instruction_t *buf, int count ) {
 	int i;
-	
+
 	for ( i = 0; i < count; i++ ) {
 		Com_Memset( buf + i, 0, sizeof( *buf ) );
 		buf[i].op = OP_IGNORE;
@@ -1371,7 +1371,7 @@ vm_t *VM_Restart( vm_t *vm ) {
 		syscall_t		systemCall;
 		dllSyscall_t	dllSyscall;
 		vmIndex_t		index;
-				
+
 		index = vm->index;
 		systemCall = vm->systemCall;
 		dllSyscall = vm->dllSyscall;
@@ -1412,7 +1412,7 @@ static void * QDECL VM_LoadDll( const char *name, dllSyscall_t *entryPoint, dllS
 	char		filename[ MAX_QPATH ];
 	void		*libHandle;
 	dllEntry_t	dllEntry;
-	
+
 	if ( !*gamedir ) {
 		gamedir = Cvar_VariableString( "fs_basegame" );
 	}
