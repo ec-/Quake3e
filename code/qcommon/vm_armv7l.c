@@ -464,8 +464,6 @@ static unsigned short can_encode(unsigned val)
 
 // optimize: use load multiple
 #define IJ(comparator) do { \
-	emit_MOVRxi(R0, v); \
-	CHECK_JUMP; \
 	emit(LDRTxi(R0, rOPSTACK, 4)); \
 	emit(LDRTxi(R1, rOPSTACK, 4));  \
 	emit(CMP(R1, R0)); \
@@ -473,8 +471,6 @@ static unsigned short can_encode(unsigned val)
 } while (0)
 
 #define FJ(comparator) do { \
-	emit_MOVRxi(R0, v); \
-	CHECK_JUMP; \
 	emit(SUBi(rOPSTACK, rOPSTACK, 8)); \
 	emit(VLDRa(S15, rOPSTACK, 4)); \
 	emit(VLDRa(S14, rOPSTACK, 8)); \
