@@ -564,6 +564,10 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 #define OFF_CODE 0
 #define OFF_IMMEDIATES 1
 
+	if ( !(CPU_Flags & CPU_VFPv3) ) {
+		return qfalse;
+	}
+
 	inst = (instruction_t*)Z_Malloc( (header->instructionCount + 8 ) * sizeof( instruction_t ) );
 	//instructionOffsets = (uint32_t*)Z_Malloc( header->instructionCount * sizeof( uint32_t ) );
 
@@ -581,8 +585,6 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 	if ( !vm->instructionPointers ) {
 		vm->instructionPointers = Hunk_Alloc( header->instructionCount * sizeof(vm->instructionPointers[0]), h_high );
 	}
-
-	vm->compiled = qfalse;
 
 	vm->codeBase.ptr = NULL;
 	compiledOfs = 0;
@@ -1077,7 +1079,6 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 	__clear_cache( vm->codeBase.ptr, vm->codeBase.ptr + vm->codeLength );
 
 	vm->destroy = VM_Destroy_Compiled;
-	vm->compiled = qtrue;
 
 	return qtrue;
 }

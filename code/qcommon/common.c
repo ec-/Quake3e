@@ -3282,6 +3282,8 @@ out:
 ** --------------------------------------------------------------------------------
 */
 
+#if (idx64 || id386)
+
 #if defined _MSC_VER
 #include <intrin.h>
 static void CPUID( int func, unsigned int *regs )
@@ -3293,22 +3295,17 @@ static void CPUID( int func, unsigned int *regs )
 
 static void CPUID( int func, unsigned int *regs )
 {
-#if (idx64 || id386)
 	__asm__ __volatile__( "cpuid" :
 		"=a"(regs[0]),
 		"=b"(regs[1]),
 		"=c"(regs[2]),
 		"=d"(regs[3]) :
 		"a"(func) );
-#else	// non-x86
-		regs[0] = regs[1] = regs[2] = regs[3] = 0;
-#endif
 }
 
 #endif  // clang/gcc/mingw
 
-
-int Sys_GetProcessorId( char *vendor )
+static void Sys_GetProcessorId( char *vendor )
 {
 	unsigned int regs[4];
 
@@ -3380,9 +3377,44 @@ int Sys_GetProcessorId( char *vendor )
 				strcat( vendor, " SSE4.1" );
 		}
 	}
-	return 1;
 }
 
+#else // non-x86
+
+#if defined(__arm__)
+#include <sys/auxv.h>
+#include <asm/hwcap.h>
+#endif
+static void Sys_GetProcessorId( char *vendor )
+{
+	long hwcaps;
+
+	CPU_Flags = 0;
+
+#if defined(__arm__)
+	Com_sprintf( vendor, 100, "ARM %s", (const char*)getauxval( AT_PLATFORM ) );
+
+	hwcaps = getauxval( AT_HWCAP );
+
+	if ( hwcaps & ( HWCAP_IDIVA | HWCAP_VFPv3 ) ) {
+		strcat( vendor, " /w" );
+
+		if ( hwcaps & HWCAP_IDIVA ) {
+			CPU_Flags |= CPU_IDIV;
+			strcat( vendor, " IDIV" );
+		}
+
+		if ( hwcaps & HWCAP_VFPv3 ) {
+			CPU_Flags |= CPU_VFPv3;
+			strcat( vendor, " VFPv3" );
+		}
+	}
+#else
+	Com_sprintf( vendor, 128, "%s %s", ARCH_STRING, (const char*)getauxval( AT_PLATFORM ) );
+#endif
+}
+
+#endif // non-x86
 
 /*
 ================
@@ -3415,7 +3447,7 @@ void Sys_SnapVector( float *vector )
 	_mm_store_ss( &vector[2], vf2 );
 }
 #else // id386
-void Sys_SnapVector( float *vector ) 
+void Sys_SnapVector( float *vector )
 {
 	static const DWORD cw037F = 0x037F;
 	DWORD cwCurr;
@@ -3557,7 +3589,7 @@ void Com_Init( char *commandLine ) {
 	// override anything from the config files with command line args
 	Com_StartupVariable( NULL );
 
-  // get dedicated here for proper hunk megs initialization
+	// get dedicated here for proper hunk megs initialization
 #ifdef DEDICATED
 	com_dedicated = Cvar_Get( "dedicated", "1", CVAR_INIT );
 	Cvar_CheckRange( com_dedicated, "1", "2", CV_INTEGER );
@@ -3658,7 +3690,6 @@ void Com_Init( char *commandLine ) {
 
 	Sys_Init();
 
-#if defined (id386) || defined (idx64)
 	// CPU detection
 	Cvar_Get( "sys_cpustring", "detect", CVAR_PROTECTED | CVAR_ROM | CVAR_NORESTART );
 	if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "detect" ) )
@@ -3669,7 +3700,6 @@ void Com_Init( char *commandLine ) {
 		Cvar_Set( "sys_cpustring", vendor );
 	}
 	Com_Printf( "%s\n", Cvar_VariableString( "sys_cpustring" ) );
-#endif
 
 #ifdef USE_AFFINITY_MASK
 	if ( com_affinityMask->integer )

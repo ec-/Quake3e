@@ -898,12 +898,17 @@ extern char cl_cdkey[34];
 
 extern	int	CPU_Flags;
 
+// x86 flags
 #define CPU_FCOM   0x01
 #define CPU_MMX    0x02
 #define CPU_SSE    0x04
 #define CPU_SSE2   0x08
 #define CPU_SSE3   0x10
 #define CPU_SSE41  0x20
+
+// ARM flags
+#define CPU_IDIV   0x01
+#define CPU_VFPv3  0x02
 
 // TTimo
 // centralized and cleaned, that's the max string you can send to a Com_Printf / Com_DPrintf (above gets truncated)
@@ -1256,8 +1261,6 @@ qboolean Sys_RandomBytes( byte *string, int len );
 
 // the system console is shown when a dedicated server is running
 void	Sys_DisplaySystemConsole( qboolean show );
-
-int		Sys_GetProcessorId( char *vendor );
 
 void	Sys_ShowConsole( int level, qboolean quitOnClose );
 void	Sys_SetErrorText( const char *text );
