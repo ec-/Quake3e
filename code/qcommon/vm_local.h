@@ -146,8 +146,7 @@ typedef struct vmSymbol_s {
 
 typedef union vmFunc_u {
 	byte		*ptr;
-	void (*func)(void); // x86 entry point
-	int (*func2)(unsigned int *, int *); // arm entry point
+	void (*func)(void);
 } vmFunc_t;
 
 struct vm_s {
