@@ -42,11 +42,14 @@ ARMv7-A_ARMv7-R_DDI0406_2007.pdf
 
 #include "vm_local.h"
 
+#define DEBUG_VM
+
 typedef enum
 {
 	LAST_COMMAND_NONE = 0,
 	LAST_COMMAND_STORE_OPSTACK_R0,
-	LAST_COMMAND_STORE_OPSTACK_P4_R0
+	LAST_COMMAND_STORE_OPSTACK_P4_R0,
+	LAST_COMMAND_STORE_OPSTACK_P4_R0_CALL
 } ELastCommand;
 
 static vm_t *currentVM = NULL; // needed only for VM_BlockCopy
@@ -167,7 +170,7 @@ static int asmcall( int call, int pstack )
 	currentVM->programStack = pstack - 4;
 
 	argPosition = (intptr_t *)((byte *)currentVM->dataBase + pstack + 4);
-	argPosition[0] = ~call;
+	argPosition[0] = call;
 	ret = currentVM->systemCall( argPosition );
 
 	currentVM = savedVM;
@@ -526,6 +529,13 @@ static void emit_store_opstack_p4_r0( vm_t *vm )
 }
 
 
+static void emit_store_opstack_p4_r0_call( vm_t *vm )
+{
+	emit(STRaiw(R0, rOPSTACK, 4)); // opstack+=4; *opstack = r0
+	LastCommand = LAST_COMMAND_STORE_OPSTACK_P4_R0_CALL;
+}
+
+
 static void emit_load_r0_opstack( vm_t *vm )
 {
 #ifdef REG0_OPTIMIZE
@@ -561,6 +571,12 @@ static void emit_load_r0_opstack_m4( vm_t *vm )
 		rewind4( vm );
 		return;
 	}
+
+	if ( LastCommand == LAST_COMMAND_STORE_OPSTACK_P4_R0_CALL ) // opstack +=4; *opstack = r0; call
+	{
+		emit(SUBi(rOPSTACK, rOPSTACK, 4)); // rOPSTACK -= 4;
+		return;
+	}
 #endif
 	emit(LDRTxi(R0, rOPSTACK, 4));  // r0 = *opstack; rOPSTACK -= 4
 }
@@ -591,6 +607,32 @@ static uint32_t get_comp( opcode_t op )
 	Com_Error( ERR_DROP, "Unexpected op %i\n", op );
 }
 
+
+#if 0
+static opcode_t commute( opcode_t op ) {
+
+	switch ( op ) {
+
+	case OP_LTI: return OP_GTI;
+	case OP_LEI: return OP_GEI;
+	case OP_GTI: return OP_LTI;
+	case OP_GEI: return OP_LEI;
+
+	case OP_LTU: return OP_GTU;
+	case OP_LEU: return OP_GEU;
+	case OP_GTU: return OP_LTU;
+	case OP_GEU: return OP_LEU;
+
+	case OP_LEF: return OP_GEF;
+	case OP_LTF: return OP_GTF;
+	case OP_GEF: return OP_LEF;
+	case OP_GTF: return OP_LTF;
+	default: return op;
+	}
+}
+#endif
+
+
 #define j_rel(x) (pass?_j_rel(x, ip-1):0xBAD)
 
 #ifdef CONST_OPTIMIZE
@@ -607,21 +649,70 @@ static qboolean ConstOptimize( vm_t *vm )
 
 	case OP_LOAD4:
 		x = ci->value;
-		emit(ADDi(rOPSTACK, rOPSTACK, 4));     // opstack += 4;
 		if ( x < 256 ) {
 			emit(LDRai(R0, rDATABASE, x)); // r0 = [dataBase + v]
 		} else {
 			emit_MOVRxi(R1, x);
-			emit(LDRa(R0, rDATABASE, R1)); // r0 = [dataBase + r0]
+			emit(LDRa(R0, rDATABASE, R1)); // r0 = [dataBase + r1]
 		}
-		emit_store_opstack_r0( vm ); // *opstack = r0;
+		emit_store_opstack_p4_r0( vm ); // opstack +=4 ; *opstack = r0;
 		ip += 1; // OP_LOAD4
+		return qtrue;
+
+	case OP_LOAD2:
+		x = ci->value;
+		if ( x < 256 ) {
+			emit(LDRHai(R0, rDATABASE, x)); // r0 = (word*)[dataBase + v]
+		} else {
+			emit_MOVRxi(R1, x);
+			emit(LDRHa(R0, rDATABASE, R1)); // r0 = (word*)[dataBase + r1]
+		}
+		emit_store_opstack_p4_r0( vm ); // opstack +=4 ; *opstack = r0;
+		ip += 1; // OP_LOAD2
+		return qtrue;
+
+	case OP_LOAD1:
+		x = ci->value;
+		//emit(ADDi(rOPSTACK, rOPSTACK, 4));     // opstack += 4;
+		emit_MOVRxi(R1, x);
+		emit(LDRBa(R0, rDATABASE, R1)); // r0 = (byte*)[dataBase + r1]
+		//emit_store_opstack_r0( vm ); // *opstack = r0;
+		emit_store_opstack_p4_r0( vm ); // opstack +=4 ; *opstack = r0;
+		ip += 1; // OP_LOAD1
+		return qtrue;
+
+	case OP_STORE4:
+		x = ci->value;
+		emit_load_r0_opstack_m4( vm ); // r0 = *opstack; opstack -=4;
+		emit(AND(R0, rDATAMASK, R0));    // r0 = r0 & rDATAMASK
+		emit_MOVRxi(R1, x);
+		emit(STRa(R1, rDATABASE, R0)); // [dataBase + r0] = r1;
+		ip += 1; // OP_STORE4
+		return qtrue;
+
+	case OP_STORE2:
+		x = ci->value;
+		emit_load_r0_opstack_m4( vm ); // r0 = *opstack; opstack -=4;
+		emit(AND(R0, rDATAMASK, R0));    // r0 = r0 & rDATAMASK
+		emit_MOVRxi(R1, x);
+		emit(STRHa(R1, rDATABASE, R0)); // (word*)[dataBase + r0] = r1;
+		ip += 1; // OP_STORE2
+		return qtrue;
+
+	case OP_STORE1:
+		x = ci->value;
+		emit_load_r0_opstack_m4( vm ); // r0 = *opstack; opstack -=4;
+		emit(AND(R0, rDATAMASK, R0));    // r0 = r0 & rDATAMASK
+		emit_MOVRxi(R1, x);
+		emit(STRBa(R1, rDATABASE, R0)); // (byte*)[dataBase + r0] = r1;
+		ip += 1; // OP_STORE1
 		return qtrue;
 
 	case OP_ADD:
 		x = ci->value;
 		emit_load_r0_opstack( vm ); // r0 = *opstack;
-		if ( x < 256 ) {
+		//if ( x < 256 ) {
+		if ( can_encode( x ) ) {
 			emit(ADDi(R0, R0, x));
 		} else {
 			emit_MOVRxi(R1, x);
@@ -634,7 +725,8 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_SUB:
 		x = ci->value;
 		emit_load_r0_opstack( vm ); // r0 = *opstack;
-		if ( x < 256 ) {
+		//if ( x < 256 ) {
+		if ( can_encode( x ) ) {
 			emit(SUBi(R0, R0, x));
 		} else {
 			emit_MOVRxi(R1, x);
@@ -677,7 +769,8 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_BAND:
 		x = ci->value;
 		emit_load_r0_opstack( vm );  // r0 = *opstack;
-		if ( x < 256 ) {
+		//if ( x < 256 ) {
+		if ( can_encode( x ) ) {
 			emit(ANDi(R0, R0, x));       // r0 = r0 & x
 		} else {
 			emit_MOVRxi(R1, x);
@@ -690,7 +783,8 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_BOR:
 		x = ci->value;
 		emit_load_r0_opstack( vm );    // r0 = *opstack;
-		if ( x < 256 ) {
+		//if ( x < 256 ) {
+		if ( can_encode( x ) ) {
 			emit(ORRi(R0, R0, x)); // r0 = r0 | x
 		} else {
 			emit_MOVRxi(R1, x);
@@ -703,7 +797,8 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_BXOR:
 		x = ci->value;
 		emit_load_r0_opstack( vm );    // r0 = *opstack;
-		if ( x < 256 ) {
+		//if ( x < 256 ) {
+		if ( can_encode( x ) ) {
 			emit(EORi(R0, R0, x)); // r0 = r0 ^ x
 		} else {
 			emit_MOVRxi(R1, x);
@@ -724,7 +819,17 @@ static qboolean ConstOptimize( vm_t *vm )
 
 	case OP_CALL:
 		if ( ci->value < 0 ) // syscall
-			break;
+		{
+			x = ~ci->value;
+			emit_MOVRxi(R0, x);
+			emit(MOV(R1, rPSTACK));
+			emit_MOVRxi(R12, (unsigned)asmcall);
+			emit(BLX(R12));
+			// store return value
+			emit_store_opstack_p4_r0_call( vm ); // opstack+=4; *opstack = r0; call
+			ip += 1; // OP_CALL;
+			return qtrue;
+		}
 		x = (vm->instructionPointers[ ci->value ] - compiledOfs - 8) >> 2;
 		t = x >> 24;
 		if ( t != 0x3F && t != 0x00 )
@@ -744,13 +849,14 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_LEI:
 	case OP_LTI: {
 		uint32_t comp = get_comp( ni->op );
-		emit(LDRTxi(R1, rOPSTACK, 4)); // r1 = *opstack; rOPSTACK -= 4
+		emit_load_r0_opstack_m4( vm ); // r0 = *opstack; rOPSTACK -= 4
 		x = ci->value;
-		if ( x < 256 ) {
-			emit(CMPi(R1, x));
+		//if ( x < 256 ) {
+		if ( can_encode( x ) ) {
+			emit(CMPi(R0, x));
 		} else {
-			emit_MOVRxi_or_NOP(R0, x);
-			emit(CMP(R1, R0));
+			emit_MOVRxi(R1, x);
+			emit(CMP(R0, R1));
 		}
 		emit(cond(comp, Bi(j_rel(vm->instructionPointers[ ni->value ] - compiledOfs))));
 		}
@@ -853,10 +959,13 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 	emit(LDRai(rPSTACK, rVMBASE,offsetof(vm_t, programStack)));
 	emit(LDRai(rOPSTACK, rVMBASE,offsetof(vm_t, opStack)));
 
-	emit(BLi(OFFSET(OFF_CODE)));
+	emit(BLi(OFFSET(OFF_CODE))); // call vmMain()
 
-	// save return value in r0
-	// emit(LDRTxi(R0, rOPSTACK, 4));  // r0 = *opstack; rOPSTACK -= 4
+#ifdef DEBUG_VM
+	emit(STRai(rPSTACK, rVMBASE, offsetof(vm_t, programStack))); // vm->programStack = rPSTACK;
+	emit(STRai(rOPSTACK, rVMBASE, offsetof(vm_t, opStack)));     // vm->opStack = rOPSTACK;
+#endif
+	// emit(LDRai(R0, rOPSTACK, 0)); // r0 = *opstack
 
 	emit(ADDi(SP, SP, 12));       // align stack to 16 bytes
 	emit(POP(SAVE_REGS|(1<<PC))); // pop R4-R11, LR -> PC
@@ -869,7 +978,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 	emit(BKPT(0));
 	emit(BKPT(0));
 
-	save_offset(OFF_CODE);
+	save_offset(OFF_CODE);      // vmMain() entry point
 //	offsidx = OFF_IMMEDIATES+1;
 
 	// translate all instructions
@@ -907,14 +1016,11 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 
 			case OP_ENTER:
 				emit(PUSH((1<<R12)|(1<<rPSTACK)|(1<<rPROCBASE)|(1<<LR)));
-				if ( can_encode( v ) )
-				{
+				if ( can_encode( v ) ) {
 					emit(SUBi(rPSTACK, rPSTACK, v)); // pstack -= arg
-				}
-				else
-				{
-					emit_MOVR0i(v);
-					emit(SUB(rPSTACK, rPSTACK, R0)); // pstack -= arg
+				} else {
+					emit_MOVR0i(v);                  // r0 = arg
+					emit(SUB(rPSTACK, rPSTACK, R0)); // pstack -= r0
 				}
 				emit(ADD(rPROCBASE, rPSTACK, rDATABASE));
 				break;
@@ -926,7 +1032,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 			case OP_CALL:
 #if 0
 				// save next instruction
-				emit_MOVR0i(i_count);
+				emit_MOVR0i(ip);
 				emit(STRa(R0, rDATABASE, rPSTACK));      // dataBase[pstack] = r0
 #endif
 				{
@@ -944,13 +1050,12 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 					emit(Bi(j_rel(vm->instructionPointers[ip] - compiledOfs)));
 					if (bytes_to_skip == -1)
 						bytes_to_skip = compiledOfs - start_block;
+					emit(MVN(R0, R0));   // r0 = ~r0
 					emit(MOV(R1, rPSTACK));
 					emit_MOVRxi(R12, (unsigned)asmcall);
 					emit(BLX(R12));
 					// store return value
-					emit_store_opstack_p4_r0( vm ); // opstack+=4; *opstack = r0
-					// and make sure it will be not discarded
-					LastCommand = LAST_COMMAND_NONE;
+					emit_store_opstack_p4_r0_call( vm ); // opstack+=4; *opstack = r0; call
 				}
 				break;
 
@@ -985,8 +1090,8 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 					ip++; // OP_LOAD4
 					break;
 				}
-#if 0
-				if ( ni->op == OP_LOAD2 ) // merge OP_LOCAL + OP_LOAD4
+
+				if ( ni->op == OP_LOAD2 ) // merge OP_LOCAL + OP_LOAD2
 				{
 					if ( v < 256 ) {
 						emit(LDRHai(R0, rPROCBASE, v)); // r0 = (unsigned short*)[procBase + v]
@@ -1007,7 +1112,6 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 					ip++; // OP_LOAD1
 					break;
 				}
-#endif
 #endif // VM_OPTIMIZE
 
 				if ( can_encode( v ) ) {
@@ -1107,14 +1211,17 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 
 			case OP_ARG:
 				emit_load_r0_opstack_m4( vm );  // r0 = *opstack; rOPSTACK -= 4
-				//emit(ADDi(R1, rPSTACK, v));     // r1 = programStack+arg
-				//emit(STRa(R0, rDATABASE, R1));  // dataBase[r1] = r0
+#ifdef VM_OPTIMIZE
 				if ( v < 256 ) {
 					emit(STRai(R0, rPROCBASE, v)); // [procBase + v] = r0;
 				} else {
 					emit_MOVRxi(R1, v);
 					emit(STRa(R0, rPROCBASE, R1)); // [procBase + r1] = r0;
 				}
+#else
+				emit(ADDi(R1, rPSTACK, v));     // r1 = programStack+arg
+				emit(STRa(R0, rDATABASE, R1));  // dataBase[r1] = r0
+#endif
 				break;
 
 			case OP_BLOCK_COPY:
@@ -1126,12 +1233,12 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 				break;
 
 			case OP_SEX8:
-				emit(LDRSBai(R0, rOPSTACK, 0));      // sign extend *opstack
+				emit(LDRSBai(R0, rOPSTACK, 0)); // r0 = sign extend *opstack
 				emit_store_opstack_r0( vm );    // *opstack = r0
 				break;
 
 			case OP_SEX16:
-				emit(LDRSHai(R0, rOPSTACK, 0)); // sign extend *opstack
+				emit(LDRSHai(R0, rOPSTACK, 0)); // r0 = sign extend *opstack
 				emit_store_opstack_r0( vm );    // *opstack = r0
 				break;
 
@@ -1256,7 +1363,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 				// vldr can't modify rOPSTACK so
 				// we'd either need to change it
 				// with sub or use regular ldr+vmov
-				emit(LDRxiw(R0, rOPSTACK, 4));   // opstack-=4; r1 = *opstack
+				emit(LDRxiw(R0, rOPSTACK, 4));   // opstack-=4; r0 = *opstack
 				emit(VMOVass(S15,R0));           // s15 = r0
 				emit(VADD_F32(S14, S15, S14));   // s14 = s14 + s15
 				emit(VSTRa(S14, rOPSTACK, 0));   // *((float*)opstack) = s14
@@ -1265,7 +1372,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 			case OP_SUBF:
 				emit(VLDRa(S14, rOPSTACK, 0));   // s14 = *((float*)opstack)
 				// see OP_ADDF
-				emit(LDRxiw(R0, rOPSTACK, 4));   // opstack-=4; r1 = *opstack
+				emit(LDRxiw(R0, rOPSTACK, 4));   // opstack-=4; r0 = *opstack
 				emit(VMOVass(S15,R0));           // s15 = r0
 				emit(VSUB_F32(S14, S15, S14));   // s14 = s14 - s15
 				emit(VSTRa(S14, rOPSTACK, 0));   // *((float*)opstack) = s14
@@ -1274,7 +1381,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 			case OP_DIVF:
 				emit(VLDRa(S14, rOPSTACK, 0));   // s14 = *((float*)opstack)
 				// see OP_ADDF
-				emit(LDRxiw(R0, rOPSTACK, 4));   // opstack-=4; r1 = *opstack
+				emit(LDRxiw(R0, rOPSTACK, 4));   // opstack-=4; r0 = *opstack
 				emit(VMOVass(S15,R0));           // s15 = r0
 				emit(VDIV_F32(S14, S15, S14));   // s14 = s14 / s15
 				emit(VSTRa(S14, rOPSTACK, 0));   // *((float*)opstack) = s14
@@ -1283,7 +1390,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 			case OP_MULF:
 				emit(VLDRa(S14, rOPSTACK, 0));   // s14 = *((float*)opstack)
 				// see OP_ADDF
-				emit(LDRxiw(R0, rOPSTACK, 4));   // opstack-=4; r1 = *opstack
+				emit(LDRxiw(R0, rOPSTACK, 4));   // opstack-=4; r0 = *opstack
 				emit(VMOVass(S15,R0));           // s15 = r0
 				emit(VMUL_F32(S14, S15, S14));   // s14 = s14 * s15
 				emit(VSTRa(S14, rOPSTACK, 0));   // *((float*)opstack) = s14
@@ -1358,8 +1465,11 @@ int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 	}
 
 	image[1] =  0; // return stack
-	image[0] = -1; // will terminate loop on return, only for interpreter modules
+	// image[0] = -1; // will terminate loop on return, only for interpreter modules
 
+#ifdef DEBUG_VM
+	opStack[0] = 0xDEADC0DE;
+#endif
 	opStack[1] = 0;
 
 	vm->opStack = opStack; // unused atm
@@ -1367,13 +1477,13 @@ int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 
 	vm->codeBase.func(); // go into generated code
 
-	//if ( vm->opStack != &opStack[1] ) { // not works atm
-	//	Com_Error( ERR_DROP, "opStack corrupted in compiled code" );
-	//}
-
 #ifdef DEBUG_VM
-	if ( vm->programStack != stackOnEntry - CALL_PSTACK ) {
-		Com_Error( ERR_DROP, "programStack corrupted in compiled code" );
+	if ( vm->opStack != &opStack[1] || opStack[0] != 0xDEADC0DE ) {
+		Com_Error( ERR_DROP, "%s(%s): opStack corrupted in compiled code", __func__, vm->name );
+	}
+
+	if ( vm->programStack != stackOnEntry - (MAX_VMMAIN_CALL_ARGS+2)*4 ) {
+		Com_Error( ERR_DROP, "%s(%s): programStack corrupted in compiled code", __func__, vm->name );
 	}
 #endif
 
