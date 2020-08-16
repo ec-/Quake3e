@@ -16,15 +16,14 @@
 #define MAX_IMAGE_CHUNKS 48
 
 #define NUM_COMMAND_BUFFERS 2	// number of command buffers / render semaphores / framebuffer sets
-//#define USE_DEDICATED_ALLOCATION
-
-#define USE_IMAGE_POOL
-#define USE_IMAGE_LAYOUT_1
-#define MIN_IMAGE_ALIGN (128*1024)
 
 #define USE_REVERSED_DEPTH
 
 #define VK_NUM_BLOOM_PASSES 4
+
+#define USE_DEDICATED_ALLOCATION
+//#define MIN_IMAGE_ALIGN (128*1024)
+#define MAX_ATTACHMENTS_IN_POOL (6+1+VK_NUM_BLOOM_PASSES*2) // depth + msaa + msaa-resolve + screenmap.msaa + screenmap.resolve + screenmap.depth + bloom_extract + blur pairs
 
 #define VK_CHECK(function_call) { \
 	VkResult result = function_call; \
@@ -255,9 +254,8 @@ typedef struct {
 	VkCommandPool command_pool;
 	VkSemaphore image_acquired;
 
-#ifdef USE_IMAGE_POOL
-	VkDeviceMemory image_memory;
-#endif
+	VkDeviceMemory image_memory[ MAX_ATTACHMENTS_IN_POOL ];
+	uint32_t image_memory_count;
 
 	struct {
 		VkRenderPass main;
@@ -281,22 +279,32 @@ typedef struct {
 	VkDescriptorSet color_descriptor;
 
 	VkImage color_image;
-	VkDeviceMemory color_image_memory;
 	VkImageView color_image_view;
 
 	VkImage bloom_image[1+VK_NUM_BLOOM_PASSES*2];
-	VkDeviceMemory bloom_image_memory[1+VK_NUM_BLOOM_PASSES*2];
 	VkImageView bloom_image_view[1+VK_NUM_BLOOM_PASSES*2];
 
 	VkDescriptorSet bloom_image_descriptor[1+VK_NUM_BLOOM_PASSES*2];
 
 	VkImage depth_image;
-	VkDeviceMemory depth_image_memory;
 	VkImageView depth_image_view;
 
 	VkImage msaa_image;
-	VkDeviceMemory msaa_image_memory;
 	VkImageView msaa_image_view;
+
+	// screenMap
+	struct {
+		VkDescriptorSet color_descriptor;
+		VkImage color_image;
+		VkImageView color_image_view;
+
+		VkImage color_image_msaa;
+		VkImageView color_image_view_msaa;
+
+		VkImage depth_image;
+		VkImageView depth_image_view;
+
+	} screenMap;
 
 	struct {
 		VkFramebuffer blur[VK_NUM_BLOOM_PASSES*2];
@@ -305,22 +313,6 @@ typedef struct {
 		VkFramebuffer gamma[MAX_SWAPCHAIN_IMAGES];
 		VkFramebuffer screenmap;
 	} framebuffers;
-
-	// screenMap
-
-	VkDescriptorSet color_descriptor3;
-
-	VkImage color_image3;
-	VkDeviceMemory color_image3_memory;
-	VkImageView color_image3_view;
-
-	VkImage color_image3_msaa;
-	VkDeviceMemory color_image3_memory_msaa;
-	VkImageView color_image3_view_msaa;
-
-	VkImage depth_image3;
-	VkDeviceMemory depth_image3_memory;
-	VkImageView depth_image3_view;
 
 	vk_tess_t tess[ NUM_COMMAND_BUFFERS ], *cmd;
 	int cmd_index;

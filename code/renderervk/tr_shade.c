@@ -75,7 +75,7 @@ void R_BindAnimatedImage( const textureBundle_t *bundle ) {
 		if ( !backEnd.screenMapDone )
 			GL_Bind( tr.blackImage );
 		else
-			vk_update_descriptor( glState.currenttmu + 2, vk.color_descriptor3 );
+			vk_update_descriptor( glState.currenttmu + 2, vk.screenMap.color_descriptor );
 		return;
 	}
 
