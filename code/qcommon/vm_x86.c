@@ -108,7 +108,7 @@ static void VM_Destroy_Compiled( vm_t *vm );
   | ???? | +4 - unused, reserved for interpreter
   | arg0 | +8  \
   | arg1 | +12  \ - passed arguments, accessible from vmMain
-  | arg2 | +16  / 
+  | arg2 | +16  /
   | arg3 | +20 /
   |------| vm->programStack = vm->dataMask + 1 // set by VM_Create()
 
@@ -440,7 +440,7 @@ static void EmitAddEDI4( vm_t *vm )
 	}
 
 	if ( LastCommand == LAST_COMMAND_SUB_DI_8 ) // sub edi, 8
-	{	
+	{
 #if idx64
 		REWIND( 4 );
 #else
@@ -451,7 +451,7 @@ static void EmitAddEDI4( vm_t *vm )
 	}
 
 	if ( LastCommand == LAST_COMMAND_SUB_DI_12 ) // sub edi, 12
-	{	
+	{
 #if idx64
 		REWIND( 4 );
 #else
@@ -491,12 +491,12 @@ static void EmitMovEAXEDI( vm_t *vm )
 
 	if ( pop == OP_DIVI || pop == OP_DIVU || pop == OP_MULI || pop == OP_MULU ||
 		pop == OP_STORE4 || pop == OP_STORE2 || pop == OP_STORE1 ) 
-	{	
+	{
 		return;
 	}
 
 	if ( LastCommand == LAST_COMMAND_MOV_EDI_CONST ) // mov dword ptr [edi], 0x12345678
-	{	
+	{
 		REWIND( 6 );
 		if ( lastConst == 0 ) {
 			EmitString( "31 C0" );		// xor eax, eax
@@ -626,7 +626,7 @@ static int EmitLoadFloatEDI_X87( vm_t *vm )
 {
 	// fstp dword ptr [edi]
 	if ( LastCommand == LAST_COMMAND_STORE_FLOAT_EDI_X87 )
-	{ 	
+	{
 		if ( !vm )
 			return 1;
 		REWIND( 2 );
@@ -648,7 +648,7 @@ static int EmitLoadFloatEDI( vm_t *vm )
 }
 
 #if JUMP_OPTIMIZE
-const char *NearJumpStr( int op ) 
+const char *NearJumpStr( int op )
 {
 	switch ( op )
 	{
@@ -802,7 +802,7 @@ static void EmitCallAddr( vm_t *vm, int addr )
 	int v;
 	v = instructionOffsets[ addr ] - compiledOfs;
 	EmitString( "E8" );
-	Emit4( v - 5 ); 
+	Emit4( v - 5 );
 }
 
 
@@ -1673,18 +1673,6 @@ static qboolean ConstOptimize( vm_t *vm )
 }
 
 
-static qboolean FindLocal( int addr, const instruction_t *buf, const instruction_t *end ) {
-	while ( buf < end ) {
-		if ( buf->op == OP_LOCAL && buf->value == addr )
-			return qtrue;
-		if ( buf->op == OP_PUSH && (buf+1)->op == OP_LEAVE )
-			break;
-		++buf;
-	}
-	return qfalse;
-} 
-
-
 /*
 =================
 VM_FindMOps
@@ -1696,7 +1684,7 @@ static void VM_FindMOps( instruction_t *buf, int instructionCount )
 {
 	int n, v, op0;
 	instruction_t *i;
-	
+
 	i = buf;
 	n = 0;
 
@@ -1728,31 +1716,6 @@ static void VM_FindMOps( instruction_t *buf, int instructionCount )
 					continue;
 				}
 			}
-
-			// skip useless sequences
-			if ( (i+1)->op == OP_LOCAL && (i+0)->value == (i+1)->value && (i+2)->op == OP_LOAD4 && (i+3)->op == OP_STORE4 ) {
-				VM_IgnoreInstructions( i, 4 );
-				i += 4; n += 4;
-				continue;
-			}
-
-			// OP_LOCAL + OP_CONST + OP_CALL + OP_STORE4
-			if ( (i+1)->op == OP_CONST && (i+2)->op == OP_CALL && (i+3)->op == OP_STORE4 && !(i+4)->jused ) {
-				// OP_CONST|OP_LOCAL + OP_LOCAL + OP_LOAD4 + OP_STORE4
-				if ( (i+4)->op == OP_CONST || (i+4)->op == OP_LOCAL ) {
-					if (( i+5)->op == OP_LOCAL && (i+5)->value == (i+0)->value && (i+6)->op == OP_LOAD4 && (i+7)->op == OP_STORE4 ) {
-						// make sure that address of temporary variable is not referenced anymore in this function
-						if ( !FindLocal( i->value, i + 8, buf + instructionCount ) ) {
-							(i+0)->op = (i+4)->op;
-							(i+0)->value = (i+4)->value;
-							VM_IgnoreInstructions( i + 4, 4 );
-							i += 8;
-							n += 8;
-							continue;
-						}
-					}
-				}
-			}
 		} else if ( op0 == OP_CONST && (i+1)->op == OP_CALL && (i+2)->op == OP_POP && i >= buf+6 && (i-1)->op == OP_ARG && !i->jused ) {
 			// some void function( arg1, arg2, arg3 )
 			if ( i->value == ~TRAP_STRNCPY ) {
@@ -1773,10 +1736,10 @@ static void VM_FindMOps( instruction_t *buf, int instructionCount )
 EmitMOPs
 =================
 */
-static qboolean EmitMOPs( vm_t *vm, int op ) 
+static qboolean EmitMOPs( vm_t *vm, int op )
 {
 	int v, n;
-	switch ( op ) 
+	switch ( op )
 	{
 		//[local] += CONST
 		case MOP_ADD4:
@@ -2946,7 +2909,7 @@ int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 
 	vm->programStack -= (MAX_VMMAIN_CALL_ARGS+2)*4;
 
-	// set up the stack frame 
+	// set up the stack frame
 	image = (int*)( vm->dataBase + vm->programStack );
 	for ( i = 0; i < nargs; i++ ) {
 		image[ i + 2 ] = args[ i ];

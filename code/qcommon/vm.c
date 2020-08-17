@@ -411,6 +411,7 @@ int	ParseHex( const char *text ) {
 	return value;
 }
 
+
 /*
 ===============
 VM_LoadSymbols
@@ -881,6 +882,89 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 }
 
 
+static void VM_IgnoreInstructions( instruction_t *buf, const int count ) {
+	int i;
+
+	for ( i = 0; i < count; i++ ) {
+		Com_Memset( buf + i, 0, sizeof( *buf ) );
+		buf[i].op = OP_IGNORE;
+	}
+
+	buf[0].value = count > 0 ? count - 1 : 0;
+}
+
+
+/*
+=================
+VM_FindLocal
+
+search for specified local variable until end of function
+=================
+*/
+static qboolean VM_FindLocal( int addr, const instruction_t *buf, const instruction_t *end ) {
+	while ( buf < end ) {
+		if ( buf->op == OP_LOCAL && buf->value == addr )
+			return qtrue;
+		if ( buf->op == OP_PUSH && (buf+1)->op == OP_LEAVE )
+			break;
+		++buf;
+	}
+	return qfalse;
+}
+
+
+/*
+=================
+VM_Fixup
+
+Do some corrections to fix known Q3LCC flaws
+=================
+*/
+static void VM_Fixup( instruction_t *buf, int instructionCount )
+{
+	int n, op0;
+	instruction_t *i;
+
+	i = buf;
+	n = 0;
+
+	while ( n < instructionCount )
+	{
+		op0 = i->op;
+		if ( op0 == OP_LOCAL ) {
+
+			// skip useless sequences
+			if ( (i+1)->op == OP_LOCAL && (i+0)->value == (i+1)->value && (i+2)->op == OP_LOAD4 && (i+3)->op == OP_STORE4 ) {
+				VM_IgnoreInstructions( i, 4 );
+				i += 4; n += 4;
+				continue;
+			}
+
+			// OP_LOCAL + OP_CONST + OP_CALL + OP_STORE4
+			if ( (i+1)->op == OP_CONST && (i+2)->op == OP_CALL && (i+3)->op == OP_STORE4 && !(i+4)->jused ) {
+				// OP_CONST|OP_LOCAL + OP_LOCAL + OP_LOAD4 + OP_STORE4
+				if ( (i+4)->op == OP_CONST || (i+4)->op == OP_LOCAL ) {
+					if (( i+5)->op == OP_LOCAL && (i+5)->value == (i+0)->value && (i+6)->op == OP_LOAD4 && (i+7)->op == OP_STORE4 ) {
+						// make sure that address of temporary variable is not referenced anymore in this function
+						if ( !VM_FindLocal( i->value, i + 8, buf + instructionCount ) ) {
+							(i+0)->op = (i+4)->op;
+							(i+0)->value = (i+4)->value;
+							VM_IgnoreInstructions( i + 4, 4 );
+							i += 8;
+							n += 8;
+							continue;
+						}
+					}
+				}
+			}
+		}
+
+		i++;
+		n++;
+	}
+}
+
+
 /*
 =================
 VM_LoadInstructions
@@ -1267,19 +1351,9 @@ __noJTS:
 		}
 	}
 
+	VM_Fixup( buf, instructionCount );
+
 	return NULL;
-}
-
-
-void VM_IgnoreInstructions( instruction_t *buf, int count ) {
-	int i;
-
-	for ( i = 0; i < count; i++ ) {
-		Com_Memset( buf + i, 0, sizeof( *buf ) );
-		buf[i].op = OP_IGNORE;
-	}
-
-	buf[0].value = count > 0 ? count - 1 : 0;
 }
 
 

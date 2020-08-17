@@ -216,17 +216,16 @@ const char *VM_ValueToSymbol( vm_t *vm, int value );
 void VM_LogSyscalls( int *args );
 
 const char *VM_LoadInstructions( const byte *code_pos, int codeLength, int instructionCount, instruction_t *buf );
-const char *VM_CheckInstructions( instruction_t *buf, int instructionCount, 
-								 const byte *jumpTableTargets, 
-								 int numJumpTableTargets, 
+const char *VM_CheckInstructions( instruction_t *buf, int instructionCount,
+								 const byte *jumpTableTargets,
+								 int numJumpTableTargets,
 								 int dataLength );
 
-void VM_IgnoreInstructions( instruction_t *buf, int count );
 void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf );
 
 #define JUMP	(1<<0)
 
-typedef struct opcode_info_s 
+typedef struct opcode_info_s
 {
 	int	size;
 	int	stack;

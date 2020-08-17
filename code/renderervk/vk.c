@@ -3236,12 +3236,12 @@ void vk_initialize( void )
 		case VK_PHYSICAL_DEVICE_TYPE_CPU: device_type = "CPU"; break;
 		default: device_type = "OTHER"; break;
 	}
-	
+
 	Q_strncpyz( glConfig.vendor_string, vendor_name, sizeof( glConfig.vendor_string ) );
 	Com_sprintf( glConfig.renderer_string, sizeof(	glConfig.renderer_string ),
 		"%s %s, 0x%04x", device_type, props.deviceName, props.deviceID );
 
-	SET_OBJECT_NAME( vk.device, glConfig.renderer_string, VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_EXT );
+	SET_OBJECT_NAME( (intptr_t)vk.device, glConfig.renderer_string, VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_EXT );
 
 	//
 	// Sync primitives.
