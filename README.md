@@ -129,6 +129,10 @@ Example:
 
 `make BUILD_SERVER=0 USE_VULKAN=1` - which means do not build dedicated binary, build client with static vulkan renderer
 
+## Contacts
+
+Discord channel: https://discordapp.com/invite/X3Exs4C
+
 ## Links
 
 * https://bitbucket.org/CPMADevs/cnq3
