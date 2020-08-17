@@ -35,8 +35,9 @@ and one exported function: Perform
 
 #include "vm_local.h"
 
-opcode_info_t ops[ OP_MAX ] = 
+opcode_info_t ops[ OP_MAX ] =
 {
+	// size, stack, nargs, flags
 	{ 0, 0, 0, 0 }, // undef
 	{ 0, 0, 0, 0 }, // ignore
 	{ 0, 0, 0, 0 }, // break
@@ -110,13 +111,13 @@ opcode_info_t ops[ OP_MAX ] =
 	{ 0,-4, 3, 0 }, // mulf
 
 	{ 0, 0, 1, 0 }, // cvif
-	{ 0, 0, 1, 0 } // cvfi
+	{ 0, 0, 1, 0 }  // cvfi
 };
 
 const char *opname[ 256 ] = {
-	"OP_UNDEF", 
+	"OP_UNDEF",
 
-	"OP_IGNORE", 
+	"OP_IGNORE",
 
 	"OP_BREAK",
 
@@ -630,7 +631,7 @@ static int Load_JTS( vm_t *vm, unsigned int crc32, void *data, int vmPakIndex ) 
 	length -= sizeof( header ); // skip header and filesize
 
 	// we need just filesize
-	if ( !data ) { 
+	if ( !data ) {
 		FS_FCloseFile( fh );
 		return length;
 	}
@@ -705,22 +706,20 @@ static char *VM_ValidateHeader( vmHeader_t *header, int fileSize )
 		return errMsg;
 	}
 
-	if ( header->vmMagic == VM_MAGIC_VER2 ) 
-	{
+	if ( header->vmMagic == VM_MAGIC_VER2 ) {
 		// bad lit/jtrg length
 		if ( header->dataOffset + header->dataLength + header->litLength + header->jtrgLength != fileSize ) {
 			sprintf( errMsg, "bad lit/jtrg segment length" );
 			return errMsg;
 		}
-	} 
+	}
 	// bad lit length
-	else if ( header->dataOffset + header->dataLength + header->litLength != fileSize ) 
-	{
+	else if ( header->dataOffset + header->dataLength + header->litLength != fileSize ) {
 		sprintf( errMsg, "bad lit segment length %i", header->litLength );
 		return errMsg;
 	}
 
-	return NULL;	
+	return NULL;
 }
 
 
@@ -787,11 +786,14 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 
 	vm->exactDataLength = header->dataLength + header->litLength + header->bssLength;
 	dataLength = vm->exactDataLength + PROGRAM_STACK_EXTRA;
+	if ( dataLength < PROGRAM_STACK_SIZE + PROGRAM_STACK_EXTRA ) {
+		dataLength = PROGRAM_STACK_SIZE + PROGRAM_STACK_EXTRA;
+	}
 	vm->dataLength = dataLength;
 
 	// round up to next power of 2 so all data operations can
 	// be mask protected
-	for ( i = 0 ; dataLength > ( 1 << i ) ; i++ ) 
+	for ( i = 0 ; dataLength > ( 1 << i ) ; i++ )
 		;
 	dataLength = 1 << i;
 
@@ -917,7 +919,7 @@ const char *VM_LoadInstructions( const byte *code_pos, int codeLength, int instr
 		if ( n == 4 ) {
 			ci->value = LittleLong( *((int*)code_pos) );
 			code_pos += 4;
-		} else if ( n == 1 ) { 
+		} else if ( n == 1 ) {
 			ci->value = *((unsigned char*)code_pos);
 			code_pos += 1;
 		} else {
@@ -1018,7 +1020,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 			}
 
 			if ( endp == 0 ) {
-				sprintf( errBuf, "missing end proc for %i", i ); 
+				sprintf( errBuf, "missing end proc for %i", i );
 				return errBuf;
 			}
 
@@ -1462,7 +1464,7 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 	}
 
 	if ( (unsigned)index >= VM_COUNT ) {
-		Com_Error( ERR_DROP, "VM_Create: bad vm index %i", index );	
+		Com_Error( ERR_DROP, "VM_Create: bad vm index %i", index );
 	}
 
 	remaining = Hunk_MemoryRemaining();

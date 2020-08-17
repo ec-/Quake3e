@@ -153,11 +153,25 @@ ErrJump
 Error handler for jump/call to invalid instruction number
 =================
 */
-static void __attribute__((__noreturn__)) ErrJump(unsigned num)
+static void __attribute__((__noreturn__)) ErrJump( unsigned num )
 {
-	Com_Error(ERR_DROP, "program tried to execute code outside VM (%x)", num);
+	Com_Error( ERR_DROP, "program tried to execute code outside VM (%x)", num );
 }
 
+static void __attribute__((__noreturn__)) BadJump( void )
+{
+	Com_Error( ERR_DROP, "program tried to execute code at bad location inside VM" );
+}
+
+static void __attribute__((__noreturn__)) ErrBadProgramStack( void )
+{
+	Com_Error( ERR_DROP, "program tried to overflow programStack\n" );
+}
+
+static void __attribute__((__noreturn__)) ErrBadOpStack( void )
+{
+	Com_Error( ERR_DROP, "program tried to overflow opStack\n" );
+}
 
 static int asmcall( int call, int pstack )
 {
@@ -424,6 +438,13 @@ static unsigned short can_encode(unsigned val)
 	emit(MOVW(reg, (arg&0xFFFF))); \
 	if (arg > 0xFFFF) \
 		emit(MOVT(reg, (((arg>>16)&0xFFFF)))); \
+	} while(0)
+
+// puts integer arg in register reg
+#define emit_CMOVRxi(comp, reg, arg) do { \
+	emit(cond(comp,MOVW(reg, (arg&0xFFFF)))); \
+	if (arg > 0xFFFF) \
+		emit(cond(comp,MOVT(reg, (((arg>>16)&0xFFFF))))); \
 	} while(0)
 
 // puts integer arg in register reg. adds nop if only one instr is needed to
@@ -951,13 +972,16 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 	emit(PUSH(SAVE_REGS|(1<<LR))); // push R4-R11, LR
 	emit(SUBi(SP, SP, 12));        // align stack to 16 bytes
 
-	emit_MOVRxi(rVMBASE, (unsigned)vm); // constant at compile-time
+	// these are constant at compile time
+	emit_MOVRxi(rVMBASE, (unsigned)vm);
 	emit(LDRai(rINSPOINTERS, rVMBASE, offsetof(vm_t, instructionPointers)));
 	emit(LDRai(rDATABASE, rVMBASE, offsetof(vm_t, dataBase)));
 	emit(LDRai(rDATAMASK, rVMBASE, offsetof(vm_t, dataMask)));
 
-	emit(LDRai(rPSTACK, rVMBASE,offsetof(vm_t, programStack)));
-	emit(LDRai(rOPSTACK, rVMBASE,offsetof(vm_t, opStack)));
+	// these are volatile variables
+	emit(LDRai(rPSTACK, rVMBASE, offsetof(vm_t, programStack)));
+	emit(LDRai(rOPSTACK, rVMBASE, offsetof(vm_t, opStack)));
+	emit(LDRai(rOPSTACKTOP, rVMBASE, offsetof(vm_t, opStackTop)));
 
 	emit(BLi(OFFSET(OFF_CODE))); // call vmMain()
 
@@ -1022,6 +1046,30 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 					emit_MOVR0i(v);                  // r0 = arg
 					emit(SUB(rPSTACK, rPSTACK, R0)); // pstack -= r0
 				}
+
+				// programStack overflow check
+				if ( vm_rtChecks->integer & 1 ) {
+					// check if pStack < vm->stackBottom
+					emit(LDRai(R1, rVMBASE, offsetof(vm_t, stackBottom))); // r1 = vm->stackBottom
+					emit(CMP(rPSTACK, R1));
+					emit_CMOVRxi(LO, R12, (unsigned)ErrBadProgramStack);   // if (unsigned lower) then R12 = ErrBadProgramStack
+					emit(cond(LO, BLX(R12)));                              // if (unsigned lower) then call [R12]
+				}
+
+				// opStack overflow check
+				if ( vm_rtChecks->integer & 2 ) {
+					uint32_t n = ci->opStack;            // proc->opStack carries max.used opStack value
+					if ( can_encode( n ) ) {
+						emit(ADDi(R2, rOPSTACK, n)); // r2 = opstack + n;
+					} else {
+						emit_MOVRxi(R2, n);          // r2 = n
+						emit(ADD(R2, rOPSTACK, R2)); // r2 = opstack + r2;
+					}
+					emit(CMP(R2, rOPSTACKTOP));
+					emit_CMOVRxi(HI, R12, (unsigned)ErrBadOpStack); // if (unsigned higher) then R12 = ErrBadOpStack
+					emit(cond(HI, BLX(R12)));                       // if (unsigned higher) then call [R12]
+				}
+
 				emit(ADD(rPROCBASE, rPSTACK, rDATABASE));
 				break;
 
@@ -1354,7 +1402,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 
 			case OP_NEGF:
 				emit(VLDRa(S14, rOPSTACK, 0)); // s14 = *((float*)opstack)
-				emit(VNEG_F32(S14, S14));      // s15 = -s14
+				emit(VNEG_F32(S14, S14));      // s14 = -s14
 				emit(VSTRa(S14, rOPSTACK, 0)); // *((float*)opstack) = s14
 				break;
 
@@ -1400,7 +1448,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 				emit_load_r0_opstack( vm );    // r0 = *opstack
 				emit(VMOVass(S14,R0));         // s14 = r0
 				emit(VCVT_F32_S32(S14, S14));  // s15 = (float)s14
-				emit(VSTRa(S14, rOPSTACK, 0)); // *((float*)opstack) = s15
+				emit(VSTRa(S14, rOPSTACK, 0)); // *((float*)opstack) = s14
 				break;
 
 			case OP_CVFI:
@@ -1418,10 +1466,10 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 
 	// offset all the instruction pointers for the new location
 	for ( i = 0; i < header->instructionCount; i++ ) {
-		//if ( !inst[i].jused ) {
-			//instructionPointers[ i ] = (intptr_t)badJumpPtr;
-			//continue;
-		//}
+		if ( !inst[i].jused ) {
+			vm->instructionPointers[ i ] = (unsigned)BadJump;
+			continue;
+		}
 		vm->instructionPointers[ i ] += (intptr_t)vm->codeBase.ptr;
 	}
 

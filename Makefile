@@ -26,9 +26,9 @@ USE_CURL         = 1
 USE_LOCAL_HEADERS= 0
 USE_VULKAN       = 0
 USE_SYSTEM_JPEG  = 0
-#USE_VULKAN_API   = 0
+USE_VULKAN_API   = 1
 
-USE_RENDERER_DLOPEN = 0
+USE_RENDERER_DLOPEN = 1
 
 CNAME            = quake3e
 DNAME            = quake3e.ded
@@ -424,6 +424,10 @@ else
   ifeq ($(ARCH),x86)
     OPTIMIZE += -march=i586 -mtune=i686
   endif
+  endif
+
+  ifeq ($(ARCH),arm)
+    ARCHEXT = .arm
   endif
 
   SHLIBEXT = so
