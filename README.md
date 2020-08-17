@@ -119,15 +119,15 @@ Several make options available for linux/mingw/macos builds:
 
 `USE_SDL=0`- use SDL2 backend for video, audio, input subsystems, disabled by default, enforced for macos
 
-`USE_VULKAN=0` - link client with vulkan renderer instead of OpenGL, disabled by default
+`USE_VULKAN=0` - link client with vulkan renderer instead of OpenGL, disabled by default, works only with single renderer builds
 
-`USE_RENDERER_DLOPEN=0` - do not link single renderer into client binary, compile all renderers as dynamic libraries and allow to switch them on the fly via `\cl_renderer` cvar, disabled by default - *not recommented due to not stable renderer API*
+`USE_RENDERER_DLOPEN=1` - do not link single renderer into client binary, compile all renderers (ignoring USE_VULKAN setting) as dynamic libraries and allow to switch them on the fly via `\cl_renderer` cvar, enabled by default
 
 `USE_SYSTEM_JPEG=0` - use current system JPEG library, disabled by default
 
 Example:
 
-`make BUILD_SERVER=0 USE_VULKAN=1` - which means do not build dedicated binary, build client with static vulkan renderer
+`make BUILD_SERVER=0 USE_RENDERER_DLOPEN=0 USE_VULKAN=1` - which means do not build dedicated binary, build client with single static vulkan renderer
 
 ## Contacts
 
