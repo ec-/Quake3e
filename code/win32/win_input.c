@@ -127,7 +127,7 @@ IN_MouseActive
 */
 qboolean IN_MouseActive( void )
 {
-	return ( in_nograb->integer == 0 && s_wmv.mouseActive );
+	return ( in_nograb && in_nograb->integer == 0 && s_wmv.mouseActive );
 }
 
 
@@ -812,7 +812,7 @@ static void IN_StartupMouse( void )
 
 		if ( IN_InitRawMouse() ) {
 			s_wmv.mouseInitialized = qtrue;
-			Com_Printf( "Raw mouse input initialized.\n" );
+			Com_DPrintf( "Raw mouse input initialized.\n" );
 			return;
 		}
 

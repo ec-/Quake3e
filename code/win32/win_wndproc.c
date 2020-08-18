@@ -626,7 +626,6 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 #endif
 	case WM_DESTROY:
 		Win_RemoveHotkey();
-		IN_Shutdown();
 		if ( hWinEventHook )
 			UnhookWinEvent( hWinEventHook );
 		hWinEventHook = NULL;
