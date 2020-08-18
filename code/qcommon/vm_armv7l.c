@@ -52,6 +52,27 @@ typedef enum
 	LAST_COMMAND_STORE_OPSTACK_P4_R0_CALL
 } ELastCommand;
 
+
+typedef enum
+{
+	FUNC_ENTR = 0,
+	FUNC_PSOF,
+	FUNC_OSOF,
+	FUNC_BADJ,
+	FUNC_OUTJ,
+	FUNC_LAST
+} func_t;
+
+
+// macro opcode sequences
+typedef enum {
+	MOP_UNDEF = OP_MAX,
+	MOP_ADD4,
+	MOP_SUB4,
+	MOP_BAND4,
+	MOP_BOR4,
+} macro_op_t;
+
 static vm_t *currentVM = NULL; // needed only for VM_BlockCopy
 
 //staticuint32_t *code;
@@ -68,7 +89,7 @@ static	uint32_t	pass;
 //static	int	lastConst;
 //static	opcode_t	pop1;
 static	ELastCommand	LastCommand;
-//int		funcOffset[FUNC_LAST];
+uint32_t	funcOffset[FUNC_LAST];
 
 
 static void VM_FreeBuffers( void )
@@ -147,15 +168,9 @@ static void VM_Destroy_Compiled(vm_t *vm)
 }
 
 
-/*
-=================
-ErrJump
-Error handler for jump/call to invalid instruction number
-=================
-*/
-static void __attribute__((__noreturn__)) ErrJump( unsigned num )
+static void __attribute__((__noreturn__)) OutJump( void )
 {
-	Com_Error( ERR_DROP, "program tried to execute code outside VM (%x)", num );
+	Com_Error( ERR_DROP, "program tried to execute code outside VM" );
 }
 
 static void __attribute__((__noreturn__)) BadJump( void )
@@ -172,6 +187,7 @@ static void __attribute__((__noreturn__)) ErrBadOpStack( void )
 {
 	Com_Error( ERR_DROP, "program tried to overflow opStack\n" );
 }
+
 
 static int asmcall( int call, int pstack )
 {
@@ -491,22 +507,6 @@ static unsigned short can_encode(unsigned val)
 #define VMRS(Rt) \
 	(AL|(0b11101111<<20)|(0b0001<<16)|(Rt<<12)|(0b1010<<8)|(1<<4))
 
-// check if instruction in R0 is within range. Clobbers R1, R12
-#define CHECK_JUMP do { \
-	static int bytes_to_skip = -1; \
-	static unsigned branch = -1; \
-	emit_MOVRxi(R1, (unsigned)header->instructionCount); \
-	emit(CMP(R0, R1)); \
-	if (branch == -1) \
-		branch = compiledOfs; \
-	emit(cond(LT, Bi(j_rel(bytes_to_skip)))); \
-	emit_MOVRxi_or_NOP(R12, (unsigned)ErrJump); \
-	emit(BLX(R12)); \
-	if (bytes_to_skip == -1) \
-		bytes_to_skip = compiledOfs - branch; \
-} while(0)
-
-
 static inline unsigned _j_rel(int x, int pc)
 {
 	if (x&3) goto err;
@@ -527,6 +527,7 @@ err:
 #define REG0_OPTIMIZE
 #define CONST_OPTIMIZE
 #define VM_OPTIMIZE
+#define MACRO_OPTIMIZE
 
 static void rewind4( vm_t *vm )
 {
@@ -593,11 +594,11 @@ static void emit_load_r0_opstack_m4( vm_t *vm )
 		return;
 	}
 
-	if ( LastCommand == LAST_COMMAND_STORE_OPSTACK_P4_R0_CALL ) // opstack +=4; *opstack = r0; call
-	{
-		emit(SUBi(rOPSTACK, rOPSTACK, 4)); // rOPSTACK -= 4;
-		return;
-	}
+	//if ( LastCommand == LAST_COMMAND_STORE_OPSTACK_P4_R0_CALL ) // opstack +=4; *opstack = r0; call
+	//{
+		//emit(SUBi(rOPSTACK, rOPSTACK, 4)); // rOPSTACK -= 4;
+		//return;
+	//}
 #endif
 	emit(LDRTxi(R0, rOPSTACK, 4));  // r0 = *opstack; rOPSTACK -= 4
 }
@@ -652,6 +653,24 @@ static opcode_t commute( opcode_t op ) {
 	}
 }
 #endif
+
+
+static uint32_t encode_offset( uint32_t ofs )
+{
+	const uint32_t x = (ofs - 8) >> 2;
+	const uint32_t t = x >> 24;
+	if ( t != 0x3F && t != 0x00 )
+		Com_Error( ERR_DROP, "can't encode offsset %i", ofs );
+	return x & 0x00FFFFFF;
+}
+
+
+static void emitFuncOffset( uint32_t comp, vm_t *vm, func_t func )
+{
+	uint32_t offset = funcOffset[ func ] - compiledOfs;
+
+	emit( cond( comp, BLi( encode_offset( offset ) ) ) );
+}
 
 
 #define j_rel(x) (pass?_j_rel(x, ip-1):0xBAD)
@@ -895,6 +914,135 @@ static qboolean ConstOptimize( vm_t *vm )
 
 /*
 =================
+VM_FindMOps
+
+Search for known macro-op sequences
+=================
+*/
+static void VM_FindMOps( instruction_t *buf, const int instructionCount )
+{
+	int n, v, op0;
+	instruction_t *i;
+
+	i = buf;
+	n = 0;
+
+	while ( n < instructionCount )
+	{
+		op0 = i->op;
+		if ( op0 == OP_LOCAL ) {
+			// OP_LOCAL + OP_LOCAL + OP_LOAD4 + OP_CONST + OP_XXX + OP_STORE4
+			if ( (i+1)->op == OP_LOCAL && i->value == (i+1)->value && (i+2)->op == OP_LOAD4 && (i+3)->op == OP_CONST && (i+4)->op != OP_UNDEF && (i+5)->op == OP_STORE4 ) {
+				v = (i+4)->op;
+				if ( v == OP_ADD ) {
+					i->op = MOP_ADD4;
+					i += 6; n += 6;
+					continue;
+				}
+				if ( v == OP_SUB ) {
+					i->op = MOP_SUB4;
+					i += 6; n += 6;
+					continue;
+				}
+				if ( v == OP_BAND ) {
+					i->op = MOP_BAND4;
+					i += 6; n += 6;
+					continue;
+				}
+				if ( v == OP_BOR ) {
+					i->op = MOP_BOR4;
+					i += 6; n += 6;
+					continue;
+				}
+			}
+		}
+
+		i++;
+		n++;
+	}
+}
+
+
+/*
+=================
+EmitMOPs
+=================
+*/
+static qboolean EmitMOPs( vm_t *vm, int op )
+{
+	uint32_t addr, value;
+	switch ( op )
+	{
+		//[local] += CONST
+		case MOP_ADD4:
+		case MOP_SUB4:
+		case MOP_BAND4:
+		case MOP_BOR4:
+			value = inst[ip+2].value;
+			addr = ci->value;
+
+			// load
+			if ( addr < 256 ) {
+				emit(LDRai(R0, rPROCBASE, addr)); // r0 = [procBase + addr]
+			} else {
+				emit_MOVRxi(R2, addr);            // r2 = addr
+				emit(LDRa(R0, rPROCBASE, R2));    // r0 = [procBase + r2]
+			}
+
+			// modify
+			switch ( op ) {
+				case MOP_ADD4:
+					if ( can_encode( value ) ) {
+						emit(ADDi(R0, R0, value));        // r0 += value;
+					} else {
+						emit_MOVRxi(R1, value);           // r1 = value
+						emit(ADD(R0, R0, R1));            // r0 += r1
+					} break;
+				case MOP_SUB4:
+					if ( can_encode( value ) ) {
+						emit(SUBi(R0, R0, value));        // r0 += value;
+					} else {
+						emit_MOVRxi(R1, value);           // r1 = value
+						emit(SUB(R0, R0, R1));            // r0 += r1
+					} break;
+				case MOP_BAND4:
+					if ( can_encode( value ) ) {
+						emit(ANDi(R0, R0, value));        // r0 += value;
+					} else {
+						emit_MOVRxi(R1, value);           // r1 = value
+						emit(AND(R0, R0, R1));            // r0 += r1
+					} break;
+				case MOP_BOR4:
+					if ( can_encode( value ) ) {
+						emit(ORRi(R0, R0, value));        // r0 += value;
+					} else {
+						emit_MOVRxi(R1, value);           // r1 = value
+						emit(ORR(R0, R0, R1));            // r0 += r1
+					} break;
+			}
+
+			// store
+			if ( addr < 256 ) {
+				emit(STRai(R0, rPROCBASE, addr)); // [procBase + addr] = r0
+			} else {
+				emit(STRa(R0, rPROCBASE, R2));    // [procBase + r2] = r0
+			}
+
+			ip += 5;
+			return qtrue;
+
+		default: Com_Error( ERR_DROP, "Unknown macro opcode %i", op );
+			break;
+	};
+
+	return qfalse;
+}
+
+
+
+
+/*
+=================
 VM_BlockCopy
 Executes a block copy operation within currentVM data space
 =================
@@ -917,16 +1065,9 @@ static void VM_BlockCopy( uint32_t dest, uint32_t src, uint32_t n )
 
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 {
-	int i, codeoffsets[2]; // was 1024 but it's only used for OFF_CODE and OFF_IMMEDIATES
+	int i;
 
 	const char *errMsg;
-
-//#define j_rel(x) (pass?_j_rel(x, ip-1):0xBAD)
-#define OFFSET(i) (pass?(j_rel(codeoffsets[i] - compiledOfs)):(0xF000000F))
-#define get_offset(i) (codeoffsets[i])
-#define save_offset(i) (codeoffsets[i] = compiledOfs)
-#define OFF_CODE 0
-#define OFF_IMMEDIATES 1
 
 	if ( !(CPU_Flags & CPU_VFPv3) ) {
 		return qfalse;
@@ -949,6 +1090,14 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 	if ( !vm->instructionPointers ) {
 		vm->instructionPointers = Hunk_Alloc( header->instructionCount * sizeof(vm->instructionPointers[0]), h_high );
 	}
+
+	VM_ReplaceInstructions( vm, inst );
+
+#ifdef MACRO_OPTIMIZE
+	VM_FindMOps( inst, vm->instructionCount );
+#endif
+
+	memset( funcOffset, 0, sizeof( funcOffset ) );
 
 	vm->codeBase.ptr = NULL;
 	compiledOfs = 0;
@@ -983,7 +1132,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 	emit(LDRai(rOPSTACK, rVMBASE, offsetof(vm_t, opStack)));
 	emit(LDRai(rOPSTACKTOP, rVMBASE, offsetof(vm_t, opStackTop)));
 
-	emit(BLi(OFFSET(OFF_CODE))); // call vmMain()
+	emitFuncOffset( AL, vm, FUNC_ENTR );  // call vmMain()
 
 #ifdef DEBUG_VM
 	emit(STRai(rPSTACK, rVMBASE, offsetof(vm_t, programStack))); // vm->programStack = rPSTACK;
@@ -993,17 +1142,9 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 
 	emit(ADDi(SP, SP, 12));       // align stack to 16 bytes
 	emit(POP(SAVE_REGS|(1<<PC))); // pop R4-R11, LR -> PC
-
-	/* save some immediates here */
-	emit(BKPT(0));
-	emit(BKPT(0));
-	save_offset(OFF_IMMEDIATES);
-//	emit((unsigned)whatever);
-	emit(BKPT(0));
 	emit(BKPT(0));
 
-	save_offset(OFF_CODE);      // vmMain() entry point
-//	offsidx = OFF_IMMEDIATES+1;
+	funcOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 
 	// translate all instructions
 	ip = 0;
@@ -1052,8 +1193,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 					// check if pStack < vm->stackBottom
 					emit(LDRai(R1, rVMBASE, offsetof(vm_t, stackBottom))); // r1 = vm->stackBottom
 					emit(CMP(rPSTACK, R1));
-					emit_CMOVRxi(LO, R12, (unsigned)ErrBadProgramStack);   // if (unsigned lower) then R12 = ErrBadProgramStack
-					emit(cond(LO, BLX(R12)));                              // if (unsigned lower) then call [R12]
+					emitFuncOffset( LO, vm, FUNC_PSOF );
 				}
 
 				// opStack overflow check
@@ -1066,8 +1206,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 						emit(ADD(R2, rOPSTACK, R2)); // r2 = opstack + r2;
 					}
 					emit(CMP(R2, rOPSTACKTOP));
-					emit_CMOVRxi(HI, R12, (unsigned)ErrBadOpStack); // if (unsigned higher) then R12 = ErrBadOpStack
-					emit(cond(HI, BLX(R12)));                       // if (unsigned higher) then call [R12]
+					emitFuncOffset( HI, vm, FUNC_OSOF );
 				}
 
 				emit(ADD(rPROCBASE, rPSTACK, rDATABASE));
@@ -1092,10 +1231,19 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 					if (start_block == -1)
 						start_block = compiledOfs;
 					emit(cond(LT, Bi(j_rel(bytes_to_skip))));
-					CHECK_JUMP;
+
+					// check if R0 >= header->instructionCount
+					emit_MOVRxi(R1, (unsigned)header->instructionCount);
+					//emit(LDRai(R1, rVMBASE, offsetof(vm_t, instructionCount)));
+					emit(CMP(R0, R1));
+					emitFuncOffset( HS, vm, FUNC_OUTJ );
+
+					// local function call
 					emit(LDRa(R0, rINSPOINTERS, rLSL(2, R0))); // r0 = instructionPointers[r0]
 					emit(BLX(R0));
 					emit(Bi(j_rel(vm->instructionPointers[ip] - compiledOfs)));
+
+					// syscall
 					if (bytes_to_skip == -1)
 						bytes_to_skip = compiledOfs - start_block;
 					emit(MVN(R0, R0));   // r0 = ~r0
@@ -1175,7 +1323,13 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 			case OP_JUMP:
 				{
 					emit_load_r0_opstack_m4( vm );  // r0 = *opstack; rOPSTACK -= 4
-					CHECK_JUMP;
+
+					// check if r0 >= header->instructionCount
+					emit_MOVRxi(R1, (unsigned)header->instructionCount);
+					//emit(LDRai(R1, rVMBASE, offsetof(vm_t, instructionCount)));
+					emit(CMP(R0, R1));
+					emitFuncOffset( HS, vm, FUNC_OUTJ );
+
 					emit(LDRa(R0, rINSPOINTERS, rLSL(2, R0))); // r0 = instructionPointers[r0]
 					emit(BLX(R0));
 				}
@@ -1457,11 +1611,37 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 				emit(VMOVssa(R0,S14));         // s14 = r0
 				emit_store_opstack_r0( vm );   // *opstack = r0
 				break;
+
+			case MOP_ADD4:
+			case MOP_SUB4:
+			case MOP_BAND4:
+			case MOP_BOR4:
+				EmitMOPs( vm, ci->op );
+				break;
+
 		} // switch op
 	} // ip
 
-		// never reached
+		funcOffset[ FUNC_BADJ ] = compiledOfs;
+		emit_MOVRxi(R12, (unsigned)BadJump);
+		emit(BLX(R12));
 		emit(BKPT(0));
+
+		funcOffset[ FUNC_OUTJ ] = compiledOfs;
+		emit_MOVRxi(R12, (unsigned)OutJump);
+		emit(BLX(R12));
+		emit(BKPT(0));
+
+		funcOffset[ FUNC_OSOF ] = compiledOfs;
+		emit_MOVRxi(R12, (unsigned)ErrBadOpStack);
+		emit(BLX(R12));
+		emit(BKPT(0));
+
+		funcOffset[ FUNC_PSOF ] = compiledOfs;
+		emit_MOVRxi(R12, (unsigned)ErrBadProgramStack);
+		emit(BLX(R12));
+		emit(BKPT(0));
+
 	} // pass
 
 	// offset all the instruction pointers for the new location
