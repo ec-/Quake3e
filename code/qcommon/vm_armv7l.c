@@ -39,10 +39,20 @@ ARMv7-A_ARMv7-R_DDI0406_2007.pdf
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "vm_local.h"
 
+#define NUM_PASSES 1
+
+// additional integrity checks
 #define DEBUG_VM
+
+// various optimizations
+#define REG0_OPTIMIZE
+#define CONST_OPTIMIZE
+#define VM_OPTIMIZE
+#define MACRO_OPTIMIZE
 
 typedef enum
 {
@@ -56,6 +66,8 @@ typedef enum
 typedef enum
 {
 	FUNC_ENTR = 0,
+	FUNC_SYSC,
+	FUNC_SYSF,
 	FUNC_PSOF,
 	FUNC_OSOF,
 	FUNC_BADJ,
@@ -72,8 +84,6 @@ typedef enum {
 	MOP_BAND4,
 	MOP_BOR4,
 } macro_op_t;
-
-static vm_t *currentVM = NULL; // needed only for VM_BlockCopy
 
 //staticuint32_t *code;
 static	uint32_t  compiledOfs;
@@ -189,27 +199,6 @@ static void __attribute__((__noreturn__)) ErrBadOpStack( void )
 }
 
 
-static int asmcall( int call, int pstack )
-{
-	// save currentVM so as to allow for recursive VM entry
-	vm_t *savedVM = currentVM;
-	intptr_t *argPosition;
-	int ret;
-
-	// modify VM stack pointer for recursive VM entry
-	currentVM->programStack = pstack - 4;
-
-	argPosition = (intptr_t *)((byte *)currentVM->dataBase + pstack + 4);
-	argPosition[0] = call;
-	ret = currentVM->systemCall( argPosition );
-
-	currentVM = savedVM;
-
-	return ret;
-}
-
-#include <unistd.h>
-
 void _emit( vm_t *vm, uint32_t isn, int pass )
 {
 #if 0
@@ -226,8 +215,11 @@ void _emit( vm_t *vm, uint32_t isn, int pass )
 	}
 #endif
 
-	if ( pass )
+	//if ( pass )
+	if ( vm->codeBase.ptr )
+	{
 		memcpy( vm->codeBase.ptr + compiledOfs, &isn, 4 );
+	}
 
 	compiledOfs += 4;
 
@@ -421,10 +413,12 @@ static unsigned short can_encode(unsigned val)
 
 // branch to target address (for small jumps)
 #define Bi(imm24) \
-	(AL | (0b10)<<26 | (1<<25) /*I*/ | (0<<24) /*L*/ | (imm24))
+	(AL | (0b101)<<25 | (0<<24) /*L*/ | (imm24))
+
 // call subroutine
 #define BLi(imm24) \
-	(AL | (0b10)<<26 | (1<<25) /*I*/ | (1<<24) /*L*/ | (imm24))
+	(AL | (0b101)<<25 | (1<<24) /*L*/ | (imm24))
+
 // branch and exchange (register)
 #define BX(reg) \
 	(AL | 0b00010010<<20 | 0b1111<<16 | 0b1111<<12 | 0b1111<<8| 0b0001<<4 | reg)
@@ -454,13 +448,6 @@ static unsigned short can_encode(unsigned val)
 	emit(MOVW(reg, (arg&0xFFFF))); \
 	if (arg > 0xFFFF) \
 		emit(MOVT(reg, (((arg>>16)&0xFFFF)))); \
-	} while(0)
-
-// puts integer arg in register reg
-#define emit_CMOVRxi(comp, reg, arg) do { \
-	emit(cond(comp,MOVW(reg, (arg&0xFFFF)))); \
-	if (arg > 0xFFFF) \
-		emit(cond(comp,MOVT(reg, (((arg>>16)&0xFFFF))))); \
 	} while(0)
 
 // puts integer arg in register reg. adds nop if only one instr is needed to
@@ -507,35 +494,15 @@ static unsigned short can_encode(unsigned val)
 #define VMRS(Rt) \
 	(AL|(0b11101111<<20)|(0b0001<<16)|(Rt<<12)|(0b1010<<8)|(1<<4))
 
-static inline unsigned _j_rel(int x, int pc)
-{
-	if (x&3) goto err;
-	x = (x>>2)-2;
-	if (x < 0)
-	{
-		if ((x&(0xFF<<24)) != 0xFF<<24)
-			goto err;
-		x &= ~(0xFF<<24);
-	}
-	else if (x&(0xFF<<24))
-		goto err;
-	return x;
-err:
-	DIE("jump %d out of range at %d", x, pc);
-}
 
-#define REG0_OPTIMIZE
-#define CONST_OPTIMIZE
-#define VM_OPTIMIZE
-#define MACRO_OPTIMIZE
-
+#ifdef REG0_OPTIMIZE
 static void rewind4( vm_t *vm )
 {
 	compiledOfs -= 4;
 	vm->instructionPointers[ ip-1 ] = compiledOfs;
 	LastCommand = LAST_COMMAND_NONE;
 }
-
+#endif
 
 static void emit_store_opstack_r0( vm_t *vm )
 {
@@ -548,13 +515,6 @@ static void emit_store_opstack_p4_r0( vm_t *vm )
 {
 	emit(STRaiw(R0, rOPSTACK, 4)); // opstack+=4; *opstack = r0
 	LastCommand = LAST_COMMAND_STORE_OPSTACK_P4_R0;
-}
-
-
-static void emit_store_opstack_p4_r0_call( vm_t *vm )
-{
-	emit(STRaiw(R0, rOPSTACK, 4)); // opstack+=4; *opstack = r0
-	LastCommand = LAST_COMMAND_STORE_OPSTACK_P4_R0_CALL;
 }
 
 
@@ -593,12 +553,6 @@ static void emit_load_r0_opstack_m4( vm_t *vm )
 		rewind4( vm );
 		return;
 	}
-
-	//if ( LastCommand == LAST_COMMAND_STORE_OPSTACK_P4_R0_CALL ) // opstack +=4; *opstack = r0; call
-	//{
-		//emit(SUBi(rOPSTACK, rOPSTACK, 4)); // rOPSTACK -= 4;
-		//return;
-	//}
 #endif
 	emit(LDRTxi(R0, rOPSTACK, 4));  // r0 = *opstack; rOPSTACK -= 4
 }
@@ -673,12 +627,51 @@ static void emitFuncOffset( uint32_t comp, vm_t *vm, func_t func )
 }
 
 
-#define j_rel(x) (pass?_j_rel(x, ip-1):0xBAD)
+static void emitSyscallFunc( vm_t *vm )
+{
+funcOffset[ FUNC_SYSC ] = compiledOfs; // to jump from OP_CALL
+
+	emit(MVN(R0, R0));   // r0 = ~r0
+
+funcOffset[ FUNC_SYSF ] = compiledOfs; // to jump from ConstOptimize()
+
+	// save link register because it will be clobbered by BLX instruction
+	emit(PUSH((1<<rOPSTACK)|(1<<rPSTACK)|(1<<rPROCBASE)|(1<<LR)));
+
+	// modify VM stack pointer for recursive VM entry
+
+	//currentVM->programStack = pstack - 4;
+	emit(SUBi(R1, rPSTACK, 4)); // r1 = pstack - 4
+	emit(STRai(R1, rVMBASE, offsetof(vm_t, programStack))); // vm->programStack = r1
+
+	//argPosition = (intptr_t *)((byte *)currentVM->dataBase + pstack + 4);
+	emit(ADDi(R2,rPROCBASE,4)); /// r2 = rPROCBASE + 4
+
+	//argPosition[0] = call;
+	emit(STRai(R0, R2, 0)); // r2[0] = r0
+
+	emit(MOV(R0,R2));
+
+	//ret = currentVM->systemCall( argPosition );
+	emit(LDRai(R12, rVMBASE, offsetof(vm_t,systemCall))); // r12 = vm->systemCall
+	emit(BLX(R12)); // call [r12]( r0 )
+
+	emit(POP((1<<rOPSTACK)|(1<<rPSTACK)|(1<<rPROCBASE))|(1<<LR));
+
+	// store return value
+	emit_store_opstack_p4_r0( vm ); // opstack+=4; *opstack = r0;
+
+	// return to caller
+	emit(MOV(PC,LR));
+
+	emit(BKPT(0));
+}
+
 
 #ifdef CONST_OPTIMIZE
 static qboolean ConstOptimize( vm_t *vm )
 {
-	uint32_t x, t;
+	uint32_t x;
 
 	// we can safely perform optimizations only in case if
 	// we are 100% sure that next instruction is not a jump label
@@ -849,11 +842,7 @@ static qboolean ConstOptimize( vm_t *vm )
 		return qtrue;
 
 	case OP_JUMP:
-		x = (vm->instructionPointers[ ci->value ] - compiledOfs - 8) >> 2;
-		t = x >> 24;
-		if ( t != 0x3F && t != 0x00 )
-			break; // offset can't be encoded in 24 bits...
-		emit(Bi(x&0xFFFFFF));
+		emit(Bi(encode_offset(vm->instructionPointers[ ci->value ] - compiledOfs)));
 		ip += 1; // OP_JUMP
 		return qtrue;
 
@@ -862,19 +851,11 @@ static qboolean ConstOptimize( vm_t *vm )
 		{
 			x = ~ci->value;
 			emit_MOVRxi(R0, x);
-			emit(MOV(R1, rPSTACK));
-			emit_MOVRxi(R12, (unsigned)asmcall);
-			emit(BLX(R12));
-			// store return value
-			emit_store_opstack_p4_r0_call( vm ); // opstack+=4; *opstack = r0; call
+			emitFuncOffset( AL, vm, FUNC_SYSF );
 			ip += 1; // OP_CALL;
 			return qtrue;
 		}
-		x = (vm->instructionPointers[ ci->value ] - compiledOfs - 8) >> 2;
-		t = x >> 24;
-		if ( t != 0x3F && t != 0x00 )
-			break; // offset can't be encoded in 24 bits...
-		emit(BLi(x&0xFFFFFF));
+		emit(BLi(encode_offset(vm->instructionPointers[ ci->value ] - compiledOfs)));
 		ip += 1; // OP_CALL;
 		return qtrue;
 
@@ -898,7 +879,7 @@ static qboolean ConstOptimize( vm_t *vm )
 			emit_MOVRxi(R1, x);
 			emit(CMP(R0, R1));
 		}
-		emit(cond(comp, Bi(j_rel(vm->instructionPointers[ ni->value ] - compiledOfs))));
+		emit(cond(comp, Bi(encode_offset(vm->instructionPointers[ ni->value ] - compiledOfs))));
 		}
 		ip += 1; // OP_cond
 		return qtrue;
@@ -912,6 +893,7 @@ static qboolean ConstOptimize( vm_t *vm )
 #endif
 
 
+#ifdef MACRO_OPTIMIZE
 /*
 =================
 VM_FindMOps
@@ -1037,29 +1019,28 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 
 	return qfalse;
 }
-
-
+#endif
 
 
 /*
 =================
 VM_BlockCopy
-Executes a block copy operation within currentVM data space
+Executes a block copy operation within current VM data space
 =================
 */
-static void VM_BlockCopy( uint32_t dest, uint32_t src, uint32_t n )
+static void VM_BlockCopy( uint32_t src, uint32_t dest, const uint32_t n, const vm_t *vm )
 {
-	const uint32_t dataMask = currentVM->dataMask;
+	const uint32_t dataMask = vm->dataMask;
 
 	if ((dest & dataMask) != dest
 	|| (src & dataMask) != src
 	|| ((dest + n) & dataMask) != dest + n
 	|| ((src + n) & dataMask) != src + n)
 	{
-		Com_Error( ERR_DROP, "OP_BLOCK_COPY out of range for vm %s", currentVM->name );
+		Com_Error( ERR_DROP, "OP_BLOCK_COPY out of range for vm %s", vm->name );
 	}
 
-	Com_Memcpy( currentVM->dataBase + dest, currentVM->dataBase + src, n );
+	Com_Memcpy( vm->dataBase + dest, vm->dataBase + src, n );
 }
 
 
@@ -1100,23 +1081,14 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 	memset( funcOffset, 0, sizeof( funcOffset ) );
 
 	vm->codeBase.ptr = NULL;
+
+	for ( pass = 0; pass < NUM_PASSES; pass++ ) {
+__recompile:
+
+	// translate all instructions
+	ip = 0;
 	compiledOfs = 0;
-
-	for ( pass = 0; pass < 2; pass++ ) {
-
-	if ( pass ) {
-		vm->codeBase.ptr = mmap( NULL, compiledOfs, PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0 );
-		if ( vm->codeBase.ptr == MAP_FAILED ) {
-			VM_FreeBuffers();
-			Com_Printf( S_COLOR_YELLOW "%s(%s): mmap failed\n", __func__, vm->name );
-			return qfalse;
-		}
-		vm->codeLength = compiledOfs;
-		vm->codeSize = compiledOfs;
-		compiledOfs = 0;
-	}
-
-	compiledOfs = 0;
+	LastCommand = LAST_COMMAND_NONE;
 
 	emit(PUSH(SAVE_REGS|(1<<LR))); // push R4-R11, LR
 	emit(SUBi(SP, SP, 12));        // align stack to 16 bytes
@@ -1138,17 +1110,12 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 	emit(STRai(rPSTACK, rVMBASE, offsetof(vm_t, programStack))); // vm->programStack = rPSTACK;
 	emit(STRai(rOPSTACK, rVMBASE, offsetof(vm_t, opStack)));     // vm->opStack = rOPSTACK;
 #endif
-	// emit(LDRai(R0, rOPSTACK, 0)); // r0 = *opstack
 
 	emit(ADDi(SP, SP, 12));       // align stack to 16 bytes
 	emit(POP(SAVE_REGS|(1<<PC))); // pop R4-R11, LR -> PC
 	emit(BKPT(0));
 
 	funcOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
-
-	// translate all instructions
-	ip = 0;
-	LastCommand = LAST_COMMAND_NONE;
 
 	while ( ip < header->instructionCount ) {
 
@@ -1230,7 +1197,8 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 					emit(CMPi(R0, 0)); // check if syscall
 					if (start_block == -1)
 						start_block = compiledOfs;
-					emit(cond(LT, Bi(j_rel(bytes_to_skip))));
+
+					emit(cond(LT, Bi(encode_offset(bytes_to_skip))));
 
 					// check if R0 >= header->instructionCount
 					emit_MOVRxi(R1, (unsigned)header->instructionCount);
@@ -1239,19 +1207,15 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 					emitFuncOffset( HS, vm, FUNC_OUTJ );
 
 					// local function call
-					emit(LDRa(R0, rINSPOINTERS, rLSL(2, R0))); // r0 = instructionPointers[r0]
-					emit(BLX(R0));
-					emit(Bi(j_rel(vm->instructionPointers[ip] - compiledOfs)));
+					emit(LDRa(R12, rINSPOINTERS, rLSL(2, R0))); // r12 = instructionPointers[r0]
+					emit(BLX(R12));
+					emit(Bi(encode_offset(vm->instructionPointers[ip] - compiledOfs)));
 
 					// syscall
 					if (bytes_to_skip == -1)
 						bytes_to_skip = compiledOfs - start_block;
-					emit(MVN(R0, R0));   // r0 = ~r0
-					emit(MOV(R1, rPSTACK));
-					emit_MOVRxi(R12, (unsigned)asmcall);
-					emit(BLX(R12));
-					// store return value
-					emit_store_opstack_p4_r0_call( vm ); // opstack+=4; *opstack = r0; call
+
+					emitFuncOffset(AL, vm, FUNC_SYSC);
 				}
 				break;
 
@@ -1330,8 +1294,8 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 					emit(CMP(R0, R1));
 					emitFuncOffset( HS, vm, FUNC_OUTJ );
 
-					emit(LDRa(R0, rINSPOINTERS, rLSL(2, R0))); // r0 = instructionPointers[r0]
-					emit(BLX(R0));
+					emit(LDRa(R12, rINSPOINTERS, rLSL(2, R0))); // r12 = instructionPointers[ r0 ]
+					emit(BX(R12));
 				}
 				break;
 
@@ -1349,7 +1313,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 				emit_load_r0_opstack_m4( vm ); // r0 = *opstack; rOPSTACK -= 4
 				emit(LDRTxi(R1, rOPSTACK, 4)); // r1 = *opstack; rOPSTACK -= 4
 				emit(CMP(R1, R0));
-				emit(cond(comp, Bi(j_rel(vm->instructionPointers[v] - compiledOfs))));
+				emit(cond(comp, Bi(encode_offset(vm->instructionPointers[v] - compiledOfs))));
 				}
 				break;
 
@@ -1365,7 +1329,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 				emit(VLDRa(S14, rOPSTACK, 8));
 				emit(VCMP_F32(S15, S14));
 				emit(VMRS(APSR_nzcv));
-				emit(cond(comp, Bi(j_rel(vm->instructionPointers[v] - compiledOfs))));
+				emit(cond(comp, Bi(encode_offset(vm->instructionPointers[v] - compiledOfs))));
 				}
 				break;
 
@@ -1427,9 +1391,12 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 				break;
 
 			case OP_BLOCK_COPY:
-				emit(LDRTxi(R1, rOPSTACK, 4));  // r1 = *opstack; rOPSTACK -= 4
-				emit(LDRTxi(R0, rOPSTACK, 4));  // r0 = *opstack; rOPSTACK -= 4
+				// src: opStack[0]
+				// dst: opstack[-4]
+				emit_load_r0_opstack_m4( vm );  // src: r0 = *opstack; rOPSTACK -= 4
+				emit(LDRTxi(R1, rOPSTACK, 4));  // dst: r1 = *opstack; rOPSTACK -= 4
 				emit_MOVRxi(R2, v);
+				emit(MOV(R3,rVMBASE));
 				emit_MOVRxi(R12, (unsigned)VM_BlockCopy);
 				emit(BLX(R12));
 				break;
@@ -1611,16 +1578,20 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 				emit(VMOVssa(R0,S14));         // s14 = r0
 				emit_store_opstack_r0( vm );   // *opstack = r0
 				break;
-
+#ifdef MACRO_OPTIMIZE
 			case MOP_ADD4:
 			case MOP_SUB4:
 			case MOP_BAND4:
 			case MOP_BOR4:
 				EmitMOPs( vm, ci->op );
 				break;
-
+#endif
 		} // switch op
 	} // ip
+
+		//funcOffset[ FUNC_SYSC ] = compiledOfs;
+		emitSyscallFunc( vm );
+		emit(BKPT(0));
 
 		funcOffset[ FUNC_BADJ ] = compiledOfs;
 		emit_MOVRxi(R12, (unsigned)BadJump);
@@ -1644,6 +1615,18 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 
 	} // pass
 
+	if ( vm->codeBase.ptr == NULL ) {
+		vm->codeBase.ptr = mmap( NULL, compiledOfs, PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0 );
+		if ( vm->codeBase.ptr == MAP_FAILED ) {
+			VM_FreeBuffers();
+			Com_Printf( S_COLOR_YELLOW "%s(%s): mmap failed\n", __func__, vm->name );
+			return qfalse;
+		}
+		vm->codeLength = compiledOfs;
+		vm->codeSize = compiledOfs;
+		goto __recompile;
+	}
+
 	// offset all the instruction pointers for the new location
 	for ( i = 0; i < header->instructionCount; i++ ) {
 		if ( !inst[i].jused ) {
@@ -1661,7 +1644,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 		return qfalse;
 	}
 
-	// clear icache, http://blogs.arm.com/software-enablement/141-caches-and-self-modifying-code/ 
+	// clear icache, http://blogs.arm.com/software-enablement/141-caches-and-self-modifying-code/
 	__clear_cache( vm->codeBase.ptr, vm->codeBase.ptr + vm->codeLength );
 
 	vm->destroy = VM_Destroy_Compiled;
@@ -1675,14 +1658,10 @@ int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 	int		opStack[MAX_OPSTACK_SIZE];
 	unsigned int stackOnEntry;
 	int		*image;
-	int		*oldOpTop;
 	int		i;
-
-	currentVM = vm;
 
 	// we might be called recursively, so this might not be the very top
 	stackOnEntry = vm->programStack;
-	oldOpTop = vm->opStackTop;
 
 	vm->programStack -= (MAX_VMMAIN_CALL_ARGS+2)*4;
 
@@ -1692,7 +1671,7 @@ int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 		image[ i + 2 ] = args[ i ];
 	}
 
-	image[1] =  0; // return stack
+	// image[1] =  0; // return stack
 	// image[0] = -1; // will terminate loop on return, only for interpreter modules
 
 #ifdef DEBUG_VM
@@ -1700,8 +1679,8 @@ int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 #endif
 	opStack[1] = 0;
 
-	vm->opStack = opStack; // unused atm
-	vm->opStackTop = opStack + ARRAY_LEN( opStack ) - 1; // unused atm
+	vm->opStack = opStack;
+	vm->opStackTop = opStack + ARRAY_LEN( opStack ) - 1;
 
 	vm->codeBase.func(); // go into generated code
 
@@ -1716,7 +1695,6 @@ int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 #endif
 
 	vm->programStack = stackOnEntry;
-	vm->opStackTop = oldOpTop;
 
 	return opStack[1];
 }
