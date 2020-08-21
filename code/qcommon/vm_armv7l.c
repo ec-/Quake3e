@@ -306,7 +306,7 @@ static unsigned short can_encode(unsigned val)
 #define AL (0b1110<<28)
 #define cond(what, op) (what | (op&~AL))
 
-#define BKPT(v) (AL | 0b10010<<20 | ((v&~0xFFFF000F)<<8) | 0b0111<<4 | (v&0xF))
+#define BKPT(v) (AL | 0b10010<<20 | ((v&0xFFF0)<<8) | 0b0111<<4 | (v&0xF))
 
 #define YIELD (0b110010<<20 | 0b1111<<12 | 1)
 #define NOP cond(AL, YIELD)
@@ -382,20 +382,25 @@ static unsigned short can_encode(unsigned val)
 #define LDRa(dst, base, off)   (AL | (0b011<<25) | (0b1100<<21) | (1<<20) | base<<16 | dst<<12 | off)
 #define LDRx(dst, base, off)   (AL | (0b011<<25) | (0b1000<<21) | (1<<20) | base<<16 | dst<<12 | off)
 
-#define LDRai(dst, base, off)  (AL | (0b010<<25) | (0b1100<<21) | (1<<20) | base<<16 | dst<<12 | rimm(off))
-#define LDRxi(dst, base, off)  (AL | (0b010<<25) | (0b1000<<21) | (1<<20) | base<<16 | dst<<12 | rimm(off))
-#define LDRxiw(dst, base, off) (AL | (0b010<<25) | (0b1001<<21) | (1<<20) | base<<16 | dst<<12 | rimm(off))
+#define LDRai(dst, base, off)  (AL | (0b010<<25) | (0b1100<<21) | (1<<20) | base<<16 | dst<<12 | off)
+#define LDRBai(dst, base, off) (AL | (0b010<<25) | (0b1110<<21) | (1<<20) | base<<16 | dst<<12 | off)
+
+#define LDRxi(dst, base, off)  (AL | (0b010<<25) | (0b1000<<21) | (1<<20) | base<<16 | dst<<12 | off)
+#define LDRxiw(dst, base, off) (AL | (0b010<<25) | (0b1001<<21) | (1<<20) | base<<16 | dst<<12 | off)
 
 #define LDRTa(dst, base, off)  (AL | (0b011<<25) | (0b0101<<21) | (1<<20) | base<<16 | dst<<12 | off)
 #define LDRTx(dst, base, off)  (AL | (0b011<<25) | (0b0001<<21) | (1<<20) | base<<16 | dst<<12 | off)
-#define LDRTai(dst, base, off) (AL | (0b010<<25) | (0b0101<<21) | (1<<20) | base<<16 | dst<<12 | rimm(off))
-#define LDRTxi(dst, base, off) (AL | (0b010<<25) | (0b0001<<21) | (1<<20) | base<<16 | dst<<12 | rimm(off))
+#define LDRTai(dst, base, off) (AL | (0b010<<25) | (0b0101<<21) | (1<<20) | base<<16 | dst<<12 | off)
+#define LDRTxi(dst, base, off) (AL | (0b010<<25) | (0b0001<<21) | (1<<20) | base<<16 | dst<<12 | off)
 
 #define LDRBa(dst, base, off)   (AL | (0b011<<25) | (0b1110<<21) | (1<<20) | base<<16 | dst<<12 | off)
-#define LDRSBai(dst, base, off) (AL | (0b000<<25) | (0b0110<<21) | (1<<20) | base<<16 | dst<<12 | ((off&0xF0)<<8) | 0b1101<<4 | (off&0x0F))
+#define LDRSBa(dst, base, off)  (AL | (0b000<<25) | (0b1100<<21) | (1<<20) | base<<16 | dst<<12 | (0b0000<<8) | 0b1101<<4 | off)
+#define LDRSBai(dst, base, off) (AL | (0b000<<25) | (0b1110<<21) | (1<<20) | base<<16 | dst<<12 | ((off&0xF0)<<8) | 0b1101<<4 | (off&0x0F))
+
 #define STRBa(dst, base, off)   (AL | (0b011<<25) | (0b1110<<21) | (0<<20) | base<<16 | dst<<12 | off)
 
-#define LDRHa(dst, base, off)   (AL | (0b000<<25) | (0b1100<<21) | (1<<20) | base<<16 | dst<<12 | (0b1011<<4) | off)
+#define LDRHa(dst, base, off)   (AL | (0b000<<25) | (0b1100<<21) | (1<<20) | base<<16 | dst<<12 | (0b0000<<8) | (0b1011<<4) | off)
+#define LDRSHa(dst, base, off)  (AL | (0b000<<25) | (0b1100<<21) | (1<<20) | base<<16 | dst<<12 | (0b0000<<8) | (0b1111<<4) | off)
 #define LDRHai(dst, base, off)  (AL | (0b000<<25) | (0b1110<<21) | (1<<20) | base<<16 | dst<<12 | (((off)&0xF0)<<8) | (0b1011)<<4 | ((off)&0x0F) )
 #define LDRSHai(dst, base, off) (AL | (0b000<<25) | (0b1110<<21) | (1<<20) | base<<16 | dst<<12 | (((off)&0xF0)<<8) | (0b1111)<<4 | ((off)&0x0F) )
 
@@ -403,10 +408,10 @@ static unsigned short can_encode(unsigned val)
 
 #define STRa(dst, base, off)   (AL | (0b011<<25) | (0b1100<<21) | (0<<20) | base<<16 | dst<<12 | off)
 #define STRx(dst, base, off)   (AL | (0b011<<25) | (0b1000<<21) | (0<<20) | base<<16 | dst<<12 | off)
-#define STRai(dst, base, off)  (AL | (0b010<<25) | (0b1100<<21) | (0<<20) | base<<16 | dst<<12 | rimm(off))
-#define STRxi(dst, base, off)  (AL | (0b010<<25) | (0b1000<<21) | (0<<20) | base<<16 | dst<<12 | rimm(off))
-#define STRaiw(dst, base, off) (AL | (0b010<<25) | (0b1101<<21) | (0<<20) | base<<16 | dst<<12 | rimm(off))
-#define STRxiw(dst, base, off) (AL | (0b010<<25) | (0b1001<<21) | (0<<20) | base<<16 | dst<<12 | rimm(off))
+#define STRai(dst, base, off)  (AL | (0b010<<25) | (0b1100<<21) | (0<<20) | base<<16 | dst<<12 | off)
+#define STRxi(dst, base, off)  (AL | (0b010<<25) | (0b1000<<21) | (0<<20) | base<<16 | dst<<12 | off)
+#define STRaiw(dst, base, off) (AL | (0b010<<25) | (0b1101<<21) | (0<<20) | base<<16 | dst<<12 | off)
+#define STRxiw(dst, base, off) (AL | (0b010<<25) | (0b1001<<21) | (0<<20) | base<<16 | dst<<12 | off)
 
 // load with post-increment
 #define POP1(reg)              (AL | (0b010<<25) | (0b0100<<21) | (1<<20) |   SP<<16 | reg<<12 | reg)
@@ -429,18 +434,19 @@ static unsigned short can_encode(unsigned val)
 	(AL | 0b00010010<<20 | 0b1111<<16 | 0b1111<<12 | 0b1111<<8| 0b0011<<4 | reg)
 
 #define PUSH(mask)    (AL | (0b100100<<22) | (0b10<<20) | (0b1101<<16) |  mask)
-#define PUSH2(r1, r2) (AL | (0b100100<<22) | (0b10<<20) | (0b1101<<16) |  1<<r1 | 1<<r2)
 
 //#define PUSH1(reg) STRxiw(SP, reg, 4)
 
 #define POP(mask)     (0xe8bd0000|mask)
 
-// note: op1 and op2 must not be the same
-#define MUL(op1, op2, op3) \
-	(AL | 0b0000000<<21 | (1<<20) /*S*/ | (op1<<16) | (op3<<8) | 0b1001<<4 | (op2))
+// note: Rd and Rm must not be the same
+#define MUL(Rd, Rm, Rs) \
+	(AL | 0b0000000<<21 | (0<<20) /*S*/ | (Rd<<16) | (Rs<<8) | 0b1001<<4 | Rm)
 
-#define SDIV(Rd, Rm, Rn) (AL | (0b01110<<23) | (0b001<<20) | (Rd<<16) | (0b1111<<12) | (Rm<<8) | (0b0001 << 4) | Rn )
-#define UDIV(Rd, Rm, Rn) (AL | (0b01110<<23) | (0b011<<20) | (Rd<<16) | (0b1111<<12) | (Rm<<8) | (0b0001 << 4) | Rn )
+#define SDIV(Rd, Rm, Rn) (AL | (0b01110<<23) | (0b001<<20) | (Rd<<16) | (0b1111<<12) | (Rm<<8) | (0b0001 << 4) | Rn)
+#define UDIV(Rd, Rm, Rn) (AL | (0b01110<<23) | (0b011<<20) | (Rd<<16) | (0b1111<<12) | (Rm<<8) | (0b0001 << 4) | Rn)
+
+#define MLS(Rd, Rn, Rm, Ra) (AL | (0b0110<<20) | (Rd<<16) | (Ra<<12) | (Rm<<8) | (0b1001<<4) | Rn)
 
 // puts integer in R0
 #define emit_MOVR0i(arg) emit_MOVRxi(R0, arg)
@@ -750,7 +756,7 @@ static qboolean ConstOptimize( vm_t *vm )
 
 	case OP_LOAD4:
 		x = ci->value;
-		if ( x < 256 ) {
+		if ( x < 4096 ) {
 			emit(LDRai(R0, rDATABASE, x)); // r0 = [dataBase + v]
 		} else {
 			emit_MOVRxi(R1, x);
@@ -762,24 +768,46 @@ static qboolean ConstOptimize( vm_t *vm )
 
 	case OP_LOAD2:
 		x = ci->value;
-		if ( x < 256 ) {
-			emit(LDRHai(R0, rDATABASE, x)); // r0 = (word*)[dataBase + v]
+		if ( (ci+2)->op == OP_SEX16 ) {
+			if ( x < 256 ) {
+				emit(LDRSHai(R0, rDATABASE, x)); // r0 = (signed short*)[dataBase + v]
+			} else {
+				emit_MOVRxi(R1, x);
+				emit(LDRSHa(R0, rDATABASE, R1)); // r0 = (signed short*)[dataBase + r1]
+			}
+			ip += 2; // OP_LOAD2 + OP_SEX16
 		} else {
-			emit_MOVRxi(R1, x);
-			emit(LDRHa(R0, rDATABASE, R1)); // r0 = (word*)[dataBase + r1]
+			if ( x < 256 ) {
+				emit(LDRHai(R0, rDATABASE, x));  // r0 = (unsigned short*)[dataBase + v]
+			} else {
+				emit_MOVRxi(R1, x);
+				emit(LDRHa(R0, rDATABASE, R1));  // r0 = (unsigned short*)[dataBase + r1]
+			}
+			ip += 1; // OP_LOAD2
 		}
 		emit_store_opstack_p4_r0( vm ); // opstack +=4 ; *opstack = r0;
-		ip += 1; // OP_LOAD2
 		return qtrue;
 
 	case OP_LOAD1:
 		x = ci->value;
-		//emit(ADDi(rOPSTACK, rOPSTACK, 4));     // opstack += 4;
-		emit_MOVRxi(R1, x);
-		emit(LDRBa(R0, rDATABASE, R1)); // r0 = (byte*)[dataBase + r1]
-		//emit_store_opstack_r0( vm ); // *opstack = r0;
+		if ( (ci+2)->op == OP_SEX8 ) {
+			if ( x < 256 ) {
+				emit(LDRSBai(R0, rDATABASE, x)); // r0 = (signed char*)[dataBase + x]
+			} else {
+				emit_MOVRxi(R1, x);
+				emit(LDRSBa(R0, rDATABASE, R1)); // r0 = (signed char*)[dataBase + r1]
+			}
+			ip += 2; // OP_LOAD1 + OP_SEX8
+		} else {
+			if ( x < 4096 ) {
+				emit(LDRBai(R0, rDATABASE, x));  // r0 = (byte*)[dataBase + x]
+			} else {
+				emit_MOVRxi(R1, x);
+				emit(LDRBa(R0, rDATABASE, R1));  // r0 = (byte*)[dataBase + r1]
+			}
+			ip += 1; // OP_LOAD1
+		}
 		emit_store_opstack_p4_r0( vm ); // opstack +=4 ; *opstack = r0;
-		ip += 1; // OP_LOAD1
 		return qtrue;
 
 	case OP_STORE4:
@@ -812,7 +840,6 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_ADD:
 		x = ci->value;
 		emit_load_r0_opstack( vm ); // r0 = *opstack;
-		//if ( x < 256 ) {
 		if ( can_encode( x ) ) {
 			emit(ADDi(R0, R0, x));
 		} else {
@@ -826,7 +853,6 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_SUB:
 		x = ci->value;
 		emit_load_r0_opstack( vm ); // r0 = *opstack;
-		//if ( x < 256 ) {
 		if ( can_encode( x ) ) {
 			emit(SUBi(R0, R0, x));
 		} else {
@@ -870,7 +896,6 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_BAND:
 		x = ci->value;
 		emit_load_r0_opstack( vm );  // r0 = *opstack;
-		//if ( x < 256 ) {
 		if ( can_encode( x ) ) {
 			emit(ANDi(R0, R0, x));       // r0 = r0 & x
 		} else {
@@ -884,7 +909,6 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_BOR:
 		x = ci->value;
 		emit_load_r0_opstack( vm );    // r0 = *opstack;
-		//if ( x < 256 ) {
 		if ( can_encode( x ) ) {
 			emit(ORRi(R0, R0, x)); // r0 = r0 | x
 		} else {
@@ -898,7 +922,6 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_BXOR:
 		x = ci->value;
 		emit_load_r0_opstack( vm );    // r0 = *opstack;
-		//if ( x < 256 ) {
 		if ( can_encode( x ) ) {
 			emit(EORi(R0, R0, x)); // r0 = r0 ^ x
 		} else {
@@ -941,7 +964,6 @@ static qboolean ConstOptimize( vm_t *vm )
 		uint32_t comp = get_comp( ni->op );
 		emit_load_r0_opstack_m4( vm ); // r0 = *opstack; rOPSTACK -= 4
 		x = ci->value;
-		//if ( x < 256 ) {
 		if ( can_encode( x ) ) {
 			emit(CMPi(R0, x));
 		} else {
@@ -951,6 +973,44 @@ static qboolean ConstOptimize( vm_t *vm )
 		emit(cond(comp, Bi(encode_offset(vm->instructionPointers[ ni->value ] - compiledOfs))));
 		}
 		ip += 1; // OP_cond
+		return qtrue;
+
+	case OP_EQF:
+	case OP_NEF:
+	case OP_LTF:
+	case OP_LEF:
+	case OP_GTF:
+	case OP_GEF: {
+		uint32_t comp = get_comp( ni->op );
+		x = ci->value;
+		emit_load_r0_opstack_m4( vm );     // r0 = *opstack; rOPSTACK -= 4
+		emit_MOVRxi(R1, x);                // r1 = ci->value
+		emit(VMOVass(S14,R0));             // s14 = r0
+		emit(VMOVass(S15,R1));             // s15 = r1
+		emit(VCMP_F32(S14, S15));
+		emit(VMRS(APSR_nzcv));
+		emit(cond(comp, Bi(encode_offset(vm->instructionPointers[ ni->value ] - compiledOfs))));
+		ip += 1; // OP_cond
+		return qtrue;
+		}
+
+	case OP_ADDF:
+	case OP_SUBF:
+	case OP_MULF:
+	case OP_DIVF:
+		emit_load_opstack_s14( vm );       // s14 = *opstack;
+		x = ci->value;
+		emit_MOVRxi(R1, x);                // r1 = ci->value
+		emit(VMOVass(S15,R1));             // s15 = r1
+		switch ( ni->op ) {
+			case OP_ADDF: emit(VADD_F32(S14, S14, S15)); break;  // s14 = s14 + s15
+			case OP_SUBF: emit(VSUB_F32(S14, S14, S15)); break;  // s14 = s14 - s15
+			case OP_MULF: emit(VMUL_F32(S14, S14, S15)); break;  // s14 = s14 * s15
+			case OP_DIVF: emit(VDIV_F32(S14, S14, S15)); break;  // s14 = s14 / s15
+			default: break;
+		}
+		emit_store_opstack_s14( vm );      // *((float*)opstack) = s14
+		ip += 1; // OP_XXXF
 		return qtrue;
 
 	default:
@@ -1033,7 +1093,7 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 			addr = ci->value;
 
 			// load
-			if ( addr < 256 ) {
+			if ( addr < 4096 ) {
 				emit(LDRai(R0, rPROCBASE, addr)); // r0 = [procBase + addr]
 			} else {
 				emit_MOVRxi(R2, addr);            // r2 = addr
@@ -1073,7 +1133,7 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 			}
 
 			// store
-			if ( addr < 256 ) {
+			if ( addr < 4096 ) {
 				emit(STRai(R0, rPROCBASE, addr)); // [procBase + addr] = r0
 			} else {
 				emit(STRa(R0, rPROCBASE, R2));    // [procBase + r2] = r0
@@ -1205,14 +1265,14 @@ __recompile:
 		switch ( ci->op )
 		{
 			case OP_UNDEF:
+				emit(BKPT(1));
 				break;
 
 			case OP_IGNORE:
-				//NOTIMPL(op);
 				break;
 
 			case OP_BREAK:
-				emit(BKPT(0));
+				emit(BKPT(3));
 				break;
 
 			case OP_ENTER:
@@ -1283,7 +1343,7 @@ __recompile:
 #ifdef VM_OPTIMIZE
 				if ( ni->op == OP_LOAD4 ) // merge OP_LOCAL + OP_LOAD4
 				{
-					if ( v < 256 ) {
+					if ( v < 4096 ) {
 						emit(LDRai(R0, rPROCBASE, v)); // r0 = [procBase + v]
 					} else {
 						emit_MOVRxi(R1, v);
@@ -1309,8 +1369,12 @@ __recompile:
 
 				if ( ni->op == OP_LOAD1 ) // merge OP_LOCAL + OP_LOAD1
 				{
-					emit_MOVRxi(R1, v);
-					emit(LDRBa(R0, rPROCBASE, R1)); // r0 = (byte*)[procBase+r1]
+					if ( v < 4096 ) {
+						emit(LDRBai(R0, rPROCBASE, v)); // r0 = (byte*)[procBase+v]
+					} else {
+						emit_MOVRxi(R1, v);
+						emit(LDRBa(R0, rPROCBASE, R1)); // r0 = (byte*)[procBase+r1]
+					}
 					emit_store_opstack_p4_r0( vm ); // opstack+=4; *opstack = r0
 					ip++; // OP_LOAD1
 					break;
@@ -1419,7 +1483,7 @@ __recompile:
 			case OP_ARG:
 				emit_load_r0_opstack_m4( vm );  // r0 = *opstack; rOPSTACK -= 4
 #ifdef VM_OPTIMIZE
-				if ( v < 256 ) {
+				if ( v < 4096 ) {
 					emit(STRai(R0, rPROCBASE, v)); // [procBase + v] = r0;
 				} else {
 					emit_MOVRxi(R1, v);
@@ -1496,14 +1560,26 @@ __recompile:
 
 			case OP_MODI:
 			case OP_MODU:
-				emit(LDRai(R1, rOPSTACK, 0));  // r1 = *opstack
-				emit(LDRxiw(R0, rOPSTACK, 4)); // opstack-=4; r0 = *opstack
-				if ( ci->op == OP_MODI )
-					emit_MOVRxi(R12, (unsigned)__aeabi_idivmod);
-				else
-					emit_MOVRxi(R12, (unsigned)__aeabi_uidivmod);
-				emit(BLX(R12));
-				emit(STRai(R1, rOPSTACK, 0));  // *opstack = r1
+				if ( CPU_Flags & CPU_IDIV && 0 ) {
+					emit_load_r0_opstack( vm );
+					emit(LDRxiw(R1, rOPSTACK, 4)); // opstack-=4; r1 = *opstack
+					if ( ci->op == OP_MODI ) {
+						emit(SDIV(R2,R0,R1));
+					} else {
+						emit(UDIV(R2,R0,R1));
+					}
+					emit(MLS(R0, R1, R2, R0));     // r0 = r0 - r1 * r2
+					emit_store_opstack_r0( vm );   // *opstack = r0
+				} else {
+					emit(LDRai(R1, rOPSTACK, 0));  // r1 = *opstack
+					emit(LDRxiw(R0, rOPSTACK, 4)); // opstack-=4; r0 = *opstack
+					if ( ci->op == OP_MODI )
+						emit_MOVRxi(R12, (unsigned)__aeabi_idivmod);
+					else
+						emit_MOVRxi(R12, (unsigned)__aeabi_uidivmod);
+					emit(BLX(R12));
+					emit(STRai(R1, rOPSTACK, 0));  // *opstack = r1
+				}
 				break;
 
 			case OP_MULI:
