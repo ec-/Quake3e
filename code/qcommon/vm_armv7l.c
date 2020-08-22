@@ -75,6 +75,7 @@ typedef enum
 	FUNC_OSOF,
 	FUNC_BADJ,
 	FUNC_OUTJ,
+	FUNC_BADD,
 	FUNC_LAST
 } func_t;
 
@@ -193,14 +194,18 @@ static void __attribute__((__noreturn__)) BadJump( void )
 
 static void __attribute__((__noreturn__)) ErrBadProgramStack( void )
 {
-	Com_Error( ERR_DROP, "program tried to overflow programStack\n" );
+	Com_Error( ERR_DROP, "program tried to overflow programStack" );
 }
 
 static void __attribute__((__noreturn__)) ErrBadOpStack( void )
 {
-	Com_Error( ERR_DROP, "program tried to overflow opStack\n" );
+	Com_Error( ERR_DROP, "program tried to overflow opStack" );
 }
 
+static void __attribute__((__noreturn__)) ErrBadData( void )
+{
+	Com_Error( ERR_DROP, "program tried to read/write out of data segment" );
+}
 
 void _emit( vm_t *vm, uint32_t isn, int pass )
 {
@@ -443,8 +448,8 @@ static unsigned short can_encode(unsigned val)
 #define MUL(Rd, Rm, Rs) \
 	(AL | 0b0000000<<21 | (0<<20) /*S*/ | (Rd<<16) | (Rs<<8) | 0b1001<<4 | Rm)
 
-#define SDIV(Rd, Rm, Rn) (AL | (0b01110<<23) | (0b001<<20) | (Rd<<16) | (0b1111<<12) | (Rm<<8) | (0b0001 << 4) | Rn)
-#define UDIV(Rd, Rm, Rn) (AL | (0b01110<<23) | (0b011<<20) | (Rd<<16) | (0b1111<<12) | (Rm<<8) | (0b0001 << 4) | Rn)
+#define SDIV(Rd, Rn, Rm) (AL | (0b01110<<23) | (0b001<<20) | (Rd<<16) | (0b1111<<12) | (Rm<<8) | (0b0001 << 4) | Rn)
+#define UDIV(Rd, Rn, Rm) (AL | (0b01110<<23) | (0b011<<20) | (Rd<<16) | (0b1111<<12) | (Rm<<8) | (0b0001 << 4) | Rn)
 
 #define MLS(Rd, Rn, Rm, Ra) (AL | (0b0110<<20) | (Rd<<16) | (Ra<<12) | (Rm<<8) | (0b1001<<4) | Rn)
 
@@ -742,6 +747,20 @@ funcOffset[ FUNC_SYSF ] = compiledOfs; // to jump from ConstOptimize()
 }
 
 
+static void emit_CheckReg( vm_t *vm, uint32_t reg )
+{
+	if ( !( vm_rtChecks->integer & 8 ) || vm->forceDataMask ) {
+		if ( vm->forceDataMask ) {
+			emit(AND(reg, rDATAMASK, reg));    // rN = rN & rDATAMASK
+		}
+		return;
+	}
+
+	emit(CMP(reg, rDATAMASK));
+	emitFuncOffset(HI, vm, FUNC_BADD);
+}
+
+
 #ifdef CONST_OPTIMIZE
 static qboolean ConstOptimize( vm_t *vm )
 {
@@ -813,7 +832,7 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_STORE4:
 		x = ci->value;
 		emit_load_r0_opstack_m4( vm ); // r0 = *opstack; opstack -=4;
-		emit(AND(R0, rDATAMASK, R0));    // r0 = r0 & rDATAMASK
+		emit_CheckReg(vm, R0);
 		emit_MOVRxi(R1, x);
 		emit(STRa(R1, rDATABASE, R0)); // [dataBase + r0] = r1;
 		ip += 1; // OP_STORE4
@@ -822,7 +841,7 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_STORE2:
 		x = ci->value;
 		emit_load_r0_opstack_m4( vm ); // r0 = *opstack; opstack -=4;
-		emit(AND(R0, rDATAMASK, R0));    // r0 = r0 & rDATAMASK
+		emit_CheckReg(vm, R0);
 		emit_MOVRxi(R1, x);
 		emit(STRHa(R1, rDATABASE, R0)); // (word*)[dataBase + r0] = r1;
 		ip += 1; // OP_STORE2
@@ -831,7 +850,7 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_STORE1:
 		x = ci->value;
 		emit_load_r0_opstack_m4( vm ); // r0 = *opstack; opstack -=4;
-		emit(AND(R0, rDATAMASK, R0));    // r0 = r0 & rDATAMASK
+		emit_CheckReg(vm, R0);
 		emit_MOVRxi(R1, x);
 		emit(STRBa(R1, rDATABASE, R0)); // (byte*)[dataBase + r0] = r1;
 		ip += 1; // OP_STORE1
@@ -861,6 +880,51 @@ static qboolean ConstOptimize( vm_t *vm )
 		}
 		emit_store_opstack_r0( vm ); // *opstack = r0;
 		ip += 1; // OP_SUB
+		return qtrue;
+
+	case OP_MULI:
+	case OP_MULU:
+		emit_load_r0_opstack( vm );     // r0 = *opstack;
+		x = ci->value;
+		emit_MOVRxi(R1, x);
+		emit(MUL(R0, R1, R0));
+		emit_store_opstack_r0( vm );    // *opstack = r0;
+		ip += 1; // OP_MULI|OP_MULU
+		return qtrue;
+
+	case OP_DIVI:
+	case OP_DIVU:
+		if ( !(CPU_Flags & CPU_IDIV) ) {
+			return qfalse;
+		}
+		emit_load_r0_opstack( vm );     // r0 = *opstack;
+		x = ci->value;
+		emit_MOVRxi(R1, x);
+		if ( ni->op == OP_DIVI ) {
+			emit(SDIV(R0, R0, R1));     // r0 = r0 / r1
+		} else {
+			emit(UDIV(R0, R0, R1));
+		}
+		emit_store_opstack_r0( vm );    // *opstack = r0;
+		ip += 1;
+		return qtrue;
+
+	case OP_MODI:
+	case OP_MODU:
+		if ( !(CPU_Flags & CPU_IDIV) ) {
+			return qfalse;
+		}
+		emit_load_r0_opstack( vm );     // r0 = *opstack;
+		x = ci->value;
+		emit_MOVRxi(R1, x);
+		if ( ni->op == OP_MODI ) {
+			emit(SDIV(R2, R0, R1));     // r2 = r0 / r1
+		} else {
+			emit(UDIV(R2, R0, R1));
+		}
+		emit(MLS(R0, R1, R2, R0));      // r0 = r0 - r1 * r2
+		emit_store_opstack_r0( vm );    // *opstack = r0;
+		ip += 1;
 		return qtrue;
 
 	case OP_LSH:
@@ -1440,21 +1504,21 @@ __recompile:
 
 			case OP_LOAD1:
 				emit_load_r0_opstack( vm );      // r0 = *opstack;
-				emit(AND(R0, rDATAMASK, R0));    // r0 = r0 & rDATAMASK
+				emit_CheckReg(vm, R0);
 				emit(LDRBa(R0, rDATABASE, R0));  // r0 = (unsigned char)dataBase[r0]
 				emit_store_opstack_r0( vm );     // *opstack = r0;
 				break;
 
 			case OP_LOAD2:
 				emit_load_r0_opstack( vm );
-				emit(AND(R0, rDATAMASK, R0));    // r0 = r0 & rDATAMASK
+				emit_CheckReg(vm, R0);
 				emit(LDRHa(R0, rDATABASE, R0));  // r0 = (unsigned short)dataBase[r0]
 				emit_store_opstack_r0( vm );     // *opstack = r0
 				break;
 
 			case OP_LOAD4:
 				emit_load_r0_opstack( vm );      // r0 = *opstack
-				emit(AND(R0, rDATAMASK, R0));    // r0 = r0 & rDATAMASK
+				emit_CheckReg(vm, R0);
 				emit(LDRa(R0, rDATABASE, R0));   // r0 = dataBase[r0]
 				emit_store_opstack_r0( vm );     // *opstack = r0
 				break;
@@ -1462,21 +1526,21 @@ __recompile:
 			case OP_STORE1:
 				emit_load_r0_opstack_m4( vm );   // r0 = *opstack; rOPSTACK -= 4
 				emit(LDRTxi(R1, rOPSTACK, 4));   // r1 = *opstack; rOPSTACK -= 4
-				emit(AND(R1, rDATAMASK, R1));    // r1 = r1 & rDATAMASK
+				emit_CheckReg(vm, R1);
 				emit(STRBa(R0, rDATABASE, R1));  // database[r1] = r0
 				break;
 
 			case OP_STORE2:
 				emit_load_r0_opstack_m4( vm );  // r0 = *opstack; rOPSTACK -= 4
 				emit(LDRTxi(R1, rOPSTACK, 4));  // r1 = *opstack; rOPSTACK -= 4
-				emit(AND(R1, rDATAMASK, R1));    // r1 = r1 & rDATAMASK
+				emit_CheckReg(vm, R1);
 				emit(STRHa(R0, rDATABASE, R1)); // database[r1] = r0
 				break;
 
 			case OP_STORE4:
 				emit_load_r0_opstack_m4( vm );  // r0 = *opstack; rOPSTACK -= 4
 				emit(LDRTxi(R1, rOPSTACK, 4));  // r1 = *opstack; rOPSTACK -= 4
-				emit(AND(R1, rDATAMASK, R1));    // r1 = r1 & rDATAMASK
+				emit_CheckReg(vm, R1);
 				emit(STRa(R0, rDATABASE, R1)); // database[r1] = r0
 				break;
 
@@ -1542,9 +1606,9 @@ __recompile:
 					emit_load_r0_opstack( vm );    // r0 = *opstack
 					emit(LDRxiw(R1, rOPSTACK, 4)); // opstack-=4; r1 = *opstack
 					if ( ci->op == OP_DIVI ) {
-						emit(SDIV(R0,R0,R1));
+						emit(SDIV(R0, R1, R0));
 					} else {
-						emit(UDIV(R0,R0,R1));
+						emit(UDIV(R0, R1, R0));
 					}
 				} else {
 					emit(LDRai(R1, rOPSTACK, 0));  // r1 = *opstack
@@ -1560,16 +1624,16 @@ __recompile:
 
 			case OP_MODI:
 			case OP_MODU:
-				if ( CPU_Flags & CPU_IDIV && 0 ) {
+				if ( CPU_Flags & CPU_IDIV ) {
 					emit_load_r0_opstack( vm );
-					emit(LDRxiw(R1, rOPSTACK, 4)); // opstack-=4; r1 = *opstack
+					emit(LDRxiw(R1, rOPSTACK, 4));  // opstack-=4; r1 = *opstack
 					if ( ci->op == OP_MODI ) {
-						emit(SDIV(R2,R0,R1));
+						emit(SDIV(R2, R1, R0));     // r2 = r1 / r0
 					} else {
-						emit(UDIV(R2,R0,R1));
+						emit(UDIV(R2, R1, R0));
 					}
-					emit(MLS(R0, R1, R2, R0));     // r0 = r0 - r1 * r2
-					emit_store_opstack_r0( vm );   // *opstack = r0
+					emit(MLS(R0, R0, R2, R1));      // r0 = r1 - r0 * r2
+					emit_store_opstack_r0( vm );    // *opstack = r0
 				} else {
 					emit(LDRai(R1, rOPSTACK, 0));  // r1 = *opstack
 					emit(LDRxiw(R0, rOPSTACK, 4)); // opstack-=4; r0 = *opstack
@@ -1727,6 +1791,11 @@ __recompile:
 
 		funcOffset[ FUNC_PSOF ] = compiledOfs;
 		emit_MOVRxi(R12, (unsigned)ErrBadProgramStack);
+		emit(BLX(R12));
+		emit(BKPT(0));
+
+		funcOffset[ FUNC_BADD ] = compiledOfs;
+		emit_MOVRxi(R12, (unsigned)ErrBadData);
 		emit(BLX(R12));
 		emit(BKPT(0));
 
