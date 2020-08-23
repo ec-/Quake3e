@@ -214,10 +214,7 @@ endif
 endif
 
 ifeq ($(ARCH),arm)
-# check non-stripped CPU architecture string
-ifeq ($(shell uname -m),armv7l)
   HAVE_VM_COMPILED = true
-endif
 endif
 
 BASE_CFLAGS =

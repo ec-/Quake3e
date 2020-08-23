@@ -3387,12 +3387,25 @@ static void Sys_GetProcessorId( char *vendor )
 #endif
 static void Sys_GetProcessorId( char *vendor )
 {
+#if defined(__arm__)
+	const char *platform;
 	long hwcaps;
 
 	CPU_Flags = 0;
 
-#if defined(__arm__)
-	Com_sprintf( vendor, 100, "ARM %s", (const char*)getauxval( AT_PLATFORM ) );
+	platform = (const char*)getauxval( AT_PLATFORM );
+
+	if ( !platform || *platform == '\0' ) {
+		platform = "(unknown)";
+	}
+
+	if ( platform[0] == 'v' || platform[0] == 'V' ) {
+		if ( atoi( platform + 1 ) >= 7 ) {
+			CPU_Flags |= CPU_ARMv7;
+		}
+	}
+
+	Com_sprintf( vendor, 100, "ARM %s", platform );
 
 	hwcaps = getauxval( AT_HWCAP );
 
@@ -3400,16 +3413,21 @@ static void Sys_GetProcessorId( char *vendor )
 		strcat( vendor, " /w" );
 
 		if ( hwcaps & HWCAP_IDIVA ) {
-			CPU_Flags |= CPU_IDIV;
-			strcat( vendor, " IDIV" );
+			CPU_Flags |= CPU_IDIVA;
+			strcat( vendor, " IDIVA" );
 		}
 
 		if ( hwcaps & HWCAP_VFPv3 ) {
 			CPU_Flags |= CPU_VFPv3;
 			strcat( vendor, " VFPv3" );
 		}
+
+		if ( ( CPU_Flags & ( CPU_ARMv7 | CPU_VFPv3 ) ) == ( CPU_ARMv7 | CPU_VFPv3 ) ) {
+			strcat( vendor, " QVM-bytecode" );
+		}
 	}
 #else
+	CPU_Flags = 0;
 	Com_sprintf( vendor, 128, "%s %s", ARCH_STRING, (const char*)getauxval( AT_PLATFORM ) );
 #endif
 }

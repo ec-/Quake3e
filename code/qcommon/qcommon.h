@@ -907,8 +907,9 @@ extern	int	CPU_Flags;
 #define CPU_SSE41  0x20
 
 // ARM flags
-#define CPU_IDIV   0x01
-#define CPU_VFPv3  0x02
+#define CPU_ARMv7  0x01
+#define CPU_IDIVA  0x02
+#define CPU_VFPv3  0x04
 
 // TTimo
 // centralized and cleaned, that's the max string you can send to a Com_Printf / Com_DPrintf (above gets truncated)
