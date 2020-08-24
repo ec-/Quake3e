@@ -1620,9 +1620,9 @@ static qboolean ConstOptimize( vm_t *vm )
 			if ( v == 0 ) {
 				EmitString( "0F 57 C9" );			// xorps xmm1, xmm1
 			} else {
-				EmitString( "C7 45 00" );			// mov dword ptr [ebp], v
+				EmitString( "B8" );					// mov eax, 0x12345678
 				Emit4( v );
-				EmitString( "F3 0F 10 4D 00" );		// movss xmm1, dword ptr [ebp]
+				EmitString( "66 0F 6E C8" );		// movd xmm1, eax
 			}
 			EmitString( "0F 2F C1" );				// comiss xmm0, xmm1
 			EmitJump( vm, ni, ni->op, ni->value );
