@@ -1266,9 +1266,10 @@ static void VM_BlockCopy( uint32_t src, uint32_t dest, const uint32_t n, const v
 
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 {
-	int i;
-
 	const char *errMsg;
+	int proc_base;
+	int proc_len;
+	int i;
 
 	if ( ( CPU_Flags & ( CPU_ARMv7 | CPU_VFPv3 ) ) != ( CPU_ARMv7 | CPU_VFPv3 ) ) {
 		return qfalse;
@@ -1310,6 +1311,9 @@ __recompile:
 	ip = 0;
 	compiledOfs = 0;
 	LastCommand = LAST_COMMAND_NONE;
+
+	proc_base = -1;
+	proc_len = 0;
 
 	emit(PUSH(SAVE_REGS|(1<<LR))); // push R4-R11, LR
 	emit(SUBi(SP, SP, 12));        // align stack to 16 bytes
@@ -1368,6 +1372,15 @@ __recompile:
 				break;
 
 			case OP_ENTER:
+
+				proc_base = ip;
+				// locate endproc
+				for ( proc_len = -1, i = ip; i < header->instructionCount; i++ ) {
+					if ( inst[ i ].op == OP_PUSH && inst[ i + 1 ].op == OP_LEAVE ) {
+						proc_len = i - proc_base;
+					}
+				}
+
 				emit(PUSH((1<<R12)|(1<<rPSTACK)|(1<<rPROCBASE)|(1<<LR)));
 				if ( can_encode( v ) ) {
 					emit(SUBi(rPSTACK, rPSTACK, v)); // pstack -= arg
@@ -1416,6 +1429,9 @@ __recompile:
 
 			case OP_PUSH:
 				emit(ADDi(rOPSTACK, rOPSTACK, 4)); // opstack += 4
+				if ( ni->op == OP_LEAVE ) {
+					proc_base = -1;
+				}
 				break;
 
 			case OP_POP:
@@ -1486,11 +1502,30 @@ __recompile:
 			case OP_JUMP:
 				emit_load_r0_opstack_m4( vm );  // r0 = *opstack; rOPSTACK -= 4
 				if ( vm_rtChecks->integer & 4 ) {
-					// check if r0 >= header->instructionCount
-					emit_MOVRxi(R1, (unsigned)header->instructionCount);
-					//emit(LDRai(R1, rVMBASE, offsetof(vm_t, instructionCount)));
-					emit(CMP(R0, R1));
-					emitFuncOffset( HS, vm, FUNC_OUTJ );
+					if ( proc_base != -1 ) {
+						// allow jump within local function scope only
+						// R2 = ip - proc_base
+						if ( can_encode( proc_base ) )
+							emit(SUBi(R2, R0, proc_base));
+						else {
+							emit_MOVRxi(R1, proc_base);
+							emit(SUB(R2, R0, R1));
+						}
+						// ip > proc_len
+						if ( can_encode( proc_len ) ) {
+							emit(CMPi(R2, proc_len));
+						} else {
+							emit_MOVRxi(R1, proc_len);
+							emit(CMP(R2, R1));
+						}
+						emitFuncOffset( HI, vm, FUNC_OUTJ );
+					} else {
+						// check if r0 >= header->instructionCount
+						emit_MOVRxi(R1, (unsigned)header->instructionCount);
+						//emit(LDRai(R1, rVMBASE, offsetof(vm_t, instructionCount)));
+						emit(CMP(R0, R1));
+						emitFuncOffset( HS, vm, FUNC_OUTJ );
+					}
 				}
 				emit(LDRa(R12, rINSPOINTERS, rLSL(2, R0))); // r12 = instructionPointers[ r0 ]
 				emit(BX(R12));
