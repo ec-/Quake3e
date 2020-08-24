@@ -1037,9 +1037,12 @@ const char *VM_CheckInstructions( instruction_t *buf,
 								int dataLength )
 {
 	static char errBuf[ 128 ];
-	int i, n, v, op0, op1, opStack, pstack;
+	instruction_t *opStackPtr[ PROC_OPSTACK_SIZE ];
+	int i, m, n, v, op0, op1, opStack, pstack;
 	instruction_t *ci, *proc;
 	int startp, endp;
+	int safe_stores;
+	int unsafe_stores;
 
 	ci = buf;
 	opStack = 0;
@@ -1059,8 +1062,12 @@ const char *VM_CheckInstructions( instruction_t *buf,
 
 	ci = buf;
 	pstack = 0;
+	opStack = 0;
+	safe_stores = 0;
+	unsafe_stores = 0;
 	op1 = OP_UNDEF;
 	proc = NULL;
+	Com_Memset( opStackPtr, 0, sizeof( opStackPtr ) );
 
 	startp = 0;
 	endp = instructionCount - 1;
@@ -1069,6 +1076,12 @@ const char *VM_CheckInstructions( instruction_t *buf,
 
 	for ( i = 0; i < instructionCount; i++, ci++, op1 = op0 ) {
 		op0 = ci->op;
+
+		m = ops[ ci->op ].stack;
+		opStack += m;
+		if ( m >= 0 ) {
+			opStackPtr[ opStack / 4 ] = ci;
+		}
 
 		// function entry
 		if ( op0 == OP_ENTER ) {
@@ -1224,11 +1237,11 @@ const char *VM_CheckInstructions( instruction_t *buf,
 					}
 					if ( buf[v].op != OP_ENTER ) {
 						n = buf[v].op;
-						sprintf( errBuf, "call target %i has bad opcode %i", v, n );
+						sprintf( errBuf, "call target %i has bad opcode %s", v, opname[ n ] );
 						return errBuf;
 					}
 					if ( v == 0 ) {
-						sprintf( errBuf, "explicit vmMain call inside VM" );
+						sprintf( errBuf, "explicit vmMain call inside VM at %i", i );
 						return errBuf;
 					}
 					// mark jump target
@@ -1261,30 +1274,55 @@ const char *VM_CheckInstructions( instruction_t *buf,
 					return errBuf;
 				}
 			}
+			continue;
 		}
 
 		if ( ci->op == OP_LOAD4 && op1 == OP_CONST ) {
 			v = (ci-1)->value;
 			if ( v < 0 || v > dataLength - 4 ) {
-				sprintf( errBuf, "bad load4 address %i at %i", v, i - 1 );
+				sprintf( errBuf, "bad %s address %i at %i", opname[ ci->op ], v, i - 1 );
 				return errBuf;
 			}
+			continue;
 		}
 
 		if ( ci->op == OP_LOAD2 && op1 == OP_CONST ) {
 			v = (ci-1)->value;
 			if ( v < 0 || v > dataLength - 2 ) {
-				sprintf( errBuf, "bad load2 address %i at %i", v, i - 1 );
+				sprintf( errBuf, "bad %s address %i at %i", opname[ ci->op ], v, i - 1 );
 				return errBuf;
 			}
+			continue;
 		}
 
 		if ( ci->op == OP_LOAD1 && op1 == OP_CONST ) {
 			v =  (ci-1)->value;
 			if ( v < 0 || v > dataLength - 1 ) {
-				sprintf( errBuf, "bad load1 address %i at %i", v, i - 1 );
+				sprintf( errBuf, "bad %s address %i at %i", opname[ ci->op ], v, i - 1 );
 				return errBuf;
 			}
+			continue;
+		}
+
+		if ( ci->op == OP_STORE4 || ci->op == OP_STORE2 || ci->op == OP_STORE1 ) {
+			instruction_t *x = opStackPtr[ opStack / 4 + 1 ];
+			if ( x->op == OP_CONST ) {
+				if ( x->value >= dataLength ) {
+					sprintf( errBuf, "bad %s address %i at %i", opname[ ci->op ], x->value, x - buf );
+					return errBuf;
+				} else {
+					ci->safe = 1;
+					safe_stores++;
+				}
+				continue;
+			}
+			if ( x->op == OP_LOCAL ) {
+				ci->safe = 1;
+				safe_stores++;
+				continue;
+			}
+			unsafe_stores++;
+			continue;
 		}
 
 		if ( ci->op == OP_BLOCK_COPY ) {
@@ -1297,6 +1335,10 @@ const char *VM_CheckInstructions( instruction_t *buf,
 
 //		op1 = op0;
 //		ci++;
+	}
+
+	if ( ( safe_stores + unsafe_stores ) > 0 ) {
+		Com_DPrintf( "%s: safe stores - %i (%i%%)\n", __func__, safe_stores, safe_stores * 100 / ( safe_stores + unsafe_stores ) );
 	}
 
 	if ( op1 != OP_UNDEF && op1 != OP_LEAVE ) {

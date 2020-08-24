@@ -561,9 +561,13 @@ void EmitMovECXEDI( vm_t *vm )
 }
 
 
-static void EmitCheckReg( vm_t *vm, int reg, int size )
+static void EmitCheckReg( vm_t *vm, instruction_t *ins, int reg, int size )
 {
 	int n;
+
+	if ( ins->safe ) {
+		return;
+	}
 
 	if ( !( vm_rtChecks->integer & 8 ) || vm->forceDataMask ) {
 		if ( vm->forceDataMask ) {
@@ -1357,7 +1361,7 @@ static qboolean ConstOptimize( vm_t *vm )
 			EmitString( "B9" );			// mov	ecx, 0x12345678
 			Emit4( ci->value );
 		}
-		EmitCheckReg( vm, REG_EAX, 4 );
+		EmitCheckReg( vm, ni, REG_EAX, 4 );
 		EmitString( "89 0C 03" );		// mov dword ptr [ebx + eax], ecx
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );		// sub edi, 4
 		ip += 1;
@@ -1371,7 +1375,7 @@ static qboolean ConstOptimize( vm_t *vm )
 			EmitString( "B9" );			// mov	ecx, 0x12345678
 			Emit4( ci->value );
 		}
-		EmitCheckReg( vm, REG_EAX, 2 );
+		EmitCheckReg( vm, ni, REG_EAX, 2 );
 		EmitString( "66 89 0C 03" );	// mov word ptr [ebx + eax], cx
 		EmitCommand( LAST_COMMAND_SUB_DI_4 ); // sub edi, 4
 		ip += 1;
@@ -1385,7 +1389,7 @@ static qboolean ConstOptimize( vm_t *vm )
 			EmitString( "B9" );			// mov	ecx, 0x12345678
 			Emit4( ci->value );
 		}
-		EmitCheckReg( vm, REG_EAX, 1 );
+		EmitCheckReg( vm, ni, REG_EAX, 1 );
 		EmitString( "88 0C 03" );		// mov byte ptr [ebx + eax], cl
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 		ip += 1;
@@ -2274,13 +2278,13 @@ __compile:
 		case OP_LOAD4:
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				REWIND( 2 );
-				EmitCheckReg( vm, REG_EAX, 4 );			// range check eax
+				EmitCheckReg( vm, ci, REG_EAX, 4 );		// range check eax
 				EmitString( "8B 04 03" );				// mov	eax, dword ptr [ebx + eax]
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX );// mov dword ptr [edi], eax
 				break;
 			}
-			EmitMovECXEDI( vm );						// mov ecx, dword ptr [edi]		
-			EmitCheckReg( vm, REG_ECX, 4 );				// range check ecx
+			EmitMovECXEDI( vm );						// mov ecx, dword ptr [edi]
+			EmitCheckReg( vm, ci, REG_ECX, 4 );			// range check ecx
 			EmitString( "8B 04 0B" );					// mov	eax, dword ptr [ebx + ecx]
 			EmitCommand( LAST_COMMAND_MOV_EDI_EAX );	// mov dword ptr [edi], eax
 			break;
@@ -2288,7 +2292,7 @@ __compile:
 		case OP_LOAD2:
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				REWIND( 2 );
-				EmitCheckReg( vm, REG_EAX, 2 );			// range check eax
+				EmitCheckReg( vm, ci, REG_EAX, 2 );		// range check eax
 				if ( ni->op == OP_SEX16 ) {
 					EmitString( "0F BF 04 03" );		// movsx eax, word ptr [ebx + eax]
 					ip++;
@@ -2299,7 +2303,7 @@ __compile:
 				break;
 			}
 			EmitMovECXEDI( vm );						// mov ecx, dword ptr [edi]
-			EmitCheckReg( vm, REG_ECX, 2 );				// range check ecx
+			EmitCheckReg( vm, ci, REG_ECX, 2 );			// range check ecx
 			if ( ni->op == OP_SEX16 ) {
 				EmitString( "0F BF 04 0B" );			// movsx eax, word ptr [ebx + ecx]
 				ip++;
@@ -2312,7 +2316,7 @@ __compile:
 		case OP_LOAD1:
 			if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) {
 				REWIND( 2 );
-				EmitCheckReg( vm, REG_EAX, 1 );			// range check eax
+				EmitCheckReg( vm, ci, REG_EAX, 1 );		// range check eax
 				if ( ni->op == OP_SEX8 ) {
 					EmitString( "0F BE 04 03" );		// movsx eax, byte ptr [ebx + eax]
 					ip++;
@@ -2323,7 +2327,7 @@ __compile:
 				break;
 			}
 			EmitMovECXEDI( vm );						// mov ecx, dword ptr [edi]
-			EmitCheckReg( vm, REG_ECX, 1 );				// range check ecx
+			EmitCheckReg( vm, ci, REG_ECX, 1 );			// range check ecx
 			if ( ni->op == OP_SEX8 ) {
 				EmitString( "0F BE 04 0B" );			// movsx eax, byte ptr [ebx + ecx]
 				ip++;
@@ -2336,7 +2340,7 @@ __compile:
 		case OP_STORE4:
 			EmitMovEAXEDI( vm );						// mov eax, dword ptr [edi]
 			EmitString( "8B 4F FC" );					// mov ecx, dword ptr [edi-4]
-			EmitCheckReg( vm, REG_ECX, 4 );				// range check
+			EmitCheckReg( vm, ci, REG_ECX, 4 );			// range check
 			EmitString( "89 04 0B" );					// mov dword ptr [ebx + ecx], eax
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
 			break;
@@ -2344,7 +2348,7 @@ __compile:
 		case OP_STORE2:
 			EmitMovEAXEDI( vm );						// mov eax, dword ptr [edi]	
 			EmitString( "8B 4F FC" );					// mov ecx, dword ptr [edi-4]
-			EmitCheckReg( vm, REG_ECX, 2 );				// range check
+			EmitCheckReg( vm, ci, REG_ECX, 2 );			// range check
 			EmitString( "66 89 04 0B" );				// mov word ptr [ebx + ecx], ax
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
 			break;
@@ -2352,7 +2356,7 @@ __compile:
 		case OP_STORE1:
 			EmitMovEAXEDI( vm );						// mov eax, dword ptr [edi]	
 			EmitString( "8B 4F FC" );					// mov ecx, dword ptr [edi-4]
-			EmitCheckReg( vm, REG_ECX, 1 );				// range check
+			EmitCheckReg( vm, ci, REG_ECX, 1 );			// range check
 			EmitString( "88 04 0B" );					// mov byte ptr [ebx + ecx], al
 			EmitCommand( LAST_COMMAND_SUB_DI_8 );		// sub edi, 8
 			break;
@@ -2577,7 +2581,7 @@ __compile:
 				if ( wantres ) {
 					if ( ni->op == OP_STORE4 ) {
 						 EmitString( "8B 47 F8" );	// mov eax, dword ptr [edi-8]
-						 EmitCheckReg( vm, REG_EAX, 4 );
+						 EmitCheckReg( vm, ni, REG_EAX, 4 );
 					} else if ( ni->op == OP_ARG ) {
 						//
 					} else {
@@ -2915,8 +2919,9 @@ int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 		image[ i + 2 ] = args[ i ];
 	}
 
-	image[1] =  0;	// return stack
-	image[0] = -1;	// will terminate loop on return
+	// these only needed for interpreter:
+	// image[1] =  0;	// return stack
+	// image[0] = -1;	// will terminate loop on return
 
 	opStack[1] = 0;
 

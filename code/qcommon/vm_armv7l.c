@@ -512,7 +512,7 @@ static void emit_MOVRxi( uint32_t reg, uint32_t imm )
 {
 	if ( imm <= 0xFFFF ) {
 		emit( MOVW( reg, imm ) );
-#if 0
+#if 1
 	} else if ( can_encode( imm ) ) {
 		emit( MOVi( reg, imm ) );
 	} else if ( can_encode( ~imm ) ) {
@@ -749,8 +749,12 @@ funcOffset[ FUNC_SYSF ] = compiledOfs; // to jump from ConstOptimize()
 }
 
 
-static void emit_CheckReg( vm_t *vm, uint32_t reg )
+static void emit_CheckReg( vm_t *vm, instruction_t *ins, uint32_t reg )
 {
+	if ( ins->safe ) {
+		return;
+	}
+
 	if ( !( vm_rtChecks->integer & 8 ) || vm->forceDataMask ) {
 		if ( vm->forceDataMask ) {
 			emit(AND(reg, rDATAMASK, reg));    // rN = rN & rDATAMASK
@@ -834,7 +838,7 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_STORE4:
 		x = ci->value;
 		emit_load_r0_opstack_m4( vm ); // r0 = *opstack; opstack -=4;
-		emit_CheckReg(vm, R0);
+		emit_CheckReg(vm, ni, R0);
 		emit_MOVRxi(R1, x);
 		emit(STRa(R1, rDATABASE, R0)); // [dataBase + r0] = r1;
 		ip += 1; // OP_STORE4
@@ -843,7 +847,7 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_STORE2:
 		x = ci->value;
 		emit_load_r0_opstack_m4( vm ); // r0 = *opstack; opstack -=4;
-		emit_CheckReg(vm, R0);
+		emit_CheckReg(vm, ni, R0);
 		emit_MOVRxi(R1, x);
 		emit(STRHa(R1, rDATABASE, R0)); // (word*)[dataBase + r0] = r1;
 		ip += 1; // OP_STORE2
@@ -852,7 +856,7 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_STORE1:
 		x = ci->value;
 		emit_load_r0_opstack_m4( vm ); // r0 = *opstack; opstack -=4;
-		emit_CheckReg(vm, R0);
+		emit_CheckReg(vm, ni, R0);
 		emit_MOVRxi(R1, x);
 		emit(STRBa(R1, rDATABASE, R0)); // (byte*)[dataBase + r0] = r1;
 		ip += 1; // OP_STORE1
@@ -1528,21 +1532,21 @@ __recompile:
 
 			case OP_LOAD1:
 				emit_load_r0_opstack( vm );      // r0 = *opstack;
-				emit_CheckReg(vm, R0);
+				emit_CheckReg(vm, ci, R0);
 				emit(LDRBa(R0, rDATABASE, R0));  // r0 = (unsigned char)dataBase[r0]
 				emit_store_opstack_r0( vm );     // *opstack = r0;
 				break;
 
 			case OP_LOAD2:
 				emit_load_r0_opstack( vm );
-				emit_CheckReg(vm, R0);
+				emit_CheckReg(vm, ci, R0);
 				emit(LDRHa(R0, rDATABASE, R0));  // r0 = (unsigned short)dataBase[r0]
 				emit_store_opstack_r0( vm );     // *opstack = r0
 				break;
 
 			case OP_LOAD4:
 				emit_load_r0_opstack( vm );      // r0 = *opstack
-				emit_CheckReg(vm, R0);
+				emit_CheckReg(vm, ci, R0);
 				emit(LDRa(R0, rDATABASE, R0));   // r0 = dataBase[r0]
 				emit_store_opstack_r0( vm );     // *opstack = r0
 				break;
@@ -1550,21 +1554,21 @@ __recompile:
 			case OP_STORE1:
 				emit_load_r0_opstack_m4( vm );   // r0 = *opstack; rOPSTACK -= 4
 				emit(LDRTxi(R1, rOPSTACK, 4));   // r1 = *opstack; rOPSTACK -= 4
-				emit_CheckReg(vm, R1);
+				emit_CheckReg(vm, ci, R1);
 				emit(STRBa(R0, rDATABASE, R1));  // database[r1] = r0
 				break;
 
 			case OP_STORE2:
 				emit_load_r0_opstack_m4( vm );  // r0 = *opstack; rOPSTACK -= 4
 				emit(LDRTxi(R1, rOPSTACK, 4));  // r1 = *opstack; rOPSTACK -= 4
-				emit_CheckReg(vm, R1);
+				emit_CheckReg(vm, ci, R1);
 				emit(STRHa(R0, rDATABASE, R1)); // database[r1] = r0
 				break;
 
 			case OP_STORE4:
 				emit_load_r0_opstack_m4( vm );  // r0 = *opstack; rOPSTACK -= 4
 				emit(LDRTxi(R1, rOPSTACK, 4));  // r1 = *opstack; rOPSTACK -= 4
-				emit_CheckReg(vm, R1);
+				emit_CheckReg(vm, ci, R1);
 				emit(STRa(R0, rDATABASE, R1)); // database[r1] = r0
 				break;
 
