@@ -1444,9 +1444,9 @@ static qboolean ConstOptimize( vm_t *vm )
 		v = ci->value;
 		EmitLoadFloatEDI( vm );
 		if ( HasSSEFP() ) {
-			EmitString( "C7 45 00" );			// mov dword ptr [ebp], v
+			EmitString( "B8" );					// mov eax, 0x12345678
 			Emit4( v );
-			EmitString( "F3 0F 10 4D 00" );		// movss xmm1, dword ptr [ebp]
+			EmitString( "66 0F 6E C8" );		// movd xmm1, eax
 			switch( op1 ) {
 				case OP_ADDF: EmitString( "0F 58 C1" ); break;	// addps xmm0, xmm1
 				case OP_SUBF: EmitString( "0F 5C C1" ); break;	// subps xmm0, xmm1
