@@ -19,14 +19,14 @@ ifeq ($(COMPILE_PLATFORM),mingw32)
 endif
 
 BUILD_CLIENT     = 1
-BUILD_SERVER     = 1
+BUILD_SERVER     = 0
 
 USE_SDL          = 0
 USE_CURL         = 1
 USE_LOCAL_HEADERS= 0
 USE_VULKAN       = 0
 USE_SYSTEM_JPEG  = 0
-USE_VULKAN_API   = 1
+USE_VULKAN_API   = 0
 
 USE_RENDERER_DLOPEN = 1
 
@@ -62,7 +62,7 @@ ifeq ($(COMPILE_PLATFORM),cygwin)
 endif
 
 ifndef PLATFORM
-PLATFORM=$(COMPILE_PLATFORM)
+PLATFORM=mingw64
 endif
 export PLATFORM
 
