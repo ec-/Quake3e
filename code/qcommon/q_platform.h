@@ -107,6 +107,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #if defined (__arm__)
 #define ARCH_STRING "arm"
 #define Q3_LITTLE_ENDIAN
+#undef arm32
+#define arm32 1
 #endif // __arm__
 
 #if defined (__e2k__)

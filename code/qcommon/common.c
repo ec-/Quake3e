@@ -3381,13 +3381,14 @@ static void Sys_GetProcessorId( char *vendor )
 
 #else // non-x86
 
-#if defined(__arm__)
+#if arm32
 #include <sys/auxv.h>
 #include <asm/hwcap.h>
 #endif
+
 static void Sys_GetProcessorId( char *vendor )
 {
-#if defined(__arm__)
+#if arm32
 	const char *platform;
 	long hwcaps;
 
@@ -3426,7 +3427,7 @@ static void Sys_GetProcessorId( char *vendor )
 			strcat( vendor, " QVM-bytecode" );
 		}
 	}
-#else
+#else // !arm32
 	CPU_Flags = 0;
 	Com_sprintf( vendor, 128, "%s %s", ARCH_STRING, (const char*)getauxval( AT_PLATFORM ) );
 #endif
