@@ -1,6 +1,6 @@
 #include "tr_local.h"
 #include "vk.h"
-#if defined (_WIN32) && !defined (NDEBUG)
+#if defined (_WIN32) && defined (_DEBUG)
 #include <windows.h> // for win32 debug callback
 #endif
 
@@ -30,7 +30,7 @@ PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR	qvkGetPhysicalDeviceSurfaceCapabil
 PFN_vkGetPhysicalDeviceSurfaceFormatsKHR		qvkGetPhysicalDeviceSurfaceFormatsKHR;
 PFN_vkGetPhysicalDeviceSurfacePresentModesKHR	qvkGetPhysicalDeviceSurfacePresentModesKHR;
 PFN_vkGetPhysicalDeviceSurfaceSupportKHR		qvkGetPhysicalDeviceSurfaceSupportKHR;
-#ifndef NDEBUG
+#ifdef _DEBUG
 PFN_vkCreateDebugReportCallbackEXT				qvkCreateDebugReportCallbackEXT;
 PFN_vkDestroyDebugReportCallbackEXT				qvkDestroyDebugReportCallbackEXT;
 #endif
@@ -886,8 +886,9 @@ static qboolean used_instance_extension( const char *ext )
 
 static void create_instance( void )
 {
-#ifndef NDEBUG
+#ifdef _DEBUG
 	const char* validation_layer_name = "VK_LAYER_LUNARG_standard_validation";
+	VkResult res;
 #endif
 	VkInstanceCreateInfo desc;
 	VkExtensionProperties *extension_properties;
@@ -928,12 +929,29 @@ static void create_instance( void )
 	desc.enabledExtensionCount = extension_count;
 	desc.ppEnabledExtensionNames = extension_names;
 
-#ifndef NDEBUG
+#ifdef _DEBUG
 	desc.enabledLayerCount = 1;
 	desc.ppEnabledLayerNames = &validation_layer_name;
-#endif
 
+	res = qvkCreateInstance( &desc, NULL, &vk.instance );
+
+	if ( res == VK_ERROR_LAYER_NOT_PRESENT ) {
+
+		ri.Printf( PRINT_ALL, "...validation layer is not available\n" );
+
+		// try without validation layer
+		desc.enabledLayerCount = 0;
+		desc.ppEnabledLayerNames = NULL;
+
+		res = qvkCreateInstance( &desc, NULL, &vk.instance );
+	}
+
+	if ( res != VK_SUCCESS ) {
+		ri.Error( ERR_FATAL, "Vulkan: instance creation failed with error %i", res );
+	}
+#else
 	VK_CHECK( qvkCreateInstance( &desc, NULL, &vk.instance ) );
+#endif
 
 	ri.Free( (void*)extension_names );
 	ri.Free( extension_properties );
@@ -1317,14 +1335,14 @@ static void init_vulkan_library( void )
 	INIT_INSTANCE_FUNCTION(vkGetPhysicalDeviceSurfacePresentModesKHR)
 	INIT_INSTANCE_FUNCTION(vkGetPhysicalDeviceSurfaceSupportKHR)
 
-#ifndef NDEBUG
+#ifdef _DEBUG
 	INIT_INSTANCE_FUNCTION_EXT(vkCreateDebugReportCallbackEXT)
 	INIT_INSTANCE_FUNCTION_EXT(vkDestroyDebugReportCallbackEXT)
 
 	//
 	// Create debug callback.
 	//
-	if ( qvkCreateDebugReportCallbackEXT )
+	if ( qvkCreateDebugReportCallbackEXT && qvkDestroyDebugReportCallbackEXT )
 	{
 		VkDebugReportCallbackCreateInfoEXT desc;
 		desc.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
@@ -1463,7 +1481,7 @@ static void deinit_vulkan_library( void )
 	qvkGetPhysicalDeviceSurfaceFormatsKHR		= NULL;
 	qvkGetPhysicalDeviceSurfacePresentModesKHR	= NULL;
 	qvkGetPhysicalDeviceSurfaceSupportKHR		= NULL;
-#ifndef NDEBUG
+#ifdef _DEBUG
 	qvkCreateDebugReportCallbackEXT				= NULL;
 	qvkDestroyDebugReportCallbackEXT			= NULL;
 #endif
@@ -2554,7 +2572,7 @@ static void vk_alloc_attachments( void )
 	}
 
 	if ( vk.image_memory_count >= ARRAY_LEN( vk.image_memory ) ) {
-		ri.Error( ERR_DROP, "vk.image_memory_count == %i", ARRAY_LEN( vk.image_memory ) );
+		ri.Error( ERR_DROP, "vk.image_memory_count == %i", (int)ARRAY_LEN( vk.image_memory ) );
 	}
 	
 	memoryTypeBits = ~0U;
@@ -3661,7 +3679,7 @@ void vk_shutdown( void )
 	qvkDestroyDevice( vk.device, NULL );
 	qvkDestroySurfaceKHR( vk.instance, vk.surface, NULL );
 
-#ifndef NDEBUG
+#ifdef _DEBUG
 	if ( qvkDestroyDebugReportCallbackEXT && vk.debug_callback )
 		qvkDestroyDebugReportCallbackEXT( vk.instance, vk.debug_callback, NULL );
 #endif
