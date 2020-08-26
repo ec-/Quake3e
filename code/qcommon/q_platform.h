@@ -27,6 +27,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define id386 0
 #define idx64 0
+#define arm32 0
+#define arm64 0
 
 // ============================== Win32 ====================================
 
@@ -110,6 +112,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #undef arm32
 #define arm32 1
 #endif // __arm__
+
+#if defined (__aarch64__)
+#define ARCH_STRING "aarch64"
+#define Q3_LITTLE_ENDIAN
+#undef arm64
+#define arm64 1
+#endif // __arm64__
 
 #if defined (__e2k__)
 #define ARCH_STRING "e2k"

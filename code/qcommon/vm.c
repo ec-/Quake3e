@@ -1308,7 +1308,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 			instruction_t *x = opStackPtr[ opStack / 4 + 1 ];
 			if ( x->op == OP_CONST ) {
 				if ( x->value >= dataLength ) {
-					sprintf( errBuf, "bad %s address %i at %i", opname[ ci->op ], x->value, x - buf );
+					sprintf( errBuf, "bad %s address %i at %i", opname[ ci->op ], x->value, (int)(x- buf) );
 					return errBuf;
 				} else {
 					ci->safe = 1;

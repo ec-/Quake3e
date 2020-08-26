@@ -2572,7 +2572,7 @@ static void vk_alloc_attachments( void )
 	}
 
 	if ( vk.image_memory_count >= ARRAY_LEN( vk.image_memory ) ) {
-		ri.Error( ERR_DROP, "vk.image_memory_count == %i", ARRAY_LEN( vk.image_memory ) );
+		ri.Error( ERR_DROP, "vk.image_memory_count == %i", (int)ARRAY_LEN( vk.image_memory ) );
 	}
 	
 	memoryTypeBits = ~0U;
