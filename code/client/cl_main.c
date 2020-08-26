@@ -3272,14 +3272,29 @@ static qboolean CL_IsMininized( void ) {
 /*
 ============
 CL_SetScaling
+
+Sets console chars height
 ============
 */
 static void CL_SetScaling( float factor, int captureWidth, int captureHeight ) {
+
+	float scale;
+	int h;
+
+	// adjust factor proportionally to FullHD height (1080 pixels), with 1/16 granularity
+	h = (captureHeight * 16 / 1080);
+	scale = h / 16.0f;
+	if ( scale < 1.0f )
+		scale = 1.0f;
+
+	factor *= scale;
+
 	// set console scaling
 	smallchar_width = SMALLCHAR_WIDTH * factor;
 	smallchar_height = SMALLCHAR_HEIGHT * factor;
 	bigchar_width = BIGCHAR_WIDTH * factor;
 	bigchar_height = BIGCHAR_HEIGHT * factor;
+
 	// set custom capture resolution
 	cls.captureWidth = captureWidth;
 	cls.captureHeight = captureHeight;
