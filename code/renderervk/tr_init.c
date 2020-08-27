@@ -1503,11 +1503,7 @@ static void R_Register( void )
 	r_dynamiclight = ri.Cvar_Get( "r_dynamiclight", "1", CVAR_ARCHIVE );
 #ifdef USE_PMLIGHT
 	r_dlightMode = ri.Cvar_Get( "r_dlightMode", "1", CVAR_ARCHIVE );
-#ifdef USE_LEGACY_DLIGHTS
 	ri.Cvar_CheckRange( r_dlightMode, "0", "2", CV_INTEGER );
-#else
-	ri.Cvar_CheckRange( r_dlightMode, "1", "2", CV_INTEGER );
-#endif
 	r_dlightScale = ri.Cvar_Get( "r_dlightScale", "0.5", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_dlightScale, "0.1", "1", CV_FLOAT );
 	r_dlightIntensity = ri.Cvar_Get( "r_dlightIntensity", "1.0", CVAR_ARCHIVE_ND );

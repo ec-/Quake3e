@@ -464,16 +464,17 @@ static void DrawSkySide( image_t *image, const int mins[2], const int maxs[2], i
 		{
 			Com_Memset( tess.svars.colors, tr.identityLightByte, tess.numVertexes * sizeof( tess.svars.colors[0] ) );
 			*numColors = tess.numVertexes;
-			tess_flags = TESS_IDX | TESS_XYZ | TESS_RGBA | TESS_ST0;
+			tess_flags = TESS_XYZ | TESS_RGBA | TESS_ST0;
 		}
 		else
 		{
-			tess_flags = TESS_IDX | TESS_XYZ | TESS_ST0;
+			tess_flags = TESS_XYZ | TESS_ST0;
 		}
 
 		tess.svars.texcoordPtr[0] = tess.texCoords[0];
 
-		vk_bind_geometry_ext( tess_flags );
+		vk_bind_index();
+		vk_bind_geometry( tess_flags );
 		vk_draw_geometry( vk.skybox_pipeline, r_showsky->integer ? DEPTH_RANGE_ZERO : DEPTH_RANGE_ONE, qtrue );
 
 		tess.numVertexes = 0;

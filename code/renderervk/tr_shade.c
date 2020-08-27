@@ -198,7 +198,8 @@ static void DrawNormals( const shaderCommands_t *input ) {
 	tess.numVertexes *= 2;
 	Com_Memset( tess.svars.colors, tr.identityLightByte, tess.numVertexes * sizeof(color4ub_t) );
 
-	vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_RGBA );
+	vk_bind_index();
+	vk_bind_geometry( TESS_XYZ | TESS_RGBA );
 	vk_draw_geometry( vk.normals_debug_pipeline, DEPTH_RANGE_ZERO, qtrue );
 #else
 	GL_ClientState( 0, CLS_NONE );
@@ -396,7 +397,6 @@ static void ProjectDlightTexture_scalar( void ) {
 		if ( !( tess.dlightBits & ( 1 << l ) ) ) {
 			continue;	// this surface definately doesn't have any of this light
 		}
-		
 
 #ifdef USE_VULKAN
 		texCoords = (float*)&tess.svars.texcoords[0][0];
@@ -498,7 +498,8 @@ static void ProjectDlightTexture_scalar( void ) {
 
 #ifdef USE_VULKAN
 		pipeline = vk.dlight_pipelines[dl->additive > 0 ? 1 : 0][tess.shader->cullType][tess.shader->polygonOffset];
-		vk_bind_geometry_ext( TESS_RGBA | TESS_ST0 );
+		vk_bind_index_ext( numIndexes, hitIndexes );
+		vk_bind_geometry( TESS_RGBA | TESS_ST0 );
 		vk_draw_geometry( pipeline, DEPTH_RANGE_NORMAL, qtrue );
 #else
 		// include GLS_DEPTHFUNC_EQUAL so alpha tested surfaces don't add light
@@ -558,7 +559,8 @@ static void RB_FogPass( void ) {
 	RB_CalcFogTexCoords( ( float * ) tess.svars.texcoords[0] );
 	tess.svars.texcoordPtr[ 0 ] = tess.svars.texcoords[ 0 ];
 	GL_Bind( tr.fogImage );
-	vk_bind_geometry_ext( TESS_ST0 | TESS_RGBA );
+
+	vk_bind_geometry( TESS_ST0 | TESS_RGBA );
 	vk_draw_geometry( pipeline, DEPTH_RANGE_NORMAL, qtrue );
 #endif
 #else
@@ -909,6 +911,8 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 	uint32_t pipeline;
 	int fog_stage;
 
+	vk_bind_index();
+
 	tess_flags = input->shader->tessFlags;
 
 #ifdef USE_FOG_COLLAPSE
@@ -964,7 +968,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 			GL_Bind( tr.whiteImage ); // replace diffuse texture with a white one thus effectively render only lightmap
 		}
 
-		vk_bind_geometry_ext( tess_flags );
+		vk_bind_geometry( tess_flags );
 		vk_draw_geometry( pipeline, tess.depthRange, qtrue );
 
 		if ( pStage->depthFragment ) {
@@ -1023,7 +1027,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 
 #ifdef USE_VULKAN
 	if ( tess_flags ) // fog-only shaders?
-		vk_bind_geometry_ext( tess_flags );
+		vk_bind_geometry( tess_flags );
 #endif
 }
 
@@ -1165,7 +1169,8 @@ void VK_LightingPass( void )
 		R_ComputeTexCoords( 0, &pStage->bundle[ 0 ] );
 	}
 
-	vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_ST0 | TESS_NNN );
+	vk_bind_index();
+	vk_bind_geometry( TESS_XYZ | TESS_ST0 | TESS_NNN );
 	vk_draw_geometry( pipeline, tess.depthRange, qtrue );
 }
 #endif // USE_PMLIGHT
