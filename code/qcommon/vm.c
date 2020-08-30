@@ -1111,6 +1111,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 			// locate endproc
 			for ( endp = 0, n = i+1 ; n < instructionCount; n++ ) {
 				if ( buf[n].op == OP_PUSH && buf[n+1].op == OP_LEAVE ) {
+					buf[n].endp = 1;
 					endp = n;
 					break;
 				}
@@ -1784,7 +1785,7 @@ intptr_t QDECL VM_Call( vm_t *vm, int nargs, int callnum, ... )
 
 	++vm->callLevel;
 	// if we have a dll loaded, call it directly
-	if ( vm->entryPoint ) 
+	if ( vm->entryPoint )
 	{
 		//rcg010207 -  see dissertation at top of VM_DllSyscall() in this file.
 		int args[MAX_VMMAIN_CALL_ARGS-1];
