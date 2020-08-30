@@ -80,6 +80,8 @@ Copy resulting exe from `code/win32/msvc2017/output` directory
 
 To compile with Vulkan backend - clean solution, right click on `quake3e` project, find `Project Dependencies` and select `renderervk` instead of `renderer`
 
+---
+
 ### windows/mingw
 
 All build dependencies (libraries, headers) are bundled-in
@@ -87,6 +89,8 @@ All build dependencies (libraries, headers) are bundled-in
 Build with either `make ARCH=x86` or `make ARCH=x86_64` commands depending from your target system, then copy resulting binaries from created `build` directory or use command: 
 
 `make install DESTDIR=<path_to_game_files>`
+
+---
 
 ### linux/bsd
 
@@ -102,6 +106,22 @@ Copy resulting binaries from created `build` directory or use command:
 
 `make install DESTDIR=<path_to_game_files>`
 
+---
+
+### raspberry pi os
+
+Install build dependencies:
+
+* apt install libsdl2-dev libxxf86dga-dev libcurl4-openssl-dev
+
+Build with: `make`
+
+Copy resulting binaries from created `build` directory or use command: 
+
+`make install DESTDIR=<path_to_game_files>`
+
+---
+
 ### macos
 
 * install official SDL2 framework to /Library/Frameworks
@@ -110,6 +130,8 @@ Copy resulting binaries from created `build` directory or use command:
 Build with: `make`
 
 Copy resulting binaries from created `build` directory
+
+---
 
 Several make options available for linux/mingw/macos builds:
 
