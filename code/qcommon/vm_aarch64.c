@@ -64,7 +64,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define R17	17 // intra-procedure-call scratch
 #define R18	18 // *
 #define R19	19 // *
-#define R20	20 // * litBase?
+#define R20	20 // * litBase
 #define R21	21 // * vmBase
 #define R22	22 // * opStack
 #define R23	23 // * opStackTop
@@ -81,6 +81,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define LR	R30
 #define SP	R31
 
+#define rLITBASE	R20
 #define rVMBASE		R21
 #define rOPSTACK	R22
 #define rOPSTACKTOP	R23
@@ -106,11 +107,14 @@ typedef enum
 
 typedef enum
 {
+	LIT_LITBASE,
 	LIT_VMBASE,
 	LIT_DATABASE,
 	LIT_INSPOINTERS,
 	LIT_DATAMASK,
 	LIT_PSTACKBOTTOM,
+
+	LAST_CONST,
 
 	FUNC_ENTR,
 	FUNC_CALL,
@@ -152,6 +156,52 @@ static	uint32_t	pass;
 static	ELastCommand	LastCommand;
 uint32_t savedOffset[ OFFSET_T_LAST ];
 
+
+// literal pool
+
+#define MAX_LITERALS  4096
+#define LIT_HASH_SIZE 512
+#define LIT_HASH_FUNC(v) ((v*157)&(LIT_HASH_SIZE-1))
+
+typedef struct literal_s {
+	struct literal_s *next;
+	uint32_t value;
+} literal_t;
+
+static uint32_t numLiterals;
+static literal_t *litHash[ LIT_HASH_SIZE ];
+static literal_t litList[ MAX_LITERALS ];
+
+static void VM_InitLiterals( void )
+{
+	Com_Memset( litHash, 0, sizeof( litHash ) );
+	Com_Memset( litList, 0, sizeof( litList ) );
+	numLiterals = 0;
+}
+
+static int VM_SearchLiteral( const uint32_t value )
+{
+	uint32_t h = LIT_HASH_FUNC( value );
+	literal_t *lt = litHash[ h ];
+
+	while ( lt ) {
+		if ( lt->value == value ) {
+			return (lt - &litList[0]);
+		}
+		lt = lt->next;
+	}
+
+	if ( numLiterals >= ARRAY_LEN( litList ) ) {
+		return -1;
+	}
+
+	lt = &litList[ numLiterals++ ];
+	lt->next = litHash[ h ];
+	lt->value = value;
+	litHash[ h ] = lt;
+
+	return numLiterals;
+}
 
 static void VM_FreeBuffers( void )
 {
@@ -354,9 +404,9 @@ static void emit8( uint64_t imm )
 #define LDRH32(Rt, Rn, Rm)      ( (0b01<<30) | (0b111000011<<21) | (Rm<<16) | (0b010<<13) /*UXTW*/ | (0<<12) /*#0*/ | (0b10<<10) | (Rn << 5) | Rt )
 #define LDRB32(Rt, Rn, Rm)      ( (0b00<<30) | (0b111000011<<21) | (Rm<<16) | (0b010<<13) /*UXTW*/ | (0<<12) /*#0*/ | (0b10<<10) | (Rn << 5) | Rt )
 
-#define LDR32i(Rt, Rn, imm12)   ( (0b10<<30) | 0b11100101<<22 |  (imm12_scale(imm12,2) << 10) | (Rn << 5) | Rt )
-#define LDRH32i(Rt, Rn, imm12)  ( (0b01<<30) | 0b11100101<<22 |  (imm12_scale(imm12,1) << 10) | (Rn << 5) | Rt )
-#define LDRB32i(Rt, Rn, imm12)  ( (0b00<<30) | 0b11100101<<22 |  (imm12_scale(imm12,0) << 10) | (Rn << 5) | Rt )
+#define LDR32i(Rt, Rn, imm12)   ( (0b10<<30) | (0b11100101<<22) |  (imm12_scale((imm12),2) << 10) | (Rn << 5) | Rt )
+#define LDRH32i(Rt, Rn, imm12)  ( (0b01<<30) | (0b11100101<<22) |  (imm12_scale((imm12),1) << 10) | (Rn << 5) | Rt )
+#define LDRB32i(Rt, Rn, imm12)  ( (0b00<<30) | (0b11100101<<22) |  (imm12_scale((imm12),0) << 10) | (Rn << 5) | Rt )
 
 //#define LDR32_4(Rt, Rn, Rm)        ( (0b10<<30) | (0b111000011<<21) | (Rm<<16) | (0b011<<13) /*LSL*/ | (1<<12) /*#2*/ | (0b10<<10) | (Rn << 5) | Rt )
 #define LDR64_8(Rt, Rn, Rm)        ( (0b11<<30) | (0b111000011<<21) | (Rm<<16) | (0b011<<13) /*LSL*/ | (1<<12) /*#3*/ | (0b10<<10) | (Rn << 5) | Rt )
@@ -430,15 +480,17 @@ static void emit8( uint64_t imm )
 #define FMOVgs(Rd, Sn)           ( (0<<31) | (0b00<<29) | (0b11110<<24) | (0b00<<22) | (1<<21) | (0b00<<19) /*rmode*/ | (0b110<<16) /*opcode*/ | (0b000000<<10) | (Sn<<5) | Rd )
 // move general to scalar
 #define FMOVsg(Sd, Rn)           ( (0<<31) | (0b00<<29) | (0b11110<<24) | (0b00<<22) | (1<<21) | (0b00<<19) /*rmode*/ | (0b111<<16) /*opcode*/ | (0b000000<<10) | (Rn<<5) | Sd )
+// move immediate to scalar
+#define FMOVi(Sd, imm8)          ( (0<<31) | (0b00<<29) | (0b11110<<24) | (0b00<<22) | (1<<21) | ((imm8)<<13) | (0b100<<10) | (0b00000<<5) | Sd )
 
 #define VLDRpost(St, Rn, simm9)  ( (0b10<<30) | (0b111<<27) | (1<<26) | (0b00<<24) | (0b01<<22) /*opc*/ | (0<<21) | (((simm9)&0x1FF) << 12) | (0b01<<10) | (Rn<<5) | St )
 #define VLDRpre(St, Rn, simm9)   ( (0b10<<30) | (0b111<<27) | (1<<26) | (0b00<<24) | (0b01<<22) /*opc*/ | (0<<21) | (((simm9)&0x1FF) << 12) | (0b11<<10) | (Rn<<5) | St )
-#define VLDR(St, Rn, pimm12)     ( (0b10<<30) | (0b111<<27) | (1<<26) | (0b01<<24) | (0b01<<22) /*opc*/ | ((((pimm12)>>2)&0xFFF) << 10) | (Rn<<5) | St )
+#define VLDR(St, Rn, imm12)      ( (0b10<<30) | (0b111<<27) | (1<<26) | (0b01<<24) | (0b01<<22) /*opc*/ | (imm12_scale((imm12),2) << 10) | (Rn<<5) | St )
 
 #define VSTRpost(St, Rn, simm9)  ( (0b10<<30) | (0b111<<27) | (1<<26) | (0b00<<24) | (0b00<<22) /*opc*/ | (0<<21) | (((simm9)&0x1FF) << 12) | (0b01<<10) | (Rn<<5) | St )
 #define VSTRpre(St, Rn, simm9)   ( (0b10<<30) | (0b111<<27) | (1<<26) | (0b00<<24) | (0b00<<22) /*opc*/ | (0<<21) | (((simm9)&0x1FF) << 12) | (0b11<<10) | (Rn<<5) | St )
 
-#define VSTR(St, Rn, pimm12)     ( (0b10<<30) | (0b111<<27) | (1<<26) /*0?*/ | (0b01<<24) | (0b00<<22) /*opc*/ | ((((pimm12)>>2)&0xFFF) << 10) | (Rn<<5) | St )
+#define VSTR(St, Rn, imm12)      ( (0b10<<30) | (0b111<<27) | (1<<26) /*0?*/ | (0b01<<24) | (0b00<<22) /*opc*/ | (imm12_scale(imm12,2) << 10) | (Rn<<5) | St )
 
 
 static uint32_t imm12_scale( const uint32_t imm12, const uint32_t scale )
@@ -475,6 +527,8 @@ static void emit_MOVXi( uint32_t reg, uint64_t imm )
 
 static void emit_MOVRi( uint32_t reg, uint32_t imm )
 {
+	int litIndex;
+
 	if ( imm <= 0xFFFF ) {
 		emit( MOVZ32( reg, imm & 0xFFFF ) );
 		return;
@@ -485,8 +539,60 @@ static void emit_MOVRi( uint32_t reg, uint32_t imm )
 		return;
 	}
 
+	litIndex = VM_SearchLiteral( imm );
+	if ( litIndex >= 0 ) {
+		emit( LDR32i( reg, rLITBASE, (litIndex*4) ) );
+		return;
+	}
+
 	emit( MOVZ32( reg, imm & 0xFFFF ) );
 	emit( MOVK32_16( reg, (imm >> 16)&0xFFFF ) );
+}
+
+
+// check if we can encode single-precision scalar immediate
+
+static qboolean can_encode_f32_imm( const uint32_t v )
+{
+	uint32_t exp3 = (v >> 25) & ((1<<6)-1);
+
+	if ( exp3 != 0x20 && exp3 != 0x1F )
+		return qfalse;
+
+	if ( v & ((1<<19)-1) )
+		return qfalse;
+
+	return qtrue;
+}
+
+
+static uint32_t encode_f32_imm( const uint32_t v )
+{
+	return  (((v >> 31) & 0x1) << 7) | (((v >> 23) & 0x7) << 4) | ((v >> 19) & 0xF);
+}
+
+
+static qboolean emit_MOVSi( uint32_t reg, uint32_t imm )
+{
+	int litIndex;
+
+	if ( imm == 0 ) {
+		emit( FMOVsg( reg, WZR ) );
+		return qtrue;
+	}
+
+	if ( can_encode_f32_imm( imm ) ) {
+		emit( FMOVi( reg, encode_f32_imm( imm ) ) );
+		return qtrue;
+	}
+
+	litIndex = VM_SearchLiteral( imm );
+	if ( litIndex >= 0 ) {
+		emit( VLDR( reg, rLITBASE, (litIndex*4) ) );
+		return qtrue;
+	}
+
+	return qfalse;
 }
 
 
@@ -1024,15 +1130,39 @@ qboolean ConstOptimize( vm_t *vm )
 		ip += 1; // OP_cond
 		return qtrue;
 
-#if 0
+	case OP_EQF:
+	case OP_NEF:
+	case OP_LTF:
+	case OP_LEF:
+	case OP_GTF:
+	case OP_GEF: {
+		uint32_t comp = get_comp( ni->op );
+		x = ci->value;
+		emit_load_opstack_s0_m4( vm );       // s0 = *opstack; opstack -=4
+		if ( emit_MOVSi( S1, x ) ) {
+			// constant loaded from lit.pool to S1
+		} else {
+			emit_MOVRi(R1, x);           // r1 = ci->value
+			emit(FMOVsg(S1, R1));        // s1 = r1
+		}
+		emit(FCMP(S0, S1));
+		emit(Bcond(comp, vm->instructionPointers[ni->value] - compiledOfs));
+		ip += 1; // OP_cond
+		return qtrue;
+		}
+
 	case OP_ADDF:
 	case OP_SUBF:
 	case OP_MULF:
 	case OP_DIVF:
 		emit_load_opstack_s0( vm );        // s0 = *opstack;
 		x = ci->value;
-		emit_MOVRi(R1, x);                 // r1 = ci->value
-		emit(FMOVsg(S1, R1));              // s1 = r1
+		if ( emit_MOVSi( S1, x ) ) {
+			// constant loaded from lit.pool to S1
+		} else {
+			emit_MOVRi(R1, x);                 // r1 = ci->value
+			emit(FMOVsg(S1, R1));              // s1 = r1
+		}
 		switch ( ni->op ) {
 			case OP_ADDF: emit(FADD(S0, S0, S1)); break; // s0 = s0 + s1
 			case OP_SUBF: emit(FSUB(S0, S0, S1)); break; // s0 = s0 - s1
@@ -1043,7 +1173,6 @@ qboolean ConstOptimize( vm_t *vm )
 		emit_store_opstack_s0( vm );       // *opstack = s0
 		ip += 1; // OP_XXXF
 		return qtrue;
-#endif
 
 	default:
 		break;
@@ -1092,7 +1221,6 @@ static void VM_FindMOps( instruction_t *buf, const int instructionCount )
 					i += 6; n += 6;
 					continue;
 				}
-#if 0
 				if ( v == OP_DIVI ) {
 					i->op = MOP_DIVI4;
 					i += 6; n += 6;
@@ -1103,7 +1231,7 @@ static void VM_FindMOps( instruction_t *buf, const int instructionCount )
 					i += 6; n += 6;
 					continue;
 				}
-
+#if 0
 				if ( v == OP_MODI ) {
 					i->op = MOP_MODI4;
 					i += 6; n += 6;
@@ -1249,6 +1377,7 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 {
 	const char *errMsg;
+	uint32_t *litBase;
 	int proc_base;
 	int proc_len;
 	int i;
@@ -1277,6 +1406,9 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 	VM_FindMOps( inst, vm->instructionCount );
 #endif
 
+	litBase = NULL;
+	VM_InitLiterals();
+
 	memset( savedOffset, 0, sizeof( savedOffset ) );
 
 	code = NULL;
@@ -1293,13 +1425,16 @@ __recompile:
 	proc_base = -1;
 	proc_len = 0;
 
-	emit(SUB64i(SP, SP, 80)); // SP -= 80
-	emit(STP64(LR, R21, SP, 0));
+	emit(SUB64i(SP, SP, 96)); // SP -= 80
+
+	emit(STP64(R20, R21, SP, 0));
 	emit(STP64(R22, R23, SP, 16));
 	emit(STP64(R24, R25, SP, 32));
 	emit(STP64(R26, R27, SP, 48));
 	emit(STP64(R28, R29, SP, 64));
+	emit(STP64(R19, LR,  SP, 80));
 
+	emit(LDR64lit(rLITBASE, savedOffset[LIT_LITBASE] - compiledOfs));
 	emit(LDR64lit(rVMBASE, savedOffset[LIT_VMBASE] - compiledOfs));
 	emit(LDR64lit(rINSPOINTERS, savedOffset[LIT_INSPOINTERS] - compiledOfs));
 	emit(LDR64lit(rDATABASE, savedOffset[LIT_DATABASE] - compiledOfs));
@@ -1319,15 +1454,21 @@ __recompile:
 	emit(STR64i(rOPSTACK, rVMBASE, offsetof(vm_t, opStack)));     // vm->opStack = rOPSTACK;
 #endif
 
-	emit(LDP64(LR, R21, SP, 0));
+	emit(LDP64(R20, R21, SP, 0));
 	emit(LDP64(R22, R23, SP, 16));
 	emit(LDP64(R24, R25, SP, 32));
 	emit(LDP64(R26, R27, SP, 48));
 	emit(LDP64(R28, R29, SP, 64));
-	emit(ADD64i(SP, SP, 80)); // SP += 80
+	emit(LDP64(R19, LR,  SP, 80));
+
+	emit(ADD64i(SP, SP, 96)); // SP += 96
+
 	emit(RET(LR));
 
 	// begin literals
+
+savedOffset[ LIT_LITBASE ] = compiledOfs;
+	emit8( (intptr_t)litBase );
 
 savedOffset[ LIT_VMBASE ] = compiledOfs;
 	emit8( (intptr_t) vm );
@@ -1434,6 +1575,8 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 				if ( ConstOptimize( vm ) )
 					break;
 #endif
+				savedOffset[ LAST_CONST ] = compiledOfs;
+
 				emit_MOVRi(R0, v);                    // mov r0, 0x12345678
 				emit_store_opstack_p4_r0( vm );       // opstack+=4; *opstack = r0
 				break;
@@ -1790,16 +1933,26 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 	} // pass
 
 	if ( vm->codeBase.ptr == NULL ) {
-		vm->codeBase.ptr = mmap( NULL, compiledOfs, PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0 );
+		uint32_t allocSize = compiledOfs + numLiterals * sizeof( uint32_t );
+		vm->codeBase.ptr = mmap( NULL, allocSize, PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0 );
 		if ( vm->codeBase.ptr == MAP_FAILED ) {
 			VM_FreeBuffers();
 			Com_Printf( S_COLOR_YELLOW "%s(%s): mmap failed\n", __func__, vm->name );
 			return qfalse;
 		}
-		vm->codeLength = compiledOfs;
+		vm->codeLength = allocSize; // code + literals
 		vm->codeSize = compiledOfs;
 		code = (uint32_t*)vm->codeBase.ptr;
+		litBase = (uint32_t*)(vm->codeBase.ptr + compiledOfs);
 		goto __recompile;
+	}
+
+	// append literals to the code
+	if ( numLiterals ) {
+		uint32_t i, *lp = litBase;
+		for ( i = 0; i < numLiterals; i++, lp++ ) {
+			*lp = litList[ i ].value;
+		}
 	}
 
 	//dump_code( code, compiledOfs / 4 );
