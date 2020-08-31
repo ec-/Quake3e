@@ -28,7 +28,7 @@ USE_VULKAN       = 0
 USE_SYSTEM_JPEG  = 0
 USE_VULKAN_API   = 0
 
-USE_RENDERER_DLOPEN = 1
+USE_RENDERER_DLOPEN = 0
 
 CNAME            = quake3e
 DNAME            = quake3e.ded
