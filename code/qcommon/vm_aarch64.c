@@ -329,6 +329,15 @@ static void emit8( uint64_t imm )
 // ASR (register)
 #define ASR32(Rd, Rn, Rm)       ( (0<<31) | (0b00<<29) | (0b11010110<<21) | (Rm<<16) | (0b0010<<12) | (0b10<<10) | (Rn<<5) | Rd )
 
+// LSL (immediate in range 1..31)
+#define LSL32i(Rd, Rn, shift)   ( (0<<31) | (0b10<<29) | (0b100110<<23) | (0<<22) | (((-(shift))&31)<<16) | ((31-(shift))<<10) | ((Rn)<<5) | Rd )
+
+// LSR (immediate in range 1..31)
+#define LSR32i(Rd, Rn, shift)   ( (0<<31) | (0b10<<29) | (0b100110<<23) | (0<<22) | ((shift)<<16) | (31<<10) | ((Rn)<<5) | Rd )
+
+// ASR (immediate in range 1..31)
+#define ASR32i(Rd, Rn, shift)   ( (0<<31) | (0b00<<29) | (0b100110<<23) | (0<<22) | ((shift)<<16) | (31<<10) | ((Rn)<<5) | Rd )
+
 // LDP - load pair of registers with signed offset
 #define LDP32(Rt1,Rt2,Rn,simm7) ( 0b00<<30 | 0b101<<27 | 0<<26 | 0b010<<23 | 1<<22 /*L*/ | (((simm7)&0x7F)>>2)<<15 | Rt2<<10 | Rn<<5 | Rt1 )
 #define LDP64(Rt1,Rt2,Rn,simm7) ( 0b10<<30 | 0b101<<27 | 0<<26 | 0b010<<23 | 1<<22 /*L*/ | (((simm7)&0x7F)>>3)<<15 | Rt2<<10 | Rn<<5 | Rt1 )
@@ -936,6 +945,42 @@ qboolean ConstOptimize( vm_t *vm )
 		ip += 1;
 		return qtrue;
 
+	case OP_LSH:
+		x = ci->value;
+		if ( x < 0 || x > 31 )
+			break;
+		if ( x ) {
+			emit_load_r0_opstack( vm );  // r0 = *opstack;
+			emit(LSL32i(R0, R0, x));     // r0 = r1 << r0
+			emit_store_opstack_r0( vm ); // *opstack = r0;
+		}
+		ip += 1; // OP_LSH
+		return qtrue;
+
+	case OP_RSHI:
+		x = ci->value;
+		if ( x < 0 || x > 31 )
+			break;
+		if ( x ) {
+			emit_load_r0_opstack( vm );  // r0 = *opstack;
+			emit(ASR32i(R0, R0, x));     // r0 = r0 >> x
+			emit_store_opstack_r0( vm ); // *opstack = r0;
+		}
+		ip += 1; // OP_RSHI
+		return qtrue;
+
+	case OP_RSHU:
+		x = ci->value;
+		if ( x < 0 || x > 31 )
+			break;
+		if ( x ) {
+			emit_load_r0_opstack( vm );  // r0 = *opstack;
+			emit(LSR32i(R0, R0, x));     // r0 = (unsigned)r0 >> x
+			emit_store_opstack_r0( vm ); // *opstack = r0;
+		}
+		ip += 1; // OP_RSHU
+		return qtrue;
+
 	case OP_JUMP:
 		emit(B(vm->instructionPointers[ ci->value ] - compiledOfs));
 		ip += 1; // OP_JUMP
@@ -1204,6 +1249,8 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 {
 	const char *errMsg;
+	int proc_base;
+	int proc_len;
 	int i;
 
 	inst = (instruction_t*)Z_Malloc( (header->instructionCount + 8 ) * sizeof( instruction_t ) );
@@ -1242,6 +1289,9 @@ __recompile:
 	ip = 0;
 	compiledOfs = 0;
 	LastCommand = LAST_COMMAND_NONE;
+
+	proc_base = -1;
+	proc_len = 0;
 
 	emit(SUB64i(SP, SP, 80)); // SP -= 80
 	emit(STP64(LR, R21, SP, 0));
@@ -1328,6 +1378,16 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 				break;
 
 			case OP_ENTER:
+
+				proc_base = ip;
+				// locate endproc
+				for ( proc_len = -1, i = ip; i < header->instructionCount; i++ ) {
+					if ( inst[ i ].op == OP_PUSH && inst[ i + 1 ].op == OP_LEAVE ) {
+						proc_len = i - proc_base;
+						break;
+					}
+				}
+
 				emit(SUB64i(SP, SP, 32));
 				emit(STP64(LR, rPROCBASE, SP, 0)); // save LR, rPROCBASE
 				emit(STP32(R16, rPSTACK, SP, 16)); // save R16, rPSTACK
@@ -1342,6 +1402,11 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 				break;
 
 			case OP_LEAVE:
+				if ( !ci->endp && proc_base >= 0 ) {
+					v = proc_base + proc_len + 1;
+					emit(B(vm->instructionPointers[ v ] - compiledOfs));
+					break;
+				}
 				emit(LDP64(LR, rPROCBASE, SP, 0)); // restore LR, rPROCBASE
 				emit(LDP32(R16, rPSTACK, SP, 16)); // restore R16, rPSTACK
 				emit(ADD64i(SP, SP, 32));
@@ -1355,6 +1420,9 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 
 			case OP_PUSH:
 				emit(ADD64i(rOPSTACK, rOPSTACK, 4)); // opstack += 4
+				if ( ni->op == OP_LEAVE ) {
+					proc_base = -1;
+				}
 				break;
 
 			case OP_POP:
@@ -1452,7 +1520,7 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 			case OP_GTF:
 			case OP_GEF: {
 				uint32_t comp = get_comp( ci->op );
-				emit_load_opstack_s0_m4( vm );      // *s0 = opstack; opstack -=4
+				emit_load_opstack_s0_m4( vm );      // s0 = *opstack; opstack -=4
 				emit(VLDRpost(S1, rOPSTACK, -4));   // s1 = *opstack; opstack -=4
 				emit(FCMP(S1, S0));
 				emit(Bcond(comp, vm->instructionPointers[v] - compiledOfs));
