@@ -25,7 +25,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define USE_VBO				// store static world geometry in VBO
 #define USE_FOG_ONLY
-#define USE_FOG_COLLAPSE
+#define USE_FOG_COLLAPSE	// not compatible with legacy dlights
 #if defined (USE_VBO) && !defined(USE_FOG_ONLY)
 #define USE_FOG_ONLY
 #endif

@@ -1384,6 +1384,7 @@ __recompile:
 				for ( proc_len = -1, i = ip; i < header->instructionCount; i++ ) {
 					if ( inst[ i ].op == OP_PUSH && inst[ i + 1 ].op == OP_LEAVE ) {
 						proc_len = i - proc_base;
+						break;
 					}
 				}
 

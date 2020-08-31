@@ -2353,10 +2353,12 @@ static void vk_create_persistent_pipelines( void )
 
 						def.shader_type = TYPE_SIGNLE_TEXTURE;
 						def.state_bits = dlight_state;
+#ifdef USE_LEGACY_DLIGHTS
 #ifdef USE_PMLIGHT
 						vk.dlight_pipelines[i][j][k] = vk_find_pipeline_ext( 0, &def, r_dlightMode->integer == 0 ? qtrue : qfalse );
 #else
 						vk.dlight_pipelines[i][j][k] = vk_find_pipeline_ext( 0, &def, qtrue );
+#endif
 #endif
 					}
 				}
@@ -5225,7 +5227,7 @@ static VkBuffer shade_bufs[6];
 static int bind_base;
 static int bind_count;
 
-static void vk_bind_index( int index )
+static void vk_bind_index_attr( int index )
 {
 	if ( bind_base == -1 ) {
 		bind_base = index;
@@ -5249,7 +5251,7 @@ static void vk_bind_attr( int index, unsigned int item_size, const void *src ) {
 		vk.cmd->vertex_buffer_offset = (VkDeviceSize)offset + size;
 	}
 
-	vk_bind_index( index );
+	vk_bind_index_attr( index );
 }
 
 
@@ -5279,52 +5281,76 @@ void vk_bind_index_buffer( VkBuffer buffer, uint32_t offset )
 }
 
 
-void vk_bind_geometry_ext( int flags )
+void vk_bind_index( void )
 {
+	uint32_t offset;
+
+#ifdef USE_VBO
+	if ( tess.vboIndex ) {
+		vk.cmd->num_indexes = 0;
+		//qvkCmdBindIndexBuffer( vk.cmd->command_buffer, vk.vbo.index_buffer, tess.shader->iboOffset, VK_INDEX_TYPE_UINT32 );
+		return;
+	}
+#endif
+
+	offset = vk_tess_index( tess.numIndexes, tess.indexes );
+	vk_bind_index_buffer( vk.cmd->vertex_buffer, offset );
+	vk.cmd->num_indexes = tess.numIndexes;
+}
+
+
+void vk_bind_index_ext( const int numIndexes, const uint32_t *indexes )
+{
+	uint32_t offset;
+
+	offset = vk_tess_index( numIndexes, indexes );
+	vk_bind_index_buffer( vk.cmd->vertex_buffer, offset );
+	vk.cmd->num_indexes = numIndexes;
+}
+
+
+void vk_bind_geometry( uint32_t flags )
+{
+	if ( ( flags & ( TESS_XYZ | TESS_RGBA | TESS_ST0 | TESS_ST1 | TESS_ST2 | TESS_NNN ) ) == 0 )
+		return;
+
 	//unsigned int size;
 	bind_base = -1;
 	bind_count = 0;
 
 #ifdef USE_VBO
 	if ( tess.vboIndex ) {
-		
-		if ( ( flags & (TESS_XYZ | TESS_RGBA | TESS_ST0 | TESS_ST1 | TESS_ST2 | TESS_NNN ) ) == 0 )
-			return;
 
 		shade_bufs[0] = shade_bufs[1] = shade_bufs[2] = shade_bufs[3] = shade_bufs[4] = shade_bufs[5] = vk.vbo.vertex_buffer;
 
-		//if ( flags & TESS_IDX ) {  // index
-			//qvkCmdBindIndexBuffer( vk.cmd->command_buffer, vk.vbo.index_buffer, tess.shader->iboOffset, VK_INDEX_TYPE_UINT32 );
-		//}
-
 		if ( flags & TESS_XYZ ) {  // 0
 			vk.cmd->vbo_offset[0] = tess.shader->vboOffset + 0; 
-			vk_bind_index( 0 );
+			vk_bind_index_attr( 0 );
 		}
 
 		if ( flags & TESS_RGBA ) { // 1
 			vk.cmd->vbo_offset[1] = tess.shader->stages[ tess.vboStage ]->color_offset;
-			vk_bind_index( 1 );
+			vk_bind_index_attr( 1 );
 		}
 
 		if ( flags & TESS_ST0 ) {  // 2
 			vk.cmd->vbo_offset[2] = tess.shader->stages[ tess.vboStage ]->tex_offset[0];
-			vk_bind_index( 2 );
+			vk_bind_index_attr( 2 );
 		}
 
 		if ( flags & TESS_ST1 ) {  // 3
 			vk.cmd->vbo_offset[3] = tess.shader->stages[ tess.vboStage ]->tex_offset[1];
-			vk_bind_index( 3 );
+			vk_bind_index_attr( 3 );
 		}
 
 		if ( flags & TESS_ST2 ) {  // 3
 			vk.cmd->vbo_offset[4] = tess.shader->stages[ tess.vboStage ]->tex_offset[2];
-			vk_bind_index( 4 );
+			vk_bind_index_attr( 4 );
 		}
 
 		if ( flags & TESS_NNN ) {
 			vk.cmd->vbo_offset[5] = tess.shader->normalOffset;
-			vk_bind_index( 5 );
+			vk_bind_index_attr( 5 );
 		}
 
 		qvkCmdBindVertexBuffers( vk.cmd->command_buffer, bind_base, bind_count, shade_bufs, vk.cmd->vbo_offset + bind_base );
@@ -5333,14 +5359,6 @@ void vk_bind_geometry_ext( int flags )
 #endif // USE_VBO
 	{
 		shade_bufs[0] = shade_bufs[1] = shade_bufs[2] = shade_bufs[3] = shade_bufs[4] = shade_bufs[5] = vk.cmd->vertex_buffer;
-
-		if ( flags & TESS_IDX ) {
-			uint32_t offset = vk_tess_index( tess.numIndexes, tess.indexes );
-			vk_bind_index_buffer( vk.cmd->vertex_buffer, offset );
-		}
-
-		if ( ( flags & ( TESS_XYZ | TESS_RGBA | TESS_ST0 | TESS_ST1 | TESS_ST2 | TESS_NNN ) ) == 0 )
-			return;
 
 		if ( flags & TESS_XYZ ) {
 			vk_bind_attr(0, sizeof(tess.xyz[0]), &tess.xyz[0]);
@@ -5455,7 +5473,7 @@ void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean i
 	else
 #endif
 	if ( indexed ) {
-		qvkCmdDrawIndexed( vk.cmd->command_buffer, tess.numIndexes, 1, 0, 0, 0 );
+		qvkCmdDrawIndexed( vk.cmd->command_buffer, vk.cmd->num_indexes, 1, 0, 0, 0 );
 	} else {
 		qvkCmdDraw( vk.cmd->command_buffer, tess.numVertexes, 1, 0, 0 );
 	}

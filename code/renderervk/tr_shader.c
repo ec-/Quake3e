@@ -2911,7 +2911,7 @@ static shader_t *FinishShader( void ) {
 
 #ifdef USE_VULKAN
 
-	shader.tessFlags = TESS_IDX | TESS_XYZ;
+	shader.tessFlags = TESS_XYZ;
 	stages[0].tessFlags = TESS_RGBA | TESS_ST0;
 
 	{

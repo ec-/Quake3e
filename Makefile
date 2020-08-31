@@ -216,6 +216,9 @@ endif
 ifeq ($(ARCH),arm)
   HAVE_VM_COMPILED = true
 endif
+ifeq ($(ARCH),aarch64)
+  HAVE_VM_COMPILED = true
+endif
 
 BASE_CFLAGS =
 
@@ -425,6 +428,10 @@ else
 
   ifeq ($(ARCH),arm)
     ARCHEXT = .arm
+  endif
+
+  ifeq ($(ARCH),aarch64)
+    ARCHEXT = .aarch64
   endif
 
   SHLIBEXT = so
@@ -915,6 +922,9 @@ ifeq ($(HAVE_VM_COMPILED),true)
   ifeq ($(ARCH),arm)
     Q3OBJ += $(B)/client/vm_armv7l.o
   endif
+  ifeq ($(ARCH),aarch64)
+    Q3OBJ += $(B)/client/vm_aarch64.o
+  endif
 endif
 
 ifeq ($(USE_CURL),1)
@@ -1089,6 +1099,9 @@ ifeq ($(HAVE_VM_COMPILED),true)
   endif
   ifeq ($(ARCH),arm)
     Q3DOBJ += $(B)/ded/vm_armv7l.o
+  endif
+  ifeq ($(ARCH),aarch64)
+    Q3DOBJ += $(B)/ded/vm_aarch64.o
   endif
 endif
 

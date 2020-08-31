@@ -134,6 +134,7 @@ typedef struct {
 	unsigned jused:1;
 	unsigned swtch:1;
 	unsigned safe:1;   // non-masked op_store
+	unsigned endp:1;
 } instruction_t;
 
 typedef struct vmSymbol_s {

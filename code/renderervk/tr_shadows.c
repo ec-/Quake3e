@@ -210,7 +210,8 @@ void RB_ShadowTessEnd( void ) {
 #ifdef USE_VULKAN
 	GL_Bind( tr.whiteImage );
 
-	vk_bind_geometry_ext( TESS_IDX | TESS_XYZ | TESS_RGBA );
+	vk_bind_index();
+	vk_bind_geometry( TESS_XYZ | TESS_RGBA );
 
 	// mirrors have the culling order reversed
 	if ( backEnd.viewParms.portalView == PV_MIRROR ) {
@@ -326,7 +327,7 @@ void RB_ShadowFinish( void ) {
 
 	vk_update_mvp( NULL );
 
-	vk_bind_geometry_ext( TESS_XYZ | TESS_RGBA /*| TESS_ST0 */ );
+	vk_bind_geometry( TESS_XYZ | TESS_RGBA /*| TESS_ST0 */ );
 	vk_draw_geometry( vk.shadow_finish_pipeline, DEPTH_RANGE_NORMAL, qfalse );
 
 	Com_Memcpy( vk_world.modelview_transform, tmp, 64 );

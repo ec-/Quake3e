@@ -348,7 +348,7 @@ void RB_TestFlare( flare_t *f ) {
 	vk_update_descriptor( 0, vk.storage.descriptor );
 	vk_update_descriptor_offset( 0, offset );
 
-	vk_bind_geometry_ext( TESS_XYZ );
+	vk_bind_geometry( TESS_XYZ );
 	vk_draw_geometry( vk.dot_pipeline, DEPTH_RANGE_NORMAL, qfalse );
 
 	//Com_Memcpy( vk_world.modelview_transform, modelMatrix_original, sizeof( modelMatrix_original ) );
