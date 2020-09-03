@@ -1061,10 +1061,6 @@ static void dump_code( uint32_t *code, uint32_t code_len )
 qboolean ConstOptimize( vm_t *vm )
 {
 	uint32_t x;
-	// we can safely perform optimizations only in case if
-	// we are 100% sure that next instruction is not a jump label
-	if ( ni->jused )
-		return qfalse;
 
 	switch ( ni->op ) {
 
@@ -1677,6 +1673,8 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 
 		if ( ci->jused )
 		{
+			// we can safely perform rewind-optimizations only in case if
+			// we are 100% sure that current instruction is not a jump label
 			LastCommand = LAST_COMMAND_NONE;
 		}
 
@@ -1723,18 +1721,12 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 					// jump to last OP_LEAVE instruction in this function
 					v = proc_base + proc_len + 1;
 					emit(B(vm->instructionPointers[ v ] - compiledOfs));
-					if ( !ni->jused && ni->op == OP_CONST && ni->value == v-1 && (ni+1)->op == OP_JUMP ) {
-						ip += 2; // OP_CONST + OP_JUMP
-					}
 					break;
 				}
 #endif
 				emit(LDP64post(LR, rPSTACK, SP, 16)); // restore LR, rPSTACK
 				emit(ADD64(rPROCBASE, rPSTACK, rDATABASE));
 				emit(RET(LR));
-				if ( ci->endp ) {
-					proc_base = -1;
-				}
 				break;
 
 			case OP_CALL:

@@ -922,7 +922,7 @@ Do some corrections to fix known Q3LCC flaws
 */
 static void VM_Fixup( instruction_t *buf, int instructionCount )
 {
-	int n, op0;
+	int n;
 	instruction_t *i;
 
 	i = buf;
@@ -930,8 +930,7 @@ static void VM_Fixup( instruction_t *buf, int instructionCount )
 
 	while ( n < instructionCount )
 	{
-		op0 = i->op;
-		if ( op0 == OP_LOCAL ) {
+		if ( i->op == OP_LOCAL ) {
 
 			// skip useless sequences
 			if ( (i+1)->op == OP_LOCAL && (i+0)->value == (i+1)->value && (i+2)->op == OP_LOAD4 && (i+3)->op == OP_STORE4 ) {
@@ -944,7 +943,7 @@ static void VM_Fixup( instruction_t *buf, int instructionCount )
 			if ( (i+1)->op == OP_CONST && (i+2)->op == OP_CALL && (i+3)->op == OP_STORE4 && !(i+4)->jused ) {
 				// OP_CONST|OP_LOCAL + OP_LOCAL + OP_LOAD4 + OP_STORE4
 				if ( (i+4)->op == OP_CONST || (i+4)->op == OP_LOCAL ) {
-					if (( i+5)->op == OP_LOCAL && (i+5)->value == (i+0)->value && (i+6)->op == OP_LOAD4 && (i+7)->op == OP_STORE4 ) {
+					if ((i+5)->op == OP_LOCAL && (i+5)->value == (i+0)->value && (i+6)->op == OP_LOAD4 && (i+7)->op == OP_STORE4 ) {
 						// make sure that address of temporary variable is not referenced anymore in this function
 						if ( !VM_FindLocal( i->value, i + 8, buf + instructionCount ) ) {
 							(i+0)->op = (i+4)->op;
@@ -955,6 +954,18 @@ static void VM_Fixup( instruction_t *buf, int instructionCount )
 							continue;
 						}
 					}
+				}
+			}
+		}
+
+		if ( i->op == OP_LEAVE && !i->endp ) {
+			if ( !(i+1)->jused && (i+1)->op == OP_CONST && (i+2)->op == OP_JUMP ) {
+				int v = (i+1)->value;
+				if ( buf[ v ].op == OP_PUSH && buf[ v+1 ].op == OP_LEAVE && buf[ v+1 ].endp ) {
+					VM_IgnoreInstructions( i + 1, 2 );
+					i += 3;
+					n += 3;
+					continue;
 				}
 			}
 		}
@@ -1111,7 +1122,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 			// locate endproc
 			for ( endp = 0, n = i+1 ; n < instructionCount; n++ ) {
 				if ( buf[n].op == OP_PUSH && buf[n+1].op == OP_LEAVE ) {
-					buf[n].endp = 1;
+					buf[n+1].endp = 1;
 					endp = n;
 					break;
 				}

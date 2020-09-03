@@ -778,11 +778,6 @@ static qboolean ConstOptimize( vm_t *vm )
 {
 	uint32_t x;
 
-	// we can safely perform optimizations only in case if
-	// we are 100% sure that next instruction is not a jump label
-	if ( ni->jused )
-		return qfalse;
-
 	switch ( ni->op ) {
 
 	case OP_LOAD4:
@@ -1358,6 +1353,8 @@ __recompile:
 
 		if ( ci->jused )
 		{
+			// we can safely perform rewind-optimizations only in case if
+			// we are 100% sure that current instruction is not a jump label
 			LastCommand = LAST_COMMAND_NONE;
 		}
 
