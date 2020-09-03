@@ -802,6 +802,7 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 	dataAlloc = dataLength + 1024;
 
 	if ( dataLength >= (1U<<31) || dataAlloc >= (1U<<31) ) {
+		// dataLenth is negative int32
 		VM_Free( vm );
 		FS_FreeFile( header );
 		Com_Printf( S_COLOR_RED "%s: data segment is too large\n", __func__ );

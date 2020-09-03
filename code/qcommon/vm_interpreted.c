@@ -156,8 +156,8 @@ locals from sp
 int	VM_CallInterpreted2( vm_t *vm, int nargs, int *args ) {
 	int		stack[MAX_OPSTACK_SIZE];
 	int		*opStack, *opStackTop;
-	unsigned int programStack;
-	unsigned int stackOnEntry;
+	int		programStack;
+	int		stackOnEntry;
 	byte	*image;
 	int		v1, v0;
 	int		dataMask;
@@ -221,7 +221,7 @@ nextInstruction2:
 		case OP_ENTER:
 			// get size of stack frame
 			programStack -= v0;
-			if ( programStack <= vm->stackBottom ) {
+			if ( programStack < vm->stackBottom ) {
 				Com_Error( ERR_DROP, "VM programStack overflow" );
 			}
 			if ( opStack + ((ci-1)->opStack/4) >= opStackTop ) {

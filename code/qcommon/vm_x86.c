@@ -2124,7 +2124,7 @@ __compile:
 				EmitString( "81 FE" );			// cmp	esi, vm->stackBottom
 				Emit4( vm->stackBottom );
 #endif
-				EmitString( "0F 82" );			// jb +funcOffset[FUNC_PSOF]
+				EmitString( "0F 8C" );			// jl +funcOffset[FUNC_PSOF]
 				n = funcOffset[FUNC_PSOF] - compiledOfs;
 				Emit4( n - 6 );
 			}

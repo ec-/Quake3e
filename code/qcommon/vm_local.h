@@ -158,8 +158,8 @@ struct vm_s {
 	int			*opStack;			// pointer to local function stack
 	int			*opStackTop;
 
-	unsigned int programStack;		// the vm may be recursively entered
-	unsigned int stackBottom;		// if programStack < stackBottom, error
+	int			programStack;		// the vm may be recursively entered
+	int			stackBottom;		// if programStack < stackBottom, error
 
 	//------------------------------------
 

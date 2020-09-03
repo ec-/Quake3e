@@ -701,14 +701,14 @@ static void emit_load_r0_opstack( vm_t *vm )
 	if ( LastCommand == LAST_COMMAND_STORE_OPSTACK_P4_R0 ) // opstack +=4; *opstack = r0;
 	{
 		rewind4( vm );
-		emit_add_opstack_4(); // opstack += 4;
+		emit_add_opstack_4(); // opstack += 4
 		return;
 	}
 
 	if ( LastCommand == LAST_COMMAND_STORE_OPSTACK_M4_R0 ) // opstack -= 4; *opstack = r0;
 	{
 		rewind4( vm );
-		emit_sub_opstack_4();
+		emit_sub_opstack_4(); // opstack -=4
 		return;
 	}
 #endif
@@ -952,7 +952,7 @@ static void emit_CheckProc( vm_t *vm, instruction_t *inst )
 	// programStack overflow check
 	if ( vm_rtChecks->integer & 1 ) {
 		emit(CMP32(rPSTACK, rPSTACKBOTTOM));  // check if pStack < vm->stackBottom
-		emit(Bcond(HS, +8));                  // jump over if unsigned higher or equal
+		emit(Bcond(GE, +8));                  // jump over if signed higher or equal
 		emitFuncOffset( vm, FUNC_PSOF );      // error function
 	}
 
