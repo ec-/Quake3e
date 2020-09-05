@@ -2069,6 +2069,8 @@ __compile:
 		ip++;
 
 		if ( ci->jused ) {
+			// we can safely perform rewind-optimizations only in case if
+			// we are 100% sure that current instruction is not a jump label
 			LastCommand = LAST_COMMAND_NONE;
 			pop1 = OP_UNDEF;
 		}
@@ -2122,7 +2124,7 @@ __compile:
 				EmitString( "81 FE" );			// cmp	esi, vm->stackBottom
 				Emit4( vm->stackBottom );
 #endif
-				EmitString( "0F 82" );			// jb +funcOffset[FUNC_PSOF]
+				EmitString( "0F 8C" );			// jl +funcOffset[FUNC_PSOF]
 				n = funcOffset[FUNC_PSOF] - compiledOfs;
 				Emit4( n - 6 );
 			}
@@ -2151,14 +2153,10 @@ __compile:
 			break;
 
 		case OP_CONST:
-
-			// we can safely perform optimizations only in case if
-			// we are 100% sure that next instruction is not a jump label
 #ifdef CONST_OPTIMIZE
-			if ( !ni->jused && ConstOptimize( vm ) )
+			if ( ConstOptimize( vm ) )
 				break;
 #endif
-
 			EmitAddEDI4( vm );					// add edi, 4
 			EmitString( "C7 07" );				// mov dword ptr [edi], 0x12345678
 			lastConst = ci->value;

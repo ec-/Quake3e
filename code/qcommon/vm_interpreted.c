@@ -156,8 +156,8 @@ locals from sp
 int	VM_CallInterpreted2( vm_t *vm, int nargs, int *args ) {
 	int		stack[MAX_OPSTACK_SIZE];
 	int		*opStack, *opStackTop;
-	unsigned int programStack;
-	unsigned int stackOnEntry;
+	int		programStack;
+	int		stackOnEntry;
 	byte	*image;
 	int		v1, v0;
 	int		dataMask;
@@ -221,7 +221,7 @@ nextInstruction2:
 		case OP_ENTER:
 			// get size of stack frame
 			programStack -= v0;
-			if ( programStack <= vm->stackBottom ) {
+			if ( programStack < vm->stackBottom ) {
 				Com_Error( ERR_DROP, "VM programStack overflow" );
 			}
 			if ( opStack + ((ci-1)->opStack/4) >= opStackTop ) {
@@ -482,58 +482,47 @@ nextInstruction2:
 			break;
 
 		case OP_ADD:
-			opStack[-1] = r1.i + r0.i;
-			opStack--;
+			*(--opStack) = r1.i + r0.i;
 			break;
 
 		case OP_SUB:
-			opStack[-1] = r1.i - r0.i;
-			opStack--;
+			*(--opStack) = r1.i - r0.i;
 			break;
 
 		case OP_DIVI:
-			opStack[-1] = r1.i / r0.i;
-			opStack--;
+			*(--opStack) = r1.i / r0.i;
 			break;
 
 		case OP_DIVU:
-			opStack[-1] = r1.u / r0.u;
-			opStack--;
+			*(--opStack) = r1.u / r0.u;
 			break;
 
 		case OP_MODI:
-			opStack[-1] = r1.i % r0.i;
-			opStack--;
+			*(--opStack) = r1.i % r0.i;
 			break;
 
 		case OP_MODU:
-			opStack[-1] = r1.u % r0.u;
-			opStack--;
+			*(--opStack) = r1.u % r0.u;
 			break;
 
 		case OP_MULI:
-			opStack[-1] = r1.i * r0.i;
-			opStack--;
+			*(--opStack) = r1.i * r0.i;
 			break;
 
 		case OP_MULU:
-			opStack[-1] = r1.u * r0.u;
-			opStack--;
+			*(--opStack) = r1.u * r0.u;
 			break;
 
 		case OP_BAND:
-			opStack[-1] = r1.u & r0.u;
-			opStack--;
+			*(--opStack) = r1.u & r0.u;
 			break;
 
 		case OP_BOR:
-			opStack[-1] = r1.u | r0.u;
-			opStack--;
+			*(--opStack) = r1.u | r0.u;
 			break;
 
 		case OP_BXOR:
-			opStack[-1] = r1.u ^ r0.u;
-			opStack--;
+			*(--opStack) = r1.u ^ r0.u;
 			break;
 
 		case OP_BCOM:
@@ -541,18 +530,15 @@ nextInstruction2:
 			break;
 
 		case OP_LSH:
-			opStack[-1] = r1.i << r0.i;
-			opStack--;
+			*(--opStack) = r1.i << r0.i;
 			break;
 
 		case OP_RSHI:
-			opStack[-1] = r1.i >> r0.i;
-			opStack--;
+			*(--opStack) = r1.i >> r0.i;
 			break;
 
 		case OP_RSHU:
-			opStack[-1] = r1.u >> r0.i;
-			opStack--;
+			*(--opStack) = r1.u >> r0.i;
 			break;
 
 		case OP_NEGF:
@@ -560,23 +546,19 @@ nextInstruction2:
 			break;
 
 		case OP_ADDF:
-			*(float *)(opStack-1) = r1.f + r0.f;
-			opStack--;
+			*(float *)(--opStack) = r1.f + r0.f;
 			break;
 
 		case OP_SUBF:
-			*(float *)(opStack-1) = r1.f - r0.f;
-			opStack--;
+			*(float *)(--opStack) = r1.f - r0.f;
 			break;
 
 		case OP_DIVF:
-			*(float *)(opStack-1) = r1.f / r0.f;
-			opStack--;
+			*(float *)(--opStack) = r1.f / r0.f;
 			break;
 
 		case OP_MULF:
-			*(float *)(opStack-1) = r1.f * r0.f;
-			opStack--;
+			*(float *)(--opStack) = r1.f * r0.f;
 			break;
 
 		case OP_CVIF:
