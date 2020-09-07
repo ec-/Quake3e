@@ -391,13 +391,13 @@ static unsigned short can_encode(unsigned val)
 // load byte with pre-increment
 #define LDRBa(dst, base, off)   (AL | (0b011<<25) | (0b1110<<21) | (1<<20) | base<<16 | dst<<12 | off)
 #define LDRSBa(dst, base, off)  (AL | (0b000<<25) | (0b1100<<21) | (1<<20) | base<<16 | dst<<12 | (0b0000<<8) | 0b1101<<4 | off)
-#define LDRSBai(dst, base, off) (AL | (0b000<<25) | (0b1110<<21) | (1<<20) | base<<16 | dst<<12 | ((off&0xF0)<<8) | 0b1101<<4 | (off&0x0F))
+#define LDRSBai(dst, base, off) (AL | (0b000<<25) | (0b1110<<21) | (1<<20) | base<<16 | dst<<12 | ((((off)>>4)&0xF)<<8) | 0b1101<<4 | ((off)&0xF))
 
 // load half-word with pre-increment
 #define LDRHa(dst, base, off)   (AL | (0b000<<25) | (0b1100<<21) | (1<<20) | base<<16 | dst<<12 | (0b0000<<8) | (0b1011<<4) | off)
 #define LDRSHa(dst, base, off)  (AL | (0b000<<25) | (0b1100<<21) | (1<<20) | base<<16 | dst<<12 | (0b0000<<8) | (0b1111<<4) | off)
-#define LDRHai(dst, base, off)  (AL | (0b000<<25) | (0b1110<<21) | (1<<20) | base<<16 | dst<<12 | (((off)&0xF0)<<8) | (0b1011)<<4 | ((off)&0x0F) )
-#define LDRSHai(dst, base, off) (AL | (0b000<<25) | (0b1110<<21) | (1<<20) | base<<16 | dst<<12 | (((off)&0xF0)<<8) | (0b1111)<<4 | ((off)&0x0F) )
+#define LDRHai(dst, base, off)  (AL | (0b000<<25) | (0b1110<<21) | (1<<20) | base<<16 | dst<<12 | ((((off)>>4)&0xF)<<8) | (0b1011)<<4 | ((off)&0xF) )
+#define LDRSHai(dst, base, off) (AL | (0b000<<25) | (0b1110<<21) | (1<<20) | base<<16 | dst<<12 | ((((off)>>4)&0xF)<<8) | (0b1111)<<4 | ((off)&0xF) )
 
 // store byte/half-word with pre-increment
 #define STRBa(dst, base, off)   (AL | (0b011<<25) | (0b1110<<21) | (0<<20) | base<<16 | dst<<12 | off)
