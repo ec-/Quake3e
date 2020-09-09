@@ -1,6 +1,7 @@
 /*
 ===========================================================================
 Copyright (C) 1999-2005 Id Software, Inc.
+Copyright (C) 2012-2020 Quake3e project
 
 This file is part of Quake III Arena source code.
 
@@ -65,13 +66,13 @@ opcode_info_t ops[ OP_MAX ] =
 	{ 4,-8, 2, JUMP }, // gtu
 	{ 4,-8, 2, JUMP }, // geu
 
-	{ 4,-8, 2, JUMP }, // eqf
-	{ 4,-8, 2, JUMP }, // nef
+	{ 4,-8, 2, JUMP|FPU }, // eqf
+	{ 4,-8, 2, JUMP|FPU }, // nef
 
-	{ 4,-8, 2, JUMP }, // ltf
-	{ 4,-8, 2, JUMP }, // lef
-	{ 4,-8, 2, JUMP }, // gtf
-	{ 4,-8, 2, JUMP }, // gef
+	{ 4,-8, 2, JUMP|FPU }, // ltf
+	{ 4,-8, 2, JUMP|FPU }, // lef
+	{ 4,-8, 2, JUMP|FPU }, // gtf
+	{ 4,-8, 2, JUMP|FPU }, // gef
 
 	{ 0, 0, 1, 0 }, // load1
 	{ 0, 0, 1, 0 }, // load2
@@ -104,14 +105,14 @@ opcode_info_t ops[ OP_MAX ] =
 	{ 0,-4, 3, 0 }, // rshi
 	{ 0,-4, 3, 0 }, // rshu
 
-	{ 0, 0, 1, 0 }, // negf
-	{ 0,-4, 3, 0 }, // addf
-	{ 0,-4, 3, 0 }, // subf
-	{ 0,-4, 3, 0 }, // divf
-	{ 0,-4, 3, 0 }, // mulf
+	{ 0, 0, 1, FPU }, // negf
+	{ 0,-4, 3, FPU }, // addf
+	{ 0,-4, 3, FPU }, // subf
+	{ 0,-4, 3, FPU }, // divf
+	{ 0,-4, 3, FPU }, // mulf
 
-	{ 0, 0, 1, 0 }, // cvif
-	{ 0, 0, 1, 0 }  // cvfi
+	{ 0, 0, 1, 0 },   // cvif
+	{ 0, 0, 1, FPU }  // cvfi
 };
 
 const char *opname[ 256 ] = {
@@ -1022,6 +1023,10 @@ const char *VM_LoadInstructions( const byte *code_pos, int codeLength, int instr
 			ci->value = 0;
 		}
 
+		if ( ops[ op0 ].flags & FPU ) {
+			ci->fpu = 1;
+		}
+
 		// setup jump value from previous const
 		if ( op0 == OP_JUMP && op1 == OP_CONST ) {
 			ci->value = (ci-1)->value;
@@ -1092,7 +1097,21 @@ const char *VM_CheckInstructions( instruction_t *buf,
 		m = ops[ ci->op ].stack;
 		opStack += m;
 		if ( m >= 0 ) {
-			opStackPtr[ opStack / 4 ] = ci;
+			// do some FPU type promotion for more efficient loads
+			if ( ci->fpu && ci->op != OP_CVIF ) {
+				opStackPtr[ opStack >> 2 ]->fpu = 1;
+			}
+			opStackPtr[ opStack >> 2 ] = ci;
+		} else {
+			if ( ci->fpu ) {
+				if ( m <= -8 ) {
+					opStackPtr[ (opStack + 4) >> 2 ]->fpu = 1;
+					opStackPtr[ (opStack + 8) >> 2 ]->fpu = 1;
+				} else {
+					opStackPtr[ (opStack + 0) >> 2 ]->fpu = 1;
+					opStackPtr[ (opStack + 4) >> 2 ]->fpu = 1;
+				}
+			}
 		}
 
 		// function entry
