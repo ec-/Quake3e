@@ -1044,7 +1044,7 @@ static qboolean safe_address( instruction_t *ci, instruction_t *proc, int dataLe
 {
 	if ( ci->op == OP_LOCAL ) {
 		// local address can't exceed programStack frame plus 256 bytes of passed arguments
-		if ( ci->value < 0 || ci->value >= proc->value + 256 )
+		if ( ci->value < 8 || ci->value >= proc->value + 256 )
 			return qfalse;
 		return qtrue;
 	}
@@ -1256,7 +1256,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 				}
 				if ( buf[v].op == OP_ENTER ) {
 					n = buf[v].op;
-					sprintf( errBuf, "jump target %i has bad opcode %i", v, n ); 
+					sprintf( errBuf, "jump target %i has bad opcode %s", v, opname[ n ] ); 
 					return errBuf;
 				}
 				if ( v == (i-1) ) {
@@ -1305,6 +1305,10 @@ const char *VM_CheckInstructions( instruction_t *buf,
 
 		if ( ci->op == OP_ARG ) {
 			v = ci->value & 255;
+			if ( proc == NULL ) {
+				sprintf( errBuf, "missing proc frame for %s %i at %i", opname[ ci->op ], v, i );
+				return errBuf;
+			}
 			// argument can't exceed programStack frame
 			if ( v < 8 || v > pstack - 4 || (v & 3) ) {
 				sprintf( errBuf, "bad argument address %i at %i", v, i );
@@ -1316,12 +1320,14 @@ const char *VM_CheckInstructions( instruction_t *buf,
 		if ( ci->op == OP_LOCAL ) {
 			v = ci->value;
 			if ( proc == NULL ) {
-				sprintf( errBuf, "missing proc frame for local %i at %i", v, i );
+				sprintf( errBuf, "missing proc frame for %s %i at %i", opname[ ci->op ], v, i );
 				return errBuf;
 			}
-			if ( !safe_address( ci, proc, dataLength ) ) {
-				sprintf( errBuf, "bad local address %i at %i", v, i );
-				return errBuf;
+			if ( (ci+1)->op == OP_LOAD4 || (ci+1)->op == OP_LOAD2 || (ci+1)->op == OP_LOAD1 ) {
+				if ( !safe_address( ci, proc, dataLength ) ) {
+					sprintf( errBuf, "bad %s address %i at %i", opname[ ci->op ], v, i );
+					return errBuf;
+				}
 			}
 			continue;
 		}
