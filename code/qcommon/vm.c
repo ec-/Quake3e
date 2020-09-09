@@ -849,7 +849,7 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 				FS_FreeFile( header );
 
 				Com_Printf( S_COLOR_YELLOW "Warning: Jump table size of %s not matching after "
-						"VM_Restart()\n", filename );
+					"VM_Restart()\n", filename );
 				return NULL;
 			}
 
@@ -1040,6 +1040,26 @@ const char *VM_LoadInstructions( const byte *code_pos, int codeLength, int instr
 }
 
 
+static qboolean safe_address( instruction_t *ci, instruction_t *proc, int dataLength )
+{
+	if ( ci->op == OP_LOCAL ) {
+		// local address can't exceed programStack frame plus 256 bytes of passed arguments
+		if ( ci->value < 0 || ci->value >= proc->value + 256 )
+			return qfalse;
+		return qtrue;
+	}
+
+	if ( ci->op == OP_CONST ) {
+		// constant address can't exceed data segment
+		if ( ci->value >= dataLength || ci->value < 0 )
+			return qfalse;
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
+
 /*
 ===============================
 VM_CheckInstructions
@@ -1099,17 +1119,17 @@ const char *VM_CheckInstructions( instruction_t *buf,
 		if ( m >= 0 ) {
 			// do some FPU type promotion for more efficient loads
 			if ( ci->fpu && ci->op != OP_CVIF ) {
-				opStackPtr[ opStack >> 2 ]->fpu = 1;
+				opStackPtr[ opStack / 4 ]->fpu = 1;
 			}
 			opStackPtr[ opStack >> 2 ] = ci;
 		} else {
 			if ( ci->fpu ) {
 				if ( m <= -8 ) {
-					opStackPtr[ (opStack + 4) >> 2 ]->fpu = 1;
-					opStackPtr[ (opStack + 8) >> 2 ]->fpu = 1;
+					opStackPtr[ opStack / 4 + 1 ]->fpu = 1;
+					opStackPtr[ opStack / 4 + 2 ]->fpu = 1;
 				} else {
-					opStackPtr[ (opStack + 0) >> 2 ]->fpu = 1;
-					opStackPtr[ (opStack + 4) >> 2 ]->fpu = 1;
+					opStackPtr[ opStack / 4 + 0 ]->fpu = 1;
+					opStackPtr[ opStack / 4 + 1 ]->fpu = 1;
 				}
 			}
 		}
@@ -1299,12 +1319,9 @@ const char *VM_CheckInstructions( instruction_t *buf,
 				sprintf( errBuf, "missing proc frame for local %i at %i", v, i );
 				return errBuf;
 			}
-			if ( (ci+1)->op == OP_LOAD1 || (ci+1)->op == OP_LOAD2 || (ci+1)->op == OP_LOAD4 || (ci+1)->op == OP_ARG ) {
-				// FIXME: alloc 256 bytes of programStack in VM_CallCompiled()?
-				if ( v < 8 || v >= proc->value + 256 ) {
-					sprintf( errBuf, "bad local address %i at %i", v, i );
-					return errBuf;
-				}
+			if ( !safe_address( ci, proc, dataLength ) ) {
+				sprintf( errBuf, "bad local address %i at %i", v, i );
+				return errBuf;
 			}
 			continue;
 		}
@@ -1338,33 +1355,47 @@ const char *VM_CheckInstructions( instruction_t *buf,
 
 		if ( ci->op == OP_STORE4 || ci->op == OP_STORE2 || ci->op == OP_STORE1 ) {
 			instruction_t *x = opStackPtr[ opStack / 4 + 1 ];
-			if ( x->op == OP_CONST ) {
-				if ( x->value >= dataLength ) {
-					sprintf( errBuf, "bad %s address %i at %i", opname[ ci->op ], x->value, (int)(x- buf) );
-					return errBuf;
-				} else {
+			if ( x->op == OP_CONST || x->op == OP_LOCAL ) {
+				if ( safe_address( x, proc, dataLength ) ) {
 					ci->safe = 1;
 					safe_stores++;
+					continue;
+				} else {
+					sprintf( errBuf, "bad %s address %i at %i", opname[ ci->op ], x->value, (int)(x - buf) );
+					return errBuf;
 				}
-				continue;
-			}
-			if ( x->op == OP_LOCAL ) {
-				ci->safe = 1;
-				safe_stores++;
-				continue;
 			}
 			unsafe_stores++;
 			continue;
 		}
 
 		if ( ci->op == OP_BLOCK_COPY ) {
+			instruction_t *src = opStackPtr[ opStack / 4 + 2 ];
+			instruction_t *dst = opStackPtr[ opStack / 4 + 1 ];
+			int safe = 0;
 			v = ci->value;
 			if ( v >= dataLength ) {
 				sprintf( errBuf, "bad count %i for block copy at %i", v, i - 1 );
 				return errBuf;
 			}
+			if ( src->op == OP_LOCAL || src->op == OP_CONST ) {
+				if ( !safe_address( src, proc, dataLength ) ) {
+					sprintf( errBuf, "bad src for block copy at %i", (int)(dst - buf) );
+					return errBuf;
+				}
+				safe++;
+			}
+			if ( dst->op == OP_LOCAL || dst->op == OP_CONST ) {
+				if ( !safe_address( dst, proc, dataLength ) ) {
+					sprintf( errBuf, "bad dst for block copy at %i", (int)(dst - buf) );
+					return errBuf;
+				}
+				safe++;
+			}
+			if ( safe == 2 ) {
+				ci->safe = 1;
+			}
 		}
-
 //		op1 = op0;
 //		ci++;
 	}
@@ -1385,12 +1416,12 @@ const char *VM_CheckInstructions( instruction_t *buf,
 			n = *(int *)(jumpTableTargets + ( i * sizeof( int ) ) );
 			if ( n < 0 || n >= instructionCount ) {
 				Com_Printf( S_COLOR_YELLOW "jump target %i set on instruction %i that is out of range [0..%i]",
-					i, n, instructionCount - 1 ); 
+					i, n, instructionCount - 1 );
 				break;
 			}
 			if ( buf[n].opStack != 0 ) {
 				Com_Printf( S_COLOR_YELLOW "jump target %i set on instruction %i (%s) with bad opStack %i\n",
-					i, n, opname[ buf[n].op ], buf[n].opStack ); 
+					i, n, opname[ buf[n].op ], buf[n].opStack );
 				break;
 			}
 		}
