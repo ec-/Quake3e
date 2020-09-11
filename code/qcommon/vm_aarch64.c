@@ -48,6 +48,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define MACRO_OPTIMIZE
 #define USE_LITERAL_POOL
 
+//#define DUMP_CODE
+
 // registers map
 
 // general purpose registers:
@@ -160,7 +162,6 @@ static  instruction_t *ni;
 static	uint32_t	ip;
 static	uint32_t	pass;
 static	uint32_t	savedOffset[ OFFSET_T_LAST ];
-static	int			opstack;
 
 
 // literal pool
@@ -210,6 +211,13 @@ static int VM_SearchLiteral( const uint32_t value )
 	return numLiterals++;
 }
 #endif // USE_LITERAL_POOL
+
+
+#define DROP( reason, args... ) \
+	do { \
+		VM_FreeBuffers(); \
+		Com_Error( ERR_DROP, "%s: " reason, __func__, ##args ); \
+	} while(0)
 
 
 static void VM_FreeBuffers( void )
@@ -567,7 +575,7 @@ static uint32_t imm12_scale( const uint32_t imm12, const uint32_t scale )
 	const uint32_t mask = (1<<scale) - 1;
 
 	if ( imm12 & mask || imm12 >= 4096 * (1 << scale) )
-		Com_Error( ERR_DROP, "offset12_%i %i cannot be encoded\n", (1 << scale), imm12 );
+		DROP( "can't encode offset %i with scale %i", imm12, (1 << scale) );
 
 	return imm12 >> scale;
 }
@@ -690,6 +698,7 @@ typedef struct opstack_s {
 } opstack_t;
 
 
+static int opstack;
 static opstack_t opstackv[ (PROC_OPSTACK_SIZE + 1) * 4 ];
 
 static uint32_t rx_mask;
@@ -710,7 +719,7 @@ static void mask_rx( uint32_t reg )
 {
 #ifdef DEBUG_VM
 	if ( rx_mask & (1 << reg) )
-		Com_Error( ERR_FATAL, "%s: register R%i is already masked", __func__, reg );
+		DROP( "register #%i is already masked", reg );
 #endif
 
 	rx_mask |= (1 << reg);
@@ -721,7 +730,7 @@ static void mask_sx( uint32_t reg )
 {
 #ifdef DEBUG_VM
 	if ( sx_mask & (1 << reg) )
-		Com_Error( ERR_FATAL, "%s: register S%i is already masked", __func__, reg );
+		DROP( "register #%i is already masked", reg );
 #endif
 
 	sx_mask |= (1 << reg);
@@ -835,14 +844,13 @@ static qboolean scalar_on_top( void )
 {
 #ifdef DEBUG_VM
 	if ( opstack <= 0 )
-		Com_Error( ERR_DROP, "%s: opstack underflow\n", __func__ );
+		DROP( "opstack underflow - %i", opstack );
 #endif
 
 	if ( opstackv[ opstack ].type == TYPE_SX )
 		return qtrue;
 	else
 		return qfalse;
-	
 }
 
 
@@ -850,14 +858,14 @@ static void inc_opstack( void )
 {
 #ifdef DEBUG_VM
 	if ( opstack >= PROC_OPSTACK_SIZE * 4 )
-		Com_Error( ERR_FATAL, "%s: opstack overflow\n", __func__ );
+		DROP( "opstack overflow - %i", opstack );
 #endif
 
 	opstack += 4;
 
 #ifdef DEBUG_VM
 	if ( opstackv[ opstack ].type != TYPE_RAW )
-		Com_Error( ERR_FATAL, "%s: bad opstack item type %i at %i\n", __func__, opstackv[ opstack ].type, opstack );
+		DROP( "bad item type %i at opstack %i", opstackv[ opstack ].type, opstack );
 #endif
 }
 
@@ -866,7 +874,7 @@ static void dec_opstack( void )
 {
 #ifdef DEBUG_VM
 	if ( opstack <= 0 )
-		Com_Error( ERR_DROP, "%s: opstack underflow\n", __func__ );
+		DROP( "opstack underflow - %i", opstack );
 #endif
 
 	flush_item( opstackv + opstack ); // in case if it was not consumed by any load function
@@ -914,16 +922,17 @@ static uint32_t alloc_rx( uint32_t pref )
 		for ( i = 0; i <= opstack; i++ ) {
 			opstack_t *it = opstackv + i;
 			if ( it->type == TYPE_RX ) {
+				n = it->value;
 				// skip masked registers
-				if ( rx_mask & (1 << it->value) ) {
+				if ( rx_mask & (1 << n) ) {
 					continue;
 				}
 				flush_item( it );
-				mask_rx( i );
-				return i;
+				mask_rx( n );
+				return n;
 			}
 		}
-		Com_Error( ERR_FATAL, "No free RX registers at opstack %i, mask: %04x\n", opstack, rx_mask );
+		DROP( "no free registers, pref %x, opStack %i, mask %04x", pref, opstack, rx_mask );
 	}
 #endif
 
@@ -938,7 +947,7 @@ static uint32_t alloc_rx( uint32_t pref )
 
 #ifdef DEBUG_VM
 	if ( rx_mask & ( 1 << reg ) )
-		Com_Error( ERR_FATAL, "forced register R%i is already masked!", reg );
+		DROP( "forced register R%i is already masked!", reg );
 #endif
 
 	mask_rx( reg );
@@ -970,17 +979,18 @@ static uint32_t alloc_sx( uint32_t pref )
 		for ( i = 0; i <= opstack; i++ ) {
 			opstack_t *it = opstackv + i;
 			if ( it->type == TYPE_SX ) {
+				n = it->value;
 				// skip masked registers
-				if ( sx_mask & (1 << it->value) ) {
+				if ( sx_mask & (1 << n) ) {
 					continue;
 				}
 				flush_item( it );
-				mask_sx( i );
-				return i;
+				mask_sx( n );
+				return n;
 			}
 		}
 	}
-	Com_Error( ERR_FATAL, "no free SX registers at opstack %i\n", opstack );
+	DROP( "no free registers, pref %x, opStack %i, mask %04x", pref, opstack, sx_mask );
 #endif
 
 	// FORCED option: find and flush target register
@@ -994,7 +1004,7 @@ static uint32_t alloc_sx( uint32_t pref )
 
 #ifdef DEBUG_VM
 	if ( sx_mask & ( 1 << reg ) )
-		Com_Error( ERR_FATAL, "forced register S%i is already masked!", reg );
+		DROP( "forced register S%i is already masked!", reg );
 #endif
 
 	mask_sx( reg );
@@ -1021,10 +1031,10 @@ static void store_rx_opstack( uint32_t reg )
 
 #ifdef DEBUG_VM
 	if ( opstack <= 0 )
-		Com_Error( ERR_FATAL, "bad %s with opstack %i\n", __func__, opstack );
+		DROP( "bad opstack %i", opstack );
 
 	if ( it->type != TYPE_RAW )
-		Com_Error( ERR_FATAL, "%s: opstack %i type %i\n", __func__, opstack, it->type );
+		DROP( "bad type %i at opstack %i", it->type, opstack );
 #endif
 
 	it->type = TYPE_RX;
@@ -1041,10 +1051,10 @@ static void store_syscall_opstack( void )
 
 #ifdef DEBUG_VM
 	if ( opstack <= 0 )
-		Com_Error( ERR_FATAL, "bad %s with opstack %i\n", __func__, opstack );
+		DROP( "bad opstack %i", opstack );
 
-	if ( opstackv[ opstack ].type != TYPE_RAW )
-		Com_Error( ERR_FATAL, "%s: bad opstack item type %i at %i\n", __func__, opstackv[ opstack ].type, opstack );
+	if ( it->type != TYPE_RAW )
+		DROP( "bad type %i at opstack %i", it->type, opstack );
 #endif
 
 	it->type = TYPE_RX_SYSCALL;
@@ -1059,10 +1069,10 @@ static void store_sx_opstack( uint32_t reg )
 
 #ifdef DEBUG_VM
 	if ( opstack <= 0 )
-		Com_Error( ERR_FATAL, "bad %s with opstack %i\n", __func__, opstack );
+		DROP( "bad opstack %i", opstack );
 
 	if ( it->type != TYPE_RAW )
-		Com_Error( ERR_FATAL, "%s: opstack %i type %i\n", __func__, opstack, it->type );
+		DROP( "bad type %i at opstack %i", it->type, opstack );
 #endif
 
 	it->type = TYPE_SX;
@@ -1079,7 +1089,7 @@ static void store_const_opstack( uint32_t v )
 
 #ifdef DEBUG_VM
 	if ( it->type != TYPE_RAW )
-		Com_Error( ERR_FATAL, "%s: bad item type %i on value %i\n", __func__, it->type, v );
+		DROP( "bad type %i at opstack %i", it->type, opstack );
 #endif
 
 	it->type = TYPE_CONST;
@@ -1094,7 +1104,7 @@ static void store_local_opstack( uint32_t v )
 
 #ifdef DEBUG_VM
 	if ( it->type != TYPE_RAW )
-		Com_Error( ERR_FATAL, "%s: bad item type %i on value %i\n", __func__, it->type, v );
+		DROP( "bad type %i at opstack %i", it->type, opstack );
 #endif
 
 	it->type = TYPE_LOCAL;
@@ -1112,7 +1122,7 @@ static uint32_t load_rx_opstack( vm_t *vm, uint32_t pref )
 
 #ifdef DEBUG_VM
 	if ( opstack <= 0 )
-		Com_Error( ERR_FATAL, "bad %s with opstack %i\n", __func__, opstack );
+		DROP( "bad opstack %i", opstack );
 #endif
 
 	if ( it->type == TYPE_RX || it->type == TYPE_RX_SYSCALL ) {
@@ -1128,7 +1138,6 @@ static uint32_t load_rx_opstack( vm_t *vm, uint32_t pref )
 			it->type = TYPE_RAW;
 			return reg;
 		} else {
-#ifdef DYN_ALLOC_RX
 			// allocate target register
 			reg = alloc_rx( pref );
 			// copy source to target
@@ -1137,7 +1146,6 @@ static uint32_t load_rx_opstack( vm_t *vm, uint32_t pref )
 			unmask_rx( it->value );
 			it->type = TYPE_RAW;
 			return reg;
-#endif
 		}
 	}
 
@@ -1187,11 +1195,11 @@ static uint32_t load_sx_opstack( vm_t *vm, uint32_t pref )
 {
 	opstack_t *it = opstackv + opstack;
 	uint32_t reg = pref & RMASK;
-	uint32_t tr;
+	uint32_t rx;
 
 #ifdef DEBUG_VM
 	if ( opstack <= 0 )
-		Com_Error( ERR_FATAL, "bad %s\n", __func__ );
+		DROP( "bad opstack %i", opstack );
 #endif
 
 	// scalar register on the stack
@@ -1208,7 +1216,6 @@ static uint32_t load_sx_opstack( vm_t *vm, uint32_t pref )
 			it->type = TYPE_RAW;
 			return reg;
 		} else {
-#ifdef DYN_ALLOC_SX
 			// allocate target register
 			reg = alloc_sx( pref );
 			// copy source to target
@@ -1217,7 +1224,6 @@ static uint32_t load_sx_opstack( vm_t *vm, uint32_t pref )
 			unmask_sx( it->value );
 			it->type = TYPE_RAW;
 			return reg;
-#endif
 		}
 	}
 
@@ -1243,15 +1249,15 @@ static uint32_t load_sx_opstack( vm_t *vm, uint32_t pref )
 
 	if ( it->type == TYPE_LOCAL ) {
 		reg = alloc_sx( pref );
-		tr = alloc_rx( R2 | TEMP );
+		rx = alloc_rx( R2 | TEMP );
 		if ( it->value < 4096 ) {
-			emit(ADD32i(tr, rPSTACK, it->value)); // r2 = pstack + arg
+			emit(ADD32i(rx, rPSTACK, it->value)); // r2 = pstack + arg
 		} else {
-			emit_MOVRi(tr, it->value);            // r2 = arg;
-			emit(ADD32(tr, rPSTACK, tr));         // r2 = pstack + r2
+			emit_MOVRi(rx, it->value);            // r2 = arg;
+			emit(ADD32(rx, rPSTACK, rx));         // r2 = pstack + r2
 		}
-		emit( FMOVsg( reg, tr ) );
-		unmask_rx( tr );
+		emit( FMOVsg( reg, rx ) );
+		unmask_rx( rx );
 		it->type = TYPE_RAW;
 		return reg;
 	}
@@ -1287,7 +1293,7 @@ static uint32_t get_comp( opcode_t op )
 		default: break;
 	}
 
-	Com_Error( ERR_FATAL, "Unexpected op %i\n", op );
+	DROP( "unexpected op %i", op );
 }
 
 
@@ -1297,7 +1303,7 @@ static uint32_t encode_offset26( uint32_t ofs )
 	const uint32_t t = x >> 26;
 
 	if ( ( ( t != 0x0F && t != 0x00 ) || ( ofs & 3 ) ) && pass != 0 )
-		Com_Error( ERR_FATAL, "can't encode offsset26 %i", ofs );
+		DROP( "can't encode %i", ofs );
 
 	return x & 0x03FFFFFF;
 }
@@ -1309,7 +1315,7 @@ static uint32_t encode_offset19( uint32_t ofs )
 	const uint32_t t = x >> 19;
 
 	if ( ( ( t != 0x7FF && t != 0x00 ) || ( ofs & 3 ) ) && pass != 0 )
-		Com_Error( ERR_FATAL, "can't encode offsset19 %i", ofs );
+		DROP( "can't encode %i", ofs );
 
 	return x & 0x7FFFF;
 }
@@ -1384,18 +1390,15 @@ static void emit_CheckJump( vm_t *vm, uint32_t reg, int proc_base, int proc_len 
 		unmask_rx( rx[0] );
 		emit(Bcond(LS, +8)); // jump over if unsigned less or same
 		emitFuncOffset(vm, FUNC_OUTJ);
-		return;
+	} else {
+		// check if reg >= header->instructionCount
+		rx[0] = alloc_rx( R2 | TEMP );
+		emit(LDR32i(rx[0], rVMBASE, offsetof(vm_t, instructionCount))); // r2 = vm->instructionCount
+		emit(CMP32(reg, rx[0]));       // cmp reg, r2
+		emit(Bcond(LO, +8));           // jump over if unsigned less
+		emitFuncOffset(vm, FUNC_OUTJ); // error function
+		unmask_rx( rx[0] );
 	}
-
-	// check if reg >= header->instructionCount
-	rx[0] = alloc_rx( R2 | TEMP );
-
-	emit(LDR32i(rx[0], rVMBASE, offsetof(vm_t, instructionCount))); // r2 = vm->instructionCount
-	emit(CMP32(reg, rx[0]));       // cmp reg, r2
-	emit(Bcond(LO, +8));           // jump over if unsigned less
-	emitFuncOffset(vm, FUNC_OUTJ); // error function
-
-	unmask_rx( rx[0] );
 
 	if ( !masked ) {
 		unmask_rx( reg );
@@ -1522,7 +1525,7 @@ static void VM_BlockCopy( uint32_t src, uint32_t dest, const uint32_t n, const v
 }
 
 
-#if 0
+#ifdef DUMP_CODE
 static void dump_code( uint32_t *code, uint32_t code_len )
 {
 	int fd = open( "code.hex", O_TRUNC | O_WRONLY | O_CREAT, 0644 );
@@ -1733,10 +1736,9 @@ qboolean ConstOptimize( vm_t *vm )
 	case OP_MODI:
 	case OP_MODU:
 		rx[0] = load_rx_opstack( vm, R0 );    // r0 = *opstack
-		x = ci->value;
 		rx[1] = alloc_rx( R1 | TEMP );
 		rx[2] = alloc_rx( R2 | TEMP );
-		emit_MOVRi(rx[1], x);
+		emit_MOVRi(rx[1], ci->value);
 		if ( ni->op == OP_MODI ) {
 			emit(SDIV32(rx[2], rx[0], rx[1])); // r2 = r0 / r1
 		} else {
@@ -1791,7 +1793,6 @@ qboolean ConstOptimize( vm_t *vm )
 		return qtrue;
 
 	case OP_CALL:
-		flush_volatile();
 		inc_opstack(); // opstack += 4
 		if ( ci->value == ~TRAP_SQRT ) {
 			sx[0] = alloc_sx( S0 );
@@ -1801,6 +1802,7 @@ qboolean ConstOptimize( vm_t *vm )
 			ip += 1; // OP_CALL
 			return qtrue;
 		}
+		flush_volatile();
 		if ( ci->value == ~TRAP_SIN || ci->value == ~TRAP_COS ) {
 			sx[0] = alloc_sx( S0 );
 			emit(VLDRi(sx[0], rPROCBASE, 8)); // s0 = [procBase + 8]
@@ -2342,8 +2344,6 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 				break;
 
 			case OP_ENTER:
-				init_opstack();
-
 				emitAlign( 16 ); // align to quadword boundary
 				vm->instructionPointers[ ip - 1 ] = compiledOfs;
 
@@ -2386,7 +2386,7 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 
 #ifdef DEBUG_VM
 				if ( opstack != 0 )
-					Com_Error( ERR_DROP, "%s: opStack corrupted on OP_LEAVE", __func__ );
+					DROP( "opStack corrupted on OP_LEAVE" );
 #endif
 
 #ifdef MISC_OPTIMIZE
@@ -2749,7 +2749,9 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 	}
 #endif
 
-	//dump_code( code, compiledOfs / 4 );
+#ifdef DUMP_CODE
+	dump_code( code, compiledOfs / 4 );
+#endif
 
 	// offset all the instruction pointers for the new location
 	for ( i = 0; i < header->instructionCount; i++ ) {

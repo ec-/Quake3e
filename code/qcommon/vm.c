@@ -1389,6 +1389,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 					sprintf( errBuf, "bad src for block copy at %i", (int)(dst - buf) );
 					return errBuf;
 				}
+				src->safe = 1;
 				safe++;
 			}
 			if ( dst->op == OP_LOCAL || dst->op == OP_CONST ) {
@@ -1396,6 +1397,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 					sprintf( errBuf, "bad dst for block copy at %i", (int)(dst - buf) );
 					return errBuf;
 				}
+				dst->safe = 1;
 				safe++;
 			}
 			if ( safe == 2 ) {
