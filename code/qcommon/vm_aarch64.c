@@ -456,9 +456,9 @@ static void emit8( uint64_t imm )
 //#define LDR32_4(Rt, Rn, Rm)        ( (0b10<<30) | (0b111000011<<21) | (Rm<<16) | (0b011<<13) /*LSL*/ | (1<<12) /*#2*/ | (0b10<<10) | (Rn << 5) | Rt )
 #define LDR64_8(Rt, Rn, Rm)        ( (0b11<<30) | (0b111000011<<21) | (Rm<<16) | (0b011<<13) /*LSL*/ | (1<<12) /*#3*/ | (0b10<<10) | (Rn << 5) | Rt )
 
-#define LDR64iwpost(Rt, Rn, simm9) ( (0b11<<30) | 0b111000010<<21 | ((simm9&511) << 12) | (0b01 << 10) | (Rn << 5) | Rt )
-#define LDR64iwpre(Rt, Rn, simm9)  ( (0b11<<30) | 0b111000010<<21 | ((simm9&511) << 12) | (0b11 << 10) | (Rn << 5) | Rt )
-#define LDR64i(Rt, Rn, imm12)      ( (0b11<<30) | 0b11100101<<22 |  (imm12_scale(imm12,3) << 10) | (Rn << 5) | Rt )
+#define LDR64iwpost(Rt, Rn, simm9) ( (0b11<<30) | (0b111000010<<21) | ((simm9&511) << 12) | (0b01 << 10) | (Rn << 5) | Rt )
+#define LDR64iwpre(Rt, Rn, simm9)  ( (0b11<<30) | (0b111000010<<21) | ((simm9&511) << 12) | (0b11 << 10) | (Rn << 5) | Rt )
+#define LDR64i(Rt, Rn, imm12)      ( (0b11<<30) | (0b11100101<<22) |  (imm12_scale(imm12,3) << 10) | (Rn << 5) | Rt )
 
 #define STR32iwpost(Rt, Rn, simm9) ( (0b10<<30) | (0b111000000<<21) | ((simm9&511) << 12) | (0b01<<10) | (Rn<<5) | Rt )
 #define STR32iwpre(Rt, Rn, simm9)  ( (0b10<<30) | (0b111000000<<21) | ((simm9&511) << 12) | (0b11<<10) | (Rn<<5) | Rt )
@@ -466,7 +466,7 @@ static void emit8( uint64_t imm )
 
 #define STR32i(Rt, Rn, imm12)      ( (0b10<<30) | (0b11100100<<22) |  (imm12_scale(imm12,2) << 10) | (Rn << 5) | Rt )
 
-#define STR64iwpost(Rt, Rn, simm9) ( (0b11<<30) | (0b111000000<<21( | ((simm9&511) << 12) | (0b01<<10) | (Rn<<5) | Rt )
+#define STR64iwpost(Rt, Rn, simm9) ( (0b11<<30) | (0b111000000<<21) | ((simm9&511) << 12) | (0b01<<10) | (Rn<<5) | Rt )
 #define STR64iwpre(Rt, Rn, simm9)  ( (0b11<<30) | (0b111000000<<21) | ((simm9&511) << 12) | (0b11<<10) | (Rn<<5) | Rt )
 #define STR64i(Rt, Rn, imm12)      ( (0b11<<30) | (0b11100100<<22) |  (imm12_scale(imm12,3) << 10) | (Rn << 5) | Rt )
 
@@ -698,6 +698,7 @@ typedef struct opstack_s {
 	uint32_t value;
 	uint32_t offset;
 	opstack_value_t type;
+	int safe_arg;
 } opstack_t;
 
 
@@ -793,13 +794,11 @@ static void flush_item( opstack_t *it )
 		case TYPE_RX:
 			emit(STR32i(it->value, rOPSTACK, it->offset)); // *opstack = rX
 			unmask_rx( it->value );
-			it->type = TYPE_RAW;
 			break;
 
 		case TYPE_SX:
 			emit(VSTRi(it->value, rOPSTACK, it->offset));  // *opstack = sX
 			unmask_sx( it->value );
-			it->type = TYPE_RAW;
 			break;
 
 		case TYPE_CONST:
@@ -807,7 +806,6 @@ static void flush_item( opstack_t *it )
 			emit_MOVRi(rx, it->value);              // r2 = const
 			emit(STR32i(rx, rOPSTACK, it->offset)); // *opstack = r2
 			unmask_rx( rx );
-			it->type = TYPE_RAW;
 			break;
 
 		case TYPE_LOCAL:
@@ -820,17 +818,19 @@ static void flush_item( opstack_t *it )
 			}
 			emit(STR32i(rx, rOPSTACK, it->offset));   // *opstack = r2
 			unmask_rx( rx );
-			it->type = TYPE_RAW;
 			break;
 
 		case TYPE_RX_SYSCALL:
 			// discard R0
-			it->type = TYPE_RAW;
 			break;
 
 		default:
 			break;
 	}
+
+	it->type = TYPE_RAW;
+	it->safe_arg = 0;
+
 }
 
 
@@ -853,6 +853,16 @@ static qboolean scalar_on_top( void )
 		return qtrue;
 	else
 		return qfalse;
+}
+
+
+static int is_safe_arg( void )
+{
+#ifdef DEBUG_VM
+	if ( opstack >= PROC_OPSTACK_SIZE * 4 || opstack <= 0 )
+		DROP( "bad opstack %i", opstack );
+#endif
+	return opstackv[ opstack ].safe_arg;
 }
 
 
@@ -1042,6 +1052,7 @@ static void store_rx_opstack( uint32_t reg )
 	it->type = TYPE_RX;
 	it->offset = opstack;
 	it->value = reg;
+	it->safe_arg = 0;
 
 	unmask_rx( reg ); // so it can be flushed on demand
 }
@@ -1062,6 +1073,7 @@ static void store_syscall_opstack( void )
 	it->type = TYPE_RX_SYSCALL;
 	it->offset = opstack;
 	it->value = R0;
+	it->safe_arg = 0;
 }
 
 
@@ -1080,12 +1092,13 @@ static void store_sx_opstack( uint32_t reg )
 	it->type = TYPE_SX;
 	it->offset = opstack;
 	it->value = reg;
+	it->safe_arg = 0;
 
 	unmask_sx( reg ); // so it can be flushed on demand
 }
 
 
-static void store_const_opstack( uint32_t v )
+static void store_item_opstack( instruction_t *inst )
 {
 	opstack_t *it = opstackv + opstack;
 
@@ -1093,25 +1106,15 @@ static void store_const_opstack( uint32_t v )
 	if ( it->type != TYPE_RAW )
 		DROP( "bad type %i at opstack %i", it->type, opstack );
 #endif
+	switch ( inst->op ) {
+		case OP_CONST: it->type = TYPE_CONST; break;
+		case OP_LOCAL: it->type = TYPE_LOCAL; break;
+		default: DROP( "incorrect opcode %i", inst->op );
+	}
 
-	it->type = TYPE_CONST;
 	it->offset = opstack;
-	it->value = v;
-}
-
-
-static void store_local_opstack( uint32_t v )
-{
-	opstack_t *it = opstackv + opstack;
-
-#ifdef DEBUG_VM
-	if ( it->type != TYPE_RAW )
-		DROP( "bad type %i at opstack %i", it->type, opstack );
-#endif
-
-	it->type = TYPE_LOCAL;
-	it->offset = opstack;
-	it->value = v;
+	it->value = inst->value;
+	it->safe_arg = inst->safe;
 }
 
 
@@ -1536,6 +1539,69 @@ static void VM_BlockCopy( uint32_t src, uint32_t dest, const uint32_t n, const v
 	}
 
 	Com_Memcpy( vm->dataBase + dest, vm->dataBase + src, n );
+}
+
+
+static void emitBlockCopy( vm_t *vm, const uint32_t count )
+{
+	if ( count == 12 ) // most common case - 3d vector copy
+	{
+		uint32_t rx[3];
+		int safe_arg[2];
+
+		rx[0] = load_rx_opstack( vm, R0 ); // src: r0 = *opstack;
+		safe_arg[0] = is_safe_arg();
+		dec_opstack(); // opstack -= 4
+
+		rx[1] = load_rx_opstack( vm, R1 ); // dst: r1 = *opstack
+		safe_arg[1] = is_safe_arg();
+		dec_opstack(); // opstack -= 4
+
+		if ( !safe_arg[0] )
+			emit(AND32(rx[0], rx[0], rDATAMASK)); // r0 &= dataMask
+
+		if ( !safe_arg[1] )
+			emit(AND32(rx[1], rx[1], rDATAMASK)); // r1 &= dataMask
+
+		emit(ADD64(rx[0], rx[0], rDATABASE));
+		emit(ADD64(rx[1], rx[1], rDATABASE));
+
+		rx[2] = alloc_rx( R2 | TEMP );
+
+		// load/store double word
+		//emit(LDR64iwpost(rx[2], rx[0], 8));
+		//emit(STR64iwpost(rx[2], rx[1], 8));
+
+		// load/store word
+		//emit(LDR32iwpost(rx[2], rx[0], 4));
+		//emit(STR32iwpost(rx[2], rx[1], 4));
+
+		// load/store double word
+		emit(LDR64i(rx[2], rx[0], 0));
+		emit(STR64i(rx[2], rx[1], 0));
+
+		// load/store word
+		emit(LDR32i(rx[2], rx[0], 8));
+		emit(STR32i(rx[2], rx[1], 8));
+
+		unmask_rx( rx[2] );
+
+		unmask_rx( rx[1] );
+		unmask_rx( rx[0] );
+		return;
+	}
+
+	// src: opStack[0]
+	// dst: opstack[-4]
+	load_rx_opstack( vm, R0 | FORCED ); dec_opstack(); // src: r0 = *opstack; opstack -= 4
+	load_rx_opstack( vm, R1 | FORCED ); dec_opstack(); // dst: r1 = *opstack; opstack -= 4
+	unmask_rx( R0 );
+	unmask_rx( R1 );
+	flush_volatile();
+	emit_MOVRi(R2, count);    // r2 - count
+	emit(MOV64(R3, rVMBASE)); // r3 - vmBase
+	emit_MOVXi(R16, (intptr_t)VM_BlockCopy);
+	emit(BLR(R16));
 }
 
 
@@ -2450,7 +2516,7 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 					break;
 #endif
 				inc_opstack(); // opstack += 4
-				store_const_opstack( v );
+				store_item_opstack( ci );
 				break;
 
 			case OP_LOCAL:
@@ -2459,7 +2525,7 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 					break;
 #endif
 				inc_opstack(); // opstack += 4
-				store_local_opstack( v );
+				store_item_opstack( ci );
 				break;
 
 			case OP_JUMP:
@@ -2587,17 +2653,7 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 				break;
 
 			case OP_BLOCK_COPY:
-				// src: opStack[0]
-				// dst: opstack[-4]
-				load_rx_opstack( vm, R0 | FORCED ); dec_opstack(); // src: r0 = *opstack; opstack -= 4
-				load_rx_opstack( vm, R1 | FORCED ); dec_opstack(); // dst: r1 = *opstack; opstack -= 4
-				unmask_rx( R0 );
-				unmask_rx( R1 );
-				flush_volatile();
-				emit_MOVRi(R2, v);        // r2 - count
-				emit(MOV64(R3, rVMBASE)); // r3 - vmBase
-				emit_MOVXi(R16, (intptr_t)VM_BlockCopy);
-				emit(BLR(R16));
+				emitBlockCopy( vm, ci->value );
 				break;
 
 			case OP_SEX8:
@@ -2645,14 +2701,14 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 					case OP_RSHU: emit(LSR32(rx[0], rx[1], rx[0])); break;  // r0 = (unsigned)r1 >> r0
 					case OP_MODI:
 					case OP_MODU:
-								rx[2] = alloc_rx( R2 | TEMP );
-								if ( ci->op == OP_MODI )
-									emit(SDIV32(rx[2], rx[1], rx[0]));      // r2 = r1 / r0
-								else
-									emit(UDIV32(rx[2], rx[1], rx[0]));      // r2 = (unsigned)r1 / r0
-								emit(MSUB32(rx[0], rx[0], rx[2], rx[1]));   // r0 = r1 - r0 * r2
-								unmask_rx( rx[2] );
-								break;
+						rx[2] = alloc_rx( R2 | TEMP );
+						if ( ci->op == OP_MODI )
+							emit(SDIV32(rx[2], rx[1], rx[0]));      // r2 = r1 / r0
+						else
+							emit(UDIV32(rx[2], rx[1], rx[0]));      // r2 = (unsigned)r1 / r0
+						emit(MSUB32(rx[0], rx[0], rx[2], rx[1]));       // r0 = r1 - r0 * r2
+						unmask_rx( rx[2] );
+						break;
 				}
 				store_rx_opstack( rx[0] ); // *opstack = r0
 				unmask_rx( rx[1] );
