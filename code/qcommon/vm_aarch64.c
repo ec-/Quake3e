@@ -42,6 +42,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define DYN_ALLOC_RX
 #define DYN_ALLOC_SX
 
+#define REGS_OPTIMIZE
 #define FPU_OPTIMIZE
 #define CONST_OPTIMIZE
 #define MISC_OPTIMIZE
@@ -419,8 +420,8 @@ static void emit8( uint64_t imm )
 #define LDP64pre(Rt1,Rt2,Rn,simm7)  ( 0b10<<30 | 0b101<<27 | 0<<26 | 0b011<<23 | 1<<22 /*L*/ | ((((simm7)>>3)&0x7F)<<15) | Rt2<<10 | Rn<<5 | Rt1 )
 
 // STP - store pair of registers with signed offset
-#define STP32(Rt1,Rt2,Rn,simm7)     ( 0b00<<30 | 0b101<<27 | 0<<26 | 0b010<<23 | 0<<22 /*L*/ | ((((simm7)>>2)&0x7F)<<15) | Rt2<<10 | Rn<<5 | Rt1 )
-#define STP64(Rt1,Rt2,Rn,simm7)     ( 0b10<<30 | 0b101<<27 | 0<<26 | 0b010<<23 | 0<<22 /*L*/ | ((((simm7)>>3)&0x7F)<<15) | Rt2<<10 | Rn<<5 | Rt1 )
+#define STP32(Rt1,Rt2,Rn,simm7)     ( 0b00<<30 | 0b101<<27 | 0<<26 | 0b010<<23 | 0<<22 /*L*/ | ((((simm7)>>2)&0x7F)<<15) | ((Rt2)<<10) | ((Rn)<<5) | (Rt1) )
+#define STP64(Rt1,Rt2,Rn,simm7)     ( 0b10<<30 | 0b101<<27 | 0<<26 | 0b010<<23 | 0<<22 /*L*/ | ((((simm7)>>3)&0x7F)<<15) | ((Rt2)<<10) | ((Rn)<<5) | (Rt1) )
 
 // STP - load pair of registers with post-index
 #define STP32post(Rt1,Rt2,Rn,simm7) ( 0b00<<30 | 0b101<<27 | 0<<26 | 0b001<<23 | 0<<22 /*L*/ | ((((simm7)>>2)&0x7F)<<15) | Rt2<<10 | Rn<<5 | Rt1 )
@@ -449,6 +450,8 @@ static void emit8( uint64_t imm )
 
 #define LDRSB32i(Rt, Rn, imm12) ( (0b00<<30) | (0b111001<<24) | (0b11<<22) | (imm12_scale(imm12,0)<<10) | (Rn<<5) | Rt )
 #define LDRSH32i(Rt, Rn, imm12) ( (0b01<<30) | (0b111001<<24) | (0b11<<22) | (imm12_scale(imm12,1)<<10) | (Rn<<5) | Rt )
+
+#define LDRSWi(Rt, Rn, imm12)   ( (0b10<<30) | (0b111001<<24) | (0b10<<22) | (imm12_scale(imm12,2)<<10) | ((Rn)<<5) | (Rt) )
 
 //#define LDR32_4(Rt, Rn, Rm)        ( (0b10<<30) | (0b111000011<<21) | (Rm<<16) | (0b011<<13) /*LSL*/ | (1<<12) /*#2*/ | (0b10<<10) | (Rn << 5) | Rt )
 #define LDR64_8(Rt, Rn, Rm)        ( (0b11<<30) | (0b111000011<<21) | (Rm<<16) | (0b011<<13) /*LSL*/ | (1<<12) /*#3*/ | (0b10<<10) | (Rn << 5) | Rt )
@@ -512,7 +515,7 @@ static void emit8( uint64_t imm )
 #define BLR(Rn)                    ( (0b1101011<<25) | (0<<24) | (0<<23) | (0b01<<21) | (0b11111<<16) | (0b0000<<12) | (0<<11) /*A*/ | (0<<10) /*M*/ | (Rn<<5) | 0b00000 /*Rm*/ )
 
 // Prefetch Memory (immediate)
-#define PRFMi(Rt, Rn, imm12)       ( (0b11111<<27) | (0b00110<<22) | (((imm12>>3)&0xFFF)<<10) | (Rn<<5) | (Rt) )
+#define PRFMi(Rt, Rn, imm12)       ( (0b11111<<27) | (0b00110<<22) | (((imm12>>3)&0xFFF)<<10) | ((Rn)<<5) | (Rt) )
 // Rt register fields:
 // policy
 #define KEEP 0
@@ -665,7 +668,7 @@ static uint32_t alloc_sx( uint32_t pref );
 
 // general-purpose register list available for dynamic allocation
 static const uint32_t rx_list[] = {
-	R0, R1, R2, R3, // R0, R1 and R2 are required minimum
+	R0, R1, R2, R3, // R0-R3 are required minimum
 	R4, R5, R6, R7,
 	R8, R9, R10, R11,
 	R12, R13, R14, R15,
@@ -843,10 +846,9 @@ static void init_opstack( void )
 static qboolean scalar_on_top( void )
 {
 #ifdef DEBUG_VM
-	if ( opstack <= 0 )
-		DROP( "opstack underflow - %i", opstack );
+	if ( opstack >= PROC_OPSTACK_SIZE * 4 || opstack <= 0 )
+		DROP( "bad opstack %i", opstack );
 #endif
-
 	if ( opstackv[ opstack ].type == TYPE_SX )
 		return qtrue;
 	else
@@ -1340,7 +1342,7 @@ static void emit_CheckReg( vm_t *vm, instruction_t *ins, uint32_t reg )
 {
 	if ( ins->safe )
 		return;
-
+#ifdef DEBUG_VM
 	if ( vm->forceDataMask )
 	{
 		emit(AND32(reg, rDATAMASK, reg)); // rN = rN & rDATAMASK
@@ -1353,6 +1355,11 @@ static void emit_CheckReg( vm_t *vm, instruction_t *ins, uint32_t reg )
 	emit(CMP32(reg, rDATAMASK));
 	emit(Bcond(LO, +8));
 	emitFuncOffset(vm, FUNC_BADD);  // error function
+#else
+	if ( vm_rtChecks->integer & 8 || vm->forceDataMask ) {
+		emit(AND32(reg, rDATAMASK, reg)); // rN = rN & rDATAMASK
+	}
+#endif
 }
 
 
@@ -1433,31 +1440,9 @@ static void emit_CheckProc( vm_t *vm, instruction_t *inst )
 }
 
 
-/*
-=================
-VM_SysCall
-=================
-*/
-static int VM_SysCall( int call, int pstack, vm_t *vm )
-{
-	intptr_t args[ 16 ];
-	int *argPtr;
-	int i;
-
-	vm->programStack = pstack - 8;
-
-	args[0] = call;
-	argPtr = (int *)((byte *)vm->dataBase + pstack + 4);
-
-	for( i = 1; i < ARRAY_LEN( args ); i++ )
-		args[ i ] = argPtr[ i ];
-
-	return vm->systemCall( args );
-}
-
-
 static void emitCallFunc( vm_t *vm )
 {
+	int i;
 	init_opstack(); // to avoid any side-effects on emit_CheckJump()
 
 savedOffset[ FUNC_CALL ] = compiledOfs; // to jump from OP_CALL
@@ -1477,30 +1462,59 @@ savedOffset[ FUNC_CALL ] = compiledOfs; // to jump from OP_CALL
 savedOffset[ FUNC_SYSC ] = compiledOfs; // to jump from OP_CALL
 
 	emit(MVN32(R0, R0));   // r0 = ~r0
+	emit(ADD32i(rOPSTACKSHIFT, rOPSTACKSHIFT, 4)); // opStackShift += 4
 
 savedOffset[ FUNC_SYSF ] = compiledOfs; // to jump from ConstOptimize()
 
-	emit(ADD32i(rOPSTACKSHIFT, rOPSTACKSHIFT, 4));
-	emit(SUB64i(SP, SP, 16));
-	// save LR because it will be clobbered by BLR instruction
-	emit(STP64(LR, rOPSTACKSHIFT, SP, 0));
+	emit(SUB64i(SP, SP, 128+16)); // SP -= (128 + 16)
 
-	// R0 - call, R1 - programStack, R2 - vmBASE
-	emit(MOV32(R1,rPSTACK));
-	emit(MOV64(R2,rVMBASE));
-	emit_MOVXi(R16, (intptr_t)VM_SysCall);
-	emit(BLR(16));
+	// save LR, opStackShift because they will be clobbered by BLR instruction
+	emit(STP64(LR, rOPSTACKSHIFT, SP, 128)); // SP[128] = { LR, opStackShift }
 
-	// restore LR, R17
-	emit(LDP64(LR, rOPSTACKSHIFT, SP, 0));
-	emit(ADD64i(SP, SP, 16));
+	// modify VM stack pointer for recursive VM entry
+
+	//currentVM->programStack = pstack - 8;
+	emit(SUB32i(R1, rPSTACK, 8)); // r1 = pstack - 8
+	emit(STR32i(R1, rVMBASE, offsetof(vm_t, programStack))); // vm->programStack = r1
+
+	// sign-extend agruments starting from [procBase+8]
+	// R0 is already zero-extended
+#if 1
+	emit(LDRSWi(R1, rPROCBASE, 8));
+	emit(STP64(R0, R1, SP, 0));
+	for ( i = 2 ; i < 16; i += 2 ) {
+		//emit(LDRSWi(R0+i+0, rPROCBASE, 4+(i+0)*4));
+		//emit(LDRSWi(R0+i+1, rPROCBASE, 4+(i+1)*4));
+		//emit(STP64(R0+i+0, R0+i+1, SP, (i/2)*16));
+		emit(LDRSWi(R0, rPROCBASE, 4+(i+0)*4));
+		emit(LDRSWi(R1, rPROCBASE, 4+(i+1)*4));
+		emit(STP64(R0, R1, SP, (i/2)*16));
+	}
+#else
+	// sign-extend 15 agruments to R1-R15
+	for ( i = 0; i < 15; i++ ) {
+		emit(LDRSWi(R1+i, rPROCBASE, 8+i*4));
+	}
+	// store all extended registers to [SP+0]
+	for ( i = 0; i < 16; i += 2 ) {
+		emit(STP64(R0+i+0, R0+i+1, SP, (i/2)*16));
+	}
+#endif
+	emit(ADD64i(R0, SP, 0)); // r0 = sp
+
+	//ret = currentVM->systemCall( args );
+	emit(LDR64i(R16, rVMBASE, offsetof(vm_t,systemCall))); // r16 = vm->systemCall
+	emit(BLR(R16)); // call [r16]( r0 )
+
+	// restore LR, opStackShift
+	emit(LDP64(LR, rOPSTACKSHIFT, SP, 128)); // { LR, opStackShift } = SP[ 128 ]
+	emit(ADD64i(SP, SP, 128+16)); // SP += 128 + 16
 
 	// store return value
 	emit(STR32(R0, rOPSTACK, rOPSTACKSHIFT)); // *(opstack+shift) = r0;
 
 	emit(RET(LR));
 }
-
 
 
 /*
@@ -1819,7 +1833,7 @@ qboolean ConstOptimize( vm_t *vm )
 		{
 			x = ~ci->value;
 			emit_MOVRi(R0, x); // r0 = syscall number
-			emit_MOVRi(rOPSTACKSHIFT, opstack-4); // opStack shift
+			emit_MOVRi(rOPSTACKSHIFT, opstack); // opStack shift
 			emitFuncOffset( vm, FUNC_SYSF );
 			ip += 1; // OP_CALL;
 			store_syscall_opstack();
@@ -2311,6 +2325,8 @@ savedOffset[ LIT_PSTACKBOTTOM ] = compiledOfs;
 
 	// end literals
 
+	emitAlign( 16 ); // align to quadword boundary
+
 savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 
 	while ( ip < header->instructionCount ) {
@@ -2320,7 +2336,9 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 		ci = &inst[ ip + 0 ];
 		ni = &inst[ ip + 1 ];
 
+#ifdef REGS_OPTIMIZE
 		if ( ci->jused )
+#endif
 		{
 			// we can safely perform register optimizations only in case if
 			// we are 100% sure that current instruction is not a jump label
