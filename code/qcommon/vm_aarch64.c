@@ -126,6 +126,7 @@ typedef enum
 	LIT_PSTACKBOTTOM,
 
 	FUNC_ENTR,
+	FUNC_BCPY,
 	FUNC_CALL,
 	FUNC_SYSC,
 	FUNC_SYSF,
@@ -444,6 +445,7 @@ static void emit8( uint64_t imm )
 #define LDR32i(Rt, Rn, imm12)   ( (0b10<<30) | (0b11100101<<22) |  (imm12_scale((imm12),2) << 10) | (Rn << 5) | Rt )
 #define LDRH32i(Rt, Rn, imm12)  ( (0b01<<30) | (0b11100101<<22) |  (imm12_scale((imm12),1) << 10) | (Rn << 5) | Rt )
 #define LDRB32i(Rt, Rn, imm12)  ( (0b00<<30) | (0b11100101<<22) |  (imm12_scale((imm12),0) << 10) | (Rn << 5) | Rt )
+#define LDRB32iwpost(Rt, Rn, simm9) ( (0b00<<30) | (0b111000010<<21) | (((simm9)&511)<<12) | (0b01<<10) | ((Rn)<<5) | (Rt) )
 
 #define LDRSB32(Rt, Rn, Rm)     ( (0b00<<30) | (0b111000<<24) | (0b11<<22) /*opc*/ | (1<<21) | (Rm<<16) | (0b010<<13) /*UXTW*/ | (0<<12) /*S*/ | (0b10<<10)  | (Rn<<5) | Rt )
 #define LDRSH32(Rt, Rn, Rm)     ( (0b01<<30) | (0b111000<<24) | (0b11<<22) /*opc*/ | (1<<21) | (Rm<<16) | (0b010<<13) /*UXTW*/ | (0<<12) /*S*/ | (0b10<<10)  | (Rn<<5) | Rt )
@@ -474,6 +476,7 @@ static void emit8( uint64_t imm )
 #define STR32(Rt, Rn, Rm)          ( (0b10<<30) | (0b111000001<<21) | (Rm<<16) | (0b010<<13) /*UXTW*/ | (0<<12) /*#0*/ | (0b10<<10) | (Rn<<5) | Rt )
 #define STRH32(Rt, Rn, Rm)         ( (0b01<<30) | (0b111000001<<21) | (Rm<<16) | (0b010<<13) /*UXTW*/ | (0<<12) /*#0*/ | (0b10<<10) | (Rn<<5) | Rt )
 #define STRB32(Rt, Rn, Rm)         ( (0b00<<30) | (0b111000001<<21) | (Rm<<16) | (0b010<<13) /*UXTW*/ | (0<<12) /*#0*/ | (0b10<<10) | (Rn<<5) | Rt )
+#define STRB32iwpost(Rt, Rn, simm9) ( (0b00<<30) | (0b111000000<<21) | (((simm9)&511)<<12) | (0b01<<10) | ((Rn)<<5) | (Rt) )
 
 // LDR (literal) - PC-related load
 #define LDR32lit(Rt,simm19)        ( (0b00<<30) | (0b011<<27) | (0<<26) | (0b00<<24) | (encode_offset19(simm19)<<5) | Rt )
@@ -1520,25 +1523,49 @@ savedOffset[ FUNC_SYSF ] = compiledOfs; // to jump from ConstOptimize()
 }
 
 
-/*
-=================
-VM_BlockCopy
-Executes a block copy operation within current VM data space
-=================
-*/
-static void VM_BlockCopy( uint32_t src, uint32_t dest, const uint32_t n, const vm_t *vm )
+// R0 - src, R1 - dst, R2 - count, R3 - scratch
+static void emitBlockCopyFunc( vm_t *vm )
 {
-	const uint32_t dataMask = vm->dataMask;
+	// adjust R2 if needed
+	emit(AND32(R0, R0, rDATAMASK)); // r0 &= dataMask
+	emit(AND32(R1, R1, rDATAMASK)); // r1 &= dataMask
 
-	if ((dest & dataMask) != dest
-	|| (src & dataMask) != src
-	|| ((dest + n) & dataMask) != dest + n
-	|| ((src + n) & dataMask) != src + n)
-	{
-		Com_Error( ERR_DROP, "OP_BLOCK_COPY out of range for vm %s", vm->name );
-	}
+	emit(ADD32(R3, R0, R2));        // r3 = r0 + r2
+	emit(AND32(R3, R3, rDATAMASK)); // r3 &= dataMask
+	emit(SUB32(R2, R3, R0));        // r2 = r3 - r0
 
-	Com_Memcpy( vm->dataBase + dest, vm->dataBase + src, n );
+	emit(ADD32(R3, R1, R2));        // r3 = r1 + r2
+	emit(AND32(R3, R3, rDATAMASK)); // r3 &= dataMask
+	emit(SUB32(R2, R3, R1));        // r2 = r3 - r1
+
+	emit(ADD64(R0, R0, rDATABASE)); // r0 += dataBase
+	emit(ADD64(R1, R1, rDATABASE)); // r1 += dataBase
+
+	emitAlign( 16 );
+	emit(CMP32i(R2, 8));
+	emit(Bcond(LT, +20));           // jump to next block if R2 is less than 8
+	emit(LDR64iwpost(R3, R0, 8));   // r3 = [r0]; r0 += 8
+	emit(STR64iwpost(R3, R1, 8));   // r[1] = r3; r1 += 8
+	emit(SUB32i(R2, R2, 8));        // r2 -= 8
+	emit(B(-20));
+
+	emitAlign( 16 );
+	emit(CMP32i(R2, 4));
+	emit(Bcond(LT, +20));           // jump to next block if R2 is less than 4
+	emit(LDR32iwpost(R3, R0, 4));   // r3 = [r0]; r0 += 4
+	emit(STR32iwpost(R3, R1, 4));   // r[1] = r3; r1 += 4
+	emit(SUB32i(R2, R2, 4));        // r2 -= 4
+	emit(B(-20));
+
+	emitAlign( 16 );
+	emit(CMP32i(R2, 1));
+	emit(Bcond(LT, +20));           // jump to next block if R2 is less than 1
+	emit(LDRB32iwpost(R3, R0, 1));  // r3 = [r0]; r0 += 1
+	emit(STRB32iwpost(R3, R1, 1));  // r[1] = r3; r1 += 1
+	emit(SUB32i(R2, R2, 1));        // r2 -= 1
+	emit(B(-20));
+
+	emit(RET(LR));
 }
 
 
@@ -1591,17 +1618,16 @@ static void emitBlockCopy( vm_t *vm, const uint32_t count )
 		return;
 	}
 
-	// src: opStack[0]
-	// dst: opstack[-4]
 	load_rx_opstack( vm, R0 | FORCED ); dec_opstack(); // src: r0 = *opstack; opstack -= 4
 	load_rx_opstack( vm, R1 | FORCED ); dec_opstack(); // dst: r1 = *opstack; opstack -= 4
-	unmask_rx( R0 );
+	alloc_rx( R2 | FORCED ); // r2 - count
+	alloc_rx( R3 | FORCED ); // r3 - scratch
+	emit_MOVRi(R2, count);
+	emitFuncOffset( vm, FUNC_BCPY );
+	unmask_rx( R3 );
+	unmask_rx( R2 );
 	unmask_rx( R1 );
-	flush_volatile();
-	emit_MOVRi(R2, count);    // r2 - count
-	emit(MOV64(R3, rVMBASE)); // r3 - vmBase
-	emit_MOVXi(R16, (intptr_t)VM_BlockCopy);
-	emit(BLR(R16));
+	unmask_rx( R0 );
 }
 
 
@@ -2771,6 +2797,10 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 		emitAlign( 16 ); // align to quadword boundary
 		// it will set multiple offsets
 		emitCallFunc( vm );
+
+		emitAlign( 16 ); // align to quadword boundary
+		savedOffset[ FUNC_BCPY ] = compiledOfs;
+		emitBlockCopyFunc( vm );
 
 		savedOffset[ FUNC_BADJ ] = compiledOfs;
 		emit_MOVXi(R16, (intptr_t)BadJump);
