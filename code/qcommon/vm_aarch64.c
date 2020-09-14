@@ -631,9 +631,6 @@ static void emit_MOVXi( uint32_t reg, uint64_t imm )
 
 static void emit_MOVRi( uint32_t reg, uint32_t imm )
 {
-#ifdef USE_LITERAL_POOL
-	int litIndex;
-#endif
 	if ( imm <= 0xFFFF ) {
 		emit( MOVZ32( reg, imm & 0xFFFF ) );
 		return;
@@ -643,14 +640,6 @@ static void emit_MOVRi( uint32_t reg, uint32_t imm )
 		emit( MOVZ32_16( reg, (imm >> 16)&0xFFFF ) );
 		return;
 	}
-
-#ifdef USE_LITERAL_POOL
-	litIndex = VM_SearchLiteral( imm );
-	if ( litIndex >= 0 ) {
-		emit( LDR32i( reg, rLITBASE, (litIndex*4) ) );
-		return;
-	}
-#endif
 
 	emit( MOVZ32( reg, imm & 0xFFFF ) );
 	emit( MOVK32_16( reg, (imm >> 16)&0xFFFF ) );
