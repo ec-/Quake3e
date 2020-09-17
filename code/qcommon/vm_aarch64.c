@@ -39,6 +39,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define DEBUG_VM
 
 // various defintions to enable/disable particular optimization
+
+// use dynamic allocation of integer/scalar registers
 #define DYN_ALLOC_RX
 #define DYN_ALLOC_SX
 
@@ -147,8 +149,8 @@ typedef enum {
 	MOP_MUL4,
 	MOP_DIVI4,
 	MOP_DIVU4,
-	//MOP_MODI4,
-	//MOP_MODU4,
+	MOP_MODI4,
+	MOP_MODU4,
 	MOP_BAND4,
 	MOP_BOR4,
 } macro_op_t;
@@ -1474,7 +1476,6 @@ savedOffset[ FUNC_SYSF ] = compiledOfs; // to jump from ConstOptimize()
 
 	// sign-extend agruments starting from [procBase+8]
 	// R0 is already zero-extended
-#if 1
 	emit(LDRSWi(R1, rPROCBASE, 8));
 	emit(STP64(R0, R1, SP, 0));
 	for ( i = 2 ; i < 16; i += 2 ) {
@@ -1485,16 +1486,7 @@ savedOffset[ FUNC_SYSF ] = compiledOfs; // to jump from ConstOptimize()
 		emit(LDRSWi(R1, rPROCBASE, 4+(i+1)*4));
 		emit(STP64(R0, R1, SP, (i/2)*16));
 	}
-#else
-	// sign-extend 15 agruments to R1-R15
-	for ( i = 0; i < 15; i++ ) {
-		emit(LDRSWi(R1+i, rPROCBASE, 8+i*4));
-	}
-	// store all extended registers to [SP+0]
-	for ( i = 0; i < 16; i += 2 ) {
-		emit(STP64(R0+i+0, R0+i+1, SP, (i/2)*16));
-	}
-#endif
+
 	emit(ADD64i(R0, SP, 0)); // r0 = sp
 
 	//ret = currentVM->systemCall( args );
@@ -1583,14 +1575,6 @@ static void emitBlockCopy( vm_t *vm, const uint32_t count )
 		emit(ADD64(rx[1], rx[1], rDATABASE));
 
 		rx[2] = alloc_rx( R2 | TEMP );
-
-		// load/store double word
-		//emit(LDR64iwpost(rx[2], rx[0], 8));
-		//emit(STR64iwpost(rx[2], rx[1], 8));
-
-		// load/store word
-		//emit(LDR32iwpost(rx[2], rx[0], 4));
-		//emit(STR32iwpost(rx[2], rx[1], 4));
 
 		// load/store double word
 		emit(LDR64i(rx[2], rx[0], 0));
@@ -1883,6 +1867,7 @@ qboolean ConstOptimize( vm_t *vm )
 		return qtrue;
 
 	case OP_JUMP:
+		flush_volatile();
 		emit(B(vm->instructionPointers[ ci->value ] - compiledOfs));
 		ip += 1; // OP_JUMP
 		return qtrue;
@@ -2134,7 +2119,7 @@ static void VM_FindMOps( instruction_t *buf, const int instructionCount )
 					i += 6; n += 6;
 					continue;
 				}
-#if 0
+
 				if ( v == OP_MODI ) {
 					i->op = MOP_MODI4;
 					i += 6; n += 6;
@@ -2145,7 +2130,7 @@ static void VM_FindMOps( instruction_t *buf, const int instructionCount )
 					i += 6; n += 6;
 					continue;
 				}
-#endif
+
 				if ( v == OP_BAND ) {
 					i->op = MOP_BAND4;
 					i += 6; n += 6;
@@ -2173,7 +2158,7 @@ EmitMOPs
 static qboolean EmitMOPs( vm_t *vm, int op )
 {
 	uint32_t addr, value;
-	uint32_t rx[3];
+	uint32_t rx[4];
 	int short_addr32;
 
 	switch ( op )
@@ -2184,8 +2169,8 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 		case MOP_MUL4:
 		case MOP_DIVI4:
 		case MOP_DIVU4:
-		//case MOP_MODI4:
-		//case MOP_MODU4:
+		case MOP_MODI4:
+		case MOP_MODU4:
 		case MOP_BAND4:
 		case MOP_BOR4:
 			value = inst[ip+2].value;
@@ -2214,6 +2199,7 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 						emit(ADD32(rx[0], rx[0], rx[1]));  // r0 += r1
 					}
 					break;
+
 				case MOP_SUB4:
 					if ( value < 4096 ) {
 						emit(SUB32i(rx[0], rx[0], value)); // r0 -= value;
@@ -2237,19 +2223,23 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 					emit_MOVRi(rx[1], value);          // r1 = value
 					emit(UDIV32(rx[0], rx[0], rx[1])); // r0 /= r1
 					break;
-#if 0 // this overwrites R2. will be fixed later
+
 				case MOP_MODI4:
+					rx[3] = alloc_rx( R3 | TEMP );
 					emit_MOVRi(rx[1], value);                 // r1 = value
-					emit(SDIV32(rx[2], rx[0], rx[1]));        // r2 = r0 / r1
-					emit(MSUB32(rx[0], rx[1], rx[2], rx[0])); // r0 = r0 - r1 * r2
+					emit(SDIV32(rx[3], rx[0], rx[1]));        // r3 = r0 / r1
+					emit(MSUB32(rx[0], rx[1], rx[3], rx[0])); // r0 = r0 - r1 * r3
+					unmask_rx( rx[3] );
 					break;
 
 				case MOP_MODU4:
+					rx[3] = alloc_rx( R3 | TEMP );
 					emit_MOVRi(rx[1], value);                 // r1 = value
-					emit(UDIV32(rx[2], rx[0], rx[1]));        // r2 = r0 / r1
-					emit(MSUB32(rx[0], rx[1], rx[2], rx[0])); // r0 = r0 - r1 * r2
+					emit(UDIV32(rx[3], rx[0], rx[1]));        // r3 = r0 / r1
+					emit(MSUB32(rx[0], rx[1], rx[3], rx[0])); // r0 = r0 - r1 * r3
+					unmask_rx( rx[3] );
 					break;
-#endif
+
 				case MOP_BAND4:
 					emit_MOVRi(rx[1], value);         // r1 = value
 					emit(AND32(rx[0], rx[0], rx[1])); // r0 &= r1
@@ -2259,6 +2249,7 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 					emit_MOVRi(rx[1], value);         // r1 = value
 					emit(ORR32(rx[0], rx[0], rx[1])); // r0 |= r1
 					break;
+
 				default:
 					break;
 			}
@@ -2773,8 +2764,8 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 			case MOP_MUL4:
 			case MOP_DIVI4:
 			case MOP_DIVU4:
-			//case MOP_MODI4:
-			//case MOP_MODU4:
+			case MOP_MODI4:
+			case MOP_MODU4:
 			case MOP_BAND4:
 			case MOP_BOR4:
 				EmitMOPs( vm, ci->op );
