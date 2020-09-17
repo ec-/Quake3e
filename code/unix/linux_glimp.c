@@ -882,13 +882,26 @@ void HandleEvents( void )
 			win_x = event.xconfigure.x;
 			win_y = event.xconfigure.y;
 
-			Com_DPrintf( "ConfigureNotify: gw_minimized=%i, x=%i, y=%i\n",
-				gw_minimized, win_x, win_y );
+			Com_DPrintf( "ConfigureNotify: gw_minimized=%i, created=%i, exposed=%i, x=%i, y=%i\n",
+				gw_minimized, window_created, window_exposed, win_x, win_y );
 
-			if ( !glw_state.cdsFullscreen && window_created && !gw_minimized )
+			if ( !glw_state.cdsFullscreen && window_created && !gw_minimized && window_exposed )
 			{
+				unsigned int w, h, border, depth;
+				Window r;
+				int x, y;
+
+				if ( XGetGeometry( dpy, win, &r, &x, &y, &w, &h, &border, &depth ) ) {
+					// workaround to compensate constant shift added by window decorations
+					if ( x < 200 && y < 200 ) {
+						win_x -= x;
+						win_y -= y;
+					}
+				}
+
 				Cvar_SetIntegerValue( "vid_xpos", win_x );
 				Cvar_SetIntegerValue( "vid_ypos", win_y );
+
 				RandR_UpdateMonitor( win_x, win_y,
 					event.xconfigure.width,
 					event.xconfigure.height );
