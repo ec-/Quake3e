@@ -2179,6 +2179,7 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 
 			rx[0] = alloc_rx( R0 | TEMP );
 			rx[1] = alloc_rx( R1 | TEMP );
+			rx[2] = ~0U;
 
 			// load
 			if ( short_addr32 ) {
