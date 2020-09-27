@@ -3493,22 +3493,34 @@ void CL_Video_f( void )
 	else
 		ext = "avi";
 
-	if( Cmd_Argc() == 2 )
+	if ( Cmd_Argc() == 2 )
 	{
 		// explicit filename
 		Com_sprintf( filename, sizeof( filename ), "videos/%s", Cmd_Argv( 1 ) );
+
+		// override video file extension
+		if ( pipe )
+		{
+			char *sep = strrchr( filename, '/' ); // last path separator
+			char *e = strrchr( filename, '.' );
+
+			if ( e && e > sep && *(e+1) != '\0' ) {
+				ext = e + 1;
+				*e = '\0';
+			}
+		}
 	}
 	else
 	{
 		 // scan for a free filename
-		for( i = 0; i <= 9999; i++ )
+		for ( i = 0; i <= 9999; i++ )
 		{
 			Com_sprintf( filename, sizeof( filename ), "videos/video%04d.%s", i, ext );
 			if ( !FS_FileExists( filename ) )
 				break; // file doesn't exist
 		}
 
-		if( i > 9999 )
+		if ( i > 9999 )
 		{
 			Com_Printf( S_COLOR_RED "ERROR: no free file names to create video\n" );
 			return;
