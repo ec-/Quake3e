@@ -21,6 +21,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <signal.h>
 
+#ifdef _DEBUG
+#include <execinfo.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#endif
+
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
 #ifndef DEDICATED
@@ -41,9 +48,19 @@ static void signal_handler( int sig )
 		Sys_Exit( 1 ); // abstraction
 	}
 
+	printf( "Received signal %d, exiting...\n", sig );
+
+#ifdef _DEBUG
+	if ( sig == SIGSEGV || sig == SIGILL || sig == SIGBUS )
+	{
+		void *syms[10];
+		const size_t size = backtrace( syms, ARRAY_LEN( syms ) );
+		backtrace_symbols_fd( syms, size, STDERR_FILENO );
+	}
+#endif
+
 	signalcaught = qtrue;
 	sprintf( msg, "Signal caught (%d)", sig );
-	printf( "Received signal %d, exiting...\n", sig );
 #ifndef DEDICATED
 	CL_Shutdown( msg, qtrue );
 #endif
