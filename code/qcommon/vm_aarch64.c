@@ -124,13 +124,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 typedef enum
 {
-	LIT_LITBASE,
-	LIT_VMBASE,
-	LIT_DATABASE,
-	LIT_INSPOINTERS,
-	LIT_DATAMASK,
-	LIT_PSTACKBOTTOM,
-
 	FUNC_ENTR,
 	FUNC_BCPY,
 	FUNC_CALL,
@@ -296,18 +289,6 @@ static void emit( uint32_t isn )
 }
 
 
-static void emit8( uint64_t imm )
-{
-	if ( code )
-	{
-		code[ (compiledOfs + 0) >> 2 ] = (imm >> 0 ) & 0xFFFFFFFF;
-		code[ (compiledOfs + 4) >> 2 ] = (imm >> 32) & 0xFFFFFFFF;
-	}
-
-	compiledOfs += 8;
-}
-
-
 // conditions
 #define EQ (0b0000) // equal/equals zero
 #define NE (0b0001) // not equal
@@ -331,8 +312,7 @@ static void emit8( uint64_t imm )
 #define WZR 0b11111
 #define XZR 0b11111
 
-#define NOP                     YIELD
-#define YIELD                   ( (0b1101010100<<22) | (0b000011<<16) | (0b00100000<<8) | 0b00111111 )
+#define NOP                     ( (0b1101010100<<22) | (0b000011<<16) | (0b00100000<<8) | 0b00011111 )
 #define BRK(imm16)              ( (0b11010100001<<21) | (imm16<<5) )
 #define RET(Rn)                 ( (0b1101011<<25) | (0b0010<<21) | (0b11111<<16) | (0b000000<<10) | (Rn<<5) | 0b00000 /*Rm*/ )
 
@@ -361,8 +341,14 @@ static void emit8( uint64_t imm )
 #define AND32(Rd, Rn, Rm)       ( (0<<31) /*sf*/ | (0b0001010<<24) | 0b00<<22 /*shift*/ | (0<<21) /*N*/ | (Rm<<16) | 0b000000<<10 /*imm6*/ | (Rn<<5) | Rd )
 #define AND64(Rd, Rn, Rm)       ( (1<<31) /*sf*/ | (0b0001010<<24) | 0b00<<22 /*shift*/ | (0<<21) /*N*/ | (Rm<<16) | 0b000000<<10 /*imm6*/ | (Rn<<5) | Rd )
 
-#define MOV32(Rd, Rm)            ORR32(Rd, WZR, Rm)
-#define MOV64(Rd, Rm)            ORR64(Rd, XZR, Rm)
+#define AND32i(Rd, Rn, immrs)   ( (0<<31) /*sf*/ | (0b00<<29) | (0b100100 << 23) | ((immrs) << 10) | ((Rn)<<5) | (Rd) )
+#define ORR32i(Rd, Rn, immrs)   ( (0<<31) /*sf*/ | (0b01<<29) | (0b100100 << 23) | ((immrs) << 10) | ((Rn)<<5) | (Rd) )
+#define EOR32i(Rd, Rn, immrs)   ( (0<<31) /*sf*/ | (0b10<<29) | (0b100100 << 23) | ((immrs) << 10) | ((Rn)<<5) | (Rd) )
+
+#define MOV32(Rd, Rm)           ORR32(Rd, WZR, Rm)
+#define MOV64(Rd, Rm)           ORR64(Rd, XZR, Rm)
+
+#define MOV32i(Rd, immrs)       ORR32i(Rd, WZR, immrs)
 
 // MUL, alias for MADD
 #define MUL32(Rd, Rn, Rm)       ( (0<<31) | (0b00<<29) | (0b11011<<24) | (0b000<<21) | (Rm<<16) | (0<<15) | (WZR<<10) /*Ra*/ | (Rn<<5) | Rd )
@@ -593,6 +579,78 @@ static uint32_t imm12_scale( const uint32_t imm12, const uint32_t scale )
 }
 
 
+static int shifted_mask( const uint64_t v ) {
+	const uint64_t m = v - 1;
+	return ( ( ( m | v ) + 1 ) & m ) == 0;
+}
+
+
+static qboolean encode_logic_imm( const uint64_t v, uint32_t reg_size, uint32_t *res ) {
+	uint64_t mask, imm;
+	uint32_t size, len;
+	uint32_t N, immr, imms;
+
+	// determine element size
+	if ( reg_size == 64 ) {
+		mask = 0xFFFFFFFF;
+		size = 32;
+	} else {
+		if ( v > 0xFFFFFFFF ) {
+			return qfalse;
+		}
+		mask = 0xFFFF;
+		size = 16;
+	}
+	for ( ;; ) {
+		if ( ( v & mask ) != ( (v >> size) & mask ) || size == 1 ) {
+			mask |= mask << size;
+			size <<= 1;
+			break;
+		}
+		size >>= 1;
+		mask >>= size;
+	}
+
+	imm = v & mask;
+
+	// early reject
+	if ( !shifted_mask( imm ) && !shifted_mask( ~( imm | ~mask ) ) ) {
+		return qfalse;
+	}
+
+	// rotate right to set leading zero and trailing one
+	mask = 1ULL << ( size - 1 ) | 1;
+	for ( immr = 0; immr < size; immr++ ) {
+		if ( ( imm & mask ) == 1 ) {
+			break;
+		}
+		imm = ( ( imm & 1 ) << ( size - 1 ) ) | ( imm >> 1 );
+	}
+
+	if ( immr == size ) {
+		// all zeros, unsupported
+		return qfalse;
+	}
+
+	// count trailing bits set
+	for ( len = 0; len < size; len++ ) {
+		if ( ( ( imm >> len ) & 1 ) == 0 ) {
+			break;
+		}
+	}
+
+	if ( len == size || ( imm >> len ) != 0 ) {
+		return qfalse;
+	}
+
+	N = ( size >> 6 ) & 1;
+	imms = (63 & (64 - size*2)) | (len - 1);
+	*res = ( N << 12 ) | ( (size - immr) << 6 ) | imms;
+
+	return qtrue;
+}
+
+
 // check if we can encode single-precision scalar immediate
 static qboolean can_encode_f32_imm( const uint32_t v )
 {
@@ -637,6 +695,8 @@ static void emit_MOVXi( uint32_t reg, uint64_t imm )
 
 static void emit_MOVRi( uint32_t reg, uint32_t imm )
 {
+	uint32_t immrs;
+
 	if ( imm <= 0xFFFF ) {
 		emit( MOVZ32( reg, imm & 0xFFFF ) );
 		return;
@@ -644,6 +704,11 @@ static void emit_MOVRi( uint32_t reg, uint32_t imm )
 
 	if ( ( imm & 0xFFFF ) == 0 ) {
 		emit( MOVZ32_16( reg, (imm >> 16)&0xFFFF ) );
+		return;
+	}
+
+	if ( encode_logic_imm( imm, 32, &immrs ) ) {
+		emit( MOV32i( reg, immrs ) );
 		return;
 	}
 
@@ -1962,6 +2027,7 @@ static void dump_code( uint32_t *code, uint32_t code_len )
 #ifdef CONST_OPTIMIZE
 qboolean ConstOptimize( vm_t *vm )
 {
+	uint32_t immrs;
 	uint32_t rx[3];
 	uint32_t sx[2];
 	uint32_t x;
@@ -2150,6 +2216,39 @@ qboolean ConstOptimize( vm_t *vm )
 		unmask_rx( rx[2] );
 		ip += 1;
 		return qtrue;
+
+	case OP_BAND:
+		x = ci->value;
+		if ( encode_logic_imm( x, 32, &immrs ) ) {
+			rx[0] = load_rx_opstack( vm, R0 ); // r0 = *opstack
+			emit(AND32i(rx[0], rx[0], immrs)); // r0 &= const
+			store_rx_opstack( rx[0] );         // *opstack = r0
+			ip += 1; // OP_BAND
+			return qtrue;
+		}
+		break;
+
+	case OP_BOR:
+		x = ci->value;
+		if ( encode_logic_imm( x, 32, &immrs ) ) {
+			rx[0] = load_rx_opstack( vm, R0 ); // r0 = *opstack
+			emit(ORR32i(rx[0], rx[0], immrs)); // r0 |= const
+			store_rx_opstack( rx[0] );         // *opstack = r0
+			ip += 1; // OP_BOR
+			return qtrue;
+		}
+		break;
+
+	case OP_BXOR:
+		x = ci->value;
+		if ( encode_logic_imm( x, 32, &immrs ) ) {
+			rx[0] = load_rx_opstack( vm, R0 ); // r0 = *opstack
+			emit(EOR32i(rx[0], rx[0], immrs)); // r0 ^= const
+			store_rx_opstack( rx[0] );         // *opstack = r0
+			ip += 1; // OP_BXOR
+			return qtrue;
+		}
+		break;
 
 	case OP_LSH:
 		x = ci->value;
@@ -2665,13 +2764,13 @@ __recompile:
 	emit(STP64(R28, R29, SP, 64));
 	emit(STP64(R19, LR,  SP, 80));
 
-	emit(LDR64lit(rLITBASE, savedOffset[LIT_LITBASE] - compiledOfs));
-	emit(LDR64lit(rVMBASE, savedOffset[LIT_VMBASE] - compiledOfs));
-	emit(LDR64lit(rINSPOINTERS, savedOffset[LIT_INSPOINTERS] - compiledOfs));
-	emit(LDR64lit(rDATABASE, savedOffset[LIT_DATABASE] - compiledOfs));
+	emit_MOVXi(rLITBASE, (intptr_t)litBase );
+	emit_MOVXi(rVMBASE, (intptr_t)vm );
+	emit_MOVXi(rINSPOINTERS, (intptr_t)vm->instructionPointers );
+	emit_MOVXi(rDATABASE, (intptr_t)vm->dataBase );
 
-	emit(LDR32lit(rDATAMASK, savedOffset[LIT_DATAMASK] - compiledOfs));
-	emit(LDR32lit(rPSTACKBOTTOM, savedOffset[LIT_PSTACKBOTTOM] - compiledOfs));
+	emit_MOVRi(rDATAMASK, vm->dataMask);
+	emit_MOVRi(rPSTACKBOTTOM, vm->stackBottom);
 
 	// these are volatile variables
 	emit(LDR64i(rOPSTACK, rVMBASE, offsetof(vm_t, opStack)));
@@ -2696,28 +2795,6 @@ __recompile:
 	emit(ADD64i(SP, SP, 96)); // SP += 96
 
 	emit(RET(LR));
-
-	// begin literals
-
-savedOffset[ LIT_LITBASE ] = compiledOfs;
-	emit8( (intptr_t)litBase );
-
-savedOffset[ LIT_VMBASE ] = compiledOfs;
-	emit8( (intptr_t) vm );
-
-savedOffset[ LIT_DATABASE ] = compiledOfs;
-	emit8( (intptr_t) vm->dataBase );
-
-savedOffset[ LIT_INSPOINTERS ] = compiledOfs;
-	emit8( (intptr_t) vm->instructionPointers );
-
-savedOffset[ LIT_DATAMASK ] = compiledOfs;
-	emit( vm->dataMask );
-
-savedOffset[ LIT_PSTACKBOTTOM ] = compiledOfs;
-	emit( vm->stackBottom );
-
-	// end literals
 
 	emitAlign( 16 ); // align to quadword boundary
 
