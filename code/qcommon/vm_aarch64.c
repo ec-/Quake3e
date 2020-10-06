@@ -150,6 +150,7 @@ typedef enum {
 	MOP_MODU4,
 	MOP_BAND4,
 	MOP_BOR4,
+	MOP_BXOR4,
 } macro_op_t;
 
 
@@ -579,6 +580,22 @@ static uint32_t imm12_scale( const uint32_t imm12, const uint32_t scale )
 }
 
 
+static qboolean encode_arith_imm( const uint32_t imm, uint32_t *res ) {
+
+	if ( imm <= 0xFFF ) {
+		*res = imm;
+		return qtrue;
+	}
+
+	if ( (imm >> 12) <= 0xFFF && (imm & 0xFFF) == 0 ) {
+		*res = (1 << 12) | (imm >> 12);
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
+
 static int shifted_mask( const uint64_t v ) {
 	const uint64_t m = v - 1;
 	return ( ( ( m | v ) + 1 ) & m ) == 0;
@@ -628,7 +645,7 @@ static qboolean encode_logic_imm( const uint64_t v, uint32_t reg_size, uint32_t 
 	}
 
 	if ( immr == size ) {
-		// all zeros, unsupported
+		// all ones/zeros, unsupported
 		return qfalse;
 	}
 
@@ -639,9 +656,9 @@ static qboolean encode_logic_imm( const uint64_t v, uint32_t reg_size, uint32_t 
 		}
 	}
 
-	if ( len == size || ( imm >> len ) != 0 ) {
-		return qfalse;
-	}
+	//if ( len == size || ( imm >> len ) != 0 ) {
+	//	return qfalse;
+	//}
 
 	N = ( size >> 6 ) & 1;
 	imms = (63 & (64 - size*2)) | (len - 1);
@@ -884,8 +901,9 @@ static void emit_MOVSi( uint32_t reg, uint32_t imm )
 
 static void set_local_address( uint32_t reg, uint32_t addr )
 {
-	if ( addr < 4096 ) {
-		emit(ADD32i(reg, rPSTACK, addr));         // reg = pstack + addr
+	uint32_t imm;
+	if ( encode_arith_imm( addr, &imm ) ) {
+		emit(ADD32i(reg, rPSTACK, imm));         // reg = pstack + addr
 	} else {
 		if ( find_rx_const( addr ) ) {
 			uint32_t rx = alloc_rx_const( R3, addr ); // rx = const
@@ -1763,7 +1781,7 @@ static void emit_CheckReg( vm_t *vm, instruction_t *ins, uint32_t reg )
 static void emit_CheckJump( vm_t *vm, uint32_t reg, int proc_base, int proc_len )
 {
 	qboolean masked = is_masked_rx( reg );
-	uint32_t rx[2];
+	uint32_t rx[2], imm;
 
 	if ( ( vm_rtChecks->integer & 4 ) == 0 ) {
 		return;
@@ -1776,19 +1794,19 @@ static void emit_CheckJump( vm_t *vm, uint32_t reg, int proc_base, int proc_len 
 	if ( proc_base != -1 ) {
 		// allow jump within local function scope only
 		rx[0] = alloc_rx( R2 | TEMP );
-		if ( proc_base < 4096 )
-			emit(SUB32i(rx[0], reg, proc_base)); // r2 = ip - procBase
+		if ( encode_arith_imm( proc_base, &imm ) )
+			emit(SUB32i(rx[0], reg, imm));  // r2 = ip - procBase
 		else {
-			emit_MOVRi(rx[0], proc_base);        // r2 = procBase
-			emit(SUB32(rx[0], reg, rx[0]));      // r2 = ip - R2
+			emit_MOVRi(rx[0], proc_base);   // r2 = procBase
+			emit(SUB32(rx[0], reg, rx[0])); // r2 = ip - R2
 		}
 		// (ip > proc_len) ?
-		if ( proc_len < 4096 ) {
-			emit(CMP32i(rx[0], proc_len));       // cmp r2, proclen
+		if ( encode_arith_imm( proc_len, &imm ) ) {
+			emit(CMP32i(rx[0], imm));       // cmp r2, proclen
 		} else {
 			rx[1] = alloc_rx( R1 | TEMP );
-			emit_MOVRi(rx[1], proc_len);         // r1 = procLen
-			emit(CMP32(rx[0], rx[1]));           // cmp r2, r1
+			emit_MOVRi(rx[1], proc_len);    // r1 = procLen
+			emit(CMP32(rx[0], rx[1]));      // cmp r2, r1
 			unmask_rx( rx[1] );
 		}
 		unmask_rx( rx[0] );
@@ -1812,6 +1830,8 @@ static void emit_CheckJump( vm_t *vm, uint32_t reg, int proc_base, int proc_len 
 
 static void emit_CheckProc( vm_t *vm, instruction_t *inst )
 {
+	uint32_t imm;
+
 	// programStack overflow check
 	if ( vm_rtChecks->integer & 1 ) {
 		emit(CMP32(rPSTACK, rPSTACKBOTTOM));  // check if pStack < vm->stackBottom
@@ -1823,8 +1843,8 @@ static void emit_CheckProc( vm_t *vm, instruction_t *inst )
 	if ( vm_rtChecks->integer & 2 ) {
 		uint32_t n = inst->opStack;        // proc->opStack carries max.used opStack value
 		uint32_t rx = alloc_rx( R2 | TEMP );
-		if ( n < 4096 ) {
-			emit(ADD64i(rx, rOPSTACK, n)); // r2 = opstack + max.opStack
+		if ( encode_arith_imm( n, &imm ) ) {
+			emit(ADD64i(rx, rOPSTACK, imm));// r2 = opstack + max.opStack
 		} else {
 			emit_MOVRi(rx, n);             // r2 = max.opStack
 			emit(ADD64(rx, rOPSTACK, rx)); // r2 = opStack + r2
@@ -2030,7 +2050,7 @@ qboolean ConstOptimize( vm_t *vm )
 	uint32_t immrs;
 	uint32_t rx[3];
 	uint32_t sx[2];
-	uint32_t x;
+	uint32_t x, imm;
 
 	switch ( ni->op ) {
 
@@ -2149,8 +2169,8 @@ qboolean ConstOptimize( vm_t *vm )
 	case OP_ADD:
 		x = ci->value;
 		rx[0] = load_rx_opstack( vm, R0 ); // r0 = *opstack
-		if ( x < 4096 ) {
-			emit(ADD32i(rx[0], rx[0], x));
+		if ( encode_arith_imm( x, &imm ) ) {
+			emit(ADD32i(rx[0], rx[0], imm));
 		} else {
 			rx[1] = alloc_rx_const( R2, x );  // r2 = 0x12345678
 			emit(ADD32(rx[0], rx[0], rx[1])); // r0 = r0 + r2
@@ -2163,8 +2183,8 @@ qboolean ConstOptimize( vm_t *vm )
 	case OP_SUB:
 		x = ci->value;
 		rx[0] = load_rx_opstack( vm, R0 ); // r0 = *opstack
-		if ( x < 4096 ) {
-			emit(SUB32i(rx[0], rx[0], x));
+		if ( encode_arith_imm( x, &imm ) ) {
+			emit(SUB32i(rx[0], rx[0], imm));
 		} else {
 			rx[1] = alloc_rx_const( R2, x );  // r2 = 0x12345678
 			emit(SUB32(rx[0], rx[0], rx[1])); // r0 = r0 - r2
@@ -2349,8 +2369,8 @@ qboolean ConstOptimize( vm_t *vm )
 			else
 				emit(CBNZ32(rx[0], vm->instructionPointers[ ni->value ] - compiledOfs));
 		} else {
-			if ( x < 4096 ) {
-				emit(CMP32i(rx[0], x));
+			if ( encode_arith_imm( x, &imm ) ) {
+				emit(CMP32i(rx[0], imm));
 			} else {
 				rx[1] = alloc_rx_const( R2, x );
 				emit(CMP32(rx[0], rx[1]));
@@ -2554,6 +2574,11 @@ static void VM_FindMOps( instruction_t *buf, const int instructionCount )
 					i += 6; n += 6;
 					continue;
 				}
+				if ( v == OP_BXOR ) {
+					i->op = MOP_BXOR4;
+					i += 6; n += 6;
+					continue;
+				}
 			}
 		}
 
@@ -2572,6 +2597,7 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 {
 	uint32_t addr, value;
 	uint32_t rx[4];
+	uint32_t imm;
 	int short_addr32;
 
 	switch ( op )
@@ -2586,6 +2612,7 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 		case MOP_MODU4:
 		case MOP_BAND4:
 		case MOP_BOR4:
+		case MOP_BXOR4:
 			value = inst[ip+2].value;
 			addr = ci->value;
 			short_addr32 = can_encode_imm12( addr, 2 );
@@ -2605,8 +2632,8 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 			// modify
 			switch ( op ) {
 				case MOP_ADD4:
-					if ( value < 4096 ) {
-						emit(ADD32i(rx[0], rx[0], value)); // r0 += value;
+					if ( encode_arith_imm( value, &imm ) ) {
+						emit(ADD32i(rx[0], rx[0], imm));     // r0 += value
 					} else {
 						rx[1] = alloc_rx_const( R1, value ); // r1 = value
 						emit(ADD32(rx[0], rx[0], rx[1]));    // r0 += r1
@@ -2615,36 +2642,36 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 					break;
 
 				case MOP_SUB4:
-					if ( value < 4096 ) {
-						emit(SUB32i(rx[0], rx[0], value)); // r0 -= value;
+					if ( encode_arith_imm( value, &imm ) ) {
+						emit(SUB32i(rx[0], rx[0], imm));     // r0 -= value
 					} else {
 						rx[1] = alloc_rx_const( R1, value ); // r1 = value
-						emit(SUB32(rx[0], rx[0], rx[1]));  // r0 -= r1
+						emit(SUB32(rx[0], rx[0], rx[1]));    // r0 -= r1
 						unmask_rx( rx[1] );
 					}
 					break;
 
 				case MOP_MUL4:
 					rx[1] = alloc_rx_const( R1, value ); // r1 = value
-					emit(MUL32(rx[0], rx[0], rx[1]));  // r0 *= r1
+					emit(MUL32(rx[0], rx[0], rx[1]));    // r0 *= r1
 					unmask_rx( rx[1] );
 					break;
 
 				case MOP_DIVI4:
 					rx[1] = alloc_rx_const( R1, value ); // r1 = value
-					emit(SDIV32(rx[0], rx[0], rx[1])); // r0 /= r1
+					emit(SDIV32(rx[0], rx[0], rx[1]));   // r0 /= r1
 					unmask_rx( rx[1] );
 					break;
 
 				case MOP_DIVU4:
 					rx[1] = alloc_rx_const( R1, value ); // r1 = value
-					emit(UDIV32(rx[0], rx[0], rx[1])); // r0 /= r1
+					emit(UDIV32(rx[0], rx[0], rx[1]));   // r0 /= r1
 					unmask_rx( rx[1] );
 					break;
 
 				case MOP_MODI4:
 					rx[3] = alloc_rx( R3 | TEMP );
-					rx[1] = alloc_rx_const( R1, value ); // r1 = value
+					rx[1] = alloc_rx_const( R1, value );      // r1 = value
 					emit(SDIV32(rx[3], rx[0], rx[1]));        // r3 = r0 / r1
 					emit(MSUB32(rx[0], rx[1], rx[3], rx[0])); // r0 = r0 - r1 * r3
 					unmask_rx( rx[1] );
@@ -2661,15 +2688,33 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 					break;
 
 				case MOP_BAND4:
-					rx[1] = alloc_rx_const( R1, value ); // r1 = value
-					emit(AND32(rx[0], rx[0], rx[1]));    // r0 &= r1
-					unmask_rx( rx[1] );
+					if ( encode_logic_imm( value, 32, &imm ) ) {
+						emit(AND32i(rx[0], rx[0], imm));     // r0 &= const
+					} else {
+						rx[1] = alloc_rx_const( R1, value ); // r1 = value
+						emit(AND32(rx[0], rx[0], rx[1]));    // r0 &= r1
+						unmask_rx( rx[1] );
+					}
 					break;
 
 				case MOP_BOR4:
-					rx[1] = alloc_rx_const( R1, value ); // r1 = value
-					emit(ORR32(rx[0], rx[0], rx[1]));    // r0 |= r1
-					unmask_rx( rx[1] );
+					if ( encode_logic_imm( value, 32, &imm ) ) {
+						emit(ORR32i(rx[0], rx[0], imm));     // r0 |= const
+					} else {
+						rx[1] = alloc_rx_const( R1, value ); // r1 = value
+						emit(ORR32(rx[0], rx[0], rx[1]));    // r0 |= r1
+						unmask_rx( rx[1] );
+					}
+					break;
+
+				case MOP_BXOR4:
+					if ( encode_logic_imm( value, 32, &imm ) ) {
+						emit(EOR32i(rx[0], rx[0], imm));     // r0 ^= const
+					} else {
+						rx[1] = alloc_rx_const( R1, value ); // r1 = value
+						emit(EOR32(rx[0], rx[0], rx[1]));    // r0 ^= r1
+						unmask_rx( rx[1] );
+					}
 					break;
 
 				default:
@@ -2702,7 +2747,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 {
 	const char *errMsg;
 	uint32_t *litBase;
-	uint32_t rx[3];
+	uint32_t rx[3], imm;
 	uint32_t sx[2];
 	qboolean scalar;
 	int proc_base;
@@ -2755,7 +2800,7 @@ __recompile:
 
 	init_opstack();
 
-	emit(SUB64i(SP, SP, 96)); // SP -= 80
+	emit(SUB64i(SP, SP, 96)); // SP -= 96
 
 	emit(STP64(R20, R21, SP, 0));
 	emit(STP64(R22, R23, SP, 16));
@@ -2856,8 +2901,8 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 					emit(ADD64(rOPSTACK, rOPSTACK, rOPSTACKSHIFT));
 				}
 
-				if ( v < 4096 ) {
-					emit(SUB32i(rPSTACK, rPSTACK, v));    // pstack -= arg
+				if ( encode_arith_imm( v, &imm ) ) {
+					emit(SUB32i(rPSTACK, rPSTACK, imm));  // pstack -= arg
 				} else {
 					rx[0] = alloc_rx( R2 | TEMP );
 					emit_MOVRi(rx[0], v);                 // r2 = arg
@@ -3167,6 +3212,7 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 			case MOP_MODU4:
 			case MOP_BAND4:
 			case MOP_BOR4:
+			case MOP_BXOR4:
 				EmitMOPs( vm, ci->op );
 				break;
 #endif
