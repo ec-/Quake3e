@@ -715,12 +715,17 @@ static void emit_MOVRi( uint32_t reg, uint32_t imm )
 	uint32_t immrs;
 
 	if ( imm <= 0xFFFF ) {
-		emit( MOVZ32( reg, imm & 0xFFFF ) );
+		emit( MOVZ32( reg, imm ) );
 		return;
 	}
 
 	if ( ( imm & 0xFFFF ) == 0 ) {
 		emit( MOVZ32_16( reg, (imm >> 16)&0xFFFF ) );
+		return;
+	}
+
+	if ( ~imm <= 0xFFFF ) {
+		emit( MOVN32( reg, ~imm ) );
 		return;
 	}
 
