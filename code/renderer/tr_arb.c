@@ -637,7 +637,7 @@ static char *ARB_BuildGreyscaleProgram( char *buf ) {
 		*buf = '\0';
 		return buf;
 	}
-	
+
 	s = Q_stradd( buf, "PARAM sRGB = { 0.2126, 0.7152, 0.0722, 1.0 }; \n" );
 
 	if ( r_greyscale->value == 1.0 ) {
@@ -645,7 +645,7 @@ static char *ARB_BuildGreyscaleProgram( char *buf ) {
 	} else {
 		s = Q_stradd( s, "TEMP luma; \n" );
 		s = Q_stradd( s, "DP3 luma, base, sRGB; \n" );
-		s += sprintf( s, "LRP base.xyz, %1.2f, luma, base; \n", r_greyscale->value );
+		/*s +=*/ sprintf( s, "LRP base.xyz, %1.2f, luma, base; \n", r_greyscale->value );
 	}
 
 	return buf;

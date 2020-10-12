@@ -1044,7 +1044,7 @@ static qboolean safe_address( instruction_t *ci, instruction_t *proc, int dataLe
 {
 	if ( ci->op == OP_LOCAL ) {
 		// local address can't exceed programStack frame plus 256 bytes of passed arguments
-		if ( ci->value < 8 || ci->value >= proc->value + 256 )
+		if ( ci->value < 8 || ( proc && ci->value >= proc->value + 256 ) )
 			return qfalse;
 		return qtrue;
 	}

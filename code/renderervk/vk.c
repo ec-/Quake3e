@@ -3182,6 +3182,9 @@ void vk_initialize( void )
 	// round down to next power of 2
 	glConfig.maxTextureSize = MIN( props.limits.maxImageDimension2D, log2pad( maxSize, 0 ) );
 
+	if ( glConfig.maxTextureSize > 2048 )
+		glConfig.maxTextureSize = 2048; // ResampleTexture() relies on that maximum
+
 	// default chunk size, may be doubled on demand
 	vk.image_chunk_size = IMAGE_CHUNK_SIZE;
 

@@ -801,7 +801,6 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 	VBO_Cleanup();
 
 	vbo_size = 0;
-	ibo_size = 0;
 
 	// initial scan to count surfaces/indexes/vertexes for memory allocation
 	for ( i = 0, sf = surf; i < surfCount; i++, sf++ ) {
@@ -1000,7 +999,7 @@ __fail:
 		ri.Printf( PRINT_ERROR, "%s: error %i\n", __func__, err );
 
 	// reset vbo markers
-	for ( i = 0, n = 0, sf = surf; i < surfCount; i++, sf++ ) {
+	for ( i = 0, sf = surf; i < surfCount; i++, sf++ ) {
 		face = (srfSurfaceFace_t *) sf->data;
 		if ( face->surfaceType == SF_FACE ) {
 			face->vboItemIndex = 0;
