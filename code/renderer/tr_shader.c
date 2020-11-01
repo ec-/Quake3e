@@ -1539,7 +1539,7 @@ static qboolean ParseCondition( const char **text, resultType *res )
 			rval_type = com_tokentype;
 
 			// read next token, expect '||', '&&' or ')', allow newlines
-			token = COM_ParseComplex( text, qtrue );
+			/*token =*/ COM_ParseComplex( text, qtrue );
 		} 
 		else if ( com_tokentype == TK_SCOPE_CLOSE || com_tokentype == TK_OR || com_tokentype == TK_AND ) 
 		{

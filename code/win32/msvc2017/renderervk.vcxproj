@@ -204,7 +204,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\renderervk\iqm.h" />
-    <ClInclude Include="..\..\renderervk\qgl.h" />
     <ClInclude Include="..\..\renderervk\tr_common.h" />
     <ClInclude Include="..\..\renderervk\tr_local.h" />
     <ClInclude Include="..\..\renderercommon\tr_public.h" />

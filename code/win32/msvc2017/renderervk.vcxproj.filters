@@ -212,9 +212,6 @@
     <ClInclude Include="..\..\renderervk\iqm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\renderervk\qgl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\renderervk\tr_common.h">
       <Filter>Header Files</Filter>
     </ClInclude>

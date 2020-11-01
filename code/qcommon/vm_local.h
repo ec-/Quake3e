@@ -135,6 +135,7 @@ typedef struct {
 	unsigned swtch:1;
 	unsigned safe:1;   // non-masked op_store
 	unsigned endp:1;
+	unsigned fpu:1;    // load into FPU register
 } instruction_t;
 
 typedef struct vmSymbol_s {
@@ -226,6 +227,7 @@ const char *VM_CheckInstructions( instruction_t *buf, int instructionCount,
 void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf );
 
 #define JUMP	(1<<0)
+#define FPU		(1<<1)
 
 typedef struct opcode_info_s
 {

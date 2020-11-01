@@ -521,6 +521,8 @@ static void InitOpenGL( void )
 		// stubbed or broken drivers may have reported 0...
 		if ( glConfig.maxTextureSize <= 0 ) 
 			glConfig.maxTextureSize = 0;
+		else if ( glConfig.maxTextureSize > MAX_TEXTURE_SIZE )
+			glConfig.maxTextureSize = MAX_TEXTURE_SIZE; // ResampleTexture() relies on that maximum
 
 		qglGetIntegerv( GL_MAX_TEXTURE_IMAGE_UNITS, &max_shader_units );
 		qglGetIntegerv( GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &max_bind_units );

@@ -570,10 +570,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderervk\qgl.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\qcommon\surfaceflags.h"
 				>
 			</File>

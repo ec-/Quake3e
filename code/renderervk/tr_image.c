@@ -275,13 +275,14 @@ static void ResampleTexture( unsigned *in, int inwidth, int inheight, unsigned *
 	int		i, j;
 	unsigned	*inrow, *inrow2;
 	unsigned	frac, fracstep;
-	unsigned	p1[2048], p2[2048];
+	unsigned	p1[MAX_TEXTURE_SIZE];
+	unsigned	p2[MAX_TEXTURE_SIZE];
 	byte		*pix1, *pix2, *pix3, *pix4;
 
-	if (outwidth>2048)
-		ri.Error(ERR_DROP, "ResampleTexture: max width");
+	if ( outwidth > ARRAY_LEN( p1 ) )
+		ri.Error( ERR_DROP, "ResampleTexture: max width" );
 								
-	fracstep = inwidth*0x10000/outwidth;
+	fracstep = inwidth * 0x10000 / outwidth;
 
 	frac = fracstep>>2;
 	for ( i=0 ; i<outwidth ; i++ ) {
@@ -566,9 +567,10 @@ static void generate_image_upload_data( image_t *image, byte *data, Image_Upload
 	int width = image->width;
 	int height = image->height;
 	unsigned* scaled_buffer;
-	int max_texture_size;
 	int mip_level_size;
 	int miplevel;
+
+	Com_Memset( upload_data, 0, sizeof( *upload_data ) );
 
 	if ( image->flags & IMGFLAG_NOSCALE ) {
 		//
@@ -591,9 +593,18 @@ static void generate_image_upload_data( image_t *image, byte *data, Image_Upload
 			scaled_height >>= 1;
 	}
 
-	Com_Memset( upload_data, 0, sizeof( *upload_data ) );
+	//
+	// clamp to the current upper OpenGL limit
+	// scale both axis down equally so we don't have to
+	// deal with a half mip resampling
+	//
+	while ( scaled_width > glConfig.maxTextureSize
+		|| scaled_height > glConfig.maxTextureSize ) {
+		scaled_width >>= 1;
+		scaled_height >>= 1;
+	}
 
-	upload_data->buffer = (byte*) ri.Hunk_AllocateTempMemory(2 * 4 * scaled_width * scaled_height);
+	upload_data->buffer = (byte*) ri.Hunk_AllocateTempMemory( 2 * 4 * scaled_width * scaled_height );
 	if ( data == NULL ) {
 		Com_Memset( upload_data->buffer, 0, 2 * 4 * scaled_width * scaled_height );
 	}
@@ -637,19 +648,6 @@ static void generate_image_upload_data( image_t *image, byte *data, Image_Upload
 	}
 	if (scaled_height < 1) {
 		scaled_height = 1;
-	}
-
-	//
-	// clamp to the current upper OpenGL limit
-	// scale both axis down equally so we don't have to
-	// deal with a half mip resampling
-	//
-	max_texture_size = glConfig.maxTextureSize;
-
-	while ( scaled_width > max_texture_size
-		|| scaled_height > max_texture_size ) {
-		scaled_width >>= 1;
-		scaled_height >>= 1;
 	}
 
 	upload_data->base_level_width = scaled_width;
@@ -901,20 +899,34 @@ static void Upload32( byte *data, int x, int y, int width, int height, image_t *
 			;
 		for (scaled_height = 1 ; scaled_height < height ; scaled_height<<=1)
 			;
+
 		if ( r_roundImagesDown->integer && scaled_width > width )
 			scaled_width >>= 1;
 		if ( r_roundImagesDown->integer && scaled_height > height )
 			scaled_height >>= 1;
+	}
 
-		if ( scaled_width != width || scaled_height != height ) {
-			if ( data ) {
-				resampledBuffer = ri.Hunk_AllocateTempMemory( scaled_width * scaled_height * 4 );
-				ResampleTexture( (unsigned*)data, width, height, (unsigned*)resampledBuffer, scaled_width, scaled_height );
-				data = resampledBuffer;
-			}
-			width = scaled_width;
-			height = scaled_height;
+	//
+	// clamp to the current texture size limit
+	// scale both axis down equally so we don't have to
+	// deal with a half mip resampling
+	//
+	while ( scaled_width > glConfig.maxTextureSize
+		|| scaled_height > glConfig.maxTextureSize ) {
+		scaled_width >>= 1;
+		scaled_height >>= 1;
+		x >>= 1;
+		y >>= 1;
+	}
+
+	if ( scaled_width != width || scaled_height != height ) {
+		if ( data ) {
+			resampledBuffer = ri.Hunk_AllocateTempMemory( scaled_width * scaled_height * 4 );
+			ResampleTexture( (unsigned*)data, width, height, (unsigned*)resampledBuffer, scaled_width, scaled_height );
+			data = resampledBuffer;
 		}
+		width = scaled_width;
+		height = scaled_height;
 	}
 
 	if ( image->flags & IMGFLAG_COLORSHIFT ) {
@@ -943,19 +955,6 @@ static void Upload32( byte *data, int x, int y, int width, int height, image_t *
 	}
 	if (scaled_height < 1) {
 		scaled_height = 1;
-	}
-
-	//
-	// clamp to the current texture size limit
-	// scale both axis down equally so we don't have to
-	// deal with a half mip resampling
-	//
-	while ( scaled_width > glConfig.maxTextureSize
-		|| scaled_height > glConfig.maxTextureSize ) {
-		scaled_width >>= 1;
-		scaled_height >>= 1;
-		x >>= 1;
-		y >>= 1;
 	}
 
 	if ( !subImage ) {
