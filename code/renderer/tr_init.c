@@ -309,7 +309,7 @@ static void R_InitExtensions( void )
 	Q_strncpyz( gl_extensions, (char *)qglGetString( GL_EXTENSIONS ), sizeof( gl_extensions ) );
 	Q_strncpyz( glConfig.extensions_string, gl_extensions, sizeof( glConfig.extensions_string ) );
 
-	version = atof( (const char *)qglGetString( GL_VERSION ) );
+	version = Q_atof( (const char *)qglGetString( GL_VERSION ) );
 	gl_version = (int)(version * 10.001);
 
 	glConfig.textureCompression = TC_NONE;

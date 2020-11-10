@@ -2190,9 +2190,9 @@ static void R_LoadEntities( const lump_t *l ) {
 		if (!Q_stricmp(keyname, "gridsize")) {
 			//sscanf(value, "%f %f %f", &w->lightGridSize[0], &w->lightGridSize[1], &w->lightGridSize[2] );
 			Com_Split( value, v, 3, ' ' );
-			w->lightGridSize[0] = atof( v[0] );
-			w->lightGridSize[1] = atof( v[1] );
-			w->lightGridSize[2] = atof( v[2] );
+			w->lightGridSize[0] = Q_atof( v[0] );
+			w->lightGridSize[1] = Q_atof( v[1] );
+			w->lightGridSize[2] = Q_atof( v[2] );
 			continue;
 		}
 	}
