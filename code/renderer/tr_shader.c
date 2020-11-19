@@ -91,10 +91,12 @@ void RE_RemapShader(const char *shaderName, const char *newShaderName, const cha
 			}
 		}
 	}
-	if (timeOffset) {
-		sh2->timeOffset = Q_atof(timeOffset);
+
+	if ( timeOffset ) {
+		sh2->timeOffset = Q_atof( timeOffset );
 	}
 }
+
 
 /*
 ===============
@@ -2139,21 +2141,23 @@ static void FindLightingStages( void )
 		st = &stages[ i ];
 		if ( !st->active )
 			break;
-		if ( !st->bundle[0].isLightmap ) {
-			if ( st->bundle[0].tcGen != TCGEN_TEXTURE )
+		if ( st->bundle[0].isLightmap )
+			continue;
+		if ( st->bundle[0].tcGen != TCGEN_TEXTURE )
+			continue;
+		if ( (st->stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE) )
+			continue;
+		if ( st->bundle[0].image[0] == tr.whiteImage )
+			continue;
+		if ( st->isDetail && shader.lightingStage >= 0 )
+			continue;
+		// fix for q3wcp17' textures/scanctf2/bounce_white and others
+		if ( st->rgbGen == CGEN_IDENTITY && (st->stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO) ) {
+			if ( shader.lightingStage >= 0 ) {
 				continue;
-			if ( (st->stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE) )
-				continue;
-			if ( st->bundle[0].image[0] == tr.whiteImage )
-				continue;
-			 // fix for q3wcp17' textures/scanctf2/bounce_white and others
-			if ( st->rgbGen == CGEN_IDENTITY && (st->stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO) ) {
-				if ( shader.lightingStage >= 0 ) {
-					continue;
-				}
 			}
-			shader.lightingStage = i;
 		}
+		shader.lightingStage = i;
 	}
 }
 #endif
