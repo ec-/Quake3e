@@ -231,10 +231,10 @@ void S_UpdateEntityPosition( int entityNum, const vec3_t origin )
 S_Update
 =================
 */
-void S_Update( void )
+void S_Update( int msec )
 {
-	if( si.Update ) {
-		si.Update();
+	if ( si.Update ) {
+		si.Update( msec );
 	}
 }
 

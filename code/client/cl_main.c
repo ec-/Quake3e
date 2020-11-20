@@ -2964,13 +2964,12 @@ static void CL_CheckUserinfo( void ) {
 CL_Frame
 ==================
 */
-void CL_Frame( int msec ) {
+void CL_Frame( int msec, int realMsec ) {
 	float fps;
 	float frameDuration;
 
-#ifdef USE_CURL	
-	if ( download.cURL ) 
-	{
+#ifdef USE_CURL
+	if ( download.cURL ) {
 		Com_DL_Perform( &download );
 	}
 #endif
@@ -2979,6 +2978,9 @@ void CL_Frame( int msec ) {
 		return;
 	}
 
+	// save the msec before checking pause
+	cls.realFrametime = realMsec;
+
 #ifdef USE_CURL
 	if ( clc.downloadCURLM ) {
 		CL_cURL_PerformDownload();
@@ -2986,12 +2988,11 @@ void CL_Frame( int msec ) {
 		// download mode since the ui vm expects cls.state to be
 		// CA_CONNECTED
 		if ( clc.cURLDisconnected ) {
-			cls.realFrametime = msec;
 			cls.frametime = msec;
-			cls.realtime += cls.frametime;
+			cls.realtime += msec;
 			cls.framecount++;
 			SCR_UpdateScreen();
-			S_Update();
+			S_Update( realMsec );
 			Con_RunConsole();
 			return;
 		}
@@ -3066,16 +3067,12 @@ void CL_Frame( int msec ) {
 		}
 	}
 
-	// save the msec before checking pause
-	cls.realFrametime = msec;
-
 	// decide the simulation time
 	cls.frametime = msec;
-
-	cls.realtime += cls.frametime;
+	cls.realtime += msec;
 
 	if ( cl_timegraph->integer ) {
-		SCR_DebugGraph( cls.realFrametime * 0.25 );
+		SCR_DebugGraph( msec * 0.25f );
 	}
 
 	// see if we need to update any userinfo
@@ -3100,7 +3097,7 @@ void CL_Frame( int msec ) {
 	SCR_UpdateScreen();
 
 	// update audio
-	S_Update();
+	S_Update( realMsec );
 
 	// advance local effects for next frame
 	SCR_RunCinematic();

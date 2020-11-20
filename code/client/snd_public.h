@@ -52,7 +52,7 @@ void S_Respatialize( int entityNum, const vec3_t origin, vec3_t axis[3], int inw
 // let the sound system know where an entity currently is
 void S_UpdateEntityPosition( int entityNum, const vec3_t origin );
 
-void S_Update( void );
+void S_Update( int msec );
 
 void S_DisableSounds( void );
 

@@ -1113,7 +1113,7 @@ void CL_Init( void );
 qboolean CL_Disconnect( qboolean showMainMenu );
 void CL_ResetOldGame( void );
 void CL_Shutdown( const char *finalmsg, qboolean quit );
-void CL_Frame( int msec );
+void CL_Frame( int msec, int realMsec );
 qboolean CL_GameCommand( void );
 void CL_KeyEvent (int key, qboolean down, unsigned time);
 

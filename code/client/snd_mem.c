@@ -85,6 +85,7 @@ void SND_setup( void )
 	static int old_scs = -1;
 
 	cv = Cvar_Get( "com_soundMegs", DEF_COMSOUNDMEGS, CVAR_LATCH | CVAR_ARCHIVE );
+	Cvar_CheckRange( cv, "1", "512", CV_INTEGER );
 
 	scs = ( cv->integer * /*1536*/ 12 * dma.speed ) / 22050;
 	scs *= 128;
