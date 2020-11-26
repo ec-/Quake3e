@@ -86,8 +86,8 @@ static sfx_t *sfxHash[LOOP_HASH];
 cvar_t		*s_testsound;
 cvar_t		*s_khz;
 cvar_t		*s_show;
-cvar_t		*s_mixahead;
-cvar_t		*s_mixPreStep;
+static cvar_t *s_mixahead;
+static cvar_t *s_mixOffset;
 #if defined(__linux__) && !defined(USE_SDL)
 cvar_t		*s_device;
 #endif
@@ -1174,7 +1174,7 @@ static void S_GetSoundtime( void )
 	s_soundtime = buffers * dma.fullsamples + samplepos/dma.channels;
 
 	if ( dma.submission_chunk < 256 ) {
-		s_paintedtime = s_soundtime + s_mixPreStep->value * dma.speed;
+		s_paintedtime = s_soundtime + s_mixOffset->value * dma.speed;
 	} else {
 		s_paintedtime = s_soundtime + dma.submission_chunk;
 	}
@@ -1489,11 +1489,11 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 			break;
 	}
 
-	s_mixahead = Cvar_Get( "s_mixahead", "0.2", CVAR_ARCHIVE_ND );
+	s_mixahead = Cvar_Get( "s_mixAhead", "0.2", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( s_mixahead, "0.001", "0.5", CV_FLOAT );
 
-	s_mixPreStep = Cvar_Get( "s_mixPreStep", "0.05", CVAR_ARCHIVE_ND );
-	Cvar_CheckRange( s_mixPreStep, "0.04", "0.5", CV_FLOAT );
+	s_mixOffset = Cvar_Get( "s_mixOffset", "0", CVAR_ARCHIVE_ND | CVAR_DEVELOPER );
+	Cvar_CheckRange( s_mixOffset, "0", "0.5", CV_FLOAT );
 
 	s_show = Cvar_Get( "s_show", "0", CVAR_CHEAT );
 	s_testsound = Cvar_Get( "s_testsound", "0", CVAR_CHEAT );

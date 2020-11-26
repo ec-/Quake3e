@@ -941,7 +941,7 @@ qboolean SNDDMA_InitDS( void )
 ==============
 SNDDMA_GetDMAPos
 
-return the current sample position (in mono samples read)
+return the current sample WRITE position (in mono samples)
 inside the recirculating dma buffer, so the mixing code will know
 how many sample are required to fill it up.
 ===============
@@ -960,19 +960,12 @@ int SNDDMA_GetDMAPos( void ) {
 	}
 #endif
 	if ( dsound_init ) {
-		MMTIME	mmtime;
-		int		s;
-		DWORD	dwWrite;
+		DWORD	dwWriteCursor;
 
-		mmtime.wType = TIME_SAMPLES;
-		pDSBuf->lpVtbl->GetCurrentPosition( pDSBuf, &mmtime.u.sample, &dwWrite );
+		// write position is the only safe position to start update
+		pDSBuf->lpVtbl->GetCurrentPosition( pDSBuf, NULL, &dwWriteCursor );
 
-		s = mmtime.u.sample;
-
-		s >>= sample16;
-		s &= ( dma.samples - 1 );
-
-		return s;
+		return ( dwWriteCursor >> sample16 ) & ( dma.samples - 1 );
 	}
 
 	return 0;
