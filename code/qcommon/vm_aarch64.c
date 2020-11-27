@@ -45,7 +45,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define DYN_ALLOC_SX
 
 // re-use constants previously stored in scratch registers
-#define CONST_CACHE_RX
+//#define CONST_CACHE_RX
 #define CONST_CACHE_SX
 
 #define REGS_OPTIMIZE
@@ -988,9 +988,11 @@ static qboolean scalar_on_top( void )
 	if ( opstack >= PROC_OPSTACK_SIZE * 4 || opstack <= 0 )
 		DROP( "bad opstack %i", opstack );
 #endif
+#ifdef FPU_OPTIMIZE
 	if ( opstackv[ opstack ].type == TYPE_SX )
 		return qtrue;
 	else
+#endif
 		return qfalse;
 }
 
@@ -1287,7 +1289,7 @@ static uint32_t alloc_rx( uint32_t pref )
 		uint32_t mask = rx_mask | build_mask( TYPE_RX );
 
 		// pickup first free register from rx_list
-		for ( i = 0; i < ARRAY_LEN( rx_list ) ; i++ ) {
+		for ( i = 0; i < ARRAY_LEN( rx_list ); i++ ) {
 			n = rx_list[ i ];
 			if  ( mask & (1 << n) ) {
 				continue;
@@ -1347,7 +1349,7 @@ static uint32_t alloc_sx( uint32_t pref )
 		uint32_t mask = sx_mask | build_mask( TYPE_SX );
 
 		// pickup first free register from sx_list
-		for ( i = 0; i < ARRAY_LEN( sx_list ) ; i++ ) {
+		for ( i = 0; i < ARRAY_LEN( sx_list ); i++ ) {
 			n = sx_list[ i ];
 			if  ( mask & (1 << n) ) {
 				continue;
@@ -1438,6 +1440,8 @@ static void store_rx_opstack( uint32_t reg )
 	it->value = reg;
 	it->safe_arg = 0;
 
+	wipe_rx_meta( reg );
+
 	unmask_rx( reg ); // so it can be flushed on demand
 }
 
@@ -1479,6 +1483,8 @@ static void store_sx_opstack( uint32_t reg )
 	it->offset = opstack;
 	it->value = reg;
 	it->safe_arg = 0;
+
+	wipe_sx_meta( reg );
 
 	unmask_sx( reg ); // so it can be flushed on demand
 }
@@ -2396,7 +2402,7 @@ qboolean ConstOptimize( vm_t *vm )
 	case OP_GEF: {
 		uint32_t comp = get_comp( ni->op );
 		x = ci->value;
-		sx[0] = load_sx_opstack( vm, S0 ); dec_opstack(); // s0 = *opstack; opstack -= 4
+		sx[0] = load_sx_opstack( vm, S0 | CONST ); dec_opstack(); // s0 = *opstack; opstack -= 4
 		if ( x == 0 ) {
 			emit(FCMP0(sx[0]));
 		} else {
@@ -2987,8 +2993,10 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 				rx[0] = load_rx_opstack( vm, R0 | CONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
 				flush_volatile();
 				emit_CheckJump( vm, rx[0], proc_base, proc_len ); // check if r0 is within current proc
-				emit(LDR64_8(R16, rINSPOINTERS, rx[0]));          // r16 = instructionPointers[ r0 ]
-				emit(BR(R16));
+				rx[1] = alloc_rx( R16 );
+				emit(LDR64_8(rx[1], rINSPOINTERS, rx[0]));        // r16 = instructionPointers[ r0 ]
+				emit(BR(rx[1]));
+				unmask_rx( rx[1] );
 				unmask_rx( rx[0] );
 				break;
 
@@ -3078,9 +3086,9 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 
 			case OP_STORE4:
 				if ((scalar = scalar_on_top())) {
-					sx[0] = load_sx_opstack( vm, S0 | CONST ); // s0 = *opstack;
+					sx[0] = load_sx_opstack( vm, S0 | CONST ); // s0 = *opstack
 				} else {
-					rx[0] = load_rx_opstack( vm, R0 | CONST ); // r0 = *opstack;
+					rx[0] = load_rx_opstack( vm, R0 | CONST ); // r0 = *opstack
 				}
 				dec_opstack(); // opstack -= 4
 				rx[1] = load_rx_opstack( vm, R1 | CONST ); dec_opstack(); // r1 = *opstack; opstack -= 4
