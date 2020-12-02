@@ -1046,7 +1046,45 @@ static VkFormat get_hdr_format( VkFormat base_format )
 }
 
 
-static void get_surface_formats( void )
+static void vk_select_surface_format( VkPhysicalDevice device, VkSurfaceKHR surface )
+{
+	VkSurfaceFormatKHR *candidates;
+	uint32_t format_count;
+
+	VK_CHECK( qvkGetPhysicalDeviceSurfaceFormatsKHR( device, surface, &format_count, NULL ) );
+
+	if ( format_count == 0 )
+		ri.Error( ERR_FATAL, "%s: no surface formats found", __func__ );
+
+	candidates = (VkSurfaceFormatKHR*)ri.Malloc( format_count * sizeof(VkSurfaceFormatKHR) );
+
+	VK_CHECK( qvkGetPhysicalDeviceSurfaceFormatsKHR( device, surface, &format_count, candidates ) );
+
+	if (format_count == 1 && candidates[0].format == VK_FORMAT_UNDEFINED) {
+		// special case that means we can choose any format
+		vk.surface_format.format = VK_FORMAT_R8G8B8A8_UNORM;
+		vk.surface_format.colorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+	}
+	else {
+		uint32_t i;
+		vk.surface_format = candidates[0];
+		for ( i = 1; i < format_count; i++ ) {
+			if ( candidates[i].format == VK_FORMAT_B8G8R8A8_UNORM && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
+				vk.surface_format = candidates[i];
+				break;
+			}
+			//if ( candidates[i].format == VK_FORMAT_B8G8R8A8_SRGB && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
+			//	vk.surface_format = candidates[i];
+			//	break;
+			//}
+		}
+	}
+
+	ri.Free( candidates );
+}
+
+
+static void setup_surface_formats( void )
 {
 	vk.depth_format = get_depth_format( vk.physical_device );
 
@@ -1099,41 +1137,9 @@ static void vk_create_device( void ) {
 	}
 
 	// select surface format
-	{
-		VkSurfaceFormatKHR *candidates;
-		uint32_t format_count;
+	vk_select_surface_format( vk.physical_device, vk.surface );
 
-		VK_CHECK( qvkGetPhysicalDeviceSurfaceFormatsKHR( vk.physical_device, vk.surface, &format_count, NULL ) );
-		if ( format_count == 0 )
-			ri.Error( ERR_FATAL, "%s: no surface formats found", __func__ );
-
-		candidates = (VkSurfaceFormatKHR*) ri.Malloc( format_count * sizeof(VkSurfaceFormatKHR) );
-
-		VK_CHECK( qvkGetPhysicalDeviceSurfaceFormatsKHR( vk.physical_device, vk.surface, &format_count, candidates ) );
-		
-		if ( format_count == 1 && candidates[0].format == VK_FORMAT_UNDEFINED ) {
-			// special case that means we can choose any format
-			vk.surface_format.format = VK_FORMAT_R8G8B8A8_UNORM;
-			vk.surface_format.colorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-		} else {
-			uint32_t i;
-			vk.surface_format = candidates[0];
-			for ( i = 1; i < format_count; i++ ) {
-				if ( candidates[i].format == VK_FORMAT_B8G8R8A8_UNORM && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
-					vk.surface_format = candidates[i];
-					break;
-				}
-				//if ( candidates[i].format == VK_FORMAT_B8G8R8A8_SRGB && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
-				//	vk.surface_format = candidates[i];
-				//	break;
-				//}
-			}
-		}
-
-		ri.Free( candidates );
-	}
-
-	get_surface_formats();
+	setup_surface_formats();
 
 	// select queue family
 	{
@@ -2996,6 +3002,55 @@ static void vk_create_framebuffers( void )
 }
 
 
+static void vk_create_sync_primitives( void ) {
+	VkSemaphoreCreateInfo desc;
+	VkFenceCreateInfo fence_desc;
+	uint32_t i;
+
+	desc.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	desc.pNext = NULL;
+	desc.flags = 0;
+
+	// swapchain image acquired
+	VK_CHECK( qvkCreateSemaphore( vk.device, &desc, NULL, &vk.image_acquired ) );
+
+	SET_OBJECT_NAME( vk.image_acquired, "image_acquired semaphore", VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT );
+
+	// all commands submitted
+	for ( i = 0; i < NUM_COMMAND_BUFFERS; i++ )
+	{
+		desc.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		desc.pNext = NULL;
+		desc.flags = 0;
+
+		VK_CHECK( qvkCreateSemaphore( vk.device, &desc, NULL, &vk.tess[i].rendering_finished ) );
+
+		fence_desc.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fence_desc.pNext = NULL;
+		fence_desc.flags = VK_FENCE_CREATE_SIGNALED_BIT; // so it can be used to start rendering
+
+		VK_CHECK( qvkCreateFence( vk.device, &fence_desc, NULL, &vk.tess[i].rendering_finished_fence ) );
+		vk.tess[i].waitForFence = qtrue;
+
+		SET_OBJECT_NAME( vk.tess[i].rendering_finished, va( "rendering_finished semaphore %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT );
+		SET_OBJECT_NAME( vk.tess[i].rendering_finished_fence, va( "rendering_finished fence %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_FENCE_EXT );
+	}
+}
+
+
+static void vk_destroy_sync_primitives( void  ) {
+	uint32_t i;
+
+	qvkDestroySemaphore( vk.device, vk.image_acquired, NULL );
+
+	for ( i = 0; i < NUM_COMMAND_BUFFERS; i++ ) {
+		qvkDestroySemaphore( vk.device, vk.tess[i].rendering_finished, NULL );
+		qvkDestroyFence( vk.device, vk.tess[i].rendering_finished_fence, NULL );
+		vk.tess[i].waitForFence = qfalse;
+	}
+}
+
+
 static void vk_destroy_framebuffers( void ) {
 	uint32_t n;
 
@@ -3051,6 +3106,8 @@ void vk_restart_swapchain( const char *funcname )
 	vk_wait_idle();
 	vk_destroy_framebuffers();
 	vk_destroy_swapchain();
+	vk_destroy_sync_primitives();
+	vk_create_sync_primitives();
 	vk_create_swapchain( vk.physical_device, vk.device, vk.surface, vk.surface_format, &vk.swapchain );
 	vk_create_framebuffers();
 }
@@ -3269,39 +3326,7 @@ void vk_initialize( void )
 	//
 	// Sync primitives.
 	//
-	{
-		VkSemaphoreCreateInfo desc;
-		VkFenceCreateInfo fence_desc;
-
-		desc.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-		desc.pNext = NULL;
-		desc.flags = 0;
-
-		// swapchain image acquired
-		VK_CHECK(qvkCreateSemaphore(vk.device, &desc, NULL, &vk.image_acquired));
-
-		SET_OBJECT_NAME( vk.image_acquired, "image_acquired semaphore", VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT );
-
-		// all commands submitted
-		for ( i = 0; i < NUM_COMMAND_BUFFERS; i++ )
-		{
-			desc.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-			desc.pNext = NULL;
-			desc.flags = 0;
-
-			VK_CHECK( qvkCreateSemaphore( vk.device, &desc, NULL, &vk.tess[i].rendering_finished ) );
-
-			fence_desc.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-			fence_desc.pNext = NULL;
-			fence_desc.flags = VK_FENCE_CREATE_SIGNALED_BIT; // so it can be used to start rendering
-
-			VK_CHECK( qvkCreateFence( vk.device, &fence_desc, NULL, &vk.tess[i].rendering_finished_fence ) );
-			vk.tess[i].waitForFence = qtrue;
-
-			SET_OBJECT_NAME( vk.tess[i].rendering_finished, va( "rendering_finished semaphore %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT );
-			SET_OBJECT_NAME( vk.tess[i].rendering_finished_fence, va( "rendering_finished fence %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_FENCE_EXT );
-		}
-	}
+	vk_create_sync_primitives();
 
 	//
 	// Command pool.
@@ -3623,12 +3648,7 @@ void vk_shutdown( void )
 	qvkDestroyBuffer( vk.device, vk.storage.buffer, NULL );
 	qvkFreeMemory( vk.device, vk.storage.memory, NULL );
 
-	qvkDestroySemaphore( vk.device, vk.image_acquired, NULL );
-
-	for ( i = 0; i < NUM_COMMAND_BUFFERS; i++ ) {
-		qvkDestroySemaphore( vk.device, vk.tess[i].rendering_finished, NULL );
-		qvkDestroyFence( vk.device, vk.tess[i].rendering_finished_fence, NULL );
-	}
+	vk_destroy_sync_primitives();
 	
 	qvkDestroyShaderModule(vk.device, vk.modules.st_vs[0], NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.st_vs[1], NULL);
