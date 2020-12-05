@@ -755,11 +755,12 @@ static uint32_t alloc_sx( uint32_t pref );
 #define FORCED 0x20 // load function must return specified register
 #define TEMP   0x40 // hint: temporary allocation, will not be pushed on stack
 #define CONST  0x80 // hint: register value will be not modified
+#define XMASK  0x100 // exclude masked registers
 
 #define RMASK  0x1F
 
 // general-purpose register list available for dynamic allocation
-static const uint32_t rx_list[] = {
+static const uint32_t rx_list_alloc[] = {
 	R0, R1, R2, R3, // R0-R3 are required minimum
 	R4, R5, R6, R7,
 	R8, R9, R10, R11,
@@ -767,13 +768,33 @@ static const uint32_t rx_list[] = {
 	R16, R17
 };
 
+#ifdef CONST_CACHE_RX
+static const uint32_t rx_list_cache[] = {
+	//R0, R1,
+	R2, R3,
+	R4, R5, R6, R7,
+	R8, R9, R10, R11,
+	R12, R13, R14, R15,
+	R16, R17,
+};
+#endif
+
 // FPU scalar register list available for dynamic allocation
-static const uint32_t sx_list[] = {
+static const uint32_t sx_list_alloc[] = {
 	S0, S1, 2, 3, 4, 5, 6, 7, // S0 and S1 are required minimum
 	// S8..S15 must be preserved
 	16, 17, 18, 19, 20, 21, 22, 23,
 	24, 25, 26, 27, 28, 29, 30, 31
 };
+
+#ifdef CONST_CACHE_SX
+static const uint32_t sx_list_cache[] = {
+	S0, S1, 2, 3, 4, 5, 6, 7,
+	// S8..S15 must be preserved
+	16, 17, 18, 19, 20, 21, 22, 23,
+	24, 25, 26, 27, 28, 29, 30, 31
+};
+#endif
 
 // types of items on the stack
 typedef enum {
@@ -1086,9 +1107,9 @@ static qboolean find_rx_const( uint32_t imm )
 	uint32_t mask = rx_mask | build_mask( TYPE_RX );
 	int i;
 
-	for ( i = ARRAY_LEN( rx_list )-1; i >= 0; i-- ) {
+	for ( i = 0; i < ARRAY_LEN( rx_list_cache ); i++ ) {
 		reg_t *r;
-		uint32_t n = rx_list[ i ];
+		uint32_t n = rx_list_cache[ i ];
 		if ( mask & ( 1 << n ) ) {
 			// target register must be unmasked
 			continue;
@@ -1118,18 +1139,29 @@ static uint32_t alloc_rx_const( uint32_t pref, uint32_t imm )
 #ifdef CONST_CACHE_RX
 	if ( (pref & FORCED) == 0 ) {
 		// support only dynamic allocation mode
-		uint32_t mask = rx_mask | build_mask( TYPE_RX );
+		const uint32_t mask = rx_mask | build_mask( TYPE_RX );
 		int min_ref = MAX_QINT;
 		int min_ip = MAX_QINT;
 		int min_ref_idx = -1;
 		int first_free = -1;
 		int i, n;
 
-		// search in descending order
-		for ( i = ARRAY_LEN( rx_list )-1; i >= 0; i-- ) {
-			n = rx_list[ i ];
+		if ( ( pref & XMASK ) == 0 ) {
+			// we can select from already masked registers
+			for ( n = 0; n < 32; n++ ) {
+				r = &rx_regs[ n ];
+				if ( r->type == RTYPE_CONST && r->value == imm ) {
+					unmask_rx( n );
+					mask_rx( n );
+					return n;
+				}
+			}
+		}
+
+		for ( i = 0; i < ARRAY_LEN( rx_list_cache ); i++ ) {
+			n = rx_list_cache[ i ];
 			if ( mask & ( 1 << n ) ) {
-				// target register must be unmasked
+				// target register must be unmasked and not present on opstack
 				continue;
 			}
 			r = &rx_regs[ n ];
@@ -1211,16 +1243,27 @@ static uint32_t alloc_sx_const( uint32_t pref, uint32_t imm )
 #ifdef CONST_CACHE_SX
 	if ( (pref & FORCED) == 0 ) {
 		// support only dynamic allocation mode
-		uint32_t mask = sx_mask | build_mask( TYPE_SX );
+		const uint32_t mask = sx_mask | build_mask( TYPE_SX );
 		int min_ref = MAX_QINT;
 		int min_ip = MAX_QINT;
 		int min_ref_idx = -1;
 		int first_free = -1;
 		int i, n;
 
-		// search in descending order
-		for ( i = ARRAY_LEN( sx_list )-1; i >= 0; i-- ) {
-			n = sx_list[ i ];
+		if ( ( pref & XMASK ) == 0 ) {
+			// we can select from already masked registers
+			for ( n = 0; n < 32; n++ ) {
+				r = &sx_regs[ n ];
+				if ( r->type == RTYPE_CONST && r->value == imm ) {
+					unmask_sx( n );
+					mask_sx( n );
+					return n;
+				}
+			}
+		}
+
+		for ( i = 0; i < ARRAY_LEN( sx_list_cache ); i++ ) {
+			n = sx_list_cache[ i ];
 			if ( mask & ( 1 << n ) ) {
 				// target register must be unmasked
 				continue;
@@ -1304,12 +1347,12 @@ static uint32_t alloc_rx( uint32_t pref )
 
 #ifdef DYN_ALLOC_RX
 	if ( (pref & FORCED) == 0 ) {
-		uint32_t mask = rx_mask | build_mask( TYPE_RX );
+		const uint32_t mask = rx_mask | build_mask( TYPE_RX );
 
 #ifdef CONST_CACHE_RX
-		// fist pass: try to avoid cached registers
-		for ( i = 0; i < ARRAY_LEN( rx_list ); i++ ) {
-			n = rx_list[ i ];
+		// first pass: try to avoid cached registers
+		for ( i = 0; i < ARRAY_LEN( rx_list_alloc ); i++ ) {
+			n = rx_list_alloc[ i ];
 			if  ( mask & (1 << n) ) {
 				continue;
 			}
@@ -1321,9 +1364,9 @@ static uint32_t alloc_rx( uint32_t pref )
 			return n;
 		}
 #endif
-		// pickup first free register from rx_list
-		for ( i = 0; i < ARRAY_LEN( rx_list ); i++ ) {
-			n = rx_list[ i ];
+		// pickup first free register from rx_list_alloc
+		for ( i = 0; i < ARRAY_LEN( rx_list_alloc ); i++ ) {
+			n = rx_list_alloc[ i ];
 			if  ( mask & (1 << n) ) {
 				continue;
 			}
@@ -1379,12 +1422,12 @@ static uint32_t alloc_sx( uint32_t pref )
 
 #ifdef DYN_ALLOC_SX
 	if ( (pref & FORCED) == 0 ) {
-		uint32_t mask = sx_mask | build_mask( TYPE_SX );
+		const uint32_t mask = sx_mask | build_mask( TYPE_SX );
 
 #ifdef CONST_CACHE_SX
-		// fist pass: try to avoid cached registers
-		for ( i = 0; i < ARRAY_LEN( sx_list ); i++ ) {
-			n = sx_list[ i ];
+		// first pass: try to avoid cached registers
+		for ( i = 0; i < ARRAY_LEN( sx_list_alloc ); i++ ) {
+			n = sx_list_alloc[ i ];
 			if  ( mask & (1 << n) ) {
 				continue;
 			}
@@ -1396,9 +1439,9 @@ static uint32_t alloc_sx( uint32_t pref )
 			return n;
 		}
 #endif
-		// pickup first free register from sx_list
-		for ( i = 0; i < ARRAY_LEN( sx_list ); i++ ) {
-			n = sx_list[ i ];
+		// pickup first free register from sx_list_alloc
+		for ( i = 0; i < ARRAY_LEN( sx_list_alloc ); i++ ) {
+			n = sx_list_alloc[ i ];
 			if  ( mask & (1 << n) ) {
 				continue;
 			}
@@ -1637,6 +1680,10 @@ static uint32_t load_rx_opstack( vm_t *vm, uint32_t pref )
 		return reg;
 	}
 
+	if ( ( pref & CONST ) == 0 ) {
+		pref |= XMASK;
+	}
+
 	if ( it->type == TYPE_CONST ) {
 		// move constant to general-purpose register
 		reg = alloc_rx_const( pref, it->value );
@@ -1726,6 +1773,10 @@ static uint32_t load_sx_opstack( vm_t *vm, uint32_t pref )
 
 		it->type = TYPE_RAW;
 		return reg;
+	}
+
+	if ( ( pref & CONST ) == 0 ) {
+		pref |= XMASK;
 	}
 
 	if ( it->type == TYPE_CONST ) {
@@ -2101,7 +2152,6 @@ static void dump_code( uint32_t *code, uint32_t code_len )
 		char buf[32];
 		uint32_t i;
 		int len;
-
 		for ( i = 0; i < code_len; i++ )
 		{
 			len = sprintf( buf, "%02x %02x %02x %02x\n", (code[i]>>0)&0xFF, (code[i]>>8)&0xFF, (code[i]>>16)&0xFF, (code[i]>>24)&0xFF );
