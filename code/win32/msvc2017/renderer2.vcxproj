@@ -83,26 +83,32 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>.\output\</OutDir>
     <IntDir>.\build\$(ProjectName)_$(Configuration)_$(PlatformTarget)\</IntDir>
+    <TargetName>renderer</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>.\output\</OutDir>
     <IntDir>.\build\$(ProjectName)_$(Configuration)_$(PlatformTarget)\</IntDir>
+    <TargetName>renderer</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <OutDir>.\output\</OutDir>
     <IntDir>.\build\$(ProjectName)_$(Configuration)_$(PlatformTarget)\</IntDir>
+    <TargetName>renderer</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>.\output\</OutDir>
     <IntDir>.\build\$(ProjectName)_$(Configuration)_$(PlatformTarget)\</IntDir>
+    <TargetName>renderer</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>.\output\</OutDir>
     <IntDir>.\build\$(ProjectName)_$(Configuration)_$(PlatformTarget)\</IntDir>
+    <TargetName>renderer</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <OutDir>.\output\</OutDir>
     <IntDir>.\build\$(ProjectName)_$(Configuration)_$(PlatformTarget)\</IntDir>
+    <TargetName>renderer</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PreBuildEvent>
@@ -153,7 +159,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -208,7 +214,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
@@ -261,7 +267,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -318,7 +324,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -378,7 +384,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
@@ -435,7 +441,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
