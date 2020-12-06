@@ -3381,6 +3381,15 @@ static void Sys_GetProcessorId( char *vendor )
 
 #else // non-x86
 
+#ifdef _WIN32
+
+static void Sys_GetProcessorId( char *vendor )
+{
+	Com_sprintf( vendor, 100, "%s", ARCH_STRING );
+}
+
+#else
+
 #if arm32 || arm64
 #include <sys/auxv.h>
 #include <asm/hwcap.h>
@@ -3434,6 +3443,8 @@ static void Sys_GetProcessorId( char *vendor )
 #endif
 }
 
+#endif // !_WIN32
+
 #endif // non-x86
 
 /*
@@ -3466,7 +3477,9 @@ void Sys_SnapVector( float *vector )
 	_mm_store_ss( &vector[1], vf1 );
 	_mm_store_ss( &vector[2], vf2 );
 }
-#else // id386
+#endif // idx64
+
+#if id386
 void Sys_SnapVector( float *vector )
 {
 	static const DWORD cw037F = 0x037F;
@@ -3495,6 +3508,15 @@ __asm {
 	}; // __asm
 }
 #endif // id386
+
+#if arm64
+void Sys_SnapVector( vec3_t vec )
+{
+	vec[0] = rint( vec[0] );
+	vec[1] = rint( vec[1] );
+	vec[2] = rint( vec[2] );
+}
+#endif
 
 #else // clang/gcc/mingw
 

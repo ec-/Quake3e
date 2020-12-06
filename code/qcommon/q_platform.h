@@ -83,6 +83,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 #endif
 
+#if defined( _M_ARM64 )
+#define ARCH_STRING "arm64"
+#define Q3_LITTLE_ENDIAN
+#undef arm64
+#define arm64 1
+#ifndef __WORDSIZE
+#define __WORDSIZE 64
+#endif
+#endif
+
 #else // !defined _WIN32
 
 // common unix platforms parameters
