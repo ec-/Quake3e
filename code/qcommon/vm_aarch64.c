@@ -228,6 +228,7 @@ static int VM_SearchLiteral( const uint32_t value )
 		Com_Error( ERR_DROP, "%s: " reason, __func__, __VA_ARGS__ ); \
 	} while(0)
 #else
+#define DROP( reason, args... ) \
 	do { \
 		VM_FreeBuffers(); \
 		Com_Error( ERR_DROP, "%s: " reason, __func__, ##args ); \
