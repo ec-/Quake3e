@@ -19,16 +19,16 @@ ifeq ($(COMPILE_PLATFORM),mingw32)
 endif
 
 BUILD_CLIENT     = 1
-BUILD_SERVER     = 1
+BUILD_SERVER     = 1 # dedicated server binary
 
-USE_SDL          = 0
+USE_SDL          = 1 # use SDL2 for window/input/sound management
 USE_CURL         = 1
 USE_LOCAL_HEADERS= 0
 USE_VULKAN       = 0
 USE_SYSTEM_JPEG  = 0
-USE_VULKAN_API   = 1
+USE_VULKAN_API   = 1 # set to 0 if you wan to build with old SDL2 without Vulkan support
 
-USE_RENDERER_DLOPEN = 1
+USE_RENDERER_DLOPEN = 1 # build both OpenGL and Vulkan renderers as dynamic libraries
 
 CNAME            = quake3e
 DNAME            = quake3e.ded
@@ -179,6 +179,8 @@ bin_path=$(shell which $(1) 2> /dev/null)
 
 STRIP ?= strip
 PKG_CONFIG ?= pkg-config
+INSTALL=install
+MKDIR=mkdir
 
 ifneq ($(call bin_path, $(PKG_CONFIG)),)
   SDL_INCLUDE ?= $(shell $(PKG_CONFIG) --silence-errors --cflags-only-I sdl2)
@@ -266,9 +268,6 @@ ifeq ($(GENERATE_DEPENDENCIES),1)
   BASE_CFLAGS += -MMD
 endif
 
-## Defaults
-INSTALL=install
-MKDIR=mkdir
 
 ARCHEXT=
 
