@@ -19,16 +19,16 @@ ifeq ($(COMPILE_PLATFORM),mingw32)
 endif
 
 BUILD_CLIENT     = 1
-BUILD_SERVER     = 1 # dedicated server binary
+BUILD_SERVER     = 1
 
-USE_SDL          = 1 # use SDL2 for window/input/sound management
+USE_SDL          = 1
 USE_CURL         = 1
 USE_LOCAL_HEADERS= 0
 USE_VULKAN       = 0
 USE_SYSTEM_JPEG  = 0
-USE_VULKAN_API   = 1 # set to 0 if you wan to build with old SDL2 without Vulkan support
+USE_VULKAN_API   = 1
 
-USE_RENDERER_DLOPEN = 1 # build both OpenGL and Vulkan renderers as dynamic libraries
+USE_RENDERER_DLOPEN = 1
 
 CNAME            = quake3e
 DNAME            = quake3e.ded

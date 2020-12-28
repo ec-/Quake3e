@@ -674,7 +674,7 @@ static const char *GetExceptionName( DWORD code )
 		default: break;
 	}
 
-	sprintf( buf, "0x%08X", code );
+	sprintf( buf, "0x%08X", (unsigned int)code );
 	return buf;
 }
 
