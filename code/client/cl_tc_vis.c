@@ -55,16 +55,17 @@ static cvar_t *clips_draw;
 
 static qhandle_t trigger_shader;
 static qhandle_t clip_shader;
+static qhandle_t slick_shader;
 
-static vec4_t trigger_color = { 128, 128, 0, 255 };
+static vec4_t trigger_color = { 0, 128, 0, 255 };
 static vec4_t clip_color = { 128, 0, 0, 255 };
 
 void tc_vis_init(void) {
 	free_vis_brushes(head);
 	head = NULL;
 
-	triggers_draw = Cvar_Get("hud_triggers_draw", "0", CVAR_ARCHIVE);
-	clips_draw = Cvar_Get("hud_clips_draw", "0", CVAR_ARCHIVE);
+	triggers_draw = Cvar_Get("r_renderTriggerBrushes", "0", CVAR_ARCHIVE);
+	clips_draw = Cvar_Get("r_renderClipBrushes", "0", CVAR_ARCHIVE);
 
 	trigger_shader = re.RegisterShader("tcRenderShader");
 	clip_shader = re.RegisterShader("tcRenderShader");
