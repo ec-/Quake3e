@@ -141,7 +141,7 @@ static qboolean CL_GetSnapshot( int snapshotNumber, snapshot_t *snapshot ) {
 	}
 	snapshot->numEntities = count;
 	for ( i = 0 ; i < count ; i++ ) {
-		snapshot->entities[i] = 
+		snapshot->entities[i] =
 			cl.parseEntities[ ( clSnap->parseEntitiesNum + i ) & (MAX_PARSE_ENTITIES-1) ];
 	}
 
@@ -203,7 +203,7 @@ static void CL_ConfigstringModified( void ) {
 
 	// leave the first 0 for uninitialized strings
 	cl.gameState.dataCount = 1;
-		
+
 	for ( i = 0 ; i < MAX_CONFIGSTRINGS ; i++ ) {
 		if ( i == index ) {
 			dup = s;
@@ -368,6 +368,7 @@ static void CL_CM_LoadMap( const char *mapname ) {
 	int		checksum;
 
 	CM_LoadMap( mapname, qtrue, &checksum );
+	tc_vis_init();
 }
 
 
@@ -385,7 +386,7 @@ void CL_ShutdownCGame( void ) {
 	if ( !cgvm ) {
 		return;
 	}
-	
+
 	re.VertexLighting( qfalse );
 
 	VM_Call( cgvm, 0, CG_SHUTDOWN );
@@ -468,7 +469,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 	case CG_MILLISECONDS:
 		return Sys_Milliseconds();
 	case CG_CVAR_REGISTER:
-		Cvar_Register( VMA(1), VMA(2), VMA(3), args[4] ); 
+		Cvar_Register( VMA(1), VMA(2), VMA(3), args[4] );
 		return 0;
 	case CG_CVAR_UPDATE:
 		Cvar_Update( VMA(1) );
@@ -587,7 +588,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return 0;
 	case CG_R_LOADWORLDMAP:
 		re.LoadWorld( VMA(1) );
-		return 0; 
+		return 0;
 	case CG_R_REGISTERMODEL:
 		return re.RegisterModel( VMA(1) );
 	case CG_R_REGISTERSKIN:
@@ -620,6 +621,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		re.AddAdditiveLightToScene( VMA(1), VMF(2), VMF(3), VMF(4), VMF(5) );
 		return 0;
 	case CG_R_RENDERSCENE:
+	    tc_vis_render();
 		re.RenderScene( VMA(1) );
 		return 0;
 	case CG_R_SETCOLOR:
@@ -1018,7 +1020,7 @@ static void CL_FirstSnapshot( void ) {
 		Cbuf_AddText( "\n" );
 		Cvar_Set( "activeAction", "" );
 	}
-	
+
 	Sys_BeginProfiling();
 }
 
@@ -1138,7 +1140,7 @@ void CL_SetCGameTime( void ) {
 		cl.serverTimeDelta -= cls.frametime;
 	} else {
 		// cl_timeNudge is a user adjustable cvar that allows more
-		// or less latency to be added in the interest of better 
+		// or less latency to be added in the interest of better
 		// smoothness or better responsiveness.
 		cl.serverTime = cls.realtime + cl.serverTimeDelta - CL_TimeNudge();
 
