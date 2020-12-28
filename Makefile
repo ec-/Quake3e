@@ -30,8 +30,8 @@ USE_VULKAN_API   = 1
 
 USE_RENDERER_DLOPEN = 1
 
-CNAME            = quake3e
-DNAME            = quake3e.ded
+CNAME            = odfe
+DNAME            = odfe.ded
 
 RENDERER_PREFIX  = $(CNAME)
 
