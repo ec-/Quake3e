@@ -102,7 +102,7 @@ void tc_vis_render(void) {
 
 // ripped from breadsticks
 static void add_triggers(void) {
-	char *entities = cm.entityString;
+	const char *entities = cm.entityString;
 	for (;; ) {
 		qboolean is_trigger = qfalse;
 		int model = -1;
