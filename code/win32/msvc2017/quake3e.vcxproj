@@ -293,6 +293,7 @@
     <ClCompile Include="..\..\client\cl_net_chan.c" />
     <ClCompile Include="..\..\client\cl_parse.c" />
     <ClCompile Include="..\..\client\cl_scrn.c" />
+    <ClCompile Include="..\..\client\cl_tc_vis.c" />
     <ClCompile Include="..\..\client\cl_ui.c" />
     <ClCompile Include="..\..\client\snd_adpcm.c" />
     <ClCompile Include="..\..\client\snd_codec.c" />
