@@ -58,7 +58,6 @@ static cvar_t * clip_shader_setting;
 
 static qhandle_t trigger_shader;
 static qhandle_t clip_shader;
-static qhandle_t slick_shader;
 
 static vec4_t trigger_color = { 0, 128, 0, 255 };
 static vec4_t clip_color = { 128, 0, 0, 255 };
