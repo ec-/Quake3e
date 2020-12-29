@@ -53,6 +53,9 @@ static float w_ref_vec_len;
 static cvar_t *triggers_draw;
 static cvar_t *clips_draw;
 
+static cvar_t * trigger_shader_setting;
+static cvar_t * clip_shader_setting;
+
 static qhandle_t trigger_shader;
 static qhandle_t clip_shader;
 static qhandle_t slick_shader;
@@ -67,8 +70,11 @@ void tc_vis_init(void) {
 	triggers_draw = Cvar_Get("r_renderTriggerBrushes", "0", CVAR_ARCHIVE);
 	clips_draw = Cvar_Get("r_renderClipBrushes", "0", CVAR_ARCHIVE);
 
-	trigger_shader = re.RegisterShader("tcRenderShader");
-	clip_shader = re.RegisterShader("tcRenderShader");
+	trigger_shader_setting = Cvar_Get("r_renderTriggerBrushesShader", "tcRenderShader", CVAR_ARCHIVE);
+	clip_shader_setting = Cvar_Get("r_renderClipBrushesShader", "tcRenderShader", CVAR_ARCHIVE);
+
+	trigger_shader = re.RegisterShader(trigger_shader_setting->string);
+	clip_shader = re.RegisterShader(clip_shader_setting->string);
 
 	add_triggers();
 	add_clips();
