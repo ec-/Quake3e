@@ -317,7 +317,7 @@ ifdef MINGW
   endif
 
   # using generic windres if specific one is not present
-  ifndef WINDRES
+  ifeq ($(WINDRES),)
     WINDRES=windres
   endif
 
