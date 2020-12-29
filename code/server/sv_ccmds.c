@@ -202,10 +202,14 @@ static void SV_Map_f( void ) {
 			killBots = qfalse;
 		}
 
-		if ( !Q_stricmp( cmd, "vq3" ) ) {
-		    Cvar_Set( "df_promode", "0" );
-		} else if ( !Q_stricmp( cmd, "cpm" ) ) {
-            Cvar_Set( "df_promode", "1" );
+		if ( ( !Q_stricmp( cmd, "devcpm" )) || ( !Q_stricmp( cmd, "devvq3" )) ) {
+			cheat = qtrue;
+		}
+		if ( ( !Q_stricmp( cmd, "cpm" )) || ( !Q_stricmp( cmd, "devcpm" )) ) {
+			Cvar_Set( "df_promode", "1" );
+		}
+		else if ( ( !Q_stricmp( cmd, "vq3" )) || ( !Q_stricmp( cmd, "devvq3" )) ) {
+			Cvar_Set( "df_promode", "0" );
 		}
 
 		if( sv_gametype->integer == GT_SINGLE_PLAYER ) {
