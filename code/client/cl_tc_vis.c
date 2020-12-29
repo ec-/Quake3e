@@ -12,7 +12,7 @@
 // if you dare to exceed this...
 #define MAX_FACE_VERTS 64
 
-typedef enum {TRIGGER_BRUSH, CLIP_BRUSH} visBrushType_t;
+typedef enum {TRIGGER_BRUSH, CLIP_BRUSH, SLICK_BRUSH} visBrushType_t;
 
 typedef struct {
 	int numVerts;
@@ -35,6 +35,7 @@ typedef struct visBrushNode_s {
 
 static void add_triggers(void);
 static void add_clips(void);
+static void add_slicks(void);
 static void gen_visible_brush(int brushnum, vec3_t origin, visBrushType_t type, vec4_t color, qhandle_t shader);
 static qboolean intersect_planes(cplane_t *p1, cplane_t *p2, cplane_t *p3, vec3_t p);
 static qboolean point_in_brush(vec3_t point, cbrush_t *brush);
@@ -52,15 +53,19 @@ static float w_ref_vec_len;
 
 static cvar_t *triggers_draw;
 static cvar_t *clips_draw;
+static cvar_t *slicks_draw;
 
 static cvar_t * trigger_shader_setting;
 static cvar_t * clip_shader_setting;
+static cvar_t * slick_shader_setting;
 
 static qhandle_t trigger_shader;
 static qhandle_t clip_shader;
+static qhandle_t slick_shader;
 
 static vec4_t trigger_color = { 0, 128, 0, 255 };
 static vec4_t clip_color = { 128, 0, 0, 255 };
+static vec4_t slick_color = { 0, 64, 128, 255 };
 
 void tc_vis_init(void) {
 	free_vis_brushes(head);
@@ -68,21 +73,25 @@ void tc_vis_init(void) {
 
 	triggers_draw = Cvar_Get("r_renderTriggerBrushes", "0", CVAR_ARCHIVE);
 	clips_draw = Cvar_Get("r_renderClipBrushes", "0", CVAR_ARCHIVE);
+	slicks_draw = Cvar_Get("r_renderSlickSurfaces", "0", CVAR_ARCHIVE);
 
 	trigger_shader_setting = Cvar_Get("r_renderTriggerBrushesShader", "tcRenderShader", CVAR_ARCHIVE);
 	clip_shader_setting = Cvar_Get("r_renderClipBrushesShader", "tcRenderShader", CVAR_ARCHIVE);
+	slick_shader_setting = Cvar_Get("r_renderSlickSurfacesShader", "tcRenderShader", CVAR_ARCHIVE);
 
 	trigger_shader = re.RegisterShader(trigger_shader_setting->string);
 	clip_shader = re.RegisterShader(clip_shader_setting->string);
+	slick_shader = re.RegisterShader(slick_shader_setting->string);
 
 	add_triggers();
 	add_clips();
+	add_slicks();
 }
 
 void tc_vis_render(void) {
 	visBrushNode_t *brush = head;
 	while ( brush ) {
-		if ( ( brush->type == TRIGGER_BRUSH && triggers_draw->integer ) || ( brush->type == CLIP_BRUSH && clips_draw->integer) )
+		if ( ( brush->type == TRIGGER_BRUSH && triggers_draw->integer ) || ( brush->type == CLIP_BRUSH && clips_draw->integer ) || ( brush->type == SLICK_BRUSH && slicks_draw->integer ) )
 		{
 			for (int i = 0; i < brush->numFaces; i++)
 				re.AddPolyToScene(brush->shader, brush->faces[i].numVerts, brush->faces[i].verts, 1);
@@ -146,6 +155,19 @@ static void add_clips(void) {
 			gen_visible_brush(i, vec3_origin, CLIP_BRUSH, clip_color, clip_shader);
 		}
 	}
+}
+
+static void add_slicks(void) {
+    for (int i = 0; i < cm.numBrushes; i++) {
+        cbrush_t *brush = &cm.brushes[i];
+        for (int s = 0; s < brush->numsides; s++) {
+            cbrushside_t* side = &brush->sides[s];
+            if (side->surfaceFlags & SURF_SLICK) {
+                gen_visible_brush(i, vec3_origin, SLICK_BRUSH, slick_color, slick_shader);
+                break;
+            }
+        }
+    }
 }
 
 static void gen_visible_brush(int brushnum, vec3_t origin, visBrushType_t type, vec4_t color, qhandle_t shader) {
