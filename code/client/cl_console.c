@@ -566,7 +566,7 @@ void CL_ConsolePrint( const char *txt ) {
 		}
 
 		// word wrap
-		if ( l != con.linewidth && ( con.x + l >= con.linewidth ) ) {
+		if ( l != con.linewidth && ( con.x + l >= con.linewidth ) && (l + (con_timestamp->integer ? 10 : 0) <= con.linewidth)) {
 			Con_Linefeed( skipnotify );
 		}
 
