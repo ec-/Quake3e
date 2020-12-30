@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define  DEFAULT_CONSOLE_WIDTH 78
 #define  MAX_CONSOLE_WIDTH 120
 
-#define  NUM_CON_TIMES  4
+#define  NUM_CON_TIMES  64
 
 #define  CON_TEXTSIZE   65536
 
@@ -73,6 +73,10 @@ console_t	con;
 cvar_t		*con_timestamp;
 cvar_t		*con_conspeed;
 cvar_t		*con_notifytime;
+cvar_t		*con_notifylines;
+cvar_t		*con_notifyx;
+cvar_t		*con_notifyy;
+cvar_t		*con_notifykeep;
 
 int         g_console_field_width = DEFAULT_CONSOLE_WIDTH;
 
@@ -92,7 +96,9 @@ void Con_ToggleConsole_f( void ) {
 	Field_Clear( &g_consoleField );
 	g_consoleField.widthInChars = g_console_field_width;
 
-	Con_ClearNotify();
+	if (!con_notifykeep->integer) {
+		Con_ClearNotify();
+	}
 	Key_SetCatcher( Key_GetCatcher() ^ KEYCATCH_CONSOLE );
 }
 
@@ -384,13 +390,20 @@ Con_Init
 void Con_Init( void )
 {
     con_timestamp = Cvar_Get("con_timestamp", "1", CVAR_ARCHIVE);
-	con_notifytime = Cvar_Get( "con_notifytime", "3", 0 );
+	con_notifytime = Cvar_Get( "con_notifyTime", "3", CVAR_ARCHIVE);
+	con_notifylines = Cvar_Get("con_notifyLines", "3", CVAR_ARCHIVE);
+	Cvar_CheckRange(con_notifylines, "0", "64", CV_INTEGER );
+	con_notifyx = Cvar_Get("con_notifyX", "73", CVAR_ARCHIVE);
+	con_notifyy = Cvar_Get("con_notifyY", "0", CVAR_ARCHIVE);
+	con_notifykeep = Cvar_Get("con_notifyKeep", "0", CVAR_ARCHIVE);
 	con_conspeed = Cvar_Get( "con_togglespeed", "3", 0 );
+
 
 	Field_Clear( &g_consoleField );
 	g_consoleField.widthInChars = g_console_field_width;
 
 	Cmd_AddCommand( "clear", Con_Clear_f );
+	Cmd_AddCommand( "clearnotify", Con_ClearNotify );
 	Cmd_AddCommand( "condump", Con_Dump_f );
 	Cmd_SetCommandCompletionFunc( "condump", Cmd_CompleteTxtName );
 	Cmd_AddCommand( "toggleconsole", Con_ToggleConsole_f );
@@ -666,7 +679,7 @@ void Con_DrawNotify( void )
 	re.SetColor( g_color_table[ currentColorIndex ] );
 
 	v = 0;
-	for (i= con.current-NUM_CON_TIMES+1 ; i<=con.current ; i++)
+	for (i = con.current - con_notifylines->integer + 1; i <= con.current; i++)
 	{
 		if (i < 0)
 			continue;
@@ -674,7 +687,7 @@ void Con_DrawNotify( void )
 		if (time == 0)
 			continue;
 		time = cls.realtime - time;
-		if ( time >= con_notifytime->value*1000 )
+		if (con_notifytime->value != -1 && time >= con_notifytime->value*1000 )
 			continue;
 		text = con.text + (i % con.totallines)*con.linewidth;
 
@@ -691,7 +704,7 @@ void Con_DrawNotify( void )
 				currentColorIndex = colorIndex;
 				re.SetColor( g_color_table[ colorIndex ] );
 			}
-			SCR_DrawSmallChar(cl_conXOffset->integer + con.xadjust + (x + 1 - (con_timestamp->integer ? 9 : 0))*smallchar_width, v, text[x] & 0xff);
+			SCR_DrawSmallChar(con_notifyx->integer + con.xadjust + (x + 1 - (con_timestamp->integer ? 9 : 0)) * SMALLCHAR_WIDTH, v + con_notifyy->integer, text[x] & 0xff);
 		}
 
 		v += smallchar_height;
@@ -711,16 +724,16 @@ void Con_DrawNotify( void )
 
 		if (chat_team)
 		{
-			SCR_DrawBigString( SMALLCHAR_WIDTH, v, "say_team:", 1.0f, qfalse );
+			SCR_DrawBigString( SMALLCHAR_WIDTH, v + con_notifyy->integer, "say_team:", 1.0f, qfalse );
 			skip = 10;
 		}
 		else
 		{
-			SCR_DrawBigString( SMALLCHAR_WIDTH, v, "say:", 1.0f, qfalse );
+			SCR_DrawBigString( SMALLCHAR_WIDTH, v + con_notifyy->integer, "say:", 1.0f, qfalse );
 			skip = 5;
 		}
 
-		Field_BigDraw( &chatField, skip * BIGCHAR_WIDTH, v,
+		Field_BigDraw( &chatField, skip * BIGCHAR_WIDTH, v + con_notifyy->integer,
 			SCREEN_WIDTH - ( skip + 1 ) * BIGCHAR_WIDTH, qtrue, qtrue );
 	}
 }

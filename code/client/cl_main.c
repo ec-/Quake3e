@@ -56,7 +56,6 @@ cvar_t	*cl_allowDownload;
 #ifdef USE_CURL
 cvar_t	*cl_mapAutoDownload;
 #endif
-cvar_t	*cl_conXOffset;
 cvar_t	*cl_conColor;
 cvar_t	*cl_inGameVideo;
 
@@ -3831,7 +3830,6 @@ void CL_Init( void ) {
 #endif
 #endif
 
-	cl_conXOffset = Cvar_Get ("cl_conXOffset", "0", 0);
 	cl_conColor = Cvar_Get( "cl_conColor", "", 0 );
 
 #ifdef MACOS_X
