@@ -194,7 +194,7 @@ static void SV_Map_f( void ) {
 		killBots = qtrue;
 	}
 	else {
-		if ( !Q_stricmp( cmd, "devmap" ) ) {
+		if ( !Q_stricmpn( cmd, "dev", 3 ) ) {
 			cheat = qtrue;
 			killBots = qtrue;
 		} else {
@@ -202,13 +202,10 @@ static void SV_Map_f( void ) {
 			killBots = qfalse;
 		}
 
-		if ( ( !Q_stricmp( cmd, "devcpm" )) || ( !Q_stricmp( cmd, "devvq3" )) ) {
-			cheat = qtrue;
-		}
-		if ( ( !Q_stricmp( cmd, "cpm" )) || ( !Q_stricmp( cmd, "devcpm" )) ) {
+		if ( !Q_stricmp( cmd, "cpm" ) || !Q_stricmp( cmd, "devcpm" ) ) {
 			Cvar_Set( "df_promode", "1" );
 		}
-		else if ( ( !Q_stricmp( cmd, "vq3" )) || ( !Q_stricmp( cmd, "devvq3" )) ) {
+		else if ( !Q_stricmp( cmd, "vq3" ) || !Q_stricmp( cmd, "devvq3" ) ) {
 			Cvar_Set( "df_promode", "0" );
 		}
 
