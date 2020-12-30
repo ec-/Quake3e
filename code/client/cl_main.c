@@ -3248,6 +3248,16 @@ static void *CL_RefMalloc( int size ) {
 
 /*
 ============
+CL_RefFreeAll
+============
+*/
+static void CL_RefFreeAll( void ) {
+	Z_FreeTags( TAG_RENDERER );
+}
+
+
+/*
+============
 CL_ScaledMilliseconds
 ============
 */
@@ -3358,6 +3368,7 @@ static void CL_InitRef( void ) {
 	rimp.Milliseconds = CL_ScaledMilliseconds;
 	rimp.Microseconds = Sys_Microseconds;
 	rimp.Malloc = CL_RefMalloc;
+	rimp.FreeAll = CL_RefFreeAll;
 	rimp.Free = Z_Free;
 #ifdef HUNK_DEBUG
 	rimp.Hunk_AllocDebug = Hunk_AllocDebug;
@@ -4689,24 +4700,24 @@ static void CL_Ping_f( void ) {
 	argc = Cmd_Argc();
 
 	if ( argc != 2 && argc != 3 ) {
-		Com_Printf( "usage: ping [-4|-6] server\n");
+		Com_Printf( "usage: ping [-4|-6] <server>\n");
 		return;	
 	}
 	
-	if(argc == 2)
+	if ( argc == 2 )
 		server = Cmd_Argv(1);
 	else
 	{
-		if(!strcmp(Cmd_Argv(1), "-4"))
+		if( !strcmp( Cmd_Argv(1), "-4" ) )
 			family = NA_IP;
 #ifdef USE_IPV6
-		else if(!strcmp(Cmd_Argv(1), "-6"))
+		else if( !strcmp( Cmd_Argv(1), "-6" ) )
 			family = NA_IP6;
 		else
-			Com_Printf( "warning: only -4 or -6 as address type understood.\n");
+			Com_Printf( "warning: only -4 or -6 as address type understood.\n" );
 #else
 		else
-			Com_Printf( "warning: only -4 as address type understood.\n");
+			Com_Printf( "warning: only -4 as address type understood.\n" );
 #endif
 		
 		server = Cmd_Argv(2);
@@ -4854,18 +4865,22 @@ static void CL_ServerStatus_f( void ) {
 		if (cls.state != CA_ACTIVE || clc.demoplaying)
 		{
 			Com_Printf( "Not connected to a server.\n" );
-			Com_Printf( "usage: serverstatus [-4|-6] server\n" );
+#ifdef USE_IPV6
+			Com_Printf( "usage: serverstatus [-4|-6] <server>\n" );
+#else
+			Com_Printf("usage: serverstatus <server>\n");
+#endif
 			return;
 		}
 
 		toptr = &clc.serverAddress;
 	}
 	
-	if(!toptr)
+	if ( !toptr )
 	{
 		Com_Memset( &to, 0, sizeof( to ) );
 	
-		if(argc == 2)
+		if ( argc == 2 )
 			server = Cmd_Argv(1);
 		else
 		{
@@ -4917,7 +4932,7 @@ qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownloa
 	const char *s;
 	qboolean headerCheck;
 
-	if ( !cl_dlURL->string[0] )
+	if ( cl_dlURL->string[0] == '\0' )
 	{
 		Com_Printf( S_COLOR_YELLOW "cl_dlURL cvar is not set\n" );
 		return qfalse;
@@ -4977,7 +4992,7 @@ CL_Download_f
 */
 static void CL_Download_f( void )
 {
-	if ( Cmd_Argc() < 2 || !*Cmd_Argv( 1 ) )
+	if ( Cmd_Argc() < 2 || *Cmd_Argv( 1 ) == '\0' )
 	{
 		Com_Printf( "usage: %s <mapname>\n", Cmd_Argv( 0 ) );
 		return;
@@ -4992,4 +5007,3 @@ static void CL_Download_f( void )
 	CL_Download( Cmd_Argv( 0 ), Cmd_Argv( 1 ), qfalse );
 }
 #endif // USE_CURL
-
