@@ -21,7 +21,7 @@ endif
 BUILD_CLIENT     = 1
 BUILD_SERVER     = 1
 
-USE_SDL          = 0
+USE_SDL          = 1
 USE_CURL         = 1
 USE_LOCAL_HEADERS= 0
 USE_VULKAN       = 0
@@ -179,6 +179,8 @@ bin_path=$(shell which $(1) 2> /dev/null)
 
 STRIP ?= strip
 PKG_CONFIG ?= pkg-config
+INSTALL=install
+MKDIR=mkdir
 
 ifneq ($(call bin_path, $(PKG_CONFIG)),)
   SDL_INCLUDE ?= $(shell $(PKG_CONFIG) --silence-errors --cflags-only-I sdl2)
@@ -266,9 +268,6 @@ ifeq ($(GENERATE_DEPENDENCIES),1)
   BASE_CFLAGS += -MMD
 endif
 
-## Defaults
-INSTALL=install
-MKDIR=mkdir
 
 ARCHEXT=
 
@@ -318,7 +317,7 @@ ifdef MINGW
   endif
 
   # using generic windres if specific one is not present
-  ifndef WINDRES
+  ifeq ($(WINDRES),)
     WINDRES=windres
   endif
 

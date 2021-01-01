@@ -577,7 +577,7 @@ ParseStage
 */
 static qboolean ParseStage( shaderStage_t *stage, const char **text )
 {
-	char *token;
+	const char *token;
 	int depthMaskBits = GLS_DEPTHMASK_TRUE, blendSrcBits = 0, blendDstBits = 0, atestBits = 0, depthFuncBits = 0;
 	qboolean depthMaskExplicit = qfalse;
 
@@ -1001,11 +1001,16 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 
 			if ( !Q_stricmp( token, "environment" ) )
 			{
+				const char *t = *text;
 				stage->bundle[0].tcGen = TCGEN_ENVIRONMENT_MAPPED;
 				token = COM_ParseExt( text, qfalse );
 				if ( Q_stricmp( token, "firstPerson" ) == 0 )
 				{
 					stage->bundle[0].tcGen = TCGEN_ENVIRONMENT_MAPPED_FP;
+				}
+				else
+				{
+					*text = t; // rewind
 				}
 			}
 			else if ( !Q_stricmp( token, "lightmap" ) )

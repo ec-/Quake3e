@@ -1791,6 +1791,8 @@ static void RE_Shutdown( refShutdownCode_t code ) {
 		Com_Memset( &glState, 0, sizeof( glState ) );
 	}
 
+	ri.FreeAll();
+
 	tr.registered = qfalse;
 }
 
