@@ -4837,7 +4837,6 @@ static void FS_CheckIdPaks( void )
 						"**************************************************\n\n\n",
 						pakBasename[3]-'0', path->pack->checksum );
 				}
-				Com_Error(ERR_FATAL, "\n* You need to install correct Quake III Arena files in order to play *");
 			}
 
 			foundPak |= 1<<(pakBasename[3]-'0');
