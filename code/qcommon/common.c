@@ -3710,8 +3710,8 @@ void Com_Init( char *commandLine ) {
 	Cvar_Get( "com_errorMessage", "", CVAR_ROM | CVAR_NORESTART );
 
 #ifndef DEDICATED
-	com_introPlayed = Cvar_Get( "com_introplayed", "0", CVAR_ARCHIVE );
-	com_skipIdLogo  = Cvar_Get( "com_skipIdLogo", "0", CVAR_ARCHIVE );
+	com_introPlayed = Cvar_Get( "com_introplayed", "1", CVAR_ARCHIVE );
+	com_skipIdLogo  = Cvar_Get( "com_skipIdLogo", "1", CVAR_ARCHIVE );
 #endif
 
 	if ( com_dedicated->integer ) {
