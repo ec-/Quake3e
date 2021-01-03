@@ -688,13 +688,19 @@ Restore gamma and hide fullscreen window in case of crash
 */
 static LONG WINAPI ExceptionFilter( struct _EXCEPTION_POINTERS *ExceptionInfo )
 {
-
 #ifndef DEDICATED
-	if ( glw_state.gammaSet )
-		GLW_RestoreGamma();
+	if ( com_dedicated->integer == 0 ) {
+		extern cvar_t *com_cl_running;
+		if ( com_cl_running  && com_cl_running->integer ) {
+			// assume we can restart client module
+		} else {
+			if ( glw_state.gammaSet )
+				GLW_RestoreGamma();
 
-	if ( g_wv.hWnd && glw_state.cdsFullscreen )
-		ShowWindow( g_wv.hWnd, SW_HIDE );
+			if ( g_wv.hWnd && glw_state.cdsFullscreen )
+				ShowWindow( g_wv.hWnd, SW_HIDE );
+		}
+	}
 #endif
 
 	if ( ExceptionInfo->ExceptionRecord->ExceptionCode != EXCEPTION_BREAKPOINT )
@@ -720,7 +726,7 @@ static LONG WINAPI ExceptionFilter( struct _EXCEPTION_POINTERS *ExceptionInfo )
 			GetExceptionName( ExceptionInfo->ExceptionRecord->ExceptionCode ),
 			addr, vma ? " (VMA)" : "" );
 
-		Com_Error( ERR_FATAL, "Unhandled exception caught\n%s", msg );
+		Com_Error( ERR_DROP, "Unhandled exception caught\n%s", msg );
 	}
 
 	return EXCEPTION_EXECUTE_HANDLER;
