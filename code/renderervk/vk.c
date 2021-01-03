@@ -5508,6 +5508,7 @@ void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean i
 static void vk_begin_render_pass( VkRenderPass renderPass, VkFramebuffer frameBuffer, qboolean clearValues, uint32_t width, uint32_t height )
 {
 	VkRenderPassBeginInfo render_pass_begin_info;
+	VkClearValue clear_values[3];
 
 	// Begin render pass.
 
@@ -5521,8 +5522,6 @@ static void vk_begin_render_pass( VkRenderPass renderPass, VkFramebuffer frameBu
 	render_pass_begin_info.renderArea.extent.height = height;
 
 	if ( clearValues ) {
-		VkClearValue clear_values[3];
-
 		/// attachments layout:
 		// [0] - resolve/color/presentation
 		// [1] - depth/stencil
