@@ -390,7 +390,7 @@ Con_Init
 */
 void Con_Init( void )
 {
-    con_timestamp = Cvar_Get( "con_timestamp", "1", CVAR_ARCHIVE );
+	con_timestamp = Cvar_Get( "con_timestamp", "1", CVAR_ARCHIVE );
 	con_notifytime = Cvar_Get( "con_notifyTime", "3", CVAR_ARCHIVE );
 	con_notifylines = Cvar_Get( "con_notifyLines", "3", CVAR_ARCHIVE );
 	Cvar_CheckRange( con_notifylines, "0", "64", CV_INTEGER );
