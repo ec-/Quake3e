@@ -74,6 +74,7 @@ cvar_t		*con_timestamp;
 cvar_t		*con_conspeed;
 cvar_t		*con_notifytime;
 cvar_t		*con_notifylines;
+cvar_t		*con_notifyxy_enable;
 cvar_t		*con_notifyx;
 cvar_t		*con_notifyy;
 cvar_t		*con_notifykeep;
@@ -389,13 +390,14 @@ Con_Init
 */
 void Con_Init( void )
 {
-    con_timestamp = Cvar_Get("con_timestamp", "1", CVAR_ARCHIVE);
-	con_notifytime = Cvar_Get( "con_notifyTime", "3", CVAR_ARCHIVE);
-	con_notifylines = Cvar_Get("con_notifyLines", "3", CVAR_ARCHIVE);
-	Cvar_CheckRange(con_notifylines, "0", "64", CV_INTEGER );
-	con_notifyx = Cvar_Get("con_notifyX", "73", CVAR_ARCHIVE);
-	con_notifyy = Cvar_Get("con_notifyY", "0", CVAR_ARCHIVE);
-	con_notifykeep = Cvar_Get("con_notifyKeep", "0", CVAR_ARCHIVE);
+    con_timestamp = Cvar_Get( "con_timestamp", "1", CVAR_ARCHIVE );
+	con_notifytime = Cvar_Get( "con_notifyTime", "3", CVAR_ARCHIVE );
+	con_notifylines = Cvar_Get( "con_notifyLines", "3", CVAR_ARCHIVE );
+	Cvar_CheckRange( con_notifylines, "0", "64", CV_INTEGER );
+	con_notifyxy_enable = Cvar_Get( "con_notifyXY_enable", "0", CVAR_ARCHIVE_ND );
+	con_notifyx = Cvar_Get( "con_notifyX", "48", CVAR_ARCHIVE );
+	con_notifyy = Cvar_Get( "con_notifyY", "0", CVAR_ARCHIVE );
+	con_notifykeep = Cvar_Get( "con_notifyKeep", "0", CVAR_ARCHIVE );
 	con_conspeed = Cvar_Get( "con_togglespeed", "3", 0 );
 
 
@@ -674,6 +676,17 @@ void Con_DrawNotify( void )
 	int		skip;
 	int		currentColorIndex;
 	int		colorIndex;
+	
+	if ( con_notifyXY_enable->integer ) 
+	{
+	con.notifyx = con_notifyX->value * (float)cls.glconfig.vidWidth / 640.0;
+	con.notifyy = con_notifyY->value * (float)cls.glconfig.vidHeight / 480.0;
+	}
+	else
+	{
+	con.notifyx = 0;
+	con.notifyy = 0;
+	}
 
 	currentColorIndex = ColorIndex( COLOR_WHITE );
 	re.SetColor( g_color_table[ currentColorIndex ] );
