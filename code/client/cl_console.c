@@ -721,7 +721,7 @@ void Con_DrawNotify( void )
 				currentColorIndex = colorIndex;
 				re.SetColor( g_color_table[ colorIndex ] );
 			}
-			SCR_DrawSmallChar(con_notifyx->integer + con.xadjust + (x + 1 - (con_timestamp->integer ? 9 : 0)) * SMALLCHAR_WIDTH, v + con_notifyy->integer, text[x] & 0xff);
+			SCR_DrawSmallChar( con.notifyx + con.xadjust + (x + 1 - (con_timestamp->integer ? 9 : 0)) * SMALLCHAR_WIDTH, v + con.notifyy, text[x] & 0xff );
 		}
 
 		v += smallchar_height;
@@ -741,16 +741,16 @@ void Con_DrawNotify( void )
 
 		if (chat_team)
 		{
-			SCR_DrawBigString( SMALLCHAR_WIDTH, v + con_notifyy->integer, "say_team:", 1.0f, qfalse );
+			SCR_DrawBigString( SMALLCHAR_WIDTH, v + con.notifyy, "say_team:", 1.0f, qfalse );
 			skip = 10;
 		}
 		else
 		{
-			SCR_DrawBigString( SMALLCHAR_WIDTH, v + con_notifyy->integer, "say:", 1.0f, qfalse );
+			SCR_DrawBigString( SMALLCHAR_WIDTH, v + con.notifyy, "say:", 1.0f, qfalse );
 			skip = 5;
 		}
 
-		Field_BigDraw( &chatField, skip * BIGCHAR_WIDTH, v + con_notifyy->integer,
+		Field_BigDraw( &chatField, skip * BIGCHAR_WIDTH, v + con.notifyy,
 			SCREEN_WIDTH - ( skip + 1 ) * BIGCHAR_WIDTH, qtrue, qtrue );
 	}
 }
