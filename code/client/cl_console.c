@@ -60,6 +60,10 @@ typedef struct {
 	int		viswidth;
 	int		vispage;
 
+	int		notifyx;
+	int		notifyy;
+
+
 	qboolean newline;
 
 	char prefix[9];
@@ -677,10 +681,10 @@ void Con_DrawNotify( void )
 	int		currentColorIndex;
 	int		colorIndex;
 	
-	if ( con_notifyXY_enable->integer ) 
+	if ( con_notifyxy_enable->integer )
 	{
-	con.notifyx = con_notifyX->value * (float)cls.glconfig.vidWidth / 640.0;
-	con.notifyy = con_notifyY->value * (float)cls.glconfig.vidHeight / 480.0;
+	con.notifyx = con_notifyx->value * (float)cls.glconfig.vidWidth / 640.0;
+	con.notifyy = con_notifyy->value * (float)cls.glconfig.vidHeight / 480.0;
 	}
 	else
 	{
