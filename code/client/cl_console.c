@@ -62,6 +62,7 @@ typedef struct {
 
 	qboolean newline;
 
+	char prefix[9];
 } console_t;
 
 extern  qboolean    chat_team;
@@ -459,11 +460,20 @@ void Con_NewLine( void )
 		con.display++;
 	con.current++;
 
+	con.x = 0;
 	s = &con.text[ ( con.current % con.totallines ) * con.linewidth ];
+
+	// insert prefix
+	if (con_timestamp && con_timestamp->integer) {
+		assert(strlen(con.prefix) == 8);
+		con.x = 9;
+		for ( i = 0; i < 8; ++i )
+			*s++ = (9<<8) | con.prefix[i];
+		++s;
+	}
+
 	for ( i = 0; i < con.linewidth ; i++ )
 		*s++ = (ColorIndex(COLOR_WHITE)<<8) | ' ';
-
-	con.x = 0;
 }
 
 
@@ -509,13 +519,9 @@ void CL_ConsolePrint( const char *txt ) {
 	qboolean skipnotify = qfalse;		// NERVE - SMF
 	int prev;							// NERVE - SMF
 
-    // iodfe
-	if (con.x == 0 && con_timestamp && con_timestamp->integer) {
-		char txtt[MAXPRINTMSG + 15];
-		qtime_t	now;
-		Com_RealTime(&now);
-		Com_sprintf(txtt, sizeof(txtt), "^9%02d:%02d:%02d ^7%s", now.tm_hour, now.tm_min, now.tm_sec, txt);
-		txt = txtt;
+	// for some demos we don't want to ever show anything on the console
+	if ( cl_noprint && cl_noprint->integer ) {
+		return;
 	}
 
 	// TTimo - prefix for text that shows up in console but not in notify
@@ -523,11 +529,6 @@ void CL_ConsolePrint( const char *txt ) {
 	if ( !Q_strncmp( txt, "[skipnotify]", 12 ) ) {
 		skipnotify = qtrue;
 		txt += 12;
-	}
-
-	// for some demos we don't want to ever show anything on the console
-	if ( cl_noprint && cl_noprint->integer ) {
-		return;
 	}
 
 	if ( !con.initialized ) {
@@ -538,6 +539,14 @@ void CL_ConsolePrint( const char *txt ) {
 		con.viswidth = -9999;
 		Con_CheckResize();
 		con.initialized = qtrue;
+	}
+
+	// update prefix
+	if (con.x == 0 && con_timestamp && con_timestamp->integer) {
+		qtime_t	now;
+		Com_RealTime(&now);
+		assert(sizeof(con.prefix) == 9);
+		Com_sprintf(con.prefix, sizeof(con.prefix), "%02d:%02d:%02d", now.tm_hour, now.tm_min, now.tm_sec);
 	}
 
 	colorIndex = ColorIndex( COLOR_WHITE );
@@ -557,7 +566,7 @@ void CL_ConsolePrint( const char *txt ) {
 		}
 
 		// word wrap
-		if ( l != con.linewidth && ( con.x + l >= con.linewidth ) ) {
+		if ( l != con.linewidth && ( con.x + l >= con.linewidth ) && (l + (con_timestamp->integer ? 10 : 0) <= con.linewidth)) {
 			Con_Linefeed( skipnotify );
 		}
 
