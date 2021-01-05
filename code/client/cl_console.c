@@ -397,7 +397,7 @@ void Con_Init( void )
 	con_timestamp = Cvar_Get( "con_timestamp", "1", CVAR_ARCHIVE );
 	con_notifytime = Cvar_Get( "con_notifyTime", "3", CVAR_ARCHIVE );
 	con_notifylines = Cvar_Get( "con_notifyLines", "3", CVAR_ARCHIVE );
-	Cvar_CheckRange( con_notifylines, "0", "64", CV_INTEGER );
+	Cvar_CheckRange( con_notifylines, "0", XSTRING( NUM_CON_TIMES ), CV_INTEGER );
 	con_notifyxy_enable = Cvar_Get( "con_notifyXY_enable", "0", CVAR_ARCHIVE_ND );
 	con_notifyx = Cvar_Get( "con_notifyX", "48", CVAR_ARCHIVE );
 	con_notifyy = Cvar_Get( "con_notifyY", "0", CVAR_ARCHIVE );
