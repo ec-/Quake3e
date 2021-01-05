@@ -679,8 +679,11 @@ void Con_DrawNotify( void )
 	int		currentColorIndex;
 	int		colorIndex;
 	
-	con.notifyx = con_notifyx->value * (float)cls.glconfig.vidWidth / 640.0;
-	con.notifyy = con_notifyy->value * (float)cls.glconfig.vidHeight / 480.0;
+	float notifyx = con_notifyx->value;
+	float notifyy = con_notifyy->value;
+	SCR_AdjustFrom640(&notifyx, &notifyy, NULL, NULL);
+	con.notifyx = (int)notifyx;
+	con.notifyy = (int)notifyy;
 
 	currentColorIndex = ColorIndex( COLOR_WHITE );
 	re.SetColor( g_color_table[ currentColorIndex ] );
