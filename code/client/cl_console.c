@@ -60,10 +60,6 @@ typedef struct {
 	int		viswidth;
 	int		vispage;
 
-	int		notifyx;
-	int		notifyy;
-
-
 	qboolean newline;
 
 	char prefix[9];
@@ -682,8 +678,6 @@ void Con_DrawNotify( void )
 	float notifyx = con_notifyx->value;
 	float notifyy = con_notifyy->value;
 	SCR_AdjustFrom640(&notifyx, &notifyy, NULL, NULL);
-	con.notifyx = (int)notifyx;
-	con.notifyy = (int)notifyy;
 
 	currentColorIndex = ColorIndex( COLOR_WHITE );
 	re.SetColor( g_color_table[ currentColorIndex ] );
@@ -714,7 +708,7 @@ void Con_DrawNotify( void )
 				currentColorIndex = colorIndex;
 				re.SetColor( g_color_table[ colorIndex ] );
 			}
-			SCR_DrawSmallChar( con.notifyx + con.xadjust + (x + 1 - (con_timestamp->integer ? 9 : 0)) * smallchar_width, v + con.notifyy, text[x] & 0xff );
+			SCR_DrawSmallChar( (int)notifyx + con.xadjust + (x + 1 - (con_timestamp->integer ? 9 : 0)) * smallchar_width, v + (int)notifyy, text[x] & 0xff );
 		}
 
 		v += smallchar_height;
@@ -729,7 +723,7 @@ void Con_DrawNotify( void )
 	// draw the chat line
 	if ( Key_GetCatcher( ) & KEYCATCH_MESSAGE )
 	{
-		v += con.notifyy;
+		v += (int)notifyy;
 		// rescale to virtual 640x480 space
 		v /= cls.glconfig.vidHeight / 480.0;
 
