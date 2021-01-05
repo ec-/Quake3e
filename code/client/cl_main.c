@@ -3830,7 +3830,7 @@ void CL_Init( void ) {
 #endif
 #endif
 
-	cl_conColor = Cvar_Get( "cl_conColor", "", 0 );
+	cl_conColor = Cvar_Get( "cl_conColor", "60 60 70 220", 0 );
 
 #ifdef MACOS_X
 	// In game video is REALLY slow in Mac OS X right now due to driver slowness
