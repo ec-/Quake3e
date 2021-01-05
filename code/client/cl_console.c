@@ -729,21 +729,22 @@ void Con_DrawNotify( void )
 	// draw the chat line
 	if ( Key_GetCatcher( ) & KEYCATCH_MESSAGE )
 	{
+		v += con.notifyy;
 		// rescale to virtual 640x480 space
 		v /= cls.glconfig.vidHeight / 480.0;
 
 		if (chat_team)
 		{
-			SCR_DrawBigString( smallchar_width, v + con.notifyy, "say_team:", 1.0f, qfalse );
+			SCR_DrawBigString( smallchar_width, v, "say_team:", 1.0f, qfalse );
 			skip = 10;
 		}
 		else
 		{
-			SCR_DrawBigString( smallchar_width, v + con.notifyy, "say:", 1.0f, qfalse );
+			SCR_DrawBigString( smallchar_width, v, "say:", 1.0f, qfalse );
 			skip = 5;
 		}
 
-		Field_BigDraw( &chatField, skip * BIGCHAR_WIDTH, v + con.notifyy,
+		Field_BigDraw( &chatField, skip * BIGCHAR_WIDTH, v,
 			SCREEN_WIDTH - ( skip + 1 ) * BIGCHAR_WIDTH, qtrue, qtrue );
 	}
 }
