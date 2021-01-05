@@ -78,7 +78,6 @@ cvar_t		*con_timestamp;
 cvar_t		*con_conspeed;
 cvar_t		*con_notifytime;
 cvar_t		*con_notifylines;
-cvar_t		*con_notifyxy_enable;
 cvar_t		*con_notifyx;
 cvar_t		*con_notifyy;
 cvar_t		*con_notifykeep;
@@ -398,7 +397,6 @@ void Con_Init( void )
 	con_notifytime = Cvar_Get( "con_notifyTime", "3", CVAR_ARCHIVE );
 	con_notifylines = Cvar_Get( "con_notifyLines", "3", CVAR_ARCHIVE );
 	Cvar_CheckRange( con_notifylines, "0", XSTRING( NUM_CON_TIMES ), CV_INTEGER );
-	con_notifyxy_enable = Cvar_Get( "con_notifyXY_enable", "0", CVAR_ARCHIVE_ND );
 	con_notifyx = Cvar_Get( "con_notifyX", "48", CVAR_ARCHIVE );
 	con_notifyy = Cvar_Get( "con_notifyY", "0", CVAR_ARCHIVE );
 	con_notifykeep = Cvar_Get( "con_notifyKeep", "0", CVAR_ARCHIVE );
@@ -681,16 +679,8 @@ void Con_DrawNotify( void )
 	int		currentColorIndex;
 	int		colorIndex;
 	
-	if ( con_notifyxy_enable->integer )
-	{
 	con.notifyx = con_notifyx->value * (float)cls.glconfig.vidWidth / 640.0;
 	con.notifyy = con_notifyy->value * (float)cls.glconfig.vidHeight / 480.0;
-	}
-	else
-	{
-	con.notifyx = 0;
-	con.notifyy = 0;
-	}
 
 	currentColorIndex = ColorIndex( COLOR_WHITE );
 	re.SetColor( g_color_table[ currentColorIndex ] );
