@@ -720,7 +720,7 @@ static qboolean GLW_CreateWindow( int width, int height, int colorbits, qboolean
 		oldFullscreen = glw_state.cdsFullscreen;
 		glw_state.cdsFullscreen = cdsFullscreen;
 
-		g_wv.hWnd = CreateWindowEx( exstyle, TEXT(CLIENT_WINDOW_TITLE), TEXT(CLIENT_WINDOW_TITLE),
+		g_wv.hWnd = CreateWindowEx( exstyle, TEXT(CLIENT_WINDOW_TITLE), AtoW(cl_title),
 			 stylebits, x, y, w, h, NULL, NULL, g_wv.hInstance,  NULL );
 
 		if ( !g_wv.hWnd )
