@@ -888,6 +888,7 @@ static void create_instance( void )
 {
 #ifdef _DEBUG
 	const char* validation_layer_name = "VK_LAYER_LUNARG_standard_validation";
+	const char* validation_layer_name2 = "VK_LAYER_KHRONOS_validation";
 	VkResult res;
 #endif
 	VkInstanceCreateInfo desc;
@@ -937,13 +938,21 @@ static void create_instance( void )
 
 	if ( res == VK_ERROR_LAYER_NOT_PRESENT ) {
 
-		ri.Printf( PRINT_ALL, "...validation layer is not available\n" );
-
-		// try without validation layer
-		desc.enabledLayerCount = 0;
-		desc.ppEnabledLayerNames = NULL;
+		desc.enabledLayerCount = 1;
+		desc.ppEnabledLayerNames = &validation_layer_name2;
 
 		res = qvkCreateInstance( &desc, NULL, &vk.instance );
+
+		if ( res == VK_ERROR_LAYER_NOT_PRESENT ) {
+
+			ri.Printf( PRINT_WARNING, "...validation layer is not available\n" );
+
+			// try without validation layer
+			desc.enabledLayerCount = 0;
+			desc.ppEnabledLayerNames = NULL;
+
+			res = qvkCreateInstance( &desc, NULL, &vk.instance );
+		}
 	}
 
 	if ( res != VK_SUCCESS ) {
@@ -1015,16 +1024,16 @@ const char *vk_get_format_name( VkFormat format )
 
 
 // Check if we can use vkCmdBlitImage for the given source and destination image formats.
-static qboolean vk_blit_enabled( const VkFormat srcFormat, const VkFormat dstFormat )
+static qboolean vk_blit_enabled( VkPhysicalDevice physical_device, const VkFormat srcFormat, const VkFormat dstFormat )
 {
 	VkFormatProperties formatProps;
 	qboolean blit_enabled = qtrue;
 
-	qvkGetPhysicalDeviceFormatProperties( vk.physical_device, srcFormat, &formatProps );
+	qvkGetPhysicalDeviceFormatProperties( physical_device, srcFormat, &formatProps );
 	if ( ( formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT ) == 0 )
 		blit_enabled = qfalse;
 
-	qvkGetPhysicalDeviceFormatProperties( vk.physical_device, dstFormat, &formatProps );
+	qvkGetPhysicalDeviceFormatProperties( physical_device, dstFormat, &formatProps );
 	if ( ( formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT ) == 0 )
 		blit_enabled = qfalse;
 
@@ -1046,19 +1055,28 @@ static VkFormat get_hdr_format( VkFormat base_format )
 }
 
 
-static void vk_select_surface_format( VkPhysicalDevice device, VkSurfaceKHR surface )
+static qboolean vk_select_surface_format( VkPhysicalDevice physical_device, VkSurfaceKHR surface )
 {
 	VkSurfaceFormatKHR *candidates;
 	uint32_t format_count;
+	VkResult res;
 
-	VK_CHECK( qvkGetPhysicalDeviceSurfaceFormatsKHR( device, surface, &format_count, NULL ) );
+	res = qvkGetPhysicalDeviceSurfaceFormatsKHR( physical_device, surface, &format_count, NULL );
+	if ( res < 0 ) {
+		ri.Printf( PRINT_ERROR, "vkGetPhysicalDeviceSurfaceFormatsKHR returned error %i\n", res );
+		return qfalse;
+	}
 
-	if ( format_count == 0 )
-		ri.Error( ERR_FATAL, "%s: no surface formats found", __func__ );
+	VK_CHECK( qvkGetPhysicalDeviceSurfaceFormatsKHR( physical_device, surface, &format_count, NULL ) );
+
+	if ( format_count == 0 ) {
+		ri.Printf( PRINT_ERROR, "...no surface formats found\n" );
+		return qfalse;
+	}
 
 	candidates = (VkSurfaceFormatKHR*)ri.Malloc( format_count * sizeof(VkSurfaceFormatKHR) );
 
-	VK_CHECK( qvkGetPhysicalDeviceSurfaceFormatsKHR( device, surface, &format_count, candidates ) );
+	VK_CHECK( qvkGetPhysicalDeviceSurfaceFormatsKHR( physical_device, surface, &format_count, candidates ) );
 
 	if (format_count == 1 && candidates[0].format == VK_FORMAT_UNDEFINED) {
 		// special case that means we can choose any format
@@ -1081,12 +1099,14 @@ static void vk_select_surface_format( VkPhysicalDevice device, VkSurfaceKHR surf
 	}
 
 	ri.Free( candidates );
+
+	return qtrue;
 }
 
 
-static void setup_surface_formats( void )
+static void setup_surface_formats( VkPhysicalDevice physical_device )
 {
-	vk.depth_format = get_depth_format( vk.physical_device );
+	vk.depth_format = get_depth_format( physical_device );
 
 	vk.color_format = get_hdr_format( vk.surface_format.format );
 
@@ -1094,7 +1114,7 @@ static void setup_surface_formats( void )
 
 	vk.bloom_format = vk.surface_format.format;
 
-	vk.blitEnabled = vk_blit_enabled( vk.color_format, vk.capture_format );
+	vk.blitEnabled = vk_blit_enabled( physical_device, vk.color_format, vk.capture_format );
 
 	if ( !vk.blitEnabled )
 	{
@@ -1103,43 +1123,35 @@ static void setup_surface_formats( void )
 }
 
 
-static void vk_create_device( void ) {
+static const char *renderer_name( const VkPhysicalDeviceProperties *props ) {
+	static char buf[sizeof( props->deviceName ) + 64];
+	const char *device_type;
 
-	VkPhysicalDevice *physical_devices;
-	uint32_t device_count;
-	int device_index;
-	VkResult res;
-
-	res = qvkEnumeratePhysicalDevices( vk.instance, &device_count, NULL );
-	if ( device_count == 0 ) {
-		ri.Error( ERR_FATAL, "Vulkan: no physical device found" );
-	} else if ( res < 0 ) {
-		ri.Error( ERR_FATAL, "vkEnumeratePhysicalDevices returned error %i", res );
+	switch ( props->deviceType ) {
+		case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: device_type = "Integrated"; break;
+		case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: device_type = "Discrete"; break;
+		case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU: device_type = "Virtual"; break;
+		case VK_PHYSICAL_DEVICE_TYPE_CPU: device_type = "CPU"; break;
+		default: device_type = "OTHER"; break;
 	}
 
-	physical_devices = (VkPhysicalDevice*)ri.Malloc( device_count * sizeof( VkPhysicalDevice ) );
-	VK_CHECK(qvkEnumeratePhysicalDevices( vk.instance, &device_count, physical_devices ) );
+	Com_sprintf( buf, sizeof( buf ), "%s %s, 0x%04x",
+		device_type, props->deviceName, props->deviceID );
 
-	// select physical device
-	device_index = r_device->integer;
-	if ( device_index > device_count - 1 )
-		device_index = device_count - 1;
+	return buf;
+}
 
-	vk.physical_device = physical_devices[ device_index ];
 
-	ri.Free( physical_devices );
+static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_index ) {
 
-	ri.Printf( PRINT_ALL, "...selected physical device #%i\n", device_index );
-
-	if ( !ri.VK_CreateSurface( vk.instance, &vk.surface ) ) {
-		ri.Error( ERR_FATAL, "Error creating Vulkan surface" );
-		return;
-	}
+	ri.Printf( PRINT_ALL, "...selected physical device: %i\n", device_index );
 
 	// select surface format
-	vk_select_surface_format( vk.physical_device, vk.surface );
+	if ( !vk_select_surface_format( physical_device, vk.surface ) ) {
+		return qfalse;
+	}
 
-	setup_surface_formats();
+	setup_surface_formats( physical_device );
 
 	// select queue family
 	{
@@ -1147,15 +1159,15 @@ static void vk_create_device( void ) {
 		uint32_t queue_family_count;
 		uint32_t i;
 
-		qvkGetPhysicalDeviceQueueFamilyProperties(vk.physical_device, &queue_family_count, NULL);
-		queue_families = (VkQueueFamilyProperties*)ri.Malloc(queue_family_count * sizeof(VkQueueFamilyProperties));
-		qvkGetPhysicalDeviceQueueFamilyProperties(vk.physical_device, &queue_family_count, queue_families);
+		qvkGetPhysicalDeviceQueueFamilyProperties( physical_device, &queue_family_count, NULL );
+		queue_families = (VkQueueFamilyProperties*)ri.Malloc( queue_family_count * sizeof( VkQueueFamilyProperties ) );
+		qvkGetPhysicalDeviceQueueFamilyProperties( physical_device, &queue_family_count, queue_families );
 
 		// select queue family with presentation and graphics support
 		vk.queue_family_index = ~0U;
 		for (i = 0; i < queue_family_count; i++) {
 			VkBool32 presentation_supported;
-			VK_CHECK(qvkGetPhysicalDeviceSurfaceSupportKHR(vk.physical_device, i, vk.surface, &presentation_supported));
+			VK_CHECK( qvkGetPhysicalDeviceSurfaceSupportKHR( physical_device, i, vk.surface, &presentation_supported ) );
 
 			if (presentation_supported && (queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
 				vk.queue_family_index = i;
@@ -1165,8 +1177,11 @@ static void vk_create_device( void ) {
 		
 		ri.Free( queue_families );
 
-		if ( vk.queue_family_index == ~0U )
-			ri.Error( ERR_FATAL, "%s: failed to find queue family", __func__ );
+		if ( vk.queue_family_index == ~0U ) {
+			ri.Printf( PRINT_ERROR, "...failed to find graphics queue family\n" );
+
+			return qfalse;
+		}
 	}
 
 	// create VkDevice
@@ -1181,15 +1196,16 @@ static void vk_create_device( void ) {
 		VkPhysicalDeviceFeatures device_features;
 		VkPhysicalDeviceFeatures features;
 		VkDeviceCreateInfo device_desc;
+		VkResult res;
 		qboolean swapchainSupported = qfalse;
 		qboolean dedicatedAllocation = qfalse;
 		qboolean memoryRequirements2 = qfalse;
 		qboolean debugMarker = qfalse;
 		uint32_t i, len, count = 0;
 
-		VK_CHECK(qvkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &count, NULL));
-		extension_properties = (VkExtensionProperties*)ri.Malloc(count * sizeof(VkExtensionProperties));
-		VK_CHECK(qvkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &count, extension_properties));
+		VK_CHECK( qvkEnumerateDeviceExtensionProperties( physical_device, NULL, &count, NULL ) );
+		extension_properties = (VkExtensionProperties*)ri.Malloc( count * sizeof( VkExtensionProperties ) );
+		VK_CHECK( qvkEnumerateDeviceExtensionProperties( physical_device, NULL, &count, extension_properties ) );
 
 		// fill glConfig.extensions_string
 		str = glConfig.extensions_string; *str = '\0';
@@ -1222,8 +1238,10 @@ static void vk_create_device( void ) {
 
 		device_extension_count = 0;
 
-		if ( !swapchainSupported )
-			ri.Error( ERR_FATAL, "%s: required device extension is not available: %s", __func__, VK_KHR_SWAPCHAIN_EXTENSION_NAME );
+		if ( !swapchainSupported ) {
+			ri.Printf( PRINT_ERROR, "...required device extension is not available: %s\n", VK_KHR_SWAPCHAIN_EXTENSION_NAME );
+			return qfalse;
+		}
 
 		if ( !memoryRequirements2 )
 			dedicatedAllocation = qfalse;
@@ -1246,10 +1264,12 @@ static void vk_create_device( void ) {
 			vk.debugMarkers = qtrue;
 		}
 
-		qvkGetPhysicalDeviceFeatures( vk.physical_device, &device_features );
+		qvkGetPhysicalDeviceFeatures( physical_device, &device_features );
 
-		if ( device_features.fillModeNonSolid == VK_FALSE )
-			ri.Error( ERR_FATAL, "%s: fillModeNonSolid feature is not supported", __func__ );
+		if ( device_features.fillModeNonSolid == VK_FALSE ) {
+			ri.Printf( PRINT_ERROR, "...fillModeNonSolid feature is not supported\n" );
+			return qfalse;
+		}
 
 		queue_desc.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queue_desc.pNext = NULL;
@@ -1287,8 +1307,14 @@ static void vk_create_device( void ) {
 		device_desc.ppEnabledExtensionNames = device_extension_list;
 		device_desc.pEnabledFeatures = &features;
 
-		VK_CHECK( qvkCreateDevice( vk.physical_device, &device_desc, NULL, &vk.device ) );
+		res = qvkCreateDevice( physical_device, &device_desc, NULL, &vk.device );
+		if ( res < 0 ) {
+			ri.Printf( PRINT_ERROR, "vkCreateDevice returned error %i\n", res );
+			return qfalse;
+		}
 	}
+
+	return qtrue;
 }
 
 
@@ -1314,6 +1340,12 @@ static void vk_create_device( void ) {
 
 static void init_vulkan_library( void )
 {
+	VkPhysicalDeviceProperties props;
+	VkPhysicalDevice *physical_devices;
+	uint32_t device_count;
+	int device_index, i;
+	VkResult res;
+
 	//
 	// Get functions that do not depend on VkInstance (vk.instance == nullptr at this point).
 	//
@@ -1363,11 +1395,55 @@ static void init_vulkan_library( void )
 	}
 #endif
 
+	// create surface
+	if ( !ri.VK_CreateSurface( vk.instance, &vk.surface ) ) {
+		ri.Error( ERR_FATAL, "Error creating Vulkan surface" );
+		return;
+	}
+
+	res = qvkEnumeratePhysicalDevices( vk.instance, &device_count, NULL );
+	if ( device_count == 0 ) {
+		ri.Error( ERR_FATAL, "Vulkan: no physical devices found" );
+		return;
+	}
+	else if ( res < 0 ) {
+		ri.Error( ERR_FATAL, "vkEnumeratePhysicalDevices returned error %i", res );
+		return;
+	}
+
+	physical_devices = (VkPhysicalDevice*)ri.Malloc( device_count * sizeof( VkPhysicalDevice ) );
+	VK_CHECK( qvkEnumeratePhysicalDevices( vk.instance, &device_count, physical_devices ) );
+	
+	ri.Printf( PRINT_ALL, ".......................\nAvailable physical devices:\n" );
+	for ( i = 0; i < device_count; i++ ) {
+		qvkGetPhysicalDeviceProperties( physical_devices[ i ], &props );
+		ri.Printf( PRINT_ALL, " %i: %s\n", i, renderer_name( &props ) );
+	}
+	ri.Printf( PRINT_ALL, ".......................\n" );
+
+	vk.physical_device = VK_NULL_HANDLE;
+	// initial physical device index
+	device_index = r_device->integer;
+	for ( i = 0; i < device_count; i++, device_index++ ) {
+		if ( device_index >= device_count ) {
+			device_index = 0;
+		}
+		if ( vk_create_device( physical_devices[ device_index ], device_index ) ) {
+			vk.physical_device = physical_devices[ device_index ];
+			break;
+		}
+	}
+
+	ri.Free( physical_devices );
+
+	if ( vk.physical_device == VK_NULL_HANDLE ) {
+		ri.Error( PRINT_ERROR, "Vulkan: unable to find any suitable physical device" );
+		return;
+	}
+
 	//
 	// Get device level functions.
 	//
-	vk_create_device();
-
 	INIT_DEVICE_FUNCTION(vkAllocateCommandBuffers)
 	INIT_DEVICE_FUNCTION(vkAllocateDescriptorSets)
 	INIT_DEVICE_FUNCTION(vkAllocateMemory)
@@ -3159,7 +3235,6 @@ void vk_initialize( void )
 {
 	char buf[64], driver_version[64];
 	const char *vendor_name;
-	const char *device_type;
 	VkPhysicalDeviceProperties props;
 	uint32_t major;
 	uint32_t minor;
@@ -3309,17 +3384,8 @@ void vk_initialize( void )
 		vendor_name = buf;
 	}
 
-	switch ( props.deviceType ) {
-		case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: device_type = "Integrated"; break;
-		case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: device_type = "Discrete"; break;
-		case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU: device_type = "Virtual"; break;
-		case VK_PHYSICAL_DEVICE_TYPE_CPU: device_type = "CPU"; break;
-		default: device_type = "OTHER"; break;
-	}
-
 	Q_strncpyz( glConfig.vendor_string, vendor_name, sizeof( glConfig.vendor_string ) );
-	Com_sprintf( glConfig.renderer_string, sizeof(	glConfig.renderer_string ),
-		"%s %s, 0x%04x", device_type, props.deviceName, props.deviceID );
+	Com_sprintf( glConfig.renderer_string, sizeof( glConfig.renderer_string ), renderer_name( &props ) );
 
 	SET_OBJECT_NAME( (intptr_t)vk.device, glConfig.renderer_string, VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_EXT );
 
