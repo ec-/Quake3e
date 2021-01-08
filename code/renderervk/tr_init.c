@@ -1608,8 +1608,12 @@ static void R_Register( void )
 	r_showsky = ri.Cvar_Get( "r_showsky", "0", CVAR_LATCH );
 
 #ifdef USE_VULKAN
-	r_device = ri.Cvar_Get( "r_device", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	ri.Cvar_CheckRange( r_device, "0", NULL, CV_INTEGER );
+	r_device = ri.Cvar_Get( "r_device", "-1", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_device, "-2", NULL, CV_INTEGER );
+	ri.Cvar_SetDescription( r_device, "Select physical device to render:\n" \
+		" 0+ - use explicit device index\n" \
+		" -1 - first discrete GPU\n" \
+		" -2 - first integrated GPU" );
 	r_device->modified = qfalse;
 
 	r_fbo = ri.Cvar_Get( "r_fbo", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );

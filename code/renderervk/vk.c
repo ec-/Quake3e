@@ -889,10 +889,10 @@ static void create_instance( void )
 #ifdef _DEBUG
 	const char* validation_layer_name = "VK_LAYER_LUNARG_standard_validation";
 	const char* validation_layer_name2 = "VK_LAYER_KHRONOS_validation";
-	VkResult res;
 #endif
 	VkInstanceCreateInfo desc;
 	VkExtensionProperties *extension_properties;
+	VkResult res;
 	const char **extension_names, *ext;
 	uint32_t i, n, count, extension_count;
 
@@ -925,8 +925,6 @@ static void create_instance( void )
 	desc.pNext = NULL;
 	desc.flags = 0;
 	desc.pApplicationInfo = NULL;
-	desc.enabledLayerCount = 0;
-	desc.ppEnabledLayerNames = NULL;
 	desc.enabledExtensionCount = extension_count;
 	desc.ppEnabledExtensionNames = extension_names;
 
@@ -954,16 +952,19 @@ static void create_instance( void )
 			res = qvkCreateInstance( &desc, NULL, &vk.instance );
 		}
 	}
-
-	if ( res != VK_SUCCESS ) {
-		ri.Error( ERR_FATAL, "Vulkan: instance creation failed with error %i", res );
-	}
 #else
-	VK_CHECK( qvkCreateInstance( &desc, NULL, &vk.instance ) );
+	desc.enabledLayerCount = 0;
+	desc.ppEnabledLayerNames = NULL;
+
+	res = qvkCreateInstance( &desc, NULL, &vk.instance );
 #endif
 
 	ri.Free( (void*)extension_names );
 	ri.Free( extension_properties );
+
+	if ( res != VK_SUCCESS ) {
+		ri.Error( ERR_FATAL, "Vulkan: instance creation failed with error %i", res );
+	}
 }
 
 
@@ -1346,6 +1347,8 @@ static void init_vulkan_library( void )
 	int device_index, i;
 	VkResult res;
 
+	Com_Memset( &vk, 0, sizeof( vk ) );
+
 	//
 	// Get functions that do not depend on VkInstance (vk.instance == nullptr at this point).
 	//
@@ -1413,19 +1416,25 @@ static void init_vulkan_library( void )
 
 	physical_devices = (VkPhysicalDevice*)ri.Malloc( device_count * sizeof( VkPhysicalDevice ) );
 	VK_CHECK( qvkEnumeratePhysicalDevices( vk.instance, &device_count, physical_devices ) );
-	
+
+	// initial physical device index
+	device_index = r_device->integer;
+
 	ri.Printf( PRINT_ALL, ".......................\nAvailable physical devices:\n" );
 	for ( i = 0; i < device_count; i++ ) {
 		qvkGetPhysicalDeviceProperties( physical_devices[ i ], &props );
 		ri.Printf( PRINT_ALL, " %i: %s\n", i, renderer_name( &props ) );
+		if ( device_index == -1 && props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ) {
+			device_index = i;
+		} else if ( device_index == -2 && props.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU ) {
+			device_index = i;
+		}
 	}
 	ri.Printf( PRINT_ALL, ".......................\n" );
 
 	vk.physical_device = VK_NULL_HANDLE;
-	// initial physical device index
-	device_index = r_device->integer;
 	for ( i = 0; i < device_count; i++, device_index++ ) {
-		if ( device_index >= device_count ) {
+		if ( device_index >= device_count || device_index < 0 ) {
 			device_index = 0;
 		}
 		if ( vk_create_device( physical_devices[ device_index ], device_index ) ) {
@@ -3584,8 +3593,9 @@ void vk_shutdown( void )
 {
 	uint32_t i, j;
 
-	if ( !qvkDestroyImage ) // not fully initialized
-		return;
+	if ( !qvkQueuePresentKHR ) {// not fully initialized
+		goto __cleanup;
+	}
 
 	vk_destroy_framebuffers();
 
@@ -3767,17 +3777,22 @@ void vk_shutdown( void )
 	//qvkDestroySwapchainKHR(vk.device, vk.swapchain, NULL);
 	vk_destroy_swapchain();
 
-	qvkDestroyDevice( vk.device, NULL );
-	qvkDestroySurfaceKHR( vk.instance, vk.surface, NULL );
+__cleanup:
+	if ( vk.device != VK_NULL_HANDLE )
+		qvkDestroyDevice( vk.device, NULL );
+
+	if ( vk.surface != VK_NULL_HANDLE )
+		qvkDestroySurfaceKHR( vk.instance, vk.surface, NULL );
 
 #ifdef _DEBUG
 	if ( qvkDestroyDebugReportCallbackEXT && vk.debug_callback )
 		qvkDestroyDebugReportCallbackEXT( vk.instance, vk.debug_callback, NULL );
 #endif
 
-	qvkDestroyInstance(vk.instance, NULL);
+	if ( vk.instance != VK_NULL_HANDLE )
+		qvkDestroyInstance( vk.instance, NULL );
 
-	Com_Memset(&vk, 0, sizeof(vk));
+	Com_Memset( &vk, 0, sizeof( vk ) );
 
 	deinit_vulkan_library();
 }
