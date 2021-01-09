@@ -1068,8 +1068,6 @@ static qboolean vk_select_surface_format( VkPhysicalDevice physical_device, VkSu
 		return qfalse;
 	}
 
-	VK_CHECK( qvkGetPhysicalDeviceSurfaceFormatsKHR( physical_device, surface, &format_count, NULL ) );
-
 	if ( format_count == 0 ) {
 		ri.Printf( PRINT_ERROR, "...no surface formats found\n" );
 		return qfalse;
