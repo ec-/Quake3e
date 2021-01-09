@@ -404,6 +404,8 @@ ifeq ($(COMPILE_PLATFORM),darwin)
   SHLIBCFLAGS = -fPIC -fvisibility=hidden
   SHLIBLDFLAGS = -dynamiclib $(LDFLAGS)
 
+  BINEXT = .app
+
   LDFLAGS =
 
   CLIENT_LDFLAGS =  -F/Library/Frameworks -framework SDL2
