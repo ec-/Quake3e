@@ -30,10 +30,16 @@ USE_VULKAN_API   = 1
 
 USE_RENDERER_DLOPEN = 1
 
-CNAME            = odfe
-DNAME            = odfe.ded
+CNAME            = oDFe
+DNAME            = oDFe.ded
 
 RENDERER_PREFIX  = $(CNAME)
+
+ifeq ($(USE_RENDERER_DLOPEN),0)
+  ifeq ($(USE_VULKAN),1)
+    CNAME = oDFe.vk
+  endif
+endif
 
 ifeq ($(V),1)
 echo_cmd=@:
