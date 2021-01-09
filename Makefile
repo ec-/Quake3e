@@ -396,8 +396,6 @@ ifeq ($(COMPILE_PLATFORM),darwin)
 
   BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
 
-  BASE_CFLAGS += -I/Library/Frameworks/SDL2.framework/Headers
-
   OPTIMIZE = -O2 -fvisibility=hidden
 
   SHLIBEXT = dylib
@@ -408,7 +406,17 @@ ifeq ($(COMPILE_PLATFORM),darwin)
 
   LDFLAGS =
 
-  CLIENT_LDFLAGS =  -F/Library/Frameworks -framework SDL2
+  ifeq ($(USE_SDL),1)
+    ifneq ($(SDL_INCLUDE),)
+      BASE_CFLAGS += $(SDL_INCLUDE)
+      CLIENT_LDFLAGS = $(SDL_LIBS)
+    else
+      BASE_CFLAGS += -I/Library/Frameworks/SDL2.framework/Headers
+      CLIENT_LDFLAGS = -F/Library/Frameworks -framework SDL2
+    endif
+  else
+    $(error Use SDL on macOS)
+  endif
 
   DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -g -O0
   RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
