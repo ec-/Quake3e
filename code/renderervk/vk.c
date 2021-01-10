@@ -5421,12 +5421,12 @@ uint32_t vk_tess_index( uint32_t numIndexes, const void *src ) {
 	if ( offset + size > vk.geometry_buffer_size ) {
 		// schedule geometry buffer resize
 		vk.geometry_buffer_size_new = log2pad( offset + size, 1 );
+		return ~0U;
 	} else {
 		Com_Memcpy( vk.cmd->vertex_buffer_ptr + offset, src, size );
 		vk.cmd->vertex_buffer_offset = (VkDeviceSize)offset + size;
+		return offset;
 	}
-
-	return offset;
 }
 
 
@@ -5442,8 +5442,6 @@ void vk_bind_index_buffer( VkBuffer buffer, uint32_t offset )
 
 void vk_bind_index( void )
 {
-	uint32_t offset;
-
 #ifdef USE_VBO
 	if ( tess.vboIndex ) {
 		vk.cmd->num_indexes = 0;
@@ -5452,19 +5450,20 @@ void vk_bind_index( void )
 	}
 #endif
 
-	offset = vk_tess_index( tess.numIndexes, tess.indexes );
-	vk_bind_index_buffer( vk.cmd->vertex_buffer, offset );
-	vk.cmd->num_indexes = tess.numIndexes;
+	vk_bind_index_ext( tess.numIndexes, tess.indexes );
 }
 
 
 void vk_bind_index_ext( const int numIndexes, const uint32_t *indexes )
 {
-	uint32_t offset;
-
-	offset = vk_tess_index( numIndexes, indexes );
-	vk_bind_index_buffer( vk.cmd->vertex_buffer, offset );
-	vk.cmd->num_indexes = numIndexes;
+	uint32_t offset	= vk_tess_index( numIndexes, indexes );
+	if ( offset != ~0U ) {
+		vk_bind_index_buffer( vk.cmd->vertex_buffer, offset );
+		vk.cmd->num_indexes = numIndexes;
+	} else {
+		// overflowed
+		vk.cmd->num_indexes = 0;
+	}
 }
 
 
