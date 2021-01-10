@@ -53,8 +53,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define T TEXT
 
-#define EDIT_COLOR		RGB(0x00,0x00,0x10)
-#define TEXT_COLOR		RGB(0x40,0xEE,0x20)
+#define EDIT_COLOR		RGB(0x3C,0x3C,0x46)
+#define TEXT_COLOR		RGB(0xFF,0xFF,0xFF)
 
 #define ERROR_BG_COLOR	RGB(0x90,0x80,0x80)
 
