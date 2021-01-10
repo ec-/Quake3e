@@ -30,10 +30,16 @@ USE_VULKAN_API   = 1
 
 USE_RENDERER_DLOPEN = 1
 
-CNAME            = odfe
-DNAME            = odfe.ded
+CNAME            = oDFe
+DNAME            = oDFe.ded
 
 RENDERER_PREFIX  = $(CNAME)
+
+ifeq ($(USE_RENDERER_DLOPEN),0)
+  ifeq ($(USE_VULKAN),1)
+    CNAME = oDFe.vk
+  endif
+endif
 
 ifeq ($(V),1)
 echo_cmd=@:
@@ -390,17 +396,27 @@ ifeq ($(COMPILE_PLATFORM),darwin)
 
   BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
 
-  BASE_CFLAGS += -I/Library/Frameworks/SDL2.framework/Headers
-
   OPTIMIZE = -O2 -fvisibility=hidden
 
   SHLIBEXT = dylib
   SHLIBCFLAGS = -fPIC -fvisibility=hidden
   SHLIBLDFLAGS = -dynamiclib $(LDFLAGS)
 
+  BINEXT = .app
+
   LDFLAGS =
 
-  CLIENT_LDFLAGS =  -F/Library/Frameworks -framework SDL2
+  ifeq ($(USE_SDL),1)
+    ifneq ($(SDL_INCLUDE),)
+      BASE_CFLAGS += $(SDL_INCLUDE)
+      CLIENT_LDFLAGS = $(SDL_LIBS)
+    else
+      BASE_CFLAGS += -I/Library/Frameworks/SDL2.framework/Headers
+      CLIENT_LDFLAGS = -F/Library/Frameworks -framework SDL2
+    endif
+  else
+    $(error Use SDL on macOS)
+  endif
 
   DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -g -O0
   RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
