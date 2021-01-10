@@ -176,6 +176,93 @@ static const char *pmode_to_str( VkPresentModeKHR mode )
 }
 
 
+#define CASE_STR(x) case (x): return #x
+
+const char *vk_format_string( VkFormat format )
+{
+	static char buf[16];
+
+	switch ( format ) {
+		// color formats
+		CASE_STR( VK_FORMAT_B8G8R8A8_SRGB );
+		CASE_STR( VK_FORMAT_R8G8B8A8_SRGB );
+		CASE_STR( VK_FORMAT_B8G8R8A8_SNORM );
+		CASE_STR( VK_FORMAT_R8G8B8A8_SNORM );
+		CASE_STR( VK_FORMAT_B8G8R8A8_UNORM );
+		CASE_STR( VK_FORMAT_R8G8B8A8_UNORM );
+		CASE_STR( VK_FORMAT_B4G4R4A4_UNORM_PACK16 );
+		CASE_STR( VK_FORMAT_R16G16B16A16_UNORM );
+		// depth formats
+		CASE_STR( VK_FORMAT_D16_UNORM );
+		CASE_STR( VK_FORMAT_D16_UNORM_S8_UINT );
+		CASE_STR( VK_FORMAT_X8_D24_UNORM_PACK32 );
+		CASE_STR( VK_FORMAT_D24_UNORM_S8_UINT );
+		CASE_STR( VK_FORMAT_D32_SFLOAT );
+		CASE_STR( VK_FORMAT_D32_SFLOAT_S8_UINT );
+	default:
+		Com_sprintf( buf, sizeof( buf ), "#%i", format );
+		return buf;
+	}
+}
+
+
+static const char *vk_result_string( VkResult code ) {
+	static char buffer[32];
+
+	switch ( code ) {
+		CASE_STR( VK_SUCCESS );
+		CASE_STR( VK_NOT_READY );
+		CASE_STR( VK_TIMEOUT );
+		CASE_STR( VK_EVENT_SET );
+		CASE_STR( VK_EVENT_RESET );
+		CASE_STR( VK_INCOMPLETE );
+		CASE_STR( VK_ERROR_OUT_OF_HOST_MEMORY );
+		CASE_STR( VK_ERROR_OUT_OF_DEVICE_MEMORY );
+		CASE_STR( VK_ERROR_INITIALIZATION_FAILED );
+		CASE_STR( VK_ERROR_DEVICE_LOST );
+		CASE_STR( VK_ERROR_MEMORY_MAP_FAILED );
+		CASE_STR( VK_ERROR_LAYER_NOT_PRESENT );
+		CASE_STR( VK_ERROR_EXTENSION_NOT_PRESENT );
+		CASE_STR( VK_ERROR_FEATURE_NOT_PRESENT );
+		CASE_STR( VK_ERROR_INCOMPATIBLE_DRIVER );
+		CASE_STR( VK_ERROR_TOO_MANY_OBJECTS );
+		CASE_STR( VK_ERROR_FORMAT_NOT_SUPPORTED );
+		CASE_STR( VK_ERROR_FRAGMENTED_POOL );
+		CASE_STR( VK_ERROR_UNKNOWN );
+		CASE_STR( VK_ERROR_OUT_OF_POOL_MEMORY );
+		CASE_STR( VK_ERROR_INVALID_EXTERNAL_HANDLE );
+		CASE_STR( VK_ERROR_FRAGMENTATION );
+		CASE_STR( VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS );
+		CASE_STR( VK_ERROR_SURFACE_LOST_KHR );
+		CASE_STR( VK_ERROR_NATIVE_WINDOW_IN_USE_KHR );
+		CASE_STR( VK_SUBOPTIMAL_KHR );
+		CASE_STR( VK_ERROR_OUT_OF_DATE_KHR );
+		CASE_STR( VK_ERROR_INCOMPATIBLE_DISPLAY_KHR );
+		CASE_STR( VK_ERROR_VALIDATION_FAILED_EXT );
+		CASE_STR( VK_ERROR_INVALID_SHADER_NV );
+		CASE_STR( VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT );
+		CASE_STR( VK_ERROR_NOT_PERMITTED_EXT );
+		CASE_STR( VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT );
+		CASE_STR( VK_THREAD_IDLE_KHR );
+		CASE_STR( VK_THREAD_DONE_KHR );
+		CASE_STR( VK_OPERATION_DEFERRED_KHR );
+		CASE_STR( VK_OPERATION_NOT_DEFERRED_KHR );
+		CASE_STR( VK_PIPELINE_COMPILE_REQUIRED_EXT );
+	default:
+		sprintf( buffer, "code %i", code );
+		return buffer;
+	}
+}
+#undef CASE_STR
+
+#define VK_CHECK( function_call ) { \
+	VkResult res = function_call; \
+	if ( res < 0 ) { \
+		ri.Error( ERR_FATAL, "Vulkan: %s returned %s", #function_call, vk_result_string( res ) ); \
+	} \
+}
+
+
 /*
 static VkFlags get_composite_alpha( VkCompositeAlphaFlagsKHR flags )
 {
@@ -409,7 +496,7 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 	desc.clipped = VK_TRUE;
 	desc.oldSwapchain = VK_NULL_HANDLE;
 
-	VK_CHECK( qvkCreateSwapchainKHR(device, &desc, NULL, swapchain ) );
+	VK_CHECK( qvkCreateSwapchainKHR( device, &desc, NULL, swapchain ) );
 
 	VK_CHECK( qvkGetSwapchainImagesKHR( vk.device, vk.swapchain, &vk.swapchain_image_count, NULL ) );
 	vk.swapchain_image_count = MIN( vk.swapchain_image_count, MAX_SWAPCHAIN_IMAGES );
@@ -963,7 +1050,7 @@ static void create_instance( void )
 	ri.Free( extension_properties );
 
 	if ( res != VK_SUCCESS ) {
-		ri.Error( ERR_FATAL, "Vulkan: instance creation failed with error %i", res );
+		ri.Error( ERR_FATAL, "Vulkan: instance creation failed with %s", vk_result_string( res ) );
 	}
 }
 
@@ -991,36 +1078,6 @@ static VkFormat get_depth_format( VkPhysicalDevice physical_device ) {
 
 	ri.Error( ERR_FATAL, "get_depth_format: failed to find depth attachment format" );
 	return VK_FORMAT_UNDEFINED; // never get here
-}
-
-
-#define CASE_STR(x) case (x): return #x
-
-const char *vk_get_format_name( VkFormat format )
-{
-	static char buf[16];
-
-	switch ( format ) {
-		// color formats
-		CASE_STR( VK_FORMAT_B8G8R8A8_SRGB );
-		CASE_STR( VK_FORMAT_R8G8B8A8_SRGB );
-		CASE_STR( VK_FORMAT_B8G8R8A8_SNORM );
-		CASE_STR( VK_FORMAT_R8G8B8A8_SNORM );
-		CASE_STR( VK_FORMAT_B8G8R8A8_UNORM );
-		CASE_STR( VK_FORMAT_R8G8B8A8_UNORM );
-		CASE_STR( VK_FORMAT_B4G4R4A4_UNORM_PACK16 );
-		CASE_STR( VK_FORMAT_R16G16B16A16_UNORM );
-		// depth formats
-		CASE_STR( VK_FORMAT_D16_UNORM );
-		CASE_STR( VK_FORMAT_D16_UNORM_S8_UINT );
-		CASE_STR( VK_FORMAT_X8_D24_UNORM_PACK32 );
-		CASE_STR( VK_FORMAT_D24_UNORM_S8_UINT );
-		CASE_STR( VK_FORMAT_D32_SFLOAT );
-		CASE_STR( VK_FORMAT_D32_SFLOAT_S8_UINT );
-		default:
-			Com_sprintf( buf, sizeof( buf ), "#%i", format );
-			return buf;
-	}
 }
 
 
@@ -1064,7 +1121,7 @@ static qboolean vk_select_surface_format( VkPhysicalDevice physical_device, VkSu
 
 	res = qvkGetPhysicalDeviceSurfaceFormatsKHR( physical_device, surface, &format_count, NULL );
 	if ( res < 0 ) {
-		ri.Printf( PRINT_ERROR, "vkGetPhysicalDeviceSurfaceFormatsKHR returned error %i\n", res );
+		ri.Printf( PRINT_ERROR, "vkGetPhysicalDeviceSurfaceFormatsKHR returned %s\n", vk_result_string( res ) );
 		return qfalse;
 	}
 
@@ -1308,7 +1365,7 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 
 		res = qvkCreateDevice( physical_device, &device_desc, NULL, &vk.device );
 		if ( res < 0 ) {
-			ri.Printf( PRINT_ERROR, "vkCreateDevice returned error %i\n", res );
+			ri.Printf( PRINT_ERROR, "vkCreateDevice returned %s\n", vk_result_string( res ) );
 			return qfalse;
 		}
 	}
@@ -1408,7 +1465,7 @@ static void init_vulkan_library( void )
 		return;
 	}
 	else if ( res < 0 ) {
-		ri.Error( ERR_FATAL, "vkEnumeratePhysicalDevices returned error %i", res );
+		ri.Error( ERR_FATAL, "vkEnumeratePhysicalDevices returned %s", vk_result_string( res ) );
 		return;
 	}
 
@@ -1444,7 +1501,7 @@ static void init_vulkan_library( void )
 	ri.Free( physical_devices );
 
 	if ( vk.physical_device == VK_NULL_HANDLE ) {
-		ri.Error( PRINT_ERROR, "Vulkan: unable to find any suitable physical device" );
+		ri.Error( ERR_FATAL, "Vulkan: unable to find any suitable physical device" );
 		return;
 	}
 
@@ -5716,6 +5773,7 @@ void vk_end_render_pass( void )
 //	vk.renderPassIndex = RENDER_PASS_MAIN;
 }
 
+
 static qboolean vk_find_screenmap_drawsurfs( void )
 {
 	const void *curCmd = &backEndData->commands.cmds;
@@ -5754,7 +5812,8 @@ void vk_begin_frame( void )
 
 	if ( vk.cmd->waitForFence ) {
 		if ( !ri.CL_IsMinimized() ) {
-			res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, UINT64_MAX, vk.image_acquired, VK_NULL_HANDLE, &vk.swapchain_image_index );
+			//res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, UINT64_MAX, vk.image_acquired, VK_NULL_HANDLE, &vk.swapchain_image_index );
+			res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, 2000000000, vk.image_acquired, VK_NULL_HANDLE, &vk.swapchain_image_index );
 			// when running via RDP: "Application has already acquired the maximum number of images (0x2)"
 			// probably caused by "device lost" errors
 			if ( res < 0 ) {
@@ -5762,7 +5821,7 @@ void vk_begin_frame( void )
 					// swapchain re-creation needed
 					vk_restart_swapchain( __func__ );
 				} else {
-					ri.Error( ERR_FATAL, "vkAcquireNextImageKHR returned error code %x", res );
+					ri.Error( ERR_FATAL, "vkAcquireNextImageKHR returned %s", vk_result_string( res ) );
 				}
 			}
 		} else {
@@ -5961,7 +6020,7 @@ void vk_end_frame( void )
 			vk_restart_swapchain( __func__ );
 		} else {
 			// or we don't
-			ri.Error( ERR_FATAL, "vkQueuePresentKHR: error %i", res );
+			ri.Error( ERR_FATAL, "vkQueuePresentKHR returned %s", vk_result_string( res ) );
 		}
 	}
 }
