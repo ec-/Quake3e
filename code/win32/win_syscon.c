@@ -56,10 +56,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define EDIT_COLOR		RGB(0x3C,0x3C,0x46)
 #define TEXT_COLOR		RGB(0xFF,0xFF,0xFF)
 
-#define ERROR_BG_COLOR	RGB(0x90,0x80,0x80)
-
-#define ERROR_COLOR_1   RGB(0xFF,0xFF,0x00)
-#define ERROR_COLOR_2   RGB(0xF0,0x00,0x00)
+#define ERROR_BG_COLOR	RGB(0xFF,0x00,0x00)
 
 field_t console;
 
@@ -237,14 +234,12 @@ static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 		{
 			if ( s_timePolarity & 1 )
 			{
-				SetBkColor( ( HDC ) wParam, ERROR_BG_COLOR );
-				SetTextColor( ( HDC ) wParam, ERROR_COLOR_1 );
+				SetBkColor( ( HDC ) wParam, EDIT_COLOR );
+				SetTextColor( ( HDC ) wParam, TEXT_COLOR );
+				return ( LRESULT ) s_wcd.hbrEditBackground;
 			}
-			else
-			{
-				SetBkColor( ( HDC ) wParam, ERROR_BG_COLOR );
-				SetTextColor( ( HDC ) wParam, ERROR_COLOR_2 );
-			}
+			SetBkColor( ( HDC ) wParam, ERROR_BG_COLOR );
+			SetTextColor( ( HDC ) wParam, TEXT_COLOR );
 			return ( LRESULT ) s_wcd.hbrErrorBackground;
 		}
 		break;
