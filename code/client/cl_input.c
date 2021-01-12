@@ -972,7 +972,7 @@ void CL_InitInput( void ) {
 
 	cl_run = Cvar_Get( "cl_run", "1", CVAR_ARCHIVE_ND );
 	cl_sensitivity = Cvar_Get( "sensitivity", "5", CVAR_ARCHIVE );
-	m_menuSensitivity = Cvar_Get( "m_menuSensitivity", "1", CVAR_ARCHIVE );
+	m_menuSensitivity = Cvar_Get( "m_menuSensitivity", "1", CVAR_ARCHIVE_ND );
 	cl_mouseAccel = Cvar_Get( "cl_mouseAccel", "0", CVAR_ARCHIVE_ND );
 	cl_freelook = Cvar_Get( "cl_freelook", "1", CVAR_ARCHIVE_ND );
 
