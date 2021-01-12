@@ -393,7 +393,7 @@ void Con_Init( void )
 	con_notifytime = Cvar_Get( "con_notifyTime", "3", CVAR_ARCHIVE );
 	con_notifylines = Cvar_Get( "con_notifyLines", "3", CVAR_ARCHIVE );
 	Cvar_CheckRange( con_notifylines, "0", XSTRING( NUM_CON_TIMES ), CV_INTEGER );
-	con_notifyx = Cvar_Get( "con_notifyX", "48", CVAR_ARCHIVE );
+	con_notifyx = Cvar_Get( "con_notifyX", "0", CVAR_ARCHIVE );
 	con_notifyy = Cvar_Get( "con_notifyY", "0", CVAR_ARCHIVE );
 	con_notifykeep = Cvar_Get( "con_notifyKeep", "0", CVAR_ARCHIVE );
 	con_conspeed = Cvar_Get( "con_togglespeed", "3", 0 );
