@@ -482,10 +482,10 @@ static void Con_NewLine( void )
 		con.x = sizeof(con.prefix); // prefix + ' '
 		for ( i = 0; i < sizeof(con.prefix) - 1; ++i )
 			*s++ = (ColorIndexFromChar('z')<<8) | con.prefix[i];
-		++s;
+		*s++ = (ColorIndex(COLOR_WHITE)<<8) | ' ';
 	}
 
-	for ( i = 0; i < con.linewidth ; i++ )
+	for ( i = con.x; i < con.linewidth ; i++ )
 		*s++ = (ColorIndex(COLOR_WHITE)<<8) | ' ';
 }
 
