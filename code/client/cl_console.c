@@ -488,12 +488,14 @@ static void Con_NewLine( void )
 	short *s;
 	int i;
 
+	assert( con.newline == qtrue );
+	assert( con.x == 0 );
+
 	// follow last line
 	if ( con.display == con.current )
 		con.display++;
 	con.current++;
 
-	con.x = 0;
 	Con_Prefix();
 
 	s = &con.text[ ( con.current % con.totallines ) * con.linewidth + con.x];
@@ -521,8 +523,8 @@ static void Con_Linefeed( qboolean skipnotify )
 		Con_NewLine();
 	} else {
 		con.newline = qtrue;
-		con.x = 0;
 	}
+	con.x = 0;
 
 	Con_Fixup();
 }
