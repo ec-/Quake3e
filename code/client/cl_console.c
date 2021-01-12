@@ -60,6 +60,7 @@ typedef struct {
 	int		viswidth;
 	int		vispage;
 
+	qboolean carriageReturn;
 	qboolean newline;
 
 	char prefix[9];			// fixed width prefix
@@ -182,6 +183,7 @@ static void Con_Clear_f( void ) {
 
 	con.x = 0;
 	con.current = 0;
+	con.carriageReturn = qfalse;
 	con.newline = qtrue;
 
 	Con_Bottom();		// go to end
@@ -506,6 +508,18 @@ static void Con_NewLine( void )
 
 /*
 ===============
+Con_CarriageReturn
+===============
+*/
+static void Con_CarriageReturn( void )
+{
+	con.carriageReturn = qtrue;
+	con.x = 0;
+}
+
+
+/*
+===============
 Con_Linefeed
 ===============
 */
@@ -605,14 +619,20 @@ void CL_ConsolePrint( const char *txt ) {
 			Con_Linefeed( skipnotify );
 			break;
 		case '\r':
-			con.x = 0;
+			Con_CarriageReturn();
 			break;
 		default:
 			if ( con.newline ) {
 				Con_NewLine();
 				Con_Fixup();
+				con.carriageReturn = qfalse;
 				con.newline = qfalse;
+			} else if ( con.carriageReturn ) {
+				Con_Prefix();
+				con.carriageReturn = qfalse;
+				assert( con.newline == qfalse );
 			}
+
 			// display character and advance
 			y = con.current % con.totallines;
 			con.text[y * con.linewidth + con.x ] = (colorIndex << 8) | (c & 255);
