@@ -65,6 +65,7 @@ static cvar_t *cl_nodelta;
 static cvar_t *cl_showSend;
 
 static cvar_t *cl_sensitivity;
+static cvar_t *m_menuSensitivity;
 static cvar_t *cl_mouseAccel;
 static cvar_t *cl_mouseAccelOffset;
 static cvar_t *cl_mouseAccelStyle;
@@ -368,8 +369,15 @@ CL_MouseEvent
 =================
 */
 void CL_MouseEvent( int dx, int dy, int time ) {
+	static float mouseMenuBuffer[2] = {0, 0};
+	float mdx, mdy;
+
 	if ( Key_GetCatcher( ) & KEYCATCH_UI ) {
-		VM_Call( uivm, 2, UI_MOUSE_EVENT, dx, dy );
+		mouseMenuBuffer[0] += m_menuSensitivity->value * dx;
+		mouseMenuBuffer[1] += m_menuSensitivity->value * dy;
+		mouseMenuBuffer[0] = modff(mouseMenuBuffer[0], &mdx);
+		mouseMenuBuffer[1] = modff(mouseMenuBuffer[1], &mdy);
+		VM_Call( uivm, 2, UI_MOUSE_EVENT, (int)mdx, (int)mdy);
 	} else if ( Key_GetCatcher( ) & KEYCATCH_CGAME ) {
 		VM_Call( cgvm, 2, CG_MOUSE_EVENT, dx, dy );
 	} else {
@@ -964,6 +972,7 @@ void CL_InitInput( void ) {
 
 	cl_run = Cvar_Get( "cl_run", "1", CVAR_ARCHIVE_ND );
 	cl_sensitivity = Cvar_Get( "sensitivity", "5", CVAR_ARCHIVE );
+	m_menuSensitivity = Cvar_Get( "m_menuSensitivity", "1", CVAR_ARCHIVE );
 	cl_mouseAccel = Cvar_Get( "cl_mouseAccel", "0", CVAR_ARCHIVE_ND );
 	cl_freelook = Cvar_Get( "cl_freelook", "1", CVAR_ARCHIVE_ND );
 
