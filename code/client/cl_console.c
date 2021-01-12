@@ -62,7 +62,7 @@ typedef struct {
 
 	qboolean newline;
 
-	char prefix[9];
+	char prefix[9];			// fixed width prefix
 } console_t;
 
 extern  qboolean    chat_team;
@@ -458,12 +458,12 @@ void Con_Fixup( void )
 
 /*
 ===============
-Con_Linefeed
+Con_NewLine
 
 Move to newline only when we _really_ need this
 ===============
 */
-void Con_NewLine( void )
+static void Con_NewLine( void )
 {
 	short *s;
 	int i;
@@ -477,10 +477,10 @@ void Con_NewLine( void )
 	s = &con.text[ ( con.current % con.totallines ) * con.linewidth ];
 
 	// insert prefix
-	if (con_timestamp && con_timestamp->integer) {
-		assert(strlen(con.prefix) == 8);
-		con.x = 9;
-		for ( i = 0; i < 8; ++i )
+	if ( con_timestamp && con_timestamp->integer ) {
+		assert( strlen(con.prefix) == sizeof(con.prefix) - 1 );
+		con.x = sizeof(con.prefix); // prefix + ' '
+		for ( i = 0; i < sizeof(con.prefix) - 1; ++i )
 			*s++ = (ColorIndexFromChar('z')<<8) | con.prefix[i];
 		++s;
 	}
@@ -495,7 +495,7 @@ void Con_NewLine( void )
 Con_Linefeed
 ===============
 */
-void Con_Linefeed( qboolean skipnotify )
+static void Con_Linefeed( qboolean skipnotify )
 {
 	// mark time for transparent overlay
 	if ( con.current >= 0 )	{
@@ -555,11 +555,11 @@ void CL_ConsolePrint( const char *txt ) {
 	}
 
 	// update prefix
-	if (con.x == 0 && con_timestamp && con_timestamp->integer) {
+	if ( con.x == 0 && con_timestamp && con_timestamp->integer ) {
 		qtime_t	now;
-		Com_RealTime(&now);
-		assert(sizeof(con.prefix) == 9);
-		Com_sprintf(con.prefix, sizeof(con.prefix), "%02d:%02d:%02d", now.tm_hour, now.tm_min, now.tm_sec);
+		Com_RealTime( &now );
+		assert( sizeof(con.prefix) == 9 );
+		Com_sprintf( con.prefix, sizeof(con.prefix), "%02d:%02d:%02d", now.tm_hour, now.tm_min, now.tm_sec );
 	}
 
 	colorIndex = ColorIndex( COLOR_WHITE );
@@ -579,7 +579,7 @@ void CL_ConsolePrint( const char *txt ) {
 		}
 
 		// word wrap
-		if ( l != con.linewidth && ( con.x + l >= con.linewidth ) && (l + (con_timestamp->integer ? 10 : 0) <= con.linewidth)) {
+		if ( l != con.linewidth && ( con.x + l >= con.linewidth ) && (l + (con_timestamp->integer ? sizeof(con.prefix) + 1 : 0) <= con.linewidth)) {
 			Con_Linefeed( skipnotify );
 		}
 
@@ -699,7 +699,7 @@ void Con_DrawNotify( void )
 			continue;
 		}
 
-		for (x = con_timestamp->integer ? 9 : 0; x < con.linewidth ; x++) {
+		for (x = con_timestamp->integer ? sizeof(con.prefix) : 0; x < con.linewidth ; x++) {
 			if ( ( text[x] & 0xff ) == ' ' ) {
 				continue;
 			}
@@ -708,7 +708,7 @@ void Con_DrawNotify( void )
 				currentColorIndex = colorIndex;
 				re.SetColor( g_color_table[ colorIndex ] );
 			}
-			SCR_DrawSmallChar( (int)notifyx + con.xadjust + (x + 1 - (con_timestamp->integer ? 9 : 0)) * smallchar_width, v + (int)notifyy, text[x] & 0xff );
+			SCR_DrawSmallChar( (int)notifyx + con.xadjust + (x + 1 - (con_timestamp->integer ? sizeof(con.prefix) : 0)) * smallchar_width, v + (int)notifyy, text[x] & 0xff );
 		}
 
 		v += smallchar_height;
