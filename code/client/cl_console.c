@@ -458,6 +458,26 @@ void Con_Fixup( void )
 
 /*
 ===============
+Con_Prefix
+===============
+*/
+static void Con_Prefix( void )
+{
+	assert( con.x == 0 );
+
+	if ( con_timestamp && con_timestamp->integer ) {
+		assert( strlen(con.prefix) == sizeof(con.prefix) - 1 );
+		con.x = sizeof(con.prefix); // prefix + ' '
+		short *s = &con.text[ ( con.current % con.totallines ) * con.linewidth ];
+		for ( int i = 0; i < sizeof(con.prefix) - 1; ++i )
+			*s++ = (ColorIndexFromChar('z')<<8) | con.prefix[i];
+		*s++ = (ColorIndex(COLOR_WHITE)<<8) | ' ';
+	}
+}
+
+
+/*
+===============
 Con_NewLine
 
 Move to newline only when we _really_ need this
@@ -474,17 +494,9 @@ static void Con_NewLine( void )
 	con.current++;
 
 	con.x = 0;
-	s = &con.text[ ( con.current % con.totallines ) * con.linewidth ];
+	Con_Prefix();
 
-	// insert prefix
-	if ( con_timestamp && con_timestamp->integer ) {
-		assert( strlen(con.prefix) == sizeof(con.prefix) - 1 );
-		con.x = sizeof(con.prefix); // prefix + ' '
-		for ( i = 0; i < sizeof(con.prefix) - 1; ++i )
-			*s++ = (ColorIndexFromChar('z')<<8) | con.prefix[i];
-		*s++ = (ColorIndex(COLOR_WHITE)<<8) | ' ';
-	}
-
+	s = &con.text[ ( con.current % con.totallines ) * con.linewidth + con.x];
 	for ( i = con.x; i < con.linewidth ; i++ )
 		*s++ = (ColorIndex(COLOR_WHITE)<<8) | ' ';
 }
