@@ -328,6 +328,8 @@ ifdef MINGW
   BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
     -DUSE_ICON -DMINGW=1
 
+  BASE_CFLAGS += -Wno-unused-result
+
   ifeq ($(ARCH),x86_64)
     ARCHEXT = .x64
     BASE_CFLAGS += -m64
@@ -390,6 +392,8 @@ ifeq ($(COMPILE_PLATFORM),darwin)
 
   BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
 
+  BASE_CFLAGS += -Wno-unused-result
+
   BASE_CFLAGS += -I/Library/Frameworks/SDL2.framework/Headers
 
   OPTIMIZE = -O2 -fvisibility=hidden
@@ -400,7 +404,7 @@ ifeq ($(COMPILE_PLATFORM),darwin)
 
   LDFLAGS =
 
-  CLIENT_LDFLAGS =  -F/Library/Frameworks -framework SDL2
+  CLIENT_LDFLAGS = -F/Library/Frameworks -framework SDL2
 
   DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -g -O0
   RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
@@ -412,6 +416,8 @@ else
 #############################################################################
 
   BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
+
+  BASE_CFLAGS += -Wno-unused-result
 
   BASE_CFLAGS += -I/usr/include -I/usr/local/include
 

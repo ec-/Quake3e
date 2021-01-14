@@ -3449,7 +3449,7 @@ void vk_initialize( void )
 	}
 
 	Q_strncpyz( glConfig.vendor_string, vendor_name, sizeof( glConfig.vendor_string ) );
-	Com_sprintf( glConfig.renderer_string, sizeof( glConfig.renderer_string ), renderer_name( &props ) );
+	Q_strncpyz( glConfig.renderer_string, renderer_name( &props ), sizeof( glConfig.renderer_string ) );
 
 	SET_OBJECT_NAME( (intptr_t)vk.device, glConfig.renderer_string, VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_EXT );
 
