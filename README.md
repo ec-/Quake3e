@@ -1,5 +1,7 @@
 # Quake3e
 
+![build](https://github.com/ec-/Quake3e/workflows/build/badge.svg)
+
 This is a modern Quake III Arena engine aimed to be fast, secure and compatible with all existing Q3A mods.
 It is based on last non-SDL source dump of ioquake3 with latest upstream fixes applied.
 
