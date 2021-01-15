@@ -11,8 +11,8 @@ on:
     paths-ignore:
       - '**.md'
       - '*.txt'
-    release:
-     types: [published]
+  release:
+    types: [published]
 
   workflow_dispatch:
 
@@ -216,7 +216,7 @@ jobs:
 
   update-release:
     if: ${{ github.event_name == 'release' }}
-    needs: [ubuntu]
+    needs: [windows-x86, ubuntu, ubuntu-arm, macos]
     runs-on: ubuntu-latest
 
     strategy:
