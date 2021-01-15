@@ -496,6 +496,7 @@ void Com_ParseCommandLine( char *commandLine ) {
 	parsed = 1;
 }
 
+char cl_title[ MAX_CVAR_VALUE_STRING ] = CLIENT_WINDOW_TITLE;
 
 /*
 ===================
@@ -514,6 +515,16 @@ qboolean Com_EarlyParseCmdLine( char *commandLine, char *con_title, int title_si
 
 	for ( i = 0 ; i < com_numConsoleLines ; i++ ) {
 		Cmd_TokenizeString( com_consoleLines[i] );
+		if ( !Q_stricmpn( Cmd_Argv(0), "set", 3 ) && !Q_stricmp( Cmd_Argv(1), "cl_title" ) ) {
+			com_consoleLines[i][0] = '\0';
+			Q_strncpyz( cl_title, Cmd_ArgsFrom( 2 ), sizeof(cl_title) );
+			continue;
+		}
+		if ( !Q_stricmp( Cmd_Argv(0), "cl_title" ) ) {
+			com_consoleLines[i][0] = '\0';
+			Q_strncpyz( cl_title, Cmd_ArgsFrom( 1 ), sizeof(cl_title) );
+			continue;
+		}
 		if ( !Q_stricmpn( Cmd_Argv(0), "set", 3 ) && !Q_stricmp( Cmd_Argv(1), "con_title" ) ) {
 			com_consoleLines[i][0] = '\0';
 			Q_strncpyz( con_title, Cmd_ArgsFrom( 2 ), title_size );

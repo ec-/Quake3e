@@ -1624,7 +1624,7 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 			sizeof(decohint) / sizeof(long) );
 	}
 
-	XStoreName( dpy, win, CLIENT_WINDOW_TITLE );
+	XStoreName( dpy, win, cl_title );
 
 	/* GH: Don't let the window be resized */
 	sizehints.flags = PMinSize | PMaxSize;

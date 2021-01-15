@@ -896,6 +896,9 @@ MISC
 // https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=470
 extern char cl_cdkey[34];
 
+// customizable client window title
+extern char cl_title[ MAX_CVAR_VALUE_STRING ];
+
 extern	int	CPU_Flags;
 
 // x86 flags
