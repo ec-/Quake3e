@@ -6,9 +6,15 @@ on:
       - '**.md'
       - '*.txt'
   push:
+    branches:
+      - master
     paths-ignore:
       - '**.md'
       - '*.txt'
+    release:
+     types: [published]
+
+  workflow_dispatch:
 
 jobs:
   windows-x86:
@@ -180,10 +186,10 @@ jobs:
         if-no-files-found: error
         retention-days: 5
 
-  create-release:
+  create-testing:
+    if: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
     needs: [ubuntu, ubuntu-arm, macos, windows-x86]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v2
@@ -207,3 +213,47 @@ jobs:
           title: Latest Build
           files: |
             *.zip
+
+  update-release:
+    if: ${{ github.event_name == 'release' }}
+    needs: [ubuntu]
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - artifact_dir: linux-aarch64
+            artifact_name: quake3e-linux-aarch64.zip
+
+          - artifact_dir: linux-armv7
+            artifact_name: quake3e-linux-armv7.zip
+
+          - artifact_dir: linux-x86
+            artifact_name: quake3e-linux-x86.zip
+
+          - artifact_dir: linux-x86_64
+            artifact_name: quake3e-linux-x86_64.zip
+
+          - artifact_dir: windows-x86
+            artifact_name: quake3e-windows-x86.zip
+
+          - artifact_dir: windows-x86_64
+            artifact_name: quake3e-windows-x86_64.zip
+
+          - artifact_dir: macos-x86_64
+            artifact_name: quake3e-macos-x86_64.zip
+
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+
+      - name: Create archive
+        run: 7z a -r ${{ matrix.artifact_name }} ./${{ matrix.artifact_dir }}/*
+
+      - name: Upload archive
+        uses: "svenstaro/upload-release-action@v2"
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          overwrite: true
+          file: ${{ matrix.artifact_name }}
