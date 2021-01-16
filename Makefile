@@ -174,7 +174,6 @@ W32DIR=$(MOUNT_DIR)/win32
 BLIBDIR=$(MOUNT_DIR)/botlib
 UIDIR=$(MOUNT_DIR)/ui
 JPDIR=$(MOUNT_DIR)/libjpeg
-LOKISETUPDIR=$(UDIR)/setup
 
 bin_path=$(shell which $(1) 2> /dev/null)
 
@@ -1226,7 +1225,6 @@ ifneq ($(BUILD_SERVER),0)
 endif
 
 clean: clean-debug clean-release
-	@$(MAKE) -C $(LOKISETUPDIR) clean
 
 clean2:
 	@echo "CLEAN $(B)"
@@ -1244,21 +1242,6 @@ clean-release:
 distclean: clean
 	@rm -rf $(BUILD_DIR)
 
-installer: release
-	@$(MAKE) VERSION=$(VERSION) -C $(LOKISETUPDIR) V=$(V)
-
-dist:
-	rm -rf quake3-$(SVN_VERSION)
-	svn export . quake3-$(SVN_VERSION)
-	tar --owner=root --group=root --force-local -cjf quake3-$(SVN_VERSION).tar.bz2 quake3-$(SVN_VERSION)
-	rm -rf quake3-$(SVN_VERSION)
-
-dist2:
-	rm -rf quake3-1.32e-src
-	svn export . quake3-1.32e-src
-	zip -9 -r quake3-1.32e-src.zip quake3-1.32e-src/*
-	rm -rf quake3-1.32e-src
-
 #############################################################################
 # DEPENDENCIES
 #############################################################################
@@ -1270,5 +1253,5 @@ D_FILES=$(shell find . -name '*.d')
 #endif
 
 .PHONY: all clean clean2 clean-debug clean-release copyfiles \
-	debug default dist distclean installer makedirs release \
+	debug default dist distclean makedirs release \
 	targets tools toolsclean
