@@ -1,0 +1,1069 @@
+16-Jan-2021:
+* Win32: try to catch exceptions instead of silent crashing
+* Win32: made unhandled exceptions non-fatal
+* Sound: backported some fixes from ioq3, improved skip protection and reduced latency
+* Client: made console hide/display speed do not depend from \timescale
+* Client: updated built-in jpeg library version from 8c to 9d
+* Renderers: avoid using detail textures for lighting stage
+* Renderers: fixed shader parsing regression introduced by optional 'firstPerson' key
+* Renderers: reverted color correction for external lightmap atlases
+* Vulkan: list all available GPUs at startup
+* Vulkan: added option to automatically select discrete/integrated GPUs via \r_device values -1 and -2
+* Vulkan: changed \r_device default to -1 (auto-select first discrete GPU)
+* Vulkan: fixed potential crash caused by incorrect index offset bond
+* Miscellaneous fixes and improvements
+
+31-Oct-2020:
+* Allow changing extension for \video-pipe output files
+* More optimizations for vm_aarch64
+* Fixed "ResampleTexture: max width" error in renderers
+* Fixed crash in linux client caused by unitialized cvars, added backtrace output for debug builds
+
+21-Sep-2020:
+* Client: automatically rescale console chars height for resolutions greater than FullHD	
+* Vulkan: do not crash if validation layer is not available in debug mode, some other minor fixes
+* Added support for Raspberry Pi 4, Vulkan renderer seems to work fine with its beta driver
+* Added very fast bytecode compilers for 32/64-bit ARM processors, slight improvements for x86
+
+08-Aug-2020:
+* OpenGL: fixed anisotropy level always forced to 1
+* Vulkan: implemented bloom post-processing effect, can be enabled via \r_bloom 1 cvar, requires \r_fbo 1
+* Vulkan: speedup video/screenshot capture
+* SDL: added missing \in_restart command
+* Added description for \fs_homepath and \fs_excludeReference cvars
+* Added support for compiling on MacOS and ARM-based platforms
+* Various small corrections
+
+05-Jul-2020:
+* Added support for external lightmap atlases stored in maps/<mapname>/lm_XXXX textures
+* Vulkan: added debug markers for resources, can be useful for tools like RenderDoc
+* Vulkan: fixed incorrect color format setup with r_hdr 1 and r_fbo 0
+* Vulkan: render screenmap only in first scene
+* Fixed incorrect usage of \r_dlightScale, slightly improved lighting stage selection
+* Added wrapper over gai_strerror() to force english error messages
+* Fixed 2+ arguments command completion for \rcon commands
+
+27-May-2020:
+* Fixed some broken binds
+
+25-May-2020:
+* Removed dead KP_STAR bind (referenced only in unused macosx code)
+* Re-enable depth writes for skybox to fix cases when it can overlap with portal models
+* Backported alpha-to-coverage fix from cnq3 for alpha-test function #1
+* Vulkan: fixed discard optimization
+* Vulkan: fixed broken TCgen optimization
+* Vulkan: use FIFO_RELAXED if available for V-Sync
+* Vulkan: added support for mailbox presentation mode via \r_swapInterval 2 cvar
+* Server: missing pure checksums at CS_ACTIVE now will cause client drop or gamestate retransmission at CS_PRIMED
+* Win32: try to reset read-only attribute when writing q3config.cfg
+
+15-Apr-2020:
+* Server: run userinfo filter as early as possible
+* Vulkan: reworked library loader
+* Vulkan: fixed \imagelist displaying wrong image formats
+* Vulkan: fixed broken cinematics with \r_textureBits 16
+* Vulkan: fixed broken single-texture+fog shader
+* Vulkan: fixed multi-texture bind order
+* Allow shaders extensions to be used within .shaderx files only
+
+04-Apr-2020:
+* Vulkan: improved performance and compatibility
+* Vulkan: imlemented reversed depth buffer to avoid z-figting on very large maps
+* Vulkan: fixed framebuffer corruption on Intel iGPUs
+* Vulkan: fixed HDR screenshots/video capture on Nvidia drivers
+* OpenGL: fixed rendering of some environment mapping shaders in VBO
+* Increased MAX_IMAGE_ANIMATIONS from 8 to 24, considering using it from shaderx files only to maintain compatibility
+* Changed option set for \r_showTris to 0 (disabled), 1 (exclude console) and 2 (include everything)
+
+27-Feb-2020:
+* Change Sys_SnapVector to `rint` the components for x64 linux/mingw (to sync with everything else)
+* Fixed vertex buffer overflow on zeel-exzeel_slick map, optimized skybox rendering
+* Vulkan: implemented geometry buffer resizing on the fly, no more fatal errors
+* Vulkan: fixed screenMap rendering in some cases
+* OpenGL: put more shader stages in VBO to increase performance
+* OpenGL: removed \r_primitives and \r_ignoreFastPath cvars
+* Removed CVAR_CHEAT flag for \r_noportals cvar
+* Fixed image corruption caused by bug in FixRenderCommandList()
+* Fixed dynamic lighting on moving platforms
+* Added two-side lighting for some surfaces
+* Removed massive spam about wrong image extension in developer mode
+  (information about extension substitution now printed by \imagelist command)
+* Various bugfixes and optimizations
+
+23-Jan-2020:
+* Added \cvar_trim command - to remove all user-created cvars
+* Vulkan: implemented 2-pass rendering and \r_renderScale options similar to OpenGL renderer
+* Vulkan: implemented screenMap keyword functionality, enabled .shaderx support
+* Vulkan: improved performance and image quality in several aspects
+* Fixed vertexlighting collapse
+* Fixed sort order for shaders with stages mixing depthWrite and blendFunc
+* Win32: set a bit higher process priority
+* Updated IPDB
+
+29-Nov-2019:
+* Win32: slightly boost Q3A process priority
+* Vulkan: added \r_ext_alpha_to_coverage - to improve quality of alpha-tested textures with enabled \r_ext_multisample
+* Vulkan: fixed a few alpha-test bugs in a light fragment shader
+* Vulkan: fixed \imagelist command
+* Vulkan: fixed startup with old AMD drivers
+* Vulkan: enable \r_vbo by default and set developer mode dependency
+* Fixed defrag mod compatibility issue
+* Fixed crash with remapped shaders in vertexlight mode
+* Fixed vertex lighting of shaders without vertex color data
+* Made \r_allowExtensions developer-protected
+* Changed \r_showtris:
+ 0 - disabled
+ 1 - enabled only for 3D surfaces
+ 2 - plus HUD
+ 3 - plus console
+ 1 and 2 might work incorrectly on case of multiple views
+* More QVM optimizations
+* Updated IPDB
+
+09-Sep-2019:
+* Added experimental vulkan renderer:
+ - based on KennyAlive's reference implementation
+ - offsers significant (50..300%) performance increase (at least on AMD hardware)
+ - supports r_fbo, r_vbo, multisampling, fast flares, per-pixel dynamic lighting
+ - currently missing bloom+reflection, screenMap comparing to opengl renderer
+* Added \r_noborder support for linux
+* Changed noborder drag key from CTRL to ALT to unify behavior with linux WMs
+* Added SDL2 support (window,audio,mouse,joysticks) for win32/linux, selectable at compile time
+* Modular renderer design (selectable at compile time)
+* Changed \com_yieldCPU from 2 to 1 by default
+* Implemented correct ALT-TAB handling in windows
+* Less visual spam in console
+* Various bugfixes
+
+05-Jun-2019:
+* Made \sv_pure latched to avoid side-effects after map startup
+* Added \fs_excludeReference cvar - to exclude certain pk3s from download list on server side
+ for example: \fs_excludeReference "baseq3/pakx.pk3 modx/paky.pk3"
+* Extended \logfile modes:
+  0 - disabled
+  1 - overwrite mode, buffered
+  2 - overwrite mode, synced
+  3 - append mode, buffered
+  4 - append mode, synced
+* Fixed non-working console scrolling in fullscreen with 2+ monitors on win32
+* Slightly changed "\rcon tell" appearance
+* Misc. filesystem changes
+* Updated ip4db
+
+18-Apr-2019:
+* Added client country detection code
+  controlled by \sv_clientTLD 0|1 cvar, default is 0
+  adds \\tld\\XX key to userinfo, can be used for filtering
+  requires external ip4db.dat database
+* Added \locations client command
+* Removed \com_maxfps limitations for defrag-1.91.25
+* Fixed "userinfo" client command DoS
+* Fixed non-working exec[q] command file completion
+
+14-Mar-2019:
+* Fixed client event handling regression
+* Fixed shader duplication on some maps
+* Improved client-side prediction
+
+17-Feb-2019:
+* Do not allow listing/loading autoexec.cfg/q3config.cfg from pk3 files
+* Fixed weird bug with non-working mousewheel under some conditions
+* Fixed non-working virtual resolution (for capture)
+* Misc. renderer fixes
+
+29-Jan-2019:
+* Added 'novlcollapse' shader key - to bypass \r_vertexLight 1 setting
+* Now using more explicit control over vertex lighting approximation to provide more predictable renderer output:
+ - always disable it for UI elements (this includes console shader)
+ - enable it only for CGame module
+* Improved memory management during image loading, removed practical MAX_DRAWIMAGES/MAX_QPATH limits (conditions left only for forward compatibility)
+* Implemented CTRL+Left and CTRL+Right hotkeys for in-game console to seek through words in command line
+* Tab-complete cvar values and bind values
+* Declare single-char bind keys for better tab-completion
+* Increased MAX_EDIT_LINE to 512
+* Bypass K_MWHEELUP/K_MWHEELDOWN with opened console in linux
+* Removed unused K_WORLD_* keys and unused K_AUX9..K_AUX16 key definitions, reduced set of K_JOY* keys
+* Removed unused \r_inGameVideo cvar from renderer modules
+* Removed unused \r_uiFullScreen cvar
+* Improved FreeBSD compatibility
+
+22-Dec-2018:
+* Fixed configstring race condition caused by previously loaded map
+* Fixed redundant map downloads with \cl_mapAutoDownload 1
+* Fixed non-working +button15/-button15
+
+27-Nov-2018:
+* Added vendor-specific exported symbols to win32 executables in hope that it will select most powerful GPU for our process in multi-GPU configurations
+* Really fixed fog shader for q3dm19
+* Fixed broken rendering with multiple views and opened console with FBO and MSAA enabled
+* Fixed crash in renderer caused by corrupted fog data, found on `geminicastle` map
+* Fixed memory leak in CL_CloseAVI()
+* Reworked \status command output to draw variable-sized name and address fields
+* Implemented userinfo filtering system (see docs/filter.txt):
+ - any userinfo key can be validated
+ - practically unlimited number of conditions and nested levels
+ - special "date" key for temporary bans
+* Reverted SHADER_MAX_VERTEXES back to 1000, to enforce forward compatibility with other engines
+* Renamed \sv_maxconcurrent to \sv_maxclientsPerIP and changed default from 4 to 3
+* Try to use least-used client slots for new connection to preserve client ids between connections
+* QVM speed improvements
+
+22-Sep-2018:
+* Fixed zero ping time causes empty server list
+* Fixed wrong fog shader on q3dm19
+* Implemented \minimize console command
+* Improved OSP mod compatibility
+
+18-Aug-2018:
+* Accept negative \r_mapGreyScale values to apply old (lightmap-only) grey scale
+* Implemented loading/saving of pk3 index data, speeds up initial filesystem startup in 10x-100x times
+* Slightly reduced filesystem memory usage
+* Improved zone memory manager
+* Unified behavior of MWheelUp with PgUp and MWheelDown with PgDown for console scrolling
+* Reworked ALSA initialization and improved compatibility with jack2 + zita-ajbridge
+* Fixed error message during monitor detection via xrandr
+* Fixed time wrapping causing very long reconnect delay
+
+05-Aug-2018:
+Renamed \r_mapGrayScale to \r_mapGreyScale, also now it is more strong
+Fixed engine crash caused by mods passing erroneous data to render
+Fixed non-working rconPassword2 on linux
+
+29-Jul-2018:
+* Fixed Defrag demo UI (works on linux now)
+* Improved filesystem compatibility
+
+28-Jul-2018:
+* Fixed regression in filesystem code
+* Fixed 'floating' console color
+* Fixed OSP demo UI
+
+23-Jul-2018:
+* Fixed resolving optional FBO functions
+* Fixed Escape key causing full client restart during cinematics
+* Fixed excessive filesystem lookup with empty \fs_steampath 
+* Reduced memory fragmentation at filesystem startup
+* Avoided bug in defrag mod (whose demo UI can't handle properly sorted directories)
+* Improved file extension filtering so now defrag demo UI works (partially) on linux too
+
+17-Jul-2018:
+* Fixed pak reference & checksum calculation for cached pk3 files
+
+15-Jul-2018:
+* Implemented more correct online switching between mods
+* Added \fs_restart command - to manually restart the filesystem
+* Significally reduced filesystem restart time in case of thousands of pk3s installed
+
+05-Jul-2018:
+* Fixed client/botlib memory corruption
+
+30-Jun-2018:
+* Added \r_ext_supersample - SuperSample Anti-Aliasing, most resource-heavy antialiasing method, can be enabled in pair with \r_ext_multisample
+* Fixed chat input position counting notify lines
+* Fixed clipboard text length truncation on linux
+* Corrected screenMap texture generation
+* Linux console improvements
+* Netcode improvements
+
+04-Jun-2018:
+* Fixed resource leak in botlib code
+* Fixed OSP game patch
+* Fixed command history buffer size
+* Fixed ctrl+n and ctrl+p hotkeys with \in_forceCharset > 0
+* Game configuration now saved much less frequently
+* Reset console command history on game change
+* Use own console command history for dedicated servers
+
+23-May-2018:
+* Fixed server crash induced by permanent rcon functionality
+* ioq3: Fix client kicked as unpure when missing the latest cgame/ui pk3s
+
+19-May-2018:
+* Improved mod compatibility
+* Now using \r_renderScale 0 to disable custom render resolution mode
+* Allow only printable ASCII chars for cvar names
+* Fixed \r_speeds 1 with enabled VBO
+* Fixed black lines on dlighted surfaces with \r_showTris 1 and \r_dlightMode > 0
+
+28-Apr-2018:
+* ioq3: Fix uninitialized bot_goal_t fields
+* ioq3: Fix possible bot goal state NULL pointer dereference
+* Misc. renderer & netcode improvements
+* Print up to 32 file sources in \which output
+* Print developer messages with cyan color
+* Increased win32' console width & height
+
+15-Apr-2018:
+* ioq3: Fix q3history buffer not cleared between mods and OOB-access
+* ioq3: Fix the behavior of CVAR_LATCH|CVAR_CHEAT cvars
+* Netcode & QVM improvements
+
+09-Apr-2018:
+* Fixed invalid files referenced on pure clients
+* Fixed a few netcode exploits
+* Fixed \sv_reconnectlimit is not always working
+* Try to use persistent slot for each client after disconnect
+* Print information about delay at reconnect
+* Linux console imrovements
+
+02-Apr-2018:
+* Fixed a few bugs in client connection code
+
+01-Apr-2018:
+* Fixed remote server crash via rcon
+* Send quoted rcon passwords when needed and parse them correctly on server-side
+* Now rcon is always available on dedicated servers - so it is possible to start a map, retrieve status or recover from non-fatal error, for example
+* Added rconPassword2 - hidden master rcon password that can be set only from command line, can be used to change/revoke compromised rconPassword
+* Various bugfixes
+
+26-Mar-2018:
+* Added \cl_autoNudge - automatic time nudge that uses your average ping as the time nudge value, suggested by @iradicus, values:
+ 0 - use fixed \cl_timeNudge
+ (0..1] - factor of median average ping to use as timenudge
+* Added \sv_maxconcurrent - to limit number of simultaneous connections from the same IP address, default is 4
+* Added \fs_locked cvar to control pk3 file handle usage policy:
+ 0 - release after use (default from now), no pk3 file count limits
+ 1 - keep it locked (vq3 behavior), more consistent but pk3 file count is limited to ~1-4k
+* Various bugfixes and optimizations
+
+14-Mar-2018:
+* Win32: added \r_noborder 1 - to draw game window without border, hold CTRL to drag & drop it with opened console
+* Win32: Fixed window handling
+* Changed \r_neatsky to 0 by default
+* Accept protocol headers (e.g. http://) in command lines and save them properly in cvars
+* Try to prevent gamestate overflow on pure servers
+* Various bugfixes and optimizations
+
+26-Feb-2018:
+* Fixed regression added with recent optimizations
+* Improved DoS protection
+
+24-Feb-2018:
+* Slightly speedup collision detection for win64-msvc builds
+* Added \r_defaultImage cvar - to replace the default (missing texture) images, can either point on external filename or specify solid color texture in (hex) formats: "#rgb" or "#rrggbb"
+* Removed obsolete \com_maxfpsMinimized
+* Synced \snaps with \sv_fps for localhost client
+* Properly reflected \sv_fps changes for connected clients
+* Reduced memory & CPU usage
+* Fixed adjacent texels leaking in merged lightmaps
+* ioq3: Make 'globalservers 0' fetch all masters
+* Marked \sv_master[1..3] as CVAR_INIT to prevent overriding them by spoiled configuration files
+* Fixed root of 14-years-old q3msgboom bug
+* Misc. improvements and bugfixes
+
+09-Feb-2018:
+* New server-side client connection code (no more "getchallenge" flooding, reduced CPU usage)
+* Removed \sv_minPing and \sv_maxPing cvars
+* Changed \r_dlightScale to 0.5 by default to match VQ3'dlights radius/intensity
+* Fixed grid collision geometry to be more equal in 32-bit and 64-bit modes
+* Fixed non-working \reconnect in some cases
+* Misc. fixes and improvements
+
+30-Jan-2018:
+* Added unified lightmaps, enabled by default, can be disabled by \r_mergeLightmaps 0
+* Changed default \com_hunkMegs from 96 to 128 for client and from 56 to 64 for server
+* Reverted condump changes
+* Drop error to local client on gamestate overflow
+* ioq3: Fix exploit to bypass filename restrictions on Windows
+
+28-Jan-2018:
+* Improved QVM memory isolation
+* Improved QVM interpreter performance
+* Improved cvar security
+* Reduced GPU usage when minimized
+* Fixed MSAA on Intel HD 530
+* Fixed non-working console scrolling in windowed mode with raw input and opened console
+* Fixed crash caused by \timescale 0
+* Condumps now will be saved in upper level directory, not mod directory
+
+16-Jan-2018:
+* Added experimental "screenMap" texture support for shader stages, can be used for real-time on-hand weapon reflections
+* Fixed viewport/scissor with \r_fastSky 1
+* Fixed depth range for inserted dynamic lights
+* Fixed wrong ping times at high uptime
+
+11-Jan-2018:
+* Added range checks for \sv_timeout and \sv_zombietime cvars to avoid using values that may break server functionality
+* Improved server-side flood protection (\sv_floodProtect 1), might be considered as really usable now
+* Removed unused \sv_showloss cvar
+* Misc. bugfixes
+
+08-Jan-2018:
+* Faster map loading
+* Do not take (blank) screenshots and print warning when minimized and FBO is not active
+* Always save CPU when minimized
+* Slightly optimized VBO rendering and fixed \r_showtris colors with VBO
+
+30-Dec-2017:
+* Added \cl_dlDirectory - to specify location to save downloads initiated by \dlmap and \downloads commands:
+ 0 - save in current game directory
+ 1 - save in fs_basegame (baseq3) directory
+* Fixed non-working VBO in fullbright mode
+
+23-Dec-2017:
+* Better FPS control (client and server)
+* More precise ping calculation
+* Linux multimonitor improvements
+* Implemented string comparisons for conditional shaders
+* Fixed console messages may leak on screen with \con_notifytime 0
+* Removed \username and corresponding functionality
+* Botlib security fix
+
+11-Dec-2017:
+* Fixed missing dynamic lighting with collapsed multitexture shaders 
+
+09-Dec-2017:
+* Win32: do not minimize/restore video mode/gamma when switching out of game window in multimonitor configurations
+
+08-Dec-2017:
+* Implemented \r_renderWidth and \r_renderHeight, see docs/quake3e.htm for details
+* Now releasing mouse with opened console in multimonitor configurations
+* Added multimonitor support for Linux, ALSA and window handling improvements
+* Removed old non-FBO bloom and its variables, so only new bloom is available from now via \r_bloom:
+ 0 - (disabled)
+ 1 - (without hud)
+ 2 - (with hud)
+* Renamed all \r_bloom2* cvars to \r_bloom*
+* Now using \timescale 0 to pause demo playback
+* Removed \cl_freezeDemo as it never worked as intended
+* Various bugfixes
+
+27-Nov-2017:
+* Backport master dns resolve timeout and dedicated \tell command support from ioq3
+* Fixed precision in collision detection module (to avoid incostistency between 32 and 64-bit builds)
+* Fixed stuck at "awaiting snapshot..." state when connecting to pure servers and being kicked because of unpure
+* Fixed spurious "Invalid .PK3 files referenced" errors on reconnect
+* Fixed dlight quality with \r_vbo 1
+
+15-Nov-2017:
+* Implemented correct fog fading for new dynamic lights
+* Actually use only 22 and 11 cases for \s_khz
+* Fix SurfIsOffscreen() with enabled VBO
+
+10-Nov-2017:
+* Fix non-working new dynamic lighting on some maps
+* Fix VBO crash
+* Another small VBO fix
+
+09-Nov-2017:
+* Add \r_vbo 1 - GPU-accelerated static map geometry caching, map-dependent, typically adds 5-20% FPS on modern GPUs, but even 200%+ FPS increase was observed as well as zero difference cases
+* Win32: restore gamma and hide fullscreen window in case of crash
+
+01-Nov-2017:
+* Change [automatic] demo naming scheme from demoXXXX to demo-YYYYMMDD-HHmmSS[-NNN]
+* Add \s_device cvar to specify output sound device for ALSA
+* Clear key states on focus change/vid_restart in linux
+* Slight bloom effect performance increase
+* Fix \r_anaglyphMode rendering with \r_fbo
+* Fix texture numbers generation
+
+16-Oct-2017:
+* Fix non-working \r_ignorehwgamma 1 with \r_fbo 1
+* Use RGBA16 instead of RGBA12 textures for \r_hdr 1 - should fix errors on nvidia cards
+* Fix some drivers reporting invalid preferred texture format
+* Print detailed format of used FBO
+
+15-Oct-2017:
+* Escape always closes console
+* Fix sound muted when minimized with \s_muteWhenMinimized 0
+* Fix sounds leaks when muted
+* Fix unfocused/minimized window state adding delays during video capture
+* No more zone allocation errors, no need to tune \com_zoneMegs at all because of new multi-segment allocator
+* Reduce \com_zoneMegs from 25 to 9 by default
+* Fix bot routing cache growing to com_zoneMegs-1 (and potentially unlimited with new multi-segment allocator), use explicit 2MB limit which is enough even for route-heavy maps like q3dm12 with 60+ bots
+* Increase MIN_DEDICATED_COMHUNKMEGS from 1 to 8 because common snapshot storage always uses 6.7MB i.e. there is no sense is smaller values
+* Fix dynamic lights not working well with AMD drivers
+* Add \r_hdr - use high dynamic range pixel format for framebuffers, improves visual quality
+* Many bloom changes:
+ add \r_bloom2_passes [1..8] - number of downscaled textures used for final bloom composition
+ add \r_bloom2_filter_size [1..20]-  number of texture lookups for blur
+ add \r_bloom2_intensity - scale factor applied to final bloom texture before adding to main frame
+ add \r_bloom2_blend_base - to select from which hi-level buffer start blending final bloom texture, default is 1 (i.e. do not blend first full-resolution intensity buffer)
+ add \r_bloom2_threshold_mode to specify color extraction condition:
+  0 - (r|g|b) >= threshold
+  1 - (r+g+b)/2 >= threshold
+  2 - luminosity(r,g,b) >= threshold
+ add \r_bloom2_modulate to modify extracted bloom intensity:
+  0 - do not modulate
+  1 - modulate by itself
+  2 - modulate by luminosity
+ always use hdr buffers for bloom
+ add \r_bloom2_reflection - bloom lens reflection effect, negative values will apply only lens effect and disable bloom
+ \r_bloom 3 now doesn't affect console
+ fix bloom intensity extractor
+ remove \r_bloom2_cap
+* Remove old platform-dependent multisample setup code, leave only fbo version
+* Allow changing \r_ext_multisample and \r_hdr on the fly (in \r_fbo 1 mode)
+* Allow more than 32 surfaces in skin files
+* Remove unused \r_ext_gamma_control
+* Fix OpenGL 1.4 version detection
+* Do light pass right before SS_UNDERWATER if possible
+* Add \video-pipe command - redirect captured video stream to ffmpeg input pipe and save as mp4
+ you need to install ffmpeg package (on linux) or put ffmpeg binary near quake3e executable (on windows)
+* Add \cl_aviPipeFormat - encoder parameters used for \video-pipe, see ffmpeg documentation for details
+
+15-Sep-2017:
+* Add "\screenshotBMP" command
+* Add "\screenshotBMP clipboard" command - to copy screenshot in clipboard, works only in windows atm
+* Add some hardcoded key binds:
+ PrintScreen - "\screenshotBMP clipboard"
+ Shift+PrintScreen - "\screenshotBMP"
+* Add dedicated \r_nomip cvar instead of negative \r_picmip values to apply picmip only on worldspawn textures
+ as negative \r_picmip values is breaking cross-engine config compatibility
+* Fix \r_greyscale validation
+* Add descriptions for some renderer cvars
+* Accept only HTTP(S)/FTP(S) protocols for download redirection
+
+10-Sep-2017:
+* Add \s_muteWhenUnfocused and \s_muteWhenMinimized cvars
+* Sound muting now works during video recording
+* Fix memory allocation error caused by listing large directories
+
+08-Sep-2017:
+* Package now shipped with baseq3a patch (baseq3/pak8a.pk3)
+* Clear key states on disconnect
+* Clean some server cvars on server shutdown
+* Fix crash in TeamArena
+* Fix main menu recorded in video after disconnect
+* Fix slight sound corruption during video recording
+* Fix MSVC compilation from paths that contains whitespace
+* Rework cvar validation
+* Range check \cl_packetdup cvar
+* Detect and skip files with unsupported compression method inside pk3 archives
+
+26-Aug-2017:
+* Call glFinish() only if requested by r_finish
+* Fix sound stutter caused by filesystem operations
+* Verbose bot kick message on map change
+* Filter "connect" packet length to avoid overflows in dynamic huffman decoder
+* Improve overflow handling in MSG_ReadBits/MSG_WriteBits
+* Warn about userinfo and pure checksums truncation on client-side
+* Do not send more than MAX_PACKETLEN (1400 bytes) in single statusResponse packet
+* Read sv_pure directly from systeminfo, not local cvar
+* Do not set following local cvars from remote userinfo:
+ sv_pure, sv_serverid, sv_paks, sv_pakNames, sv_referencedPaks, sv_referencedPakNames
+* ioq3: Fix friction in AAS_ClientMovementPrediction ( ground and water friction were reversed )
+* Add trap_R_AddLinearLightToScene - linear light source, suitable for rail trails, lightsabers etc.
+ can be resolved via extension interface
+* Do not issue late cull tests on modern gfx hardware or for linear lights - as CPU may bottleneck in these cases
+* Fix FreeBSD compilation (partially)
+* Fix some errors reported by clang' undefined behavior sanitizer
+* Move \r_greyscale functionality to FBO/ARB shaders so now it requires \r_fbo 1, on other side:
+ - you can change \r_greyscale on the fly
+ - now it applies to everything including cinematics
+* Parse systeminfo as big string on client side, rest of strings - as normal strings
+* Add \systeminfo and \serverinfo commands on client side
+* Read systeminfo and serverinfo from corresponding configstrings on server side
+* Add "tcGen environment firstPerson" shader stage parameter - fixes non-working environment mapping for first-person (on-hand) models
+* Increase shader loading speed
+* Add complex token parser
+* Add experimental conditional shader stages, see docs/quake3e.htm for details
+
+13-Jul-2017:
+* Experimental: unconditionally complete \callvote command and its arguments for all mods
+* Print screenshot filename after executing render commands so it won't appear on screenshot itself
+* Add engine extension system, remove old r_floatfix hack
+* Allow multiple mirror views to be rendered
+* Fix non-working depth/stencil tests for extra refdefs in \r_bloom 2 mode
+* Fix crash caused by window movements during map load
+* Fix stuck AltGr key
+* Fix shader rotation at high level times
+
+13-Jun-2017:
+* Revert "Fix ^^ rendering in game console" due to mods compatibility problems
+
+12-Jun-2017:
+* Add \cl_mapAutoDownload - automatic map download from cl_dlURL for non-pure servers and demo playback, disabled by default
+* Add \r_bloom 2 - experimental high-quality bloom, use with \r_fbo 1, parameters:
+ \r_bloom2_threshold - bloom filter sensitivity
+ \r_bloom2_cap - max.resulting bloom intensity applied to original image
+* Add pk3dir feature, backported from ioq3 with some differences, works only with sv_pure 0
+* Client echo/print packet security fix
+* Win32: fix alt key hang
+* Win32: fix AltGr+Enter hotkey on non-US layouts
+* Win32: block monitor shutoff on battery
+* Fix ^^ rendering in game console
+* FBO-related fixes
+
+28-May-2017:
+* Add \in_forceCharset 2 - to use physical EN/US layout, this is obviously incompatible with AZERTY keyboards but useful for UK/RU layouts
+* Add \r_fbo - opengl framebuffer support, partially backported from cnq3, disabled by default
+ - gamma correction in windowed mode
+ - support for screenshots/video recording with larger resolutions
+ - allow window minimizing during video recording
+* Increase max.count of file handles in win32, needed for defrag mod
+* Detect and verbose a weird opengl error under linux
+* Range check \r_gamma and \r_intensity cvars
+* Fix '.' translation on numpad
+* Fix last-standing frameloss bug (stuck waves at very big sv.leveltime)
+* Fix early print to client console
+* Remove non-archive flag for \rate
+* Remove \r_measureOverdraw
+* MinGW compilation support
+* Win32: parse and set vid_xpos and vid_ypos from command line
+ - for dedicated binary it will set console position
+ - for client binary it will set main window position
+* Win32: correctly restore main window position from vid_xpos and vid_ypos in multi monitor configurations
+* Disable DPI scaling on windows 10
+
+12-May-2017:
+* Rename \in_forceLayout to \in_forceCharset and perform translation only for non-ASCII chars
+
+11-May-2017:
+* Add negative \r_picmip values support - to apply picmip only on worldspawn textures
+
+09-May-2017:
+* Experimental: add CVAR_NODEFAULT flag - to avoid writing cvar into config file if its value matching reset(default) string
+ this will reduce config file size and will help with upgrading archive cvars that most users never changing
+ also it will increase cross-plaftorm config compatibility for cases where some archive cvars may have different default values on different platforms
+* Add \in_forceLayout - to use EN/US keyboard layout not depending from current language settings, enabled by default
+* Add vsync workaround for linux opensource drivers
+
+07-May-2017:
+* Bugfixes and network layer optimizations
+
+30-Apr-2017:
+* Fix digits input on numpad in numlock mode
+* Fix local console history not loaded when client is connected to pure server
+* Stop demo recording on first download packet to avoid recording downloaded data
+* Skip download blocks parsing during demo playback
+* Replace some buggy shaders on mapel4b
+* Fix non-working effect colors is OSP mod
+* Try to handle some non-fatal errors during shaders loading
+* A bit faster shader loading
+* Add support for loading .shaderx files - to add or replace any existing shader
+* Add "depthFragment" shader stage parameter - to store non-transparent (with alpha >=0.85) fragments into depth buffer, very useful for sprites (cg_simpleitems)
+* Do not print each loaded shader name in developer mode
+* Change some client defaults:
+ cl_maxpackets 30 -> 60
+ snaps 20 -> 40
+
+22-Apr-2017:
+* Fix: crash caused by long filenames inside pk3 files
+* Fix: demo filename truncation
+* Fix: skip gamedata bounds check for dlls
+
+21-Apr-2017:
+* Add: unlagged input for win32 mouse
+* Add: \in_lagged to simulate old behavior for win32/raw mouse
+* Chg: clamp \com_yieldCPU values to [0,1]
+* Chg: increase max allowed \r_displayRefresh value to 250
+
+16-Apr-2017:
+* Fix: switch back to old mod if downloading new mod on \connect has been failed
+* Chg: use q3config_server.cfg as config file for dedicated server binaries and do not write key bindings to that as well
+* Chg: increase SHADER_MAX_VERTEXES from 1000 to 1536
+* Misc: reduce CPU usage on server side
+
+09-Apr-2017:
+Add: \r_mapGrayScale
+Chg: alphabetically sort cvars for \writeconfig, will affect \cvarlist too
+Fix: renderer crash on negative \r_fullscreen values
+Misc: add SSE math to QVM, speed optimizations
+
+02-Apr-2017:
+Add: backport and use alternative huffman encoder from uberdemotools - means reduced CPU usage on server-side
+Chg: avi segments naming scheme to "filename-NN.avi" instead of corrupting extension by '_' suffix
+Chg: max avi file size to 4GB
+Fix: black video frames with \r_faskSky 1
+Fix: crash on video recording
+Fix: reversed timescale during video recording
+Fix: check for ZIP archive signature before writing any received data
+Fix: several bugs in video recording code
+
+24-Mar-2017:
+Add: new snapshot system with reduced CPU/memory usage on dedicated servers
+Fix: don't count \sv_timeout multiple times - so now its really works as expected
+
+20-Mar-2017:
+Chg: fs_game default back to "baseq3"
+Fix: clearing win32 dedicated console
+Fix: do not build bot snapshots every client frame on listen servers
+Fix: do not crash but just discard using corrupted JTRGSEG in QVM
+
+Fix: CVE-2017-6903, affects mostly linux builds:
+ - deny manipulations with ".exe", ".qvm" and ".so.[0-9]" extensions too
+ - Sys_LoadLibrary() now can load only known library extensions
+ - force dll extension during loading \r_glDriver under windows
+ - deny using referenced pak names that is too long
+ - increase some filesystem buffers to avoid possible filename truncations
+
+07-Mar-2017:
+Fix: QVM memory leak
+Fix: UrbanTerror-4.3.2 compatibility
+
+26-Feb-2017:
+Fix: black screenshots at \r_fastSky 1
+ + Rework screenshot code so we can take two screenshots (tga+jpg) per frame, each with different name
+ + Avoid situation with multiple screenshots (of the same type) being taken during one frame - which doesn't have any sense
+ + Now screenshot code doesn't use render command buffer so it will always success in case of overflow etc.
+Chg: default screenshot naming scheme from shotNNNN to shot-YYYYMMDD-HHmmSS
+
+13-Feb-2017:
+Fix: handle client gamestate overflow
+Chg: set sv_levelTimeReset default to 0
+Fix: restart server every 12 hours when sv_levelTimeReset is 0 
+Fix: potential hang in tty_FlushIn()
+Fix: much more correct suspend/resume (SIGTSTP/SIGCONT) for unix console
+Add: CTRL+L hotkey support for unix console
+
+04-Jan-2017:
+Add: [out of source tree atm] multiview protocol and server-side demo recording
+
+22-Dec-2016:
+Win32: non-blocking window movements/scrolling, faster dedicated console text output
+
+19-Dec-2016:
+Fix: CPMA hacks
+
+18-Dec-2016:
+Fix: do not handle "disconnect" command when downloading with cURL
+
+16-Dec-2016:
+Add: allow recording demo duding demo playback
+Fix: filehandle leak after reading zero-sized servercache.dat 
+Fix: do not add newlines to the end of cs/bcs* server commands
+Fix: missing client name in debug output "Going to CS_ZOMBIE for [name]"
+Chg: servercache.dat now per mod and not global for all
+Misc: QVM improvements
+ioq3: Don't have clients use private slots when sv_privatePassword is unset
+ioq3: renderer2 fixes
+
+24-Nov-2016:
+Add: overwhelming CPMA hack
+Fix: OSP game module crash - it will continue corrupting its own memory but not crash
+Fix: gcc and clang warnings
+Fix: vmprofile
+
+12-Nov-2016:
+Fix: \r_dlightMode 2 with \cg_shadows 2
+Fix: dynamic lights on decals on q3wcp18 and other maps
+Fix: use dedicated dlight set for each view so old light counting code is not buggy anymore
+Fix: use explicit litsurf count check since we can't correctly handle overflows because of ".next" pointers
+Fix: round up \r_ext_multisample values in win32 to match linux behavior
+Fix: use dedicated dll syscall wrappers for each game module
+Chg: default number of dlights - 64
+Add: allow using '?' in extensions for trap_FS_GetFileList()
+
+02-Nov-2016:
+Fix: list all available demos that matching valid protocols (66-71)
+Fix: indicate actually opened demo file instead of command line argument
+Fix: color blending on some old Intel GMA's
+Fix: missing dlights on q3dm4 and maybe other maps too
+Fix: dlights on q3wcp17
+Fix: portals now correctly works with \r_fastky 1
+Chg: raize MAX_POLYS and MAX_POLYVERTS defaults to 8k and 32k respectively
+Chg: \r_noportals 1 - disable only portals, 2 - mirrors + portals
+Chg: scissor viewport by portal model bounds
+Chg: print extension for tab-completed demos
+Cgh: rename \r_dlightSpecExp to \r_dlightSpecPower and set default to 8.0
+Add: \r_dlightIntensity
+Add: \r_dlightSpecColor - color base for specular component
+ <= 0 - use current texture and modulate by abs(r_dlightSpecColor)
+ > 0 - use constant color with RGB components set to \r_dlightSpecColor
+ default is -0.25
+
+21-Oct-2016:
+Fix: anaglyph/stereo rendering with new dlights
+Chg: Use 12 bits for refentites - fixes missing frames in stereo rendering and allows more game items to be drawed
+Add: \r_dlightMode 2 - now illuminates md3 models i.e. almost everything on the map
+Add: CPMA hacks
+Add: sin,cos,rand to \varfunc
+
+10-Oct-2016:
+Fix: skybox overbright with picmip and r_intencity > 1 
+Add: \varfunc <add|sub|mul|div|mov> <cvar> <value> [- or low limit] [high limit]
+Remove: \inc and \dec
+
+09-Oct-2016:
+Add: \r_dlightMode 1 - improved dlights backported from cnq3
+     \r_dlightScale - for adjusting new light radius in old mods
+     \r_dlightSpexExp - control over specular component in new dlights
+Add: multi sampling support via \r_ext_multisample
+Add: \r_neatsky to force nopicmip for skyboxes
+Add: \inc and \dec commands for increasing and decreasing cvar values
+
+27-Sep-2016:
+Chg: undefine UNICODE for win64 build
+
+26-Sep-2016:
+* Fix: non-working \reconnect
+* Chg: r_modeFullscreen defaults to "-2"
+* Add: extra r_mode entries
+* Chg: undefine FORCE_DM68_EXT
+
+20-Sep-2016:
+* Bring back dynamic OpenGL dll loading
+* Upstream ioq3 fixes
+
+20-Aug-2016:
+* Add \r_modeFullscreen - dedicated fullscreen mode, leave empty for old behavior, set to -2 to use desktop resolution etc.
+* Add \com_affinityMask - bind application to specified CPU core(s)
+* Fix win32 console update
+* Fix WM_CLOSE message handling to avoid unneeded renderer errors at shutdown
+* Fix \cl_shownet may print invalid entity number
+* ioq3: Avoid generating client commands with zero frame_msec
+* ioq3: preserve all \connect arguments for further \reconnect
+
+29-Jul-2016:
+* Range check valuer of \com_yieldCPU
+* Fix startup flags for \vm_rtChecks
+* Linux: support gamma ramps larger than 256 entries
+
+26-Jul-2016:
+* Never send snapshots often than client' "snaps" specifies
+* Raize some client network rate limits
+* Win32: set gamma only for used monitor
+* Win32: track and change gamma when moving game window
+* Win32: Implement \in_nograb - so now it is possible to move game window without opened console
+* Fix non-working r_ignorehwgamma in linux
+* Don't forget to release vidmodes on linux
+
+21-Jul-2016:
+* Render CPMA/CNQ3 color codes (8,9,a-z) in console
+* Fix "Restarting server due to numSnapshotEntities wrapping"
+* bugfixes
+
+30-Jun-2016:
+* backport UDP spoofing protection from ioq3
+* bugfixes
+
+24-Jun-2016:
+* Fix win32 clipboard copy function
+* Fix dlight #32 not being rendered
+
+21-Jun-2016:
+* Backport fast legacy (udp) downloads from ioq3
+* Sync with redrerergl1 from ioq3
+* Netcode & renderer bugfixes
+
+07-Dec-2015:
+* Fix r_picmip resetting to default value
+* Add support for searching game data from Steam' Q3A installation
+* Other backported ioq3 fixes
+
+10-May-2015:
+* win32: Enable ASLR security feature
+* win32: don't allow to minimize when recording video
+* Hadle com_maxfpsMinimized in linux
+* Reset mapname after server shutdown
+* Reduced CPU usage in dedicated mode
+* \com_yieldCPU now specifies maximum sub-frame sleep time in milliseconds, 1 by default
+
+28-Apr-2015:
+* Clipboard paste support for linux client
+
+27-Apr-2015:
+* Negative \r_overbrightBits to force gamma in windowed mode
+
+22-Apr-2015:
+* Various fixes
+* Remove 1000 fps lock in timedemo
+
+09-Mar-2014:
+* Upstream ioq3 fixes
+
+26-May-2013:
+* Backport MD4/MDR/IQM models support from ioq3
+* QVM: reworked interpreter and improved x86 bytecode compiler
+* ioq3: fix QVM memset and memcpy return NULL
+
+01-May-2013:
+* Fix non-working software GL in some cases under Win7/Vista
+* Fix win32 dedicated console 'copy' button crash
+* Don't allow to manipulate with multi-platform executables
+* Add x86 QVM data read/write runtime checks
+
+24-Apr-2013:
+* Fix linux file creation
+* Complete arguments for \video and \record commands if possible
+* ioq3: Fix referencing pk3 with only qagame QVM
+
+18-Apr-2013:
+* Fix \condump command
+* Allow listing all client demos when connected to pure server
+* List only external files for condump/writeconfig
+* Draw scroll start/end markers for input fields
+* Fix input fields color tracking
+* Fix x86 QVM
+
+07-Apr-2013:
+* Console fixes/improvements:
+ Get rid of empty lines scrolling
+ Ctrl+HOME now works correctly in all cases
+ Pageup/down and mwheelup/down now scrolls by 1 line, not 2, hold +ctrl to accelerate
+* Add \cl_conColor [RRR GGG BBB AAA] - controls console background color
+* Mute sounds only in minimized client window state
+* More correct linux client shutdown
+
+14-Mar-2013:
+* Upstream ioquake3 fixes and improvements
+* Use platform-dependent newlines for writing config files
+* Try to use real process directory instead of just current one
+* Remove hardcoded BASEGAME ("baseq3") content loading
+* Remove fs_cdpath and related code
+
+31-Jan-2013:
+* Fix bug with reporting too many referenced paks to pure server
+* QVM improvements
+
+29-Jan-2013:
+* ioq3: Makes cvar be flagged as VM created and unset ROM if ARCHIVE is set
+* Code cleanup
+
+10-Jan-2013:
+* Bugfixes
+* \dlmap and \download command support, see documentation
+
+30-Nov-2012:
+* Native 64-bit support for x86 (windows/linux)
+* Another round of QVM performance/security improvements
+* Link statically with OpenGL32.dll|so
+* Remove 3DFX-gamma-related stuff
+* Remove \r_clampToEdge
+
+14-Oct-2012:
+* Try to open demo file first before shutting down any client stuff
+* Improved qvm file validation
+* ioq3: do not require clients to have a matching qagame.qvm
+
+24-Jul-2012:
+* Add scrolling win32 dedicated console buffer by mouse wheel
+* Fix compiler warnings
+
+23-Jul-2012:
+* Preserve binds by dedicated server binaries
+* Fix facets overflow
+* Backport recent ioq3' socket/bot AI fixes
+
+14-Jun-2012:
+* Filesystem layer fixes
+
+04-Jun-2012:
+* Code cleanup
+* Some x86 QVM improvements
+
+19-May-2012:
+* Win32 multi-monitor fixes
+* Another set of x86 QVM improvements
+
+02-May-2012:
+* Fix custom GL driver loading 
+* Many x86 QVM improvements
+
+11-Apr-2012:
+* Force focus for win32 decicated console input field
+* Misc. fixes and improvements
+
+06-Apr-2012:
+* Try to resolve remote server address first before shutting down any client stuff on "connect" command 
+
+05-Apr-2012:
+* Added win32 decicated server binary
+* Reworked win32 decicated console
+* Avoid adding last duplicated command in console history
+
+24-Mar-2012:
+* Allow resizing win32 dedicated console 
+* Allow setting win32 dedicated console title via con_title cvar from application shortcut
+
+17-Mar-2012:
+* Fix filtering duplicates in getserversResponse packets
+
+06-Mar-2012:
+* Add SSE3 instruction set detection and corresponding fast float-to-int conversion inside QVM
+
+25-Feb-2012:
+* Fix potential memory leak in host name resolution
+* Set sv_master1 to master.maverickservers.com
+* Add "master.ioquake3.org" as sv_master2
+* Rate limit getinfo queries
+* Client no longer tries to run UI_SHUTDOWN on ui vms with an unsupported API version.
+
+03-Jan-2012:
+* Add \r_bloom <0|1> - light bloom postprocessing effect
+
+26-Nov-2011:
+* Revert fast SSE2 float-to-int conversion
+* Code cleanup
+
+26-Oct-2011:
+* Add SSE2 instruction set detection and fast SSE2 float-to-int conversion for QVM
+* Use proper function for setting integer texture parameters
+* Fix point contents detection in SV_AreaEntities()
+
+14-Oct-2011:
+* Fix mouse clipping in windowed mode (win32)
+* Change: unlock \bot_thinktime cvar
+
+08-Aug-2011:
+* Clean-up mouse handling code
+* Don't allow VMs to operate with executables
+* Fix downloading 65M+ files via UDP
+* Fix comments inside configs
+* Fix bot AI
+
+02-Jul-2011:
+* Fix few bugs in sound mixing code
+* Reduce probability of sound drops
+
+27-Jun-2011:
+* bring back Windows 2000 compatibility
+
+26-Jun-2011:
+* more qvm optimizations
+
+09-Jun-2011:
+* fs_game now is "edawn" by default so edawn.exe/ded now deprecated 
+  (usual mod switch via menu or commandline is working as before)
+* \video (motion capture) command now available
+* fixed http 406 error when downloading content from some servers
+* linux binaries now is glibc-2.3 compatible (suitable for deploying on old linux distributions)
+* more x86-qvm improvements
+
+30-May-2011:
+* more qvm optimizations - up to 30% speedup comparing to 1.32b/c :)
+* removed buggy \r_smp
+
+12-May-2011:
+* additional security checks against malicious qvms
+* more correct code generation for vq3-compatible mods 
+* additional qvm jit-compiler optimizations (more than 10% codesize reduction for edawn + faster execution)
+
+04-May-2011:
+* max.config size increased to 64k
+* fixed few potential crash cases
+* additional qvm optimizations and security improvements
+
+23-Apr-2011:
+* Allow listing some type of files - fixes issue with in-game hud selection menu on pure servers
+* Allow adding custom bots on pure servers
+* improvements in x86 bytecode compiler
+
+07-Apr-2011:
+* added K_AUX1..K_AUX8 keys support in linux
+* added \r_mode -2 - sets current video mode
+* remove com_blindlyLoadDLLs - no more nasty popups
+* fixed spurious client disconnects in some cases
+* fixed gamma in windowed mode (win32 )
+
+18-Feb-2011:
+* fixed OSP mod behavior
+
+16-Feb-2011:
+* fixed potential crash/corruption in Q_vsnprintf function (affects even netcode)
+
+12-Feb-2011
+* fixed potentilal userinfo corruption
+
+21-Dec-2010:
+* fixed some Vista/7 gfx issues
+
+19-Dec-2010:
+* fixed rate limiter
+* ttycon 0 also disables console input now (linux console)
+* add missing interrupt (ctrl+c) handler for linux console (means correct client/server shutdown)
+
+16-Dec-2010:
+* backported security fix from zlib-1.1.4
+* prevent game crash due to cvar overflow exploits

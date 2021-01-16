@@ -107,7 +107,7 @@ jobs:
         copy code\win32\msvc2017\output\quake3e.ded.exe bin\quake3e.ded${{ matrix.suffix }}.exe
 
         msbuild code\win32\msvc2017\renderer.vcxproj -m -p:Configuration=${{ matrix.config }},Platform=${{ matrix.platform }}
-        msbuild code\win32\msvc2017\quake3e.vcxproj -m -p:TargetName=quake3e,Configuration=${{ matrix.config }},Platform=${{ matrix.platform }}
+        msbuild code\win32\msvc2017\quake3e.vcxproj -m -p:TargetName=quake3e,Configuration=${{ matrix.config }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0
 
         copy code\win32\msvc2017\output\quake3e.exe bin\quake3e${{ matrix.suffix }}.exe
 
@@ -115,7 +115,7 @@ jobs:
         msbuild code\win32\msvc2017\quake3e.vcxproj -t:Clean -m -p:TargetName=quake3e,Configuration=${{ matrix.config }},Platform=${{ matrix.platform }}
 
         msbuild code\win32\msvc2017\renderervk.vcxproj -m -p:Configuration=${{ matrix.config }},Platform=${{ matrix.platform }}
-        msbuild code\win32\msvc2017\quake3e.vcxproj -m -p:TargetName=quake3e,Configuration=${{ matrix.config }},Platform=${{ matrix.platform }}
+        msbuild code\win32\msvc2017\quake3e.vcxproj -m -p:TargetName=quake3e,Configuration=${{ matrix.config }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0
 
         copy code\win32\msvc2017\output\quake3e.exe bin\quake3e-vulkan${{ matrix.suffix }}.exe
 
