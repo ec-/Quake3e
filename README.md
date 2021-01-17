@@ -40,7 +40,8 @@ Based on Quake-III-Arena-Kenny-Edition with many additions:
 * fixed framebuffer corruption on some Intel iGPUs
 * offscreen rendering, enabled with **\r_fbo 1**, all following reguires it enabled:
 * `screenMap` texture rendering - to create realistic environment reflections
-* multi-sample anti-aliasing (**\r_ext_multisample**)
+* multisample anti-aliasing (**\r_ext_multisample**)
+* supersample anti-aliasing (**\r_ext_supersample**)
 * per-window gamma-correction which is important for screen-capture tools like OBS
 * you can minimize game window any time during **\video**|**\video-pipe** recording
 * high dynamic range render targets (**\r_hdr 1**) to avoid color banding
