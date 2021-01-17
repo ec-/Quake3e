@@ -1280,6 +1280,7 @@ extern cvar_t	*r_bloom;
 extern cvar_t	*r_bloom_threshold;
 extern cvar_t	*r_bloom_intensity;
 extern cvar_t	*r_ext_multisample;
+extern cvar_t	*r_ext_supersample;
 extern cvar_t	*r_ext_alpha_to_coverage;
 extern cvar_t	*r_renderWidth;
 extern cvar_t	*r_renderHeight;
@@ -1902,6 +1903,9 @@ typedef struct {
 
 extern	int		max_polys;
 extern	int		max_polyverts;
+
+extern	int		captureWidth;
+extern	int		captureHeight;
 
 extern	backEndData_t	*backEndData;
 

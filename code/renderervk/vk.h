@@ -257,6 +257,7 @@ typedef struct {
 		VkRenderPass main;
 		VkRenderPass screenmap;
 		VkRenderPass gamma;
+		VkRenderPass capture;
 		VkRenderPass bloom_extract;
 		VkRenderPass blur[VK_NUM_BLOOM_PASSES*2]; // horizontal-vertical pairs
 		VkRenderPass post_bloom;
@@ -303,11 +304,17 @@ typedef struct {
 	} screenMap;
 
 	struct {
+		VkImage image;
+		VkImageView image_view;
+	} capture;
+
+	struct {
 		VkFramebuffer blur[VK_NUM_BLOOM_PASSES*2];
 		VkFramebuffer bloom_extract;
 		VkFramebuffer main[MAX_SWAPCHAIN_IMAGES];
 		VkFramebuffer gamma[MAX_SWAPCHAIN_IMAGES];
 		VkFramebuffer screenmap;
+		VkFramebuffer capture;
 	} framebuffers;
 
 	vk_tess_t tess[ NUM_COMMAND_BUFFERS ], *cmd;
@@ -437,6 +444,7 @@ typedef struct {
 	uint32_t dot_pipeline;
 
 	VkPipeline gamma_pipeline;
+	VkPipeline capture_pipeline;
 	VkPipeline bloom_extract_pipeline;
 	VkPipeline blur_pipeline[VK_NUM_BLOOM_PASSES*2]; // horizontal & vertical pairs
 	VkPipeline bloom_blend_pipeline;

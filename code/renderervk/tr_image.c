@@ -45,8 +45,8 @@ return a hash value for the filename
 void R_GammaCorrect( byte *buffer, int bufSize ) {
 	int i;
 #ifdef USE_VULKAN
-	//if ( r_fbo->integer == 1 )
-	//	return;
+	if ( vk.capture.image != VK_NULL_HANDLE )
+		return;
 #endif
 	for ( i = 0; i < bufSize; i++ ) {
 		buffer[i] = s_gammatable[buffer[i]];
@@ -1713,6 +1713,10 @@ void R_SetColorMappings( void ) {
 	if ( vk.fboActive ) {
 		// update gamma shader
 		vk_create_post_process_pipeline( 0 );
+		if ( vk.capture.image ) {
+			// update capture pipeline
+			vk_create_post_process_pipeline( 3 );
+		}
 	}
 	
 	if ( glConfig.deviceSupportsGamma && !vk.fboActive )

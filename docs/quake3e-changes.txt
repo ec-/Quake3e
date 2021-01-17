@@ -4,6 +4,7 @@
 * Sound: backported some fixes from ioq3, improved skip protection and reduced latency
 * Client: made console hide/display speed do not depend from \timescale
 * Client: updated built-in jpeg library version from 8c to 9d
+* Client: allow setting window title via command-line cl_title cvar
 * Renderers: avoid using detail textures for lighting stage
 * Renderers: fixed shader parsing regression introduced by optional 'firstPerson' key
 * Renderers: reverted color correction for external lightmap atlases
