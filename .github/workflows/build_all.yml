@@ -133,10 +133,10 @@ jobs:
         if [ ${{ matrix.arch }} == "x86" ]; then
           sudo dpkg --add-architecture i386
           sudo apt-get -qq update
-          sudo apt-get -y install gcc-multilib libcurl4-openssl-dev:i386 mesa-common-dev:i386 libxxf86dga-dev:i386 libxrandr-dev:i386 libxxf86vm-dev:i386 libasound-dev:i386
+          sudo apt-get -y install gcc-multilib libcurl4-openssl-dev:i386 mesa-common-dev:i386 libxxf86dga-dev:i386 libxrandr-dev:i386 libxxf86vm-dev:i386 libasound-dev:i386 libpcre3-dev:i386
         elif [ ${{ matrix.arch }} == "x86_64" ]; then
           sudo apt-get -qq update
-          sudo apt-get -y install libcurl4-openssl-dev mesa-common-dev libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev
+          sudo apt-get -y install libcurl4-openssl-dev mesa-common-dev libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev libpcre3-dev
         fi
 
     - uses: actions/checkout@v2
@@ -178,7 +178,7 @@ jobs:
 
     steps:
     - name: Install tools
-      run: brew install coreutils sdl2
+      run: brew install coreutils sdl2 pcre
       # run: |
       #  brew install coreutils
       #  curl -L -o SDL2.dmg https://www.libsdl.org/release/SDL2-2.0.14.dmg

@@ -28,6 +28,7 @@ BUILD_SERVER     = 1
 
 USE_SDL          = 1
 USE_CURL         = 1
+USE_PCRE         = 1
 USE_LOCAL_HEADERS= 0
 USE_VULKAN       = 0
 USE_SYSTEM_JPEG  = 0
@@ -156,6 +157,10 @@ ifndef USE_CURL_DLOPEN
   endif
 endif
 
+ifndef USE_PCRE
+USE_PCRE=1
+endif
+
 ifneq ($(USE_RENDERER_DLOPEN),0)
 USE_VULKAN=1
 endif
@@ -268,6 +273,10 @@ ifeq ($(USE_CURL),1)
       BASE_CFLAGS += -DCURL_STATICLIB
     endif
   endif
+endif
+
+ifeq ($(USE_PCRE),1)
+  BASE_CFLAGS += -DUSE_PCRE
 endif
 
 ifeq ($(USE_VULKAN_API),1)
@@ -389,6 +398,16 @@ ifdef MINGW
     CLIENT_LDFLAGS += -lcurl -lwldap32 -lcrypt32
   endif
 
+  ifeq ($(USE_PCRE),1)
+    BASE_CFLAGS += -I$(MOUNT_DIR)/libpcre/windows/include
+    ifeq ($(ARCH),x86)
+      CLIENT_LDFLAGS += -L$(MOUNT_DIR)/libpcre/windows/mingw/lib32
+    else
+      CLIENT_LDFLAGS += -L$(MOUNT_DIR)/libpcre/windows/mingw/lib64
+    endif
+    CLIENT_LDFLAGS += -lpcre
+  endif
+
   DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -g -O0
   RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
 
@@ -420,6 +439,10 @@ ifeq ($(COMPILE_PLATFORM),darwin)
   else
     BASE_CFLAGS += -I/Library/Frameworks/SDL2.framework/Headers
     CLIENT_LDFLAGS = -F/Library/Frameworks -framework SDL2
+  endif
+
+  ifeq ($(USE_PCRE),1)
+    CLIENT_LDFLAGS += -lpcre
   endif
 
   DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -g -O0
@@ -481,6 +504,10 @@ else
     ifeq ($(USE_CURL_DLOPEN),0)
       CLIENT_LDFLAGS += -lcurl
     endif
+  endif
+
+  ifeq ($(USE_PCRE),1)
+    CLIENT_LDFLAGS += -lpcre
   endif
 
   ifeq ($(PLATFORM),linux)

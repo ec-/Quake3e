@@ -83,6 +83,21 @@ int         g_console_field_width = DEFAULT_CONSOLE_WIDTH;
 
 void		Con_Fixup( void );
 
+#ifdef USE_PCRE
+#define PCRE_STATIC 1
+#include <pcre.h>
+
+/*
+================
+Con_ShowPCREVersion_f
+================
+*/
+static void Con_ShowPCREVersion_f( void ) {
+	Com_Printf( "%s\n", pcre_version() );
+}
+
+#endif /* USE_PCRE */
+
 /*
 ================
 Con_ToggleConsole_f
@@ -414,6 +429,9 @@ void Con_Init( void )
 	Cmd_AddCommand( "messagemode2", Con_MessageMode2_f );
 	Cmd_AddCommand( "messagemode3", Con_MessageMode3_f );
 	Cmd_AddCommand( "messagemode4", Con_MessageMode4_f );
+#ifdef USE_PCRE
+	Cmd_AddCommand( "pcre_version", Con_ShowPCREVersion_f );
+#endif /* USE_PCRE */
 }
 
 
@@ -431,6 +449,9 @@ void Con_Shutdown( void )
 	Cmd_RemoveCommand( "messagemode2" );
 	Cmd_RemoveCommand( "messagemode3" );
 	Cmd_RemoveCommand( "messagemode4" );
+#ifdef USE_PCRE
+	Cmd_RemoveCommand( "pcre_version" );
+#endif /* USE_PCRE */
 }
 
 

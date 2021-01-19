@@ -146,10 +146,10 @@ jobs:
         if [ ${{ matrix.arch }} == "x86" ]; then
           sudo dpkg --add-architecture i386
           sudo apt-get -qq update
-          sudo apt-get -y install gcc-multilib libcurl4-openssl-dev:i386 mesa-common-dev:i386 libxxf86dga-dev:i386 libxrandr-dev:i386 libxxf86vm-dev:i386 libasound-dev:i386
+          sudo apt-get -y install gcc-multilib libcurl4-openssl-dev:i386 mesa-common-dev:i386 libxxf86dga-dev:i386 libxrandr-dev:i386 libxxf86vm-dev:i386 libasound-dev:i386 libpcre3-dev:i386
         else
           sudo apt-get -qq update
-          sudo apt-get -y install libcurl4-openssl-dev mesa-common-dev libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev
+          sudo apt-get -y install libcurl4-openssl-dev mesa-common-dev libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev libpcre3-dev
         fi
 
     - uses: actions/checkout@v2
@@ -200,7 +200,7 @@ jobs:
         run: |
           apt-get -qq update
           apt-get install -y make gcc g++
-          apt-get -y install libcurl4-openssl-dev mesa-common-dev libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev
+          apt-get -y install libcurl4-openssl-dev mesa-common-dev libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev libpcre3-dev
           make ${{ matrix.rule }} -j 4 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 USE_SDL=0 USE_VULKAN=1 BUILD_SERVER=0
           make clean ARCH=${{ matrix.arch }} 
           make ${{ matrix.rule }} -j 4 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 USE_SDL=0 USE_VULKAN_API=0
@@ -229,7 +229,7 @@ jobs:
 
     steps:
     - name: Install tools
-      run: brew install coreutils sdl2
+      run: brew install coreutils sdl2 pcre
 
     - uses: actions/checkout@v2
       with:
