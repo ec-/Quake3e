@@ -24,12 +24,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // load time compiler and execution environment for ARM aarch64
 // with dynamic register allocation and various optimizations
 
+#ifdef _WIN32
+#include <windows.h>
+#pragma warning( disable : 4245 ) // conversion from int to XXX, signed/unsigned mismatch
+#pragma warning( disable : 4146 ) // unary minus operator applied to unsigned type, result still unsigned
+#else
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <math.h>
+#endif
 
 #include "vm_local.h"
 
@@ -215,11 +221,19 @@ static int VM_SearchLiteral( const uint32_t value )
 #endif // USE_LITERAL_POOL
 
 
+#ifdef _MSC_VER
+#define DROP( reason, ... ) \
+	do { \
+		VM_FreeBuffers(); \
+		Com_Error( ERR_DROP, "%s: " reason, __func__, __VA_ARGS__ ); \
+	} while(0)
+#else
 #define DROP( reason, args... ) \
 	do { \
 		VM_FreeBuffers(); \
 		Com_Error( ERR_DROP, "%s: " reason, __func__, ##args ); \
 	} while(0)
+#endif
 
 
 static void VM_FreeBuffers( void )
@@ -241,8 +255,12 @@ static void VM_Destroy_Compiled( vm_t *vm )
 {
 	if ( vm->codeBase.ptr )
 	{
+#ifdef _WIN32
+		VirtualFree( vm->codeBase.ptr, 0, MEM_RELEASE );
+#else
 		if ( munmap( vm->codeBase.ptr, vm->codeLength ) )
 			Com_Printf( S_COLOR_RED "%s(): memory unmap failed, possible memory leak!\n", __func__ );
+#endif
 	}
 
 	vm->codeBase.ptr = NULL;
@@ -754,12 +772,13 @@ static uint32_t alloc_sx( uint32_t pref );
 
 #define FORCED 0x20 // load function must return specified register
 #define TEMP   0x40 // hint: temporary allocation, will not be pushed on stack
-#define CONST  0x80 // hint: register value will be not modified
+#define RCONST 0x80 // hint: register value will be not modified
+#define XMASK  0x100 // exclude masked registers
 
 #define RMASK  0x1F
 
 // general-purpose register list available for dynamic allocation
-static const uint32_t rx_list[] = {
+static const uint32_t rx_list_alloc[] = {
 	R0, R1, R2, R3, // R0-R3 are required minimum
 	R4, R5, R6, R7,
 	R8, R9, R10, R11,
@@ -767,13 +786,33 @@ static const uint32_t rx_list[] = {
 	R16, R17
 };
 
+#ifdef CONST_CACHE_RX
+static const uint32_t rx_list_cache[] = {
+	//R0, R1,
+	R2, R3,
+	R4, R5, R6, R7,
+	R8, R9, R10, R11,
+	R12, R13, R14, R15,
+	R16, R17,
+};
+#endif
+
 // FPU scalar register list available for dynamic allocation
-static const uint32_t sx_list[] = {
+static const uint32_t sx_list_alloc[] = {
 	S0, S1, 2, 3, 4, 5, 6, 7, // S0 and S1 are required minimum
-	// 8..15 must be preserved
+	// S8..S15 must be preserved
 	16, 17, 18, 19, 20, 21, 22, 23,
 	24, 25, 26, 27, 28, 29, 30, 31
 };
+
+#ifdef CONST_CACHE_SX
+static const uint32_t sx_list_cache[] = {
+	S0, S1, 2, 3, 4, 5, 6, 7,
+	// S8..S15 must be preserved
+	16, 17, 18, 19, 20, 21, 22, 23,
+	24, 25, 26, 27, 28, 29, 30, 31
+};
+#endif
 
 // types of items on the stack
 typedef enum {
@@ -781,7 +820,6 @@ typedef enum {
 	TYPE_CONST,      // constant
 	TYPE_LOCAL,      // address
 	TYPE_RX,         // volatile - general-purpose register
-	TYPE_RX_SYSCALL, // volatile - R0, syscall return value
 	TYPE_SX,         // volatile - FPU scalar register
 } opstack_value_t;
 
@@ -805,7 +843,7 @@ typedef struct reg_s {
 } reg_t;
 
 static int opstack;
-static opstack_t opstackv[ (PROC_OPSTACK_SIZE + 1) * 4 ];
+static opstack_t opstackv[ PROC_OPSTACK_SIZE + 1 ];
 
 // cached register values
 static reg_t rx_regs[32];
@@ -929,7 +967,8 @@ static void flush_item( opstack_t *it )
 	switch ( it->type ) {
 
 		case TYPE_RX:
-			emit(STR32i(it->value, rOPSTACK, it->offset)); // *opstack = rX
+			if ( it->offset != ~0U )
+				emit(STR32i(it->value, rOPSTACK, it->offset)); // *opstack = rX
 			//wipe_rx_meta( it->value );
 			unmask_rx( it->value );
 			break;
@@ -952,11 +991,6 @@ static void flush_item( opstack_t *it )
 			emit(STR32i(rx, rOPSTACK, it->offset));       // *opstack = r2
 			//wipe_rx_meta( rx );
 			unmask_rx( rx );
-			break;
-
-		case TYPE_RX_SYSCALL:
-			wipe_rx_meta( R0 );
-			// discard R0
 			break;
 
 		default:
@@ -985,12 +1019,14 @@ static void init_opstack( void )
 static qboolean scalar_on_top( void )
 {
 #ifdef DEBUG_VM
-	if ( opstack >= PROC_OPSTACK_SIZE * 4 || opstack <= 0 )
-		DROP( "bad opstack %i", opstack );
+	if ( opstack >= PROC_OPSTACK_SIZE || opstack <= 0 )
+		DROP( "bad opstack %i", opstack*4 );
 #endif
+#ifdef FPU_OPTIMIZE
 	if ( opstackv[ opstack ].type == TYPE_SX )
 		return qtrue;
 	else
+#endif
 		return qfalse;
 }
 
@@ -998,8 +1034,8 @@ static qboolean scalar_on_top( void )
 static int is_safe_arg( void )
 {
 #ifdef DEBUG_VM
-	if ( opstack >= PROC_OPSTACK_SIZE * 4 || opstack <= 0 )
-		DROP( "bad opstack %i", opstack );
+	if ( opstack >= PROC_OPSTACK_SIZE || opstack <= 0 )
+		DROP( "bad opstack %i", opstack*4 );
 #endif
 	return opstackv[ opstack ].safe_arg;
 }
@@ -1008,15 +1044,15 @@ static int is_safe_arg( void )
 static void inc_opstack( void )
 {
 #ifdef DEBUG_VM
-	if ( opstack >= PROC_OPSTACK_SIZE * 4 )
-		DROP( "opstack overflow - %i", opstack );
+	if ( opstack >= PROC_OPSTACK_SIZE )
+		DROP( "opstack overflow - %i", opstack*4 );
 #endif
 
-	opstack += 4;
+	opstack += 1;
 
 #ifdef DEBUG_VM
 	if ( opstackv[ opstack ].type != TYPE_RAW )
-		DROP( "bad item type %i at opstack %i", opstackv[ opstack ].type, opstack );
+		DROP( "bad item type %i at opstack %i", opstackv[ opstack ].type, opstack*4 );
 #endif
 }
 
@@ -1024,18 +1060,41 @@ static void inc_opstack( void )
 static void dec_opstack( void )
 {
 #ifdef DEBUG_VM
+	opstack_t *it;
+
 	if ( opstack <= 0 )
-		DROP( "opstack underflow - %i", opstack );
+		DROP( "opstack underflow - %i", opstack*4 );
+
+	it = &opstackv[ opstack ];
+	if ( it->type != TYPE_RAW )
+		DROP( "opstack[%i]: item type %i is not consumed", opstack*4, it->type );
+#endif
+	opstack -= 1;
+}
+
+
+static void dec_opstack_discard( void )
+{
+	opstack_t *it;
+
+	it = &opstackv[ opstack ];
+#ifdef DEBUG_VM
+	if ( opstack <= 0 )
+		DROP( "opstack underflow - %i", opstack*4 );
+
+	if ( it->type != TYPE_RAW && ( it->type != TYPE_RX || it->offset != ~0U ) )
+		DROP( "opstack[%i]: item type %i is not consumed", opstack*4, it->type );
 #endif
 
-	flush_item( opstackv + opstack ); // in case if it was not consumed by any load function
+	it->type = TYPE_RAW; // discard value
+	it->safe_arg = 0;
 
-	opstack -= 4;
+	opstack -= 1;
 }
 
 
 // returns bitmask of registers present on opstack
-static uint32_t build_mask( uint32_t reg_type )
+static uint32_t build_mask( int reg_type )
 {
 	uint32_t mask = 0;
 	int i;
@@ -1066,9 +1125,9 @@ static qboolean find_rx_const( uint32_t imm )
 	uint32_t mask = rx_mask | build_mask( TYPE_RX );
 	int i;
 
-	for ( i = ARRAY_LEN( rx_list )-1; i >= 0; i-- ) {
+	for ( i = 0; i < ARRAY_LEN( rx_list_cache ); i++ ) {
 		reg_t *r;
-		uint32_t n = rx_list[ i ];
+		uint32_t n = rx_list_cache[ i ];
 		if ( mask & ( 1 << n ) ) {
 			// target register must be unmasked
 			continue;
@@ -1098,18 +1157,29 @@ static uint32_t alloc_rx_const( uint32_t pref, uint32_t imm )
 #ifdef CONST_CACHE_RX
 	if ( (pref & FORCED) == 0 ) {
 		// support only dynamic allocation mode
-		uint32_t mask = rx_mask | build_mask( TYPE_RX );
+		const uint32_t mask = rx_mask | build_mask( TYPE_RX );
 		int min_ref = MAX_QINT;
 		int min_ip = MAX_QINT;
 		int min_ref_idx = -1;
 		int first_free = -1;
 		int i, n;
 
-		// search in descending order
-		for ( i = ARRAY_LEN( rx_list )-1; i >= 0; i-- ) {
-			n = rx_list[ i ];
+		if ( ( pref & XMASK ) == 0 ) {
+			// we can select from already masked registers
+			for ( n = 0; n < 32; n++ ) {
+				r = &rx_regs[ n ];
+				if ( r->type == RTYPE_CONST && r->value == imm ) {
+					unmask_rx( n );
+					mask_rx( n );
+					return n;
+				}
+			}
+		}
+
+		for ( i = 0; i < ARRAY_LEN( rx_list_cache ); i++ ) {
+			n = rx_list_cache[ i ];
 			if ( mask & ( 1 << n ) ) {
-				// target register must be unmasked
+				// target register must be unmasked and not present on opstack
 				continue;
 			}
 			r = &rx_regs[ n ];
@@ -1191,21 +1261,32 @@ static uint32_t alloc_sx_const( uint32_t pref, uint32_t imm )
 #ifdef CONST_CACHE_SX
 	if ( (pref & FORCED) == 0 ) {
 		// support only dynamic allocation mode
-		uint32_t mask = sx_mask | build_mask( TYPE_SX );
+		const uint32_t mask = sx_mask | build_mask( TYPE_SX );
 		int min_ref = MAX_QINT;
 		int min_ip = MAX_QINT;
 		int min_ref_idx = -1;
 		int first_free = -1;
 		int i, n;
 
-		// search in descending order
-		for ( i = ARRAY_LEN( sx_list )-1; i >= 0; i-- ) {
-			n = sx_list[ i ];
+		if ( ( pref & XMASK ) == 0 ) {
+			// we can select from already masked registers
+			for ( n = 0; n < 32; n++ ) {
+				r = &sx_regs[ n ];
+				if ( r->type == RTYPE_CONST && r->value == imm ) {
+					unmask_sx( n );
+					mask_sx( n );
+					return n;
+				}
+			}
+		}
+
+		for ( i = 0; i < ARRAY_LEN( sx_list_cache ); i++ ) {
+			n = sx_list_cache[ i ];
 			if ( mask & ( 1 << n ) ) {
 				// target register must be unmasked
 				continue;
 			}
-			r = &rx_regs[ n ];
+			r = &sx_regs[ n ];
 			if ( r->type == RTYPE_UNUSED ) {
 				if ( first_free == -1 ) {
 					first_free = n;
@@ -1284,11 +1365,26 @@ static uint32_t alloc_rx( uint32_t pref )
 
 #ifdef DYN_ALLOC_RX
 	if ( (pref & FORCED) == 0 ) {
-		uint32_t mask = rx_mask | build_mask( TYPE_RX );
+		const uint32_t mask = rx_mask | build_mask( TYPE_RX );
 
-		// pickup first free register from rx_list
-		for ( i = 0; i < ARRAY_LEN( rx_list ) ; i++ ) {
-			n = rx_list[ i ];
+#ifdef CONST_CACHE_RX
+		// first pass: try to avoid cached registers
+		for ( i = 0; i < ARRAY_LEN( rx_list_alloc ); i++ ) {
+			n = rx_list_alloc[ i ];
+			if  ( mask & (1 << n) ) {
+				continue;
+			}
+			if ( rx_regs[ n ].type == RTYPE_CONST ) {
+				continue;
+			}
+			wipe_rx_meta( n );
+			mask_rx( n );
+			return n;
+		}
+#endif
+		// pickup first free register from rx_list_alloc
+		for ( i = 0; i < ARRAY_LEN( rx_list_alloc ); i++ ) {
+			n = rx_list_alloc[ i ];
 			if  ( mask & (1 << n) ) {
 				continue;
 			}
@@ -1312,7 +1408,7 @@ static uint32_t alloc_rx( uint32_t pref )
 				return n;
 			}
 		}
-		DROP( "no free registers, pref %x, opStack %i, mask %04x", pref, opstack, rx_mask );
+		DROP( "no free registers, pref %x, opStack %i, mask %04x", pref, opstack*4, rx_mask );
 	}
 #endif
 
@@ -1344,11 +1440,26 @@ static uint32_t alloc_sx( uint32_t pref )
 
 #ifdef DYN_ALLOC_SX
 	if ( (pref & FORCED) == 0 ) {
-		uint32_t mask = sx_mask | build_mask( TYPE_SX );
+		const uint32_t mask = sx_mask | build_mask( TYPE_SX );
 
-		// pickup first free register from sx_list
-		for ( i = 0; i < ARRAY_LEN( sx_list ) ; i++ ) {
-			n = sx_list[ i ];
+#ifdef CONST_CACHE_SX
+		// first pass: try to avoid cached registers
+		for ( i = 0; i < ARRAY_LEN( sx_list_alloc ); i++ ) {
+			n = sx_list_alloc[ i ];
+			if  ( mask & (1 << n) ) {
+				continue;
+			}
+			if ( sx_regs[ n ].type == RTYPE_CONST ) {
+				continue;
+			}
+			wipe_sx_meta( n );
+			mask_sx( n );
+			return n;
+		}
+#endif
+		// pickup first free register from sx_list_alloc
+		for ( i = 0; i < ARRAY_LEN( sx_list_alloc ); i++ ) {
+			n = sx_list_alloc[ i ];
 			if  ( mask & (1 << n) ) {
 				continue;
 			}
@@ -1373,7 +1484,7 @@ static uint32_t alloc_sx( uint32_t pref )
 			}
 		}
 	}
-	DROP( "no free registers, pref %x, opStack %i, mask %04x", pref, opstack, sx_mask );
+	DROP( "no free registers, pref %x, opStack %i, mask %04x", pref, opstack*4, sx_mask );
 #endif
 
 	// FORCED option: find and flush target register
@@ -1410,9 +1521,24 @@ static void flush_volatile( void )
 
 	for ( i = 0; i <= opstack; i++ ) {
 		opstack_t *it = opstackv + i;
-		if ( it->type == TYPE_RX || it->type == TYPE_SX || it->type == TYPE_RX_SYSCALL ) {
+		if ( it->type == TYPE_RX || it->type == TYPE_SX ) {
 			flush_item( it );
 		}
+	}
+
+	// wipe all constants metadata
+	Com_Memset( &rx_regs[0], 0, sizeof( rx_regs ) );
+	Com_Memset( &sx_regs[0], 0, sizeof( sx_regs ) );
+}
+
+
+static void flush_opstack( void )
+{
+	int i;
+
+	for ( i = 0; i <= opstack; i++ ) {
+		opstack_t *it = opstackv + i;
+		flush_item( it );
 	}
 
 	// wipe all constants metadata
@@ -1427,14 +1553,14 @@ static void store_rx_opstack( uint32_t reg )
 
 #ifdef DEBUG_VM
 	if ( opstack <= 0 )
-		DROP( "bad opstack %i", opstack );
+		DROP( "bad opstack %i", opstack*4 );
 
 	if ( it->type != TYPE_RAW )
-		DROP( "bad type %i at opstack %i", it->type, opstack );
+		DROP( "bad type %i at opstack %i", it->type, opstack*4 );
 #endif
 
 	it->type = TYPE_RX;
-	it->offset = opstack;
+	it->offset = opstack * sizeof( int32_t );
 	it->value = reg;
 	it->safe_arg = 0;
 
@@ -1448,18 +1574,20 @@ static void store_syscall_opstack( void )
 
 #ifdef DEBUG_VM
 	if ( opstack <= 0 )
-		DROP( "bad opstack %i", opstack );
+		DROP( "bad opstack %i", opstack*4 );
 
 	if ( it->type != TYPE_RAW )
-		DROP( "bad type %i at opstack %i", it->type, opstack );
+		DROP( "bad type %i at opstack %i", it->type, opstack*4 );
 #endif
 
-	it->type = TYPE_RX_SYSCALL;
-	it->offset = opstack;
+	it->type = TYPE_RX;
+	it->offset = ~0U; // opstack * sizeof( int32_t )
 	it->value = R0;
 	it->safe_arg = 0;
 
 	wipe_rx_meta( R0 );
+
+	unmask_rx( R0 ); // so it can be flushed on demand
 }
 
 
@@ -1469,14 +1597,14 @@ static void store_sx_opstack( uint32_t reg )
 
 #ifdef DEBUG_VM
 	if ( opstack <= 0 )
-		DROP( "bad opstack %i", opstack );
+		DROP( "bad opstack %i", opstack*4 );
 
 	if ( it->type != TYPE_RAW )
-		DROP( "bad type %i at opstack %i", it->type, opstack );
+		DROP( "bad type %i at opstack %i", it->type, opstack*4 );
 #endif
 
 	it->type = TYPE_SX;
-	it->offset = opstack;
+	it->offset = opstack * sizeof( int32_t );
 	it->value = reg;
 	it->safe_arg = 0;
 
@@ -1484,23 +1612,23 @@ static void store_sx_opstack( uint32_t reg )
 }
 
 
-static void store_item_opstack( instruction_t *inst )
+static void store_item_opstack( instruction_t *ins )
 {
 	opstack_t *it = opstackv + opstack;
 
 #ifdef DEBUG_VM
 	if ( it->type != TYPE_RAW )
-		DROP( "bad type %i at opstack %i", it->type, opstack );
+		DROP( "bad type %i at opstack %i", it->type, opstack*4 );
 #endif
-	switch ( inst->op ) {
+	switch ( ins->op ) {
 		case OP_CONST: it->type = TYPE_CONST; break;
 		case OP_LOCAL: it->type = TYPE_LOCAL; break;
-		default: DROP( "incorrect opcode %i", inst->op );
+		default: DROP( "incorrect opcode %i", ins->op );
 	}
 
-	it->offset = opstack;
-	it->value = inst->value;
-	it->safe_arg = inst->safe;
+	it->offset = opstack * sizeof( int32_t );
+	it->value = ins->value;
+	it->safe_arg = ins->safe;
 }
 
 
@@ -1520,14 +1648,14 @@ static uint32_t load_rx_opstack( vm_t *vm, uint32_t pref )
 
 #ifdef DEBUG_VM
 	if ( opstack <= 0 )
-		DROP( "bad opstack %i", opstack );
+		DROP( "bad opstack %i", opstack*4 );
 #endif
 
-	if ( it->type == TYPE_RX || it->type == TYPE_RX_SYSCALL ) {
+	if ( it->type == TYPE_RX ) {
 #ifdef DYN_ALLOC_RX
 		if ( !(pref & FORCED) ) {
 			mask_rx( it->value );
-			if ( ( pref & CONST ) == 0 ) {
+			if ( ( pref & RCONST ) == 0 ) {
 				wipe_rx_meta( it->value );
 			}
 			it->type = TYPE_RAW;
@@ -1536,7 +1664,7 @@ static uint32_t load_rx_opstack( vm_t *vm, uint32_t pref )
 #endif
 		if ( it->value == reg ) {
 			mask_rx( it->value );
-			if ( ( pref & CONST ) == 0 ) {
+			if ( ( pref & RCONST ) == 0 ) {
 				wipe_rx_meta( it->value );
 			}
 			it->type = TYPE_RAW;
@@ -1570,10 +1698,14 @@ static uint32_t load_rx_opstack( vm_t *vm, uint32_t pref )
 		return reg;
 	}
 
+	if ( ( pref & RCONST ) == 0 ) {
+		pref |= XMASK;
+	}
+
 	if ( it->type == TYPE_CONST ) {
 		// move constant to general-purpose register
 		reg = alloc_rx_const( pref, it->value );
-		if ( (pref & CONST) == 0 ) {
+		if ( (pref & RCONST) == 0 ) {
 			wipe_rx_meta( reg );
 		}
 		it->type = TYPE_RAW;
@@ -1582,7 +1714,7 @@ static uint32_t load_rx_opstack( vm_t *vm, uint32_t pref )
 
 	if ( it->type == TYPE_LOCAL ) {
 		reg = alloc_rx_local( pref, it->value );
-		if ( (pref & CONST) == 0 ) {
+		if ( (pref & RCONST) == 0 ) {
 			wipe_rx_meta( reg );
 		}
 		it->type = TYPE_RAW;
@@ -1591,7 +1723,7 @@ static uint32_t load_rx_opstack( vm_t *vm, uint32_t pref )
 
 	// default raw type, explicit load
 	reg = alloc_rx( pref );
-	emit(LDR32i(reg, rOPSTACK, opstack)); // rX = *opstack
+	emit(LDR32i(reg, rOPSTACK, opstack * sizeof(int32_t))); // rX = *opstack
 	it->type = TYPE_RAW;
 	return reg;
 }
@@ -1606,7 +1738,7 @@ static uint32_t load_sx_opstack( vm_t *vm, uint32_t pref )
 
 #ifdef DEBUG_VM
 	if ( opstack <= 0 )
-		DROP( "bad opstack %i", opstack );
+		DROP( "bad opstack %i", opstack*4 );
 #endif
 
 	// scalar register on the stack
@@ -1614,7 +1746,7 @@ static uint32_t load_sx_opstack( vm_t *vm, uint32_t pref )
 #ifdef DYN_ALLOC_SX
 		if ( !(pref & FORCED) ) {
 			mask_sx( it->value );
-			if ( ( pref & CONST ) == 0 ) {
+			if ( ( pref & RCONST ) == 0 ) {
 				wipe_sx_meta( it->value );
 			}
 			it->type = TYPE_RAW;
@@ -1623,7 +1755,7 @@ static uint32_t load_sx_opstack( vm_t *vm, uint32_t pref )
 #endif
 		if ( it->value == reg ) {
 			mask_sx( it->value );
-			if ( ( pref & CONST ) == 0 ) {
+			if ( ( pref & RCONST ) == 0 ) {
 				wipe_sx_meta( it->value );
 			}
 			it->type = TYPE_RAW;
@@ -1644,7 +1776,7 @@ static uint32_t load_sx_opstack( vm_t *vm, uint32_t pref )
 	}
 
 	// integer register on the stack
-	if ( it->type == TYPE_RX || it->type == TYPE_RX_SYSCALL ) {
+	if ( it->type == TYPE_RX ) {
 		// move from general-purpose to scalar register
 		// should never happen with FPU type promotion, except syscalls
 		reg = alloc_sx( pref );
@@ -1661,10 +1793,14 @@ static uint32_t load_sx_opstack( vm_t *vm, uint32_t pref )
 		return reg;
 	}
 
+	if ( ( pref & RCONST ) == 0 ) {
+		pref |= XMASK;
+	}
+
 	if ( it->type == TYPE_CONST ) {
 		// move constant to scalar register
 		reg = alloc_sx_const( pref, it->value );
-		if ( ( pref & CONST ) == 0 ) {
+		if ( ( pref & RCONST ) == 0 ) {
 			wipe_sx_meta( reg );
 		}
 		it->type = TYPE_RAW;
@@ -1674,10 +1810,10 @@ static uint32_t load_sx_opstack( vm_t *vm, uint32_t pref )
 	if ( it->type == TYPE_LOCAL ) {
 		// bogus case: local address casted to float
 		reg = alloc_sx( pref );
-		rx = alloc_rx_local( R2 | CONST, it->value );
+		rx = alloc_rx_local( R2 | RCONST, it->value );
 		emit( FMOVsg( reg, rx ) );
 		unmask_rx( rx );
-		if ( (pref & CONST) == 0 ) {
+		if ( (pref & RCONST) == 0 ) {
 			wipe_rx_meta( rx );
 		}
 		it->type = TYPE_RAW;
@@ -1686,7 +1822,7 @@ static uint32_t load_sx_opstack( vm_t *vm, uint32_t pref )
 
 	// default raw type, explicit load
 	reg = alloc_sx( pref );
-	emit( VLDRi( reg, rOPSTACK, opstack ) ); // sX = *opstack
+	emit( VLDRi( reg, rOPSTACK, opstack * sizeof( int32_t ) ) ); // sX = *opstack
 	it->type = TYPE_RAW;
 	return reg;
 }
@@ -1712,10 +1848,10 @@ static uint32_t get_comp( opcode_t op )
 		case OP_LEF: return LE;
 		case OP_GTF: return GT;
 		case OP_GEF: return GE;
-		default: break;
+		default: DROP( "unexpected op %i", op );
 	}
 
-	DROP( "unexpected op %i", op );
+	return 0;
 }
 
 
@@ -1809,8 +1945,7 @@ static void emit_CheckJump( vm_t *vm, uint32_t reg, int proc_base, int proc_len 
 		if ( encode_arith_imm( proc_len, &imm ) ) {
 			emit(CMP32i(rx[0], imm));       // cmp r2, proclen
 		} else {
-			rx[1] = alloc_rx( R1 | TEMP );
-			emit_MOVRi(rx[1], proc_len);    // r1 = procLen
+			rx[1] = alloc_rx_const( R1, proc_len ); // r1 = procLen
 			emit(CMP32(rx[0], rx[1]));      // cmp r2, r1
 			unmask_rx( rx[1] );
 		}
@@ -1833,7 +1968,7 @@ static void emit_CheckJump( vm_t *vm, uint32_t reg, int proc_base, int proc_len 
 }
 
 
-static void emit_CheckProc( vm_t *vm, instruction_t *inst )
+static void emit_CheckProc( vm_t *vm, instruction_t *ins )
 {
 	uint32_t imm;
 
@@ -1846,7 +1981,7 @@ static void emit_CheckProc( vm_t *vm, instruction_t *inst )
 
 	// opStack overflow check
 	if ( vm_rtChecks->integer & 2 ) {
-		uint32_t n = inst->opStack;        // proc->opStack carries max.used opStack value
+		uint32_t n = ins->opStack;        // proc->opStack carries max.used opStack value
 		uint32_t rx = alloc_rx( R2 | TEMP );
 		if ( encode_arith_imm( n, &imm ) ) {
 			emit(ADD64i(rx, rOPSTACK, imm));// r2 = opstack + max.opStack
@@ -1904,9 +2039,6 @@ savedOffset[ FUNC_SYSF ] = compiledOfs; // to jump from ConstOptimize()
 	emit(LDRSWi(R1, rPROCBASE, 8));
 	emit(STP64(R0, R1, SP, 0));
 	for ( i = 2 ; i < 16; i += 2 ) {
-		//emit(LDRSWi(R0+i+0, rPROCBASE, 4+(i+0)*4));
-		//emit(LDRSWi(R0+i+1, rPROCBASE, 4+(i+1)*4));
-		//emit(STP64(R0+i+0, R0+i+1, SP, (i/2)*16));
 		emit(LDRSWi(R0, rPROCBASE, 4+(i+0)*4));
 		emit(LDRSWi(R1, rPROCBASE, 4+(i+1)*4));
 		emit(STP64(R0, R1, SP, (i/2)*16));
@@ -2140,7 +2272,7 @@ qboolean ConstOptimize( vm_t *vm )
 
 	case OP_STORE4:
 		x = ci->value;
-		rx[0] = load_rx_opstack( vm, R0 | CONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
+		rx[0] = load_rx_opstack( vm, R0 | RCONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
 		emit_CheckReg(vm, ni, rx[0]);
 		rx[1] = alloc_rx_const( R2, x );      // r2 = 0x12345678
 		emit(STR32(rx[1], rDATABASE, rx[0])); // [dataBase + r0] = r2;
@@ -2151,7 +2283,7 @@ qboolean ConstOptimize( vm_t *vm )
 
 	case OP_STORE2:
 		x = ci->value;
-		rx[0] = load_rx_opstack( vm, R0 | CONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
+		rx[0] = load_rx_opstack( vm, R0 | RCONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
 		emit_CheckReg(vm, ni, rx[0]);
 		rx[1] = alloc_rx_const( R2, x );       // r2 = 0x12345678
 		emit(STRH32(rx[1], rDATABASE, rx[0])); // (short)[dataBase + r0] = r2;
@@ -2162,7 +2294,7 @@ qboolean ConstOptimize( vm_t *vm )
 
 	case OP_STORE1:
 		x = ci->value;
-		rx[0] = load_rx_opstack( vm, R0 | CONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
+		rx[0] = load_rx_opstack( vm, R0 | RCONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
 		emit_CheckReg(vm, ni, rx[0]);
 		rx[1] = alloc_rx_const( R2, x );       // r2 = 0x12345678
 		emit(STRB32(rx[1], rDATABASE, rx[0])); // (byte)[dataBase + r0] = r2;
@@ -2330,12 +2462,14 @@ qboolean ConstOptimize( vm_t *vm )
 		flush_volatile();
 		if ( ci->value == ~TRAP_SIN || ci->value == ~TRAP_COS ) {
 			sx[0] = alloc_sx( S0 );
+			rx[0] = alloc_rx( R16 );
 			emit(VLDRi(sx[0], rPROCBASE, 8)); // s0 = [procBase + 8]
 			if ( ci->value == ~TRAP_SIN )
-				emit_MOVXi(R17, (intptr_t)sinf);
+				emit_MOVXi(rx[0], (intptr_t)sinf);
 			else
-				emit_MOVXi(R17, (intptr_t)cosf);
-			emit(BLR(R17));
+				emit_MOVXi(rx[0], (intptr_t)cosf);
+			emit(BLR(rx[0]));
+			unmask_rx( rx[0] );
 			store_sx_opstack( sx[0] );        // *opstack = s0
 			ip += 1; // OP_CALL
 			return qtrue;
@@ -2344,13 +2478,13 @@ qboolean ConstOptimize( vm_t *vm )
 		{
 			x = ~ci->value;
 			emit_MOVRi(R0, x); // r0 = syscall number
-			emit_MOVRi(rOPSTACKSHIFT, opstack); // opStack shift
+			emit_MOVRi(rOPSTACKSHIFT, opstack*sizeof(int32_t)); // opStack shift
 			emitFuncOffset( vm, FUNC_SYSF );
 			ip += 1; // OP_CALL;
 			store_syscall_opstack();
 			return qtrue;
 		}
-		emit_MOVRi(rOPSTACKSHIFT, opstack-4); // opStack shift
+		emit_MOVRi(rOPSTACKSHIFT, (opstack-1)*sizeof(int32_t)); // opStack shift
 		emit(BL(vm->instructionPointers[ ci->value ] - compiledOfs));
 		ip += 1; // OP_CALL;
 		return qtrue;
@@ -2366,7 +2500,7 @@ qboolean ConstOptimize( vm_t *vm )
 	case OP_LEI:
 	case OP_LTI: {
 		uint32_t comp = get_comp( ni->op );
-		rx[0] = load_rx_opstack( vm, R0 | CONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
+		rx[0] = load_rx_opstack( vm, R0 | RCONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
 		x = ci->value;
 		if ( x == 0 && ( ni->op == OP_EQ || ni->op == OP_NE ) ) {
 			if ( ni->op == OP_EQ )
@@ -2396,7 +2530,7 @@ qboolean ConstOptimize( vm_t *vm )
 	case OP_GEF: {
 		uint32_t comp = get_comp( ni->op );
 		x = ci->value;
-		sx[0] = load_sx_opstack( vm, S0 ); dec_opstack(); // s0 = *opstack; opstack -= 4
+		sx[0] = load_sx_opstack( vm, S0 | RCONST ); dec_opstack(); // s0 = *opstack; opstack -= 4
 		if ( x == 0 ) {
 			emit(FCMP0(sx[0]));
 		} else {
@@ -2902,15 +3036,14 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 				emit(STP64pre(rPSTACK, rPROCBASE, SP, -16));
 
 				if ( ip != 1 ) {
-					// opStack shift
+					// apply opStack shift
 					emit(ADD64(rOPSTACK, rOPSTACK, rOPSTACKSHIFT));
 				}
 
 				if ( encode_arith_imm( v, &imm ) ) {
 					emit(SUB32i(rPSTACK, rPSTACK, imm));  // pstack -= arg
 				} else {
-					rx[0] = alloc_rx( R2 | TEMP );
-					emit_MOVRi(rx[0], v);                 // r2 = arg
+					rx[0] = alloc_rx_const( R2, v );      // r2 = arg
 					emit(SUB32(rPSTACK, rPSTACK, rx[0])); // pstack -= r2
 					unmask_rx( rx[0] );
 				}
@@ -2920,9 +3053,8 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 				break;
 
 			case OP_LEAVE:
+				flush_opstack();
 				dec_opstack(); // opstack -= 4
-				flush_volatile(); // dump all constants etc.
-
 #ifdef DEBUG_VM
 				if ( opstack != 0 )
 					DROP( "opStack corrupted on OP_LEAVE" );
@@ -2949,7 +3081,7 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 			case OP_CALL:
 				rx[0] = load_rx_opstack( vm, R0 | FORCED ); // r0 = *opstack
 				flush_volatile();
-				emit_MOVRi(rOPSTACKSHIFT, opstack-4);
+				emit_MOVRi(rOPSTACKSHIFT, (opstack-1)*sizeof(int32_t));
 				emitFuncOffset(vm, FUNC_CALL);
 				unmask_rx( rx[0] );
 				break;
@@ -2962,7 +3094,7 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 				break;
 
 			case OP_POP:
-				dec_opstack(); // opstack -= 4
+				dec_opstack_discard(); // opstack -= 4
 				break;
 
 			case OP_CONST:
@@ -2984,11 +3116,13 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 				break;
 
 			case OP_JUMP:
-				rx[0] = load_rx_opstack( vm, R0 | CONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
+				rx[0] = load_rx_opstack( vm, R0 | RCONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
 				flush_volatile();
 				emit_CheckJump( vm, rx[0], proc_base, proc_len ); // check if r0 is within current proc
-				emit(LDR64_8(R16, rINSPOINTERS, rx[0]));          // r16 = instructionPointers[ r0 ]
-				emit(BR(R16));
+				rx[1] = alloc_rx( R16 );
+				emit(LDR64_8(rx[1], rINSPOINTERS, rx[0]));        // r16 = instructionPointers[ r0 ]
+				emit(BR(rx[1]));
+				unmask_rx( rx[1] );
 				unmask_rx( rx[0] );
 				break;
 
@@ -3003,8 +3137,8 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 			case OP_GTU:
 			case OP_GEU: {
 				uint32_t comp = get_comp( ci->op );
-				rx[0] = load_rx_opstack( vm, R0 | CONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
-				rx[1] = load_rx_opstack( vm, R1 | CONST ); dec_opstack(); // r1 = *opstack; opstack -= 4
+				rx[0] = load_rx_opstack( vm, R0 | RCONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
+				rx[1] = load_rx_opstack( vm, R1 | RCONST ); dec_opstack(); // r1 = *opstack; opstack -= 4
 				unmask_rx( rx[0] );
 				unmask_rx( rx[1] );
 				emit(CMP32(rx[1], rx[0]));
@@ -3019,8 +3153,8 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 			case OP_GTF:
 			case OP_GEF: {
 				uint32_t comp = get_comp( ci->op );
-				sx[0] = load_sx_opstack( vm, S0 | CONST ); dec_opstack(); // s0 = *opstack; opstack -= 4
-				sx[1] = load_sx_opstack( vm, S1 | CONST ); dec_opstack(); // s1 = *opstack; opstack -= 4
+				sx[0] = load_sx_opstack( vm, S0 | RCONST ); dec_opstack(); // s0 = *opstack; opstack -= 4
+				sx[1] = load_sx_opstack( vm, S1 | RCONST ); dec_opstack(); // s1 = *opstack; opstack -= 4
 				unmask_sx( sx[0] );
 				unmask_sx( sx[1] );
 				emit(FCMP(sx[1], sx[0]));
@@ -3059,8 +3193,8 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 				break;
 
 			case OP_STORE1:
-				rx[0] = load_rx_opstack( vm, R0 | CONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
-				rx[1] = load_rx_opstack( vm, R1 | CONST ); dec_opstack(); // r1 = *opstack; opstack -= 4
+				rx[0] = load_rx_opstack( vm, R0 | RCONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
+				rx[1] = load_rx_opstack( vm, R1 | RCONST ); dec_opstack(); // r1 = *opstack; opstack -= 4
 				emit_CheckReg(vm, ci, rx[1]);
 				emit(STRB32(rx[0], rDATABASE, rx[1]));     // (byte*)database[r1] = r0
 				unmask_rx( rx[0] );
@@ -3068,8 +3202,8 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 				break;
 
 			case OP_STORE2:
-				rx[0] = load_rx_opstack( vm, R0 | CONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
-				rx[1] = load_rx_opstack( vm, R1 | CONST ); dec_opstack(); // r1 = *opstack; opstack -= 4
+				rx[0] = load_rx_opstack( vm, R0 | RCONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
+				rx[1] = load_rx_opstack( vm, R1 | RCONST ); dec_opstack(); // r1 = *opstack; opstack -= 4
 				emit_CheckReg(vm, ci, rx[1]);
 				emit(STRH32(rx[0], rDATABASE, rx[1]));     // (short*)database[r1] = r0
 				unmask_rx( rx[0] );
@@ -3077,13 +3211,13 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 				break;
 
 			case OP_STORE4:
-				if ((scalar = scalar_on_top())) {
-					sx[0] = load_sx_opstack( vm, S0 | CONST ); // s0 = *opstack;
+				if ( (scalar = scalar_on_top()) != qfalse ) {
+					sx[0] = load_sx_opstack( vm, S0 | RCONST ); // s0 = *opstack
 				} else {
-					rx[0] = load_rx_opstack( vm, R0 | CONST ); // r0 = *opstack;
+					rx[0] = load_rx_opstack( vm, R0 | RCONST ); // r0 = *opstack
 				}
 				dec_opstack(); // opstack -= 4
-				rx[1] = load_rx_opstack( vm, R1 | CONST ); dec_opstack(); // r1 = *opstack; opstack -= 4
+				rx[1] = load_rx_opstack( vm, R1 | RCONST ); dec_opstack(); // r1 = *opstack; opstack -= 4
 				emit_CheckReg(vm, ci, rx[1]);
 				if ( scalar ) {
 					emit(VSTR(sx[0], rDATABASE, rx[1]));  // database[r1] = s0
@@ -3097,11 +3231,11 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 
 			case OP_ARG:
 				if ( scalar_on_top() ) {
-					sx[0] = load_sx_opstack( vm, S0 | CONST ); dec_opstack(); // s0 = *opstack; opstack -=4
+					sx[0] = load_sx_opstack( vm, S0 | RCONST ); dec_opstack(); // s0 = *opstack; opstack -=4
 					emit(VSTRi(sx[0], rPROCBASE, v)); // [procBase + v] = s0
 					unmask_sx( sx[0] );
 				} else {
-					rx[0] = load_rx_opstack( vm, R0 | CONST ); dec_opstack(); // r0 = *opstack; opstack -=4
+					rx[0] = load_rx_opstack( vm, R0 | RCONST ); dec_opstack(); // r0 = *opstack; opstack -=4
 					emit(STR32i(rx[0], rPROCBASE, v)); // [procBase + v] = r0
 					unmask_rx( rx[0] );
 				}
@@ -3140,7 +3274,7 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 			case OP_RSHI:
 			case OP_RSHU:
 				rx[0] = load_rx_opstack( vm, R0 ); dec_opstack(); // r0 = *opstack
-				rx[1] = load_rx_opstack( vm, R1 | CONST ); // opstack-=4; r1 = *opstack
+				rx[1] = load_rx_opstack( vm, R1 | RCONST ); // opstack-=4; r1 = *opstack
 				switch ( ci->op ) {
 					case OP_ADD:  emit(ADD32(rx[0], rx[1], rx[0])); break;  // r0 = r1 + r0
 					case OP_SUB:  emit(SUB32(rx[0], rx[1], rx[0])); break;  // r0 = r1 - r0
@@ -3174,7 +3308,7 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 			case OP_MULF:
 			case OP_DIVF:
 				sx[0] = load_sx_opstack( vm, S0 ); dec_opstack(); // s0 = *opstack
-				sx[1] = load_sx_opstack( vm, S1 | CONST ); // opstack -= 4; s1 = *opstack
+				sx[1] = load_sx_opstack( vm, S1 | RCONST ); // opstack -= 4; s1 = *opstack
 				switch ( ci->op ) {
 					case OP_ADDF: emit(FADD(sx[0], sx[1], sx[0])); break; // s0 = s1 + s0
 					case OP_SUBF: emit(FSUB(sx[0], sx[1], sx[0])); break; // s0 = s1 - s0
@@ -3193,7 +3327,7 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 
 			case OP_CVIF:
 				sx[0] = alloc_sx( S0 );
-				rx[0] = load_rx_opstack( vm, R0 | CONST ); // r0 = *opstack
+				rx[0] = load_rx_opstack( vm, R0 | RCONST ); // r0 = *opstack
 				emit(SCVTF(sx[0], rx[0]));         // s0 = (float)r0
 				store_sx_opstack( sx[0] );         // *opstack = s0
 				unmask_rx( rx[0] );
@@ -3201,7 +3335,7 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 
 			case OP_CVFI:
 				rx[0] = alloc_rx( R0 );
-				sx[0] = load_sx_opstack( vm, S0 | CONST ); // s0 = *opstack
+				sx[0] = load_sx_opstack( vm, S0 | RCONST ); // s0 = *opstack
 				emit(FCVTZS(rx[0], sx[0]));        // r0 = (int)s0
 				store_rx_opstack( rx[0] );         // *opstack = r0;
 				unmask_sx( sx[0] );
@@ -3260,12 +3394,23 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 #else
 		uint32_t allocSize = compiledOfs;
 #endif
+
+#ifdef _WIN32
+		vm->codeBase.ptr = VirtualAlloc( NULL, allocSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE );
+		if ( !vm->codeBase.ptr ) {
+			VM_FreeBuffers();
+			Com_Printf( S_COLOR_YELLOW "%s(%s): VirtualAlloc failed\n", __func__, vm->name );
+			return qfalse;
+		}
+#else
 		vm->codeBase.ptr = mmap( NULL, allocSize, PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0 );
 		if ( vm->codeBase.ptr == MAP_FAILED ) {
 			VM_FreeBuffers();
 			Com_Printf( S_COLOR_YELLOW "%s(%s): mmap failed\n", __func__, vm->name );
 			return qfalse;
 		}
+#endif
+
 		vm->codeLength = allocSize; // code + literals
 		vm->codeSize = compiledOfs;
 		code = (uint32_t*)vm->codeBase.ptr;
@@ -3276,7 +3421,7 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 #ifdef USE_LITERAL_POOL
 	// append literals to the code
 	if ( numLiterals ) {
-		uint32_t i, *lp = litBase;
+		uint32_t *lp = litBase;
 		for ( i = 0; i < numLiterals; i++, lp++ ) {
 			*lp = litList[ i ].value;
 		}
@@ -3298,6 +3443,17 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 
 	VM_FreeBuffers();
 
+#ifdef _WIN32
+	{
+		DWORD oldProtect = 0;
+		// remove write permissions
+		if ( !VirtualProtect( vm->codeBase.ptr, vm->codeLength, PAGE_EXECUTE_READ, &oldProtect ) ) {
+			VM_Destroy_Compiled( vm );
+			Com_Printf( S_COLOR_YELLOW "%s(%s): VirtualProtect failed\n", __func__, vm->name );
+			return qfalse;
+		}
+	}
+#else
 	if ( mprotect( vm->codeBase.ptr, vm->codeLength, PROT_READ | PROT_EXEC ) ) {
 		VM_Destroy_Compiled( vm );
 		Com_Printf( S_COLOR_YELLOW "%s(%s): mprotect failed\n", __func__, vm->name );
@@ -3306,6 +3462,7 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 
 	// clear icache, http://blogs.arm.com/software-enablement/141-caches-and-self-modifying-code/
 	__clear_cache( vm->codeBase.ptr, vm->codeBase.ptr + vm->codeLength );
+#endif
 
 	vm->destroy = VM_Destroy_Compiled;
 
@@ -3315,9 +3472,9 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 
 int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 {
-	int		opStack[MAX_OPSTACK_SIZE];
-	unsigned int stackOnEntry;
-	int		*image;
+	int32_t		opStack[ MAX_OPSTACK_SIZE ];
+	int			stackOnEntry;
+	int32_t		*image;
 	int		i;
 
 	// we might be called recursively, so this might not be the very top
@@ -3326,7 +3483,7 @@ int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 	vm->programStack -= (MAX_VMMAIN_CALL_ARGS+2)*4;
 
 	// set up the stack frame
-	image = (int*)( vm->dataBase + vm->programStack );
+	image = (int32_t*)( vm->dataBase + vm->programStack );
 	for ( i = 0; i < nargs; i++ ) {
 		image[ i + 2 ] = args[ i ];
 	}

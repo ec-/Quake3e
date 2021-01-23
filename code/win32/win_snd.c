@@ -29,10 +29,12 @@ static qboolean	dsound_init;
 
 // Visual Studio 2012+ or MINGW
 #if ( _MSC_VER >= 1700 ) || defined(MINGW)
-#define USE_WASAPI
+#ifndef USE_WASAPI
+#define USE_WASAPI 1
+#endif
 #endif
 
-#ifdef USE_WASAPI
+#if USE_WASAPI
 static qboolean wasapi_init;
 
 #include <mmreg.h>
@@ -691,7 +693,7 @@ SNDDMA_Shutdown
 */
 void SNDDMA_Shutdown( void ) {
 	Com_DPrintf( "Shutting down sound system\n" );
-#ifdef USE_WASAPI
+#if USE_WASAPI
 	if ( wasapi_init ) {
 		Done_WASAPI();
 	}
@@ -732,7 +734,7 @@ void SNDDMA_Shutdown( void ) {
 	pDSPBuf = NULL;
 
 	dsound_init = qfalse;
-#ifdef USE_WASAPI
+#if USE_WASAPI
 	wasapi_init = qfalse;
 #endif
 	memset( &dma, 0, sizeof( dma ) );
@@ -751,7 +753,7 @@ Returns false if failed
 */
 qboolean SNDDMA_Init( void ) {
 
-#ifdef USE_WASAPI
+#if USE_WASAPI
 	const char *defdrv;
 	cvar_t *s_driver;
 
@@ -770,13 +772,13 @@ qboolean SNDDMA_Init( void ) {
 	memset( &dma, 0, sizeof( dma ) );
 
 	dsound_init = qfalse;
-#ifdef USE_WASAPI
+#if USE_WASAPI
 	wasapi_init = qfalse;
 #endif
 	if ( CoInitialize( NULL ) != S_OK ) {
 		return qfalse;
 	}
-#ifdef USE_WASAPI
+#if USE_WASAPI
 	if ( Q_stricmp( s_driver->string, "wasapi" ) == 0 && SNDDMA_InitWASAPI() ) {
 		dma.driver = "WASAPI";
 		wasapi_init = qtrue;
@@ -941,13 +943,13 @@ qboolean SNDDMA_InitDS( void )
 ==============
 SNDDMA_GetDMAPos
 
-return the current sample position (in mono samples read)
+return the current sample WRITE position (in mono samples)
 inside the recirculating dma buffer, so the mixing code will know
 how many sample are required to fill it up.
 ===============
 */
 int SNDDMA_GetDMAPos( void ) {
-#ifdef USE_WASAPI
+#if USE_WASAPI
 	if ( wasapi_init ) {
 		// restart sound system if needed
 		if ( doSndRestart ) {
@@ -960,19 +962,12 @@ int SNDDMA_GetDMAPos( void ) {
 	}
 #endif
 	if ( dsound_init ) {
-		MMTIME	mmtime;
-		int		s;
-		DWORD	dwWrite;
+		DWORD	dwWriteCursor;
 
-		mmtime.wType = TIME_SAMPLES;
-		pDSBuf->lpVtbl->GetCurrentPosition( pDSBuf, &mmtime.u.sample, &dwWrite );
+		// write position is the only safe position to start update
+		pDSBuf->lpVtbl->GetCurrentPosition( pDSBuf, NULL, &dwWriteCursor );
 
-		s = mmtime.u.sample;
-
-		s >>= sample16;
-		s &= ( dma.samples - 1 );
-
-		return s;
+		return ( dwWriteCursor >> sample16 ) & ( dma.samples - 1 );
 	}
 
 	return 0;
@@ -992,7 +987,7 @@ void SNDDMA_BeginPainting( void ) {
 	DWORD	*pbuf, *pbuf2;
 	HRESULT	hresult;
 	DWORD	dwStatus;
-#ifdef USE_WASAPI
+#if USE_WASAPI
 	if ( wasapi_init ) {
 		EnterCriticalSection( &cs );
 		return;
@@ -1047,7 +1042,7 @@ Also unlocks the dsound buffer
 ===============
 */
 void SNDDMA_Submit( void ) {
-#ifdef USE_WASAPI
+#if USE_WASAPI
 	if ( wasapi_init ) {
 		LeaveCriticalSection( &cs );
 		return;
@@ -1068,7 +1063,7 @@ When we change windows we need to do this
 =================
 */
 void SNDDMA_Activate( void ) {
-#ifdef USE_WASAPI
+#if USE_WASAPI
 	if ( wasapi_init ) {
 		if ( inPlay == 0 ) {
 			doSndRestart = qtrue;

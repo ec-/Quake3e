@@ -1,5 +1,7 @@
 # Quake3e
 
+[![build](https://github.com/ec-/Quake3e/workflows/build/badge.svg)](https://github.com/ec-/Quake3e/actions?query=workflow%3Abuild) * [![Discord Shield](https://discord.com/api/guilds/314456230649135105/widget.png?style=shield)](https://discord.com/channels/314456230649135105/314465055578128385)
+
 This is a modern Quake III Arena engine aimed to be fast, secure and compatible with all existing Q3A mods.
 It is based on last non-SDL source dump of ioquake3 with latest upstream fixes applied.
 
@@ -38,7 +40,8 @@ Based on Quake-III-Arena-Kenny-Edition with many additions:
 * fixed framebuffer corruption on some Intel iGPUs
 * offscreen rendering, enabled with **\r_fbo 1**, all following reguires it enabled:
 * `screenMap` texture rendering - to create realistic environment reflections
-* multi-sample anti-aliasing (**\r_ext_multisample**)
+* multisample anti-aliasing (**\r_ext_multisample**)
+* supersample anti-aliasing (**\r_ext_supersample**)
 * per-window gamma-correction which is important for screen-capture tools like OBS
 * you can minimize game window any time during **\video**|**\video-pipe** recording
 * high dynamic range render targets (**\r_hdr 1**) to avoid color banding

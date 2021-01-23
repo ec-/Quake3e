@@ -176,6 +176,93 @@ static const char *pmode_to_str( VkPresentModeKHR mode )
 }
 
 
+#define CASE_STR(x) case (x): return #x
+
+const char *vk_format_string( VkFormat format )
+{
+	static char buf[16];
+
+	switch ( format ) {
+		// color formats
+		CASE_STR( VK_FORMAT_B8G8R8A8_SRGB );
+		CASE_STR( VK_FORMAT_R8G8B8A8_SRGB );
+		CASE_STR( VK_FORMAT_B8G8R8A8_SNORM );
+		CASE_STR( VK_FORMAT_R8G8B8A8_SNORM );
+		CASE_STR( VK_FORMAT_B8G8R8A8_UNORM );
+		CASE_STR( VK_FORMAT_R8G8B8A8_UNORM );
+		CASE_STR( VK_FORMAT_B4G4R4A4_UNORM_PACK16 );
+		CASE_STR( VK_FORMAT_R16G16B16A16_UNORM );
+		// depth formats
+		CASE_STR( VK_FORMAT_D16_UNORM );
+		CASE_STR( VK_FORMAT_D16_UNORM_S8_UINT );
+		CASE_STR( VK_FORMAT_X8_D24_UNORM_PACK32 );
+		CASE_STR( VK_FORMAT_D24_UNORM_S8_UINT );
+		CASE_STR( VK_FORMAT_D32_SFLOAT );
+		CASE_STR( VK_FORMAT_D32_SFLOAT_S8_UINT );
+	default:
+		Com_sprintf( buf, sizeof( buf ), "#%i", format );
+		return buf;
+	}
+}
+
+
+static const char *vk_result_string( VkResult code ) {
+	static char buffer[32];
+
+	switch ( code ) {
+		CASE_STR( VK_SUCCESS );
+		CASE_STR( VK_NOT_READY );
+		CASE_STR( VK_TIMEOUT );
+		CASE_STR( VK_EVENT_SET );
+		CASE_STR( VK_EVENT_RESET );
+		CASE_STR( VK_INCOMPLETE );
+		CASE_STR( VK_ERROR_OUT_OF_HOST_MEMORY );
+		CASE_STR( VK_ERROR_OUT_OF_DEVICE_MEMORY );
+		CASE_STR( VK_ERROR_INITIALIZATION_FAILED );
+		CASE_STR( VK_ERROR_DEVICE_LOST );
+		CASE_STR( VK_ERROR_MEMORY_MAP_FAILED );
+		CASE_STR( VK_ERROR_LAYER_NOT_PRESENT );
+		CASE_STR( VK_ERROR_EXTENSION_NOT_PRESENT );
+		CASE_STR( VK_ERROR_FEATURE_NOT_PRESENT );
+		CASE_STR( VK_ERROR_INCOMPATIBLE_DRIVER );
+		CASE_STR( VK_ERROR_TOO_MANY_OBJECTS );
+		CASE_STR( VK_ERROR_FORMAT_NOT_SUPPORTED );
+		CASE_STR( VK_ERROR_FRAGMENTED_POOL );
+		CASE_STR( VK_ERROR_UNKNOWN );
+		CASE_STR( VK_ERROR_OUT_OF_POOL_MEMORY );
+		CASE_STR( VK_ERROR_INVALID_EXTERNAL_HANDLE );
+		CASE_STR( VK_ERROR_FRAGMENTATION );
+		CASE_STR( VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS );
+		CASE_STR( VK_ERROR_SURFACE_LOST_KHR );
+		CASE_STR( VK_ERROR_NATIVE_WINDOW_IN_USE_KHR );
+		CASE_STR( VK_SUBOPTIMAL_KHR );
+		CASE_STR( VK_ERROR_OUT_OF_DATE_KHR );
+		CASE_STR( VK_ERROR_INCOMPATIBLE_DISPLAY_KHR );
+		CASE_STR( VK_ERROR_VALIDATION_FAILED_EXT );
+		CASE_STR( VK_ERROR_INVALID_SHADER_NV );
+		CASE_STR( VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT );
+		CASE_STR( VK_ERROR_NOT_PERMITTED_EXT );
+		CASE_STR( VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT );
+		CASE_STR( VK_THREAD_IDLE_KHR );
+		CASE_STR( VK_THREAD_DONE_KHR );
+		CASE_STR( VK_OPERATION_DEFERRED_KHR );
+		CASE_STR( VK_OPERATION_NOT_DEFERRED_KHR );
+		CASE_STR( VK_PIPELINE_COMPILE_REQUIRED_EXT );
+	default:
+		sprintf( buffer, "code %i", code );
+		return buffer;
+	}
+}
+#undef CASE_STR
+
+#define VK_CHECK( function_call ) { \
+	VkResult res = function_call; \
+	if ( res < 0 ) { \
+		ri.Error( ERR_FATAL, "Vulkan: %s returned %s", #function_call, vk_result_string( res ) ); \
+	} \
+}
+
+
 /*
 static VkFlags get_composite_alpha( VkCompositeAlphaFlagsKHR flags )
 {
@@ -409,7 +496,7 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 	desc.clipped = VK_TRUE;
 	desc.oldSwapchain = VK_NULL_HANDLE;
 
-	VK_CHECK( qvkCreateSwapchainKHR(device, &desc, NULL, swapchain ) );
+	VK_CHECK( qvkCreateSwapchainKHR( device, &desc, NULL, swapchain ) );
 
 	VK_CHECK( qvkGetSwapchainImagesKHR( vk.device, vk.swapchain, &vk.swapchain_image_count, NULL ) );
 	vk.swapchain_image_count = MIN( vk.swapchain_image_count, MAX_SWAPCHAIN_IMAGES );
@@ -575,10 +662,10 @@ static void create_render_pass( VkDevice device, VkFormat depth_format )
 	deps[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;						// Don't read things from the shader before ready
 	deps[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;					// Only need the current fragment (or tile) synchronized, not the whole framebuffer
 
-	desc.dependencyCount = 2;
-	desc.pDependencies = deps;
-	//desc.dependencyCount = 0;
-	//desc.pDependencies = NULL;
+	//desc.dependencyCount = 2;
+	//desc.pDependencies = deps;
+	desc.dependencyCount = 0;
+	desc.pDependencies = NULL;
 
 	VK_CHECK( qvkCreateRenderPass( device, &desc, NULL, &vk.render_pass.main ) );
 
@@ -634,6 +721,40 @@ static void create_render_pass( VkDevice device, VkFormat depth_format )
 			VK_CHECK( qvkCreateRenderPass( device, &desc, NULL, &vk.render_pass.blur[i] ) );
 			SET_OBJECT_NAME( vk.render_pass.blur[i], va( "render pass - blur %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_RENDER_PASS_EXT );
 		}
+	}
+
+	// capture render pass
+	if ( vk.capture.image )
+	{
+		Com_Memset( &subpass, 0, sizeof( subpass ) );
+
+		attachments[0].flags = 0;
+		attachments[0].format = vk.capture_format;
+		attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+		attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // this will be completely overwritten
+		attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;   // needed for next render pass
+		attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachments[0].finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+		colorRef0.attachment = 0;
+		colorRef0.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorRef0;
+
+		desc.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		desc.pNext = NULL;
+		desc.flags = 0;
+		desc.pAttachments = attachments;
+		desc.attachmentCount = 1;
+		desc.pSubpasses = &subpass;
+		desc.subpassCount = 1;
+
+		VK_CHECK( qvkCreateRenderPass( device, &desc, NULL, &vk.render_pass.capture ) );
+		SET_OBJECT_NAME( vk.render_pass.capture, "render pass - capture", VK_DEBUG_REPORT_OBJECT_TYPE_RENDER_PASS_EXT );
 	}
 
 	colorRef0.attachment = 0;
@@ -888,10 +1009,11 @@ static void create_instance( void )
 {
 #ifdef _DEBUG
 	const char* validation_layer_name = "VK_LAYER_LUNARG_standard_validation";
-	VkResult res;
+	const char* validation_layer_name2 = "VK_LAYER_KHRONOS_validation";
 #endif
 	VkInstanceCreateInfo desc;
 	VkExtensionProperties *extension_properties;
+	VkResult res;
 	const char **extension_names, *ext;
 	uint32_t i, n, count, extension_count;
 
@@ -924,8 +1046,6 @@ static void create_instance( void )
 	desc.pNext = NULL;
 	desc.flags = 0;
 	desc.pApplicationInfo = NULL;
-	desc.enabledLayerCount = 0;
-	desc.ppEnabledLayerNames = NULL;
 	desc.enabledExtensionCount = extension_count;
 	desc.ppEnabledExtensionNames = extension_names;
 
@@ -937,24 +1057,35 @@ static void create_instance( void )
 
 	if ( res == VK_ERROR_LAYER_NOT_PRESENT ) {
 
-		ri.Printf( PRINT_ALL, "...validation layer is not available\n" );
-
-		// try without validation layer
-		desc.enabledLayerCount = 0;
-		desc.ppEnabledLayerNames = NULL;
+		desc.enabledLayerCount = 1;
+		desc.ppEnabledLayerNames = &validation_layer_name2;
 
 		res = qvkCreateInstance( &desc, NULL, &vk.instance );
-	}
 
-	if ( res != VK_SUCCESS ) {
-		ri.Error( ERR_FATAL, "Vulkan: instance creation failed with error %i", res );
+		if ( res == VK_ERROR_LAYER_NOT_PRESENT ) {
+
+			ri.Printf( PRINT_WARNING, "...validation layer is not available\n" );
+
+			// try without validation layer
+			desc.enabledLayerCount = 0;
+			desc.ppEnabledLayerNames = NULL;
+
+			res = qvkCreateInstance( &desc, NULL, &vk.instance );
+		}
 	}
 #else
-	VK_CHECK( qvkCreateInstance( &desc, NULL, &vk.instance ) );
+	desc.enabledLayerCount = 0;
+	desc.ppEnabledLayerNames = NULL;
+
+	res = qvkCreateInstance( &desc, NULL, &vk.instance );
 #endif
 
 	ri.Free( (void*)extension_names );
 	ri.Free( extension_properties );
+
+	if ( res != VK_SUCCESS ) {
+		ri.Error( ERR_FATAL, "Vulkan: instance creation failed with %s", vk_result_string( res ) );
+	}
 }
 
 
@@ -984,51 +1115,22 @@ static VkFormat get_depth_format( VkPhysicalDevice physical_device ) {
 }
 
 
-#define CASE_STR(x) case (x): return #x
-
-const char *vk_get_format_name( VkFormat format )
-{
-	static char buf[16];
-
-	switch ( format ) {
-		// color formats
-		CASE_STR( VK_FORMAT_B8G8R8A8_SRGB );
-		CASE_STR( VK_FORMAT_R8G8B8A8_SRGB );
-		CASE_STR( VK_FORMAT_B8G8R8A8_SNORM );
-		CASE_STR( VK_FORMAT_R8G8B8A8_SNORM );
-		CASE_STR( VK_FORMAT_B8G8R8A8_UNORM );
-		CASE_STR( VK_FORMAT_R8G8B8A8_UNORM );
-		CASE_STR( VK_FORMAT_B4G4R4A4_UNORM_PACK16 );
-		CASE_STR( VK_FORMAT_R16G16B16A16_UNORM );
-		// depth formats
-		CASE_STR( VK_FORMAT_D16_UNORM );
-		CASE_STR( VK_FORMAT_D16_UNORM_S8_UINT );
-		CASE_STR( VK_FORMAT_X8_D24_UNORM_PACK32 );
-		CASE_STR( VK_FORMAT_D24_UNORM_S8_UINT );
-		CASE_STR( VK_FORMAT_D32_SFLOAT );
-		CASE_STR( VK_FORMAT_D32_SFLOAT_S8_UINT );
-		default:
-			Com_sprintf( buf, sizeof( buf ), "#%i", format );
-			return buf;
-	}
-}
-
-
 // Check if we can use vkCmdBlitImage for the given source and destination image formats.
-static qboolean vk_blit_enabled( const VkFormat srcFormat, const VkFormat dstFormat )
+static qboolean vk_blit_enabled( VkPhysicalDevice physical_device, const VkFormat srcFormat, const VkFormat dstFormat )
 {
 	VkFormatProperties formatProps;
-	qboolean blit_enabled = qtrue;
 
-	qvkGetPhysicalDeviceFormatProperties( vk.physical_device, srcFormat, &formatProps );
-	if ( ( formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT ) == 0 )
-		blit_enabled = qfalse;
+	qvkGetPhysicalDeviceFormatProperties( physical_device, srcFormat, &formatProps );
+	if ( ( formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT ) == 0 ) {
+		return qfalse;
+	}
 
-	qvkGetPhysicalDeviceFormatProperties( vk.physical_device, dstFormat, &formatProps );
-	if ( ( formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT ) == 0 )
-		blit_enabled = qfalse;
+	qvkGetPhysicalDeviceFormatProperties( physical_device, dstFormat, &formatProps );
+	if ( ( formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT ) == 0 ) {
+		return qfalse;
+	}
 
-	return blit_enabled;
+	return qtrue;
 }
 
 
@@ -1046,9 +1148,56 @@ static VkFormat get_hdr_format( VkFormat base_format )
 }
 
 
-static void get_surface_formats( void )
+static qboolean vk_select_surface_format( VkPhysicalDevice physical_device, VkSurfaceKHR surface )
 {
-	vk.depth_format = get_depth_format( vk.physical_device );
+	VkSurfaceFormatKHR *candidates;
+	uint32_t format_count;
+	VkResult res;
+
+	res = qvkGetPhysicalDeviceSurfaceFormatsKHR( physical_device, surface, &format_count, NULL );
+	if ( res < 0 ) {
+		ri.Printf( PRINT_ERROR, "vkGetPhysicalDeviceSurfaceFormatsKHR returned %s\n", vk_result_string( res ) );
+		return qfalse;
+	}
+
+	if ( format_count == 0 ) {
+		ri.Printf( PRINT_ERROR, "...no surface formats found\n" );
+		return qfalse;
+	}
+
+	candidates = (VkSurfaceFormatKHR*)ri.Malloc( format_count * sizeof(VkSurfaceFormatKHR) );
+
+	VK_CHECK( qvkGetPhysicalDeviceSurfaceFormatsKHR( physical_device, surface, &format_count, candidates ) );
+
+	if (format_count == 1 && candidates[0].format == VK_FORMAT_UNDEFINED) {
+		// special case that means we can choose any format
+		vk.surface_format.format = VK_FORMAT_R8G8B8A8_UNORM;
+		vk.surface_format.colorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+	}
+	else {
+		uint32_t i;
+		vk.surface_format = candidates[0];
+		for ( i = 1; i < format_count; i++ ) {
+			if ( candidates[i].format == VK_FORMAT_B8G8R8A8_UNORM && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
+				vk.surface_format = candidates[i];
+				break;
+			}
+			//if ( candidates[i].format == VK_FORMAT_B8G8R8A8_SRGB && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
+			//	vk.surface_format = candidates[i];
+			//	break;
+			//}
+		}
+	}
+
+	ri.Free( candidates );
+
+	return qtrue;
+}
+
+
+static void setup_surface_formats( VkPhysicalDevice physical_device )
+{
+	vk.depth_format = get_depth_format( physical_device );
 
 	vk.color_format = get_hdr_format( vk.surface_format.format );
 
@@ -1056,7 +1205,7 @@ static void get_surface_formats( void )
 
 	vk.bloom_format = vk.surface_format.format;
 
-	vk.blitEnabled = vk_blit_enabled( vk.color_format, vk.capture_format );
+	vk.blitEnabled = vk_blit_enabled( physical_device, vk.color_format, vk.capture_format );
 
 	if ( !vk.blitEnabled )
 	{
@@ -1065,75 +1214,35 @@ static void get_surface_formats( void )
 }
 
 
-static void vk_create_device( void ) {
+static const char *renderer_name( const VkPhysicalDeviceProperties *props ) {
+	static char buf[sizeof( props->deviceName ) + 64];
+	const char *device_type;
 
-	VkPhysicalDevice *physical_devices;
-	uint32_t device_count;
-	int device_index;
-	VkResult res;
-
-	res = qvkEnumeratePhysicalDevices( vk.instance, &device_count, NULL );
-	if ( device_count == 0 ) {
-		ri.Error( ERR_FATAL, "Vulkan: no physical device found" );
-	} else if ( res < 0 ) {
-		ri.Error( ERR_FATAL, "vkEnumeratePhysicalDevices returned error %i", res );
+	switch ( props->deviceType ) {
+		case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: device_type = "Integrated"; break;
+		case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: device_type = "Discrete"; break;
+		case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU: device_type = "Virtual"; break;
+		case VK_PHYSICAL_DEVICE_TYPE_CPU: device_type = "CPU"; break;
+		default: device_type = "OTHER"; break;
 	}
 
-	physical_devices = (VkPhysicalDevice*)ri.Malloc( device_count * sizeof( VkPhysicalDevice ) );
-	VK_CHECK(qvkEnumeratePhysicalDevices( vk.instance, &device_count, physical_devices ) );
+	Com_sprintf( buf, sizeof( buf ), "%s %s, 0x%04x",
+		device_type, props->deviceName, props->deviceID );
 
-	// select physical device
-	device_index = r_device->integer;
-	if ( device_index > device_count - 1 )
-		device_index = device_count - 1;
+	return buf;
+}
 
-	vk.physical_device = physical_devices[ device_index ];
 
-	ri.Free( physical_devices );
+static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_index ) {
 
-	ri.Printf( PRINT_ALL, "...selected physical device #%i\n", device_index );
-
-	if ( !ri.VK_CreateSurface( vk.instance, &vk.surface ) ) {
-		ri.Error( ERR_FATAL, "Error creating Vulkan surface" );
-		return;
-	}
+	ri.Printf( PRINT_ALL, "...selected physical device: %i\n", device_index );
 
 	// select surface format
-	{
-		VkSurfaceFormatKHR *candidates;
-		uint32_t format_count;
-
-		VK_CHECK( qvkGetPhysicalDeviceSurfaceFormatsKHR( vk.physical_device, vk.surface, &format_count, NULL ) );
-		if ( format_count == 0 )
-			ri.Error( ERR_FATAL, "%s: no surface formats found", __func__ );
-
-		candidates = (VkSurfaceFormatKHR*) ri.Malloc( format_count * sizeof(VkSurfaceFormatKHR) );
-
-		VK_CHECK( qvkGetPhysicalDeviceSurfaceFormatsKHR( vk.physical_device, vk.surface, &format_count, candidates ) );
-		
-		if ( format_count == 1 && candidates[0].format == VK_FORMAT_UNDEFINED ) {
-			// special case that means we can choose any format
-			vk.surface_format.format = VK_FORMAT_R8G8B8A8_UNORM;
-			vk.surface_format.colorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-		} else {
-			uint32_t i;
-			vk.surface_format = candidates[0];
-			for ( i = 1; i < format_count; i++ ) {
-				if ( candidates[i].format == VK_FORMAT_B8G8R8A8_UNORM && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
-					vk.surface_format = candidates[i];
-					break;
-				}
-				//if ( candidates[i].format == VK_FORMAT_B8G8R8A8_SRGB && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
-				//	vk.surface_format = candidates[i];
-				//	break;
-				//}
-			}
-		}
-
-		ri.Free( candidates );
+	if ( !vk_select_surface_format( physical_device, vk.surface ) ) {
+		return qfalse;
 	}
 
-	get_surface_formats();
+	setup_surface_formats( physical_device );
 
 	// select queue family
 	{
@@ -1141,15 +1250,15 @@ static void vk_create_device( void ) {
 		uint32_t queue_family_count;
 		uint32_t i;
 
-		qvkGetPhysicalDeviceQueueFamilyProperties(vk.physical_device, &queue_family_count, NULL);
-		queue_families = (VkQueueFamilyProperties*)ri.Malloc(queue_family_count * sizeof(VkQueueFamilyProperties));
-		qvkGetPhysicalDeviceQueueFamilyProperties(vk.physical_device, &queue_family_count, queue_families);
+		qvkGetPhysicalDeviceQueueFamilyProperties( physical_device, &queue_family_count, NULL );
+		queue_families = (VkQueueFamilyProperties*)ri.Malloc( queue_family_count * sizeof( VkQueueFamilyProperties ) );
+		qvkGetPhysicalDeviceQueueFamilyProperties( physical_device, &queue_family_count, queue_families );
 
 		// select queue family with presentation and graphics support
 		vk.queue_family_index = ~0U;
 		for (i = 0; i < queue_family_count; i++) {
 			VkBool32 presentation_supported;
-			VK_CHECK(qvkGetPhysicalDeviceSurfaceSupportKHR(vk.physical_device, i, vk.surface, &presentation_supported));
+			VK_CHECK( qvkGetPhysicalDeviceSurfaceSupportKHR( physical_device, i, vk.surface, &presentation_supported ) );
 
 			if (presentation_supported && (queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
 				vk.queue_family_index = i;
@@ -1159,8 +1268,11 @@ static void vk_create_device( void ) {
 		
 		ri.Free( queue_families );
 
-		if ( vk.queue_family_index == ~0U )
-			ri.Error( ERR_FATAL, "%s: failed to find queue family", __func__ );
+		if ( vk.queue_family_index == ~0U ) {
+			ri.Printf( PRINT_ERROR, "...failed to find graphics queue family\n" );
+
+			return qfalse;
+		}
 	}
 
 	// create VkDevice
@@ -1175,15 +1287,16 @@ static void vk_create_device( void ) {
 		VkPhysicalDeviceFeatures device_features;
 		VkPhysicalDeviceFeatures features;
 		VkDeviceCreateInfo device_desc;
+		VkResult res;
 		qboolean swapchainSupported = qfalse;
 		qboolean dedicatedAllocation = qfalse;
 		qboolean memoryRequirements2 = qfalse;
 		qboolean debugMarker = qfalse;
 		uint32_t i, len, count = 0;
 
-		VK_CHECK(qvkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &count, NULL));
-		extension_properties = (VkExtensionProperties*)ri.Malloc(count * sizeof(VkExtensionProperties));
-		VK_CHECK(qvkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &count, extension_properties));
+		VK_CHECK( qvkEnumerateDeviceExtensionProperties( physical_device, NULL, &count, NULL ) );
+		extension_properties = (VkExtensionProperties*)ri.Malloc( count * sizeof( VkExtensionProperties ) );
+		VK_CHECK( qvkEnumerateDeviceExtensionProperties( physical_device, NULL, &count, extension_properties ) );
 
 		// fill glConfig.extensions_string
 		str = glConfig.extensions_string; *str = '\0';
@@ -1216,8 +1329,10 @@ static void vk_create_device( void ) {
 
 		device_extension_count = 0;
 
-		if ( !swapchainSupported )
-			ri.Error( ERR_FATAL, "%s: required device extension is not available: %s", __func__, VK_KHR_SWAPCHAIN_EXTENSION_NAME );
+		if ( !swapchainSupported ) {
+			ri.Printf( PRINT_ERROR, "...required device extension is not available: %s\n", VK_KHR_SWAPCHAIN_EXTENSION_NAME );
+			return qfalse;
+		}
 
 		if ( !memoryRequirements2 )
 			dedicatedAllocation = qfalse;
@@ -1240,10 +1355,12 @@ static void vk_create_device( void ) {
 			vk.debugMarkers = qtrue;
 		}
 
-		qvkGetPhysicalDeviceFeatures( vk.physical_device, &device_features );
+		qvkGetPhysicalDeviceFeatures( physical_device, &device_features );
 
-		if ( device_features.fillModeNonSolid == VK_FALSE )
-			ri.Error( ERR_FATAL, "%s: fillModeNonSolid feature is not supported", __func__ );
+		if ( device_features.fillModeNonSolid == VK_FALSE ) {
+			ri.Printf( PRINT_ERROR, "...fillModeNonSolid feature is not supported\n" );
+			return qfalse;
+		}
 
 		queue_desc.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queue_desc.pNext = NULL;
@@ -1281,8 +1398,14 @@ static void vk_create_device( void ) {
 		device_desc.ppEnabledExtensionNames = device_extension_list;
 		device_desc.pEnabledFeatures = &features;
 
-		VK_CHECK( qvkCreateDevice( vk.physical_device, &device_desc, NULL, &vk.device ) );
+		res = qvkCreateDevice( physical_device, &device_desc, NULL, &vk.device );
+		if ( res < 0 ) {
+			ri.Printf( PRINT_ERROR, "vkCreateDevice returned %s\n", vk_result_string( res ) );
+			return qfalse;
+		}
 	}
+
+	return qtrue;
 }
 
 
@@ -1308,6 +1431,14 @@ static void vk_create_device( void ) {
 
 static void init_vulkan_library( void )
 {
+	VkPhysicalDeviceProperties props;
+	VkPhysicalDevice *physical_devices;
+	uint32_t device_count;
+	int device_index, i;
+	VkResult res;
+
+	Com_Memset( &vk, 0, sizeof( vk ) );
+
 	//
 	// Get functions that do not depend on VkInstance (vk.instance == nullptr at this point).
 	//
@@ -1357,11 +1488,61 @@ static void init_vulkan_library( void )
 	}
 #endif
 
+	// create surface
+	if ( !ri.VK_CreateSurface( vk.instance, &vk.surface ) ) {
+		ri.Error( ERR_FATAL, "Error creating Vulkan surface" );
+		return;
+	}
+
+	res = qvkEnumeratePhysicalDevices( vk.instance, &device_count, NULL );
+	if ( device_count == 0 ) {
+		ri.Error( ERR_FATAL, "Vulkan: no physical devices found" );
+		return;
+	}
+	else if ( res < 0 ) {
+		ri.Error( ERR_FATAL, "vkEnumeratePhysicalDevices returned %s", vk_result_string( res ) );
+		return;
+	}
+
+	physical_devices = (VkPhysicalDevice*)ri.Malloc( device_count * sizeof( VkPhysicalDevice ) );
+	VK_CHECK( qvkEnumeratePhysicalDevices( vk.instance, &device_count, physical_devices ) );
+
+	// initial physical device index
+	device_index = r_device->integer;
+
+	ri.Printf( PRINT_ALL, ".......................\nAvailable physical devices:\n" );
+	for ( i = 0; i < device_count; i++ ) {
+		qvkGetPhysicalDeviceProperties( physical_devices[ i ], &props );
+		ri.Printf( PRINT_ALL, " %i: %s\n", i, renderer_name( &props ) );
+		if ( device_index == -1 && props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ) {
+			device_index = i;
+		} else if ( device_index == -2 && props.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU ) {
+			device_index = i;
+		}
+	}
+	ri.Printf( PRINT_ALL, ".......................\n" );
+
+	vk.physical_device = VK_NULL_HANDLE;
+	for ( i = 0; i < device_count; i++, device_index++ ) {
+		if ( device_index >= device_count || device_index < 0 ) {
+			device_index = 0;
+		}
+		if ( vk_create_device( physical_devices[ device_index ], device_index ) ) {
+			vk.physical_device = physical_devices[ device_index ];
+			break;
+		}
+	}
+
+	ri.Free( physical_devices );
+
+	if ( vk.physical_device == VK_NULL_HANDLE ) {
+		ri.Error( ERR_FATAL, "Vulkan: unable to find any suitable physical device" );
+		return;
+	}
+
 	//
 	// Get device level functions.
 	//
-	vk_create_device();
-
 	INIT_DEVICE_FUNCTION(vkAllocateCommandBuffers)
 	INIT_DEVICE_FUNCTION(vkAllocateDescriptorSets)
 	INIT_DEVICE_FUNCTION(vkAllocateMemory)
@@ -2722,7 +2903,7 @@ static void vk_get_image_memory_erquirements( VkImage image, VkMemoryRequirement
 
 
 static void create_color_attachment( uint32_t width, uint32_t height, VkSampleCountFlagBits samples, VkFormat format,
-	VkImageUsageFlags usage, VkImage *image, VkImageView *image_view, qboolean multisample )
+	VkImageUsageFlags usage, VkImage *image, VkImageView *image_view, VkImageLayout image_layout, qboolean multisample )
 {
 	VkImageCreateInfo create_desc;
 	VkMemoryRequirements memory_requirements;
@@ -2753,9 +2934,9 @@ static void create_color_attachment( uint32_t width, uint32_t height, VkSampleCo
 	vk_get_image_memory_erquirements( *image, &memory_requirements );
 
 	if ( multisample )
-		vk_add_attachment_desc( *image, image_view, usage, &memory_requirements, format, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
+		vk_add_attachment_desc( *image, image_view, usage, &memory_requirements, format, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, image_layout );
 	else
-		vk_add_attachment_desc( *image, image_view, usage, &memory_requirements, format, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
+		vk_add_attachment_desc( *image, image_view, usage, &memory_requirements, format, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_SHADER_READ_BIT, image_layout );
 }
 
 
@@ -2817,42 +2998,50 @@ static void vk_create_attachments( void )
 			uint32_t height = glConfig.vidHeight;
 
 			create_color_attachment( width, height, VK_SAMPLE_COUNT_1_BIT, vk.bloom_format,
-				usage, &vk.bloom_image[0], &vk.bloom_image_view[0], qfalse );
+				usage, &vk.bloom_image[0], &vk.bloom_image_view[0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
 
 			for ( i = 1; i < ARRAY_LEN( vk.bloom_image ); i += 2 ) {
 				width /= 2;
 				height /= 2;
 				create_color_attachment( width, height, VK_SAMPLE_COUNT_1_BIT, vk.bloom_format,
-					usage, &vk.bloom_image[i+0], &vk.bloom_image_view[i+0], qfalse );
+					usage, &vk.bloom_image[i+0], &vk.bloom_image_view[i+0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
 
 				create_color_attachment( width, height, VK_SAMPLE_COUNT_1_BIT, vk.bloom_format,
-					usage, &vk.bloom_image[i+1], &vk.bloom_image_view[i+1], qfalse );
+					usage, &vk.bloom_image[i+1], &vk.bloom_image_view[i+1], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
 			}
 		}
 
 		// post-processing/msaa-resolve
 		create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, VK_SAMPLE_COUNT_1_BIT, vk.color_format,
-			usage, &vk.color_image, &vk.color_image_view, qfalse );
+			usage, &vk.color_image, &vk.color_image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
 	
 		// screenmap
 		usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 		if ( vk.screenMapSamples > VK_SAMPLE_COUNT_1_BIT ) {
 			create_color_attachment( vk.screenMapWidth, vk.screenMapHeight, vk.screenMapSamples, vk.color_format,
-				usage, &vk.screenMap.color_image_msaa, &vk.screenMap.color_image_view_msaa, qtrue );
+				usage, &vk.screenMap.color_image_msaa, &vk.screenMap.color_image_view_msaa, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, qtrue );
 		}
 
 		create_color_attachment( vk.screenMapWidth, vk.screenMapHeight, VK_SAMPLE_COUNT_1_BIT, vk.color_format,
-			usage, &vk.screenMap.color_image, &vk.screenMap.color_image_view, qfalse );
+			usage, &vk.screenMap.color_image, &vk.screenMap.color_image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
 
 		// screenmap depth
 		create_depth_attachment( vk.screenMapWidth, vk.screenMapHeight, vk.screenMapSamples, &vk.screenMap.depth_image, &vk.screenMap.depth_image_view );
 
 		if ( vk.msaaActive ) {
 			create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, vkSamples, vk.color_format, 
-				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &vk.msaa_image, &vk.msaa_image_view, qtrue );
+				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &vk.msaa_image, &vk.msaa_image_view, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, qtrue );
 		}
-	}
+
+		if ( r_ext_supersample->integer ) {
+			// capture buffer
+			usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+			create_color_attachment( captureWidth, captureHeight, VK_SAMPLE_COUNT_1_BIT, vk.capture_format,
+				usage, &vk.capture.image, &vk.capture.image_view, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, qfalse );
+		}
+	} // if ( vk.fboActive )
+
 	//vk_alloc_attachments();
 
 	create_depth_attachment( glConfig.vidWidth, glConfig.vidHeight, vkSamples, &vk.depth_image, &vk.depth_image_view );
@@ -2869,6 +3058,9 @@ static void vk_create_attachments( void )
 
 	SET_OBJECT_NAME( vk.color_image, "color attachment", VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT );
 	SET_OBJECT_NAME( vk.color_image_view, "color attachment", VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_VIEW_EXT );
+
+	SET_OBJECT_NAME( vk.capture.image, "capture image", VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_VIEW_EXT );
+	SET_OBJECT_NAME( vk.capture.image_view, "capture image view", VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_VIEW_EXT );
 
 	for ( i = 0; i < ARRAY_LEN( vk.bloom_image ); i++ )
 	{
@@ -2953,8 +3145,21 @@ static void vk_create_framebuffers( void )
 			attachments[2] = vk.screenMap.color_image_view_msaa;
 		}
 		VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.screenmap ) );
-
 		SET_OBJECT_NAME( vk.framebuffers.screenmap, "framebuffer - screenmap", VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT );
+
+		if ( vk.capture.image != VK_NULL_HANDLE )
+		{
+			attachments[0] = vk.capture.image_view;
+
+			desc.renderPass = vk.render_pass.capture;
+			desc.pAttachments = attachments;
+			desc.attachmentCount = 1;
+			desc.width = captureWidth;
+			desc.height = captureHeight;
+
+			VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.capture ) );
+			SET_OBJECT_NAME( vk.framebuffers.capture, "framebuffer - capture", VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT );
+		}
 
 		if ( r_bloom->integer )
 		{
@@ -2996,6 +3201,55 @@ static void vk_create_framebuffers( void )
 }
 
 
+static void vk_create_sync_primitives( void ) {
+	VkSemaphoreCreateInfo desc;
+	VkFenceCreateInfo fence_desc;
+	uint32_t i;
+
+	desc.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	desc.pNext = NULL;
+	desc.flags = 0;
+
+	// swapchain image acquired
+	VK_CHECK( qvkCreateSemaphore( vk.device, &desc, NULL, &vk.image_acquired ) );
+
+	SET_OBJECT_NAME( vk.image_acquired, "image_acquired semaphore", VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT );
+
+	// all commands submitted
+	for ( i = 0; i < NUM_COMMAND_BUFFERS; i++ )
+	{
+		desc.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		desc.pNext = NULL;
+		desc.flags = 0;
+
+		VK_CHECK( qvkCreateSemaphore( vk.device, &desc, NULL, &vk.tess[i].rendering_finished ) );
+
+		fence_desc.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fence_desc.pNext = NULL;
+		fence_desc.flags = VK_FENCE_CREATE_SIGNALED_BIT; // so it can be used to start rendering
+
+		VK_CHECK( qvkCreateFence( vk.device, &fence_desc, NULL, &vk.tess[i].rendering_finished_fence ) );
+		vk.tess[i].waitForFence = qtrue;
+
+		SET_OBJECT_NAME( vk.tess[i].rendering_finished, va( "rendering_finished semaphore %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT );
+		SET_OBJECT_NAME( vk.tess[i].rendering_finished_fence, va( "rendering_finished fence %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_FENCE_EXT );
+	}
+}
+
+
+static void vk_destroy_sync_primitives( void  ) {
+	uint32_t i;
+
+	qvkDestroySemaphore( vk.device, vk.image_acquired, NULL );
+
+	for ( i = 0; i < NUM_COMMAND_BUFFERS; i++ ) {
+		qvkDestroySemaphore( vk.device, vk.tess[i].rendering_finished, NULL );
+		qvkDestroyFence( vk.device, vk.tess[i].rendering_finished_fence, NULL );
+		vk.tess[i].waitForFence = qfalse;
+	}
+}
+
+
 static void vk_destroy_framebuffers( void ) {
 	uint32_t n;
 
@@ -3020,6 +3274,11 @@ static void vk_destroy_framebuffers( void ) {
 	if ( vk.framebuffers.screenmap != VK_NULL_HANDLE ) {
 		qvkDestroyFramebuffer( vk.device, vk.framebuffers.screenmap, NULL );
 		vk.framebuffers.screenmap = VK_NULL_HANDLE;
+	}
+
+	if ( vk.framebuffers.capture != VK_NULL_HANDLE ) {
+		qvkDestroyFramebuffer( vk.device, vk.framebuffers.capture, NULL );
+		vk.framebuffers.capture = VK_NULL_HANDLE;
 	}
 
 	for ( n = 0; n < ARRAY_LEN( vk.framebuffers.blur ); n++ ) {
@@ -3051,6 +3310,8 @@ void vk_restart_swapchain( const char *funcname )
 	vk_wait_idle();
 	vk_destroy_framebuffers();
 	vk_destroy_swapchain();
+	vk_destroy_sync_primitives();
+	vk_create_sync_primitives();
 	vk_create_swapchain( vk.physical_device, vk.device, vk.surface, vk.surface_format, &vk.swapchain );
 	vk_create_framebuffers();
 }
@@ -3102,7 +3363,6 @@ void vk_initialize( void )
 {
 	char buf[64], driver_version[64];
 	const char *vendor_name;
-	const char *device_type;
 	VkPhysicalDeviceProperties props;
 	uint32_t major;
 	uint32_t minor;
@@ -3127,13 +3387,15 @@ void vk_initialize( void )
 	vk.maxLodBias = props.limits.maxSamplerLodBias;
 
 	// framebuffer parameters
-	vk.windowAdjusted = qfalse;
 	vk.windowWidth = glConfig.vidWidth;
 	vk.windowHeight = glConfig.vidHeight;
 
 	vk.blitFilter = GL_NEAREST;
 	vk.windowAdjusted = qfalse;
 	vk.blitX0 = vk.blitY0 = 0;
+
+	captureWidth = glConfig.vidWidth;
+	captureHeight = glConfig.vidHeight;
 
 	if ( r_fbo->integer ) {
 		vk.fboActive = qtrue;
@@ -3146,9 +3408,21 @@ void vk_initialize( void )
 			glConfig.vidHeight = r_renderHeight->integer;
 		}
 
-		ri.CL_SetScaling( 1.0, glConfig.vidWidth, glConfig.vidHeight );
+		captureWidth = glConfig.vidWidth;
+		captureHeight = glConfig.vidHeight;
+		ri.CL_SetScaling( 1.0, captureWidth, captureHeight );
+
+		if ( r_ext_supersample->integer ) {
+			glConfig.vidWidth *= 2;
+			glConfig.vidHeight *= 2;
+			ri.CL_SetScaling( 2.0, captureWidth, captureHeight );
+		}
 
 		vk_set_render_scale();
+
+		if ( r_ext_supersample->integer && !r_renderScale->integer ) {
+			vk.blitFilter = GL_LINEAR;
+		}
 	}
 
 	// multisampling
@@ -3252,56 +3526,15 @@ void vk_initialize( void )
 		vendor_name = buf;
 	}
 
-	switch ( props.deviceType ) {
-		case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: device_type = "Integrated"; break;
-		case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: device_type = "Discrete"; break;
-		case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU: device_type = "Virtual"; break;
-		case VK_PHYSICAL_DEVICE_TYPE_CPU: device_type = "CPU"; break;
-		default: device_type = "OTHER"; break;
-	}
-
 	Q_strncpyz( glConfig.vendor_string, vendor_name, sizeof( glConfig.vendor_string ) );
-	Com_sprintf( glConfig.renderer_string, sizeof(	glConfig.renderer_string ),
-		"%s %s, 0x%04x", device_type, props.deviceName, props.deviceID );
+	Q_strncpyz( glConfig.renderer_string, renderer_name( &props ), sizeof( glConfig.renderer_string ) );
 
 	SET_OBJECT_NAME( (intptr_t)vk.device, glConfig.renderer_string, VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_EXT );
 
 	//
 	// Sync primitives.
 	//
-	{
-		VkSemaphoreCreateInfo desc;
-		VkFenceCreateInfo fence_desc;
-
-		desc.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-		desc.pNext = NULL;
-		desc.flags = 0;
-
-		// swapchain image acquired
-		VK_CHECK(qvkCreateSemaphore(vk.device, &desc, NULL, &vk.image_acquired));
-
-		SET_OBJECT_NAME( vk.image_acquired, "image_acquired semaphore", VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT );
-
-		// all commands submitted
-		for ( i = 0; i < NUM_COMMAND_BUFFERS; i++ )
-		{
-			desc.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-			desc.pNext = NULL;
-			desc.flags = 0;
-
-			VK_CHECK( qvkCreateSemaphore( vk.device, &desc, NULL, &vk.tess[i].rendering_finished ) );
-
-			fence_desc.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-			fence_desc.pNext = NULL;
-			fence_desc.flags = VK_FENCE_CREATE_SIGNALED_BIT; // so it can be used to start rendering
-
-			VK_CHECK( qvkCreateFence( vk.device, &fence_desc, NULL, &vk.tess[i].rendering_finished_fence ) );
-			vk.tess[i].waitForFence = qtrue;
-
-			SET_OBJECT_NAME( vk.tess[i].rendering_finished, va( "rendering_finished semaphore %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT );
-			SET_OBJECT_NAME( vk.tess[i].rendering_finished_fence, va( "rendering_finished fence %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_FENCE_EXT );
-		}
-	}
+	vk_create_sync_primitives();
 
 	//
 	// Command pool.
@@ -3493,8 +3726,9 @@ void vk_shutdown( void )
 {
 	uint32_t i, j;
 
-	if ( !qvkDestroyImage ) // not fully initialized
-		return;
+	if ( !qvkQueuePresentKHR ) {// not fully initialized
+		goto __cleanup;
+	}
 
 	vk_destroy_framebuffers();
 
@@ -3533,6 +3767,11 @@ void vk_shutdown( void )
 		qvkDestroyImageView( vk.device, vk.screenMap.depth_image_view, NULL );
 	}
 
+	if ( vk.capture.image ) {
+		qvkDestroyImage( vk.device, vk.capture.image, NULL );
+		qvkDestroyImageView( vk.device, vk.capture.image_view, NULL );
+	}
+
 	for ( i = 0; i < vk.image_memory_count; i++ ) {
 		qvkFreeMemory( vk.device, vk.image_memory[i], NULL );
 	}
@@ -3559,6 +3798,9 @@ void vk_shutdown( void )
 	if ( vk.render_pass.gamma != VK_NULL_HANDLE )
 		qvkDestroyRenderPass( vk.device, vk.render_pass.gamma, NULL );
 
+	if ( vk.render_pass.capture != VK_NULL_HANDLE )
+		qvkDestroyRenderPass( vk.device, vk.render_pass.capture, NULL );
+
 	qvkDestroyCommandPool( vk.device, vk.command_pool, NULL );
 
 	//for ( i = 0; i < vk.swapchain_image_count; i++ ) {
@@ -3579,6 +3821,11 @@ void vk_shutdown( void )
 	if ( vk.gamma_pipeline ) {
 		qvkDestroyPipeline( vk.device, vk.gamma_pipeline, NULL );
 		vk.gamma_pipeline = VK_NULL_HANDLE;
+	}
+
+	if ( vk.capture_pipeline ) {
+		qvkDestroyPipeline( vk.device, vk.capture_pipeline, NULL );
+		vk.capture_pipeline = VK_NULL_HANDLE;
 	}
 
 	if ( vk.bloom_extract_pipeline != VK_NULL_HANDLE ) {
@@ -3623,12 +3870,7 @@ void vk_shutdown( void )
 	qvkDestroyBuffer( vk.device, vk.storage.buffer, NULL );
 	qvkFreeMemory( vk.device, vk.storage.memory, NULL );
 
-	qvkDestroySemaphore( vk.device, vk.image_acquired, NULL );
-
-	for ( i = 0; i < NUM_COMMAND_BUFFERS; i++ ) {
-		qvkDestroySemaphore( vk.device, vk.tess[i].rendering_finished, NULL );
-		qvkDestroyFence( vk.device, vk.tess[i].rendering_finished_fence, NULL );
-	}
+	vk_destroy_sync_primitives();
 	
 	qvkDestroyShaderModule(vk.device, vk.modules.st_vs[0], NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.st_vs[1], NULL);
@@ -3681,17 +3923,22 @@ void vk_shutdown( void )
 	//qvkDestroySwapchainKHR(vk.device, vk.swapchain, NULL);
 	vk_destroy_swapchain();
 
-	qvkDestroyDevice( vk.device, NULL );
-	qvkDestroySurfaceKHR( vk.instance, vk.surface, NULL );
+__cleanup:
+	if ( vk.device != VK_NULL_HANDLE )
+		qvkDestroyDevice( vk.device, NULL );
+
+	if ( vk.surface != VK_NULL_HANDLE )
+		qvkDestroySurfaceKHR( vk.instance, vk.surface, NULL );
 
 #ifdef _DEBUG
 	if ( qvkDestroyDebugReportCallbackEXT && vk.debug_callback )
 		qvkDestroyDebugReportCallbackEXT( vk.instance, vk.debug_callback, NULL );
 #endif
 
-	qvkDestroyInstance(vk.instance, NULL);
+	if ( vk.instance != VK_NULL_HANDLE )
+		qvkDestroyInstance( vk.instance, NULL );
 
-	Com_Memset(&vk, 0, sizeof(vk));
+	Com_Memset( &vk, 0, sizeof( vk ) );
 
 	deinit_vulkan_library();
 }
@@ -3999,6 +4246,15 @@ void vk_create_post_process_pipeline( int program_index )
 			samples = vkSamples;
 			pipeline_name = "bloom blend pipeline";
 			blend = qtrue;
+			break;
+		case 3: // capture buffer extraction
+			pipeline = &vk.capture_pipeline;
+			fsmodule = vk.modules.gamma_fs;
+			renderpass = vk.render_pass.capture;
+			layout = vk.pipeline_layout_post_process;
+			samples = VK_SAMPLE_COUNT_1_BIT;
+			pipeline_name = "capture buffer pipeline";
+			blend = qfalse;
 			break;
 		default: // gamma correction
 			pipeline = &vk.gamma_pipeline;
@@ -5265,12 +5521,12 @@ uint32_t vk_tess_index( uint32_t numIndexes, const void *src ) {
 	if ( offset + size > vk.geometry_buffer_size ) {
 		// schedule geometry buffer resize
 		vk.geometry_buffer_size_new = log2pad( offset + size, 1 );
+		return ~0U;
 	} else {
 		Com_Memcpy( vk.cmd->vertex_buffer_ptr + offset, src, size );
 		vk.cmd->vertex_buffer_offset = (VkDeviceSize)offset + size;
+		return offset;
 	}
-
-	return offset;
 }
 
 
@@ -5286,8 +5542,6 @@ void vk_bind_index_buffer( VkBuffer buffer, uint32_t offset )
 
 void vk_bind_index( void )
 {
-	uint32_t offset;
-
 #ifdef USE_VBO
 	if ( tess.vboIndex ) {
 		vk.cmd->num_indexes = 0;
@@ -5296,19 +5550,20 @@ void vk_bind_index( void )
 	}
 #endif
 
-	offset = vk_tess_index( tess.numIndexes, tess.indexes );
-	vk_bind_index_buffer( vk.cmd->vertex_buffer, offset );
-	vk.cmd->num_indexes = tess.numIndexes;
+	vk_bind_index_ext( tess.numIndexes, tess.indexes );
 }
 
 
 void vk_bind_index_ext( const int numIndexes, const uint32_t *indexes )
 {
-	uint32_t offset;
-
-	offset = vk_tess_index( numIndexes, indexes );
-	vk_bind_index_buffer( vk.cmd->vertex_buffer, offset );
-	vk.cmd->num_indexes = numIndexes;
+	uint32_t offset	= vk_tess_index( numIndexes, indexes );
+	if ( offset != ~0U ) {
+		vk_bind_index_buffer( vk.cmd->vertex_buffer, offset );
+		vk.cmd->num_indexes = numIndexes;
+	} else {
+		// overflowed
+		vk.cmd->num_indexes = 0;
+	}
 }
 
 
@@ -5510,7 +5765,7 @@ static void vk_begin_render_pass( VkRenderPass renderPass, VkFramebuffer frameBu
 #ifndef USE_REVERSED_DEPTH
 		clear_values[1].depthStencil.depth = 1.0;
 #endif
-		render_pass_begin_info.clearValueCount = ARRAY_LEN( clear_values );
+		render_pass_begin_info.clearValueCount = vk.msaaActive ? 3 : 2;
 		render_pass_begin_info.pClearValues = clear_values;
 
 		vk_world.dirty_depth_attachment = 0;
@@ -5617,6 +5872,7 @@ void vk_end_render_pass( void )
 //	vk.renderPassIndex = RENDER_PASS_MAIN;
 }
 
+
 static qboolean vk_find_screenmap_drawsurfs( void )
 {
 	const void *curCmd = &backEndData->commands.cmds;
@@ -5655,7 +5911,8 @@ void vk_begin_frame( void )
 
 	if ( vk.cmd->waitForFence ) {
 		if ( !ri.CL_IsMinimized() ) {
-			res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, UINT64_MAX, vk.image_acquired, VK_NULL_HANDLE, &vk.swapchain_image_index );
+			//res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, UINT64_MAX, vk.image_acquired, VK_NULL_HANDLE, &vk.swapchain_image_index );
+			res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, 2000000000, vk.image_acquired, VK_NULL_HANDLE, &vk.swapchain_image_index );
 			// when running via RDP: "Application has already acquired the maximum number of images (0x2)"
 			// probably caused by "device lost" errors
 			if ( res < 0 ) {
@@ -5663,7 +5920,7 @@ void vk_begin_frame( void )
 					// swapchain re-creation needed
 					vk_restart_swapchain( __func__ );
 				} else {
-					ri.Error( ERR_FATAL, "vkAcquireNextImageKHR returned error code %x", res );
+					ri.Error( ERR_FATAL, "vkAcquireNextImageKHR returned %s", vk_result_string( res ) );
 				}
 			}
 		} else {
@@ -5794,6 +6051,18 @@ void vk_end_frame( void )
 			vk_bloom();
 		}
 
+		if ( backEnd.screenshotMask && vk.capture.image )
+		{
+			vk_end_render_pass();
+
+			// render to capture FBO
+			vk_begin_render_pass( vk.render_pass.capture, vk.framebuffers.capture, qfalse, captureWidth, captureHeight );
+			qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.capture_pipeline );
+			qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout_post_process, 0, 1, &vk.color_descriptor, 0, NULL );
+
+			qvkCmdDraw( vk.cmd->command_buffer, 4, 1, 0, 0 );
+		}
+
 		if ( !ri.CL_IsMinimized() )
 		{
 			vk_end_render_pass();
@@ -5862,7 +6131,7 @@ void vk_end_frame( void )
 			vk_restart_swapchain( __func__ );
 		} else {
 			// or we don't
-			ri.Error( ERR_FATAL, "vkQueuePresentKHR: error %i", res );
+			ri.Error( ERR_FATAL, "vkQueuePresentKHR returned %s", vk_result_string( res ) );
 		}
 	}
 }
@@ -5908,8 +6177,14 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 
 	if ( vk.fboActive ) {
 		srcImageAccess = VK_ACCESS_SHADER_READ_BIT;
-		srcImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		srcImage = vk.color_image;
+		if ( vk.capture.image ) {
+			// dedicated capture buffer
+			srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			srcImage = vk.capture.image;
+		} else {
+			srcImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			srcImage = vk.color_image;
+		}
 	} else {
 		srcImageAccess = VK_ACCESS_MEMORY_READ_BIT;
 		srcImageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
@@ -5974,10 +6249,12 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 
 	command_buffer = begin_command_buffer();
 
-	record_image_layout_transition( command_buffer, srcImage,
-		VK_IMAGE_ASPECT_COLOR_BIT,
-		srcImageAccess, srcImageLayout,
-		VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL );
+	if ( srcImage == vk.color_image ) {
+		record_image_layout_transition( command_buffer, srcImage,
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			srcImageAccess, srcImageLayout,
+			VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL );
+	}
 
 	record_image_layout_transition( command_buffer, dstImage,
 		VK_IMAGE_ASPECT_COLOR_BIT,
@@ -6104,14 +6381,16 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 	qvkFreeMemory( vk.device, memory, NULL );
 
 	// restore previous layout
-	command_buffer = begin_command_buffer();
+	if ( srcImage == vk.color_image ) {
+		command_buffer = begin_command_buffer();
 
-	record_image_layout_transition( command_buffer, srcImage,
-		VK_IMAGE_ASPECT_COLOR_BIT,
-		VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		srcImageAccess, srcImageLayout );
+		record_image_layout_transition( command_buffer, srcImage,
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			srcImageAccess, srcImageLayout );
 
-	end_command_buffer( command_buffer );
+		end_command_buffer( command_buffer );
+	}
 }
 
 

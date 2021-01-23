@@ -896,6 +896,9 @@ MISC
 // https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=470
 extern char cl_cdkey[34];
 
+// customizable client window title
+extern char cl_title[ MAX_CVAR_VALUE_STRING ];
+
 extern	int	CPU_Flags;
 
 // x86 flags
@@ -923,7 +926,6 @@ void		Com_BeginRedirect (char *buffer, int buffersize, void (*flush)(const char 
 void		Com_EndRedirect( void );
 void 		QDECL Com_Printf( const char *fmt, ... ) __attribute__ ((format (printf, 1, 2)));
 void 		QDECL Com_DPrintf( const char *fmt, ... ) __attribute__ ((format (printf, 1, 2)));
-void 		QDECL Com_Error( errorParm_t code, const char *fmt, ... ) __attribute__ ((noreturn, format (printf, 2, 3)));
 void 		Com_Quit_f( void );
 void		Com_GameRestart( int checksumFeed, qboolean clientRestart );
 
@@ -1113,7 +1115,7 @@ void CL_Init( void );
 qboolean CL_Disconnect( qboolean showMainMenu );
 void CL_ResetOldGame( void );
 void CL_Shutdown( const char *finalmsg, qboolean quit );
-void CL_Frame( int msec );
+void CL_Frame( int msec, int realMsec );
 qboolean CL_GameCommand( void );
 void CL_KeyEvent (int key, qboolean down, unsigned time);
 

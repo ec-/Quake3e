@@ -240,6 +240,7 @@ static void Con_Dump_f( void )
 		// store line
 		for( x = 0; x < con.linewidth; x++ )
 			buffer[ x ] = line[ x ] & 0xff;
+		buffer[ con.linewidth ] = '\0';
 		// terminate on ending space characters
 		for ( x = con.linewidth - 1 ; x >= 0 ; x-- ) {
 			if ( buffer[ x ] == ' ' )
@@ -760,11 +761,11 @@ void Con_DrawSolidConsole( float frac ) {
 				Q_strncpyz( buf, cl_conColor->string, sizeof( buf ) );
 				Com_Split( buf, v, 4, ' ' );
 				for ( i = 0; i < 4 ; i++ ) {
-					conColorValue[ i ] = atof( v[ i ] ) / 255.0;
-					if ( conColorValue[ i ] > 1.0 ) {
-						conColorValue[ i ] = 1.0;
-					} else if ( conColorValue[ i ] < 0.0 ) {
-						conColorValue[ i ] = 0.0;
+					conColorValue[ i ] = Q_atof( v[ i ] ) / 255.0f;
+					if ( conColorValue[ i ] > 1.0f ) {
+						conColorValue[ i ] = 1.0f;
+					} else if ( conColorValue[ i ] < 0.0f ) {
+						conColorValue[ i ] = 0.0f;
 					}
 				}
 			}

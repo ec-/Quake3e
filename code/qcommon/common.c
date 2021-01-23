@@ -497,6 +497,7 @@ void Com_ParseCommandLine( char *commandLine ) {
 	parsed = 1;
 }
 
+char cl_title[ MAX_CVAR_VALUE_STRING ] = CLIENT_WINDOW_TITLE;
 
 /*
 ===================
@@ -515,6 +516,16 @@ qboolean Com_EarlyParseCmdLine( char *commandLine, char *con_title, int title_si
 
 	for ( i = 0 ; i < com_numConsoleLines ; i++ ) {
 		Cmd_TokenizeString( com_consoleLines[i] );
+		if ( !Q_stricmpn( Cmd_Argv(0), "set", 3 ) && !Q_stricmp( Cmd_Argv(1), "cl_title" ) ) {
+			com_consoleLines[i][0] = '\0';
+			Q_strncpyz( cl_title, Cmd_ArgsFrom( 2 ), sizeof(cl_title) );
+			continue;
+		}
+		if ( !Q_stricmp( Cmd_Argv(0), "cl_title" ) ) {
+			com_consoleLines[i][0] = '\0';
+			Q_strncpyz( cl_title, Cmd_ArgsFrom( 1 ), sizeof(cl_title) );
+			continue;
+		}
 		if ( !Q_stricmpn( Cmd_Argv(0), "set", 3 ) && !Q_stricmp( Cmd_Argv(1), "con_title" ) ) {
 			com_consoleLines[i][0] = '\0';
 			Q_strncpyz( con_title, Cmd_ArgsFrom( 2 ), title_size );
@@ -3382,6 +3393,15 @@ static void Sys_GetProcessorId( char *vendor )
 
 #else // non-x86
 
+#ifdef _WIN32
+
+static void Sys_GetProcessorId( char *vendor )
+{
+	Com_sprintf( vendor, 100, "%s", ARCH_STRING );
+}
+
+#else
+
 #if arm32 || arm64
 #include <sys/auxv.h>
 #include <asm/hwcap.h>
@@ -3435,6 +3455,8 @@ static void Sys_GetProcessorId( char *vendor )
 #endif
 }
 
+#endif // !_WIN32
+
 #endif // non-x86
 
 /*
@@ -3467,7 +3489,9 @@ void Sys_SnapVector( float *vector )
 	_mm_store_ss( &vector[1], vf1 );
 	_mm_store_ss( &vector[2], vf2 );
 }
-#else // id386
+#endif // idx64
+
+#if id386
 void Sys_SnapVector( float *vector )
 {
 	static const DWORD cw037F = 0x037F;
@@ -3496,6 +3520,15 @@ __asm {
 	}; // __asm
 }
 #endif // id386
+
+#if arm64
+void Sys_SnapVector( vec3_t vec )
+{
+	vec[0] = rint( vec[0] );
+	vec[1] = rint( vec[1] );
+	vec[2] = rint( vec[2] );
+}
+#endif
 
 #else // clang/gcc/mingw
 
@@ -3952,7 +3985,7 @@ void Com_Frame( qboolean noDelay ) {
 #ifndef DEDICATED
 	static int bias = 0;
 #endif
-	int	msec, minMsec;
+	int	msec, realMsec, minMsec;
 	int	sleepMsec;
 	int	timeVal;
 	int	timeValSV;
@@ -4061,12 +4094,12 @@ void Com_Frame( qboolean noDelay ) {
 
 	lastTime = com_frameTime;
 	com_frameTime = Com_EventLoop();
-	msec = com_frameTime - lastTime;
+	realMsec = com_frameTime - lastTime;
 
 	Cbuf_Execute();
 
 	// mess with msec if needed
-	msec = Com_ModifyMsec( msec );
+	msec = Com_ModifyMsec( realMsec );
 
 	//
 	// server side
@@ -4135,7 +4168,7 @@ void Com_Frame( qboolean noDelay ) {
 			timeBeforeClient = Sys_Milliseconds();
 		}
 
-		CL_Frame( msec );
+		CL_Frame( msec, realMsec );
 
 		if ( com_speeds->integer ) {
 			timeAfter = Sys_Milliseconds();

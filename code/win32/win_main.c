@@ -654,7 +654,31 @@ static void SetDPIAwareness( void )
 #endif
 
 
-#ifndef DEDICATED
+static const char *GetExceptionName( DWORD code )
+{
+	static char buf[ 32 ];
+
+	switch ( code )
+	{
+		case EXCEPTION_ACCESS_VIOLATION: return "ACCESS_VIOLATION";
+		case EXCEPTION_DATATYPE_MISALIGNMENT: return "DATATYPE_MISALIGNMENT";
+		case EXCEPTION_ARRAY_BOUNDS_EXCEEDED: return "ARRAY_BOUNDS_EXCEEDED";
+		case EXCEPTION_PRIV_INSTRUCTION: return "PRIV_INSTRUCTION";
+		case EXCEPTION_IN_PAGE_ERROR: return "IN_PAGE_ERROR";
+		case EXCEPTION_ILLEGAL_INSTRUCTION: return "ILLEGAL_INSTRUCTION";
+		case EXCEPTION_NONCONTINUABLE_EXCEPTION: return "NONCONTINUABLE_EXCEPTION";
+		case EXCEPTION_STACK_OVERFLOW: return "STACK_OVERFLOW";
+		case EXCEPTION_INVALID_DISPOSITION: return "INVALID_DISPOSITION";
+		case EXCEPTION_GUARD_PAGE: return "GUARD_PAGE";
+		case EXCEPTION_INVALID_HANDLE: return "INVALID_HANDLE";
+		default: break;
+	}
+
+	sprintf( buf, "0x%08X", (unsigned int)code );
+	return buf;
+}
+
+
 /*
 ==================
 ExceptionFilter
@@ -664,17 +688,49 @@ Restore gamma and hide fullscreen window in case of crash
 */
 static LONG WINAPI ExceptionFilter( struct _EXCEPTION_POINTERS *ExceptionInfo )
 {
-	if ( glw_state.gammaSet )
-		GLW_RestoreGamma();
+#ifndef DEDICATED
+	if ( com_dedicated->integer == 0 ) {
+		extern cvar_t *com_cl_running;
+		if ( com_cl_running  && com_cl_running->integer ) {
+			// assume we can restart client module
+		} else {
+			if ( glw_state.gammaSet )
+				GLW_RestoreGamma();
 
-	if ( g_wv.hWnd && glw_state.cdsFullscreen )
+			if ( g_wv.hWnd && glw_state.cdsFullscreen )
+				ShowWindow( g_wv.hWnd, SW_HIDE );
+		}
+	}
+#endif
+
+	if ( ExceptionInfo->ExceptionRecord->ExceptionCode != EXCEPTION_BREAKPOINT )
 	{
-		ShowWindow( g_wv.hWnd, SW_HIDE );
+		char msg[128];
+		byte *addr, *base;
+		qboolean vma;
+
+		addr = (byte*)ExceptionInfo->ExceptionRecord->ExceptionAddress;
+		base = (byte*)GetModuleHandle( NULL );
+
+		if ( addr >= base )
+		{
+			addr = (byte*)(addr - base);
+			vma = qtrue;
+		}
+		else
+		{
+			vma = qfalse;
+		}
+
+		sprintf( msg, "Exception Code: %s\nException Address: %p%s",
+			GetExceptionName( ExceptionInfo->ExceptionRecord->ExceptionCode ),
+			addr, vma ? " (VMA)" : "" );
+
+		Com_Error( ERR_DROP, "Unhandled exception caught\n%s", msg );
 	}
 
-	return EXCEPTION_CONTINUE_SEARCH;
+	return EXCEPTION_EXECUTE_HANDLER;
 }
-#endif
 
 
 /*
@@ -716,9 +772,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	// no abort/retry/fail errors
 	SetErrorMode( SEM_FAILCRITICALERRORS );
 
-#ifndef DEDICATED
 	SetUnhandledExceptionFilter( ExceptionFilter );
-#endif
 
 	// get the initial time base
 	Sys_Milliseconds();

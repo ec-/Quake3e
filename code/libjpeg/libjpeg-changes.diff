@@ -1,0 +1,23 @@
+List of changes applied over original jpegsrc.v9d.tar.gz distribution files
+
+------
+
+--- code/libjpeg-orig/jerror.c
++++ code/libjpeg/jerror.c
+@@ -25,14 +25,16 @@
+ 
+ /* this is not a core library module, so it doesn't define JPEG_INTERNALS */
+ #include "jinclude.h"
+ #include "jpeglib.h"
+ #include "jversion.h"
+ #include "jerror.h"
+ 
++#include <stdlib.h>
++
+ #ifndef EXIT_FAILURE		/* define exit() codes if not provided */
+ #define EXIT_FAILURE  1
+ #endif
+ 
+ 
+ /*
+  * Create the message string table.

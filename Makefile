@@ -1,3 +1,4 @@
+
 # Quake3 Unix Makefile
 #
 # Nov '98 by Zoid <zoid@idsoftware.com>
@@ -21,7 +22,7 @@ endif
 BUILD_CLIENT     = 1
 BUILD_SERVER     = 0
 
-USE_SDL          = 0
+USE_SDL          = 1
 USE_CURL         = 1
 USE_LOCAL_HEADERS= 0
 USE_VULKAN       = 0
@@ -172,13 +173,14 @@ UDIR=$(MOUNT_DIR)/unix
 W32DIR=$(MOUNT_DIR)/win32
 BLIBDIR=$(MOUNT_DIR)/botlib
 UIDIR=$(MOUNT_DIR)/ui
-JPDIR=$(MOUNT_DIR)/jpeg-8c
-LOKISETUPDIR=$(UDIR)/setup
+JPDIR=$(MOUNT_DIR)/libjpeg
 
 bin_path=$(shell which $(1) 2> /dev/null)
 
 STRIP ?= strip
 PKG_CONFIG ?= pkg-config
+INSTALL=install
+MKDIR=mkdir
 
 ifneq ($(call bin_path, $(PKG_CONFIG)),)
   SDL_INCLUDE ?= $(shell $(PKG_CONFIG) --silence-errors --cflags-only-I sdl2)
@@ -266,9 +268,6 @@ ifeq ($(GENERATE_DEPENDENCIES),1)
   BASE_CFLAGS += -MMD
 endif
 
-## Defaults
-INSTALL=install
-MKDIR=mkdir
 
 ARCHEXT=
 
@@ -318,7 +317,7 @@ ifdef MINGW
   endif
 
   # using generic windres if specific one is not present
-  ifndef WINDRES
+  ifeq ($(WINDRES),)
     WINDRES=windres
   endif
 
@@ -328,6 +327,8 @@ ifdef MINGW
 
   BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
     -DUSE_ICON -DMINGW=1
+
+  BASE_CFLAGS += -Wno-unused-result
 
   ifeq ($(ARCH),x86_64)
     ARCHEXT = .x64
@@ -391,7 +392,7 @@ ifeq ($(COMPILE_PLATFORM),darwin)
 
   BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
 
-  BASE_CFLAGS += -I/Library/Frameworks/SDL2.framework/Headers
+  BASE_CFLAGS += -Wno-unused-result
 
   OPTIMIZE = -O2 -fvisibility=hidden
 
@@ -401,7 +402,13 @@ ifeq ($(COMPILE_PLATFORM),darwin)
 
   LDFLAGS =
 
-  CLIENT_LDFLAGS =  -F/Library/Frameworks -framework SDL2
+  ifneq ($(SDL_INCLUDE),)
+    BASE_CFLAGS += $(SDL_INCLUDE)
+    CLIENT_LDFLAGS = $(SDL_LIBS)
+  else
+    BASE_CFLAGS += -I/Library/Frameworks/SDL2.framework/Headers
+    CLIENT_LDFLAGS = -F/Library/Frameworks -framework SDL2
+  endif
 
   DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -g -O0
   RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
@@ -413,6 +420,8 @@ else
 #############################################################################
 
   BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
+
+  BASE_CFLAGS += -Wno-unused-result
 
   BASE_CFLAGS += -I/usr/include -I/usr/local/include
 
@@ -1002,11 +1011,11 @@ $(B)/$(TARGET_CLIENT): $(Q3OBJ)
 
 $(B)/$(TARGET_REND1): $(Q3REND1OBJ)
 	$(echo_cmd) "LD $@"
-	$(Q)$(CC) $(SHLIBCFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3REND1OBJ)
+	$(Q)$(CC) -o $@ $(Q3REND1OBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
 
 $(B)/$(TARGET_RENDV): $(Q3RENDVOBJ)
 	$(echo_cmd) "LD $@"
-	$(Q)$(CC) $(SHLIBCFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3RENDVOBJ)
+	$(Q)$(CC) -o $@ $(Q3RENDVOBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
 
 #############################################################################
 # DEDICATED SERVER
@@ -1216,7 +1225,6 @@ ifneq ($(BUILD_SERVER),0)
 endif
 
 clean: clean-debug clean-release
-	@$(MAKE) -C $(LOKISETUPDIR) clean
 
 clean2:
 	@echo "CLEAN $(B)"
@@ -1234,21 +1242,6 @@ clean-release:
 distclean: clean
 	@rm -rf $(BUILD_DIR)
 
-installer: release
-	@$(MAKE) VERSION=$(VERSION) -C $(LOKISETUPDIR) V=$(V)
-
-dist:
-	rm -rf quake3-$(SVN_VERSION)
-	svn export . quake3-$(SVN_VERSION)
-	tar --owner=root --group=root --force-local -cjf quake3-$(SVN_VERSION).tar.bz2 quake3-$(SVN_VERSION)
-	rm -rf quake3-$(SVN_VERSION)
-
-dist2:
-	rm -rf quake3-1.32e-src
-	svn export . quake3-1.32e-src
-	zip -9 -r quake3-1.32e-src.zip quake3-1.32e-src/*
-	rm -rf quake3-1.32e-src
-
 #############################################################################
 # DEPENDENCIES
 #############################################################################
@@ -1260,5 +1253,5 @@ D_FILES=$(shell find . -name '*.d')
 #endif
 
 .PHONY: all clean clean2 clean-debug clean-release copyfiles \
-	debug default dist distclean installer makedirs release \
+	debug default dist distclean makedirs release \
 	targets tools toolsclean

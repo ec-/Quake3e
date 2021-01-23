@@ -29,8 +29,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #if defined (USE_VBO) && !defined(USE_FOG_ONLY)
 #define USE_FOG_ONLY
 #endif
-//#define USE_LEGACY_DLIGHTS	// vq3 dynamic lights
-#define USE_PMLIGHT			// promode dynamic lights via \r_dlightMode 1|2
+#define USE_LEGACY_DLIGHTS	// vq3 dynamic lights
+#define USE_PMLIGHT		// promode dynamic lights via \r_dlightMode 1|2
 #define MAX_REAL_DLIGHTS	(MAX_DLIGHTS*2)
 #define MAX_LITSURFS		(MAX_DRAWSURFS)
 #define	MAX_FLARES			256
@@ -1280,6 +1280,7 @@ extern cvar_t	*r_bloom;
 extern cvar_t	*r_bloom_threshold;
 extern cvar_t	*r_bloom_intensity;
 extern cvar_t	*r_ext_multisample;
+extern cvar_t	*r_ext_supersample;
 extern cvar_t	*r_ext_alpha_to_coverage;
 extern cvar_t	*r_renderWidth;
 extern cvar_t	*r_renderHeight;
@@ -1902,6 +1903,9 @@ typedef struct {
 
 extern	int		max_polys;
 extern	int		max_polyverts;
+
+extern	int		captureWidth;
+extern	int		captureHeight;
 
 extern	backEndData_t	*backEndData;
 

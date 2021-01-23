@@ -1,6 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
@@ -8,6 +12,10 @@
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
@@ -35,7 +43,15 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
@@ -51,7 +67,13 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -60,19 +82,33 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>.\output\</OutDir>
-    <IntDir>.\build\renderer2_release\</IntDir>
+    <IntDir>.\build\$(ProjectName)_$(Configuration)_$(PlatformTarget)\</IntDir>
+    <TargetName>renderer</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>.\output\</OutDir>
-    <IntDir>.\build\renderer2_release_x64\</IntDir>
+    <IntDir>.\build\$(ProjectName)_$(Configuration)_$(PlatformTarget)\</IntDir>
+    <TargetName>renderer</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <OutDir>.\output\</OutDir>
+    <IntDir>.\build\$(ProjectName)_$(Configuration)_$(PlatformTarget)\</IntDir>
+    <TargetName>renderer</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>.\output\</OutDir>
-    <IntDir>.\build\renderer2_debug\</IntDir>
+    <IntDir>.\build\$(ProjectName)_$(Configuration)_$(PlatformTarget)\</IntDir>
+    <TargetName>renderer</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>.\output\</OutDir>
-    <IntDir>.\build\renderer2_debug_x64\</IntDir>
+    <IntDir>.\build\$(ProjectName)_$(Configuration)_$(PlatformTarget)\</IntDir>
+    <TargetName>renderer</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <OutDir>.\output\</OutDir>
+    <IntDir>.\build\$(ProjectName)_$(Configuration)_$(PlatformTarget)\</IntDir>
+    <TargetName>renderer</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PreBuildEvent>
@@ -123,7 +159,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -178,7 +214,60 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <PreBuildEvent>
+      <Message>Stringify GLSL files</Message>
+      <Command>mkdir .\build\dynamic
+mkdir .\build\dynamic\renderer2
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\bokeh_fp.glsl .\build\dynamic\renderer2\bokeh_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\bokeh_vp.glsl .\build\dynamic\renderer2\bokeh_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\calclevels4x_fp.glsl .\build\dynamic\renderer2\calclevels4x_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\calclevels4x_vp.glsl .\build\dynamic\renderer2\calclevels4x_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\depthblur_fp.glsl .\build\dynamic\renderer2\depthblur_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\depthblur_vp.glsl .\build\dynamic\renderer2\depthblur_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\dlight_fp.glsl .\build\dynamic\renderer2\dlight_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\dlight_vp.glsl .\build\dynamic\renderer2\dlight_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\down4x_fp.glsl .\build\dynamic\renderer2\down4x_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\down4x_vp.glsl .\build\dynamic\renderer2\down4x_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\fogpass_fp.glsl .\build\dynamic\renderer2\fogpass_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\fogpass_vp.glsl .\build\dynamic\renderer2\fogpass_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\generic_fp.glsl .\build\dynamic\renderer2\generic_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\generic_vp.glsl .\build\dynamic\renderer2\generic_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\lightall_fp.glsl .\build\dynamic\renderer2\lightall_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\lightall_vp.glsl .\build\dynamic\renderer2\lightall_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\pshadow_fp.glsl .\build\dynamic\renderer2\pshadow_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\pshadow_vp.glsl .\build\dynamic\renderer2\pshadow_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowfill_fp.glsl .\build\dynamic\renderer2\shadowfill_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowfill_vp.glsl .\build\dynamic\renderer2\shadowfill_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowmask_fp.glsl .\build\dynamic\renderer2\shadowmask_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowmask_vp.glsl .\build\dynamic\renderer2\shadowmask_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\ssao_fp.glsl .\build\dynamic\renderer2\ssao_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\ssao_vp.glsl .\build\dynamic\renderer2\ssao_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\texturecolor_fp.glsl .\build\dynamic\renderer2\texturecolor_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\texturecolor_vp.glsl .\build\dynamic\renderer2\texturecolor_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_fp.glsl .\build\dynamic\renderer2\tonemap_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\build\dynamic\renderer2\tonemap_vp.c
+</Command>
+    </PreBuildEvent>
+    <Midl />
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;USE_RENDERER2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -228,13 +317,14 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <WarningLevel>Level3</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <FloatingPointExceptions>true</FloatingPointExceptions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -287,13 +377,71 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <WarningLevel>Level3</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <FloatingPointExceptions>true</FloatingPointExceptions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-renderer.lib</OutputFile>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <PreBuildEvent>
+      <Message>Stringify GLSL files</Message>
+      <Command>mkdir .\build\dynamic
+mkdir .\build\dynamic\renderer2
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\bokeh_fp.glsl .\build\dynamic\renderer2\bokeh_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\bokeh_vp.glsl .\build\dynamic\renderer2\bokeh_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\calclevels4x_fp.glsl .\build\dynamic\renderer2\calclevels4x_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\calclevels4x_vp.glsl .\build\dynamic\renderer2\calclevels4x_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\depthblur_fp.glsl .\build\dynamic\renderer2\depthblur_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\depthblur_vp.glsl .\build\dynamic\renderer2\depthblur_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\dlight_fp.glsl .\build\dynamic\renderer2\dlight_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\dlight_vp.glsl .\build\dynamic\renderer2\dlight_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\down4x_fp.glsl .\build\dynamic\renderer2\down4x_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\down4x_vp.glsl .\build\dynamic\renderer2\down4x_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\fogpass_fp.glsl .\build\dynamic\renderer2\fogpass_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\fogpass_vp.glsl .\build\dynamic\renderer2\fogpass_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\generic_fp.glsl .\build\dynamic\renderer2\generic_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\generic_vp.glsl .\build\dynamic\renderer2\generic_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\lightall_fp.glsl .\build\dynamic\renderer2\lightall_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\lightall_vp.glsl .\build\dynamic\renderer2\lightall_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\pshadow_fp.glsl .\build\dynamic\renderer2\pshadow_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\pshadow_vp.glsl .\build\dynamic\renderer2\pshadow_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowfill_fp.glsl .\build\dynamic\renderer2\shadowfill_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowfill_vp.glsl .\build\dynamic\renderer2\shadowfill_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowmask_fp.glsl .\build\dynamic\renderer2\shadowmask_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\shadowmask_vp.glsl .\build\dynamic\renderer2\shadowmask_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\ssao_fp.glsl .\build\dynamic\renderer2\ssao_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\ssao_vp.glsl .\build\dynamic\renderer2\ssao_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\texturecolor_fp.glsl .\build\dynamic\renderer2\texturecolor_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\texturecolor_vp.glsl .\build\dynamic\renderer2\texturecolor_vp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_fp.glsl .\build\dynamic\renderer2\tonemap_fp.c
+cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\build\dynamic\renderer2\tonemap_vp.c
+</Command>
+    </PreBuildEvent>
+    <Midl />
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;USE_RENDERER2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
+      <BrowseInformation>true</BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>

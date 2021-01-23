@@ -307,9 +307,9 @@ int AAS_VectorForBSPEpairKey(int ent, char *key, vec3_t v)
 	if (!AAS_ValueForBSPEpairKey(ent, key, buf, MAX_EPAIRKEY)) return qfalse;
 	//scanf into doubles, then assign, so it is vec_t size independent
 	Com_Split( buf, s, 3, ' ' );
-	v[0] = atof( s[0] );
-	v[1] = atof( s[1] );
-	v[2] = atof( s[2] );
+	v[0] = Q_atof( s[0] );
+	v[1] = Q_atof( s[1] );
+	v[2] = Q_atof( s[2] );
 	return qtrue;
 } //end of the function AAS_VectorForBSPEpairKey
 //===========================================================================

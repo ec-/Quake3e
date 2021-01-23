@@ -14,7 +14,7 @@
 
 #define USE_SPINLOCK
 
-#define NUM_SAMPLES 8192
+#define BUFFER_SIZE (64*1024)
 #define NUM_PERIODS 3
 #define PERIOD_TIME 20000 // wishable latency
 
@@ -45,6 +45,7 @@ extern cvar_t *s_device;
 
 #define	_snd_strerror snd_strerror
 #define	_snd_pcm_open snd_pcm_open
+#define	_snd_pcm_drain snd_pcm_drain
 #define	_snd_pcm_drop snd_pcm_drop
 #define	_snd_pcm_close snd_pcm_close
 #define	_snd_pcm_hw_params_sizeof snd_pcm_hw_params_sizeof
@@ -105,6 +106,7 @@ static void *a_lib = NULL;
 
 static const char *(*_snd_strerror)(int errnum);
 static int (*_snd_pcm_open)(snd_pcm_t **pcm, const char *name, snd_pcm_stream_t stream, int mode);
+static int (*_snd_pcm_drain)(snd_pcm_t *pcm);
 static int (*_snd_pcm_drop)(snd_pcm_t *pcm);
 static int (*_snd_pcm_close)(snd_pcm_t *pcm);
 static size_t (*_snd_pcm_hw_params_sizeof)(void);
@@ -163,6 +165,7 @@ sym_t t_list[] = {
 sym_t a_list[] = {
 	{ (void**)&_snd_strerror, "snd_strerror" },
 	{ (void**)&_snd_pcm_open, "snd_pcm_open" },
+	{ (void**)&_snd_pcm_drain, "snd_pcm_drain" },
 	{ (void**)&_snd_pcm_drop, "snd_pcm_drop" },
 	{ (void**)&_snd_pcm_close, "snd_pcm_close" },
 	{ (void**)&_snd_pcm_hw_params_sizeof, "snd_pcm_hw_params_sizeof" },
@@ -211,14 +214,14 @@ static pthread_mutex_t mutex;
 static qboolean snd_inited = qfalse;
 
 /* we will use static dma buffer */
-static unsigned char buffer[NUM_SAMPLES*4];
+static unsigned char buffer[ BUFFER_SIZE ];
 static unsigned int periods;
 static unsigned int period_time;  // wishable latency
 static snd_pcm_t *handle;
 
 
 static volatile qboolean snd_loop;
-static qboolean snd_async;
+static volatile qboolean snd_async;
 
 static snd_pcm_uframes_t period_size;
 static snd_pcm_sframes_t buffer_pos;	// buffer position, in mono samples
@@ -264,7 +267,7 @@ typedef enum {
 	SND_MODE_DIRECT
 } smode_t;
 
-qboolean setup_ALSA( smode_t mode )
+static qboolean setup_ALSA( smode_t mode )
 {
 	snd_async_handler_t *ahandler;
 	snd_pcm_hw_params_t *hwparams;
@@ -434,8 +437,8 @@ qboolean setup_ALSA( smode_t mode )
 
 	switch ( s_khz->integer )
 	{
-		//case 48: speed = 48000; break;
-		//case 44: speed = 44100; break;
+		case 48: speed = 48000; break;
+		case 44: speed = 44100; break;
 		case 11: speed = 11025; break;
 		case 22:
 		default: speed = 22050; break;
@@ -543,7 +546,7 @@ qboolean setup_ALSA( smode_t mode )
 	dma.isfloat = qfalse;
 	dma.channels = channels;
 	dma.speed = speed;
-	dma.samples = NUM_SAMPLES;
+	dma.samples = sizeof( buffer ) * 8 / bps;
 	dma.fullsamples = dma.samples / dma.channels;
 	dma.samplebits = bps;
 	dma.submission_chunk = 1;
@@ -637,8 +640,8 @@ __fail:
 
 qboolean SNDDMA_Init( void )
 {
-//	Com_Printf( "...trying ASYNC mode\n" );
-//	if ( !setup_ALSA( SND_MODE_ASYNC ) )
+	//Com_Printf( "...trying ASYNC mode\n" );
+	//if ( !setup_ALSA( SND_MODE_ASYNC ) )
 	{
 		Com_Printf( "...trying MMAP mode\n" );
 		if ( !setup_ALSA( SND_MODE_MMAP ) )
@@ -667,12 +670,15 @@ void SNDDMA_Shutdown( void )
 		/* wait for thread loop exit */
 		_pthread_join( thread, NULL );
 	}
+	else
+	{
+		_snd_pcm_drain( handle );
+	}
 
-	_snd_pcm_drop( handle );
-	_snd_pcm_close( handle );
-
-	snd_inited = qfalse;
 	snd_async = qfalse;
+	snd_inited = qfalse;
+
+	_snd_pcm_close( handle );
 
 #ifdef USE_SPINLOCK
 	_pthread_spin_destroy( &lock );
@@ -928,6 +934,8 @@ static void thread_proc_mmap( void )
 #endif
 	}
 
+	_snd_pcm_drop( handle );
+
 	_pthread_exit( 0 );
 }
 
@@ -1014,6 +1022,8 @@ static void thread_proc_direct( void )
 		_pthread_mutex_unlock( &mutex );
 #endif
 	}
+
+	_snd_pcm_drop( handle );
 
 	_pthread_exit( 0 );
 }

@@ -56,6 +56,7 @@ typedef struct sfx_s {
 	qboolean		soundCompressed;		// not in Memory
 	int				soundCompressionMethod;	
 	int 			soundLength;
+	int				soundChannels;
 	char 			soundName[MAX_QPATH];
 	int				lastTimeUsed;
 	struct sfx_s	*next;
@@ -138,7 +139,7 @@ typedef struct
 	void (*StopLoopingSound)(int entityNum );
 	void (*Respatialize)( int entityNum, const vec3_t origin, vec3_t axis[3], int inwater );
 	void (*UpdateEntityPosition)( int entityNum, const vec3_t origin );
-	void (*Update)( void );
+	void (*Update)( int msec );
 	void (*DisableSounds)( void );
 	void (*BeginRegistration)( void );
 	sfxHandle_t (*RegisterSound)( const char *sample, qboolean compressed );

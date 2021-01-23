@@ -2964,13 +2964,12 @@ static void CL_CheckUserinfo( void ) {
 CL_Frame
 ==================
 */
-void CL_Frame( int msec ) {
+void CL_Frame( int msec, int realMsec ) {
 	float fps;
 	float frameDuration;
 
-#ifdef USE_CURL	
-	if ( download.cURL ) 
-	{
+#ifdef USE_CURL
+	if ( download.cURL ) {
 		Com_DL_Perform( &download );
 	}
 #endif
@@ -2979,6 +2978,9 @@ void CL_Frame( int msec ) {
 		return;
 	}
 
+	// save the msec before checking pause
+	cls.realFrametime = realMsec;
+
 #ifdef USE_CURL
 	if ( clc.downloadCURLM ) {
 		CL_cURL_PerformDownload();
@@ -2986,12 +2988,11 @@ void CL_Frame( int msec ) {
 		// download mode since the ui vm expects cls.state to be
 		// CA_CONNECTED
 		if ( clc.cURLDisconnected ) {
-			cls.realFrametime = msec;
 			cls.frametime = msec;
-			cls.realtime += cls.frametime;
+			cls.realtime += msec;
 			cls.framecount++;
 			SCR_UpdateScreen();
-			S_Update();
+			S_Update( realMsec );
 			Con_RunConsole();
 			return;
 		}
@@ -3066,16 +3067,12 @@ void CL_Frame( int msec ) {
 		}
 	}
 
-	// save the msec before checking pause
-	cls.realFrametime = msec;
-
 	// decide the simulation time
 	cls.frametime = msec;
-
-	cls.realtime += cls.frametime;
+	cls.realtime += msec;
 
 	if ( cl_timegraph->integer ) {
-		SCR_DebugGraph( cls.realFrametime * 0.25 );
+		SCR_DebugGraph( msec * 0.25f );
 	}
 
 	// see if we need to update any userinfo
@@ -3100,7 +3097,7 @@ void CL_Frame( int msec ) {
 	SCR_UpdateScreen();
 
 	// update audio
-	S_Update();
+	S_Update( realMsec );
 
 	// advance local effects for next frame
 	SCR_RunCinematic();
@@ -3251,6 +3248,16 @@ static void *CL_RefMalloc( int size ) {
 
 /*
 ============
+CL_RefFreeAll
+============
+*/
+static void CL_RefFreeAll( void ) {
+	Z_FreeTags( TAG_RENDERER );
+}
+
+
+/*
+============
 CL_ScaledMilliseconds
 ============
 */
@@ -3361,6 +3368,7 @@ static void CL_InitRef( void ) {
 	rimp.Milliseconds = CL_ScaledMilliseconds;
 	rimp.Microseconds = Sys_Microseconds;
 	rimp.Malloc = CL_RefMalloc;
+	rimp.FreeAll = CL_RefFreeAll;
 	rimp.Free = Z_Free;
 #ifdef HUNK_DEBUG
 	rimp.Hunk_AllocDebug = Hunk_AllocDebug;
@@ -3859,7 +3867,7 @@ void CL_Init( void ) {
 
 	cl_guidServerUniq = Cvar_Get( "cl_guidServerUniq", "1", CVAR_ARCHIVE_ND );
 
-	cl_dlURL = Cvar_Get( "cl_dlURL", "http://ws.q3df.org/getpk3bymapname.php/%1", CVAR_ARCHIVE_ND );
+	cl_dlURL = Cvar_Get( "cl_dlURL", "http://ws.q3df.org/maps/download/%1", CVAR_ARCHIVE_ND );
 	
 	cl_dlDirectory = Cvar_Get( "cl_dlDirectory", "0", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( cl_dlDirectory, "0", "1", CV_INTEGER );
@@ -4692,24 +4700,24 @@ static void CL_Ping_f( void ) {
 	argc = Cmd_Argc();
 
 	if ( argc != 2 && argc != 3 ) {
-		Com_Printf( "usage: ping [-4|-6] server\n");
+		Com_Printf( "usage: ping [-4|-6] <server>\n");
 		return;	
 	}
 	
-	if(argc == 2)
+	if ( argc == 2 )
 		server = Cmd_Argv(1);
 	else
 	{
-		if(!strcmp(Cmd_Argv(1), "-4"))
+		if( !strcmp( Cmd_Argv(1), "-4" ) )
 			family = NA_IP;
 #ifdef USE_IPV6
-		else if(!strcmp(Cmd_Argv(1), "-6"))
+		else if( !strcmp( Cmd_Argv(1), "-6" ) )
 			family = NA_IP6;
 		else
-			Com_Printf( "warning: only -4 or -6 as address type understood.\n");
+			Com_Printf( "warning: only -4 or -6 as address type understood.\n" );
 #else
 		else
-			Com_Printf( "warning: only -4 as address type understood.\n");
+			Com_Printf( "warning: only -4 as address type understood.\n" );
 #endif
 		
 		server = Cmd_Argv(2);
@@ -4857,18 +4865,22 @@ static void CL_ServerStatus_f( void ) {
 		if (cls.state != CA_ACTIVE || clc.demoplaying)
 		{
 			Com_Printf( "Not connected to a server.\n" );
-			Com_Printf( "usage: serverstatus [-4|-6] server\n" );
+#ifdef USE_IPV6
+			Com_Printf( "usage: serverstatus [-4|-6] <server>\n" );
+#else
+			Com_Printf("usage: serverstatus <server>\n");
+#endif
 			return;
 		}
 
 		toptr = &clc.serverAddress;
 	}
 	
-	if(!toptr)
+	if ( !toptr )
 	{
 		Com_Memset( &to, 0, sizeof( to ) );
 	
-		if(argc == 2)
+		if ( argc == 2 )
 			server = Cmd_Argv(1);
 		else
 		{
@@ -4920,7 +4932,7 @@ qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownloa
 	const char *s;
 	qboolean headerCheck;
 
-	if ( !cl_dlURL->string[0] )
+	if ( cl_dlURL->string[0] == '\0' )
 	{
 		Com_Printf( S_COLOR_YELLOW "cl_dlURL cvar is not set\n" );
 		return qfalse;
@@ -4980,7 +4992,7 @@ CL_Download_f
 */
 static void CL_Download_f( void )
 {
-	if ( Cmd_Argc() < 2 || !*Cmd_Argv( 1 ) )
+	if ( Cmd_Argc() < 2 || *Cmd_Argv( 1 ) == '\0' )
 	{
 		Com_Printf( "usage: %s <mapname>\n", Cmd_Argv( 0 ) );
 		return;
@@ -4995,4 +5007,3 @@ static void CL_Download_f( void )
 	CL_Download( Cmd_Argv( 0 ), Cmd_Argv( 1 ), qfalse );
 }
 #endif // USE_CURL
-

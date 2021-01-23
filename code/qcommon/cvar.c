@@ -287,10 +287,10 @@ static const char *Cvar_Validate( cvar_t *var, const char *value, qboolean warn 
 					limit = var->maxs;
 				}
 			} else { // CV_FLOAT
-				valuef = atof( value );
-				if ( var->mins && valuef < atof( var->mins ) ) {
+				valuef = Q_atof( value );
+				if ( var->mins && valuef < Q_atof( var->mins ) ) {
 					limit = var->mins;
-				} else if ( var->maxs && valuef > atof( var->maxs ) ) {
+				} else if ( var->maxs && valuef > Q_atof( var->maxs ) ) {
 					limit = var->maxs;
 				}
 			}
@@ -473,7 +473,7 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 	var->string = CopyString( var_value );
 	var->modified = qtrue;
 	var->modificationCount = 1;
-	var->value = atof( var->string );
+	var->value = Q_atof( var->string );
 	var->integer = atoi( var->string );
 	var->resetString = CopyString( var_value );
 	var->validator = CV_NONE;
@@ -728,9 +728,9 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 	
 	Z_Free (var->string);	// free the old value string
 	
-	var->string = CopyString(value);
-	var->value = atof (var->string);
-	var->integer = atoi (var->string);
+	var->string = CopyString( value );
+	var->value = Q_atof( var->string );
+	var->integer = atoi( var->string );
 
 	return var;
 }
@@ -1096,7 +1096,7 @@ static const char *GetValue( int index, int *ival, float *fval )
 	if ( !var ) // cvar not found, return string
 	{
 		*ival = atoi( cmd );
-		*fval = atof( cmd );
+		*fval = Q_atof( cmd );
 		Q_strncpyz( buf, cmd, sizeof( buf ) );
 		return buf;
 	}
