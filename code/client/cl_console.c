@@ -607,6 +607,7 @@ void CL_ConsolePrint( const char *txt ) {
 		Com_sprintf( con.prefix, sizeof(con.prefix), "%02d:%02d:%02d", now.tm_hour, now.tm_min, now.tm_sec );
 	}
 
+	l = 0;
 	colorIndex = ColorIndex( COLOR_WHITE );
 
 	while ( (c = *txt) != 0 ) {
@@ -615,15 +616,6 @@ void CL_ConsolePrint( const char *txt ) {
 			txt += 2;
 			continue;
 		}
-
-		l = Con_WordLength( txt );
-
-		// word wrap
-		if ( l < con.linewidth && ( con.x + l >= con.linewidth ) && (l + (con_timestamp->integer ? sizeof(con.prefix) + 1 : 0) <= con.linewidth)) {
-			Con_Linefeed( skipnotify );
-		}
-
-		txt++;
 
 		switch( c )
 		{
@@ -645,15 +637,31 @@ void CL_ConsolePrint( const char *txt ) {
 				assert( con.newline == qfalse );
 			}
 
+			if ( l == 0 ) {
+				l = Con_WordLength(txt);
+				l = l ? l : 1; // if no word, just advance by 1
+
+				// word wrap
+				if ( con.x + l > con.linewidth && (con_timestamp && con_timestamp->integer ? sizeof(con.prefix) : 0) + l < con.linewidth ) {
+					Con_Linefeed( skipnotify );
+					continue;
+				}
+			}
+			assert( l > 0 );
+
 			// display character and advance
+			assert( con.x < con.linewidth );
 			y = con.current % con.totallines;
 			con.text[y * con.linewidth + con.x ] = (colorIndex << 8) | (c & 255);
 			con.x++;
-			if ( con.x >= con.linewidth ) {
+			--l;
+			if ( con.x == con.linewidth ) {
 				Con_Linefeed( skipnotify );
 			}
 			break;
 		}
+
+		txt++;
 	}
 
 	// mark time for transparent overlay
