@@ -626,6 +626,10 @@ void CL_ConsolePrint( const char *txt ) {
 			Con_CarriageReturn();
 			break;
 		default:
+			if ( con.x == con.linewidth ) {
+				Con_Linefeed( skipnotify );
+			}
+
 			if ( con.newline ) {
 				Con_NewLine();
 				Con_Fixup();
@@ -655,9 +659,6 @@ void CL_ConsolePrint( const char *txt ) {
 			con.text[y * con.linewidth + con.x ] = (colorIndex << 8) | (c & 255);
 			con.x++;
 			--l;
-			if ( con.x == con.linewidth ) {
-				Con_Linefeed( skipnotify );
-			}
 			break;
 		}
 
