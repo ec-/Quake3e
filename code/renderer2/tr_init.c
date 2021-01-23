@@ -1426,6 +1426,8 @@ void RE_Shutdown( int destroyWindow ) {
 		Com_Memset( &glState, 0, sizeof( glState ) );
 	}
 
+	ri.FreeAll();
+
 	tr.registered = qfalse;
 }
 

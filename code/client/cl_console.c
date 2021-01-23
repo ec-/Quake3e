@@ -250,6 +250,7 @@ static void Con_Dump_f( void )
 		// store line
 		for( x = 0; x < con.linewidth; x++ )
 			buffer[ x ] = line[ x ] & 0xff;
+		buffer[ con.linewidth ] = '\0';
 		// terminate on ending space characters
 		for ( x = con.linewidth - 1 ; x >= 0 ; x-- ) {
 			if ( buffer[ x ] == ' ' )

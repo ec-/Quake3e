@@ -1,95 +1,95 @@
 name: build
 
-on: [push, pull_request]
+on:
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - '*.txt'
+      - '.gitignore'
+      - 'docs/*'
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+      - '*.txt'
+      - '.gitignore'
+      - 'docs/*'
+  release:
+    types: [published]
+
+  workflow_dispatch:
 
 jobs:
-  windows_gcc:
-    name: ${{ matrix.config }} Windows ${{ matrix.arch }} (Vulkan=${{ matrix.vulkan }}, ${{ matrix.c }})
+#  windows_msys:
+#    name: ${{ matrix.config }} Windows ${{ matrix.arch }}
+#    runs-on: windows-latest
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        arch: [x86, x86_64]
+#        cc: [gcc]
+#        config: [Release]
+#        include:
+#          - arch: x86
+#            msystem: MINGW32
+#            prefix: mingw-w64-i686
+#          - arch: x86_64
+#            msystem: MINGW64
+#            prefix: mingw-w64-x86_64
+#          - config: Release
+#            rule: install
+#
+#    defaults:
+#      run:
+#        shell: msys2 {0}
+#
+#    steps:
+#    - uses: msys2/setup-msys2@v2
+#      with:
+#        install: ${{ matrix.prefix }}-binutils ${{ matrix.prefix }}-make ${{ matrix.prefix }}-${{ matrix.cc }}
+#        msystem: ${{ matrix.msystem }}
+#        path-type: minimal
+#        release: false
+#        update: false
+#
+#    - uses: actions/checkout@v2
+#      with:
+#        submodules: recursive
+#
+#    - name: Build
+#      run: |
+#        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 USE_SDL=0 USE_VULKAN=1 BUILD_SERVER=0
+#        make clean ARCH=${{ matrix.arch }}
+#        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 USE_SDL=0 USE_VULKAN_API=0
+#
+#    - uses: actions/upload-artifact@v2
+#      if: matrix.cc == 'gcc' && matrix.config == 'Release'
+#      with:
+#        name: windows-${{ matrix.arch }}
+#        path: bin
+#        if-no-files-found: error
+#        retention-days: 5
+
+  windows-msvc:
+    name: ${{ matrix.config }} Windows ${{ matrix.arch }}
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        arch: [x86, x86_64]
-        c: [gcc, clang]
-        config: [Debug, Release]
-        vulkan: [0, 1]
+        arch: [arm64, x86, x64]
+        config: [Release]
         include:
+          - arch: arm64
+            platform: ARM64
+            suffix: .arm64
+
           - arch: x86
-            msystem: MINGW32
-            prefix: mingw-w64-i686
-          - arch: x86_64
-            msystem: MINGW64
-            prefix: mingw-w64-x86_64
-          - config: Debug
-            rule: debug
-          - config: Release
-            rule: install
-          - arch: x86
-            c: clang
-            cflags: -D__MINGW_FORCE_SYS_INTRINS # workaround (https://sourceforge.net/p/mingw-w64/bugs/488/)
+            platform: Win32
 
-    defaults:
-      run:
-        shell: msys2 {0}
-
-    steps:
-    - uses: msys2/setup-msys2@v2
-      with:
-        install: ${{ matrix.prefix }}-binutils ${{ matrix.prefix }}-make ${{ matrix.prefix }}-${{ matrix.c }}
-        msystem: ${{ matrix.msystem }}
-        path-type: minimal
-        release: false
-        update: false
-
-    - uses: actions/checkout@v2
-      with:
-        submodules: recursive
-
-    - name: Build
-      run: make ${{ matrix.rule }} -j 8
-        ARCH=${{ matrix.arch }}
-        BUILD_SERVER=0
-        CC=${{ matrix.c }}
-        CFLAGS=${{ matrix.cflags }}
-        DESTDIR=bin
-        USE_RENDERER_DLOPEN=0
-        USE_SDL=0
-        USE_VULKAN=${{ matrix.vulkan }}
-
-    - uses: actions/upload-artifact@v2
-      if: matrix.c == 'gcc' && matrix.config == 'Release'
-      with:
-        name: windows
-        path: bin
-        if-no-files-found: error
-        retention-days: 5
-
-  windows_msvc:
-    name: ${{ matrix.config }} Windows ${{ matrix.arch }} (Vulkan=${{ matrix.vulkan }}, MSVC)
-    runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [Win32, x64]
-        config: [Debug, Release]
-        vulkan: [0, 1]
-        include:
-          - arch: Win32
-            name: oDFe
-            renderer: renderer
-            vulkan: 0
           - arch: x64
-            name: oDFe.x64
-            renderer: renderer
-            vulkan: 0
-          - arch: Win32
-            name: oDFe.vk
-            renderer: renderervk
-            vulkan: 1
-          - arch: x64
-            name: oDFe.vk.x64
-            renderer: renderervk
-            vulkan: 1
+            platform: x64
+            suffix: .x64
 
     steps:
     - uses: microsoft/setup-msbuild@v1.0.2
@@ -100,30 +100,43 @@ jobs:
 
     - name: Build
       run: |
-        msbuild code/win32/msvc2017/${{ matrix.renderer }}.vcxproj -m -p:Configuration=${{ matrix.config }},Platform=${{ matrix.arch }}
-        msbuild code/win32/msvc2017/quake3e.vcxproj -m -p:TargetName=${{ matrix.name }},Configuration=${{ matrix.config }},Platform=${{ matrix.arch }}
+        mkdir bin
 
-    # - uses: actions/upload-artifact@v2
-    #   if: matrix.config == 'Release'
-    #   with:
-    #     name: windows_msvc
-    #     path: code/win32/msvc2017/output/*.exe
-    #     if-no-files-found: error
-    #     retention-days: 5
+        msbuild code\win32\msvc2017\quake3e-ded.vcxproj -m -p:TargetName=oDFe.ded,Configuration=${{ matrix.config }},Platform=${{ matrix.platform }}
+
+        copy code\win32\msvc2017\output\oDFe.ded.exe bin\oDFe.ded${{ matrix.suffix }}.exe
+
+        msbuild code\win32\msvc2017\renderer.vcxproj -m -p:Configuration=${{ matrix.config }},Platform=${{ matrix.platform }}
+        msbuild code\win32\msvc2017\quake3e.vcxproj -m -p:TargetName=oDFe,Configuration=${{ matrix.config }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0
+
+        copy code\win32\msvc2017\output\oDFe.exe bin\oDFe${{ matrix.suffix }}.exe
+
+        msbuild code\win32\msvc2017\renderer.vcxproj -t:Clean -m -p:Configuration=${{ matrix.config }},Platform=${{ matrix.platform }}
+        msbuild code\win32\msvc2017\quake3e.vcxproj -t:Clean -m -p:TargetName=oDFe,Configuration=${{ matrix.config }},Platform=${{ matrix.platform }}
+
+        msbuild code\win32\msvc2017\renderervk.vcxproj -m -p:Configuration=${{ matrix.config }},Platform=${{ matrix.platform }}
+        msbuild code\win32\msvc2017\quake3e.vcxproj -m -p:TargetName=oDFe,Configuration=${{ matrix.config }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0
+
+        copy code\win32\msvc2017\output\oDFe.exe bin\oDFe.vk${{ matrix.suffix }}.exe
+
+    - uses: actions/upload-artifact@v2
+      if: ${{ matrix.config == 'Release' }}
+      with:
+        name: windows-${{ matrix.arch }}
+        path: bin
+        if-no-files-found: error
+        retention-days: 5
         
-  ubuntu:
-    name: ${{ matrix.config }} Ubuntu ${{ matrix.arch }} (Vulkan=${{ matrix.vulkan }}, ${{ matrix.c }})
+  ubuntu-x86:
+    name: ${{ matrix.config }} Ubuntu ${{ matrix.arch }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         arch: [x86, x86_64]
-        c: [gcc, clang]
-        config: [Debug, Release]
-        vulkan: [0, 1]
+        cc: [gcc]
+        config: [Release]
         include:
-          - config: Debug
-            rule: debug
           - config: Release
             rule: install
 
@@ -134,7 +147,7 @@ jobs:
           sudo dpkg --add-architecture i386
           sudo apt-get -qq update
           sudo apt-get -y install gcc-multilib libcurl4-openssl-dev:i386 mesa-common-dev:i386 libxxf86dga-dev:i386 libxrandr-dev:i386 libxxf86vm-dev:i386 libasound-dev:i386
-        elif [ ${{ matrix.arch }} == "x86_64" ]; then
+        else
           sudo apt-get -qq update
           sudo apt-get -y install libcurl4-openssl-dev mesa-common-dev libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev
         fi
@@ -144,65 +157,167 @@ jobs:
         submodules: recursive
 
     - name: Build
-      run: make ${{ matrix.rule }} -j 8
-        ARCH=${{ matrix.arch }}
-        BUILD_SERVER=0
-        CC=${{ matrix.c }}
-        DESTDIR=bin
-        USE_RENDERER_DLOPEN=0
-        USE_SDL=0
-        USE_VULKAN=${{ matrix.vulkan }}
+      run: |
+        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 USE_SDL=0 USE_VULKAN=1 BUILD_SERVER=0
+        make clean ARCH=${{ matrix.arch }} 
+        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 USE_SDL=0 USE_VULKAN_API=0
 
     - uses: actions/upload-artifact@v2
-      if: matrix.c == 'gcc' && matrix.config == 'Release'
+      if: matrix.cc == 'gcc' && matrix.config == 'Release'
       with:
-        name: linux
+        name: linux-${{ matrix.arch }}
         path: bin
         if-no-files-found: error
         retention-days: 5
 
-  macos:
-    name: ${{ matrix.config }} macOS x86_64 (Vulkan=${{ matrix.vulkan }}, ${{ matrix.c }})
+  ubuntu-arm:
+    name: ${{ matrix.config }} Ubuntu ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [aarch64, armv7]
+        cc: [gcc]
+        config: [Release]
+        include:
+          - config: Release
+            rule: install
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Build ${{ matrix.arch }}
+      uses: uraimo/run-on-arch-action@v2.0.5
+      with:
+        arch: ${{ matrix.arch }}
+        distro: ubuntu20.04
+        githubToken: ${{ github.token }}
+        shell: /bin/sh
+        run: |
+          apt-get -qq update
+          apt-get install -y make gcc g++
+          apt-get -y install libcurl4-openssl-dev mesa-common-dev libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev
+          make ${{ matrix.rule }} -j 4 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 USE_SDL=0 USE_VULKAN=1 BUILD_SERVER=0
+          make clean ARCH=${{ matrix.arch }} 
+          make ${{ matrix.rule }} -j 4 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 USE_SDL=0 USE_VULKAN_API=0
+
+    - uses: actions/upload-artifact@v2
+      if: matrix.cc == 'gcc' && matrix.config == 'Release'
+      with:
+        name: linux-${{ matrix.arch }}
+        path: bin
+        if-no-files-found: error
+        retention-days: 5
+
+  macos-x86:
+    name: ${{ matrix.config }} macOS x86_64
     runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
-        c: [gcc, clang]
-        config: [Debug, Release]
-        vulkan: [0, 1]
+        arch: [x86_64]
+        cc: [clang]
+        config: [Release]
         include:
-          - config: Debug
-            rule: debug
           - config: Release
             rule: install
 
     steps:
     - name: Install tools
       run: brew install coreutils sdl2
-      # run: |
-      #  brew install coreutils
-      #  curl -L -o SDL2.dmg https://www.libsdl.org/release/SDL2-2.0.14.dmg
-      #  hdiutil mount SDL2.dmg
-      #  sudo cp -R "/Volumes/SDL2/SDL2.framework" /Library/Frameworks
-      #  hdiutil unmount "/Volumes/SDL2"
 
     - uses: actions/checkout@v2
       with:
         submodules: recursive
 
     - name: Build
-      run: make ${{ matrix.rule }} -j 8
-        BUILD_SERVER=0
-        CC=${{ matrix.c }}
-        DESTDIR=bin
-        INSTALL=ginstall
-        USE_RENDERER_DLOPEN=0
-        USE_VULKAN=${{ matrix.vulkan }}
+      run: |
+        make ${{ matrix.rule }} -j 4 CC=${{ matrix.cc }} DESTDIR=bin INSTALL=ginstall USE_RENDERER_DLOPEN=0 USE_VULKAN=1 BUILD_SERVER=0
+        make clean ARCH=${{ matrix.arch }} 
+        make ${{ matrix.rule }} -j 4 CC=${{ matrix.cc }} DESTDIR=bin INSTALL=ginstall USE_RENDERER_DLOPEN=0 USE_VULKAN_API=0
 
     - uses: actions/upload-artifact@v2
-      if: matrix.c == 'gcc' && matrix.config == 'Release'
+      if: matrix.cc == 'clang' && matrix.config == 'Release'
       with:
-        name: macos
+        name: macos-${{ matrix.arch }}
         path: bin
         if-no-files-found: error
         retention-days: 5
+
+  create-testing:
+    if: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
+    needs: [windows-msvc, ubuntu-x86, ubuntu-arm, macos-x86]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+
+      - name: Create binary archives
+        run: |
+          7z a -r oDFe-linux-aarch64.zip  ./linux-aarch64/*
+          7z a -r oDFe-linux-armv7.zip    ./linux-armv7/*
+          7z a -r oDFe-linux-x86.zip      ./linux-x86/*
+          7z a -r oDFe-linux-x86_64.zip   ./linux-x86_64/*
+          7z a -r oDFe-windows-arm64.zip  ./windows-arm64/*
+          7z a -r oDFe-windows-x86.zip    ./windows-x86/*
+          7z a -r oDFe-windows-x64.zip    ./windows-x64/*
+          7z a -r oDFe-macos-x86_64.zip   ./macos-x86_64/*
+
+      - name: Create latest build
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          automatic_release_tag: "latest"
+          prerelease: false
+          title: Latest Build
+          files: |
+            *.zip
+
+  update-release:
+    if: ${{ github.event_name == 'release' }}
+    needs: [windows-msvc, ubuntu-x86, ubuntu-arm, macos-x86]
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - artifact_dir: linux-aarch64
+            artifact_name: oDFe-linux-aarch64.zip
+
+          - artifact_dir: linux-armv7
+            artifact_name: oDFe-linux-armv7.zip
+
+          - artifact_dir: linux-x86
+            artifact_name: oDFe-linux-x86.zip
+
+          - artifact_dir: linux-x86_64
+            artifact_name: oDFe-linux-x86_64.zip
+
+          - artifact_dir: windows-arm64
+            artifact_name: oDFe-windows-arm64.zip
+
+          - artifact_dir: windows-x86
+            artifact_name: oDFe-windows-x86.zip
+
+          - artifact_dir: windows-x64
+            artifact_name: oDFe-windows-x64.zip
+
+          - artifact_dir: macos-x86_64
+            artifact_name: oDFe-macos-x86_64.zip
+
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+
+      - name: Create archive
+        run: 7z a -r ${{ matrix.artifact_name }} ./${{ matrix.artifact_dir }}/*
+
+      - name: Upload archive
+        uses: "svenstaro/upload-release-action@v2"
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          overwrite: true
+          file: ${{ matrix.artifact_name }}

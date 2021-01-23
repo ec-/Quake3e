@@ -25,12 +25,6 @@
 //#define MIN_IMAGE_ALIGN (128*1024)
 #define MAX_ATTACHMENTS_IN_POOL (6+1+VK_NUM_BLOOM_PASSES*2) // depth + msaa + msaa-resolve + screenmap.msaa + screenmap.resolve + screenmap.depth + bloom_extract + blur pairs
 
-#define VK_CHECK(function_call) { \
-	VkResult result = function_call; \
-	if (result < 0) \
-		ri.Error(ERR_FATAL, "Vulkan: error code %d returned by %s", result, #function_call); \
-}
-
 typedef enum {
 	TYPE_SIGNLE_TEXTURE,
 	TYPE_SIGNLE_TEXTURE_DF,
@@ -197,7 +191,7 @@ void vk_reset_descriptor( int index );
 void vk_update_descriptor( int index, VkDescriptorSet descriptor );
 void vk_update_descriptor_offset( int index, uint32_t offset );
 
-const char *vk_get_format_name( VkFormat format );
+const char *vk_format_string( VkFormat format );
 
 void VBO_PrepareQueues( void );
 void VBO_RenderIBOItems( void );
@@ -263,6 +257,7 @@ typedef struct {
 		VkRenderPass main;
 		VkRenderPass screenmap;
 		VkRenderPass gamma;
+		VkRenderPass capture;
 		VkRenderPass bloom_extract;
 		VkRenderPass blur[VK_NUM_BLOOM_PASSES*2]; // horizontal-vertical pairs
 		VkRenderPass post_bloom;
@@ -309,11 +304,17 @@ typedef struct {
 	} screenMap;
 
 	struct {
+		VkImage image;
+		VkImageView image_view;
+	} capture;
+
+	struct {
 		VkFramebuffer blur[VK_NUM_BLOOM_PASSES*2];
 		VkFramebuffer bloom_extract;
 		VkFramebuffer main[MAX_SWAPCHAIN_IMAGES];
 		VkFramebuffer gamma[MAX_SWAPCHAIN_IMAGES];
 		VkFramebuffer screenmap;
+		VkFramebuffer capture;
 	} framebuffers;
 
 	vk_tess_t tess[ NUM_COMMAND_BUFFERS ], *cmd;
@@ -443,6 +444,7 @@ typedef struct {
 	uint32_t dot_pipeline;
 
 	VkPipeline gamma_pipeline;
+	VkPipeline capture_pipeline;
 	VkPipeline bloom_extract_pipeline;
 	VkPipeline blur_pipeline[VK_NUM_BLOOM_PASSES*2]; // horizontal & vertical pairs
 	VkPipeline bloom_blend_pipeline;

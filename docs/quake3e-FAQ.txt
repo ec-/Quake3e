@@ -1,0 +1,15 @@
+Q: \r_mode doesn't work for fullscreen
+A: dedicated cvar \r_modeFullscreen now is used for fullscreen,
+   set its value to "" if you want to use \r_mode again
+
+Q: what mouse mode is used for raw input?
+A: \in_mouse 1
+
+Q: cnq3' raw input feels different
+A: try \in_lagged 1
+
+Q: how to minimize/restore game window by ALT+X key, for example?
+A: set \in_minimize "alt+x" ; in_restart
+
+Q: non-US/EN keyboard input is not working as before
+A: \in_forceCharset 0

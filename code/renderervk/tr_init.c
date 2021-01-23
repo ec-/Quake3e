@@ -83,7 +83,8 @@ cvar_t	*r_bloom_intensity;
 cvar_t	*r_renderWidth;
 cvar_t	*r_renderHeight;
 cvar_t	*r_renderScale;
-#endif
+cvar_t	*r_ext_supersample;
+#endif // USE_VULKAN
 
 cvar_t	*r_dlightBacks;
 
@@ -171,6 +172,9 @@ cvar_t	*r_maxpolys;
 int		max_polys;
 cvar_t	*r_maxpolyverts;
 int		max_polyverts;
+
+int		captureWidth;
+int		captureHeight;
 
 #ifdef USE_VULKAN
 #include "vk.h"
@@ -495,6 +499,9 @@ static void InitOpenGL( void )
 		// This function is responsible for initializing a valid Vulkan subsystem.
 		ri.VKimp_Init( &glConfig );
 
+		captureWidth = glConfig.vidWidth;
+		captureHeight = glConfig.vidHeight;
+
 		ri.CL_SetScaling( 1.0, glConfig.vidWidth, glConfig.vidHeight );
 
 		vk_initialize();
@@ -534,6 +541,9 @@ static void InitOpenGL( void )
 
 		if ( glConfig.numTextureUnits && max_bind_units > 0 )
 			glConfig.numTextureUnits = max_bind_units;
+
+		captureWidth = glConfig.vidWidth;
+		captureHeight = glConfig.vidHeight;
 
 		ri.CL_SetScaling( 1.0, glConfig.vidWidth, glConfig.vidHeight );
 #endif
@@ -959,7 +969,7 @@ static void R_LevelShot( void ) {
 
 	Com_sprintf(checkname, sizeof(checkname), "levelshots/%s.tga", tr.world->baseName);
 
-	allsource = RB_ReadPixels(0, 0, glConfig.vidWidth, glConfig.vidHeight, &offset, &padlen, 0 );
+	allsource = RB_ReadPixels(0, 0, captureWidth, captureHeight, &offset, &padlen, 0 );
 	source = allsource + offset;
 
 	buffer = ri.Hunk_AllocateTempMemory(128 * 128*3 + 18);
@@ -1302,14 +1312,14 @@ static void GfxInfo( void )
 
 	ri.Printf( PRINT_ALL, "\nPIXELFORMAT: color(%d-bits) Z(%d-bit) stencil(%d-bits)\n", glConfig.colorBits, glConfig.depthBits, glConfig.stencilBits );
 #ifdef USE_VULKAN
-	ri.Printf( PRINT_ALL, " presentation: %s\n", vk_get_format_name( vk.surface_format.format ) );
+	ri.Printf( PRINT_ALL, " presentation: %s\n", vk_format_string( vk.surface_format.format ) );
 	if ( vk.color_format != vk.surface_format.format ) {
-		ri.Printf( PRINT_ALL, " color: %s\n", vk_get_format_name( vk.color_format ) );
+		ri.Printf( PRINT_ALL, " color: %s\n", vk_format_string( vk.color_format ) );
 	}
 	if ( vk.capture_format != vk.surface_format.format || vk.capture_format != vk.color_format ) {
-		ri.Printf( PRINT_ALL, " capture: %s\n", vk_get_format_name( vk.capture_format ) );
+		ri.Printf( PRINT_ALL, " capture: %s\n", vk_format_string( vk.capture_format ) );
 	}
-	ri.Printf( PRINT_ALL, " depth: %s\n", vk_get_format_name( vk.depth_format ) );
+	ri.Printf( PRINT_ALL, " depth: %s\n", vk_format_string( vk.depth_format ) );
 #endif
 	if ( glConfig.isFullscreen )
 	{
@@ -1608,8 +1618,12 @@ static void R_Register( void )
 	r_showsky = ri.Cvar_Get( "r_showsky", "0", CVAR_LATCH );
 
 #ifdef USE_VULKAN
-	r_device = ri.Cvar_Get( "r_device", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	ri.Cvar_CheckRange( r_device, "0", NULL, CV_INTEGER );
+	r_device = ri.Cvar_Get( "r_device", "-1", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_device, "-2", NULL, CV_INTEGER );
+	ri.Cvar_SetDescription( r_device, "Select physical device to render:\n" \
+		" 0+ - use explicit device index\n" \
+		" -1 - first discrete GPU\n" \
+		" -2 - first integrated GPU" );
 	r_device->modified = qfalse;
 
 	r_fbo = ri.Cvar_Get( "r_fbo", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
@@ -1625,6 +1639,9 @@ static void R_Register( void )
 
 	r_ext_multisample = ri.Cvar_Get( "r_ext_multisample", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_ext_multisample, "0", "64", CV_INTEGER );
+
+	r_ext_supersample = ri.Cvar_Get( "r_ext_supersample", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_ext_supersample, "0", "1", CV_INTEGER );
 
 	r_ext_alpha_to_coverage = ri.Cvar_Get( "r_ext_alpha_to_coverage", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_ext_alpha_to_coverage, "0", "1", CV_INTEGER );
@@ -1642,7 +1659,7 @@ static void R_Register( void )
 		" 2 - nearest filtering, preserve aspect ratio (black bars on sides)\n"
 		" 3 - linear filtering, stretch to full size\n"
 		" 4 - linear filtering, preserve aspect ratio (black bars on sides)\n" );
-#endif
+#endif // USE_VULKAN
 }
 
 
@@ -1790,6 +1807,8 @@ static void RE_Shutdown( refShutdownCode_t code ) {
 		Com_Memset( &glConfig, 0, sizeof( glConfig ) );
 		Com_Memset( &glState, 0, sizeof( glState ) );
 	}
+
+	ri.FreeAll();
 
 	tr.registered = qfalse;
 }

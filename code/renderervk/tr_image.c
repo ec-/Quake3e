@@ -45,8 +45,8 @@ return a hash value for the filename
 void R_GammaCorrect( byte *buffer, int bufSize ) {
 	int i;
 #ifdef USE_VULKAN
-	//if ( r_fbo->integer == 1 )
-	//	return;
+	if ( vk.capture.image != VK_NULL_HANDLE )
+		return;
 #endif
 	for ( i = 0; i < bufSize; i++ ) {
 		buffer[i] = s_gammatable[buffer[i]];
@@ -1093,7 +1093,8 @@ image_t *R_CreateImage( const char *name, const char *name2, byte *pic, int widt
 
 	if ( namelen > 6 && Q_stristr( image->imgName, "maps/" ) == image->imgName && Q_stristr( image->imgName + 6, "/lm_" ) != NULL ) {
 		// external lightmap atlases stored in maps/<mapname>/lm_XXXX textures
-		image->flags = IMGFLAG_NOLIGHTSCALE | IMGFLAG_NO_COMPRESSION | IMGFLAG_NOSCALE | IMGFLAG_COLORSHIFT;
+		// image->flags = IMGFLAG_NOLIGHTSCALE | IMGFLAG_NO_COMPRESSION | IMGFLAG_NOSCALE | IMGFLAG_COLORSHIFT;
+		image->flags |= IMGFLAG_NO_COMPRESSION | IMGFLAG_NOSCALE;
 	}
 
 #ifdef USE_VULKAN
@@ -1712,6 +1713,10 @@ void R_SetColorMappings( void ) {
 	if ( vk.fboActive ) {
 		// update gamma shader
 		vk_create_post_process_pipeline( 0 );
+		if ( vk.capture.image ) {
+			// update capture pipeline
+			vk_create_post_process_pipeline( 3 );
+		}
 	}
 	
 	if ( glConfig.deviceSupportsGamma && !vk.fboActive )
