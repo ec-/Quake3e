@@ -22,7 +22,7 @@ endif
 BUILD_CLIENT     = 1
 BUILD_SERVER     = 0
 
-USE_SDL          = 1
+USE_SDL          = 0
 USE_CURL         = 1
 USE_LOCAL_HEADERS= 0
 USE_VULKAN       = 0
