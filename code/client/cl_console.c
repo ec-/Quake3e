@@ -545,6 +545,22 @@ static void Con_Linefeed( qboolean skipnotify )
 }
 
 
+static int Con_WordLength( const char *txt )
+{
+	assert( *txt );
+	int l = 0;
+	while ( *txt > ' ' ) {
+		if ( Q_IsColorString( txt ) ) {
+			txt += 2;
+		} else {
+			++l;
+			++txt;
+		}
+	}
+	return l;
+}
+
+
 /*
 ================
 CL_ConsolePrint
@@ -600,15 +616,10 @@ void CL_ConsolePrint( const char *txt ) {
 			continue;
 		}
 
-		// count word length
-		for ( l = 0 ; l < con.linewidth ; l++ ) {
-			if ( txt[l] <= ' ' ) {
-				break;
-			}
-		}
+		l = Con_WordLength( txt );
 
 		// word wrap
-		if ( l != con.linewidth && ( con.x + l >= con.linewidth ) && (l + (con_timestamp->integer ? sizeof(con.prefix) + 1 : 0) <= con.linewidth)) {
+		if ( l < con.linewidth && ( con.x + l >= con.linewidth ) && (l + (con_timestamp->integer ? sizeof(con.prefix) + 1 : 0) <= con.linewidth)) {
 			Con_Linefeed( skipnotify );
 		}
 
