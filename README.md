@@ -63,7 +63,6 @@ Based on classic OpenGL renderers from id/ioq3/cnq3/openarena, features:
 * static world surfaces cached in VBO (**\r_vbo 1**)
 * all set of offscreen rendering features mentioned in Vulkan renderer, plus:
 * bloom reflection post-processing effect
-* supersample anti-aliasing (**\r_ext_supersample**)
 
 Performance is usually greater or equal to other opengl1 renderers
 
