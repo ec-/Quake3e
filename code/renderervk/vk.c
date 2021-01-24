@@ -2696,11 +2696,11 @@ static void vk_create_persistent_pipelines( void )
 
 	if ( vk.fboActive && r_bloom->integer )
 	{
-		uint32_t width = glConfig.vidWidth;
-		uint32_t height = glConfig.vidHeight;
+		uint32_t width = captureWidth;
+		uint32_t height = captureHeight;
 		uint32_t i;
 
-		vk_create_post_process_pipeline( 1 ); // bloom extraction
+		vk_create_post_process_pipeline( 1, width, height ); // bloom extraction
 
 		for ( i = 0; i < ARRAY_LEN( vk.blur_pipeline ); i += 2 ) {
 			width /= 2;
@@ -2709,7 +2709,7 @@ static void vk_create_persistent_pipelines( void )
 			vk_create_blur_pipeline( i + 1, width, height, qfalse ); // vertical
 		}
 
-		vk_create_post_process_pipeline( 2 ); // bloom blending
+		vk_create_post_process_pipeline( 2, glConfig.vidWidth, glConfig.vidHeight ); // bloom blending
 	}
 }
 
@@ -2994,8 +2994,8 @@ static void vk_create_attachments( void )
 
 		// bloom
 		if ( r_bloom->integer ) {
-			uint32_t width = glConfig.vidWidth;
-			uint32_t height = glConfig.vidHeight;
+			uint32_t width = captureWidth;
+			uint32_t height = captureHeight;
 
 			create_color_attachment( width, height, VK_SAMPLE_COUNT_1_BIT, vk.bloom_format,
 				usage, &vk.bloom_image[0], &vk.bloom_image_view[0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
@@ -3163,8 +3163,8 @@ static void vk_create_framebuffers( void )
 
 		if ( r_bloom->integer )
 		{
-			uint32_t width = glConfig.vidWidth;
-			uint32_t height = glConfig.vidHeight;
+			uint32_t width = captureWidth;
+			uint32_t height = captureHeight;
 
 			// bloom color extraction
 			desc.renderPass = vk.render_pass.bloom_extract;
@@ -4203,7 +4203,7 @@ static void set_shader_stage_desc(VkPipelineShaderStageCreateInfo *desc, VkShade
 }
 
 
-void vk_create_post_process_pipeline( int program_index )
+void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_t height )
 {
 	VkPipelineShaderStageCreateInfo shader_stages[2];
 	VkPipelineVertexInputStateCreateInfo vertex_input_state;
@@ -4330,10 +4330,20 @@ void vk_create_post_process_pipeline( int program_index )
 	//
 	// Viewport.
 	//
-	viewport.x = 0.0 + vk.blitX0;
-	viewport.y = 0.0 + vk.blitY0;
-	viewport.width = vk.windowWidth - vk.blitX0 * 2;
-	viewport.height = vk.windowHeight - vk.blitY0 * 2;
+	if ( program_index == 0 ) {
+		// gamma correction
+		viewport.x = 0.0 + vk.blitX0;
+		viewport.y = 0.0 + vk.blitY0;
+		viewport.width = vk.windowWidth - vk.blitX0 * 2;
+		viewport.height = vk.windowHeight - vk.blitY0 * 2;
+	} else {
+		// other post-processing
+		viewport.x = 0.0;
+		viewport.y = 0.0;
+		viewport.width = width;
+		viewport.height = height;
+	}
+
 	viewport.minDepth = 0.0;
 	viewport.maxDepth = 1.0;
 
@@ -5694,8 +5704,21 @@ void vk_bind_descriptor_sets( void )
 }
 
 
-void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean indexed ) {
+void vk_bind_pipeline( uint32_t pipeline ) {
 	VkPipeline vkpipe;
+
+	vkpipe = vk_gen_pipeline( pipeline );
+
+	if ( vkpipe != vk.cmd->last_pipeline ) {
+		qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkpipe );
+		vk.cmd->last_pipeline = vkpipe;
+	}
+
+	vk_world.dirty_depth_attachment |= ( vk.pipelines[ pipeline ].def.state_bits & GLS_DEPTHMASK_TRUE );
+}
+
+
+void vk_draw_geometry( Vk_Depth_Range depth_range, qboolean indexed ) {
 	VkRect2D scissor_rect;
 	VkViewport viewport;
 
@@ -5705,13 +5728,6 @@ void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean i
 	}
 
 	vk_bind_descriptor_sets();
-
-	// bind pipeline
-	vkpipe = vk_gen_pipeline( pipeline );
-	if ( vkpipe != vk.cmd->last_pipeline ) {
-		qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkpipe );
-		vk.cmd->last_pipeline = vkpipe;
-	}
 
 	// configure pipeline's dynamic state
 	if ( vk.cmd->depth_range != depth_range ) {
@@ -5735,8 +5751,6 @@ void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean i
 	} else {
 		qvkCmdDraw( vk.cmd->command_buffer, tess.numVertexes, 1, 0, 0 );
 	}
-
-	vk_world.dirty_depth_attachment |= ( vk.pipelines[ pipeline ].def.state_bits & GLS_DEPTHMASK_TRUE );
 }
 
 
@@ -5818,8 +5832,8 @@ void vk_begin_bloom_extract_render_pass( void )
 
 	//vk.renderPassIndex = RENDER_PASS_BLOOM_EXTRACT; // doesn't matter, we will use dedicated pipelines
 
-	vk.renderWidth = glConfig.vidWidth;
-	vk.renderHeight = glConfig.vidHeight;
+	vk.renderWidth = captureWidth;
+	vk.renderHeight = captureHeight;
 
 	//vk.renderScaleX = (float)vk.renderWidth / (float)glConfig.vidWidth;
 	//vk.renderScaleY = (float)vk.renderHeight / (float)glConfig.vidHeight;
@@ -5835,8 +5849,8 @@ void vk_begin_blur_render_pass( uint32_t index )
 
 	//vk.renderPassIndex = RENDER_PASS_BLOOM_EXTRACT; // doesn't matter, we will use dedicated pipelines
 
-	vk.renderWidth = glConfig.vidWidth / (2<<(index/2));
-	vk.renderHeight = glConfig.vidHeight / (2<<(index/2));
+	vk.renderWidth = captureWidth / ( 2 << ( index / 2 ) );
+	vk.renderHeight = captureHeight / ( 2 << ( index / 2 ) );
 
 	//vk.renderScaleX = (float)vk.renderWidth / (float)glConfig.vidWidth;
 	//vk.renderScaleY = (float)vk.renderHeight / (float)glConfig.vidHeight;
@@ -6046,6 +6060,8 @@ void vk_end_frame( void )
 
 	if ( vk.fboActive )
 	{
+		vk.cmd->last_pipeline = NULL; // do not restore clobbered descriptors in vk_bloom()
+
 		if ( r_bloom->integer )
 		{
 			vk_bloom();
@@ -6464,15 +6480,26 @@ qboolean vk_bloom( void )
 	}
 
 	// invalidate pipeline state cache
-	vk.cmd->last_pipeline = VK_NULL_HANDLE;
+	//vk.cmd->last_pipeline = VK_NULL_HANDLE;
 
-	// restore clobbered descriptor sets
-	for ( i = 0; i < VK_NUM_BLOOM_PASSES; i++ ) {
-		if ( vk.cmd->descriptor_set.current[i] != VK_NULL_HANDLE ) {
-			if ( i == 0 || i == 1 )
-				qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, i, 1, &vk.cmd->descriptor_set.current[i], 1, &vk.cmd->descriptor_set.offset[i] );
-			else
-				qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, i, 1, &vk.cmd->descriptor_set.current[i], 0, NULL );
+	if ( vk.cmd->last_pipeline != VK_NULL_HANDLE )
+	{
+		// restore last pipeline
+		qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.cmd->last_pipeline );
+
+		vk_update_mvp( NULL );
+
+		// force depth range and viewport/scissor updates
+		vk.cmd->depth_range = DEPTH_RANGE_COUNT;
+
+		// restore clobbered descriptor sets
+		for ( i = 0; i < VK_NUM_BLOOM_PASSES; i++ ) {
+			if ( vk.cmd->descriptor_set.current[i] != VK_NULL_HANDLE ) {
+				if ( i == 0 || i == 1 )
+					qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, i, 1, &vk.cmd->descriptor_set.current[i], 1, &vk.cmd->descriptor_set.offset[i] );
+				else
+					qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, i, 1, &vk.cmd->descriptor_set.current[i], 0, NULL );
+			}
 		}
 	}
 

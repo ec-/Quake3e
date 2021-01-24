@@ -155,7 +155,7 @@ void vk_update_descriptor_set( image_t *image, qboolean mipmap );
 uint32_t vk_find_pipeline_ext( uint32_t base, const Vk_Pipeline_Def *def, qboolean use );
 void vk_get_pipeline_def( uint32_t pipeline, Vk_Pipeline_Def *def );
 
-void vk_create_post_process_pipeline( int program_index );
+void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_t height );
 void vk_restart_swapchain( const char *funcname );
 
 //
@@ -171,10 +171,11 @@ void vk_end_render_pass( void );
 void vk_begin_main_render_pass( void );
 void vk_begin_screenmap_render_pass( void );
 
+void vk_bind_pipeline( uint32_t pipeline );
 void vk_bind_index( void );
 void vk_bind_index_ext( const int numIndexes, const uint32_t*indexes );
 void vk_bind_geometry( uint32_t flags );
-void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean indexed );
+void vk_draw_geometry( Vk_Depth_Range depth_range, qboolean indexed );
 
 void vk_draw_light( uint32_t pipeline, Vk_Depth_Range depth_range, uint32_t uniform_offset, int fog);
 

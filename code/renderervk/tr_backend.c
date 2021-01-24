@@ -1341,8 +1341,9 @@ static void RB_DebugPolygon( int color, int numPoints, float *points ) {
 	}
 
 	vk_bind_index();
+	vk_bind_pipeline( vk.surface_debug_pipeline_solid );
 	vk_bind_geometry( TESS_XYZ | TESS_RGBA | TESS_ST0 );
-	vk_draw_geometry( vk.surface_debug_pipeline_solid, DEPTH_RANGE_NORMAL, qtrue );
+	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 
 	// Outline.
 	Com_Memset( tess.svars.colors, tr.identityLightByte, numPoints * 2 * sizeof(tess.svars.colors[0] ) );
@@ -1354,8 +1355,9 @@ static void RB_DebugPolygon( int color, int numPoints, float *points ) {
 	tess.numVertexes = numPoints * 2;
 	tess.numIndexes = 0;
 
+	vk_bind_pipeline( vk.surface_debug_pipeline_outline );
 	vk_bind_geometry( TESS_XYZ | TESS_RGBA );
-	vk_draw_geometry( vk.surface_debug_pipeline_outline, DEPTH_RANGE_ZERO, qfalse );
+	vk_draw_geometry( DEPTH_RANGE_ZERO, qfalse );
 	tess.numVertexes = 0;
 #else
 	GL_SelectTexture( 0 );
@@ -1568,8 +1570,9 @@ void RB_ShowImages( void )
 
 		tess.svars.texcoordPtr[0] = tess.svars.texcoords[0];
 
+		vk_bind_pipeline( vk.images_debug_pipeline );
 		vk_bind_geometry( TESS_XYZ | TESS_RGBA | TESS_ST0 );
-		vk_draw_geometry( vk.images_debug_pipeline, DEPTH_RANGE_NORMAL, qfalse );
+		vk_draw_geometry( DEPTH_RANGE_NORMAL, qfalse );
 	}
 
 	tess.numIndexes = 0;

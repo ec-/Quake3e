@@ -1712,10 +1712,10 @@ void R_SetColorMappings( void ) {
 #ifdef USE_VULKAN
 	if ( vk.fboActive ) {
 		// update gamma shader
-		vk_create_post_process_pipeline( 0 );
+		vk_create_post_process_pipeline( 0, 0, 0 );
 		if ( vk.capture.image ) {
 			// update capture pipeline
-			vk_create_post_process_pipeline( 3 );
+			vk_create_post_process_pipeline( 3, captureWidth, captureHeight );
 		}
 	}
 	
