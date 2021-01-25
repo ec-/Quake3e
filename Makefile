@@ -13,6 +13,10 @@
 COMPILE_PLATFORM=$(shell uname | sed -e 's/_.*//' | tr '[:upper:]' '[:lower:]' | sed -e 's/\//_/g')
 COMPILE_ARCH=$(shell uname -m | sed -e 's/i.86/x86/' | sed -e 's/^arm.*/arm/')
 
+ifeq ($(shell uname -m),arm64)
+  COMPILE_ARCH=aarch64
+endif
+
 ifeq ($(COMPILE_PLATFORM),mingw32)
   ifeq ($(COMPILE_ARCH),i386)
     COMPILE_ARCH=x86

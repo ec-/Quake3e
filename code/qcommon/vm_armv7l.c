@@ -2679,6 +2679,8 @@ __recompile:
 
 	vm->destroy = VM_Destroy_Compiled;
 
+	Com_Printf( "VM file %s compiled to %i bytes of code\n", vm->name, vm->codeLength );
+
 	return qtrue;
 }
 
