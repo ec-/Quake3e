@@ -86,6 +86,10 @@ void		Con_Fixup( void );
 #ifdef USE_PCRE
 #define PCRE_STATIC 1
 #include <pcre.h>
+#define		MAX_CON_FILTERS 10
+static	cvar_t* con_filters[MAX_CON_FILTERS];
+static	cvar_t* con_filter;
+static	pcre* con_filters_compiled[MAX_CON_FILTERS];
 
 /*
 ================
@@ -96,6 +100,83 @@ static void Con_ShowPCREVersion_f( void ) {
 	Com_Printf( "%s\n", pcre_version() );
 }
 
+
+/*
+===============
+Con_UpdateFilters
+
+Prepares regular expressions in con_filter* cvars for matching.
+Executed on init and on every console print.
+Doesn't do anything if filter cvars have not been changed since last run.  
+===============
+*/
+static void Con_UpdateFilters( void ) {
+	const char* errptr;
+	int erroffset;
+	cvar_t** cvar;
+	pcre** regex;
+
+	for (cvar = con_filters; cvar - con_filters < MAX_CON_FILTERS; cvar++) {
+		if (!*cvar || !(*cvar)->modified) {
+			continue;
+		}
+		regex = con_filters_compiled + (cvar - con_filters);
+		(*cvar)->modified = qfalse;
+		if (!strlen((*cvar)->string)) {
+			*regex = NULL;
+			continue;
+		}
+		*regex = pcre_compile((*cvar)->string, 0, &errptr, &erroffset, NULL);
+		if (!*regex) {
+			Com_Printf( S_COLOR_YELLOW "Failed to compile %s at character %i: %s\n", (*cvar)->name, erroffset, errptr);
+			Cvar_Set((*cvar)->name, "");
+			(*cvar)->modified = qfalse;
+		}
+
+	}
+}
+
+
+/*
+===============
+Con_CheckFilters
+
+Check if a string is a match for any of the regular expressions in con_filter* cvars.
+===============
+*/
+static qboolean Con_CheckFilters( const char* txt ) {
+	char txt_nocolor[MAXPRINTMSG];
+	int ovector[30];
+	pcre** regex;
+
+	Con_UpdateFilters();
+
+	Q_strncpyz( txt_nocolor, txt, sizeof( txt_nocolor ) );
+	Q_DecolorStr( txt_nocolor );
+
+	for ( regex = con_filters_compiled; regex - con_filters_compiled < MAX_CON_FILTERS; regex++ ) {
+		if ( *regex && pcre_exec( *regex, NULL, txt_nocolor, strlen( txt_nocolor ), 0, 0, ovector, 30 ) > 0 ) {
+			return qtrue;
+		}
+	}
+
+	return qfalse;
+}
+
+
+/*
+===============
+Con_InitFilters
+===============
+*/
+static void Con_InitFilters( void ) {
+	int		i;
+	con_filter = Cvar_Get( "con_filter", "1", CVAR_ARCHIVE_ND );
+	for ( i = 0; i < MAX_CON_FILTERS; i++ ) {
+		con_filters[i] = Cvar_Get(va("con_filter%i", i), "", CVAR_ARCHIVE_ND);
+	}
+	Con_UpdateFilters();
+}
 #endif /* USE_PCRE */
 
 /*
@@ -431,6 +512,7 @@ void Con_Init( void )
 	Cmd_AddCommand( "messagemode4", Con_MessageMode4_f );
 #ifdef USE_PCRE
 	Cmd_AddCommand( "pcre_version", Con_ShowPCREVersion_f );
+	Con_InitFilters();
 #endif /* USE_PCRE */
 }
 
@@ -602,6 +684,12 @@ void CL_ConsolePrint( const char *txt ) {
 	if ( cl_noprint && cl_noprint->integer ) {
 		return;
 	}
+
+#ifdef USE_PCRE
+	if ( con_filter && con_filter->integer && Con_CheckFilters( txt ) ) {
+		return;
+	}
+#endif /* USE_PCRE */
 
 	// TTimo - prefix for text that shows up in console but not in notify
 	// backported from RTCW
