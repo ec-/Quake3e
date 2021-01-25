@@ -632,7 +632,7 @@ void CL_ConsolePrint( const char *txt ) {
 	colorIndex = ColorIndex( COLOR_WHITE );
 
 	while ( (c = *txt) != 0 ) {
-		if ( Q_IsColorString( txt ) && *(txt+1) != '\n' ) {
+		if ( Q_IsColorString( txt ) ) {
 			colorIndex = ColorIndexFromChar( *(txt+1) );
 			txt += 2;
 			continue;
