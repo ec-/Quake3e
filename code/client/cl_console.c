@@ -171,7 +171,7 @@ Con_InitFilters
 */
 static void Con_InitFilters( void ) {
 	int		i;
-	con_filter = Cvar_Get( "con_filter", "1", CVAR_ARCHIVE_ND );
+	con_filter = Cvar_Get( "con_filter", "0", CVAR_ARCHIVE_ND );
 	for ( i = 0; i < MAX_CON_FILTERS; i++ ) {
 		con_filters[i] = Cvar_Get(va("con_filter%i", i), "", CVAR_ARCHIVE_ND);
 	}
