@@ -1633,6 +1633,28 @@ char *Q_CleanStr( char *string ) {
 }
 
 
+char *Q_DecolorStr( char *string ) {
+	char*	d;
+	char*	s;
+	int		c;
+
+	s = string;
+	d = string;
+	while ( (c = *s) != 0 ) {
+		if ( Q_IsColorString( s ) ) {
+			s++;
+		}
+		else {
+			*d++ = c;
+		}
+		s++;
+	}
+	*d = '\0';
+
+	return string;
+}
+
+
 int Q_CountChar(const char *string, char tocount)
 {
 	int count;
