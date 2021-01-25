@@ -1,6 +1,6 @@
 # Quake3e
 
-[![build](../../workflows/build/badge.svg)](../../actions?query=workflow%3Abuild) * [![Discord Shield](https://discord.com/api/guilds/751483934034100274/widget.png?style=shield)](https://discord.com/channels/751483934034100274/753780845692846150)
+[![build](../../workflows/build/badge.svg)](../../actions?query=workflow%3Abuild) * [![Discord Shield](https://discord.com/api/guilds/751483934034100274/widget.png?style=shield)](https://discord.gg/ZG4dKNVQJu)
 
 This is a modern Quake III Arena engine aimed to be fast, secure and compatible with all existing Q3A mods.
 It is based on last non-SDL source dump of ioquake3 with latest upstream fixes applied.
