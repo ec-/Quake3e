@@ -49,8 +49,8 @@ float threshold(vec2 coord) {
 vec3 dither(vec3 color, vec2 coord)
 {
 	vec3 cDenormalized = color * depth;
-	vec3 cFractional = fract(cDenormalized);
-	vec3 cLow = cDenormalized - cFractional;
+	vec3 cLow = floor(cDenormalized);
+	vec3 cFractional = cDenormalized - cLow;
 	vec3 cDithered = cLow + step(threshold(coord), cFractional);
 	return cDithered / depth;
 }
