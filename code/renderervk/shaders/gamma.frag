@@ -42,7 +42,7 @@ float threshold(vec2 coord) {
 	*/
 
 	float bayerSample = bayerMatrix[bayerCoord.x + bayerCoord.y * bayerSize];
-	float threshold = (bayerSample + 1.0) / float(bayerSize * bayerSize);
+	float threshold = (bayerSample + 0.5) / float(bayerSize * bayerSize);
 	return threshold;
 }
 
