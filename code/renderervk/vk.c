@@ -4217,7 +4217,6 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 	VkGraphicsPipelineCreateInfo create_info;
 	VkViewport viewport;
 	VkRect2D scissor;
-	float frag_spec_data[5]; // gamma,overbright,greyscale,bloom_threshold,bloom_intensity
 	VkSpecializationMapEntry spec_entries[5];
 	VkSpecializationInfo frag_spec_info;
 	VkPipeline *pipeline;
@@ -4227,6 +4226,14 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 	VkSampleCountFlagBits samples;
 	const char *pipeline_name;
 	qboolean blend;
+
+	struct FragSpecData {
+		float gamma;
+		float overbright;
+		float greyscale;
+		float bloom_threshold;
+		float bloom_intensity;
+	} frag_spec_data;
 
 	switch ( program_index ) {
 		case 1: // bloom extraction
@@ -4285,36 +4292,36 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 	set_shader_stage_desc( shader_stages+0, VK_SHADER_STAGE_VERTEX_BIT, vk.modules.gamma_vs, "main" );
 	set_shader_stage_desc( shader_stages+1, VK_SHADER_STAGE_FRAGMENT_BIT, fsmodule, "main" );
 
-	frag_spec_data[0] = 1.0 / (r_gamma->value);
-	frag_spec_data[1] = (float)(1 << tr.overbrightBits);
-	frag_spec_data[2] = r_greyscale->value;
-	frag_spec_data[3] = r_bloom_threshold->value;
-	frag_spec_data[4] = r_bloom_intensity->value;
+	frag_spec_data.gamma = 1.0 / (r_gamma->value);
+	frag_spec_data.overbright = (float)(1 << tr.overbrightBits);
+	frag_spec_data.greyscale = r_greyscale->value;
+	frag_spec_data.bloom_threshold = r_bloom_threshold->value;
+	frag_spec_data.bloom_intensity = r_bloom_intensity->value;
 
 	spec_entries[0].constantID = 0;
-	spec_entries[0].offset = 0 * sizeof( float );
-	spec_entries[0].size = sizeof( float );
+	spec_entries[0].offset = offsetof( struct FragSpecData, gamma );
+	spec_entries[0].size = sizeof( frag_spec_data.gamma );
 	
 	spec_entries[1].constantID = 1;
-	spec_entries[1].offset = 1 * sizeof( float );
-	spec_entries[1].size = sizeof( float );
+	spec_entries[1].offset = offsetof( struct FragSpecData, overbright );
+	spec_entries[1].size = sizeof( frag_spec_data.overbright );
 
 	spec_entries[2].constantID = 2;
-	spec_entries[2].offset = 2 * sizeof( float );
-	spec_entries[2].size = sizeof( float );
+	spec_entries[2].offset = offsetof( struct FragSpecData, greyscale );
+	spec_entries[2].size = sizeof( frag_spec_data.greyscale );
 
 	spec_entries[3].constantID = 3;
-	spec_entries[3].offset = 3 * sizeof( float );
-	spec_entries[3].size = sizeof( float );
+	spec_entries[3].offset = offsetof( struct FragSpecData, bloom_threshold );
+	spec_entries[3].size = sizeof( frag_spec_data.bloom_threshold );
 
 	spec_entries[4].constantID = 4;
-	spec_entries[4].offset = 4 * sizeof( float );
-	spec_entries[4].size = sizeof( float );
+	spec_entries[4].offset = offsetof( struct FragSpecData, bloom_intensity );
+	spec_entries[4].size = sizeof( frag_spec_data.bloom_intensity );
 
 	frag_spec_info.mapEntryCount = 5;
 	frag_spec_info.pMapEntries = spec_entries;
-	frag_spec_info.dataSize = 5 * sizeof( float );
-	frag_spec_info.pData = &frag_spec_data[0];
+	frag_spec_info.dataSize = sizeof( frag_spec_data );
+	frag_spec_info.pData = &frag_spec_data;
 
 	shader_stages[1].pSpecializationInfo = &frag_spec_info;
 
