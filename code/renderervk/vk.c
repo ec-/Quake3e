@@ -4298,7 +4298,7 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 	frag_spec_data.greyscale = r_greyscale->value;
 	frag_spec_data.bloom_threshold = r_bloom_threshold->value;
 	frag_spec_data.bloom_intensity = r_bloom_intensity->value;
-	frag_spec_data.dither = r_dither->value;
+	frag_spec_data.dither = r_dither->integer;
 
 	spec_entries[0].constantID = 0;
 	spec_entries[0].offset = offsetof( struct FragSpecData, gamma );
