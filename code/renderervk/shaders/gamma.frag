@@ -9,6 +9,7 @@ layout(location = 0) out vec4 out_color;
 layout(constant_id = 0) const float gamma = 1.0;
 layout(constant_id = 1) const float obScale = 2.0;
 layout(constant_id = 2) const float greyscale = 0.0;
+layout(constant_id = 5) const int ditherMode = 0; // 0 - disabled, 1 - randomized, 2 - static
 
 const vec3 sRGB = { 0.2126, 0.7152, 0.0722 };
 
@@ -75,5 +76,7 @@ void main() {
 		out_color = vec4(base * obScale, 1);
 	}
 
-	out_color.rgb = dither(out_color.rgb);
+	if ( ditherMode == 1 || ditherMode == 2 ) {
+		out_color.rgb = dither(out_color.rgb);
+	}
 }

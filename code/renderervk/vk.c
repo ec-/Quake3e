@@ -4217,7 +4217,7 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 	VkGraphicsPipelineCreateInfo create_info;
 	VkViewport viewport;
 	VkRect2D scissor;
-	VkSpecializationMapEntry spec_entries[5];
+	VkSpecializationMapEntry spec_entries[6];
 	VkSpecializationInfo frag_spec_info;
 	VkPipeline *pipeline;
 	VkShaderModule fsmodule;
@@ -4233,6 +4233,7 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 		float greyscale;
 		float bloom_threshold;
 		float bloom_intensity;
+		int dither;
 	} frag_spec_data;
 
 	switch ( program_index ) {
@@ -4297,6 +4298,7 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 	frag_spec_data.greyscale = r_greyscale->value;
 	frag_spec_data.bloom_threshold = r_bloom_threshold->value;
 	frag_spec_data.bloom_intensity = r_bloom_intensity->value;
+	frag_spec_data.dither = r_dither->value;
 
 	spec_entries[0].constantID = 0;
 	spec_entries[0].offset = offsetof( struct FragSpecData, gamma );
@@ -4318,7 +4320,11 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 	spec_entries[4].offset = offsetof( struct FragSpecData, bloom_intensity );
 	spec_entries[4].size = sizeof( frag_spec_data.bloom_intensity );
 
-	frag_spec_info.mapEntryCount = 5;
+	spec_entries[5].constantID = 5;
+	spec_entries[5].offset = offsetof( struct FragSpecData, dither );
+	spec_entries[5].size = sizeof( frag_spec_data.dither );
+
+	frag_spec_info.mapEntryCount = 6;
 	frag_spec_info.pMapEntries = spec_entries;
 	frag_spec_info.dataSize = sizeof( frag_spec_data );
 	frag_spec_info.pData = &frag_spec_data;

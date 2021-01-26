@@ -57,6 +57,7 @@ cvar_t	*r_skipBackEnd;
 //cvar_t	*r_anaglyphMode;
 
 cvar_t	*r_greyscale;
+cvar_t	*r_dither;
 
 cvar_t	*r_ignorehwgamma;
 
@@ -1544,6 +1545,10 @@ static void R_Register( void )
 
 	r_greyscale = ri.Cvar_Get( "r_greyscale", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_greyscale, "-1", "1", CV_FLOAT );
+
+	r_dither = ri.Cvar_Get( "r_dither", "1", CVAR_ARCHIVE_ND );
+	ri.Cvar_CheckRange( r_dither, "0", "2", CV_INTEGER );
+	ri.Cvar_SetDescription(r_dither, "Set dithering mode:\n 0 - disable dithering\n 1 - enable randomized dithering\n 2 - enable static dithering\nRequires r_fbo 1");
 
 	//
 	// temporary variables that can change at any time

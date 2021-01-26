@@ -1336,6 +1336,7 @@ extern	cvar_t	*r_lodCurveError;
 extern	cvar_t	*r_skipBackEnd;
 
 extern	cvar_t	*r_greyscale;
+extern	cvar_t	*r_dither;
 
 extern	cvar_t	*r_ignoreGLErrors;
 
