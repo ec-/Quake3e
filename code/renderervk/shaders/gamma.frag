@@ -24,10 +24,9 @@ const float bayerMatrix[bayerSize * bayerSize] = {
 	15, 47, 7,  39, 13, 45, 5,  37,
 	63, 31, 55, 23, 61, 29, 53, 21
 };
-const ivec2 screenSize = { 2560, 1440 };
 
-float threshold(vec2 coord) {
-	ivec2 coordDenormalized = ivec2(coord * screenSize);
+float threshold() {
+	ivec2 coordDenormalized = ivec2(gl_FragCoord.xy);
 	ivec2 bayerCoord = (coordDenormalized/* + offset*/) % bayerSize;
 	/*
 	if (rotation == 0) {
@@ -46,11 +45,11 @@ float threshold(vec2 coord) {
 	return threshold;
 }
 
-vec3 dither(vec3 color, vec2 coord) {
+vec3 dither(vec3 color) {
 	vec3 cDenormalized = color * depth;
 	vec3 cLow = floor(cDenormalized);
 	vec3 cFractional = cDenormalized - cLow;
-	vec3 cDithered = cLow + step(threshold(coord), cFractional);
+	vec3 cDithered = cLow + step(threshold(), cFractional);
 	return cDithered / depth;
 }
 
@@ -76,5 +75,5 @@ void main() {
 		out_color = vec4(base * obScale, 1);
 	}
 
-	out_color.rgb = dither(out_color.rgb, frag_tex_coord);
+	out_color.rgb = dither(out_color.rgb);
 }
