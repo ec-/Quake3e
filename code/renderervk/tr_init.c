@@ -58,6 +58,7 @@ cvar_t	*r_skipBackEnd;
 
 cvar_t	*r_greyscale;
 cvar_t	*r_dither;
+cvar_t	*r_30bitColor;
 
 cvar_t	*r_ignorehwgamma;
 
@@ -1549,6 +1550,10 @@ static void R_Register( void )
 	r_dither = ri.Cvar_Get( "r_dither", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_dither, "0", "1", CV_INTEGER );
 	ri.Cvar_SetDescription(r_dither, "Set dithering mode:\n 0 - disabled\n 1 - ordered\nRequires r_fbo 1");
+
+	r_30bitColor = ri.Cvar_Get( "r_30bitColor", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_30bitColor, "0", "1", CV_INTEGER );
+	ri.Cvar_SetDescription( r_30bitColor, "Prefer color mode:\n 0 - 24-bit\n 1 - 30-bit" );
 
 	//
 	// temporary variables that can change at any time

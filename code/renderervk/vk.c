@@ -192,6 +192,8 @@ const char *vk_format_string( VkFormat format )
 		CASE_STR( VK_FORMAT_R8G8B8A8_UNORM );
 		CASE_STR( VK_FORMAT_B4G4R4A4_UNORM_PACK16 );
 		CASE_STR( VK_FORMAT_R16G16B16A16_UNORM );
+		CASE_STR( VK_FORMAT_A2B10G10R10_UNORM_PACK32 );
+		CASE_STR( VK_FORMAT_A2R10G10B10_SNORM_PACK32 );
 		// depth formats
 		CASE_STR( VK_FORMAT_D16_UNORM );
 		CASE_STR( VK_FORMAT_D16_UNORM_S8_UINT );
@@ -1171,22 +1173,28 @@ static qboolean vk_select_surface_format( VkPhysicalDevice physical_device, VkSu
 
 	if (format_count == 1 && candidates[0].format == VK_FORMAT_UNDEFINED) {
 		// special case that means we can choose any format
-		vk.surface_format.format = VK_FORMAT_R8G8B8A8_UNORM;
+		vk.surface_format.format = r_30bitColor->integer ? VK_FORMAT_A2B10G10R10_UNORM_PACK32 : VK_FORMAT_B8G8R8A8_UNORM;
 		vk.surface_format.colorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
 	}
 	else {
+		qboolean foundPreferredFormat = qfalse;
 		uint32_t i;
-		vk.surface_format = candidates[0];
-		for ( i = 1; i < format_count; i++ ) {
-			if ( candidates[i].format == VK_FORMAT_B8G8R8A8_UNORM && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
-				vk.surface_format = candidates[i];
-				break;
+		if ( r_30bitColor->integer ) {
+			for ( i = 0; i < format_count && !foundPreferredFormat; i++ ) {
+				if ( ( candidates[i].format == VK_FORMAT_A2B10G10R10_UNORM_PACK32 || candidates[i].format == VK_FORMAT_A2R10G10B10_UNORM_PACK32 ) && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
+					vk.surface_format = candidates[i];
+					foundPreferredFormat = qtrue;
+				}
 			}
-			//if ( candidates[i].format == VK_FORMAT_B8G8R8A8_SRGB && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
-			//	vk.surface_format = candidates[i];
-			//	break;
-			//}
 		}
+		for ( i = 0; i < format_count && !foundPreferredFormat; i++ ) {
+			if ( ( candidates[i].format == VK_FORMAT_B8G8R8A8_UNORM || candidates[i].format == VK_FORMAT_R8G8B8A8_UNORM ) && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
+				vk.surface_format = candidates[i];
+				foundPreferredFormat = qtrue;
+			}
+		}
+		if (!foundPreferredFormat)
+			vk.surface_format = candidates[0];
 	}
 
 	ri.Free( candidates );
