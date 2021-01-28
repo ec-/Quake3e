@@ -3,4 +3,3 @@ output/
 .vs/
 .vscode/
 *.user
-/code/renderervk/shaders/bin2hex.exe
