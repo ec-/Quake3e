@@ -1,5 +1,10 @@
 #version 450
 
+layout(push_constant) uniform PushBlock {
+	ivec2 ditherOffset;
+	int ditherRotation;
+};
+
 layout(set = 0, binding = 0) uniform sampler2D texture0;
 
 layout(location = 0) in vec2 frag_tex_coord;
@@ -9,7 +14,7 @@ layout(location = 0) out vec4 out_color;
 layout(constant_id = 0) const float gamma = 1.0;
 layout(constant_id = 1) const float obScale = 2.0;
 layout(constant_id = 2) const float greyscale = 0.0;
-layout(constant_id = 5) const int ditherMode = 0; // 0 - disabled, 1 - randomized, 2 - static
+layout(constant_id = 5) const int ditherMode = 0; // 0 - disabled, 1 - ordered
 
 const vec3 sRGB = { 0.2126, 0.7152, 0.0722 };
 
@@ -27,19 +32,25 @@ const float bayerMatrix[bayerSize * bayerSize] = {
 };
 
 float threshold() {
+	ivec2 offset = ditherOffset;
+	int rotation = ditherRotation;
+
 	ivec2 coordDenormalized = ivec2(gl_FragCoord.xy);
-	ivec2 bayerCoord = (coordDenormalized/* + offset*/) % bayerSize;
-	/*
-	if (rotation == 0) {
-		bayerCoord = int2(bayerCoord.x, bayerCoord.y);
-	} else if (rotation == 1) {
-		bayerCoord = int2(bayerCoord.y, bayerSize - 1 - bayerCoord.x);
-	} else if (rotation == 2) {
-		bayerCoord = int2(bayerSize - 1 - bayerCoord.x, bayerSize - 1 - bayerCoord.y);
-	} else if (rotation == 3) {
-		bayerCoord = int2(bayerSize - 1 - bayerCoord.y, bayerCoord.x);
+	ivec2 bayerCoord;
+	if (ditherMode == 1) {
+		bayerCoord = (coordDenormalized + offset) % bayerSize;
+		if (rotation == 0) {
+			bayerCoord = ivec2(bayerCoord.x, bayerCoord.y);
+		} else if (rotation == 1) {
+			bayerCoord = ivec2(bayerCoord.y, bayerSize - 1 - bayerCoord.x);
+		} else if (rotation == 2) {
+			bayerCoord = ivec2(bayerSize - 1 - bayerCoord.x, bayerSize - 1 - bayerCoord.y);
+		} else if (rotation == 3) {
+			bayerCoord = ivec2(bayerSize - 1 - bayerCoord.y, bayerCoord.x);
+		}
+	} else {
+		bayerCoord = coordDenormalized % bayerSize;
 	}
-	*/
 
 	float bayerSample = bayerMatrix[bayerCoord.x + bayerCoord.y * bayerSize];
 	float threshold = (bayerSample + 0.5) / float(bayerSize * bayerSize);
@@ -76,7 +87,7 @@ void main() {
 		out_color = vec4(base * obScale, 1);
 	}
 
-	if ( ditherMode == 1 || ditherMode == 2 ) {
+	if ( ditherMode == 1 ) {
 		out_color.rgb = dither(out_color.rgb);
 	}
 }
