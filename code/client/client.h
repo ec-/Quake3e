@@ -365,7 +365,7 @@ extern	qboolean	cl_oldGameSet;
 extern		download_t	download;
 qboolean	Com_DL_Perform( download_t *dl );
 void		Com_DL_Cleanup( download_t *dl );
-qboolean	Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean headerCheck, qboolean autoDownload );
+qboolean	Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean autoDownload );
 qboolean	Com_DL_InProgress( const download_t *dl );
 qboolean	Com_DL_ValidFileName( const char *fileName );
 qboolean	CL_Download( const char *cmd, const char *pakname, qboolean autoDownload );
