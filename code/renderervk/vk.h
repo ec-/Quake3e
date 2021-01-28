@@ -198,6 +198,8 @@ void VBO_PrepareQueues( void );
 void VBO_RenderIBOItems( void );
 void VBO_ClearQueue( void );
 
+qboolean vk_surface_format_color_depth( VkFormat format, int* r, int* g, int* b );
+
 typedef struct vk_tess_s {
 	VkCommandBuffer command_buffer;
 

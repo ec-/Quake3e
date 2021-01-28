@@ -4217,7 +4217,7 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 	VkGraphicsPipelineCreateInfo create_info;
 	VkViewport viewport;
 	VkRect2D scissor;
-	VkSpecializationMapEntry spec_entries[6];
+	VkSpecializationMapEntry spec_entries[9];
 	VkSpecializationInfo frag_spec_info;
 	VkPipeline *pipeline;
 	VkShaderModule fsmodule;
@@ -4234,6 +4234,9 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 		float bloom_threshold;
 		float bloom_intensity;
 		int dither;
+		int depth_r;
+		int depth_g;
+		int depth_b;
 	} frag_spec_data;
 
 	switch ( program_index ) {
@@ -4299,6 +4302,9 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 	frag_spec_data.bloom_threshold = r_bloom_threshold->value;
 	frag_spec_data.bloom_intensity = r_bloom_intensity->value;
 	frag_spec_data.dither = r_dither->integer;
+	
+	if ( !vk_surface_format_color_depth( vk.surface_format.format, &frag_spec_data.depth_r, &frag_spec_data.depth_g, &frag_spec_data.depth_b ) )
+		ri.Printf( PRINT_ALL, "Format %s not recognized, dither to assume 8bpc\n", vk_format_string( vk.surface_format.format ) );
 
 	spec_entries[0].constantID = 0;
 	spec_entries[0].offset = offsetof( struct FragSpecData, gamma );
@@ -4324,7 +4330,19 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 	spec_entries[5].offset = offsetof( struct FragSpecData, dither );
 	spec_entries[5].size = sizeof( frag_spec_data.dither );
 
-	frag_spec_info.mapEntryCount = 6;
+	spec_entries[6].constantID = 6;
+	spec_entries[6].offset = offsetof( struct FragSpecData, depth_r );
+	spec_entries[6].size = sizeof( frag_spec_data.depth_r );
+
+	spec_entries[7].constantID = 7;
+	spec_entries[7].offset = offsetof(struct FragSpecData, depth_g);
+	spec_entries[7].size = sizeof(frag_spec_data.depth_g);
+
+	spec_entries[8].constantID = 8;
+	spec_entries[8].offset = offsetof(struct FragSpecData, depth_b);
+	spec_entries[8].size = sizeof(frag_spec_data.depth_b);
+
+	frag_spec_info.mapEntryCount = 9;
 	frag_spec_info.pMapEntries = spec_entries;
 	frag_spec_info.dataSize = sizeof( frag_spec_data );
 	frag_spec_info.pData = &frag_spec_data;
@@ -6519,4 +6537,33 @@ qboolean vk_bloom( void )
 	backEnd.doneBloom = qtrue;
 
 	return qtrue;
+}
+
+#define FORMAT_DEPTH(format, r_bits, g_bits, b_bits) case(VK_FORMAT_##format): *r = r_bits; *b = b_bits; *g = g_bits; return qtrue;
+qboolean vk_surface_format_color_depth(VkFormat format, int* r, int* g, int* b) {
+	switch (format) {
+		// Common formats from https://vulkan.gpuinfo.org/listsurfaceformats.php
+		FORMAT_DEPTH(B8G8R8A8_UNORM, 255, 255, 255)
+		FORMAT_DEPTH(B8G8R8A8_SRGB, 255, 255, 255)
+		FORMAT_DEPTH(A2B10G10R10_UNORM_PACK32, 1023, 1023, 1023)
+		FORMAT_DEPTH(R8G8B8A8_UNORM, 255, 255, 255)
+		FORMAT_DEPTH(R8G8B8A8_SRGB, 255, 255, 255)
+		FORMAT_DEPTH(A2R10G10B10_UNORM_PACK32, 1023, 1023, 1023)
+		FORMAT_DEPTH(R5G6B5_UNORM_PACK16, 31, 63, 31)
+		FORMAT_DEPTH(R8G8B8A8_SNORM, 255, 255, 255)
+		FORMAT_DEPTH(A8B8G8R8_UNORM_PACK32, 255, 255, 255)
+		FORMAT_DEPTH(A8B8G8R8_SNORM_PACK32, 255, 255, 255)
+		FORMAT_DEPTH(A8B8G8R8_SRGB_PACK32, 255, 255, 255)
+		FORMAT_DEPTH(R16G16B16A16_UNORM, 65535, 65535, 65535)
+		FORMAT_DEPTH(R16G16B16A16_SNORM, 65535, 65535, 65535)
+		FORMAT_DEPTH(B5G6R5_UNORM_PACK16, 31, 63, 31)
+		FORMAT_DEPTH(B8G8R8A8_SNORM, 255, 255, 255)
+		FORMAT_DEPTH(R4G4B4A4_UNORM_PACK16, 15, 15, 15)
+		FORMAT_DEPTH(B4G4R4A4_UNORM_PACK16, 15, 15, 15)
+		FORMAT_DEPTH(A1R5G5B5_UNORM_PACK16, 31, 31, 31)
+		FORMAT_DEPTH(R5G5B5A1_UNORM_PACK16, 31, 31, 31)
+		FORMAT_DEPTH(B5G5R5A1_UNORM_PACK16, 31, 31, 31)
+	default:
+		*r = 255; *g = 255; *b = 255; return qfalse;
+	}
 }

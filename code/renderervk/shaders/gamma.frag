@@ -1,10 +1,5 @@
 #version 450
 
-layout(push_constant) uniform PushBlock {
-	ivec2 ditherOffset;
-	int ditherRotation;
-};
-
 layout(set = 0, binding = 0) uniform sampler2D texture0;
 
 layout(location = 0) in vec2 frag_tex_coord;
@@ -15,10 +10,12 @@ layout(constant_id = 0) const float gamma = 1.0;
 layout(constant_id = 1) const float obScale = 2.0;
 layout(constant_id = 2) const float greyscale = 0.0;
 layout(constant_id = 5) const int ditherMode = 0; // 0 - disabled, 1 - ordered
+layout(constant_id = 6) const int depth_r = 255;
+layout(constant_id = 7) const int depth_g = 255;
+layout(constant_id = 8) const int depth_b = 255;
 
 const vec3 sRGB = { 0.2126, 0.7152, 0.0722 };
 
-const ivec3 depth = { 255, 255, 255 };
 const int bayerSize = 8;
 const float bayerMatrix[bayerSize * bayerSize] = {
 	0,  32, 8,  40, 2,  34, 10, 42,
@@ -32,32 +29,15 @@ const float bayerMatrix[bayerSize * bayerSize] = {
 };
 
 float threshold() {
-	ivec2 offset = ditherOffset;
-	int rotation = ditherRotation;
-
 	ivec2 coordDenormalized = ivec2(gl_FragCoord.xy);
-	ivec2 bayerCoord;
-	if (ditherMode == 1) {
-		bayerCoord = (coordDenormalized + offset) % bayerSize;
-		if (rotation == 0) {
-			bayerCoord = ivec2(bayerCoord.x, bayerCoord.y);
-		} else if (rotation == 1) {
-			bayerCoord = ivec2(bayerCoord.y, bayerSize - 1 - bayerCoord.x);
-		} else if (rotation == 2) {
-			bayerCoord = ivec2(bayerSize - 1 - bayerCoord.x, bayerSize - 1 - bayerCoord.y);
-		} else if (rotation == 3) {
-			bayerCoord = ivec2(bayerSize - 1 - bayerCoord.y, bayerCoord.x);
-		}
-	} else {
-		bayerCoord = coordDenormalized % bayerSize;
-	}
-
+	ivec2 bayerCoord = coordDenormalized % bayerSize;
 	float bayerSample = bayerMatrix[bayerCoord.x + bayerCoord.y * bayerSize];
 	float threshold = (bayerSample + 0.5) / float(bayerSize * bayerSize);
 	return threshold;
 }
 
 vec3 dither(vec3 color) {
+	ivec3 depth = ivec3(depth_r, depth_g, depth_b);
 	vec3 cDenormalized = color * depth;
 	vec3 cLow = floor(cDenormalized);
 	vec3 cFractional = cDenormalized - cLow;
