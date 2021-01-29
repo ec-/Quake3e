@@ -4927,10 +4927,9 @@ static void CL_ShowIP_f( void ) {
 
 qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownload )
 {
-	char url[MAX_CVAR_VALUE_STRING];
+	char url[MAX_OSPATH];
 	char name[MAX_CVAR_VALUE_STRING];
 	const char *s;
-	qboolean headerCheck;
 
 	if ( cl_dlURL->string[0] == '\0' )
 	{
@@ -4967,21 +4966,7 @@ qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownloa
 		}
 	}
 
-	Q_strncpyz( url, cl_dlURL->string, sizeof( url ) );
-
-	if ( !Q_replace( "%1", pakname, url, sizeof( url ) ) )
-	{
-		if ( url[strlen(url)] != '/' )
-			Q_strcat( url, sizeof( url ), "/" );
-		Q_strcat( url, sizeof( url ), pakname );
-		headerCheck = qfalse;
-	}
-	else
-	{
-		headerCheck = qtrue;
-	}
-
-	return Com_DL_Begin( &download, pakname, url, headerCheck, autoDownload );
+	return Com_DL_Begin( &download, pakname, cl_dlURL->string, autoDownload );
 }
 
 
