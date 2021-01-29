@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30907.101
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2015
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "botlib", "botlib.vcxproj", "{A410161F-AE9F-485D-A01F-5294891430A6}"
 EndProject
@@ -8,7 +8,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libjpeg", "libjpeg.vcxproj"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "quake3e", "quake3e.vcxproj", "{81CB51C4-B434-4E12-B69B-BAEE102F2852}"
 	ProjectSection(ProjectDependencies) = postProject
-		{157AD8A8-E8BD-41C1-9139-F4687A8E3668} = {157AD8A8-E8BD-41C1-9139-F4687A8E3668}
+		{AB424155-FBED-4D8D-B007-5B6CF93EA395} = {AB424155-FBED-4D8D-B007-5B6CF93EA395}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "renderer", "renderer.vcxproj", "{AB424155-FBED-4D8D-B007-5B6CF93EA395}"
