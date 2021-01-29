@@ -172,6 +172,8 @@ void CL_cURL_Shutdown( void )
 		Sys_UnloadLibrary(cURLLib);
 		cURLLib = NULL;
 	}
+	qcurl_version = NULL;
+
 	qcurl_easy_init = NULL;
 	qcurl_easy_setopt = NULL;
 	qcurl_easy_perform = NULL;
@@ -552,6 +554,8 @@ qboolean Com_DL_Init( download_t *dl )
 	Sys_LoadFunctionErrors(); // reset error count;
 
 	dl->func.version = Sys_LoadFunction( dl->func.lib, "curl_version" );
+	dl->func.easy_escape = Sys_LoadFunction( dl->func.lib, "curl_easy_escape" );
+	dl->func.free = Sys_LoadFunction( dl->func.lib, "curl_free" );
 
 	dl->func.easy_init = Sys_LoadFunction( dl->func.lib, "curl_easy_init" );
 	dl->func.easy_setopt = Sys_LoadFunction( dl->func.lib, "curl_easy_setopt" );
@@ -583,6 +587,8 @@ qboolean Com_DL_Init( download_t *dl )
 	dl->func.lib = NULL;
 
 	dl->func.version = curl_version;
+	dl->func.easy_escape = curl_easy_escape;
+	dl->func.free = (void (*)(char *))curl_free; // cast to silence warning
 
 	dl->func.easy_init = curl_easy_init;
 	dl->func.easy_setopt = curl_easy_setopt;
@@ -857,7 +863,7 @@ Com_DL_Begin()
 Start downloading file from remoteURL and save it under fs_game/localName
 ==============================================================
 */
-qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean headerCheck, qboolean autoDownload )
+qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean autoDownload )
 {
 	char *s;
 
@@ -866,8 +872,6 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 		Com_Printf( S_COLOR_YELLOW " already downloading %s\n", dl->Name );
 		return qfalse;
 	}
-
-	Com_Printf( "URL: %s\n", remoteURL );
 
 	Com_DL_Cleanup( dl );
 
@@ -885,7 +889,32 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 		return qfalse;
 	}
 
-	Q_strncpyz( dl->URL, remoteURL, sizeof( dl->URL ) );
+	{
+		char *escapedName = dl->func.easy_escape( dl->cURL, localName, 0 );
+		if ( !escapedName ) 
+		{
+			Com_Printf( S_COLOR_RED "Com_DL_Begin: easy_escape() failed\n" );
+			Com_DL_Cleanup( dl );
+			return qfalse;
+		}
+
+		Q_strncpyz( dl->URL, remoteURL, sizeof( dl->URL ) );
+
+		if ( !Q_replace( "%1", escapedName, dl->URL, sizeof( dl->URL ) ) )
+		{
+			if ( dl->URL[strlen(dl->URL)] != '/' )
+				Q_strcat( dl->URL, sizeof( dl->URL ), "/" );
+			Q_strcat( dl->URL, sizeof( dl->URL ), escapedName );
+			dl->headerCheck = qfalse;
+		}
+		else
+		{
+			dl->headerCheck = qtrue;
+		}
+		dl->func.free( escapedName );
+	}
+
+	Com_Printf( "URL: %s\n", dl->URL );
 
 	if ( cl_dlDirectory->integer ) {
 		Q_strncpyz( dl->gameDir, FS_GetBaseGameDir(), sizeof( dl->gameDir ) );
@@ -908,8 +937,6 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 		return qfalse;
 	}
 
-	dl->headerCheck = headerCheck;
-
 	Com_sprintf( dl->TempName, sizeof( dl->TempName ), 
 		"%s/%s.%08x.tmp", dl->gameDir, dl->Name, rand() | (rand() << 16) );
 
@@ -923,7 +950,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 	dl->func.easy_setopt( dl->cURL, CURLOPT_USERAGENT, Q3_VERSION );
 	dl->func.easy_setopt( dl->cURL, CURLOPT_WRITEFUNCTION, Com_DL_CallbackWrite );
 	dl->func.easy_setopt( dl->cURL, CURLOPT_WRITEDATA, dl );
-	if ( headerCheck ) 
+	if ( dl->headerCheck ) 
 	{
 		dl->func.easy_setopt( dl->cURL, CURLOPT_HEADERFUNCTION, Com_DL_HeaderCallback );
 		dl->func.easy_setopt( dl->cURL, CURLOPT_HEADERDATA, dl );
