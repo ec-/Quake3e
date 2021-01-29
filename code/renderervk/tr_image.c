@@ -331,7 +331,11 @@ static void R_LightScaleTexture( byte *in, int inwidth, int inheight, qboolean o
 
 	if ( only_gamma )
 	{
+#ifdef USE_VULKAN
+		if ( !glConfig.deviceSupportsGamma && !vk.fboActive)
+#else
 		if ( !glConfig.deviceSupportsGamma )
+#endif
 		{
 			int		i, c;
 			byte	*p;
@@ -356,7 +360,11 @@ static void R_LightScaleTexture( byte *in, int inwidth, int inheight, qboolean o
 
 		c = inwidth*inheight;
 
+#ifdef USE_VULKAN
+		if ( glConfig.deviceSupportsGamma || vk.fboActive )
+#else
 		if ( glConfig.deviceSupportsGamma )
+#endif
 		{
 			for (i=0 ; i<c ; i++, p+=4)
 			{
@@ -1657,7 +1665,11 @@ void R_SetColorMappings( void ) {
 	// setup the overbright lighting
 	// negative value will force gamma in windowed mode
 	tr.overbrightBits = abs( r_overBrightBits->integer );
+#ifdef USE_VULKAN
+	if ( !glConfig.deviceSupportsGamma && !vk.fboActive )
+#else
 	if ( !glConfig.deviceSupportsGamma )
+#endif
 		tr.overbrightBits = 0;		// need hardware gamma for overbright
 
 	// never overbright in windowed mode

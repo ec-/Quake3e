@@ -551,14 +551,7 @@ static void InitOpenGL( void )
 #endif
 
 		glConfig.deviceSupportsGamma = qfalse;
-
 		ri.GLimp_InitGamma( &glConfig );
-
-#ifdef USE_VULKAN
-		if ( r_fbo->integer )
-			glConfig.deviceSupportsGamma = qtrue;
-#endif
-
 		if ( r_ignorehwgamma->integer )
 			glConfig.deviceSupportsGamma = qfalse;
 
