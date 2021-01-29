@@ -126,11 +126,11 @@ static void initFormat( WAVEFORMATEXTENSIBLE *wave, int nChannels, int nSamples,
 // Sound mixer thread
 static DWORD WINAPI ThreadProc( HANDLE hInited )
 {
-	HANDLE( WINAPI *pAvSetMmThreadCharacteristicsW )( _In_ LPCWSTR TaskName, _Inout_ LPDWORD TaskIndex ) = NULL;
-	BOOL( WINAPI *pAvRevertMmThreadCharacteristics )( _In_ HANDLE AvrtHandle ) = NULL;
+	HANDLE( WINAPI *pAvSetMmThreadCharacteristicsW )( _In_ LPCWSTR TaskName, _Inout_ LPDWORD TaskIndex );
+	BOOL( WINAPI *pAvRevertMmThreadCharacteristics )( _In_ HANDLE AvrtHandle );
 	BYTE	*pData;
-	DWORD	taskIndex = 0;
-	HANDLE	th = NULL;
+	DWORD	taskIndex;
+	HANDLE	th;
 	DWORD	dwOffset;
 	DWORD	dwRes;
 	UINT32	samples, n;
@@ -144,15 +144,17 @@ static DWORD WINAPI ThreadProc( HANDLE hInited )
 	hAVRT = LoadLibraryW( L"avrt" );
 	if ( hAVRT )
 	{
-		pAvSetMmThreadCharacteristicsW = (void*) GetProcAddress( hAVRT, "AvSetMmThreadCharacteristicsW" );
-		pAvRevertMmThreadCharacteristics = (void*) GetProcAddress( hAVRT, "AvRevertMmThreadCharacteristics" );
+		th = NULL;
+		taskIndex = 0;
+		pAvSetMmThreadCharacteristicsW = (void*)GetProcAddress( hAVRT, "AvSetMmThreadCharacteristicsW" );
+		pAvRevertMmThreadCharacteristics = (void*)GetProcAddress( hAVRT, "AvRevertMmThreadCharacteristics" );
 		if ( pAvRevertMmThreadCharacteristics && pAvSetMmThreadCharacteristicsW )
 		{
 			th = pAvSetMmThreadCharacteristicsW( L"Pro Audio", &taskIndex );
 			if ( th == NULL )
 			{
 				Com_Printf( S_COLOR_YELLOW "WASAPI: thread priority setup failed\n" );
-				goto err_exit;
+				goto err_prio;
 			}
 		}
 		else
@@ -169,7 +171,7 @@ static DWORD WINAPI ThreadProc( HANDLE hInited )
 			Com_Printf( S_COLOR_YELLOW "WASAPI: GetStreamLatency() failed\n" );
 			goto err_exit;
 		}
-		Com_Printf( S_COLOR_CYAN "WASAPI stream latency: %ims\n", (int)(streamLatency / 10000) );
+		Com_Printf( S_COLOR_CYAN "WASAPI stream latency: %ims\n", (int)( streamLatency / 10000 ) );
 	}
 
 	inPlay = 1;
@@ -222,7 +224,7 @@ static DWORD WINAPI ThreadProc( HANDLE hInited )
 			EnterCriticalSection( &cs );
 
 			// fill pData with numFramesAvailable
-			do 
+			do
 			{
 				if ( bufferPosition + samples > dma.fullsamples )
 					n = dma.fullsamples - bufferPosition;
@@ -246,11 +248,13 @@ static DWORD WINAPI ThreadProc( HANDLE hInited )
 	iAudioClient->lpVtbl->Stop( iAudioClient );
 
 err_prio:
-	if ( pAvRevertMmThreadCharacteristics && th != NULL )
-		pAvRevertMmThreadCharacteristics( hThread );
-
 	if ( hAVRT )
+	{
+		if ( pAvRevertMmThreadCharacteristics && th != NULL )
+			pAvRevertMmThreadCharacteristics( th );
+
 		FreeLibrary( hAVRT );
+	}
 
 err_exit:
 	inPlay = 0;
@@ -824,10 +828,10 @@ qboolean SNDDMA_InitDS( void )
 	Com_Printf( "Initializing DirectSound\n" );
 
 	use8 = 1;
-    // Create IDirectSound using the primary sound device
-    if( FAILED( hresult = CoCreateInstance(&CLSID_DirectSound8, NULL, CLSCTX_INPROC_SERVER, &IID_IDirectSound8, (void **)&pDS))) {
+	// Create IDirectSound using the primary sound device
+	if( FAILED( hresult = CoCreateInstance(&CLSID_DirectSound8, NULL, CLSCTX_INPROC_SERVER, &IID_IDirectSound8, (void **)&pDS))) {
 		use8 = 0;
-	    if( FAILED( hresult = CoCreateInstance(&CLSID_DirectSound, NULL, CLSCTX_INPROC_SERVER, &IID_IDirectSound, (void **)&pDS))) {
+		if( FAILED( hresult = CoCreateInstance(&CLSID_DirectSound, NULL, CLSCTX_INPROC_SERVER, &IID_IDirectSound, (void **)&pDS))) {
 			Com_Printf ("failed\n");
 			SNDDMA_Shutdown ();
 			return qfalse;
@@ -862,12 +866,12 @@ qboolean SNDDMA_InitDS( void )
 
 	memset (&format, 0, sizeof(format));
 	format.wFormatTag = WAVE_FORMAT_PCM;
-    format.nChannels = dma.channels;
-    format.wBitsPerSample = dma.samplebits;
-    format.nSamplesPerSec = dma.speed;
-    format.nBlockAlign = format.nChannels * format.wBitsPerSample / 8;
-    format.cbSize = 0;
-    format.nAvgBytesPerSec = format.nSamplesPerSec*format.nBlockAlign; 
+	format.nChannels = dma.channels;
+	format.wBitsPerSample = dma.samplebits;
+	format.nSamplesPerSec = dma.speed;
+	format.nBlockAlign = format.nChannels * format.wBitsPerSample / 8;
+	format.cbSize = 0;
+	format.nAvgBytesPerSec = format.nSamplesPerSec*format.nBlockAlign; 
 
 	memset (&dsbuf, 0, sizeof(dsbuf));
 	dsbuf.dwSize = sizeof(DSBUFFERDESC);
