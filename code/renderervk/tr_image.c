@@ -1731,7 +1731,7 @@ void R_SetColorMappings( void ) {
 		vk_create_post_process_pipeline( 0, 0, 0 );
 		if ( vk.capture.image ) {
 			// update capture pipeline
-			vk_create_post_process_pipeline( 3, captureWidth, captureHeight );
+			vk_create_post_process_pipeline( 3, gls.captureWidth, gls.captureHeight );
 		}
 	}
 	

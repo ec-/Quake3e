@@ -238,7 +238,8 @@ typedef struct {
 	VkInstance instance;
 	VkPhysicalDevice physical_device;
 	VkSurfaceKHR surface;
-	VkSurfaceFormatKHR surface_format;
+	VkSurfaceFormatKHR base_format;
+	VkSurfaceFormatKHR present_format;
 
 	uint32_t queue_family_index;
 	VkDevice device;
@@ -480,8 +481,6 @@ typedef struct {
 	qboolean offscreenRender;
 
 	qboolean windowAdjusted;
-	int		windowWidth;
-	int		windowHeight;
 	int		blitX0;
 	int		blitY0;
 	int		blitFilter;
