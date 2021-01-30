@@ -1896,7 +1896,7 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 		GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
 	}
 
-	if ( windowAdjusted ) {
+	if ( windowAdjusted || backEnd.screenshotMask ) {
 		finalStage = qfalse; // can't blit directly into back buffer in this case
 	}
 
