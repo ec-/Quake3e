@@ -1067,7 +1067,11 @@ void VK_SetFogParams( vkUniform_t *uniform, int *fogStage )
 static void VK_SetLightParams( vkUniform_t *uniform, const dlight_t *dl ) {
 	float radius;
 
+#ifdef USE_VULKAN
+	if ( !glConfig.deviceSupportsGamma && !vk.fboActive )
+#else
 	if ( !glConfig.deviceSupportsGamma )
+#endif
 		VectorScale( dl->color, 2 * powf( r_intensity->value, r_gamma->value ), uniform->lightColor);
 	else
 		VectorCopy( dl->color, uniform->lightColor );

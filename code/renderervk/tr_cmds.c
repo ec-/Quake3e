@@ -334,9 +334,10 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	//
 	// gamma stuff
 	//
-	if ( r_gamma->modified || r_greyscale->modified ) {
+	if ( r_gamma->modified || r_greyscale->modified || r_dither->modified ) {
 		r_gamma->modified = qfalse;
 		r_greyscale->modified = qfalse;
+		r_dither->modified = qfalse;
 		R_SetColorMappings();
 	}
 

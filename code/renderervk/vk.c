@@ -192,6 +192,8 @@ const char *vk_format_string( VkFormat format )
 		CASE_STR( VK_FORMAT_R8G8B8A8_UNORM );
 		CASE_STR( VK_FORMAT_B4G4R4A4_UNORM_PACK16 );
 		CASE_STR( VK_FORMAT_R16G16B16A16_UNORM );
+		CASE_STR( VK_FORMAT_A2B10G10R10_UNORM_PACK32 );
+		CASE_STR( VK_FORMAT_A2R10G10B10_SNORM_PACK32 );
 		// depth formats
 		CASE_STR( VK_FORMAT_D16_UNORM );
 		CASE_STR( VK_FORMAT_D16_UNORM_S8_UINT );
@@ -1171,22 +1173,28 @@ static qboolean vk_select_surface_format( VkPhysicalDevice physical_device, VkSu
 
 	if (format_count == 1 && candidates[0].format == VK_FORMAT_UNDEFINED) {
 		// special case that means we can choose any format
-		vk.surface_format.format = VK_FORMAT_R8G8B8A8_UNORM;
+		vk.surface_format.format = r_30bitColor->integer ? VK_FORMAT_A2B10G10R10_UNORM_PACK32 : VK_FORMAT_B8G8R8A8_UNORM;
 		vk.surface_format.colorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
 	}
 	else {
+		qboolean foundPreferredFormat = qfalse;
 		uint32_t i;
-		vk.surface_format = candidates[0];
-		for ( i = 1; i < format_count; i++ ) {
-			if ( candidates[i].format == VK_FORMAT_B8G8R8A8_UNORM && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
-				vk.surface_format = candidates[i];
-				break;
+		if ( r_30bitColor->integer ) {
+			for ( i = 0; i < format_count && !foundPreferredFormat; i++ ) {
+				if ( ( candidates[i].format == VK_FORMAT_A2B10G10R10_UNORM_PACK32 || candidates[i].format == VK_FORMAT_A2R10G10B10_UNORM_PACK32 ) && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
+					vk.surface_format = candidates[i];
+					foundPreferredFormat = qtrue;
+				}
 			}
-			//if ( candidates[i].format == VK_FORMAT_B8G8R8A8_SRGB && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
-			//	vk.surface_format = candidates[i];
-			//	break;
-			//}
 		}
+		for ( i = 0; i < format_count && !foundPreferredFormat; i++ ) {
+			if ( ( candidates[i].format == VK_FORMAT_B8G8R8A8_UNORM || candidates[i].format == VK_FORMAT_R8G8B8A8_UNORM ) && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
+				vk.surface_format = candidates[i];
+				foundPreferredFormat = qtrue;
+			}
+		}
+		if (!foundPreferredFormat)
+			vk.surface_format = candidates[0];
 	}
 
 	ri.Free( candidates );
@@ -4217,8 +4225,7 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 	VkGraphicsPipelineCreateInfo create_info;
 	VkViewport viewport;
 	VkRect2D scissor;
-	float frag_spec_data[5]; // gamma,overbright,greyscale,bloom_threshold,bloom_intensity
-	VkSpecializationMapEntry spec_entries[5];
+	VkSpecializationMapEntry spec_entries[9];
 	VkSpecializationInfo frag_spec_info;
 	VkPipeline *pipeline;
 	VkShaderModule fsmodule;
@@ -4227,6 +4234,18 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 	VkSampleCountFlagBits samples;
 	const char *pipeline_name;
 	qboolean blend;
+
+	struct FragSpecData {
+		float gamma;
+		float overbright;
+		float greyscale;
+		float bloom_threshold;
+		float bloom_intensity;
+		int dither;
+		int depth_r;
+		int depth_g;
+		int depth_b;
+	} frag_spec_data;
 
 	switch ( program_index ) {
 		case 1: // bloom extraction
@@ -4285,36 +4304,56 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 	set_shader_stage_desc( shader_stages+0, VK_SHADER_STAGE_VERTEX_BIT, vk.modules.gamma_vs, "main" );
 	set_shader_stage_desc( shader_stages+1, VK_SHADER_STAGE_FRAGMENT_BIT, fsmodule, "main" );
 
-	frag_spec_data[0] = 1.0 / (r_gamma->value);
-	frag_spec_data[1] = (float)(1 << tr.overbrightBits);
-	frag_spec_data[2] = r_greyscale->value;
-	frag_spec_data[3] = r_bloom_threshold->value;
-	frag_spec_data[4] = r_bloom_intensity->value;
+	frag_spec_data.gamma = 1.0 / (r_gamma->value);
+	frag_spec_data.overbright = (float)(1 << tr.overbrightBits);
+	frag_spec_data.greyscale = r_greyscale->value;
+	frag_spec_data.bloom_threshold = r_bloom_threshold->value;
+	frag_spec_data.bloom_intensity = r_bloom_intensity->value;
+	frag_spec_data.dither = r_dither->integer;
+	
+	if ( !vk_surface_format_color_depth( vk.surface_format.format, &frag_spec_data.depth_r, &frag_spec_data.depth_g, &frag_spec_data.depth_b ) )
+		ri.Printf( PRINT_ALL, "Format %s not recognized, dither to assume 8bpc\n", vk_format_string( vk.surface_format.format ) );
 
 	spec_entries[0].constantID = 0;
-	spec_entries[0].offset = 0 * sizeof( float );
-	spec_entries[0].size = sizeof( float );
+	spec_entries[0].offset = offsetof( struct FragSpecData, gamma );
+	spec_entries[0].size = sizeof( frag_spec_data.gamma );
 	
 	spec_entries[1].constantID = 1;
-	spec_entries[1].offset = 1 * sizeof( float );
-	spec_entries[1].size = sizeof( float );
+	spec_entries[1].offset = offsetof( struct FragSpecData, overbright );
+	spec_entries[1].size = sizeof( frag_spec_data.overbright );
 
 	spec_entries[2].constantID = 2;
-	spec_entries[2].offset = 2 * sizeof( float );
-	spec_entries[2].size = sizeof( float );
+	spec_entries[2].offset = offsetof( struct FragSpecData, greyscale );
+	spec_entries[2].size = sizeof( frag_spec_data.greyscale );
 
 	spec_entries[3].constantID = 3;
-	spec_entries[3].offset = 3 * sizeof( float );
-	spec_entries[3].size = sizeof( float );
+	spec_entries[3].offset = offsetof( struct FragSpecData, bloom_threshold );
+	spec_entries[3].size = sizeof( frag_spec_data.bloom_threshold );
 
 	spec_entries[4].constantID = 4;
-	spec_entries[4].offset = 4 * sizeof( float );
-	spec_entries[4].size = sizeof( float );
+	spec_entries[4].offset = offsetof( struct FragSpecData, bloom_intensity );
+	spec_entries[4].size = sizeof( frag_spec_data.bloom_intensity );
 
-	frag_spec_info.mapEntryCount = 5;
+	spec_entries[5].constantID = 5;
+	spec_entries[5].offset = offsetof( struct FragSpecData, dither );
+	spec_entries[5].size = sizeof( frag_spec_data.dither );
+
+	spec_entries[6].constantID = 6;
+	spec_entries[6].offset = offsetof( struct FragSpecData, depth_r );
+	spec_entries[6].size = sizeof( frag_spec_data.depth_r );
+
+	spec_entries[7].constantID = 7;
+	spec_entries[7].offset = offsetof(struct FragSpecData, depth_g);
+	spec_entries[7].size = sizeof(frag_spec_data.depth_g);
+
+	spec_entries[8].constantID = 8;
+	spec_entries[8].offset = offsetof(struct FragSpecData, depth_b);
+	spec_entries[8].size = sizeof(frag_spec_data.depth_b);
+
+	frag_spec_info.mapEntryCount = 9;
 	frag_spec_info.pMapEntries = spec_entries;
-	frag_spec_info.dataSize = 5 * sizeof( float );
-	frag_spec_info.pData = &frag_spec_data[0];
+	frag_spec_info.dataSize = sizeof( frag_spec_data );
+	frag_spec_info.pData = &frag_spec_data;
 
 	shader_stages[1].pSpecializationInfo = &frag_spec_info;
 
@@ -6506,4 +6545,33 @@ qboolean vk_bloom( void )
 	backEnd.doneBloom = qtrue;
 
 	return qtrue;
+}
+
+#define FORMAT_DEPTH(format, r_bits, g_bits, b_bits) case(VK_FORMAT_##format): *r = r_bits; *b = b_bits; *g = g_bits; return qtrue;
+qboolean vk_surface_format_color_depth(VkFormat format, int* r, int* g, int* b) {
+	switch (format) {
+		// Common formats from https://vulkan.gpuinfo.org/listsurfaceformats.php
+		FORMAT_DEPTH(B8G8R8A8_UNORM, 255, 255, 255)
+		FORMAT_DEPTH(B8G8R8A8_SRGB, 255, 255, 255)
+		FORMAT_DEPTH(A2B10G10R10_UNORM_PACK32, 1023, 1023, 1023)
+		FORMAT_DEPTH(R8G8B8A8_UNORM, 255, 255, 255)
+		FORMAT_DEPTH(R8G8B8A8_SRGB, 255, 255, 255)
+		FORMAT_DEPTH(A2R10G10B10_UNORM_PACK32, 1023, 1023, 1023)
+		FORMAT_DEPTH(R5G6B5_UNORM_PACK16, 31, 63, 31)
+		FORMAT_DEPTH(R8G8B8A8_SNORM, 255, 255, 255)
+		FORMAT_DEPTH(A8B8G8R8_UNORM_PACK32, 255, 255, 255)
+		FORMAT_DEPTH(A8B8G8R8_SNORM_PACK32, 255, 255, 255)
+		FORMAT_DEPTH(A8B8G8R8_SRGB_PACK32, 255, 255, 255)
+		FORMAT_DEPTH(R16G16B16A16_UNORM, 65535, 65535, 65535)
+		FORMAT_DEPTH(R16G16B16A16_SNORM, 65535, 65535, 65535)
+		FORMAT_DEPTH(B5G6R5_UNORM_PACK16, 31, 63, 31)
+		FORMAT_DEPTH(B8G8R8A8_SNORM, 255, 255, 255)
+		FORMAT_DEPTH(R4G4B4A4_UNORM_PACK16, 15, 15, 15)
+		FORMAT_DEPTH(B4G4R4A4_UNORM_PACK16, 15, 15, 15)
+		FORMAT_DEPTH(A1R5G5B5_UNORM_PACK16, 31, 31, 31)
+		FORMAT_DEPTH(R5G5B5A1_UNORM_PACK16, 31, 31, 31)
+		FORMAT_DEPTH(B5G5R5A1_UNORM_PACK16, 31, 31, 31)
+	default:
+		*r = 255; *g = 255; *b = 255; return qfalse;
+	}
 }
