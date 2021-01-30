@@ -141,11 +141,13 @@ static DWORD WINAPI ThreadProc( HANDLE hInited )
 	// execution starts in main thread context
 
 	// Ask MMCSS to temporarily boost our thread priority to reduce glitches while the low-latency stream plays
+	th = NULL;
+	taskIndex = 0;
+	pAvSetMmThreadCharacteristicsW = NULL;
+	pAvRevertMmThreadCharacteristics = NULL;
 	hAVRT = LoadLibraryW( L"avrt" );
 	if ( hAVRT )
 	{
-		th = NULL;
-		taskIndex = 0;
 		pAvSetMmThreadCharacteristicsW = (void*)GetProcAddress( hAVRT, "AvSetMmThreadCharacteristicsW" );
 		pAvRevertMmThreadCharacteristics = (void*)GetProcAddress( hAVRT, "AvRevertMmThreadCharacteristics" );
 		if ( pAvRevertMmThreadCharacteristics && pAvSetMmThreadCharacteristicsW )
@@ -154,7 +156,7 @@ static DWORD WINAPI ThreadProc( HANDLE hInited )
 			if ( th == NULL )
 			{
 				Com_Printf( S_COLOR_YELLOW "WASAPI: thread priority setup failed\n" );
-				goto err_prio;
+				goto err_exit;
 			}
 		}
 		else
@@ -194,7 +196,7 @@ static DWORD WINAPI ThreadProc( HANDLE hInited )
 	if ( iAudioClient->lpVtbl->Start( iAudioClient ) != S_OK )
 	{
 		Com_Printf( S_COLOR_YELLOW "WASAPI playback start failed\n" );
-		goto err_prio;
+		goto err_exit;
 	}
 
 	// return control to the main thread
@@ -247,7 +249,7 @@ static DWORD WINAPI ThreadProc( HANDLE hInited )
 
 	iAudioClient->lpVtbl->Stop( iAudioClient );
 
-err_prio:
+err_exit:
 	if ( hAVRT )
 	{
 		if ( pAvRevertMmThreadCharacteristics && th != NULL )
@@ -256,7 +258,6 @@ err_prio:
 		FreeLibrary( hAVRT );
 	}
 
-err_exit:
 	inPlay = 0;
 	bufferPosition = 0;
 
