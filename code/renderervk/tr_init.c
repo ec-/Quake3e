@@ -584,6 +584,7 @@ static void InitOpenGL( void )
 	if ( !vk.active ) {
 		// might happen after REF_KEEP_WINDOW
 		vk_initialize();
+		gls.initTime = ri.Milliseconds();
 	}
 	vk_init_buffers();
 #endif

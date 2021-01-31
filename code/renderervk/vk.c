@@ -4346,7 +4346,7 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 	frag_spec_data.bloom_intensity = r_bloom_intensity->value;
 	frag_spec_data.dither = r_dither->integer;
 	
-	if ( !vk_surface_format_color_depth( vk.base_format.format, &frag_spec_data.depth_r, &frag_spec_data.depth_g, &frag_spec_data.depth_b ) )
+	if ( !vk_surface_format_color_depth( vk.present_format.format, &frag_spec_data.depth_r, &frag_spec_data.depth_g, &frag_spec_data.depth_b ) )
 		ri.Printf( PRINT_ALL, "Format %s not recognized, dither to assume 8bpc\n", vk_format_string( vk.base_format.format ) );
 
 	spec_entries[0].constantID = 0;
