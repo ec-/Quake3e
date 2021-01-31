@@ -403,15 +403,15 @@ static void Console_Key( int key ) {
 			g_consoleField.cursor++;
 		}
 
-		Com_Printf( "]%s\n", g_consoleField.buffer );
-
 		// leading slash is an explicit command
 		if ( g_consoleField.buffer[0] == '\\' || g_consoleField.buffer[0] == '/' ) {
+			Com_Printf( "]\\%s\n", g_consoleField.buffer+1 );
 			Cbuf_AddText( g_consoleField.buffer+1 );	// valid command
 			Cbuf_AddText( "\n" );
 		} else {
 			// other text will be chat messages
 			if ( !g_consoleField.buffer[0] ) {
+				Com_Printf( "]\n" );
 				return;	// empty lines just scroll the console without adding to history
 			} else if ( keys[K_CTRL].down && keys[K_SHIFT].down ) {
 				Cbuf_AddText( "cmd tell " );
