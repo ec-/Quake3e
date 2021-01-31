@@ -1545,6 +1545,10 @@ shaderProgram_t *GLSL_GetGenericShaderProgram(int stage)
 	{
 		shaderAttribs |= GENERICDEF_USE_VERTEX_ANIMATION;
 	}
+	else if (glState.boneAnimation)
+	{
+		shaderAttribs |= GENERICDEF_USE_BONE_ANIMATION;
+	}
 
 	if (pStage->bundle[0].numTexMods)
 	{
