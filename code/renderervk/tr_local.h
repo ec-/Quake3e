@@ -1037,6 +1037,15 @@ typedef struct {
 	int			currentArray;
 } glstate_t;
 
+typedef struct glstatic_s {
+	// unmodified width/height according to actual \r_mode*
+	int windowWidth;
+	int windowHeight;
+	int captureWidth;
+	int captureHeight;
+	int initTime;
+} glstatic_t;
+
 typedef struct {
 	int		c_surfaces, c_shaders, c_vertexes, c_indexes, c_totalIndexes;
 	float	c_overDraw;
@@ -1225,12 +1234,15 @@ typedef struct {
 	qboolean				vertexLightingAllowed;
 } trGlobals_t;
 
+
 extern backEndState_t	backEnd;
 extern trGlobals_t	tr;
 
-extern int					gl_clamp_mode;
+extern int	gl_clamp_mode;
 
 extern glstate_t	glState;		// outside of TR since it shouldn't be cleared during ref re-init
+
+extern glstatic_t gls;
 
 extern void myGlMultMatrix(const float *a, const float *b, float *out);
 
@@ -1336,6 +1348,8 @@ extern	cvar_t	*r_lodCurveError;
 extern	cvar_t	*r_skipBackEnd;
 
 extern	cvar_t	*r_greyscale;
+extern	cvar_t	*r_dither;
+extern	cvar_t	*r_presentBits;
 
 extern	cvar_t	*r_ignoreGLErrors;
 
@@ -1903,9 +1917,6 @@ typedef struct {
 
 extern	int		max_polys;
 extern	int		max_polyverts;
-
-extern	int		captureWidth;
-extern	int		captureHeight;
 
 extern	backEndData_t	*backEndData;
 

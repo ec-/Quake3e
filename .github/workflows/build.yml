@@ -185,11 +185,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      if: false
       with:
         submodules: recursive
 
     - name: Build ${{ matrix.arch }}
       uses: uraimo/run-on-arch-action@v2.0.5
+      if: false
       with:
         arch: ${{ matrix.arch }}
         distro: ubuntu20.04
@@ -204,7 +206,8 @@ jobs:
           make ${{ matrix.rule }} -j 4 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 USE_SDL=0 USE_VULKAN_API=0
 
     - uses: actions/upload-artifact@v2
-      if: matrix.cc == 'gcc' && matrix.config == 'Release'
+      if: false
+      #if: matrix.cc == 'gcc' && matrix.config == 'Release'
       with:
         name: linux-${{ matrix.arch }}
         path: bin
@@ -247,8 +250,9 @@ jobs:
         retention-days: 5
 
   create-testing:
-    if: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
-    needs: [windows-msvc, ubuntu-x86, ubuntu-arm, macos-x86]
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: [windows-msvc, ubuntu-x86, macos-x86]
+    # needs: [windows-msvc, ubuntu-x86, ubuntu-arm, macos-x86]
     runs-on: ubuntu-latest
     steps:
       - name: Download Artifacts
@@ -256,14 +260,14 @@ jobs:
 
       - name: Create binary archives
         run: |
-          7z a -r oDFe-linux-aarch64.zip  ./linux-aarch64/*
-          7z a -r oDFe-linux-armv7.zip    ./linux-armv7/*
           7z a -r oDFe-linux-x86.zip      ./linux-x86/*
           7z a -r oDFe-linux-x86_64.zip   ./linux-x86_64/*
           7z a -r oDFe-windows-arm64.zip  ./windows-arm64/*
           7z a -r oDFe-windows-x86.zip    ./windows-x86/*
           7z a -r oDFe-windows-x64.zip    ./windows-x64/*
           7z a -r oDFe-macos-x86_64.zip   ./macos-x86_64/*
+#         7z a -r oDFe-linux-aarch64.zip  ./linux-aarch64/*
+#         7z a -r oDFe-linux-armv7.zip    ./linux-armv7/*
 
       - name: Create latest build
         uses: marvinpinto/action-automatic-releases@latest
@@ -283,11 +287,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - artifact_dir: linux-aarch64
-            artifact_name: oDFe-linux-aarch64.zip
+          # - artifact_dir: linux-aarch64
+          #   artifact_name: oDFe-linux-aarch64.zip
 
-          - artifact_dir: linux-armv7
-            artifact_name: oDFe-linux-armv7.zip
+          # - artifact_dir: linux-armv7
+          #  artifact_name: oDFe-linux-armv7.zip
 
           - artifact_dir: linux-x86
             artifact_name: oDFe-linux-x86.zip

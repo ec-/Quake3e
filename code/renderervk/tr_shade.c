@@ -138,7 +138,8 @@ static void DrawTris( shaderCommands_t *input ) {
 			pipeline = backEnd.viewParms.portalView == PV_MIRROR ? vk.tris_mirror_debug_pipeline : vk.tris_debug_pipeline;
 	}
 
-	vk_draw_geometry( pipeline, DEPTH_RANGE_ZERO, qtrue );
+	vk_bind_pipeline( pipeline );
+	vk_draw_geometry( DEPTH_RANGE_ZERO, qtrue );
 
 #else
 	if ( r_showtris->integer == 1 && backEnd.drawConsole )
@@ -198,9 +199,10 @@ static void DrawNormals( const shaderCommands_t *input ) {
 	tess.numVertexes *= 2;
 	Com_Memset( tess.svars.colors, tr.identityLightByte, tess.numVertexes * sizeof(color4ub_t) );
 
+	vk_bind_pipeline( vk.normals_debug_pipeline );
 	vk_bind_index();
 	vk_bind_geometry( TESS_XYZ | TESS_RGBA );
-	vk_draw_geometry( vk.normals_debug_pipeline, DEPTH_RANGE_ZERO, qtrue );
+	vk_draw_geometry( DEPTH_RANGE_ZERO, qtrue );
 #else
 	GL_ClientState( 0, CLS_NONE );
 
@@ -498,9 +500,10 @@ static void ProjectDlightTexture_scalar( void ) {
 
 #ifdef USE_VULKAN
 		pipeline = vk.dlight_pipelines[dl->additive > 0 ? 1 : 0][tess.shader->cullType][tess.shader->polygonOffset];
+		vk_bind_pipeline( pipeline );
 		vk_bind_index_ext( numIndexes, hitIndexes );
 		vk_bind_geometry( TESS_RGBA | TESS_ST0 );
-		vk_draw_geometry( pipeline, DEPTH_RANGE_NORMAL, qtrue );
+		vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 #else
 		// include GLS_DEPTHFUNC_EQUAL so alpha tested surfaces don't add light
 		// where they aren't rendered
@@ -542,10 +545,11 @@ static void RB_FogPass( void ) {
 	int fog_stage;
 
 	// fog parameters
+	vk_bind_pipeline( pipeline );
 	VK_SetFogParams( &uniform, &fog_stage );
 	VK_PushUniform( &uniform );
 	vk_update_descriptor( 3, tr.fogImage->descriptor );
-	vk_draw_geometry( pipeline, DEPTH_RANGE_NORMAL, qtrue );
+	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 #else
 	const fog_t	*fog;
 	int			i;
@@ -560,8 +564,9 @@ static void RB_FogPass( void ) {
 	tess.svars.texcoordPtr[ 0 ] = tess.svars.texcoords[ 0 ];
 	GL_Bind( tr.fogImage );
 
+	vk_bind_pipeline( pipeline );
 	vk_bind_geometry( TESS_ST0 | TESS_RGBA );
-	vk_draw_geometry( pipeline, DEPTH_RANGE_NORMAL, qtrue );
+	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 #endif
 #else
 	const fog_t	*fog;
@@ -968,15 +973,17 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 			GL_Bind( tr.whiteImage ); // replace diffuse texture with a white one thus effectively render only lightmap
 		}
 
+		vk_bind_pipeline( pipeline );
 		vk_bind_geometry( tess_flags );
-		vk_draw_geometry( pipeline, tess.depthRange, qtrue );
+		vk_draw_geometry( tess.depthRange, qtrue );
 
 		if ( pStage->depthFragment ) {
 			if ( backEnd.viewParms.portalView == PV_MIRROR )
 				pipeline = pStage->vk_mirror_pipeline_df;
 			else
 				pipeline = pStage->vk_pipeline_df;
-			vk_draw_geometry( pipeline, tess.depthRange, qtrue );
+			vk_bind_pipeline( pipeline );
+			vk_draw_geometry( tess.depthRange, qtrue );
 		}
 #else
 		R_ComputeColors( pStage );
@@ -1060,7 +1067,11 @@ void VK_SetFogParams( vkUniform_t *uniform, int *fogStage )
 static void VK_SetLightParams( vkUniform_t *uniform, const dlight_t *dl ) {
 	float radius;
 
+#ifdef USE_VULKAN
+	if ( !glConfig.deviceSupportsGamma && !vk.fboActive )
+#else
 	if ( !glConfig.deviceSupportsGamma )
+#endif
 		VectorScale( dl->color, 2 * powf( r_intensity->value, r_gamma->value ), uniform->lightColor);
 	else
 		VectorCopy( dl->color, uniform->lightColor );
@@ -1169,9 +1180,10 @@ void VK_LightingPass( void )
 		R_ComputeTexCoords( 0, &pStage->bundle[ 0 ] );
 	}
 
+	vk_bind_pipeline( pipeline );
 	vk_bind_index();
 	vk_bind_geometry( TESS_XYZ | TESS_ST0 | TESS_NNN );
-	vk_draw_geometry( pipeline, tess.depthRange, qtrue );
+	vk_draw_geometry( tess.depthRange, qtrue );
 }
 #endif // USE_PMLIGHT
 

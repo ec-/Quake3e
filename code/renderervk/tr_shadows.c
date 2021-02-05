@@ -215,11 +215,15 @@ void RB_ShadowTessEnd( void ) {
 
 	// mirrors have the culling order reversed
 	if ( backEnd.viewParms.portalView == PV_MIRROR ) {
-		vk_draw_geometry( vk.shadow_volume_pipelines[0][1], DEPTH_RANGE_NORMAL, qtrue );
-		vk_draw_geometry( vk.shadow_volume_pipelines[1][1], DEPTH_RANGE_NORMAL, qtrue );
+		vk_bind_pipeline( vk.shadow_volume_pipelines[0][1] );
+		vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
+		vk_bind_pipeline( vk.shadow_volume_pipelines[1][1] );
+		vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 	} else {
-		vk_draw_geometry( vk.shadow_volume_pipelines[0][0], DEPTH_RANGE_NORMAL, qtrue );
-		vk_draw_geometry( vk.shadow_volume_pipelines[1][0], DEPTH_RANGE_NORMAL, qtrue );
+		vk_bind_pipeline( vk.shadow_volume_pipelines[0][0] );
+		vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
+		vk_bind_pipeline( vk.shadow_volume_pipelines[1][0] );
+		vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 	}
 
 	tess.numVertexes /= 2;
@@ -325,10 +329,12 @@ void RB_ShadowFinish( void ) {
 	vk_world.modelview_transform[10] = 1.0f;
 	vk_world.modelview_transform[15] = 1.0f;
 
+	vk_bind_pipeline( vk.shadow_finish_pipeline );
+
 	vk_update_mvp( NULL );
 
 	vk_bind_geometry( TESS_XYZ | TESS_RGBA /*| TESS_ST0 */ );
-	vk_draw_geometry( vk.shadow_finish_pipeline, DEPTH_RANGE_NORMAL, qfalse );
+	vk_draw_geometry( DEPTH_RANGE_NORMAL, qfalse );
 
 	Com_Memcpy( vk_world.modelview_transform, tmp, 64 );
 

@@ -3399,20 +3399,18 @@ static void Sys_GetProcessorId( char *vendor )
 	Com_sprintf( vendor, 100, "%s", ARCH_STRING );
 }
 
-#else
+#else // not _WIN32
 
-#if arm32 || arm64
+#if arm32
 #include <sys/auxv.h>
 #include <asm/hwcap.h>
 #endif
 
 static void Sys_GetProcessorId( char *vendor )
 {
-#if arm32 || arm64
-	const char *platform;
 #if arm32
+	const char *platform;
 	long hwcaps;
-#endif
 	CPU_Flags = 0;
 
 	platform = (const char*)getauxval( AT_PLATFORM );
@@ -3428,7 +3426,6 @@ static void Sys_GetProcessorId( char *vendor )
 	}
 
 	Com_sprintf( vendor, 100, "ARM %s", platform );
-#if arm32
 	hwcaps = getauxval( AT_HWCAP );
 	if ( hwcaps & ( HWCAP_IDIVA | HWCAP_VFPv3 ) ) {
 		strcat( vendor, " /w" );
@@ -3447,10 +3444,13 @@ static void Sys_GetProcessorId( char *vendor )
 			strcat( vendor, " QVM-bytecode" );
 		}
 	}
-#endif // arm32
-#else // !arm32 && !arm64
+#else
 	CPU_Flags = 0;
+#if arm64
+	Com_sprintf( vendor, 100, "ARM %s", ARCH_STRING );
+#else
 	Com_sprintf( vendor, 128, "%s %s", ARCH_STRING, (const char*)getauxval( AT_PLATFORM ) );
+#endif
 #endif
 }
 

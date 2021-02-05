@@ -1,6 +1,6 @@
 # Quake3e
 
-[![build](../../workflows/build/badge.svg)](../../actions?query=workflow%3Abuild) * [![Discord Shield](https://discord.com/api/guilds/751483934034100274/widget.png?style=shield)](https://discord.gg/ZG4dKNVQJu)
+[![build](../../workflows/build/badge.svg)](../../actions?query=workflow%3Abuild) * <a href="https://discord.gg/ZG4dKNVQJu"><img src="https://img.shields.io/discord/751483934034100274?color=7289da&logo=discord&logoColor=white" alt="Discord server" /></a>
 
 This is a modern Quake III Arena engine aimed to be fast, secure and compatible with all existing Q3A mods.
 It is based on last non-SDL source dump of ioquake3 with latest upstream fixes applied.
@@ -63,7 +63,6 @@ Based on classic OpenGL renderers from id/ioq3/cnq3/openarena, features:
 * static world surfaces cached in VBO (**\r_vbo 1**)
 * all set of offscreen rendering features mentioned in Vulkan renderer, plus:
 * bloom reflection post-processing effect
-* supersample anti-aliasing (**\r_ext_supersample**)
 
 Performance is usually greater or equal to other opengl1 renderers
 

@@ -24,12 +24,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "tr_local.h"
 
 glconfig_t	glConfig;
+
 qboolean	textureFilterAnisotropic;
 int			maxAnisotropy;
 int			gl_version;
 int			gl_clamp_mode;	// GL_CLAMP or GL_CLAMP_TO_EGGE
 
 glstate_t	glState;
+
+glstatic_t	gls;
 
 #ifdef USE_VULKAN
 static void VkInfo_f( void );
@@ -57,6 +60,8 @@ cvar_t	*r_skipBackEnd;
 //cvar_t	*r_anaglyphMode;
 
 cvar_t	*r_greyscale;
+cvar_t	*r_dither;
+cvar_t	*r_presentBits;
 
 cvar_t	*r_ignorehwgamma;
 
@@ -172,9 +177,6 @@ cvar_t	*r_maxpolys;
 int		max_polys;
 cvar_t	*r_maxpolyverts;
 int		max_polyverts;
-
-int		captureWidth;
-int		captureHeight;
 
 #ifdef USE_VULKAN
 #include "vk.h"
@@ -499,10 +501,34 @@ static void InitOpenGL( void )
 		// This function is responsible for initializing a valid Vulkan subsystem.
 		ri.VKimp_Init( &glConfig );
 
-		captureWidth = glConfig.vidWidth;
-		captureHeight = glConfig.vidHeight;
+		gls.windowWidth = glConfig.vidWidth;
+		gls.windowHeight = glConfig.vidHeight;
+
+		gls.captureWidth = glConfig.vidWidth;
+		gls.captureHeight = glConfig.vidHeight;
 
 		ri.CL_SetScaling( 1.0, glConfig.vidWidth, glConfig.vidHeight );
+
+		if ( r_fbo->integer )
+		{
+			if ( r_renderScale->integer )
+			{
+				glConfig.vidWidth = r_renderWidth->integer;
+				glConfig.vidHeight = r_renderHeight->integer;
+			}
+
+			gls.captureWidth = glConfig.vidWidth;
+			gls.captureHeight = glConfig.vidHeight;
+
+			ri.CL_SetScaling( 1.0, gls.captureWidth, gls.captureHeight );
+
+			if ( r_ext_supersample->integer )
+			{
+				glConfig.vidWidth *= 2;
+				glConfig.vidHeight *= 2;
+				ri.CL_SetScaling( 2.0, gls.captureWidth, gls.captureHeight );
+			}
+		}
 
 		vk_initialize();
 #else
@@ -541,30 +567,25 @@ static void InitOpenGL( void )
 
 		if ( glConfig.numTextureUnits && max_bind_units > 0 )
 			glConfig.numTextureUnits = max_bind_units;
-
-		captureWidth = glConfig.vidWidth;
-		captureHeight = glConfig.vidHeight;
-
-		ri.CL_SetScaling( 1.0, glConfig.vidWidth, glConfig.vidHeight );
 #endif
 
 		glConfig.deviceSupportsGamma = qfalse;
-
 		ri.GLimp_InitGamma( &glConfig );
-
-#ifdef USE_VULKAN
-		if ( r_fbo->integer )
-			glConfig.deviceSupportsGamma = qtrue;
-#endif
-
 		if ( r_ignorehwgamma->integer )
 			glConfig.deviceSupportsGamma = qfalse;
 
 		// print info
 		GfxInfo();
+
+		gls.initTime = ri.Milliseconds();
 	}
 
 #ifdef USE_VULKAN
+	if ( !vk.active ) {
+		// might happen after REF_KEEP_WINDOW
+		vk_initialize();
+		gls.initTime = ri.Milliseconds();
+	}
 	vk_init_buffers();
 #endif
 
@@ -969,7 +990,7 @@ static void R_LevelShot( void ) {
 
 	Com_sprintf(checkname, sizeof(checkname), "levelshots/%s.tga", tr.world->baseName);
 
-	allsource = RB_ReadPixels(0, 0, captureWidth, captureHeight, &offset, &padlen, 0 );
+	allsource = RB_ReadPixels(0, 0, gls.captureWidth, gls.captureHeight, &offset, &padlen, 0 );
 	source = allsource + offset;
 
 	buffer = ri.Hunk_AllocateTempMemory(128 * 128*3 + 18);
@@ -1312,11 +1333,11 @@ static void GfxInfo( void )
 
 	ri.Printf( PRINT_ALL, "\nPIXELFORMAT: color(%d-bits) Z(%d-bit) stencil(%d-bits)\n", glConfig.colorBits, glConfig.depthBits, glConfig.stencilBits );
 #ifdef USE_VULKAN
-	ri.Printf( PRINT_ALL, " presentation: %s\n", vk_format_string( vk.surface_format.format ) );
-	if ( vk.color_format != vk.surface_format.format ) {
+	ri.Printf( PRINT_ALL, " presentation: %s\n", vk_format_string( vk.present_format.format ) );
+	if ( vk.color_format != vk.present_format.format ) {
 		ri.Printf( PRINT_ALL, " color: %s\n", vk_format_string( vk.color_format ) );
 	}
-	if ( vk.capture_format != vk.surface_format.format || vk.capture_format != vk.color_format ) {
+	if ( vk.capture_format != vk.present_format.format || vk.capture_format != vk.color_format ) {
 		ri.Printf( PRINT_ALL, " capture: %s\n", vk_format_string( vk.capture_format ) );
 	}
 	ri.Printf( PRINT_ALL, " depth: %s\n", vk_format_string( vk.depth_format ) );
@@ -1544,6 +1565,14 @@ static void R_Register( void )
 
 	r_greyscale = ri.Cvar_Get( "r_greyscale", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_greyscale, "-1", "1", CV_FLOAT );
+
+	r_dither = ri.Cvar_Get( "r_dither", "0", CVAR_ARCHIVE_ND );
+	ri.Cvar_CheckRange( r_dither, "0", "1", CV_INTEGER );
+	ri.Cvar_SetDescription(r_dither, "Set dithering mode:\n 0 - disabled\n 1 - ordered\nRequires " S_COLOR_CYAN "\\r_fbo 1" );
+
+	r_presentBits = ri.Cvar_Get( "r_presentBits", "24", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_CheckRange( r_presentBits, "16", "30", CV_INTEGER );
+	ri.Cvar_SetDescription( r_presentBits, "Select color bits used for presentation surfaces\nRequires " S_COLOR_CYAN "\\r_fbo 1" );
 
 	//
 	// temporary variables that can change at any time
@@ -1791,21 +1820,29 @@ static void RE_Shutdown( refShutdownCode_t code ) {
 	// shut down platform specific OpenGL/Vulkan stuff
 	if ( code != REF_KEEP_CONTEXT ) {
 #ifdef USE_VULKAN
+		vk_shutdown();
+
+		//Com_Memset( &vk, 0, sizeof( vk ) );
+		Com_Memset( &vk_world, 0, sizeof( vk_world ) );
+		Com_Memset( &glState, 0, sizeof( glState ) );
+
 		if ( r_device->modified ) {
 			code = REF_UNLOAD_DLL;
 		}
-		vk_shutdown();
-		ri.VKimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue: qfalse );
-		Com_Memset( &vk, 0, sizeof( vk ) );
-		Com_Memset( &vk_world, 0, sizeof( vk_world ) );
+
+		if ( code != REF_KEEP_WINDOW ) {
+			ri.VKimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue : qfalse );
+			Com_Memset( &glConfig, 0, sizeof( glConfig ) );
+		}
 #else
-		ri.GLimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue: qfalse );
-
 		R_ClearSymTables();
-#endif
-
-		Com_Memset( &glConfig, 0, sizeof( glConfig ) );
 		Com_Memset( &glState, 0, sizeof( glState ) );
+
+		if ( code != REF_KEEP_WINDOW ) {
+			ri.GLimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue : qfalse );
+			Com_Memset( &glConfig, 0, sizeof( glConfig ) );
+		}
+#endif
 	}
 
 	ri.FreeAll();

@@ -970,6 +970,15 @@ typedef struct {
 	int			currentArray;
 } glstate_t;
 
+typedef struct glstatic_s {
+	// unmodified width/height according to actual \r_mode*
+	int windowWidth;
+	int windowHeight;
+	int captureWidth;
+	int captureHeight;
+	int initTime;
+} glstatic_t;
+
 typedef struct {
 	int		c_surfaces, c_shaders, c_vertexes, c_indexes, c_totalIndexes;
 	float	c_overDraw;
@@ -1155,13 +1164,9 @@ extern int					gl_clamp_mode;
 
 extern glstate_t	glState;		// outside of TR since it shouldn't be cleared during ref re-init
 
-	// unmodified width/height according to actual \r_mode*
-extern	int					windowWidth;
-extern	int					windowHeight;
-extern	qboolean			windowAdjusted;
+extern glstatic_t gls;
 
-extern	int					captureWidth;
-extern	int					captureHeight;
+extern	qboolean			windowAdjusted;
 extern	qboolean			superSampled;
 
 //
@@ -1959,5 +1964,7 @@ extern const char *fogInVPCode;
 
 qboolean ARB_CompileProgram( programType ptype, const char *text, GLuint program );
 void ARB_ProgramEnableExt( GLuint vertexProgram, GLuint fragmentProgram );
+
+void QGL_SetRenderScale( qboolean verbose );
 
 #endif //TR_LOCAL_H

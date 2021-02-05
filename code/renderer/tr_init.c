@@ -32,6 +32,8 @@ int			gl_clamp_mode;	// GL_CLAMP or GL_CLAMP_TO_EGGE
 
 glstate_t	glState;
 
+glstatic_t	gls;
+
 static void GfxInfo( void );
 static void VarInfo( void );
 static void GL_SetDefaultState( void );
@@ -173,9 +175,6 @@ cvar_t	*r_maxpolys;
 int		max_polys;
 cvar_t	*r_maxpolyverts;
 int		max_polyverts;
-
-int		captureWidth;
-int		captureHeight;
 
 static char gl_extensions[ 32768 ];
 
@@ -573,10 +572,34 @@ static void InitOpenGL( void )
 		if ( glConfig.numTextureUnits && max_bind_units > 0 )
 			glConfig.numTextureUnits = max_bind_units;
 
-		captureWidth = glConfig.vidWidth;
-		captureHeight = glConfig.vidHeight;
+		gls.windowWidth = glConfig.vidWidth;
+		gls.windowHeight = glConfig.vidHeight;
 
-		ri.CL_SetScaling( 1.0, captureWidth, captureHeight );
+		gls.captureWidth = glConfig.vidWidth;
+		gls.captureHeight = glConfig.vidHeight;
+
+		ri.CL_SetScaling( 1.0, gls.captureWidth, gls.captureHeight );
+
+		if ( r_fbo->integer && qglGenProgramsARB && qglGenFramebuffers )
+		{
+			if ( r_renderScale->integer )
+			{
+				glConfig.vidWidth = r_renderWidth->integer;
+				glConfig.vidHeight = r_renderHeight->integer;
+			}
+
+			gls.captureWidth = glConfig.vidWidth;
+			gls.captureHeight = glConfig.vidHeight;
+
+			ri.CL_SetScaling( 1.0, gls.captureWidth, gls.captureHeight );
+
+			if ( r_ext_supersample->integer )
+			{
+				glConfig.vidWidth *= 2;
+				glConfig.vidHeight *= 2;
+				ri.CL_SetScaling( 2.0, gls.captureWidth, gls.captureHeight );
+			}
+		}
 
 		QGL_InitARB();
 
@@ -592,6 +615,12 @@ static void InitOpenGL( void )
 
 		// print info
 		GfxInfo();
+
+		gls.initTime = ri.Milliseconds();
+	}
+	else
+	{
+		QGL_SetRenderScale( qfalse );
 	}
 
 	VarInfo();
@@ -1319,11 +1348,11 @@ static void GfxInfo( void )
 
 	if ( windowAdjusted )
 	{
-		ri.Printf( PRINT_ALL, "RENDER: %d x %d, MODE: %d, %d x %d %s hz:", glConfig.vidWidth, glConfig.vidHeight, mode, windowWidth, windowHeight, fs );
+		ri.Printf( PRINT_ALL, "RENDER: %d x %d, MODE: %d, %d x %d %s hz:", glConfig.vidWidth, glConfig.vidHeight, mode, gls.windowWidth, gls.windowHeight, fs );
 	}
 	else 
 	{
-		ri.Printf( PRINT_ALL, "MODE: %d, %d x %d %s hz:", mode, windowWidth, windowHeight, fs );
+		ri.Printf( PRINT_ALL, "MODE: %d, %d x %d %s hz:", mode, gls.windowWidth, gls.windowHeight, fs );
 	}
 
 	if ( glConfig.displayFrequency )
@@ -1736,12 +1765,14 @@ static void RE_Shutdown( refShutdownCode_t code ) {
 
 		VBO_Cleanup();
 
-		ri.GLimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue: qfalse );
-
 		R_ClearSymTables();
 
-		Com_Memset( &glConfig, 0, sizeof( glConfig ) );
 		Com_Memset( &glState, 0, sizeof( glState ) );
+
+		if ( code != REF_KEEP_WINDOW ) {
+			ri.GLimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue : qfalse );
+			Com_Memset( &glConfig, 0, sizeof( glConfig ) );
+		}
 	}
 
 	ri.FreeAll();

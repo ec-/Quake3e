@@ -184,6 +184,10 @@ const char *vk_format_string( VkFormat format )
 
 	switch ( format ) {
 		// color formats
+		CASE_STR( VK_FORMAT_R5G5B5A1_UNORM_PACK16 );
+		CASE_STR( VK_FORMAT_B5G5R5A1_UNORM_PACK16 );
+		CASE_STR( VK_FORMAT_R5G6B5_UNORM_PACK16 );
+		CASE_STR( VK_FORMAT_B5G6R5_UNORM_PACK16 );
 		CASE_STR( VK_FORMAT_B8G8R8A8_SRGB );
 		CASE_STR( VK_FORMAT_R8G8B8A8_SRGB );
 		CASE_STR( VK_FORMAT_B8G8R8A8_SNORM );
@@ -191,7 +195,11 @@ const char *vk_format_string( VkFormat format )
 		CASE_STR( VK_FORMAT_B8G8R8A8_UNORM );
 		CASE_STR( VK_FORMAT_R8G8B8A8_UNORM );
 		CASE_STR( VK_FORMAT_B4G4R4A4_UNORM_PACK16 );
+		CASE_STR( VK_FORMAT_R4G4B4A4_UNORM_PACK16 );
 		CASE_STR( VK_FORMAT_R16G16B16A16_UNORM );
+		CASE_STR( VK_FORMAT_A2B10G10R10_UNORM_PACK32 );
+		CASE_STR( VK_FORMAT_A2R10G10B10_UNORM_PACK32 );
+		CASE_STR( VK_FORMAT_B10G11R11_UFLOAT_PACK32 );
 		// depth formats
 		CASE_STR( VK_FORMAT_D16_UNORM );
 		CASE_STR( VK_FORMAT_D16_UNORM_S8_UINT );
@@ -509,7 +517,7 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 		view.flags = 0;
 		view.image = vk.swapchain_images[i];
 		view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		view.format = vk.surface_format.format;
+		view.format = vk.present_format.format;
 		view.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 		view.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 		view.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -554,7 +562,7 @@ static void create_render_pass( VkDevice device, VkFormat depth_format )
 	{
 		// presentation
 		attachments[0].flags = 0;
-		attachments[0].format = vk.surface_format.format;
+		attachments[0].format = vk.present_format.format;
 		attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
 		attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;	// Assuming this will be completely overwritten
 		attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;		// needed for presentation
@@ -769,7 +777,7 @@ static void create_render_pass( VkDevice device, VkFormat depth_format )
 
 	// gamma post-processing
 	attachments[0].flags = 0;
-	attachments[0].format = vk.surface_format.format;
+	attachments[0].format = vk.present_format.format;
 	attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
 	attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE; // needed for presentation
@@ -1147,9 +1155,46 @@ static VkFormat get_hdr_format( VkFormat base_format )
 	}
 }
 
+typedef struct {
+	int bits;
+	VkFormat rgb;
+	VkFormat bgr;
+} present_format_t;
+
+static const present_format_t present_formats[] = {
+	//{12, VK_FORMAT_B4G4R4A4_UNORM_PACK16, VK_FORMAT_R4G4B4A4_UNORM_PACK16},
+	//{15, VK_FORMAT_B5G5R5A1_UNORM_PACK16, VK_FORMAT_R5G5B5A1_UNORM_PACK16},
+	{16, VK_FORMAT_B5G6R5_UNORM_PACK16, VK_FORMAT_R5G6B5_UNORM_PACK16},
+	{24, VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM},
+	{30, VK_FORMAT_A2B10G10R10_UNORM_PACK32, VK_FORMAT_A2R10G10B10_UNORM_PACK32},
+	//{32, VK_FORMAT_B10G11R11_UFLOAT_PACK32, VK_FORMAT_B10G11R11_UFLOAT_PACK32}
+};
+
+static void get_present_format( int present_bits, VkFormat *bgr, VkFormat *rgb ) {
+	const present_format_t *pf, *sel;
+	int i;
+
+	sel = NULL;
+	pf = present_formats;
+	for ( i = 0; i < ARRAY_LEN( present_formats ); i++, pf++ ) {
+		if ( pf->bits <= present_bits  ) {
+			sel = pf;
+		}
+	}
+	if ( !sel ) {
+		*bgr = VK_FORMAT_B8G8R8A8_UNORM;
+		*rgb = VK_FORMAT_R8G8B8A8_UNORM;
+	} else {
+		*bgr = sel->bgr;
+		*rgb = sel->rgb;
+	}
+}
+
 
 static qboolean vk_select_surface_format( VkPhysicalDevice physical_device, VkSurfaceKHR surface )
 {
+	VkFormat base_bgr, base_rgb;
+	VkFormat ext_bgr, ext_rgb;
 	VkSurfaceFormatKHR *candidates;
 	uint32_t format_count;
 	VkResult res;
@@ -1169,24 +1214,46 @@ static qboolean vk_select_surface_format( VkPhysicalDevice physical_device, VkSu
 
 	VK_CHECK( qvkGetPhysicalDeviceSurfaceFormatsKHR( physical_device, surface, &format_count, candidates ) );
 
-	if (format_count == 1 && candidates[0].format == VK_FORMAT_UNDEFINED) {
+	get_present_format( 24, &base_bgr, &base_rgb );
+
+	if ( r_fbo->integer ) {
+		get_present_format( r_presentBits->integer, &ext_bgr, &ext_rgb );
+	} else {
+		ext_bgr = base_bgr;
+		ext_rgb = base_rgb;
+	}
+
+	if ( format_count == 1 && candidates[0].format == VK_FORMAT_UNDEFINED ) {
 		// special case that means we can choose any format
-		vk.surface_format.format = VK_FORMAT_R8G8B8A8_UNORM;
-		vk.surface_format.colorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+		vk.base_format.format = base_bgr;
+		vk.base_format.colorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+		vk.present_format.format = ext_bgr;
+		vk.present_format.colorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
 	}
 	else {
 		uint32_t i;
-		vk.surface_format = candidates[0];
-		for ( i = 1; i < format_count; i++ ) {
-			if ( candidates[i].format == VK_FORMAT_B8G8R8A8_UNORM && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
-				vk.surface_format = candidates[i];
+		for ( i = 0; i < format_count; i++ ) {
+			if ( ( candidates[i].format == base_bgr || candidates[i].format == base_rgb ) && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
+				vk.base_format = candidates[i];
 				break;
 			}
-			//if ( candidates[i].format == VK_FORMAT_B8G8R8A8_SRGB && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
-			//	vk.surface_format = candidates[i];
-			//	break;
-			//}
 		}
+		if ( i == format_count ) {
+			vk.base_format = candidates[0];
+		}
+		for ( i = 0; i < format_count; i++ ) {
+			if ( ( candidates[i].format == ext_bgr || candidates[i].format == ext_rgb ) && candidates[i].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ) {
+				vk.present_format = candidates[i];
+				break;
+			}
+		}
+		if ( i == format_count ) {
+			vk.present_format = vk.base_format;
+		}
+	}
+
+	if ( !r_fbo->integer ) {
+		vk.present_format = vk.base_format;
 	}
 
 	ri.Free( candidates );
@@ -1199,11 +1266,11 @@ static void setup_surface_formats( VkPhysicalDevice physical_device )
 {
 	vk.depth_format = get_depth_format( physical_device );
 
-	vk.color_format = get_hdr_format( vk.surface_format.format );
+	vk.color_format = get_hdr_format( vk.base_format.format );
 
 	vk.capture_format = VK_FORMAT_R8G8B8A8_UNORM;
 
-	vk.bloom_format = vk.surface_format.format;
+	vk.bloom_format = vk.base_format.format;
 
 	vk.blitEnabled = vk_blit_enabled( physical_device, vk.color_format, vk.capture_format );
 
@@ -2696,11 +2763,11 @@ static void vk_create_persistent_pipelines( void )
 
 	if ( vk.fboActive && r_bloom->integer )
 	{
-		uint32_t width = glConfig.vidWidth;
-		uint32_t height = glConfig.vidHeight;
+		uint32_t width = gls.captureWidth;
+		uint32_t height = gls.captureHeight;
 		uint32_t i;
 
-		vk_create_post_process_pipeline( 1 ); // bloom extraction
+		vk_create_post_process_pipeline( 1, width, height ); // bloom extraction
 
 		for ( i = 0; i < ARRAY_LEN( vk.blur_pipeline ); i += 2 ) {
 			width /= 2;
@@ -2709,7 +2776,7 @@ static void vk_create_persistent_pipelines( void )
 			vk_create_blur_pipeline( i + 1, width, height, qfalse ); // vertical
 		}
 
-		vk_create_post_process_pipeline( 2 ); // bloom blending
+		vk_create_post_process_pipeline( 2, glConfig.vidWidth, glConfig.vidHeight ); // bloom blending
 	}
 }
 
@@ -2994,8 +3061,8 @@ static void vk_create_attachments( void )
 
 		// bloom
 		if ( r_bloom->integer ) {
-			uint32_t width = glConfig.vidWidth;
-			uint32_t height = glConfig.vidHeight;
+			uint32_t width = gls.captureWidth;
+			uint32_t height = gls.captureHeight;
 
 			create_color_attachment( width, height, VK_SAMPLE_COUNT_1_BIT, vk.bloom_format,
 				usage, &vk.bloom_image[0], &vk.bloom_image_view[0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
@@ -3037,7 +3104,7 @@ static void vk_create_attachments( void )
 		if ( r_ext_supersample->integer ) {
 			// capture buffer
 			usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-			create_color_attachment( captureWidth, captureHeight, VK_SAMPLE_COUNT_1_BIT, vk.capture_format,
+			create_color_attachment( gls.captureWidth, gls.captureHeight, VK_SAMPLE_COUNT_1_BIT, vk.capture_format,
 				usage, &vk.capture.image, &vk.capture.image_view, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, qfalse );
 		}
 	} // if ( vk.fboActive )
@@ -3088,8 +3155,8 @@ static void vk_create_framebuffers( void )
 		desc.attachmentCount = 2;
 		if ( r_fbo->integer == 0 )
 		{
-			desc.width = vk.windowWidth;
-			desc.height = vk.windowHeight;
+			desc.width = gls.windowWidth;
+			desc.height = gls.windowHeight;
 			attachments[0] = vk.swapchain_image_views[n];
 			attachments[1] = vk.depth_image_view;
 			VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.main[n] ) );
@@ -3121,8 +3188,8 @@ static void vk_create_framebuffers( void )
 			// gamma correction
 			desc.renderPass = vk.render_pass.gamma;
 			desc.attachmentCount = 1;
-			desc.width = vk.windowWidth;
-			desc.height = vk.windowHeight;
+			desc.width = gls.windowWidth;
+			desc.height = gls.windowHeight;
 			attachments[0] = vk.swapchain_image_views[n];
 			VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.gamma[n] ) );
 
@@ -3154,8 +3221,8 @@ static void vk_create_framebuffers( void )
 			desc.renderPass = vk.render_pass.capture;
 			desc.pAttachments = attachments;
 			desc.attachmentCount = 1;
-			desc.width = captureWidth;
-			desc.height = captureHeight;
+			desc.width = gls.captureWidth;
+			desc.height = gls.captureHeight;
 
 			VK_CHECK( qvkCreateFramebuffer( vk.device, &desc, NULL, &vk.framebuffers.capture ) );
 			SET_OBJECT_NAME( vk.framebuffers.capture, "framebuffer - capture", VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT );
@@ -3163,8 +3230,8 @@ static void vk_create_framebuffers( void )
 
 		if ( r_bloom->integer )
 		{
-			uint32_t width = glConfig.vidWidth;
-			uint32_t height = glConfig.vidHeight;
+			uint32_t width = gls.captureWidth;
+			uint32_t height = gls.captureHeight;
 
 			// bloom color extraction
 			desc.renderPass = vk.render_pass.bloom_extract;
@@ -3312,38 +3379,33 @@ void vk_restart_swapchain( const char *funcname )
 	vk_destroy_swapchain();
 	vk_destroy_sync_primitives();
 	vk_create_sync_primitives();
-	vk_create_swapchain( vk.physical_device, vk.device, vk.surface, vk.surface_format, &vk.swapchain );
+	vk_create_swapchain( vk.physical_device, vk.device, vk.surface, vk.present_format, &vk.swapchain );
 	vk_create_framebuffers();
 }
 
 
 static void vk_set_render_scale( void )
 {
-	int scaleMode;
-
-	if ( r_fbo->integer == 0 )
-		return;
-
-	if ( vk.windowWidth != glConfig.vidWidth || vk.windowHeight != glConfig.vidHeight )
+	if ( gls.windowWidth != glConfig.vidWidth || gls.windowHeight != glConfig.vidHeight )
 	{
 		if ( r_renderScale->integer > 0 )
 		{
-			scaleMode = r_renderScale->integer - 1;
+			int scaleMode = r_renderScale->integer - 1;
 			if ( scaleMode & 1 )
 			{
 				// preserve aspect ratio (black bars on sides)
-				float windowAspect = (float) vk.windowWidth / (float) vk.windowHeight;
+				float windowAspect = (float) gls.windowWidth / (float) gls.windowHeight;
 				float renderAspect = (float) glConfig.vidWidth / (float) glConfig.vidHeight;
 				if ( windowAspect >= renderAspect ) 
 				{
-					float scale = (float) vk.windowHeight / ( float ) glConfig.vidHeight;
-					int bias = ( vk.windowWidth - scale * (float) glConfig.vidWidth ) / 2;
+					float scale = (float)gls.windowHeight / ( float ) glConfig.vidHeight;
+					int bias = ( gls.windowWidth - scale * (float) glConfig.vidWidth ) / 2;
 					vk.blitX0 += bias;
 				}
 				else
 				{
-					float scale = (float) vk.windowWidth / ( float ) glConfig.vidWidth;
-					int bias = ( vk.windowHeight - scale * (float) glConfig.vidHeight ) / 2;
+					float scale = (float)gls.windowWidth / ( float ) glConfig.vidWidth;
+					int bias = ( gls.windowHeight - scale * (float) glConfig.vidHeight ) / 2;
 					vk.blitY0 += bias;
 				}
 			}
@@ -3355,6 +3417,11 @@ static void vk_set_render_scale( void )
 		}
 
 		vk.windowAdjusted = qtrue;
+	}
+
+	if ( r_fbo->integer && r_ext_supersample->integer && !r_renderScale->integer )
+	{
+		vk.blitFilter = GL_LINEAR;
 	}
 }
 
@@ -3386,42 +3453,18 @@ void vk_initialize( void )
 	vk.maxAnisotropy = props.limits.maxSamplerAnisotropy;
 	vk.maxLodBias = props.limits.maxSamplerLodBias;
 
-	// framebuffer parameters
-	vk.windowWidth = glConfig.vidWidth;
-	vk.windowHeight = glConfig.vidHeight;
-
 	vk.blitFilter = GL_NEAREST;
 	vk.windowAdjusted = qfalse;
 	vk.blitX0 = vk.blitY0 = 0;
 
-	captureWidth = glConfig.vidWidth;
-	captureHeight = glConfig.vidHeight;
+	vk_set_render_scale();
 
-	if ( r_fbo->integer ) {
+	if ( r_fbo->integer )
+	{
 		vk.fboActive = qtrue;
-		if ( r_ext_multisample->integer ) {
+		if ( r_ext_multisample->integer )
+		{
 			vk.msaaActive = qtrue;
-		}
-
-		if ( r_renderScale->integer ) {
-			glConfig.vidWidth = r_renderWidth->integer;
-			glConfig.vidHeight = r_renderHeight->integer;
-		}
-
-		captureWidth = glConfig.vidWidth;
-		captureHeight = glConfig.vidHeight;
-		ri.CL_SetScaling( 1.0, captureWidth, captureHeight );
-
-		if ( r_ext_supersample->integer ) {
-			glConfig.vidWidth *= 2;
-			glConfig.vidHeight *= 2;
-			ri.CL_SetScaling( 2.0, captureWidth, captureHeight );
-		}
-
-		vk_set_render_scale();
-
-		if ( r_ext_supersample->integer && !r_renderScale->integer ) {
-			vk.blitFilter = GL_LINEAR;
 		}
 	}
 
@@ -3573,7 +3616,7 @@ void vk_initialize( void )
 	//
 	// Swapchain.
 	//
-	vk_create_swapchain( vk.physical_device, vk.device, vk.surface, vk.surface_format, &vk.swapchain );
+	vk_create_swapchain( vk.physical_device, vk.device, vk.surface, vk.present_format, &vk.swapchain );
 
 	// color/depth attachments
 	vk_create_attachments();
@@ -4203,7 +4246,7 @@ static void set_shader_stage_desc(VkPipelineShaderStageCreateInfo *desc, VkShade
 }
 
 
-void vk_create_post_process_pipeline( int program_index )
+void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_t height )
 {
 	VkPipelineShaderStageCreateInfo shader_stages[2];
 	VkPipelineVertexInputStateCreateInfo vertex_input_state;
@@ -4217,8 +4260,7 @@ void vk_create_post_process_pipeline( int program_index )
 	VkGraphicsPipelineCreateInfo create_info;
 	VkViewport viewport;
 	VkRect2D scissor;
-	float frag_spec_data[5]; // gamma,overbright,greyscale,bloom_threshold,bloom_intensity
-	VkSpecializationMapEntry spec_entries[5];
+	VkSpecializationMapEntry spec_entries[9];
 	VkSpecializationInfo frag_spec_info;
 	VkPipeline *pipeline;
 	VkShaderModule fsmodule;
@@ -4227,6 +4269,18 @@ void vk_create_post_process_pipeline( int program_index )
 	VkSampleCountFlagBits samples;
 	const char *pipeline_name;
 	qboolean blend;
+
+	struct FragSpecData {
+		float gamma;
+		float overbright;
+		float greyscale;
+		float bloom_threshold;
+		float bloom_intensity;
+		int dither;
+		int depth_r;
+		int depth_g;
+		int depth_b;
+	} frag_spec_data;
 
 	switch ( program_index ) {
 		case 1: // bloom extraction
@@ -4285,36 +4339,56 @@ void vk_create_post_process_pipeline( int program_index )
 	set_shader_stage_desc( shader_stages+0, VK_SHADER_STAGE_VERTEX_BIT, vk.modules.gamma_vs, "main" );
 	set_shader_stage_desc( shader_stages+1, VK_SHADER_STAGE_FRAGMENT_BIT, fsmodule, "main" );
 
-	frag_spec_data[0] = 1.0 / (r_gamma->value);
-	frag_spec_data[1] = (float)(1 << tr.overbrightBits);
-	frag_spec_data[2] = r_greyscale->value;
-	frag_spec_data[3] = r_bloom_threshold->value;
-	frag_spec_data[4] = r_bloom_intensity->value;
+	frag_spec_data.gamma = 1.0 / (r_gamma->value);
+	frag_spec_data.overbright = (float)(1 << tr.overbrightBits);
+	frag_spec_data.greyscale = r_greyscale->value;
+	frag_spec_data.bloom_threshold = r_bloom_threshold->value;
+	frag_spec_data.bloom_intensity = r_bloom_intensity->value;
+	frag_spec_data.dither = r_dither->integer;
+	
+	if ( !vk_surface_format_color_depth( vk.present_format.format, &frag_spec_data.depth_r, &frag_spec_data.depth_g, &frag_spec_data.depth_b ) )
+		ri.Printf( PRINT_ALL, "Format %s not recognized, dither to assume 8bpc\n", vk_format_string( vk.base_format.format ) );
 
 	spec_entries[0].constantID = 0;
-	spec_entries[0].offset = 0 * sizeof( float );
-	spec_entries[0].size = sizeof( float );
+	spec_entries[0].offset = offsetof( struct FragSpecData, gamma );
+	spec_entries[0].size = sizeof( frag_spec_data.gamma );
 	
 	spec_entries[1].constantID = 1;
-	spec_entries[1].offset = 1 * sizeof( float );
-	spec_entries[1].size = sizeof( float );
+	spec_entries[1].offset = offsetof( struct FragSpecData, overbright );
+	spec_entries[1].size = sizeof( frag_spec_data.overbright );
 
 	spec_entries[2].constantID = 2;
-	spec_entries[2].offset = 2 * sizeof( float );
-	spec_entries[2].size = sizeof( float );
+	spec_entries[2].offset = offsetof( struct FragSpecData, greyscale );
+	spec_entries[2].size = sizeof( frag_spec_data.greyscale );
 
 	spec_entries[3].constantID = 3;
-	spec_entries[3].offset = 3 * sizeof( float );
-	spec_entries[3].size = sizeof( float );
+	spec_entries[3].offset = offsetof( struct FragSpecData, bloom_threshold );
+	spec_entries[3].size = sizeof( frag_spec_data.bloom_threshold );
 
 	spec_entries[4].constantID = 4;
-	spec_entries[4].offset = 4 * sizeof( float );
-	spec_entries[4].size = sizeof( float );
+	spec_entries[4].offset = offsetof( struct FragSpecData, bloom_intensity );
+	spec_entries[4].size = sizeof( frag_spec_data.bloom_intensity );
 
-	frag_spec_info.mapEntryCount = 5;
+	spec_entries[5].constantID = 5;
+	spec_entries[5].offset = offsetof( struct FragSpecData, dither );
+	spec_entries[5].size = sizeof( frag_spec_data.dither );
+
+	spec_entries[6].constantID = 6;
+	spec_entries[6].offset = offsetof( struct FragSpecData, depth_r );
+	spec_entries[6].size = sizeof( frag_spec_data.depth_r );
+
+	spec_entries[7].constantID = 7;
+	spec_entries[7].offset = offsetof(struct FragSpecData, depth_g);
+	spec_entries[7].size = sizeof(frag_spec_data.depth_g);
+
+	spec_entries[8].constantID = 8;
+	spec_entries[8].offset = offsetof(struct FragSpecData, depth_b);
+	spec_entries[8].size = sizeof(frag_spec_data.depth_b);
+
+	frag_spec_info.mapEntryCount = 9;
 	frag_spec_info.pMapEntries = spec_entries;
-	frag_spec_info.dataSize = 5 * sizeof( float );
-	frag_spec_info.pData = &frag_spec_data[0];
+	frag_spec_info.dataSize = sizeof( frag_spec_data );
+	frag_spec_info.pData = &frag_spec_data;
 
 	shader_stages[1].pSpecializationInfo = &frag_spec_info;
 
@@ -4330,10 +4404,20 @@ void vk_create_post_process_pipeline( int program_index )
 	//
 	// Viewport.
 	//
-	viewport.x = 0.0 + vk.blitX0;
-	viewport.y = 0.0 + vk.blitY0;
-	viewport.width = vk.windowWidth - vk.blitX0 * 2;
-	viewport.height = vk.windowHeight - vk.blitY0 * 2;
+	if ( program_index == 0 ) {
+		// gamma correction
+		viewport.x = 0.0 + vk.blitX0;
+		viewport.y = 0.0 + vk.blitY0;
+		viewport.width = gls.windowWidth - vk.blitX0 * 2;
+		viewport.height = gls.windowHeight - vk.blitY0 * 2;
+	} else {
+		// other post-processing
+		viewport.x = 0.0;
+		viewport.y = 0.0;
+		viewport.width = width;
+		viewport.height = height;
+	}
+
 	viewport.minDepth = 0.0;
 	viewport.maxDepth = 1.0;
 
@@ -5694,8 +5778,21 @@ void vk_bind_descriptor_sets( void )
 }
 
 
-void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean indexed ) {
+void vk_bind_pipeline( uint32_t pipeline ) {
 	VkPipeline vkpipe;
+
+	vkpipe = vk_gen_pipeline( pipeline );
+
+	if ( vkpipe != vk.cmd->last_pipeline ) {
+		qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkpipe );
+		vk.cmd->last_pipeline = vkpipe;
+	}
+
+	vk_world.dirty_depth_attachment |= ( vk.pipelines[ pipeline ].def.state_bits & GLS_DEPTHMASK_TRUE );
+}
+
+
+void vk_draw_geometry( Vk_Depth_Range depth_range, qboolean indexed ) {
 	VkRect2D scissor_rect;
 	VkViewport viewport;
 
@@ -5705,13 +5802,6 @@ void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean i
 	}
 
 	vk_bind_descriptor_sets();
-
-	// bind pipeline
-	vkpipe = vk_gen_pipeline( pipeline );
-	if ( vkpipe != vk.cmd->last_pipeline ) {
-		qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkpipe );
-		vk.cmd->last_pipeline = vkpipe;
-	}
 
 	// configure pipeline's dynamic state
 	if ( vk.cmd->depth_range != depth_range ) {
@@ -5735,8 +5825,6 @@ void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean i
 	} else {
 		qvkCmdDraw( vk.cmd->command_buffer, tess.numVertexes, 1, 0, 0 );
 	}
-
-	vk_world.dirty_depth_attachment |= ( vk.pipelines[ pipeline ].def.state_bits & GLS_DEPTHMASK_TRUE );
 }
 
 
@@ -5818,8 +5906,8 @@ void vk_begin_bloom_extract_render_pass( void )
 
 	//vk.renderPassIndex = RENDER_PASS_BLOOM_EXTRACT; // doesn't matter, we will use dedicated pipelines
 
-	vk.renderWidth = glConfig.vidWidth;
-	vk.renderHeight = glConfig.vidHeight;
+	vk.renderWidth = gls.captureWidth;
+	vk.renderHeight = gls.captureHeight;
 
 	//vk.renderScaleX = (float)vk.renderWidth / (float)glConfig.vidWidth;
 	//vk.renderScaleY = (float)vk.renderHeight / (float)glConfig.vidHeight;
@@ -5835,8 +5923,8 @@ void vk_begin_blur_render_pass( uint32_t index )
 
 	//vk.renderPassIndex = RENDER_PASS_BLOOM_EXTRACT; // doesn't matter, we will use dedicated pipelines
 
-	vk.renderWidth = glConfig.vidWidth / (2<<(index/2));
-	vk.renderHeight = glConfig.vidHeight / (2<<(index/2));
+	vk.renderWidth = gls.captureWidth / ( 2 << ( index / 2 ) );
+	vk.renderHeight = gls.captureHeight / ( 2 << ( index / 2 ) );
 
 	//vk.renderScaleX = (float)vk.renderWidth / (float)glConfig.vidWidth;
 	//vk.renderScaleY = (float)vk.renderHeight / (float)glConfig.vidHeight;
@@ -6046,6 +6134,8 @@ void vk_end_frame( void )
 
 	if ( vk.fboActive )
 	{
+		vk.cmd->last_pipeline = NULL; // do not restore clobbered descriptors in vk_bloom()
+
 		if ( r_bloom->integer )
 		{
 			vk_bloom();
@@ -6056,7 +6146,7 @@ void vk_end_frame( void )
 			vk_end_render_pass();
 
 			// render to capture FBO
-			vk_begin_render_pass( vk.render_pass.capture, vk.framebuffers.capture, qfalse, captureWidth, captureHeight );
+			vk_begin_render_pass( vk.render_pass.capture, vk.framebuffers.capture, qfalse, gls.captureWidth, gls.captureHeight );
 			qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.capture_pipeline );
 			qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout_post_process, 0, 1, &vk.color_descriptor, 0, NULL );
 
@@ -6067,8 +6157,8 @@ void vk_end_frame( void )
 		{
 			vk_end_render_pass();
 
-			vk.renderWidth = vk.windowWidth;
-			vk.renderHeight = vk.windowHeight;
+			vk.renderWidth = gls.windowWidth;
+			vk.renderHeight = gls.windowHeight;
 
 			vk.renderScaleX = 1.0;
 			vk.renderScaleY = 1.0;
@@ -6464,19 +6554,59 @@ qboolean vk_bloom( void )
 	}
 
 	// invalidate pipeline state cache
-	vk.cmd->last_pipeline = VK_NULL_HANDLE;
+	//vk.cmd->last_pipeline = VK_NULL_HANDLE;
 
-	// restore clobbered descriptor sets
-	for ( i = 0; i < VK_NUM_BLOOM_PASSES; i++ ) {
-		if ( vk.cmd->descriptor_set.current[i] != VK_NULL_HANDLE ) {
-			if ( i == 0 || i == 1 )
-				qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, i, 1, &vk.cmd->descriptor_set.current[i], 1, &vk.cmd->descriptor_set.offset[i] );
-			else
-				qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, i, 1, &vk.cmd->descriptor_set.current[i], 0, NULL );
+	if ( vk.cmd->last_pipeline != VK_NULL_HANDLE )
+	{
+		// restore last pipeline
+		qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.cmd->last_pipeline );
+
+		vk_update_mvp( NULL );
+
+		// force depth range and viewport/scissor updates
+		vk.cmd->depth_range = DEPTH_RANGE_COUNT;
+
+		// restore clobbered descriptor sets
+		for ( i = 0; i < VK_NUM_BLOOM_PASSES; i++ ) {
+			if ( vk.cmd->descriptor_set.current[i] != VK_NULL_HANDLE ) {
+				if ( i == 0 || i == 1 )
+					qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, i, 1, &vk.cmd->descriptor_set.current[i], 1, &vk.cmd->descriptor_set.offset[i] );
+				else
+					qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, i, 1, &vk.cmd->descriptor_set.current[i], 0, NULL );
+			}
 		}
 	}
 
 	backEnd.doneBloom = qtrue;
 
 	return qtrue;
+}
+
+#define FORMAT_DEPTH(format, r_bits, g_bits, b_bits) case(VK_FORMAT_##format): *r = r_bits; *b = b_bits; *g = g_bits; return qtrue;
+qboolean vk_surface_format_color_depth(VkFormat format, int* r, int* g, int* b) {
+	switch (format) {
+		// Common formats from https://vulkan.gpuinfo.org/listsurfaceformats.php
+		FORMAT_DEPTH(B8G8R8A8_UNORM, 255, 255, 255)
+		FORMAT_DEPTH(B8G8R8A8_SRGB, 255, 255, 255)
+		FORMAT_DEPTH(A2B10G10R10_UNORM_PACK32, 1023, 1023, 1023)
+		FORMAT_DEPTH(R8G8B8A8_UNORM, 255, 255, 255)
+		FORMAT_DEPTH(R8G8B8A8_SRGB, 255, 255, 255)
+		FORMAT_DEPTH(A2R10G10B10_UNORM_PACK32, 1023, 1023, 1023)
+		FORMAT_DEPTH(R5G6B5_UNORM_PACK16, 31, 63, 31)
+		FORMAT_DEPTH(R8G8B8A8_SNORM, 255, 255, 255)
+		FORMAT_DEPTH(A8B8G8R8_UNORM_PACK32, 255, 255, 255)
+		FORMAT_DEPTH(A8B8G8R8_SNORM_PACK32, 255, 255, 255)
+		FORMAT_DEPTH(A8B8G8R8_SRGB_PACK32, 255, 255, 255)
+		FORMAT_DEPTH(R16G16B16A16_UNORM, 65535, 65535, 65535)
+		FORMAT_DEPTH(R16G16B16A16_SNORM, 65535, 65535, 65535)
+		FORMAT_DEPTH(B5G6R5_UNORM_PACK16, 31, 63, 31)
+		FORMAT_DEPTH(B8G8R8A8_SNORM, 255, 255, 255)
+		FORMAT_DEPTH(R4G4B4A4_UNORM_PACK16, 15, 15, 15)
+		FORMAT_DEPTH(B4G4R4A4_UNORM_PACK16, 15, 15, 15)
+		FORMAT_DEPTH(A1R5G5B5_UNORM_PACK16, 31, 31, 31)
+		FORMAT_DEPTH(R5G5B5A1_UNORM_PACK16, 31, 31, 31)
+		FORMAT_DEPTH(B5G5R5A1_UNORM_PACK16, 31, 31, 31)
+	default:
+		*r = 255; *g = 255; *b = 255; return qfalse;
+	}
 }

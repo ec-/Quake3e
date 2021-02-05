@@ -244,6 +244,8 @@ static void InitOpenGL( void )
 		ri.GLimp_Init( &glConfig );
 		GLimp_InitExtraExtensions();
 
+		glConfig.textureEnvAddAvailable = qtrue;
+
 		strcpy( renderer_buffer, glConfig.renderer_string );
 		Q_strlwr( renderer_buffer );
 
@@ -258,6 +260,22 @@ static void InitOpenGL( void )
 		}
 
 		ri.CL_SetScaling( 1.0, glConfig.vidWidth, glConfig.vidHeight );
+
+		qglGetIntegerv( GL_MAX_TEXTURE_IMAGE_UNITS, &temp );
+		glConfig.numTextureUnits = temp;
+
+		// reserve 160 components for other uniforms
+		qglGetIntegerv( GL_MAX_VERTEX_UNIFORM_COMPONENTS, &temp );
+		glRefConfig.glslMaxAnimatedBones = Com_Clamp( 0, IQM_MAX_JOINTS, ( temp - 160 ) / 16 );
+		if ( glRefConfig.glslMaxAnimatedBones < 12 ) {
+			glRefConfig.glslMaxAnimatedBones = 0;
+		}
+	}
+
+	// check for GLSL function textureCubeLod()
+	if ( r_cubeMapping->integer && !QGL_VERSION_ATLEAST( 3, 0 ) ) {
+		ri.Printf( PRINT_WARNING, "WARNING: Disabled r_cubeMapping because it requires OpenGL 3.0\n" );
+		ri.Cvar_Set( "r_cubeMapping", "0" );
 	}
 
 	// set default state
@@ -962,7 +980,7 @@ void GfxInfo_f( void )
 	}
 	ri.Printf( PRINT_ALL, "\n" );
 	ri.Printf( PRINT_ALL, "GL_MAX_TEXTURE_SIZE: %d\n", glConfig.maxTextureSize );
-	ri.Printf( PRINT_ALL, "GL_MAX_TEXTURE_UNITS_ARB: %d\n", glConfig.numTextureUnits );
+	ri.Printf( PRINT_ALL, "GL_MAX_TEXTURE_IMAGE_UNITS: %d\n", glConfig.numTextureUnits );
 	ri.Printf( PRINT_ALL, "\nPIXELFORMAT: color(%d-bits) Z(%d-bit) stencil(%d-bits)\n", glConfig.colorBits, glConfig.depthBits, glConfig.stencilBits );
 	ri.Printf( PRINT_ALL, "MODE: %d, %d x %d %s hz:", ri.Cvar_VariableIntegerValue( "r_mode" ), glConfig.vidWidth, glConfig.vidHeight, fsstrings[ glConfig.isFullscreen != 0 ] );
 	if ( glConfig.displayFrequency )
@@ -1389,9 +1407,9 @@ void R_Init( void ) {
 RE_Shutdown
 ===============
 */
-void RE_Shutdown( int destroyWindow ) {
+void RE_Shutdown( refShutdownCode_t code ) {
 
-	ri.Printf( PRINT_ALL, "RE_Shutdown( %i )\n", destroyWindow );
+	ri.Printf( PRINT_ALL, "RE_Shutdown( %i )\n", code );
 
 	ri.Cmd_RemoveCommand( "imagelist" );
 	ri.Cmd_RemoveCommand( "shaderlist" );
@@ -1419,10 +1437,15 @@ void RE_Shutdown( int destroyWindow ) {
 	R_DoneFreeType();
 
 	// shut down platform specific OpenGL stuff
-	if ( destroyWindow ) {
-		ri.GLimp_Shutdown( destroyWindow == 2 ? qtrue: qfalse );
+	if ( code != REF_KEEP_CONTEXT ) {
+		ri.GLimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue: qfalse );
 
 		Com_Memset( &glConfig, 0, sizeof( glConfig ) );
+		Com_Memset( &glRefConfig, 0, sizeof( glRefConfig ) );
+
+		textureFilterAnisotropic = qfalse;
+		maxAnisotropy = 0;
+
 		Com_Memset( &glState, 0, sizeof( glState ) );
 	}
 

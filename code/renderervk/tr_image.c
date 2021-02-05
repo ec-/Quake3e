@@ -25,6 +25,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 static byte			 s_intensitytable[256];
 static unsigned char s_gammatable[256];
 
+#ifdef USE_VULKAN
+static unsigned char s_gammatable_linear[256];
+#endif
+
 GLint	gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
 GLint	gl_filter_max = GL_LINEAR;
 
@@ -327,7 +331,11 @@ static void R_LightScaleTexture( byte *in, int inwidth, int inheight, qboolean o
 
 	if ( only_gamma )
 	{
+#ifdef USE_VULKAN
+		if ( !glConfig.deviceSupportsGamma && !vk.fboActive)
+#else
 		if ( !glConfig.deviceSupportsGamma )
+#endif
 		{
 			int		i, c;
 			byte	*p;
@@ -352,7 +360,11 @@ static void R_LightScaleTexture( byte *in, int inwidth, int inheight, qboolean o
 
 		c = inwidth*inheight;
 
+#ifdef USE_VULKAN
+		if ( glConfig.deviceSupportsGamma || vk.fboActive )
+#else
 		if ( glConfig.deviceSupportsGamma )
+#endif
 		{
 			for (i=0 ; i<c ; i++, p+=4)
 			{
@@ -1653,7 +1665,11 @@ void R_SetColorMappings( void ) {
 	// setup the overbright lighting
 	// negative value will force gamma in windowed mode
 	tr.overbrightBits = abs( r_overBrightBits->integer );
+#ifdef USE_VULKAN
+	if ( !glConfig.deviceSupportsGamma && !vk.fboActive )
+#else
 	if ( !glConfig.deviceSupportsGamma )
+#endif
 		tr.overbrightBits = 0;		// need hardware gamma for overbright
 
 	// never overbright in windowed mode
@@ -1712,18 +1728,21 @@ void R_SetColorMappings( void ) {
 #ifdef USE_VULKAN
 	if ( vk.fboActive ) {
 		// update gamma shader
-		vk_create_post_process_pipeline( 0 );
+		vk_create_post_process_pipeline( 0, 0, 0 );
 		if ( vk.capture.image ) {
 			// update capture pipeline
-			vk_create_post_process_pipeline( 3 );
+			vk_create_post_process_pipeline( 3, gls.captureWidth, gls.captureHeight );
 		}
 	}
 	
 	if ( glConfig.deviceSupportsGamma && !vk.fboActive )
+		ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
+	if ( glConfig.deviceSupportsGamma && vk.fboActive )
+		ri.GLimp_SetGamma( s_gammatable_linear, s_gammatable_linear, s_gammatable_linear );
 #else
 	if ( glConfig.deviceSupportsGamma )
-#endif
 		ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
+#endif
 }
 
 
@@ -1735,6 +1754,13 @@ R_InitImages
 void R_InitImages( void ) {
 
 	Com_Memset( hashTable, 0, sizeof( hashTable ) );
+
+#ifdef USE_VULKAN
+	// initialize linear gamma table before setting color mappings for the first time
+	int i;
+	for (i = 0; i < 256; i++)
+		s_gammatable_linear[i] = (unsigned char)i;
+#endif
 
 	// build brightness translation tables
 	R_SetColorMappings();
