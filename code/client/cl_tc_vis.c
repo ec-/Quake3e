@@ -71,13 +71,13 @@ void tc_vis_init(void) {
 	free_vis_brushes(head);
 	head = NULL;
 
-	triggers_draw = Cvar_Get("r_renderTriggerBrushes", "0", CVAR_ARCHIVE);
-	clips_draw = Cvar_Get("r_renderClipBrushes", "0", CVAR_ARCHIVE);
-	slicks_draw = Cvar_Get("r_renderSlickSurfaces", "0", CVAR_ARCHIVE);
+	triggers_draw = Cvar_Get("r_renderTriggerBrushes", "0", CVAR_ARCHIVE_ND);
+	clips_draw = Cvar_Get("r_renderClipBrushes", "0", CVAR_ARCHIVE_ND);
+	slicks_draw = Cvar_Get("r_renderSlickSurfaces", "0", CVAR_ARCHIVE_ND);
 
-	trigger_shader_setting = Cvar_Get("r_renderTriggerBrushesShader", "tcRenderShader", CVAR_ARCHIVE);
-	clip_shader_setting = Cvar_Get("r_renderClipBrushesShader", "tcRenderShader", CVAR_ARCHIVE);
-	slick_shader_setting = Cvar_Get("r_renderSlickSurfacesShader", "tcRenderShader", CVAR_ARCHIVE);
+	trigger_shader_setting = Cvar_Get("r_renderTriggerBrushesShader", "tcRenderShader", CVAR_ARCHIVE_ND);
+	clip_shader_setting = Cvar_Get("r_renderClipBrushesShader", "tcRenderShader", CVAR_ARCHIVE_ND);
+	slick_shader_setting = Cvar_Get("r_renderSlickSurfacesShader", "tcRenderShader", CVAR_ARCHIVE_ND);
 
 	trigger_shader = re.RegisterShader(trigger_shader_setting->string);
 	clip_shader = re.RegisterShader(clip_shader_setting->string);
