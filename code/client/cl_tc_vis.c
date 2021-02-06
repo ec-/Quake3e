@@ -158,16 +158,16 @@ static void add_clips(void) {
 }
 
 static void add_slicks(void) {
-    for (int i = 0; i < cm.numBrushes; i++) {
-        cbrush_t *brush = &cm.brushes[i];
-        for (int s = 0; s < brush->numsides; s++) {
-            cbrushside_t* side = &brush->sides[s];
-            if (side->surfaceFlags & SURF_SLICK) {
-                gen_visible_brush(i, vec3_origin, SLICK_BRUSH, slick_color, slick_shader);
-                break;
-            }
-        }
-    }
+	for (int i = 0; i < cm.numBrushes; i++) {
+		cbrush_t *brush = &cm.brushes[i];
+		for (int s = 0; s < brush->numsides; s++) {
+			cbrushside_t* side = &brush->sides[s];
+			if (side->surfaceFlags & SURF_SLICK) {
+				gen_visible_brush(i, vec3_origin, SLICK_BRUSH, slick_color, slick_shader);
+				break;
+			}
+		}
+	}
 }
 
 static void gen_visible_brush(int brushnum, vec3_t origin, visBrushType_t type, vec4_t color, qhandle_t shader) {
