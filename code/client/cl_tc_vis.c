@@ -157,12 +157,16 @@ static void add_clips(void) {
 	}
 }
 
+static inline qboolean walkable(cplane_t const *plane) {
+	return plane->normal[2] >= 0.7 /*MIN_WALK_NORMAL*/;
+}
+
 static void add_slicks(void) {
 	for (int i = 0; i < cm.numBrushes; i++) {
 		cbrush_t *brush = &cm.brushes[i];
 		for (int s = 0; s < brush->numsides; s++) {
 			cbrushside_t* side = &brush->sides[s];
-			if (side->surfaceFlags & SURF_SLICK) {
+			if (side->surfaceFlags & SURF_SLICK && walkable(side->plane)) {
 				gen_visible_brush(i, vec3_origin, SLICK_BRUSH, slick_color, slick_shader);
 				break;
 			}
@@ -200,9 +204,12 @@ static void gen_visible_brush(int brushnum, vec3_t origin, visBrushType_t type, 
 				VectorAdd(p, origin, p);
 
 				vec2_t uv;
-				add_vert_to_face(&node->faces[i], p, color, get_uv_coords(uv, p, p1->normal));
-				add_vert_to_face(&node->faces[j], p, color, get_uv_coords(uv, p, p2->normal));
-				add_vert_to_face(&node->faces[k], p, color, get_uv_coords(uv, p, p3->normal));
+				if (type != SLICK_BRUSH || walkable(p1))
+					add_vert_to_face(&node->faces[i], p, color, get_uv_coords(uv, p, p1->normal));
+				if (type != SLICK_BRUSH || walkable(p2))
+					add_vert_to_face(&node->faces[j], p, color, get_uv_coords(uv, p, p2->normal));
+				if (type != SLICK_BRUSH || walkable(p3))
+					add_vert_to_face(&node->faces[k], p, color, get_uv_coords(uv, p, p3->normal));
 			}
 		}
 	}
