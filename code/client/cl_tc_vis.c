@@ -203,13 +203,24 @@ static void gen_visible_brush(int brushnum, vec3_t origin, visBrushType_t type, 
 				// looking at you FM
 				VectorAdd(p, origin, p);
 
+				// fix z-fighting by slightly moving vertices outwards
+				vec3_t v1;
+				vec3_t v2;
+				vec3_t v3;
+				VectorScale(p1->normal, .0625, v1);
+				VectorScale(p2->normal, .0625, v2);
+				VectorScale(p3->normal, .0625, v3);
+				VectorAdd(p, v1, v1);
+				VectorAdd(p, v2, v2);
+				VectorAdd(p, v3, v3);
+
 				vec2_t uv;
 				if (type != SLICK_BRUSH || walkable(p1))
-					add_vert_to_face(&node->faces[i], p, color, get_uv_coords(uv, p, p1->normal));
+					add_vert_to_face(&node->faces[i], v1, color, get_uv_coords(uv, p, p1->normal));
 				if (type != SLICK_BRUSH || walkable(p2))
-					add_vert_to_face(&node->faces[j], p, color, get_uv_coords(uv, p, p2->normal));
+					add_vert_to_face(&node->faces[j], v2, color, get_uv_coords(uv, p, p2->normal));
 				if (type != SLICK_BRUSH || walkable(p3))
-					add_vert_to_face(&node->faces[k], p, color, get_uv_coords(uv, p, p3->normal));
+					add_vert_to_face(&node->faces[k], v3, color, get_uv_coords(uv, p, p3->normal));
 			}
 		}
 	}
