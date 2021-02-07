@@ -2048,6 +2048,9 @@ static void CL_DownloadsComplete( void ) {
 	if ( clc.demofile == FS_INVALID_HANDLE ) {
 		Cmd_AddCommand( "callvote", NULL );
 		Cmd_SetCommandCompletionFunc( "callvote", CL_CompleteCallvote );
+		
+		Cmd_AddCommand( "cv", NULL );
+		Cmd_SetCommandCompletionFunc( "cv", CL_CompleteCallvote );
 	}
 
 	// set pure checksums
