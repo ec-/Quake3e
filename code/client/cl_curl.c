@@ -900,7 +900,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 
 		Q_strncpyz( dl->URL, remoteURL, sizeof( dl->URL ) );
 
-		if ( !Q_replace( "%1", escapedName, dl->URL, sizeof( dl->URL ) ) )
+		if ( !Q_replace( "%m", escapedName, dl->URL, sizeof( dl->URL ) ) )
 		{
 			if ( dl->URL[strlen(dl->URL)] != '/' )
 				Q_strcat( dl->URL, sizeof( dl->URL ), "/" );
@@ -916,7 +916,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 
 	Com_Printf( "URL: %s\n", dl->URL );
 
-	if ( cl_dlDirectory->integer ) {
+	if ( dl_usebaseq3->integer ) {
 		Q_strncpyz( dl->gameDir, FS_GetBaseGameDir(), sizeof( dl->gameDir ) );
 	} else {
 		Q_strncpyz( dl->gameDir, FS_GetCurrentGameDir(), sizeof( dl->gameDir ) );

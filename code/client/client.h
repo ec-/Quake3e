@@ -400,7 +400,7 @@ extern	cvar_t	*cl_activeAction;
 extern	cvar_t	*cl_allowDownload;
 #ifdef USE_CURL
 extern	cvar_t	*cl_mapAutoDownload;
-extern	cvar_t	*cl_dlDirectory;
+extern	cvar_t	*dl_usebaseq3;
 #endif
 extern	cvar_t	*cl_conColor;
 extern	cvar_t	*cl_inGameVideo;

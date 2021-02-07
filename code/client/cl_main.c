@@ -65,8 +65,8 @@ cvar_t	*cl_lanForcePackets;
 
 cvar_t	*cl_guidServerUniq;
 
-cvar_t	*cl_dlURL;
-cvar_t	*cl_dlDirectory;
+cvar_t	*dl_source;
+cvar_t	*dl_usebaseq3;
 
 // common cvars for GLimp modules
 cvar_t	*vid_xpos;			// X coordinate of window position
@@ -3865,14 +3865,14 @@ void CL_Init( void ) {
 
 	cl_guidServerUniq = Cvar_Get( "cl_guidServerUniq", "1", CVAR_ARCHIVE_ND );
 
-	cl_dlURL = Cvar_Get( "cl_dlURL", "http://ws.q3df.org/maps/download/%1", CVAR_ARCHIVE_ND );
-	
-	cl_dlDirectory = Cvar_Get( "cl_dlDirectory", "0", CVAR_ARCHIVE_ND );
-	Cvar_CheckRange( cl_dlDirectory, "0", "1", CV_INTEGER );
+	dl_source = Cvar_Get( "dl_source", "http://ws.q3df.org/maps/download/%m", CVAR_ARCHIVE_ND );
+
+	dl_usebaseq3 = Cvar_Get( "dl_usebaseq3", "0", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( dl_usebaseq3, "0", "1", CV_INTEGER );
 	s = va( "Save downloads initiated by \\dlmap and \\download commands in:\n"
 		" 0 - current game directory\n"
 		" 1 - fs_basegame (%s) directory\n", FS_GetBaseGameDir() );
-	Cvar_SetDescription( cl_dlDirectory, s );
+	Cvar_SetDescription( dl_usebaseq3, s );
 
 	// userinfo
 	Cvar_Get ("name", "UnnamedPlayer", CVAR_USERINFO | CVAR_ARCHIVE_ND );
@@ -4929,9 +4929,9 @@ qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownloa
 	char name[MAX_CVAR_VALUE_STRING];
 	const char *s;
 
-	if ( cl_dlURL->string[0] == '\0' )
+	if ( dl_source->string[0] == '\0' )
 	{
-		Com_Printf( S_COLOR_YELLOW "cl_dlURL cvar is not set\n" );
+		Com_Printf( S_COLOR_YELLOW "dl_source cvar is not set\n" );
 		return qfalse;
 	}
 
@@ -4964,7 +4964,7 @@ qboolean CL_Download( const char *cmd, const char *pakname, qboolean autoDownloa
 		}
 	}
 
-	return Com_DL_Begin( &download, pakname, cl_dlURL->string, autoDownload );
+	return Com_DL_Begin( &download, pakname, dl_source->string, autoDownload );
 }
 
 
