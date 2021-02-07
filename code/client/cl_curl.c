@@ -945,7 +945,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 
 	dl->func.easy_setopt( dl->cURL, CURLOPT_URL, dl->URL );
 	dl->func.easy_setopt( dl->cURL, CURLOPT_TRANSFERTEXT, 0 );
-	//dl->func.easy_setopt( dl->cURL, CURLOPT_REFERER, "q3a://127.0.0.1" );
+	//dl->func.easy_setopt( dl->cURL, CURLOPT_REFERER, "defrag://127.0.0.1" );
 	dl->func.easy_setopt( dl->cURL, CURLOPT_REFERER, dl->URL );
 	dl->func.easy_setopt( dl->cURL, CURLOPT_USERAGENT, Q3_VERSION );
 	dl->func.easy_setopt( dl->cURL, CURLOPT_WRITEFUNCTION, Com_DL_CallbackWrite );
