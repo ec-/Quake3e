@@ -22,6 +22,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "server.h"
 
+cvar_t	*sv_noReferencedPaks;
 
 /*
 ===============
@@ -603,20 +604,25 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	FS_TouchFileInPak( "vm/cgame.qvm" );
 	FS_TouchFileInPak( "vm/ui.qvm" );
 
-	// the server sends these to the clients so they can figure
-	// out which pk3s should be auto-downloaded
-	p = FS_ReferencedPakNames();
-	if ( FS_ExcludeReference() ) {
-		// \fs_excludeReference may mask our current ui/cgame qvms
-		FS_TouchFileInPak( "vm/cgame.qvm" );
-		FS_TouchFileInPak( "vm/ui.qvm" );
-		// rebuild referenced paks list
+	if (sv_noReferencedPaks->integer) {
+		Cvar_Set( "sv_referencedPakNames", "" );
+		Cvar_Set( "sv_referencedPaks", "" );
+	} else {
+		// the server sends these to the clients so they can figure
+		// out which pk3s should be auto-downloaded
 		p = FS_ReferencedPakNames();
-	}
-	Cvar_Set( "sv_referencedPakNames", p );
+		if ( FS_ExcludeReference() ) {
+			// \fs_excludeReference may mask our current ui/cgame qvms
+			FS_TouchFileInPak( "vm/cgame.qvm" );
+			FS_TouchFileInPak( "vm/ui.qvm" );
+			// rebuild referenced paks list
+			p = FS_ReferencedPakNames();
+		}
+		Cvar_Set( "sv_referencedPakNames", p );
 
-	p = FS_ReferencedPakChecksums();
-	Cvar_Set( "sv_referencedPaks", p );
+		p = FS_ReferencedPakChecksums();
+		Cvar_Set( "sv_referencedPaks", p );
+	}
 
 	Cvar_Set( "sv_paks", "" );
 	Cvar_Set( "sv_pakNames", "" ); // not used on client-side
@@ -724,6 +730,7 @@ void SV_Init( void )
 	Cvar_Get( "sv_pakNames", "", CVAR_SYSTEMINFO | CVAR_ROM );
 	Cvar_Get( "sv_referencedPaks", "", CVAR_SYSTEMINFO | CVAR_ROM );
 	sv_referencedPakNames = Cvar_Get( "sv_referencedPakNames", "", CVAR_SYSTEMINFO | CVAR_ROM );
+	sv_noReferencedPaks = Cvar_Get( "sv_noReferencedPaks", "1", CVAR_ARCHIVE_ND );
 
 	// server vars
 	sv_rconPassword = Cvar_Get ("rconPassword", "", CVAR_TEMP );
