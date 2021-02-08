@@ -473,7 +473,7 @@ static void Con_Prefix( void )
 		con.x = sizeof(con.prefix); // prefix + ' '
 		short *s = &con.text[ ( con.current % con.totallines ) * con.linewidth ];
 		for ( int i = 0; i < sizeof(con.prefix) - 1; ++i )
-			*s++ = (ColorIndexFromChar('z')<<8) | con.prefix[i];
+			*s++ = (9<<8) | con.prefix[i];
 		*s++ = (ColorIndex(COLOR_WHITE)<<8) | ' ';
 	}
 }
