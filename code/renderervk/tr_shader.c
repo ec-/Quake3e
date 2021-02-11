@@ -2118,7 +2118,6 @@ static int CollapseMultitexture( unsigned int st0bits, shaderStage_t *st0, shade
 	{
 		if ( memcmp( &st0->bundle[0].alphaWave, &st1->bundle[0].alphaWave, sizeof( stages[0].bundle[0].alphaWave ) ) )
 		{
-			ri.Printf( PRINT_WARNING, "%s[%i]: code 3\n", shader.name, st0 - stages );
 			switch ( mtEnv ) {
 				case GL_ADD:
 				case GL_ADD_NONIDENTITY: mtEnv = GL_BLEND_ADD; break;
