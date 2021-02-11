@@ -2017,7 +2017,7 @@ Attempt to combine two stages into a single multitexture stage
 FIXME: I think modulated add + modulated add collapses incorrectly
 =================
 */
-static int CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, int num_stages ) {
+static int CollapseMultitexture( unsigned int st0bits, shaderStage_t *st0, shaderStage_t *st1, int num_stages ) {
 	int abits, bbits;
 	int i, mtEnv;
 	textureBundle_t tmpBundle;
@@ -2047,7 +2047,7 @@ static int CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, int num
 	}
 #endif
 
-	abits = st0->stateBits;
+	abits = st0bits; // st0->stateBits;
 	bbits = st1->stateBits;
 
 	// make sure that both stages have identical state other than blend modes
@@ -2171,9 +2171,17 @@ static int CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, int num
 	Com_Memset( st0 + num_stages - 1, 0, sizeof( stages[0] ) );
 
 #ifdef USE_VULKAN
-	if ( vk.maxBoundDescriptorSets >= 6 && num_stages >= 3 && abits == 0 && !st0->mtEnv3 )
+	if ( vk.maxBoundDescriptorSets >= 6 && num_stages >= 3 && !st0->mtEnv3 )
 	{
-		return 1 + CollapseMultitexture( st0, st1, num_stages - 1 );
+		if ( mtEnv == GL_BLEND_ONE_MINUS_ALPHA || mtEnv == GL_BLEND_ALPHA )
+		{
+			// pass original state bits so recursive detection will work for these shaders
+			return 1 + CollapseMultitexture( st0bits, st0, st1, num_stages - 1 );
+		}
+		if ( abits == 0 )
+		{
+			return 1 + CollapseMultitexture( st0->stateBits, st0, st1, num_stages - 1 );
+		}
 	}
 #endif
 
@@ -2924,7 +2932,7 @@ static shader_t *FinishShader( void ) {
 	//
 	if ( r_ext_multitexture->integer ) {
 		for ( i = 0; i < stage-1; i++ ) {
-			stage -= CollapseMultitexture( &stages[i+0], &stages[i+1], stage-i );
+			stage -= CollapseMultitexture( stages[i+0].stateBits,  &stages[i+0], &stages[i+1], stage-i );
 		}
 	}
 
