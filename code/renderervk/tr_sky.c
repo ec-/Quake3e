@@ -464,7 +464,7 @@ static void DrawSkySide( image_t *image, const int mins[2], const int maxs[2], i
 		{
 			Com_Memset( tess.svars.colors, tr.identityLightByte, tess.numVertexes * sizeof( tess.svars.colors[0] ) );
 			*numColors = tess.numVertexes;
-			tess_flags = TESS_XYZ | TESS_RGBA | TESS_ST0;
+			tess_flags = TESS_XYZ | TESS_RGBA0 | TESS_ST0;
 		}
 		else
 		{

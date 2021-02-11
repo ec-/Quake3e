@@ -1342,7 +1342,7 @@ static void RB_DebugPolygon( int color, int numPoints, float *points ) {
 
 	vk_bind_index();
 	vk_bind_pipeline( vk.surface_debug_pipeline_solid );
-	vk_bind_geometry( TESS_XYZ | TESS_RGBA | TESS_ST0 );
+	vk_bind_geometry( TESS_XYZ | TESS_RGBA0 | TESS_ST0 );
 	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 
 	// Outline.
@@ -1356,7 +1356,7 @@ static void RB_DebugPolygon( int color, int numPoints, float *points ) {
 	tess.numIndexes = 0;
 
 	vk_bind_pipeline( vk.surface_debug_pipeline_outline );
-	vk_bind_geometry( TESS_XYZ | TESS_RGBA );
+	vk_bind_geometry( TESS_XYZ | TESS_RGBA0 );
 	vk_draw_geometry( DEPTH_RANGE_ZERO, qfalse );
 	tess.numVertexes = 0;
 #else
@@ -1571,7 +1571,7 @@ void RB_ShowImages( void )
 		tess.svars.texcoordPtr[0] = tess.svars.texcoords[0];
 
 		vk_bind_pipeline( vk.images_debug_pipeline );
-		vk_bind_geometry( TESS_XYZ | TESS_RGBA | TESS_ST0 );
+		vk_bind_geometry( TESS_XYZ | TESS_RGBA0 | TESS_ST0 );
 		vk_draw_geometry( DEPTH_RANGE_NORMAL, qfalse );
 	}
 

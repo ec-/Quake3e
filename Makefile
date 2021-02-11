@@ -747,6 +747,10 @@ Q3RENDVOBJ = \
   $(B)/rendv/mt_vert.o \
   $(B)/rendv/mt_fog_frag.o \
   $(B)/rendv/mt_frag.o \
+  $(B)/rendv/mt_x2_vert.o \
+  $(B)/rendv/mt_x3_vert.o \
+  $(B)/rendv/mt_x2_frag.o \
+  $(B)/rendv/mt_x3_frag.o \
   $(B)/rendv/mt2_fog_vert.o \
   $(B)/rendv/mt2_vert.o \
   $(B)/rendv/mt2_fog_frag.o \

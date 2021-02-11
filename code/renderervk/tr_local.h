@@ -60,7 +60,13 @@ typedef enum {
 	GL_LINEAR_MIPMAP_LINEAR,
 	GL_MODULATE,
 	GL_ADD,
-	GL_ADD_2,
+	GL_ADD_NONIDENTITY,
+
+	GL_BLEND_MODULATE,
+	GL_BLEND_ADD,
+	GL_BLEND_ALPHA,
+	GL_BLEND_ONE_MINUS_ALPHA,
+
 	GL_DECAL,
 	GL_BACK_LEFT,
 	GL_BACK_RIGHT
@@ -322,6 +328,16 @@ typedef struct {
 	int				numTexMods;
 	texModInfo_t	*texMods;
 
+	waveForm_t		rgbWave;
+	colorGen_t		rgbGen;
+
+	waveForm_t		alphaWave;
+	alphaGen_t		alphaGen;
+
+	byte			constantColor[4];			// for CGEN_CONST and AGEN_CONST
+
+	acff_t			adjustColorsForFog;
+
 	int				videoMapHandle;
 	qboolean		isLightmap;
 	qboolean		isVideoMap;
@@ -339,19 +355,9 @@ typedef struct {
 	
 	textureBundle_t	bundle[NUM_TEXTURE_BUNDLES];
 
-	waveForm_t		rgbWave;
-	colorGen_t		rgbGen;
-
-	waveForm_t		alphaWave;
-	alphaGen_t		alphaGen;
-
-	byte			constantColor[4];			// for CGEN_CONST and AGEN_CONST
-
 	unsigned		stateBits;					// GLS_xxxx mask
 	GLint			mtEnv;						// 0, GL_MODULATE, GL_ADD, GL_DECAL
-	GLint			mtEnv2;						// 0, GL_MODULATE, GL_ADD, GL_DECAL
-
-	acff_t			adjustColorsForFog;
+	GLint			mtEnv3;						// 0, GL_MODULATE, GL_ADD, GL_DECAL
 
 	qboolean		isDetail;
 	qboolean		depthFragment;
@@ -367,7 +373,7 @@ typedef struct {
 #endif
 
 #ifdef USE_VBO
-	uint32_t		color_offset; // within current shader
+	uint32_t		rgb_offset[NUM_TEXTURE_BUNDLES]; // within current shader
 	uint32_t		tex_offset[NUM_TEXTURE_BUNDLES]; // within current shader
 #endif
 
@@ -1527,6 +1533,8 @@ typedef byte color4ub_t[4];
 typedef struct stageVars
 {
 	color4ub_t	colors[SHADER_MAX_VERTEXES*2]; // 2x needed for shadows
+	color4ub_t	colors1[SHADER_MAX_VERTEXES];
+	color4ub_t	colors2[SHADER_MAX_VERTEXES];
 	vec2_t		texcoords[NUM_TEXTURE_BUNDLES][SHADER_MAX_VERTEXES];
 	vec2_t		*texcoordPtr[NUM_TEXTURE_BUNDLES];
 } stageVars_t;
@@ -1649,7 +1657,7 @@ qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t 
 
 void R_BindAnimatedImage( const textureBundle_t *bundle );
 void R_DrawElements( int numIndexes, const glIndex_t *indexes );
-void R_ComputeColors( const shaderStage_t *pStage );
+void R_ComputeColors( const int bundle, color4ub_t *dest, const shaderStage_t *pStage );
 void R_ComputeTexCoords( const int b, const textureBundle_t *bundle );
 
 /*

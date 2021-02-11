@@ -488,6 +488,22 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\renderervk\shaders\spirv\mt_x2_frag.c"
+					>
+				</File>
+				<File
+					RelativePath="..\..\renderervk\shaders\spirv\mt_x2_vert.c"
+					>
+				</File>
+				<File
+					RelativePath="..\..\renderervk\shaders\spirv\mt_x3_frag.c"
+					>
+				</File>
+				<File
+					RelativePath="..\..\renderervk\shaders\spirv\mt_x3_vert.c"
+					>
+				</File>
+				<File
 					RelativePath="..\..\renderervk\shaders\spirv\mt2_fog_frag.c"
 					>
 				</File>
