@@ -1489,6 +1489,21 @@ typedef enum {
 	maskAND
 } resultMask;
 
+
+static void derefVariable( const char *name, char *buf, int size )
+{
+	if ( !Q_stricmp( name, "vid_width" ) ) {
+		Com_sprintf( buf, size, "%i", glConfig.vidWidth );
+		return;
+	}
+	if ( !Q_stricmp( name, "vid_height" ) ) {
+		Com_sprintf( buf, size, "%i", glConfig.vidHeight );
+		return;
+	}
+	ri.Cvar_VariableStringBuffer( name, buf, size );
+}
+
+
 /*
 ===============
 ParseCondition
@@ -1566,7 +1581,7 @@ static qboolean ParseCondition( const char **text, resultType *res )
 		} else {
 			// dereference l-value
 			if ( lval_str[0] == '$' ) {
-				ri.Cvar_VariableStringBuffer( lval_str+1, lval_str, sizeof( lval_str ) ); 
+				derefVariable( lval_str + 1, lval_str, sizeof( lval_str ) );
 			}
 		}
 
@@ -1575,7 +1590,7 @@ static qboolean ParseCondition( const char **text, resultType *res )
 		} else {
 			// dereference r-value
 			if ( rval_str[0] == '$' ) {
-				ri.Cvar_VariableStringBuffer( rval_str+1, rval_str, sizeof( rval_str ) ); 
+				derefVariable( rval_str + 1, rval_str, sizeof( rval_str ) );
 			}
 		}
 
@@ -1820,8 +1835,8 @@ static qboolean ParseShader( const char **text )
 		{
 			ParseSkyParms( text );
 			if ( r_neatsky->integer ) {
-				shader.noPicMip = qtrue;
-				shader.noMipMaps = qtrue;
+				shader.noPicMip = 1;
+				shader.noMipMaps = 1;
 			}
 			continue;
 		}
