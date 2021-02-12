@@ -4806,6 +4806,8 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_BLEND2_MUL:
 		case TYPE_BLEND2_ALPHA:
 		case TYPE_BLEND2_ONE_MINUS_ALPHA:
+		case TYPE_BLEND2_MIX_ALPHA:
+		case TYPE_BLEND2_MIX_ONE_MINUS_ALPHA:
 			vs_module = &vk.modules.mt_x2_vs;
 			fs_module = &vk.modules.mt_x2_fs;
 			break;
@@ -4814,6 +4816,8 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_BLEND3_MUL:
 		case TYPE_BLEND3_ALPHA:
 		case TYPE_BLEND3_ONE_MINUS_ALPHA:
+		case TYPE_BLEND3_MIX_ALPHA:
+		case TYPE_BLEND3_MIX_ONE_MINUS_ALPHA:
 			vs_module = &vk.modules.mt_x3_vs;
 			fs_module = &vk.modules.mt_x3_fs;
 			break;
@@ -4849,10 +4853,14 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 			case TYPE_BLEND2_MUL:
 			case TYPE_BLEND2_ALPHA:
 			case TYPE_BLEND2_ONE_MINUS_ALPHA:
+			case TYPE_BLEND2_MIX_ALPHA:
+			case TYPE_BLEND2_MIX_ONE_MINUS_ALPHA:
 			case TYPE_BLEND3_ADD:
 			case TYPE_BLEND3_MUL:
 			case TYPE_BLEND3_ALPHA:
 			case TYPE_BLEND3_ONE_MINUS_ALPHA:
+			case TYPE_BLEND3_MIX_ALPHA:
+			case TYPE_BLEND3_MIX_ONE_MINUS_ALPHA:
 				break;
 			default:
 				// switch to fogged modules
@@ -4936,6 +4944,12 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_BLEND2_ONE_MINUS_ALPHA:
 		case TYPE_BLEND3_ONE_MINUS_ALPHA:
 			frag_spec_data[6].i = 4; break;
+		case TYPE_BLEND2_MIX_ALPHA:
+		case TYPE_BLEND3_MIX_ALPHA:
+			frag_spec_data[6].i = 5; break;
+		case TYPE_BLEND2_MIX_ONE_MINUS_ALPHA:
+		case TYPE_BLEND3_MIX_ONE_MINUS_ALPHA:
+			frag_spec_data[6].i = 6; break;
 		default: 
 			break;
 	}
@@ -5073,6 +5087,8 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_BLEND2_MUL:
 		case TYPE_BLEND2_ALPHA:
 		case TYPE_BLEND2_ONE_MINUS_ALPHA:
+		case TYPE_BLEND2_MIX_ALPHA:
+		case TYPE_BLEND2_MIX_ONE_MINUS_ALPHA:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_bind( 1, sizeof( color4ub_t ) );				// color0 array
 			push_bind( 2, sizeof( vec2_t ) );					// st0 array
@@ -5089,6 +5105,8 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_BLEND3_MUL:
 		case TYPE_BLEND3_ALPHA:
 		case TYPE_BLEND3_ONE_MINUS_ALPHA:
+		case TYPE_BLEND3_MIX_ALPHA:
+		case TYPE_BLEND3_MIX_ONE_MINUS_ALPHA:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_bind( 1, sizeof( color4ub_t ) );				// color0 array
 			push_bind( 2, sizeof( vec2_t ) );					// st0 array

@@ -20,7 +20,7 @@ layout(location = 0) out vec4 out_color;
 //layout (constant_id = 3) const int alpha_to_coverage = 0;
 //layout (constant_id = 4) const int color_mode = 0;
 //layout (constant_id = 5) const int abs_light = 0;
-layout (constant_id = 6) const int tex_mode = 0; // modulate, add (identity), add, alpha, 1-alpha
+layout (constant_id = 6) const int tex_mode = 0; // modulate, add (identity), add, alpha, 1-alpha, mix alpha, mix 1-alpha 
 layout (constant_id = 7) const int discard_mode = 0;
 
 void main() {
@@ -33,15 +33,21 @@ void main() {
 		// add
 		base = vec4( color0.rgb + color1.rgb, color0.a * color1.a );
 	} else if ( tex_mode == 3 ) {
-        // modulate by alpha
+		// modulate by alpha
 		color0 *= color0.a;
 		color1 *= color1.a;
- 	    base = vec4( color0.rgb + color1.rgb, color0.a * color1.a );
-    } else if ( tex_mode == 4 ) {
+		base = vec4( color0.rgb + color1.rgb, color0.a * color1.a );
+	} else if ( tex_mode == 4 ) {
 		// modulate by 1.0-alpha
 		color0 *= 1.0-color0.a;
 		color1 *= 1.0-color1.a;
- 	    base = vec4( color0.rgb + color1.rgb, color0.a * color1.a );
+		base = vec4( color0.rgb + color1.rgb, color0.a * color1.a );
+	} else if ( tex_mode == 5 ) {
+		// mix by src alpha
+		base = mix( color0, color1, color1.a );
+	} else if ( tex_mode == 6 ) {
+		// mix by 1-src alpha
+		base = mix( color1, color0, color1.a );
 	} else {
 		// modulate
 		base = color0 * color1;

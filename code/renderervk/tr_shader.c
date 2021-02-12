@@ -2001,6 +2001,12 @@ static collapse_t	collapse[] = {
 	{ GLS_DSTBLEND_ONE | GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA, GLS_DSTBLEND_ONE | GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA,
 		GL_BLEND_ONE_MINUS_ALPHA, GLS_DSTBLEND_ONE | GLS_SRCBLEND_ONE},
 
+	{ 0, GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_SRCBLEND_SRC_ALPHA,
+		GL_BLEND_MIX_ALPHA, 0},
+
+	{ 0, GLS_DSTBLEND_SRC_ALPHA | GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA,
+		GL_BLEND_MIX_ONE_MINUS_ALPHA, 0},
+
 #if 0
 	{ 0, GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_SRCBLEND_SRC_ALPHA,
 		GL_DECAL, 0 },
@@ -2172,7 +2178,7 @@ static int CollapseMultitexture( unsigned int st0bits, shaderStage_t *st0, shade
 #ifdef USE_VULKAN
 	if ( vk.maxBoundDescriptorSets >= 6 && num_stages >= 3 && !st0->mtEnv3 )
 	{
-		if ( mtEnv == GL_BLEND_ONE_MINUS_ALPHA || mtEnv == GL_BLEND_ALPHA )
+		if ( mtEnv == GL_BLEND_ONE_MINUS_ALPHA || mtEnv == GL_BLEND_ALPHA || mtEnv == GL_BLEND_MIX_ALPHA || mtEnv == GL_BLEND_MIX_ONE_MINUS_ALPHA )
 		{
 			// pass original state bits so recursive detection will work for these shaders
 			return 1 + CollapseMultitexture( st0bits, st0, st1, num_stages - 1 );
@@ -2993,17 +2999,23 @@ static shader_t *FinishShader( void ) {
 						def.shader_type = TYPE_MULTI_TEXTURE_ADD3; break;
 
 					case GL_BLEND_MODULATE:
-						pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1 | TESS_ST2 | TESS_RGBA1 | TESS_RGBA2;
+						pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_RGBA2 | TESS_ST0 | TESS_ST1 | TESS_ST2;
 						def.shader_type = TYPE_BLEND3_MUL; fogCollapse = qfalse; break;
 					case GL_BLEND_ADD:
-						pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1 | TESS_ST2 | TESS_RGBA1 | TESS_RGBA2;
+						pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_RGBA2 | TESS_ST0 | TESS_ST1 | TESS_ST2;
 						def.shader_type = TYPE_BLEND3_ADD; fogCollapse = qfalse; break;
 					case GL_BLEND_ALPHA:
-						pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1 | TESS_ST2 | TESS_RGBA1 | TESS_RGBA2;
+						pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_RGBA2 | TESS_ST0 | TESS_ST1 | TESS_ST2;
 						def.shader_type = TYPE_BLEND3_ALPHA; fogCollapse = qfalse; break;
 					case GL_BLEND_ONE_MINUS_ALPHA:
-						pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1 | TESS_ST2 | TESS_RGBA1 | TESS_RGBA2;
+						pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_RGBA2 | TESS_ST0 | TESS_ST1 | TESS_ST2;
 						def.shader_type = TYPE_BLEND3_ONE_MINUS_ALPHA; fogCollapse = qfalse; break;
+					case GL_BLEND_MIX_ONE_MINUS_ALPHA:
+						pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_RGBA2 | TESS_ST0 | TESS_ST1 | TESS_ST2;
+						def.shader_type = TYPE_BLEND3_MIX_ONE_MINUS_ALPHA; fogCollapse = qfalse; break;
+					case GL_BLEND_MIX_ALPHA:
+						pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_RGBA2 | TESS_ST0 | TESS_ST1 | TESS_ST2;
+						def.shader_type = TYPE_BLEND3_MIX_ALPHA; fogCollapse = qfalse; break;
 
 					default:
 						break;
@@ -3022,17 +3034,23 @@ static shader_t *FinishShader( void ) {
 					def.shader_type = TYPE_MULTI_TEXTURE_ADD2; break;
 
 				case GL_BLEND_MODULATE:
-					pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1 | TESS_RGBA1;
+					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
 					def.shader_type = TYPE_BLEND2_MUL; fogCollapse = qfalse; break;
 				case GL_BLEND_ADD:
-					pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1 | TESS_RGBA1;
+					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
 					def.shader_type = TYPE_BLEND2_ADD; fogCollapse = qfalse; break;
 				case GL_BLEND_ALPHA:
-					pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1 | TESS_RGBA1;
+					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
 					def.shader_type = TYPE_BLEND2_ALPHA; fogCollapse = qfalse; break;
 				case GL_BLEND_ONE_MINUS_ALPHA:
-					pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1 | TESS_RGBA1;
+					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
 					def.shader_type = TYPE_BLEND2_ONE_MINUS_ALPHA; fogCollapse = qfalse; break;
+				case GL_BLEND_MIX_ONE_MINUS_ALPHA:
+					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
+					def.shader_type = TYPE_BLEND2_MIX_ONE_MINUS_ALPHA; fogCollapse = qfalse; break;
+				case GL_BLEND_MIX_ALPHA:
+					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
+					def.shader_type = TYPE_BLEND2_MIX_ALPHA; fogCollapse = qfalse; break;
 
 				default:
 					pStage->tessFlags = TESS_RGBA0 | TESS_ST0;
