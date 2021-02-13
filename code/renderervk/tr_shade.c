@@ -197,7 +197,7 @@ static void DrawNormals( const shaderCommands_t *input ) {
 		tess.numIndexes += 2;
 	}
 	tess.numVertexes *= 2;
-	Com_Memset( tess.svars.colors, tr.identityLightByte, tess.numVertexes * sizeof(color4ub_t) );
+	Com_Memset( tess.svars.colors[0], tr.identityLightByte, tess.numVertexes * sizeof( color4ub_t ) );
 
 	vk_bind_pipeline( vk.normals_debug_pipeline );
 	vk_bind_index();
@@ -319,13 +319,13 @@ static void DrawMultitextured( const shaderCommands_t *input, int stage ) {
 	GL_State( pStage->stateBits );
 
 	if ( !setArraysOnce ) {
-		R_ComputeColors( 0, tess.svars.colors, pStage );
+		R_ComputeColors( 0, tess.svars.colors[0], pStage );
 		R_ComputeTexCoords( 0, &pStage->bundle[0] );
 		R_ComputeTexCoords( 1, &pStage->bundle[1] );
 		GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
 
 		qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoordPtr[0] );
-		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors );
+		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors[0] );
 
 		GL_ClientState( 1, CLS_TEXCOORD_ARRAY );
 		qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoordPtr[1] );
@@ -557,7 +557,7 @@ static void RB_FogPass( void ) {
 	fog = tr.world->fogs + tess.fogNum;
 
 	for ( i = 0; i < tess.numVertexes; i++ ) {
-		* ( int * )&tess.svars.colors[i] = fog->colorInt;
+		* ( int * )&tess.svars.colors[0][i] = fog->colorInt;
 	}
 
 	RB_CalcFogTexCoords( ( float * ) tess.svars.texcoords[0] );
@@ -577,7 +577,7 @@ static void RB_FogPass( void ) {
 	GL_ClientState( 1, CLS_NONE );
 	GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
 
-	qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors );
+	qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors[0] );
 	qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[0] );
 
 	GL_SelectTexture( 0 );
@@ -949,25 +949,20 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 #ifdef USE_VULKAN
 		tess_flags |= pStage->tessFlags;
 
-		if ( pStage->tessFlags & TESS_RGBA0 ) {
-			R_ComputeColors( 0, tess.svars.colors, pStage );
-		}
-		if ( pStage->tessFlags & TESS_RGBA1 ) {
-			R_ComputeColors( 1, tess.svars.colors1, pStage );
-		}
-		if ( pStage->tessFlags & TESS_RGBA2 ) {
-			R_ComputeColors( 2, tess.svars.colors2, pStage );
-		}
-
-		for ( i = NUM_TEXTURE_BUNDLES-1; i >= 0; i-- ) {
+		for ( i = 0;  i < pStage->numTexBundles; i++ ) {
 			if ( pStage->bundle[i].image[0] != NULL ) {
 				GL_SelectTexture( i );
 				R_BindAnimatedImage( &pStage->bundle[i] );
-				if ( pStage->tessFlags & (TESS_ST0 << i) ) {
+				if ( tess_flags & ( TESS_ST0 << i ) ) {
 					R_ComputeTexCoords( i, &pStage->bundle[i] );
+				}
+				if ( tess_flags & ( TESS_RGBA0 << i ) ) {
+					R_ComputeColors( i, tess.svars.colors[i], pStage );
 				}
 			}
 		}
+
+		GL_SelectTexture( 0 );
 
 		if ( backEnd.viewParms.portalView == PV_MIRROR )
 			pipeline = pStage->vk_mirror_pipeline[ fog_stage ];
@@ -975,7 +970,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 			pipeline = pStage->vk_pipeline[ fog_stage ];
 
 		if ( r_lightmap->integer && pStage->bundle[1].isLightmap ) {
-			GL_SelectTexture( 0 );
+			//GL_SelectTexture( 0 );
 			GL_Bind( tr.whiteImage ); // replace diffuse texture with a white one thus effectively render only lightmap
 		}
 
@@ -992,7 +987,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 			vk_draw_geometry( tess.depthRange, qtrue );
 		}
 #else
-		R_ComputeColors( 0, tess.svars.colors, pStage );
+		R_ComputeColors( 0, tess.svars.colors[0], pStage );
 
 		R_ComputeTexCoords( 0, &pStage->bundle[0] );
 
@@ -1008,13 +1003,13 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 			if ( !setArraysOnce )
 			{
 				R_ComputeTexCoords( 0, &pStage->bundle[0] );
-				R_ComputeColors( 0, tess.svars.colors, pStage );
+				R_ComputeColors( 0, tess.svars.colors[0], pStage );
 
 				GL_ClientState( 1, CLS_NONE );
 				GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
 
 				qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoordPtr[0] );
-				qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors );
+				qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors[0] );
 			}
 
 			//
@@ -1288,7 +1283,7 @@ void RB_StageIteratorGeneric( void )
 		if ( tess.xstages[0] )
 		{
 			R_ComputeColors( 0, tess.svars.colors, tess.xstages[0] );
-			qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors );
+			qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors[0] );
 			R_ComputeTexCoords( 0, &tess.xstages[0]->bundle[0] );
 			qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoordPtr[0] );
 			if ( shader->multitextureEnv )

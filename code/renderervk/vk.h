@@ -378,17 +378,15 @@ typedef struct {
 	struct {
 		VkShaderModule st_vs[2];
 		VkShaderModule st_enviro_vs[2];
-		VkShaderModule mt_vs[2];
-		VkShaderModule mt2_vs[2];
-
-		VkShaderModule mt_x2_vs;
-		VkShaderModule mt_x3_vs;
-
 		VkShaderModule st_fs[2];
 		VkShaderModule st_df_fs;
+
+		VkShaderModule mt_vs[2];
+		VkShaderModule mt2_vs[2];
+		VkShaderModule mt_x2_vs;
+		VkShaderModule mt_x3_vs;
 		VkShaderModule mt_fs[2];
 		VkShaderModule mt2_fs[2];
-
 		VkShaderModule mt_x2_fs;
 		VkShaderModule mt_x3_fs;
 

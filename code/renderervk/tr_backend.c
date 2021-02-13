@@ -1325,10 +1325,10 @@ static void RB_DebugPolygon( int color, int numPoints, float *points ) {
 	for (i = 0; i < numPoints; i++) {
 		VectorCopy(&points[3*i], tess.xyz[i]);
 
-		tess.svars.colors[i][0] = (color&1) ? 255 : 0;
-		tess.svars.colors[i][1] = (color&2) ? 255 : 0;
-		tess.svars.colors[i][2] = (color&4) ? 255 : 0;
-		tess.svars.colors[i][3] = 255;
+		tess.svars.colors[0][i][0] = (color&1) ? 255 : 0;
+		tess.svars.colors[0][i][1] = (color&2) ? 255 : 0;
+		tess.svars.colors[0][i][2] = (color&4) ? 255 : 0;
+		tess.svars.colors[0][i][3] = 255;
 	}
 	tess.numVertexes = numPoints;
 
@@ -1346,7 +1346,7 @@ static void RB_DebugPolygon( int color, int numPoints, float *points ) {
 	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 
 	// Outline.
-	Com_Memset( tess.svars.colors, tr.identityLightByte, numPoints * 2 * sizeof(tess.svars.colors[0] ) );
+	Com_Memset( tess.svars.colors[0], tr.identityLightByte, numPoints * 2 * sizeof( color4ub_t ) );
 
 	for ( i = 0; i < numPoints; i++ ) {
 		VectorCopy( &points[3*i], tess.xyz[2*i] );
@@ -1544,7 +1544,7 @@ void RB_ShowImages( void )
 
 		GL_Bind( image );
 
-		Com_Memset( tess.svars.colors, 255, 4 * sizeof( tess.svars.colors[0] ) );
+		Com_Memset( tess.svars.colors[0], 255, 4 * sizeof( color4ub_t ) );
 
 		tess.numVertexes = 4;
 

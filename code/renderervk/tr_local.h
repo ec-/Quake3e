@@ -366,6 +366,7 @@ typedef struct {
 
 #ifdef USE_VULKAN
 	uint32_t		tessFlags;
+	uint32_t		numTexBundles;
 
 	uint32_t		vk_pipeline[2]; // normal,fogged
 	uint32_t		vk_mirror_pipeline[2];
@@ -1534,9 +1535,7 @@ typedef byte color4ub_t[4];
 
 typedef struct stageVars
 {
-	color4ub_t	colors[SHADER_MAX_VERTEXES*2]; // 2x needed for shadows
-	color4ub_t	colors1[SHADER_MAX_VERTEXES];
-	color4ub_t	colors2[SHADER_MAX_VERTEXES];
+	color4ub_t	colors[NUM_TEXTURE_BUNDLES][SHADER_MAX_VERTEXES]; // we need at least 2xSHADER_MAX_VERTEXES for shadows and normals
 	vec2_t		texcoords[NUM_TEXTURE_BUNDLES][SHADER_MAX_VERTEXES];
 	vec2_t		*texcoordPtr[NUM_TEXTURE_BUNDLES];
 } stageVars_t;

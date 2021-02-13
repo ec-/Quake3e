@@ -2180,6 +2180,8 @@ static int CollapseMultitexture( unsigned int st0bits, shaderStage_t *st0, shade
 		shader.multitextureEnv = qtrue;
 	}
 
+	st0->numTexBundles++;
+
 	//
 	// move down subsequent shaders
 	//
@@ -2816,13 +2818,13 @@ static shader_t *FinishShader( void ) {
 		if ( pStage->isDetail && !r_detailTextures->integer )
 		{
 			int index;
-			
+
 			for(index = stage + 1; index < MAX_SHADER_STAGES; index++)
 			{
 				if(!stages[index].active)
 					break;
 			}
-			
+
 			if(index < MAX_SHADER_STAGES)
 				memmove(pStage, pStage + 1, sizeof(*pStage) * (index - stage));
 			else
@@ -2832,7 +2834,7 @@ static shader_t *FinishShader( void ) {
 				
 				Com_Memset(&stages[index - 1], 0, sizeof(*stages));
 			}
-			
+
 			continue;
 		}
 
@@ -2894,7 +2896,7 @@ static shader_t *FinishShader( void ) {
 
 			colorBlend = qtrue;
 		}
-		
+
 		stage++;
 	}
 
@@ -2941,10 +2943,14 @@ static shader_t *FinishShader( void ) {
 	//
 	// if we are in r_vertexLight mode, never use a lightmap texture
 	//
-	if ( stage > 1 && ( (r_vertexLight->integer && tr.vertexLightingAllowed && !shader.noVLcollapse) || glConfig.hardwareType == GLHW_PERMEDIA2 ) ) {
+	if ( stage > 1 && ( ( r_vertexLight->integer && tr.vertexLightingAllowed && !shader.noVLcollapse ) || glConfig.hardwareType == GLHW_PERMEDIA2 ) ) {
 		VertexLightingCollapse();
 		stage = 1;
 		hasLightmapStage = qfalse;
+	}
+
+	for ( i = 0; i < stage; i++ ) {
+		stages[ i ].numTexBundles = 1;
 	}
 
 	//
