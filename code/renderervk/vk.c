@@ -3483,6 +3483,8 @@ void vk_initialize( void )
 
 	if ( props.vendorID == 0x1002 ) {
 		vendor_name = "Advanced Micro Devices, Inc.";
+	} else if ( props.vendorID == 0x106B ) {
+		vendor_name = "Apple Inc.";
 	} else if ( props.vendorID == 0x10DE ) {
 #ifdef _WIN32
 		// https://github.com/SaschaWillems/Vulkan/issues/493
