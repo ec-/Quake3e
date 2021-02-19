@@ -313,7 +313,7 @@ static void add_vert_to_face(visFace_t *face, vec3_t vert, vec4_t color, vec2_t 
 }
 
 static float *get_uv_coords(vec2_t uv, vec3_t vert, vec3_t normal) {
-	float x = abs(normal[0]), y = abs(normal[1]), z = abs(normal[2]);
+	float x = fabsf(normal[0]), y = fabsf(normal[1]), z = fabsf(normal[2]);
 	if (x >= y && x >= z) {
 		uv[0] = -vert[1] / 32.f;
 		uv[1] = -vert[2] / 32.f;
