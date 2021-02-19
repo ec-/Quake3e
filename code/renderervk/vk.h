@@ -29,14 +29,32 @@ typedef enum {
 	TYPE_SIGNLE_TEXTURE,
 	TYPE_SIGNLE_TEXTURE_DF,
 	TYPE_SIGNLE_TEXTURE_ENVIRO,
+
 	TYPE_SIGNLE_TEXTURE_LIGHTING,
 	TYPE_SIGNLE_TEXTURE_LIGHTING1,
-	TYPE_MULTI_TEXTURE_MUL,
-	TYPE_MULTI_TEXTURE_ADD,
-	TYPE_MULTI_TEXTURE_ADD_IDENTITY,
+
 	TYPE_MULTI_TEXTURE_MUL2,
-	TYPE_MULTI_TEXTURE_ADD2,
 	TYPE_MULTI_TEXTURE_ADD2_IDENTITY,
+	TYPE_MULTI_TEXTURE_ADD2,
+
+	TYPE_MULTI_TEXTURE_MUL3,
+	TYPE_MULTI_TEXTURE_ADD3_IDENTITY,
+	TYPE_MULTI_TEXTURE_ADD3,
+
+	TYPE_BLEND2_ADD,
+	TYPE_BLEND2_MUL,
+	TYPE_BLEND2_ALPHA,
+	TYPE_BLEND2_ONE_MINUS_ALPHA,
+	TYPE_BLEND2_MIX_ALPHA,
+	TYPE_BLEND2_MIX_ONE_MINUS_ALPHA,
+
+	TYPE_BLEND3_ADD,
+	TYPE_BLEND3_MUL,
+	TYPE_BLEND3_ALPHA,
+	TYPE_BLEND3_ONE_MINUS_ALPHA,
+	TYPE_BLEND3_MIX_ALPHA,
+	TYPE_BLEND3_MIX_ONE_MINUS_ALPHA,
+
 	TYPE_COLOR_WHITE,
 	TYPE_COLOR_GREEN,
 	TYPE_COLOR_RED,
@@ -117,13 +135,15 @@ typedef struct vkUniform_s {
 } vkUniform_t;
 
 #define TESS_XYZ   (1)
-#define TESS_RGBA  (2)
-#define TESS_ST0   (4)
-#define TESS_ST1   (8)
-#define TESS_ST2   (16)
-#define TESS_NNN   (32)
-#define TESS_VPOS  (64)  // uniform with eyePos
-#define TESS_ENV   (128) // mark shader stage with environment mapping
+#define TESS_RGBA0 (2)
+#define TESS_RGBA1 (4)
+#define TESS_RGBA2 (8)
+#define TESS_ST0   (16)
+#define TESS_ST1   (32)
+#define TESS_ST2   (64)
+#define TESS_NNN   (128)
+#define TESS_VPOS  (256)  // uniform with eyePos
+#define TESS_ENV   (512) // mark shader stage with environment mapping
 //
 // Initialization.
 //
@@ -213,8 +233,8 @@ typedef struct vk_tess_s {
 
 	VkDescriptorSet uniform_descriptor;
 	uint32_t		uniform_read_offset;
-	VkDeviceSize	buf_offset[6];
-	VkDeviceSize	vbo_offset[6];
+	VkDeviceSize	buf_offset[8];
+	VkDeviceSize	vbo_offset[8];
 
 	VkBuffer		curr_index_buffer;
 	uint32_t		curr_index_offset;
@@ -358,13 +378,17 @@ typedef struct {
 	struct {
 		VkShaderModule st_vs[2];
 		VkShaderModule st_enviro_vs[2];
-		VkShaderModule mt_vs[2];
-		VkShaderModule mt2_vs[2];
-
 		VkShaderModule st_fs[2];
 		VkShaderModule st_df_fs;
+
+		VkShaderModule mt_vs[2];
+		VkShaderModule mt2_vs[2];
+		VkShaderModule mt_x2_vs;
+		VkShaderModule mt_x3_vs;
 		VkShaderModule mt_fs[2];
 		VkShaderModule mt2_fs[2];
+		VkShaderModule mt_x2_fs;
+		VkShaderModule mt_x3_fs;
 
 		VkShaderModule color_fs;
 		VkShaderModule color_vs;

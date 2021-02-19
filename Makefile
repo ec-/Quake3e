@@ -180,7 +180,6 @@ SDIR=$(MOUNT_DIR)/server
 RCDIR=$(MOUNT_DIR)/renderercommon
 R1DIR=$(MOUNT_DIR)/renderer
 RVDIR=$(MOUNT_DIR)/renderervk
-RVSDIR=$(MOUNT_DIR)/renderervk/shaders/spirv
 SDLDIR=$(MOUNT_DIR)/sdl
 
 CMDIR=$(MOUNT_DIR)/qcommon
@@ -760,39 +759,6 @@ Q3RENDVOBJ = \
   $(B)/rendv/vk.o \
   $(B)/rendv/vk_flares.o \
   $(B)/rendv/vk_vbo.o \
-  \
-  $(B)/rendv/bloom_frag.o \
-  $(B)/rendv/blur_frag.o \
-  $(B)/rendv/blend_frag.o \
-  $(B)/rendv/dot_frag.o \
-  $(B)/rendv/dot_vert.o \
-  $(B)/rendv/color_frag.o \
-  $(B)/rendv/color_vert.o \
-  $(B)/rendv/fog_frag.o \
-  $(B)/rendv/fog_vert.o \
-  $(B)/rendv/gamma_frag.o \
-  $(B)/rendv/gamma_vert.o \
-  $(B)/rendv/light_fog_vert.o \
-  $(B)/rendv/light_vert.o \
-  $(B)/rendv/light_fog_frag.o \
-  $(B)/rendv/light_frag.o \
-  $(B)/rendv/light1_fog_frag.o \
-  $(B)/rendv/light1_frag.o \
-  $(B)/rendv/mt_fog_vert.o \
-  $(B)/rendv/mt_vert.o \
-  $(B)/rendv/mt_fog_frag.o \
-  $(B)/rendv/mt_frag.o \
-  $(B)/rendv/mt2_fog_vert.o \
-  $(B)/rendv/mt2_vert.o \
-  $(B)/rendv/mt2_fog_frag.o \
-  $(B)/rendv/mt2_frag.o \
-  $(B)/rendv/st_fog_vert.o \
-  $(B)/rendv/st_vert.o \
-  $(B)/rendv/st_enviro_fog_vert.o \
-  $(B)/rendv/st_enviro_vert.o \
-  $(B)/rendv/st_fog_frag.o \
-  $(B)/rendv/st_df_frag.o \
-  $(B)/rendv/st_frag.o
 
 ifneq ($(USE_RENDERER_DLOPEN), 0)
   Q3RENDVOBJ += \
@@ -1200,9 +1166,6 @@ $(B)/rendv/%.o: $(RVDIR)/%.c
 $(B)/rendv/%.o: $(RCDIR)/%.c
 	$(DO_REND_CC)
 
-$(B)/rendv/%.o: $(RVSDIR)/%.c
-	$(DO_REND_CC)
-
 $(B)/rendv/%.o: $(CMDIR)/%.c
 	$(DO_REND_CC)
 
@@ -1214,7 +1177,6 @@ $(B)/client/%.o: $(W32DIR)/%.c
 
 $(B)/client/%.o: $(W32DIR)/%.rc
 	$(DO_WINDRES)
-
 
 $(B)/ded/%.o: $(ADIR)/%.s
 	$(DO_AS)

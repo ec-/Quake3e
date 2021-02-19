@@ -334,7 +334,8 @@ typedef struct {
 } texModInfo_t;
 
 
-#define	MAX_IMAGE_ANIMATIONS	8
+#define MAX_IMAGE_ANIMATIONS		24
+#define MAX_IMAGE_ANIMATIONS_VQ3	8
 
 typedef struct {
 	image_t			*image[MAX_IMAGE_ANIMATIONS];

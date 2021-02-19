@@ -65,6 +65,7 @@ static void R_CalcShadowEdges( void ) {
 	int		c, c2;
 	int		j, k;
 	int		i2;
+	color4ub_t *colors;
 
 	tess.numIndexes = 0;
 
@@ -119,9 +120,10 @@ static void R_CalcShadowEdges( void ) {
 #ifdef USE_VULKAN
 	tess.numVertexes *= 2;
 
+	colors = &tess.svars.colors[0][0]; // we need at least 2x SHADER_MAX_VERTEXES there
+
 	for ( i = 0; i < tess.numVertexes; i++ ) {
-		VectorSet(tess.svars.colors[i], 50, 50, 50);
-		tess.svars.colors[i][3] = 255;
+		Vector4Set(colors[i], 50, 50, 50, 255);
 	}
 #endif
 }
@@ -210,17 +212,18 @@ void RB_ShadowTessEnd( void ) {
 #ifdef USE_VULKAN
 	GL_Bind( tr.whiteImage );
 
-	vk_bind_index();
-	vk_bind_geometry( TESS_XYZ | TESS_RGBA );
-
 	// mirrors have the culling order reversed
 	if ( backEnd.viewParms.portalView == PV_MIRROR ) {
 		vk_bind_pipeline( vk.shadow_volume_pipelines[0][1] );
+		vk_bind_index();
+		vk_bind_geometry( TESS_XYZ | TESS_RGBA0 );
 		vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 		vk_bind_pipeline( vk.shadow_volume_pipelines[1][1] );
 		vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 	} else {
 		vk_bind_pipeline( vk.shadow_volume_pipelines[0][0] );
+		vk_bind_index();
+		vk_bind_geometry( TESS_XYZ | TESS_RGBA0 );
 		vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 		vk_bind_pipeline( vk.shadow_volume_pipelines[1][0] );
 		vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
@@ -316,7 +319,7 @@ void RB_ShadowFinish( void ) {
 	for ( i = 0; i < 4; i++ )
 	{
 		VectorCopy( verts[i], tess.xyz[i] );
-		Vector4Set( tess.svars.colors[i], 153, 153, 153, 255 );
+		Vector4Set( tess.svars.colors[0][i], 153, 153, 153, 255 );
 	}
 
 	tess.numVertexes = 4;
@@ -333,7 +336,7 @@ void RB_ShadowFinish( void ) {
 
 	vk_update_mvp( NULL );
 
-	vk_bind_geometry( TESS_XYZ | TESS_RGBA /*| TESS_ST0 */ );
+	vk_bind_geometry( TESS_XYZ | TESS_RGBA0 /*| TESS_ST0 */ );
 	vk_draw_geometry( DEPTH_RANGE_NORMAL, qfalse );
 
 	Com_Memcpy( vk_world.modelview_transform, tmp, 64 );

@@ -197,6 +197,9 @@ static qboolean isStaticShader( shader_t *shader )
 	if ( shader->numDeforms || shader->numUnfoggedPasses > MAX_VBO_STAGES )
 		return qfalse;
 
+	if ( shader->tessFlags & ( TESS_RGBA1 | TESS_RGBA2 ) )
+		return qfalse;
+
 	svarsSize = 0;
 
 	for ( i = 0; i < shader->numUnfoggedPasses; i++ )
@@ -206,25 +209,30 @@ static qboolean isStaticShader( shader_t *shader )
 			break;
 		if ( stage->depthFragment )
 			return qfalse;
-		if ( stage->adjustColorsForFog != ACFF_NONE )
-			return qfalse;
-		if ( !isStaticRGBgen( stage->rgbGen ) )
-			return qfalse;
-		if ( !isStaticAgen( stage->alphaGen ) )
-			return qfalse;
 		for ( b = 0; b < NUM_TEXTURE_BUNDLES; b++ ) {
 			if ( !isStaticTCmod( &stage->bundle[b] ) )
 				return qfalse;
 			if ( !isStaticTCgen( stage, b ) )
 				return qfalse;
+			if ( stage->bundle[b].adjustColorsForFog != ACFF_NONE )
+				return qfalse;
+			if ( !isStaticRGBgen( stage->bundle[b].rgbGen ) )
+				return qfalse;
+			if ( !isStaticAgen( stage->bundle[b].alphaGen ) )
+				return qfalse;
 		}
-		svarsSize += sizeof( tess.svars.colors[0] );
+		if ( stage->tessFlags & TESS_RGBA0 )
+			svarsSize += sizeof( color4ub_t );
+		if ( stage->tessFlags & TESS_RGBA1 )
+			svarsSize += sizeof( color4ub_t );
+		if ( stage->tessFlags & TESS_RGBA2 )
+			svarsSize += sizeof( color4ub_t );
 		if ( stage->tessFlags & TESS_ST0 )
-			svarsSize += sizeof( tess.svars.texcoords[0][0] );
+			svarsSize += sizeof( vec2_t );
 		if ( stage->tessFlags & TESS_ST1 )
-			svarsSize += sizeof( tess.svars.texcoords[1][0] );
+			svarsSize += sizeof( vec2_t );
 		if ( stage->tessFlags & TESS_ST2 )
-			svarsSize += sizeof( tess.svars.texcoords[2][0] );
+			svarsSize += sizeof( vec2_t );
 	}
 
 	if ( i == 0 )
@@ -249,9 +257,11 @@ static void VBO_AddGeometry( vbo_t *vbo, vbo_item_t *vi, shaderCommands_t *input
 {
 	uint32_t size, offs;
 	uint32_t offs_st[NUM_TEXTURE_BUNDLES];
+	uint32_t offs_cl[NUM_TEXTURE_BUNDLES];
 	int i;
 
 	offs_st[0] = offs_st[1] = offs_st[2] = 0;
+	offs_cl[0] = offs_cl[1] = offs_cl[2] = 0;
 
 	if ( input->shader->iboOffset == -1 || input->shader->vboOffset == -1 ) {
 
@@ -274,22 +284,43 @@ static void VBO_AddGeometry( vbo_t *vbo, vbo_item_t *vi, shaderCommands_t *input
 			shaderStage_t *pStage = input->xstages[ i ];
 			if ( !pStage )
 				break;
-			pStage->color_offset = offs; offs += input->shader->numVertexes * sizeof( tess.svars.colors[0] );
+
+			if ( pStage->tessFlags & TESS_RGBA0 ) {
+				offs_cl[0] = offs;
+				pStage->rgb_offset[0] = offs; offs += input->shader->numVertexes * sizeof( color4ub_t );
+			} else {
+				pStage->rgb_offset[0] = offs_cl[0];
+			}
+
+			if ( pStage->tessFlags & TESS_RGBA1 ) {
+				offs_cl[1] = offs;
+				pStage->rgb_offset[1] = offs; offs += input->shader->numVertexes * sizeof( color4ub_t );
+			} else {
+				pStage->rgb_offset[1] = offs_cl[1];
+			}
+
+			if ( pStage->tessFlags & TESS_RGBA2 ) {
+				offs_cl[2] = offs;
+				pStage->rgb_offset[2] = offs; offs += input->shader->numVertexes * sizeof( color4ub_t );
+			} else {
+				pStage->rgb_offset[2] = offs_cl[2];
+			}
+
 			if ( pStage->tessFlags & TESS_ST0 )	{
 				offs_st[0] = offs;
-				pStage->tex_offset[0] = offs; offs += input->shader->numVertexes * sizeof( tess.svars.texcoords[0][0] );
+				pStage->tex_offset[0] = offs; offs += input->shader->numVertexes * sizeof( vec2_t );
 			} else {
 				pStage->tex_offset[0] = offs_st[0];
 			}
 			if ( pStage->tessFlags & TESS_ST1 ) {
 				offs_st[1] = offs;
-				pStage->tex_offset[1] = offs; offs += input->shader->numVertexes * sizeof( tess.svars.texcoords[1][0] );
+				pStage->tex_offset[1] = offs; offs += input->shader->numVertexes * sizeof( vec2_t );
 			} else {
 				pStage->tex_offset[1] = offs_st[1];
 			}
 			if ( pStage->tessFlags & TESS_ST2 ) {
 				offs_st[2] = offs;
-				pStage->tex_offset[2] = offs; offs += input->shader->numVertexes * sizeof( tess.svars.texcoords[2][0] );
+				pStage->tex_offset[2] = offs; offs += input->shader->numVertexes * sizeof( vec2_t );
 			} else {
 				pStage->tex_offset[2] = offs_st[2];
 			}
@@ -348,21 +379,21 @@ static void VBO_AddGeometry( vbo_t *vbo, vbo_item_t *vi, shaderCommands_t *input
 }
 
 
-static void VBO_AddStageColors( vbo_t *vbo, int stage, const shaderCommands_t *input )
+static void VBO_AddStageColors( vbo_t *vbo, const int stage, const shaderCommands_t *input, const int bundle )
 {
-	const int offs = input->xstages[ stage ]->color_offset + input->shader->curVertexes * sizeof( input->svars.colors[0] );
-	const int size = input->numVertexes * sizeof( input->svars.colors[ 0 ] );
+	const int offs = input->xstages[ stage ]->rgb_offset[ bundle ] + input->shader->curVertexes * sizeof( color4ub_t );
+	const int size = input->numVertexes * sizeof( color4ub_t );
 
-	memcpy( vbo->vbo_buffer + offs, input->svars.colors, size );
+	memcpy( vbo->vbo_buffer + offs, input->svars.colors[bundle], size );
 }
 
 
-static void VBO_AddStageTxCoords( vbo_t *vbo, int stage, const shaderCommands_t *input, int unit )
+static void VBO_AddStageTxCoords( vbo_t *vbo, const int stage, const shaderCommands_t *input, const int bundle )
 {
-	const int offs = input->xstages[ stage ]->tex_offset[ unit ] + input->shader->curVertexes * sizeof( input->svars.texcoords[unit][0] );
-	const int size = input->numVertexes * sizeof( input->svars.texcoords[unit][0] );
+	const int offs = input->xstages[ stage ]->tex_offset[ bundle ] + input->shader->curVertexes * sizeof( vec2_t );
+	const int size = input->numVertexes * sizeof( vec2_t );
 
-	memcpy( vbo->vbo_buffer + offs, input->svars.texcoordPtr[ unit ], size );
+	memcpy( vbo->vbo_buffer + offs, input->svars.texcoordPtr[ bundle ], size );
 }
 
 
@@ -380,8 +411,23 @@ void VBO_PushData( int itemIndex, shaderCommands_t *input )
 		pStage = input->xstages[ i ];
 		if ( !pStage )
 			break;
-		R_ComputeColors( pStage );
-		VBO_AddStageColors( vbo, i, input );
+
+		if ( pStage->tessFlags & TESS_RGBA0 )
+		{
+			R_ComputeColors( 0, tess.svars.colors[0], pStage );
+			VBO_AddStageColors( vbo, i, input, 0 );
+		}
+		if ( pStage->tessFlags & TESS_RGBA1 )
+		{
+			R_ComputeColors( 1, tess.svars.colors[1], pStage );
+			VBO_AddStageColors( vbo, i, input, 1 );
+		}
+		if ( pStage->tessFlags & TESS_RGBA2 )
+		{
+			R_ComputeColors( 2, tess.svars.colors[2], pStage );
+			VBO_AddStageColors( vbo, i, input, 2 );
+		}
+
 		if ( pStage->tessFlags & TESS_ST0 )
 		{
 			R_ComputeTexCoords( 0, &pStage->bundle[0] );

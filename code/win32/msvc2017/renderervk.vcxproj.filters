@@ -105,107 +105,11 @@
     <ClCompile Include="..\..\renderercommon\tr_noise.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\dot_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\dot_vert.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\fog_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\fog_vert.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\gamma_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\gamma_vert.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\light_fog_vert.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\light_vert.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\light_fog_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\light_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt_fog_vert.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt_vert.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt_fog_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\st_fog_vert.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\st_vert.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\st_enviro_fog_vert.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\st_enviro_vert.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\st_fog_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\st_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\renderervk\vk_flares.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\renderervk\vk_vbo.c">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\bloom_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\blur_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\blend_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\color_vert.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\color_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\light1_fog_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\light1_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\st_df_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt2_fog_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt2_fog_vert.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt2_frag.c">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt2_vert.c">
-      <Filter>Source Files\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -385,10 +385,7 @@ static void RB_SurfaceBeam( void )
 	GL_Bind( tr.whiteImage );
 
 	for ( i = 0; i < (NUM_BEAM_SEGS+1)*2; i++ ) {
-		tess.svars.colors[i][0] = 255;
-		tess.svars.colors[i][1] = 0;
-		tess.svars.colors[i][2] = 0;
-		tess.svars.colors[i][3] = 255;
+		Vector4Set( tess.svars.colors[0][i], 255, 0, 0, 255 );
 	}
 
 	for ( i = 0; i <= NUM_BEAM_SEGS; i++ ) {
@@ -398,7 +395,7 @@ static void RB_SurfaceBeam( void )
 	tess.numVertexes = (NUM_BEAM_SEGS + 1) * 2;
 
 	vk_bind_pipeline( vk.surface_beam_pipeline );
-	vk_bind_geometry( TESS_XYZ | TESS_RGBA );
+	vk_bind_geometry( TESS_XYZ | TESS_RGBA0 );
 	vk_draw_geometry( DEPTH_RANGE_NORMAL, qfalse );
 
 	tess.numIndexes = 0;
@@ -1262,22 +1259,22 @@ static void RB_SurfaceAxis( void ) {
 	tess.xyz[3][1] = 16.0;
 	tess.xyz[5][2] = 16.0;
 
-	Com_Memset( tess.svars.colors, 0, 6 * sizeof( tess.svars.colors[0] ) );
+	Com_Memset( tess.svars.colors[0], 0, 6 * sizeof( color4ub_t ) );
 	for ( i = 0; i < 6; i++ )
-		tess.svars.colors[i][3] = 255;
+		tess.svars.colors[0][i][3] = 255;
 
-	tess.svars.colors[0][0] = 255;
-	tess.svars.colors[1][0] = 255;
-	tess.svars.colors[2][1] = 255;
-	tess.svars.colors[3][1] = 255;
-	tess.svars.colors[4][2] = 255;
-	tess.svars.colors[5][2] = 255;
+	tess.svars.colors[0][0][0] = 255;
+	tess.svars.colors[0][1][0] = 255;
+	tess.svars.colors[0][2][1] = 255;
+	tess.svars.colors[0][3][1] = 255;
+	tess.svars.colors[0][4][2] = 255;
+	tess.svars.colors[0][5][2] = 255;
 
 	tess.numVertexes = 6;
 
 	vk_bind_pipeline( vk.surface_axis_pipeline );
 	// TODO: use common layout and avoid ST0 binding?
-	vk_bind_geometry( TESS_XYZ | TESS_RGBA | TESS_ST0 );
+	vk_bind_geometry( TESS_XYZ | TESS_RGBA0 | TESS_ST0 );
 	vk_draw_geometry( DEPTH_RANGE_NORMAL, qfalse );
 
 	tess.numVertexes = 0;
