@@ -6185,7 +6185,7 @@ void vk_end_frame( void )
 
 	if ( vk.fboActive )
 	{
-		vk.cmd->last_pipeline = NULL; // do not restore clobbered descriptors in vk_bloom()
+		vk.cmd->last_pipeline = VK_NULL_HANDLE; // do not restore clobbered descriptors in vk_bloom()
 
 		if ( r_bloom->integer )
 		{
