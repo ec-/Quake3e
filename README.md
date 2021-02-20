@@ -38,7 +38,7 @@ Based on Quake-III-Arena-Kenny-Edition with many additions:
 * static world surfaces cached in VBO (**\r_vbo 1**)
 * useful debug markers for tools like RenderDoc
 * fixed framebuffer corruption on some Intel iGPUs
-* offscreen rendering, enabled with **\r_fbo 1**, all following reguires it enabled:
+* offscreen rendering, enabled with **\r_fbo 1**, all following requires it enabled:
 * `screenMap` texture rendering - to create realistic environment reflections
 * multisample anti-aliasing (**\r_ext_multisample**)
 * supersample anti-aliasing (**\r_ext_supersample**)
@@ -127,7 +127,7 @@ Copy resulting binaries from created `build` directory or use command:
 ### macos
 
 * install official SDL2 framework to /Library/Frameworks
-* install Vulkan SDK to use MoltenVK library
+* `brew install molten-vk` or install Vulkan SDK to use MoltenVK library
 
 Build with: `make`
 
