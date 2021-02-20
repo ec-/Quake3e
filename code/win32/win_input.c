@@ -357,7 +357,7 @@ static void IN_ActivateRawMouse( void )
 	{
 		Rid.usUsagePage = HID_USAGE_PAGE_GENERIC;
 		Rid.usUsage = HID_USAGE_GENERIC_MOUSE;
-		Rid.dwFlags = RIDEV_NOLEGACY; // skip all WM_*BUTTON* and WM_MOUSEMOVE stuff
+		Rid.dwFlags = RIDEV_NOLEGACY | RIDEV_CAPTUREMOUSE; // skip all WM_*BUTTON* and WM_MOUSEMOVE stuff
 		Rid.hwndTarget = g_wv.hWnd;
 
 		if( !RRID( &Rid, 1, sizeof( Rid ) ) )
