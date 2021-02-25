@@ -1429,7 +1429,7 @@ void CM_TraceThroughPatchCollide( traceWork_t *tw, const struct patchCollide_s *
 	float offset, enterFrac, leaveFrac, t;
 	patchPlane_t *pp;
 	facet_t	*facet;
-	float plane[4] = {0, 0, 0, 0}, bestplane[4] = {0, 0, 0, 0};
+	float plane[4], bestplane[4];
 	vec3_t startp, endp;
 #ifndef BSPC
 	static cvar_t *cv;
@@ -1444,6 +1444,8 @@ void CM_TraceThroughPatchCollide( traceWork_t *tw, const struct patchCollide_s *
 		CM_TracePointThroughPatchCollide( tw, pc );
 		return;
 	}
+
+	Vector4Set(bestplane, 0, 0, 0, 0);
 
 	facet = pc->facets;
 	for ( i = 0 ; i < pc->numFacets ; i++, facet++ ) {
