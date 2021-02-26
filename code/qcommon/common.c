@@ -3705,12 +3705,12 @@ void Com_Init( char *commandLine ) {
 	Cvar_CheckRange( com_timedemo, "0", "1", CV_INTEGER );
 	cl_paused = Cvar_Get ("cl_paused", "0", CVAR_ROM);
 	cl_packetdelay = Cvar_Get ("cl_packetdelay", "0", CVAR_CHEAT);
-	com_cl_running = Cvar_Get ("cl_running", "0", CVAR_ROM);
+	com_cl_running = Cvar_Get ("cl_running", "0", CVAR_ROM | CVAR_NOTABCOMPLETE );
 #endif
 
 	sv_paused = Cvar_Get ("sv_paused", "0", CVAR_ROM);
 	sv_packetdelay = Cvar_Get ("sv_packetdelay", "0", CVAR_CHEAT);
-	com_sv_running = Cvar_Get ("sv_running", "0", CVAR_ROM);
+	com_sv_running = Cvar_Get ("sv_running", "0", CVAR_ROM | CVAR_NOTABCOMPLETE );
 
 	com_buildScript = Cvar_Get( "com_buildScript", "0", 0 );
 
@@ -3746,7 +3746,7 @@ void Com_Init( char *commandLine ) {
 	com_version = Cvar_Get( "version", s, CVAR_PROTECTED | CVAR_ROM | CVAR_SERVERINFO );
 
 	// this cvar is the single entry point of the entire extension system
-	Cvar_Get( "//trap_GetValue", va( "%i", COM_TRAP_GETVALUE ), CVAR_PROTECTED | CVAR_ROM );
+	Cvar_Get( "//trap_GetValue", va( "%i", COM_TRAP_GETVALUE ), CVAR_PROTECTED | CVAR_ROM | CVAR_NOTABCOMPLETE );
 
 	Sys_Init();
 
