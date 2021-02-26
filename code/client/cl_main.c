@@ -69,8 +69,6 @@ cvar_t	*cl_guidServerUniq;
 cvar_t	*cl_dlURL;
 cvar_t	*cl_dlDirectory;
 
-cvar_t  *cl_reconnectArgs;
-
 // common cvars for GLimp modules
 cvar_t	*vid_xpos;			// X coordinate of window position
 cvar_t	*vid_ypos;			// Y coordinate of window position
@@ -100,6 +98,7 @@ vm_t				*cgvm = NULL;
 
 netadr_t			rcon_address;
 
+char				cl_reconnectArgs[ MAX_OSPATH ];
 char				cl_oldGame[ MAX_QPATH ];
 qboolean			cl_oldGameSet;
 static	qboolean	noGameRestart = qfalse;
@@ -1514,10 +1513,10 @@ CL_Reconnect_f
 ================
 */
 static void CL_Reconnect_f( void ) {
-	if ( !*cl_reconnectArgs->string )
+	if ( cl_reconnectArgs[0] == '\0' )
 		return;
 	Cvar_Set( "ui_singlePlayerActive", "0" );
-	Cbuf_AddText( va("connect %s\n", cl_reconnectArgs->string ) );
+	Cbuf_AddText( va( "connect %s\n", cl_reconnectArgs ) );
 }
 
 
@@ -1544,7 +1543,7 @@ static void CL_Connect_f( void ) {
 		return;	
 	}
 	
-	if ( argc == 2 ) {
+	if( argc == 2 ) {
 		server = Cmd_Argv(1);
 	} else {
 		if( !strcmp( Cmd_Argv(1), "-4" ) )
@@ -1620,7 +1619,7 @@ static void CL_Connect_f( void ) {
 	Q_strncpyz( cls.servername, server, sizeof( cls.servername ) );
 
 	// save arguments for reconnect
-	Cvar_Set("cl_reconnectArgs", Cmd_Args());
+	Q_strncpyz( cl_reconnectArgs, cmd_args, sizeof( cl_reconnectArgs ) );
 
 	// copy resolved address 
 	clc.serverAddress = addr;
@@ -3876,8 +3875,6 @@ void CL_Init( void ) {
 		" 0 - current game directory\n"
 		" 1 - fs_basegame (%s) directory\n", FS_GetBaseGameDir() );
 	Cvar_SetDescription( cl_dlDirectory, s );
-	
-	cl_reconnectArgs = Cvar_Get ("cl_reconnectArgs", "", CVAR_ARCHIVE_ND);
 
 	// userinfo
 	Cvar_Get ("name", "UnnamedPlayer", CVAR_USERINFO | CVAR_ARCHIVE_ND );
