@@ -1477,6 +1477,8 @@ static void R_Register( void )
 	// archived variables that can change at any time
 	//
 	r_lodCurveError = ri.Cvar_Get( "r_lodCurveError", "250", CVAR_ARCHIVE_ND );
+	ri.Cvar_CheckRange( r_lodCurveError, "-1", "8192", CV_FLOAT );
+	ri.Cvar_SetDescription( r_lodCurveError, "Level of detail error on curved surface grids." );
 	r_lodbias = ri.Cvar_Get( "r_lodbias", "0", CVAR_ARCHIVE_ND );
 	r_znear = ri.Cvar_Get( "r_znear", "4", CVAR_CHEAT );
 	ri.Cvar_CheckRange( r_znear, "0.001", "200", CV_FLOAT );
