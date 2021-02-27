@@ -81,12 +81,12 @@ void main()
 #endif
 
 	gl_Position = u_ModelViewProjectionMatrix * vec4(position, 1.0);
-		
+
 	vec3 dist = u_DlightInfo.xyz - position;
 
 	var_Tex1 = dist.xy * u_DlightInfo.a + vec2(0.5);
 	float dlightmod = step(0.0, dot(dist, normal));
 	dlightmod *= clamp(2.0 * (1.0 - abs(dist.z) * u_DlightInfo.a), 0.0, 1.0);
-	
+
 	var_Color = u_Color * dlightmod;
 }

@@ -76,7 +76,7 @@ int main( int argc, const char* argv[] ) {
 		size++;
 
 		if ( c != EOF ) {
-			if ( size % line_length ) 
+			if ( size % line_length )
 				fputs( ", ", f_out );
 			else
 				fputs( ",\n\t", f_out );

@@ -37,9 +37,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define CHAT_GENDERFEMALE		1
 #define CHAT_GENDERMALE			2
 
-#define CHAT_ALL					0
-#define CHAT_TEAM					1
-#define CHAT_TELL					2
+#define CHAT_ALL				0
+#define CHAT_TEAM				1
+#define CHAT_TELL				2
 
 //a console message
 typedef struct bot_consolemessage_s

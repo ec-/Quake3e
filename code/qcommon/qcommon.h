@@ -34,11 +34,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 
 /* C99 defines __func__ */
-#if __STDC_VERSION__ < 199901L 
-#if __GNUC__ >= 2 || _MSC_VER >= 1300 
-#define __func__ __FUNCTION__ 
-#else 
-#define __func__ "(unknown)" 
+#if __STDC_VERSION__ < 199901L
+#if __GNUC__ >= 2 || _MSC_VER >= 1300
+#define __func__ __FUNCTION__
+#else
+#define __func__ "(unknown)"
 #endif
 #endif
 
@@ -152,7 +152,7 @@ NET
 
 #define	MAX_SNAPSHOT_ENTITIES	256
 
-#define	PORT_ANY			-1
+#define	PORT_ANY				-1
 
 #define	MAX_RELIABLE_COMMANDS	64			// max string commands buffered for restransmit
 
@@ -245,7 +245,7 @@ typedef struct {
 
 	// incoming fragment assembly buffer
 	int			fragmentSequence;
-	int			fragmentLength;	
+	int			fragmentLength;
 	byte		fragmentBuffer[MAX_MSGLEN];
 
 	// outgoing fragment buffer
@@ -281,9 +281,9 @@ PROTOCOL
 ==============================================================
 */
 
-#define	PROTOCOL_VERSION		68
+#define PROTOCOL_VERSION		68
 // new protocol with UDP spoofing protection:
-#define	NEW_PROTOCOL_VERSION	71
+#define NEW_PROTOCOL_VERSION	71
 // 1.31 - 67
 
 
@@ -291,13 +291,13 @@ PROTOCOL
 // NOTE: that stuff only works with two digits protocols
 extern const int demo_protocols[];
 
-#define	UPDATE_SERVER_NAME	"update.quake3arena.com"
+#define UPDATE_SERVER_NAME		"update.quake3arena.com"
 // override on command line, config files etc.
 #ifndef MASTER_SERVER_NAME
-#define MASTER_SERVER_NAME	"master.quake3arena.com"
+#define MASTER_SERVER_NAME		"master.quake3arena.com"
 #endif
 #ifndef AUTHORIZE_SERVER_NAME
-#define	AUTHORIZE_SERVER_NAME	"authorize.quake3arena.com"
+#define AUTHORIZE_SERVER_NAME	"authorize.quake3arena.com"
 #endif
 
 #define	PORT_MASTER			27950
@@ -337,7 +337,7 @@ enum svc_ops_e {
 //
 enum clc_ops_e {
 	clc_bad,
-	clc_nop, 		
+	clc_nop,
 	clc_move,				// [[usercmd_t]
 	clc_moveNoDelta,		// [[usercmd_t]
 	clc_clientCommand,		// [string] message
@@ -550,7 +550,7 @@ void	Cvar_Register( vmCvar_t *vmCvar, const char *varName, const char *defaultVa
 void	Cvar_Update( vmCvar_t *vmCvar );
 // updates an interpreted modules' version of a cvar
 
-void 	Cvar_Set( const char *var_name, const char *value );
+void	Cvar_Set( const char *var_name, const char *value );
 // will create the variable with no flags if it doesn't exist
 
 cvar_t	*Cvar_Set2(const char *var_name, const char *value, qboolean force);
@@ -584,8 +584,8 @@ int		Cvar_Flags(const char *var_name);
 void	Cvar_CommandCompletion( void(*callback)(const char *s) );
 // callback with each valid string
 
-void 	Cvar_Reset( const char *var_name );
-void 	Cvar_ForceReset(const char *var_name);
+void	Cvar_Reset( const char *var_name );
+void	Cvar_ForceReset(const char *var_name);
 
 void	Cvar_SetCheatState( void );
 // reset all testing vars to a safe value
@@ -595,7 +595,7 @@ qboolean Cvar_Command( void );
 // command.  Returns true if the command was a variable reference that
 // was handled. (print or change)
 
-void 	Cvar_WriteVariables( fileHandle_t f );
+void	Cvar_WriteVariables( fileHandle_t f );
 // writes lines containing "set variable value" for all variables
 // with the archive flag set to true.
 
@@ -793,9 +793,9 @@ qboolean FS_ExcludeReference( void );
 const char *FS_ReferencedPakNames( void );
 const char *FS_ReferencedPakChecksums( void );
 const char *FS_ReferencedPakPureChecksums( int maxlen );
-// Returns a space separated string containing the checksums of all loaded 
-// AND referenced pk3 files. Servers with sv_pure set will get this string 
-// back from clients for pure validation 
+// Returns a space separated string containing the checksums of all loaded
+// AND referenced pk3 files. Servers with sv_pure set will get this string
+// back from clients for pure validation
 
 void FS_ClearPakReferences( int flags );
 // clears referenced booleans on loaded pk3s
@@ -842,7 +842,7 @@ void *FS_LoadLibrary( const char *name );
 
 typedef qboolean ( *fnamecallback_f )( const char *filename, int length );
 
-void FS_SetFilenameCallback( fnamecallback_f func ); 
+void FS_SetFilenameCallback( fnamecallback_f func );
 
 char *FS_CopyString( const char *in );
 
@@ -1318,10 +1318,10 @@ int HuffmanGetSymbol( unsigned int* symbol, const byte* buffer, int bitIndex );
 #define	CL_DECODE_START		4
 
 // flags for sv_allowDownload and cl_allowDownload
-#define	DLF_ENABLE		1
-#define	DLF_NO_REDIRECT	2
-#define	DLF_NO_UDP		4
-#define	DLF_NO_DISCONNECT 8
+#define	DLF_ENABLE			1
+#define	DLF_NO_REDIRECT		2
+#define	DLF_NO_UDP			4
+#define	DLF_NO_DISCONNECT	8
 
 // functional gate syscall number
 #define COM_TRAP_GETVALUE 700

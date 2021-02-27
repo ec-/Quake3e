@@ -30,7 +30,7 @@ typedef struct {
 extern	qboolean	key_overstrikeMode;
 extern	qkey_t		keys[MAX_KEYS];
 
-extern  int         anykeydown;
+extern	int			anykeydown;
 
 // NOTE TTimo the declaration of field_t and Field_Clear is now in qcommon/qcommon.h
 

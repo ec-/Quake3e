@@ -12,9 +12,9 @@ void main()
 {
 	vec3 lightToPos = var_Position - u_LightOrigin.xyz;
 	vec2 st = vec2(-dot(u_LightRight, lightToPos), dot(u_LightUp, lightToPos));
-	
+
 	float fade = length(st);
-	
+
 #if defined(USE_DISCARD)
 	if (fade >= 1.0)
 	{
@@ -23,7 +23,7 @@ void main()
 #endif
 
 	fade = clamp(8.0 - fade * 8.0, 0.0, 1.0);
-	
+
 	st = st * 0.5 + vec2(0.5);
 
 #if defined(USE_SOLID_PSHADOWS)
@@ -31,7 +31,7 @@ void main()
 #else
 	float intensity = clamp((1.0 - dot(lightToPos, lightToPos) / (u_LightRadius * u_LightRadius)) * 2.0, 0.0, 1.0);
 #endif
-	
+
 	float lightDist = length(lightToPos);
 	float dist;
 

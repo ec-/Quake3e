@@ -45,8 +45,8 @@ bot_input_t *botinputs;
 
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void EA_Say( int client, const char *str )
@@ -55,8 +55,8 @@ void EA_Say( int client, const char *str )
 } //end of the function EA_Say
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void EA_SayTeam( int client, const char *str )
@@ -65,8 +65,8 @@ void EA_SayTeam( int client, const char *str )
 } //end of the function EA_SayTeam
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void EA_Tell( int client, int clientto, const char *str )
@@ -75,8 +75,8 @@ void EA_Tell( int client, int clientto, const char *str )
 } //end of the function EA_SayTeam
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void EA_UseItem( int client, const char *it )
@@ -85,8 +85,8 @@ void EA_UseItem( int client, const char *it )
 } //end of the function EA_UseItem
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void EA_DropItem( int client, const char *it )
@@ -95,8 +95,8 @@ void EA_DropItem( int client, const char *it )
 } //end of the function EA_DropItem
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void EA_UseInv( int client, const char *inv )
@@ -129,8 +129,8 @@ void EA_Gesture(int client)
 } //end of the function EA_Gesture
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void EA_Command( int client, const char *command )
@@ -459,8 +459,7 @@ void EA_ResetInput(int client)
 int EA_Setup(void)
 {
 	//initialize the bot inputs
-	botinputs = (bot_input_t *) GetClearedHunkMemory(
-									botlibglobals.maxclients * sizeof(bot_input_t));
+	botinputs = (bot_input_t *) GetClearedHunkMemory(botlibglobals.maxclients * sizeof(bot_input_t));
 	return BLERR_NOERROR;
 } //end of the function EA_Setup
 //===========================================================================

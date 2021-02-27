@@ -43,7 +43,7 @@ QVM files
 ========================================================================
 */
 
-#define	VM_MAGIC			0x12721444
+#define	VM_MAGIC		0x12721444
 #define	VM_MAGIC_VER2	0x12721445
 typedef struct {
 	int		vmMagic;
@@ -109,7 +109,7 @@ typedef struct md3Tag_s {
 ** XyzNormals		sizeof( md3XyzNormal_t ) * numVerts * numFrames
 */
 typedef struct {
-	int		ident;				// 
+	int		ident;				//
 
 	char	name[MAX_QPATH];	// polyset name
 
@@ -156,7 +156,7 @@ typedef struct {
 	int			flags;
 
 	int			numFrames;
-	int			numTags;			
+	int			numTags;
 	int			numSurfaces;
 
 	int			numSkins;
@@ -287,8 +287,8 @@ typedef struct {
 	int			numLODs;
 	int			ofsLODs;
 
-        int                     numTags;
-        int                     ofsTags;
+	int			numTags;
+	int			ofsTags;
 
 	int			ofsEnd;				// end of file
 } mdrHeader_t;

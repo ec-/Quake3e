@@ -138,13 +138,13 @@ SV_Netchan_FreeQueue
 void SV_Netchan_FreeQueue(client_t *client)
 {
 	netchan_buffer_t *netbuf, *next;
-	
+
 	for(netbuf = client->netchan_start_queue; netbuf; netbuf = next)
 	{
 		next = netbuf->next;
 		Z_Free(netbuf);
 	}
-	
+
 	client->netchan_start_queue = NULL;
 	client->netchan_end_queue = &client->netchan_start_queue;
 }
@@ -157,7 +157,7 @@ SV_Netchan_TransmitNextInQueue
 void SV_Netchan_TransmitNextInQueue(client_t *client)
 {
 	netchan_buffer_t *netbuf;
-		
+
 	Com_DPrintf("#462 Netchan_TransmitNextFragment: popping a queued message for transmit\n");
 	netbuf = client->netchan_start_queue;
 
@@ -200,7 +200,7 @@ int SV_Netchan_TransmitNextFragment(client_t *client)
 		SV_Netchan_TransmitNextInQueue(client);
 		return SV_RateMsec(client);
 	}
-	
+
 	return -1;
 }
 
@@ -227,7 +227,7 @@ void SV_Netchan_Transmit( client_t *client, msg_t *msg)
 		netbuf = (netchan_buffer_t *) Z_Malloc(sizeof(netchan_buffer_t));
 		// store the msg, we can't store it encoded, as the encoding depends on stuff we still have to finish sending
 		MSG_Copy(&netbuf->msg, netbuf->msgBuffer, sizeof( netbuf->msgBuffer ), msg);
-		if ( client->compat ) 
+		if ( client->compat )
 		{
 			Q_strncpyz(netbuf->clientCommandString, client->lastClientCommandString,
 				sizeof(netbuf->clientCommandString));
@@ -252,7 +252,7 @@ Netchan_SV_Process
 */
 qboolean SV_Netchan_Process( client_t *client, msg_t *msg ) {
 	qboolean ret;
-	
+
 	ret = Netchan_Process( &client->netchan, msg );
 	if ( !ret )
 		return qfalse;

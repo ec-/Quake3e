@@ -426,7 +426,7 @@ static qboolean setup_ALSA( smode_t mode )
 		channels = 1;
 		err = _snd_pcm_hw_params_set_channels( handle, hwparams, channels );
 	}
-	
+
 	if ( err < 0 )
 	{
 		err = _snd_pcm_hw_params_set_channels( handle, hwparams, channels );
@@ -600,7 +600,7 @@ static qboolean setup_ALSA( smode_t mode )
 #else
 		_pthread_mutex_lock( &mutex );
 #endif
-	
+
 		if ( use_mmap )
 			err = _pthread_create( &thread, NULL, (void*)&thread_proc_mmap, NULL );
 		else
@@ -1175,16 +1175,16 @@ qboolean SNDDMA_Init( void )
 	dma.samplebits = (int)sndbits->value;
 	if (dma.samplebits != 16 && dma.samplebits != 8) {
 		ioctl(audio_fd, SNDCTL_DSP_GETFMTS, &fmt);
-		if (fmt & AFMT_S16_LE) 
+		if (fmt & AFMT_S16_LE)
 			dma.samplebits = 16;
-		else if (fmt & AFMT_U8) 
+		else if (fmt & AFMT_U8)
 			dma.samplebits = 8;
 	}
 
 	dma.speed = (int)sndspeed->value;
 	if (!dma.speed) {
 		for (i=0 ; i<sizeof(tryrates)/4 ; i++)
-			if (!ioctl(audio_fd, SNDCTL_DSP_SPEED, &tryrates[i])) 
+			if (!ioctl(audio_fd, SNDCTL_DSP_SPEED, &tryrates[i]))
 				break;
 		dma.speed = tryrates[i];
 	}

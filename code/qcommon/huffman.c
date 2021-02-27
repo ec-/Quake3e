@@ -31,7 +31,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define INTERNAL_NODE (HMAX+1)
 
 typedef struct nodetype {
-	struct	nodetype *left, *right, *parent; /* tree structure */ 
+	struct	nodetype *left, *right, *parent; /* tree structure */
 	struct	nodetype *next, *prev; /* doubly-linked list */
 	struct	nodetype **head; /* highest ranked node in block */
 	int		weight;
@@ -95,7 +95,7 @@ static void free_ppnode(huff_t* huff, node_t **ppnode) {
 }
 
 /* Swap the location of these two nodes in the tree */
-static void swap (huff_t* huff, node_t *node1, node_t *node2) { 
+static void swap (huff_t* huff, node_t *node1, node_t *node2) {
 	node_t *par1, *par2;
 
 	par1 = node1->parent;
@@ -105,7 +105,7 @@ static void swap (huff_t* huff, node_t *node1, node_t *node2) {
 		if (par1->left == node1) {
 			par1->left = node2;
 		} else {
-	      par1->right = node2;
+		  par1->right = node2;
 		}
 	} else {
 		huff->tree = node2;
@@ -120,7 +120,7 @@ static void swap (huff_t* huff, node_t *node1, node_t *node2) {
 	} else {
 		huff->tree = node1;
 	}
-  
+
 	node1->parent = par2;
 	node2->parent = par1;
 }
@@ -166,7 +166,7 @@ static void increment(huff_t* huff, node_t *node) {
 	}
 
 	if (node->next != NULL && node->next->weight == node->weight) {
-	    lnode = *node->head;
+		lnode = *node->head;
 		if (lnode != node->parent) {
 			swap(huff, lnode, node);
 		}
@@ -175,13 +175,13 @@ static void increment(huff_t* huff, node_t *node) {
 	if (node->prev && node->prev->weight == node->weight) {
 		*node->head = node->prev;
 	} else {
-	    *node->head = NULL;
+		*node->head = NULL;
 		free_ppnode(huff, node->head);
 	}
 	node->weight++;
 	if (node->next && node->next->weight == node->weight) {
 		node->head = node->next->head;
-	} else { 
+	} else {
 		node->head = get_ppnode(huff);
 		*node->head = node;
 	}
@@ -219,7 +219,7 @@ void Huff_addRef(huff_t* huff, byte ch) {
 		}
 		huff->lhead->next = tnode2;
 		tnode2->prev = huff->lhead;
- 
+
 		tnode->symbol = ch;
 		tnode->weight = 1;
 		tnode->next = huff->lhead->next;
@@ -231,7 +231,7 @@ void Huff_addRef(huff_t* huff, byte ch) {
 				/* this should never happen */
 				tnode->head = get_ppnode(huff);
 				*tnode->head = tnode2;
-		    }
+			}
 		} else {
 			/* this should never happen */
 			tnode->head = get_ppnode(huff);
@@ -240,7 +240,7 @@ void Huff_addRef(huff_t* huff, byte ch) {
 		huff->lhead->next = tnode;
 		tnode->prev = huff->lhead;
 		tnode->left = tnode->right = NULL;
- 
+
 		if (huff->lhead->parent) {
 			if (huff->lhead->parent->left == huff->lhead) { /* lhead is guaranteed to by the NYT */
 				huff->lhead->parent->left = tnode2;
@@ -248,17 +248,17 @@ void Huff_addRef(huff_t* huff, byte ch) {
 				huff->lhead->parent->right = tnode2;
 			}
 		} else {
-			huff->tree = tnode2; 
+			huff->tree = tnode2;
 		}
- 
+
 		tnode2->right = tnode;
 		tnode2->left = huff->lhead;
- 
+
 		tnode2->parent = huff->lhead->parent;
 		huff->lhead->parent = tnode->parent = tnode2;
-     
+
 		huff->loc[ch] = tnode;
- 
+
 		increment(huff, tnode2->parent);
 	} else {
 		increment(huff, huff->loc[ch]);
@@ -298,7 +298,7 @@ static void send(node_t *node, node_t *child, byte *fout) {
 /* Send a symbol */
 void Huff_transmit (huff_t *huff, int ch, byte *fout) {
 	int i;
-	if (huff->loc[ch] == NULL) { 
+	if (huff->loc[ch] == NULL) {
 		/* node_t hasn't been transmitted, send a NYT, then the symbol */
 		Huff_transmit(huff, NYT, fout);
 		for (i = 7; i >= 0; i--) {
@@ -323,7 +323,7 @@ void Huff_Decompress(msg_t *mbuf, int offset) {
 	}
 
 	Com_Memset(&huff, 0, sizeof(huff_t));
-	// Initialize the tree & list with the NYT node 
+	// Initialize the tree & list with the NYT node
 	huff.tree = huff.lhead = huff.ltail = huff.loc[NYT] = &(huff.nodeList[huff.blocNode++]);
 	huff.tree->symbol = NYT;
 	huff.tree->weight = 0;
@@ -352,7 +352,7 @@ void Huff_Decompress(msg_t *mbuf, int offset) {
 				ch = (ch<<1) + get_bit(buffer);
 			}
 		}
-    
+
 		seq[j] = ch;									/* Write symbol */
 
 		Huff_addRef(&huff, (byte)ch);								/* Increment node */
@@ -405,7 +405,7 @@ void Huff_Init(huffman_t *huff) {
 	Com_Memset(&huff->compressor, 0, sizeof(huff_t));
 	Com_Memset(&huff->decompressor, 0, sizeof(huff_t));
 
-	// Initialize the tree & list with the NYT node 
+	// Initialize the tree & list with the NYT node
 	huff->decompressor.tree = huff->decompressor.lhead = huff->decompressor.ltail = huff->decompressor.loc[NYT] = &(huff->decompressor.nodeList[huff->decompressor.blocNode++]);
 	huff->decompressor.tree->symbol = NYT;
 	huff->decompressor.tree->weight = 0;

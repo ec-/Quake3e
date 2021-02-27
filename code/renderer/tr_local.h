@@ -143,8 +143,8 @@ typedef enum {
 	GF_SIN,
 	GF_SQUARE,
 	GF_TRIANGLE,
-	GF_SAWTOOTH, 
-	GF_INVERSE_SAWTOOTH, 
+	GF_SAWTOOTH,
+	GF_INVERSE_SAWTOOTH,
 
 	GF_NOISE
 
@@ -301,7 +301,7 @@ typedef struct {
 
 typedef struct {
 	qboolean		active;
-	
+
 	textureBundle_t	bundle[NUM_TEXTURE_BUNDLES];
 
 	waveForm_t		rgbWave;
@@ -322,7 +322,7 @@ typedef struct {
 
 	short			vboVPindex[3];		// normal, eye-in, eye-out
 	short			vboFPindex[2];		// normal, fog-blend
-	
+
 	uint32_t		color_offset;		// within current shader
 	uint32_t		tex_offset[2];		// within current shader
 
@@ -380,8 +380,8 @@ typedef struct shader_s {
 	qboolean	multitextureEnv;		// if shader has multitexture stage(s)
 
 	cullType_t	cullType;				// CT_FRONT_SIDED, CT_BACK_SIDED, or CT_TWO_SIDED
-	qboolean	polygonOffset;			// set for decals and other items that must be offset 
-	
+	qboolean	polygonOffset;			// set for decals and other items that must be offset
+
 	unsigned	noMipMaps:1;			// for console fonts, 2D elements, etc.
 	unsigned	noPicMip:1;				// for images that must always be full resolution
 	unsigned	noLightScale:1;
@@ -795,7 +795,7 @@ typedef struct mnode_s {
 
 	// node specific
 	cplane_t	*plane;
-	struct mnode_s	*children[2];	
+	struct mnode_s	*children[2];
 
 	// leaf specific
 	int			cluster;
@@ -882,7 +882,7 @@ typedef struct model_s {
 
 void		R_ModelInit (void);
 model_t		*R_GetModelByHandle( qhandle_t hModel );
-int			R_LerpTag( orientation_t *tag, qhandle_t handle, int startFrame, int endFrame, 
+int			R_LerpTag( orientation_t *tag, qhandle_t handle, int startFrame, int endFrame,
 					 float frac, const char *tagName );
 void		R_ModelBounds( qhandle_t handle, vec3_t mins, vec3_t maxs );
 
@@ -982,7 +982,7 @@ typedef struct glstatic_s {
 typedef struct {
 	int		c_surfaces, c_shaders, c_vertexes, c_indexes, c_totalIndexes;
 	float	c_overDraw;
-	
+
 	int		c_dlightVertexes;
 	int		c_dlightIndexes;
 
@@ -1018,7 +1018,7 @@ enum {
 	SCREENSHOT_AVI = 1<<4 // take video frame
 };
 
-// all state modified by the back end is seperated
+// all state modified by the back end is separated
 // from the front end state
 typedef struct {
 	trRefdef_t	refdef;
@@ -1043,7 +1043,7 @@ typedef struct {
 	qboolean screenShotJPGsilent;
 	qboolean screenShotBMPsilent;
 	videoFrameCommand_t	vcmd;	// avi capture
-	
+
 	qboolean throttle;
 	qboolean drawConsole;
 	qboolean doneShadows;
@@ -1051,7 +1051,7 @@ typedef struct {
 } backEndState_t;
 
 /*
-** trGlobals_t 
+** trGlobals_t
 **
 ** Most renderer globals are defined here.
 ** backend functions should never modify any of these fields,
@@ -1174,7 +1174,7 @@ extern	qboolean			superSampled;
 //
 extern cvar_t	*r_flareSize;
 extern cvar_t	*r_flareFade;
-extern cvar_t	*r_flareCoeff;			// coefficient for the flare intensity falloff function. 
+extern cvar_t	*r_flareCoeff;			// coefficient for the flare intensity falloff function.
 
 extern cvar_t	*r_railWidth;
 extern cvar_t	*r_railCoreWidth;
@@ -1299,7 +1299,7 @@ void R_AddLightningBoltSurfaces( trRefEntity_t *e );
 
 void R_AddPolygonSurfaces( void );
 
-void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader, 
+void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader,
 					 int *fogNum, int *dlightMap );
 
 void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader, int fogIndex, int dlightMap );
@@ -1430,7 +1430,7 @@ void		RE_RemapShader(const char *oldShader, const char *newShader, const char *t
 //
 // tr_surface.c
 //
-void		RB_SurfaceGridEstimate( srfGridMesh_t *cv, int *numVertexes, int *numIndexes ); 
+void		RB_SurfaceGridEstimate( srfGridMesh_t *cv, int *numVertexes, int *numIndexes );
 
 /*
 ====================================================================
@@ -1448,7 +1448,7 @@ typedef struct stageVars
 	vec2_t		*texcoordPtr[NUM_TEXTURE_BUNDLES];
 } stageVars_t;
 
-typedef struct shaderCommands_s 
+typedef struct shaderCommands_s
 {
 #pragma pack(push,16)
 	glIndex_t	indexes[SHADER_MAX_INDEXES] QALIGN(16);
@@ -1865,7 +1865,7 @@ void R_IssuePendingRenderCommands( void );
 void R_AddDrawSurfCmd( drawSurf_t *drawSurfs, int numDrawSurfs );
 
 void RE_SetColor( const float *rgba );
-void RE_StretchPic ( float x, float y, float w, float h, 
+void RE_StretchPic ( float x, float y, float w, float h,
 					  float s1, float t1, float s2, float t2, qhandle_t hShader );
 void RE_BeginFrame( stereoFrame_t stereoFrame );
 void RE_EndFrame( int *frontEndMsec, int *backEndMsec );

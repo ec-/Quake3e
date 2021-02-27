@@ -195,8 +195,8 @@ libvar_t *droppedweight = NULL;
 
 //========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //========================================================================
 bot_goalstate_t *BotGoalStateFromHandle(int handle)
@@ -230,13 +230,12 @@ void BotInterbreedGoalFuzzyLogic(int parent1, int parent2, int child)
 	if ( !p1 || !p2 || !c )
 		return;
 
-	InterbreedWeightConfigs(p1->itemweightconfig, p2->itemweightconfig,
-									c->itemweightconfig);
+	InterbreedWeightConfigs(p1->itemweightconfig, p2->itemweightconfig, c->itemweightconfig);
 } //end of the function BotInterbreedingGoalFuzzyLogic
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void BotSaveGoalFuzzyLogic(int goalstate, char *filename)
@@ -250,8 +249,8 @@ void BotSaveGoalFuzzyLogic(int goalstate, char *filename)
 } //end of the function BotSaveGoalFuzzyLogic
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void BotMutateGoalFuzzyLogic(int goalstate, float range)
@@ -265,8 +264,8 @@ void BotMutateGoalFuzzyLogic(int goalstate, float range)
 } //end of the function BotMutateGoalFuzzyLogic
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 itemconfig_t *LoadItemConfig( const char *filename )
@@ -294,8 +293,7 @@ itemconfig_t *LoadItemConfig( const char *filename )
 		return NULL;
 	} //end if
 	//initialize item config
-	ic = (itemconfig_t *) GetClearedHunkMemory(sizeof(itemconfig_t) +
-														max_iteminfo * sizeof(iteminfo_t));
+	ic = (itemconfig_t *) GetClearedHunkMemory(sizeof(itemconfig_t) + max_iteminfo * sizeof(iteminfo_t));
 	ic->iteminfo = (iteminfo_t *) ((char *) ic + sizeof(itemconfig_t));
 	ic->numiteminfo = 0;
 	//parse the item config file
@@ -346,8 +344,8 @@ itemconfig_t *LoadItemConfig( const char *filename )
 //===========================================================================
 // index to find the weight function of an iteminfo
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int *ItemWeightIndex(weightconfig_t *iwc, itemconfig_t *ic)
@@ -369,8 +367,8 @@ int *ItemWeightIndex(weightconfig_t *iwc, itemconfig_t *ic)
 } //end of the function ItemWeightIndex
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void InitLevelItemHeap(void)
@@ -392,8 +390,8 @@ void InitLevelItemHeap(void)
 } //end of the function InitLevelItemHeap
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 levelitem_t *AllocLevelItem(void)
@@ -413,8 +411,8 @@ levelitem_t *AllocLevelItem(void)
 } //end of the function AllocLevelItem
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void FreeLevelItem(levelitem_t *li)
@@ -424,8 +422,8 @@ void FreeLevelItem(levelitem_t *li)
 } //end of the function FreeLevelItem
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AddLevelItemToList(levelitem_t *li)
@@ -437,8 +435,8 @@ void AddLevelItemToList(levelitem_t *li)
 } //end of the function AddLevelItemToList
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void RemoveLevelItemFromList(levelitem_t *li)
@@ -643,8 +641,7 @@ void BotInitLevelItems(void)
 		{
 			if (!AAS_DropToFloor(origin, ic->iteminfo[i].mins, ic->iteminfo[i].maxs))
 			{
-				botimport.Print(PRT_MESSAGE, "%s in solid at (%1.1f %1.1f %1.1f)\n",
-												classname, origin[0], origin[1], origin[2]);
+				botimport.Print(PRT_MESSAGE, "%s in solid at (%1.1f %1.1f %1.1f)\n", classname, origin[0], origin[1], origin[2]);
 			} //end if
 		} //end if
 		//item info of the level item
@@ -660,13 +657,10 @@ void BotInitLevelItems(void)
 		else
 		{
 			//get the item goal area and goal origin
-			li->goalareanum = AAS_BestReachableArea(origin,
-							ic->iteminfo[i].mins, ic->iteminfo[i].maxs,
-							li->goalorigin);
+			li->goalareanum = AAS_BestReachableArea(origin, ic->iteminfo[i].mins, ic->iteminfo[i].maxs, li->goalorigin);
 			if (!li->goalareanum)
 			{
-				botimport.Print(PRT_MESSAGE, "%s not reachable for bots at (%1.1f %1.1f %1.1f)\n",
-												classname, origin[0], origin[1], origin[2]);
+				botimport.Print(PRT_MESSAGE, "%s not reachable for bots at (%1.1f %1.1f %1.1f)\n", classname, origin[0], origin[1], origin[2]);
 			} //end if
 		} //end else
 		//
@@ -676,8 +670,8 @@ void BotInitLevelItems(void)
 } //end of the function BotInitLevelItems
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void BotGoalName(int number, char *name, int size)
@@ -698,8 +692,8 @@ void BotGoalName(int number, char *name, int size)
 } //end of the function BotGoalName
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void BotResetAvoidGoals(int goalstate)
@@ -713,8 +707,8 @@ void BotResetAvoidGoals(int goalstate)
 } //end of the function BotResetAvoidGoals
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void BotDumpAvoidGoals(int goalstate)
@@ -737,8 +731,8 @@ void BotDumpAvoidGoals(int goalstate)
 } //end of the function BotDumpAvoidGoals
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void BotAddToAvoidGoals(bot_goalstate_t *gs, int number, float avoidtime)
@@ -1081,9 +1075,7 @@ void BotUpdateEntityItems(void)
 					{
 						VectorCopy(entinfo.origin, li->origin);
 						//also update the goal area number
-						li->goalareanum = AAS_BestReachableArea(li->origin,
-										ic->iteminfo[li->iteminfo].mins, ic->iteminfo[li->iteminfo].maxs,
-										li->goalorigin);
+						li->goalareanum = AAS_BestReachableArea(li->origin, ic->iteminfo[li->iteminfo].mins, ic->iteminfo[li->iteminfo].maxs, li->goalorigin);
 					} //end if
 					break;
 				} //end else
@@ -1122,9 +1114,7 @@ void BotUpdateEntityItems(void)
 						//update the level item origin
 						VectorCopy(entinfo.origin, li->origin);
 						//also update the goal area number
-						li->goalareanum = AAS_BestReachableArea(li->origin,
-										ic->iteminfo[li->iteminfo].mins, ic->iteminfo[li->iteminfo].maxs,
-										li->goalorigin);
+						li->goalareanum = AAS_BestReachableArea(li->origin, ic->iteminfo[li->iteminfo].mins, ic->iteminfo[li->iteminfo].maxs, li->goalorigin);
 					} //end if
 #ifdef DEBUG
 					Log_Write("linked item %s to an entity", ic->iteminfo[li->iteminfo].classname);
@@ -1157,9 +1147,7 @@ void BotUpdateEntityItems(void)
 		//origin of the item
 		VectorCopy(entinfo.origin, li->origin);
 		//get the item goal area and goal origin
-		li->goalareanum = AAS_BestReachableArea(li->origin,
-									ic->iteminfo[i].mins, ic->iteminfo[i].maxs,
-									li->goalorigin);
+		li->goalareanum = AAS_BestReachableArea(li->origin, ic->iteminfo[i].mins, ic->iteminfo[i].maxs, li->goalorigin);
 		//never go for items dropped into jumppads
 		if (AAS_AreaJumpPad(li->goalareanum))
 		{
@@ -1184,8 +1172,8 @@ void BotUpdateEntityItems(void)
 } //end of the function BotUpdateEntityItems
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void BotDumpGoalStack(int goalstate)
@@ -1204,8 +1192,8 @@ void BotDumpGoalStack(int goalstate)
 } //end of the function BotDumpGoalStack
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void BotPushGoal(int goalstate, bot_goal_t *goal)
@@ -1225,8 +1213,8 @@ void BotPushGoal(int goalstate, bot_goal_t *goal)
 } //end of the function BotPushGoal
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void BotPopGoal(int goalstate)
@@ -1239,8 +1227,8 @@ void BotPopGoal(int goalstate)
 } //end of the function BotPopGoal
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void BotEmptyGoalStack(int goalstate)
@@ -1253,8 +1241,8 @@ void BotEmptyGoalStack(int goalstate)
 } //end of the function BotEmptyGoalStack
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int BotGetTopGoal(int goalstate, bot_goal_t *goal)
@@ -1269,8 +1257,8 @@ int BotGetTopGoal(int goalstate, bot_goal_t *goal)
 } //end of the function BotGetTopGoal
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int BotGetSecondGoal(int goalstate, bot_goal_t *goal)
@@ -1286,8 +1274,8 @@ int BotGetSecondGoal(int goalstate, bot_goal_t *goal)
 //===========================================================================
 // pops a new long term goal on the goal stack in the goalstate
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int BotChooseLTGItem(int goalstate, vec3_t origin, int *inventory, int travelflags)
@@ -1453,12 +1441,11 @@ int BotChooseLTGItem(int goalstate, vec3_t origin, int *inventory, int travelfla
 } //end of the function BotChooseLTGItem
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotChooseNBGItem(int goalstate, vec3_t origin, int *inventory, int travelflags,
-														bot_goal_t *ltg, float maxtime)
+int BotChooseNBGItem(int goalstate, vec3_t origin, int *inventory, int travelflags, bot_goal_t *ltg, float maxtime)
 {
 	int areanum, t, weightnum, ltg_time;
 	float weight, bestweight, avoidtime;
@@ -1610,8 +1597,8 @@ int BotChooseNBGItem(int goalstate, vec3_t origin, int *inventory, int travelfla
 } //end of the function BotChooseNBGItem
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int BotTouchingGoal(vec3_t origin, bot_goal_t *goal)
@@ -1639,8 +1626,8 @@ int BotTouchingGoal(vec3_t origin, bot_goal_t *goal)
 } //end of the function BotTouchingGoal
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int BotItemGoalInVisButNotVisible(int viewer, vec3_t eye, vec3_t viewangles, bot_goal_t *goal)
@@ -1676,8 +1663,8 @@ int BotItemGoalInVisButNotVisible(int viewer, vec3_t eye, vec3_t viewangles, bot
 } //end of the function BotItemGoalInVisButNotVisible
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void BotResetGoalState(int goalstate)
@@ -1692,8 +1679,8 @@ void BotResetGoalState(int goalstate)
 } //end of the function BotResetGoalState
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int BotLoadItemWeights(int goalstate, char *filename)
@@ -1718,8 +1705,8 @@ int BotLoadItemWeights(int goalstate, char *filename)
 } //end of the function BotLoadItemWeights
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void BotFreeItemWeights(int goalstate)
@@ -1733,8 +1720,8 @@ void BotFreeItemWeights(int goalstate)
 } //end of the function BotFreeItemWeights
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int BotAllocGoalState(int client)
@@ -1754,8 +1741,8 @@ int BotAllocGoalState(int client)
 } //end of the function BotAllocGoalState
 //========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //========================================================================
 void BotFreeGoalState(int handle)
@@ -1776,8 +1763,8 @@ void BotFreeGoalState(int handle)
 } //end of the function BotFreeGoalState
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int BotSetupGoalAI(void)

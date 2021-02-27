@@ -27,7 +27,7 @@ void main()
 		if (alpha < 0.5)
 			discard;
 	}
-	
+
 	gl_FragColor.rgb = color.rgb * var_Color.rgb;
 	gl_FragColor.a = alpha;
 }

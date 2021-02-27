@@ -139,8 +139,8 @@ static ID_INLINE void START_CHUNK( const char *s )
 	if( afd.chunkStackTop >= MAX_RIFF_CHUNKS )
 	{
 		Com_Error( ERR_DROP, "ERROR: Top of chunkstack breached" );
-	} 
-	else 
+	}
+	else
 	{
 		afd.chunkStack[ afd.chunkStackTop ] = bufIndex;
 		afd.chunkStackTop++;
@@ -162,7 +162,7 @@ static ID_INLINE void END_CHUNK( void )
 	if( afd.chunkStackTop <= 0 )
 	{
 		Com_Error( ERR_DROP, "ERROR: Bottom of chunkstack breached" );
-	} 
+	}
 	else
 	{
 		afd.chunkStackTop--;
@@ -331,7 +331,7 @@ static void CL_WriteAVIHeader( void )
 
 static qboolean CL_ValidatePipeFormat( const char *s )
 {
-	while ( *s != '\0' ) 
+	while ( *s != '\0' )
 	{
 		if ( *s == '.' && *(s+1) == '.' && ( *(s+2) == '/' || *(s+2) == '\\' ) )
 			return qfalse;
@@ -551,7 +551,7 @@ static int  bytesInBuffer = 0;
 CL_FlushAudioBuffer
 ===============
 */
-static void CL_FlushCaptureBuffer( void ) 
+static void CL_FlushCaptureBuffer( void )
 {
     unsigned int chunkOffset = afd.fileSize - afd.moviOffset - 8;
     int   chunkSize = 8 + bytesInBuffer;
@@ -619,7 +619,7 @@ void CL_WriteAVIAudioFrame( const byte *pcmBuffer, int size )
 		CL_FlushCaptureBuffer();
 	}
 
-	if ( pcmBuffer ) 
+	if ( pcmBuffer )
 	{
 		Com_Memcpy( &pcmCaptureBuffer[ bytesInBuffer ], pcmBuffer, size );
 		bytesInBuffer += size;
@@ -693,7 +693,7 @@ qboolean CL_CloseAVI( void )
 	// Open the temp index file
 	if( ( indexSize = FS_Home_FOpenFileRead( idxFileName, &afd.idxF ) ) <= 0 )
 	{
-		if ( afd.idxF != FS_INVALID_HANDLE ) 
+		if ( afd.idxF != FS_INVALID_HANDLE )
 		{
 			FS_FCloseFile( afd.idxF );
 		}

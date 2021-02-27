@@ -135,7 +135,7 @@ int R_CullPointAndRadius( const vec3_t pt, float radius )
 	}
 
 	// check against frustum planes
-	for (i = 0 ; i < 4 ; i++) 
+	for (i = 0 ; i < 4 ; i++)
 	{
 		frust = &tr.viewParms.frustum[i];
 
@@ -144,7 +144,7 @@ int R_CullPointAndRadius( const vec3_t pt, float radius )
 		{
 			return CULL_OUT;
 		}
-		else if ( dist <= radius ) 
+		else if ( dist <= radius )
 		{
 			mightBeClipped = qtrue;
 		}
@@ -179,10 +179,10 @@ int R_CullDlight( const dlight_t* dl )
 			dist2 = DotProduct( dl->transformed2, frust->normal) - frust->dist;
 			if ( dist < -dl->radius && dist2 < -dl->radius )
 				return CULL_OUT;
-			else if ( dist <= dl->radius || dist2 <= dl->radius ) 
+			else if ( dist <= dl->radius || dist2 <= dl->radius )
 				mightBeClipped = qtrue;
 		}
-	} 
+	}
 	else
 	// check against frustum planes
 	for ( i = 0 ; i < 4 ; i++ ) {
@@ -190,7 +190,7 @@ int R_CullDlight( const dlight_t* dl )
 		dist = DotProduct( dl->transformed, frust->normal) - frust->dist;
 		if ( dist < -dl->radius )
 			return CULL_OUT;
-		else if ( dist <= dl->radius ) 
+		else if ( dist <= dl->radius )
 			mightBeClipped = qtrue;
 	}
 
@@ -247,7 +247,7 @@ void R_TransformModelToClip( const vec3_t src, const float *modelMatrix, const f
 	int i;
 
 	for ( i = 0 ; i < 4 ; i++ ) {
-		eye[i] = 
+		eye[i] =
 			src[0] * modelMatrix[ i + 0 * 4 ] +
 			src[1] * modelMatrix[ i + 1 * 4 ] +
 			src[2] * modelMatrix[ i + 2 * 4 ] +
@@ -255,7 +255,7 @@ void R_TransformModelToClip( const vec3_t src, const float *modelMatrix, const f
 	}
 
 	for ( i = 0 ; i < 4 ; i++ ) {
-		dst[i] = 
+		dst[i] =
 			eye[0] * projectionMatrix[ i + 0 * 4 ] +
 			eye[1] * projectionMatrix[ i + 1 * 4 ] +
 			eye[2] * projectionMatrix[ i + 2 * 4 ] +
@@ -273,7 +273,7 @@ static void R_TransformModelToClipMVP( const vec3_t src, const float *mvp, vec4_
 	int i;
 
 	for ( i = 0 ; i < 4 ; i++ ) {
-		clip[i] = 
+		clip[i] =
 			src[0] * mvp[ i + 0 * 4 ] +
 			src[1] * mvp[ i + 1 * 4 ] +
 			src[2] * mvp[ i + 2 * 4 ] +
@@ -496,7 +496,7 @@ static void R_SetupFrustum( viewParms_t *dest, float xmin, float xmax, float yma
 	vec3_t ofsorigin;
 	float oppleg, adjleg, length;
 	int i;
-	
+
 	if(stereoSep == 0 && xmin == -xmax)
 	{
 		// symmetric case can be simplified
@@ -517,7 +517,7 @@ static void R_SetupFrustum( viewParms_t *dest, float xmin, float xmax, float yma
 		// In stereo rendering, due to the modification of the projection matrix, dest->or.origin is not the
 		// actual origin that we're rendering so offset the tip of the view pyramid.
 		VectorMA(dest->or.origin, stereoSep, dest->or.axis[1], ofsorigin);
-	
+
 		oppleg = xmax + stereoSep;
 		length = sqrt(oppleg * oppleg + zProj * zProj);
 		VectorScale(dest->or.axis[0], oppleg / length, dest->frustum[0].normal);
@@ -538,7 +538,7 @@ static void R_SetupFrustum( viewParms_t *dest, float xmin, float xmax, float yma
 
 	VectorScale(dest->or.axis[0], oppleg, dest->frustum[3].normal);
 	VectorMA(dest->frustum[3].normal, -adjleg, dest->or.axis[2], dest->frustum[3].normal);
-	
+
 	for (i=0 ; i<4 ; i++) {
 		dest->frustum[i].type = PLANE_NON_AXIAL;
 		dest->frustum[i].dist = DotProduct (ofsorigin, dest->frustum[i].normal);
@@ -564,7 +564,7 @@ void R_SetupProjection( viewParms_t *dest, float zProj, qboolean computeFrustum 
 	float	width, height, stereoSep = r_stereoSeparation->value;
 
 	/*
-	 * offset the view origin of the viewer for stereo rendering 
+	 * offset the view origin of the viewer for stereo rendering
 	 * by setting the projection matrix appropriately.
 	 */
 
@@ -586,7 +586,7 @@ void R_SetupProjection( viewParms_t *dest, float zProj, qboolean computeFrustum 
 
 	width = xmax - xmin;
 	height = ymax - ymin;
-	
+
 	dest->projectionMatrix[0] = 2 * zProj / width;
 	dest->projectionMatrix[4] = 0;
 	dest->projectionMatrix[8] = (xmax + xmin + 2 * stereoSep) / width;
@@ -601,7 +601,7 @@ void R_SetupProjection( viewParms_t *dest, float zProj, qboolean computeFrustum 
 	dest->projectionMatrix[7] = 0;
 	dest->projectionMatrix[11] = -1;
 	dest->projectionMatrix[15] = 0;
-	
+
 	// Now that we have all the data for the projection matrix we can also setup the view frustum.
 	if ( computeFrustum )
 		R_SetupFrustum( dest, xmin, xmax, ymax, zProj, stereoSep );
@@ -721,13 +721,13 @@ static void R_PlaneForSurface( const surfaceType_t *surfType, cplane_t *plane ) 
 		v2 = tri->verts + tri->indexes[1];
 		v3 = tri->verts + tri->indexes[2];
 		PlaneFromPoints( plane4, v1->xyz, v2->xyz, v3->xyz );
-		VectorCopy( plane4, plane->normal ); 
+		VectorCopy( plane4, plane->normal );
 		plane->dist = plane4[3];
 		return;
 	case SF_POLY:
 		poly = (srfPoly_t *)surfType;
 		PlaneFromPoints( plane4, poly->verts[0].xyz, poly->verts[1].xyz, poly->verts[2].xyz );
-		VectorCopy( plane4, plane->normal ); 
+		VectorCopy( plane4, plane->normal );
 		plane->dist = plane4[3];
 		return;
 	default:
@@ -801,8 +801,8 @@ static qboolean R_GetPortalOrientations( const drawSurf_t *drawSurf, int entityN
 		VectorCopy( e->e.oldorigin, pvsOrigin );
 
 		// if the entity is just a mirror, don't use as a camera point
-		if ( e->e.oldorigin[0] == e->e.origin[0] && 
-			e->e.oldorigin[1] == e->e.origin[1] && 
+		if ( e->e.oldorigin[0] == e->e.origin[0] &&
+			e->e.oldorigin[1] == e->e.origin[1] &&
 			e->e.oldorigin[2] == e->e.origin[2] ) {
 			VectorScale( plane.normal, plane.dist, surface->origin );
 			VectorCopy( surface->origin, camera->origin );
@@ -818,7 +818,7 @@ static qboolean R_GetPortalOrientations( const drawSurf_t *drawSurf, int entityN
 		// an origin point we can rotate around
 		d = DotProduct( e->e.origin, plane.normal ) - plane.dist;
 		VectorMA( e->e.origin, -d, surface->axis[0], surface->origin );
-			
+
 		// now get the camera origin and orientation
 		VectorCopy( e->e.oldorigin, camera->origin );
 		AxisCopy( e->e.axis, camera->axis );
@@ -904,7 +904,7 @@ static qboolean IsMirror( const drawSurf_t *drawSurf, int entityNum )
 	// locate the portal entity closest to this plane.
 	// origin will be the origin of the portal, origin2 will be
 	// the origin of the camera
-	for ( i = 0 ; i < tr.refdef.num_entities ; i++ ) 
+	for ( i = 0 ; i < tr.refdef.num_entities ; i++ )
 	{
 		e = &tr.refdef.entities[i];
 		if ( e->e.reType != RT_PORTALSURFACE ) {
@@ -917,9 +917,9 @@ static qboolean IsMirror( const drawSurf_t *drawSurf, int entityNum )
 		}
 
 		// if the entity is just a mirror, don't use as a camera point
-		if ( e->e.oldorigin[0] == e->e.origin[0] && 
-			e->e.oldorigin[1] == e->e.origin[1] && 
-			e->e.oldorigin[2] == e->e.origin[2] ) 
+		if ( e->e.oldorigin[0] == e->e.origin[0] &&
+			e->e.oldorigin[1] == e->e.origin[1] &&
+			e->e.oldorigin[2] == e->e.origin[2] )
 		{
 			return qtrue;
 		}
@@ -1141,7 +1141,7 @@ static qboolean R_MirrorViewBySurface( const drawSurf_t *drawSurf, int entityNum
 	newParms = tr.viewParms;
 	newParms.portalView = PV_NONE;
 
-	if ( !R_GetPortalOrientations( drawSurf, entityNum, &surface, &camera, 
+	if ( !R_GetPortalOrientations( drawSurf, entityNum, &surface, &camera,
 		newParms.pvsOrigin, &newParms.portalView ) ) {
 		return qfalse;		// bad portal, no portalentity
 	}
@@ -1402,7 +1402,7 @@ void R_AddLitSurf( surfaceType_t *surface, shader_t *shader, int fogIndex )
 
 	litsurf = &tr.refdef.litSurfs[ tr.refdef.numLitSurfs++ ];
 
-	litsurf->sort = (shader->sortedIndex << QSORT_SHADERNUM_SHIFT) 
+	litsurf->sort = (shader->sortedIndex << QSORT_SHADERNUM_SHIFT)
 		| tr.shiftedEntityNum | ( fogIndex << QSORT_FOGNUM_SHIFT );
 	litsurf->surface = surface;
 
@@ -1437,7 +1437,7 @@ void R_DecomposeLitSort( unsigned sort, int *entityNum, shader_t **shader, int *
 R_AddDrawSurf
 =================
 */
-void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader, 
+void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader,
 				   int fogIndex, int dlightMap ) {
 	int			index;
 
@@ -1446,7 +1446,7 @@ void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader,
 	index = tr.refdef.numDrawSurfs & DRAWSURF_MASK;
 	// the sort data is packed into a single 32 bit value so it can be
 	// compared quickly during the qsorting process
-	tr.refdef.drawSurfs[index].sort = (shader->sortedIndex << QSORT_SHADERNUM_SHIFT) 
+	tr.refdef.drawSurfs[index].sort = (shader->sortedIndex << QSORT_SHADERNUM_SHIFT)
 		| tr.shiftedEntityNum | ( fogIndex << QSORT_FOGNUM_SHIFT ) | (int)dlightMap;
 	tr.refdef.drawSurfs[index].surface = surface;
 	tr.refdef.numDrawSurfs++;
@@ -1458,7 +1458,7 @@ void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader,
 R_DecomposeSort
 =================
 */
-void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader, 
+void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader,
 					 int *fogNum, int *dlightMap ) {
 	*fogNum = ( sort >> QSORT_FOGNUM_SHIFT ) & FOGNUM_MASK;
 	*shader = tr.sortedShaders[ ( sort >> QSORT_SHADERNUM_SHIFT ) & SHADERNUM_MASK ];
@@ -1517,13 +1517,13 @@ static void R_SortDrawSurfs( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 
 #ifdef USE_PMLIGHT
 #ifdef USE_LEGACY_DLIGHTS
-	if ( r_dlightMode->integer ) 
+	if ( r_dlightMode->integer )
 #endif
 	{
 		dlight_t *dl;
 		// all the lit surfaces are in a single queue
 		// but each light's surfaces are sorted within its subsection
-		for ( i = 0; i < tr.refdef.num_dlights; ++i ) { 
+		for ( i = 0; i < tr.refdef.num_dlights; ++i ) {
 			dl = &tr.refdef.dlights[ i ];
 			if ( dl->head ) {
 				R_SortLitsurfs( dl );
@@ -1561,7 +1561,7 @@ void R_AddEntitySurfaces( void ) {
 
 		//
 		// the weapon model must be handled special --
-		// we don't want the hacked weapon position showing in 
+		// we don't want the hacked weapon position showing in
 		// mirrors, because the true body position will already be drawn
 		//
 		if ( (ent->e.renderfx & RF_FIRST_PERSON) && (tr.viewParms.portalView != PV_NONE) ) {

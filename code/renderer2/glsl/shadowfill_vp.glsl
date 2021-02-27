@@ -103,6 +103,6 @@ void main()
 	position = DeformPosition(position, normal, attr_TexCoord0.st);
 
 	gl_Position = u_ModelViewProjectionMatrix * vec4(position, 1.0);
-	
+
 	var_Position  = (u_ModelMatrix * vec4(position, 1.0)).xyz;
 }

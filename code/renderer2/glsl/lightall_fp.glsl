@@ -26,7 +26,7 @@ uniform samplerCube u_CubeMap;
 
 #if defined(USE_NORMALMAP) || defined(USE_DELUXEMAP) || defined(USE_SPECULARMAP) || defined(USE_CUBEMAP)
 // y = deluxe, w = cube
-uniform vec4      u_EnableTextures; 
+uniform vec4      u_EnableTextures;
 #endif
 
 #if defined(USE_PRIMARY_LIGHT) || defined(USE_SHADOWMAP)
@@ -105,9 +105,9 @@ float RayIntersectDisplaceMap(vec2 dp, vec2 ds, sampler2D normalMap)
 	for(int i = 0; i < linearSearchSteps - 1; ++i)
 	{
 		depth += size;
-		
+
 		float t = SampleDepth(normalMap, dp + ds * depth);
-		
+
 		if(bestDepth > 0.996)		// if no depth found yet
 			if(depth >= t)
 			{
@@ -130,7 +130,7 @@ float RayIntersectDisplaceMap(vec2 dp, vec2 ds, sampler2D normalMap)
 		size *= 0.5;
 
 		float t = SampleDepth(normalMap, dp + ds * depth);
-		
+
 		if(depth >= t)
 		{
 			bestDepth = depth;
@@ -163,7 +163,7 @@ float LightRay(vec2 dp, vec2 ds, sampler2D normalMap)
 
 		if (startDepth < height)
 			return 1.0;
-		
+
 		float t = SampleDepth(normalMap, dp + ds * height);
 
 		if (startDepth > t + height)
@@ -248,7 +248,7 @@ vec4 hitCube(vec3 ray, vec3 pos, vec3 invSize, float lod, samplerCube tex)
 	//vec3 fade3 = abs(pos);
 	//float fade = max(max(fade3.x, fade3.y), fade3.z);
 	//fade = clamp(1.0 - fade, 0.0, 1.0);
-			
+
 	//return vec4(textureCubeLod(tex, tc, lod).rgb * fade, fade);
 	return vec4(textureCubeLod(tex, tc, lod).rgb, 1.0);
 }
@@ -290,7 +290,7 @@ void main()
 #endif
 
 	vec4 diffuse = texture2D(u_DiffuseMap, texCoords);
-	
+
 	float alpha = diffuse.a * var_Color.a;
 	if (u_AlphaTest == 1)
 	{
@@ -337,7 +337,7 @@ void main()
 
 	N = normalize(N);
 
-  #if defined(USE_SHADOWMAP) 
+  #if defined(USE_SHADOWMAP)
 	vec2 shadowTex = gl_FragCoord.xy * r_FBufScale;
 	float shadowValue = texture2D(u_ShadowMap, shadowTex).r;
 

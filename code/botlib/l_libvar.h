@@ -34,10 +34,10 @@ typedef struct libvar_s
 {
 	char		*name;
 	char		*string;
-	int		flags;
+	int			flags;
 	qboolean	modified;	// set each time the cvar is changed
 	float		value;
-	struct	libvar_s *next;
+	struct		libvar_s *next;
 } libvar_t;
 
 //removes all library variables
@@ -60,4 +60,3 @@ void LibVarSet( const char *var_name, const char *value );
 qboolean LibVarChanged( const char *var_name );
 //sets the library variable to unmodified
 void LibVarSetNotModified( const char *var_name );
-

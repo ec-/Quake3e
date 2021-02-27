@@ -78,14 +78,14 @@ qboolean Sys_RandomBytes( byte *string, int len )
 
 
 #ifdef UNICODE
-LPWSTR AtoW( const char *s ) 
+LPWSTR AtoW( const char *s )
 {
 	static WCHAR buffer[MAXPRINTMSG*2];
 	MultiByteToWideChar( CP_ACP, 0, s, strlen( s ) + 1, (LPWSTR) buffer, ARRAYSIZE( buffer ) );
 	return buffer;
 }
 
-const char *WtoA( const LPWSTR s ) 
+const char *WtoA( const LPWSTR s )
 {
 	static char buffer[MAXPRINTMSG*2];
 	WideCharToMultiByte( CP_ACP, 0, s, -1, buffer, ARRAYSIZE( buffer ), NULL, NULL );
@@ -99,14 +99,14 @@ const char *WtoA( const LPWSTR s )
 Sys_DefaultHomePath
 ================
 */
-const char *Sys_DefaultHomePath( void ) 
+const char *Sys_DefaultHomePath( void )
 {
 #ifdef USE_PROFILES
 	TCHAR szPath[MAX_PATH];
 	static char path[MAX_OSPATH];
 	FARPROC qSHGetFolderPath;
 	HMODULE shfolder = LoadLibrary("shfolder.dll");
-	
+
 	if(shfolder == NULL) {
 		Com_Printf("Unable to load SHFolder.dll\n");
 		return NULL;
@@ -162,7 +162,7 @@ const char *Sys_SteamPath( void )
 
 #ifdef STEAMPATH_APPID
 	// Assuming Steam is a 32-bit app
-	if ( !steamPath[0] && RegOpenKeyEx(HKEY_LOCAL_MACHINE, AtoW("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App " STEAMPATH_APPID), 0, KEY_QUERY_VALUE | KEY_WOW64_32KEY, &steamRegKey ) == ERROR_SUCCESS ) 
+	if ( !steamPath[0] && RegOpenKeyEx(HKEY_LOCAL_MACHINE, AtoW("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App " STEAMPATH_APPID), 0, KEY_QUERY_VALUE | KEY_WOW64_32KEY, &steamRegKey ) == ERROR_SUCCESS )
 	{
 		pathLen = sizeof( steamPath );
 		if ( RegQueryValueEx( steamRegKey, AtoW("InstallLocation"), NULL, NULL, (LPBYTE)steamPath, &pathLen ) != ERROR_SUCCESS )

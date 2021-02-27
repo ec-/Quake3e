@@ -189,7 +189,7 @@ emit_dht (j_compress_ptr cinfo, int index, boolean is_ac)
 {
   JHUFF_TBL * htbl;
   int length, i;
-  
+
   if (is_ac) {
     htbl = cinfo->ac_huff_tbl_ptrs[index];
     index += 0x10;		/* output index has AC bit set */
@@ -199,23 +199,23 @@ emit_dht (j_compress_ptr cinfo, int index, boolean is_ac)
 
   if (htbl == NULL)
     ERREXIT1(cinfo, JERR_NO_HUFF_TABLE, index);
-  
+
   if (! htbl->sent_table) {
     emit_marker(cinfo, M_DHT);
-    
+
     length = 0;
     for (i = 1; i <= 16; i++)
       length += htbl->bits[i];
-    
+
     emit_2bytes(cinfo, length + 2 + 1 + 16);
     emit_byte(cinfo, index);
-    
+
     for (i = 1; i <= 16; i++)
       emit_byte(cinfo, htbl->bits[i]);
-    
+
     for (i = 0; i < length; i++)
       emit_byte(cinfo, htbl->huffval[i]);
-    
+
     htbl->sent_table = TRUE;
   }
 }
@@ -275,7 +275,7 @@ emit_dri (j_compress_ptr cinfo)
 /* Emit a DRI marker */
 {
   emit_marker(cinfo, M_DRI);
-  
+
   emit_2bytes(cinfo, 4);	/* fixed length */
 
   emit_2bytes(cinfo, (int) cinfo->restart_interval);
@@ -292,7 +292,7 @@ emit_lse_ict (j_compress_ptr cinfo)
     ERREXIT(cinfo, JERR_CONVERSION_NOTIMPL);
 
   emit_marker(cinfo, M_JPG8);
-  
+
   emit_2bytes(cinfo, 24);	/* fixed length */
 
   emit_byte(cinfo, 0x0D);	/* ID inverse transform specification */
@@ -319,9 +319,9 @@ emit_sof (j_compress_ptr cinfo, JPEG_MARKER code)
 {
   int ci;
   jpeg_component_info *compptr;
-  
+
   emit_marker(cinfo, code);
-  
+
   emit_2bytes(cinfo, 3 * cinfo->num_components + 2 + 5 + 1); /* length */
 
   /* Make sure image isn't bigger than SOF field can handle */
@@ -350,13 +350,13 @@ emit_sos (j_compress_ptr cinfo)
 {
   int i, td, ta;
   jpeg_component_info *compptr;
-  
+
   emit_marker(cinfo, M_SOS);
-  
+
   emit_2bytes(cinfo, 2 * cinfo->comps_in_scan + 2 + 1 + 3); /* length */
-  
+
   emit_byte(cinfo, cinfo->comps_in_scan);
-  
+
   for (i = 0; i < cinfo->comps_in_scan; i++) {
     compptr = cinfo->cur_comp_info[i];
     emit_byte(cinfo, compptr->component_id);
@@ -384,9 +384,9 @@ emit_pseudo_sos (j_compress_ptr cinfo)
 /* Emit a pseudo SOS marker */
 {
   emit_marker(cinfo, M_SOS);
-  
+
   emit_2bytes(cinfo, 2 + 1 + 3); /* length */
-  
+
   emit_byte(cinfo, 0); /* Ns */
 
   emit_byte(cinfo, 0); /* Ss */
@@ -410,9 +410,9 @@ emit_jfif_app0 (j_compress_ptr cinfo)
    * Thumbnail X size		(1 byte)
    * Thumbnail Y size		(1 byte)
    */
-  
+
   emit_marker(cinfo, M_APP0);
-  
+
   emit_2bytes(cinfo, 2 + 4 + 1 + 2 + 1 + 2 + 2 + 1 + 1); /* length */
 
   emit_byte(cinfo, 0x4A);	/* Identifier: ASCII "JFIF" */
@@ -449,9 +449,9 @@ emit_adobe_app14 (j_compress_ptr cinfo)
    * YCbCr, 2 if it's YCCK, 0 otherwise.  Adobe's definition has to do with
    * whether the encoder performed a transformation, which is pretty useless.
    */
-  
+
   emit_marker(cinfo, M_APP14);
-  
+
   emit_2bytes(cinfo, 2 + 5 + 2 + 2 + 2 + 1); /* length */
 
   emit_byte(cinfo, 0x41);	/* Identifier: ASCII "Adobe" */
@@ -546,7 +546,7 @@ write_frame_header (j_compress_ptr cinfo)
   int ci, prec;
   boolean is_baseline;
   jpeg_component_info *compptr;
-  
+
   /* Emit DQT for each quantization table.
    * Note that emit_dqt() suppresses any duplicate tables.
    */

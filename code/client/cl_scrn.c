@@ -147,8 +147,8 @@ static void SCR_DrawChar( int x, int y, float size, int ch ) {
 	size = 0.0625;
 
 	re.DrawStretchPic( ax, ay, aw, ah,
-					   fcol, frow, 
-					   fcol + size, frow + size, 
+					   fcol, frow,
+					   fcol + size, frow + size,
 					   cls.charSetShader );
 }
 
@@ -180,8 +180,8 @@ void SCR_DrawSmallChar( int x, int y, int ch ) {
 	size = 0.0625;
 
 	re.DrawStretchPic( x, y, smallchar_width, smallchar_height,
-					   fcol, frow, 
-					   fcol + size, frow + size, 
+					   fcol, frow,
+					   fcol + size, frow + size,
 					   cls.charSetShader );
 }
 
@@ -210,7 +210,7 @@ void SCR_DrawSmallString( int x, int y, const char *s, int len ) {
 		fcol = col*0.0625;
 
 		re.DrawStretchPic( x, y, smallchar_width, smallchar_height,
-						   fcol, frow, fcol + size, frow + size, 
+						   fcol, frow, fcol + size, frow + size,
 						   cls.charSetShader );
 
 		x += smallchar_width;
@@ -228,8 +228,7 @@ to a fixed color.
 Coordinates are at 640 by 480 virtual resolution
 ==================
 */
-void SCR_DrawStringExt( int x, int y, float size, const char *string, const float *setColor, qboolean forceColor,
-		qboolean noColorEscape ) {
+void SCR_DrawStringExt( int x, int y, float size, const char *string, const float *setColor, qboolean forceColor, qboolean noColorEscape ) {
 	vec4_t		color;
 	const char	*s;
 	int			xx;
@@ -297,8 +296,7 @@ Draws a multi-colored string with a drop shadow, optionally forcing
 to a fixed color.
 ==================
 */
-void SCR_DrawSmallStringExt( int x, int y, const char *string, const float *setColor, qboolean forceColor,
-		qboolean noColorEscape ) {
+void SCR_DrawSmallStringExt( int x, int y, const char *string, const float *setColor, qboolean forceColor, qboolean noColorEscape ) {
 	vec4_t		color;
 	const char	*s;
 	int			xx;
@@ -349,7 +347,7 @@ static int SCR_Strlen( const char *str ) {
 
 /*
 ** SCR_GetBigStringWidth
-*/ 
+*/
 int SCR_GetBigStringWidth( const char *str ) {
 	return SCR_Strlen( str ) * BIGCHAR_WIDTH;
 }
@@ -460,7 +458,7 @@ void SCR_DrawDebugGraph (void)
 	x = 0;
 	y = cls.glconfig.vidHeight;
 	re.SetColor( g_color_table[ ColorIndex( COLOR_BLACK ) ] );
-	re.DrawStretchPic(x, y - cl_graphheight->integer, 
+	re.DrawStretchPic(x, y - cl_graphheight->integer,
 		w, cl_graphheight->integer, 0, 0, 0, 0, cls.whiteShader );
 	re.SetColor( NULL );
 
@@ -469,7 +467,7 @@ void SCR_DrawDebugGraph (void)
 		i = (ARRAY_LEN(values)+current-1-(a % ARRAY_LEN(values))) % ARRAY_LEN(values);
 		v = values[i];
 		v = v * cl_graphscale->integer + cl_graphshift->integer;
-		
+
 		if (v < 0)
 			v += cl_graphheight->integer * (1+(int)(-v / cl_graphheight->integer));
 		h = (int)v % cl_graphheight->integer;
@@ -485,11 +483,11 @@ SCR_Init
 ==================
 */
 void SCR_Init( void ) {
-	cl_timegraph = Cvar_Get ("timegraph", "0", CVAR_CHEAT);
-	cl_debuggraph = Cvar_Get ("debuggraph", "0", CVAR_CHEAT);
-	cl_graphheight = Cvar_Get ("graphheight", "32", CVAR_CHEAT);
-	cl_graphscale = Cvar_Get ("graphscale", "1", CVAR_CHEAT);
-	cl_graphshift = Cvar_Get ("graphshift", "0", CVAR_CHEAT);
+	cl_timegraph = Cvar_Get( "timegraph", "0", CVAR_CHEAT );
+	cl_debuggraph = Cvar_Get( "debuggraph", "0", CVAR_CHEAT );
+	cl_graphheight = Cvar_Get( "graphheight", "32", CVAR_CHEAT );
+	cl_graphscale = Cvar_Get( "graphscale", "1", CVAR_CHEAT );
+	cl_graphshift = Cvar_Get( "graphshift", "0", CVAR_CHEAT );
 
 	scr_initialized = qtrue;
 }

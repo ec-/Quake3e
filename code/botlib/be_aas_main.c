@@ -50,8 +50,8 @@ libvar_t *saveroutingcache;
 
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void QDECL AAS_Error(char *fmt, ...)
@@ -66,8 +66,8 @@ void QDECL AAS_Error(char *fmt, ...)
 } //end of the function AAS_Error
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int AAS_Loaded(void)
@@ -76,8 +76,8 @@ int AAS_Loaded(void)
 } //end of the function AAS_Loaded
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int AAS_Initialized(void)
@@ -86,8 +86,8 @@ int AAS_Initialized(void)
 } //end of the function AAS_Initialized
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_SetInitialized(void)
@@ -103,8 +103,8 @@ void AAS_SetInitialized(void)
 } //end of the function AAS_SetInitialized
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_ContinueInit(float time)
@@ -141,8 +141,8 @@ void AAS_ContinueInit(float time)
 //===========================================================================
 // called at the start of every frame
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int AAS_StartFrame(float time)
@@ -187,8 +187,8 @@ int AAS_StartFrame(float time)
 } //end of the function AAS_StartFrame
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 float AAS_Time(void)
@@ -213,8 +213,8 @@ void AAS_ProjectPointOntoVector( vec3_t point, vec3_t vStart, vec3_t vEnd, vec3_
 } //end of the function AAS_ProjectPointOntoVector
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int AAS_LoadFiles(const char *mapname)
@@ -244,8 +244,8 @@ int AAS_LoadFiles(const char *mapname)
 //===========================================================================
 // called everytime a map changes
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int AAS_LoadMap(const char *mapname)
@@ -286,8 +286,8 @@ int AAS_LoadMap(const char *mapname)
 //===========================================================================
 // called when the library is first loaded
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int AAS_Setup(void)
@@ -302,15 +302,15 @@ int AAS_Setup(void)
 	//invalidate all the entities
 	AAS_InvalidateEntities();
 	//force some recalculations
-	//LibVarSet("forceclustering", "1");			//force clustering calculation
+	//LibVarSet("forceclustering", "1");		//force clustering calculation
 	//LibVarSet("forcereachability", "1");		//force reachability calculation
 	aasworld.numframes = 0;
 	return BLERR_NOERROR;
 } //end of the function AAS_Setup
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_Shutdown(void)

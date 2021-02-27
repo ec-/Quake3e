@@ -126,8 +126,8 @@ int AAS_OptimizeEdge(optimized_t *optimized, int edgenum)
 } //end of the function AAS_OptimizeEdge
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int AAS_KeepFace(aas_face_t *face)
@@ -137,8 +137,8 @@ int AAS_KeepFace(aas_face_t *face)
 } //end of the function AAS_KeepFace
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int AAS_OptimizeFace(optimized_t *optimized, int facenum)
@@ -182,8 +182,8 @@ int AAS_OptimizeFace(optimized_t *optimized, int facenum)
 } //end of the function AAS_OptimizeFace
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_OptimizeArea(optimized_t *optimized, int areanum)
@@ -211,8 +211,8 @@ void AAS_OptimizeArea(optimized_t *optimized, int areanum)
 } //end of the function AAS_OptimizeArea
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_OptimizeAlloc(optimized_t *optimized)
@@ -236,8 +236,8 @@ void AAS_OptimizeAlloc(optimized_t *optimized)
 } //end of the function AAS_OptimizeAlloc
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_OptimizeStore(optimized_t *optimized)
@@ -273,8 +273,8 @@ void AAS_OptimizeStore(optimized_t *optimized)
 } //end of the function AAS_OptimizeStore
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_Optimize(void)

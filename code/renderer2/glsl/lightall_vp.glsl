@@ -126,7 +126,7 @@ vec2 ModTexCoords(vec2 st, vec3 position, vec4 texMatrix, vec4 offTurb)
 
 	vec2 texOffset = sin(offsetPos * (2.0 * M_PI / 1024.0) + vec2(phase));
 
-	return st2 + texOffset * amplitude;	
+	return st2 + texOffset * amplitude;
 }
 #endif
 

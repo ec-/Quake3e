@@ -59,8 +59,8 @@ int numclusterareas;
 
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_AltRoutingFloodCluster_r(int areanum)
@@ -190,9 +190,7 @@ int AAS_AlternativeRouteGoals(vec3_t start, int startareanum, vec3_t goal, int g
 		altroutegoals[numaltroutegoals].areanum = bestareanum;
 		altroutegoals[numaltroutegoals].starttraveltime = midrangeareas[bestareanum].starttime;
 		altroutegoals[numaltroutegoals].goaltraveltime = midrangeareas[bestareanum].goaltime;
-		altroutegoals[numaltroutegoals].extratraveltime =
-					(midrangeareas[bestareanum].starttime + midrangeareas[bestareanum].goaltime) -
-								goaltraveltime;
+		altroutegoals[numaltroutegoals].extratraveltime = (midrangeareas[bestareanum].starttime + midrangeareas[bestareanum].goaltime) - goaltraveltime;
 		numaltroutegoals++;
 		//
 #ifdef ALTROUTE_DEBUG
@@ -209,8 +207,8 @@ int AAS_AlternativeRouteGoals(vec3_t start, int startareanum, vec3_t goal, int g
 } //end of the function AAS_AlternativeRouteGoals
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_InitAlternativeRouting(void)
@@ -224,8 +222,8 @@ void AAS_InitAlternativeRouting(void)
 } //end of the function AAS_InitAlternativeRouting
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_ShutdownAlternativeRouting(void)

@@ -75,7 +75,7 @@ qboolean VidMode_Init( void )
 			goto __fail;
 		}
 	}
-	
+
 	if ( !_XF86VidModeQueryExtension( dpy, &event_base, &error_base ) || !_XF86VidModeQueryVersion( dpy, &ver_major, &ver_minor ) )
 	{
 		Com_Printf( "...VidMode extension is not available.\n" );
@@ -85,7 +85,7 @@ qboolean VidMode_Init( void )
 	Com_Printf( "...VidMode extension version %i.%i detected.\n", ver_major, ver_minor );
 
 	glw_state.vidmode_ext = qtrue;
-	
+
 	if ( glw_state.desktop_ok == qfalse )
 	{
 		XF86VidModeModeLine c;
@@ -178,7 +178,7 @@ qboolean VidMode_SetMode( int *width, int *height, int *rate )
 	int x, y; //, w, h;
 	int num_vidmodes;
 	int i;
-	
+
 	if ( !glw_state.vidmode_ext )
 		return qfalse;
 
@@ -186,7 +186,7 @@ qboolean VidMode_SetMode( int *width, int *height, int *rate )
 	{
 		free( vidmodes );
 	}
-	
+
 	_XF86VidModeGetAllModeLines( dpy, scrnum, &num_vidmodes, &vidmodes );
 
 	best_dist = 9999999;

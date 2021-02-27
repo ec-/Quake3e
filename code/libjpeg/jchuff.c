@@ -185,7 +185,7 @@ jpeg_make_c_derived_tbl (j_compress_ptr cinfo, boolean isDC, int tblno,
     *pdtbl = (c_derived_tbl *) (*cinfo->mem->alloc_small)
       ((j_common_ptr) cinfo, JPOOL_IMAGE, SIZEOF(c_derived_tbl));
   dtbl = *pdtbl;
-  
+
   /* Figure C.1: make table of Huffman code length for each symbol */
 
   p = 0;
@@ -198,7 +198,7 @@ jpeg_make_c_derived_tbl (j_compress_ptr cinfo, boolean isDC, int tblno,
   }
   huffsize[p] = 0;
   lastp = p;
-  
+
   /* Figure C.2: generate the codes themselves */
   /* We also validate that the counts represent a legal Huffman code tree. */
 
@@ -218,7 +218,7 @@ jpeg_make_c_derived_tbl (j_compress_ptr cinfo, boolean isDC, int tblno,
     code <<= 1;
     si++;
   }
-  
+
   /* Figure C.3: generate encoding tables */
   /* These are code and size indexed by symbol value */
 
@@ -651,9 +651,9 @@ encode_mcu_AC_first (j_compress_ptr cinfo, JBLOCKROW *MCU_data)
   block = MCU_data[0];
 
   /* Encode the AC coefficients per section G.1.2.2, fig. G.3 */
-  
+
   r = 0;			/* r = run length of zeros */
-   
+
   for (k = cinfo->Ss; k <= Se; k++) {
     if ((temp = (*block)[natural_order[k]]) == 0) {
       r++;
@@ -826,7 +826,7 @@ encode_mcu_AC_refine (j_compress_ptr cinfo, JBLOCKROW *MCU_data)
   }
 
   /* Encode the AC coefficients per section G.1.2.3, fig. G.7 */
-  
+
   r = 0;			/* r = run length of zeros */
   BR = 0;			/* BR = count of buffered bits added now */
   BR_buffer = entropy->bit_buffer + entropy->BE; /* Append bits to buffer */

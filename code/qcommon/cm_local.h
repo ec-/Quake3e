@@ -68,7 +68,7 @@ static ID_INLINE vec_t VectorNormalizeDP( vec3_t v ) {
 		v[1] = d[1] * ilength;
 		v[2] = d[2] * ilength;
 	}
-		
+
 	return length;
 }
 

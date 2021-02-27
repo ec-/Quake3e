@@ -86,8 +86,8 @@ unsigned short crctable[257] =
 
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void CRC_Init(unsigned short *crcvalue)
@@ -96,8 +96,8 @@ void CRC_Init(unsigned short *crcvalue)
 } //end of the function CRC_Init
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void CRC_ProcessByte(unsigned short *crcvalue, byte data)
@@ -106,8 +106,8 @@ void CRC_ProcessByte(unsigned short *crcvalue, byte data)
 } //end of the function CRC_ProcessByte
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 unsigned short CRC_Value(unsigned short crcvalue)
@@ -116,8 +116,8 @@ unsigned short CRC_Value(unsigned short crcvalue)
 } //end of the function CRC_Value
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 unsigned short CRC_ProcessString(unsigned char *data, int length)
@@ -137,8 +137,8 @@ unsigned short CRC_ProcessString(unsigned char *data, int length)
 } //end of the function CRC_ProcessString
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void CRC_ContinueProcessString(unsigned short *crc, char *data, int length)

@@ -134,7 +134,7 @@ vec2 GenTexCoords(int TCGen, vec3 position, vec3 normal, vec3 TCGenVector0, vec3
 	{
 		tex = vec2(dot(position, TCGenVector0), dot(position, TCGenVector1));
 	}
-	
+
 	return tex;
 }
 #endif
@@ -149,10 +149,10 @@ vec2 ModTexCoords(vec2 st, vec3 position, vec4 texMatrix, vec4 offTurb)
 	st2.y = st.x * texMatrix.y + (st.y * texMatrix.w + offTurb.y);
 
 	vec2 offsetPos = vec2(position.x + position.z, position.y);
-	
+
 	vec2 texOffset = sin(offsetPos * (2.0 * M_PI / 1024.0) + vec2(phase));
-	
-	return st2 + texOffset * amplitude;	
+
+	return st2 + texOffset * amplitude;
 }
 #endif
 
@@ -160,21 +160,21 @@ vec2 ModTexCoords(vec2 st, vec3 position, vec4 texMatrix, vec4 offTurb)
 vec4 CalcColor(vec3 position, vec3 normal)
 {
 	vec4 color = u_VertColor * attr_Color + u_BaseColor;
-	
+
 	if (u_ColorGen == CGEN_LIGHTING_DIFFUSE)
 	{
 		float incoming = clamp(dot(normal, u_ModelLightDir), 0.0, 1.0);
 
 		color.rgb = clamp(u_DirectedLight * incoming + u_AmbientLight, 0.0, 1.0);
 	}
-	
+
 	vec3 viewer = u_LocalViewOrigin - position;
 
 	if (u_AlphaGen == AGEN_LIGHTING_SPECULAR)
 	{
 		vec3 lightDir = normalize(vec3(-960.0, 1980.0, 96.0) - position);
 		vec3 reflected = -reflect(lightDir, normal);
-		
+
 		color.a = clamp(dot(reflected, normalize(viewer)), 0.0, 1.0);
 		color.a *= color.a;
 		color.a *= color.a;
@@ -183,7 +183,7 @@ vec4 CalcColor(vec3 position, vec3 normal)
 	{
 		color.a = clamp(length(viewer) / u_PortalRange, 0.0, 1.0);
 	}
-	
+
 	return color;
 }
 #endif

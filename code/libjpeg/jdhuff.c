@@ -349,7 +349,7 @@ jpeg_make_d_derived_tbl (j_decompress_ptr cinfo, boolean isDC, int tblno,
       ((j_common_ptr) cinfo, JPOOL_IMAGE, SIZEOF(d_derived_tbl));
   dtbl = *pdtbl;
   dtbl->pub = htbl;		/* fill in back link */
-  
+
   /* Figure C.1: make table of Huffman code length for each symbol */
 
   p = 0;
@@ -362,10 +362,10 @@ jpeg_make_d_derived_tbl (j_decompress_ptr cinfo, boolean isDC, int tblno,
   }
   huffsize[p] = 0;
   numsymbols = p;
-  
+
   /* Figure C.2: generate the codes themselves */
   /* We also validate that the counts represent a legal Huffman code tree. */
-  
+
   code = 0;
   si = huffsize[0];
   p = 0;
@@ -683,7 +683,7 @@ process_restart (j_decompress_ptr cinfo)
 /*
  * Huffman MCU decoding.
  * Each of these routines decodes and returns one MCU's worth of
- * Huffman-compressed coefficients. 
+ * Huffman-compressed coefficients.
  * The coefficients are reordered from zigzag order into natural array order,
  * but are not dequantized.
  *

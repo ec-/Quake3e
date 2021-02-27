@@ -30,7 +30,7 @@ float random( const vec2 p )
     23.1406926327792690,  // e^pi (Gelfond's constant)
      2.6651441426902251); // 2^sqrt(2) (Gelfond-Schneider constant)
   //return fract( cos( mod( 123456789., 1e-7 + 256. * dot(p,r) ) ) );
-  return mod( 123456789., 1e-7 + 256. * dot(p,r) );  
+  return mod( 123456789., 1e-7 + 256. * dot(p,r) );
 }
 
 mat2 randomRotation( const vec2 p )

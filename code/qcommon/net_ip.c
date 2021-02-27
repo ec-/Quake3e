@@ -37,12 +37,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #		endif
 #	else // WINVER >= 0x501
 
-#if	1	// Windows2000 compatibility 
+#if	1	// Windows2000 compatibility
 #		include <ws2tcpip.h>
 #		include <wspiapi.h>
 #else
 #		include <ws2spi.h>
-#endif	
+#endif
 
 #endif // WINVER >= 0x501
 
@@ -151,7 +151,7 @@ static struct sockaddr_in6 boundto;
 typedef struct
 {
 	char ifname[IF_NAMESIZE];
-	
+
 	netadrtype_t type;
 	sa_family_t family;
 #ifdef USE_IPV6
@@ -293,7 +293,7 @@ static struct addrinfo *SearchAddrInfo( struct addrinfo *hints, sa_family_t fami
 
 		hints = hints->ai_next;
 	}
-	
+
 	return NULL;
 }
 
@@ -351,7 +351,7 @@ static qboolean Sys_StringToSockaddr( const char *s, struct sockaddr *sadr, int 
 			{
 				if ( net_enabled->integer & NET_ENABLEV6 )
 					search = SearchAddrInfo( res, AF_INET6 );
-				
+
 				if ( !search && ( net_enabled->integer & NET_ENABLEV4 ) )
 					search = SearchAddrInfo( res, AF_INET );
 			}
@@ -421,7 +421,7 @@ Sys_StringToAdr
 qboolean Sys_StringToAdr( const char *s, netadr_t *a, netadrtype_t family ) {
 	struct sockaddr_storage sadr;
 	sa_family_t fam;
-	
+
 	switch(family)
 	{
 		case NA_IP:
@@ -468,7 +468,7 @@ qboolean NET_CompareBaseAdrMask( const netadr_t *a, const netadr_t *b, unsigned 
 	{
 		addra = (byte *) &a->ipv._4;
 		addrb = (byte *) &b->ipv._4;
-		
+
 		if (netmask > 32)
 			netmask = 32;
 	}
@@ -477,7 +477,7 @@ qboolean NET_CompareBaseAdrMask( const netadr_t *a, const netadr_t *b, unsigned 
 	{
 		addra = (byte *) &a->ipv._6;
 		addrb = (byte *) &b->ipv._6;
-		
+
 		if (netmask > 128)
 			netmask = 128;
 	}
@@ -504,7 +504,7 @@ qboolean NET_CompareBaseAdrMask( const netadr_t *a, const netadr_t *b, unsigned 
 	}
 	else
 		return qtrue;
-	
+
 	return qfalse;
 }
 
@@ -580,12 +580,12 @@ qboolean NET_CompareAdr( const netadr_t *a, const netadr_t *b )
 	}
 	else
 		return qtrue;
-		
+
 	return qfalse;
 }
 
 
-qboolean NET_IsLocalAddress( const netadr_t *adr ) 
+qboolean NET_IsLocalAddress( const netadr_t *adr )
 {
 	return adr->type == NA_LOOPBACK;
 }
@@ -674,7 +674,7 @@ static qboolean NET_GetPacket( netadr_t *net_from, msg_t *net_message, const fd_
 				Com_Printf( "Oversize packet from %s\n", NET_AdrToString( net_from ) );
 				return qfalse;
 			}
-			
+
 			net_message->cursize = ret;
 			return qtrue;
 		}
@@ -846,7 +846,7 @@ qboolean Sys_IsLANAddress( const netadr_t *adr ) {
 				compareip = (byte *) &((struct sockaddr_in *) &localIP[index].addr)->sin_addr.s_addr;
 				comparemask = (byte *) &((struct sockaddr_in *) &localIP[index].netmask)->sin_addr.s_addr;
 				compareadr = adr->ipv._4;
-				
+
 				addrsize = sizeof(adr->ipv._4);
 			}
 #ifdef USE_IPV6
@@ -857,7 +857,7 @@ qboolean Sys_IsLANAddress( const netadr_t *adr ) {
 				compareip = (byte *) &((struct sockaddr_in6 *) &localIP[index].addr)->sin6_addr;
 				comparemask = (byte *) &((struct sockaddr_in6 *) &localIP[index].netmask)->sin6_addr;
 				compareadr = adr->ipv._6;
-				
+
 				addrsize = sizeof(adr->ipv._6);
 			}
 #endif
@@ -873,12 +873,12 @@ qboolean Sys_IsLANAddress( const netadr_t *adr ) {
 					break;
 				}
 			}
-			
+
 			if ( !differed )
 				return qtrue;
 		}
 	}
-	
+
 	return qfalse;
 }
 
@@ -1055,7 +1055,7 @@ static SOCKET NET_IP6Socket( const char *net_interface, int port, struct sockadd
 		closesocket( newsocket );
 		return INVALID_SOCKET;
 	}
-	
+
 	if(bindto)
 		*bindto = address;
 
@@ -1077,12 +1077,12 @@ static void NET_SetMulticast6( void )
 	{
 		Com_Printf("WARNING: NET_JoinMulticast6: Incorrect multicast address given, "
 			   "please set cvar %s to a sane value.\n", net_mcast6addr->name);
-		
+
 		Cvar_SetIntegerValue( net_enabled->name, net_enabled->integer | NET_DISABLEMCAST );
-		
+
 		return;
 	}
-	
+
 	memcpy(&curgroup.ipv6mr_multiaddr, &addr.sin6_addr, sizeof(curgroup.ipv6mr_multiaddr));
 
 	if(*net_mcast6iface->string)
@@ -1107,10 +1107,10 @@ Join an ipv6 multicast group
 void NET_JoinMulticast6( void )
 {
 	int err;
-	
+
 	if(ip6_socket == INVALID_SOCKET || multicast6_socket != INVALID_SOCKET || (net_enabled->integer & NET_DISABLEMCAST))
 		return;
-	
+
 	if(IN6_IS_ADDR_MULTICAST(&boundto.sin6_addr) || IN6_IS_ADDR_UNSPECIFIED(&boundto.sin6_addr))
 	{
 		// The way the socket was bound does not prohibit receiving multi-cast packets. So we don't need to open a new one.
@@ -1124,7 +1124,7 @@ void NET_JoinMulticast6( void )
 			multicast6_socket = ip6_socket;
 		}
 	}
-	
+
 	if(curgroup.ipv6mr_interface)
 	{
 		if (setsockopt(multicast6_socket, IPPROTO_IPV6, IPV6_MULTICAST_IF,
@@ -1346,11 +1346,11 @@ static void NET_AddLocalAddress( const char *ifname, const struct sockaddr *addr
 {
 	int addrlen;
 	sa_family_t family;
-	
+
 	// only add addresses that have all required info.
 	if (!addr || !netmask || !ifname)
 		return;
-	
+
 	family = addr->sa_family;
 
 	if(numIP < MAX_IPS)
@@ -1369,14 +1369,14 @@ static void NET_AddLocalAddress( const char *ifname, const struct sockaddr *addr
 #endif
 		else
 			return;
-		
+
 		Q_strncpyz(localIP[numIP].ifname, ifname, sizeof(localIP[numIP].ifname));
-	
+
 		localIP[numIP].family = family;
 
 		memcpy(&localIP[numIP].addr, addr, addrlen);
 		memcpy(&localIP[numIP].netmask, netmask, addrlen);
-		
+
 		numIP++;
 	}
 }
@@ -1405,9 +1405,9 @@ static void NET_GetLocalAddress( void )
 			if ( ifap->ifa_flags & IFF_UP )
 				NET_AddLocalAddress( search->ifa_name, search->ifa_addr, search->ifa_netmask );
 		}
-	
+
 		freeifaddrs( ifap );
-		
+
 		Sys_ShowIP();
 	}
 }
@@ -1423,12 +1423,12 @@ static void NET_GetLocalAddress( void ) {
 		return;
 
 	Com_Printf( "Hostname: %s\n", hostname );
-	
+
 	memset(&hint, 0, sizeof(hint));
-	
+
 	hint.ai_family = AF_UNSPEC;
 	hint.ai_socktype = SOCK_DGRAM;
-	
+
 	if ( !getaddrinfo( hostname, NULL, &hint, &res ) )
 	{
 		struct addrinfo *search;
@@ -1436,10 +1436,10 @@ static void NET_GetLocalAddress( void ) {
 #ifdef USE_IPV6
 		struct sockaddr_in6 mask6;
 #endif
-	
+
 		/* On operating systems where it's more difficult to find out the configured interfaces, we'll just assume a
 		 * netmask with all bits set. */
-	
+
 		memset(&mask4, 0, sizeof(mask4));
 		mask4.sin_family = AF_INET;
 		memset(&mask4.sin_addr.s_addr, 0xFF, sizeof(mask4.sin_addr.s_addr));
@@ -1460,10 +1460,10 @@ static void NET_GetLocalAddress( void ) {
 				NET_AddLocalAddress( "", search->ai_addr, (struct sockaddr *) &mask6 );
 #endif
 		}
-	
+
 		Sys_ShowIP();
 	}
-	
+
 	if ( res )
 		freeaddrinfo( res );
 }
@@ -1533,7 +1533,7 @@ static void NET_OpenIP( void ) {
 					break;
 			}
 		}
-		
+
 		if(ip_socket == INVALID_SOCKET)
 			Com_Printf( "WARNING: Couldn't bind to a v4 ip address.\n");
 	}
@@ -1579,7 +1579,7 @@ static qboolean NET_GetCvars( void ) {
 	net_port = Cvar_Get( "net_port", va( "%i", PORT_SERVER ), CVAR_LATCH | CVAR_NORESTART );
 	modified += net_port->modified;
 	net_port->modified = qfalse;
-	
+
 #ifdef USE_IPV6
 	net_ip6 = Cvar_Get( "net_ip6", "::", CVAR_LATCH );
 	modified += net_ip6->modified;
@@ -1683,7 +1683,7 @@ static void NET_Config( qboolean enableNetworking ) {
 		{
 			if(multicast6_socket != ip6_socket)
 				closesocket(multicast6_socket);
-				
+
 			multicast6_socket = INVALID_SOCKET;
 		}
 
@@ -1696,7 +1696,7 @@ static void NET_Config( qboolean enableNetworking ) {
 			closesocket( socks_socket );
 			socks_socket = INVALID_SOCKET;
 		}
-		
+
 	}
 
 	if( start )
@@ -1732,7 +1732,7 @@ void NET_Init( void ) {
 #endif
 
 	NET_Config( qtrue );
-	
+
 	Cmd_AddCommand( "net_restart", NET_Restart_f );
 }
 
@@ -1768,7 +1768,7 @@ static void NET_Event( const fd_set *fdr )
 	byte bufData[ MAX_MSGLEN_BUF ];
 	netadr_t from;
 	msg_t netmsg;
-	
+
 	while( 1 )
 	{
 		MSG_Init( &netmsg, bufData, MAX_MSGLEN );
@@ -1861,7 +1861,7 @@ qboolean NET_Sleep( int timeout )
 #ifndef _WIN32
 		if ( socketError != EINTR )
 #endif
-		Com_Printf( S_COLOR_YELLOW "Warning: select() syscall failed: %s\n", 
+		Com_Printf( S_COLOR_YELLOW "Warning: select() syscall failed: %s\n",
 			NET_ErrorString() );
 	}
 

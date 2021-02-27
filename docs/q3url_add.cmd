@@ -1,5 +1,5 @@
 @echo off
-set CWD=%~dp0 
+set CWD=%~dp0
 set CWD=%CWD:~0,-2%
 set CWD=%CWD:\=\\%
 set F=%TEMP%\q3a.reg

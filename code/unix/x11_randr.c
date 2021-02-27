@@ -95,7 +95,7 @@ static qboolean monitor_in_list( int x, int y, int w, int h, RROutput outputn, R
 void monitor_add( int x, int y, int w, int h, const char *name, RROutput outputn, RRCrtc crtcn, RRMode mode )
 {
 	monitor_t *m;
-	
+
 	if ( glw_state.monitorCount >= MAX_MONITORS )
 		return;
 
@@ -164,7 +164,7 @@ qboolean RandR_SetMode( int *width, int *height, int *rate )
 		glw_state.randr_active = qtrue;
 		return glw_state.randr_active;
 	}
-	
+
 	sr = _XRRGetScreenResources( dpy, DefaultRootWindow( dpy ) );
 
 	output_info = _XRRGetOutputInfo( dpy, sr, m->outputn );
@@ -181,7 +181,7 @@ qboolean RandR_SetMode( int *width, int *height, int *rate )
 
 		if ( !mode_info || ( mode_info->modeFlags & RR_Interlace ) )
 			continue;
-	
+
 		// change original policy, i.e. allow selecting lower resolution modes
 		// as it is very unlikely that current mode is lower than mode you want to set
 		if ( mode_info->width > *width || mode_info->height > *height )
@@ -196,7 +196,7 @@ qboolean RandR_SetMode( int *width, int *height, int *rate )
 		} else {
 			r = best_rate;
 		}
-	
+
 		if ( dist < best_dist || ( dist == best_dist && r < best_rate ) )
 		{
 			best_dist = dist;
@@ -206,11 +206,11 @@ qboolean RandR_SetMode( int *width, int *height, int *rate )
 			w = mode_info->width; // save adjusted with
 			h = mode_info->height; // save adjusted height
 			rr = getRefreshRate( mode_info );
-			
+
 		}
 		//fprintf( stderr, "mode[%i]: %i x %i @ %iHz.\n", i, mode_info->width, mode_info->height, getRefreshRate( mode_info ) );
 	}
-	
+
 	if ( best_fit != -1 )
 	{
 		//Com_Printf( "...setting new mode 0x%x via xrandr \n", (int)newMode );
@@ -238,7 +238,7 @@ void RandR_RestoreMode( void )
 	XRRScreenResources *sr;
 	XRROutputInfo *output_info;
 	XRRCrtcInfo *crtc_info;
-	
+
 	if ( !glw_state.randr_ext || !glw_state.randr_active || !dpy )
 		return;
 
@@ -382,7 +382,7 @@ void RandR_UpdateMonitor( int x, int y, int w, int h )
 {
 	monitor_t *cm;
 //	int i;
-	
+
 	if ( !glw_state.monitorCount || glw_state.cdsFullscreen )
 		return;
 
@@ -455,7 +455,7 @@ static qboolean BackupMonitorGamma( void )
 		old_gamma_size = gammaRampSize;
 
 		_XRRFreeGamma( gamma );
-		
+
 		return qtrue;
 	}
 
@@ -490,7 +490,7 @@ void RandR_RestoreGamma( void )
 void RandR_SetGamma( unsigned char red[256], unsigned char green[256], unsigned char blue[256] )
 {
 	unsigned short table[3][4096];
-	
+
 	if ( BuildGammaRampTable( red, green, blue, old_gamma_size, table ) )
 	{
 		SetMonitorGamma( table[0], table[1], table[2], old_gamma_size );

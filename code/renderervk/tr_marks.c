@@ -90,13 +90,13 @@ static void R_ChopPolyBehindPlane( int numInPoints, vec3_t inPoints[MAX_VERTS_ON
 	for ( i = 0 ; i < numInPoints ; i++ ) {
 		p1 = inPoints[i];
 		clip = outPoints[ *numOutPoints ];
-		
+
 		if ( sides[i] == SIDE_ON ) {
 			VectorCopy( p1, clip );
 			(*numOutPoints)++;
 			continue;
 		}
-	
+
 		if ( sides[i] == SIDE_FRONT ) {
 			VectorCopy( p1, clip );
 			(*numOutPoints)++;
@@ -106,7 +106,7 @@ static void R_ChopPolyBehindPlane( int numInPoints, vec3_t inPoints[MAX_VERTS_ON
 		if ( sides[i+1] == SIDE_ON || sides[i+1] == sides[i] ) {
 			continue;
 		}
-			
+
 		// generate a split point
 		p2 = inPoints[ (i+1) % numInPoints ];
 

@@ -95,7 +95,7 @@ static LPWSTR DeviceID = NULL;
 static qboolean doSndRestart = qfalse;
 
 static IAudioRenderClient	*iAudioRenderClient = NULL;
-static IAudioClient			*iAudioClient = NULL; 
+static IAudioClient			*iAudioClient = NULL;
 static IMMDeviceEnumerator	*pEnumerator = NULL;
 static IMMDevice			*iMMDevice = NULL;
 
@@ -269,7 +269,7 @@ err_exit:
 
 
 static BOOL ValidFormat( const WAVEFORMATEXTENSIBLE *format, const WORD wFormatTag, const GUID *SubFormat ) {
-	
+
 	if ( format->Format.wFormatTag == wFormatTag )
 	{
 		return TRUE;
@@ -296,7 +296,7 @@ NotificationClient_t;
 
 static HRESULT STDMETHODCALLTYPE QueryInterface( IMMNotificationClient *this, REFIID riid, VOID **ppvInterface )
 {
-	if ( !memcmp( riid, &IID_IUnknown, sizeof( GUID ) ) || !memcmp( riid, &IID_IMMNotificationClient, sizeof( GUID ) ) ) 
+	if ( !memcmp( riid, &IID_IUnknown, sizeof( GUID ) ) || !memcmp( riid, &IID_IMMNotificationClient, sizeof( GUID ) ) )
 	{
 		*ppvInterface = (void**)this;
 		this->lpVtbl->AddRef( this );
@@ -509,7 +509,7 @@ static qboolean SNDDMA_InitWASAPI( void )
 		// because we will call Initialize() with hnsBufferDuration=0 to select minimal buffer size
 		REFERENCE_TIME defDuration;
 		iAudioClient->lpVtbl->GetDevicePeriod( iAudioClient, &defDuration, NULL );
-		Com_Printf( S_COLOR_CYAN "WASAPI buffer duration: %i.%i millisecons\n", 
+		Com_Printf( S_COLOR_CYAN "WASAPI buffer duration: %i.%i millisecons\n",
 			(int)(defDuration / 10000), (int)(( ( defDuration + 500 ) / 1000 ) % 10) );
 	}
 
@@ -536,7 +536,7 @@ static qboolean SNDDMA_InitWASAPI( void )
 	}
 
 	Com_DPrintf( "WASAPI buffer frame count: %i\n", bufferFrameCount );
-	
+
 	dma.submission_chunk = 1;
 	dma.buffer = buffer;
 	dma.isfloat = isfloat;
@@ -872,7 +872,7 @@ qboolean SNDDMA_InitDS( void )
 	format.nSamplesPerSec = dma.speed;
 	format.nBlockAlign = format.nChannels * format.wBitsPerSample / 8;
 	format.cbSize = 0;
-	format.nAvgBytesPerSec = format.nSamplesPerSec*format.nBlockAlign; 
+	format.nAvgBytesPerSec = format.nSamplesPerSec*format.nBlockAlign;
 
 	memset (&dsbuf, 0, sizeof(dsbuf));
 	dsbuf.dwSize = sizeof(DSBUFFERDESC);
@@ -884,10 +884,10 @@ qboolean SNDDMA_InitDS( void )
 	}
 	dsbuf.dwBufferBytes = SECONDARY_BUFFER_SIZE;
 	dsbuf.lpwfxFormat = &format;
-	
+
 	memset(&dsbcaps, 0, sizeof(dsbcaps));
 	dsbcaps.dwSize = sizeof(dsbcaps);
-	
+
 	Com_DPrintf( "...creating secondary buffer: " );
 	if (DS_OK == pDS->lpVtbl->CreateSoundBuffer(pDS, &dsbuf, &pDSBuf, NULL)) {
 		Com_Printf( "locked hardware.  ok\n" );
@@ -905,7 +905,7 @@ qboolean SNDDMA_InitDS( void )
 		}
 		Com_DPrintf( "forced to software.  ok\n" );
 	}
-		
+
 	// Make sure mixer is active
 	if ( DS_OK != pDSBuf->lpVtbl->Play(pDSBuf, 0, 0, DSBPLAY_LOOPING) ) {
 		Com_Printf ("*** Looped sound play failed ***\n");
@@ -919,7 +919,7 @@ qboolean SNDDMA_InitDS( void )
 		SNDDMA_Shutdown();
 		return qfalse;
 	}
-	
+
 	gSndBufSize = dsbcaps.dwBufferBytes;
 
 	dma.isfloat = qfalse;
@@ -937,7 +937,7 @@ qboolean SNDDMA_InitDS( void )
 
 	if ( dma.buffer )
 		memset( dma.buffer, 0, dma.samples * dma.samplebits/8 );
-	
+
 	SNDDMA_Submit();
 
 	return qtrue;
@@ -1006,10 +1006,10 @@ void SNDDMA_BeginPainting( void ) {
 	if ( pDSBuf->lpVtbl->GetStatus (pDSBuf, &dwStatus) != DS_OK ) {
 		Com_Printf ("Couldn't get sound buffer status\n");
 	}
-	
+
 	if (dwStatus & DSBSTATUS_BUFFERLOST)
 		pDSBuf->lpVtbl->Restore (pDSBuf);
-	
+
 	if (!(dwStatus & DSBSTATUS_PLAYING))
 		pDSBuf->lpVtbl->Play(pDSBuf, 0, 0, DSBPLAY_LOOPING);
 
@@ -1017,7 +1017,7 @@ void SNDDMA_BeginPainting( void ) {
 	reps = 0;
 	dma.buffer = NULL;
 
-	while ((hresult = pDSBuf->lpVtbl->Lock(pDSBuf, 0, gSndBufSize, (LPVOID)&pbuf, &locksize, 
+	while ((hresult = pDSBuf->lpVtbl->Lock(pDSBuf, 0, gSndBufSize, (LPVOID)&pbuf, &locksize,
 								   (LPVOID)&pbuf2, &dwSize2, 0)) != DS_OK)
 	{
 		if (hresult != DSERR_BUFFERLOST)

@@ -27,7 +27,7 @@ C(S_WriteLinearBlastStereo16_MMX):
 	and ecx,3
 	jnz LTail
 	shr ecx,2
-	not ecx		
+	not ecx
 	add ecx,17
 LClamp1:
 	mov eax,[esi]
@@ -103,7 +103,7 @@ LClampDone2:
 	dec ebx
 	jnz	LClamp2
 LEnd:
-    emms
+	emms
 LExit:
 	pop edi
 	pop esi

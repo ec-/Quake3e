@@ -118,8 +118,8 @@ static HINSTANCE load_vulkan_library( const char *dllname )
 /*
 ** QVK_Init
 **
-** This is responsible for binding our qvk function pointers to 
-** the appropriate Vulkan stuff.  In Windows this means doing a 
+** This is responsible for binding our qvk function pointers to
+** the appropriate Vulkan stuff.  In Windows this means doing a
 ** LoadLibrary and a bunch of calls to GetProcAddress.  On other
 ** operating systems we need to do the right thing, whatever that
 ** might be.

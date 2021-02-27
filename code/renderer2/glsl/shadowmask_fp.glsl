@@ -38,7 +38,7 @@ float random( const vec2 p )
     23.1406926327792690,  // e^pi (Gelfond's constant)
      2.6651441426902251); // 2^sqrt(2) (Gelfond-Schneider constant)
   //return fract( cos( mod( 123456789., 1e-7 + 256. * dot(p,r) ) ) );
-  return mod( 123456789., 1e-7 + 256. * dot(p,r) );  
+  return mod( 123456789., 1e-7 + 256. * dot(p,r) );
 }
 
 float PCF(const sampler2DShadow shadowmap, const vec2 st, const float dist)
@@ -51,12 +51,12 @@ float PCF(const sampler2DShadow shadowmap, const vec2 st, const float dist)
 	vec2 offset = vec2(greaterThan(fract(var_DepthTex.xy * r_FBufScale * 0.5), vec2(0.25)));
 	offset.y += offset.x;
 	if (offset.y > 1.1) offset.y = 0.0;
-	
+
 	mult = shadow2D(shadowmap, vec3(st + (offset + vec2(-1.5,  0.5)) * scale, dist))
 	     + shadow2D(shadowmap, vec3(st + (offset + vec2( 0.5,  0.5)) * scale, dist))
 	     + shadow2D(shadowmap, vec3(st + (offset + vec2(-1.5, -1.5)) * scale, dist))
 	     + shadow2D(shadowmap, vec3(st + (offset + vec2( 0.5, -1.5)) * scale, dist));
-	 
+
 	mult *= 0.25;
 #endif
 

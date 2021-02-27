@@ -123,8 +123,7 @@ void S_StopBackgroundTrack( void )
 S_RawSamples
 =================
 */
-void S_RawSamples (int samples, int rate, int width, int channels,
-		   const byte *data, float volume)
+void S_RawSamples (int samples, int rate, int width, int channels, const byte *data, float volume)
 {
 	if( si.RawSamples ) {
 		si.RawSamples( samples, rate, width, channels, data, volume );
@@ -163,8 +162,7 @@ void S_ClearLoopingSounds( qboolean killall )
 S_AddLoopingSound
 =================
 */
-void S_AddLoopingSound( int entityNum, const vec3_t origin,
-		const vec3_t velocity, sfxHandle_t sfx )
+void S_AddLoopingSound( int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx )
 {
 	if( si.AddLoopingSound ) {
 		si.AddLoopingSound( entityNum, origin, velocity, sfx );
@@ -177,8 +175,7 @@ void S_AddLoopingSound( int entityNum, const vec3_t origin,
 S_AddRealLoopingSound
 =================
 */
-void S_AddRealLoopingSound( int entityNum, const vec3_t origin,
-		const vec3_t velocity, sfxHandle_t sfx )
+void S_AddRealLoopingSound( int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx )
 {
 	if( si.AddRealLoopingSound ) {
 		si.AddRealLoopingSound( entityNum, origin, velocity, sfx );
@@ -204,8 +201,7 @@ void S_StopLoopingSound( int entityNum )
 S_Respatialize
 =================
 */
-void S_Respatialize( int entityNum, const vec3_t origin,
-		vec3_t axis[3], int inwater )
+void S_Respatialize( int entityNum, const vec3_t origin, vec3_t axis[3], int inwater )
 {
 	if( si.Respatialize ) {
 		si.Respatialize( entityNum, origin, axis, inwater );

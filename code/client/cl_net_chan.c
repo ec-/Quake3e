@@ -60,7 +60,7 @@ static void CL_Netchan_Encode( msg_t *msg ) {
 	msg->oob = soob;
 	msg->bit = sbit;
 	msg->readcount = srdc;
-        
+
 	string = (byte *)clc.serverCommands[ reliableAcknowledge & (MAX_RELIABLE_COMMANDS-1) ];
 	index = 0;
 	//
@@ -142,7 +142,7 @@ static qboolean CL_Netchan_TransmitNextFragment( netchan_t *chan )
 		Netchan_TransmitNextFragment( chan );
 		return qtrue;
 	}
-	
+
 	return qfalse;
 }
 
@@ -166,7 +166,7 @@ void CL_Netchan_Transmit( netchan_t *chan, msg_t* msg ) {
 		CL_Netchan_Encode( msg );
 
 	Netchan_Transmit( chan, msg->cursize, msg->data );
-	
+
 	// Transmit all fragments without delay
 	while ( CL_Netchan_TransmitNextFragment( chan ) ) {
 		// might happen if server die silently but client continue adding/sending commands

@@ -27,7 +27,7 @@ C(S_WriteLinearBlastStereo16_SSE):
 	and ecx,3
 	jnz LTail
 	shr ecx,2
-	not ecx		
+	not ecx
 	add ecx,17
 LClamp1:
 	mov eax,[esi]

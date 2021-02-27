@@ -159,13 +159,13 @@ static int win_x, win_y;
 //#define KBD_DBG
 static const char s_keytochar[ 128 ] =
 {
-//0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F 
+//0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  '1',  '2',  '3',  '4',  '5',  '6',  // 0
  '7',  '8',  '9',  '0',  '-',  '=',  0x8,  0x9,  'q',  'w',  'e',  'r',  't',  'y',  'u',  'i',  // 1
  'o',  'p',  '[',  ']',  0x0,  0x0,  'a',  's',  'd',  'f',  'g',  'h',  'j',  'k',  'l',  ';',  // 2
  '\'', 0x0,  0x0,  '\\', 'z',  'x',  'c',  'v',  'b',  'n',  'm',  ',',  '.',  '/',  0x0,  '*',  // 3
 
-//0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F 
+//0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  '!',  '@',  '#',  '$',  '%',  '^',  // 4
  '&',  '*',  '(',  ')',  '_',  '+',  0x8,  0x9,  'Q',  'W',  'E',  'R',  'T',  'Y',  'U',  'I',  // 5
  'O',  'P',  '{',  '}',  0x0,  0x0,  'A',  'S',  'D',  'F',  'G',  'H',  'J',  'K',  'L',  ':',  // 6
@@ -488,7 +488,7 @@ static void uninstall_mouse_grab( void )
 #endif /* HAVE_XF86DGA */
 
 	// restore mouse settings
-	XChangePointerControl( dpy, qtrue, qtrue, mouse_accel_numerator, 
+	XChangePointerControl( dpy, qtrue, qtrue, mouse_accel_numerator,
 		mouse_accel_denominator, mouse_threshold );
 
 	XWarpPointer( dpy, None, win, 0, 0, 0, 0, window_width / 2, window_height / 2 );
@@ -513,7 +513,7 @@ static void uninstall_kb_grab( void )
 
 // bk001206 - from Ryan's Fakk2
 /**
- * XPending() actually performs a blocking read 
+ * XPending() actually performs a blocking read
  *  if no events available. From Fakk2, by way of
  *  Heretic2, by way of SDL, original idea GGI project.
  * The benefit of this approach over the quite
@@ -521,7 +521,7 @@ static void uninstall_kb_grab( void )
  *  focus handling for free, which is a major win
  *  with debug and windowed mode. It rests on the
  *  assumption that the X server will use the
- *  same timestamp on press/release event pairs 
+ *  same timestamp on press/release event pairs
  *  for key repeats.
  */
 static qboolean X11_PendingInput( void )
@@ -934,7 +934,7 @@ void HandleEvents( void )
 }
 
 
-// NOTE TTimo for the tty console input, we didn't rely on those .. 
+// NOTE TTimo for the tty console input, we didn't rely on those ..
 //   it's not very surprising actually cause they are not used otherwise
 void KBD_Init( void )
 {
@@ -1041,7 +1041,7 @@ qboolean BuildGammaRampTable( unsigned char *red, unsigned char *green, unsigned
 			Com_Printf( "Unsupported gamma ramp size: %d\n", gammaRampSize );
 		return qfalse;
 	};
-	
+
 	m = gammaRampSize / 256;
 	m1 = 256 / m;
 
@@ -1251,7 +1251,7 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 static rserr_t GLW_StartDriverAndSetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vulkan )
 {
 	rserr_t err;
-	
+
 	if ( fullscreen && in_nograb->integer )
 	{
 		Com_Printf( "Fullscreen not allowed with in_nograb 1\n");
@@ -1387,7 +1387,7 @@ static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbi
 		if ( !visinfo )
 			continue;
 
-		Com_Printf( "Using %d/%d/%d Color bits, %d depth, %d stencil display.\n", 
+		Com_Printf( "Using %d/%d/%d Color bits, %d depth, %d stencil display.\n",
 			attrib[ATTR_RED_IDX], attrib[ATTR_GREEN_IDX], attrib[ATTR_BLUE_IDX],
 			attrib[ATTR_DEPTH_IDX], attrib[ATTR_STENCIL_IDX]);
 
@@ -1452,7 +1452,7 @@ static XVisualInfo *VK_SelectVisual( int colorbits, int depthbits, int stencilbi
 //	for ( ;; ) {
 //		if ( XMatchVisualInfo( dpy, scrnum, colorbits, &vinfo ) )
 //		{
-//		
+//
 //		}
 //	}
 }
@@ -1720,7 +1720,7 @@ void GLimp_InitGamma( glconfig_t *config )
 /*
 ** GLW_LoadOpenGL
 **
-** GLimp_win.c internal function that that attempts to load and use 
+** GLimp_win.c internal function that that attempts to load and use
 ** a specific OpenGL DLL.
 */
 static qboolean GLW_LoadOpenGL( const char *name )
@@ -1969,7 +1969,7 @@ void VKimp_Init( glconfig_t *config )
 
 /*
 ** GLimp_EndFrame
-** 
+**
 ** Responsible for doing a swapbuffers and possibly for other stuff
 ** as yet to be determined.  Probably better not to make this a GLimp
 ** function and instead do a call to GLimp_SwapBuffers.

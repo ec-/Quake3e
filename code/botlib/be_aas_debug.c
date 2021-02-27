@@ -53,8 +53,8 @@ static int debugpolygons[MAX_DEBUGPOLYGONS];
 
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_ClearShownPolygons(void)
@@ -77,8 +77,8 @@ void AAS_ClearShownPolygons(void)
 } //end of the function AAS_ClearShownPolygons
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_ShowPolygon(int color, int numpoints, vec3_t *points)
@@ -96,8 +96,8 @@ void AAS_ShowPolygon(int color, int numpoints, vec3_t *points)
 } //end of the function AAS_ShowPolygon
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_ClearShownDebugLines(void)
@@ -118,8 +118,8 @@ void AAS_ClearShownDebugLines(void)
 } //end of the function AAS_ClearShownDebugLines
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_DebugLine(vec3_t start, vec3_t end, int color)
@@ -179,8 +179,8 @@ void AAS_DrawPermanentCross(vec3_t origin, float size, int color)
 } //end of the function AAS_DrawPermanentCross
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_DrawPlaneCross(vec3_t point, vec3_t normal, float dist, int type, int color)
@@ -295,8 +295,8 @@ void AAS_ShowBoundingBox(vec3_t origin, vec3_t mins, vec3_t maxs)
 } //end of the function AAS_ShowBoundingBox
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_ShowFace(int facenum)
@@ -342,8 +342,8 @@ void AAS_ShowFace(int facenum)
 } //end of the function AAS_ShowFace
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_ShowFacePolygon(int facenum, int color, int flip)
@@ -479,8 +479,8 @@ void AAS_ShowArea(int areanum, int groundfacesonly)
 } //end of the function AAS_ShowArea
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_ShowAreaPolygons(int areanum, int color, int groundfacesonly)
@@ -518,8 +518,8 @@ void AAS_ShowAreaPolygons(int areanum, int color, int groundfacesonly)
 } //end of the function AAS_ShowAreaPolygons
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_DrawCross(vec3_t origin, float size, int color)
@@ -538,8 +538,8 @@ void AAS_DrawCross(vec3_t origin, float size, int color)
 } //end of the function AAS_DrawCross
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_PrintTravelType(int traveltype)
@@ -572,8 +572,8 @@ void AAS_PrintTravelType(int traveltype)
 } //end of the function AAS_PrintTravelType
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_DrawArrow(vec3_t start, vec3_t end, int linecolor, int arrowcolor)
@@ -598,8 +598,8 @@ void AAS_DrawArrow(vec3_t start, vec3_t end, int linecolor, int arrowcolor)
 } //end of the function AAS_DrawArrow
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_ShowReachability(aas_reachability_t *reach)
@@ -677,8 +677,8 @@ void AAS_ShowReachability(aas_reachability_t *reach)
 } //end of the function AAS_ShowReachability
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_ShowReachableAreas(int areanum)

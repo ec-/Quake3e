@@ -43,4 +43,3 @@ void QDECL Log_WriteTimeStamped(char *fmt, ...) __attribute__ ((format (printf, 
 FILE *Log_FilePointer(void);
 //flush log file
 void Log_Flush(void);
-

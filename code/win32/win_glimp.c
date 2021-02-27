@@ -159,7 +159,7 @@ __rescan:
 		//
 		// make sure this has hardware acceleration
 		//
-		if ( ( pfds[i].dwFlags & PFD_GENERIC_FORMAT ) != 0 ) 
+		if ( ( pfds[i].dwFlags & PFD_GENERIC_FORMAT ) != 0 )
 		{
 			if ( !r_allowSoftwareGL->integer )
 			{
@@ -182,7 +182,7 @@ __rescan:
 		}
 
 		// verify proper flags
-		if ( ( pfds[i].dwFlags & pPFD->dwFlags ) != pPFD->dwFlags ) 
+		if ( ( pfds[i].dwFlags & pPFD->dwFlags ) != pPFD->dwFlags )
 		{
 			if ( r_verbose->integer )
 			{
@@ -203,7 +203,7 @@ __rescan:
 
 		//
 		// selection criteria (in order of priority):
-		// 
+		//
 		//  PFD_STEREO
 		//  colorBits
 		//  depthBits
@@ -217,7 +217,7 @@ __rescan:
 				bestMatch = i;
 				continue;
 			}
-			
+
 			if ( !( pfds[i].dwFlags & PFD_STEREO ) && ( pfds[bestMatch].dwFlags & PFD_STEREO ) && ( pPFD->dwFlags & PFD_STEREO ) )
 			{
 				bestMatch = i;
@@ -268,7 +268,7 @@ __rescan:
 					continue;
 				}
 				// otherwise if this PFD has more bits than our best, use it
-				else if ( ( pfds[i].cStencilBits > pfds[bestMatch].cStencilBits ) && 
+				else if ( ( pfds[i].cStencilBits > pfds[bestMatch].cStencilBits ) &&
 					 ( pPFD->cStencilBits > 0 ) )
 				{
 					bestMatch = i;
@@ -281,10 +281,10 @@ __rescan:
 			bestMatch = i;
 		}
 	}
-	
-	if ( !bestMatch ) 
+
+	if ( !bestMatch )
 	{
-		if ( pPFD->dwFlags & PFD_SUPPORT_COMPOSITION ) 
+		if ( pPFD->dwFlags & PFD_SUPPORT_COMPOSITION )
 		{
 			// this can be a problem if we are working via RDP for example
 			pPFD->dwFlags &= ~PFD_SUPPORT_COMPOSITION;
@@ -341,7 +341,7 @@ static void GLW_CreatePFD( PIXELFORMATDESCRIPTOR *pPFD, int colorbits, int depth
 		0,								// shift bit ignored
 		0,								// no accumulation buffer
 		0, 0, 0, 0,						// accum bits ignored
-		24,								// 24-bit z-buffer	
+		24,								// 24-bit z-buffer
 		8,								// 8-bit stencil buffer
 		0,								// no auxiliary buffer
 		PFD_MAIN_PLANE,					// main layer
@@ -546,7 +546,7 @@ static qboolean GLW_InitOpenGLDriver( int colorbits )
 		/*
 		** report if stereo is desired but unavailable
 		*/
-		if ( !( pfd.dwFlags & PFD_STEREO ) && ( r_stereoEnabled->integer != 0 ) ) 
+		if ( !( pfd.dwFlags & PFD_STEREO ) && ( r_stereoEnabled->integer != 0 ) )
 		{
 			Com_Printf( "...failed to select stereo pixel format\n" );
 			glw_state.config->stereoEnabled = qfalse;
@@ -554,7 +554,7 @@ static qboolean GLW_InitOpenGLDriver( int colorbits )
 	}
 
 	/*
-	** store PFD specifics 
+	** store PFD specifics
 	*/
 
 	glw_state.config->colorBits = ( int ) pfd.cColorBits;
@@ -649,7 +649,7 @@ static qboolean GLW_CreateWindow( int width, int height, int colorbits, qboolean
 	r.bottom = r.top + height;
 
 	UpdateMonitorInfo( &r );
-	
+
 	//
 	// create the HWND if one does not already exist
 	//
@@ -662,7 +662,7 @@ static qboolean GLW_CreateWindow( int width, int height, int colorbits, qboolean
 		//r.top = 0;
 		//r.right  = width;
 		//r.bottom = height;
-		
+
 		g_wv.borderless = 0;
 
 		if ( cdsFullscreen )
@@ -702,7 +702,7 @@ static qboolean GLW_CreateWindow( int width, int height, int colorbits, qboolean
 			x = vid_xpos->integer;
 			y = vid_ypos->integer;
 
-			// adjust window coordinates if necessary 
+			// adjust window coordinates if necessary
 			// so that the window is completely on screen
 			if ( w < glw_state.desktopWidth && (x + w) > glw_state.desktopWidth + glw_state.desktopX )
 				x = ( glw_state.desktopWidth + glw_state.desktopX - w );
@@ -716,7 +716,7 @@ static qboolean GLW_CreateWindow( int width, int height, int colorbits, qboolean
 		}
 
 		stylebits &= ~WS_VISIBLE; // show window only after successive OpenGL/Vulkan initialization
-			
+
 		oldFullscreen = glw_state.cdsFullscreen;
 		glw_state.cdsFullscreen = cdsFullscreen;
 
@@ -835,7 +835,7 @@ static LONG ApplyDisplaySettings( DEVMODE *dm )
 		curr.dmPelsWidth == dm->dmPelsWidth &&
 		curr.dmPelsHeight == dm->dmPelsHeight &&
 		(curr.dmBitsPerPel == dm->dmBitsPerPel || dm->dmBitsPerPel == 0 ) &&
-		(curr.dmDisplayFrequency == dm->dmDisplayFrequency || dm->dmDisplayFrequency ==0)) 
+		(curr.dmDisplayFrequency == dm->dmDisplayFrequency || dm->dmDisplayFrequency ==0))
 	{
 		memcpy( &dm_current, &curr, sizeof( dm_current ) );
 		return DISP_CHANGE_SUCCESSFUL; // simulate success
@@ -843,7 +843,7 @@ static LONG ApplyDisplaySettings( DEVMODE *dm )
 #endif
 
 	// Uninitialized?
-	if ( dm->dmDisplayFrequency == 0 && dm->dmPelsWidth == 0 && 
+	if ( dm->dmDisplayFrequency == 0 && dm->dmPelsWidth == 0 &&
 		dm->dmPelsHeight == 0 && dm->dmBitsPerPel == 0 ) {
 		if ( dm_desktop.dmPelsWidth && dm_desktop.dmPelsHeight ) {
 			return ApplyDisplaySettings( &dm_desktop );
@@ -863,7 +863,7 @@ static LONG ApplyDisplaySettings( DEVMODE *dm )
 }
 
 
-void SetGameDisplaySettings( void ) 
+void SetGameDisplaySettings( void )
 {
 	ApplyDisplaySettings( &dm_current );
 }
@@ -883,7 +883,7 @@ void SetDesktopDisplaySettings( void )
 }
 
 
-void UpdateMonitorInfo( const RECT *target ) 
+void UpdateMonitorInfo( const RECT *target )
 {
 	MONITORINFOEX mInfo;
 	DEVMODE	devMode;
@@ -915,7 +915,7 @@ void UpdateMonitorInfo( const RECT *target )
 		y = mInfo.rcMonitor.top;
 
 		// try to detect DPI scale
-		// we can't properly handle it but at least detect monitor resolution 
+		// we can't properly handle it but at least detect monitor resolution
 		// and inform user in console
 		if ( devMode.dmPelsWidth > w || devMode.dmPelsHeight > h ) {
 			int scaleX, scaleY;
@@ -928,8 +928,8 @@ void UpdateMonitorInfo( const RECT *target )
 			}
 		}
 
-		if ( glw_state.desktopWidth != w || glw_state.desktopHeight != h || 
-			glw_state.desktopX != x || glw_state.desktopY != y || 
+		if ( glw_state.desktopWidth != w || glw_state.desktopHeight != h ||
+			glw_state.desktopX != x || glw_state.desktopY != y ||
 			glw_state.hMonitor != hMon ) {
 				// track monitor and gamma change
 				qboolean gammaSet = glw_state.gammaSet;
@@ -945,7 +945,7 @@ void UpdateMonitorInfo( const RECT *target )
 
 				glw_state.desktopBitsPixel = devMode.dmBitsPerPel;
 
-				Com_Printf( "...current monitor: %ix%i@%i,%i %s\n", 
+				Com_Printf( "...current monitor: %ix%i@%i,%i %s\n",
 					w, h, x, y, WtoA( mInfo.szDevice ) );
 
 				if ( gammaSet && re.SetColorMappings ) {
@@ -1033,9 +1033,9 @@ static rserr_t GLW_SetMode( int mode, const char *modeFS, int colorbits, qboolea
 	if ( cdsFullscreen )
 	{
 		memset( &dm, 0, sizeof( dm ) );
-		
+
 		dm.dmSize = sizeof( dm );
-		
+
 		dm.dmPelsWidth  = config->vidWidth;
 		dm.dmPelsHeight = config->vidHeight;
 		dm.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT;
@@ -1046,18 +1046,18 @@ static rserr_t GLW_SetMode( int mode, const char *modeFS, int colorbits, qboolea
 			dm.dmFields |= DM_DISPLAYFREQUENCY;
 		}
 		else // try to set at least desktop refresh rate?
-		if ( (dm_desktop.dmDisplayFrequency 
-				&& dm.dmPelsWidth <= dm_desktop.dmPelsWidth 
-				&& dm.dmPelsHeight <= dm_desktop.dmPelsWidth) 
-				|| (dm_current.dmDisplayFrequency 
-				&& dm.dmPelsWidth <= dm_current.dmPelsWidth 
+		if ( (dm_desktop.dmDisplayFrequency
+				&& dm.dmPelsWidth <= dm_desktop.dmPelsWidth
+				&& dm.dmPelsHeight <= dm_desktop.dmPelsWidth)
+				|| (dm_current.dmDisplayFrequency
+				&& dm.dmPelsWidth <= dm_current.dmPelsWidth
 				&& dm.dmPelsHeight <= dm_current.dmPelsWidth)) {
 			//dm.dmDisplayFrequency = dm_desktop.dmDisplayFrequency;
 			//dm.dmFields |= DM_DISPLAYFREQUENCY;
-			//Com_Printf("...using display refresh rate: %iHz\n", 
+			//Com_Printf("...using display refresh rate: %iHz\n",
 			//	dm_desktop.dmDisplayFrequency );
 		}
-		
+
 		// try to change color depth if possible
 		if ( colorbits != 0 )
 		{
@@ -1090,7 +1090,7 @@ static rserr_t GLW_SetMode( int mode, const char *modeFS, int colorbits, qboolea
 		else
 		{
 			Com_Printf( "...calling CDS: " );
-			
+
 			// try setting the exact mode requested, because some drivers don't report
 			// the low res modes in EnumDisplaySettings, but still work
 			if ( ( cdsRet = ApplyDisplaySettings( &dm ) ) == DISP_CHANGE_SUCCESSFUL )
@@ -1113,11 +1113,11 @@ static rserr_t GLW_SetMode( int mode, const char *modeFS, int colorbits, qboolea
 				int			modeNum;
 
 				Com_Printf( "failed, " );
-				
+
 				PrintCDSError( cdsRet );
-			
+
 				Com_Printf( "...trying next higher resolution:" );
-				
+
 				// we could do a better matching job here...
 				for ( modeNum = 0 ; ; modeNum++ ) {
 					BOOL bResult;
@@ -1134,7 +1134,7 @@ static rserr_t GLW_SetMode( int mode, const char *modeFS, int colorbits, qboolea
 						modeNum = -1;
 						break;
 					}
-					if ( devmode.dmPelsWidth >= config->vidWidth 
+					if ( devmode.dmPelsWidth >= config->vidWidth
 						&& devmode.dmPelsHeight >= config->vidHeight
 						&& devmode.dmBitsPerPel >= 15 ) {
 						break;
@@ -1154,9 +1154,9 @@ static rserr_t GLW_SetMode( int mode, const char *modeFS, int colorbits, qboolea
 				else
 				{
 					Com_Printf( " failed, " );
-					
+
 					PrintCDSError( cdsRet );
-					
+
 					ResetDisplaySettings( qtrue );
 					glw_state.cdsFullscreen = qfalse;
 					glw_state.config->isFullscreen = qfalse;
@@ -1188,7 +1188,7 @@ static rserr_t GLW_SetMode( int mode, const char *modeFS, int colorbits, qboolea
 	//
 	memset( &dm, 0, sizeof( dm ) );
 	dm.dmSize = sizeof( dm );
-	if ( EnumDisplaySettings( glw_state.displayName, ENUM_CURRENT_SETTINGS, &dm ) ) 
+	if ( EnumDisplaySettings( glw_state.displayName, ENUM_CURRENT_SETTINGS, &dm ) )
 	{
 		glw_state.config->displayFrequency = dm.dmDisplayFrequency;
 	}
@@ -1204,7 +1204,7 @@ static rserr_t GLW_SetMode( int mode, const char *modeFS, int colorbits, qboolea
 /*
 ** GLW_LoadOpenGL
 **
-** GLimp_win.c internal function that attempts to load and use 
+** GLimp_win.c internal function that attempts to load and use
 ** a specific OpenGL DLL.
 */
 static qboolean GLW_LoadOpenGL( const char *drivername )
@@ -1229,7 +1229,7 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 
 	//
 	// load the driver and bind our function pointers to it
-	// 
+	//
 	if ( QGL_Init( buffer ) )
 	{
 		cdsFullscreen = (r_fullscreen->integer != 0);
@@ -1256,7 +1256,7 @@ fail:
 }
 
 
-static void GLimp_SwapBuffers( void ) 
+static void GLimp_SwapBuffers( void )
 {
 	if ( !SwapBuffers( glw_state.hDC ) )
 	{
@@ -1297,10 +1297,10 @@ static qboolean GLW_StartOpenGL( void )
 	//
 	if ( !GLW_LoadOpenGL( r_glDriver->string ) )
 	{
-		if ( Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) != 0 ) 
+		if ( Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) != 0 )
 		{
 			// try default driver
-			if ( GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) ) 
+			if ( GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) )
 			{
 				Cvar_Set( "r_glDriver", OPENGL_DRIVER_NAME );
 				r_glDriver->modified = qfalse;

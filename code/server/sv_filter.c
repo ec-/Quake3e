@@ -31,7 +31,7 @@ static const char *opstr[ FOP_MAX ] =
 	">= ",
 };
 
-typedef union 
+typedef union
 {
 	char *string;
 	int integer;
@@ -150,13 +150,13 @@ static int eval_node( const filter_node_t *node )
 		}
 		else
 		{
-			value = Info_ValueForKeyToken( node->p1 ); 
+			value = Info_ValueForKeyToken( node->p1 );
 		}
 
 		if ( node->is_string )
 		{
 			value2 = node->p2.string;
-			if ( node->is_cvar ) // dereference value2 
+			if ( node->is_cvar ) // dereference value2
 			{
 				value2 = Cvar_VariableString( value2 + 1 );
 			}
@@ -269,7 +269,7 @@ static void dump_nodes( const filter_node_t *node, int level, int skip_tagged, F
 
 				fwrite( "}", 1, 1, f );
 
-				if ( node->next ) 
+				if ( node->next )
 					fwrite( "\n", 1, 1, f );
 			}
 
@@ -383,9 +383,9 @@ static unsigned tag_parents( filter_node_t *node )
 	unsigned v;
 	while ( node != NULL )
 	{
-		if ( node->child ) 
+		if ( node->child )
 			v = tag_parents( node->child );
-		else 
+		else
 			v = node->tagged;
 		r &= v;
 		node->tagged = v;
@@ -445,7 +445,7 @@ static filter_node_t *new_node( const char *p1, const char *p2, filter_op fop, i
 	else
 	{
 		len1 = strlen( p1 ) + 1; // key name or action message
-		if ( len1 > MAX_FILTER_MESSAGE ) 
+		if ( len1 > MAX_FILTER_MESSAGE )
 			len1 = MAX_FILTER_MESSAGE;
 	}
 
@@ -466,14 +466,14 @@ static filter_node_t *new_node( const char *p1, const char *p2, filter_op fop, i
 	if ( is_date )
 	{
 		// point on static date buffer
-		node->p1 = filterDate; 
+		node->p1 = filterDate;
 		if ( fop == FOP_LT )
 			tempCount++; // check for potential expire
 	}
 	else if ( is_fname )
 	{
 		// point on static filtered name buffer
-		node->p1 = filterName; 
+		node->p1 = filterName;
 	}
 	else
 	{
@@ -527,13 +527,13 @@ static const char *parse_section( const char *text, int level, filter_node_t **r
 	{
 		// expecting new key/action
 		v0 = COM_ParseComplex( &text, in_scope );
-		if ( com_tokentype == TK_EOF ) 
+		if ( com_tokentype == TK_EOF )
 			break;
 
 		// we are in child inline node
 		if ( com_tokentype == TK_NEWLINE )
 		{
-			if ( curr == NULL ) 
+			if ( curr == NULL )
 			{
 				COM_ParseError( "unexpected newline" );
 				return NULL;
@@ -630,12 +630,12 @@ static const char *parse_section( const char *text, int level, filter_node_t **r
 			else if ( com_tokentype == TK_STRING ) // new key/action on the same line, open new section
 			{
 				text = parse_section( back, level + 1, &ch->child, qfalse );
-			} 
+			}
 			else if ( com_tokentype == TK_NEWLINE || com_tokentype == TK_EOF )  // expect new section
 			{
 				v0 = COM_ParseComplex( &text, qtrue );
 				if ( *v0 == '{' )
-				{ 
+				{
 					text = parse_section( text, level + 1, &ch->child, qtrue );
 				}
 				else
@@ -649,7 +649,7 @@ static const char *parse_section( const char *text, int level, filter_node_t **r
 		// update node pointers
 		if ( curr == NULL )
 			*root = ch;
-		else 
+		else
 			curr->next = ch;
 
 		curr = ch;
@@ -669,7 +669,7 @@ static qboolean parse_file( const char *filename )
 	qtime_t t;
 	FILE *f;
 	int size;
-	
+
 	// unconditionally release old filters
 	free_nodes( nodes );
 	nodes = NULL;
@@ -781,7 +781,7 @@ static void SV_ReloadFilters( const char *filename, filter_node_t *new_node )
 			expiredCount = 0;
 			// find single expired nodes
 			tag_expired( nodes );
-			if ( expiredCount ) 
+			if ( expiredCount )
 			{
 				tag_parents( nodes );
 				dump = qtrue;
@@ -792,7 +792,7 @@ static void SV_ReloadFilters( const char *filename, filter_node_t *new_node )
 		{
 			FILE *f;
 			f = Sys_FOpen( ospath, "w" );
-			if ( f ) 
+			if ( f )
 			{
 				dump_nodes( nodes, 0, 1, f ); // skip tagged
 				fclose( f );
@@ -860,7 +860,7 @@ const char *SV_RunFilters( const char *userinfo, const netadr_t *addr )
 /* Add hours to specified date */
 static void Q_AddTime( qtime_t *qtime, unsigned int n )
 {
-	unsigned int md[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };	
+	unsigned int md[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 	unsigned int year, month, day, min, hour;
 
 	year = qtime->tm_year + 1900;
@@ -1110,12 +1110,12 @@ SV_AddFilterCmd_f
 Parses raw filter command string
 ===============
 */
-void SV_AddFilterCmd_f( void ) 
+void SV_AddFilterCmd_f( void )
 {
 	filter_node_t *node;
 	const char *cmd, *s;
 
-	if ( !sv_filter->string[0] ) 
+	if ( !sv_filter->string[0] )
 	{
 		Com_Printf( "Filter system is not enabled.\n" );
 		SV_ReloadFilters( "", NULL );

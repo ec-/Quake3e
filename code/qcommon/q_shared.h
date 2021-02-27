@@ -52,7 +52,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #ifdef _MSC_VER
 
-#pragma warning(disable : 4018)     // signed/unsigned mismatch
+#pragma warning(disable : 4018)		// signed/unsigned mismatch
 #pragma warning(disable : 4032)
 #pragma warning(disable : 4051)
 #pragma warning(disable : 4057)		// slightly different base types
@@ -67,8 +67,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #pragma warning(disable : 4267)		// conversion from 'size_t' to 'int', possible loss of data
 #pragma warning(disable : 4244)
 #pragma warning(disable : 4142)		// benign redefinition
-//#pragma warning(disable : 4305)		// truncation from const double to float
-//#pragma warning(disable : 4310)		// cast truncates constant value
+//#pragma warning(disable : 4305)	// truncation from const double to float
+//#pragma warning(disable : 4310)	// cast truncates constant value
 //#pragma warning(disable:  4505) 	// unreferenced local function has been removed
 #pragma warning(disable : 4514)
 #pragma warning(disable : 4702)		// unreachable code
@@ -227,7 +227,7 @@ typedef int		clipHandle_t;
 #define	MAX_INFO_VALUE		1024
 
 #define MAX_USERINFO_LENGTH (MAX_INFO_STRING-13) // incl. length of 'connect ""' or 'userinfo ""' and reserving one byte to avoid q3msgboom
-													
+
 #define	BIG_INFO_STRING		8192  // used for system info key only
 #define	BIG_INFO_KEY		  8192
 #define	BIG_INFO_VALUE		8192
@@ -364,7 +364,7 @@ typedef	int	fixed16_t;
 #endif
 
 #ifndef M_LN2
-#define M_LN2      0.693147180559945309417
+#define M_LN2		0.693147180559945309417
 #endif
 
 #ifdef __linux__
@@ -537,7 +537,7 @@ void AddPointToBounds( const vec3_t v, vec3_t mins, vec3_t maxs );
 static ID_INLINE int VectorCompare( const vec3_t v1, const vec3_t v2 ) {
 	if (v1[0] != v2[0] || v1[1] != v2[1] || v1[2] != v2[2]) {
 		return 0;
-	}			
+	}
 	return 1;
 }
 
@@ -794,7 +794,7 @@ qboolean Q_isintegral( float f );
 void	Q_strncpyz( char *dest, const char *src, int destsize );
 void	Q_strcat( char *dest, int size, const char *src );
 
-int     Q_replace( const char *str1, const char *str2, char *src, int max_len );
+int		Q_replace( const char *str1, const char *str2, char *src, int max_len );
 
 char	*Q_stradd( char *dst, const char *src );
 
@@ -1114,7 +1114,7 @@ typedef struct {
 #define	MAX_STATS				16
 #define	MAX_PERSISTANT			16
 #define	MAX_POWERUPS			16
-#define	MAX_WEAPONS				16		
+#define	MAX_WEAPONS				16
 
 #define	MAX_PS_EVENTS			2
 
@@ -1234,7 +1234,7 @@ typedef struct usercmd_s {
 	int				serverTime;
 	int				angles[3];
 	int 			buttons;
-	byte			weapon;           // weapon 
+	byte			weapon;           // weapon
 	signed char	forwardmove, rightmove, upmove;
 } usercmd_t;
 
@@ -1314,7 +1314,7 @@ typedef struct entityState_s {
 typedef enum {
 	CA_UNINITIALIZED,
 	CA_DISCONNECTED, 	// not talking to a server
-	CA_AUTHORIZING,		// not used any more, was checking cd key 
+	CA_AUTHORIZING,		// not used any more, was checking cd key
 	CA_CONNECTING,		// sending request packets to the server
 	CA_CHALLENGING,		// sending challenge packets to the server
 	CA_CONNECTED,		// netchan_t established, getting gamestate
@@ -1324,7 +1324,7 @@ typedef enum {
 	CA_CINEMATIC		// playing a cinematic or a static pic, not connected to a server
 } connstate_t;
 
-// font support 
+// font support
 
 #define GLYPH_START 0
 #define GLYPH_END 255
@@ -1374,9 +1374,9 @@ typedef struct qtime_s {
 
 // server browser sources
 // TTimo: AS_MPLAYER is no longer used
-#define AS_LOCAL			0
+#define AS_LOCAL		0
 #define AS_MPLAYER		1
-#define AS_GLOBAL			2
+#define AS_GLOBAL		2
 #define AS_FAVORITES	3
 
 
@@ -1401,9 +1401,9 @@ typedef enum _flag_status {
 
 
 
-#define	MAX_GLOBAL_SERVERS				4096
-#define	MAX_OTHER_SERVERS					128
-#define MAX_PINGREQUESTS					32
+#define	MAX_GLOBAL_SERVERS			4096
+#define	MAX_OTHER_SERVERS			128
+#define MAX_PINGREQUESTS			32
 #define MAX_SERVERSTATUSREQUESTS	16
 
 #define SAY_ALL		0

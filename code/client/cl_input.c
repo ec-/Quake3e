@@ -108,7 +108,7 @@ static void IN_MLookUp( void ) {
 static void IN_KeyDown( kbutton_t *b ) {
 	const char *c;
 	int	k;
-	
+
 	c = Cmd_Argv(1);
 	if ( c[0] ) {
 		k = atoi(c);
@@ -119,7 +119,7 @@ static void IN_KeyDown( kbutton_t *b ) {
 	if ( k == b->down[0] || k == b->down[1] ) {
 		return;		// repeating key
 	}
-	
+
 	if ( !b->down[0] ) {
 		b->down[0] = k;
 	} else if ( !b->down[1] ) {
@@ -128,7 +128,7 @@ static void IN_KeyDown( kbutton_t *b ) {
 		Com_Printf ("Three keys down for a button!\n");
 		return;
 	}
-	
+
 	if ( b->active ) {
 		return;		// still down
 	}
@@ -297,7 +297,7 @@ Moves the local angle positions
 */
 static void CL_AdjustAngles( void ) {
 	float	speed;
-	
+
 	if ( in_speed.active ) {
 		speed = 0.001 * cls.frametime * cl_anglespeedkey->value;
 	} else {
@@ -327,7 +327,7 @@ static void CL_KeyMove( usercmd_t *cmd ) {
 
 	//
 	// adjust for speed key / running
-	// the walking flag is to keep animations consistant
+	// the walking flag is to keep animations consistent
 	// even during acceleration and develeration
 	//
 	if ( in_speed.active ^ cl_run->integer ) {
@@ -452,27 +452,27 @@ static void CL_MouseMove( usercmd_t *cmd )
 		mx = cl.mouseDx[cl.mouseIndex];
 		my = cl.mouseDy[cl.mouseIndex];
 	}
-	
+
 	cl.mouseIndex ^= 1;
 	cl.mouseDx[cl.mouseIndex] = 0;
 	cl.mouseDy[cl.mouseIndex] = 0;
 
 	if (mx == 0.0f && my == 0.0f)
 		return;
-	
+
 	if (cl_mouseAccel->value != 0.0f)
 	{
 		if(cl_mouseAccelStyle->integer == 0)
 		{
 			float accelSensitivity;
 			float rate;
-			
+
 			rate = sqrt(mx * mx + my * my) / (float) frame_msec;
 
 			accelSensitivity = cl_sensitivity->value + rate * cl_mouseAccel->value;
 			mx *= accelSensitivity;
 			my *= accelSensitivity;
-			
+
 			if(cl_showMouseRate->integer)
 				Com_Printf("rate: %f, accelSensitivity: %f\n", rate, accelSensitivity);
 		}
@@ -540,7 +540,7 @@ static void CL_CmdButtons( usercmd_t *cmd ) {
 	// figure button bits
 	// send a button bit even if the key was pressed and released in
 	// less than a frame
-	//	
+	//
 	for ( i = 0 ; i < ARRAY_LEN( in_buttons ); i++ ) {
 		if ( in_buttons[i].active || in_buttons[i].wasPressed ) {
 			cmd->buttons |= 1 << i;
@@ -594,7 +594,7 @@ static usercmd_t CL_CreateCmd( void ) {
 
 	// keyboard angle adjustment
 	CL_AdjustAngles ();
-	
+
 	Com_Memset( &cmd, 0, sizeof( cmd ) );
 
 	CL_CmdButtons( &cmd );
@@ -613,7 +613,7 @@ static usercmd_t CL_CreateCmd( void ) {
 		cl.viewangles[PITCH] = oldAngles[PITCH] + 90;
 	} else if ( oldAngles[PITCH] - cl.viewangles[PITCH] > 90 ) {
 		cl.viewangles[PITCH] = oldAngles[PITCH] - 90;
-	} 
+	}
 
 	// store out the final values
 	CL_FinishMove( &cmd );
@@ -691,15 +691,14 @@ static qboolean CL_ReadyToSendPacket( void ) {
 	}
 
 	// If we are downloading, we send no less than 50ms between packets
-	if ( *clc.downloadTempName &&
-		cls.realtime - clc.lastPacketSentTime < 50 ) {
+	if ( *clc.downloadTempName && cls.realtime - clc.lastPacketSentTime < 50 ) {
 		return qfalse;
 	}
 
 	// if we don't have a valid gamestate yet, only send
 	// one packet a second
-	if ( cls.state != CA_ACTIVE && 
-		cls.state != CA_PRIMED && 
+	if ( cls.state != CA_ACTIVE &&
+		cls.state != CA_PRIMED &&
 		!*clc.downloadTempName &&
 		cls.realtime - clc.lastPacketSentTime < 1000 ) {
 		return qfalse;
@@ -975,7 +974,7 @@ void CL_InitInput( void ) {
 	cl_mouseAccelOffset = Cvar_Get( "cl_mouseAccelOffset", "5", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( cl_mouseAccelOffset, "0.001", "50000", CV_FLOAT );
 
-	cl_showMouseRate = Cvar_Get ("cl_showmouserate", "0", 0);
+	cl_showMouseRate = Cvar_Get( "cl_showmouserate", "0", 0 );
 
 	m_pitch = Cvar_Get( "m_pitch", "0.022", CVAR_ARCHIVE_ND );
 	m_yaw = Cvar_Get( "m_yaw", "0.022", CVAR_ARCHIVE_ND );

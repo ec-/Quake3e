@@ -40,20 +40,16 @@ void (*qcurl_easy_reset)(CURL *curl);
 const char *(*qcurl_easy_strerror)(CURLcode);
 
 CURLM* (*qcurl_multi_init)(void);
-CURLMcode (*qcurl_multi_add_handle)(CURLM *multi_handle,
-                                                CURL *curl_handle);
-CURLMcode (*qcurl_multi_remove_handle)(CURLM *multi_handle,
-                                                CURL *curl_handle);
+CURLMcode (*qcurl_multi_add_handle)(CURLM *multi_handle, CURL *curl_handle);
+CURLMcode (*qcurl_multi_remove_handle)(CURLM *multi_handle, CURL *curl_handle);
 CURLMcode (*qcurl_multi_fdset)(CURLM *multi_handle,
                                                 fd_set *read_fd_set,
                                                 fd_set *write_fd_set,
                                                 fd_set *exc_fd_set,
                                                 int *max_fd);
-CURLMcode (*qcurl_multi_perform)(CURLM *multi_handle,
-                                                int *running_handles);
+CURLMcode (*qcurl_multi_perform)(CURLM *multi_handle, int *running_handles);
 CURLMcode (*qcurl_multi_cleanup)(CURLM *multi_handle);
-CURLMsg *(*qcurl_multi_info_read)(CURLM *multi_handle,
-                                                int *msgs_in_queue);
+CURLMsg *(*qcurl_multi_info_read)(CURLM *multi_handle, int *msgs_in_queue);
 const char *(*qcurl_multi_strerror)(CURLMcode);
 
 static void *cURLLib = NULL;
@@ -77,7 +73,7 @@ static void *GPA(char *str)
 	else
 	{
 		Com_DPrintf("Loaded symbol %s (0x%p)\n", str, rv);
-        return rv;
+		return rv;
 	}
 }
 #endif /* USE_CURL_DLOPEN */
@@ -133,7 +129,7 @@ qboolean CL_cURL_Init( void )
 	qcurl_easy_duphandle = GPA("curl_easy_duphandle");
 	qcurl_easy_reset = GPA("curl_easy_reset");
 	qcurl_easy_strerror = GPA("curl_easy_strerror");
-	
+
 	qcurl_multi_init = GPA("curl_multi_init");
 	qcurl_multi_add_handle = GPA("curl_multi_add_handle");
 	qcurl_multi_remove_handle = GPA("curl_multi_remove_handle");
@@ -234,13 +230,13 @@ static size_t CL_cURL_CallbackWrite( void *buffer, size_t size, size_t nmemb, vo
 {
 	if ( clc.download == FS_INVALID_HANDLE ) {
 		if ( !CL_ValidPakSignature( buffer, size*nmemb ) ) {
-			Com_Error( ERR_DROP, "CL_cURL_CallbackWrite: invalid pak signature for %s", 
+			Com_Error( ERR_DROP, "CL_cURL_CallbackWrite: invalid pak signature for %s",
 				clc.downloadName );
 			return (size_t)-1;
 		}
 		clc.download = FS_SV_FOpenFileWrite( clc.downloadTempName );
 		if ( clc.download == FS_INVALID_HANDLE ) {
-			Com_Error( ERR_DROP, "CL_cURL_CallbackWrite: failed to open %s for writing", 
+			Com_Error( ERR_DROP, "CL_cURL_CallbackWrite: failed to open %s for writing",
 				clc.downloadTempName );
 			return (size_t)-1;
 		}
@@ -277,7 +273,7 @@ CURLcode qcurl_easy_setopt_warn(CURL *curl, CURLoption option, ...)
 	return result;
 }
 
-static void CL_cURL_CloseDownload( void ) 
+static void CL_cURL_CloseDownload( void )
 {
 	if ( clc.download != FS_INVALID_HANDLE )
 		FS_FCloseFile( clc.download );
@@ -322,22 +318,19 @@ void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 		qcurl_easy_setopt( clc.downloadCURL, CURLOPT_VERBOSE, 1 );
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_URL, clc.downloadURL);
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_TRANSFERTEXT, 0);
-	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_REFERER, va("ioQ3://%s",
-		NET_AdrToString(&clc.serverAddress)));
+	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_REFERER, va("ioQ3://%s", NET_AdrToString(&clc.serverAddress)));
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_USERAGENT, Q3_VERSION);
-	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_WRITEFUNCTION,
-		CL_cURL_CallbackWrite);
+	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_WRITEFUNCTION, CL_cURL_CallbackWrite);
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_WRITEDATA, &clc.download);
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_NOPROGRESS, 0);
-	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_PROGRESSFUNCTION,
-		CL_cURL_CallbackProgress);
+	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_PROGRESSFUNCTION, CL_cURL_CallbackProgress);
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_PROGRESSDATA, NULL);
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_FAILONERROR, 1);
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_FOLLOWLOCATION, 1);
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_MAXREDIRS, 5);
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_PROTOCOLS, ALLOWED_PROTOCOLS);
 
-	clc.downloadCURLM = qcurl_multi_init();	
+	clc.downloadCURLM = qcurl_multi_init();
 	if( !clc.downloadCURLM ) {
 		qcurl_easy_cleanup( clc.downloadCURL );
 		clc.downloadCURL = NULL;
@@ -350,14 +343,11 @@ void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 	if ( result != CURLM_OK ) {
 		qcurl_easy_cleanup( clc.downloadCURL );
 		clc.downloadCURL = NULL;
-		Com_Error( ERR_DROP, "CL_cURL_BeginDownload: qcurl_multi_add_handle() failed: %s",	
-			qcurl_multi_strerror( result ) );
+		Com_Error( ERR_DROP, "CL_cURL_BeginDownload: qcurl_multi_add_handle() failed: %s", qcurl_multi_strerror( result ) );
 		return;
 	}
 
-	if(!(clc.sv_allowDownload & DLF_NO_DISCONNECT) &&
-		!clc.cURLDisconnected) {
-
+	if(!(clc.sv_allowDownload & DLF_NO_DISCONNECT) && !clc.cURLDisconnected) {
 		CL_AddReliableCommand("disconnect", qtrue);
 		CL_WritePacket();
 		CL_WritePacket();
@@ -393,8 +383,7 @@ void CL_cURL_PerformDownload( void )
 	else {
 		long code;
 
-		qcurl_easy_getinfo(msg->easy_handle, CURLINFO_RESPONSE_CODE,
-			&code);	
+		qcurl_easy_getinfo(msg->easy_handle, CURLINFO_RESPONSE_CODE, &code);
 		Com_Error(ERR_DROP, "Download Error: %s Code: %ld URL: %s",
 			qcurl_easy_strerror(msg->data.result),
 			code, clc.downloadURL);
@@ -404,7 +393,7 @@ void CL_cURL_PerformDownload( void )
 }
 
 
-/*  
+/*
 ==================================
 
 Common CURL downloading functions
@@ -420,12 +409,12 @@ stristr
 case-insensitive sub-string search
 ==================================
 */
-const char* stristr( const char *source, const char *target ) 
+const char* stristr( const char *source, const char *target )
 {
 	const char *p0, *p1, *p2, *pn;
 	char c1, c2;
 
-	if ( *target == '\0' )  
+	if ( *target == '\0' )
 	{
 		return source;
 	}
@@ -433,19 +422,19 @@ const char* stristr( const char *source, const char *target )
 	pn = source;
 	p1 = source;
 	p2 = target;
-	
+
 	while ( *++p2 )
 	{
 	    pn++;
 	}
 
-	while ( *pn != '\0' ) 
+	while ( *pn != '\0' )
 	{
 
-    	p0 = p1;
-	    p2 = target;
+		p0 = p1;
+		p2 = target;
 
-    	while ( (c1 = *p1) != '\0' && (c2 = *p2) != '\0' )
+		while ( (c1 = *p1) != '\0' && (c2 = *p2) != '\0' )
 		{
 				if ( c1 <= 'Z' && c1 >= 'A' )
 					c1 += ('a' - 'A');
@@ -453,7 +442,7 @@ const char* stristr( const char *source, const char *target )
 				if ( c2 <= 'Z' && c2 >= 'A' )
 					c2 += ('a' - 'A');
 
-				if ( c1 != c2 ) 
+				if ( c1 != c2 )
 				{
 					break;
 				}
@@ -462,14 +451,14 @@ const char* stristr( const char *source, const char *target )
 				p2++;
 		}
 
-		if ( *p2 == '\0' )  
+		if ( *p2 == '\0' )
 		{
 			return p0;
 		}
 
 		p1 = p0 + 1;
-	    pn++;
-  }
+		pn++;
+	}
 
   return NULL;
 }
@@ -479,18 +468,18 @@ const char* stristr( const char *source, const char *target )
 replace1
 ==================================
 */
-int replace1( const char src, const char dst, char *str ) 
+int replace1( const char src, const char dst, char *str )
 {
 	int count;
 
-	if ( !str ) 
+	if ( !str )
 		return 0;
 
 	count = 0;
 
-	while ( *str != '\0' ) 
+	while ( *str != '\0' )
 	{
-		if ( *str == src )	
+		if ( *str == src )
 		{
 			*str = dst;
 			count++;
@@ -507,7 +496,7 @@ int replace1( const char src, const char dst, char *str )
 Com_DL_Done
 =================
 */
-void Com_DL_Done( download_t *dl ) 
+void Com_DL_Done( download_t *dl )
 {
 	if ( dl->func.lib )
 		Sys_UnloadLibrary( dl->func.lib );
@@ -563,7 +552,7 @@ qboolean Com_DL_Init( download_t *dl )
 	dl->func.easy_cleanup = Sys_LoadFunction( dl->func.lib, "curl_easy_cleanup" );
 	dl->func.easy_getinfo = Sys_LoadFunction( dl->func.lib, "curl_easy_getinfo" );
 	dl->func.easy_strerror = Sys_LoadFunction( dl->func.lib, "curl_easy_strerror" );
-	
+
 	dl->func.multi_init = Sys_LoadFunction( dl->func.lib, "curl_multi_init" );
 	dl->func.multi_add_handle = Sys_LoadFunction( dl->func.lib, "curl_multi_add_handle" );
 	dl->func.multi_remove_handle = Sys_LoadFunction( dl->func.lib, "curl_multi_remove_handle" );
@@ -596,7 +585,7 @@ qboolean Com_DL_Init( download_t *dl )
 	dl->func.easy_cleanup = curl_easy_cleanup;
 	dl->func.easy_getinfo = curl_easy_getinfo;
 	dl->func.easy_strerror = curl_easy_strerror;
-	
+
 	dl->func.multi_init = curl_multi_init;
 	dl->func.multi_add_handle = curl_multi_add_handle;
 	dl->func.multi_remove_handle = curl_multi_remove_handle;
@@ -631,9 +620,9 @@ Com_DL_Cleanup
 */
 void Com_DL_Cleanup( download_t *dl )
 {
-	if( dl->cURLM ) 
+	if( dl->cURLM )
 	{
-		if ( dl->cURL ) 
+		if ( dl->cURL )
 		{
 			dl->func.multi_remove_handle( dl->cURLM, dl->cURL );
 			dl->func.easy_cleanup( dl->cURL );
@@ -642,12 +631,12 @@ void Com_DL_Cleanup( download_t *dl )
 		dl->cURLM = NULL;
 		dl->cURL = NULL;
 	}
-	else if( dl->cURL ) 
+	else if( dl->cURL )
 	{
 		dl->func.easy_cleanup( dl->cURL );
 		dl->cURL = NULL;
 	}
-	if ( dl->fHandle != FS_INVALID_HANDLE ) 
+	if ( dl->fHandle != FS_INVALID_HANDLE )
 	{
 		FS_FCloseFile( dl->fHandle );
 		dl->fHandle = FS_INVALID_HANDLE;
@@ -702,7 +691,7 @@ static int Com_DL_CallbackProgress( void *data, double dltotal, double dlnow, do
 {
 	double percentage, speed;
 	download_t *dl = (download_t *)data;
-	
+
 	dl->Size = (int)dltotal;
 	dl->Count = (int)dlnow;
 
@@ -745,15 +734,15 @@ static size_t Com_DL_CallbackWrite( void *ptr, size_t size, size_t nmemb, void *
 
 	if ( dl->fHandle == FS_INVALID_HANDLE )
 	{
-		if ( !CL_ValidPakSignature( ptr, size*nmemb ) ) 
+		if ( !CL_ValidPakSignature( ptr, size*nmemb ) )
 		{
-			Com_Printf( S_COLOR_YELLOW "Com_DL_CallbackWrite(): invalid pak signature for %s.\n", 
+			Com_Printf( S_COLOR_YELLOW "Com_DL_CallbackWrite(): invalid pak signature for %s.\n",
 				dl->Name );
 			return (size_t)-1;
 		}
 
 		dl->fHandle = FS_SV_FOpenFileWrite( dl->TempName );
-		if ( dl->fHandle == FS_INVALID_HANDLE ) 
+		if ( dl->fHandle == FS_INVALID_HANDLE )
 		{
 			return (size_t)-1;
 		}
@@ -789,41 +778,41 @@ qboolean Com_DL_ValidFileName( const char *fileName )
 Com_DL_HeaderCallback
 =================
 */
-static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void *userdata ) 
+static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void *userdata )
 {
 	char name[MAX_OSPATH];
 	char header[1024], *s, quote, *d;
 	download_t *dl;
 	int len;
 
-	if ( size*nmemb >= sizeof( header ) ) 
+	if ( size*nmemb >= sizeof( header ) )
 	{
 		Com_Printf( S_COLOR_RED "Com_DL_HeaderCallback: header is too large." );
 		return (size_t)-1;
 	}
 
 	dl = (download_t *)userdata;
-	
+
 	memcpy( header, ptr, size*nmemb+1 );
 	header[ size*nmemb ] = '\0';
 
 	//Com_Printf( "h: %s\n--------------------------\n", header );
 
 	s = (char*)stristr( header, "content-disposition:" );
-	if ( s ) 
+	if ( s )
 	{
-		s += 20; // strlen( "content-disposition:" )	
+		s += 20; // strlen( "content-disposition:" )
 		s = (char*)stristr( s, "filename=" );
-		if ( s ) 
+		if ( s )
 		{
 			s += 9; // strlen( "filename=" )
-			
+
 			d = name;
 			replace1( '\r', '\0', s );
 			replace1( '\n', '\0', s );
 
 			// prevent overflow
-			if ( strlen( s ) >= sizeof( name ) ) 
+			if ( strlen( s ) >= sizeof( name ) )
 				s[ sizeof( name ) - 1 ] = '\0';
 
 			if ( *s == '\'' || *s == '"' )
@@ -832,7 +821,7 @@ static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void 
 				quote = '\0';
 
 			// copy filename
-			while ( *s != '\0' && *s != quote ) 
+			while ( *s != '\0' && *s != quote )
 				*d++ = *s++;
 			len = d - name;
 			*d++ = '\0';
@@ -851,7 +840,7 @@ static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void 
 			strcpy( dl->Name, name );
 		}
 	}
-	
+
 	return size*nmemb;
 }
 
@@ -875,14 +864,14 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 
 	Com_DL_Cleanup( dl );
 
-	if ( !Com_DL_Init( dl ) ) 
+	if ( !Com_DL_Init( dl ) )
 	{
-		Com_Printf( S_COLOR_YELLOW "Error initializing cURL library\n" );		
+		Com_Printf( S_COLOR_YELLOW "Error initializing cURL library\n" );
 		return qfalse;
 	}
 
 	dl->cURL = dl->func.easy_init();
-	if ( !dl->cURL ) 
+	if ( !dl->cURL )
 	{
 		Com_Printf( S_COLOR_RED "Com_DL_Begin: easy_init() failed\n" );
 		Com_DL_Cleanup( dl );
@@ -891,7 +880,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 
 	{
 		char *escapedName = dl->func.easy_escape( dl->cURL, localName, 0 );
-		if ( !escapedName ) 
+		if ( !escapedName )
 		{
 			Com_Printf( S_COLOR_RED "Com_DL_Begin: easy_escape() failed\n" );
 			Com_DL_Cleanup( dl );
@@ -925,7 +914,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 	// try to extract game path from localName
 	// dl->Name should contain only pak name without game dir and extension
 	s = strrchr( localName, '/' );
-	if ( s ) 
+	if ( s )
 		Q_strncpyz( dl->Name, s+1, sizeof( dl->Name ) );
 	else
 		Q_strncpyz( dl->Name, localName, sizeof( dl->Name ) );
@@ -937,7 +926,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 		return qfalse;
 	}
 
-	Com_sprintf( dl->TempName, sizeof( dl->TempName ), 
+	Com_sprintf( dl->TempName, sizeof( dl->TempName ),
 		"%s/%s.%08x.tmp", dl->gameDir, dl->Name, rand() | (rand() << 16) );
 
 	if ( com_developer->integer )
@@ -950,7 +939,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 	dl->func.easy_setopt( dl->cURL, CURLOPT_USERAGENT, Q3_VERSION );
 	dl->func.easy_setopt( dl->cURL, CURLOPT_WRITEFUNCTION, Com_DL_CallbackWrite );
 	dl->func.easy_setopt( dl->cURL, CURLOPT_WRITEDATA, dl );
-	if ( dl->headerCheck ) 
+	if ( dl->headerCheck )
 	{
 		dl->func.easy_setopt( dl->cURL, CURLOPT_HEADERFUNCTION, Com_DL_HeaderCallback );
 		dl->func.easy_setopt( dl->cURL, CURLOPT_HEADERDATA, dl );
@@ -965,14 +954,14 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 
 	dl->cURLM = dl->func.multi_init();
 
-	if ( !dl->cURLM ) 
+	if ( !dl->cURLM )
 	{
-		Com_DL_Cleanup( dl );	
+		Com_DL_Cleanup( dl );
 		Com_Printf( S_COLOR_RED "Com_DL_Begin: multi_init() failed\n" );
 		return qfalse;
 	}
 
-	if ( dl->func.multi_add_handle( dl->cURLM, dl->cURL ) != CURLM_OK ) 
+	if ( dl->func.multi_add_handle( dl->cURLM, dl->cURL ) != CURLM_OK )
 	{
 		Com_DL_Cleanup( dl );
 		Com_Printf( S_COLOR_RED "Com_DL_Begin: multi_add_handle() failed\n" );
@@ -1058,7 +1047,7 @@ qboolean Com_DL_Perform( download_t *dl )
 			if ( cls.state == CA_CONNECTED && !clc.demoplaying )
 			{
 				CL_AddReliableCommand( "donedl", qfalse ); // get new gamestate info from server
-			} 
+			}
 			else if ( clc.demoplaying )
 			{
 				// FIXME: there might be better solution than vid_restart

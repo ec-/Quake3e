@@ -38,8 +38,8 @@ libvar_t *libvarlist = NULL;
 
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 float LibVarStringValue( const char *string )
@@ -76,8 +76,8 @@ float LibVarStringValue( const char *string )
 } //end of the function LibVarStringValue
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 libvar_t *LibVarAlloc( const char *var_name )
@@ -95,8 +95,8 @@ libvar_t *LibVarAlloc( const char *var_name )
 } //end of the function LibVarAlloc
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void LibVarDeAlloc( libvar_t *v )
@@ -108,8 +108,8 @@ void LibVarDeAlloc( libvar_t *v )
 } //end of the function LibVarDeAlloc
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void LibVarDeAllocAll(void)
@@ -125,8 +125,8 @@ void LibVarDeAllocAll(void)
 } //end of the function LibVarDeAllocAll
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 libvar_t *LibVarGet( const char *var_name )
@@ -144,8 +144,8 @@ libvar_t *LibVarGet( const char *var_name )
 } //end of the function LibVarGet
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 const char *LibVarGetString( const char *var_name )
@@ -164,8 +164,8 @@ const char *LibVarGetString( const char *var_name )
 } //end of the function LibVarGetString
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 float LibVarGetValue( const char *var_name )
@@ -184,15 +184,15 @@ float LibVarGetValue( const char *var_name )
 } //end of the function LibVarGetValue
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 libvar_t *LibVar( const char *var_name, const char *value )
 {
 	libvar_t *v;
 	v = LibVarGet( var_name );
-	if ( v ) 
+	if ( v )
 		return v;
 	//create new variable
 	v = LibVarAlloc( var_name );
@@ -208,8 +208,8 @@ libvar_t *LibVar( const char *var_name, const char *value )
 } //end of the function LibVar
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 const char *LibVarString( const char *var_name, const char *value )
@@ -221,8 +221,8 @@ const char *LibVarString( const char *var_name, const char *value )
 } //end of the function LibVarString
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 float LibVarValue( const char *var_name, const char *value )
@@ -234,8 +234,8 @@ float LibVarValue( const char *var_name, const char *value )
 } //end of the function LibVarValue
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void LibVarSet( const char *var_name, const char *value )
@@ -261,8 +261,8 @@ void LibVarSet( const char *var_name, const char *value )
 } //end of the function LibVarSet
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 qboolean LibVarChanged( const char *var_name )
@@ -281,8 +281,8 @@ qboolean LibVarChanged( const char *var_name )
 } //end of the function LibVarChanged
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void LibVarSetNotModified( const char *var_name )

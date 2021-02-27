@@ -44,7 +44,7 @@ Sys_Milliseconds
 ================
 */
 /* base time in seconds, that's our origin
-   timeval:tv_sec is an int: 
+   timeval:tv_sec is an int:
    assuming this wraps every 0x7fffffff - ~68 years since the Epoch (1970) - we're safe till 2038
    using unsigned long data type to work right with Sys_XTimeToSysTime */
 unsigned long sys_timeBase = 0;
@@ -59,7 +59,7 @@ int Sys_Milliseconds( void )
 	int curtime;
 
 	gettimeofday( &tp, NULL );
-	
+
 	if ( !sys_timeBase )
 	{
 		sys_timeBase = tp.tv_sec;
@@ -67,7 +67,7 @@ int Sys_Milliseconds( void )
 	}
 
 	curtime = (tp.tv_sec - sys_timeBase) * 1000 + tp.tv_usec / 1000;
-	
+
 	return curtime;
 }
 
@@ -222,7 +222,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 	if ( hasPatterns && extension[0] == '.' && extension[1] != '\0' ) {
 		extension++;
 	}
-	
+
 	// search
 	nfiles = 0;
 
@@ -360,7 +360,7 @@ qboolean Sys_ResetReadOnlyAttribute( const char *ospath )
 Sys_Pwd
 =================
 */
-const char *Sys_Pwd( void ) 
+const char *Sys_Pwd( void )
 {
 	static char pwd[ MAX_OSPATH ];
 
@@ -409,8 +409,8 @@ const char *Sys_DefaultHomePath( void )
 
 	if ( *homePath )
 		return homePath;
-            
-	if ( (p = getenv("HOME")) != NULL ) 
+
+	if ( (p = getenv("HOME")) != NULL )
 	{
 		Q_strncpyz( homePath, p, sizeof( homePath ) );
 #ifdef MACOS_X
@@ -418,10 +418,10 @@ const char *Sys_DefaultHomePath( void )
 #else
 		Q_strcat( homePath, sizeof( homePath ), "/.q3a" );
 #endif
-		if ( mkdir( homePath, 0750 ) ) 
+		if ( mkdir( homePath, 0750 ) )
 		{
-			if ( errno != EEXIST ) 
-				Sys_Error( "Unable to create directory \"%s\", error is %s(%d)\n", 
+			if ( errno != EEXIST )
+				Sys_Error( "Unable to create directory \"%s\", error is %s(%d)\n",
 					homePath, strerror( errno ), errno );
 		}
 		return homePath;
@@ -523,7 +523,7 @@ void *Sys_LoadFunction( void *handle, const char *name )
 	void *symbol;
 	size_t nlen;
 
-	if ( handle == NULL || name == NULL || *name == '\0' ) 
+	if ( handle == NULL || name == NULL || *name == '\0' )
 	{
 		dll_err_count++;
 		return NULL;
@@ -575,7 +575,7 @@ void Sys_SetAffinityMask( int mask )
 	static cpu_set_t old_set;
 	cpu_set_t set;
 	int cpu;
-	
+
 	if ( !inited )
 	{
 		if ( sched_getaffinity( getpid(), sizeof( old_set ), &old_set ) == 0 )

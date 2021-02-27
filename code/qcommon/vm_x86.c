@@ -205,34 +205,34 @@ static int	errParam = 0;
 
 static void ErrJump( void )
 {
-	Com_Error( ERR_DROP, "program tried to execute code outside VM" ); 
+	Com_Error( ERR_DROP, "program tried to execute code outside VM" );
 }
 
 
 static void BadJump( void )
 {
-	Com_Error( ERR_DROP, "program tried to execute code at bad location inside VM" ); 
+	Com_Error( ERR_DROP, "program tried to execute code at bad location inside VM" );
 }
 
 
 static void BadStack( void )
 {
-	Com_Error( ERR_DROP, "program tried to overflow program stack" ); 
+	Com_Error( ERR_DROP, "program tried to overflow program stack" );
 }
 
 
 static void BadOpStack( void )
 {
-	Com_Error( ERR_DROP, "program tried to overflow opcode stack" ); 
+	Com_Error( ERR_DROP, "program tried to overflow opcode stack" );
 }
 
 
 static void BadData( void )
 {
-#ifdef DEBUG_VM	
-	Com_Error( ERR_DROP, "program tried to read/write out of data segment at %i", errParam ); 
+#ifdef DEBUG_VM
+	Com_Error( ERR_DROP, "program tried to read/write out of data segment at %i", errParam );
 #else
-	Com_Error( ERR_DROP, "program tried to read/write out of data segment" ); 
+	Com_Error( ERR_DROP, "program tried to read/write out of data segment" );
 #endif
 }
 
@@ -490,14 +490,14 @@ static void EmitMovEAXEDI( vm_t *vm )
 		return;
 
 	if ( LastCommand == LAST_COMMAND_MOV_EDI_EAX ) // mov dword ptr [edi], eax
-	{	
+	{
 		REWIND( 2 );
 		LastCommand = LAST_COMMAND_NONE;
 		return;
 	}
 
 	if ( pop == OP_DIVI || pop == OP_DIVU || pop == OP_MULI || pop == OP_MULU ||
-		pop == OP_STORE4 || pop == OP_STORE2 || pop == OP_STORE1 ) 
+		pop == OP_STORE4 || pop == OP_STORE2 || pop == OP_STORE1 )
 	{
 		return;
 	}
@@ -550,14 +550,14 @@ void EmitMovECXEDI( vm_t *vm )
 	}
 
 	if (pop == OP_DIVI || pop == OP_DIVU || pop == OP_MULI || pop == OP_MULU ||
-		pop == OP_STORE4 || pop == OP_STORE2 || pop == OP_STORE1 ) 
-	{	
+		pop == OP_STORE4 || pop == OP_STORE2 || pop == OP_STORE1 )
+	{
 		EmitString( "89 C1" );		// mov ecx, eax
 		return;
 	}
 
 	if ( LastCommand == LAST_COMMAND_MOV_EDI_CONST ) // mov dword ptr [edi], 0x12345678
-	{	
+	{
 		REWIND( 6 );
 		EmitString( "B9" );			// mov ecx, 0x12345678
 		Emit4( lastConst );
@@ -670,10 +670,10 @@ const char *NearJumpStr( int op )
 	{
 		case OP_EQF:
 		case OP_EQ:  return "74"; // je
-		
+
 		case OP_NEF:
 		case OP_NE:  return "75"; // jne
-		
+
 		case OP_LTI: return "7C"; // jl
 		case OP_LEI: return "7E"; // jle
 		case OP_GTI: return "7F"; // jg
@@ -681,13 +681,13 @@ const char *NearJumpStr( int op )
 
 		case OP_LTF:
 		case OP_LTU: return "72"; // jb
-		
+
 		case OP_LEF:
 		case OP_LEU: return "76"; // jbe
-		
+
 		case OP_GTF:
-		case OP_GTU: return "77"; // ja 
-		
+		case OP_GTU: return "77"; // ja
+
 		case OP_GEF:
 		case OP_GEU: return "73"; // jae
 
@@ -707,10 +707,10 @@ const char *FarJumpStr( int op, int *n )
 	{
 		case OP_EQF:
 		case OP_EQ:  *n = 2; return "0F 84"; // je
-		
+
 		case OP_NEF:
 		case OP_NE:  *n = 2; return "0F 85"; // jne
-		
+
 		case OP_LTI: *n = 2; return "0F 8C"; // jl
 		case OP_LEI: *n = 2; return "0F 8E"; // jle
 		case OP_GTI: *n = 2; return "0F 8F"; // jg
@@ -721,10 +721,10 @@ const char *FarJumpStr( int op, int *n )
 
 		case OP_LEF:
 		case OP_LEU: *n = 2; return "0F 86"; // jbe
-		
+
 		case OP_GTF:
 		case OP_GTU: *n = 2; return "0F 87"; // ja
-		
+
 		case OP_GEF:
 		case OP_GEU: *n = 2; return "0F 83"; // jae
 
@@ -747,7 +747,7 @@ void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 		if ( v < -126 || v > 129 ) {
 			str = FarJumpStr( op, &jump_size );
 			EmitString( str );
-			Emit4( v - 4 - jump_size ); 
+			Emit4( v - 4 - jump_size );
 			i->njump = 0;
 			return;
 		}
@@ -759,7 +759,7 @@ void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 	if ( pass >= 2 && pass < NUM_PASSES-2 ) {
 		if ( v >= -126 && v <= 129 ) {
 			EmitString( NearJumpStr( op ) );
-			Emit1( v - 2 ); 
+			Emit1( v - 2 );
 			i->njump = 1;
 			return;
 		}
@@ -857,9 +857,9 @@ static void EmitCallFunc( vm_t *vm )
 	int n;
 
 	EmitString( "85 C0" );				// test eax, eax
-	EmitString( "7C" );					// jl +offset (SystemCall) 
+	EmitString( "7C" );					// jl +offset (SystemCall)
 	Emit1( sysCallOffset );				// will be valid after first pass
-sysCallOffset = compiledOfs;				
+sysCallOffset = compiledOfs;
 
 	// jump target range check
 	if ( vm_rtChecks->integer & 4 ) {
@@ -885,7 +885,7 @@ sysCallOffset = compiledOfs;
 	EmitString( "FF 11" );				// call dword ptr [ecx]
 #endif
 
-	// restore proc base and programStack so there is 
+	// restore proc base and programStack so there is
 	// no need to validate programStack anymore
 	EmitString( "5E" );				// pop esi
 	EmitString( "5D" );				// pop ebp
@@ -960,7 +960,7 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 	// rdi = &int64_params[0]
 	EmitString( "48 8D 79 F8" );			// lea rdi, [rcx-8]
 #endif
-	
+
 	// currentVm->systemCall( param );
 	EmitString( "41 FF D4" );				// call r12
 
@@ -1008,11 +1008,11 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 
 	// cdecl - set params
 	EmitString( "89 0C 24" );				// mov [esp], ecx
-	
+
 	// currentVm->systemCall( param );
 	EmitString( "FF 15" );					// call dword ptr [&currentVM->systemCall]
 	EmitPtr( &vm->systemCall );
-	
+
 	// we added the return value: *(opstack+1) = eax
 #if 0
 	EmitAddEDI4( vm );						// add edi, 4
@@ -1033,7 +1033,7 @@ funcOffset[FUNC_SYSC] = compiledOfs;
 static void EmitFTOLFunc( vm_t *vm )
 {
 	EmitRexString( "B8" );		// mov eax, &fp_cw[0]
-	EmitPtr( &fp_cw[0] );		
+	EmitPtr( &fp_cw[0] );
 	EmitString( "9B D9 38" );	// fnstcw word ptr [eax]
 	EmitString( "D9 68 04" );	// fldcw word ptr [eax+4]
 	EmitString( "DB 1F" );		// fistp dword ptr [edi]
@@ -1407,10 +1407,10 @@ static qboolean ConstOptimize( vm_t *vm )
 		EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 		ip += 1;
 		return qtrue;
-	
+
 	case OP_ADD:
 		v = ci->value;
-		EmitMovEAXEDI( vm ); 
+		EmitMovEAXEDI( vm );
 		if ( ISS8( v ) ) {
 			EmitString( "83 C0" );	// add eax, 0x7F
 			Emit1( v );
@@ -1596,7 +1596,7 @@ static qboolean ConstOptimize( vm_t *vm )
 			EmitString( "66 0F 3A 0A C0 02" );	// roundss xmm0, xmm0, 2 (exceptions not masked)
 			EmitCommand( LAST_COMMAND_STORE_FLOAT_EDI );
 			ip += 1;
-			return qtrue;		
+			return qtrue;
 		}
 
 		if ( v < 0 ) // syscall
@@ -1679,7 +1679,7 @@ static qboolean ConstOptimize( vm_t *vm )
 			}
 		}
 		EmitJump( vm, ni, ni->op, ni->value );
-		ip += 1; 
+		ip += 1;
 		return qtrue;
 
 	default:
@@ -2193,7 +2193,7 @@ __compile:
 				} else {
 					EmitString( "0F B7 85" );	// movzx eax, word ptr [ebp + 0x12345678]
 					Emit4( v );
-				} 
+				}
 				EmitCommand( LAST_COMMAND_MOV_EDI_EAX ); // mov dword ptr [edi], eax
 				ip++;
 				break;
@@ -2378,7 +2378,7 @@ __compile:
 			break;
 
 		case OP_STORE2:
-			EmitMovEAXEDI( vm );						// mov eax, dword ptr [edi]	
+			EmitMovEAXEDI( vm );						// mov eax, dword ptr [edi]
 			EmitString( "8B 4F FC" );					// mov ecx, dword ptr [edi-4]
 			EmitCheckReg( vm, ci, REG_ECX, 2 );			// range check
 			EmitString( "66 89 04 0B" );				// mov word ptr [ebx + ecx], ax
@@ -2386,7 +2386,7 @@ __compile:
 			break;
 
 		case OP_STORE1:
-			EmitMovEAXEDI( vm );						// mov eax, dword ptr [edi]	
+			EmitMovEAXEDI( vm );						// mov eax, dword ptr [edi]
 			EmitString( "8B 4F FC" );					// mov ecx, dword ptr [edi-4]
 			EmitCheckReg( vm, ci, REG_ECX, 1 );			// range check
 			EmitString( "88 04 0B" );					// mov byte ptr [ebx + ecx], al
@@ -2670,7 +2670,7 @@ __compile:
 			} else {
 				EmitString( "DB 07" );				// fild dword ptr [edi]
 			}
-			//if ( !ci->fpu ) 
+			//if ( !ci->fpu )
 			EmitCommand( LAST_COMMAND_STORE_FLOAT_EDI );
 			break;
 
@@ -2846,7 +2846,7 @@ __compile:
 #elif _WIN32
 	{
 		DWORD oldProtect = 0;
-		
+
 		// remove write permissions.
 		if ( !VirtualProtect( vm->codeBase.ptr, vm->codeSize, PAGE_EXECUTE_READ, &oldProtect ) ) {
 			VM_Destroy_Compiled( vm );

@@ -47,8 +47,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_SwapAASData(void)
@@ -176,8 +176,8 @@ void AAS_SwapAASData(void)
 //===========================================================================
 // dump the current loaded aas file
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_DumpAASData(void)
@@ -232,8 +232,8 @@ void AAS_DumpAASData(void)
 } //end of the function AAS_DumpAASData
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 #ifdef AASFILEDEBUG
@@ -283,8 +283,8 @@ void AAS_FileInfo(void)
 //===========================================================================
 // allocate memory and read a lump of an AAS file
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 char *AAS_LoadAASLump(fileHandle_t fp, int offset, int length, int *lastoffset, int size)
@@ -489,8 +489,8 @@ int AAS_LoadAASFile(char *filename)
 } //end of the function AAS_LoadAASFile
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 static int AAS_WriteAASLump_offset;
@@ -500,7 +500,7 @@ int AAS_WriteAASLump(fileHandle_t fp, aas_header_t *h, int lumpnum, void *data, 
 	aas_lump_t *lump;
 
 	lump = &h->lumps[lumpnum];
-	
+
 	lump->fileofs = LittleLong(AAS_WriteAASLump_offset);	//LittleLong(ftell(fp));
 	lump->filelen = LittleLong(length);
 
@@ -516,8 +516,8 @@ int AAS_WriteAASLump(fileHandle_t fp, aas_header_t *h, int lumpnum, void *data, 
 //===========================================================================
 // aas data is useless after writing to file because it is byte swapped
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 qboolean AAS_WriteAASFile(char *filename)

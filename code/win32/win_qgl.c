@@ -57,7 +57,7 @@ void QGL_Shutdown( qboolean unloadDLL )
 		Sys_UnloadLibrary( glw_state.OpenGLLib );
 		glw_state.OpenGLLib = NULL;
 	}
-	
+
 #define GLE( ret, name, ... ) q##name = NULL;
 	QGL_Win32_PROCS;
 	QGL_Swp_PROCS;
@@ -82,8 +82,8 @@ void *GL_GetProcAddress( const char *name )
 /*
 ** QGL_Init
 **
-** This is responsible for binding our qgl function pointers to 
-** the appropriate GL stuff.  In Windows this means doing a 
+** This is responsible for binding our qgl function pointers to
+** the appropriate GL stuff.  In Windows this means doing a
 ** LoadLibrary and a bunch of calls to GetProcAddress.  On other
 ** operating systems we need to do the right thing, whatever that
 ** might be.

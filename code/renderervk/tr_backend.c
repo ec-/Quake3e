@@ -152,11 +152,11 @@ void GL_Cull( cullType_t cullType ) {
 
 	glState.faceCulling = cullType;
 #ifndef USE_VULKAN
-	if ( cullType == CT_TWO_SIDED ) 
+	if ( cullType == CT_TWO_SIDED )
 	{
 		qglDisable( GL_CULL_FACE );
-	} 
-	else 
+	}
+	else
 	{
 		qboolean cullFront;
 		qglEnable( GL_CULL_FACE );
@@ -481,9 +481,9 @@ static void SetViewportAndScissor( void ) {
 	qglMatrixMode(GL_MODELVIEW);
 
 	// set the window clipping
-	qglViewport( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY, 
+	qglViewport( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY,
 		backEnd.viewParms.viewportWidth, backEnd.viewParms.viewportHeight );
-	qglScissor( backEnd.viewParms.scissorX, backEnd.viewParms.scissorY, 
+	qglScissor( backEnd.viewParms.scissorX, backEnd.viewParms.scissorY,
 		backEnd.viewParms.scissorWidth, backEnd.viewParms.scissorHeight );
 #endif
 }
@@ -616,7 +616,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 #endif
 		//
 		// change the tess parameters if needed
-		// a "entityMergable" shader is a shader that can have surfaces from seperate
+		// a "entityMergable" shader is a shader that can have surfaces from separate
 		// entities merged into a single batch, like smoke and blood puff sprites
 		if ( ( (oldSort ^ drawSurfs->sort ) & ~QSORT_REFENTITYNUM_MASK ) || !shader->entityMergable ) {
 			if ( oldShader != NULL ) {
@@ -666,7 +666,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 #ifdef USE_LEGACY_DLIGHTS
 #ifdef USE_PMLIGHT
 				if ( !r_dlightMode->integer )
-#endif 
+#endif
 				if ( backEnd.currentEntity->needDlights ) {
 					R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 				}
@@ -674,7 +674,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				if ( backEnd.currentEntity->e.renderfx & RF_DEPTHHACK ) {
 					// hack the depth range to prevent view model from poking into walls
 					depthRange = qtrue;
-					
+
 					if(backEnd.currentEntity->e.renderfx & RF_CROSSHAIR)
 						isCrosshair = qtrue;
 				}
@@ -821,7 +821,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 	qboolean		depthRange, isCrosshair;
 	const litSurf_t	*litSurf;
 	unsigned int	oldSort;
-	double			originalTime; // -EC- 
+	double			originalTime; // -EC-
 
 	// save original time for entity shader offsets
 	originalTime = backEnd.refdef.floatTime;
@@ -861,7 +861,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 
 		//
 		// change the tess parameters if needed
-		// a "entityMergable" shader is a shader that can have surfaces from seperate
+		// a "entityMergable" shader is a shader that can have surfaces from separate
 		// entities merged into a single batch, like smoke and blood puff sprites
 		if ( ( (oldSort ^ litSurf->sort) & ~QSORT_REFENTITYNUM_MASK ) || !shader->entityMergable ) {
 			if ( oldShader != NULL ) {
@@ -893,7 +893,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 				if ( backEnd.currentEntity->e.renderfx & RF_DEPTHHACK ) {
 					// hack the depth range to prevent view model from poking into walls
 					depthRange = qtrue;
-					
+
 					if(backEnd.currentEntity->e.renderfx & RF_CROSSHAIR)
 						isCrosshair = qtrue;
 				}
@@ -1645,7 +1645,7 @@ static const void *RB_ColorMask( const void *data )
 #else
 	qglColorMask( cmd->rgba[0], cmd->rgba[1], cmd->rgba[2], cmd->rgba[3] );
 #endif
-	
+
 	return (const void *)(cmd + 1);
 }
 
@@ -1658,7 +1658,7 @@ RB_ClearDepth
 static const void *RB_ClearDepth( const void *data )
 {
 	const clearDepthCommand_t *cmd = data;
-	
+
 	RB_EndSurface();
 
 #ifdef USE_VULKAN
@@ -1666,7 +1666,7 @@ static const void *RB_ClearDepth( const void *data )
 #else
 	qglClear( GL_DEPTH_BUFFER_BIT );
 #endif
-	
+
 	return (const void *)(cmd + 1);
 }
 

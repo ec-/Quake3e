@@ -1,6 +1,6 @@
 
 ; this is mostly copy-pasted x86-version with x86_64-related fixes and comments
-; runs about 4x times faster than C version 
+; runs about 4x times faster than C version
 ; saves about 3M ticks each second
 
 .code
@@ -17,13 +17,13 @@ S_WriteLinearBlastStereo16_SSE_x64 PROC
 
 	test ebx,ebx
 	jz	LExit
-	mov ecx,esi  ; try to align source memory to 64 bytes boundary 
-	and ecx,63 
+	mov ecx,esi  ; try to align source memory to 64 bytes boundary
+	and ecx,63
 	jz LMain     ; if already aligned - goto main loop
 	and ecx,3
 	jnz LTail    ; if not dword-aligned - tail work & exit, should never happen though
 	shr ecx,2    ; get dword count to align source data
-	not ecx		
+	not ecx
 	add ecx,17
 
 LClamp1:
@@ -85,7 +85,7 @@ LAgain:
 LTail:
 	test ebx, ebx
 	jz	LEnd
-	
+
 LClamp2:
 	mov eax,[rsi]
 	sar eax,8
@@ -103,17 +103,17 @@ LClampDone2:
 	add rdi,2
 	dec ebx
 	jnz	LClamp2
-	
+
 LEnd:
 	sfence
 	emms
-	
+
 LExit:
 	pop rbx
 	pop rdi
 	pop rsi
 	ret
-	
+
 S_WriteLinearBlastStereo16_SSE_x64 ENDP
 
 END

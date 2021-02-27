@@ -48,12 +48,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define ROUTING_DEBUG
 
 //travel time in hundreths of a second = distance * 100 / speed
-#define DISTANCEFACTOR_CROUCH		1.3f		//crouch speed = 100
+#define DISTANCEFACTOR_CROUCH		1.3f	//crouch speed = 100
 #define DISTANCEFACTOR_SWIM			1		//should be 0.66, swim speed = 150
 #define DISTANCEFACTOR_WALK			0.33f	//walk speed = 300
 
 //cache refresh time
-#define CACHE_REFRESHTIME		15.0f	//15 seconds refresh time
+#define CACHE_REFRESHTIME			15.0f	//15 seconds refresh time
 
 //maximum number of routing updates each frame
 #define MAX_FRAMEROUTINGUPDATES		10
@@ -345,8 +345,8 @@ static ID_INLINE float AAS_RoutingTime(void)
 } //end of the function AAS_RoutingTime
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int AAS_GetAreaContentsTravelFlags(int areanum)
@@ -841,20 +841,19 @@ void AAS_FreeAllPortalCache(void)
 } //end of the function AAS_FreeAllPortalCache
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_InitPortalCache(void)
 {
 	//
-	aasworld.portalcache = (aas_routingcache_t **) GetClearedMemory(
-								aasworld.numareas * sizeof(aas_routingcache_t *));
+	aasworld.portalcache = (aas_routingcache_t **) GetClearedMemory(aasworld.numareas * sizeof(aas_routingcache_t *));
 } //end of the function AAS_InitPortalCache
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_InitRoutingUpdate(void)
@@ -873,13 +872,11 @@ void AAS_InitRoutingUpdate(void)
 		} //end if
 	} //end for
 	//allocate memory for the routing update fields
-	aasworld.areaupdate = (aas_routingupdate_t *) GetClearedMemory(
-									maxreachabilityareas * sizeof(aas_routingupdate_t));
+	aasworld.areaupdate = (aas_routingupdate_t *) GetClearedMemory(maxreachabilityareas * sizeof(aas_routingupdate_t));
 	//
 	if (aasworld.portalupdate) FreeMemory(aasworld.portalupdate);
 	//allocate memory for the portal update fields
-	aasworld.portalupdate = (aas_routingupdate_t *) GetClearedMemory(
-									(aasworld.numportals+1) * sizeof(aas_routingupdate_t));
+	aasworld.portalupdate = (aas_routingupdate_t *) GetClearedMemory((aasworld.numportals+1) * sizeof(aas_routingupdate_t));
 } //end of the function AAS_InitRoutingUpdate
 //===========================================================================
 //
@@ -1377,8 +1374,7 @@ void AAS_UpdateAreaRoutingCache(aas_routingcache_t *areacache)
 				nextupdate->areanum = nextareanum;
 				nextupdate->tmptraveltime = t;
 				//VectorCopy(reach->start, nextupdate->start);
-				nextupdate->areatraveltimes = aasworld.areatraveltimes[nextareanum][linknum -
-													aasworld.areasettings[nextareanum].firstreachablearea];
+				nextupdate->areatraveltimes = aasworld.areatraveltimes[nextareanum][linknum - aasworld.areasettings[nextareanum].firstreachablearea];
 				if (!nextupdate->inlist)
 				{
 					// we add the update to the end of the list
@@ -1752,8 +1748,7 @@ int AAS_AreaRouteToGoalArea(int areanum, vec3_t origin, int goalareanum, int tra
 		//
 		if (origin)
 		{
-			*reachnum = aasworld.areasettings[areanum].firstreachablearea +
-							areacache->reachabilities[clusterareanum];
+			*reachnum = aasworld.areasettings[areanum].firstreachablearea + areacache->reachabilities[clusterareanum];
 			reach = aasworld.reachability + *reachnum;
 			t += AAS_AreaTravelTime(areanum, origin, reach->start);
 		} //end if

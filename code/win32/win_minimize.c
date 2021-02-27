@@ -1,13 +1,13 @@
 #include "../client/client.h"
 #include "win_local.h"
 
-struct hk_token 
+struct hk_token
 {
 	const unsigned int vk;
 	const char *name;
 } ;
 
-static struct hk_token tokens[] = 
+static struct hk_token tokens[] =
 {
 	{ VK_BACK,		"BS"  },
 	{ VK_BACK,		"BACK"  },
@@ -149,7 +149,7 @@ int Win32_GetKey( const char **s, char *buf, int buflen )
 	base = *s;
 
 	// skip leading separators
-	while ( *base == ' ' || *base == '\t' || *base == '+' ) 
+	while ( *base == ' ' || *base == '\t' || *base == '+' )
 		base++;
 
 	// empty token
@@ -169,10 +169,10 @@ int Win32_GetKey( const char **s, char *buf, int buflen )
 
 	if ( len > buflen-1 )
 		len = buflen-1;
-	
+
 	strncpy( buf, base, len );
 	buf[len]= '\0';
-	
+
 	for ( i = 0; i < len ; i++ ) //uppercase
 		if ( buf[i] >= 'a' && buf[i] <= 'z' )
 			buf[i] += 'A'-'a';

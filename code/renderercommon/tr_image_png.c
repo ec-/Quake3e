@@ -341,7 +341,7 @@ static void *BufferedFileRead(struct BufferedFile *BF, unsigned Length)
 
 static qboolean BufferedFileRewind(struct BufferedFile *BF, unsigned Offset)
 {
-	unsigned BytesRead; 
+	unsigned BytesRead;
 
 	/*
 	 *  input verification
@@ -492,7 +492,7 @@ static qboolean FindChunk(struct BufferedFile *BF, uint32_t ChunkType)
 				if(!BufferedFileSkip(BF, Length + PNG_ChunkCRC_Size))
 				{
 					return(qfalse);
-				}  
+				}
 			}
 		}
 	}
@@ -572,7 +572,7 @@ static uint32_t DecompressIDATs(struct BufferedFile *BF, uint8_t **Buffer)
 		{
 			/*
 			 *  Rewind to the start of this adventure
-			 *  and return unsuccessfull
+			 *  and return unsuccessful
 			 */
 
 			BufferedFileRewind(BF, BytesToRewind);
@@ -593,7 +593,7 @@ static uint32_t DecompressIDATs(struct BufferedFile *BF, uint8_t **Buffer)
 
 		if(!(Type == PNG_ChunkType_IDAT))
 		{
-			BufferedFileRewind(BF, PNG_ChunkHeader_Size); 
+			BufferedFileRewind(BF, PNG_ChunkHeader_Size);
 
 			break;
 		}
@@ -619,7 +619,7 @@ static uint32_t DecompressIDATs(struct BufferedFile *BF, uint8_t **Buffer)
 
 			BytesToRewind += Length + PNG_ChunkCRC_Size;
 			CompressedDataLength += Length;
-		} 
+		}
 	}
 
 	BufferedFileRewind(BF, BytesToRewind);
@@ -645,7 +645,7 @@ static uint32_t DecompressIDATs(struct BufferedFile *BF, uint8_t **Buffer)
 		CH = BufferedFileRead(BF, PNG_ChunkHeader_Size);
 		if(!CH)
 		{
-			ri.Free(CompressedData); 
+			ri.Free(CompressedData);
 
 			return((unsigned)-1);
 		}
@@ -663,7 +663,7 @@ static uint32_t DecompressIDATs(struct BufferedFile *BF, uint8_t **Buffer)
 
 		if(!(Type == PNG_ChunkType_IDAT))
 		{
-			BufferedFileRewind(BF, PNG_ChunkHeader_Size); 
+			BufferedFileRewind(BF, PNG_ChunkHeader_Size);
 
 			break;
 		}
@@ -679,21 +679,21 @@ static uint32_t DecompressIDATs(struct BufferedFile *BF, uint8_t **Buffer)
 			OrigCompressedData = BufferedFileRead(BF, Length);
 			if(!OrigCompressedData)
 			{
-				ri.Free(CompressedData); 
+				ri.Free(CompressedData);
 
 				return((unsigned)-1);
 			}
 
 			if(!BufferedFileSkip(BF, PNG_ChunkCRC_Size))
 			{
-				ri.Free(CompressedData); 
+				ri.Free(CompressedData);
 
 				return((unsigned)-1);
 			}
 
 			memcpy(CompressedDataPtr, OrigCompressedData, Length);
 			CompressedDataPtr += Length;
-		} 
+		}
 	}
 
 	/*
@@ -755,7 +755,7 @@ static uint32_t DecompressIDATs(struct BufferedFile *BF, uint8_t **Buffer)
 	ri.Free(CompressedData);
 
 	/*
-	 *  Check if the last puff() was successfull.
+	 *  Check if the last puff() was successful.
 	 */
 
 	if(!((puffResult == 0) && (puffDestLen > 0)))
@@ -817,9 +817,9 @@ static uint8_t PredictPaeth(uint8_t a, uint8_t b, uint8_t c)
  *  Reverse the filters.
  */
 
-static qboolean UnfilterImage(uint8_t  *DecompressedData, 
+static qboolean UnfilterImage(uint8_t  *DecompressedData,
 		uint32_t  ImageHeight,
-		uint32_t  BytesPerScanline, 
+		uint32_t  BytesPerScanline,
 		uint32_t  BytesPerPixel)
 {
 	uint8_t   *DecompPtr;
@@ -914,7 +914,7 @@ static qboolean UnfilterImage(uint8_t  *DecompressedData,
 			for(p = 0; p < BytesPerPixel; p++)
 			{
 				switch(FilterType)
-				{ 
+				{
 					case PNG_FilterType_None :
 					{
 						/*
@@ -1254,7 +1254,7 @@ static qboolean ConvertPixel(struct PNG_Chunk_IHDR *IHDR,
  */
 
 static qboolean DecodeImageNonInterlaced(struct PNG_Chunk_IHDR *IHDR,
-		byte                  *OutBuffer, 
+		byte                  *OutBuffer,
 		uint8_t               *DecompressedData,
 		uint32_t               DecompressedDataLength,
 		qboolean               HasTransparentColour,
@@ -1531,7 +1531,7 @@ static qboolean DecodeImageNonInterlaced(struct PNG_Chunk_IHDR *IHDR,
  */
 
 static qboolean DecodeImageInterlaced(struct PNG_Chunk_IHDR *IHDR,
-		byte                  *OutBuffer, 
+		byte                  *OutBuffer,
 		uint8_t               *DecompressedData,
 		uint32_t               DecompressedDataLength,
 		qboolean               HasTransparentColour,
@@ -1964,10 +1964,10 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 	if(!ThePNG)
 	{
 		return;
-	}           
+	}
 
 	/*
-	 *  Read the siganture of the file.
+	 *  Read the signature of the file.
 	 */
 
 	Signature = BufferedFileRead(ThePNG, PNG_Signature_Size);
@@ -1986,7 +1986,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 	{
 		CloseBufferedFile(ThePNG);
 
-		return; 
+		return;
 	}
 
 	/*
@@ -1998,7 +1998,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 	{
 		CloseBufferedFile(ThePNG);
 
-		return; 
+		return;
 	}
 
 	/*
@@ -2016,19 +2016,19 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 	{
 		CloseBufferedFile(ThePNG);
 
-		return; 
+		return;
 	}
 
 	/*
 	 *  Read the IHDR.
-	 */ 
+	 */
 
 	IHDR = BufferedFileRead(ThePNG, PNG_Chunk_IHDR_Size);
 	if(!IHDR)
 	{
 		CloseBufferedFile(ThePNG);
 
-		return; 
+		return;
 	}
 
 	/*
@@ -2040,7 +2040,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 	{
 		CloseBufferedFile(ThePNG);
 
-		return; 
+		return;
 	}
 
 	/*
@@ -2065,7 +2065,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 
 		ri.Printf( PRINT_WARNING, "%s: invalid image size\n", name );
 
-		return; 
+		return;
 	}
 
 	/*
@@ -2080,7 +2080,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 	{
 		CloseBufferedFile(ThePNG);
 
-		return; 
+		return;
 	}
 
 	/*
@@ -2120,7 +2120,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 		{
 			CloseBufferedFile(ThePNG);
 
-			return; 
+			return;
 		}
 
 		/*
@@ -2138,7 +2138,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 		{
 			CloseBufferedFile(ThePNG);
 
-			return; 
+			return;
 		}
 
 		/*
@@ -2149,7 +2149,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 		{
 			CloseBufferedFile(ThePNG);
 
-			return;   
+			return;
 		}
 
 		/*
@@ -2161,7 +2161,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 		{
 			CloseBufferedFile(ThePNG);
 
-			return; 
+			return;
 		}
 
 		/*
@@ -2173,7 +2173,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 		{
 			CloseBufferedFile(ThePNG);
 
-			return; 
+			return;
 		}
 
 		/*
@@ -2185,7 +2185,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 			OutPal[i * Q3IMAGE_BYTESPERPIXEL + 0] = 0x00;
 			OutPal[i * Q3IMAGE_BYTESPERPIXEL + 1] = 0x00;
 			OutPal[i * Q3IMAGE_BYTESPERPIXEL + 2] = 0x00;
-			OutPal[i * Q3IMAGE_BYTESPERPIXEL + 3] = 0xFF;  
+			OutPal[i * Q3IMAGE_BYTESPERPIXEL + 3] = 0xFF;
 		}
 
 		/*
@@ -2222,7 +2222,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 		{
 			CloseBufferedFile(ThePNG);
 
-			return; 
+			return;
 		}
 
 		/*
@@ -2240,7 +2240,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 		{
 			CloseBufferedFile(ThePNG);
 
-			return; 
+			return;
 		}
 
 		/*
@@ -2252,7 +2252,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 		{
 			CloseBufferedFile(ThePNG);
 
-			return;  
+			return;
 		}
 
 		/*
@@ -2264,7 +2264,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 		{
 			CloseBufferedFile(ThePNG);
 
-			return; 
+			return;
 		}
 
 		/*
@@ -2279,7 +2279,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 				{
 					CloseBufferedFile(ThePNG);
 
-					return;    
+					return;
 				}
 
 				HasTransparentColour = qtrue;
@@ -2301,7 +2301,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 				{
 					CloseBufferedFile(ThePNG);
 
-					return;    
+					return;
 				}
 
 				HasTransparentColour = qtrue;
@@ -2331,7 +2331,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 				{
 					CloseBufferedFile(ThePNG);
 
-					return;    
+					return;
 				}
 
 				HasTransparentColour = qtrue;
@@ -2358,7 +2358,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 
 				return;
 			}
-		} 
+		}
 	}
 
 	/*
@@ -2369,7 +2369,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 	{
 		CloseBufferedFile(ThePNG);
 
-		return; 
+		return;
 	}
 
 	/*
@@ -2380,7 +2380,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 	{
 		CloseBufferedFile(ThePNG);
 
-		return; 
+		return;
 	}
 
 	/*
@@ -2401,13 +2401,13 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 	 *  Allocate output buffer.
 	 */
 
-	OutBuffer = ri.Malloc(IHDR_Width * IHDR_Height * Q3IMAGE_BYTESPERPIXEL); 
+	OutBuffer = ri.Malloc(IHDR_Width * IHDR_Height * Q3IMAGE_BYTESPERPIXEL);
 	if(!OutBuffer)
 	{
-		ri.Free(DecompressedData); 
+		ri.Free(DecompressedData);
 		CloseBufferedFile(ThePNG);
 
-		return;  
+		return;
 	}
 
 	/*
@@ -2420,8 +2420,8 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 		{
 			if(!DecodeImageNonInterlaced(IHDR, OutBuffer, DecompressedData, DecompressedDataLength, HasTransparentColour, TransparentColour, OutPal))
 			{
-				ri.Free(OutBuffer); 
-				ri.Free(DecompressedData); 
+				ri.Free(OutBuffer);
+				ri.Free(DecompressedData);
 				CloseBufferedFile(ThePNG);
 
 				return;
@@ -2434,8 +2434,8 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 		{
 			if(!DecodeImageInterlaced(IHDR, OutBuffer, DecompressedData, DecompressedDataLength, HasTransparentColour, TransparentColour, OutPal))
 			{
-				ri.Free(OutBuffer); 
-				ri.Free(DecompressedData); 
+				ri.Free(OutBuffer);
+				ri.Free(DecompressedData);
 				CloseBufferedFile(ThePNG);
 
 				return;
@@ -2446,8 +2446,8 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 
 		default :
 		{
-			ri.Free(OutBuffer); 
-			ri.Free(DecompressedData); 
+			ri.Free(OutBuffer);
+			ri.Free(DecompressedData);
 			CloseBufferedFile(ThePNG);
 
 			return;
@@ -2478,7 +2478,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 	 *  DecompressedData is not needed anymore.
 	 */
 
-	ri.Free(DecompressedData); 
+	ri.Free(DecompressedData);
 
 	/*
 	 *  We have all data, so close the file.

@@ -53,8 +53,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 fielddef_t *FindField(fielddef_t *defs, char *name)
@@ -69,8 +69,8 @@ fielddef_t *FindField(fielddef_t *defs, char *name)
 } //end of the function FindField
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 qboolean ReadNumber(source_t *source, fielddef_t *fd, void *p)
@@ -184,8 +184,8 @@ qboolean ReadNumber(source_t *source, fielddef_t *fd, void *p)
 } //end of the function ReadNumber
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 qboolean ReadChar(source_t *source, fielddef_t *fd, void *p)
@@ -209,8 +209,8 @@ qboolean ReadChar(source_t *source, fielddef_t *fd, void *p)
 } //end of the function ReadChar
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int ReadString(source_t *source, fielddef_t *fd, void *p)
@@ -226,8 +226,8 @@ int ReadString(source_t *source, fielddef_t *fd, void *p)
 } //end of the function ReadString
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int ReadStructure(source_t *source, structdef_t *def, char *structure)
@@ -320,8 +320,8 @@ int ReadStructure(source_t *source, structdef_t *def, char *structure)
 } //end of the function ReadStructure
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int WriteIndent(FILE *fp, int indent)
@@ -334,8 +334,8 @@ int WriteIndent(FILE *fp, int indent)
 } //end of the function WriteIndent
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int WriteFloat(FILE *fp, float value)
@@ -362,8 +362,8 @@ int WriteFloat(FILE *fp, float value)
 } //end of the function WriteFloat
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int WriteStructWithIndent(FILE *fp, structdef_t *def, char *structure, int indent)
@@ -448,12 +448,11 @@ int WriteStructWithIndent(FILE *fp, structdef_t *def, char *structure, int inden
 } //end of the function WriteStructWithIndent
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int WriteStructure(FILE *fp, structdef_t *def, char *structure)
 {
 	return WriteStructWithIndent(fp, def, structure, 0);
 } //end of the function WriteStructure
-

@@ -70,8 +70,8 @@ int botlibsetup = qfalse;
 
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int Sys_MilliSeconds(void)
@@ -80,24 +80,23 @@ int Sys_MilliSeconds(void)
 } //end of the function Sys_MilliSeconds
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 static qboolean ValidEntityNumber(int num, const char *str)
 {
 	if ( /*num < 0 || */ (unsigned)num > botlibglobals.maxentities )
 	{
-		botimport.Print(PRT_ERROR, "%s: invalid entity number %d, [0, %d]\n",
-										str, num, botlibglobals.maxentities);
+		botimport.Print(PRT_ERROR, "%s: invalid entity number %d, [0, %d]\n", str, num, botlibglobals.maxentities);
 		return qfalse;
 	} //end if
 	return qtrue;
 } //end of the function BotValidateClientNumber
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 static qboolean BotLibSetup(const char *str)
@@ -112,16 +111,16 @@ static qboolean BotLibSetup(const char *str)
 
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int Export_BotLibSetup( void )
 {
 	int		errnum;
-	
+
 	botDeveloper = LibVarGetValue( "bot_developer" );
- 	memset( &botlibglobals, 0, sizeof( botlibglobals ) );
+	memset( &botlibglobals, 0, sizeof( botlibglobals ) );
 
 	// initialize byte swapping (litte endian etc.)
 	// Swap_Init();
@@ -156,8 +155,8 @@ int Export_BotLibSetup( void )
 } //end of the function Export_BotLibSetup
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int Export_BotLibShutdown(void)
@@ -176,7 +175,7 @@ int Export_BotLibShutdown(void)
 	BotShutdownCharacters();	//be_ai_char.c
 	//shud down aas
 	AAS_Shutdown();
-	//shut down bot elemantary actions
+	//shut down bot elementary actions
 	EA_Shutdown();
 	//free all libvars
 	LibVarDeAllocAll();
@@ -200,8 +199,8 @@ int Export_BotLibShutdown(void)
 } //end of the function Export_BotLibShutdown
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int Export_BotLibVarSet( const char *var_name, const char *value )
@@ -211,8 +210,8 @@ int Export_BotLibVarSet( const char *var_name, const char *value )
 } //end of the function Export_BotLibVarSet
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int Export_BotLibVarGet( const char *var_name, char *value, int size )
@@ -225,8 +224,8 @@ int Export_BotLibVarGet( const char *var_name, char *value, int size )
 } //end of the function Export_BotLibVarGet
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int Export_BotLibStartFrame(float time)
@@ -236,8 +235,8 @@ int Export_BotLibStartFrame(float time)
 } //end of the function Export_BotLibStartFrame
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int Export_BotLibLoadMap(const char *mapname)
@@ -266,8 +265,8 @@ int Export_BotLibLoadMap(const char *mapname)
 } //end of the function Export_BotLibLoadMap
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 static int Export_BotLibUpdateEntity(int ent, bot_entitystate_t *state)
@@ -279,8 +278,8 @@ static int Export_BotLibUpdateEntity(int ent, bot_entitystate_t *state)
 } //end of the function Export_BotLibUpdateEntity
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_TestMovementPrediction(int entnum, vec3_t origin, vec3_t dir);
@@ -421,8 +420,7 @@ int BotExportTest(int parm0, char *parm1, vec3_t parm2, vec3_t parm3)
 		/*
 		botlibglobals.goalareanum = newarea;
 		VectorCopy(parm2, botlibglobals.goalorigin);
-		botimport.Print(PRT_MESSAGE, "new goal %2.1f %2.1f %2.1f area %d\n",
-								origin[0], origin[1], origin[2], newarea);
+		botimport.Print(PRT_MESSAGE, "new goal %2.1f %2.1f %2.1f area %d\n", origin[0], origin[1], origin[2], newarea);
 		*/
 	} //end if
 	//*
@@ -439,8 +437,7 @@ int BotExportTest(int parm0, char *parm1, vec3_t parm2, vec3_t parm3)
 		{
 			botlibglobals.goalareanum = newarea;
 			VectorCopy(parm2, botlibglobals.goalorigin);
-			botimport.Print(PRT_MESSAGE, "new goal %2.1f %2.1f %2.1f area %d\n",
-									origin[0], origin[1], origin[2], newarea);
+			botimport.Print(PRT_MESSAGE, "new goal %2.1f %2.1f %2.1f area %d\n", origin[0], origin[1], origin[2], newarea);
 		}
 	} //end if*/
 	if (flood)
@@ -453,9 +450,7 @@ int BotExportTest(int parm0, char *parm1, vec3_t parm2, vec3_t parm3)
 		//* /
 		/*
 		goal.areanum = botlibglobals.goalareanum;
-		reachnum = BotGetReachabilityToGoal(parm2, newarea, 1,
-										ms.avoidreach, ms.avoidreachtimes,
-										&goal, TFL_DEFAULT);
+		reachnum = BotGetReachabilityToGoal(parm2, newarea, 1, ms.avoidreach, ms.avoidreachtimes, &goal, TFL_DEFAULT);
 		if (!reachnum)
 		{
 			botimport.Print(PRT_MESSAGE, "goal not reachable\n");
@@ -475,8 +470,7 @@ int BotExportTest(int parm0, char *parm1, vec3_t parm2, vec3_t parm3)
 				AAS_DrawCross(bottomcenter, 10, LINECOLOR_GREEN);
 			} //end if
 		} //end else*/
-//		botimport.Print(PRT_MESSAGE, "travel time to goal = %d\n",
-//					AAS_AreaTravelTimeToGoalArea(area, origin, botlibglobals.goalareanum, TFL_DEFAULT));
+//		botimport.Print(PRT_MESSAGE, "travel time to goal = %d\n", AAS_AreaTravelTimeToGoalArea(area, origin, botlibglobals.goalareanum, TFL_DEFAULT));
 //		botimport.Print(PRT_MESSAGE, "test rj from 703 to 716\n");
 //		AAS_Reachability_WeaponJump(703, 716);
 //	} //end if*/
@@ -528,10 +522,10 @@ int BotExportTest(int parm0, char *parm1, vec3_t parm2, vec3_t parm3)
 				break;
 			}
 			reachnum = BotGetReachabilityToGoal(curorigin, curarea,
-										  lastgoalareanum, lastareanum,
-										  avoidreach, avoidreachtimes, avoidreachtries,
-										  &goal, TFL_DEFAULT|TFL_FUNCBOB|TFL_ROCKETJUMP,
-										  NULL, 0, &resultFlags);
+										lastgoalareanum, lastareanum,
+										avoidreach, avoidreachtimes, avoidreachtries,
+										&goal, TFL_DEFAULT|TFL_FUNCBOB|TFL_ROCKETJUMP,
+										NULL, 0, &resultFlags);
 			AAS_ReachabilityFromNum(reachnum, &reach);
 			AAS_ShowReachability(&reach);
 			VectorCopy(reach.end, origin);
@@ -589,7 +583,7 @@ int BotExportTest(int parm0, char *parm1, vec3_t parm2, vec3_t parm3)
 	botimport.Print(PRT_MESSAGE, "id %lu clocks, %lu CLOCKS_PER_SEC\n", end_time - start_time, CLOCKS_PER_SEC);
 */
 
-    // TTimo: nested comments are BAD for gcc -Werror, use #if 0 instead..
+	// TTimo: nested comments are BAD for gcc -Werror, use #if 0 instead..
 #if 0
 	AAS_ClearShownDebugLines();
 	//bsptrace = AAS_Trace(eye, NULL, NULL, end, 1, MASK_PLAYERSOLID);
@@ -603,11 +597,8 @@ int BotExportTest(int parm0, char *parm1, vec3_t parm2, vec3_t parm3)
 		{
 			AAS_ShowFace(face - aasworld.faces);
 		} //end if
-		
-		AAS_DrawPlaneCross(bsptrace.endpos,
-									bsptrace.plane.normal,
-									bsptrace.plane.dist + bsptrace.exp_dist,
-									bsptrace.plane.type, LINECOLOR_GREEN);
+
+		AAS_DrawPlaneCross(bsptrace.endpos, bsptrace.plane.normal, bsptrace.plane.dist + bsptrace.exp_dist, bsptrace.plane.type, LINECOLOR_GREEN);
 		if (trace.ent)
 		{
 			ent = &aasworld.entities[trace.ent];
@@ -689,7 +680,7 @@ static void Init_AAS_Export( aas_export_t *aas ) {
 	aas->AAS_PredictClientMovement = AAS_PredictClientMovement;
 }
 
-  
+
 /*
 ============
 Init_EA_Export

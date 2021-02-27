@@ -70,7 +70,7 @@
  */
 
 #include <setjmp.h>             /* for setjmp(), longjmp(), and jmp_buf */
-#include "puff.h"		/* prototype for puff() */
+#include "puff.h"               /* prototype for puff() */
 
 #define local static            /* for local function definitions */
 
@@ -87,16 +87,16 @@
 /* input and output state */
 struct state {
     /* output state */
-    uint8_t *out;         /* output buffer */
+    uint8_t *out;          /* output buffer */
     uint32_t outlen;       /* available space at out */
     uint32_t outcnt;       /* bytes written to out so far */
 
     /* input state */
-    uint8_t *in;          /* input buffer */
+    uint8_t *in;           /* input buffer */
     uint32_t inlen;        /* available input at in */
     uint32_t incnt;        /* bytes read so far */
-    int32_t bitbuf;                 /* bit buffer */
-    int32_t bitcnt;                 /* number of bits in bit buffer */
+    int32_t bitbuf;        /* bit buffer */
+    int32_t bitcnt;        /* number of bits in bit buffer */
 
     /* input limit error return state for bits() and decode() */
     jmp_buf env;
@@ -227,7 +227,7 @@ local int32_t decode(struct state *s, struct huffman *h)
     int32_t index;          /* index of first code of length len in symbol table */
     int32_t bitbuf;         /* bits from stream */
     int32_t left;           /* bits left in next or left to process */
-    int16_t *next;        /* next number of codes */
+    int16_t *next;          /* next number of codes */
 
     bitbuf = s->bitbuf;
     left = s->bitcnt;
@@ -405,8 +405,7 @@ local int32_t codes(struct state *s,
         8193, 12289, 16385, 24577};
     static const int16_t dext[30] = { /* Extra bits for distance codes 0..29 */
         0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,
-        7, 7, 8, 8, 9, 9, 10, 10, 11, 11,
-        12, 12, 13, 13};
+        7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13};
 
     /* decode literals and length/distance pairs */
     do {
@@ -600,14 +599,14 @@ local int32_t fixed(struct state *s)
  */
 local int32_t dynamic(struct state *s)
 {
-    int32_t nlen, ndist, ncode;             /* number of lengths in descriptor */
-    int32_t index;                          /* index of lengths[] */
-    int32_t err;                            /* construct() return value */
+    int32_t nlen, ndist, ncode;           /* number of lengths in descriptor */
+    int32_t index;                        /* index of lengths[] */
+    int32_t err;                          /* construct() return value */
     int16_t lengths[MAXCODES];            /* descriptor code lengths */
     int16_t lencnt[MAXBITS+1], lensym[MAXLCODES];         /* lencode memory */
     int16_t distcnt[MAXBITS+1], distsym[MAXDCODES];       /* distcode memory */
-    struct huffman lencode;				/* length code */
-    struct huffman distcode;			/* distance code */
+    struct huffman lencode;               /* length code */
+    struct huffman distcode;              /* distance code */
     static const int16_t order[19] =      /* permutation of code length codes */
         {16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
 

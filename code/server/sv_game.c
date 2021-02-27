@@ -86,7 +86,7 @@ static void SV_GameSendServerCommand( int clientNum, const char *text ) {
 		if ( clientNum < 0 || clientNum >= sv_maxclients->integer ) {
 			return;
 		}
-		SV_SendServerCommand( svs.clients + clientNum, "%s", text );	
+		SV_SendServerCommand( svs.clients + clientNum, "%s", text );
 	}
 }
 
@@ -102,7 +102,7 @@ static void SV_GameDropClient( int clientNum, const char *reason ) {
 	if ( clientNum < 0 || clientNum >= sv_maxclients->integer ) {
 		return;
 	}
-	SV_DropClient( svs.clients + clientNum, reason );	
+	SV_DropClient( svs.clients + clientNum, reason );
 }
 
 
@@ -266,14 +266,14 @@ static void SV_LocateGameData( sharedEntity_t *gEnts, int numGEntities, int size
 			Com_Error( ERR_DROP, "%s: bad entity count %i", __func__, numGEntities );
 		} else {
 			if ( sizeofGEntity_t > gvm->exactDataLength / numGEntities ) {
-				Com_Error( ERR_DROP, "%s: bad entity size %i", __func__, sizeofGEntity_t );	
+				Com_Error( ERR_DROP, "%s: bad entity size %i", __func__, sizeofGEntity_t );
 			} else if ( (byte*)gEnts + (numGEntities * sizeofGEntity_t) > (gvm->dataBase + gvm->exactDataLength) ) {
 				Com_Error( ERR_DROP, "%s: entities located out of data segment", __func__ );
 			}
 		}
 
 		if ( sizeofGameClient > gvm->exactDataLength / MAX_CLIENTS ) {
-			Com_Error( ERR_DROP, "%s: bad game client size %i", __func__, sizeofGameClient );	
+			Com_Error( ERR_DROP, "%s: bad game client size %i", __func__, sizeofGameClient );
 		} else if ( (byte*)clients + (sizeofGameClient * MAX_CLIENTS) > gvm->dataBase + gvm->exactDataLength ) {
 			Com_Error( ERR_DROP, "%s: clients located out of data segment", __func__ );
 		}
@@ -334,7 +334,7 @@ GVM_ArgPtr
 exported version
 ====================
 */
-void *GVM_ArgPtr( intptr_t intValue ) 
+void *GVM_ArgPtr( intptr_t intValue )
 {
 	return VM_ArgPtr( intValue );
 }
@@ -370,7 +370,7 @@ static intptr_t SV_GameSystemCalls( intptr_t *args ) {
 	case G_MILLISECONDS:
 		return Sys_Milliseconds();
 	case G_CVAR_REGISTER:
-		Cvar_Register( VMA(1), VMA(2), VMA(3), args[4] ); 
+		Cvar_Register( VMA(1), VMA(2), VMA(3), args[4] );
 		return 0;
 	case G_CVAR_UPDATE:
 		Cvar_Update( VMA(1) );
@@ -1022,7 +1022,7 @@ static void SV_InitGameVM( qboolean restart ) {
 	for ( i = 0 ; i < sv_maxclients->integer ; i++ ) {
 		svs.clients[i].gentity = NULL;
 	}
-	
+
 	// use the current msec count for a random seed
 	// init for this gamestate
 	VM_Call( gvm, 3, GAME_INIT, sv.time, Com_Milliseconds(), restart );

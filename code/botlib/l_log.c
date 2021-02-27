@@ -53,15 +53,15 @@ static logfile_t logfile;
 
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void Log_Open( const char *filename )
 {
 	const char *ospath;
 
-	if ( !LibVarValue( "log", "0" ) ) 
+	if ( !LibVarValue( "log", "0" ) )
 		return;
 
 	if ( !filename || !*filename )
@@ -89,8 +89,8 @@ void Log_Open( const char *filename )
 } //end of the function Log_Create
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void Log_Close(void)
@@ -106,8 +106,8 @@ void Log_Close(void)
 } //end of the function Log_Close
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void Log_Shutdown(void)
@@ -116,8 +116,8 @@ void Log_Shutdown(void)
 } //end of the function Log_Shutdown
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void QDECL Log_Write(char *fmt, ...)
@@ -133,8 +133,8 @@ void QDECL Log_Write(char *fmt, ...)
 } //end of the function Log_Write
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void QDECL Log_WriteTimeStamped(char *fmt, ...)
@@ -158,8 +158,8 @@ void QDECL Log_WriteTimeStamped(char *fmt, ...)
 } //end of the function Log_Write
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 FILE *Log_FilePointer(void)
@@ -168,12 +168,11 @@ FILE *Log_FilePointer(void)
 } //end of the function Log_FilePointer
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void Log_Flush(void)
 {
 	if (logfile.fp) fflush(logfile.fp);
 } //end of the function Log_Flush
-

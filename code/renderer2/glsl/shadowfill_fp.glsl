@@ -11,7 +11,7 @@ void main()
 	// 32 bit precision
 	const vec4 bitSh = vec4( 256 * 256 * 256,   256 * 256,         256,           1);
 	const vec4 bitMsk = vec4(              0, 1.0 / 256.0, 1.0 / 256.0, 1.0 / 256.0);
-	
+
 	vec4 comp;
 	comp = depth * bitSh;
 	comp.xyz = fract(comp.xyz);
@@ -23,7 +23,7 @@ void main()
 	// 24 bit precision
 	const vec3 bitSh = vec3( 256 * 256,         256,           1);
 	const vec3 bitMsk = vec3(        0, 1.0 / 256.0, 1.0 / 256.0);
-	
+
 	vec3 comp;
 	comp = depth * bitSh;
 	comp.xy = fract(comp.xy);

@@ -94,7 +94,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define T TEXT
 #ifdef UNICODE
 LPWSTR AtoW( const char *s );
-const char *WtoA( const LPWSTR s ); 
+const char *WtoA( const LPWSTR s );
 #else
 #define AtoW(S) (S)
 #define WtoA(S) (S)
@@ -149,7 +149,7 @@ typedef struct
 	int raw_my;
 
 	POINT mouse;
-	
+
 } WinVars_t;
 
 extern WinVars_t	g_wv;

@@ -370,7 +370,7 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 		if ( !vulkan )
 #endif
 		{
-	
+
 #ifdef __sgi /* Fix for SGIs grabbing too many bits of color */
 			if (perChannelColorBits == 4)
 				perChannelColorBits = 0; /* Use minimum size for 16-bit color */
@@ -398,7 +398,7 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 				config->stereoEnabled = qfalse;
 				SDL_GL_SetAttribute( SDL_GL_STEREO, 0 );
 			}
-		
+
 			SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
 #if 1		// if multisampling is enabled on X11, this causes create window to fail.
@@ -814,7 +814,7 @@ void Sys_SetClipboardBitmap( const byte *bitmap, int length )
 	if ( hMem != NULL ) {
 		ptr = ( byte* )GlobalLock( hMem );
 		if ( ptr != NULL ) {
-			memcpy( ptr, bitmap, length ); 
+			memcpy( ptr, bitmap, length );
 		}
 		GlobalUnlock( hMem );
 		SetClipboardData( CF_DIB, hMem );

@@ -56,8 +56,8 @@ enum {
 
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int AAS_UpdateEntity(int entnum, bot_entitystate_t *state)
@@ -188,8 +188,8 @@ void AAS_EntityInfo(int entnum, aas_entityinfo_t *info)
 } //end of the function AAS_EntityInfo
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_EntityOrigin(int entnum, vec3_t origin)
@@ -205,8 +205,8 @@ void AAS_EntityOrigin(int entnum, vec3_t origin)
 } //end of the function AAS_EntityOrigin
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int AAS_EntityModelindex(int entnum)
@@ -220,8 +220,8 @@ int AAS_EntityModelindex(int entnum)
 } //end of the function AAS_EntityModelindex
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int AAS_EntityType(int entnum)
@@ -237,8 +237,8 @@ int AAS_EntityType(int entnum)
 } //end of the AAS_EntityType
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int AAS_EntityModelNum(int entnum)
@@ -254,8 +254,8 @@ int AAS_EntityModelNum(int entnum)
 } //end of the function AAS_EntityModelNum
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int AAS_OriginOfMoverWithModelNum(int modelnum, vec3_t origin)
@@ -279,8 +279,8 @@ int AAS_OriginOfMoverWithModelNum(int modelnum, vec3_t origin)
 } //end of the function AAS_OriginOfMoverWithModelNum
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_EntitySize(int entnum, vec3_t mins, vec3_t maxs)
@@ -301,8 +301,8 @@ void AAS_EntitySize(int entnum, vec3_t mins, vec3_t maxs)
 } //end of the function AAS_EntitySize
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_EntityBSPData(int entnum, bsp_entdata_t *entdata)
@@ -319,8 +319,8 @@ void AAS_EntityBSPData(int entnum, bsp_entdata_t *entdata)
 } //end of the function AAS_EntityBSPData
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_ResetEntityLinks(void)
@@ -334,8 +334,8 @@ void AAS_ResetEntityLinks(void)
 } //end of the function AAS_ResetEntityLinks
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_InvalidateEntities(void)
@@ -349,8 +349,8 @@ void AAS_InvalidateEntities(void)
 } //end of the function AAS_InvalidateEntities
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 void AAS_UnlinkInvalidEntities(void)
@@ -372,8 +372,8 @@ void AAS_UnlinkInvalidEntities(void)
 } //end of the function AAS_UnlinkInvalidEntities
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int AAS_NearestEntity(vec3_t origin, int modelindex)
@@ -407,8 +407,8 @@ int AAS_NearestEntity(vec3_t origin, int modelindex)
 } //end of the function AAS_NearestEntity
 //===========================================================================
 //
-// Parameter:				-
-// Returns:					-
+// Parameter:			-
+// Returns:				-
 // Changes Globals:		-
 //===========================================================================
 int AAS_BestReachableEntityArea(int entnum)

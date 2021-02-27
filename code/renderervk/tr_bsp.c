@@ -110,7 +110,7 @@ void R_ColorShiftLightingBytes( const byte in[4], byte out[4] ) {
 	r = in[0] << shift;
 	g = in[1] << shift;
 	b = in[2] << shift;
-	
+
 	// normalize by color instead of saturating to white
 	if ( ( r | g | b ) > 255 ) {
 		int		max;
@@ -166,7 +166,7 @@ static void FillBorders( byte *img )
 		x0 = n - 1; x1 = LIGHTMAP_LEN - n;
 		y0 = n - 1; y1 = LIGHTMAP_LEN - n;
 		len = LIGHTMAP_SIZE + (LIGHTMAP_BORDER*2 - n);
-		for ( i = n; i < len; i++ ) 
+		for ( i = n; i < len; i++ )
 		{
 			PIX( i, y0, 0 ) = PIX( i, y0+1, 0 );
 			PIX( i, y0, 1 ) = PIX( i, y0+1, 1 );
@@ -194,12 +194,12 @@ static void FillBorders( byte *img )
 		PIX( x0, y0, 1 ) = (int)(PIX( x0, y0+1, 1 ) + PIX( x0+1, y0, 1 )) >> 1;
 		PIX( x0, y0, 2 ) = (int)(PIX( x0, y0+1, 2 ) + PIX( x0+1, y0, 2 )) >> 1;
 		PIX( x0, y0, 3 ) = (int)(PIX( x0, y0+1, 3 ) + PIX( x0+1, y0, 3 )) >> 1;
-		
+
 		PIX( x1, y0, 0 ) = (int)(PIX( x1-1, y0, 0 ) + PIX( x1, y0+1, 0 )) >> 1;
 		PIX( x1, y0, 1 ) = (int)(PIX( x1-1, y0, 1 ) + PIX( x1, y0+1, 1 )) >> 1;
 		PIX( x1, y0, 2 ) = (int)(PIX( x1-1, y0, 2 ) + PIX( x1, y0+1, 2 )) >> 1;
 		PIX( x1, y0, 3 ) = (int)(PIX( x1-1, y0, 3 ) + PIX( x1, y0+1, 3 )) >> 1;
-	
+
 		PIX( x0, y1, 0 ) = (int)(PIX( x0, y1-1, 0 ) + PIX( x0+1, y1, 0 )) >> 1;
 		PIX( x0, y1, 1 ) = (int)(PIX( x0, y1-1, 1 ) + PIX( x0+1, y1, 1 )) >> 1;
 		PIX( x0, y1, 2 ) = (int)(PIX( x0, y1-1, 2 ) + PIX( x0+1, y1, 2 )) >> 1;
@@ -362,7 +362,7 @@ static void R_LoadMergedLightmaps( const lump_t *l, byte *image )
 					break;
 
 				R_ProcessLightmap( image, buf + offs, maxIntensity );
-				
+
 #ifdef USE_VULKAN
 				vk_upload_image_data( tr.lightmaps[ i ]->handle, x * LIGHTMAP_LEN, y * LIGHTMAP_LEN, LIGHTMAP_LEN, LIGHTMAP_LEN, qfalse, image, 4 );
 #else
@@ -832,7 +832,7 @@ static void ParseTriSurf( const dsurface_t *ds, const drawVert_t *verts, msurfac
 	numVerts = LittleLong( ds->numVerts );
 	numIndexes = LittleLong( ds->numIndexes );
 
-	tri = ri.Hunk_Alloc( sizeof( *tri ) + numVerts * sizeof( tri->verts[0] ) 
+	tri = ri.Hunk_Alloc( sizeof( *tri ) + numVerts * sizeof( tri->verts[0] )
 		+ numIndexes * sizeof( tri->indexes[0] ), h_low );
 	tri->surfaceType = SF_TRIANGLES;
 	tri->numVerts = numVerts;
@@ -1678,7 +1678,7 @@ static void R_LoadSurfaces( const lump_t *surfs, const lump_t *verts, const lump
 	R_MovePatchSurfacesToHunk();
 #endif
 
-	ri.Printf( PRINT_ALL, "...loaded %d faces, %i meshes, %i trisurfs, %i flares\n", 
+	ri.Printf( PRINT_ALL, "...loaded %d faces, %i meshes, %i trisurfs, %i flares\n",
 		numFaces, numMeshes, numTriSurfs, numFlares );
 }
 
@@ -1762,7 +1762,7 @@ static void R_LoadNodesAndLeafs( const lump_t *nodeLump, const lump_t *leafLump 
 	numNodes = nodeLump->filelen / sizeof(dnode_t);
 	numLeafs = leafLump->filelen / sizeof(dleaf_t);
 
-	out = ri.Hunk_Alloc ( (numNodes + numLeafs) * sizeof(*out), h_low);	
+	out = ri.Hunk_Alloc ( (numNodes + numLeafs) * sizeof(*out), h_low);
 
 	s_worldData.nodes = out;
 	s_worldData.numnodes = numNodes + numLeafs;
@@ -1776,7 +1776,7 @@ static void R_LoadNodesAndLeafs( const lump_t *nodeLump, const lump_t *leafLump 
 			out->mins[j] = LittleLong (in->mins[j]);
 			out->maxs[j] = LittleLong (in->maxs[j]);
 		}
-	
+
 		p = LittleLong(in->planeNum);
 		out->plane = s_worldData.planes + p;
 
@@ -1791,7 +1791,7 @@ static void R_LoadNodesAndLeafs( const lump_t *nodeLump, const lump_t *leafLump 
 				out->children[j] = s_worldData.nodes + numNodes + (-1 - p);
 		}
 	}
-	
+
 	// load leafs
 	inLeaf = (void *)(fileBase + leafLump->fileofs);
 	for ( i=0 ; i<numLeafs ; i++, inLeaf++, out++)
@@ -1812,7 +1812,7 @@ static void R_LoadNodesAndLeafs( const lump_t *nodeLump, const lump_t *leafLump 
 		out->firstmarksurface = s_worldData.marksurfaces +
 			LittleLong(inLeaf->firstLeafSurface);
 		out->nummarksurfaces = LittleLong(inLeaf->numLeafSurfaces);
-	}	
+	}
 
 	// chain descendants
 	R_SetParent (s_worldData.nodes, NULL);
@@ -1828,7 +1828,7 @@ R_ReplaceShaders
 replaces some buggy map shaders
 =================
 */
-static void R_ReplaceMapShaders( dshader_t *out, int count ) 
+static void R_ReplaceMapShaders( dshader_t *out, int count )
 {
 	if ( Q_stricmp( s_worldData.baseName, "mapel4b" ) == 0 && count == 86 ) {
 		if ( crc32_buffer( (const byte*)out, count*sizeof(*out) ) == 0x1593623C ) {
@@ -1848,7 +1848,7 @@ R_LoadShaders
 static void R_LoadShaders( const lump_t *l ) {
 	int		i, count;
 	dshader_t	*in, *out;
-	
+
 	in = (void *)(fileBase + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		ri.Error( ERR_DROP, "%s(): funny lump size in %s", __func__, s_worldData.name );
@@ -1875,11 +1875,11 @@ R_LoadMarksurfaces
 =================
 */
 static void R_LoadMarksurfaces( const lump_t *l )
-{	
+{
 	int		i, j, count;
 	int		*in;
 	msurface_t **out;
-	
+
 	in = (void *)(fileBase + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		ri.Error( ERR_DROP, "%s(): funny lump size in %s", __func__, s_worldData.name );
@@ -2021,7 +2021,7 @@ static void R_LoadFogs( const lump_t *l, const lump_t *brushesLump, const lump_t
 
 		// get information from the shader for fog parameters
 		shader = R_FindShader( fogs->shader, LIGHTMAP_NONE, qtrue );
-	
+
 		VectorCopy( shader->fogParms.color, fogColor );
 
 		if ( r_mapGreyScale->value > 0 ) {
@@ -2143,7 +2143,7 @@ static void R_LoadEntities( const lump_t *l ) {
 	}
 
 	// only parse the world spawn
-	while ( 1 ) {	
+	while ( 1 ) {
 		// parse key
 		token = COM_ParseExt( &p, qtrue );
 
@@ -2274,7 +2274,7 @@ void RE_LoadWorldMap( const char *name ) {
 
 	i = LittleLong (header->version);
 	if ( i != BSP_VERSION ) {
-		ri.Error (ERR_DROP, "RE_LoadWorldMap: %s has wrong version number (%i should be %i)", 
+		ri.Error (ERR_DROP, "RE_LoadWorldMap: %s has wrong version number (%i should be %i)",
 			name, i, BSP_VERSION);
 	}
 

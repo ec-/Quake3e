@@ -187,9 +187,9 @@ int R_ComputeLOD( trRefEntity_t *ent ) {
 			int frameSize;
 			mdr = (mdrHeader_t *) tr.currentModel->modelData;
 			frameSize = (size_t) (&((mdrFrame_t *)0)->bones[mdr->numBones]);
-			
+
 			mdrframe = (mdrFrame_t *) ((byte *) mdr + mdr->ofsFrames + frameSize * ent->e.frame);
-			
+
 			radius = RadiusFromBounds(mdrframe->bounds[0], mdrframe->bounds[1]);
 		}
 		else
@@ -227,7 +227,7 @@ int R_ComputeLOD( trRefEntity_t *ent ) {
 	}
 
 	lod += r_lodbias->integer;
-	
+
 	if ( lod >= tr.currentModel->numLods )
 		lod = tr.currentModel->numLods - 1;
 	if ( lod < 0 )
@@ -311,7 +311,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 	// when the surfaces are rendered, they don't need to be
 	// range checked again.
 	//
-	if ( (ent->e.frame >= tr.currentModel->md3[0]->numFrames) 
+	if ( (ent->e.frame >= tr.currentModel->md3[0]->numFrames)
 		|| (ent->e.frame < 0)
 		|| (ent->e.oldframe >= tr.currentModel->md3[0]->numFrames)
 		|| (ent->e.oldframe < 0) ) {
@@ -351,7 +351,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 		R_TransformDlights( tr.viewParms.num_dlights, tr.viewParms.dlights, &tr.or );
 		for ( n = 0; n < tr.viewParms.num_dlights; n++ ) {
 			dl = &tr.viewParms.dlights[ n ];
-			if ( !R_LightCullBounds( dl, bounds[0], bounds[1] ) ) 
+			if ( !R_LightCullBounds( dl, bounds[0], bounds[1] ) )
 				dlights[ numDlights++ ] = dl;
 		}
 	}
@@ -404,9 +404,9 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 
 		// stencil shadows can't do personal models unless I polyhedron clip
 		if ( !personalModel
-			&& r_shadows->integer == 2 
+			&& r_shadows->integer == 2
 			&& fogNum == 0
-			&& !(ent->e.renderfx & ( RF_NOSHADOW | RF_DEPTHHACK ) ) 
+			&& !(ent->e.renderfx & ( RF_NOSHADOW | RF_DEPTHHACK ) )
 			&& shader->sort == SS_OPAQUE ) {
 			R_AddDrawSurf( (void *)surface, tr.shadowShader, 0, 0 );
 		}

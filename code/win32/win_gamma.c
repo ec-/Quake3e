@@ -256,7 +256,7 @@ void GLW_RestoreGamma( void )
 
 	if ( !glw_state.deviceSupportsGamma ) {
 		return;
-	}	
+	}
 
 	if ( glw_state.displayName[0] ) {
 		hDC = CreateDC( TEXT( "DISPLAY" ), glw_state.displayName, NULL, NULL );

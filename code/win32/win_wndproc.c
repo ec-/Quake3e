@@ -25,7 +25,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "glw_win.h"
 
 #ifndef WM_MOUSEWHEEL
-#define WM_MOUSEWHEEL (WM_MOUSELAST+1)  // message that will be supported by the OS 
+#define WM_MOUSEWHEEL (WM_MOUSELAST+1)  // message that will be supported by the OS
 #endif
 
 //static UINT MSH_MOUSEWHEEL;
@@ -75,7 +75,7 @@ static LRESULT CALLBACK WinKeyHook( int code, WPARAM wParam, LPARAM lParam )
 WIN_DisableHook
 ==================
 */
-void WIN_DisableHook( void  ) 
+void WIN_DisableHook( void  )
 {
 	if ( WinHook ) {
 		UnhookWindowsHookEx( WinHook );
@@ -89,7 +89,7 @@ void WIN_DisableHook( void  )
 WIN_EnableHook
 ==================
 */
-void WIN_EnableHook( void  ) 
+void WIN_EnableHook( void  )
 {
 	if ( !WinHook )
 	{
@@ -152,7 +152,7 @@ void WIN_EnableAltTab( void )
 
 	if ( !Q_stricmp( Cvar_VariableString( "arch" ), "winnt" ) )
 		UnregisterHotKey( NULL, 0 );
-	else 
+	else
 		SystemParametersInfo( SPI_SETSCREENSAVERRUNNING, 0, &old, 0 );
 
 	s_alttab_disabled = qfalse;
@@ -181,27 +181,27 @@ static void VID_AppActivate( qboolean active )
 
 //==========================================================================
 
-static const int s_scantokey[ 128 ] = 
-{ 
-//	0        1       2       3       4       5       6       7 
-//	8        9       A       B       C       D       E       F 
-	0  , K_ESCAPE,  '1',    '2',    '3',    '4',    '5',    '6', 
-	'7',    '8',    '9',    '0',    '-',    '=',K_BACKSPACE,K_TAB,  // 0 
-	'q',    'w',    'e',    'r',    't',    'y',    'u',    'i', 
-	'o',    'p',    '[',    ']',  K_ENTER, K_CTRL,	'a',	's',	// 1 
-	'd',    'f',    'g',    'h',    'j',    'k',    'l',    ';', 
-	'\'',K_CONSOLE,K_SHIFT, '\\',   'z',    'x',    'c',    'v',	// 2 
-	'b',    'n',    'm',    ',',    '.',    '/',  K_SHIFT,  '*', 
-	K_ALT,  ' ',K_CAPSLOCK, K_F1,   K_F2,   K_F3,   K_F4,  K_F5,    // 3 
-	K_F6, K_F7,  K_F8,   K_F9,  K_F10, K_PAUSE, K_SCROLLOCK, K_HOME, 
-	K_UPARROW,K_PGUP,K_KP_MINUS,K_LEFTARROW,K_KP_5,K_RIGHTARROW,K_KP_PLUS,K_END, //4 
-	K_DOWNARROW,K_PGDN,K_INS,K_DEL, 0,      0,      0,    K_F11, 
+static const int s_scantokey[ 128 ] =
+{
+//	0        1       2       3       4       5       6       7
+//	8        9       A       B       C       D       E       F
+	0  , K_ESCAPE,  '1',    '2',    '3',    '4',    '5',    '6',
+	'7',    '8',    '9',    '0',    '-',    '=',K_BACKSPACE,K_TAB,  // 0
+	'q',    'w',    'e',    'r',    't',    'y',    'u',    'i',
+	'o',    'p',    '[',    ']',  K_ENTER, K_CTRL,	'a',	's',	// 1
+	'd',    'f',    'g',    'h',    'j',    'k',    'l',    ';',
+	'\'',K_CONSOLE,K_SHIFT, '\\',   'z',    'x',    'c',    'v',	// 2
+	'b',    'n',    'm',    ',',    '.',    '/',  K_SHIFT,  '*',
+	K_ALT,  ' ',K_CAPSLOCK, K_F1,   K_F2,   K_F3,   K_F4,  K_F5,    // 3
+	K_F6, K_F7,  K_F8,   K_F9,  K_F10, K_PAUSE, K_SCROLLOCK, K_HOME,
+	K_UPARROW,K_PGUP,K_KP_MINUS,K_LEFTARROW,K_KP_5,K_RIGHTARROW,K_KP_PLUS,K_END, //4
+	K_DOWNARROW,K_PGDN,K_INS,K_DEL, 0,      0,      0,    K_F11,
 	K_F12,  0  ,    0  ,    0  ,    0  ,  K_MENU,   0  ,    0,     // 5
-	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0, 
-	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0,     // 6 
-	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0, 
-	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0      // 7 
-}; 
+	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0,
+	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0,     // 6
+	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0,
+	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0      // 7
+};
 
 
 /*
@@ -320,30 +320,30 @@ MapChar
 Map input to ASCII charset
 ==================
 */
-static int MapChar( WPARAM wParam, byte scancode ) 
+static int MapChar( WPARAM wParam, byte scancode )
 {
-	static const int s_scantochar[ 128 ] = 
-	{ 
-//	0        1       2       3       4       5       6       7 
-//	8        9       A       B       C       D       E       F 
- 	 0,      0,     '1',    '2',    '3',    '4',    '5',    '6', 
+	static const int s_scantochar[ 128 ] =
+	{
+//	0        1       2       3       4       5       6       7
+//	8        9       A       B       C       D       E       F
+ 	 0,      0,     '1',    '2',    '3',    '4',    '5',    '6',
 	'7',    '8',    '9',    '0',    '-',    '=',    0x8,    0x9,	// 0
-	'q',    'w',    'e',    'r',    't',    'y',    'u',    'i', 
+	'q',    'w',    'e',    'r',    't',    'y',    'u',    'i',
 	'o',    'p',    '[',    ']',    0xD,     0,     'a',    's',	// 1
-	'd',    'f',    'g',    'h',    'j',    'k',    'l',    ';', 
+	'd',    'f',    'g',    'h',    'j',    'k',    'l',    ';',
 	'\'',    0,      0,     '\\',   'z',    'x',    'c',    'v',	// 2
-	'b',    'n',    'm',    ',',    '.',    '/',     0,     '*', 
+	'b',    'n',    'm',    ',',    '.',    '/',     0,     '*',
 	 0,     ' ',     0,      0,      0,      0,      0,      0,     // 3
 
-	 0,      0,     '!',    '@',    '#',    '$',    '%',    '^', 
+	 0,      0,     '!',    '@',    '#',    '$',    '%',    '^',
 	'&',    '*',    '(',    ')',    '_',    '+',    0x8,    0x9,	// 4
-	'Q',    'W',    'E',    'R',    'T',    'Y',    'U',    'I', 
+	'Q',    'W',    'E',    'R',    'T',    'Y',    'U',    'I',
 	'O',    'P',    '{',    '}',    0xD,     0,     'A',    'S',	// 5
 	'D',    'F',    'G',    'H',    'J',    'K',    'L',    ':',
 	'"',     0,      0,     '|',    'Z',    'X',    'C',    'V',	// 6
-	'B',    'N',    'M',    '<',    '>',    '?',     0,     '*', 
+	'B',    'N',    'M',    '<',    '>',    '?',     0,     '*',
  	 0,     ' ',     0,      0,      0,      0,      0,      0,     // 7
-	}; 
+	};
 
 	if ( scancode == 0x53 )
 		return '.';
@@ -352,19 +352,19 @@ static int MapChar( WPARAM wParam, byte scancode )
 	{
 		return wParam;
 	}
-	else 
+	else
 	{
 		char ch = s_scantochar[ scancode ];
 		int shift = (GetKeyState( VK_SHIFT ) >> 15) & 1;
-		if ( ch >= 'a' && ch <= 'z' ) 
+		if ( ch >= 'a' && ch <= 'z' )
 		{
 			int  capital = GetKeyState( VK_CAPITAL ) & 1;
-			if ( capital ^ shift ) 
+			if ( capital ^ shift )
 			{
 				ch = ch - 'a' + 'A';
 			}
-		} 
-		else 
+		}
+		else
 		{
 			ch = s_scantochar[ scancode | (shift<<6) ];
 		}
@@ -390,7 +390,7 @@ int			hkinstalled = 0;
 extern void SetGameDisplaySettings( void );
 extern void SetDesktopDisplaySettings( void );
 
-void Win_AddHotkey( void ) 
+void Win_AddHotkey( void )
 {
 	UINT modifiers, vk;
 	ATOM atom;
@@ -416,7 +416,7 @@ void Win_AddHotkey( void )
 }
 
 
-void Win_RemoveHotkey( void ) 
+void Win_RemoveHotkey( void )
 {
 	ATOM atom;
 
@@ -453,7 +453,7 @@ BOOL Win_CheckHotkeyMod( void ) {
 #if 0
 static int GetTimerMsec( void ) {
 	int msec;
-	
+
 	if ( gw_minimized || CL_VideoRecording() )
 		return 0;
 
@@ -595,10 +595,10 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 	case WM_CREATE:
 
-		//MSH_MOUSEWHEEL = RegisterWindowMessage( TEXT( "MSWHEEL_ROLLMSG" ) ); 
+		//MSH_MOUSEWHEEL = RegisterWindowMessage( TEXT( "MSWHEEL_ROLLMSG" ) );
 
 		WIN_EnableHook();
-		hWinEventHook = SetWinEventHook( EVENT_SYSTEM_SWITCHSTART, EVENT_SYSTEM_SWITCHSTART, NULL, WinEventProc, 
+		hWinEventHook = SetWinEventHook( EVENT_SYSTEM_SWITCHSTART, EVENT_SYSTEM_SWITCHSTART, NULL, WinEventProc,
 			0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS );
 		g_wv.hWnd = hWnd;
 		GetWindowRect( hWnd, &g_wv.winRect );
@@ -674,7 +674,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		active = (LOWORD( wParam ) != WA_INACTIVE) ? qtrue : qfalse;
 		minimized = (BOOL)HIWORD( wParam ) ? qtrue : qfalse;
 
-		// We can recieve Active & Minimized when restoring from minimized state
+		// We can receive Active & Minimized when restoring from minimized state
 		if ( active && minimized )
 			break;
 
@@ -756,7 +756,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			// (at least with current nvidia drivers)
 			re.SyncRender();
 			gw_active = qfalse;
-			gw_minimized = qtrue; 
+			gw_minimized = qtrue;
 		} else if ( wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED ) {
 			gw_minimized = qfalse;
 			//gw_active = qtrue;
@@ -939,7 +939,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			return HTCAPTION;
 		break;
 
-	case WM_ERASEBKGND: 
+	case WM_ERASEBKGND:
 		// avoid GDI clearing the OpenGL window background in Vista/7
 		return 1;
 	}
@@ -993,7 +993,7 @@ char *Sys_GetClipboardData( void ) {
 				data = Z_Malloc( size );
 				Q_strncpyz( data, cliptext, size );
 				GlobalUnlock( hClipboardData );
-				
+
 				strtok( data, "\n\r\b" );
 			}
 		}
@@ -1021,7 +1021,7 @@ void Sys_SetClipboardBitmap( const byte *bitmap, int length )
 	if ( hMem != NULL ) {
 		ptr = ( byte* )GlobalLock( hMem );
 		if ( ptr != NULL ) {
-			memcpy( ptr, bitmap, length ); 
+			memcpy( ptr, bitmap, length );
 		}
 		GlobalUnlock( hMem );
 		SetClipboardData( CF_DIB, hMem );

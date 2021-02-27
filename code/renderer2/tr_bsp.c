@@ -111,7 +111,7 @@ static	void R_ColorShiftLightingBytes( byte in[4], byte out[4] ) {
 	r = in[0] << shift;
 	g = in[1] << shift;
 	b = in[2] << shift;
-	
+
 	// normalize by color instead of saturating to white
 	if ( ( r | g | b ) > 255 ) {
 		int		max;
@@ -339,13 +339,13 @@ static	void R_LoadLightmaps( lump_t *l, lump_t *surfs ) {
 			{
 				byte *p = hdrLightmap, *end = hdrLightmap + size;
 				//ri.Printf(PRINT_ALL, "found!\n");
-				
+
 				/* FIXME: don't just skip over this header and actually parse it */
 				while (p < end && !(*p == '\n' && *(p+1) == '\n'))
 					p++;
 
 				p += 2;
-				
+
 				while (p < end && !(*p == '\n'))
 					p++;
 
@@ -370,7 +370,7 @@ static	void R_LoadLightmaps( lump_t *l, lump_t *surfs ) {
 				buf_p = buf + imgOffset * tr.lightmapSize * tr.lightmapSize * 3;
 			}
 
-			for ( j = 0 ; j < tr.lightmapSize * tr.lightmapSize; j++ ) 
+			for ( j = 0 ; j < tr.lightmapSize * tr.lightmapSize; j++ )
 			{
 				if (hdrLightmap)
 				{
@@ -547,7 +547,7 @@ static int FatLightmap(int lightmapnum)
 
 	if (tr.fatLightmapCols > 0)
 		return lightmapnum / (tr.fatLightmapCols * tr.fatLightmapRows);
-	
+
 	return lightmapnum;
 }
 
@@ -1718,7 +1718,7 @@ static	void R_LoadSurfaces( lump_t *surfs, lump_t *verts, lump_t *indexLump ) {
 	if ( indexLump->filelen % sizeof(*indexes))
 		ri.Error (ERR_DROP, "LoadMap: funny lump size in %s",s_worldData.name);
 
-	out = ri.Hunk_Alloc ( count * sizeof(*out), h_low );	
+	out = ri.Hunk_Alloc ( count * sizeof(*out), h_low );
 
 	s_worldData.surfaces = out;
 	s_worldData.numsurfaces = count;
@@ -1810,7 +1810,7 @@ static	void R_LoadSurfaces( lump_t *surfs, lump_t *verts, lump_t *indexLump ) {
 	R_MovePatchSurfacesToHunk();
 #endif
 
-	ri.Printf( PRINT_ALL, "...loaded %d faces, %i meshes, %i trisurfs, %i flares\n", 
+	ri.Printf( PRINT_ALL, "...loaded %d faces, %i meshes, %i trisurfs, %i flares\n",
 		numFaces, numMeshes, numTriSurfs, numFlares );
 }
 
@@ -1902,7 +1902,7 @@ static	void R_LoadNodesAndLeafs (lump_t *nodeLump, lump_t *leafLump) {
 	numNodes = nodeLump->filelen / sizeof(dnode_t);
 	numLeafs = leafLump->filelen / sizeof(dleaf_t);
 
-	out = ri.Hunk_Alloc ( (numNodes + numLeafs) * sizeof(*out), h_low);	
+	out = ri.Hunk_Alloc ( (numNodes + numLeafs) * sizeof(*out), h_low);
 
 	s_worldData.nodes = out;
 	s_worldData.numnodes = numNodes + numLeafs;
@@ -1916,7 +1916,7 @@ static	void R_LoadNodesAndLeafs (lump_t *nodeLump, lump_t *leafLump) {
 			out->mins[j] = LittleLong (in->mins[j]);
 			out->maxs[j] = LittleLong (in->maxs[j]);
 		}
-	
+
 		p = LittleLong(in->planeNum);
 		out->plane = s_worldData.planes + p;
 
@@ -1931,7 +1931,7 @@ static	void R_LoadNodesAndLeafs (lump_t *nodeLump, lump_t *leafLump) {
 				out->children[j] = s_worldData.nodes + numNodes + (-1 - p);
 		}
 	}
-	
+
 	// load leafs
 	inLeaf = (void *)(fileBase + leafLump->fileofs);
 	for ( i=0 ; i<numLeafs ; i++, inLeaf++, out++)
@@ -1951,7 +1951,7 @@ static	void R_LoadNodesAndLeafs (lump_t *nodeLump, lump_t *leafLump) {
 
 		out->firstmarksurface = LittleLong(inLeaf->firstLeafSurface);
 		out->nummarksurfaces = LittleLong(inLeaf->numLeafSurfaces);
-	}	
+	}
 
 	// chain descendants
 	R_SetParent (s_worldData.nodes, NULL);
@@ -1964,10 +1964,10 @@ static	void R_LoadNodesAndLeafs (lump_t *nodeLump, lump_t *leafLump) {
 R_LoadShaders
 =================
 */
-static	void R_LoadShaders( lump_t *l ) {	
+static	void R_LoadShaders( lump_t *l ) {
 	int		i, count;
 	dshader_t	*in, *out;
-	
+
 	in = (void *)(fileBase + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		ri.Error (ERR_DROP, "LoadMap: funny lump size in %s",s_worldData.name);
@@ -1992,16 +1992,16 @@ R_LoadMarksurfaces
 =================
 */
 static	void R_LoadMarksurfaces (lump_t *l)
-{	
+{
 	int		i, j, count;
 	int		*in;
 	int     *out;
-	
+
 	in = (void *)(fileBase + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		ri.Error (ERR_DROP, "LoadMap: funny lump size in %s",s_worldData.name);
 	count = l->filelen / sizeof(*in);
-	out = ri.Hunk_Alloc ( count*sizeof(*out), h_low);	
+	out = ri.Hunk_Alloc ( count*sizeof(*out), h_low);
 
 	s_worldData.marksurfaces = out;
 	s_worldData.nummarksurfaces = count;
@@ -2025,13 +2025,13 @@ static	void R_LoadPlanes( lump_t *l ) {
 	dplane_t 	*in;
 	int			count;
 	int			bits;
-	
+
 	in = (void *)(fileBase + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		ri.Error (ERR_DROP, "LoadMap: funny lump size in %s",s_worldData.name);
 	count = l->filelen / sizeof(*in);
-	out = ri.Hunk_Alloc ( count*2*sizeof(*out), h_low);	
-	
+	out = ri.Hunk_Alloc ( count*2*sizeof(*out), h_low);
+
 	s_worldData.planes = out;
 	s_worldData.numplanes = count;
 
@@ -2075,7 +2075,7 @@ static	void R_LoadFogs( lump_t *l, lump_t *brushesLump, lump_t *sidesLump ) {
 	}
 	count = l->filelen / sizeof(*fogs);
 
-	// create fog strucutres for them
+	// create fog structures for them
 	s_worldData.numfogs = count + 1;
 	s_worldData.fogs = ri.Hunk_Alloc ( s_worldData.numfogs*sizeof(*out), h_low);
 	out = s_worldData.fogs + 1;
@@ -2302,7 +2302,7 @@ void R_LoadEntities( lump_t *l ) {
 	}
 
 	// only parse the world spawn
-	while ( 1 ) {	
+	while ( 1 ) {
 		// parse key
 		token = COM_ParseExt( &p, qtrue );
 
@@ -2401,7 +2401,7 @@ qboolean R_ParseSpawnVars( char *spawnVarChars, int maxSpawnVarChars, int *numSp
 	}
 
 	// go through all the key / value pairs
-	while ( 1 ) {	
+	while ( 1 ) {
 		int keyLength, tokenLength;
 
 		// parse key
@@ -2413,8 +2413,8 @@ qboolean R_ParseSpawnVars( char *spawnVarChars, int maxSpawnVarChars, int *numSp
 		if ( keyname[0] == '}' ) {
 			break;
 		}
-		
-		// parse value	
+
+		// parse value
 		if ( !R_GetEntityToken( com_token, sizeof( com_token ) ) ) {
 			ri.Printf( PRINT_ALL, "R_ParseSpawnVars: EOF without closing brace\n" );
 			return qfalse;
@@ -2769,7 +2769,7 @@ void RE_LoadWorldMap( const char *name ) {
 
 	i = LittleLong (header->version);
 	if ( i != BSP_VERSION ) {
-		ri.Error (ERR_DROP, "RE_LoadWorldMap: %s has wrong version number (%i should be %i)", 
+		ri.Error (ERR_DROP, "RE_LoadWorldMap: %s has wrong version number (%i should be %i)",
 			name, i, BSP_VERSION);
 	}
 
@@ -2855,7 +2855,7 @@ void RE_LoadWorldMap( const char *name ) {
 			byte *out;
 			uint8_t *in;
 			char fileName[MAX_QPATH];
-			
+
 			Com_Memset (buffer, 0, 18);
 			buffer[2] = 2;		// uncompressed type
 			buffer[12] = w->lightGridBounds[0] & 255;

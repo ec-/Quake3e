@@ -54,7 +54,7 @@ static float	sky_min_depth;
 AddSkyPolygon
 ================
 */
-static void AddSkyPolygon (int nump, vec3_t vecs) 
+static void AddSkyPolygon (int nump, vec3_t vecs)
 {
 	int		i,j;
 	vec3_t	v, av;
@@ -147,7 +147,7 @@ static void AddSkyPolygon (int nump, vec3_t vecs)
 ClipSkyPolygon
 ================
 */
-static void ClipSkyPolygon (int nump, vec3_t vecs, int stage) 
+static void ClipSkyPolygon (int nump, vec3_t vecs, int stage)
 {
 	const float *norm;
 	float	*v;
@@ -266,10 +266,10 @@ void RB_ClipSkyPolygons( shaderCommands_t *input )
 
 	for ( i = 0; i < input->numIndexes; i += 3 )
 	{
-		for (j = 0 ; j < 3 ; j++) 
+		for (j = 0 ; j < 3 ; j++)
 		{
 			VectorSubtract( input->xyz[input->indexes[i+j]],
-							backEnd.viewParms.or.origin, 
+							backEnd.viewParms.or.origin,
 							p[j] );
 		}
 		ClipSkyPolygon( 3, p[0], 0 );
@@ -425,7 +425,7 @@ static void FillSkySide( const int mins[2], const int maxs[2], float skyTexCoord
 	}
 
 	for ( t = 0; t < tHeight-1; t++ )
-	{	
+	{
 		for ( s = 0; s < sWidth-1; s++ )
 		{
 			tess.indexes[tess.numIndexes] = vertexStart + s + t * ( sWidth );
@@ -535,22 +535,22 @@ static void DrawSkyBox( const shader_t *shader )
 		sky_maxs_subd[0] = sky_maxs[0][i] * HALF_SKY_SUBDIVISIONS;
 		sky_maxs_subd[1] = sky_maxs[1][i] * HALF_SKY_SUBDIVISIONS;
 
-		if ( sky_mins_subd[0] < -HALF_SKY_SUBDIVISIONS ) 
+		if ( sky_mins_subd[0] < -HALF_SKY_SUBDIVISIONS )
 			sky_mins_subd[0] = -HALF_SKY_SUBDIVISIONS;
-		else if ( sky_mins_subd[0] > HALF_SKY_SUBDIVISIONS ) 
+		else if ( sky_mins_subd[0] > HALF_SKY_SUBDIVISIONS )
 			sky_mins_subd[0] = HALF_SKY_SUBDIVISIONS;
 		if ( sky_mins_subd[1] < -HALF_SKY_SUBDIVISIONS )
 			sky_mins_subd[1] = -HALF_SKY_SUBDIVISIONS;
-		else if ( sky_mins_subd[1] > HALF_SKY_SUBDIVISIONS ) 
+		else if ( sky_mins_subd[1] > HALF_SKY_SUBDIVISIONS )
 			sky_mins_subd[1] = HALF_SKY_SUBDIVISIONS;
 
-		if ( sky_maxs_subd[0] < -HALF_SKY_SUBDIVISIONS ) 
+		if ( sky_maxs_subd[0] < -HALF_SKY_SUBDIVISIONS )
 			sky_maxs_subd[0] = -HALF_SKY_SUBDIVISIONS;
-		else if ( sky_maxs_subd[0] > HALF_SKY_SUBDIVISIONS ) 
+		else if ( sky_maxs_subd[0] > HALF_SKY_SUBDIVISIONS )
 			sky_maxs_subd[0] = HALF_SKY_SUBDIVISIONS;
-		if ( sky_maxs_subd[1] < -HALF_SKY_SUBDIVISIONS ) 
+		if ( sky_maxs_subd[1] < -HALF_SKY_SUBDIVISIONS )
 			sky_maxs_subd[1] = -HALF_SKY_SUBDIVISIONS;
-		else if ( sky_maxs_subd[1] > HALF_SKY_SUBDIVISIONS ) 
+		else if ( sky_maxs_subd[1] > HALF_SKY_SUBDIVISIONS )
 			sky_maxs_subd[1] = HALF_SKY_SUBDIVISIONS;
 
 		//
@@ -560,8 +560,8 @@ static void DrawSkyBox( const shader_t *shader )
 		{
 			for ( s = sky_mins_subd[0]+HALF_SKY_SUBDIVISIONS; s <= sky_maxs_subd[0]+HALF_SKY_SUBDIVISIONS; s++ )
 			{
-				MakeSkyVec( ( s - HALF_SKY_SUBDIVISIONS ) / ( float ) HALF_SKY_SUBDIVISIONS, 
-							( t - HALF_SKY_SUBDIVISIONS ) / ( float ) HALF_SKY_SUBDIVISIONS, 
+				MakeSkyVec( ( s - HALF_SKY_SUBDIVISIONS ) / ( float ) HALF_SKY_SUBDIVISIONS,
+							( t - HALF_SKY_SUBDIVISIONS ) / ( float ) HALF_SKY_SUBDIVISIONS,
 							i,
 							s_skyPoints[t][s] );
 			}
@@ -630,22 +630,22 @@ static void FillCloudBox( void )
 		sky_maxs_subd[0] = myftol( sky_maxs[0][i] * HALF_SKY_SUBDIVISIONS );
 		sky_maxs_subd[1] = myftol( sky_maxs[1][i] * HALF_SKY_SUBDIVISIONS );
 
-		if ( sky_mins_subd[0] < -HALF_SKY_SUBDIVISIONS ) 
+		if ( sky_mins_subd[0] < -HALF_SKY_SUBDIVISIONS )
 			sky_mins_subd[0] = -HALF_SKY_SUBDIVISIONS;
-		else if ( sky_mins_subd[0] > HALF_SKY_SUBDIVISIONS ) 
+		else if ( sky_mins_subd[0] > HALF_SKY_SUBDIVISIONS )
 			sky_mins_subd[0] = HALF_SKY_SUBDIVISIONS;
 		if ( sky_mins_subd[1] < MIN_T )
 			sky_mins_subd[1] = MIN_T;
-		else if ( sky_mins_subd[1] > HALF_SKY_SUBDIVISIONS ) 
+		else if ( sky_mins_subd[1] > HALF_SKY_SUBDIVISIONS )
 			sky_mins_subd[1] = HALF_SKY_SUBDIVISIONS;
 
-		if ( sky_maxs_subd[0] < -HALF_SKY_SUBDIVISIONS ) 
+		if ( sky_maxs_subd[0] < -HALF_SKY_SUBDIVISIONS )
 			sky_maxs_subd[0] = -HALF_SKY_SUBDIVISIONS;
-		else if ( sky_maxs_subd[0] > HALF_SKY_SUBDIVISIONS ) 
+		else if ( sky_maxs_subd[0] > HALF_SKY_SUBDIVISIONS )
 			sky_maxs_subd[0] = HALF_SKY_SUBDIVISIONS;
 		if ( sky_maxs_subd[1] < MIN_T )
 			sky_maxs_subd[1] = MIN_T;
-		else if ( sky_maxs_subd[1] > HALF_SKY_SUBDIVISIONS ) 
+		else if ( sky_maxs_subd[1] > HALF_SKY_SUBDIVISIONS )
 			sky_maxs_subd[1] = HALF_SKY_SUBDIVISIONS;
 
 		//
@@ -655,9 +655,9 @@ static void FillCloudBox( void )
 		{
 			for ( s = sky_mins_subd[0]+HALF_SKY_SUBDIVISIONS; s <= sky_maxs_subd[0]+HALF_SKY_SUBDIVISIONS; s++ )
 			{
-				MakeSkyVec( ( s - HALF_SKY_SUBDIVISIONS ) / ( float ) HALF_SKY_SUBDIVISIONS, 
-							( t - HALF_SKY_SUBDIVISIONS ) / ( float ) HALF_SKY_SUBDIVISIONS, 
-							i, 
+				MakeSkyVec( ( s - HALF_SKY_SUBDIVISIONS ) / ( float ) HALF_SKY_SUBDIVISIONS,
+							( t - HALF_SKY_SUBDIVISIONS ) / ( float ) HALF_SKY_SUBDIVISIONS,
+							i,
 							s_skyPoints[t][s] );
 			}
 		}
@@ -765,19 +765,19 @@ void R_InitSkyTexCoords( float heightCloud )
 			for ( s = 0; s <= SKY_SUBDIVISIONS; s++ )
 			{
 				// compute vector from view origin to sky side integral point
-				MakeSkyVec( ( s - HALF_SKY_SUBDIVISIONS ) / ( float ) HALF_SKY_SUBDIVISIONS, 
-							( t - HALF_SKY_SUBDIVISIONS ) / ( float ) HALF_SKY_SUBDIVISIONS, 
+				MakeSkyVec( ( s - HALF_SKY_SUBDIVISIONS ) / ( float ) HALF_SKY_SUBDIVISIONS,
+							( t - HALF_SKY_SUBDIVISIONS ) / ( float ) HALF_SKY_SUBDIVISIONS,
 							i,
 							skyVec );
 
 				// compute parametric value 'p' that intersects with cloud layer
 				p = ( 1.0f / ( 2 * DotProduct( skyVec, skyVec ) ) ) *
-					( -2 * skyVec[2] * radiusWorld + 
-						2 * sqrt( Square( skyVec[2] ) * Square( radiusWorld ) + 
+					( -2 * skyVec[2] * radiusWorld +
+						2 * sqrt( Square( skyVec[2] ) * Square( radiusWorld ) +
 							2 * Square( skyVec[0] ) * radiusWorld * heightCloud +
-							Square( skyVec[0] ) * Square( heightCloud ) + 
+							Square( skyVec[0] ) * Square( heightCloud ) +
 							2 * Square( skyVec[1] ) * radiusWorld * heightCloud +
-							Square( skyVec[1] ) * Square( heightCloud ) + 
+							Square( skyVec[1] ) * Square( heightCloud ) +
 							2 * Square( skyVec[2] ) * radiusWorld * heightCloud +
 							Square( skyVec[2] ) * Square( heightCloud ) ) );
 
