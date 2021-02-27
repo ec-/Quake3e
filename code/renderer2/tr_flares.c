@@ -478,6 +478,10 @@ void RB_RenderFlares (void) {
 		return;
 	}
 
+	if ( backEnd.isHyperspace ) {
+		return;
+	}
+
 	if(r_flareCoeff->modified)
 	{
 		R_SetFlareCoeff();

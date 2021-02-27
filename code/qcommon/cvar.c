@@ -219,14 +219,14 @@ int Cvar_Flags(const char *var_name)
 Cvar_CommandCompletion
 ============
 */
-void Cvar_CommandCompletion(void (*callback)(const char *s))
+void Cvar_CommandCompletion( void (*callback)(const char *s) )
 {
-	cvar_t		*cvar;
+	const cvar_t *cvar;
 
-	for(cvar = cvar_vars; cvar; cvar = cvar->next)
-	{
-		if(cvar->name)
-			callback(cvar->name);
+	for ( cvar = cvar_vars; cvar; cvar = cvar->next ) {
+		if ( cvar->name && ( cvar->flags & CVAR_NOTABCOMPLETE ) == 0 ) {
+			callback( cvar->name );
+		}
 	}
 }
 
@@ -1367,6 +1367,12 @@ static void Cvar_List_f( void ) {
 	cvar_t	*var;
 	int		i;
 	char	*match;
+
+	// sort to get more predictable output
+	if ( cvar_sort ) {
+		cvar_sort = qfalse;
+		Cvar_Sort();
+	}
 
 	if ( Cmd_Argc() > 1 ) {
 		match = Cmd_Argv( 1 );

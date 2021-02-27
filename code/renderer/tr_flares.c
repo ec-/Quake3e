@@ -448,6 +448,10 @@ void RB_RenderFlares (void) {
 		return;
 	}
 
+	if ( backEnd.isHyperspace ) {
+		return;
+	}
+
 	// Reset currentEntity to world so that any previously referenced entities
 	// don't have influence on the rendering of these flares (i.e. RF_ renderer flags).
 	backEnd.currentEntity = &tr.worldEntity;
