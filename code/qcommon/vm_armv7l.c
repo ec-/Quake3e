@@ -31,17 +31,18 @@ http://www.heyrick.co.uk/armwiki/Category:Opcodes
 ARMv7-A_ARMv7-R_DDI0406_2007.pdf
 */
 
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <sys/time.h>
-#include <time.h>
-#include <stddef.h>
-
+#ifdef _WIN32
+#include <windows.h>
+#pragma warning( disable : 4245 ) // conversion from int to XXX, signed/unsigned mismatch
+#pragma warning( disable : 4146 ) // unary minus operator applied to unsigned type, result still unsigned
+#else
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <math.h>
+#endif
 
 #include "vm_local.h"
 
@@ -63,7 +64,7 @@ ARMv7-A_ARMv7-R_DDI0406_2007.pdf
 
 typedef enum
 {
-	FUNC_ENTR = 0,
+	FUNC_ENTR,
 	FUNC_BCPY,
 	FUNC_CALL,
 	FUNC_SYSC,
@@ -73,8 +74,8 @@ typedef enum
 	FUNC_BADJ,
 	FUNC_OUTJ,
 	FUNC_BADD,
-	FUNC_LAST
-} func_t;
+	OFFSET_T_LAST
+} offset_t;
 
 
 // macro opcode sequences
@@ -97,22 +98,9 @@ static  instruction_t *ni;
 
 static	uint32_t	ip;
 static	uint32_t	pass;
-static	uint32_t	funcOffset[FUNC_LAST];
+static	uint32_t	savedOffset[ OFFSET_T_LAST ];
 
 
-static void VM_FreeBuffers( void )
-{
-	// should be freed in reversed allocation order
-	//if ( instructionOffsets ) {
-	//	Z_Free( instructionOffsets );
-	//	instructionOffsets = NULL;
-	//}
-
-	if ( inst ) {
-		Z_Free( inst );
-		inst = NULL;
-	}
-}
 
 #define R0	0  // scratch
 #define R1	1  // scratch
@@ -157,27 +145,46 @@ unsigned __aeabi_uidiv(unsigned, unsigned);
 void __aeabi_idivmod(void);
 void __aeabi_uidivmod(void);
 
-/* exit() won't be called but use it because it is marked with noreturn */
-#define DIE( reason, args... ) \
+#ifdef _MSC_VER
+#define DROP( reason, ... ) \
 	do { \
-		Com_Error(ERR_DROP, "vm_arm compiler error: " reason, ##args); \
-		exit(1); \
+		VM_FreeBuffers(); \
+		Com_Error( ERR_DROP, "%s: " reason, __func__, __VA_ARGS__ ); \
 	} while(0)
-
-
+#else
 #define DROP( reason, args... ) \
 	do { \
 		VM_FreeBuffers(); \
 		Com_Error( ERR_DROP, "%s: " reason, __func__, ##args ); \
 	} while(0)
+#endif
 
 
-static void VM_Destroy_Compiled(vm_t *vm)
+static void VM_FreeBuffers( void )
+{
+	// should be freed in reversed allocation order
+	//if ( instructionOffsets ) {
+	//	Z_Free( instructionOffsets );
+	//	instructionOffsets = NULL;
+	//}
+
+	if ( inst ) {
+		Z_Free( inst );
+		inst = NULL;
+	}
+}
+
+
+static void VM_Destroy_Compiled( vm_t *vm )
 {
 	if ( vm->codeBase.ptr )
 	{
+#ifdef _WIN32
+		VirtualFree( vm->codeBase.ptr, 0, MEM_RELEASE );
+#else
 		if ( munmap( vm->codeBase.ptr, vm->codeLength ) )
 			Com_Printf( S_COLOR_RED "%s(): memory unmap failed, possible memory leak!\n", __func__ );
+#endif
 	}
 
 	vm->codeBase.ptr = NULL;
@@ -189,6 +196,7 @@ static void __attribute__((__noreturn__)) OutJump( void )
 	Com_Error( ERR_DROP, "program tried to execute code outside VM" );
 }
 
+
 static void __attribute__((__noreturn__)) BadJump( void )
 {
 	Com_Error( ERR_DROP, "program tried to execute code at bad location inside VM" );
@@ -199,10 +207,12 @@ static void __attribute__((__noreturn__)) ErrBadProgramStack( void )
 	Com_Error( ERR_DROP, "program tried to overflow programStack" );
 }
 
+
 static void __attribute__((__noreturn__)) ErrBadOpStack( void )
 {
 	Com_Error( ERR_DROP, "program tried to overflow opStack" );
 }
+
 
 static void __attribute__((__noreturn__)) ErrBadData( void )
 {
@@ -747,11 +757,34 @@ static void inc_opstack( void )
 static void dec_opstack( void )
 {
 #ifdef DEBUG_VM
+	opstack_t *it;
+
 	if ( opstack <= 0 )
 		DROP( "opstack underflow - %i", opstack*4 );
+
+	it = &opstackv[ opstack ];
+	if ( it->type != TYPE_RAW )
+		DROP( "opstack[%i]: item type %i is not consumed", opstack*4, it->type );
+#endif
+	opstack -= 1;
+}
+
+
+static void dec_opstack_discard( void )
+{
+	opstack_t *it;
+
+	it = &opstackv[ opstack ];
+#ifdef DEBUG_VM
+	if ( opstack <= 0 )
+		DROP( "opstack underflow - %i", opstack*4 );
+
+	if ( it->type != TYPE_RAW && ( it->type != TYPE_RX || it->offset != ~0U ) )
+		DROP( "opstack[%i]: item type %i is not consumed", opstack*4, it->type );
 #endif
 
-	flush_item( opstackv + opstack ); // in case if it was not consumed by any load function
+	it->type = TYPE_RAW; // discard value
+	it->safe_arg = 0;
 
 	opstack -= 1;
 }
@@ -780,7 +813,7 @@ static uint32_t alloc_rx( uint32_t pref )
 
 #ifdef DYN_ALLOC_RX
 	if ( (pref & FORCED) == 0 ) {
-		uint32_t mask = rx_mask | build_mask( TYPE_RX );
+		const uint32_t mask = rx_mask | build_mask( TYPE_RX );
 
 		// pickup first free register from rx_list
 		for ( i = 0; i < ARRAY_LEN( rx_list ) ; i++ ) {
@@ -837,7 +870,7 @@ static uint32_t alloc_sx( uint32_t pref )
 
 #ifdef DYN_ALLOC_SX
 	if ( (pref & FORCED) == 0 ) {
-		uint32_t mask = sx_mask | build_mask( TYPE_SX );
+		const uint32_t mask = sx_mask | build_mask( TYPE_SX );
 
 		// pickup first free register from sx_list
 		for ( i = 0; i < ARRAY_LEN( sx_list ) ; i++ ) {
@@ -886,8 +919,14 @@ static uint32_t alloc_sx( uint32_t pref )
 }
 
 
-// save all volatile items to opstack memory
-// this is required before calling any external function
+/*
+==============
+flush_volatile
+
+flush any cached register/address/constant to opstack and reset meta (constants mapping)
+this MUST be called before any unconditional jump, return or function call
+==============
+*/
 static void flush_volatile( void )
 {
 	int i;
@@ -921,7 +960,7 @@ static void store_rx_opstack( uint32_t reg )
 		DROP( "bad opstack %i", opstack*4 );
 
 	if ( it->type != TYPE_RAW )
-		DROP( "bad type %i at opstack %i", it->type, opstack );
+		DROP( "bad type %i at opstack %i", it->type, opstack*4 );
 #endif
 
 	it->type = TYPE_RX;
@@ -939,14 +978,14 @@ static void store_syscall_opstack( void )
 
 #ifdef DEBUG_VM
 	if ( opstack <= 0 )
-		DROP( "bad opstack %i", opstack );
+		DROP( "bad opstack %i", opstack*4 );
 
 	if ( it->type != TYPE_RAW )
-		DROP( "bad type %i at opstack %i", it->type, opstack );
+		DROP( "bad type %i at opstack %i", it->type, opstack*4 );
 #endif
 
 	it->type = TYPE_RX;
-	it->offset = ~0U; // opstack * sizeof( int32_t );
+	it->offset = ~0U; // opstack * sizeof( int32_t )
 	it->value = R0;
 	it->safe_arg = 0;
 
@@ -975,7 +1014,7 @@ static void store_sx_opstack( uint32_t reg )
 }
 
 
-static void store_item_opstack( instruction_t *inst )
+static void store_item_opstack( instruction_t *ins )
 {
 	opstack_t *it = opstackv + opstack;
 
@@ -983,19 +1022,27 @@ static void store_item_opstack( instruction_t *inst )
 	if ( it->type != TYPE_RAW )
 		DROP( "bad type %i at opstack %i", it->type, opstack*4 );
 #endif
-	switch ( inst->op ) {
+	switch ( ins->op ) {
 		case OP_CONST: it->type = TYPE_CONST; break;
 		case OP_LOCAL: it->type = TYPE_LOCAL; break;
-		default: DROP( "incorrect opcode %i", inst->op );
+		default: DROP( "incorrect opcode %i", ins->op );
 	}
 
 	it->offset = opstack * sizeof( int32_t );
-	it->value = inst->value;
-	it->safe_arg = inst->safe;
+	it->value = ins->value;
+	it->safe_arg = ins->safe;
 }
 
 
-// we must unmask register manually after allocation/loading
+/*
+===========
+load_rx_opstack
+
+loads current opstack value into specified register
+returns masked register number, must be unmasked manually if not stored on the opstack
+output register is very likely to be modified unless CONST preference is specified
+===========
+*/
 static uint32_t load_rx_opstack( vm_t *vm, uint32_t pref )
 {
 	opstack_t *it = opstackv + opstack;
@@ -1168,10 +1215,10 @@ static uint32_t get_comp( opcode_t op )
 		case OP_LEF: return LE;
 		case OP_GTF: return GT;
 		case OP_GEF: return GE;
-		default: break;
+		default: DROP( "unexpected op %i", op );
 	}
 
-	DROP( "unexpected op %i", op );
+	return 0;
 }
 
 
@@ -1192,9 +1239,9 @@ static void emitAlign( const uint32_t align )
 }
 
 
-static void emitFuncOffset( uint32_t comp, vm_t *vm, func_t func )
+static void emitFuncOffset( uint32_t comp, vm_t *vm, offset_t func )
 {
-	uint32_t offset = funcOffset[ func ] - compiledOfs;
+	uint32_t offset = savedOffset[ func ] - compiledOfs;
 
 	emit( cond( comp, BLi( encode_offset( offset ) ) ) );
 }
@@ -1202,9 +1249,8 @@ static void emitFuncOffset( uint32_t comp, vm_t *vm, func_t func )
 
 static void emit_CheckReg( vm_t *vm, instruction_t *ins, uint32_t reg )
 {
-	if ( ins->safe ) {
+	if ( ins->safe )
 		return;
-	}
 #ifdef DEBUG_VM
 	if ( !( vm_rtChecks->integer & 8 ) || vm->forceDataMask ) {
 		if ( vm->forceDataMask ) {
@@ -1307,7 +1353,7 @@ static void emitCallFunc( vm_t *vm )
 
 	init_opstack(); // to avoid any side-effects on emit_CheckJump()
 
-funcOffset[ FUNC_CALL ] = compiledOfs; // to jump from OP_CALL
+savedOffset[ FUNC_CALL ] = compiledOfs; // to jump from OP_CALL
 
 	emit(CMPi(R0, 0)); // check if syscall
 
@@ -1328,11 +1374,11 @@ funcOffset[ FUNC_CALL ] = compiledOfs; // to jump from OP_CALL
 	if (bytes_to_skip == -1)
 		bytes_to_skip = compiledOfs - start_block;
 
-funcOffset[ FUNC_SYSC ] = compiledOfs; // to jump from OP_CALL
+savedOffset[ FUNC_SYSC ] = compiledOfs; // to jump from OP_CALL
 
 	emit(MVN(R0, R0));   // r0 = ~r0
 
-funcOffset[ FUNC_SYSF ] = compiledOfs; // to jump from ConstOptimize()
+savedOffset[ FUNC_SYSF ] = compiledOfs; // to jump from ConstOptimize()
 
 	emit(ADDi(rOPSTACKSHIFT, rOPSTACKSHIFT, 4));
 
@@ -2164,7 +2210,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 	VM_FindMOps( inst, vm->instructionCount );
 #endif
 
-	memset( funcOffset, 0, sizeof( funcOffset ) );
+	memset( savedOffset, 0, sizeof( savedOffset ) );
 
 	code = NULL;
 	vm->codeBase.ptr = NULL;
@@ -2210,7 +2256,7 @@ __recompile:
 
 	emitAlign( 16 ); // align to quadword boundary
 
-	funcOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
+	savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 
 	while ( ip < header->instructionCount ) {
 
@@ -2246,7 +2292,7 @@ __recompile:
 				emitAlign( 16 ); // align to quadword boundary
 				vm->instructionPointers[ ip - 1 ] = compiledOfs;
 
-				proc_base = ip;
+				proc_base = ip; // this points on next instruction after OP_ENTER
 				// locate endproc
 				for ( proc_len = -1, i = ip; i < header->instructionCount; i++ ) {
 					if ( inst[ i ].op == OP_PUSH && inst[ i + 1 ].op == OP_LEAVE ) {
@@ -2288,10 +2334,10 @@ __recompile:
 
 			case OP_CALL:
 				rx[0] = load_rx_opstack( vm, R0 | FORCED ); // r0 = *opstack
-				unmask_rx( rx[0] );
 				flush_volatile();
-				emit_MOVRxi(rOPSTACKSHIFT, opstack-4);
+				emit_MOVRxi(rOPSTACKSHIFT, (opstack-1)*sizeof(int32_t));
 				emitFuncOffset(AL, vm, FUNC_CALL);
+				unmask_rx( rx[0] );
 				break;
 
 			case OP_PUSH:
@@ -2302,7 +2348,7 @@ __recompile:
 				break;
 
 			case OP_POP:
-				dec_opstack(); // opstack -= 4
+				dec_opstack_discard(); // opstack -= 4
 				break;
 
 			case OP_CONST:
@@ -2422,12 +2468,12 @@ __recompile:
 				break;
 
 			case OP_STORE4:
-				if ((scalar = scalar_on_top())) {
+				if ( (scalar = scalar_on_top()) != qfalse ) {
 					sx[0] = load_sx_opstack( vm, S0 ); // s0 = *opstack;
 				} else {
 					rx[0] = load_rx_opstack( vm, R0 ); // r0 = *opstack;
 				}
-				dec_opstack(); // opstack --=4
+				dec_opstack(); // opstack -= 4
 				rx[1] = load_rx_opstack( vm, R1 ); dec_opstack(); // r1 = *opstack; opstack -= 4
 				emit_CheckReg(vm, ci, rx[1]);
 				if ( scalar ) {
@@ -2604,36 +2650,35 @@ __recompile:
 		} // switch op
 	} // ip
 
-		// it will set multiple offsets
 		emitAlign( 16 ); // align to quadword boundary
+		// it will set multiple offsets
 		emitCallFunc( vm );
-		emit(BKPT(0));
 
 		emitAlign( 16 ); // align to quadword boundary
-		funcOffset[ FUNC_BCPY ] = compiledOfs;
+		savedOffset[ FUNC_BCPY ] = compiledOfs;
 		emitBlockCopyFunc( vm );
 
-		funcOffset[ FUNC_BADJ ] = compiledOfs;
+		savedOffset[ FUNC_BADJ ] = compiledOfs;
 		emit_MOVRxi(R12, (unsigned)BadJump);
 		emit(BLX(R12));
 		emit(BKPT(0));
 
-		funcOffset[ FUNC_OUTJ ] = compiledOfs;
+		savedOffset[ FUNC_OUTJ ] = compiledOfs;
 		emit_MOVRxi(R12, (unsigned)OutJump);
 		emit(BLX(R12));
 		emit(BKPT(0));
 
-		funcOffset[ FUNC_OSOF ] = compiledOfs;
+		savedOffset[ FUNC_OSOF ] = compiledOfs;
 		emit_MOVRxi(R12, (unsigned)ErrBadOpStack);
 		emit(BLX(R12));
 		emit(BKPT(0));
 
-		funcOffset[ FUNC_PSOF ] = compiledOfs;
+		savedOffset[ FUNC_PSOF ] = compiledOfs;
 		emit_MOVRxi(R12, (unsigned)ErrBadProgramStack);
 		emit(BLX(R12));
 		emit(BKPT(0));
 
-		funcOffset[ FUNC_BADD ] = compiledOfs;
+		savedOffset[ FUNC_BADD ] = compiledOfs;
 		emit_MOVRxi(R12, (unsigned)ErrBadData);
 		emit(BLX(R12));
 		emit(BKPT(0));
@@ -2641,12 +2686,22 @@ __recompile:
 	} // pass
 
 	if ( vm->codeBase.ptr == NULL ) {
+#ifdef _WIN32
+		vm->codeBase.ptr = VirtualAlloc( NULL, compiledOfs, MEM_COMMIT, PAGE_EXECUTE_READWRITE );
+		if ( !vm->codeBase.ptr ) {
+			VM_FreeBuffers();
+			Com_Printf( S_COLOR_YELLOW "%s(%s): VirtualAlloc failed\n", __func__, vm->name );
+			return qfalse;
+		}
+#else
 		vm->codeBase.ptr = mmap( NULL, compiledOfs, PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0 );
 		if ( vm->codeBase.ptr == MAP_FAILED ) {
 			VM_FreeBuffers();
 			Com_Printf( S_COLOR_YELLOW "%s(%s): mmap failed\n", __func__, vm->name );
 			return qfalse;
 		}
+#endif
+
 		vm->codeLength = compiledOfs;
 		vm->codeSize = compiledOfs;
 		code = (uint32_t*)vm->codeBase.ptr;
@@ -2660,7 +2715,7 @@ __recompile:
 	// offset all the instruction pointers for the new location
 	for ( i = 0; i < header->instructionCount; i++ ) {
 		if ( !inst[i].jused ) {
-			vm->instructionPointers[ i ] = (unsigned)BadJump;
+			vm->instructionPointers[ i ] = (intptr_t)BadJump;
 			continue;
 		}
 		vm->instructionPointers[ i ] += (intptr_t)vm->codeBase.ptr;
@@ -2668,6 +2723,17 @@ __recompile:
 
 	VM_FreeBuffers();
 
+#ifdef _WIN32
+	{
+		DWORD oldProtect = 0;
+		// remove write permissions
+		if ( !VirtualProtect( vm->codeBase.ptr, vm->codeLength, PAGE_EXECUTE_READ, &oldProtect ) ) {
+			VM_Destroy_Compiled( vm );
+			Com_Printf( S_COLOR_YELLOW "%s(%s): VirtualProtect failed\n", __func__, vm->name );
+			return qfalse;
+		}
+	}
+#else
 	if ( mprotect( vm->codeBase.ptr, vm->codeLength, PROT_READ | PROT_EXEC ) ) {
 		VM_Destroy_Compiled( vm );
 		Com_Printf( S_COLOR_YELLOW "%s(%s): mprotect failed\n", __func__, vm->name );
@@ -2676,6 +2742,7 @@ __recompile:
 
 	// clear icache, http://blogs.arm.com/software-enablement/141-caches-and-self-modifying-code/
 	__clear_cache( vm->codeBase.ptr, vm->codeBase.ptr + vm->codeLength );
+#endif
 
 	vm->destroy = VM_Destroy_Compiled;
 
@@ -2688,7 +2755,7 @@ __recompile:
 int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 {
 	int32_t		opStack[ MAX_OPSTACK_SIZE ];
-	unsigned int stackOnEntry;
+	int			stackOnEntry;
 	int32_t		*image;
 	int		i;
 

@@ -276,7 +276,6 @@ static void __attribute__((__noreturn__)) OutJump( void )
 static void __attribute__((__noreturn__)) BadJump( void )
 {
 	Com_Error( ERR_DROP, "program tried to execute code at bad location inside VM" );
-
 }
 
 static void __attribute__((__noreturn__)) ErrBadProgramStack( void )
@@ -1828,7 +1827,6 @@ static uint32_t load_sx_opstack( vm_t *vm, uint32_t pref )
 }
 
 
-
 static uint32_t get_comp( opcode_t op )
 {
 	switch ( op ) {
@@ -2573,7 +2571,7 @@ qboolean ConstOptimize( vm_t *vm )
 
 
 #ifdef MISC_OPTIMIZE
-qboolean LocalOptimize( vm_t *vm )
+static qboolean LocalOptimize( vm_t *vm )
 {
 	uint32_t v = ci->value;
 	uint32_t rx[2];
@@ -2982,7 +2980,7 @@ __recompile:
 
 	emitAlign( 16 ); // align to quadword boundary
 
-savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
+	savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 
 	while ( ip < header->instructionCount ) {
 
