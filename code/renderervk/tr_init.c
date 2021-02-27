@@ -1523,7 +1523,7 @@ static void R_Register( void )
 	//
 	// archived variables that can change at any time
 	//
-	r_lodCurveError = ri.Cvar_Get( "r_lodCurveError", "250", CVAR_ARCHIVE_ND | CVAR_CHEAT );
+	r_lodCurveError = ri.Cvar_Get( "r_lodCurveError", "250", CVAR_ARCHIVE_ND );
 	r_lodbias = ri.Cvar_Get( "r_lodbias", "0", CVAR_ARCHIVE_ND );
 	r_flares = ri.Cvar_Get ("r_flares", "0", CVAR_ARCHIVE_ND );
 	r_znear = ri.Cvar_Get( "r_znear", "4", CVAR_CHEAT );
