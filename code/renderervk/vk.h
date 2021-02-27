@@ -241,7 +241,7 @@ typedef struct vk_tess_s {
 
 	struct {
 		uint32_t		start, end;
-		VkDescriptorSet	current[6];
+		VkDescriptorSet	current[6]; // 0:storage, 1:uniform, 2:color0, 3:color1, 4:color2, 5:fog
 		uint32_t		offset[2]; // 0 (uniform) and 5 (storage)
 	} descriptor_set;
 
