@@ -46,7 +46,7 @@ return a hash value for the filename
 ================
 */
 #ifdef __GNUCC__
-  #warning TODO: check if long is ok here 
+  #warning TODO: check if long is ok here
 #endif
 
 #define generateHashValue Com_GenerateHashValue
@@ -139,7 +139,7 @@ NameToAFunc
 ===============
 */
 static unsigned NameToAFunc( const char *funcname )
-{	
+{
 	if ( !Q_stricmp( funcname, "GT0" ) )
 	{
 		return GLS_ATEST_GT_0;
@@ -484,7 +484,7 @@ static void ParseTexMod( const char *_text, shaderStage_t *stage )
 			return;
 		}
 		tmi->wave.frequency = Q_atof( token );
-		
+
 		tmi->type = TMOD_STRETCH;
 	}
 	//
@@ -1028,7 +1028,7 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 
 				stage->bundle[0].tcGen = TCGEN_VECTOR;
 			}
-			else 
+			else
 			{
 				ri.Printf( PRINT_WARNING, "WARNING: unknown texgen parm in shader '%s'\n", shader.name );
 			}
@@ -1179,7 +1179,7 @@ static void ParseDeform( const char **text ) {
 
 	if ( !Q_stricmpn( token, "text", 4 ) ) {
 		int		n;
-		
+
 		n = token[4] - '0';
 		if ( n < 0 || n > 7 ) {
 			n = 0;
@@ -1303,7 +1303,7 @@ static void ParseSkyParms( const char **text ) {
 	if ( r_neatsky->integer ) {
 		imgFlags = IMGFLAG_NONE;
 	}
-	
+
 	// outerbox
 	token = COM_ParseExt( text, qfalse );
 	if ( token[0] == 0 ) {
@@ -1540,7 +1540,7 @@ static qboolean ParseCondition( const char **text, resultType *res )
 			ri.Printf( PRINT_WARNING, "WARNING: expecting lvalue for condition in shader %s\n", shader.name );
 			return qfalse;
 		}
-	
+
 		Q_strncpyz( lval_str, token, sizeof( lval_str ) );
 		lval_type = com_tokentype;
 
@@ -1562,18 +1562,18 @@ static qboolean ParseCondition( const char **text, resultType *res )
 
 			// read next token, expect '||', '&&' or ')', allow newlines
 			/*token =*/ COM_ParseComplex( text, qtrue );
-		} 
-		else if ( com_tokentype == TK_SCOPE_CLOSE || com_tokentype == TK_OR || com_tokentype == TK_AND ) 
+		}
+		else if ( com_tokentype == TK_SCOPE_CLOSE || com_tokentype == TK_OR || com_tokentype == TK_AND )
 		{
 			// no r-value, assume 'not zero' comparison
 			op = TK_NEQ;
 		}
-		else 
+		else
 		{
 			ri.Printf( PRINT_WARNING, "WARNING: unexpected operator '%s' for comparison in shader %s\n", token, shader.name );
 			return qfalse;
 		}
-		
+
 		str = qfalse;
 
 		if ( lval_type == TK_QUOTED ) {
@@ -1625,7 +1625,7 @@ static qboolean ParseCondition( const char **text, resultType *res )
 			r |= r0;
 		else
 			r &= r0;
-			
+
 		if ( com_tokentype == TK_OR ) {
 			rm = maskOR;
 			continue;
@@ -1646,7 +1646,7 @@ static qboolean ParseCondition( const char **text, resultType *res )
 
 	if ( res )
 		*res = r ? res_true : res_false;
-	
+
 	return qtrue;
 }
 
@@ -1726,7 +1726,7 @@ static qboolean ParseShader( const char **text )
 			tr.sunLight[1] = Q_atof( token );
 			token = COM_ParseExt( text, qfalse );
 			tr.sunLight[2] = Q_atof( token );
-			
+
 			VectorNormalize( tr.sunLight );
 
 			token = COM_ParseExt( text, qfalse );
@@ -2117,7 +2117,7 @@ static int CollapseMultitexture( unsigned int st0bits, shaderStage_t *st0, shade
 	// make sure waveforms have identical parameters
 	if ( ( st0->bundle[0].rgbGen != st1->bundle[0].rgbGen ) || ( st0->bundle[0].alphaGen != st1->bundle[0].alphaGen ) ) {
 		switch ( mtEnv ) {
-			case GL_ADD: 
+			case GL_ADD:
 			case GL_ADD_NONIDENTITY: mtEnv = GL_BLEND_ADD; break;
 			case GL_MODULATE: mtEnv = GL_BLEND_MODULATE; break;
 		}
@@ -2188,7 +2188,7 @@ static int CollapseMultitexture( unsigned int st0bits, shaderStage_t *st0, shade
 	if ( num_stages > 2 )
 	{
 		memmove( st1, st1+1, sizeof( stages[0] ) * ( num_stages - 2 ) );
-	} 
+	}
 
 	Com_Memset( st0 + num_stages - 1, 0, sizeof( stages[0] ) );
 
@@ -2389,7 +2389,7 @@ static qboolean EqualRGBgen( const shaderStage_t *st1, const shaderStage_t *st2 
 			return qfalse;
 		}
 	}
-	
+
 	if ( st1->bundle[0].alphaGen != st2->bundle[0].alphaGen ) {
 		return qfalse;
 	}
@@ -2555,7 +2555,7 @@ static shader_t *GeneratePermanentShader( void ) {
 
 	tr.shaders[ tr.numShaders ] = newShader;
 	newShader->index = tr.numShaders;
-	
+
 	tr.sortedShaders[ tr.numShaders ] = newShader;
 	newShader->sortedIndex = tr.numShaders;
 
@@ -2831,7 +2831,7 @@ static shader_t *FinishShader( void ) {
 			{
 				if(stage + 1 < MAX_SHADER_STAGES)
 					memmove(pStage, pStage + 1, sizeof(*pStage) * (index - stage - 1));
-				
+
 				Com_Memset(&stages[index - 1], 0, sizeof(*stages));
 			}
 
@@ -3351,7 +3351,7 @@ shader_t *R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImag
 
 	InitShader( strippedName, lightmapIndex );
 
-	// FIXME: set these "need" values apropriately
+	// FIXME: set these "need" values appropriately
 	//shader.needsNormal = qtrue;
 	//shader.needsST1 = qtrue;
 	//shader.needsST2 = qtrue;
@@ -3457,7 +3457,7 @@ qhandle_t RE_RegisterShaderFromImage(const char *name, int lightmapIndex, image_
 }
 
 
-/* 
+/*
 ====================
 RE_RegisterShaderLightMap
 
@@ -3491,7 +3491,7 @@ qhandle_t RE_RegisterShaderLightMap( const char *name, int lightmapIndex ) {
 }
 
 
-/* 
+/*
 ====================
 RE_RegisterShader
 
@@ -3662,7 +3662,7 @@ static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char
 
 		if ( !buffers[i] )
 			ri.Error( ERR_DROP, "Couldn't load %s", filename );
-		
+
 		// comment some buggy shaders from pak0
 		if ( summand == 35910 && strcmp( shaderFiles[i], "sky.shader" ) == 0 )
 		{
@@ -3686,14 +3686,14 @@ static int loadShaderBuffers( char **shaderFiles, const int numShaderFiles, char
 
 		p = buffers[i];
 		COM_BeginParseSession( filename );
-		
+
 		shaderStart = NULL;
 		denyErrors = qfalse;
 
 		while ( 1 )
 		{
 			token = COM_ParseExt( &p, qtrue );
-			
+
 			if ( !*token )
 				break;
 
@@ -3923,7 +3923,7 @@ static void CreateExternalShaders( void ) {
 	if(!tr.flareShader->defaultShader)
 	{
 		int index;
-		
+
 		for(index = 0; index < tr.flareShader->numUnfoggedPasses; index++)
 		{
 			tr.flareShader->stages[index]->bundle[0].adjustColorsForFog = ACFF_NONE;

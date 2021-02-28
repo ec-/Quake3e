@@ -535,7 +535,7 @@ Dlls will call this directly
 
   For speed, we just grab 15 arguments, and don't worry about exactly
    how many the syscall actually needs; the extra is thrown away.
- 
+
 ============
 */
 #if 0 // - disabled because now is different for each module
@@ -653,7 +653,7 @@ static int Load_JTS( vm_t *vm, unsigned int crc32, void *data, int vmPakIndex ) 
 VM_ValidateHeader
 =================
 */
-static char *VM_ValidateHeader( vmHeader_t *header, int fileSize ) 
+static char *VM_ValidateHeader( vmHeader_t *header, int fileSize )
 {
 	static char errMsg[128];
 	int n;
@@ -669,7 +669,7 @@ static char *VM_ValidateHeader( vmHeader_t *header, int fileSize )
 		sprintf( errMsg, "bad file magic %08x", LittleLong( header->vmMagic ) );
 		return errMsg;
 	}
-	
+
 	// truncated
 	if ( fileSize < sizeof( vmHeader_t ) && LittleLong( header->vmMagic ) != VM_MAGIC_VER2 ) {
 		sprintf( errMsg, "truncated image header (%i bytes long)", fileSize );
@@ -1196,12 +1196,12 @@ const char *VM_CheckInstructions( instruction_t *buf,
 			}
 			v = ci->value;
 			if ( v < 0 || v >= PROGRAM_STACK_SIZE || (v & 3) ) {
-				sprintf( errBuf, "bad return programStack %i at %i", v, i ); 
+				sprintf( errBuf, "bad return programStack %i at %i", v, i );
 				return errBuf;
 			}
 			if ( op1 == OP_PUSH ) {
 				if ( proc == NULL ) {
-					sprintf( errBuf, "unexpected proc end at %i", i ); 
+					sprintf( errBuf, "unexpected proc end at %i", i );
 					return errBuf;
 				}
 				proc = NULL;
@@ -1216,7 +1216,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 			v = ci->value;
 			// conditional jumps should have opStack == 8
 			if ( ci->opStack != 8 ) {
-				sprintf( errBuf, "bad jump opStack %i at %i", ci->opStack, i ); 
+				sprintf( errBuf, "bad jump opStack %i at %i", ci->opStack, i );
 				return errBuf;
 			}
 			//if ( v >= header->instructionCount ) {
@@ -1227,7 +1227,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 			}
 			if ( buf[v].opStack != 0 ) {
 				n = buf[v].opStack;
-				sprintf( errBuf, "jump target %i has bad opStack %i", v, n ); 
+				sprintf( errBuf, "jump target %i has bad opStack %i", v, n );
 				return errBuf;
 			}
 			// mark jump target
@@ -1239,7 +1239,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 		if ( op0 == OP_JUMP ) {
 			// jumps should have opStack == 4
 			if ( ci->opStack != 4 ) {
-				sprintf( errBuf, "bad jump opStack %i at %i", ci->opStack, i ); 
+				sprintf( errBuf, "bad jump opStack %i at %i", ci->opStack, i );
 				return errBuf;
 			}
 			if ( op1 == OP_CONST ) {
@@ -1251,16 +1251,16 @@ const char *VM_CheckInstructions( instruction_t *buf,
 				}
 				if ( buf[v].opStack != 0 ) {
 					n = buf[v].opStack;
-					sprintf( errBuf, "jump target %i has bad opStack %i", v, n ); 
+					sprintf( errBuf, "jump target %i has bad opStack %i", v, n );
 					return errBuf;
 				}
 				if ( buf[v].op == OP_ENTER ) {
 					n = buf[v].op;
-					sprintf( errBuf, "jump target %i has bad opcode %s", v, opname[ n ] ); 
+					sprintf( errBuf, "jump target %i has bad opcode %s", v, opname[ n ] );
 					return errBuf;
 				}
 				if ( v == (i-1) ) {
-					sprintf( errBuf, "self loop at %i", v ); 
+					sprintf( errBuf, "self loop at %i", v );
 					return errBuf;
 				}
 				// mark jump target
@@ -1617,7 +1617,7 @@ static void * QDECL VM_LoadDll( const char *name, dllSyscall_t *entryPoint, dllS
 
 	Com_Printf( "VM_LoadDLL '%s' ok\n", filename );
 
-	dllEntry = /* ( dllEntry_t ) */ Sys_LoadFunction( libHandle, "dllEntry" ); 
+	dllEntry = /* ( dllEntry_t ) */ Sys_LoadFunction( libHandle, "dllEntry" );
 	*entryPoint = /* ( dllSyscall_t ) */ Sys_LoadFunction( libHandle, "vmMain" );
 	if ( !*entryPoint || !dllEntry ) {
 		Sys_UnloadLibrary( libHandle );
@@ -1866,7 +1866,7 @@ intptr_t QDECL VM_Call( vm_t *vm, int nargs, int callnum, ... )
 		}
 		va_end(ap);
 
-		// add more agruments if you're changed MAX_VMMAIN_CALL_ARGS:
+		// add more arguments if you're changed MAX_VMMAIN_CALL_ARGS:
 		r = vm->entryPoint( callnum, args[0], args[1], args[2] );
 	} else {
 #if id386 && !defined __clang__ // calling convention doesn't need conversion in some cases
@@ -1923,7 +1923,7 @@ static int QDECL VM_ProfileSort( const void *a, const void *b ) {
 VM_NameToVM
 ==============
 */
-static vm_t *VM_NameToVM( const char *name ) 
+static vm_t *VM_NameToVM( const char *name )
 {
 	vmIndex_t index;
 

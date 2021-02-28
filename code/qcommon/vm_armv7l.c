@@ -1997,7 +1997,7 @@ static qboolean ConstOptimize( vm_t *vm )
 			if ( x < 256 ) {
 				emit(LDRSBai(rx[0], rDATABASE, x));    // r0 = (signed char*)[dataBase + x]
 			} else {
-				rx[1] = alloc_rx_const( R1, x );      // r1 = v 
+				rx[1] = alloc_rx_const( R1, x );      // r1 = v
 				emit(LDRSBa(rx[0], rDATABASE, rx[1])); // r0 = (signed char*)[dataBase + r1]
 				unmask_rx( rx[1] );
 			}
@@ -2039,7 +2039,7 @@ static qboolean ConstOptimize( vm_t *vm )
 	case OP_STORE1:
 		rx[0] = load_rx_opstack( vm, R0 | RCONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
 		emit_CheckReg(vm, ni, rx[0]);
-		rx[1] = alloc_rx_const( R2, ci->value ); // r2 = 0x12345678 
+		rx[1] = alloc_rx_const( R2, ci->value ); // r2 = 0x12345678
 		emit(STRBa(rx[1], rDATABASE, rx[0]));    // [dataBase + r0] = r2;
 		unmask_rx( rx[0] );
 		unmask_rx( rx[1] );

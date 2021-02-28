@@ -95,7 +95,7 @@ void R_ClearFlares( void ) {
 
 	if ( !vk.fragmentStores )
 		return;
-	
+
 	Com_Memset( r_flareStructs, 0, sizeof( r_flareStructs ) );
 	r_activeFlares = NULL;
 	r_inactiveFlares = NULL;
@@ -196,7 +196,7 @@ void RB_AddFlare( void *surface, int fogNum, vec3_t point, vec3_t color, vec3_t 
 
 	// fade the intensity of the flare down as the
 	// light surface turns away from the viewer
-	VectorScale( f->color, d, f->color ); 
+	VectorScale( f->color, d, f->color );
 
 	// save info needed to test
 	f->windowX = backEnd.viewParms.viewportX + window[0];
@@ -236,7 +236,7 @@ void RB_AddDlightFlares( void ) {
 
 		if ( fog )
 		{
-			// find which fog volume the light is in 
+			// find which fog volume the light is in
 			for ( j = 1 ; j < tr.world->numfogs ; j++ ) {
 				fog = &tr.world->fogs[j];
 				for ( k = 0 ; k < 3 ; k++ ) {
@@ -300,7 +300,7 @@ void RB_TestFlare( flare_t *f ) {
 	backEnd.pc.c_flareTests++;
 
 /*
-	We don't have equivalent of glReadPixels() in vulkan 
+	We don't have equivalent of glReadPixels() in vulkan
 	and explicit depth buffer reading may be very slow and require surface conversion.
 
 	So we will use storage buffer and exploit early depth tests by
@@ -308,7 +308,7 @@ void RB_TestFlare( flare_t *f ) {
 	window-x, window-y and world-z: if test dot is not covered by
 	any world geometry - it will invoke fragment shader which will
 	fill storage buffer at desired location, then we discard fragment.
-	In next frame we read storage buffer: if there is a non-zero value 
+	In next frame we read storage buffer: if there is a non-zero value
 	then our flare WAS visible (as we're working with 1-frame delay),
 	multisampled image will cause multiple fragment shader invocations.
 */
@@ -427,7 +427,7 @@ void RB_RenderFlare( flare_t *f ) {
  */
 
 	factor = distance + size * sqrt( r_flareCoeff->value );
-	
+
 	intensity = r_flareCoeff->value * size * size / ( factor * factor );
 
 	VectorScale( f->color, f->drawIntensity * intensity, color );
@@ -438,9 +438,9 @@ void RB_RenderFlare( flare_t *f ) {
 		tess.numVertexes = 1;
 		VectorCopy( f->origin, tess.xyz[0] );
 		tess.fogNum = f->fogNum;
-	
+
 		RB_CalcModulateColorsByFog( fogFactors );
-		
+
 		// We don't need to render the flare if colors are 0 anyways.
 		if ( !(fogFactors[0] || fogFactors[1] || fogFactors[2]) )
 			return;
@@ -449,7 +449,7 @@ void RB_RenderFlare( flare_t *f ) {
 	iColor[0] = color[0] * fogFactors[0];
 	iColor[1] = color[1] * fogFactors[1];
 	iColor[2] = color[2] * fogFactors[2];
-	
+
 	RB_BeginSurface( tr.flareShader, f->fogNum );
 
 	// FIXME: use quadstamp?
@@ -592,7 +592,7 @@ void RB_RenderFlares( void ) {
 	m = vk_ortho( backEnd.viewParms.viewportX, backEnd.viewParms.viewportX + backEnd.viewParms.viewportWidth,
 		backEnd.viewParms.viewportY, backEnd.viewParms.viewportY + backEnd.viewParms.viewportHeight, 0.0, 1.0 );
 #endif
-	
+
 	vk_update_mvp( m );
 
 	for ( f = r_activeFlares ; f ; f = f->next ) {
