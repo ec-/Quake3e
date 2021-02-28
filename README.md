@@ -72,7 +72,7 @@ Original ioquake3 renderer, performance is very poor on non-nvidia systems, unma
 
 ## Build Instructions
 
-### windows/msvc 
+### windows/msvc
 
 Install Visual Studio Community Edition 2017 or later and compile `quake3e` project from solution
 
@@ -88,7 +88,7 @@ To compile with Vulkan backend - clean solution, right click on `quake3e` projec
 
 All build dependencies (libraries, headers) are bundled-in
 
-Build with either `make ARCH=x86` or `make ARCH=x86_64` commands depending on your target system, then copy resulting binaries from created `build` directory or use command: 
+Build with either `make ARCH=x86` or `make ARCH=x86_64` commands depending on your target system, then copy resulting binaries from created `build` directory or use command:
 
 `make install DESTDIR=<path_to_game_files>`
 
@@ -104,7 +104,7 @@ You may need to run the following commands to install packages (using fresh ubun
 
 Build with: `make`
 
-Copy the resulting binaries from created `build` directory or use command: 
+Copy the resulting binaries from created `build` directory or use command:
 
 `make install DESTDIR=<path_to_game_files>`
 
@@ -118,7 +118,7 @@ Install the build dependencies:
 
 Build with: `make`
 
-Copy the resulting binaries from created `build` directory or use command: 
+Copy the resulting binaries from created `build` directory or use command:
 
 `make install DESTDIR=<path_to_game_files>`
 
