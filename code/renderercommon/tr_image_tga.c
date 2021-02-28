@@ -80,7 +80,7 @@ void R_LoadTGA ( const char *name, byte **pic, int *width, int *height)
 	targa_header.id_length = buf_p[0];
 	targa_header.colormap_type = buf_p[1];
 	targa_header.image_type = buf_p[2];
-	
+
 	memcpy(&targa_header.colormap_index, &buf_p[3], 2);
 	memcpy(&targa_header.colormap_length, &buf_p[5], 2);
 	targa_header.colormap_size = buf_p[7];
@@ -100,9 +100,9 @@ void R_LoadTGA ( const char *name, byte **pic, int *width, int *height)
 
 	buf_p += 18;
 
-	if (targa_header.image_type!=2 
+	if (targa_header.image_type!=2
 		&& targa_header.image_type!=10
-		&& targa_header.image_type != 3 ) 
+		&& targa_header.image_type != 3 )
 	{
 		ri.Error (ERR_DROP, "LoadTGA: Only type 2 (RGB), 3 (gray), and 10 (RGB) TGA images supported");
 	}
@@ -136,9 +136,9 @@ void R_LoadTGA ( const char *name, byte **pic, int *width, int *height)
 
 		buf_p += targa_header.id_length;  // skip TARGA image comment
 	}
-	
+
 	if ( targa_header.image_type == 2 || targa_header.image_type == 3 )
-	{ 
+	{
 		if ( buf_p + columns * rows * targa_header.pixel_size / 8 > end )
 		{
 			ri.Error( ERR_DROP, "LoadTGA: file truncated (%s)", name );
@@ -225,7 +225,7 @@ void R_LoadTGA ( const char *name, byte **pic, int *width, int *height)
 							red = green = blue = alphabyte = 0; // silence compiler warning
 							break;
 					}
-	
+
 					for(j=0;j<packetSize;j++) {
 						*pixbuf++=red;
 						*pixbuf++=green;
@@ -279,7 +279,7 @@ void R_LoadTGA ( const char *name, byte **pic, int *width, int *height)
 							else
 								goto breakOut;
 							pixbuf = targa_rgba + row*columns*4;
-						}						
+						}
 					}
 				}
 			}
@@ -287,8 +287,8 @@ void R_LoadTGA ( const char *name, byte **pic, int *width, int *height)
 		}
 	}
 
-#if 0 
-  // TTimo: this is the chunk of code to ensure a behavior that meets TGA specs 
+#if 0
+  // TTimo: this is the chunk of code to ensure a behavior that meets TGA specs
   // bit 5 set => top-down
   if (targa_header.attributes & 0x20) {
     unsigned char *flip = (unsigned char*)malloc (columns*4);

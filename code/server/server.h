@@ -37,7 +37,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 typedef struct svEntity_s {
 	struct worldSector_s *worldSector;
 	struct svEntity_s *nextEntityInWorldSector;
-	
+
 	entityState_t	baseline;		// for delta compression of initial sighting
 	int			numClusters;		// if -1, use headnode instead
 	int			clusternums[MAX_ENT_CLUSTERS];
@@ -157,9 +157,9 @@ typedef struct client_s {
 	char			userinfo[MAX_INFO_STRING];		// name, etc
 
 	char			reliableCommands[MAX_RELIABLE_COMMANDS][MAX_STRING_CHARS];
-	int				reliableSequence;		// last added reliable message, not necesarily sent or acknowledged yet
+	int				reliableSequence;		// last added reliable message, not necessarily sent or acknowledged yet
 	int				reliableAcknowledge;	// last acknowledged reliable message
-	int				reliableSent;			// last sent reliable message, not necesarily acknowledged yet
+	int				reliableSent;			// last sent reliable message, not necessarily acknowledged yet
 	int				messageAcknowledge;
 
 	int				gamestateMessageNum;	// netchan->outgoingSequence of gamestate
@@ -264,7 +264,7 @@ typedef struct
 	netadr_t ip;
 	// For a CIDR-Notation type suffix
 	int subnet;
-	
+
 	qboolean isexception;
 } serverBan_t;
 #endif

@@ -73,7 +73,7 @@ static const keyname_t keynames[] =
 	{"+", K_PLUS},
 	{",", K_COMMA},
 	{"-", K_MINUS},
-	{".", K_DOT}, 
+	{".", K_DOT},
 	{"/", K_SLASH},
 	{"SEMICOLON", K_SEMICOLON},	// because a raw semicolon separates commands
 	{"=", K_EQUAL},
@@ -95,7 +95,7 @@ static const keyname_t keynames[] =
 	{"COMMAND", K_COMMAND},
 
 	{"CAPSLOCK", K_CAPSLOCK},
-	
+
 	{"F1", K_F1},
 	{"F2", K_F2},
 	{"F3", K_F3},
@@ -248,7 +248,7 @@ static const keyname_t keynames[] =
 Key_SetOverstrikeMode
 ===================
 */
-qboolean Key_GetOverstrikeMode( void ) 
+qboolean Key_GetOverstrikeMode( void )
 {
 	return key_overstrikeMode;
 }
@@ -259,7 +259,7 @@ qboolean Key_GetOverstrikeMode( void )
 Key_SetOverstrikeMode
 ===================
 */
-void Key_SetOverstrikeMode( qboolean state ) 
+void Key_SetOverstrikeMode( qboolean state )
 {
 	key_overstrikeMode = state;
 }
@@ -270,9 +270,9 @@ void Key_SetOverstrikeMode( qboolean state )
 Key_IsDown
 ===================
 */
-qboolean Key_IsDown( int keynum ) 
+qboolean Key_IsDown( int keynum )
 {
-	if ( keynum < 0 || keynum >= MAX_KEYS ) 
+	if ( keynum < 0 || keynum >= MAX_KEYS )
 	{
 		return qfalse;
 	}
@@ -289,14 +289,14 @@ Returns a key number to be used to index keys[] by looking at
 the given string.  Single ascii characters return themselves, while
 the K_* names are matched up.
 
-0x11 will be interpreted as raw hex, which will allow new controlers
+0x11 will be interpreted as raw hex, which will allow new controllers
 
 to be configured even if they don't have defined names.
 ===================
 */
 int Key_StringToKeynum( const char *str ) {
 	const keyname_t	*kn;
-	
+
 	if ( !str || str[0] == '\0' ) {
 		return -1;
 	}
@@ -307,7 +307,7 @@ int Key_StringToKeynum( const char *str ) {
 	// check for hex code
 	if ( strlen( str ) == 4 ) {
 		int n = Com_HexStrToInt( str );
-		
+
 		if ( n >= 0 ) {
 			return n;
 		}
@@ -386,12 +386,12 @@ void Key_SetBinding( int keynum, const char *binding ) {
 	if ( keys[ keynum ].binding ) {
 		Z_Free( keys[ keynum ].binding );
 	}
-		
+
 	// allocate memory for new binding
 	keys[ keynum ].binding = CopyString( binding );
 
 	// consider this like modifying an archived cvar, so the
-	// file write will be triggered at the next oportunity
+	// file write will be triggered at the next opportunity
 	cvar_modifiedFlags |= CVAR_ARCHIVE;
 }
 
@@ -410,7 +410,7 @@ const char *Key_GetBinding( int keynum ) {
 }
 
 
-/* 
+/*
 ===================
 Key_GetKey
 ===================
@@ -443,7 +443,7 @@ static void Key_Unbind_f( void )
 		Com_Printf( "unbind <key> : remove commands from a key\n" );
 		return;
 	}
-	
+
 	b = Key_StringToKeynum( Cmd_Argv( 1 ) );
 	if ( b == -1 )
 	{
@@ -463,8 +463,8 @@ Key_Unbindall_f
 static void Key_Unbindall_f( void )
 {
 	int		i;
-	
-	for ( i = 0 ; i < MAX_KEYS; i++ ) 
+
+	for ( i = 0 ; i < MAX_KEYS; i++ )
 	{
 		if ( keys[i].binding )
 		{
@@ -482,7 +482,7 @@ Key_Bind_f
 static void Key_Bind_f( void )
 {
 	int c, b;
-	
+
 	c = Cmd_Argc();
 
 	if ( c < 2 )
@@ -506,7 +506,7 @@ static void Key_Bind_f( void )
 			Com_Printf( "\"%s\" is not bound\n", Cmd_Argv( 1 ) );
 		return;
 	}
-	
+
 	// copy the rest of the command line
 	Key_SetBinding( b, Cmd_ArgsFrom( 2 ) );
 }
@@ -663,7 +663,7 @@ void Key_ParseBinding( int key, qboolean down, unsigned time )
 Com_InitKeyCommands
 ===================
 */
-void Com_InitKeyCommands( void ) 
+void Com_InitKeyCommands( void )
 {
 	// register our functions
 	Cmd_AddCommand( "bind", Key_Bind_f );
