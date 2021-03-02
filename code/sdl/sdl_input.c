@@ -359,9 +359,9 @@ static void IN_GobbleMotionEvents( void )
 IN_ActivateMouse
 ===============
 */
-static void IN_ActivateMouse( qboolean isFullscreen )
+static void IN_ActivateMouse( void )
 {
-	if ( !mouseAvailable || !SDL_WasInit( SDL_INIT_VIDEO ) )
+	if ( !mouseAvailable )
 		return;
 
 	if ( !mouseActive )
@@ -373,7 +373,7 @@ static void IN_ActivateMouse( qboolean isFullscreen )
 	}
 
 	// in_nograb makes no sense in fullscreen mode
-	if ( !isFullscreen )
+	if ( !glw_state.isFullscreen )
 	{
 		if ( in_nograb->modified || !mouseActive )
 		{
@@ -398,16 +398,8 @@ static void IN_ActivateMouse( qboolean isFullscreen )
 IN_DeactivateMouse
 ===============
 */
-static void IN_DeactivateMouse( qboolean isFullscreen )
+static void IN_DeactivateMouse( void )
 {
-	if ( !SDL_WasInit( SDL_INIT_VIDEO ) )
-		return;
-
-	// Always show the cursor when the mouse is disabled,
-	// but not when fullscreen
-	if ( !isFullscreen )
-		SDL_ShowCursor( SDL_TRUE );
-
 	if ( !mouseAvailable )
 		return;
 
@@ -418,18 +410,24 @@ static void IN_DeactivateMouse( qboolean isFullscreen )
 		SDL_SetWindowGrab( SDL_window, SDL_FALSE );
 		SDL_SetRelativeMouseMode( SDL_FALSE );
 
-		// Don't warp the mouse unless the cursor is within the window
-		if ( SDL_GetWindowFlags( SDL_window ) & SDL_WINDOW_MOUSE_FOCUS )
+		if ( gw_active && !gw_minimized )
 			SDL_WarpMouseInWindow( SDL_window, glw_state.window_width / 2, glw_state.window_height / 2 );
+		else
+			SDL_WarpMouseGlobal( glw_state.desktop_width / 2, glw_state.desktop_height / 2 );
 
 		mouseActive = qfalse;
 	}
+
+	// Always show the cursor when the mouse is disabled,
+	// but not when fullscreen
+	if ( !glw_state.isFullscreen )
+		SDL_ShowCursor( SDL_TRUE );
 }
 
 
 #ifdef USE_JOYSTICK
 // We translate axes movement into keypresses
-static int joy_keys[16] = {
+static const int joy_keys[16] = {
 	K_LEFTARROW, K_RIGHTARROW,
 	K_UPARROW, K_DOWNARROW,
 	K_JOY17, K_JOY18,
@@ -442,7 +440,7 @@ static int joy_keys[16] = {
 
 // translate hat events into keypresses
 // the 4 highest buttons are used for the first hat ...
-static int hat_keys[16] = {
+static const int hat_keys[16] = {
 	K_JOY29, K_JOY30,
 	K_JOY31, K_JOY32,
 	K_JOY25, K_JOY26,
@@ -797,6 +795,8 @@ static void IN_JoyMove( void )
 	unsigned int hats = 0;
 	int total = 0;
 	int i = 0;
+
+	in_eventTime = Sys_Milliseconds()
 
 	if (gamepad)
 	{
@@ -1156,7 +1156,7 @@ void HandleEvents( void )
 				switch( e.window.event )
 				{
 					case SDL_WINDOWEVENT_MOVED:
-						if ( gw_active && !glw_state.isFullscreen ) {
+						if ( gw_active && !gw_minimized && !glw_state.isFullscreen ) {
 							Cvar_SetIntegerValue( "vid_xpos", e.window.data1 );
 							Cvar_SetIntegerValue( "vid_ypos", e.window.data2 );
 						}
@@ -1196,35 +1196,25 @@ IN_Frame
 */
 void IN_Frame( void )
 {
-	qboolean loading;
-	qboolean fullscreen;
-
 #ifdef USE_JOYSTICK
 	IN_JoyMove();
 #endif
 
-	// If not DISCONNECTED (main menu) or ACTIVE (in game), we're loading
-	loading = ( cls.state != CA_DISCONNECTED && cls.state != CA_ACTIVE );
+	if ( Key_GetCatcher() & KEYCATCH_CONSOLE ) {
+		// temporarily deactivate if not in the game and
+		// running on the desktop with multimonitor configuration
+		if ( !glw_state.isFullscreen || glw_state.monitorCount > 1 ) {
+			IN_DeactivateMouse();
+			return;
+		}
+	}
 
-	fullscreen = glw_state.isFullscreen;
+	if ( !gw_active || gw_minimized || in_nograb->integer ) {
+		IN_DeactivateMouse();
+		return;
+	}
 
-	if ( !fullscreen && ( Key_GetCatcher() & KEYCATCH_CONSOLE ) )
-	{
-		// Console is down in windowed mode
-		IN_DeactivateMouse( fullscreen );
-	}
-	else if( !fullscreen && loading )
-	{
-		// Loading in windowed mode
-		IN_DeactivateMouse( fullscreen );
-	}
-	else if ( !( SDL_GetWindowFlags( SDL_window ) & SDL_WINDOW_INPUT_FOCUS ) )
-	{
-		// Window not got focus
-		IN_DeactivateMouse( fullscreen );
-	}
-	else
-		IN_ActivateMouse( fullscreen );
+	IN_ActivateMouse();
 
 	//IN_ProcessEvents();
 	//HandleEvents();
@@ -1296,11 +1286,11 @@ void IN_Init( void )
 	// ~ and `, as keys and characters
 	cl_consoleKeys = Cvar_Get( "cl_consoleKeys", "~ ` 0x7e 0x60", CVAR_ARCHIVE );
 
-	SDL_StartTextInput();
-
 	mouseAvailable = ( in_mouse->value != 0 ) ? qtrue : qfalse;
 
-	IN_DeactivateMouse( glw_state.isFullscreen );
+	SDL_StartTextInput();
+
+	//IN_DeactivateMouse();
 
 #ifdef USE_JOYSTICK
 	IN_InitJoystick();
@@ -1322,7 +1312,7 @@ void IN_Shutdown( void )
 {
 	SDL_StopTextInput();
 
-	IN_DeactivateMouse( glw_state.isFullscreen );
+	IN_DeactivateMouse();
 
 	mouseAvailable = qfalse;
 
