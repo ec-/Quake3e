@@ -68,6 +68,9 @@ void GLimp_Shutdown( qboolean unloadDLL )
 	SDL_DestroyWindow( SDL_window );
 	SDL_window = NULL;
 
+	if ( glw_state.isFullscreen )
+		SDL_WarpMouseGlobal( glw_state.desktop_width / 2, glw_state.desktop_height / 2 );
+
 	if ( unloadDLL )
 		SDL_QuitSubSystem( SDL_INIT_VIDEO );
 }
@@ -753,6 +756,9 @@ void VKimp_Shutdown( qboolean unloadDLL )
 
 	SDL_DestroyWindow( SDL_window );
 	SDL_window = NULL;
+
+	if ( glw_state.isFullscreen )
+		SDL_WarpMouseGlobal( glw_state.desktop_width / 2, glw_state.desktop_height / 2 );
 
 	if ( unloadDLL )
 		SDL_QuitSubSystem( SDL_INIT_VIDEO );

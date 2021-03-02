@@ -339,18 +339,19 @@ static keyNum_t IN_TranslateSDLToQ3Key( SDL_Keysym *keysym, qboolean down )
 IN_GobbleMotionEvents
 ===============
 */
-static void IN_GobbleMotionEvents( void )
+static void IN_GobbleMouseEvents( void )
 {
 	SDL_Event dummy[ 1 ];
 	int val = 0;
 
-	// Gobble any mouse motion events
-	SDL_PumpEvents( );
-	while( ( val = SDL_PeepEvents( dummy, 1, SDL_GETEVENT,
-		SDL_MOUSEMOTION, SDL_MOUSEMOTION ) ) > 0 ) { }
+	// Gobble any mouse events
+	SDL_PumpEvents();
+
+	while( ( val = SDL_PeepEvents( dummy, ARRAY_LEN( dummy ), SDL_GETEVENT,
+		SDL_MOUSEMOTION, SDL_MOUSEWHEEL ) ) > 0 ) { }
 
 	if ( val < 0 )
-		Com_Printf( "IN_GobbleMotionEvents failed: %s\n", SDL_GetError( ) );
+		Com_Printf( "%s failed: %s\n", __func__, SDL_GetError() );
 }
 
 
@@ -366,10 +367,10 @@ static void IN_ActivateMouse( void )
 
 	if ( !mouseActive )
 	{
+		IN_GobbleMouseEvents();
+
 		SDL_SetRelativeMouseMode( in_mouse->integer == 1 ? SDL_TRUE : SDL_FALSE );
 		SDL_SetWindowGrab( SDL_window, SDL_TRUE );
-
-		IN_GobbleMotionEvents();
 	}
 
 	// in_nograb makes no sense in fullscreen mode
@@ -405,7 +406,7 @@ static void IN_DeactivateMouse( void )
 
 	if ( mouseActive )
 	{
-		IN_GobbleMotionEvents();
+		IN_GobbleMouseEvents();
 
 		SDL_SetWindowGrab( SDL_window, SDL_FALSE );
 		SDL_SetRelativeMouseMode( SDL_FALSE );
