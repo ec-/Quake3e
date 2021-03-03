@@ -471,9 +471,8 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 
 	if ( SDL_window )
 	{
-		SDL_Surface *icon;
 #ifdef USE_ICON
-		icon = SDL_CreateRGBSurfaceFrom(
+		SDL_Surface *icon = SDL_CreateRGBSurfaceFrom(
 			(void *)CLIENT_WINDOW_ICON.pixel_data,
 			CLIENT_WINDOW_ICON.width,
 			CLIENT_WINDOW_ICON.height,
@@ -485,9 +484,9 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 			0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF
 #endif
 		);
-#endif
 		SDL_SetWindowIcon( SDL_window, icon );
 		SDL_FreeSurface( icon );
+#endif
 	}
 	else
 	{

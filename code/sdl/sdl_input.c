@@ -797,7 +797,7 @@ static void IN_JoyMove( void )
 	int total = 0;
 	int i = 0;
 
-	in_eventTime = Sys_Milliseconds()
+	in_eventTime = Sys_Milliseconds();
 
 	if (gamepad)
 	{

@@ -426,6 +426,8 @@ else
 
   BASE_CFLAGS += -Wno-unused-result
 
+  BASE_CFLAGS += -DUSE_ICON
+
   BASE_CFLAGS += -I/usr/include -I/usr/local/include
 
   OPTIMIZE = -O2 -fvisibility=hidden
