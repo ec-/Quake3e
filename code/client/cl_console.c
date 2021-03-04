@@ -50,6 +50,7 @@ typedef struct {
 
 	float	displayFrac;	// aproaches finalFrac at scr_conspeed
 	float	finalFrac;		// 0.0 to 1.0 lines of console to display
+	float	userFrac;		// based on con_height* cvars, different with modifier keys
 
 	int		vislines;		// in scanlines
 
@@ -78,6 +79,10 @@ cvar_t		*con_notifylines;
 cvar_t		*con_notifyx;
 cvar_t		*con_notifyy;
 cvar_t		*con_notifykeep;
+cvar_t		*con_height;
+cvar_t		*con_heightShift;
+cvar_t		*con_heightCtrl;
+cvar_t		*con_heightAlt;
 
 int         g_console_field_width = DEFAULT_CONSOLE_WIDTH;
 
@@ -196,6 +201,20 @@ void Con_ToggleConsole_f( void ) {
 	if (!con_notifykeep->integer) {
 		Con_ClearNotify();
 	}
+
+	if ( keys[K_SHIFT].down )	{
+		con.userFrac = con_heightShift->value;
+	}
+	else if ( keys[K_CTRL].down )	{
+		con.userFrac = con_heightCtrl->value;
+	}
+	else if ( keys[K_ALT].down )	{
+		con.userFrac = con_heightAlt->value;
+	}
+	else {
+		con.userFrac = con_height->value;
+	}
+
 	Key_SetCatcher( Key_GetCatcher() ^ KEYCATCH_CONSOLE );
 }
 
@@ -496,6 +515,14 @@ void Con_Init( void )
 	con_notifyy = Cvar_Get( "con_notifyY", "0", CVAR_ARCHIVE );
 	con_notifykeep = Cvar_Get( "con_notifyKeep", "0", CVAR_ARCHIVE );
 	con_conspeed = Cvar_Get( "con_togglespeed", "3", 0 );
+	con_height = Cvar_Get( "con_height", "0.5", CVAR_ARCHIVE_ND );
+	con_heightShift = Cvar_Get( "con_heightShift", "0.5", CVAR_ARCHIVE_ND ); // same default because Shift+Esc opens the console too 
+	con_heightCtrl = Cvar_Get( "con_heightCtrl", "0.25", CVAR_ARCHIVE_ND );
+	con_heightAlt = Cvar_Get( "con_heightAlt", "1.0", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( con_height, "0.1", "1.0", CV_FLOAT ); // 0.1 to prevent the console from being completely hidden
+	Cvar_CheckRange( con_heightShift, "0.1", "1.0", CV_FLOAT );
+	Cvar_CheckRange( con_heightCtrl, "0.1", "1.0", CV_FLOAT );
+	Cvar_CheckRange( con_heightAlt, "0.1", "1.0", CV_FLOAT );
 
 
 	Field_Clear( &g_consoleField );
@@ -1099,7 +1126,7 @@ void Con_RunConsole( void )
 {
 	// decide on the destination height of the console
 	if ( Key_GetCatcher( ) & KEYCATCH_CONSOLE )
-		con.finalFrac = 0.5;	// half screen
+		con.finalFrac = con.userFrac;	// based on con_height* cvars, different with modifier keys
 	else
 		con.finalFrac = 0.0;	// none visible
 
