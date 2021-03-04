@@ -48,7 +48,7 @@ static LRESULT CALLBACK WinKeyHook( int code, WPARAM wParam, LPARAM lParam )
 	{
 	case WM_KEYDOWN:
 	case WM_SYSKEYDOWN:
-		if ( ( key->vkCode == VK_LWIN || key->vkCode == VK_RWIN ) && ( !(Key_GetCatcher() & KEYCATCH_CONSOLE) && in_blockWinKey->integer) ) {
+		if ( ( key->vkCode == VK_LWIN || key->vkCode == VK_RWIN ) && !(Key_GetCatcher() & (KEYCATCH_CONSOLE | KEYCATCH_UI | KEYCATCH_MESSAGE)) && in_blockWinKey->integer ) {
 			Sys_QueEvent( 0, SE_KEY, K_SUPER, qtrue, 0, NULL );
 			return 1;
 		}
@@ -58,7 +58,7 @@ static LRESULT CALLBACK WinKeyHook( int code, WPARAM wParam, LPARAM lParam )
 		}
 	case WM_KEYUP:
 	case WM_SYSKEYUP:
-		if ( ( key->vkCode == VK_LWIN || key->vkCode == VK_RWIN ) && ( !(Key_GetCatcher() & KEYCATCH_CONSOLE) && in_blockWinKey->integer) ) {
+		if ( ( key->vkCode == VK_LWIN || key->vkCode == VK_RWIN ) && !(Key_GetCatcher() & (KEYCATCH_CONSOLE | KEYCATCH_UI | KEYCATCH_MESSAGE)) && in_blockWinKey->integer ) {
 			Sys_QueEvent( 0, SE_KEY, K_SUPER, qfalse, 0, NULL );
 			return 1;
 		}
