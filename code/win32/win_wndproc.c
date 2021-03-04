@@ -31,7 +31,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //static UINT MSH_MOUSEWHEEL;
 
 // Console variables that we need to access from this module
-cvar_t		*in_winKeyDisable;
+cvar_t		*in_blockWinKey;
 cvar_t		*in_forceCharset;
 
 static HHOOK WinHook;
@@ -48,7 +48,7 @@ static LRESULT CALLBACK WinKeyHook( int code, WPARAM wParam, LPARAM lParam )
 	{
 	case WM_KEYDOWN:
 	case WM_SYSKEYDOWN:
-		if ( ( key->vkCode == VK_LWIN || key->vkCode == VK_RWIN ) && ( !(Key_GetCatcher() & KEYCATCH_CONSOLE) && in_winKeyDisable->integer) ) {
+		if ( ( key->vkCode == VK_LWIN || key->vkCode == VK_RWIN ) && ( !(Key_GetCatcher() & KEYCATCH_CONSOLE) && in_blockWinKey->integer) ) {
 			Sys_QueEvent( 0, SE_KEY, K_SUPER, qtrue, 0, NULL );
 			return 1;
 		}
@@ -58,7 +58,7 @@ static LRESULT CALLBACK WinKeyHook( int code, WPARAM wParam, LPARAM lParam )
 		}
 	case WM_KEYUP:
 	case WM_SYSKEYUP:
-		if ( ( key->vkCode == VK_LWIN || key->vkCode == VK_RWIN ) && ( !(Key_GetCatcher() & KEYCATCH_CONSOLE) && in_winKeyDisable->integer) ) {
+		if ( ( key->vkCode == VK_LWIN || key->vkCode == VK_RWIN ) && ( !(Key_GetCatcher() & KEYCATCH_CONSOLE) && in_blockWinKey->integer) ) {
 			Sys_QueEvent( 0, SE_KEY, K_SUPER, qfalse, 0, NULL );
 			return 1;
 		}
@@ -598,7 +598,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 		//MSH_MOUSEWHEEL = RegisterWindowMessage( TEXT( "MSWHEEL_ROLLMSG" ) ); 
 
-		in_winKeyDisable = Cvar_Get( "in_winKeyDisable", "1", CVAR_ARCHIVE_ND );
+		in_blockWinKey = Cvar_Get( "in_blockWinKey", "1", CVAR_ARCHIVE_ND );
 		WIN_EnableHook();
 		hWinEventHook = SetWinEventHook( EVENT_SYSTEM_SWITCHSTART, EVENT_SYSTEM_SWITCHSTART, NULL, WinEventProc, 
 			0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS );
