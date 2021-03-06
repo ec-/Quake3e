@@ -387,7 +387,6 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 	VkImageViewCreateInfo view;
 	VkSurfaceCapabilitiesKHR surface_caps;
 	VkExtent2D image_extent;
-	VkCommandBuffer command_buffer;
 	uint32_t present_mode_count, i;
 	VkPresentModeKHR present_mode;
 	VkPresentModeKHR *present_modes;
@@ -534,16 +533,18 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 		SET_OBJECT_NAME( vk.swapchain_image_views[i], va( "swapchain image %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_VIEW_EXT );
 	}
 
-	command_buffer = begin_command_buffer();
+	if ( vk.initSwapchainLayout != VK_IMAGE_LAYOUT_UNDEFINED ) {
+		VkCommandBuffer command_buffer = begin_command_buffer();
 
-	for ( i = 0; i < vk.swapchain_image_count; i++ ) {
-		record_image_layout_transition( command_buffer, vk.swapchain_images[i],
-			VK_IMAGE_ASPECT_COLOR_BIT,
-			0, VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR );
+		for ( i = 0; i < vk.swapchain_image_count; i++ ) {
+			record_image_layout_transition( command_buffer, vk.swapchain_images[i],
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				0, VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_ACCESS_MEMORY_READ_BIT, vk.initSwapchainLayout );
+		}
+
+		end_command_buffer( command_buffer );
 	}
-
-	end_command_buffer( command_buffer );
 }
 
 
@@ -573,7 +574,7 @@ static void vk_create_render_passes( void )
 		attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;		// needed for presentation
 		attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attachments[0].initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		attachments[0].initialLayout = vk.initSwapchainLayout;
 		attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 	}
 	else
@@ -788,7 +789,7 @@ static void vk_create_render_passes( void )
 	attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE; // needed for presentation
 	attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	attachments[0].initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	attachments[0].initialLayout = vk.initSwapchainLayout;
 	attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 	VK_CHECK( qvkCreateRenderPass( device, &desc, NULL, &vk.render_pass.gamma ) );
@@ -3357,6 +3358,7 @@ static void vk_restart_swapchain( const char *funcname )
 	setup_surface_formats( vk.physical_device );
 
 	vk_create_sync_primitives();
+	vk.initSwapchainLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	vk_create_swapchain( vk.physical_device, vk.device, vk.surface, vk.present_format, &vk.swapchain );
 	vk_create_attachments();
 	vk_create_render_passes();
@@ -3745,6 +3747,8 @@ void vk_initialize( void )
 	vk.renderPassIndex = RENDER_PASS_MAIN; // default render pass
 
 	// swapchain
+	vk.initSwapchainLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	//vk.initSwapchainLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	vk_create_swapchain( vk.physical_device, vk.device, vk.surface, vk.present_format, &vk.swapchain );
 
 	// color/depth attachments

@@ -497,6 +497,8 @@ typedef struct {
 	VkFormat depth_format;
 	VkFormat bloom_format;
 
+	VkImageLayout initSwapchainLayout;
+
 	qboolean fastSky;		// requires VK_IMAGE_USAGE_TRANSFER_DST_BIT
 	qboolean fboActive;
 	qboolean blitEnabled;

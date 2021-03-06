@@ -1,4 +1,4 @@
-	/*
+/*
 ===========================================================================
 Copyright (C) 1999-2005 Id Software, Inc.
 
@@ -275,6 +275,8 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 	{
 		flags |= SDL_WINDOW_BORDERLESS;
 	}
+
+	flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 
 	config->isFullscreen = fullscreen;
 	colorBits = r_colorbits->value;

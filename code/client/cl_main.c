@@ -3140,7 +3140,7 @@ static void CL_ShutdownRef( refShutdownCode_t code ) {
 
 #ifdef USE_RENDERER_DLOPEN
 	if ( cl_renderer->modified ) {
-		unloadDLL = qtrue;
+		code = REF_UNLOAD_DLL;
 	}
 #endif
 
