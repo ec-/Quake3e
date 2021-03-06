@@ -547,7 +547,7 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 }
 
 
-static void create_render_pass( VkDevice device, VkFormat depth_format )
+static void vk_create_render_passes( void )
 {
 	VkAttachmentDescription attachments[3]; // color | depth | msaa color
 	VkAttachmentReference colorResolveRef;
@@ -556,7 +556,12 @@ static void create_render_pass( VkDevice device, VkFormat depth_format )
 	VkSubpassDescription subpass;
 	VkSubpassDependency deps[2];
 	VkRenderPassCreateInfo desc;
+	VkFormat depth_format;
+	VkDevice device;
 	uint32_t i;
+
+	depth_format = vk.depth_format;
+	device = vk.device;
 
 	if ( r_fbo->integer == 0 )
 	{
@@ -1987,7 +1992,65 @@ static VkSampler vk_find_sampler( const Vk_Sampler_Def *def ) {
 }
 
 
-void vk_init_buffers( void )
+static void vk_update_attachment_descriptors( void ) {
+
+	if ( vk.color_image_view )
+	{
+		VkDescriptorImageInfo info;
+		VkWriteDescriptorSet desc;
+		Vk_Sampler_Def sd;
+
+		Com_Memset( &sd, 0, sizeof( sd ) );
+		sd.gl_mag_filter = sd.gl_min_filter = vk.blitFilter;
+		sd.address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sd.max_lod_1_0 = qtrue;
+		sd.noAnisotropy = qtrue;
+
+		info.sampler = vk_find_sampler( &sd );
+		info.imageView = vk.color_image_view;
+		info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		desc.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		desc.dstSet = vk.color_descriptor;
+		desc.dstBinding = 0;
+		desc.dstArrayElement = 0;
+		desc.descriptorCount = 1;
+		desc.pNext = NULL;
+		desc.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		desc.pImageInfo = &info;
+		desc.pBufferInfo = NULL;
+		desc.pTexelBufferView = NULL;
+
+		qvkUpdateDescriptorSets( vk.device, 1, &desc, 0, NULL );
+
+		// screenmap
+		sd.gl_mag_filter = sd.gl_min_filter = GL_LINEAR;
+		sd.max_lod_1_0 = qfalse;
+		sd.noAnisotropy = qtrue;
+
+		info.sampler = vk_find_sampler( &sd );
+
+		info.imageView = vk.screenMap.color_image_view;
+		desc.dstSet = vk.screenMap.color_descriptor;
+
+		qvkUpdateDescriptorSets( vk.device, 1, &desc, 0, NULL );
+
+		// bloom images
+		if ( r_bloom->integer )
+		{
+			uint32_t i;
+			for ( i = 0; i < ARRAY_LEN( vk.bloom_image_descriptor ); i++ )
+			{
+				info.imageView = vk.bloom_image_view[i];
+				desc.dstSet = vk.bloom_image_descriptor[i];
+
+				qvkUpdateDescriptorSets( vk.device, 1, &desc, 0, NULL );
+			}
+		}
+	}
+}
+
+
+void vk_init_descriptors( void )
 {
 	VkDescriptorSetAllocateInfo alloc;
 	VkDescriptorBufferInfo info;
@@ -2056,58 +2119,7 @@ void vk_init_buffers( void )
 		alloc.descriptorSetCount = 1;
 		VK_CHECK( qvkAllocateDescriptorSets( vk.device, &alloc, &vk.screenMap.color_descriptor ) ); // screenmap
 
-		// update descriptor set
-		{
-			VkDescriptorImageInfo info;
-			VkWriteDescriptorSet desc;
-			Vk_Sampler_Def sd;
-
-			Com_Memset( &sd, 0, sizeof( sd ) );
-			sd.gl_mag_filter = sd.gl_min_filter = vk.blitFilter;
-			sd.address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-			sd.max_lod_1_0 = qtrue;
-			sd.noAnisotropy = qtrue;
-
-			info.sampler = vk_find_sampler( &sd );
-			info.imageView = vk.color_image_view;
-			info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			desc.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			desc.dstSet = vk.color_descriptor;
-			desc.dstBinding = 0;
-			desc.dstArrayElement = 0;
-			desc.descriptorCount = 1;
-			desc.pNext = NULL;
-			desc.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			desc.pImageInfo = &info;
-			desc.pBufferInfo = NULL;
-			desc.pTexelBufferView = NULL;
-
-			qvkUpdateDescriptorSets( vk.device, 1, &desc, 0, NULL );
-
-			// screenmap
-			sd.gl_mag_filter = sd.gl_min_filter = GL_LINEAR;
-			sd.max_lod_1_0 = qfalse;
-			sd.noAnisotropy = qtrue;
-
-			info.sampler = vk_find_sampler( &sd );
-
-			info.imageView = vk.screenMap.color_image_view;
-			desc.dstSet = vk.screenMap.color_descriptor;
-
-			qvkUpdateDescriptorSets( vk.device, 1, &desc, 0, NULL );
-
-			// bloom images
-			if ( r_bloom->integer )
-			{
-				for ( i = 0; i < ARRAY_LEN( vk.bloom_image_descriptor ); i++ )
-				{
-					info.imageView = vk.bloom_image_view[i];
-					desc.dstSet = vk.bloom_image_descriptor[i];
-
-					qvkUpdateDescriptorSets( vk.device, 1, &desc, 0, NULL );
-				}
-			}
-		}
+		vk_update_attachment_descriptors();
 	}
 }
 
@@ -2433,15 +2445,13 @@ static void vk_create_shader_modules( void )
 	SET_OBJECT_NAME( vk.modules.gamma_vs, "gamma post-processing vertex module", VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT );
 }
 
-void vk_create_blur_pipeline( uint32_t index, uint32_t width, uint32_t height, qboolean horizontal_pass );
 
-static void vk_create_persistent_pipelines( void )
+static void vk_alloc_persistent_pipelines( void )
 {
 	unsigned int state_bits;
 	Com_Memset( &vk.pipelines, 0, sizeof( vk.pipelines ) );
 
 	vk.pipelines_count = 0;
-	vk.pipelines_created_count = 0;
 	vk.pipelines_world_base = 0;
 
 	{
@@ -2692,7 +2702,12 @@ static void vk_create_persistent_pipelines( void )
 			vk.images_debug_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
 		}
 	}
+}
 
+void vk_create_blur_pipeline( uint32_t index, uint32_t width, uint32_t height, qboolean horizontal_pass );
+
+static void vk_create_bloom_pipelines( void )
+{
 	if ( vk.fboActive && r_bloom->integer )
 	{
 		uint32_t width = gls.captureWidth;
@@ -2709,6 +2724,19 @@ static void vk_create_persistent_pipelines( void )
 		}
 
 		vk_create_post_process_pipeline( 2, glConfig.vidWidth, glConfig.vidHeight ); // bloom blending
+	}
+}
+
+
+void vk_update_post_process_pipelines( void )
+{
+	if ( vk.fboActive ) {
+		// update gamma shader
+		vk_create_post_process_pipeline( 0, 0, 0 );
+		if ( vk.capture.image ) {
+			// update capture pipeline
+			vk_create_post_process_pipeline( 3, gls.captureWidth, gls.captureHeight );
+		}
 	}
 }
 
@@ -2974,6 +3002,7 @@ static void create_depth_attachment( uint32_t width, uint32_t height, VkSampleCo
 
 	vk_add_attachment_desc( *image, image_view, create_desc.usage, &memory_requirements, vk.depth_format, image_aspect_flags, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL );
 }
+
 
 static void vk_create_attachments( void )
 {
@@ -3302,17 +3331,41 @@ static void vk_destroy_swapchain( void ) {
 	qvkDestroySwapchainKHR( vk.device, vk.swapchain, NULL );
 }
 
+static void vk_destroy_attachments( void );
+static void vk_destroy_render_passes( void );
+static void vk_destroy_pipelines( qboolean resetCount );
 
-void vk_restart_swapchain( const char *funcname )
+static void vk_restart_swapchain( const char *funcname )
 {
+	uint32_t i;
 	ri.Printf( PRINT_WARNING, "%s(): restarting swapchain...\n", funcname );
+
 	vk_wait_idle();
+
+	for ( i = 0; i < NUM_COMMAND_BUFFERS; i++ ) {
+		qvkResetCommandBuffer( vk.tess[i].command_buffer, 0 );
+	}
+
+	vk_destroy_pipelines( qfalse );
 	vk_destroy_framebuffers();
+	vk_destroy_render_passes();
+	vk_destroy_attachments();
 	vk_destroy_swapchain();
 	vk_destroy_sync_primitives();
+
+	vk_select_surface_format( vk.physical_device, vk.surface );
+	setup_surface_formats( vk.physical_device );
+
 	vk_create_sync_primitives();
 	vk_create_swapchain( vk.physical_device, vk.device, vk.surface, vk.present_format, &vk.swapchain );
+	vk_create_attachments();
+	vk_create_render_passes();
 	vk_create_framebuffers();
+	vk_create_bloom_pipelines();
+
+	vk_update_attachment_descriptors();
+
+	vk_update_post_process_pipelines();
 }
 
 
@@ -3547,19 +3600,19 @@ void vk_initialize( void )
 		//SET_OBJECT_NAME( vk.tess[i].command_buffer, va( "command buffer %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT );
 	}
 
-	//
-	// Swapchain.
-	//
+#if 0
+	// swapchain
 	vk_create_swapchain( vk.physical_device, vk.device, vk.surface, vk.present_format, &vk.swapchain );
 
 	// color/depth attachments
 	vk_create_attachments();
 
 	// renderpasses
-	create_render_pass( vk.device, vk.depth_format );
+	vk_create_render_passes();
 
 	// framebuffers for each swapchain image
 	vk_create_framebuffers();
+#endif
 
 	//
 	// Descriptor pool.
@@ -3691,98 +3744,142 @@ void vk_initialize( void )
 
 	vk.renderPassIndex = RENDER_PASS_MAIN; // default render pass
 
-	vk_create_persistent_pipelines();
+	// swapchain
+	vk_create_swapchain( vk.physical_device, vk.device, vk.surface, vk.present_format, &vk.swapchain );
+
+	// color/depth attachments
+	vk_create_attachments();
+
+	// renderpasses
+	vk_create_render_passes();
+
+	// framebuffers for each swapchain image
+	vk_create_framebuffers();
+
+	vk_alloc_persistent_pipelines();
 
 	vk.pipelines_world_base = vk.pipelines_count;
+
+	vk_create_bloom_pipelines();
 
 	vk.active = qtrue;
 }
 
 
-void vk_shutdown( void )
+static void vk_destroy_attachments( void )
 {
-	uint32_t i, j;
-
-	if ( !qvkQueuePresentKHR ) {// not fully initialized
-		goto __cleanup;
-	}
-
-	vk_destroy_framebuffers();
+	uint32_t i;
 
 	if ( vk.bloom_image[0] ) {
 		for ( i = 0; i < ARRAY_LEN( vk.bloom_image ); i++ ) {
 			qvkDestroyImage( vk.device, vk.bloom_image[i], NULL );
 			qvkDestroyImageView( vk.device, vk.bloom_image_view[i], NULL );
+			vk.bloom_image[i] = VK_NULL_HANDLE;
+			vk.bloom_image_view[i] = VK_NULL_HANDLE;
 		}
 	}
 
 	if ( vk.color_image ) {
 		qvkDestroyImage( vk.device, vk.color_image, NULL );
 		qvkDestroyImageView( vk.device, vk.color_image_view, NULL );
+		vk.color_image = VK_NULL_HANDLE;
+		vk.color_image_view = VK_NULL_HANDLE;
 	}
 
 	if ( vk.msaa_image ) {
 		qvkDestroyImage( vk.device, vk.msaa_image, NULL );
 		qvkDestroyImageView( vk.device, vk.msaa_image_view, NULL );
+		vk.msaa_image = VK_NULL_HANDLE;
+		vk.msaa_image_view = VK_NULL_HANDLE;
 	}
 
 	qvkDestroyImage( vk.device, vk.depth_image, NULL );
 	qvkDestroyImageView( vk.device, vk.depth_image_view, NULL );
+	vk.depth_image = VK_NULL_HANDLE;
+	vk.depth_image_view = VK_NULL_HANDLE;
 
 	if ( vk.screenMap.color_image ) {
 		qvkDestroyImage( vk.device, vk.screenMap.color_image, NULL );
 		qvkDestroyImageView( vk.device, vk.screenMap.color_image_view, NULL );
+		vk.screenMap.color_image = VK_NULL_HANDLE;
+		vk.screenMap.color_image_view = VK_NULL_HANDLE;
 	}
 
 	if ( vk.screenMap.color_image_msaa ) {
 		qvkDestroyImage( vk.device, vk.screenMap.color_image_msaa, NULL );
 		qvkDestroyImageView( vk.device, vk.screenMap.color_image_view_msaa, NULL );
+		vk.screenMap.color_image_msaa = VK_NULL_HANDLE;
+		vk.screenMap.color_image_view_msaa = VK_NULL_HANDLE;
 	}
 
 	if ( vk.screenMap.depth_image ) {
 		qvkDestroyImage( vk.device, vk.screenMap.depth_image, NULL );
 		qvkDestroyImageView( vk.device, vk.screenMap.depth_image_view, NULL );
+		vk.screenMap.depth_image = VK_NULL_HANDLE;
+		vk.screenMap.depth_image_view = VK_NULL_HANDLE;
 	}
 
 	if ( vk.capture.image ) {
 		qvkDestroyImage( vk.device, vk.capture.image, NULL );
 		qvkDestroyImageView( vk.device, vk.capture.image_view, NULL );
+		vk.capture.image = VK_NULL_HANDLE;
+		vk.capture.image_view = VK_NULL_HANDLE;
 	}
 
 	for ( i = 0; i < vk.image_memory_count; i++ ) {
 		qvkFreeMemory( vk.device, vk.image_memory[i], NULL );
 	}
+
 	vk.image_memory_count = 0;
+}
 
-	if ( vk.render_pass.main != VK_NULL_HANDLE )
+
+static void vk_destroy_render_passes( void )
+{
+	uint32_t i;
+
+	if ( vk.render_pass.main != VK_NULL_HANDLE ) {
 		qvkDestroyRenderPass( vk.device, vk.render_pass.main, NULL );
+		vk.render_pass.main = VK_NULL_HANDLE;
+	}
 
-	if ( vk.render_pass.bloom_extract != VK_NULL_HANDLE )
+	if ( vk.render_pass.bloom_extract != VK_NULL_HANDLE ) {
 		qvkDestroyRenderPass( vk.device, vk.render_pass.bloom_extract, NULL );
+		vk.render_pass.bloom_extract = VK_NULL_HANDLE;
+	}
 
 	for ( i = 0; i < ARRAY_LEN( vk.render_pass.blur ); i++ ) {
 		if ( vk.render_pass.blur[i] != VK_NULL_HANDLE ) {
 			qvkDestroyRenderPass( vk.device, vk.render_pass.blur[i], NULL );
+			vk.render_pass.blur[i] = VK_NULL_HANDLE;
 		}
 	}
 
-	if ( vk.render_pass.post_bloom != VK_NULL_HANDLE )
+	if ( vk.render_pass.post_bloom != VK_NULL_HANDLE ) {
 		qvkDestroyRenderPass( vk.device, vk.render_pass.post_bloom, NULL );
+		vk.render_pass.post_bloom = VK_NULL_HANDLE;
+	}
 
-	if ( vk.render_pass.screenmap != VK_NULL_HANDLE )
+	if ( vk.render_pass.screenmap != VK_NULL_HANDLE ) {
 		qvkDestroyRenderPass( vk.device, vk.render_pass.screenmap, NULL );
+		vk.render_pass.screenmap = VK_NULL_HANDLE;
+	}
 
-	if ( vk.render_pass.gamma != VK_NULL_HANDLE )
+	if ( vk.render_pass.gamma != VK_NULL_HANDLE ) {
 		qvkDestroyRenderPass( vk.device, vk.render_pass.gamma, NULL );
+		vk.render_pass.gamma = VK_NULL_HANDLE;
+	}
 
-	if ( vk.render_pass.capture != VK_NULL_HANDLE )
+	if ( vk.render_pass.capture != VK_NULL_HANDLE ) {
 		qvkDestroyRenderPass( vk.device, vk.render_pass.capture, NULL );
+		vk.render_pass.capture = VK_NULL_HANDLE;
+	}
+}
 
-	qvkDestroyCommandPool( vk.device, vk.command_pool, NULL );
 
-	//for ( i = 0; i < vk.swapchain_image_count; i++ ) {
-	//	qvkDestroyImageView( vk.device, vk.swapchain_image_views[i], NULL );
-	//}
+static void vk_destroy_pipelines( qboolean reset )
+{
+	uint32_t i, j;
 
 	for ( i = 0; i < vk.pipelines_count; i++ ) {
 		for ( j = 0; j < RENDER_PASS_COUNT; j++ ) {
@@ -3791,9 +3888,12 @@ void vk_shutdown( void )
 				vk.pipelines[i].handle[j] = VK_NULL_HANDLE;
 			}
 		}
-		Com_Memset( &vk.pipelines[i], 0, sizeof( vk.pipelines[0] ) );
 	}
-	vk.pipelines_count = 0;
+
+	if ( reset ) {
+		Com_Memset( &vk.pipelines, 0, sizeof( vk.pipelines ) );
+		vk.pipelines_count = 0;
+	}
 
 	if ( vk.gamma_pipeline ) {
 		qvkDestroyPipeline( vk.device, vk.gamma_pipeline, NULL );
@@ -3821,11 +3921,31 @@ void vk_shutdown( void )
 			vk.blur_pipeline[i] = VK_NULL_HANDLE;
 		}
 	}
+}
+
+
+void vk_shutdown( void )
+{
+	if ( !qvkQueuePresentKHR ) {// not fully initialized
+		goto __cleanup;
+	}
+
+	vk_destroy_framebuffers();
+
+	vk_destroy_pipelines( qtrue ); // reset counter
+
+	vk_destroy_render_passes();
+
+	vk_destroy_attachments();
+
+	vk_destroy_swapchain();
 
 	if ( vk.pipelineCache != VK_NULL_HANDLE ) {
 		qvkDestroyPipelineCache( vk.device, vk.pipelineCache, NULL );
 		vk.pipelineCache = VK_NULL_HANDLE;
 	}
+
+	qvkDestroyCommandPool( vk.device, vk.command_pool, NULL );
 
 	qvkDestroyDescriptorPool(vk.device, vk.descriptor_pool, NULL);
 
@@ -3844,10 +3964,10 @@ void vk_shutdown( void )
 
 	vk_release_geometry_buffers();
 
+	vk_destroy_sync_primitives();
+
 	qvkDestroyBuffer( vk.device, vk.storage.buffer, NULL );
 	qvkFreeMemory( vk.device, vk.storage.memory, NULL );
-
-	vk_destroy_sync_primitives();
 
 	qvkDestroyShaderModule(vk.device, vk.modules.st_vs[0], NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.st_vs[1], NULL);
@@ -3902,9 +4022,6 @@ void vk_shutdown( void )
 
 	qvkDestroyShaderModule(vk.device, vk.modules.gamma_vs, NULL);
 	qvkDestroyShaderModule(vk.device, vk.modules.gamma_fs, NULL);
-
-	//qvkDestroySwapchainKHR(vk.device, vk.swapchain, NULL);
-	vk_destroy_swapchain();
 
 __cleanup:
 	if ( vk.device != VK_NULL_HANDLE )

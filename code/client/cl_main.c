@@ -140,7 +140,7 @@ static void CL_GlobalServers_f( void );
 static void CL_Ping_f( void );
 
 static void CL_InitRef( void );
-static void CL_ShutdownRef( qboolean unloadDLL );
+static void CL_ShutdownRef( refShutdownCode_t code );
 static void CL_InitGLimp_Cvars( void );
 
 static void CL_NextDemo( void );
@@ -998,7 +998,7 @@ void CL_ShutdownAll( void ) {
 			// shutdown sound system before renderer
 			S_Shutdown();
 			cls.soundStarted = qfalse;
-			CL_ShutdownRef( qfalse ); // shutdown renderer & GLimp
+			CL_ShutdownRef( REF_DESTROY_WINDOW ); // shutdown renderer & GLimp
 		} else {
 			re.Shutdown( REF_KEEP_CONTEXT ); // don't destroy window or context
 		}
@@ -1768,7 +1768,7 @@ we also have to reload the UI and CGame because the renderer
 doesn't know what graphics to reload
 =================
 */
-static void CL_Vid_Restart( void ) {
+static void CL_Vid_Restart( qboolean keepWindow ) {
 
 	// Settings may have changed so stop recording now
 	if ( CL_VideoRecording() )
@@ -1784,7 +1784,7 @@ static void CL_Vid_Restart( void ) {
 	// shutdown sound system
 	S_Shutdown();
 	// shutdown the renderer and clear the renderer interface
-	CL_ShutdownRef( qfalse );
+	CL_ShutdownRef( keepWindow ? REF_KEEP_WINDOW : REF_DESTROY_WINDOW );
 	// client is no longer pure until new checksums are sent
 	CL_ResetPureClientAtServer();
 	// clear pak references
@@ -1836,7 +1836,10 @@ static void CL_Vid_Restart_f( void ) {
 		if ( abs( cls.lastVidRestart - Sys_Milliseconds() ) < 500 )
 			return;
 
-	CL_Vid_Restart();
+	if ( Q_stricmp( Cmd_Argv(1), "keep_window" ) == 0 )
+		CL_Vid_Restart( qtrue );
+	else
+		CL_Vid_Restart( qfalse );
 }
 
 
@@ -1867,8 +1870,9 @@ handles will be invalid
 static void CL_Snd_Restart_f( void )
 {
 	CL_Snd_Shutdown();
+
 	// sound will be reinitialized by vid_restart
-	CL_Vid_Restart();
+	CL_Vid_Restart( qtrue );
 }
 
 
@@ -3132,7 +3136,7 @@ static __attribute__ ((format (printf, 2, 3))) void QDECL CL_RefPrintf( printPar
 CL_ShutdownRef
 ============
 */
-static void CL_ShutdownRef( qboolean unloadDLL ) {
+static void CL_ShutdownRef( refShutdownCode_t code ) {
 
 #ifdef USE_RENDERER_DLOPEN
 	if ( cl_renderer->modified ) {
@@ -3141,10 +3145,7 @@ static void CL_ShutdownRef( qboolean unloadDLL ) {
 #endif
 
 	if ( re.Shutdown ) {
-		if ( unloadDLL )
-			re.Shutdown( REF_UNLOAD_DLL );
-		else
-			re.Shutdown( REF_DESTROY_WINDOW );
+		re.Shutdown( code );
 	}
 
 #ifdef USE_RENDERER_DLOPEN
@@ -3986,7 +3987,7 @@ void CL_Shutdown( const char *finalmsg, qboolean quit ) {
 
 	S_Shutdown();
 
-	CL_ShutdownRef( quit );
+	CL_ShutdownRef( quit ? REF_UNLOAD_DLL : REF_DESTROY_WINDOW );
 
 	Con_Shutdown();
 

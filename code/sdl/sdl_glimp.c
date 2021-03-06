@@ -484,8 +484,11 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 			0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF
 #endif
 		);
-		SDL_SetWindowIcon( SDL_window, icon );
-		SDL_FreeSurface( icon );
+		if ( icon )
+		{
+			SDL_SetWindowIcon( SDL_window, icon );
+			SDL_FreeSurface( icon );
+		}
 #endif
 	}
 	else

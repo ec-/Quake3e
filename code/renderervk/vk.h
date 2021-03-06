@@ -153,7 +153,7 @@ typedef struct vkUniform_s {
 void vk_initialize( void );
 
 // Called after initialization or renderer restart
-void vk_init_buffers( void );
+void vk_init_descriptors( void );
 
 // Shutdown vulkan subsystem by releasing resources acquired by Vk_Instance.
 void vk_shutdown( void );
@@ -176,7 +176,6 @@ uint32_t vk_find_pipeline_ext( uint32_t base, const Vk_Pipeline_Def *def, qboole
 void vk_get_pipeline_def( uint32_t pipeline, Vk_Pipeline_Def *def );
 
 void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_t height );
-void vk_restart_swapchain( const char *funcname );
 
 //
 // Rendering setup.
@@ -211,6 +210,8 @@ void vk_bind_index_buffer( VkBuffer buffer, uint32_t offset );
 void vk_reset_descriptor( int index );
 void vk_update_descriptor( int index, VkDescriptorSet descriptor );
 void vk_update_descriptor_offset( int index, uint32_t offset );
+
+void vk_update_post_process_pipelines( void );
 
 const char *vk_format_string( VkFormat format );
 
@@ -421,7 +422,6 @@ typedef struct {
 
 	VK_Pipeline_t pipelines[ MAX_VK_PIPELINES ];
 	uint32_t pipelines_count;
-	uint32_t pipelines_created_count;
 	uint32_t pipelines_world_base;
 
 	// pipeline statistics

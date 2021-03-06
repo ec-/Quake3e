@@ -1742,17 +1742,11 @@ void R_SetColorMappings( void ) {
 	}
 
 #ifdef USE_VULKAN
-	if ( vk.fboActive ) {
-		// update gamma shader
-		vk_create_post_process_pipeline( 0, 0, 0 );
-		if ( vk.capture.image ) {
-			// update capture pipeline
-			vk_create_post_process_pipeline( 3, gls.captureWidth, gls.captureHeight );
-		}
-	}
+	vk_update_post_process_pipelines();
 	
 	if ( glConfig.deviceSupportsGamma && !vk.fboActive )
 		ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
+
 	if ( glConfig.deviceSupportsGamma && vk.fboActive )
 		ri.GLimp_SetGamma( s_gammatable_linear, s_gammatable_linear, s_gammatable_linear );
 #else

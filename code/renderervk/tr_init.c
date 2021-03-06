@@ -587,7 +587,7 @@ static void InitOpenGL( void )
 		vk_initialize();
 		gls.initTime = ri.Milliseconds();
 	}
-	vk_init_buffers();
+	vk_init_descriptors();
 #endif
 
 	VarInfo();
