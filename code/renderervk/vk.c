@@ -3553,6 +3553,8 @@ void vk_initialize( void )
 		vendor_name = "Google Inc.";
 	} else if ( props.vendorID == 0x8086 ) {
 		vendor_name = "Intel Corporation";
+	} else if ( props.vendorID == VK_VENDOR_ID_MESA ) {
+		vendor_name = "MESA";
 	} else {
 		Com_sprintf( buf, sizeof( buf ), "VendorID: %04x", props.vendorID );
 		vendor_name = buf;
