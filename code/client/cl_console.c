@@ -64,7 +64,8 @@ typedef struct {
 	qboolean carriageReturn;
 	qboolean newline;
 
-	char prefix[9];			// fixed width prefix
+	char prefix[9];			// fixed width prefix, hh:mm:ss
+	char date[11];			// fixed width date, YYYY-MM-DD
 } console_t;
 
 extern  qboolean    chat_team;
@@ -83,6 +84,7 @@ cvar_t		*con_height;
 cvar_t		*con_heightShift;
 cvar_t		*con_heightCtrl;
 cvar_t		*con_heightAlt;
+cvar_t		*con_timedisplay;
 
 int         g_console_field_width = DEFAULT_CONSOLE_WIDTH;
 
@@ -501,6 +503,23 @@ void Cmd_CompleteTxtName( char *args, int argNum ) {
 
 
 /*
+===============
+Con_UpdateDateTime
+===============
+*/
+static void Con_UpdateDateTime(void)
+{
+	qtime_t	now;
+
+	Com_RealTime( &now );
+	assert( sizeof(con.prefix) == 9 );
+	Com_sprintf( con.prefix, sizeof(con.prefix), "%02d:%02d:%02d", now.tm_hour, now.tm_min, now.tm_sec );
+	assert( sizeof(con.date) == 11 );
+	Com_sprintf( con.date, sizeof(con.date), "%04d-%02d-%02d", 1900 + now.tm_year, 1 + now.tm_mon, now.tm_mday );
+}
+
+
+/*
 ================
 Con_Init
 ================
@@ -523,7 +542,9 @@ void Con_Init( void )
 	Cvar_CheckRange( con_heightShift, "0.1", "1.0", CV_FLOAT );
 	Cvar_CheckRange( con_heightCtrl, "0.1", "1.0", CV_FLOAT );
 	Cvar_CheckRange( con_heightAlt, "0.1", "1.0", CV_FLOAT );
+	con_timedisplay = Cvar_Get( "con_timedisplay", "3", CVAR_ARCHIVE_ND );
 
+	Con_UpdateDateTime();
 
 	Field_Clear( &g_consoleField );
 	g_consoleField.widthInChars = g_console_field_width;
@@ -599,6 +620,7 @@ static void Con_Prefix( void )
 	assert( con.x == 0 );
 
 	if ( con_timestamp && con_timestamp->integer ) {
+		Con_UpdateDateTime();
 		assert( strlen(con.prefix) == sizeof(con.prefix) - 1 );
 		con.x = sizeof(con.prefix); // prefix + ' '
 		short *s = &con.text[ ( con.current % con.totallines ) * con.linewidth ];
@@ -735,14 +757,6 @@ void CL_ConsolePrint( const char *txt ) {
 		con.initialized = qtrue;
 	}
 
-	// update prefix
-	if ( con.x == 0 && con_timestamp && con_timestamp->integer ) {
-		qtime_t	now;
-		Com_RealTime( &now );
-		assert( sizeof(con.prefix) == 9 );
-		Com_sprintf( con.prefix, sizeof(con.prefix), "%02d:%02d:%02d", now.tm_hour, now.tm_min, now.tm_sec );
-	}
-
 	l = 0;
 	colorIndex = ColorIndex( COLOR_WHITE );
 
@@ -833,6 +847,7 @@ Draw the editline after a ] prompt
 */
 void Con_DrawInput( void ) {
 	int		y;
+	int		offset = 0;
 
 	if ( cls.state != CA_DISCONNECTED && !(Key_GetCatcher( ) & KEYCATCH_CONSOLE ) ) {
 		return;
@@ -840,11 +855,16 @@ void Con_DrawInput( void ) {
 
 	y = con.vislines - ( smallchar_height * 2 );
 
+	if ( con_timedisplay->integer & 1 ) {
+		offset = sizeof(con.prefix);
+		re.SetColor( g_color_table[ColorIndexFromChar('8')] );
+		SCR_DrawSmallString( con.xadjust + smallchar_width, y, con.prefix, sizeof(con.prefix) - 1 );
+	}
 	re.SetColor( con.color );
 
-	SCR_DrawSmallChar( con.xadjust + 1 * smallchar_width, y, ']' );
+	SCR_DrawSmallChar( con.xadjust + (offset + 1) * smallchar_width, y, ']' );
 
-	Field_Draw( &g_consoleField, con.xadjust + 2 * smallchar_width, y,
+	Field_Draw( &g_consoleField, con.xadjust + (offset + 2) * smallchar_width, y,
 		SCREEN_WIDTH - 3 * smallchar_width, qtrue, qtrue );
 }
 
@@ -1014,6 +1034,18 @@ void Con_DrawSolidConsole( float frac ) {
 	// draw the version number
 	SCR_DrawSmallString( cls.glconfig.vidWidth - ( ARRAY_LEN( Q3_VERSION ) ) * smallchar_width,
 		lines - smallchar_height, Q3_VERSION, ARRAY_LEN( Q3_VERSION ) - 1 );
+
+	if ( con_timedisplay->integer ) {
+		Con_UpdateDateTime();
+	}
+
+	// draw date and time
+	if ( con_timedisplay->integer & 2 ) {
+		SCR_DrawSmallString( cls.glconfig.vidWidth - (sizeof(con.prefix) + sizeof(con.date)) * smallchar_width,
+			lines - smallchar_height * 2, con.prefix, sizeof(con.prefix) - 1 );
+		SCR_DrawSmallString( cls.glconfig.vidWidth - sizeof(con.date) * smallchar_width,
+			lines - smallchar_height * 2, con.date, sizeof(con.date) - 1 );
+	}
 
 	// draw the text
 	con.vislines = lines;
