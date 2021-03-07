@@ -1,4 +1,4 @@
-	/*
+/*
 ===========================================================================
 Copyright (C) 1999-2005 Id Software, Inc.
 
@@ -68,6 +68,9 @@ void GLimp_Shutdown( qboolean unloadDLL )
 	SDL_DestroyWindow( SDL_window );
 	SDL_window = NULL;
 
+	if ( glw_state.isFullscreen )
+		SDL_WarpMouseGlobal( glw_state.desktop_width / 2, glw_state.desktop_height / 2 );
+
 	if ( unloadDLL )
 		SDL_QuitSubSystem( SDL_INIT_VIDEO );
 }
@@ -108,6 +111,8 @@ static int FindNearestDisplay( int *x, int *y, int w, int h )
 	numDisplays = SDL_GetNumVideoDisplays();
 	if ( numDisplays <= 0 )
 		return -1;
+
+	glw_state.monitorCount = numDisplays;
 
 	list = Z_Malloc( numDisplays * sizeof( list[0] ) );
 
@@ -184,14 +189,12 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 	glconfig_t *config = glw_state.config;
 	int perChannelColorBits;
 	int colorBits, depthBits, stencilBits;
-	int samples;
 	int i;
-	SDL_Surface *icon = NULL;
 	SDL_DisplayMode desktopMode;
 	int display;
 	int x;
 	int y;
-	Uint32 flags = SDL_WINDOW_SHOWN;
+	Uint32 flags = 0; // SDL_WINDOW_SHOWN
 #ifdef USE_VULKAN_API
 	if ( vulkan ) {
 		flags |= SDL_WINDOW_VULKAN;
@@ -202,21 +205,6 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 		flags |= SDL_WINDOW_OPENGL;
 		Com_Printf( "Initializing OpenGL display\n");
 	}
-
-#ifdef USE_ICON
-	icon = SDL_CreateRGBSurfaceFrom(
-			(void *)CLIENT_WINDOW_ICON.pixel_data,
-			CLIENT_WINDOW_ICON.width,
-			CLIENT_WINDOW_ICON.height,
-			CLIENT_WINDOW_ICON.bytes_per_pixel * 8,
-			CLIENT_WINDOW_ICON.bytes_per_pixel * CLIENT_WINDOW_ICON.width,
-#ifdef Q3_LITTLE_ENDIAN
-			0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000
-#else
-			0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF
-#endif
-			);
-#endif
 
 	// If a window exists, note its display index
 	if ( SDL_window != NULL )
@@ -288,6 +276,8 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 		flags |= SDL_WINDOW_BORDERLESS;
 	}
 
+	flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+
 	config->isFullscreen = fullscreen;
 	colorBits = r_colorbits->value;
 
@@ -300,7 +290,6 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 		depthBits = cl_depthbits->integer;
 
 	stencilBits = cl_stencilbits->integer;
-	samples = 0; // r_ext_multisample->integer;
 
 	for ( i = 0; i < 16; i++ )
 	{
@@ -385,8 +374,8 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 			SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, testDepthBits );
 			SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, testStencilBits );
 
-			SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, samples ? 1 : 0 );
-			SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, samples );
+			SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, 0 );
+			SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, 0 );
 
 			if ( r_stereoEnabled->integer )
 			{
@@ -401,11 +390,8 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 		
 			SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
-#if 1		// if multisampling is enabled on X11, this causes create window to fail.
-			// If not allowing software GL, demand accelerated
 			if ( !r_allowSoftwareGL->integer )
 				SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL, 1 );
-#endif
 		}
 
 		if ( ( SDL_window = SDL_CreateWindow( cl_title, x, y, config->vidWidth, config->vidHeight, flags ) ) == NULL )
@@ -443,10 +429,6 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 				config->vidHeight = mode.h;
 			}
 		}
-
-		SDL_SetWindowIcon( SDL_window, icon );
-
-		SDL_glContext = NULL;
 
 #ifdef USE_VULKAN_API
 		if ( vulkan )
@@ -489,9 +471,29 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 		break;
 	}
 
-	SDL_FreeSurface( icon );
-
-	if ( !SDL_window )
+	if ( SDL_window )
+	{
+#ifdef USE_ICON
+		SDL_Surface *icon = SDL_CreateRGBSurfaceFrom(
+			(void *)CLIENT_WINDOW_ICON.pixel_data,
+			CLIENT_WINDOW_ICON.width,
+			CLIENT_WINDOW_ICON.height,
+			CLIENT_WINDOW_ICON.bytes_per_pixel * 8,
+			CLIENT_WINDOW_ICON.bytes_per_pixel * CLIENT_WINDOW_ICON.width,
+#ifdef Q3_LITTLE_ENDIAN
+			0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000
+#else
+			0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF
+#endif
+		);
+		if ( icon )
+		{
+			SDL_SetWindowIcon( SDL_window, icon );
+			SDL_FreeSurface( icon );
+		}
+#endif
+	}
+	else
 	{
 		Com_Printf( "Couldn't get a visual\n" );
 		return RSERR_INVALID_MODE;
@@ -624,6 +626,8 @@ void GLimp_Init( glconfig_t *config )
 
 	// This depends on SDL_INIT_VIDEO, hence having it here
 	IN_Init();
+
+	SDL_ShowWindow( SDL_window );
 }
 
 
@@ -690,7 +694,7 @@ void VKimp_Init( glconfig_t *config )
 	{
 		if ( err == RSERR_FATAL_ERROR )
 		{
-			Com_Error( ERR_FATAL, "GLimp_Init() - could not load OpenGL subsystem" );
+			Com_Error( ERR_FATAL, "VKimp_Init() - could not load OpenGL subsystem" );
 			return;
 		}
 
@@ -719,6 +723,8 @@ void VKimp_Init( glconfig_t *config )
 
 	// This depends on SDL_INIT_VIDEO, hence having it here
 	IN_Init();
+
+	SDL_ShowWindow( SDL_window );
 }
 
 
@@ -758,6 +764,9 @@ void VKimp_Shutdown( qboolean unloadDLL )
 
 	SDL_DestroyWindow( SDL_window );
 	SDL_window = NULL;
+
+	if ( glw_state.isFullscreen )
+		SDL_WarpMouseGlobal( glw_state.desktop_width / 2, glw_state.desktop_height / 2 );
 
 	if ( unloadDLL )
 		SDL_QuitSubSystem( SDL_INIT_VIDEO );

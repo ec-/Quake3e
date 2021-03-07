@@ -10,10 +10,10 @@ Common format and expression syntax:
 
 Where:
 
-<key> - arbitrary userinfo key to compare, special built-in keys: 
+<key> - arbitrary userinfo key to compare, special built-in keys:
     'drop' - action key, can be followed by ban reason string, no further ops or nested keys is allowed
     'date' - represents current date in "YYYY-MM-DD HH:mm" format
-    'fname' - filtered 'name' userinfo key (without color sequences) 
+    'fname' - filtered 'name' userinfo key (without color sequences)
 
 [op] - optional operator, can be '==', '!=', '>', '>=', '<', '<=', '*' (string pattern match)
 		default operator is '==' (equal) and '<' (less) for 'date' key
@@ -23,7 +23,7 @@ Where:
 
 Examples:
 
-	ip "127.0.0.1" { 
+	ip "127.0.0.1" {
 		name * "Unnamed*" {
 			drop "You have bad name"
 		}
@@ -40,7 +40,7 @@ One-line format (without brackets) is also acceptable:
 
 Multiple keys/comparisons inside single scope:
 
-	ip "127.0.0.1" { 
+	ip "127.0.0.1" {
 		name * "*^0*" {
 			drop "Black color is not allowed on this server"
 		}
@@ -101,10 +101,10 @@ Examples:
 		ban client 0 by his "name" and "cl_guid" userinfo fields
 
 	\filter 0 reason "bad guy."
-		
-		ban client by his "ip" address field with a reason "bad guy." 
 
-	\filter 0 ip name date +1d 
+		ban client by his "ip" address field with a reason "bad guy."
+
+	\filter 0 ip name date +1d
 
 		ban client for 1 day by his ip and name
 
@@ -116,7 +116,7 @@ Examples:
 	pass manually constructed filter string (described in previous section) to the engine
 
 Examples:
-	
+
 	\filtercmd ip "127.0.0.1" name "name" drop "reason"
 
 	\filtercmd name * "*^0*" drop "black color is not allowed"

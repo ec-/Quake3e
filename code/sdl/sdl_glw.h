@@ -45,6 +45,8 @@ typedef struct
 	int window_width;
 	int window_height;
 
+	int monitorCount;
+
 } glwstate_t;
 
 extern SDL_Window *SDL_window;

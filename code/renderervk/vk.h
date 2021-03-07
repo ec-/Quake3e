@@ -117,7 +117,7 @@ typedef struct VK_Pipeline {
 	Vk_Pipeline_Def def;
 	VkPipeline handle[ RENDER_PASS_COUNT ];
 } VK_Pipeline_t;
-	
+
 // this structure must be in sync with shader uniforms!
 typedef struct vkUniform_s {
 	// vertex shader reference
@@ -153,7 +153,7 @@ typedef struct vkUniform_s {
 void vk_initialize( void );
 
 // Called after initialization or renderer restart
-void vk_init_buffers( void );
+void vk_init_descriptors( void );
 
 // Shutdown vulkan subsystem by releasing resources acquired by Vk_Instance.
 void vk_shutdown( void );
@@ -171,12 +171,11 @@ void vk_create_image( int width, int height, VkFormat format, int mip_levels, im
 void vk_upload_image_data( VkImage image, int x, int y, int width, int height, qboolean mipmap, const uint8_t* pixels, int bytes_per_pixel );
 byte *resample_image_data( const image_t *image, byte *data, const int data_size, int *bytes_per_pixel );
 void vk_update_descriptor_set( image_t *image, qboolean mipmap );
-	
+
 uint32_t vk_find_pipeline_ext( uint32_t base, const Vk_Pipeline_Def *def, qboolean use );
 void vk_get_pipeline_def( uint32_t pipeline, Vk_Pipeline_Def *def );
 
 void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_t height );
-void vk_restart_swapchain( const char *funcname );
 
 //
 // Rendering setup.
@@ -212,6 +211,8 @@ void vk_reset_descriptor( int index );
 void vk_update_descriptor( int index, VkDescriptorSet descriptor );
 void vk_update_descriptor_offset( int index, uint32_t offset );
 
+void vk_update_post_process_pipelines( void );
+
 const char *vk_format_string( VkFormat format );
 
 void VBO_PrepareQueues( void );
@@ -241,7 +242,7 @@ typedef struct vk_tess_s {
 
 	struct {
 		uint32_t		start, end;
-		VkDescriptorSet	current[6];
+		VkDescriptorSet	current[6]; // 0:storage, 1:uniform, 2:color0, 3:color1, 4:color2, 5:fog
 		uint32_t		offset[2]; // 0 (uniform) and 5 (storage)
 	} descriptor_set;
 
@@ -421,12 +422,11 @@ typedef struct {
 
 	VK_Pipeline_t pipelines[ MAX_VK_PIPELINES ];
 	uint32_t pipelines_count;
-	uint32_t pipelines_created_count;
 	uint32_t pipelines_world_base;
 
 	// pipeline statistics
 	int32_t pipeline_create_count;
-		
+
 	//
 	// Standard pipelines.
 	//
@@ -496,6 +496,8 @@ typedef struct {
 	VkFormat capture_format;
 	VkFormat depth_format;
 	VkFormat bloom_format;
+
+	VkImageLayout initSwapchainLayout;
 
 	qboolean fastSky;		// requires VK_IMAGE_USAGE_TRANSFER_DST_BIT
 	qboolean fboActive;
@@ -572,7 +574,7 @@ typedef struct {
 extern Vk_Instance	vk;				// shouldn't be cleared during ref re-init
 extern Vk_World		vk_world;		// this data is cleared during ref re-init
 
-// Most of the renderer's code uses Vulkan API via function provides in this file but 
+// Most of the renderer's code uses Vulkan API via function provides in this file but
 // there are few places outside of vk.c where we use Vulkan commands directly.
 
 extern PFN_vkDestroyImage qvkDestroyImage;

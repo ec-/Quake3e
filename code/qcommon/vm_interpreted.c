@@ -174,11 +174,11 @@ int	VM_CallInterpreted2( vm_t *vm, int nargs, int *args ) {
 	// we might be called recursively, so this might not be the very top
 	programStack = stackOnEntry = vm->programStack;
 
-	// set up the stack frame 
+	// set up the stack frame
 	image = vm->dataBase;
 	inst = (instruction_t *)vm->codeBase.ptr;
 	dataMask = vm->dataMask;
-	
+
 	// leave a free spot at start of stack so
 	// that as long as opStack is valid, opStack-1 will
 	// not corrupt anything
@@ -206,7 +206,7 @@ int	VM_CallInterpreted2( vm_t *vm, int nargs, int *args ) {
 nextInstruction2:
 
 		v0 = ci->value;
-		opcode = ci->op; 
+		opcode = ci->op;
 		ci++;
 
 		switch ( opcode ) {
@@ -248,7 +248,7 @@ nextInstruction2:
 		case OP_CALL:
 			// save current program counter
 			*(int *)&image[ programStack ] = ci - inst;
-			
+
 			// jump to the location on the stack
 			if ( r0.i < 0 ) {
 				// system call
@@ -464,7 +464,7 @@ nextInstruction2:
 
 				src = (int *)&image[ srci ];
 				dest = (int *)&image[ desti ];
-				
+
 				memcpy( dest, src, count );
 				opStack -= 2;
 			}

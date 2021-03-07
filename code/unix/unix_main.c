@@ -109,7 +109,7 @@ tty_err Sys_ConsoleInputInit( void );
 // General routines
 // =======================================================================
 
-// bk001207 
+// bk001207
 #define MEM_THRESHOLD 96*1024*1024
 
 /*
@@ -232,7 +232,7 @@ void Sys_ConsoleInputShutdown( void )
 
 	stdin_active = qfalse;
 	ttycon_on = qfalse;
-	
+
 	ttycon_hide = 0;
 }
 
@@ -252,16 +252,16 @@ void CON_SigCont( int signum )
 void CON_SigTStp( int signum )
 {
 	sigset_t mask;
-	
+
 	tty_FlushIn();
 	Sys_ConsoleInputShutdown();
 
 	sigemptyset( &mask );
 	sigaddset( &mask, SIGTSTP );
 	sigprocmask( SIG_UNBLOCK, &mask, NULL );
-	
+
 	signal( SIGTSTP, SIG_DFL );
-	
+
 	kill( getpid(),  SIGTSTP );
 }
 
@@ -277,7 +277,7 @@ void Sys_Exit( int code )
 	Sys_ConsoleInputShutdown();
 
 #ifdef NDEBUG // regular behavior
-	// We can't do this 
+	// We can't do this
 	//  as long as GL DLL's keep installing with atexit...
 	//exit(ex);
 	_exit( code );
@@ -361,7 +361,7 @@ tty_err Sys_ConsoleInputInit( void )
 
 	// If SIGCONT is received, reinitialize console
 	signal( SIGCONT, CON_SigCont );
-	
+
 	if ( signal( SIGTSTP, SIG_IGN ) == SIG_DFL )
 	{
 		signal( SIGTSTP, CON_SigTStp );
@@ -565,7 +565,7 @@ char *Sys_ConsoleInput( void )
 
 		len = read( STDIN_FILENO, text, sizeof( text ) );
 		if ( len == 0 ) // eof!
-		{ 
+		{
 			fcntl( STDIN_FILENO, F_SETFL, stdin_flags );
 			stdin_active = qfalse;
 			return NULL;
@@ -606,7 +606,7 @@ void Sys_SendKeyEvents( void )
 ==================
 Sys_Sleep
 
-Block execution for msec or until input is recieved.
+Block execution for msec or until input is received.
 ==================
 */
 void Sys_Sleep( int msec ) {
@@ -776,7 +776,7 @@ void Sys_ConfigureFPU( void )  // bk001213 - divide by zero
 	_FPU_SETCW( fpu_word );
 #endif // NDEBUG
 #endif // __GLIBC__
-#endif // __i386 
+#endif // __i386
 #endif // __linux
 }
 

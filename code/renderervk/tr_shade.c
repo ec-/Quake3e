@@ -130,7 +130,7 @@ static void DrawTris( shaderCommands_t *input ) {
 	} else
 #endif
 	{
-#ifdef USE_PMLIGHT 
+#ifdef USE_PMLIGHT
 		if ( tess.dlightPass )
 			pipeline = backEnd.viewParms.portalView == PV_MIRROR ? vk.tris_mirror_debug_red_pipeline : vk.tris_debug_red_pipeline;
 		else
@@ -182,7 +182,7 @@ Draws vertex normals for debugging
 static void DrawNormals( const shaderCommands_t *input ) {
 	int		i;
 #ifdef USE_VULKAN
-#ifdef USE_VBO	
+#ifdef USE_VBO
 	if ( tess.vboIndex )
 		return; // must be handled specially
 #endif
@@ -216,7 +216,7 @@ static void DrawNormals( const shaderCommands_t *input ) {
 	for ( i = tess.numVertexes-1; i >= 0; i-- ) {
 		VectorMA( tess.xyz[i], 2.0, tess.normal[i], tess.xyz[i*2 + 1] );
 		VectorCopy( tess.xyz[i], tess.xyz[i*2] );
-	} 
+	}
 
 	qglVertexPointer( 3, GL_FLOAT, sizeof( tess.xyz[0] ), tess.xyz );
 
@@ -249,7 +249,7 @@ to overflow.
 void RB_BeginSurface( shader_t *shader, int fogNum ) {
 
 	shader_t *state;
-	
+
 #ifdef USE_VBO
 	if ( shader->isStaticShader && !shader->remappedShader ) {
 		tess.allowVBO = qtrue;
@@ -397,7 +397,7 @@ static void ProjectDlightTexture_scalar( void ) {
 	for ( l = 0 ; l < backEnd.refdef.num_dlights ; l++ ) {
 
 		if ( !( tess.dlightBits & ( 1 << l ) ) ) {
-			continue;	// this surface definately doesn't have any of this light
+			continue;	// this surface definitely doesn't have any of this light
 		}
 
 #ifdef USE_VULKAN
@@ -413,11 +413,11 @@ static void ProjectDlightTexture_scalar( void ) {
 		VectorCopy( dl->transformed, origin );
 		radius = dl->radius;
 		scale = 1.0f / radius;
-	
+
 		for ( i = 0 ; i < tess.numVertexes ; i++, texCoords += 2, colors += 4 ) {
 			int		clip = 0;
 			vec3_t	dist;
-			
+
 			VectorSubtract( origin, tess.xyz[i], dist );
 
 			backEnd.pc.c_dlightVertexes++;
@@ -863,7 +863,7 @@ void R_ComputeTexCoords( const int b, const textureBundle_t *bundle ) {
 			RB_CalcScaleTexCoords( bundle->texMods[tm].scale, (float *) src, (float *) dst );
 			src = dst;
 			break;
-			
+
 		case TMOD_STRETCH:
 			RB_CalcStretchTexCoords( &bundle->texMods[tm].wave, (float *)src, (float *) dst );
 			src = dst;
@@ -910,7 +910,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 	const shaderStage_t *pStage;
 	int tess_flags;
 	int stage, i;
-	
+
 #ifdef USE_VULKAN
 	vkUniform_t uniform;
 	uint32_t pipeline;
@@ -1099,7 +1099,7 @@ static void VK_SetLightParams( vkUniform_t *uniform, const dlight_t *dl ) {
 
 uint32_t VK_PushUniform( const vkUniform_t *uniform ) {
 	const uint32_t offset = vk.cmd->uniform_read_offset = PAD( vk.cmd->vertex_buffer_offset, vk.uniform_alignment );
-	
+
 	if ( offset + vk.uniform_item_size > vk.geometry_buffer_size )
 		return ~0U;
 
@@ -1314,7 +1314,7 @@ void RB_StageIteratorGeneric( void )
 	//
 	RB_IterateStagesGeneric( input );
 
-	// 
+	//
 	// now do any dynamic lighting needed
 	//
 	if ( tess.dlightBits && tess.shader->sort <= SS_OPAQUE && !(tess.shader->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) )
@@ -1330,7 +1330,7 @@ void RB_StageIteratorGeneric( void )
 		RB_FogPass();
 	}
 
-	// 
+	//
 	// unlock arrays
 	//
 	if ( qglUnlockArraysEXT )
@@ -1366,7 +1366,7 @@ void RB_EndSurface( void ) {
 
 	if ( input->numIndexes > SHADER_MAX_INDEXES ) {
 		ri.Error( ERR_DROP, "RB_EndSurface() - SHADER_MAX_INDEXES hit" );
-	}	
+	}
 
 	if ( input->numVertexes > SHADER_MAX_VERTEXES ) {
 		ri.Error( ERR_DROP, "RB_EndSurface() - SHADER_MAX_VERTEXES hit" );
@@ -1393,7 +1393,7 @@ void RB_EndSurface( void ) {
 		backEnd.pc.c_lit_batches++;
 		backEnd.pc.c_lit_vertices += tess.numVertexes;
 		backEnd.pc.c_lit_indices += tess.numIndexes;
-	} else 
+	} else
 #endif
 	{
 		backEnd.pc.c_shaders++;

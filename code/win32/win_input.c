@@ -357,7 +357,7 @@ static void IN_ActivateRawMouse( void )
 	{
 		Rid.usUsagePage = HID_USAGE_PAGE_GENERIC;
 		Rid.usUsage = HID_USAGE_GENERIC_MOUSE;
-		Rid.dwFlags = RIDEV_NOLEGACY; // skip all WM_*BUTTON* and WM_MOUSEMOVE stuff
+		Rid.dwFlags = RIDEV_NOLEGACY | RIDEV_CAPTUREMOUSE; // skip all WM_*BUTTON* and WM_MOUSEMOVE stuff
 		Rid.hwndTarget = g_wv.hWnd;
 
 		if( !RRID( &Rid, 1, sizeof( Rid ) ) )
@@ -1231,8 +1231,7 @@ void IN_Frame( void ) {
 	if ( Key_GetCatcher() & KEYCATCH_CONSOLE ) {
 		// temporarily deactivate if not in the game and
 		// running on the desktop with multimonitor configuration
-		if ( !glw_state.cdsFullscreen || glw_state.monitorCount > 1 )
-		{
+		if ( !glw_state.cdsFullscreen || glw_state.monitorCount > 1 ) {
 			IN_DeactivateMouse();
 			//WIN_EnableAltTab();
 			//WIN_DisableHook();
@@ -1240,7 +1239,7 @@ void IN_Frame( void ) {
 		}
 	}
 
-	if ( !gw_active || in_nograb->integer ) {
+	if ( !gw_active || gw_minimized || in_nograb->integer ) {
 		IN_DeactivateMouse();
 		return;
 	}

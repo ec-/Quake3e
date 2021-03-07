@@ -166,7 +166,7 @@ static void DrawNormals( const shaderCommands_t *input ) {
 	for ( i = tess.numVertexes-1; i >= 0; i-- ) {
 		VectorMA( tess.xyz[i], 2.0, tess.normal[i], tess.xyz[i*2 + 1] );
 		VectorCopy( tess.xyz[i], tess.xyz[i*2] );
-	} 
+	}
 
 	qglVertexPointer( 3, GL_FLOAT, sizeof( tess.xyz[0] ), tess.xyz );
 
@@ -198,7 +198,7 @@ to overflow.
 void RB_BeginSurface( shader_t *shader, int fogNum ) {
 
 	shader_t *state;
-	
+
 #ifdef USE_PMLIGHT
 	if ( !tess.dlightPass && shader->isStaticShader && !shader->remappedShader )
 #else
@@ -349,7 +349,7 @@ static void ProjectDlightTexture_scalar( void ) {
 	for ( l = 0 ; l < backEnd.refdef.num_dlights ; l++ ) {
 
 		if ( !( tess.dlightBits & ( 1 << l ) ) ) {
-			continue;	// this surface definately doesn't have any of this light
+			continue;	// this surface definitely doesn't have any of this light
 		}
 		texCoords = texCoordsArray[0];
 		colors = colorArray[0];
@@ -358,11 +358,11 @@ static void ProjectDlightTexture_scalar( void ) {
 		VectorCopy( dl->transformed, origin );
 		radius = dl->radius;
 		scale = 1.0f / radius;
-	
+
 		for ( i = 0 ; i < tess.numVertexes ; i++, texCoords += 2, colors += 4 ) {
 			int		clip = 0;
 			vec3_t	dist;
-			
+
 			VectorSubtract( origin, tess.xyz[i], dist );
 
 			backEnd.pc.c_dlightVertexes++;
@@ -771,7 +771,7 @@ void R_ComputeTexCoords( const int b, const textureBundle_t *bundle ) {
 			RB_CalcScaleTexCoords( bundle->texMods[tm].scale, (float *) src, (float *) dst );
 			src = dst;
 			break;
-			
+
 		case TMOD_STRETCH:
 			RB_CalcStretchTexCoords( &bundle->texMods[tm].wave, (float *)src, (float *) dst );
 			src = dst;
@@ -965,7 +965,7 @@ void RB_StageIteratorGeneric( void )
 	//
 	RB_IterateStagesGeneric( input );
 
-	// 
+	//
 	// now do any dynamic lighting needed
 	//
 #ifdef USE_LEGACY_DLIGHTS
@@ -986,7 +986,7 @@ void RB_StageIteratorGeneric( void )
 		RB_FogPass();
 	}
 
-	// 
+	//
 	// unlock arrays
 	//
 	if ( qglUnlockArraysEXT )
@@ -1021,7 +1021,7 @@ void RB_EndSurface( void ) {
 
 	if ( input->numIndexes > SHADER_MAX_INDEXES ) {
 		ri.Error( ERR_DROP, "RB_EndSurface() - SHADER_MAX_INDEXES hit" );
-	}	
+	}
 
 	if ( input->numVertexes > SHADER_MAX_VERTEXES ) {
 		ri.Error( ERR_DROP, "RB_EndSurface() - SHADER_MAX_VERTEXES hit" );
@@ -1046,7 +1046,7 @@ void RB_EndSurface( void ) {
 		backEnd.pc.c_lit_batches++;
 		backEnd.pc.c_lit_vertices += tess.numVertexes;
 		backEnd.pc.c_lit_indices += tess.numIndexes;
-	} else 
+	} else
 #endif
 	{
 		backEnd.pc.c_shaders++;

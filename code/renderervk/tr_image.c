@@ -1304,11 +1304,12 @@ image_t	*R_FindImageFile( const char *name, imgFlags_t flags )
 {
 	image_t	*image;
 	const char *localName;
+	char	strippedName[ MAX_QPATH ];
 	int		width, height;
 	byte	*pic;
 	int		hash;
 
-	if (!name) {
+	if ( !name ) {
 		return NULL;
 	}
 
@@ -1317,7 +1318,7 @@ image_t	*R_FindImageFile( const char *name, imgFlags_t flags )
 	//
 	// see if the image is already loaded
 	//
-	for ( image = hashTable[hash]; image; image = image->next ) {
+	for ( image = hashTable[ hash ]; image; image = image->next ) {
 		if ( !Q_stricmp( name, image->imgName ) ) {
 			// the white image can be used with any set of parms, but other mismatches are errors
 			if ( strcmp( name, "*white" ) ) {
@@ -1326,6 +1327,21 @@ image_t	*R_FindImageFile( const char *name, imgFlags_t flags )
 				}
 			}
 			return image;
+		}
+	}
+
+	if ( strrchr( name, '.' ) > name ) {
+		// try with stripped extension
+		COM_StripExtension( name, strippedName, sizeof( strippedName ) );
+		for ( image = hashTable[ hash ]; image; image = image->next ) {
+			if ( !Q_stricmp( strippedName, image->imgName ) ) {
+				//if ( strcmp( strippedName, "*white" ) ) {
+					if ( image->flags != flags ) {
+						ri.Printf( PRINT_DEVELOPER, "WARNING: reused image %s with mixed flags (%i vs %i)\n", strippedName, image->flags, flags );
+					}
+				//}
+				return image;
+			}
 		}
 	}
 
@@ -1726,17 +1742,11 @@ void R_SetColorMappings( void ) {
 	}
 
 #ifdef USE_VULKAN
-	if ( vk.fboActive ) {
-		// update gamma shader
-		vk_create_post_process_pipeline( 0, 0, 0 );
-		if ( vk.capture.image ) {
-			// update capture pipeline
-			vk_create_post_process_pipeline( 3, gls.captureWidth, gls.captureHeight );
-		}
-	}
+	vk_update_post_process_pipelines();
 	
 	if ( glConfig.deviceSupportsGamma && !vk.fboActive )
 		ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
+
 	if ( glConfig.deviceSupportsGamma && vk.fboActive )
 		ri.GLimp_SetGamma( s_gammatable_linear, s_gammatable_linear, s_gammatable_linear );
 #else

@@ -5,7 +5,7 @@
 This is a modern Quake III Arena engine aimed to be fast, secure and compatible with all existing Q3A mods.
 It is based on last non-SDL source dump of ioquake3 with latest upstream fixes applied.
 
-*This repository do not contains any game content so in order to play you must copy resulting binaries into your existing Quake III Arena installation*
+*This repository does not contain any game content so in order to play you must copy the resulting binaries into your existing Quake III Arena installation*
 
 **Key features**:
 
@@ -17,10 +17,10 @@ It is based on last non-SDL source dump of ioquake3 with latest upstream fixes a
 * **\video-pipe** - to use external ffmpeg binary as an encoder for better quality and smaller output files
 * significally reworked QVM (Quake Virtual Machine)
 * improved server-side DoS protection, much reduced memory usage
-* raized filesystem limits (up to 20.000 maps can be handled in a single directory)
+* raised filesystem limits (up to 20,000 maps can be handled in a single directory)
 * reworked Zone memory allocator, no more out-of-memory errors
-* non-intrusive support for SDL2 backend (video,audio,input), selectable at compile time
-* tons of bugfixes and other improvements
+* non-intrusive support for SDL2 backend (video, audio, input), selectable at compile time
+* tons of bug fixes and other improvements
 
 ## Vulkan renderer
 
@@ -38,7 +38,7 @@ Based on Quake-III-Arena-Kenny-Edition with many additions:
 * static world surfaces cached in VBO (**\r_vbo 1**)
 * useful debug markers for tools like RenderDoc
 * fixed framebuffer corruption on some Intel iGPUs
-* offscreen rendering, enabled with **\r_fbo 1**, all following reguires it enabled:
+* offscreen rendering, enabled with **\r_fbo 1**, all following requires it enabled:
 * `screenMap` texture rendering - to create realistic environment reflections
 * multisample anti-aliasing (**\r_ext_multisample**)
 * supersample anti-aliasing (**\r_ext_supersample**)
@@ -49,7 +49,7 @@ Based on Quake-III-Arena-Kenny-Edition with many additions:
 * arbitrary resolution rendering
 * greyscale mode
 
-In general, not counting offscreen rendering features you might expect from 10% to 200%+ FPS increase comparing to original KE's version
+In general, not counting offscreen rendering features you might expect from 10% to 200%+ FPS increase comparing to KE's original version
 
 Highly recommended to use on modern systems
 
@@ -72,7 +72,7 @@ Original ioquake3 renderer, performance is very poor on non-nvidia systems, unma
 
 ## Build Instructions
 
-### windows/msvc 
+### windows/msvc
 
 Install Visual Studio Community Edition 2017 or later and compile `quake3e` project from solution
 
@@ -88,7 +88,7 @@ To compile with Vulkan backend - clean solution, right click on `quake3e` projec
 
 All build dependencies (libraries, headers) are bundled-in
 
-Build with either `make ARCH=x86` or `make ARCH=x86_64` commands depending from your target system, then copy resulting binaries from created `build` directory or use command: 
+Build with either `make ARCH=x86` or `make ARCH=x86_64` commands depending on your target system, then copy resulting binaries from created `build` directory or use command:
 
 `make install DESTDIR=<path_to_game_files>`
 
@@ -96,7 +96,7 @@ Build with either `make ARCH=x86` or `make ARCH=x86_64` commands depending from 
 
 ### linux/bsd
 
-You may need to run following commands to install packages (using fresh ubuntu-18.04 installation as example):
+You may need to run the following commands to install packages (using fresh ubuntu-18.04 installation as example):
 
 * sudo apt install make gcc libcurl4-openssl-dev mesa-common-dev
 * sudo apt install libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev
@@ -104,7 +104,7 @@ You may need to run following commands to install packages (using fresh ubuntu-1
 
 Build with: `make`
 
-Copy resulting binaries from created `build` directory or use command: 
+Copy the resulting binaries from created `build` directory or use command:
 
 `make install DESTDIR=<path_to_game_files>`
 
@@ -112,13 +112,13 @@ Copy resulting binaries from created `build` directory or use command:
 
 ### raspberry pi os
 
-Install build dependencies:
+Install the build dependencies:
 
 * apt install libsdl2-dev libxxf86dga-dev libcurl4-openssl-dev
 
 Build with: `make`
 
-Copy resulting binaries from created `build` directory or use command: 
+Copy the resulting binaries from created `build` directory or use command:
 
 `make install DESTDIR=<path_to_game_files>`
 
@@ -126,16 +126,16 @@ Copy resulting binaries from created `build` directory or use command:
 
 ### macos
 
-* install official SDL2 framework to /Library/Frameworks
-* install Vulkan SDK to use MoltenVK library
+* install the official SDL2 framework to /Library/Frameworks
+* `brew install molten-vk` or install Vulkan SDK to use MoltenVK library
 
 Build with: `make`
 
-Copy resulting binaries from created `build` directory
+Copy the resulting binaries from created `build` directory
 
 ---
 
-Several make options available for linux/mingw/macos builds:
+Several make options are available for linux/mingw/macos builds:
 
 `BUILD_CLIENT=1` - build unified client/server executable, enabled by default
 

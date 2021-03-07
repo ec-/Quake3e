@@ -8,7 +8,7 @@ It is based on ioquake3-r1160 (latest non-SDL revision) with upstream patches an
 <b>Common changes/additions:</b>
 <ul>
 <li>a lot of security, performance and bug fixes</li>
-<li>much improved autocompletion (map, demo, exec and other commands), in-game <b>\callvote</b> agrument autocompletion</li>
+<li>much improved autocompletion (map, demo, exec and other commands), in-game <b>\callvote</b> argument autocompletion</li>
 <li><b>\com_affinityMask</b> - bind Quake3e process to bitmask-specified CPU core(s)</li>
 <li>raized filesystem limits, much faster startup with 1000+ pk3 files in use, level restart times were also reduced as well</li>
 <li><b>\fs_locked</b> <font color=silver><b>0</b>|1</font> - keep opened pk3 files locked or not, removes pk3 file limit when unlocked</li>
@@ -22,15 +22,15 @@ It is based on ioquake3-r1160 (latest non-SDL revision) with upstream patches an
 <li><a href="#in_minimize"><b>\in_minimize</b><a> - hotkey for minimize/restore main window (direct replacement for Q3Minimizer)</li>
 <li><b>\in_forceCharset</b> <font color=silver>0|<b>1</b>|2</font> - try to translate non-ASCII chars in keyboard input (<b>1</b>) or force EN/US keyboard layout (2)</li>
 <li><b>\in_nograb</b> <font color=silver><b>0</b>|1</font> - do not capture mouse in game, may be useful during online streaming</li>
-<li><b>\s_muteWhenUnfocused</b> <font color=silver>0|<b>1</b></font></li> 
-<li><b>\s_muteWhenMinimized</b> <font color=silver>0|<b>1</b></font></li> 
-<li><b>\s_device</b> - linux-only, specified sound device to use with ALSA, enter <font color=green>aplay -L</font> in your shell to see all available options</li> 
-<li><b>\screenshotBMP</b> and <b>\screenshotBMP clipboard</b> commands</li> 
-<li>hardcoded PrintScreen key - for "\screenshotBMP clipboard"</li> 
+<li><b>\s_muteWhenUnfocused</b> <font color=silver>0|<b>1</b></font></li>
+<li><b>\s_muteWhenMinimized</b> <font color=silver>0|<b>1</b></font></li>
+<li><b>\s_device</b> - linux-only, specified sound device to use with ALSA, enter <font color=green>aplay -L</font> in your shell to see all available options</li>
+<li><b>\screenshotBMP</b> and <b>\screenshotBMP clipboard</b> commands</li>
+<li>hardcoded PrintScreen key - for "\screenshotBMP clipboard"</li>
 <li>hardcoded Shift+PrintScreen - for "\screenshotBMP"</li>
 <li><b>\com_maxfpsUnfocused</b> - will save cpu when inactive,set to your desktop refresh rate, for example</li>
 <li><b>\com_skipIdLogo</b> <font color=silver><b>0</b>|1</font>- skip playing idlogo movie at startup</li>
-<li><b>\com_yieldCPU </b>&lt;milliseconds&gt; - try to sleep specified amout of time between rendered frames when game is active, this will greatly reduce CPU load, use <b>0</b> only if you're experiencing some lags (also it is usualy reduces performance on integrated graphics because CPU steals GPU's power budget)</li>
+<li><b>\com_yieldCPU </b>&lt;milliseconds&gt; - try to sleep specified amout of time between rendered frames when game is active, this will greatly reduce CPU load, use <b>0</b> only if you're experiencing some lags (also it is usually reduces performance on integrated graphics because CPU steals GPU's power budget)</li>
 <li><b>\r_defaultImage</b> <font color=silver>&lt;filename&gt;|#rgb|#rrggbb</font> - replace default (missing) image texture by either exact file or solid #rgb|#rrggbb background color</li>
 <li><b>\r_vbo</b> <font color=silver><b>0</b>|1</font> - use Vertex Buffer Objects to cache static map geometry, may improve FPS on modern GPUs, increases hunk memory usage by 15-30MB (map-dependent)</li>
 <div id="r_fbo"></div>
@@ -102,7 +102,7 @@ can be used to change/revoke compromised <b>rconPassword</b></li>
 
 <hr>
 <p><b>Fast client downloads</b><br><br>
-Usually downloads in Q3 is slow because all dowloaded data is requested/revieced from game server directly. 
+Usually downloads in Q3 is slow because all dowloaded data is requested/revieced from game server directly.
 So called `download redirection' allows very fast downloads because game server just tells you from where you should download all required mods/maps etc. - it can be internet or local http/ftp server<br>
 So what you need:
 <ul>
@@ -148,7 +148,7 @@ To stop download just specify '-' as argument:<br>
 <br>
 <hr>
 <p> <b>Built-in URL-filter</b><br><br>
-There is ability to launch Quake3 1.32e client directly from your browser 
+There is ability to launch Quake3 1.32e client directly from your browser
 by just clicking on URL that contains <b>q3a://</b>
 instead of usual <b>http://</b> or <b>ftp://</b> protocol headers<br><br>
 
@@ -188,7 +188,7 @@ console
   blendFunc blend
   tcmod scale 1 1
  }
- else 
+ else
  {
   map image2.tga
   blendFunc add
