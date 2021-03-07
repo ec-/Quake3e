@@ -502,7 +502,8 @@ void WIN_Minimize( void ) {
 	if ( gw_active )
 		SetForegroundWindow( GetDesktopWindow() );
 	// and wait some time before minimizing
-	uTimerM = SetTimer( g_wv.hWnd, TIMER_M, 50, NULL );
+	if ( !uTimerM )
+		uTimerM = SetTimer( g_wv.hWnd, TIMER_M, 50, NULL );
 #else
 	ShowWindow( g_wv.hWnd, SW_MINIMIZE );
 #endif
@@ -516,6 +517,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 	#define TIMER_ID 10
 	//static UINT uTimerID;
 	static qboolean flip = qtrue;
+	static qboolean focused = qfalse;
 	qboolean active;
 	qboolean minimized;
 	int zDelta, i;
@@ -643,31 +645,48 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 	/*
 		on minimize:
+			WM_WINDOWPOSCHANGING WindowPlacement:ShowCmd = SW_SHOWMINIMIZED
 			WM_KILLFOCUS
-			WM_MOVE (x:33536 y:33536)
+			WM_MOVE (x:garbage y:garbage)
 			WM_SIZE (SIZE_MINIMIZED w=0 h=0)
 			WM_ACTIVATE (active=0 minimized=1)
 
 		on restore:
+			WM_WINDOWPOSCHANGING WindowPlacement:ShowCmd = SW_SHOWNORMAL
 			WM_ACTIVATE (active=1 minimized=1)
 			WM_MOVE (x, y)
 			WM_SIZE (SIZE_RESTORED width height)
 			WM_SETFOCUS
 			WM_ACTIVATE (active=1 minimized=0)
+			WM_WINDOWPOSCHANGING WindowPlacement:ShowCmd = SW_SHOWNORMAL
 
 		on click in:
+			WM_WINDOWPOSCHANGING WindowPlacement:ShowCmd = SW_SHOWNORMAL
 			WM_ACTIVATE (active=1 minimized=0)
+			WM_WINDOWPOSCHANGING WindowPlacement:ShowCmd = SW_SHOWNORMAL
 			WM_SETFOCUS
 
 		on click out, destroy:
 			WM_ACTIVATE (active=0 minimized=0)
+			WM_WINDOWPOSCHANGING WindowPlacement:ShowCmd = SW_SHOWNORMAL
 			WM_KILLFOCUS
 
 		on create:
+			WM_WINDOWPOSCHANGING WindowPlacement:ShowCmd = SW_SHOWNORMAL
 			WM_ACTIVATE (active=1 minimized=0)
+			WM_WINDOWPOSCHANGING WindowPlacement:ShowCmd = SW_SHOWNORMAL
 			WM_SETFOCUS
 			WM_SIZE (SIZE_RESTORED width height)
 			WM_MOVE (x, y)
+
+		on win+d:
+			WM_WINDOWPOSCHANGING WindowPlacement:ShowCmd = SW_SHOWMINIMIZED
+			WM_MOVE (x:garbage, y:garbage)
+			WM_SIZE (SIZE_MINIMIZED)
+			WM_ACTIVATE (active=0 minimized=1)
+			WM_WINDOWPOSCHANGING WindowPlacement:ShowCmd = SW_SHOWMINIMIZED
+			WM_KILLFOCUS
+			
 	*/
 
 	case WM_ACTIVATE:
@@ -675,8 +694,10 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		minimized = (BOOL)HIWORD( wParam ) ? qtrue : qfalse;
 
 		// We can recieve Active & Minimized when restoring from minimized state
-		if ( active && minimized )
+		if ( active && minimized ) {
+			gw_minimized = qtrue;
 			break;
+		}
 
 		gw_active = active;
 		gw_minimized = minimized;
@@ -725,12 +746,17 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		SNDDMA_Activate();
 		break;
 
+	case WM_SETFOCUS:
+		focused = qtrue;
+		break;
+
 	case WM_KILLFOCUS:
-		gw_active = qfalse;
+		//gw_active = qfalse;
+		focused = qfalse;
 		break;
 
 	case WM_MOVE:
-		if ( !gw_active || gw_minimized )
+		if ( !gw_active || gw_minimized || !focused )
 			break;
 
 		GetWindowRect( hWnd, &g_wv.winRect );
@@ -748,41 +774,13 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		break;
 
 	case WM_SIZE:
-		if ( wParam == SIZE_MINIMIZED ) {
-			// it is important for vulkan backend to finish all pending work
-			// before minimizing/hiding presentation window
-			// because swapchain surfaces may become not available
-			// and cause uncorrectable VK_ERROR_OUT_OF_DATE_KHR errors
-			// (at least with current nvidia drivers)
-			re.SyncRender();
-			gw_active = qfalse;
-			gw_minimized = qtrue; 
-		} else if ( wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED ) {
-			gw_minimized = qfalse;
-			//gw_active = qtrue;
-		}
-
-		if ( gw_active ) {
+		if ( gw_active && focused && !gw_minimized ) {
 			GetWindowRect( hWnd, &g_wv.winRect );
 			g_wv.winRectValid = qtrue;
 			UpdateMonitorInfo( &g_wv.winRect );
 			IN_UpdateWindow( NULL, qtrue );
 		}
-
 		break;
-
-	//case WM_ENTERSIZEMOVE:
-	//	if ( uTimerID == 0 && (i = GetTimerMsec()) > 0 ) {
-	//		uTimerID = SetTimer( g_wv.hWnd, TIMER_ID, i, NULL );
-	//	}
-	//	break;
-
-	//case WM_EXITSIZEMOVE:
-	//	if ( uTimerID != 0 ) {
-	//		KillTimer( g_wv.hWnd, uTimerID );
-	//		uTimerID = 0;
-	//	}
-	//	break;
 
 	case WM_TIMER:
 		//if ( wParam == TIMER_ID && uTimerID != 0 && !CL_VideoRecording() ) {
@@ -806,38 +804,47 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		break;
 
 	case WM_WINDOWPOSCHANGING:
-		if ( g_wv.borderless )
 		{
-			WINDOWPOS *pos = (LPWINDOWPOS) lParam;
-			const int threshold = 10;
-			HMONITOR hMonitor;
-			MONITORINFO mi;
-			const RECT *r;
-			RECT rr;
+			WINDOWPLACEMENT wp;
 
-			rr.left = pos->x;
-			rr.right = pos->x + pos->cx;
-			rr.top = pos->y;
-			rr.bottom = pos->y + pos->cy;
-			hMonitor = MonitorFromRect( &rr, MONITOR_DEFAULTTONEAREST );
+			// set minimized flag as early as possible
+			if ( GetWindowPlacement( hWnd, &wp ) && wp.showCmd == SW_SHOWMINIMIZED )
+				gw_minimized = qtrue;
 
-			if ( hMonitor )
+			if ( g_wv.borderless )
 			{
-				mi.cbSize = sizeof( mi );
-				GetMonitorInfo( hMonitor, &mi );
-				r = &mi.rcWork;
+				WINDOWPOS *pos = (LPWINDOWPOS) lParam;
+				const int threshold = 10;
+				HMONITOR hMonitor;
+				MONITORINFO mi;
+				const RECT *r;
+				RECT rr;
 
-				if ( pos->x >= (r->left - threshold) && pos->x <= (r->left + threshold ) )
-					pos->x = r->left;
-				else if( (pos->x + pos->cx) >= (r->right - threshold) && (pos->x + pos->cx) <= (r->right + threshold) )
-					pos->x = (r->right - pos->cx);
+				rr.left = pos->x;
+				rr.right = pos->x + pos->cx;
+				rr.top = pos->y;
+				rr.bottom = pos->y + pos->cy;
+				hMonitor = MonitorFromRect( &rr, MONITOR_DEFAULTTONEAREST );
 
-				if ( pos->y >= (r->top - threshold) && pos->y <= (r->top + threshold ) )
-					pos->y = r->top;
-				else if( (pos->y + pos->cy) >= (r->bottom - threshold) && (pos->y + pos->cy) <= (r->bottom + threshold) )
-					pos->y = (r->bottom - pos->cy);
+				if ( hMonitor )
+				{
+					mi.cbSize = sizeof( mi );
+					GetMonitorInfo( hMonitor, &mi );
+					r = &mi.rcWork;
 
-				return 0;
+					// snap window to current monitor borders
+					if ( pos->x >= ( r->left - threshold ) && pos->x <= ( r->left + threshold ) )
+						pos->x = r->left;
+					else if ( ( pos->x + pos->cx ) >= ( r->right - threshold ) && ( pos->x + pos->cx ) <= ( r->right + threshold ) )
+						pos->x = ( r->right - pos->cx );
+
+					if ( pos->y >= ( r->top - threshold ) && pos->y <= ( r->top + threshold ) )
+						pos->y = r->top;
+					else if ( ( pos->y + pos->cy ) >= ( r->bottom - threshold ) && ( pos->y + pos->cy ) <= ( r->bottom + threshold ) )
+						pos->y = ( r->bottom - pos->cy );
+
+					return 0;
+				}
 			}
 		}
 		break;
