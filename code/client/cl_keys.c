@@ -434,7 +434,7 @@ static void Console_Key( int key ) {
 		Con_SaveField( &g_consoleField );
 
 		Field_Clear( &g_consoleField );
-		g_consoleField.widthInChars = g_console_field_width;
+		Con_ResetFieldWidth();
 
 		if ( cls.state == CA_DISCONNECTED ) {
 			SCR_UpdateScreen ();	// force an update, because the command
@@ -454,14 +454,14 @@ static void Console_Key( int key ) {
 	if ( (key == K_MWHEELUP && keys[K_SHIFT].down) || ( key == K_UPARROW ) || ( key == K_KP_UPARROW ) ||
 		 ( ( tolower(key) == 'p' ) && keys[K_CTRL].down ) ) {
 		Con_HistoryGetPrev( &g_consoleField );
-		g_consoleField.widthInChars = g_console_field_width;
+		Con_ResetFieldWidth();
 		return;
 	}
 
 	if ( (key == K_MWHEELDOWN && keys[K_SHIFT].down) || ( key == K_DOWNARROW ) || ( key == K_KP_DOWNARROW ) ||
 		 ( ( tolower(key) == 'n' ) && keys[K_CTRL].down ) ) {
 		Con_HistoryGetNext( &g_consoleField );
-		g_consoleField.widthInChars = g_console_field_width;
+		Con_ResetFieldWidth();
 		return;
 	}
 

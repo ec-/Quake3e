@@ -198,7 +198,7 @@ void Con_ToggleConsole_f( void ) {
 	}
 
 	Field_Clear( &g_consoleField );
-	g_consoleField.widthInChars = g_console_field_width;
+	Con_ResetFieldWidth();
 
 	if (!con_notifykeep->integer) {
 		Con_ClearNotify();
@@ -492,6 +492,19 @@ void Con_CheckResize( void )
 
 /*
 ==================
+Con_ResetFieldWidth
+==================
+*/
+void Con_ResetFieldWidth( void )
+{
+	g_consoleField.widthInChars = g_console_field_width -
+		(con_timedisplay->integer & 1 ? sizeof(con.prefix) : 0) -
+		(con_timedisplay->integer & 2 ? sizeof(con.prefix) + sizeof(con.date) : 0);
+}
+
+
+/*
+==================
 Cmd_CompleteTxtName
 ==================
 */
@@ -547,7 +560,7 @@ void Con_Init( void )
 	Con_UpdateDateTime();
 
 	Field_Clear( &g_consoleField );
-	g_consoleField.widthInChars = g_console_field_width;
+	Con_ResetFieldWidth();
 
 	Cmd_AddCommand( "clear", Con_Clear_f );
 	Cmd_AddCommand( "clearnotify", Con_ClearNotify );

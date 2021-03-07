@@ -496,6 +496,7 @@ qboolean CL_ValidPakSignature( const byte *data, int len );
 // console
 //
 void Con_CheckResize( void );
+void Con_ResetFieldWidth(void);
 void Con_Init( void );
 void Con_Shutdown( void );
 void Con_ToggleConsole_f( void );
