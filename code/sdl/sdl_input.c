@@ -998,6 +998,39 @@ static void IN_JoyMove( void )
 }
 #endif  // USE_JOYSTICK
 
+//#define DEBUG_EVENTS
+
+#ifdef DEBUG_EVENTS
+static const char *eventName( SDL_WindowEventID event )
+{
+	static char buf[32];
+
+	switch ( event )
+	{
+		case SDL_WINDOWEVENT_NONE: return "NONE";
+		case SDL_WINDOWEVENT_SHOWN: return "SHOWN";
+		case SDL_WINDOWEVENT_HIDDEN: return "HIDDEN";
+		case SDL_WINDOWEVENT_EXPOSED: return "EXPOSED";
+		case SDL_WINDOWEVENT_MOVED: return "MOVED";
+		case SDL_WINDOWEVENT_RESIZED: return "RESIZED";
+		case SDL_WINDOWEVENT_SIZE_CHANGED: return "SIZE_CHANGED";
+		case SDL_WINDOWEVENT_MINIMIZED: return "MINIMIZED";
+		case SDL_WINDOWEVENT_MAXIMIZED: return "MAXIMIZED";
+		case SDL_WINDOWEVENT_RESTORED: return "RESTORED";
+		case SDL_WINDOWEVENT_ENTER: return "ENTER";
+		case SDL_WINDOWEVENT_LEAVE: return "LEAVE";
+		case SDL_WINDOWEVENT_FOCUS_GAINED: return "FOCUS_GAINED";
+		case SDL_WINDOWEVENT_FOCUS_LOST: return "FOCUS_LOST";
+		case SDL_WINDOWEVENT_CLOSE: return "CLOSE";
+		case SDL_WINDOWEVENT_TAKE_FOCUS: return "TAKE_FOCUS";
+		case SDL_WINDOWEVENT_HIT_TEST: return "HIT_TEST"; 
+		default:
+			sprintf( buf, "EVENT#%i", event );
+			return buf;
+	}
+}
+#endif
+
 
 /*
 ===============
@@ -1154,7 +1187,10 @@ void HandleEvents( void )
 				break;
 
 			case SDL_WINDOWEVENT:
-				switch( e.window.event )
+#ifdef DEBUG_EVENTS
+				Com_Printf( "%4i %s\n", e.window.timestamp, eventName( e.window.event ) );
+#endif
+				switch ( e.window.event )
 				{
 					case SDL_WINDOWEVENT_MOVED:
 						if ( gw_active && !gw_minimized && !glw_state.isFullscreen ) {
