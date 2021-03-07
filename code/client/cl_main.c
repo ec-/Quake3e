@@ -3177,7 +3177,7 @@ static void CL_InitRenderer( void ) {
 	cls.whiteShader = re.RegisterShader( "white" );
 	cls.consoleShader = re.RegisterShader( "console" );
 	g_console_field_width = cls.glconfig.vidWidth / smallchar_width - 2;
-	g_consoleField.widthInChars = g_console_field_width;
+	Con_ResetFieldWidth();
 
 	// for 640x480 virtualized screen
 	cls.biasY = 0;

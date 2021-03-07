@@ -498,8 +498,8 @@ Con_ResetFieldWidth
 void Con_ResetFieldWidth( void )
 {
 	g_consoleField.widthInChars = g_console_field_width -
-		(con_timedisplay->integer & 1 ? sizeof(con.prefix) : 0) -
-		(con_timedisplay->integer & 2 ? sizeof(con.prefix) + sizeof(con.date) : 0);
+		(con_timedisplay && con_timedisplay->integer & 1 ? sizeof(con.prefix) : 0) -
+		(con_timedisplay && con_timedisplay->integer & 2 ? sizeof(con.prefix) + sizeof(con.date) : 0);
 }
 
 
@@ -520,7 +520,7 @@ void Cmd_CompleteTxtName( char *args, int argNum ) {
 Con_UpdateDateTime
 ===============
 */
-static void Con_UpdateDateTime(void)
+static void Con_UpdateDateTime( void )
 {
 	qtime_t	now;
 
