@@ -1198,12 +1198,13 @@ void HandleEvents( void )
 							Cvar_SetIntegerValue( "vid_ypos", e.window.data2 );
 						}
 						break;
-					case SDL_WINDOWEVENT_MINIMIZED:		re.SyncRender();
-														gw_active = qfalse; gw_minimized = qtrue; break;
+					case SDL_WINDOWEVENT_HIDDEN:
+					case SDL_WINDOWEVENT_MINIMIZED:		gw_active = qfalse; gw_minimized = qtrue; break;
+					case SDL_WINDOWEVENT_SHOWN:
 					case SDL_WINDOWEVENT_RESTORED:
-					case SDL_WINDOWEVENT_MAXIMIZED:		gw_active = qtrue;  gw_minimized = qfalse; break;
+					case SDL_WINDOWEVENT_MAXIMIZED:		gw_minimized = qfalse; break;
 					case SDL_WINDOWEVENT_FOCUS_LOST:	gw_active = qfalse; break;
-					case SDL_WINDOWEVENT_FOCUS_GAINED:	gw_active = qtrue;  gw_minimized = qfalse; break;
+					case SDL_WINDOWEVENT_FOCUS_GAINED:	gw_active = qtrue; gw_minimized = qfalse; break;
 				}
 				break;
 			default:

@@ -194,7 +194,9 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 	int display;
 	int x;
 	int y;
-	Uint32 flags = 0; // SDL_WINDOW_SHOWN
+//	Uint32 flags = 0; // SDL_WINDOW_SHOWN
+	Uint32 flags = SDL_WINDOW_HIDDEN;
+
 #ifdef USE_VULKAN_API
 	if ( vulkan ) {
 		flags |= SDL_WINDOW_VULKAN;
@@ -262,6 +264,9 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 		SDL_DestroyWindow( SDL_window );
 		SDL_window = NULL;
 	}
+
+	gw_active = qfalse;
+	gw_minimized = qtrue;
 
 	if ( fullscreen )
 	{
