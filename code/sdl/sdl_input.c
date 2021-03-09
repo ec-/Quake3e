@@ -355,6 +355,8 @@ static void IN_GobbleMouseEvents( void )
 }
 
 
+//#define DEBUG_EVENTS
+
 /*
 ===============
 IN_ActivateMouse
@@ -371,6 +373,9 @@ static void IN_ActivateMouse( void )
 
 		SDL_SetRelativeMouseMode( in_mouse->integer == 1 ? SDL_TRUE : SDL_FALSE );
 		SDL_SetWindowGrab( SDL_window, SDL_TRUE );
+#ifdef DEBUG_EVENTS
+		Com_Printf( "%4i %s\n", Sys_Milliseconds(), __func__ );
+#endif
 	}
 
 	// in_nograb makes no sense in fullscreen mode
@@ -406,6 +411,9 @@ static void IN_DeactivateMouse( void )
 
 	if ( mouseActive )
 	{
+#ifdef DEBUG_EVENTS
+		Com_Printf( "%4i %s\n", Sys_Milliseconds(), __func__ );
+#endif
 		IN_GobbleMouseEvents();
 
 		SDL_SetWindowGrab( SDL_window, SDL_FALSE );
@@ -998,7 +1006,7 @@ static void IN_JoyMove( void )
 }
 #endif  // USE_JOYSTICK
 
-//#define DEBUG_EVENTS
+
 
 #ifdef DEBUG_EVENTS
 static const char *eventName( SDL_WindowEventID event )

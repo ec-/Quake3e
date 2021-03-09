@@ -194,8 +194,7 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 	int display;
 	int x;
 	int y;
-//	Uint32 flags = 0; // SDL_WINDOW_SHOWN
-	Uint32 flags = SDL_WINDOW_HIDDEN;
+	Uint32 flags = SDL_WINDOW_SHOWN;
 
 #ifdef USE_VULKAN_API
 	if ( vulkan ) {
@@ -629,10 +628,10 @@ void GLimp_Init( glconfig_t *config )
 
 	glw_state.isFullscreen = config->isFullscreen;
 
+	HandleEvents();
+
 	// This depends on SDL_INIT_VIDEO, hence having it here
 	IN_Init();
-
-	SDL_ShowWindow( SDL_window );
 }
 
 
@@ -726,10 +725,10 @@ void VKimp_Init( glconfig_t *config )
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
 
+	HandleEvents();
+
 	// This depends on SDL_INIT_VIDEO, hence having it here
 	IN_Init();
-
-	SDL_ShowWindow( SDL_window );
 }
 
 
