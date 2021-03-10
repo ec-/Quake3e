@@ -64,6 +64,7 @@ static cvar_t *j_up_axis;
 static cvar_t *cl_consoleKeys;
 
 static int in_eventTime = 0;
+static qboolean mouse_focus;
 
 #define CTRL(a) ((a)-'a'+1)
 
@@ -373,6 +374,9 @@ static void IN_ActivateMouse( void )
 
 		SDL_SetRelativeMouseMode( in_mouse->integer == 1 ? SDL_TRUE : SDL_FALSE );
 		SDL_SetWindowGrab( SDL_window, SDL_TRUE );
+
+		SDL_WarpMouseInWindow( SDL_window, glw_state.window_width / 2, glw_state.window_height / 2 );
+
 #ifdef DEBUG_EVENTS
 		Com_Printf( "%4i %s\n", Sys_Milliseconds(), __func__ );
 #endif
@@ -419,7 +423,7 @@ static void IN_DeactivateMouse( void )
 		SDL_SetWindowGrab( SDL_window, SDL_FALSE );
 		SDL_SetRelativeMouseMode( SDL_FALSE );
 
-		if ( gw_active && !gw_minimized )
+		if ( gw_active )
 			SDL_WarpMouseInWindow( SDL_window, glw_state.window_width / 2, glw_state.window_height / 2 );
 		else
 			SDL_WarpMouseGlobal( glw_state.desktop_width / 2, glw_state.desktop_height / 2 );
@@ -1206,13 +1210,18 @@ void HandleEvents( void )
 							Cvar_SetIntegerValue( "vid_ypos", e.window.data2 );
 						}
 						break;
+					// window states:
 					case SDL_WINDOWEVENT_HIDDEN:
 					case SDL_WINDOWEVENT_MINIMIZED:		gw_active = qfalse; gw_minimized = qtrue; break;
 					case SDL_WINDOWEVENT_SHOWN:
 					case SDL_WINDOWEVENT_RESTORED:
 					case SDL_WINDOWEVENT_MAXIMIZED:		gw_minimized = qfalse; break;
-					case SDL_WINDOWEVENT_FOCUS_LOST:	gw_active = qfalse; break;
-					case SDL_WINDOWEVENT_FOCUS_GAINED:	gw_active = qtrue; gw_minimized = qfalse; break;
+					// keyboard focus:
+					case SDL_WINDOWEVENT_FOCUS_LOST:	lastKeyDown = 0; Key_ClearStates(); gw_active = qfalse; break;
+					case SDL_WINDOWEVENT_FOCUS_GAINED:	lastKeyDown = 0; Key_ClearStates(); gw_active = qtrue; gw_minimized = qfalse; break;
+					// mouse focus:
+					case SDL_WINDOWEVENT_ENTER: mouse_focus = qtrue; break;
+					case SDL_WINDOWEVENT_LEAVE: if ( glw_state.isFullscreen ) mouse_focus = qfalse; break;
 				}
 				break;
 			default:
@@ -1255,7 +1264,7 @@ void IN_Frame( void )
 		}
 	}
 
-	if ( !gw_active || gw_minimized || in_nograb->integer ) {
+	if ( !gw_active || !mouse_focus || in_nograb->integer ) {
 		IN_DeactivateMouse();
 		return;
 	}

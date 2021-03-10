@@ -239,6 +239,9 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 		glw_state.desktop_height = 480;
 	}
 
+	config->isFullscreen = fullscreen;
+	glw_state.isFullscreen = fullscreen;
+
 	Com_Printf( "...setting mode %d:", mode );
 
 	if ( !CL_GetModeInfo( &config->vidWidth, &config->vidHeight, &config->windowAspect, mode, modeFS, glw_state.desktop_width, glw_state.desktop_height, fullscreen ) )
@@ -269,11 +272,7 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 
 	if ( fullscreen )
 	{
-#ifdef _WIN32
 		flags |= SDL_WINDOW_FULLSCREEN;
-#else
-		flags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS;
-#endif
 	}
 	else if ( r_noborder->integer )
 	{
@@ -282,7 +281,6 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 
 	flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 
-	config->isFullscreen = fullscreen;
 	colorBits = r_colorbits->value;
 
 	if ( colorBits == 0 || colorBits >= 32 )
@@ -503,7 +501,7 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 		return RSERR_INVALID_MODE;
 	}
 
-	if ( !config->isFullscreen && r_noborder->integer )
+	if ( !fullscreen && r_noborder->integer )
 		SDL_SetWindowHitTest( SDL_window, SDL_HitTestFunc, NULL );
 
 #ifdef USE_VULKAN_API
@@ -513,11 +511,11 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 #endif
 		SDL_GL_GetDrawableSize( SDL_window, &config->vidWidth, &config->vidHeight );
 
-	glw_state.isFullscreen = config->isFullscreen;
-
 	// save render dimensions as renderer may change it in advance
 	glw_state.window_width = config->vidWidth;
 	glw_state.window_height = config->vidHeight;
+
+	SDL_WarpMouseInWindow( SDL_window, glw_state.window_width / 2, glw_state.window_height / 2 );
 
 	return RSERR_OK;
 }
@@ -626,7 +624,7 @@ void GLimp_Init( glconfig_t *config )
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
 
-	glw_state.isFullscreen = config->isFullscreen;
+	Key_ClearStates();
 
 	HandleEvents();
 
@@ -724,6 +722,8 @@ void VKimp_Init( glconfig_t *config )
 	// This values force the UI to disable driver selection
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
+
+	Key_ClearStates();
 
 	HandleEvents();
 

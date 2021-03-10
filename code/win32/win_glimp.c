@@ -1371,6 +1371,8 @@ void GLimp_Init( glconfig_t *config )
 
 	HandleEvents();
 
+	Key_ClearStates();
+
 	IN_Init();
 }
 
@@ -1510,6 +1512,8 @@ void VKimp_Init( glconfig_t *config )
 	ShowWindow( g_wv.hWnd, SW_SHOW );
 
 	HandleEvents();
+
+	Key_ClearStates();
 
 	IN_Init();
 }
