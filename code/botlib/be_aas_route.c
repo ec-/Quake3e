@@ -1627,7 +1627,7 @@ int AAS_AreaRouteToGoalArea(int areanum, vec3_t origin, int goalareanum, int tra
 	} //end if
 
 	// make sure the routing cache doesn't grow to large
-	while ( routingcachesize > 4 * 1024 * 1024 ) {
+	while ( routingcachesize > 12 * 1024 * 1024 ) {
 		if ( !AAS_FreeOldestCache() ) {
 			break;
 		}
