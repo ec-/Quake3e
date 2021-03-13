@@ -500,6 +500,10 @@ void Con_ResetFieldWidth( void )
 	g_consoleField.widthInChars = g_console_field_width -
 		(con_timedisplay && con_timedisplay->integer & 1 ? sizeof(con.prefix) : 0) -
 		(con_timedisplay && con_timedisplay->integer & 2 ? sizeof(con.prefix) + sizeof(con.date) : 0);
+	if ( g_consoleField.widthInChars <= 10 ) {
+		Cvar_Set( "con_timedisplay", "0" );
+		g_consoleField.widthInChars = g_console_field_width;
+	}
 }
 
 
