@@ -375,6 +375,9 @@ static void IN_ActivateMouse( void )
 		SDL_SetRelativeMouseMode( in_mouse->integer == 1 ? SDL_TRUE : SDL_FALSE );
 		SDL_SetWindowGrab( SDL_window, SDL_TRUE );
 
+		if ( glw_state.isFullscreen )
+			SDL_ShowCursor( SDL_FALSE );
+
 		SDL_WarpMouseInWindow( SDL_window, glw_state.window_width / 2, glw_state.window_height / 2 );
 
 #ifdef DEBUG_EVENTS
@@ -426,7 +429,12 @@ static void IN_DeactivateMouse( void )
 		if ( gw_active )
 			SDL_WarpMouseInWindow( SDL_window, glw_state.window_width / 2, glw_state.window_height / 2 );
 		else
+		{
+			if ( glw_state.isFullscreen )
+				SDL_ShowCursor( SDL_TRUE );
+
 			SDL_WarpMouseGlobal( glw_state.desktop_width / 2, glw_state.desktop_height / 2 );
+		}
 
 		mouseActive = qfalse;
 	}
