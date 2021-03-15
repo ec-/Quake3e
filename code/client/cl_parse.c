@@ -409,11 +409,11 @@ void CL_SystemInfoChanged( qboolean onlyGame ) {
 
 	// scan through all the variables in the systeminfo and locally set cvars to match
 	s = systemInfo;
-	while ( s ) {
+	do {
 		int cvar_flags;
 
-		Info_NextPair( &s, key, value );
-		if ( !key[0] ) {
+		s = Info_NextPair( s, key, value );
+		if ( key[0] == '\0' ) {
 			break;
 		}
 
@@ -432,26 +432,26 @@ void CL_SystemInfoChanged( qboolean onlyGame ) {
 			continue; // already processed
 		}
 
-		if((cvar_flags = Cvar_Flags(key)) == CVAR_NONEXISTENT)
-			Cvar_Get(key, value, CVAR_SERVER_CREATED | CVAR_ROM);
+		if ( ( cvar_flags = Cvar_Flags( key ) ) == CVAR_NONEXISTENT )
+			Cvar_Get( key, value, CVAR_SERVER_CREATED | CVAR_ROM );
 		else
 		{
 			// If this cvar may not be modified by a server discard the value.
-			if(!(cvar_flags & (CVAR_SYSTEMINFO | CVAR_SERVER_CREATED | CVAR_USER_CREATED)))
+			if ( !(cvar_flags & ( CVAR_SYSTEMINFO | CVAR_SERVER_CREATED | CVAR_USER_CREATED ) ) )
 			{
 #ifndef STANDALONE
-				if(Q_stricmp(key, "g_synchronousClients") && Q_stricmp(key, "pmove_fixed") &&
-				   Q_stricmp(key, "pmove_msec"))
+				if ( Q_stricmp( key, "g_synchronousClients" ) && Q_stricmp( key, "pmove_fixed" ) && Q_stricmp( key, "pmove_msec" ) )
 #endif
 				{
-					Com_Printf(S_COLOR_YELLOW "WARNING: server is not allowed to set %s=%s\n", key, value);
+					Com_Printf( S_COLOR_YELLOW "WARNING: server is not allowed to set %s=%s\n", key, value );
 					continue;
 				}
 			}
 
-			Cvar_SetSafe(key, value);
+			Cvar_SetSafe( key, value );
 		}
 	}
+	while ( *s != '\0' );
 }
 
 
