@@ -85,6 +85,7 @@ cvar_t		*con_heightShift;
 cvar_t		*con_heightCtrl;
 cvar_t		*con_heightAlt;
 cvar_t		*con_timedisplay;
+qboolean	con_timedisplay_show = qfalse;
 
 int         g_console_field_width = DEFAULT_CONSOLE_WIDTH;
 
@@ -502,8 +503,11 @@ void Con_ResetFieldWidth( void )
 		(con_timedisplay && con_timedisplay->integer & 1 ? sizeof(con.prefix) : 0) -
 		(con_timedisplay && con_timedisplay->integer & 2 ? sizeof(con.prefix) + sizeof(con.date) : 0);
 	if ( g_consoleField.widthInChars <= 10 ) {
-		Cvar_Set( "con_timedisplay", "0" );
 		g_consoleField.widthInChars = g_console_field_width;
+		con_timedisplay_show = qfalse;
+	}
+	else {
+		con_timedisplay_show = qtrue;
 	}
 }
 
@@ -873,7 +877,7 @@ void Con_DrawInput( void ) {
 
 	y = con.vislines - ( smallchar_height * 2 );
 
-	if ( con_timedisplay->integer & 1 ) {
+	if ( con_timedisplay->integer & 1 && con_timedisplay_show ) {
 		offset = sizeof(con.prefix);
 		re.SetColor( g_color_table[ColorIndexFromChar('8')] );
 		SCR_DrawSmallString( con.xadjust + smallchar_width, y, con.prefix, sizeof(con.prefix) - 1 );
@@ -1053,12 +1057,12 @@ void Con_DrawSolidConsole( float frac ) {
 	SCR_DrawSmallString( cls.glconfig.vidWidth - ( ARRAY_LEN( Q3_VERSION ) ) * smallchar_width,
 		lines - smallchar_height, Q3_VERSION, ARRAY_LEN( Q3_VERSION ) - 1 );
 
-	if ( con_timedisplay->integer ) {
+	if ( con_timedisplay->integer && con_timedisplay_show ) {
 		Con_UpdateDateTime();
 	}
 
 	// draw date and time
-	if ( con_timedisplay->integer & 2 ) {
+	if ( con_timedisplay->integer & 2 && con_timedisplay_show ) {
 		SCR_DrawSmallString( cls.glconfig.vidWidth - (sizeof(con.prefix) + sizeof(con.date)) * smallchar_width,
 			lines - smallchar_height * 2, con.prefix, sizeof(con.prefix) - 1 );
 		SCR_DrawSmallString( cls.glconfig.vidWidth - sizeof(con.date) * smallchar_width,
