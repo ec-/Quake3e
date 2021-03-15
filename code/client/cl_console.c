@@ -505,8 +505,7 @@ void Con_ResetFieldWidth( void )
 	if ( g_consoleField.widthInChars <= 10 ) {
 		g_consoleField.widthInChars = g_console_field_width;
 		con_timedisplay_show = qfalse;
-	}
-	else {
+	} else {
 		con_timedisplay_show = qtrue;
 	}
 }
