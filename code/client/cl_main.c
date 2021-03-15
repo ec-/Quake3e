@@ -57,7 +57,7 @@ cvar_t	*cl_allowDownload;
 cvar_t	*cl_mapAutoDownload;
 #endif
 cvar_t	*cl_conColor;
-cvar_t	*con_fontSize;
+cvar_t	*con_scale;
 cvar_t	*cl_inGameVideo;
 
 cvar_t	*cl_serverStatusResendTime;
@@ -3299,7 +3299,7 @@ static void CL_SetScaling( float factor, int captureWidth, int captureHeight ) {
 	factor *= scale;
 
 	// set console scaling
-	fontsize = Com_Clamp( 0.5f, captureWidth / (SMALLCHAR_WIDTH * factor) / 12, con_fontSize->value );
+	fontsize = Com_Clamp( 0.5f, captureWidth / (SMALLCHAR_WIDTH * factor) / 12, con_scale->value );
 	smallchar_width = SMALLCHAR_WIDTH * factor * fontsize;
 	smallchar_height = SMALLCHAR_HEIGHT * factor * fontsize;
 	bigchar_width = BIGCHAR_WIDTH * factor;
@@ -3847,7 +3847,7 @@ void CL_Init( void ) {
 #endif
 
 	cl_conColor = Cvar_Get( "cl_conColor", "60 60 70 220", 0 );
-	con_fontSize = Cvar_Get( "con_fontSize", "1", CVAR_ARCHIVE_ND );
+	con_scale = Cvar_Get( "con_scale", "1", CVAR_ARCHIVE_ND );
 
 #ifdef MACOS_X
 	// In game video is REALLY slow in Mac OS X right now due to driver slowness
