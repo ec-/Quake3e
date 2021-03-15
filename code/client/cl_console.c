@@ -85,7 +85,7 @@ cvar_t		*con_heightShift;
 cvar_t		*con_heightCtrl;
 cvar_t		*con_heightAlt;
 cvar_t		*con_timedisplay;
-qboolean	con_timedisplay_show = qfalse;
+static qboolean con_timedisplay_show = qfalse;
 
 int         g_console_field_width = DEFAULT_CONSOLE_WIDTH;
 
