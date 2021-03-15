@@ -409,10 +409,10 @@ void Con_CheckResize( void )
 {
 	int		i, j, width, oldwidth, oldtotallines, oldcurrent, numlines, numchars;
 	short	tbuf[CON_TEXTSIZE], *src, *dst;
-	static int old_width, old_vispage;
+	static int old_width, old_vispage, old_charwidth;
 	int		vispage;
 
-	if ( con.viswidth == cls.glconfig.vidWidth )
+	if ( con.viswidth == cls.glconfig.vidWidth && old_charwidth == smallchar_width )
 		return;
 
 	con.viswidth = cls.glconfig.vidWidth;
@@ -437,6 +437,7 @@ void Con_CheckResize( void )
 	else
 	{
 		width = (cls.glconfig.vidWidth / smallchar_width) - 2;
+		old_charwidth = smallchar_width;
 
 		if ( width > MAX_CONSOLE_WIDTH )
 			width = MAX_CONSOLE_WIDTH;
