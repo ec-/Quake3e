@@ -118,28 +118,32 @@ static rserr_t GLW_StartDriverAndSetMode( int mode, const char *modeFS, int colo
 
 
 /*
-** ChoosePFD
+** GLW_ChoosePFD
 **
 ** Helper function that replaces ChoosePixelFormat.
 */
-#define MAX_PFDS 384
-
 static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 {
-	PIXELFORMATDESCRIPTOR pfds[MAX_PFDS+1];
+	PIXELFORMATDESCRIPTOR *pfds;
 	int maxPFD, bestMatch;
 	int i;
 
 	Com_Printf( "...GLW_ChoosePFD( %d, %d, %d )\n", ( int ) pPFD->cColorBits, ( int ) pPFD->cDepthBits, ( int ) pPFD->cStencilBits );
 
 	// count number of PFDs
-	maxPFD = DescribePixelFormat( hDC, 1, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[0] );
-
-	if ( maxPFD > MAX_PFDS )
-	{
-		Com_Printf( S_COLOR_YELLOW "WARNING: ...numPFDs > MAX_PFDS (%d > %d)\n", maxPFD, MAX_PFDS );
-		maxPFD = MAX_PFDS;
+#ifdef _MSC_VER
+	__try {
+		maxPFD = DescribePixelFormat( hDC, 1, sizeof( PIXELFORMATDESCRIPTOR ), NULL );
 	}
+	__except ( EXCEPTION_EXECUTE_HANDLER ) {
+		Com_Error( ERR_FATAL, "DescribePixelFormat() crashed" );
+		return 0;
+	}
+#else
+	maxPFD = DescribePixelFormat( hDC, 1, sizeof( PIXELFORMATDESCRIPTOR ), NULL );
+#endif
+
+	pfds = Z_Malloc( ( maxPFD + 1 ) * sizeof( PIXELFORMATDESCRIPTOR ) );
 
 	Com_Printf( "...%d PFDs found\n", maxPFD - 1 );
 
@@ -290,6 +294,7 @@ __rescan:
 			pPFD->dwFlags &= ~PFD_SUPPORT_COMPOSITION;
 			goto __rescan;
 		}
+		Z_Free( pfds );
 		return 0;
 	}
 
@@ -298,6 +303,7 @@ __rescan:
 		if ( !r_allowSoftwareGL->integer )
 		{
 			Com_Printf( "...no hardware acceleration found\n" );
+			Z_Free( pfds );
 			return 0;
 		}
 		else
@@ -315,6 +321,8 @@ __rescan:
 	}
 
 	*pPFD = pfds[bestMatch];
+
+	Z_Free( pfds );
 
 	return bestMatch;
 }
@@ -1360,6 +1368,12 @@ void GLimp_Init( glconfig_t *config )
 
 	// show main window after all initializations
 	ShowWindow( g_wv.hWnd, SW_SHOW );
+
+	HandleEvents();
+
+	Key_ClearStates();
+
+	IN_Init();
 }
 
 
@@ -1496,6 +1510,12 @@ void VKimp_Init( glconfig_t *config )
 
 	// show main window after all initializations
 	ShowWindow( g_wv.hWnd, SW_SHOW );
+
+	HandleEvents();
+
+	Key_ClearStates();
+
+	IN_Init();
 }
 
 

@@ -663,43 +663,18 @@ static qboolean Com_AddStartupCommands( void ) {
 void Info_Print( const char *s ) {
 	char	key[BIG_INFO_KEY];
 	char	value[BIG_INFO_VALUE];
-	char	*o;
-	int		l;
 
-	if (*s == '\\')
-		s++;
-	while (*s)
-	{
-		o = key;
-		while (*s && *s != '\\')
-			*o++ = *s++;
+	do {
+		s = Info_NextPair( s, key, value );
+		if ( key[0] == '\0' )
+			break;
 
-		l = o - key;
-		if (l < 20)
-		{
-			Com_Memset (o, ' ', 20-l);
-			key[20] = '\0';
-		}
-		else
-			*o = '\0';
-		Com_Printf ("%s ", key);
+		if ( value[0] == '\0' )
+			strcpy( value, "MISSING VALUE" );
 
-		if (!*s)
-		{
-			Com_Printf ("MISSING VALUE\n");
-			return;
-		}
+		Com_Printf( "%-20s %s\n", key, value );
 
-		o = value;
-		s++;
-		while (*s && *s != '\\')
-			*o++ = *s++;
-		*o = '\0';
-
-		if (*s)
-			s++;
-		Com_Printf ("%s\n", value);
-	}
+	} while ( *s != '\0' );
 }
 
 

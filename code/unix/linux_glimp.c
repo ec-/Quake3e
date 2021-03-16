@@ -108,7 +108,6 @@ static Atom motifWMHints = None;
 static int window_width = 0;
 static int window_height = 0;
 static qboolean window_created;
-static qboolean window_focused;
 static qboolean window_exposed;
 
 #define KEY_MASK (KeyPressMask | KeyReleaseMask)
@@ -838,6 +837,9 @@ void HandleEvents( void )
 
 		case ButtonPress:
 		case ButtonRelease:
+			if ( !IN_MouseActive() )
+				break;
+
 			if ( event.type == ButtonPress )
 				btn_press = qtrue;
 			else
@@ -861,9 +863,6 @@ void HandleEvents( void )
 					btn_code = event.xbutton.button - 8 + K_AUX1;
 					break;
 			}
-
-			if ( !IN_MouseActive() )
-				break;
 
 			if ( btn_code != -1 )
 			{
@@ -912,10 +911,10 @@ void HandleEvents( void )
 		case FocusIn:
 		case FocusOut:
 			if ( event.type == FocusIn ) {
-				window_focused = qtrue;
+				gw_active = qtrue;
 				Com_DPrintf( "FocusIn\n" );
 			} else {
-				window_focused = qfalse;
+				gw_active = qfalse;
 				Com_DPrintf( "FocusOut\n" );
 			}
 			Key_ClearStates();
@@ -1604,7 +1603,9 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 
 	window_exposed = qfalse;
 	window_created = qfalse;
-	window_focused = qfalse;
+
+	gw_active = qfalse;
+	gw_minimized = qfalse; /* safe default */
 
 	win = XCreateWindow( dpy, root, 0, 0, actualWidth, actualHeight,
 		0, visinfo->depth, InputOutput, visinfo->visual, mask, &attr );
@@ -1860,13 +1861,9 @@ void GLimp_Init( glconfig_t *config )
 		return;
 	}
 
-	IN_Init();
-
 	// This values force the UI to disable driver selection
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
-
-	//InitSig(); // not clear why this is at begin & end of function
 
 	// optional
 #define GLE( ret, name, ... ) q##name = GL_GetProcAddress( XSTRING( name ) );
@@ -1882,6 +1879,10 @@ void GLimp_Init( glconfig_t *config )
 	{
 		Com_Printf( "...GLX_EXT_swap_control not found\n" );
 	}
+
+	Key_ClearStates();
+
+	IN_Init();
 }
 
 
@@ -1956,13 +1957,13 @@ void VKimp_Init( glconfig_t *config )
 		return;
 	}
 
-	IN_Init();
-
 	// This values force the UI to disable driver selection
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
 
-	//InitSig(); // not clear why this is at begin & end of function
+	Key_ClearStates();
+
+	IN_Init();
 }
 #endif // USE_VULKAN_API
 
@@ -2012,14 +2013,6 @@ void IN_Init( void )
 	// mouse variables
 	in_mouse = Cvar_Get( "in_mouse", "1", CVAR_ARCHIVE );
 
-#ifdef USE_JOYSTICK
-	// bk001130 - from cvs.17 (mkv), joystick variables
-	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	// bk001130 - changed this to match win32
-	in_joystickDebug = Cvar_Get( "in_debugjoystick", "0", CVAR_TEMP );
-	joy_threshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE_ND ); // FIXME: in_joythreshold
-#endif
-
 	if ( in_mouse->integer )
 	{
 		mouse_avail = qtrue;
@@ -2030,6 +2023,12 @@ void IN_Init( void )
 	}
 
 #ifdef USE_JOYSTICK
+	// bk001130 - from cvs.17 (mkv), joystick variables
+	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	// bk001130 - changed this to match win32
+	in_joystickDebug = Cvar_Get( "in_debugjoystick", "0", CVAR_TEMP );
+	joy_threshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE_ND ); // FIXME: in_joythreshold
+
 	IN_StartupJoystick(); // bk001130 - from cvs1.17 (mkv)
 #endif
 
@@ -2079,7 +2078,7 @@ void IN_Frame( void )
 		}
 	}
 
-	if ( !window_focused || gw_minimized || in_nograb->integer ) {
+	if ( !gw_active || gw_minimized || in_nograb->integer ) {
 		IN_DeactivateMouse();
 		return;
 	}

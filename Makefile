@@ -112,10 +112,6 @@ else
 endif
 export CROSS_COMPILING
 
-ifndef COPYDIR
-COPYDIR="/usr/local/games/quake3"
-endif
-
 ifndef DESTDIR
 DESTDIR=/usr/local/games/quake3
 endif
@@ -1212,21 +1208,6 @@ install: release
 			$(STRIP) "$(DESTDIR)$$i"; \
 		fi \
 	done
-
-copyfiles: release
-	@if [ ! -d $(COPYDIR)/baseq3 ]; then echo "You need to set COPYDIR to where your Quake3 data is!"; fi
-	-$(MKDIR) -p -m 0755 $(COPYDIR)/baseq3
-	-$(MKDIR) -p -m 0755 $(COPYDIR)/missionpack
-
-ifneq ($(BUILD_CLIENT),0)
-	$(INSTALL) -s -m 0755 $(BR)/$(TARGET_CLIENT) $(COPYDIR)/$(TARGET_CLIENT)
-endif
-
-ifneq ($(BUILD_SERVER),0)
-	@if [ -f $(BR)/$(TARGET_SERVER) ]; then \
-		$(INSTALL) -s -m 0755 $(BR)/$(TARGET_SERVER) $(COPYDIR)/$(TARGET_SERVER); \
-	fi
-endif
 
 clean: clean-debug clean-release
 

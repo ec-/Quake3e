@@ -3358,7 +3358,7 @@ static void vk_restart_swapchain( const char *funcname )
 	setup_surface_formats( vk.physical_device );
 
 	vk_create_sync_primitives();
-	vk.initSwapchainLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	//vk.initSwapchainLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	vk_create_swapchain( vk.physical_device, vk.device, vk.surface, vk.present_format, &vk.swapchain );
 	vk_create_attachments();
 	vk_create_render_passes();

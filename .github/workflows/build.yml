@@ -129,7 +129,7 @@ jobs:
         
   ubuntu-x86:
     name: ${{ matrix.config }} Ubuntu ${{ matrix.arch }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -139,6 +139,10 @@ jobs:
         include:
           - config: Release
             rule: install
+          - arch: x86
+            use_sdl: USE_SDL=0
+          - arch: x86_64
+            use_sdl: USE_SDL=1
 
     steps:
     - name: Install tools
@@ -149,7 +153,7 @@ jobs:
           sudo apt-get -y install gcc-multilib libcurl4-openssl-dev:i386 mesa-common-dev:i386 libxxf86dga-dev:i386 libxrandr-dev:i386 libxxf86vm-dev:i386 libasound-dev:i386 libpcre3-dev:i386
         else
           sudo apt-get -qq update
-          sudo apt-get -y install libcurl4-openssl-dev mesa-common-dev libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev libpcre3-dev
+          sudo apt-get -y install libcurl4-openssl-dev mesa-common-dev libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev libsdl2-dev libpcre3-dev
         fi
 
     - uses: actions/checkout@v2
@@ -158,9 +162,9 @@ jobs:
 
     - name: Build
       run: |
-        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 USE_SDL=0 USE_VULKAN=1 BUILD_SERVER=0
+        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 ${{ matrix.use_sdl }} USE_VULKAN=1 BUILD_SERVER=0
         make clean ARCH=${{ matrix.arch }} 
-        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 USE_SDL=0 USE_VULKAN_API=0
+        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 ${{ matrix.use_sdl }} USE_VULKAN_API=0
 
     - uses: actions/upload-artifact@v2
       if: matrix.cc == 'gcc' && matrix.config == 'Release'
