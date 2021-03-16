@@ -32,6 +32,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 // Console variables that we need to access from this module
 cvar_t		*in_blockWinKey;
+cvar_t		*in_useInGamePrintScrn;
 cvar_t		*in_forceCharset;
 
 static HHOOK WinHook;
@@ -52,20 +53,22 @@ static LRESULT CALLBACK WinKeyHook( int code, WPARAM wParam, LPARAM lParam )
 			Sys_QueEvent( 0, SE_KEY, K_SUPER, qtrue, 0, NULL );
 			return 1;
 		}
-		if ( key->vkCode == VK_SNAPSHOT ) {
+		if ( key->vkCode == VK_SNAPSHOT && in_useInGamePrintScrn->integer ) {
 			Sys_QueEvent( 0, SE_KEY, K_PRINT, qtrue, 0, NULL );
 			return 1;
 		}
+		break;
 	case WM_KEYUP:
 	case WM_SYSKEYUP:
 		if ( ( key->vkCode == VK_LWIN || key->vkCode == VK_RWIN ) && !(Key_GetCatcher() & (KEYCATCH_CONSOLE | KEYCATCH_UI | KEYCATCH_MESSAGE)) && in_blockWinKey->integer ) {
 			Sys_QueEvent( 0, SE_KEY, K_SUPER, qfalse, 0, NULL );
 			return 1;
 		}
-		if ( key->vkCode == VK_SNAPSHOT ) {
+		if ( key->vkCode == VK_SNAPSHOT && in_useInGamePrintScrn->integer ) {
 			Sys_QueEvent( 0, SE_KEY, K_PRINT, qfalse, 0, NULL );
 			return 1;
 		}
+		break;
 	}
 	return CallNextHookEx( NULL, code, wParam, lParam );
 }
@@ -607,6 +610,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		//MSH_MOUSEWHEEL = RegisterWindowMessage( TEXT( "MSWHEEL_ROLLMSG" ) ); 
 
 		in_blockWinKey = Cvar_Get( "in_blockWinKey", "1", CVAR_ARCHIVE_ND );
+		in_useInGamePrintScrn = Cvar_Get( "in_useInGamePrintScrn", "1", CVAR_ARCHIVE_ND );
 		WIN_EnableHook(); // for PrintScreen and Win* keys
 
 		hWinEventHook = SetWinEventHook( EVENT_SYSTEM_SWITCHSTART, EVENT_SYSTEM_SWITCHSTART, NULL, WinEventProc, 
