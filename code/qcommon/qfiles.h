@@ -354,7 +354,8 @@ typedef struct {
 
 
 typedef struct {
-	int		fileofs, filelen;
+	int32_t fileofs;
+	int32_t filelen;
 } lump_t;
 
 #define	LUMP_ENTITIES		0
