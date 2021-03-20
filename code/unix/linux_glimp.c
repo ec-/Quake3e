@@ -1551,17 +1551,27 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 			Com_Printf( "XFree86-VidModeExtension: Ignored on non-fullscreen\n" );
 	}
 
-	if ( r_colorbits->integer == 0 )
+	colorbits = r_colorbits->integer;
+
+	if ( colorbits == 0 || colorbits > 24 )
 		colorbits = 24;
-	else
-		colorbits = MIN( r_colorbits->integer, 24);
 
 	if ( cl_depthbits->integer == 0 )
-		depthbits = 24;
+	{
+		// implicitly assume Z-buffer depth == desktop color depth
+		if ( colorbits > 16 )
+			depthbits = 24;
+		else
+			depthbits = 16;
+	}
 	else
-		depthbits = MIN( cl_depthbits->integer, 32);
+		depthbits = cl_depthbits->integer;
 
 	stencilbits = cl_stencilbits->integer;
+
+	// do not allow stencil if Z-buffer depth likely won't contain it
+	if ( depthbits < 24 )
+		stencilbits = 0;
 
 #ifdef USE_VULKAN_API
 	if ( vulkan )
