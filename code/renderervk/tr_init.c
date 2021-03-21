@@ -1803,7 +1803,13 @@ RE_Shutdown
 ===============
 */
 static void RE_Shutdown( refShutdownCode_t code ) {
-
+#ifdef USE_VULKAN
+	if ( code == REF_KEEP_CONTEXT ) {
+		if ( ( ri.Milliseconds() - gls.initTime ) > 48 * 3600 * 1000 ) {
+			code = REF_KEEP_WINDOW; // destroy context
+		}
+	}
+#endif
 	ri.Printf( PRINT_ALL, "RE_Shutdown( %i )\n", code );
 
 	ri.Cmd_RemoveCommand( "modellist" );
