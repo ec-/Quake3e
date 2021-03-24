@@ -26,40 +26,62 @@
 #define MAX_ATTACHMENTS_IN_POOL (6+1+VK_NUM_BLOOM_PASSES*2) // depth + msaa + msaa-resolve + screenmap.msaa + screenmap.resolve + screenmap.depth + bloom_extract + blur pairs
 
 typedef enum {
-	TYPE_SIGNLE_TEXTURE,
-	TYPE_SIGNLE_TEXTURE_DF,
-	TYPE_SIGNLE_TEXTURE_ENVIRO,
-
-	TYPE_SIGNLE_TEXTURE_LIGHTING,
-	TYPE_SIGNLE_TEXTURE_LIGHTING1,
-
-	TYPE_MULTI_TEXTURE_MUL2,
-	TYPE_MULTI_TEXTURE_ADD2_IDENTITY,
-	TYPE_MULTI_TEXTURE_ADD2,
-
-	TYPE_MULTI_TEXTURE_MUL3,
-	TYPE_MULTI_TEXTURE_ADD3_IDENTITY,
-	TYPE_MULTI_TEXTURE_ADD3,
-
-	TYPE_BLEND2_ADD,
-	TYPE_BLEND2_MUL,
-	TYPE_BLEND2_ALPHA,
-	TYPE_BLEND2_ONE_MINUS_ALPHA,
-	TYPE_BLEND2_MIX_ALPHA,
-	TYPE_BLEND2_MIX_ONE_MINUS_ALPHA,
-
-	TYPE_BLEND3_ADD,
-	TYPE_BLEND3_MUL,
-	TYPE_BLEND3_ALPHA,
-	TYPE_BLEND3_ONE_MINUS_ALPHA,
-	TYPE_BLEND3_MIX_ALPHA,
-	TYPE_BLEND3_MIX_ONE_MINUS_ALPHA,
-
 	TYPE_COLOR_WHITE,
 	TYPE_COLOR_GREEN,
 	TYPE_COLOR_RED,
 	TYPE_FOG_ONLY,
 	TYPE_DOT,
+
+	TYPE_SIGNLE_TEXTURE_LIGHTING,
+	TYPE_SIGNLE_TEXTURE_LIGHTING_LINEAR,
+
+	TYPE_SIGNLE_TEXTURE_DF,
+
+	TYPE_GENERIC_BEGIN,
+	TYPE_SIGNLE_TEXTURE = TYPE_GENERIC_BEGIN,
+	TYPE_SIGNLE_TEXTURE_ENV,
+
+	TYPE_MULTI_TEXTURE_MUL2,
+	TYPE_MULTI_TEXTURE_MUL2_ENV,
+	TYPE_MULTI_TEXTURE_ADD2_IDENTITY,
+	TYPE_MULTI_TEXTURE_ADD2_IDENTITY_ENV,
+	TYPE_MULTI_TEXTURE_ADD2,
+	TYPE_MULTI_TEXTURE_ADD2_ENV,
+
+	TYPE_MULTI_TEXTURE_MUL3,
+	TYPE_MULTI_TEXTURE_MUL3_ENV,
+	TYPE_MULTI_TEXTURE_ADD3_IDENTITY,
+	TYPE_MULTI_TEXTURE_ADD3_IDENTITY_ENV,
+	TYPE_MULTI_TEXTURE_ADD3,
+	TYPE_MULTI_TEXTURE_ADD3_ENV,
+
+	TYPE_BLEND2_ADD,
+	TYPE_BLEND2_ADD_ENV,
+	TYPE_BLEND2_MUL,
+	TYPE_BLEND2_MUL_ENV,
+	TYPE_BLEND2_ALPHA,
+	TYPE_BLEND2_ALPHA_ENV,
+	TYPE_BLEND2_ONE_MINUS_ALPHA,
+	TYPE_BLEND2_ONE_MINUS_ALPHA_ENV,
+	TYPE_BLEND2_MIX_ALPHA,
+	TYPE_BLEND2_MIX_ALPHA_ENV,
+	TYPE_BLEND2_MIX_ONE_MINUS_ALPHA,
+	TYPE_BLEND2_MIX_ONE_MINUS_ALPHA_ENV,
+
+	TYPE_BLEND3_ADD,
+	TYPE_BLEND3_ADD_ENV,
+	TYPE_BLEND3_MUL,
+	TYPE_BLEND3_MUL_ENV,
+	TYPE_BLEND3_ALPHA,
+	TYPE_BLEND3_ALPHA_ENV,
+	TYPE_BLEND3_ONE_MINUS_ALPHA,
+	TYPE_BLEND3_ONE_MINUS_ALPHA_ENV,
+	TYPE_BLEND3_MIX_ALPHA,
+	TYPE_BLEND3_MIX_ALPHA_ENV,
+	TYPE_BLEND3_MIX_ONE_MINUS_ALPHA,
+	TYPE_BLEND3_MIX_ONE_MINUS_ALPHA_ENV,
+	TYPE_GENERIC_END = TYPE_BLEND3_MIX_ONE_MINUS_ALPHA_ENV
+
 } Vk_Shader_Type;
 
 // used with cg_shadows == 2
@@ -377,19 +399,15 @@ typedef struct {
 	// Shader modules.
 	//
 	struct {
-		VkShaderModule st_vs[2];
-		VkShaderModule st_enviro_vs[2];
-		VkShaderModule st_fs[2];
-		VkShaderModule st_df_fs;
-
-		VkShaderModule mt_vs[2];
-		VkShaderModule mt2_vs[2];
-		VkShaderModule mt_x2_vs;
-		VkShaderModule mt_x3_vs;
-		VkShaderModule mt_fs[2];
-		VkShaderModule mt2_fs[2];
-		VkShaderModule mt_x2_fs;
-		VkShaderModule mt_x3_fs;
+		struct {
+			VkShaderModule gen[3][2][2][2]; // tx[0,1,2], cl[0,1] env0[0,1] fog[0,1]
+			VkShaderModule light[2]; // fog[0,1]
+		}	vert;
+		struct {
+			VkShaderModule gen0_df;
+			VkShaderModule gen[3][2][2]; // tx[0,1,2] cl[0,1] fog[0,1]
+			VkShaderModule light[2][2]; // linear[0,1] fog[0,1]
+		}	frag;
 
 		VkShaderModule color_fs;
 		VkShaderModule color_vs;
@@ -406,16 +424,6 @@ typedef struct {
 
 		VkShaderModule dot_fs;
 		VkShaderModule dot_vs;
-
-		struct {
-			VkShaderModule vs[2];
-			VkShaderModule fs[2];
-		} light;
-
-		struct {
-			VkShaderModule fs[2];
-		} light1;
-
 	} modules;
 
 	VkPipelineCache pipelineCache;

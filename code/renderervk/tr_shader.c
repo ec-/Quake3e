@@ -2016,8 +2016,8 @@ static collapse_t	collapse[] = {
 	{ GLS_DSTBLEND_ONE | GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA, GLS_DSTBLEND_ONE | GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA,
 		GL_BLEND_ONE_MINUS_ALPHA, GLS_DSTBLEND_ONE | GLS_SRCBLEND_ONE},
 
-	//{ 0, GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_SRCBLEND_SRC_ALPHA,
-	//	GL_BLEND_MIX_ALPHA, 0},
+	{ 0, GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_SRCBLEND_SRC_ALPHA,
+		GL_BLEND_MIX_ALPHA, 0},
 
 	{ 0, GLS_DSTBLEND_SRC_ALPHA | GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA,
 		GL_BLEND_MIX_ONE_MINUS_ALPHA, 0},
@@ -3011,32 +3011,41 @@ static shader_t *FinishShader( void ) {
 				switch ( pStage->mtEnv3 ) {
 					case GL_MODULATE:
 						pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1 | TESS_ST2;
-						def.shader_type = TYPE_MULTI_TEXTURE_MUL3; break;
+						def.shader_type = TYPE_MULTI_TEXTURE_MUL3;
+						break;
 					case GL_ADD:
 						pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1 | TESS_ST2;
-						def.shader_type = TYPE_MULTI_TEXTURE_ADD3_IDENTITY; break;
+						def.shader_type = TYPE_MULTI_TEXTURE_ADD3_IDENTITY;
+						break;
 					case GL_ADD_NONIDENTITY:
 						pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1 | TESS_ST2;
-						def.shader_type = TYPE_MULTI_TEXTURE_ADD3; break;
+						def.shader_type = TYPE_MULTI_TEXTURE_ADD3;
+						break;
 
 					case GL_BLEND_MODULATE:
 						pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_RGBA2 | TESS_ST0 | TESS_ST1 | TESS_ST2;
-						def.shader_type = TYPE_BLEND3_MUL; fogCollapse = qfalse; break;
+						def.shader_type = TYPE_BLEND3_MUL;
+						break;
 					case GL_BLEND_ADD:
 						pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_RGBA2 | TESS_ST0 | TESS_ST1 | TESS_ST2;
-						def.shader_type = TYPE_BLEND3_ADD; fogCollapse = qfalse; break;
+						def.shader_type = TYPE_BLEND3_ADD;
+						break;
 					case GL_BLEND_ALPHA:
 						pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_RGBA2 | TESS_ST0 | TESS_ST1 | TESS_ST2;
-						def.shader_type = TYPE_BLEND3_ALPHA; fogCollapse = qfalse; break;
+						def.shader_type = TYPE_BLEND3_ALPHA;
+						break;
 					case GL_BLEND_ONE_MINUS_ALPHA:
 						pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_RGBA2 | TESS_ST0 | TESS_ST1 | TESS_ST2;
-						def.shader_type = TYPE_BLEND3_ONE_MINUS_ALPHA; fogCollapse = qfalse; break;
+						def.shader_type = TYPE_BLEND3_ONE_MINUS_ALPHA;
+						break;
 					case GL_BLEND_MIX_ONE_MINUS_ALPHA:
 						pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_RGBA2 | TESS_ST0 | TESS_ST1 | TESS_ST2;
-						def.shader_type = TYPE_BLEND3_MIX_ONE_MINUS_ALPHA; fogCollapse = qfalse; break;
+						def.shader_type = TYPE_BLEND3_MIX_ONE_MINUS_ALPHA;
+						break;
 					case GL_BLEND_MIX_ALPHA:
 						pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_RGBA2 | TESS_ST0 | TESS_ST1 | TESS_ST2;
-						def.shader_type = TYPE_BLEND3_MIX_ALPHA; fogCollapse = qfalse; break;
+						def.shader_type = TYPE_BLEND3_MIX_ALPHA;
+						break;
 
 					default:
 						break;
@@ -3046,47 +3055,58 @@ static shader_t *FinishShader( void ) {
 			switch ( pStage->mtEnv ) {
 				case GL_MODULATE:
 					pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1;
-					def.shader_type = TYPE_MULTI_TEXTURE_MUL2; break;
+					def.shader_type = TYPE_MULTI_TEXTURE_MUL2;
+					break;
 				case GL_ADD:
 					pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1;
-					def.shader_type = TYPE_MULTI_TEXTURE_ADD2_IDENTITY; break;
+					def.shader_type = TYPE_MULTI_TEXTURE_ADD2_IDENTITY;
+					break;
 				case GL_ADD_NONIDENTITY:
 					pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1;
-					def.shader_type = TYPE_MULTI_TEXTURE_ADD2; break;
+					def.shader_type = TYPE_MULTI_TEXTURE_ADD2;
+					break;
 
 				case GL_BLEND_MODULATE:
 					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
-					def.shader_type = TYPE_BLEND2_MUL; fogCollapse = qfalse; break;
+					def.shader_type = TYPE_BLEND2_MUL;
+					break;
 				case GL_BLEND_ADD:
 					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
-					def.shader_type = TYPE_BLEND2_ADD; fogCollapse = qfalse; break;
+					def.shader_type = TYPE_BLEND2_ADD;
+					break;
 				case GL_BLEND_ALPHA:
 					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
-					def.shader_type = TYPE_BLEND2_ALPHA; fogCollapse = qfalse; break;
+					def.shader_type = TYPE_BLEND2_ALPHA;
+					break;
 				case GL_BLEND_ONE_MINUS_ALPHA:
 					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
-					def.shader_type = TYPE_BLEND2_ONE_MINUS_ALPHA; fogCollapse = qfalse; break;
+					def.shader_type = TYPE_BLEND2_ONE_MINUS_ALPHA;
+					break;
 				case GL_BLEND_MIX_ONE_MINUS_ALPHA:
 					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
-					def.shader_type = TYPE_BLEND2_MIX_ONE_MINUS_ALPHA; fogCollapse = qfalse; break;
+					def.shader_type = TYPE_BLEND2_MIX_ONE_MINUS_ALPHA;
+					break;
 				case GL_BLEND_MIX_ALPHA:
 					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
-					def.shader_type = TYPE_BLEND2_MIX_ALPHA; fogCollapse = qfalse; break;
+					def.shader_type = TYPE_BLEND2_MIX_ALPHA;
+					break;
 
 				default:
 					pStage->tessFlags = TESS_RGBA0 | TESS_ST0;
-					def.shader_type = TYPE_SIGNLE_TEXTURE; break;
+					def.shader_type = TYPE_SIGNLE_TEXTURE;
+					break;
 			}
 
-			if ( def.shader_type == TYPE_SIGNLE_TEXTURE && pStage->bundle[0].tcGen == TCGEN_ENVIRONMENT_MAPPED && ( !pStage->bundle[0].isLightmap || r_mergeLightmaps->integer == 0 ) ) {
-				if ( pStage->bundle[0].numTexMods == 0 ) {
-					def.shader_type = TYPE_SIGNLE_TEXTURE_ENVIRO;
+			if ( !pStage->depthFragment && pStage->bundle[0].tcGen == TCGEN_ENVIRONMENT_MAPPED && ( !pStage->bundle[0].isLightmap || r_mergeLightmaps->integer == 0 ) ) {
+				if ( def.shader_type >= TYPE_GENERIC_BEGIN && def.shader_type <= TYPE_GENERIC_END && pStage->bundle[0].numTexMods == 0 ) {
+					def.shader_type++; // switch to *_ENV version
 					shader.tessFlags |= TESS_NNN | TESS_VPOS;
 					pStage->tessFlags &= ~TESS_ST0;
 					pStage->tessFlags |= TESS_ENV;
 					pStage->bundle[0].tcGen = TCGEN_BAD;
 				}
 			}
+
 			stype = def.shader_type;
 			def.mirror = qfalse;
 			pStage->vk_pipeline[0] = vk_find_pipeline_ext( 0, &def, qtrue );
