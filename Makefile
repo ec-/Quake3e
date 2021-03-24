@@ -468,6 +468,7 @@ else
   endif
 
   ifeq ($(ARCH),arm)
+    OPTIMIZE += -march=armv7-a
     ARCHEXT = .arm
   endif
 

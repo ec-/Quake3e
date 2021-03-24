@@ -279,19 +279,29 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 		flags |= SDL_WINDOW_BORDERLESS;
 	}
 
-	flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+	//flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 
 	colorBits = r_colorbits->value;
 
-	if ( colorBits == 0 || colorBits >= 32 )
+	if ( colorBits == 0 || colorBits > 24 )
 		colorBits = 24;
 
 	if ( cl_depthbits->integer == 0 )
-		depthBits = 24;
+	{
+		// implicitly assume Z-buffer depth == desktop color depth
+		if ( colorBits > 16 )
+			depthBits = 24;
+		else
+			depthBits = 16;
+	}
 	else
 		depthBits = cl_depthbits->integer;
 
 	stencilBits = cl_stencilbits->integer;
+
+	// do not allow stencil if Z-buffer depth likely won't contain it
+	if ( depthBits < 24 )
+		stencilBits = 0;
 
 	for ( i = 0; i < 16; i++ )
 	{
@@ -696,7 +706,7 @@ void VKimp_Init( glconfig_t *config )
 	{
 		if ( err == RSERR_FATAL_ERROR )
 		{
-			Com_Error( ERR_FATAL, "VKimp_Init() - could not load OpenGL subsystem" );
+			Com_Error( ERR_FATAL, "VKimp_Init() - could not load Vulkan subsystem" );
 			return;
 		}
 

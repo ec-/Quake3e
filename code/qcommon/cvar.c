@@ -198,15 +198,15 @@ void Cvar_VariableStringBufferSafe( const char *var_name, char *buffer, int bufs
 Cvar_Flags
 ============
 */
-int Cvar_Flags(const char *var_name)
+unsigned Cvar_Flags( const char *var_name )
 {
-	cvar_t *var;
+	const cvar_t *var;
 	
-	if( (var = Cvar_FindVar(var_name)) == NULL )
+	if ( ( var = Cvar_FindVar( var_name ) ) == NULL )
 		return CVAR_NONEXISTENT;
 	else
 	{
-		if(var->modified)
+		if ( var->modified )
 			return var->flags | CVAR_MODIFIED;
 		else
 			return var->flags;
@@ -765,7 +765,7 @@ Cvar_SetSafe
 */
 void Cvar_SetSafe( const char *var_name, const char *value )
 {
-	int flags = Cvar_Flags( var_name );
+	unsigned flags = Cvar_Flags( var_name );
 	qboolean force = qtrue;
 
 	if ( flags != CVAR_NONEXISTENT )

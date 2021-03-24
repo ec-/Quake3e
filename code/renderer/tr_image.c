@@ -1135,7 +1135,7 @@ float R_FogFactor( float s, float t ) {
 		s = 1.0;
 	}
 
-	d = tr.fogTable[ (int)(s * (FOG_TABLE_SIZE-1)) ];
+	d = tr.fogTable[ (uint32_t)(s * (FOG_TABLE_SIZE-1)) ];
 
 	return d;
 }

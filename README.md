@@ -3,7 +3,7 @@
 [![build](../../workflows/build/badge.svg)](../../actions?query=workflow%3Abuild) * <a href="https://discord.gg/ZG4dKNVQJu"><img src="https://img.shields.io/discord/751483934034100274?color=7289da&logo=discord&logoColor=white" alt="Discord server" /></a>
 
 This is a modern Quake III Arena engine aimed to be fast, secure and compatible with all existing Q3A mods.
-It is based on last non-SDL source dump of ioquake3 with latest upstream fixes applied.
+It is based on last non-SDL source dump of [ioquake3](https://github.com/ioquake/ioq3) with latest upstream fixes applied.
 
 *This repository does not contain any game content so in order to play you must copy the resulting binaries into your existing Quake III Arena installation*
 
@@ -24,7 +24,7 @@ It is based on last non-SDL source dump of ioquake3 with latest upstream fixes a
 
 ## Vulkan renderer
 
-Based on Quake-III-Arena-Kenny-Edition with many additions:
+Based on [Quake-III-Arena-Kenny-Edition](https://github.com/kennyalive/Quake-III-Arena-Kenny-Edition) with many additions:
 
 * high-quality per-pixel dynamic lighting
 * very fast flares (**\r_flares 1**)
@@ -55,7 +55,7 @@ Highly recommended to use on modern systems
 
 ## OpenGL renderer
 
-Based on classic OpenGL renderers from id/ioq3/cnq3/openarena, features:
+Based on classic OpenGL renderers from [idq3](https://github.com/id-Software/Quake-III-Arena)/[ioquake3](https://github.com/ioquake/ioq3)/[cnq3](https://bitbucket.org/CPMADevs/cnq3)/[openarena](https://github.com/OpenArena/engine), features:
 
 * OpenGL 1.1 compatible, uses features from newer versions whenever available
 * high-quality per-pixel dynamic lighting, can be triggered by **\r_dlightMode** cvar

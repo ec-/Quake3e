@@ -608,7 +608,7 @@ void CM_LoadMap( const char *name, qboolean clientload, int *checksum ) {
 	int				length;
 
 	if ( !name || !name[0] ) {
-		Com_Error( ERR_DROP, "CM_LoadMap: NULL name" );
+		Com_Error( ERR_DROP, "%s: NULL name", __func__ );
 	}
 
 #ifndef BSPC
@@ -617,7 +617,7 @@ void CM_LoadMap( const char *name, qboolean clientload, int *checksum ) {
 	cm_playerCurveClip = Cvar_Get( "cm_playerCurveClip", "1", CVAR_ARCHIVE_ND | CVAR_CHEAT );
 #endif
 
-	Com_DPrintf( "CM_LoadMap( '%s', %i )\n", name, clientload );
+	Com_DPrintf( "%s( '%s', %i )\n", __func__, name, clientload );
 
 	if ( !strcmp( cm.name, name ) && clientload ) {
 		*checksum = cm.checksum;
@@ -648,19 +648,29 @@ void CM_LoadMap( const char *name, qboolean clientload, int *checksum ) {
 #endif
 
 	if ( !buf ) {
-		Com_Error( ERR_DROP, "Couldn't load %s", name );
+		Com_Error( ERR_DROP, "%s: couldn't load %s", __func__, name );
+	}
+	if ( length < sizeof( dheader_t ) ) {
+		Com_Error( ERR_DROP, "%s: %s has truncated header", __func__, name );
 	}
 
 	*checksum = cm.checksum = LittleLong( Com_BlockChecksum( buf, length ) );
 
 	header = *(dheader_t *)buf;
-	for (i=0 ; i<sizeof(dheader_t)/4 ; i++) {
-		((int *)&header)[i] = LittleLong ( ((int *)&header)[i]);
+	for ( i = 0; i < sizeof( dheader_t ) / 4; i++ ) {
+		( (int32_t *)&header )[i] = LittleLong( ( (int32_t *)&header )[i] );
 	}
 
 	if ( header.version != BSP_VERSION ) {
-		Com_Error (ERR_DROP, "CM_LoadMap: %s has wrong version number (%i should be %i)"
-		, name, header.version, BSP_VERSION );
+		Com_Error( ERR_DROP, "%s: %s has wrong version number (%i should be %i)", __func__, name, header.version, BSP_VERSION );
+	}
+
+	for ( i = 0; i < HEADER_LUMPS; i++ ) {
+		int32_t ofs = header.lumps[i].fileofs;
+		int32_t len = header.lumps[i].filelen;
+		if ( (uint32_t)ofs > MAX_QINT || (uint32_t)len > MAX_QINT || ofs + len > length || ofs + len <  0 ) {
+			Com_Error( ERR_DROP, "%s: %s has wrong lump[%i] size/offset", __func__, name, i );
+		}
 	}
 
 	cmod_base = (byte *)buf;

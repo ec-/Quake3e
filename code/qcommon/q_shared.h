@@ -77,8 +77,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //#pragma intrinsic( memset, memcpy )
 #endif
 
-//Ignore __attribute__ on non-gcc platforms
-#ifndef __GNUC__
+//Ignore __attribute__ on non-gcc/clang platforms
+#if !defined(__GNUC__) && !defined(__clang__)
 #ifndef __attribute__
 #define __attribute__(x)
 #endif
