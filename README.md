@@ -5,6 +5,8 @@
 This is a modern Quake III Arena engine aimed to be fast, secure and compatible with all existing Q3A mods.
 It is based on last non-SDL source dump of [ioquake3](https://github.com/ioquake/ioq3) with latest upstream fixes applied.
 
+Go to [Releases](../../releases) section to download latest binaries for your platform or follow [Build Instructions](#build-instructions)
+
 *This repository does not contain any game content so in order to play you must copy the resulting binaries into your existing Quake III Arena installation*
 
 **Key features**:
