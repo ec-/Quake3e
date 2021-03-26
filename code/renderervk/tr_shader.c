@@ -2022,6 +2022,9 @@ static collapse_t	collapse[] = {
 	{ 0, GLS_DSTBLEND_SRC_ALPHA | GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA,
 		GL_BLEND_MIX_ONE_MINUS_ALPHA, 0},
 
+	{ 0, GLS_DSTBLEND_SRC_ALPHA | GLS_SRCBLEND_DST_COLOR,
+		GL_BLEND_DST_COLOR_SRC_ALPHA, 0},
+
 #if 0
 	{ 0, GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_SRCBLEND_SRC_ALPHA,
 		GL_DECAL, 0 },
@@ -2042,6 +2045,8 @@ static int CollapseMultitexture( unsigned int st0bits, shaderStage_t *st0, shade
 	int abits, bbits;
 	int i, mtEnv;
 	textureBundle_t tmpBundle;
+	qboolean nonIdenticalColors;
+	qboolean swapLightmap;
 
 #ifndef USE_VULKAN
 	if ( !qglActiveTextureARB ) {
@@ -2096,10 +2101,11 @@ static int CollapseMultitexture( unsigned int st0bits, shaderStage_t *st0, shade
 
 #ifdef USE_VULKAN
 	if ( mtEnv == GL_ADD && st0->bundle[0].rgbGen != CGEN_IDENTITY ) {
-		mtEnv = GL_ADD_NONIDENTITY; // GL_BLEND_ADD;
+		mtEnv = GL_ADD_NONIDENTITY;
 	}
 
 	if ( st0->mtEnv && st0->mtEnv != mtEnv ) {
+		// we don't support different blend modes in 3x mode, yet
 		return 0;
 	}
 #else
@@ -2114,24 +2120,19 @@ static int CollapseMultitexture( unsigned int st0bits, shaderStage_t *st0, shade
 	}
 #endif
 
+	nonIdenticalColors = qfalse;
+
 	// make sure waveforms have identical parameters
-	if ( ( st0->bundle[0].rgbGen != st1->bundle[0].rgbGen ) || ( st0->bundle[0].alphaGen != st1->bundle[0].alphaGen ) ) {
-		switch ( mtEnv ) {
-			case GL_ADD:
-			case GL_ADD_NONIDENTITY: mtEnv = GL_BLEND_ADD; break;
-			case GL_MODULATE: mtEnv = GL_BLEND_MODULATE; break;
-		}
+	if ( ( st0->bundle[0].rgbGen != st1->bundle[0].rgbGen ) || ( st0->bundle[0].alphaGen != st1->bundle[0].alphaGen ) )
+	{
+		nonIdenticalColors = qtrue;
 	}
 
 	if ( st0->bundle[0].rgbGen == CGEN_WAVEFORM )
 	{
 		if ( memcmp( &st0->bundle[0].rgbWave, &st1->bundle[0].rgbWave, sizeof( stages[0].bundle[0].rgbWave ) ) )
 		{
-			switch ( mtEnv ) {
-				case GL_ADD:
-				case GL_ADD_NONIDENTITY: mtEnv = GL_BLEND_ADD; break;
-				case GL_MODULATE: mtEnv = GL_BLEND_MODULATE; break;
-			}
+			nonIdenticalColors = qtrue;
 		}
 	}
 
@@ -2139,16 +2140,36 @@ static int CollapseMultitexture( unsigned int st0bits, shaderStage_t *st0, shade
 	{
 		if ( memcmp( &st0->bundle[0].alphaWave, &st1->bundle[0].alphaWave, sizeof( stages[0].bundle[0].alphaWave ) ) )
 		{
-			switch ( mtEnv ) {
-				case GL_ADD:
-				case GL_ADD_NONIDENTITY: mtEnv = GL_BLEND_ADD; break;
-				case GL_MODULATE: mtEnv = GL_BLEND_MODULATE; break;
-			}
+			nonIdenticalColors = qtrue;
 		}
 	}
 
+	if ( nonIdenticalColors )
+	{
+#ifdef USE_VULKAN
+		switch ( mtEnv )
+		{
+			case GL_ADD:
+			case GL_ADD_NONIDENTITY: mtEnv = GL_BLEND_ADD; break;
+			case GL_MODULATE: mtEnv = GL_BLEND_MODULATE; break;
+		}
+#else
+		return 0;
+#endif
+	}
+
+	switch ( mtEnv ) {
+		case GL_MODULATE:
+		case GL_ADD:
+			swapLightmap = qtrue;
+			break;
+		default:
+			swapLightmap = qfalse;
+			break;
+	}
+
 	// make sure that lightmaps are in bundle 1
-	if ( !st0->mtEnv && ( st0->bundle[0].isLightmap || ( st0->bundle[0].tcGen == TCGEN_LIGHTMAP && st1->bundle[0].tcGen != TCGEN_LIGHTMAP ) ) )
+	if ( swapLightmap && !st0->mtEnv && ( st0->bundle[0].isLightmap || ( st0->bundle[0].tcGen == TCGEN_LIGHTMAP && st1->bundle[0].tcGen != TCGEN_LIGHTMAP ) ) )
 	{
 		tmpBundle = st0->bundle[0];
 		st0->bundle[0] = st1->bundle[0];
@@ -2193,9 +2214,9 @@ static int CollapseMultitexture( unsigned int st0bits, shaderStage_t *st0, shade
 	Com_Memset( st0 + num_stages - 1, 0, sizeof( stages[0] ) );
 
 #ifdef USE_VULKAN
-	if ( vk.maxBoundDescriptorSets >= 6 && num_stages >= 3 && !st0->mtEnv3 )
+	if ( vk.maxBoundDescriptorSets >= 8 && num_stages >= 3 && !st0->mtEnv3 )
 	{
-		if ( mtEnv == GL_BLEND_ONE_MINUS_ALPHA || mtEnv == GL_BLEND_ALPHA || mtEnv == GL_BLEND_MIX_ALPHA || mtEnv == GL_BLEND_MIX_ONE_MINUS_ALPHA )
+		if ( mtEnv == GL_BLEND_ONE_MINUS_ALPHA || mtEnv == GL_BLEND_ALPHA || mtEnv == GL_BLEND_MIX_ALPHA || mtEnv == GL_BLEND_MIX_ONE_MINUS_ALPHA || mtEnv == GL_BLEND_DST_COLOR_SRC_ALPHA )
 		{
 			// pass original state bits so recursive detection will work for these shaders
 			return 1 + CollapseMultitexture( st0bits, st0, st1, num_stages - 1 );
@@ -3046,6 +3067,10 @@ static shader_t *FinishShader( void ) {
 						pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_RGBA2 | TESS_ST0 | TESS_ST1 | TESS_ST2;
 						def.shader_type = TYPE_BLEND3_MIX_ALPHA;
 						break;
+					case GL_BLEND_DST_COLOR_SRC_ALPHA:
+						pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_RGBA2 | TESS_ST0 | TESS_ST1 | TESS_ST2;
+						def.shader_type = TYPE_BLEND3_DST_COLOR_SRC_ALPHA;
+						break;
 
 					default:
 						break;
@@ -3082,13 +3107,17 @@ static shader_t *FinishShader( void ) {
 					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
 					def.shader_type = TYPE_BLEND2_ONE_MINUS_ALPHA;
 					break;
+				case GL_BLEND_MIX_ALPHA:
+					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
+					def.shader_type = TYPE_BLEND2_MIX_ALPHA;
+					break;
 				case GL_BLEND_MIX_ONE_MINUS_ALPHA:
 					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
 					def.shader_type = TYPE_BLEND2_MIX_ONE_MINUS_ALPHA;
 					break;
-				case GL_BLEND_MIX_ALPHA:
+				case GL_BLEND_DST_COLOR_SRC_ALPHA:
 					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
-					def.shader_type = TYPE_BLEND2_MIX_ALPHA;
+					def.shader_type = TYPE_BLEND2_DST_COLOR_SRC_ALPHA;
 					break;
 
 				default:

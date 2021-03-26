@@ -197,9 +197,6 @@ static qboolean isStaticShader( shader_t *shader )
 	if ( shader->numDeforms || shader->numUnfoggedPasses > MAX_VBO_STAGES )
 		return qfalse;
 
-	if ( shader->tessFlags & ( TESS_RGBA1 | TESS_RGBA2 ) )
-		return qfalse;
-
 	svarsSize = 0;
 
 	for ( i = 0; i < shader->numUnfoggedPasses; i++ )

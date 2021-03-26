@@ -147,9 +147,15 @@ void main() {
 		//base = mix( color2, base, color2.a );
 		base = mix( color2, mix( color1, color0, color1.a ), color2.a );
 	}
+	else if ( tex_mode == 7 ) // 0 + 2x GLS_DSTBLEND_SRC_ALPHA | GLS_SRCBLEND_DST_COLOR
+	{
+		vec4 color1 = texture(texture1, frag_tex_coord1) * frag_color1;
+		vec4 color2 = texture(texture2, frag_tex_coord2) * frag_color2;
+
+		base = (color2 + color2.a) * (color1 + color1.a) * color0;
+	}
 	else
 	{
-		vec4 color0 = texture(texture0, frag_tex_coord0) * frag_color0;
 		vec4 color1 = texture(texture1, frag_tex_coord1) * frag_color1;
 		vec4 color2 = texture(texture2, frag_tex_coord2) * frag_color2;
 		base = color0 * color1 * color2;
@@ -187,7 +193,7 @@ void main() {
 		vec4 color1 = texture(texture1, frag_tex_coord1) * frag_color1;
 		base = vec4( color0.rgb + color1.rgb, color0.a * color1.a );
 	}
-	else if ( tex_mode == 3 )
+	else if ( tex_mode == 3 ) // 2x GLS_DSTBLEND_ONE | GLS_SRCBLEND_SRC_ALPHA
 	{
 		// modulate by alpha
 		vec4 color1 = texture(texture1, frag_tex_coord1) * frag_color1;
@@ -195,7 +201,7 @@ void main() {
 		color1 *= color1.a;
 		base = vec4( color0.rgb + color1.rgb, color0.a * color1.a );
 	}
-	else if ( tex_mode == 4 )
+	else if ( tex_mode == 4 ) // 2x GLS_DSTBLEND_ONE | GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA
 	{
 		// modulate by 1.0-alpha
 		vec4 color1 = texture(texture1, frag_tex_coord1) * frag_color1;
@@ -203,17 +209,24 @@ void main() {
 		color1 *= 1.0-color1.a;
 		base = vec4( color0.rgb + color1.rgb, color0.a * color1.a );
 	}
-	else if ( tex_mode == 5 )
+	else if ( tex_mode == 5 ) // 0 + GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_SRCBLEND_SRC_ALPHA
 	{
 		// mix by src alpha
 		vec4 color1 = texture(texture1, frag_tex_coord1) * frag_color1;
 		base = mix( color0, color1, color1.a );
 	}
-	else if ( tex_mode == 6 )
+	else if ( tex_mode == 6 ) // 0 + GLS_DSTBLEND_SRC_ALPHA | GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA
 	{
 		// mix by 1-src alpha
 		vec4 color1 = texture(texture1, frag_tex_coord1) * frag_color1;
 		base = mix( color1, color0, color1.a );
+	}
+	else if ( tex_mode == 7 ) // 0 + GLS_DSTBLEND_SRC_ALPHA | GLS_SRCBLEND_DST_COLOR
+	{
+		// modulate color1 by color0
+		// moduleta color0 by color1.alpha
+		vec4 color1 = texture(texture1, frag_tex_coord1) * frag_color1;
+		base = (color1 + color1.a) * color0;
 	}
 	else
 	{

@@ -4864,6 +4864,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_BLEND2_ONE_MINUS_ALPHA:
 		case TYPE_BLEND2_MIX_ALPHA:
 		case TYPE_BLEND2_MIX_ONE_MINUS_ALPHA:
+		case TYPE_BLEND2_DST_COLOR_SRC_ALPHA:
 			vs_module = &vk.modules.vert.gen[1][1][0][0];
 			fs_module = &vk.modules.frag.gen[1][1][0];
 			break;
@@ -4874,6 +4875,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_BLEND2_ONE_MINUS_ALPHA_ENV:
 		case TYPE_BLEND2_MIX_ALPHA_ENV:
 		case TYPE_BLEND2_MIX_ONE_MINUS_ALPHA_ENV:
+		case TYPE_BLEND2_DST_COLOR_SRC_ALPHA_ENV:
 			vs_module = &vk.modules.vert.gen[1][1][1][0];
 			fs_module = &vk.modules.frag.gen[1][1][0];
 			break;
@@ -4884,6 +4886,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_BLEND3_ONE_MINUS_ALPHA:
 		case TYPE_BLEND3_MIX_ALPHA:
 		case TYPE_BLEND3_MIX_ONE_MINUS_ALPHA:
+		case TYPE_BLEND3_DST_COLOR_SRC_ALPHA:
 			vs_module = &vk.modules.vert.gen[2][1][0][0];
 			fs_module = &vk.modules.frag.gen[2][1][0];
 			break;
@@ -4894,6 +4897,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_BLEND3_ONE_MINUS_ALPHA_ENV:
 		case TYPE_BLEND3_MIX_ALPHA_ENV:
 		case TYPE_BLEND3_MIX_ONE_MINUS_ALPHA_ENV:
+		case TYPE_BLEND3_DST_COLOR_SRC_ALPHA_ENV:
 			vs_module = &vk.modules.vert.gen[2][1][1][0];
 			fs_module = &vk.modules.frag.gen[2][1][0];
 			break;
@@ -5047,6 +5051,13 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_BLEND3_MIX_ONE_MINUS_ALPHA:
 		case TYPE_BLEND3_MIX_ONE_MINUS_ALPHA_ENV:
 			frag_spec_data[6].i = 6;
+			break;
+
+		case TYPE_BLEND2_DST_COLOR_SRC_ALPHA:
+		case TYPE_BLEND2_DST_COLOR_SRC_ALPHA_ENV:
+		case TYPE_BLEND3_DST_COLOR_SRC_ALPHA:
+		case TYPE_BLEND3_DST_COLOR_SRC_ALPHA_ENV:
+			frag_spec_data[6].i = 7;
 			break;
 
 		default:
@@ -5225,6 +5236,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_BLEND2_ONE_MINUS_ALPHA:
 		case TYPE_BLEND2_MIX_ALPHA:
 		case TYPE_BLEND2_MIX_ONE_MINUS_ALPHA:
+		case TYPE_BLEND2_DST_COLOR_SRC_ALPHA:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_bind( 1, sizeof( color4ub_t ) );				// color0 array
 			push_bind( 2, sizeof( vec2_t ) );					// st0 array
@@ -5243,6 +5255,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_BLEND2_ONE_MINUS_ALPHA_ENV:
 		case TYPE_BLEND2_MIX_ALPHA_ENV:
 		case TYPE_BLEND2_MIX_ONE_MINUS_ALPHA_ENV:
+		case TYPE_BLEND2_DST_COLOR_SRC_ALPHA_ENV:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_bind( 1, sizeof( color4ub_t ) );				// color0 array
 			//push_bind( 2, sizeof( vec2_t ) );					// st0 array
@@ -5263,6 +5276,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_BLEND3_ONE_MINUS_ALPHA:
 		case TYPE_BLEND3_MIX_ALPHA:
 		case TYPE_BLEND3_MIX_ONE_MINUS_ALPHA:
+		case TYPE_BLEND3_DST_COLOR_SRC_ALPHA:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_bind( 1, sizeof( color4ub_t ) );				// color0 array
 			push_bind( 2, sizeof( vec2_t ) );					// st0 array
@@ -5285,6 +5299,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_BLEND3_ONE_MINUS_ALPHA_ENV:
 		case TYPE_BLEND3_MIX_ALPHA_ENV:
 		case TYPE_BLEND3_MIX_ONE_MINUS_ALPHA_ENV:
+		case TYPE_BLEND3_DST_COLOR_SRC_ALPHA_ENV:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_bind( 1, sizeof( color4ub_t ) );				// color0 array
 			//push_bind( 2, sizeof( vec2_t ) );					// st0 array
