@@ -2301,7 +2301,7 @@ static void CL_CheckForResend( void ) {
 			CL_RequestAuthorization();
 #endif
 		// The challenge request shall be followed by a client challenge so no malicious server can hijack this connection.
-		NET_OutOfBandPrint( NS_CLIENT, &clc.serverAddress, "getchallenge %d", clc.challenge );
+		NET_OutOfBandPrint( NS_CLIENT, &clc.serverAddress, "getchallenge %d %s", clc.challenge, GAMENAME_FOR_MASTER );
 		break;
 
 	case CA_CHALLENGING:
