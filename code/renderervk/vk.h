@@ -223,6 +223,7 @@ void vk_bind_pipeline( uint32_t pipeline );
 void vk_bind_index( void );
 void vk_bind_index_ext( const int numIndexes, const uint32_t*indexes );
 void vk_bind_geometry( uint32_t flags );
+void vk_bind_lighting( int stage, int bundle );
 void vk_draw_geometry( Vk_Depth_Range depth_range, qboolean indexed );
 
 void vk_draw_light( uint32_t pipeline, Vk_Depth_Range depth_range, uint32_t uniform_offset, int fog);

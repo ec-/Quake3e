@@ -1122,7 +1122,6 @@ void VK_LightingPass( void )
 	static int fog_stage;
 	uint32_t pipeline;
 	const shaderStage_t *pStage;
-	const dlight_t *dl;
 	cullType_t cull;
 	int abs_light;
 
@@ -1131,8 +1130,6 @@ void VK_LightingPass( void )
 
 	pStage = tess.xstages[ tess.shader->lightingStage ];
 
-	dl = tess.light;
-
 	// we may need to update programs for fog transitions
 	if ( tess.dlightUpdateParams ) {
 		vkUniform_t uniform;
@@ -1140,7 +1137,7 @@ void VK_LightingPass( void )
 		// fog parameters
 		VK_SetFogParams( &uniform, &fog_stage );
 		// light parameters
-		VK_SetLightParams( &uniform, dl );
+		VK_SetLightParams( &uniform, tess.light );
 
 		uniform_offset = VK_PushUniform( &uniform );
 
@@ -1164,26 +1161,24 @@ void VK_LightingPass( void )
 	if ( fog_stage )
 		vk_update_descriptor( 3, tr.fogImage->descriptor );
 
-	if ( dl->linear )
+	if ( tess.light->linear )
 		pipeline = vk.dlight1_pipelines_x[cull][tess.shader->polygonOffset][fog_stage][abs_light];
 	else
 		pipeline = vk.dlight_pipelines_x[cull][tess.shader->polygonOffset][fog_stage][abs_light];
 
 	GL_SelectTexture( 0 );
-	R_BindAnimatedImage( &pStage->bundle[ 0 ] );
+	R_BindAnimatedImage( &pStage->bundle[ tess.shader->lightingBundle ] );
 
 #ifdef USE_VBO
-	if ( tess.vboIndex ) {
-		tess.vboStage = tess.shader->lightingStage;
-	} else
+	if ( tess.vboIndex == 0 )
 #endif
 	{
-		R_ComputeTexCoords( 0, &pStage->bundle[ 0 ] );
+		R_ComputeTexCoords( 0, &pStage->bundle[ tess.shader->lightingBundle ] );
 	}
 
 	vk_bind_pipeline( pipeline );
 	vk_bind_index();
-	vk_bind_geometry( TESS_XYZ | TESS_ST0 | TESS_NNN );
+	vk_bind_lighting( tess.shader->lightingStage, tess.shader->lightingBundle );
 	vk_draw_geometry( tess.depthRange, qtrue );
 }
 #endif // USE_PMLIGHT

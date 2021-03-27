@@ -5163,11 +5163,11 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex
 		case TYPE_SIGNLE_TEXTURE_LIGHTING:
 		case TYPE_SIGNLE_TEXTURE_LIGHTING_LINEAR:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
-			push_bind( 2, sizeof( vec2_t ) );					// st0 array
-			push_bind( 5, sizeof( vec4_t ) );					// normals array
+			push_bind( 1, sizeof( vec2_t ) );					// st0 array
+			push_bind( 2, sizeof( vec4_t ) );					// normals array
 			push_attr( 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT );
-			push_attr( 2, 2, VK_FORMAT_R32G32_SFLOAT );
-			push_attr( 5, 5, VK_FORMAT_R32G32B32A32_SFLOAT );
+			push_attr( 1, 1, VK_FORMAT_R32G32_SFLOAT );
+			push_attr( 2, 2, VK_FORMAT_R32G32B32A32_SFLOAT );
 			break;
 
 		case TYPE_MULTI_TEXTURE_MUL2:
@@ -6058,6 +6058,37 @@ void vk_bind_geometry( uint32_t flags )
 		if ( flags & TESS_RGBA2 ) {
 			vk_bind_attr(7, sizeof( color4ub_t ), tess.svars.colors[2]);
 		}
+
+		qvkCmdBindVertexBuffers( vk.cmd->command_buffer, bind_base, bind_count, shade_bufs, vk.cmd->buf_offset + bind_base );
+	}
+}
+
+
+void vk_bind_lighting( int stage, int bundle )
+{
+	bind_base = -1;
+	bind_count = 0;
+
+#ifdef USE_VBO
+	if ( tess.vboIndex ) {
+
+		shade_bufs[0] = shade_bufs[1] = shade_bufs[2] = vk.vbo.vertex_buffer;
+
+		vk.cmd->vbo_offset[0] = tess.shader->vboOffset + 0;
+		vk.cmd->vbo_offset[1] = tess.shader->stages[ stage ]->tex_offset[ bundle ];
+		vk.cmd->vbo_offset[2] = tess.shader->normalOffset;
+
+		qvkCmdBindVertexBuffers( vk.cmd->command_buffer, 0, 3, shade_bufs, vk.cmd->vbo_offset + 0 );
+
+	}
+	else
+#endif // USE_VBO
+	{
+		shade_bufs[0] = shade_bufs[1] = shade_bufs[2] = vk.cmd->vertex_buffer;
+
+		vk_bind_attr( 0, sizeof( tess.xyz[0] ), &tess.xyz[0] );
+		vk_bind_attr( 1, sizeof( vec2_t ), tess.svars.texcoordPtr[ bundle ] );
+		vk_bind_attr( 2, sizeof( tess.normal[0] ), tess.normal );
 
 		qvkCmdBindVertexBuffers( vk.cmd->command_buffer, bind_base, bind_count, shade_bufs, vk.cmd->buf_offset + bind_base );
 	}
