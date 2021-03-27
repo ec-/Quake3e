@@ -2169,7 +2169,7 @@ static int CollapseMultitexture( unsigned int st0bits, shaderStage_t *st0, shade
 	}
 
 	// make sure that lightmaps are in bundle 1
-	if ( swapLightmap && !st0->mtEnv && ( st0->bundle[0].isLightmap || ( st0->bundle[0].tcGen == TCGEN_LIGHTMAP && st1->bundle[0].tcGen != TCGEN_LIGHTMAP ) ) )
+	if ( swapLightmap && st0->bundle[0].isLightmap && !st0->mtEnv )
 	{
 		tmpBundle = st0->bundle[0];
 		st0->bundle[0] = st1->bundle[0];
