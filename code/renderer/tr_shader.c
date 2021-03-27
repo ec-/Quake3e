@@ -2136,7 +2136,56 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 	return qtrue;
 }
 
+
 #ifdef USE_PMLIGHT
+
+static int tcmodWeight( const textureBundle_t *bundle )
+{
+	if ( bundle->numTexMods == 0 )
+		return 1;
+
+	return 0;
+}
+
+
+static const textureBundle_t *lightingBundle( int stageIndex, const textureBundle_t *selected ) {
+	const shaderStage_t *stage = &stages[ stageIndex ];
+	int i, numTexBundles;
+
+	if ( stage->mtEnv )
+		numTexBundles = 2;
+	else
+		numTexBundles = 1;
+
+	for ( i = 0; i < numTexBundles; i++ ) {
+		const textureBundle_t *bundle = &stage->bundle[ i ];
+		if ( bundle->isLightmap ) {
+			continue;
+		}
+		if ( bundle->image[0] == tr.whiteImage ) {
+			continue;
+		}
+		if ( bundle->tcGen != TCGEN_TEXTURE ) {
+			continue;
+		}
+		if ( selected ) {
+			if ( stage->rgbGen == CGEN_IDENTITY && ( stage->stateBits & GLS_BLEND_BITS ) == ( GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO ) ) {
+				// fix for q3wcp17' textures/scanctf2/bounce_white and others
+				continue;
+			}
+			if ( tcmodWeight( selected ) > tcmodWeight( bundle ) ) {
+				continue;
+			}
+		}
+		shader.lightingStage = stageIndex;
+		shader.lightingBundle = i;
+		selected = bundle;
+	}
+
+	return selected;
+}
+
+
 /*
 ====================
 FindLightingStages
@@ -2147,9 +2196,11 @@ Find proper stage for dlight pass
 static void FindLightingStages( void )
 {
 	const shaderStage_t *st;
+	const textureBundle_t *bundle;
 	int i;
 
 	shader.lightingStage = -1;
+	shader.lightingBundle = 0;
 
 	if ( !qglGenProgramsARB )
 		return;
@@ -2157,27 +2208,23 @@ static void FindLightingStages( void )
 	if ( shader.isSky || ( shader.surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) || shader.sort == SS_ENVIRONMENT )
 		return;
 
+	bundle = NULL;
 	for ( i = 0; i < shader.numUnfoggedPasses; i++ ) {
 		st = &stages[ i ];
 		if ( !st->active )
 			break;
-		if ( st->bundle[0].isLightmap )
-			continue;
-		if ( st->bundle[0].tcGen != TCGEN_TEXTURE )
-			continue;
-		if ( (st->stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE) )
-			continue;
-		if ( st->bundle[0].image[0] == tr.whiteImage )
-			continue;
 		if ( st->isDetail && shader.lightingStage >= 0 )
 			continue;
-		// fix for q3wcp17' textures/scanctf2/bounce_white and others
-		if ( st->rgbGen == CGEN_IDENTITY && (st->stateBits & GLS_BLEND_BITS) == (GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO) ) {
-			if ( shader.lightingStage >= 0 ) {
+		if ( ( st->stateBits & GLS_BLEND_BITS ) == ( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE ) ) {
+			if ( bundle && bundle->numTexMods ) {
+				// already selected bundle has somewhat non-static tcgen
+				// so we may accept this stage
+				// this fixes jumppads on lun3dm5
+			} else {
 				continue;
 			}
 		}
-		shader.lightingStage = i;
+		bundle = lightingBundle( i, bundle );
 	}
 }
 #endif
@@ -2714,7 +2761,7 @@ static shader_t *FinishShader( void ) {
 	//
 	// if we are in r_vertexLight mode, never use a lightmap texture
 	//
-	if ( stage > 1 && ( (r_vertexLight->integer && tr.vertexLightingAllowed && !shader.noVLcollapse) || glConfig.hardwareType == GLHW_PERMEDIA2 ) ) {
+	if ( stage > 1 && ( ( r_vertexLight->integer && tr.vertexLightingAllowed && !shader.noVLcollapse ) || glConfig.hardwareType == GLHW_PERMEDIA2 ) ) {
 		VertexLightingCollapse();
 		stage = 1;
 		hasLightmapStage = qfalse;
@@ -2733,9 +2780,11 @@ static shader_t *FinishShader( void ) {
 	//
 	// look for multitexture potential
 	//
-	for ( i = 0; i < stage-1; i++ ) {
-		if ( CollapseMultitexture( &stages[i+0], &stages[i+1], stage-i ) ) {
-			stage--;
+	if ( r_ext_multitexture->integer ) {
+		for ( i = 0; i < stage-1; i++ ) {
+			if ( CollapseMultitexture( &stages[i+0], &stages[i+1], stage-i ) ) {
+				stage--;
+			}
 		}
 	}
 

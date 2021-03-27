@@ -210,7 +210,7 @@ static void ARB_Lighting( const shaderStage_t* pStage )
 
 	GL_SelectTexture( 0 );
 
-	R_BindAnimatedImage( &pStage->bundle[ 0 ] );
+	R_BindAnimatedImage( &pStage->bundle[ tess.shader->lightingBundle ] );
 	
 	R_DrawElements( numIndexes, hitIndexes );
 }
@@ -229,7 +229,7 @@ static void ARB_Lighting_Fast( const shaderStage_t* pStage )
 
 	GL_SelectTexture( 0 );
 
-	R_BindAnimatedImage( &pStage->bundle[ 0 ] );
+	R_BindAnimatedImage( &pStage->bundle[ tess.shader->lightingBundle ] );
 	
 	R_DrawElements( tess.numIndexes, tess.indexes );
 }
@@ -334,7 +334,7 @@ void ARB_LightingPass( void )
 
 	pStage = tess.xstages[ tess.shader->lightingStage ];
 
-	R_ComputeTexCoords( 0, &pStage->bundle[0] );
+	R_ComputeTexCoords( 0, &pStage->bundle[ tess.shader->lightingBundle ] );
 
 	GL_ClientState( 1, CLS_NONE );
 	GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_NORMAL_ARRAY );
