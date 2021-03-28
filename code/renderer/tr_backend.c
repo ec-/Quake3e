@@ -1475,7 +1475,7 @@ static const void *RB_FinishBloom( const void *data )
 			blitMSfbo = qfalse;
 		}
 
-		if ( r_bloom->integer )
+		if ( r_bloom->integer && qglActiveTextureARB )
 		{
 			if ( !backEnd.doneBloom && backEnd.doneSurfaces )
 			{

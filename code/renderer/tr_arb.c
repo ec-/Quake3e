@@ -1945,7 +1945,7 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 
 void R_BloomScreen( void )
 {
-	if ( r_bloom->integer == 1 && fboEnabled )
+	if ( r_bloom->integer == 1 && fboEnabled && qglActiveTextureARB )
 	{
 		if ( !backEnd.doneBloom && backEnd.doneSurfaces )
 		{
@@ -1993,7 +1993,7 @@ void FBO_PostProcess( void )
 
 	minimized = ri.CL_IsMinimized();
 
-	if ( r_bloom->integer && programCompiled ) {
+	if ( r_bloom->integer && programCompiled && qglActiveTextureARB ) {
 		if ( FBO_Bloom( gamma, obScale, !minimized ) ) {
 			return;
 		}
