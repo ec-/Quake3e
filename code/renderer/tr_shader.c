@@ -2122,6 +2122,7 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 	st0->mtEnv = collapse[i].multitextureEnv;
 	st0->stateBits &= ~GLS_BLEND_BITS;
 	st0->stateBits |= collapse[i].multitextureBlend;
+	st0->tessFlags |= TESS_ST1;
 
 	//
 	// move down subsequent shaders
@@ -2304,8 +2305,8 @@ static void FixRenderCommandList( int newShader ) {
 				}
 			case RC_COLORMASK:
 				{
-				const colorMaskCommand_t *db_cmd = (const colorMaskCommand_t *)curCmd;
-				curCmd = (const void *)(db_cmd + 1);
+				const colorMaskCommand_t *cm_cmd = (const colorMaskCommand_t *)curCmd;
+				curCmd = (const void *)(cm_cmd + 1);
 				break;
 				}
 			case RC_CLEARDEPTH:
@@ -2775,6 +2776,10 @@ static shader_t *FinishShader( void ) {
 			stages[stage - 1].active = qfalse;
 			stage--;
 		}
+	}
+
+	for ( i = 0; i < stage; i++ ) {
+		stages[i].tessFlags = TESS_ST0;
 	}
 
 	//

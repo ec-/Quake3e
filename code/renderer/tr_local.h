@@ -299,6 +299,11 @@ typedef struct {
 
 #define NUM_TEXTURE_BUNDLES 2
 
+#define TESS_ST0	1<<0
+#define TESS_ST1	1<<1
+#define TESS_ENV0	1<<2
+#define TESS_ENV1	1<<3
+
 typedef struct {
 	qboolean		active;
 	
@@ -326,7 +331,7 @@ typedef struct {
 	uint32_t		color_offset;		// within current shader
 	uint32_t		tex_offset[2];		// within current shader
 
-	qboolean		needViewPos;
+	uint32_t		tessFlags;
 
 } shaderStage_t;
 
