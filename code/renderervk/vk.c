@@ -596,10 +596,10 @@ static void vk_create_render_passes( void )
 	attachments[1].format = depth_format;
 	attachments[1].samples = vkSamples;
 	attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // Need empty depth buffer before use
-	attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	attachments[1].stencilLoadOp = r_stencilbits->integer ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	if ( r_bloom->integer ) {
 		attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE; // keep it for post-bloom pass
-		attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachments[1].stencilStoreOp = r_stencilbits->integer ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	} else {
 		attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -5850,7 +5850,7 @@ void vk_clear_depth( qboolean clear_stencil ) {
 	attachment.clearValue.depthStencil.depth = 1.0f;
 #endif
 	attachment.clearValue.depthStencil.stencil = 0;
-	if ( clear_stencil ) {
+	if ( clear_stencil && r_stencilbits->integer ) {
 		attachment.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 	} else {
 		attachment.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
