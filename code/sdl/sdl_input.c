@@ -322,10 +322,20 @@ static keyNum_t IN_TranslateSDLToQ3Key( SDL_Keysym *keysym, qboolean down )
 		}
 	}
 
-	if( in_keyboardDebug->integer )
+	if ( in_keyboardDebug->integer )
 		IN_PrintKey( keysym, key, down );
 
-	if( IN_IsConsoleKey( key, 0 ) )
+	if ( keysym->scancode == SDL_SCANCODE_GRAVE )
+	{
+		SDL_Keycode translated = SDL_GetKeyFromScancode( SDL_SCANCODE_GRAVE );
+
+		if ( (translated != SDLK_CARET) || (translated == SDLK_CARET && (keysym->mod & KMOD_SHIFT)) )
+		{
+			// Console keys can't be bound or generate characters
+			key = K_CONSOLE;
+		}
+	}
+	else if ( IN_IsConsoleKey( key, 0 ) )
 	{
 		// Console keys can't be bound or generate characters
 		key = K_CONSOLE;
