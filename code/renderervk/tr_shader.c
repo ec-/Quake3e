@@ -2307,7 +2307,7 @@ static void FindLightingStages( void )
 	shader.lightingStage = -1;
 	shader.lightingBundle = 0;
 
-	if ( shader.isSky || ( shader.surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) || shader.sort == SS_ENVIRONMENT )
+	if ( shader.isSky || ( shader.surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) || shader.sort == SS_ENVIRONMENT || shader.sort >= SS_FOG )
 		return;
 
 	bundle = NULL;

@@ -2206,7 +2206,7 @@ static void FindLightingStages( void )
 	if ( !qglGenProgramsARB )
 		return;
 
-	if ( shader.isSky || ( shader.surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) || shader.sort == SS_ENVIRONMENT )
+	if ( shader.isSky || ( shader.surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) || shader.sort == SS_ENVIRONMENT || shader.sort >= SS_FOG )
 		return;
 
 	bundle = NULL;
