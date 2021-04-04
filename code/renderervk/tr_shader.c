@@ -3081,6 +3081,7 @@ static shader_t *FinishShader( void ) {
 		}
 
 		for ( i = 0; i < stage; i++ ) {
+			int env_mask;
 			shaderStage_t *pStage = &stages[i];
 			def.state_bits = pStage->stateBits;
 
@@ -3182,8 +3183,17 @@ static shader_t *FinishShader( void ) {
 					break;
 			}
 
-			if ( !pStage->depthFragment && pStage->bundle[0].tcGen == TCGEN_ENVIRONMENT_MAPPED && ( !pStage->bundle[0].isLightmap || r_mergeLightmaps->integer == 0 ) ) {
-				if ( def.shader_type >= TYPE_GENERIC_BEGIN && def.shader_type <= TYPE_GENERIC_END && pStage->bundle[0].numTexMods == 0 ) {
+			for ( env_mask = 0, n = 0; n < pStage->numTexBundles; n++ ) {
+				if ( pStage->bundle[n].numTexMods ) {
+					continue;
+				}
+				if ( pStage->bundle[n].tcGen == TCGEN_ENVIRONMENT_MAPPED && ( !pStage->bundle[n].isLightmap || r_mergeLightmaps->integer == 0 ) ) {
+					env_mask |= (1 << n);
+				}
+			}
+
+			if ( env_mask == 1 && !pStage->depthFragment ) {
+				if ( def.shader_type >= TYPE_GENERIC_BEGIN && def.shader_type <= TYPE_GENERIC_END  ) {
 					def.shader_type++; // switch to *_ENV version
 					shader.tessFlags |= TESS_NNN | TESS_VPOS;
 					pStage->tessFlags &= ~TESS_ST0;
