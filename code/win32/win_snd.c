@@ -402,7 +402,7 @@ static qboolean SNDDMA_InitWASAPI( void )
 
 	hr = pEnumerator->lpVtbl->GetDefaultAudioEndpoint( pEnumerator, eRender, eMultimedia, &iMMDevice );
 	if ( hr != S_OK ) {
-		Com_Printf( S_COLOR_YELLOW "WASAPI: GetDefaultAudioEndpoint() failed with error %08x\n", hr );
+		Com_Printf( S_COLOR_YELLOW "WASAPI: GetDefaultAudioEndpoint() failed with error %08x\n", (DWORD)hr );
 		goto error2;
 	}
 

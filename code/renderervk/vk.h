@@ -36,6 +36,7 @@ typedef enum {
 	TYPE_SIGNLE_TEXTURE_LIGHTING_LINEAR,
 
 	TYPE_SIGNLE_TEXTURE_DF,
+	TYPE_SIGNLE_TEXTURE_IDENTITY,
 
 	TYPE_GENERIC_BEGIN,
 	TYPE_SIGNLE_TEXTURE = TYPE_GENERIC_BEGIN,
@@ -205,6 +206,7 @@ uint32_t vk_find_pipeline_ext( uint32_t base, const Vk_Pipeline_Def *def, qboole
 void vk_get_pipeline_def( uint32_t pipeline, Vk_Pipeline_Def *def );
 
 void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_t height );
+void vk_create_pipelines( void );
 
 //
 // Rendering setup.
@@ -410,8 +412,10 @@ typedef struct {
 		struct {
 			VkShaderModule gen[3][2][2][2]; // tx[0,1,2], cl[0,1] env0[0,1] fog[0,1]
 			VkShaderModule light[2]; // fog[0,1]
+			VkShaderModule gen0_ident;
 		}	vert;
 		struct {
+			VkShaderModule gen0_ident;
 			VkShaderModule gen0_df;
 			VkShaderModule gen[3][2][2]; // tx[0,1,2] cl[0,1] fog[0,1]
 			VkShaderModule light[2][2]; // linear[0,1] fog[0,1]

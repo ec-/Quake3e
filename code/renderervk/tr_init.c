@@ -1779,6 +1779,10 @@ void R_Init( void ) {
 
 	R_InitImages();
 
+#ifdef USE_VULKAN
+	vk_create_pipelines();
+#endif
+
 	R_InitShaders();
 
 	R_InitSkins();

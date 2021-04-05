@@ -62,6 +62,9 @@ for %%f in (*.frag) do (
 "%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_FOG -DUSE_ENV
 "%bh%" "%tmpf%" %outf% vert_tx0_env_fog
 
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_CL0_IDENT
+"%bh%" "%tmpf%" %outf% vert_tx0_ident
+
 @rem double-texture vertex
 
 "%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_TX1
@@ -119,6 +122,9 @@ for %%f in (*.frag) do (
 "%bh%" "%tmpf%" %outf% vert_tx2_cl_env_fog
 
 @rem single-texture fragment
+
+"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_CL0_IDENT
+"%bh%" "%tmpf%" %outf% frag_tx0_ident
 
 "%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_ATEST -DUSE_DF
 "%bh%" "%tmpf%" %outf% frag_tx0_df

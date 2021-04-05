@@ -36,7 +36,12 @@ layout(set = 4, binding = 0) uniform sampler2D texture2;
 layout(set = 5, binding = 0) uniform sampler2D fog_texture;
 #endif
 
+#ifdef USE_CL0_IDENT
+// use fixed color from spec.constant.8
+#else
 layout(location = 0) in vec4 frag_color0;
+#endif
+
 #ifdef USE_CL1
 layout(location = 5) in vec4 frag_color1;
 #endif
@@ -61,18 +66,24 @@ layout(depth_less) out float gl_FragDepth;
 layout(location = 0) out vec4 out_color;
 #endif
 
+#ifdef USE_ATEST
 layout (constant_id = 0) const int alpha_test_func = 0;
 layout (constant_id = 1) const float alpha_test_value = 0.0;
 #ifdef USE_DF
 layout (constant_id = 2) const float depth_fragment = 0.85;
 #endif
+#endif
+
 layout (constant_id = 3) const int alpha_to_coverage = 0;
 //layout (constant_id = 4) const int color_mode = 0;
 //layout (constant_id = 5) const int abs_light = 0;
 #if defined (USE_TX1) || defined(USE_TX2)
-layout (constant_id = 6) const int tex_mode = 0; // modulate, add (identity), add, alpha, 1-alpha
+layout (constant_id = 6) const int tex_mode = 0; // modulate, add (identity), add(non-identity) etc
 #endif
 layout (constant_id = 7) const int discard_mode = 0;
+#ifdef USE_CL0_IDENT
+layout (constant_id = 8) const float identity_color = 1.0;
+#endif
 
 #ifdef USE_ATEST
 float CorrectAlpha(float threshold, float alpha, vec2 tc)
@@ -91,7 +102,13 @@ void main() {
 #ifdef USE_FOG
 	vec4 fog = texture(fog_texture, fog_tex_coord);
 #endif
+
+#ifdef USE_CL0_IDENT
+	vec4 color0 = texture(texture0, frag_tex_coord0) * vec4( identity_color );
+#else
 	vec4 color0 = texture(texture0, frag_tex_coord0) * frag_color0;
+#endif
+
 	vec4 base;
 
 #if defined (USE_TX2)
