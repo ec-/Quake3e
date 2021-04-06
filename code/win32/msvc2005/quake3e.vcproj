@@ -516,10 +516,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\client\snd_codec_ogg.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\client\snd_codec_wav.c"
 				>
 			</File>

@@ -296,7 +296,6 @@
     <ClCompile Include="..\..\client\cl_ui.c" />
     <ClCompile Include="..\..\client\snd_adpcm.c" />
     <ClCompile Include="..\..\client\snd_codec.c" />
-    <ClCompile Include="..\..\client\snd_codec_ogg.c" />
     <ClCompile Include="..\..\client\snd_codec_wav.c" />
     <ClCompile Include="..\..\client\snd_dma.c" />
     <ClCompile Include="..\..\client\snd_main.c" />

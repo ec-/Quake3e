@@ -145,7 +145,9 @@ void RB_ShadowTessEnd( void ) {
 	int		i;
 	int		numTris;
 	vec3_t	lightDir;
-#ifndef USE_VULKAN
+#ifdef USE_VULKAN
+	uint32_t pipeline[2];
+#else
 	GLboolean rgba[4];
 #endif
 
@@ -214,20 +216,19 @@ void RB_ShadowTessEnd( void ) {
 
 	// mirrors have the culling order reversed
 	if ( backEnd.viewParms.portalView == PV_MIRROR ) {
-		vk_bind_pipeline( vk.shadow_volume_pipelines[0][1] );
-		vk_bind_index();
-		vk_bind_geometry( TESS_XYZ | TESS_RGBA0 );
-		vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
-		vk_bind_pipeline( vk.shadow_volume_pipelines[1][1] );
-		vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
+		pipeline[0] = vk.shadow_volume_pipelines[0][1];
+		pipeline[1] = vk.shadow_volume_pipelines[1][1];
 	} else {
-		vk_bind_pipeline( vk.shadow_volume_pipelines[0][0] );
-		vk_bind_index();
-		vk_bind_geometry( TESS_XYZ | TESS_RGBA0 );
-		vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
-		vk_bind_pipeline( vk.shadow_volume_pipelines[1][0] );
-		vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
+		pipeline[0] = vk.shadow_volume_pipelines[0][0];
+		pipeline[1] = vk.shadow_volume_pipelines[1][0];
+
 	}
+	vk_bind_pipeline( pipeline[0] ); // back-sided
+	vk_bind_index();
+	vk_bind_geometry( TESS_XYZ | TESS_RGBA0 );
+	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
+	vk_bind_pipeline( pipeline[1] ); // front-sided
+	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 
 	tess.numVertexes /= 2;
 #else
