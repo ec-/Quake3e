@@ -1,0 +1,149 @@
+#version 450
+
+#ifdef USE_TX2
+#define USE_TX1
+#endif
+
+#ifdef USE_CL2
+#define USE_CL1
+#endif
+
+// 64 bytes
+layout(push_constant) uniform Transform {
+	mat4 mvp;
+};
+
+
+#if defined(USE_FOG) || defined(USE_ENV)
+layout(set = 1, binding = 0) uniform UBO {
+	// VERTEX
+	vec4 eyePos;
+	vec4 lightPos;
+	//  VERTEX-FOG
+	vec4 fogDistanceVector;
+	vec4 fogDepthVector;
+	vec4 fogEyeT;
+	// FRAGMENT
+	vec4 lightColor;
+	vec4 fogColor;
+	// linear dynamic light
+	vec4 lightVector;
+};
+#endif
+
+layout(location = 0) in vec3 in_position;
+
+#ifdef USE_CL0_IDENT
+// use fixed color from frag.spec.constant.8
+#else
+layout(location = 1) in vec4 in_color0;
+#endif
+
+#ifndef USE_ENV
+layout(location = 2) in vec2 in_tex_coord0;
+#endif
+
+#ifdef USE_TX1
+layout(location = 3) in vec2 in_tex_coord1;
+#endif
+#ifdef USE_TX2
+layout(location = 4) in vec2 in_tex_coord2;
+#endif
+
+#ifdef USE_ENV
+layout(location = 5) in vec3 in_normal;
+#endif
+
+#ifdef USE_CL1
+layout(location = 6) in vec4 in_color1;
+#endif
+#ifdef USE_CL2
+layout(location = 7) in vec4 in_color2;
+#endif
+
+
+#ifdef USE_CL0_IDENT
+// use fixed color from frag.spec.constant.8
+#else
+layout(location = 0) out vec4 frag_color0;
+#endif
+
+#ifdef USE_CL1
+layout(location = 5) out vec4 frag_color1;
+#endif
+#ifdef USE_CL2
+layout(location = 6) out vec4 frag_color2;
+#endif
+
+layout(location = 1) out vec2 frag_tex_coord0;
+#ifdef USE_TX1
+layout(location = 2) out vec2 frag_tex_coord1;
+#endif
+#ifdef USE_TX2
+layout(location = 3) out vec2 frag_tex_coord2;
+#endif
+
+#ifdef USE_FOG
+layout(location = 4) out vec2 fog_tex_coord;
+#endif
+
+
+out gl_PerVertex {
+	vec4 gl_Position;
+};
+
+void main() {
+	gl_Position = mvp * vec4(in_position, 1.0);
+
+#ifdef USE_CL0_IDENT
+// use fixed color from frag.spec.constant.8
+#else
+	frag_color0 = in_color0;
+#endif
+
+#ifdef USE_CL1
+	frag_color1 = in_color1;
+#endif
+#ifdef USE_CL2
+	frag_color2 = in_color2;
+#endif
+
+#ifdef USE_ENV
+	vec3 viewer = normalize(eyePos.xyz - in_position);
+	float d = dot(in_normal, viewer); 
+	vec2 reflected = in_normal.yz * 2 * d - viewer.yz;
+
+	frag_tex_coord0.s = 0.5 + reflected.x * 0.5;
+	frag_tex_coord0.t = 0.5 - reflected.y * 0.5;
+#else
+	frag_tex_coord0 = in_tex_coord0;
+#endif
+
+#ifdef USE_TX1
+	frag_tex_coord1 = in_tex_coord1;
+#endif
+#ifdef USE_TX2
+	frag_tex_coord2 = in_tex_coord2;
+#endif
+
+#ifdef USE_FOG
+	float s = dot(in_position, fogDistanceVector.xyz) + fogDistanceVector.w;
+	float t = dot(in_position, fogDepthVector.xyz) + fogDepthVector.w;
+
+	if ( fogEyeT.y == 1.0 ) {
+		if ( t < 0.0 ) {
+			t = 1.0 / 32.0;
+		} else {
+			t = 31.0 / 32.0;
+		}
+	} else {
+		if ( t < 1.0 ) {
+			t = 1.0 / 32.0;
+		} else {
+			t = 1.0 / 32.0 + (30.0 / 32.0 * t) / ( t - fogEyeT.x );
+		}
+	}
+
+	fog_tex_coord = vec2(s, t);
+#endif
+}

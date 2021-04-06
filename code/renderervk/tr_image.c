@@ -332,7 +332,7 @@ static void R_LightScaleTexture( byte *in, int inwidth, int inheight, qboolean o
 	if ( only_gamma )
 	{
 #ifdef USE_VULKAN
-		if ( !glConfig.deviceSupportsGamma && !vk.fboActive)
+		if ( !glConfig.deviceSupportsGamma && !vk.fboActive )
 #else
 		if ( !glConfig.deviceSupportsGamma )
 #endif
@@ -1744,11 +1744,12 @@ void R_SetColorMappings( void ) {
 #ifdef USE_VULKAN
 	vk_update_post_process_pipelines();
 	
-	if ( glConfig.deviceSupportsGamma && !vk.fboActive )
-		ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
-
-	if ( glConfig.deviceSupportsGamma && vk.fboActive )
-		ri.GLimp_SetGamma( s_gammatable_linear, s_gammatable_linear, s_gammatable_linear );
+	if ( glConfig.deviceSupportsGamma ) {
+		if ( vk.fboActive )
+			ri.GLimp_SetGamma( s_gammatable_linear, s_gammatable_linear, s_gammatable_linear );
+		else
+			ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
+	}
 #else
 	if ( glConfig.deviceSupportsGamma )
 		ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
@@ -1763,14 +1764,15 @@ R_InitImages
 */
 void R_InitImages( void ) {
 
-	Com_Memset( hashTable, 0, sizeof( hashTable ) );
-
 #ifdef USE_VULKAN
 	// initialize linear gamma table before setting color mappings for the first time
 	int i;
-	for (i = 0; i < 256; i++)
+
+	for ( i = 0; i < 256; i++ )
 		s_gammatable_linear[i] = (unsigned char)i;
 #endif
+
+	Com_Memset( hashTable, 0, sizeof( hashTable ) );
 
 	// build brightness translation tables
 	R_SetColorMappings();

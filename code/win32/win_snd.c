@@ -394,10 +394,15 @@ static qboolean SNDDMA_InitWASAPI( void )
 		goto error1;
 	}
 
-	pEnumerator->lpVtbl->RegisterEndpointNotificationCallback( pEnumerator, (IMMNotificationClient*) &notification_client );
+	hr = pEnumerator->lpVtbl->RegisterEndpointNotificationCallback( pEnumerator, (IMMNotificationClient*) &notification_client );
+	if ( hr != S_OK ) {
+		Com_Printf( S_COLOR_YELLOW "WASAPI: RegisterEndpointNotificationCallback() failed with error %08x\n", hr );
+		goto error2;
+	}
 
-	if ( pEnumerator->lpVtbl->GetDefaultAudioEndpoint( pEnumerator, eRender, eMultimedia, &iMMDevice ) != S_OK ) {
-		Com_Printf( S_COLOR_YELLOW "WASAPI: GetDefaultAudioEndpoint() failed\n" );
+	hr = pEnumerator->lpVtbl->GetDefaultAudioEndpoint( pEnumerator, eRender, eMultimedia, &iMMDevice );
+	if ( hr != S_OK ) {
+		Com_Printf( S_COLOR_YELLOW "WASAPI: GetDefaultAudioEndpoint() failed with error %08x\n", (DWORD)hr );
 		goto error2;
 	}
 
@@ -615,13 +620,19 @@ error2:
 		CoTaskMemFree( DeviceID );
 	DeviceID = NULL;
 
-	pEnumerator->lpVtbl->UnregisterEndpointNotificationCallback( pEnumerator, (IMMNotificationClient *) &notification_client );
+	if ( notification_client.lpVtbl->QueryInterface ) {
+		pEnumerator->lpVtbl->UnregisterEndpointNotificationCallback( pEnumerator, (IMMNotificationClient *)&notification_client );
+		Com_Memset( &notification_client, 0, sizeof( notification_client ) );
+	}
+
 	pEnumerator->lpVtbl->Release( pEnumerator ); pEnumerator = NULL;
 
 error1:
 	DeleteCriticalSection( &cs );
 
 	Com_Memset( &dma, 0, sizeof( dma ) );
+
+	dma.channels = 1; // to avoid division-by-zero in S_GetSoundtime()
 
 	return qfalse;
 }

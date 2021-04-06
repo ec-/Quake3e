@@ -210,7 +210,7 @@ static void ARB_Lighting( const shaderStage_t* pStage )
 
 	GL_SelectTexture( 0 );
 
-	R_BindAnimatedImage( &pStage->bundle[ 0 ] );
+	R_BindAnimatedImage( &pStage->bundle[ tess.shader->lightingBundle ] );
 	
 	R_DrawElements( numIndexes, hitIndexes );
 }
@@ -229,7 +229,7 @@ static void ARB_Lighting_Fast( const shaderStage_t* pStage )
 
 	GL_SelectTexture( 0 );
 
-	R_BindAnimatedImage( &pStage->bundle[ 0 ] );
+	R_BindAnimatedImage( &pStage->bundle[ tess.shader->lightingBundle ] );
 	
 	R_DrawElements( tess.numIndexes, tess.indexes );
 }
@@ -253,7 +253,7 @@ void ARB_SetupLightParams( void )
 
 	dl = tess.light;
 
-	if ( !glConfig.deviceSupportsGamma )
+	if ( !glConfig.deviceSupportsGamma && !fboEnabled )
 		VectorScale( dl->color, 2 * powf( r_intensity->value, r_gamma->value ), lightRGB );
 	else
 		VectorCopy( dl->color, lightRGB );
@@ -334,7 +334,7 @@ void ARB_LightingPass( void )
 
 	pStage = tess.xstages[ tess.shader->lightingStage ];
 
-	R_ComputeTexCoords( 0, &pStage->bundle[0] );
+	R_ComputeTexCoords( 0, &pStage->bundle[ tess.shader->lightingBundle ] );
 
 	GL_ClientState( 1, CLS_NONE );
 	GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_NORMAL_ARRAY );
@@ -1945,7 +1945,7 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 
 void R_BloomScreen( void )
 {
-	if ( r_bloom->integer == 1 && fboEnabled )
+	if ( r_bloom->integer == 1 && fboEnabled && qglActiveTextureARB )
 	{
 		if ( !backEnd.doneBloom && backEnd.doneSurfaces )
 		{
@@ -1961,7 +1961,7 @@ void R_BloomScreen( void )
 void FBO_PostProcess( void )
 {
 	const float obScale = 1 << tr.overbrightBits;
-	const float gamma = 1.0f / r_gamma->value;
+	const float gamma = glConfig.deviceSupportsGamma ? 1.0f / r_gamma->value : 1.0f;
 	const float w = glConfig.vidWidth;
 	const float h = glConfig.vidHeight;
 	qboolean minimized;
@@ -1993,7 +1993,7 @@ void FBO_PostProcess( void )
 
 	minimized = ri.CL_IsMinimized();
 
-	if ( r_bloom->integer && programCompiled ) {
+	if ( r_bloom->integer && programCompiled && qglActiveTextureARB ) {
 		if ( FBO_Bloom( gamma, obScale, !minimized ) ) {
 			return;
 		}

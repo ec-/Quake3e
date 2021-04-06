@@ -16,13 +16,17 @@ layout(set = 1, binding = 0) uniform UBO {
 };
 
 layout(set = 2, binding = 0) uniform sampler2D texture0;
+#ifdef USE_FOG
 layout(set = 3, binding = 0) uniform sampler2D fogtexture;
+#endif
 
 layout(location = 0) centroid in vec2 frag_tex_coord;
 layout(location = 1) in vec3 N;  // normalized object-space normal vector
 layout(location = 2) in vec4 L;  // object-space light vector
 layout(location = 3) in vec4 V;  // object-space view vector
+#ifdef USE_FOG
 layout(location = 4) in vec2 fog_tex_coord;
+#endif
 
 layout(location = 0) out vec4 out_color;
 
@@ -45,10 +49,12 @@ float CorrectAlpha(float threshold, float alpha, vec2 tc)
 }
 
 void main() {
-	vec4 base = texture(texture0, frag_tex_coord);
+#ifdef USE_FOG
 	vec4 fog = texture(fogtexture, fog_tex_coord);
+#endif
+	vec4 base = texture(texture0, frag_tex_coord);
 
-	if (alpha_to_coverage != 0) {
+	if ( alpha_to_coverage != 0 ) {
 		if (alpha_test_func == 1) {
 			base.a =  base.a > 0.0 ? 1.0 : 0.0;
 		} else if (alpha_test_func == 2) {
@@ -68,17 +74,32 @@ void main() {
 
 	vec4 lightColorRadius = lightColor;
 
+#ifdef USE_LINE
+	// project fragment on light vector
+	float scale = clamp( dot( -L.xyz, lightVector.xyz ) * lightVector.w, 0.0, 1.0 );
+	vec4 LL = lightVector * scale + L;
+
+	vec3 nL = normalize(LL.xyz); // normalized light vector
+	vec3 nV = normalize(V.xyz);	// normalized view vector
+
+	// light intensity
+	float intensFactor = 1.0 - (dot(LL.xyz, LL.xyz) * lightColorRadius.w);
+#else
 	vec3 nL = normalize(L.xyz);	// normalized light vector
 	vec3 nV = normalize(V.xyz);	// normalized view vector
 
 	// light intensity
 	float intensFactor = 1.0 - dot(L.xyz, L.xyz) * lightColorRadius.w;
+#endif
+
 	if (intensFactor <= 0.0)
 		discard;
 	vec3 intens = lightColorRadius.rgb * intensFactor;
 
+#ifdef USE_FOG
 	// modulate base by inverted fog alpha
 	base.xyz = base.xyz * ( 1.0 - fog.a );
+#endif
 
 	// Lambertian diffuse reflection term (N.L)
 	float diffuse = dot(N, nL);

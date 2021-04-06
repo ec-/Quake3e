@@ -69,6 +69,8 @@ typedef enum {
 	GL_BLEND_MIX_ALPHA, // SRC_ALPHA + ONE_MINUS_SRC_ALPHA
 	GL_BLEND_MIX_ONE_MINUS_ALPHA, // ONE_MINUS_SRC_ALPHA + SRC_ALPHA
 
+	GL_BLEND_DST_COLOR_SRC_ALPHA, // GLS_SRCBLEND_DST_COLOR + GLS_DSTBLEND_SRC_ALPHA
+
 	GL_DECAL,
 	GL_BACK_LEFT,
 	GL_BACK_RIGHT
@@ -455,6 +457,7 @@ typedef struct shader_s {
 
 #ifdef USE_PMLIGHT
 	int			lightingStage;
+	int			lightingBundle;
 #endif
 	qboolean	fogCollapse;
 	int			tessFlags;

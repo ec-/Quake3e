@@ -1,3 +1,26 @@
+28-Mar-2021:
+* Vulkan: implemented super-sample anti-aliasing, can be enabled via \r_ext_supersample 1, requires \r_fbo 1
+* Vulkan: added \r_presentBits to support HDR monitors, added \r_dither to control dithering in such cases
+* Vulkan: added more multitexturing optimizations
+* OpenGL: fixed incorrect image capture with supersampling and renderscale enabled
+* OpenGL: fixed texture generation for environment-mapped shaders in VBO
+* OpenGL: disable bloom if multitexturing was disabled via \r_ext_multitexture 0
+* Renderers: dereference $vid_width and $vid_height to actual rendering width/height inside extended shaders
+* Win32: fixed crash on nvidia systems when using Vulkan renderer and Win+D hotkey
+* Win32: fixed accidental focus losses when using high-dpi mice
+* Win32: fixed non-working \in_minimize in windowed mode
+* Win32: catch rare DescribePixelFormat() crash
+* Fixed error raised by messagemode 3/4 called without running cgvm
+* Fixed another crash in FixRenderCommandList()
+* Fixed potential crash with fog table
+* Allow \reconnect to work after client restart
+* Added warnings in developer mode to know why and when a sound isn't played
+* Added \r_dlightSaturation
+* Unlocked \r_lodCurveError
+* Check integrity of loaded maps and models
+* SDL2+Wayland compatibility fixes
+* Various fixes and improvements
+
 16-Jan-2021:
 * Win32: try to catch exceptions instead of silent crashing
 * Win32: made unhandled exceptions non-fatal
@@ -772,7 +795,7 @@ Add: CPMA hacks
 Add: sin,cos,rand to \varfunc
 
 10-Oct-2016:
-Fix: skybox overbright with picmip and r_intencity > 1
+Fix: skybox overbright with picmip and \r_intensity > 1
 Add: \varfunc <add|sub|mul|div|mov> <cvar> <value> [- or low limit] [high limit]
 Remove: \inc and \dec
 
