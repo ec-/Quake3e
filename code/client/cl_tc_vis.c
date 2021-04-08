@@ -20,9 +20,6 @@ typedef struct {
 } visFace_t;
 
 typedef struct visBrushNode_s {
-	visBrushType_t type;
-	qhandle_t shader;
-
 	int numFaces;
 	visFace_t *faces;
 
@@ -36,16 +33,19 @@ typedef struct visBrushNode_s {
 static void add_triggers(void);
 static void add_clips(void);
 static void add_slicks(void);
-static void gen_visible_brush(int brushnum, vec3_t origin, visBrushType_t type, vec4_t color, qhandle_t shader);
+static void gen_visible_brush(int brushnum, vec3_t origin, visBrushType_t type, vec4_t color);
 static qboolean intersect_planes(cplane_t *p1, cplane_t *p2, cplane_t *p3, vec3_t p);
 static qboolean point_in_brush(vec3_t point, cbrush_t *brush);
 static int winding_cmp(const void *a, const void *b);
 static void add_vert_to_face(visFace_t *face, vec3_t vert, vec4_t color, vec2_t tex_coords);
 static float *get_uv_coords(vec2_t uv, vec3_t vert, vec3_t normal);
 static void free_vis_brushes(visBrushNode_t *brushes);
+static void draw(visBrushNode_t *brush, qhandle_t shader);
 
 
-static visBrushNode_t *head = NULL;
+static visBrushNode_t *trigger_head = NULL;
+static visBrushNode_t *clip_head = NULL;
+static visBrushNode_t *slick_head = NULL;
 
 /* needed for winding_cmp */
 static vec3_t w_center, w_normal, w_ref_vec;
@@ -55,9 +55,9 @@ static cvar_t *triggers_draw;
 static cvar_t *clips_draw;
 static cvar_t *slicks_draw;
 
-static cvar_t * trigger_shader_setting;
-static cvar_t * clip_shader_setting;
-static cvar_t * slick_shader_setting;
+static cvar_t *trigger_shader_setting;
+static cvar_t *clip_shader_setting;
+static cvar_t *slick_shader_setting;
 
 static qhandle_t trigger_shader;
 static qhandle_t clip_shader;
@@ -68,8 +68,12 @@ static vec4_t clip_color = { 128, 0, 0, 255 };
 static vec4_t slick_color = { 0, 64, 128, 255 };
 
 void tc_vis_init(void) {
-	free_vis_brushes(head);
-	head = NULL;
+	free_vis_brushes(trigger_head);
+	free_vis_brushes(clip_head);
+	free_vis_brushes(slick_head);
+	trigger_head = NULL;
+	clip_head = NULL;
+	slick_head = NULL;
 
 	triggers_draw = Cvar_Get("r_renderTriggerBrushes", "0", CVAR_ARCHIVE_ND);
 	clips_draw = Cvar_Get("r_renderClipBrushes", "0", CVAR_ARCHIVE_ND);
@@ -89,14 +93,14 @@ void tc_vis_init(void) {
 }
 
 void tc_vis_render(void) {
-	visBrushNode_t *brush = head;
-	while ( brush ) {
-		if ( ( brush->type == TRIGGER_BRUSH && triggers_draw->integer ) || ( brush->type == CLIP_BRUSH && clips_draw->integer ) || ( brush->type == SLICK_BRUSH && slicks_draw->integer ) )
-		{
-			for (int i = 0; i < brush->numFaces; i++)
-				re.AddPolyToScene(brush->shader, brush->faces[i].numVerts, brush->faces[i].verts, 1);
-		}
-		brush = brush->next;
+	if (triggers_draw->integer) {
+		draw(trigger_head, trigger_shader);
+	}
+	if (clips_draw->integer) {
+		draw(clip_head, clip_shader);
+	}
+	if (slicks_draw->integer) {
+		draw(slick_head, slick_shader);
 	}
 }
 
@@ -142,7 +146,7 @@ static void add_triggers(void) {
 		if (is_trigger && model > 0) {
 			cLeaf_t *leaf = &cm.cmodels[model].leaf;
 			for (int i = 0; i < leaf->numLeafBrushes; i++) {
-				gen_visible_brush(cm.leafbrushes[leaf->firstLeafBrush + i], origin, TRIGGER_BRUSH, trigger_color, trigger_shader);
+				gen_visible_brush(cm.leafbrushes[leaf->firstLeafBrush + i], origin, TRIGGER_BRUSH, trigger_color);
 			}
 		}
 	}
@@ -152,7 +156,7 @@ static void add_clips(void) {
 	for (int i = 0; i < cm.numBrushes; i++) {
 		cbrush_t *brush = &cm.brushes[i];
 		if (brush->contents & CONTENTS_PLAYERCLIP) {
-			gen_visible_brush(i, vec3_origin, CLIP_BRUSH, clip_color, clip_shader);
+			gen_visible_brush(i, vec3_origin, CLIP_BRUSH, clip_color);
 		}
 	}
 }
@@ -167,18 +171,16 @@ static void add_slicks(void) {
 		for (int s = 0; s < brush->numsides; s++) {
 			cbrushside_t* side = &brush->sides[s];
 			if (side->surfaceFlags & SURF_SLICK && walkable(side->plane)) {
-				gen_visible_brush(i, vec3_origin, SLICK_BRUSH, slick_color, slick_shader);
+				gen_visible_brush(i, vec3_origin, SLICK_BRUSH, slick_color);
 				break;
 			}
 		}
 	}
 }
 
-static void gen_visible_brush(int brushnum, vec3_t origin, visBrushType_t type, vec4_t color, qhandle_t shader) {
+static void gen_visible_brush(int brushnum, vec3_t origin, visBrushType_t type, vec4_t color) {
 	cbrush_t *brush = &cm.brushes[brushnum];
 	visBrushNode_t *node = malloc(sizeof(visBrushNode_t));
-	node->type = type;
-	node->shader = shader;
 	node->numFaces = brush->numsides;
 	node->faces = malloc(node->numFaces * sizeof(visFace_t));
 	for (int i = 0; i < node->numFaces; i++) {
@@ -238,8 +240,22 @@ static void gen_visible_brush(int brushnum, vec3_t origin, visBrushType_t type, 
 		qsort(face->verts, face->numVerts, sizeof(face->verts[0]), winding_cmp);
 	}
 
-	node->next = head;
-	head = node;
+	visBrushNode_t **head = NULL;
+	switch (type)
+	{
+	case TRIGGER_BRUSH:
+		head = &trigger_head;
+		break;
+	case CLIP_BRUSH:
+		head = &clip_head;
+		break;
+	case SLICK_BRUSH:
+		head = &slick_head;
+		break;
+	};
+	assert(head);
+	node->next = *head;
+	*head = node;
 }
 
 static qboolean intersect_planes(cplane_t *p1, cplane_t *p2, cplane_t *p3, vec3_t p) {
@@ -341,4 +357,14 @@ static void free_vis_brushes(visBrushNode_t *brushes) {
 
 	free(brushes->faces);
 	free(brushes);
+}
+
+static void draw(visBrushNode_t *brush, qhandle_t shader) {
+	while (brush) {
+		for (int i = 0; i < brush->numFaces; ++i) {
+			if (!brush->faces[i].numVerts) continue;
+			re.AddPolyToScene(shader, brush->faces[i].numVerts, brush->faces[i].verts, 1);
+		}
+		brush = brush->next;
+	}
 }
