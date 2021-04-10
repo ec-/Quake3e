@@ -186,7 +186,7 @@ typedef struct {
 		byte	_6[16];
 #endif
 	} ipv;
-	unsigned short	port;
+	uint16_t	port;
 #ifdef USE_IPV6
 	unsigned long	scope_id;	// Needed for IPv6 link-local addresses
 #endif
