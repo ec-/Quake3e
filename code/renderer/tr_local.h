@@ -315,7 +315,7 @@ typedef struct {
 	waveForm_t		alphaWave;
 	alphaGen_t		alphaGen;
 
-	byte			constantColor[4];			// for CGEN_CONST and AGEN_CONST
+	color4ub_t		constantColor;				// for CGEN_CONST and AGEN_CONST
 
 	unsigned		stateBits;					// GLS_xxxx mask
 	GLint			mtEnv;						// 0, GL_MODULATE, GL_ADD, GL_DECAL
@@ -518,7 +518,7 @@ typedef struct {
 	int			originalBrushNumber;
 	vec3_t		bounds[2];
 
-	unsigned	colorInt;				// in packed byte format
+	color4ub_t	colorInt;				// in packed byte format
 	vec4_t		color;
 	float		tcScale;				// texture coordinate vector scales
 	fogParms_t	parms;
@@ -1036,7 +1036,7 @@ typedef struct {
 	qboolean	skyRenderedThisView;	// flag for drawing sun
 
 	qboolean	projection2D;	// if qtrue, drawstretchpic doesn't need to change modes
-	byte		color2D[4];
+	color4ub_t	color2D;
 	qboolean	doneBloom;		// done bloom this frame
 	qboolean	doneSurfaces;   // done any 3d surfaces already
 	trRefEntity_t	entity2D;	// currentEntity will point at this when doing 2D rendering
@@ -1446,7 +1446,6 @@ TESSELATOR/SHADER DECLARATIONS
 
 ====================================================================
 */
-typedef byte color4ub_t[4];
 
 typedef struct stageVars
 {

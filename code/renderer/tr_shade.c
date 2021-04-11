@@ -274,7 +274,7 @@ static void DrawMultitextured( const shaderCommands_t *input, int stage ) {
 		GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
 
 		qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoordPtr[0] );
-		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors );
+		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors[0].rgba );
 
 		GL_ClientState( 1, CLS_TEXCOORD_ARRAY );
 		qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoordPtr[1] );
@@ -478,7 +478,7 @@ static void RB_FogPass( void ) {
 	fog = tr.world->fogs + tess.fogNum;
 
 	for ( i = 0; i < tess.numVertexes; i++ ) {
-		* ( int * )&tess.svars.colors[i] = fog->colorInt;
+		tess.svars.colors[i].u32 = fog->colorInt.u32;
 	}
 
 	RB_CalcFogTexCoords( ( float * ) tess.svars.texcoords[0] );
@@ -486,7 +486,7 @@ static void RB_FogPass( void ) {
 	GL_ClientState( 1, CLS_NONE );
 	GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
 
-	qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors );
+	qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors[0].rgba );
 	qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[0] );
 
 	GL_SelectTexture( 0 );
@@ -534,7 +534,7 @@ void R_ComputeColors( const shaderStage_t *pStage )
 			break;
 		case CGEN_CONST:
 			for ( i = 0; i < tess.numVertexes; i++ ) {
-				*(int *)tess.svars.colors[i] = *(int *)pStage->constantColor;
+				tess.svars.colors[i].u32 = pStage->constantColor.u32;
 			}
 			break;
 		case CGEN_VERTEX:
@@ -546,10 +546,10 @@ void R_ComputeColors( const shaderStage_t *pStage )
 			{
 				for ( i = 0; i < tess.numVertexes; i++ )
 				{
-					tess.svars.colors[i][0] = tess.vertexColors[i][0] * tr.identityLight;
-					tess.svars.colors[i][1] = tess.vertexColors[i][1] * tr.identityLight;
-					tess.svars.colors[i][2] = tess.vertexColors[i][2] * tr.identityLight;
-					tess.svars.colors[i][3] = tess.vertexColors[i][3];
+					tess.svars.colors[i].rgba[0] = tess.vertexColors[i].rgba[0] * tr.identityLight;
+					tess.svars.colors[i].rgba[1] = tess.vertexColors[i].rgba[1] * tr.identityLight;
+					tess.svars.colors[i].rgba[2] = tess.vertexColors[i].rgba[2] * tr.identityLight;
+					tess.svars.colors[i].rgba[3] = tess.vertexColors[i].rgba[3];
 				}
 			}
 			break;
@@ -558,18 +558,18 @@ void R_ComputeColors( const shaderStage_t *pStage )
 			{
 				for ( i = 0; i < tess.numVertexes; i++ )
 				{
-					tess.svars.colors[i][0] = 255 - tess.vertexColors[i][0];
-					tess.svars.colors[i][1] = 255 - tess.vertexColors[i][1];
-					tess.svars.colors[i][2] = 255 - tess.vertexColors[i][2];
+					tess.svars.colors[i].rgba[0] = 255 - tess.vertexColors[i].rgba[0];
+					tess.svars.colors[i].rgba[1] = 255 - tess.vertexColors[i].rgba[1];
+					tess.svars.colors[i].rgba[2] = 255 - tess.vertexColors[i].rgba[2];
 				}
 			}
 			else
 			{
 				for ( i = 0; i < tess.numVertexes; i++ )
 				{
-					tess.svars.colors[i][0] = ( 255 - tess.vertexColors[i][0] ) * tr.identityLight;
-					tess.svars.colors[i][1] = ( 255 - tess.vertexColors[i][1] ) * tr.identityLight;
-					tess.svars.colors[i][2] = ( 255 - tess.vertexColors[i][2] ) * tr.identityLight;
+					tess.svars.colors[i].rgba[0] = ( 255 - tess.vertexColors[i].rgba[0] ) * tr.identityLight;
+					tess.svars.colors[i].rgba[1] = ( 255 - tess.vertexColors[i].rgba[1] ) * tr.identityLight;
+					tess.svars.colors[i].rgba[2] = ( 255 - tess.vertexColors[i].rgba[2] ) * tr.identityLight;
 				}
 			}
 			break;
@@ -580,18 +580,18 @@ void R_ComputeColors( const shaderStage_t *pStage )
 				fog = tr.world->fogs + tess.fogNum;
 
 				for ( i = 0; i < tess.numVertexes; i++ ) {
-					* ( int * )&tess.svars.colors[i] = fog->colorInt;
+					tess.svars.colors[i].u32 = fog->colorInt.u32;
 				}
 			}
 			break;
 		case CGEN_WAVEFORM:
-			RB_CalcWaveColor( &pStage->rgbWave, ( unsigned char * ) tess.svars.colors );
+			RB_CalcWaveColor( &pStage->rgbWave, tess.svars.colors[0].rgba );
 			break;
 		case CGEN_ENTITY:
-			RB_CalcColorFromEntity( ( unsigned char * ) tess.svars.colors );
+			RB_CalcColorFromEntity( tess.svars.colors[0].rgba );
 			break;
 		case CGEN_ONE_MINUS_ENTITY:
-			RB_CalcColorFromOneMinusEntity( ( unsigned char * ) tess.svars.colors );
+			RB_CalcColorFromOneMinusEntity( tess.svars.colors[0].rgba );
 			break;
 	}
 
@@ -606,36 +606,36 @@ void R_ComputeColors( const shaderStage_t *pStage )
 		if ( ( pStage->rgbGen == CGEN_VERTEX && tr.identityLight != 1 ) ||
 			 pStage->rgbGen != CGEN_VERTEX ) {
 			for ( i = 0; i < tess.numVertexes; i++ ) {
-				tess.svars.colors[i][3] = 0xff;
+				tess.svars.colors[i].rgba[3] = 255;
 			}
 		}
 		break;
 	case AGEN_CONST:
 		for ( i = 0; i < tess.numVertexes; i++ ) {
-			tess.svars.colors[i][3] = pStage->constantColor[3];
+			tess.svars.colors[i].rgba[3] = pStage->constantColor.rgba[3];
 		}
 		break;
 	case AGEN_WAVEFORM:
-		RB_CalcWaveAlpha( &pStage->alphaWave, ( unsigned char * ) tess.svars.colors );
+		RB_CalcWaveAlpha( &pStage->alphaWave, tess.svars.colors[0].rgba );
 		break;
 	case AGEN_LIGHTING_SPECULAR:
-		RB_CalcSpecularAlpha( ( unsigned char * ) tess.svars.colors );
+		RB_CalcSpecularAlpha( tess.svars.colors[0].rgba );
 		break;
 	case AGEN_ENTITY:
-		RB_CalcAlphaFromEntity( ( unsigned char * ) tess.svars.colors );
+		RB_CalcAlphaFromEntity( tess.svars.colors[0].rgba );
 		break;
 	case AGEN_ONE_MINUS_ENTITY:
-		RB_CalcAlphaFromOneMinusEntity( ( unsigned char * ) tess.svars.colors );
+		RB_CalcAlphaFromOneMinusEntity( tess.svars.colors[0].rgba );
 		break;
 	case AGEN_VERTEX:
 		for ( i = 0; i < tess.numVertexes; i++ ) {
-			tess.svars.colors[i][3] = tess.vertexColors[i][3];
+			tess.svars.colors[i].rgba[3] = tess.vertexColors[i].rgba[3];
 		}
 		break;
 	case AGEN_ONE_MINUS_VERTEX:
 		for ( i = 0; i < tess.numVertexes; i++ )
 		{
-			tess.svars.colors[i][3] = 255 - tess.vertexColors[i][3];
+			tess.svars.colors[i].rgba[3] = 255 - tess.vertexColors[i].rgba[3];
 		}
 		break;
 	case AGEN_PORTAL:
@@ -665,7 +665,7 @@ void R_ComputeColors( const shaderStage_t *pStage )
 					alpha = len * 0xff;
 				}
 
-				tess.svars.colors[i][3] = alpha;
+				tess.svars.colors[i].rgba[3] = alpha;
 			}
 		}
 		break;
@@ -679,13 +679,13 @@ void R_ComputeColors( const shaderStage_t *pStage )
 		switch ( pStage->adjustColorsForFog )
 		{
 		case ACFF_MODULATE_RGB:
-			RB_CalcModulateColorsByFog( ( unsigned char * ) tess.svars.colors );
+			RB_CalcModulateColorsByFog( tess.svars.colors[0].rgba );
 			break;
 		case ACFF_MODULATE_ALPHA:
-			RB_CalcModulateAlphasByFog( ( unsigned char * ) tess.svars.colors );
+			RB_CalcModulateAlphasByFog( tess.svars.colors[0].rgba );
 			break;
 		case ACFF_MODULATE_RGBA:
-			RB_CalcModulateRGBAsByFog( ( unsigned char * ) tess.svars.colors );
+			RB_CalcModulateRGBAsByFog( tess.svars.colors[0].rgba );
 			break;
 		case ACFF_NONE:
 			break;
@@ -838,7 +838,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 				GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
 
 				qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoordPtr[0] );
-				qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors );
+				qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors[0].rgba );
 			}
 
 			//
@@ -934,7 +934,7 @@ void RB_StageIteratorGeneric( void )
 		if ( tess.xstages[0] )
 		{
 			R_ComputeColors( tess.xstages[0] );
-			qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors );
+			qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors[0].rgba );
 			R_ComputeTexCoords( 0, &tess.xstages[0]->bundle[0] );
 			qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoordPtr[0] );
 			if ( shader->multitextureEnv )

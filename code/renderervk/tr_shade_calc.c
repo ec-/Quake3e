@@ -410,7 +410,7 @@ static void AutospriteDeform( void ) {
 			VectorScale(up, axisLength, up);
 		}
 
-		RB_AddQuadStamp( mid, left, up, tess.vertexColors[i] );
+		RB_AddQuadStamp( mid, left, up, tess.vertexColors[i].rgba );
 	}
 }
 
@@ -599,14 +599,13 @@ COLORS
 */
 void RB_CalcColorFromEntity( unsigned char *dstColors )
 {
+	uint32_t c, *pColors = (uint32_t *)dstColors;
 	int	i;
-	int *pColors = ( int * ) dstColors;
-	int c;
 
 	if ( !backEnd.currentEntity )
 		return;
 
-	c = * ( int * ) backEnd.currentEntity->e.shaderRGBA;
+	c = backEnd.currentEntity->e.shader.u32;
 
 	for ( i = 0; i < tess.numVertexes; i++, pColors++ )
 	{
@@ -621,23 +620,20 @@ void RB_CalcColorFromEntity( unsigned char *dstColors )
 void RB_CalcColorFromOneMinusEntity( unsigned char *dstColors )
 {
 	int	i;
-	int *pColors = ( int * ) dstColors;
-	unsigned char invModulate[4];
-	int c;
+	uint32_t *pColors = ( uint32_t * ) dstColors;
+	color4ub_t invModulate;
 
 	if ( !backEnd.currentEntity )
 		return;
 
-	invModulate[0] = 255 - backEnd.currentEntity->e.shaderRGBA[0];
-	invModulate[1] = 255 - backEnd.currentEntity->e.shaderRGBA[1];
-	invModulate[2] = 255 - backEnd.currentEntity->e.shaderRGBA[2];
-	invModulate[3] = 255 - backEnd.currentEntity->e.shaderRGBA[3];	// this trashes alpha, but the AGEN block fixes it
-
-	c = * ( int * ) invModulate;
+	invModulate.rgba[0] = 255 - backEnd.currentEntity->e.shader.rgba[0];
+	invModulate.rgba[1] = 255 - backEnd.currentEntity->e.shader.rgba[1];
+	invModulate.rgba[2] = 255 - backEnd.currentEntity->e.shader.rgba[2];
+	invModulate.rgba[3] = 255 - backEnd.currentEntity->e.shader.rgba[3];	// this trashes alpha, but the AGEN block fixes it
 
 	for ( i = 0; i < tess.numVertexes; i++, pColors++ )
 	{
-		*pColors = c;
+		*pColors = invModulate.u32;
 	}
 }
 
@@ -656,7 +652,7 @@ void RB_CalcAlphaFromEntity( unsigned char *dstColors )
 
 	for ( i = 0; i < tess.numVertexes; i++, dstColors += 4 )
 	{
-		*dstColors = backEnd.currentEntity->e.shaderRGBA[3];
+		*dstColors = backEnd.currentEntity->e.shader.rgba[3];
 	}
 }
 
@@ -675,7 +671,7 @@ void RB_CalcAlphaFromOneMinusEntity( unsigned char *dstColors )
 
 	for ( i = 0; i < tess.numVertexes; i++, dstColors += 4 )
 	{
-		*dstColors = 0xff - backEnd.currentEntity->e.shaderRGBA[3];
+		*dstColors = 0xff - backEnd.currentEntity->e.shader.rgba[3];
 	}
 }
 
@@ -685,12 +681,10 @@ void RB_CalcAlphaFromOneMinusEntity( unsigned char *dstColors )
 */
 void RB_CalcWaveColor( const waveForm_t *wf, unsigned char *dstColors )
 {
-	int i;
-	int v;
+	int v, i;
 	float glow;
-	int *colors = ( int * ) dstColors;
-	byte	color[4];
-
+	uint32_t *colors = ( uint32_t * ) dstColors;
+	color4ub_t color;
 
 	if ( wf->func == GF_NOISE ) {
 		glow = wf->base + R_NoiseGet4f( 0, 0, 0, ( tess.shaderTime + wf->phase ) * wf->frequency ) * wf->amplitude;
@@ -705,12 +699,11 @@ void RB_CalcWaveColor( const waveForm_t *wf, unsigned char *dstColors )
 	else if ( v > 255 )
 		v = 255;
 
-	color[0] = color[1] = color[2] = v;
-	color[3] = 255;
-	v = *(int *)color;
+	color.rgba[0] = color.rgba[1] = color.rgba[2] = v;
+	color.rgba[3] = 255;
 	
 	for ( i = 0; i < tess.numVertexes; i++, colors++ ) {
-		*colors = v;
+		*colors = color.u32;
 	}
 }
 

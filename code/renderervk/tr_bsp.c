@@ -661,7 +661,7 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 			cv->points[i][3+j] = LittleFloat( verts[i].st[j] );
 			cv->points[i][5+j] = LittleFloat( verts[i].lightmap[j] );
 		}
-		R_ColorShiftLightingBytes( verts[i].color, (byte *)&cv->points[i][7] );
+		R_ColorShiftLightingBytes( verts[i].color.rgba, (byte *)&cv->points[i][7] );
 		if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
 			// adjust lightmap coords
 			cv->points[i][5] = cv->points[i][5] * tr.lightmapScale[0] + lightmapX;
@@ -772,7 +772,7 @@ static void ParseMesh( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 			points[i].st[j] = LittleFloat( verts[i].st[j] );
 			points[i].lightmap[j] = LittleFloat( verts[i].lightmap[j] );
 		}
-		R_ColorShiftLightingBytes( verts[i].color, points[i].color );
+		R_ColorShiftLightingBytes( verts[i].color.rgba, points[i].color.rgba );
 		if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
 			// adjust lightmap coords
 			points[i].lightmap[0] = points[i].lightmap[0] * tr.lightmapScale[0] + lightmapX;
@@ -856,7 +856,7 @@ static void ParseTriSurf( const dsurface_t *ds, const drawVert_t *verts, msurfac
 			tri->verts[i].lightmap[j] = LittleFloat( verts[i].lightmap[j] );
 		}
 
-		R_ColorShiftLightingBytes( verts[i].color, tri->verts[i].color );
+		R_ColorShiftLightingBytes( verts[i].color.rgba, tri->verts[i].color.rgba );
 		if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
 			// adjust lightmap coords
 			tri->verts[i].lightmap[0] = tri->verts[i].lightmap[0] * tr.lightmapScale[0] + lightmapX;
@@ -2034,11 +2034,13 @@ static void R_LoadFogs( const lump_t *l, const lump_t *brushesLump, const lump_t
 
 		out->parms = shader->fogParms;
 
-		out->colorInt = ColorBytes4( fogColor[0] * tr.identityLight,
-			fogColor[1] * tr.identityLight, fogColor[2] * tr.identityLight, 1.0 );
+		out->colorInt.rgba[0] = ( fogColor[0] * tr.identityLight ) * 255.0f;
+		out->colorInt.rgba[1] = ( fogColor[1] * tr.identityLight ) * 255.0f;
+		out->colorInt.rgba[2] = ( fogColor[2] * tr.identityLight ) * 255.0f;
+		out->colorInt.rgba[3] = 255;
 
 		for ( n = 0; n < 4; n++ )
-			out->color[ n ] = ( ( out->colorInt >> (n*8) ) & 255 ) / 255.0f;
+			out->color[ n ] = (float) out->colorInt.rgba[i] / 255.0f;
 
 		d = shader->fogParms.depthForOpaque < 1 ? 1 : shader->fogParms.depthForOpaque;
 		out->tcScale = 1.0f / ( d * 8 );

@@ -187,6 +187,12 @@ typedef union floatint_u
 }
 floatint_t;
 
+typedef union {
+	byte rgba[4];
+	uint32_t u32;
+} color4ub_t;
+
+
 typedef int		qhandle_t;
 typedef int		sfxHandle_t;
 typedef int		fileHandle_t;

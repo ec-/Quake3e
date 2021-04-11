@@ -123,7 +123,7 @@ static void R_CalcShadowEdges( void ) {
 	colors = &tess.svars.colors[0][0]; // we need at least 2x SHADER_MAX_VERTEXES there
 
 	for ( i = 0; i < tess.numVertexes; i++ ) {
-		Vector4Set(colors[i], 50, 50, 50, 255);
+		Vector4Set( colors[i].rgba, 50, 50, 50, 255 );
 	}
 #endif
 }
@@ -320,7 +320,7 @@ void RB_ShadowFinish( void ) {
 	for ( i = 0; i < 4; i++ )
 	{
 		VectorCopy( verts[i], tess.xyz[i] );
-		Vector4Set( tess.svars.colors[0][i], 153, 153, 153, 255 );
+		Vector4Set( tess.svars.colors[0][i].rgba, 153, 153, 153, 255 );
 	}
 
 	tess.numVertexes = 4;

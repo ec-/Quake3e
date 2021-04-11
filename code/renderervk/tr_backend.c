@@ -1152,10 +1152,10 @@ static const void *RB_SetColor( const void *data ) {
 
 	cmd = (const setColorCommand_t *)data;
 
-	backEnd.color2D[0] = cmd->color[0] * 255;
-	backEnd.color2D[1] = cmd->color[1] * 255;
-	backEnd.color2D[2] = cmd->color[2] * 255;
-	backEnd.color2D[3] = cmd->color[3] * 255;
+	backEnd.color2D.rgba[0] = cmd->color[0] * 255;
+	backEnd.color2D.rgba[1] = cmd->color[1] * 255;
+	backEnd.color2D.rgba[2] = cmd->color[2] * 255;
+	backEnd.color2D.rgba[3] = cmd->color[3] * 255;
 
 	return (const void *)(cmd + 1);
 }
@@ -1210,10 +1210,10 @@ static const void *RB_StretchPic( const void *data ) {
 	tess.indexes[ numIndexes + 4 ] = numVerts + 0;
 	tess.indexes[ numIndexes + 5 ] = numVerts + 1;
 
-	*(int *)tess.vertexColors[ numVerts ] =
-		*(int *)tess.vertexColors[ numVerts + 1 ] =
-		*(int *)tess.vertexColors[ numVerts + 2 ] =
-		*(int *)tess.vertexColors[ numVerts + 3 ] = *(int *)backEnd.color2D;
+	tess.vertexColors[ numVerts ].u32 =
+		tess.vertexColors[ numVerts + 1 ].u32 =
+		tess.vertexColors[ numVerts + 2 ].u32 =
+		tess.vertexColors[ numVerts + 3 ].u32 = backEnd.color2D.u32;
 
 	tess.xyz[ numVerts ][0] = cmd->x;
 	tess.xyz[ numVerts ][1] = cmd->y;
@@ -1325,10 +1325,10 @@ static void RB_DebugPolygon( int color, int numPoints, float *points ) {
 	for (i = 0; i < numPoints; i++) {
 		VectorCopy(&points[3*i], tess.xyz[i]);
 
-		tess.svars.colors[0][i][0] = (color&1) ? 255 : 0;
-		tess.svars.colors[0][i][1] = (color&2) ? 255 : 0;
-		tess.svars.colors[0][i][2] = (color&4) ? 255 : 0;
-		tess.svars.colors[0][i][3] = 255;
+		tess.svars.colors[0][i].rgba[0] = (color&1) ? 255 : 0;
+		tess.svars.colors[0][i].rgba[1] = (color&2) ? 255 : 0;
+		tess.svars.colors[0][i].rgba[2] = (color&4) ? 255 : 0;
+		tess.svars.colors[0][i].rgba[3] = 255;
 	}
 	tess.numVertexes = numPoints;
 
@@ -1544,7 +1544,7 @@ void RB_ShowImages( void )
 
 		GL_Bind( image );
 
-		Com_Memset( tess.svars.colors[0], 255, 4 * sizeof( color4ub_t ) );
+		Com_Memset( tess.svars.colors[0][0].rgba, 255, 4 * sizeof( color4ub_t ) );
 
 		tess.numVertexes = 4;
 

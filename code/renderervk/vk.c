@@ -6065,7 +6065,7 @@ void vk_bind_geometry( uint32_t flags )
 		}
 
 		if ( flags & TESS_RGBA0 ) {
-			vk_bind_attr(1, sizeof( color4ub_t ), tess.svars.colors[0]);
+			vk_bind_attr(1, sizeof( color4ub_t ), tess.svars.colors[0][0].rgba);
 		}
 
 		if ( flags & TESS_ST0 ) {
@@ -6085,11 +6085,11 @@ void vk_bind_geometry( uint32_t flags )
 		}
 
 		if ( flags & TESS_RGBA1 ) {
-			vk_bind_attr(6, sizeof( color4ub_t ), tess.svars.colors[1]);
+			vk_bind_attr(6, sizeof( color4ub_t ), tess.svars.colors[1][0].rgba);
 		}
 
 		if ( flags & TESS_RGBA2 ) {
-			vk_bind_attr(7, sizeof( color4ub_t ), tess.svars.colors[2]);
+			vk_bind_attr(7, sizeof( color4ub_t ), tess.svars.colors[2][0].rgba);
 		}
 
 		qvkCmdBindVertexBuffers( vk.cmd->command_buffer, bind_base, bind_count, shade_bufs, vk.cmd->buf_offset + bind_base );

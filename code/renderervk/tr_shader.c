@@ -873,9 +873,9 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 				VectorClear( color );
 
 				ParseVector( text, 3, color );
-				stage->bundle[0].constantColor[0] = 255 * color[0];
-				stage->bundle[0].constantColor[1] = 255 * color[1];
-				stage->bundle[0].constantColor[2] = 255 * color[2];
+				stage->bundle[0].constantColor.rgba[0] = 255 * color[0];
+				stage->bundle[0].constantColor.rgba[1] = 255 * color[1];
+				stage->bundle[0].constantColor.rgba[2] = 255 * color[2];
 
 				stage->bundle[0].rgbGen = CGEN_CONST;
 			}
@@ -940,7 +940,7 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 			else if ( !Q_stricmp( token, "const" ) )
 			{
 				token = COM_ParseExt( text, qfalse );
-				stage->bundle[0].constantColor[3] = 255 * Q_atof( token );
+				stage->bundle[0].constantColor.rgba[3] = 255 * Q_atof( token );
 				stage->bundle[0].alphaGen = AGEN_CONST;
 			}
 			else if ( !Q_stricmp( token, "identity" ) )
@@ -2456,7 +2456,7 @@ static qboolean EqualRGBgen( const shaderStage_t *st1, const shaderStage_t *st2 
 	}
 
 	if ( st1->bundle[0].rgbGen == CGEN_CONST ) {
-		if ( memcmp( st1->bundle[0].constantColor, st2->bundle[0].constantColor, 4 ) != 0 ) {
+		if ( st1->bundle[0].constantColor.u32 != st2->bundle[0].constantColor.u32 ) {
 			return qfalse;
 		}
 	}
@@ -2473,7 +2473,7 @@ static qboolean EqualRGBgen( const shaderStage_t *st1, const shaderStage_t *st2 
 
 	if ( st1->bundle[0].alphaGen == AGEN_CONST ) {
 		if ( st1->bundle[0].rgbGen != CGEN_CONST ) {
-			if ( st1->bundle[0].constantColor[3] != st2->bundle[0].constantColor[3] ) {
+			if ( st1->bundle[0].constantColor.rgba[3] != st2->bundle[0].constantColor.rgba[3] ) {
 				return qfalse;
 			}
 		}

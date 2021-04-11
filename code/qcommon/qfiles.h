@@ -446,10 +446,8 @@ typedef struct {
 	float		st[2];
 	float		lightmap[2];
 	vec3_t		normal;
-	byte		color[4];
+	color4ub_t	color;
 } drawVert_t;
-
-#define drawVert_t_cleared(x) drawVert_t (x) = {{0, 0, 0}, {0, 0}, {0, 0}, {0, 0, 0}, {0, 0, 0, 0}}
 
 typedef enum {
 	MST_BAD,
