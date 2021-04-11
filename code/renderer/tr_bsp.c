@@ -1989,7 +1989,7 @@ static void R_LoadFogs( const lump_t *l, const lump_t *brushesLump, const lump_t
 		out->colorInt.rgba[3] = 255;
 
 		for ( n = 0; n < 4; n++ )
-			out->color[ n ] = (float) out->colorInt.rgba[i] / 255.0f;
+			out->color[ n ] = (float) out->colorInt.rgba[ n ] / 255.0f;
 
 		d = shader->fogParms.depthForOpaque < 1 ? 1 : shader->fogParms.depthForOpaque;
 		out->tcScale = 1.0f / ( d * 8 );
