@@ -1898,14 +1898,13 @@ static VkSampler vk_find_sampler( const Vk_Sampler_Def *def ) {
 	VkFilter mag_filter;
 	VkFilter min_filter;
 	VkSamplerMipmapMode mipmap_mode;
-	qboolean max_lod_0_25 = qfalse; // used to emulate OpenGL's GL_LINEAR/GL_NEAREST minification filter
+	float maxLod;
 	int i;
 
 	// Look for sampler among existing samplers.
-	for (i = 0; i < vk_world.num_samplers; i++) {
+	for ( i = 0; i < vk_world.num_samplers; i++ ) {
 		const Vk_Sampler_Def *cur_def = &vk_world.sampler_defs[i];
-		if ( memcmp( cur_def, def, sizeof( *def ) ) == 0 )
-		{
+		if ( memcmp( cur_def, def, sizeof( *def ) ) == 0 ) {
 			return vk_world.samplers[i];
 		}
 	}
@@ -1926,14 +1925,16 @@ static VkSampler vk_find_sampler( const Vk_Sampler_Def *def ) {
 		return VK_NULL_HANDLE;
 	}
 
+	maxLod = vk.maxLod;
+
 	if (def->gl_min_filter == GL_NEAREST) {
 		min_filter = VK_FILTER_NEAREST;
 		mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-		max_lod_0_25 = qtrue;
+		maxLod = 0.25f; // used to emulate OpenGL's GL_LINEAR/GL_NEAREST minification filter
 	} else if (def->gl_min_filter == GL_LINEAR) {
 		min_filter = VK_FILTER_LINEAR;
 		mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-		max_lod_0_25 = qtrue;
+		maxLod = 0.25f; // used to emulate OpenGL's GL_LINEAR/GL_NEAREST minification filter
 	} else if (def->gl_min_filter == GL_NEAREST_MIPMAP_NEAREST) {
 		min_filter = VK_FILTER_NEAREST;
 		mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
@@ -1949,6 +1950,10 @@ static VkSampler vk_find_sampler( const Vk_Sampler_Def *def ) {
 	} else {
 		ri.Error(ERR_FATAL, "vk_find_sampler: invalid gl_min_filter");
 		return VK_NULL_HANDLE;
+	}
+
+	if ( def->max_lod_1_0 ) {
+		maxLod = 1.0f;
 	}
 
 	desc.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -1975,7 +1980,7 @@ static VkSampler vk_find_sampler( const Vk_Sampler_Def *def ) {
 	desc.compareEnable = VK_FALSE;
 	desc.compareOp = VK_COMPARE_OP_ALWAYS;
 	desc.minLod = 0.0f;
-	desc.maxLod = (def->max_lod_1_0) ? 1.0f : (max_lod_0_25 ? 0.25f : vk.maxLodBias);
+	desc.maxLod = maxLod;
 	desc.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 	desc.unnormalizedCoordinates = VK_FALSE;
 
@@ -3458,7 +3463,6 @@ void vk_initialize( void )
 	vk.storage_alignment = MAX( props.limits.minStorageBufferOffsetAlignment, sizeof( uint32_t ) );
 
 	vk.maxAnisotropy = props.limits.maxSamplerAnisotropy;
-	vk.maxLodBias = props.limits.maxSamplerLodBias;
 
 	vk.blitFilter = GL_NEAREST;
 	vk.windowAdjusted = qfalse;
@@ -3511,6 +3515,8 @@ void vk_initialize( void )
 
 	// default chunk size, may be doubled on demand
 	vk.image_chunk_size = IMAGE_CHUNK_SIZE;
+
+	vk.maxLod = 1 + Q_log2( glConfig.maxTextureSize );
 
 	if ( props.limits.maxPerStageDescriptorSamplers != 0xFFFFFFFF )
 		glConfig.numTextureUnits = props.limits.maxPerStageDescriptorSamplers;
@@ -6205,7 +6211,11 @@ void vk_draw_geometry( Vk_Depth_Range depth_range, qboolean indexed ) {
 		vk.cmd->depth_range = depth_range;
 
 		get_scissor_rect( &scissor_rect );
-		qvkCmdSetScissor( vk.cmd->command_buffer, 0, 1, &scissor_rect );
+
+		if ( memcmp( &vk.cmd->scissor_rect, &scissor_rect, sizeof( scissor_rect ) ) != 0 ) {
+			qvkCmdSetScissor( vk.cmd->command_buffer, 0, 1, &scissor_rect );
+			vk.cmd->scissor_rect = scissor_rect;
+		}
 
 		get_viewport( &viewport, depth_range );
 		qvkCmdSetViewport( vk.cmd->command_buffer, 0, 1, &viewport );
@@ -6474,7 +6484,9 @@ void vk_begin_frame( void )
 
 	Com_Memset( &vk.cmd->descriptor_set, 0, sizeof( vk.cmd->descriptor_set ) );
 	vk.cmd->descriptor_set.start = ~0U;
-	vk.cmd->descriptor_set.end = 0;
+	//vk.cmd->descriptor_set.end = 0;
+
+	Com_Memset( &vk.cmd->scissor_rect, 0, sizeof( vk.cmd->scissor_rect ) );
 
 	vk_update_descriptor( 2, tr.whiteImage->descriptor );
 	vk_update_descriptor( 3, tr.whiteImage->descriptor );
