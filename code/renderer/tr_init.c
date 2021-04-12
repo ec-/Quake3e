@@ -624,6 +624,22 @@ static void InitOpenGL( void )
 		QGL_SetRenderScale( qfalse );
 	}
 
+	if ( !qglViewport ) // might happen after REF_KEEP_WINDOW
+	{
+		const char *err = R_ResolveSymbols( core_procs, ARRAY_LEN( core_procs ) );
+		if ( err )
+			ri.Error( ERR_FATAL, "Error resolving core OpenGL function '%s'", err );
+
+		R_InitExtensions();
+
+		QGL_InitARB();
+
+		// print info
+		GfxInfo();
+
+		gls.initTime = ri.Milliseconds();
+	}
+
 	VarInfo();
 
 	// set default state
