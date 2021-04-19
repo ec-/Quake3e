@@ -1300,6 +1300,12 @@ static void RE_SyncRender( void )
 }
 
 
+static const cplane_t *RE_GetFrustum( void )
+{
+	return tr.viewParms.frustum;
+}
+
+
 /*
 ===============
 R_Init
@@ -1542,6 +1548,8 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.GetConfig = RE_GetConfig;
 	re.VertexLighting = RE_VertexLighting;
 	re.SyncRender = RE_SyncRender;
+
+	re.GetFrustum = RE_GetFrustum;
 
 	return &re;
 }

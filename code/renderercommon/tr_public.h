@@ -121,6 +121,7 @@ typedef struct {
 	void	(*VertexLighting)( qboolean allowed );
 	void	(*SyncRender)( void );
 
+	const cplane_t *(*GetFrustum)( void );
 
 } refexport_t;
 

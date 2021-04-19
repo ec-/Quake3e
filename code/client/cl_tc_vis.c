@@ -17,6 +17,8 @@ typedef enum {TRIGGER_BRUSH, CLIP_BRUSH, SLICK_BRUSH} visBrushType_t;
 typedef struct {
 	int numVerts;
 	polyVert_t *verts;
+	vec3_t mins;
+	vec3_t maxs;
 } visFace_t;
 
 typedef struct visBrushNode_s {
@@ -66,6 +68,8 @@ static qhandle_t slick_shader;
 static vec4_t trigger_color = { 0, 128, 0, 255 };
 static vec4_t clip_color = { 128, 0, 0, 255 };
 static vec4_t slick_color = { 0, 64, 128, 255 };
+
+static const cplane_t *frustum;
 
 void tc_vis_init(void) {
 	free_vis_brushes(trigger_head);
@@ -232,8 +236,11 @@ static void gen_visible_brush(int brushnum, vec3_t origin, visBrushType_t type, 
 		visFace_t *face = &node->faces[i];
 		VectorCopy(brush->sides[i].plane->normal, w_normal);
 		VectorClear(w_center);
-		for (int j = 0; j < face->numVerts; j++)
+		ClearBounds(face->mins, face->maxs);
+		for (int j = 0; j < face->numVerts; j++) {
 			VectorAdd(w_center, face->verts[j].xyz, w_center);
+			AddPointToBounds(face->verts[j].xyz, face->mins, face->maxs);
+		}
 		VectorScale(w_center, 1.0f / face->numVerts, w_center);
 		VectorSubtract(face->verts[0].xyz, w_center, w_ref_vec);
 		w_ref_vec_len = VectorLength(w_ref_vec);
@@ -359,10 +366,21 @@ static void free_vis_brushes(visBrushNode_t *brushes) {
 	free(brushes);
 }
 
+static qboolean CullFace(const visFace_t *face) {
+	if (!face->numVerts) return qtrue;
+
+	for (int i = 0; i < 5; ++i) {
+		const int s = BoxOnPlaneSide(face->mins, face->maxs, frustum + i);
+		if (s == 2) return qtrue;
+	}
+	return qfalse;
+}
+
 static void draw(visBrushNode_t *brush, qhandle_t shader) {
+	frustum = re.GetFrustum();
 	while (brush) {
 		for (int i = 0; i < brush->numFaces; ++i) {
-			if (!brush->faces[i].numVerts) continue;
+			if (CullFace(brush->faces + i)) continue;
 			re.AddPolyToScene(shader, brush->faces[i].numVerts, brush->faces[i].verts, 1);
 		}
 		brush = brush->next;
