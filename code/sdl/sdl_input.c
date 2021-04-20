@@ -327,9 +327,9 @@ static keyNum_t IN_TranslateSDLToQ3Key( SDL_Keysym *keysym, qboolean down )
 
 	if ( keysym->scancode == SDL_SCANCODE_GRAVE )
 	{
-		SDL_Keycode translated = SDL_GetKeyFromScancode( SDL_SCANCODE_GRAVE );
+		//SDL_Keycode translated = SDL_GetKeyFromScancode( SDL_SCANCODE_GRAVE );
 
-		if ( (translated != SDLK_CARET) || (translated == SDLK_CARET && (keysym->mod & KMOD_SHIFT)) )
+		//if ( translated == SDLK_CARET )
 		{
 			// Console keys can't be bound or generate characters
 			key = K_CONSOLE;

@@ -282,6 +282,8 @@ typedef struct vk_tess_s {
 	VkPipeline last_pipeline;
 
 	uint32_t num_indexes; // value from most recent vk_bind_index() call
+
+	VkRect2D scissor_rect;
 } vk_tess_t;
 
 
@@ -510,7 +512,7 @@ typedef struct {
 	qboolean debugMarkers;
 
 	float maxAnisotropy;
-	float maxLodBias;
+	float maxLod;
 
 	VkFormat color_format;
 	VkFormat capture_format;

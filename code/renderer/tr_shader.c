@@ -874,9 +874,9 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 				VectorClear( color );
 
 				ParseVector( text, 3, color );
-				stage->constantColor[0] = 255 * color[0];
-				stage->constantColor[1] = 255 * color[1];
-				stage->constantColor[2] = 255 * color[2];
+				stage->constantColor.rgba[0] = 255 * color[0];
+				stage->constantColor.rgba[1] = 255 * color[1];
+				stage->constantColor.rgba[2] = 255 * color[2];
 
 				stage->rgbGen = CGEN_CONST;
 			}
@@ -941,7 +941,7 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 			else if ( !Q_stricmp( token, "const" ) )
 			{
 				token = COM_ParseExt( text, qfalse );
-				stage->constantColor[3] = 255 * Q_atof( token );
+				stage->constantColor.rgba[3] = 255 * Q_atof( token );
 				stage->alphaGen = AGEN_CONST;
 			}
 			else if ( !Q_stricmp( token, "identity" ) )

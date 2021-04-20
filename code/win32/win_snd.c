@@ -389,20 +389,24 @@ static qboolean SNDDMA_InitWASAPI( void )
 
 	InitializeCriticalSection( &cs );
 
-	if ( CoCreateInstance( &CLSID_MMDeviceEnumerator, 0, CLSCTX_ALL, &IID_IMMDeviceEnumerator, (void **) &pEnumerator ) != S_OK ) {
+	hr = CoCreateInstance( &CLSID_MMDeviceEnumerator, 0, CLSCTX_ALL, &IID_IMMDeviceEnumerator, (void **) &pEnumerator );
+	if ( hr != S_OK )
+	{
 		Com_Printf( S_COLOR_YELLOW "WASAPI: CoCreateInstance() failed\n" );
 		goto error1;
 	}
 
 	hr = pEnumerator->lpVtbl->RegisterEndpointNotificationCallback( pEnumerator, (IMMNotificationClient*) &notification_client );
-	if ( hr != S_OK ) {
-		Com_Printf( S_COLOR_YELLOW "WASAPI: RegisterEndpointNotificationCallback() failed with error %08x\n", hr );
+	if ( hr != S_OK )
+	{
+		Com_Printf( S_COLOR_YELLOW "WASAPI: RegisterEndpointNotificationCallback() failed\n" );
 		goto error2;
 	}
 
 	hr = pEnumerator->lpVtbl->GetDefaultAudioEndpoint( pEnumerator, eRender, eMultimedia, &iMMDevice );
-	if ( hr != S_OK ) {
-		Com_Printf( S_COLOR_YELLOW "WASAPI: GetDefaultAudioEndpoint() failed with error %08x\n", (DWORD)hr );
+	if ( hr != S_OK )
+	{
+		Com_Printf( S_COLOR_YELLOW "WASAPI: GetDefaultAudioEndpoint() failed\n" );
 		goto error2;
 	}
 
@@ -414,7 +418,8 @@ static qboolean SNDDMA_InitWASAPI( void )
 
 	iMMDevice->lpVtbl->GetId( iMMDevice, &DeviceID );
 
-	if ( iMMDevice->lpVtbl->Activate( iMMDevice, &IID_IAudioClient, CLSCTX_ALL, 0, (void **) &iAudioClient ) != S_OK )
+	hr = iMMDevice->lpVtbl->Activate( iMMDevice, &IID_IAudioClient, CLSCTX_ALL, 0, (void **)&iAudioClient );
+	if ( hr != S_OK )
 	{
 		Com_Printf( S_COLOR_YELLOW "WASAPI: audio client activation failed\n" );
 		goto error3;

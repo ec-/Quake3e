@@ -1037,10 +1037,10 @@ static const void *RB_SetColor( const void *data ) {
 
 	cmd = (const setColorCommand_t *)data;
 
-	backEnd.color2D[0] = cmd->color[0] * 255;
-	backEnd.color2D[1] = cmd->color[1] * 255;
-	backEnd.color2D[2] = cmd->color[2] * 255;
-	backEnd.color2D[3] = cmd->color[3] * 255;
+	backEnd.color2D.rgba[0] = cmd->color[0] * 255;
+	backEnd.color2D.rgba[1] = cmd->color[1] * 255;
+	backEnd.color2D.rgba[2] = cmd->color[2] * 255;
+	backEnd.color2D.rgba[3] = cmd->color[3] * 255;
 
 	return (const void *)(cmd + 1);
 }
@@ -1090,10 +1090,10 @@ static const void *RB_StretchPic( const void *data ) {
 	tess.indexes[ numIndexes + 4 ] = numVerts + 0;
 	tess.indexes[ numIndexes + 5 ] = numVerts + 1;
 
-	*(int *)tess.vertexColors[ numVerts ] =
-		*(int *)tess.vertexColors[ numVerts + 1 ] =
-		*(int *)tess.vertexColors[ numVerts + 2 ] =
-		*(int *)tess.vertexColors[ numVerts + 3 ] = *(int *)backEnd.color2D;
+	tess.vertexColors[ numVerts ].u32 =
+		tess.vertexColors[ numVerts + 1 ].u32 =
+		tess.vertexColors[ numVerts + 2 ].u32 =
+		tess.vertexColors[ numVerts + 3 ].u32 = backEnd.color2D.u32;
 
 	tess.xyz[ numVerts ][0] = cmd->x;
 	tess.xyz[ numVerts ][1] = cmd->y;

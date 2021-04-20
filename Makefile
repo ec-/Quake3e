@@ -339,8 +339,7 @@ ifdef MINGW
     $(error Cannot find a suitable cross compiler for $(PLATFORM))
   endif
 
-  BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
-    -DUSE_ICON -DMINGW=1
+  BASE_CFLAGS += -Wall -Wimplicit -Wstrict-prototypes -DUSE_ICON -DMINGW=1
 
   BASE_CFLAGS += -Wno-unused-result
 
@@ -414,7 +413,7 @@ ifeq ($(COMPILE_PLATFORM),darwin)
 # SETUP AND BUILD -- MACOS
 #############################################################################
 
-  BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
+  BASE_CFLAGS += -Wall -Wimplicit -Wstrict-prototypes -pipe
 
   BASE_CFLAGS += -Wno-unused-result
 
@@ -449,7 +448,7 @@ else
 # SETUP AND BUILD -- *NIX PLATFORMS
 #############################################################################
 
-  BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
+  BASE_CFLAGS += -Wall -Wimplicit -Wstrict-prototypes -pipe
 
   BASE_CFLAGS += -Wno-unused-result
 
