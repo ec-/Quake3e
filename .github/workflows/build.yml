@@ -268,16 +268,16 @@ jobs:
 
       - name: Create binary archives
         run: |
-          7z a -r oDFe-linux-x86.zip            ./linux-x86/*
-          7z a -r oDFe-linux-x86_64.zip         ./linux-x86_64/*
-          7z a -r oDFe-windows-mingw-x86.zip    ./windows-mingw-x86/*
-          7z a -r oDFe-windows-mingw-x86_64.zip ./windows-mingw-x86_64/*
-          7z a -r oDFe-windows-msvc-x86.zip     ./windows-msvc-x86/*
-          7z a -r oDFe-windows-msvc-x86_64.zip  ./windows-msvc-x86_64/*
-          7z a -r oDFe-windows-msvc-arm64.zip   ./windows-msvc-arm64/*
-          7z a -r oDFe-macos-x86_64.zip         ./macos-x86_64/*
-#         7z a -r oDFe-linux-aarch64.zip        ./linux-aarch64/*
-#         7z a -r oDFe-linux-armv7.zip          ./linux-armv7/*
+          7z a -r oDFe-linux-x86.zip      ./linux-x86/*
+          7z a -r oDFe-linux-x86_64.zip   ./linux-x86_64/*
+          7z a -r oDFe-windows-x86.zip    ./windows-mingw-x86/*
+          7z a -r oDFe-windows-x86_64.zip ./windows-mingw-x86_64/*
+          7z a -r oDFe-macos-x86_64.zip   ./macos-x86_64/*
+          7z a -r oDFe-other.zip          windows-msvc-x86/
+          7z a -r oDFe-other.zip          windows-msvc-x86_64/
+          7z a -r oDFe-other.zip          windows-msvc-arm64/
+#         7z a -r oDFe-other.zip          linux-aarch64/
+#         7z a -r oDFe-other.zip          linux-armv7/
 
       - name: Create latest build
         uses: marvinpinto/action-automatic-releases@latest
@@ -297,42 +297,30 @@ jobs:
     strategy:
       matrix:
         include:
-          # - artifact_dir: linux-aarch64
-          #   artifact_name: oDFe-linux-aarch64.zip
-
-          # - artifact_dir: linux-armv7
-          #  artifact_name: oDFe-linux-armv7.zip
-
-          - artifact_dir: linux-x86
+          - artifacts: ./linux-x86/*
             artifact_name: oDFe-linux-x86.zip
 
-          - artifact_dir: linux-x86_64
+          - artifacts: ./linux-x86_64/*
             artifact_name: oDFe-linux-x86_64.zip
 
-          - artifact_dir: windows-mingw-x86
-            artifact_name: oDFe-windows-mingw-x86.zip
+          - artifacts: ./windows-mingw-x86/*
+            artifact_name: oDFe-windows-x86.zip
 
-          - artifact_dir: windows-mingw-x86_64
-            artifact_name: oDFe-windows-mingw-x86_64.zip
+          - artifacts: ./windows-mingw-x86_64/*
+            artifact_name: oDFe-windows-x86_64.zip
 
-          - artifact_dir: windows-msvc-x86
-            artifact_name: oDFe-windows-msvc-x86.zip
-
-          - artifact_dir: windows-msvc-x86_64
-            artifact_name: oDFe-windows-msvc-x86_64.zip
-
-          - artifact_dir: windows-msvc-arm64
-            artifact_name: oDFe-windows-msvc-arm64.zip
-
-          - artifact_dir: macos-x86_64
+          - artifacts: ./macos-x86_64/*
             artifact_name: oDFe-macos-x86_64.zip
+
+          - artifacts: windows-msvc-x86/ windows-msvc-x86_64/ windows-msvc-arm64/ # linux-aarch64/ linux-armv7/
+            artifact_name: oDFe-other.zip
 
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v2
 
       - name: Create archive
-        run: 7z a -r ${{ matrix.artifact_name }} ./${{ matrix.artifact_dir }}/*
+        run: 7z a -r ${{ matrix.artifact_name }} ${{ matrix.artifacts }}
 
       - name: Upload archive
         uses: "svenstaro/upload-release-action@v2"
