@@ -1442,8 +1442,8 @@ static void VkInfo_f( void )
 	ri.Printf(PRINT_ALL, "max_vertex_usage: %iKb\n", (int)((vk.stats.vertex_buffer_max + 1023) / 1024) );
 	ri.Printf(PRINT_ALL, "max_push_size: %ib\n", vk.stats.push_size_max );
 
-	ri.Printf(PRINT_ALL, "created pipelines: %i\n", vk.pipeline_create_count );
-	ri.Printf(PRINT_ALL, "allocated pipelines: %i\n", vk.pipelines_count );
+	ri.Printf(PRINT_ALL, "pipeline handles: %i\n", vk.pipeline_create_count );
+	ri.Printf(PRINT_ALL, "pipeline descriptors: %i, base: %i\n", vk.pipelines_count, vk.pipelines_world_base );
 	ri.Printf(PRINT_ALL, "image chunks: %i\n", vk_world.num_image_chunks );
 }
 #endif
