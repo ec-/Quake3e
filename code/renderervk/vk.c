@@ -124,7 +124,7 @@ PFN_vkDebugMarkerSetObjectNameEXT				qvkDebugMarkerSetObjectNameEXT;
 ////////////////////////////////////////////////////////////////////////////
 
 // forward declaration
-VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex );
+VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassIndex );
 
 static uint32_t find_memory_type( VkPhysicalDevice physical_device, uint32_t memory_type_bits, VkMemoryPropertyFlags properties ) {
 	VkPhysicalDeviceMemoryProperties memory_properties;
@@ -2474,10 +2474,6 @@ static void vk_create_shader_modules( void )
 static void vk_alloc_persistent_pipelines( void )
 {
 	unsigned int state_bits;
-	Com_Memset( &vk.pipelines, 0, sizeof( vk.pipelines ) );
-
-	vk.pipelines_count = 0;
-	vk.pipelines_world_base = 0;
 
 	{
 		// skybox
@@ -3264,17 +3260,15 @@ static void vk_create_sync_primitives( void ) {
 	desc.pNext = NULL;
 	desc.flags = 0;
 
-	// swapchain image acquired
-	VK_CHECK( qvkCreateSemaphore( vk.device, &desc, NULL, &vk.image_acquired ) );
-
-	SET_OBJECT_NAME( vk.image_acquired, "image_acquired semaphore", VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT );
-
 	// all commands submitted
 	for ( i = 0; i < NUM_COMMAND_BUFFERS; i++ )
 	{
 		desc.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 		desc.pNext = NULL;
 		desc.flags = 0;
+
+		// swapchain image acquired
+		VK_CHECK( qvkCreateSemaphore( vk.device, &desc, NULL, &vk.tess[ i ].image_acquired ) );
 
 		VK_CHECK( qvkCreateSemaphore( vk.device, &desc, NULL, &vk.tess[i].rendering_finished ) );
 
@@ -3285,6 +3279,7 @@ static void vk_create_sync_primitives( void ) {
 		VK_CHECK( qvkCreateFence( vk.device, &fence_desc, NULL, &vk.tess[i].rendering_finished_fence ) );
 		vk.tess[i].waitForFence = qtrue;
 
+		SET_OBJECT_NAME( vk.tess[i].image_acquired, va( "image_acquired semaphore %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT);
 		SET_OBJECT_NAME( vk.tess[i].rendering_finished, va( "rendering_finished semaphore %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT );
 		SET_OBJECT_NAME( vk.tess[i].rendering_finished_fence, va( "rendering_finished fence %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_FENCE_EXT );
 	}
@@ -3294,9 +3289,8 @@ static void vk_create_sync_primitives( void ) {
 static void vk_destroy_sync_primitives( void  ) {
 	uint32_t i;
 
-	qvkDestroySemaphore( vk.device, vk.image_acquired, NULL );
-
 	for ( i = 0; i < NUM_COMMAND_BUFFERS; i++ ) {
+		qvkDestroySemaphore( vk.device, vk.tess[i].image_acquired, NULL );
 		qvkDestroySemaphore( vk.device, vk.tess[i].rendering_finished, NULL );
 		qvkDestroyFence( vk.device, vk.tess[i].rendering_finished_fence, NULL );
 		vk.tess[i].waitForFence = qfalse;
@@ -3777,6 +3771,7 @@ void vk_initialize( void )
 	vk.active = qtrue;
 }
 
+
 void vk_create_pipelines( void )
 {
 	vk_alloc_persistent_pipelines();
@@ -3907,6 +3902,7 @@ static void vk_destroy_pipelines( qboolean reset )
 			if ( vk.pipelines[i].handle[j] != VK_NULL_HANDLE ) {
 				qvkDestroyPipeline( vk.device, vk.pipelines[i].handle[j], NULL );
 				vk.pipelines[i].handle[j] = VK_NULL_HANDLE;
+				vk.pipeline_create_count--;
 			}
 		}
 	}
@@ -4096,6 +4092,7 @@ void vk_release_resources( void ) {
 			if ( vk.pipelines[i].handle[j] != VK_NULL_HANDLE ) {
 				qvkDestroyPipeline( vk.device, vk.pipelines[i].handle[j], NULL );
 				vk.pipelines[i].handle[j] = VK_NULL_HANDLE;
+				vk.pipeline_create_count--;
 			}
 		}
 		Com_Memset( &vk.pipelines[i], 0, sizeof( vk.pipelines[0] ) );
@@ -4797,7 +4794,7 @@ static void push_attr( uint32_t location, uint32_t binding, VkFormat format )
 }
 
 
-VkPipeline create_pipeline( const Vk_Pipeline_Def *def, uint32_t renderPassIndex ) {
+VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassIndex ) {
 	VkShaderModule *vs_module = NULL;
 	VkShaderModule *fs_module = NULL;
 	int32_t vert_spec_data[1]; // clippping
@@ -6405,9 +6402,12 @@ void vk_begin_frame( void )
 		return;
 
 	if ( vk.cmd->waitForFence ) {
+
+		vk.cmd = &vk.tess[ vk.cmd_index++ ];
+		vk.cmd_index %= NUM_COMMAND_BUFFERS;
+
 		if ( !ri.CL_IsMinimized() ) {
-			//res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, UINT64_MAX, vk.image_acquired, VK_NULL_HANDLE, &vk.swapchain_image_index );
-			res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, 2000000000, vk.image_acquired, VK_NULL_HANDLE, &vk.swapchain_image_index );
+			res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, 5 * 1000000000LLU, vk.cmd->image_acquired, VK_NULL_HANDLE, &vk.swapchain_image_index );
 			// when running via RDP: "Application has already acquired the maximum number of images (0x2)"
 			// probably caused by "device lost" errors
 			if ( res < 0 ) {
@@ -6423,9 +6423,8 @@ void vk_begin_frame( void )
 			vk.swapchain_image_index %= vk.swapchain_image_count;
 		}
 
-		// TODO: do not switch with r_swapInterval?
-		vk.cmd = &vk.tess[ vk.cmd_index++ ];
-		vk.cmd_index %= NUM_COMMAND_BUFFERS;
+		//vk.cmd = &vk.tess[ vk.cmd_index++ ];
+		//vk.cmd_index %= NUM_COMMAND_BUFFERS;
 
 		vk.cmd->waitForFence = qfalse;
 		VK_CHECK( qvkWaitForFences( vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e10 ) );
@@ -6446,13 +6445,19 @@ void vk_begin_frame( void )
 	// Ensure visibility of geometry buffers writes.
 	//record_buffer_memory_barrier( vk.cmd->command_buffer, vk.cmd->vertex_buffer, vk.cmd->vertex_buffer_offset, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT );
 
-#if 0
-	//frameBuffer = vk.framebuffers[ vk.swapchain_image_index ];
+#if 1
+	// add explicit layout transition dependency
 	if ( vk.fboActive ) {
 		record_image_layout_transition( vk.cmd->command_buffer,
 			vk.color_image, VK_IMAGE_ASPECT_COLOR_BIT,
-			VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, //VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
+
+	} else {
+		record_image_layout_transition( vk.cmd->command_buffer,
+			vk.swapchain_images[ vk.swapchain_image_index ], VK_IMAGE_ASPECT_COLOR_BIT,
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR );
 	}
 #endif
 
@@ -6590,7 +6595,7 @@ void vk_end_frame( void )
 	submit_info.pCommandBuffers = &vk.cmd->command_buffer;
 	if ( !ri.CL_IsMinimized() ) {
 		submit_info.waitSemaphoreCount = 1;
-		submit_info.pWaitSemaphores = &vk.image_acquired;
+		submit_info.pWaitSemaphores = &vk.cmd->image_acquired;
 		submit_info.pWaitDstStageMask = &wait_dst_stage_mask;
 		submit_info.signalSemaphoreCount = 1;
 		submit_info.pSignalSemaphores = &vk.cmd->rendering_finished;
