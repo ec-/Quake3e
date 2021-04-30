@@ -594,6 +594,7 @@ Con_Shutdown
 void Con_Shutdown( void )
 {
 	Cmd_RemoveCommand( "clear" );
+	Cmd_RemoveCommand( "clearnotify" );
 	Cmd_RemoveCommand( "condump" );
 	Cmd_RemoveCommand( "toggleconsole" );
 	Cmd_RemoveCommand( "messagemode" );
