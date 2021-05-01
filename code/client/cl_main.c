@@ -3840,7 +3840,7 @@ void CL_Init( void ) {
 
 	cl_allowDownload = Cvar_Get( "cl_allowDownload", "0", CVAR_ARCHIVE_ND );
 #ifdef USE_CURL
-	cl_mapAutoDownload = Cvar_Get( "cl_mapAutoDownload", "1", CVAR_ARCHIVE_ND );
+	cl_mapAutoDownload = Cvar_Get( "cl_mapAutoDownload", "1", CVAR_ARCHIVE );
 #ifdef USE_CURL_DLOPEN
 	cl_cURLLib = Cvar_Get( "cl_cURLLib", DEFAULT_CURL_LIB, 0 );
 #endif
@@ -3871,7 +3871,7 @@ void CL_Init( void ) {
 
 	cl_guidServerUniq = Cvar_Get( "cl_guidServerUniq", "1", CVAR_ARCHIVE_ND );
 
-	dl_source = Cvar_Get( "dl_source", "http://ws.q3df.org/maps/download/%m", CVAR_ARCHIVE_ND );
+	dl_source = Cvar_Get( "dl_source", "http://ws.q3df.org/maps/download/%m", CVAR_ARCHIVE );
 
 	dl_usebaseq3 = Cvar_Get( "dl_usebaseq3", "0", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( dl_usebaseq3, "0", "1", CV_INTEGER );
