@@ -1258,7 +1258,7 @@ void	Sys_SetAffinityMask( int mask );
 int		Sys_Milliseconds( void );
 int64_t	Sys_Microseconds( void );
 
-void	Sys_SnapVector( float *v );
+void	Sys_SnapVector( float *vector );
 
 qboolean Sys_RandomBytes( byte *string, int len );
 

@@ -355,7 +355,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		FS_PureServerSetLoadedPaks( "", "" );
 		com_errorEntered = qfalse;
 
-		longjmp( abortframe, -1 );
+		longjmp( abortframe, 1 );
 	} else if ( code == ERR_DROP ) {
 		Com_Printf( "********************\nERROR: %s\n********************\n",
 			com_errorMessage );
@@ -371,7 +371,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		FS_PureServerSetLoadedPaks( "", "" );
 		com_errorEntered = qfalse;
 
-		longjmp( abortframe, -1 );
+		longjmp( abortframe, 1 );
 	} else if ( code == ERR_NEED_CD ) {
 		SV_Shutdown( "Server didn't have CD" );
 		Com_EndRedirect();
@@ -389,7 +389,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		FS_PureServerSetLoadedPaks( "", "" );
 		com_errorEntered = qfalse;
 
-		longjmp( abortframe, -1 );
+		longjmp( abortframe, 1 );
 	} else {
 		VM_Forced_Unload_Start();
 #ifndef DEDICATED
@@ -3496,11 +3496,11 @@ __asm {
 #endif // id386
 
 #if arm64
-void Sys_SnapVector( vec3_t vec )
+void Sys_SnapVector( float *vector )
 {
-	vec[0] = rint( vec[0] );
-	vec[1] = rint( vec[1] );
-	vec[2] = rint( vec[2] );
+	vector[0] = rint( vector[0] );
+	vector[1] = rint( vector[1] );
+	vector[2] = rint( vector[2] );
 }
 #endif
 
@@ -3514,7 +3514,7 @@ void Sys_SnapVector( vec3_t vec )
 	"fildl " src "\n" \
 	"fstps " src "\n"
 
-void Sys_SnapVector( vec3_t vector )
+void Sys_SnapVector( float *vector )
 {
 	static const unsigned short cw037F = 0x037F;
 	unsigned short cwCurr;
@@ -3535,11 +3535,11 @@ void Sys_SnapVector( vec3_t vector )
 
 #else // idx64, non-x86
 
-void Sys_SnapVector( vec3_t vec )
+void Sys_SnapVector( float *vector )
 {
-	vec[0] = rint(vec[0]);
-	vec[1] = rint(vec[1]);
-	vec[2] = rint(vec[2]);
+	vector[0] = rint( vector[0] );
+	vector[1] = rint( vector[1] );
+	vector[2] = rint( vector[2] );
 }
 
 #endif

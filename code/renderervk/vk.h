@@ -18,6 +18,7 @@
 #define NUM_COMMAND_BUFFERS 2	// number of command buffers / render semaphores / framebuffer sets
 
 #define USE_REVERSED_DEPTH
+//#define USE_BUFFER_CLEAR
 
 #define VK_NUM_BLOOM_PASSES 4
 
