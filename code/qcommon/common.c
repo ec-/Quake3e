@@ -68,6 +68,7 @@ cvar_t	*com_dedicated;
 cvar_t	*com_timescale;
 cvar_t	*com_fixedtime;
 cvar_t	*com_journal;
+cvar_t	*com_protocol;
 #ifndef DEDICATED
 cvar_t	*com_maxfps;
 cvar_t	*com_maxfpsUnfocused;
@@ -601,22 +602,21 @@ be after execing the config and default.
 ===============
 */
 void Com_StartupVariable( const char *match ) {
-	int		i;
-	char	*s;
+	int i;
+	const char *name;
 
-	for (i=0 ; i < com_numConsoleLines ; i++) {
+	for ( i = 0; i < com_numConsoleLines; i++ ) {
 		Cmd_TokenizeString( com_consoleLines[i] );
-		if ( strcmp( Cmd_Argv(0), "set" ) ) {
+		if ( Q_stricmp( Cmd_Argv( 0 ), "set" ) ) {
 			continue;
 		}
 
-		s = Cmd_Argv(1);
-		if( !match || !strcmp( s, match ) )
-		{
-			if ( Cvar_Flags( s ) == CVAR_NONEXISTENT )
-				Cvar_Get( s, Cmd_ArgsFrom( 2 ), CVAR_USER_CREATED );
+		name = Cmd_Argv( 1 );
+		if ( !match || Q_stricmp( name, match ) == 0 ) {
+			if ( Cvar_Flags( name ) == CVAR_NONEXISTENT )
+				Cvar_Get( name, Cmd_ArgsFrom( 2 ), CVAR_USER_CREATED );
 			else
-				Cvar_Set2( s, Cmd_ArgsFrom( 2 ), qfalse );
+				Cvar_Set2( name, Cmd_ArgsFrom( 2 ), qfalse );
 		}
 	}
 }
@@ -3611,6 +3611,11 @@ void Com_Init( char *commandLine ) {
 	Cvar_Get( "sv_master1", MASTER_SERVER_NAME, CVAR_INIT );
 	Cvar_Get( "sv_master2", "master.ioquake3.org", CVAR_INIT );
 	Cvar_Get( "sv_master3", "master.maverickservers.com", CVAR_INIT );
+
+	com_protocol = Cvar_Get( "protocol", XSTRING( PROTOCOL_VERSION ), 0 );
+	Cvar_CheckRange( com_protocol, "0", NULL, CV_INTEGER );
+	com_protocol->flags &= CVAR_USER_CREATED;
+	com_protocol->flags |= CVAR_SERVERINFO | CVAR_ROM;
 
 	// done early so bind command exists
 	Com_InitKeyCommands();
