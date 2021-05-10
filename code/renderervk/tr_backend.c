@@ -1544,7 +1544,10 @@ void RB_ShowImages( void )
 
 		GL_Bind( image );
 
-		Com_Memset( tess.svars.colors[0][0].rgba, 255, 4 * sizeof( color4ub_t ) );
+		tess.svars.colors[0][0].u32 = ~0U; // 255-255-255-255
+		tess.svars.colors[0][1].u32 = ~0U;
+		tess.svars.colors[0][2].u32 = ~0U;
+		tess.svars.colors[0][3].u32 = ~0U;
 
 		tess.numVertexes = 4;
 
