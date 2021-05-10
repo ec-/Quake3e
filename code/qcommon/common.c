@@ -3614,7 +3614,7 @@ void Com_Init( char *commandLine ) {
 
 	com_protocol = Cvar_Get( "protocol", XSTRING( PROTOCOL_VERSION ), 0 );
 	Cvar_CheckRange( com_protocol, "0", NULL, CV_INTEGER );
-	com_protocol->flags &= CVAR_USER_CREATED;
+	com_protocol->flags &= ~CVAR_USER_CREATED;
 	com_protocol->flags |= CVAR_SERVERINFO | CVAR_ROM;
 
 	// done early so bind command exists
