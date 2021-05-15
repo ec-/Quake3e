@@ -1409,7 +1409,7 @@ void R_Init( void ) {
 RE_Shutdown
 ===============
 */
-void RE_Shutdown( refShutdownCode_t code ) {
+static void RE_Shutdown( refShutdownCode_t code ) {
 
 	ri.Printf( PRINT_ALL, "RE_Shutdown( %i )\n", code );
 

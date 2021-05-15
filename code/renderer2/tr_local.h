@@ -846,7 +846,6 @@ SURFACES
 
 ==============================================================================
 */
-typedef byte color4ub_t[4];
 
 // any changes in surfaceType must be mirrored in rb_surfaceTable[]
 typedef enum {
@@ -1941,8 +1940,8 @@ void	GL_Cull( int cullType );
 
 #define GLS_DEFAULT			GLS_DEPTHMASK_TRUE
 
-void	RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty);
-void	RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty);
+void	RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, byte *data, int client, qboolean dirty );
+void	RE_UploadCinematic( int w, int h, int cols, int rows, byte *data, int client, qboolean dirty );
 
 void		RE_BeginFrame( stereoFrame_t stereoFrame );
 void		RE_BeginRegistration( glconfig_t *glconfig );
@@ -1950,7 +1949,6 @@ void		RE_LoadWorldMap( const char *mapname );
 void		RE_SetWorldVisData( const byte *vis );
 qhandle_t	RE_RegisterModel( const char *name );
 qhandle_t	RE_RegisterSkin( const char *name );
-void		RE_Shutdown( int destroyWindow );
 
 qboolean	R_GetEntityToken( char *buffer, int size );
 
