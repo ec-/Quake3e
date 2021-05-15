@@ -885,7 +885,6 @@ Q3OBJ = \
   $(B)/client/snd_main.o \
   $(B)/client/snd_codec.o \
   $(B)/client/snd_codec_wav.o \
-  $(B)/client/snd_codec_ogg.o \
   \
   $(B)/client/sv_bot.o \
   $(B)/client/sv_ccmds.o \
