@@ -1957,7 +1957,7 @@ basically a slightly modified Cvar_Get for the interpreted modules
 =====================
 */
 #define INVALID_FLAGS ( CVAR_USER_CREATED | CVAR_SERVER_CREATED | CVAR_PROTECTED | CVAR_PRIVATE | CVAR_MODIFIED | CVAR_NONEXISTENT )
-void Cvar_Register(vmCvar_t *vmCvar, const char *varName, const char *defaultValue, int flags)
+void Cvar_Register( vmCvar_t *vmCvar, const char *varName, const char *defaultValue, int flags, int privateFlag )
 {
 	cvar_t	*cv;
 
@@ -1983,10 +1983,13 @@ void Cvar_Register(vmCvar_t *vmCvar, const char *varName, const char *defaultVal
 	if ( cv && ( cv->flags & ( CVAR_PROTECTED | CVAR_PRIVATE ) ) ) {
 		Com_DPrintf( S_COLOR_YELLOW "WARNING: VM tried to register protected cvar '%s' with value '%s'%s\n",
 			varName, defaultValue, ( flags & ~cv->flags ) != 0 ? " and new flags" : "" );
-		if ( cv->flags & CVAR_PRIVATE )
-			return;
+		if ( cv->flags & CVAR_PRIVATE ) {
+			if ( privateFlag ) {
+				return;
+			}
+		}
 	} else {
-		cv = Cvar_Get(varName, defaultValue, flags | CVAR_VM_CREATED);
+		cv = Cvar_Get( varName, defaultValue, flags | CVAR_VM_CREATED );
 	}
 
 	if (!vmCvar)
@@ -1994,7 +1997,8 @@ void Cvar_Register(vmCvar_t *vmCvar, const char *varName, const char *defaultVal
 
 	vmCvar->handle = cv - cvar_indexes;
 	vmCvar->modificationCount = -1;
-	Cvar_Update( vmCvar );
+
+	Cvar_Update( vmCvar, 0 );
 }
 
 
@@ -2005,7 +2009,7 @@ Cvar_Update
 updates an interpreted modules' version of a cvar
 =====================
 */
-void Cvar_Update( vmCvar_t *vmCvar ) {
+void Cvar_Update( vmCvar_t *vmCvar, int privateFlag ) {
 	size_t	len;
 	cvar_t	*cv = NULL;
 	assert(vmCvar);
@@ -2023,7 +2027,9 @@ void Cvar_Update( vmCvar_t *vmCvar ) {
 		return;		// variable might have been cleared by a cvar_restart
 	} 
 	if ( cv->flags & CVAR_PRIVATE ) {
-		return;
+		if ( privateFlag ) {
+			return;
+		}
 	}
 	vmCvar->modificationCount = cv->modificationCount;
 
