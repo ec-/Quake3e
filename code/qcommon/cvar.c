@@ -625,7 +625,8 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 
 //	Com_DPrintf( "Cvar_Set2: %s %s\n", var_name, value );
 
-	if ( !Cvar_ValidateName( var_name ) ) {
+	if ( !Cvar_ValidateName( var_name ) )
+	{
 		Com_Printf( "invalid cvar name string: %s\n", var_name );
 		var_name = "BADNAME";
 	}
@@ -637,60 +638,35 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 	}
 #endif
 
-	var = Cvar_FindVar (var_name);
-	if (!var) {
-		if ( !value ) {
+	var = Cvar_FindVar( var_name );
+	if ( !var )
+	{
+		if ( !value )
 			return NULL;
-		}
 		// create it
-		if ( !force ) {
+		if ( !force )
 			return Cvar_Get( var_name, value, CVAR_USER_CREATED );
-		} else {
-			return Cvar_Get (var_name, value, 0);
-		}
+		else
+			return Cvar_Get( var_name, value, 0 );
 	}
 
-	if (!value ) {
-		value = var->resetString;
-	}
-
-	value = Cvar_Validate(var, value, qtrue);
-
-	if((var->flags & CVAR_LATCH) && var->latchedString)
+	if ( var->flags & (CVAR_ROM | CVAR_INIT | CVAR_CHEAT | CVAR_DEVELOPER) && !force )
 	{
-		if(!strcmp(value, var->string))
+		if ( var->flags & CVAR_ROM )
 		{
-			Z_Free(var->latchedString);
-			var->latchedString = NULL;
+			Com_Printf( "%s is read only.\n", var_name );
 			return var;
 		}
 
-		if(!strcmp(value, var->latchedString))
-			return var;
-	}
-	else if(!strcmp(value, var->string))
-		return var;
-
-	// note what types of cvars have been modified (userinfo, archive, serverinfo, systeminfo)
-	cvar_modifiedFlags |= var->flags;
-
-	if (!force)
-	{
-		if (var->flags & CVAR_ROM)
+		if ( var->flags & CVAR_INIT )
 		{
-			Com_Printf ("%s is read only.\n", var_name);
-			return var;
-		}
-
-		if (var->flags & CVAR_INIT)
-		{
-			Com_Printf ("%s is write protected.\n", var_name);
+			Com_Printf( "%s is write protected.\n", var_name );
 			return var;
 		}
 
 		if ( (var->flags & CVAR_CHEAT) && !cvar_cheats->integer )
 		{
-			Com_Printf ("%s is cheat protected.\n", var_name);
+			Com_Printf( "%s is cheat protected.\n", var_name );
 			return var;
 		}
 
@@ -699,23 +675,49 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 			Com_Printf( "%s can be set only in developer mode.\n", var_name );
 			return var;
 		}
+	}
 
-		if (var->flags & CVAR_LATCH)
+	if ( !value )
+		value = var->resetString;
+
+	value = Cvar_Validate( var, value, qtrue );
+
+	if ( (var->flags & CVAR_LATCH) && var->latchedString )
+	{
+		if ( strcmp( value, var->string ) == 0 )
 		{
-			if (var->latchedString)
+			Z_Free( var->latchedString );
+			var->latchedString = NULL;
+			return var;
+		}
+
+		if ( strcmp( value, var->latchedString ) == 0 )
+			return var;
+	}
+	else if ( strcmp( value, var->string ) == 0 )
+		return var;
+
+	// note what types of cvars have been modified (userinfo, archive, serverinfo, systeminfo)
+	cvar_modifiedFlags |= var->flags;
+
+	if ( !force )
+	{
+		if ( var->flags & CVAR_LATCH )
+		{
+			if ( var->latchedString )
 			{
-				if (strcmp(value, var->latchedString) == 0)
+				if ( strcmp( value, var->latchedString ) == 0 )
 					return var;
-				Z_Free (var->latchedString);
+				Z_Free( var->latchedString );
 			}
 			else
 			{
-				if (strcmp(value, var->string) == 0)
+				if ( strcmp( value, var->string ) == 0 )
 					return var;
 			}
 
-			Com_Printf ("%s will be changed upon restarting.\n", var_name);
-			var->latchedString = CopyString(value);
+			Com_Printf( "%s will be changed upon restarting.\n", var_name );
+			var->latchedString = CopyString( value );
 			var->modified = qtrue;
 			var->modificationCount++;
 			cvar_group[ var->group ] = 1;
@@ -724,21 +726,21 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 	}
 	else
 	{
-		if (var->latchedString)
+		if ( var->latchedString )
 		{
-			Z_Free (var->latchedString);
+			Z_Free( var->latchedString );
 			var->latchedString = NULL;
 		}
 	}
 
-	if (!strcmp(value, var->string))
-		return var;		// not changed
+	if ( strcmp( value, var->string ) == 0 )
+		return var; // not changed
 
 	var->modified = qtrue;
 	var->modificationCount++;
 	cvar_group[ var->group ] = 1;
 	
-	Z_Free (var->string);	// free the old value string
+	Z_Free( var->string ); // free the old value string
 	
 	var->string = CopyString( value );
 	var->value = Q_atof( var->string );
