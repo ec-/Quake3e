@@ -536,7 +536,6 @@ endef
 define DO_SHLIB_CC
 $(echo_cmd) "SHLIB_CC $<"
 $(Q)$(CC) $(CFLAGS) $(SHLIBCFLAGS) -o $@ -c $<
-$(Q)$(DO_QVM_DEP)
 endef
 
 define DO_AS
@@ -1288,9 +1287,9 @@ distclean: clean
 
 D_FILES=$(shell find . -name '*.d')
 
-#ifneq ($(strip $(D_FILES)),)
- # include $(D_FILES)
-#endif
+ifneq ($(strip $(D_FILES)),)
+ include $(D_FILES)
+endif
 
 .PHONY: all clean clean2 clean-debug clean-release copyfiles \
 	debug default dist distclean makedirs release \
