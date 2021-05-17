@@ -29,6 +29,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../client/client.h"
 #include "sdl_glw.h"
 
+#ifdef __APPLE__
+// Mouse acceleration needs to be disabled
+#define MACOS_X_ACCELERATION_HACK
+// Cursor needs hack to hide
+#define MACOS_X_CURSOR_HACK
+#endif
+
+#ifdef MACOS_X_ACCELERATION_HACK
+#include <IOKit/IOTypes.h>
+#include <IOKit/hidsystem/IOHIDLib.h>
+#include <IOKit/hidsystem/IOHIDParameter.h>
+#include <IOKit/hidsystem/event_status_driver.h>
+#endif
+
 static cvar_t *in_keyboardDebug;
 
 #ifdef USE_JOYSTICK
@@ -40,6 +54,10 @@ static qboolean mouseAvailable = qfalse;
 static qboolean mouseActive = qfalse;
 
 static cvar_t *in_mouse;
+#ifdef MACOS_X_ACCELERATION_HACK
+static cvar_t *in_disablemacosxmouseaccel = NULL;
+static double originalMouseSpeed = -1.0;
+#endif
 
 #ifdef USE_JOYSTICK
 static cvar_t *in_joystick;
@@ -344,6 +362,33 @@ static keyNum_t IN_TranslateSDLToQ3Key( SDL_Keysym *keysym, qboolean down )
 	return key;
 }
 
+#ifdef MACOS_X_ACCELERATION_HACK
+/*
+===============
+IN_GetIOHandle
+===============
+*/
+static io_connect_t IN_GetIOHandle(void) // mac os x mouse accel hack
+{
+	io_connect_t iohandle = MACH_PORT_NULL;
+	kern_return_t status;
+	io_service_t iohidsystem = MACH_PORT_NULL;
+	mach_port_t masterport;
+
+	status = IOMasterPort(MACH_PORT_NULL, &masterport);
+	if(status != KERN_SUCCESS)
+		return 0;
+
+	iohidsystem = IORegistryEntryFromPath(masterport, kIOServicePlane ":/IOResources/IOHIDSystem");
+	if(!iohidsystem)
+		return 0;
+
+	status = IOServiceOpen(iohidsystem, mach_task_self(), kIOHIDParamConnectType, &iohandle);
+	IOObjectRelease(iohidsystem);
+
+	return iohandle;
+}
+#endif
 
 /*
 ===============
@@ -377,6 +422,41 @@ static void IN_ActivateMouse( void )
 {
 	if ( !mouseAvailable )
 		return;
+
+#ifdef MACOS_X_ACCELERATION_HACK
+	if (!mouseActive) // mac os x mouse accel hack
+	{
+		// Save the status of mouse acceleration
+		originalMouseSpeed = -1.0; // in case of error
+		if(in_disablemacosxmouseaccel->integer)
+		{
+			io_connect_t mouseDev = IN_GetIOHandle();
+			if(mouseDev != 0)
+			{
+				if(IOHIDGetAccelerationWithKey(mouseDev, CFSTR(kIOHIDMouseAccelerationType), &originalMouseSpeed) == kIOReturnSuccess)
+				{
+					Com_Printf("previous mouse acceleration: %f\n", originalMouseSpeed);
+					if(IOHIDSetAccelerationWithKey(mouseDev, CFSTR(kIOHIDMouseAccelerationType), -1.0) != kIOReturnSuccess)
+					{
+						Com_Printf("Could not disable mouse acceleration (failed at IOHIDSetAccelerationWithKey).\n");
+						Cvar_Set ("in_disablemacosxmouseaccel", 0);
+					}
+				}
+				else
+				{
+					Com_Printf("Could not disable mouse acceleration (failed at IOHIDGetAccelerationWithKey).\n");
+					Cvar_Set ("in_disablemacosxmouseaccel", 0);
+				}
+				IOServiceClose(mouseDev);
+			}
+			else
+			{
+				Com_Printf("Could not disable mouse acceleration (failed at IO_GetIOHandle).\n");
+				Cvar_Set ("in_disablemacosxmouseaccel", 0);
+			}
+		}
+	}
+#endif
 
 	if ( !mouseActive )
 	{
@@ -425,6 +505,25 @@ static void IN_DeactivateMouse( void )
 {
 	if ( !mouseAvailable )
 		return;
+
+#ifdef MACOS_X_ACCELERATION_HACK
+	if (mouseActive) // mac os x mouse accel hack
+	{
+		if(originalMouseSpeed != -1.0)
+		{
+			io_connect_t mouseDev = IN_GetIOHandle();
+			if(mouseDev != 0)
+			{
+				Com_Printf("restoring mouse acceleration to: %f\n", originalMouseSpeed);
+				if(IOHIDSetAccelerationWithKey(mouseDev, CFSTR(kIOHIDMouseAccelerationType), originalMouseSpeed) != kIOReturnSuccess)
+					Com_Printf("Could not re-enable mouse acceleration (failed at IOHIDSetAccelerationWithKey).\n");
+				IOServiceClose(mouseDev);
+			}
+			else
+				Com_Printf("Could not re-enable mouse acceleration (failed at IO_GetIOHandle).\n");
+		}
+	}
+#endif
 
 	if ( mouseActive )
 	{
@@ -1332,6 +1431,10 @@ void IN_Init( void )
 	// mouse variables
 	in_mouse = Cvar_Get( "in_mouse", "1", CVAR_ARCHIVE );
 	Cvar_CheckRange( in_mouse, "-1", "1", CV_INTEGER );
+
+#ifdef MACOS_X_ACCELERATION_HACK
+	in_disablemacosxmouseaccel = Cvar_Get( "in_disablemacosxmouseaccel", "1", CVAR_ARCHIVE );
+#endif
 
 #ifdef USE_JOYSTICK
 	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE|CVAR_LATCH );
