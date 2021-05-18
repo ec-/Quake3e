@@ -6764,7 +6764,7 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 
 	command_buffer = begin_command_buffer();
 
-	if ( srcImage == vk.color_image ) {
+	if ( srcImageLayout != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL ) {
 		record_image_layout_transition( command_buffer, srcImage,
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			srcImageAccess, srcImageLayout,
