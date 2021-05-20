@@ -236,6 +236,7 @@ typedef struct {
 
 	float	aviVideoFrameRemainder;
 	float	aviSoundFrameRemainder;
+	int		aviFrameEndTime;
 	char	videoName[MAX_QPATH];
 	int		videoIndex;
 
