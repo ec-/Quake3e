@@ -388,7 +388,7 @@ ifeq ($(COMPILE_PLATFORM),darwin)
   SHLIBCFLAGS = -fPIC -fvisibility=hidden
   SHLIBLDFLAGS = -dynamiclib $(LDFLAGS)
 
-  LDFLAGS =
+  LDFLAGS = -F/System/Library/Frameworks -framework IOKIT -framework CoreFoundation
 
   ifneq ($(SDL_INCLUDE),)
     BASE_CFLAGS += $(SDL_INCLUDE)
@@ -565,16 +565,16 @@ default: release
 all: debug release
 
 debug:
-  @$(MAKE) targets B=$(BD) CFLAGS="$(CFLAGS) $(DEBUG_CFLAGS)" LDFLAGS="$(LDFLAGS) $(DEBUG_LDFLAGS)" V=$(V)
+	@$(MAKE) targets B=$(BD) CFLAGS="$(CFLAGS) $(DEBUG_CFLAGS)" LDFLAGS="$(LDFLAGS) $(DEBUG_LDFLAGS)" V=$(V)
 
 release:
-  @$(MAKE) targets B=$(BR) CFLAGS="$(CFLAGS) $(RELEASE_CFLAGS)" V=$(V)
+	@$(MAKE) targets B=$(BR) CFLAGS="$(CFLAGS) $(RELEASE_CFLAGS)" V=$(V)
 
 define ADD_COPY_TARGET
 TARGETS += $2
 $2: $1
-  $(echo_cmd) "CP $$<"
-  @cp $1 $2
+	$(echo_cmd) "CP $$<"
+	@cp $1 $2
 endef
 
 # These functions allow us to generate rules for copying a list of files
@@ -594,44 +594,44 @@ endif
 # Create the build directories and tools, print out
 # an informational message, then start building
 targets: makedirs tools
-  @echo ""
-  @echo "Building quake3 in $(B):"
-  @echo ""
-  @echo "  VERSION: $(VERSION)"
-  @echo "  PLATFORM: $(PLATFORM)"
-  @echo "  ARCH: $(ARCH)"
-  @echo "  COMPILE_PLATFORM: $(COMPILE_PLATFORM)"
-  @echo "  COMPILE_ARCH: $(COMPILE_ARCH)"
+	@echo ""
+	@echo "Building quake3 in $(B):"
+	@echo ""
+	@echo "  VERSION: $(VERSION)"
+	@echo "  PLATFORM: $(PLATFORM)"
+	@echo "  ARCH: $(ARCH)"
+	@echo "  COMPILE_PLATFORM: $(COMPILE_PLATFORM)"
+	@echo "  COMPILE_ARCH: $(COMPILE_ARCH)"
 ifdef MINGW
-  @echo "  WINDRES: $(WINDRES)"
+	@echo "  WINDRES: $(WINDRES)"
 endif
-  @echo "  CC: $(CC)"
-  @echo ""
-  @echo "  CFLAGS:"
-  @for i in $(CFLAGS); \
-  do \
-    echo "    $$i"; \
-  done
-  @echo ""
-  @echo "  Output:"
-  @for i in $(TARGETS); \
-  do \
-    echo "    $$i"; \
-  done
-  @echo ""
+	@echo "  CC: $(CC)"
+	@echo ""
+	@echo "  CFLAGS:"
+	@for i in $(CFLAGS); \
+	do \
+		echo "    $$i"; \
+	done
+	@echo ""
+	@echo "  Output:"
+	@for i in $(TARGETS); \
+	do \
+		echo "    $$i"; \
+	done
+	@echo ""
 ifneq ($(TARGETS),)
-  @$(MAKE) $(TARGETS) V=$(V)
+	@$(MAKE) $(TARGETS) V=$(V)
 endif
 
 makedirs:
-  @if [ ! -d $(BUILD_DIR) ];then $(MKDIR) $(BUILD_DIR);fi
-  @if [ ! -d $(B) ];then $(MKDIR) $(B);fi
-  @if [ ! -d $(B)/client ];then $(MKDIR) $(B)/client;fi
-  @if [ ! -d $(B)/rend1 ];then $(MKDIR) $(B)/rend1;fi
-  @if [ ! -d $(B)/rend2 ];then $(MKDIR) $(B)/rend2;fi
-  @if [ ! -d $(B)/rend2/glsl ];then $(MKDIR) $(B)/rend2/glsl;fi
-  @if [ ! -d $(B)/rendv ];then $(MKDIR) $(B)/rendv;fi
-  @if [ ! -d $(B)/ded ];then $(MKDIR) $(B)/ded;fi
+	@if [ ! -d $(BUILD_DIR) ];then $(MKDIR) $(BUILD_DIR);fi
+	@if [ ! -d $(B) ];then $(MKDIR) $(B);fi
+	@if [ ! -d $(B)/client ];then $(MKDIR) $(B)/client;fi
+	@if [ ! -d $(B)/rend1 ];then $(MKDIR) $(B)/rend1;fi
+	@if [ ! -d $(B)/rend2 ];then $(MKDIR) $(B)/rend2;fi
+	@if [ ! -d $(B)/rend2/glsl ];then $(MKDIR) $(B)/rend2/glsl;fi
+	@if [ ! -d $(B)/rendv ];then $(MKDIR) $(B)/rendv;fi
+	@if [ ! -d $(B)/ded ];then $(MKDIR) $(B)/ded;fi
 
 #############################################################################
 # CLIENT/SERVER
@@ -1038,27 +1038,27 @@ endif # !MINGW
 # client binary
 
 $(B)/$(TARGET_CLIENT): $(Q3OBJ)
-  $(echo_cmd) "LD $@"
-  $(Q)$(CC) -o $@ $(Q3OBJ) $(CLIENT_LDFLAGS) \
-    $(LDFLAGS)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) -o $@ $(Q3OBJ) $(CLIENT_LDFLAGS) \
+		$(LDFLAGS)
 
 # modular renderers
 
 $(B)/$(TARGET_REND1): $(Q3REND1OBJ)
-  $(echo_cmd) "LD $@"
-  $(Q)$(CC) -o $@ $(Q3REND1OBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) -o $@ $(Q3REND1OBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
 
 $(STRINGIFY): $(MOUNT_DIR)/renderer2/stringify.c
-  $(echo_cmd) "LD $@"
-  $(Q)$(CC) -o $@ $(MOUNT_DIR)/renderer2/stringify.c $(LDFLAGS)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) -o $@ $(MOUNT_DIR)/renderer2/stringify.c $(LDFLAGS)
 
 $(B)/$(TARGET_REND2): $(Q3REND2OBJ) $(Q3REND2STROBJ)
-  $(echo_cmd) "LD $@"
-  $(Q)$(CC) -o $@ $(Q3REND2OBJ) $(Q3REND2STROBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) -o $@ $(Q3REND2OBJ) $(Q3REND2STROBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
 
 $(B)/$(TARGET_RENDV): $(Q3RENDVOBJ)
-  $(echo_cmd) "LD $@"
-  $(Q)$(CC) -o $@ $(Q3RENDVOBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) -o $@ $(Q3RENDVOBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
 
 #############################################################################
 # DEDICATED SERVER
@@ -1160,126 +1160,126 @@ ifeq ($(HAVE_VM_COMPILED),true)
 endif
 
 $(B)/$(TARGET_SERVER): $(Q3DOBJ)
-  $(echo_cmd) "LD $@"
-  $(Q)$(CC) -o $@ $(Q3DOBJ) $(LDFLAGS)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) -o $@ $(Q3DOBJ) $(LDFLAGS)
 
 #############################################################################
 ## CLIENT/SERVER RULES
 #############################################################################
 
 $(B)/client/%.o: $(ADIR)/%.s
-  $(DO_AS)
+	$(DO_AS)
 
 $(B)/client/%.o: $(CDIR)/%.c
-  $(DO_CC)
+	$(DO_CC)
 
 $(B)/client/%.o: $(SDIR)/%.c
-  $(DO_CC)
+	$(DO_CC)
 
 $(B)/client/%.o: $(CMDIR)/%.c
-  $(DO_CC)
+	$(DO_CC)
 
 $(B)/client/%.o: $(BLIBDIR)/%.c
-  $(DO_BOT_CC)
+	$(DO_BOT_CC)
 
 $(B)/client/%.o: $(JPDIR)/%.c
-  $(DO_CC)
+	$(DO_CC)
 
 $(B)/client/%.o: $(SDLDIR)/%.c
-  $(DO_CC)
+	$(DO_CC)
 
 $(B)/rend1/%.o: $(R1DIR)/%.c
-  $(DO_REND_CC)
+	$(DO_REND_CC)
 
 $(B)/rend1/%.o: $(RCDIR)/%.c
-  $(DO_REND_CC)
+	$(DO_REND_CC)
 
 $(B)/rend1/%.o: $(CMDIR)/%.c
-  $(DO_REND_CC)
+	$(DO_REND_CC)
 
 $(B)/rend2/glsl/%.c: $(R2DIR)/glsl/%.glsl $(STRINGIFY)
-  $(DO_REF_STR)
+	$(DO_REF_STR)
 
 $(B)/rend2/glsl/%.o: $(B)/renderer2/glsl/%.c
-  $(DO_REND_CC)
+	$(DO_REND_CC)
 
 $(B)/rend2/%.o: $(R2DIR)/%.c
-  $(DO_REND_CC)
+	$(DO_REND_CC)
 
 $(B)/rend2/%.o: $(RCDIR)/%.c
-  $(DO_REND_CC)
+	$(DO_REND_CC)
 
 $(B)/rend2/%.o: $(CMDIR)/%.c
-  $(DO_REND_CC)
+	$(DO_REND_CC)
 
 $(B)/rendv/%.o: $(RVDIR)/%.c
-  $(DO_REND_CC)
+	$(DO_REND_CC)
 
 $(B)/rendv/%.o: $(RCDIR)/%.c
-  $(DO_REND_CC)
+	$(DO_REND_CC)
 
 $(B)/rendv/%.o: $(CMDIR)/%.c
-  $(DO_REND_CC)
+	$(DO_REND_CC)
 
 $(B)/client/%.o: $(UDIR)/%.c
-  $(DO_CC)
+	$(DO_CC)
 
 $(B)/client/%.o: $(W32DIR)/%.c
-  $(DO_CC)
+	$(DO_CC)
 
 $(B)/client/%.o: $(W32DIR)/%.rc
-  $(DO_WINDRES)
+	$(DO_WINDRES)
 
 $(B)/ded/%.o: $(ADIR)/%.s
-  $(DO_AS)
+	$(DO_AS)
 
 $(B)/ded/%.o: $(SDIR)/%.c
-  $(DO_DED_CC)
+	$(DO_DED_CC)
 
 $(B)/ded/%.o: $(CMDIR)/%.c
-  $(DO_DED_CC)
+	$(DO_DED_CC)
 
 $(B)/ded/%.o: $(BLIBDIR)/%.c
-  $(DO_BOT_CC)
+	$(DO_BOT_CC)
 
 $(B)/ded/%.o: $(UDIR)/%.c
-  $(DO_DED_CC)
+	$(DO_DED_CC)
 
 $(B)/ded/%.o: $(W32DIR)/%.c
-  $(DO_DED_CC)
+	$(DO_DED_CC)
 
 $(B)/ded/%.o: $(W32DIR)/%.rc
-  $(DO_WINDRES)
+	$(DO_WINDRES)
 
 #############################################################################
 # MISC
 #############################################################################
 
 install: release
-  @for i in $(TARGETS); do \
-    if [ -f $(BR)$$i ]; then \
-      $(INSTALL) -D -m 0755 "$(BR)/$$i" "$(DESTDIR)$$i"; \
-      $(STRIP) "$(DESTDIR)$$i"; \
-    fi \
-  done
+	@for i in $(TARGETS); do \
+		if [ -f $(BR)$$i ]; then \
+			$(INSTALL) -D -m 0755 "$(BR)/$$i" "$(DESTDIR)$$i"; \
+			$(STRIP) "$(DESTDIR)$$i"; \
+		fi \
+	done
 
 clean: clean-debug clean-release
 
 clean2:
-  @echo "CLEAN $(B)"
-  @if [ -d $(B) ];then (find $(B) -name '*.d' -exec rm {} \;)fi
-  @rm -f $(Q3OBJ) $(Q3DOBJ)
-  @rm -f $(TARGETS)
+	@echo "CLEAN $(B)"
+	@if [ -d $(B) ];then (find $(B) -name '*.d' -exec rm {} \;)fi
+	@rm -f $(Q3OBJ) $(Q3DOBJ)
+	@rm -f $(TARGETS)
 
 clean-debug:
-  @rm -rf $(BD)
+	@rm -rf $(BD)
 
 clean-release:
-  @echo $(BR)
-  @rm -rf $(BR)
+	@echo $(BR)
+	@rm -rf $(BR)
 
 distclean: clean
-  @rm -rf $(BUILD_DIR)
+	@rm -rf $(BUILD_DIR)
 
 #############################################################################
 # DEPENDENCIES
@@ -1292,5 +1292,5 @@ ifneq ($(strip $(D_FILES)),)
 endif
 
 .PHONY: all clean clean2 clean-debug clean-release copyfiles \
-  debug default dist distclean makedirs release \
-  targets tools toolsclean
+	debug default dist distclean makedirs release \
+	targets tools toolsclean
