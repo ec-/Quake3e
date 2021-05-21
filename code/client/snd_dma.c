@@ -161,14 +161,14 @@ static void S_ChannelFree( channel_t *v ) {
 }
 
 
-static channel_t* S_ChannelMalloc( void ) {
+static channel_t* S_ChannelMalloc( int allocTime ) {
 	channel_t *v;
 	if (freelist == NULL) {
 		return NULL;
 	}
 	v = freelist;
 	freelist = *(channel_t **)freelist;
-	v->allocTime = Com_Milliseconds();
+	v->allocTime = allocTime;
 	return v;
 }
 
@@ -459,7 +459,7 @@ Entchannel 0 will never override a playing sound
 static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfxHandle ) {
 	channel_t	*ch;
 	sfx_t		*sfx;
-	int i, oldest, chosen, time;
+	int i, oldest, chosen, startTime;
 	int	inplay, allowed;
 
 	if ( !s_soundStarted || s_soundMuted ) {
@@ -477,7 +477,7 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 
 	sfx = &s_knownSfx[ sfxHandle ];
 
-	if (sfx->inMemory == qfalse) {
+	if ( sfx->inMemory == qfalse ) {
 		S_memoryLoad(sfx);
 	}
 
@@ -485,7 +485,7 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 		Com_Printf( "%i : %s\n", s_paintedtime, sfx->soundName );
 	}
 
-	time = Com_Milliseconds();
+	startTime = s_soundtime; // Com_Milliseconds();
 
 	// borrowed from cnq3
 	// a UNIQUE entity starting the same sound twice in a frame is either a bug,
@@ -499,11 +499,11 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 		for ( i = 0; i < MAX_CHANNELS; i++, ch++ ) {
 			if ( ch->entnum != entityNum )
 				continue;
-			if ( ch->allocTime != time )
+			if ( ch->allocTime != startTime )
 				continue;
 			if ( ch->thesfx != sfx )
 				continue;
-			sfx->lastTimeUsed = time;
+			sfx->lastTimeUsed = startTime;
 			//Com_Printf( S_COLOR_YELLOW "double sound start: %d %s\n", entityNum, sfx->soundName);
 			return;
 		}
@@ -520,10 +520,10 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 
 	ch = s_channels;
 	inplay = 0;
-	for ( i = 0; i < MAX_CHANNELS ; i++, ch++ ) {		
+	for ( i = 0; i < MAX_CHANNELS; i++, ch++ ) {
 		if ( ch->entnum == entityNum && ch->thesfx == sfx ) {
-			if ( time - ch->allocTime < 20 ) {
-				Com_DPrintf(S_COLOR_YELLOW "S_StartSound: Double start (%d ms < 20 ms) for %s\n", time - ch->allocTime, sfx->soundName);
+			if ( startTime - ch->allocTime < 20 ) {
+				Com_DPrintf(S_COLOR_YELLOW "S_StartSound: Double start (%d ms < 20 ms) for %s\n", startTime - ch->allocTime, sfx->soundName);
 				return;
 			}
 			inplay++;
@@ -536,9 +536,9 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 		return;
 	}
 
-	sfx->lastTimeUsed = time;
+	sfx->lastTimeUsed = startTime;
 
-	ch = S_ChannelMalloc();	// entityNum, entchannel);
+	ch = S_ChannelMalloc( startTime ); // entityNum, entchannel);
 	if (!ch) {
 		ch = s_channels;
 
@@ -579,8 +579,8 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 		Com_DPrintf(S_COLOR_YELLOW "S_StartSound: No more channels free for %s, dropping earliest sound: %s\n", sfx->soundName, ch->thesfx->soundName);
 	}
 
-	if (origin) {
-		VectorCopy (origin, ch->origin);
+	if ( origin ) {
+		VectorCopy( origin, ch->origin );
 		ch->fixed_origin = qtrue;
 	} else {
 		ch->fixed_origin = qfalse;
@@ -812,8 +812,8 @@ All sounds are on the same cycle, so any duplicates can just
 sum up the channel multipliers.
 ==================
 */
-void S_AddLoopSounds (void) {
-	int			i, j, time;
+void S_AddLoopSounds( void ) {
+	int			i, j, startTime;
 	int			left_total, right_total, left, right;
 	channel_t	*ch;
 	loopSound_t	*loop, *loop2;
@@ -822,7 +822,7 @@ void S_AddLoopSounds (void) {
 
 	numLoopChannels = 0;
 
-	time = Com_Milliseconds();
+	startTime = s_soundtime; // Com_Milliseconds();
 
 	loopFrame++;
 	for ( i = 0 ; i < MAX_GENTITIES ; i++) {
@@ -837,7 +837,7 @@ void S_AddLoopSounds (void) {
 			S_SpatializeOrigin( loop->origin, SPHERE_VOL,  &left_total, &right_total);	// sphere
 		}
 
-		loop->sfx->lastTimeUsed = time;
+		loop->sfx->lastTimeUsed = startTime;
 
 		for (j=(i+1); j< MAX_GENTITIES ; j++) {
 			loop2 = &loopSounds[j];
@@ -852,7 +852,7 @@ void S_AddLoopSounds (void) {
 				S_SpatializeOrigin( loop2->origin, SPHERE_VOL,  &left, &right);		// sphere
 			}
 
-			loop2->sfx->lastTimeUsed = time;
+			loop2->sfx->lastTimeUsed = startTime;
 			left_total += left;
 			right_total += right;
 		}
@@ -1147,11 +1147,17 @@ static void S_GetSoundtime( void )
 	if ( CL_VideoRecording() )
 	{
 		fps = MIN( cl_aviFrameRate->value, 1000.0f );
-		frameDuration = MAX( dma.speed / fps, 1.0f ) + clc.aviSoundFrameRemainder;
+		frameDuration = MAX( (float) dma.speed / fps, 1.0f ) + clc.aviSoundFrameRemainder;
 
 		msec = (int)frameDuration;
 		s_soundtime += msec;
 		clc.aviSoundFrameRemainder = frameDuration - msec;
+
+		// use same offset as in game
+		s_paintedtime = s_soundtime + s_mixOffset->value * dma.speed;
+
+		// render exactly one frame of audio data
+		clc.aviFrameEndTime = s_paintedtime + MAX( (float) dma.speed / fps, 1.0f ) + clc.aviSoundFrameRemainder;
 		return;
 	}
 
@@ -1227,8 +1233,8 @@ static void S_Update_( int msec ) {
 		& ~(dma.submission_chunk-1);
 
 	// never mix more than the complete buffer
-	if ( endtime - s_soundtime > dma.fullsamples ) {
-		endtime = s_soundtime + dma.fullsamples;
+	if ( endtime - s_paintedtime > dma.fullsamples ) {
+		endtime = s_paintedtime + dma.fullsamples;
 	}
 
 	// add raw data from streamed samples
@@ -1405,7 +1411,8 @@ void S_FreeOldestSound( void ) {
 	sfx_t	*sfx;
 	sndBuffer	*buffer, *nbuffer;
 
-	oldest = Com_Milliseconds();
+	oldest = s_soundtime; // Com_Milliseconds();
+
 	used = 0;
 
 	for ( i = 1 ; i < s_numSfx ; i++ ) {
