@@ -37,6 +37,7 @@ static void S_Update_( int msec );
 static void S_UpdateBackgroundTrack( void );
 static void S_Base_StopAllSounds( void );
 static void S_Base_StopBackgroundTrack( void );
+static void S_memoryLoad( sfx_t *sfx );
 
 snd_stream_t	*s_backgroundStream = NULL;
 static char		s_backgroundLoop[MAX_QPATH];
@@ -370,7 +371,7 @@ static void S_Base_BeginRegistration( void ) {
 }
 
 
-void S_memoryLoad( sfx_t *sfx ) {
+static void S_memoryLoad( sfx_t *sfx ) {
 
 	// load the sound file
 	if ( !S_LoadSound ( sfx ) ) {
@@ -1411,7 +1412,9 @@ void S_FreeOldestSound( void ) {
 	sfx_t	*sfx;
 	sndBuffer	*buffer, *nbuffer;
 
-	oldest = s_soundtime; // Com_Milliseconds();
+	// all sounds may be loaded with (s_soundtime + 1) at this moment
+	// so we need to trigger match condition at least once
+	oldest = s_soundtime + 2; // Com_Milliseconds();
 
 	used = 0;
 
