@@ -123,9 +123,7 @@ S_CodecInit
 void S_CodecInit()
 {
 	codecs = NULL;
-#if USE_CODEC_VORBIS
-	S_CodecRegister(&ogg_codec);
-#endif
+
 	// Register wav codec last so that it is always tried first when a file extension was not found
 	S_CodecRegister(&wav_codec);
 }

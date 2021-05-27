@@ -1,3 +1,19 @@
+27-May-2021:
+* QVM: more correct hanling of NaNs in bytecode compilers 
+* QVM: fixed non-working RocketArena3 server code
+* Cvars: avoid misleading warnings when changing ROM variables
+* Cvars: allow override "protocol" from command-line
+* Sound: reduced lag during video capture
+* SDL2: (somewhat) fixed non-working console key for non-US keyboard layouts
+* Vulkan: fixed some broken debug features
+* Vulkan: fixed resource leaks and incorrect layout transitions during image capture
+* Vulkan: avoid redundant scissor updates
+* Vulkan: use correct texture bundle for lighting, use static uniform location to avoid pushing garbage from stack variables
+* Vulkan: fixed crash with \r_showtris 1 and \r_fastsky 1, fixed environment shader selection
+* OpenGL: fixed crash with \snd_restart
+* Do not light up shaders whose sort comes after insertion point (SS_FOG)
+* Unified gamma correction between OpenGL and Vulkan renderers
+
 28-Mar-2021:
 * Vulkan: implemented super-sample anti-aliasing, can be enabled via \r_ext_supersample 1, requires \r_fbo 1
 * Vulkan: added \r_presentBits to support HDR monitors, added \r_dither to control dithering in such cases

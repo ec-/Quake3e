@@ -4032,7 +4032,7 @@ static void ScanAndLoadShaderFiles( void )
 
 	// scan for legacy shader files
 	shaderFiles = ri.FS_ListFiles( "scripts", ".shader", &numShaderFiles );
-	mtrFiles = ri.FS_ListFiles( "scripts", ".mtr", &numMtrFiles );
+	mtrFiles = ri.FS_ListFiles( "scripts", ".mtrx", &numMtrFiles );
 
 	if ( (!shaderFiles || !numShaderFiles) && (!mtrFiles || !numMtrFiles) ) {
 		ri.Printf( PRINT_WARNING, "WARNING: no shader files found\n" );

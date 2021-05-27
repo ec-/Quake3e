@@ -178,6 +178,7 @@ extern	channel_t   s_channels[MAX_CHANNELS];
 extern	channel_t   loop_channels[MAX_CHANNELS];
 extern	int		numLoopChannels;
 
+extern	int		s_soundtime;
 extern	int		s_paintedtime;
 extern	int		s_rawend;
 extern	vec3_t	listener_forward;
@@ -204,8 +205,6 @@ void		SND_setup( void );
 void		SND_shutdown( void );
 
 void S_PaintChannels(int endtime);
-
-void S_memoryLoad(sfx_t *sfx);
 
 // spatializes a channel
 void S_Spatialize(channel_t *ch);

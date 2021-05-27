@@ -1320,7 +1320,7 @@ void R_AddLitSurf( surfaceType_t *surface, shader_t *shader, int fogIndex );
 #define	CULL_OUT	2		// completely outside the clipping planes
 void R_LocalNormalToWorld( const vec3_t local, vec3_t world );
 void R_LocalPointToWorld( const vec3_t local, vec3_t world );
-int R_CullLocalBox( vec3_t bounds[] );
+int R_CullLocalBox( const vec3_t bounds[2] );
 int R_CullPointAndRadius( const vec3_t origin, float radius );
 int R_CullLocalPointAndRadius( const vec3_t origin, float radius );
 int R_CullDlight( const dlight_t *dl );

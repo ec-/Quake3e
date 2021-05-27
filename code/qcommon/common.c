@@ -68,6 +68,7 @@ cvar_t	*com_dedicated;
 cvar_t	*com_timescale;
 cvar_t	*com_fixedtime;
 cvar_t	*com_journal;
+cvar_t	*com_protocol;
 #ifndef DEDICATED
 cvar_t	*com_maxfps;
 cvar_t	*com_maxfpsUnfocused;
@@ -355,7 +356,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		FS_PureServerSetLoadedPaks( "", "" );
 		com_errorEntered = qfalse;
 
-		longjmp( abortframe, -1 );
+		longjmp( abortframe, 1 );
 	} else if ( code == ERR_DROP ) {
 		Com_Printf( "********************\nERROR: %s\n********************\n",
 			com_errorMessage );
@@ -371,7 +372,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		FS_PureServerSetLoadedPaks( "", "" );
 		com_errorEntered = qfalse;
 
-		longjmp( abortframe, -1 );
+		longjmp( abortframe, 1 );
 	} else if ( code == ERR_NEED_CD ) {
 		SV_Shutdown( "Server didn't have CD" );
 		Com_EndRedirect();
@@ -389,7 +390,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		FS_PureServerSetLoadedPaks( "", "" );
 		com_errorEntered = qfalse;
 
-		longjmp( abortframe, -1 );
+		longjmp( abortframe, 1 );
 	} else {
 		VM_Forced_Unload_Start();
 #ifndef DEDICATED
@@ -601,22 +602,21 @@ be after execing the config and default.
 ===============
 */
 void Com_StartupVariable( const char *match ) {
-	int		i;
-	char	*s;
+	int i;
+	const char *name;
 
-	for (i=0 ; i < com_numConsoleLines ; i++) {
+	for ( i = 0; i < com_numConsoleLines; i++ ) {
 		Cmd_TokenizeString( com_consoleLines[i] );
-		if ( strcmp( Cmd_Argv(0), "set" ) ) {
+		if ( Q_stricmp( Cmd_Argv( 0 ), "set" ) ) {
 			continue;
 		}
 
-		s = Cmd_Argv(1);
-		if( !match || !strcmp( s, match ) )
-		{
-			if ( Cvar_Flags( s ) == CVAR_NONEXISTENT )
-				Cvar_Get( s, Cmd_ArgsFrom( 2 ), CVAR_USER_CREATED );
+		name = Cmd_Argv( 1 );
+		if ( !match || Q_stricmp( name, match ) == 0 ) {
+			if ( Cvar_Flags( name ) == CVAR_NONEXISTENT )
+				Cvar_Get( name, Cmd_ArgsFrom( 2 ), CVAR_USER_CREATED );
 			else
-				Cvar_Set2( s, Cmd_ArgsFrom( 2 ), qfalse );
+				Cvar_Set2( name, Cmd_ArgsFrom( 2 ), qfalse );
 		}
 	}
 }
@@ -3496,11 +3496,11 @@ __asm {
 #endif // id386
 
 #if arm64
-void Sys_SnapVector( vec3_t vec )
+void Sys_SnapVector( float *vector )
 {
-	vec[0] = rint( vec[0] );
-	vec[1] = rint( vec[1] );
-	vec[2] = rint( vec[2] );
+	vector[0] = rint( vector[0] );
+	vector[1] = rint( vector[1] );
+	vector[2] = rint( vector[2] );
 }
 #endif
 
@@ -3514,7 +3514,7 @@ void Sys_SnapVector( vec3_t vec )
 	"fildl " src "\n" \
 	"fstps " src "\n"
 
-void Sys_SnapVector( vec3_t vector )
+void Sys_SnapVector( float *vector )
 {
 	static const unsigned short cw037F = 0x037F;
 	unsigned short cwCurr;
@@ -3535,11 +3535,11 @@ void Sys_SnapVector( vec3_t vector )
 
 #else // idx64, non-x86
 
-void Sys_SnapVector( vec3_t vec )
+void Sys_SnapVector( float *vector )
 {
-	vec[0] = rint(vec[0]);
-	vec[1] = rint(vec[1]);
-	vec[2] = rint(vec[2]);
+	vector[0] = rint( vector[0] );
+	vector[1] = rint( vector[1] );
+	vector[2] = rint( vector[2] );
 }
 
 #endif
@@ -3611,6 +3611,11 @@ void Com_Init( char *commandLine ) {
 	Cvar_Get( "sv_master1", MASTER_SERVER_NAME, CVAR_INIT );
 	Cvar_Get( "sv_master2", "master.ioquake3.org", CVAR_INIT );
 	Cvar_Get( "sv_master3", "master.maverickservers.com", CVAR_INIT );
+
+	com_protocol = Cvar_Get( "protocol", XSTRING( PROTOCOL_VERSION ), 0 );
+	Cvar_CheckRange( com_protocol, "0", NULL, CV_INTEGER );
+	com_protocol->flags &= ~CVAR_USER_CREATED;
+	com_protocol->flags |= CVAR_SERVERINFO | CVAR_ROM;
 
 	// done early so bind command exists
 	Com_InitKeyCommands();
