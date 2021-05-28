@@ -1614,8 +1614,8 @@ static uint32_t get_comp( opcode_t op )
 		case OP_GEU: return HS;
 		case OP_EQF: return EQ;
 		case OP_NEF: return NE;
-		case OP_LTF: return LT;
-		case OP_LEF: return LE;
+		case OP_LTF: return MI;
+		case OP_LEF: return LS;
 		case OP_GTF: return GT;
 		case OP_GEF: return GE;
 		default: DROP( "unexpected op %i", op );

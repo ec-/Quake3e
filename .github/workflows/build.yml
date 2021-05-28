@@ -310,19 +310,22 @@ jobs:
             artifact_name: quake3e-linux-x86_64.zip
 
           - artifact_dir: windows-mingw-x86
-            artifact_name: quake3e-windows-mingw-x86.zip
+#           artifact_name: quake3e-windows-mingw-x86.zip
+            artifact_name: quake3e-windows-x86.zip 
 
           - artifact_dir: windows-mingw-x86_64
-            artifact_name: quake3e-windows-mingw-x86_64.zip
+#           artifact_name: quake3e-windows-mingw-x86_64.zip
+            artifact_name: quake3e-windows-x86_64.zip
 
-          - artifact_dir: windows-msvc-x86
-            artifact_name: quake3e-windows-msvc-x86.zip
+#         - artifact_dir: windows-msvc-x86
+#           artifact_name: quake3e-windows-msvc-x86.zip
 
-          - artifact_dir: windows-msvc-x86_64
-            artifact_name: quake3e-windows-msvc-x86_64.zip
+#         - artifact_dir: windows-msvc-x86_64
+#           artifact_name: quake3e-windows-msvc-x86_64.zip
 
           - artifact_dir: windows-msvc-arm64
-            artifact_name: quake3e-windows-msvc-arm64.zip
+#           artifact_name: quake3e-windows-msvc-arm64.zip
+            artifact_name: quake3e-windows-arm64.zip
 
           - artifact_dir: macos-x86_64
             artifact_name: quake3e-macos-x86_64.zip

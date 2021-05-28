@@ -733,24 +733,48 @@ const char *FarJumpStr( int op, int *n )
 	return NULL;
 }
 
-
 void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 {
 	const char *str;
 	int v, jump_size = 0;
+	qboolean shouldNaNCheck = qfalse;
 
-	v = instructionOffsets[ addr ] - compiledOfs;
+	v = instructionOffsets[addr] - compiledOfs;
+	
+	if (HasFCOM()) {
+		// EQF, LTF and LEF use je/jb/jbe to conditional branch. je/jb/jbe branch if CF/ZF 
+		// is set. comiss/fucomip was used to perform the compare, so if any of the 
+		// operands are NaN, ZF, CF and PF will be set and je/jb/jbe would branch.
+		// However, according to IEEE 754, when the operand is NaN for these comparisons,
+		// the result must be false. So, we emit `jp` before je/jb/jbe to skip
+		// the branch if the result is NaN.
+		if (op == OP_EQF || op == OP_LTF || op == OP_LEF) shouldNaNCheck = qtrue;
+	} else if (i->op == OP_EQF || i->op == OP_LTF || i->op == OP_LEF) {
+		// Similar to above, NaN needs to be accounted for. When HasFCOM() is false, 
+		// fcomp is used to perform the compare and EmitFloatJump is called. Which in turn,
+		// preserves C2 when masking and calls EmitJump with OP_NE. When any of the operands
+		// are NaN, C2 and C0/C3 (whichever was also masked) will be set. So like the previous
+		// case, we can use PF to skip the branch if the result is NaN.
+		shouldNaNCheck = qtrue;
+	}
+
+	if (shouldNaNCheck) {
+		v -= 2; // 2 bytes needed to account for NaN
+		Emit1(0x7A); // jp, target will be filled once we know if next inst is a near or far jump
+	}
 
 #if JUMP_OPTIMIZE
 	if ( i->njump ) {
 		// can happen
 		if ( v < -126 || v > 129 ) {
 			str = FarJumpStr( op, &jump_size );
+			if (shouldNaNCheck) Emit1(jump_size + 4); // target for NaN branch
 			EmitString( str );
 			Emit4( v - 4 - jump_size );
 			i->njump = 0;
 			return;
 		}
+		if (shouldNaNCheck) Emit1(0x02); // target for NaN branch
 		EmitString( NearJumpStr( op ) );
 		Emit1( v - 2 );
 		return;
@@ -758,6 +782,7 @@ void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 
 	if ( pass >= 2 && pass < NUM_PASSES-2 ) {
 		if ( v >= -126 && v <= 129 ) {
+			if (shouldNaNCheck) Emit1(0x02); // target for NaN branch
 			EmitString( NearJumpStr( op ) );
 			Emit1( v - 2 );
 			i->njump = 1;
@@ -769,10 +794,11 @@ void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 	str = FarJumpStr( op, &jump_size );
 	if ( jump_size == 0 ) {
 		Com_Error( ERR_DROP, "VM_CompileX86 error: %s\n", "bad jump size" );
-	} else {
-		EmitString( str );
-		Emit4( v - 4 - jump_size );
+		return;
 	}
+	if (shouldNaNCheck) Emit1(jump_size + 4); // target for NaN branch
+	EmitString( str );
+	Emit4( v - 4 - jump_size );
 }
 
 
@@ -780,22 +806,22 @@ void EmitFloatJump( vm_t *vm, instruction_t *i, int op, int addr )
 {
 	switch ( op ) {
 		case OP_EQF:
-			EmitString( "80 E4 40" );	// and ah,0x40
+			EmitString( "80 E4 44" );	// and ah,0x44 (preserve C2 too)
 			EmitJump( vm, i, OP_NE, addr );
 			break;
 
 		case OP_NEF:
-			EmitString( "80 E4 40" );	// and ah,0x40
+			EmitString( "80 E4 40" );	// and ah,0x40 
 			EmitJump( vm, i, OP_EQ, addr );
 			break;
 
 		case OP_LTF:
-			EmitString( "80 E4 01" );	// and ah,0x01
+			EmitString( "80 E4 05" );	// and ah,0x05 (preserve C2 too)
 			EmitJump( vm, i, OP_NE, addr );
 			break;
 
 		case OP_LEF:
-			EmitString( "80 E4 41" );	// and ah,0x41
+			EmitString( "80 E4 45" );	// and ah,0x45 (preserve C2 too)
 			EmitJump( vm, i, OP_NE, addr );
 			break;
 
