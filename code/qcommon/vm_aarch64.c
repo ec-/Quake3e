@@ -2459,7 +2459,7 @@ static qboolean ConstOptimize( vm_t *vm )
 		}
 		flush_volatile();
 		if ( ci->value == ~TRAP_SIN || ci->value == ~TRAP_COS ) {
-			sx[0] = alloc_sx( S0 );
+			sx[0] = S0; mask_sx( sx[0] );
 			rx[0] = alloc_rx( R16 );
 			emit(VLDRi(sx[0], rPROCBASE, 8)); // s0 = [procBase + 8]
 			if ( ci->value == ~TRAP_SIN )
@@ -2467,8 +2467,8 @@ static qboolean ConstOptimize( vm_t *vm )
 			else
 				emit_MOVXi(rx[0], (intptr_t)cosf);
 			emit(BLR(rx[0]));
-			store_sx_opstack( sx[0] );        // *opstack = s0
 			unmask_rx( rx[0] );
+			store_sx_opstack( sx[0] );        // *opstack = s0
 			ip += 1; // OP_CALL
 			return qtrue;
 		}
