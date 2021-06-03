@@ -3775,7 +3775,11 @@ static void CL_InitGLimp_Cvars( void )
 	cl_drawBuffer = Cvar_Get( "r_drawBuffer", "GL_BACK", CVAR_CHEAT );
 
 #ifdef USE_RENDERER_DLOPEN
+#ifdef RENDERER_DEFAULT
+	cl_renderer = Cvar_Get( "cl_renderer", XSTRING( RENDERER_DEFAULT ), CVAR_ARCHIVE | CVAR_LATCH );
+#else
 	cl_renderer = Cvar_Get( "cl_renderer", "opengl", CVAR_ARCHIVE | CVAR_LATCH );
+#endif
 	if ( !isValidRenderer( cl_renderer->string ) ) {
 		Cvar_ForceReset( "cl_renderer" );
 	}
