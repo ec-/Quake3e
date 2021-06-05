@@ -197,8 +197,9 @@ static void gen_visible_brush(int brushnum, vec3_t origin, visBrushType_t type, 
 		for (int j = i+1; j < brush->numsides; j++) {
 			cplane_t *p2 = brush->sides[j].plane;
 			for (int k = j+1; k < brush->numsides; k++) {
-				vec3_t p;
 				cplane_t *p3 = brush->sides[k].plane;
+
+				vec3_t p;
 				if (!intersect_planes(p1, p2, p3, p))
 					continue;
 
@@ -270,7 +271,9 @@ static qboolean intersect_planes(cplane_t *p1, cplane_t *p2, cplane_t *p3, vec3_
 	vec3_t u, v;
 	CrossProduct(p2->normal, p3->normal, u);
 	float denom = DotProduct(p1->normal, u);
-	if (fabs(denom) < 1e-5)
+	// brushes with non-AA planes + AA bevel planes create invalid intersections
+	// EPSILON 1e-5 too small => 1e-3
+	if (fabs(denom) < 1e-3)
 		return qfalse;
 
 	for (int i = 0; i < 3; i++)
@@ -285,7 +288,9 @@ static qboolean intersect_planes(cplane_t *p1, cplane_t *p2, cplane_t *p3, vec3_
 static qboolean point_in_brush(vec3_t point, cbrush_t *brush) {
 	for (int i = 0; i < brush->numsides; i++) {
 		float d = DotProduct(point, brush->sides[i].plane->normal);
-		if (d - brush->sides[i].plane->dist > PLANE_TRI_EPSILON)
+		// brushes with non-AA planes + AA bevel planes create too much intersections
+		// EPSILON 1e-1 too big => 1e-3
+		if (d - brush->sides[i].plane->dist > 1e-3)
 			return qfalse;
 	}
 	return qtrue;
