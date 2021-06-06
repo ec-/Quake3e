@@ -19,7 +19,7 @@ along with Quake III Arena source code; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
-// snd_local.h -- private sound definations
+// snd_local.h -- private sound definitions
 
 
 #include "../qcommon/q_shared.h"
@@ -38,14 +38,14 @@ typedef struct {
 } portable_samplepair_t;
 
 typedef struct adpcm_state {
-    short	sample;		/* Previous output value */
-    char	index;		/* Index into stepsize table */
+	short	sample;		/* Previous output value */
+	char	index;		/* Index into stepsize table */
 } adpcm_state_t;
 
 typedef	struct sndBuffer_s {
 	short					sndChunk[SND_CHUNK_SIZE];
 	struct sndBuffer_s		*next;
-    int						size;
+	int						size;
 	adpcm_state_t			adpcm;
 } sndBuffer;
 
@@ -54,7 +54,7 @@ typedef struct sfx_s {
 	qboolean		defaultSound;			// couldn't be loaded, so use buzz
 	qboolean		inMemory;				// not in Memory
 	qboolean		soundCompressed;		// not in Memory
-	int				soundCompressionMethod;	
+	int				soundCompressionMethod;
 	int 			soundLength;
 	int				soundChannels;
 	char 			soundName[MAX_QPATH];
@@ -178,6 +178,7 @@ extern	channel_t   s_channels[MAX_CHANNELS];
 extern	channel_t   loop_channels[MAX_CHANNELS];
 extern	int		numLoopChannels;
 
+extern	int		s_soundtime;
 extern	int		s_paintedtime;
 extern	int		s_rawend;
 extern	vec3_t	listener_forward;
@@ -204,8 +205,6 @@ void		SND_setup( void );
 void		SND_shutdown( void );
 
 void S_PaintChannels(int endtime);
-
-void S_memoryLoad(sfx_t *sfx);
 
 // spatializes a channel
 void S_Spatialize(channel_t *ch);

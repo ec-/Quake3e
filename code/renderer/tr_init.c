@@ -32,6 +32,8 @@ int			gl_clamp_mode;	// GL_CLAMP or GL_CLAMP_TO_EGGE
 
 glstate_t	glState;
 
+glstatic_t	gls;
+
 static void GfxInfo( void );
 static void VarInfo( void );
 static void GL_SetDefaultState( void );
@@ -70,6 +72,7 @@ cvar_t	*r_dlightSpecColor;
 cvar_t	*r_dlightScale;
 cvar_t	*r_dlightIntensity;
 #endif
+cvar_t	*r_dlightSaturation;
 cvar_t	*r_vbo;
 cvar_t	*r_fbo;
 cvar_t	*r_hdr;
@@ -173,9 +176,6 @@ cvar_t	*r_maxpolys;
 int		max_polys;
 cvar_t	*r_maxpolyverts;
 int		max_polyverts;
-
-int		captureWidth;
-int		captureHeight;
 
 static char gl_extensions[ 32768 ];
 
@@ -348,7 +348,7 @@ static void R_InitExtensions( void )
 	if ( R_HaveExtension( "GL_ARB_texture_compression" ) &&
 		 R_HaveExtension( "GL_EXT_texture_compression_s3tc" ) )
 	{
-		if ( r_ext_compressed_textures->integer ){ 
+		if ( r_ext_compressed_textures->integer ){
 			glConfig.textureCompression = TC_S3TC_ARB;
 			ri.Printf( PRINT_ALL, "...using GL_EXT_texture_compression_s3tc\n" );
 		} else {
@@ -475,7 +475,7 @@ static void R_InitExtensions( void )
 		if ( err )
 		{
 			ri.Printf( PRINT_WARNING, "Error resolving ARB program function '%s'\n", err );
-			qglGenProgramsARB = NULL; // indicates presense of ARB shaders functionality
+			qglGenProgramsARB = NULL; // indicates presence of ARB shaders functionality
 		}
 		else
 		{
@@ -489,7 +489,7 @@ static void R_InitExtensions( void )
 		if ( err )
 		{
 			ri.Printf( PRINT_WARNING, "Error resolving VBO function '%s'\n", err );
-			qglBindBufferARB = NULL; // indicates presense of VBO functionality
+			qglBindBufferARB = NULL; // indicates presence of VBO functionality
 		}
 		else
 		{
@@ -503,7 +503,7 @@ static void R_InitExtensions( void )
 		if ( err )
 		{
 			ri.Printf( PRINT_WARNING, "Error resolving FBO function '%s'\n", err );
-			qglGenFramebuffers = NULL; // indicates presense of FBO functionality
+			qglGenFramebuffers = NULL; // indicates presence of FBO functionality
 		}
 		else
 		{
@@ -534,7 +534,7 @@ static void InitOpenGL( void )
 	//		- r_ignorehwgamma
 	//		- r_gamma
 	//
-	
+
 	if ( glConfig.vidWidth == 0 )
 	{
 		const char *err;
@@ -557,7 +557,7 @@ static void InitOpenGL( void )
 		glConfig.maxTextureSize = max_texture_size;
 
 		// stubbed or broken drivers may have reported 0...
-		if ( glConfig.maxTextureSize <= 0 ) 
+		if ( glConfig.maxTextureSize <= 0 )
 			glConfig.maxTextureSize = 0;
 		else if ( glConfig.maxTextureSize > 2048 )
 			glConfig.maxTextureSize = 2048; // ResampleTexture() relies on that maximum
@@ -573,10 +573,34 @@ static void InitOpenGL( void )
 		if ( glConfig.numTextureUnits && max_bind_units > 0 )
 			glConfig.numTextureUnits = max_bind_units;
 
-		captureWidth = glConfig.vidWidth;
-		captureHeight = glConfig.vidHeight;
+		gls.windowWidth = glConfig.vidWidth;
+		gls.windowHeight = glConfig.vidHeight;
 
-		ri.CL_SetScaling( 1.0, captureWidth, captureHeight );
+		gls.captureWidth = glConfig.vidWidth;
+		gls.captureHeight = glConfig.vidHeight;
+
+		ri.CL_SetScaling( 1.0, gls.captureWidth, gls.captureHeight );
+
+		if ( r_fbo->integer && qglGenProgramsARB && qglGenFramebuffers )
+		{
+			if ( r_renderScale->integer )
+			{
+				glConfig.vidWidth = r_renderWidth->integer;
+				glConfig.vidHeight = r_renderHeight->integer;
+			}
+
+			gls.captureWidth = glConfig.vidWidth;
+			gls.captureHeight = glConfig.vidHeight;
+
+			ri.CL_SetScaling( 1.0, gls.captureWidth, gls.captureHeight );
+
+			if ( r_ext_supersample->integer )
+			{
+				glConfig.vidWidth *= 2;
+				glConfig.vidHeight *= 2;
+				ri.CL_SetScaling( 2.0, gls.captureWidth, gls.captureHeight );
+			}
+		}
 
 		QGL_InitARB();
 
@@ -592,6 +616,28 @@ static void InitOpenGL( void )
 
 		// print info
 		GfxInfo();
+
+		gls.initTime = ri.Milliseconds();
+	}
+	else
+	{
+		QGL_SetRenderScale( qfalse );
+	}
+
+	if ( !qglViewport ) // might happen after REF_KEEP_WINDOW
+	{
+		const char *err = R_ResolveSymbols( core_procs, ARRAY_LEN( core_procs ) );
+		if ( err )
+			ri.Error( ERR_FATAL, "Error resolving core OpenGL function '%s'", err );
+
+		R_InitExtensions();
+
+		QGL_InitARB();
+
+		// print info
+		GfxInfo();
+
+		gls.initTime = ri.Milliseconds();
 	}
 
 	VarInfo();
@@ -647,10 +693,10 @@ void GL_CheckErrors( void ) {
 }
 
 
-/* 
-============================================================================== 
- 
-						SCREEN SHOTS 
+/*
+==============================================================================
+
+						SCREEN SHOTS
 
 NOTE TTimo
 some thoughts about the screenshots system:
@@ -663,11 +709,11 @@ we use statics to store a count and start writing the first screenshot/screensho
 (with FS_FileExists / FS_FOpenFileWrite calls)
 FIXME: the statics don't get a reinit between fs_game changes
 
-============================================================================== 
-*/ 
+==============================================================================
+*/
 
-/* 
-================== 
+/*
+==================
 RB_ReadPixels
 
 Reads an image but takes care of alignment issues for reading RGB images.
@@ -680,8 +726,8 @@ alignment of packAlign to ensure efficient copying.
 Stores the length of padding after a line of pixels to address padlen
 
 Return value must be freed with ri.Hunk_FreeTempMemory()
-================== 
-*/  
+==================
+*/
 static byte *RB_ReadPixels(int x, int y, int width, int height, size_t *offset, int *padlen, int lineAlign )
 {
 	byte *buffer, *bufstart;
@@ -717,7 +763,7 @@ static byte *RB_ReadPixels(int x, int y, int width, int height, size_t *offset, 
 ==================
 RB_TakeScreenshot
 ==================
-*/  
+*/
 void RB_TakeScreenshot( int x, int y, int width, int height, const char *fileName )
 {
 	const int header_size = 18;
@@ -756,10 +802,10 @@ void RB_TakeScreenshot( int x, int y, int width, int height, const char *fileNam
 			*destptr++ = srcptr[2];
 			*destptr++ = srcptr[1];
 			*destptr++ = temp;
-			
+
 			srcptr += 3;
 		}
-		
+
 		// Skip the pad
 		srcptr += padlen;
 	}
@@ -776,10 +822,10 @@ void RB_TakeScreenshot( int x, int y, int width, int height, const char *fileNam
 }
 
 
-/* 
-================== 
+/*
+==================
 RB_TakeScreenshotJPEG
-================== 
+==================
 */
 void RB_TakeScreenshotJPEG( int x, int y, int width, int height, const char *fileName )
 {
@@ -923,11 +969,11 @@ void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *file
 }
 
 
-/* 
-================== 
+/*
+==================
 R_ScreenshotFilename
-================== 
-*/  
+==================
+*/
 static void R_ScreenshotFilename( char *fileName, const char *fileExt ) {
 	qtime_t t;
 	int count;
@@ -935,12 +981,12 @@ static void R_ScreenshotFilename( char *fileName, const char *fileExt ) {
 	count = 0;
 	ri.Com_RealTime( &t );
 
-	Com_sprintf( fileName, MAX_OSPATH, "screenshots/shot-%04d%02d%02d-%02d%02d%02d.%s", 
+	Com_sprintf( fileName, MAX_OSPATH, "screenshots/shot-%04d%02d%02d-%02d%02d%02d.%s",
 			1900 + t.tm_year, 1 + t.tm_mon,	t.tm_mday,
 			t.tm_hour, t.tm_min, t.tm_sec, fileExt );
 
 	while (	ri.FS_FileExists( fileName ) && ++count < 1000 ) {
-		Com_sprintf( fileName, MAX_OSPATH, "screenshots/shot-%04d%02d%02d-%02d%02d%02d-%d.%s", 
+		Com_sprintf( fileName, MAX_OSPATH, "screenshots/shot-%04d%02d%02d-%02d%02d%02d-%d.%s",
 				1900 + t.tm_year, 1 + t.tm_mon,	t.tm_mday,
 				t.tm_hour, t.tm_min, t.tm_sec, count, fileExt );
 	}
@@ -1015,8 +1061,8 @@ static void R_LevelShot( void ) {
 }
 
 
-/* 
-================== 
+/*
+==================
 R_ScreenShot_f
 
 screenshot
@@ -1025,8 +1071,8 @@ screenshot [levelshot]
 screenshot [filename]
 
 Doesn't print the pacifier message if there is a second arg
-================== 
-*/  
+==================
+*/
 static void R_ScreenShot_f( void ) {
 	char		checkname[MAX_OSPATH];
 	qboolean	silent;
@@ -1161,10 +1207,10 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 				*destptr++ = srcptr[0];
 				srcptr += 3;
 			}
-			
+
 			Com_Memset(destptr, '\0', avipadlen);
 			destptr += avipadlen;
-			
+
 			srcptr += padlen;
 		}
 
@@ -1305,7 +1351,7 @@ static void GfxInfo( void )
 	if ( glConfig.isFullscreen )
 	{
 		const char *modefs = ri.Cvar_VariableString( "r_modeFullscreen" );
-		if ( *modefs ) 
+		if ( *modefs )
 			mode = atoi( modefs );
 		else
 			mode = ri.Cvar_VariableIntegerValue( "r_mode" );
@@ -1317,13 +1363,13 @@ static void GfxInfo( void )
 		fs = fsstrings[0];
 	}
 
-	if ( windowAdjusted )
+	if ( glConfig.vidWidth != gls.windowWidth || glConfig.vidHeight != gls.windowHeight )
 	{
-		ri.Printf( PRINT_ALL, "RENDER: %d x %d, MODE: %d, %d x %d %s hz:", glConfig.vidWidth, glConfig.vidHeight, mode, windowWidth, windowHeight, fs );
+		ri.Printf( PRINT_ALL, "RENDER: %d x %d, MODE: %d, %d x %d %s hz:", glConfig.vidWidth, glConfig.vidHeight, mode, gls.windowWidth, gls.windowHeight, fs );
 	}
-	else 
+	else
 	{
-		ri.Printf( PRINT_ALL, "MODE: %d, %d x %d %s hz:", mode, windowWidth, windowHeight, fs );
+		ri.Printf( PRINT_ALL, "MODE: %d, %d x %d %s hz:", mode, gls.windowWidth, gls.windowHeight, fs );
 	}
 
 	if ( glConfig.displayFrequency )
@@ -1356,7 +1402,6 @@ static void VarInfo( void )
 	} else {
 		ri.Printf( PRINT_ALL, "GAMMA: software w/ %d overbright bits\n", tr.overbrightBits );
 	}
-
 
 	ri.Printf( PRINT_ALL, "texturemode: %s\n", r_textureMode->string );
 	ri.Printf( PRINT_ALL, "texture bits: %d\n", r_texturebits->integer ? r_texturebits->integer : 32 );
@@ -1447,7 +1492,9 @@ static void R_Register( void )
 	//
 	// archived variables that can change at any time
 	//
-	r_lodCurveError = ri.Cvar_Get( "r_lodCurveError", "250", CVAR_ARCHIVE_ND | CVAR_CHEAT );
+	r_lodCurveError = ri.Cvar_Get( "r_lodCurveError", "250", CVAR_ARCHIVE_ND );
+	ri.Cvar_CheckRange( r_lodCurveError, "-1", "8192", CV_FLOAT );
+	ri.Cvar_SetDescription( r_lodCurveError, "Level of detail error on curved surface grids." );
 	r_lodbias = ri.Cvar_Get( "r_lodbias", "0", CVAR_ARCHIVE_ND );
 	r_znear = ri.Cvar_Get( "r_znear", "4", CVAR_CHEAT );
 	ri.Cvar_CheckRange( r_znear, "0.001", "200", CV_FLOAT );
@@ -1475,6 +1522,9 @@ static void R_Register( void )
 	r_dlightIntensity = ri.Cvar_Get( "r_dlightIntensity", "1.0", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_dlightIntensity, "0.1", "1", CV_FLOAT );
 #endif // USE_PMLIGHT
+	r_dlightSaturation = ri.Cvar_Get( "r_dlightSaturation", "1", CVAR_ARCHIVE_ND );
+	ri.Cvar_CheckRange( r_dlightSaturation, "0", "1", CV_FLOAT );
+
 	r_ext_multisample = ri.Cvar_Get( "r_ext_multisample", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_ext_multisample, "0", "8", CV_INTEGER );
 	ri.Cvar_SetGroup( r_ext_multisample, CVG_RENDERER );
@@ -1736,12 +1786,14 @@ static void RE_Shutdown( refShutdownCode_t code ) {
 
 		VBO_Cleanup();
 
-		ri.GLimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue: qfalse );
-
 		R_ClearSymTables();
 
-		Com_Memset( &glConfig, 0, sizeof( glConfig ) );
 		Com_Memset( &glState, 0, sizeof( glState ) );
+
+		if ( code != REF_KEEP_WINDOW ) {
+			ri.GLimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue : qfalse );
+			Com_Memset( &glConfig, 0, sizeof( glConfig ) );
+		}
 	}
 
 	ri.FreeAll();
@@ -1784,7 +1836,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	Com_Memset( &re, 0, sizeof( re ) );
 
 	if ( apiVersion != REF_API_VERSION ) {
-		ri.Printf(PRINT_ALL, "Mismatched REF_API_VERSION: expected %i, got %i\n", 
+		ri.Printf(PRINT_ALL, "Mismatched REF_API_VERSION: expected %i, got %i\n",
 			REF_API_VERSION, apiVersion );
 		return NULL;
 	}

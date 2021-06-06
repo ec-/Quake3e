@@ -53,16 +53,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifdef _MSC_VER
 
 #pragma warning(disable : 4018)     // signed/unsigned mismatch
-#pragma warning(disable : 4032)
-#pragma warning(disable : 4051)
+//#pragma warning(disable : 4032)
+//#pragma warning(disable : 4051)
 #pragma warning(disable : 4057)		// slightly different base types
 #pragma warning(disable : 4100)		// unreferenced formal parameter
-#pragma warning(disable : 4115)
+//#pragma warning(disable : 4115)
 #pragma warning(disable : 4125)		// decimal digit terminates octal escape sequence
 #pragma warning(disable : 4127)		// conditional expression is constant
-#pragma warning(disable : 4136)
+//#pragma warning(disable : 4136)
 #pragma warning(disable : 4152)		// nonstandard extension, function/data pointer conversion in expression
+#pragma warning(disable : 4200)		// nonstandard extension used: size-sided array in struct/union
 //#pragma warning(disable : 4201)
+#pragma warning(disable : 4206)		// nonstandard extension used: translation unit is empty
 //#pragma warning(disable : 4214)
 #pragma warning(disable : 4267)		// conversion from 'size_t' to 'int', possible loss of data
 #pragma warning(disable : 4244)
@@ -70,15 +72,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //#pragma warning(disable : 4305)		// truncation from const double to float
 //#pragma warning(disable : 4310)		// cast truncates constant value
 //#pragma warning(disable:  4505) 	// unreferenced local function has been removed
-#pragma warning(disable : 4514)
+//#pragma warning(disable : 4514)
 #pragma warning(disable : 4702)		// unreachable code
 #pragma warning(disable : 4711)		// selected for automatic inline expansion
 #pragma warning(disable : 4220)		// varargs matches remaining parameters
+#pragma warning(disable : 4324)		// 'q_jpeg_error_mgr_s' : structure was padded due to alignment specifier
+#pragma warning(disable : 4091)		// 'typedef': ignored on lef of <..> when no variable is declared
 //#pragma intrinsic( memset, memcpy )
 #endif
 
-//Ignore __attribute__ on non-gcc platforms
-#ifndef __GNUC__
+//Ignore __attribute__ on non-gcc/clang platforms
+#if !defined(__GNUC__) && !defined(__clang__)
 #ifndef __attribute__
 #define __attribute__(x)
 #endif
@@ -182,6 +186,12 @@ typedef union floatint_u
 	byte b[4];
 }
 floatint_t;
+
+typedef union {
+	byte rgba[4];
+	uint32_t u32;
+} color4ub_t;
+
 
 typedef int		qhandle_t;
 typedef int		sfxHandle_t;
@@ -855,7 +865,7 @@ const char *Info_ValueForKeyToken( const char *key );
 qboolean Info_SetValueForKey_s( char *s, int slen, const char *key, const char *value );
 qboolean Info_Validate( const char *s );
 qboolean Info_ValidateKeyValue( const char *s );
-void Info_NextPair( const char **s, char *key, char *value );
+const char *Info_NextPair( const char *s, char *key, char *value );
 int Info_RemoveKey( char *s, const char *key );
 
 // this is only here so the functions in q_shared.c and bg_*.c can link
@@ -902,6 +912,7 @@ default values.
 #define CVAR_PRIVATE		0x8000	// can't be read from VM
 
 #define CVAR_DEVELOPER		0x10000 // can be set only in developer mode
+#define CVAR_NOTABCOMPLETE	0x20000 // no tab completion in console
 
 #define CVAR_ARCHIVE_ND		(CVAR_ARCHIVE | CVAR_NODEFAULT)
 

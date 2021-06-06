@@ -29,6 +29,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #	include <SDL.h>
 #endif
 
+void HandleEvents( void );
+
 //#define USE_JOYSTICK
 
 typedef struct
@@ -44,6 +46,8 @@ typedef struct
 
 	int window_width;
 	int window_height;
+
+	int monitorCount;
 
 } glwstate_t;
 

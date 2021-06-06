@@ -141,7 +141,7 @@ static qboolean CL_GetSnapshot( int snapshotNumber, snapshot_t *snapshot ) {
 	}
 	snapshot->numEntities = count;
 	for ( i = 0 ; i < count ; i++ ) {
-		snapshot->entities[i] = 
+		snapshot->entities[i] =
 			cl.parseEntities[ ( clSnap->parseEntitiesNum + i ) & (MAX_PARSE_ENTITIES-1) ];
 	}
 
@@ -203,7 +203,7 @@ static void CL_ConfigstringModified( void ) {
 
 	// leave the first 0 for uninitialized strings
 	cl.gameState.dataCount = 1;
-		
+
 	for ( i = 0 ; i < MAX_CONFIGSTRINGS ; i++ ) {
 		if ( i == index ) {
 			dup = s;
@@ -334,7 +334,7 @@ rescan:
 	// the clientLevelShot command is used during development
 	// to generate 128*128 screenshots from the intermission
 	// point of levels for the menu system to use
-	// we pass it along to the cgame to make apropriate adjustments,
+	// we pass it along to the cgame to make appropriate adjustments,
 	// but we also clear the console and notify lines here
 	if ( !strcmp( cmd, "clientLevelShot" ) ) {
 		// don't do it if we aren't running the server locally,
@@ -385,7 +385,7 @@ void CL_ShutdownCGame( void ) {
 	if ( !cgvm ) {
 		return;
 	}
-	
+
 	re.VertexLighting( qfalse );
 
 	VM_Call( cgvm, 0, CG_SHUTDOWN );
@@ -468,10 +468,10 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 	case CG_MILLISECONDS:
 		return Sys_Milliseconds();
 	case CG_CVAR_REGISTER:
-		Cvar_Register( VMA(1), VMA(2), VMA(3), args[4] ); 
+		Cvar_Register( VMA(1), VMA(2), VMA(3), args[4], cgvm->privateFlag );
 		return 0;
 	case CG_CVAR_UPDATE:
-		Cvar_Update( VMA(1) );
+		Cvar_Update( VMA(1), cgvm->privateFlag );
 		return 0;
 	case CG_CVAR_SET:
 		Cvar_SetSafe( VMA(1), VMA(2) );
@@ -587,7 +587,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return 0;
 	case CG_R_LOADWORLDMAP:
 		re.LoadWorld( VMA(1) );
-		return 0; 
+		return 0;
 	case CG_R_REGISTERMODEL:
 		return re.RegisterModel( VMA(1) );
 	case CG_R_REGISTERSKIN:
@@ -1018,7 +1018,7 @@ static void CL_FirstSnapshot( void ) {
 		Cbuf_AddText( "\n" );
 		Cvar_Set( "activeAction", "" );
 	}
-	
+
 	Sys_BeginProfiling();
 }
 
@@ -1138,7 +1138,7 @@ void CL_SetCGameTime( void ) {
 		cl.serverTimeDelta -= cls.frametime;
 	} else {
 		// cl_timeNudge is a user adjustable cvar that allows more
-		// or less latency to be added in the interest of better 
+		// or less latency to be added in the interest of better
 		// smoothness or better responsiveness.
 		cl.serverTime = cls.realtime + cl.serverTimeDelta - CL_TimeNudge();
 

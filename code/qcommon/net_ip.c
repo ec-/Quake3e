@@ -103,6 +103,58 @@ typedef int	ioctlarg_t;
 
 #endif
 
+typedef union {
+	struct sockaddr_in v4;
+	struct sockaddr_in6 v6;
+	struct sockaddr_storage ss;
+} sockaddr_t;
+
+#pragma pack(push,1)
+typedef struct socks5_request_s {
+	uint8_t version;
+	uint8_t command;
+	uint8_t reserved;
+	uint8_t addrtype;
+	union {
+		struct {
+			struct in_addr addr;
+			uint16_t port;
+		} v4;
+#ifdef USE_IPV6
+		struct {
+			struct in6_addr addr;
+			uint16_t port;
+		} v6;
+#endif
+		byte buffer[64];
+	} u;
+} socks5_request_t;
+
+typedef union socks5_udp_request_s {
+	struct {
+		uint8_t reserved[2];
+		uint8_t fragnum;
+		uint8_t addrtype;
+		union {
+			struct {
+				struct in_addr addr;
+				uint16_t port;
+				char data[2000];
+			} v4;
+#ifdef USE_IPV6
+			struct {
+				struct in6_addr addr;
+				uint16_t port;
+				char data[2000];
+			} v6;
+#endif
+		} u;
+	} s;
+	char buf[1];
+} socks5_udp_request_t;
+#pragma pack(pop)
+
+
 static qboolean usingSocks = qfalse;
 static int networkingEnabled = 0;
 
@@ -124,7 +176,7 @@ static cvar_t	*net_mcast6iface;
 #endif
 static cvar_t	*net_dropsim;
 
-static struct sockaddr_in socksRelayAddr;
+static sockaddr_t socksRelayAddr;
 
 static SOCKET	ip_socket = INVALID_SOCKET;
 static SOCKET	socks_socket = INVALID_SOCKET;
@@ -154,13 +206,8 @@ typedef struct
 	
 	netadrtype_t type;
 	sa_family_t family;
-#ifdef USE_IPV6
-	struct sockaddr_storage addr;
-	struct sockaddr_storage netmask;
-#else
-	struct sockaddr_storage addr;
-	struct sockaddr_storage netmask;
-#endif
+	sockaddr_t addr;
+	sockaddr_t netmask;
 } nip_localaddr_t;
 
 static nip_localaddr_t localIP[MAX_IPS];
@@ -232,53 +279,53 @@ static char *NET_ErrorString( void ) {
 }
 
 
-static void NetadrToSockadr( const netadr_t *a, struct sockaddr_storage *s ) {
+static void NetadrToSockadr( const netadr_t *a, sockaddr_t *s ) {
 	switch ( a->type ) {
 		case NA_BROADCAST:
-			((struct sockaddr_in *)s)->sin_family = AF_INET;
-			((struct sockaddr_in *)s)->sin_port = a->port;
-			((struct sockaddr_in *)s)->sin_addr.s_addr = INADDR_BROADCAST;
+			s->v4.sin_family = AF_INET;
+			s->v4.sin_port = a->port;
+			s->v4.sin_addr.s_addr = INADDR_BROADCAST;
 			break;
 		case NA_IP:
-			((struct sockaddr_in *)s)->sin_family = AF_INET;
-			((struct sockaddr_in *)s)->sin_addr.s_addr = *(int *)&a->ipv._4;
-			((struct sockaddr_in *)s)->sin_port = a->port;
+			s->v4.sin_family = AF_INET;
+			memcpy( &s->v4.sin_addr.s_addr, a->ipv._4, sizeof( s->v4.sin_addr.s_addr ) );
+			s->v4.sin_port = a->port;
 			break;
 #ifdef USE_IPV6
 		case NA_IP6:
-			((struct sockaddr_in6 *)s)->sin6_family = AF_INET6;
-			((struct sockaddr_in6 *)s)->sin6_addr = * ((struct in6_addr *) &a->ipv._6);
-			((struct sockaddr_in6 *)s)->sin6_port = a->port;
-			((struct sockaddr_in6 *)s)->sin6_scope_id = a->scope_id;
+			s->v6.sin6_family = AF_INET6;
+			memcpy( &s->v6.sin6_addr, a->ipv._6, sizeof( s->v6.sin6_addr ) );
+			s->v6.sin6_port = a->port;
+			s->v6.sin6_scope_id = a->scope_id;
 			break;
 		case NA_MULTICAST6:
-			((struct sockaddr_in6 *)s)->sin6_family = AF_INET6;
-			((struct sockaddr_in6 *)s)->sin6_addr = curgroup.ipv6mr_multiaddr;
-			((struct sockaddr_in6 *)s)->sin6_port = a->port;
+			s->v6.sin6_family = AF_INET6;
+			s->v6.sin6_addr = curgroup.ipv6mr_multiaddr;
+			s->v6.sin6_port = a->port;
 			break;
 #endif
 		default:
-			((struct sockaddr_in *)s)->sin_family = AF_UNSPEC;
-			((struct sockaddr_in *)s)->sin_port = 0;
-			((struct sockaddr_in *)s)->sin_addr.s_addr = INADDR_ANY;
+			s->v4.sin_family = AF_UNSPEC;
+			s->v4.sin_port = 0;
+			s->v4.sin_addr.s_addr = INADDR_ANY;
 			break;
 	}
 }
 
 
-static void SockadrToNetadr( const struct sockaddr_storage *s, netadr_t *a ) {
-	if (s->ss_family == AF_INET) {
+static void SockadrToNetadr( const sockaddr_t *s, netadr_t *a ) {
+	if ( s->ss.ss_family == AF_INET ) {
 		a->type = NA_IP;
-		*(int *)&a->ipv._4 = ((struct sockaddr_in *)s)->sin_addr.s_addr;
-		a->port = ((struct sockaddr_in *)s)->sin_port;
+		memcpy( a->ipv._4, &s->v4.sin_addr.s_addr, sizeof( a->ipv._4 ) );
+		a->port = s->v4.sin_port;
 	}
 #ifdef USE_IPV6
-	else if(s->ss_family == AF_INET6)
+	else if ( s->ss.ss_family == AF_INET6 )
 	{
 		a->type = NA_IP6;
-		memcpy(a->ipv._6, &((struct sockaddr_in6 *)s)->sin6_addr, sizeof(a->ipv._6));
-		a->port = ((struct sockaddr_in6 *)s)->sin6_port;
-		a->scope_id = ((struct sockaddr_in6 *)s)->sin6_scope_id;
+		memcpy( a->ipv._6, &s->v6.sin6_addr, sizeof( a->ipv._6 ) );
+		a->port = s->v6.sin6_port;
+		a->scope_id = s->v6.sin6_scope_id;
 	}
 #endif
 }
@@ -324,11 +371,10 @@ static const char *gai_error_str( int ecode )
 Sys_StringToSockaddr
 =============
 */
-static qboolean Sys_StringToSockaddr( const char *s, struct sockaddr *sadr, int sadr_len, sa_family_t family )
+static qboolean Sys_StringToSockaddr( const char *s, sockaddr_t *sadr, int sadr_len, sa_family_t family )
 {
 	struct addrinfo hints;
 	struct addrinfo *res = NULL;
-	struct addrinfo *search = NULL;
 	struct addrinfo *hintsp;
 	int retval;
 
@@ -343,6 +389,8 @@ static qboolean Sys_StringToSockaddr( const char *s, struct sockaddr *sadr, int 
 
 	if ( !retval )
 	{
+		struct addrinfo *search = NULL;
+
 		if ( family == AF_UNSPEC )
 		{
 			// Decide here and now which protocol family to use
@@ -397,12 +445,12 @@ static qboolean Sys_StringToSockaddr( const char *s, struct sockaddr *sadr, int 
 Sys_SockaddrToString
 =============
 */
-static void Sys_SockaddrToString( char *dest, int destlen, const struct sockaddr_storage *input )
+static void Sys_SockaddrToString( char *dest, int destlen, const sockaddr_t *input )
 {
 	socklen_t inputlen;
 
 #ifdef USE_IPV6
-	if ( input->ss_family == AF_INET6 )
+	if ( input->ss.ss_family == AF_INET6 )
 		inputlen = sizeof(struct sockaddr_in6);
 	else
 #endif
@@ -419,7 +467,7 @@ Sys_StringToAdr
 =============
 */
 qboolean Sys_StringToAdr( const char *s, netadr_t *a, netadrtype_t family ) {
-	struct sockaddr_storage sadr;
+	sockaddr_t sadr;
 	sa_family_t fam;
 	
 	switch(family)
@@ -437,7 +485,7 @@ qboolean Sys_StringToAdr( const char *s, netadr_t *a, netadrtype_t family ) {
 		break;
 	}
 
-	if( !Sys_StringToSockaddr(s, (struct sockaddr *) &sadr, sizeof(sadr), fam ) ) {
+	if ( !Sys_StringToSockaddr( s, &sadr, sizeof( sadr ), fam ) ) {
 		return qfalse;
 	}
 
@@ -536,7 +584,7 @@ const char *NET_AdrToString( const netadr_t *a )
 	else if (a->type == NA_IP)
 #endif
 	{
-		struct sockaddr_storage sadr;
+		sockaddr_t sadr;
 		NetadrToSockadr( a, &sadr );
 		Sys_SockaddrToString( s, sizeof(s), &sadr );
 	}
@@ -602,7 +650,7 @@ Receive one packet
 static qboolean NET_GetPacket( netadr_t *net_from, msg_t *net_message, const fd_set *fdr )
 {
 	int 	ret;
-	struct sockaddr_storage from;
+	sockaddr_t	from;
 	socklen_t	fromlen;
 	int		err;
 
@@ -620,7 +668,7 @@ static qboolean NET_GetPacket( netadr_t *net_from, msg_t *net_message, const fd_
 		}
 		else
 		{
-			memset( ((struct sockaddr_in *)&from)->sin_zero, 0, 8 );
+			memset( &from.v4.sin_zero, 0, sizeof( from.v4.sin_zero ) );
 
 			if ( usingSocks && memcmp( &from, &socksRelayAddr, fromlen ) == 0 ) {
 				if ( ret < 10 || net_message->data[0] != 0 || net_message->data[1] != 0 || net_message->data[2] != 0 || net_message->data[3] != 1 ) {
@@ -631,7 +679,7 @@ static qboolean NET_GetPacket( netadr_t *net_from, msg_t *net_message, const fd_
 				net_from->ipv._4[1] = net_message->data[5];
 				net_from->ipv._4[2] = net_message->data[6];
 				net_from->ipv._4[3] = net_message->data[7];
-				net_from->port = *(short *)&net_message->data[8];
+				net_from->port = *(uint16_t *)&net_message->data[8];
 				net_message->readcount = 10;
 			}
 			else {
@@ -722,8 +770,8 @@ Sys_SendPacket
 ==================
 */
 void Sys_SendPacket( int length, const void *data, const netadr_t *to ) {
-	int				ret = SOCKET_ERROR;
-	struct sockaddr_storage	addr;
+	int ret = SOCKET_ERROR;
+	sockaddr_t addr;
 
 	switch ( to->type ) {
 		case NA_BROADCAST:
@@ -754,22 +802,25 @@ void Sys_SendPacket( int length, const void *data, const netadr_t *to ) {
 
 	NetadrToSockadr( to, &addr );
 
-	if( usingSocks && to->type == NA_IP ) {
-		char socksBuf[ 4096 ];
-		socksBuf[0] = 0;	// reserved
-		socksBuf[1] = 0;
-		socksBuf[2] = 0;	// fragment (not fragmented)
-		socksBuf[3] = 1;	// address type: IPV4
-		*(int *)&socksBuf[4] = ((struct sockaddr_in *)&addr)->sin_addr.s_addr;
-		*(short *)&socksBuf[8] = ((struct sockaddr_in *)&addr)->sin_port;
-		memcpy( &socksBuf[10], data, length );
-		ret = sendto( ip_socket, socksBuf, length+10, 0, (struct sockaddr *) &socksRelayAddr, sizeof(socksRelayAddr) );
+	if ( usingSocks && to->type == NA_IP ) {
+		socks5_udp_request_t cmd;
+
+		if ( length <= sizeof( cmd.s.u.v4.data ) ) {
+			cmd.s.reserved[0] = 0;
+			cmd.s.reserved[1] = 0;
+			cmd.s.fragnum = 0;  // not fragmented
+			cmd.s.addrtype = 1; // address type: IPV4
+			cmd.s.u.v4.addr.s_addr = addr.v4.sin_addr.s_addr;
+			cmd.s.u.v4.port = addr.v4.sin_port;
+			memcpy( cmd.s.u.v4.data, data, length );
+			ret = sendto( ip_socket, cmd.buf, length + 10, 0, ( struct sockaddr * ) &socksRelayAddr.v4, sizeof( socksRelayAddr.v4 ) );
+		}
 	}
 	else {
-		if(addr.ss_family == AF_INET)
+		if ( addr.ss.ss_family == AF_INET )
 			ret = sendto( ip_socket, data, length, 0, (struct sockaddr *) &addr, sizeof(struct sockaddr_in) );
 #ifdef USE_IPV6
-		else if(addr.ss_family == AF_INET6)
+		else if ( addr.ss.ss_family == AF_INET6 )
 			ret = sendto( ip6_socket, data, length, 0, (struct sockaddr *) &addr, sizeof(struct sockaddr_in6) );
 #endif
 	}
@@ -953,7 +1004,7 @@ static SOCKET NET_IPSocket( const char *net_interface, int port, int *err ) {
 	}
 	else
 	{
-		if(!Sys_StringToSockaddr( net_interface, (struct sockaddr *)&address, sizeof(address), AF_INET))
+		if ( !Sys_StringToSockaddr( net_interface, (sockaddr_t *)&address, sizeof( address ), AF_INET ) )
 		{
 			closesocket(newsocket);
 			return INVALID_SOCKET;
@@ -1035,7 +1086,7 @@ static SOCKET NET_IP6Socket( const char *net_interface, int port, struct sockadd
 	}
 	else
 	{
-		if(!Sys_StringToSockaddr( net_interface, (struct sockaddr *)&address, sizeof(address), AF_INET6))
+		if ( !Sys_StringToSockaddr( net_interface, (sockaddr_t *)&address, sizeof(address), AF_INET6 ) )
 		{
 			closesocket(newsocket);
 			return INVALID_SOCKET;
@@ -1073,7 +1124,7 @@ static void NET_SetMulticast6( void )
 {
 	struct sockaddr_in6 addr;
 
-	if(!*net_mcast6addr->string || !Sys_StringToSockaddr(net_mcast6addr->string, (struct sockaddr *) &addr, sizeof(addr), AF_INET6))
+	if ( !*net_mcast6addr->string || !Sys_StringToSockaddr( net_mcast6addr->string, (sockaddr_t *) &addr, sizeof( addr ), AF_INET6 ) )
 	{
 		Com_Printf("WARNING: NET_JoinMulticast6: Incorrect multicast address given, "
 			   "please set cvar %s to a sane value.\n", net_mcast6addr->name);
@@ -1179,8 +1230,8 @@ static void NET_OpenSocks( int port ) {
 	struct sockaddr_in	address;
 	struct hostent		*h;
 	int					len;
-	qboolean			rfc1929;
-	unsigned char		buf[64];
+	unsigned char		buf[4 + 255 * 2];
+	socks5_request_t	cmd;
 
 	usingSocks = qfalse;
 
@@ -1200,60 +1251,53 @@ static void NET_OpenSocks( int port ) {
 		Com_Printf( "WARNING: NET_OpenSocks: gethostbyname: address type was not AF_INET\n" );
 		return;
 	}
-	address.sin_family = AF_INET;
-	address.sin_addr.s_addr = *(int *)h->h_addr_list[0];
-	address.sin_port = htons( (short)net_socksPort->integer );
 
-	if ( connect( socks_socket, (struct sockaddr *)&address, sizeof( address ) ) == SOCKET_ERROR ) {
-		Com_Printf( "NET_OpenSocks: connect: %s\n", NET_ErrorString() );
+	address.sin_family = AF_INET;
+	address.sin_addr.s_addr = *(uint32_t *)h->h_addr_list[0];
+	address.sin_port = htons( net_socksPort->integer );
+
+	if ( connect( socks_socket, ( struct sockaddr * )&address, sizeof( struct sockaddr_in ) ) == SOCKET_ERROR ) {
+		Com_Printf( "%s: connect: %s\n", __func__, NET_ErrorString() );
 		return;
 	}
 
-	// send socks authentication handshake
-	if ( *net_socksUsername->string || *net_socksPassword->string ) {
-		rfc1929 = qtrue;
-	}
-	else {
-		rfc1929 = qfalse;
-	}
+	buf[0] = 5;	// SOCKS version
 
-	buf[0] = 5;		// SOCKS version
-	// method count
-	if ( rfc1929 ) {
-		buf[1] = 2;
+	if ( *net_socksUsername->string || *net_socksPassword->string ) {
+		// rfc1929 - send socks authentication handshake
+		buf[1] = 2; // method count
+		buf[2] = 0; // method id #00: no authentication
+		buf[3] = 2; // method id #02: username/password
 		len = 4;
-	}
-	else {
-		buf[1] = 1;
+	} else {
+		buf[1] = 1; // method count
+		buf[2] = 0; // method id #00: no authentication
 		len = 3;
 	}
-	buf[2] = 0;		// method #1 - method id #00: no authentication
-	if ( rfc1929 ) {
-		buf[2] = 2;		// method #2 - method id #02: username/password
-	}
+
 	if ( send( socks_socket, (void *)buf, len, 0 ) == SOCKET_ERROR ) {
-		Com_Printf( "NET_OpenSocks: send: %s\n", NET_ErrorString() );
+		Com_Printf( "%s: send: %s\n", __func__, NET_ErrorString() );
 		return;
 	}
 
 	// get the response
-	len = recv( socks_socket, (void *)buf, 64, 0 );
+	len = recv( socks_socket, (void *)buf, 32, 0 );
 	if ( len == SOCKET_ERROR ) {
-		Com_Printf( "NET_OpenSocks: recv: %s\n", NET_ErrorString() );
+		Com_Printf( "%s: recv: %s\n", __func__, NET_ErrorString() );
 		return;
 	}
 	if ( len != 2 || buf[0] != 5 ) {
-		Com_Printf( "NET_OpenSocks: bad response\n" );
+		Com_Printf( "%s: bad auth.method response\n", __func__ );
 		return;
 	}
-	switch( buf[1] ) {
-	case 0:	// no authentication
-		break;
-	case 2: // username/password authentication
-		break;
-	default:
-		Com_Printf( "NET_OpenSocks: request denied\n" );
-		return;
+
+	switch ( buf[1] ) {
+		case 0: // no authentication
+		case 2: // username/password authentication
+			break;
+		default:
+			Com_Printf( "%s: unsupported auth.method\n", __func__ );
+			return;
 	}
 
 	// do username/password authentication if needed
@@ -1264,7 +1308,12 @@ static void NET_OpenSocks( int port ) {
 		// build the request
 		ulen = strlen( net_socksUsername->string );
 		plen = strlen( net_socksPassword->string );
-
+		if ( ulen > 255 ) {
+			ulen = 255;
+		}
+		if ( plen > 255 ) {
+			plen = 255;
+		}
 		buf[0] = 1;		// username/password authentication version
 		buf[1] = ulen;
 		if ( ulen ) {
@@ -1277,61 +1326,60 @@ static void NET_OpenSocks( int port ) {
 
 		// send it
 		if ( send( socks_socket, (void *)buf, 3 + ulen + plen, 0 ) == SOCKET_ERROR ) {
-			Com_Printf( "NET_OpenSocks: send: %s\n", NET_ErrorString() );
+			Com_Printf( "%s: send: %s\n", __func__, NET_ErrorString() );
 			return;
 		}
 
 		// get the response
 		len = recv( socks_socket, (void *)buf, 64, 0 );
 		if ( len == SOCKET_ERROR ) {
-			Com_Printf( "NET_OpenSocks: recv: %s\n", NET_ErrorString() );
+			Com_Printf( "%s: recv: %s\n", __func__, NET_ErrorString() );
 			return;
 		}
 		if ( len != 2 || buf[0] != 1 ) {
-			Com_Printf( "NET_OpenSocks: bad response\n" );
-			return;
-		}
-		if ( buf[1] != 0 ) {
-			Com_Printf( "NET_OpenSocks: authentication failed\n" );
+			Com_Printf( "%s: bad auth response\n", __func__ );
 			return;
 		}
 	}
 
 	// send the UDP associate request
-	buf[0] = 5;		// SOCKS version
-	buf[1] = 3;		// command: UDP associate
-	buf[2] = 0;		// reserved
-	buf[3] = 1;		// address type: IPV4
-	*(int *)&buf[4] = INADDR_ANY;
-	*(short *)&buf[8] = htons( (short)port );		// port
-	if ( send( socks_socket, (void *)buf, 10, 0 ) == SOCKET_ERROR ) {
-		Com_Printf( "NET_OpenSocks: send: %s\n", NET_ErrorString() );
+	cmd.version = 5;  // SOCKS version
+	cmd.command = 3;  // UDP associate
+	cmd.reserved = 0; // reserved
+	cmd.addrtype = 1; // address type: IPV4
+	cmd.u.v4.addr.s_addr = INADDR_ANY;
+	cmd.u.v4.port = htons( port );
+	if ( send( socks_socket, (void *)&cmd, 10, 0 ) == SOCKET_ERROR ) {
+		Com_Printf( "%s: send: %s\n", __func__, NET_ErrorString() );
 		return;
 	}
 
 	// get the response
-	len = recv( socks_socket, (void *)buf, 64, 0 );
-	if( len == SOCKET_ERROR ) {
-		Com_Printf( "NET_OpenSocks: recv: %s\n", NET_ErrorString() );
+	len = recv( socks_socket, (void *)&cmd, sizeof( cmd ), 0 );
+	if ( len == SOCKET_ERROR ) {
+		Com_Printf( "%s: recv: %s\n", __func__, NET_ErrorString() );
 		return;
 	}
-	if( len < 2 || buf[0] != 5 ) {
-		Com_Printf( "NET_OpenSocks: bad response\n" );
+	if ( len < 10 || cmd.version != 5 ) {
+		Com_Printf( "%s: bad response\n", __func__ );
 		return;
 	}
+
 	// check completion code
-	if( buf[1] != 0 ) {
-		Com_Printf( "NET_OpenSocks: request denied: %i\n", buf[1] );
+	if ( cmd.command != 0 ) {
+		Com_Printf( "%s: request denied: %i\n", __func__, cmd.command );
 		return;
 	}
-	if( buf[3] != 1 ) {
-		Com_Printf( "NET_OpenSocks: relay address is not IPV4: %i\n", buf[3] );
+	if ( cmd.addrtype != 1 ) {
+		Com_Printf( "%s: relay address is not IPV4: %i\n", __func__, cmd.addrtype );
 		return;
 	}
-	socksRelayAddr.sin_family = AF_INET;
-	socksRelayAddr.sin_addr.s_addr = *(int *)&buf[4];
-	socksRelayAddr.sin_port = *(short *)&buf[8];
-	memset( &socksRelayAddr.sin_zero, 0, sizeof( socksRelayAddr.sin_zero ) );
+
+	memset( &socksRelayAddr, 0, sizeof( socksRelayAddr ) );
+
+	socksRelayAddr.v4.sin_family = AF_INET;
+	socksRelayAddr.v4.sin_addr.s_addr = cmd.u.v4.addr.s_addr;
+	socksRelayAddr.v4.sin_port = cmd.u.v4.port;
 
 	usingSocks = qtrue;
 }
@@ -1569,6 +1617,7 @@ static qboolean NET_GetCvars( void ) {
 #endif
 		);
 
+	Cvar_CheckRange( net_enabled, NULL, NULL, CV_INTEGER );
 	modified = net_enabled->modified;
 	net_enabled->modified = qfalse;
 
@@ -1577,6 +1626,7 @@ static qboolean NET_GetCvars( void ) {
 	net_ip->modified = qfalse;
 
 	net_port = Cvar_Get( "net_port", va( "%i", PORT_SERVER ), CVAR_LATCH | CVAR_NORESTART );
+	Cvar_CheckRange( net_port, "0", "65535", CV_INTEGER );
 	modified += net_port->modified;
 	net_port->modified = qfalse;
 	
@@ -1586,6 +1636,7 @@ static qboolean NET_GetCvars( void ) {
 	net_ip6->modified = qfalse;
 
 	net_port6 = Cvar_Get( "net_port6", va( "%i", PORT_SERVER ), CVAR_LATCH | CVAR_NORESTART );
+	Cvar_CheckRange( net_port6, "0", "65535", CV_INTEGER );
 	modified += net_port6->modified;
 	net_port6->modified = qfalse;
 
@@ -1604,6 +1655,7 @@ static qboolean NET_GetCvars( void ) {
 #endif // USE_IPV6
 
 	net_socksEnabled = Cvar_Get( "net_socksEnabled", "0", CVAR_LATCH | CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( net_socksEnabled, "0", "1", CV_INTEGER );
 	modified += net_socksEnabled->modified;
 	net_socksEnabled->modified = qfalse;
 
@@ -1612,6 +1664,7 @@ static qboolean NET_GetCvars( void ) {
 	net_socksServer->modified = qfalse;
 
 	net_socksPort = Cvar_Get( "net_socksPort", "1080", CVAR_LATCH | CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( net_socksPort, "0", "65535", CV_INTEGER );
 	modified += net_socksPort->modified;
 	net_socksPort->modified = qfalse;
 

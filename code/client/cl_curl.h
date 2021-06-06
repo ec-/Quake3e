@@ -102,9 +102,9 @@ void CL_cURL_Cleanup( void );
 
 typedef struct download_s {
 	char		URL[MAX_OSPATH];
-	char		TempName[MAX_OSPATH+4];
 	char		Name[MAX_OSPATH];
 	char		gameDir[MAX_OSPATH];
+	char		TempName[MAX_OSPATH*2 + 14]; // gameDir + PATH_SEP + Name + ".00000000.tmp"
 	char		progress[MAX_OSPATH+64];
 	CURL		*cURL;
 	CURLM		*cURLM;
@@ -116,6 +116,9 @@ typedef struct download_s {
 
 	struct func_s {
 		char*		(*version)(void);
+		char *		(*easy_escape)(CURL *curl, const char *string, int length);
+		void		(*free)(char *ptr);
+
 		CURL*		(*easy_init)(void);
 		CURLcode	(*easy_setopt)(CURL *curl, CURLoption option, ...);
 		CURLcode	(*easy_perform)(CURL *curl);
@@ -130,6 +133,7 @@ typedef struct download_s {
 		CURLMcode	(*multi_cleanup)(CURLM *multi_handle);
 		CURLMsg		*(*multi_info_read)(CURLM *multi_handle, int *msgs_in_queue);
 		const char	*(*multi_strerror)(CURLMcode);
+
 		void		*lib;
 	} func;
 } download_t;

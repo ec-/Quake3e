@@ -166,7 +166,7 @@ void AAS_InitTravelFlagFromType(void)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-static ID_INLINE int AAS_TravelFlagForType_inline(int traveltype)
+static ID_INLINE int AAS_TravelFlagForType_inline(unsigned int traveltype)
 {
 	int tfl;
 
@@ -176,7 +176,7 @@ static ID_INLINE int AAS_TravelFlagForType_inline(int traveltype)
 	if (traveltype & TRAVELFLAG_NOTTEAM2)
 		tfl |= TFL_NOTTEAM2;
 	traveltype &= TRAVELTYPE_MASK;
-	if (traveltype < 0 || traveltype >= MAX_TRAVELTYPES)
+	if (traveltype >= MAX_TRAVELTYPES)
 		return TFL_INVALID;
 	tfl |= aasworld.travelflagfortype[traveltype];
 	return tfl;
@@ -1627,7 +1627,7 @@ int AAS_AreaRouteToGoalArea(int areanum, vec3_t origin, int goalareanum, int tra
 	} //end if
 
 	// make sure the routing cache doesn't grow to large
-	while ( routingcachesize > 2 * 1024 * 1024 ) {
+	while ( routingcachesize > 12 * 1024 * 1024 ) {
 		if ( !AAS_FreeOldestCache() ) {
 			break;
 		}

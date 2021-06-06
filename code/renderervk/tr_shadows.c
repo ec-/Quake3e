@@ -65,6 +65,7 @@ static void R_CalcShadowEdges( void ) {
 	int		c, c2;
 	int		j, k;
 	int		i2;
+	color4ub_t *colors;
 
 	tess.numIndexes = 0;
 
@@ -119,9 +120,10 @@ static void R_CalcShadowEdges( void ) {
 #ifdef USE_VULKAN
 	tess.numVertexes *= 2;
 
+	colors = &tess.svars.colors[0][0]; // we need at least 2x SHADER_MAX_VERTEXES there
+
 	for ( i = 0; i < tess.numVertexes; i++ ) {
-		VectorSet(tess.svars.colors[i], 50, 50, 50);
-		tess.svars.colors[i][3] = 255;
+		Vector4Set( colors[i].rgba, 50, 50, 50, 255 );
 	}
 #endif
 }
@@ -143,7 +145,9 @@ void RB_ShadowTessEnd( void ) {
 	int		i;
 	int		numTris;
 	vec3_t	lightDir;
-#ifndef USE_VULKAN
+#ifdef USE_VULKAN
+	uint32_t pipeline[2];
+#else
 	GLboolean rgba[4];
 #endif
 
@@ -210,17 +214,21 @@ void RB_ShadowTessEnd( void ) {
 #ifdef USE_VULKAN
 	GL_Bind( tr.whiteImage );
 
-	vk_bind_index();
-	vk_bind_geometry( TESS_XYZ | TESS_RGBA );
-
 	// mirrors have the culling order reversed
 	if ( backEnd.viewParms.portalView == PV_MIRROR ) {
-		vk_draw_geometry( vk.shadow_volume_pipelines[0][1], DEPTH_RANGE_NORMAL, qtrue );
-		vk_draw_geometry( vk.shadow_volume_pipelines[1][1], DEPTH_RANGE_NORMAL, qtrue );
+		pipeline[0] = vk.shadow_volume_pipelines[0][1];
+		pipeline[1] = vk.shadow_volume_pipelines[1][1];
 	} else {
-		vk_draw_geometry( vk.shadow_volume_pipelines[0][0], DEPTH_RANGE_NORMAL, qtrue );
-		vk_draw_geometry( vk.shadow_volume_pipelines[1][0], DEPTH_RANGE_NORMAL, qtrue );
+		pipeline[0] = vk.shadow_volume_pipelines[0][0];
+		pipeline[1] = vk.shadow_volume_pipelines[1][0];
+
 	}
+	vk_bind_pipeline( pipeline[0] ); // back-sided
+	vk_bind_index();
+	vk_bind_geometry( TESS_XYZ | TESS_RGBA0 );
+	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
+	vk_bind_pipeline( pipeline[1] ); // front-sided
+	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 
 	tess.numVertexes /= 2;
 #else
@@ -312,7 +320,7 @@ void RB_ShadowFinish( void ) {
 	for ( i = 0; i < 4; i++ )
 	{
 		VectorCopy( verts[i], tess.xyz[i] );
-		Vector4Set( tess.svars.colors[i], 153, 153, 153, 255 );
+		Vector4Set( tess.svars.colors[0][i].rgba, 153, 153, 153, 255 );
 	}
 
 	tess.numVertexes = 4;
@@ -325,10 +333,12 @@ void RB_ShadowFinish( void ) {
 	vk_world.modelview_transform[10] = 1.0f;
 	vk_world.modelview_transform[15] = 1.0f;
 
+	vk_bind_pipeline( vk.shadow_finish_pipeline );
+
 	vk_update_mvp( NULL );
 
-	vk_bind_geometry( TESS_XYZ | TESS_RGBA /*| TESS_ST0 */ );
-	vk_draw_geometry( vk.shadow_finish_pipeline, DEPTH_RANGE_NORMAL, qfalse );
+	vk_bind_geometry( TESS_XYZ | TESS_RGBA0 /*| TESS_ST0 */ );
+	vk_draw_geometry( DEPTH_RANGE_NORMAL, qfalse );
 
 	Com_Memcpy( vk_world.modelview_transform, tmp, 64 );
 

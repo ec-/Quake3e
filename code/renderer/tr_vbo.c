@@ -184,9 +184,14 @@ static const char *BuildVP( int multitexture, int fogmode, int texgen )
 		//"MAD st.y, d.z, -0.5, 0.5; \n"
 		"PARAM m = { 0.0, 0.5, -0.5, 0.0 }; \n"
 		"MAD d, d, m, 0.5; \n" );
-
-		tex0 = "d.yzwx";
-		tex1 = "d.yzwx";
+		if ( texgen & 1 )
+			tex0 = "d.yzwx";
+		else
+			tex0 = "vertex.texcoord[0]";
+		if ( texgen & 2 )
+			tex1 = "d.yzwx";
+		else
+			tex1 = "vertex.texcoord[1]";
 	} else {
 		tex0 = "vertex.texcoord[0]";
 		tex1 = "vertex.texcoord[1]";
@@ -280,9 +285,9 @@ const char *BuildFP( int multitexture, int alphatest, int fogMode )
 
 
 // multitexture modes: single, mt-add, mt-modulate, mt-replace
-// texgen: array, environment mapping
+// environment mapping: none, tx0, tx1, tx0 + tx1
 // fog modes: disabled, eye-in, eye-out, fog-only
-static GLuint vbo_vp[4*2*4+1];
+static GLuint vbo_vp[4*4*4+1];
 
 // multitexture modes: single, mt-add, mt-modulate, mt-replace
 // alpha test modes: disabled, GT0, LT80, GE80
@@ -293,7 +298,7 @@ static int getVPindex( int multitexture, int fogmode, int texgen )
 {
 	int index;
 
-	switch( multitexture )
+	switch ( multitexture )
 	{
 		default:			index = 0; break;
 		case GL_ADD:		index = 1; break;
@@ -301,8 +306,8 @@ static int getVPindex( int multitexture, int fogmode, int texgen )
 		case GL_REPLACE:	index = 3; break;
 	}
 
-	index <<= 1;  // reserve bits for texgen
-	index |= texgen & 1; // array, environment mapping
+	index <<= 2;  // reserve bits for texgen
+	index |= texgen & 3; // environment mapping: none, tx0, tx1, tx0 + tx1
 
 	index <<= 2;  // reserve bits for fogmode
 	index |= fogmode & 3; // disabled, eye-in, eye-out, fog-only
@@ -362,7 +367,7 @@ static qboolean isStaticRGBgen( colorGen_t cgen )
 }
 
 
-static qboolean isStaticTCgen( const shaderStage_t *stage, int bundle )
+static qboolean isStaticTCgen( shaderStage_t *stage, int bundle )
 {
 	switch ( stage->bundle[bundle].tcGen )
 	{
@@ -372,10 +377,15 @@ static qboolean isStaticTCgen( const shaderStage_t *stage, int bundle )
 		case TCGEN_TEXTURE:
 			return qtrue;
 		case TCGEN_ENVIRONMENT_MAPPED:
-			if ( stage->bundle[bundle].numTexMods == 0 && ( !stage->bundle[bundle].isLightmap || r_mergeLightmaps->integer == 0 ) )
+			if ( stage->bundle[bundle].numTexMods == 0 && ( !stage->bundle[bundle].isLightmap || r_mergeLightmaps->integer == 0 ) ) {
+				stage->tessFlags |= TESS_ENV0 << bundle;
+				stage->tessFlags &= ~( TESS_ST0 << bundle );
 				return qtrue;
-			else
+			} else {
+				stage->tessFlags |= TESS_ST0 << bundle;
+				stage->tessFlags &= ~( TESS_ENV0 << bundle );
 				return qfalse;
+			}
 		//case TCGEN_ENVIRONMENT_MAPPED_FP:
 		//case TCGEN_FOG:
 		case TCGEN_VECTOR:		// S and T from world coordinates
@@ -455,7 +465,8 @@ Decide if we can put surface in static vbo
 static qboolean isStaticShader( shader_t *shader )
 {
 	shaderStage_t* stage;
-	int i, svarsSize, mtx, atestBits;
+	int i, svarsSize, mtx;
+	GLbitfield atestBits;
 
 	if ( shader->isStaticShader )
 		return qtrue;
@@ -488,11 +499,10 @@ static qboolean isStaticShader( shader_t *shader )
 		if ( !isStaticAgen( stage->alphaGen ) )
 			return qfalse;
 		svarsSize += sizeof( tess.svars.colors[0] );
-		//if ( stage->tessFlags & TESS_ST1 )
-		if ( stage->mtEnv )
-			svarsSize += sizeof( tess.svars.texcoords[1][0] );
-		//if ( stage->tessFlags & TESS_ST0 )
+		if ( stage->tessFlags & TESS_ST0 )
 			svarsSize += sizeof( tess.svars.texcoords[0][0] );
+		if ( stage->tessFlags & TESS_ST1 )
+			svarsSize += sizeof( tess.svars.texcoords[1][0] );
 	}
 
 	if ( i == 0 )
@@ -518,11 +528,12 @@ static qboolean isStaticShader( shader_t *shader )
 		
 		mtx = stage->mtEnv;
 		atestBits = stage->stateBits & GLS_ATEST_BITS;
-		if ( stage->bundle[0].tcGen == TCGEN_ENVIRONMENT_MAPPED ) {
-			stage->needViewPos = qtrue;
-			texgen = 1;
-		} else {
-			texgen = 0;
+		texgen = 0;
+		if ( stage->tessFlags & TESS_ENV0 ) {
+			texgen |= 1;
+		}
+		if ( stage->tessFlags & TESS_ENV1 ) {
+			texgen |= 2;
 		}
 
 		if ( texgen || shader->numUnfoggedPasses == 1 ) {
@@ -582,12 +593,11 @@ static void VBO_AddGeometry( vbo_t *vbo, vbo_item_t *vi, shaderCommands_t *input
 			if ( !pStage )
 				break;
 			pStage->color_offset = offs; offs += input->shader->numVertexes * sizeof( tess.svars.colors[0] );
-			//if ( pStage->tessFlags & TESS_ST0 )
+			if ( pStage->tessFlags & TESS_ST0 )
 			{
 				pStage->tex_offset[0] = offs; offs += input->shader->numVertexes * sizeof( tess.svars.texcoords[0][0] );
 			}
-			//if ( pStage->tessFlags & TESS_ST1 )
-			if ( pStage->mtEnv )
+			if ( pStage->tessFlags & TESS_ST1 )
 			{
 				pStage->tex_offset[1] = offs; offs += input->shader->numVertexes * sizeof( tess.svars.texcoords[1][0] );
 			}
@@ -674,13 +684,12 @@ void VBO_PushData( int itemIndex, shaderCommands_t *input )
 			break;
 		R_ComputeColors( pStage );
 		VBO_AddStageColors( vbo, i, input );
-		//if ( pStage->tessFlags & TESS_ST0 )
+		if ( pStage->tessFlags & TESS_ST0 )
 		{
 			R_ComputeTexCoords( 0, &pStage->bundle[0] );
 			VBO_AddStageTxCoords( vbo, i, input, 0 );
 		}
-		//if ( pStage->tessFlags & TESS_ST1 )
-		if ( pStage->mtEnv )
+		if ( pStage->tessFlags & TESS_ST1 )
 		{
 			R_ComputeTexCoords( 1, &pStage->bundle[1] );
 			VBO_AddStageTxCoords( vbo, i, input, 1 );
@@ -1316,8 +1325,9 @@ static const fogProgramParms_t *VBO_SetupFog( int VPindex, int FPindex, GLuint *
 static void RB_IterateStagesVBO( const shaderCommands_t *input )
 {
 	const shaderStage_t *pStage;
-	const fogProgramParms_t *fparm = NULL;
-	int i, stateBits;
+	const fogProgramParms_t *fparm;
+	int i;
+	GLbitfield stateBits, normalMask;
 	qboolean fogPass;
 	GLuint vp, fp;
 
@@ -1363,20 +1373,29 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 
 		GL_State( stateBits );
 
-		if ( pStage->needViewPos ) {
-			GL_ClientState( 0, CLS_NORMAL_ARRAY | CLS_COLOR_ARRAY );
-			// bind color and normals array
-			qglNormalPointer( GL_FLOAT, 16, (const GLvoid *)(intptr_t)tess.shader->normalOffset );
+		if ( pStage->tessFlags & ( TESS_ENV0 | TESS_ENV1 ) ) {
 			// setup viewpos needed for environment mapping program
-			qglProgramLocalParameter4fARB( GL_VERTEX_PROGRAM_ARB, 0, 
+			qglProgramLocalParameter4fARB( GL_VERTEX_PROGRAM_ARB, 0,
 				backEnd.or.viewOrigin[0],
 				backEnd.or.viewOrigin[1],
 				backEnd.or.viewOrigin[2],
 				0.0 );
+			normalMask = CLS_NORMAL_ARRAY;
 		} else {
-			GL_ClientState( 0, CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
+			normalMask = 0;
+		}
+
+		if ( pStage->tessFlags & TESS_ENV0 ) {
+			GL_ClientState( 0, normalMask | CLS_COLOR_ARRAY );
+		} else {
+			GL_ClientState( 0, normalMask | CLS_TEXCOORD_ARRAY | CLS_COLOR_ARRAY );
 			// bind colors and first texture array
 			qglTexCoordPointer( 2, GL_FLOAT, 0, (const GLvoid *)(intptr_t)pStage->tex_offset[0] );
+		}
+
+		if ( normalMask ) {
+			// bind normals
+			qglNormalPointer( GL_FLOAT, 16, (const GLvoid *)(intptr_t)tess.shader->normalOffset );
 		}
 
 		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, (const GLvoid *)(intptr_t)pStage->color_offset );
@@ -1402,7 +1421,7 @@ static void RB_IterateStagesVBO( const shaderCommands_t *input )
 				qglDisable( GL_TEXTURE_2D );
 				GL_SelectTexture( 0 );
 			} else {
-				if ( pStage->needViewPos ) {
+				if ( pStage->tessFlags & TESS_ENV1 ) {
 					GL_ClientState( 1, CLS_NONE );
 				} else {
 					GL_ClientState( 1, CLS_TEXCOORD_ARRAY );

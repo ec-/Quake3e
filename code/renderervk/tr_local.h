@@ -60,7 +60,17 @@ typedef enum {
 	GL_LINEAR_MIPMAP_LINEAR,
 	GL_MODULATE,
 	GL_ADD,
-	GL_ADD_2,
+	GL_ADD_NONIDENTITY,
+
+	GL_BLEND_MODULATE,
+	GL_BLEND_ADD,
+	GL_BLEND_ALPHA,
+	GL_BLEND_ONE_MINUS_ALPHA,
+	GL_BLEND_MIX_ALPHA, // SRC_ALPHA + ONE_MINUS_SRC_ALPHA
+	GL_BLEND_MIX_ONE_MINUS_ALPHA, // ONE_MINUS_SRC_ALPHA + SRC_ALPHA
+
+	GL_BLEND_DST_COLOR_SRC_ALPHA, // GLS_SRCBLEND_DST_COLOR + GLS_DSTBLEND_SRC_ALPHA
+
 	GL_DECAL,
 	GL_BACK_LEFT,
 	GL_BACK_RIGHT
@@ -322,6 +332,16 @@ typedef struct {
 	int				numTexMods;
 	texModInfo_t	*texMods;
 
+	waveForm_t		rgbWave;
+	colorGen_t		rgbGen;
+
+	waveForm_t		alphaWave;
+	alphaGen_t		alphaGen;
+
+	color4ub_t		constantColor;			// for CGEN_CONST and AGEN_CONST
+
+	acff_t			adjustColorsForFog;
+
 	int				videoMapHandle;
 	qboolean		isLightmap;
 	qboolean		isVideoMap;
@@ -339,25 +359,16 @@ typedef struct {
 	
 	textureBundle_t	bundle[NUM_TEXTURE_BUNDLES];
 
-	waveForm_t		rgbWave;
-	colorGen_t		rgbGen;
-
-	waveForm_t		alphaWave;
-	alphaGen_t		alphaGen;
-
-	byte			constantColor[4];			// for CGEN_CONST and AGEN_CONST
-
 	unsigned		stateBits;					// GLS_xxxx mask
 	GLint			mtEnv;						// 0, GL_MODULATE, GL_ADD, GL_DECAL
-	GLint			mtEnv2;						// 0, GL_MODULATE, GL_ADD, GL_DECAL
-
-	acff_t			adjustColorsForFog;
+	GLint			mtEnv3;						// 0, GL_MODULATE, GL_ADD, GL_DECAL
 
 	qboolean		isDetail;
 	qboolean		depthFragment;
 
 #ifdef USE_VULKAN
 	uint32_t		tessFlags;
+	uint32_t		numTexBundles;
 
 	uint32_t		vk_pipeline[2]; // normal,fogged
 	uint32_t		vk_mirror_pipeline[2];
@@ -367,7 +378,7 @@ typedef struct {
 #endif
 
 #ifdef USE_VBO
-	uint32_t		color_offset; // within current shader
+	uint32_t		rgb_offset[NUM_TEXTURE_BUNDLES]; // within current shader
 	uint32_t		tex_offset[NUM_TEXTURE_BUNDLES]; // within current shader
 #endif
 
@@ -446,6 +457,7 @@ typedef struct shader_s {
 
 #ifdef USE_PMLIGHT
 	int			lightingStage;
+	int			lightingBundle;
 #endif
 	qboolean	fogCollapse;
 	int			tessFlags;
@@ -575,7 +587,7 @@ typedef struct {
 	int			originalBrushNumber;
 	vec3_t		bounds[2];
 
-	unsigned	colorInt;				// in packed byte format
+	color4ub_t	colorInt;				// in packed byte format
 	vec4_t		color;
 	float		tcScale;				// texture coordinate vector scales
 	fogParms_t	parms;
@@ -1037,6 +1049,15 @@ typedef struct {
 	int			currentArray;
 } glstate_t;
 
+typedef struct glstatic_s {
+	// unmodified width/height according to actual \r_mode*
+	int windowWidth;
+	int windowHeight;
+	int captureWidth;
+	int captureHeight;
+	int initTime;
+} glstatic_t;
+
 typedef struct {
 	int		c_surfaces, c_shaders, c_vertexes, c_indexes, c_totalIndexes;
 	float	c_overDraw;
@@ -1088,7 +1109,7 @@ typedef struct {
 	qboolean	skyRenderedThisView;	// flag for drawing sun
 
 	qboolean	projection2D;	// if qtrue, drawstretchpic doesn't need to change modes
-	byte		color2D[4];
+	color4ub_t	color2D;
 	qboolean	doneSurfaces;   // done any 3d surfaces already
 	trRefEntity_t	entity2D;	// currentEntity will point at this when doing 2D rendering
 
@@ -1225,12 +1246,15 @@ typedef struct {
 	qboolean				vertexLightingAllowed;
 } trGlobals_t;
 
+
 extern backEndState_t	backEnd;
 extern trGlobals_t	tr;
 
-extern int					gl_clamp_mode;
+extern int	gl_clamp_mode;
 
 extern glstate_t	glState;		// outside of TR since it shouldn't be cleared during ref re-init
+
+extern glstatic_t gls;
 
 extern void myGlMultMatrix(const float *a, const float *b, float *out);
 
@@ -1269,6 +1293,7 @@ extern cvar_t	*r_dlightMode;			// 0 - vq3, 1 - pmlight
 extern cvar_t	*r_dlightScale;			// 0.1 - 1.0
 extern cvar_t	*r_dlightIntensity;		// 0.1 - 1.0
 #endif
+extern cvar_t	*r_dlightSaturation;	// 0.0 - 1.0
 #ifdef USE_VULKAN
 extern cvar_t	*r_device;
 #ifdef USE_VBO
@@ -1336,6 +1361,8 @@ extern	cvar_t	*r_lodCurveError;
 extern	cvar_t	*r_skipBackEnd;
 
 extern	cvar_t	*r_greyscale;
+extern	cvar_t	*r_dither;
+extern	cvar_t	*r_presentBits;
 
 extern	cvar_t	*r_ignoreGLErrors;
 
@@ -1382,7 +1409,7 @@ void R_AddLitSurf( surfaceType_t *surface, shader_t *shader, int fogIndex );
 #define	CULL_OUT	2		// completely outside the clipping planes
 void R_LocalNormalToWorld( const vec3_t local, vec3_t world );
 void R_LocalPointToWorld( const vec3_t local, vec3_t world );
-int R_CullLocalBox( vec3_t bounds[] );
+int R_CullLocalBox( const vec3_t bounds[2] );
 int R_CullPointAndRadius( const vec3_t origin, float radius );
 int R_CullLocalPointAndRadius( const vec3_t origin, float radius );
 int R_CullDlight( const dlight_t *dl );
@@ -1508,11 +1535,10 @@ TESSELATOR/SHADER DECLARATIONS
 
 ====================================================================
 */
-typedef byte color4ub_t[4];
 
 typedef struct stageVars
 {
-	color4ub_t	colors[SHADER_MAX_VERTEXES*2]; // 2x needed for shadows
+	color4ub_t	colors[NUM_TEXTURE_BUNDLES][SHADER_MAX_VERTEXES]; // we need at least 2xSHADER_MAX_VERTEXES for shadows and normals
 	vec2_t		texcoords[NUM_TEXTURE_BUNDLES][SHADER_MAX_VERTEXES];
 	vec2_t		*texcoordPtr[NUM_TEXTURE_BUNDLES];
 } stageVars_t;
@@ -1635,7 +1661,7 @@ qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t 
 
 void R_BindAnimatedImage( const textureBundle_t *bundle );
 void R_DrawElements( int numIndexes, const glIndex_t *indexes );
-void R_ComputeColors( const shaderStage_t *pStage );
+void R_ComputeColors( const int bundle, color4ub_t *dest, const shaderStage_t *pStage );
 void R_ComputeTexCoords( const int b, const textureBundle_t *bundle );
 
 /*
@@ -1903,9 +1929,6 @@ typedef struct {
 
 extern	int		max_polys;
 extern	int		max_polyverts;
-
-extern	int		captureWidth;
-extern	int		captureHeight;
 
 extern	backEndData_t	*backEndData;
 

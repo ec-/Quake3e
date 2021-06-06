@@ -124,6 +124,7 @@
       <PreprocessorDefinitions>_DEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <FloatingPointExceptions>true</FloatingPointExceptions>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <ProjectReference />
     <Lib>
@@ -163,6 +164,8 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -180,6 +183,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -197,6 +201,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -209,38 +214,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\renderercommon\tr_noise.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\bloom_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\blur_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\blend_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\color_vert.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\color_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\dot_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\dot_vert.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\fog_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\fog_vert.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\gamma_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\gamma_vert.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\light1_fog_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\light1_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\light_fog_vert.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\light_vert.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\light_fog_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\light_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt2_fog_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt2_fog_vert.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt2_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt2_vert.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt_fog_vert.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt_vert.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt_fog_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\mt_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\st_fog_vert.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\st_vert.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\st_df_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\st_enviro_fog_vert.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\st_enviro_vert.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\st_fog_frag.c" />
-    <ClCompile Include="..\..\renderervk\shaders\spirv\st_frag.c" />
     <ClCompile Include="..\..\renderervk\tr_animation.c" />
     <ClCompile Include="..\..\renderervk\tr_backend.c" />
     <ClCompile Include="..\..\renderervk\tr_bsp.c" />

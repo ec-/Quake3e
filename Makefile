@@ -13,6 +13,10 @@
 COMPILE_PLATFORM=$(shell uname | sed -e 's/_.*//' | tr '[:upper:]' '[:lower:]' | sed -e 's/\//_/g')
 COMPILE_ARCH=$(shell uname -m | sed -e 's/i.86/x86/' | sed -e 's/^arm.*/arm/')
 
+ifeq ($(shell uname -m),arm64)
+  COMPILE_ARCH=aarch64
+endif
+
 ifeq ($(COMPILE_PLATFORM),mingw32)
   ifeq ($(COMPILE_ARCH),i386)
     COMPILE_ARCH=x86
@@ -25,7 +29,9 @@ BUILD_SERVER     = 0
 USE_SDL          = 0
 USE_CURL         = 1
 USE_LOCAL_HEADERS= 0
-USE_VULKAN       = 0
+USE_VULKAN       = 1
+USE_OPENGL       = 1
+USE_OPENGL2      = 0
 USE_SYSTEM_JPEG  = 0
 USE_VULKAN_API   = 1
 
@@ -35,6 +41,10 @@ CNAME            = quake3e
 DNAME            = quake3e.ded
 
 RENDERER_PREFIX  = $(CNAME)
+
+# valid options: opengl, vulkan, opengl2
+RENDERER_DEFAULT = opengl
+
 
 ifeq ($(V),1)
 echo_cmd=@:
@@ -101,10 +111,6 @@ else
 endif
 export CROSS_COMPILING
 
-ifndef COPYDIR
-COPYDIR="/usr/local/games/quake3"
-endif
-
 ifndef DESTDIR
 DESTDIR=/usr/local/games/quake3
 endif
@@ -126,10 +132,6 @@ USE_CCACHE=0
 endif
 export USE_CCACHE
 
-ifndef USE_CODEC_VORBIS
-USE_CODEC_VORBIS=0
-endif
-
 ifndef USE_LOCAL_HEADERS
 USE_LOCAL_HEADERS=1
 endif
@@ -146,12 +148,28 @@ ifndef USE_CURL_DLOPEN
   endif
 endif
 
-ifneq ($(USE_RENDERER_DLOPEN),0)
-USE_VULKAN=1
+ifeq ($(USE_RENDERER_DLOPEN),0)
+  ifeq ($(RENDERER_DEFAULT),opengl)
+    USE_OPENGL=1
+    USE_OPENGL2=0
+    USE_VULKAN=0
+    USE_VULKAN_API=0
+  endif
+  ifeq ($(RENDERER_DEFAULT),opengl2)
+    USE_OPENGL=0
+    USE_OPENGL2=1
+    USE_VULKAN=0
+    USE_VULKAN_API=0
+  endif
+  ifeq ($(RENDERER_DEFAULT),vulkan)
+    USE_OPENGL=0
+    USE_OPENGL2=0
+    USE_VULKAN=1
+  endif
 endif
 
 ifneq ($(USE_VULKAN),0)
-USE_VULKAN_API=1
+  USE_VULKAN_API=1
 endif
 
 
@@ -164,8 +182,8 @@ CDIR=$(MOUNT_DIR)/client
 SDIR=$(MOUNT_DIR)/server
 RCDIR=$(MOUNT_DIR)/renderercommon
 R1DIR=$(MOUNT_DIR)/renderer
+R2DIR=$(MOUNT_DIR)/renderer2
 RVDIR=$(MOUNT_DIR)/renderervk
-RVSDIR=$(MOUNT_DIR)/renderervk/shaders/spirv
 SDLDIR=$(MOUNT_DIR)/sdl
 
 CMDIR=$(MOUNT_DIR)/qcommon
@@ -235,10 +253,7 @@ endif
 ifneq ($(USE_RENDERER_DLOPEN),0)
   BASE_CFLAGS += -DUSE_RENDERER_DLOPEN
   BASE_CFLAGS += -DRENDERER_PREFIX=\\\"$(RENDERER_PREFIX)\\\"
-endif
-
-ifeq ($(USE_CODEC_VORBIS),1)
-  BASE_CFLAGS += -DUSE_CODEC_VORBIS=1
+  BASE_CFLAGS += -DRENDERER_DEFAULT="$(RENDERER_DEFAULT)"
 endif
 
 ifdef DEFAULT_BASEDIR
@@ -325,8 +340,7 @@ ifdef MINGW
     $(error Cannot find a suitable cross compiler for $(PLATFORM))
   endif
 
-  BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
-    -DUSE_ICON -DMINGW=1
+  BASE_CFLAGS += -Wall -Wimplicit -Wstrict-prototypes -DUSE_ICON -DMINGW=1
 
   BASE_CFLAGS += -Wno-unused-result
 
@@ -365,10 +379,6 @@ ifdef MINGW
     endif
   endif
 
-  ifeq ($(USE_CODEC_VORBIS),1)
-    CLIENT_LDFLAGS += -lvorbisfile -lvorbis -logg
-  endif
-
   ifeq ($(USE_CURL),1)
     BASE_CFLAGS += -I$(MOUNT_DIR)/libcurl/windows/include
     ifeq ($(ARCH),x86)
@@ -390,7 +400,7 @@ ifeq ($(COMPILE_PLATFORM),darwin)
 # SETUP AND BUILD -- MACOS
 #############################################################################
 
-  BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
+  BASE_CFLAGS += -Wall -Wimplicit -Wstrict-prototypes -pipe
 
   BASE_CFLAGS += -Wno-unused-result
 
@@ -419,9 +429,11 @@ else
 # SETUP AND BUILD -- *NIX PLATFORMS
 #############################################################################
 
-  BASE_CFLAGS += -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pipe
+  BASE_CFLAGS += -Wall -Wimplicit -Wstrict-prototypes -pipe
 
   BASE_CFLAGS += -Wno-unused-result
+
+  BASE_CFLAGS += -DUSE_ICON
 
   BASE_CFLAGS += -I/usr/include -I/usr/local/include
 
@@ -436,6 +448,7 @@ else
   endif
 
   ifeq ($(ARCH),arm)
+    OPTIMIZE += -march=armv7-a
     ARCHEXT = .arm
   endif
 
@@ -455,10 +468,6 @@ else
   else
     BASE_CFLAGS += $(X11_INCLUDE)
     CLIENT_LDFLAGS = $(X11_LIBS)
-  endif
-
-  ifeq ($(USE_CODEC_VORBIS),1)
-    CLIENT_LDFLAGS += -lvorbisfile -lvorbis -logg
   endif
 
   ifeq ($(USE_SYSTEM_JPEG),1)
@@ -493,9 +502,12 @@ endif # !MINGW
 TARGET_CLIENT = $(CNAME)$(ARCHEXT)$(BINEXT)
 
 TARGET_REND1 = $(RENDERER_PREFIX)_opengl_$(SHLIBNAME)
+TARGET_REND2 = $(RENDERER_PREFIX)_opengl2_$(SHLIBNAME)
 TARGET_RENDV = $(RENDERER_PREFIX)_vulkan_$(SHLIBNAME)
 
 TARGET_SERVER = $(DNAME)$(ARCHEXT)$(BINEXT)
+
+STRINGIFY = $(B)/rend2/stringify$(BINEXT)
 
 TARGETS =
 
@@ -506,8 +518,15 @@ endif
 ifneq ($(BUILD_CLIENT),0)
   TARGETS += $(B)/$(TARGET_CLIENT)
   ifneq ($(USE_RENDERER_DLOPEN),0)
-    TARGETS += $(B)/$(TARGET_REND1)
-    TARGETS += $(B)/$(TARGET_RENDV)
+    ifeq ($(USE_OPENGL),1)
+      TARGETS += $(B)/$(TARGET_REND1)
+    endif
+    ifeq ($(USE_OPENGL2),1)
+      TARGETS += $(B)/$(TARGET_REND2)
+    endif
+    ifeq ($(USE_VULKAN),1)
+      TARGETS += $(B)/$(TARGET_RENDV)
+    endif
   endif
 endif
 
@@ -531,25 +550,20 @@ $(echo_cmd) "REND_CC $<"
 $(Q)$(CC) $(RENDCFLAGS) $(CFLAGS) -o $@ -c $<
 endef
 
+define DO_REF_STR
+$(echo_cmd) "REF_STR $<"
+$(Q)rm -f $@
+$(Q)$(STRINGIFY) $< $@
+endef
+
 define DO_BOT_CC
 $(echo_cmd) "BOT_CC $<"
 $(Q)$(CC) $(NOTSHLIBCFLAGS) $(CFLAGS) $(BOTCFLAGS) -DBOTLIB -o $@ -c $<
 endef
 
-ifeq ($(GENERATE_DEPENDENCIES),1)
-  DO_QVM_DEP=cat $(@:%.o=%.d) | sed -e 's/\.o/\.asm/g' >> $(@:%.o=%.d)
-endif
-
 define DO_SHLIB_CC
 $(echo_cmd) "SHLIB_CC $<"
 $(Q)$(CC) $(CFLAGS) $(SHLIBCFLAGS) -o $@ -c $<
-$(Q)$(DO_QVM_DEP)
-endef
-
-define DO_SHLIB_CC_MISSIONPACK
-$(echo_cmd) "SHLIB_CC_MISSIONPACK $<"
-$(Q)$(CC) -DMISSIONPACK $(CFLAGS) $(SHLIBCFLAGS) -o $@ -c $<
-$(Q)$(DO_QVM_DEP)
 endef
 
 define DO_AS
@@ -642,6 +656,8 @@ makedirs:
 	@if [ ! -d $(B) ];then $(MKDIR) $(B);fi
 	@if [ ! -d $(B)/client ];then $(MKDIR) $(B)/client;fi
 	@if [ ! -d $(B)/rend1 ];then $(MKDIR) $(B)/rend1;fi
+	@if [ ! -d $(B)/rend2 ];then $(MKDIR) $(B)/rend2;fi
+	@if [ ! -d $(B)/rend2/glsl ];then $(MKDIR) $(B)/rend2/glsl;fi
 	@if [ ! -d $(B)/rendv ];then $(MKDIR) $(B)/rendv;fi
 	@if [ ! -d $(B)/ded ];then $(MKDIR) $(B)/ded;fi
 
@@ -689,6 +705,82 @@ ifneq ($(USE_RENDERER_DLOPEN), 0)
     $(B)/rend1/q_math.o
 endif
 
+Q3REND2OBJ = \
+  $(B)/rend2/tr_animation.o \
+  $(B)/rend2/tr_backend.o \
+  $(B)/rend2/tr_bsp.o \
+  $(B)/rend2/tr_cmds.o \
+  $(B)/rend2/tr_curve.o \
+  $(B)/rend2/tr_dsa.o \
+  $(B)/rend2/tr_extramath.o \
+  $(B)/rend2/tr_extensions.o \
+  $(B)/rend2/tr_fbo.o \
+  $(B)/rend2/tr_flares.o \
+  $(B)/rend2/tr_font.o \
+  $(B)/rend2/tr_glsl.o \
+  $(B)/rend2/tr_image.o \
+  $(B)/rend2/tr_image_bmp.o \
+  $(B)/rend2/tr_image_jpg.o \
+  $(B)/rend2/tr_image_pcx.o \
+  $(B)/rend2/tr_image_png.o \
+  $(B)/rend2/tr_image_tga.o \
+  $(B)/rend2/tr_image_dds.o \
+  $(B)/rend2/tr_init.o \
+  $(B)/rend2/tr_light.o \
+  $(B)/rend2/tr_main.o \
+  $(B)/rend2/tr_marks.o \
+  $(B)/rend2/tr_mesh.o \
+  $(B)/rend2/tr_model.o \
+  $(B)/rend2/tr_model_iqm.o \
+  $(B)/rend2/tr_noise.o \
+  $(B)/rend2/tr_postprocess.o \
+  $(B)/rend2/tr_scene.o \
+  $(B)/rend2/tr_shade.o \
+  $(B)/rend2/tr_shade_calc.o \
+  $(B)/rend2/tr_shader.o \
+  $(B)/rend2/tr_shadows.o \
+  $(B)/rend2/tr_sky.o \
+  $(B)/rend2/tr_surface.o \
+  $(B)/rend2/tr_vbo.o \
+  $(B)/rend2/tr_world.o
+
+ifneq ($(USE_RENDERER_DLOPEN), 0)
+  Q3REND2OBJ += \
+    $(B)/rend2/q_shared.o \
+    $(B)/rend2/puff.o \
+    $(B)/rend2/q_math.o
+endif
+
+Q3REND2STROBJ = \
+  $(B)/rend2/glsl/bokeh_fp.o \
+  $(B)/rend2/glsl/bokeh_vp.o \
+  $(B)/rend2/glsl/calclevels4x_fp.o \
+  $(B)/rend2/glsl/calclevels4x_vp.o \
+  $(B)/rend2/glsl/depthblur_fp.o \
+  $(B)/rend2/glsl/depthblur_vp.o \
+  $(B)/rend2/glsl/dlight_fp.o \
+  $(B)/rend2/glsl/dlight_vp.o \
+  $(B)/rend2/glsl/down4x_fp.o \
+  $(B)/rend2/glsl/down4x_vp.o \
+  $(B)/rend2/glsl/fogpass_fp.o \
+  $(B)/rend2/glsl/fogpass_vp.o \
+  $(B)/rend2/glsl/generic_fp.o \
+  $(B)/rend2/glsl/generic_vp.o \
+  $(B)/rend2/glsl/lightall_fp.o \
+  $(B)/rend2/glsl/lightall_vp.o \
+  $(B)/rend2/glsl/pshadow_fp.o \
+  $(B)/rend2/glsl/pshadow_vp.o \
+  $(B)/rend2/glsl/shadowfill_fp.o \
+  $(B)/rend2/glsl/shadowfill_vp.o \
+  $(B)/rend2/glsl/shadowmask_fp.o \
+  $(B)/rend2/glsl/shadowmask_vp.o \
+  $(B)/rend2/glsl/ssao_fp.o \
+  $(B)/rend2/glsl/ssao_vp.o \
+  $(B)/rend2/glsl/texturecolor_fp.o \
+  $(B)/rend2/glsl/texturecolor_vp.o \
+  $(B)/rend2/glsl/tonemap_fp.o \
+  $(B)/rend2/glsl/tonemap_vp.o
+
 Q3RENDVOBJ = \
   $(B)/rendv/tr_animation.o \
   $(B)/rendv/tr_backend.o \
@@ -721,43 +813,10 @@ Q3RENDVOBJ = \
   $(B)/rendv/vk.o \
   $(B)/rendv/vk_flares.o \
   $(B)/rendv/vk_vbo.o \
-  \
-  $(B)/rendv/bloom_frag.o \
-  $(B)/rendv/blur_frag.o \
-  $(B)/rendv/blend_frag.o \
-  $(B)/rendv/dot_frag.o \
-  $(B)/rendv/dot_vert.o \
-  $(B)/rendv/color_frag.o \
-  $(B)/rendv/color_vert.o \
-  $(B)/rendv/fog_frag.o \
-  $(B)/rendv/fog_vert.o \
-  $(B)/rendv/gamma_frag.o \
-  $(B)/rendv/gamma_vert.o \
-  $(B)/rendv/light_fog_vert.o \
-  $(B)/rendv/light_vert.o \
-  $(B)/rendv/light_fog_frag.o \
-  $(B)/rendv/light_frag.o \
-  $(B)/rendv/light1_fog_frag.o \
-  $(B)/rendv/light1_frag.o \
-  $(B)/rendv/mt_fog_vert.o \
-  $(B)/rendv/mt_vert.o \
-  $(B)/rendv/mt_fog_frag.o \
-  $(B)/rendv/mt_frag.o \
-  $(B)/rendv/mt2_fog_vert.o \
-  $(B)/rendv/mt2_vert.o \
-  $(B)/rendv/mt2_fog_frag.o \
-  $(B)/rendv/mt2_frag.o \
-  $(B)/rendv/st_fog_vert.o \
-  $(B)/rendv/st_vert.o \
-  $(B)/rendv/st_enviro_fog_vert.o \
-  $(B)/rendv/st_enviro_vert.o \
-  $(B)/rendv/st_fog_frag.o \
-  $(B)/rendv/st_df_frag.o \
-  $(B)/rendv/st_frag.o
 
 ifneq ($(USE_RENDERER_DLOPEN), 0)
   Q3RENDVOBJ += \
-    $(B)/rend1/q_shared.o \
+    $(B)/rendv/q_shared.o \
     $(B)/rendv/puff.o \
     $(B)/rendv/q_math.o
 endif
@@ -853,7 +912,6 @@ Q3OBJ = \
   $(B)/client/snd_main.o \
   $(B)/client/snd_codec.o \
   $(B)/client/snd_codec_wav.o \
-  $(B)/client/snd_codec_ogg.o \
   \
   $(B)/client/sv_bot.o \
   $(B)/client/sv_ccmds.o \
@@ -911,7 +969,12 @@ ifneq ($(USE_RENDERER_DLOPEN),1)
   ifeq ($(USE_VULKAN),1)
     Q3OBJ += $(Q3RENDVOBJ)
   else
-    Q3OBJ += $(Q3REND1OBJ)
+    ifeq ($(USE_OPENGL2),1)
+      Q3OBJ += $(Q3REND2OBJ)
+      Q3OBJ += $(Q3REND2STROBJ)
+    else
+      Q3OBJ += $(Q3REND1OBJ)
+    endif
   endif
 endif
 
@@ -1012,6 +1075,14 @@ $(B)/$(TARGET_CLIENT): $(Q3OBJ)
 $(B)/$(TARGET_REND1): $(Q3REND1OBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) -o $@ $(Q3REND1OBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
+
+$(STRINGIFY): $(MOUNT_DIR)/renderer2/stringify.c
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) -o $@ $(MOUNT_DIR)/renderer2/stringify.c $(LDFLAGS)
+
+$(B)/$(TARGET_REND2): $(Q3REND2OBJ) $(Q3REND2STROBJ)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) -o $@ $(Q3REND2OBJ) $(Q3REND2STROBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
 
 $(B)/$(TARGET_RENDV): $(Q3RENDVOBJ)
 	$(echo_cmd) "LD $@"
@@ -1154,13 +1225,25 @@ $(B)/rend1/%.o: $(RCDIR)/%.c
 $(B)/rend1/%.o: $(CMDIR)/%.c
 	$(DO_REND_CC)
 
+$(B)/rend2/glsl/%.c: $(R2DIR)/glsl/%.glsl $(STRINGIFY)
+	$(DO_REF_STR)
+
+$(B)/rend2/glsl/%.o: $(B)/renderer2/glsl/%.c
+	$(DO_REND_CC)
+
+$(B)/rend2/%.o: $(R2DIR)/%.c
+	$(DO_REND_CC)
+
+$(B)/rend2/%.o: $(RCDIR)/%.c
+	$(DO_REND_CC)
+
+$(B)/rend2/%.o: $(CMDIR)/%.c
+	$(DO_REND_CC)
+
 $(B)/rendv/%.o: $(RVDIR)/%.c
 	$(DO_REND_CC)
 
 $(B)/rendv/%.o: $(RCDIR)/%.c
-	$(DO_REND_CC)
-
-$(B)/rendv/%.o: $(RVSDIR)/%.c
 	$(DO_REND_CC)
 
 $(B)/rendv/%.o: $(CMDIR)/%.c
@@ -1174,7 +1257,6 @@ $(B)/client/%.o: $(W32DIR)/%.c
 
 $(B)/client/%.o: $(W32DIR)/%.rc
 	$(DO_WINDRES)
-
 
 $(B)/ded/%.o: $(ADIR)/%.s
 	$(DO_AS)
@@ -1209,21 +1291,6 @@ install: release
 		fi \
 	done
 
-copyfiles: release
-	@if [ ! -d $(COPYDIR)/baseq3 ]; then echo "You need to set COPYDIR to where your Quake3 data is!"; fi
-	-$(MKDIR) -p -m 0755 $(COPYDIR)/baseq3
-	-$(MKDIR) -p -m 0755 $(COPYDIR)/missionpack
-
-ifneq ($(BUILD_CLIENT),0)
-	$(INSTALL) -s -m 0755 $(BR)/$(TARGET_CLIENT) $(COPYDIR)/$(TARGET_CLIENT)
-endif
-
-ifneq ($(BUILD_SERVER),0)
-	@if [ -f $(BR)/$(TARGET_SERVER) ]; then \
-		$(INSTALL) -s -m 0755 $(BR)/$(TARGET_SERVER) $(COPYDIR)/$(TARGET_SERVER); \
-	fi
-endif
-
 clean: clean-debug clean-release
 
 clean2:
@@ -1248,9 +1315,9 @@ distclean: clean
 
 D_FILES=$(shell find . -name '*.d')
 
-#ifneq ($(strip $(D_FILES)),)
- # include $(D_FILES)
-#endif
+ifneq ($(strip $(D_FILES)),)
+ include $(D_FILES)
+endif
 
 .PHONY: all clean clean2 clean-debug clean-release copyfiles \
 	debug default dist distclean makedirs release \

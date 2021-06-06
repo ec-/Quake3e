@@ -481,19 +481,19 @@ static void ComputeShaderColors( shaderStage_t *pStage, vec4_t baseColor, vec4_t
 		case CGEN_ENTITY:
 			if (backEnd.currentEntity)
 			{
-				baseColor[0] = ((unsigned char *)backEnd.currentEntity->e.shaderRGBA)[0] / 255.0f;
-				baseColor[1] = ((unsigned char *)backEnd.currentEntity->e.shaderRGBA)[1] / 255.0f;
-				baseColor[2] = ((unsigned char *)backEnd.currentEntity->e.shaderRGBA)[2] / 255.0f;
-				baseColor[3] = ((unsigned char *)backEnd.currentEntity->e.shaderRGBA)[3] / 255.0f;
+				baseColor[0] = backEnd.currentEntity->e.shader.rgba[0] / 255.0f;
+				baseColor[1] = backEnd.currentEntity->e.shader.rgba[1] / 255.0f;
+				baseColor[2] = backEnd.currentEntity->e.shader.rgba[2] / 255.0f;
+				baseColor[3] = backEnd.currentEntity->e.shader.rgba[3] / 255.0f;
 			}
 			break;
 		case CGEN_ONE_MINUS_ENTITY:
 			if (backEnd.currentEntity)
 			{
-				baseColor[0] = 1.0f - ((unsigned char *)backEnd.currentEntity->e.shaderRGBA)[0] / 255.0f;
-				baseColor[1] = 1.0f - ((unsigned char *)backEnd.currentEntity->e.shaderRGBA)[1] / 255.0f;
-				baseColor[2] = 1.0f - ((unsigned char *)backEnd.currentEntity->e.shaderRGBA)[2] / 255.0f;
-				baseColor[3] = 1.0f - ((unsigned char *)backEnd.currentEntity->e.shaderRGBA)[3] / 255.0f;
+				baseColor[0] = 1.0f - backEnd.currentEntity->e.shader.rgba[0] / 255.0f;
+				baseColor[1] = 1.0f - backEnd.currentEntity->e.shader.rgba[1] / 255.0f;
+				baseColor[2] = 1.0f - backEnd.currentEntity->e.shader.rgba[2] / 255.0f;
+				baseColor[3] = 1.0f - backEnd.currentEntity->e.shader.rgba[3] / 255.0f;
 			}
 			break;
 		case CGEN_IDENTITY:
@@ -525,14 +525,14 @@ static void ComputeShaderColors( shaderStage_t *pStage, vec4_t baseColor, vec4_t
 		case AGEN_ENTITY:
 			if (backEnd.currentEntity)
 			{
-				baseColor[3] = ((unsigned char *)backEnd.currentEntity->e.shaderRGBA)[3] / 255.0f;
+				baseColor[3] = backEnd.currentEntity->e.shader.rgba[3] / 255.0f;
 			}
 			vertColor[3] = 0.0f;
 			break;
 		case AGEN_ONE_MINUS_ENTITY:
 			if (backEnd.currentEntity)
 			{
-				baseColor[3] = 1.0f - ((unsigned char *)backEnd.currentEntity->e.shaderRGBA)[3] / 255.0f;
+				baseColor[3] = 1.0f - backEnd.currentEntity->e.shader.rgba[3] / 255.0f;
 			}
 			vertColor[3] = 0.0f;
 			break;

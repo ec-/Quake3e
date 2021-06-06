@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define	DLIGHT_AT_RADIUS		16
 // at the edge of a dlight's influence, this amount of light will be added
 
-#define	DLIGHT_MINIMUM_RADIUS	16		
+#define	DLIGHT_MINIMUM_RADIUS	16
 // never calculate a range less than this to prevent huge light numbers
 
 
@@ -143,7 +143,7 @@ static void R_SetupEntityLightingGrid( trRefEntity_t *ent ) {
 	float	totalFactor;
 
 	if ( ent->e.renderfx & RF_LIGHTING_ORIGIN ) {
-		// seperate lightOrigins are needed so an object that is
+		// separate lightOrigins are needed so an object that is
 		// sinking into the ground can still be lit, and so
 		// multi-part models can be lit identically
 		VectorCopy( ent->e.lightingOrigin, lightOrigin );
@@ -294,7 +294,7 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 	vec3_t			shadowLightDir;
 #endif
 
-	// lighting calculations 
+	// lighting calculations
 	if ( ent->lightingCalculated ) {
 		return;
 	}
@@ -304,7 +304,7 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 	// trace a sample point down to find ambient light
 	//
 	if ( ent->e.renderfx & RF_LIGHTING_ORIGIN ) {
-		// seperate lightOrigins are needed so an object that is
+		// separate lightOrigins are needed so an object that is
 		// sinking into the ground can still be lit, and so
 		// multi-part models can be lit identically
 		VectorCopy( ent->e.lightingOrigin, lightOrigin );
@@ -313,13 +313,13 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 	}
 
 	// if NOWORLDMODEL, only use dynamic lights (menu system, etc)
-	if ( !(refdef->rdflags & RDF_NOWORLDMODEL ) 
+	if ( !(refdef->rdflags & RDF_NOWORLDMODEL )
 		&& tr.world->lightGridData ) {
 		R_SetupEntityLightingGrid( ent );
 	} else {
-		ent->ambientLight[0] = ent->ambientLight[1] = 
+		ent->ambientLight[0] = ent->ambientLight[1] =
 			ent->ambientLight[2] = tr.identityLight * 150;
-		ent->directedLight[0] = ent->directedLight[1] = 
+		ent->directedLight[0] = ent->directedLight[1] =
 			ent->directedLight[2] = tr.identityLight * 150;
 		VectorCopy( tr.sunDirection, ent->lightDir );
 	}
@@ -338,7 +338,7 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 	d = VectorLength( ent->directedLight );
 	VectorScale( ent->lightDir, d, lightDir );
 #ifdef USE_PMLIGHT
-	if ( r_dlightMode->integer == 2 ) { 
+	if ( r_dlightMode->integer == 2 ) {
 		// only direct lights
 		// but we need to deal with shadow light direction
 		VectorCopy( lightDir, shadowLightDir );
@@ -391,7 +391,7 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 	((byte *)&ent->ambientLightInt)[1] = myftol( ent->ambientLight[1] );
 	((byte *)&ent->ambientLightInt)[2] = myftol( ent->ambientLight[2] );
 	((byte *)&ent->ambientLightInt)[3] = 0xff;
-	
+
 	// transform the direction to local space
 	VectorNormalize( lightDir );
 	ent->lightDir[0] = DotProduct( lightDir, ent->e.axis[0] );
@@ -417,7 +417,7 @@ R_LightForPoint
 int R_LightForPoint( vec3_t point, vec3_t ambientLight, vec3_t directedLight, vec3_t lightDir )
 {
 	trRefEntity_t ent;
-	
+
 	if ( tr.world->lightGridData == NULL )
 	  return qfalse;
 

@@ -54,10 +54,10 @@ static void LerpDrawVert( drawVert_t *a, drawVert_t *b, drawVert_t *out ) {
 	out->lightmap[0] = 0.5f * (a->lightmap[0] + b->lightmap[0]);
 	out->lightmap[1] = 0.5f * (a->lightmap[1] + b->lightmap[1]);
 
-	out->color[0] = (a->color[0] + b->color[0]) >> 1;
-	out->color[1] = (a->color[1] + b->color[1]) >> 1;
-	out->color[2] = (a->color[2] + b->color[2]) >> 1;
-	out->color[3] = (a->color[3] + b->color[3]) >> 1;
+	out->color.rgba[0] = (a->color.rgba[0] + b->color.rgba[0]) >> 1;
+	out->color.rgba[1] = (a->color.rgba[1] + b->color.rgba[1]) >> 1;
+	out->color.rgba[2] = (a->color.rgba[2] + b->color.rgba[2]) >> 1;
+	out->color.rgba[3] = (a->color.rgba[3] + b->color.rgba[3]) >> 1;
 }
 
 /*
@@ -354,14 +354,18 @@ R_SubdividePatchToGrid
 srfGridMesh_t *R_SubdividePatchToGrid( int width, int height,
 								drawVert_t points[MAX_PATCH_SIZE*MAX_PATCH_SIZE] ) {
 	int			i, j, k, l;
-	drawVert_t_cleared( prev );
-	drawVert_t_cleared( next );
-	drawVert_t_cleared( mid );
+	drawVert_t	prev;
+	drawVert_t	next;
+	drawVert_t	mid;
 	float		len, maxLen;
 	int			n;
 	int			t;
 	drawVert_t	ctrl[MAX_GRID_SIZE][MAX_GRID_SIZE];
 	float		errorTable[2][MAX_GRID_SIZE];
+
+	memset( &prev, 0, sizeof( prev ) );
+	memset( &next, 0, sizeof( next ) );
+	memset( &mid, 0, sizeof( mid ) );
 
 	for ( i = 0 ; i < width ; i++ ) {
 		for ( j = 0 ; j < height ; j++ ) {

@@ -446,42 +446,6 @@ static void FillSkySide( const int mins[2], const int maxs[2], float skyTexCoord
 }
 
 
-#ifdef USE_VULKAN
-static void DrawSkySide( image_t *image, const int mins[2], const int maxs[2], int *numColors )
-{
-	tess.numVertexes = 0;
-	tess.numIndexes = 0;
-
-	FillSkySide( mins, maxs, s_skyTexCoords );
-
-	if ( tess.numIndexes )
-	{
-		int tess_flags;
-
-		GL_Bind( image );
-		// optimization: update color array only when needed
-		if ( tess.numVertexes > *numColors )
-		{
-			Com_Memset( tess.svars.colors, tr.identityLightByte, tess.numVertexes * sizeof( tess.svars.colors[0] ) );
-			*numColors = tess.numVertexes;
-			tess_flags = TESS_XYZ | TESS_RGBA | TESS_ST0;
-		}
-		else
-		{
-			tess_flags = TESS_XYZ | TESS_ST0;
-		}
-
-		tess.svars.texcoordPtr[0] = tess.texCoords[0];
-
-		vk_bind_index();
-		vk_bind_geometry( tess_flags );
-		vk_draw_geometry( vk.skybox_pipeline, r_showsky->integer ? DEPTH_RANGE_ZERO : DEPTH_RANGE_ONE, qtrue );
-
-		tess.numVertexes = 0;
-		tess.numIndexes = 0;
-	}
-}
-#else
 static void DrawSkySide( image_t *image, const int mins[2], const int maxs[2] )
 {
 	tess.numVertexes = 0;
@@ -492,24 +456,27 @@ static void DrawSkySide( image_t *image, const int mins[2], const int maxs[2] )
 	if ( tess.numIndexes )
 	{
 		GL_Bind( image );
+#ifdef USE_VULKAN
+		tess.svars.texcoordPtr[0] = tess.texCoords[0];
 
+		vk_bind_pipeline( vk.skybox_pipeline );
+		vk_bind_index();
+		vk_bind_geometry( TESS_XYZ | TESS_ST0 );
+		vk_draw_geometry( r_showsky->integer ? DEPTH_RANGE_ZERO : DEPTH_RANGE_ONE, qtrue );
+#else
 		qglVertexPointer( 3, GL_FLOAT, 16, tess.xyz );
 		qglTexCoordPointer( 2, GL_FLOAT, 0, tess.texCoords[0] );
 
 		R_DrawElements( tess.numIndexes, tess.indexes );
-
+#endif
 		tess.numVertexes = 0;
 		tess.numIndexes = 0;
 	}
 }
-#endif
 
 
 static void DrawSkyBox( const shader_t *shader )
 {
-#ifdef USE_VULKAN
-	int numColors = 0;
-#endif
 	int		i;
 	sky_min = 0;
 	sky_max = 1;
@@ -566,11 +533,7 @@ static void DrawSkyBox( const shader_t *shader )
 			}
 		}
 
-#ifdef USE_VULKAN
-		DrawSkySide( shader->sky.outerbox[sky_texorder[i]], sky_mins_subd, sky_maxs_subd, &numColors );
-#else
 		DrawSkySide( shader->sky.outerbox[sky_texorder[i]], sky_mins_subd, sky_maxs_subd );
-#endif
 	}
 }
 

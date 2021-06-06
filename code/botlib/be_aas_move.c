@@ -980,6 +980,8 @@ static int AAS_ClientMovementPrediction( aas_clientmove_t *move,
 	//
 	return qtrue;
 } //end of the function AAS_ClientMovementPrediction
+
+
 //===========================================================================
 //
 // Parameter:			-
@@ -994,12 +996,15 @@ int AAS_PredictClientMovement(struct aas_clientmove_s *move,
 								int maxframes, float frametime,
 								int stopevent, int stopareanum, int visualize)
 {
-	vec3_t mins, maxs;
+	const vec3_t mins = { -4, -4, -4 };
+	const vec3_t maxs = { 4, 4, 4 };
 	return AAS_ClientMovementPrediction(move, entnum, origin, presencetype, onground,
 										velocity, cmdmove, cmdframes, maxframes,
 										frametime, stopevent, stopareanum,
 										mins, maxs, visualize);
 } //end of the function AAS_PredictClientMovement
+
+
 //===========================================================================
 //
 // Parameter:			-

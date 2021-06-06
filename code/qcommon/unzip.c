@@ -1488,7 +1488,7 @@ static int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 	unz_file_info_internal file_info_internal;
 	byte buf[46];
 	int err=UNZ_OK;
-	uLong uMagic;
+	//uLong uMagic;
 	long lSeek=0;
 
 	if (file==NULL)
@@ -1500,9 +1500,11 @@ static int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 #if 1 // try ro reduce fread() overhead
 	if ( unzlocal_getData( s->file, buf, 46 ) != UNZ_OK )
 		return UNZ_ERRNO;
-	uMagic = LittleLong( *(int*)(buf+0) );
+	//uMagic = LittleLong( *(int*)(buf+0) );
 	/* we check the magic */
-	if ( uMagic != 0x02014b50 )
+	//if ( uMagic != 0x02014b50 )
+	//	return UNZ_BADZIPFILE;
+	if ( memcmp( buf, "\x50\x4b\x01\x02", 4 ) != 0 )
 		return UNZ_BADZIPFILE;
 	file_info.version = LittleShort( *(short*)(buf+4) );
 	file_info.version_needed  = LittleShort( *(short*)(buf+6) );

@@ -286,7 +286,7 @@ qboolean S_LoadSound( sfx_t *sfx )
 
 	samples = Hunk_AllocateTempMemory(info.samples * sizeof(short) * 2);
 
-	sfx->lastTimeUsed = Com_Milliseconds()+1;
+	sfx->lastTimeUsed = s_soundtime + 1; // Com_Milliseconds()+1
 
 	// each of these compression schemes works just fine
 	// but the 16bit quality is much nicer and with a local

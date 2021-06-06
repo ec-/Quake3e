@@ -272,6 +272,15 @@ void RE_AddDynamicLightToScene( const vec3_t org, float intensity, float r, floa
 		intensity *= r_dlightScale->value;
 	}
 #endif
+
+	if ( r_dlightSaturation->value != 1.0 )
+	{
+		float luminance = LUMA( r, g, b );
+		r = LERP( luminance, r, r_dlightSaturation->value );
+		g = LERP( luminance, g, r_dlightSaturation->value );
+		b = LERP( luminance, b, r_dlightSaturation->value );
+	}
+
 	dl = &backEndData->dlights[r_numdlights++];
 	VectorCopy( org, dl->origin );
 	dl->radius = intensity;
@@ -314,6 +323,15 @@ void RE_AddLinearLightToScene( const vec3_t start, const vec3_t end, float inten
 		intensity *= r_dlightScale->value;
 	}
 #endif
+
+	if ( r_dlightSaturation->value != 1.0 )
+	{
+		float luminance = LUMA( r, g, b );
+		r = LERP( luminance, r, r_mapGreyScale->value );
+		g = LERP( luminance, g, r_mapGreyScale->value );
+		b = LERP( luminance, b, r_mapGreyScale->value );
+	}
+
 	dl = &backEndData->dlights[ r_numdlights++ ];
 	VectorCopy( start, dl->origin );
 	VectorCopy( end, dl->origin2 );

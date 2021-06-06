@@ -1,3 +1,42 @@
+27-May-2021:
+* QVM: more correct hanling of NaNs in bytecode compilers 
+* QVM: fixed non-working RocketArena3 server code
+* Cvars: avoid misleading warnings when changing ROM variables
+* Cvars: allow override "protocol" from command-line
+* Sound: reduced lag during video capture
+* SDL2: (somewhat) fixed non-working console key for non-US keyboard layouts
+* Vulkan: fixed some broken debug features
+* Vulkan: fixed resource leaks and incorrect layout transitions during image capture
+* Vulkan: avoid redundant scissor updates
+* Vulkan: use correct texture bundle for lighting, use static uniform location to avoid pushing garbage from stack variables
+* Vulkan: fixed crash with \r_showtris 1 and \r_fastsky 1, fixed environment shader selection
+* OpenGL: fixed crash with \snd_restart
+* Do not light up shaders whose sort comes after insertion point (SS_FOG)
+* Unified gamma correction between OpenGL and Vulkan renderers
+
+28-Mar-2021:
+* Vulkan: implemented super-sample anti-aliasing, can be enabled via \r_ext_supersample 1, requires \r_fbo 1
+* Vulkan: added \r_presentBits to support HDR monitors, added \r_dither to control dithering in such cases
+* Vulkan: added more multitexturing optimizations
+* OpenGL: fixed incorrect image capture with supersampling and renderscale enabled
+* OpenGL: fixed texture generation for environment-mapped shaders in VBO
+* OpenGL: disable bloom if multitexturing was disabled via \r_ext_multitexture 0
+* Renderers: dereference $vid_width and $vid_height to actual rendering width/height inside extended shaders
+* Win32: fixed crash on nvidia systems when using Vulkan renderer and Win+D hotkey
+* Win32: fixed accidental focus losses when using high-dpi mice
+* Win32: fixed non-working \in_minimize in windowed mode
+* Win32: catch rare DescribePixelFormat() crash
+* Fixed error raised by messagemode 3/4 called without running cgvm
+* Fixed another crash in FixRenderCommandList()
+* Fixed potential crash with fog table
+* Allow \reconnect to work after client restart
+* Added warnings in developer mode to know why and when a sound isn't played
+* Added \r_dlightSaturation
+* Unlocked \r_lodCurveError
+* Check integrity of loaded maps and models
+* SDL2+Wayland compatibility fixes
+* Various fixes and improvements
+
 16-Jan-2021:
 * Win32: try to catch exceptions instead of silent crashing
 * Win32: made unhandled exceptions non-fatal
@@ -21,7 +60,7 @@
 * Fixed crash in linux client caused by unitialized cvars, added backtrace output for debug builds
 
 21-Sep-2020:
-* Client: automatically rescale console chars height for resolutions greater than FullHD	
+* Client: automatically rescale console chars height for resolutions greater than FullHD
 * Vulkan: do not crash if validation layer is not available in debug mode, some other minor fixes
 * Added support for Raspberry Pi 4, Vulkan renderer seems to work fine with its beta driver
 * Added very fast bytecode compilers for 32/64-bit ARM processors, slight improvements for x86
@@ -242,7 +281,7 @@ Fixed non-working rconPassword2 on linux
 23-Jul-2018:
 * Fixed resolving optional FBO functions
 * Fixed Escape key causing full client restart during cinematics
-* Fixed excessive filesystem lookup with empty \fs_steampath 
+* Fixed excessive filesystem lookup with empty \fs_steampath
 * Reduced memory fragmentation at filesystem startup
 * Avoided bug in defrag mod (whose demo UI can't handle properly sorted directories)
 * Improved file extension filtering so now defrag demo UI works (partially) on linux too
@@ -411,7 +450,7 @@ Fixed non-working rconPassword2 on linux
 * Botlib security fix
 
 11-Dec-2017:
-* Fixed missing dynamic lighting with collapsed multitexture shaders 
+* Fixed missing dynamic lighting with collapsed multitexture shaders
 
 09-Dec-2017:
 * Win32: do not minimize/restore video mode/gamma when switching out of game window in multimonitor configurations
@@ -703,7 +742,7 @@ Chg: default screenshot naming scheme from shotNNNN to shot-YYYYMMDD-HHmmSS
 13-Feb-2017:
 Fix: handle client gamestate overflow
 Chg: set sv_levelTimeReset default to 0
-Fix: restart server every 12 hours when sv_levelTimeReset is 0 
+Fix: restart server every 12 hours when sv_levelTimeReset is 0
 Fix: potential hang in tty_FlushIn()
 Fix: much more correct suspend/resume (SIGTSTP/SIGCONT) for unix console
 Add: CTRL+L hotkey support for unix console
@@ -722,7 +761,7 @@ Fix: do not handle "disconnect" command when downloading with cURL
 
 16-Dec-2016:
 Add: allow recording demo duding demo playback
-Fix: filehandle leak after reading zero-sized servercache.dat 
+Fix: filehandle leak after reading zero-sized servercache.dat
 Fix: do not add newlines to the end of cs/bcs* server commands
 Fix: missing client name in debug output "Going to CS_ZOMBIE for [name]"
 Chg: servercache.dat now per mod and not global for all
@@ -772,7 +811,7 @@ Add: CPMA hacks
 Add: sin,cos,rand to \varfunc
 
 10-Oct-2016:
-Fix: skybox overbright with picmip and r_intencity > 1 
+Fix: skybox overbright with picmip and \r_intensity > 1
 Add: \varfunc <add|sub|mul|div|mov> <cvar> <value> [- or low limit] [high limit]
 Remove: \inc and \dec
 
@@ -949,7 +988,7 @@ Chg: undefine UNICODE for win64 build
 * Another set of x86 QVM improvements
 
 02-May-2012:
-* Fix custom GL driver loading 
+* Fix custom GL driver loading
 * Many x86 QVM improvements
 
 11-Apr-2012:
@@ -957,7 +996,7 @@ Chg: undefine UNICODE for win64 build
 * Misc. fixes and improvements
 
 06-Apr-2012:
-* Try to resolve remote server address first before shutting down any client stuff on "connect" command 
+* Try to resolve remote server address first before shutting down any client stuff on "connect" command
 
 05-Apr-2012:
 * Added win32 decicated server binary
@@ -965,7 +1004,7 @@ Chg: undefine UNICODE for win64 build
 * Avoid adding last duplicated command in console history
 
 24-Mar-2012:
-* Allow resizing win32 dedicated console 
+* Allow resizing win32 dedicated console
 * Allow setting win32 dedicated console title via con_title cvar from application shortcut
 
 17-Mar-2012:
@@ -1015,7 +1054,7 @@ Chg: undefine UNICODE for win64 build
 * more qvm optimizations
 
 09-Jun-2011:
-* fs_game now is "edawn" by default so edawn.exe/ded now deprecated 
+* fs_game now is "edawn" by default so edawn.exe/ded now deprecated
   (usual mod switch via menu or commandline is working as before)
 * \video (motion capture) command now available
 * fixed http 406 error when downloading content from some servers
@@ -1028,7 +1067,7 @@ Chg: undefine UNICODE for win64 build
 
 12-May-2011:
 * additional security checks against malicious qvms
-* more correct code generation for vq3-compatible mods 
+* more correct code generation for vq3-compatible mods
 * additional qvm jit-compiler optimizations (more than 10% codesize reduction for edawn + faster execution)
 
 04-May-2011:

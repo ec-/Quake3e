@@ -46,20 +46,20 @@ QVM files
 #define	VM_MAGIC			0x12721444
 #define	VM_MAGIC_VER2	0x12721445
 typedef struct {
-	int		vmMagic;
+	int32_t vmMagic;
 
-	int		instructionCount;
+	int32_t instructionCount;
 
-	int		codeOffset;
-	int		codeLength;
+	int32_t codeOffset;
+	int32_t codeLength;
 
-	int		dataOffset;
-	int		dataLength;
-	int		litLength;			// ( dataLength - litLength ) should be byteswapped on load
-	int		bssLength;			// zero filled memory appended to datalength
+	int32_t dataOffset;
+	int32_t dataLength;
+	int32_t litLength;			// ( dataLength - litLength ) should be byteswapped on load
+	int32_t bssLength;			// zero filled memory appended to datalength
 
 	//!!! below here is VM_MAGIC_VER2 !!!
-	int		jtrgLength;			// number of jump table targets
+	int32_t jtrgLength;			// number of jump table targets
 } vmHeader_t;
 
 /*
@@ -109,24 +109,24 @@ typedef struct md3Tag_s {
 ** XyzNormals		sizeof( md3XyzNormal_t ) * numVerts * numFrames
 */
 typedef struct {
-	int		ident;				// 
+	int32_t ident;				//
 
 	char	name[MAX_QPATH];	// polyset name
 
-	int		flags;
-	int		numFrames;			// all surfaces in a model should have the same
+	int32_t flags;
+	int32_t numFrames;			// all surfaces in a model should have the same
 
-	int		numShaders;			// all surfaces in a model should have the same
-	int		numVerts;
+	int32_t numShaders;			// all surfaces in a model should have the same
+	int32_t numVerts;
 
-	int		numTriangles;
-	int		ofsTriangles;
+	int32_t numTriangles;
+	uint32_t ofsTriangles;
 
-	int		ofsShaders;			// offset from start of md3Surface_t
-	int		ofsSt;				// texture coords are common for all frames
-	int		ofsXyzNormals;		// numVerts * numFrames
+	uint32_t ofsShaders;			// offset from start of md3Surface_t
+	uint32_t ofsSt;				// texture coords are common for all frames
+	uint32_t ofsXyzNormals;		// numVerts * numFrames
 
-	int		ofsEnd;				// next surface follows
+	uint32_t ofsEnd;				// next surface follows
 } md3Surface_t;
 
 typedef struct {
@@ -148,24 +148,24 @@ typedef struct {
 } md3XyzNormal_t;
 
 typedef struct {
-	int			ident;
-	int			version;
+	int32_t		ident;
+	int32_t		version;
 
 	char		name[MAX_QPATH];	// model name
 
-	int			flags;
+	uint32_t	flags;
 
-	int			numFrames;
-	int			numTags;			
-	int			numSurfaces;
+	int32_t		numFrames;
+	int32_t		numTags;
+	int32_t		numSurfaces;
 
-	int			numSkins;
+	int32_t		numSkins;
 
-	int			ofsFrames;			// offset for first frame
-	int			ofsTags;			// numFrames * numTags
-	int			ofsSurfaces;		// first surface, others follow
+	uint32_t	ofsFrames;			// offset for first frame
+	uint32_t	ofsTags;			// numFrames * numTags
+	uint32_t	ofsSurfaces;		// first surface, others follow
 
-	int			ofsEnd;				// end of file
+	uint32_t	ofsEnd;				// end of file
 } md3Header_t;
 
 /*
@@ -354,7 +354,8 @@ typedef struct {
 
 
 typedef struct {
-	int		fileofs, filelen;
+	int32_t fileofs;
+	int32_t filelen;
 } lump_t;
 
 #define	LUMP_ENTITIES		0
@@ -445,10 +446,8 @@ typedef struct {
 	float		st[2];
 	float		lightmap[2];
 	vec3_t		normal;
-	byte		color[4];
+	color4ub_t	color;
 } drawVert_t;
-
-#define drawVert_t_cleared(x) drawVert_t (x) = {{0, 0, 0}, {0, 0}, {0, 0}, {0, 0, 0}, {0, 0, 0, 0}}
 
 typedef enum {
 	MST_BAD,

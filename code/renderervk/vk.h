@@ -18,6 +18,7 @@
 #define NUM_COMMAND_BUFFERS 2	// number of command buffers / render semaphores / framebuffer sets
 
 #define USE_REVERSED_DEPTH
+//#define USE_BUFFER_CLEAR
 
 #define VK_NUM_BLOOM_PASSES 4
 
@@ -26,22 +27,70 @@
 #define MAX_ATTACHMENTS_IN_POOL (6+1+VK_NUM_BLOOM_PASSES*2) // depth + msaa + msaa-resolve + screenmap.msaa + screenmap.resolve + screenmap.depth + bloom_extract + blur pairs
 
 typedef enum {
-	TYPE_SIGNLE_TEXTURE,
-	TYPE_SIGNLE_TEXTURE_DF,
-	TYPE_SIGNLE_TEXTURE_ENVIRO,
-	TYPE_SIGNLE_TEXTURE_LIGHTING,
-	TYPE_SIGNLE_TEXTURE_LIGHTING1,
-	TYPE_MULTI_TEXTURE_MUL,
-	TYPE_MULTI_TEXTURE_ADD,
-	TYPE_MULTI_TEXTURE_ADD_IDENTITY,
-	TYPE_MULTI_TEXTURE_MUL2,
-	TYPE_MULTI_TEXTURE_ADD2,
-	TYPE_MULTI_TEXTURE_ADD2_IDENTITY,
 	TYPE_COLOR_WHITE,
 	TYPE_COLOR_GREEN,
 	TYPE_COLOR_RED,
 	TYPE_FOG_ONLY,
 	TYPE_DOT,
+
+	TYPE_SIGNLE_TEXTURE_LIGHTING,
+	TYPE_SIGNLE_TEXTURE_LIGHTING_LINEAR,
+
+	TYPE_SIGNLE_TEXTURE_DF,
+	TYPE_SIGNLE_TEXTURE_IDENTITY,
+
+	TYPE_GENERIC_BEGIN,
+	TYPE_SIGNLE_TEXTURE = TYPE_GENERIC_BEGIN,
+	TYPE_SIGNLE_TEXTURE_ENV,
+
+	TYPE_MULTI_TEXTURE_MUL2,
+	TYPE_MULTI_TEXTURE_MUL2_ENV,
+	TYPE_MULTI_TEXTURE_ADD2_IDENTITY,
+	TYPE_MULTI_TEXTURE_ADD2_IDENTITY_ENV,
+	TYPE_MULTI_TEXTURE_ADD2,
+	TYPE_MULTI_TEXTURE_ADD2_ENV,
+
+	TYPE_MULTI_TEXTURE_MUL3,
+	TYPE_MULTI_TEXTURE_MUL3_ENV,
+	TYPE_MULTI_TEXTURE_ADD3_IDENTITY,
+	TYPE_MULTI_TEXTURE_ADD3_IDENTITY_ENV,
+	TYPE_MULTI_TEXTURE_ADD3,
+	TYPE_MULTI_TEXTURE_ADD3_ENV,
+
+	TYPE_BLEND2_ADD,
+	TYPE_BLEND2_ADD_ENV,
+	TYPE_BLEND2_MUL,
+	TYPE_BLEND2_MUL_ENV,
+	TYPE_BLEND2_ALPHA,
+	TYPE_BLEND2_ALPHA_ENV,
+	TYPE_BLEND2_ONE_MINUS_ALPHA,
+	TYPE_BLEND2_ONE_MINUS_ALPHA_ENV,
+	TYPE_BLEND2_MIX_ALPHA,
+	TYPE_BLEND2_MIX_ALPHA_ENV,
+	TYPE_BLEND2_MIX_ONE_MINUS_ALPHA,
+	TYPE_BLEND2_MIX_ONE_MINUS_ALPHA_ENV,
+
+	TYPE_BLEND2_DST_COLOR_SRC_ALPHA,
+	TYPE_BLEND2_DST_COLOR_SRC_ALPHA_ENV,
+
+	TYPE_BLEND3_ADD,
+	TYPE_BLEND3_ADD_ENV,
+	TYPE_BLEND3_MUL,
+	TYPE_BLEND3_MUL_ENV,
+	TYPE_BLEND3_ALPHA,
+	TYPE_BLEND3_ALPHA_ENV,
+	TYPE_BLEND3_ONE_MINUS_ALPHA,
+	TYPE_BLEND3_ONE_MINUS_ALPHA_ENV,
+	TYPE_BLEND3_MIX_ALPHA,
+	TYPE_BLEND3_MIX_ALPHA_ENV,
+	TYPE_BLEND3_MIX_ONE_MINUS_ALPHA,
+	TYPE_BLEND3_MIX_ONE_MINUS_ALPHA_ENV,
+
+	TYPE_BLEND3_DST_COLOR_SRC_ALPHA,
+	TYPE_BLEND3_DST_COLOR_SRC_ALPHA_ENV,
+
+	TYPE_GENERIC_END = TYPE_BLEND3_MIX_ONE_MINUS_ALPHA_ENV
+
 } Vk_Shader_Type;
 
 // used with cg_shadows == 2
@@ -74,12 +123,12 @@ typedef struct {
 	qboolean noAnisotropy;
 } Vk_Sampler_Def;
 
-enum {
+typedef enum {
 	RENDER_PASS_SCREENMAP = 0,
 	RENDER_PASS_MAIN,
 	RENDER_PASS_POST_BLOOM,
 	RENDER_PASS_COUNT
-};
+} renderPass_t;
 
 typedef struct {
 	Vk_Shader_Type shader_type;
@@ -99,7 +148,7 @@ typedef struct VK_Pipeline {
 	Vk_Pipeline_Def def;
 	VkPipeline handle[ RENDER_PASS_COUNT ];
 } VK_Pipeline_t;
-	
+
 // this structure must be in sync with shader uniforms!
 typedef struct vkUniform_s {
 	// vertex shader reference
@@ -117,13 +166,15 @@ typedef struct vkUniform_s {
 } vkUniform_t;
 
 #define TESS_XYZ   (1)
-#define TESS_RGBA  (2)
-#define TESS_ST0   (4)
-#define TESS_ST1   (8)
-#define TESS_ST2   (16)
-#define TESS_NNN   (32)
-#define TESS_VPOS  (64)  // uniform with eyePos
-#define TESS_ENV   (128) // mark shader stage with environment mapping
+#define TESS_RGBA0 (2)
+#define TESS_RGBA1 (4)
+#define TESS_RGBA2 (8)
+#define TESS_ST0   (16)
+#define TESS_ST1   (32)
+#define TESS_ST2   (64)
+#define TESS_NNN   (128)
+#define TESS_VPOS  (256)  // uniform with eyePos
+#define TESS_ENV   (512) // mark shader stage with environment mapping
 //
 // Initialization.
 //
@@ -133,7 +184,7 @@ typedef struct vkUniform_s {
 void vk_initialize( void );
 
 // Called after initialization or renderer restart
-void vk_init_buffers( void );
+void vk_init_descriptors( void );
 
 // Shutdown vulkan subsystem by releasing resources acquired by Vk_Instance.
 void vk_shutdown( void );
@@ -151,12 +202,12 @@ void vk_create_image( int width, int height, VkFormat format, int mip_levels, im
 void vk_upload_image_data( VkImage image, int x, int y, int width, int height, qboolean mipmap, const uint8_t* pixels, int bytes_per_pixel );
 byte *resample_image_data( const image_t *image, byte *data, const int data_size, int *bytes_per_pixel );
 void vk_update_descriptor_set( image_t *image, qboolean mipmap );
-	
+
 uint32_t vk_find_pipeline_ext( uint32_t base, const Vk_Pipeline_Def *def, qboolean use );
 void vk_get_pipeline_def( uint32_t pipeline, Vk_Pipeline_Def *def );
 
-void vk_create_post_process_pipeline( int program_index );
-void vk_restart_swapchain( const char *funcname );
+void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_t height );
+void vk_create_pipelines( void );
 
 //
 // Rendering setup.
@@ -171,10 +222,12 @@ void vk_end_render_pass( void );
 void vk_begin_main_render_pass( void );
 void vk_begin_screenmap_render_pass( void );
 
+void vk_bind_pipeline( uint32_t pipeline );
 void vk_bind_index( void );
 void vk_bind_index_ext( const int numIndexes, const uint32_t*indexes );
 void vk_bind_geometry( uint32_t flags );
-void vk_draw_geometry( uint32_t pipeline, Vk_Depth_Range depth_range, qboolean indexed );
+void vk_bind_lighting( int stage, int bundle );
+void vk_draw_geometry( Vk_Depth_Range depth_range, qboolean indexed );
 
 void vk_draw_light( uint32_t pipeline, Vk_Depth_Range depth_range, uint32_t uniform_offset, int fog);
 
@@ -191,15 +244,20 @@ void vk_reset_descriptor( int index );
 void vk_update_descriptor( int index, VkDescriptorSet descriptor );
 void vk_update_descriptor_offset( int index, uint32_t offset );
 
+void vk_update_post_process_pipelines( void );
+
 const char *vk_format_string( VkFormat format );
 
 void VBO_PrepareQueues( void );
 void VBO_RenderIBOItems( void );
 void VBO_ClearQueue( void );
 
+qboolean vk_surface_format_color_depth( VkFormat format, int* r, int* g, int* b );
+
 typedef struct vk_tess_s {
 	VkCommandBuffer command_buffer;
 
+	VkSemaphore image_acquired;
 	VkSemaphore rendering_finished;
 	VkFence rendering_finished_fence;
 	qboolean waitForFence;
@@ -210,15 +268,15 @@ typedef struct vk_tess_s {
 
 	VkDescriptorSet uniform_descriptor;
 	uint32_t		uniform_read_offset;
-	VkDeviceSize	buf_offset[6];
-	VkDeviceSize	vbo_offset[6];
+	VkDeviceSize	buf_offset[8];
+	VkDeviceSize	vbo_offset[8];
 
 	VkBuffer		curr_index_buffer;
 	uint32_t		curr_index_offset;
 
 	struct {
 		uint32_t		start, end;
-		VkDescriptorSet	current[6];
+		VkDescriptorSet	current[6]; // 0:storage, 1:uniform, 2:color0, 3:color1, 4:color2, 5:fog
 		uint32_t		offset[2]; // 0 (uniform) and 5 (storage)
 	} descriptor_set;
 
@@ -226,6 +284,8 @@ typedef struct vk_tess_s {
 	VkPipeline last_pipeline;
 
 	uint32_t num_indexes; // value from most recent vk_bind_index() call
+
+	VkRect2D scissor_rect;
 } vk_tess_t;
 
 
@@ -235,7 +295,8 @@ typedef struct {
 	VkInstance instance;
 	VkPhysicalDevice physical_device;
 	VkSurfaceKHR surface;
-	VkSurfaceFormatKHR surface_format;
+	VkSurfaceFormatKHR base_format;
+	VkSurfaceFormatKHR present_format;
 
 	uint32_t queue_family_index;
 	VkDevice device;
@@ -248,7 +309,6 @@ typedef struct {
 	uint32_t swapchain_image_index;
 
 	VkCommandPool command_pool;
-	VkSemaphore image_acquired;
 
 	VkDeviceMemory image_memory[ MAX_ATTACHMENTS_IN_POOL ];
 	uint32_t image_memory_count;
@@ -352,15 +412,17 @@ typedef struct {
 	// Shader modules.
 	//
 	struct {
-		VkShaderModule st_vs[2];
-		VkShaderModule st_enviro_vs[2];
-		VkShaderModule mt_vs[2];
-		VkShaderModule mt2_vs[2];
-
-		VkShaderModule st_fs[2];
-		VkShaderModule st_df_fs;
-		VkShaderModule mt_fs[2];
-		VkShaderModule mt2_fs[2];
+		struct {
+			VkShaderModule gen[3][2][2][2]; // tx[0,1,2], cl[0,1] env0[0,1] fog[0,1]
+			VkShaderModule light[2]; // fog[0,1]
+			VkShaderModule gen0_ident;
+		}	vert;
+		struct {
+			VkShaderModule gen0_ident;
+			VkShaderModule gen0_df;
+			VkShaderModule gen[3][2][2]; // tx[0,1,2] cl[0,1] fog[0,1]
+			VkShaderModule light[2][2]; // linear[0,1] fog[0,1]
+		}	frag;
 
 		VkShaderModule color_fs;
 		VkShaderModule color_vs;
@@ -377,28 +439,17 @@ typedef struct {
 
 		VkShaderModule dot_fs;
 		VkShaderModule dot_vs;
-
-		struct {
-			VkShaderModule vs[2];
-			VkShaderModule fs[2];
-		} light;
-
-		struct {
-			VkShaderModule fs[2];
-		} light1;
-
 	} modules;
 
 	VkPipelineCache pipelineCache;
 
 	VK_Pipeline_t pipelines[ MAX_VK_PIPELINES ];
 	uint32_t pipelines_count;
-	uint32_t pipelines_created_count;
 	uint32_t pipelines_world_base;
 
 	// pipeline statistics
 	int32_t pipeline_create_count;
-		
+
 	//
 	// Standard pipelines.
 	//
@@ -462,12 +513,14 @@ typedef struct {
 	qboolean debugMarkers;
 
 	float maxAnisotropy;
-	float maxLodBias;
+	float maxLod;
 
 	VkFormat color_format;
 	VkFormat capture_format;
 	VkFormat depth_format;
 	VkFormat bloom_format;
+
+	VkImageLayout initSwapchainLayout;
 
 	qboolean fastSky;		// requires VK_IMAGE_USAGE_TRANSFER_DST_BIT
 	qboolean fboActive;
@@ -477,8 +530,6 @@ typedef struct {
 	qboolean offscreenRender;
 
 	qboolean windowAdjusted;
-	int		windowWidth;
-	int		windowHeight;
 	int		blitX0;
 	int		blitY0;
 	int		blitFilter;
@@ -489,7 +540,7 @@ typedef struct {
 	float renderScaleX;
 	float renderScaleY;
 
-	int		renderPassIndex;
+	renderPass_t renderPassIndex;
 
 	uint32_t screenMapWidth;
 	uint32_t screenMapHeight;
@@ -546,7 +597,7 @@ typedef struct {
 extern Vk_Instance	vk;				// shouldn't be cleared during ref re-init
 extern Vk_World		vk_world;		// this data is cleared during ref re-init
 
-// Most of the renderer's code uses Vulkan API via function provides in this file but 
+// Most of the renderer's code uses Vulkan API via function provides in this file but
 // there are few places outside of vk.c where we use Vulkan commands directly.
 
 extern PFN_vkDestroyImage qvkDestroyImage;

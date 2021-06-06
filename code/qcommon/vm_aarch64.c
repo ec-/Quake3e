@@ -1,7 +1,7 @@
 /*
 ===========================================================================
 Copyright (C) 1999-2005 Id Software, Inc.
-Copyright (C) 2020 Quake3e project
+Copyright (C) 2020-2021 Quake3e project
 
 This file is part of Quake III Arena source code.
 
@@ -60,6 +60,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define MISC_OPTIMIZE
 #define MACRO_OPTIMIZE
 #define USE_LITERAL_POOL
+
+#define FUNC_ALIGN 16
 
 //#define DUMP_CODE
 
@@ -276,7 +278,6 @@ static void __attribute__((__noreturn__)) OutJump( void )
 static void __attribute__((__noreturn__)) BadJump( void )
 {
 	Com_Error( ERR_DROP, "program tried to execute code at bad location inside VM" );
-
 }
 
 static void __attribute__((__noreturn__)) ErrBadProgramStack( void )
@@ -936,7 +937,7 @@ static void emit_MOVSi( uint32_t reg, uint32_t imm )
 	}
 #endif
 
-	rx = alloc_rx_const( R2, imm );
+	rx = alloc_rx_const( R2, imm ); // rx = imm
 	emit(FMOVsg(reg, rx));  // sX = rX
 	unmask_rx( rx );
 }
@@ -969,27 +970,23 @@ static void flush_item( opstack_t *it )
 		case TYPE_RX:
 			if ( it->offset != ~0U )
 				emit(STR32i(it->value, rOPSTACK, it->offset)); // *opstack = rX
-			//wipe_rx_meta( it->value );
 			unmask_rx( it->value );
 			break;
 
 		case TYPE_SX:
 			emit(VSTRi(it->value, rOPSTACK, it->offset));  // *opstack = sX
-			//wipe_sx_meta( it->value );
 			unmask_sx( it->value );
 			break;
 
 		case TYPE_CONST:
 			rx = alloc_rx_const( R2, it->value );
 			emit(STR32i(rx, rOPSTACK, it->offset)); // *opstack = r2
-			//wipe_rx_meta( rx );
 			unmask_rx( rx );
 			break;
 
 		case TYPE_LOCAL:
 			rx = alloc_rx_local( R2 | TEMP, it->value );
 			emit(STR32i(rx, rOPSTACK, it->offset));       // *opstack = r2
-			//wipe_rx_meta( rx );
 			unmask_rx( rx );
 			break;
 
@@ -1166,7 +1163,7 @@ static uint32_t alloc_rx_const( uint32_t pref, uint32_t imm )
 
 		if ( ( pref & XMASK ) == 0 ) {
 			// we can select from already masked registers
-			for ( n = 0; n < 32; n++ ) {
+			for ( n = 0; n < ARRAY_LEN( rx_regs ); n++ ) {
 				r = &rx_regs[ n ];
 				if ( r->type == RTYPE_CONST && r->value == imm ) {
 					unmask_rx( n );
@@ -1270,7 +1267,7 @@ static uint32_t alloc_sx_const( uint32_t pref, uint32_t imm )
 
 		if ( ( pref & XMASK ) == 0 ) {
 			// we can select from already masked registers
-			for ( n = 0; n < 32; n++ ) {
+			for ( n = 0; n < ARRAY_LEN( sx_regs ); n++ ) {
 				r = &sx_regs[ n ];
 				if ( r->type == RTYPE_CONST && r->value == imm ) {
 					unmask_sx( n );
@@ -1828,7 +1825,6 @@ static uint32_t load_sx_opstack( vm_t *vm, uint32_t pref )
 }
 
 
-
 static uint32_t get_comp( opcode_t op )
 {
 	switch ( op ) {
@@ -1844,8 +1840,8 @@ static uint32_t get_comp( opcode_t op )
 		case OP_GEU: return HS;
 		case OP_EQF: return EQ;
 		case OP_NEF: return NE;
-		case OP_LTF: return LT;
-		case OP_LEF: return LE;
+		case OP_LTF: return MI;
+		case OP_LEF: return LS;
 		case OP_GTF: return GT;
 		case OP_GEF: return GE;
 		default: DROP( "unexpected op %i", op );
@@ -2182,7 +2178,7 @@ static void dump_code( uint32_t *code, uint32_t code_len )
 
 
 #ifdef CONST_OPTIMIZE
-qboolean ConstOptimize( vm_t *vm )
+static qboolean ConstOptimize( vm_t *vm )
 {
 	uint32_t immrs;
 	uint32_t rx[3];
@@ -2231,7 +2227,7 @@ qboolean ConstOptimize( vm_t *vm )
 				emit(LDRSH32(rx[0], rDATABASE, rx[1])); // r0 = (signed short*)[dataBase + r2]
 				unmask_rx( rx[1] );
 			}
-			ip += 1; // OP_SEX16
+			ip += 2; // OP_LOAD2 + OP_SEX16
 		} else {
 			if ( can_encode_imm12( x, 1 ) ) {
 				emit(LDRH32i(rx[0], rDATABASE, x));    // r0 = (unsigned short*)[dataBase + v]
@@ -2240,9 +2236,10 @@ qboolean ConstOptimize( vm_t *vm )
 				emit(LDRH32(rx[0], rDATABASE, rx[1])); // r0 = (unsigned short*)[dataBase + r2]
 				unmask_rx( rx[1] );
 			}
+			ip += 1; // OP_LOAD2
 		}
-		inc_opstack(); store_rx_opstack( rx[0] ); // opstack +=4 ; *opstack = r0;
-		ip += 1; // OP_LOAD2
+		inc_opstack();             // opstack += 4
+		store_rx_opstack( rx[0] ); // *opstack = r0
 		return qtrue;
 
 	case OP_LOAD1:
@@ -2256,7 +2253,7 @@ qboolean ConstOptimize( vm_t *vm )
 				emit(LDRSB32(rx[0], rDATABASE, rx[1])); // r0 = (signed byte*)[dataBase + r2]
 				unmask_rx( rx[1] );
 			}
-			ip += 1; // OP_SEX8
+			ip += 2; // OP_LOAD1 + OP_SEX8
 		} else {
 			if ( x < 4096 ) {
 				emit(LDRB32i(rx[0], rDATABASE, x));    // r0 = (byte*)[dataBase + v]
@@ -2265,9 +2262,10 @@ qboolean ConstOptimize( vm_t *vm )
 				emit(LDRB32(rx[0], rDATABASE, rx[1])); // r0 = (byte*)[dataBase + r2]
 				unmask_rx( rx[1] );
 			}
+			ip += 1; // OP_LOAD1
 		}
-		inc_opstack(); store_rx_opstack( rx[0] ); // opstack +=4 ; *opstack = r0; 
-		ip += 1; // OP_LOAD1
+		inc_opstack();             // opstack += 4
+		store_rx_opstack( rx[0] ); // *opstack = r0
 		return qtrue;
 
 	case OP_STORE4:
@@ -2337,8 +2335,8 @@ qboolean ConstOptimize( vm_t *vm )
 		rx[0] = load_rx_opstack( vm, R0 ); // r0 = *opstack
 		rx[1] = alloc_rx_const( R2, x );   // r2 = 0x12345678
 		emit(MUL32(rx[0], rx[0], rx[1]));  // r0 = r0 * r2
-		unmask_rx( rx[1] );
 		store_rx_opstack( rx[0] );         // *opstack = r0
+		unmask_rx( rx[1] );
 		ip += 1; // OP_MULI|OP_MULU
 		return qtrue;
 
@@ -2348,12 +2346,12 @@ qboolean ConstOptimize( vm_t *vm )
 		rx[0] = load_rx_opstack( vm, R0 ); // r0 = *opstack
 		rx[1] = alloc_rx_const( R2, x );   // r2 = 0x12345678
 		if ( ni->op == OP_DIVI ) {
-			emit(SDIV32(rx[0], rx[0], rx[1])); // r0 = r0 / r1
+			emit(SDIV32(rx[0], rx[0], rx[1])); // r0 = r0 / r2
 		} else {
-			emit(UDIV32(rx[0], rx[0], rx[1])); // r0 = (unsigned)r0 / r1
+			emit(UDIV32(rx[0], rx[0], rx[1])); // r0 = (unsigned)r0 / r2
 		}
-		unmask_rx( rx[1] );
 		store_rx_opstack( rx[0] ); // *opstack = r0
+		unmask_rx( rx[1] );
 		ip += 1;
 		return qtrue;
 
@@ -2461,7 +2459,7 @@ qboolean ConstOptimize( vm_t *vm )
 		}
 		flush_volatile();
 		if ( ci->value == ~TRAP_SIN || ci->value == ~TRAP_COS ) {
-			sx[0] = alloc_sx( S0 );
+			sx[0] = S0; mask_sx( sx[0] );
 			rx[0] = alloc_rx( R16 );
 			emit(VLDRi(sx[0], rPROCBASE, 8)); // s0 = [procBase + 8]
 			if ( ci->value == ~TRAP_SIN )
@@ -2476,8 +2474,7 @@ qboolean ConstOptimize( vm_t *vm )
 		}
 		if ( ci->value < 0 ) // syscall
 		{
-			x = ~ci->value;
-			emit_MOVRi(R0, x); // r0 = syscall number
+			emit_MOVRi(R0, ~ci->value); // r0 = syscall number
 			emit_MOVRi(rOPSTACKSHIFT, opstack*sizeof(int32_t)); // opStack shift
 			emitFuncOffset( vm, FUNC_SYSF );
 			ip += 1; // OP_CALL;
@@ -2548,9 +2545,8 @@ qboolean ConstOptimize( vm_t *vm )
 	case OP_SUBF:
 	case OP_MULF:
 	case OP_DIVF:
-		x = ci->value;
 		sx[0] = load_sx_opstack( vm, S0 ); // s0 = *opstack
-		sx[1] = alloc_sx_const( S1, x );   // s1 = const
+		sx[1] = alloc_sx_const( S1, ci->value );   // s1 = const
 		switch ( ni->op ) {
 			case OP_ADDF: emit(FADD(sx[0], sx[0], sx[1])); break; // s0 = s0 + s1
 			case OP_SUBF: emit(FSUB(sx[0], sx[0], sx[1])); break; // s0 = s0 - s1
@@ -2558,14 +2554,14 @@ qboolean ConstOptimize( vm_t *vm )
 			case OP_DIVF: emit(FDIV(sx[0], sx[0], sx[1])); break; // s0 = s0 / s1
 			default: break;
 		}
-		unmask_sx( sx[1] );
 		store_sx_opstack( sx[0] );    // *opstack = s0
+		unmask_sx( sx[1] );
 		ip += 1; // OP_XXXF
 		return qtrue;
 
 	default:
 		break;
-	};
+	}
 
 	return qfalse;
 }
@@ -2573,10 +2569,10 @@ qboolean ConstOptimize( vm_t *vm )
 
 
 #ifdef MISC_OPTIMIZE
-qboolean LocalOptimize( vm_t *vm )
+static qboolean LocalOptimize( vm_t *vm )
 {
-	uint32_t v = ci->value;
 	uint32_t rx[2];
+	uint32_t v = ci->value;
 
 	if ( ni->op == OP_LOAD4 ) // merge OP_LOCAL + OP_LOAD4
 	{
@@ -2873,7 +2869,7 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 			ip += 5;
 			return qtrue;
 
-		default: Com_Error( ERR_FATAL, "Unknown macro opcode %i", op );
+		default: DROP( "%s: unknown macro opcode %i", __func__, op );
 			break;
 	};
 
@@ -2980,9 +2976,11 @@ __recompile:
 
 	emit(RET(LR));
 
-	emitAlign( 16 ); // align to quadword boundary
+#ifdef FUNC_ALIGN
+	emitAlign( FUNC_ALIGN );
+#endif
 
-savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
+	savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 
 	while ( ip < header->instructionCount ) {
 
@@ -3017,7 +3015,9 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 				break;
 
 			case OP_ENTER:
-				emitAlign( 16 ); // align to quadword boundary
+#ifdef FUNC_ALIGN
+				emitAlign( FUNC_ALIGN );
+#endif
 				vm->instructionPointers[ ip - 1 ] = compiledOfs;
 
 				proc_base = ip; // this points on next instruction after OP_ENTER
@@ -3357,12 +3357,14 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 #endif
 		} // switch op
 	} // ip
-
-		emitAlign( 16 ); // align to quadword boundary
+#ifdef FUNC_ALIGN
+		emitAlign( FUNC_ALIGN );
+#endif
 		// it will set multiple offsets
 		emitCallFunc( vm );
-
-		emitAlign( 16 ); // align to quadword boundary
+#ifdef FUNC_ALIGN
+		emitAlign( FUNC_ALIGN );
+#endif
 		savedOffset[ FUNC_BCPY ] = compiledOfs;
 		emitBlockCopyFunc( vm );
 
@@ -3465,6 +3467,8 @@ savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 #endif
 
 	vm->destroy = VM_Destroy_Compiled;
+
+	Com_Printf( "VM file %s compiled to %i bytes of code\n", vm->name, vm->codeLength );
 
 	return qtrue;
 }
