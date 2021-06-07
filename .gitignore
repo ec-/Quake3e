@@ -5,3 +5,4 @@ output/
 *.user
 *.cbp
 *.layout
+Makefile.local
