@@ -4280,6 +4280,42 @@ static void FindMatches( const char *s ) {
 }
 
 
+static void ExtractModelSkin( const char *s, char *modelSkin, int size) {
+	assert( s && modelSkin );
+	if ( strlen( s ) - 5 < size ) {
+		// model name
+		char *slash = strrchr( s, '/' );
+		assert(slash);
+		while ( s < slash ) {
+			*modelSkin++ = *s++;
+		}
+		assert( !Q_stricmpn( s, "/icon_", 6 ) );
+		s += 6;
+		if ( Q_stricmpn( s, "default", 7 ) )
+		{
+			// skin name
+			*modelSkin++ = '/';
+			while ( *s ) {
+				*modelSkin++ = *s++;
+			}
+		}
+	}
+	*modelSkin = '\0';
+}
+
+
+/*
+===============
+FindModelMatches
+===============
+*/
+static void FindModelMatches( const char *s ) {
+	char modelSkin[ MAX_QPATH ];
+	ExtractModelSkin( s, modelSkin, sizeof( modelSkin ) );
+	FindMatches( modelSkin );
+}
+
+
 /*
 ===============
 PrintMatches
@@ -4304,6 +4340,18 @@ static void PrintCvarMatches( const char *s ) {
 		Com_TruncateLongString( value, Cvar_VariableString( s ) );
 		Com_Printf( "    %s = \"%s\"\n", s, value );
 	}
+}
+
+
+/*
+===============
+PrintModelMatches
+===============
+*/
+static void PrintModelMatches( const char *s ) {
+	char modelSkin[ MAX_QPATH ];
+	ExtractModelSkin( s, modelSkin, sizeof( modelSkin ) );
+	PrintMatches( modelSkin );
 }
 
 
@@ -4493,6 +4541,28 @@ void Field_CompleteFilename( const char *dir, const char *ext, qboolean stripExt
 
 	if ( !Field_Complete() )
 		FS_FilenameCompletion( dir, ext, stripExt, PrintMatches, flags );
+}
+
+
+/*
+===============
+Field_CompleteModelName
+===============
+*/
+void Field_CompleteModelName( void )
+{
+	matchCount = 0;
+	shortestMatch[ 0 ] = '\0';
+
+	char const* dir = "models/players";
+	char const* ext = "";
+	qboolean const stripExt = qtrue;
+	int const flags = FS_MATCH_ANY | FS_MATCH_STICK;
+
+	FS_FilenameCompletion( dir, ext, stripExt, FindModelMatches, flags );
+
+	if ( !Field_Complete() )
+		FS_FilenameCompletion( dir, ext, stripExt, PrintModelMatches, flags );
 }
 
 

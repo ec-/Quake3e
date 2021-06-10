@@ -877,6 +877,7 @@ void Field_AutoComplete( field_t *edit );
 void Field_CompleteKeyname( void );
 void Field_CompleteKeyBind( int key );
 void Field_CompleteFilename( const char *dir, const char *ext, qboolean stripExt, int flags );
+void Field_CompleteModelName( void );
 void Field_CompleteCommand( char *cmd, qboolean doCommands, qboolean doCvars );
 
 void Con_ResetHistory( void );

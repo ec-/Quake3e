@@ -3787,6 +3787,26 @@ static void CL_InitGLimp_Cvars( void )
 #endif
 }
 
+static qboolean CL_ModelNameCallback_f( const char *filename, int length )
+{
+	// <model_name>/icon_<skin_name>.<extension>
+	if ( length < 1 /*model name*/ + 6 + 1 /*skin name*/ ) 
+		return qfalse;
+
+	const char *slash = strrchr( filename, '/' );
+	return slash && !Q_stricmpn( slash + 1, "icon_", 5 );
+}
+
+static void CL_CompleteModelName( char *args, int argNum )
+{
+	if( argNum == 2 )
+	{
+		FS_SetFilenameCallback( CL_ModelNameCallback_f );
+		Field_CompleteModelName();
+		FS_SetFilenameCallback( NULL );
+	}
+}
+
 
 /*
 ====================
@@ -3939,6 +3959,7 @@ void CL_Init( void ) {
 	Cmd_AddCommand ("fs_openedList", CL_OpenedPK3List_f );
 	Cmd_AddCommand ("fs_referencedList", CL_ReferencedPK3List_f );
 	Cmd_AddCommand ("model", CL_SetModel_f );
+	Cmd_SetCommandCompletionFunc( "model", CL_CompleteModelName );
 	Cmd_AddCommand ("video", CL_Video_f );
 	Cmd_AddCommand ("video-pipe", CL_Video_f );
 	Cmd_SetCommandCompletionFunc( "video", CL_CompleteVideoName );
