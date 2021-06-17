@@ -1915,7 +1915,7 @@ static qboolean EmitMOPs( vm_t *vm, int op )
 VM_Compile
 =================
 */
-qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
+qboolean VM_Compile_Legacy( vm_t *vm, vmHeader_t *header ) {
 	const char	*errMsg;
 	int		instructionCount;
 	int		proc_base;
@@ -2954,11 +2954,12 @@ VM_CallCompiled
 This function is called directly by the generated code
 ==============
 */
-int VM_CallCompiled( vm_t *vm, int nargs, int *args )
+#if 0
+int VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
 {
-	int		opStack[MAX_OPSTACK_SIZE];
-	unsigned int stackOnEntry;
-	int		*image;
+	int32_t	opStack[MAX_OPSTACK_SIZE];
+	int		stackOnEntry;
+	int32_t	*image;
 #if id386
 	int		*oldOpTop;
 #endif
@@ -2966,6 +2967,7 @@ int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 
 	// we might be called recursively, so this might not be the very top
 	stackOnEntry = vm->programStack;
+
 #if id386
 	oldOpTop = vm->opStackTop;
 #endif
@@ -2982,29 +2984,39 @@ int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 	// image[1] =  0;	// return stack
 	// image[0] = -1;	// will terminate loop on return
 
+#ifdef DEBUG_VM
+	opStack[0] = 0xDEADC0DE;
+#endif
 	opStack[1] = 0;
 
 	vm->opStack = opStack;
+
 #if id386
 	vm->opStackTop = opStack + ARRAY_LEN( opStack ) - 1;
 #endif
 
 	vm->codeBase.func(); // go into generated code
 
-	if ( vm->opStack != &opStack[1] ) {
-		Com_Error( ERR_DROP, "opStack corrupted in compiled code" );
-	}
+	//if ( vm->opStack != &opStack[1] ) {
+	//	Com_Error( ERR_DROP, "opStack corrupted in compiled code" );
+	//}
 
 #ifdef DEBUG_VM
-	if ( vm->programStack != stackOnEntry - CALL_PSTACK ) {
-		Com_Error( ERR_DROP, "programStack corrupted in compiled code" );
+	if ( opStack[0] != 0xDEADC0DE ) {
+		Com_Error( ERR_DROP, "%s(%s): opStack corrupted in compiled code", __func__, vm->name );
+	}
+
+	if ( vm->programStack != stackOnEntry - ( MAX_VMMAIN_CALL_ARGS + 2 ) * 4 ) {
+		Com_Error( ERR_DROP, "%s(%s): programStack corrupted in compiled code", __func__, vm->name );
 	}
 #endif
 
 	vm->programStack = stackOnEntry;
+
 #if id386
 	vm->opStackTop = oldOpTop;
 #endif
 
-	return vm->opStack[0];
+	return opStack[1];
 }
+#endif
