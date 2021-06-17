@@ -24,8 +24,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // load time compiler and execution environment for x86_64
 // with dynamic register allocation and various optimizations
 
-#define INT_CC
-
 #include "vm_local.h"
 #include "../ui/ui_public.h"
 #include "../cgame/cg_public.h"
@@ -494,9 +492,7 @@ static void emit_op_reg_base_index( int prefix, int opcode, uint32_t reg, uint32
 			SWAP_INT( index, base ); // swap index with base
 		}
 		if ( ( index & R_MASK ) == 4 ) {
-#ifndef INT_CC
 			DROP( "incorrect index register" );
-#endif
 			return; // R_ESP cannot be used as index register
 		}
 	} else if ( ( base & 7 ) == 5 && scale == 1 ) {
@@ -3533,10 +3529,6 @@ __compile:
 
 	init_opstack();
 
-#ifdef INT_CC
-	Emit1( 0xCC );
-#endif
-
 #if idx64
 
 	emit_push( R_EBX );				// push rbx
@@ -3615,195 +3607,6 @@ __compile:
 
 	emit_ret();						// ret
 
-#ifdef INT_CC
-
-	//for ( i = 0; i < 16; i++ ) emit_jump_index_offset( 0x0, i );
-	
-	//for ( i = 0; i < 16; i++ ) emit_jump_index_offset( 0xFFFFFFFF, i );
-	//for ( i = 0; i < 16; i++ ) emit_call_index_offset( 0xFFFFFFFF, i );
-
-	//for ( i = 0; i < 16; i++ ) emit_cmp_rx_mem( i, 0x0 );
-	//for ( i = 0; i < 16; i++ ) emit_cmp_rx_mem( i, 0xFFFFFFFF );
-	//for ( i = 0; i < 16; i++ ) emit_cmp_rx_mem( i, 0x77777777 );
-
-	//for ( i = 0; i < 16; i++ ) emit_load_rx_offset( i, 0x0 );
-	//for ( i = 0; i < 16; i++ ) emit_store_rx_offset( i, 0xFFFFFFFF );
-
-	//mov_rx_imm64( R_R14, 0 );
-	//mov_rx_imm64( R_R14, -1 );
-	//mov_rx_imm64( R_R14, 0xFFFFFFFFFFFFFFFFULL );
-	//mov_rx_imm64( R_R14, 0x000000007FFFFFFFULL );
-	//mov_rx_imm64( R_R14, 0x0000000080000000ULL );
-	//mov_rx_imm64( R_R14, 0x00000000FFFFFFFFULL );
-	//mov_rx_imm64( R_R14, 0xFFFFFFFF00000000ULL );
-	//mov_rx_imm64( R_R14, 0xFFFFFFFF00000001ULL );
-	//mov_rx_imm64( R_R14, 0x0000000100000000ULL );
-	//mov_rx_imm64( R_R14, 0xFFFFFFFF80000001ULL );
-	//mov_rx_imm64( R_R14, 0xFFFFFFFF80000000ULL );
-	//mov_rx_imm64( R_R14, 0xFFFFFFFF7FFFFFFFULL );
-
-	//for ( i = 0; i < 16; i++ ) emit_add_sx_mem( i, 15 - i, 0x0 );
-	//for ( i = 0; i < 16; i++ ) emit_add_sx_mem( i, 15 - i, 0x77 );
-	//for ( i = 0; i < 16; i++ ) emit_add_sx_mem( i, 15 - i, 0x88 );
-
-	//for ( i = 0; i < 16; i++ ) emit_call_rx( i );
-
-	//for ( i = 0; i < 16; i++ ) emit_sqrt( i, i, 8 );
-	//for ( i = 0; i < 16; i++ ) emit_floor( i, i, 8 );
-
-	//for ( i = 0; i < 16; i++ ) emit_mov_rx_imm64( i, 1 );
-	//for ( i = 0; i < 16; i++ ) emit_mov_rx_imm64( i, -1 );
-	//for ( i = 0; i < 16; i++ ) emit_mov_rx_imm64( i, 0xFFFFFFFF );
-	//for ( i = 0; i < 16; i++ ) emit_mov_rx_imm64( i, 0x7FFFFFFF );
-	//for ( i = 0; i < 16; i++ ) emit_mov_rx_imm64( i, 0x7777777700000000LL );
-	//for ( i = 0; i < 16; i++ ) emit_mov_rx_imm64( i, -0x7777777700000000LL );
-
-	//for ( i = 0; i < 8; i++ ) emit_lea( i, 8 - i, 0x0 );
-	//for ( i = 0; i < 8; i++ ) emit_lea( i, 8 - i, 0x77 );
-	//for ( i = 0; i < 8; i++ ) emit_lea_index( i, 8 - i, i );
-	//for ( i = 0; i < 8; i++ ) emit_lea_index( i, i, i );
-	//for ( i = 0; i < 8; i++ ) emit_lea_index( i, R_EBP, i );
-	//for ( i = 0; i < 8; i++ ) emit_lea_index( i, R_ESP, i );
-	//for ( i = 0; i < 8; i++ ) emit_lea_index( i | R_REX, 8 - i, i );
-
-	//for ( i = 0; i < 16; i++ ) emit_op_mem_imm( X_ADD, i, i * 32, 0x11111111 );
-	//for ( i = 0; i < 16; i++ ) emit_op_mem_imm( X_ADD, i, i * 32, 0x77 );
-	//for ( i = 0; i < 16; i++ ) emit_op_mem_imm( X_ADD, i, i * 32, 0x11111111 );
-	//for ( i = 0; i < 16; i++ ) emit_op_mem_imm( X_SUB, i, i * 32, 0x77 );
-	//for ( i = 0; i < 16; i++ ) emit_op_mem_imm( X_SUB, i, i * 32, 0x11111111 );
-	//for ( i = 0; i < 16; i++ ) emit_op_mem_imm( X_AND, i, i * 32, 0x77 );
-	//for ( i = 0; i < 16; i++ ) emit_op_mem_imm( X_AND, i, i * 32, 0x11111111 );
-	//for ( i = 0; i < 16; i++ ) emit_op_mem_imm( X_OR, i, i * 32, 0x77 );
-	//for ( i = 0; i < 16; i++ ) emit_op_mem_imm( X_OR, i, i * 32, 0x11111111 );
-	//for ( i = 0; i < 16; i++ ) emit_op_mem_imm( X_XOR, i, i * 32, 0x77 );
-	//for ( i = 0; i < 16; i++ ) emit_op_mem_imm( X_XOR, i, i * 32, 0x11111111 );
-
-	//for ( i = 0; i < 16; i++ ) emit_load_rx( i | R_REX, 15-i, i * 32 ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_store_rx( i | R_REX, 15-i, i * 32 ); // ok
-
-	//for ( i = 0; i < 16; i++ ) emit_load2( i | R_REX, 15-i, i * 32 ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_load1( i, 15-i, i * 32 ); // ok
-
-	//for ( i = 0; i < 16; i++ ) emit_load2_sex( i, 15 - i, i * 32 ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_load1_sex( i, 15 - i, i * 32 ); // ok
-
-	//for ( i = 0; i < 16; i++ ) emit_store4_imm32_index( i, i, 15 - i ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_store2_imm16_index( i, i, 15 - i ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_store1_imm8_index( i, i, 15 - i ); // ok
-
-	//for ( i = 0; i < 16; i++ ) emit_store4_imm32( i, i, i * 32 ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_store2_imm16( i, i, i * 32 ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_store1_imm8( i, i, i * 32 ); // ok
-
-	//for ( i = 0; i < 16; i++ ) emit_load4_index( i, 15-i, i ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_load2_index( i, 15-i, i ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_load1_index( i, 15-i, i ); // ok
-
-	//for ( i = 0; i < 16; i++ ) emit_store4( i, 15 - i, 256 ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_store4( i, 15 - i, 0 ); // ok
-
-	//for ( i = 0; i < 16; i++ ) emit_store2( i, 15 - i, 128 ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_store2( i, 15 - i, 64 ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_store2( i, 15 - i, 0 ); // ok
-
-	//for ( i = 0; i < 16; i++ ) emit_store1( i, 15 - i, 128 ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_store1( i, 15 - i, 64 ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_store1( i, 15 - i, 0 ); // ok
-
-	//for ( i = 0; i < 16; i++ ) emit_store1_index( i, 15 - i, i ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_store2_index( i, 15 - i, i ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_store4_index( i, 15 - i, i ); // ok
-
-	//for ( i = 0; i < 16; i++ ) emit_lea( i, 15 - i, 0x77 ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_lea( i, 15 - i, -15 ); // ok
-
-	//for ( i = 0; i < 16; i++ ) set_local_address( i, i ); // ok
-	//for ( i = 0; i < 16; i++ ) set_local_address( i, i*32 ); // ok
-
-	//for ( i = 0; i < 16; i++ ) {
-	//	flush_volatile();
-	//	emit_mov_sx_imm( i, i ); // ok
-	//}
-
-	//for ( i = 0; i < 16; i++ ) emit_mov_rx_rx( i, 15-i ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_mov_rx_imm( i, i ); // ok
-
-	//for ( i = 0; i < 16; i++ ) emit_sex8( i, 15 - i );
-	//for ( i = 0; i < 16; i++ ) emit_sex16( i, 15 - i );
-	//for ( i = 0; i < 16; i++ ) emit_xchg_rx( i, 15 - i );
-
-	//for ( i = 0; i < 16; i++ ) emit_test_rx( i, 15 - i );
-	//for ( i = 0; i < 16; i++ ) emit_test_rx( i | R_REX, 15 - i );
-
-	//for ( i = 0; i < 16; i++ ) emit_cmp_rx( i, 15 - i );
-	//for ( i = 0; i < 16; i++ ) emit_not_rx( i );
-	//for ( i = 0; i < 16; i++ ) emit_neg_rx( i );
-	//for ( i = 0; i < 16; i++ ) emit_and_rx( i, 15 - i );
-	//for ( i = 0; i < 16; i++ ) emit_or_rx( i, 15 - i );
-	//for ( i = 0; i < 16; i++ ) emit_xor_rx( i, 15 - i );
-	
-	//for ( i = 0; i < 16; i++ ) emit_add_rx( i, 15 - i );
-	//for ( i = 0; i < 16; i++ ) emit_add_rx_imm( i, i * 32 );
-
-	//for ( i = 0; i < 16; i++ ) emit_op_rx_imm( X_ADD, i, 0x33 );
-	//for ( i = 0; i < 16; i++ ) emit_op_rx_imm( X_ADD, i, 0x77777777 );
-
-	//for ( i = 0; i < 16; i++ ) emit_op_rx_imm( X_SUB, i, 0x33 );
-	//for ( i = 0; i < 16; i++ ) emit_op_rx_imm( X_SUB, i, 0x77777777 );
-
-	//for ( i = 0; i < 16; i++ ) emit_op_rx_imm( X_AND, i, 0x33 );
-	//for ( i = 0; i < 16; i++ ) emit_op_rx_imm( X_AND, i, 0x77777777 );
-
-	//for ( i = 0; i < 16; i++ ) emit_op_rx_imm( X_OR, i, 0x33 );
-	//for ( i = 0; i < 16; i++ ) emit_op_rx_imm( X_OR, i, 0x77777777 );
-
-	//for ( i = 0; i < 16; i++ ) emit_op_rx_imm( X_XOR, i, 0x33 );
-	//for ( i = 0; i < 16; i++ ) emit_op_rx_imm( X_XOR, i, 0x77777777 );
-
-	//for ( i = 0; i < 16; i++ ) emit_op_rx_imm( X_CMP, i, 0x33 );
-	//for ( i = 0; i < 16; i++ ) emit_op_rx_imm( X_CMP, i, 0x77777777 );
-
-	//for ( i = 0; i < 16; i++ ) emit_shl_rx_imm( i, 0x1 );
-	//for ( i = 0; i < 16; i++ ) emit_shr_rx_imm( i, 0x2 );
-	//for ( i = 0; i < 16; i++ ) emit_sar_rx_imm( i, 0x3 );
-
-	//for ( i = 0; i < 16; i++ ) emit_mul_rx_imm( i, 0x33 );
-	//for ( i = 0; i < 16; i++ ) emit_mul_rx_imm( i, 0x77777777 );
-
-	//for ( i = 0; i < 16; i++ ) emit_sub_rx( i, 15 - i );
-	//for ( i = 0; i < 16; i++ ) emit_mul_rx( i, 15 - i );
-	//for ( i = 0; i < 16; i++ ) emit_idiv_rx( i );
-	//for ( i = 0; i < 16; i++ ) emit_udiv_rx( i );
-	//for ( i = 0; i < 16; i++ ) emit_shl_rx( i );
-	//for ( i = 0; i < 16; i++ ) emit_shr_rx( i );
-	//for ( i = 0; i < 16; i++ ) emit_sar_rx( i );
-
-	//for ( i = 0; i < 16; i++ ) emit_mov_sx_rx( i, 15 - i ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_mov_rx_sx( i, 15 - i ); // ok
-
-	//for ( i = 0; i < 16; i++ ) emit_jump( 15 - i, i ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_jump( i, 15 - i ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_call( i, 15 - i ); // ok
-	//for ( i = 0; i < 16; i++ ) emit_jump( R_R8, i ); // ok
-
-	//for ( i = 0; i < 16; i++ ) emit_load_sx( i, 15-i, i*32 );
-	//for ( i = 0; i < 16; i++ ) emit_load_sx_index( i, 15 - i, i );
-
-	//for ( i = 0; i < 16; i++ ) emit_store_sx( i, 15-i, i*32 );
-
-	//for ( i = 0; i < 16; i++ ) emit_cmp_sx( i, 15 - i );
-	//for ( i = 0; i < 16; i++ ) emit_xor_sx( i, 15 - i );
-	//for ( i = 0; i < 16; i++ ) emit_mov_sx( i, 15 - i );
-	//for ( i = 0; i < 16; i++ ) emit_add_sx( i, 15 - i );
-	//for ( i = 0; i < 16; i++ ) emit_sub_sx( i, 15 - i );
-	//for ( i = 0; i < 16; i++ ) emit_mul_sx( i, 15 - i );
-	//for ( i = 0; i < 16; i++ ) emit_div_sx( i, 15 - i );
-
-	//for ( i = 0; i < 16; i++ ) emit_cvif( i, 15 - i );
-	//for ( i = 0; i < 16; i++ ) emit_cvfi( i, 15 - i );
-
-	//for ( i = 0; i < 16; i++ ) emit_cmp_rx_imm32( i, -256 + i * 64 );
-#endif
 
 	EmitAlign( 4 );
 
