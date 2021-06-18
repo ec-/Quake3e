@@ -48,6 +48,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define DEBUG_VM
 
+//#define DEBUG_INT
+
 //#define VM_LOG_SYSCALLS
 //#define JUMP_OPTIMIZE 0
 
@@ -188,8 +190,6 @@ static	int      *instructionOffsets;
 static	intptr_t *instructionPointers;
 
 static  instruction_t *inst = NULL;
-static  instruction_t *ci;
-static  instruction_t *ni;
 
 static	int	ip, pass;
 
@@ -492,7 +492,9 @@ static void emit_op_reg_base_index( int prefix, int opcode, uint32_t reg, uint32
 			SWAP_INT( index, base ); // swap index with base
 		}
 		if ( ( index & R_MASK ) == 4 ) {
+#ifndef DEBUG_INT
 			DROP( "incorrect index register" );
+#endif
 			return; // R_ESP cannot be used as index register
 		}
 	} else if ( ( base & 7 ) == 5 && scale == 1 ) {
@@ -2862,7 +2864,7 @@ static void EmitCallFunc( vm_t *vm )
 
 	emit_ret();								// ret
 
-#else // i386
+#else // id386
 
 	// push and save opStackShift before stack alignment
 	emit_push( R_OPSTACKSHIFT );
@@ -3038,7 +3040,7 @@ static qboolean CanForwardOptimize( instruction_t *i, uint32_t base_reg, int32_t
 }
 
 
-static qboolean ConstOptimize( vm_t *vm )
+static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 {
 	uint32_t base_reg;
 	int v;
@@ -3296,7 +3298,7 @@ static qboolean ConstOptimize( vm_t *vm )
 
 
 #ifdef MISC_OPTIMIZE
-static qboolean LocalOptimize( vm_t *vm )
+static qboolean LocalOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 {
 	if ( ni->op == OP_LOAD4 ) { // merge OP_LOCAL + OP_LOAD4
 		int rx;
@@ -3471,6 +3473,7 @@ VM_Compile
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	const char	*errMsg;
 	int		instructionCount;
+	instruction_t *ci;
 	int		i, n, v;
 	uint32_t rx[2], base_reg;
 	uint32_t sx[2];
@@ -3529,6 +3532,10 @@ __compile:
 
 	init_opstack();
 
+#ifdef DEBUG_INT
+	Emit1( 0xCC ); // int 3h
+#endif
+
 #if idx64
 
 	emit_push( R_EBX );				// push rbx
@@ -3563,22 +3570,7 @@ __compile:
 	// opStackShift
 	emit_xor_rx( R_ECX, R_ECX );	// xor ecx, ecx
 
-#else // id386
-
-	emit_pushad();							// pushad
-
-	mov_rx_ptr( R_DATABASE, vm->dataBase );	// mov ebx, vm->dataBase
-
-	emit_load_rx_offset( R_PSTACK, (intptr_t) &vm->programStack ); // mov esi, [&vm->programStack]
-
-	emit_load_rx_offset( R_OPSTACK, (intptr_t) &vm->opStack ); // mov edi, [&vm->opStack]
-
-	emit_xor_rx( R_OPSTACKSHIFT, R_OPSTACKSHIFT ); // xor ecx, ecx
-#endif
-
 	EmitCallOffset( FUNC_ENTR );
-
-#if idx64
 
 #ifdef DEBUG_VM
 	mov_rx_imm64( R_EAX, (intptr_t) &vm->programStack );	// mov rax, &vm->programStack
@@ -3593,8 +3585,21 @@ __compile:
 	emit_pop( R_ESI );				// pop rsi
 	emit_pop( R_EBP );				// pop rbp
 	emit_pop( R_EBX );				// pop rbx
+	emit_ret();						// ret
 
 #else // id386
+
+	emit_pushad();							// pushad
+
+	mov_rx_ptr( R_DATABASE, vm->dataBase );	// mov ebx, vm->dataBase
+
+	emit_load_rx_offset( R_PSTACK, (intptr_t) &vm->programStack ); // mov esi, [&vm->programStack]
+
+	emit_load_rx_offset( R_OPSTACK, (intptr_t) &vm->opStack ); // mov edi, [&vm->opStack]
+
+	emit_xor_rx( R_OPSTACKSHIFT, R_OPSTACKSHIFT ); // xor ecx, ecx
+
+	EmitCallOffset( FUNC_ENTR );
 
 #ifdef DEBUG_VM
 	emit_store_rx_offset( R_PSTACK, (intptr_t) &vm->programStack ); // mov [&vm->programStack], esi 
@@ -3603,10 +3608,9 @@ __compile:
 	emit_store_rx_offset( R_OPSTACK, (intptr_t) &vm->opStack ); // // [&vm->opStack], edi
 
 	emit_popad();					// popad
-#endif
-
 	emit_ret();						// ret
 
+#endif // id386
 
 	EmitAlign( 4 );
 
@@ -3615,7 +3619,6 @@ __compile:
 
 	while ( ip < instructionCount ) {
 		ci = &inst[ip + 0];
-		ni = &inst[ip + 1];
 
 #ifdef REGS_OPTIMIZE
 		if ( ci->jused )
@@ -3710,7 +3713,7 @@ __compile:
 
 			case OP_PUSH:
 				inc_opstack(); // opstack += 4
-				if ( ni->op == OP_LEAVE ) {
+				if ( (ci + 1)->op == OP_LEAVE ) {
 					proc_base = -1;
 				}
 				break;
@@ -3721,7 +3724,7 @@ __compile:
 
 			case OP_CONST:
 #ifdef CONST_OPTIMIZE
-				if ( ConstOptimize( vm ) )
+				if ( ConstOptimize( vm, ci + 0, ci + 1 ) )
 					break;
 #endif
 				inc_opstack(); // opstack += 4
@@ -3730,7 +3733,7 @@ __compile:
 
 			case OP_LOCAL:
 #ifdef MISC_OPTIMIZE
-				if ( LocalOptimize( vm ) )
+				if ( LocalOptimize( vm, ci + 0, ci + 1 ) )
 					break;
 #endif
 				inc_opstack(); // opstack += 4
@@ -3848,7 +3851,7 @@ __compile:
 						emit_store_sx( sx[0], base_reg, n );				// baseReg[n] = xmm0
 
 						// try to forward current register to next load operation
-						if ( CanForwardOptimize( ni, base_reg, n, 1 ) ) {
+						if ( CanForwardOptimize( ci + 1, base_reg, n, 1 ) ) {
 							inc_opstack(); store_sx_opstack( sx[0] );
 							ip += 2; // (OP_LOCAL|OP_CONST) + OP_LOAD
 							break;
@@ -3867,7 +3870,7 @@ __compile:
 						emit_store_rx( rx[0], base_reg, n );				// baseReg[n] = eax
 
 						// try to forward current register to next load operation
-						if ( CanForwardOptimize( ni, base_reg, n, 0 ) ) {
+						if ( CanForwardOptimize( ci + 1, base_reg, n, 0 ) ) {
 							inc_opstack(); store_rx_opstack( rx[0] );
 							ip += 2; // (OP_LOCAL|OP_CONST) + OP_LOAD
 							break;
