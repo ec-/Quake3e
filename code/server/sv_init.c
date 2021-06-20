@@ -671,6 +671,15 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	Com_Printf ("-----------------------------------\n");
 
 	Sys_SetStatus( "Running map %s", mapname );
+  
+#ifndef DEDICATED
+  // Brian "megamind" Cullinan - if on the off chance there is a server error
+  //   preventing a connection for single player in SV_DirectConnect gamestate
+  //   will never be sent and won't restart client after shutdown above
+  if(!com_dedicated->integer) {
+    CL_StartHunkUsers();
+  }
+#endif
 }
 
 
