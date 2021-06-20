@@ -128,7 +128,7 @@ typedef enum {
 } opcode_t;
 
 typedef struct {
-	int	value;         // 32
+	int32_t	value;     // 32
 	byte	op;        // 8
 	byte	opStack;   // 8
 	unsigned jused:1;
@@ -136,6 +136,7 @@ typedef struct {
 	unsigned safe:1;   // non-masked op_store
 	unsigned endp:1;
 	unsigned fpu:1;    // load into FPU register
+	unsigned njump:1;  // near jump
 } instruction_t;
 
 typedef struct vmSymbol_s {

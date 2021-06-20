@@ -1053,7 +1053,12 @@ static void emit_xor_sx( uint32_t dst, uint32_t src )
 	emit_op_reg( 0x0F, 0x57, src, dst );
 }
 
-static void emit_cmp_sx( uint32_t base, uint32_t reg )
+static void emit_ucomiss( uint32_t base, uint32_t reg )
+{
+	emit_op_reg( 0x0F, 0x2E, reg, base );
+}
+
+static void emit_comiss( uint32_t base, uint32_t reg )
 {
 	emit_op_reg( 0x0F, 0x2F, reg, base );
 }
@@ -2543,27 +2548,17 @@ static void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 	qboolean shouldNaNCheck = qfalse;
 
 	v = instructionOffsets[addr] - compiledOfs;
-	
-	if (HasFCOM()) {
-		// EQF, LTF and LEF use je/jb/jbe to conditional branch. je/jb/jbe branch if CF/ZF 
-		// is set. comiss/fucomip was used to perform the compare, so if any of the 
-		// operands are NaN, ZF, CF and PF will be set and je/jb/jbe would branch.
-		// However, according to IEEE 754, when the operand is NaN for these comparisons,
-		// the result must be false. So, we emit `jp` before je/jb/jbe to skip
-		// the branch if the result is NaN.
-		if (op == OP_EQF || op == OP_LTF || op == OP_LEF) shouldNaNCheck = qtrue;
-	} else if (i->op == OP_EQF || i->op == OP_LTF || i->op == OP_LEF) {
-		// Similar to above, NaN needs to be accounted for. When HasFCOM() is false, 
-		// fcomp is used to perform the compare and EmitFloatJump is called. Which in turn,
-		// preserves C2 when masking and calls EmitJump with OP_NE. When any of the operands
-		// are NaN, C2 and C0/C3 (whichever was also masked) will be set. So like the previous
-		// case, we can use PF to skip the branch if the result is NaN.
-		shouldNaNCheck = qtrue;
-	}
 
-	if (shouldNaNCheck) {
-		v -= 2; // 2 bytes needed to account for NaN
-		Emit1(0x7A); // jp, target will be filled once we know if next inst is a near or far jump
+	// EQF, LTF and LEF use je/jb/jbe to conditional branch. je/jb/jbe branch if CF/ZF 
+	// is set. comiss/fucomip was used to perform the compare, so if any of the 
+	// operands are NaN, ZF, CF and PF will be set and je/jb/jbe would branch.
+	// However, according to IEEE 754, when the operand is NaN for these comparisons,
+	// the result must be false. So, we emit `jp` before je/jb/jbe to skip
+	// the branch if the result is NaN.
+	if ( op == OP_EQF || op == OP_LTF || op == OP_LEF ) {
+		shouldNaNCheck = qtrue;
+		v -= 2;			// 2 bytes needed to account for NaN
+		Emit1( 0x7A );	// jp, target will be filled once we know if next inst is a near or far jump
 	}
 
 #if JUMP_OPTIMIZE
@@ -2571,13 +2566,17 @@ static void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 		// can happen
 		if ( v < -126 || v > 129 ) {
 			str = FarJumpStr( op, &jump_size );
-			if (shouldNaNCheck) Emit1(jump_size + 4); // target for NaN branch
+			if ( shouldNaNCheck ) {
+				Emit1( jump_size + 4 ); // target for NaN branch
+			}
 			EmitString( str );
 			Emit4( v - 4 - jump_size );
 			i->njump = 0;
 			return;
 		}
-		if (shouldNaNCheck) Emit1(0x02); // target for NaN branch
+		if ( shouldNaNCheck ) {
+			Emit1( 0x02 ); // target for NaN branch
+		}
 		EmitString( NearJumpStr( op ) );
 		Emit1( v - 2 );
 		return;
@@ -2585,7 +2584,9 @@ static void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 
 	if ( pass >= 2 && pass < NUM_PASSES-2 ) {
 		if ( v >= -126 && v <= 129 ) {
-			if (shouldNaNCheck) Emit1(0x02); // target for NaN branch
+			if ( shouldNaNCheck ) {
+				Emit1( 0x02 ); // target for NaN branch
+			}
 			EmitString( NearJumpStr( op ) );
 			Emit1( v - 2 );
 			i->njump = 1;
@@ -2599,7 +2600,9 @@ static void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 		Com_Error( ERR_DROP, "VM_CompileX86 error: %s\n", "bad jump size" );
 		return;
 	}
-	if (shouldNaNCheck) Emit1(jump_size + 4); // target for NaN branch
+	if ( shouldNaNCheck ) {
+		Emit1( jump_size + 4 ); // target for NaN branch
+	}
 	EmitString( str );
 	Emit4( v - 4 - jump_size );
 }
@@ -3779,7 +3782,11 @@ __compile:
 			case OP_GEF: {
 				sx[0] = load_sx_opstack( vm, R_XMM0 | RCONST ); dec_opstack(); // xmm0 = *opstack; opstack -= 4
 				sx[1] = load_sx_opstack( vm, R_XMM1 | RCONST ); dec_opstack(); // xmm1 = *opstack; opstack -= 4
-				emit_cmp_sx( sx[1], sx[0] );
+				if ( ci->op == OP_EQF || ci->op == OP_NEF ) {
+					emit_ucomiss( sx[1], sx[0] );	// ucomiss xmm1, xmm0
+				} else {
+					emit_comiss( sx[1], sx[0] );	// comiss xmm1, xmm0
+				}
 				unmask_sx( sx[0] );
 				unmask_sx( sx[1] );
 				EmitJump( vm, ci, ci->op, ci->value );
