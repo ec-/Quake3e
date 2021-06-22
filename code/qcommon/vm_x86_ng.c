@@ -2994,6 +2994,23 @@ static void EmitDATWFunc( vm_t *vm )
 }
 
 
+static qboolean CanForwardOptimize( instruction_t *i, uint32_t base_reg, int32_t address, unsigned int fpu )
+{
+#ifdef FORWARD_OPTIMIZE
+	if ( i->jused ) {
+		return qfalse;
+	}
+
+	if ( ( i->op == OP_LOCAL && base_reg == R_PROCBASE ) || ( i->op == OP_CONST && base_reg == R_DATABASE ) ) {
+		if ( ( i + 1 )->op == OP_LOAD4 && ( i + 1 )->fpu == fpu && i->value == address ) {
+			return qtrue;
+		}
+	}
+#endif
+	return qfalse;
+}
+
+
 #ifdef CONST_OPTIMIZE
 
 static qboolean IsFloorTrap( const vm_t *vm, const int trap )
@@ -3022,23 +3039,6 @@ static qboolean IsCeilTrap( const vm_t *vm, const int trap )
 	if ( trap == ~G_CEIL && vm->index == VM_GAME )
 		return qtrue;
 
-	return qfalse;
-}
-
-
-static qboolean CanForwardOptimize( instruction_t *i, uint32_t base_reg, int32_t address, unsigned int fpu )
-{
-#ifdef FORWARD_OPTIMIZE
-	if ( i->jused ) {
-		return qfalse;
-	}
-
-	if ( ( i->op == OP_LOCAL && base_reg == R_PROCBASE ) || ( i->op == OP_CONST && base_reg == R_DATABASE ) ) {
-		if ( ( i + 1 )->op == OP_LOAD4 && ( i + 1 )->fpu == fpu && i->value == address ) {
-			return qtrue;
-		}
-	}
-#endif
 	return qfalse;
 }
 
@@ -3489,7 +3489,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int		instructionCount;
 	instruction_t *ci;
 	int		i, n, v;
-	uint32_t rx[2], base_reg;
+	uint32_t rx[3], base_reg;
 	uint32_t sx[2];
 	qboolean scalar;
 	int proc_base;
@@ -3943,10 +3943,10 @@ __compile:
 			case OP_BLOCK_COPY:
 				rx[0] = load_rx_opstack( R_EDX | FORCED ); dec_opstack(); // src
 				rx[1] = load_rx_opstack( R_EAX | FORCED ); dec_opstack(); // dst
-				flush_rx( R_ECX ); mask_rx( R_ECX ); wipe_rx_meta( R_ECX );
-				mov_rx_imm32( R_ECX, ci->value >> 2 ); // mov ecx, 0x12345678 / 4
+				rx[2] = alloc_rx( R_ECX | FORCED );
+				mov_rx_imm32( rx[2], ci->value >> 2 ); // mov ecx, 0x12345678 / 4
 				EmitCallOffset( FUNC_BCPY );
-				unmask_rx( R_ECX );
+				unmask_rx( rx[2] );
 				unmask_rx( rx[1] );
 				unmask_rx( rx[0] );
 				break;
@@ -4005,25 +4005,25 @@ __compile:
 			case OP_DIVU:
 			case OP_MODI:
 			case OP_MODU:
-				flush_rx( R_EDX ); mask_rx( R_EDX ); // reserve edx register
+				rx[2] = alloc_rx( R_EDX | FORCED ); // reserve edx register
 				rx[1] = load_rx_opstack( R_EAX | FORCED | SHIFT4 );  // eax = *(opstack-4)
 				rx[0] = load_rx_opstack( R_ECX | RCONST ); dec_opstack(); // ecx = *opstack; opstack -= 4
-				if ( rx[0] == R_EDX || rx[1] == R_EDX )
+				if ( rx[0] == rx[2] || rx[1] == rx[2] )
 					DROP( "incorrect register setup" );
 				if ( ci->op == OP_DIVI || ci->op == OP_MODI ) {
 					emit_cdq();						// cdq
 					emit_idiv_rx( rx[0] );			// idiv eax, ecx
 				} else {
-					emit_xor_rx( R_EDX, R_EDX );	// xor edx, edx
+					emit_xor_rx( rx[2], rx[2] );	// xor edx, edx
 					emit_udiv_rx( rx[0] );			// div ecx
 				}
 				unmask_rx( rx[0] );
 				if ( ci->op == OP_DIVI || ci->op == OP_DIVU ) {
-					unmask_rx( R_EDX );
+					unmask_rx( rx[2] );
 					store_rx_opstack( rx[1] ); // *opstack = eax
 				} else {
 					unmask_rx( rx[1] );
-					store_rx_opstack( R_EDX ); // *opstack = edx
+					store_rx_opstack( rx[2] ); // *opstack = edx
 				}
 				break;
 

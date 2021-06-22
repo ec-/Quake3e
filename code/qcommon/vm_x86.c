@@ -1239,36 +1239,6 @@ static int CommuteFloatOp( int op )
 }
 
 
-static qboolean IsFloorTrap( const vm_t *vm, const int trap )
-{
-	if ( trap == ~CG_FLOOR && vm->index == VM_CGAME )
-		return qtrue;
-
-	if ( trap == ~UI_FLOOR && vm->index == VM_UI )
-		return qtrue;
-
-	if ( trap == ~G_FLOOR && vm->index == VM_GAME )
-		return qtrue;
-
-	return qfalse;
-}
-
-
-static qboolean IsCeilTrap( const vm_t *vm, const int trap )
-{
-	if ( trap == ~CG_CEIL && vm->index == VM_CGAME )
-		return qtrue;
-
-	if ( trap == ~UI_CEIL && vm->index == VM_UI )
-		return qtrue;
-
-	if ( trap == ~G_CEIL && vm->index == VM_GAME )
-		return qtrue;
-
-	return qfalse;
-}
-
-
 /*
 =================
 ConstOptimize
