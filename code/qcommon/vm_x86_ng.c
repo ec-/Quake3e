@@ -50,6 +50,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 //#define DEBUG_INT
 
+//#define DUMP_CODE
+
 //#define VM_LOG_SYSCALLS
 #define JUMP_OPTIMIZE 1
 
@@ -81,7 +83,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define R_PSTACK		R_ESI
 #define R_OPSTACK		R_EDI
-#define R_OPSTACKSHIFT	R_ECX
 #define R_DATABASE		R_EBX
 #define R_PROCBASE		R_EBP
 #if idx64
@@ -96,7 +97,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
   -------------
   eax	scratch
   ebx*	dataBase
-  ecx	scratch (required for shifts) - opStackShift
+  ecx	scratch (required for shifts)
   edx	scratch (required for divisions)
   esi*	programStack
   edi*	opStack
@@ -104,7 +105,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
   -------------
   rax   scratch
   rbx*  dataBase
-  rcx   scratch (required for shifts) - opStackShift
+  rcx   scratch (required for shifts)
   rdx   scratch (required for divisions)
   rsi*  programStack
   rdi*  opStack
@@ -2978,8 +2979,6 @@ static void EmitCallFunc( vm_t *vm )
 	// and store right before the first arg
 	emit_not_rx( R_EAX );				// not eax
 
-	emit_op_rx_imm32( X_ADD, R_OPSTACKSHIFT, 4 ); // opStackShift += 4
-
 	// we may jump here from ConstOptimize() also
 	funcOffset[FUNC_SYSC] = compiledOfs;
 
@@ -2993,7 +2992,6 @@ static void EmitCallFunc( vm_t *vm )
 	emit_store_rx( R_ESI | R_REX, R_EDX, 0 );	// mov [rdx+00], rsi
 	emit_store_rx( R_EDI | R_REX, R_EDX, 8 );	// mov [rdx+08], rdi
 	emit_store_rx( R_R11 | R_REX, R_EDX, 16 );	// mov [rdx+16], r11 - dataMask
-	emit_store_rx( R_OPSTACKSHIFT, R_EDX, 24 );	// mov [rdx+24], opStackShift
 
 	// ecx = &int64_params[0]
 	emit_lea( R_ECX | R_REX, R_ESP, SHADOW_BASE + PUSH_STACK ); // lea rcx, [rsp+SHADOW_BASE+PUSH_STACK]
@@ -3040,9 +3038,9 @@ static void EmitCallFunc( vm_t *vm )
 	emit_load_rx( R_ESI | R_REX, R_EDX, 0 );	// mov rsi, [rdx+00]
 	emit_load_rx( R_EDI | R_REX, R_EDX, 8 );	// mov rdi, [rdx+08]
 	emit_load_rx( R_R11 | R_REX, R_EDX, 16 );	// mov r11, [rdx+16]
-	emit_load_rx( R_OPSTACKSHIFT, R_EDX, 24 );	// mov opStackShift, [rdx+24]
 
-	emit_store_index( R_EAX, R_OPSTACK, R_OPSTACKSHIFT ); // *opstack[ opStackShift ] = eax
+	// // store result in opStack[4]
+	emit_store_rx( R_EAX, R_OPSTACK, 4 ); // *opstack[ opStack + 4 ] = eax
 
 	// return stack
 	emit_op_rx_imm32( X_ADD, R_ESP | R_REX, SHADOW_BASE + PUSH_STACK + PARAM_STACK ); // add rsp, 200
@@ -3050,9 +3048,6 @@ static void EmitCallFunc( vm_t *vm )
 	emit_ret();								// ret
 
 #else // id386
-
-	// push and save opStackShift before stack alignment
-	emit_push( R_OPSTACKSHIFT );
 
 	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
 	emit_lea( R_ECX, R_EBP, 4 );			// lea ecx, [ebp+4]
@@ -3084,9 +3079,8 @@ static void EmitCallFunc( vm_t *vm )
 	emit_mov_rx( R_ESP, R_EBP );			// mov esp, ebp
 	emit_pop( R_EBP );
 
-	// store result
-	emit_pop( R_OPSTACKSHIFT );
-	emit_store_index( R_EAX, R_OPSTACK, R_OPSTACKSHIFT ); // *opstack[ opStackShift ] = eax
+	// store result in opStack[4]
+	emit_store_rx( R_EAX, R_OPSTACK, 4 ); // *opstack[ 4 ] = eax
 
 	emit_ret();
 #endif
@@ -3406,17 +3400,23 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 
 			if ( ci->value < 0 ) { // syscall
 				mov_rx_imm32( R_EAX, ~ci->value ); // eax - syscall number
-				mov_rx_imm32( R_OPSTACKSHIFT, ( opstack - 0 ) * sizeof( int32_t ) ); // opStackShift
-				EmitCallOffset( FUNC_SYSC );
+				if ( opstack > 0 ) {
+					emit_op_rx_imm32( X_ADD, R_OPSTACK | R_REX, ( opstack - 0 ) * sizeof( int32_t ) );
+					EmitCallOffset( FUNC_SYSC );
+					emit_op_rx_imm32( X_SUB, R_OPSTACK | R_REX, ( opstack - 0 ) * sizeof( int32_t ) );
+				} else {
+					EmitCallOffset( FUNC_SYSC );
+				}
 				ip += 1; // OP_CALL
 				store_syscall_opstack();
 				return qtrue;
 			}
-
-			mov_rx_imm32( R_OPSTACKSHIFT, ( opstack  - 1 ) * sizeof( int32_t ) ); // opStackShift
-			emit_push( R_EBP );				// push rbp
+			emit_push( R_OPSTACK );	// push edi
+			if ( opstack > 1 ) {
+				emit_op_rx_imm32( X_ADD, R_OPSTACK | R_REX, (opstack-1) * sizeof( int32_t ) ); // add rdi, opstack-4
+			}
 			EmitCallAddr( vm, ci->value );	// call +addr
-			emit_pop( R_EBP );				// pop rbp
+			emit_pop( R_OPSTACK );	// pop edi
 			ip += 1; // OP_CALL;
 			return qtrue;
 		}	
@@ -3581,6 +3581,30 @@ static qboolean EmitMOPs( vm_t *vm, instruction_t *ci, macro_op_t op )
 #endif // MACRO_OPTIMIZE
 
 
+#ifdef DUMP_CODE
+static void dump_code( const char *vmname, uint8_t *c, int32_t code_len )
+{
+	const char *filename = va( "vm-%s.hex", vmname );
+	fileHandle_t fh = FS_FOpenFileWrite( filename );
+	if ( fh != FS_INVALID_HANDLE ) {
+		while ( code_len >= 8 ) {
+			FS_Printf( fh, "%02x %02x %02x %02x %02x %02x %02x %02x\n", c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7] );
+			code_len -= 8;
+			c += 8;
+		}
+		while ( code_len > 0 ) {
+			FS_Printf( fh, "%02x", c[0] );
+			if ( code_len > 1 )
+				FS_Write( " ", 1, fh );
+			code_len -= 1;
+			c += 1;
+		}
+		FS_FCloseFile( fh );
+	}
+}
+#endif
+
+
 #if id386
 extern qboolean VM_Compile_Legacy( vm_t *vm, vmHeader_t *header );
 #endif
@@ -3708,9 +3732,6 @@ __compile:
 
 	emit_lea( R_OPSTACKTOP | R_REX, R_OPSTACK, sizeof( int32_t ) * MAX_OPSTACK_SIZE - 1 ); // lea r15, [opStack + opStackSize - 1]
 
-	// opStackShift
-	emit_xor_rx( R_ECX, R_ECX );	// xor ecx, ecx
-
 	EmitCallOffset( FUNC_ENTR );
 
 #ifdef DEBUG_VM
@@ -3738,15 +3759,13 @@ __compile:
 
 	emit_load_rx_offset( R_OPSTACK, (intptr_t) &vm->opStack ); // mov edi, [&vm->opStack]
 
-	emit_xor_rx( R_OPSTACKSHIFT, R_OPSTACKSHIFT ); // xor ecx, ecx
-
 	EmitCallOffset( FUNC_ENTR );
 
 #ifdef DEBUG_VM
 	emit_store_rx_offset( R_PSTACK, (intptr_t) &vm->programStack ); // mov [&vm->programStack], esi 
 #endif
 
-	emit_store_rx_offset( R_OPSTACK, (intptr_t) &vm->opStack ); // // [&vm->opStack], edi
+	// emit_store_rx_offset( R_OPSTACK, (intptr_t) &vm->opStack ); // // [&vm->opStack], edi
 
 	emit_popad();					// popad
 	emit_ret();						// ret
@@ -3803,19 +3822,12 @@ __compile:
 					}
 				}
 
-				// !!! procBase must be preserved in ConstOptimize() or during OP_CALL !!!
-
+				emit_push( R_PROCBASE );				// procBase
 				emit_push( R_PSTACK );					// programStack
-				emit_push( R_OPSTACK );					// opStack
 
 				emit_op_rx_imm32( X_SUB, R_PSTACK, v );	// sub programStack, 0x12
 
 				emit_lea_index( R_PROCBASE | R_REX, R_DATABASE, R_PSTACK ); // procBase = dataBase + programStack
-
-				// apply opStack shift
-				if ( ip != 1 ) {
-					emit_add_rx( R_OPSTACK | R_REX, R_OPSTACKSHIFT );	// opStack += opStackShift
-				}
 
 				emit_CheckProc( vm, ci );
 				break;
@@ -3839,18 +3851,23 @@ __compile:
 					break;
 				}
 #endif
-				emit_pop( R_OPSTACK );			// pop rdi // opStack
+
 				emit_pop( R_PSTACK );			// pop rsi // programStack
+				emit_pop( R_PROCBASE );			// pop rbp // procBase
+
 				emit_ret();						// ret
 				break;
 
 			case OP_CALL:
 				rx[0] = load_rx_opstack( R_EAX | FORCED ); // eax = *opstack
 				flush_volatile();
-				rx[1] = alloc_rx( R_OPSTACKSHIFT | FORCED );
-				mov_rx_imm32( rx[1], ( opstack - 1 ) * sizeof( int32_t ) ); // opStackShift = opstack - 4
-				EmitCallOffset( FUNC_CALL ); // call +FUNC_CALL
-				unmask_rx( rx[1] );
+				if ( opstack > 1 ) {
+					emit_op_rx_imm32( X_ADD, R_OPSTACK | R_REX, ( opstack - 1 ) * sizeof( int32_t ) );
+					EmitCallOffset( FUNC_CALL ); // call +FUNC_CALL
+					emit_op_rx_imm32( X_SUB, R_OPSTACK | R_REX, ( opstack - 1 ) * sizeof( int32_t ) );
+				} else {
+					EmitCallOffset( FUNC_CALL ); // call +FUNC_CALL
+				}
 				unmask_rx( rx[0] );
 				break;
 
@@ -4313,6 +4330,10 @@ __compile:
 		pass = NUM_PASSES-1; // repeat last pass
 		goto __compile;
 	}
+
+#ifdef DUMP_CODE
+	dump_code( vm->name, code, compiledOfs );
+#endif
 
 	// offset all the instruction pointers for the new location
 	for ( i = 0 ; i < header->instructionCount ; i++ ) {
