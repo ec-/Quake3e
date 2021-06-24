@@ -538,7 +538,7 @@ static void emit_op_reg_base_index( int prefix, int opcode, uint32_t reg, uint32
 }
 
 
-static void emit_op_reg_index_offset( int opcode, uint32_t regx, uint32_t index, int scale, int32_t offset )
+static void emit_op_reg_index_offset( int opcode, uint32_t reg, uint32_t index, int scale, int32_t offset )
 {
 	modrm_t modrm;
 	sib_t sib;
@@ -547,13 +547,13 @@ static void emit_op_reg_index_offset( int opcode, uint32_t regx, uint32_t index,
 		return;
 
 #if idx64
-	emit_rex3( 0x0, 0x0, index );
+	emit_rex3( 0x0, reg, index );
 #endif
 
-	// modrm = 00:<parm>:100
+	// modrm = 00:<reg>:100
 	modrm.s.mod = MOD_SIB_NO_DISP_RM_4;
+	modrm.s.r_x = reg;
 	modrm.s.r_m = 4;
-	modrm.s.r_x = regx;
 
 	// sib = <scale>:<index>:101
 	sib.s.base = 5; // 101 - (index*scale + disp4) mode
@@ -576,9 +576,14 @@ static void emit_lea( uint32_t reg, uint32_t base, int32_t offset )
 	emit_op_reg_base_offset( 0, 0x8D, reg, base, offset );
 }
 
-static void emit_lea_index( uint32_t reg, uint32_t base, uint32_t index )
+static void emit_lea_base_index( uint32_t reg, uint32_t base, uint32_t index )
 {
 	emit_op_reg_base_index( 0, 0x8D, reg, base, index, 1, 0 );
+}
+
+static void emit_lea_index_scale( uint32_t reg, uint32_t index, int scale, int32_t offset )
+{
+	emit_op_reg_index_offset( 0x8D, reg, index, scale, offset );
 }
 
 static void emit_mov_rx( uint32_t base, uint32_t reg )
@@ -2833,7 +2838,7 @@ static void emit_CheckReg( vm_t *vm, instruction_t *ins, uint32_t reg, func_t fu
 		return;
 	}
 
-	if ( !( vm_rtChecks->integer & 8 ) )
+	if ( !( vm_rtChecks->integer & VM_RTCHECK_DATA ) )
 		return;
 
 #if idx64
@@ -2846,7 +2851,7 @@ static void emit_CheckReg( vm_t *vm, instruction_t *ins, uint32_t reg, func_t fu
 	EmitString( "0F 87" );			// ja +errorFunction
 	Emit4( funcOffset[ func ] - compiledOfs - 6 );
 #else
-	if ( vm_rtChecks->integer & 8 || vm->forceDataMask )
+	if ( vm_rtChecks->integer & VM_RTCHECK_DATA || vm->forceDataMask )
 	{
 #if idx64
 		emit_and_rx( reg, R_DATAMASK );					// reg = reg & dataMask
@@ -2860,7 +2865,7 @@ static void emit_CheckReg( vm_t *vm, instruction_t *ins, uint32_t reg, func_t fu
 
 static void emit_CheckJump( vm_t *vm, uint32_t reg, int32_t proc_base, int32_t proc_len )
 {
-	if ( ( vm_rtChecks->integer & 4 ) == 0 ) {
+	if ( ( vm_rtChecks->integer & VM_RTCHECK_JUMP ) == 0 ) {
 		return;
 	}
 
@@ -2897,7 +2902,7 @@ static void emit_CheckJump( vm_t *vm, uint32_t reg, int32_t proc_base, int32_t p
 static void emit_CheckProc( vm_t *vm, instruction_t *ins )
 {
 	// programStack overflow check
-	if ( vm_rtChecks->integer & 1 ) {
+	if ( vm_rtChecks->integer & VM_RTCHECK_PSTACK ) {
 #if idx64
 		emit_cmp_rx( R_PSTACK, R_STACKBOTTOM );	// cmp programStack, stackBottom
 #else
@@ -2908,7 +2913,7 @@ static void emit_CheckProc( vm_t *vm, instruction_t *ins )
 	}
 
 	// opStack overflow check
-	if ( vm_rtChecks->integer & 2 ) {
+	if ( vm_rtChecks->integer & VM_RTCHECK_OPSTACK ) {
 		uint32_t rx = alloc_rx( R_EDX | TEMP );
 
 		// proc->opStack carries max.used opStack value
@@ -2955,8 +2960,8 @@ static void EmitCallFunc( vm_t *vm )
 	emit_CheckJump( vm, R_EAX, -1, 0 );
 
 	// save procBase and programStack
-	emit_push( R_PROCBASE );			// procBase
-	emit_push( R_PSTACK );				// programStack
+	//emit_push( R_PROCBASE );			// procBase
+	//emit_push( R_PSTACK );			// programStack
 
 	// calling another vm function
 #if idx64
@@ -2967,8 +2972,8 @@ static void EmitCallFunc( vm_t *vm )
 
 	// restore proc base and programStack so there is
 	// no need to validate programStack anymore
-	emit_pop( R_PSTACK );				// pop rsi // programStack
-	emit_pop( R_PROCBASE );				// pop rbp // procBase
+	//emit_pop( R_PSTACK );				// pop rsi // programStack
+	//emit_pop( R_PROCBASE );			// pop rbp // procBase
 
 	emit_ret();							// ret
 
@@ -3075,14 +3080,13 @@ static void EmitCallFunc( vm_t *vm )
 	// currentVm->systemCall( param );
 	emit_call_indir( (intptr_t) &vm->systemCall ); // call dword ptr [&currentVM->systemCall]
 
+	// store result in opStack[4]
+	emit_store_rx( R_EAX, R_OPSTACK, 4 );	// *opstack[ 4 ] = eax
+
 	// function epilogue
 	emit_mov_rx( R_ESP, R_EBP );			// mov esp, ebp
-	emit_pop( R_EBP );
-
-	// store result in opStack[4]
-	emit_store_rx( R_EAX, R_OPSTACK, 4 ); // *opstack[ 4 ] = eax
-
-	emit_ret();
+	emit_pop( R_EBP );						// pop ebp
+	emit_ret();								// ret
 #endif
 }
 
@@ -3102,7 +3106,7 @@ static void EmitBCPYFunc( vm_t *vm )
 		emit_and_rx( R_ESI, R_EAX );			// and esi, eax
 		emit_and_rx( R_EDI, R_EAX );			// and edi, eax
 
-		emit_lea_index( R_EDX, R_ESI, R_ECX );	// lea edx, [esi + ecx]
+		emit_lea_base_index( R_EDX, R_ESI, R_ECX ); // lea edx, [esi + ecx]
 		emit_and_rx( R_EDX, R_EAX );			// and edx, eax - apply data mask
 		emit_sub_rx( R_EDX, R_ESI );			// sub edx, esi - source-adjusted counter
 
@@ -3256,7 +3260,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 
 		case OP_ADD: {
 			int rx = load_rx_opstack( R_EAX );			// eax = *opstack
-			if ( (ni+1)->op == OP_LOAD4 ) {
+			if ( 0 && (ni+1)->op == OP_LOAD4 && ( vm_rtChecks->integer & VM_RTCHECK_DATA ) == 0 ) {
 				// structure field load
 				if ( (ni+1 )->fpu ) {
 					int sx = alloc_sx( R_XMM0 );
@@ -3271,6 +3275,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				}
 				ip += 1; // OP_LOAD4
 			} else {
+				// this potential load address must be validated
 				emit_op_rx_imm32( X_ADD, rx, ci->value );	// add eax, 0x12345678
 			}
 			store_rx_opstack( rx );						// *opstack = eax
@@ -3325,20 +3330,26 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			if ( ci->value ) {
 				int rx = load_rx_opstack( R_EAX );		// eax = *opstack
 				// [index*scale + offset]?
-				if ( ci->value <= 3 && !(ni+1)->jused && (ni+1)->op == OP_CONST && (ni+2)->op == OP_ADD && (ni+3)->op == OP_LOAD4 ) {
-					if ( (ni+3)->fpu ) {
-						int sx = alloc_sx( R_XMM0 );
-						// xmm0 = [dataBase + eax*(1<<shift) + offset]
-						emit_load_sx_index_offset( sx, R_DATABASE, rx, 1 << ci->value, (ni+1)->value );
-						unmask_rx( rx );
-						store_sx_opstack( sx );			// *opstack = xmm0
-						ip += 4; // OP_LSH + CONST + OP_ADD + OP_LOAD4
-						return qtrue;
+				if ( ci->value <= 3 && !(ni+1)->jused && (ni+1)->op == OP_CONST && (ni+2)->op == OP_ADD ) {
+					if ( 0 && (ni+3)->op == OP_LOAD4 && ( vm_rtChecks->integer & VM_RTCHECK_DATA ) == 0 ) {
+						if ( (ni+3)->fpu ) {
+							int sx = alloc_sx( R_XMM0 );
+							// xmm0 = [dataBase + eax*(1<<shift) + offset]
+							emit_load_sx_index_offset( sx, R_DATABASE, rx, 1 << ci->value, (ni+1)->value );
+							unmask_rx( rx );
+							store_sx_opstack( sx );			// *opstack = xmm0
+							ip += 4; // OP_LSH + CONST + OP_ADD + OP_LOAD4
+							return qtrue;
+						} else {
+							// eax = dword ptr [dataBase + eax*(1<<shift) + offset]
+							emit_load4_index_offset( rx, R_DATABASE, rx, 1 << ci->value, (ni+1)->value );
+						}
+						ip += 3; // CONST + OP_ADD + OP_LOAD4
 					} else {
-						// eax = dword ptr [dataBase + eax*(1<<shift) + offset]
-						emit_load4_index_offset( rx, R_DATABASE, rx, 1 << ci->value, (ni+1)->value );
+						// this potential load address must be validated
+						emit_lea_index_scale( rx, rx, 1 << ci->value, (ni+1)->value ); // eax = lea [eax*(1<<shift) + offset]
+						ip += 2; // CONST + OP_ADD
 					}
-					ip += 3; // CONST + OP_ADD + OP_LOAD4
 				} else {
 					emit_shl_rx_imm( rx, ci->value );	// eax = eax << x
 				}
@@ -3751,7 +3762,7 @@ __compile:
 
 #else // id386
 
-	emit_pushad();							// pushad
+	emit_pushad();					// pushad
 
 	mov_rx_ptr( R_DATABASE, vm->dataBase );	// mov ebx, vm->dataBase
 
@@ -3827,7 +3838,7 @@ __compile:
 
 				emit_op_rx_imm32( X_SUB, R_PSTACK, v );	// sub programStack, 0x12
 
-				emit_lea_index( R_PROCBASE | R_REX, R_DATABASE, R_PSTACK ); // procBase = dataBase + programStack
+				emit_lea_base_index( R_PROCBASE | R_REX, R_DATABASE, R_PSTACK ); // procBase = dataBase + programStack
 
 				emit_CheckProc( vm, ci );
 				break;
