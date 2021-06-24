@@ -517,7 +517,7 @@ static void emit_op_reg_base_index( int prefix, int opcode, uint32_t reg, uint32
 		if ( scale == 1 && ( base & R_MASK ) != 4 ) {
 			SWAP_INT( index, base ); // swap index with base
 		} else {
-#ifdef DEBUG_INT
+#ifndef DEBUG_INT
 			DROP( "incorrect index register" );
 #else
 			return; // R_ESP cannot be used as index register
@@ -2739,8 +2739,8 @@ static void EmitJump( instruction_t *i, int op, int addr )
 
 	v = instructionOffsets[addr] - compiledOfs;
 
-	// EQF, LTF and LEF use je/jb/jbe to conditional branch. je/jb/jbe branch if CF/ZF 
-	// is set. comiss/fucomip was used to perform the compare, so if any of the 
+	// EQF, LTF and LEF use je/jb/jbe to conditional branch. je/jb/jbe branch if CF/ZF
+	// is set. comiss/fucomip was used to perform the compare, so if any of the
 	// operands are NaN, ZF, CF and PF will be set and je/jb/jbe would branch.
 	// However, according to IEEE 754, when the operand is NaN for these comparisons,
 	// the result must be false. So, we emit `jp` before je/jb/jbe to skip
@@ -3400,10 +3400,10 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 
 			if ( ci->value < 0 ) { // syscall
 				mov_rx_imm32( R_EAX, ~ci->value ); // eax - syscall number
-				if ( opstack > 0 ) {
-					emit_op_rx_imm32( X_ADD, R_OPSTACK | R_REX, ( opstack - 0 ) * sizeof( int32_t ) );
+				if ( opstack > 1 ) {
+					emit_op_rx_imm32( X_ADD, R_OPSTACK | R_REX, (opstack-1) * sizeof( int32_t ) );
 					EmitCallOffset( FUNC_SYSC );
-					emit_op_rx_imm32( X_SUB, R_OPSTACK | R_REX, ( opstack - 0 ) * sizeof( int32_t ) );
+					emit_op_rx_imm32( X_SUB, R_OPSTACK | R_REX, (opstack-1) * sizeof( int32_t ) );
 				} else {
 					EmitCallOffset( FUNC_SYSC );
 				}

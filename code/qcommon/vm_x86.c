@@ -695,15 +695,15 @@ void EmitJump( vm_t *vm, instruction_t *i, int op, int addr )
 	v = instructionOffsets[addr] - compiledOfs;
 	
 	if (HasFCOM()) {
-		// EQF, LTF and LEF use je/jb/jbe to conditional branch. je/jb/jbe branch if CF/ZF 
-		// is set. comiss/fucomip was used to perform the compare, so if any of the 
+		// EQF, LTF and LEF use je/jb/jbe to conditional branch. je/jb/jbe branch if CF/ZF
+		// is set. comiss/fucomip was used to perform the compare, so if any of the
 		// operands are NaN, ZF, CF and PF will be set and je/jb/jbe would branch.
 		// However, according to IEEE 754, when the operand is NaN for these comparisons,
 		// the result must be false. So, we emit `jp` before je/jb/jbe to skip
 		// the branch if the result is NaN.
 		if (op == OP_EQF || op == OP_LTF || op == OP_LEF) shouldNaNCheck = qtrue;
 	} else if (i->op == OP_EQF || i->op == OP_LTF || i->op == OP_LEF) {
-		// Similar to above, NaN needs to be accounted for. When HasFCOM() is false, 
+		// Similar to above, NaN needs to be accounted for. When HasFCOM() is false,
 		// fcomp is used to perform the compare and EmitFloatJump is called. Which in turn,
 		// preserves C2 when masking and calls EmitJump with OP_NE. When any of the operands
 		// are NaN, C2 and C0/C3 (whichever was also masked) will be set. So like the previous
