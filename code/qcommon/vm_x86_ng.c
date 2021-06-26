@@ -1324,7 +1324,7 @@ static qboolean is_masked_rx( const uint32_t reg )
 
 static void set_rx_var(  uint32_t reg, const var_addr_t *addr, reg_value_t type ) {
 #ifdef LOAD_OPTIMIZE
-	if ( reg < ARRAY_LEN( rx_regs ) ) {
+	if ( reg < ARRAY_LEN( rx_regs ) && type != RTYPE_UNUSED ) {
 		uint32_t i;
 		reg_t *r = &rx_regs[ reg ];
 		r->type = type;
@@ -4084,11 +4084,11 @@ __compile:
 					rx[0] = load_rx_opstack( R_EAX | RCONST );	dec_opstack();		// eax = *opstack; opstack -= 4
 					if ( addr_on_top( &var ) ) {
 						// address specified by CONST/LOCAL
-						reg_value_t var_type;
+						reg_value_t var_type = RTYPE_UNUSED;
 						discard_top(); dec_opstack();
 						switch ( ci->op ) {
-							case OP_STORE1:	emit_store1_rx( rx[0], var.base, var.addr ); var_type = RTYPE_VAR1; break; // (byte*)var.base[var.addr] = al
-							case OP_STORE2:	emit_store2_rx( rx[0], var.base, var.addr ); var_type = RTYPE_VAR2; break; // (short*)var.base[var.addr] = ax
+							case OP_STORE1:	emit_store1_rx( rx[0], var.base, var.addr ); /*var_type = RTYPE_VAR1;*/ break; // (byte*)var.base[var.addr] = al
+							case OP_STORE2:	emit_store2_rx( rx[0], var.base, var.addr ); /*var_type = RTYPE_VAR2;*/ break; // (short*)var.base[var.addr] = ax
 							default:        emit_store_rx( rx[0], var.base, var.addr ); var_type = RTYPE_VAR4; break;  // (dword*)var.base[var.addr] = eax
 						}
 						set_rx_var( rx[0], &var, var_type );						// update metadata, this may wipe constant
