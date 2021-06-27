@@ -1344,48 +1344,45 @@ static qboolean is_masked_rx( const uint32_t reg )
 }
 
 
-static void set_rx_var(  uint32_t reg, const var_addr_t *addr, reg_value_t type, int zext ) {
+static void set_rx_var( uint32_t reg, const var_addr_t *v, reg_value_t type, int zext ) {
 #ifdef LOAD_OPTIMIZE
 	if ( reg < ARRAY_LEN( rx_regs ) && type != RTYPE_UNUSED ) {
 		uint32_t i;
-		reg_t *r = &rx_regs[ reg ];
+		reg_t *r;
+		for ( i = 0; i < ARRAY_LEN( rx_regs ); i++ ) {
+			r = &rx_regs[i];
+			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base && r->u.var.addr == v->addr ) {
+				r->type = RTYPE_UNUSED;
+			}
+		}
+		r = &rx_regs[ reg ];
 		r->type = type;
-		r->u.var = *addr;
+		r->u.var = *v;
 		r->refcnt = 1;
 		r->ip = ip;
 		r->zext = zext;
-		for ( i = 0; i < ARRAY_LEN( rx_regs ); i++ ) {
-			if ( i == reg ) {
-				continue;
-			}
-			r = &rx_regs[ i ];
-			if ( r->type == type && r->u.var.base == addr->base && r->u.var.addr == addr->addr ) {
-				r->type = RTYPE_UNUSED; // wipe other registers
-			}
-		}
 	}
 #endif
 }
 
 
-static void set_sx_var( uint32_t reg, const var_addr_t *addr ) {
+static void set_sx_var( uint32_t reg, const var_addr_t *v ) {
 #ifdef LOAD_OPTIMIZE
 	if ( reg < ARRAY_LEN( sx_regs ) ) {
 		uint32_t i;
-		reg_t *r = &sx_regs[reg];
-		r->type = RTYPE_VAR4;
-		r->u.var = *addr;
-		r->refcnt = 1;
-		r->ip = ip;
+		reg_t *r;
 		for ( i = 0; i < ARRAY_LEN( sx_regs ); i++ ) {
-			if ( i == reg ) {
-				continue;
-			}
 			r = &sx_regs[i];
-			if ( r->type == RTYPE_VAR4 && r->u.var.base == addr->base && r->u.var.addr == addr->addr ) {
-				r->type = RTYPE_UNUSED; // wipe other registers
+			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base && r->u.var.addr == v->addr ) {
+				r->type = RTYPE_UNUSED;
 			}
 		}
+		r = &sx_regs[ reg ];
+		r->type = RTYPE_VAR4;
+		r->u.var = *v;
+		r->refcnt = 1;
+		r->ip = ip;
+		r->zext = 0;
 	}
 #endif
 }
@@ -1429,9 +1426,27 @@ static qboolean find_sx_var( uint32_t *reg, const var_addr_t *var ) {
 }
 
 
+static void wipe_vars( void )
+{
+#ifdef LOAD_OPTIMIZE
+	uint32_t i;
+	for ( i = 0; i < ARRAY_LEN( rx_regs ); i++ ) {
+		if ( rx_regs[i].type >= RTYPE_VAR4 ) {
+			rx_regs[i].type = RTYPE_UNUSED;
+		}
+	}
+	for ( i = 0; i < ARRAY_LEN( sx_regs ); i++ ) {
+		if ( sx_regs[i].type >= RTYPE_VAR4 ) {
+			sx_regs[i].type = RTYPE_UNUSED;
+		}
+	}
+#endif
+}
+
+
 #if 0
 static qboolean search_opstack( opstack_value_t type, uint32_t value ) {
-	uint32_t i;
+	int i;
 	for ( i = 1; i <= opstack; i++ ) {
 		if ( opstackv[i].type == type && opstackv[i].value == value ) {
 			return qtrue;
@@ -3245,6 +3260,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				emit_CheckReg( vm, ni, rx, FUNC_DATW );
 				emit_store_imm32_index( ci->value, R_DATABASE, rx ); // (dword*)dataBase[ eax ] = 0x12345678
 				unmask_rx( rx );
+				wipe_vars();
 			}
 			ip += 1; // OP_STORE4
 			return qtrue;
@@ -3262,6 +3278,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				emit_CheckReg( vm, ni, rx, FUNC_DATW );
 				emit_store2_imm16_index( ci->value, R_DATABASE, rx ); // (word*)dataBase[ eax ] = 0x12345678
 				unmask_rx( rx );
+				wipe_vars();
 			}
 			ip += 1; // OP_STORE2
 			return qtrue;
@@ -3279,6 +3296,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				emit_CheckReg( vm, ni, rx, FUNC_DATW );
 				emit_store1_imm8_index( ci->value, R_DATABASE, rx ); // (char*)dataBase[ eax ] = 0x12345678
 				unmask_rx( rx );
+				wipe_vars();
 			}
 			ip += 1; // OP_STORE1
 			return qtrue;
@@ -4100,6 +4118,7 @@ __compile:
 						emit_CheckReg( vm, ci, rx[1], FUNC_DATW );
 						emit_store_sx_index( sx[0], R_DATABASE, rx[1] );			// dataBase[edx] = xmm0
 						unmask_rx( rx[1] );
+						wipe_vars();
 					}
 					unmask_sx( sx[0] );
 				} else {
@@ -4124,6 +4143,7 @@ __compile:
 							default:        emit_store_index( rx[0], R_DATABASE, rx[1] ); break;	// (dword*)dataBase[edx] = eax
 						}
 						unmask_rx( rx[1] );
+						wipe_vars();
 					}
 					unmask_rx( rx[0] );
 				}
