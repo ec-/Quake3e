@@ -137,10 +137,10 @@ typedef struct {
 	int32_t	value;     // 32
 	byte	op;        // 8
 	byte	opStack;   // 8
-	unsigned jused:1;
-	unsigned swtch:1;
-	unsigned safe:1;   // non-masked op_store
-	unsigned endp:1;
+	unsigned jused:1;  // this instruction is a jump target
+	unsigned swtch:1;  // indirect jump
+	unsigned safe:1;   // non-masked OP_STORE*
+	unsigned endp:1;   // for last OP_LEAVE instruction
 	unsigned fpu:1;    // load into FPU register
 	unsigned njump:1;  // near jump
 } instruction_t;
