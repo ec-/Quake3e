@@ -1893,8 +1893,8 @@ __compile:
 	//EmitPtr( &vm->opStackTop );
 	//EmitString( "4C 8B 30" );		// mov r14, [rax]
 
-	EmitString( "4C 8D B7" );		// lea r14, [opStack + opStackSize - 1]
-	Emit4( sizeof( int ) * MAX_OPSTACK_SIZE - 1 );
+	EmitString( "4C 8D B7" );		// lea r14, [opStack + opStackSize - 4]
+	Emit4( sizeof( int32_t ) * ( MAX_OPSTACK_SIZE - 1 ) );
 
 	EmitCallOffset( FUNC_ENTR );
 

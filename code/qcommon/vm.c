@@ -659,7 +659,7 @@ static char *VM_ValidateHeader( vmHeader_t *header, int fileSize )
 	int n;
 
 	// truncated
-	if ( fileSize < ( sizeof( vmHeader_t ) - sizeof( int ) ) ) {
+	if ( fileSize < ( sizeof( vmHeader_t ) - sizeof( int32_t ) ) ) {
 		sprintf( errMsg, "truncated image header (%i bytes long)", fileSize );
 		return errMsg;
 	}
@@ -679,7 +679,7 @@ static char *VM_ValidateHeader( vmHeader_t *header, int fileSize )
 	if ( LittleLong( header->vmMagic ) == VM_MAGIC_VER2 )
 		n = sizeof( vmHeader_t );
 	else
-		n = ( sizeof( vmHeader_t ) - sizeof( int ) );
+		n = ( sizeof( vmHeader_t ) - sizeof( int32_t ) );
 
 	// byte swap the header
 	VM_SwapLongs( header, n );
