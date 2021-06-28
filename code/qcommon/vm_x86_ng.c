@@ -2282,11 +2282,17 @@ static uint32_t finish_rx( uint32_t pref, uint32_t reg ) {
 	}
 
 	if ( search_opstack( TYPE_RX, reg ) ) {
-		// another instance is present on opStack so must be copied
-		int rx = alloc_rx( R_ECX );
-		emit_mov_rx( rx, reg );
-		unmask_rx( reg );
-		return rx;
+		// another instance is present on opStack
+		if ( pref & FORCED ) {
+			// nothing should left for a FORCED register
+			flush_items( TYPE_RX, reg );
+		} else {
+			// copy it
+			int rx = alloc_rx( R_ECX );
+			emit_mov_rx( rx, reg );
+			unmask_rx( reg );
+			return rx;
+		}
 	}
 
 	wipe_rx_meta( reg );
@@ -2394,11 +2400,17 @@ static uint32_t finish_sx( uint32_t pref, uint32_t reg ) {
 	}
 
 	if ( search_opstack( TYPE_SX, reg ) ) {
-		// another instance is present on opStack so must be copied
-		int sx = alloc_sx( R_XMM2 );
-		emit_mov_sx( sx, reg );
-		unmask_sx( reg );
-		return sx;
+		// another instance is present on opStack
+		if ( pref & FORCED ) {
+			// nothing should left for a FORCED register
+			flush_items( TYPE_SX, reg );
+		} else {
+			// must be copied
+			int sx = alloc_sx( R_XMM2 );
+			emit_mov_sx( sx, reg );
+			unmask_sx( reg );
+			return sx;
+		}
 	}
 
 	wipe_sx_meta( reg );
