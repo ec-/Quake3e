@@ -1325,6 +1325,7 @@ typedef struct reg_s {
 	uint32_t ip; // ip of last reference
 	int refcnt;  // reference counter
 	int zext;	 // zero-extension needed
+	int size;
 } reg_t;
 
 static int opstack;
@@ -1350,28 +1351,43 @@ static qboolean is_masked_rx( const uint32_t reg )
 
 static void set_rx_var( uint32_t reg, const var_addr_t *v, reg_value_t type, int zext ) {
 #ifdef LOAD_OPTIMIZE
-	if ( reg < ARRAY_LEN( rx_regs ) && type != RTYPE_UNUSED ) {
+	if ( reg < ARRAY_LEN( rx_regs ) ) {
 		uint32_t i;
+		int size;
 		reg_t *r;
-		// wipe ALL types of variables aliased to the specified address
+
+		switch ( type ) {
+			case RTYPE_VAR4: size = 4; break;
+			case RTYPE_VAR2: size = 2; break;
+			case RTYPE_VAR1: size = 1; break;
+			default: return;
+		}
+
+		// wipe ALL types of overlapping variables
 		for ( i = 0; i < ARRAY_LEN( rx_regs ); i++ ) {
 			r = &rx_regs[i];
-			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base && r->u.var.addr == v->addr ) {
-				r->type = RTYPE_UNUSED;
+			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base ) {
+				if ( v->addr < r->u.var.addr + r->size && v->addr + size > r->u.var.addr ) {
+					r->type = RTYPE_UNUSED;
+				}
 			}
 		}
 		for ( i = 0; i < ARRAY_LEN( sx_regs ); i++ ) {
 			r = &sx_regs[i];
-			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base && r->u.var.addr == v->addr ) {
-				r->type = RTYPE_UNUSED;
+			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base ) {
+				if ( v->addr < r->u.var.addr + r->size && v->addr + size > r->u.var.addr ) {
+					r->type = RTYPE_UNUSED;
+				}
 			}
 		}
+
 		r = &rx_regs[ reg ];
 		r->type = type;
 		r->u.var = *v;
 		r->refcnt = 1;
 		r->ip = ip;
 		r->zext = zext;
+		r->size = size;
 	}
 #endif
 }
@@ -1381,26 +1397,34 @@ static void set_sx_var( uint32_t reg, const var_addr_t *v ) {
 #ifdef LOAD_OPTIMIZE
 	if ( reg < ARRAY_LEN( sx_regs ) ) {
 		uint32_t i;
+		int size = 4;
 		reg_t *r;
-		// wipe ALL types of variables aliased to the specified address
+
+		// wipe ALL types of overlapping variables
 		for ( i = 0; i < ARRAY_LEN( rx_regs ); i++ ) {
 			r = &rx_regs[i];
-			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base && r->u.var.addr == v->addr ) {
-				r->type = RTYPE_UNUSED;
+			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base ) {
+				if ( v->addr < r->u.var.addr + r->size && v->addr + size > r->u.var.addr ) {
+					r->type = RTYPE_UNUSED;
+				}
 			}
 		}
 		for ( i = 0; i < ARRAY_LEN( sx_regs ); i++ ) {
 			r = &sx_regs[i];
-			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base && r->u.var.addr == v->addr ) {
-				r->type = RTYPE_UNUSED;
+			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base ) {
+				if ( v->addr < r->u.var.addr + r->size && v->addr + size > r->u.var.addr ) {
+					r->type = RTYPE_UNUSED;
+				}
 			}
 		}
+
 		r = &sx_regs[ reg ];
 		r->type = RTYPE_VAR4;
 		r->u.var = *v;
 		r->refcnt = 1;
 		r->ip = ip;
 		r->zext = 0;
+		r->size = size;
 	}
 #endif
 }
