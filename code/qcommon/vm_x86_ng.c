@@ -1353,8 +1353,15 @@ static void set_rx_var( uint32_t reg, const var_addr_t *v, reg_value_t type, int
 	if ( reg < ARRAY_LEN( rx_regs ) && type != RTYPE_UNUSED ) {
 		uint32_t i;
 		reg_t *r;
+		// wipe ALL types of variables aliased to the specified address
 		for ( i = 0; i < ARRAY_LEN( rx_regs ); i++ ) {
 			r = &rx_regs[i];
+			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base && r->u.var.addr == v->addr ) {
+				r->type = RTYPE_UNUSED;
+			}
+		}
+		for ( i = 0; i < ARRAY_LEN( sx_regs ); i++ ) {
+			r = &sx_regs[i];
 			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base && r->u.var.addr == v->addr ) {
 				r->type = RTYPE_UNUSED;
 			}
@@ -1375,6 +1382,13 @@ static void set_sx_var( uint32_t reg, const var_addr_t *v ) {
 	if ( reg < ARRAY_LEN( sx_regs ) ) {
 		uint32_t i;
 		reg_t *r;
+		// wipe ALL types of variables aliased to the specified address
+		for ( i = 0; i < ARRAY_LEN( rx_regs ); i++ ) {
+			r = &rx_regs[i];
+			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base && r->u.var.addr == v->addr ) {
+				r->type = RTYPE_UNUSED;
+			}
+		}
 		for ( i = 0; i < ARRAY_LEN( sx_regs ); i++ ) {
 			r = &sx_regs[i];
 			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base && r->u.var.addr == v->addr ) {
