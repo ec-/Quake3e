@@ -4192,6 +4192,7 @@ __compile:
 				unmask_rx( rx[2] );
 				unmask_rx( rx[1] );
 				unmask_rx( rx[0] );
+				wipe_vars();
 				break;
 
 			case OP_SEX8:
