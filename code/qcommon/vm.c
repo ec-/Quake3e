@@ -1216,6 +1216,12 @@ const char *VM_CheckInstructions( instruction_t *buf,
 					opStackPtr[ opStack / 4 + 0 ]->fpu = 1;
 					opStackPtr[ opStack / 4 + 1 ]->fpu = 1;
 				}
+			} else {
+				if ( m <= -8 ) {
+					//
+				} else {
+					opStackPtr[ opStack / 4 + 0 ] = ci;
+				}
 			}
 		}
 

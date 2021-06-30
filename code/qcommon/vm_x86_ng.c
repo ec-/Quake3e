@@ -617,6 +617,19 @@ static void emit_test_rx( uint32_t base, uint32_t reg )
 	emit_op_reg( 0, 0x85, base, reg );
 }
 
+static void emit_test_rx_imm32( uint32_t base, int32_t imm32 )
+{
+	if ( (base & R_MASK) == R_EAX ) {
+#if idx64
+		emit_rex1( base );
+#endif
+		Emit1( 0xA9 );
+	} else {
+		emit_op_reg( 0, 0xF7, base, 0x0 );
+	}
+	Emit4( imm32 );
+}
+
 static void emit_cmp_rx( uint32_t base, uint32_t reg )
 {
 	emit_op_reg( 0, 0x39, base, reg );
@@ -1332,27 +1345,45 @@ static int opstack;
 static opstack_t opstackv[PROC_OPSTACK_SIZE + 1];
 
 // cached register values
+
 static reg_t rx_regs[NUM_RX_REGS];
 static reg_t sx_regs[NUM_SX_REGS];
+
+// masked register can't be allocated or flushed to opStack on register pressure
 
 static int32_t rx_mask[NUM_RX_REGS];
 static int32_t sx_mask[NUM_SX_REGS];
 
-// masked register can't be allocated or flushed to opstack on register pressure
-
-static qboolean is_masked_rx( const uint32_t reg )
+static void wipe_var_range( const var_addr_t *v, const int size )
 {
-	if ( rx_mask[reg] > 0 )
-		return qtrue;
-	else
-		return qfalse;
+#ifdef LOAD_OPTIMIZE
+	uint32_t i;
+	reg_t *r;
+
+	// wipe all types of overlapping variables
+	for ( i = 0; i < ARRAY_LEN( rx_regs ); i++ ) {
+		r = &rx_regs[i];
+		if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base ) {
+			if ( v->addr < r->u.var.addr + r->size && v->addr + size > r->u.var.addr ) {
+				r->type = RTYPE_UNUSED;
+			}
+		}
+	}
+	for ( i = 0; i < ARRAY_LEN( sx_regs ); i++ ) {
+		r = &sx_regs[i];
+		if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base ) {
+			if ( v->addr < r->u.var.addr + r->size && v->addr + size > r->u.var.addr ) {
+				r->type = RTYPE_UNUSED;
+			}
+		}
+	}
+#endif
 }
 
 
 static void set_rx_var( uint32_t reg, const var_addr_t *v, reg_value_t type, int zext ) {
 #ifdef LOAD_OPTIMIZE
 	if ( reg < ARRAY_LEN( rx_regs ) ) {
-		uint32_t i;
 		int size;
 		reg_t *r;
 
@@ -1363,23 +1394,7 @@ static void set_rx_var( uint32_t reg, const var_addr_t *v, reg_value_t type, int
 			default: return;
 		}
 
-		// wipe ALL types of overlapping variables
-		for ( i = 0; i < ARRAY_LEN( rx_regs ); i++ ) {
-			r = &rx_regs[i];
-			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base ) {
-				if ( v->addr < r->u.var.addr + r->size && v->addr + size > r->u.var.addr ) {
-					r->type = RTYPE_UNUSED;
-				}
-			}
-		}
-		for ( i = 0; i < ARRAY_LEN( sx_regs ); i++ ) {
-			r = &sx_regs[i];
-			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base ) {
-				if ( v->addr < r->u.var.addr + r->size && v->addr + size > r->u.var.addr ) {
-					r->type = RTYPE_UNUSED;
-				}
-			}
-		}
+		wipe_var_range( v, size );
 
 		r = &rx_regs[ reg ];
 		r->type = type;
@@ -1396,27 +1411,10 @@ static void set_rx_var( uint32_t reg, const var_addr_t *v, reg_value_t type, int
 static void set_sx_var( uint32_t reg, const var_addr_t *v ) {
 #ifdef LOAD_OPTIMIZE
 	if ( reg < ARRAY_LEN( sx_regs ) ) {
-		uint32_t i;
 		int size = 4;
 		reg_t *r;
 
-		// wipe ALL types of overlapping variables
-		for ( i = 0; i < ARRAY_LEN( rx_regs ); i++ ) {
-			r = &rx_regs[i];
-			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base ) {
-				if ( v->addr < r->u.var.addr + r->size && v->addr + size > r->u.var.addr ) {
-					r->type = RTYPE_UNUSED;
-				}
-			}
-		}
-		for ( i = 0; i < ARRAY_LEN( sx_regs ); i++ ) {
-			r = &sx_regs[i];
-			if ( r->type >= RTYPE_VAR4 && r->u.var.base == v->base ) {
-				if ( v->addr < r->u.var.addr + r->size && v->addr + size > r->u.var.addr ) {
-					r->type = RTYPE_UNUSED;
-				}
-			}
-		}
+		wipe_var_range( v, size );
 
 		r = &sx_regs[ reg ];
 		r->type = RTYPE_VAR4;
@@ -1499,20 +1497,26 @@ static qboolean search_opstack( opstack_value_t type, uint32_t value ) {
 
 static void wipe_rx_meta( uint32_t reg )
 {
+#ifdef DEBUG_VM
 	if ( reg < ARRAY_LEN( rx_regs ) )
+#endif
 		rx_regs[reg].type = RTYPE_UNUSED;
 }
 
 static void wipe_sx_meta( uint32_t reg )
 {
+#ifdef DEBUG_VM
 	if ( reg < ARRAY_LEN( sx_regs ) )
+#endif
 		sx_regs[reg].type = RTYPE_UNUSED;
 }
+
 
 static void mask_rx( uint32_t reg )
 {
 	rx_mask[reg]++;
 }
+
 
 static void mask_sx( uint32_t reg )
 {
@@ -2473,9 +2477,6 @@ static uint32_t load_sx_opstack( uint32_t pref )
 
 		emit_mov_sx_rx( reg, it->value );
 
-		// keep meta information about integer register so it can be reused
-		//wipe_rx_meta( it->value );
-
 		it->type = TYPE_RAW;
 		return reg;
 	}
@@ -2832,11 +2833,8 @@ static void EmitCallOffset( func_t Func )
 }
 
 
-static void emit_CheckReg( vm_t *vm, instruction_t *ins, uint32_t reg, func_t func )
+static void emit_CheckReg( vm_t *vm, uint32_t reg, func_t func )
 {
-	if ( ins->safe )
-		return;
-
 #ifdef DEBUG_VM
 	if ( vm->forceDataMask )
 	{
@@ -2880,12 +2878,7 @@ static void emit_CheckJump( vm_t *vm, uint32_t reg, int32_t proc_base, int32_t p
 	}
 
 	if ( proc_base != -1 ) {
-		qboolean masked = is_masked_rx( reg );
 		uint32_t rx;
-
-		if ( !masked ) {
-			mask_rx( reg ); // so allocator will not chose it
-		}
 
 		// allow jump within local function scope only
 		// check if (reg - proc_base) > proc_len
@@ -2896,10 +2889,6 @@ static void emit_CheckJump( vm_t *vm, uint32_t reg, int32_t proc_base, int32_t p
 
 		EmitString( "0F 87" );						// ja +funcOffset[FUNC_BADJ]
 		Emit4( funcOffset[ FUNC_BADJ ] - compiledOfs - 6 );
-
-		if ( !masked ) {
-			unmask_rx( reg );
-		}
 	} else {
 		// check if reg >= instructionCount
 		emit_op_rx_imm32( X_CMP, reg, vm->instructionCount );	// cmp reg, vm->instructionCount
@@ -2967,7 +2956,9 @@ static void EmitCallFunc( vm_t *vm )
 	sysCallOffset = compiledOfs;
 
 	// jump target range check
+	mask_rx( R_EAX );
 	emit_CheckJump( vm, R_EAX, -1, 0 );
+	unmask_rx( R_EAX );
 
 	// save procBase and programStack
 	//emit_push( R_PROCBASE );			// procBase
@@ -3256,7 +3247,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				emit_store_imm32( ci->value, var.base, var.addr );	// (dword*)base_reg[ v ] = 0x12345678
 			} else {
 				int rx = load_rx_opstack( R_EAX | RCONST ); dec_opstack(); // eax = *opstack; opstack -= 4
-				emit_CheckReg( vm, ni, rx, FUNC_DATW );
+				emit_CheckReg( vm, rx, FUNC_DATW );
 				emit_store_imm32_index( ci->value, R_DATABASE, rx ); // (dword*)dataBase[ eax ] = 0x12345678
 				unmask_rx( rx );
 				wipe_vars();
@@ -3274,7 +3265,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				emit_store2_imm16( ci->value, var.base, var.addr );	// (short*)var.base[ v ] = 0x1234
 			} else {
 				int rx = load_rx_opstack( R_EAX | RCONST ); dec_opstack(); // eax = *opstack; opstack -= 4
-				emit_CheckReg( vm, ni, rx, FUNC_DATW );
+				emit_CheckReg( vm, rx, FUNC_DATW );
 				emit_store2_imm16_index( ci->value, R_DATABASE, rx ); // (word*)dataBase[ eax ] = 0x12345678
 				unmask_rx( rx );
 				wipe_vars();
@@ -3292,7 +3283,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				emit_store1_imm8( ci->value, var.base, var.addr );	// (byte*)base_reg[ v ] = 0x12
 			} else {
 				int rx = load_rx_opstack( R_EAX | RCONST ); dec_opstack(); // eax = *opstack; opstack -= 4
-				emit_CheckReg( vm, ni, rx, FUNC_DATW );
+				emit_CheckReg( vm, rx, FUNC_DATW );
 				emit_store1_imm8_index( ci->value, R_DATABASE, rx ); // (char*)dataBase[ eax ] = 0x12345678
 				unmask_rx( rx );
 				wipe_vars();
@@ -3345,6 +3336,16 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 
 		case OP_BAND: {
 			int rx = load_rx_opstack( R_EAX );			// eax = *opstack
+			if ( !(ni+1)->jused && (ni+1)->op == OP_CONST && (ni+1)->value == 0 && ops[(ni+2)->op].flags & JUMP ) {
+				if ( (ni+2)->op == OP_EQ || (ni+2)->op == OP_NE ) {
+					dec_opstack();
+					emit_test_rx_imm32( rx, ci->value );// test eax, mask
+					EmitJump( ni+2, (ni+2)->op, (ni+2)->value ); // jcc
+					unmask_rx( rx );
+					ip += 3; // OP_BAND + OP_CONST + OP_EQ/OP_NE
+					return qtrue;
+				}
+			}
 			emit_op_rx_imm32( X_AND, rx, ci->value );	// and eax, 0x12345678
 			store_rx_opstack( rx );						// *opstack = eax
 			ip += 1; // OP_BAND
@@ -4025,7 +4026,7 @@ __compile:
 					} else {
 						// address stored in register
 						rx[0] = load_rx_opstack( R_EAX | RCONST );		// eax = *opstack
-						emit_CheckReg( vm, ci, rx[0], FUNC_DATR );
+						emit_CheckReg( vm, rx[0], FUNC_DATR );
 						sx[0] = alloc_sx( R_XMM0 );
 						emit_load_sx_index( sx[0], R_DATABASE, rx[0] ); // xmmm0 = dataBase[eax]
 						unmask_rx( rx[0] );
@@ -4097,7 +4098,7 @@ __compile:
 #else
 					rx[0] = rx[1] = load_rx_opstack( R_EAX );		// target, address = *opstack
 #endif
-					emit_CheckReg( vm, ci, rx[1], FUNC_DATR );		// check address bounds
+					emit_CheckReg( vm, rx[1], FUNC_DATR );			// check address bounds
 					if ( (ci+1)->op == sign_extend && sign_extend != OP_UNDEF ) {
 						// merge with following sign-extension instruction
 						switch ( ci->op ) {
@@ -4132,7 +4133,7 @@ __compile:
 						set_sx_var( sx[0], &var );									// update metadata, this may wipe constant
 					} else {
 						rx[1] = load_rx_opstack( R_EDX | RCONST ); dec_opstack();	// edx = *opstack; opstack -= 4
-						emit_CheckReg( vm, ci, rx[1], FUNC_DATW );
+						emit_CheckReg( vm, rx[1], FUNC_DATW );
 						emit_store_sx_index( sx[0], R_DATABASE, rx[1] );			// dataBase[edx] = xmm0
 						unmask_rx( rx[1] );
 						wipe_vars();
@@ -4153,7 +4154,7 @@ __compile:
 						set_rx_var( rx[0], &var, var_type, zext ); // update metadata, this may wipe constant
 					} else {
 						rx[1] = load_rx_opstack( R_EDX | RCONST ); dec_opstack();	// edx = *opstack; opstack -= 4
-						emit_CheckReg( vm, ci, rx[1], FUNC_DATW );
+						emit_CheckReg( vm, rx[1], FUNC_DATW );
 						switch ( ci->op ) {
 							case OP_STORE1: emit_store1_index( rx[0], R_DATABASE, rx[1] ); break;	// (byte*)dataBase[edx] = al
 							case OP_STORE2: emit_store2_index( rx[0], R_DATABASE, rx[1] ); break;	// (short*)dataBase[edx] = ax
@@ -4167,17 +4168,20 @@ __compile:
 				break;
 
 			case OP_ARG:
+				var.base = R_PROCBASE;
+				var.addr = ci->value;
+				wipe_var_range( &var, 4 );
 				if ( scalar_on_top() ) {
-					sx[0] = load_sx_opstack( R_XMM0 | RCONST ); dec_opstack(); // xmm0 = *opstack; opstack -=4
-					emit_store_sx( sx[0], R_PROCBASE, ci->value );		// [procBase + v] = xmm0
+					sx[0] = load_sx_opstack( R_XMM0 | RCONST ); dec_opstack();	// xmm0 = *opstack; opstack -=4
+					emit_store_sx( sx[0], var.base, var.addr );					// [procBase + v] = xmm0
 					unmask_sx( sx[0] );
 				} else {
 					if ( const_on_top() && top_value() != 0 ) {
 						n = top_value(); discard_top(); dec_opstack();
-						emit_store_imm32( n, R_PROCBASE, ci->value );	// [procBase + v] = n
+						emit_store_imm32( n, var.base, var.addr );					// [procBase + v] = n
 					} else {
-						rx[0] = load_rx_opstack( R_EAX | RCONST ); dec_opstack(); // eax = *opstack; opstack -=4
-						emit_store_rx( rx[0], R_PROCBASE, ci->value );	// [procBase + v] = eax
+						rx[0] = load_rx_opstack( R_EAX | RCONST ); dec_opstack();	// eax = *opstack; opstack -=4
+						emit_store_rx( rx[0], var.base, var.addr );					// [procBase + v] = eax
 						unmask_rx( rx[0] );
 					}
 				}
