@@ -1264,6 +1264,15 @@ static uint32_t alloc_sx( uint32_t pref );
 
 #define RMASK  0x0F
 
+// array sizes for cached/meta registers
+#if idx64
+#define NUM_RX_REGS 11 // [EAX..R10]
+#define NUM_SX_REGS 6 // [XMM0..XMM5]
+#else
+#define NUM_RX_REGS 3 // EAX, ECX, EDX
+#define NUM_SX_REGS 6 // [XMM0..XMM5]
+#endif
+
 // general-purpose register list available for dynamic allocation
 static const uint32_t rx_list_alloc[] = {
 	R_EAX, R_EDX, R_ECX
@@ -1277,15 +1286,6 @@ static const uint32_t sx_list_alloc[] = {
 	R_XMM0, R_XMM1, R_XMM2,
 	R_XMM3, R_XMM4, R_XMM5
 };
-
-// array sizes for cached registers
-#if idx64
-#define NUM_RX_REGS 11 // [EAX..R10]
-#define NUM_SX_REGS 6 // [XMM0..XMM5]
-#else
-#define NUM_RX_REGS 3 // EAX, ECX, EDX
-#define NUM_SX_REGS 6 // [XMM0..XMM5]
-#endif
 
 #ifdef CONST_CACHE_RX
 static const uint32_t rx_list_cache[] = {
@@ -1728,7 +1728,7 @@ static void inc_opstack( void )
 
 #ifdef DEBUG_VM
 	if ( opstackv[ opstack ].type != TYPE_RAW )
-		DROP( "bad item type %i at opstack %i", opstackv[opstack].type, opstack * 4 );
+		DROP( "bad item type %i at opstack %i", opstackv[ opstack ].type, opstack * 4 );
 #endif
 }
 
@@ -3258,6 +3258,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				}
 				discard_top(); dec_opstack();						// v = *opstack; opstack -= 4
 				emit_store_imm32( ci->value, var.base, var.addr );	// (dword*)base_reg[ v ] = 0x12345678
+				wipe_var_range( &var, 4 );
 			} else {
 				int rx = load_rx_opstack( R_EAX | RCONST ); dec_opstack(); // eax = *opstack; opstack -= 4
 				emit_CheckReg( vm, rx, FUNC_DATW );
@@ -3276,6 +3277,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				}
 				discard_top(); dec_opstack();						// v = *opstack; opstack -= 4
 				emit_store2_imm16( ci->value, var.base, var.addr );	// (short*)var.base[ v ] = 0x1234
+				wipe_var_range( &var, 2 );
 			} else {
 				int rx = load_rx_opstack( R_EAX | RCONST ); dec_opstack(); // eax = *opstack; opstack -= 4
 				emit_CheckReg( vm, rx, FUNC_DATW );
@@ -3294,6 +3296,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				}
 				discard_top(); dec_opstack();						// v = *opstack; opstack -= 4
 				emit_store1_imm8( ci->value, var.base, var.addr );	// (byte*)base_reg[ v ] = 0x12
+				wipe_var_range( &var, 1 );
 			} else {
 				int rx = load_rx_opstack( R_EAX | RCONST ); dec_opstack(); // eax = *opstack; opstack -= 4
 				emit_CheckReg( vm, rx, FUNC_DATW );
@@ -3469,7 +3472,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			if ( ci->value < 0 ) { // syscall
 				mask_rx( R_EAX );
 				mov_rx_imm32( R_EAX, ~ci->value ); // eax - syscall number
-				if ( opstack > 1 ) {
+				if ( opstack != 1 ) {
 					emit_op_rx_imm32( X_ADD, R_OPSTACK | R_REX, (opstack-1) * sizeof( int32_t ) );
 					EmitCallOffset( FUNC_SYSC );
 					emit_op_rx_imm32( X_SUB, R_OPSTACK | R_REX, (opstack-1) * sizeof( int32_t ) );
@@ -3481,7 +3484,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				return qtrue;
 			}
 			emit_push( R_OPSTACK );	// push edi
-			if ( opstack > 1 ) {
+			if ( opstack != 1 ) {
 				emit_op_rx_imm32( X_ADD, R_OPSTACK | R_REX, (opstack-1) * sizeof( int32_t ) ); // add rdi, opstack-4
 			}
 			EmitCallAddr( vm, ci->value );	// call +addr
@@ -3881,7 +3884,7 @@ __compile:
 
 				// locate endproc
 				for ( proc_len = -1, i = ip; i < header->instructionCount; i++ ) {
-					if ( inst[i].op == OP_PUSH && inst[i + 1].op == OP_LEAVE ) {
+					if ( inst[ i ].op == OP_PUSH && inst[ i + 1 ].op == OP_LEAVE ) {
 						proc_len = i - proc_base;
 #ifdef RET_OPTIMIZE
 						proc_end = i + 1;
@@ -3936,7 +3939,7 @@ __compile:
 			case OP_CALL:
 				rx[0] = load_rx_opstack( R_EAX | FORCED ); // eax = *opstack
 				flush_volatile();
-				if ( opstack > 1 ) {
+				if ( opstack != 1 ) {
 					emit_op_rx_imm32( X_ADD, R_OPSTACK | R_REX, ( opstack - 1 ) * sizeof( int32_t ) );
 					EmitCallOffset( FUNC_CALL ); // call +FUNC_CALL
 					emit_op_rx_imm32( X_SUB, R_OPSTACK | R_REX, ( opstack - 1 ) * sizeof( int32_t ) );
