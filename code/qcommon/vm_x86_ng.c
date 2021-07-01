@@ -1354,6 +1354,19 @@ static reg_t sx_regs[NUM_SX_REGS];
 static int32_t rx_mask[NUM_RX_REGS];
 static int32_t sx_mask[NUM_SX_REGS];
 
+
+static qboolean find_free_rx( void ) {
+	uint32_t i, n;
+	for ( i = 0; i < ARRAY_LEN( rx_list_alloc ); i++ ) {
+		n = rx_list_alloc[i];
+		if ( rx_regs[i].type == RTYPE_UNUSED ) {
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
+
 static void wipe_var_range( const var_addr_t *v, const int size )
 {
 #ifdef LOAD_OPTIMIZE
@@ -4088,9 +4101,9 @@ __compile:
 					}
 #if 1
 					rx[0] = rx[1] = load_rx_opstack( R_EAX | RCONST ); // target, address = *opstack
-					if ( search_opstack( TYPE_RX, rx[0] ) ) {
-						// address is duplicated on opStack, allocate new register for the target
-						rx[0] = alloc_rx( R_EDX );
+					if ( search_opstack( TYPE_RX, rx[0] ) || find_free_rx() ) {
+						// address is duplicated on opStack or there is a free register
+						rx[0] = alloc_rx( R_EDX ); // allocate new register for the target
 					} else {
 						// will be overwritten, wipe metadata
 						wipe_rx_meta( rx[0] );
