@@ -1359,7 +1359,7 @@ static qboolean find_free_rx( void ) {
 	uint32_t i, n;
 	for ( i = 0; i < ARRAY_LEN( rx_list_alloc ); i++ ) {
 		n = rx_list_alloc[i];
-		if ( rx_regs[i].type == RTYPE_UNUSED ) {
+		if ( rx_regs[n].type == RTYPE_UNUSED ) {
 			return qtrue;
 		}
 	}
