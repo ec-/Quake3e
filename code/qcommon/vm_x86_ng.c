@@ -2409,6 +2409,23 @@ static uint32_t load_rx_opstack( uint32_t pref )
 }
 
 
+static void load_rx_opstack2( uint32_t *dst, uint32_t dst_pref, uint32_t *src, uint32_t src_pref )
+{
+#if 0
+	*dst = *src = load_rx_opstack( src_pref &= ~RCONST ); // source, target = *opstack
+#else
+	*dst = *src = load_rx_opstack( src_pref | RCONST ); // source, target = *opstack
+	if ( search_opstack( TYPE_RX, *src ) || find_free_rx() ) {
+		// *src is duplicated on opStack or there is a free register
+		*dst = alloc_rx( dst_pref &= ~RCONST ); // allocate new register for the target
+	} else {
+		// will be overwritten, wipe metadata
+		wipe_rx_meta( *dst );
+	}
+#endif
+}
+
+
 static uint32_t finish_sx( uint32_t pref, uint32_t reg ) {
 
 	if ( pref & RCONST ) {
@@ -4065,10 +4082,15 @@ __compile:
 					if ( ( f = find_rx_var( &rx[0], &var, var_type ) ) != NULL ) {
 						// already cached in some register
 						if ( f->zext ) {
+							if ( ((ci+1)->op == OP_STORE1 && ci->op == OP_LOAD1) || ((ci+1)->op == OP_STORE2 && ci->op == OP_LOAD2) ) {
+								f->zext = 0;
+							}
+						}
+						if ( f->zext ) {
 							// do zero extension
 							switch ( ci->op ) {
-								case OP_LOAD1: emit_zex8( rx[0], rx[0] ); break;
-								case OP_LOAD2: emit_zex16( rx[0], rx[0] ); break;
+								case OP_LOAD1: emit_zex8( rx[0], rx[0] ); break;	// movzx eax, al
+								case OP_LOAD2: emit_zex16( rx[0], rx[0] ); break;	// movzx eax, ah
 							}
 							f->zext = 0;
 						}
@@ -4103,14 +4125,7 @@ __compile:
 						default:		sign_extend = OP_UNDEF; break;
 					}
 #if 1
-					rx[0] = rx[1] = load_rx_opstack( R_EAX | RCONST ); // target, address = *opstack
-					if ( search_opstack( TYPE_RX, rx[0] ) || find_free_rx() ) {
-						// address is duplicated on opStack or there is a free register
-						rx[0] = alloc_rx( R_EDX ); // allocate new register for the target
-					} else {
-						// will be overwritten, wipe metadata
-						wipe_rx_meta( rx[0] );
-					}
+					load_rx_opstack2( &rx[0], R_EDX, &rx[1], R_EAX ); // target, address = *opstack
 #else
 					rx[0] = rx[1] = load_rx_opstack( R_EAX );		// target, address = *opstack
 #endif
