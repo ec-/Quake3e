@@ -659,7 +659,7 @@ static char *VM_ValidateHeader( vmHeader_t *header, int fileSize )
 	int n;
 
 	// truncated
-	if ( fileSize < ( sizeof( vmHeader_t ) - sizeof( int ) ) ) {
+	if ( fileSize < ( sizeof( vmHeader_t ) - sizeof( int32_t ) ) ) {
 		sprintf( errMsg, "truncated image header (%i bytes long)", fileSize );
 		return errMsg;
 	}
@@ -679,7 +679,7 @@ static char *VM_ValidateHeader( vmHeader_t *header, int fileSize )
 	if ( LittleLong( header->vmMagic ) == VM_MAGIC_VER2 )
 		n = sizeof( vmHeader_t );
 	else
-		n = ( sizeof( vmHeader_t ) - sizeof( int ) );
+		n = ( sizeof( vmHeader_t ) - sizeof( int32_t ) );
 
 	// byte swap the header
 	VM_SwapLongs( header, n );
@@ -896,6 +896,37 @@ static void VM_IgnoreInstructions( instruction_t *buf, const int count ) {
 }
 
 
+static int InvertCondition( int op )
+{
+	switch ( op ) {
+		case OP_EQ: return OP_NE;   // == -> !=
+		case OP_NE: return OP_EQ;   // != -> ==
+
+		case OP_LTI: return OP_GEI;	// <  -> >=
+		case OP_LEI: return OP_GTI;	// <= -> >
+		case OP_GTI: return OP_LEI; // >  -> <=
+		case OP_GEI: return OP_LTI; // >= -> <
+
+		case OP_LTU: return OP_GEU;
+		case OP_LEU: return OP_GTU;
+		case OP_GTU: return OP_LEU;
+		case OP_GEU: return OP_LTU;
+
+		case OP_EQF: return OP_NEF;
+		case OP_NEF: return OP_EQF;
+
+		case OP_LTF: return OP_GEF;
+		case OP_LEF: return OP_GTF;
+		case OP_GTF: return OP_LEF;
+		case OP_GEF: return OP_LTF;
+
+		default: 
+			Com_Error( ERR_DROP, "incorrect condition opcode %i", op );
+			return op;
+	}
+}
+
+
 /*
 =================
 VM_FindLocal
@@ -903,14 +934,33 @@ VM_FindLocal
 search for specified local variable until end of function
 =================
 */
-static qboolean VM_FindLocal( int addr, const instruction_t *buf, const instruction_t *end ) {
+static qboolean VM_FindLocal( int32_t addr, const instruction_t *buf, const instruction_t *end, int32_t *back_addr ) {
+	int32_t curr_addr = *back_addr;
 	while ( buf < end ) {
-		if ( buf->op == OP_LOCAL && buf->value == addr )
-			return qtrue;
-		if ( buf->op == OP_PUSH && (buf+1)->op == OP_LEAVE )
+		if ( buf->op == OP_LOCAL ) {
+			if ( buf->value == addr ) {
+				return qtrue;
+			}
+			++buf; continue;
+		}
+		if ( ops[ buf->op ].flags & JUMP ) {
+			if ( buf->value < curr_addr ) {
+				curr_addr = buf->value;
+			}
+			++buf; continue;
+		}
+		if ( buf->op == OP_JUMP ) {
+			if ( buf->value && buf->value < curr_addr ) {
+				curr_addr = buf->value;
+			}
+			++buf; continue;
+		}
+		if ( buf->op == OP_PUSH && (buf+1)->op == OP_LEAVE ) {
 			break;
+		}
 		++buf;
 	}
+	*back_addr = curr_addr;
 	return qfalse;
 }
 
@@ -941,20 +991,40 @@ static void VM_Fixup( instruction_t *buf, int instructionCount )
 				continue;
 			}
 
-			// OP_LOCAL + OP_CONST + OP_CALL + OP_STORE4
+			// [0]OP_LOCAL + [1]OP_CONST + [2]OP_CALL + [3]OP_STORE4
 			if ( (i+1)->op == OP_CONST && (i+2)->op == OP_CALL && (i+3)->op == OP_STORE4 && !(i+4)->jused ) {
-				// OP_CONST|OP_LOCAL + OP_LOCAL + OP_LOAD4 + OP_STORE4
+				// [4]OP_CONST|OP_LOCAL (dest) + [5]OP_LOCAL(temp) + [6]OP_LOAD4 + [7]OP_STORE4
 				if ( (i+4)->op == OP_CONST || (i+4)->op == OP_LOCAL ) {
-					if ((i+5)->op == OP_LOCAL && (i+5)->value == (i+0)->value && (i+6)->op == OP_LOAD4 && (i+7)->op == OP_STORE4 ) {
-						// make sure that address of temporary variable is not referenced anymore in this function
-						if ( !VM_FindLocal( i->value, i + 8, buf + instructionCount ) ) {
-							(i+0)->op = (i+4)->op;
-							(i+0)->value = (i+4)->value;
-							VM_IgnoreInstructions( i + 4, 4 );
-							i += 8;
-							n += 8;
+					if ( (i+5)->op == OP_LOCAL && (i+5)->value == (i+0)->value && (i+6)->op == OP_LOAD4 && (i+7)->op == OP_STORE4 ) {
+						int32_t back_addr = n;
+						int32_t curr_addr = n;
+						qboolean do_break = qfalse;
+
+						// make sure that address of (potentially) temporary variable is not referenced further in this function
+						if ( VM_FindLocal( i->value, i + 8, buf + instructionCount, &back_addr ) ) {
+							i++; n++;
 							continue;
 						}
+
+						// we have backward jumps in code then check for references before current position
+						while ( back_addr < curr_addr ) {
+							curr_addr = back_addr;
+							if ( VM_FindLocal( i->value, buf + back_addr, i, &back_addr ) ) {
+								do_break = qtrue;
+								break;
+							}
+						}
+						if ( do_break ) {
+							i++; n++;
+							continue;
+						}
+
+						(i+0)->op = (i+4)->op;
+						(i+0)->value = (i+4)->value;
+						VM_IgnoreInstructions( i + 4, 4 );
+						i += 8;
+						n += 8;
+						continue;
 					}
 				}
 			}
@@ -972,6 +1042,21 @@ static void VM_Fixup( instruction_t *buf, int instructionCount )
 			}
 		}
 
+		//n + 0: if ( cond ) goto label1;
+		//n + 2: goto label2;
+		//n + 3: label1:
+		// ...
+		//n + x: label2:
+		if ( ( ops[i->op].flags & (JUMP | FPU) ) == JUMP && !(i+1)->jused && (i+1)->op == OP_CONST && (i+2)->op == OP_JUMP ) {
+			if ( i->value == n + 3 && (i+1)->value >= n + 3 ) {
+				i->op = InvertCondition( i->op );
+				i->value = ( i + 1 )->value;
+				VM_IgnoreInstructions( i + 1, 2 );
+				i += 3;
+				n += 3;
+				continue;
+			}
+		}
 		i++;
 		n++;
 	}
@@ -1131,6 +1216,12 @@ const char *VM_CheckInstructions( instruction_t *buf,
 					opStackPtr[ opStack / 4 + 0 ]->fpu = 1;
 					opStackPtr[ opStack / 4 + 1 ]->fpu = 1;
 				}
+			} else {
+				if ( m <= -8 ) {
+					//
+				} else {
+					opStackPtr[ opStack / 4 + 0 ] = ci;
+				}
 			}
 		}
 
@@ -1214,8 +1305,8 @@ const char *VM_CheckInstructions( instruction_t *buf,
 		// conditional jumps
 		if ( ops[ ci->op ].flags & JUMP ) {
 			v = ci->value;
-			// conditional jumps should have opStack == 8
-			if ( ci->opStack != 8 ) {
+			// conditional jumps should have opStack >= 8
+			if ( ci->opStack < 8 ) {
 				sprintf( errBuf, "bad jump opStack %i at %i", ci->opStack, i );
 				return errBuf;
 			}
@@ -1225,7 +1316,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 				sprintf( errBuf, "jump target %i at %i is out of range (%i,%i)", v, i-1, startp, endp );
 				return errBuf;
 			}
-			if ( buf[v].opStack != 0 ) {
+			if ( buf[v].opStack != ci->opStack - 8 ) {
 				n = buf[v].opStack;
 				sprintf( errBuf, "jump target %i has bad opStack %i", v, n );
 				return errBuf;
@@ -1237,8 +1328,8 @@ const char *VM_CheckInstructions( instruction_t *buf,
 
 		// unconditional jumps
 		if ( op0 == OP_JUMP ) {
-			// jumps should have opStack == 4
-			if ( ci->opStack != 4 ) {
+			// jumps should have opStack >= 4
+			if ( ci->opStack < 4 ) {
 				sprintf( errBuf, "bad jump opStack %i at %i", ci->opStack, i );
 				return errBuf;
 			}
@@ -1249,7 +1340,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 					sprintf( errBuf, "jump target %i at %i is out of range (%i,%i)", v, i-1, startp, endp );
 					return errBuf;
 				}
-				if ( buf[v].opStack != 0 ) {
+				if ( buf[v].opStack != ci->opStack - 4 ) {
 					n = buf[v].opStack;
 					sprintf( errBuf, "jump target %i has bad opStack %i", v, n );
 					return errBuf;

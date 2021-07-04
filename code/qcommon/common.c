@@ -291,18 +291,16 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 
 #if defined(_WIN32) && defined(_DEBUG)
 	if ( code != ERR_DISCONNECT && code != ERR_NEED_CD ) {
-		if (!com_noErrorInterrupt->integer) {
+		if ( !com_noErrorInterrupt->integer ) {
 			DebugBreak();
 		}
 	}
 #endif
 
-	if(com_errorEntered)
-	{
-		if(!calledSysError)
-		{
+	if ( com_errorEntered ) {
+		if ( !calledSysError ) {
 			calledSysError = qtrue;
-			Sys_Error("recursive error after: %s", com_errorMessage);
+			Sys_Error( "recursive error after: %s", com_errorMessage );
 		}
 	}
 
