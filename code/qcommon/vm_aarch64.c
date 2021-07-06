@@ -2170,14 +2170,14 @@ static void emit_CheckReg( vm_t *vm, instruction_t *ins, uint32_t reg, offset_t 
 		return;
 	}
 
-	if ( !( vm_rtChecks->integer & 8 ) )
+	if ( !( vm_rtChecks->integer & VM_RTCHECK_DATA ) )
 		return;
 
 	emit( CMP32( reg, rDATAMASK ) );
 	emit( Bcond( LO, +8 ) );
 	emitFuncOffset( vm, func );  // error function
 #else
-	if ( vm_rtChecks->integer & 8 || vm->forceDataMask ) {
+	if ( vm_rtChecks->integer & VM_RTCHECK_DATA || vm->forceDataMask ) {
 		emit( AND32( reg, rDATAMASK, reg ) ); // rN = rN & rDATAMASK
 	}
 #endif
@@ -2960,12 +2960,16 @@ __recompile:
 					if ( ( f = find_rx_var( &rx[0], &var, var_type ) ) != NULL ) {
 						// already cached in some register
 						if ( f->zext ) {
-							// do zero extension
-							switch ( ci->op ) {
-								case OP_LOAD1: emit( UXTB( rx[0], rx[0] ) ); break; // r0 = (unsigned byte) r0
-								case OP_LOAD2: emit( UXTH( rx[0], rx[0] ) ); break; // r0 = (unsigned short) r0
+							if ( ( ( ci + 1 )->op == OP_STORE1 && ci->op == OP_LOAD1 ) || ( ( ci + 1 )->op == OP_STORE2 && ci->op == OP_LOAD2 ) ) {
+								// next operation will require only current low register part, ignore zero-extension for now
+							} else {
+								// do zero extension
+								switch ( ci->op ) {
+									case OP_LOAD1: emit( UXTB( rx[0], rx[0] ) ); break; // r0 = (unsigned byte) r0
+									case OP_LOAD2: emit( UXTH( rx[0], rx[0] ) ); break; // r0 = (unsigned short) r0
+								}
+								f->zext = 0;
 							}
-							f->zext = 0;
 						}
 						mask_rx( rx[0] );
 					} else {

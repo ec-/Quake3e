@@ -4083,19 +4083,17 @@ __compile:
 						// already cached in some register
 						if ( f->zext ) {
 							if ( ((ci+1)->op == OP_STORE1 && ci->op == OP_LOAD1) || ((ci+1)->op == OP_STORE2 && ci->op == OP_LOAD2) ) {
+								// next operation will require only current low register part, ignore zero-extension for now
+							} else {
+								// do zero extension
+								switch ( ci->op ) {
+									case OP_LOAD1: emit_zex8( rx[0], rx[0] ); break;	// movzx eax, al
+									case OP_LOAD2: emit_zex16( rx[0], rx[0] ); break;	// movzx eax, ah
+								}
 								f->zext = 0;
 							}
 						}
-						if ( f->zext ) {
-							// do zero extension
-							switch ( ci->op ) {
-								case OP_LOAD1: emit_zex8( rx[0], rx[0] ); break;	// movzx eax, al
-								case OP_LOAD2: emit_zex16( rx[0], rx[0] ); break;	// movzx eax, ah
-							}
-							f->zext = 0;
-						}
 						mask_rx( rx[0] );
-
 					} else {
 						// not cached, perform load
 						rx[0] = alloc_rx( R_EAX );					// allocate new register
