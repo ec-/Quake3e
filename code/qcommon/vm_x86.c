@@ -557,7 +557,7 @@ static void EmitCheckReg( vm_t *vm, instruction_t *ins, int reg, int size )
 	}
 #endif
 
-	if ( !( vm_rtChecks->integer & 8 ) || vm->forceDataMask ) {
+	if ( !( vm_rtChecks->integer & VM_RTCHECK_DATA ) || vm->forceDataMask ) {
 		if ( vm->forceDataMask ) {
 			if ( reg == REG_EAX )
 				EmitString( "25" ); 	// and eax, 0x12345678
@@ -842,7 +842,7 @@ static void EmitCallFunc( vm_t *vm )
 sysCallOffset = compiledOfs;
 
 	// jump target range check
-	if ( vm_rtChecks->integer & 4 ) {
+	if ( vm_rtChecks->integer & VM_RTCHECK_JUMP ) {
 		EmitString( "3D" );					// cmp eax, vm->instructionCount
 		Emit4( vm->instructionCount );
 		EmitString( "0F 83" );				// jae +funcOffset[FUNC_ERRJ]
@@ -1121,7 +1121,7 @@ static void EmitNCPYFunc( vm_t *vm )
 	}
 	else
 #endif
-	if ( vm_rtChecks->integer & 8 ) // security checks
+	if ( vm_rtChecks->integer & VM_RTCHECK_DATA ) // security checks
 	{
 		EmitString( "89 F8" );		// mov eax, edi
 		EmitString( "09 C8" );		// or eax, ecx
@@ -2015,7 +2015,7 @@ __compile:
 			}
 
 			// programStack overflow check
-			if ( vm_rtChecks->integer & 1 ) {
+			if ( vm_rtChecks->integer & VM_RTCHECK_PSTACK ) {
 #if idx64
 				//EmitString( "4C 39 EE" );		// cmp	rsi, r13
 				EmitString( "44 39 EE" );		// cmp	esi, r13d
@@ -2029,7 +2029,7 @@ __compile:
 			}
 
 			// opStack overflow check
-			if ( vm_rtChecks->integer & 2 ) {
+			if ( vm_rtChecks->integer & VM_RTCHECK_OPSTACK ) {
 				if ( ISU8( ci->opStack ) ) {
 					EmitRexString( "8D 47" );		// lea eax, [edi+0x7F]
 					Emit1( ci->opStack );
@@ -2506,7 +2506,7 @@ __compile:
 			EmitCommand( LAST_COMMAND_SUB_DI_4 );	// sub edi, 4
 
 			// jump target range check
-			if ( vm_rtChecks->integer & 4 ) {
+			if ( vm_rtChecks->integer & VM_RTCHECK_JUMP ) {
 				if ( proc_base != -1 ) {
 					// allow jump within local function scope only
 					EmitString( "89 C2" );			// mov edx, eax

@@ -89,6 +89,8 @@ float RayIntersectDisplaceMap(vec2 dp, vec2 ds, sampler2D normalMap)
 	// current size of search window
 	float size = 1.0 / float(linearSearchSteps);
 
+	// adjust position if offset above surface
+	dp -= ds * r_parallaxMapOffset;
 	// current depth position
 	float depth = 0.0;
 
@@ -141,29 +143,26 @@ float RayIntersectDisplaceMap(vec2 dp, vec2 ds, sampler2D normalMap)
 	}
 #endif
 
-	return bestDepth;
+	return bestDepth - r_parallaxMapOffset;
 }
 
 float LightRay(vec2 dp, vec2 ds, sampler2D normalMap)
 {
 	const int linearSearchSteps = 16;
 
-	// current size of search window
-	float size = 1.0 / float(linearSearchSteps);
-
 	// current height from initial texel depth
 	float height = 0.0;
 
 	float startDepth = SampleDepth(normalMap, dp);
+
+	// size of search window
+	float size = startDepth / float(linearSearchSteps);
 
 	// find a collision or escape
 	for(int i = 0; i < linearSearchSteps - 1; ++i)
 	{
 		height += size;
 
-		if (startDepth < height)
-			return 1.0;
-		
 		float t = SampleDepth(normalMap, dp + ds * height);
 
 		if (startDepth > t + height)
@@ -201,7 +200,7 @@ vec3 CalcSpecular(vec3 specular, float NH, float EH, float roughness)
 	float rr = roughness*roughness;
 	float rrrr = rr*rr;
 	float d = (NH * NH) * (rrrr - 1.0) + 1.0;
-	float v = (EH * EH) * (roughness + 0.5);
+	float v = (EH * EH) * (roughness + 0.5) + EPSILON;
 	return specular * (rrrr / (4.0 * d * d * v));
 }
 
