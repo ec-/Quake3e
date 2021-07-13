@@ -3907,10 +3907,6 @@ static void dump_code( const char *vmname, uint8_t *c, int32_t code_len )
 #endif
 
 
-#if id386
-extern qboolean VM_Compile_Legacy( vm_t *vm, vmHeader_t *header );
-#endif
-
 /*
 =================
 VM_Compile
@@ -3933,12 +3929,6 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	int var_size;
 #if JUMP_OPTIMIZE
 	int num_compress;
-#endif
-
-#if id386
-	if ( !HasSSEFP() ) {
-		return VM_Compile_Legacy( vm, header );
-	}
 #endif
 
 	inst = (instruction_t*)Z_Malloc( (header->instructionCount + 8 ) * sizeof( instruction_t ) );
