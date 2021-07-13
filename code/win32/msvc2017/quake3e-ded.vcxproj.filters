@@ -106,9 +106,6 @@
     <ClCompile Include="..\..\qcommon\vm_x86.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\qcommon\vm_x86_ng.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\win_main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
