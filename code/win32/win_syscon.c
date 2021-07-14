@@ -406,6 +406,7 @@ static LRESULT WINAPI BufferWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 		}
 		return 0;
 
+#if 0 // this is actually redundant except setting focus to s_wcd.hwndInputLine
 	case WM_COPY: {
 			DWORD selStart, selEnd;
 			SendMessage( hWnd, EM_GETSEL, (WPARAM)&selStart, (LPARAM)&selEnd );
@@ -443,6 +444,7 @@ static LRESULT WINAPI BufferWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 			}
 		}
 		break;
+#endif
 
 	case WM_TIMER:
 		if ( wParam == BUF_TIMER_ID && bufTimerID != 0 && !com_errorEntered )
