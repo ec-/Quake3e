@@ -3041,7 +3041,7 @@ static void emit_CheckReg( vm_t *vm, uint32_t reg, func_t func )
 #if idx64
 		emit_and_rx( reg, R_DATAMASK );					// reg = reg & dataMask
 #else
-		emit_op_rx_imm32( X_ADD, reg, vm->dataMask );	// reg = reg & vm->dataMask
+		emit_op_rx_imm32( X_AND, reg, vm->dataMask );	// reg = reg & vm->dataMask
 #endif
 		return;
 	}
