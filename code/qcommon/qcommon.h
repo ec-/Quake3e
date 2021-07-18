@@ -505,6 +505,7 @@ void	Cmd_TokenizeString( const char *text );
 void	Cmd_TokenizeStringIgnoreQuotes( const char *text_in );
 // Takes a null terminated string.  Does not need to be /n terminated.
 // breaks the string up into arg tokens.
+char     *Cmd_TokenizeAlphanumeric(const char *text_in, int *count);
 
 void	Cmd_ExecuteString( const char *text );
 // Parses a single line of text into arguments and tries to execute it
