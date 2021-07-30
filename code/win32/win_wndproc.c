@@ -619,6 +619,8 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		GetWindowRect( hWnd, &g_wv.winRect );
 		g_wv.winRectValid = qtrue;
 		gw_minimized = qfalse;
+		uTimerM = 0;
+		uTimerT = 0;
 
 		in_forceCharset = Cvar_Get( "in_forceCharset", "1", CVAR_ARCHIVE_ND );
 
@@ -639,15 +641,22 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 #endif
 	case WM_DESTROY:
 		Win_RemoveHotkey();
-		if ( hWinEventHook )
+		if ( hWinEventHook ) {
 			UnhookWinEvent( hWinEventHook );
+		}
+		if ( uTimerM ) {
+			KillTimer( g_wv.hWnd, uTimerM ); uTimerM = 0;
+		}
+		if ( uTimerT ) {
+			KillTimer( g_wv.hWnd, uTimerT ); uTimerT = 0;
+		}
 		hWinEventHook = NULL;
 		g_wv.hWnd = NULL;
 		g_wv.winRectValid = qfalse;
 		//gw_minimized = qfalse;
 		gw_active = qfalse;
 		//WIN_EnableAltTab();
-		break;
+		return 0;
 
 	case WM_CLOSE:
 		Cbuf_ExecuteText( EXEC_APPEND, "quit\n" );

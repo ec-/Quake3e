@@ -52,7 +52,7 @@ const int demo_protocols[] = { 66, 67, PROTOCOL_VERSION, NEW_PROTOCOL_VERSION, 0
 #define DEF_COMZONEMEGS		25
 #endif
 
-jmp_buf abortframe;		// an ERR_DROP occurred, exit the entire frame
+static jmp_buf abortframe;	// an ERR_DROP occurred, exit the entire frame
 
 int		CPU_Flags = 0;
 
@@ -291,18 +291,16 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 
 #if defined(_WIN32) && defined(_DEBUG)
 	if ( code != ERR_DISCONNECT && code != ERR_NEED_CD ) {
-		if (!com_noErrorInterrupt->integer) {
+		if ( !com_noErrorInterrupt->integer ) {
 			DebugBreak();
 		}
 	}
 #endif
 
-	if(com_errorEntered)
-	{
-		if(!calledSysError)
-		{
+	if ( com_errorEntered ) {
+		if ( !calledSysError ) {
 			calledSysError = qtrue;
-			Sys_Error("recursive error after: %s", com_errorMessage);
+			Sys_Error( "recursive error after: %s", com_errorMessage );
 		}
 	}
 
@@ -356,7 +354,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		FS_PureServerSetLoadedPaks( "", "" );
 		com_errorEntered = qfalse;
 
-		longjmp( abortframe, 1 );
+		Q_longjmp( abortframe, 1 );
 	} else if ( code == ERR_DROP ) {
 		Com_Printf( "********************\nERROR: %s\n********************\n",
 			com_errorMessage );
@@ -372,7 +370,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		FS_PureServerSetLoadedPaks( "", "" );
 		com_errorEntered = qfalse;
 
-		longjmp( abortframe, 1 );
+		Q_longjmp( abortframe, 1 );
 	} else if ( code == ERR_NEED_CD ) {
 		SV_Shutdown( "Server didn't have CD" );
 		Com_EndRedirect();
@@ -390,7 +388,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		FS_PureServerSetLoadedPaks( "", "" );
 		com_errorEntered = qfalse;
 
-		longjmp( abortframe, 1 );
+		Q_longjmp( abortframe, 1 );
 	} else {
 		VM_Forced_Unload_Start();
 #ifndef DEDICATED
@@ -3558,7 +3556,7 @@ void Com_Init( char *commandLine ) {
 
 	Com_Printf( "%s %s %s\n", SVN_VERSION, PLATFORM_STRING, __DATE__ );
 
-	if ( setjmp (abortframe) ) {
+	if ( Q_setjmp( abortframe ) ) {
 		Sys_Error ("Error during initialization");
 	}
 
@@ -3981,7 +3979,7 @@ void Com_Frame( qboolean noDelay ) {
 	int	timeBeforeClient;
 	int	timeAfter;
 
-	if ( setjmp( abortframe ) ) {
+	if ( Q_setjmp( abortframe ) ) {
 		return;			// an ERR_DROP was thrown
 	}
 

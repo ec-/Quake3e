@@ -61,9 +61,9 @@ jobs:
 
     - name: Build
       run: |
-        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 USE_SDL=0 USE_VULKAN=1 BUILD_SERVER=0
+        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=vulkan CNAME=oDFe.vk BUILD_SERVER=0
         make clean ARCH=${{ matrix.arch }}
-        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 USE_SDL=0 USE_VULKAN_API=0
+        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl
 
     - uses: actions/upload-artifact@v2
       if: matrix.cc == 'gcc' && matrix.config == 'Release'
@@ -167,9 +167,9 @@ jobs:
 
     - name: Build
       run: |
-        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 ${{ matrix.use_sdl }} USE_VULKAN=1 BUILD_SERVER=0
+        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin ${{ matrix.use_sdl }} USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=vulkan CNAME=oDFe.vk BUILD_SERVER=0
         make clean ARCH=${{ matrix.arch }} 
-        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 ${{ matrix.use_sdl }} USE_VULKAN_API=0
+        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin ${{ matrix.use_sdl }} USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl
 
     - uses: actions/upload-artifact@v2
       if: matrix.cc == 'gcc' && matrix.config == 'Release'
@@ -210,9 +210,9 @@ jobs:
           apt-get -qq update
           apt-get install -y make gcc g++
           apt-get -y install libcurl4-openssl-dev mesa-common-dev libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev libpcre3-dev
-          make ${{ matrix.rule }} -j 4 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 USE_SDL=0 USE_VULKAN=1 BUILD_SERVER=0
+          make ${{ matrix.rule }} -j 4 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=vulkan CNAME=oDFe.vk BUILD_SERVER=0
           make clean ARCH=${{ matrix.arch }} 
-          make ${{ matrix.rule }} -j 4 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_RENDERER_DLOPEN=0 USE_SDL=0 USE_VULKAN_API=0
+          make ${{ matrix.rule }} -j 4 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl
 
     - uses: actions/upload-artifact@v2
       if: false
@@ -246,9 +246,9 @@ jobs:
 
     - name: Build
       run: |
-        make ${{ matrix.rule }} -j 4 CC=${{ matrix.cc }} DESTDIR=bin INSTALL=ginstall USE_RENDERER_DLOPEN=0 USE_VULKAN=1 BUILD_SERVER=0
+        make ${{ matrix.rule }} -j 4 CC=${{ matrix.cc }} DESTDIR=bin INSTALL=ginstall USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=vulkan CNAME=oDFe.vk BUILD_SERVER=0
         make clean ARCH=${{ matrix.arch }} 
-        make ${{ matrix.rule }} -j 4 CC=${{ matrix.cc }} DESTDIR=bin INSTALL=ginstall USE_RENDERER_DLOPEN=0 USE_VULKAN_API=0
+        make ${{ matrix.rule }} -j 4 CC=${{ matrix.cc }} DESTDIR=bin INSTALL=ginstall USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl
 
     - uses: actions/upload-artifact@v2
       if: matrix.cc == 'clang' && matrix.config == 'Release'

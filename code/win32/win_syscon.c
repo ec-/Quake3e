@@ -401,6 +401,46 @@ static LRESULT WINAPI BufferWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 		}
 		return 0;
 
+#if 0 // this is actually redundant except setting focus to s_wcd.hwndInputLine
+	case WM_COPY: {
+			DWORD selStart, selEnd;
+			SendMessage( hWnd, EM_GETSEL, (WPARAM)&selStart, (LPARAM)&selEnd );
+			if ( selStart != selEnd ) {
+				if ( OpenClipboard( s_wcd.hWnd ) ) {
+					int len;
+					HGLOBAL hMem;
+					TCHAR *text, *tmp;
+					len = GetWindowTextLength( s_wcd.hwndBuffer ) + 1;
+					tmp = (TCHAR*) malloc( len * sizeof( TCHAR ) );
+					if ( tmp ) {
+						GetWindowText( s_wcd.hwndBuffer, tmp, len );
+						hMem = GlobalAlloc( GMEM_MOVEABLE | GMEM_DDESHARE | GMEM_ZEROINIT, ( selEnd - selStart + 1 ) * sizeof( TCHAR ) );
+						if ( hMem != NULL ) {
+							EmptyClipboard();
+							text = (TCHAR*) GlobalLock( hMem );
+							if ( text != NULL ) {
+								memcpy( text, tmp + selStart, ( selEnd - selStart ) * sizeof( text[0] ) );
+							}
+							GlobalUnlock( hMem );
+#ifdef UNICODE
+							SetClipboardData( CF_UNICODETEXT, hMem );
+#else
+							SetClipboardData( CF_TEXT, hMem );
+#endif
+						}
+						free( tmp );
+					}
+					CloseClipboard();
+				}
+				if ( s_wcd.hwndInputLine ) {
+					SetFocus( s_wcd.hwndInputLine );
+				}
+				return 0;
+			}
+		}
+		break;
+#endif
+
 	case WM_TIMER:
 		if ( wParam == BUF_TIMER_ID && bufTimerID != 0 && !com_errorEntered )
 		{
@@ -425,6 +465,16 @@ static LRESULT WINAPI BufferWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 
 	case WM_CONTEXTMENU:
 		return 0;
+
+	case WM_CHAR: {
+			if ( wParam != VK_CANCEL ) {
+				// forward to input line
+				SetFocus( s_wcd.hwndInputLine );
+				SendMessage( s_wcd.hwndInputLine, WM_CHAR, wParam, lParam );
+				return 0;
+			}
+		}
+		break;
 	}
 
 	return CallWindowProc( (WNDPROC) s_wcd.SysBufferWndProc, hWnd, uMsg, wParam, lParam );
@@ -497,12 +547,14 @@ LRESULT WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 
 	switch ( uMsg )
 	{
+#if 0
 	case WM_KILLFOCUS:
 		if ( (HWND)wParam == s_wcd.hwndBuffer ) {
 			SetFocus( s_wcd.hwndInputLine );
 			return 0;
 		}
 		break;
+#endif
 
 	case WM_MOUSEWHEEL:
 		zDelta = (short) HIWORD( wParam ) / WHEEL_DELTA;

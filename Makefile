@@ -30,7 +30,8 @@ USE_SDL          = 1
 USE_CURL         = 1
 USE_PCRE         = 1
 USE_LOCAL_HEADERS= 0
-USE_VULKAN       = 0
+USE_VULKAN       = 1
+USE_OPENGL       = 1
 USE_OPENGL2      = 0
 USE_SYSTEM_JPEG  = 0
 USE_VULKAN_API   = 1
@@ -42,11 +43,9 @@ DNAME            = oDFe.ded
 
 RENDERER_PREFIX  = $(CNAME)
 
-ifeq ($(USE_RENDERER_DLOPEN),0)
-  ifeq ($(USE_VULKAN),1)
-    CNAME = oDFe.vk
-  endif
-endif
+# valid options: opengl, vulkan, opengl2
+RENDERER_DEFAULT = opengl
+
 
 ifeq ($(V),1)
 echo_cmd=@:
@@ -154,12 +153,28 @@ ifndef USE_PCRE
 USE_PCRE=1
 endif
 
-ifneq ($(USE_RENDERER_DLOPEN),0)
-USE_VULKAN=1
+ifeq ($(USE_RENDERER_DLOPEN),0)
+  ifeq ($(RENDERER_DEFAULT),opengl)
+    USE_OPENGL=1
+    USE_OPENGL2=0
+    USE_VULKAN=0
+    USE_VULKAN_API=0
+  endif
+  ifeq ($(RENDERER_DEFAULT),opengl2)
+    USE_OPENGL=0
+    USE_OPENGL2=1
+    USE_VULKAN=0
+    USE_VULKAN_API=0
+  endif
+  ifeq ($(RENDERER_DEFAULT),vulkan)
+    USE_OPENGL=0
+    USE_OPENGL2=0
+    USE_VULKAN=1
+  endif
 endif
 
 ifneq ($(USE_VULKAN),0)
-USE_VULKAN_API=1
+  USE_VULKAN_API=1
 endif
 
 
@@ -243,6 +258,7 @@ endif
 ifneq ($(USE_RENDERER_DLOPEN),0)
   BASE_CFLAGS += -DUSE_RENDERER_DLOPEN
   BASE_CFLAGS += -DRENDERER_PREFIX=\\\"$(RENDERER_PREFIX)\\\"
+  BASE_CFLAGS += -DRENDERER_DEFAULT="$(RENDERER_DEFAULT)"
 endif
 
 ifdef DEFAULT_BASEDIR
@@ -335,7 +351,7 @@ ifdef MINGW
 
   BASE_CFLAGS += -Wall -Wimplicit -Wstrict-prototypes -DUSE_ICON -DMINGW=1
 
-  BASE_CFLAGS += -Wno-unused-result
+  BASE_CFLAGS += -Wno-unused-result -fvisibility=hidden
 
   ifeq ($(ARCH),x86_64)
     ARCHEXT = .x64
@@ -353,7 +369,8 @@ ifdef MINGW
 
   BINEXT = .exe
 
-  LDFLAGS = -mwindows -Wl,--dynamicbase -Wl,--nxcompat  -fvisibility=hidden
+  LDFLAGS = -mwindows -Wl,--dynamicbase -Wl,--nxcompat
+  LDFLAGS += -Wl,--gc-sections -fvisibility=hidden
   LDFLAGS += -lwsock32 -lgdi32 -lwinmm -lole32 -lws2_32 -lpsapi -lcomctl32
 
   CLIENT_LDFLAGS=$(LDFLAGS)
@@ -470,6 +487,7 @@ else
   SHLIBLDFLAGS = -shared $(LDFLAGS)
 
   LDFLAGS = -lm
+  LDFLAGS += -Wl,--gc-sections -fvisibility=hidden
 
   ifeq ($(USE_SDL),1)
     BASE_CFLAGS += $(SDL_INCLUDE)
@@ -531,9 +549,15 @@ endif
 ifneq ($(BUILD_CLIENT),0)
   TARGETS += $(B)/$(TARGET_CLIENT)
   ifneq ($(USE_RENDERER_DLOPEN),0)
-    TARGETS += $(B)/$(TARGET_REND1)
-    TARGETS += $(B)/$(TARGET_REND2)
-    TARGETS += $(B)/$(TARGET_RENDV)
+    ifeq ($(USE_OPENGL),1)
+      TARGETS += $(B)/$(TARGET_REND1)
+    endif
+    ifeq ($(USE_OPENGL2),1)
+      TARGETS += $(B)/$(TARGET_REND2)
+    endif
+    ifeq ($(USE_VULKAN),1)
+      TARGETS += $(B)/$(TARGET_RENDV)
+    endif
   endif
 endif
 

@@ -1,5 +1,13 @@
+20-Jul-2021:
+* vm_x86: implemented new bytecode compiler with dynamic register allocation and many optimizations similar to aarch64/armv7l, brings ~2x performance increase
+* vm_aarch64, vm_armv7l: added more optimizations, yields another ~40% performance increase
+* win32: allow copying selected text from dedicated console via keyboard shortcuts
+* win32: fixed input regression caused by previous fix for high-dpi mice in win10 insider builds
+* win32: fixed application crash caused by hardened longjmp() in recent win10 versions
+* win32: fixed broken minimize function after \vid_restart
+
 27-May-2021:
-* QVM: more correct hanling of NaNs in bytecode compilers 
+* QVM: more correct handling of NaNs in bytecode compilers
 * QVM: fixed non-working RocketArena3 server code
 * Cvars: avoid misleading warnings when changing ROM variables
 * Cvars: allow override "protocol" from command-line

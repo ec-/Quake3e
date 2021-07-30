@@ -38,6 +38,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // for some buggy mods
 #define	PROGRAM_STACK_EXTRA	(32*1024)
 
+// flags for vm_rtChecks cvar
+#define VM_RTCHECK_PSTACK  1
+#define VM_RTCHECK_OPSTACK 2
+#define VM_RTCHECK_JUMP    4
+#define VM_RTCHECK_DATA    8
+
 typedef enum {
 	OP_UNDEF,
 
@@ -128,14 +134,15 @@ typedef enum {
 } opcode_t;
 
 typedef struct {
-	int	value;         // 32
+	int32_t	value;     // 32
 	byte	op;        // 8
 	byte	opStack;   // 8
-	unsigned jused:1;
-	unsigned swtch:1;
-	unsigned safe:1;   // non-masked op_store
-	unsigned endp:1;
+	unsigned jused:1;  // this instruction is a jump target
+	unsigned swtch:1;  // indirect jump
+	unsigned safe:1;   // non-masked OP_STORE*
+	unsigned endp:1;   // for last OP_LEAVE instruction
 	unsigned fpu:1;    // load into FPU register
+	unsigned njump:1;  // near jump
 } instruction_t;
 
 typedef struct vmSymbol_s {

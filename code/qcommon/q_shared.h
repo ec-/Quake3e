@@ -174,6 +174,14 @@ float FloatSwap( const float *f );
 	#endif
 #endif
 
+#if defined (_WIN32) && !defined(_MSC_VER)
+#define Q_setjmp __builtin_setjmp
+#define Q_longjmp __builtin_longjmp
+#else
+#define Q_setjmp setjmp
+#define Q_longjmp longjmp
+#endif
+
 typedef unsigned char byte;
 
 typedef enum { qfalse = 0, qtrue } qboolean;

@@ -26,6 +26,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 static snd_codec_t *codecs;
 
+static void S_CodecRegister( snd_codec_t *codec );
+
 /*
 =================
 S_CodecGetSound
@@ -34,7 +36,7 @@ Opens/loads a sound, tries codec based on the sound's file extension
 then tries all supported codecs.
 =================
 */
-static void *S_CodecGetSound(const char *filename, snd_info_t *info)
+static void *S_CodecGetSound( const char *filename, snd_info_t *info )
 {
 	snd_codec_t *codec;
 	snd_codec_t *orgCodec = NULL;
@@ -46,28 +48,28 @@ static void *S_CodecGetSound(const char *filename, snd_info_t *info)
 
 	Q_strncpyz( localName, filename, sizeof( localName ) );
 
-	ext = COM_GetExtension(localName);
+	ext = COM_GetExtension( localName );
 
-	if( *ext )
+	if ( *ext )
 	{
 		// Look for the correct loader and use it
-		for( codec = codecs; codec; codec = codec->next )
+		for ( codec = codecs; codec; codec = codec->next )
 		{
-			if( !Q_stricmp( ext, codec->ext ) )
+			if ( !Q_stricmp( ext, codec->ext ) )
 			{
 				// Load
-				if( info )
-					rtn = codec->load(localName, info);
+				if ( info )
+					rtn = codec->load( localName, info );
 				else
-					rtn = codec->open(localName);
+					rtn = codec->open( localName );
 				break;
 			}
 		}
 
 		// A loader was found
-		if( codec )
+		if ( codec )
 		{
-			if( !rtn )
+			if ( !rtn )
 			{
 				// Loader failed, most likely because the file isn't there;
 				// try again without the extension
@@ -85,99 +87,117 @@ static void *S_CodecGetSound(const char *filename, snd_info_t *info)
 
 	// Try and find a suitable match using all
 	// the sound codecs supported
-	for( codec = codecs; codec; codec = codec->next )
+	for ( codec = codecs; codec; codec = codec->next )
 	{
-		if( codec == orgCodec )
+		if ( codec == orgCodec )
 			continue;
 
-		Com_sprintf( altName, sizeof (altName), "%s.%s", localName, codec->ext );
+		Com_sprintf( altName, sizeof( altName ), "%s.%s", localName, codec->ext );
 
 		// Load
-		if( info )
-			rtn = codec->load(altName, info);
+		if ( info )
+			rtn = codec->load( altName, info );
 		else
-			rtn = codec->open(altName);
+			rtn = codec->open( altName );
 
-		if( rtn )
+		if ( rtn )
 		{
-			if( orgNameFailed )
+			if ( orgNameFailed )
 			{
-				Com_DPrintf(S_COLOR_YELLOW "WARNING: %s not present, using %s instead\n",
-						filename, altName );
+				Com_DPrintf( S_COLOR_YELLOW "WARNING: %s not present, using %s instead\n",
+					filename, altName );
 			}
 
 			return rtn;
 		}
 	}
 
-	Com_DPrintf(S_COLOR_YELLOW "WARNING: Failed to %s sound %s!\n", info ? "load" : "open", filename);
+	Com_DPrintf( S_COLOR_YELLOW "WARNING: Failed to %s sound %s!\n", info ? "load" : "open", filename );
 
 	return NULL;
 }
+
 
 /*
 =================
 S_CodecInit
 =================
 */
-void S_CodecInit()
+void S_CodecInit( void )
 {
 	codecs = NULL;
 
 	// Register wav codec last so that it is always tried first when a file extension was not found
-	S_CodecRegister(&wav_codec);
+	S_CodecRegister( &wav_codec );
 }
+
 
 /*
 =================
 S_CodecShutdown
 =================
 */
-void S_CodecShutdown()
+void S_CodecShutdown( void )
 {
 	codecs = NULL;
 }
+
 
 /*
 =================
 S_CodecRegister
 =================
 */
-void S_CodecRegister(snd_codec_t *codec)
+static void S_CodecRegister( snd_codec_t *codec )
 {
 	codec->next = codecs;
 	codecs = codec;
 }
+
 
 /*
 =================
 S_CodecLoad
 =================
 */
-void *S_CodecLoad(const char *filename, snd_info_t *info)
+void *S_CodecLoad( const char *filename, snd_info_t *info )
 {
-	return S_CodecGetSound(filename, info);
+	return S_CodecGetSound( filename, info );
 }
+
 
 /*
 =================
 S_CodecOpenStream
 =================
 */
-snd_stream_t *S_CodecOpenStream(const char *filename)
+snd_stream_t *S_CodecOpenStream( const char *filename )
 {
-	return S_CodecGetSound(filename, NULL);
+	return S_CodecGetSound( filename, NULL );
 }
 
-void S_CodecCloseStream(snd_stream_t *stream)
+
+/*
+=================
+S_CodecCloseStream
+=================
+*/
+void S_CodecCloseStream( snd_stream_t *stream )
 {
-	stream->codec->close(stream);
+	stream->codec->close( stream );
 }
 
-int S_CodecReadStream(snd_stream_t *stream, int bytes, void *buffer)
+
+/*
+=================
+S_CodecReadStream
+=================
+*/
+int S_CodecReadStream( snd_stream_t *stream, int bytes, void *buffer )
 {
-	return stream->codec->read(stream, bytes, buffer);
+	return stream->codec->read( stream, bytes, buffer );
 }
+
 
 //=======================================================================
 // Util functions (used by codecs)
@@ -187,7 +207,7 @@ int S_CodecReadStream(snd_stream_t *stream, int bytes, void *buffer)
 S_CodecUtilOpen
 =================
 */
-snd_stream_t *S_CodecUtilOpen(const char *filename, snd_codec_t *codec)
+snd_stream_t *S_CodecUtilOpen( const char *filename, snd_codec_t *codec )
 {
 	snd_stream_t *stream;
 	fileHandle_t hnd;
@@ -197,12 +217,12 @@ snd_stream_t *S_CodecUtilOpen(const char *filename, snd_codec_t *codec)
 	length = FS_FOpenFileRead( filename, &hnd, qtrue );
 	if ( hnd == FS_INVALID_HANDLE )
 	{
-		Com_DPrintf("Can't read sound file %s\n", filename);
+		Com_DPrintf( "Can't read sound file %s\n", filename );
 		return NULL;
 	}
 
 	// Allocate a stream
-	stream = Z_Malloc(sizeof(snd_stream_t));
+	stream = Z_Malloc( sizeof( snd_stream_t ) );
 	if ( !stream )
 	{
 		FS_FCloseFile( hnd );
@@ -221,9 +241,9 @@ snd_stream_t *S_CodecUtilOpen(const char *filename, snd_codec_t *codec)
 S_CodecUtilClose
 =================
 */
-void S_CodecUtilClose(snd_stream_t **stream)
+void S_CodecUtilClose( snd_stream_t **stream )
 {
-	FS_FCloseFile((*stream)->file);
-	Z_Free(*stream);
+	FS_FCloseFile( ( *stream )->file );
+	Z_Free( *stream );
 	*stream = NULL;
 }
