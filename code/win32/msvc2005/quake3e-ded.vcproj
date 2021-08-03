@@ -504,10 +504,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\qcommon\vm_x86_ng.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\win32\win_main.c"
 				>
 			</File>

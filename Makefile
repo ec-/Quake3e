@@ -342,7 +342,7 @@ ifdef MINGW
 
   BASE_CFLAGS += -Wall -Wimplicit -Wstrict-prototypes -DUSE_ICON -DMINGW=1
 
-  BASE_CFLAGS += -Wno-unused-result
+  BASE_CFLAGS += -Wno-unused-result -fvisibility=hidden
 
   ifeq ($(ARCH),x86_64)
     ARCHEXT = .x64
@@ -360,7 +360,8 @@ ifdef MINGW
 
   BINEXT = .exe
 
-  LDFLAGS = -mwindows -Wl,--dynamicbase -Wl,--nxcompat  -fvisibility=hidden
+  LDFLAGS = -mwindows -Wl,--dynamicbase -Wl,--nxcompat
+  LDFLAGS += -Wl,--gc-sections -fvisibility=hidden
   LDFLAGS += -lwsock32 -lgdi32 -lwinmm -lole32 -lws2_32 -lpsapi -lcomctl32
 
   CLIENT_LDFLAGS=$(LDFLAGS)
@@ -461,6 +462,7 @@ else
   SHLIBLDFLAGS = -shared $(LDFLAGS)
 
   LDFLAGS = -lm
+  LDFLAGS += -Wl,--gc-sections -fvisibility=hidden
 
   ifeq ($(USE_SDL),1)
     BASE_CFLAGS += $(SDL_INCLUDE)
@@ -989,11 +991,9 @@ endif
 ifeq ($(HAVE_VM_COMPILED),true)
   ifeq ($(ARCH),x86)
     Q3OBJ += $(B)/client/vm_x86.o
-    Q3OBJ += $(B)/client/vm_x86_ng.o
   endif
   ifeq ($(ARCH),x86_64)
     Q3OBJ += $(B)/client/vm_x86.o
-    Q3OBJ += $(B)/client/vm_x86_ng.o
   endif
   ifeq ($(ARCH),arm)
     Q3OBJ += $(B)/client/vm_armv7l.o
@@ -1177,11 +1177,9 @@ endif
 ifeq ($(HAVE_VM_COMPILED),true)
   ifeq ($(ARCH),x86)
     Q3DOBJ += $(B)/ded/vm_x86.o
-    Q3DOBJ += $(B)/ded/vm_x86_ng.o
   endif
   ifeq ($(ARCH),x86_64)
     Q3DOBJ += $(B)/ded/vm_x86.o
-    Q3DOBJ += $(B)/ded/vm_x86_ng.o
   endif
   ifeq ($(ARCH),arm)
     Q3DOBJ += $(B)/ded/vm_armv7l.o
