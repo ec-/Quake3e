@@ -601,7 +601,7 @@ void GLimp_Init( glconfig_t *config )
 
 	glw_state.config = config; // feedback renderer configuration
 
-	in_nograb = Cvar_Get( "in_nograb", "0", CVAR_ARCHIVE );
+	in_nograb = Cvar_Get( "in_nograb", "0", 0 );
 
 	r_allowSoftwareGL = Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
 
