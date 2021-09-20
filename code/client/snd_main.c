@@ -259,7 +259,7 @@ S_BeginRegistration
 */
 void S_BeginRegistration( void )
 {
-	if( si.BeginRegistration ) {
+	if ( si.BeginRegistration ) {
 		si.BeginRegistration();
 	}
 }
@@ -481,4 +481,6 @@ void S_Shutdown( void )
 	Cmd_RemoveCommand( "s_info" );
 
 	S_CodecShutdown();
+
+	cls.soundStarted = qfalse;
 }

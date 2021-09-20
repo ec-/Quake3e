@@ -3044,8 +3044,6 @@ void Com_GameRestart( int checksumFeed, qboolean clientRestart )
 		Com_ExecuteCfg();
 
 #ifndef DEDICATED
-		// Restart sound subsystem so old handles are flushed
-		//CL_Snd_Restart();
 		if ( clientRestart )
 			CL_StartHunkUsers();
 #endif
