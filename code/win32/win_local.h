@@ -128,7 +128,6 @@ void Conbuf_BeginPrint( void );
 void Conbuf_EndPrint( void );
 
 void SNDDMA_Activate( void );
-qboolean SNDDMA_InitDS( void );
 
 typedef struct
 {
