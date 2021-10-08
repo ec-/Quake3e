@@ -977,6 +977,8 @@ static void CL_ShutdownVMs( void )
 
 /*
 =====================
+Called by Com_GameRestart, CL_FlushMemory and SV_SpawnServer
+
 CL_ShutdownAll
 =====================
 */
@@ -1031,8 +1033,7 @@ void CL_ClearMemory( void ) {
 =================
 CL_FlushMemory
 
-Called by CL_MapLoading, CL_Connect_f, CL_PlayDemo_f, and CL_ParseGamestate the only
-ways a client gets into a game
+Called by CL_Disconnect_f, CL_DownloadsComplete
 Also called by Com_Error
 =================
 */

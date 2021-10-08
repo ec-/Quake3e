@@ -714,6 +714,7 @@ static void wipe_reg_range( reg_t *reg, const var_addr_t *v ) {
 		}
 		if ( c == 0 ) {
 			reg->type_mask &= ~RTYPE_VAR;
+			reg->ext = Z_NONE;
 		} else {
 			//reg->type_mask |= RTYPE_VAR;
 		}
@@ -851,11 +852,13 @@ static void wipe_vars( void )
 		r = &rx_regs[i];
 		memset( &r->vars, 0, sizeof( r->vars ) );
 		r->type_mask &= ~RTYPE_VAR;
+		r->ext = Z_NONE;
 	}
 	for ( i = 0; i < ARRAY_LEN( sx_regs ); i++ ) {
 		r = &sx_regs[i];
 		memset( &r->vars, 0, sizeof( r->vars ) );
 		r->type_mask &= ~RTYPE_VAR;
+		r->ext = Z_NONE;
 	}
 #endif
 }
@@ -1275,6 +1278,7 @@ static uint32_t alloc_rx_const( uint32_t pref, uint32_t imm )
 			r->cnst.value = imm;
 			r->refcnt = 1;
 			r->ip = ip;
+			r->ext = Z_NONE;
 			emit_MOVRxi( idx, imm );
 			mask_rx( idx );
 			return idx;
@@ -1294,6 +1298,7 @@ static uint32_t alloc_rx_const( uint32_t pref, uint32_t imm )
 	r->cnst.value = imm;
 	r->refcnt = 1;
 	r->ip = ip;
+	//r->ext = Z_NONE;
 #endif
 
 	return rx;
@@ -1364,6 +1369,7 @@ static uint32_t alloc_sx_const( uint32_t pref, uint32_t imm )
 			r->cnst.value = imm;
 			r->refcnt = 1;
 			r->ip = ip;
+			r->ext = Z_NONE;
 			emit_MOVSxi( idx, imm );
 			mask_sx( idx );
 			return idx;
@@ -1383,6 +1389,7 @@ static uint32_t alloc_sx_const( uint32_t pref, uint32_t imm )
 	r->cnst.value = imm;
 	r->refcnt = 1;
 	r->ip = ip;
+	r->ext = Z_NONE;
 #endif
 
 	return sx;
@@ -1827,7 +1834,7 @@ static void load_rx_opstack2( uint32_t *dst, uint32_t dst_pref, uint32_t *src, u
 	*dst = *src = load_rx_opstack( src_pref | RCONST ); // source, target = *opstack
 	if ( search_opstack( TYPE_RX, *src ) || find_free_rx() ) {
 		// *src is duplicated on opStack or there is a free register
-		*dst = alloc_rx( dst_pref &= ~RCONST ); // allocate new register for the target
+		*dst = alloc_rx( dst_pref & ~RCONST ); // allocate new register for the target
 	} else {
 		// will be overwritten, wipe metadata
 		wipe_rx_meta( *dst );

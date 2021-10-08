@@ -814,6 +814,7 @@ static void emit_load4_index_offset( uint32_t reg, uint32_t base, uint32_t index
 	emit_op_reg_base_index( 0, 0x8B, reg, base, index, scale, offset );
 }
 
+// R_REX prefix flag in [reg] may expand store to 8 bytes
 static void emit_store_rx( uint32_t reg, uint32_t base, int32_t offset )
 {
 	emit_op_reg_base_offset( 0, 0x89, reg, base, offset );
@@ -1313,9 +1314,9 @@ static uint32_t alloc_sx( uint32_t pref );
 
 // register allocation preferences
 
-#define FORCED 0x20 // load function must return specified register
-#define TEMP   0x40 // hint: temporary allocation, will not be stored on opStack
-#define RCONST 0x80 // hint: register value will be not modified
+#define FORCED 0x20  // load function must return specified register
+#define TEMP   0x40  // hint: temporary allocation, will not be stored on opStack
+#define RCONST 0x80  // register value will be not modified
 #define XMASK  0x100 // exclude masked registers
 #define SHIFT4 0x200 // load bottom item
 
@@ -1454,6 +1455,7 @@ static void wipe_reg_range( reg_t *reg, const var_addr_t *v ) {
 		}
 		if ( c == 0 ) {
 			reg->type_mask &= ~RTYPE_VAR;
+			reg->ext = Z_NONE;
 		} else {
 			//reg->type_mask |= RTYPE_VAR;
 		}
@@ -1591,11 +1593,13 @@ static void wipe_vars( void )
 		r = &rx_regs[i];
 		memset( &r->vars, 0, sizeof( r->vars ) );
 		r->type_mask &= ~RTYPE_VAR;
+		r->ext = Z_NONE;
 	}
 	for ( i = 0; i < ARRAY_LEN( sx_regs ); i++ ) {
 		r = &sx_regs[i];
 		memset( &r->vars, 0, sizeof( r->vars ) );
 		r->type_mask &= ~RTYPE_VAR;
+		r->ext = Z_NONE;
 	}
 #endif
 }
@@ -1929,33 +1933,23 @@ static uint32_t alloc_rx_local( uint32_t pref, uint32_t imm )
 }
 
 
-// returns qtrue if specified constant is found or there is a free register to store it
-#if 0
-static qboolean find_rx_const( uint32_t imm )
+// returns qtrue if specified constant is found
+static reg_t *find_rx_const( uint32_t imm, uint32_t mask )
 {
 #ifdef CONST_CACHE_RX
-	uint32_t mask = build_rx_mask() | build_opstack_mask( TYPE_RX );
-	int i;
+	uint32_t i, n;
+	reg_t *r;
 
 	for ( i = 0; i < ARRAY_LEN( rx_list_cache ); i++ ) {
-		reg_t *r;
-		uint32_t n = rx_list_cache[ i ];
-		if ( mask & ( 1 << n ) ) {
-			// target register must be unmasked
-			continue;
-		}
+		n = rx_list_cache[ i ];
 		r = &rx_regs[ n ];
-		if ( r->type_mask & RTYPE_CONST && r->cnst.value == imm ) {
-			return qtrue;
-		}
-		if ( r->type_mask == RTYPE_UNUSED ) {
-			return qtrue;
+		if ( r->type_mask & RTYPE_CONST && ( r->cnst.value & mask ) == imm ) {
+			return r;
 		}
 	}
 #endif
-	return qfalse;
+	return NULL;
 }
-#endif
 
 
 // allocate integer register with constant value
@@ -2022,6 +2016,7 @@ static uint32_t alloc_rx_const( uint32_t pref, uint32_t imm )
 			r->cnst.value = imm;
 			r->refcnt = 1;
 			r->ip = ip;
+			r->ext = Z_NONE;
 			mov_rx_imm32( idx, imm );
 			mask_rx( idx );
 			return idx;
@@ -2042,6 +2037,7 @@ static uint32_t alloc_rx_const( uint32_t pref, uint32_t imm )
 	r->cnst.value = imm;
 	r->refcnt = 1;
 	r->ip = ip;
+	//r->ext = Z_NONE;
 #endif
 
 	return rx;
@@ -2112,6 +2108,7 @@ static uint32_t alloc_sx_const( uint32_t pref, uint32_t imm )
 			r->cnst.value = imm;
 			r->refcnt = 1;
 			r->ip = ip;
+			r->ext = Z_NONE;
 			mov_sx_imm( idx, imm );
 			mask_sx( idx );
 			return idx;
@@ -2132,6 +2129,7 @@ static uint32_t alloc_sx_const( uint32_t pref, uint32_t imm )
 	r->cnst.value = imm;
 	r->refcnt = 1;
 	r->ip = ip;
+	//r->ext = Z_NONE;
 #endif
 
 	return sx;
@@ -2556,12 +2554,12 @@ static uint32_t load_rx_opstack( uint32_t pref )
 static void load_rx_opstack2( uint32_t *dst, uint32_t dst_pref, uint32_t *src, uint32_t src_pref )
 {
 #if 0
-	*dst = *src = load_rx_opstack( src_pref &= ~RCONST ); // source, target = *opstack
+	*dst = *src = load_rx_opstack( src_pref & ~RCONST ); // source, target = *opstack
 #else
 	*dst = *src = load_rx_opstack( src_pref | RCONST ); // source, target = *opstack
 	if ( search_opstack( TYPE_RX, *src ) || find_free_rx() ) {
 		// *src is duplicated on opStack or there is a free register
-		*dst = alloc_rx( dst_pref &= ~RCONST ); // allocate new register for the target
+		*dst = alloc_rx( dst_pref & ~RCONST ); // allocate new register for the target
 	} else {
 		// will be overwritten, wipe metadata
 		wipe_rx_meta( *dst );
@@ -3496,7 +3494,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 
 		case OP_STORE2:	{
 			if ( addr_on_top( &var ) ) {
-				if ( NextLoad( &var, ni + 1, OP_LOAD2 ) ) {
+				if ( NextLoad( &var, ni + 1, OP_LOAD2 ) || find_rx_const( ci->value, 0xFFFF ) ) {
 					return qfalse; // store value in a register
 				}
 				discard_top(); dec_opstack();						// v = *opstack; opstack -= 4
@@ -3516,7 +3514,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 
 		case OP_STORE1: {
 			if ( addr_on_top( &var ) ) {
-				if ( NextLoad( &var, ni + 1, OP_LOAD1 ) ) {
+				if ( NextLoad( &var, ni + 1, OP_LOAD1 ) || find_rx_const( ci->value, 0xFF ) ) {
 					return qfalse; // store value in a register
 				}
 				discard_top(); dec_opstack();						// v = *opstack; opstack -= 4
