@@ -19,7 +19,7 @@ along with Quake III Arena source code; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
-#if !( defined __linux__ || defined __FreeBSD__ || defined __OpenBSD__ || defined __sun || defined MACOS_X )
+#if !( defined __linux__ || defined __FreeBSD__ || defined __OpenBSD__ || defined __sun || defined __APPLE__ )
 #error You should include this file only on Linux/FreeBSD/Solaris platforms
 #endif
 
