@@ -1583,6 +1583,26 @@ static qboolean find_sx_var( uint32_t *reg, const var_addr_t *v ) {
 }
 
 
+static void reduce_map_size( reg_t *reg, uint32_t size ) {
+	int i;
+	for ( i = 0; i < ARRAY_LEN( reg->vars.map ); i++ ) {
+		if ( reg->vars.map[i].size > size ) {
+			reg->vars.map[i].size = size;
+		}
+	}
+}
+
+
+static reg_t *rx_on_top( void ) {
+	opstack_t *it = &opstackv[ opstack ];
+	if ( it->type == TYPE_RX ) {
+		return &rx_regs[ it->value ];
+	} else {
+		return NULL;
+	}
+}
+
+
 static void wipe_vars( void )
 {
 #ifdef LOAD_OPTIMIZE
@@ -3925,6 +3945,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	var_addr_t var;
 	opcode_t sign_extend;
 	int var_size;
+	reg_t *reg;
 #if JUMP_OPTIMIZE
 	int num_compress;
 #endif
@@ -4302,43 +4323,40 @@ __compile:
 				// integer path
 				if ( addr_on_top( &var ) ) {
 					// address specified by CONST/LOCAL
-					reg_t *r;
 					discard_top();
 					var.size = var_size;
-					if ( ( r = find_rx_var( &rx[0], &var ) ) != NULL ) {
+					if ( ( reg = find_rx_var( &rx[0], &var ) ) != NULL ) {
 						// already cached in some register
-						if ( ( (ci+1)->op == OP_STORE1 && ci->op == OP_LOAD1 ) || ( (ci+1)->op == OP_STORE2 && ci->op == OP_LOAD2 ) ) {
-							// next operation will require only current low register part, ignore zero-extension for now
-						} else {
-							// do zero extension
-							switch ( ci->op ) {
-								case OP_LOAD1:
-									if ( r->ext != Z_EXT8 ) {
-										emit_zex8( rx[0], rx[0] );  // movzx eax, al 
-										r->ext = Z_EXT8;
-										// invalidate any mappings that overlaps with high [8..31] bits 
-										// TODO: just reduce mapping size?
-										var.addr += 1; var.size = 3;
-										wipe_reg_range( rx_regs + rx[0], &var );
-										// modify constant
-										rx_regs[rx[0]].cnst.value &= 0xFF;
-									}
-									break;
-								case OP_LOAD2:
-									if ( r->ext != Z_EXT16 ) {
-										emit_zex16( rx[0], rx[0] );  // movzx eax, ax
-										r->ext = Z_EXT16;
-										// invalidate any mappings that overlaps with high [16..31] bits 
-										var.addr += 2; var.size = 2;
-										wipe_reg_range( rx_regs + rx[0], &var );
-										// modify constant
-										rx_regs[rx[0]].cnst.value &= 0xFFFF;
-									}
-									break;
-								case OP_LOAD4:
-									r->ext = Z_NONE;
-									break;
-							}
+						// do zero extension if needed
+						switch ( ci->op ) {
+							case OP_LOAD1:
+								if ( reg->ext != Z_EXT8 ) {
+									emit_zex8( rx[0], rx[0] );  // movzx eax, al 
+									// invalidate any mappings that overlaps with high [8..31] bits 
+									//var.addr += 1; var.size = 3;
+									//wipe_reg_range( rx_regs + rx[0], &var );
+									// TODO: just reduce mapping size?
+									reduce_map_size( reg, 1 );
+									// modify constant
+									reg->cnst.value &= 0xFF;
+									reg->ext = Z_EXT8;
+								}
+								break;
+							case OP_LOAD2:
+								if ( reg->ext != Z_EXT16 ) {
+									emit_zex16( rx[0], rx[0] );  // movzx eax, ax
+									// invalidate any mappings that overlaps with high [16..31] bits 
+									//var.addr += 2; var.size = 2;
+									//wipe_reg_range( rx_regs + rx[0], &var );
+									reduce_map_size( reg, 2 );
+									// modify constant
+									reg->cnst.value &= 0xFFFF;
+									reg->ext = Z_EXT16;
+								}
+								break;
+							case OP_LOAD4:
+								reg->ext = Z_NONE;
+								break;
 						}
 						mask_rx( rx[0] );
 					} else {
@@ -4474,6 +4492,20 @@ __compile:
 			case OP_SEX16:
 			case OP_NEGI:
 			case OP_BCOM:
+				if ( ci->op == OP_SEX8 || ci->op == OP_SEX16 ) {
+					// skip sign-extension for `if ( var == 0 )` tests if we already zero-extended
+					reg = rx_on_top();
+					if ( reg && (ci+1)->op == OP_CONST && (ci+1)->value == 0 && ( (ci+2)->op == OP_EQ || (ci+2)->op == OP_NE ) ) {
+						if ( !(ci+1)->jused && !(ci+2)->jused ) {
+							if ( ci->op == OP_SEX8 && reg->ext == Z_EXT8 ) {
+								break;
+							}
+							if ( ci->op == OP_SEX16 && reg->ext == Z_EXT16 ) {
+								break;
+							}
+						}
+					}
+				}
 				rx[0] = load_rx_opstack( R_EAX ); // eax = *opstack
 				switch ( ci->op ) {
 					case OP_SEX8:  emit_sex8( rx[0], rx[0] ); break;	// movsx eax, al
