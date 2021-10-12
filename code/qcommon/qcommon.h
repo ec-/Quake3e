@@ -673,7 +673,11 @@ typedef enum {
 #endif
 
 typedef	time_t fileTime_t;
+#if defined  (_MSC_VER) && defined (__clang__)
+typedef	_off_t  fileOffset_t;
+#else
 typedef	off_t  fileOffset_t;
+#endif
 
 qboolean FS_Initialized( void );
 
