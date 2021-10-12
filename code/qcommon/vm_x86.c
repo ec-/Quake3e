@@ -586,10 +586,12 @@ static void emit_lea_base_index( uint32_t reg, uint32_t base, uint32_t index )
 	emit_op_reg_base_index( 0, 0x8D, reg, base, index, 1, 0 );
 }
 
+#if 0
 static void emit_lea_index_scale( uint32_t reg, uint32_t index, int scale, int32_t offset )
 {
 	emit_op_reg_index_offset( 0x8D, reg, index, scale, offset );
 }
+#endif
 
 static void emit_lea_base_index_offset( uint32_t reg, uint32_t base, uint32_t index, int32_t offset )
 {
@@ -809,10 +811,12 @@ static void emit_load4_index( uint32_t reg, uint32_t base, uint32_t index )
 	emit_op_reg_base_index( 0, 0x8B, reg, base, index, 1, 0 );
 }
 
+#if 0
 static void emit_load4_index_offset( uint32_t reg, uint32_t base, uint32_t index, int scale, int32_t offset )
 {
 	emit_op_reg_base_index( 0, 0x8B, reg, base, index, scale, offset );
 }
+#endif
 
 // R_REX prefix flag in [reg] may expand store to 8 bytes
 static void emit_store_rx( uint32_t reg, uint32_t base, int32_t offset )
@@ -1159,11 +1163,13 @@ static void emit_load_sx_index( uint32_t reg, uint32_t base, uint32_t index )
 	emit_op_reg_base_index( 0x0F, 0x10, reg, base, index, 1, 0 );
 }
 
+#if 0
 static void emit_load_sx_index_offset( uint32_t reg, uint32_t base, uint32_t index, int scale, int32_t offset )
 {
 	Emit1( 0xF3 );
 	emit_op_reg_base_index( 0x0F, 0x10, reg, base, index, scale, offset );
 }
+#endif
 
 static void emit_store_sx( uint32_t reg, uint32_t base, int32_t offset )
 {
@@ -3554,24 +3560,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 
 		case OP_ADD: {
 			int rx = load_rx_opstack( R_EAX );			// eax = *opstack
-			if ( (ni+1)->op == OP_LOAD4 && ( vm_rtChecks->integer & VM_RTCHECK_DATA ) == 0 && !vm->forceDataMask ) {
-				// structure field load
-				if ( (ni+1 )->fpu && HasSSEFP() ) {
-					int sx = alloc_sx( R_XMM0 );
- 					// xmm0 = [dataBase + eax + 0x12345678]
-					emit_load_sx_index_offset( sx, R_DATABASE, rx, 1, ci->value );
-					unmask_rx( rx );
-					store_sx_opstack( sx );	// *opstack = xmm0
-					ip += 2; // OP_ADD + OP_LOAD4
-					return qtrue;
-				} else {
-					emit_load4_index_offset( rx, R_DATABASE, rx, 1, ci->value ); // eax = dword ptr [dataBase + eax + 0x12345678]
-				}
-				ip += 1; // OP_LOAD4
-			} else {
-				// this potential load address must be validated
-				emit_op_rx_imm32( X_ADD, rx, ci->value );	// add eax, 0x12345678
-			}
+			emit_op_rx_imm32( X_ADD, rx, ci->value );	// add eax, 0x12345678
 			store_rx_opstack( rx );						// *opstack = eax
 			ip += 1; // OP_ADD
 			return qtrue;
@@ -3633,30 +3622,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				break; // undefined behavior
 			if ( ci->value ) {
 				int rx = load_rx_opstack( R_EAX );		// eax = *opstack
-				// [index*scale + offset]?
-				if ( ci->value <= 3 && !(ni+1)->jused && (ni+1)->op == OP_CONST && (ni+2)->op == OP_ADD ) {
-					if ( (ni+3)->op == OP_LOAD4 && ( vm_rtChecks->integer & VM_RTCHECK_DATA ) == 0 && !vm->forceDataMask ) {
-						if ( (ni+3)->fpu && HasSSEFP() ) {
-							int sx = alloc_sx( R_XMM0 );
-							// xmm0 = [dataBase + eax*(1<<shift) + offset]
-							emit_load_sx_index_offset( sx, R_DATABASE, rx, 1 << ci->value, (ni+1)->value );
-							unmask_rx( rx );
-							store_sx_opstack( sx );			// *opstack = xmm0
-							ip += 4; // OP_LSH + CONST + OP_ADD + OP_LOAD4
-							return qtrue;
-						} else {
-							// eax = dword ptr [dataBase + eax*(1<<shift) + offset]
-							emit_load4_index_offset( rx, R_DATABASE, rx, 1 << ci->value, (ni+1)->value );
-						}
-						ip += 3; // CONST + OP_ADD + OP_LOAD4
-					} else {
-						// this potential load address must be validated
-						emit_lea_index_scale( rx, rx, 1 << ci->value, (ni+1)->value ); // eax = lea [eax*(1<<shift) + offset]
-						ip += 2; // CONST + OP_ADD
-					}
-				} else {
-					emit_shl_rx_imm( rx, ci->value );	// eax = eax << x
-				}
+				emit_shl_rx_imm( rx, ci->value );		// eax = (unsigned)eax << x
 				store_rx_opstack( rx );					// *opstack = eax
 			}
 			ip += 1; // OP_LSH
