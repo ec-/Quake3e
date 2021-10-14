@@ -1059,7 +1059,7 @@ static float CL_AvgPing( void ) {
 
 	// use median average ping
 	if ( (count % 2) == 0 )
-		result = (ping[count / 2] + ping[(count / 2) - 1]) / 2.0;
+		result = (ping[count / 2] + ping[(count / 2) - 1]) / 2.0f;
 	else
 		result = ping[count / 2];
 
@@ -1077,8 +1077,8 @@ Returns either auto-nudge or cl_timeNudge value.
 static int CL_TimeNudge( void ) {
 	float autoNudge = cl_autoNudge->value;
 
-	if ( autoNudge != 0.0 )
-		return (int)((CL_AvgPing() * autoNudge) + 0.5) * -1;
+	if ( autoNudge != 0.0f )
+		return (int)((CL_AvgPing() * autoNudge) + 0.5f) * -1;
 	else
 		return cl_timeNudge->integer;
 }
