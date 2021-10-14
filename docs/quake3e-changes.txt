@@ -1,3 +1,11 @@
+14-Oct-2021:
+* Filesystem: close all handles when switching to other game directory
+* Sound: fixed potential division-by-zero in S_GetSoundTime() in case of failed DirectSound initialization, reworked shutdown functions
+* Unix: output only printable chars in console
+* SDL: removed archive flag for \in_nograb
+* QVM: added more optimizations, removed unsafe x86 optimizations with disabled VM_RTCHECK_DATA
+* QVM: always force either range checks or data mask operations
+
 20-Jul-2021:
 * vm_x86: implemented new bytecode compiler with dynamic register allocation and many optimizations similar to aarch64/armv7l, brings ~2x performance increase
 * vm_aarch64, vm_armv7l: added more optimizations, yields another ~40% performance increase
