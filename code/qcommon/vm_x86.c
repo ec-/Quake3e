@@ -3059,8 +3059,7 @@ static void EmitCallOffset( func_t Func )
 
 static void emit_CheckReg( vm_t *vm, uint32_t reg, func_t func )
 {
-#ifdef DEBUG_VM
-	if ( vm->forceDataMask )
+	if ( vm->forceDataMask || !( vm_rtChecks->integer & VM_RTCHECK_DATA ) )
 	{
 #if idx64
 		emit_and_rx( reg, R_DATAMASK );					// reg = reg & dataMask
@@ -3069,9 +3068,6 @@ static void emit_CheckReg( vm_t *vm, uint32_t reg, func_t func )
 #endif
 		return;
 	}
-
-	if ( !( vm_rtChecks->integer & VM_RTCHECK_DATA ) )
-		return;
 
 #if idx64
 	emit_cmp_rx( reg, R_DATAMASK );					// cmp reg, dataMask
@@ -3082,16 +3078,6 @@ static void emit_CheckReg( vm_t *vm, uint32_t reg, func_t func )
 	// error reporting
 	EmitString( "0F 87" );			// ja +errorFunction
 	Emit4( funcOffset[ func ] - compiledOfs - 6 );
-#else
-	if ( vm_rtChecks->integer & VM_RTCHECK_DATA || vm->forceDataMask )
-	{
-#if idx64
-		emit_and_rx( reg, R_DATAMASK );					// reg = reg & dataMask
-#else
-		emit_op_rx_imm32( X_AND, reg, vm->dataMask );	// reg = reg & vm->dataMask
-#endif
-	}
-#endif
 }
 
 

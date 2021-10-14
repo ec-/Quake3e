@@ -2253,23 +2253,14 @@ static void emitFuncOffset( vm_t *vm, offset_t func )
 
 static void emit_CheckReg( vm_t *vm, uint32_t reg, offset_t func )
 {
-#ifdef DEBUG_VM
-	if ( vm->forceDataMask ) {
+	if ( vm->forceDataMask || !( vm_rtChecks->integer & VM_RTCHECK_DATA ) ) {
 		emit( AND32( reg, rDATAMASK, reg ) ); // rN = rN & rDATAMASK
 		return;
 	}
-
-	if ( !( vm_rtChecks->integer & VM_RTCHECK_DATA ) )
-		return;
 
 	emit( CMP32( reg, rDATAMASK ) );
 	emit( Bcond( LO, +8 ) );
 	emitFuncOffset( vm, func );  // error function
-#else
-	if ( vm_rtChecks->integer & VM_RTCHECK_DATA || vm->forceDataMask ) {
-		emit( AND32( reg, rDATAMASK, reg ) ); // rN = rN & rDATAMASK
-	}
-#endif
 }
 
 

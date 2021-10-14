@@ -2014,19 +2014,13 @@ static void emitFuncOffset( uint32_t comp, vm_t *vm, offset_t func )
 
 static void emit_CheckReg( vm_t *vm, uint32_t reg, offset_t func )
 {
-#ifdef DEBUG_VM
-	if ( !( vm_rtChecks->integer & VM_RTCHECK_DATA ) || vm->forceDataMask ) {
-		if ( vm->forceDataMask ) {
-			emit(AND(reg, rDATAMASK, reg));    // rN = rN & rDATAMASK
-		}
+	if ( vm->forceDataMask || !( vm_rtChecks->integer & VM_RTCHECK_DATA ) ) {
+		emit(AND(reg, rDATAMASK, reg));    // rN = rN & rDATAMASK
 		return;
 	}
 
 	emit( CMP( reg, rDATAMASK ) );
 	emitFuncOffset( HI, vm, func );
-#else
-	emit( AND( reg, rDATAMASK, reg ) );    // rN = rN & rDATAMASK
-#endif
 }
 
 
