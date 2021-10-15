@@ -1630,7 +1630,7 @@ static void R_CreateDefaultImage( void ) {
 R_CreateBuiltinImages
 ==================
 */
-void R_CreateBuiltinImages( void ) {
+static void R_CreateBuiltinImages( void ) {
 	int		x,y;
 	byte	data[DEFAULT_SIZE][DEFAULT_SIZE][4];
 

@@ -212,7 +212,7 @@ int		vm_debugLevel;
 // used by Com_Error to get rid of running vm's before longjmp
 static int forced_unload;
 
-struct vm_s	vmTable[ VM_COUNT ];
+static struct vm_s vmTable[ VM_COUNT ];
 
 static const char *vmName[ VM_COUNT ] = {
 	"qagame",

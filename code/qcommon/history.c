@@ -7,10 +7,10 @@ static      qboolean historyLoaded = qfalse;
 
 #define     COMMAND_HISTORY 32
 
-field_t     historyEditLines[COMMAND_HISTORY];
+static field_t historyEditLines[COMMAND_HISTORY];
 
-int         nextHistoryLine; // the last line in the history buffer, not masked
-int         historyLine;     // the line being displayed from history buffer
+static int nextHistoryLine; // the last line in the history buffer, not masked
+static int historyLine;     // the line being displayed from history buffer
                                  // will be <= nextHistoryLine
 
 #define     MAX_CONSOLE_SAVE_BUFFER ( COMMAND_HISTORY * (MAX_EDIT_LINE + 13) )

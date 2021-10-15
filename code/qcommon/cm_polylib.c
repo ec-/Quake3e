@@ -28,17 +28,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 // counters are only bumped when running single threaded,
 // because they are an awful coherence problem
-int	c_active_windings;
-int	c_peak_windings;
-int	c_winding_allocs;
-int	c_winding_points;
+static int c_active_windings;
+static int c_peak_windings;
+static int c_winding_allocs;
+static int c_winding_points;
 
-void pw(winding_t *w)
+#if 0
+static void pw(winding_t *w)
 {
 	int	i;
 	for ( i = 0 ; i < w->numpoints ; i++ )
 		Com_Printf( "%f, %f, %f\n", w->p[i][0], w->p[i][1], w->p[i][2] );
 }
+#endif
 
 
 /*
@@ -46,7 +48,7 @@ void pw(winding_t *w)
 AllocWinding
 =============
 */
-winding_t *AllocWinding( int points )
+static winding_t *AllocWinding( int points )
 {
 	winding_t	*w;
 	size_t		s;
@@ -79,7 +81,7 @@ void FreeWinding (winding_t *w)
 RemoveColinearPoints
 ============
 */
-int	c_removed;
+//static int c_removed;
 
 void	RemoveColinearPoints (winding_t *w)
 {
@@ -107,7 +109,8 @@ void	RemoveColinearPoints (winding_t *w)
 	if (nump == w->numpoints)
 		return;
 
-	c_removed += w->numpoints - nump;
+	//c_removed += w->numpoints - nump;
+
 	w->numpoints = nump;
 	Com_Memcpy (w->p, p, nump*sizeof(p[0]));
 }
@@ -134,7 +137,7 @@ void WindingPlane (winding_t *w, vec3_t normal, vec_t *dist)
 WindingArea
 =============
 */
-vec_t	WindingArea (winding_t *w)
+static vec_t WindingArea( winding_t *w )
 {
 	int		i;
 	vec3_t	d1, d2, cross;
@@ -309,8 +312,7 @@ winding_t	*ReverseWinding (winding_t *w)
 ClipWindingEpsilon
 =============
 */
-void	ClipWindingEpsilon (winding_t *in, vec3_t normal, vec_t dist, 
-				vec_t epsilon, winding_t **front, winding_t **back)
+static void ClipWindingEpsilon( winding_t *in, vec3_t normal, vec_t dist, vec_t epsilon, winding_t **front, winding_t **back )
 {
 	vec_t	dists[MAX_POINTS_ON_WINDING+4];
 	int		sides[MAX_POINTS_ON_WINDING+4];

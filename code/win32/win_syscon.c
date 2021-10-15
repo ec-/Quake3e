@@ -61,7 +61,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define ERROR_COLOR_1   RGB(0xFF,0xFF,0x00)
 #define ERROR_COLOR_2   RGB(0xF0,0x00,0x00)
 
-field_t console;
+static field_t console;
 
 typedef struct
 {
@@ -486,7 +486,7 @@ static LRESULT WINAPI BufferWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 }
 
 
-LRESULT WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+static LRESULT WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	HGLOBAL hMem;
 	TCHAR *text;
@@ -544,7 +544,7 @@ LRESULT WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 }
 
 
-LRESULT WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+static LRESULT WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	TCHAR inputBuffer[ MAX_EDIT_LINE ];
 	int zDelta, fwKeys, i;
@@ -791,7 +791,7 @@ void Sys_CreateConsole( const char *title, int xPos, int yPos, qboolean useXYpos
 		OUT_DEFAULT_PRECIS,
 		CLIP_DEFAULT_PRECIS,
 		DEFAULT_QUALITY,
-		MONO_FONT,
+		FF_MODERN | FIXED_PITCH,
 		T("Terminal") );
 
 	s_wcd.hfStatusFont = CreateFont( statusFontHeight, 0,
