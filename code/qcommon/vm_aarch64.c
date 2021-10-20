@@ -3489,7 +3489,7 @@ __recompile:
 }
 
 
-int VM_CallCompiled( vm_t *vm, int nargs, int *args )
+int32_t VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
 {
 	int32_t		opStack[ MAX_OPSTACK_SIZE ];
 	int			stackOnEntry;
@@ -3499,7 +3499,7 @@ int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 	// we might be called recursively, so this might not be the very top
 	stackOnEntry = vm->programStack;
 
-	vm->programStack -= ( MAX_VMMAIN_CALL_ARGS + 2 ) * 4;
+	vm->programStack -= ( MAX_VMMAIN_CALL_ARGS + 2 ) * sizeof( int32_t );
 
 	// set up the stack frame
 	image = (int32_t*) ( vm->dataBase + vm->programStack );
@@ -3526,7 +3526,7 @@ int VM_CallCompiled( vm_t *vm, int nargs, int *args )
 		Com_Error( ERR_DROP, "%s(%s): opStack corrupted in compiled code", __func__, vm->name );
 	}
 
-	if ( vm->programStack != stackOnEntry - ( MAX_VMMAIN_CALL_ARGS + 2 ) * 4 ) {
+	if ( vm->programStack != stackOnEntry - ( MAX_VMMAIN_CALL_ARGS + 2 ) * sizeof( int32_t ) ) {
 		Com_Error( ERR_DROP, "%s(%s): programStack corrupted in compiled code", __func__, vm->name );
 	}
 #endif

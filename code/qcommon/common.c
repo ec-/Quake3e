@@ -2578,7 +2578,7 @@ static const char *Sys_EventName( sysEventType_t evType ) {
 		"SE_CONSOLE"
 	};
 
-	if ( evType >= SE_MAX ) {
+	if ( (unsigned)evType >= ARRAY_LEN( evNames ) ) {
 		return "SE_UNKNOWN";
 	} else {
 		return evNames[ evType ];

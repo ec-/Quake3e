@@ -1479,20 +1479,16 @@ int BotFindMatch(char *str, bot_match_t *match, unsigned long int context)
 	} //end for
 	return qfalse;
 } //end of the function BotFindMatch
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+
+
 void BotMatchVariable(bot_match_t *match, int variable, char *buf, int size)
 {
 	if (variable < 0 || variable >= MAX_MATCHVARIABLES)
 	{
 		botimport.Print(PRT_FATAL, "BotMatchVariable: variable out of range\n");
-		strcpy(buf, "");
+		buf[0] = '\0';
 		return;
-	} //end if
+	}
 
 	if (match->variables[variable].offset >= 0)
 	{
@@ -1500,35 +1496,35 @@ void BotMatchVariable(bot_match_t *match, int variable, char *buf, int size)
 			size = match->variables[variable].length+1;
 		assert( match->variables[variable].offset >= 0 );
 		Q_strncpyz( buf, &match->string[ (int) match->variables[variable].offset], size );
-	} //end if
+	}
 	else
 	{
-		strcpy(buf, "");
-	} //end else
-} //end of the function BotMatchVariable
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-bot_stringlist_t *BotFindStringInList(bot_stringlist_t *list, char *string)
+		buf[0] = '\0';
+	}
+}
+
+
+static bot_stringlist_t *BotFindStringInList(bot_stringlist_t *list, const char *string)
 {
 	bot_stringlist_t *s;
 
-	for (s = list; s; s = s->next)
+	for ( s = list; s; s = s->next )
 	{
-		if (!strcmp(s->string, string)) return s;
-	} //end for
+		if ( !strcmp( s->string, string ) )
+			return s;
+	}
+
 	return NULL;
-} //end of the function BotFindStringInList
+}
+
+
 //===========================================================================
 //
 // Parameter:				-
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_stringlist_t *BotCheckChatMessageIntegrety(char *message, bot_stringlist_t *stringlist)
+static bot_stringlist_t *BotCheckChatMessageIntegrety(char *message, bot_stringlist_t *stringlist)
 {
 	int i;
 	char *msgptr;
@@ -2397,13 +2393,16 @@ int BotExpandChatMessage(char *outmessage, char *message, unsigned long mcontext
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-void BotConstructChatMessage(bot_chatstate_t *chatstate, char *message, unsigned long mcontext,
+
+
+static void BotConstructChatMessage(bot_chatstate_t *chatstate, const char *message, unsigned long mcontext,
 							 bot_match_t *match, unsigned long vcontext, int reply)
 {
 	int i;
 	char srcmessage[MAX_MESSAGE_SIZE];
 
-	strcpy(srcmessage, message);
+	Q_strncpyz( srcmessage, message, sizeof( srcmessage ) );
+
 	for (i = 0; i < 10; i++)
 	{
 		if (!BotExpandChatMessage(chatstate->chatmessage, srcmessage, mcontext, match, vcontext, reply))
@@ -2510,10 +2509,10 @@ int BotNumInitialChats(int chatstate, char *type)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void BotInitialChat(int chatstate, char *type, int mcontext, char *var0, char *var1, char *var2, char *var3, char *var4, char *var5, char *var6, char *var7)
+void BotInitialChat(int chatstate, char *type, int mcontext, const char *var0, const char *var1, const char *var2, const char *var3, const char *var4, const char *var5, const char *var6, const char *var7)
 {
 	char *message;
-	int index;
+	int index, len;
 	bot_match_t match;
 	bot_chatstate_t *cs;
 
@@ -2532,54 +2531,79 @@ void BotInitialChat(int chatstate, char *type, int mcontext, char *var0, char *v
 		return;
 	} //end if
 	//
-	Com_Memset(&match, 0, sizeof(match));
+	Com_Memset( &match, 0, sizeof( match ) );
 	index = 0;
-	if( var0 ) {
-		strcat(match.string, var0);
+	if ( var0 ) {
+		len = (int)strlen( var0 );
 		match.variables[0].offset = index;
-		match.variables[0].length = strlen(var0);
-		index += strlen(var0);
+		if ( len + index < sizeof( match.string ) ) {
+			match.variables[0].length = len;
+			strcat( match.string, var0 );
+			index += strlen( var0 );
+		}
 	}
-	if( var1 ) {
-		strcat(match.string, var1);
+	if ( var1 ) {
+		len = (int) strlen( var1 );
 		match.variables[1].offset = index;
-		match.variables[1].length = strlen(var1);
-		index += strlen(var1);
+		if ( len + index < sizeof( match.string ) ) {
+			match.variables[1].length = len;
+			strcat( match.string, var1 );
+			index += len;
+		}
 	}
-	if( var2 ) {
-		strcat(match.string, var2);
+	if ( var2 ) {
+		len = (int) strlen( var2 );
 		match.variables[2].offset = index;
-		match.variables[2].length = strlen(var2);
-		index += strlen(var2);
+		if ( len + index < sizeof( match.string ) ) {
+			match.variables[2].length = len;
+			strcat( match.string, var2 );
+			index += len;
+		}
 	}
-	if( var3 ) {
-		strcat(match.string, var3);
+	if ( var3 ) {
+		len = (int) strlen( var3 );
 		match.variables[3].offset = index;
-		match.variables[3].length = strlen(var3);
-		index += strlen(var3);
+		if ( len + index < sizeof( match.string ) ) {
+			match.variables[3].length = len;
+			strcat( match.string, var3 );
+			index += len;
+		}
 	}
-	if( var4 ) {
-		strcat(match.string, var4);
+	if ( var4 ) {
+		len = (int) strlen( var4 );
 		match.variables[4].offset = index;
-		match.variables[4].length = strlen(var4);
-		index += strlen(var4);
+		if ( len + index < sizeof( match.string ) ) {
+			match.variables[4].length = len;
+			strcat( match.string, var4 );
+			index += len;
+		}
 	}
-	if( var5 ) {
-		strcat(match.string, var5);
+	if ( var5 ) {
+		len = (int) strlen( var5 );
 		match.variables[5].offset = index;
-		match.variables[5].length = strlen(var5);
-		index += strlen(var5);
+		if ( len + index < sizeof( match.string ) ) {
+			match.variables[5].length = len;
+			strcat( match.string, var5 );
+			index += len;
+		}
 	}
-	if( var6 ) {
-		strcat(match.string, var6);
+	if ( var6 ) {
+		len = (int) strlen( var6 );
 		match.variables[6].offset = index;
-		match.variables[6].length = strlen(var6);
-		index += strlen(var6);
+		if ( len + index < sizeof( match.string ) ) {
+			match.variables[6].length = len;
+			strcat( match.string, var6 );
+			index += len;
+		}
 	}
-	if( var7 ) {
-		strcat(match.string, var7);
+	if ( var7 ) {
+		len = (int) strlen( var7 );
 		match.variables[7].offset = index;
-		match.variables[7].length = strlen(var7);
+		if ( len + index < sizeof( match.string ) ) {
+			match.variables[7].length = strlen(var7);
+			strcat( match.string, var7 );
+			//index += len;
+		}
 	}
  	//
 	BotConstructChatMessage(cs, message, mcontext, &match, 0, qfalse);
@@ -2631,7 +2655,7 @@ void BotPrintReplyChatKeys(bot_replychat_t *replychat)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int BotReplyChat(int chatstate, char *message, int mcontext, int vcontext, char *var0, char *var1, char *var2, char *var3, char *var4, char *var5, char *var6, char *var7)
+int BotReplyChat(int chatstate, char *message, int mcontext, int vcontext, const char *var0, const char *var1, const char *var2, const char *var3, const char *var4, const char *var5, const char *var6, const char *var7)
 {
 	bot_replychat_t *rchat, *bestrchat;
 	bot_replychatkey_t *key;
@@ -2642,8 +2666,8 @@ int BotReplyChat(int chatstate, char *message, int mcontext, int vcontext, char 
 
 	cs = BotChatStateFromHandle(chatstate);
 	if (!cs) return qfalse;
-	Com_Memset(&match, 0, sizeof(bot_match_t));
-	strcpy(match.string, message);
+	Com_Memset( &match, 0, sizeof( match ) );
+	Q_strncpyz( match.string, message, sizeof( match.string ) );
 	bestpriority = -1;
 	bestchatmessage = NULL;
 	bestrchat = NULL;
@@ -2715,53 +2739,79 @@ int BotReplyChat(int chatstate, char *message, int mcontext, int vcontext, char 
 	} //end for
 	if (bestchatmessage)
 	{
-		index = strlen(bestmatch.string);
-		if( var0 ) {
-			strcat(bestmatch.string, var0);
+		index = strlen( bestmatch.string );
+		int len;
+		if ( var0 ) {
+			len = (int) strlen( var0 );
 			bestmatch.variables[0].offset = index;
-			bestmatch.variables[0].length = strlen(var0);
-			index += strlen(var0);
+			if ( len + index < sizeof( bestmatch.string ) ) {
+				bestmatch.variables[0].length = len;
+				strcat( bestmatch.string, var0 );
+				index += len;
+			}
 		}
-		if( var1 ) {
-			strcat(bestmatch.string, var1);
+		if ( var1 ) {
+			len = (int) strlen( var1 );
 			bestmatch.variables[1].offset = index;
-			bestmatch.variables[1].length = strlen(var1);
-			index += strlen(var1);
+			if ( len + index < sizeof( bestmatch.string ) ) {
+				bestmatch.variables[1].length = len;
+				strcat( bestmatch.string, var1 );
+				index += len;
+			}
 		}
-		if( var2 ) {
-			strcat(bestmatch.string, var2);
+		if ( var2 ) {
+			len = (int) strlen( var2 );
 			bestmatch.variables[2].offset = index;
-			bestmatch.variables[2].length = strlen(var2);
-			index += strlen(var2);
+			if ( len + index < sizeof( bestmatch.string ) ) {
+				bestmatch.variables[2].length = len;
+				strcat( bestmatch.string, var2 );
+				index += len;
+			}
 		}
-		if( var3 ) {
-			strcat(bestmatch.string, var3);
+		if ( var3 ) {
+			len = (int) strlen( var3 );
 			bestmatch.variables[3].offset = index;
-			bestmatch.variables[3].length = strlen(var3);
-			index += strlen(var3);
+			if ( len + index < sizeof( bestmatch.string ) ) {
+				bestmatch.variables[3].length = len;
+				strcat( bestmatch.string, var3 );
+				index += len;
+			}
 		}
-		if( var4 ) {
-			strcat(bestmatch.string, var4);
+		if ( var4 ) {
+			len = (int) strlen( var4 );
 			bestmatch.variables[4].offset = index;
-			bestmatch.variables[4].length = strlen(var4);
-			index += strlen(var4);
+			if ( len + index < sizeof( bestmatch.string ) ) {
+				bestmatch.variables[4].length = len;
+				strcat( bestmatch.string, var4 );
+				index += len;
+			}
 		}
-		if( var5 ) {
-			strcat(bestmatch.string, var5);
+		if ( var5 ) {
+			len = (int) strlen( var5 );
 			bestmatch.variables[5].offset = index;
-			bestmatch.variables[5].length = strlen(var5);
-			index += strlen(var5);
+			if ( len + index < sizeof( bestmatch.string ) ) {
+				bestmatch.variables[5].length = len;
+				strcat( bestmatch.string, var5 );
+				index += len;
+			}
 		}
-		if( var6 ) {
-			strcat(bestmatch.string, var6);
+		if ( var6 ) {
+			len = (int) strlen( var6 );
 			bestmatch.variables[6].offset = index;
-			bestmatch.variables[6].length = strlen(var6);
-			index += strlen(var6);
+			if ( len + index < sizeof( bestmatch.string ) ) {
+				bestmatch.variables[6].length = len;
+				strcat( bestmatch.string, var6 );
+				index += len;
+			}
 		}
-		if( var7 ) {
-			strcat(bestmatch.string, var7);
+		if ( var7 ) {
+			len = (int) strlen( var7 );
 			bestmatch.variables[7].offset = index;
-			bestmatch.variables[7].length = strlen(var7);
+			if ( len + index < sizeof( bestmatch.string ) ) {
+				bestmatch.variables[7].length = len;
+				strcat( bestmatch.string, var7 );
+				//index += len;
+			}
 		}
 		if (LibVarGetValue("bot_testrchat"))
 		{
@@ -2847,7 +2897,7 @@ void BotGetChatMessage(int chatstate, char *buf, int size)
 	BotRemoveTildes(cs->chatmessage);
 	Q_strncpyz( buf, cs->chatmessage, size );
 	//clear the chat message from the state
-	strcpy( cs->chatmessage, "" );
+	cs->chatmessage[0] = '\0';
 } //end of the function BotGetChatMessage
 //===========================================================================
 //

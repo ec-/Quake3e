@@ -2403,7 +2403,7 @@ int PC_Directive_error(source_t *source)
 {
 	token_t token;
 
-	strcpy(token.string, "");
+	token.string[0] = '\0';
 	PC_ReadSourceToken(source, &token);
 	SourceError(source, "#error directive: %s", token.string);
 	return qfalse;
@@ -2834,7 +2834,7 @@ int PC_ExpectTokenType(source_t *source, int type, int subtype, token_t *token)
 
 	if (token->type != type)
 	{
-		strcpy(str, "");
+		str[0] = '\0';
 		if (type == TT_STRING) strcpy(str, "string");
 		if (type == TT_LITERAL) strcpy(str, "literal");
 		if (type == TT_NUMBER) strcpy(str, "number");
@@ -2847,7 +2847,7 @@ int PC_ExpectTokenType(source_t *source, int type, int subtype, token_t *token)
 	{
 		if ((token->subtype & subtype) != subtype)
 		{
-			strcpy(str, "");
+			str[0] = '\0';
 			if (subtype & TT_DECIMAL) strcpy(str, "decimal");
 			if (subtype & TT_HEX) strcpy(str, "hex");
 			if (subtype & TT_OCTAL) strcpy(str, "octal");
@@ -3011,8 +3011,8 @@ source_t *LoadSourceFile(const char *filename)
 
 	script->next = NULL;
 
-	source = (source_t *) GetMemory(sizeof(source_t));
-	Com_Memset(source, 0, sizeof(source_t));
+	source = (source_t *) GetMemory( sizeof( *source ) );
+	Com_Memset( source, 0, sizeof( *source ) );
 
 	Q_strncpyz(source->filename, filename, sizeof(source->filename));
 	source->scriptstack = script;
@@ -3215,23 +3215,15 @@ int PC_SourceFileAndLine(int handle, char *filename, int *line)
 		*line = 0;
 	return qtrue;
 } //end of the function PC_SourceFileAndLine
-//============================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//============================================================================
-void PC_SetBaseFolder(const char *path)
+
+
+void PC_SetBaseFolder( const char *path )
 {
-	PS_SetBaseFolder(path);
-} //end of the function PC_SetBaseFolder
-//============================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//============================================================================
-void PC_CheckOpenSourceHandles(void)
+	PS_SetBaseFolder( path );
+}
+
+
+void PC_CheckOpenSourceHandles( void )
 {
 	int i;
 
@@ -3241,7 +3233,7 @@ void PC_CheckOpenSourceHandles(void)
 		{
 #ifdef BOTLIB
 			botimport.Print(PRT_ERROR, "file %s still open in precompiler\n", sourceFiles[i]->scriptstack->filename);
-#endif	//BOTLIB
-		} //end if
-	} //end for
-} //end of the function PC_CheckOpenSourceHandles
+#endif
+		}
+	}
+}

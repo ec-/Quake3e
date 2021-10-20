@@ -977,7 +977,7 @@ void SV_PacketEvent( const netadr_t *from, msg_t *msg ) {
 		return;
 
 	// check for connectionless packet (0xffffffff) first
-	if ( *(int *)msg->data == -1 ) {
+	if ( *(int32_t *)msg->data == -1 ) {
 		SV_ConnectionlessPacket( from, msg );
 		return;
 	}

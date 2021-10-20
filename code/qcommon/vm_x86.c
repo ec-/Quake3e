@@ -708,14 +708,14 @@ static void mov_rx_imm64( uint32_t reg, int64_t imm64 )
 				emit_rex1( reg | R_REX );
 				Emit1( 0xC7 );
 				Emit1( 0xC0 + ( reg & 7 ) ); // modrm: 11.000.reg
-				Emit4( imm64 );
+				Emit4( (int32_t)imm64 );
 			} else {
 				// worst case
 				emit_mov_rx_imm64( reg, imm64 );
 			}
 		} else {
 			// move to 32-bit register with implicit zero-extension to 64-bits
-			emit_mov_rx_imm32( reg, imm64 );
+			emit_mov_rx_imm32( reg, (int32_t)imm64 );
 		}
 	}
 }
@@ -4824,13 +4824,13 @@ VM_CallCompiled
 This function is called directly by the generated code
 ==============
 */
-int VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
+int32_t VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
 {
 	int32_t	opStack[MAX_OPSTACK_SIZE];
 	int		stackOnEntry;
 	int32_t	*image;
 #if id386
-	int		*oldOpTop;
+	int32_t	*oldOpTop;
 #endif
 	int		i;
 
@@ -4841,7 +4841,7 @@ int VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
 	oldOpTop = vm->opStackTop;
 #endif
 
-	vm->programStack -= ( MAX_VMMAIN_CALL_ARGS + 2 ) * 4;
+	vm->programStack -= ( MAX_VMMAIN_CALL_ARGS + 2 ) * sizeof( int32_t );
 
 	// set up the stack frame
 	image = (int32_t*) ( vm->dataBase + vm->programStack );
@@ -4871,7 +4871,7 @@ int VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
 		Com_Error( ERR_DROP, "%s(%s): opStack corrupted in compiled code", __func__, vm->name );
 	}
 
-	if ( vm->programStack != stackOnEntry - ( MAX_VMMAIN_CALL_ARGS + 2 ) * 4 ) {
+	if ( vm->programStack != stackOnEntry - ( MAX_VMMAIN_CALL_ARGS + 2 ) * sizeof( int32_t ) ) {
 		Com_Error( ERR_DROP, "%s(%s): programStack corrupted in compiled code", __func__, vm->name );
 	}
 #endif

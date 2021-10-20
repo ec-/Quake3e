@@ -204,7 +204,7 @@ struct vm_s {
 	int			breakFunction;		// increment breakCount on function entry to this
 	int			breakCount;
 
-	byte		*jumpTableTargets;
+	int32_t		*jumpTableTargets;
 	int			numJumpTableTargets;
 
 	uint32_t	crc32sum;
@@ -215,10 +215,10 @@ struct vm_s {
 };
 
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header );
-int	VM_CallCompiled( vm_t *vm, int nargs, int *args );
+int32_t VM_CallCompiled( vm_t *vm, int nargs, int32_t *args );
 
 qboolean VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header );
-int	VM_CallInterpreted2( vm_t *vm, int nargs, int *args );
+int32_t VM_CallInterpreted2( vm_t *vm, int nargs, int32_t *args );
 
 vmSymbol_t *VM_ValueToFunctionSymbol( vm_t *vm, int value );
 int VM_SymbolToValue( vm_t *vm, const char *symbol );
@@ -227,7 +227,7 @@ void VM_LogSyscalls( int *args );
 
 const char *VM_LoadInstructions( const byte *code_pos, int codeLength, int instructionCount, instruction_t *buf );
 const char *VM_CheckInstructions( instruction_t *buf, int instructionCount,
-								 const byte *jumpTableTargets,
+								 const int32_t *jumpTableTargets,
 								 int numJumpTableTargets,
 								 int dataLength );
 

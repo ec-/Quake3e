@@ -564,9 +564,10 @@ intptr_t QDECL VM_DllSyscall( intptr_t arg, ... ) {
 static void VM_SwapLongs( void *data, int length )
 {
 #ifndef Q3_LITTLE_ENDIAN
-	int i, *ptr;
-	ptr = (int *) data;
-	length /= sizeof( int );
+	int32_t *ptr;
+	int i;
+	ptr = (int32_t *) data;
+	length /= sizeof( int32_t );
 	for ( i = 0; i < length; i++ ) {
 		ptr[ i ] = LittleLong( ptr[ i ] );
 	}
@@ -842,7 +843,7 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 		Com_Printf( "Loading %d jump table targets\n", vm->numJumpTableTargets );
 
 		if ( alloc ) {
-			vm->jumpTableTargets = Hunk_Alloc( header->jtrgLength, h_high );
+			vm->jumpTableTargets = (int32_t *) Hunk_Alloc( header->jtrgLength, h_high );
 		} else {
 			if ( vm->numJumpTableTargets != previousNumJumpTableTargets ) {
 				VM_Free( vm );
@@ -873,7 +874,7 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 		vm->numJumpTableTargets = length >> 2;
 		Com_Printf( "Loading %d external jump table targets\n", vm->numJumpTableTargets );
 		if ( alloc == qtrue ) {
-			vm->jumpTableTargets = Hunk_Alloc( length, h_high );
+			vm->jumpTableTargets = (int32_t *) Hunk_Alloc( length, h_high );
 		} else {
 			Com_Memset( vm->jumpTableTargets, 0, length );
 		}
@@ -1099,7 +1100,7 @@ const char *VM_LoadInstructions( const byte *code_pos, int codeLength, int instr
 		code_pos++;
 		ci->op = op0;
 		if ( n == 4 ) {
-			ci->value = LittleLong( *((int*)code_pos) );
+			ci->value = LittleLong( *((int32_t*)code_pos) );
 			code_pos += 4;
 		} else if ( n == 1 ) {
 			ci->value = *((unsigned char*)code_pos);
@@ -1154,7 +1155,7 @@ performs additional consistency and security checks
 */
 const char *VM_CheckInstructions( instruction_t *buf,
 								int instructionCount,
-								const byte *jumpTableTargets,
+								const int32_t *jumpTableTargets,
 								int numJumpTableTargets,
 								int dataLength )
 {
@@ -1512,7 +1513,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 	if ( jumpTableTargets ) {
 		// first pass - validate
 		for( i = 0; i < numJumpTableTargets; i++ ) {
-			n = *(int *)(jumpTableTargets + ( i * sizeof( int ) ) );
+			n = jumpTableTargets[ i ];
 			if ( n < 0 || n >= instructionCount ) {
 				Com_Printf( S_COLOR_YELLOW "jump target %i set on instruction %i that is out of range [0..%i]",
 					i, n, instructionCount - 1 );
@@ -1532,8 +1533,8 @@ const char *VM_CheckInstructions( instruction_t *buf,
 		}
 		// second pass - apply
 		for( i = 0; i < numJumpTableTargets; i++ ) {
-			n = *(int *)(jumpTableTargets + ( i * sizeof( int ) ) );
-			buf[n].jused = 1;
+			n = jumpTableTargets[ i ];
+			buf[ n ].jused = 1;
 		}
 	} else {
 __noJTS:
@@ -1949,7 +1950,7 @@ intptr_t QDECL VM_Call( vm_t *vm, int nargs, int callnum, ... )
 	if ( vm->entryPoint )
 	{
 		//rcg010207 -  see dissertation at top of VM_DllSyscall() in this file.
-		int args[MAX_VMMAIN_CALL_ARGS-1];
+		int32_t args[MAX_VMMAIN_CALL_ARGS-1];
 		va_list ap;
 		va_start( ap, callnum );
 		for ( i = 0; i < nargs; i++ ) {
@@ -1963,12 +1964,12 @@ intptr_t QDECL VM_Call( vm_t *vm, int nargs, int callnum, ... )
 #if id386 && !defined __clang__ // calling convention doesn't need conversion in some cases
 #ifndef NO_VM_COMPILED
 		if ( vm->compiled )
-			r = VM_CallCompiled( vm, nargs+1, (int*)&callnum );
+			r = VM_CallCompiled( vm, nargs+1, (int32_t*)&callnum );
 		else
 #endif
-			r = VM_CallInterpreted2( vm, nargs+1, (int*)&callnum );
+			r = VM_CallInterpreted2( vm, nargs+1, (int32_t*)&callnum );
 #else
-		int args[MAX_VMMAIN_CALL_ARGS];
+		int32_t args[MAX_VMMAIN_CALL_ARGS];
 		va_list ap;
 
 		args[0] = callnum;
