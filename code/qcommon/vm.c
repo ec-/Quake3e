@@ -575,7 +575,7 @@ static void VM_SwapLongs( void *data, int length )
 }
 
 
-static int Load_JTS( vm_t *vm, unsigned int crc32, void *data, int vmPakIndex ) {
+static int Load_JTS( vm_t *vm, uint32_t crc32, void *data, int vmPakIndex ) {
 	char		filename[MAX_QPATH];
 	int			header[2];
 	int			length;
@@ -801,7 +801,7 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 	dataLength = 1 << i;
 
 	// reserve some space for effective LOCAL+LOAD* checks
-	dataAlloc = dataLength + 1024;
+	dataAlloc = dataLength + VM_DATA_GUARD_SIZE;
 
 	if ( dataLength >= (1U<<31) || dataAlloc >= (1U<<31) ) {
 		// dataLenth is negative int32

@@ -38,6 +38,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // for some buggy mods
 #define	PROGRAM_STACK_EXTRA	(32*1024)
 
+// reserved space for effective LOCAL+LOAD* checks
+// also to avoid runtime range checks for many small agruments/structs in systemcalls
+#define	VM_DATA_GUARD_SIZE	1024
+
+// guard size must cover at least function arguments area
+#if VM_DATA_GUARD_SIZE < 256
+#undef VM_DATA_GUARD_SIZE
+#define VM_DATA_GUARD_SIZE 256
+#endif
+
 // flags for vm_rtChecks cvar
 #define VM_RTCHECK_PSTACK  1
 #define VM_RTCHECK_OPSTACK 2
@@ -163,8 +173,8 @@ struct vm_s {
 
 	syscall_t	systemCall;
 	byte		*dataBase;
-	int			*opStack;			// pointer to local function stack
-	int			*opStackTop;
+	int32_t		*opStack;			// pointer to local function stack
+	int32_t		*opStackTop;
 
 	int			programStack;		// the vm may be recursively entered
 	int			stackBottom;		// if programStack < stackBottom, error
@@ -195,7 +205,7 @@ struct vm_s {
 	unsigned int dataMask;
 	unsigned int dataLength;			// data segment length
 	unsigned int exactDataLength;	// from qvm header
-	unsigned int dataAlloc;			// actually allocated
+	unsigned int dataAlloc;			// actually allocated, for mmap()/munmap()
 
 	int			numSymbols;
 	vmSymbol_t	*symbols;
@@ -242,7 +252,7 @@ typedef struct opcode_info_s
 	int	stack;
 	int	nargs;
 	int	flags;
-} opcode_info_t ;
+} opcode_info_t;
 
 extern opcode_info_t ops[ OP_MAX ];
 
