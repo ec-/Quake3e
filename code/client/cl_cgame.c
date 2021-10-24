@@ -106,7 +106,7 @@ static qboolean CL_GetSnapshot( int snapshotNumber, snapshot_t *snapshot ) {
 	clSnapshot_t	*clSnap;
 	int				i, count;
 
-	if ( snapshotNumber > cl.snap.messageNum ) {
+	if ( cl.snap.messageNum - snapshotNumber < 0 ) {
 		Com_Error( ERR_DROP, "CL_GetSnapshot: snapshotNumber > cl.snapshot.messageNum" );
 	}
 
@@ -185,8 +185,8 @@ static void CL_ConfigstringModified( void ) {
 	int			len;
 
 	index = atoi( Cmd_Argv(1) );
-	if ( index < 0 || index >= MAX_CONFIGSTRINGS ) {
-		Com_Error( ERR_DROP, "CL_ConfigstringModified: bad index %i", index );
+	if ( (unsigned) index >= MAX_CONFIGSTRINGS ) {
+		Com_Error( ERR_DROP, "%s: bad configstring index %i", __func__, index );
 	}
 	// get everything after "cs <num>"
 	s = Cmd_ArgsFrom(2);
@@ -204,7 +204,7 @@ static void CL_ConfigstringModified( void ) {
 	// leave the first 0 for uninitialized strings
 	cl.gameState.dataCount = 1;
 
-	for ( i = 0 ; i < MAX_CONFIGSTRINGS ; i++ ) {
+	for ( i = 0; i < MAX_CONFIGSTRINGS; i++ ) {
 		if ( i == index ) {
 			dup = s;
 		} else {
@@ -217,7 +217,7 @@ static void CL_ConfigstringModified( void ) {
 		len = strlen( dup );
 
 		if ( len + 1 + cl.gameState.dataCount > MAX_GAMESTATE_CHARS ) {
-			Com_Error( ERR_DROP, "MAX_GAMESTATE_CHARS exceeded" );
+			Com_Error( ERR_DROP, "%s: MAX_GAMESTATE_CHARS exceeded", __func__ );
 		}
 
 		// append it to the gameState string buffer
@@ -247,7 +247,7 @@ static qboolean CL_GetServerCommand( int serverCommandNumber ) {
 	int argc, index;
 
 	// if we have irretrievably lost a reliable command, drop the connection
-	if ( serverCommandNumber <= clc.serverCommandSequence - MAX_RELIABLE_COMMANDS ) {
+	if ( clc.serverCommandSequence - serverCommandNumber >= MAX_RELIABLE_COMMANDS ) {
 		// when a demo record was started after the client got a whole bunch of
 		// reliable commands then the client never got those first reliable commands
 		if ( clc.demoplaying ) {
@@ -258,7 +258,7 @@ static qboolean CL_GetServerCommand( int serverCommandNumber ) {
 		return qfalse;
 	}
 
-	if ( serverCommandNumber > clc.serverCommandSequence ) {
+	if ( clc.serverCommandSequence - serverCommandNumber < 0 ) {
 		Com_Error( ERR_DROP, "CL_GetServerCommand: requested a command not received" );
 		return qfalse;
 	}
@@ -1126,7 +1126,7 @@ void CL_SetCGameTime( void ) {
 		return;
 	}
 
-	if ( cl.snap.serverTime < cl.oldFrameServerTime ) {
+	if ( cl.snap.serverTime - cl.oldFrameServerTime < 0 ) {
 		Com_Error( ERR_DROP, "cl.snap.serverTime < cl.oldFrameServerTime" );
 	}
 	cl.oldFrameServerTime = cl.snap.serverTime;
@@ -1144,14 +1144,15 @@ void CL_SetCGameTime( void ) {
 
 		// guarantee that time will never flow backwards, even if
 		// serverTimeDelta made an adjustment or cl_timeNudge was changed
-		if ( cl.serverTime < cl.oldServerTime ) {
+		if ( cl.serverTime - cl.oldServerTime < 0 ) {
 			cl.serverTime = cl.oldServerTime;
 		}
 		cl.oldServerTime = cl.serverTime;
 
 		// note if we are almost past the latest frame (without timeNudge),
 		// so we will try and adjust back a bit when the next snapshot arrives
-		if ( cls.realtime + cl.serverTimeDelta >= cl.snap.serverTime - 5 ) {
+		//if ( cls.realtime + cl.serverTimeDelta >= cl.snap.serverTime - 5 ) {
+		if ( cls.realtime + cl.serverTimeDelta - cl.snap.serverTime >= -5 ) {
 			cl.extrapolatedSnapshot = qtrue;
 		}
 	}
@@ -1183,7 +1184,8 @@ void CL_SetCGameTime( void ) {
 		cl.serverTime = clc.timeDemoBaseTime + clc.timeDemoFrames * 50;
 	}
 
-	while ( cl.serverTime >= cl.snap.serverTime ) {
+	//while ( cl.serverTime >= cl.snap.serverTime ) {
+	while ( cl.serverTime - cl.snap.serverTime >= 0 ) {
 		// feed another messag, which should change
 		// the contents of cl.snap
 		CL_ReadDemoMessage();

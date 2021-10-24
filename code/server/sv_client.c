@@ -759,7 +759,7 @@ gotnewcl:
 	// when we receive the first packet from the client, we will
 	// notice that it is from a different serverid and that the
 	// gamestate message was not just sent, forcing a retransmit
-	newcl->gamestateMessageNum = -1;
+	newcl->gamestateMessageNum = newcl->messageAcknowledge - 1; // force gamestate retransmit
 
 	// if this was the first client on the server, or the last client
 	// the server can hold, send a heartbeat to the master.
@@ -1062,7 +1062,7 @@ void SV_ClientEnterWorld( client_t *client, usercmd_t *cmd ) {
 	ent->s.number = clientNum;
 	client->gentity = ent;
 
-	client->deltaMessage = -1;
+	client->deltaMessage = client->netchan.outgoingSequence - (PACKET_BACKUP + 1); // force delta reset
 	client->lastSnapshotTime = svs.time - 9999; // generate a snapshot immediately
 
 	if(cmd)
@@ -1202,16 +1202,15 @@ Check to see if the client wants a file, open it if needed and start pumping the
 Fill up msg with data, return number of download blocks added
 ==================
 */
-static int SV_WriteDownloadToClient( client_t *cl, msg_t *msg )
+static int SV_WriteDownloadToClient( client_t *cl )
 {
 	int curindex;
 	int unreferenced = 1;
 	char errorMessage[1024];
 	char pakbuf[MAX_QPATH], *pakptr;
 	int numRefPaks;
-
-	if (!*cl->downloadName)
-		return 0;	// Nothing being downloaded
+	msg_t msg;
+	byte msgBuffer[MAX_DOWNLOAD_BLKSIZE*2+8];
 
 	if ( cl->download == FS_INVALID_HANDLE ) {
 		qboolean idPack = qfalse;
@@ -1256,6 +1255,7 @@ static int SV_WriteDownloadToClient( client_t *cl, msg_t *msg )
 			(sv_allowDownload->integer & DLF_NO_UDP) ||
 			idPack || unreferenced ||
 			( cl->downloadSize = FS_SV_FOpenFileRead( cl->downloadName, &cl->download ) ) < 0 ) {
+
 			// cannot auto-download file
 			if(unreferenced)
 			{
@@ -1292,10 +1292,17 @@ static int SV_WriteDownloadToClient( client_t *cl, msg_t *msg )
 				Com_Printf("clientDownload: %d : \"%s\" file not found on server\n", (int) (cl - svs.clients), cl->downloadName);
 				Com_sprintf(errorMessage, sizeof(errorMessage), "File \"%s\" not found on server for autodownloading.\n", cl->downloadName);
 			}
-			MSG_WriteByte( msg, svc_download );
-			MSG_WriteShort( msg, 0 ); // client is expecting block zero
-			MSG_WriteLong( msg, -1 ); // illegal file size
-			MSG_WriteString( msg, errorMessage );
+
+			MSG_Init( &msg, msgBuffer, sizeof( msgBuffer ) - 8 );
+			MSG_WriteLong( &msg, cl->lastClientCommand );
+
+			MSG_WriteByte( &msg, svc_download );
+			MSG_WriteShort( &msg, 0 ); // client is expecting block zero
+			MSG_WriteLong( &msg, -1 ); // illegal file size
+			MSG_WriteString( &msg, errorMessage );
+
+			MSG_WriteByte( &msg, svc_EOF );
+			SV_Netchan_Transmit( cl, &msg );
 
 			*cl->downloadName = '\0';
 
@@ -1366,18 +1373,24 @@ static int SV_WriteDownloadToClient( client_t *cl, msg_t *msg )
 	// Send current block
 	curindex = (cl->downloadXmitBlock % MAX_DOWNLOAD_WINDOW);
 
-	MSG_WriteByte( msg, svc_download );
-	MSG_WriteShort( msg, cl->downloadXmitBlock );
+	MSG_Init( &msg, msgBuffer, sizeof( msgBuffer ) - 8 );
+	MSG_WriteLong( &msg, cl->lastClientCommand );
+
+	MSG_WriteByte( &msg, svc_download );
+	MSG_WriteShort( &msg, cl->downloadXmitBlock );
 
 	// block zero is special, contains file size
 	if ( cl->downloadXmitBlock == 0 )
-		MSG_WriteLong( msg, cl->downloadSize );
+		MSG_WriteLong( &msg, cl->downloadSize );
 
-	MSG_WriteShort( msg, cl->downloadBlockSize[curindex] );
+	MSG_WriteShort( &msg, cl->downloadBlockSize[curindex] );
 
 	// Write the block
-	if(cl->downloadBlockSize[curindex])
-		MSG_WriteData(msg, cl->downloadBlocks[curindex], cl->downloadBlockSize[curindex]);
+	if ( cl->downloadBlockSize[curindex] > 0 )
+		MSG_WriteData( &msg, cl->downloadBlocks[curindex], cl->downloadBlockSize[curindex] );
+
+	MSG_WriteByte( &msg, svc_EOF );
+	SV_Netchan_Transmit( cl, &msg );
 
 	Com_DPrintf( "clientDownload: %d : writing block %d\n", (int) (cl - svs.clients), cl->downloadXmitBlock );
 
@@ -1432,28 +1445,15 @@ Send one round of download messages to all clients
 */
 int SV_SendDownloadMessages( void )
 {
-	int i, numDLs = 0, retval;
+	int i, numDLs = 0;
 	client_t *cl;
-	msg_t msg;
-	byte msgBuffer[ MAX_MSGLEN_BUF ];
 
 	for( i = 0; i < sv_maxclients->integer; i++ )
 	{
-		cl = &svs.clients[i];
-
+		cl = &svs.clients[ i ];
 		if ( cl->state >= CS_CONNECTED && *cl->downloadName )
 		{
-			MSG_Init( &msg, msgBuffer, MAX_MSGLEN );
-			MSG_WriteLong( &msg, cl->lastClientCommand );
-
-			retval = SV_WriteDownloadToClient( cl, &msg );
-
-			if ( retval )
-			{
-				MSG_WriteByte( &msg, svc_EOF );
-				SV_Netchan_Transmit( cl, &msg );
-				numDLs += retval;
-			}
+			numDLs += SV_WriteDownloadToClient( cl );
 		}
 	}
 
@@ -1521,7 +1521,7 @@ static void SV_VerifyPaks_f( client_t *cl ) {
 			// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=475
 			// we may get incoming cp sequences from a previous checksumFeed, which we need to ignore
 			// since serverId is a frame count, it always goes up
-			if ( atoi( pArg ) < sv.checksumFeedServerId )
+			if ( atoi( pArg ) - sv.checksumFeedServerId < 0 )
 			{
 				Com_DPrintf( "ignoring outdated cp command from client %s\n", cl->name );
 				return;
@@ -2024,7 +2024,7 @@ static void SV_UserMove( client_t *cl, msg_t *msg, qboolean delta ) {
 	if ( delta ) {
 		cl->deltaMessage = cl->messageAcknowledge;
 	} else {
-		cl->deltaMessage = -1;
+		cl->deltaMessage = cl->netchan.outgoingSequence - ( PACKET_BACKUP + 1 ); // force delta reset
 	}
 
 	cmdCount = MSG_ReadByte( msg );
@@ -2080,7 +2080,7 @@ static void SV_UserMove( client_t *cl, msg_t *msg, qboolean delta ) {
 	}
 
 	if ( cl->state != CS_ACTIVE ) {
-		cl->deltaMessage = -1;
+		cl->deltaMessage = cl->netchan.outgoingSequence - ( PACKET_BACKUP + 1 ); // force delta reset
 		return;
 	}
 
@@ -2098,10 +2098,11 @@ static void SV_UserMove( client_t *cl, msg_t *msg, qboolean delta ) {
 		//}
 		// don't execute if this is an old cmd which is already executed
 		// these old cmds are included when cl_packetdup > 0
-		if ( cmds[i].serverTime <= cl->lastUsercmd.serverTime ) {
+		//if ( cmds[i].serverTime <= cl->lastUsercmd.serverTime ) {
+		if ( cmds[i].serverTime - cl->lastUsercmd.serverTime <= 0 ) {
 			continue;
 		}
-		SV_ClientThink (cl, &cmds[ i ]);
+		SV_ClientThink( cl, &cmds[ i ] );
 	}
 }
 
@@ -2122,15 +2123,16 @@ Parse a client packet
 ===================
 */
 void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
-	int			c;
-	int			serverId;
+	int	c;
+	int	serverId;
 
-	MSG_Bitstream(msg);
+	MSG_Bitstream( msg );
 
 	serverId = MSG_ReadLong( msg );
 	cl->messageAcknowledge = MSG_ReadLong( msg );
 
-	if (cl->messageAcknowledge < 0) {
+	//if ( cl->messageAcknowledge < 0 ) {
+	if ( cl->netchan.outgoingSequence - cl->messageAcknowledge <= 0 ) {
 		// usually only hackers create messages like this
 		// it is more annoying for them to let them hanging
 #ifndef NDEBUG
@@ -2144,7 +2146,7 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 	// NOTE: when the client message is fux0red the acknowledgement numbers
 	// can be out of range, this could cause the server to send thousands of server
 	// commands which the server thinks are not yet acknowledged in SV_UpdateServerCommandsToClient
-	if (cl->reliableAcknowledge < cl->reliableSequence - MAX_RELIABLE_COMMANDS) {
+	if ( cl->reliableSequence - cl->reliableAcknowledge > MAX_RELIABLE_COMMANDS ) {
 		// usually only hackers create messages like this
 		// it is more annoying for them to let them hanging
 #ifndef NDEBUG
@@ -2169,16 +2171,17 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 	// but we still need to read the next message to move to next download or send gamestate
 	// I don't like this hack though, it must have been working fine at some point, suspecting the fix is somewhere else
 	if ( serverId != sv.serverId && !*cl->downloadName && !strstr(cl->lastClientCommandString, "nextdl") ) {
-		if ( serverId >= sv.restartedServerId && serverId < sv.serverId ) { // TTimo - use a comparison here to catch multiple map_restart
-			// they just haven't caught the map_restart yet
-			Com_DPrintf("%s : ignoring pre map_restart / outdated client message\n", cl->name);
+		// TTimo - use a comparison here to catch multiple map_restart
+		if ( serverId - sv.restartedServerId >= 0 && serverId - sv.serverId < 0 ) {
+			// they just haven't caught the \map_restart yet
+			Com_DPrintf( "%s: ignoring pre map_restart / outdated client message\n", cl->name );
 			return;
 		}
-		// if we can tell that the client has dropped the last
-		// gamestate we sent them, resend it
-		if ( cl->state != CS_ACTIVE && cl->messageAcknowledge > cl->gamestateMessageNum ) {
+		// if we can tell that the client has dropped the last gamestate we sent them, resend it
+		if ( cl->state != CS_ACTIVE && cl->messageAcknowledge - cl->gamestateMessageNum > 0 ) {
 			if ( !SVC_RateLimit( &cl->gamestate_rate, 4, 1000 ) ) {
-				Com_DPrintf( "%s : dropped gamestate, resending\n", cl->name );
+				if ( cl->gentity )
+					Com_DPrintf( "%s: dropped gamestate, resending\n", cl->name );
 				SV_SendClientGameState( cl );
 			}
 		}

@@ -74,7 +74,6 @@ typedef struct {
 	int				checksumFeedServerId;
 	int				snapshotCounter;	// incremented for each snapshot built
 	int				timeResidual;		// <= 1000 / sv_frame->value
-	int				nextFrameTime;		// when time > nextFrameTime, process world
 	char			*configstrings[MAX_CONFIGSTRINGS];
 	svEntity_t		svEntities[MAX_GENTITIES];
 
