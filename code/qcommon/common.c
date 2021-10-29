@@ -2866,7 +2866,7 @@ int Com_EventLoop( void ) {
 			CL_CharEvent( ev.evValue );
 			break;
 		case SE_MOUSE:
-			CL_MouseEvent( ev.evValue, ev.evValue2, ev.evTime );
+			CL_MouseEvent( ev.evValue, ev.evValue2 /*, ev.evTime*/ );
 			break;
 		case SE_JOYSTICK_AXIS:
 			CL_JoystickEvent( ev.evValue, ev.evValue2, ev.evTime );
@@ -2876,7 +2876,7 @@ int Com_EventLoop( void ) {
 			Cbuf_AddText( (char *)ev.evPtr );
 			Cbuf_AddText( "\n" );
 			break;
-			default:
+		default:
 				Com_Error( ERR_FATAL, "Com_EventLoop: bad event type %i", ev.evType );
 			break;
 		}
@@ -2884,6 +2884,7 @@ int Com_EventLoop( void ) {
 		// free any block data
 		if ( ev.evPtr ) {
 			Z_Free( ev.evPtr );
+			ev.evPtr = NULL;
 		}
 	}
 

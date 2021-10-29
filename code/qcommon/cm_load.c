@@ -657,7 +657,7 @@ void CM_LoadMap( const char *name, qboolean clientload, int *checksum ) {
 	*checksum = cm.checksum = LittleLong( Com_BlockChecksum( buf, length ) );
 
 	header = *(dheader_t *)buf;
-	for ( i = 0; i < sizeof( dheader_t ) / 4; i++ ) {
+	for ( i = 0; i < sizeof( dheader_t ) / sizeof( int32_t ); i++ ) {
 		( (int32_t *)&header )[i] = LittleLong( ( (int32_t *)&header )[i] );
 	}
 

@@ -817,12 +817,12 @@ CL_ParseServerMessage
 =====================
 */
 void CL_ParseServerMessage( msg_t *msg ) {
-	int			cmd;
+	int cmd;
 
 	if ( cl_shownet->integer == 1 ) {
-		Com_Printf ("%i ",msg->cursize);
+		Com_Printf( "%i ",msg->cursize );
 	} else if ( cl_shownet->integer >= 2 ) {
-		Com_Printf ("------------------\n");
+		Com_Printf( "------------------\n" );
 	}
 
 	clc.eventMask = 0;
@@ -830,17 +830,18 @@ void CL_ParseServerMessage( msg_t *msg ) {
 
 	// get the reliable sequence acknowledge number
 	clc.reliableAcknowledge = MSG_ReadLong( msg );
-	//
-	if ( clc.reliableAcknowledge < clc.reliableSequence - MAX_RELIABLE_COMMANDS ) {
+
+	if ( clc.reliableSequence - clc.reliableAcknowledge > MAX_RELIABLE_COMMANDS ) {
+		Com_Printf( S_COLOR_YELLOW "WARNING: dropping %i commands from server\n", clc.reliableSequence - clc.reliableAcknowledge );
 		clc.reliableAcknowledge = clc.reliableSequence;
+	} else if ( clc.reliableSequence - clc.reliableAcknowledge < 0 ) {
+		Com_Error( ERR_DROP, "%s: incorrect reliable sequence acknowledge number", __func__ );
 	}
 
-	//
 	// parse the message
-	//
 	while ( 1 ) {
 		if ( msg->readcount > msg->cursize ) {
-			Com_Error (ERR_DROP,"CL_ParseServerMessage: read past end of server message");
+			Com_Error( ERR_DROP,"CL_ParseServerMessage: read past end of server message" );
 			break;
 		}
 
@@ -862,7 +863,7 @@ void CL_ParseServerMessage( msg_t *msg ) {
 		// other commands
 		switch ( cmd ) {
 		default:
-			Com_Error (ERR_DROP,"CL_ParseServerMessage: Illegible server message");
+			Com_Error( ERR_DROP,"CL_ParseServerMessage: Illegible server message" );
 			break;
 		case svc_nop:
 			break;

@@ -228,14 +228,18 @@ SV_UpdateServerCommandsToClient
 ==================
 */
 void SV_UpdateServerCommandsToClient( client_t *client, msg_t *msg ) {
-	int		i;
+	int i, n;
 
 	// write any unacknowledged serverCommands
-	for ( i = client->reliableAcknowledge + 1 ; i <= client->reliableSequence ; i++ ) {
+	n = client->reliableSequence - client->reliableAcknowledge;
+
+	for ( i = 0; i < n; i++ ) {
+		const int index = client->reliableAcknowledge + 1 + i;
 		MSG_WriteByte( msg, svc_serverCommand );
-		MSG_WriteLong( msg, i );
-		MSG_WriteString( msg, client->reliableCommands[ i & (MAX_RELIABLE_COMMANDS-1) ] );
+		MSG_WriteLong( msg, index );
+		MSG_WriteString( msg, client->reliableCommands[ index & (MAX_RELIABLE_COMMANDS-1) ] );
 	}
+
 	client->reliableSent = client->reliableSequence;
 }
 

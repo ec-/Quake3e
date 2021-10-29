@@ -1956,16 +1956,15 @@ static qboolean SV_ClientCommand( client_t *cl, msg_t *msg ) {
 	s = MSG_ReadString( msg );
 
 	// see if we have already executed it
-	if ( cl->lastClientCommand >= seq ) {
+	if ( seq - cl->lastClientCommand <= 0 ) {
 		return qtrue;
 	}
 
 	Com_DPrintf( "clientCommand: %s : %i : %s\n", cl->name, seq, s );
 
 	// drop the connection if we have somehow lost commands
-	if ( seq > cl->lastClientCommand + 1 ) {
-		Com_Printf( "Client %s lost %i clientCommands\n", cl->name,
-			seq - cl->lastClientCommand + 1 );
+	if ( seq - cl->lastClientCommand > 1 ) {
+		Com_Printf( "Client %s lost %i clientCommands\n", cl->name, seq - cl->lastClientCommand - 1 );
 		SV_DropClient( cl, "Lost reliable commands" );
 		return qfalse;
 	}
@@ -1977,7 +1976,7 @@ static qboolean SV_ClientCommand( client_t *cl, msg_t *msg ) {
 	cl->lastClientCommand = seq;
 	Q_strncpyz( cl->lastClientCommandString, s, sizeof( cl->lastClientCommandString ) );
 
-	return qtrue;		// continue procesing
+	return qtrue; // continue procesing
 }
 
 
@@ -2087,9 +2086,9 @@ static void SV_UserMove( client_t *cl, msg_t *msg, qboolean delta ) {
 	// usually, the first couple commands will be duplicates
 	// of ones we have previously received, but the servertimes
 	// in the commands will cause them to be immediately discarded
-	for ( i =  0 ; i < cmdCount ; i++ ) {
+	for ( i = 0; i < cmdCount; i++ ) {
 		// if this is a cmd from before a map_restart ignore it
-		if ( cmds[i].serverTime > cmds[cmdCount-1].serverTime ) {
+		if ( cmds[i].serverTime - cmds[cmdCount-1].serverTime > 0 ) {
 			continue;
 		}
 		// extremely lagged or cmd from before a map_restart
@@ -2125,36 +2124,49 @@ Parse a client packet
 void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 	int	c;
 	int	serverId;
+	int reliableAcknowledge;
 
 	MSG_Bitstream( msg );
 
 	serverId = MSG_ReadLong( msg );
+
 	cl->messageAcknowledge = MSG_ReadLong( msg );
 
 	//if ( cl->messageAcknowledge < 0 ) {
 	if ( cl->netchan.outgoingSequence - cl->messageAcknowledge <= 0 ) {
 		// usually only hackers create messages like this
 		// it is more annoying for them to let them hanging
-#ifndef NDEBUG
+#ifdef _DEBUG
 		SV_DropClient( cl, "DEBUG: illegible client message" );
 #endif
 		return;
 	}
 
-	cl->reliableAcknowledge = MSG_ReadLong( msg );
+	reliableAcknowledge = MSG_ReadLong( msg );
+
+	if ( cl->reliableSequence - reliableAcknowledge < 0 ) {
+#ifdef _DEBUG
+		SV_DropClient( cl, "DEBUG: illegible client message" );
+#endif
+		return;
+	}
 
 	// NOTE: when the client message is fux0red the acknowledgement numbers
 	// can be out of range, this could cause the server to send thousands of server
 	// commands which the server thinks are not yet acknowledged in SV_UpdateServerCommandsToClient
-	if ( cl->reliableSequence - cl->reliableAcknowledge > MAX_RELIABLE_COMMANDS ) {
+	if ( cl->reliableSequence - reliableAcknowledge > MAX_RELIABLE_COMMANDS ) {
 		// usually only hackers create messages like this
 		// it is more annoying for them to let them hanging
-#ifndef NDEBUG
+#ifdef _DEBUG
 		SV_DropClient( cl, "DEBUG: illegible client message" );
+#else
+		Com_Printf( S_COLOR_YELLOW "WARNING: dropping %i commands from %s\n", cl->reliableSequence - cl->reliableAcknowledge, cl->name );
 #endif
 		cl->reliableAcknowledge = cl->reliableSequence;
 		return;
 	}
+
+	cl->reliableAcknowledge = reliableAcknowledge;
 
 	cl->justConnected = qfalse;
 
