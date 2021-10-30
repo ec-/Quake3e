@@ -239,8 +239,6 @@ void SV_UpdateServerCommandsToClient( client_t *client, msg_t *msg ) {
 		MSG_WriteLong( msg, index );
 		MSG_WriteString( msg, client->reliableCommands[ index & (MAX_RELIABLE_COMMANDS-1) ] );
 	}
-
-	client->reliableSent = client->reliableSequence;
 }
 
 /*
