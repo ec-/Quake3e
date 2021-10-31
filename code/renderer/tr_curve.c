@@ -281,7 +281,7 @@ static void PutPointsOnCurve( drawVert_t	ctrl[MAX_GRID_SIZE][MAX_GRID_SIZE],
 R_CreateSurfaceGridMesh
 =================
 */
-srfGridMesh_t *R_CreateSurfaceGridMesh(int width, int height,
+static srfGridMesh_t *R_CreateSurfaceGridMesh(int width, int height,
 								drawVert_t ctrl[MAX_GRID_SIZE][MAX_GRID_SIZE], float errorTable[2][MAX_GRID_SIZE] ) {
 	int i, j, size;
 	drawVert_t	*vert;
@@ -417,7 +417,7 @@ srfGridMesh_t *R_SubdividePatchToGrid( int width, int height,
 				}
 			}
 
-			maxLen = sqrt(maxLen);
+			maxLen = sqrtf( maxLen );
 
 			// if all the points are on the lines, remove the entire columns
 			if ( maxLen < 0.1f ) {

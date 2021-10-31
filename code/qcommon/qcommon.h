@@ -673,7 +673,11 @@ typedef enum {
 #endif
 
 typedef	time_t fileTime_t;
+#if defined  (_MSC_VER) && defined (__clang__)
+typedef	_off_t  fileOffset_t;
+#else
 typedef	off_t  fileOffset_t;
+#endif
 
 qboolean FS_Initialized( void );
 
@@ -1017,7 +1021,6 @@ extern	int		time_frontend;
 extern	int		time_backend;		// renderer backend time
 
 extern	int		com_frameTime;
-extern	int		com_frameMsec;
 
 #ifndef DEDICATED
 extern	qboolean	gw_minimized;
@@ -1123,7 +1126,7 @@ void CL_KeyEvent (int key, qboolean down, unsigned time);
 void CL_CharEvent( int key );
 // char events are for field typing, not game control
 
-void CL_MouseEvent( int dx, int dy, int time );
+void CL_MouseEvent( int dx, int dy /*, int time*/ );
 
 void CL_JoystickEvent( int axis, int value, int time );
 

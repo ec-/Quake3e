@@ -135,7 +135,7 @@ R_MDRComputeFogNum
 =================
 */
 
-int R_MDRComputeFogNum( mdrHeader_t *header, trRefEntity_t *ent ) {
+static int R_MDRComputeFogNum( mdrHeader_t *header, trRefEntity_t *ent ) {
 	int				i, j;
 	fog_t			*fog;
 	mdrFrame_t		*mdrFrame;

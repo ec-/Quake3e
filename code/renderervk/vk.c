@@ -3576,11 +3576,9 @@ void vk_initialize( void )
 	} else if ( props.vendorID == 0x106B ) {
 		vendor_name = "Apple Inc.";
 	} else if ( props.vendorID == 0x10DE ) {
-#ifdef _WIN32
 		// https://github.com/SaschaWillems/Vulkan/issues/493
 		// we can't render to offscreen presentation surfaces on nvidia
 		vk.offscreenRender = qfalse;
-#endif
 		vendor_name = "NVIDIA";
 	} else if ( props.vendorID == 0x14E4 ) {
 		vendor_name = "Broadcom Inc.";

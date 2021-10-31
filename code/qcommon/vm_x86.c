@@ -586,10 +586,12 @@ static void emit_lea_base_index( uint32_t reg, uint32_t base, uint32_t index )
 	emit_op_reg_base_index( 0, 0x8D, reg, base, index, 1, 0 );
 }
 
+#if 0
 static void emit_lea_index_scale( uint32_t reg, uint32_t index, int scale, int32_t offset )
 {
 	emit_op_reg_index_offset( 0x8D, reg, index, scale, offset );
 }
+#endif
 
 static void emit_lea_base_index_offset( uint32_t reg, uint32_t base, uint32_t index, int32_t offset )
 {
@@ -706,14 +708,14 @@ static void mov_rx_imm64( uint32_t reg, int64_t imm64 )
 				emit_rex1( reg | R_REX );
 				Emit1( 0xC7 );
 				Emit1( 0xC0 + ( reg & 7 ) ); // modrm: 11.000.reg
-				Emit4( imm64 );
+				Emit4( (int32_t)imm64 );
 			} else {
 				// worst case
 				emit_mov_rx_imm64( reg, imm64 );
 			}
 		} else {
 			// move to 32-bit register with implicit zero-extension to 64-bits
-			emit_mov_rx_imm32( reg, imm64 );
+			emit_mov_rx_imm32( reg, (int32_t)imm64 );
 		}
 	}
 }
@@ -809,10 +811,12 @@ static void emit_load4_index( uint32_t reg, uint32_t base, uint32_t index )
 	emit_op_reg_base_index( 0, 0x8B, reg, base, index, 1, 0 );
 }
 
+#if 0
 static void emit_load4_index_offset( uint32_t reg, uint32_t base, uint32_t index, int scale, int32_t offset )
 {
 	emit_op_reg_base_index( 0, 0x8B, reg, base, index, scale, offset );
 }
+#endif
 
 // R_REX prefix flag in [reg] may expand store to 8 bytes
 static void emit_store_rx( uint32_t reg, uint32_t base, int32_t offset )
@@ -1159,11 +1163,13 @@ static void emit_load_sx_index( uint32_t reg, uint32_t base, uint32_t index )
 	emit_op_reg_base_index( 0x0F, 0x10, reg, base, index, 1, 0 );
 }
 
+#if 0
 static void emit_load_sx_index_offset( uint32_t reg, uint32_t base, uint32_t index, int scale, int32_t offset )
 {
 	Emit1( 0xF3 );
 	emit_op_reg_base_index( 0x0F, 0x10, reg, base, index, scale, offset );
 }
+#endif
 
 static void emit_store_sx( uint32_t reg, uint32_t base, int32_t offset )
 {
@@ -1580,6 +1586,26 @@ static qboolean find_sx_var( uint32_t *reg, const var_addr_t *v ) {
 	}
 #endif // LOAD_OPTIMIZE
 	return qfalse;
+}
+
+
+static void reduce_map_size( reg_t *reg, uint32_t size ) {
+	int i;
+	for ( i = 0; i < ARRAY_LEN( reg->vars.map ); i++ ) {
+		if ( reg->vars.map[i].size > size ) {
+			reg->vars.map[i].size = size;
+		}
+	}
+}
+
+
+static reg_t *rx_on_top( void ) {
+	opstack_t *it = &opstackv[ opstack ];
+	if ( it->type == TYPE_RX ) {
+		return &rx_regs[ it->value ];
+	} else {
+		return NULL;
+	}
 }
 
 
@@ -3033,8 +3059,7 @@ static void EmitCallOffset( func_t Func )
 
 static void emit_CheckReg( vm_t *vm, uint32_t reg, func_t func )
 {
-#ifdef DEBUG_VM
-	if ( vm->forceDataMask )
+	if ( vm->forceDataMask || !( vm_rtChecks->integer & VM_RTCHECK_DATA ) )
 	{
 #if idx64
 		emit_and_rx( reg, R_DATAMASK );					// reg = reg & dataMask
@@ -3043,9 +3068,6 @@ static void emit_CheckReg( vm_t *vm, uint32_t reg, func_t func )
 #endif
 		return;
 	}
-
-	if ( !( vm_rtChecks->integer & VM_RTCHECK_DATA ) )
-		return;
 
 #if idx64
 	emit_cmp_rx( reg, R_DATAMASK );					// cmp reg, dataMask
@@ -3056,16 +3078,6 @@ static void emit_CheckReg( vm_t *vm, uint32_t reg, func_t func )
 	// error reporting
 	EmitString( "0F 87" );			// ja +errorFunction
 	Emit4( funcOffset[ func ] - compiledOfs - 6 );
-#else
-	if ( vm_rtChecks->integer & VM_RTCHECK_DATA || vm->forceDataMask )
-	{
-#if idx64
-		emit_and_rx( reg, R_DATAMASK );					// reg = reg & dataMask
-#else
-		emit_op_rx_imm32( X_AND, reg, vm->dataMask );	// reg = reg & vm->dataMask
-#endif
-	}
-#endif
 }
 
 
@@ -3534,24 +3546,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 
 		case OP_ADD: {
 			int rx = load_rx_opstack( R_EAX );			// eax = *opstack
-			if ( (ni+1)->op == OP_LOAD4 && ( vm_rtChecks->integer & VM_RTCHECK_DATA ) == 0 && !vm->forceDataMask ) {
-				// structure field load
-				if ( (ni+1 )->fpu && HasSSEFP() ) {
-					int sx = alloc_sx( R_XMM0 );
- 					// xmm0 = [dataBase + eax + 0x12345678]
-					emit_load_sx_index_offset( sx, R_DATABASE, rx, 1, ci->value );
-					unmask_rx( rx );
-					store_sx_opstack( sx );	// *opstack = xmm0
-					ip += 2; // OP_ADD + OP_LOAD4
-					return qtrue;
-				} else {
-					emit_load4_index_offset( rx, R_DATABASE, rx, 1, ci->value ); // eax = dword ptr [dataBase + eax + 0x12345678]
-				}
-				ip += 1; // OP_LOAD4
-			} else {
-				// this potential load address must be validated
-				emit_op_rx_imm32( X_ADD, rx, ci->value );	// add eax, 0x12345678
-			}
+			emit_op_rx_imm32( X_ADD, rx, ci->value );	// add eax, 0x12345678
 			store_rx_opstack( rx );						// *opstack = eax
 			ip += 1; // OP_ADD
 			return qtrue;
@@ -3613,30 +3608,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				break; // undefined behavior
 			if ( ci->value ) {
 				int rx = load_rx_opstack( R_EAX );		// eax = *opstack
-				// [index*scale + offset]?
-				if ( ci->value <= 3 && !(ni+1)->jused && (ni+1)->op == OP_CONST && (ni+2)->op == OP_ADD ) {
-					if ( (ni+3)->op == OP_LOAD4 && ( vm_rtChecks->integer & VM_RTCHECK_DATA ) == 0 && !vm->forceDataMask ) {
-						if ( (ni+3)->fpu && HasSSEFP() ) {
-							int sx = alloc_sx( R_XMM0 );
-							// xmm0 = [dataBase + eax*(1<<shift) + offset]
-							emit_load_sx_index_offset( sx, R_DATABASE, rx, 1 << ci->value, (ni+1)->value );
-							unmask_rx( rx );
-							store_sx_opstack( sx );			// *opstack = xmm0
-							ip += 4; // OP_LSH + CONST + OP_ADD + OP_LOAD4
-							return qtrue;
-						} else {
-							// eax = dword ptr [dataBase + eax*(1<<shift) + offset]
-							emit_load4_index_offset( rx, R_DATABASE, rx, 1 << ci->value, (ni+1)->value );
-						}
-						ip += 3; // CONST + OP_ADD + OP_LOAD4
-					} else {
-						// this potential load address must be validated
-						emit_lea_index_scale( rx, rx, 1 << ci->value, (ni+1)->value ); // eax = lea [eax*(1<<shift) + offset]
-						ip += 2; // CONST + OP_ADD
-					}
-				} else {
-					emit_shl_rx_imm( rx, ci->value );	// eax = eax << x
-				}
+				emit_shl_rx_imm( rx, ci->value );		// eax = (unsigned)eax << x
 				store_rx_opstack( rx );					// *opstack = eax
 			}
 			ip += 1; // OP_LSH
@@ -3925,6 +3897,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	var_addr_t var;
 	opcode_t sign_extend;
 	int var_size;
+	reg_t *reg;
 #if JUMP_OPTIMIZE
 	int num_compress;
 #endif
@@ -4302,43 +4275,40 @@ __compile:
 				// integer path
 				if ( addr_on_top( &var ) ) {
 					// address specified by CONST/LOCAL
-					reg_t *r;
 					discard_top();
 					var.size = var_size;
-					if ( ( r = find_rx_var( &rx[0], &var ) ) != NULL ) {
+					if ( ( reg = find_rx_var( &rx[0], &var ) ) != NULL ) {
 						// already cached in some register
-						if ( ( (ci+1)->op == OP_STORE1 && ci->op == OP_LOAD1 ) || ( (ci+1)->op == OP_STORE2 && ci->op == OP_LOAD2 ) ) {
-							// next operation will require only current low register part, ignore zero-extension for now
-						} else {
-							// do zero extension
-							switch ( ci->op ) {
-								case OP_LOAD1:
-									if ( r->ext != Z_EXT8 ) {
-										emit_zex8( rx[0], rx[0] );  // movzx eax, al 
-										r->ext = Z_EXT8;
-										// invalidate any mappings that overlaps with high [8..31] bits 
-										// TODO: just reduce mapping size?
-										var.addr += 1; var.size = 3;
-										wipe_reg_range( rx_regs + rx[0], &var );
-										// modify constant
-										rx_regs[rx[0]].cnst.value &= 0xFF;
-									}
-									break;
-								case OP_LOAD2:
-									if ( r->ext != Z_EXT16 ) {
-										emit_zex16( rx[0], rx[0] );  // movzx eax, ax
-										r->ext = Z_EXT16;
-										// invalidate any mappings that overlaps with high [16..31] bits 
-										var.addr += 2; var.size = 2;
-										wipe_reg_range( rx_regs + rx[0], &var );
-										// modify constant
-										rx_regs[rx[0]].cnst.value &= 0xFFFF;
-									}
-									break;
-								case OP_LOAD4:
-									r->ext = Z_NONE;
-									break;
-							}
+						// do zero extension if needed
+						switch ( ci->op ) {
+							case OP_LOAD1:
+								if ( reg->ext != Z_EXT8 ) {
+									emit_zex8( rx[0], rx[0] );  // movzx eax, al 
+									// invalidate any mappings that overlaps with high [8..31] bits 
+									//var.addr += 1; var.size = 3;
+									//wipe_reg_range( rx_regs + rx[0], &var );
+									// TODO: just reduce mapping size?
+									reduce_map_size( reg, 1 );
+									// modify constant
+									reg->cnst.value &= 0xFF;
+									reg->ext = Z_EXT8;
+								}
+								break;
+							case OP_LOAD2:
+								if ( reg->ext != Z_EXT16 ) {
+									emit_zex16( rx[0], rx[0] );  // movzx eax, ax
+									// invalidate any mappings that overlaps with high [16..31] bits 
+									//var.addr += 2; var.size = 2;
+									//wipe_reg_range( rx_regs + rx[0], &var );
+									reduce_map_size( reg, 2 );
+									// modify constant
+									reg->cnst.value &= 0xFFFF;
+									reg->ext = Z_EXT16;
+								}
+								break;
+							case OP_LOAD4:
+								reg->ext = Z_NONE;
+								break;
 						}
 						mask_rx( rx[0] );
 					} else {
@@ -4474,6 +4444,20 @@ __compile:
 			case OP_SEX16:
 			case OP_NEGI:
 			case OP_BCOM:
+				if ( ci->op == OP_SEX8 || ci->op == OP_SEX16 ) {
+					// skip sign-extension for `if ( var == 0 )` tests if we already zero-extended
+					reg = rx_on_top();
+					if ( reg && (ci+1)->op == OP_CONST && (ci+1)->value == 0 && ( (ci+2)->op == OP_EQ || (ci+2)->op == OP_NE ) ) {
+						if ( !(ci+1)->jused && !(ci+2)->jused ) {
+							if ( ci->op == OP_SEX8 && reg->ext == Z_EXT8 ) {
+								break;
+							}
+							if ( ci->op == OP_SEX16 && reg->ext == Z_EXT16 ) {
+								break;
+							}
+						}
+					}
+				}
 				rx[0] = load_rx_opstack( R_EAX ); // eax = *opstack
 				switch ( ci->op ) {
 					case OP_SEX8:  emit_sex8( rx[0], rx[0] ); break;	// movsx eax, al
@@ -4840,13 +4824,13 @@ VM_CallCompiled
 This function is called directly by the generated code
 ==============
 */
-int VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
+int32_t VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
 {
 	int32_t	opStack[MAX_OPSTACK_SIZE];
 	int		stackOnEntry;
 	int32_t	*image;
 #if id386
-	int		*oldOpTop;
+	int32_t	*oldOpTop;
 #endif
 	int		i;
 
@@ -4857,7 +4841,7 @@ int VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
 	oldOpTop = vm->opStackTop;
 #endif
 
-	vm->programStack -= ( MAX_VMMAIN_CALL_ARGS + 2 ) * 4;
+	vm->programStack -= ( MAX_VMMAIN_CALL_ARGS + 2 ) * sizeof( int32_t );
 
 	// set up the stack frame
 	image = (int32_t*) ( vm->dataBase + vm->programStack );
@@ -4887,7 +4871,7 @@ int VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
 		Com_Error( ERR_DROP, "%s(%s): opStack corrupted in compiled code", __func__, vm->name );
 	}
 
-	if ( vm->programStack != stackOnEntry - ( MAX_VMMAIN_CALL_ARGS + 2 ) * 4 ) {
+	if ( vm->programStack != stackOnEntry - ( MAX_VMMAIN_CALL_ARGS + 2 ) * sizeof( int32_t ) ) {
 		Com_Error( ERR_DROP, "%s(%s): programStack corrupted in compiled code", __func__, vm->name );
 	}
 #endif

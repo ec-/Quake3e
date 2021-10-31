@@ -174,9 +174,9 @@ cvar_t	*r_marksOnTriangleMeshes;
 cvar_t	*r_aviMotionJpegQuality;
 cvar_t	*r_screenshotJpegQuality;
 
-cvar_t	*r_maxpolys;
+static cvar_t *r_maxpolys;
+static cvar_t* r_maxpolyverts;
 int		max_polys;
-cvar_t	*r_maxpolyverts;
 int		max_polyverts;
 
 #ifdef USE_VULKAN

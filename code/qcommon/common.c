@@ -56,7 +56,6 @@ static jmp_buf abortframe;	// an ERR_DROP occurred, exit the entire frame
 
 int		CPU_Flags = 0;
 
-FILE *debuglogfile;
 static fileHandle_t logfile = FS_INVALID_HANDLE;
 static fileHandle_t com_journalFile = FS_INVALID_HANDLE ; // events are written here
 fileHandle_t com_journalDataFile = FS_INVALID_HANDLE; // config files are written here
@@ -66,7 +65,7 @@ cvar_t	*com_speeds;
 cvar_t	*com_developer;
 cvar_t	*com_dedicated;
 cvar_t	*com_timescale;
-cvar_t	*com_fixedtime;
+static cvar_t *com_fixedtime;
 cvar_t	*com_journal;
 cvar_t	*com_protocol;
 #ifndef DEDICATED
@@ -78,8 +77,8 @@ cvar_t	*com_timedemo;
 #ifdef USE_AFFINITY_MASK
 cvar_t	*com_affinityMask;
 #endif
-cvar_t	*com_logfile;		// 1 = buffer log, 2 = flush after each print
-cvar_t	*com_showtrace;
+static cvar_t *com_logfile;		// 1 = buffer log, 2 = flush after each print
+static cvar_t *com_showtrace;
 cvar_t	*com_version;
 cvar_t	*com_buildScript;	// for automated data building scripts
 cvar_t	*com_blood;
@@ -109,8 +108,7 @@ int		time_backend;		// renderer backend time
 
 static int	lastTime;
 int			com_frameTime;
-int			com_frameMsec;
-int			com_frameNumber;
+static int	com_frameNumber;
 
 qboolean	com_errorEntered = qfalse;
 qboolean	com_fullyInitialized = qfalse;
@@ -453,8 +451,9 @@ quake3 set test blah + map test
 */
 
 #define	MAX_CONSOLE_LINES	32
-int		com_numConsoleLines;
-char	*com_consoleLines[MAX_CONSOLE_LINES];
+static int	com_numConsoleLines;
+static char	*com_consoleLines[MAX_CONSOLE_LINES];
+
 // master rcon password
 char	rconPassword2[MAX_CVAR_VALUE_STRING];
 
@@ -465,7 +464,7 @@ Com_ParseCommandLine
 Break it up into multiple console lines
 ==================
 */
-void Com_ParseCommandLine( char *commandLine ) {
+static void Com_ParseCommandLine( char *commandLine ) {
 	static int parsed = 0;
 	int inq;
 
@@ -1016,14 +1015,14 @@ typedef struct memzone_s {
 #endif
 } memzone_t;
 
-int minfragment = MINFRAGMENT; // may be adjusted at runtime
+static int minfragment = MINFRAGMENT; // may be adjusted at runtime
 
 // main zone for all "dynamic" memory allocation
-memzone_t	*mainzone;
+static memzone_t *mainzone;
 
 // we also have a small zone for small allocations that would only
 // fragment the main zone (think of cvar and cmd strings)
-memzone_t	*smallzone;
+static memzone_t *smallzone;
 
 
 #ifdef USE_MULTI_SEGMENT
@@ -1919,7 +1918,7 @@ static void Zone_Stats( const char *name, const memzone_t *z, qboolean printDeta
 Com_Meminfo_f
 =================
 */
-void Com_Meminfo_f( void ) {
+static void Com_Meminfo_f( void ) {
 	zone_stats_t st;
 	int		unused;
 
@@ -2028,7 +2027,7 @@ void Com_TouchMemory( void ) {
 Com_InitSmallZoneMemory
 =================
 */
-void Com_InitSmallZoneMemory( void ) {
+static void Com_InitSmallZoneMemory( void ) {
 	static byte s_buf[ 512 * 1024 ];
 	int smallZoneSize;
 
@@ -2083,8 +2082,9 @@ void Hunk_Log( void ) {
 	char		buf[4096];
 	int size, numBlocks;
 
-	if (!logfile || !FS_Initialized())
+	if ( logfile == FS_INVALID_HANDLE || !FS_Initialized() )
 		return;
+
 	size = 0;
 	numBlocks = 0;
 	Com_sprintf(buf, sizeof(buf), "\r\n================\r\nHunk log\r\n================\r\n");
@@ -2109,13 +2109,15 @@ void Hunk_Log( void ) {
 Hunk_SmallLog
 =================
 */
+#ifdef HUNK_DEBUG
 void Hunk_SmallLog( void ) {
 	hunkblock_t	*block, *block2;
 	char		buf[4096];
 	int size, locsize, numBlocks;
 
-	if (!logfile || !FS_Initialized())
+	if ( logfile == FS_INVALID_HANDLE || !FS_Initialized() )
 		return;
+
 	for (block = hunkblocks ; block; block = block->next) {
 		block->printed = qfalse;
 	}
@@ -2139,10 +2141,8 @@ void Hunk_SmallLog( void ) {
 			locsize += block2->size;
 			block2->printed = qtrue;
 		}
-#ifdef HUNK_DEBUG
 		Com_sprintf(buf, sizeof(buf), "size = %8d: %s, line: %d (%s)\r\n", locsize, block->file, block->line, block->label);
 		FS_Write(buf, strlen(buf), logfile);
-#endif
 		size += block->size;
 		numBlocks++;
 	}
@@ -2151,6 +2151,7 @@ void Hunk_SmallLog( void ) {
 	Com_sprintf(buf, sizeof(buf), "%d hunk blocks\r\n", numBlocks);
 	FS_Write(buf, strlen(buf), logfile);
 }
+#endif
 
 
 /*
@@ -2577,7 +2578,7 @@ static const char *Sys_EventName( sysEventType_t evType ) {
 		"SE_CONSOLE"
 	};
 
-	if ( evType >= SE_MAX ) {
+	if ( (unsigned)evType >= ARRAY_LEN( evNames ) ) {
 		return "SE_UNKNOWN";
 	} else {
 		return evNames[ evType ];
@@ -2865,7 +2866,7 @@ int Com_EventLoop( void ) {
 			CL_CharEvent( ev.evValue );
 			break;
 		case SE_MOUSE:
-			CL_MouseEvent( ev.evValue, ev.evValue2, ev.evTime );
+			CL_MouseEvent( ev.evValue, ev.evValue2 /*, ev.evTime*/ );
 			break;
 		case SE_JOYSTICK_AXIS:
 			CL_JoystickEvent( ev.evValue, ev.evValue2, ev.evTime );
@@ -2875,7 +2876,7 @@ int Com_EventLoop( void ) {
 			Cbuf_AddText( (char *)ev.evPtr );
 			Cbuf_AddText( "\n" );
 			break;
-			default:
+		default:
 				Com_Error( ERR_FATAL, "Com_EventLoop: bad event type %i", ev.evType );
 			break;
 		}
@@ -2883,6 +2884,7 @@ int Com_EventLoop( void ) {
 		// free any block data
 		if ( ev.evPtr ) {
 			Z_Free( ev.evPtr );
+			ev.evPtr = NULL;
 		}
 	}
 
@@ -3027,7 +3029,7 @@ void Com_GameRestart( int checksumFeed, qboolean clientRestart )
 		Con_ResetHistory();
 
 		// Shutdown FS early so Cvar_Restart will not reset old game cvars
-		FS_Shutdown( qfalse );
+		FS_Shutdown( qtrue );
 
 		// Clean out any user and VM created cvars
 		Cvar_Restart( qtrue );
@@ -3270,7 +3272,7 @@ out:
 #include <intrin.h>
 static void CPUID( int func, unsigned int *regs )
 {
-	__cpuid( regs, func );
+	__cpuid( (int*)regs, func );
 }
 
 #else // clang/gcc/mingw

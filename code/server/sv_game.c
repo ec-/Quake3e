@@ -217,7 +217,7 @@ static void SV_AdjustAreaPortalState( sharedEntity_t *ent, qboolean open ) {
 SV_EntityContact
 ==================
 */
-static qboolean SV_EntityContact( vec3_t mins, vec3_t maxs, const sharedEntity_t *gEnt, int capsule ) {
+static qboolean SV_EntityContact( const vec3_t mins, const vec3_t maxs, const sharedEntity_t *gEnt, int capsule ) {
 	const float	*origin, *angles;
 	clipHandle_t	ch;
 	trace_t			trace;
@@ -227,8 +227,7 @@ static qboolean SV_EntityContact( vec3_t mins, vec3_t maxs, const sharedEntity_t
 	angles = gEnt->r.currentAngles;
 
 	ch = SV_ClipHandleForEntity( gEnt );
-	CM_TransformedBoxTrace( &trace, vec3_origin, vec3_origin, mins, maxs,
-		ch, -1, origin, angles, capsule );
+	CM_TransformedBoxTrace( &trace, vec3_origin, vec3_origin, mins, maxs, ch, -1, origin, angles, capsule );
 
 	return trace.startsolid;
 }
@@ -237,7 +236,6 @@ static qboolean SV_EntityContact( vec3_t mins, vec3_t maxs, const sharedEntity_t
 /*
 ===============
 SV_GetServerinfo
-
 ===============
 */
 static void SV_GetServerinfo( char *buffer, int bufferSize ) {
@@ -294,10 +292,11 @@ SV_GetUsercmd
 ===============
 */
 static void SV_GetUsercmd( int clientNum, usercmd_t *cmd ) {
-	if ( clientNum < 0 || clientNum >= sv_maxclients->integer ) {
-		Com_Error( ERR_DROP, "SV_GetUsercmd: bad clientNum:%i", clientNum );
+	if ( (unsigned) clientNum < sv_maxclients->integer ) {
+		*cmd = svs.clients[ clientNum ].lastUsercmd;
+	} else {
+		Com_Error( ERR_DROP, "%s(): bad clientNum: %i", __func__, clientNum );
 	}
-	*cmd = svs.clients[clientNum].lastUsercmd;
 }
 
 
@@ -757,7 +756,7 @@ static intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		botlib_export->ai.UnifyWhiteSpaces( VMA(1) );
 		return 0;
 	case BOTLIB_AI_REPLACE_SYNONYMS:
-		botlib_export->ai.BotReplaceSynonyms( VMA(1), args[2] );
+		botlib_export->ai.BotReplaceSynonyms( VMA(1), VM_DATA_GUARD_SIZE, args[2] );
 		return 0;
 	case BOTLIB_AI_LOAD_CHAT_FILE:
 		return botlib_export->ai.BotLoadChatFile( args[1], VMA(2), VMA(3) );

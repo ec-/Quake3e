@@ -367,10 +367,10 @@ static void CL_KeyMove( usercmd_t *cmd ) {
 CL_MouseEvent
 =================
 */
-void CL_MouseEvent( int dx, int dy, int time ) {
-	if ( Key_GetCatcher( ) & KEYCATCH_UI ) {
+void CL_MouseEvent( int dx, int dy /*, int time*/ ) {
+	if ( Key_GetCatcher() & KEYCATCH_UI ) {
 		VM_Call( uivm, 2, UI_MOUSE_EVENT, dx, dy );
-	} else if ( Key_GetCatcher( ) & KEYCATCH_CGAME ) {
+	} else if ( Key_GetCatcher() & KEYCATCH_CGAME ) {
 		VM_Call( cgvm, 2, CG_MOUSE_EVENT, dx, dy );
 	} else {
 		cl.mouseDx[cl.mouseIndex] += dx;
@@ -389,8 +389,9 @@ Joystick values stay set until changed
 void CL_JoystickEvent( int axis, int value, int time ) {
 	if ( axis < 0 || axis >= MAX_JOYSTICK_AXIS ) {
 		Com_Error( ERR_DROP, "CL_JoystickEvent: bad axis %i", axis );
+	} else {
+		cl.joystickAxis[axis] = value;
 	}
-	cl.joystickAxis[axis] = value;
 }
 
 
@@ -579,10 +580,9 @@ static usercmd_t CL_CreateCmd( void ) {
 	// draw debug graphs of turning for mouse testing
 	if ( cl_debugMove->integer ) {
 		if ( cl_debugMove->integer == 1 ) {
-			SCR_DebugGraph( fabs(cl.viewangles[YAW] - oldAngles[YAW]) );
-		}
-		if ( cl_debugMove->integer == 2 ) {
-			SCR_DebugGraph( fabs(cl.viewangles[PITCH] - oldAngles[PITCH]) );
+			SCR_DebugGraph( fabsf( cl.viewangles[YAW] - oldAngles[YAW] ) );
+		} else if ( cl_debugMove->integer == 2 ) {
+			SCR_DebugGraph( fabsf( cl.viewangles[PITCH] - oldAngles[PITCH] ) );
 		}
 	}
 
@@ -673,7 +673,7 @@ static qboolean CL_ReadyToSendPacket( void ) {
 	}
 
 	oldPacketNum = (clc.netchan.outgoingSequence - 1) & PACKET_MASK;
-	delta = cls.realtime -  cl.outPackets[ oldPacketNum ].p_realtime;
+	delta = cls.realtime - cl.outPackets[ oldPacketNum ].p_realtime;
 	if ( delta < 1000 / cl_maxpackets->integer ) {
 		// the accumulated commands will go out in the next packet
 		return qfalse;
@@ -707,7 +707,7 @@ During normal gameplay, a client packet will contain something like:
 void CL_WritePacket( void ) {
 	msg_t		buf;
 	byte		data[ MAX_MSGLEN_BUF ];
-	int			i, j;
+	int			i, j, n;
 	usercmd_t	*cmd, *oldcmd;
 	usercmd_t	nullcmd;
 	int			packetNum;
@@ -738,10 +738,12 @@ void CL_WritePacket( void ) {
 	MSG_WriteLong( &buf, clc.serverCommandSequence );
 
 	// write any unacknowledged clientCommands
-	for ( i = clc.reliableAcknowledge + 1 ; i <= clc.reliableSequence ; i++ ) {
+	n = clc.reliableSequence - clc.reliableAcknowledge;
+	for ( i = 0; i < n; i++ ) {
+		const int index = clc.reliableAcknowledge + 1 + i;
 		MSG_WriteByte( &buf, clc_clientCommand );
-		MSG_WriteLong( &buf, i );
-		MSG_WriteString( &buf, clc.reliableCommands[ i & (MAX_RELIABLE_COMMANDS-1) ] );
+		MSG_WriteLong( &buf, index );
+		MSG_WriteString( &buf, clc.reliableCommands[ index & ( MAX_RELIABLE_COMMANDS - 1 ) ] );
 	}
 
 	// we want to send all the usercmds that were generated in the last
@@ -907,6 +909,7 @@ void CL_InitInput( void ) {
 
 	cl_nodelta = Cvar_Get( "cl_nodelta", "0", CVAR_DEVELOPER );
 	cl_debugMove = Cvar_Get( "cl_debugMove", "0", 0 );
+	Cvar_CheckRange( cl_debugMove, "0", "2", CV_INTEGER );
 
 	cl_showSend = Cvar_Get( "cl_showSend", "0", CVAR_TEMP );
 

@@ -161,9 +161,9 @@ punctuation_t default_punctuations[] =
 };
 
 #ifdef BSPC
-char basefolder[MAX_PATH];
+static char basefolder[MAX_PATH];
 #else
-char basefolder[MAX_QPATH];
+static char basefolder[MAX_QPATH];
 #endif
 
 //===========================================================================
@@ -1327,7 +1327,7 @@ script_t *LoadScriptFile(const char *filename)
 {
 #ifdef BOTLIB
 	fileHandle_t fp;
-	char pathname[MAX_QPATH];
+	char pathname[MAX_QPATH*2];
 #else
 	FILE *fp;
 #endif
@@ -1336,10 +1336,11 @@ script_t *LoadScriptFile(const char *filename)
 	script_t *script;
 
 #ifdef BOTLIB
-	if (strlen(basefolder))
-		Com_sprintf(pathname, sizeof(pathname), "%s/%s", basefolder, filename);
+	if ( basefolder[0] != '\0' )
+		Com_sprintf( pathname, sizeof( pathname ), "%s/%s", basefolder, filename );
 	else
-		Com_sprintf(pathname, sizeof(pathname), "%s", filename);
+		Com_sprintf( pathname, sizeof( pathname ), "%s", filename );
+
 	length = botimport.FS_FOpenFile( pathname, &fp, FS_READ );
 	if (!fp) return NULL;
 #else
@@ -1433,17 +1434,10 @@ void FreeScript(script_t *script)
 #endif //PUNCTABLE
 	FreeMemory(script);
 } //end of the function FreeScript
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
-void PS_SetBaseFolder(const char *path)
+
+
+//set the base folder to load files from
+void PS_SetBaseFolder( const char *path )
 {
-#ifdef BSPC
-	sprintf(basefolder, path);
-#else
 	Q_strncpyz( basefolder, path, sizeof( basefolder ) );
-#endif
-} //end of the function PS_SetBaseFolder
+}

@@ -39,8 +39,7 @@ void RE_LoadWorldMap( const char *name );
 static	world_t		s_worldData;
 static	byte		*fileBase;
 
-int			c_subdivisions;
-int			c_gridVerts;
+static int	c_gridVerts;
 
 //===============================================================================
 

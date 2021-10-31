@@ -80,9 +80,7 @@ typedef struct {
 #define	WRAP_POINT_EPSILON	0.1
 */
 
-int	c_totalPatchBlocks;
-int	c_totalPatchSurfaces;
-int	c_totalPatchEdges;
+static int c_totalPatchBlocks;
 
 static const patchCollide_t	*debugPatchCollide;
 static const facet_t		*debugFacet;
@@ -1276,7 +1274,7 @@ CM_TracePointThroughPatchCollide
   special case for point traces because the patch collide "brushes" have no volume
 ====================
 */
-void CM_TracePointThroughPatchCollide( traceWork_t *tw, const struct patchCollide_s *pc ) {
+static void CM_TracePointThroughPatchCollide( traceWork_t *tw, const struct patchCollide_s *pc ) {
 	qboolean	frontFacing[MAX_PATCH_PLANES];
 	float		intersection[MAX_PATCH_PLANES];
 	float		intersect;

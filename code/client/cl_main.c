@@ -2835,7 +2835,7 @@ void CL_PacketEvent( const netadr_t *from, msg_t *msg ) {
 	// track the last message received so it can be returned in
 	// client messages, allowing the server to detect a dropped
 	// gamestate
-	clc.serverMessageSequence = LittleLong( *(int *)msg->data );
+	clc.serverMessageSequence = LittleLong( *(int32_t *)msg->data );
 
 	clc.lastPacketTime = cls.realtime;
 	CL_ParseServerMessage( msg );

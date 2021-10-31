@@ -304,7 +304,7 @@ typedef struct ai_export_s
 	//-----------------------------------
 	// be_ai_char.h
 	//-----------------------------------
-	int		(*BotLoadCharacter)(char *charfile, float skill);
+	int		(*BotLoadCharacter)(const char *charfile, float skill);
 	void	(*BotFreeCharacter)(int character);
 	float	(*Characteristic_Float)(int character, int index);
 	float	(*Characteristic_BFloat)(int character, int index, float min, float max);
@@ -320,17 +320,17 @@ typedef struct ai_export_s
 	void	(*BotRemoveConsoleMessage)(int chatstate, int handle);
 	int		(*BotNextConsoleMessage)(int chatstate, struct bot_consolemessage_s *cm);
 	int		(*BotNumConsoleMessages)(int chatstate);
-	void	(*BotInitialChat)(int chatstate, char *type, int mcontext, char *var0, char *var1, char *var2, char *var3, char *var4, char *var5, char *var6, char *var7);
+	void	(*BotInitialChat)(int chatstate, char *type, int mcontext, const char *var0, const char *var1, const char *var2, const char *var3, const char *var4, const char *var5, const char *var6, const char *var7);
 	int		(*BotNumInitialChats)(int chatstate, char *type);
-	int		(*BotReplyChat)(int chatstate, char *message, int mcontext, int vcontext, char *var0, char *var1, char *var2, char *var3, char *var4, char *var5, char *var6, char *var7);
+	int		(*BotReplyChat)(int chatstate, char *message, int mcontext, int vcontext, const char *var0, const char *var1, const char *var2, const char *var3, const char *var4, const char *var5, const char *var6, const char *var7);
 	int		(*BotChatLength)(int chatstate);
 	void	(*BotEnterChat)(int chatstate, int client, int sendto);
 	void	(*BotGetChatMessage)(int chatstate, char *buf, int size);
-	int		(*StringContains)(char *str1, char *str2, int casesensitive);
+	int		(*StringContains)(const char *str1, const char *str2, int casesensitive);
 	int		(*BotFindMatch)(char *str, struct bot_match_s *match, unsigned long int context);
 	void	(*BotMatchVariable)(struct bot_match_s *match, int variable, char *buf, int size);
 	void	(*UnifyWhiteSpaces)(char *string);
-	void	(*BotReplaceSynonyms)(char *string, unsigned long int context);
+	void	(*BotReplaceSynonyms)(char *string, int size, unsigned long int context);
 	int		(*BotLoadChatFile)(int chatstate, char *chatfile, char *chatname);
 	void	(*BotSetChatGender)(int chatstate, int gender);
 	void	(*BotSetChatName)(int chatstate, char *name, int client);
