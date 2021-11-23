@@ -22,10 +22,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // tr_image.c
 #include "tr_local.h"
 
-static byte			 s_intensitytable[256];
-static unsigned char s_gammatable[256];
+static byte	s_intensitytable[256];
+static byte	s_gammatable[256];
 
-static unsigned char s_gammatable_linear[256];
+static byte	s_gammatable_linear[256];
 
 GLint	gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
 GLint	gl_filter_max = GL_LINEAR;
@@ -47,6 +47,8 @@ return a hash value for the filename
 void R_GammaCorrect( byte *buffer, int bufSize ) {
 	int i;
 	if ( fboEnabled )
+		return;
+	if ( !gls.deviceSupportsGamma )
 		return;
 	for ( i = 0; i < bufSize; i++ ) {
 		buffer[i] = s_gammatable[buffer[i]];
@@ -1406,7 +1408,7 @@ void R_SetColorMappings( void ) {
 		s_intensitytable[i] = j;
 	}
 
-	if ( glConfig.deviceSupportsGamma ) {
+	if ( gls.deviceSupportsGamma ) {
 		if ( fboEnabled )
 			ri.GLimp_SetGamma( s_gammatable_linear, s_gammatable_linear, s_gammatable_linear );
 		else
