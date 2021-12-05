@@ -39,8 +39,8 @@ static void S_Base_StopAllSounds( void );
 static void S_Base_StopBackgroundTrack( void );
 static void S_memoryLoad( sfx_t *sfx );
 
-snd_stream_t	*s_backgroundStream = NULL;
-static char		s_backgroundLoop[MAX_QPATH];
+static snd_stream_t *s_backgroundStream = NULL;
+static char s_backgroundLoop[MAX_QPATH];
 //static char		s_backgroundMusic[MAX_QPATH]; //TTimo: unused
 
 static byte		buffer2[ 0x10000 ]; // for muted painting
@@ -77,11 +77,11 @@ int   		s_paintedtime; 		// sample PAIRS
 
 // MAX_SFX may be larger than MAX_SOUNDS because
 // of custom player sounds
-#define		MAX_SFX			4096
-sfx_t		s_knownSfx[MAX_SFX];
-int			s_numSfx = 0;
+#define MAX_SFX			4096
+static sfx_t s_knownSfx[MAX_SFX];
+static int s_numSfx = 0;
 
-#define		LOOP_HASH		128
+#define LOOP_HASH		128
 static sfx_t *sfxHash[LOOP_HASH];
 
 cvar_t		*s_testsound;
@@ -1467,6 +1467,8 @@ static void S_Base_Shutdown( void ) {
 	dma_buffer2 = NULL;
 
 	Cmd_RemoveCommand( "s_info" );
+
+	cls.soundRegistered = qfalse;
 }
 
 

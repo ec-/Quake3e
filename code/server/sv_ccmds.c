@@ -263,15 +263,18 @@ static void SV_MapRestart_f( void ) {
 		return;
 	}
 
-	if (Cmd_Argc() > 1 ) {
+	if ( Cmd_Argc() > 1 ) {
 		delay = atoi( Cmd_Argv(1) );
-	}
-	else {
+	} else {
 		delay = 5;
 	}
+
 	if ( delay && !Cvar_VariableIntegerValue( "g_doWarmup" ) ) {
 		sv.restartTime = sv.time + delay * 1000;
-		SV_SetConfigstring( CS_WARMUP, va("%i", sv.restartTime) );
+		if ( sv.restartTime == 0 ) {
+			sv.restartTime = 1;
+		}
+		SV_SetConfigstring( CS_WARMUP, va( "%i", sv.restartTime ) );
 		return;
 	}
 

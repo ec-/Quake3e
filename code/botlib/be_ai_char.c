@@ -86,7 +86,7 @@ bot_character_t *botcharacters[MAX_HANDLES + 1];
 // Returns:				-
 // Changes Globals:		-
 //========================================================================
-bot_character_t *BotCharacterFromHandle(int handle)
+static bot_character_t *BotCharacterFromHandle(int handle)
 {
 	if (handle <= 0 || handle > MAX_HANDLES)
 	{
@@ -121,13 +121,7 @@ static bot_character_t *BotReferenceHandle( int handle, int refmod )
 }
 
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
-void BotDumpCharacter(bot_character_t *ch)
+static void BotDumpCharacter( const bot_character_t *ch )
 {
 	int i;
 
@@ -141,17 +135,19 @@ void BotDumpCharacter(bot_character_t *ch)
 			case CT_INTEGER: Log_Write(" %4d %d\n", i, ch->c[i].value.integer); break;
 			case CT_FLOAT: Log_Write(" %4d %f\n", i, ch->c[i].value._float); break;
 			case CT_STRING: Log_Write(" %4d %s\n", i, ch->c[i].value.string); break;
-		} //end case
-	} //end for
+		}
+	}
 	Log_Write("}\n");
-} //end of the function BotDumpCharacter
+}
+
+
 //========================================================================
 //
 // Parameter:			-
 // Returns:				-
 // Changes Globals:		-
 //========================================================================
-void BotFreeCharacterStrings(bot_character_t *ch)
+static void BotFreeCharacterStrings(bot_character_t *ch)
 {
 	int i;
 
@@ -169,7 +165,7 @@ void BotFreeCharacterStrings(bot_character_t *ch)
 // Returns:				-
 // Changes Globals:		-
 //========================================================================
-void BotFreeCharacter2(int handle)
+static void BotFreeCharacter2(int handle)
 {
 	if (handle <= 0 || handle > MAX_HANDLES)
 	{
@@ -219,7 +215,7 @@ static int BotReleaseUnreferencedHandle( void )
 
 	r = t = 0;
 	now = botimport.Sys_Milliseconds();
-	for ( handle = 1; handle < MAX_HANDLES; handle++ )
+	for ( handle = 1; handle <= MAX_HANDLES; handle++ )
 	{
 		ch = botcharacters[ handle ];
 		if ( ch && ch->refcnt == 0 )
@@ -248,7 +244,7 @@ static int BotReleaseUnreferencedHandle( void )
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-void BotDefaultCharacteristics(bot_character_t *ch, bot_character_t *defaultch)
+static void BotDefaultCharacteristics(bot_character_t *ch, bot_character_t *defaultch)
 {
 	int i;
 
@@ -274,13 +270,15 @@ void BotDefaultCharacteristics(bot_character_t *ch, bot_character_t *defaultch)
 		} //end else if
 	} //end for
 } //end of the function BotDefaultCharacteristics
+
+
 //===========================================================================
 //
 // Parameter:			-
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-bot_character_t *BotLoadCharacterFromFile(char *charfile, int skill)
+static bot_character_t *BotLoadCharacterFromFile(const char *charfile, int skill)
 {
 	int indent, index, foundcharacter;
 	bot_character_t *ch;
@@ -293,12 +291,12 @@ bot_character_t *BotLoadCharacterFromFile(char *charfile, int skill)
 	source = LoadSourceFile(charfile);
 	if (!source)
 	{
-		botimport.Print(PRT_ERROR, "counldn't load %s\n", charfile);
+		botimport.Print(PRT_ERROR, "couldn't load %s\n", charfile);
 		return NULL;
 	}
 
 	ch = (bot_character_t *) GetClearedMemory( sizeof( *ch ) );
-	strcpy( ch->filename, charfile );
+	Q_strncpyz( ch->filename, charfile, sizeof( ch->filename ) );
 
 	while(PC_ReadToken( source, &token))
 	{
@@ -431,7 +429,7 @@ bot_character_t *BotLoadCharacterFromFile(char *charfile, int skill)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotFindCachedCharacter(char *charfile, float skill)
+static int BotFindCachedCharacter(const char *charfile, float skill)
 {
 	int handle;
 
@@ -439,7 +437,7 @@ int BotFindCachedCharacter(char *charfile, float skill)
 	{
 		if ( !botcharacters[handle] ) continue;
 		if ( strcmp( botcharacters[handle]->filename, charfile ) == 0 &&
-			(skill < 0 || fabs(botcharacters[handle]->skill - skill) < 0.01) )
+			(skill < 0.0f || fabsf(botcharacters[handle]->skill - skill) < 0.01f) )
 		{
 			return handle;
 		} //end if
@@ -452,7 +450,7 @@ int BotFindCachedCharacter(char *charfile, float skill)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotLoadCachedCharacter(char *charfile, float skill, int reload)
+int BotLoadCachedCharacter(const char *charfile, float skill, int reload)
 {
 	int handle, cachedhandle, intskill;
 	bot_character_t *ch = NULL;
@@ -486,7 +484,7 @@ int BotLoadCachedCharacter(char *charfile, float skill, int reload)
 		} //end if
 	} //end else
 	//
-	intskill = (int) (skill + 0.5);
+	intskill = (int) (skill + 0.5f);
 	//try to load the character with the given skill
 	ch = BotLoadCharacterFromFile(charfile, intskill);
 	if (ch)
@@ -572,7 +570,7 @@ int BotLoadCachedCharacter(char *charfile, float skill, int reload)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotLoadCharacterSkill(char *charfile, float skill)
+static int BotLoadCharacterSkill(const char *charfile, float skill)
 {
 	int ch, defaultch;
 
@@ -595,7 +593,7 @@ int BotLoadCharacterSkill(char *charfile, float skill)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotInterpolateCharacters(int handle1, int handle2, float desiredskill)
+static int BotInterpolateCharacters(int handle1, int handle2, float desiredskill)
 {
 	bot_character_t *ch1, *ch2, *out;
 	int i, handle;
@@ -620,7 +618,7 @@ int BotInterpolateCharacters(int handle1, int handle2, float desiredskill)
 
 	out = (bot_character_t *) GetClearedMemory( sizeof( *out ) );
 	out->skill = desiredskill;
-	strcpy(out->filename, ch1->filename);
+	Q_strncpyz( out->filename, ch1->filename, sizeof( out->filename ) );
 	botcharacters[handle] = out;
 
 	scale = (float) (desiredskill - ch1->skill) / (ch2->skill - ch1->skill);
@@ -657,7 +655,7 @@ int BotInterpolateCharacters(int handle1, int handle2, float desiredskill)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotLoadCharacter(char *charfile, float skill)
+int BotLoadCharacter(const char *charfile, float skill)
 {
 	int firstskill, secondskill, handle;
 

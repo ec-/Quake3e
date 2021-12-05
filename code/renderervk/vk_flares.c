@@ -291,7 +291,7 @@ static float *vk_ortho( float x1, float x2,
 RB_TestFlare
 ==================
 */
-void RB_TestFlare( flare_t *f ) {
+static void RB_TestFlare( flare_t *f ) {
 	qboolean		visible;
 	float			fade;
 	float			*m;
@@ -384,7 +384,7 @@ void RB_TestFlare( flare_t *f ) {
 RB_RenderFlare
 ==================
 */
-void RB_RenderFlare( flare_t *f ) {
+static void RB_RenderFlare( flare_t *f ) {
 	float			size;
 	vec3_t			color;
 	int				iColor[3];

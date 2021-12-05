@@ -368,17 +368,17 @@ static void CL_KeyMove( usercmd_t *cmd ) {
 CL_MouseEvent
 =================
 */
-void CL_MouseEvent( int dx, int dy, int time ) {
+void CL_MouseEvent( int dx, int dy /*, int time*/ ) {
 	static float mouseMenuBuffer[2] = {0, 0};
 	float mdx, mdy;
 
-	if ( Key_GetCatcher( ) & KEYCATCH_UI ) {
+	if ( Key_GetCatcher() & KEYCATCH_UI ) {
 		mouseMenuBuffer[0] += m_menuSensitivity->value * dx;
 		mouseMenuBuffer[1] += m_menuSensitivity->value * dy;
 		mouseMenuBuffer[0] = modff(mouseMenuBuffer[0], &mdx);
 		mouseMenuBuffer[1] = modff(mouseMenuBuffer[1], &mdy);
-		VM_Call( uivm, 2, UI_MOUSE_EVENT, (int)mdx, (int)mdy);
-	} else if ( Key_GetCatcher( ) & KEYCATCH_CGAME ) {
+		VM_Call( uivm, 2, UI_MOUSE_EVENT, (int)mdx, (int)mdy );
+	} else if ( Key_GetCatcher() & KEYCATCH_CGAME ) {
 		VM_Call( cgvm, 2, CG_MOUSE_EVENT, dx, dy );
 	} else {
 		cl.mouseDx[cl.mouseIndex] += dx;
@@ -397,8 +397,9 @@ Joystick values stay set until changed
 void CL_JoystickEvent( int axis, int value, int time ) {
 	if ( axis < 0 || axis >= MAX_JOYSTICK_AXIS ) {
 		Com_Error( ERR_DROP, "CL_JoystickEvent: bad axis %i", axis );
+	} else {
+		cl.joystickAxis[axis] = value;
 	}
-	cl.joystickAxis[axis] = value;
 }
 
 
@@ -468,9 +469,9 @@ static void CL_MouseMove( usercmd_t *cmd )
 	if (mx == 0.0f && my == 0.0f)
 		return;
 
-	if (cl_mouseAccel->value != 0.0f)
+	if ( cl_mouseAccel->value != 0.0f )
 	{
-		if(cl_mouseAccelStyle->integer == 0)
+		if ( cl_mouseAccelStyle->integer == 0 )
 		{
 			float accelSensitivity;
 			float rate;
@@ -481,8 +482,8 @@ static void CL_MouseMove( usercmd_t *cmd )
 			mx *= accelSensitivity;
 			my *= accelSensitivity;
 
-			if(cl_showMouseRate->integer)
-				Com_Printf("rate: %f, accelSensitivity: %f\n", rate, accelSensitivity);
+			if ( cl_showMouseRate->integer )
+				Com_Printf( "rate: %f, accelSensitivity: %f\n", rate, accelSensitivity );
 		}
 		else
 		{
@@ -492,7 +493,7 @@ static void CL_MouseMove( usercmd_t *cmd )
 
 			// clip at a small positive number to avoid division
 			// by zero (or indeed going backwards!)
-			if (offset < 0.001) {
+			if ( offset < 0.001f ) {
 				offset = 0.001f;
 			}
 
@@ -501,8 +502,8 @@ static void CL_MouseMove( usercmd_t *cmd )
 			// cl_mouseAccelOffset is the rate for which the acceleration will have doubled the non accelerated amplification
 			// NOTE: decouple the config cvars for independent acceleration setup along X and Y?
 
-			rate[0] = fabs(mx) / (float) frame_msec;
-			rate[1] = fabs(my) / (float) frame_msec;
+			rate[0] = fabsf( mx ) / (float) frame_msec;
+			rate[1] = fabsf( my ) / (float) frame_msec;
 			power[0] = powf( rate[0] / offset, cl_mouseAccel->value );
 			power[1] = powf( rate[1] / offset, cl_mouseAccel->value );
 
@@ -629,10 +630,9 @@ static usercmd_t CL_CreateCmd( void ) {
 	// draw debug graphs of turning for mouse testing
 	if ( cl_debugMove->integer ) {
 		if ( cl_debugMove->integer == 1 ) {
-			SCR_DebugGraph( fabs(cl.viewangles[YAW] - oldAngles[YAW]) );
-		}
-		if ( cl_debugMove->integer == 2 ) {
-			SCR_DebugGraph( fabs(cl.viewangles[PITCH] - oldAngles[PITCH]) );
+			SCR_DebugGraph( fabsf( cl.viewangles[YAW] - oldAngles[YAW] ) );
+		} else if ( cl_debugMove->integer == 2 ) {
+			SCR_DebugGraph( fabsf( cl.viewangles[PITCH] - oldAngles[PITCH] ) );
 		}
 	}
 
@@ -723,7 +723,7 @@ static qboolean CL_ReadyToSendPacket( void ) {
 	}
 
 	oldPacketNum = (clc.netchan.outgoingSequence - 1) & PACKET_MASK;
-	delta = cls.realtime -  cl.outPackets[ oldPacketNum ].p_realtime;
+	delta = cls.realtime - cl.outPackets[ oldPacketNum ].p_realtime;
 	if ( delta < 1000 / cl_maxpackets->integer ) {
 		// the accumulated commands will go out in the next packet
 		return qfalse;
@@ -757,7 +757,7 @@ During normal gameplay, a client packet will contain something like:
 void CL_WritePacket( void ) {
 	msg_t		buf;
 	byte		data[ MAX_MSGLEN_BUF ];
-	int			i, j;
+	int			i, j, n;
 	usercmd_t	*cmd, *oldcmd;
 	usercmd_t	nullcmd;
 	int			packetNum;
@@ -788,10 +788,12 @@ void CL_WritePacket( void ) {
 	MSG_WriteLong( &buf, clc.serverCommandSequence );
 
 	// write any unacknowledged clientCommands
-	for ( i = clc.reliableAcknowledge + 1 ; i <= clc.reliableSequence ; i++ ) {
+	n = clc.reliableSequence - clc.reliableAcknowledge;
+	for ( i = 0; i < n; i++ ) {
+		const int index = clc.reliableAcknowledge + 1 + i;
 		MSG_WriteByte( &buf, clc_clientCommand );
-		MSG_WriteLong( &buf, i );
-		MSG_WriteString( &buf, clc.reliableCommands[ i & (MAX_RELIABLE_COMMANDS-1) ] );
+		MSG_WriteLong( &buf, index );
+		MSG_WriteString( &buf, clc.reliableCommands[ index & ( MAX_RELIABLE_COMMANDS - 1 ) ] );
 	}
 
 	// we want to send all the usercmds that were generated in the last
@@ -957,6 +959,7 @@ void CL_InitInput( void ) {
 
 	cl_nodelta = Cvar_Get( "cl_nodelta", "0", CVAR_DEVELOPER );
 	cl_debugMove = Cvar_Get( "cl_debugMove", "0", 0 );
+	Cvar_CheckRange( cl_debugMove, "0", "2", CV_INTEGER );
 
 	cl_showSend = Cvar_Get( "cl_showSend", "0", CVAR_TEMP );
 

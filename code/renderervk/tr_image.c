@@ -51,6 +51,8 @@ void R_GammaCorrect( byte *buffer, int bufSize ) {
 #ifdef USE_VULKAN
 	if ( vk.capture.image != VK_NULL_HANDLE )
 		return;
+	if ( !gls.deviceSupportsGamma )
+		return;
 #endif
 	for ( i = 0; i < bufSize; i++ ) {
 		buffer[i] = s_gammatable[buffer[i]];
@@ -1630,7 +1632,7 @@ static void R_CreateDefaultImage( void ) {
 R_CreateBuiltinImages
 ==================
 */
-void R_CreateBuiltinImages( void ) {
+static void R_CreateBuiltinImages( void ) {
 	int		x,y;
 	byte	data[DEFAULT_SIZE][DEFAULT_SIZE][4];
 
@@ -1744,15 +1746,16 @@ void R_SetColorMappings( void ) {
 #ifdef USE_VULKAN
 	vk_update_post_process_pipelines();
 	
-	if ( glConfig.deviceSupportsGamma ) {
+	if ( gls.deviceSupportsGamma ) {
 		if ( vk.fboActive )
 			ri.GLimp_SetGamma( s_gammatable_linear, s_gammatable_linear, s_gammatable_linear );
 		else
 			ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
 	}
 #else
-	if ( glConfig.deviceSupportsGamma )
+	if ( gls.deviceSupportsGamma ) {
 		ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
+	}
 #endif
 }
 

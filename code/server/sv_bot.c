@@ -33,7 +33,7 @@ typedef struct bot_debugpoly_s
 } bot_debugpoly_t;
 
 static bot_debugpoly_t *debugpolygons;
-int bot_maxdebugpolys;
+static int bot_maxdebugpolys;
 
 extern botlib_export_t	*botlib_export;
 int	bot_enable;
@@ -82,7 +82,7 @@ SV_BotFreeClient
 void SV_BotFreeClient( int clientNum ) {
 	client_t	*cl;
 
-	if ( clientNum < 0 || clientNum >= sv_maxclients->integer ) {
+	if ( (unsigned) clientNum >= sv_maxclients->integer ) {
 		Com_Error( ERR_DROP, "SV_BotFreeClient: bad clientNum: %i", clientNum );
 	}
 
@@ -313,7 +313,7 @@ BotImport_HunkAlloc
 */
 static void *BotImport_HunkAlloc( int size ) {
 	if( Hunk_CheckMark() ) {
-		Com_Error( ERR_DROP, "SV_Bot_HunkAlloc: Alloc with marks already set" );
+		Com_Error( ERR_DROP, "%s(): Alloc with marks already set", __func__ );
 	}
 	return Hunk_Alloc( size, h_high );
 }
@@ -353,7 +353,12 @@ BotImport_DebugPolygonShow
 static void BotImport_DebugPolygonShow(int id, int color, int numPoints, vec3_t *points) {
 	bot_debugpoly_t *poly;
 
-	if (!debugpolygons) return;
+	if ( !debugpolygons )
+		return;
+
+	if ( (unsigned) id >= bot_maxdebugpolys )
+		return;
+
 	poly = &debugpolygons[id];
 	poly->inuse = qtrue;
 	poly->color = color;
@@ -368,7 +373,12 @@ BotImport_DebugPolygonDelete
 */
 void BotImport_DebugPolygonDelete(int id)
 {
-	if (!debugpolygons) return;
+	if ( !debugpolygons )
+		return;
+
+	if ( (unsigned) id >= bot_maxdebugpolys )
+		return;
+
 	debugpolygons[id].inuse = qfalse;
 }
 
@@ -430,7 +440,9 @@ SV_BotClientCommand
 ==================
 */
 static void BotClientCommand( int client, const char *command ) {
-	SV_ExecuteClientCommand( &svs.clients[client], command );
+	if ( (unsigned) client < sv_maxclients->integer ) {
+		SV_ExecuteClientCommand( &svs.clients[client], command );
+	}
 }
 
 /*
@@ -580,25 +592,29 @@ SV_BotGetConsoleMessage
 */
 int SV_BotGetConsoleMessage( int client, char *buf, int size )
 {
-	client_t	*cl;
-	int			index;
+	if ( (unsigned) client < sv_maxclients->integer ) {
+		client_t* cl;
+		int index;
 
-	cl = &svs.clients[client];
-	cl->lastPacketTime = svs.time;
+		cl = &svs.clients[client];
+		cl->lastPacketTime = svs.time;
 
-	if ( cl->reliableAcknowledge == cl->reliableSequence ) {
+		if ( cl->reliableAcknowledge == cl->reliableSequence ) {
+			return qfalse;
+		}
+
+		cl->reliableAcknowledge++;
+		index = cl->reliableAcknowledge & ( MAX_RELIABLE_COMMANDS - 1 );
+
+		if ( !cl->reliableCommands[index][0] ) {
+			return qfalse;
+		}
+
+		Q_strncpyz( buf, cl->reliableCommands[index], size );
+		return qtrue;
+	} else {
 		return qfalse;
 	}
-
-	cl->reliableAcknowledge++;
-	index = cl->reliableAcknowledge & ( MAX_RELIABLE_COMMANDS - 1 );
-
-	if ( !cl->reliableCommands[index][0] ) {
-		return qfalse;
-	}
-
-	Q_strncpyz( buf, cl->reliableCommands[index], size );
-	return qtrue;
 }
 
 
@@ -624,19 +640,21 @@ int EntityInPVS( int client, int entityNum ) {
 }
 #endif
 
+
 /*
 ==================
 SV_BotGetSnapshotEntity
 ==================
 */
 int SV_BotGetSnapshotEntity( int client, int sequence ) {
-	client_t			*cl;
-	clientSnapshot_t	*frame;
-
-	cl = &svs.clients[client];
-	frame = &cl->frames[cl->netchan.outgoingSequence & PACKET_MASK];
-	if (sequence < 0 || sequence >= frame->num_entities) {
+	if ( (unsigned) client < sv_maxclients->integer ) {
+		const client_t* cl = &svs.clients[client];
+		const clientSnapshot_t* frame = &cl->frames[cl->netchan.outgoingSequence & PACKET_MASK];
+		if ( (unsigned) sequence >= frame->num_entities ) {
+			return -1;
+		}
+		return frame->ents[sequence]->number;
+	} else {
 		return -1;
 	}
-	return frame->ents[ sequence ]->number;
 }

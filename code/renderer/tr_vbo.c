@@ -1146,13 +1146,14 @@ void VBO_QueueItem( int itemIndex )
 {
 	vbo_t *vbo = &world_vbo;
 
-	if ( vbo->items_queue_count >= vbo->items_count ) 
+	if ( vbo->items_queue_count < vbo->items_count )
+	{
+		vbo->items_queue[vbo->items_queue_count++] = itemIndex;
+	}
+	else
 	{
 		ri.Error( ERR_DROP, "VBO queue overflow" );
-		return;
 	}
-
-	vbo->items_queue[ vbo->items_queue_count++ ] = itemIndex;
 }
 
 

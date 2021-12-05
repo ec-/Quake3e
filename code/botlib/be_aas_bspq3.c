@@ -262,7 +262,7 @@ int AAS_NextBSPEntity(int ent)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int AAS_BSPEntityInRange(int ent)
+static int AAS_BSPEntityInRange(int ent)
 {
 	if (ent <= 0 || ent >= bspworld.numentities)
 	{
@@ -304,7 +304,7 @@ int AAS_VectorForBSPEpairKey(int ent, char *key, vec3_t v)
 	char buf[MAX_EPAIRKEY], *s[3];
 
 	VectorClear(v);
-	if (!AAS_ValueForBSPEpairKey(ent, key, buf, MAX_EPAIRKEY)) return qfalse;
+	if (!AAS_ValueForBSPEpairKey(ent, key, buf, sizeof( buf ) )) return qfalse;
 	//scanf into doubles, then assign, so it is vec_t size independent
 	Com_Split( buf, s, 3, ' ' );
 	v[0] = Q_atof( s[0] );
@@ -323,7 +323,7 @@ int AAS_FloatForBSPEpairKey(int ent, char *key, float *value)
 	char buf[MAX_EPAIRKEY];
 	
 	*value = 0;
-	if (!AAS_ValueForBSPEpairKey(ent, key, buf, MAX_EPAIRKEY)) return qfalse;
+	if (!AAS_ValueForBSPEpairKey(ent, key, buf, sizeof( buf ))) return qfalse;
 	*value = atof(buf);
 	return qtrue;
 } //end of the function AAS_FloatForBSPEpairKey
@@ -338,7 +338,7 @@ int AAS_IntForBSPEpairKey(int ent, char *key, int *value)
 	char buf[MAX_EPAIRKEY];
 	
 	*value = 0;
-	if (!AAS_ValueForBSPEpairKey(ent, key, buf, MAX_EPAIRKEY)) return qfalse;
+	if (!AAS_ValueForBSPEpairKey(ent, key, buf, sizeof( buf ))) return qfalse;
 	*value = atoi(buf);
 	return qtrue;
 } //end of the function AAS_IntForBSPEpairKey
@@ -348,7 +348,7 @@ int AAS_IntForBSPEpairKey(int ent, char *key, int *value)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-void AAS_FreeBSPEntities(void)
+static void AAS_FreeBSPEntities(void)
 {
 	int i;
 	bsp_entity_t *ent;
@@ -368,13 +368,9 @@ void AAS_FreeBSPEntities(void)
 	} //end for
 	bspworld.numentities = 0;
 } //end of the function AAS_FreeBSPEntities
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
-void AAS_ParseBSPEntities(void)
+
+
+static void AAS_ParseBSPEntities(void)
 {
 	script_t *script;
 	token_t token;
@@ -439,22 +435,15 @@ void AAS_ParseBSPEntities(void)
 	} //end while
 	FreeScript(script);
 } //end of the function AAS_ParseBSPEntities
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-int AAS_BSPTraceLight(vec3_t start, vec3_t end, vec3_t endpos, int *red, int *green, int *blue)
+
+
+#if 0
+static int AAS_BSPTraceLight(vec3_t start, vec3_t end, vec3_t endpos, int *red, int *green, int *blue)
 {
 	return 0;
-} //end of the function AAS_BSPTraceLight
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+#endif
+
+
 void AAS_DumpBSPData(void)
 {
 	AAS_FreeBSPEntities();
@@ -462,16 +451,14 @@ void AAS_DumpBSPData(void)
 	if (bspworld.dentdata) FreeMemory(bspworld.dentdata);
 	bspworld.dentdata = NULL;
 	bspworld.entdatasize = 0;
-	//
+
 	bspworld.loaded = qfalse;
 	Com_Memset( &bspworld, 0, sizeof(bspworld) );
-} //end of the function AAS_DumpBSPData
+}
+
+
 //===========================================================================
 // load a .bsp file
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
 //===========================================================================
 int AAS_LoadBSPFile(void)
 {
@@ -482,4 +469,5 @@ int AAS_LoadBSPFile(void)
 	AAS_ParseBSPEntities();
 	bspworld.loaded = qtrue;
 	return BLERR_NOERROR;
-} //end of the function AAS_LoadBSPFile
+}
+

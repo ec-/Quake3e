@@ -196,7 +196,7 @@ static void increment(huff_t* huff, node_t *node) {
 	}
 }
 
-void Huff_addRef(huff_t* huff, byte ch) {
+static void Huff_addRef(huff_t* huff, byte ch) {
 	node_t *tnode, *tnode2;
 	if (huff->loc[ch] == NULL) { /* if this is the first transmission of this node */
 		tnode = &(huff->nodeList[huff->blocNode++]);
@@ -266,7 +266,7 @@ void Huff_addRef(huff_t* huff, byte ch) {
 }
 
 /* Get a symbol */
-int Huff_Receive (node_t *node, int *ch, byte *fin) {
+static int Huff_Receive(node_t *node, int *ch, byte *fin) {
 	while (node && node->symbol == INTERNAL_NODE) {
 		if (get_bit(fin)) {
 			node = node->right;
@@ -296,7 +296,7 @@ static void send(node_t *node, node_t *child, byte *fout) {
 }
 
 /* Send a symbol */
-void Huff_transmit (huff_t *huff, int ch, byte *fout) {
+static void Huff_transmit( huff_t *huff, int ch, byte *fout ) {
 	int i;
 	if (huff->loc[ch] == NULL) { 
 		/* node_t hasn't been transmitted, send a NYT, then the symbol */
@@ -400,6 +400,7 @@ void Huff_Compress(msg_t *mbuf, int offset) {
 	Com_Memcpy(mbuf->data+offset, seq, (bloc>>3));
 }
 
+#if 0
 void Huff_Init(huffman_t *huff) {
 
 	Com_Memset(&huff->compressor, 0, sizeof(huff_t));
@@ -419,3 +420,4 @@ void Huff_Init(huffman_t *huff) {
 	huff->compressor.lhead->next = huff->compressor.lhead->prev = NULL;
 	huff->compressor.tree->parent = huff->compressor.tree->left = huff->compressor.tree->right = NULL;
 }
+#endif

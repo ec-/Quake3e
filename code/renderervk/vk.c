@@ -1,7 +1,11 @@
 #include "tr_local.h"
 #include "vk.h"
-#if defined (_WIN32) && defined (_DEBUG)
+
+#if defined (_DEBUG)
+#if defined (_WIN32)
+#define USE_VK_VALIDATION
 #include <windows.h> // for win32 debug callback
+#endif
 #endif
 
 static int vkSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -30,7 +34,7 @@ PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR	qvkGetPhysicalDeviceSurfaceCapabil
 PFN_vkGetPhysicalDeviceSurfaceFormatsKHR		qvkGetPhysicalDeviceSurfaceFormatsKHR;
 PFN_vkGetPhysicalDeviceSurfacePresentModesKHR	qvkGetPhysicalDeviceSurfacePresentModesKHR;
 PFN_vkGetPhysicalDeviceSurfaceSupportKHR		qvkGetPhysicalDeviceSurfaceSupportKHR;
-#ifdef _DEBUG
+#ifdef USE_VK_VALIDATION
 PFN_vkCreateDebugReportCallbackEXT				qvkCreateDebugReportCallbackEXT;
 PFN_vkDestroyDebugReportCallbackEXT				qvkDestroyDebugReportCallbackEXT;
 #endif
@@ -1018,7 +1022,7 @@ static void ensure_staging_buffer_allocation(VkDeviceSize size) {
 }
 
 
-#ifndef NDEBUG
+#ifdef USE_VK_VALIDATION
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT object_type, uint64_t object, size_t location,
 	int32_t message_code, const char* layer_prefix, const char* message, void* user_data) {
 #ifdef _WIN32
@@ -1044,7 +1048,7 @@ static qboolean used_instance_extension( const char *ext )
 	if ( Q_stricmp( ext, VK_KHR_SWAPCHAIN_EXTENSION_NAME ) == 0 )
 		return qtrue;
 
-#ifdef _DEBUG
+#ifdef USE_VK_VALIDATION
 	if ( Q_stricmp( ext, VK_EXT_DEBUG_REPORT_EXTENSION_NAME ) == 0 )
 		return qtrue;
 #endif
@@ -1058,7 +1062,7 @@ static qboolean used_instance_extension( const char *ext )
 
 static void create_instance( void )
 {
-#ifdef _DEBUG
+#ifdef USE_VK_VALIDATION
 	const char* validation_layer_name = "VK_LAYER_LUNARG_standard_validation";
 	const char* validation_layer_name2 = "VK_LAYER_KHRONOS_validation";
 #endif
@@ -1100,7 +1104,7 @@ static void create_instance( void )
 	desc.enabledExtensionCount = extension_count;
 	desc.ppEnabledExtensionNames = extension_names;
 
-#ifdef _DEBUG
+#ifdef USE_VK_VALIDATION
 	desc.enabledLayerCount = 1;
 	desc.ppEnabledLayerNames = &validation_layer_name;
 
@@ -1576,7 +1580,7 @@ static void init_vulkan_library( void )
 	INIT_INSTANCE_FUNCTION(vkGetPhysicalDeviceSurfacePresentModesKHR)
 	INIT_INSTANCE_FUNCTION(vkGetPhysicalDeviceSurfaceSupportKHR)
 
-#ifdef _DEBUG
+#ifdef USE_VK_VALIDATION
 	INIT_INSTANCE_FUNCTION_EXT(vkCreateDebugReportCallbackEXT)
 	INIT_INSTANCE_FUNCTION_EXT(vkDestroyDebugReportCallbackEXT)
 
@@ -1772,7 +1776,7 @@ static void deinit_vulkan_library( void )
 	qvkGetPhysicalDeviceSurfaceFormatsKHR		= NULL;
 	qvkGetPhysicalDeviceSurfacePresentModesKHR	= NULL;
 	qvkGetPhysicalDeviceSurfaceSupportKHR		= NULL;
-#ifdef _DEBUG
+#ifdef USE_VK_VALIDATION
 	qvkCreateDebugReportCallbackEXT				= NULL;
 	qvkDestroyDebugReportCallbackEXT			= NULL;
 #endif
@@ -3572,11 +3576,9 @@ void vk_initialize( void )
 	} else if ( props.vendorID == 0x106B ) {
 		vendor_name = "Apple Inc.";
 	} else if ( props.vendorID == 0x10DE ) {
-#ifdef _WIN32
 		// https://github.com/SaschaWillems/Vulkan/issues/493
 		// we can't render to offscreen presentation surfaces on nvidia
 		vk.offscreenRender = qfalse;
-#endif
 		vendor_name = "NVIDIA";
 	} else if ( props.vendorID == 0x14E4 ) {
 		vendor_name = "Broadcom Inc.";
@@ -4061,7 +4063,7 @@ __cleanup:
 	if ( vk.surface != VK_NULL_HANDLE )
 		qvkDestroySurfaceKHR( vk.instance, vk.surface, NULL );
 
-#ifdef _DEBUG
+#ifdef USE_VK_VALIDATION
 	if ( qvkDestroyDebugReportCallbackEXT && vk.debug_callback )
 		qvkDestroyDebugReportCallbackEXT( vk.instance, vk.debug_callback, NULL );
 #endif

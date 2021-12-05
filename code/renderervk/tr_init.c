@@ -63,7 +63,7 @@ cvar_t	*r_greyscale;
 cvar_t	*r_dither;
 cvar_t	*r_presentBits;
 
-cvar_t	*r_ignorehwgamma;
+static cvar_t *r_ignorehwgamma;
 
 cvar_t	*r_fastsky;
 cvar_t	*r_neatsky;
@@ -174,9 +174,9 @@ cvar_t	*r_marksOnTriangleMeshes;
 cvar_t	*r_aviMotionJpegQuality;
 cvar_t	*r_screenshotJpegQuality;
 
-cvar_t	*r_maxpolys;
+static cvar_t *r_maxpolys;
+static cvar_t* r_maxpolyverts;
 int		max_polys;
-cvar_t	*r_maxpolyverts;
 int		max_polyverts;
 
 #ifdef USE_VULKAN
@@ -571,7 +571,11 @@ static void InitOpenGL( void )
 #endif
 
 		glConfig.deviceSupportsGamma = qfalse;
+
 		ri.GLimp_InitGamma( &glConfig );
+
+		gls.deviceSupportsGamma = glConfig.deviceSupportsGamma;
+
 		if ( r_ignorehwgamma->integer )
 			glConfig.deviceSupportsGamma = qfalse;
 
@@ -788,9 +792,8 @@ void RB_TakeScreenshot( int x, int y, int width, int height, const char *fileNam
 
 	memcount = linelen * height;
 
-	// gamma correct
-	if ( glConfig.deviceSupportsGamma )
-		R_GammaCorrect( allbuf + offset, memcount );
+	// gamma correction
+	R_GammaCorrect( allbuf + offset, memcount );
 
 	ri.FS_WriteFile( fileName, buffer, memcount + header_size );
 
@@ -812,9 +815,8 @@ void RB_TakeScreenshotJPEG( int x, int y, int width, int height, const char *fil
 	buffer = RB_ReadPixels(x, y, width, height, &offset, &padlen, 0);
 	memcount = (width * 3 + padlen) * height;
 
-	// gamma correct
-	if ( glConfig.deviceSupportsGamma )
-		R_GammaCorrect( buffer + offset, memcount );
+	// gamma correction
+	R_GammaCorrect( buffer + offset, memcount );
 
 	ri.CL_SaveJPG( fileName, r_screenshotJpegQuality->integer, width, height, buffer + offset, padlen );
 	ri.Hunk_FreeTempMemory( buffer );
@@ -930,9 +932,8 @@ void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *file
 	// fill this last to avoid data overwrite in case when we're moving destination buffer forward
 	FillBMPHeader( buffer - header_size, width, height, memcount, header_size );
 
-	// gamma correct
-	if ( glConfig.deviceSupportsGamma )
-		R_GammaCorrect( buffer, memcount );
+	// gamma correction
+	R_GammaCorrect( buffer, memcount );
 
 	if ( clipboardOnly ) {
 		// copy starting from bitmapinfoheader
@@ -1023,10 +1024,8 @@ static void R_LevelShot( void ) {
 		}
 	}
 
-	// gamma correct
-	if ( glConfig.deviceSupportsGamma ) {
-		R_GammaCorrect( buffer + 18, 128 * 128 * 3 );
-	}
+	// gamma correction
+	R_GammaCorrect( buffer + 18, 128 * 128 * 3 );
 
 	ri.FS_WriteFile( checkname, buffer, 128 * 128*3 + 18 );
 
@@ -1159,9 +1158,8 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 
 	memcount = padwidth * cmd->height;
 
-	// gamma correct
-	if ( glConfig.deviceSupportsGamma )
-		R_GammaCorrect( cBuf, memcount );
+	// gamma correction
+	R_GammaCorrect( cBuf, memcount );
 
 	if ( cmd->motionJpeg )
 	{
@@ -1660,6 +1658,7 @@ static void R_Register( void )
 	ri.Cvar_CheckRange( r_stencilbits, "0", "8", CV_INTEGER );
 
 	r_ignorehwgamma = ri.Cvar_Get( "r_ignorehwgamma", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_SetDescription( r_ignorehwgamma, "overrides hardware gamma capabilities" );
 	ri.Cvar_CheckRange( r_ignorehwgamma, "0", "1", CV_INTEGER );
 
 	r_showsky = ri.Cvar_Get( "r_showsky", "0", CVAR_LATCH );

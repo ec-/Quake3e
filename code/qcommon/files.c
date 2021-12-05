@@ -2510,7 +2510,7 @@ static void FS_FreeUnusedCache( void )
 
 #ifdef USE_PK3_CACHE_FILE
 
-void FS_WriteCacheHeader( FILE *f )
+static void FS_WriteCacheHeader( FILE *f )
 {
 	fwrite( cache_header, sizeof( cache_header ), 1, f );
 }
@@ -3315,7 +3315,7 @@ Returns a uniqued list of files that match the given criteria
 from all search paths
 ===============
 */
-char **FS_ListFilteredFiles( const char *path, const char *extension, const char *filter, int *numfiles, int flags ) {
+static char **FS_ListFilteredFiles( const char *path, const char *extension, const char *filter, int *numfiles, int flags ) {
 	int				nfiles;
 	char			**listCopy;
 	char			*list[MAX_FOUND_FILES];

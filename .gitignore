@@ -3,6 +3,8 @@ output/
 .vs/
 .vscode/
 *.user
+cmake-*
+.idea
 *.cbp
 *.layout
 Makefile.local
