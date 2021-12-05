@@ -359,16 +359,15 @@ static float *get_uv_coords(vec2_t uv, vec3_t vert, vec3_t normal) {
 }
 
 static void free_vis_brushes(visBrushNode_t *brushes) {
-	// one day this will be iterative?
-	if (!brushes)
-		return;
-
-	free_vis_brushes(brushes->next);
-	for (int i = 0; i < brushes->numFaces; i++)
-		free(brushes->faces[i].verts);
-
-	free(brushes->faces);
-	free(brushes);
+	while (brushes != NULL)
+	{
+		visBrushNode_t *next = brushes->next;
+		for (int i = 0; i < brushes->numFaces; i++)
+			free(brushes->faces[i].verts);
+		free(brushes->faces);
+		free(brushes);
+		brushes = next;
+	}
 }
 
 static qboolean CullFace(const visFace_t *face) {
