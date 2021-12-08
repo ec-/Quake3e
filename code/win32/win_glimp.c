@@ -941,9 +941,9 @@ void UpdateMonitorInfo( const RECT *target )
 			glw_state.hMonitor != hMon ) {
 				// track monitor and gamma change
 				qboolean gammaSet = glw_state.gammaSet;
-				if ( gammaSet ) {
-					GLW_RestoreGamma();
-				}
+
+				GLW_RestoreGamma();
+
 				glw_state.desktopWidth = w;
 				glw_state.desktopHeight = h;
 				glw_state.desktopX = x;
@@ -1398,10 +1398,7 @@ void GLimp_Shutdown( qboolean unloadDLL )
 	Com_Printf( "Shutting down OpenGL subsystem\n" );
 
 	// restore gamma.  We do this first because 3Dfx's extension needs a valid OGL subsystem
-	if ( glw_state.gammaSet ) {
-		GLW_RestoreGamma();
-		glw_state.gammaSet = qfalse;
-	}
+	GLW_RestoreGamma();
 
 	// set current context to NULL
 	if ( qwglMakeCurrent )
@@ -1532,11 +1529,7 @@ void VKimp_Shutdown( qboolean unloadDLL )
 	Com_Printf( "Shutting down Vulkan subsystem\n" );
 
 	// restore gamma
-	if ( glw_state.gammaSet )
-	{
-		GLW_RestoreGamma();
-		glw_state.gammaSet = qfalse;
-	}
+	GLW_RestoreGamma();
 
 	// destroy window
 	if ( g_wv.hWnd )
