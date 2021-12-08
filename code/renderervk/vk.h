@@ -3,7 +3,7 @@
 #include "../renderercommon/vulkan/vulkan.h"
 #include "tr_common.h"
 
-#define MAX_SWAPCHAIN_IMAGES 4
+#define MAX_SWAPCHAIN_IMAGES 8
 #define MIN_SWAPCHAIN_IMAGES_IMM 3
 #define MIN_SWAPCHAIN_IMAGES_FIFO 3
 #define MIN_SWAPCHAIN_IMAGES_MAILBOX 3
