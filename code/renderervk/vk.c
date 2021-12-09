@@ -410,8 +410,8 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 
 	image_extent = surface_caps.currentExtent;
 	if ( image_extent.width == 0xffffffff && image_extent.height == 0xffffffff ) {
-		image_extent.width = MIN(surface_caps.maxImageExtent.width, MAX(surface_caps.minImageExtent.width, 640u));
-		image_extent.height = MIN(surface_caps.maxImageExtent.height, MAX(surface_caps.minImageExtent.height, 480u));
+		image_extent.width = MIN( surface_caps.maxImageExtent.width, MAX( surface_caps.minImageExtent.width, (uint32_t) glConfig.vidWidth ) );
+		image_extent.height = MIN( surface_caps.maxImageExtent.height, MAX( surface_caps.minImageExtent.height, (uint32_t) glConfig.vidHeight ) );
 	}
 
 	vk.fastSky = qtrue;
