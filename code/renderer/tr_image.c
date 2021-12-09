@@ -1354,6 +1354,11 @@ void R_SetColorMappings( void ) {
 	int		shift;
 	qboolean applyGamma;
 
+	if ( !tr.inited ) {
+		// it may be called from window handling functions where gamma flags is now yet known/set
+		return;
+	}
+
 	// setup the overbright lighting
 	// negative value will force gamma in windowed mode
 	tr.overbrightBits = abs( r_overBrightBits->integer );

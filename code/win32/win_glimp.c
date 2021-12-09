@@ -1428,7 +1428,7 @@ void GLimp_Shutdown( qboolean unloadDLL )
 	if ( g_wv.hWnd )
 	{
 		Com_Printf( "...destroying window\n" );
-		ShowWindow( g_wv.hWnd, SW_HIDE );
+		//ShowWindow( g_wv.hWnd, SW_HIDE );
 		DestroyWindow( g_wv.hWnd );
 		g_wv.hWnd = NULL;
 		glw_state.pixelFormatSet = qfalse;
@@ -1535,7 +1535,7 @@ void VKimp_Shutdown( qboolean unloadDLL )
 	if ( g_wv.hWnd )
 	{
 		Com_Printf( "...destroying window\n" );
-		ShowWindow( g_wv.hWnd, SW_HIDE );
+		//ShowWindow( g_wv.hWnd, SW_HIDE );
 		DestroyWindow( g_wv.hWnd );
 		g_wv.hWnd = NULL;
 	}
