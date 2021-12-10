@@ -3162,6 +3162,7 @@ CL_InitRenderer
 ============
 */
 static void CL_InitRenderer( void ) {
+
 	// this sets up the renderer and calls R_Init
 	re.BeginRegistration( &cls.glconfig );
 
@@ -3169,7 +3170,10 @@ static void CL_InitRenderer( void ) {
 	cls.charSetShader = re.RegisterShader( "gfx/2d/bigchars" );
 	cls.whiteShader = re.RegisterShader( "white" );
 	cls.consoleShader = re.RegisterShader( "console" );
-	g_console_field_width = cls.glconfig.vidWidth / smallchar_width - 2;
+
+	Con_CheckResize();
+
+	g_console_field_width = ((cls.glconfig.vidWidth / smallchar_width)) - 2;
 	g_consoleField.widthInChars = g_console_field_width;
 
 	// for 640x480 virtualized screen
@@ -3279,22 +3283,12 @@ Sets console chars height
 */
 static void CL_SetScaling( float factor, int captureWidth, int captureHeight ) {
 
-	float scale;
-	int h;
+	if ( cls.con_factor != factor ) {
+		// rescale console
+		con_scale->modified = qtrue;
+	}
 
-	// adjust factor proportionally to FullHD height (1080 pixels), with 1/16 granularity
-	h = (captureHeight * 16 / 1080);
-	scale = h / 16.0f;
-	if ( scale < 1.0f )
-		scale = 1.0f;
-
-	factor *= scale;
-
-	// set console scaling
-	smallchar_width = SMALLCHAR_WIDTH * factor;
-	smallchar_height = SMALLCHAR_HEIGHT * factor;
-	bigchar_width = BIGCHAR_WIDTH * factor;
-	bigchar_height = BIGCHAR_HEIGHT * factor;
+	cls.con_factor = factor;
 
 	// set custom capture resolution
 	cls.captureWidth = captureWidth;
