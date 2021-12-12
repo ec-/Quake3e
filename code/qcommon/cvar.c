@@ -1267,7 +1267,7 @@ static void Cvar_Func_f( void ) {
 
 	funcType_t	ftype;
 	const char	*cvar_name;
-	char		value[ 32 ];
+	char		value[ 64 ];
 	cvar_t		*cvar;
 	int			ival;
 	float		fval;
