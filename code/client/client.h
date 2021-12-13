@@ -345,6 +345,8 @@ typedef struct {
 	int			captureWidth;
 	int			captureHeight;
 
+	float		con_factor;
+
 	float		scale;
 	float		biasX;
 	float		biasY;
@@ -497,6 +499,9 @@ qboolean CL_ValidPakSignature( const byte *data, int len );
 //
 // console
 //
+
+extern cvar_t *con_scale;
+
 void Con_CheckResize( void );
 void Con_Init( void );
 void Con_Shutdown( void );

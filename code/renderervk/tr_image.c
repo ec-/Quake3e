@@ -51,6 +51,8 @@ void R_GammaCorrect( byte *buffer, int bufSize ) {
 #ifdef USE_VULKAN
 	if ( vk.capture.image != VK_NULL_HANDLE )
 		return;
+	if ( !gls.deviceSupportsGamma )
+		return;
 #endif
 	for ( i = 0; i < bufSize; i++ ) {
 		buffer[i] = s_gammatable[buffer[i]];
@@ -1677,6 +1679,12 @@ void R_SetColorMappings( void ) {
 	float	g;
 	int		inf;
 	int		shift;
+	qboolean applyGamma;
+
+	if ( !tr.inited ) {
+		// it may be called from window handling functions where gamma flags is now yet known/set
+		return;
+	}
 
 	// setup the overbright lighting
 	// negative value will force gamma in windowed mode
@@ -1690,11 +1698,15 @@ void R_SetColorMappings( void ) {
 
 	// never overbright in windowed mode
 #ifdef USE_VULKAN
-	if ( !glConfig.isFullscreen && r_overBrightBits->integer >= 0 && !vk.fboActive )
+	if ( !glConfig.isFullscreen && r_overBrightBits->integer >= 0 && !vk.fboActive ) {
 #else
-	if ( !glConfig.isFullscreen && r_overBrightBits->integer >= 0 )
+	if ( !glConfig.isFullscreen && r_overBrightBits->integer >= 0 ) {
 #endif
 		tr.overbrightBits = 0;
+		applyGamma = qfalse;
+	} else {
+		applyGamma = qtrue;
+	}
 
 	// allow 2 overbright bits in 24 bit, but only 1 in 16 bit
 	if ( glConfig.colorBits > 16 ) {
@@ -1743,16 +1755,22 @@ void R_SetColorMappings( void ) {
 
 #ifdef USE_VULKAN
 	vk_update_post_process_pipelines();
-	
-	if ( glConfig.deviceSupportsGamma ) {
+
+	if ( gls.deviceSupportsGamma ) {
 		if ( vk.fboActive )
 			ri.GLimp_SetGamma( s_gammatable_linear, s_gammatable_linear, s_gammatable_linear );
-		else
-			ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
+		else {
+			if ( applyGamma ) {
+				ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
+			}
+		}
 	}
 #else
-	if ( glConfig.deviceSupportsGamma )
-		ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
+	if ( gls.deviceSupportsGamma ) {
+		if ( applyGamma ) {
+			ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
+		}
+	}
 #endif
 }
 

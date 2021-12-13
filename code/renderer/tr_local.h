@@ -983,6 +983,7 @@ typedef struct glstatic_s {
 	int captureWidth;
 	int captureHeight;
 	int initTime;
+	qboolean deviceSupportsGamma;
 } glstatic_t;
 
 typedef struct {
@@ -1066,6 +1067,7 @@ typedef struct {
 */
 typedef struct {
 	qboolean				registered;		// cleared at shutdown, set at beginRegistration
+	qboolean				inited;			// cleared at shutdown, set at InitOpenGL
 
 	int						visCount;		// incremented every time a new vis cluster is entered
 	int						frameCount;		// incremented every frame
