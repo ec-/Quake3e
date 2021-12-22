@@ -628,7 +628,6 @@ error2:
 
 	if ( notification_client.lpVtbl->QueryInterface ) {
 		pEnumerator->lpVtbl->UnregisterEndpointNotificationCallback( pEnumerator, (IMMNotificationClient *)&notification_client );
-		Com_Memset( &notification_client, 0, sizeof( notification_client ) );
 	}
 
 	pEnumerator->lpVtbl->Release( pEnumerator ); pEnumerator = NULL;
