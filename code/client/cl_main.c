@@ -57,7 +57,6 @@ cvar_t	*cl_allowDownload;
 cvar_t	*cl_mapAutoDownload;
 #endif
 cvar_t	*cl_conColor;
-cvar_t	*con_scale;
 cvar_t	*cl_inGameVideo;
 
 cvar_t	*cl_serverStatusResendTime;
@@ -3165,6 +3164,7 @@ CL_InitRenderer
 ============
 */
 static void CL_InitRenderer( void ) {
+
 	// this sets up the renderer and calls R_Init
 	re.BeginRegistration( &cls.glconfig );
 
@@ -3172,7 +3172,10 @@ static void CL_InitRenderer( void ) {
 	cls.charSetShader = re.RegisterShader( "gfx/2d/bigchars" );
 	cls.whiteShader = re.RegisterShader( "white" );
 	cls.consoleShader = re.RegisterShader( "console" );
-	g_console_field_width = cls.glconfig.vidWidth / smallchar_width - 2;
+
+	Con_CheckResize();
+
+	g_console_field_width = ((cls.glconfig.vidWidth / smallchar_width)) - 2;
 	Con_ResetFieldWidth();
 
 	// for 640x480 virtualized screen
@@ -3282,24 +3285,12 @@ Sets console chars height
 */
 static void CL_SetScaling( float factor, int captureWidth, int captureHeight ) {
 
-	float scale;
-	float fontsize;
-	int h;
+	if ( cls.con_factor != factor ) {
+		// rescale console
+		con_scale->modified = qtrue;
+	}
 
-	// adjust factor proportionally to FullHD height (1080 pixels), with 1/16 granularity
-	h = (captureHeight * 16 / 1080);
-	scale = h / 16.0f;
-	if ( scale < 1.0f )
-		scale = 1.0f;
-
-	factor *= scale;
-
-	// set console scaling
-	fontsize = Com_Clamp( 0.5f, captureWidth / (SMALLCHAR_WIDTH * factor) / 12, con_scale->value );
-	smallchar_width = SMALLCHAR_WIDTH * factor * fontsize;
-	smallchar_height = SMALLCHAR_HEIGHT * factor * fontsize;
-	bigchar_width = BIGCHAR_WIDTH * factor;
-	bigchar_height = BIGCHAR_HEIGHT * factor;
+	cls.con_factor = factor;
 
 	// set custom capture resolution
 	cls.captureWidth = captureWidth;
@@ -3867,7 +3858,6 @@ void CL_Init( void ) {
 #endif
 
 	cl_conColor = Cvar_Get( "cl_conColor", "60 60 70 220", 0 );
-	con_scale = Cvar_Get( "con_scale", "1", CVAR_ARCHIVE_ND );
 
 #ifdef MACOS_X
 	// In game video is REALLY slow in Mac OS X right now due to driver slowness
