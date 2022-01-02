@@ -2843,7 +2843,7 @@ from the current global working shader
 =========================
 */
 static shader_t *FinishShader( void ) {
-	int			stage, i, n;
+	int			stage, i, n, m;
 	qboolean	hasLightmapStage;
 	qboolean	vertexLightmap;
 	qboolean	colorBlend;
@@ -3264,6 +3264,26 @@ static shader_t *FinishShader( void ) {
 		}
 	}
 #endif
+
+	// make sure that amplitude for TMOD_STRETCH is not zero
+	for ( i = 0; i < shader.numUnfoggedPasses; i++ ) {
+		if ( !stages[i].active ) {
+			continue;
+		}
+		for ( n = 0; n < stages[i].numTexBundles; n++ ) {
+			for ( m = 0; m < stages[i].bundle[n].numTexMods; m++ ) {
+				if ( stages[i].bundle[n].texMods[m].type == TMOD_STRETCH ) {
+					if ( fabsf( stages[i].bundle[n].texMods[m].wave.amplitude ) < 1e-6 ) {
+						if ( stages[i].bundle[n].texMods[m].wave.amplitude >= 0.0f ) {
+							stages[i].bundle[n].texMods[m].wave.amplitude = 1e-6;
+						} else {
+							stages[i].bundle[n].texMods[m].wave.amplitude = -1e-6;
+						}
+					}
+				}
+			}
+		}
+	}
 
 	// determine which stage iterator function is appropriate
 	ComputeStageIteratorFunc();
