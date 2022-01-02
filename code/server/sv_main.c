@@ -161,8 +161,8 @@ void SV_AddServerCommand( client_t *client, const char *cmd ) {
 		Com_Printf( "===== pending server commands =====\n" );
 		n = client->reliableSequence - client->reliableAcknowledge;
 		for ( i = 0; i < n; i++ ) {
-			const int index = client->reliableAcknowledge + 1 + i;
-			Com_Printf( "cmd %5d: %s\n", i, client->reliableCommands[ index & ( MAX_RELIABLE_COMMANDS - 1 ) ] );
+			const int idx = client->reliableAcknowledge + 1 + i;
+			Com_Printf( "cmd %5d: %s\n", i, client->reliableCommands[ idx & ( MAX_RELIABLE_COMMANDS - 1 ) ] );
 		}
 		Com_Printf( "cmd %5d: %s\n", i, cmd );
 		SV_DropClient( client, "Server command overflow" );

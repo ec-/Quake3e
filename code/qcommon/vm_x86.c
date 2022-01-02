@@ -299,7 +299,7 @@ typedef enum {
 
 typedef union {
 	struct {
-		unsigned r_m : 3; // direct or indirect register operand with opt.sidplacement, REX.b can extend this by 1 bit
+		unsigned r_m : 3; // direct or indirect register operand with opt.displacement, REX.b can extend this by 1 bit
 		unsigned r_x : 3; // register or opcode extension, REX.r can extend this by 1 bit
 		unsigned mod : 2; // see mod_t
 	} s;
