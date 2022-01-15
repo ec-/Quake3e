@@ -1687,7 +1687,7 @@ Used to load a development dll instead of a virtual machine
 TTimo: added some verbosity in debug
 =================
 */
-static void * QDECL VM_LoadDll( const char *name, dllSyscall_t *entryPoint, dllSyscall_t systemcalls ) {
+static void * QDECL VM_LoadDll( const char *name, vmMainFunc_t *entryPoint, dllSyscall_t systemcalls ) {
 
 	const char	*gamedir = Cvar_VariableString( "fs_game" );
 	char		filename[ MAX_QPATH ];
@@ -1954,9 +1954,9 @@ intptr_t QDECL VM_Call( vm_t *vm, int nargs, int callnum, ... )
 		va_list ap;
 		va_start( ap, callnum );
 		for ( i = 0; i < nargs; i++ ) {
-			args[i] = va_arg( ap, int );
+			args[i] = va_arg( ap, int32_t );
 		}
-		va_end(ap);
+		va_end( ap );
 
 		// add more arguments if you're changed MAX_VMMAIN_CALL_ARGS:
 		r = vm->entryPoint( callnum, args[0], args[1], args[2] );
@@ -1975,7 +1975,7 @@ intptr_t QDECL VM_Call( vm_t *vm, int nargs, int callnum, ... )
 		args[0] = callnum;
 		va_start( ap, callnum );
 		for ( i = 0; i < nargs; i++ ) {
-			args[i+1] = va_arg( ap, int );
+			args[i+1] = va_arg( ap, int32_t );
 		}
 		va_end(ap);
 #ifndef NO_VM_COMPILED
