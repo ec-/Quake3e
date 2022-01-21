@@ -439,17 +439,17 @@ static void SV_KickBots_f( void ) {
 	int			i;
 
 	// make sure server is running
-	if( !com_sv_running->integer ) {
+	if ( !com_sv_running->integer ) {
 		Com_Printf("Server is not running.\n");
 		return;
 	}
 
 	for( i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++ ) {
-		if( !cl->state ) {
+		if ( cl->state >= CS_CONNECTED ) {
 			continue;
 		}
 
-		if( cl->netchan.remoteAddress.type != NA_BOT ) {
+		if ( cl->netchan.remoteAddress.type != NA_BOT ) {
 			continue;
 		}
 
@@ -469,17 +469,17 @@ static void SV_KickAll_f( void ) {
 	int i;
 
 	// make sure server is running
-	if( !com_sv_running->integer ) {
+	if ( !com_sv_running->integer ) {
 		Com_Printf( "Server is not running.\n" );
 		return;
 	}
 
 	for( i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++ ) {
-		if( !cl->state ) {
+		if ( cl->state >= CS_CONNECTED ) {
 			continue;
 		}
 
-		if( cl->netchan.remoteAddress.type == NA_LOOPBACK ) {
+		if ( cl->netchan.remoteAddress.type == NA_LOOPBACK ) {
 			continue;
 		}
 
@@ -513,7 +513,7 @@ static void SV_KickNum_f( void ) {
 	if ( !cl ) {
 		return;
 	}
-	if( cl->netchan.remoteAddress.type == NA_LOOPBACK ) {
+	if ( cl->netchan.remoteAddress.type == NA_LOOPBACK ) {
 		Com_Printf("Cannot kick host player\n");
 		return;
 	}
