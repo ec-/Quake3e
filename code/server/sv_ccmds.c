@@ -445,7 +445,7 @@ static void SV_KickBots_f( void ) {
 	}
 
 	for( i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++ ) {
-		if ( cl->state >= CS_CONNECTED ) {
+		if ( cl->state < CS_CONNECTED ) {
 			continue;
 		}
 
@@ -475,7 +475,7 @@ static void SV_KickAll_f( void ) {
 	}
 
 	for( i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++ ) {
-		if ( cl->state >= CS_CONNECTED ) {
+		if ( cl->state < CS_CONNECTED ) {
 			continue;
 		}
 
