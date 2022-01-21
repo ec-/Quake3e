@@ -196,13 +196,14 @@ static void SV_Map_f( void ) {
 	else {
 		if ( !Q_stricmp( cmd, "devmap" ) ) {
 			cheat = qtrue;
-			killBots = qtrue;
 		} else {
 			cheat = qfalse;
-			killBots = qfalse;
 		}
 		if( sv_gametype->integer == GT_SINGLE_PLAYER ) {
 			Cvar_SetIntegerValue( "g_gametype", GT_FFA );
+			killBots = qtrue;
+		} else {
+			killBots = qfalse;
 		}
 	}
 
