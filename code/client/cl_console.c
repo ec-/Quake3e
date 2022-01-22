@@ -70,6 +70,7 @@ extern  int         chat_playerNum;
 console_t	con;
 
 cvar_t		*con_conspeed;
+cvar_t		*con_autoclear;
 cvar_t		*con_notifytime;
 cvar_t		*con_scale;
 
@@ -88,7 +89,10 @@ void Con_ToggleConsole_f( void ) {
 		return;
 	}
 
-	Field_Clear( &g_consoleField );
+	if ( con_autoclear->integer ) {
+		Field_Clear( &g_consoleField );
+	}
+
 	g_consoleField.widthInChars = g_console_field_width;
 
 	Con_ClearNotify();
@@ -393,7 +397,7 @@ void Con_Init( void )
 {
 	con_notifytime = Cvar_Get( "con_notifytime", "3", 0 );
 	con_conspeed = Cvar_Get( "scr_conspeed", "3", 0 );
-
+	con_autoclear = Cvar_Get("con_autoclear", "1", CVAR_ARCHIVE_ND);
 	con_scale = Cvar_Get( "con_scale", "1", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( con_scale, "0.5", "8", CV_FLOAT );
 
