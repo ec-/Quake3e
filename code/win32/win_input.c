@@ -197,11 +197,23 @@ IN_CaptureMouse
 */
 static void IN_CaptureMouse( const RECT *clipRect )
 {
-	while( ShowCursor( FALSE ) >= 0 )
-		;
+	CURSORINFO ci;
+
+	ClipCursor( clipRect );
 	SetCursorPos( window_center.x, window_center.y );
 	SetCapture( g_wv.hWnd );
-	ClipCursor( clipRect );
+
+	memset( &ci, 0, sizeof( ci ) );
+	ci.cbSize = sizeof( CURSORINFO );
+	if ( GetCursorInfo( &ci ) ) {
+		if ( ci.flags == CURSOR_SHOWING ) {
+			while ( ShowCursor( FALSE ) >= 0 )
+				;
+		}
+	} else {
+		while ( ShowCursor( FALSE ) >= 0 )
+			;
+	}
 }
 
 
@@ -225,16 +237,27 @@ IN_DeactivateWin32Mouse
 */
 static void IN_DeactivateWin32Mouse( void )
 {
-	if ( !gw_minimized )
-	{
+	CURSORINFO ci;
+
+	if ( !gw_minimized ) {
 		IN_UpdateWindow( NULL, qfalse );
 		SetCursorPos( window_center.x, window_center.y );
 	}
 
 	ReleaseCapture();
 	ClipCursor( NULL );
-	while ( ShowCursor( TRUE ) < 0 )
-		;
+
+	memset( &ci, 0, sizeof( ci ) );
+	ci.cbSize = sizeof( CURSORINFO );
+	if ( GetCursorInfo( &ci ) ) {
+		if ( ci.flags == 0 ) {
+			while ( ShowCursor( TRUE ) < 0 )
+				;
+		}
+	} else {
+		while ( ShowCursor( TRUE ) < 0 )
+			;
+	}
 }
 
 
