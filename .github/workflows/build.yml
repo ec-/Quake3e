@@ -280,7 +280,7 @@ jobs:
 #         7z a -r quake3e-linux-armv7.zip    ./linux-armv7/*
 
       - name: Create latest build
-        uses: ec-/action-automatic-releases@latest
+        uses: ec-/action-automatic-releases@test
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           automatic_release_tag: "latest"
