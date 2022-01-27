@@ -4827,7 +4827,7 @@ This function is called directly by the generated code
 int32_t VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
 {
 	int32_t	opStack[MAX_OPSTACK_SIZE];
-	int		stackOnEntry;
+	int32_t	stackOnEntry;
 	int32_t	*image;
 #if id386
 	int32_t	*oldOpTop;

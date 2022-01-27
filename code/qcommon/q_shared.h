@@ -839,10 +839,6 @@ typedef struct
 	byte	b7;
 } qint64;
 
-typedef intptr_t (*syscall_t)( intptr_t *parms );
-typedef intptr_t (QDECL *dllSyscall_t)( intptr_t callNum, ... );
-typedef void (QDECL *dllEntry_t)( dllSyscall_t syscallptr );
-
 //=============================================
 /*
 short	BigShort(short l);
