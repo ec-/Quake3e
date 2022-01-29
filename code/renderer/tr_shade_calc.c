@@ -208,7 +208,7 @@ void RB_CalcBulgeVertexes( deformStage_t *ds ) {
 	float		*normal = ( float * ) tess.normal;
 	double		now;
 
-	now = backEnd.refdef.time * 0.001 * ds->bulgeSpeed;
+	now = backEnd.refdef.floatTime * ds->bulgeSpeed;
 
 	for ( i = 0; i < tess.numVertexes; i++, xyz += 4, st += 2, normal += 4 ) {
 		int64_t off;

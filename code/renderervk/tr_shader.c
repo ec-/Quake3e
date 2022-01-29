@@ -4027,6 +4027,13 @@ static void CreateInternalShaders( void ) {
 	stages[0].stateBits = GLS_DEFAULT;
 	tr.defaultShader = FinishShader();
 
+	InitShader( "<white>", LIGHTMAP_NONE );
+	stages[0].bundle[0].image[0] = tr.whiteImage;
+	stages[0].active = qtrue;
+	stages[0].bundle[0].rgbGen = CGEN_EXACT_VERTEX;
+	stages[0].stateBits = GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA;
+	tr.whiteShader = FinishShader();
+
 	// shadow shader is just a marker
 	InitShader( "<stencil shadow>", LIGHTMAP_NONE );
 	stages[0].bundle[0].image[0] = tr.defaultImage;

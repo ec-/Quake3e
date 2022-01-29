@@ -134,14 +134,67 @@ void RB_AddQuadStampExt( const vec3_t origin, const vec3_t left, const vec3_t up
 
 	// constant color all the way around
 	// should this be identity and let the shader specify from entity?
-	* ( unsigned int * ) &tess.vertexColors[ndx] = 
-	* ( unsigned int * ) &tess.vertexColors[ndx+1] = 
-	* ( unsigned int * ) &tess.vertexColors[ndx+2] = 
-	* ( unsigned int * ) &tess.vertexColors[ndx+3] = 
-		* ( unsigned int * )color;
+	tess.vertexColors[ndx+0].u32 =
+	tess.vertexColors[ndx+1].u32 =
+	tess.vertexColors[ndx+2].u32 =
+	tess.vertexColors[ndx+3].u32 =
+		* ( uint32_t * )color;
 
 	tess.numVertexes += 4;
 	tess.numIndexes += 6;
+}
+
+
+void RB_AddQuadStamp2( float x, float y, float w, float h, float s1, float t1, float s2, float t2, color4ub_t color ) {
+	int			numIndexes;
+	int			numVerts;
+
+	RB_CHECKOVERFLOW( 4, 6 );
+
+	tess.surfType = SF_TRIANGLES;
+
+	numIndexes = tess.numIndexes;
+	numVerts = tess.numVertexes;
+
+	tess.numVertexes += 4;
+	tess.numIndexes += 6;
+
+	tess.indexes[numIndexes + 0] = numVerts + 3;
+	tess.indexes[numIndexes + 1] = numVerts + 0;
+	tess.indexes[numIndexes + 2] = numVerts + 2;
+	tess.indexes[numIndexes + 3] = numVerts + 2;
+	tess.indexes[numIndexes + 4] = numVerts + 0;
+	tess.indexes[numIndexes + 5] = numVerts + 1;
+
+	tess.vertexColors[numVerts + 0].u32 =
+	tess.vertexColors[numVerts + 1].u32 =
+	tess.vertexColors[numVerts + 2].u32 =
+	tess.vertexColors[numVerts + 3].u32 = color.u32;
+
+	tess.xyz[numVerts + 0][0] = x;
+	tess.xyz[numVerts + 0][1] = y;
+	tess.xyz[numVerts + 0][2] = 0;
+
+	tess.xyz[numVerts + 1][0] = x + w;
+	tess.xyz[numVerts + 1][1] = y;
+	tess.xyz[numVerts + 1][2] = 0;
+
+	tess.xyz[numVerts + 2][0] = x + w;
+	tess.xyz[numVerts + 2][1] = y + h;
+	tess.xyz[numVerts + 2][2] = 0;
+
+	tess.xyz[numVerts + 3][0] = x;
+	tess.xyz[numVerts + 3][1] = y + h;
+	tess.xyz[numVerts + 3][2] = 0;
+
+	tess.texCoords[0][numVerts + 0][0] = s1;
+	tess.texCoords[0][numVerts + 0][1] = t1;
+	tess.texCoords[0][numVerts + 1][0] = s2;
+	tess.texCoords[0][numVerts + 1][1] = s1;
+	tess.texCoords[0][numVerts + 2][0] = s2;
+	tess.texCoords[0][numVerts + 2][1] = t2;
+	tess.texCoords[0][numVerts + 3][0] = s1;
+	tess.texCoords[0][numVerts + 3][1] = t2;
 }
 
 

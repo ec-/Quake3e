@@ -427,6 +427,8 @@ void GL_ClientState( int unit, unsigned stateBits )
 }
 
 
+void RB_SetGL2D( void );
+
 /*
 ================
 RB_Hyperspace
@@ -435,24 +437,39 @@ A player has predicted a teleport, but hasn't arrived yet
 ================
 */
 static void RB_Hyperspace( void ) {
-	float		c;
+	color4ub_t c;
 
 	if ( !backEnd.isHyperspace ) {
 		// do initialization shit
 	}
 
-	c = ( backEnd.refdef.time & 255 ) / 255.0f;
-	qglClearColor( c, c, c, 1 );
-	qglClear( GL_COLOR_BUFFER_BIT );
+	if ( tess.shader != tr.whiteShader ) {
+		if ( tess.numIndexes ) {
+			RB_EndSurface();
+		}
+		RB_BeginSurface( tr.whiteShader, 0 );
+	}
+
+	VBO_UnBind();
+
+	RB_SetGL2D();
+
+	c.rgba[0] = c.rgba[1] = c.rgba[2] = (backEnd.refdef.time & 255);
+	c.rgba[3] = 255;
+
+	RB_AddQuadStamp2( backEnd.refdef.x, backEnd.refdef.y, backEnd.refdef.width, backEnd.refdef.height,
+		0.0, 0.0, 0.0, 0.0, c );
+
+	RB_EndSurface();
 
 	backEnd.isHyperspace = qtrue;
 }
 
 
 static void SetViewportAndScissor( void ) {
-	qglMatrixMode(GL_PROJECTION);
+	qglMatrixMode( GL_PROJECTION );
 	qglLoadMatrixf( backEnd.viewParms.projectionMatrix );
-	qglMatrixMode(GL_MODELVIEW);
+	qglMatrixMode( GL_MODELVIEW );
 
 	// set the window clipping
 	qglViewport( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY,
@@ -511,13 +528,11 @@ static void RB_BeginDrawingView( void ) {
 	}
 	qglClear( clearBits );
 
-	if ( backEnd.refdef.rdflags & RDF_HYPERSPACE )
-	{
+	if ( backEnd.refdef.rdflags & RDF_HYPERSPACE ) {
 		RB_Hyperspace();
-		return;
-	}
-	else
-	{
+		backEnd.projection2D = qfalse;
+		SetViewportAndScissor();
+	} else {
 		backEnd.isHyperspace = qfalse;
 	}
 
@@ -925,6 +940,7 @@ RENDER BACK END FUNCTIONS
 
 ============================================================================
 */
+
 
 /*
 ================
