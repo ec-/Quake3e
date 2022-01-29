@@ -190,7 +190,7 @@ void RB_AddQuadStamp2( float x, float y, float w, float h, float s1, float t1, f
 	tess.texCoords[0][numVerts + 0][0] = s1;
 	tess.texCoords[0][numVerts + 0][1] = t1;
 	tess.texCoords[0][numVerts + 1][0] = s2;
-	tess.texCoords[0][numVerts + 1][1] = s1;
+	tess.texCoords[0][numVerts + 1][1] = t1;
 	tess.texCoords[0][numVerts + 2][0] = s2;
 	tess.texCoords[0][numVerts + 2][1] = t2;
 	tess.texCoords[0][numVerts + 3][0] = s1;
