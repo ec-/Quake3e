@@ -437,7 +437,7 @@ void GL_ClientState( int unit, unsigned stateBits )
 #endif
 
 
-void RB_SetGL2D( void );
+static void RB_SetGL2D( void );
 
 /*
 ================
