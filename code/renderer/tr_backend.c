@@ -1070,7 +1070,6 @@ RB_StretchPic
 static const void *RB_StretchPic( const void *data ) {
 	const stretchPicCommand_t	*cmd;
 	shader_t *shader;
-	int		numVerts, numIndexes;
 
 	cmd = (const stretchPicCommand_t *)data;
 
