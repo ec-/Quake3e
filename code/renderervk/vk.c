@@ -1071,6 +1071,7 @@ static void create_instance( void )
 	VkResult res;
 	const char **extension_names, *ext;
 	uint32_t i, n, count, extension_count;
+	VkApplicationInfo appInfo;
 
 	count = 0;
 	extension_count = 0;
@@ -1096,11 +1097,19 @@ static void create_instance( void )
 		extension_names[ extension_count++ ] = ext;
 	}
 
+	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+	appInfo.pNext = NULL;
+	appInfo.pApplicationName = NULL; // Q3_VERSION;
+	appInfo.applicationVersion = 0x0;
+	appInfo.pEngineName = NULL;
+	appInfo.engineVersion = 0x0;
+	appInfo.apiVersion = VK_API_VERSION_1_0;
+
 	// create instance
 	desc.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	desc.pNext = NULL;
 	desc.flags = 0;
-	desc.pApplicationInfo = NULL;
+	desc.pApplicationInfo = &appInfo;
 	desc.enabledExtensionCount = extension_count;
 	desc.ppEnabledExtensionNames = extension_names;
 
@@ -6458,7 +6467,7 @@ void vk_begin_frame( void )
 	// Ensure visibility of geometry buffers writes.
 	//record_buffer_memory_barrier( vk.cmd->command_buffer, vk.cmd->vertex_buffer, vk.cmd->vertex_buffer_offset, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT );
 
-#if 1
+#if 0
 	// add explicit layout transition dependency
 	if ( vk.fboActive ) {
 		record_image_layout_transition( vk.cmd->command_buffer,

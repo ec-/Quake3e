@@ -460,7 +460,9 @@ static void RB_Hyperspace( void ) {
 		RB_BeginSurface( tr.whiteShader, 0 );
 	}
 
+#ifdef USE_VBO
 	VBO_UnBind();
+#endif
 
 	RB_SetGL2D();
 

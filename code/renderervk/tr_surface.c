@@ -149,9 +149,15 @@ void RB_AddQuadStamp2( float x, float y, float w, float h, float s1, float t1, f
 	int			numIndexes;
 	int			numVerts;
 
+#ifdef USE_VBO
+	VBO_Flush();
+#endif
+
 	RB_CHECKOVERFLOW( 4, 6 );
 
+#ifdef USE_VBO
 	tess.surfType = SF_TRIANGLES;
+#endif
 
 	numIndexes = tess.numIndexes;
 	numVerts = tess.numVertexes;

@@ -145,6 +145,8 @@ void RB_AddQuadStamp2( float x, float y, float w, float h, float s1, float t1, f
 	int			numIndexes;
 	int			numVerts;
 
+	VBO_Flush();
+
 	RB_CHECKOVERFLOW( 4, 6 );
 
 	tess.surfType = SF_TRIANGLES;
