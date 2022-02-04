@@ -2700,27 +2700,27 @@ static qboolean CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 			return qfalse;
 		}
 
-		if ( !clc.compat )
-		{
-			c = Cmd_Argv(1);
-
-			if(*c)
-				challenge = atoi(c);
-			else
-			{
-				Com_Printf("Bad connectResponse received. Ignored.\n");
+		if ( !clc.compat ) {
+			c = Cmd_Argv( 1 );
+			if ( *c != '\0' ) {
+				challenge = atoi( c );
+			} else {
+				Com_Printf( "Bad connectResponse received. Ignored.\n" );
 				return qfalse;
 			}
 
-			if(challenge != clc.challenge)
-			{
-				Com_Printf("ConnectResponse with bad challenge received. Ignored.\n");
+			if ( challenge != clc.challenge ) {
+				Com_Printf( "ConnectResponse with bad challenge received. Ignored.\n" );
 				return qfalse;
+			}
+
+			if ( com_protocolCompat ) {
+				// enforce dm68-compatible stream
+				clc.compat = qtrue;
 			}
 		}
 
-		Netchan_Setup( NS_CLIENT, &clc.netchan, from, Cvar_VariableIntegerValue("net_qport"),
-			clc.challenge, clc.compat );
+		Netchan_Setup( NS_CLIENT, &clc.netchan, from, Cvar_VariableIntegerValue( "net_qport" ), clc.challenge, clc.compat );
 
 		cls.state = CA_CONNECTED;
 		clc.lastPacketSentTime = -9999;		// send first packet immediately

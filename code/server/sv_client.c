@@ -536,6 +536,12 @@ void SV_DirectConnect( const netadr_t *from ) {
 		}
 	}
 
+	if ( com_protocolCompat )
+	{
+		// enforce dm68-compatible stream
+		compat = qtrue;
+	}
+
 	v = Info_ValueForKey( userinfo, "qport" );
 	if ( *v == '\0' )
 	{
