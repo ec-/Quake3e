@@ -431,14 +431,13 @@ void SV_DirectConnect( const netadr_t *from ) {
 	client_t	*cl, *newcl;
 	//sharedEntity_t *ent;
 	int			clientNum;
-	int			version;
 	int			qport;
 	int			challenge;
 	char		*password;
 	int			startIndex;
 	intptr_t	denied;
 	int			count;
-	int			server_protocol;
+	int			cl_proto, sv_proto;
 	const char	*ip, *info, *v;
 	qboolean	compat;
 	qboolean	longstr;
@@ -518,27 +517,28 @@ void SV_DirectConnect( const netadr_t *from ) {
 		}
 		return;
 	}
-	version = atoi( v );
+	cl_proto = atoi( v );
 
-	server_protocol = com_protocol->integer;
-	if ( server_protocol == PROTOCOL_VERSION )
+	sv_proto = com_protocol->integer;
+	if ( sv_proto == DEFAULT_PROTOCOL_VERSION )
 	{
-		server_protocol = NEW_PROTOCOL_VERSION;
+		// we support new protocol features by default
+		sv_proto = NEW_PROTOCOL_VERSION;
 	}
 
-	if ( version == PROTOCOL_VERSION )
+	if ( cl_proto <= OLD_PROTOCOL_VERSION )
 		compat = qtrue;
 	else
 	{
-		if ( version != server_protocol )
+		if ( cl_proto != sv_proto )
 		{
 			// avoid excessive outgoing traffic
 			if ( !SVC_RateLimit( &bucket, 10, 200 ) )
 			{
 				NET_OutOfBandPrint( NS_SERVER, from, "print\nServer uses protocol version %i "
-					"(yours is %i).\n", server_protocol, version );
+					"(yours is %i).\n", sv_proto, cl_proto );
 			}
-			Com_DPrintf( "    rejected connect from version %i\n", version );
+			Com_DPrintf( "    rejected connect from version %i\n", cl_proto );
 			return;
 		}
 		compat = qfalse;
@@ -757,7 +757,7 @@ gotnewcl:
 
 	// send the connect packet to the client
 	if ( longstr /*&& !compat*/ ) {
-		NET_OutOfBandPrint( NS_SERVER, from, "connectResponse %d %d", challenge, server_protocol );
+		NET_OutOfBandPrint( NS_SERVER, from, "connectResponse %d %d", challenge, sv_proto );
 	} else {
 		NET_OutOfBandPrint( NS_SERVER, from, "connectResponse %d", challenge );
 	}
