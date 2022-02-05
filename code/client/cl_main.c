@@ -2701,6 +2701,7 @@ static qboolean CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 		}
 
 		if ( !clc.compat ) {
+			// first argument: challenge response
 			c = Cmd_Argv( 1 );
 			if ( *c != '\0' ) {
 				challenge = atoi( c );
@@ -2715,8 +2716,21 @@ static qboolean CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 			}
 
 			if ( com_protocolCompat ) {
-				// enforce dm68-compatible stream
+				// enforce dm68-compatible stream for legacy/unknown servers
 				clc.compat = qtrue;
+			}
+
+			// second (optional) argument: actual protocol version used on server-side
+			c = Cmd_Argv( 2 );
+			if ( *c != '\0' ) {
+				int protocol = atoi( c );
+				if ( protocol > 0 ) {
+					if ( protocol == PROTOCOL_VERSION ) {
+						clc.compat = qtrue;
+					} else {
+						clc.compat = qfalse;
+					}
+				}
 			}
 		}
 

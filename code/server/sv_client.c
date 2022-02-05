@@ -438,8 +438,9 @@ void SV_DirectConnect( const netadr_t *from ) {
 	int			startIndex;
 	intptr_t	denied;
 	int			count;
+	int			server_protocol;
 	const char	*ip, *info, *v;
-	qboolean	compat = qfalse;
+	qboolean	compat;
 	qboolean	longstr;
 
 	Com_DPrintf( "SVC_DirectConnect()\n" );
@@ -519,27 +520,28 @@ void SV_DirectConnect( const netadr_t *from ) {
 	}
 	version = atoi( v );
 
+	server_protocol = com_protocol->integer;
+	if ( server_protocol == PROTOCOL_VERSION )
+	{
+		server_protocol = NEW_PROTOCOL_VERSION;
+	}
+
 	if ( version == PROTOCOL_VERSION )
 		compat = qtrue;
 	else
 	{
-		if ( version != NEW_PROTOCOL_VERSION )
+		if ( version != server_protocol )
 		{
 			// avoid excessive outgoing traffic
 			if ( !SVC_RateLimit( &bucket, 10, 200 ) )
 			{
 				NET_OutOfBandPrint( NS_SERVER, from, "print\nServer uses protocol version %i "
-					"(yours is %i).\n", NEW_PROTOCOL_VERSION, version );
+					"(yours is %i).\n", server_protocol, version );
 			}
 			Com_DPrintf( "    rejected connect from version %i\n", version );
 			return;
 		}
-	}
-
-	if ( com_protocolCompat )
-	{
-		// enforce dm68-compatible stream
-		compat = qtrue;
+		compat = qfalse;
 	}
 
 	v = Info_ValueForKey( userinfo, "qport" );
@@ -554,11 +556,16 @@ void SV_DirectConnect( const netadr_t *from ) {
 	qport = atoi( Info_ValueForKey( userinfo, "qport" ) );
 
 	// if "client" is present in userinfo and it is a modern client
-	// then assume it can properly decode long strings
-	if ( !compat && *Info_ValueForKey( userinfo, "client" ) != '\0' )
+	// then assume it can properly decode long strings and protocol extensions
+	if ( !compat && *Info_ValueForKey( userinfo, "client" ) != '\0' ) {
 		longstr = qtrue;
-	else
+	} else {
 		longstr = qfalse;
+		if ( com_protocolCompat ) {
+			// enforce dm68-compatible stream for other clients
+			compat = qtrue;
+		}
+	}
 
 	// we don't need these keys after connection, release some space in userinfo
 	Info_RemoveKey( userinfo, "challenge" );
@@ -749,7 +756,11 @@ gotnewcl:
 	}
 
 	// send the connect packet to the client
-	NET_OutOfBandPrint( NS_SERVER, from, "connectResponse %d", challenge );
+	if ( longstr /*&& !compat*/ ) {
+		NET_OutOfBandPrint( NS_SERVER, from, "connectResponse %d %d", challenge, server_protocol );
+	} else {
+		NET_OutOfBandPrint( NS_SERVER, from, "connectResponse %d", challenge );
+	}
 
 	Com_DPrintf( "Going from CS_FREE to CS_CONNECTED for %s\n", newcl->name );
 
