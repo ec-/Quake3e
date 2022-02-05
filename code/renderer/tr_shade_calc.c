@@ -267,7 +267,7 @@ void DeformText( const char *text ) {
 	vec3_t	origin, width, height;
 	int		len;
 	int		ch;
-	byte	color[4];
+	color4ub_t color;
 	float	bottom, top;
 	vec3_t	mid;
 
@@ -306,7 +306,7 @@ void DeformText( const char *text ) {
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
 
-	color[0] = color[1] = color[2] = color[3] = 255;
+	color.u32 = 0xFFFFFFFF;
 
 	// draw each character
 	for ( i = 0 ; i < len ; i++ ) {
@@ -410,7 +410,7 @@ static void AutospriteDeform( void ) {
 			VectorScale(up, axisLength, up);
 		}
 
-		RB_AddQuadStamp( mid, left, up, tess.vertexColors[i].rgba );
+		RB_AddQuadStamp( mid, left, up, tess.vertexColors[i] );
 	}
 }
 
