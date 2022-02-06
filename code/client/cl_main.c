@@ -42,6 +42,7 @@ cvar_t	*cl_showTimeDelta;
 
 cvar_t	*cl_shownet;
 cvar_t	*cl_autoRecordDemo;
+cvar_t*  cl_autoQuitDemo;
 
 cvar_t	*cl_aviFrameRate;
 cvar_t	*cl_aviMotionJpeg;
@@ -685,6 +686,10 @@ static void CL_DemoCompleted( void ) {
 			Com_Printf( "%i frames, %3.*f seconds: %3.1f fps\n", clc.timeDemoFrames,
 			time > 10000 ? 1 : 2, time/1000.0, clc.timeDemoFrames*1000.0 / time );
 		}
+	}
+
+	if (cl_autoQuitDemo->integer) {
+		Com_Quit_f();
 	}
 
 	CL_Disconnect( qtrue );
@@ -3840,6 +3845,7 @@ void CL_Init( void ) {
 	cl_activeAction = Cvar_Get( "activeAction", "", CVAR_TEMP );
 
 	cl_autoRecordDemo = Cvar_Get ("cl_autoRecordDemo", "0", CVAR_ARCHIVE);
+	cl_autoQuitDemo = Cvar_Get("cl_autoQuitDemo", "0", CVAR_ARCHIVE);
 
 	cl_aviFrameRate = Cvar_Get ("cl_aviFrameRate", "25", CVAR_ARCHIVE);
 	Cvar_CheckRange( cl_aviFrameRate, "1", "1000", CV_INTEGER );
