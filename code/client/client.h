@@ -411,7 +411,7 @@ extern	cvar_t	*cl_inGameVideo;
 
 extern	cvar_t	*cl_lanForcePackets;
 extern	cvar_t	*cl_autoRecordDemo;
-extern	cvar_t  *cl_autoQuitDemo;
+extern	cvar_t	*cl_autoQuitDemo;
 
 extern	cvar_t	*com_maxfps;
 
