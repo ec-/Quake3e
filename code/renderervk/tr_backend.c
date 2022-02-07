@@ -1108,21 +1108,11 @@ void RE_UploadCinematic( int w, int h, int cols, int rows, byte *data, int clien
 
 	// if the scratchImage isn't in the format we want, specify it as a new texture
 	if ( cols != image->width || rows != image->height ) {
-		byte *buffer;
-		int bytes_per_pixel;
-
 		image->width = image->uploadWidth = cols;
 		image->height = image->uploadHeight = rows;
 #ifdef USE_VULKAN
-		qvkDestroyImage( vk.device, image->handle, NULL );
-		qvkDestroyImageView( vk.device, image->view, NULL );
-
-		vk_create_image( cols, rows, image->internalFormat, 1, image );
-		buffer = resample_image_data( image, data, cols * rows * 4, &bytes_per_pixel );
-		vk_upload_image_data( image->handle, 0, 0, cols, rows, qfalse, buffer, bytes_per_pixel );
-		if ( buffer != data ) {
-			ri.Hunk_FreeTempMemory( buffer );
-		}
+		vk_create_image( image, cols, rows, 1 );
+		vk_upload_image_data( image, 0, 0, cols, rows, 1, data, cols * rows * 4 );
 #else
 		qglTexImage2D( GL_TEXTURE_2D, 0, image->internalFormat, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
@@ -1131,17 +1121,10 @@ void RE_UploadCinematic( int w, int h, int cols, int rows, byte *data, int clien
 		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl_clamp_mode );
 #endif
 	} else if ( dirty ) {
-		byte *buffer;
-		int bytes_per_pixel;
-
 		// otherwise, just subimage upload it so that drivers can tell we are going to be changing
 		// it and don't try and do a texture compression
 #ifdef USE_VULKAN
-		buffer = resample_image_data( image, data, cols * rows * 4, &bytes_per_pixel );
-		vk_upload_image_data( image->handle, 0, 0, cols, rows, qfalse, buffer, bytes_per_pixel );
-		if ( buffer != data ) {
-			ri.Hunk_FreeTempMemory( buffer );
-		}
+		vk_upload_image_data( image, 0, 0, cols, rows, 1, data, cols * rows * 4 );
 #else
 		qglTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, cols, rows, GL_RGBA, GL_UNSIGNED_BYTE, data );
 #endif

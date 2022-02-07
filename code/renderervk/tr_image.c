@@ -182,6 +182,10 @@ void R_ImageList_f( void ) {
 				format = "RGBA ";
 				estSize *= 4;
 				break;
+			case VK_FORMAT_R8G8B8_UNORM:
+				format = "RGB  ";
+				estSize *= 3;
+				break;
 			case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
 				format = "RGBA ";
 				estSize *= 2;
@@ -743,7 +747,7 @@ byte *resample_image_data( const image_t *image, byte *data, const int data_size
 {
 	byte *buffer;
 	uint16_t *p;
-	int i;
+	int i, n;
 
 	switch ( image->internalFormat ) {
 		case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
@@ -788,6 +792,17 @@ byte *resample_image_data( const image_t *image, byte *data, const int data_size
 			*bytes_per_pixel = 4;
 			return buffer;
 
+		case VK_FORMAT_R8G8B8_UNORM: {
+			buffer = (byte*)ri.Hunk_AllocateTempMemory( (data_size * 3) / 4 );
+			for ( i = 0, n = 0; i < data_size; i += 4, n += 3 ) {
+				buffer[n + 0] = data[i + 0];
+				buffer[n + 1] = data[i + 1];
+				buffer[n + 2] = data[i + 2];
+			}
+			*bytes_per_pixel = 3;
+			return buffer;
+		}
+
 		default:
 			*bytes_per_pixel = 4;
 			return data;
@@ -795,17 +810,21 @@ byte *resample_image_data( const image_t *image, byte *data, const int data_size
 }
 
 
-static void upload_vk_image( Image_Upload_Data *upload_data, image_t *image ) {
-	int w = upload_data->base_level_width;
-	int h = upload_data->base_level_height;
-	int bytes_per_pixel;
-	byte *buffer;
+static void upload_vk_image( image_t *image, byte *pic ) {
+
+	Image_Upload_Data upload_data;
+	int w, h;
+
+	generate_image_upload_data( image, pic, &upload_data );
+
+	w = upload_data.base_level_width;
+	h = upload_data.base_level_height;
 
 	if ( r_texturebits->integer > 16 || r_texturebits->integer == 0 || ( image->flags & IMGFLAG_LIGHTMAP ) ) {
 		image->internalFormat = VK_FORMAT_R8G8B8A8_UNORM;
 		//image->internalFormat = VK_FORMAT_B8G8R8A8_UNORM;
 	} else {
-		qboolean has_alpha = RawImage_HasAlpha( upload_data->buffer, w * h );
+		qboolean has_alpha = RawImage_HasAlpha( upload_data.buffer, w * h );
 		image->internalFormat = has_alpha ? VK_FORMAT_B4G4R4A4_UNORM_PACK16 : VK_FORMAT_A1R5G5B5_UNORM_PACK16;
 	}
 
@@ -813,15 +832,13 @@ static void upload_vk_image( Image_Upload_Data *upload_data, image_t *image ) {
 	image->view = VK_NULL_HANDLE;
 	image->descriptor = VK_NULL_HANDLE;
 
-	image->uploadWidth = upload_data->base_level_width;
-	image->uploadHeight = upload_data->base_level_height;
+	image->uploadWidth = w;
+	image->uploadHeight = h;
 
-	vk_create_image( w, h, image->internalFormat, upload_data->mip_levels, image );
-	buffer = resample_image_data( image, upload_data->buffer, upload_data->buffer_size, &bytes_per_pixel ); 
-	vk_upload_image_data( image->handle, 0, 0, w, h, upload_data->mip_levels > 1, buffer, bytes_per_pixel );
-	if ( buffer != upload_data->buffer ) {
-		ri.Hunk_FreeTempMemory( buffer );
-	}
+	vk_create_image( image, w, h, upload_data.mip_levels );
+	vk_upload_image_data( image, 0, 0, w, h, upload_data.mip_levels, upload_data.buffer, upload_data.buffer_size );
+
+	ri.Hunk_FreeTempMemory( upload_data.buffer );
 }
 
 #else // !USE_VULKAN
@@ -1058,9 +1075,7 @@ Picture data may be modified in-place during mipmap processing
 image_t *R_CreateImage( const char *name, const char *name2, byte *pic, int width, int height, imgFlags_t flags ) {
 	image_t		*image;
 	long		hash;
-#ifdef USE_VULKAN
-	Image_Upload_Data upload_data;
-#else
+#ifndef USE_VULKAN
 	GLint		glWrapClampMode;
 	GLuint		currTexture;
 	int			currTMU;
@@ -1119,11 +1134,7 @@ image_t *R_CreateImage( const char *name, const char *name2, byte *pic, int widt
 	else
 		image->wrapClampMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
-	generate_image_upload_data( image, pic, &upload_data );
-
-	upload_vk_image( &upload_data, image );
-
-	ri.Hunk_FreeTempMemory( upload_data.buffer );
+	upload_vk_image( image, pic );
 #else
 	if ( flags & IMGFLAG_RGB )
 		image->internalFormat = GL_RGB;
