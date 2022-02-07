@@ -634,12 +634,12 @@ void GLimp_Init( glconfig_t *config )
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
 
-	Key_ClearStates();
+	// This depends on SDL_INIT_VIDEO, hence having it here
+	IN_Init();
 
 	HandleEvents();
 
-	// This depends on SDL_INIT_VIDEO, hence having it here
-	IN_Init();
+	Key_ClearStates();
 }
 
 
