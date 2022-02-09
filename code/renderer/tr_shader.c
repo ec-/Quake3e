@@ -2829,11 +2829,11 @@ static shader_t *FinishShader( void ) {
 		for ( n = 0; n < 2; n++ ) {
 			for ( m = 0; m < stages[i].bundle[n].numTexMods; m++ ) {
 				if ( stages[i].bundle[n].texMods[m].type == TMOD_STRETCH ) {
-					if ( fabsf( stages[i].bundle[n].texMods[m].wave.amplitude ) < 1e-6 ) {
+					if ( fabsf( stages[i].bundle[n].texMods[m].wave.amplitude ) < 1e-6f ) {
 						if ( stages[i].bundle[n].texMods[m].wave.amplitude >= 0.0f ) {
-							stages[i].bundle[n].texMods[m].wave.amplitude = 1e-6;
+							stages[i].bundle[n].texMods[m].wave.amplitude = 1e-6f;
 						} else {
-							stages[i].bundle[n].texMods[m].wave.amplitude = -1e-6;
+							stages[i].bundle[n].texMods[m].wave.amplitude = -1e-6f;
 						}
 					}
 				}

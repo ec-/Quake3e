@@ -643,7 +643,7 @@ static void generate_image_upload_data( image_t *image, byte *data, Image_Upload
 			byte *p = data;
 			int i, n = width * height;
 			for ( i = 0; i < n; i++, p+=4 ) {
-				R_ColorShiftLightingBytes( p, p );
+				R_ColorShiftLightingBytes( p, p, qfalse );
 			}
 		}
 	}

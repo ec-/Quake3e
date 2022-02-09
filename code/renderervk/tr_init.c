@@ -1708,7 +1708,7 @@ static void R_Register( void )
 #endif // USE_VULKAN
 }
 
-#define EPSILON 1e-6
+#define EPSILON 1e-6f
 
 /*
 ===============
