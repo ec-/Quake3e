@@ -586,12 +586,16 @@ static void InitOpenGL( void )
 	}
 
 #ifdef USE_VULKAN
-	if ( !vk.active ) {
+	if ( !vk.active && vk.instance ) {
 		// might happen after REF_KEEP_WINDOW
 		vk_initialize();
 		gls.initTime = ri.Milliseconds();
 	}
-	vk_init_descriptors();
+	if ( vk.active ) {
+		vk_init_descriptors();
+	} else {
+		ri.Error( ERR_FATAL, "Recursive error during Vulkan initialization" );
+	}
 #endif
 
 	VarInfo();
@@ -1704,7 +1708,7 @@ static void R_Register( void )
 #endif // USE_VULKAN
 }
 
-#define EPSILON 1e-6
+#define EPSILON 1e-6f
 
 /*
 ===============

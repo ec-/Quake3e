@@ -197,9 +197,9 @@ void RB_AddFlare( void *surface, int fogNum, vec3_t point, vec3_t color, vec3_t 
 	f->eyeZ = eye[2];
 
 	if ( backEnd.viewParms.portalView )
-		f->drawZ = (clip[2] + clip[3] - 2 ) / ( 2 * clip[3] );
+		f->drawZ = (clip[2] + clip[3] - 1.5 ) / ( 2 * clip[3] );
 	else
-		f->drawZ = (clip[2] + clip[3] - 1 ) / ( 2 * clip[3] );
+		f->drawZ = (clip[2] + clip[3] - 0.5 ) / ( 2 * clip[3] );
 }
 
 
@@ -309,9 +309,9 @@ RB_RenderFlare
 static void RB_RenderFlare( flare_t *f ) {
 	float			size;
 	vec3_t			color;
-	int				iColor[3];
 	float distance, intensity, factor;
 	byte fogFactors[3] = {255, 255, 255};
+	color4ub_t		c;
 
 	backEnd.pc.c_flareRenders++;
 
@@ -352,7 +352,7 @@ static void RB_RenderFlare( flare_t *f ) {
 	VectorScale(f->color, f->drawIntensity * intensity, color);
 
 	// Calculations for fogging
-	if(tr.world && f->fogNum > 0 && f->fogNum < tr.world->numfogs)
+	if ( tr.world && f->fogNum > 0 && f->fogNum < tr.world->numfogs )
 	{
 		tess.numVertexes = 1;
 		VectorCopy(f->origin, tess.xyz[0]);
@@ -361,63 +361,18 @@ static void RB_RenderFlare( flare_t *f ) {
 		RB_CalcModulateColorsByFog(fogFactors);
 		
 		// We don't need to render the flare if colors are 0 anyways.
-		if(!(fogFactors[0] || fogFactors[1] || fogFactors[2]))
+		if (!(fogFactors[0] || fogFactors[1] || fogFactors[2]))
 			return;
 	}
 
-	iColor[0] = color[0] * fogFactors[0];
-	iColor[1] = color[1] * fogFactors[1];
-	iColor[2] = color[2] * fogFactors[2];
-	
 	RB_BeginSurface( tr.flareShader, f->fogNum );
 
-	// FIXME: use quadstamp?
-	tess.xyz[tess.numVertexes][0] = f->windowX - size;
-	tess.xyz[tess.numVertexes][1] = f->windowY - size;
-	tess.texCoords[0][tess.numVertexes][0] = 0;
-	tess.texCoords[0][tess.numVertexes][1] = 0;
-	tess.vertexColors[tess.numVertexes].rgba[0] = iColor[0];
-	tess.vertexColors[tess.numVertexes].rgba[1] = iColor[1];
-	tess.vertexColors[tess.numVertexes].rgba[2] = iColor[2];
-	tess.vertexColors[tess.numVertexes].rgba[3] = 255;
-	tess.numVertexes++;
+	c.rgba[0] = color[0] * fogFactors[0];
+	c.rgba[1] = color[1] * fogFactors[1];
+	c.rgba[2] = color[2] * fogFactors[2];
+	c.rgba[3] = 255;
 
-	tess.xyz[tess.numVertexes][0] = f->windowX - size;
-	tess.xyz[tess.numVertexes][1] = f->windowY + size;
-	tess.texCoords[0][tess.numVertexes][0] = 0;
-	tess.texCoords[0][tess.numVertexes][1] = 1;
-	tess.vertexColors[tess.numVertexes].rgba[0] = iColor[0];
-	tess.vertexColors[tess.numVertexes].rgba[1] = iColor[1];
-	tess.vertexColors[tess.numVertexes].rgba[2] = iColor[2];
-	tess.vertexColors[tess.numVertexes].rgba[3] = 255;
-	tess.numVertexes++;
-
-	tess.xyz[tess.numVertexes][0] = f->windowX + size;
-	tess.xyz[tess.numVertexes][1] = f->windowY + size;
-	tess.texCoords[0][tess.numVertexes][0] = 1;
-	tess.texCoords[0][tess.numVertexes][1] = 1;
-	tess.vertexColors[tess.numVertexes].rgba[0] = iColor[0];
-	tess.vertexColors[tess.numVertexes].rgba[1] = iColor[1];
-	tess.vertexColors[tess.numVertexes].rgba[2] = iColor[2];
-	tess.vertexColors[tess.numVertexes].rgba[3] = 255;
-	tess.numVertexes++;
-
-	tess.xyz[tess.numVertexes][0] = f->windowX + size;
-	tess.xyz[tess.numVertexes][1] = f->windowY - size;
-	tess.texCoords[0][tess.numVertexes][0] = 1;
-	tess.texCoords[0][tess.numVertexes][1] = 0;
-	tess.vertexColors[tess.numVertexes].rgba[0] = iColor[0];
-	tess.vertexColors[tess.numVertexes].rgba[1] = iColor[1];
-	tess.vertexColors[tess.numVertexes].rgba[2] = iColor[2];
-	tess.vertexColors[tess.numVertexes].rgba[3] = 255;
-	tess.numVertexes++;
-
-	tess.indexes[tess.numIndexes++] = 0;
-	tess.indexes[tess.numIndexes++] = 1;
-	tess.indexes[tess.numIndexes++] = 2;
-	tess.indexes[tess.numIndexes++] = 0;
-	tess.indexes[tess.numIndexes++] = 2;
-	tess.indexes[tess.numIndexes++] = 3;
+	RB_AddQuadStamp2( f->windowX - size, f->windowY - size, size * 2, size * 2, 0, 0, 1, 1, c );
 
 	RB_EndSurface();
 }

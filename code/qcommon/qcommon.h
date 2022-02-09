@@ -281,10 +281,12 @@ PROTOCOL
 ==============================================================
 */
 
-#define	PROTOCOL_VERSION		68
+#define	OLD_PROTOCOL_VERSION	68
 // new protocol with UDP spoofing protection:
 #define	NEW_PROTOCOL_VERSION	71
 // 1.31 - 67
+
+#define DEFAULT_PROTOCOL_VERSION	OLD_PROTOCOL_VERSION
 
 
 // maintain a list of compatible protocols for demo playing
@@ -1004,6 +1006,7 @@ extern	cvar_t	*com_buildScript;		// for building release pak files
 extern	cvar_t	*com_journal;
 extern	cvar_t	*com_cameraMode;
 extern	cvar_t	*com_protocol;
+extern	qboolean com_protocolCompat;
 
 // both client and server must agree to pause
 extern	cvar_t	*sv_paused;

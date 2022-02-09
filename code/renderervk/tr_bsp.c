@@ -99,7 +99,7 @@ static void HSVtoRGB( float h, float s, float v, float rgb[3] )
 R_ColorShiftLightingBytes
 ===============
 */
-void R_ColorShiftLightingBytes( const byte in[4], byte out[4] ) {
+void R_ColorShiftLightingBytes( const byte in[4], byte out[4], qboolean hasAlpha ) {
 	int		shift, r, g, b;
 
 	// shift the color data based on overbright range
@@ -140,7 +140,10 @@ void R_ColorShiftLightingBytes( const byte in[4], byte out[4] ) {
 		out[1] = g;
 		out[2] = b;
 	}
-	out[3] = in[3];
+
+	if ( hasAlpha ) {
+		out[3] = in[3];
+	}
 }
 
 
@@ -258,7 +261,9 @@ static float R_ProcessLightmap( byte *image, const byte *buf_p, float maxIntensi
 		if ( r_mergeLightmaps->integer ) {
 			for ( y = 0 ; y < LIGHTMAP_SIZE; y++ ) {
 				for ( x = 0 ; x < LIGHTMAP_SIZE; x++ ) {
-					R_ColorShiftLightingBytes( buf_p, &image[ ((y + LIGHTMAP_BORDER) * LIGHTMAP_LEN + x + LIGHTMAP_BORDER) * 4 ] );
+					byte *dst = &image[((y + LIGHTMAP_BORDER) * LIGHTMAP_LEN + x + LIGHTMAP_BORDER) * 4];
+					R_ColorShiftLightingBytes( buf_p, dst, qfalse );
+					dst[3] = 255;
 					buf_p += 3;
 				}
 			}
@@ -267,7 +272,9 @@ static float R_ProcessLightmap( byte *image, const byte *buf_p, float maxIntensi
 			// legacy path
 			for ( y = 0 ; y < LIGHTMAP_SIZE; y++ ) {
 				for ( x = 0 ; x < LIGHTMAP_SIZE; x++ ) {
-					R_ColorShiftLightingBytes( buf_p, &image[ (y * LIGHTMAP_SIZE + x) * 4 ] );
+					byte *dst = &image[(y * LIGHTMAP_SIZE + x) * 4];
+					R_ColorShiftLightingBytes( buf_p, dst, qfalse );
+					dst[3] = 255;
 					buf_p += 3;
 				}
 			}
@@ -366,7 +373,7 @@ static void R_LoadMergedLightmaps( const lump_t *l, byte *image )
 				R_ProcessLightmap( image, buf + offs, maxIntensity );
 				
 #ifdef USE_VULKAN
-				vk_upload_image_data( tr.lightmaps[ i ]->handle, x * LIGHTMAP_LEN, y * LIGHTMAP_LEN, LIGHTMAP_LEN, LIGHTMAP_LEN, qfalse, image, 4 );
+				vk_upload_image_data( tr.lightmaps[ i ], x * LIGHTMAP_LEN, y * LIGHTMAP_LEN, LIGHTMAP_LEN, LIGHTMAP_LEN, 1, image, LIGHTMAP_LEN * LIGHTMAP_LEN * 4 );
 #else
 				R_UploadSubImage( image, x * LIGHTMAP_LEN, y * LIGHTMAP_LEN, LIGHTMAP_LEN, LIGHTMAP_LEN, tr.lightmaps[ i ] );
 #endif
@@ -663,7 +670,7 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 			cv->points[i][3+j] = LittleFloat( verts[i].st[j] );
 			cv->points[i][5+j] = LittleFloat( verts[i].lightmap[j] );
 		}
-		R_ColorShiftLightingBytes( verts[i].color.rgba, (byte *)&cv->points[i][7] );
+		R_ColorShiftLightingBytes( verts[i].color.rgba, (byte *)&cv->points[i][7], qtrue );
 		if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
 			// adjust lightmap coords
 			cv->points[i][5] = cv->points[i][5] * tr.lightmapScale[0] + lightmapX;
@@ -774,7 +781,7 @@ static void ParseMesh( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 			points[i].st[j] = LittleFloat( verts[i].st[j] );
 			points[i].lightmap[j] = LittleFloat( verts[i].lightmap[j] );
 		}
-		R_ColorShiftLightingBytes( verts[i].color.rgba, points[i].color.rgba );
+		R_ColorShiftLightingBytes( verts[i].color.rgba, points[i].color.rgba, qtrue );
 		if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
 			// adjust lightmap coords
 			points[i].lightmap[0] = points[i].lightmap[0] * tr.lightmapScale[0] + lightmapX;
@@ -858,7 +865,7 @@ static void ParseTriSurf( const dsurface_t *ds, const drawVert_t *verts, msurfac
 			tri->verts[i].lightmap[j] = LittleFloat( verts[i].lightmap[j] );
 		}
 
-		R_ColorShiftLightingBytes( verts[i].color.rgba, tri->verts[i].color.rgba );
+		R_ColorShiftLightingBytes( verts[i].color.rgba, tri->verts[i].color.rgba, qtrue );
 		if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
 			// adjust lightmap coords
 			tri->verts[i].lightmap[0] = tri->verts[i].lightmap[0] * tr.lightmapScale[0] + lightmapX;
@@ -2111,8 +2118,8 @@ static void R_LoadLightGrid( const lump_t *l ) {
 
 	// deal with overbright bits
 	for ( i = 0 ; i < numGridPoints ; i++ ) {
-		R_ColorShiftLightingBytes( &w->lightGridData[i*8], &w->lightGridData[i*8] );
-		R_ColorShiftLightingBytes( &w->lightGridData[i*8+3], &w->lightGridData[i*8+3] );
+		R_ColorShiftLightingBytes( &w->lightGridData[i*8], &w->lightGridData[i*8], qfalse );
+		R_ColorShiftLightingBytes( &w->lightGridData[i*8+3], &w->lightGridData[i*8+3], qfalse );
 	}
 }
 
