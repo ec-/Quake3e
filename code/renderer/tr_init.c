@@ -274,7 +274,7 @@ void QDECL Com_Printf( const char *fmt, ... )
 /*
 ** R_HaveExtension
 */
-qboolean R_HaveExtension( const char *ext )
+static qboolean R_HaveExtension( const char *ext )
 {
 	const char *ptr = Q_stristr( gl_extensions, ext );
 	if (ptr == NULL)

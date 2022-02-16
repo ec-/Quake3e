@@ -81,8 +81,7 @@ cvar_t	*com_affinityMask;
 static cvar_t *com_logfile;		// 1 = buffer log, 2 = flush after each print
 static cvar_t *com_showtrace;
 cvar_t	*com_version;
-cvar_t	*com_buildScript;	// for automated data building scripts
-cvar_t	*com_blood;
+static cvar_t *com_buildScript;	// for automated data building scripts
 
 #ifndef DEDICATED
 cvar_t	*com_introPlayed;
@@ -3669,7 +3668,7 @@ void Com_Init( char *commandLine ) {
 	com_affinityMask->modified = qfalse;
 #endif
 
-	com_blood = Cvar_Get( "com_blood", "1", CVAR_ARCHIVE_ND );
+	// com_blood = Cvar_Get( "com_blood", "1", CVAR_ARCHIVE_ND );
 
 	com_logfile = Cvar_Get( "logfile", "0", CVAR_TEMP );
 	Cvar_CheckRange( com_logfile, "0", "4", CV_INTEGER );
