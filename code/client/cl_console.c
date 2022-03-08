@@ -75,6 +75,7 @@ console_t	con;
 
 cvar_t		*con_timestamp;
 cvar_t		*con_conspeed;
+cvar_t		*con_autoclear;
 cvar_t		*con_notifytime;
 cvar_t		*con_notifylines;
 cvar_t		*con_notifyx;
@@ -89,8 +90,6 @@ cvar_t		*con_timedisplay;
 static qboolean con_timedisplay_show = qfalse;
 
 int			g_console_field_width;
-
-void		Con_Fixup( void );
 
 #ifdef USE_PCRE
 #define PCRE_STATIC 1
@@ -195,11 +194,14 @@ Con_ToggleConsole_f
 */
 void Con_ToggleConsole_f( void ) {
 	// Can't toggle the console when it's the only thing available
-    if ( cls.state == CA_DISCONNECTED && Key_GetCatcher() == KEYCATCH_CONSOLE ) {
+	if ( cls.state == CA_DISCONNECTED && Key_GetCatcher() == KEYCATCH_CONSOLE ) {
 		return;
 	}
 
-	Field_Clear( &g_consoleField );
+	if ( con_autoclear->integer ) {
+		Field_Clear( &g_consoleField );
+	}
+
 	Con_ResetFieldWidth();
 
 	if (!con_notifykeep->integer) {
@@ -524,8 +526,8 @@ void Con_ResetFieldWidth( void )
 Cmd_CompleteTxtName
 ==================
 */
-void Cmd_CompleteTxtName( char *args, int argNum ) {
-	if( argNum == 2 ) {
+static void Cmd_CompleteTxtName( char *args, int argNum ) {
+	if ( argNum == 2 ) {
 		Field_CompleteFilename( "", "txt", qfalse, FS_MATCH_EXTERN | FS_MATCH_STICK );
 	}
 }
@@ -575,6 +577,7 @@ void Con_Init( void )
 
 	Con_UpdateDateTime();
 
+	con_autoclear = Cvar_Get("con_autoclear", "1", CVAR_ARCHIVE_ND);
 	con_scale = Cvar_Get( "con_scale", "1", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( con_scale, "0.5", "8", CV_FLOAT );
 
@@ -623,7 +626,7 @@ void Con_Shutdown( void )
 Con_Fixup
 ===============
 */
-void Con_Fixup( void )
+static void Con_Fixup( void ) 
 {
 	int filled;
 
@@ -883,7 +886,7 @@ Con_DrawInput
 Draw the editline after a ] prompt
 ================
 */
-void Con_DrawInput( void ) {
+static void Con_DrawInput( void ) {
 	int		y;
 	int		offset = 0;
 
@@ -914,7 +917,7 @@ Con_DrawNotify
 Draws the last few lines of output transparently over the game top
 ================
 */
-void Con_DrawNotify( void )
+static void Con_DrawNotify( void )
 {
 	int		x, v;
 	short	*text;
@@ -1000,7 +1003,7 @@ Con_DrawSolidConsole
 Draws the console with the solid background
 ================
 */
-void Con_DrawSolidConsole( float frac ) {
+static void Con_DrawSolidConsole( float frac ) {
 
 	static float conColorValue[4] = { 0.0, 0.0, 0.0, 0.0 };
 	// for cvar value change tracking
@@ -1179,7 +1182,7 @@ void Con_DrawConsole( void ) {
 	} else {
 		// draw notify lines
 		if ( cls.state == CA_ACTIVE ) {
-			Con_DrawNotify ();
+			Con_DrawNotify();
 		}
 	}
 }

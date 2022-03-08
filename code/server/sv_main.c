@@ -161,8 +161,8 @@ void SV_AddServerCommand( client_t *client, const char *cmd ) {
 		Com_Printf( "===== pending server commands =====\n" );
 		n = client->reliableSequence - client->reliableAcknowledge;
 		for ( i = 0; i < n; i++ ) {
-			const int index = client->reliableAcknowledge + 1 + i;
-			Com_Printf( "cmd %5d: %s\n", i, client->reliableCommands[ index & ( MAX_RELIABLE_COMMANDS - 1 ) ] );
+			const int idx = client->reliableAcknowledge + 1 + i;
+			Com_Printf( "cmd %5d: %s\n", i, client->reliableCommands[ idx & ( MAX_RELIABLE_COMMANDS - 1 ) ] );
 		}
 		Com_Printf( "cmd %5d: %s\n", i, cmd );
 		SV_DropClient( client, "Server command overflow" );
@@ -778,7 +778,7 @@ static void SVC_Info( const netadr_t *from ) {
 	// to prevent timed spoofed reply packets that add ghost servers
 	Info_SetValueForKey( infostring, "challenge", Cmd_Argv(1) );
 
-	Info_SetValueForKey( infostring, "protocol", com_protocol->string );
+	Info_SetValueForKey( infostring, "protocol", va( "%i", com_protocol->integer ) );
 	Info_SetValueForKey( infostring, "hostname", sv_hostname->string );
 	Info_SetValueForKey( infostring, "mapname", sv_mapname->string );
 	Info_SetValueForKey( infostring, "clients", va("%i", count) );

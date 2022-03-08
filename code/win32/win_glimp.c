@@ -1369,11 +1369,11 @@ void GLimp_Init( glconfig_t *config )
 	// show main window after all initializations
 	ShowWindow( g_wv.hWnd, SW_SHOW );
 
+	IN_Init();
+
 	HandleEvents();
 
 	Key_ClearStates();
-
-	IN_Init();
 }
 
 
@@ -1508,11 +1508,11 @@ void VKimp_Init( glconfig_t *config )
 	// show main window after all initializations
 	ShowWindow( g_wv.hWnd, SW_SHOW );
 
+	IN_Init();
+
 	HandleEvents();
 
 	Key_ClearStates();
-
-	IN_Init();
 }
 
 

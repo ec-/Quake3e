@@ -531,7 +531,7 @@ static const int kbitmask[32] = {
 };
 
 
-void MSG_WriteDeltaKey( msg_t *msg, int key, int oldV, int newV, int bits ) {
+static void MSG_WriteDeltaKey( msg_t *msg, int key, int oldV, int newV, int bits ) {
 	if ( oldV == newV ) {
 		MSG_WriteBits( msg, 0, 1 );
 		return;
@@ -541,7 +541,7 @@ void MSG_WriteDeltaKey( msg_t *msg, int key, int oldV, int newV, int bits ) {
 }
 
 
-int	MSG_ReadDeltaKey( msg_t *msg, int key, int oldV, int bits ) {
+static int MSG_ReadDeltaKey( msg_t *msg, int key, int oldV, int bits ) {
 	if ( MSG_ReadBits( msg, 1 ) ) {
 		return MSG_ReadBits( msg, bits ) ^ (key & kbitmask[ bits - 1 ]);
 	}
@@ -666,7 +666,7 @@ typedef struct {
 // using the stringizing operator to save typing...
 #define	NETF(x) #x,(size_t)&((entityState_t*)0)->x
 
-const netField_t entityStateFields[] = 
+static const netField_t entityStateFields[] =
 {
 { NETF(pos.trTime), 32 },
 { NETF(pos.trBase[0]), 0 },
@@ -985,9 +985,9 @@ plyer_state_t communication
 // using the stringizing operator to save typing...
 #define	PSF(x) #x,(size_t)&((playerState_t*)0)->x
 
-netField_t	playerStateFields[] = 
+static const netField_t playerStateFields[] = 
 {
-{ PSF(commandTime), 32 },				
+{ PSF(commandTime), 32 },
 { PSF(origin[0]), 0 },
 { PSF(origin[1]), 0 },
 { PSF(bobCycle), 8 },
@@ -1051,7 +1051,7 @@ void MSG_WriteDeltaPlayerstate( msg_t *msg, const playerState_t *from, const pla
 	int				ammobits;
 	int				powerupbits;
 	int				numFields;
-	netField_t		*field;
+	const netField_t *field;
 	const int		*fromF, *toF;
 	float			fullFloat;
 	int				trunc, lc;
@@ -1194,7 +1194,7 @@ MSG_ReadDeltaPlayerstate
 void MSG_ReadDeltaPlayerstate( msg_t *msg, const playerState_t *from, playerState_t *to ) {
 	int			i, lc;
 	int			bits;
-	netField_t	*field;
+	const netField_t *field;
 	int			numFields;
 	int			startBit, endBit;
 	int			print;

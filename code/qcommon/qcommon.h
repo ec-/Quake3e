@@ -281,10 +281,12 @@ PROTOCOL
 ==============================================================
 */
 
-#define	PROTOCOL_VERSION		68
+#define	OLD_PROTOCOL_VERSION	68
 // new protocol with UDP spoofing protection:
 #define	NEW_PROTOCOL_VERSION	71
 // 1.31 - 67
+
+#define DEFAULT_PROTOCOL_VERSION	OLD_PROTOCOL_VERSION
 
 
 // maintain a list of compatible protocols for demo playing
@@ -383,10 +385,17 @@ typedef enum {
 	VM_COUNT
 } vmIndex_t;
 
+// we don't need more than 4 arguments (counting callnum) for vmMain, at least in Vanilla Quake3
+#define MAX_VMMAIN_CALL_ARGS 4
+
+typedef intptr_t (QDECL *vmMainFunc_t)( int command, int arg0, int arg1, int arg2 );
+
+typedef intptr_t (*syscall_t)( intptr_t *parms );
+typedef intptr_t (QDECL *dllSyscall_t)( intptr_t callNum, ... );
+typedef void (QDECL *dllEntry_t)( dllSyscall_t syscallptr );
+
 void	VM_Init( void );
 vm_t	*VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscalls, vmInterpret_t interpret );
-
-// module should be bare: "cgame", not "cgame.dll" or "vm/cgame.qvm"
 
 void	VM_Free( vm_t *vm );
 void	VM_Clear(void);
@@ -993,11 +1002,10 @@ extern	cvar_t	*com_speeds;
 extern	cvar_t	*com_timescale;
 extern	cvar_t	*com_viewlog;			// 0 = hidden, 1 = visible, 2 = minimized
 extern	cvar_t	*com_version;
-extern	cvar_t	*com_blood;
-extern	cvar_t	*com_buildScript;		// for building release pak files
 extern	cvar_t	*com_journal;
 extern	cvar_t	*com_cameraMode;
 extern	cvar_t	*com_protocol;
+extern	qboolean com_protocolCompat;
 
 // both client and server must agree to pause
 extern	cvar_t	*sv_paused;

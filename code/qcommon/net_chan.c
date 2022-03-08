@@ -473,7 +473,7 @@ typedef struct packetQueue_s {
         int release;
 } packetQueue_t;
 
-packetQueue_t *packetQueue = NULL;
+static packetQueue_t *packetQueue = NULL;
 
 static void NET_QueuePacket( int length, const void *data, const netadr_t *to, int offset )
 {

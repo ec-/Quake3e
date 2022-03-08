@@ -299,7 +299,7 @@ typedef enum {
 
 typedef union {
 	struct {
-		unsigned r_m : 3; // direct or indirect register operand with opt.sidplacement, REX.b can extend this by 1 bit
+		unsigned r_m : 3; // direct or indirect register operand with opt.displacement, REX.b can extend this by 1 bit
 		unsigned r_x : 3; // register or opcode extension, REX.r can extend this by 1 bit
 		unsigned mod : 2; // see mod_t
 	} s;
@@ -4827,7 +4827,7 @@ This function is called directly by the generated code
 int32_t VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
 {
 	int32_t	opStack[MAX_OPSTACK_SIZE];
-	int		stackOnEntry;
+	int32_t	stackOnEntry;
 	int32_t	*image;
 #if id386
 	int32_t	*oldOpTop;
@@ -4871,7 +4871,7 @@ int32_t VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
 		Com_Error( ERR_DROP, "%s(%s): opStack corrupted in compiled code", __func__, vm->name );
 	}
 
-	if ( vm->programStack != stackOnEntry - ( MAX_VMMAIN_CALL_ARGS + 2 ) * sizeof( int32_t ) ) {
+	if ( vm->programStack != (int32_t)( stackOnEntry - ( MAX_VMMAIN_CALL_ARGS + 2 ) * sizeof( int32_t ) ) ) {
 		Com_Error( ERR_DROP, "%s(%s): programStack corrupted in compiled code", __func__, vm->name );
 	}
 #endif

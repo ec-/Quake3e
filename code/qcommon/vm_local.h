@@ -28,9 +28,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define	MAX_OPSTACK_SIZE	512
 #define	PROC_OPSTACK_SIZE	30
 
-// we don't need more than 4 arguments (counting callnum) for vmMain, at least in Quake3
-#define MAX_VMMAIN_CALL_ARGS 4
-
 // don't change
 // Hardcoded in q3asm an reserved at end of bss
 #define	PROGRAM_STACK_SIZE	0x10000
@@ -176,17 +173,17 @@ struct vm_s {
 	int32_t		*opStack;			// pointer to local function stack
 	int32_t		*opStackTop;
 
-	int			programStack;		// the vm may be recursively entered
-	int			stackBottom;		// if programStack < stackBottom, error
+	int32_t		programStack;		// the vm may be recursively entered
+	int32_t		stackBottom;		// if programStack < stackBottom, error
 
 	//------------------------------------
 
-	const char	*name;
+	const char	*name;				// module should be bare: "cgame", not "cgame.dll" or "vm/cgame.qvm"
 	vmIndex_t	index;
 
 	// for dynamic linked modules
 	void		*dllHandle;
-	dllSyscall_t entryPoint;
+	vmMainFunc_t entryPoint;
 	dllSyscall_t dllSyscall;
 	void (*destroy)(vm_t* self);
 
@@ -215,7 +212,7 @@ struct vm_s {
 	int			breakCount;
 
 	int32_t		*jumpTableTargets;
-	int			numJumpTableTargets;
+	int32_t		numJumpTableTargets;
 
 	uint32_t	crc32sum;
 

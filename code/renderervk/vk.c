@@ -1071,6 +1071,7 @@ static void create_instance( void )
 	VkResult res;
 	const char **extension_names, *ext;
 	uint32_t i, n, count, extension_count;
+	VkApplicationInfo appInfo;
 
 	count = 0;
 	extension_count = 0;
@@ -1096,11 +1097,19 @@ static void create_instance( void )
 		extension_names[ extension_count++ ] = ext;
 	}
 
+	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+	appInfo.pNext = NULL;
+	appInfo.pApplicationName = NULL; // Q3_VERSION;
+	appInfo.applicationVersion = 0x0;
+	appInfo.pEngineName = NULL;
+	appInfo.engineVersion = 0x0;
+	appInfo.apiVersion = VK_API_VERSION_1_0;
+
 	// create instance
 	desc.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	desc.pNext = NULL;
 	desc.flags = 0;
-	desc.pApplicationInfo = NULL;
+	desc.pApplicationInfo = &appInfo;
 	desc.enabledExtensionCount = extension_count;
 	desc.ppEnabledExtensionNames = extension_names;
 
@@ -2010,7 +2019,7 @@ static VkSampler vk_find_sampler( const Vk_Sampler_Def *def ) {
 	desc.addressModeW = address_mode;
 	desc.mipLodBias = 0.0f;
 
-	if ( def->noAnisotropy ) {
+	if ( def->noAnisotropy || mipmap_mode == VK_SAMPLER_MIPMAP_MODE_NEAREST || mag_filter == VK_FILTER_NEAREST ) {
 		desc.anisotropyEnable = VK_FALSE;
 		desc.maxAnisotropy = 1.0f;
 	} else {
@@ -4158,7 +4167,18 @@ static void record_buffer_memory_barrier(VkCommandBuffer cb, VkBuffer buffer, Vk
 }
 
 
-void vk_create_image( int width, int height, VkFormat format, int mip_levels, image_t *image ) {
+void vk_create_image( image_t *image, int width, int height, int mip_levels ) {
+
+	VkFormat format = image->internalFormat;
+
+	if ( image->handle ) {
+		qvkDestroyImage( vk.device, image->handle, NULL );
+	}
+
+	if ( image->view ) {
+		qvkDestroyImageView( vk.device, image->view, NULL );
+	}
+
 	// create image
 	{
 		VkImageCreateInfo desc;
@@ -4231,14 +4251,18 @@ void vk_create_image( int width, int height, VkFormat format, int mip_levels, im
 }
 
 
-void vk_upload_image_data( VkImage image, int x, int y, int width, int height, qboolean mipmap, const uint8_t *pixels, int bytes_per_pixel ) {
+void vk_upload_image_data( image_t *image, int x, int y, int width, int height, int mipmaps, byte *pixels, int size ) {
 
 	VkCommandBuffer command_buffer;
 	VkBufferImageCopy regions[16];
 	VkBufferImageCopy region;
+	byte *buf;
+	int bpp;
 
 	int num_regions = 0;
 	int buffer_size = 0;
+
+	buf = resample_image_data( image, pixels, size, &bpp );
 
 	while (qtrue) {
 		Com_Memset(&region, 0, sizeof(region));
@@ -4259,9 +4283,9 @@ void vk_upload_image_data( VkImage image, int x, int y, int width, int height, q
 		regions[num_regions] = region;
 		num_regions++;
 
-		buffer_size += width * height * bytes_per_pixel;
+		buffer_size += width * height * bpp;
 
-		if ( !mipmap || (width == 1 && height == 1) || num_regions >= ARRAY_LEN( regions ) )
+		if ( num_regions >= mipmaps || (width == 1 && height == 1) || num_regions >= ARRAY_LEN( regions ) )
 			break;
 
 		x >>= 1;
@@ -4275,16 +4299,20 @@ void vk_upload_image_data( VkImage image, int x, int y, int width, int height, q
 	}
 
 	ensure_staging_buffer_allocation(buffer_size);
-	Com_Memcpy( vk_world.staging_buffer_ptr, pixels, buffer_size );
+	Com_Memcpy( vk_world.staging_buffer_ptr, buf, buffer_size );
 
 	command_buffer = begin_command_buffer();
 
 	record_buffer_memory_barrier( command_buffer, vk_world.staging_buffer, VK_WHOLE_SIZE, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT );
-	record_image_layout_transition( command_buffer, image, VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_IMAGE_LAYOUT_UNDEFINED, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
-	qvkCmdCopyBufferToImage( command_buffer, vk_world.staging_buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, num_regions, regions );
-	record_image_layout_transition( command_buffer, image, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
+	record_image_layout_transition( command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_IMAGE_LAYOUT_UNDEFINED, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
+	qvkCmdCopyBufferToImage( command_buffer, vk_world.staging_buffer, image->handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, num_regions, regions );
+	record_image_layout_transition( command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
 
 	end_command_buffer( command_buffer );
+
+	if ( buf != pixels ) {
+		ri.Hunk_FreeTempMemory( buf );
+	}
 }
 
 
@@ -6458,7 +6486,7 @@ void vk_begin_frame( void )
 	// Ensure visibility of geometry buffers writes.
 	//record_buffer_memory_barrier( vk.cmd->command_buffer, vk.cmd->vertex_buffer, vk.cmd->vertex_buffer_offset, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT );
 
-#if 1
+#if 0
 	// add explicit layout transition dependency
 	if ( vk.fboActive ) {
 		record_image_layout_transition( vk.cmd->command_buffer,
