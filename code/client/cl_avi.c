@@ -596,25 +596,24 @@ CL_WriteAVIAudioFrame
 */
 void CL_WriteAVIAudioFrame( const byte *pcmBuffer, int size )
 {
-	if( !afd.audio )
+	if ( !afd.audio )
 		return;
 
-	if( !afd.fileOpen )
+	if ( !afd.fileOpen )
 		return;
 
 	// Chunk header + contents + padding
-	if( CL_CheckFileSize( 8 + bytesInBuffer + size + 2 ) )
+	if ( CL_CheckFileSize( 8 + bytesInBuffer + size + 2 ) )
 		return;
 
-	if( bytesInBuffer + size > PCM_BUFFER_SIZE )
+	if ( bytesInBuffer + size > PCM_BUFFER_SIZE )
 	{
 		Com_Printf( S_COLOR_YELLOW "WARNING: Audio capture buffer overflow -- truncating\n" );
 		size = PCM_BUFFER_SIZE - bytesInBuffer;
 	}
 
 	// Only write if we have a frame's worth of audio
-	//if( bytesInBuffer >= afd.audioFrameSize )
-	if( bytesInBuffer + size > afd.audioFrameSize )
+	if ( bytesInBuffer >= afd.audioFrameSize )
 	{
 		CL_FlushCaptureBuffer();
 	}
