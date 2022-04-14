@@ -444,9 +444,7 @@ static void RB_Hyperspace( void ) {
 	}
 
 	if ( tess.shader != tr.whiteShader ) {
-		if ( tess.numIndexes ) {
-			RB_EndSurface();
-		}
+		RB_EndSurface();
 		RB_BeginSurface( tr.whiteShader, 0 );
 	}
 
@@ -461,6 +459,9 @@ static void RB_Hyperspace( void ) {
 		0.0, 0.0, 0.0, 0.0, c );
 
 	RB_EndSurface();
+
+	tess.numIndexes = 0;
+	tess.numVertexes = 0;
 
 	backEnd.isHyperspace = qtrue;
 }

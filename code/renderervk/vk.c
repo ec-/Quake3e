@@ -1045,6 +1045,9 @@ static qboolean used_instance_extension( const char *ext )
 	if ( u && Q_stricmp( u + 1, "surface" ) == 0 )
 		return qtrue;
 
+	if ( Q_stricmp( ext, VK_KHR_DISPLAY_EXTENSION_NAME ) == 0 )
+		return qtrue; // needed for KMSDRM instances/devices?
+
 	if ( Q_stricmp( ext, VK_KHR_SWAPCHAIN_EXTENSION_NAME ) == 0 )
 		return qtrue;
 

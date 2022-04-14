@@ -142,11 +142,17 @@ void SV_GetChallenge( const netadr_t *from ) {
 		// legacy client query, don't send unneeded information
 		NET_OutOfBandPrint( NS_SERVER, from, "challengeResponse %i", challenge );
 	} else {
+		int sv_proto = com_protocol->integer;
+		if ( sv_proto == DEFAULT_PROTOCOL_VERSION ) {
+			// we support new protocol features by default
+			sv_proto = NEW_PROTOCOL_VERSION;
+		}
+
 		// Grab the client's challenge to echo back (if given)
 		clientChallenge = atoi( Cmd_Argv( 1 ) );
 
 		NET_OutOfBandPrint( NS_SERVER, from, "challengeResponse %i %i %i",
-			challenge, clientChallenge, NEW_PROTOCOL_VERSION );
+			challenge, clientChallenge, sv_proto );
 	}
 }
 

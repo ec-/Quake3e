@@ -76,8 +76,6 @@ cvar_t		*con_scale;
 
 int			g_console_field_width;
 
-void		Con_Fixup( void );
-
 /*
 ================
 Con_ToggleConsole_f
@@ -381,8 +379,8 @@ void Con_CheckResize( void )
 Cmd_CompleteTxtName
 ==================
 */
-void Cmd_CompleteTxtName( char *args, int argNum ) {
-	if( argNum == 2 ) {
+static void Cmd_CompleteTxtName( char *args, int argNum ) {
+	if ( argNum == 2 ) {
 		Field_CompleteFilename( "", "txt", qfalse, FS_MATCH_EXTERN | FS_MATCH_STICK );
 	}
 }
@@ -437,7 +435,7 @@ void Con_Shutdown( void )
 Con_Fixup
 ===============
 */
-void Con_Fixup( void ) 
+static void Con_Fixup( void ) 
 {
 	int filled;
 
@@ -464,7 +462,7 @@ Con_Linefeed
 Move to newline only when we _really_ need this
 ===============
 */
-void Con_NewLine( void ) 
+static void Con_NewLine( void )
 {
 	short *s;
 	int i;
@@ -487,7 +485,7 @@ void Con_NewLine( void )
 Con_Linefeed
 ===============
 */
-void Con_Linefeed( qboolean skipnotify )
+static void Con_Linefeed( qboolean skipnotify )
 {
 	// mark time for transparent overlay
 	if ( con.current >= 0 )	{
@@ -629,7 +627,7 @@ Con_DrawInput
 Draw the editline after a ] prompt
 ================
 */
-void Con_DrawInput( void ) {
+static void Con_DrawInput( void ) {
 	int		y;
 
 	if ( cls.state != CA_DISCONNECTED && !(Key_GetCatcher( ) & KEYCATCH_CONSOLE ) ) {
@@ -654,7 +652,7 @@ Con_DrawNotify
 Draws the last few lines of output transparently over the game top
 ================
 */
-void Con_DrawNotify( void )
+static void Con_DrawNotify( void )
 {
 	int		x, v;
 	short	*text;
@@ -735,7 +733,7 @@ Con_DrawSolidConsole
 Draws the console with the solid background
 ================
 */
-void Con_DrawSolidConsole( float frac ) {
+static void Con_DrawSolidConsole( float frac ) {
 
 	static float conColorValue[4] = { 0.0, 0.0, 0.0, 0.0 };
 	// for cvar value change tracking
@@ -902,7 +900,7 @@ void Con_DrawConsole( void ) {
 	} else {
 		// draw notify lines
 		if ( cls.state == CA_ACTIVE ) {
-			Con_DrawNotify ();
+			Con_DrawNotify();
 		}
 	}
 }

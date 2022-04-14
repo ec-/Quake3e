@@ -597,7 +597,7 @@ CL_CreateNewCommands
 Create a new usercmd_t structure for this frame
 =================
 */
-void CL_CreateNewCommands( void ) {
+static void CL_CreateNewCommands( void ) {
 	int			cmdNum;
 
 	// no need to create usercmds until we have a gamestate
@@ -952,7 +952,7 @@ void CL_InitInput( void ) {
 
 /*
 ============
-CL_InitInput
+CL_ClearInput
 ============
 */
 void CL_ClearInput( void ) {

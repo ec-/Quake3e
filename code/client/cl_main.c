@@ -114,7 +114,7 @@ refexport_t	re;
 static void	*rendererLib;
 #endif
 
-ping_t	cl_pinglist[MAX_PINGREQUESTS];
+static ping_t cl_pinglist[MAX_PINGREQUESTS];
 
 typedef struct serverStatus_s
 {
@@ -126,7 +126,7 @@ typedef struct serverStatus_s
 	qboolean retrieved;
 } serverStatus_t;
 
-serverStatus_t cl_serverStatusList[MAX_SERVERSTATUSREQUESTS];
+static serverStatus_t cl_serverStatusList[MAX_SERVERSTATUSREQUESTS];
 
 static void CL_CheckForResend( void );
 static void CL_ShowIP_f( void );
@@ -928,7 +928,7 @@ static void CL_PlayDemo_f( void ) {
 	clc.demoplaying = qtrue;
 	Q_strncpyz( cls.servername, shortname, sizeof( cls.servername ) );
 
-	if ( protocol < NEW_PROTOCOL_VERSION )
+	if ( protocol <= OLD_PROTOCOL_VERSION )
 		clc.compat = qtrue;
 	else
 		clc.compat = qfalse;
@@ -1230,7 +1230,7 @@ qboolean CL_Disconnect( qboolean showMainMenu ) {
 		// Finish rendering current frame
 		cls.framecount++;
 		SCR_UpdateScreen();
-		CL_CloseAVI();
+		CL_CloseAVI( qfalse );
 	}
 
 	if ( cgvm ) {
@@ -1781,7 +1781,7 @@ static void CL_Vid_Restart( qboolean keepWindow ) {
 
 	// Settings may have changed so stop recording now
 	if ( CL_VideoRecording() )
-		CL_CloseAVI();
+		CL_CloseAVI( qfalse );
 
 	if ( clc.demorecording )
 		CL_StopRecord_f();
@@ -2413,11 +2413,11 @@ typedef struct hash_chain_s {
 	struct hash_chain_s *next;
 } hash_chain_t;
 
-hash_chain_t *hash_table[1024];
-hash_chain_t hash_list[MAX_GLOBAL_SERVERS];
-unsigned int hash_count = 0;
+static hash_chain_t *hash_table[1024];
+static hash_chain_t hash_list[MAX_GLOBAL_SERVERS];
+static unsigned int hash_count = 0;
 
-unsigned int hash_func( const netadr_t *addr ) {
+static unsigned int hash_func( const netadr_t *addr ) {
 
 	const byte		*ip = NULL;
 	unsigned int	size;
@@ -3037,6 +3037,8 @@ void CL_Frame( int msec, int realMsec ) {
 
 			msec = (int)frameDuration;
 			clc.aviVideoFrameRemainder = frameDuration - msec;
+
+			realMsec = msec; // sync sound duration
 		}
 	}
 
@@ -3469,7 +3471,7 @@ static void CL_InitRef( void ) {
 //===========================================================================================
 
 
-void CL_SetModel_f( void ) {
+static void CL_SetModel_f( void ) {
 	const char *arg;
 	char name[ MAX_CVAR_VALUE_STRING ];
 
@@ -3495,7 +3497,7 @@ video
 video [filename]
 ===============
 */
-void CL_Video_f( void )
+static void CL_Video_f( void )
 {
 	char filename[ MAX_OSPATH ];
 	const char *ext;
@@ -3559,7 +3561,7 @@ void CL_Video_f( void )
 	Q_strncpyz( clc.videoName, filename, sizeof( clc.videoName ) );
 	clc.videoIndex = 0;
 
-	CL_OpenAVIForWriting( va( "%s.%s", clc.videoName, ext ), pipe );
+	CL_OpenAVIForWriting( va( "%s.%s", clc.videoName, ext ), pipe, qfalse );
 }
 
 
@@ -3570,7 +3572,7 @@ CL_StopVideo_f
 */
 static void CL_StopVideo_f( void )
 {
-  CL_CloseAVI();
+	CL_CloseAVI( qfalse );
 }
 
 
@@ -3581,7 +3583,7 @@ CL_CompleteRecordName
 */
 static void CL_CompleteVideoName( char *args, int argNum )
 {
-	if( argNum == 2 )
+	if ( argNum == 2 )
 	{
 		Field_CompleteFilename( "videos", ".avi", qtrue, FS_MATCH_EXTERN | FS_MATCH_STICK );
 	}
@@ -3749,7 +3751,7 @@ static void CL_InitGLimp_Cvars( void )
 	r_glDriver = Cvar_Get( "r_glDriver", OPENGL_DRIVER_NAME, CVAR_ARCHIVE_ND | CVAR_LATCH );
 
 	r_displayRefresh = Cvar_Get( "r_displayRefresh", "0", CVAR_LATCH );
-	Cvar_CheckRange( r_displayRefresh, "0", "360", CV_INTEGER );
+	Cvar_CheckRange( r_displayRefresh, "0", "500", CV_INTEGER );
 	Cvar_SetDescription( r_displayRefresh, "Override monitor refresh rate in fullscreen mode:\n  0 - use current monitor refresh rate\n >0 - use custom refresh rate" );
 
 	vid_xpos = Cvar_Get( "vid_xpos", "3", CVAR_ARCHIVE );
@@ -3806,6 +3808,7 @@ CL_Init
 */
 void CL_Init( void ) {
 	const char *s;
+	cvar_t *cv;
 
 	Com_Printf( "----- Client Initialization -----\n" );
 
@@ -3880,7 +3883,8 @@ void CL_Init( void ) {
 
 	cl_motdString = Cvar_Get( "cl_motdString", "", CVAR_ROM );
 
-	Cvar_Get( "cl_maxPing", "800", CVAR_ARCHIVE_ND );
+	cv = Cvar_Get( "cl_maxPing", "800", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( cv, "100", "999", CV_INTEGER );
 
 	cl_lanForcePackets = Cvar_Get( "cl_lanForcePackets", "1", CVAR_ARCHIVE_ND );
 
@@ -3914,7 +3918,7 @@ void CL_Init( void ) {
 	Cvar_Get ("sex", "male", CVAR_USERINFO | CVAR_ARCHIVE_ND );
 	Cvar_Get ("cl_anonymous", "0", CVAR_USERINFO | CVAR_ARCHIVE_ND );
 
-	Cvar_Get ("password", "", CVAR_USERINFO);
+	Cvar_Get ("password", "", CVAR_USERINFO | CVAR_NORESTART);
 	Cvar_Get ("cg_predictItems", "1", CVAR_USERINFO | CVAR_ARCHIVE );
 
 
@@ -4566,15 +4570,12 @@ void CL_GetPing( int n, char *buf, int buflen, int *pingtime )
 	Q_strncpyz( buf, str, buflen );
 
 	time = cl_pinglist[n].time;
-	if (!time)
+	if ( time == 0 )
 	{
 		// check for timeout
 		time = Sys_Milliseconds() - cl_pinglist[n].start;
 		maxPing = Cvar_VariableIntegerValue( "cl_maxPing" );
-		if( maxPing < 100 ) {
-			maxPing = 100;
-		}
-		if (time < maxPing)
+		if ( time < maxPing )
 		{
 			// not timed out yet
 			time = 0;

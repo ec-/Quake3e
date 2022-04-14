@@ -506,7 +506,6 @@ void Con_CheckResize( void );
 void Con_Init( void );
 void Con_Shutdown( void );
 void Con_ToggleConsole_f( void );
-void Con_DrawNotify( void );
 void Con_ClearNotify( void );
 void Con_RunConsole( void );
 void Con_DrawConsole( void );
@@ -574,8 +573,6 @@ void CL_InitUI( void );
 void CL_ShutdownUI( void );
 int Key_GetCatcher( void );
 void Key_SetCatcher( int catcher );
-void LAN_LoadCachedServers( void );
-void LAN_SaveServersToCache( void );
 
 
 //
@@ -587,11 +584,11 @@ qboolean CL_Netchan_Process( netchan_t *chan, msg_t *msg );
 //
 // cl_avi.c
 //
-qboolean CL_OpenAVIForWriting( const char *filename, qboolean pipe );
+qboolean CL_OpenAVIForWriting( const char *filename, qboolean pipe, qboolean reopen );
 void CL_TakeVideoFrame( void );
 void CL_WriteAVIVideoFrame( const byte *imageBuffer, int size );
 void CL_WriteAVIAudioFrame( const byte *pcmBuffer, int size );
-qboolean CL_CloseAVI( void );
+qboolean CL_CloseAVI( qboolean reopen );
 qboolean CL_VideoRecording( void );
 
 //

@@ -130,13 +130,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define arm64 1
 #endif // __arm64__
 
-#if defined (__e2k__)
-#define ARCH_STRING "e2k"
-#define Q3_LITTLE_ENDIAN
-#undef ide2k
-#define ide2k 1
-#endif // __e2k__
-
 #endif // !_WIN32
 
 // ============================== Linux ====================================

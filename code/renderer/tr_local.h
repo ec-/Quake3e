@@ -1897,8 +1897,6 @@ void RE_VertexLighting( qboolean allowed );
 
 void R_BloomScreen( void );
 
-qboolean R_HaveExtension( const char *ext );
-
 #define GLE( ret, name, ... ) extern ret ( APIENTRY * q##name )( __VA_ARGS__ );
 	QGL_Core_PROCS;
 	QGL_Ext_PROCS;

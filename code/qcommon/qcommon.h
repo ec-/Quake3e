@@ -1001,8 +1001,6 @@ extern	cvar_t	*com_speeds;
 extern	cvar_t	*com_timescale;
 extern	cvar_t	*com_viewlog;			// 0 = hidden, 1 = visible, 2 = minimized
 extern	cvar_t	*com_version;
-extern	cvar_t	*com_blood;
-extern	cvar_t	*com_buildScript;		// for building release pak files
 extern	cvar_t	*com_journal;
 extern	cvar_t	*com_cameraMode;
 extern	cvar_t	*com_protocol;
