@@ -197,11 +197,23 @@ IN_CaptureMouse
 */
 static void IN_CaptureMouse( const RECT *clipRect )
 {
-	while( ShowCursor( FALSE ) >= 0 )
-		;
+	CURSORINFO ci;
+
+	ClipCursor( clipRect );
 	SetCursorPos( window_center.x, window_center.y );
 	SetCapture( g_wv.hWnd );
-	ClipCursor( clipRect );
+
+	memset( &ci, 0, sizeof( ci ) );
+	ci.cbSize = sizeof( CURSORINFO );
+	if ( GetCursorInfo( &ci ) ) {
+		if ( ci.flags == CURSOR_SHOWING ) {
+			while ( ShowCursor( FALSE ) >= 0 )
+				;
+		}
+	} else {
+		while ( ShowCursor( FALSE ) >= 0 )
+			;
+	}
 }
 
 
@@ -225,16 +237,27 @@ IN_DeactivateWin32Mouse
 */
 static void IN_DeactivateWin32Mouse( void )
 {
-	if ( !gw_minimized )
-	{
+	CURSORINFO ci;
+
+	if ( !gw_minimized ) {
 		IN_UpdateWindow( NULL, qfalse );
 		SetCursorPos( window_center.x, window_center.y );
 	}
 
 	ReleaseCapture();
 	ClipCursor( NULL );
-	while ( ShowCursor( TRUE ) < 0 )
-		;
+
+	memset( &ci, 0, sizeof( ci ) );
+	ci.cbSize = sizeof( CURSORINFO );
+	if ( GetCursorInfo( &ci ) ) {
+		if ( ci.flags == 0 ) {
+			while ( ShowCursor( TRUE ) < 0 )
+				;
+		}
+	} else {
+		while ( ShowCursor( TRUE ) < 0 )
+			;
+	}
 }
 
 
@@ -356,7 +379,7 @@ static void IN_ActivateRawMouse( void )
 	{
 		Rid.usUsagePage = HID_USAGE_PAGE_GENERIC;
 		Rid.usUsage = HID_USAGE_GENERIC_MOUSE;
-		Rid.dwFlags = RIDEV_NOLEGACY | RIDEV_CAPTUREMOUSE; // skip all WM_*BUTTON* and WM_MOUSEMOVE stuff
+		Rid.dwFlags = RIDEV_NOLEGACY /*| RIDEV_CAPTUREMOUSE*/; // skip all WM_*BUTTON* and WM_MOUSEMOVE stuff
 		Rid.hwndTarget = g_wv.hWnd;
 
 		if( !RRID( &Rid, 1, sizeof( Rid ) ) )
@@ -779,8 +802,8 @@ static void IN_DeactivateMouse( void )
 	s_wmv.mouseActive = qfalse;
 
 	IN_DeactivateDIMouse();
-	IN_DeactivateWin32Mouse();
 	IN_DeactivateRawMouse();
+	IN_DeactivateWin32Mouse();
 }
 
 

@@ -140,7 +140,7 @@ not have future snapshot_t executed before it is executed
 ======================
 */
 void SV_AddServerCommand( client_t *client, const char *cmd ) {
-	int		index, i;
+	int		index, i, n;
 
 	// this is very ugly but it's also a waste to for instance send multiple config string updates
 	// for the same config string index in one snapshot
@@ -159,8 +159,10 @@ void SV_AddServerCommand( client_t *client, const char *cmd ) {
 	// doesn't cause a recursive drop client
 	if ( client->reliableSequence - client->reliableAcknowledge == MAX_RELIABLE_COMMANDS + 1 ) {
 		Com_Printf( "===== pending server commands =====\n" );
-		for ( i = client->reliableAcknowledge + 1 ; i <= client->reliableSequence ; i++ ) {
-			Com_Printf( "cmd %5d: %s\n", i, client->reliableCommands[ i & (MAX_RELIABLE_COMMANDS-1) ] );
+		n = client->reliableSequence - client->reliableAcknowledge;
+		for ( i = 0; i < n; i++ ) {
+			const int idx = client->reliableAcknowledge + 1 + i;
+			Com_Printf( "cmd %5d: %s\n", i, client->reliableCommands[ idx & ( MAX_RELIABLE_COMMANDS - 1 ) ] );
 		}
 		Com_Printf( "cmd %5d: %s\n", i, cmd );
 		SV_DropClient( client, "Server command overflow" );
@@ -776,7 +778,7 @@ static void SVC_Info( const netadr_t *from ) {
 	// to prevent timed spoofed reply packets that add ghost servers
 	Info_SetValueForKey( infostring, "challenge", Cmd_Argv(1) );
 
-	Info_SetValueForKey( infostring, "protocol", com_protocol->string );
+	Info_SetValueForKey( infostring, "protocol", va( "%i", com_protocol->integer ) );
 	Info_SetValueForKey( infostring, "hostname", sv_hostname->string );
 	Info_SetValueForKey( infostring, "mapname", sv_mapname->string );
 	Info_SetValueForKey( infostring, "clients", va("%i", count) );
@@ -977,7 +979,7 @@ void SV_PacketEvent( const netadr_t *from, msg_t *msg ) {
 		return;
 
 	// check for connectionless packet (0xffffffff) first
-	if ( *(int *)msg->data == -1 ) {
+	if ( *(int32_t *)msg->data == -1 ) {
 		SV_ConnectionlessPacket( from, msg );
 		return;
 	}
@@ -1283,7 +1285,7 @@ happen before SV_Frame is called
 void SV_Frame( int msec ) {
 	int		frameMsec;
 	int		startTime;
-	int		i, n;
+	int		i;
 
 	if ( Cvar_CheckGroup( CVG_SERVER ) )
 		SV_TrackCvarChanges(); // update rate settings, etc.
@@ -1338,23 +1340,21 @@ void SV_Frame( int msec ) {
 
 	// try to do silent restart earlier if possible
 	if ( sv.time > (12*3600*1000) && ( sv_levelTimeReset->integer == 0 || sv.time > 0x40000000 ) ) {
-		n = 0;
 		if ( svs.clients ) {
 			for ( i = 0; i < sv_maxclients->integer; i++ ) {
 				// FIXME: deal with bots (reconnect?)
 				if ( svs.clients[i].state != CS_FREE && svs.clients[i].netchan.remoteAddress.type != NA_BOT ) {
-					n = 1;
 					break;
 				}
 			}
-		}
-		if ( !n ) {
-			SV_Restart( "Restarting server" );
-			return;
+			if ( i == sv_maxclients->integer ) {
+				SV_Restart( "Restarting server" );
+				return;
+			}
 		}
 	}
 
-	if ( sv.restartTime && sv.time >= sv.restartTime ) {
+	if ( sv.restartTime && sv.time - sv.restartTime >= 0 ) {
 		sv.restartTime = 0;
 		Cbuf_AddText( "map_restart 0\n" );
 		return;

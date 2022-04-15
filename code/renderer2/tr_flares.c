@@ -272,7 +272,7 @@ FLARE BACK END
 RB_TestFlare
 ==================
 */
-void RB_TestFlare( flare_t *f ) {
+static void RB_TestFlare( flare_t *f ) {
 	float			depth;
 	qboolean		visible;
 	float			fade;
@@ -336,7 +336,7 @@ void RB_TestFlare( flare_t *f ) {
 RB_RenderFlare
 ==================
 */
-void RB_RenderFlare( flare_t *f ) {
+static void RB_RenderFlare( flare_t *f ) {
 	float			size;
 	vec3_t			color;
 	int				iColor[3];

@@ -344,7 +344,7 @@ static void S_TransferPaintBuffer( int endtime, byte *buffer )
 		p = (int *) paintbuffer;
 		count = (endtime - s_paintedtime) * dma.channels;
 		out_mask = dma.samples - 1; 
-		out_idx = s_paintedtime * dma.channels & out_mask;
+		out_idx = ( s_paintedtime * dma.channels ) & out_mask;
 		step = 3 - dma.channels;
 
 		if ( dma.samplebits == 32 && dma.isfloat )
@@ -397,7 +397,7 @@ static void S_TransferPaintBuffer( int endtime, byte *buffer )
 	if ( CL_VideoRecording() ) {
 		//count = (endtime - s_paintedtime) * dma.channels;
 		count = (clc.aviFrameEndTime - s_paintedtime) * dma.channels;
-		out_idx = s_paintedtime * dma.channels % dma.samples;
+		out_idx = ( s_paintedtime * dma.channels ) % dma.samples;
 		while ( count > 0 ) {
 			int n = count;
 			if ( n + out_idx > dma.samples )

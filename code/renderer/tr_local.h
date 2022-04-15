@@ -983,6 +983,7 @@ typedef struct glstatic_s {
 	int captureWidth;
 	int captureHeight;
 	int initTime;
+	qboolean deviceSupportsGamma;
 } glstatic_t;
 
 typedef struct {
@@ -1066,6 +1067,7 @@ typedef struct {
 */
 typedef struct {
 	qboolean				registered;		// cleared at shutdown, set at beginRegistration
+	qboolean				inited;			// cleared at shutdown, set at InitOpenGL
 
 	int						visCount;		// incremented every time a new vis cluster is entered
 	int						frameCount;		// incremented every frame
@@ -1092,6 +1094,7 @@ typedef struct {
 	image_t					*identityLightImage;	// full of tr.identityLightByte
 
 	shader_t				*defaultShader;
+	shader_t				*whiteShader;
 	shader_t				*cinematicShader;
 	shader_t				*shadowShader;
 	shader_t				*projectionShadowShader;
@@ -1405,7 +1408,7 @@ void		R_Init( void );
 
 void		R_SetColorMappings( void );
 void		R_GammaCorrect( byte *buffer, int bufSize );
-void		R_ColorShiftLightingBytes( const byte in[4], byte out[4] );
+void		R_ColorShiftLightingBytes( const byte in[4], byte out[4], qboolean hasAlpha );
 
 void	R_ImageList_f( void );
 void	R_SkinList_f( void );
@@ -1514,8 +1517,9 @@ void RB_CheckOverflow( int verts, int indexes );
 void RB_StageIteratorGeneric( void );
 void RB_StageIteratorSky( void );
 
-void RB_AddQuadStamp( const vec3_t origin, const vec3_t left, const vec3_t up, const byte *color );
-void RB_AddQuadStampExt( const vec3_t origin, const vec3_t left, const vec3_t up, const byte *color, float s1, float t1, float s2, float t2 );
+void RB_AddQuadStamp( const vec3_t origin, const vec3_t left, const vec3_t up, color4ub_t color );
+void RB_AddQuadStampExt( const vec3_t origin, const vec3_t left, const vec3_t up, color4ub_t color, float s1, float t1, float s2, float t2 );
+void RB_AddQuadStamp2( float x, float y, float w, float h, float s1, float t1, float s2, float t2, color4ub_t color );
 
 void RB_ShowImages( void );
 
@@ -1892,8 +1896,6 @@ void RE_VertexLighting( qboolean allowed );
 #define MAX_BLUR_PASSES MAX_TEXTURE_UNITS
 
 void R_BloomScreen( void );
-
-qboolean R_HaveExtension( const char *ext );
 
 #define GLE( ret, name, ... ) extern ret ( APIENTRY * q##name )( __VA_ARGS__ );
 	QGL_Core_PROCS;

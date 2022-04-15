@@ -34,7 +34,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "../client/keys.h"
 
-const int demo_protocols[] = { 66, 67, PROTOCOL_VERSION, NEW_PROTOCOL_VERSION, 0 };
+const int demo_protocols[] = { 66, 67, OLD_PROTOCOL_VERSION, NEW_PROTOCOL_VERSION, 0 };
 
 #define USE_MULTI_SEGMENT // allocate additional zone segments on demand
 
@@ -52,11 +52,10 @@ const int demo_protocols[] = { 66, 67, PROTOCOL_VERSION, NEW_PROTOCOL_VERSION, 0
 #define DEF_COMZONEMEGS		25
 #endif
 
-jmp_buf abortframe;		// an ERR_DROP occurred, exit the entire frame
+static jmp_buf abortframe;	// an ERR_DROP occurred, exit the entire frame
 
 int		CPU_Flags = 0;
 
-FILE *debuglogfile;
 static fileHandle_t logfile = FS_INVALID_HANDLE;
 static fileHandle_t com_journalFile = FS_INVALID_HANDLE ; // events are written here
 fileHandle_t com_journalDataFile = FS_INVALID_HANDLE; // config files are written here
@@ -66,9 +65,10 @@ cvar_t	*com_speeds;
 cvar_t	*com_developer;
 cvar_t	*com_dedicated;
 cvar_t	*com_timescale;
-cvar_t	*com_fixedtime;
+static cvar_t *com_fixedtime;
 cvar_t	*com_journal;
 cvar_t	*com_protocol;
+qboolean com_protocolCompat;
 #ifndef DEDICATED
 cvar_t	*suka_fpsblyatzapomni;
 cvar_t	*com_maxfps;
@@ -79,11 +79,10 @@ cvar_t	*com_timedemo;
 #ifdef USE_AFFINITY_MASK
 cvar_t	*com_affinityMask;
 #endif
-cvar_t	*com_logfile;		// 1 = buffer log, 2 = flush after each print
-cvar_t	*com_showtrace;
+static cvar_t *com_logfile;		// 1 = buffer log, 2 = flush after each print
+static cvar_t *com_showtrace;
 cvar_t	*com_version;
-cvar_t	*com_buildScript;	// for automated data building scripts
-cvar_t	*com_blood;
+static cvar_t *com_buildScript;	// for automated data building scripts
 
 #ifndef DEDICATED
 cvar_t	*com_introPlayed;
@@ -110,8 +109,7 @@ int		time_backend;		// renderer backend time
 
 static int	lastTime;
 int			com_frameTime;
-int			com_frameMsec;
-int			com_frameNumber;
+static int	com_frameNumber;
 
 qboolean	com_errorEntered = qfalse;
 qboolean	com_fullyInitialized = qfalse;
@@ -292,18 +290,16 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 
 #if defined(_WIN32) && defined(_DEBUG)
 	if ( code != ERR_DISCONNECT && code != ERR_NEED_CD ) {
-		if (!com_noErrorInterrupt->integer) {
+		if ( !com_noErrorInterrupt->integer ) {
 			DebugBreak();
 		}
 	}
 #endif
 
-	if(com_errorEntered)
-	{
-		if(!calledSysError)
-		{
+	if ( com_errorEntered ) {
+		if ( !calledSysError ) {
 			calledSysError = qtrue;
-			Sys_Error("recursive error after: %s", com_errorMessage);
+			Sys_Error( "recursive error after: %s", com_errorMessage );
 		}
 	}
 
@@ -357,7 +353,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		FS_PureServerSetLoadedPaks( "", "" );
 		com_errorEntered = qfalse;
 
-		longjmp( abortframe, 1 );
+		Q_longjmp( abortframe, 1 );
 	} else if ( code == ERR_DROP ) {
 		Com_Printf( "********************\nERROR: %s\n********************\n",
 			com_errorMessage );
@@ -373,7 +369,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		FS_PureServerSetLoadedPaks( "", "" );
 		com_errorEntered = qfalse;
 
-		longjmp( abortframe, 1 );
+		Q_longjmp( abortframe, 1 );
 	} else if ( code == ERR_NEED_CD ) {
 		SV_Shutdown( "Server didn't have CD" );
 		Com_EndRedirect();
@@ -391,7 +387,7 @@ void QDECL Com_Error( errorParm_t code, const char *fmt, ... ) {
 		FS_PureServerSetLoadedPaks( "", "" );
 		com_errorEntered = qfalse;
 
-		longjmp( abortframe, 1 );
+		Q_longjmp( abortframe, 1 );
 	} else {
 		VM_Forced_Unload_Start();
 #ifndef DEDICATED
@@ -456,8 +452,9 @@ quake3 set test blah + map test
 */
 
 #define	MAX_CONSOLE_LINES	32
-int		com_numConsoleLines;
-char	*com_consoleLines[MAX_CONSOLE_LINES];
+static int	com_numConsoleLines;
+static char	*com_consoleLines[MAX_CONSOLE_LINES];
+
 // master rcon password
 char	rconPassword2[MAX_CVAR_VALUE_STRING];
 
@@ -468,7 +465,7 @@ Com_ParseCommandLine
 Break it up into multiple console lines
 ==================
 */
-void Com_ParseCommandLine( char *commandLine ) {
+static void Com_ParseCommandLine( char *commandLine ) {
 	static int parsed = 0;
 	int inq;
 
@@ -1019,14 +1016,14 @@ typedef struct memzone_s {
 #endif
 } memzone_t;
 
-int minfragment = MINFRAGMENT; // may be adjusted at runtime
+static int minfragment = MINFRAGMENT; // may be adjusted at runtime
 
 // main zone for all "dynamic" memory allocation
-memzone_t	*mainzone;
+static memzone_t *mainzone;
 
 // we also have a small zone for small allocations that would only
 // fragment the main zone (think of cvar and cmd strings)
-memzone_t	*smallzone;
+static memzone_t *smallzone;
 
 
 #ifdef USE_MULTI_SEGMENT
@@ -1922,7 +1919,7 @@ static void Zone_Stats( const char *name, const memzone_t *z, qboolean printDeta
 Com_Meminfo_f
 =================
 */
-void Com_Meminfo_f( void ) {
+static void Com_Meminfo_f( void ) {
 	zone_stats_t st;
 	int		unused;
 
@@ -2031,7 +2028,7 @@ void Com_TouchMemory( void ) {
 Com_InitSmallZoneMemory
 =================
 */
-void Com_InitSmallZoneMemory( void ) {
+static void Com_InitSmallZoneMemory( void ) {
 	static byte s_buf[ 512 * 1024 ];
 	int smallZoneSize;
 
@@ -2086,8 +2083,9 @@ void Hunk_Log( void ) {
 	char		buf[4096];
 	int size, numBlocks;
 
-	if (!logfile || !FS_Initialized())
+	if ( logfile == FS_INVALID_HANDLE || !FS_Initialized() )
 		return;
+
 	size = 0;
 	numBlocks = 0;
 	Com_sprintf(buf, sizeof(buf), "\r\n================\r\nHunk log\r\n================\r\n");
@@ -2112,13 +2110,15 @@ void Hunk_Log( void ) {
 Hunk_SmallLog
 =================
 */
+#ifdef HUNK_DEBUG
 void Hunk_SmallLog( void ) {
 	hunkblock_t	*block, *block2;
 	char		buf[4096];
 	int size, locsize, numBlocks;
 
-	if (!logfile || !FS_Initialized())
+	if ( logfile == FS_INVALID_HANDLE || !FS_Initialized() )
 		return;
+
 	for (block = hunkblocks ; block; block = block->next) {
 		block->printed = qfalse;
 	}
@@ -2142,10 +2142,8 @@ void Hunk_SmallLog( void ) {
 			locsize += block2->size;
 			block2->printed = qtrue;
 		}
-#ifdef HUNK_DEBUG
 		Com_sprintf(buf, sizeof(buf), "size = %8d: %s, line: %d (%s)\r\n", locsize, block->file, block->line, block->label);
 		FS_Write(buf, strlen(buf), logfile);
-#endif
 		size += block->size;
 		numBlocks++;
 	}
@@ -2154,6 +2152,7 @@ void Hunk_SmallLog( void ) {
 	Com_sprintf(buf, sizeof(buf), "%d hunk blocks\r\n", numBlocks);
 	FS_Write(buf, strlen(buf), logfile);
 }
+#endif
 
 
 /*
@@ -2580,7 +2579,7 @@ static const char *Sys_EventName( sysEventType_t evType ) {
 		"SE_CONSOLE"
 	};
 
-	if ( evType >= SE_MAX ) {
+	if ( (unsigned)evType >= ARRAY_LEN( evNames ) ) {
 		return "SE_UNKNOWN";
 	} else {
 		return evNames[ evType ];
@@ -2868,7 +2867,7 @@ int Com_EventLoop( void ) {
 			CL_CharEvent( ev.evValue );
 			break;
 		case SE_MOUSE:
-			CL_MouseEvent( ev.evValue, ev.evValue2, ev.evTime );
+			CL_MouseEvent( ev.evValue, ev.evValue2 /*, ev.evTime*/ );
 			break;
 		case SE_JOYSTICK_AXIS:
 			CL_JoystickEvent( ev.evValue, ev.evValue2, ev.evTime );
@@ -2878,7 +2877,7 @@ int Com_EventLoop( void ) {
 			Cbuf_AddText( (char *)ev.evPtr );
 			Cbuf_AddText( "\n" );
 			break;
-			default:
+		default:
 				Com_Error( ERR_FATAL, "Com_EventLoop: bad event type %i", ev.evType );
 			break;
 		}
@@ -2886,6 +2885,7 @@ int Com_EventLoop( void ) {
 		// free any block data
 		if ( ev.evPtr ) {
 			Z_Free( ev.evPtr );
+			ev.evPtr = NULL;
 		}
 	}
 
@@ -3030,7 +3030,7 @@ void Com_GameRestart( int checksumFeed, qboolean clientRestart )
 		Con_ResetHistory();
 
 		// Shutdown FS early so Cvar_Restart will not reset old game cvars
-		FS_Shutdown( qfalse );
+		FS_Shutdown( qtrue );
 
 		// Clean out any user and VM created cvars
 		Cvar_Restart( qtrue );
@@ -3047,8 +3047,6 @@ void Com_GameRestart( int checksumFeed, qboolean clientRestart )
 		Com_ExecuteCfg();
 
 #ifndef DEDICATED
-		// Restart sound subsystem so old handles are flushed
-		//CL_Snd_Restart();
 		if ( clientRestart )
 			CL_StartHunkUsers();
 #endif
@@ -3275,7 +3273,7 @@ out:
 #include <intrin.h>
 static void CPUID( int func, unsigned int *regs )
 {
-	__cpuid( regs, func );
+	__cpuid( (int*)regs, func );
 }
 
 #else // clang/gcc/mingw
@@ -3559,7 +3557,7 @@ void Com_Init( char *commandLine ) {
 
 	Com_Printf( "%s %s %s\n", SVN_VERSION, PLATFORM_STRING, __DATE__ );
 
-	if ( setjmp (abortframe) ) {
+	if ( Q_setjmp( abortframe ) ) {
 		Sys_Error ("Error during initialization");
 	}
 
@@ -3613,7 +3611,16 @@ void Com_Init( char *commandLine ) {
 	Cvar_Get( "sv_master2", "master.ioquake3.org", CVAR_INIT );
 	Cvar_Get( "sv_master3", "master.maverickservers.com", CVAR_INIT );
 
-	com_protocol = Cvar_Get( "protocol", XSTRING( PROTOCOL_VERSION ), 0 );
+	com_protocol = Cvar_Get( "protocol", XSTRING( DEFAULT_PROTOCOL_VERSION ), 0 );
+	if ( Q_stristr( com_protocol->string, "-compat" ) > com_protocol->string ) {
+		// strip -compat suffix
+		Cvar_Set2( "protocol", va( "%i", com_protocol->integer ), qtrue );
+		// enforce legacy stream encoding but with new challenge format
+		com_protocolCompat = qtrue;
+	} else {
+		com_protocolCompat = qfalse;
+	}
+
 	Cvar_CheckRange( com_protocol, "0", NULL, CV_INTEGER );
 	com_protocol->flags &= ~CVAR_USER_CREATED;
 	com_protocol->flags |= CVAR_SERVERINFO | CVAR_ROM;
@@ -3663,7 +3670,7 @@ void Com_Init( char *commandLine ) {
 	com_affinityMask->modified = qfalse;
 #endif
 
-	com_blood = Cvar_Get( "com_blood", "1", CVAR_ARCHIVE_ND );
+	// com_blood = Cvar_Get( "com_blood", "1", CVAR_ARCHIVE_ND );
 
 	com_logfile = Cvar_Get( "logfile", "0", CVAR_TEMP );
 	Cvar_CheckRange( com_logfile, "0", "4", CV_INTEGER );
@@ -3983,7 +3990,7 @@ void Com_Frame( qboolean noDelay ) {
 	int	timeBeforeClient;
 	int	timeAfter;
 
-	if ( setjmp( abortframe ) ) {
+	if ( Q_setjmp( abortframe ) ) {
 		return;			// an ERR_DROP was thrown
 	}
 

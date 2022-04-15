@@ -32,9 +32,9 @@ typedef struct {
 	int cursize;
 } cmd_t;
 
-int    cmd_wait;
-cmd_t  cmd_text;
-byte   cmd_text_buf[MAX_CMD_BUFFER];
+static int   cmd_wait;
+static cmd_t cmd_text;
+static byte  cmd_text_buf[MAX_CMD_BUFFER];
 
 
 //=============================================================================
@@ -110,7 +110,7 @@ Adds command text immediately after the current command
 Adds a \n to the text
 ============
 */
-void Cbuf_InsertText( const char *text ) {
+static void Cbuf_InsertText( const char *text ) {
 	int		len;
 	int		i;
 

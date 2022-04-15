@@ -601,7 +601,7 @@ void GLimp_Init( glconfig_t *config )
 
 	glw_state.config = config; // feedback renderer configuration
 
-	in_nograb = Cvar_Get( "in_nograb", "0", CVAR_ARCHIVE );
+	in_nograb = Cvar_Get( "in_nograb", "0", 0 );
 
 	r_allowSoftwareGL = Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
 
@@ -634,12 +634,12 @@ void GLimp_Init( glconfig_t *config )
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
 
-	Key_ClearStates();
+	// This depends on SDL_INIT_VIDEO, hence having it here
+	IN_Init();
 
 	HandleEvents();
 
-	// This depends on SDL_INIT_VIDEO, hence having it here
-	IN_Init();
+	Key_ClearStates();
 }
 
 
@@ -733,12 +733,12 @@ void VKimp_Init( glconfig_t *config )
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
 
-	Key_ClearStates();
+	// This depends on SDL_INIT_VIDEO, hence having it here
+	IN_Init();
 
 	HandleEvents();
 
-	// This depends on SDL_INIT_VIDEO, hence having it here
-	IN_Init();
+	Key_ClearStates();
 }
 
 

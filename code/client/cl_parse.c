@@ -204,7 +204,7 @@ static void CL_ParseSnapshot( msg_t *msg ) {
 	clSnapshot_t	newSnap;
 	int			deltaNum;
 	int			oldMessageNum;
-	int			i, packetNum;
+	int			i, n, packetNum;
 
 	// get the reliable sequence acknowledge number
 	// NOTE: now sent with all server to client messages
@@ -296,8 +296,9 @@ static void CL_ParseSnapshot( msg_t *msg ) {
 	if ( newSnap.messageNum - oldMessageNum >= PACKET_BACKUP ) {
 		oldMessageNum = newSnap.messageNum - ( PACKET_BACKUP - 1 );
 	}
-	for ( ; oldMessageNum < newSnap.messageNum ; oldMessageNum++ ) {
-		cl.snapshots[oldMessageNum & PACKET_MASK].valid = qfalse;
+
+	for ( i = 0, n = newSnap.messageNum - oldMessageNum; i < n; i++ ) {
+		cl.snapshots[ ( oldMessageNum + i ) & PACKET_MASK ].valid = qfalse;
 	}
 
 	// copy to the current good spot
@@ -306,7 +307,7 @@ static void CL_ParseSnapshot( msg_t *msg ) {
 	// calculate ping time
 	for ( i = 0 ; i < PACKET_BACKUP ; i++ ) {
 		packetNum = ( clc.netchan.outgoingSequence - 1 - i ) & PACKET_MASK;
-		if ( cl.snap.ps.commandTime >= cl.outPackets[ packetNum ].p_serverTime ) {
+		if ( cl.snap.ps.commandTime - cl.outPackets[packetNum].p_serverTime >= 0 ) {
 			cl.snap.ping = cls.realtime - cl.outPackets[ packetNum ].p_realtime;
 			break;
 		}
@@ -779,7 +780,7 @@ static void CL_ParseCommandString( msg_t *msg ) {
 		Com_Printf( " %3i(%3i) %s\n", seq, clc.serverCommandSequence, s );
 
 	// see if we have already executed stored it off
-	if ( clc.serverCommandSequence >= seq ) {
+	if ( clc.serverCommandSequence - seq >= 0 ) {
 		return;
 	}
 	clc.serverCommandSequence = seq;
@@ -817,12 +818,12 @@ CL_ParseServerMessage
 =====================
 */
 void CL_ParseServerMessage( msg_t *msg ) {
-	int			cmd;
+	int cmd;
 
 	if ( cl_shownet->integer == 1 ) {
-		Com_Printf ("%i ",msg->cursize);
+		Com_Printf( "%i ",msg->cursize );
 	} else if ( cl_shownet->integer >= 2 ) {
-		Com_Printf ("------------------\n");
+		Com_Printf( "------------------\n" );
 	}
 
 	clc.eventMask = 0;
@@ -830,17 +831,24 @@ void CL_ParseServerMessage( msg_t *msg ) {
 
 	// get the reliable sequence acknowledge number
 	clc.reliableAcknowledge = MSG_ReadLong( msg );
-	//
-	if ( clc.reliableAcknowledge < clc.reliableSequence - MAX_RELIABLE_COMMANDS ) {
+
+	if ( clc.reliableSequence - clc.reliableAcknowledge > MAX_RELIABLE_COMMANDS ) {
+		if ( !clc.demoplaying ) {
+			Com_Printf( S_COLOR_YELLOW "WARNING: dropping %i commands from server\n", clc.reliableSequence - clc.reliableAcknowledge );
+		}
 		clc.reliableAcknowledge = clc.reliableSequence;
+	} else if ( clc.reliableSequence - clc.reliableAcknowledge < 0 ) {
+		if ( clc.demoplaying ) {
+			clc.reliableSequence = clc.reliableAcknowledge;
+		} else {
+			Com_Error( ERR_DROP, "%s: incorrect reliable sequence acknowledge number", __func__ );
+		}
 	}
 
-	//
 	// parse the message
-	//
 	while ( 1 ) {
 		if ( msg->readcount > msg->cursize ) {
-			Com_Error (ERR_DROP,"CL_ParseServerMessage: read past end of server message");
+			Com_Error( ERR_DROP,"CL_ParseServerMessage: read past end of server message" );
 			break;
 		}
 
@@ -862,7 +870,7 @@ void CL_ParseServerMessage( msg_t *msg ) {
 		// other commands
 		switch ( cmd ) {
 		default:
-			Com_Error (ERR_DROP,"CL_ParseServerMessage: Illegible server message");
+			Com_Error( ERR_DROP,"CL_ParseServerMessage: Illegible server message" );
 			break;
 		case svc_nop:
 			break;

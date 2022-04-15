@@ -114,7 +114,7 @@ refexport_t	re;
 static void	*rendererLib;
 #endif
 
-ping_t	cl_pinglist[MAX_PINGREQUESTS];
+static ping_t cl_pinglist[MAX_PINGREQUESTS];
 
 typedef struct serverStatus_s
 {
@@ -126,7 +126,7 @@ typedef struct serverStatus_s
 	qboolean retrieved;
 } serverStatus_t;
 
-serverStatus_t cl_serverStatusList[MAX_SERVERSTATUSREQUESTS];
+static serverStatus_t cl_serverStatusList[MAX_SERVERSTATUSREQUESTS];
 
 static void CL_CheckForResend( void );
 static void CL_ShowIP_f( void );
@@ -253,10 +253,15 @@ void CL_StopRecord_f( void ) {
 		clc.recordfile = FS_INVALID_HANDLE;
 
 		// select proper extension
-		if ( clc.dm68compat || clc.demoplaying )
-			protocol = PROTOCOL_VERSION;
-		else
+		if ( clc.dm68compat || clc.demoplaying ) {
+			protocol = OLD_PROTOCOL_VERSION;
+		} else {
 			protocol = NEW_PROTOCOL_VERSION;
+		}
+
+		if ( com_protocol->integer != DEFAULT_PROTOCOL_VERSION ) {
+			protocol = com_protocol->integer;
+		}
 
 		Com_sprintf( tempName, sizeof( tempName ), "%s.tmp", clc.recordName );
 
@@ -579,7 +584,7 @@ static void CL_Record_f( void ) {
 		ext = COM_GetExtension( demoName );
 		if ( *ext ) {
 			// strip demo extension
-			sprintf( demoExt, "%s%d", DEMOEXT, PROTOCOL_VERSION );
+			sprintf( demoExt, "%s%d", DEMOEXT, OLD_PROTOCOL_VERSION );
 			if ( Q_stricmp( ext, demoExt ) == 0 ) {
 				*(strrchr( demoName, '.' )) = '\0';
 			} else {
@@ -648,11 +653,11 @@ CL_CompleteRecordName
 */
 static void CL_CompleteRecordName( char *args, int argNum )
 {
-	if( argNum == 2 )
+	if ( argNum == 2 )
 	{
 		char demoExt[ 16 ];
 
-		Com_sprintf( demoExt, sizeof( demoExt ), ".dm_%d", PROTOCOL_VERSION );
+		Com_sprintf( demoExt, sizeof( demoExt ), ".%s%d", DEMOEXT, com_protocol->integer );
 		Field_CompleteFilename( "demos", demoExt, qtrue, FS_MATCH_EXTERN | FS_MATCH_STICK );
 	}
 }
@@ -759,7 +764,7 @@ void CL_ReadDemoMessage( void ) {
 CL_WalkDemoExt
 ====================
 */
-static int CL_WalkDemoExt( const char *arg, char *name, fileHandle_t *handle )
+static int CL_WalkDemoExt( const char *arg, char *name, int name_len, fileHandle_t *handle )
 {
 	int i;
 
@@ -768,7 +773,7 @@ static int CL_WalkDemoExt( const char *arg, char *name, fileHandle_t *handle )
 
 	while ( demo_protocols[ i ] )
 	{
-		Com_sprintf( name, MAX_OSPATH, "demos/%s.dm_%d", arg, demo_protocols[ i ] );
+		Com_sprintf( name, name_len, "demos/%s.%s%d", arg, DEMOEXT, demo_protocols[ i ] );
 		FS_BypassPure();
 		FS_FOpenFileRead( name, handle, qtrue );
 		FS_RestorePure();
@@ -792,12 +797,17 @@ CL_DemoExtCallback
 */
 static qboolean CL_DemoNameCallback_f( const char *filename, int length )
 {
+	const int ext_len = strlen( "." DEMOEXT );
+	const int num_len = 2;
 	int version;
 
-	if ( length < 7 || Q_stricmpn( filename + length - 6, ".dm_", 4 ) )
+	if ( length <= ext_len + num_len || Q_stricmpn( filename + length - (ext_len + num_len), "." DEMOEXT, ext_len ) != 0 )
 		return qfalse;
 
-	version = atoi( filename + length - 2 );
+	version = atoi( filename + length - num_len );
+	if ( version == com_protocol->integer )
+		return qtrue;
+
 	if ( version < 66 || version > NEW_PROTOCOL_VERSION )
 		return qfalse;
 
@@ -812,10 +822,10 @@ CL_CompleteDemoName
 */
 static void CL_CompleteDemoName( char *args, int argNum )
 {
-	if( argNum == 2 )
+	if ( argNum == 2 )
 	{
 		FS_SetFilenameCallback( CL_DemoNameCallback_f );
-		Field_CompleteFilename( "demos", ".dm_??", qfalse, FS_MATCH_ANY | FS_MATCH_STICK );
+		Field_CompleteFilename( "demos", "." DEMOEXT "??", qfalse, FS_MATCH_ANY | FS_MATCH_STICK );
 		FS_SetFilenameCallback( NULL );
 	}
 }
@@ -871,16 +881,17 @@ static void CL_PlayDemo_f( void ) {
 			Com_Printf("Protocol %d not supported for demos\n", protocol );
 			len = ext_test - arg;
 
-			if(len >= ARRAY_LEN(retry))
-				len = ARRAY_LEN(retry) - 1;
+			if ( len > ARRAY_LEN( retry ) - 1 ) {
+				len = ARRAY_LEN( retry ) - 1;
+			}
 
 			Q_strncpyz( retry, arg, len + 1);
 			retry[len] = '\0';
-			protocol = CL_WalkDemoExt( retry, name, &hFile );
+			protocol = CL_WalkDemoExt( retry, name, sizeof( name ), &hFile );
 		}
 	}
 	else
-		protocol = CL_WalkDemoExt( arg, name, &hFile );
+		protocol = CL_WalkDemoExt( arg, name, sizeof( name ), &hFile );
 
 	if ( hFile == FS_INVALID_HANDLE ) {
 		Com_Printf( S_COLOR_YELLOW "couldn't open %s\n", name );
@@ -917,7 +928,7 @@ static void CL_PlayDemo_f( void ) {
 	clc.demoplaying = qtrue;
 	Q_strncpyz( cls.servername, shortname, sizeof( cls.servername ) );
 
-	if ( protocol < NEW_PROTOCOL_VERSION )
+	if ( protocol <= OLD_PROTOCOL_VERSION )
 		clc.compat = qtrue;
 	else
 		clc.compat = qfalse;
@@ -977,6 +988,8 @@ static void CL_ShutdownVMs( void )
 
 /*
 =====================
+Called by Com_GameRestart, CL_FlushMemory and SV_SpawnServer
+
 CL_ShutdownAll
 =====================
 */
@@ -985,7 +998,8 @@ void CL_ShutdownAll( void ) {
 #ifdef USE_CURL
 	CL_cURL_Shutdown();
 #endif
-	// clear sounds
+
+	// clear and mute all sounds until next registration
 	S_DisableSounds();
 
 	// shutdown VMs
@@ -994,19 +1008,16 @@ void CL_ShutdownAll( void ) {
 	// shutdown the renderer
 	if ( re.Shutdown ) {
 		if ( CL_GameSwitch() ) {
-			// shutdown sound system before renderer
-			S_Shutdown();
-			cls.soundStarted = qfalse;
 			CL_ShutdownRef( REF_DESTROY_WINDOW ); // shutdown renderer & GLimp
 		} else {
 			re.Shutdown( REF_KEEP_CONTEXT ); // don't destroy window or context
 		}
 	}
 
-	cls.uiStarted = qfalse;
-	cls.cgameStarted = qfalse;
 	cls.rendererStarted = qfalse;
 	cls.soundRegistered = qfalse;
+
+	SCR_Done();
 }
 
 
@@ -1033,8 +1044,7 @@ void CL_ClearMemory( void ) {
 =================
 CL_FlushMemory
 
-Called by CL_MapLoading, CL_Connect_f, CL_PlayDemo_f, and CL_ParseGamestate the only
-ways a client gets into a game
+Called by CL_Disconnect_f, CL_DownloadsComplete
 Also called by Com_Error
 =================
 */
@@ -1220,7 +1230,7 @@ qboolean CL_Disconnect( qboolean showMainMenu ) {
 		// Finish rendering current frame
 		cls.framecount++;
 		SCR_UpdateScreen();
-		CL_CloseAVI();
+		CL_CloseAVI( qfalse );
 	}
 
 	if ( cgvm ) {
@@ -1771,40 +1781,36 @@ static void CL_Vid_Restart( qboolean keepWindow ) {
 
 	// Settings may have changed so stop recording now
 	if ( CL_VideoRecording() )
-		CL_CloseAVI();
+		CL_CloseAVI( qfalse );
 
 	if ( clc.demorecording )
 		CL_StopRecord_f();
 
-	// don't let them loop during the restart
-	S_StopAllSounds();
+	// clear and mute all sounds until next registration
+	S_DisableSounds();
+
 	// shutdown VMs
 	CL_ShutdownVMs();
-	// shutdown sound system
-	S_Shutdown();
+
 	// shutdown the renderer and clear the renderer interface
 	CL_ShutdownRef( keepWindow ? REF_KEEP_WINDOW : REF_DESTROY_WINDOW );
+
 	// client is no longer pure until new checksums are sent
 	CL_ResetPureClientAtServer();
+
 	// clear pak references
 	FS_ClearPakReferences( FS_UI_REF | FS_CGAME_REF );
+
 	// reinitialize the filesystem if the game directory or checksum has changed
 	if ( !clc.demoplaying ) // -EC-
 		FS_ConditionalRestart( clc.checksumFeed, qfalse );
 
-	cls.rendererStarted = qfalse;
-	cls.uiStarted = qfalse;
-	cls.cgameStarted = qfalse;
 	cls.soundRegistered = qfalse;
-	cls.soundStarted = qfalse;
 
 	// unpause so the cgame definitely gets a snapshot and renders a frame
 	Cvar_Set( "cl_paused", "0" );
 
 	CL_ClearMemory();
-
-	// initialize the renderer interface
-	CL_InitRef();
 
 	// startup all the client stuff
 	CL_StartHunkUsers();
@@ -1844,21 +1850,6 @@ static void CL_Vid_Restart_f( void ) {
 
 /*
 =================
-CL_Snd_Restart
-
-Restart the sound subsystem
-=================
-*/
-static void CL_Snd_Shutdown( void )
-{
-	S_StopAllSounds();
-	S_Shutdown();
-	cls.soundStarted = qfalse;
-}
-
-
-/*
-=================
 CL_Snd_Restart_f
 
 Restart the sound subsystem
@@ -1868,7 +1859,7 @@ handles will be invalid
 */
 static void CL_Snd_Restart_f( void )
 {
-	CL_Snd_Shutdown();
+	S_Shutdown();
 
 	// sound will be reinitialized by vid_restart
 	CL_Vid_Restart( qtrue );
@@ -2323,12 +2314,12 @@ static void CL_CheckForResend( void ) {
 			notOverflowed = qtrue;
 		}
 
-		if ( com_protocol->integer != PROTOCOL_VERSION ) {
+		if ( com_protocol->integer != DEFAULT_PROTOCOL_VERSION ) {
 			notOverflowed &= Info_SetValueForKey_s( info, MAX_USERINFO_LENGTH, "protocol",
 				com_protocol->string );
 		} else {
 			notOverflowed &= Info_SetValueForKey_s( info, MAX_USERINFO_LENGTH, "protocol",
-				clc.compat ? XSTRING( PROTOCOL_VERSION ) : XSTRING( NEW_PROTOCOL_VERSION ) );
+				clc.compat ? XSTRING( OLD_PROTOCOL_VERSION ) : XSTRING( NEW_PROTOCOL_VERSION ) );
 		}
 
 		notOverflowed &= Info_SetValueForKey_s( info, MAX_USERINFO_LENGTH, "qport",
@@ -2422,11 +2413,11 @@ typedef struct hash_chain_s {
 	struct hash_chain_s *next;
 } hash_chain_t;
 
-hash_chain_t *hash_table[1024];
-hash_chain_t hash_list[MAX_GLOBAL_SERVERS];
-unsigned int hash_count = 0;
+static hash_chain_t *hash_table[1024];
+static hash_chain_t hash_list[MAX_GLOBAL_SERVERS];
+static unsigned int hash_count = 0;
 
-unsigned int hash_func( const netadr_t *addr ) {
+static unsigned int hash_func( const netadr_t *addr ) {
 
 	const byte		*ip = NULL;
 	unsigned int	size;
@@ -2639,44 +2630,45 @@ static qboolean CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 	}
 
 	// challenge from the server we are connecting to
-	if (!Q_stricmp(c, "challengeResponse"))
-	{
-		char *strver;
-		int ver;
+	if ( !Q_stricmp(c, "challengeResponse" ) ) {
 
-		if ( cls.state != CA_CONNECTING )
-		{
+		if ( cls.state != CA_CONNECTING ) {
 			Com_DPrintf( "Unwanted challenge response received. Ignored.\n" );
 			return qfalse;
 		}
 
 		c = Cmd_Argv( 2 );
-		if ( *c )
+		if ( *c != '\0' )
 			challenge = atoi( c );
 
- 		clc.compat = qtrue;
-		strver = Cmd_Argv( 3 ); // analyze server protocol version
-		if ( *strver ) {
-			ver = atoi( strver );
-			if ( ver != PROTOCOL_VERSION ) {
-				if ( ver == NEW_PROTOCOL_VERSION ) {
+		clc.compat = qtrue;
+		s = Cmd_Argv( 3 ); // analyze server protocol version
+		if ( *s != '\0' ) {
+			int sv_proto = atoi( s );
+			if ( sv_proto > OLD_PROTOCOL_VERSION ) {
+				if ( sv_proto == NEW_PROTOCOL_VERSION || sv_proto == com_protocol->integer ) {
 					clc.compat = qfalse;
 				} else {
+					int cl_proto = com_protocol->integer;
+					if ( cl_proto == DEFAULT_PROTOCOL_VERSION ) {
+						// we support new protocol features by default
+						cl_proto = NEW_PROTOCOL_VERSION;
+					}
 					Com_Printf( S_COLOR_YELLOW "Warning: Server reports protocol version %d, "
-						   "we have %d. Trying legacy protocol %d.\n",
-						   ver, NEW_PROTOCOL_VERSION, PROTOCOL_VERSION );
+						"we have %d. Trying legacy protocol %d.\n",
+						sv_proto, cl_proto, OLD_PROTOCOL_VERSION );
 				}
 			}
 		}
 
 		if ( clc.compat )
 		{
-			if( !NET_CompareAdr( from, &clc.serverAddress ) )
+			if ( !NET_CompareAdr( from, &clc.serverAddress ) )
 			{
 				// This challenge response is not coming from the expected address.
 				// Check whether we have a matching client challenge to prevent
 				// connection hi-jacking.
-				if( !*c || challenge != clc.challenge )
+				if ( *c == '\0' || challenge != clc.challenge )
 				{
 					Com_DPrintf( "Challenge response received from unexpected source. Ignored.\n" );
 					return qfalse;
@@ -2685,7 +2677,7 @@ static qboolean CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 		}
 		else
 		{
-			if( !*c || challenge != clc.challenge )
+			if ( *c == '\0' || challenge != clc.challenge )
 			{
 				Com_Printf( "Bad challenge for challengeResponse. Ignored.\n" );
 				return qfalse;
@@ -2720,27 +2712,41 @@ static qboolean CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 			return qfalse;
 		}
 
-		if ( !clc.compat )
-		{
-			c = Cmd_Argv(1);
-
-			if(*c)
-				challenge = atoi(c);
-			else
-			{
-				Com_Printf("Bad connectResponse received. Ignored.\n");
+		if ( !clc.compat ) {
+			// first argument: challenge response
+			c = Cmd_Argv( 1 );
+			if ( *c != '\0' ) {
+				challenge = atoi( c );
+			} else {
+				Com_Printf( "Bad connectResponse received. Ignored.\n" );
 				return qfalse;
 			}
 
-			if(challenge != clc.challenge)
-			{
-				Com_Printf("ConnectResponse with bad challenge received. Ignored.\n");
+			if ( challenge != clc.challenge ) {
+				Com_Printf( "ConnectResponse with bad challenge received. Ignored.\n" );
 				return qfalse;
+			}
+
+			if ( com_protocolCompat ) {
+				// enforce dm68-compatible stream for legacy/unknown servers
+				clc.compat = qtrue;
+			}
+
+			// second (optional) argument: actual protocol version used on server-side
+			c = Cmd_Argv( 2 );
+			if ( *c != '\0' ) {
+				int protocol = atoi( c );
+				if ( protocol > 0 ) {
+					if ( protocol <= OLD_PROTOCOL_VERSION ) {
+						clc.compat = qtrue;
+					} else {
+						clc.compat = qfalse;
+					}
+				}
 			}
 		}
 
-		Netchan_Setup( NS_CLIENT, &clc.netchan, from, Cvar_VariableIntegerValue("net_qport"),
-			clc.challenge, clc.compat );
+		Netchan_Setup( NS_CLIENT, &clc.netchan, from, Cvar_VariableIntegerValue( "net_qport" ), clc.challenge, clc.compat );
 
 		cls.state = CA_CONNECTED;
 		clc.lastPacketSentTime = -9999;		// send first packet immediately
@@ -2855,7 +2861,7 @@ void CL_PacketEvent( const netadr_t *from, msg_t *msg ) {
 	// track the last message received so it can be returned in
 	// client messages, allowing the server to detect a dropped
 	// gamestate
-	clc.serverMessageSequence = LittleLong( *(int *)msg->data );
+	clc.serverMessageSequence = LittleLong( *(int32_t *)msg->data );
 
 	clc.lastPacketTime = cls.realtime;
 	CL_ParseServerMessage( msg );
@@ -3031,6 +3037,8 @@ void CL_Frame( int msec, int realMsec ) {
 
 			msec = (int)frameDuration;
 			clc.aviVideoFrameRemainder = frameDuration - msec;
+
+			realMsec = msec; // sync sound duration
 		}
 	}
 
@@ -3148,6 +3156,17 @@ static void CL_ShutdownRef( refShutdownCode_t code ) {
 	}
 #endif
 
+	// clear and mute all sounds until next registration
+	// S_DisableSounds();
+
+	if ( code >= REF_DESTROY_WINDOW ) { // +REF_UNLOAD_DLL
+		// shutdown sound system before renderer
+		// because it may depend from window handle
+		S_Shutdown();
+	}
+
+	SCR_Done();
+
 	if ( re.Shutdown ) {
 		re.Shutdown( code );
 	}
@@ -3160,6 +3179,8 @@ static void CL_ShutdownRef( refShutdownCode_t code ) {
 #endif
 
 	Com_Memset( &re, 0, sizeof( re ) );
+
+	cls.rendererStarted = qfalse;
 }
 
 
@@ -3169,6 +3190,7 @@ CL_InitRenderer
 ============
 */
 static void CL_InitRenderer( void ) {
+
 	// this sets up the renderer and calls R_Init
 	re.BeginRegistration( &cls.glconfig );
 
@@ -3176,7 +3198,10 @@ static void CL_InitRenderer( void ) {
 	cls.charSetShader = re.RegisterShader( "gfx/2d/bigchars" );
 	cls.whiteShader = re.RegisterShader( "white" );
 	cls.consoleShader = re.RegisterShader( "console" );
-	g_console_field_width = cls.glconfig.vidWidth / smallchar_width - 2;
+
+	Con_CheckResize();
+
+	g_console_field_width = ((cls.glconfig.vidWidth / smallchar_width)) - 2;
 	g_consoleField.widthInChars = g_console_field_width;
 
 	// for 640x480 virtualized screen
@@ -3191,6 +3216,8 @@ static void CL_InitRenderer( void ) {
 		cls.scale = cls.glconfig.vidWidth * (1.0/640.0);
 		cls.biasY = 0.5 * ( cls.glconfig.vidHeight - ( cls.glconfig.vidWidth * (480.0/640) ) );
 	}
+
+	SCR_Init();
 }
 
 
@@ -3203,11 +3230,8 @@ This is the only place that any of these functions are called from
 ============================
 */
 void CL_StartHunkUsers( void ) {
-	if (!com_cl_running) {
-		return;
-	}
 
-	if ( !com_cl_running->integer ) {
+	if ( !com_cl_running || !com_cl_running->integer ) {
 		return;
 	}
 
@@ -3287,22 +3311,12 @@ Sets console chars height
 */
 static void CL_SetScaling( float factor, int captureWidth, int captureHeight ) {
 
-	float scale;
-	int h;
+	if ( cls.con_factor != factor ) {
+		// rescale console
+		con_scale->modified = qtrue;
+	}
 
-	// adjust factor proportionally to FullHD height (1080 pixels), with 1/16 granularity
-	h = (captureHeight * 16 / 1080);
-	scale = h / 16.0f;
-	if ( scale < 1.0f )
-		scale = 1.0f;
-
-	factor *= scale;
-
-	// set console scaling
-	smallchar_width = SMALLCHAR_WIDTH * factor;
-	smallchar_height = SMALLCHAR_HEIGHT * factor;
-	bigchar_width = BIGCHAR_WIDTH * factor;
-	bigchar_height = BIGCHAR_HEIGHT * factor;
+	cls.con_factor = factor;
 
 	// set custom capture resolution
 	cls.captureWidth = captureWidth;
@@ -3457,7 +3471,7 @@ static void CL_InitRef( void ) {
 //===========================================================================================
 
 
-void CL_SetModel_f( void ) {
+static void CL_SetModel_f( void ) {
 	const char *arg;
 	char name[ MAX_CVAR_VALUE_STRING ];
 
@@ -3483,7 +3497,7 @@ video
 video [filename]
 ===============
 */
-void CL_Video_f( void )
+static void CL_Video_f( void )
 {
 	char filename[ MAX_OSPATH ];
 	const char *ext;
@@ -3547,7 +3561,7 @@ void CL_Video_f( void )
 	Q_strncpyz( clc.videoName, filename, sizeof( clc.videoName ) );
 	clc.videoIndex = 0;
 
-	CL_OpenAVIForWriting( va( "%s.%s", clc.videoName, ext ), pipe );
+	CL_OpenAVIForWriting( va( "%s.%s", clc.videoName, ext ), pipe, qfalse );
 }
 
 
@@ -3558,7 +3572,7 @@ CL_StopVideo_f
 */
 static void CL_StopVideo_f( void )
 {
-  CL_CloseAVI();
+	CL_CloseAVI( qfalse );
 }
 
 
@@ -3569,7 +3583,7 @@ CL_CompleteRecordName
 */
 static void CL_CompleteVideoName( char *args, int argNum )
 {
-	if( argNum == 2 )
+	if ( argNum == 2 )
 	{
 		Field_CompleteFilename( "videos", ".avi", qtrue, FS_MATCH_EXTERN | FS_MATCH_STICK );
 	}
@@ -3737,7 +3751,7 @@ static void CL_InitGLimp_Cvars( void )
 	r_glDriver = Cvar_Get( "r_glDriver", OPENGL_DRIVER_NAME, CVAR_ARCHIVE_ND | CVAR_LATCH );
 
 	r_displayRefresh = Cvar_Get( "r_displayRefresh", "0", CVAR_LATCH );
-	Cvar_CheckRange( r_displayRefresh, "0", "360", CV_INTEGER );
+	Cvar_CheckRange( r_displayRefresh, "0", "500", CV_INTEGER );
 	Cvar_SetDescription( r_displayRefresh, "Override monitor refresh rate in fullscreen mode:\n  0 - use current monitor refresh rate\n >0 - use custom refresh rate" );
 
 	vid_xpos = Cvar_Get( "vid_xpos", "3", CVAR_ARCHIVE );
@@ -3794,6 +3808,7 @@ CL_Init
 */
 void CL_Init( void ) {
 	const char *s;
+	cvar_t *cv;
 
 	Com_Printf( "----- Client Initialization -----\n" );
 
@@ -3868,7 +3883,8 @@ void CL_Init( void ) {
 
 	cl_motdString = Cvar_Get( "cl_motdString", "", CVAR_ROM );
 
-	Cvar_Get( "cl_maxPing", "800", CVAR_ARCHIVE_ND );
+	cv = Cvar_Get( "cl_maxPing", "800", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( cv, "100", "999", CV_INTEGER );
 
 	cl_lanForcePackets = Cvar_Get( "cl_lanForcePackets", "1", CVAR_ARCHIVE_ND );
 
@@ -3902,7 +3918,7 @@ void CL_Init( void ) {
 	Cvar_Get ("sex", "male", CVAR_USERINFO | CVAR_ARCHIVE_ND );
 	Cvar_Get ("cl_anonymous", "0", CVAR_USERINFO | CVAR_ARCHIVE_ND );
 
-	Cvar_Get ("password", "", CVAR_USERINFO);
+	Cvar_Get ("password", "", CVAR_USERINFO | CVAR_NORESTART);
 	Cvar_Get ("cg_predictItems", "1", CVAR_USERINFO | CVAR_ARCHIVE );
 
 
@@ -3951,12 +3967,6 @@ void CL_Init( void ) {
 #endif
 	Cmd_AddCommand( "modelist", CL_ModeList_f );
 
-	CL_InitRef();
-
-	SCR_Init();
-
-	//Cbuf_Execute ();
-
 	Cvar_Set( "cl_running", "1" );
 #ifdef USE_MD5
 	CL_GenerateQKey();
@@ -3971,6 +3981,8 @@ void CL_Init( void ) {
 /*
 ===============
 CL_Shutdown
+
+Called on fatal error, quit and dedicated mode switch
 ===============
 */
 void CL_Shutdown( const char *finalmsg, qboolean quit ) {
@@ -3991,9 +4003,10 @@ void CL_Shutdown( const char *finalmsg, qboolean quit ) {
 	noGameRestart = quit;
 	CL_Disconnect( qfalse );
 
-	CL_ShutdownVMs();
+	// clear and mute all sounds until next registration
+	S_DisableSounds();
 
-	S_Shutdown();
+	CL_ShutdownVMs();
 
 	CL_ShutdownRef( quit ? REF_UNLOAD_DLL : REF_DESTROY_WINDOW );
 
@@ -4105,7 +4118,7 @@ static void CL_ServerInfoPacket( const netadr_t *from, msg_t *msg ) {
 
 	// if this isn't the correct protocol version, ignore it
 	prot = atoi( Info_ValueForKey( infoString, "protocol" ) );
-	if ( prot != PROTOCOL_VERSION && prot != NEW_PROTOCOL_VERSION ) {
+	if ( prot != OLD_PROTOCOL_VERSION && prot != NEW_PROTOCOL_VERSION && prot != com_protocol->integer ) {
 		Com_DPrintf( "Different protocol info packet: %s\n", infoString );
 		return;
 	}
@@ -4557,15 +4570,12 @@ void CL_GetPing( int n, char *buf, int buflen, int *pingtime )
 	Q_strncpyz( buf, str, buflen );
 
 	time = cl_pinglist[n].time;
-	if (!time)
+	if ( time == 0 )
 	{
 		// check for timeout
 		time = Sys_Milliseconds() - cl_pinglist[n].start;
 		maxPing = Cvar_VariableIntegerValue( "cl_maxPing" );
-		if( maxPing < 100 ) {
-			maxPing = 100;
-		}
-		if (time < maxPing)
+		if ( time < maxPing )
 		{
 			// not timed out yet
 			time = 0;

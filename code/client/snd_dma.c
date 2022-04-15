@@ -39,8 +39,8 @@ static void S_Base_StopAllSounds( void );
 static void S_Base_StopBackgroundTrack( void );
 static void S_memoryLoad( sfx_t *sfx );
 
-snd_stream_t	*s_backgroundStream = NULL;
-static char		s_backgroundLoop[MAX_QPATH];
+static snd_stream_t *s_backgroundStream = NULL;
+static char s_backgroundLoop[MAX_QPATH];
 //static char		s_backgroundMusic[MAX_QPATH]; //TTimo: unused
 
 static byte		buffer2[ 0x10000 ]; // for muted painting
@@ -77,11 +77,11 @@ int   		s_paintedtime; 		// sample PAIRS
 
 // MAX_SFX may be larger than MAX_SOUNDS because
 // of custom player sounds
-#define		MAX_SFX			4096
-sfx_t		s_knownSfx[MAX_SFX];
-int			s_numSfx = 0;
+#define MAX_SFX			4096
+static sfx_t s_knownSfx[MAX_SFX];
+static int s_numSfx = 0;
 
-#define		LOOP_HASH		128
+#define LOOP_HASH		128
 static sfx_t *sfxHash[LOOP_HASH];
 
 cvar_t		*s_testsound;
@@ -1141,24 +1141,21 @@ static void S_GetSoundtime( void )
 	int		samplepos;
 	static	int		buffers;
 	static	int		oldsamplepos;
-	float	fps;
-	float	frameDuration;
-	int		msec;
 
 	if ( CL_VideoRecording() )
 	{
-		fps = MIN( cl_aviFrameRate->value, 1000.0f );
-		frameDuration = MAX( (float) dma.speed / fps, 1.0f ) + clc.aviSoundFrameRemainder;
+		const float duration = MAX( (float)dma.speed / cl_aviFrameRate->value, 1.0f );
+		const float frameDuration = duration + clc.aviSoundFrameRemainder;
+		const int msec = (int)frameDuration;
 
-		msec = (int)frameDuration;
 		s_soundtime += msec;
 		clc.aviSoundFrameRemainder = frameDuration - msec;
 
 		// use same offset as in game
-		s_paintedtime = s_soundtime + s_mixOffset->value * dma.speed;
+		s_paintedtime = s_soundtime + (int)(s_mixOffset->value * (float)dma.speed);
 
 		// render exactly one frame of audio data
-		clc.aviFrameEndTime = s_paintedtime + MAX( (float) dma.speed / fps, 1.0f ) + clc.aviSoundFrameRemainder;
+		clc.aviFrameEndTime = s_paintedtime + (int)(duration + clc.aviSoundFrameRemainder);
 		return;
 	}
 
@@ -1467,6 +1464,8 @@ static void S_Base_Shutdown( void ) {
 	dma_buffer2 = NULL;
 
 	Cmd_RemoveCommand( "s_info" );
+
+	cls.soundRegistered = qfalse;
 }
 
 

@@ -56,7 +56,7 @@ int			c_pointcontents;
 int			c_traces, c_brush_traces, c_patch_traces;
 
 
-byte		*cmod_base;
+static byte *cmod_base;
 
 #ifndef BSPC
 cvar_t		*cm_noAreas;
@@ -64,9 +64,9 @@ cvar_t		*cm_noCurves;
 cvar_t		*cm_playerCurveClip;
 #endif
 
-cmodel_t	box_model;
-cplane_t	*box_planes;
-cbrush_t	*box_brush;
+static cmodel_t box_model;
+static cplane_t *box_planes;
+static cbrush_t *box_brush;
 
 
 
@@ -213,7 +213,7 @@ CM_BoundBrush
 
 =================
 */
-void CM_BoundBrush( cbrush_t *b ) {
+static void CM_BoundBrush( cbrush_t *b ) {
 	b->bounds[0][0] = -b->sides[0].plane->dist;
 	b->bounds[1][0] = b->sides[1].plane->dist;
 
@@ -657,7 +657,7 @@ void CM_LoadMap( const char *name, qboolean clientload, int *checksum ) {
 	*checksum = cm.checksum = LittleLong( Com_BlockChecksum( buf, length ) );
 
 	header = *(dheader_t *)buf;
-	for ( i = 0; i < sizeof( dheader_t ) / 4; i++ ) {
+	for ( i = 0; i < sizeof( dheader_t ) / sizeof( int32_t ); i++ ) {
 		( (int32_t *)&header )[i] = LittleLong( ( (int32_t *)&header )[i] );
 	}
 

@@ -61,7 +61,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define ERROR_COLOR_1   RGB(0xFF,0xFF,0x00)
 #define ERROR_COLOR_2   RGB(0xF0,0x00,0x00)
 
-field_t console;
+static field_t console;
 
 typedef struct
 {
@@ -406,6 +406,46 @@ static LRESULT WINAPI BufferWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 		}
 		return 0;
 
+#if 0 // this is actually redundant except setting focus to s_wcd.hwndInputLine
+	case WM_COPY: {
+			DWORD selStart, selEnd;
+			SendMessage( hWnd, EM_GETSEL, (WPARAM)&selStart, (LPARAM)&selEnd );
+			if ( selStart != selEnd ) {
+				if ( OpenClipboard( s_wcd.hWnd ) ) {
+					int len;
+					HGLOBAL hMem;
+					TCHAR *text, *tmp;
+					len = GetWindowTextLength( s_wcd.hwndBuffer ) + 1;
+					tmp = (TCHAR*) malloc( len * sizeof( TCHAR ) );
+					if ( tmp ) {
+						GetWindowText( s_wcd.hwndBuffer, tmp, len );
+						hMem = GlobalAlloc( GMEM_MOVEABLE | GMEM_DDESHARE | GMEM_ZEROINIT, ( selEnd - selStart + 1 ) * sizeof( TCHAR ) );
+						if ( hMem != NULL ) {
+							EmptyClipboard();
+							text = (TCHAR*) GlobalLock( hMem );
+							if ( text != NULL ) {
+								memcpy( text, tmp + selStart, ( selEnd - selStart ) * sizeof( text[0] ) );
+							}
+							GlobalUnlock( hMem );
+#ifdef UNICODE
+							SetClipboardData( CF_UNICODETEXT, hMem );
+#else
+							SetClipboardData( CF_TEXT, hMem );
+#endif
+						}
+						free( tmp );
+					}
+					CloseClipboard();
+				}
+				if ( s_wcd.hwndInputLine ) {
+					SetFocus( s_wcd.hwndInputLine );
+				}
+				return 0;
+			}
+		}
+		break;
+#endif
+
 	case WM_TIMER:
 		if ( wParam == BUF_TIMER_ID && bufTimerID != 0 && !com_errorEntered )
 		{
@@ -430,13 +470,23 @@ static LRESULT WINAPI BufferWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 
 	case WM_CONTEXTMENU:
 		return 0;
+
+	case WM_CHAR: {
+			if ( wParam != VK_CANCEL ) {
+				// forward to input line
+				SetFocus( s_wcd.hwndInputLine );
+				SendMessage( s_wcd.hwndInputLine, WM_CHAR, wParam, lParam );
+				return 0;
+			}
+		}
+		break;
 	}
 
 	return CallWindowProc( (WNDPROC) s_wcd.SysBufferWndProc, hWnd, uMsg, wParam, lParam );
 }
 
 
-LRESULT WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+static LRESULT WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	HGLOBAL hMem;
 	TCHAR *text;
@@ -494,7 +544,7 @@ LRESULT WINAPI StatusWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 }
 
 
-LRESULT WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+static LRESULT WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	TCHAR inputBuffer[ MAX_EDIT_LINE ];
 	int zDelta, fwKeys, i;
@@ -502,12 +552,14 @@ LRESULT WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 
 	switch ( uMsg )
 	{
+#if 0
 	case WM_KILLFOCUS:
 		if ( (HWND)wParam == s_wcd.hwndBuffer ) {
 			SetFocus( s_wcd.hwndInputLine );
 			return 0;
 		}
 		break;
+#endif
 
 	case WM_MOUSEWHEEL:
 		zDelta = (short) HIWORD( wParam ) / WHEEL_DELTA;
@@ -739,7 +791,7 @@ void Sys_CreateConsole( const char *title, int xPos, int yPos, qboolean useXYpos
 		OUT_DEFAULT_PRECIS,
 		CLIP_DEFAULT_PRECIS,
 		DEFAULT_QUALITY,
-		MONO_FONT,
+		FF_MODERN | FIXED_PITCH,
 		T("Terminal") );
 
 	s_wcd.hfStatusFont = CreateFont( statusFontHeight, 0,

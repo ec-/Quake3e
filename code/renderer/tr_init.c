@@ -58,7 +58,7 @@ cvar_t	*r_anaglyphMode;
 
 cvar_t	*r_greyscale;
 
-cvar_t	*r_ignorehwgamma;
+static cvar_t *r_ignorehwgamma;
 
 cvar_t	*r_fastsky;
 cvar_t	*r_neatsky;
@@ -172,9 +172,9 @@ cvar_t	*r_marksOnTriangleMeshes;
 cvar_t	*r_aviMotionJpegQuality;
 cvar_t	*r_screenshotJpegQuality;
 
-cvar_t	*r_maxpolys;
+static cvar_t *r_maxpolys;
+static cvar_t* r_maxpolyverts;
 int		max_polys;
-cvar_t	*r_maxpolyverts;
 int		max_polyverts;
 
 static char gl_extensions[ 32768 ];
@@ -274,7 +274,7 @@ void QDECL Com_Printf( const char *fmt, ... )
 /*
 ** R_HaveExtension
 */
-qboolean R_HaveExtension( const char *ext )
+static qboolean R_HaveExtension( const char *ext )
 {
 	const char *ptr = Q_stristr( gl_extensions, ext );
 	if (ptr == NULL)
@@ -608,8 +608,7 @@ static void InitOpenGL( void )
 
 		ri.GLimp_InitGamma( &glConfig );
 
-		if ( fboEnabled )
-			glConfig.deviceSupportsGamma = qtrue;
+		gls.deviceSupportsGamma = glConfig.deviceSupportsGamma;
 
 		if ( r_ignorehwgamma->integer )
 			glConfig.deviceSupportsGamma = qfalse;
@@ -644,6 +643,8 @@ static void InitOpenGL( void )
 
 	// set default state
 	GL_SetDefaultState();
+
+	tr.inited = qtrue;
 }
 
 
@@ -812,9 +813,8 @@ void RB_TakeScreenshot( int x, int y, int width, int height, const char *fileNam
 
 	memcount = linelen * height;
 
-	// gamma correct
-	if ( glConfig.deviceSupportsGamma )
-		R_GammaCorrect( allbuf + offset, memcount );
+	// gamma correction
+	R_GammaCorrect( allbuf + offset, memcount );
 
 	ri.FS_WriteFile( fileName, buffer, memcount + header_size );
 
@@ -836,9 +836,8 @@ void RB_TakeScreenshotJPEG( int x, int y, int width, int height, const char *fil
 	buffer = RB_ReadPixels(x, y, width, height, &offset, &padlen, 0);
 	memcount = (width * 3 + padlen) * height;
 
-	// gamma correct
-	if ( glConfig.deviceSupportsGamma )
-		R_GammaCorrect( buffer + offset, memcount );
+	// gamma correction
+	R_GammaCorrect( buffer + offset, memcount );
 
 	ri.CL_SaveJPG( fileName, r_screenshotJpegQuality->integer, width, height, buffer + offset, padlen );
 	ri.Hunk_FreeTempMemory( buffer );
@@ -954,9 +953,8 @@ void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *file
 	// fill this last to avoid data overwrite in case when we're moving destination buffer forward
 	FillBMPHeader( buffer - header_size, width, height, memcount, header_size );
 
-	// gamma correct
-	if ( glConfig.deviceSupportsGamma )
-		R_GammaCorrect( buffer, memcount );
+	// gamma correction
+	R_GammaCorrect( buffer, memcount );
 
 	if ( clipboardOnly ) {
 		// copy starting from bitmapinfoheader
@@ -1047,10 +1045,8 @@ static void R_LevelShot( void ) {
 		}
 	}
 
-	// gamma correct
-	if ( glConfig.deviceSupportsGamma ) {
-		R_GammaCorrect( buffer + 18, 128 * 128 * 3 );
-	}
+	// gamma correction
+	R_GammaCorrect( buffer + 18, 128 * 128 * 3 );
 
 	ri.FS_WriteFile( checkname, buffer, 128 * 128*3 + 18 );
 
@@ -1176,9 +1172,8 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 
 	memcount = padwidth * cmd->height;
 
-	// gamma correct
-	if ( glConfig.deviceSupportsGamma )
-		R_GammaCorrect( cBuf, memcount );
+	// gamma correction
+	R_GammaCorrect( cBuf, memcount );
 
 	if ( cmd->motionJpeg )
 	{
@@ -1464,7 +1459,7 @@ static void R_Register( void )
 	r_simpleMipMaps = ri.Cvar_Get( "r_simpleMipMaps", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_vertexLight = ri.Cvar_Get( "r_vertexLight", "0", CVAR_ARCHIVE | CVAR_LATCH );
 
-	r_picmip = ri.Cvar_Get( "r_picmip", "1", CVAR_ARCHIVE | CVAR_LATCH );
+	r_picmip = ri.Cvar_Get( "r_picmip", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_picmip, "0", "16", CV_INTEGER );
 	ri.Cvar_SetDescription( r_picmip, "Set texture quality, lower is better" );
 
@@ -1632,14 +1627,17 @@ static void R_Register( void )
 	r_ext_compiled_vertex_array = ri.Cvar_Get( "r_ext_compiled_vertex_array", "1", CVAR_ARCHIVE_ND | CVAR_LATCH | CVAR_DEVELOPER );
 	r_ext_texture_env_add = ri.Cvar_Get( "r_ext_texture_env_add", "1", CVAR_ARCHIVE_ND | CVAR_LATCH | CVAR_DEVELOPER );
 
-	r_ext_texture_filter_anisotropic = ri.Cvar_Get( "r_ext_texture_filter_anisotropic",	"0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_ext_texture_filter_anisotropic = ri.Cvar_Get( "r_ext_texture_filter_anisotropic",	"1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_ext_texture_filter_anisotropic, "0", "1", CV_INTEGER );
 
-	r_ext_max_anisotropy = ri.Cvar_Get( "r_ext_max_anisotropy", "2", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_ext_max_anisotropy = ri.Cvar_Get( "r_ext_max_anisotropy", "8", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_ext_max_anisotropy, "1", NULL, CV_INTEGER );
 
 	r_stencilbits = ri.Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE_ND | CVAR_LATCH );
+
 	r_ignorehwgamma = ri.Cvar_Get( "r_ignorehwgamma", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	ri.Cvar_SetDescription( r_ignorehwgamma, "overrides hardware gamma capabilities" );
+	ri.Cvar_CheckRange( r_ignorehwgamma, "0", "1", CV_INTEGER );
 
 	r_flares = ri.Cvar_Get( "r_flares", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 
@@ -1663,6 +1661,7 @@ static void R_Register( void )
 		" 4 - linear filtering, preserve aspect ratio (black bars on sides)\n" );
 }
 
+#define EPSILON 1e-6f
 
 /*
 ===============
@@ -1682,8 +1681,8 @@ void R_Init( void ) {
 	Com_Memset( &tess, 0, sizeof( tess ) );
 	Com_Memset( &glState, 0, sizeof( glState ) );
 
-	if (sizeof(glconfig_t) != 11332)
-		ri.Error( ERR_FATAL, "Mod ABI incompatible: sizeof(glconfig_t) == %u != 11332", (unsigned int) sizeof(glconfig_t));
+	if ( sizeof( glconfig_t ) != 11332 )
+		ri.Error( ERR_FATAL, "Mod ABI incompatible: sizeof(glconfig_t) == %u != 11332", (unsigned int) sizeof( glconfig_t ) );
 
 	if ( (intptr_t)tess.xyz & 15 ) {
 		ri.Printf( PRINT_WARNING, "tess.xyz not 16 byte aligned\n" );
@@ -1693,27 +1692,33 @@ void R_Init( void ) {
 	//
 	// init function tables
 	//
-	for ( i = 0; i < FUNCTABLE_SIZE; i++ )
-	{
-		tr.sinTable[i]		= sin( DEG2RAD( i * 360.0f / ( ( float ) ( FUNCTABLE_SIZE - 1 ) ) ) );
-		tr.squareTable[i]	= ( i < FUNCTABLE_SIZE/2 ) ? 1.0f : -1.0f;
-		tr.sawToothTable[i] = (float)i / FUNCTABLE_SIZE;
-		tr.inverseSawToothTable[i] = 1.0f - tr.sawToothTable[i];
-
-		if ( i < FUNCTABLE_SIZE / 2 )
-		{
-			if ( i < FUNCTABLE_SIZE / 4 )
-			{
-				tr.triangleTable[i] = ( float ) i / ( FUNCTABLE_SIZE / 4 );
-			}
-			else
-			{
-				tr.triangleTable[i] = 1.0f - tr.triangleTable[i-FUNCTABLE_SIZE / 4];
-			}
+	for ( i = 0; i < FUNCTABLE_SIZE; i++ ) {
+		if ( i == 0 ) {
+			tr.sinTable[i] = EPSILON;
+		} else if ( i == (FUNCTABLE_SIZE - 1) ) {
+			tr.sinTable[i] = -EPSILON;
+		} else {
+			tr.sinTable[i] = sin( DEG2RAD( i * 360.0f / ((float)(FUNCTABLE_SIZE - 1)) ) );
 		}
-		else
-		{
-			tr.triangleTable[i] = -tr.triangleTable[i-FUNCTABLE_SIZE/2];
+		tr.squareTable[i] = (i < FUNCTABLE_SIZE / 2) ? 1.0f : -1.0f;
+		if ( i == 0 ) {
+			tr.sawToothTable[i] = EPSILON;
+		} else {
+			tr.sawToothTable[i] = (float)i / FUNCTABLE_SIZE;
+		}
+		tr.inverseSawToothTable[i] = 1.0f - tr.sawToothTable[i];
+		if ( i < FUNCTABLE_SIZE / 2 ) {
+			if ( i < FUNCTABLE_SIZE / 4 ) {
+				if ( i == 0 ) {
+					tr.triangleTable[i] = EPSILON;
+				} else {
+					tr.triangleTable[i] = (float)i / (FUNCTABLE_SIZE / 4);
+				}
+			} else {
+				tr.triangleTable[i] = 1.0f - tr.triangleTable[i - FUNCTABLE_SIZE / 4];
+			}
+		} else {
+			tr.triangleTable[i] = -tr.triangleTable[i - FUNCTABLE_SIZE / 2];
 		}
 	}
 
@@ -1799,6 +1804,7 @@ static void RE_Shutdown( refShutdownCode_t code ) {
 	ri.FreeAll();
 
 	tr.registered = qfalse;
+	tr.inited = qfalse;
 }
 
 

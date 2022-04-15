@@ -22,10 +22,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // tr_image.c
 #include "tr_local.h"
 
-static byte			 s_intensitytable[256];
-static unsigned char s_gammatable[256];
+static byte	s_intensitytable[256];
+static byte	s_gammatable[256];
 
-static unsigned char s_gammatable_linear[256];
+static byte	s_gammatable_linear[256];
 
 GLint	gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
 GLint	gl_filter_max = GL_LINEAR;
@@ -47,6 +47,8 @@ return a hash value for the filename
 void R_GammaCorrect( byte *buffer, int bufSize ) {
 	int i;
 	if ( fboEnabled )
+		return;
+	if ( !gls.deviceSupportsGamma )
 		return;
 	for ( i = 0; i < bufSize; i++ ) {
 		buffer[i] = s_gammatable[buffer[i]];
@@ -641,7 +643,7 @@ static void Upload32( byte *data, int x, int y, int width, int height, image_t *
 		byte *p = data;
 		int i, n = width * height;
 		for ( i = 0; i < n; i++, p+=4 ) {
-			R_ColorShiftLightingBytes( p, p );
+			R_ColorShiftLightingBytes( p, p, qfalse );
 		}
 	}
 
@@ -1306,7 +1308,7 @@ static void R_CreateDefaultImage( void ) {
 R_CreateBuiltinImages
 ==================
 */
-void R_CreateBuiltinImages( void ) {
+static void R_CreateBuiltinImages( void ) {
 	int		x,y;
 	byte	data[DEFAULT_SIZE][DEFAULT_SIZE][4];
 
@@ -1350,6 +1352,12 @@ void R_SetColorMappings( void ) {
 	float	g;
 	int		inf;
 	int		shift;
+	qboolean applyGamma;
+
+	if ( !tr.inited ) {
+		// it may be called from window handling functions where gamma flags is now yet known/set
+		return;
+	}
 
 	// setup the overbright lighting
 	// negative value will force gamma in windowed mode
@@ -1358,8 +1366,12 @@ void R_SetColorMappings( void ) {
 		tr.overbrightBits = 0;		// need hardware gamma for overbright
 
 	// never overbright in windowed mode
-	if ( !glConfig.isFullscreen && r_overBrightBits->integer >= 0 && !fboEnabled )
+	if ( !glConfig.isFullscreen && r_overBrightBits->integer >= 0 && !fboEnabled ) {
 		tr.overbrightBits = 0;
+		applyGamma = qfalse;
+	} else {
+		applyGamma = qtrue;
+	}
 
 	// allow 2 overbright bits in 24 bit, but only 1 in 16 bit
 	if ( glConfig.colorBits > 16 ) {
@@ -1406,11 +1418,14 @@ void R_SetColorMappings( void ) {
 		s_intensitytable[i] = j;
 	}
 
-	if ( glConfig.deviceSupportsGamma ) {
+	if ( gls.deviceSupportsGamma ) {
 		if ( fboEnabled )
 			ri.GLimp_SetGamma( s_gammatable_linear, s_gammatable_linear, s_gammatable_linear );
-		else
-			ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
+		else {
+			if ( applyGamma ) {
+				ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
+			}
+		}
 	}
 }
 

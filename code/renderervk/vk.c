@@ -1,7 +1,11 @@
 #include "tr_local.h"
 #include "vk.h"
-#if defined (_WIN32) && defined (_DEBUG)
+
+#if defined (_DEBUG)
+#if defined (_WIN32)
+#define USE_VK_VALIDATION
 #include <windows.h> // for win32 debug callback
+#endif
 #endif
 
 static int vkSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -30,7 +34,7 @@ PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR	qvkGetPhysicalDeviceSurfaceCapabil
 PFN_vkGetPhysicalDeviceSurfaceFormatsKHR		qvkGetPhysicalDeviceSurfaceFormatsKHR;
 PFN_vkGetPhysicalDeviceSurfacePresentModesKHR	qvkGetPhysicalDeviceSurfacePresentModesKHR;
 PFN_vkGetPhysicalDeviceSurfaceSupportKHR		qvkGetPhysicalDeviceSurfaceSupportKHR;
-#ifdef _DEBUG
+#ifdef USE_VK_VALIDATION
 PFN_vkCreateDebugReportCallbackEXT				qvkCreateDebugReportCallbackEXT;
 PFN_vkDestroyDebugReportCallbackEXT				qvkDestroyDebugReportCallbackEXT;
 #endif
@@ -406,8 +410,8 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 
 	image_extent = surface_caps.currentExtent;
 	if ( image_extent.width == 0xffffffff && image_extent.height == 0xffffffff ) {
-		image_extent.width = MIN(surface_caps.maxImageExtent.width, MAX(surface_caps.minImageExtent.width, 640u));
-		image_extent.height = MIN(surface_caps.maxImageExtent.height, MAX(surface_caps.minImageExtent.height, 480u));
+		image_extent.width = MIN( surface_caps.maxImageExtent.width, MAX( surface_caps.minImageExtent.width, (uint32_t) glConfig.vidWidth ) );
+		image_extent.height = MIN( surface_caps.maxImageExtent.height, MAX( surface_caps.minImageExtent.height, (uint32_t) glConfig.vidHeight ) );
 	}
 
 	vk.fastSky = qtrue;
@@ -1018,7 +1022,7 @@ static void ensure_staging_buffer_allocation(VkDeviceSize size) {
 }
 
 
-#ifndef NDEBUG
+#ifdef USE_VK_VALIDATION
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT object_type, uint64_t object, size_t location,
 	int32_t message_code, const char* layer_prefix, const char* message, void* user_data) {
 #ifdef _WIN32
@@ -1041,10 +1045,13 @@ static qboolean used_instance_extension( const char *ext )
 	if ( u && Q_stricmp( u + 1, "surface" ) == 0 )
 		return qtrue;
 
+	if ( Q_stricmp( ext, VK_KHR_DISPLAY_EXTENSION_NAME ) == 0 )
+		return qtrue; // needed for KMSDRM instances/devices?
+
 	if ( Q_stricmp( ext, VK_KHR_SWAPCHAIN_EXTENSION_NAME ) == 0 )
 		return qtrue;
 
-#ifdef _DEBUG
+#ifdef USE_VK_VALIDATION
 	if ( Q_stricmp( ext, VK_EXT_DEBUG_REPORT_EXTENSION_NAME ) == 0 )
 		return qtrue;
 #endif
@@ -1058,7 +1065,7 @@ static qboolean used_instance_extension( const char *ext )
 
 static void create_instance( void )
 {
-#ifdef _DEBUG
+#ifdef USE_VK_VALIDATION
 	const char* validation_layer_name = "VK_LAYER_LUNARG_standard_validation";
 	const char* validation_layer_name2 = "VK_LAYER_KHRONOS_validation";
 #endif
@@ -1067,6 +1074,7 @@ static void create_instance( void )
 	VkResult res;
 	const char **extension_names, *ext;
 	uint32_t i, n, count, extension_count;
+	VkApplicationInfo appInfo;
 
 	count = 0;
 	extension_count = 0;
@@ -1092,15 +1100,23 @@ static void create_instance( void )
 		extension_names[ extension_count++ ] = ext;
 	}
 
+	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+	appInfo.pNext = NULL;
+	appInfo.pApplicationName = NULL; // Q3_VERSION;
+	appInfo.applicationVersion = 0x0;
+	appInfo.pEngineName = NULL;
+	appInfo.engineVersion = 0x0;
+	appInfo.apiVersion = VK_API_VERSION_1_0;
+
 	// create instance
 	desc.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	desc.pNext = NULL;
 	desc.flags = 0;
-	desc.pApplicationInfo = NULL;
+	desc.pApplicationInfo = &appInfo;
 	desc.enabledExtensionCount = extension_count;
 	desc.ppEnabledExtensionNames = extension_names;
 
-#ifdef _DEBUG
+#ifdef USE_VK_VALIDATION
 	desc.enabledLayerCount = 1;
 	desc.ppEnabledLayerNames = &validation_layer_name;
 
@@ -1576,7 +1592,7 @@ static void init_vulkan_library( void )
 	INIT_INSTANCE_FUNCTION(vkGetPhysicalDeviceSurfacePresentModesKHR)
 	INIT_INSTANCE_FUNCTION(vkGetPhysicalDeviceSurfaceSupportKHR)
 
-#ifdef _DEBUG
+#ifdef USE_VK_VALIDATION
 	INIT_INSTANCE_FUNCTION_EXT(vkCreateDebugReportCallbackEXT)
 	INIT_INSTANCE_FUNCTION_EXT(vkDestroyDebugReportCallbackEXT)
 
@@ -1772,7 +1788,7 @@ static void deinit_vulkan_library( void )
 	qvkGetPhysicalDeviceSurfaceFormatsKHR		= NULL;
 	qvkGetPhysicalDeviceSurfacePresentModesKHR	= NULL;
 	qvkGetPhysicalDeviceSurfaceSupportKHR		= NULL;
-#ifdef _DEBUG
+#ifdef USE_VK_VALIDATION
 	qvkCreateDebugReportCallbackEXT				= NULL;
 	qvkDestroyDebugReportCallbackEXT			= NULL;
 #endif
@@ -2006,7 +2022,7 @@ static VkSampler vk_find_sampler( const Vk_Sampler_Def *def ) {
 	desc.addressModeW = address_mode;
 	desc.mipLodBias = 0.0f;
 
-	if ( def->noAnisotropy ) {
+	if ( def->noAnisotropy || mipmap_mode == VK_SAMPLER_MIPMAP_MODE_NEAREST || mag_filter == VK_FILTER_NEAREST ) {
 		desc.anisotropyEnable = VK_FALSE;
 		desc.maxAnisotropy = 1.0f;
 	} else {
@@ -3572,11 +3588,9 @@ void vk_initialize( void )
 	} else if ( props.vendorID == 0x106B ) {
 		vendor_name = "Apple Inc.";
 	} else if ( props.vendorID == 0x10DE ) {
-#ifdef _WIN32
 		// https://github.com/SaschaWillems/Vulkan/issues/493
 		// we can't render to offscreen presentation surfaces on nvidia
 		vk.offscreenRender = qfalse;
-#endif
 		vendor_name = "NVIDIA";
 	} else if ( props.vendorID == 0x14E4 ) {
 		vendor_name = "Broadcom Inc.";
@@ -4061,7 +4075,7 @@ __cleanup:
 	if ( vk.surface != VK_NULL_HANDLE )
 		qvkDestroySurfaceKHR( vk.instance, vk.surface, NULL );
 
-#ifdef _DEBUG
+#ifdef USE_VK_VALIDATION
 	if ( qvkDestroyDebugReportCallbackEXT && vk.debug_callback )
 		qvkDestroyDebugReportCallbackEXT( vk.instance, vk.debug_callback, NULL );
 #endif
@@ -4156,7 +4170,18 @@ static void record_buffer_memory_barrier(VkCommandBuffer cb, VkBuffer buffer, Vk
 }
 
 
-void vk_create_image( int width, int height, VkFormat format, int mip_levels, image_t *image ) {
+void vk_create_image( image_t *image, int width, int height, int mip_levels ) {
+
+	VkFormat format = image->internalFormat;
+
+	if ( image->handle ) {
+		qvkDestroyImage( vk.device, image->handle, NULL );
+	}
+
+	if ( image->view ) {
+		qvkDestroyImageView( vk.device, image->view, NULL );
+	}
+
 	// create image
 	{
 		VkImageCreateInfo desc;
@@ -4229,14 +4254,18 @@ void vk_create_image( int width, int height, VkFormat format, int mip_levels, im
 }
 
 
-void vk_upload_image_data( VkImage image, int x, int y, int width, int height, qboolean mipmap, const uint8_t *pixels, int bytes_per_pixel ) {
+void vk_upload_image_data( image_t *image, int x, int y, int width, int height, int mipmaps, byte *pixels, int size ) {
 
 	VkCommandBuffer command_buffer;
 	VkBufferImageCopy regions[16];
 	VkBufferImageCopy region;
+	byte *buf;
+	int bpp;
 
 	int num_regions = 0;
 	int buffer_size = 0;
+
+	buf = resample_image_data( image, pixels, size, &bpp );
 
 	while (qtrue) {
 		Com_Memset(&region, 0, sizeof(region));
@@ -4257,9 +4286,9 @@ void vk_upload_image_data( VkImage image, int x, int y, int width, int height, q
 		regions[num_regions] = region;
 		num_regions++;
 
-		buffer_size += width * height * bytes_per_pixel;
+		buffer_size += width * height * bpp;
 
-		if ( !mipmap || (width == 1 && height == 1) || num_regions >= ARRAY_LEN( regions ) )
+		if ( num_regions >= mipmaps || (width == 1 && height == 1) || num_regions >= ARRAY_LEN( regions ) )
 			break;
 
 		x >>= 1;
@@ -4273,16 +4302,20 @@ void vk_upload_image_data( VkImage image, int x, int y, int width, int height, q
 	}
 
 	ensure_staging_buffer_allocation(buffer_size);
-	Com_Memcpy( vk_world.staging_buffer_ptr, pixels, buffer_size );
+	Com_Memcpy( vk_world.staging_buffer_ptr, buf, buffer_size );
 
 	command_buffer = begin_command_buffer();
 
 	record_buffer_memory_barrier( command_buffer, vk_world.staging_buffer, VK_WHOLE_SIZE, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT );
-	record_image_layout_transition( command_buffer, image, VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_IMAGE_LAYOUT_UNDEFINED, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
-	qvkCmdCopyBufferToImage( command_buffer, vk_world.staging_buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, num_regions, regions );
-	record_image_layout_transition( command_buffer, image, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
+	record_image_layout_transition( command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_IMAGE_LAYOUT_UNDEFINED, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
+	qvkCmdCopyBufferToImage( command_buffer, vk_world.staging_buffer, image->handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, num_regions, regions );
+	record_image_layout_transition( command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
 
 	end_command_buffer( command_buffer );
+
+	if ( buf != pixels ) {
+		ri.Hunk_FreeTempMemory( buf );
+	}
 }
 
 
@@ -6456,7 +6489,7 @@ void vk_begin_frame( void )
 	// Ensure visibility of geometry buffers writes.
 	//record_buffer_memory_barrier( vk.cmd->command_buffer, vk.cmd->vertex_buffer, vk.cmd->vertex_buffer_offset, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT );
 
-#if 1
+#if 0
 	// add explicit layout transition dependency
 	if ( vk.fboActive ) {
 		record_image_layout_transition( vk.cmd->command_buffer,

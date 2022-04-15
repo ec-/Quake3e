@@ -364,7 +364,7 @@ static void PutPointsOnCurve( srfVert_t	ctrl[MAX_GRID_SIZE][MAX_GRID_SIZE],
 R_CreateSurfaceGridMesh
 =================
 */
-void R_CreateSurfaceGridMesh(srfBspSurface_t *grid, int width, int height,
+static void R_CreateSurfaceGridMesh(srfBspSurface_t *grid, int width, int height,
 								srfVert_t ctrl[MAX_GRID_SIZE][MAX_GRID_SIZE], float errorTable[2][MAX_GRID_SIZE],
 								int numIndexes, glIndex_t indexes[(MAX_GRID_SIZE-1)*(MAX_GRID_SIZE-1)*2*3]) {
 	int i, j;

@@ -154,18 +154,18 @@ an OP_ENTER instruction, which will subtract space for
 locals from sp
 ==============
 */
-int	VM_CallInterpreted2( vm_t *vm, int nargs, int *args ) {
-	int		stack[MAX_OPSTACK_SIZE];
-	int		*opStack, *opStackTop;
-	int		programStack;
-	int		stackOnEntry;
+int VM_CallInterpreted2( vm_t *vm, int nargs, int32_t *args ) {
+	int32_t	stack[MAX_OPSTACK_SIZE];
+	int32_t	*opStack, *opStackTop;
+	int32_t	programStack;
+	int32_t	stackOnEntry;
 	byte	*image;
-	int		v1, v0;
+	int32_t	v1, v0;
 	int		dataMask;
 	instruction_t *inst, *ci;
 	floatint_t	r0, r1;
 	int		opcode;
-	int		*img;
+	int32_t	*img;
 	int		i;
 
 	// interpret the code
@@ -185,7 +185,7 @@ int	VM_CallInterpreted2( vm_t *vm, int nargs, int *args ) {
 	opStack = &stack[1];
 	opStackTop = stack + ARRAY_LEN( stack ) - 1;
 
-	programStack -= (MAX_VMMAIN_CALL_ARGS+2)*4;
+	programStack -= (MAX_VMMAIN_CALL_ARGS + 2) * sizeof( int32_t );
 	img = (int*)&image[ programStack ];
 	for ( i = 0; i < nargs; i++ ) {
 		img[ i + 2 ] = args[ i ];
@@ -235,7 +235,7 @@ nextInstruction2:
 			programStack += v0;
 
 			// grab the saved program counter
-			v1 = *(int *)&image[ programStack ];
+			v1 = *(int32_t *)&image[ programStack ];
 			// check for leaving the VM
 			if ( v1 == -1 ) {
 				goto done;
@@ -255,7 +255,7 @@ nextInstruction2:
 				// save the stack to allow recursive VM entry
 				//vm->programStack = programStack - 4;
 				vm->programStack = programStack - 8;
-				*(int *)&image[ programStack + 4 ] = ~r0.i;
+				*(int32_t *)&image[ programStack + 4 ] = ~r0.i;
 				{
 #if __WORDSIZE == 64
 					// the vm has ints on the stack, we expect
@@ -263,7 +263,7 @@ nextInstruction2:
 					intptr_t argarr[16];
 					int argn;
 					for ( argn = 0; argn < ARRAY_LEN( argarr ); ++argn ) {
-						argarr[ argn ] = *(int*)&image[ programStack + 4 + 4*argn ];
+						argarr[ argn ] = *(int32_t*)&image[ programStack + 4 + 4*argn ];
 					}
 					v0 = vm->systemCall( &argarr[0] );
 #else
@@ -273,7 +273,7 @@ nextInstruction2:
 
 				// save return value
 				//opStack++;
-				ci = inst + *(int *)&image[ programStack ];
+				ci = inst + *(int32_t *)&image[ programStack ];
 				*opStack = v0;
 			} else if ( r0.u < vm->instructionCount ) {
 				// vm call
@@ -426,7 +426,7 @@ nextInstruction2:
 			goto nextInstruction2;
 
 		case OP_LOAD4:
-			r0.i = *opStack = *(int *)&image[ r0.i & dataMask ];
+			r0.i = *opStack = *(int32_t *)&image[ r0.i & dataMask ];
 			goto nextInstruction2;
 
 		case OP_STORE1:
@@ -446,7 +446,7 @@ nextInstruction2:
 
 		case OP_ARG:
 			// single byte offset from programStack
-			*(int *)&image[ ( v0 + programStack ) /*& ( dataMask & ~3 ) */ ] = r0.i;
+			*(int32_t *)&image[ ( v0 + programStack ) /*& ( dataMask & ~3 ) */ ] = r0.i;
 			opStack--;
 			break;
 
@@ -475,7 +475,7 @@ nextInstruction2:
 			break;
 
 		case OP_SEX16:
-			*opStack = (short)*opStack;
+			*opStack = (signed short)*opStack;
 			break;
 
 		case OP_NEGI:
@@ -574,11 +574,11 @@ nextInstruction2:
 			ci++;
 			opStack++;
 			r1.i = r0.i;
-			r0.i = *opStack = *(int *)&image[ v0 + programStack ];
+			r0.i = *opStack = *(int32_t *)&image[ v0 + programStack ];
 			goto nextInstruction2;
 
 		case MOP_LOCAL_LOAD4_CONST:
-			r1.i = opStack[1] = *(int *)&image[ v0 + programStack ];
+			r1.i = opStack[1] = *(int32_t *)&image[ v0 + programStack ];
 			r0.i = opStack[2] = (ci+1)->value;
 			opStack += 2;
 			ci += 2;
@@ -594,7 +594,7 @@ nextInstruction2:
 		case MOP_LOCAL_LOCAL_LOAD4:
 			r1.i = opStack[1] = v0 + programStack;
 			r0.i /*= opStack[2]*/ = ci->value + programStack;
-			r0.i = opStack[2] = *(int *)&image[ r0.i /*& dataMask*/ ];
+			r0.i = opStack[2] = *(int32_t *)&image[ r0.i /*& dataMask*/ ];
 			opStack += 2;
 			ci += 2;
 			goto nextInstruction2;

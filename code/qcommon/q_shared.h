@@ -174,6 +174,14 @@ float FloatSwap( const float *f );
 	#endif
 #endif
 
+#if defined (_WIN32) && !defined(_MSC_VER)
+#define Q_setjmp __builtin_setjmp
+#define Q_longjmp __builtin_longjmp
+#else
+#define Q_setjmp setjmp
+#define Q_longjmp longjmp
+#endif
+
 typedef unsigned char byte;
 
 typedef enum { qfalse = 0, qtrue } qboolean;
@@ -830,10 +838,6 @@ typedef struct
 	byte	b6;
 	byte	b7;
 } qint64;
-
-typedef intptr_t (*syscall_t)( intptr_t *parms );
-typedef intptr_t (QDECL *dllSyscall_t)( intptr_t callNum, ... );
-typedef void (QDECL *dllEntry_t)( dllSyscall_t syscallptr );
 
 //=============================================
 /*

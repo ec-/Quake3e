@@ -464,8 +464,9 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	// try to reset level time if server is empty
 	if ( !sv_levelTimeReset->integer && !sv.restartTime ) {
 		for ( i = 0; i < sv_maxclients->integer; i++ ) {
-			if ( svs.clients[ i ].state != CS_FREE )
+			if ( svs.clients[i].state >= CS_CONNECTED ) {
 				break;
+			}
 		}
 		if ( i == sv_maxclients->integer ) {
 			sv.time = 0;
@@ -582,7 +583,7 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 					ent->s.number = i;
 					client->gentity = ent;
 
-					client->deltaMessage = -1;
+					client->deltaMessage = client->netchan.outgoingSequence - ( PACKET_BACKUP + 1 ); // force delta reset
 					client->lastSnapshotTime = svs.time - 9999; // generate a snapshot immediately
 
 					VM_Call( gvm, 1, GAME_CLIENT_BEGIN, i );
@@ -711,10 +712,11 @@ void SV_Init( void )
 	sv_clientTLD = Cvar_Get( "sv_clientTLD", "0", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( sv_clientTLD, NULL, NULL, CV_INTEGER );
 
-	sv_minRate = Cvar_Get ("sv_minRate", "0", CVAR_ARCHIVE_ND | CVAR_SERVERINFO );
-	sv_maxRate = Cvar_Get ("sv_maxRate", "0", CVAR_ARCHIVE_ND | CVAR_SERVERINFO );
-	sv_dlRate = Cvar_Get("sv_dlRate", "100", CVAR_ARCHIVE | CVAR_SERVERINFO);
-	sv_floodProtect = Cvar_Get ("sv_floodProtect", "1", CVAR_ARCHIVE | CVAR_SERVERINFO );
+	sv_minRate = Cvar_Get( "sv_minRate", "0", CVAR_ARCHIVE_ND | CVAR_SERVERINFO );
+	sv_maxRate = Cvar_Get( "sv_maxRate", "0", CVAR_ARCHIVE_ND | CVAR_SERVERINFO );
+	sv_dlRate = Cvar_Get( "sv_dlRate", "100", CVAR_ARCHIVE | CVAR_SERVERINFO );
+	Cvar_CheckRange( sv_dlRate, "0", "500", CV_INTEGER );
+	sv_floodProtect = Cvar_Get( "sv_floodProtect", "1", CVAR_ARCHIVE | CVAR_SERVERINFO );
 
 	// systeminfo
 	Cvar_Get( "sv_cheats", "1", CVAR_SYSTEMINFO | CVAR_ROM );
@@ -752,10 +754,10 @@ void SV_Init( void )
 	sv_reconnectlimit = Cvar_Get( "sv_reconnectlimit", "3", 0 );
 	Cvar_CheckRange( sv_reconnectlimit, "0", "12", CV_INTEGER );
 
-	sv_padPackets = Cvar_Get ("sv_padPackets", "0", 0);
-	sv_killserver = Cvar_Get ("sv_killserver", "0", 0);
-	sv_mapChecksum = Cvar_Get ("sv_mapChecksum", "", CVAR_ROM);
-	sv_lanForceRate = Cvar_Get ("sv_lanForceRate", "1", CVAR_ARCHIVE_ND );
+	sv_padPackets = Cvar_Get( "sv_padPackets", "0", CVAR_DEVELOPER );
+	sv_killserver = Cvar_Get( "sv_killserver", "0", 0 );
+	sv_mapChecksum = Cvar_Get( "sv_mapChecksum", "", CVAR_ROM );
+	sv_lanForceRate = Cvar_Get( "sv_lanForceRate", "1", CVAR_ARCHIVE_ND );
 
 #ifdef USE_BANS
 	sv_banFile = Cvar_Get("sv_banFile", "serverbans.dat", CVAR_ARCHIVE);
