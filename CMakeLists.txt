@@ -29,10 +29,10 @@ AUX_SOURCE_DIRECTORY(code/qcommon QCOMMON_SRCS)
 list(FILTER QCOMMON_SRCS EXCLUDE REGEX ".*vm_[alx].*.c")
 
 ADD_LIBRARY(qcommon ${QCOMMON_SRCS} ${VM_SRC})
-TARGET_LINK_LIBRARIES(qcommon server m)
+TARGET_LINK_LIBRARIES(qcommon server m dl)
 
 ADD_LIBRARY(qcommon_ded ${QCOMMON_SRCS} ${VM_SRC})
-TARGET_LINK_LIBRARIES(qcommon_ded server_ded m)
+TARGET_LINK_LIBRARIES(qcommon_ded server_ded m dl)
 
 
 AUX_SOURCE_DIRECTORY(code/botlib BOTLIB_SRCS)
@@ -140,7 +140,7 @@ ENDIF()
 
 ADD_EXECUTABLE(quake3e ${EXE_TYPE} ${VM_SRCS} ${Q3_SRCS} ${Q3_UI_SRCS})
 TARGET_LINK_LIBRARIES(quake3e client botlib m dl)
-TARGET_LINK_OPTIONS(quake3e PRIVATE -ffast-math -no-pie)
+TARGET_LINK_OPTIONS(quake3e PRIVATE -no-pie)
 
 IF(USE_SDL)
 	TARGET_LINK_LIBRARIES(quake3e qsdl)
@@ -153,9 +153,9 @@ ELSE()
 	TARGET_LINK_LIBRARIES(quake3e renderer)
 ENDIF(USE_VULKAN)
 
-#ADD_EXECUTABLE(quake3e.ded ${EXE_TYPE} ${VM_SRCS} ${Q3_SRCS})
-#TARGET_LINK_LIBRARIES(quake3e.ded qcommon_ded botlib)
-#TARGET_LINK_OPTIONS(quake3e.ded PRIVATE)
+ADD_EXECUTABLE(quake3e.ded ${EXE_TYPE} ${VM_SRCS} ${Q3_SRCS})
+TARGET_LINK_LIBRARIES(quake3e.ded qcommon_ded botlib)
+TARGET_LINK_OPTIONS(quake3e.ded PRIVATE -no-pie)
 
 IF(WIN32)
 	TARGET_LINK_LIBRARIES(quake3e winmm comctl32 ws2_32)
