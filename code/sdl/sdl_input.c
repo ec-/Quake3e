@@ -1335,7 +1335,11 @@ void HandleEvents( void )
 					case SDL_WINDOWEVENT_MAXIMIZED:		gw_minimized = qfalse; break;
 					// keyboard focus:
 					case SDL_WINDOWEVENT_FOCUS_LOST:	lastKeyDown = 0; Key_ClearStates(); gw_active = qfalse; break;
-					case SDL_WINDOWEVENT_FOCUS_GAINED:	lastKeyDown = 0; Key_ClearStates(); gw_active = qtrue; gw_minimized = qfalse; break;
+					case SDL_WINDOWEVENT_FOCUS_GAINED:	lastKeyDown = 0; Key_ClearStates(); gw_active = qtrue; gw_minimized = qfalse;
+														if ( re.SetColorMappings ) {
+															re.SetColorMappings();
+														}
+														break;
 					// mouse focus:
 					case SDL_WINDOWEVENT_ENTER: mouse_focus = qtrue; break;
 					case SDL_WINDOWEVENT_LEAVE: if ( glw_state.isFullscreen ) mouse_focus = qfalse; break;
