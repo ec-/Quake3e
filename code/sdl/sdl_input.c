@@ -217,12 +217,37 @@ static keyNum_t IN_TranslateSDLToQ3Key( SDL_Keysym *keysym, qboolean down )
 		else
 			key = '1' + keysym->scancode - SDL_SCANCODE_1;
 	}
-	else if( keysym->sym >= SDLK_SPACE && keysym->sym < SDLK_DELETE )
+	else if( keysym->scancode >= SDL_SCANCODE_A && keysym->scancode <= SDL_SCANCODE_Z )
+	{
+		key = 'a' + keysym->scancode - SDL_SCANCODE_A;
+	}
+	else
+	{
+		switch( keysym->scancode )
+		{
+			case SDL_SCANCODE_MINUS:        key = '-';  break;
+			case SDL_SCANCODE_EQUALS:       key = '=';  break;
+			case SDL_SCANCODE_LEFTBRACKET:  key = '[';  break;
+			case SDL_SCANCODE_RIGHTBRACKET: key = ']';  break;
+			case SDL_SCANCODE_NONUSBACKSLASH:
+			case SDL_SCANCODE_BACKSLASH:    key = '\\'; break;
+			case SDL_SCANCODE_SEMICOLON:    key = ';';  break;
+			case SDL_SCANCODE_APOSTROPHE:   key = '\''; break;
+			case SDL_SCANCODE_COMMA:        key = ',';  break;
+			case SDL_SCANCODE_PERIOD:       key = '.';  break;
+			case SDL_SCANCODE_SLASH:        key = '/';  break;
+			default:
+				/* key = 0 */
+				break;
+		}
+	}
+
+	if( !key && keysym->sym >= SDLK_SPACE && keysym->sym < SDLK_DELETE )
 	{
 		// These happen to match the ASCII chars
 		key = (int)keysym->sym;
 	}
-	else
+	else if( !key )
 	{
 		switch( keysym->sym )
 		{
