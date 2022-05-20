@@ -769,7 +769,7 @@ void MSG_WriteDeltaEntity( msg_t *msg, const entityState_t *from, const entitySt
 	}
 
 	lc = 0;
-	// build the change vector as bytes so it is endien independent
+	// build the change vector as bytes so it is endian independent
 	for ( i = 0, field = entityStateFields ; i < numFields ; i++, field++ ) {
 		fromF = (int *)( (byte *)from + field->offset );
 		toF = (int *)( (byte *)to + field->offset );
@@ -901,7 +901,7 @@ void MSG_ReadDeltaEntity( msg_t *msg, const entityState_t *from, entityState_t *
 
 #ifndef DEDICATED
 	// shownet 2/3 will interleave with other printed info, -1 will
-	// just print the delta records`
+	// just print the delta records
 	if ( cl_shownet && ( cl_shownet->integer >= 2 || cl_shownet->integer == -1 ) ) {
 		print = 1;
 		Com_Printf( "%3i: #%-3i ", msg->readcount, to->number );

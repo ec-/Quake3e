@@ -47,7 +47,7 @@ vec4_t		colorLtGrey	= {0.75, 0.75, 0.75, 1};
 vec4_t		colorMdGrey	= {0.5, 0.5, 0.5, 1};
 vec4_t		colorDkGrey	= {0.25, 0.25, 0.25, 1};
 
-// actually there is 35 colors but we want to use bitmask safely
+// actually there are 35 colors but we want to use bitmask safely
 const vec4_t g_color_table[ 64 ] = {
 
 	{0.0f, 0.0f, 0.0f, 1.0f},
@@ -323,7 +323,7 @@ float NormalizeColor( const vec3_t in, vec3_t out ) {
 =====================
 PlaneFromPoints
 
-Returns false if the triangle is degenrate.
+Returns false if the triangle is degenerate.
 The normal will point out of the clock for clockwise ordered points
 =====================
 */

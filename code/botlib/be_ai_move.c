@@ -1202,7 +1202,7 @@ int BotWalkInDirection(bot_movestate_t *ms, vec3_t dir, float speed, int type)
 		if (type & MOVE_JUMP) EA_Jump(ms->client);
 		if (type & MOVE_CROUCH) EA_Crouch(ms->client);
 		EA_Move(ms->client, hordir, speed);
-		//movement was succesfull
+		//movement was successful
 		return qtrue;
 	} //end if
 	else
@@ -1366,7 +1366,7 @@ bot_moveresult_t BotTravel_Walk(bot_movestate_t *ms, aas_reachability_t *reach)
 		if (dist > 0) speed = 400 - (360 - 2 * dist);
 		else speed = 400;
 	} //end else
-	//elemantary action move in direction
+	//elementary action move in direction
 	EA_Move(ms->client, hordir, speed);
 	VectorCopy(hordir, result.movedir);
 	//
@@ -1429,7 +1429,7 @@ bot_moveresult_t BotTravel_Crouch(bot_movestate_t *ms, aas_reachability_t *reach
 	VectorNormalize(hordir);
 	//
 	BotCheckBlocked(ms, hordir, qtrue, &result);
-	//elemantary actions
+	//elementary actions
 	EA_Crouch(ms->client);
 	EA_Move(ms->client, hordir, speed);
 	//
@@ -1513,7 +1513,7 @@ bot_moveresult_t BotTravel_Swim(bot_movestate_t *ms, aas_reachability_t *reach)
 	VectorNormalize(dir);
 	//
 	BotCheckBlocked(ms, dir, qtrue, &result);
-	//elemantary actions
+	//elementary actions
 	EA_Move(ms->client, dir, 400);
 	//
 	VectorCopy(dir, result.movedir);
@@ -1542,7 +1542,7 @@ bot_moveresult_t BotTravel_WaterJump(bot_movestate_t *ms, aas_reachability_t *re
 	//botimport.Print(PRT_MESSAGE, "BotTravel_WaterJump: dir[2] = %f\n", dir[2]);
 	VectorNormalize(dir);
 	dist = VectorNormalize(hordir);
-	//elemantary actions
+	//elementary actions
 	//EA_Move(ms->client, dir, 400);
 	EA_MoveForward(ms->client);
 	//move up if close to the actual out of water jump spot
@@ -1579,7 +1579,7 @@ bot_moveresult_t BotFinishTravel_WaterJump(bot_movestate_t *ms, aas_reachability
 	dir[0] += crandom() * 10;
 	dir[1] += crandom() * 10;
 	dir[2] += 70 + crandom() * 10;
-	//elemantary actions
+	//elementary actions
 	EA_Move(ms->client, dir, 400);
 	//set the ideal view angles
 	Vector2Angles(dir, result.ideal_viewangles);
@@ -1645,7 +1645,7 @@ bot_moveresult_t BotTravel_WalkOffLedge(bot_movestate_t *ms, aas_reachability_t 
 	} //end else
 	//
 	BotCheckBlocked(ms, hordir, qtrue, &result);
-	//elemantary action
+	//elementary action
 	EA_Move(ms->client, hordir, speed);
 	VectorCopy(hordir, result.movedir);
 	//
@@ -1759,7 +1759,7 @@ bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
 		hordir[0] = reach->end[0] - ms->origin[0];
 		hordir[1] = reach->end[1] - ms->origin[1];
 		VectorNormalize(hordir);
-		//elemantary action jump
+		//elementary action jump
 		EA_Jump(ms->client);
 		//
 		ms->jumpreach = ms->lastreachnum;
@@ -1772,7 +1772,7 @@ bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
 			speed = horspeed * 400 / botlibglobals.sv_maxwalkvelocity->value;
 		} //end if
 	} //end else
-	//elemantary action
+	//elementary action
 	EA_Move(ms->client, hordir, speed);
 	VectorCopy(hordir, result.movedir);
 	//
@@ -1827,7 +1827,7 @@ bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
 		hordir[1] = reach->end[1] - ms->origin[1];
 		hordir[2] = 0;
 		VectorNormalize(hordir);
-		//elemantary action jump
+		//elementary action jump
 		if (dist1 < 24) EA_Jump(ms->client);
 		else if (dist1 < 32) EA_DelayedJump(ms->client);
 		EA_Move(ms->client, hordir, 600);
@@ -1893,7 +1893,7 @@ bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
 		hordir[1] = reach->end[1] - ms->origin[1];
 		hordir[2] = 0;
 		VectorNormalize(hordir);
-		//elemantary action jump
+		//elementary action jump
 		if (dist1 < 24) EA_Jump(ms->client);
 		else if (dist1 < 32) EA_DelayedJump(ms->client);
 		EA_Move(ms->client, hordir, 600);
@@ -1977,7 +1977,7 @@ bot_moveresult_t BotTravel_Ladder(bot_movestate_t *ms, aas_reachability_t *reach
 		viewdir[1] = dir[1];
 		viewdir[2] = 3 * dir[2];
 		Vector2Angles(viewdir, result.ideal_viewangles);
-		//elemantary action
+		//elementary action
 		EA_Move(ms->client, origin, 0);
 		EA_MoveForward(ms->client);
 		//set movement view flag so the AI can see the view is focussed
@@ -2082,7 +2082,7 @@ bot_moveresult_t BotTravel_Elevator(bot_movestate_t *ms, aas_reachability_t *rea
 #ifdef DEBUG_ELEVATOR
 				botimport.Print(PRT_MESSAGE, "bot moving to center\n");
 #endif //DEBUG_ELEVATOR
-				//move to the center of the plat
+				//move to the center of the elevator
 				if (dist > 100) dist = 100;
 				speed = 400 - (400 - 4 * dist);
 				//
@@ -2309,7 +2309,7 @@ bot_moveresult_t BotTravel_FuncBobbing(bot_movestate_t *ms, aas_reachability_t *
 			} //end if
 			VectorCopy(hordir, result.movedir);
 		} //end else
-		//if not really close to the center of the elevator
+		//if not really close to the center of the func_bobbing
 		else
 		{
 			MoverBottomCenter(reach, bottomcenter);
@@ -2322,7 +2322,7 @@ bot_moveresult_t BotTravel_FuncBobbing(bot_movestate_t *ms, aas_reachability_t *
 #ifdef DEBUG_FUNCBOB
 				botimport.Print(PRT_MESSAGE, "bot moving to func_bobbing center\n");
 #endif
-				//move to the center of the plat
+				//move to the center of the func_bobbing
 				if (dist > 100) dist = 100;
 				speed = 400 - (400 - 4 * dist);
 				//
@@ -2389,13 +2389,13 @@ bot_moveresult_t BotTravel_FuncBobbing(bot_movestate_t *ms, aas_reachability_t *
 			result.flags |= MOVERESULT_WAITING;
 			return result;
 		} //end if
-		//get direction and distance to func_bob bottom center
+		//get direction and distance to func_bobbing bottom center
 		MoverBottomCenter(reach, bottomcenter);
 		VectorSubtract(bottomcenter, ms->origin, dir2);
 		if (!(ms->moveflags & MFL_SWIMMING)) dir2[2] = 0;
 		dist2 = VectorNormalize(dir2);
 		//if very close to the reachability start or
-		//closer to the elevator center or
+		//closer to the func_bobbing center or
 		//between reachability start and func_bobbing center
 		if (dist1 < 20 || dist2 < dist1 || DotProduct(dir1, dir2) < 0)
 		{
@@ -2470,7 +2470,7 @@ bot_moveresult_t BotFinishTravel_FuncBobbing(bot_movestate_t *ms, aas_reachabili
 		//
 		if (dist > 5)
 		{
-			//move to the center of the plat
+			//move to the center of the func_bobbing
 			if (dist > 100) dist = 100;
 			speed = 400 - (400 - 4 * dist);
 			//
@@ -2682,7 +2682,7 @@ bot_moveresult_t BotTravel_Grapple(bot_movestate_t *ms, aas_reachability_t *reac
 			else speed = 400;
 			//
 			BotCheckBlocked(ms, dir, qtrue, &result);
-			//elemantary action move in direction
+			//elementary action move in direction
 			EA_Move(ms->client, dir, speed);
 			VectorCopy(dir, result.movedir);
 		} //end else
@@ -2725,7 +2725,7 @@ bot_moveresult_t BotTravel_RocketJump(bot_movestate_t *ms, aas_reachability_t *r
 		hordir[1] = reach->end[1] - ms->origin[1];
 		hordir[2] = 0;
 		VectorNormalize(hordir);
-		//elemantary action jump
+		//elementary action jump
 		EA_Jump(ms->client);
 		EA_Attack(ms->client);
 		EA_Move(ms->client, hordir, 800);
@@ -2785,7 +2785,7 @@ bot_moveresult_t BotTravel_BFGJump(bot_movestate_t *ms, aas_reachability_t *reac
 		hordir[1] = reach->end[1] - ms->origin[1];
 		hordir[2] = 0;
 		VectorNormalize(hordir);
-		//elemantary action jump
+		//elementary action jump
 		EA_Jump(ms->client);
 		EA_Attack(ms->client);
 		EA_Move(ms->client, hordir, 800);
@@ -2872,7 +2872,7 @@ bot_moveresult_t BotTravel_JumpPad(bot_movestate_t *ms, aas_reachability_t *reac
 	hordir[2] = 0;
 	//
 	BotCheckBlocked(ms, hordir, qtrue, &result);
-	//elemantary action move in direction
+	//elementary action move in direction
 	EA_Move(ms->client, hordir, 400);
 	VectorCopy(hordir, result.movedir);
 	//
@@ -2899,7 +2899,7 @@ bot_moveresult_t BotFinishTravel_JumpPad(bot_movestate_t *ms, aas_reachability_t
 		speed = 400;
 	} //end if
 	BotCheckBlocked(ms, hordir, qtrue, &result);
-	//elemantary action move in direction
+	//elementary action move in direction
 	EA_Move(ms->client, hordir, speed);
 	VectorCopy(hordir, result.movedir);
 	//
@@ -2975,7 +2975,7 @@ bot_moveresult_t BotMoveInGoalArea(bot_movestate_t *ms, bot_goal_t *goal)
 	if (speed < 10) speed = 0;
 	//
 	BotCheckBlocked(ms, dir, qtrue, &result);
-	//elemantary action move in direction
+	//elementary action move in direction
 	EA_Move(ms->client, dir, speed);
 	VectorCopy(dir, result.movedir);
 	//

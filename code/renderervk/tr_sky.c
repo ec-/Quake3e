@@ -352,7 +352,7 @@ static qboolean CullPoints( vec4_t v[], const int count )
 				break;
 			}
 		}
-		// all points is completely behind at least of one frustum plane
+		// all points are completely behind at least of one frustum plane
 		if ( j == count ) {
 			return qtrue;
 		}

@@ -464,7 +464,7 @@ void RB_TakeScreenshot(int x, int y, int width, int height, char *fileName)
 
 	memcount = linelen * height;
 
-	// gamma correct
+	// gamma correction
 	if(glConfig.deviceSupportsGamma)
 		R_GammaCorrect(allbuf + offset, memcount);
 
@@ -488,7 +488,7 @@ void RB_TakeScreenshotJPEG(int x, int y, int width, int height, char *fileName)
 	buffer = RB_ReadPixels(x, y, width, height, &offset, &padlen);
 	memcount = (width * 3 + padlen) * height;
 
-	// gamma correct
+	// gamma correction
 	if(glConfig.deviceSupportsGamma)
 		R_GammaCorrect(buffer + offset, memcount);
 
@@ -646,7 +646,7 @@ void R_LevelShot( void ) {
 		}
 	}
 
-	// gamma correct
+	// gamma correction
 	if ( glConfig.deviceSupportsGamma ) {
 		R_GammaCorrect( buffer + 18, 128 * 128 * 3 );
 	}
@@ -845,7 +845,7 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 
 	memcount = padwidth * cmd->height;
 
-	// gamma correct
+	// gamma correction
 	if(glConfig.deviceSupportsGamma)
 		R_GammaCorrect(cBuf, memcount);
 

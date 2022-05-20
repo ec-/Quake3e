@@ -1728,7 +1728,7 @@ const char *QDECL va( const char *format, ... )
 ============
 Com_TruncateLongString
 
-Assumes buffer is atleast TRUNCATE_LENGTH big
+Assumes buffer is at least TRUNCATE_LENGTH big
 ============
 */
 void Com_TruncateLongString( char *buffer, const char *s )

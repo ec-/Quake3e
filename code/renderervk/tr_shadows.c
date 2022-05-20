@@ -267,7 +267,7 @@ void RB_ShadowTessEnd( void ) {
 	if ( qglUnlockArraysEXT )
 		qglUnlockArraysEXT();
 
-	// reenable writing to the color buffer
+	// re-enable writing to the color buffer
 	qglColorMask(rgba[0], rgba[1], rgba[2], rgba[3]);
 
 	qglEnable( GL_TEXTURE_2D );

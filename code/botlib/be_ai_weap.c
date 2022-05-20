@@ -96,7 +96,7 @@ static fielddef_t projectileinfo_fields[] =
 {"bounce", PROJECTILE_OFS(bounce), FT_FLOAT},				//amount the projectile bounces
 {"bouncefric", PROJECTILE_OFS(bouncefric), FT_FLOAT}, 	//amount the bounce decreases per bounce
 {"bouncestop", PROJECTILE_OFS(bouncestop), FT_FLOAT},		//minimum bounce value before bouncing stops
-//recurive projectile definition??
+//recursive projectile definition??
 {NULL, 0, 0, 0}
 };
 

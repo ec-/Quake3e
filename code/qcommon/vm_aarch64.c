@@ -44,7 +44,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // additional integrity checks
 #define DEBUG_VM
 
-// various defintions to enable/disable particular optimization
+// various definitions to enable/disable particular optimization
 
 // use dynamic allocation of integer/scalar registers
 #define DYN_ALLOC_RX

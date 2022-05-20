@@ -571,7 +571,7 @@ static void StringReplaceWords( char *string, int size, const char *synonym, con
 		if ( !str2 )
 		{
 			memmove( str + replen, str + synlen, strlen( str + synlen ) + 1 );
-			//append the synonum replacement
+			//append the synonym replacement
 			Com_Memcpy( str, replacement, replen );
 		}
 
@@ -874,7 +874,7 @@ static void BotReplaceReplySynonyms( char *string, int size, unsigned long int c
 					continue;
 
 				memmove( str1 + replen, str1 + strlen( synonym->string ), strlen( str1 + strlen( synonym->string ) ) + 1 );
-				//append the synonum replacement
+				//append the synonym replacement
 				Com_Memcpy( str1, replacement, replen );
 				break;
 			}
@@ -1021,7 +1021,7 @@ bot_randomlist_t *BotLoadRandomStrings( const char *filename )
 		source = LoadSourceFile(filename);
 		if (!source)
 		{
-			botimport.Print(PRT_ERROR, "counldn't load %s\n", filename);
+			botimport.Print(PRT_ERROR, "couldn't load %s\n", filename);
 			return NULL;
 		} //end if
 		//
@@ -1321,7 +1321,7 @@ bot_matchtemplate_t *BotLoadMatchTemplates( const char *matchfile )
 	source = LoadSourceFile(matchfile);
 	if (!source)
 	{
-		botimport.Print(PRT_ERROR, "counldn't load %s\n", matchfile);
+		botimport.Print(PRT_ERROR, "couldn't load %s\n", matchfile);
 		return NULL;
 	} //end if
 	//
@@ -1888,7 +1888,7 @@ bot_replychat_t *BotLoadReplyChat( const char *filename )
 	source = LoadSourceFile(filename);
 	if (!source)
 	{
-		botimport.Print(PRT_ERROR, "counldn't load %s\n", filename);
+		botimport.Print(PRT_ERROR, "couldn't load %s\n", filename);
 		return NULL;
 	} //end if
 	//
@@ -2087,7 +2087,7 @@ bot_chat_t *BotLoadInitialChat(char *chatfile, char *chatname)
 		source = LoadSourceFile(chatfile);
 		if (!source)
 		{
-			botimport.Print(PRT_ERROR, "counldn't load %s\n", chatfile);
+			botimport.Print(PRT_ERROR, "couldn't load %s\n", chatfile);
 			return NULL;
 		} //end if
 		//chat structure

@@ -957,7 +957,7 @@ void PC_ConvertPath(char *path)
 {
 	char *ptr;
 
-	//remove double path seperators
+	//remove double path separators
 	for (ptr = path; *ptr;)
 	{
 		if ((*ptr == '\\' || *ptr == '/') &&
@@ -970,7 +970,7 @@ void PC_ConvertPath(char *path)
 			ptr++;
 		} //end else
 	} //end while
-	//set OS dependent path seperators
+	//set OS dependent path separators
 	for (ptr = path; *ptr;)
 	{
 		if (*ptr == '/' || *ptr == '\\') *ptr = PATHSEPERATOR_CHAR;
@@ -1373,7 +1373,7 @@ define_t *PC_DefineFromString(const char *string)
 	FreeScript(script);
 	//if the define was created successfully
 	if (res > 0) return def;
-	//free the define is created
+	//free the define if created
 	if (src.defines) PC_FreeDefine(def);
 	//
 	return NULL;
@@ -2976,7 +2976,7 @@ void PC_SetIncludePath(source_t *source, const char *path)
 	Q_strncpyz( source->includepath, path, sizeof(source->includepath)-1 );
 
 	len = strlen(source->includepath);
-	//add trailing path seperator
+	//add trailing path separator
 	if (len > 0 && source->includepath[len-1] != '\\' &&
 		source->includepath[len-1] != '/')
 	{
