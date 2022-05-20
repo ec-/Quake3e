@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "sdl_glw.h"
 
 static cvar_t *in_keyboardDebug;
+static cvar_t *in_forceCharset;
 
 #ifdef USE_JOYSTICK
 static SDL_GameController *gamepad;
@@ -217,12 +218,40 @@ static keyNum_t IN_TranslateSDLToQ3Key( SDL_Keysym *keysym, qboolean down )
 		else
 			key = '1' + keysym->scancode - SDL_SCANCODE_1;
 	}
-	else if( keysym->sym >= SDLK_SPACE && keysym->sym < SDLK_DELETE )
+	else if ( in_forceCharset->integer > 0 )
+	{
+		if ( keysym->scancode >= SDL_SCANCODE_A && keysym->scancode <= SDL_SCANCODE_Z )
+		{
+			key = 'a' + keysym->scancode - SDL_SCANCODE_A;
+		}
+		else
+		{
+			switch ( keysym->scancode )
+			{
+				case SDL_SCANCODE_MINUS:        key = '-';  break;
+				case SDL_SCANCODE_EQUALS:       key = '=';  break;
+				case SDL_SCANCODE_LEFTBRACKET:  key = '[';  break;
+				case SDL_SCANCODE_RIGHTBRACKET: key = ']';  break;
+				case SDL_SCANCODE_NONUSBACKSLASH:
+				case SDL_SCANCODE_BACKSLASH:    key = '\\'; break;
+				case SDL_SCANCODE_SEMICOLON:    key = ';';  break;
+				case SDL_SCANCODE_APOSTROPHE:   key = '\''; break;
+				case SDL_SCANCODE_COMMA:        key = ',';  break;
+				case SDL_SCANCODE_PERIOD:       key = '.';  break;
+				case SDL_SCANCODE_SLASH:        key = '/';  break;
+				default:
+					/* key = 0 */
+					break;
+			}
+		}
+	}
+
+	if( !key && keysym->sym >= SDLK_SPACE && keysym->sym < SDLK_DELETE )
 	{
 		// These happen to match the ASCII chars
 		key = (int)keysym->sym;
 	}
-	else
+	else if( !key )
 	{
 		switch( keysym->sym )
 		{
@@ -1236,7 +1265,11 @@ void HandleEvents( void )
 					case SDL_WINDOWEVENT_MAXIMIZED:		gw_minimized = qfalse; break;
 					// keyboard focus:
 					case SDL_WINDOWEVENT_FOCUS_LOST:	lastKeyDown = 0; Key_ClearStates(); gw_active = qfalse; break;
-					case SDL_WINDOWEVENT_FOCUS_GAINED:	lastKeyDown = 0; Key_ClearStates(); gw_active = qtrue; gw_minimized = qfalse; break;
+					case SDL_WINDOWEVENT_FOCUS_GAINED:	lastKeyDown = 0; Key_ClearStates(); gw_active = qtrue; gw_minimized = qfalse;
+														if ( re.SetColorMappings ) {
+															re.SetColorMappings();
+														}
+														break;
 					// mouse focus:
 					case SDL_WINDOWEVENT_ENTER: mouse_focus = qtrue; break;
 					case SDL_WINDOWEVENT_LEAVE: if ( glw_state.isFullscreen ) mouse_focus = qfalse; break;
@@ -1328,6 +1361,7 @@ void IN_Init( void )
 	Com_DPrintf( "\n------- Input Initialization -------\n" );
 
 	in_keyboardDebug = Cvar_Get( "in_keyboardDebug", "0", CVAR_ARCHIVE );
+	in_forceCharset = Cvar_Get( "in_forceCharset", "1", CVAR_ARCHIVE_ND );
 
 	// mouse variables
 	in_mouse = Cvar_Get( "in_mouse", "1", CVAR_ARCHIVE );
