@@ -1156,7 +1156,7 @@ static int R_StitchPatches( int grid1num, int grid2num ) {
 						continue;
 					//
 					//ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
-					// insert column into grid2 right after after column l
+					// insert column into grid2 right after column l
 					if (m) row = grid2->height-1;
 					else row = 0;
 					grid2 = R_GridInsertColumn( grid2, l+1, row,
@@ -1200,7 +1200,7 @@ static int R_StitchPatches( int grid1num, int grid2num ) {
 						continue;
 					//
 					//ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
-					// insert row into grid2 right after after row l
+					// insert row into grid2 right after row l
 					if (m) column = grid2->width-1;
 					else column = 0;
 					grid2 = R_GridInsertRow( grid2, l+1, column,
@@ -1253,7 +1253,7 @@ static int R_StitchPatches( int grid1num, int grid2num ) {
 						continue;
 					//
 					//ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
-					// insert column into grid2 right after after column l
+					// insert column into grid2 right after column l
 					if (m) row = grid2->height-1;
 					else row = 0;
 					grid2 = R_GridInsertColumn( grid2, l+1, row,
@@ -1297,7 +1297,7 @@ static int R_StitchPatches( int grid1num, int grid2num ) {
 						continue;
 					//
 					//ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
-					// insert row into grid2 right after after row l
+					// insert row into grid2 right after row l
 					if (m) column = grid2->width-1;
 					else column = 0;
 					grid2 = R_GridInsertRow( grid2, l+1, column,
@@ -1351,7 +1351,7 @@ static int R_StitchPatches( int grid1num, int grid2num ) {
 						continue;
 					//
 					//ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
-					// insert column into grid2 right after after column l
+					// insert column into grid2 right after column l
 					if (m) row = grid2->height-1;
 					else row = 0;
 					grid2 = R_GridInsertColumn( grid2, l+1, row,
@@ -1395,7 +1395,7 @@ static int R_StitchPatches( int grid1num, int grid2num ) {
 						continue;
 					//
 					//ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
-					// insert row into grid2 right after after row l
+					// insert row into grid2 right after row l
 					if (m) column = grid2->width-1;
 					else column = 0;
 					grid2 = R_GridInsertRow( grid2, l+1, column,
@@ -1450,7 +1450,7 @@ static int R_StitchPatches( int grid1num, int grid2num ) {
 						continue;
 					//
 					//ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
-					// insert column into grid2 right after after column l
+					// insert column into grid2 right after column l
 					if (m) row = grid2->height-1;
 					else row = 0;
 					grid2 = R_GridInsertColumn( grid2, l+1, row,
@@ -1494,7 +1494,7 @@ static int R_StitchPatches( int grid1num, int grid2num ) {
 						continue;
 					//
 					//ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
-					// insert row into grid2 right after after row l
+					// insert row into grid2 right after row l
 					if (m) column = grid2->width-1;
 					else column = 0;
 					grid2 = R_GridInsertRow( grid2, l+1, column,
@@ -1516,7 +1516,7 @@ R_TryStitchPatch
 
 This function will try to stitch patches in the same LoD group together for the highest LoD.
 
-Only single missing vertice cracks will be fixed.
+Only single missing vertex cracks will be fixed.
 
 Vertices will be joined at the patch side a crack is first found, at the other side
 of the patch (on the same row or column) the vertices will not be joined and cracks

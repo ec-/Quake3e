@@ -665,7 +665,7 @@ Com_InitKeyCommands
 */
 void Com_InitKeyCommands( void )
 {
-	// register our functions
+	// register client functions
 	Cmd_AddCommand( "bind", Key_Bind_f );
 	Cmd_SetCommandCompletionFunc( "bind", Key_CompleteBind );
 	Cmd_AddCommand( "unbind", Key_Unbind_f );

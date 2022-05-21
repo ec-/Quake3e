@@ -340,7 +340,7 @@ float AAS_WeaponJumpZVelocity(vec3_t origin, float radiusdamage)
 //===========================================================================
 float AAS_RocketJumpZVelocity(vec3_t origin)
 {
-	//rocket radius damage is 120 (p_weapon.c: Weapon_RocketLauncher_Fire)
+	//rocket radius damage is 120
 	return AAS_WeaponJumpZVelocity(origin, 120);
 } //end of the function AAS_RocketJumpZVelocity
 //===========================================================================
@@ -351,7 +351,7 @@ float AAS_RocketJumpZVelocity(vec3_t origin)
 //===========================================================================
 float AAS_BFGJumpZVelocity(vec3_t origin)
 {
-	//bfg radius damage is 1000 (p_weapon.c: weapon_bfg_fire)
+	//bfg radius damage is 120
 	return AAS_WeaponJumpZVelocity(origin, 120);
 } //end of the function AAS_BFGJumpZVelocity
 //===========================================================================

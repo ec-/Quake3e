@@ -39,7 +39,7 @@ instead of tesselation like for regular surfaces. Using items queue also
 eleminates run-time tesselation limits.
 
 When it is time to render - we sort queued items to get longest possible
-index sequence run to check if its long enough i.e. worth issuing a draw call.
+index sequence run to check if it is long enough i.e. worth issuing a draw call.
 So long device-local index runs are rendered via multiple draw calls,
 all remaining short index sequences are grouped together into single
 host-visible index buffer which is finally rendered via single draw call.

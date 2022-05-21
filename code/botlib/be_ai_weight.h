@@ -32,7 +32,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define WT_BALANCE			1
 #define MAX_WEIGHTS			128
 
-//fuzzy seperator
+//fuzzy separator
 typedef struct fuzzyseperator_s
 {
 	int index;

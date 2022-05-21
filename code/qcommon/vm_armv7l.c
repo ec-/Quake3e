@@ -51,7 +51,7 @@ ARMv7-A_ARMv7-R_DDI0406_2007.pdf
 // additional integrity checks
 #define DEBUG_VM
 
-// various defintions to enable/disable particular optimization
+// various definitions to enable/disable particular optimization
 
 // use dynamic allocation of integer/scalar registers
 #define DYN_ALLOC_RX
@@ -276,7 +276,7 @@ static unsigned short can_encode( uint32_t val )
 {
 	unsigned shift = 0;
 	if (val == 0)
-		return 1; // to avoid redundand checks
+		return 1; // to avoid redundant checks
 		//DIE("can_encode: invalid argument");
 	if (val < 256)
 		return val;

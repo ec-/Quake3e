@@ -49,7 +49,7 @@ extern botlib_import_t botimport;
 
 //#define REACH_DEBUG
 
-//NOTE: all travel times are in hundreth of a second
+//NOTE: all travel times are in hundredths of a second
 //maximum number of reachability links
 #define AAS_MAX_REACHABILITYSIZE			65536
 //number of areas reachability is calculated for each frame
@@ -1476,7 +1476,7 @@ int AAS_Reachability_Step_Barrier_WaterJump_WalkOffLedge(int area1num, int area2
 			//if no water in area1 or a very thin layer of water on the ground
 			if (!water_foundreach || (ground_bestdist - water_bestdist < 16))
 			{
-				//cannot perform a barrier jump towards or from a crouch area in Quake2
+				//cannot perform a barrier jump towards or from a crouch area
 				if (!AAS_AreaCrouch(area1num) && !AAS_AreaCrouch(area2num))
 				{
 					//create barrier jump reachability from area1 to area2
@@ -3174,7 +3174,7 @@ aas_lreachability_t *AAS_FindFaceReachabilities(vec3_t *facepoints, int numpoint
 	for (i = 1; i < aasworld.numareas; i++)
 	{
 		area = &aasworld.areas[i];
-		// get the shortest distance between one of the func_bob start edges and
+		// get the shortest distance between one of the func_bobbing start edges and
 		// one of the face edges of area1
 		bestdist = 999999;
 		for (j = 0; j < area->numfaces; j++)
@@ -3887,7 +3887,7 @@ int AAS_Reachability_Grapple(int area1num, int area2num)
 		{
 			continue;
 		} //end if
-		//do not go the the source area
+		//do not go to the source area
 		if (areanum == area1num) continue;
 		//don't create reachabilities if they already exist
 		if (AAS_ReachabilityExists(area1num, areanum)) continue;
@@ -4052,7 +4052,7 @@ int AAS_Reachability_WeaponJump(int area1num, int area2num)
 		//NOTE: set to 2 to allow bfg jump reachabilities
 		for (n = 0; n < 1/*2*/; n++)
 		{
-			//get the rocket jump z velocity
+			//get the weapon jump z velocity
 			if (n) zvel = AAS_BFGJumpZVelocity(areastart);
 			else zvel = AAS_RocketJumpZVelocity(areastart);
 			//get the horizontal speed for the jump, if it isn't possible to calculate this

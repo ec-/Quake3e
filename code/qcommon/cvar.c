@@ -1090,7 +1090,7 @@ static void Cvar_Reset_f( void ) {
 }
 
 
-// returns NULL for non-existent "-" agrument
+// returns NULL for non-existent "-" argument
 static const char *GetValue( int index, int *ival, float *fval ) 
 {
 	static char buf[ MAX_CVAR_VALUE_STRING ];
@@ -1973,7 +1973,7 @@ void Cvar_Register( vmCvar_t *vmCvar, const char *varName, const char *defaultVa
 		flags &= ~CVAR_ROM;
 	}
 
-	// Don't allow VM to specific a different creator or other internal flags.
+	// Don't allow VM to specify a different creator or other internal flags.
 	if ( flags & INVALID_FLAGS ) {
 		Com_DPrintf( S_COLOR_YELLOW "WARNING: VM tried to set invalid flags 0x%02x on cvar '%s'\n", ( flags & INVALID_FLAGS ), varName );
 		flags &= ~INVALID_FLAGS;

@@ -56,7 +56,7 @@ static qboolean GLimp_HaveExtension( const char *ext )
 	if (ptr == NULL)
 		return qfalse;
 	ptr += strlen(ext);
-	return ((*ptr == ' ') || (*ptr == '\0'));  // verify it's complete string.
+	return ((*ptr == ' ') || (*ptr == '\0'));  // verify its complete string.
 }
 
 

@@ -223,14 +223,14 @@ void SV_LinkEntity( sharedEntity_t *gEnt ) {
 	if ( gEnt->r.bmodel ) {
 		gEnt->s.solid = SOLID_BMODEL;		// a solid_box will never create this value
 	} else if ( gEnt->r.contents & ( CONTENTS_SOLID | CONTENTS_BODY ) ) {
-		// assume that x/y are equal and symetric
+		// assume that x/y are equal and symmetric
 		i = gEnt->r.maxs[0];
 		if (i<1)
 			i = 1;
 		if (i>255)
 			i = 255;
 
-		// z is not symetric
+		// z is not symmetric
 		j = (-gEnt->r.mins[2]);
 		if (j<1)
 			j = 1;
@@ -299,7 +299,7 @@ void SV_LinkEntity( sharedEntity_t *gEnt ) {
 		area = CM_LeafArea (leafs[i]);
 		if (area != -1) {
 			// doors may legally straggle two areas,
-			// but nothing should evern need more than that
+			// but nothing should ever need more than that
 			if (ent->areanum != -1 && ent->areanum != area) {
 				if (ent->areanum2 != -1 && ent->areanum2 != area && sv.state == SS_LOADING) {
 					Com_DPrintf ("Object %i touching 3 areas at %f %f %f\n",

@@ -177,7 +177,7 @@ static channel_t* S_ChannelMalloc( int allocTime ) {
 static void S_ChannelSetup( void ) {
 	channel_t *p, *q;
 
-	// clear all the sounds so they don't
+	// clear all the sounds
 	Com_Memset( s_channels, 0, sizeof( s_channels ) );
 
 	p = s_channels;
@@ -1277,7 +1277,7 @@ S_OpenBackgroundStream
 */
 static void S_OpenBackgroundStream( const char *filename ) {
 	// close the background track, but DON'T reset s_rawend
-	// if restarting the same back ground track
+	// if restarting the same background track
 	if( s_backgroundStream )
 	{
 		S_CodecCloseStream( s_backgroundStream );
@@ -1451,7 +1451,7 @@ static void S_Base_Shutdown( void ) {
 	SNDDMA_Shutdown();
 
 	// release sound buffers only when switching to dedicated 
-	// to avoid redundand reallocation at client restart
+	// to avoid redundant reallocation at client restart
 	if ( com_dedicated->integer )
 		SND_shutdown();
 
@@ -1528,7 +1528,7 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 
 		S_Base_StopAllSounds();
 
-		// setup(likely) or allocate (unlikely) buffer for muted painting
+		// setup (likely) or allocate (unlikely) buffer for muted painting
 		if ( dma.samples * dma.samplebits/8 <= sizeof( buffer2 ) ) {
 			dma_buffer2 = buffer2;
 		} else {

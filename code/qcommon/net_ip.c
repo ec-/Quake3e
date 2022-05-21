@@ -1854,7 +1854,7 @@ static void NET_Event( const fd_set *fdr )
 ====================
 NET_Sleep
 
-Sleeps usec or until something happens on the network
+Sleeps msec or until something happens on the network
 
 Returns qfalse on network event or qtrue in all other cases
 ====================
