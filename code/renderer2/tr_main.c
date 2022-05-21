@@ -1564,7 +1564,7 @@ static void R_AddEntitySurface (int entityNum)
 
 	//
 	// the weapon model must be handled special --
-	// we don't want the hacked weapon position showing in 
+	// we don't want the hacked first person weapon position showing in 
 	// mirrors, because the true body position will already be drawn
 	//
 	if ( (ent->e.renderfx & RF_FIRST_PERSON) && (tr.viewParms.flags & VPF_NOVIEWMODEL)) {

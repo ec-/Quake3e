@@ -820,7 +820,7 @@ __reswitch:
 			str++;
 		}
 		if ( c != '\0' ) {
-			str++; // skip enging '"'
+			str++; // skip ending '"'
 		} else {
 			// FIXME: unterminated quoted string?
 		}

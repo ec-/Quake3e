@@ -299,7 +299,7 @@ void SV_LinkEntity( sharedEntity_t *gEnt ) {
 		area = CM_LeafArea (leafs[i]);
 		if (area != -1) {
 			// doors may legally straggle two areas,
-			// but nothing should evern need more than that
+			// but nothing should ever need more than that
 			if (ent->areanum != -1 && ent->areanum != area) {
 				if (ent->areanum2 != -1 && ent->areanum2 != area && sv.state == SS_LOADING) {
 					Com_DPrintf ("Object %i touching 3 areas at %f %f %f\n",

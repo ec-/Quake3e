@@ -280,7 +280,7 @@ static qboolean SV_LoadIP4DB( const char *filename )
 	FS_Read( buf, len, fh );
 	FS_FCloseFile( fh );
 
-	// check integrity of loaded databse
+	// check integrity of loaded database
 	last_ip = 0;
 	num_tlds = len / 10;
 
@@ -1813,7 +1813,7 @@ void SV_PrintLocations_f( client_t *client ) {
 	max_namelength = 4; // strlen( "name" )
 	max_ctrylength = 7; // strlen( "country" )
 
-	// first pass: save and determine max.legths of name/address fields
+	// first pass: save and determine max.lengths of name/address fields
 	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ )
 	{
 		if ( cl->state == CS_FREE )

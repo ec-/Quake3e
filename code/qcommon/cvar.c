@@ -1090,7 +1090,7 @@ static void Cvar_Reset_f( void ) {
 }
 
 
-// returns NULL for non-existent "-" agrument
+// returns NULL for non-existent "-" argument
 static const char *GetValue( int index, int *ival, float *fval ) 
 {
 	static char buf[ MAX_CVAR_VALUE_STRING ];
