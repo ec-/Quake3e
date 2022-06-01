@@ -144,7 +144,7 @@ FT_Bitmap *R_RenderGlyph(FT_GlyphSlot glyph, glyphInfo_t* glyphOut) {
 	return NULL;
 }
 
-void WriteTGA (char *filename, byte *data, int width, int height) {
+static void WriteTGA (char *filename, byte *data, int width, int height) {
 	byte			*buffer;
 	int				i, c;
 	int             row;
@@ -306,7 +306,7 @@ static glyphInfo_t *RE_ConstructGlyphInfo(unsigned char *imageOut, int *xOut, in
 static int fdOffset;
 static byte	*fdFile;
 
-int readInt( void ) {
+static int readInt( void ) {
 	int i = ((unsigned int)fdFile[fdOffset] | ((unsigned int)fdFile[fdOffset+1]<<8) | ((unsigned int)fdFile[fdOffset+2]<<16) | ((unsigned int)fdFile[fdOffset+3]<<24));
 	fdOffset += 4;
 	return i;

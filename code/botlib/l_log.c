@@ -93,7 +93,7 @@ void Log_Open( const char *filename )
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void Log_Close(void)
+static void Log_Close(void)
 {
 	if (!logfile.fp) return;
 	if (fclose(logfile.fp))

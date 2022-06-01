@@ -125,10 +125,6 @@ int PC_SkipUntilString(source_t *source, char *string);
 void PC_UnreadLastToken(source_t *source);
 //unread the given token
 void PC_UnreadToken(source_t *source, token_t *token);
-//read a token only if on the same line, lines are concatenated with a slash
-int PC_ReadLine(source_t *source, token_t *token);
-//returns true if there was a white space in front of the token
-int PC_WhiteSpaceBeforeToken(token_t *token);
 //add a define to the source
 int PC_AddDefine(source_t *source, char *string);
 //add a globals define that will be added to all opened sources

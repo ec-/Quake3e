@@ -1361,7 +1361,7 @@ static void ParseSkyParms( const char **text ) {
 ParseSort
 =================
 */
-void ParseSort( const char **text ) {
+static void ParseSort( const char **text ) {
 	char	*token;
 
 	token = COM_ParseExt( text, qfalse );

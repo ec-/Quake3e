@@ -70,7 +70,7 @@ static cbrush_t *box_brush;
 
 
 
-void	CM_InitBoxHull (void);
+static void	CM_InitBoxHull (void);
 void	CM_FloodAreaConnections (void);
 
 
@@ -795,7 +795,7 @@ Set up the planes and nodes so that the six floats of a bounding box
 can just be stored out and get a proper clipping hull structure.
 ===================
 */
-void CM_InitBoxHull( void )
+static void CM_InitBoxHull( void )
 {
 	int			i;
 	int			side;

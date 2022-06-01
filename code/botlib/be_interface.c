@@ -116,7 +116,7 @@ static qboolean BotLibSetup(const char *str)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int Export_BotLibSetup( void )
+static int Export_BotLibSetup( void )
 {
 	int		errnum;
 	
@@ -160,7 +160,7 @@ int Export_BotLibSetup( void )
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int Export_BotLibShutdown(void)
+static int Export_BotLibShutdown(void)
 {
 	if ( !botlibglobals.botlibsetup )
 		return BLERR_LIBRARYNOTSETUP;
@@ -204,7 +204,7 @@ int Export_BotLibShutdown(void)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int Export_BotLibVarSet( const char *var_name, const char *value )
+static int Export_BotLibVarSet( const char *var_name, const char *value )
 {
 	LibVarSet( var_name, value );
 	return BLERR_NOERROR;
@@ -229,7 +229,7 @@ int Export_BotLibVarGet( const char *var_name, char *value, int size )
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int Export_BotLibStartFrame(float time)
+static int Export_BotLibStartFrame(float time)
 {
 	if (!BotLibSetup("BotStartFrame")) return BLERR_LIBRARYNOTSETUP;
 	return AAS_StartFrame(time);
@@ -240,7 +240,7 @@ int Export_BotLibStartFrame(float time)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int Export_BotLibLoadMap(const char *mapname)
+static int Export_BotLibLoadMap(const char *mapname)
 {
 #ifdef DEBUG
 	int starttime = Sys_MilliSeconds();

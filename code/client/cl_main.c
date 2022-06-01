@@ -1340,7 +1340,7 @@ CL_RequestMotd
 ===================
 */
 #if 0
-void CL_RequestMotd( void ) {
+static void CL_RequestMotd( void ) {
 	char		info[MAX_INFO_STRING];
 
 	if ( !cl_motd->integer ) {

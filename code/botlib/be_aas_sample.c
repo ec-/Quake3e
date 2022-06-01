@@ -61,7 +61,7 @@ typedef struct aas_tracestack_s
 	int nodenum;		//node found after splitting with planenum
 } aas_tracestack_t;
 
-int numaaslinks;
+static int numaaslinks;
 
 //===========================================================================
 //
@@ -73,8 +73,8 @@ void AAS_PresenceTypeBoundingBox(int presencetype, vec3_t mins, vec3_t maxs)
 {
 	int index;
 	//bounding box size for each presence type
-	vec3_t boxmins[3] = {{0, 0, 0}, {-15, -15, -24}, {-15, -15, -24}};
-	vec3_t boxmaxs[3] = {{0, 0, 0}, { 15,  15,  32}, { 15,  15,   8}};
+	static vec3_t boxmins[3] = {{0, 0, 0}, {-15, -15, -24}, {-15, -15, -24}};
+	static vec3_t boxmaxs[3] = {{0, 0, 0}, { 15,  15,  32}, { 15,  15,   8}};
 
 	if (presencetype == PRESENCE_NORMAL) index = 1;
 	else if (presencetype == PRESENCE_CROUCH) index = 2;
@@ -168,7 +168,7 @@ aas_link_t *AAS_AllocAASLink(void)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void AAS_DeAllocAASLink(aas_link_t *link)
+static void AAS_DeAllocAASLink(aas_link_t *link)
 {
 	if (aasworld.freelinks) aasworld.freelinks->prev_ent = link;
 	link->prev_ent = NULL;
@@ -402,7 +402,7 @@ vec_t AAS_BoxOriginDistanceFromPlane(vec3_t normal, vec3_t mins, vec3_t maxs, in
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-qboolean AAS_AreaEntityCollision(int areanum, vec3_t start, vec3_t end,
+static qboolean AAS_AreaEntityCollision(int areanum, vec3_t start, vec3_t end,
 										int presencetype, int passent, aas_trace_t *trace)
 {
 	int collision;
@@ -922,7 +922,7 @@ int AAS_TraceAreas(vec3_t start, vec3_t end, int *areas, vec3_t *points, int max
 // Returns:					qtrue if the point is within the face boundaries
 // Changes Globals:		-
 //===========================================================================
-qboolean AAS_InsideFace(aas_face_t *face, vec3_t pnormal, vec3_t point, float epsilon)
+static qboolean AAS_InsideFace(aas_face_t *face, vec3_t pnormal, vec3_t point, float epsilon)
 {
 	int i, firstvertex, edgenum;
 	vec3_t v0;
@@ -1123,7 +1123,7 @@ aas_face_t *AAS_TraceEndFace(aas_trace_t *trace)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int AAS_BoxOnPlaneSide2(vec3_t absmins, vec3_t absmaxs, aas_plane_t *p)
+static int AAS_BoxOnPlaneSide2(vec3_t absmins, vec3_t absmaxs, aas_plane_t *p)
 {
 	int i, sides;
 	float dist1, dist2;

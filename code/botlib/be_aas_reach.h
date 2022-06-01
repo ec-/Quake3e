@@ -60,8 +60,6 @@ int AAS_AreaLava(int areanum);
 int AAS_AreaSlime(int areanum);
 //returns true if the area has one or more ground faces
 int AAS_AreaGrounded(int areanum);
-//returns true if the area has one or more ladder faces
-int AAS_AreaLadder(int areanum);
 //returns true if the area is a jump pad
 int AAS_AreaJumpPad(int areanum);
 //returns true if the area is donotenter

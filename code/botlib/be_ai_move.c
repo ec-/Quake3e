@@ -101,20 +101,20 @@ typedef struct bot_movestate_s
 #define MODELTYPE_FUNC_DOOR		3
 #define MODELTYPE_FUNC_STATIC	4
 
-libvar_t *sv_maxstep;
-libvar_t *sv_maxbarrier;
-libvar_t *sv_gravity;
-libvar_t *weapindex_rocketlauncher;
-libvar_t *weapindex_bfg10k;
-libvar_t *weapindex_grapple;
-libvar_t *entitytypemissile;
-libvar_t *offhandgrapple;
-libvar_t *cmd_grappleoff;
-libvar_t *cmd_grappleon;
+static libvar_t *sv_maxstep;
+static libvar_t *sv_maxbarrier;
+static libvar_t *sv_gravity;
+static libvar_t *weapindex_rocketlauncher;
+static libvar_t *weapindex_bfg10k;
+static libvar_t *weapindex_grapple;
+static libvar_t *entitytypemissile;
+static libvar_t *offhandgrapple;
+static libvar_t *cmd_grappleoff;
+static libvar_t *cmd_grappleon;
 //type of model, func_plat or func_bobbing
-int modeltypes[MAX_MODELS];
+static int modeltypes[MAX_MODELS];
 
-bot_movestate_t *botmovestates[MAX_CLIENTS+1];
+static bot_movestate_t *botmovestates[MAX_CLIENTS+1];
 
 //========================================================================
 //
@@ -163,7 +163,7 @@ void BotFreeMoveState(int handle)
 // Returns:					-
 // Changes Globals:		-
 //========================================================================
-bot_movestate_t *BotMoveStateFromHandle(int handle)
+static bot_movestate_t *BotMoveStateFromHandle(int handle)
 {
 	if (handle <= 0 || handle > MAX_CLIENTS)
 	{
@@ -437,7 +437,7 @@ int BotReachabilityArea(vec3_t origin, int testground)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotOnMover(vec3_t origin, int entnum, aas_reachability_t *reach)
+static int BotOnMover(vec3_t origin, int entnum, aas_reachability_t *reach)
 {
 	int i, modelnum;
 	vec3_t mins, maxs, modelorigin, org, end;
@@ -483,7 +483,7 @@ int BotOnMover(vec3_t origin, int entnum, aas_reachability_t *reach)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int MoverDown(aas_reachability_t *reach)
+static int MoverDown(aas_reachability_t *reach)
 {
 	int modelnum;
 	vec3_t mins, maxs, origin;
@@ -544,7 +544,7 @@ void BotSetBrushModelTypes(void)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotOnTopOfEntity(bot_movestate_t *ms)
+static int BotOnTopOfEntity(bot_movestate_t *ms)
 {
 	vec3_t mins, maxs, end, up = {0, 0, 1};
 	bsp_trace_t trace;
@@ -564,7 +564,7 @@ int BotOnTopOfEntity(bot_movestate_t *ms)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotValidTravel(vec3_t origin, aas_reachability_t *reach, int travelflags)
+static int BotValidTravel(vec3_t origin, aas_reachability_t *reach, int travelflags)
 {
 	//if the reachability uses an unwanted travel type
 	if (AAS_TravelFlagForType(reach->traveltype) & ~travelflags) return qfalse;
@@ -578,7 +578,7 @@ int BotValidTravel(vec3_t origin, aas_reachability_t *reach, int travelflags)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void BotAddToAvoidReach(bot_movestate_t *ms, int number, float avoidtime)
+static void BotAddToAvoidReach(bot_movestate_t *ms, int number, float avoidtime)
 {
 	int i;
 
@@ -610,7 +610,7 @@ void BotAddToAvoidReach(bot_movestate_t *ms, int number, float avoidtime)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-float DistanceFromLineSquared(vec3_t p, vec3_t lp1, vec3_t lp2)
+static float DistanceFromLineSquared(vec3_t p, vec3_t lp1, vec3_t lp2)
 {
 	vec3_t proj, dir;
 	int j;
@@ -648,7 +648,7 @@ float VectorDistanceSquared(vec3_t p1, vec3_t p2)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotAvoidSpots(vec3_t origin, aas_reachability_t *reach, bot_avoidspot_t *avoidspots, int numavoidspots)
+static int BotAvoidSpots(vec3_t origin, aas_reachability_t *reach, bot_avoidspot_t *avoidspots, int numavoidspots)
 {
 	int checkbetween, i, type;
 	float squareddist, squaredradius;
@@ -816,7 +816,7 @@ int BotGetReachabilityToGoal(vec3_t origin, int areanum,
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int BotAddToTarget(vec3_t start, vec3_t end, float maxdist, float *dist, vec3_t target)
+static int BotAddToTarget(vec3_t start, vec3_t end, float maxdist, float *dist, vec3_t target)
 {
 	vec3_t dir;
 	float curdist;
@@ -891,7 +891,7 @@ int BotMovementViewTarget(int movestate, bot_goal_t *goal, int travelflags, floa
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotVisible(int ent, vec3_t eye, vec3_t target)
+static int BotVisible(int ent, vec3_t eye, vec3_t target)
 {
 	bsp_trace_t trace;
 
@@ -968,7 +968,7 @@ int BotPredictVisiblePosition(vec3_t origin, int areanum, bot_goal_t *goal, int 
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-void MoverBottomCenter(aas_reachability_t *reach, vec3_t bottomcenter)
+static void MoverBottomCenter(aas_reachability_t *reach, vec3_t bottomcenter)
 {
 	int modelnum;
 	vec3_t mins, maxs, origin, mids;
@@ -993,7 +993,7 @@ void MoverBottomCenter(aas_reachability_t *reach, vec3_t bottomcenter)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-float BotGapDistance(vec3_t origin, vec3_t hordir, int entnum)
+static float BotGapDistance(vec3_t origin, vec3_t hordir, int entnum)
 {
 	int dist;
 	float startz;
@@ -1093,7 +1093,7 @@ int BotCheckBarrierJump(bot_movestate_t *ms, vec3_t dir, float speed)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotSwimInDirection(bot_movestate_t *ms, vec3_t dir, float speed, int type)
+static int BotSwimInDirection(bot_movestate_t *ms, vec3_t dir, float speed, int type)
 {
 	vec3_t normdir;
 
@@ -1108,7 +1108,7 @@ int BotSwimInDirection(bot_movestate_t *ms, vec3_t dir, float speed, int type)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotWalkInDirection(bot_movestate_t *ms, vec3_t dir, float speed, int type)
+static int BotWalkInDirection(bot_movestate_t *ms, vec3_t dir, float speed, int type)
 {
 	vec3_t hordir, cmdmove, velocity, tmpdir, origin;
 	int presencetype, maxframes, cmdframes, stopevent;
@@ -1324,7 +1324,7 @@ void BotCheckBlocked(bot_movestate_t *ms, vec3_t dir, int checkbottom, bot_mover
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotTravel_Walk(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_Walk(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	float dist, speed;
 	vec3_t hordir;
@@ -1414,7 +1414,7 @@ bot_moveresult_t BotFinishTravel_Walk(bot_movestate_t *ms, aas_reachability_t *r
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotTravel_Crouch(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_Crouch(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	float speed;
 	vec3_t hordir;
@@ -1443,7 +1443,7 @@ bot_moveresult_t BotTravel_Crouch(bot_movestate_t *ms, aas_reachability_t *reach
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotTravel_BarrierJump(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_BarrierJump(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	float dist, speed;
 	vec3_t hordir;
@@ -1477,7 +1477,7 @@ bot_moveresult_t BotTravel_BarrierJump(bot_movestate_t *ms, aas_reachability_t *
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotFinishTravel_BarrierJump(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotFinishTravel_BarrierJump(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t hordir;
 	bot_moveresult_t_cleared( result );
@@ -1503,7 +1503,7 @@ bot_moveresult_t BotFinishTravel_BarrierJump(bot_movestate_t *ms, aas_reachabili
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotTravel_Swim(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_Swim(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t dir;
 	bot_moveresult_t_cleared( result );
@@ -1528,7 +1528,7 @@ bot_moveresult_t BotTravel_Swim(bot_movestate_t *ms, aas_reachability_t *reach)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotTravel_WaterJump(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_WaterJump(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t dir, hordir;
 	float dist;
@@ -1561,7 +1561,7 @@ bot_moveresult_t BotTravel_WaterJump(bot_movestate_t *ms, aas_reachability_t *re
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotFinishTravel_WaterJump(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotFinishTravel_WaterJump(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t dir, pnt;
 	bot_moveresult_t_cleared( result );
@@ -1657,7 +1657,7 @@ bot_moveresult_t BotTravel_WalkOffLedge(bot_movestate_t *ms, aas_reachability_t 
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotAirControl(vec3_t origin, vec3_t velocity, vec3_t goal, vec3_t dir, float *speed)
+static int BotAirControl(vec3_t origin, vec3_t velocity, vec3_t goal, vec3_t dir, float *speed)
 {
 	vec3_t org, vel;
 	float dist;
@@ -1694,7 +1694,7 @@ int BotAirControl(vec3_t origin, vec3_t velocity, vec3_t goal, vec3_t dir, float
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotFinishTravel_WalkOffLedge(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotFinishTravel_WalkOffLedge(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t dir, hordir, end, v;
 	float dist, speed;
@@ -1851,7 +1851,7 @@ bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
 	return result;
 } //end of the function BotTravel_Jump*/
 //*
-bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t hordir, dir1, dir2, start, end, runstart;
 //	vec3_t runstart, dir1, dir2, hordir;
@@ -1922,7 +1922,7 @@ bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotFinishTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotFinishTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t hordir, hordir2;
 	float speed, dist;
@@ -1956,7 +1956,7 @@ bot_moveresult_t BotFinishTravel_Jump(bot_movestate_t *ms, aas_reachability_t *r
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotTravel_Ladder(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_Ladder(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	//float dist, speed;
 	vec3_t dir, viewdir;//, hordir;
@@ -2011,7 +2011,7 @@ bot_moveresult_t BotTravel_Ladder(bot_movestate_t *ms, aas_reachability_t *reach
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotTravel_Teleport(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_Teleport(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t hordir;
 	float dist;
@@ -2041,7 +2041,7 @@ bot_moveresult_t BotTravel_Teleport(bot_movestate_t *ms, aas_reachability_t *rea
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotTravel_Elevator(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_Elevator(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t dir, dir1, dir2, hordir, bottomcenter;
 	float dist, dist1, dist2, speed;
@@ -2191,7 +2191,7 @@ bot_moveresult_t BotTravel_Elevator(bot_movestate_t *ms, aas_reachability_t *rea
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotFinishTravel_Elevator(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotFinishTravel_Elevator(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t bottomcenter, bottomdir, topdir;
 	bot_moveresult_t_cleared( result );
@@ -2220,7 +2220,7 @@ bot_moveresult_t BotFinishTravel_Elevator(bot_movestate_t *ms, aas_reachability_
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-void BotFuncBobStartEnd(aas_reachability_t *reach, vec3_t start, vec3_t end, vec3_t origin)
+static void BotFuncBobStartEnd(aas_reachability_t *reach, vec3_t start, vec3_t end, vec3_t origin)
 {
 	int spawnflags, modelnum;
 	vec3_t mins, maxs, mid, angles = {0, 0, 0};
@@ -2278,7 +2278,7 @@ void BotFuncBobStartEnd(aas_reachability_t *reach, vec3_t start, vec3_t end, vec
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotTravel_FuncBobbing(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_FuncBobbing(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t dir, dir1, dir2, hordir, bottomcenter, bob_start, bob_end, bob_origin;
 	float dist, dist1, dist2, speed;
@@ -2435,7 +2435,7 @@ bot_moveresult_t BotTravel_FuncBobbing(bot_movestate_t *ms, aas_reachability_t *
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotFinishTravel_FuncBobbing(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotFinishTravel_FuncBobbing(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t bob_origin, bob_start, bob_end, dir, hordir, bottomcenter;
 	bot_moveresult_t_cleared( result );
@@ -2489,7 +2489,7 @@ bot_moveresult_t BotFinishTravel_FuncBobbing(bot_movestate_t *ms, aas_reachabili
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int GrappleState(bot_movestate_t *ms, aas_reachability_t *reach)
+static int GrappleState(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	int i;
 	aas_entityinfo_t entinfo;
@@ -2519,7 +2519,7 @@ int GrappleState(bot_movestate_t *ms, aas_reachability_t *reach)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void BotResetGrapple(bot_movestate_t *ms)
+static void BotResetGrapple(bot_movestate_t *ms)
 {
 	aas_reachability_t reach;
 
@@ -2545,7 +2545,7 @@ void BotResetGrapple(bot_movestate_t *ms)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotTravel_Grapple(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_Grapple(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	bot_moveresult_t_cleared( result );
 	float dist, speed;
@@ -2698,7 +2698,7 @@ bot_moveresult_t BotTravel_Grapple(bot_movestate_t *ms, aas_reachability_t *reac
 // Returns:					-
 // Changes Globals:			-
 //===========================================================================
-bot_moveresult_t BotTravel_RocketJump(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_RocketJump(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t hordir;
 	float dist, speed;
@@ -2762,7 +2762,7 @@ bot_moveresult_t BotTravel_RocketJump(bot_movestate_t *ms, aas_reachability_t *r
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotTravel_BFGJump(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_BFGJump(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t hordir;
 	float dist, speed;
@@ -2822,7 +2822,7 @@ bot_moveresult_t BotTravel_BFGJump(bot_movestate_t *ms, aas_reachability_t *reac
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotFinishTravel_WeaponJump(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotFinishTravel_WeaponJump(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t hordir;
 	float speed;
@@ -2861,7 +2861,7 @@ bot_moveresult_t BotFinishTravel_WeaponJump(bot_movestate_t *ms, aas_reachabilit
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotTravel_JumpPad(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_JumpPad(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t hordir;
 	bot_moveresult_t_cleared( result );
@@ -2884,7 +2884,7 @@ bot_moveresult_t BotTravel_JumpPad(bot_movestate_t *ms, aas_reachability_t *reac
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotFinishTravel_JumpPad(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotFinishTravel_JumpPad(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	float speed;
 	vec3_t hordir;
@@ -2912,7 +2912,7 @@ bot_moveresult_t BotFinishTravel_JumpPad(bot_movestate_t *ms, aas_reachability_t
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int BotReachabilityTime(aas_reachability_t *reach)
+static int BotReachabilityTime(aas_reachability_t *reach)
 {
 	switch(reach->traveltype & TRAVELTYPE_MASK)
 	{
@@ -2944,7 +2944,7 @@ int BotReachabilityTime(aas_reachability_t *reach)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotMoveInGoalArea(bot_movestate_t *ms, bot_goal_t *goal)
+static bot_moveresult_t BotMoveInGoalArea(bot_movestate_t *ms, bot_goal_t *goal)
 {
 	bot_moveresult_t_cleared( result );
 	vec3_t dir;
