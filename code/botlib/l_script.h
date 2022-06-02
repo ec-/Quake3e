@@ -219,8 +219,6 @@ void StripSingleQuotes(char *string);
 signed long int ReadSignedInt(script_t *script);
 //read a possible signed floating point number
 float ReadSignedFloat(script_t *script);
-//set an array with punctuations, NULL restores default C/C++ set
-void SetScriptPunctuations(script_t *script, punctuation_t *p);
 //set script flags
 void SetScriptFlags(script_t *script, int flags);
 //get script flags
@@ -241,7 +239,5 @@ void FreeScript(script_t *script);
 void PS_SetBaseFolder(const char *path);
 //print a script error with filename and line number
 void QDECL ScriptError(script_t *script, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
-//print a script warning with filename and line number
-void QDECL ScriptWarning(script_t *script, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 
 

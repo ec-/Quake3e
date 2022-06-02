@@ -85,7 +85,7 @@ typedef struct bsp_s
 } bsp_t;
 
 //global bsp
-bsp_t bspworld;
+static bsp_t bspworld;
 
 
 #ifdef BSP_DEBUG

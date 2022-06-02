@@ -243,7 +243,7 @@ R_ComputeFogNum
 
 =================
 */
-int R_ComputeFogNum( mdvModel_t *model, trRefEntity_t *ent ) {
+static int R_ComputeFogNum( mdvModel_t *model, trRefEntity_t *ent ) {
 	int				i, j;
 	fog_t			*fog;
 	mdvFrame_t		*mdvFrame;

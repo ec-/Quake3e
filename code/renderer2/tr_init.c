@@ -388,7 +388,7 @@ Return value must be freed with ri.Hunk_FreeTempMemory()
 ================== 
 */  
 
-byte *RB_ReadPixels(int x, int y, int width, int height, size_t *offset, int *padlen)
+static byte *RB_ReadPixels(int x, int y, int width, int height, size_t *offset, int *padlen)
 {
 	byte *buffer, *bufstart;
 	int padwidth, linelen;
@@ -417,7 +417,7 @@ byte *RB_ReadPixels(int x, int y, int width, int height, size_t *offset, int *pa
 RB_TakeScreenshot
 ================== 
 */  
-void RB_TakeScreenshot(int x, int y, int width, int height, char *fileName)
+static void RB_TakeScreenshot(int x, int y, int width, int height, char *fileName)
 {
 	byte *allbuf, *buffer;
 	byte *srcptr, *destptr;
@@ -479,7 +479,7 @@ RB_TakeScreenshotJPEG
 ================== 
 */
 
-void RB_TakeScreenshotJPEG(int x, int y, int width, int height, char *fileName)
+static void RB_TakeScreenshotJPEG(int x, int y, int width, int height, char *fileName)
 {
 	byte *buffer;
 	size_t offset = 0, memcount;
@@ -523,7 +523,7 @@ const void *RB_TakeScreenshotCmd( const void *data ) {
 R_TakeScreenshot
 ==================
 */
-void R_TakeScreenshot( int x, int y, int width, int height, char *name, qboolean jpeg ) {
+static void R_TakeScreenshot( int x, int y, int width, int height, char *name, qboolean jpeg ) {
 	static char	fileName[MAX_OSPATH]; // bad things if two screenshots per frame?
 	screenshotCommand_t	*cmd;
 
@@ -547,7 +547,7 @@ void R_TakeScreenshot( int x, int y, int width, int height, char *name, qboolean
 R_ScreenshotFilename
 ================== 
 */  
-void R_ScreenshotFilename( int lastNumber, char *fileName ) {
+static void R_ScreenshotFilename( int lastNumber, char *fileName ) {
 	int		a,b,c,d;
 
 	if ( lastNumber < 0 || lastNumber > 9999 ) {
@@ -572,7 +572,7 @@ void R_ScreenshotFilename( int lastNumber, char *fileName ) {
 R_ScreenshotFilename
 ================== 
 */  
-void R_ScreenshotFilenameJPEG( int lastNumber, char *fileName ) {
+static void R_ScreenshotFilenameJPEG( int lastNumber, char *fileName ) {
 	int		a,b,c,d;
 
 	if ( lastNumber < 0 || lastNumber > 9999 ) {
@@ -600,7 +600,7 @@ levelshots are specialized 128*128 thumbnails for
 the menu system, sampled down from full screen distorted images
 ====================
 */
-void R_LevelShot( void ) {
+static void R_LevelShot( void ) {
 	char		checkname[MAX_OSPATH];
 	byte		*buffer;
 	byte		*source, *allsource;
@@ -671,7 +671,7 @@ screenshot [filename]
 Doesn't print the pacifier message if there is a second arg
 ================== 
 */  
-void R_ScreenShot_f (void) {
+static void R_ScreenShot_f (void) {
 	char	checkname[MAX_OSPATH];
 	static	int	lastNumber = -1;
 	qboolean	silent;
@@ -724,7 +724,7 @@ void R_ScreenShot_f (void) {
 	}
 } 
 
-void R_ScreenShotJPEG_f (void) {
+static void R_ScreenShotJPEG_f (void) {
 	char		checkname[MAX_OSPATH];
 	static	int	lastNumber = -1;
 	qboolean	silent;
@@ -784,7 +784,7 @@ void R_ScreenShotJPEG_f (void) {
 R_ExportCubemaps
 ==================
 */
-void R_ExportCubemaps(void)
+static void R_ExportCubemaps(void)
 {
 	exportCubemapsCommand_t	*cmd;
 
@@ -801,7 +801,7 @@ void R_ExportCubemaps(void)
 R_ExportCubemaps_f
 ==================
 */
-void R_ExportCubemaps_f(void)
+static void R_ExportCubemaps_f(void)
 {
 	R_ExportCubemaps();
 }
@@ -951,7 +951,7 @@ R_PrintLongString
 Workaround for ri.Printf's 1024 characters buffer limit.
 ================
 */
-void R_PrintLongString(const char *string) {
+static void R_PrintLongString(const char *string) {
 	char buffer[1024];
 	const char *p;
 	int size = strlen(string);
@@ -971,7 +971,7 @@ void R_PrintLongString(const char *string) {
 GfxInfo_f
 ================
 */
-void GfxInfo_f( void ) 
+static void GfxInfo_f( void ) 
 {
 	const char *enablestrings[] =
 	{
@@ -1042,7 +1042,7 @@ void GfxInfo_f( void )
 GfxMemInfo_f
 ================
 */
-void GfxMemInfo_f( void ) 
+static void GfxMemInfo_f( void ) 
 {
 	switch (glRefConfig.memInfo)
 	{
@@ -1095,7 +1095,7 @@ void GfxMemInfo_f( void )
 R_Register
 ===============
 */
-void R_Register( void ) 
+static void R_Register( void ) 
 {
 	//
 	// latched and archived variables
@@ -1299,7 +1299,7 @@ void R_Register( void )
 	ri.Cmd_AddCommand( "exportCubemaps", R_ExportCubemaps_f );
 }
 
-void R_InitQueries(void)
+static void R_InitQueries(void)
 {
 	if (!glRefConfig.occlusionQuery)
 		return;
@@ -1308,7 +1308,7 @@ void R_InitQueries(void)
 		qglGenQueries(ARRAY_LEN(tr.sunFlareQuery), tr.sunFlareQuery);
 }
 
-void R_ShutDownQueries(void)
+static void R_ShutDownQueries(void)
 {
 	if (!glRefConfig.occlusionQuery)
 		return;
@@ -1488,7 +1488,7 @@ RE_EndRegistration
 Touch all images to make sure they are resident
 =============
 */
-void RE_EndRegistration( void ) {
+static void RE_EndRegistration( void ) {
 	R_IssuePendingRenderCommands();
 	if ( !ri.Sys_LowPhysicalMemory() ) {
 		RB_ShowImages();

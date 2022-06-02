@@ -63,7 +63,7 @@ void RB_CheckOverflow( int verts, int indexes ) {
 	RB_BeginSurface(tess.shader, tess.fogNum, tess.cubemapIndex );
 }
 
-void RB_CheckVao(vao_t *vao)
+static void RB_CheckVao(vao_t *vao)
 {
 	if (vao != glState.currentVao)
 	{
@@ -1205,7 +1205,7 @@ static void RB_SurfaceFlare(srfFlare_t *surf)
 		RB_AddFlare(surf, tess.fogNum, surf->origin, surf->color, surf->normal);
 }
 
-void RB_SurfaceVaoMdvMesh(srfVaoMdvMesh_t * surface)
+static void RB_SurfaceVaoMdvMesh(srfVaoMdvMesh_t * surface)
 {
 	//mdvModel_t     *mdvModel;
 	//mdvSurface_t   *mdvSurface;

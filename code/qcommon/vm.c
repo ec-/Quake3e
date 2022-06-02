@@ -389,7 +389,7 @@ const char *VM_SymbolForCompiledPointer( vm_t *vm, void *code ) {
 ParseHex
 ===============
 */
-int	ParseHex( const char *text ) {
+static int	ParseHex( const char *text ) {
 	int		value;
 	int		c;
 
@@ -418,7 +418,7 @@ int	ParseHex( const char *text ) {
 VM_LoadSymbols
 ===============
 */
-void VM_LoadSymbols( vm_t *vm ) {
+static void VM_LoadSymbols( vm_t *vm ) {
 	union {
 		char	*c;
 		void	*v;

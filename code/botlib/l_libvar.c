@@ -42,7 +42,7 @@ libvar_t *libvarlist = NULL;
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-float LibVarStringValue( const char *string )
+static float LibVarStringValue( const char *string )
 {
 	int dotfound = 0;
 	float value = 0;

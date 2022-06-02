@@ -83,7 +83,7 @@ typedef enum {qfalse, qtrue}	qboolean;
 #define PUNCTABLE
 
 //longer punctuations first
-punctuation_t default_punctuations[] =
+static punctuation_t default_punctuations[] =
 {
 	//binary operators
 	{">>=",P_RSHIFT_ASSIGN, NULL},
@@ -172,7 +172,7 @@ static char basefolder[MAX_QPATH];
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void PS_CreatePunctuationTable(script_t *script, punctuation_t *punctuations)
+static void PS_CreatePunctuationTable(script_t *script, punctuation_t *punctuations)
 {
 	int i;
 	punctuation_t *p, *lastp, *newp;
@@ -254,7 +254,7 @@ void QDECL ScriptError(script_t *script, const char *fmt, ...)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void QDECL ScriptWarning(script_t *script, const char *fmt, ...)
+static void QDECL ScriptWarning(script_t *script, const char *fmt, ...)
 {
 	char text[1024];
 	va_list ap;
@@ -280,7 +280,7 @@ void QDECL ScriptWarning(script_t *script, const char *fmt, ...)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void SetScriptPunctuations(script_t *script, punctuation_t *p)
+static void SetScriptPunctuations(script_t *script, punctuation_t *p)
 {
 #ifdef PUNCTABLE
 	if (p) PS_CreatePunctuationTable(script, p);
@@ -297,7 +297,7 @@ void SetScriptPunctuations(script_t *script, punctuation_t *p)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int PS_ReadWhiteSpace(script_t *script)
+static int PS_ReadWhiteSpace(script_t *script)
 {
 	while(1)
 	{
@@ -356,7 +356,7 @@ int PS_ReadWhiteSpace(script_t *script)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int PS_ReadEscapeCharacter(script_t *script, char *ch)
+static int PS_ReadEscapeCharacter(script_t *script, char *ch)
 {
 	int c, val, i;
 
@@ -434,7 +434,7 @@ int PS_ReadEscapeCharacter(script_t *script, char *ch)
 // Returns:					qtrue when a string was read successfully
 // Changes Globals:		-
 //============================================================================
-int PS_ReadString(script_t *script, token_t *token, int quote)
+static int PS_ReadString(script_t *script, token_t *token, int quote)
 {
 	int len, tmpline;
 	char *tmpscript_p;
@@ -523,7 +523,7 @@ int PS_ReadString(script_t *script, token_t *token, int quote)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int PS_ReadName(script_t *script, token_t *token)
+static int PS_ReadName(script_t *script, token_t *token)
 {
 	int len = 0;
 	char c;
@@ -553,7 +553,7 @@ int PS_ReadName(script_t *script, token_t *token)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-void NumberValue(char *string, int subtype, unsigned long int *intvalue,
+static void NumberValue(char *string, int subtype, unsigned long int *intvalue,
 															float *floatvalue)
 {
 	unsigned long int dotfound = 0;
@@ -625,7 +625,7 @@ void NumberValue(char *string, int subtype, unsigned long int *intvalue,
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int PS_ReadNumber(script_t *script, token_t *token)
+static int PS_ReadNumber(script_t *script, token_t *token)
 {
 	int len = 0, i;
 	int octal, dot;
@@ -780,7 +780,7 @@ int PS_ReadLiteral(script_t *script, token_t *token)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int PS_ReadPunctuation(script_t *script, token_t *token)
+static int PS_ReadPunctuation(script_t *script, token_t *token)
 {
 	int len;
 	char *p;
@@ -821,7 +821,7 @@ int PS_ReadPunctuation(script_t *script, token_t *token)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int PS_ReadPrimitive(script_t *script, token_t *token)
+static int PS_ReadPrimitive(script_t *script, token_t *token)
 {
 	int len;
 
@@ -1304,7 +1304,7 @@ int ScriptSkipTo(script_t *script, char *value)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int FileLength(FILE *fp)
+static int FileLength(FILE *fp)
 {
 	int pos;
 	int end;

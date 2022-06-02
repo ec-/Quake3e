@@ -362,7 +362,7 @@ static char		*fs_serverReferencedPakNames[MAX_REF_PAKS];	// pk3 names
 int	fs_lastPakIndex;
 
 #ifdef FS_MISSING
-FILE*		missingFiles = NULL;
+static FILE*		missingFiles = NULL;
 #endif
 
 void Com_AppendCDKey( const char *filename );

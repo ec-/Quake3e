@@ -53,9 +53,9 @@ typedef struct midrangearea_s
 	unsigned short goaltime;
 } midrangearea_t;
 
-midrangearea_t *midrangeareas;
-int *clusterareas;
-int numclusterareas;
+static midrangearea_t *midrangeareas;
+static int *clusterareas;
+static int numclusterareas;
 
 //===========================================================================
 //
@@ -63,7 +63,7 @@ int numclusterareas;
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void AAS_AltRoutingFloodCluster_r(int areanum)
+static void AAS_AltRoutingFloodCluster_r(int areanum)
 {
 	int i, otherareanum;
 	aas_area_t *area;

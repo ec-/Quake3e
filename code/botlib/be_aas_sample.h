@@ -40,7 +40,6 @@ aas_plane_t *AAS_PlaneFromNum(int planenum);
 aas_link_t *AAS_AASLinkEntity(vec3_t absmins, vec3_t absmaxs, int entnum);
 aas_link_t *AAS_LinkEntityClientBBox(vec3_t absmins, vec3_t absmaxs, int entnum, int presencetype);
 qboolean AAS_PointInsideFace(int facenum, vec3_t point, float epsilon);
-qboolean AAS_InsideFace(aas_face_t *face, vec3_t pnormal, vec3_t point, float epsilon);
 void AAS_UnlinkFromAreas(aas_link_t *areas);
 #endif //AASINTERN
 

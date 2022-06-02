@@ -71,8 +71,8 @@ typedef struct worldSector_s {
 #define	AREA_DEPTH	4
 #define	AREA_NODES	64
 
-worldSector_t	sv_worldSectors[AREA_NODES];
-int			sv_numworldSectors;
+static worldSector_t	sv_worldSectors[AREA_NODES];
+static int			sv_numworldSectors;
 
 
 /*

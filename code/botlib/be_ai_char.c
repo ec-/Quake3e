@@ -450,7 +450,7 @@ static int BotFindCachedCharacter(const char *charfile, float skill)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotLoadCachedCharacter(const char *charfile, float skill, int reload)
+static int BotLoadCachedCharacter(const char *charfile, float skill, int reload)
 {
 	int handle, cachedhandle, intskill;
 	bot_character_t *ch = NULL;
@@ -712,7 +712,7 @@ int BotLoadCharacter(const char *charfile, float skill)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int CheckCharacteristicIndex(int character, int index)
+static int CheckCharacteristicIndex(int character, int index)
 {
 	bot_character_t *ch;
 

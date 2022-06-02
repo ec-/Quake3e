@@ -84,7 +84,7 @@ cvar_t	*com_version;
 static cvar_t *com_buildScript;	// for automated data building scripts
 
 #ifndef DEDICATED
-cvar_t	*com_introPlayed;
+static cvar_t	*com_introPlayed;
 cvar_t	*com_skipIdLogo;
 
 cvar_t	*cl_paused;
