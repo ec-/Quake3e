@@ -271,6 +271,7 @@ void QDECL Com_Printf( const char *fmt, ... )
 #endif
 
 
+#ifndef USE_VULKAN
 /*
 ** R_HaveExtension
 */
@@ -287,7 +288,6 @@ static qboolean R_HaveExtension( const char *ext )
 /*
 ** R_InitExtensions
 */
-#ifndef USE_VULKAN
 static void R_InitExtensions( void )
 {
 	GLint max_texture_size = 0;
