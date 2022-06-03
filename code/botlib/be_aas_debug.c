@@ -708,7 +708,7 @@ void AAS_ShowReachableAreas(int areanum)
 		botimport.Print(PRT_MESSAGE, "\n");
 	} //end if
 	AAS_ShowReachability(&reach);
-} //end of the function ShowReachableAreas
+} //end of the function AAS_ShowReachableAreas
 
 static void AAS_FloodAreas_r(int areanum, int cluster, int *done)
 {

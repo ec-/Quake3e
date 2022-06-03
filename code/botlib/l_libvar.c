@@ -259,6 +259,7 @@ void LibVarSet( const char *var_name, const char *value )
 	//variable is modified
 	v->modified = qtrue;
 } //end of the function LibVarSet
+#if 0
 //===========================================================================
 //
 // Parameter:				-
@@ -295,3 +296,4 @@ void LibVarSetNotModified( const char *var_name )
 		v->modified = qfalse;
 	} //end if
 } //end of the function LibVarSetNotModified
+#endif

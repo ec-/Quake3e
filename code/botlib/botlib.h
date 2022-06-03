@@ -210,11 +210,11 @@ typedef struct botlib_import_s
 typedef struct aas_export_s
 {
 	//-----------------------------------
-	// be_aas_entity.h
+	// be_aas_entity.c
 	//-----------------------------------
 	void		(*AAS_EntityInfo)(int entnum, struct aas_entityinfo_s *info);
 	//-----------------------------------
-	// be_aas_main.h
+	// be_aas_main.c
 	//-----------------------------------
 	int			(*AAS_Initialized)(void);
 	void		(*AAS_PresenceTypeBoundingBox)(int presencetype, vec3_t mins, vec3_t maxs);

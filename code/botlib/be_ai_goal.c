@@ -965,13 +965,14 @@ int BotGetNextCampSpotGoal(int num, bot_goal_t *goal)
 	} //end for
 	return 0;
 } //end of the function BotGetNextCampSpotGoal
+#if 0
 //===========================================================================
 //
 // Parameter:			-
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-void BotFindEntityForLevelItem(levelitem_t *li)
+static void BotFindEntityForLevelItem(levelitem_t *li)
 {
 	int ent, modelindex;
 	itemconfig_t *ic;
@@ -1005,6 +1006,7 @@ void BotFindEntityForLevelItem(levelitem_t *li)
 		} //end if
 	} //end for
 } //end of the function BotFindEntityForLevelItem
+#endif
 //===========================================================================
 //
 // Parameter:			-

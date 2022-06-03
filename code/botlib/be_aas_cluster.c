@@ -76,6 +76,7 @@ static void AAS_RemoveClusterAreas(void)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
+#if 0
 void AAS_ClearCluster(int clusternum)
 {
 	int i;
@@ -110,6 +111,7 @@ void AAS_RemovePortalsClusterReference(int clusternum)
 		} //end if
 	} //end for
 } //end of the function AAS_RemovePortalsClusterReference
+#endif
 //===========================================================================
 //
 // Parameter:				-
@@ -280,13 +282,14 @@ static int AAS_FloodClusterAreasUsingReachabilities(int clusternum)
 	} //end for
 	return qtrue;
 } //end of the function AAS_FloodClusterAreasUsingReachabilities
+#if 0
 //===========================================================================
 //
 // Parameter:			-
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-void AAS_NumberClusterPortals(int clusternum)
+static void AAS_NumberClusterPortals(int clusternum)
 {
 	int i, portalnum;
 	aas_cluster_t *cluster;
@@ -307,6 +310,7 @@ void AAS_NumberClusterPortals(int clusternum)
 		} //end else
 	} //end for
 } //end of the function AAS_NumberClusterPortals
+#endif
 //===========================================================================
 //
 // Parameter:			-
@@ -929,6 +933,7 @@ static void AAS_FindPossiblePortals(void)
 	} //end for
 	botimport.Print(PRT_MESSAGE, "\r%6d possible portal areas\n", numpossibleportals);
 } //end of the function AAS_FindPossiblePortals
+#if 0
 //===========================================================================
 //
 // Parameter:				-
@@ -944,8 +949,6 @@ void AAS_RemoveAllPortals(void)
 		aasworld.areasettings[i].contents &= ~AREACONTENTS_CLUSTERPORTAL;
 	} //end for
 } //end of the function AAS_RemoveAllPortals
-
-#if 0
 //===========================================================================
 //
 // Parameter:				-
@@ -1055,7 +1058,6 @@ void AAS_FloodClusterReachabilities(int clusternum)
 		} //end for
 	} //end for
 } //end of the function AAS_FloodClusterReachabilities
-
 //===========================================================================
 //
 // Parameter:				-
@@ -1128,14 +1130,12 @@ void AAS_RemoveNotClusterClosingPortals(void)
 	} //end for
 	botimport.Print(PRT_MESSAGE, "\r%6d non closing portals removed\n", nonclosingportals);
 } //end of the function AAS_RemoveNotClusterClosingPortals
-
 //===========================================================================
 //
 // Parameter:				-
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-
 void AAS_RemoveNotClusterClosingPortals(void)
 {
 	int i, j, facenum, otherareanum, nonclosingportals, numseperatedclusters;
@@ -1202,14 +1202,12 @@ void AAS_RemoveNotClusterClosingPortals(void)
 	} //end for
 	botimport.Print(PRT_MESSAGE, "\r%6d non closing portals removed\n", nonclosingportals);
 } //end of the function AAS_RemoveNotClusterClosingPortals
-
 //===========================================================================
 //
 // Parameter:				-
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-
 void AAS_AddTeleporterPortals(void)
 {
 	int j, area2num, facenum, otherareanum;
@@ -1340,7 +1338,6 @@ void AAS_AddTeleporterPortals(void)
 	} //end for
 	AAS_FreeBSPEntities(entities);
 } //end of the function AAS_AddTeleporterPortals
-
 //===========================================================================
 //
 // Parameter:				-
@@ -1361,9 +1358,7 @@ void AAS_AddTeleporterPortals(void)
 		} //end for
 	} //end for
 } //end of the function AAS_AddTeleporterPortals
-
 #endif
-
 //===========================================================================
 //
 // Parameter:				-

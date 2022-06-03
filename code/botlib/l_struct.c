@@ -57,7 +57,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-fielddef_t *FindField(fielddef_t *defs, char *name)
+static fielddef_t *FindField(fielddef_t *defs, char *name)
 {
 	int i;
 
@@ -73,7 +73,7 @@ fielddef_t *FindField(fielddef_t *defs, char *name)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-qboolean ReadNumber(source_t *source, fielddef_t *fd, void *p)
+static qboolean ReadNumber(source_t *source, fielddef_t *fd, void *p)
 {
 	token_t token;
 	int negative = qfalse;
@@ -188,7 +188,7 @@ qboolean ReadNumber(source_t *source, fielddef_t *fd, void *p)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-qboolean ReadChar(source_t *source, fielddef_t *fd, void *p)
+static qboolean ReadChar(source_t *source, fielddef_t *fd, void *p)
 {
 	token_t token;
 
@@ -213,7 +213,7 @@ qboolean ReadChar(source_t *source, fielddef_t *fd, void *p)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int ReadString(source_t *source, fielddef_t *fd, void *p)
+static int ReadString(source_t *source, fielddef_t *fd, void *p)
 {
 	token_t token;
 
@@ -366,7 +366,7 @@ int WriteFloat(FILE *fp, float value)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int WriteStructWithIndent(FILE *fp, structdef_t *def, char *structure, int indent)
+static int WriteStructWithIndent(FILE *fp, structdef_t *def, char *structure, int indent)
 {
 	int i, num;
 	void *p;
