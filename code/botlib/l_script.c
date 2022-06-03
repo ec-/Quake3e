@@ -727,13 +727,14 @@ static int PS_ReadNumber(script_t *script, token_t *token)
 	if (!(token->subtype & TT_FLOAT)) token->subtype |= TT_INTEGER;
 	return 1;
 } //end of the function PS_ReadNumber
+#if 0
 //============================================================================
 //
 // Parameter:				-
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int PS_ReadLiteral(script_t *script, token_t *token)
+static int PS_ReadLiteral(script_t *script, token_t *token)
 {
 	token->type = TT_LITERAL;
 	//first quote
@@ -774,6 +775,7 @@ int PS_ReadLiteral(script_t *script, token_t *token)
 	//
 	return 1;
 } //end of the function PS_ReadLiteral
+#endif
 //============================================================================
 //
 // Parameter:				-
@@ -915,6 +917,7 @@ int PS_ReadToken(script_t *script, token_t *token)
 	//successfully read a token
 	return 1;
 } //end of the function PS_ReadToken
+#if 0
 //============================================================================
 //
 // Parameter:				-
@@ -938,6 +941,7 @@ int PS_ExpectTokenString(script_t *script, const char *string)
 	} //end if
 	return 1;
 } //end of the function PS_ExpectToken
+#endif
 //============================================================================
 //
 // Parameter:				-
@@ -1016,6 +1020,7 @@ int PS_ExpectAnyToken(script_t *script, token_t *token)
 		return 1;
 	} //end else
 } //end of the function PS_ExpectAnyToken
+#if 0
 //============================================================================
 //
 // Parameter:				-
@@ -1071,6 +1076,7 @@ int PS_SkipUntilString(script_t *script, const char *string)
 	} //end while
 	return 0;
 } //end of the function PS_SkipUntilString
+#endif
 //============================================================================
 //
 // Parameter:				-
@@ -1081,6 +1087,7 @@ void PS_UnreadLastToken(script_t *script)
 {
 	script->tokenavailable = 1;
 } //end of the function UnreadLastToken
+#if 0
 //============================================================================
 //
 // Parameter:				-
@@ -1110,6 +1117,7 @@ char PS_NextWhiteSpaceChar(script_t *script)
 		return 0;
 	} //end else
 } //end of the function PS_NextWhiteSpaceChar
+#endif
 //============================================================================
 //
 // Parameter:				-
@@ -1144,6 +1152,7 @@ void StripSingleQuotes(char *string)
 		string[strlen(string)-1] = '\0';
 	} //end if
 } //end of the function StripSingleQuotes
+#if 0
 //============================================================================
 //
 // Parameter:				-
@@ -1206,6 +1215,7 @@ signed long int ReadSignedInt(script_t *script)
 	
 	return sign * token.intvalue;
 } //end of the function ReadSignedInt
+#endif
 //============================================================================
 //
 // Parameter:				-
@@ -1216,6 +1226,7 @@ void SetScriptFlags(script_t *script, int flags)
 {
 	script->flags = flags;
 } //end of the function SetScriptFlags
+#if 0
 //============================================================================
 //
 // Parameter:				-
@@ -1250,6 +1261,7 @@ void ResetScript(script_t *script)
 	//clear the saved token
 	Com_Memset(&script->token, 0, sizeof(token_t));
 } //end of the function ResetScript
+#endif
 //============================================================================
 // returns true if at the end of the script
 //
@@ -1261,6 +1273,7 @@ int EndOfScript(script_t *script)
 {
 	return script->script_p >= script->end_p;
 } //end of the function EndOfScript
+#if 0
 //============================================================================
 //
 // Parameter:				-
@@ -1297,6 +1310,7 @@ int ScriptSkipTo(script_t *script, char *value)
 		script->script_p++;
 	} while(1);
 } //end of the function ScriptSkipTo
+#endif
 #ifndef BOTLIB
 //============================================================================
 //
@@ -1434,10 +1448,15 @@ void FreeScript(script_t *script)
 #endif //PUNCTABLE
 	FreeMemory(script);
 } //end of the function FreeScript
-
-
-//set the base folder to load files from
+//============================================================================
+// set the base folder to load files from
+//
+// Parameter:				-
+// Returns:					-
+// Changes Globals:		-
+//============================================================================
 void PS_SetBaseFolder( const char *path )
 {
 	Q_strncpyz( basefolder, path, sizeof( basefolder ) );
-}
+} //end of the function PS_SetBaseFolder
+

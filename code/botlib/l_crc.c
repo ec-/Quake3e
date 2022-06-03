@@ -94,6 +94,7 @@ static void CRC_Init(unsigned short *crcvalue)
 {
 	*crcvalue = CRC_INIT_VALUE;
 } //end of the function CRC_Init
+#if 0
 //===========================================================================
 //
 // Parameter:				-
@@ -104,6 +105,7 @@ void CRC_ProcessByte(unsigned short *crcvalue, byte data)
 {
 	*crcvalue = (*crcvalue << 8) ^ crctable[(*crcvalue >> 8) ^ data];
 } //end of the function CRC_ProcessByte
+#endif
 //===========================================================================
 //
 // Parameter:				-
@@ -135,6 +137,7 @@ unsigned short CRC_ProcessString(unsigned char *data, int length)
 	} //end for
 	return CRC_Value(crcvalue);
 } //end of the function CRC_ProcessString
+#if 0
 //===========================================================================
 //
 // Parameter:				-
@@ -150,3 +153,4 @@ void CRC_ContinueProcessString(unsigned short *crc, char *data, int length)
 		*crc = (*crc << 8) ^ crctable[(*crc >> 8) ^ data[i]];
 	} //end for
 } //end of the function CRC_ProcessString
+#endif

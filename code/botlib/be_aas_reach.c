@@ -67,7 +67,7 @@ static int reach_equalfloor;	//walk on floors with equal height
 static int reach_step;			//step up
 static int reach_walk;			//walk of step
 static int reach_barrier;		//jump up to a barrier
-static int reach_waterjump;	//jump out of water
+static int reach_waterjump;		//jump out of water
 static int reach_walkoffledge;	//walk of a ledge
 static int reach_jump;			//jump
 static int reach_ladder;		//climb or descent a ladder
@@ -75,11 +75,13 @@ static int reach_teleport;		//teleport
 static int reach_elevator;		//use an elevator
 static int reach_funcbob;		//use a func bob
 static int reach_grapple;		//grapple hook
-int reach_doublejump;	//double jump
-int reach_rampjump;		//ramp jump
-int reach_strafejump;	//strafe jump (just normal jump but further)
+#if 0
+static int reach_doublejump;	//double jump
+static int reach_rampjump;		//ramp jump
+static int reach_strafejump;	//strafe jump (just normal jump but further)
+static int reach_bfgjump;		//bfg jump
+#endif
 static int reach_rocketjump;	//rocket jump
-int reach_bfgjump;		//bfg jump
 static int reach_jumppad;		//jump pads
 //if true grapple reachabilities are skipped
 int calcgrapplereach;
@@ -182,7 +184,7 @@ static float AAS_AreaVolume(int areanum)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int AAS_BestReachableLinkArea(aas_link_t *areas)
+static int AAS_BestReachableLinkArea(aas_link_t *areas)
 {
 	aas_link_t *link;
 
@@ -764,6 +766,7 @@ int AAS_AreaDoNotEnter(int areanum)
 {
 	return (aasworld.areasettings[areanum].contents & AREACONTENTS_DONOTENTER);
 } //end of the function AAS_AreaDoNotEnter
+#if 0
 //===========================================================================
 // returns the time it takes perform a barrier jump
 //
@@ -771,10 +774,11 @@ int AAS_AreaDoNotEnter(int areanum)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-unsigned short int AAS_BarrierJumpTravelTime(void)
+static unsigned short int AAS_BarrierJumpTravelTime(void)
 {
 	return aassettings.phys_jumpvel / (aassettings.phys_gravity * 0.1);
 } //end op the function AAS_BarrierJumpTravelTime
+#endif
 //===========================================================================
 // returns true if there already exists a reachability from area1 to area2
 //
@@ -792,6 +796,7 @@ static qboolean AAS_ReachabilityExists(int area1num, int area2num)
 	} //end for
 	return qfalse;
 } //end of the function AAS_ReachabilityExists
+#if 0
 //===========================================================================
 // returns true if there is a solid just after the end point when going
 // from start to end
@@ -800,7 +805,7 @@ static qboolean AAS_ReachabilityExists(int area1num, int area2num)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int AAS_NearbySolidOrGap(vec3_t start, vec3_t end)
+static int AAS_NearbySolidOrGap(vec3_t start, vec3_t end)
 {
 	vec3_t dir, testpoint;
 	int areanum;
@@ -825,6 +830,7 @@ int AAS_NearbySolidOrGap(vec3_t start, vec3_t end)
 	} //end if
 	return qfalse;
 } //end of the function AAS_SolidGapTime
+#endif
 //===========================================================================
 // searches for swim reachabilities between adjacent areas
 //
@@ -3061,7 +3067,7 @@ static void AAS_Reachability_Elevator(void)
 					bottomorg[2] += 24;
 				} //end else
 				//look at adjacent areas around the top of the plat
-				//make larger steps to outside the plat everytime
+				//make larger steps to outside the plat every time
 				for (n = 0; n < 3; n++)
 				{
 					for (k = 0; k < 3; k++)

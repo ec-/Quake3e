@@ -451,8 +451,6 @@ static int PC_ReadDefineParms(source_t *source, define_t *define, token_t **parm
 	} //end for
 	return qtrue;
 } //end of the function PC_ReadDefineParms
-
-
 //============================================================================
 //
 // Parameter:				-
@@ -480,9 +478,7 @@ static int PC_StringizeTokens( const token_t *tokens, token_t *token )
 	strcpy( token->string + total, "\"" );
 
 	return qtrue;
-}
-
-
+} //end of the function PC_StringizeTokens
 //============================================================================
 //
 // Parameter:				-
@@ -514,9 +510,7 @@ static int PC_MergeTokens(token_t *t1, token_t *t2)
 	}
 	//FIXME: merging of two number of the same sub type
 	return qfalse;
-}
-
-
+} //end of the function PC_MergeTokens
 //============================================================================
 //
 // Parameter:				-
@@ -535,13 +529,14 @@ void PC_PrintDefine(define_t *define)
 //	struct define_s *next;			//next defined macro in a list
 } //end of the function PC_PrintDefine*/
 #if DEFINEHASHING
+#if 0
 //============================================================================
 //
 // Parameter:				-
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-void PC_PrintDefineHashTable(define_t **definehash)
+static void PC_PrintDefineHashTable(define_t **definehash)
 {
 	int i;
 	define_t *d;
@@ -556,6 +551,7 @@ void PC_PrintDefineHashTable(define_t **definehash)
 		Log_Write("\n");
 	} //end for
 } //end of the function PC_PrintDefineHashTable
+#endif
 //============================================================================
 //
 // Parameter:				-
@@ -610,7 +606,7 @@ static define_t *PC_FindHashedDefine(define_t **definehash, char *name)
 	} //end for
 	return NULL;
 } //end of the function PC_FindHashedDefine
-#endif //DEFINEHASHING
+#else //DEFINEHASHING
 //============================================================================
 //
 // Parameter:				-
@@ -627,6 +623,7 @@ static define_t *PC_FindDefine(define_t *defines, char *name)
 	} //end for
 	return NULL;
 } //end of the function PC_FindDefine
+#endif //DEFINEHASHING
 //============================================================================
 //
 // Parameter:				-
@@ -673,13 +670,14 @@ static void PC_FreeDefine(define_t *define)
 	FreeMemory(define->name);
 	FreeMemory(define);
 } //end of the function PC_FreeDefine
+#if 0
 //============================================================================
 //
 // Parameter:				-
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-void PC_AddBuiltinDefines(source_t *source)
+static void PC_AddBuiltinDefines(source_t *source)
 {
 	int i;
 	define_t *define;
@@ -713,6 +711,7 @@ void PC_AddBuiltinDefines(source_t *source)
 #endif //DEFINEHASHING
 	} //end for
 } //end of the function PC_AddBuiltinDefines
+#endif
 //============================================================================
 //
 // Parameter:				-
@@ -1378,13 +1377,14 @@ static define_t *PC_DefineFromString(const char *string)
 	//
 	return NULL;
 } //end of the function PC_DefineFromString
+#if 0
 //============================================================================
 //
 // Parameter:				-
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int PC_AddDefine(source_t *source, char *string)
+static int PC_AddDefine(source_t *source, char *string)
 {
 	define_t *define;
 
@@ -1398,6 +1398,7 @@ int PC_AddDefine(source_t *source, char *string)
 #endif //DEFINEHASHING
 	return qtrue;
 } //end of the function PC_AddDefine
+#endif
 //============================================================================
 // add a globals define that will be added to all opened sources
 //
@@ -1415,6 +1416,7 @@ int PC_AddGlobalDefine(const char *string)
 	globaldefines = define;
 	return qtrue;
 } //end of the function PC_AddGlobalDefine
+#if 0
 //============================================================================
 // remove the given global define
 //
@@ -1434,6 +1436,7 @@ int PC_RemoveGlobalDefine(char *name)
 	} //end if
 	return qfalse;
 } //end of the function PC_RemoveGlobalDefine
+#endif
 //============================================================================
 // remove all globals defines
 //
@@ -2664,7 +2667,7 @@ static int PC_ReadDollarDirective(source_t *source)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int BuiltinFunction(source_t *source)
+static int BuiltinFunction(source_t *source)
 {
 	token_t token;
 
@@ -2686,7 +2689,7 @@ int BuiltinFunction(source_t *source)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int QuakeCMacro(source_t *source)
+static int QuakeCMacro(source_t *source)
 {
 	int i;
 	token_t token;
@@ -2905,6 +2908,7 @@ int PC_CheckTokenString(source_t *source, char *string)
 	PC_UnreadSourceToken(source, &tok);
 	return qfalse;
 } //end of the function PC_CheckTokenString
+#if 0
 //============================================================================
 //
 // Parameter:				-
@@ -2943,6 +2947,7 @@ int PC_SkipUntilString(source_t *source, char *string)
 	} //end while
 	return qfalse;
 } //end of the function PC_SkipUntilString
+#endif
 //============================================================================
 //
 // Parameter:				-
@@ -2963,6 +2968,7 @@ void PC_UnreadToken(source_t *source, token_t *token)
 {
 	PC_UnreadSourceToken(source, token);
 } //end of the function PC_UnreadToken
+#if 0
 //============================================================================
 //
 // Parameter:				-
@@ -2993,6 +2999,7 @@ void PC_SetPunctuations(source_t *source, punctuation_t *p)
 {
 	source->punctuations = p;
 } //end of the function PC_SetPunctuations
+#endif
 //============================================================================
 //
 // Parameter:			-
@@ -3027,6 +3034,7 @@ source_t *LoadSourceFile(const char *filename)
 	PC_AddGlobalDefinesToSource(source);
 	return source;
 } //end of the function LoadSourceFile
+#if 0
 //============================================================================
 //
 // Parameter:				-
@@ -3060,6 +3068,7 @@ source_t *LoadSourceMemory(char *ptr, int length, char *name)
 	PC_AddGlobalDefinesToSource(source);
 	return source;
 } //end of the function LoadSourceMemory
+#endif
 //============================================================================
 //
 // Parameter:				-
@@ -3215,14 +3224,22 @@ int PC_SourceFileAndLine(int handle, char *filename, int *line)
 		*line = 0;
 	return qtrue;
 } //end of the function PC_SourceFileAndLine
-
-
+//============================================================================
+//
+// Parameter:			-
+// Returns:				-
+// Changes Globals:		-
+//============================================================================
 void PC_SetBaseFolder( const char *path )
 {
 	PS_SetBaseFolder( path );
-}
-
-
+} //end of the function PC_SetBaseFolder
+//============================================================================
+//
+// Parameter:			-
+// Returns:				-
+// Changes Globals:		-
+//============================================================================
 void PC_CheckOpenSourceHandles( void )
 {
 	int i;
@@ -3233,7 +3250,8 @@ void PC_CheckOpenSourceHandles( void )
 		{
 #ifdef BOTLIB
 			botimport.Print(PRT_ERROR, "file %s still open in precompiler\n", sourceFiles[i]->scriptstack->filename);
-#endif
-		}
-	}
-}
+#endif	//BOTLIB
+		} //end if
+	} //end for
+} //end of the function PC_CheckOpenSourceHandles
+

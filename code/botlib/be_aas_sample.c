@@ -347,6 +347,7 @@ int AAS_PointPresenceType(vec3_t point)
 	if (!areanum) return PRESENCE_NONE;
 	return aasworld.areasettings[areanum].presencetype;
 } //end of the function AAS_PointPresenceType
+#if 0
 //===========================================================================
 // calculates the minimum distance between the origin of the box and the
 // given plane when both will collide on the given side of the plane
@@ -396,6 +397,7 @@ vec_t AAS_BoxOriginDistanceFromPlane(vec3_t normal, vec3_t mins, vec3_t maxs, in
 //	VectorNegate(normal, v2);
 	return DotProduct(v1, v2);
 } //end of the function AAS_BoxOriginDistanceFromPlane
+#endif
 //===========================================================================
 //
 // Parameter:				-
@@ -1007,6 +1009,7 @@ qboolean AAS_PointInsideFace(int facenum, vec3_t point, float epsilon)
 	} //end for
 	return qtrue;
 } //end of the function AAS_PointInsideFace
+#if 0
 //===========================================================================
 // returns the ground face the given point is above in the given area
 //
@@ -1056,6 +1059,7 @@ void AAS_FacePlane(int facenum, vec3_t normal, float *dist)
 	VectorCopy(plane->normal, normal);
 	*dist = plane->dist;
 } //end of the function AAS_FacePlane
+#endif
 //===========================================================================
 // returns the face the trace end position is situated in
 //
