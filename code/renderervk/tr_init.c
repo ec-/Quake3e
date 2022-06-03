@@ -180,14 +180,14 @@ int		max_polys;
 int		max_polyverts;
 
 #ifdef USE_VULKAN
+
 #include "vk.h"
 Vk_Instance vk;
 Vk_World	vk_world;
-#endif
+
+#else
 
 static char gl_extensions[ 32768 ];
-
-#ifndef USE_VULKAN
 
 #define GLE( ret, name, ... ) ret ( APIENTRY * q##name )( __VA_ARGS__ );
 	QGL_Core_PROCS;
