@@ -215,7 +215,7 @@ static int Export_BotLibVarSet( const char *var_name, const char *value )
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int Export_BotLibVarGet( const char *var_name, char *value, int size )
+static int Export_BotLibVarGet( const char *var_name, char *value, int size )
 {
 	const char *varvalue;
 
@@ -283,7 +283,9 @@ static int Export_BotLibUpdateEntity(int ent, bot_entitystate_t *state)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
+#if 0
 void AAS_TestMovementPrediction(int entnum, vec3_t origin, vec3_t dir);
+#endif
 void ElevatorBottomCenter(aas_reachability_t *reach, vec3_t bottomcenter);
 int BotGetReachabilityToGoal(vec3_t origin, int areanum,
 									  int lastgoalareanum, int lastareanum,

@@ -621,7 +621,7 @@ static void AAS_InitPortalMaxTravelTimes(void)
 // Changes Globals:		-
 //===========================================================================
 /*
-int AAS_FreeOldestCache(void)
+static int AAS_FreeOldestCache(void)
 {
 	int i, j, bestcluster, bestarea, freed;
 	float besttime;
@@ -1919,16 +1919,6 @@ int AAS_PredictRoute(struct aas_predictroute_s *route, int areanum, vec3_t origi
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int AAS_BridgeWalkable(int areanum)
-{
-	return qfalse;
-} //end of the function AAS_BridgeWalkable
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 void AAS_ReachabilityFromNum(int num, struct aas_reachability_s *reach)
 {
 	if (!aasworld.initialized)
@@ -2070,20 +2060,6 @@ static int AAS_AreaVisible(int srcarea, int destarea)
 {
 	return qfalse;
 } //end of the function AAS_AreaVisible
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
-float DistancePointToLine(vec3_t v1, vec3_t v2, vec3_t point)
-{
-	vec3_t vec, p2;
-
-	AAS_ProjectPointOntoVector(point, v1, v2, p2);
-	VectorSubtract(point, p2, vec);
-	return VectorLength(vec);
-} //end of the function DistancePointToLine
 //===========================================================================
 //
 // Parameter:			-

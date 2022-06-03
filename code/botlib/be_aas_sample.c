@@ -348,55 +348,6 @@ int AAS_PointPresenceType(vec3_t point)
 	return aasworld.areasettings[areanum].presencetype;
 } //end of the function AAS_PointPresenceType
 //===========================================================================
-// calculates the minimum distance between the origin of the box and the
-// given plane when both will collide on the given side of the plane
-//
-// normal	=	normal vector of plane to calculate distance from
-// mins		=	minimums of box relative to origin
-// maxs		=	maximums of box relative to origin
-// side		=	side of the plane we want to calculate the distance from
-//					0 normal vector side
-//					1 not normal vector side
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-vec_t AAS_BoxOriginDistanceFromPlane(vec3_t normal, vec3_t mins, vec3_t maxs, int side)
-{
-	vec3_t v1, v2;
-	int i;
-
-	//swap maxs and mins when on the other side of the plane
-	if (side)
-	{
-		//get a point of the box that would be one of the first
-		//to collide with the plane
-		for (i = 0; i < 3; i++)
-		{
-			if (normal[i] > BBOX_NORMAL_EPSILON) v1[i] = maxs[i];
-			else if (normal[i] < -BBOX_NORMAL_EPSILON) v1[i] = mins[i];
-			else v1[i] = 0;
-		} //end for
-	} //end if
-	else
-	{
-		//get a point of the box that would be one of the first
-		//to collide with the plane
-		for (i = 0; i < 3; i++)
-		{
-			if (normal[i] > BBOX_NORMAL_EPSILON) v1[i] = mins[i];
-			else if (normal[i] < -BBOX_NORMAL_EPSILON) v1[i] = maxs[i];
-			else v1[i] = 0;
-		} //end for
-	} //end else
-	//
-	VectorCopy(normal, v2);
-	VectorInverse(v2);
-//	VectorNegate(normal, v2);
-	return DotProduct(v1, v2);
-} //end of the function AAS_BoxOriginDistanceFromPlane
-//===========================================================================
 //
 // Parameter:				-
 // Returns:					-
@@ -1007,55 +958,6 @@ qboolean AAS_PointInsideFace(int facenum, vec3_t point, float epsilon)
 	} //end for
 	return qtrue;
 } //end of the function AAS_PointInsideFace
-//===========================================================================
-// returns the ground face the given point is above in the given area
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-aas_face_t *AAS_AreaGroundFace(int areanum, vec3_t point)
-{
-	int i, facenum;
-	vec3_t up = {0, 0, 1};
-	vec3_t normal;
-	aas_area_t *area;
-	aas_face_t *face;
-
-	if (!aasworld.loaded) return NULL;
-
-	area = &aasworld.areas[areanum];
-	for (i = 0; i < area->numfaces; i++)
-	{
-		facenum = aasworld.faceindex[area->firstface + i];
-		face = &aasworld.faces[abs(facenum)];
-		//if this is a ground face
-		if (face->faceflags & FACE_GROUND)
-		{
-			//get the up or down normal
-			if (aasworld.planes[face->planenum].normal[2] < 0) VectorNegate(up, normal);
-			else VectorCopy(up, normal);
-			//check if the point is in the face
-			if (AAS_InsideFace(face, normal, point, 0.01f)) return face;
-		} //end if
-	} //end for
-	return NULL;
-} //end of the function AAS_AreaGroundFace
-//===========================================================================
-// returns the face the trace end position is situated in
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-void AAS_FacePlane(int facenum, vec3_t normal, float *dist)
-{
-	aas_plane_t *plane;
-
-	plane = &aasworld.planes[aasworld.faces[facenum].planenum];
-	VectorCopy(plane->normal, normal);
-	*dist = plane->dist;
-} //end of the function AAS_FacePlane
 //===========================================================================
 // returns the face the trace end position is situated in
 //

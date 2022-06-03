@@ -727,13 +727,14 @@ static int PS_ReadNumber(script_t *script, token_t *token)
 	if (!(token->subtype & TT_FLOAT)) token->subtype |= TT_INTEGER;
 	return 1;
 } //end of the function PS_ReadNumber
+#if 0
 //============================================================================
 //
 // Parameter:				-
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int PS_ReadLiteral(script_t *script, token_t *token)
+static int PS_ReadLiteral(script_t *script, token_t *token)
 {
 	token->type = TT_LITERAL;
 	//first quote
@@ -774,6 +775,7 @@ int PS_ReadLiteral(script_t *script, token_t *token)
 	//
 	return 1;
 } //end of the function PS_ReadLiteral
+#endif
 //============================================================================
 //
 // Parameter:				-
@@ -921,29 +923,6 @@ int PS_ReadToken(script_t *script, token_t *token)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int PS_ExpectTokenString(script_t *script, const char *string)
-{
-	token_t token;
-
-	if (!PS_ReadToken(script, &token))
-	{
-		ScriptError(script, "couldn't find expected %s", string);
-		return 0;
-	} //end if
-
-	if (strcmp(token.string, string))
-	{
-		ScriptError(script, "expected %s, found %s", string, token.string);
-		return 0;
-	} //end if
-	return 1;
-} //end of the function PS_ExpectToken
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PS_ExpectTokenType(script_t *script, int type, int subtype, token_t *token)
 {
 	char str[MAX_TOKEN];
@@ -1022,94 +1001,10 @@ int PS_ExpectAnyToken(script_t *script, token_t *token)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int PS_CheckTokenString(script_t *script, const char *string)
-{
-	token_t tok;
-
-	if (!PS_ReadToken(script, &tok)) return 0;
-	//if the token is available
-	if (!strcmp(tok.string, string)) return 1;
-	//token not available
-	script->script_p = script->lastscript_p;
-	return 0;
-} //end of the function PS_CheckTokenString
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
-int PS_CheckTokenType(script_t *script, int type, int subtype, token_t *token)
-{
-	token_t tok;
-
-	if (!PS_ReadToken(script, &tok)) return 0;
-	//if the type matches
-	if (tok.type == type &&
-			(tok.subtype & subtype) == subtype)
-	{
-		Com_Memcpy(token, &tok, sizeof(token_t));
-		return 1;
-	} //end if
-	//token is not available
-	script->script_p = script->lastscript_p;
-	return 0;
-} //end of the function PS_CheckTokenType
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
-int PS_SkipUntilString(script_t *script, const char *string)
-{
-	token_t token;
-
-	while(PS_ReadToken(script, &token))
-	{
-		if (!strcmp(token.string, string)) return 1;
-	} //end while
-	return 0;
-} //end of the function PS_SkipUntilString
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void PS_UnreadLastToken(script_t *script)
 {
 	script->tokenavailable = 1;
 } //end of the function UnreadLastToken
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
-void PS_UnreadToken(script_t *script, token_t *token)
-{
-	Com_Memcpy(&script->token, token, sizeof(token_t));
-	script->tokenavailable = 1;
-} //end of the function UnreadToken
-//============================================================================
-// returns the next character of the read white space, returns NULL if none
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
-char PS_NextWhiteSpaceChar(script_t *script)
-{
-	if (script->whitespace_p != script->endwhitespace_p)
-	{
-		return *script->whitespace_p++;
-	} //end if
-	else
-	{
-		return 0;
-	} //end else
-} //end of the function PS_NextWhiteSpaceChar
 //============================================================================
 //
 // Parameter:				-
@@ -1150,106 +1045,10 @@ void StripSingleQuotes(char *string)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-float ReadSignedFloat(script_t *script)
-{
-	token_t token;
-	float sign = 1.0;
-
-	PS_ExpectAnyToken(script, &token);
-	if (!strcmp(token.string, "-"))
-	{
-		if(!PS_ExpectAnyToken(script, &token))
-		{
-			ScriptError(script, "Missing float value");
-			return 0;
-		}
-
-		sign = -1.0;
-	}
-	
-	if (token.type != TT_NUMBER)
-	{
-		ScriptError(script, "expected float value, found %s", token.string);
-		return 0;
-	}
-
-	return sign * token.floatvalue;
-} //end of the function ReadSignedFloat
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
-signed long int ReadSignedInt(script_t *script)
-{
-	token_t token;
-	signed long int sign = 1;
-
-	PS_ExpectAnyToken(script, &token);
-	if (!strcmp(token.string, "-"))
-	{
-		if(!PS_ExpectAnyToken(script, &token))
-		{
-			ScriptError(script, "Missing integer value");
-			return 0;
-		}
-
-		sign = -1;
-	}
-
-	if (token.type != TT_NUMBER || token.subtype == TT_FLOAT)
-	{
-		ScriptError(script, "expected integer value, found %s", token.string);
-		return 0;
-	}
-	
-	return sign * token.intvalue;
-} //end of the function ReadSignedInt
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void SetScriptFlags(script_t *script, int flags)
 {
 	script->flags = flags;
 } //end of the function SetScriptFlags
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
-int GetScriptFlags(script_t *script)
-{
-	return script->flags;
-} //end of the function GetScriptFlags
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
-void ResetScript(script_t *script)
-{
-	//pointer in script buffer
-	script->script_p = script->buffer;
-	//pointer in script buffer before reading token
-	script->lastscript_p = script->buffer;
-	//begin of white space
-	script->whitespace_p = NULL;
-	//end of white space
-	script->endwhitespace_p = NULL;
-	//set if there's a token available in script->token
-	script->tokenavailable = 0;
-	//
-	script->line = 1;
-	script->lastline = 1;
-	//clear the saved token
-	Com_Memset(&script->token, 0, sizeof(token_t));
-} //end of the function ResetScript
 //============================================================================
 // returns true if at the end of the script
 //
@@ -1261,42 +1060,6 @@ int EndOfScript(script_t *script)
 {
 	return script->script_p >= script->end_p;
 } //end of the function EndOfScript
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
-int NumLinesCrossed(script_t *script)
-{
-	return script->line - script->lastline;
-} //end of the function NumLinesCrossed
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
-int ScriptSkipTo(script_t *script, char *value)
-{
-	int len;
-	char firstchar;
-
-	firstchar = *value;
-	len = strlen(value);
-	do
-	{
-		if (!PS_ReadWhiteSpace(script)) return 0;
-		if (*script->script_p == firstchar)
-		{
-			if (!strncmp(script->script_p, value, len))
-			{
-				return 1;
-			} //end if
-		} //end if
-		script->script_p++;
-	} while(1);
-} //end of the function ScriptSkipTo
 #ifndef BOTLIB
 //============================================================================
 //
@@ -1434,10 +1197,15 @@ void FreeScript(script_t *script)
 #endif //PUNCTABLE
 	FreeMemory(script);
 } //end of the function FreeScript
-
-
-//set the base folder to load files from
+//============================================================================
+// set the base folder to load files from
+//
+// Parameter:				-
+// Returns:					-
+// Changes Globals:		-
+//============================================================================
 void PS_SetBaseFolder( const char *path )
 {
 	Q_strncpyz( basefolder, path, sizeof( basefolder ) );
-}
+} //end of the function PS_SetBaseFolder
+

@@ -1247,36 +1247,7 @@ int BotMoveInDirection(int movestate, vec3_t dir, float speed, int type)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int Intersection(vec2_t p1, vec2_t p2, vec2_t p3, vec2_t p4, vec2_t out)
-{
-   float x1, dx1, dy1, x2, dx2, dy2, d;
-
-   dx1 = p2[0] - p1[0];
-   dy1 = p2[1] - p1[1];
-   dx2 = p4[0] - p3[0];
-   dy2 = p4[1] - p3[1];
-
-   d = dy1 * dx2 - dx1 * dy2;
-   if (d != 0)
-   {
-      x1 = p1[1] * dx1 - p1[0] * dy1;
-      x2 = p3[1] * dx2 - p3[0] * dy2;
-      out[0] = (int) ((dx1 * x2 - dx2 * x1) / d);
-      out[1] = (int) ((dy1 * x2 - dy2 * x1) / d);
-		return qtrue;
-   } //end if
-   else
-   {
-      return qfalse;
-   } //end else
-} //end of the function Intersection
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
-void BotCheckBlocked(bot_movestate_t *ms, vec3_t dir, int checkbottom, bot_moveresult_t *result)
+static void BotCheckBlocked(bot_movestate_t *ms, vec3_t dir, int checkbottom, bot_moveresult_t *result)
 {
 	vec3_t mins, maxs, end, up = {0, 0, 1};
 	bsp_trace_t trace;
@@ -1372,13 +1343,14 @@ static bot_moveresult_t BotTravel_Walk(bot_movestate_t *ms, aas_reachability_t *
 	//
 	return result;
 } //end of the function BotTravel_Walk
+#if 0
 //===========================================================================
 //
 // Parameter:			-
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotFinishTravel_Walk(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotFinishTravel_Walk(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t hordir;
 	float dist, speed;
@@ -1408,6 +1380,7 @@ bot_moveresult_t BotFinishTravel_Walk(bot_movestate_t *ms, aas_reachability_t *r
 	//
 	return result;
 } //end of the function BotFinishTravel_Walk
+#endif
 //===========================================================================
 //
 // Parameter:				-
@@ -1595,7 +1568,7 @@ static bot_moveresult_t BotFinishTravel_WaterJump(bot_movestate_t *ms, aas_reach
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-bot_moveresult_t BotTravel_WalkOffLedge(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_WalkOffLedge(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t hordir, dir;
 	float dist, speed, reachhordist;
@@ -1731,7 +1704,7 @@ static bot_moveresult_t BotFinishTravel_WalkOffLedge(bot_movestate_t *ms, aas_re
 // Changes Globals:		-
 //===========================================================================
 /*
-bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t hordir;
 	float dist, gapdist, speed, horspeed, sv_jumpvel;
@@ -1779,7 +1752,7 @@ bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
 	return result;
 } //end of the function BotTravel_Jump*/
 /*
-bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
+static bot_moveresult_t BotTravel_Jump(bot_movestate_t *ms, aas_reachability_t *reach)
 {
 	vec3_t hordir, dir1, dir2, mins, maxs, start, end;
 	int gapdist;

@@ -259,39 +259,3 @@ void LibVarSet( const char *var_name, const char *value )
 	//variable is modified
 	v->modified = qtrue;
 } //end of the function LibVarSet
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-qboolean LibVarChanged( const char *var_name )
-{
-	libvar_t *v;
-
-	v = LibVarGet( var_name );
-	if ( v )
-	{
-		return v->modified;
-	} //end if
-	else
-	{
-		return qfalse;
-	} //end else
-} //end of the function LibVarChanged
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-void LibVarSetNotModified( const char *var_name )
-{
-	libvar_t *v;
-
-	v = LibVarGet( var_name );
-	if ( v )
-	{
-		v->modified = qfalse;
-	} //end if
-} //end of the function LibVarSetNotModified

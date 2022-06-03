@@ -971,46 +971,6 @@ int BotGetNextCampSpotGoal(int num, bot_goal_t *goal)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-void BotFindEntityForLevelItem(levelitem_t *li)
-{
-	int ent, modelindex;
-	itemconfig_t *ic;
-	aas_entityinfo_t entinfo;
-	vec3_t dir;
-
-	ic = itemconfig;
-	if (!itemconfig) return;
-	for (ent = AAS_NextEntity(0); ent; ent = AAS_NextEntity(ent))
-	{
-		//get the model index of the entity
-		modelindex = AAS_EntityModelindex(ent);
-		//
-		if (!modelindex) continue;
-		//get info about the entity
-		AAS_EntityInfo(ent, &entinfo);
-		//if the entity is still moving
-		if (entinfo.origin[0] != entinfo.lastvisorigin[0] ||
-				entinfo.origin[1] != entinfo.lastvisorigin[1] ||
-				entinfo.origin[2] != entinfo.lastvisorigin[2]) continue;
-		//
-		if (ic->iteminfo[li->iteminfo].modelindex == modelindex)
-		{
-			//check if the entity is very close
-			VectorSubtract(li->origin, entinfo.origin, dir);
-			if (VectorLength(dir) < 30)
-			{
-				//found an entity for this level item
-				li->entitynum = ent;
-			} //end if
-		} //end if
-	} //end for
-} //end of the function BotFindEntityForLevelItem
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 
 //NOTE: enum entityType_t in bg_public.h
 #define ET_ITEM			2
@@ -1173,14 +1133,6 @@ void BotUpdateEntityItems(void)
 		AddLevelItemToList(li);
 		//botimport.Print(PRT_MESSAGE, "found new level item %s\n", ic->iteminfo[i].classname);
 	} //end for
-	/*
-	for (li = levelitems; li; li = li->next)
-	{
-		if (!li->entitynum)
-		{
-			BotFindEntityForLevelItem(li);
-		} //end if
-	} //end for*/
 } //end of the function BotUpdateEntityItems
 //===========================================================================
 //

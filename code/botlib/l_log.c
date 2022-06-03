@@ -86,7 +86,7 @@ void Log_Open( const char *filename )
 
 	Q_strncpyz( logfile.filename, filename, sizeof( logfile.filename ) );
 	botimport.Print( PRT_MESSAGE, "Opened log %s\n", logfile.filename );
-} //end of the function Log_Create
+} //end of the function Log_Open
 //===========================================================================
 //
 // Parameter:				-
@@ -129,31 +129,6 @@ void QDECL Log_Write(char *fmt, ...)
 	vfprintf(logfile.fp, fmt, ap);
 	va_end(ap);
 	//fprintf(logfile.fp, "\r\n");
-	fflush(logfile.fp);
-} //end of the function Log_Write
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-void QDECL Log_WriteTimeStamped(char *fmt, ...)
-{
-	va_list ap;
-
-	if (!logfile.fp) return;
-	fprintf(logfile.fp, "%d   %02d:%02d:%02d:%02d   ",
-					logfile.numwrites,
-					(int) (botlibglobals.time / 60 / 60),
-					(int) (botlibglobals.time / 60),
-					(int) (botlibglobals.time),
-					(int) ((int) (botlibglobals.time * 100)) -
-							((int) botlibglobals.time) * 100);
-	va_start(ap, fmt);
-	vfprintf(logfile.fp, fmt, ap);
-	va_end(ap);
-	fprintf(logfile.fp, "\r\n");
-	logfile.numwrites++;
 	fflush(logfile.fp);
 } //end of the function Log_Write
 //===========================================================================

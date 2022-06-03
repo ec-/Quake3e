@@ -50,13 +50,6 @@ extern botlib_import_t botimport;
 
 #define MAX_BSPENTITIES		2048
 
-typedef struct rgb_s
-{
-	int red;
-	int green;
-	int blue;
-} rgb_t;
-
 //bsp entity epair
 typedef struct bsp_epair_s
 {
@@ -123,20 +116,6 @@ cname_t contentnames[] =
 	{CONTENTS_LADDER,"CONTENTS_LADDER"},
 	{0, 0}
 };
-
-void PrintContents(int contents)
-{
-	int i;
-
-	for (i = 0; contentnames[i].value; i++)
-	{
-		if (contents & contentnames[i].value)
-		{
-			botimport.Print(PRT_MESSAGE, "%s\n", contentnames[i].name);
-		} //end if
-	} //end for
-} //end of the function PrintContents
-
 #endif // BSP_DEBUG
 //===========================================================================
 // traces axial boxes of any size through the world
@@ -182,6 +161,7 @@ qboolean AAS_EntityCollision(int entnum,
 	} //end if
 	return qfalse;
 } //end of the function AAS_EntityCollision
+#if 0
 //===========================================================================
 // returns true if in Potentially Hearable Set
 //
@@ -204,6 +184,7 @@ qboolean AAS_inPHS(vec3_t p1, vec3_t p2)
 {
 	return qtrue;
 } //end of the function AAS_inPHS
+#endif
 //===========================================================================
 //
 // Parameter:				-
@@ -234,16 +215,6 @@ bsp_link_t *AAS_BSPLinkEntity(vec3_t absmins, vec3_t absmaxs, int entnum, int mo
 {
 	return NULL;
 } //end of the function AAS_BSPLinkEntity
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-int AAS_BoxEntities(vec3_t absmins, vec3_t absmaxs, int *list, int maxcount)
-{
-	return 0;
-} //end of the function AAS_BoxEntities
 //===========================================================================
 //
 // Parameter:			-
@@ -368,8 +339,12 @@ static void AAS_FreeBSPEntities(void)
 	} //end for
 	bspworld.numentities = 0;
 } //end of the function AAS_FreeBSPEntities
-
-
+//===========================================================================
+//
+// Parameter:			-
+// Returns:				-
+// Changes Globals:		-
+//===========================================================================
 static void AAS_ParseBSPEntities(void)
 {
 	script_t *script;
@@ -435,15 +410,12 @@ static void AAS_ParseBSPEntities(void)
 	} //end while
 	FreeScript(script);
 } //end of the function AAS_ParseBSPEntities
-
-
-#if 0
-static int AAS_BSPTraceLight(vec3_t start, vec3_t end, vec3_t endpos, int *red, int *green, int *blue)
-{
-	return 0;
-#endif
-
-
+//===========================================================================
+//
+// Parameter:				-
+// Returns:					-
+// Changes Globals:		-
+//===========================================================================
 void AAS_DumpBSPData(void)
 {
 	AAS_FreeBSPEntities();
@@ -451,14 +423,16 @@ void AAS_DumpBSPData(void)
 	if (bspworld.dentdata) FreeMemory(bspworld.dentdata);
 	bspworld.dentdata = NULL;
 	bspworld.entdatasize = 0;
-
+	//
 	bspworld.loaded = qfalse;
 	Com_Memset( &bspworld, 0, sizeof(bspworld) );
-}
-
-
+} //end of the function AAS_DumpBSPData
 //===========================================================================
 // load a .bsp file
+//
+// Parameter:				-
+// Returns:					-
+// Changes Globals:		-
 //===========================================================================
 int AAS_LoadBSPFile(void)
 {
@@ -469,5 +443,5 @@ int AAS_LoadBSPFile(void)
 	AAS_ParseBSPEntities();
 	bspworld.loaded = qtrue;
 	return BLERR_NOERROR;
-}
+} //end of the function AAS_LoadBSPFile
 
