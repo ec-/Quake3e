@@ -820,7 +820,7 @@ __reswitch:
 			str++;
 		}
 		if ( c != '\0' ) {
-			str++; // skip enging '"'
+			str++; // skip ending '"'
 		} else {
 			// FIXME: unterminated quoted string?
 		}
@@ -936,7 +936,7 @@ __reswitch:
 COM_MatchToken
 ==================
 */
-void COM_MatchToken( const char **buf_p, const char *match ) {
+static void COM_MatchToken( const char **buf_p, const char *match ) {
 	const char *token;
 
 	token = COM_Parse( buf_p );
@@ -1728,7 +1728,7 @@ const char *QDECL va( const char *format, ... )
 ============
 Com_TruncateLongString
 
-Assumes buffer is atleast TRUNCATE_LENGTH big
+Assumes buffer is at least TRUNCATE_LENGTH big
 ============
 */
 void Com_TruncateLongString( char *buffer, const char *s )

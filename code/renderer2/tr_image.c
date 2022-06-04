@@ -49,7 +49,7 @@ typedef struct {
 	int	minimize, maximize;
 } textureMode_t;
 
-textureMode_t modes[] = {
+static textureMode_t modes[] = {
 	{"GL_NEAREST", GL_NEAREST, GL_NEAREST},
 	{"GL_LINEAR", GL_LINEAR, GL_LINEAR},
 	{"GL_NEAREST_MIPMAP_NEAREST", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST},
@@ -1252,7 +1252,7 @@ Scale up the pixel values in a texture to increase the
 lighting range
 ================
 */
-void R_LightScaleTexture (byte *in, int inwidth, int inheight, qboolean only_gamma )
+static void R_LightScaleTexture (byte *in, int inwidth, int inheight, qboolean only_gamma )
 {
 	if ( only_gamma )
 	{
@@ -1436,7 +1436,7 @@ static void R_BlendOverTexture( byte *data, int pixelCount, byte blend[4] ) {
 	}
 }
 
-byte	mipBlendColors[16][4] = {
+static byte	mipBlendColors[16][4] = {
 	{0,0,0,0},
 	{255,0,0,128},
 	{0,255,0,128},
@@ -2094,7 +2094,7 @@ R_CreateImage2
 This is the only way any image_t are created
 ================
 */
-image_t *R_CreateImage2( const char *name, byte *pic, int width, int height, GLenum picFormat, int numMips, imgType_t type, imgFlags_t flags, int internalFormat ) {
+static image_t *R_CreateImage2( const char *name, byte *pic, int width, int height, GLenum picFormat, int numMips, imgType_t type, imgFlags_t flags, int internalFormat ) {
 	byte       *resampledBuffer = NULL;
 	image_t    *image;
 	qboolean    isLightmap = qfalse, scaled = qfalse;
@@ -2287,7 +2287,7 @@ Loads any of the supported image types into a canonical
 32 bit format.
 =================
 */
-void R_LoadImage( const char *name, byte **pic, int *width, int *height, GLenum *picFormat, int *numMips )
+static void R_LoadImage( const char *name, byte **pic, int *width, int *height, GLenum *picFormat, int *numMips )
 {
 	qboolean orgNameFailed = qfalse;
 	int orgLoader = -1;

@@ -30,7 +30,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 void daub4(float b[], unsigned long n, int isign)
 {
 	float wksp[4097] = { 0.0f };
-#define a(x) b[(x)-1]					// numerical recipies so a[1] = b[0]
+#define a(x) b[(x)-1]					// numerical recipes so a[1] = b[0]
 
 	unsigned long nh,nh1,i,j;
 

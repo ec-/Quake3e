@@ -136,7 +136,7 @@ typedef struct iteminfo_s
 
 #define ITEMINFO_OFS(x)	(size_t)&(((iteminfo_t *)0)->x)
 
-fielddef_t iteminfo_fields[] =
+static fielddef_t iteminfo_fields[] =
 {
 {"name", ITEMINFO_OFS(name), FT_STRING},
 {"model", ITEMINFO_OFS(model), FT_STRING},
@@ -149,7 +149,7 @@ fielddef_t iteminfo_fields[] =
 {NULL, 0, 0}
 };
 
-structdef_t iteminfo_struct =
+static structdef_t iteminfo_struct =
 {
 	sizeof(iteminfo_t), iteminfo_fields
 };
@@ -176,22 +176,22 @@ typedef struct bot_goalstate_s
 	float avoidgoaltimes[MAX_AVOIDGOALS];		//times to avoid the goals
 } bot_goalstate_t;
 
-bot_goalstate_t *botgoalstates[MAX_CLIENTS + 1]; // FIXME: init?
+static bot_goalstate_t *botgoalstates[MAX_CLIENTS + 1]; // FIXME: init?
 //item configuration
-itemconfig_t *itemconfig = NULL;
+static itemconfig_t *itemconfig = NULL;
 //level items
-levelitem_t *levelitemheap = NULL;
-levelitem_t *freelevelitems = NULL;
-levelitem_t *levelitems = NULL;
-int numlevelitems = 0;
+static levelitem_t *levelitemheap = NULL;
+static levelitem_t *freelevelitems = NULL;
+static levelitem_t *levelitems = NULL;
+static int numlevelitems = 0;
 //map locations
-maplocation_t *maplocations = NULL;
+static maplocation_t *maplocations = NULL;
 //camp spots
-campspot_t *campspots = NULL;
+static campspot_t *campspots = NULL;
 //the game type
-int g_gametype = 0;
+static int g_gametype = 0;
 //additional dropped item weight
-libvar_t *droppedweight = NULL;
+static libvar_t *droppedweight = NULL;
 
 //========================================================================
 //
@@ -269,7 +269,7 @@ void BotMutateGoalFuzzyLogic(int goalstate, float range)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-itemconfig_t *LoadItemConfig( const char *filename )
+static itemconfig_t *LoadItemConfig( const char *filename )
 {
 	int max_iteminfo;
 	token_t token;
@@ -350,7 +350,7 @@ itemconfig_t *LoadItemConfig( const char *filename )
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int *ItemWeightIndex(weightconfig_t *iwc, itemconfig_t *ic)
+static int *ItemWeightIndex(weightconfig_t *iwc, itemconfig_t *ic)
 {
 	int *index, i;
 
@@ -373,7 +373,7 @@ int *ItemWeightIndex(weightconfig_t *iwc, itemconfig_t *ic)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void InitLevelItemHeap(void)
+static void InitLevelItemHeap(void)
 {
 	int i, max_levelitems;
 
@@ -396,7 +396,7 @@ void InitLevelItemHeap(void)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-levelitem_t *AllocLevelItem(void)
+static levelitem_t *AllocLevelItem(void)
 {
 	levelitem_t *li;
 
@@ -417,7 +417,7 @@ levelitem_t *AllocLevelItem(void)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void FreeLevelItem(levelitem_t *li)
+static void FreeLevelItem(levelitem_t *li)
 {
 	li->next = freelevelitems;
 	freelevelitems = li;
@@ -428,7 +428,7 @@ void FreeLevelItem(levelitem_t *li)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void AddLevelItemToList(levelitem_t *li)
+static void AddLevelItemToList(levelitem_t *li)
 {
 	if (levelitems) levelitems->prev = li;
 	li->prev = NULL;
@@ -441,7 +441,7 @@ void AddLevelItemToList(levelitem_t *li)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void RemoveLevelItemFromList(levelitem_t *li)
+static void RemoveLevelItemFromList(levelitem_t *li)
 {
 	if (li->prev) li->prev->next = li->next;
 	else levelitems = li->next;
@@ -453,7 +453,7 @@ void RemoveLevelItemFromList(levelitem_t *li)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-void BotFreeInfoEntities(void)
+static void BotFreeInfoEntities(void)
 {
 	maplocation_t *ml, *nextml;
 	campspot_t *cs, *nextcs;
@@ -477,7 +477,7 @@ void BotFreeInfoEntities(void)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-void BotInitInfoEntities(void)
+static void BotInitInfoEntities(void)
 {
 	char classname[MAX_EPAIRKEY];
 	maplocation_t *ml;
@@ -605,7 +605,7 @@ void BotInitLevelItems(void)
 				VectorCopy(origin, end);
 				end[2] -= 32;
 				trace = AAS_Trace(origin, ic->iteminfo[i].mins, ic->iteminfo[i].maxs, end, -1, CONTENTS_SOLID|CONTENTS_PLAYERCLIP);
-				//if the item not near the ground
+				//if the item is not near the ground
 				if (trace.fraction >= 1)
 				{
 					//if the item is not reachable from a jumppad
@@ -741,7 +741,7 @@ void BotDumpAvoidGoals(int goalstate)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void BotAddToAvoidGoals(bot_goalstate_t *gs, int number, float avoidtime)
+static void BotAddToAvoidGoals(bot_goalstate_t *gs, int number, float avoidtime)
 {
 	int i;
 
@@ -965,13 +965,14 @@ int BotGetNextCampSpotGoal(int num, bot_goal_t *goal)
 	} //end for
 	return 0;
 } //end of the function BotGetNextCampSpotGoal
+#if 0
 //===========================================================================
 //
 // Parameter:			-
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-void BotFindEntityForLevelItem(levelitem_t *li)
+static void BotFindEntityForLevelItem(levelitem_t *li)
 {
 	int ent, modelindex;
 	itemconfig_t *ic;
@@ -1005,6 +1006,7 @@ void BotFindEntityForLevelItem(levelitem_t *li)
 		} //end if
 	} //end for
 } //end of the function BotFindEntityForLevelItem
+#endif
 //===========================================================================
 //
 // Parameter:			-

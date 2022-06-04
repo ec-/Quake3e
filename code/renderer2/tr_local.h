@@ -421,7 +421,7 @@ typedef enum {
 typedef enum {
 	FP_NONE,		// surface is translucent and will just be adjusted properly
 	FP_EQUAL,		// surface is opaque but possibly alpha tested
-	FP_LE			// surface is trnaslucent, but still needs a fog pass (fog surface)
+	FP_LE			// surface is translucent, but still needs a fog pass (fog surface)
 } fogPass_t;
 
 typedef struct {
@@ -772,7 +772,7 @@ typedef struct {
 //=================================================================================
 
 // max surfaces per-skin
-// This is an arbitry limit. Vanilla Q3 only supported 32 surfaces in skins but failed to
+// This is an arbitrary limit. Vanilla Q3 only supported 32 surfaces in skins but failed to
 // enforce the maximum limit when reading skin files. It was possile to use more than 32
 // surfaces which accessed out of bounds memory past end of skin->surfaces hunk block.
 #define MAX_SKIN_SURFACES	256
@@ -1879,7 +1879,7 @@ qboolean R_CalcTangentVectors(srfVert_t * dv[3]);
 #define	CULL_IN		0		// completely unclipped
 #define	CULL_CLIP	1		// clipped by one or more planes
 #define	CULL_OUT	2		// completely outside the clipping planes
-void R_LocalNormalToWorld (const vec3_t local, vec3_t world);
+
 void R_LocalPointToWorld (const vec3_t local, vec3_t world);
 int R_CullBox (vec3_t bounds[2]);
 int R_CullLocalBox( const vec3_t bounds[2] );
@@ -2137,11 +2137,9 @@ SKIES
 ============================================================
 */
 
-void R_BuildCloudData( shaderCommands_t *shader );
 void R_InitSkyTexCoords( float cloudLayerHeight );
 void R_DrawSkyBox( shaderCommands_t *shader );
 void RB_DrawSun( float scale, shader_t *shader );
-void RB_ClipSkyPolygons( shaderCommands_t *shader );
 
 /*
 ============================================================

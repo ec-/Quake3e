@@ -34,13 +34,14 @@ void AAS_InitAASLinkHeap(void);
 void AAS_InitAASLinkedEntities(void);
 void AAS_FreeAASLinkHeap(void);
 void AAS_FreeAASLinkedEntities(void);
+#if 0
 aas_face_t *AAS_AreaGroundFace(int areanum, vec3_t point);
+#endif
 aas_face_t *AAS_TraceEndFace(aas_trace_t *trace);
 aas_plane_t *AAS_PlaneFromNum(int planenum);
 aas_link_t *AAS_AASLinkEntity(vec3_t absmins, vec3_t absmaxs, int entnum);
 aas_link_t *AAS_LinkEntityClientBBox(vec3_t absmins, vec3_t absmaxs, int entnum, int presencetype);
 qboolean AAS_PointInsideFace(int facenum, vec3_t point, float epsilon);
-qboolean AAS_InsideFace(aas_face_t *face, vec3_t pnormal, vec3_t point, float epsilon);
 void AAS_UnlinkFromAreas(aas_link_t *areas);
 #endif //AASINTERN
 
@@ -64,6 +65,9 @@ int AAS_AreaInfo( int areanum, aas_areainfo_t *info );
 int AAS_PointAreaNum(vec3_t point);
 //
 int AAS_PointReachabilityAreaIndex( vec3_t point );
+#if 0
 //returns the plane the given face is in
 void AAS_FacePlane(int facenum, vec3_t normal, float *dist);
+#endif
+
 

@@ -287,7 +287,7 @@ void AAS_JumpReachRunStart(aas_reachability_t *reach, vec3_t runstart)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-float AAS_WeaponJumpZVelocity(vec3_t origin, float radiusdamage)
+static float AAS_WeaponJumpZVelocity(vec3_t origin, float radiusdamage)
 {
 	vec3_t kvel, v, start, end, forward, right, viewangles, dir;
 	float	mass, knockback, points;
@@ -340,7 +340,7 @@ float AAS_WeaponJumpZVelocity(vec3_t origin, float radiusdamage)
 //===========================================================================
 float AAS_RocketJumpZVelocity(vec3_t origin)
 {
-	//rocket radius damage is 120 (p_weapon.c: Weapon_RocketLauncher_Fire)
+	//rocket radius damage is 120
 	return AAS_WeaponJumpZVelocity(origin, 120);
 } //end of the function AAS_RocketJumpZVelocity
 //===========================================================================
@@ -351,7 +351,7 @@ float AAS_RocketJumpZVelocity(vec3_t origin)
 //===========================================================================
 float AAS_BFGJumpZVelocity(vec3_t origin)
 {
-	//bfg radius damage is 1000 (p_weapon.c: weapon_bfg_fire)
+	//bfg radius damage is 120
 	return AAS_WeaponJumpZVelocity(origin, 120);
 } //end of the function AAS_BFGJumpZVelocity
 //===========================================================================
@@ -361,7 +361,7 @@ float AAS_BFGJumpZVelocity(vec3_t origin)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-void AAS_Accelerate(vec3_t velocity, float frametime, vec3_t wishdir, float wishspeed, float accel)
+static void AAS_Accelerate(vec3_t velocity, float frametime, vec3_t wishdir, float wishspeed, float accel)
 {
 	// q2 style
 	int			i;
@@ -388,7 +388,7 @@ void AAS_Accelerate(vec3_t velocity, float frametime, vec3_t wishdir, float wish
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-void AAS_ApplyFriction(vec3_t vel, float friction, float stopspeed,
+static void AAS_ApplyFriction(vec3_t vel, float friction, float stopspeed,
 													float frametime)
 {
 	float speed, control, newspeed;
@@ -405,8 +405,6 @@ void AAS_ApplyFriction(vec3_t vel, float friction, float stopspeed,
 		vel[1] *= newspeed;
 	} //end if
 } //end of the function AAS_ApplyFriction
-
-
 //===========================================================================
 //
 // Parameter:			-
@@ -476,8 +474,6 @@ static qboolean AAS_ClipToBBox( aas_trace_t *trace, const vec3_t start, const ve
 	} //end if
 	return qfalse;
 } //end of the function AAS_ClipToBBox
-
-
 //===========================================================================
 // predicts the movement
 // assumes regular bounding box sizes
@@ -980,8 +976,6 @@ static int AAS_ClientMovementPrediction( aas_clientmove_t *move,
 	//
 	return qtrue;
 } //end of the function AAS_ClientMovementPrediction
-
-
 //===========================================================================
 //
 // Parameter:			-
@@ -1003,8 +997,6 @@ int AAS_PredictClientMovement(struct aas_clientmove_s *move,
 										frametime, stopevent, stopareanum,
 										mins, maxs, visualize);
 } //end of the function AAS_PredictClientMovement
-
-
 //===========================================================================
 //
 // Parameter:			-
@@ -1024,6 +1016,7 @@ int AAS_ClientMovementHitBBox(struct aas_clientmove_s *move,
 										frametime, SE_HITBOUNDINGBOX, 0,
 										mins, maxs, visualize);
 } //end of the function AAS_ClientMovementHitBBox
+#if 0
 //===========================================================================
 //
 // Parameter:			-
@@ -1048,6 +1041,7 @@ void AAS_TestMovementPrediction(int entnum, vec3_t origin, vec3_t dir)
 		botimport.Print(PRT_MESSAGE, "leave ground\n");
 	} //end if
 } //end of the function TestMovementPrediction
+#endif
 //===========================================================================
 // calculates the horizontal velocity needed to perform a jump from start
 // to end

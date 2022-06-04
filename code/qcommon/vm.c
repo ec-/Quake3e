@@ -389,7 +389,7 @@ const char *VM_SymbolForCompiledPointer( vm_t *vm, void *code ) {
 ParseHex
 ===============
 */
-int	ParseHex( const char *text ) {
+static int	ParseHex( const char *text ) {
 	int		value;
 	int		c;
 
@@ -418,7 +418,7 @@ int	ParseHex( const char *text ) {
 VM_LoadSymbols
 ===============
 */
-void VM_LoadSymbols( vm_t *vm ) {
+static void VM_LoadSymbols( vm_t *vm ) {
 	union {
 		char	*c;
 		void	*v;
@@ -1539,7 +1539,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 	} else {
 __noJTS:
 		v = 0;
-		// instructions with opStack > 0 can't be jump labels so its safe to optimize/merge
+		// instructions with opStack > 0 can't be jump labels so it is safe to optimize/merge
 		for ( i = 0, ci = buf; i < instructionCount; i++, ci++ ) {
 			if ( ci->op == OP_ENTER ) {
 				v = ci->swtch;

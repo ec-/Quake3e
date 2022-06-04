@@ -34,7 +34,7 @@ instead of tesselation like for regular surfaces. Using items queue also
 eleminates run-time tesselation limits.
 
 When it is time to render - we sort queued items to get longest possible 
-index sequence run to check if its long enough i.e. worth switching to GPU-side IBO.
+index sequence run to check if it is long enough i.e. worth switching to GPU-side IBO.
 So long index runs are rendered via multiple glDrawElements() calls, 
 all remaining short index sequences are grouped together into single software index
 which is finally rendered via single legacy index array transfer.

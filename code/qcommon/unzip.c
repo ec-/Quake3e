@@ -1079,7 +1079,7 @@ static void   zcfree  OF((voidp opaque, voidp ptr));
 /* ===========================================================================
      Read a byte from a gz_stream; update next_in and avail_in. Return EOF
    for end of file.
-   IN assertion: the stream s has been sucessfully opened for reading.
+   IN assertion: the stream s has been successfully opened for reading.
 */
 
 /*
@@ -1224,8 +1224,8 @@ static int strcmpcasenosensitive_internal (const char* fileName1,const char* fil
 
 /* 
    Compare two filename (fileName1,fileName2).
-   If iCaseSenisivity = 1, comparision is case sensitivity (like strcmp)
-   If iCaseSenisivity = 2, comparision is not case sensitivity (like strcmpi
+   If iCaseSenisivity = 1, comparison is case sensitivity (like strcmp)
+   If iCaseSenisivity = 2, comparison is not case sensitivity (like strcmpi
                                                                 or strcasecmp)
    If iCaseSenisivity = 0, case sensitivity is defaut of your operating system
         (like 1 on Unix, 2 on Windows)
@@ -1337,7 +1337,7 @@ extern unzFile unzOpen (const char* path)
 
 	uLong number_disk;          /* number of the current dist, used for 
 								   spaning ZIP, unsupported, always 0*/
-	uLong number_disk_with_CD;  /* number the the disk with central dir, used
+	uLong number_disk_with_CD;  /* number the disk with central dir, used
 								   for spaning ZIP, unsupported, always 0*/
 	uLong number_entry_CD;      /* total number of entries in
 	                               the central dir 

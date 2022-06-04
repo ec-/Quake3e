@@ -754,8 +754,6 @@ typedef struct pc_token_s
 
 // data is an in/out parm, returns a parsed out token
 
-void COM_MatchToken( const char**buf_p, const char *match );
-
 qboolean SkipBracedSection( const char **program, int depth );
 void SkipRestOfLine( const char **data );
 
@@ -1025,7 +1023,7 @@ typedef struct {
 	cplane_t	plane;		// surface normal at impact, transformed to world space
 	int			surfaceFlags;	// surface hit
 	int			contents;	// contents on other side of surface hit
-	int			entityNum;	// entity the contacted sirface is a part of
+	int			entityNum;	// entity the contacted surface is a part of
 } trace_t;
 
 // trace->entityNum can also be 0 to (MAX_GENTITIES-1)
@@ -1058,7 +1056,7 @@ typedef struct {
 
 // sound channels
 // channel 0 never willingly overrides
-// other channels will allways override a playing sound on that channel
+// other channels will always override a playing sound on that channel
 typedef enum {
 	CHAN_AUTO,
 	CHAN_LOCAL,		// menu sounds, etc

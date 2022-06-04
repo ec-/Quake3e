@@ -1871,7 +1871,7 @@ void GLimp_Init( glconfig_t *config )
 		return;
 	}
 
-	// This values force the UI to disable driver selection
+	// These values force the UI to disable driver selection
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
 
@@ -1967,7 +1967,7 @@ void VKimp_Init( glconfig_t *config )
 		return;
 	}
 
-	// This values force the UI to disable driver selection
+	// These values force the UI to disable driver selection
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
 

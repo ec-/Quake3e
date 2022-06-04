@@ -1360,7 +1360,7 @@ static void ParseSkyParms( const char **text ) {
 ParseSort
 =================
 */
-void ParseSort( const char **text ) {
+static void ParseSort( const char **text ) {
 	char	*token;
 
 	token = COM_ParseExt( text, qfalse );
@@ -1414,7 +1414,7 @@ static const infoParm_t infoParms[] = {
 	{"origin",		1,	0,	CONTENTS_ORIGIN },		// center of rotating brushes
 	{"trans",		0,	0,	CONTENTS_TRANSLUCENT },	// don't eat contained surfaces
 	{"detail",		0,	0,	CONTENTS_DETAIL },		// don't include in structural bsp
-	{"structural",	0,	0,	CONTENTS_STRUCTURAL },	// force into structural bsp even if trnas
+	{"structural",	0,	0,	CONTENTS_STRUCTURAL },	// force into structural bsp even if trans
 	{"areaportal",	1,	0,	CONTENTS_AREAPORTAL },	// divides areas
 	{"clusterportal", 1,0,  CONTENTS_CLUSTERPORTAL },	// for bots
 	{"donotenter",  1,  0,  CONTENTS_DONOTENTER },		// for bots

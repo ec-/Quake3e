@@ -1211,7 +1211,7 @@ static void SV_Status_f( void ) {
 	Com_Memset( ap, 0, sizeof( ap ) );
 	Com_Memset( al, 0, sizeof( al ) );
 
-	// first pass: save and determine max.legths of name/address fields
+	// first pass: save and determine max.lengths of name/address fields
 	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ )
 	{
 		if ( cl->state == CS_FREE )

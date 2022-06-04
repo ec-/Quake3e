@@ -985,7 +985,7 @@ static void ParseFlare( dsurface_t *ds, drawVert_t *verts, msurface_t *surf, int
 =================
 R_MergedWidthPoints
 
-returns true if there are grid points merged on a width edge
+returns qtrue if there are grid points merged on a width edge
 =================
 */
 int R_MergedWidthPoints(srfBspSurface_t *grid, int offset) {
@@ -1006,7 +1006,7 @@ int R_MergedWidthPoints(srfBspSurface_t *grid, int offset) {
 =================
 R_MergedHeightPoints
 
-returns true if there are grid points merged on a height edge
+returns qtrue if there are grid points merged on a height edge
 =================
 */
 int R_MergedHeightPoints(srfBspSurface_t *grid, int offset) {
@@ -1219,7 +1219,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 						continue;
 					//
 					//ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
-					// insert column into grid2 right after after column l
+					// insert column into grid2 right after column l
 					if (m) row = grid2->height-1;
 					else row = 0;
 					R_GridInsertColumn( grid2, l+1, row,
@@ -1263,7 +1263,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 						continue;
 					//
 					//ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
-					// insert row into grid2 right after after row l
+					// insert row into grid2 right after row l
 					if (m) column = grid2->width-1;
 					else column = 0;
 					R_GridInsertRow( grid2, l+1, column,
@@ -1316,7 +1316,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 						continue;
 					//
 					//ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
-					// insert column into grid2 right after after column l
+					// insert column into grid2 right after column l
 					if (m) row = grid2->height-1;
 					else row = 0;
 					R_GridInsertColumn( grid2, l+1, row,
@@ -1360,7 +1360,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 						continue;
 					//
 					//ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
-					// insert row into grid2 right after after row l
+					// insert row into grid2 right after row l
 					if (m) column = grid2->width-1;
 					else column = 0;
 					R_GridInsertRow( grid2, l+1, column,
@@ -1414,7 +1414,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 						continue;
 					//
 					//ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
-					// insert column into grid2 right after after column l
+					// insert column into grid2 right after column l
 					if (m) row = grid2->height-1;
 					else row = 0;
 					R_GridInsertColumn( grid2, l+1, row,
@@ -1458,7 +1458,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 						continue;
 					//
 					//ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
-					// insert row into grid2 right after after row l
+					// insert row into grid2 right after row l
 					if (m) column = grid2->width-1;
 					else column = 0;
 					R_GridInsertRow( grid2, l+1, column,
@@ -1513,7 +1513,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 						continue;
 					//
 					//ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
-					// insert column into grid2 right after after column l
+					// insert column into grid2 right after column l
 					if (m) row = grid2->height-1;
 					else row = 0;
 					R_GridInsertColumn( grid2, l+1, row,
@@ -1557,7 +1557,7 @@ int R_StitchPatches( int grid1num, int grid2num ) {
 						continue;
 					//
 					//ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
-					// insert row into grid2 right after after row l
+					// insert row into grid2 right after row l
 					if (m) column = grid2->width-1;
 					else column = 0;
 					R_GridInsertRow( grid2, l+1, column,
@@ -1578,7 +1578,7 @@ R_TryStitchPatch
 
 This function will try to stitch patches in the same LoD group together for the highest LoD.
 
-Only single missing vertice cracks will be fixed.
+Only single missing vertex cracks will be fixed.
 
 Vertices will be joined at the patch side a crack is first found, at the other side
 of the patch (on the same row or column) the vertices will not be joined and cracks
@@ -2074,7 +2074,7 @@ static	void R_LoadFogs( lump_t *l, lump_t *brushesLump, lump_t *sidesLump ) {
 	}
 	count = l->filelen / sizeof(*fogs);
 
-	// create fog strucutres for them
+	// create fog structures for them
 	s_worldData.numfogs = count + 1;
 	s_worldData.fogs = ri.Hunk_Alloc ( s_worldData.numfogs*sizeof(*out), h_low);
 	out = s_worldData.fogs + 1;

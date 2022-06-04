@@ -322,7 +322,7 @@ Any mirrored or portaled views have already been drawn, so prepare
 to actually render the visible surfaces for this view
 =================
 */
-void RB_BeginDrawingView (void) {
+static void RB_BeginDrawingView (void) {
 	int clearBits = 0;
 
 	// sync with gl if needed
@@ -422,7 +422,7 @@ void RB_BeginDrawingView (void) {
 RB_RenderDrawSurfList
 ==================
 */
-void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
+static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	shader_t		*shader, *oldShader;
 	int				fogNum, oldFogNum;
 	int				entityNum, oldEntityNum;
@@ -620,7 +620,7 @@ RB_SetGL2D
 
 ================
 */
-void	RB_SetGL2D (void) {
+static void	RB_SetGL2D (void) {
 	mat4_t matrix;
 	int width, height;
 
@@ -773,7 +773,7 @@ RB_SetColor
 
 =============
 */
-const void	*RB_SetColor( const void *data ) {
+static const void	*RB_SetColor( const void *data ) {
 	const setColorCommand_t	*cmd;
 
 	cmd = (const setColorCommand_t *)data;
@@ -791,7 +791,7 @@ const void	*RB_SetColor( const void *data ) {
 RB_StretchPic
 =============
 */
-const void *RB_StretchPic ( const void *data ) {
+static const void *RB_StretchPic ( const void *data ) {
 	const stretchPicCommand_t	*cmd;
 	shader_t *shader;
 	int		numVerts, numIndexes;
@@ -876,7 +876,7 @@ RB_DrawSurfs
 
 =============
 */
-const void	*RB_DrawSurfs( const void *data ) {
+static const void	*RB_DrawSurfs( const void *data ) {
 	const drawSurfsCommand_t	*cmd;
 	qboolean isShadowView;
 
@@ -1186,7 +1186,7 @@ RB_DrawBuffer
 
 =============
 */
-const void	*RB_DrawBuffer( const void *data ) {
+static const void	*RB_DrawBuffer( const void *data ) {
 	const drawBufferCommand_t	*cmd;
 
 	cmd = (const drawBufferCommand_t *)data;
@@ -1274,7 +1274,7 @@ RB_ColorMask
 
 =============
 */
-const void *RB_ColorMask(const void *data)
+static const void *RB_ColorMask(const void *data)
 {
 	const colorMaskCommand_t *cmd = data;
 
@@ -1302,7 +1302,7 @@ RB_ClearDepth
 
 =============
 */
-const void *RB_ClearDepth(const void *data)
+static const void *RB_ClearDepth(const void *data)
 {
 	const clearDepthCommand_t *cmd = data;
 	
@@ -1346,7 +1346,7 @@ RB_SwapBuffers
 
 =============
 */
-const void	*RB_SwapBuffers( const void *data ) {
+static const void	*RB_SwapBuffers( const void *data ) {
 	const swapBuffersCommand_t	*cmd;
 
 	// finish any 2D drawing if needed
@@ -1416,7 +1416,7 @@ RB_CapShadowMap
 
 =============
 */
-const void *RB_CapShadowMap(const void *data)
+static const void *RB_CapShadowMap(const void *data)
 {
 	const capShadowmapCommand_t *cmd = data;
 
@@ -1452,7 +1452,7 @@ RB_PostProcess
 
 =============
 */
-const void *RB_PostProcess(const void *data)
+static const void *RB_PostProcess(const void *data)
 {
 	const postProcessCommand_t *cmd = data;
 	FBO_t *srcFbo;
@@ -1672,7 +1672,7 @@ RB_ExportCubemaps
 
 =============
 */
-const void *RB_ExportCubemaps(const void *data)
+static const void *RB_ExportCubemaps(const void *data)
 {
 	const exportCubemapsCommand_t *cmd = data;
 

@@ -1340,7 +1340,7 @@ CL_RequestMotd
 ===================
 */
 #if 0
-void CL_RequestMotd( void ) {
+static void CL_RequestMotd( void ) {
 	char		info[MAX_INFO_STRING];
 
 	if ( !cl_motd->integer ) {
@@ -2204,7 +2204,7 @@ void CL_InitDownloads( void ) {
 		if ( FS_ComparePaks( missingfiles, sizeof( missingfiles ), qfalse ) )
 		{
 			// NOTE TTimo I would rather have that printed as a modal message box
-			// but at this point while joining the game we don't know wether we will successfully join or not
+			// but at this point while joining the game we don't know whether we will successfully join or not
 			Com_Printf( "\nWARNING: You are missing some files referenced by the server:\n%s"
 				"You might not be able to join the game\n"
 				"Go to the setting menu to turn on autodownload, or get the file elsewhere\n\n", missingfiles );
@@ -3850,8 +3850,8 @@ void CL_Init( void ) {
 	cl_forceavidemo = Cvar_Get ("cl_forceavidemo", "0", 0);
 
 	cl_aviPipeFormat = Cvar_Get( "cl_aviPipeFormat",
-		"-preset medium -crf 23 -vcodec libx264 -flags +cgop -pix_fmt yuv420p "
-		"-bf 2 -codec:a aac -strict -2 -b:a 160k -r:a 22050 -movflags faststart",
+		"-preset medium -crf 23 -vcodec libx264 -flags +cgop -pix_fmt yuvj420p "
+		"-bf 2 -codec:a aac -strict -2 -b:a 160k -movflags faststart",
 		CVAR_ARCHIVE );
 
 	rconAddress = Cvar_Get ("rconAddress", "", 0);
@@ -3877,7 +3877,7 @@ void CL_Init( void ) {
 
 	cl_serverStatusResendTime = Cvar_Get ("cl_serverStatusResendTime", "750", 0);
 
-	// init autoswitch so the ui will have it correctly even
+	// init cg_autoswitch so the ui will have it correctly even
 	// if the cgame hasn't been started
 	Cvar_Get ("cg_autoswitch", "1", CVAR_ARCHIVE);
 

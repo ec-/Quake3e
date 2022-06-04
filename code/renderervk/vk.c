@@ -6296,7 +6296,7 @@ static void vk_begin_render_pass( VkRenderPass renderPass, VkFramebuffer frameBu
 	render_pass_begin_info.renderArea.extent.height = height;
 
 	if ( clearValues ) {
-		/// attachments layout:
+		// attachments layout:
 		// [0] - resolve/color/presentation
 		// [1] - depth/stencil
 		// [2] - multisampled color, optional
