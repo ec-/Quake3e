@@ -1003,7 +1003,7 @@ FS_SV_Rename
 ===========
 */
 void FS_SV_Rename( const char *from, const char *to ) {
-	char			*from_ospath, *to_ospath;
+	const char			*from_ospath, *to_ospath;
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
@@ -1554,7 +1554,7 @@ separate file or a ZIP file.
 extern qboolean		com_fullyInitialized;
 
 int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueFILE ) {
-	searchpath_t	*search;
+	const searchpath_t	*search;
 	char			*netpath;
 	pack_t			*pak;
 	fileInPack_t	*pakFile;
@@ -3319,7 +3319,7 @@ static char **FS_ListFilteredFiles( const char *path, const char *extension, con
 	int				nfiles;
 	char			**listCopy;
 	char			*list[MAX_FOUND_FILES];
-	searchpath_t	*search;
+	const searchpath_t	*search;
 	int				i;
 	int				pathLength;
 	int				extLen;
@@ -3978,7 +3978,7 @@ static void FS_TouchFile_f( void ) {
 FS_CompleteFileName
 ============
 */
-static void FS_CompleteFileName( char *args, int argNum ) {
+static void FS_CompleteFileName( const char *args, int argNum ) {
 	if( argNum == 2 ) {
 		Field_CompleteFilename( "", "", qfalse, FS_MATCH_ANY );
 	}
@@ -3998,7 +3998,7 @@ static void FS_Which_f( void ) {
 	directory_t		*dir;
 	long			hash;
 	FILE			*temp;
-	char			*filename;
+	const char			*filename;
 	char			buf[ MAX_OSPATH*2 + 1 ];
 	int				numfound;
 
@@ -4302,7 +4302,7 @@ we are not interested in a download string format, we want something human-reada
 ================
 */
 qboolean FS_ComparePaks( char *neededpaks, int len, qboolean dlstring ) {
-	searchpath_t	*sp;
+	const searchpath_t	*sp;
 	qboolean havepak;
 	char *origpos = neededpaks;
 	int i;
@@ -4773,7 +4773,7 @@ static void FS_Startup( void ) {
 
 static void FS_PrintSearchPaths( void )
 {
-	searchpath_t *path = fs_searchpaths;
+	const searchpath_t *path = fs_searchpaths;
 
 	Com_Printf( "\nSearch paths:\n" );
 
@@ -4798,7 +4798,7 @@ Q3 media pak0.pk3, you'll want to remove this function
 */
 static void FS_CheckIdPaks( void )
 {
-	searchpath_t *path;
+	const searchpath_t *path;
 	const char* pakBasename;
 	qboolean founddemo = qfalse;
 	unsigned foundPak = 0;
@@ -4902,7 +4902,7 @@ Servers with sv_pure set will get this string and pass it to clients.
 */
 const char *FS_LoadedPakChecksums( qboolean *overflowed ) {
 	static char	info[BIG_INFO_STRING];
-	searchpath_t *search;
+	const searchpath_t *search;
 	char buf[ 32 ];
 	char *s, *max;
 	int len;
@@ -4992,7 +4992,7 @@ The server will send this to the clients so they can check which files should be
 */
 const char *FS_ReferencedPakChecksums( void ) {
 	static char	info[BIG_INFO_STRING];
-	searchpath_t *search;
+	const searchpath_t *search;
 
 	info[0] = '\0';
 
@@ -5025,7 +5025,7 @@ The string has a specific order, "cgame ui @ ref1 ref2 ref3 ..."
 const char *FS_ReferencedPakPureChecksums( int maxlen ) {
 	static char	info[ MAX_STRING_CHARS*2 ];
 	char *s, *max;
-	searchpath_t	*search;
+	const searchpath_t	*search;
 	int nFlags, numPaks, checksum;
 
 	max = info + maxlen; // maxlen is always smaller than MAX_STRING_CHARS so we can overflow a bit
@@ -5149,7 +5149,7 @@ FS_ClearPakReferences
 =====================
 */
 void FS_ClearPakReferences( int flags ) {
-	searchpath_t *search;
+	const searchpath_t *search;
 
 	if ( !flags ) {
 		flags = -1;

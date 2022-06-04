@@ -60,7 +60,7 @@ Determine which dynamic lights may effect this bmodel
 */
 void R_DlightBmodel( bmodel_t *bmodel ) {
 	int			i, j;
-	dlight_t	*dl;
+	const dlight_t	*dl;
 	int			mask;
 	msurface_t	*surf;
 
@@ -284,7 +284,7 @@ static void R_SetupEntityLightingGrid( trRefEntity_t *ent, world_t *world ) {
 LogLight
 ===============
 */
-static void LogLight( trRefEntity_t *ent ) {
+static void LogLight( const trRefEntity_t *ent ) {
 	int	max1, max2;
 
 	if ( !(ent->e.renderfx & RF_FIRST_PERSON ) ) {
@@ -318,7 +318,7 @@ by the Calc_* functions
 */
 void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 	int				i;
-	dlight_t		*dl;
+	const dlight_t		*dl;
 	float			power;
 	vec3_t			dir;
 	float			d;

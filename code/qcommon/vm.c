@@ -2097,7 +2097,7 @@ VM_VmInfo_f
 ==============
 */
 static void VM_VmInfo_f( void ) {
-	vm_t	*vm;
+	const vm_t	*vm;
 	int		i;
 
 	Com_Printf( "Registered virtual machines:\n" );

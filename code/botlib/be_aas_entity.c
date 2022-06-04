@@ -416,7 +416,7 @@ int AAS_NearestEntity(vec3_t origin, int modelindex)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int AAS_BestReachableEntityArea(int entnum)
+static int AAS_BestReachableEntityArea(int entnum)
 {
 	aas_entity_t *ent;
 

@@ -387,7 +387,8 @@ static void SV_SaveSequences( void ) {
 
 
 static void SV_InjectLocation( const char *tld, const char *country ) {
-	char *cmd, *str;
+	const char *cmd;
+	char *str;
 	int i, n;
 	for ( i = 0; i < sv_maxclients->integer; i++ ) {
 		if ( seqs[i] != svs.clients[i].reliableSequence ) {
@@ -439,7 +440,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 	int			clientNum;
 	int			qport;
 	int			challenge;
-	char		*password;
+	const char		*password;
 	int			startIndex;
 	intptr_t	denied;
 	int			count;

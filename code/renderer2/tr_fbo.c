@@ -453,13 +453,13 @@ void FBO_Shutdown(void)
 			qglDeleteFramebuffers(1, &fbo->frameBuffer);
 	}
 }
-
+#if 0
 /*
 ============
 R_FBOList_f
 ============
 */
-void R_FBOList_f(void)
+static void R_FBOList_f(void)
 {
 	int             i;
 	FBO_t          *fbo;
@@ -482,8 +482,8 @@ void R_FBOList_f(void)
 
 	ri.Printf(PRINT_ALL, " %i FBOs\n", tr.numFBOs);
 }
-
-void FBO_BlitFromTexture(struct image_s *src, vec4_t inSrcTexCorners, vec2_t inSrcTexScale, FBO_t *dst, ivec4_t inDstBox, struct shaderProgram_s *shaderProgram, vec4_t inColor, int blend)
+#endif
+void FBO_BlitFromTexture(struct image_s *src, vec4_t inSrcTexCorners, vec2_t inSrcTexScale, FBO_t *dst, ivec4_t inDstBox, struct shaderProgram_s *shaderProgram, const vec4_t inColor, int blend)
 {
 	ivec4_t dstBox;
 	vec4_t color;
@@ -588,7 +588,7 @@ void FBO_BlitFromTexture(struct image_s *src, vec4_t inSrcTexCorners, vec2_t inS
 	FBO_Bind(oldFbo);
 }
 
-void FBO_Blit(FBO_t *src, ivec4_t inSrcBox, vec2_t srcTexScale, FBO_t *dst, ivec4_t dstBox, struct shaderProgram_s *shaderProgram, vec4_t color, int blend)
+void FBO_Blit(FBO_t *src, ivec4_t inSrcBox, vec2_t srcTexScale, FBO_t *dst, ivec4_t dstBox, struct shaderProgram_s *shaderProgram, const vec4_t color, int blend)
 {
 	vec4_t srcTexCorners;
 

@@ -1132,7 +1132,7 @@ qboolean R_LoadIQM( model_t *mod, void *buffer, int filesize, const char *mod_na
 R_CullIQM
 =============
 */
-static int R_CullIQM( iqmData_t *data, trRefEntity_t *ent ) {
+static int R_CullIQM( const iqmData_t *data, const trRefEntity_t *ent ) {
 	vec3_t		bounds[2];
 	vec_t		*oldBounds, *newBounds;
 	int		i;
@@ -1173,9 +1173,9 @@ R_ComputeIQMFogNum
 
 =================
 */
-static int R_ComputeIQMFogNum( iqmData_t *data, trRefEntity_t *ent ) {
+static int R_ComputeIQMFogNum( const iqmData_t *data, const trRefEntity_t *ent ) {
 	int			i, j;
-	fog_t			*fog;
+	const fog_t			*fog;
 	const vec_t		*bounds;
 	const vec_t		defaultBounds[6] = { -8, -8, -8, 8, 8, 8 };
 	vec3_t			diag, center;
@@ -1232,7 +1232,7 @@ void R_AddIQMSurfaces( trRefEntity_t *ent ) {
 	int			fogNum;
 	int         cubemapIndex;
 	shader_t		*shader;
-	skin_t			*skin;
+	const skin_t			*skin;
 
 	data = tr.currentModel->modelData;
 	surface = data->surfaces;
@@ -1428,7 +1428,7 @@ RB_AddIQMSurfaces
 Compute vertices for this model surface
 =================
 */
-void RB_IQMSurfaceAnim( surfaceType_t *surface ) {
+void RB_IQMSurfaceAnim( const surfaceType_t *surface ) {
 	srfIQModel_t	*surf = (srfIQModel_t *)surface;
 	iqmData_t	*data = surf->data;
 	float		poseMats[IQM_MAX_JOINTS * 12];
@@ -1658,7 +1658,7 @@ void RB_IQMSurfaceAnim( surfaceType_t *surface ) {
 RB_IQMSurfaceAnimVao
 =================
 */
-void RB_IQMSurfaceAnimVao(srfVaoIQModel_t * surface)
+void RB_IQMSurfaceAnimVao(const srfVaoIQModel_t * surface)
 {
 	iqmData_t *data = surface->iqmData;
 

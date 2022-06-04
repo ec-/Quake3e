@@ -57,7 +57,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-static fielddef_t *FindField(fielddef_t *defs, char *name)
+static const fielddef_t *FindField(const fielddef_t *defs, const char *name)
 {
 	int i;
 
@@ -73,7 +73,7 @@ static fielddef_t *FindField(fielddef_t *defs, char *name)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-static qboolean ReadNumber(source_t *source, fielddef_t *fd, void *p)
+static qboolean ReadNumber(source_t *source, const fielddef_t *fd, void *p)
 {
 	token_t token;
 	int negative = qfalse;
@@ -188,7 +188,7 @@ static qboolean ReadNumber(source_t *source, fielddef_t *fd, void *p)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-static qboolean ReadChar(source_t *source, fielddef_t *fd, void *p)
+static qboolean ReadChar(source_t *source, const fielddef_t *fd, void *p)
 {
 	token_t token;
 
@@ -213,7 +213,7 @@ static qboolean ReadChar(source_t *source, fielddef_t *fd, void *p)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-static int ReadString(source_t *source, fielddef_t *fd, void *p)
+static int ReadString(source_t *source, const fielddef_t *fd, void *p)
 {
 	token_t token;
 
@@ -230,10 +230,10 @@ static int ReadString(source_t *source, fielddef_t *fd, void *p)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int ReadStructure(source_t *source, structdef_t *def, char *structure)
+int ReadStructure(source_t *source, const structdef_t *def, char *structure)
 {
 	token_t token;
-	fielddef_t *fd;
+	const fielddef_t *fd;
 	void *p;
 	int num;
 
@@ -366,11 +366,11 @@ int WriteFloat(FILE *fp, float value)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-static int WriteStructWithIndent(FILE *fp, structdef_t *def, char *structure, int indent)
+static int WriteStructWithIndent(FILE *fp, const structdef_t *def, const char *structure, int indent)
 {
 	int i, num;
 	void *p;
-	fielddef_t *fd;
+	const fielddef_t *fd;
 
 	if (!WriteIndent(fp, indent)) return qfalse;
 	if (fprintf(fp, "{\r\n") < 0) return qfalse;
@@ -452,7 +452,7 @@ static int WriteStructWithIndent(FILE *fp, structdef_t *def, char *structure, in
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int WriteStructure(FILE *fp, structdef_t *def, char *structure)
+int WriteStructure(FILE *fp, const structdef_t *def, const char *structure)
 {
 	return WriteStructWithIndent(fp, def, structure, 0);
 } //end of the function WriteStructure

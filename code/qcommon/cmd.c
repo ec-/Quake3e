@@ -392,7 +392,7 @@ void Cmd_Clear( void ) {
 Cmd_Argv
 ============
 */
-char *Cmd_Argv( int arg ) {
+const char *Cmd_Argv( int arg ) {
 	if ( (unsigned)arg >= cmd_argc ) {
 		return "";
 	}
@@ -726,7 +726,7 @@ Only remove commands with no associated function
 */
 void Cmd_RemoveCommandSafe( const char *cmd_name )
 {
-	cmd_function_t *cmd = Cmd_FindCommand( cmd_name );
+	const cmd_function_t *cmd = Cmd_FindCommand( cmd_name );
 
 	if( !cmd )
 		return;
@@ -750,7 +750,7 @@ Remove cgame-created commands
 */
 void Cmd_RemoveCgameCommands( void )
 {
-	cmd_function_t *cmd;
+	const cmd_function_t *cmd;
 	qboolean removed;
 
 	do {
@@ -785,7 +785,7 @@ void Cmd_CommandCompletion( void(*callback)(const char *s) ) {
 Cmd_CompleteArgument
 ============
 */
-qboolean Cmd_CompleteArgument( const char *command, char *args, int argNum ) {
+qboolean Cmd_CompleteArgument( const char *command, const char *args, int argNum ) {
 	const cmd_function_t *cmd;
 
 	for( cmd = cmd_functions; cmd; cmd = cmd->next ) {
@@ -901,7 +901,7 @@ static void Cmd_List_f( void )
 Cmd_CompleteCfgName
 ==================
 */
-static void Cmd_CompleteCfgName( char *args, int argNum ) {
+static void Cmd_CompleteCfgName( const char *args, int argNum ) {
 	if( argNum == 2 ) {
 		Field_CompleteFilename( "", "cfg", qfalse, FS_MATCH_ANY | FS_MATCH_STICK );
 	}
@@ -913,7 +913,7 @@ static void Cmd_CompleteCfgName( char *args, int argNum ) {
 Cmd_CompleteWriteCfgName
 ==================
 */
-void Cmd_CompleteWriteCfgName( char *args, int argNum ) {
+void Cmd_CompleteWriteCfgName( const char *args, int argNum ) {
 	if( argNum == 2 ) {
 		Field_CompleteFilename( "", "cfg", qfalse, FS_MATCH_EXTERN | FS_MATCH_STICK );
 	}

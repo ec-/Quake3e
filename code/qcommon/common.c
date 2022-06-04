@@ -975,8 +975,8 @@ all big things are allocated on the hunk.
 
 #ifdef ZONE_DEBUG
 typedef struct zonedebug_s {
-	char *label;
-	char *file;
+	const char *label;
+	const char *file;
 	int line;
 	int allocSize;
 } zonedebug_t;
@@ -1803,8 +1803,8 @@ typedef struct hunkblock_s {
 	int size;
 	byte printed;
 	struct hunkblock_s *next;
-	char *label;
-	char *file;
+	const char *label;
+	const char *file;
 	int line;
 } hunkblock_t;
 
@@ -4319,7 +4319,7 @@ static void PrintCvarMatches( const char *s ) {
 Field_FindFirstSeparator
 ===============
 */
-static char *Field_FindFirstSeparator( char *s )
+static const char *Field_FindFirstSeparator( const char *s )
 {
 	char c;
 	while ( (c = *s) != '\0' ) {
@@ -4508,7 +4508,7 @@ void Field_CompleteFilename( const char *dir, const char *ext, qboolean stripExt
 Field_CompleteCommand
 ===============
 */
-void Field_CompleteCommand( char *cmd, qboolean doCommands, qboolean doCvars )
+void Field_CompleteCommand( const char *cmd, qboolean doCommands, qboolean doCvars )
 {
 	int	completionArgument;
 
@@ -4550,7 +4550,7 @@ void Field_CompleteCommand( char *cmd, qboolean doCommands, qboolean doCvars )
 	if ( completionArgument > 1 )
 	{
 		const char *baseCmd = Cmd_Argv( 0 );
-		char *p;
+		const char *p;
 
 #ifndef DEDICATED
 			// This should always be true
