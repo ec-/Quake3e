@@ -405,7 +405,7 @@ const char *Sys_DefaultHomePath( void )
 	// Used to determine where to store user-specific files
 	static char homePath[ MAX_OSPATH ];
 
-	char *p;
+	const char *p;
 
 	if ( *homePath )
 		return homePath;
@@ -440,7 +440,7 @@ const char *Sys_SteamPath( void )
 	static char steamPath[ MAX_OSPATH ];
 	// Disabled since Steam doesn't let you install Quake 3 on Mac/Linux
 #if 0
-	char *p;
+	const char *p;
 
 	if( ( p = getenv( "HOME" ) ) != NULL )
 	{

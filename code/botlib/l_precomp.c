@@ -613,7 +613,7 @@ static define_t *PC_FindHashedDefine(define_t **definehash, char *name)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-static define_t *PC_FindDefine(define_t *defines, char *name)
+static define_t *PC_FindDefine(define_t *defines, const char *name)
 {
 	define_t *d;
 
@@ -631,7 +631,7 @@ static define_t *PC_FindDefine(define_t *defines, char *name)
 //								if no parm found with the given name -1 is returned
 // Changes Globals:		-
 //============================================================================
-static int PC_FindDefineParm(define_t *define, char *name)
+static int PC_FindDefineParm(define_t *define, const char *name)
 {
 	token_t *p;
 	int i;
@@ -754,7 +754,7 @@ static int PC_ExpandBuiltinDefine(source_t *source, token_t *deftoken, define_t 
 		case BUILTIN_DATE:
 		{
 			t = time(NULL);
-			curtime = ctime(&t);
+			curtime = ctime(( const time_t *)&t);
 			strcpy(token->string, "\"");
 			strncat(token->string, curtime+4, 7);
 			strncat(token->string+7, curtime+20, 4);
@@ -768,7 +768,7 @@ static int PC_ExpandBuiltinDefine(source_t *source, token_t *deftoken, define_t 
 		case BUILTIN_TIME:
 		{
 			t = time(NULL);
-			curtime = ctime(&t);
+			curtime = ctime(( const time_t *)&t);
 			strcpy(token->string, "\"");
 			strncat(token->string, curtime+11, 8);
 			strcat(token->string, "\"");
@@ -1424,7 +1424,7 @@ int PC_AddGlobalDefine(const char *string)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-int PC_RemoveGlobalDefine(char *name)
+int PC_RemoveGlobalDefine(const char *name)
 {
 	define_t *define;
 
@@ -1460,7 +1460,7 @@ void PC_RemoveAllGlobalDefines(void)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-static define_t *PC_CopyDefine(source_t *source, define_t *define)
+static define_t *PC_CopyDefine(source_t *source, const define_t *define)
 {
 	define_t *newdefine;
 	token_t *token, *newtoken, *lasttoken;
@@ -1505,7 +1505,8 @@ static define_t *PC_CopyDefine(source_t *source, define_t *define)
 //============================================================================
 static void PC_AddGlobalDefinesToSource(source_t *source)
 {
-	define_t *define, *newdefine;
+	const define_t *define;
+	define_t *newdefine;
 
 	for (define = globaldefines; define; define = define->next)
 	{
@@ -3041,7 +3042,7 @@ source_t *LoadSourceFile(const char *filename)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-source_t *LoadSourceMemory(char *ptr, int length, char *name)
+source_t *LoadSourceMemory(const char *ptr, int length, const char *name)
 {
 	source_t *source;
 	script_t *script;

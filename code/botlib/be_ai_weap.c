@@ -52,7 +52,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define PROJECTILE_OFS(x) (size_t)&(((projectileinfo_t *)0)->x)
 
 //weapon definition
-static fielddef_t weaponinfo_fields[] =
+static const fielddef_t weaponinfo_fields[] =
 {
 {"number", WEAPON_OFS(number), FT_INT},						//weapon number
 {"name", WEAPON_OFS(name), FT_STRING},							//name of the weapon
@@ -80,7 +80,7 @@ static fielddef_t weaponinfo_fields[] =
 };
 
 //projectile definition
-static fielddef_t projectileinfo_fields[] =
+static const fielddef_t projectileinfo_fields[] =
 {
 {"name", PROJECTILE_OFS(name), FT_STRING},					//name of the projectile
 {"model", PROJECTILE_OFS(model), FT_STRING},					//model of the projectile
@@ -327,7 +327,7 @@ static weaponconfig_t *LoadWeaponConfig(const char *filename)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-static int *WeaponWeightIndex(weightconfig_t *wwc, weaponconfig_t *wc)
+static int *WeaponWeightIndex(const weightconfig_t *wwc, const weaponconfig_t *wc)
 {
 	int *index, i;
 
@@ -361,7 +361,7 @@ static void BotFreeWeaponWeights(int weaponstate)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int BotLoadWeaponWeights(int weaponstate, char *filename)
+int BotLoadWeaponWeights(int weaponstate, const char *filename)
 {
 	bot_weaponstate_t *ws;
 

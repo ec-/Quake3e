@@ -27,7 +27,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 trGlobals_t		tr;
 
-static float	s_flipMatrix[16] = {
+static const float	s_flipMatrix[16] = {
 	// convert from our coordinate system (looking down X)
 	// to OpenGL's coordinate system (looking down -Z)
 	0, 0, -1, 0,
@@ -42,13 +42,13 @@ refimport_t	ri;
 // entities that will have procedurally generated surfaces will just
 // point at this for their sorting surface
 static surfaceType_t	entitySurface = SF_ENTITY;
-
+#if 0
 /*
 ================
 R_CompareVert
 ================
 */
-qboolean R_CompareVert(srfVert_t * v1, srfVert_t * v2, qboolean checkST)
+static qboolean R_CompareVert(srfVert_t * v1, srfVert_t * v2, qboolean checkST)
 {
 	int             i;
 
@@ -67,7 +67,7 @@ qboolean R_CompareVert(srfVert_t * v1, srfVert_t * v2, qboolean checkST)
 
 	return qtrue;
 }
-
+#endif
 /*
 =============
 R_CalcTexDirs
@@ -808,12 +808,10 @@ Sets the z-component transformation part in the projection matrix
 */
 static void R_SetupProjectionZ(viewParms_t *dest)
 {
-	float zNear, zFar, depth;
+	const float zNear = r_znear->value;
+	const float zFar	= dest->zFar;
 	
-	zNear = r_znear->value;
-	zFar	= dest->zFar;
-
-	depth	= zFar - zNear;
+	const float depth	= zFar - zNear;
 
 	dest->projectionMatrix[2] = 0;
 	dest->projectionMatrix[6] = 0;
@@ -935,7 +933,7 @@ static void R_SetupProjectionOrtho(viewParms_t *dest, vec3_t viewBounds[2])
 R_MirrorPoint
 =================
 */
-static void R_MirrorPoint (vec3_t in, orientation_t *surface, orientation_t *camera, vec3_t out) {
+static void R_MirrorPoint (const vec3_t in, const orientation_t *surface, const orientation_t *camera, vec3_t out) {
 	int		i;
 	vec3_t	local;
 	vec3_t	transformed;
@@ -952,7 +950,7 @@ static void R_MirrorPoint (vec3_t in, orientation_t *surface, orientation_t *cam
 	VectorAdd( transformed, camera->origin, out );
 }
 
-static void R_MirrorVector (vec3_t in, orientation_t *surface, orientation_t *camera, vec3_t out) {
+static void R_MirrorVector (const vec3_t in, const orientation_t *surface, const orientation_t *camera, vec3_t out) {
 	int		i;
 	float	d;
 
@@ -969,7 +967,7 @@ static void R_MirrorVector (vec3_t in, orientation_t *surface, orientation_t *ca
 R_PlaneForSurface
 =============
 */
-static void R_PlaneForSurface (surfaceType_t *surfType, cplane_t *plane) {
+static void R_PlaneForSurface (const surfaceType_t *surfType, cplane_t *plane) {
 	srfBspSurface_t	*tri;
 	srfPoly_t		*poly;
 	srfVert_t		*v1, *v2, *v3;
@@ -1016,7 +1014,7 @@ be moving and rotating.
 Returns qtrue if it should be mirrored
 =================
 */
-static qboolean R_GetPortalOrientations( drawSurf_t *drawSurf, int entityNum, 
+static qboolean R_GetPortalOrientations( const drawSurf_t *drawSurf, int entityNum, 
 							 orientation_t *surface, orientation_t *camera,
 							 vec3_t pvsOrigin, qboolean *mirror ) {
 	int			i;
@@ -1300,7 +1298,7 @@ R_MirrorViewBySurface
 Returns qtrue if another view has been rendered
 ========================
 */
-static qboolean R_MirrorViewBySurface (drawSurf_t *drawSurf, int entityNum) {
+static qboolean R_MirrorViewBySurface (const drawSurf_t *drawSurf, int entityNum) {
 	vec4_t			clipDest[128];
 	viewParms_t		newParms;
 	viewParms_t		oldParms;
@@ -1362,9 +1360,9 @@ R_SpriteFogNum
 See if a sprite is inside a fog volume
 =================
 */
-static int R_SpriteFogNum( trRefEntity_t *ent ) {
+static int R_SpriteFogNum( const trRefEntity_t *ent ) {
 	int				i, j;
-	fog_t			*fog;
+	const fog_t			*fog;
 
 	if ( tr.refdef.rdflags & RDF_NOWORLDMODEL ) {
 		return 0;
@@ -1405,7 +1403,7 @@ DRAWSURF SORTING
 R_Radix
 ===============
 */
-static ID_INLINE void R_Radix( int byte, int size, drawSurf_t *source, drawSurf_t *dest )
+static ID_INLINE void R_Radix( int byte, int size, const drawSurf_t *source, drawSurf_t *dest )
 {
   int           count[ 256 ] = { 0 };
   int           index[ 256 ];
@@ -1738,7 +1736,7 @@ A view may be either the actual camera view,
 or a mirror / remote location
 ================
 */
-void R_RenderView (viewParms_t *parms) {
+void R_RenderView (const viewParms_t *parms) {
 	int		firstDrawSurf;
 	int		numDrawSurfs;
 

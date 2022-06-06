@@ -127,7 +127,7 @@ int R_CullPointAndRadius( const vec3_t pt, float radius )
 {
 	int		i;
 	float	dist;
-	cplane_t	*frust;
+	const cplane_t	*frust;
 	qboolean mightBeClipped = qfalse;
 
 	if ( r_nocull->integer ) {

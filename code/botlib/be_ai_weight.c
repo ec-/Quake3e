@@ -282,7 +282,7 @@ static fuzzyseperator_t *ReadFuzzySeperators_r(source_t *source)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-weightconfig_t *ReadWeightConfig(char *filename)
+weightconfig_t *ReadWeightConfig(const char *filename)
 {
 	int newindent, avail = 0, n;
 	token_t token;
@@ -560,7 +560,7 @@ qboolean WriteWeightConfig(char *filename, weightconfig_t *config)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int FindFuzzyWeight(weightconfig_t *wc, char *name)
+int FindFuzzyWeight(const weightconfig_t *wc, const char *name)
 {
 	int i;
 

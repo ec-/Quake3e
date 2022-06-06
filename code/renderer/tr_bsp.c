@@ -1706,7 +1706,7 @@ R_LoadNodesAndLeafs
 */
 static void R_LoadNodesAndLeafs( const lump_t *nodeLump, const lump_t *leafLump ) {
 	int			i, j, p;
-	dnode_t		*in;
+	const dnode_t		*in;
 	dleaf_t		*inLeaf;
 	mnode_t 	*out;
 	int			numNodes, numLeafs;
@@ -1859,10 +1859,10 @@ static void R_LoadMarksurfaces( const lump_t *l )
 R_LoadPlanes
 =================
 */
-static	void R_LoadPlanes( lump_t *l ) {
+static	void R_LoadPlanes( const lump_t *l ) {
 	int			i, j;
 	cplane_t	*out;
-	dplane_t 	*in;
+	const dplane_t 	*in;
 	int			count;
 	int			bits;
 
@@ -1899,9 +1899,9 @@ R_LoadFogs
 static void R_LoadFogs( const lump_t *l, const lump_t *brushesLump, const lump_t *sidesLump ) {
 	int			i, n;
 	fog_t		*out;
-	dfog_t		*fogs;
-	dbrush_t 	*brushes, *brush;
-	dbrushside_t	*sides;
+	const dfog_t		*fogs;
+	const dbrush_t 	*brushes, *brush;
+	const dbrushside_t	*sides;
 	int			count, brushesCount, sidesCount;
 	int			sideNum;
 	int			planeNum;
@@ -2078,8 +2078,7 @@ R_LoadEntities
 ================
 */
 static void R_LoadEntities( const lump_t *l ) {
-	const char *p, *token;
-	char *s;
+	const char *p, *token, *s;
 	char keyname[MAX_TOKEN_CHARS];
 	char value[MAX_TOKEN_CHARS], *v[3];
 	world_t	*w;
@@ -2122,12 +2121,12 @@ static void R_LoadEntities( const lump_t *l ) {
 		// check for remapping of shaders for vertex lighting
 		s = "vertexremapshader";
 		if (!Q_strncmp(keyname, s, strlen(s)) ) {
-			s = strchr(value, ';');
-			if (!s) {
+			char *vs = strchr(value, ';');
+			if (!vs) {
 				ri.Printf( PRINT_WARNING, "WARNING: no semi colon in vertexshaderremap '%s'\n", value );
 				break;
 			}
-			*s++ = '\0';
+			*vs++ = '\0';
 			if ( r_vertexLight->integer && tr.vertexLightingAllowed ) {
 				RE_RemapShader(value, s, "0");
 			}
@@ -2136,12 +2135,12 @@ static void R_LoadEntities( const lump_t *l ) {
 		// check for remapping of shaders
 		s = "remapshader";
 		if (!Q_strncmp(keyname, s, (int)strlen(s)) ) {
-			s = strchr(value, ';');
-			if (!s) {
+			char *vs = strchr(value, ';');
+			if (!vs) {
 				ri.Printf( PRINT_WARNING, "WARNING: no semi colon in shaderremap '%s'\n", value );
 				break;
 			}
-			*s++ = '\0';
+			*vs++ = '\0';
 			RE_RemapShader(value, s, "0");
 			continue;
 		}
