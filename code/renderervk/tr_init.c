@@ -587,7 +587,7 @@ static void InitOpenGL( void )
 	}
 
 #ifdef USE_VULKAN
-	if ( !vk.active && vk.instance ) {
+	if ( !vk.active ) {
 		// might happen after REF_KEEP_WINDOW
 		vk_initialize();
 		gls.initTime = ri.Milliseconds();
