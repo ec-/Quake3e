@@ -1063,7 +1063,7 @@ Also called by Com_Error
 */
 void CL_FlushMemory( void ) {
 
-return;
+#ifndef __WASM__
 
 	// shutdown all the client stuff
 	CL_ShutdownAll();
@@ -1071,6 +1071,9 @@ return;
 	CL_ClearMemory();
 
 	CL_StartHunkUsers();
+
+#endif
+
 }
 
 
@@ -3526,9 +3529,6 @@ static void CL_InitRef( void ) {
 
 	// Vulkan API
 #ifdef USE_VULKAN_API
-#ifdef __WASM__
-#error this is wrong
-#endif
 	rimp.VKimp_Init = VKimp_Init;
 	rimp.VKimp_Shutdown = VKimp_Shutdown;
 	rimp.VK_GetInstanceProcAddr = VK_GetInstanceProcAddr;
