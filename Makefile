@@ -326,6 +326,7 @@ error platform support (one of linux, mingw, darwin)
 endif 
 
 WASISDK        := $(lastword $(wildcard code/wasm/$(COMPILE_PLATFORM)/wasi-sdk-*))
+WASM-OPT       ?= wasm-opt
 #LD             := $(WASISDK)/bin/wasm-ld
 CC             := $(WASISDK)/bin/clang 
 LD             := $(CC)
@@ -1232,7 +1233,7 @@ ifeq ($(PLATFORM),wasm)
 $(B)/$(TARGET_REND2): $(Q3REND2OBJ) $(Q3REND2STROBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) -o $@ $(Q3REND2OBJ) $(Q3REND2STROBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
-	wasm-opt -Os --no-validation -o $@ $@
+	$(WASM-OPT) -Os --zero-filled-memory --no-validation -o $@ $@
 
 else
 $(B)/$(TARGET_REND2): $(Q3REND2OBJ) $(Q3REND2STROBJ)
