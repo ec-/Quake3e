@@ -3,7 +3,11 @@
 #include <string.h>
 #include <libgen.h>
 
+#ifdef __WASM__
+int _start(int argc, char **argv)
+#else
 int main(int argc, char **argv)
+#endif
 {
     FILE *ifp;
     FILE *ofp;

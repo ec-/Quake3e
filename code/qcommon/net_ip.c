@@ -23,6 +23,30 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
 
+
+#ifdef __WASM__
+
+int NET_OpenIP(void);
+uint16_t ntohs(uint16_t n);
+void Sys_SendPacket( int length, const void *data, const netadr_t *to );
+static void	NET_Restart_f( void );
+void Sys_SockaddrToString(char *dest, int destlen, const void *input);
+
+#define FD_SETSIZE 1024
+#ifndef EMSCRIPTEN
+typedef struct {
+	unsigned long fds_bits[FD_SETSIZE / 8 / sizeof(long)];
+} fd_set;
+#endif
+
+#ifdef USE_MULTIVM_SERVER
+int NET_GetPacket( netadr_t *net_from, msg_t *net_message, const fd_set *fdr, int igvm );
+#else
+int NET_GetPacket( netadr_t *net_from, msg_t *net_message, const fd_set *fdr );
+#endif
+
+#else // !__WASM__
+
 #ifdef _WIN32
 #	include <winsock2.h>
 #	include <ws2tcpip.h>
@@ -155,6 +179,7 @@ typedef union socks5_udp_request_s {
 #pragma pack(pop)
 
 
+#endif
 static qboolean usingSocks = qfalse;
 static int networkingEnabled = 0;
 
@@ -175,6 +200,8 @@ static cvar_t	*net_mcast6addr;
 static cvar_t	*net_mcast6iface;
 #endif
 static cvar_t	*net_dropsim;
+
+#ifndef __WASM__
 
 static sockaddr_t socksRelayAddr;
 
@@ -491,6 +518,10 @@ qboolean Sys_StringToAdr( const char *s, netadr_t *a, netadrtype_t family ) {
 }
 
 
+#endif // !__WASM__
+
+
+
 /*
 ===================
 NET_CompareBaseAdrMask
@@ -567,12 +598,13 @@ qboolean NET_CompareBaseAdr( const netadr_t *a, const netadr_t *b )
 }
 
 
+#ifndef __WASM__
 const char *NET_AdrToString( const netadr_t *a )
 {
 	static char s[NET_ADDRSTRMAXLEN];
 
 	if (a->type == NA_LOOPBACK)
-		strcpy( s, "loopback" );
+		strcpy( s, "localhost" );
 	else if (a->type == NA_BOT)
 		strcpy( s, "bot" );
 #ifdef USE_IPV6
@@ -588,14 +620,17 @@ const char *NET_AdrToString( const netadr_t *a )
 
 	return s;
 }
+#else
+const char *NET_AdrToString( const netadr_t *a );
+
+#endif
 
 
 const char *NET_AdrToStringwPort( const netadr_t *a )
 {
 	static char s[NET_ADDRSTRMAXLEN];
-
 	if (a->type == NA_LOOPBACK)
-		strcpy( s, "loopback" );
+		strcpy( s, "localhost" );
 	else if (a->type == NA_BOT)
 		strcpy( s, "bot" );
 	else if(a->type == NA_IP)
@@ -605,6 +640,28 @@ const char *NET_AdrToStringwPort( const netadr_t *a )
 		Com_sprintf(s, sizeof(s), "[%s]:%hu", NET_AdrToString(a), ntohs(a->port));
 #endif
 
+	return s;
+}
+
+
+const char *NET_AdrToStringwPortandProtocol( const netadr_t *a )
+{
+	static char s[NET_ADDRSTRMAXLEN];
+
+	if (a->type == NA_LOOPBACK)
+		strcpy( s, "localhost" );
+    // TODO: localhost web socket?
+	else if (a->type == NA_BOT)
+		strcpy( s, "bot" );
+	else if(a->type == NA_IP)
+    Com_sprintf(s, sizeof(s), "%s%s:%hu", a->protocol[0] 
+      ? "ws://" : "", NET_AdrToString(a), ntohs(a->port));
+#ifdef USE_IPV6
+	else if(a->type == NA_IP6)
+    Com_sprintf(s, sizeof(s), "%s[%s]:%hu", a->protocol[0] 
+      ? "ws://" : "", NET_AdrToString(a), ntohs(a->port));
+#endif
+  
 	return s;
 }
 
@@ -636,6 +693,8 @@ qboolean NET_IsLocalAddress( const netadr_t *adr )
 }
 
 //=============================================================================
+
+#ifndef __WASM__
 
 /*
 ==================
@@ -800,6 +859,23 @@ void Sys_SendPacket( int length, const void *data, const netadr_t *to ) {
 	NetadrToSockadr( to, &addr );
 
 	if ( usingSocks && to->type == NA_IP ) {
+		char socksBuf[ 4096 ];
+		socksBuf[0] = 0;	// reserved
+		socksBuf[1] = 0;
+		socksBuf[2] = 0;	// fragment (not fragmented)
+    socksBuf[3] = 3;	// address type: IPV4 TODO: add websocket protocol
+    // let socks server do the translation
+    if(!Q_stricmpn(to->protocol, "ws", 2) || !Q_stricmpn(to->protocol, "wss", 3)) {
+      socksBuf[1] = 4; // special connect command indicating web sockets
+    }
+    if(to->name[0] == '\0') {
+      Q_strncpyz((char *)to->name, NET_AdrToString(to), sizeof(to->name));
+    }
+    socksBuf[4] = strlen(to->name) + 1;
+    Q_strncpyz( &socksBuf[5], to->name, socksBuf[4] );
+		*(short *)&socksBuf[5 + socksBuf[4]] = ((struct sockaddr_in *)&addr)->sin_port;
+		memcpy( &socksBuf[5 + socksBuf[4] + 2], data, length );
+    ret = sendto( ip_socket, socksBuf, length+5+socksBuf[4]+2, 0, (struct sockaddr *) &socksRelayAddr, sizeof(struct sockaddr_in) );
 		socks5_udp_request_t cmd;
 
 		if ( length <= sizeof( cmd.s.u.v4.data ) ) {
@@ -1577,6 +1653,8 @@ static void NET_OpenIP( void ) {
 }
 
 
+#endif // !__WASM__
+
 //===================================================================
 
 
@@ -1587,6 +1665,7 @@ NET_GetCvars
 */
 static qboolean NET_GetCvars( void ) {
 	int modified;
+  int port;
 
 #if defined (DEDICATED) || !defined (USE_IPV6)
 	// I want server owners to explicitly turn on ipv6 support.
@@ -1615,6 +1694,10 @@ static qboolean NET_GetCvars( void ) {
 	net_ip->modified = qfalse;
 
 	net_port = Cvar_Get( "net_port", va( "%i", PORT_SERVER ), CVAR_LATCH | CVAR_NORESTART );
+  if(net_port->integer == -1) {
+    Com_RandomBytes((byte*)&port, sizeof(int));
+  	Cvar_Set("net_port", va("%i", port &= 0xffff));
+  }
 	Cvar_CheckRange( net_port, "0", "65535", CV_INTEGER );
 	modified += net_port->modified;
 	net_port->modified = qfalse;
@@ -1715,6 +1798,7 @@ static void NET_Config( qboolean enableNetworking ) {
 		networkingEnabled = enableNetworking;
 	}
 
+#ifndef __WASM__
 	if( stop ) {
 		if ( ip_socket != INVALID_SOCKET ) {
 			closesocket( ip_socket );
@@ -1740,6 +1824,7 @@ static void NET_Config( qboolean enableNetworking ) {
 		}
 		
 	}
+#endif
 
 	if( start )
 	{
@@ -1772,6 +1857,12 @@ void NET_Init( void ) {
 	winsockInitialized = qtrue;
 	Com_DPrintf( "Winsock Initialized\n" );
 #endif
+#ifdef USE_ASYNCHRONOUS
+  int	qport;
+  // Pick a random port value
+  Com_RandomBytes( (byte*)&qport, sizeof( qport ) );
+  Netchan_Init( qport & 0xffff );
+#endif
 
 	NET_Config( qtrue );
 	
@@ -1796,6 +1887,8 @@ void NET_Shutdown( void ) {
 	winsockInitialized = qfalse;
 #endif
 }
+
+#ifndef __WASM__
 
 
 /*
@@ -1909,6 +2002,8 @@ qboolean NET_Sleep( int timeout )
 
 	return qtrue;
 }
+
+#endif
 
 
 /*

@@ -24,6 +24,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "client.h"
 #include "snd_codec.h"
 
+#ifndef __WASM__
+
 static snd_codec_t *codecs;
 
 static void S_CodecRegister( snd_codec_t *codec );
@@ -247,3 +249,6 @@ void S_CodecUtilClose( snd_stream_t **stream )
 	Z_Free( *stream );
 	*stream = NULL;
 }
+
+#endif
+

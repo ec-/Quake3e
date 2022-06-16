@@ -450,6 +450,8 @@ typedef struct shader_s {
 										// something calls RE_RegisterShader again with
 										// the same name, we don't try looking for it again
 
+	qboolean	noVertexLightingCollapse;
+	qboolean  allowCompress;
 	qboolean	explicitlyDefined;		// found in a .shader file
 
 	int			surfaceFlags;			// if explicitlyDefined, this will have SURF_* flags

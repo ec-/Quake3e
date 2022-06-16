@@ -756,6 +756,7 @@ Cvar_Set
 ============
 */
 void Cvar_Set( const char *var_name, const char *value) {
+	Com_Printf( "Cvar_Set: %s %s\n", var_name, value );
 	Cvar_Set2 (var_name, value, qtrue);
 }
 

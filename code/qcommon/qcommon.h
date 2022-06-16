@@ -134,7 +134,9 @@ NET
 
 ==============================================================
 */
+#ifndef __WASM__
 #define USE_IPV6
+#endif
 
 #define NET_ENABLEV4            0x01
 #define NET_ENABLEV6            0x02
@@ -178,6 +180,9 @@ typedef enum {
 
 #define NET_ADDRSTRMAXLEN 48	// maximum length of an IPv6 address string including trailing '\0'
 
+#ifdef __WASM__
+QALIGN(sizeof(int32_t))
+#endif
 typedef struct {
 	netadrtype_t	type;
 	union {
@@ -190,6 +195,8 @@ typedef struct {
 #ifdef USE_IPV6
 	unsigned long	scope_id;	// Needed for IPv6 link-local addresses
 #endif
+	char name[256];
+	char protocol[10];
 } netadr_t;
 
 void		NET_Init( void );
@@ -205,6 +212,8 @@ qboolean	NET_CompareBaseAdr( const netadr_t *a, const netadr_t *b );
 qboolean	NET_IsLocalAddress( const netadr_t *adr );
 const char	*NET_AdrToString( const netadr_t *a );
 const char	*NET_AdrToStringwPort( const netadr_t *a );
+const char	*NET_AdrToStringwPortandProtocol( const netadr_t *a );
+char        *NET_ParseProtocol(const char *s, char *protocol);
 int         NET_StringToAdr( const char *s, netadr_t *a, netadrtype_t family );
 qboolean	NET_GetLoopPacket( netsrc_t sock, netadr_t *net_from, msg_t *net_message );
 #ifdef USE_IPV6
@@ -1129,12 +1138,12 @@ void CL_ResetOldGame( void );
 void CL_Shutdown( const char *finalmsg, qboolean quit );
 void CL_Frame( int msec, int realMsec );
 qboolean CL_GameCommand( void );
-void CL_KeyEvent (int key, qboolean down, unsigned time);
+void CL_KeyEvent (int key, qboolean down, unsigned time, int finger);
 
 void CL_CharEvent( int key );
 // char events are for field typing, not game control
 
-void CL_MouseEvent( int dx, int dy /*, int time*/ );
+void CL_MouseEvent( int dx, int dy /*, int time*/, qboolean absolute );
 
 void CL_JoystickEvent( int axis, int value, int time );
 
@@ -1234,6 +1243,17 @@ typedef enum {
 	SE_MOUSE,	// evValue and evValue2 are relative signed x / y moves
 	SE_JOYSTICK_AXIS,	// evValue is an axis number and evValue2 is the current state (-127 to 127)
 	SE_CONSOLE,	// evPtr is a char*
+#ifdef __WASM__ //USE_ABS_MOUSE
+	SE_MOUSE_ABS,
+	SE_FINGER_DOWN,
+	SE_FINGER_UP,
+#endif
+#ifdef USE_DRAGDROP
+  SE_DROPBEGIN,
+  SE_DROPCOMPLETE,
+  SE_DROPFILE,
+  SE_DROPTEXT,
+#endif
 	SE_MAX,
 } sysEventType_t;
 
@@ -1313,6 +1333,10 @@ void *Sys_LoadLibrary( const char *name );
 void *Sys_LoadFunction( void *handle, const char *name );
 int   Sys_LoadFunctionErrors( void );
 void  Sys_UnloadLibrary( void *handle );
+#ifdef  __WASM__
+extern void DebugBreak( void );
+extern void DebugTrace( void );
+#endif
 
 // adaptive huffman functions
 void Huff_Compress( msg_t *buf, int offset );

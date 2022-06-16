@@ -1429,6 +1429,11 @@ int CIN_PlayCinematic( const char *arg, int x, int y, int w, int h, int systemBi
 	char	name[MAX_OSPATH];
 	int		i;
 
+#ifdef __WASM__
+	// NOT READY FOR THIS. THE RIGHT THING TO DO WOULD PROBABLY BE CREATE A <VIDEO>
+	return -1;
+#endif
+
 	if (strchr(arg, '/') == NULL && strchr(arg, '\\') == NULL) {
 		Com_sprintf (name, sizeof(name), "video/%s", arg);
 	} else {

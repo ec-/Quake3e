@@ -603,7 +603,10 @@ FS_CreatePath
 Creates any directories needed to store the given filename
 ============
 */
-static qboolean FS_CreatePath( const char *OSPath ) {
+#ifndef __WASM__
+static 
+#endif
+qboolean FS_CreatePath( const char *OSPath ) {
 	char	path[MAX_OSPATH*2+1];
 	char	*ofs;
 	
@@ -4854,7 +4857,11 @@ static void FS_CheckIdPaks( void )
 						"**************************************************\n\n\n",
 						pakBasename[3]-'0', path->pack->checksum );
 				}
+#ifndef __WASM__
 				Com_Error(ERR_FATAL, "\n* You need to install correct Quake III Arena files in order to play *");
+#else
+				// this isn't going to work with repacked assets, need spoofing from planet_quake
+#endif
 			}
 
 			foundPak |= 1<<(pakBasename[3]-'0');
@@ -4884,10 +4891,12 @@ static void FS_CheckIdPaks( void )
 			"the correct place and that every file\n"
 			"in the %s directory is present and readable.\n", BASEGAME);
 
+#ifndef __WASM__
 		if(!fs_gamedirvar->string[0]
 		|| !Q_stricmp( fs_gamedirvar->string, BASEGAME )
 		|| !Q_stricmp( fs_gamedirvar->string, BASETA ))
 			Com_Error(ERR_FATAL, "\n*** you need to install Quake III Arena in order to play ***");
+#endif
 	}
 }
 
@@ -5373,7 +5382,11 @@ void FS_Restart( int checksumFeed ) {
 			Com_Error( ERR_DROP, "Invalid game folder" );
 			return;
 		}
+#ifndef __WASM__
 		Com_Error( ERR_FATAL, "Couldn't load default.cfg" );
+#else
+		Cbuf_AddText( "dlmap q3dm17\n" );
+#endif
 	}
 
 	// new check before safeMode

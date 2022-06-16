@@ -223,6 +223,51 @@ jobs:
         if-no-files-found: error
         retention-days: 5
 
+  ubuntu-wasm:
+    name: ${{ matrix.config }} Web Assembly ${{ matrix.arch }}
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [js]
+        config: [Release]
+        include:
+          - config: Release
+            rule: release
+          - arch: js
+            use_sdl: USE_SDL=0
+
+    steps:
+    - name: Install tools
+      run: |
+        sudo apt-get -qq update
+        sudo apt-get -y install libcurl4-openssl-dev mesa-common-dev libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev libsdl2-dev wget binaryen
+        wget --no-check-certificate https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-15/wasi-sdk-15.0-linux.tar.gz -O ../wasi-sdk-15.0-linux.tar.gz
+        #npm install -g uglify-js
+
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Build
+      run: |
+        mkdir code/wasm/linux
+        tar -zxvf ../wasi-sdk-15.0-linux.tar.gz -C code/wasm/linux/
+        make release -j 8 PLATFORM=wasm ARCH=${{ matrix.arch }} \
+          DESTDIR=bin ${{ matrix.use_sdl }} \
+          USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl2  \
+          CNAME=quake3e BUILD_SERVER=0
+        mkdir bin
+        mv build/release-wasm-js/*.wasm bin/
+
+    - uses: actions/upload-artifact@v2
+      if: matrix.config == 'Release'
+      with:
+        name: wasm-${{ matrix.arch }}
+        path: bin
+        if-no-files-found: error
+        retention-days: 5
+
   macos-x86:
     name: ${{ matrix.config }} macOS x86_64
     runs-on: macos-latest
@@ -260,7 +305,7 @@ jobs:
 
   create-testing:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    needs: [windows-msys, windows-msvc, ubuntu-x86, ubuntu-arm, macos-x86]
+    needs: [windows-msys, windows-msvc, ubuntu-x86, ubuntu-arm, ubuntu-wasm, macos-x86]
     runs-on: ubuntu-latest
     steps:
       - name: Download Artifacts
@@ -276,6 +321,7 @@ jobs:
           7z a -r quake3e-windows-msvc-x86_64.zip  ./windows-msvc-x86_64/*
           7z a -r quake3e-windows-msvc-arm64.zip   ./windows-msvc-arm64/*
           7z a -r quake3e-macos-x86_64.zip         ./macos-x86_64/*
+          7z a -r quake3e-wasm-js.zip         ./wasm-js/*
 #         7z a -r quake3e-linux-aarch64.zip  ./linux-aarch64/*
 #         7z a -r quake3e-linux-armv7.zip    ./linux-armv7/*
 

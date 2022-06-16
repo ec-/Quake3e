@@ -396,7 +396,7 @@ void Con_Init( void )
 	con_notifytime = Cvar_Get( "con_notifytime", "3", 0 );
 	con_conspeed = Cvar_Get( "scr_conspeed", "3", 0 );
 	con_autoclear = Cvar_Get("con_autoclear", "1", CVAR_ARCHIVE_ND);
-	con_scale = Cvar_Get( "con_scale", "1", CVAR_ARCHIVE_ND );
+	con_scale = Cvar_Get( "con_scale", "1.5", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( con_scale, "0.5", "8", CV_FLOAT );
 
 	Field_Clear( &g_consoleField );
@@ -980,9 +980,13 @@ void Con_Bottom( void )
 
 void Con_Close( void )
 {
-	if ( !com_cl_running->integer )
+	if ( !com_cl_running || !com_cl_running->integer )
 		return;
 
+	if(!uivm && !cgvm && cls.state == CA_DISCONNECTED) {
+		Key_SetCatcher( Key_GetCatcher( ) | KEYCATCH_CONSOLE );
+		return; // don't try to hide console because we don't have a VM to display
+	}
 	Field_Clear( &g_consoleField );
 	Con_ClearNotify();
 	Key_SetCatcher( Key_GetCatcher( ) & ~KEYCATCH_CONSOLE );

@@ -375,6 +375,11 @@ qboolean	CL_Download( const char *cmd, const char *pakname, qboolean autoDownloa
 
 #endif
 
+#ifdef __WASM__
+void		Com_DL_Cleanup( void * );
+qboolean	CL_Download( const char *cmd, const char *pakname, qboolean autoDownload );
+#endif
+
 //=============================================================================
 
 extern	vm_t			*cgvm;	// interface to cgame dll or vm

@@ -1815,6 +1815,9 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 		interpret = VMI_BYTECODE;
 	}
 #else
+#ifdef __WASM__
+#error goddamnit
+#endif
 	if ( interpret >= VMI_COMPILED ) {
 		if ( VM_Compile( vm, header ) ) {
 			vm->compiled = qtrue;

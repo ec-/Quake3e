@@ -1,3 +1,10 @@
+# BUGS
+
+* DONE: Networking, auto-connect, rewrite socks - support `\dlmap` command
+* Sound (no emscripten, no OpenAL, simpler build), respatialize using https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Web_audio_spatialization_basics
+* DONE: Re-automate build.yml, auto-download wasi-sdk, integrate QVMs/q3lcc: https://github.com/briancullinan/multigame/actions
+* Multiworld. - Brian Cullinan
+
 # Quake3e
 
 [![build](../../workflows/build/badge.svg)](../../actions?query=workflow%3Abuild) * <a href="https://discord.com/invite/X3Exs4C"><img src="https://img.shields.io/discord/314456230649135105?color=7289da&logo=discord&logoColor=white" alt="Discord server" /></a>

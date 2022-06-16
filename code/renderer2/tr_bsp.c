@@ -2716,7 +2716,11 @@ void RE_LoadWorldMap( const char *name ) {
 	byte		*startMarker;
 
 	if ( tr.worldMapLoaded ) {
+#ifdef __WASM__
+  	ri.Printf( PRINT_WARNING, "ERROR: attempted to redundantly load world map\n" );
+#else
 		ri.Error( ERR_DROP, "ERROR: attempted to redundantly load world map" );
+#endif
 	}
 
 	// set default map light scale

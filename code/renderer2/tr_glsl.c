@@ -241,35 +241,40 @@ static void GLSL_GetShaderHeader( GLenum shaderType, const GLchar *extra, char *
 	dest[0] = '\0';
 
 	// HACK: abuse the GLSL preprocessor to turn GLSL 1.20 shaders into 1.30 ones
-	if(glRefConfig.glslMajorVersion > 1 || (glRefConfig.glslMajorVersion == 1 && glRefConfig.glslMinorVersion >= 30))
-	{
-		if (glRefConfig.glslMajorVersion > 1 || (glRefConfig.glslMajorVersion == 1 && glRefConfig.glslMinorVersion >= 50))
-			Q_strcat(dest, size, "#version 150\n");
-		else
-			Q_strcat(dest, size, "#version 130\n");
+	#ifndef __WASM__
 
-		if(shaderType == GL_VERTEX_SHADER)
+		if(glRefConfig.glslMajorVersion > 1 || (glRefConfig.glslMajorVersion == 1 && glRefConfig.glslMinorVersion >= 30))
 		{
-			Q_strcat(dest, size, "#define attribute in\n");
-			Q_strcat(dest, size, "#define varying out\n");
+			if (glRefConfig.glslMajorVersion > 1 || (glRefConfig.glslMajorVersion == 1 && glRefConfig.glslMinorVersion >= 50))
+				Q_strcat(dest, size, "#version 150\n");
+			else
+				Q_strcat(dest, size, "#version 130\n");
+
+			if(shaderType == GL_VERTEX_SHADER)
+			{
+				Q_strcat(dest, size, "#define attribute in\n");
+				Q_strcat(dest, size, "#define varying out\n");
+			}
+			else
+			{
+				Q_strcat(dest, size, "#define varying in\n");
+
+				Q_strcat(dest, size, "out vec4 out_Color;\n");
+				Q_strcat(dest, size, "#define gl_FragColor out_Color\n");
+				Q_strcat(dest, size, "#define texture2D texture\n");
+				Q_strcat(dest, size, "#define textureCubeLod textureLod\n");
+				Q_strcat(dest, size, "#define shadow2D texture\n");
+			}
 		}
 		else
 		{
-			Q_strcat(dest, size, "#define varying in\n");
-
-			Q_strcat(dest, size, "out vec4 out_Color;\n");
-			Q_strcat(dest, size, "#define gl_FragColor out_Color\n");
-			Q_strcat(dest, size, "#define texture2D texture\n");
-			Q_strcat(dest, size, "#define textureCubeLod textureLod\n");
-			Q_strcat(dest, size, "#define shadow2D texture\n");
+			Q_strcat(dest, size, "#version 120\n");
+			Q_strcat(dest, size, "#define shadow2D(a,b) shadow2D(a,b).r \n");
 		}
-	}
-	else
-	{
-		Q_strcat(dest, size, "#version 120\n");
-		Q_strcat(dest, size, "#define shadow2D(a,b) shadow2D(a,b).r \n");
-	}
-
+	#else
+		Q_strcat(dest, size, "precision mediump float;\n");
+	#endif
+	
 	// HACK: add some macros to avoid extra uniforms and save speed and code maintenance
 	//Q_strcat(dest, size,
 	//		 va("#ifndef r_SpecularExponent\n#define r_SpecularExponent %f\n#endif\n", r_specularExponent->value));
@@ -483,6 +488,15 @@ static void GLSL_ShowProgramUniforms(GLuint program)
 	int             i, count, size;
 	GLenum			type;
 	char            uniformName[1000];
+
+#ifdef __WASM__
+	// This function is rather expensive in WebGL, let's completely
+	// avoid it if not a developer.
+	if(!ri.Cvar_VariableIntegerValue("developer"))
+	{
+		return;
+	}
+#endif
 
 	// query the number of active uniforms
 	qglGetProgramiv(program, GL_ACTIVE_UNIFORMS, &count);
@@ -1215,6 +1229,7 @@ void GLSL_InitGPUShaders(void)
 		numLightShaders++;
 	}
 
+#ifndef __WASM__
 	for (i = 0; i < SHADOWMAPDEF_COUNT; i++)
 	{
 		if ((i & SHADOWMAPDEF_USE_VERTEX_ANIMATION) && (i & SHADOWMAPDEF_USE_BONE_ANIMATION))
@@ -1249,6 +1264,7 @@ void GLSL_InitGPUShaders(void)
 
 		numEtcShaders++;
 	}
+#endif
 
 	attribs = ATTR_POSITION | ATTR_NORMAL;
 	extradefines[0] = '\0';
@@ -1360,6 +1376,8 @@ void GLSL_InitGPUShaders(void)
 	Q_strcat(extradefines, 1024, va("#define r_shadowCascadeZFar %f\n", r_shadowCascadeZFar->value));
 
 
+#ifndef __WASM__
+
 	if (!GLSL_InitGPUShader(&tr.shadowmaskShader, "shadowmask", attribs, qtrue, extradefines, qtrue, fallbackShader_shadowmask_vp, fallbackShader_shadowmask_fp))
 	{
 		ri.Error(ERR_FATAL, "Could not load shadowmask shader!");
@@ -1394,7 +1412,6 @@ void GLSL_InitGPUShaders(void)
 
 	numEtcShaders++;
 
-
 	for (i = 0; i < 4; i++)
 	{
 		attribs = ATTR_POSITION | ATTR_TEXCOORD;
@@ -1423,6 +1440,8 @@ void GLSL_InitGPUShaders(void)
 
 		numEtcShaders++;
 	}
+
+#endif
 
 #if 0
 	attribs = ATTR_POSITION | ATTR_TEXCOORD;

@@ -242,11 +242,26 @@ static void SV_MasterHeartbeat( const char *message )
 	int			i;
 	int			res;
 	int			netenabled;
+#ifndef DEDICATED
+#if defined(USE_LOCAL_DED) || defined(__WASM__)
+	extern cvar_t *cl_master[MAX_MASTER_SERVERS];
+	cvar_t **masterList = sv_master;
+	if(com_dedicated->integer != 2)
+		masterList = cl_master;
+#define sv_master masterList
+#endif
+#endif
 
 	netenabled = Cvar_VariableIntegerValue("net_enabled");
 
 	// "dedicated 1" is for lan play, "dedicated 2" is for inet public play
-	if (!com_dedicated || com_dedicated->integer != 2 || !(netenabled & (NET_ENABLEV4 | NET_ENABLEV6)))
+	if (!com_dedicated 
+#if defined(USE_LOCAL_DED) || defined(__WASM__)
+		//|| com_dedicated->integer > 0 
+#else
+		|| com_dedicated->integer != 2 
+#endif
+		|| !(netenabled & (NET_ENABLEV4 | NET_ENABLEV6)))
 		return;		// only dedicated servers send heartbeats
 
 	// if not time yet, don't send anything
@@ -320,6 +335,10 @@ static void SV_MasterHeartbeat( const char *message )
 		if(adr[i][1].type != NA_BAD)
 			NET_OutOfBandPrint( NS_SERVER, &adr[i][1], "heartbeat %s\n", message);
 	}
+
+#ifdef USE_LOCAL_DED
+#undef sv_master
+#endif
 }
 
 
@@ -661,9 +680,13 @@ static void SVC_Status( const netadr_t *from ) {
 
 	// ignore if we are in single player
 #ifndef DEDICATED
+#ifndef USE_LOCAL_DED
+#ifndef __WASM__
 	if ( Cvar_VariableIntegerValue( "g_gametype" ) == GT_SINGLE_PLAYER || Cvar_VariableIntegerValue("ui_singlePlayerActive")) {
 		return;
 	}
+#endif
+#endif
 #endif
 
 	// Prevent using getstatus as an amplifier
@@ -731,9 +754,13 @@ static void SVC_Info( const netadr_t *from ) {
 
 	// ignore if we are in single player
 #ifndef DEDICATED
+#ifndef USE_LOCAL_DED
+#ifndef __WASM__
 	if ( Cvar_VariableIntegerValue( "g_gametype" ) == GT_SINGLE_PLAYER || Cvar_VariableIntegerValue("ui_singlePlayerActive")) {
 		return;
 	}
+#endif
+#endif
 #endif
 
 	// Prevent using getinfo as an amplifier
@@ -1303,7 +1330,9 @@ void SV_Frame( int msec ) {
 		{
 			// Block indefinitely until something interesting happens
 			// on STDIN.
+#ifndef __WASM__
 			Sys_Sleep( -1 );
+#endif
 		}
 		return;
 	}

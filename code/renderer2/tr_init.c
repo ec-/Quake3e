@@ -267,6 +267,7 @@ static void InitOpenGL( void )
 		GLint		temp;
 		
 		ri.GLimp_Init( &glConfig );
+
 		GLimp_InitExtraExtensions();
 
 		glConfig.textureEnvAddAvailable = qtrue;
@@ -1503,6 +1504,12 @@ GetRefAPI
 @@@@@@@@@@@@@@@@@@@@@
 */
 #ifdef USE_RENDERER_DLOPEN
+Q_EXPORT int main( int argc, char* argv[] )
+{
+
+}
+
+
 Q_EXPORT refexport_t* QDECL GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 #else
 refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
@@ -1566,6 +1573,12 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.GetConfig = RE_GetConfig;
 	re.VertexLighting = RE_VertexLighting;
 	re.SyncRender = RE_SyncRender;
+
+#ifdef __WASM__
+void ScanAndLoadShaderFiles( void );
+
+	re.ScanAndLoadShaderFiles = ScanAndLoadShaderFiles;
+#endif
 
 	return &re;
 }

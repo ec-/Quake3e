@@ -27,6 +27,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef _WIN32
 #include <netinet/in.h>
 #include <sys/stat.h> // umask
+
 #include <sys/time.h>
 #else
 #include <winsock.h>
@@ -872,6 +873,7 @@ int Com_FilterPath( const char *filter, const char *name )
 }
 
 
+#ifndef __WASM__
 /*
 ================
 Com_RealTime
@@ -935,6 +937,7 @@ int64_t Sys_Microseconds( void )
 	return (int64_t)curr.tv_sec * 1000000LL + (int64_t)curr.tv_usec;
 #endif
 }
+#endif
 
 
 /*
@@ -1553,10 +1556,14 @@ Z_Malloc
 ========================
 */
 #ifdef ZONE_DEBUG
-void *Z_MallocDebug( int size, char *label, char *file, int line ) {
-#else
-void *Z_Malloc( int size ) {
+#ifdef __WASM__
+void *Z_Malloc(size_t) __attribute__((weak, alias("Z_MallocDebug")));
 #endif
+void *Z_MallocDebug( int size, char *label, char *file, int line )
+#else
+void *Z_Malloc( int size )
+#endif
+{
 	void	*buf;
 
   //Z_CheckHeap ();	// DEBUG
@@ -2069,6 +2076,7 @@ static void Com_InitZoneMemory( void ) {
 		Com_Error( ERR_FATAL, "Zone data failed to allocate %i megs", mainZoneSize / (1024*1024) );
 	}
 	Z_ClearZone( mainzone, mainzone, mainZoneSize, 1 );
+
 }
 
 
@@ -2194,6 +2202,7 @@ static void Com_InitHunkMemory( void ) {
 	Cmd_AddCommand( "hunklog", Hunk_Log );
 	Cmd_AddCommand( "hunksmalllog", Hunk_SmallLog );
 #endif
+
 }
 
 
@@ -2622,6 +2631,7 @@ void Sys_QueEvent( int evTime, sysEventType_t evType, int value, int value2, int
 		// we are discarding an event, but don't leak memory
 		if ( ev->evPtr ) {
 			Z_Free( ev->evPtr );
+      ev->evPtr = NULL;
 		}
 		eventTail++;
 	}
@@ -2860,18 +2870,43 @@ int Com_EventLoop( void ) {
 		switch ( ev.evType ) {
 #ifndef DEDICATED
 		case SE_KEY:
-			CL_KeyEvent( ev.evValue, ev.evValue2, ev.evTime );
+			CL_KeyEvent( ev.evValue, ev.evValue2, ev.evTime, 0 );
 			break;
 		case SE_CHAR:
 			CL_CharEvent( ev.evValue );
 			break;
 		case SE_MOUSE:
-			CL_MouseEvent( ev.evValue, ev.evValue2 /*, ev.evTime*/ );
+			CL_MouseEvent( ev.evValue, ev.evValue2 /*, ev.evTime*/, qfalse );
 			break;
+#ifdef __WASM__
+		case SE_MOUSE_ABS:
+			CL_MouseEvent( ev.evValue, ev.evValue2, qtrue );
+			break;
+#endif
 		case SE_JOYSTICK_AXIS:
 			CL_JoystickEvent( ev.evValue, ev.evValue2, ev.evTime );
 			break;
+#ifdef __WASM__
+		case SE_FINGER_DOWN:
+			CL_KeyEvent( ev.evValue, qtrue, ev.evTime, ev.evValue2 );
+			break;
+		case SE_FINGER_UP:
+			CL_KeyEvent( ev.evValue, qfalse, ev.evTime, ev.evValue2 );
+			break;
 #endif
+/*
+    case SE_DROPBEGIN:
+      CL_DropStart();
+      break;
+    case SE_DROPCOMPLETE:
+      CL_DropComplete();
+      break;
+    case SE_DROPFILE:
+      CL_DropFile(ev.evPtr, ev.evPtrLength);
+      break;
+*/
+#endif
+
 		case SE_CONSOLE:
 			Cbuf_AddText( (char *)ev.evPtr );
 			Cbuf_AddText( "\n" );
@@ -3265,6 +3300,14 @@ out:
 **
 ** --------------------------------------------------------------------------------
 */
+#ifdef __WASM__
+
+static void Sys_GetProcessorId( char *vendor )
+{
+  Com_sprintf( vendor, 3, "v8" );
+}
+
+#else
 
 #if (idx64 || id386)
 
@@ -3430,6 +3473,8 @@ static void Sys_GetProcessorId( char *vendor )
 #endif // !_WIN32
 
 #endif // non-x86
+
+#endif // !__WASM__
 
 /*
 ================
@@ -3704,8 +3749,13 @@ void Com_Init( char *commandLine ) {
 	Cvar_Get( "com_errorMessage", "", CVAR_ROM | CVAR_NORESTART );
 
 #ifndef DEDICATED
+#ifdef __WASM__
+	com_introPlayed = Cvar_Get( "com_introplayed", "1", CVAR_ARCHIVE );
+	com_skipIdLogo  = Cvar_Get( "com_skipIdLogo", "1", CVAR_ARCHIVE );
+#else
 	com_introPlayed = Cvar_Get( "com_introplayed", "0", CVAR_ARCHIVE );
 	com_skipIdLogo  = Cvar_Get( "com_skipIdLogo", "0", CVAR_ARCHIVE );
+#endif
 #endif
 
 	if ( com_dedicated->integer ) {
@@ -4042,9 +4092,11 @@ void Com_Frame( qboolean noDelay ) {
 			minMsec = 0;
 			bias = 0;
 		} else {
+#ifndef __WASM__
 			if ( !gw_active && com_maxfpsUnfocused->integer > 0 )
 				minMsec = 1000 / com_maxfpsUnfocused->integer;
 			else
+#endif
 			if ( com_maxfps->integer > 0 )
 				minMsec = 1000 / com_maxfps->integer;
 			else

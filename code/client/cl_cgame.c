@@ -463,6 +463,17 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		Com_Printf( "%s", (const char*)VMA(1) );
 		return 0;
 	case CG_ERROR:
+#ifdef __WASM__
+		// BECAUSE WE CONVERT FILE TYPES TO .PNG, CLASSIC
+		//   GAME FAILS WHEN THE SKIN FILE CHECKS FOR 
+		//   A DEFAULT_ICON.TGA. NO OPTION TO CHANGE 
+		//   IMAGE TYPES BECAUSE TGA IS HARD-CODED.
+		// IGNORE THIS ERROR AND HOPE CGAME DOESN'T
+		//   REACT POORLY.
+		if(Q_stristr((const char*)VMA(1), "DEFAULT_MODEL")) {
+			return 0;
+		}
+#endif
 		Com_Error( ERR_DROP, "%s", (const char*)VMA(1) );
 		return 0;
 	case CG_MILLISECONDS:
@@ -849,7 +860,12 @@ void CL_InitCGame( void ) {
 
 	cgvm = VM_Create( VM_CGAME, CL_CgameSystemCalls, CL_DllSyscall, interpret );
 	if ( !cgvm ) {
+#ifndef __WASM__
 		Com_Error( ERR_DROP, "VM_Create on cgame failed" );
+#else
+		cls.cgameStarted = qfalse;
+		return;
+#endif
 	}
 	cls.state = CA_LOADING;
 

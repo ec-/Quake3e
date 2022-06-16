@@ -303,7 +303,11 @@ void S_ClearSoundBuffer( void )
 S_SoundInfo
 =================
 */
-static void S_SoundInfo( void )
+extern snd_codec_t *codecs;
+#ifndef __WASM__
+static 
+#endif
+void S_SoundInfo( void )
 {
 	if( si.SoundInfo ) {
 		si.SoundInfo();

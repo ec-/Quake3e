@@ -37,6 +37,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 #include <windows.h>
 #include <GL/gl.h>
+#elif defined(__WASM__)
+#include "../wasm/gl.h"
+#undef GL_RGBA8
+#define GL_RGBA8 GL_RGBA
+#undef GL_RGB8
+#define GL_RGB8 GL_RGB
 #elif defined( __linux__ ) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined( __sun )
 #include <GL/gl.h>
 #include <GL/glx.h>
@@ -380,7 +386,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 	GLE(GLvoid, NamedFramebufferTexture2DEXT, GLuint framebuffer, GLenum attachment, GLenum textarget, GLuint texture, GLint level) \
 	GLE(GLvoid, NamedFramebufferRenderbufferEXT, GLuint framebuffer, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer) \
 
+#ifdef __WASM__
+#define GLE(ret, name, ...) extern ret APIENTRY gl##name(__VA_ARGS__); \
+typedef ret APIENTRY name##proc(__VA_ARGS__); extern name##proc * qgl##name;
+#else
 #define GLE(ret, name, ...) typedef ret APIENTRY name##proc(__VA_ARGS__); extern name##proc * qgl##name;
+#endif
 QGL_1_1_PROCS;
 QGL_DESKTOP_1_1_PROCS;
 QGL_ES_1_1_PROCS;

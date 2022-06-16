@@ -24,6 +24,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "client.h"
 #include "snd_local.h"
 
+#ifndef __WASM__
+
 static portable_samplepair_t paintbuffer[PAINTBUFFER_SIZE];
 static int snd_vol;
 
@@ -797,3 +799,5 @@ void S_PaintChannels( int endtime ) {
 		s_paintedtime = end;
 	}
 }
+
+#endif

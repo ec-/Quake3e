@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<link rel="icon" href="/quakejs-bnw.png">
+	<title>Quake3e-Web</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	<link rel="stylesheet" href="index.css" />
+	<script type="text/javascript">
+		if(typeof window.preFS == 'undefined') window.preFS={};
+	</script>
+</head>
+
+<body>
+	<div id="viewport-frame">
+		<div id="dialog"><h4 class="title"></h4><p class="description"></p></div>
+		<div id="flipper">
+			<div class="front">
+				<!-- front content -->
+			</div>
+			<div class="back">
+				<!-- back content -->
+			</div>
+		</div>
+		<div id="left-joystick"></div><div id="right-joystick"></div>
+		<canvas></canvas>
+	</div>
+</body>
+
+<!-- <script type="text/javascript" src="/webgl-debug.js"></script>-->
+<script async type="text/javascript" src="nipplejs.js"></script>
+<script async type="text/javascript" src="sys_emgl.js"></script>
+<script async type="text/javascript" src="sys_fs.js"></script>
+<script async type="text/javascript" src="sys_idbfs.js"></script>
+<script async type="text/javascript" src="sys_in.js"></script>
+<script async type="text/javascript" src="sys_net.js"></script>
+<script async type="text/javascript" src="sys_std.js"></script>
+<script async type="text/javascript" src="sys_web.js"></script>
+<script async type="text/javascript" src="sys_snd.js"></script>
+<script async type="text/javascript" src="sys_wasm.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-177284065-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-177284065-1');
+</script>
+</html>

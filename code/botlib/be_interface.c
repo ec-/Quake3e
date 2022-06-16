@@ -68,16 +68,19 @@ int botlibsetup = qfalse;
 //
 //===========================================================================
 
+#ifdef I_LIKE_STUPID_CODE
 //===========================================================================
 //
 // Parameter:				-
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
+// TODO botimport.MilliSeconds NO clock()!
 int Sys_MilliSeconds(void)
 {
 	return clock() * 1000 / CLOCKS_PER_SEC;
 } //end of the function Sys_MilliSeconds
+#endif
 //===========================================================================
 //
 // Parameter:				-

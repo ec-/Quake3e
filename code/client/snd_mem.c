@@ -87,6 +87,7 @@ void SND_setup( void )
 	cv = Cvar_Get( "com_soundMegs", DEF_COMSOUNDMEGS, CVAR_LATCH | CVAR_ARCHIVE );
 	Cvar_CheckRange( cv, "1", "512", CV_INTEGER );
 
+#ifndef __WASM__
 	scs = ( cv->integer * /*1536*/ 12 * dma.speed ) / 22050;
 	scs *= 128;
 
@@ -111,6 +112,7 @@ void SND_setup( void )
 	} else {
 		Com_Memset( buffer, 0, sz );
 	}
+#endif
 
 	sz = SND_CHUNK_SIZE * sizeof(short) * 4;
 
@@ -132,6 +134,8 @@ void SND_setup( void )
 	inUse = scs * sizeof( sndBuffer );
 	totalInUse = 0; // -EC-
 
+#ifndef __WASM__
+
 	p = buffer;
 	q = p + scs;
 	while (--q > p)
@@ -139,6 +143,8 @@ void SND_setup( void )
 
 	*(sndBuffer **)q = NULL;
 	freelist = p + scs - 1;
+
+#endif
 
 	Com_Printf( "Sound memory manager started\n" );
 }
@@ -157,6 +163,8 @@ void SND_shutdown( void )
 		buffer = NULL;
 	}
 }
+
+#ifndef __WASM__
 
 /*
 ================
@@ -254,6 +262,8 @@ static int ResampleSfxRaw( short *sfx, int channels, int inrate, int inwidth, in
 	return outcount;
 }
 
+#endif
+
 //=============================================================================
 
 /*
@@ -284,7 +294,9 @@ qboolean S_LoadSound( sfx_t *sfx )
 		Com_DPrintf(S_COLOR_YELLOW "WARNING: %s is not a 22kHz audio file\n", sfx->soundName);
 	}
 
+#ifndef __WASM__
 	samples = Hunk_AllocateTempMemory(info.samples * sizeof(short) * 2);
+#endif
 
 	sfx->lastTimeUsed = s_soundtime + 1; // Com_Milliseconds()+1
 
@@ -294,6 +306,7 @@ qboolean S_LoadSound( sfx_t *sfx )
 	// manager to do the right thing for us and page
 	// sound in as needed
 
+#ifndef __WASM__
 	if( info.channels == 1 && sfx->soundCompressed == qtrue) {
 		sfx->soundCompressionMethod = 1;
 		sfx->soundData = NULL;
@@ -321,6 +334,7 @@ qboolean S_LoadSound( sfx_t *sfx )
 	
 	Hunk_FreeTempMemory(samples);
 	Hunk_FreeTempMemory(data);
+#endif
 
 	return qtrue;
 }

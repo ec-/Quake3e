@@ -63,8 +63,14 @@ channel_t   s_channels[MAX_CHANNELS];
 channel_t   loop_channels[MAX_CHANNELS];
 int			numLoopChannels;
 
-static		qboolean	s_soundStarted;
-static		qboolean	s_soundMuted;
+#ifndef __WASM__
+static		
+#endif
+qboolean	s_soundStarted;
+#ifndef __WASM__
+static		
+#endif
+qboolean	s_soundMuted;
 
 dma_t		dma;
 
@@ -315,9 +321,11 @@ static sfxHandle_t S_Base_RegisterSound( const char *name, qboolean compressed )
 	sfx_t	*sfx;
 
 	compressed = qfalse;
+#ifndef __WASM__
 	if (!s_soundStarted) {
 		return 0;
 	}
+#endif
 
 	if ( strlen( name ) >= MAX_QPATH ) {
 		Com_Printf( "Sound name exceeds MAX_QPATH\n" );
@@ -729,7 +737,11 @@ void S_Base_AddLoopingSound( int entityNum, const vec3_t origin, const vec3_t ve
 	}
 
 	if ( !sfx->soundLength ) {
+#ifdef __WASM__
+		return;
+#else
 		Com_Error( ERR_DROP, "%s has length 0", sfx->soundName );
+#endif
 	}
 
 	VectorCopy( origin, loopSounds[entityNum].origin );
@@ -793,7 +805,11 @@ void S_Base_AddRealLoopingSound( int entityNum, const vec3_t origin, const vec3_
 	}
 
 	if ( !sfx->soundLength ) {
+#ifdef __WASM__
+		return;
+#else
 		Com_Error( ERR_DROP, "%s has length 0", sfx->soundName );
+#endif
 	}
 	VectorCopy( origin, loopSounds[entityNum].origin );
 	VectorCopy( velocity, loopSounds[entityNum].velocity );
@@ -1028,6 +1044,8 @@ void S_Base_Respatialize( int entityNum, const vec3_t head, vec3_t axis[3], int 
 		return;
 	}
 
+#ifndef __WASM__
+
 	listener_number = entityNum;
 	VectorCopy(head, listener_origin);
 	VectorCopy(axis[0], listener_axis[0]);
@@ -1057,6 +1075,7 @@ void S_Base_Respatialize( int entityNum, const vec3_t head, vec3_t axis[3], int 
 
 	// add loopsounds
 	S_AddLoopSounds ();
+#endif
 }
 
 
@@ -1084,7 +1103,18 @@ static qboolean S_ScanChannelStarts( void ) {
 		// into the very first sample
 		if ( ch->startSample == START_SAMPLE_IMMEDIATE ) {
 			ch->startSample = s_paintedtime;
+#ifndef __WASM__
 			newSamples = qtrue;
+#else
+extern void S_PaintChannel( channel_t *ch, const sfx_t *sc, int count, int sampleOffset );
+			int count, sampleOffset; 
+			sampleOffset = s_paintedtime - ch->startSample;
+			count = (s_paintedtime + 13) - s_paintedtime;
+			if ( sampleOffset + count > ch->thesfx->soundLength ) {
+				count = ch->thesfx->soundLength - sampleOffset;
+			}
+			S_PaintChannel(ch, ch->thesfx, count, sampleOffset);
+#endif
 			continue;
 		}
 
@@ -1236,6 +1266,7 @@ static void S_Update_( int msec ) {
 	}
 
 	// add raw data from streamed samples
+#ifndef __WASM__
 	S_UpdateBackgroundTrack();
 
 	SNDDMA_BeginPainting();
@@ -1243,6 +1274,7 @@ static void S_Update_( int msec ) {
 	S_PaintChannels( endtime );
 
 	SNDDMA_Submit();
+#endif
 
 	lastTime = thisTime;
 }
@@ -1516,8 +1548,12 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 
 	r = SNDDMA_Init();
 
+#ifndef __WASM__
 	if ( r ) {
 		s_soundStarted = qtrue;
+#else
+		s_soundStarted = r;
+#endif
 		s_soundMuted = qtrue;
 //		s_numSfx = 0;
 
@@ -1535,9 +1571,11 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 			dma_buffer2 = malloc( dma.samples * dma.samplebits/8 );
 			memset( dma_buffer2, 0, dma.samples * dma.samplebits/8 );
 		}
+#ifndef __WASM__
 	} else {
 		return qfalse;
 	}
+#endif
 
 	si->Shutdown = S_Base_Shutdown;
 	si->StartSound = S_Base_StartSound;
