@@ -1350,6 +1350,10 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 
 			continue;
 		}
+		else if ( !Q_stricmp( token, "depthFragment" ) )
+		{
+			continue;
+		}
 		else
 		{
 			ri.Printf( PRINT_WARNING, "WARNING: unknown parameter '%s' in shader '%s'\n", token, shader.name );

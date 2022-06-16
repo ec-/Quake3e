@@ -204,7 +204,7 @@ void R_ImageList_f( void ) {
 				// same as DXT1?
 				estSize /= 2;
 				break;
-			case GL_RGBA16F:
+			case GL_RGBA16F_ARB:
 				format = "RGBA16F";
 				// 8 bytes per pixel
 				estSize *= 8;

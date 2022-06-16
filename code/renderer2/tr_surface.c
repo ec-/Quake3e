@@ -293,10 +293,10 @@ static void RB_SurfacePolychain( const srfPoly_t *p ) {
 		VectorCopy( p->verts[i].xyz, tess.xyz[numv] );
 		tess.texCoords[numv][0] = p->verts[i].st[0];
 		tess.texCoords[numv][1] = p->verts[i].st[1];
-		tess.color[numv][0] = p->verts[i].modulate.rgba[0] * 257;
-		tess.color[numv][1] = p->verts[i].modulate.rgba[1] * 257;
-		tess.color[numv][2] = p->verts[i].modulate.rgba[2] * 257;
-		tess.color[numv][3] = p->verts[i].modulate.rgba[3] * 257;
+		tess.color[numv][0] = (int)p->verts[i].modulate.rgba[0] * 257;
+		tess.color[numv][1] = (int)p->verts[i].modulate.rgba[1] * 257;
+		tess.color[numv][2] = (int)p->verts[i].modulate.rgba[2] * 257;
+		tess.color[numv][3] = (int)p->verts[i].modulate.rgba[3] * 257;
 
 		numv++;
 	}
