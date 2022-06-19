@@ -69,6 +69,9 @@ static qboolean mouse_focus;
 
 #define CTRL(a) ((a)-'a'+1)
 
+extern cvar_t *r_headless;
+
+
 /*
 ===============
 IN_PrintKey
@@ -407,6 +410,10 @@ static void IN_ActivateMouse( void )
 	if ( !mouseAvailable )
 		return;
 
+	if(r_headless->integer) {
+		return;
+	}
+
 	if ( !mouseActive )
 	{
 		IN_GobbleMouseEvents();
@@ -454,6 +461,10 @@ static void IN_DeactivateMouse( void )
 {
 	if ( !mouseAvailable )
 		return;
+
+	if(r_headless->integer) {
+		return;
+	}
 
 	if ( mouseActive )
 	{
@@ -1394,7 +1405,7 @@ void IN_Init( void )
 	// ~ and `, as keys and characters
 	cl_consoleKeys = Cvar_Get( "cl_consoleKeys", "~ ` 0x7e 0x60", CVAR_ARCHIVE );
 
-	mouseAvailable = ( in_mouse->value != 0 ) ? qtrue : qfalse;
+	mouseAvailable = ( in_mouse->value != 0 && !r_headless->integer ) ? qtrue : qfalse;
 
 	SDL_StartTextInput();
 

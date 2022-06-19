@@ -1034,6 +1034,7 @@ Q3OBJ = \
   $(B)/client/snd_codec_wav.o \
   \
   $(B)/client/sv_bot.o \
+  $(B)/client/sv_bsp_mini.o \
   $(B)/client/sv_ccmds.o \
   $(B)/client/sv_client.o \
   $(B)/client/sv_filter.o \

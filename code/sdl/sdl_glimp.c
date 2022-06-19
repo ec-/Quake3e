@@ -56,6 +56,8 @@ static PFN_vkGetInstanceProcAddr qvkGetInstanceProcAddr;
 cvar_t *r_stereoEnabled;
 cvar_t *in_nograb;
 
+cvar_t *r_headless;
+
 /*
 ===============
 GLimp_Shutdown
@@ -406,6 +408,7 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 				SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL, 1 );
 		}
 
+		//if(!r_headless->integer)
 		if ( ( SDL_window = SDL_CreateWindow( cl_title, x, y, config->vidWidth, config->vidHeight, flags ) ) == NULL )
 		{
 			Com_DPrintf( "SDL_CreateWindow failed: %s\n", SDL_GetError() );
@@ -483,6 +486,8 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 		break;
 	}
 
+	if (!r_headless->integer) {
+
 	if ( SDL_window )
 	{
 #ifdef USE_ICON
@@ -511,8 +516,7 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 		return RSERR_INVALID_MODE;
 	}
 
-	if ( !fullscreen && r_noborder->integer )
-		SDL_SetWindowHitTest( SDL_window, SDL_HitTestFunc, NULL );
+	SDL_SetWindowHitTest( SDL_window, SDL_HitTestFunc, NULL );
 
 #ifdef USE_VULKAN_API
 	if ( vulkan )
@@ -521,11 +525,15 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 #endif
 		SDL_GL_GetDrawableSize( SDL_window, &config->vidWidth, &config->vidHeight );
 
+	}
+
 	// save render dimensions as renderer may change it in advance
 	glw_state.window_width = config->vidWidth;
 	glw_state.window_height = config->vidHeight;
 
-	SDL_WarpMouseInWindow( SDL_window, glw_state.window_width / 2, glw_state.window_height / 2 );
+	if(!r_headless->integer) {
+		SDL_WarpMouseInWindow( SDL_window, glw_state.window_width / 2, glw_state.window_height / 2 );
+	}
 
 	return RSERR_OK;
 }
@@ -607,6 +615,9 @@ void GLimp_Init( glconfig_t *config )
 
 	r_swapInterval = Cvar_Get( "r_swapInterval", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_stereoEnabled = Cvar_Get( "r_stereoEnabled", "0", CVAR_ARCHIVE | CVAR_LATCH );
+
+	r_headless = Cvar_Get( "r_headless", "0", CVAR_TEMP );
+
 
 	// Create the window and set up the context
 	err = GLimp_StartDriverAndSetMode( r_mode->integer, r_modeFullscreen->string, r_fullscreen->integer, qfalse );

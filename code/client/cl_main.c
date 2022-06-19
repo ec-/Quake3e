@@ -94,6 +94,9 @@ cvar_t *cl_depthbits;
 cvar_t *cl_drawBuffer;
 
 
+cvar_t *cl_birdsEye;
+cvar_t *sv_birdsEye;
+
 
 #ifdef USE_MASTER_LAN
 cvar_t	*cl_master[MAX_MASTER_SERVERS];		// master server ip address
@@ -3869,6 +3872,10 @@ static void CL_InitGLimp_Cvars( void )
 	Cvar_CheckRange( cl_depthbits, "0", "32", CV_INTEGER );
 
 	cl_drawBuffer = Cvar_Get( "r_drawBuffer", "GL_BACK", CVAR_CHEAT );
+
+	cl_birdsEye = Cvar_Get( "cg_birdsEye", "0", 0 );
+	sv_birdsEye = Cvar_Get( "g_birdsEye", "0", 0 );
+
 
 #ifdef USE_RENDERER_DLOPEN
 #ifdef RENDERER_DEFAULT

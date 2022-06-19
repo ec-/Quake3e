@@ -521,6 +521,13 @@ static void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 
 	uiFullscreen = (uivm && VM_Call( uivm, 0, UI_IS_FULLSCREEN ));
 
+
+	if(cl_birdsEye->integer || sv_birdsEye->integer) {
+		re.SetColor( g_color_table[ ColorIndex( COLOR_BLACK ) ] );
+		re.DrawStretchPic( 0, 0, cls.glconfig.vidWidth, cls.glconfig.vidHeight, 0, 0, 0, 0, cls.whiteShader );
+		re.SetColor( NULL );
+	}
+
 	// wide aspect ratio screens need to have the sides cleared
 	// unless they are displaying game renderings
 	if ( uiFullscreen || cls.state < CA_LOADING ) {

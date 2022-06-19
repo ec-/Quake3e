@@ -439,6 +439,12 @@ extern	cvar_t	*cl_stencilbits;
 extern	cvar_t	*cl_depthbits;
 extern	cvar_t	*cl_drawBuffer;
 
+
+
+extern  cvar_t  *cl_birdsEye;
+extern  cvar_t  *sv_birdsEye;
+
+
 //=================================================
 
 //
