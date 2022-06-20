@@ -67,6 +67,7 @@
 #define TRACE_BIAS      0x10000 // slightly stretch the scan, to store more data, creates a higher resolution be trimming off the black edges around the tracemap
 #define TRACE_RADIAL    0x20000 // rotate traces around a singular viewpoint. Viewpoint is determined by the max skybox size at the point equal to the angle and rotation specified. The backwards angles facing the walls are removed, trimmed away so more detail fills the area.
 #define TRACE_STRETCH   0x40000 // similar to radial where the entire view space is filled with detail, but the X/Y points on the scan are scaled from a flat viewpoint from a single side instead of rotating angles to fill the space it only scales perpedicular to the forward direction. Corners would appear as being high definition alone the endge, but since it's a corner nothing is in it and very cluttered definition in the middle of the image where most of the detail is. This would waste space on the edges.
+#define TRACE_MIDS      0x80000
 
 #define TRACE_XRAY1     0x10000000  // x-ray one time, early out that doesn't look up again, unless being corrected
 #define TRACE_XRAY2     0x20000000  // x-ray 2 times, get an idea if there is a sub-surface
@@ -133,17 +134,14 @@ cvar_t *sv_bspMiniGrid;
    WriteTGA
    ================
  */
-void WriteTGA( const char *mapname, byte *data, int width, int height, uint32_t channels ) {
-	char minimapFilename[MAX_QPATH];
+void WriteTGA( const char *filename, byte *data, int width, int height, uint32_t channels ) {
 	byte    *buffer;
 	//int i;
 	int c;
 
-	COM_StripExtension(mapname, minimapFilename, sizeof(minimapFilename));
-	Q_strcat(minimapFilename, sizeof(minimapFilename), "_tracemap0001");
-	Com_Printf( " writing to %s...\n", FS_BuildOSPath( Cvar_VariableString("fs_homepath"), Cvar_VariableString("fs_game"), va("%s.tga", minimapFilename) ) );
+	Com_Printf( " writing to %s...\n", FS_BuildOSPath( Cvar_VariableString("fs_homepath"), Cvar_VariableString("fs_game"), filename ) );
 
-	buffer = Z_Malloc( width * height * 4 + 18 );
+	buffer = malloc( width * height * 4 + 18 );
 	memset( buffer, 0, 18 );
 
 	buffer[2] = 2;      // uncompressed type
@@ -174,11 +172,11 @@ void WriteTGA( const char *mapname, byte *data, int width, int height, uint32_t 
 		}
 	}
 
-	FS_WriteFile( va("%s.tga", minimapFilename), buffer, width * height * 4 + 18 );
+	FS_WriteFile( filename, buffer, width * height * 4 + 18 );
 
-	Z_Free( buffer );
+	free( buffer );
 
-	Com_Printf( "Wrote %s.tga\n", minimapFilename );
+	Com_Printf( "Wrote %s\n", filename );
 }
 
 
@@ -251,7 +249,7 @@ static void SV_TraceArea(vec3_t angle, vec3_t scale, float *d1, int mask, int fl
 	radius = VectorLength(newScale) / 2;
 	VectorScale(newScale, 0.5f, center);
 	VectorAdd(newMins, center, center);
-	VectorMA(center, -radius, forward, midpoint);
+	VectorMA(center, -scale[2], forward, midpoint);
 
 	//CrossProduct(newMins, right, newMins);
 	VectorMA(center, -radius, up, newMins);
@@ -270,6 +268,12 @@ static void SV_TraceArea(vec3_t angle, vec3_t scale, float *d1, int mask, int fl
 
 			VectorMA(midpoint, (y - MAPSIZE / 2) * newScale[1], up, start );
 			VectorMA(start, (x - MAPSIZE / 2) * newScale[0], right, start );
+			if(d1[MAPINDEX] == cm.cmodels[0].maxs[2]) {
+
+			} else {
+			//	start[2] = d1[MAPINDEX];
+				//VectorMA(start, d1[MAPINDEX] + 1.0f, forward, start);
+			}
 			VectorMA(start, 8192, forward, end);
 
 			d1[MAPINDEX] = SV_TraceThrough(&trace, forward, start, end, mask, flags);
@@ -335,6 +339,7 @@ static void SV_FindFacets(int surfaceFlags, vec3_t angle, vec3_t scale,
 //  trace down to find a starting position for measuring the ceiling of the floor
 void SV_XRay(vec3_t angle, float *d1, float *d2, float *d3, vec3_t scale, int mask, int flags) {
 	vec3_t opposite;
+	VectorCopy(angle, opposite);
 	VectorScale(opposite, -1, opposite);
 	Sys_SetStatus("X-raying clip map... this might take a while");
 	Com_Printf("X-raying clip map... this might take a while\n");
@@ -393,13 +398,13 @@ static void SV_InitData() {
 	sv_bspMiniGrid = Cvar_Get( "sv_bspMiniGrid", "16", CVAR_TEMP );
 
 	if(!data1f1)
-		data1f1 = (float *)Z_Malloc( MAPSIZE * MAPSIZE * sizeof( float ) );
+		data1f1 = (float *)malloc( MAPSIZE * MAPSIZE * sizeof( float ) );
 	if(!data1f2)
-		data1f2 = (float *)Z_Malloc( MAPSIZE * MAPSIZE * sizeof( float ) );
+		data1f2 = (float *)malloc( MAPSIZE * MAPSIZE * sizeof( float ) );
 	if(!data1f3)
-		data1f3 = (float *)Z_Malloc( MAPSIZE * MAPSIZE * sizeof( float ) );
+		data1f3 = (float *)malloc( MAPSIZE * MAPSIZE * sizeof( float ) );
 	if(!data4b)
-		data4b = (byte *)Z_Malloc( MAPSIZE * MAPSIZE * 4 );
+		data4b = (byte *)malloc( MAPSIZE * MAPSIZE * 4 );
 	memset(data4b, 0, MAPSIZE * MAPSIZE * 4);
 	memset(data1f1, 0, MAPSIZE * MAPSIZE * sizeof( float ));
 	memset(data1f2, 0, MAPSIZE * MAPSIZE * sizeof( float ));
@@ -408,19 +413,37 @@ static void SV_InitData() {
 }
 
 
-static void SV_ResetData(uint32_t flags) {
+static void SV_ResetData(float *d1, uint32_t flags) {
 	// if ! find facets because this will do a rotation also
 	// TODO: use +/- VectorLength(size)
 	for (size_t i = 0; i < MAPSIZE * MAPSIZE; ++i) {
-		if(!(flags & TRACE_MINS)) {
-			data1f1[i] = cm.cmodels[0].maxs[2];
-			data1f2[i] = cm.cmodels[0].maxs[2];
-			data1f3[i] = cm.cmodels[0].maxs[2];
-		} else {
-			data1f1[i] = cm.cmodels[0].mins[2];
-			data1f2[i] = cm.cmodels[0].mins[2];
-			data1f3[i] = cm.cmodels[0].mins[2];
+		if(flags & TRACE_MAXS) {
+			d1[i] = cm.cmodels[0].maxs[2];
+			//data1f2[i] = cm.cmodels[0].maxs[2];
+			//data1f3[i] = cm.cmodels[0].maxs[2];
+		} else
+		if(flags & TRACE_MINS) {
+			d1[i] = cm.cmodels[0].mins[2];
+			//data1f2[i] = cm.cmodels[0].mins[2];
+			//data1f3[i] = cm.cmodels[0].mins[2];
+		} else
+		if(flags & TRACE_MIDS) {
+			d1[i] = fabsf((cm.cmodels[0].maxs[2] - cm.cmodels[0].mins[2]) / 2.0f);
+		} else
+		if(flags & TRACE_XRAY8) {
+			d1[i] = fabsf((cm.cmodels[0].maxs[2] - cm.cmodels[0].mins[2]) / 8.0f);
 		}
+#if 0
+		if(flags & TRACE_NORMAL) {
+			if(d1[MAPINDEX] == MAX_MAP_BOUNDS) {
+				continue;
+			}
+
+			VectorMA(midpoint, (y - MAPSIZE / 2) * newScale[1], up, start );
+			VectorMA(start, (x - MAPSIZE / 2) * newScale[0], right, d1[i] );
+
+		}
+#endif
 	}
 }
 
@@ -455,10 +478,13 @@ static void ScaleColorChannel(int channel, int pass, qboolean clamped, float len
 				data4b[((MAPINDEX) * 4) + channel % 4] = (int)( Com_Clamp( 0.f, 254.f / 255.f, (cm.cmodels[0].maxs[2] - data1f2[MAPINDEX]) / length ) * 255 + 1) | 1;
 			}
 
-			if(pass & TRACE_VOLUME) {
-				//data4b[((MAPINDEX) * 4) + CURRENT_CHANNEL] -= Com_Clamp( 0.f, 255.f / 256.f, (data1f3[MAPINDEX] - data1f2[MAPINDEX]) / size[2] ) * 256;
+			if(pass & TRACE_INVERTED) {
 				data4b[((MAPINDEX) * 4) + channel % 4] = (int)( Com_Clamp( 0.f, 254.f / 255.f, 1.0f - data1f2[MAPINDEX] / length ) * 255 + 1) | 1;
 				//data4b[((MAPINDEX) * 4) + CURRENT_CHANNEL] -= 255;
+			}
+
+			if(pass & TRACE_VOLUME) {
+				data4b[((MAPINDEX) * 4) + channel] -= Com_Clamp( 0.f, 255.f / 256.f, (data1f3[MAPINDEX] - data1f2[MAPINDEX]) / length ) * 256;
 			}
 		}
 	}
@@ -473,6 +499,21 @@ void SV_MakeMinimap() {
 	vec3_t size, angle, opposite, forward, right, up;
 	vec3_t scale, newMins, newMaxs;
 	float length;
+	char command[MAX_STRING_CHARS];
+	char filename[MAX_STRING_CHARS];
+	char minimapFilename[MAX_QPATH];
+	qboolean monochrome = qtrue;
+
+	if(Cmd_Argc() > 3) {
+		Com_Printf ("Usage: minimap <multipass> <filename> \n");
+		return;
+	}
+	if(Cmd_Argc() >= 2) {
+		Q_strncpyz( command, Cmd_Argv( 1 ), sizeof( command ) );
+	}
+	if(Cmd_Argc() == 3) {
+		Q_strncpyz( filename, Cmd_Argv( 2 ), sizeof( filename ) );
+	}
 
 	SV_InitData();
 
@@ -497,7 +538,7 @@ void SV_MakeMinimap() {
 		angle[2] = 0.01f;
 		VectorScale(opposite, -3, opposite);
 	}
-	AngleVectors(angle, forward, right, up);
+	//AngleVectors(angle, forward, right, up);
 	VectorCopy(cm.cmodels[0].mins, newMins);
 	VectorCopy(cm.cmodels[0].maxs, newMaxs);
 
@@ -508,12 +549,37 @@ void SV_MakeMinimap() {
 	for(int i = 0; i < 3; i++) {
 		scale[i] = size[i] / sv_bspMiniSize->value;
 	}
+	scale[2] = length / 2.0f;
 
-	SV_ResetData(pass);
+	SV_ResetData(data1f2, TRACE_MAXS);
 
-	SV_TraceArea(angle, scale, data1f2, MASK_SOLID|MASK_WATER, (pass & 7));
+	if ( Q_stricmp( command, "areamask" ) == 0 ) {
+		SV_TraceArea(angle, scale, data1f2, MASK_SOLID|MASK_WATER, (pass & 7));
+		ScaleColorChannel(0, TRACE_MASK, qtrue, length);
+	}
 
-	ScaleColorChannel(0, TRACE_MASK, qtrue, length);
+	if ( Q_stricmp( command, "heightmap" ) == 0 ) {
+		SV_TraceArea(angle, scale, data1f2, MASK_SOLID|MASK_WATER, (pass & 7));
+		ScaleColorChannel(0, TRACE_HEIGHTS, qtrue, -cm.cmodels[0].mins[2] + cm.cmodels[0].maxs[2]);
+	}
+
+	if ( Q_stricmp( command, "airspace" ) == 0 ) {
+		ScaleColorChannel(3, TRACE_INVERTED, qtrue, cm.cmodels[0].mins[2]);
+		//SV_TraceArea(angle, scale, data1f2, MASK_SOLID|MASK_WATER, (pass & 7));
+		SV_TraceArea(angle, scale, data1f2, CONTENTS_NODE, (pass & 7));
+		//SV_XRay(angle, data1f1, data1f2, data1f3, scale, MASK_PLAYERSOLID, (pass & 7));
+		//ScaleColorChannel(1, TRACE_HEIGHTS, qtrue, -cm.cmodels[0].mins[2] + cm.cmodels[0].maxs[2]);
+		memcpy(data1f3, data1f2, MAPSIZE * MAPSIZE * sizeof( float ));
+		//SV_ResetData(data1f2, TRACE_MIDS);
+		scale[2] = -size[2] / 4.0f;
+		SV_TraceArea(angle, scale, data1f2, MASK_PLAYERSOLID, (pass & 7));
+		//ScaleColorChannel(0, TRACE_INVERTED, qtrue, (-cm.cmodels[0].mins[2] + cm.cmodels[0].maxs[2]));
+		//SV_ResetData(data1f2, TRACE_XRAY8);
+		//SV_TraceArea(angle, scale, data1f2, MASK_SOLID|MASK_WATER, (pass & 7));
+		ScaleColorChannel(2, TRACE_VOLUME, qtrue, (-cm.cmodels[0].mins[2] + cm.cmodels[0].maxs[2]));
+		monochrome = qfalse;
+	}
+
 #if 0
 	i = 0;
 	while(i < max) {
@@ -621,20 +687,27 @@ void SV_MakeMinimap() {
 	// TODO: mark all the entities on blue
 #endif
 
-	if(CURRENT_IMAGE) {
-		WriteTGA( cm.name, data4b, MAPSIZE, MAPSIZE, TGA_RGBA );
+	if(Cmd_Argc() > 1) {
+		COM_StripExtension(filename, minimapFilename, sizeof(minimapFilename));
 	} else {
-		WriteTGA( cm.name, data4b, MAPSIZE, MAPSIZE, TGA_E );
+		COM_StripExtension(cm.name, minimapFilename, sizeof(minimapFilename));
+	}
+
+	//Q_strcat(minimapFilename, sizeof(minimapFilename), "_tracemap0001");
+	if(monochrome) {
+		WriteTGA( va("maps/%s.tga", minimapFilename), data4b, MAPSIZE, MAPSIZE, TGA_E );
+	} else {
+		WriteTGA( va("maps/%s.tga", minimapFilename), data4b, MAPSIZE, MAPSIZE, TGA_RGBA );
 	}
 
 	if(data4b)
-		Z_Free(data4b);
+		free(data4b);
 	if(data1f1)
-		Z_Free(data1f1);
+		free(data1f1);
 	if(data1f2)
-		Z_Free(data1f2);
+		free(data1f2);
 	if(data1f3)
-		Z_Free(data1f3);
+		free(data1f3);
 }
 
 //#endif
