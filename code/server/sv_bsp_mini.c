@@ -189,6 +189,7 @@ static float SV_TraceThrough(trace_t *trace, vec3_t forward, vec3_t start, vec3_
 
 		// Hypo: break if we traversed length of vector tracefrom
 		if (trace->fraction == 1.0 
+			|| trace->fraction == -1.0 
 			|| trace->entityNum == ENTITYNUM_NONE
 			|| isnan(trace->endpos[2])
 		) {
@@ -246,7 +247,7 @@ static void SV_TraceArea(vec3_t angle, vec3_t scale, float *d1, int mask, int fl
 	VectorCopy(cm.cmodels[0].mins, newMins);
 	VectorCopy(cm.cmodels[0].maxs, newMaxs);
 	VectorSubtract(newMaxs, newMins, newScale);
-	radius = VectorLength(newScale) / 2;
+	radius = VectorLength(newScale) / 2.0f;
 	VectorScale(newScale, 0.5f, center);
 	VectorAdd(newMins, center, center);
 	VectorMA(center, -scale[2], forward, midpoint);
@@ -265,20 +266,13 @@ static void SV_TraceArea(vec3_t angle, vec3_t scale, float *d1, int mask, int fl
 			if(d1[MAPINDEX] == MAX_MAP_BOUNDS) {
 				continue;
 			}
-
 			VectorMA(midpoint, (y - MAPSIZE / 2) * newScale[1], up, start );
 			VectorMA(start, (x - MAPSIZE / 2) * newScale[0], right, start );
-			if(d1[MAPINDEX] == cm.cmodels[0].maxs[2]) {
-
-			} else {
-			//	start[2] = d1[MAPINDEX];
-				//VectorMA(start, d1[MAPINDEX] + 1.0f, forward, start);
-			}
-			VectorMA(start, 8192, forward, end);
-
+			VectorMA(start, scale[2] * 3, forward, end);
 			d1[MAPINDEX] = SV_TraceThrough(&trace, forward, start, end, mask, flags);
 		}
 	}
+
 }
 
 
@@ -448,7 +442,7 @@ static void SV_ResetData(float *d1, uint32_t flags) {
 }
 
 
-static void ScaleColorChannel(int channel, int pass, qboolean clamped, float length) {
+static void ScaleColorChannel(int channel, int pass, int clamped, float length) {
 
 	for ( int y = 0; y < MAPSIZE; ++y ) {
 		for ( int x = 0; x < MAPSIZE; ++x ) {
@@ -461,30 +455,42 @@ static void ScaleColorChannel(int channel, int pass, qboolean clamped, float len
 				}
 			}
 
-#if 0
-			if(pass & TRACE_CORRECTED) {
-				// to get an outline of the map?
-				if(data1f1[MAPINDEX] != MAX_MAP_BOUNDS) {
-					data1f2[MAPINDEX] = data1f1[MAPINDEX];
-				} else {
-					data1f1[MAPINDEX] = cm.cmodels[0].maxs[2];
-				}
-				//data4b[((MAPINDEX) * 4) + CURRENT_CHANNEL] = (int)( Com_Clamp( 0.f, 255.f / 256.f, (cm.cmodels[0].maxs[2] - data1f2[MAPINDEX]) /length ) * 256 ) | 1;
-			}
-#endif
-
+			// always guarantee this is somewhat red to indicate it should rain
 			if(pass & TRACE_HEIGHTS) {
-				// always guarantee this is somewhat red to indicate it should rain
-				data4b[((MAPINDEX) * 4) + channel % 4] = (int)( Com_Clamp( 0.f, 254.f / 255.f, (cm.cmodels[0].maxs[2] - data1f2[MAPINDEX]) / length ) * 255 + 1) | 1;
+				data4b[((MAPINDEX) * 4) + channel % 4] = (int)( Com_Clamp( 0.f, 254.f / 255.f, (cm.cmodels[0].maxs[2] - (data1f2[MAPINDEX])) / length ) * 255 + 1) | 1;
+			}
+
+			// always guarantee this is somewhat red to indicate it should rain
+			if(pass == TRACE_NORMAL) {
+				if(data1f2[MAPINDEX] == MAX_MAP_BOUNDS) {
+					data4b[((MAPINDEX) * 4) + channel % 4] = 0;
+				} else {
+					data4b[((MAPINDEX) * 4) + channel % 4] = (int)( Com_Clamp( 0.f, 254.f / 255.f, (data1f2[MAPINDEX] - clamped) / length ) * 255 + 1) | 1;
+				}
+			}
+
+			if(pass & TRACE_FLOORS) {
+				if(data1f2[MAPINDEX] == MAX_MAP_BOUNDS) {
+					data4b[((MAPINDEX) * 4) + channel % 4] = 0;
+				} else {
+					data4b[((MAPINDEX) * 4) + channel % 4] = (int)( Com_Clamp( 0.f, 254.f / 255.f, (data1f2[MAPINDEX] - clamped) / length ) * 255 + 1) | 1;
+				}
 			}
 
 			if(pass & TRACE_INVERTED) {
-				data4b[((MAPINDEX) * 4) + channel % 4] = (int)( Com_Clamp( 0.f, 254.f / 255.f, 1.0f - data1f2[MAPINDEX] / length ) * 255 + 1) | 1;
-				//data4b[((MAPINDEX) * 4) + CURRENT_CHANNEL] -= 255;
+				if(data1f2[MAPINDEX] == MAX_MAP_BOUNDS) {
+					data4b[((MAPINDEX) * 4) + channel % 4] = 0;
+				} else {
+					data4b[((MAPINDEX) * 4) + channel % 4] = (int)( Com_Clamp( 0.f, 254.f / 255.f, 1.0f - (data1f2[MAPINDEX] - clamped) / length ) * 255 + 1) | 1;
+				}
 			}
 
 			if(pass & TRACE_VOLUME) {
-				data4b[((MAPINDEX) * 4) + channel] -= Com_Clamp( 0.f, 255.f / 256.f, (data1f3[MAPINDEX] - data1f2[MAPINDEX]) / length ) * 256;
+				if(data1f2[MAPINDEX] == MAX_MAP_BOUNDS) {
+					data4b[((MAPINDEX) * 4) + channel % 4] = 0;
+				} else {
+					data4b[((MAPINDEX) * 4) + channel % 4] = Com_Clamp( 0.f, 255.f / 256.f, (data1f3[MAPINDEX] - clamped) / length + (data1f2[MAPINDEX] - (clamped + length / 2.0f)) / -length) * 256;
+				}
 			}
 		}
 	}
@@ -541,7 +547,6 @@ void SV_MakeMinimap() {
 	//AngleVectors(angle, forward, right, up);
 	VectorCopy(cm.cmodels[0].mins, newMins);
 	VectorCopy(cm.cmodels[0].maxs, newMaxs);
-
 	// could use height from above to add a bunch of stupid black space around it
 	//   but I like the extra dexterity - Brian Cullinan
 	VectorSubtract(newMaxs, newMins, size);
@@ -549,24 +554,85 @@ void SV_MakeMinimap() {
 	for(int i = 0; i < 3; i++) {
 		scale[i] = size[i] / sv_bspMiniSize->value;
 	}
-	scale[2] = length / 2.0f;
+	scale[2] = fabsf(length / 2.0f) + fabsf(size[2] / 2.0f);
+
+
 
 	SV_ResetData(data1f2, TRACE_MAXS);
 
+
+
 	if ( Q_stricmp( command, "areamask" ) == 0 ) {
-		SV_TraceArea(angle, scale, data1f2, MASK_SOLID|MASK_WATER, (pass & 7));
-		ScaleColorChannel(0, TRACE_MASK, qtrue, length);
-	}
+		SV_TraceArea(angle, scale, data1f2, MASK_SOLID|MASK_WATER, TRACE_HEIGHTS);
+		ScaleColorChannel(0, TRACE_MASK, 0, length);
+	} else
 
 	if ( Q_stricmp( command, "heightmap" ) == 0 ) {
-		SV_TraceArea(angle, scale, data1f2, MASK_SOLID|MASK_WATER, (pass & 7));
-		ScaleColorChannel(0, TRACE_HEIGHTS, qtrue, -cm.cmodels[0].mins[2] + cm.cmodels[0].maxs[2]);
-	}
+		SV_TraceArea(angle, scale, data1f2, MASK_SOLID|MASK_WATER, TRACE_HEIGHTS);
+		scale[2] -= fabsf(length / 2.0f);
+		ScaleColorChannel(0, TRACE_HEIGHTS, scale[2], fabsf(size[2]));
+	} else
 
-	if ( Q_stricmp( command, "airspace" ) == 0 ) {
+	if ( Q_stricmp( command, "skybox" ) == 0 ) {
+		SV_TraceArea(angle, scale, data1f2, CONTENTS_NODE, TRACE_VOLUME);
+		scale[2] -= cm.cmodels[0].maxs[2];
+		ScaleColorChannel(0, TRACE_INVERTED, scale[2], fabsf(size[2]));
+	} else
+
+	if ( Q_stricmp( command, "bottomup" ) == 0 ) {
+		scale[2] = -fabsf(length / 2.0f) - fabsf(size[2] / 2.0f);
+		SV_ResetData(data1f2, TRACE_MINS);
+		SV_TraceArea(angle, scale, data1f2, CONTENTS_NODE, TRACE_VOLUME);
+		ScaleColorChannel(0, TRACE_FLOORS, -scale[2], -fabsf(size[2]));
+	} else
+
+
+	if ( Q_stricmp( command, "groundheight" ) == 0 ) {
+		scale[2] = -fabsf(length / 2.0f) - fabsf(size[2] / 2.0f);
+		SV_ResetData(data1f2, TRACE_MINS);
+		SV_TraceArea(angle, scale, data1f2, MASK_PLAYERSOLID|CONTENTS_NODE, TRACE_HEIGHTS);
+		scale[2] -= fabsf(length / 2.0f);
+		ScaleColorChannel(0, TRACE_HEIGHTS, scale[2], fabsf(size[2]));
+	} else
+
+
+	if ( Q_stricmp( command, "skyboxvolume2" ) == 0 ) {
+		SV_TraceArea(angle, scale, data1f2, CONTENTS_NODE, TRACE_VOLUME);
+		memcpy(data1f3, data1f2, MAPSIZE * MAPSIZE * sizeof( float ));
+
+		scale[2] = -fabsf(length / 2.0f) - fabsf(size[2] / 2.0f);
+		SV_ResetData(data1f2, TRACE_MINS);
+		SV_TraceArea(angle, scale, data1f2, CONTENTS_NODE, TRACE_VOLUME);
+
+		scale[2] = fabsf(length / 2.0f);
+		ScaleColorChannel(0, TRACE_VOLUME, scale[2], fabsf(size[2]));
+
+	} else
+
+	if ( Q_stricmp( command, "skyboxvolume" ) == 0 ) {
+		ScaleColorChannel(3, TRACE_INVERTED, qtrue, cm.cmodels[0].mins[2]);
+
+		SV_TraceArea(angle, scale, data1f2, CONTENTS_NODE, TRACE_VOLUME);
+		scale[2] -= cm.cmodels[0].maxs[2];
+		ScaleColorChannel(0, TRACE_INVERTED, scale[2], fabsf(size[2]));
+
+		memcpy(data1f3, data1f2, MAPSIZE * MAPSIZE * sizeof( float ));
+
+		scale[2] = -fabsf(length / 2.0f) - fabsf(size[2] / 2.0f);
+		SV_ResetData(data1f2, TRACE_MINS);
+		SV_TraceArea(angle, scale, data1f2, CONTENTS_NODE, TRACE_VOLUME);
+		ScaleColorChannel(1, TRACE_FLOORS, -scale[2], -fabsf(size[2]));
+
+		scale[2] = fabsf(length / 2.0f);
+		ScaleColorChannel(2, TRACE_VOLUME, scale[2], fabsf(size[2]));
+
+		monochrome = qfalse;
+	} 
+
+#if 0
+
 		ScaleColorChannel(3, TRACE_INVERTED, qtrue, cm.cmodels[0].mins[2]);
 		//SV_TraceArea(angle, scale, data1f2, MASK_SOLID|MASK_WATER, (pass & 7));
-		SV_TraceArea(angle, scale, data1f2, CONTENTS_NODE, (pass & 7));
 		//SV_XRay(angle, data1f1, data1f2, data1f3, scale, MASK_PLAYERSOLID, (pass & 7));
 		//ScaleColorChannel(1, TRACE_HEIGHTS, qtrue, -cm.cmodels[0].mins[2] + cm.cmodels[0].maxs[2]);
 		memcpy(data1f3, data1f2, MAPSIZE * MAPSIZE * sizeof( float ));
@@ -576,9 +642,10 @@ void SV_MakeMinimap() {
 		//ScaleColorChannel(0, TRACE_INVERTED, qtrue, (-cm.cmodels[0].mins[2] + cm.cmodels[0].maxs[2]));
 		//SV_ResetData(data1f2, TRACE_XRAY8);
 		//SV_TraceArea(angle, scale, data1f2, MASK_SOLID|MASK_WATER, (pass & 7));
-		ScaleColorChannel(2, TRACE_VOLUME, qtrue, (-cm.cmodels[0].mins[2] + cm.cmodels[0].maxs[2]));
 		monochrome = qfalse;
 	}
+
+#endif
 
 #if 0
 	i = 0;
@@ -708,6 +775,10 @@ void SV_MakeMinimap() {
 		free(data1f2);
 	if(data1f3)
 		free(data1f3);
+	data4b = NULL;
+	data1f1 = NULL;
+	data1f2 = NULL;
+	data1f3 = NULL;
 }
 
 //#endif
