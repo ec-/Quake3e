@@ -681,6 +681,9 @@ function loadImage(filename, pic, ext) {
   }
   */
 
+  // TODO: something like 
+  //  if(loadPalette()) { Promise.any(loadRemotes()) }
+
   if ((length = FS_ReadFile(filename, buf)) > 0 && HEAPU32[buf >> 2] > 0) {
     let thisImage = document.createElement('IMG')
     EMGL.previousName = filenameStr

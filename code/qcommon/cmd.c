@@ -321,6 +321,7 @@ static void Cmd_Vstr_f( void ) {
 
 	if ( Cmd_Argc () != 2 ) {
 		Com_Printf( "vstr <variablename> : execute a variable command\n" );
+		Com_Printf( "%s given", Cmd_ArgsFrom(0));
 		return;
 	}
 

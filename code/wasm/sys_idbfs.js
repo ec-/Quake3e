@@ -211,7 +211,7 @@ async function readPreFS() {
   */
   let listOfFiles = [
     'gfx/2d/bigchars.png',
-    'maps/download/pak0',
+    'maps/repacked/pak0',
   ]
   for(let i = 0; i < listOfFiles.length; i++) {
     //let result = await readStore(listOfFiles[i])

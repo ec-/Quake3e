@@ -258,7 +258,7 @@ static void SV_TraceArea(vec3_t angle, vec3_t scale, float *d1, int mask, int fl
 	VectorMA(center, radius, up, newMaxs);
 	VectorMA(newMaxs, radius, right, newMaxs);
 	VectorSubtract(newMaxs, newMins, newScale);
-	VectorScale(newScale, 1.0f / sv_bspMiniSize->value, newScale);
+	VectorScale(newScale, 1.0f / sv_bspMiniSize->value * fabsf(scale[2] / VectorLength(newScale)), newScale);
 	Com_Printf("scale: %f, %f, %f\n", newScale[0], newScale[1], newScale[2]);
 
 	for ( int y = 0; y < MAPSIZE; ++y ) {
@@ -489,7 +489,7 @@ static void ScaleColorChannel(int channel, int pass, int clamped, float length) 
 				if(data1f2[MAPINDEX] == MAX_MAP_BOUNDS) {
 					data4b[((MAPINDEX) * 4) + channel % 4] = 0;
 				} else {
-					data4b[((MAPINDEX) * 4) + channel % 4] = Com_Clamp( 0.f, 255.f / 256.f, (data1f3[MAPINDEX] - clamped) / length + (data1f2[MAPINDEX] - (clamped + length / 2.0f)) / -length) * 256;
+					data4b[((MAPINDEX) * 4) + channel % 4] = Com_Clamp( 0.f, 255.f / 256.f, (1.0f - (data1f3[MAPINDEX] - clamped) / length) + (data1f2[MAPINDEX] - clamped) / -length) * 256;
 				}
 			}
 		}
@@ -554,7 +554,7 @@ void SV_MakeMinimap() {
 	for(int i = 0; i < 3; i++) {
 		scale[i] = size[i] / sv_bspMiniSize->value;
 	}
-	scale[2] = fabsf(length / 2.0f) + fabsf(size[2] / 2.0f);
+	scale[2] = fabsf(length) + fabsf(size[2]);
 
 
 
@@ -569,7 +569,7 @@ void SV_MakeMinimap() {
 
 	if ( Q_stricmp( command, "heightmap" ) == 0 ) {
 		SV_TraceArea(angle, scale, data1f2, MASK_SOLID|MASK_WATER, TRACE_HEIGHTS);
-		scale[2] -= fabsf(length / 2.0f);
+		scale[2] -= fabsf(length);
 		ScaleColorChannel(0, TRACE_HEIGHTS, scale[2], fabsf(size[2]));
 	} else
 
@@ -580,7 +580,7 @@ void SV_MakeMinimap() {
 	} else
 
 	if ( Q_stricmp( command, "bottomup" ) == 0 ) {
-		scale[2] = -fabsf(length / 2.0f) - fabsf(size[2] / 2.0f);
+		scale[2] = -fabsf(length) - fabsf(size[2]);
 		SV_ResetData(data1f2, TRACE_MINS);
 		SV_TraceArea(angle, scale, data1f2, CONTENTS_NODE, TRACE_VOLUME);
 		ScaleColorChannel(0, TRACE_FLOORS, -scale[2], -fabsf(size[2]));
@@ -588,10 +588,10 @@ void SV_MakeMinimap() {
 
 
 	if ( Q_stricmp( command, "groundheight" ) == 0 ) {
-		scale[2] = -fabsf(length / 2.0f) - fabsf(size[2] / 2.0f);
+		scale[2] = -fabsf(length) - fabsf(size[2]);
 		SV_ResetData(data1f2, TRACE_MINS);
 		SV_TraceArea(angle, scale, data1f2, MASK_PLAYERSOLID|CONTENTS_NODE, TRACE_HEIGHTS);
-		scale[2] -= fabsf(length / 2.0f);
+		scale[2] -= fabsf(length);
 		ScaleColorChannel(0, TRACE_HEIGHTS, scale[2], fabsf(size[2]));
 	} else
 
@@ -600,12 +600,12 @@ void SV_MakeMinimap() {
 		SV_TraceArea(angle, scale, data1f2, CONTENTS_NODE, TRACE_VOLUME);
 		memcpy(data1f3, data1f2, MAPSIZE * MAPSIZE * sizeof( float ));
 
-		scale[2] = -fabsf(length / 2.0f) - fabsf(size[2] / 2.0f);
+		scale[2] = -fabsf(length) - fabsf(size[2]);
 		SV_ResetData(data1f2, TRACE_MINS);
 		SV_TraceArea(angle, scale, data1f2, CONTENTS_NODE, TRACE_VOLUME);
 
-		scale[2] = fabsf(length / 2.0f);
-		ScaleColorChannel(0, TRACE_VOLUME, scale[2], fabsf(size[2]));
+		scale[2] = fabsf(length);
+		ScaleColorChannel(0, TRACE_VOLUME, scale[2], fabsf(size[2] * 2));
 
 	} else
 
@@ -618,15 +618,39 @@ void SV_MakeMinimap() {
 
 		memcpy(data1f3, data1f2, MAPSIZE * MAPSIZE * sizeof( float ));
 
-		scale[2] = -fabsf(length / 2.0f) - fabsf(size[2] / 2.0f);
+		scale[2] = -fabsf(length) - fabsf(size[2]);
 		SV_ResetData(data1f2, TRACE_MINS);
 		SV_TraceArea(angle, scale, data1f2, CONTENTS_NODE, TRACE_VOLUME);
 		ScaleColorChannel(1, TRACE_FLOORS, -scale[2], -fabsf(size[2]));
 
-		scale[2] = fabsf(length / 2.0f);
+		scale[2] = fabsf(length);
 		ScaleColorChannel(2, TRACE_VOLUME, scale[2], fabsf(size[2]));
 
 		monochrome = qfalse;
+	} 
+
+	if ( Q_stricmp( command, "skyboxvolume3" ) == 0 ) {
+		angle[0] = 44.9f;
+		angle[1] = 0.01f;
+		angle[2] = 0.01f;
+		//ScaleColorChannel(3, TRACE_INVERTED, qtrue, cm.cmodels[0].mins[2]);
+
+		scale[2] = fabsf(length * 4);
+		SV_TraceArea(angle, scale, data1f2, CONTENTS_NODE, TRACE_VOLUME);
+		scale[2] = fabsf(length * 3) + fabsf(size[2]);
+		//ScaleColorChannel(0, TRACE_INVERTED, scale[2], fabsf(size[2]));
+
+		//memcpy(data1f3, data1f2, MAPSIZE * MAPSIZE * sizeof( float ));
+
+		//scale[2] = -fabsf(length / 2.0f) - fabsf(size[2] / 2.0f);
+		//SV_ResetData(data1f2, TRACE_MINS);
+		//SV_TraceArea(angle, scale, data1f2, CONTENTS_NODE, TRACE_VOLUME);
+		//ScaleColorChannel(1, TRACE_FLOORS, -scale[2], -fabsf(size[2]));
+
+		//scale[2] = fabsf(length / 2.0f);
+		ScaleColorChannel(0, TRACE_INVERTED, scale[2], fabsf(length));
+
+		//monochrome = qfalse;
 	} 
 
 #if 0
