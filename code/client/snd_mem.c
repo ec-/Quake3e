@@ -84,8 +84,6 @@ void SND_setup( void )
 	int scs, sz;
 	static int old_scs = -1;
 
-	return;
-
 	cv = Cvar_Get( "com_soundMegs", DEF_COMSOUNDMEGS, CVAR_LATCH | CVAR_ARCHIVE );
 	Cvar_CheckRange( cv, "1", "512", CV_INTEGER );
 

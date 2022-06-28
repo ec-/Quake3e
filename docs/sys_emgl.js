@@ -760,7 +760,16 @@ function convertBMP(imgData, quality) {
 
 
 function loadImage(filename, pic, ext) {
+  let gamedir = addressToString(FS_GetCurrentGameDir())
   let filenameStr = addressToString(filename)
+  let localName = filenameStr
+  if(localName[0] == '/')
+    localName = localName.substring(1)
+  if(localName.startsWith(gamedir))
+    localName = localName.substring(gamedir.length)
+  if(localName[0] == '/')
+    localName = localName.substring(1)
+
   let buf = Z_Malloc(8) // pointer to pointer
   let length
   EMGL.previousImage = null
@@ -780,8 +789,16 @@ function loadImage(filename, pic, ext) {
   }
   */
 
-  let palette = R_FindPalette(filename) 
-    || R_FindPalette(stringToAddress(filenameStr.replace(/\..+?$/gi, '.tga')))
+  let palette = R_FindPalette(filename)
+  if(!palette) {
+    let tgaPalette = R_FindPalette(stringToAddress(filenameStr.replace(/\..+?$/gi, '.tga')))
+    if(filenameStr.match(/\.jpg$/gi) && HEAPU8[tgaPalette + 3] == 255) {
+      palette = tgaPalette
+    } else
+    if(filenameStr.match(/\.png$/gi) && HEAPU8[tgaPalette + 3] < 255) {
+      palette = tgaPalette
+    }
+  }
 
   if ((length = FS_ReadFile(filename, buf)) > 0 && HEAPU32[buf >> 2] > 0
     || palette) {
@@ -806,6 +823,15 @@ function loadImage(filename, pic, ext) {
       }).data))
       ext = 'bmp'
       // TODO: init XHR alt-name requests
+      // Promise.any(CL_DL_Begin()).then(new Promise(resolve .onload = resolve(evt).then(R_Finish)))
+      // TODO: does updating texnum switch the texture in game or is it already collapsed into the GPU?
+      // TODO: save both images and switch them using the shader->remappedShader interface?
+      Promise.resolve((async function () {
+        let remoteFile = 'pak0.pk3dir/' + filenameStr
+        responseData = await Com_DL_Begin(gamedir + '/' + remoteFile, remoteFile)
+        Com_DL_Perform(gamedir + '/' + remoteFile, remoteFile, responseData)
+        return true
+      })())
     }
     let utfEncoded = imageView.map(function (c) { 
         return String.fromCharCode(c) }).join('')
@@ -820,7 +846,7 @@ function loadImage(filename, pic, ext) {
       FS_FreeFile(HEAPU32[buf >> 2])
       Z_Free(buf)
     }
-    document.body.appendChild(thisImage)
+    // document.body.appendChild(thisImage)
     // continue to palette
   } // else 
 

@@ -70,8 +70,8 @@ typedef struct image_s {
 
 	imgType_t	type;
 	imgFlags_t	flags;
-	intptr_t palette;
-	struct image_s *paletteImage;
+	int palette;
+	//struct image_s *paletteImage;
 } image_t;
 
 typedef struct palette_s {

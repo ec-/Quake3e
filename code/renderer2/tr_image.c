@@ -2367,9 +2367,10 @@ static image_t *R_CreateImage3( const char *name, byte *pic, GLenum picFormat, i
 	}
 	// TODO: move to loadImage in sys_emgl.js
 	else {
-		image->paletteImage = R_CreateImage2(
-			va("*pal%i-%i-%i-%i", pic[0], pic[1], pic[2], pic[3]), 
-			pic, 16, 16, GL_RGBA8, IMGTYPE_COLORALPHA, 0, IMGFLAG_NONE, GL_RGBA8);
+		image->palette = (pic[0] << 24) + (pic[1] << 16) + (pic[2] << 8) + pic[3];
+		//image->paletteImage = R_CreateImage2(
+		//	va("*pal%i-%i-%i-%i", ), 
+		//	pic, 16, 16, GL_RGBA8, IMGTYPE_COLORALPHA, 0, IMGFLAG_NONE, GL_RGBA8);
 	}
 
 	hash = generateHashValue(name);
