@@ -759,9 +759,25 @@ function convertBMP(imgData, quality) {
 };
 
 
+
+function createImageFromBuffer(filenameStr, imageView) {
+  let thisImage = document.createElement('IMG')
+  let utfEncoded = imageView.map(function (c) { 
+    return String.fromCharCode(c) }).join('')
+  thisImage.src = 'data:image/' + (/\.(.+)$/gi).exec(filenameStr)[1] 
+      + ';base64,' + btoa(utfEncoded)
+  thisImage.name = filenameStr
+  return thisImage
+}
+
+
 function loadImage(filename, pic, ext) {
   let gamedir = addressToString(FS_GetCurrentGameDir())
   let filenameStr = addressToString(filename)
+  if(!filenameStr.match(new RegExp(`\.${ext}$` , 'gi'))) {
+    filenameStr += ext
+  }
+
   let localName = filenameStr
   if(localName[0] == '/')
     localName = localName.substring(1)
@@ -771,10 +787,10 @@ function loadImage(filename, pic, ext) {
     localName = localName.substring(1)
 
   let buf = Z_Malloc(8) // pointer to pointer
-  let length
   EMGL.previousImage = null
   EMGL.previousName = ''
   HEAPU32[buf >> 2] = 0
+
   // TODO: merge with virtual filesystem...
   //   But doing it this way, it's possible for images to load with the page
   //   If I switch back to FS.virtual mode, this part will always reload async
@@ -800,64 +816,72 @@ function loadImage(filename, pic, ext) {
     }
   }
 
-  if ((length = FS_ReadFile(filename, buf)) > 0 && HEAPU32[buf >> 2] > 0
-    || palette) {
-    let thisImage = document.createElement('IMG')
-    EMGL.previousName = filenameStr
-    EMGL.previousImage = thisImage
-    thisImage.onload = function (evt) {
-      HEAP32[(evt.target.address - 4 * 4) >> 2] = evt.target.width
-      HEAP32[(evt.target.address - 3 * 4) >> 2] = evt.target.height
-      R_FinishImage3(evt.target.address - 7 * 4, 0x1908 /* GL_RGBA */, 0)
-    }
-    let imageView
-    if(HEAPU32[buf >> 2]) {
-      imageView = Array.from(HEAPU8.slice(HEAPU32[buf >> 2], 
-          HEAPU32[buf >> 2] + length))
-    } else
-    if(palette) {
-      imageView = Array.from(Uint8Array.from(convertBMP({
-        data: HEAPU8.slice(palette, palette + 16*16*4),
-        height: 16,
-        width: 16,
-      }).data))
-      ext = 'bmp'
-      // TODO: init XHR alt-name requests
-      // Promise.any(CL_DL_Begin()).then(new Promise(resolve .onload = resolve(evt).then(R_Finish)))
-      // TODO: does updating texnum switch the texture in game or is it already collapsed into the GPU?
-      // TODO: save both images and switch them using the shader->remappedShader interface?
-      Promise.resolve((async function () {
-        let remoteFile = 'pak0.pk3dir/' + filenameStr
-        responseData = await Com_DL_Begin(gamedir + '/' + remoteFile, remoteFile)
-        Com_DL_Perform(gamedir + '/' + remoteFile, remoteFile, responseData)
-        return true
-      })())
-    }
-    let utfEncoded = imageView.map(function (c) { 
-        return String.fromCharCode(c) }).join('')
-    thisImage.src = 'data:image/' + ext + ';base64,' + btoa(utfEncoded)
-    thisImage.name = filenameStr
-    if(palette) {
-      HEAPU32[pic >> 2] = palette // TO BE COPIED OUT
-    } else {
-      HEAPU32[pic >> 2] = 1
-    }
-    if(HEAPU32[buf >> 2]) {
-      FS_FreeFile(HEAPU32[buf >> 2])
-      Z_Free(buf)
-    }
-    // document.body.appendChild(thisImage)
-    // continue to palette
-  } // else 
-
-  if(HEAPU32[pic >> 2] != 0) {
+  let length = FS_ReadFile(filename, buf)
+  let thisImage
+  if(HEAPU32[buf >> 2]) {
+    imageView = Array.from(HEAPU8.slice(HEAPU32[buf >> 2], 
+        HEAPU32[buf >> 2] + length))
+    thisImage = createImageFromBuffer(filenameStr, imageView)
+  } else
+  if(palette) {
+    imageView = Array.from(Uint8Array.from(convertBMP({
+      data: HEAPU8.slice(palette, palette + 16*16*4),
+      height: 16,
+      width: 16,
+    }).data))
+    // create palette image now and TODO: replace with real shader later
+    thisImage = createImageFromBuffer('*pal' 
+      + HEAPU8[palette] + '-' + HEAPU8[palette+1] + '-'
+      + HEAPU8[palette+2] + '-' + HEAPU8[palette+3] + '.bmp', imageView)
+  }
+  
+  if(!thisImage) {
     return
   }
 
-  // TODO: Promise.any(altImages) based on palette.shader list
-  EMGL.previousName = ''
-  EMGL.previousImage = null
-  HEAPU32[pic >> 2] = null
+  EMGL.previousName = filenameStr
+  EMGL.previousImage = thisImage
+  thisImage.addEventListener('load', function () {
+    HEAP32[(thisImage.address - 4 * 4) >> 2] = thisImage.width
+    HEAP32[(thisImage.address - 3 * 4) >> 2] = thisImage.height
+    R_FinishImage3(thisImage.address - 7 * 4, 0x1908 /* GL_RGBA */, 0)
+  }, false)
+
+  if(palette) {
+    HEAPU32[pic >> 2] = palette // TO BE COPIED OUT
+  } else {
+    HEAPU32[pic >> 2] = 1
+  }
+  if(HEAPU32[buf >> 2]) {
+    FS_FreeFile(HEAPU32[buf >> 2])
+    Z_Free(buf)
+  }
+  // document.body.appendChild(thisImage)
+
+  if(palette) {
+    // TODO: Promise.any(altImages) based on palette.shader list
+    // TODO: init XHR alt-name requests
+    // Promise.any(CL_DL_Begin()).then(new Promise(resolve .onload = resolve(evt).then(R_Finish)))
+    // TODO: does updating texnum switch the texture in game or is it already collapsed into the GPU?
+    // TODO: save both images and switch them using the shader->remappedShader interface?
+    Promise.resolve((async function () {
+      let remoteFile = 'pak0.pk3dir/' + filenameStr
+      responseData = await Com_DL_Begin(gamedir + '/' + remoteFile, remoteFile)
+      Com_DL_Perform(gamedir + '/' + remoteFile, remoteFile, responseData)
+      let replaceImage = createImageFromBuffer(filenameStr, imageView)
+      // same thing as above but synchronously after the images loads async
+      replaceImage.addEventListener('load', function (evt) {
+        // CODE REVIEW: replace texnum?
+        EMGL.previousName = filenameStr
+        EMGL.previousImage = replaceImage
+        qglGenTextures(1, thisImage.address);
+        HEAP32[(thisImage.address - 4 * 4) >> 2] = replaceImage.width
+        HEAP32[(thisImage.address - 3 * 4) >> 2] = replaceImage.height
+        R_FinishImage3(thisImage.address - 7 * 4, 0x1908 /* GL_RGBA */, 0)
+      }, false)
+      return true
+    })())
+  }
 }
 
 
