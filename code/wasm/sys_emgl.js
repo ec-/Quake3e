@@ -733,7 +733,6 @@ BmpEncoder.prototype.encode = function() {
 	for (var y = 0; y <this.height; y++){
 		for (var x = 0; x < this.width; x++){
 			var p = this.pos+y*rowBytes+x*4;
-			i++;//a
 			tempBuffer[p]= this.buffer[i++];//b
 			tempBuffer[p+1] = this.buffer[i++];//g
 			tempBuffer[p+2]  = this.buffer[i++];//r
@@ -790,7 +789,6 @@ function loadImage(filename, pic, ext) {
     EMGL.previousName = filenameStr
     EMGL.previousImage = thisImage
     thisImage.onload = function (evt) {
-      debugger
       HEAP32[(evt.target.address - 4 * 4) >> 2] = evt.target.width
       HEAP32[(evt.target.address - 3 * 4) >> 2] = evt.target.height
       R_FinishImage3(evt.target.address - 7 * 4, 0x1908 /* GL_RGBA */, 0)
