@@ -84,6 +84,8 @@ void SND_setup( void )
 	int scs, sz;
 	static int old_scs = -1;
 
+	return;
+
 	cv = Cvar_Get( "com_soundMegs", DEF_COMSOUNDMEGS, CVAR_LATCH | CVAR_ARCHIVE );
 	Cvar_CheckRange( cv, "1", "512", CV_INTEGER );
 
@@ -131,10 +133,10 @@ void SND_setup( void )
 
 	sfxScratchPointer = NULL;
 
+#ifndef __WASM__
+
 	inUse = scs * sizeof( sndBuffer );
 	totalInUse = 0; // -EC-
-
-#ifndef __WASM__
 
 	p = buffer;
 	q = p + scs;

@@ -1923,6 +1923,11 @@ static qboolean ParseCondition( const char **text, resultType *res )
 }
 
 
+#ifdef __WASM__
+void R_AddPalette(const char *name, int a, int r, int g, int b);
+#endif
+
+
 /*
 =================
 ParseShader
@@ -2239,6 +2244,49 @@ static qboolean ParseShader( const char **text )
 
 			continue;
 		}
+
+#ifdef __WASM__
+
+		// parse palette colors for filename
+    else if ( !Q_stricmp( token, "palette" ) ) {
+      char file[MAX_OSPATH];
+      token = COM_ParseExt( text, qfalse );
+      memcpy(file, token, sizeof(file));
+      const char *colors = COM_ParseExt( text, qfalse );
+      char color[4];
+      int a = 0, r = 0, g = 0, b = 0;
+      int ci = 0;
+      int ri2 = 0;
+      int gi = 0;
+      int bi = 0;
+      for(int i = 0; i < 12; i++) {
+        if(colors[i] == ',') {
+          if(ri2 == 0) {
+            color[ci] = 0;
+            a = atoi(color);
+            ri2 = i + 1;
+          } else if(gi == 0) {
+            color[ci] = 0;
+            r = atoi(color);
+            gi = i + 1;
+          } else {
+            color[ci] = 0;
+            g = atoi(color);
+            bi = i + 1;
+            b = atoi(&colors[bi]);
+            break;
+          }
+          ci = 0;
+        } else if (colors[i] >= '0' && colors[i] <= '9') {
+          color[ci] = colors[i];
+          ci++;
+        }
+      }
+      R_AddPalette(file, a, r, g, b);
+			continue;
+		}
+#endif
+
     else if ( !Q_stricmp( token, "novlcollapse" ) )
 		{
 			// new in quakelive
@@ -4207,6 +4255,16 @@ void ScanAndLoadShaderFiles( void )
 
 		hash = generateHashValue(token, MAX_SHADERTEXT_HASH);
 		shaderTextHashTable[hash][--shaderTextHashTableSizes[hash]] = (char*)oldp;
+
+#ifdef __WASM__
+		//Com_Printf("shaders: %s\n", token);
+		if(Q_stristr(token, "palettes/"))
+		{
+			const char *previous = p;
+			ParseShader( &p );
+			p = previous;
+		}
+#endif
 
 		SkipBracedSection(&p, 0);
 	}

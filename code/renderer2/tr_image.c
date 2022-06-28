@@ -32,6 +32,7 @@ int		gl_filter_max = GL_LINEAR;
 
 #define FILE_HASH_SIZE		1024
 static	image_t*		hashTable[FILE_HASH_SIZE];
+static	palette_t*		paletteTable[FILE_HASH_SIZE];
 
 /*
 ** R_GammaCorrect
@@ -2248,6 +2249,71 @@ static image_t *R_CreateImage2( const char *name, byte *pic, int width, int heig
 }
 
 #ifdef __WASM__
+
+void R_AddPalette(const char *name, int a, int r, int g, int b) {
+	int hash;
+	palette_t *palette;
+	char normalName[MAX_OSPATH];
+	const char *s;
+	if((s = Q_stristr(name, ".pk3dir/"))) {
+		name = s + 8;
+	}
+	COM_StripExtension(name, normalName, MAX_OSPATH);
+	hash = generateHashValue(normalName);
+	//Com_Printf("palette: %s\n", name);
+	int namelen = strlen(normalName);
+	for (palette=paletteTable[hash]; palette; palette=palette->next) {
+		if ( !Q_stricmp( normalName, palette->imgName ) ) {
+			return; // found
+		}
+	}
+
+	palette = ri.Hunk_Alloc( sizeof( *palette ) + namelen + 1, h_low );
+	palette->imgName = (char *)( palette + 1 );
+	strcpy( palette->imgName, normalName );
+	palette->a = a;
+	palette->r = r;
+	palette->g = g;
+	palette->b = b;
+	palette->next = paletteTable[hash];
+	paletteTable[hash] = palette;
+}
+
+
+byte *R_FindPalette(const char *name) {
+	palette_t *palette;
+	long	hash;
+	char normalName[MAX_OSPATH];
+	COM_StripExtension(name, normalName, MAX_OSPATH);
+	hash = generateHashValue(normalName);
+	for (palette=paletteTable[hash]; palette; palette=palette->next) {
+		if ( !Q_stricmp( normalName, palette->imgName ) ) {
+			//if(!palette->image) {
+				static byte	data[16][16][4];
+				for(int x = 0; x < 16; x++) {
+					for(int y = 0; y < 16; y++) {
+						//if(r_seeThroughWalls->integer) {
+						//	data[x][y][3] = palette->a * 0.5;
+						//} else {
+							data[x][y][3] = palette->a;
+						//}
+						data[x][y][2] = palette->b;
+						data[x][y][1] = palette->g;
+						data[x][y][0] = palette->r;
+					}
+				}
+				//palette->image = R_CreateImage2(
+				//	va("*pal%i-%i-%i-%i", palette->r, palette->g, palette->b, palette->a), 
+				//	(byte *)data, 16, 16, GL_RGBA8, IMGTYPE_COLORALPHA, 0, IMGFLAG_NONE, GL_RGBA8);
+				return &data[0][0][0];
+			//}
+		}
+	}
+	return NULL;
+}
+
+
+
 void R_FinishImage3( image_t *, GLenum picFormat, int numMips );
 /*
 ================
@@ -2256,8 +2322,8 @@ R_CreateImage2
 This is the only way any image_t are created
 ================
 */
-static image_t *R_CreateImage3( const char *name, GLenum picFormat, int numMips, imgType_t type, imgFlags_t flags, int internalFormat ) {
-	image_t   *image;
+static image_t *R_CreateImage3( const char *name, byte *pic, GLenum picFormat, int numMips, imgType_t type, imgFlags_t flags, int internalFormat ) {
+	image_t   *image = NULL;
 	long      hash;
 	size_t		namelen;
 
@@ -2298,8 +2364,12 @@ static image_t *R_CreateImage3( const char *name, GLenum picFormat, int numMips,
 
 	if(image->width > 1 && image->height > 1) {
 		R_FinishImage3( image, picFormat, 0 );
-	} else {
-		//image->palette = R_FindPalette(name);
+	}
+	// TODO: move to loadImage in sys_emgl.js
+	else {
+		image->paletteImage = R_CreateImage2(
+			va("*pal%i-%i-%i-%i", pic[0], pic[1], pic[2], pic[3]), 
+			pic, 16, 16, GL_RGBA8, IMGTYPE_COLORALPHA, 0, IMGFLAG_NONE, GL_RGBA8);
 	}
 
 	hash = generateHashValue(name);
@@ -2537,6 +2607,13 @@ static void R_LoadImage( const char *name, byte **pic, int *width, int *height, 
 }
 
 
+
+
+#ifdef __WASM__
+extern  cvar_t  *r_paletteMode;
+#endif
+
+
 /*
 ===============
 R_FindImageFile
@@ -2687,7 +2764,6 @@ image_t	*R_FindImageFile( const char *name, imgType_t type, imgFlags_t flags )
 				YCoCgAtoRGBA(pic, pic, width, height);
 			}
 #endif
-
 			R_CreateImage( normalName, normalPic, normalWidth, normalHeight, IMGTYPE_NORMAL, normalFlags, 0 );
 			ri.Free( normalPic );	
 		}
@@ -2709,10 +2785,11 @@ image_t	*R_FindImageFile( const char *name, imgType_t type, imgFlags_t flags )
 	}
 
 #ifdef __WASM__
-	// skip this entirely and upload directly to openGL then insert the image handle here for future use
-	// we think the image is out there so register it in the system, then we can update
-	//   the glBind when it loads
-	image = R_CreateImage3( ( char * ) name, picFormat, picNumMips, type, flags & ~IMGFLAG_MIPMAP & ~IMGFLAG_PICMIP, GL_RGBA );
+	// skip this entirely and upload directly to openGL then
+	//   insert the image handle in image->texnum for future use
+	// by this point we think the image is out there so register it in 
+	//   the system, then we can update the glBind-ing when it loads async
+	image = R_CreateImage3( ( char * ) name, pic, picFormat, picNumMips, type, flags & ~IMGFLAG_MIPMAP & ~IMGFLAG_PICMIP, GL_RGBA );
 #else
 	image = R_CreateImage2( ( char * ) name, pic, width, height, picFormat, picNumMips, type, flags, 0 );
 	ri.Free( pic );

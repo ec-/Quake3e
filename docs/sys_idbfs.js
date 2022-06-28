@@ -175,7 +175,7 @@ function _base64ToArrayBuffer(base64) {
 }
 
 // I JUST REALIZED WHY CHROME DEBUGGER WILL PERPUTUALLY HAVE A HARDER
-//   AND HARD TIME WITH WEB APPS LIKE THIS. I SCREWED UP IT'S ABILITY TO OPTIMIZE GRAPH.
+//   AND HARDER TIME WITH WEB APPS LIKE THIS. I SCREWED UP IT'S ABILITY TO OPTIMIZE GRAPH.
 
 async function readPreFS() {
 	// TODO: offline download so it saves binary to IndexedDB
@@ -197,17 +197,29 @@ async function readPreFS() {
 		}
 	}
 
+  /*
+  thinking about how deep I want to go on this:
+  I had a plan to repackage assets as they are requested from inside the server code
+  so that the same process could be used for UDP downloads.
+
+  But now I'm wondering if there's any reason not to do the same thing from the proxy server.
+
+  Where do I get this list from normally? I has a plan to transfer pk3_cache databases from the server. That would store a list of pk3s per mod.
+
+  How do I make the engine automatically pick a mod? #define BASEGAME in q_shared.h
+  but FS_GetCurrentGameDir() is not available before the engine loads.
+  */
   let listOfFiles = [
-    'multigame/pak0.pk3',
-    'multigame/xxx-multigame.pk3'
+    'gfx/2d/bigchars.png',
+    'maps/repacked/pak0',
   ]
   for(let i = 0; i < listOfFiles.length; i++) {
-    let result = await readStore(listOfFiles[i])
-    if(!result || (result.mode >> 12) == ST_DIR) {
-      responseData = await Com_DL_Begin(listOfFiles[i], 
-          listOfFiles[i].replace(/^[^\/]+\//, ''))
-      Com_DL_Perform(listOfFiles[i], listOfFiles[i], responseData)
-    }
+    //let result = await readStore(listOfFiles[i])
+    //if(!result || (result.mode >> 12) == ST_DIR) {
+      responseData = await Com_DL_Begin(listOfFiles[i], listOfFiles[i])
+      Com_DL_Perform('baseq3/' + (i == listOfFiles.length - 1 
+          ? 'pak0.pk3' : listOfFiles[i]), listOfFiles[i], responseData)
+    //}
   }
 
 }

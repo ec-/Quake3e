@@ -395,7 +395,9 @@ function Com_DL_HeaderCallback(localName, response) {
 }
 
 function Com_DL_Cleanup() {
-  NET.controller.abort()
+  if(NET.controller) {
+    NET.controller.abort()
+  }
 }
 
 function Com_DL_Begin(localName, remoteURL) {

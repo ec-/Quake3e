@@ -9,21 +9,25 @@ function getQueryCommands() {
 		'+set', 'fs_basepath', '/base',
 		'+set', 'fs_homepath', '/home',
 		'+set', 'sv_pure', '0', // require for now, TODO: server side zips
-		'+set', 'fs_basegame', 'multigame',
 		'+set', 'r_mode', '-2',
-		'+set', 'bot_enable', '0',
 		'+set', 'net_socksServer', window.location.hostname || '',
 		'+set', 'net_socksPort', window.location.port 
 			|| (window.location.protocol == 'https:' ? '443' : '80'),
 		'+set', 'sv_fps', '100',
 		'+set', 'snaps', '100',
+		// each one of the following has a special meaning
 		//'+set', 'r_ext_multitexture', '0',
+		// not implemented in javascript?
 		'+set', 'r_ignorehwgamma', '1',
+		// FBO shows up all black and textures don't bind, 
+		//   but this should work in theory with WebGL
 		'+set', 'r_ext_framebuffer_object', '0',
+		// Cause of FBO bug above?
 		'+set', 'r_overBrightBits', '1',
+		// this was replaced in QuakeJS, instead of replacing, just change cvar
 		'+set', 'r_drawBuffer', 'GL_NONE',
 		'+set', 'r_ext_texture_filter_anisotropic', '1',
-		'+set', 'r_finish', '1',
+		//'+set', 'r_finish', '1',
 		//'+set', 'r_ext_framebuffer_multisample', '0',
 		// this prevents lightmap from being wrong when switching maps
 		//   renderer doesn't restart between maps, but BSP loading updates
@@ -34,6 +38,8 @@ function getQueryCommands() {
 		//'+set', 'r_specularMapping', '0',
 	]
 	startup.push.apply(startup, window.preStart)
+	// TODO: full screen by default? I suppose someone might 
+	//   want to embed in the center of a page, edit CSS instead of JS?
 	startup.push.apply(startup, [
 		'+set', 'r_fullscreen', window.fullscreen ? '1' : '0',
 		'+set', 'r_customHeight', '' + GL.canvas.clientHeight || 0,
@@ -56,9 +62,14 @@ function getQueryCommands() {
 	if(basename) {
 		startup.push.apply(startup, [
 			'+set', 'fs_basegame', basename,
-			'+set', 'fs_game', 'multigame',
 		])
 	}
+
+	// TODO: from URL or default.cfg?
+	startup.push.apply(startup, [
+		'+set', 'fs_game', 'baseq3',
+	])
+
 	var search = /([^&=]+)/g
 	var query  = window.location.search.substring(1)
 	var match

@@ -374,7 +374,7 @@ CLIENT_LDFLAGS  = $(LDFLAGS) \
 	-Wl,--export=sprintf       -Wl,--export=malloc  \
 	-Wl,--export=stderr        -Wl,--export=stdout  \
   -Wl,--export=FS_CreatePath -Wl,--export=free \
-	-Wl,--export=errno \
+	-Wl,--export=errno,--export=R_FindPalette \
   -Wl,--export=Key_ClearStates,--export=Key_GetCatcher \
   -Wl,--export=Key_SetCatcher,--export=CL_PacketEvent \
   -Wl,--export=s_soundStarted,--export=s_soundMuted \
@@ -1202,12 +1202,15 @@ endif # !WASM
 ifeq ($(PLATFORM),wasm)
 
 
-$(B)/$(TARGET_CLIENT): $(Q3OBJ)
+$(B)/$(TARGET_CLIENT): $(Q3OBJ) $(wildcard code/wasm/*.js)
 	$(echo_cmd) "LD $@"
 	$(CC) -o $@ $(Q3OBJ) $(CLIENT_LDFLAGS) \
 		$(LDFLAGS)
-	wasm-opt -Os --no-validation -o $@ $@
+	cp code/wasm/*.js docs/
+	cp code/wasm/*.html docs/
+	cp code/wasm/*.css docs/
 
+#	wasm-opt -Os --no-validation -o $@ $@
 
 else
 

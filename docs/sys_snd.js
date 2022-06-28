@@ -2,6 +2,9 @@ const AUDIO_DRIVER = "Web Audio"
 
 let soundEffects = {}
 
+// TODO: finish spatialization 
+// https://github.com/mdn/webaudio-examples/blob/master/spacialization/index.html
+
 
 let SND = {
   SNDDMA_Init: function () {
@@ -98,6 +101,9 @@ function S_PaintChannel(ch, sfx) {
       || soundEffects[name].lastPlayed + soundEffects[name].duration < now) {
       soundEffects[name][i].lastPlayed = now
       soundEffects[name][i].play()
+      return
+    }
+    if(soundEffects[name][i].lastPlayed + 100 > now) {
       return
     }
   }

@@ -64,6 +64,12 @@ function getQueryCommands() {
 			'+set', 'fs_basegame', basename,
 		])
 	}
+
+	// TODO: from URL or default.cfg?
+	startup.push.apply(startup, [
+		'+set', 'fs_game', 'baseq3',
+	])
+
 	var search = /([^&=]+)/g
 	var query  = window.location.search.substring(1)
 	var match

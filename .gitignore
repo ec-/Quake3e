@@ -6,5 +6,6 @@ output/
 cmake-*
 .idea
 
+Makefile.local
 /node_modules/
 /code/wasm/darwin/

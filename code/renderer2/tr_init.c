@@ -213,6 +213,9 @@ static cvar_t* r_maxpolyverts;
 int		max_polys;
 int		max_polyverts;
 
+#ifdef __WASM__
+cvar_t  *r_paletteMode;
+#endif
 
 // for modular renderer
 #ifdef USE_RENDERER_DLOPEN

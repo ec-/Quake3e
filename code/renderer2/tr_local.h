@@ -1821,7 +1821,8 @@ extern	cvar_t	*r_debugSort;
 
 extern	cvar_t	*r_printShaders;
 
-extern cvar_t	*r_marksOnTriangleMeshes;
+extern  cvar_t	*r_marksOnTriangleMeshes;
+
 
 //====================================================================
 

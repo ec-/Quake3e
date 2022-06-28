@@ -671,6 +671,7 @@ function loadImage(filename, pic, ext) {
   // TODO: merge with virtual filesystem...
   //   But doing it this way, it's possible for images to load with the page
   //   If I switch back to FS.virtual mode, this part will always reload async
+  // TODO: save time loading on map-review page aka LiveView
   /*
   let preloadedImage = document.querySelector(`IMG[title="${filenameStr}"]`)
   if (preloadedImage) {
@@ -681,9 +682,6 @@ function loadImage(filename, pic, ext) {
   }
   */
 
-  // TODO: something like 
-  //  if(loadPalette()) { Promise.any(loadRemotes()) }
-
   if ((length = FS_ReadFile(filename, buf)) > 0 && HEAPU32[buf >> 2] > 0) {
     let thisImage = document.createElement('IMG')
     EMGL.previousName = filenameStr
@@ -693,19 +691,32 @@ function loadImage(filename, pic, ext) {
       HEAP32[(evt.target.address - 3 * 4) >> 2] = evt.target.height
       R_FinishImage3(evt.target.address - 7 * 4, 0x1908 /* GL_RGBA */, 0)
     }
-    let imageView = Array.from(HEAPU8.slice(HEAPU32[buf >> 2], HEAPU32[buf >> 2] + length))
+    let imageView = Array.from(HEAPU8.slice(HEAPU32[buf >> 2], 
+                               HEAPU32[buf >> 2] + length))
     let utfEncoded = imageView.map(function (c) { return String.fromCharCode(c) }).join('')
     thisImage.src = 'data:image/' + ext + ';base64,' + btoa(utfEncoded)
     thisImage.name = filenameStr
-    HEAP32[pic >> 2] = 1
+    HEAPU32[pic >> 2] = 1
     FS_FreeFile(HEAPU32[buf >> 2])
     Z_Free(buf)
+    // continue to palette
+  } // else 
+
+  let palette = R_FindPalette(filename) 
+    || R_FindPalette(stringToAddress(filenameStr.replace(/\..+?$/gi, '.tga')))
+  if(palette) {
+    // 32 bit color? palette_t
+    HEAPU32[pic >> 2] = palette // TO BE COPIED OUT
+  }
+
+  if(HEAPU32[pic >> 2] != 0) {
     return
   }
+
   // TODO: Promise.any(altImages) based on palette.shader list
   EMGL.previousName = ''
   EMGL.previousImage = null
-  HEAP32[pic >> 2] = null
+  HEAPU32[pic >> 2] = null
 }
 
 

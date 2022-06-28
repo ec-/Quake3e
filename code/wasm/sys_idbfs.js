@@ -216,10 +216,9 @@ async function readPreFS() {
   for(let i = 0; i < listOfFiles.length; i++) {
     //let result = await readStore(listOfFiles[i])
     //if(!result || (result.mode >> 12) == ST_DIR) {
-      responseData = await Com_DL_Begin(listOfFiles[i], 
-          listOfFiles[i].replace(/^[^\/]+\//, ''))
-      Com_DL_Perform(i == listOfFiles.length - 1 
-          ? 'pak0' : listOfFiles[i], listOfFiles[i], responseData)
+      responseData = await Com_DL_Begin(listOfFiles[i], listOfFiles[i])
+      Com_DL_Perform('baseq3/' + (i == listOfFiles.length - 1 
+          ? 'pak0.pk3' : listOfFiles[i]), listOfFiles[i], responseData)
     //}
   }
 

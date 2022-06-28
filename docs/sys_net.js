@@ -85,6 +85,10 @@ function Sys_StringToSockaddr() {
 function Sys_SendPacket(length, data, to) {
   let nameStr = addressToString(to + 10)
     || reverseLookup(HEAPU8.slice(to + 4, to + 8))
+  if(nameStr && nameStr.includes('ws://')) {
+    nameStr = nameStr.replace('ws://', '')
+                     .replace(/\:[0-9]+$/, '')
+  }
 	let fullMessage = new Uint8Array(
 		4 + (nameStr ? (nameStr.length + 2) : 4)
 		+ 2 + length)
@@ -195,10 +199,14 @@ function socketOpen(evt) {
   ]))
 	if(!NET.heartbeat) {
 		NET.heartbeat = setInterval(function () {
-			sendHeartbeat(NET.socket1)
-			NET.heartbeatTimeout = setTimeout(function () {
-				sendHeartbeat(NET.socket2)
-			}, 7000)
+      if(NET.socket1) {
+        sendHeartbeat(NET.socket1)
+      }
+      NET.heartbeatTimeout = setTimeout(function () {
+        if(NET.socket2) {
+          sendHeartbeat(NET.socket2)
+        }
+      }, 7000)
 		}, 9000)
 	}
   if(!NET.reconnect) return
@@ -208,6 +216,7 @@ function socketOpen(evt) {
 
 function socketMessage(evt) {
   let message = new Uint8Array(evt.data)
+  //console.log(message)
   switch(evt.target.fresh) {
     case 1:
       if(message.length != 2) {
@@ -215,6 +224,7 @@ function socketMessage(evt) {
       } else
 
       if(message[1] != 0) {
+        debugger
         throw new Error('this socket requires a password, dude')
       }
 
@@ -237,7 +247,8 @@ function socketMessage(evt) {
 
 			sendLegacyEmscriptenConnection(evt.target, NET.net_port)
 			evt.target.fresh = 3
-			/*if(socket == NET.socket1) {
+			/*
+      if(socket == NET.socket1) {
 				for(let i = 0, count = NET.socket1Queue.length; i < count; i++) {
 					socket.send(NET.socket1Queue.shift())
 				}
@@ -245,7 +256,8 @@ function socketMessage(evt) {
 				for(let i = 0, count = NET.socket1Queue.length; i < count; i++) {
 					socket.send(NET.socket2Queue.shift())
 				}
-			}*/
+			}
+      */
 
 		break
 		case 3:
@@ -383,7 +395,9 @@ function Com_DL_HeaderCallback(localName, response) {
 }
 
 function Com_DL_Cleanup() {
-  NET.controller.abort()
+  if(NET.controller) {
+    NET.controller.abort()
+  }
 }
 
 function Com_DL_Begin(localName, remoteURL) {
