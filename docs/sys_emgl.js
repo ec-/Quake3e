@@ -733,9 +733,9 @@ BmpEncoder.prototype.encode = function() {
 	for (var y = 0; y <this.height; y++){
 		for (var x = 0; x < this.width; x++){
 			var p = this.pos+y*rowBytes+x*4;
-			tempBuffer[p]= this.buffer[i++];//b
+			tempBuffer[p+2]= this.buffer[i++];//b
 			tempBuffer[p+1] = this.buffer[i++];//g
-			tempBuffer[p+2]  = this.buffer[i++];//r
+			tempBuffer[p+0]  = this.buffer[i++];//r
 			tempBuffer[p+3]  = this.buffer[i++];//a
 		}
 		if(this.extraBytes>0){
