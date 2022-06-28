@@ -1202,15 +1202,15 @@ endif # !WASM
 ifeq ($(PLATFORM),wasm)
 
 
-$(B)/$(TARGET_CLIENT): $(Q3OBJ) $(wildcard code/wasm/*.js)
+$(B)/$(TARGET_CLIENT): $(Q3OBJ) $(wildcard code/wasm/*.js) code/wasm/index.html code/wasm/index.css
 	$(echo_cmd) "LD $@"
 	$(CC) -o $@ $(Q3OBJ) $(CLIENT_LDFLAGS) \
 		$(LDFLAGS)
+	wasm-opt -Os --no-validation -o $@ $@
 	cp code/wasm/*.js docs/
 	cp code/wasm/*.html docs/
 	cp code/wasm/*.css docs/
 
-#	wasm-opt -Os --no-validation -o $@ $@
 
 else
 

@@ -661,6 +661,105 @@ function _glGenRenderbuffers(n, renderbuffers) {
   __glGenObject(n, renderbuffers, "createRenderbuffer", GL.renderbuffers);
 }
 
+function BmpEncoder(imgData){
+	this.buffer = imgData.data;
+	this.width = imgData.width;
+	this.height = imgData.height;
+	this.extraBytes = this.width%4;
+	this.rgbSize = this.height*(4*this.width+this.extraBytes);
+	this.headerInfoSize = 108;
+
+	this.data = [];
+	/******************header***********************/
+	this.flag = "BM";
+	this.reserved = 0;
+	this.offset = 14 + this.headerInfoSize;
+	this.fileSize = this.rgbSize+this.offset;
+	this.planes = 1;
+	this.bitPP = 32;
+	this.compress = 3;
+	this.hr = 0;
+	this.vr = 0;
+	this.colors = 0;
+	this.importantColors = 0;
+}
+
+function writeLE(pos, buffer, int) {
+  buffer.set([
+    (int & 0xFF) >> 0, (int & 0xFF00) >> 8, 
+    (int & 0xFF0000) >> 16, (int & 0xFF000000) >> 24, 
+    ], pos)
+}
+
+
+BmpEncoder.prototype.encode = function() {
+	var tempBuffer = new Uint8Array(this.offset+this.rgbSize);
+	this.pos = 0;
+	tempBuffer.set(this.flag.split('').map(c => c.charCodeAt(0)));
+  this.pos+=2;
+	writeLE(this.pos, tempBuffer, this.fileSize);this.pos+=4;
+	writeLE(this.pos, tempBuffer, this.reserved);this.pos+=4;
+	writeLE(this.pos, tempBuffer, this.offset);this.pos+=4;
+
+	writeLE(this.pos, tempBuffer, this.headerInfoSize);this.pos+=4;
+	writeLE(this.pos, tempBuffer, this.width);this.pos+=4;
+	writeLE(this.pos, tempBuffer, this.height);this.pos+=4;
+	tempBuffer.set([(this.planes & 0xFF), (this.planes & 0xFF00) >> 8],this.pos);this.pos+=2;
+	tempBuffer.set([ (this.bitPP & 0xFF), (this.bitPP & 0xFF00) >> 8],this.pos);this.pos+=2;
+	writeLE(this.pos, tempBuffer, this.compress);this.pos+=4;
+	writeLE(this.pos, tempBuffer, this.rgbSize);this.pos+=4;
+	writeLE(this.pos, tempBuffer, this.hr);this.pos+=4;
+	writeLE(this.pos, tempBuffer, this.vr);this.pos+=4;
+	writeLE(this.pos, tempBuffer, this.colors);this.pos+=4;
+	writeLE(this.pos, tempBuffer, this.importantColors);this.pos+=4;
+
+  writeLE(this.pos, tempBuffer, 0x00FF0000, this.pos); this.pos += 4;
+  writeLE(this.pos, tempBuffer, 0x0000FF00, this.pos); this.pos += 4;
+  writeLE(this.pos, tempBuffer, 0x000000FF, this.pos); this.pos += 4;
+  writeLE(this.pos, tempBuffer, 0xFF000000, this.pos); this.pos += 4;
+
+  tempBuffer.set(0x20, this.pos); this.pos++;
+  tempBuffer.set(0x6E, this.pos); this.pos++;
+  tempBuffer.set(0x69, this.pos); this.pos++;
+  tempBuffer.set(0x57, this.pos); this.pos++;
+
+  for (let i = 0; i < 48; i++) {
+    tempBuffer.set(0, this.pos); this.pos++;
+  }
+
+	var i=0;
+	var rowBytes = 4*this.width+this.extraBytes;
+
+	for (var y = 0; y <this.height; y++){
+		for (var x = 0; x < this.width; x++){
+			var p = this.pos+y*rowBytes+x*4;
+			i++;//a
+			tempBuffer[p]= this.buffer[i++];//b
+			tempBuffer[p+1] = this.buffer[i++];//g
+			tempBuffer[p+2]  = this.buffer[i++];//r
+			tempBuffer[p+3]  = this.buffer[i++];//a
+		}
+		if(this.extraBytes>0){
+			var setOffset = this.pos+y*rowBytes+this.width*4;
+			tempBuffer.set(0,setOffset,setOffset+this.extraBytes);
+		}
+	}
+
+	return tempBuffer;
+};
+
+function convertBMP(imgData, quality) {
+  if (typeof quality === 'undefined') quality = 100;
+ 	var encoder = new BmpEncoder(imgData);
+	var data = encoder.encode();
+  return {
+    data: data,
+    width: imgData.width,
+    height: imgData.height
+  };
+};
+
+
 function loadImage(filename, pic, ext) {
   let filenameStr = addressToString(filename)
   let buf = Z_Malloc(8) // pointer to pointer
@@ -682,32 +781,50 @@ function loadImage(filename, pic, ext) {
   }
   */
 
-  if ((length = FS_ReadFile(filename, buf)) > 0 && HEAPU32[buf >> 2] > 0) {
+  let palette = R_FindPalette(filename) 
+    || R_FindPalette(stringToAddress(filenameStr.replace(/\..+?$/gi, '.tga')))
+
+  if ((length = FS_ReadFile(filename, buf)) > 0 && HEAPU32[buf >> 2] > 0
+    || palette) {
     let thisImage = document.createElement('IMG')
     EMGL.previousName = filenameStr
     EMGL.previousImage = thisImage
     thisImage.onload = function (evt) {
+      debugger
       HEAP32[(evt.target.address - 4 * 4) >> 2] = evt.target.width
       HEAP32[(evt.target.address - 3 * 4) >> 2] = evt.target.height
       R_FinishImage3(evt.target.address - 7 * 4, 0x1908 /* GL_RGBA */, 0)
     }
-    let imageView = Array.from(HEAPU8.slice(HEAPU32[buf >> 2], 
-                               HEAPU32[buf >> 2] + length))
-    let utfEncoded = imageView.map(function (c) { return String.fromCharCode(c) }).join('')
+    let imageView
+    if(HEAPU32[buf >> 2]) {
+      imageView = Array.from(HEAPU8.slice(HEAPU32[buf >> 2], 
+          HEAPU32[buf >> 2] + length))
+    } else
+    if(palette) {
+      imageView = Array.from(Uint8Array.from(convertBMP({
+        data: HEAPU8.slice(palette, palette + 16*16*4),
+        height: 16,
+        width: 16,
+      }).data))
+      ext = 'bmp'
+      // TODO: init XHR alt-name requests
+    }
+    let utfEncoded = imageView.map(function (c) { 
+        return String.fromCharCode(c) }).join('')
     thisImage.src = 'data:image/' + ext + ';base64,' + btoa(utfEncoded)
     thisImage.name = filenameStr
-    HEAPU32[pic >> 2] = 1
-    FS_FreeFile(HEAPU32[buf >> 2])
-    Z_Free(buf)
+    if(palette) {
+      HEAPU32[pic >> 2] = palette // TO BE COPIED OUT
+    } else {
+      HEAPU32[pic >> 2] = 1
+    }
+    if(HEAPU32[buf >> 2]) {
+      FS_FreeFile(HEAPU32[buf >> 2])
+      Z_Free(buf)
+    }
+    document.body.appendChild(thisImage)
     // continue to palette
   } // else 
-
-  let palette = R_FindPalette(filename) 
-    || R_FindPalette(stringToAddress(filenameStr.replace(/\..+?$/gi, '.tga')))
-  if(palette) {
-    // 32 bit color? palette_t
-    HEAPU32[pic >> 2] = palette // TO BE COPIED OUT
-  }
 
   if(HEAPU32[pic >> 2] != 0) {
     return
