@@ -767,7 +767,7 @@ function createImageFromBuffer(filenameStr, imageView) {
   thisImage.src = 'data:image/' + (/\.(.+)$/gi).exec(filenameStr)[1] 
       + ';base64,' + btoa(utfEncoded)
   thisImage.name = filenameStr
-  document.body.appendChild(thisImage)
+  //document.body.appendChild(thisImage)
   return thisImage
 }
 
