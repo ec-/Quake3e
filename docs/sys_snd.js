@@ -5,6 +5,9 @@ let soundEffects = {}
 // TODO: finish spatialization 
 // https://github.com/mdn/webaudio-examples/blob/master/spacialization/index.html
 
+// So that we don't keep retrying missing sounds
+const REMOTE_SOUNDS = {}
+
 
 let SND = {
   SNDDMA_Init: function () {
@@ -78,6 +81,20 @@ let SND = {
       Z_Free(buf)
       return 1
     }
+
+    // TODO: try alternative download paths
+    if(typeof REMOTE_SOUNDS[filenameStr] == 'undefined') {
+      REMOTE_SOUNDS[filenameStr] = true
+
+      let gamedir = addressToString(FS_GetCurrentGameDir())
+      let remoteFile = 'pak0.pk3dir/' + filenameStr
+      Promise.resolve(Com_DL_Begin(gamedir + '/' + remoteFile, remoteFile + '?alt')
+          .then(function (responseData) {
+            Com_DL_Perform(gamedir + '/' + remoteFile, remoteFile, responseData)
+          }))
+    }
+
+
     Z_Free(buf)
     return 0
   },

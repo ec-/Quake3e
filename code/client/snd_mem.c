@@ -131,10 +131,10 @@ void SND_setup( void )
 
 	sfxScratchPointer = NULL;
 
-#ifndef __WASM__
-
 	inUse = scs * sizeof( sndBuffer );
 	totalInUse = 0; // -EC-
+
+#ifndef __WASM__
 
 	p = buffer;
 	q = p + scs;

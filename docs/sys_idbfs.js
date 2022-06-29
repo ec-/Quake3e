@@ -209,17 +209,12 @@ async function readPreFS() {
   How do I make the engine automatically pick a mod? #define BASEGAME in q_shared.h
   but FS_GetCurrentGameDir() is not available before the engine loads.
   */
-  let listOfFiles = [
-    'gfx/2d/bigchars.png',
-    'maps/repacked/pak0',
-  ]
-  for(let i = 0; i < listOfFiles.length; i++) {
-    //let result = await readStore(listOfFiles[i])
-    //if(!result || (result.mode >> 12) == ST_DIR) {
-      responseData = await Com_DL_Begin(listOfFiles[i], listOfFiles[i])
-      Com_DL_Perform('baseq3/' + (i == listOfFiles.length - 1 
-          ? 'pak0.pk3' : listOfFiles[i]), listOfFiles[i], responseData)
-    //}
-  }
-
+  responseData = await Com_DL_Begin('baseq3/pak0.pk3', 'maps/repacked/pak0')
+  Com_DL_Perform('baseq3/pak0.pk3', 'baseq3/pak0.pk3', responseData)
+  responseData = await Com_DL_Begin(
+      'baseq3/pak0.pk3dir/gfx/2d/bigchars.png', 
+      'baseq3/pak0.pk3dir/gfx/2d/bigchars.png?alt')
+  Com_DL_Perform(
+      'baseq3/pak0.pk3dir/gfx/2d/bigchars.png', 
+      'baseq3/pak0.pk3dir/gfx/2d/bigchars.png', responseData)
 }

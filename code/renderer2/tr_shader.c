@@ -3737,11 +3737,6 @@ shader_t *R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImag
 			shader.defaultShader = qtrue;
 			return FinishShader();
 		}
-#ifdef __WASM__
-		//else if (image->palette) {
-
-		//}
-#endif
 	}
 
 	//

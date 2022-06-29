@@ -775,7 +775,7 @@ function createImageFromBuffer(filenameStr, imageView) {
 function loadImage(filename, pic, ext) {
   let gamedir = addressToString(FS_GetCurrentGameDir())
   let filenameStr = addressToString(filename)
-  if(!filenameStr.match(new RegExp(`\.${ext}$` , 'gi'))) {
+  if(!filenameStr.match(/\.jpeg$|\.jpg$|\.png$|/gi)) {
     filenameStr += ext
   }
 
@@ -807,13 +807,12 @@ function loadImage(filename, pic, ext) {
   */
 
   let palette = R_FindPalette(filename)
-  if(!palette) {
-    let tgaPalette = R_FindPalette(stringToAddress(filenameStr.replace(/\..+?$/gi, '.tga')))
-    if(filenameStr.match(/\.jpg$/gi) && HEAPU8[tgaPalette + 3] == 255) {
-      palette = tgaPalette
+  if(palette) {
+    if(filenameStr.match(/\.jpg$/gi) && HEAPU8[palette + 3] == 255) {
     } else
-    if(filenameStr.match(/\.png$/gi) && HEAPU8[tgaPalette + 3] < 255) {
-      palette = tgaPalette
+    if(filenameStr.match(/\.png$/gi) && HEAPU8[palette + 3] < 255) {
+    } else {
+      palette = null
     }
   }
 
@@ -857,6 +856,7 @@ function loadImage(filename, pic, ext) {
   } else {
     HEAPU32[pic >> 2] = 1
   }
+
   if(HEAPU32[buf >> 2]) {
     FS_FreeFile(HEAPU32[buf >> 2])
     Z_Free(buf)
@@ -867,9 +867,12 @@ function loadImage(filename, pic, ext) {
     // TODO: does updating texnum switch the texture in game or is it already collapsed into the GPU?
     // TODO: save both images and switch them using the shader->remappedShader interface?
     Promise.resolve((async function () {
-      let remoteFile = 'pak0.pk3dir/' + filenameStr
-      responseData = await Com_DL_Begin(gamedir + '/' + remoteFile, remoteFile)
-      Com_DL_Perform(gamedir + '/' + remoteFile, remoteFile, responseData)
+      let remoteFile = gamedir + '/pak0.pk3dir/' + filenameStr
+      if(!remoteFile.includes('.')) {
+        remoteFile += '.tga'
+      }
+      responseData = await Com_DL_Begin(remoteFile, remoteFile + '?alt')
+      Com_DL_Perform(remoteFile, remoteFile, responseData)
       let replaceImage = createImageFromBuffer(filenameStr, Array.from(new Uint8Array(responseData)))
       // same thing as above but synchronously after the images loads async
       replaceImage.addEventListener('load', function () {
