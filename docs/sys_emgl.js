@@ -767,6 +767,7 @@ function createImageFromBuffer(filenameStr, imageView) {
   thisImage.src = 'data:image/' + (/\.(.+)$/gi).exec(filenameStr)[1] 
       + ';base64,' + btoa(utfEncoded)
   thisImage.name = filenameStr
+  document.body.appendChild(thisImage)
   return thisImage
 }
 
@@ -844,6 +845,10 @@ function loadImage(filename, pic, ext) {
   thisImage.addEventListener('load', function () {
     HEAP32[(thisImage.address - 4 * 4) >> 2] = thisImage.width
     HEAP32[(thisImage.address - 3 * 4) >> 2] = thisImage.height
+    //if(!HEAPU32[buf >> 2]) {
+    //  HEAP32[(thisImage.address - 4 * 4) >> 2] = 512
+    //  HEAP32[(thisImage.address - 3 * 4) >> 2] = 512
+    //}
     R_FinishImage3(thisImage.address - 7 * 4, 0x1908 /* GL_RGBA */, 0)
   }, false)
 
@@ -855,10 +860,7 @@ function loadImage(filename, pic, ext) {
   if(HEAPU32[buf >> 2]) {
     FS_FreeFile(HEAPU32[buf >> 2])
     Z_Free(buf)
-  }
-  // document.body.appendChild(thisImage)
-
-  if(palette) {
+  } else {
     // TODO: Promise.any(altImages) based on palette.shader list
     // TODO: init XHR alt-name requests
     // Promise.any(CL_DL_Begin()).then(new Promise(resolve .onload = resolve(evt).then(R_Finish)))
@@ -868,16 +870,19 @@ function loadImage(filename, pic, ext) {
       let remoteFile = 'pak0.pk3dir/' + filenameStr
       responseData = await Com_DL_Begin(gamedir + '/' + remoteFile, remoteFile)
       Com_DL_Perform(gamedir + '/' + remoteFile, remoteFile, responseData)
-      let replaceImage = createImageFromBuffer(filenameStr, imageView)
+      let replaceImage = createImageFromBuffer(filenameStr, Array.from(new Uint8Array(responseData)))
       // same thing as above but synchronously after the images loads async
-      replaceImage.addEventListener('load', function (evt) {
+      replaceImage.addEventListener('load', function () {
+        // TODO: not working, need to try remapShader
         // CODE REVIEW: replace texnum?
         EMGL.previousName = filenameStr
         EMGL.previousImage = replaceImage
-        qglGenTextures(1, thisImage.address);
+        glGenTextures(1, thisImage.address);
         HEAP32[(thisImage.address - 4 * 4) >> 2] = replaceImage.width
         HEAP32[(thisImage.address - 3 * 4) >> 2] = replaceImage.height
         R_FinishImage3(thisImage.address - 7 * 4, 0x1908 /* GL_RGBA */, 0)
+        HEAP32[(thisImage.address + 8 * 4) >> 2] = 0 // remove palette
+        //R_ReplaceShaders(thisImage.address - 7 * 4)
       }, false)
       return true
     })())

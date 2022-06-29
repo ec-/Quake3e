@@ -35,7 +35,38 @@ static	shader_t		shader;
 static	texModInfo_t	texMods[MAX_SHADER_STAGES][TR_MAX_TEXMODS];
 
 #define FILE_HASH_SIZE		1024
-static	shader_t*		hashTable[FILE_HASH_SIZE];
+#ifndef __WASM__
+static	
+#else
+Q_EXPORT
+#endif
+shader_t*		hashTable[FILE_HASH_SIZE];
+
+#if 0
+// well at least I learned something, that RE_RegisterShaderFromImage
+//   is maybe missing animations or time?
+// CODE REVIEW: generalize this somehow? easier than EMscripten?
+Q_EXPORT void R_ReplaceShaders(image_t *image) {
+	int hash;
+	shader_t *sh;
+	int s;
+	shaderStage_t *stage;
+	for(hash = 0; hash < 1024 /* FILE_HASH_SIZE */; hash++) {
+	for (sh = hashTable[hash]; sh; sh = sh->next) {
+		for(s = 0; s < 8; s++) {
+			if((stage = sh->stages[s])) {
+				/* image[0] is in first slot */
+				if(sh->stages[s]->bundle[0].image[0] == image) {
+					sh->remappedShader = tr.shaders[RE_RegisterShaderFromImage(va("%s_loaded", sh->name), sh->lightmapIndex, image, qfalse)];
+				}
+			}
+		}
+	}
+}
+
+
+}
+#endif
 
 #define MAX_SHADERTEXT_HASH		2048
 static const char **shaderTextHashTable[MAX_SHADERTEXT_HASH];
@@ -3120,6 +3151,7 @@ static shader_t *GeneratePermanentShader( void ) {
 	}
 
 	newShader = ri.Hunk_Alloc( sizeof( shader_t ), h_low );
+	Com_Printf("shader: %u\n", newShader);
 
 	*newShader = shader;
 
@@ -3706,6 +3738,9 @@ shader_t *R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImag
 			return FinishShader();
 		}
 #ifdef __WASM__
+		//else if (image->palette) {
+
+		//}
 #endif
 	}
 

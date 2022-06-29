@@ -382,7 +382,7 @@ typedef enum
 	ST_GLSL
 } stageType_t;
 
-typedef struct {
+typedef struct shaderStage_s {
 	qboolean		active;
 	
 	textureBundle_t	bundle[NUM_TEXTURE_BUNDLES];
