@@ -2294,17 +2294,17 @@ static qboolean ParseShader( const char **text )
         if(colors[i] == ',') {
           if(ri2 == 0) {
             color[ci] = 0;
-            a = atoi(color);
+            r = atoi(color);
             ri2 = i + 1;
           } else if(gi == 0) {
             color[ci] = 0;
-            r = atoi(color);
+            g = atoi(color);
             gi = i + 1;
           } else {
             color[ci] = 0;
-            g = atoi(color);
+            b = atoi(color);
             bi = i + 1;
-            b = atoi(&colors[bi]);
+            a = atoi(&colors[bi]);
             break;
           }
           ci = 0;

@@ -197,6 +197,9 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 	int x;
 	int y;
 	Uint32 flags = SDL_WINDOW_SHOWN;
+	if(r_headless->integer) {
+		flags = SDL_WINDOW_HIDDEN;
+	}
 
 #ifdef USE_VULKAN_API
 	if ( vulkan ) {

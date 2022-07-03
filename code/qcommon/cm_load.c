@@ -500,9 +500,23 @@ static void CMod_LoadEntityString( lump_t *l, const char *name ) {
 	Com_Memcpy( cm.entityString, cmod_base + l->fileofs, l->filelen );
 	if(cm_saveEnts && cm_saveEnts->integer && l->fileofs != 0) {
 		FS_WriteFile(entName, cm.entityString, cm.numEntityChars);
+		Com_Printf("Wrote: %s\n", entName);
 	} else {
 		Com_Printf("Entities: %s\n", cm.entityString);
 	}
+}
+
+
+static void CM_SaveEntities() {
+	char entName[MAX_QPATH];
+	size_t entNameLen = 0;
+	Q_strncpyz(entName, cm.name, sizeof(entName));
+	entNameLen = strlen(entName);
+	entName[entNameLen - 3] = 'e';
+	entName[entNameLen - 2] = 'n';
+	entName[entNameLen - 1] = 't';
+	FS_WriteFile(entName, cm.entityString, cm.numEntityChars);
+	Com_Printf("Wrote: %s\n", entName);
 }
 
 
@@ -649,6 +663,7 @@ void CM_LoadMap( const char *name, qboolean clientload, int *checksum ) {
 	cm_playerCurveClip = Cvar_Get( "cm_playerCurveClip", "1", CVAR_ARCHIVE_ND | CVAR_CHEAT );
 	cm_saveEnts = Cvar_Get ("cm_saveEnts", "0", CVAR_TEMP);
 	cm_entityString = Cvar_Get ("cm_entityString", "", CVAR_TEMP);
+	Cmd_AddCommand("saveents", CM_SaveEntities);
 #endif
 
 	Com_DPrintf( "%s( '%s', %i )\n", __func__, name, clientload );
