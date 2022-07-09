@@ -1227,7 +1227,8 @@ void HandleEvents( void )
 
 					if ( key == K_BACKSPACE )
 						Com_QueueEvent( in_eventTime, SE_CHAR, CTRL('h'), 0, 0, NULL );
-
+					else if ( key == K_ESCAPE )
+						Com_QueueEvent( in_eventTime, SE_CHAR, key, 0, 0, NULL );
 					else if( keys[K_CTRL].down && key >= 'a' && key <= 'z' )
 						Com_QueueEvent( in_eventTime, SE_CHAR, CTRL(key), 0, 0, NULL );
 				}

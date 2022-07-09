@@ -83,7 +83,7 @@ static void RB_CheckVao(vao_t *vao)
 RB_AddQuadStampExt
 ==============
 */
-void RB_AddQuadStampExt( vec3_t origin, vec3_t left, vec3_t up, float color[4], float s1, float t1, float s2, float t2 ) {
+void RB_AddQuadStampExt( const vec3_t origin, const vec3_t left, const vec3_t up, const float color[4], float s1, float t1, float s2, float t2 ) {
 	vec3_t		normal;
 	int16_t     iNormal[4];
 	uint16_t    iColor[4];
@@ -163,7 +163,7 @@ void RB_AddQuadStampExt( vec3_t origin, vec3_t left, vec3_t up, float color[4], 
 RB_AddQuadStamp
 ==============
 */
-void RB_AddQuadStamp( vec3_t origin, vec3_t left, vec3_t up, float color[4] ) {
+void RB_AddQuadStamp( const vec3_t origin, const vec3_t left, const vec3_t up, const float color[4] ) {
 	RB_AddQuadStampExt( origin, left, up, color, 0, 0, 1, 1 );
 }
 
@@ -243,7 +243,7 @@ static void RB_SurfaceSprite( void ) {
 	vec3_t		left, up;
 	float		radius;
 	float			colors[4];
-	trRefEntity_t	*ent = backEnd.currentEntity;
+	const trRefEntity_t	*ent = backEnd.currentEntity;
 
 	// calculate the xyz locations for the four corners
 	radius = ent->e.radius;
@@ -279,7 +279,7 @@ static void RB_SurfaceSprite( void ) {
 RB_SurfacePolychain
 =============
 */
-static void RB_SurfacePolychain( srfPoly_t *p ) {
+static void RB_SurfacePolychain( const srfPoly_t *p ) {
 	int		i;
 	int		numv;
 
@@ -293,10 +293,10 @@ static void RB_SurfacePolychain( srfPoly_t *p ) {
 		VectorCopy( p->verts[i].xyz, tess.xyz[numv] );
 		tess.texCoords[numv][0] = p->verts[i].st[0];
 		tess.texCoords[numv][1] = p->verts[i].st[1];
-		tess.color[numv][0] = p->verts[i].modulate.rgba[0] * 257;
-		tess.color[numv][1] = p->verts[i].modulate.rgba[1] * 257;
-		tess.color[numv][2] = p->verts[i].modulate.rgba[2] * 257;
-		tess.color[numv][3] = p->verts[i].modulate.rgba[3] * 257;
+		tess.color[numv][0] = (int)p->verts[i].modulate.rgba[0] * 257;
+		tess.color[numv][1] = (int)p->verts[i].modulate.rgba[1] * 257;
+		tess.color[numv][2] = (int)p->verts[i].modulate.rgba[2] * 257;
+		tess.color[numv][3] = (int)p->verts[i].modulate.rgba[3] * 257;
 
 		numv++;
 	}
@@ -452,7 +452,7 @@ static qboolean RB_SurfaceVaoCached(int numVerts, srfVert_t *verts, int numIndex
 RB_SurfaceTriangles
 =============
 */
-static void RB_SurfaceTriangles( srfBspSurface_t *srf ) {
+static void RB_SurfaceTriangles( const srfBspSurface_t *srf ) {
 	if (RB_SurfaceVaoCached(srf->numVerts, srf->verts, srf->numIndexes,
 		srf->indexes, srf->dlightBits, srf->pshadowBits))
 	{
@@ -473,7 +473,7 @@ RB_SurfaceBeam
 static void RB_SurfaceBeam( void )
 {
 #define NUM_BEAM_SEGS 6
-	refEntity_t *e;
+	const refEntity_t *e;
 	shaderProgram_t *sp = &tr.textureColorShader;
 	int	i;
 	vec3_t perpvec;
@@ -676,7 +676,7 @@ static void DoRailDiscs( int numSegs, const vec3_t start, const vec3_t dir, cons
 ** RB_SurfaceRailRinges
 */
 static void RB_SurfaceRailRings( void ) {
-	refEntity_t *e;
+	const refEntity_t *e;
 	int			numSegs;
 	int			len;
 	vec3_t		vec;
@@ -706,7 +706,7 @@ static void RB_SurfaceRailRings( void ) {
 ** RB_SurfaceRailCore
 */
 static void RB_SurfaceRailCore( void ) {
-	refEntity_t *e;
+	const refEntity_t *e;
 	int			len;
 	vec3_t		right;
 	vec3_t		vec;
@@ -736,7 +736,7 @@ static void RB_SurfaceRailCore( void ) {
 ** RB_SurfaceLightningBolt
 */
 static void RB_SurfaceLightningBolt( void ) {
-	refEntity_t *e;
+	const refEntity_t *e;
 	int			len;
 	vec3_t		right;
 	vec3_t		vec;
@@ -771,7 +771,7 @@ static void RB_SurfaceLightningBolt( void ) {
 }
 
 
-static void LerpMeshVertexes(mdvSurface_t *surf, float backlerp)
+static void LerpMeshVertexes(const mdvSurface_t *surf, float backlerp)
 {
 	float *outXyz;
 	int16_t *outNormal, *outTangent;
@@ -842,7 +842,7 @@ static void LerpMeshVertexes(mdvSurface_t *surf, float backlerp)
 RB_SurfaceMesh
 =============
 */
-static void RB_SurfaceMesh(mdvSurface_t *surface) {
+static void RB_SurfaceMesh(const mdvSurface_t *surface) {
 	int				j;
 	float			backlerp;
 	mdvSt_t			*texCoords;
@@ -887,7 +887,7 @@ static void RB_SurfaceMesh(mdvSurface_t *surface) {
 RB_SurfaceFace
 ==============
 */
-static void RB_SurfaceFace( srfBspSurface_t *srf ) {
+static void RB_SurfaceFace( const srfBspSurface_t *srf ) {
 	if (RB_SurfaceVaoCached(srf->numVerts, srf->verts, srf->numIndexes,
 		srf->indexes, srf->dlightBits, srf->pshadowBits))
 	{
@@ -944,7 +944,7 @@ static void RB_SurfaceGrid( srfBspSurface_t *srf ) {
 	int16_t *tangent;
 	uint16_t *color;
 	int16_t *lightdir;
-	srfVert_t	*dv;
+	const srfVert_t	*dv;
 	int		rows, irows, vrows;
 	int		used;
 	int		widthTable[MAX_GRID_SIZE];
@@ -1172,7 +1172,7 @@ RB_SurfaceEntity
 Entities that have a single procedurally generated surface
 ====================
 */
-static void RB_SurfaceEntity( surfaceType_t *surfType ) {
+static void RB_SurfaceEntity( const surfaceType_t *surfType ) {
 	switch( backEnd.currentEntity->e.reType ) {
 	case RT_SPRITE:
 		RB_SurfaceSprite();
@@ -1195,7 +1195,7 @@ static void RB_SurfaceEntity( surfaceType_t *surfType ) {
 	}
 }
 
-static void RB_SurfaceBad( surfaceType_t *surfType ) {
+static void RB_SurfaceBad( const surfaceType_t *surfType ) {
 	ri.Printf( PRINT_ALL, "Bad surface tesselated.\n" );
 }
 
@@ -1205,11 +1205,11 @@ static void RB_SurfaceFlare(srfFlare_t *surf)
 		RB_AddFlare(surf, tess.fogNum, surf->origin, surf->color, surf->normal);
 }
 
-static void RB_SurfaceVaoMdvMesh(srfVaoMdvMesh_t * surface)
+static void RB_SurfaceVaoMdvMesh(const srfVaoMdvMesh_t * surface)
 {
 	//mdvModel_t     *mdvModel;
 	//mdvSurface_t   *mdvSurface;
-	refEntity_t    *refEnt;
+	const refEntity_t    *refEnt;
 
 	//GLimp_LogComment("--- RB_SurfaceVaoMdvMesh ---\n");
 

@@ -143,7 +143,7 @@ FT_Bitmap *R_RenderGlyph(FT_GlyphSlot glyph, glyphInfo_t* glyphOut) {
 	return NULL;
 }
 
-static void WriteTGA (char *filename, byte *data, int width, int height) {
+static void WriteTGA (const char *filename, byte *data, int width, int height) {
 	byte			*buffer;
 	int				i, c;
 	int             row;

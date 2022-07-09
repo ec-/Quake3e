@@ -1616,7 +1616,7 @@ static int AAS_Reachability_Step_Barrier_WaterJump_WalkOffLedge(int area1num, in
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-float VectorDistance(vec3_t v1, vec3_t v2)
+static float VectorDistance( const vec3_t v1, const vec3_t v2)
 {
 	vec3_t dir;
 
@@ -1630,7 +1630,7 @@ float VectorDistance(vec3_t v1, vec3_t v2)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int VectorBetweenVectors(vec3_t v, vec3_t v1, vec3_t v2)
+static int VectorBetweenVectors( const vec3_t v, const vec3_t v1, const vec3_t v2)
 {
 	vec3_t dir1, dir2;
 
@@ -1645,7 +1645,7 @@ int VectorBetweenVectors(vec3_t v, vec3_t v1, vec3_t v2)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void VectorMiddle(vec3_t v1, vec3_t v2, vec3_t middle)
+static void VectorMiddle( const vec3_t v1, const vec3_t v2, vec3_t middle)
 {
 	VectorAdd(v1, v2, middle);
 	VectorScale(middle, 0.5, middle);

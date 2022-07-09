@@ -502,8 +502,8 @@ static void AAS_CalculateAreaTravelTimes(void)
 	int i, l, n, size;
 	char *ptr;
 	vec3_t end;
-	aas_reversedreachability_t *revreach;
-	aas_reversedlink_t *revlink;
+	const aas_reversedreachability_t *revreach;
+	const aas_reversedlink_t *revlink;
 	aas_reachability_t *reach;
 	aas_areasettings_t *settings;
 #ifdef DEBUG

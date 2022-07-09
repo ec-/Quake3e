@@ -1615,7 +1615,7 @@ SKIES
 */
 
 void R_InitSkyTexCoords( float cloudLayerHeight );
-void R_DrawSkyBox( shaderCommands_t *shader );
+void R_DrawSkyBox( const shaderCommands_t *shader );
 void RB_DrawSun( float scale, shader_t *shader );
 
 /*
@@ -1696,7 +1696,7 @@ void R_MDRAddAnimSurfaces( trRefEntity_t *ent );
 void RB_MDRSurfaceAnim( mdrSurface_t *surface );
 qboolean R_LoadIQM (model_t *mod, void *buffer, int filesize, const char *name );
 void R_AddIQMSurfaces( trRefEntity_t *ent );
-void RB_IQMSurfaceAnim( surfaceType_t *surface );
+void RB_IQMSurfaceAnim( const surfaceType_t *surface );
 int R_IQMLerpTag( orientation_t *tag, iqmData_t *data,
                   int startFrame, int endFrame,
                   float frac, const char *tagName );

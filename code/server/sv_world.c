@@ -464,7 +464,8 @@ SV_ClipToEntity
 void SV_ClipToEntity( trace_t *trace, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int entityNum, int contentmask, qboolean capsule ) {
 	sharedEntity_t	*touch;
 	clipHandle_t	clipHandle;
-	float			*origin, *angles;
+	float			*origin;
+	const float *angles;
 
 	touch = SV_GentityNum( entityNum );
 
@@ -510,7 +511,8 @@ static void SV_ClipMoveToEntities( moveclip_t *clip ) {
 	int			passOwnerNum;
 	trace_t		trace;
 	clipHandle_t	clipHandle;
-	float		*origin, *angles;
+	float		*origin;
+	const float *angles;
 
 	num = SV_AreaEntities( clip->boxmins, clip->boxmaxs, touchlist, MAX_GENTITIES);
 
@@ -656,7 +658,7 @@ int SV_PointContents( const vec3_t p, int passEntityNum ) {
 	int			i, num;
 	int			contents, c2;
 	clipHandle_t	clipHandle;
-	float		*angles;
+	const float		*angles;
 
 	// get base contents from world
 	contents = CM_PointContents( p, 0 );

@@ -421,6 +421,10 @@ ifeq ($(COMPILE_PLATFORM),darwin)
     CLIENT_LDFLAGS = -F/Library/Frameworks -framework SDL2
   endif
 
+  ifeq ($(USE_SYSTEM_JPEG),1)
+    CLIENT_LDFLAGS += -ljpeg
+  endif
+
   DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -g -O0
   RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
 

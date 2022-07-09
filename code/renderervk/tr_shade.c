@@ -61,7 +61,7 @@ static qboolean	setArraysOnce;
 R_BindAnimatedImage
 =================
 */
-void R_BindAnimatedImage( const textureBundle_t *bundle ) {
+static void R_BindAnimatedImage( const textureBundle_t *bundle ) {
 	int64_t index;
 	double	v;
 
@@ -109,7 +109,7 @@ DrawTris
 Draws triangle outlines for debugging
 ================
 */
-static void DrawTris( shaderCommands_t *input ) {
+static void DrawTris( const shaderCommands_t *input ) {
 #ifdef USE_VULKAN
 	uint32_t pipeline;
 
@@ -1238,7 +1238,7 @@ void RB_StageIteratorGeneric( void )
 */
 void RB_StageIteratorGeneric( void )
 {
-	shaderCommands_t *input;
+	const shaderCommands_t *input;
 	shader_t		*shader;
 
 	RB_DeformTessGeometry();
@@ -1353,7 +1353,7 @@ void RB_StageIteratorGeneric( void )
 ** RB_EndSurface
 */
 void RB_EndSurface( void ) {
-	shaderCommands_t *input;
+	const shaderCommands_t *input;
 
 	input = &tess;
 

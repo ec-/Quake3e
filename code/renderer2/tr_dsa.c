@@ -143,7 +143,7 @@ GLvoid APIENTRY GLDSA_GenerateTextureMipmapEXT(GLuint texture, GLenum target)
 
 void GL_BindNullProgram(void)
 {
-	qglUseProgram(0);
+	qglUseProgram((unsigned)0);
 	glDsaState.program = 0;
 }
 

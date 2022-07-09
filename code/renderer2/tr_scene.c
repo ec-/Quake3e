@@ -22,18 +22,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "tr_local.h"
 
-int			r_firstSceneDrawSurf;
+static int			r_firstSceneDrawSurf;
 
-int			r_numdlights;
-int			r_firstSceneDlight;
+static int			r_numdlights;
+static int			r_firstSceneDlight;
 
-int			r_numentities;
-int			r_firstSceneEntity;
+static int			r_numentities;
+static int			r_firstSceneEntity;
 
-int			r_numpolys;
-int			r_firstScenePoly;
+static int			r_numpolys;
+static int			r_firstScenePoly;
 
-int			r_numpolyverts;
+static int			r_numpolyverts;
 
 
 /*
@@ -90,7 +90,7 @@ Adds all the scene's polys into this view's drawsurf list
 void R_AddPolygonSurfaces( void ) {
 	int			i;
 	shader_t	*sh;
-	srfPoly_t	*poly;
+	const srfPoly_t	*poly;
 	int		fogMask;
 
 	tr.currentEntityNum = REFENTITYNUM_WORLD;
@@ -113,7 +113,7 @@ void RE_AddPolyToScene( qhandle_t hShader, int numVerts, const polyVert_t *verts
 	srfPoly_t	*poly;
 	int			i, j;
 	int			fogIndex;
-	fog_t		*fog;
+	const fog_t		*fog;
 	vec3_t		bounds[2];
 
 	if ( !tr.registered ) {

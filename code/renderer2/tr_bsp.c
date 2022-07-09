@@ -100,7 +100,7 @@ R_ColorShiftLightingBytes
 
 ===============
 */
-static	void R_ColorShiftLightingBytes( byte in[4], byte out[4] ) {
+static	void R_ColorShiftLightingBytes( const byte in[4], byte out[4] ) {
 	int		shift, r, g, b;
 
 	// shift the color data based on overbright range
@@ -135,7 +135,7 @@ R_ColorShiftLightingFloats
 
 ===============
 */
-static void R_ColorShiftLightingFloats(float in[4], float out[4])
+static void R_ColorShiftLightingFloats(const float in[4], float out[4])
 {
 	float	r, g, b;
 	float   scale = (1 << (r_mapOverBrightBits->integer - tr.overbrightBits)) / 255.0f;
@@ -183,7 +183,7 @@ void ColorToRGBM(const vec3_t color, unsigned char rgbm[4])
 	rgbm[2] = (unsigned char) (sample[2] * 255);
 }
 
-void ColorToRGB16(const vec3_t color, uint16_t rgb16[3])
+static void ColorToRGB16(const vec3_t color, uint16_t rgb16[3])
 {
 	rgb16[0] = color[0] * 65535.0f + 0.5f;
 	rgb16[1] = color[1] * 65535.0f + 0.5f;
@@ -198,7 +198,7 @@ R_LoadLightmaps
 ===============
 */
 #define	DEFAULT_LIGHTMAP_SIZE	128
-static	void R_LoadLightmaps( lump_t *l, lump_t *surfs ) {
+static	void R_LoadLightmaps( const lump_t *l, const lump_t *surfs ) {
 	imgFlags_t  imgFlags = IMGFLAG_NOLIGHTSCALE | IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE;
 	byte		*buf, *buf_p;
 	dsurface_t  *surf;
@@ -568,7 +568,7 @@ void		RE_SetWorldVisData( const byte *vis ) {
 R_LoadVisibility
 =================
 */
-static	void R_LoadVisibility( lump_t *l ) {
+static	void R_LoadVisibility( const lump_t *l ) {
 	int		len;
 	byte	*buf;
 
@@ -631,7 +631,7 @@ static shader_t *ShaderForShaderNum( int shaderNum, int lightmapNum ) {
 	return shader;
 }
 
-void LoadDrawVertToSrfVert(srfVert_t *s, drawVert_t *d, int realLightmapNum, float hdrVertColors[3], vec3_t *bounds)
+static void LoadDrawVertToSrfVert(srfVert_t *s, const drawVert_t *d, int realLightmapNum, float hdrVertColors[3], vec3_t *bounds)
 {
 	vec4_t v;
 
@@ -673,15 +673,15 @@ void LoadDrawVertToSrfVert(srfVert_t *s, drawVert_t *d, int realLightmapNum, flo
 		//hack: convert LDR vertex colors to HDR
 		if (r_hdr->integer)
 		{
-			v[0] = MAX(d->color.rgba[0] / 255.0f, 0.499f);
-			v[1] = MAX(d->color.rgba[1] / 255.0f, 0.499f);
-			v[2] = MAX(d->color.rgba[2] / 255.0f, 0.499f);
+			v[0] = MAX(d->color.rgba[0], 0.499f);
+			v[1] = MAX(d->color.rgba[1], 0.499f);
+			v[2] = MAX(d->color.rgba[2], 0.499f);
 		}
 		else
 		{
-			v[0] = d->color.rgba[0] / 255.0f;
-			v[1] = d->color.rgba[1] / 255.0f;
-			v[2] = d->color.rgba[2] / 255.0f;
+			v[0] = d->color.rgba[0];
+			v[1] = d->color.rgba[1];
+			v[2] = d->color.rgba[2];
 		}
 
 	}
@@ -697,7 +697,7 @@ void LoadDrawVertToSrfVert(srfVert_t *s, drawVert_t *d, int realLightmapNum, flo
 ParseFace
 ===============
 */
-static void ParseFace( dsurface_t *ds, drawVert_t *verts, float *hdrVertColors, msurface_t *surf, int *indexes  ) {
+static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, float *hdrVertColors, msurface_t *surf, int *indexes  ) {
 	int			i, j;
 	srfBspSurface_t	*cv;
 	glIndex_t  *tri;
@@ -801,7 +801,7 @@ static void ParseFace( dsurface_t *ds, drawVert_t *verts, float *hdrVertColors, 
 ParseMesh
 ===============
 */
-static void ParseMesh ( dsurface_t *ds, drawVert_t *verts, float *hdrVertColors, msurface_t *surf ) {
+static void ParseMesh ( const dsurface_t *ds, const drawVert_t *verts, float *hdrVertColors, msurface_t *surf ) {
 	srfBspSurface_t	*grid = (srfBspSurface_t *)surf->data;
 	int				i;
 	int				width, height, numPoints;
@@ -867,7 +867,7 @@ static void ParseMesh ( dsurface_t *ds, drawVert_t *verts, float *hdrVertColors,
 ParseTriSurf
 ===============
 */
-static void ParseTriSurf( dsurface_t *ds, drawVert_t *verts, float *hdrVertColors, msurface_t *surf, int *indexes ) {
+static void ParseTriSurf( const dsurface_t *ds, const drawVert_t *verts, float *hdrVertColors, msurface_t *surf, int *indexes ) {
 	srfBspSurface_t *cv;
 	glIndex_t  *tri;
 	int             i, j;
@@ -952,7 +952,7 @@ static void ParseTriSurf( dsurface_t *ds, drawVert_t *verts, float *hdrVertColor
 ParseFlare
 ===============
 */
-static void ParseFlare( dsurface_t *ds, drawVert_t *verts, msurface_t *surf, int *indexes ) {
+static void ParseFlare( const dsurface_t *ds, const drawVert_t *verts, msurface_t *surf, int *indexes ) {
 	srfFlare_t		*flare;
 	int				i;
 
@@ -988,7 +988,7 @@ R_MergedWidthPoints
 returns qtrue if there are grid points merged on a width edge
 =================
 */
-int R_MergedWidthPoints(srfBspSurface_t *grid, int offset) {
+static int R_MergedWidthPoints( const srfBspSurface_t *grid, int offset) {
 	int i, j;
 
 	for (i = 1; i < grid->width-1; i++) {
@@ -1009,7 +1009,7 @@ R_MergedHeightPoints
 returns qtrue if there are grid points merged on a height edge
 =================
 */
-int R_MergedHeightPoints(srfBspSurface_t *grid, int offset) {
+static int R_MergedHeightPoints(const srfBspSurface_t *grid, int offset) {
 	int i, j;
 
 	for (i = 1; i < grid->height-1; i++) {
@@ -1032,7 +1032,7 @@ NOTE: never sync LoD through grid edges with merged points!
 FIXME: write generalized version that also avoids cracks between a patch and one that meets half way?
 =================
 */
-void R_FixSharedVertexLodError_r( int start, srfBspSurface_t *grid1 ) {
+static void R_FixSharedVertexLodError_r( int start, srfBspSurface_t *grid1 ) {
 	int j, k, l, m, n, offset1, offset2, touch;
 	srfBspSurface_t *grid2;
 
@@ -1144,7 +1144,7 @@ This function assumes that all patches in one group are nicely stitched together
 If this is not the case this function will still do its job but won't fix the highest LoD cracks.
 =================
 */
-void R_FixSharedVertexLodError( void ) {
+static void R_FixSharedVertexLodError( void ) {
 	int i;
 	srfBspSurface_t *grid1;
 
@@ -1170,7 +1170,7 @@ void R_FixSharedVertexLodError( void ) {
 R_StitchPatches
 ===============
 */
-int R_StitchPatches( int grid1num, int grid2num ) {
+static int R_StitchPatches( int grid1num, int grid2num ) {
 	float *v1, *v2;
 	srfBspSurface_t *grid1, *grid2;
 	int k, l, m, n, offset1, offset2, row, column;
@@ -1585,7 +1585,7 @@ of the patch (on the same row or column) the vertices will not be joined and cra
 might still appear at that side.
 ===============
 */
-int R_TryStitchingPatch( int grid1num ) {
+static int R_TryStitchingPatch( int grid1num ) {
 	int j, numstitches;
 	srfBspSurface_t *grid1, *grid2;
 
@@ -1616,7 +1616,7 @@ int R_TryStitchingPatch( int grid1num ) {
 R_StitchAllPatches
 ===============
 */
-void R_StitchAllPatches( void ) {
+static void R_StitchAllPatches( void ) {
 	int i, stitched, numstitches;
 	srfBspSurface_t *grid1;
 
@@ -1649,7 +1649,7 @@ void R_StitchAllPatches( void ) {
 R_MovePatchSurfacesToHunk
 ===============
 */
-void R_MovePatchSurfacesToHunk(void) {
+static void R_MovePatchSurfacesToHunk(void) {
 	int i;
 	srfBspSurface_t *grid;
 
@@ -1690,10 +1690,10 @@ void R_MovePatchSurfacesToHunk(void) {
 R_LoadSurfaces
 ===============
 */
-static	void R_LoadSurfaces( lump_t *surfs, lump_t *verts, lump_t *indexLump ) {
-	dsurface_t	*in;
+static	void R_LoadSurfaces( const lump_t *surfs, const lump_t *verts, const lump_t *indexLump ) {
+	const dsurface_t	*in;
 	msurface_t	*out;
-	drawVert_t	*dv;
+	const drawVert_t	*dv;
 	int			*indexes;
 	int			count;
 	int			numFaces, numMeshes, numTriSurfs, numFlares;
@@ -1820,8 +1820,8 @@ static	void R_LoadSurfaces( lump_t *surfs, lump_t *verts, lump_t *indexLump ) {
 R_LoadSubmodels
 =================
 */
-static	void R_LoadSubmodels( lump_t *l ) {
-	dmodel_t	*in;
+static	void R_LoadSubmodels( const lump_t *l ) {
+	const dmodel_t	*in;
 	bmodel_t	*out;
 	int			i, j, count;
 
@@ -1886,9 +1886,9 @@ static	void R_SetParent (mnode_t *node, mnode_t *parent)
 R_LoadNodesAndLeafs
 =================
 */
-static	void R_LoadNodesAndLeafs (lump_t *nodeLump, lump_t *leafLump) {
+static	void R_LoadNodesAndLeafs (const lump_t *nodeLump, const lump_t *leafLump) {
 	int			i, j, p;
-	dnode_t		*in;
+	const dnode_t		*in;
 	dleaf_t		*inLeaf;
 	mnode_t 	*out;
 	int			numNodes, numLeafs;
@@ -1963,7 +1963,7 @@ static	void R_LoadNodesAndLeafs (lump_t *nodeLump, lump_t *leafLump) {
 R_LoadShaders
 =================
 */
-static	void R_LoadShaders( lump_t *l ) {	
+static	void R_LoadShaders( const lump_t *l ) {	
 	int		i, count;
 	dshader_t	*in, *out;
 	
@@ -1990,7 +1990,7 @@ static	void R_LoadShaders( lump_t *l ) {
 R_LoadMarksurfaces
 =================
 */
-static	void R_LoadMarksurfaces (lump_t *l)
+static	void R_LoadMarksurfaces (const lump_t *l)
 {	
 	int		i, j, count;
 	int		*in;
@@ -2018,10 +2018,10 @@ static	void R_LoadMarksurfaces (lump_t *l)
 R_LoadPlanes
 =================
 */
-static	void R_LoadPlanes( lump_t *l ) {
+static	void R_LoadPlanes( const lump_t *l ) {
 	int			i, j;
 	cplane_t	*out;
-	dplane_t 	*in;
+	const dplane_t 	*in;
 	int			count;
 	int			bits;
 	
@@ -2055,12 +2055,12 @@ R_LoadFogs
 
 =================
 */
-static	void R_LoadFogs( lump_t *l, lump_t *brushesLump, lump_t *sidesLump ) {
+static	void R_LoadFogs( const lump_t *l, const lump_t *brushesLump, const lump_t *sidesLump ) {
 	int			i;
 	fog_t		*out;
-	dfog_t		*fogs;
-	dbrush_t 	*brushes, *brush;
-	dbrushside_t	*sides;
+	const dfog_t		*fogs;
+	const dbrush_t 	*brushes, *brush;
+	const dbrushside_t	*sides;
 	int			count, brushesCount, sidesCount;
 	int			sideNum;
 	int			planeNum;
@@ -2170,7 +2170,7 @@ R_LoadLightGrid
 
 ================
 */
-void R_LoadLightGrid( lump_t *l ) {
+static void R_LoadLightGrid( const lump_t *l ) {
 	int		i;
 	vec3_t	maxs;
 	int		numGridPoints;
@@ -2277,8 +2277,8 @@ void R_LoadLightGrid( lump_t *l ) {
 R_LoadEntities
 ================
 */
-void R_LoadEntities( lump_t *l ) {
-	char *p, *token, *s;
+static void R_LoadEntities( const lump_t *l ) {
+	const char *p, *token, *s;
 	char keyname[MAX_TOKEN_CHARS];
 	char value[MAX_TOKEN_CHARS];
 	world_t	*w;
@@ -2288,7 +2288,7 @@ void R_LoadEntities( lump_t *l ) {
 	w->lightGridSize[1] = 64;
 	w->lightGridSize[2] = 128;
 
-	p = (char *)(fileBase + l->fileofs);
+	p = (const char *)(fileBase + l->fileofs);
 
 	// store for reference by the cgame
 	w->entityString = ri.Hunk_Alloc( l->filelen + 1, h_low );
@@ -2321,12 +2321,12 @@ void R_LoadEntities( lump_t *l ) {
 		// check for remapping of shaders for vertex lighting
 		s = "vertexremapshader";
 		if (!Q_strncmp(keyname, s, strlen(s)) ) {
-			s = strchr(value, ';');
-			if (!s) {
+			char *vs = strchr(value, ';');
+			if (!vs) {
 				ri.Printf( PRINT_WARNING, "WARNING: no semi colon in vertexshaderremap '%s'\n", value );
 				break;
 			}
-			*s++ = 0;
+			*vs++ = 0;
 			if ( r_vertexLight->integer && tr.vertexLightingAllowed ) {
 				R_RemapShader(value, s, "0");
 			}
@@ -2335,12 +2335,12 @@ void R_LoadEntities( lump_t *l ) {
 		// check for remapping of shaders
 		s = "remapshader";
 		if (!Q_strncmp(keyname, s, strlen(s)) ) {
-			s = strchr(value, ';');
-			if (!s) {
+			char *vs = strchr(value, ';');
+			if (!vs) {
 				ri.Printf( PRINT_WARNING, "WARNING: no semi colon in shaderremap '%s'\n", value );
 				break;
 			}
-			*s++ = 0;
+			*vs++ = 0;
 			R_RemapShader(value, s, "0");
 			continue;
 		}
@@ -2381,7 +2381,7 @@ qboolean R_GetEntityToken( char *buffer, int size ) {
 #endif
 
 // derived from G_ParseSpawnVars() in g_spawn.c
-qboolean R_ParseSpawnVars( char *spawnVarChars, int maxSpawnVarChars, int *numSpawnVars, char *spawnVars[MAX_SPAWN_VARS][2] )
+static qboolean R_ParseSpawnVars( char *spawnVarChars, int maxSpawnVarChars, int *numSpawnVars, const char *spawnVars[MAX_SPAWN_VARS][2] )
 {
 	char		keyname[MAX_TOKEN_CHARS];
 	char		com_token[MAX_TOKEN_CHARS];
@@ -2452,7 +2452,7 @@ qboolean R_ParseSpawnVars( char *spawnVarChars, int maxSpawnVarChars, int *numSp
 	return qtrue;
 }
 
-void R_LoadEnvironmentJson(const char *baseName)
+static void R_LoadEnvironmentJson(const char *baseName)
 {
 	char filename[MAX_QPATH];
 
@@ -2524,11 +2524,11 @@ void R_LoadEnvironmentJson(const char *baseName)
 	ri.FS_FreeFile(buffer.v);
 }
 
-void R_LoadCubemapEntities(char *cubemapEntityName)
+static void R_LoadCubemapEntities(char *cubemapEntityName)
 {
 	char spawnVarChars[2048];
 	int numSpawnVars;
-	char *spawnVars[MAX_SPAWN_VARS][2];
+	const char *spawnVars[MAX_SPAWN_VARS][2];
 	int numCubemaps = 0;
 
 	// count cubemaps
@@ -2592,7 +2592,7 @@ void R_LoadCubemapEntities(char *cubemapEntityName)
 	}
 }
 
-void R_AssignCubemapsToWorldSurfaces(void)
+static void R_AssignCubemapsToWorldSurfaces(void)
 {
 	world_t	*w;
 	int i;
@@ -2626,7 +2626,7 @@ void R_AssignCubemapsToWorldSurfaces(void)
 }
 
 
-void R_LoadCubemaps(void)
+static void R_LoadCubemaps(void)
 {
 	int i;
 	imgFlags_t flags = IMGFLAG_CLAMPTOEDGE | IMGFLAG_MIPMAP | IMGFLAG_NOLIGHTSCALE | IMGFLAG_CUBEMAP;
@@ -2643,7 +2643,7 @@ void R_LoadCubemaps(void)
 }
 
 
-void R_RenderMissingCubemaps(void)
+static void R_RenderMissingCubemaps(void)
 {
 	int i, j;
 	imgFlags_t flags = IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE | IMGFLAG_MIPMAP | IMGFLAG_NOLIGHTSCALE | IMGFLAG_CUBEMAP;
@@ -2666,7 +2666,7 @@ void R_RenderMissingCubemaps(void)
 }
 
 
-void R_CalcVertexLightDirs( void )
+static void R_CalcVertexLightDirs( void )
 {
 	int i, k;
 	msurface_t *surface;

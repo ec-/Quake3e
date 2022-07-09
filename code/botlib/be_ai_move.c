@@ -215,7 +215,7 @@ void BotInitMoveState(int handle, bot_initmove_t *initmove)
 // Returns:				-
 // Changes Globals:		-
 //========================================================================
-float AngleDiff(float ang1, float ang2)
+static float AngleDiff(float ang1, float ang2)
 {
 	float diff;
 
@@ -636,7 +636,7 @@ static float DistanceFromLineSquared(vec3_t p, vec3_t lp1, vec3_t lp2)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-float VectorDistanceSquared(vec3_t p1, vec3_t p2)
+static float VectorDistanceSquared(const vec3_t p1, const vec3_t p2)
 {
 	vec3_t dir;
 	VectorSubtract(p2, p1, dir);
@@ -714,7 +714,7 @@ static int BotAvoidSpots(vec3_t origin, aas_reachability_t *reach, bot_avoidspot
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-void BotAddAvoidSpot(int movestate, vec3_t origin, float radius, int type)
+void BotAddAvoidSpot(int movestate, const vec3_t origin, float radius, int type)
 {
 	bot_movestate_t *ms;
 
@@ -1043,7 +1043,7 @@ static float BotGapDistance(vec3_t origin, vec3_t hordir, int entnum)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotCheckBarrierJump(bot_movestate_t *ms, vec3_t dir, float speed)
+static int BotCheckBarrierJump(bot_movestate_t *ms, vec3_t dir, float speed)
 {
 	vec3_t start, hordir, end;
 	aas_trace_t trace;

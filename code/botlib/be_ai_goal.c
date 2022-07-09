@@ -136,7 +136,7 @@ typedef struct iteminfo_s
 
 #define ITEMINFO_OFS(x)	(size_t)&(((iteminfo_t *)0)->x)
 
-static fielddef_t iteminfo_fields[] =
+static const fielddef_t iteminfo_fields[] =
 {
 {"name", ITEMINFO_OFS(name), FT_STRING},
 {"model", ITEMINFO_OFS(model), FT_STRING},
@@ -149,7 +149,7 @@ static fielddef_t iteminfo_fields[] =
 {NULL, 0, 0}
 };
 
-static structdef_t iteminfo_struct =
+static const structdef_t iteminfo_struct =
 {
 	sizeof(iteminfo_t), iteminfo_fields
 };
@@ -221,7 +221,7 @@ bot_goalstate_t *BotGoalStateFromHandle(int handle)
 //===========================================================================
 void BotInterbreedGoalFuzzyLogic(int parent1, int parent2, int child)
 {
-	bot_goalstate_t *p1, *p2, *c;
+	const bot_goalstate_t *p1, *p2, *c;
 
 	p1 = BotGoalStateFromHandle(parent1);
 	p2 = BotGoalStateFromHandle(parent2);
@@ -239,7 +239,7 @@ void BotInterbreedGoalFuzzyLogic(int parent1, int parent2, int child)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void BotSaveGoalFuzzyLogic(int goalstate, char *filename)
+void BotSaveGoalFuzzyLogic(int goalstate, const char *filename)
 {
 	//bot_goalstate_t *gs;
 
@@ -350,7 +350,7 @@ static itemconfig_t *LoadItemConfig( const char *filename )
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-static int *ItemWeightIndex(weightconfig_t *iwc, itemconfig_t *ic)
+static int *ItemWeightIndex(const weightconfig_t *iwc, const itemconfig_t *ic)
 {
 	int *index, i;
 
@@ -858,7 +858,7 @@ void BotSetAvoidGoalTime(int goalstate, int number, float avoidtime)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotGetLevelItemGoal(int index, char *name, bot_goal_t *goal)
+int BotGetLevelItemGoal(int index, const char *name, bot_goal_t *goal)
 {
 	levelitem_t *li;
 
@@ -912,7 +912,7 @@ int BotGetLevelItemGoal(int index, char *name, bot_goal_t *goal)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotGetMapLocationGoal(char *name, bot_goal_t *goal)
+int BotGetMapLocationGoal(const char *name, bot_goal_t *goal)
 {
 	maplocation_t *ml;
 	vec3_t mins = {-8, -8, -8}, maxs = {8, 8, 8};
@@ -1616,13 +1616,13 @@ int BotChooseNBGItem(int goalstate, vec3_t origin, int *inventory, int travelfla
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int BotTouchingGoal(vec3_t origin, bot_goal_t *goal)
+int BotTouchingGoal(const vec3_t origin, const bot_goal_t *goal)
 {
 	int i;
 	vec3_t boxmins, boxmaxs;
 	vec3_t absmins, absmaxs;
-	vec3_t safety_maxs = {0, 0, 0}; //{4, 4, 10};
-	vec3_t safety_mins = {0, 0, 0}; //{-4, -4, 0};
+	const vec3_t safety_maxs = {0, 0, 0}; //{4, 4, 10};
+	const vec3_t safety_mins = {0, 0, 0}; //{-4, -4, 0};
 
 	AAS_PresenceTypeBoundingBox(PRESENCE_NORMAL, boxmins, boxmaxs);
 	VectorSubtract(goal->mins, boxmaxs, absmins);
@@ -1698,7 +1698,7 @@ void BotResetGoalState(int goalstate)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int BotLoadItemWeights(int goalstate, char *filename)
+int BotLoadItemWeights(int goalstate, const char *filename)
 {
 	bot_goalstate_t *gs;
 
