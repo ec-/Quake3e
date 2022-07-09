@@ -31,10 +31,10 @@ AUX_SOURCE_DIRECTORY(code/qcommon QCOMMON_SRCS)
 list(FILTER QCOMMON_SRCS EXCLUDE REGEX ".*vm_[alx].*.c")
 
 ADD_LIBRARY(qcommon ${QCOMMON_SRCS} ${VM_SRC})
-TARGET_LINK_LIBRARIES(qcommon server m ${CMAKE_DL_LIBS})
+TARGET_LINK_LIBRARIES(qcommon server)
 
 ADD_LIBRARY(qcommon_ded ${QCOMMON_SRCS} ${VM_SRC})
-TARGET_LINK_LIBRARIES(qcommon_ded server_ded m ${CMAKE_DL_LIBS})
+TARGET_LINK_LIBRARIES(qcommon_ded server_ded)
 
 
 AUX_SOURCE_DIRECTORY(code/botlib BOTLIB_SRCS)
@@ -118,18 +118,16 @@ ELSEIF(WIN32)
 		code/win32/win_shared.c
 		code/win32/win_syscon.c
 		code/win32/win_resource.rc)
-	IF()
-		SET(Q3_UI_SRCS
-			code/win32/win_gamma.c
-			code/win32/win_glimp.c
-			code/win32/win_input.c
-			code/win32/win_minimize.c
-			code/win32/win_qgl.c
-			code/win32/win_snd.c
-			code/win32/win_wndproc.c)
-		IF (USE_VULKAN)
-			list(APPEND Q3_UI_SRCS code/win32/win_qvk.c)
-		ENDIF()
+	SET(Q3_UI_SRCS
+		code/win32/win_gamma.c
+		code/win32/win_glimp.c
+		code/win32/win_input.c
+		code/win32/win_minimize.c
+		code/win32/win_qgl.c
+		code/win32/win_snd.c
+		code/win32/win_wndproc.c)
+	IF(USE_VULKAN)
+		list(APPEND Q3_UI_SRCS code/win32/win_qvk.c)
 	ENDIF()
 ENDIF(UNIX)
 
@@ -146,20 +144,20 @@ ENDIF()
 #client executable
 
 ADD_EXECUTABLE(quake3e ${EXE_TYPE} ${VM_SRCS} ${Q3_SRCS} ${Q3_UI_SRCS})
-TARGET_LINK_LIBRARIES(quake3e client botlib m ${CMAKE_DL_LIBS})
-TARGET_LINK_OPTIONS(quake3e PRIVATE -fno-pie)
+
+TARGET_LINK_LIBRARIES(quake3e client botlib)
+
+#TARGET_LINK_OPTIONS(quake3e PRIVATE -fno-pie) #since version 3.13
 
 IF(USE_SDL)
 	TARGET_LINK_LIBRARIES(quake3e qsdl)
-ELSE()
-	IF(UNIX)
-		TARGET_LINK_LIBRARIES(quake3e ${X11_LIBRARIES})
-	ENDIF()
-ENDIF(USE_SDL)
+ELSEIF(UNIX)
+	TARGET_LINK_LIBRARIES(quake3e ${X11_LIBRARIES})
+ENDIF()
 
 IF(USE_VULKAN)
-	TARGET_LINK_LIBRARIES(quake3e renderer_vk)
 	TARGET_COMPILE_DEFINITIONS(quake3e PRIVATE -DUSE_VULKAN_API)
+	TARGET_LINK_LIBRARIES(quake3e renderer_vk)
 ELSE()
 	TARGET_LINK_LIBRARIES(quake3e renderer)
 ENDIF(USE_VULKAN)
@@ -168,9 +166,12 @@ ENDIF(USE_VULKAN)
 
 ADD_EXECUTABLE(quake3e.ded ${EXE_TYPE} ${VM_SRCS} ${Q3_SRCS})
 TARGET_LINK_LIBRARIES(quake3e.ded qcommon_ded botlib)
-TARGET_LINK_OPTIONS(quake3e.ded PRIVATE -fno-pie)
+#TARGET_LINK_OPTIONS(quake3e.ded PRIVATE -fno-pie) #since version 3.13
 
 IF(WIN32)
 	TARGET_LINK_LIBRARIES(quake3e winmm comctl32 ws2_32)
 	TARGET_LINK_LIBRARIES(quake3e.ded winmm comctl32 ws2_32)
+ELSE()
+	TARGET_LINK_LIBRARIES(quake3e m ${CMAKE_DL_LIBS})
+	TARGET_LINK_LIBRARIES(quake3e.ded m ${CMAKE_DL_LIBS})
 ENDIF()
