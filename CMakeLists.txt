@@ -10,88 +10,79 @@ OPTION(USE_SYSTEM_JPEG "" OFF)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
 
-
-AUX_SOURCE_DIRECTORY(code/libjpeg JPEG_SRCS)
-ADD_LIBRARY(jpeg ${JPEG_SRCS})
-
-
-AUX_SOURCE_DIRECTORY(code/server SERVER_SRCS)
-list(REMOVE_ITEM SERVER_SRCS code/server/sv_rankings.c)
-
-ADD_LIBRARY(server ${SERVER_SRCS})
-TARGET_LINK_LIBRARIES(server botlib qcommon)
-
-ADD_LIBRARY(server_ded ${SERVER_SRCS})
-TARGET_LINK_LIBRARIES(server_ded botlib qcommon)
-TARGET_COMPILE_DEFINITIONS(server_ded PUBLIC -DDEDICATED)
-
-
 AUX_SOURCE_DIRECTORY(code/qcommon QCOMMON_SRCS)
-#exclude platform-dependent QVM bytecode compilers
+# exclude platform-dependent QVM bytecode compilers
 list(FILTER QCOMMON_SRCS EXCLUDE REGEX ".*vm_[alx].*.c")
+# add platform-dependent QVM bytecode compilers
+IF(CMAKE_SYSTEM_PROCESSOR MATCHES AMD64|x86|i*86)
+	list(APPEND QCOMMON_SRCS code/qcommon/vm_x86.c)
+ELSEIF(CMAKE_SYSTEM_PROCESSOR MATCHES aarch64|arm64)
+	list(APPEND QCOMMON_SRCS code/qcommon/vm_aarch64.c)
+ELSEIF(CMAKE_SYSTEM_PROCESSOR MATCHES arm*)
+	list(APPEND QCOMMON_SRCS code/qcommon/vm_armv7l.c)
+ELSE()
+	TARGET_COMPILE_DEFINITIONS(qcommon PRIVATE -DNO_VM_COMPILED)
+	TARGET_COMPILE_DEFINITIONS(qcommon_ded PRIVATE -DNO_VM_COMPILED)
+ENDIF()
 
-ADD_LIBRARY(qcommon ${QCOMMON_SRCS} ${VM_SRC})
-TARGET_LINK_LIBRARIES(qcommon server)
-
-ADD_LIBRARY(qcommon_ded ${QCOMMON_SRCS} ${VM_SRC})
-TARGET_LINK_LIBRARIES(qcommon_ded server_ded)
-
-
+# botlib
 AUX_SOURCE_DIRECTORY(code/botlib BOTLIB_SRCS)
 ADD_LIBRARY(botlib ${BOTLIB_SRCS})
 TARGET_COMPILE_DEFINITIONS(botlib PRIVATE -DBOTLIB)
 
+AUX_SOURCE_DIRECTORY(code/server SERVER_SRCS)
+list(REMOVE_ITEM SERVER_SRCS code/server/sv_rankings.c)
 
+# universal binary
+ADD_LIBRARY(qcommon ${QCOMMON_SRCS})
+ADD_LIBRARY(server ${SERVER_SRCS})
+TARGET_LINK_LIBRARIES(server botlib qcommon)
+
+# dedicated server
+ADD_LIBRARY(qcommon_ded ${QCOMMON_SRCS})
+ADD_LIBRARY(server_ded ${SERVER_SRCS})
+TARGET_LINK_LIBRARIES(server_ded botlib qcommon_ded)
+TARGET_COMPILE_DEFINITIONS(server_ded PUBLIC -DDEDICATED)
+TARGET_COMPILE_DEFINITIONS(qcommon_ded PUBLIC -DDEDICATED)
+
+# client + cURL
 AUX_SOURCE_DIRECTORY(code/client CLIENT_SRCS)
 IF(NOT USE_CURL)
     list(REMOVE_ITEM CLIENT_SRCS code/client/cl_curl.c)
 ENDIF()
 
 ADD_LIBRARY(client ${CLIENT_SRCS})
-TARGET_LINK_LIBRARIES(client qcommon jpeg)
 
+# jpeg
 IF(USE_SYSTEM_JPEG)
+	find_package(JPEG REQUIRED)
 	TARGET_COMPILE_DEFINITIONS(client PRIVATE -DUSE_SYSTEM_JPEG)
+	TARGET_LINK_LIBRARIES(client ${JPEG_LIBRARIES})
+ELSE()
+	AUX_SOURCE_DIRECTORY(code/libjpeg JPEG_SRCS)
+	ADD_LIBRARY(jpeg ${JPEG_SRCS})
+	TARGET_LINK_LIBRARIES(client jpeg)
 ENDIF()
 
-IF(USE_VULKAN)
-	TARGET_COMPILE_DEFINITIONS(client PRIVATE -DUSE_VULKAN_API)
-ENDIF()
-
-
+#renderers
 AUX_SOURCE_DIRECTORY(code/renderercommon RENDERER_COMMON_SRCS)
-ADD_LIBRARY(renderer_common ${RENDERER_COMMON_SRCS})
-TARGET_LINK_LIBRARIES(renderer_common qcommon)
 
-
-AUX_SOURCE_DIRECTORY(code/renderer RENDERER_SRCS)
-ADD_LIBRARY(renderer ${RENDERER_SRCS})
-TARGET_LINK_LIBRARIES(renderer renderer_common)
-
+AUX_SOURCE_DIRECTORY(code/renderer RENDERER_GL_SRCS)
+ADD_LIBRARY(renderer_gl ${RENDERER_GL_SRCS} ${RENDERER_COMMON_SRCS})
 
 AUX_SOURCE_DIRECTORY(code/renderervk RENDERER_VK_SRCS)
-ADD_LIBRARY(renderer_vk ${RENDERER_VK_SRCS})
-TARGET_LINK_LIBRARIES(renderer_vk renderer_common)
+ADD_LIBRARY(renderer_vk ${RENDERER_VK_SRCS} ${RENDERER_COMMON_SRCS})
 
-
-IF(USE_SDL)
-	AUX_SOURCE_DIRECTORY(code/sdl SDL_SRCS)
-	ADD_LIBRARY(qsdl ${SDL_SRCS})
-	find_package(SDL2 REQUIRED)
-	TARGET_LINK_LIBRARIES(qsdl SDL2::Main)
-	IF(USE_VULKAN)
-		TARGET_COMPILE_DEFINITIONS(qsdl PRIVATE -DUSE_VULKAN_API)
-	ENDIF()
-ENDIF()
-
+# common function, window system
 IF(UNIX)
 	SET (Q3_SRCS
 		code/unix/unix_main.c
 		code/unix/unix_shared.c
 		code/unix/linux_signals.c)
 
-	IF (NOT USE_SDL)
-		find_package (X11 REQUIRED)
+	IF(USE_SDL)
+		AUX_SOURCE_DIRECTORY(code/sdl Q3_UI_SRCS)
+	ELSE()
 		SET(Q3_UI_SRCS
 			code/unix/linux_glimp.c
 			code/unix/linux_qgl.c
@@ -117,11 +108,13 @@ ELSEIF(WIN32)
 		SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFEST:NO")
 		ADD_COMPILE_DEFINITIONS(_CRT_SECURE_NO_WARNINGS) # v3.12+
 	ENDIF()
+
 	SET(Q3_SRCS
 		code/win32/win_main.c
 		code/win32/win_shared.c
 		code/win32/win_syscon.c
 		code/win32/win_resource.rc)
+
 	SET(Q3_UI_SRCS
 		code/win32/win_gamma.c
 		code/win32/win_glimp.c
@@ -135,41 +128,37 @@ ELSEIF(WIN32)
 	ENDIF()
 ENDIF(UNIX)
 
-IF(CMAKE_SYSTEM_PROCESSOR MATCHES AMD64|x86|i*86)
-	SET(VM_SRCS code/qcommon/vm_x86.c)
-ELSEIF(CMAKE_SYSTEM_PROCESSOR MATCHES aarch64|arm64)
-	SET(VM_SRCS code/qcommon/vm_aarch64.c)
-ELSEIF(CMAKE_SYSTEM_PROCESSOR MATCHES arm*)
-	SET(VM_SRCS code/qcommon/vm_armv7l.c)
-ELSE()
-	TARGET_COMPILE_DEFINITIONS(qcommon PRIVATE -DNO_VM_COMPILED)
-ENDIF()
-
-#client executable
-
-ADD_EXECUTABLE(quake3e ${EXE_TYPE} ${VM_SRCS} ${Q3_SRCS} ${Q3_UI_SRCS})
-
-TARGET_LINK_LIBRARIES(quake3e client botlib)
-
-#TARGET_LINK_OPTIONS(quake3e PRIVATE -fno-pie) # v3.13+
+ADD_LIBRARY(q3ui ${Q3_UI_SRCS})
 
 IF(USE_SDL)
-	TARGET_LINK_LIBRARIES(quake3e qsdl)
+	find_package(SDL2 REQUIRED)
+	TARGET_LINK_LIBRARIES(q3ui SDL2::Main)
 ELSEIF(UNIX)
-	TARGET_LINK_LIBRARIES(quake3e ${X11_LIBRARIES})
+	find_package (X11 REQUIRED)
+	TARGET_LINK_LIBRARIES(q3ui ${X11_LIBRARIES})
 ENDIF()
 
 IF(USE_VULKAN)
-	TARGET_COMPILE_DEFINITIONS(quake3e PRIVATE -DUSE_VULKAN_API)
+	TARGET_COMPILE_DEFINITIONS(q3ui PRIVATE -DUSE_VULKAN_API)
+	TARGET_COMPILE_DEFINITIONS(client PRIVATE -DUSE_VULKAN_API)
+ENDIF()
+
+# client executable
+
+ADD_EXECUTABLE(quake3e ${EXE_TYPE} ${Q3_SRCS})
+TARGET_LINK_LIBRARIES(quake3e qcommon server botlib client q3ui)
+#TARGET_LINK_OPTIONS(quake3e PRIVATE -fno-pie) # v3.13+
+
+IF(USE_VULKAN)
 	TARGET_LINK_LIBRARIES(quake3e renderer_vk)
 ELSE()
-	TARGET_LINK_LIBRARIES(quake3e renderer)
+	TARGET_LINK_LIBRARIES(quake3e renderer_gl)
 ENDIF(USE_VULKAN)
 
-#dedicated server executable
+# dedicated server executable
 
-ADD_EXECUTABLE(quake3e.ded ${EXE_TYPE} ${VM_SRCS} ${Q3_SRCS})
-TARGET_LINK_LIBRARIES(quake3e.ded qcommon_ded botlib)
+ADD_EXECUTABLE(quake3e.ded ${EXE_TYPE} ${Q3_SRCS})
+TARGET_LINK_LIBRARIES(quake3e.ded qcommon_ded server_ded botlib)
 #TARGET_LINK_OPTIONS(quake3e.ded PRIVATE -fno-pie) # v3.13+
 
 IF(WIN32)

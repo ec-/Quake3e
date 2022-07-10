@@ -257,8 +257,8 @@
     <ClCompile Include="..\..\renderer\tr_cmds.c" />
     <ClCompile Include="..\..\renderer\tr_curve.c" />
     <ClCompile Include="..\..\renderer\tr_flares.c" />
-    <ClCompile Include="..\..\renderercommon\tr_font.c" />
     <ClCompile Include="..\..\renderer\tr_image.c" />
+    <ClCompile Include="..\..\renderercommon\tr_font.c" />
     <ClCompile Include="..\..\renderercommon\tr_image_bmp.c" />
     <ClCompile Include="..\..\renderercommon\tr_image_jpg.c" />
     <ClCompile Include="..\..\renderercommon\tr_image_pcx.c" />

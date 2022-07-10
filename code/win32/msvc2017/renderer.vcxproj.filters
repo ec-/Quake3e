@@ -32,10 +32,10 @@
     <ClCompile Include="..\..\renderer\tr_flares.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\renderercommon\tr_font.c">
+    <ClCompile Include="..\..\renderer\tr_image.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\renderer\tr_image.c">
+    <ClCompile Include="..\..\renderercommon\tr_font.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\renderercommon\tr_image_bmp.c">
