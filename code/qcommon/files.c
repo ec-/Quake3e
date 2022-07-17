@@ -49,19 +49,19 @@ The "base path" is the path to the directory holding all the game directories an
 the executable.  It defaults to ".", but can be overridden with a "+set fs_basepath c:\quake3"
 command line to allow code debugging in a different directory.  Basepath cannot
 be modified at all after startup.  Any files that are created (demos, screenshots,
-etc) will be created reletive to the base path, so base path should usually be writable.
+etc) will be created relative to the base path, so base path should usually be writable.
 
 The "cd path" is the path to an alternate hierarchy that will be searched if a file
 is not located in the base path.  A user can do a partial install that copies some
 data to a base path created on their hard drive and leave the rest on the cd.  Files
-are never writen to the cd path.  It defaults to a value set by the installer, like
+are never written to the cd path.  It defaults to a value set by the installer, like
 "e:\quake3", but it can be overridden with "+set fs_cdpath g:\quake3".
 
 If a user runs the game directly from a CD, the base path would be on the CD.  This
 should still function correctly, but all file writes will fail (harmlessly).
 
 The "home path" is the path used for all write access. On win32 systems we have "base path"
-== "home path", but on *nix systems the base installation is usually readonly, and
+== "home path", but on *nix systems the base installation is usually read-only, and
 "home path" points to ~/.q3a or similar
 
 The user can also install custom mods and content in "home path", so it should be searched
@@ -112,7 +112,7 @@ File search order: when FS_FOpenFileRead gets called it will go through the fs_s
 structure and stop on the first successful hit. fs_searchpaths is built with successive
 calls to FS_AddGameDirectory
 
-Additionaly, we search in several subdirectories:
+Additionally, we search in several subdirectories:
 current game is the current mode
 base game is a variable to allow mods based on other mods
 (such as baseq3 + missionpack content combination in a mod for instance)
@@ -182,7 +182,7 @@ Casing
 
 Read / write config to floppy option.
 
-Different version coexistance?
+Different version coexistence?
 
 When building a pak file, make sure a q3config.cfg isn't present in it,
 or configs will never get loaded from disk!
@@ -343,7 +343,7 @@ typedef struct {
 static fileHandleData_t	fsh[MAX_FILE_HANDLES];
 
 // TTimo - https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=540
-// wether we did a reorder on the current search path when joining the server
+// whether we did a reorder on the current search path when joining the server
 qboolean fs_reordered;
 
 #define MAX_REF_PAKS	MAX_STRING_TOKENS
@@ -362,7 +362,7 @@ static char		*fs_serverReferencedPakNames[MAX_REF_PAKS];	// pk3 names
 int	fs_lastPakIndex;
 
 #ifdef FS_MISSING
-FILE*		missingFiles = NULL;
+static FILE*		missingFiles = NULL;
 #endif
 
 void Com_AppendCDKey( const char *filename );
@@ -397,7 +397,7 @@ static qboolean FS_PakIsPure( const pack_t *pack ) {
 			// NOTE TTimo: a pk3 with same checksum but different name would be validated too
 			//   I don't see this as allowing for any exploit, it would only happen if the client does manips of its file names 'not a bug'
 			if ( pack->checksum == fs_serverPaks[i] ) {
-				return qtrue;		// on the aproved list
+				return qtrue;		// on the approved list
 			}
 		}
 		return qfalse;	// not on the pure server pak list
@@ -656,7 +656,7 @@ static void FS_CopyFile( const char *fromOSPath, const char *toOSPath ) {
 	len = FS_FileLength( f );
 
 	// we are using direct malloc instead of Z_Malloc here, so it
-	// probably won't work on a mac... Its only for developers anyway...
+	// probably won't work on a mac... It's only for developers anyway...
 	buf = malloc( len );
 	if ( !buf ) {
 		fclose( f );
@@ -748,7 +748,7 @@ qboolean FS_AllowedExtension( const char *fileName, qboolean allowPk3s, const ch
 =================
 FS_CheckFilenameIsNotExecutable
 
-ERR_FATAL if trying to maniuplate a file with the platform library extension
+ERR_FATAL if trying to manipulate a file with the platform library extension
 =================
  */
 static void FS_CheckFilenameIsNotAllowed( const char *filename, const char *function, qboolean allowPk3s )
@@ -1003,7 +1003,7 @@ FS_SV_Rename
 ===========
 */
 void FS_SV_Rename( const char *from, const char *to ) {
-	char			*from_ospath, *to_ospath;
+	const char			*from_ospath, *to_ospath;
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
@@ -1318,7 +1318,7 @@ fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 ===========
 FS_FilenameCompare
 
-Ignore case and seprator char distinctions
+Ignore case and separator char distinctions
 ===========
 */
 qboolean FS_FilenameCompare( const char *s1, const char *s2 ) {
@@ -1554,7 +1554,7 @@ separate file or a ZIP file.
 extern qboolean		com_fullyInitialized;
 
 int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueFILE ) {
-	searchpath_t	*search;
+	const searchpath_t	*search;
 	char			*netpath;
 	pack_t			*pak;
 	fileInPack_t	*pakFile;
@@ -2022,7 +2022,7 @@ qboolean FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName ) {
 		Com_Error( ERR_FATAL, "FS_FOpenFileRead: NULL 'filename' parameter passed" );
 	}
 
-	// qpaths are not supposed to have a leading slashes
+	// qpaths are not supposed to have a leading slash
 	while ( filename[0] == '/' || filename[0] == '\\' )
 		filename++;
 
@@ -2148,7 +2148,7 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 		if ( buffer ) {
 			*buffer = NULL;
 		}
-		// if we are journalling and it is a config file, write a zero to the journal file
+		// if we are journaling and it is a config file, write a zero to the journal file
 		if ( isConfig ) {
 			Com_DPrintf( "Writing zero for %s to journal file.\n", qpath );
 			len = 0;
@@ -2180,7 +2180,7 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 	buf[ len ] = '\0';
 	FS_FCloseFile( h );
 
-	// if we are journalling and it is a config file, write it to the journal file
+	// if we are journaling and it is a config file, write it to the journal file
 	if ( isConfig ) {
 		Com_DPrintf( "Writing %s to journal file.\n", qpath );
 		FS_Write( &len, sizeof( len ), com_journalDataFile );
@@ -2637,7 +2637,7 @@ static qboolean FS_LoadPakFromFile( FILE *f )
 	if ( fread( &pk, sizeof( pk ), 1, f ) != 1 )
 		return qfalse; // probably EOF
 
-	/// validate header data
+	// validate header data
 
 	if ( pk.pakNameLen > sizeof( pakName ) || pk.pakNameLen & 3 || pk.pakNameLen == 0 )
 	{
@@ -2824,7 +2824,7 @@ __error:
 ============
 FS_SaveCache
 
-Called at th end of FS_Startup() after releasing unused paks
+Called at the end of FS_Startup() after releasing unused paks
 ============
 */
 static qboolean FS_SaveCache( void )
@@ -3311,7 +3311,7 @@ void FS_SetFilenameCallback( fnamecallback_f func )
 ===============
 FS_ListFilteredFiles
 
-Returns a uniqued list of files that match the given criteria
+Returns a unique list of files that match the given criteria
 from all search paths
 ===============
 */
@@ -3319,7 +3319,7 @@ static char **FS_ListFilteredFiles( const char *path, const char *extension, con
 	int				nfiles;
 	char			**listCopy;
 	char			*list[MAX_FOUND_FILES];
-	searchpath_t	*search;
+	const searchpath_t	*search;
 	int				i;
 	int				pathLength;
 	int				extLen;
@@ -3814,7 +3814,7 @@ static void FS_ConvertPath( char *s ) {
 ===========
 FS_PathCmp
 
-Ignore case and seprator char distinctions
+Ignore case and separator char distinctions
 ===========
 */
 static int FS_PathCmp( const char *s1, const char *s2 ) {
@@ -3978,7 +3978,7 @@ static void FS_TouchFile_f( void ) {
 FS_CompleteFileName
 ============
 */
-static void FS_CompleteFileName( char *args, int argNum ) {
+static void FS_CompleteFileName( const char *args, int argNum ) {
 	if( argNum == 2 ) {
 		Field_CompleteFilename( "", "", qfalse, FS_MATCH_ANY );
 	}
@@ -3998,7 +3998,7 @@ static void FS_Which_f( void ) {
 	directory_t		*dir;
 	long			hash;
 	FILE			*temp;
-	char			*filename;
+	const char			*filename;
 	char			buf[ MAX_OSPATH*2 + 1 ];
 	int				numfound;
 
@@ -4302,7 +4302,7 @@ we are not interested in a download string format, we want something human-reada
 ================
 */
 qboolean FS_ComparePaks( char *neededpaks, int len, qboolean dlstring ) {
-	searchpath_t	*sp;
+	const searchpath_t	*sp;
 	qboolean havepak;
 	char *origpos = neededpaks;
 	int i;
@@ -4773,7 +4773,7 @@ static void FS_Startup( void ) {
 
 static void FS_PrintSearchPaths( void )
 {
-	searchpath_t *path = fs_searchpaths;
+	const searchpath_t *path = fs_searchpaths;
 
 	Com_Printf( "\nSearch paths:\n" );
 
@@ -4798,7 +4798,7 @@ Q3 media pak0.pk3, you'll want to remove this function
 */
 static void FS_CheckIdPaks( void )
 {
-	searchpath_t *path;
+	const searchpath_t *path;
 	const char* pakBasename;
 	qboolean founddemo = qfalse;
 	unsigned foundPak = 0;
@@ -4902,7 +4902,7 @@ Servers with sv_pure set will get this string and pass it to clients.
 */
 const char *FS_LoadedPakChecksums( qboolean *overflowed ) {
 	static char	info[BIG_INFO_STRING];
-	searchpath_t *search;
+	const searchpath_t *search;
 	char buf[ 32 ];
 	char *s, *max;
 	int len;
@@ -4992,7 +4992,7 @@ The server will send this to the clients so they can check which files should be
 */
 const char *FS_ReferencedPakChecksums( void ) {
 	static char	info[BIG_INFO_STRING];
-	searchpath_t *search;
+	const searchpath_t *search;
 
 	info[0] = '\0';
 
@@ -5025,7 +5025,7 @@ The string has a specific order, "cgame ui @ ref1 ref2 ref3 ..."
 const char *FS_ReferencedPakPureChecksums( int maxlen ) {
 	static char	info[ MAX_STRING_CHARS*2 ];
 	char *s, *max;
-	searchpath_t	*search;
+	const searchpath_t	*search;
 	int nFlags, numPaks, checksum;
 
 	max = info + maxlen; // maxlen is always smaller than MAX_STRING_CHARS so we can overflow a bit
@@ -5036,7 +5036,7 @@ const char *FS_ReferencedPakPureChecksums( int maxlen ) {
 	numPaks = 0;
 	for ( nFlags = FS_CGAME_REF; nFlags; nFlags = nFlags >> 1 ) {
 		if ( nFlags & FS_GENERAL_REF ) {
-			// add a delimter between must haves and general refs
+			// add a delimiter between must haves and general refs
 			s = Q_stradd( s, "@ " );
 			if ( s > max ) // client-side overflow
 				break;
@@ -5149,7 +5149,7 @@ FS_ClearPakReferences
 =====================
 */
 void FS_ClearPakReferences( int flags ) {
-	searchpath_t *search;
+	const searchpath_t *search;
 
 	if ( !flags ) {
 		flags = -1;
@@ -5305,7 +5305,7 @@ void FS_PureServerSetReferencedPaks( const char *pakSums, const char *pakNames )
 ================
 FS_InitFilesystem
 
-Called only at inital startup, not when the filesystem
+Called only at initial startup, not when the filesystem
 is resetting due to a game change
 ================
 */

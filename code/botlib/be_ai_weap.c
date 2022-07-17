@@ -52,7 +52,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define PROJECTILE_OFS(x) (size_t)&(((projectileinfo_t *)0)->x)
 
 //weapon definition
-static fielddef_t weaponinfo_fields[] =
+static const fielddef_t weaponinfo_fields[] =
 {
 {"number", WEAPON_OFS(number), FT_INT},						//weapon number
 {"name", WEAPON_OFS(name), FT_STRING},							//name of the weapon
@@ -80,7 +80,7 @@ static fielddef_t weaponinfo_fields[] =
 };
 
 //projectile definition
-static fielddef_t projectileinfo_fields[] =
+static const fielddef_t projectileinfo_fields[] =
 {
 {"name", PROJECTILE_OFS(name), FT_STRING},					//name of the projectile
 {"model", PROJECTILE_OFS(model), FT_STRING},					//model of the projectile
@@ -96,7 +96,7 @@ static fielddef_t projectileinfo_fields[] =
 {"bounce", PROJECTILE_OFS(bounce), FT_FLOAT},				//amount the projectile bounces
 {"bouncefric", PROJECTILE_OFS(bouncefric), FT_FLOAT}, 	//amount the bounce decreases per bounce
 {"bouncestop", PROJECTILE_OFS(bouncestop), FT_FLOAT},		//minimum bounce value before bouncing stops
-//recurive projectile definition??
+//recursive projectile definition??
 {NULL, 0, 0, 0}
 };
 
@@ -134,7 +134,7 @@ static weaponconfig_t *weaponconfig;
 // Returns:					-
 // Changes Globals:		-
 //========================================================================
-int BotValidWeaponNumber(int weaponnum)
+static int BotValidWeaponNumber(int weaponnum)
 {
 	if (weaponnum <= 0 || weaponnum > weaponconfig->numweapons)
 	{
@@ -149,7 +149,7 @@ int BotValidWeaponNumber(int weaponnum)
 // Returns:					-
 // Changes Globals:		-
 //========================================================================
-bot_weaponstate_t *BotWeaponStateFromHandle(int handle)
+static bot_weaponstate_t *BotWeaponStateFromHandle(int handle)
 {
 	if (handle <= 0 || handle > MAX_CLIENTS)
 	{
@@ -170,7 +170,7 @@ bot_weaponstate_t *BotWeaponStateFromHandle(int handle)
 // Changes Globals:		-
 //===========================================================================
 #ifdef DEBUG_AI_WEAP
-void DumpWeaponConfig(weaponconfig_t *wc)
+static void DumpWeaponConfig(weaponconfig_t *wc)
 {
 	FILE *fp;
 	int i;
@@ -195,7 +195,7 @@ void DumpWeaponConfig(weaponconfig_t *wc)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-weaponconfig_t *LoadWeaponConfig(const char *filename)
+static weaponconfig_t *LoadWeaponConfig(const char *filename)
 {
 	int max_weaponinfo, max_projectileinfo;
 	token_t token;
@@ -327,7 +327,7 @@ weaponconfig_t *LoadWeaponConfig(const char *filename)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int *WeaponWeightIndex(weightconfig_t *wwc, weaponconfig_t *wc)
+static int *WeaponWeightIndex(const weightconfig_t *wwc, const weaponconfig_t *wc)
 {
 	int *index, i;
 
@@ -346,7 +346,7 @@ int *WeaponWeightIndex(weightconfig_t *wwc, weaponconfig_t *wc)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void BotFreeWeaponWeights(int weaponstate)
+static void BotFreeWeaponWeights(int weaponstate)
 {
 	bot_weaponstate_t *ws;
 
@@ -361,7 +361,7 @@ void BotFreeWeaponWeights(int weaponstate)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int BotLoadWeaponWeights(int weaponstate, char *filename)
+int BotLoadWeaponWeights(int weaponstate, const char *filename)
 {
 	bot_weaponstate_t *ws;
 

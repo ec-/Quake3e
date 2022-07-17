@@ -92,7 +92,7 @@ void SND_setup( void )
 
 	sz = scs * sizeof( sndBuffer );
 
-	// realloc buffer if com_comSoundMegs changed
+	// realloc buffer if com_soundMegs changed
 	if ( old_scs != scs ) {
 		if ( buffer != NULL ) {
 			free( buffer );

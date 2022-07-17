@@ -32,7 +32,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define WT_BALANCE			1
 #define MAX_WEIGHTS			128
 
-//fuzzy seperator
+//fuzzy separator
 typedef struct fuzzyseperator_s
 {
 	int index;
@@ -61,13 +61,13 @@ typedef struct weightconfig_s
 } weightconfig_t;
 
 //reads a weight configuration
-weightconfig_t *ReadWeightConfig(char *filename);
+weightconfig_t *ReadWeightConfig(const char *filename);
 //free a weight configuration
 void FreeWeightConfig(weightconfig_t *config);
 //writes a weight configuration, returns true if successful
 qboolean WriteWeightConfig(char *filename, weightconfig_t *config);
 //find the fuzzy weight with the given name
-int FindFuzzyWeight(weightconfig_t *wc, char *name);
+int FindFuzzyWeight(const weightconfig_t *wc, const char *name);
 //returns the fuzzy weight for the given inventory and weight
 float FuzzyWeight(int *inventory, weightconfig_t *wc, int weightnum);
 float FuzzyWeightUndecided(int *inventory, weightconfig_t *wc, int weightnum);

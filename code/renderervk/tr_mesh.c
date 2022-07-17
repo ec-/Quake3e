@@ -76,7 +76,7 @@ static float ProjectRadius( float r, vec3_t location )
 R_CullModel
 =============
 */
-static int R_CullModel( md3Header_t *header, trRefEntity_t *ent, vec3_t bounds[] ) {
+static int R_CullModel( md3Header_t *header, const trRefEntity_t *ent, vec3_t bounds[] ) {
 	//vec3_t bounds[2];
 	md3Frame_t	*oldFrame, *newFrame;
 	int			i;
@@ -242,9 +242,9 @@ int R_ComputeLOD( trRefEntity_t *ent ) {
 R_ComputeFogNum
 =================
 */
-int R_ComputeFogNum( md3Header_t *header, trRefEntity_t *ent ) {
+static int R_ComputeFogNum( md3Header_t *header, const trRefEntity_t *ent ) {
 	int				i, j;
-	fog_t			*fog;
+	const fog_t			*fog;
 	md3Frame_t		*md3Frame;
 	vec3_t			localOrigin;
 
@@ -371,7 +371,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 		if ( ent->e.customShader ) {
 			shader = R_GetShaderByHandle( ent->e.customShader );
 		} else if ( ent->e.customSkin > 0 && ent->e.customSkin < tr.numSkins ) {
-			skin_t *skin;
+			const skin_t *skin;
 			int		j;
 
 			skin = R_GetSkinByHandle( ent->e.customSkin );

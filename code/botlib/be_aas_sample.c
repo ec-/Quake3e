@@ -61,7 +61,7 @@ typedef struct aas_tracestack_s
 	int nodenum;		//node found after splitting with planenum
 } aas_tracestack_t;
 
-int numaaslinks;
+static int numaaslinks;
 
 //===========================================================================
 //
@@ -73,8 +73,8 @@ void AAS_PresenceTypeBoundingBox(int presencetype, vec3_t mins, vec3_t maxs)
 {
 	int index;
 	//bounding box size for each presence type
-	vec3_t boxmins[3] = {{0, 0, 0}, {-15, -15, -24}, {-15, -15, -24}};
-	vec3_t boxmaxs[3] = {{0, 0, 0}, { 15,  15,  32}, { 15,  15,   8}};
+	static const vec3_t boxmins[3] = {{0, 0, 0}, {-15, -15, -24}, {-15, -15, -24}};
+	static const vec3_t boxmaxs[3] = {{0, 0, 0}, { 15,  15,  32}, { 15,  15,   8}};
 
 	if (presencetype == PRESENCE_NORMAL) index = 1;
 	else if (presencetype == PRESENCE_CROUCH) index = 2;
@@ -168,7 +168,7 @@ aas_link_t *AAS_AllocAASLink(void)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void AAS_DeAllocAASLink(aas_link_t *link)
+static void AAS_DeAllocAASLink(aas_link_t *link)
 {
 	if (aasworld.freelinks) aasworld.freelinks->prev_ent = link;
 	link->prev_ent = NULL;
@@ -347,6 +347,7 @@ int AAS_PointPresenceType(vec3_t point)
 	if (!areanum) return PRESENCE_NONE;
 	return aasworld.areasettings[areanum].presencetype;
 } //end of the function AAS_PointPresenceType
+#if 0
 //===========================================================================
 // calculates the minimum distance between the origin of the box and the
 // given plane when both will collide on the given side of the plane
@@ -396,13 +397,14 @@ vec_t AAS_BoxOriginDistanceFromPlane(vec3_t normal, vec3_t mins, vec3_t maxs, in
 //	VectorNegate(normal, v2);
 	return DotProduct(v1, v2);
 } //end of the function AAS_BoxOriginDistanceFromPlane
+#endif
 //===========================================================================
 //
 // Parameter:				-
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-qboolean AAS_AreaEntityCollision(int areanum, vec3_t start, vec3_t end,
+static qboolean AAS_AreaEntityCollision(int areanum, vec3_t start, vec3_t end,
 										int presencetype, int passent, aas_trace_t *trace)
 {
 	int collision;
@@ -699,7 +701,7 @@ aas_trace_t AAS_TraceClientBBox(vec3_t start, vec3_t end, int presencetype,
 				return trace;
 			} //end if
 			//now put the part near the start of the line on the stack so we will
-			//continue with thats part first. This way we'll find the first
+			//continue with that part first. This way we'll find the first
 			//hit of the bbox
 			VectorCopy(cur_start, tstack_p->start);
 			VectorCopy(cur_mid, tstack_p->end);
@@ -885,7 +887,7 @@ int AAS_TraceAreas(vec3_t start, vec3_t end, int *areas, vec3_t *points, int max
 				return numareas;
 			} //end if
 			//now put the part near the start of the line on the stack so we will
-			//continue with thats part first. This way we'll find the first
+			//continue with that part first. This way we'll find the first
 			//hit of the bbox
 			VectorCopy(cur_start, tstack_p->start);
 			VectorCopy(cur_mid, tstack_p->end);
@@ -922,7 +924,7 @@ int AAS_TraceAreas(vec3_t start, vec3_t end, int *areas, vec3_t *points, int max
 // Returns:					qtrue if the point is within the face boundaries
 // Changes Globals:		-
 //===========================================================================
-qboolean AAS_InsideFace(aas_face_t *face, vec3_t pnormal, vec3_t point, float epsilon)
+static qboolean AAS_InsideFace(aas_face_t *face, vec3_t pnormal, vec3_t point, float epsilon)
 {
 	int i, firstvertex, edgenum;
 	vec3_t v0;
@@ -1007,6 +1009,7 @@ qboolean AAS_PointInsideFace(int facenum, vec3_t point, float epsilon)
 	} //end for
 	return qtrue;
 } //end of the function AAS_PointInsideFace
+#if 0
 //===========================================================================
 // returns the ground face the given point is above in the given area
 //
@@ -1056,6 +1059,7 @@ void AAS_FacePlane(int facenum, vec3_t normal, float *dist)
 	VectorCopy(plane->normal, normal);
 	*dist = plane->dist;
 } //end of the function AAS_FacePlane
+#endif
 //===========================================================================
 // returns the face the trace end position is situated in
 //
@@ -1083,7 +1087,7 @@ aas_face_t *AAS_TraceEndFace(aas_trace_t *trace)
 		//if the face is in the same plane as the trace end point
 		if ((face->planenum & ~1) == (trace->planenum & ~1))
 		{
-			//firstface is used for optimization, if theres only one
+			//firstface is used for optimization, if there is only one
 			//face in the plane then it has to be the good one
 			//if there are more faces in the same plane then always
 			//check the one with the fewest edges first
@@ -1123,7 +1127,7 @@ aas_face_t *AAS_TraceEndFace(aas_trace_t *trace)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int AAS_BoxOnPlaneSide2(vec3_t absmins, vec3_t absmaxs, aas_plane_t *p)
+static int AAS_BoxOnPlaneSide2(vec3_t absmins, vec3_t absmaxs, aas_plane_t *p)
 {
 	int i, sides;
 	float dist1, dist2;

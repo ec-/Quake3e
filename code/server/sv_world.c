@@ -71,8 +71,8 @@ typedef struct worldSector_s {
 #define	AREA_DEPTH	4
 #define	AREA_NODES	64
 
-worldSector_t	sv_worldSectors[AREA_NODES];
-int			sv_numworldSectors;
+static worldSector_t	sv_worldSectors[AREA_NODES];
+static int			sv_numworldSectors;
 
 
 /*
@@ -223,14 +223,14 @@ void SV_LinkEntity( sharedEntity_t *gEnt ) {
 	if ( gEnt->r.bmodel ) {
 		gEnt->s.solid = SOLID_BMODEL;		// a solid_box will never create this value
 	} else if ( gEnt->r.contents & ( CONTENTS_SOLID | CONTENTS_BODY ) ) {
-		// assume that x/y are equal and symetric
+		// assume that x/y are equal and symmetric
 		i = gEnt->r.maxs[0];
 		if (i<1)
 			i = 1;
 		if (i>255)
 			i = 255;
 
-		// z is not symetric
+		// z is not symmetric
 		j = (-gEnt->r.mins[2]);
 		if (j<1)
 			j = 1;
@@ -299,7 +299,7 @@ void SV_LinkEntity( sharedEntity_t *gEnt ) {
 		area = CM_LeafArea (leafs[i]);
 		if (area != -1) {
 			// doors may legally straggle two areas,
-			// but nothing should evern need more than that
+			// but nothing should ever need more than that
 			if (ent->areanum != -1 && ent->areanum != area) {
 				if (ent->areanum2 != -1 && ent->areanum2 != area && sv.state == SS_LOADING) {
 					Com_DPrintf ("Object %i touching 3 areas at %f %f %f\n",
@@ -464,7 +464,8 @@ SV_ClipToEntity
 void SV_ClipToEntity( trace_t *trace, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int entityNum, int contentmask, qboolean capsule ) {
 	sharedEntity_t	*touch;
 	clipHandle_t	clipHandle;
-	float			*origin, *angles;
+	float			*origin;
+	const float *angles;
 
 	touch = SV_GentityNum( entityNum );
 
@@ -510,7 +511,8 @@ static void SV_ClipMoveToEntities( moveclip_t *clip ) {
 	int			passOwnerNum;
 	trace_t		trace;
 	clipHandle_t	clipHandle;
-	float		*origin, *angles;
+	float		*origin;
+	const float *angles;
 
 	num = SV_AreaEntities( clip->boxmins, clip->boxmaxs, touchlist, MAX_GENTITIES);
 
@@ -656,7 +658,7 @@ int SV_PointContents( const vec3_t p, int passEntityNum ) {
 	int			i, num;
 	int			contents, c2;
 	clipHandle_t	clipHandle;
-	float		*angles;
+	const float		*angles;
 
 	// get base contents from world
 	contents = CM_PointContents( p, 0 );

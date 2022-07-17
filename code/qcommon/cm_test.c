@@ -276,7 +276,7 @@ int CM_PointContents( const vec3_t p, clipHandle_t model ) {
 ==================
 CM_TransformedPointContents
 
-Handles offseting and rotation of the end points for moving and
+Handles offsetting and rotation of the end points for moving and
 rotating entities
 ==================
 */
@@ -481,7 +481,7 @@ int CM_WriteAreaBits (byte *buffer, int area)
 }
 
 
-#define BOUNDS_CLIP_EPSILON 0.25f // assume single precision and slightly increase to compensate potential SIMD precison loss in 64-bit environment
+#define BOUNDS_CLIP_EPSILON 0.25f // assume single precision and slightly increase to compensate potential SIMD precision loss in 64-bit environment
 
 /*
 ====================

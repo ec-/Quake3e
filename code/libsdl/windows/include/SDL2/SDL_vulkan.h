@@ -61,7 +61,7 @@ typedef VkSurfaceKHR SDL_vulkanSurface; /* for compatibility with Tizen */
  *  \name Vulkan support functions
  *
  *  \note SDL_Vulkan_GetInstanceExtensions & SDL_Vulkan_CreateSurface API
- *        is compatable with Tizen's implementation of Vulkan in SDL.
+ *        is compatible with Tizen's implementation of Vulkan in SDL.
  */
 /* @{ */
 

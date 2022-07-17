@@ -729,7 +729,7 @@ Fix: several bugs in video recording code
 
 24-Mar-2017:
 Add: new snapshot system with reduced CPU/memory usage on dedicated servers
-Fix: don't count \sv_timeout multiple times - so now its really works as expected
+Fix: don't count \sv_timeout multiple times - so now it really works as expected
 
 20-Mar-2017:
 Chg: fs_game default back to "baseq3"

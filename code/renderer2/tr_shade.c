@@ -64,7 +64,7 @@ R_BindAnimatedImageToTMU
 
 =================
 */
-static void R_BindAnimatedImageToTMU( textureBundle_t *bundle, int tmu ) {
+static void R_BindAnimatedImageToTMU( const textureBundle_t *bundle, int tmu ) {
 	int64_t index;
 	double	v;
 
@@ -103,7 +103,7 @@ DrawTris
 Draws triangle outlines for debugging
 ================
 */
-static void DrawTris (shaderCommands_t *input) {
+static void DrawTris (const shaderCommands_t *input) {
 	GL_BindToTMU( tr.whiteImage, TB_COLORMAP );
 
 	GL_State( GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE );
@@ -134,7 +134,7 @@ DrawNormals
 Draws vertex normals for debugging
 ================
 */
-static void DrawNormals (shaderCommands_t *input) {
+static void DrawNormals (const shaderCommands_t *input) {
 	//FIXME: implement this
 }
 
@@ -334,7 +334,7 @@ static void ProjectDlightTexture( void ) {
 	ComputeDeformValues(&deformGen, deformParams);
 
 	for ( l = 0 ; l < backEnd.refdef.num_dlights ; l++ ) {
-		dlight_t	*dl;
+		const dlight_t	*dl;
 		shaderProgram_t *sp;
 		vec4_t vector;
 
@@ -398,7 +398,7 @@ static void ProjectDlightTexture( void ) {
 }
 
 
-static void ComputeShaderColors( shaderStage_t *pStage, vec4_t baseColor, vec4_t vertColor, int blend )
+static void ComputeShaderColors( const shaderStage_t *pStage, vec4_t baseColor, vec4_t vertColor, int blend )
 {
 	qboolean isBlend = ((blend & GLS_SRCBLEND_BITS) == GLS_SRCBLEND_DST_COLOR)
 		|| ((blend & GLS_SRCBLEND_BITS) == GLS_SRCBLEND_ONE_MINUS_DST_COLOR)
@@ -409,7 +409,7 @@ static void ComputeShaderColors( shaderStage_t *pStage, vec4_t baseColor, vec4_t
 
 	float overbright = (isBlend || is2DDraw) ? 1.0f : (float)(1 << tr.overbrightBits);
 
-	fog_t *fog;
+	const fog_t *fog;
 
 	baseColor[0] = 
 	baseColor[1] =
@@ -573,7 +573,7 @@ static void ComputeShaderColors( shaderStage_t *pStage, vec4_t baseColor, vec4_t
 static void ComputeFogValues(vec4_t fogDistanceVector, vec4_t fogDepthVector, float *eyeT)
 {
 	// from RB_CalcFogTexCoords()
-	fog_t  *fog;
+	const fog_t  *fog;
 	vec3_t  local;
 
 	if (!tess.fogNum)
@@ -607,7 +607,7 @@ static void ComputeFogValues(vec4_t fogDistanceVector, vec4_t fogDepthVector, fl
 }
 
 
-static void ComputeFogColorMask( shaderStage_t *pStage, vec4_t fogColorMask )
+static void ComputeFogColorMask( const shaderStage_t *pStage, vec4_t fogColorMask )
 {
 	switch(pStage->adjustColorsForFog)
 	{
@@ -651,7 +651,7 @@ static void ForwardDlight( void ) {
 	vec4_t fogDistanceVector, fogDepthVector = {0, 0, 0, 0};
 	float eyeT = 0;
 
-	shaderCommands_t *input = &tess;
+	const shaderCommands_t *input = &tess;
 	shaderStage_t *pStage = tess.xstages[ tess.shader->lightingStage ];
 
 	if ( !backEnd.refdef.num_dlights ) {
@@ -663,7 +663,7 @@ static void ForwardDlight( void ) {
 	ComputeFogValues(fogDistanceVector, fogDepthVector, &eyeT);
 
 	for ( l = 0 ; l < backEnd.refdef.num_dlights ; l++ ) {
-		dlight_t	*dl;
+		const dlight_t	*dl;
 		shaderProgram_t *sp;
 		vec4_t vector;
 		vec4_t texMatrix;
@@ -820,7 +820,7 @@ static void ProjectPshadowVBOGLSL( void ) {
 	int deformGen;
 	vec5_t deformParams;
 
-	shaderCommands_t *input = &tess;
+	const shaderCommands_t *input = &tess;
 
 	if ( !backEnd.refdef.num_pshadows ) {
 		return;
@@ -890,7 +890,7 @@ Blends a fog texture on top of everything else
 ===================
 */
 static void RB_FogPass( void ) {
-	fog_t		*fog;
+	const fog_t		*fog;
 	vec4_t  color;
 	vec4_t	fogDistanceVector, fogDepthVector = {0, 0, 0, 0};
 	float	eyeT = 0;
@@ -960,7 +960,7 @@ static void RB_FogPass( void ) {
 }
 
 
-static unsigned int RB_CalcShaderVertexAttribs( shaderCommands_t *input )
+static unsigned int RB_CalcShaderVertexAttribs( const shaderCommands_t *input )
 {
 	unsigned int vertexAttribs = input->shader->vertexAttribs;
 
@@ -977,7 +977,7 @@ static unsigned int RB_CalcShaderVertexAttribs( shaderCommands_t *input )
 	return vertexAttribs;
 }
 
-static void RB_IterateStagesGeneric( shaderCommands_t *input )
+static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 {
 	int stage;
 	
@@ -1391,7 +1391,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 }
 
 
-static void RB_RenderShadowmap( shaderCommands_t *input )
+static void RB_RenderShadowmap( const shaderCommands_t *input )
 {
 	int deformGen;
 	vec5_t deformParams;
@@ -1460,7 +1460,7 @@ static void RB_RenderShadowmap( shaderCommands_t *input )
 */
 void RB_StageIteratorGeneric( void )
 {
-	shaderCommands_t *input;
+	const shaderCommands_t *input;
 	unsigned int vertexAttribs = 0;
 
 	input = &tess;
@@ -1606,7 +1606,7 @@ void RB_StageIteratorGeneric( void )
 ** RB_EndSurface
 */
 void RB_EndSurface( void ) {
-	shaderCommands_t *input;
+	const shaderCommands_t *input;
 
 	input = &tess;
 

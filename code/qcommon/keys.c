@@ -566,9 +566,9 @@ void Key_KeynameCompletion( void(*callback)(const char *s) ) {
 Key_CompleteBind
 ====================
 */
-static void Key_CompleteBind( char *args, int argNum )
+static void Key_CompleteBind( const char *args, int argNum )
 {
-	char *p;
+	const char *p;
 
 	if ( argNum == 2 )
 	{
@@ -597,12 +597,12 @@ static void Key_CompleteBind( char *args, int argNum )
 Key_CompleteUnbind
 ====================
 */
-static void Key_CompleteUnbind( char *args, int argNum )
+static void Key_CompleteUnbind( const char *args, int argNum )
 {
 	if ( argNum == 2 )
 	{
 		// Skip "unbind "
-		char *p = Com_SkipTokens( args, 1, " " );
+		const char *p = Com_SkipTokens( args, 1, " " );
 
 		if ( p > args )
 			Field_CompleteKeyname();
@@ -665,7 +665,7 @@ Com_InitKeyCommands
 */
 void Com_InitKeyCommands( void )
 {
-	// register our functions
+	// register client functions
 	Cmd_AddCommand( "bind", Key_Bind_f );
 	Cmd_SetCommandCompletionFunc( "bind", Key_CompleteBind );
 	Cmd_AddCommand( "unbind", Key_Unbind_f );

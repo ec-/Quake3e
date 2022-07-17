@@ -39,7 +39,7 @@ void R_VaoPackNormal(int16_t *out, vec3_t v)
 	out[3] = 0;
 }
 
-void R_VaoPackColor(uint16_t *out, vec4_t c)
+void R_VaoPackColor(uint16_t *out, const vec4_t c)
 {
 	out[0] = c[0] * 65535.0f + 0.5f;
 	out[1] = c[1] * 65535.0f + 0.5f;
