@@ -1526,7 +1526,10 @@ static void SV_CompleteMapName( const char *args, int argNum ) {
 	}
 }
 
+
+#ifdef __WASM__
 void SV_MakeMinimap(void);
+#endif
 
 /*
 ==================
@@ -1582,7 +1585,9 @@ void SV_AddOperatorCommands( void ) {
 #endif
 	Cmd_AddCommand( "filter", SV_AddFilter_f );
 	Cmd_AddCommand( "filtercmd", SV_AddFilterCmd_f );
+#ifdef __WASM__
 	Cmd_AddCommand ("minimap", SV_MakeMinimap);
+#endif
 }
 
 
