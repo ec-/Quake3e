@@ -326,7 +326,7 @@ error platform support (one of linux, mingw, darwin)
 endif 
 
 WASISDK        := $(lastword $(wildcard code/wasm/$(COMPILE_PLATFORM)/wasi-sdk-*))
-WASM-OPT       ?= wasm-opt
+WASM-OPT       ?= $(lastword $(wildcard code/wasm/$(COMPILE_PLATFORM)/binaryen-version_*/bin/wasm-opt))
 #LD             := $(WASISDK)/bin/wasm-ld
 CC             := $(WASISDK)/bin/clang 
 LD             := $(CC)
