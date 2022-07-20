@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "q_shared.h"
 #include "qcommon.h"
 
-int pcount[256];
+static int pcount[256];
 
 /*
 ==============================================================================
@@ -75,7 +75,7 @@ void MSG_BeginReadingOOB( msg_t *msg ) {
 }
 
 
-void MSG_Copy(msg_t *buf, byte *data, int length, msg_t *src)
+void MSG_Copy(msg_t *buf, byte *data, int length, const msg_t *src)
 {
 	if (length<src->cursize) {
 		Com_Error( ERR_DROP, "MSG_Copy: can't copy into a smaller msg_t buffer");
@@ -769,7 +769,7 @@ void MSG_WriteDeltaEntity( msg_t *msg, const entityState_t *from, const entitySt
 	}
 
 	lc = 0;
-	// build the change vector as bytes so it is endien independent
+	// build the change vector as bytes so it is endian independent
 	for ( i = 0, field = entityStateFields ; i < numFields ; i++, field++ ) {
 		fromF = (int *)( (byte *)from + field->offset );
 		toF = (int *)( (byte *)to + field->offset );
@@ -809,7 +809,7 @@ void MSG_WriteDeltaEntity( msg_t *msg, const entityState_t *from, const entitySt
 
 		if ( field->bits == 0 ) {
 			// float
-			fullFloat = *(float *)toF;
+			fullFloat = *(const float *)toF;
 			trunc = (int)fullFloat;
 
 			if (fullFloat == 0.0f) {
@@ -901,7 +901,7 @@ void MSG_ReadDeltaEntity( msg_t *msg, const entityState_t *from, entityState_t *
 
 #ifndef DEDICATED
 	// shownet 2/3 will interleave with other printed info, -1 will
-	// just print the delta records`
+	// just print the delta records
 	if ( cl_shownet && ( cl_shownet->integer >= 2 || cl_shownet->integer == -1 ) ) {
 		print = 1;
 		Com_Printf( "%3i: #%-3i ", msg->readcount, to->number );
@@ -913,7 +913,7 @@ void MSG_ReadDeltaEntity( msg_t *msg, const entityState_t *from, entityState_t *
 #endif
 
 	for ( i = 0, field = entityStateFields ; i < lc ; i++, field++ ) {
-		fromF = (int *)( (byte *)from + field->offset );
+		fromF = (const int *)( (const byte *)from + field->offset );
 		toF = (int *)( (byte *)to + field->offset );
 
 		if ( ! MSG_ReadBits( msg, 1 ) ) {
@@ -1064,8 +1064,8 @@ void MSG_WriteDeltaPlayerstate( msg_t *msg, const playerState_t *from, const pla
 
 	lc = 0;
 	for ( i = 0, field = playerStateFields ; i < numFields ; i++, field++ ) {
-		fromF = (int *)( (byte *)from + field->offset );
-		toF = (int *)( (byte *)to + field->offset );
+		fromF = (const int *)( (byte *)from + field->offset );
+		toF = (const int *)( (byte *)to + field->offset );
 		if ( *fromF != *toF ) {
 			lc = i+1;
 		}
@@ -1074,8 +1074,8 @@ void MSG_WriteDeltaPlayerstate( msg_t *msg, const playerState_t *from, const pla
 	MSG_WriteByte( msg, lc );	// # of changes
 
 	for ( i = 0, field = playerStateFields ; i < lc ; i++, field++ ) {
-		fromF = (int *)( (byte *)from + field->offset );
-		toF = (int *)( (byte *)to + field->offset );
+		fromF = (const int *)( (byte *)from + field->offset );
+		toF = (const int *)( (byte *)to + field->offset );
 
 		if ( *fromF == *toF ) {
 			MSG_WriteBits( msg, 0, 1 );	// no change
@@ -1087,7 +1087,7 @@ void MSG_WriteDeltaPlayerstate( msg_t *msg, const playerState_t *from, const pla
 
 		if ( field->bits == 0 ) {
 			// float
-			fullFloat = *(float *)toF;
+			fullFloat = *(const float *)toF;
 			trunc = (int)fullFloat;
 
 			if ( trunc == fullFloat && trunc + FLOAT_INT_BIAS >= 0 && 

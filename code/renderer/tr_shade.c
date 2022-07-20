@@ -102,7 +102,7 @@ DrawTris
 Draws triangle outlines for debugging
 ================
 */
-static void DrawTris( shaderCommands_t *input ) {
+static void DrawTris( const shaderCommands_t *input ) {
 
 	if ( r_showtris->integer == 1 && backEnd.drawConsole )
 		return;
@@ -873,7 +873,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 */
 void RB_StageIteratorGeneric( void )
 {
-	shaderCommands_t *input;
+	const shaderCommands_t *input;
 	shader_t		*shader;
 
 #ifdef USE_PMLIGHT
@@ -1010,7 +1010,7 @@ void RB_StageIteratorGeneric( void )
 ** RB_EndSurface
 */
 void RB_EndSurface( void ) {
-	shaderCommands_t *input;
+	const shaderCommands_t *input;
 
 	input = &tess;
 

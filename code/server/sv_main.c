@@ -313,7 +313,7 @@ static void SV_MasterHeartbeat( const char *message )
 		Com_Printf ("Sending heartbeat to %s\n", sv_master[i]->string );
 
 		// this command should be changed if the server info / status format
-		// ever incompatably changes
+		// ever changes incompatibly
 
 		if(adr[i][0].type != NA_BAD)
 			NET_OutOfBandPrint( NS_SERVER, &adr[i][0], "heartbeat %s\n", message);

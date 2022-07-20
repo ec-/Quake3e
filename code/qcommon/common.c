@@ -85,7 +85,7 @@ cvar_t	*com_version;
 static cvar_t *com_buildScript;	// for automated data building scripts
 
 #ifndef DEDICATED
-cvar_t	*com_introPlayed;
+static cvar_t	*com_introPlayed;
 cvar_t	*com_skipIdLogo;
 
 cvar_t	*cl_paused;
@@ -481,7 +481,7 @@ static void Com_ParseCommandLine( char *commandLine ) {
 			inq = !inq;
 		}
 		// look for a + separating character
-		// if commandLine came from a file, we might have real line seperators
+		// if commandLine came from a file, we might have real line separators
 		if ( (*commandLine == '+' && !inq) || *commandLine == '\n'  || *commandLine == '\r' ) {
 			if ( com_numConsoleLines == MAX_CONSOLE_LINES ) {
 				break;
@@ -976,8 +976,8 @@ all big things are allocated on the hunk.
 
 #ifdef ZONE_DEBUG
 typedef struct zonedebug_s {
-	char *label;
-	char *file;
+	const char *label;
+	const char *file;
 	int line;
 	int allocSize;
 } zonedebug_t;
@@ -1484,7 +1484,7 @@ void *Z_TagMalloc( int size, memtag_t tag ) {
 
 	do {
 		if ( rover == start ) {
-			// scaned all the way around the list
+			// scanned all the way around the list
 #ifdef ZONE_DEBUG
 			Z_LogHeap();
 			Com_Error( ERR_FATAL, "Z_Malloc: failed on allocation of %i bytes from the %s zone: %s, line: %d (%s)",
@@ -1804,8 +1804,8 @@ typedef struct hunkblock_s {
 	int size;
 	byte printed;
 	struct hunkblock_s *next;
-	char *label;
-	char *file;
+	const char *label;
+	const char *file;
 	int line;
 } hunkblock_t;
 
@@ -2165,7 +2165,7 @@ static void Com_InitHunkMemory( void ) {
 
 	// make sure the file system has allocated and "not" freed any temp blocks
 	// this allows the config and product id files ( journal files too ) to be loaded
-	// by the file system without redunant routines in the file system utilizing different
+	// by the file system without redundant routines in the file system utilizing different
 	// memory systems
 	if ( FS_LoadStack() != 0 ) {
 		Com_Error( ERR_FATAL, "Hunk initialization failed. File system load stack not zero" );
@@ -2405,7 +2405,7 @@ void *Hunk_AllocateTempMemory( int size ) {
 
 	// return a Z_Malloc'd block if the hunk has not been initialized
 	// this allows the config and product id files ( journal files too ) to be loaded
-	// by the file system without redunant routines in the file system utilizing different
+	// by the file system without redundant routines in the file system utilizing different
 	// memory systems
 	if ( s_hunkData == NULL )
 	{
@@ -2453,7 +2453,7 @@ void Hunk_FreeTempMemory( void *buf ) {
 
 	// free with Z_Free if the hunk has not been initialized
 	// this allows the config and product id files ( journal files too ) to be loaded
-	// by the file system without redunant routines in the file system utilizing different
+	// by the file system without redundant routines in the file system utilizing different
 	// memory systems
 	if ( s_hunkData == NULL )
 	{
@@ -3843,7 +3843,7 @@ void Com_WriteConfiguration( void ) {
 	const char *basegame;
 	const char *gamedir;
 #endif
-	// if we are quiting without fully initializing, make sure
+	// if we are quitting without fully initializing, make sure
 	// we don't write out anything
 	if ( !com_fullyInitialized ) {
 		return;
@@ -4321,7 +4321,7 @@ static void PrintCvarMatches( const char *s ) {
 Field_FindFirstSeparator
 ===============
 */
-static char *Field_FindFirstSeparator( char *s )
+static const char *Field_FindFirstSeparator( const char *s )
 {
 	char c;
 	while ( (c = *s) != '\0' ) {
@@ -4510,7 +4510,7 @@ void Field_CompleteFilename( const char *dir, const char *ext, qboolean stripExt
 Field_CompleteCommand
 ===============
 */
-void Field_CompleteCommand( char *cmd, qboolean doCommands, qboolean doCvars )
+void Field_CompleteCommand( const char *cmd, qboolean doCommands, qboolean doCvars )
 {
 	int	completionArgument;
 
@@ -4552,7 +4552,7 @@ void Field_CompleteCommand( char *cmd, qboolean doCommands, qboolean doCvars )
 	if ( completionArgument > 1 )
 	{
 		const char *baseCmd = Cmd_Argv( 0 );
-		char *p;
+		const char *p;
 
 #ifndef DEDICATED
 			// This should always be true

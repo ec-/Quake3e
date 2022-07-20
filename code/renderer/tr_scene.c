@@ -22,21 +22,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "tr_local.h"
 
-int			r_firstSceneDrawSurf;
+static int			r_firstSceneDrawSurf;
 #ifdef USE_PMLIGHT
-int			r_firstSceneLitSurf;
+static int			r_firstSceneLitSurf;
 #endif
 
 int			r_numdlights;
-int			r_firstSceneDlight;
+static int			r_firstSceneDlight;
 
-int			r_numentities;
-int			r_firstSceneEntity;
+static int			r_numentities;
+static int			r_firstSceneEntity;
 
-int			r_numpolys;
-int			r_firstScenePoly;
+static int			r_numpolys;
+static int			r_firstScenePoly;
 
-int			r_numpolyverts;
+static int			r_numpolyverts;
 
 
 /*
@@ -97,7 +97,7 @@ Adds all the scene's polys into this view's drawsurf list
 void R_AddPolygonSurfaces( void ) {
 	int			i;
 	shader_t	*sh;
-	srfPoly_t	*poly;
+	const srfPoly_t	*poly;
 
 	tr.currentEntityNum = REFENTITYNUM_WORLD;
 	tr.shiftedEntityNum = tr.currentEntityNum << QSORT_REFENTITYNUM_SHIFT;
@@ -118,7 +118,7 @@ void RE_AddPolyToScene( qhandle_t hShader, int numVerts, const polyVert_t *verts
 	srfPoly_t	*poly;
 	int			i, j;
 	int			fogIndex;
-	fog_t		*fog;
+	const fog_t		*fog;
 	vec3_t		bounds[2];
 
 	if ( !tr.registered ) {
@@ -243,7 +243,7 @@ void RE_AddRefEntityToScene( const refEntity_t *ent, qboolean intShaderTime ) {
 RE_AddDynamicLightToScene
 =====================
 */
-void RE_AddDynamicLightToScene( const vec3_t org, float intensity, float r, float g, float b, int additive ) {
+static void RE_AddDynamicLightToScene( const vec3_t org, float intensity, float r, float g, float b, int additive ) {
 	dlight_t	*dl;
 
 	if ( !tr.registered ) {

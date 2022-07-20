@@ -219,8 +219,8 @@
     <ClCompile Include="..\..\renderervk\tr_bsp.c" />
     <ClCompile Include="..\..\renderervk\tr_cmds.c" />
     <ClCompile Include="..\..\renderervk\tr_curve.c" />
-    <ClCompile Include="..\..\renderervk\tr_font.c" />
     <ClCompile Include="..\..\renderervk\tr_image.c" />
+    <ClCompile Include="..\..\renderercommon\tr_font.c" />
     <ClCompile Include="..\..\renderercommon\tr_image_bmp.c" />
     <ClCompile Include="..\..\renderercommon\tr_image_jpg.c" />
     <ClCompile Include="..\..\renderercommon\tr_image_pcx.c" />

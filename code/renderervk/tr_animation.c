@@ -40,7 +40,7 @@ frame.
 R_MDRCullModel
 =============
 */
-static int R_MDRCullModel( mdrHeader_t *header, trRefEntity_t *ent ) {
+static int R_MDRCullModel( mdrHeader_t *header, const trRefEntity_t *ent ) {
 	vec3_t		bounds[2];
 	mdrFrame_t	*oldFrame, *newFrame;
 	int			i, frameSize;
@@ -132,9 +132,9 @@ static int R_MDRCullModel( mdrHeader_t *header, trRefEntity_t *ent ) {
 R_MDRComputeFogNum
 =================
 */
-static int R_MDRComputeFogNum( mdrHeader_t *header, trRefEntity_t *ent ) {
+static int R_MDRComputeFogNum( mdrHeader_t *header, const trRefEntity_t *ent ) {
 	int				i, j;
-	fog_t			*fog;
+	const fog_t			*fog;
 	mdrFrame_t		*mdrFrame;
 	vec3_t			localOrigin;
 	int frameSize;

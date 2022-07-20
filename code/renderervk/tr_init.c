@@ -180,14 +180,14 @@ int		max_polys;
 int		max_polyverts;
 
 #ifdef USE_VULKAN
+
 #include "vk.h"
 Vk_Instance vk;
 Vk_World	vk_world;
-#endif
+
+#else
 
 static char gl_extensions[ 32768 ];
-
-#ifndef USE_VULKAN
 
 #define GLE( ret, name, ... ) ret ( APIENTRY * q##name )( __VA_ARGS__ );
 	QGL_Core_PROCS;
@@ -271,25 +271,26 @@ void QDECL Com_Printf( const char *fmt, ... )
 #endif
 
 
+#ifndef USE_VULKAN
 /*
 ** R_HaveExtension
 */
-qboolean R_HaveExtension( const char *ext )
+static qboolean R_HaveExtension( const char *ext )
 {
 	const char *ptr = Q_stristr( gl_extensions, ext );
 	if (ptr == NULL)
 		return qfalse;
 	ptr += strlen(ext);
-	return ((*ptr == ' ') || (*ptr == '\0'));  // verify it's complete string.
+	return ((*ptr == ' ') || (*ptr == '\0'));  // verify its complete string.
 }
 
 
 /*
 ** R_InitExtensions
 */
-#ifndef USE_VULKAN
 static void R_InitExtensions( void )
 {
+	GLint max_texture_size = 0;
 	float version;
 	size_t len;
 
@@ -328,6 +329,16 @@ static void R_InitExtensions( void )
 	qglClientActiveTextureARB = NULL;
 
 	gl_clamp_mode = GL_CLAMP; // by default
+
+	// OpenGL driver constants
+	qglGetIntegerv( GL_MAX_TEXTURE_SIZE, &max_texture_size );
+	glConfig.maxTextureSize = max_texture_size;
+
+	// stubbed or broken drivers may have reported 0...
+	if ( glConfig.maxTextureSize <= 0 )
+		glConfig.maxTextureSize = 0;
+	else if ( glConfig.maxTextureSize > MAX_TEXTURE_SIZE )
+		glConfig.maxTextureSize = MAX_TEXTURE_SIZE; // ResampleTexture() relies on that maximum
 
 	if ( !r_allowExtensions->integer )
 	{
@@ -395,10 +406,24 @@ static void R_InitExtensions( void )
 
 			if ( qglActiveTextureARB && qglClientActiveTextureARB )
 			{
-				qglGetIntegerv( GL_MAX_ACTIVE_TEXTURES_ARB, &glConfig.numTextureUnits );
+				GLint textureUnits = 0;
 
-				if ( glConfig.numTextureUnits > 1 )
+				qglGetIntegerv( GL_MAX_ACTIVE_TEXTURES_ARB, &textureUnits );
+
+				if ( textureUnits > 1 )
 				{
+					GLint max_shader_units = 0;
+					GLint max_bind_units = 0;
+
+					qglGetIntegerv( GL_MAX_TEXTURE_IMAGE_UNITS, &max_shader_units );
+					qglGetIntegerv( GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &max_bind_units );
+
+					if ( max_bind_units > max_shader_units )
+						max_bind_units = max_shader_units;
+					if ( max_bind_units > MAX_TEXTURE_UNITS )
+						max_bind_units = MAX_TEXTURE_UNITS;
+
+					glConfig.numTextureUnits = MAX( textureUnits, max_bind_units );
 					ri.Printf( PRINT_ALL, "...using GL_ARB_multitexture\n" );
 				}
 				else
@@ -534,9 +559,6 @@ static void InitOpenGL( void )
 		vk_initialize();
 #else
 		const char *err;
-		GLint max_texture_size = 0;
-		GLint max_shader_units = -1;
-		GLint max_bind_units = -1;
 
 		ri.GLimp_Init( &glConfig );
 
@@ -547,27 +569,6 @@ static void InitOpenGL( void )
 			ri.Error( ERR_FATAL, "Error resolving core OpenGL function '%s'", err );
 
 		R_InitExtensions();
-
-		// OpenGL driver constants
-		qglGetIntegerv( GL_MAX_TEXTURE_SIZE, &max_texture_size );
-		glConfig.maxTextureSize = max_texture_size;
-
-		// stubbed or broken drivers may have reported 0...
-		if ( glConfig.maxTextureSize <= 0 )
-			glConfig.maxTextureSize = 0;
-		else if ( glConfig.maxTextureSize > MAX_TEXTURE_SIZE )
-			glConfig.maxTextureSize = MAX_TEXTURE_SIZE; // ResampleTexture() relies on that maximum
-
-		qglGetIntegerv( GL_MAX_TEXTURE_IMAGE_UNITS, &max_shader_units );
-		qglGetIntegerv( GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &max_bind_units );
-
-		if ( max_bind_units > max_shader_units )
-			max_bind_units = max_shader_units;
-		if ( max_bind_units > MAX_TEXTURE_UNITS )
-			max_bind_units = MAX_TEXTURE_UNITS;
-
-		if ( glConfig.numTextureUnits && max_bind_units > 0 )
-			glConfig.numTextureUnits = max_bind_units;
 #endif
 
 		glConfig.deviceSupportsGamma = qfalse;
@@ -586,7 +587,7 @@ static void InitOpenGL( void )
 	}
 
 #ifdef USE_VULKAN
-	if ( !vk.active && vk.instance ) {
+	if ( !vk.active ) {
 		// might happen after REF_KEEP_WINDOW
 		vk_initialize();
 		gls.initTime = ri.Milliseconds();

@@ -41,7 +41,7 @@ static void SV_SendConfigstring(client_t *client, int index)
 	if( len >= maxChunkSize ) {
 		int		sent = 0;
 		int		remaining = len;
-		char	*cmd;
+		const char	*cmd;
 		char	buf[MAX_STRING_CHARS];
 
 		while (remaining > 0 ) {
@@ -801,7 +801,7 @@ not just stuck on the outgoing message list, because the server is going
 to totally exit after returning from this function.
 ==================
 */
-void SV_FinalMessage( const char *message ) {
+static void SV_FinalMessage( const char *message ) {
 	int			i, j;
 	client_t	*cl;
 

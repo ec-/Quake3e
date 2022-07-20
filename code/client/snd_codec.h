@@ -58,7 +58,7 @@ typedef void (*CODEC_CLOSE)(snd_stream_t *stream);
 // Codec data structure
 struct snd_codec_s
 {
-	char *ext;
+	const char *ext;
 	CODEC_LOAD load;
 	CODEC_OPEN open;
 	CODEC_READ read;

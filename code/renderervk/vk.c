@@ -2937,7 +2937,7 @@ static void vk_alloc_attachments( void )
 static void vk_add_attachment_desc( VkImage desc, VkImageView *image_view, VkImageUsageFlags usage, VkMemoryRequirements *reqs, VkFormat image_format, VkImageAspectFlags aspect_flags, VkAccessFlags access_flags, VkImageLayout image_layout )
 {
 	if ( num_attachments >= ARRAY_LEN( attachments ) ) {
-		ri.Error( ERR_FATAL, "Attachments array ovrerlow" );
+		ri.Error( ERR_FATAL, "Attachments array overflow" );
 	} else {
 		attachments[ num_attachments ].descriptor = desc;
 		attachments[ num_attachments ].image_view = image_view;
@@ -6296,7 +6296,7 @@ static void vk_begin_render_pass( VkRenderPass renderPass, VkFramebuffer frameBu
 	render_pass_begin_info.renderArea.extent.height = height;
 
 	if ( clearValues ) {
-		/// attachments layout:
+		// attachments layout:
 		// [0] - resolve/color/presentation
 		// [1] - depth/stencil
 		// [2] - multisampled color, optional

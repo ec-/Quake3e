@@ -44,7 +44,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // additional integrity checks
 #define DEBUG_VM
 
-// various defintions to enable/disable particular optimization
+// various definitions to enable/disable particular optimization
 
 // use dynamic allocation of integer/scalar registers
 #define DYN_ALLOC_RX
@@ -2371,7 +2371,7 @@ savedOffset[ FUNC_SYSF ] = compiledOfs; // to jump from ConstOptimize()
 	emit(SUB32i(R1, rPSTACK, 8)); // r1 = pstack - 8
 	emit(STR32i(R1, rVMBASE, offsetof(vm_t, programStack))); // vm->programStack = r1
 
-	// sign-extend agruments starting from [procBase+8]
+	// sign-extend arguments starting from [procBase+8]
 	// R0 is already zero-extended
 	emit(LDRSWi(R1, rPROCBASE, 8));
 	emit(STP64(R0, R1, SP, 0));

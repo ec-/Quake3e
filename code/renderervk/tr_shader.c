@@ -38,7 +38,7 @@ static	texModInfo_t	texMods[MAX_SHADER_STAGES][TR_MAX_TEXMODS];
 static	shader_t*		hashTable[FILE_HASH_SIZE];
 
 #define MAX_SHADERTEXT_HASH		2048
-static char **shaderTextHashTable[MAX_SHADERTEXT_HASH];
+static const char **shaderTextHashTable[MAX_SHADERTEXT_HASH];
 
 /*
 ================
@@ -104,7 +104,7 @@ ParseVector
 ===============
 */
 static qboolean ParseVector( const char **text, int count, float *v ) {
-	char	*token;
+	const char	*token;
 	int		i;
 
 	// FIXME: spaces are currently required after parens, should change parseext...
@@ -295,7 +295,7 @@ ParseWaveForm
 */
 static void ParseWaveForm( const char **text, waveForm_t *wave )
 {
-	char *token;
+	const char *token;
 
 	token = COM_ParseExt( text, qfalse );
 	if ( token[0] == 0 )
@@ -1144,7 +1144,7 @@ deformVertexes text[0-7]
 ===============
 */
 static void ParseDeform( const char **text ) {
-	char	*token;
+	const char	*token;
 	deformStage_t	*ds;
 
 	token = COM_ParseExt( text, qfalse );
@@ -1294,8 +1294,8 @@ skyParms <outerbox> <cloudheight> <innerbox>
 ===============
 */
 static void ParseSkyParms( const char **text ) {
-	char		*token;
-	static char	*suf[6] = {"rt", "bk", "lf", "ft", "up", "dn"};
+	const char		*token;
+	static const char	*suf[6] = {"rt", "bk", "lf", "ft", "up", "dn"};
 	char		pathname[MAX_QPATH];
 	int			i;
 	imgFlags_t imgFlags = IMGFLAG_MIPMAP | IMGFLAG_PICMIP;
@@ -1360,8 +1360,8 @@ static void ParseSkyParms( const char **text ) {
 ParseSort
 =================
 */
-void ParseSort( const char **text ) {
-	char	*token;
+static void ParseSort( const char **text ) {
+	const char	*token;
 
 	token = COM_ParseExt( text, qfalse );
 	if ( token[0] == 0 ) {
@@ -1414,7 +1414,7 @@ static const infoParm_t infoParms[] = {
 	{"origin",		1,	0,	CONTENTS_ORIGIN },		// center of rotating brushes
 	{"trans",		0,	0,	CONTENTS_TRANSLUCENT },	// don't eat contained surfaces
 	{"detail",		0,	0,	CONTENTS_DETAIL },		// don't include in structural bsp
-	{"structural",	0,	0,	CONTENTS_STRUCTURAL },	// force into structural bsp even if trnas
+	{"structural",	0,	0,	CONTENTS_STRUCTURAL },	// force into structural bsp even if trans
 	{"areaportal",	1,	0,	CONTENTS_AREAPORTAL },	// divides areas
 	{"clusterportal", 1,0,  CONTENTS_CLUSTERPORTAL },	// for bots
 	{"donotenter",  1,  0,  CONTENTS_DONOTENTER },		// for bots
@@ -1452,7 +1452,7 @@ surfaceparm <name>
 ===============
 */
 static void ParseSurfaceParm( const char **text ) {
-	char	*token;
+	const char	*token;
 	int		numInfoParms = ARRAY_LEN( infoParms );
 	int		i;
 
@@ -3901,7 +3901,8 @@ static void ScanAndLoadShaderFiles( void )
 	char *xbuffers[MAX_SHADER_FILES];
 	int numShaderFiles, numShaderxFiles;
 	int i;
-	char *token, *hashMem, *textEnd;
+	const char *token, *hashMem;
+	char *textEnd;
 	const char *p, *oldp;
 	int shaderTextHashTableSizes[MAX_SHADERTEXT_HASH], hash, size;
 
@@ -3991,7 +3992,7 @@ static void ScanAndLoadShaderFiles( void )
 	hashMem = ri.Hunk_Alloc( size * sizeof(char *), h_low );
 
 	for (i = 0; i < MAX_SHADERTEXT_HASH; i++) {
-		shaderTextHashTable[i] = (char **) hashMem;
+		shaderTextHashTable[i] = (const char **) hashMem;
 		hashMem = ((char *) hashMem) + ((shaderTextHashTableSizes[i] + 1) * sizeof(char *));
 	}
 

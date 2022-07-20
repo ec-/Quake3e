@@ -36,11 +36,11 @@ Based on [Quake-III-Arena-Kenny-Edition](https://github.com/kennyalive/Quake-III
 * greatly reduced API overhead (call/dispatch ratio)
 * flexible vertex buffer memory management to allow loading huge maps
 * multiple command buffers to reduce processing bottlenecks
-* reversed depth buffer to eliminate z-fighting on big maps
+* [reversed depth buffer](https://developer.nvidia.com/content/depth-precision-visualized) to eliminate z-fighting on big maps
 * merged lightmaps (atlases)
 * multitexturing optimizations
 * static world surfaces cached in VBO (**\r_vbo 1**)
-* useful debug markers for tools like RenderDoc
+* useful debug markers for tools like [RenderDoc](https://renderdoc.org/)
 * fixed framebuffer corruption on some Intel iGPUs
 * offscreen rendering, enabled with **\r_fbo 1**, all following requires it enabled:
 * `screenMap` texture rendering - to create realistic environment reflections
