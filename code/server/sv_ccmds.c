@@ -309,7 +309,7 @@ static void SV_MapRestart_f( void ) {
 	sv.restarting = qtrue;
 
 	// make sure that level time is not zero
-	sv.time = sv.time ? sv.time : 8;
+	//sv.time = sv.time ? sv.time : 8;
 
 	SV_RestartGameProgs();
 
