@@ -1857,8 +1857,6 @@ static void RE_Shutdown( refShutdownCode_t code ) {
 #ifdef USE_VULKAN
 		vk_shutdown();
 
-		//Com_Memset( &vk, 0, sizeof( vk ) );
-		Com_Memset( &vk_world, 0, sizeof( vk_world ) );
 		Com_Memset( &glState, 0, sizeof( glState ) );
 
 		if ( r_device->modified ) {

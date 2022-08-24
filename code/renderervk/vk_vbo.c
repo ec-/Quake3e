@@ -837,7 +837,7 @@ void VBO_RenderIBOItems( void )
 
 		for ( i = 0; i < vbo->ibo_items_count; i++ )
 		{
-			qvkCmdDrawIndexed( vk.cmd->command_buffer, vbo->ibo_items[ i ].length, 1,  vbo->ibo_items[ i ].offset, 0, 0 );
+			vk_draw_indexed( vbo->ibo_items[ i ].length, vbo->ibo_items[ i ].offset );
 		}
 	}
 
@@ -846,7 +846,7 @@ void VBO_RenderIBOItems( void )
 	{
 		vk_bind_index_buffer( vk.cmd->vertex_buffer, vbo->soft_buffer_offset );
 
-		qvkCmdDrawIndexed( vk.cmd->command_buffer, vbo->soft_buffer_indexes, 1, 0, 0, 0 );
+		vk_draw_indexed( vbo->soft_buffer_indexes, 0 );
 	}
 }
 

@@ -1829,13 +1829,9 @@ void R_DeleteTextures( void ) {
 
 	for ( i = 0; i < tr.numImages; i++ ) {
 		img = tr.images[ i ];
+		vk_destroy_image_resources( &img->handle, &img->view );
+
 		// img->descriptor will be released with pool reset
-		if ( img->handle != VK_NULL_HANDLE ) {
-			qvkDestroyImage( vk.device, img->handle, NULL );
-			qvkDestroyImageView( vk.device, img->view, NULL );
-		}
-		img->handle = VK_NULL_HANDLE;
-		img->view = VK_NULL_HANDLE;
 	}
 #else
 	for ( i = 0; i < tr.numImages; i++ ) {

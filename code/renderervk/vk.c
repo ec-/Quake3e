@@ -14,116 +14,116 @@ static int vkMaxSamples = VK_SAMPLE_COUNT_1_BIT;
 //
 // Vulkan API functions used by the renderer.
 //
-PFN_vkGetInstanceProcAddr						qvkGetInstanceProcAddr;
+static PFN_vkGetInstanceProcAddr						qvkGetInstanceProcAddr;
 
-PFN_vkCreateInstance							qvkCreateInstance;
-PFN_vkEnumerateInstanceExtensionProperties		qvkEnumerateInstanceExtensionProperties;
+static PFN_vkCreateInstance								qvkCreateInstance;
+static PFN_vkEnumerateInstanceExtensionProperties		qvkEnumerateInstanceExtensionProperties;
 
-PFN_vkCreateDevice								qvkCreateDevice;
-PFN_vkDestroyInstance							qvkDestroyInstance;
-PFN_vkEnumerateDeviceExtensionProperties		qvkEnumerateDeviceExtensionProperties;
-PFN_vkEnumeratePhysicalDevices					qvkEnumeratePhysicalDevices;
-PFN_vkGetDeviceProcAddr							qvkGetDeviceProcAddr;
-PFN_vkGetPhysicalDeviceFeatures					qvkGetPhysicalDeviceFeatures;
-PFN_vkGetPhysicalDeviceFormatProperties			qvkGetPhysicalDeviceFormatProperties;
-PFN_vkGetPhysicalDeviceMemoryProperties			qvkGetPhysicalDeviceMemoryProperties;
-PFN_vkGetPhysicalDeviceProperties				qvkGetPhysicalDeviceProperties;
-PFN_vkGetPhysicalDeviceQueueFamilyProperties	qvkGetPhysicalDeviceQueueFamilyProperties;
-PFN_vkDestroySurfaceKHR							qvkDestroySurfaceKHR;
-PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR	qvkGetPhysicalDeviceSurfaceCapabilitiesKHR;
-PFN_vkGetPhysicalDeviceSurfaceFormatsKHR		qvkGetPhysicalDeviceSurfaceFormatsKHR;
-PFN_vkGetPhysicalDeviceSurfacePresentModesKHR	qvkGetPhysicalDeviceSurfacePresentModesKHR;
-PFN_vkGetPhysicalDeviceSurfaceSupportKHR		qvkGetPhysicalDeviceSurfaceSupportKHR;
+static PFN_vkCreateDevice								qvkCreateDevice;
+static PFN_vkDestroyInstance							qvkDestroyInstance;
+static PFN_vkEnumerateDeviceExtensionProperties			qvkEnumerateDeviceExtensionProperties;
+static PFN_vkEnumeratePhysicalDevices					qvkEnumeratePhysicalDevices;
+static PFN_vkGetDeviceProcAddr							qvkGetDeviceProcAddr;
+static PFN_vkGetPhysicalDeviceFeatures					qvkGetPhysicalDeviceFeatures;
+static PFN_vkGetPhysicalDeviceFormatProperties			qvkGetPhysicalDeviceFormatProperties;
+static PFN_vkGetPhysicalDeviceMemoryProperties			qvkGetPhysicalDeviceMemoryProperties;
+static PFN_vkGetPhysicalDeviceProperties				qvkGetPhysicalDeviceProperties;
+static PFN_vkGetPhysicalDeviceQueueFamilyProperties		qvkGetPhysicalDeviceQueueFamilyProperties;
+static PFN_vkDestroySurfaceKHR							qvkDestroySurfaceKHR;
+static PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR	qvkGetPhysicalDeviceSurfaceCapabilitiesKHR;
+static PFN_vkGetPhysicalDeviceSurfaceFormatsKHR			qvkGetPhysicalDeviceSurfaceFormatsKHR;
+static PFN_vkGetPhysicalDeviceSurfacePresentModesKHR	qvkGetPhysicalDeviceSurfacePresentModesKHR;
+static PFN_vkGetPhysicalDeviceSurfaceSupportKHR			qvkGetPhysicalDeviceSurfaceSupportKHR;
 #ifdef USE_VK_VALIDATION
-PFN_vkCreateDebugReportCallbackEXT				qvkCreateDebugReportCallbackEXT;
-PFN_vkDestroyDebugReportCallbackEXT				qvkDestroyDebugReportCallbackEXT;
+static PFN_vkCreateDebugReportCallbackEXT				qvkCreateDebugReportCallbackEXT;
+static PFN_vkDestroyDebugReportCallbackEXT				qvkDestroyDebugReportCallbackEXT;
 #endif
-PFN_vkAllocateCommandBuffers					qvkAllocateCommandBuffers;
-PFN_vkAllocateDescriptorSets					qvkAllocateDescriptorSets;
-PFN_vkAllocateMemory							qvkAllocateMemory;
-PFN_vkBeginCommandBuffer						qvkBeginCommandBuffer;
-PFN_vkBindBufferMemory							qvkBindBufferMemory;
-PFN_vkBindImageMemory							qvkBindImageMemory;
-PFN_vkCmdBeginRenderPass						qvkCmdBeginRenderPass;
-PFN_vkCmdBindDescriptorSets						qvkCmdBindDescriptorSets;
-PFN_vkCmdBindIndexBuffer						qvkCmdBindIndexBuffer;
-PFN_vkCmdBindPipeline							qvkCmdBindPipeline;
-PFN_vkCmdBindVertexBuffers						qvkCmdBindVertexBuffers;
-PFN_vkCmdBlitImage								qvkCmdBlitImage;
-PFN_vkCmdClearAttachments						qvkCmdClearAttachments;
-PFN_vkCmdCopyBuffer								qvkCmdCopyBuffer;
-PFN_vkCmdCopyBufferToImage						qvkCmdCopyBufferToImage;
-PFN_vkCmdCopyImage								qvkCmdCopyImage;
-PFN_vkCmdDraw									qvkCmdDraw;
-PFN_vkCmdDrawIndexed							qvkCmdDrawIndexed;
-PFN_vkCmdEndRenderPass							qvkCmdEndRenderPass;
-PFN_vkCmdNextSubpass							qvkCmdNextSubpass;
-PFN_vkCmdPipelineBarrier						qvkCmdPipelineBarrier;
-PFN_vkCmdPushConstants							qvkCmdPushConstants;
-PFN_vkCmdSetDepthBias							qvkCmdSetDepthBias;
-PFN_vkCmdSetScissor								qvkCmdSetScissor;
-PFN_vkCmdSetViewport							qvkCmdSetViewport;
-PFN_vkCreateBuffer								qvkCreateBuffer;
-PFN_vkCreateCommandPool							qvkCreateCommandPool;
-PFN_vkCreateDescriptorPool						qvkCreateDescriptorPool;
-PFN_vkCreateDescriptorSetLayout					qvkCreateDescriptorSetLayout;
-PFN_vkCreateFence								qvkCreateFence;
-PFN_vkCreateFramebuffer							qvkCreateFramebuffer;
-PFN_vkCreateGraphicsPipelines					qvkCreateGraphicsPipelines;
-PFN_vkCreateImage								qvkCreateImage;
-PFN_vkCreateImageView							qvkCreateImageView;
-PFN_vkCreatePipelineLayout						qvkCreatePipelineLayout;
-PFN_vkCreatePipelineCache						qvkCreatePipelineCache;
-PFN_vkCreateRenderPass							qvkCreateRenderPass;
-PFN_vkCreateSampler								qvkCreateSampler;
-PFN_vkCreateSemaphore							qvkCreateSemaphore;
-PFN_vkCreateShaderModule						qvkCreateShaderModule;
-PFN_vkDestroyBuffer								qvkDestroyBuffer;
-PFN_vkDestroyCommandPool						qvkDestroyCommandPool;
-PFN_vkDestroyDescriptorPool						qvkDestroyDescriptorPool;
-PFN_vkDestroyDescriptorSetLayout				qvkDestroyDescriptorSetLayout;
-PFN_vkDestroyDevice								qvkDestroyDevice;
-PFN_vkDestroyFence								qvkDestroyFence;
-PFN_vkDestroyFramebuffer						qvkDestroyFramebuffer;
-PFN_vkDestroyImage								qvkDestroyImage;
-PFN_vkDestroyImageView							qvkDestroyImageView;
-PFN_vkDestroyPipeline							qvkDestroyPipeline;
-PFN_vkDestroyPipelineCache						qvkDestroyPipelineCache;
-PFN_vkDestroyPipelineLayout						qvkDestroyPipelineLayout;
-PFN_vkDestroyRenderPass							qvkDestroyRenderPass;
-PFN_vkDestroySampler							qvkDestroySampler;
-PFN_vkDestroySemaphore							qvkDestroySemaphore;
-PFN_vkDestroyShaderModule						qvkDestroyShaderModule;
-PFN_vkDeviceWaitIdle							qvkDeviceWaitIdle;
-PFN_vkEndCommandBuffer							qvkEndCommandBuffer;
-PFN_vkFlushMappedMemoryRanges					qvkFlushMappedMemoryRanges;
-PFN_vkFreeCommandBuffers						qvkFreeCommandBuffers;
-PFN_vkFreeDescriptorSets						qvkFreeDescriptorSets;
-PFN_vkFreeMemory								qvkFreeMemory;
-PFN_vkGetBufferMemoryRequirements				qvkGetBufferMemoryRequirements;
-PFN_vkGetDeviceQueue							qvkGetDeviceQueue;
-PFN_vkGetImageMemoryRequirements				qvkGetImageMemoryRequirements;
-PFN_vkGetImageSubresourceLayout					qvkGetImageSubresourceLayout;
-PFN_vkInvalidateMappedMemoryRanges				qvkInvalidateMappedMemoryRanges;
-PFN_vkMapMemory									qvkMapMemory;
-PFN_vkQueueSubmit								qvkQueueSubmit;
-PFN_vkQueueWaitIdle								qvkQueueWaitIdle;
-PFN_vkResetCommandBuffer						qvkResetCommandBuffer;
-PFN_vkResetDescriptorPool						qvkResetDescriptorPool;
-PFN_vkResetFences								qvkResetFences;
-PFN_vkUnmapMemory								qvkUnmapMemory;
-PFN_vkUpdateDescriptorSets						qvkUpdateDescriptorSets;
-PFN_vkWaitForFences								qvkWaitForFences;
-PFN_vkAcquireNextImageKHR						qvkAcquireNextImageKHR;
-PFN_vkCreateSwapchainKHR						qvkCreateSwapchainKHR;
-PFN_vkDestroySwapchainKHR						qvkDestroySwapchainKHR;
-PFN_vkGetSwapchainImagesKHR						qvkGetSwapchainImagesKHR;
-PFN_vkQueuePresentKHR							qvkQueuePresentKHR;
+static PFN_vkAllocateCommandBuffers						qvkAllocateCommandBuffers;
+static PFN_vkAllocateDescriptorSets						qvkAllocateDescriptorSets;
+static PFN_vkAllocateMemory								qvkAllocateMemory;
+static PFN_vkBeginCommandBuffer							qvkBeginCommandBuffer;
+static PFN_vkBindBufferMemory							qvkBindBufferMemory;
+static PFN_vkBindImageMemory							qvkBindImageMemory;
+static PFN_vkCmdBeginRenderPass							qvkCmdBeginRenderPass;
+static PFN_vkCmdBindDescriptorSets						qvkCmdBindDescriptorSets;
+static PFN_vkCmdBindIndexBuffer							qvkCmdBindIndexBuffer;
+static PFN_vkCmdBindPipeline							qvkCmdBindPipeline;
+static PFN_vkCmdBindVertexBuffers						qvkCmdBindVertexBuffers;
+static PFN_vkCmdBlitImage								qvkCmdBlitImage;
+static PFN_vkCmdClearAttachments						qvkCmdClearAttachments;
+static PFN_vkCmdCopyBuffer								qvkCmdCopyBuffer;
+static PFN_vkCmdCopyBufferToImage						qvkCmdCopyBufferToImage;
+static PFN_vkCmdCopyImage								qvkCmdCopyImage;
+static PFN_vkCmdDraw									qvkCmdDraw;
+static PFN_vkCmdDrawIndexed								qvkCmdDrawIndexed;
+static PFN_vkCmdEndRenderPass							qvkCmdEndRenderPass;
+static PFN_vkCmdNextSubpass								qvkCmdNextSubpass;
+static PFN_vkCmdPipelineBarrier							qvkCmdPipelineBarrier;
+static PFN_vkCmdPushConstants							qvkCmdPushConstants;
+static PFN_vkCmdSetDepthBias							qvkCmdSetDepthBias;
+static PFN_vkCmdSetScissor								qvkCmdSetScissor;
+static PFN_vkCmdSetViewport								qvkCmdSetViewport;
+static PFN_vkCreateBuffer								qvkCreateBuffer;
+static PFN_vkCreateCommandPool							qvkCreateCommandPool;
+static PFN_vkCreateDescriptorPool						qvkCreateDescriptorPool;
+static PFN_vkCreateDescriptorSetLayout					qvkCreateDescriptorSetLayout;
+static PFN_vkCreateFence								qvkCreateFence;
+static PFN_vkCreateFramebuffer							qvkCreateFramebuffer;
+static PFN_vkCreateGraphicsPipelines					qvkCreateGraphicsPipelines;
+static PFN_vkCreateImage								qvkCreateImage;
+static PFN_vkCreateImageView							qvkCreateImageView;
+static PFN_vkCreatePipelineLayout						qvkCreatePipelineLayout;
+static PFN_vkCreatePipelineCache						qvkCreatePipelineCache;
+static PFN_vkCreateRenderPass							qvkCreateRenderPass;
+static PFN_vkCreateSampler								qvkCreateSampler;
+static PFN_vkCreateSemaphore							qvkCreateSemaphore;
+static PFN_vkCreateShaderModule							qvkCreateShaderModule;
+static PFN_vkDestroyBuffer								qvkDestroyBuffer;
+static PFN_vkDestroyCommandPool							qvkDestroyCommandPool;
+static PFN_vkDestroyDescriptorPool						qvkDestroyDescriptorPool;
+static PFN_vkDestroyDescriptorSetLayout					qvkDestroyDescriptorSetLayout;
+static PFN_vkDestroyDevice								qvkDestroyDevice;
+static PFN_vkDestroyFence								qvkDestroyFence;
+static PFN_vkDestroyFramebuffer							qvkDestroyFramebuffer;
+static PFN_vkDestroyImage								qvkDestroyImage;
+static PFN_vkDestroyImageView							qvkDestroyImageView;
+static PFN_vkDestroyPipeline							qvkDestroyPipeline;
+static PFN_vkDestroyPipelineCache						qvkDestroyPipelineCache;
+static PFN_vkDestroyPipelineLayout						qvkDestroyPipelineLayout;
+static PFN_vkDestroyRenderPass							qvkDestroyRenderPass;
+static PFN_vkDestroySampler								qvkDestroySampler;
+static PFN_vkDestroySemaphore							qvkDestroySemaphore;
+static PFN_vkDestroyShaderModule						qvkDestroyShaderModule;
+static PFN_vkDeviceWaitIdle								qvkDeviceWaitIdle;
+static PFN_vkEndCommandBuffer							qvkEndCommandBuffer;
+static PFN_vkFlushMappedMemoryRanges					qvkFlushMappedMemoryRanges;
+static PFN_vkFreeCommandBuffers							qvkFreeCommandBuffers;
+static PFN_vkFreeDescriptorSets							qvkFreeDescriptorSets;
+static PFN_vkFreeMemory									qvkFreeMemory;
+static PFN_vkGetBufferMemoryRequirements				qvkGetBufferMemoryRequirements;
+static PFN_vkGetDeviceQueue								qvkGetDeviceQueue;
+static PFN_vkGetImageMemoryRequirements					qvkGetImageMemoryRequirements;
+static PFN_vkGetImageSubresourceLayout					qvkGetImageSubresourceLayout;
+static PFN_vkInvalidateMappedMemoryRanges				qvkInvalidateMappedMemoryRanges;
+static PFN_vkMapMemory									qvkMapMemory;
+static PFN_vkQueueSubmit								qvkQueueSubmit;
+static PFN_vkQueueWaitIdle								qvkQueueWaitIdle;
+static PFN_vkResetCommandBuffer							qvkResetCommandBuffer;
+static PFN_vkResetDescriptorPool						qvkResetDescriptorPool;
+static PFN_vkResetFences								qvkResetFences;
+static PFN_vkUnmapMemory								qvkUnmapMemory;
+static PFN_vkUpdateDescriptorSets						qvkUpdateDescriptorSets;
+static PFN_vkWaitForFences								qvkWaitForFences;
+static PFN_vkAcquireNextImageKHR						qvkAcquireNextImageKHR;
+static PFN_vkCreateSwapchainKHR							qvkCreateSwapchainKHR;
+static PFN_vkDestroySwapchainKHR						qvkDestroySwapchainKHR;
+static PFN_vkGetSwapchainImagesKHR						qvkGetSwapchainImagesKHR;
+static PFN_vkQueuePresentKHR							qvkQueuePresentKHR;
 
-PFN_vkGetBufferMemoryRequirements2KHR			qvkGetBufferMemoryRequirements2KHR;
-PFN_vkGetImageMemoryRequirements2KHR			qvkGetImageMemoryRequirements2KHR;
+static PFN_vkGetBufferMemoryRequirements2KHR			qvkGetBufferMemoryRequirements2KHR;
+static PFN_vkGetImageMemoryRequirements2KHR				qvkGetImageMemoryRequirements2KHR;
 
-PFN_vkDebugMarkerSetObjectNameEXT				qvkDebugMarkerSetObjectNameEXT;
+static PFN_vkDebugMarkerSetObjectNameEXT				qvkDebugMarkerSetObjectNameEXT;
 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -1062,6 +1062,12 @@ static qboolean used_instance_extension( const char *ext )
 	if ( Q_stricmp( ext, VK_EXT_DEBUG_UTILS_EXTENSION_NAME ) == 0 )
 		return qtrue;
 
+	if ( Q_stricmp( ext, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME ) == 0 )
+		return qtrue;
+
+	if ( Q_stricmp( ext, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME ) == 0 )
+		return qtrue;
+
 	return qfalse;
 }
 
@@ -1073,12 +1079,14 @@ static void create_instance( void )
 	const char* validation_layer_name2 = "VK_LAYER_KHRONOS_validation";
 #endif
 	VkInstanceCreateInfo desc;
+	VkInstanceCreateFlags flags;
 	VkExtensionProperties *extension_properties;
 	VkResult res;
-	const char **extension_names, *ext;
+	const char **extension_names;
 	uint32_t i, n, count, extension_count;
 	VkApplicationInfo appInfo;
 
+	flags = 0;
 	count = 0;
 	extension_count = 0;
 	VK_CHECK(qvkEnumerateInstanceExtensionProperties(NULL, &count, NULL));
@@ -1088,19 +1096,29 @@ static void create_instance( void )
 
 	VK_CHECK( qvkEnumerateInstanceExtensionProperties( NULL, &count, extension_properties ) );
 	for ( i = 0; i < count; i++ ) {
-		ext = extension_properties[i].extensionName;
+		const char *ext = extension_properties[i].extensionName;
+
 		if ( !used_instance_extension( ext ) ) {
 			continue;
 		}
+
+		// search for duplicates
 		for ( n = 0; n < extension_count; n++ ) {
 			if ( Q_stricmp( ext, extension_names[ n ] ) == 0 ) {
 				break;
 			}
 		}
 		if ( n != extension_count ) {
-			continue; // skip duplicate
+			continue;
 		}
+
 		extension_names[ extension_count++ ] = ext;
+
+		if ( Q_stricmp( ext, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME ) == 0 ) {
+			flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+		}
+
+		ri.Printf(PRINT_DEVELOPER, "instance extension: %s\n", ext);
 	}
 
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -1114,7 +1132,7 @@ static void create_instance( void )
 	// create instance
 	desc.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	desc.pNext = NULL;
-	desc.flags = 0;
+	desc.flags = flags;
 	desc.pApplicationInfo = &appInfo;
 	desc.enabledExtensionCount = extension_count;
 	desc.ppEnabledExtensionNames = extension_names;
@@ -4087,6 +4105,7 @@ __cleanup:
 		qvkDestroyInstance( vk.instance, NULL );
 
 	Com_Memset( &vk, 0, sizeof( vk ) );
+	Com_Memset( &vk_world, 0, sizeof( vk_world ) );
 
 	deinit_vulkan_library();
 }
@@ -4357,6 +4376,23 @@ void vk_update_descriptor_set( image_t *image, qboolean mipmap ) {
 	descriptor_write.pTexelBufferView = NULL;
 
 	qvkUpdateDescriptorSets( vk.device, 1, &descriptor_write, 0, NULL );
+}
+
+
+void vk_destroy_image_resources( VkImage *image, VkImageView *imageView )
+{
+	if ( image != NULL ) {
+		if ( *image != VK_NULL_HANDLE ) {
+			qvkDestroyImage( vk.device, *image, NULL );
+			*image = VK_NULL_HANDLE;
+		}
+	}
+	if ( imageView != NULL ) {
+		if ( *imageView != VK_NULL_HANDLE ) {
+			qvkDestroyImageView( vk.device, *imageView, NULL );
+			*imageView = VK_NULL_HANDLE;
+		}
+	}
 }
 
 
@@ -6019,6 +6055,12 @@ void vk_bind_index_buffer( VkBuffer buffer, uint32_t offset )
 
 	vk.cmd->curr_index_buffer = buffer;
 	vk.cmd->curr_index_offset = offset;
+}
+
+
+void vk_draw_indexed( uint32_t indexCount, uint32_t firstIndex )
+{
+	qvkCmdDrawIndexed( vk.cmd->command_buffer, indexCount, 1, firstIndex, 0, 0 );
 }
 
 

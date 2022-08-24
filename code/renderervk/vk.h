@@ -203,6 +203,7 @@ void vk_create_image( image_t *image, int width, int height, int mip_levels );
 void vk_upload_image_data( image_t *image, int x, int y, int width, int height, int miplevels, byte *pixels, int size );
 byte *resample_image_data( const image_t *image, byte *data, const int data_size, int *bytes_per_pixel );
 void vk_update_descriptor_set( image_t *image, qboolean mipmap );
+void vk_destroy_image_resources( VkImage *image, VkImageView *imageView );
 
 uint32_t vk_find_pipeline_ext( uint32_t base, const Vk_Pipeline_Def *def, qboolean use );
 void vk_get_pipeline_def( uint32_t pipeline, Vk_Pipeline_Def *def );
@@ -240,6 +241,7 @@ void vk_update_mvp( const float *m );
 
 uint32_t vk_tess_index( uint32_t numIndexes, const void *src );
 void vk_bind_index_buffer( VkBuffer buffer, uint32_t offset );
+void vk_draw_indexed( uint32_t indexCount, uint32_t firstIndex );
 
 void vk_reset_descriptor( int index );
 void vk_update_descriptor( int index, VkDescriptorSet descriptor );
@@ -597,10 +599,3 @@ typedef struct {
 
 extern Vk_Instance	vk;				// shouldn't be cleared during ref re-init
 extern Vk_World		vk_world;		// this data is cleared during ref re-init
-
-// Most of the renderer's code uses Vulkan API via function provides in this file but
-// there are few places outside of vk.c where we use Vulkan commands directly.
-
-extern PFN_vkDestroyImage qvkDestroyImage;
-extern PFN_vkDestroyImageView qvkDestroyImageView;
-extern PFN_vkCmdDrawIndexed qvkCmdDrawIndexed;
