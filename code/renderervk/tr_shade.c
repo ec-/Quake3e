@@ -735,23 +735,16 @@ void R_ComputeColors( const int b, color4ub_t *dest, const shaderStage_t *pStage
 		break;
 	case AGEN_PORTAL:
 		{
-			unsigned char alpha;
-
 			for ( i = 0; i < tess.numVertexes; i++ )
 			{
+				unsigned char alpha;
 				float len;
 				vec3_t v;
 
 				VectorSubtract( tess.xyz[i], backEnd.viewParms.or.origin, v );
-				len = VectorLength( v );
+				len = VectorLength( v ) * tess.shader->portalRangeR;
 
-				len /= tess.shader->portalRange;
-
-				if ( len < 0 )
-				{
-					alpha = 0;
-				}
-				else if ( len > 1 )
+				if ( len > 1 )
 				{
 					alpha = 0xff;
 				}

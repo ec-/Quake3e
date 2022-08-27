@@ -381,6 +381,7 @@ typedef struct shader_s {
 	fogParms_t	fogParms;
 
 	float		portalRange;			// distance to fog out at
+	float		portalRangeR;
 
 	qboolean	multitextureEnv;		// if shader has multitexture stage(s)
 
