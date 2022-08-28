@@ -442,6 +442,10 @@ ifeq ($(COMPILE_PLATFORM),darwin)
     CLIENT_LDFLAGS = -F/Library/Frameworks -framework SDL2
   endif
 
+  ifeq ($(USE_SYSTEM_JPEG),1)
+    CLIENT_LDFLAGS += -ljpeg
+  endif
+
   ifeq ($(USE_PCRE),1)
     CLIENT_LDFLAGS += -lpcre
   endif

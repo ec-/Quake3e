@@ -110,7 +110,7 @@ added to the sorting list.
 This will also allow mirrors on both sides of a model without recursion.
 ================
 */
-static qboolean	R_CullSurface( surfaceType_t *surface, shader_t *shader ) {
+static qboolean	R_CullSurface( const surfaceType_t *surface, shader_t *shader ) {
 	srfSurfaceFace_t *sface;
 	float			d;
 
@@ -245,7 +245,7 @@ static qboolean R_LightCullSurface( const surfaceType_t* surface, const dlight_t
 static int R_DlightFace( srfSurfaceFace_t *face, int dlightBits ) {
 	float		d;
 	int			i;
-	dlight_t	*dl;
+	const dlight_t	*dl;
 
 	for ( i = 0; i < tr.refdef.num_dlights; i++ ) {
 		if ( ! ( dlightBits & ( 1 << i ) ) ) {
@@ -270,7 +270,7 @@ static int R_DlightFace( srfSurfaceFace_t *face, int dlightBits ) {
 
 static int R_DlightGrid( srfGridMesh_t *grid, int dlightBits ) {
 	int			i;
-	dlight_t	*dl;
+	const dlight_t	*dl;
 
 	for ( i = 0 ; i < tr.refdef.num_dlights ; i++ ) {
 		if ( ! ( dlightBits & ( 1 << i ) ) ) {
@@ -303,7 +303,7 @@ static int R_DlightTrisurf( srfTriangles_t *surf, int dlightBits ) {
 	return dlightBits;
 #if 0
 	int			i;
-	dlight_t	*dl;
+	const dlight_t	*dl;
 
 	for ( i = 0 ; i < tr.refdef.num_dlights ; i++ ) {
 		if ( ! ( dlightBits & ( 1 << i ) ) ) {
@@ -522,7 +522,7 @@ R_AddBrushModelSurfaces
 void R_AddBrushModelSurfaces ( trRefEntity_t *ent ) {
 	bmodel_t	*bmodel;
 	int			clip;
-	model_t		*pModel;
+	const model_t		*pModel;
 	int			i;
 
 	pModel = R_GetModelByHandle( ent->e.hModel );
@@ -665,7 +665,7 @@ static void R_RecursiveWorldNode( mnode_t *node, unsigned int planeBits, unsigne
 			int	i;
 
 			for ( i = 0 ; i < tr.refdef.num_dlights ; i++ ) {
-				dlight_t	*dl;
+				const dlight_t	*dl;
 				float		dist;
 
 				if ( dlightBits & ( 1 << i ) ) {
@@ -743,7 +743,7 @@ R_PointInLeaf
 static mnode_t *R_PointInLeaf( const vec3_t p ) {
 	mnode_t		*node;
 	float		d;
-	cplane_t	*plane;
+	const cplane_t	*plane;
 	
 	if ( !tr.world ) {
 		ri.Error (ERR_DROP, "R_PointInLeaf: bad model");
@@ -785,8 +785,8 @@ R_inPVS
 =================
 */
 qboolean R_inPVS( const vec3_t p1, const vec3_t p2 ) {
-	mnode_t *leaf;
-	byte	*vis;
+	const mnode_t *leaf;
+	const byte	*vis;
 
 	leaf = R_PointInLeaf( p1 );
 	vis = ri.CM_ClusterPVS( leaf->cluster );

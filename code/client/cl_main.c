@@ -650,7 +650,7 @@ static void CL_Record_f( void ) {
 CL_CompleteRecordName
 ====================
 */
-static void CL_CompleteRecordName( char *args, int argNum )
+static void CL_CompleteRecordName(const char *args, int argNum )
 {
 	if ( argNum == 2 )
 	{
@@ -819,7 +819,7 @@ static qboolean CL_DemoNameCallback_f( const char *filename, int length )
 CL_CompleteDemoName
 ====================
 */
-static void CL_CompleteDemoName( char *args, int argNum )
+static void CL_CompleteDemoName(const char *args, int argNum )
 {
 	if ( argNum == 2 )
 	{
@@ -840,7 +840,8 @@ demo <demoname>
 */
 static void CL_PlayDemo_f( void ) {
 	char		name[MAX_OSPATH];
-	char		*arg, *ext_test;
+	const char		*arg;
+	char		*ext_test;
 	int			protocol, i;
 	char		retry[MAX_OSPATH];
 	const char	*shortname, *slash;
@@ -1229,7 +1230,7 @@ qboolean CL_Disconnect( qboolean showMainMenu ) {
 		// Finish rendering current frame
 		cls.framecount++;
 		SCR_UpdateScreen();
-		CL_CloseAVI();
+		CL_CloseAVI( qfalse );
 	}
 
 	if ( cgvm ) {
@@ -1339,7 +1340,7 @@ CL_RequestMotd
 ===================
 */
 #if 0
-void CL_RequestMotd( void ) {
+static void CL_RequestMotd( void ) {
 	char		info[MAX_INFO_STRING];
 
 	if ( !cl_motd->integer ) {
@@ -1539,7 +1540,7 @@ static void CL_Connect_f( void ) {
 	netadr_t	addr;
 	char	buffer[ sizeof( cls.servername ) ];  // same length as cls.servername
 	char	args[ sizeof( cls.servername ) + MAX_CVAR_VALUE_STRING ];
-	char	*server;
+	const char	*server;
 	const char	*serverString;
 	int		len;
 	int		argc;
@@ -1587,8 +1588,8 @@ static void CL_Connect_f( void ) {
 	}
 
 	// some programs may add ending slash
-	if ( server[len-1] == '/' ) {
-		server[len-1] = '\0';
+	if ( buffer[len-1] == '/' ) {
+		buffer[len-1] = '\0';
 	}
 
 	if ( !*server ) {
@@ -1669,12 +1670,12 @@ static void CL_Connect_f( void ) {
 CL_CompleteRcon
 ==================
 */
-static void CL_CompleteRcon( char *args, int argNum )
+static void CL_CompleteRcon(const char *args, int argNum )
 {
 	if ( argNum >= 2 )
 	{
 		// Skip "rcon "
-		char *p = Com_SkipTokens( args, 1, " " );
+		const char *p = Com_SkipTokens( args, 1, " " );
 
 		if ( p > args )
 			Field_CompleteCommand( p, qtrue, qtrue );
@@ -1780,7 +1781,7 @@ static void CL_Vid_Restart( qboolean keepWindow ) {
 
 	// Settings may have changed so stop recording now
 	if ( CL_VideoRecording() )
-		CL_CloseAVI();
+		CL_CloseAVI( qfalse );
 
 	if ( clc.demorecording )
 		CL_StopRecord_f();
@@ -1958,12 +1959,12 @@ static void CL_Systeminfo_f( void ) {
 }
 
 
-static void CL_CompleteCallvote( char *args, int argNum )
+static void CL_CompleteCallvote(const char *args, int argNum )
 {
 	if( argNum >= 2 )
 	{
 		// Skip "callvote "
-		char *p = Com_SkipTokens( args, 1, " " );
+		const char *p = Com_SkipTokens( args, 1, " " );
 
 		if ( p > args )
 			Field_CompleteCommand( p, qtrue, qtrue );
@@ -2206,7 +2207,7 @@ void CL_InitDownloads( void ) {
 		if ( FS_ComparePaks( missingfiles, sizeof( missingfiles ), qfalse ) )
 		{
 			// NOTE TTimo I would rather have that printed as a modal message box
-			// but at this point while joining the game we don't know wether we will successfully join or not
+			// but at this point while joining the game we don't know whether we will successfully join or not
 			Com_Printf( "\nWARNING: You are missing some files referenced by the server:\n%s"
 				"You might not be able to join the game\n"
 				"Go to the setting menu to turn on autodownload, or get the file elsewhere\n\n", missingfiles );
@@ -3039,6 +3040,8 @@ void CL_Frame( int msec, int realMsec ) {
 
 			msec = (int)frameDuration;
 			clc.aviVideoFrameRemainder = frameDuration - msec;
+
+			realMsec = msec; // sync sound duration
 		}
 	}
 
@@ -3561,7 +3564,7 @@ static void CL_Video_f( void )
 	Q_strncpyz( clc.videoName, filename, sizeof( clc.videoName ) );
 	clc.videoIndex = 0;
 
-	CL_OpenAVIForWriting( va( "%s.%s", clc.videoName, ext ), pipe );
+	CL_OpenAVIForWriting( va( "%s.%s", clc.videoName, ext ), pipe, qfalse );
 }
 
 
@@ -3572,7 +3575,7 @@ CL_StopVideo_f
 */
 static void CL_StopVideo_f( void )
 {
-  CL_CloseAVI();
+	CL_CloseAVI( qfalse );
 }
 
 
@@ -3581,7 +3584,7 @@ static void CL_StopVideo_f( void )
 CL_CompleteRecordName
 ====================
 */
-static void CL_CompleteVideoName( char *args, int argNum )
+static void CL_CompleteVideoName(const char *args, int argNum )
 {
 	if ( argNum == 2 )
 	{
@@ -3870,8 +3873,8 @@ void CL_Init( void ) {
 	cl_forceavidemo = Cvar_Get ("cl_forceavidemo", "0", 0);
 
 	cl_aviPipeFormat = Cvar_Get( "cl_aviPipeFormat",
-		"-preset medium -crf 23 -vcodec libx264 -flags +cgop -pix_fmt yuv420p "
-		"-bf 2 -codec:a aac -strict -2 -b:a 160k -r:a 22050 -movflags faststart",
+		"-preset medium -crf 23 -vcodec libx264 -flags +cgop -pix_fmt yuvj420p "
+		"-bf 2 -codec:a aac -strict -2 -b:a 160k -movflags faststart",
 		CVAR_ARCHIVE );
 
 	rconAddress = Cvar_Get ("rconAddress", "", 0);
@@ -3896,7 +3899,7 @@ void CL_Init( void ) {
 
 	cl_serverStatusResendTime = Cvar_Get ("cl_serverStatusResendTime", "750", 0);
 
-	// init autoswitch so the ui will have it correctly even
+	// init cg_autoswitch so the ui will have it correctly even
 	// if the cgame hasn't been started
 	Cvar_Get ("cg_autoswitch", "1", CVAR_ARCHIVE);
 
@@ -3937,7 +3940,7 @@ void CL_Init( void ) {
 	Cvar_Get ("sex", "male", CVAR_USERINFO | CVAR_ARCHIVE_ND );
 	Cvar_Get ("cl_anonymous", "0", CVAR_USERINFO | CVAR_ARCHIVE_ND );
 
-	Cvar_Get ("password", "", CVAR_USERINFO);
+	Cvar_Get ("password", "", CVAR_USERINFO | CVAR_NORESTART);
 	Cvar_Get ("cg_predictItems", "1", CVAR_USERINFO | CVAR_ARCHIVE );
 
 
@@ -4732,7 +4735,7 @@ CL_Ping_f
 static void CL_Ping_f( void ) {
 	netadr_t	to;
 	ping_t*		pingptr;
-	char*		server;
+	const char*		server;
 	int			argc;
 	netadrtype_t	family = NA_UNSPEC;
 
@@ -4892,7 +4895,7 @@ CL_ServerStatus_f
 */
 static void CL_ServerStatus_f( void ) {
 	netadr_t	to, *toptr = NULL;
-	char		*server;
+	const char		*server;
 	serverStatus_t *serverStatus;
 	int			argc;
 	netadrtype_t	family = NA_UNSPEC;

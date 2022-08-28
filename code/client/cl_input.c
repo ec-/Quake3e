@@ -40,7 +40,7 @@ When a key event issues a button command (+forward, +attack, etc), it appends
 its key number as argv(1) so it can be matched up with the release.
 
 argv(2) will be set to the time the event happened, which allows exact
-control even at low framerates when the down and up events may both get qued
+control even at low framerates when the down and up events may both get queued
 at the same time.
 
 ===============================================================================
@@ -163,7 +163,7 @@ static void IN_KeyUp( kbutton_t *b ) {
 	} else if ( b->down[1] == k ) {
 		b->down[1] = 0;
 	} else {
-		return;		// key up without coresponding down (menu pass through)
+		return;		// key up without corresponding down (menu pass through)
 	}
 	if ( b->down[0] || b->down[1] ) {
 		return;		// some other key is still holding it down
@@ -329,7 +329,7 @@ static void CL_KeyMove( usercmd_t *cmd ) {
 	//
 	// adjust for speed key / running
 	// the walking flag is to keep animations consistent
-	// even during acceleration and develeration
+	// even during acceleration and deceleration
 	//
 	if ( in_speed.active ^ cl_run->integer ) {
 		movespeed = 127;

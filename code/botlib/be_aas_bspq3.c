@@ -49,14 +49,14 @@ extern botlib_import_t botimport;
 //#define DEG2RAD( a ) (( a * M_PI ) / 180.0F)
 
 #define MAX_BSPENTITIES		2048
-
+#if 0
 typedef struct rgb_s
 {
 	int red;
 	int green;
 	int blue;
 } rgb_t;
-
+#endif
 //bsp entity epair
 typedef struct bsp_epair_s
 {
@@ -85,7 +85,7 @@ typedef struct bsp_s
 } bsp_t;
 
 //global bsp
-bsp_t bspworld;
+static bsp_t bspworld;
 
 
 #ifdef BSP_DEBUG
@@ -123,7 +123,7 @@ cname_t contentnames[] =
 	{CONTENTS_LADDER,"CONTENTS_LADDER"},
 	{0, 0}
 };
-
+#if 0
 void PrintContents(int contents)
 {
 	int i;
@@ -136,7 +136,7 @@ void PrintContents(int contents)
 		} //end if
 	} //end for
 } //end of the function PrintContents
-
+#endif
 #endif // BSP_DEBUG
 //===========================================================================
 // traces axial boxes of any size through the world
@@ -182,6 +182,7 @@ qboolean AAS_EntityCollision(int entnum,
 	} //end if
 	return qfalse;
 } //end of the function AAS_EntityCollision
+#if 0
 //===========================================================================
 // returns true if in Potentially Hearable Set
 //
@@ -204,6 +205,7 @@ qboolean AAS_inPHS(vec3_t p1, vec3_t p2)
 {
 	return qtrue;
 } //end of the function AAS_inPHS
+#endif
 //===========================================================================
 //
 // Parameter:				-
@@ -234,6 +236,7 @@ bsp_link_t *AAS_BSPLinkEntity(vec3_t absmins, vec3_t absmaxs, int entnum, int mo
 {
 	return NULL;
 } //end of the function AAS_BSPLinkEntity
+#if 0
 //===========================================================================
 //
 // Parameter:				-
@@ -244,6 +247,7 @@ int AAS_BoxEntities(vec3_t absmins, vec3_t absmaxs, int *list, int maxcount)
 {
 	return 0;
 } //end of the function AAS_BoxEntities
+#endif
 //===========================================================================
 //
 // Parameter:			-
@@ -277,7 +281,7 @@ static int AAS_BSPEntityInRange(int ent)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int AAS_ValueForBSPEpairKey(int ent, char *key, char *value, int size)
+int AAS_ValueForBSPEpairKey(int ent, const char *key, char *value, int size)
 {
 	bsp_epair_t *epair;
 
@@ -299,7 +303,7 @@ int AAS_ValueForBSPEpairKey(int ent, char *key, char *value, int size)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int AAS_VectorForBSPEpairKey(int ent, char *key, vec3_t v)
+int AAS_VectorForBSPEpairKey(int ent, const char *key, vec3_t v)
 {
 	char buf[MAX_EPAIRKEY], *s[3];
 
@@ -318,7 +322,7 @@ int AAS_VectorForBSPEpairKey(int ent, char *key, vec3_t v)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int AAS_FloatForBSPEpairKey(int ent, char *key, float *value)
+int AAS_FloatForBSPEpairKey(int ent, const char *key, float *value)
 {
 	char buf[MAX_EPAIRKEY];
 	
@@ -333,7 +337,7 @@ int AAS_FloatForBSPEpairKey(int ent, char *key, float *value)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int AAS_IntForBSPEpairKey(int ent, char *key, int *value)
+int AAS_IntForBSPEpairKey(int ent, const char *key, int *value)
 {
 	char buf[MAX_EPAIRKEY];
 	
@@ -368,8 +372,12 @@ static void AAS_FreeBSPEntities(void)
 	} //end for
 	bspworld.numentities = 0;
 } //end of the function AAS_FreeBSPEntities
-
-
+//===========================================================================
+//
+// Parameter:			-
+// Returns:				-
+// Changes Globals:		-
+//===========================================================================
 static void AAS_ParseBSPEntities(void)
 {
 	script_t *script;
@@ -435,15 +443,23 @@ static void AAS_ParseBSPEntities(void)
 	} //end while
 	FreeScript(script);
 } //end of the function AAS_ParseBSPEntities
-
-
 #if 0
+//===========================================================================
+//
+// Parameter:				-
+// Returns:					-
+// Changes Globals:		-
+//===========================================================================
 static int AAS_BSPTraceLight(vec3_t start, vec3_t end, vec3_t endpos, int *red, int *green, int *blue)
 {
 	return 0;
 #endif
-
-
+//===========================================================================
+//
+// Parameter:				-
+// Returns:					-
+// Changes Globals:		-
+//===========================================================================
 void AAS_DumpBSPData(void)
 {
 	AAS_FreeBSPEntities();
@@ -451,14 +467,16 @@ void AAS_DumpBSPData(void)
 	if (bspworld.dentdata) FreeMemory(bspworld.dentdata);
 	bspworld.dentdata = NULL;
 	bspworld.entdatasize = 0;
-
+	//
 	bspworld.loaded = qfalse;
 	Com_Memset( &bspworld, 0, sizeof(bspworld) );
-}
-
-
+} //end of the function AAS_DumpBSPData
 //===========================================================================
 // load a .bsp file
+//
+// Parameter:				-
+// Returns:					-
+// Changes Globals:		-
 //===========================================================================
 int AAS_LoadBSPFile(void)
 {
@@ -469,5 +487,5 @@ int AAS_LoadBSPFile(void)
 	AAS_ParseBSPEntities();
 	bspworld.loaded = qtrue;
 	return BLERR_NOERROR;
-}
+} //end of the function AAS_LoadBSPFile
 

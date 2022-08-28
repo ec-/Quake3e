@@ -313,11 +313,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderervk\tr_font.c"
+				RelativePath="..\..\renderervk\tr_image.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderervk\tr_image.c"
+				RelativePath="..\..\renderercommon\tr_font.c"
 				>
 			</File>
 			<File

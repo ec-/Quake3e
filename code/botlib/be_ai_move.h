@@ -132,7 +132,7 @@ void BotFreeMoveState(int handle);
 //initialize movement state before performing any movement
 void BotInitMoveState(int handle, bot_initmove_t *initmove);
 //add a spot to avoid (if type == AVOID_CLEAR all spots are removed)
-void BotAddAvoidSpot(int movestate, vec3_t origin, float radius, int type);
+void BotAddAvoidSpot(int movestate, const vec3_t origin, float radius, int type);
 //must be called every map change
 void BotSetBrushModelTypes(void);
 //setup movement AI

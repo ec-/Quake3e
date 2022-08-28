@@ -94,7 +94,7 @@ void GLimp_Minimize( void )
 GLimp_LogComment
 ===============
 */
-void GLimp_LogComment( char *comment )
+void GLimp_LogComment( const char *comment )
 {
 }
 
@@ -729,7 +729,7 @@ void VKimp_Init( glconfig_t *config )
 		Com_Error( ERR_FATAL, "VKimp_Init: qvkGetInstanceProcAddr is NULL" );
 	}
 
-	// This values force the UI to disable driver selection
+	// These values force the UI to disable driver selection
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
 

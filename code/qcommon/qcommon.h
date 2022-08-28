@@ -80,7 +80,7 @@ void MSG_Bitstream( msg_t *buf );
 // copy a msg_t in case we need to store it as is for a bit
 // (as I needed this to keep an msg_t from a static var for later use)
 // sets data buffer as MSG_Init does prior to do the copy
-void MSG_Copy(msg_t *buf, byte *data, int length, msg_t *src);
+void MSG_Copy(msg_t *buf, byte *data, int length, const msg_t *src);
 
 struct usercmd_s;
 struct entityState_s;
@@ -145,7 +145,7 @@ NET
 
 
 #define	PACKET_BACKUP	32	// number of old messages that must be kept on client and
-							// server for delta comrpession and ping estimation
+							// server for delta compression and ping estimation
 #define	PACKET_MASK		(PACKET_BACKUP-1)
 
 #define	MAX_PACKET_USERCMDS		32		// max number of usercmd_t in a packet
@@ -487,7 +487,7 @@ void	Cmd_AddCommand( const char *cmd_name, xcommand_t function );
 void	Cmd_RemoveCommand( const char *cmd_name );
 void	Cmd_RemoveCgameCommands( void );
 
-typedef void (*completionFunc_t)( char *args, int argNum );
+typedef void (*completionFunc_t)( const char *args, int argNum );
 
 // don't allow VMs to remove system commands
 void	Cmd_RemoveCommandSafe( const char *cmd_name );
@@ -495,12 +495,12 @@ void	Cmd_RemoveCommandSafe( const char *cmd_name );
 void	Cmd_CommandCompletion( void(*callback)(const char *s) );
 // callback with each valid string
 void	Cmd_SetCommandCompletionFunc( const char *command, completionFunc_t complete );
-qboolean Cmd_CompleteArgument( const char *command, char *args, int argNum );
-void	Cmd_CompleteWriteCfgName( char *args, int argNum );
+qboolean Cmd_CompleteArgument( const char *command, const char *args, int argNum );
+void	Cmd_CompleteWriteCfgName( const char *args, int argNum );
 
 int		Cmd_Argc( void );
 void	Cmd_Clear( void );
-char	*Cmd_Argv( int arg );
+const char	*Cmd_Argv( int arg );
 void	Cmd_ArgvBuffer( int arg, char *buffer, int bufferLength );
 char	*Cmd_ArgsFrom( int arg );
 void	Cmd_ArgsBuffer( char *buffer, int bufferLength );
@@ -508,7 +508,7 @@ char	*Cmd_Cmd( void );
 void	Cmd_Args_Sanitize( const char *separators );
 // The functions that execute commands get their parameters with these
 // functions. Cmd_Argv () will return an empty string, not a NULL
-// if arg > argc, so string operations are allways safe.
+// if arg > argc, so string operations are always safe.
 
 void	Cmd_TokenizeString( const char *text );
 void	Cmd_TokenizeStringIgnoreQuotes( const char *text_in );
@@ -624,7 +624,7 @@ void	Cvar_ResetGroup( cvarGroup_t group, qboolean resetModifiedFlags );
 
 void	Cvar_Restart( qboolean unsetVM );
 
-void	Cvar_CompleteCvarName( char *args, int argNum );
+void	Cvar_CompleteCvarName( const char *args, int argNum );
 
 extern	int			cvar_modifiedFlags;
 // whenever a cvar is modifed, its flags will be OR'd into this, so
@@ -640,7 +640,7 @@ unsigned int crc32_buffer( const byte *buf, unsigned int len );
 FILESYSTEM
 
 No stdio calls should be used by any part of the game, because
-we need to deal with all sorts of directory and seperator char
+we need to deal with all sorts of directory and separator char
 issues.
 ==============================================================
 */
@@ -720,7 +720,7 @@ int		FS_GetFileList(  const char *path, const char *extension, char *listbuf, in
 
 fileHandle_t	FS_FOpenFileWrite( const char *qpath );
 fileHandle_t	FS_FOpenFileAppend( const char *filename );
-// will properly create any needed paths and deal with seperater character issues
+// will properly create any needed paths and deal with separator character issues
 
 qboolean FS_ResetReadOnlyAttribute( const char *filename );
 
@@ -891,7 +891,7 @@ void Field_CompleteKeyname( void );
 void Field_CompleteKeyBind( int key );
 void Field_CompleteFilename( const char *dir, const char *ext, qboolean stripExt, int flags );
 void Field_CompleteModelName( void );
-void Field_CompleteCommand( char *cmd, qboolean doCommands, qboolean doCvars );
+void Field_CompleteCommand( const char *cmd, qboolean doCommands, qboolean doCvars );
 
 void Con_ResetHistory( void );
 void Con_SaveField( const field_t *field );

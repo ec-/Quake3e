@@ -36,7 +36,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define	PROGRAM_STACK_EXTRA	(32*1024)
 
 // reserved space for effective LOCAL+LOAD* checks
-// also to avoid runtime range checks for many small agruments/structs in systemcalls
+// also to avoid runtime range checks for many small arguments/structs in systemcalls
 #define	VM_DATA_GUARD_SIZE	1024
 
 // guard size must cover at least function arguments area

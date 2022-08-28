@@ -324,7 +324,7 @@ static void SV_AddEntitiesVisibleFromPoint( const vec3_t origin, clientSnapshot_
 
 	// during an error shutdown message we may need to transmit
 	// the shutdown message after the server has shutdown, so
-	// specfically check for it
+	// specifically check for it
 	if ( sv.state == SS_DEAD ) {
 		return;
 	}
@@ -400,7 +400,7 @@ static void SV_AddEntitiesVisibleFromPoint( const vec3_t origin, clientSnapshot_
 		}
 
 		// if we haven't found it to be visible,
-		// check overflow clusters that coudln't be stored
+		// check overflow clusters that couldn't be stored
 		if ( i == svEnt->numClusters ) {
 			if ( svEnt->lastCluster ) {
 				for ( ; l <= svEnt->lastCluster ; l++ ) {

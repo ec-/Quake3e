@@ -42,7 +42,7 @@ static void SV_SendConfigstring(client_t *client, int index)
 	if( len >= maxChunkSize ) {
 		int		sent = 0;
 		int		remaining = len;
-		char	*cmd;
+		const char	*cmd;
 		char	buf[MAX_STRING_CHARS];
 
 		while (remaining > 0 ) {
@@ -525,7 +525,7 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	sv.state = SS_LOADING;
 
 	// make sure that level time is not zero
-	sv.time = sv.time ? sv.time : 8;
+	//sv.time = sv.time ? sv.time : 8;
 
 	// load and spawn all other entities
 	SV_InitGameProgs();
@@ -808,7 +808,7 @@ not just stuck on the outgoing message list, because the server is going
 to totally exit after returning from this function.
 ==================
 */
-void SV_FinalMessage( const char *message ) {
+static void SV_FinalMessage( const char *message ) {
 	int			i, j;
 	client_t	*cl;
 

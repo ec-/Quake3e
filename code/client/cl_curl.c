@@ -63,7 +63,7 @@ static void *cURLLib = NULL;
 GPA
 =================
 */
-static void *GPA(char *str)
+static void *GPA(const char *str)
 {
 	void *rv;
 

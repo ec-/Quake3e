@@ -42,7 +42,7 @@ Returns the player with player id or name from Cmd_Argv(1)
 client_t *SV_GetPlayerByHandle( void ) {
 	client_t	*cl;
 	int			i;
-	char		*s;
+	const char		*s;
 	char		cleanName[ MAX_NAME_LENGTH ];
 
 	// make sure server is running
@@ -107,7 +107,7 @@ static client_t *SV_GetPlayerByNum( void ) {
 	client_t	*cl;
 	int			i;
 	int			idnum;
-	char		*s;
+	const char		*s;
 
 	// make sure server is running
 	if ( !com_sv_running->integer ) {
@@ -152,8 +152,8 @@ Restart the server on a different map
 ==================
 */
 static void SV_Map_f( void ) {
-	char		*cmd;
-	char		*map;
+	const char		*cmd;
+	const char		*map;
 	qboolean	killBots, cheat;
 	char		expanded[MAX_QPATH];
 	char		mapname[MAX_QPATH];
@@ -245,7 +245,7 @@ This allows fair starts with variable load times.
 static void SV_MapRestart_f( void ) {
 	int			i;
 	client_t	*client;
-	char		*denied;
+	const char		*denied;
 	qboolean	isBot;
 	int			delay;
 
@@ -317,7 +317,7 @@ static void SV_MapRestart_f( void ) {
 	sv.restarting = qtrue;
 
 	// make sure that level time is not zero
-	sv.time = sv.time ? sv.time : 8;
+	//sv.time = sv.time ? sv.time : 8;
 
 	SV_RestartGameProgs();
 
@@ -659,7 +659,8 @@ static void SV_RehashBans_f(void)
 {
 	int index, filelen;
 	fileHandle_t readfrom;
-	char *textbuf, *curpos, *maskpos, *newlinepos, *endpos;
+	char *textbuf, *curpos, *maskpos, *newlinepos;
+	const char *endpos;
 	char filepath[MAX_QPATH];
 
 	// make sure server is running
@@ -802,7 +803,7 @@ Parse a CIDR notation type string and return a netadr_t and suffix by reference
 ==================
 */
 
-static qboolean SV_ParseCIDRNotation(netadr_t *dest, int *mask, char *adrstr)
+static qboolean SV_ParseCIDRNotation(netadr_t *dest, int *mask, const char *adrstr)
 {
 	char *suffix;
 
@@ -849,7 +850,7 @@ Ban a user from being able to play on this server based on his ip address.
 
 static void SV_AddBanToList(qboolean isexception)
 {
-	char *banstring;
+	const char *banstring;
 	char addy2[NET_ADDRSTRMAXLEN];
 	netadr_t ip;
 	int index, argc, mask;
@@ -995,7 +996,7 @@ static void SV_DelBanFromList(qboolean isexception)
 {
 	int index, count = 0, todel, mask;
 	netadr_t ip;
-	char *banstring;
+	const char *banstring;
 
 	// make sure server is running
 	if ( !com_sv_running->integer ) {
@@ -1219,7 +1220,7 @@ static void SV_Status_f( void ) {
 	Com_Memset( ap, 0, sizeof( ap ) );
 	Com_Memset( al, 0, sizeof( al ) );
 
-	// first pass: save and determine max.legths of name/address fields
+	// first pass: save and determine max.lengths of name/address fields
 	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ )
 	{
 		if ( cl->state == CS_FREE )
@@ -1515,7 +1516,7 @@ static void SV_Locations_f( void ) {
 SV_CompleteMapName
 ==================
 */
-static void SV_CompleteMapName( char *args, int argNum ) {
+static void SV_CompleteMapName( const char *args, int argNum ) {
 	if ( argNum == 2 ) 	{
 		if ( sv_pure->integer ) {
 			Field_CompleteFilename( "maps", "bsp", qtrue, FS_MATCH_PK3s | FS_MATCH_STICK );

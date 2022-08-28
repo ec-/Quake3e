@@ -56,8 +56,9 @@ float LibVarValue( const char *var_name, const char *value );
 const char *LibVarString( const char *var_name, const char *value );
 //sets the library variable
 void LibVarSet( const char *var_name, const char *value );
+#if 0
 //returns true if the library variable has been modified
 qboolean LibVarChanged( const char *var_name );
 //sets the library variable to unmodified
 void LibVarSetNotModified( const char *var_name );
-
+#endif

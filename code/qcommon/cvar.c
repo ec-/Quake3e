@@ -959,7 +959,7 @@ Prints the contents of a cvar
 */
 static void Cvar_Print_f( void )
 {
-	char *name;
+	const char *name;
 	cvar_t *cv;
 	
 	if(Cmd_Argc() != 2)
@@ -1034,7 +1034,7 @@ weren't declared in C code.
 */
 static void Cvar_Set_f( void ) {
 	int		c;
-	char	*cmd;
+	const char	*cmd;
 	cvar_t	*v;
 
 	c = Cmd_Argc();
@@ -1090,7 +1090,7 @@ static void Cvar_Reset_f( void ) {
 }
 
 
-// returns NULL for non-existent "-" agrument
+// returns NULL for non-existent "-" argument
 static const char *GetValue( int index, int *ival, float *fval ) 
 {
 	static char buf[ MAX_CVAR_VALUE_STRING ];
@@ -1380,7 +1380,7 @@ Cvar_List_f
 static void Cvar_List_f( void ) {
 	cvar_t	*var;
 	int		i;
-	char	*match;
+	const char	*match;
 
 	// sort to get more predictable output
 	if ( cvar_sort ) {
@@ -1973,7 +1973,7 @@ void Cvar_Register( vmCvar_t *vmCvar, const char *varName, const char *defaultVa
 		flags &= ~CVAR_ROM;
 	}
 
-	// Don't allow VM to specific a different creator or other internal flags.
+	// Don't allow VM to specify a different creator or other internal flags.
 	if ( flags & INVALID_FLAGS ) {
 		Com_DPrintf( S_COLOR_YELLOW "WARNING: VM tried to set invalid flags 0x%02x on cvar '%s'\n", ( flags & INVALID_FLAGS ), varName );
 		flags &= ~INVALID_FLAGS;
@@ -2053,12 +2053,12 @@ void Cvar_Update( vmCvar_t *vmCvar, int privateFlag ) {
 Cvar_CompleteCvarName
 ==================
 */
-void Cvar_CompleteCvarName( char *args, int argNum )
+void Cvar_CompleteCvarName( const char *args, int argNum )
 {
 	if( argNum == 2 )
 	{
 		// Skip "<cmd> "
-		char *p = Com_SkipTokens( args, 1, " " );
+		const char *p = Com_SkipTokens( args, 1, " " );
 
 		if( p > args )
 			Field_CompleteCommand( p, qfalse, qtrue );

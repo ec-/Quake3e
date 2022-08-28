@@ -102,7 +102,7 @@ DrawTris
 Draws triangle outlines for debugging
 ================
 */
-static void DrawTris( shaderCommands_t *input ) {
+static void DrawTris( const shaderCommands_t *input ) {
 
 	if ( r_showtris->integer == 1 && backEnd.drawConsole )
 		return;
@@ -640,23 +640,16 @@ void R_ComputeColors( const shaderStage_t *pStage )
 		break;
 	case AGEN_PORTAL:
 		{
-			unsigned char alpha;
-
 			for ( i = 0; i < tess.numVertexes; i++ )
 			{
+				unsigned char alpha;
 				float len;
 				vec3_t v;
 
 				VectorSubtract( tess.xyz[i], backEnd.viewParms.or.origin, v );
-				len = VectorLength( v );
+				len = VectorLength( v ) * tess.shader->portalRangeR;
 
-				len /= tess.shader->portalRange;
-
-				if ( len < 0 )
-				{
-					alpha = 0;
-				}
-				else if ( len > 1 )
+				if ( len > 1 )
 				{
 					alpha = 0xff;
 				}
@@ -873,7 +866,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 */
 void RB_StageIteratorGeneric( void )
 {
-	shaderCommands_t *input;
+	const shaderCommands_t *input;
 	shader_t		*shader;
 
 #ifdef USE_PMLIGHT
@@ -1010,7 +1003,7 @@ void RB_StageIteratorGeneric( void )
 ** RB_EndSurface
 */
 void RB_EndSurface( void ) {
-	shaderCommands_t *input;
+	const shaderCommands_t *input;
 
 	input = &tess;
 

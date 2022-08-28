@@ -51,7 +51,7 @@ unsigned long sys_timeBase = 0;
 /* current time in ms, using sys_timeBase as origin
    NOTE: sys_timeBase*1000 + curtime -> ms since the Epoch
      0x7fffffff ms - ~24 days
-   although timeval:tv_usec is an int, I'm not sure wether it is actually used as an unsigned int
+   although timeval:tv_usec is an int, I'm not sure whether it is actually used as an unsigned int
      (which would affect the wrap period) */
 int Sys_Milliseconds( void )
 {
@@ -336,7 +336,7 @@ FILE *Sys_FOpen( const char *ospath, const char *mode )
 {
 	struct stat buf;
 
-	// check if path exists and its not a directory
+	// check if path exists and it is not a directory
 	if ( stat( ospath, &buf ) == 0 && S_ISDIR( buf.st_mode ) )
 		return NULL;
 
@@ -405,7 +405,7 @@ const char *Sys_DefaultHomePath( void )
 	// Used to determine where to store user-specific files
 	static char homePath[ MAX_OSPATH ];
 
-	char *p;
+	const char *p;
 
 	if ( *homePath )
 		return homePath;
@@ -440,7 +440,7 @@ const char *Sys_SteamPath( void )
 	static char steamPath[ MAX_OSPATH ];
 	// Disabled since Steam doesn't let you install Quake 3 on Mac/Linux
 #if 0
-	char *p;
+	const char *p;
 
 	if( ( p = getenv( "HOME" ) ) != NULL )
 	{

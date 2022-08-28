@@ -60,7 +60,7 @@ typedef struct memoryblock_s
 	struct memoryblock_s *prev, *next;
 } memoryblock_t;
 
-memoryblock_t *memory;
+static memoryblock_t *memory;
 
 //===========================================================================
 //
@@ -68,7 +68,7 @@ memoryblock_t *memory;
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-void LinkMemoryBlock(memoryblock_t *block)
+static void LinkMemoryBlock(memoryblock_t *block)
 {
 	block->prev = NULL;
 	block->next = memory;
@@ -81,7 +81,7 @@ void LinkMemoryBlock(memoryblock_t *block)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-void UnlinkMemoryBlock(memoryblock_t *block)
+static void UnlinkMemoryBlock(memoryblock_t *block)
 {
 	if (block->prev) block->prev->next = block->next;
 	else memory = block->next;
@@ -197,7 +197,7 @@ void *GetClearedHunkMemory(unsigned long size)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-memoryblock_t *BlockFromPointer(void *ptr, char *str)
+static memoryblock_t *BlockFromPointer(void *ptr, char *str)
 {
 	memoryblock_t *block;
 
