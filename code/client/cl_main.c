@@ -3813,7 +3813,7 @@ static qboolean CL_ModelNameCallback_f( const char *filename, int length )
 	return slash && !Q_stricmpn( slash + 1, "icon_", 5 );
 }
 
-static void CL_CompleteModelName( char *args, int argNum )
+static void CL_CompleteModelName( const char *args, int argNum )
 {
 	if( argNum == 2 )
 	{

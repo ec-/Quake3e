@@ -35,14 +35,14 @@ typedef struct visBrushNode_s {
 static void add_triggers(void);
 static void add_clips(void);
 static void add_slicks(void);
-static void gen_visible_brush(int brushnum, vec3_t origin, visBrushType_t type, vec4_t color);
-static qboolean intersect_planes(cplane_t *p1, cplane_t *p2, cplane_t *p3, vec3_t p);
-static qboolean point_in_brush(vec3_t point, cbrush_t *brush);
+static void gen_visible_brush(int brushnum, const vec3_t origin, visBrushType_t type, const vec4_t color);
+static qboolean intersect_planes(const cplane_t *p1, const cplane_t *p2, const cplane_t *p3, vec3_t p);
+static qboolean point_in_brush(const vec3_t point, const cbrush_t *brush);
 static int winding_cmp(const void *a, const void *b);
-static void add_vert_to_face(visFace_t *face, vec3_t vert, vec4_t color, vec2_t tex_coords);
-static float *get_uv_coords(vec2_t uv, vec3_t vert, vec3_t normal);
+static void add_vert_to_face(visFace_t *face, const vec3_t vert, const vec4_t color, const vec2_t tex_coords);
+static float *get_uv_coords(vec2_t uv, const vec3_t vert, const vec3_t normal);
 static void free_vis_brushes(visBrushNode_t *brushes);
-static void draw(visBrushNode_t *brush, qhandle_t shader);
+static void draw(const visBrushNode_t *brush, qhandle_t shader);
 
 
 static visBrushNode_t *trigger_head = NULL;
@@ -65,9 +65,9 @@ static qhandle_t trigger_shader;
 static qhandle_t clip_shader;
 static qhandle_t slick_shader;
 
-static vec4_t trigger_color = { 0, 128, 0, 255 };
-static vec4_t clip_color = { 128, 0, 0, 255 };
-static vec4_t slick_color = { 0, 64, 128, 255 };
+static const vec4_t trigger_color = { 0, 128, 0, 255 };
+static const vec4_t clip_color = { 128, 0, 0, 255 };
+static const vec4_t slick_color = { 0, 64, 128, 255 };
 
 static const cplane_t *frustum;
 
@@ -117,7 +117,7 @@ static void add_triggers(void) {
 		vec3_t origin;
 		VectorCopy(vec3_origin, origin);
 
-		char *token = COM_Parse(&entities);
+		const char *token = COM_Parse(&entities);
 		if (!entities)
 			break;
 
@@ -165,7 +165,7 @@ static void add_clips(void) {
 	}
 }
 
-static inline qboolean walkable(cplane_t const *plane) {
+static inline qboolean walkable(const cplane_t *plane) {
 	return plane->normal[2] >= 0.7 /*MIN_WALK_NORMAL*/;
 }
 
@@ -182,7 +182,7 @@ static void add_slicks(void) {
 	}
 }
 
-static void gen_visible_brush(int brushnum, vec3_t origin, visBrushType_t type, vec4_t color) {
+static void gen_visible_brush(int brushnum, const vec3_t origin, visBrushType_t type, const vec4_t color) {
 	cbrush_t *brush = &cm.brushes[brushnum];
 	visBrushNode_t *node = malloc(sizeof(visBrushNode_t));
 	node->numFaces = brush->numsides;
@@ -266,7 +266,7 @@ static void gen_visible_brush(int brushnum, vec3_t origin, visBrushType_t type, 
 	*head = node;
 }
 
-static qboolean intersect_planes(cplane_t *p1, cplane_t *p2, cplane_t *p3, vec3_t p) {
+static qboolean intersect_planes(const cplane_t *p1, const cplane_t *p2, const cplane_t *p3, vec3_t p) {
 	// thanks Real-Time Collision Detection
 	vec3_t u, v;
 	CrossProduct(p2->normal, p3->normal, u);
@@ -285,7 +285,7 @@ static qboolean intersect_planes(cplane_t *p1, cplane_t *p2, cplane_t *p3, vec3_
 	return qtrue;
 }
 
-static qboolean point_in_brush(vec3_t point, cbrush_t *brush) {
+static qboolean point_in_brush(const vec3_t point, const cbrush_t *brush) {
 	for (int i = 0; i < brush->numsides; i++) {
 		float d = DotProduct(point, brush->sides[i].plane->normal);
 		// brushes with non-AA planes + AA bevel planes create too much intersections
@@ -329,7 +329,7 @@ static int winding_cmp(const void *a, const void *b) {
 	return 0;
 }
 
-static void add_vert_to_face(visFace_t *face, vec3_t vert, vec4_t color, vec2_t tex_coords) {
+static void add_vert_to_face(visFace_t *face, const vec3_t vert, const vec4_t color, const vec2_t tex_coords) {
 	if (face->numVerts >= MAX_FACE_VERTS)
 		return;
 
@@ -340,7 +340,7 @@ static void add_vert_to_face(visFace_t *face, vec3_t vert, vec4_t color, vec2_t 
 	face->numVerts++;
 }
 
-static float *get_uv_coords(vec2_t uv, vec3_t vert, vec3_t normal) {
+static float *get_uv_coords(vec2_t uv, const vec3_t vert, const vec3_t normal) {
 	float x = fabsf(normal[0]), y = fabsf(normal[1]), z = fabsf(normal[2]);
 	if (x >= y && x >= z) {
 		uv[0] = -vert[1] / 32.f;
@@ -380,7 +380,7 @@ static qboolean CullFace(const visFace_t *face) {
 	return qfalse;
 }
 
-static void draw(visBrushNode_t *brush, qhandle_t shader) {
+static void draw(const visBrushNode_t *brush, qhandle_t shader) {
 	frustum = re.GetFrustum();
 	while (brush) {
 		for (int i = 0; i < brush->numFaces; ++i) {
