@@ -926,6 +926,7 @@ typedef enum {
 	CV_NONE = 0,
 	CV_FLOAT,
 	CV_INTEGER,
+  CV_ENUM,
 	CV_FSPATH,
 	CV_MAX,
 } cvarValidator_t;
