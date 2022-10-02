@@ -14,8 +14,6 @@ static int vkMaxSamples = VK_SAMPLE_COUNT_1_BIT;
 //
 // Vulkan API functions used by the renderer.
 //
-static PFN_vkGetInstanceProcAddr						qvkGetInstanceProcAddr;
-
 static PFN_vkCreateInstance								qvkCreateInstance;
 static PFN_vkEnumerateInstanceExtensionProperties		qvkEnumerateInstanceExtensionProperties;
 
@@ -4276,6 +4274,73 @@ void vk_create_image( image_t *image, int width, int height, int mip_levels ) {
 }
 
 
+static byte *resample_image_data( const int target_format, byte *data, const int data_size, int *bytes_per_pixel )
+{
+	byte* buffer;
+	uint16_t* p;
+	int i, n;
+
+	switch ( target_format ) {
+	case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
+		buffer = (byte*)ri.Hunk_AllocateTempMemory( data_size / 2 );
+		p = (uint16_t*)buffer;
+		for ( i = 0; i < data_size; i += 4, p++ ) {
+			byte r = data[i + 0];
+			byte g = data[i + 1];
+			byte b = data[i + 2];
+			byte a = data[i + 3];
+			*p = (uint32_t)((a / 255.0) * 15.0 + 0.5) |
+				((uint32_t)((r / 255.0) * 15.0 + 0.5) << 4) |
+				((uint32_t)((g / 255.0) * 15.0 + 0.5) << 8) |
+				((uint32_t)((b / 255.0) * 15.0 + 0.5) << 12);
+		}
+		*bytes_per_pixel = 2;
+		return buffer; // must be freed after upload!
+
+	case VK_FORMAT_A1R5G5B5_UNORM_PACK16:
+		buffer = (byte*)ri.Hunk_AllocateTempMemory( data_size / 2 );
+		p = (uint16_t*)buffer;
+		for ( i = 0; i < data_size; i += 4, p++ ) {
+			byte r = data[i + 0];
+			byte g = data[i + 1];
+			byte b = data[i + 2];
+			*p = (uint32_t)((b / 255.0) * 31.0 + 0.5) |
+				((uint32_t)((g / 255.0) * 31.0 + 0.5) << 5) |
+				((uint32_t)((r / 255.0) * 31.0 + 0.5) << 10) |
+				(1 << 15);
+		}
+		*bytes_per_pixel = 2;
+		return buffer; // must be freed after upload!
+
+	case VK_FORMAT_B8G8R8A8_UNORM:
+		buffer = (byte*)ri.Hunk_AllocateTempMemory( data_size );
+		for ( i = 0; i < data_size; i += 4 ) {
+			buffer[i + 0] = data[i + 2];
+			buffer[i + 1] = data[i + 1];
+			buffer[i + 2] = data[i + 0];
+			buffer[i + 3] = data[i + 3];
+		}
+		*bytes_per_pixel = 4;
+		return buffer;
+
+	case VK_FORMAT_R8G8B8_UNORM: {
+		buffer = (byte*)ri.Hunk_AllocateTempMemory( (data_size * 3) / 4 );
+		for ( i = 0, n = 0; i < data_size; i += 4, n += 3 ) {
+			buffer[n + 0] = data[i + 0];
+			buffer[n + 1] = data[i + 1];
+			buffer[n + 2] = data[i + 2];
+		}
+		*bytes_per_pixel = 3;
+		return buffer;
+	}
+
+	default:
+		*bytes_per_pixel = 4;
+		return data;
+	}
+}
+
+
 void vk_upload_image_data( image_t *image, int x, int y, int width, int height, int mipmaps, byte *pixels, int size ) {
 
 	VkCommandBuffer command_buffer;
@@ -4287,7 +4352,7 @@ void vk_upload_image_data( image_t *image, int x, int y, int width, int height, 
 	int num_regions = 0;
 	int buffer_size = 0;
 
-	buf = resample_image_data( image, pixels, size, &bpp );
+	buf = resample_image_data( image->internalFormat, pixels, size, &bpp );
 
 	while (qtrue) {
 		Com_Memset(&region, 0, sizeof(region));
@@ -4404,6 +4469,36 @@ static void set_shader_stage_desc(VkPipelineShaderStageCreateInfo *desc, VkShade
 	desc->module = shader_module;
 	desc->pName = entry;
 	desc->pSpecializationInfo = NULL;
+}
+
+
+#define FORMAT_DEPTH(format, r_bits, g_bits, b_bits) case(VK_FORMAT_##format): *r = r_bits; *b = b_bits; *g = g_bits; return qtrue;
+static qboolean vk_surface_format_color_depth( VkFormat format, int *r, int *g, int *b ) {
+	switch (format) {
+		// Common formats from https://vulkan.gpuinfo.org/listsurfaceformats.php
+		FORMAT_DEPTH(B8G8R8A8_UNORM, 255, 255, 255)
+			FORMAT_DEPTH(B8G8R8A8_SRGB, 255, 255, 255)
+			FORMAT_DEPTH(A2B10G10R10_UNORM_PACK32, 1023, 1023, 1023)
+			FORMAT_DEPTH(R8G8B8A8_UNORM, 255, 255, 255)
+			FORMAT_DEPTH(R8G8B8A8_SRGB, 255, 255, 255)
+			FORMAT_DEPTH(A2R10G10B10_UNORM_PACK32, 1023, 1023, 1023)
+			FORMAT_DEPTH(R5G6B5_UNORM_PACK16, 31, 63, 31)
+			FORMAT_DEPTH(R8G8B8A8_SNORM, 255, 255, 255)
+			FORMAT_DEPTH(A8B8G8R8_UNORM_PACK32, 255, 255, 255)
+			FORMAT_DEPTH(A8B8G8R8_SNORM_PACK32, 255, 255, 255)
+			FORMAT_DEPTH(A8B8G8R8_SRGB_PACK32, 255, 255, 255)
+			FORMAT_DEPTH(R16G16B16A16_UNORM, 65535, 65535, 65535)
+			FORMAT_DEPTH(R16G16B16A16_SNORM, 65535, 65535, 65535)
+			FORMAT_DEPTH(B5G6R5_UNORM_PACK16, 31, 63, 31)
+			FORMAT_DEPTH(B8G8R8A8_SNORM, 255, 255, 255)
+			FORMAT_DEPTH(R4G4B4A4_UNORM_PACK16, 15, 15, 15)
+			FORMAT_DEPTH(B4G4R4A4_UNORM_PACK16, 15, 15, 15)
+			FORMAT_DEPTH(A1R5G5B5_UNORM_PACK16, 31, 31, 31)
+			FORMAT_DEPTH(R5G5B5A1_UNORM_PACK16, 31, 31, 31)
+			FORMAT_DEPTH(B5G5R5A1_UNORM_PACK16, 31, 31, 31)
+	default:
+		*r = 255; *g = 255; *b = 255; return qfalse;
+	}
 }
 
 
@@ -6427,7 +6522,7 @@ void vk_begin_blur_render_pass( uint32_t index )
 }
 
 
-void vk_begin_screenmap_render_pass( void )
+static void vk_begin_screenmap_render_pass( void )
 {
 	VkFramebuffer frameBuffer = vk.framebuffers.screenmap;
 
@@ -7083,33 +7178,4 @@ qboolean vk_bloom( void )
 	backEnd.doneBloom = qtrue;
 
 	return qtrue;
-}
-
-#define FORMAT_DEPTH(format, r_bits, g_bits, b_bits) case(VK_FORMAT_##format): *r = r_bits; *b = b_bits; *g = g_bits; return qtrue;
-qboolean vk_surface_format_color_depth(VkFormat format, int* r, int* g, int* b) {
-	switch (format) {
-		// Common formats from https://vulkan.gpuinfo.org/listsurfaceformats.php
-		FORMAT_DEPTH(B8G8R8A8_UNORM, 255, 255, 255)
-		FORMAT_DEPTH(B8G8R8A8_SRGB, 255, 255, 255)
-		FORMAT_DEPTH(A2B10G10R10_UNORM_PACK32, 1023, 1023, 1023)
-		FORMAT_DEPTH(R8G8B8A8_UNORM, 255, 255, 255)
-		FORMAT_DEPTH(R8G8B8A8_SRGB, 255, 255, 255)
-		FORMAT_DEPTH(A2R10G10B10_UNORM_PACK32, 1023, 1023, 1023)
-		FORMAT_DEPTH(R5G6B5_UNORM_PACK16, 31, 63, 31)
-		FORMAT_DEPTH(R8G8B8A8_SNORM, 255, 255, 255)
-		FORMAT_DEPTH(A8B8G8R8_UNORM_PACK32, 255, 255, 255)
-		FORMAT_DEPTH(A8B8G8R8_SNORM_PACK32, 255, 255, 255)
-		FORMAT_DEPTH(A8B8G8R8_SRGB_PACK32, 255, 255, 255)
-		FORMAT_DEPTH(R16G16B16A16_UNORM, 65535, 65535, 65535)
-		FORMAT_DEPTH(R16G16B16A16_SNORM, 65535, 65535, 65535)
-		FORMAT_DEPTH(B5G6R5_UNORM_PACK16, 31, 63, 31)
-		FORMAT_DEPTH(B8G8R8A8_SNORM, 255, 255, 255)
-		FORMAT_DEPTH(R4G4B4A4_UNORM_PACK16, 15, 15, 15)
-		FORMAT_DEPTH(B4G4R4A4_UNORM_PACK16, 15, 15, 15)
-		FORMAT_DEPTH(A1R5G5B5_UNORM_PACK16, 31, 31, 31)
-		FORMAT_DEPTH(R5G5B5A1_UNORM_PACK16, 31, 31, 31)
-		FORMAT_DEPTH(B5G5R5A1_UNORM_PACK16, 31, 31, 31)
-	default:
-		*r = 255; *g = 255; *b = 255; return qfalse;
-	}
 }
