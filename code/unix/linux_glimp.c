@@ -1835,14 +1835,18 @@ static void InitCvars( void )
 {
 	// referenced in GLW_StartDriverAndSetMode() so must be inited there
 	in_nograb = Cvar_Get( "in_nograb", "0", 0 );
+	Cvar_SetDescription( in_nograb, "Do not capture mouse in game, may be useful during online streaming." );
 
 	// turn on-off sub-frame timing of X events, referenced in Sys_XTimeToSysTime
 	in_subframe = Cvar_Get( "in_subframe", "1", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( in_subframe, "Toggle X sub-frame event handling." );
 
 	in_dgamouse = Cvar_Get( "in_dgamouse", "1", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( in_dgamouse, "DGA Mouse support." );
 	in_shiftedKeys = Cvar_Get( "in_shiftedKeys", "0", CVAR_ARCHIVE_ND );
 
 	in_forceCharset = Cvar_Get( "in_forceCharset", "1", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( in_forceCharset, "Try to translate non-ASCII chars in keyboard input or force EN/US keyboard layout." );
 }
 
 
@@ -2022,6 +2026,11 @@ void IN_Init( void )
 
 	// mouse variables
 	in_mouse = Cvar_Get( "in_mouse", "1", CVAR_ARCHIVE );
+	Cvar_SetDescription( in_mouse,
+		"Mouse data input source:\n" \
+		"  0 - disable mouse input\n" \
+		"  1 - di/raw mouse\n" \
+		" -1 - win32 mouse" );
 
 	if ( in_mouse->integer )
 	{
@@ -2035,6 +2044,7 @@ void IN_Init( void )
 #ifdef USE_JOYSTICK
 	// bk001130 - from cvs.17 (mkv), joystick variables
 	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_SetDescription( in_joystick, "Whether or not joystick support is on (default 0)." );
 	// bk001130 - changed this to match win32
 	in_joystickDebug = Cvar_Get( "in_debugjoystick", "0", CVAR_TEMP );
 	joy_threshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE_ND ); // FIXME: in_joythreshold

@@ -1139,8 +1139,10 @@ qboolean SNDDMA_Init( void )
 		return qtrue;
 
 	sndbits = Cvar_Get("sndbits", "16", CVAR_ARCHIVE_ND | CVAR_LATCH);
+	Cvar_SetDescription( sndbits, "Bit resolution." );
 	sndspeed = Cvar_Get("sndspeed", "0", CVAR_ARCHIVE_ND | CVAR_LATCH);
 	sndchannels = Cvar_Get("sndchannels", "2", CVAR_ARCHIVE_ND |  CVAR_LATCH);
+	Cvar_SetDescription( sndchannels, "Number of channels." );
 	snddevice = Cvar_Get("snddevice", "/dev/dsp", CVAR_ARCHIVE_ND | CVAR_LATCH);
 
 	map_size = 0;
