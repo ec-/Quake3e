@@ -1159,15 +1159,20 @@ void IN_Init( void ) {
 	// MIDI input controler variables
 	in_midi = Cvar_Get( "in_midi", "0", CVAR_ARCHIVE );
 	in_midiport = Cvar_Get( "in_midiport", "1", CVAR_ARCHIVE );
+	Cvar_SetDescription( in_midiport, "Toggle the use of a midi port as an input device." );
 	in_midichannel = Cvar_Get( "in_midichannel", "1", CVAR_ARCHIVE );
+	Cvar_SetDescription( in_midichannel, "Toggle the use of a midi channel as an input device." );
 	in_mididevice = Cvar_Get( "in_mididevice", "0", CVAR_ARCHIVE );
+	Cvar_SetDescription( in_mididevice, "Toggle the use of a midi device as an input device." );
 	Cmd_AddCommand( "midiinfo", MidiInfo_f );
 #endif
 
 #ifdef USE_JOYSTICK
 	// joystick variables
 	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE | CVAR_LATCH );
+	Cvar_SetDescription( in_joystick, "Whether or not joystick support is on (default 0)." );
 	in_joyBallScale = Cvar_Get( "in_joyBallScale", "0.02", CVAR_ARCHIVE );
+	Cvar_SetDescription( in_joyBallScale, "Sets the scale of a joyball rotation to player model rotation." );
 	in_debugJoystick = Cvar_Get( "in_debugjoystick", "0", CVAR_TEMP );
 	joy_threshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE );
 #endif
@@ -1182,6 +1187,7 @@ void IN_Init( void ) {
 		" -1 - win32 mouse" );
 		
 	in_nograb = Cvar_Get( "in_nograb", "0", 0 );
+	Cvar_SetDescription( in_nograb, "Do not capture mouse in game, may be useful during online streaming." );
 	in_lagged = Cvar_Get( "in_lagged", "0", 0 );
 	Cvar_SetDescription( in_lagged, 
 		"Mouse movement processing order:\n" \
@@ -1189,8 +1195,10 @@ void IN_Init( void ) {
 		" 1 - before framerate limiter" );
 
 	in_logitechbug = Cvar_Get( "in_logitechbug", "0", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( in_logitechbug, "Toggle the use of special code in the game that addresses a bug in the logitech mouse driver software." );
 
 	in_minimize	= Cvar_Get( "in_minimize", "", CVAR_ARCHIVE | CVAR_LATCH );
+	Cvar_SetDescription( in_minimize, "Hotkey for minimize/restore main window." );
 
 	Cmd_AddCommand( "minimize", IN_Minimize );
 	Cmd_AddCommand( "in_restart", IN_Restart_f );
