@@ -249,19 +249,19 @@ typedef enum {
 	R_ESI = 0x06,
 	R_EDI = 0x07,
 #if idx64
-	R_R8 =  0x08,
-	R_R9 =  0x09,
-	R_R10 = 0x0A,
-	R_R11 = 0x0B,
-	R_R12 = 0x0C,
-	R_R13 = 0x0D,
-	R_R14 = 0x0E,
-	R_R15 = 0x0F,
+	R_R8 =   0x08,
+	R_R9 =   0x09,
+	R_R10 =  0x0A,
+	R_R11 =  0x0B,
+	R_R12 =  0x0C,
+	R_R13 =  0x0D,
+	R_R14 =  0x0E,
+	R_R15 =  0x0F,
 	R_MASK = 0x0F,
-	R_REX = 0x10 // mask to force 64-bit operation
+	R_REX =  0x10 // mask to force 64-bit operation
 #else
 	R_MASK = 0x07,
-	R_REX = 0x00
+	R_REX  = 0x00
 #endif
 } intreg_t;
 
@@ -1518,14 +1518,15 @@ static void set_rx_var( uint32_t reg, const var_addr_t *v ) {
 #endif
 }
 
+
 static void set_rx_ext( uint32_t reg, ext_t ext ) {
 #ifdef LOAD_OPTIMIZE
 	if ( reg >= ARRAY_LEN( rx_regs ) )
-		DROP( "register value %i s out of range", reg );
-	rx_regs[reg].ext = ext;
+		DROP( "register index %i is out of range", reg );
+	else
+		rx_regs[reg].ext = ext;
 #endif
 }
-
 
 
 static void set_sx_var( uint32_t reg, const var_addr_t *v ) {
@@ -2235,7 +2236,9 @@ static uint32_t alloc_rx( uint32_t pref )
 	reg = pref & RMASK;
 
 #ifdef DEBUG_VM
-	if ( rx_mask[reg] )
+	if ( reg >= ARRAY_LEN( rx_mask ) )
+		DROP( "forced register R%i index overflowed!", reg );
+	else if ( rx_mask[reg] )
 		DROP( "forced register R%i is already masked!", reg );
 #endif
 
@@ -2321,7 +2324,9 @@ static uint32_t alloc_sx( uint32_t pref )
 	reg = pref & RMASK;
 
 #ifdef DEBUG_VM
-	if ( sx_mask[reg] )
+	if ( reg >= ARRAY_LEN( sx_mask ) )
+		DROP( "forced register S%i index overflowed!", reg );
+	else if ( sx_mask[reg] )
 		DROP( "forced register S%i is already masked!", reg );
 #endif
 

@@ -3760,14 +3760,14 @@ static void CL_InitGLimp_Cvars( void )
 
 	vid_xpos = Cvar_Get( "vid_xpos", "3", CVAR_ARCHIVE );
 	Cvar_CheckRange( vid_xpos, NULL, NULL, CV_INTEGER );
-	Cvar_SetDescription( vid_xpos, "Sets window X-coordinate when windowed, requires \\vid_restart." );
+	Cvar_SetDescription( vid_xpos, "Saves/sets window X-coordinate when windowed, requires \\vid_restart." );
 	vid_ypos = Cvar_Get( "vid_ypos", "22", CVAR_ARCHIVE );
 	Cvar_CheckRange( vid_ypos, NULL, NULL, CV_INTEGER );
-	Cvar_SetDescription( vid_ypos, "Sets window Y-coordinate when windowed, requires \\vid_restart." );
+	Cvar_SetDescription( vid_ypos, "Saves/sets window Y-coordinate when windowed, requires \\vid_restart." );
 
 	r_noborder = Cvar_Get( "r_noborder", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	Cvar_CheckRange( r_noborder, "0", "1", CV_INTEGER );
-	Cvar_SetDescription( r_noborder, "Setting to 0 will remove window borders and titlebar in windowed mode, hold ALT to drag & drop it with opened console." );
+	Cvar_SetDescription( r_noborder, "Setting to 1 will remove window borders and titlebar in windowed mode, hold ALT to drag & drop it with opened console." );
 
 	r_mode = Cvar_Get( "r_mode", "-2", CVAR_ARCHIVE | CVAR_LATCH );
 	Cvar_CheckRange( r_mode, "-2", va( "%i", s_numVidModes-1 ), CV_INTEGER );
@@ -3898,7 +3898,7 @@ void CL_Init( void ) {
 	cl_conXOffset = Cvar_Get ("cl_conXOffset", "0", 0);
 	Cvar_SetDescription( cl_conXOffset, "Console notifications X-offset." );
 	cl_conColor = Cvar_Get( "cl_conColor", "", 0 );
-	Cvar_SetDescription( cl_conColor, "Console background color, set as R G B A values from 0-255." );
+	Cvar_SetDescription( cl_conColor, "Console background color, set as R G B A values from 0-255, use with \\seta to save in config." );
 
 #ifdef MACOS_X
 	// In game video is REALLY slow in Mac OS X right now due to driver slowness

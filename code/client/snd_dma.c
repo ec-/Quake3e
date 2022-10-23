@@ -1501,7 +1501,7 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 
 	s_mixahead = Cvar_Get( "s_mixAhead", "0.2", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( s_mixahead, "0.001", "0.5", CV_FLOAT );
-	Cvar_SetDescription( s_mixahead, "Duration between sound being mixed and played (in seconds). Lower values make sound more responsive, but it may become unstable. Higher values add more delay." );
+	Cvar_SetDescription( s_mixahead, "Amount of time to pre-mix sound data to avoid potential skips/stuttering in case of unstable framerate. Higher values add more CPU usage." );
 
 	s_mixOffset = Cvar_Get( "s_mixOffset", "0", CVAR_ARCHIVE_ND | CVAR_DEVELOPER );
 	Cvar_CheckRange( s_mixOffset, "0", "0.5", CV_FLOAT );

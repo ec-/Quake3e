@@ -2056,7 +2056,7 @@ static void Com_InitZoneMemory( void ) {
 	// allocate the random block zone
 	cv = Cvar_Get( "com_zoneMegs", XSTRING( DEF_COMZONEMEGS ), CVAR_LATCH | CVAR_ARCHIVE );
 	Cvar_CheckRange( cv, "1", NULL, CV_INTEGER );
-	Cvar_SetDescription( cv, "Amount of memory (RAM) allocated for the random block zone (in MB)." );
+	Cvar_SetDescription( cv, "Initial amount of memory (RAM) allocated for the main block zone (in MB)." );
 
 #ifndef USE_MULTI_SEGMENT
 	if ( cv->integer < DEF_COMZONEMEGS )
@@ -3613,8 +3613,7 @@ void Com_Init( char *commandLine ) {
 	Cvar_Get( "sv_master3", "master.maverickservers.com", CVAR_INIT );
 
 	com_protocol = Cvar_Get( "protocol", XSTRING( DEFAULT_PROTOCOL_VERSION ), 0 );
-	Cvar_CheckRange( com_protocol, "0", NULL, CV_INTEGER );
-	Cvar_SetDescription( com_protocol, "Specify protocol version number for current Quake3e protocol.");
+	Cvar_SetDescription( com_protocol, "Specify network protocol version number, use -compat suffix for OpenArena compatibility.");
 	if ( Q_stristr( com_protocol->string, "-compat" ) > com_protocol->string ) {
 		// strip -compat suffix
 		Cvar_Set2( "protocol", va( "%i", com_protocol->integer ), qtrue );
@@ -3624,6 +3623,7 @@ void Com_Init( char *commandLine ) {
 		com_protocolCompat = qfalse;
 	}
 
+	Cvar_CheckRange( com_protocol, "0", NULL, CV_INTEGER );
 	com_protocol->flags &= ~CVAR_USER_CREATED;
 	com_protocol->flags |= CVAR_SERVERINFO | CVAR_ROM;
 

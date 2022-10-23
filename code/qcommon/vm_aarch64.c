@@ -1714,7 +1714,9 @@ static uint32_t alloc_rx( uint32_t pref )
 	reg = pref & RMASK;
 
 #ifdef DEBUG_VM
-	if ( rx_mask[reg] )
+	if ( reg >= ARRAY_LEN( rx_mask ) )
+		DROP( "forced register R%i index overflowed!", reg );
+	else if ( rx_mask[reg] )
 		DROP( "forced register R%i is already masked!", reg );
 #endif
 
@@ -1800,7 +1802,9 @@ static uint32_t alloc_sx( uint32_t pref )
 	reg = pref & RMASK;
 
 #ifdef DEBUG_VM
-	if ( sx_mask[reg] )
+	if ( reg >= ARRAY_LEN( sx_mask ) )
+		DROP( "forced register S%i index overflowed!", reg );
+	else if ( sx_mask[reg] )
 		DROP( "forced register S%i is already masked!", reg );
 #endif
 

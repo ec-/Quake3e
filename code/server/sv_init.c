@@ -719,9 +719,9 @@ void SV_Init( void )
 	Cvar_SetDescription( sv_clientTLD, "Client country detection code." );
 
 	sv_minRate = Cvar_Get( "sv_minRate", "0", CVAR_ARCHIVE_ND | CVAR_SERVERINFO );
-	Cvar_SetDescription( sv_minRate, "Minimum server bandwidth (in bit per second) a client must use." );
+	Cvar_SetDescription( sv_minRate, "Minimum server bandwidth (in bit per second) a client can use." );
 	sv_maxRate = Cvar_Get( "sv_maxRate", "0", CVAR_ARCHIVE_ND | CVAR_SERVERINFO );
-	Cvar_SetDescription( sv_maxRate, "Maximum server bandwidth (in bit per second) a client must use." );
+	Cvar_SetDescription( sv_maxRate, "Maximum server bandwidth (in bit per second) a client can use." );
 	sv_dlRate = Cvar_Get( "sv_dlRate", "100", CVAR_ARCHIVE | CVAR_SERVERINFO );
 	Cvar_CheckRange( sv_dlRate, "0", "500", CV_INTEGER );
 	Cvar_SetDescription( sv_dlRate, "Bandwidth allotted to PK3 file downloads via UDP, in kbyte/s." );
@@ -769,12 +769,12 @@ void SV_Init( void )
 
 	sv_reconnectlimit = Cvar_Get( "sv_reconnectlimit", "3", 0 );
 	Cvar_CheckRange( sv_reconnectlimit, "0", "12", CV_INTEGER );
-	Cvar_SetDescription( sv_reconnectlimit, "Number of times a disconnected client can come back and reconnect." );
+	Cvar_SetDescription( sv_reconnectlimit, "Number of seconds a disconnected client should wait before next reconnect." );
 
 	sv_padPackets = Cvar_Get( "sv_padPackets", "0", CVAR_DEVELOPER );
-	Cvar_SetDescription( sv_padPackets, "Possibly toggles the padding of network packets on the server PAD - Packet Assembler/Disassembler." );
+	Cvar_SetDescription( sv_padPackets, "Adds padding bytes to network packets for rate debugging." );
 	sv_killserver = Cvar_Get( "sv_killserver", "0", 0 );
-	Cvar_SetDescription( sv_killserver, "Debugging tool to kill the server." );
+	Cvar_SetDescription( sv_killserver, "Internal flag to manage server state." );
 	sv_mapChecksum = Cvar_Get( "sv_mapChecksum", "", CVAR_ROM );
 	Cvar_SetDescription( sv_mapChecksum, "Allows check for client server map to match." );
 	sv_lanForceRate = Cvar_Get( "sv_lanForceRate", "1", CVAR_ARCHIVE_ND );

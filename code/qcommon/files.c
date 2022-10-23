@@ -4646,7 +4646,7 @@ static void FS_Startup( void ) {
 	fs_basepath = Cvar_Get( "fs_basepath", Sys_DefaultBasePath(), CVAR_INIT | CVAR_PROTECTED | CVAR_PRIVATE );
 	Cvar_SetDescription( fs_basepath, "Write-protected CVAR specifying the path to the installation folder of the game." );
 	fs_basegame = Cvar_Get( "fs_basegame", BASEGAME, CVAR_INIT | CVAR_PROTECTED );
-	Cvar_SetDescription( fs_basegame, "Write-protected CVAR specifying the path to the base mod folder." );
+	Cvar_SetDescription( fs_basegame, "Write-protected CVAR specifying the path to the base game folder." );
 	fs_steampath = Cvar_Get( "fs_steampath", Sys_SteamPath(), CVAR_INIT | CVAR_PROTECTED | CVAR_PRIVATE );
 
 #ifndef USE_HANDLE_CACHE

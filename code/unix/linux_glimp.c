@@ -2029,8 +2029,7 @@ void IN_Init( void )
 	Cvar_SetDescription( in_mouse,
 		"Mouse data input source:\n" \
 		"  0 - disable mouse input\n" \
-		"  1 - di/raw mouse\n" \
-		" -1 - win32 mouse" );
+		"  1 - enable mouse input" );
 
 	if ( in_mouse->integer )
 	{
