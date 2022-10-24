@@ -1380,7 +1380,7 @@ void IN_Init( void )
 
 #ifdef USE_JOYSTICK
 	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE|CVAR_LATCH );
-	Cvar_SetDescription( in_joystick, "Whether or not joystick support is on (default 0)." );
+	Cvar_SetDescription( in_joystick, "Whether or not joystick support is on." );
 	in_joystickThreshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE );
 	Cvar_SetDescription( in_joystickThreshold, "Threshold of joystick moving dictance." );
 

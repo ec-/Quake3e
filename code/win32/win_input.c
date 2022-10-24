@@ -1170,7 +1170,7 @@ void IN_Init( void ) {
 #ifdef USE_JOYSTICK
 	// joystick variables
 	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE | CVAR_LATCH );
-	Cvar_SetDescription( in_joystick, "Whether or not joystick support is on (default 0)." );
+	Cvar_SetDescription( in_joystick, "Whether or not joystick support is on." );
 	in_joyBallScale = Cvar_Get( "in_joyBallScale", "0.02", CVAR_ARCHIVE );
 	Cvar_SetDescription( in_joyBallScale, "Sets the scale of a joyball rotation to player model rotation." );
 	in_debugJoystick = Cvar_Get( "in_debugjoystick", "0", CVAR_TEMP );

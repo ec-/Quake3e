@@ -1341,11 +1341,11 @@ void GLimp_Init( glconfig_t *config )
 	// glimp-specific
 
 	r_maskMinidriver = Cvar_Get( "r_maskMinidriver", "0", CVAR_LATCH );
-	Cvar_SetDescription( r_maskMinidriver, "If set to 1, then a mini driver will be treated as a normal ICD (default 0)." );
+	Cvar_SetDescription( r_maskMinidriver, "If set to 1, then a mini driver will be treated as a normal ICD." );
 	r_stereoEnabled = Cvar_Get( "r_stereoEnabled", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	Cvar_SetDescription( r_stereoEnabled, "Enable stereo rendering for techniques like shutter glasses." );
 	r_verbose = Cvar_Get( "r_verbose", "0", 0 );
-	Cvar_SetDescription( r_verbose, "Turns on additional startup information when renderer is starting up (default 0)." );
+	Cvar_SetDescription( r_verbose, "Turns on additional startup information when renderer is starting up." );
 
 	// feedback to renderer configuration
 	glw_state.config = config;
