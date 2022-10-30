@@ -349,16 +349,18 @@ static void S_TransferPaintBuffer( int endtime, byte *buffer )
 
 		if ( dma.samplebits == 32 && dma.isfloat )
 		{
+			const float rdiv = 1.0f / (32768.0f * 256.0f - 128.0f); // 8388480.0f
 			float *out = (float *) pbuf;
 			while ( count-- > 0 )
 			{
-				val = *p >> 8;
+				val = *p;
 				p += step;
-				if (val > 0x7fff)
-					val = 0x7fff;
-				else if (val < -32767)  /* clamp to one less than max to make division max out at -1.0f. */
-					val = -32767;
-				out[out_idx] = ((float) val) / 32767.0f;
+				if (val > 0x7fff00) {
+					val = 0x7fff00;
+				} else if (val < -32768 * 256) {
+					val = -32768 * 256;
+				}
+				out[out_idx] = (float)(val + 128) * rdiv;
 				out_idx = (out_idx + 1) & out_mask;
 			}
 		}
