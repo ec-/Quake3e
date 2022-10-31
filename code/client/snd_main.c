@@ -427,7 +427,7 @@ void S_Init( void )
 	Cvar_SetDescription( s_muteWhenMinimized, "Mutes all audio while game is minimized." );
 
 	cv = Cvar_Get( "s_initsound", "1", 0 );
-	Cvar_SetDescription( cv, " Whether or not to startup the sound system." );
+	Cvar_SetDescription( cv, "Whether or not to startup the sound system." );
 	if ( !cv->integer ) {
 		Com_Printf( "Sound disabled.\n" );
 	} else {

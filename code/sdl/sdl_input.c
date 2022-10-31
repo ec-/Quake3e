@@ -579,7 +579,7 @@ static void IN_InitJoystick( void )
 	}
 
 	Cvar_Get( "in_availableJoysticks", buf, CVAR_ROM );
-	Cvar_SetDescription( in_availableJoysticks, "List of available Joysticks." );
+	Cvar_SetDescription( in_availableJoysticks, "List of available joysticks." );
 
 	if( !in_joystick->integer ) {
 		Com_DPrintf( "Joystick is not active.\n" );
@@ -1382,7 +1382,7 @@ void IN_Init( void )
 	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE|CVAR_LATCH );
 	Cvar_SetDescription( in_joystick, "Whether or not joystick support is on." );
 	in_joystickThreshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE );
-	Cvar_SetDescription( in_joystickThreshold, "Threshold of joystick moving dictance." );
+	Cvar_SetDescription( in_joystickThreshold, "Threshold of joystick moving distance." );
 
 	j_pitch =        Cvar_Get( "j_pitch",        "0.022", CVAR_ARCHIVE_ND );
 	Cvar_SetDescription( j_pitch, "Joystick pitch rotation speed/direction." );
