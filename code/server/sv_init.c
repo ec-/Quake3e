@@ -786,6 +786,7 @@ void SV_Init( void )
 #endif
 
 	sv_levelTimeReset = Cvar_Get( "sv_levelTimeReset", "0", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( sv_levelTimeReset, "Whether or not to reset leveltime after new map loads." );
 
 	sv_filter = Cvar_Get( "sv_filter", "filter.txt", CVAR_ARCHIVE );
 	Cvar_SetDescription( sv_filter, "Cvar that point on filter file, if it is "" then filtering will be disabled." );

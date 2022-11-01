@@ -2047,6 +2047,7 @@ void IN_Init( void )
 	// bk001130 - changed this to match win32
 	in_joystickDebug = Cvar_Get( "in_debugjoystick", "0", CVAR_TEMP );
 	joy_threshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE_ND ); // FIXME: in_joythreshold
+	Cvar_SetDescription( joy_threshold, "Threshold of joystick moving distance." );
 
 	IN_StartupJoystick(); // bk001130 - from cvs1.17 (mkv)
 #endif

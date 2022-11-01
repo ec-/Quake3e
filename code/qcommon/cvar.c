@@ -2079,7 +2079,7 @@ void Cvar_Init (void)
 	Com_Memset(hashTable, '\0', sizeof(hashTable));
 
 	cvar_cheats = Cvar_Get( "sv_cheats", "1", CVAR_ROM | CVAR_SYSTEMINFO );
-	Cvar_SetDescription( cvar_cheats, "Enable cheating commands (serverside only)." );
+	Cvar_SetDescription( cvar_cheats, "Enable cheating commands (server side only)." );
 	cvar_developer = Cvar_Get( "developer", "0", CVAR_TEMP );
 	Cvar_SetDescription( cvar_developer, "Toggles developer mode. Prints more info to console and provides more commands." );
 

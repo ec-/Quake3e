@@ -1175,6 +1175,7 @@ void IN_Init( void ) {
 	Cvar_SetDescription( in_joyBallScale, "Sets the scale of a joyball rotation to player model rotation." );
 	in_debugJoystick = Cvar_Get( "in_debugjoystick", "0", CVAR_TEMP );
 	joy_threshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE );
+	Cvar_SetDescription( joy_threshold, "Threshold of joystick moving distance." );
 #endif
 
 	// mouse variables
