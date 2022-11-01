@@ -3550,9 +3550,14 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 		}
 
 		case OP_ADD: {
-			int rx = load_rx_opstack( R_EAX );			// eax = *opstack
-			emit_op_rx_imm32( X_ADD, rx, ci->value );	// add eax, 0x12345678
-			store_rx_opstack( rx );						// *opstack = eax
+			int rx = load_rx_opstack( R_EAX );				// eax = *opstack
+			if ( ci->value == 128 ) {
+				// small trick to use 1-byte immediate value :P
+				emit_op_rx_imm32( X_SUB, rx, -128 );		// sub eax, -128
+			} else {
+				emit_op_rx_imm32( X_ADD, rx, ci->value );	// add eax, 0x12345678
+			}
+			store_rx_opstack( rx );							// *opstack = eax
 			ip += 1; // OP_ADD
 			return qtrue;
 		}
