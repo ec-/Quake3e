@@ -3292,7 +3292,9 @@ static void CPUID( int func, unsigned int *regs )
 
 static void Sys_GetProcessorId( char *vendor )
 {
-	unsigned int regs[4];
+	uint32_t regs[4]; // EAX, EBX, ECX, EDX
+	uint32_t cpuid_level, cpuid_level_ex;
+	char vendor_str[12 + 1]; // short CPU vendor string
 
 	// setup initial features
 #if idx64
@@ -3300,9 +3302,21 @@ static void Sys_GetProcessorId( char *vendor )
 #else
 	CPU_Flags = 0;
 #endif
+	vendor[0] = '\0';
+
+	CPUID( 0x80000000, regs );
+	cpuid_level_ex = regs[0];
+
+	// get CPUID level & short CPU vendor string
+	CPUID( 0x0, regs );
+	cpuid_level = regs[0];
+	memcpy(vendor_str + 0, (char*)&regs[1], 4);
+	memcpy(vendor_str + 4, (char*)&regs[3], 4);
+	memcpy(vendor_str + 8, (char*)&regs[2], 4);
+	vendor_str[12] = '\0';
 
 	// get CPU feature bits
-	CPUID( 1, regs );
+	CPUID( 0x1, regs );
 
 	// bit 15 of EDX denotes CMOV/FCMOV/FCOMI existence
 	if ( regs[3] & ( 1 << 15 ) )
@@ -3329,37 +3343,37 @@ static void Sys_GetProcessorId( char *vendor )
 		CPU_Flags |= CPU_SSE41;
 
 	if ( vendor ) {
-		int print_flags = CPU_Flags;
-#if idx64
-		strcpy( vendor, "64-bit " );
-		vendor += strlen( vendor );
-		// do not print default 64-bit features in 32-bit mode
-		print_flags &= ~(CPU_FCOM | CPU_MMX | CPU_SSE | CPU_SSE2);
-#else
-		vendor[0] = '\0';
-#endif
-		// get CPU vendor string
-		CPUID( 0, regs );
-		memcpy( vendor+0, (char*) &regs[1], 4 );
-		memcpy( vendor+4, (char*) &regs[3], 4 );
-		memcpy( vendor+8, (char*) &regs[2], 4 );
-		vendor[12] = '\0'; vendor += 12;
-
-		if ( print_flags ) {
-			// print features
-			strcat( vendor, " w/" );
-			if ( print_flags & CPU_FCOM )
-				strcat( vendor, " CMOV" );
-			if ( print_flags & CPU_MMX )
-				strcat( vendor, " MMX" );
-			if ( print_flags & CPU_SSE )
-				strcat( vendor, " SSE" );
-			if ( print_flags & CPU_SSE2 )
-				strcat( vendor, " SSE2" );
-			//if ( CPU_Flags & CPU_SSE3 )
-			//	strcat( vendor, " SSE3" );
-			if ( print_flags & CPU_SSE41 )
-				strcat( vendor, " SSE4.1" );
+		if ( cpuid_level_ex >= 0x80000004 ) {
+			// read CPU Brand string
+			uint32_t i;
+			for ( i = 0x80000002; i <= 0x80000004; i++) {
+				CPUID( i, regs );
+				memcpy( vendor+0, (char*)&regs[0], 4 );
+				memcpy( vendor+4, (char*)&regs[1], 4 );
+				memcpy( vendor+8, (char*)&regs[2], 4 );
+				memcpy( vendor+12, (char*)&regs[3], 4 );
+				vendor[16] = '\0';
+				vendor += strlen( vendor );
+			}
+		} else {
+			const int print_flags = CPU_Flags;
+			vendor = Q_stradd( vendor, vendor_str );
+			if (print_flags) {
+				// print features
+				strcat(vendor, " w/");
+				if (print_flags & CPU_FCOM)
+					strcat(vendor, " CMOV");
+				if (print_flags & CPU_MMX)
+					strcat(vendor, " MMX");
+				if (print_flags & CPU_SSE)
+					strcat(vendor, " SSE");
+				if (print_flags & CPU_SSE2)
+					strcat(vendor, " SSE2");
+				//if ( CPU_Flags & CPU_SSE3 )
+				//	strcat( vendor, " SSE3" );
+				if (print_flags & CPU_SSE41)
+					strcat(vendor, " SSE4.1");
+			}
 		}
 	}
 }
@@ -3764,7 +3778,7 @@ void Com_Init( char *commandLine ) {
 	Cvar_Get( "sys_cpustring", "detect", CVAR_PROTECTED | CVAR_ROM | CVAR_NORESTART );
 	if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "detect" ) )
 	{
-		static char vendor[128];
+		char vendor[128];
 		Com_Printf( "...detecting CPU, found " );
 		Sys_GetProcessorId( vendor );
 		Cvar_Set( "sys_cpustring", vendor );
