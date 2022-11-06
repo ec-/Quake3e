@@ -3,7 +3,7 @@
 This client aims to be fully compatible with original baseq3 and other mods
 while trying to be fast, reliable and bug-free.
 <br>
-It is based on ioquake3-r1160 (latest non-SDL revision) with upstream patches an many custom improvements.<br>
+It is based on ioquake3-r1160 (latest non-SDL revision) with upstream patches and many custom improvements.<br>
 <br>
 <b>Common changes/additions:</b>
 <ul>
@@ -28,9 +28,9 @@ It is based on ioquake3-r1160 (latest non-SDL revision) with upstream patches an
 <li><b>\screenshotBMP</b> and <b>\screenshotBMP clipboard</b> commands</li>
 <li>hardcoded PrintScreen key - for "\screenshotBMP clipboard"</li>
 <li>hardcoded Shift+PrintScreen - for "\screenshotBMP"</li>
-<li><b>\com_maxfpsUnfocused</b> - will save cpu when inactive,set to your desktop refresh rate, for example</li>
+<li><b>\com_maxfpsUnfocused</b> - will save cpu when inactive, set to your desktop refresh rate, for example</li>
 <li><b>\com_skipIdLogo</b> <font color=silver><b>0</b>|1</font>- skip playing idlogo movie at startup</li>
-<li><b>\com_yieldCPU </b>&lt;milliseconds&gt; - try to sleep specified amout of time between rendered frames when game is active, this will greatly reduce CPU load, use <b>0</b> only if you're experiencing some lags (also it is usually reduces performance on integrated graphics because CPU steals GPU's power budget)</li>
+<li><b>\com_yieldCPU </b>&lt;milliseconds&gt; - try to sleep specified amount of time between rendered frames when game is active, this will greatly reduce CPU load, use <b>0</b> only if you're experiencing some lags (also it usually reduces performance on integrated graphics because CPU steals GPU's power budget)</li>
 <li><b>\r_defaultImage</b> <font color=silver>&lt;filename&gt;|#rgb|#rrggbb</font> - replace default (missing) image texture by either exact file or solid #rgb|#rrggbb background color</li>
 <li><b>\r_vbo</b> <font color=silver><b>0</b>|1</font> - use Vertex Buffer Objects to cache static map geometry, may improve FPS on modern GPUs, increases hunk memory usage by 15-30MB (map-dependent)</li>
 <div id="r_fbo"></div>
@@ -48,8 +48,8 @@ It is based on ioquake3-r1160 (latest non-SDL revision) with upstream patches an
 <li><b>\r_modeFullscreen</b> - dedicated mode string for fullscreen mode, set to -2 to use desktop resolution, set empty to use <b>\r_mode</b> in all cases</li>
 <li><b>\r_nomip</b> <font color=silver><b>0</b>|1</font>- apply picmip only on worldspawn textures</li>
 <li><b>\r_neatsky</b> <font color=silver><b>0</b>|1</font> - nopicmip for skyboxes</li>
-<li><b>\r_greyscale</b> <font color=silver>[<b>0</b>..1.0]</font> - desaturates rendered frame, requires <b><a href="#r_fbo">\r_fbo 1</a></b>, can be changed on 	the fly</li>
-<li><b>\r_mapGreyScale</b> <font color=silver>[-1.0..1.0]</font> - desaturate world map textures only, works independently from <b>\r_greyscale</b>, negative values desaturates lightmaps only</li>
+<li><b>\r_greyscale</b> <font color=silver>[<b>0</b>..1.0]</font> - desaturate rendered frame, requires <b><a href="#r_fbo">\r_fbo 1</a></b>, can be changed on 	the fly</li>
+<li><b>\r_mapGreyScale</b> <font color=silver>[-1.0..1.0]</font> - desaturate world map textures only, works independently from <b>\r_greyscale</b>, negative values only desaturate lightmaps</li>
 <li><b>\r_ext_multisample</b> <font color=silver><b>0</b>|2|4|6|8</font> - multi-sample anti-aliasing, requires <b><a href="#r_fbo">\r_fbo 1</a></b>, can be changed on the fly</li>
 <li><b>\r_ext_supersample</b> <font color=silver><b>0</b>|1</font> - super-sample anti-aliasing, requires <b><a href="#r_fbo">\r_fbo 1</a></b></li>
 <li><b>\r_noborder</b> <font color=silver><b>0</b>|1</font> - to draw game window without border, hold ALT to drag & drop it with opened console</li>
@@ -102,7 +102,7 @@ can be used to change/revoke compromised <b>rconPassword</b></li>
 
 <hr>
 <p><b>Fast client downloads</b><br><br>
-Usually downloads in Q3 is slow because all dowloaded data is requested/revieced from game server directly.
+Usually downloads are slow in Q3 because all downloaded data is requested/received from game server directly.
 So called `download redirection' allows very fast downloads because game server just tells you from where you should download all required mods/maps etc. - it can be internet or local http/ftp server<br>
 So what you need:
 <ul>
@@ -128,7 +128,7 @@ You can easy download pk3 files you need from any ftp/http/etc resource via foll
 <b>\dlmap</b> is the same as <b>\download</b> but also will check for map existence
 <br>
 <br>
-<b>cl_dlURL</b> cvar must points to download location, where (optional) <b>%1</b> pattern will be replaced by <b>\download|dlmap</b> command argument (filename/mapmane) and HTTP header may be analysed to obtain destination filename<br><br>
+<b>cl_dlURL</b> cvar must point to download location, where (optional) <b>%1</b> pattern will be replaced by <b>\download|dlmap</b> command argument (filename/mapmane) and HTTP header may be analysed to obtain destination filename<br><br>
 
 For example: <br><br>
 &nbsp;&nbsp;1) If <b>cl_dlURL</b> is <b>http://127.0.0.1</b> and you type <b>\download <u>promaps.pk3</u></b> -

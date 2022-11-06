@@ -922,7 +922,9 @@ int main( int argc, const char* argv[] )
 	// Sys_ConsoleInputInit() might be called in signal handler
 	// so modify/init any cvars here
 	ttycon = Cvar_Get( "ttycon", "1", 0 );
+	Cvar_SetDescription(ttycon, "Enable access to input/output console terminal.");
 	ttycon_ansicolor = Cvar_Get( "ttycon_ansicolor", "0", CVAR_ARCHIVE );
+	Cvar_SetDescription(ttycon_ansicolor, "Convert in-game color codes to ANSI color codes in console terminal.");
 
 	err = Sys_ConsoleInputInit();
 	if ( err == TTY_ENABLED )
