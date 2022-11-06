@@ -614,8 +614,8 @@ void Sys_Sleep( int msec ) {
 	fd_set fdset;
 	int res;
 
-	if ( msec == 0 )
-		return;
+	//if ( msec == 0 )
+	//	return;
 
 	if ( msec < 0 ) {
 		// special case: wait for console input or network packet
@@ -637,7 +637,9 @@ void Sys_Sleep( int msec ) {
 		}
 		return;
 	}
-
+#if 1
+	usleep( msec * 1000 );
+#else
 	if ( com_dedicated->integer && stdin_active ) {
 		FD_ZERO( &fdset );
 		FD_SET( STDIN_FILENO, &fdset );
@@ -647,6 +649,7 @@ void Sys_Sleep( int msec ) {
 	} else {
 		usleep( msec * 1000 );
 	}
+#endif
 }
 
 
