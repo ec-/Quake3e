@@ -559,12 +559,14 @@ void Con_Init( void )
 {
 	con_timestamp = Cvar_Get( "con_timestamp", "1", CVAR_ARCHIVE );
 	con_notifytime = Cvar_Get( "con_notifyTime", "3", CVAR_ARCHIVE );
+	Cvar_SetDescription( con_notifytime, "Defines how long messages (from players or the system) are on the screen (in seconds)." );
 	con_notifylines = Cvar_Get( "con_notifyLines", "3", CVAR_ARCHIVE );
 	Cvar_CheckRange( con_notifylines, "0", XSTRING( NUM_CON_TIMES ), CV_INTEGER );
 	con_notifyx = Cvar_Get( "con_notifyX", "0", CVAR_ARCHIVE );
 	con_notifyy = Cvar_Get( "con_notifyY", "0", CVAR_ARCHIVE );
 	con_notifykeep = Cvar_Get( "con_notifyKeep", "0", CVAR_ARCHIVE );
 	con_conspeed = Cvar_Get( "con_togglespeed", "3", 0 );
+	Cvar_SetDescription( con_conspeed, "Console opening/closing scroll speed." );
 	con_height = Cvar_Get( "con_height", "0.5", CVAR_ARCHIVE_ND );
 	con_heightShift = Cvar_Get( "con_heightShift", "0.5", CVAR_ARCHIVE_ND ); // same default because Shift+Esc opens the console too 
 	con_heightCtrl = Cvar_Get( "con_heightCtrl", "0.25", CVAR_ARCHIVE_ND );
@@ -578,8 +580,10 @@ void Con_Init( void )
 	Con_UpdateDateTime();
 
 	con_autoclear = Cvar_Get("con_autoclear", "1", CVAR_ARCHIVE_ND);
+	Cvar_SetDescription( con_autoclear, "Enable/disable clearing console input text when console is closed." );
 	con_scale = Cvar_Get( "con_scale", "1", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( con_scale, "0.5", "8", CV_FLOAT );
+	Cvar_SetDescription( con_scale, "Console font size scale." );
 
 	Field_Clear( &g_consoleField );
 	Con_ResetFieldWidth();

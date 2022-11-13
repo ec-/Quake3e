@@ -224,7 +224,7 @@ SDL_LIBS = -lSDL2
 endif
 
 # extract version info
-VERSION=$(shell grep "\#define Q3_VERSION" $(CMDIR)/q_shared.h | \
+VERSION=$(shell grep ".\+define[ \t]\+Q3_VERSION[ \t]\+\+" $(CMDIR)/q_shared.h | \
   sed -e 's/.*".* \([^ ]*\)"/\1/')
 
 # common qvm definition
