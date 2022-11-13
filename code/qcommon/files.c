@@ -294,6 +294,7 @@ static	char		fs_gamedir[MAX_OSPATH];	// this will be a single file name with no 
 static	cvar_t		*fs_debug;
 static	cvar_t		*fs_homepath;
 
+static	cvar_t		*fs_include; // Cyberstorm - Optional extra path.
 static	cvar_t		*fs_steampath;
 
 static	cvar_t		*fs_basepath;
@@ -4647,6 +4648,7 @@ static void FS_Startup( void ) {
 	Cvar_SetDescription( fs_basepath, "Write-protected CVAR specifying the path to the installation folder of the game." );
 	fs_basegame = Cvar_Get( "fs_basegame", BASEGAME, CVAR_INIT | CVAR_PROTECTED );
 	Cvar_SetDescription( fs_basegame, "Write-protected CVAR specifying the path to the base game folder." );
+	fs_include = Cvar_Get( "fs_include", "", CVAR_INIT ); // Cyberstorm
 	fs_steampath = Cvar_Get( "fs_steampath", "", CVAR_INIT | CVAR_PROTECTED | CVAR_PRIVATE );
 
 #ifndef USE_HANDLE_CACHE
@@ -4687,6 +4689,12 @@ static void FS_Startup( void ) {
 	FS_LoadCache();
 #endif
 #endif
+
+	// Cyberstorm
+	if ( fs_include->string[0] ) {
+		FS_AddGameDirectory( fs_basepath->string, fs_include->string );
+	}
+	// !Cyberstorm
 
 	// add search path elements in reverse priority order
 	if ( fs_steampath->string[0] ) {
