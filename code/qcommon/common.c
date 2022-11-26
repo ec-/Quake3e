@@ -207,36 +207,36 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 		// TTimo: only open the qconsole.log if the filesystem is in an initialized state
 		//   also, avoid recursing in the qconsole.log opening (i.e. if fs_debug is on)
 		if ( logfile == FS_INVALID_HANDLE && FS_Initialized() && !opening_qconsole ) {
-			struct tm *newtime;
-			time_t aclock;
+			const char *logName = "qconsole.log";
 			int mode;
 
 			opening_qconsole = qtrue;
 
-			time( &aclock );
-			newtime = localtime( &aclock );
-
 			mode = com_logfile->integer - 1;
 
 			if ( mode & 2 )
-				logfile = FS_FOpenFileAppend( "qconsole.log" );
+				logfile = FS_FOpenFileAppend( logName );
 			else
-				logfile = FS_FOpenFileWrite( "qconsole.log" );
+				logfile = FS_FOpenFileWrite( logName );
 
-			if ( logfile != FS_INVALID_HANDLE )
-			{
-				Com_Printf( "logfile opened on %s\n", asctime( newtime ) );
+			if ( logfile != FS_INVALID_HANDLE ) {
+				struct tm *newtime;
+				time_t aclock;
+				char timestr[32];
 
-				if ( mode & 1 )
-				{
+				time( &aclock );
+				newtime = localtime( &aclock );
+				strftime( timestr, sizeof( timestr ), "%a %b %d %X %Y", newtime );
+
+				Com_Printf( "logfile opened on %s\n", timestr );
+
+				if ( mode & 1 ) {
 					// force it to not buffer so we get valid
 					// data even if we are crashing
 					FS_ForceFlush( logfile );
 				}
-			}
-			else
-			{
-				Com_Printf( "Opening qconsole.log failed!\n" );
+			} else {
+				Com_Printf( S_COLOR_YELLOW "Opening %s failed!\n", logName );
 				Cvar_Set( "logfile", "0" );
 			}
 
