@@ -599,8 +599,6 @@ static void InitOpenGL( void )
 	}
 #endif
 
-	VarInfo();
-
 	// set default state
 	GL_SetDefaultState();
 
@@ -1883,6 +1881,8 @@ void R_Init( void ) {
 	InitOpenGL();
 
 	R_InitImages();
+
+	VarInfo();
 
 #ifdef USE_VULKAN
 	vk_create_pipelines();

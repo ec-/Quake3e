@@ -640,8 +640,6 @@ static void InitOpenGL( void )
 		gls.initTime = ri.Milliseconds();
 	}
 
-	VarInfo();
-
 	// set default state
 	GL_SetDefaultState();
 
@@ -1842,6 +1840,8 @@ void R_Init( void ) {
 	InitOpenGL();
 
 	R_InitImages();
+
+	VarInfo();
 
 	R_InitShaders();
 
