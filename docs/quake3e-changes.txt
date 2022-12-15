@@ -1,3 +1,43 @@
+14-Oct-2022:
+* preserve \cl_reconnectAgrs between online mod changes
+* fixed nested cgame command execution
+* renderers: avoid potential division-by-zero for AGEN_PORTAL
+* CMake: numerous improvements
+* Vulkan: updated SDK headers, applied potential fix for molten-vk compatibility
+* server: do not enforce non-zero level times at startup, for mod compatibility
+* SDL2: fix escape key not sending a char event
+* Vulkan: fixed insufficient attachment pool size for extreme case (antialiasing + supersampling + hdr + bloom)
+* Vulkan: fixed error at \snd_restart (REF_KEEP_WINDOW context)
+* video-pipe: use full (pc) color space and do not enforce particular rate for output audio stream
+* OpenGL: setup TMU information in R_InitExtensions() to avoid potential errors with KEEP_WINDOW flag
+* Implemented \in_forceCharset for SDL backend
+* Renderers: fixed non-working \r_ignorehwgamma, \r_overbrightbits now can operate independently from \r_ignorehwgamma in some cases
+* Vulkan: handle special DRM/KMS case (FIFO+maxImageCount==0), use 4 swapchain images for that
+* Fixed missing video/audio frames during multi-segment avi rendering
+* Fix client forgetting password when it is set in main menu
+* Renderers: make sure that R_ColorShiftLightingBytes() is not picking more data that we actually need/have
+* SDL2: fixed crash when some cvars (like in_keyboardDebug) may be dereferenced before initialization, unified that behavior with win32 backend
+* Better support for non-standard protocols (71-compat etc.)
+* Vulkan: use minimal VkApplicationInfo at instance creation
+* Vulkan: disable anisotropy for nearest-sampling modes
+* win32: show/hide mouse cursor only if it has been not suppressed by OS
+* Added con_autoclear cvar
+* Added \kicknum, \kickall, and 'kickbots commands, patch by Ensiform
+* Always keep bots, even with \devmap
+* Allow 8x multisampling in traditional (non-framebuffer) MSAA
+* Improve the default texture quality settings:
+ - Use the highest texture quality
+ - Use 8x anisotropic filtering by default
+* Renderers: make sure that amplitude for TMOD_STRETCH is not zero
+* Fixed stack overflow in \varfunc
+* Fixed potential out-of-bounds access caused by large s_paintedtime
+* Added \con_scale - to scale console font size relative to default smallchar width/height
+* Fixed erroneous gamma setup in windowed mode
+* Handle negative color shift that caused black lightmaps
+* Use differential time and interval comparisons whenever possible
+* Various botlib and QVM fixes
+* Vulkan: mark offscreen rendering unavailable for NVidia on linux too
+
 14-Oct-2021:
 * Filesystem: close all handles when switching to other game directory
 * Sound: fixed potential division-by-zero in S_GetSoundTime() in case of failed DirectSound initialization, reworked shutdown functions

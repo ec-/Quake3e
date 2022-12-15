@@ -110,7 +110,7 @@ Adds command text immediately after the current command
 Adds a \n to the text
 ============
 */
-static void Cbuf_InsertText( const char *text ) {
+void Cbuf_InsertText( const char *text ) {
 	int		len;
 	int		i;
 

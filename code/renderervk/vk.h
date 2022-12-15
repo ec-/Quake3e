@@ -201,8 +201,8 @@ void vk_wait_idle( void );
 //
 void vk_create_image( image_t *image, int width, int height, int mip_levels );
 void vk_upload_image_data( image_t *image, int x, int y, int width, int height, int miplevels, byte *pixels, int size );
-byte *resample_image_data( const image_t *image, byte *data, const int data_size, int *bytes_per_pixel );
 void vk_update_descriptor_set( image_t *image, qboolean mipmap );
+void vk_destroy_image_resources( VkImage *image, VkImageView *imageView );
 
 uint32_t vk_find_pipeline_ext( uint32_t base, const Vk_Pipeline_Def *def, qboolean use );
 void vk_get_pipeline_def( uint32_t pipeline, Vk_Pipeline_Def *def );
@@ -221,7 +221,6 @@ void vk_end_frame( void );
 
 void vk_end_render_pass( void );
 void vk_begin_main_render_pass( void );
-void vk_begin_screenmap_render_pass( void );
 
 void vk_bind_pipeline( uint32_t pipeline );
 void vk_bind_index( void );
@@ -229,8 +228,6 @@ void vk_bind_index_ext( const int numIndexes, const uint32_t*indexes );
 void vk_bind_geometry( uint32_t flags );
 void vk_bind_lighting( int stage, int bundle );
 void vk_draw_geometry( Vk_Depth_Range depth_range, qboolean indexed );
-
-void vk_draw_light( uint32_t pipeline, Vk_Depth_Range depth_range, uint32_t uniform_offset, int fog);
 
 void vk_read_pixels( byte* buffer, uint32_t width, uint32_t height ); // screenshots
 qboolean vk_bloom( void );
@@ -240,6 +237,7 @@ void vk_update_mvp( const float *m );
 
 uint32_t vk_tess_index( uint32_t numIndexes, const void *src );
 void vk_bind_index_buffer( VkBuffer buffer, uint32_t offset );
+void vk_draw_indexed( uint32_t indexCount, uint32_t firstIndex );
 
 void vk_reset_descriptor( int index );
 void vk_update_descriptor( int index, VkDescriptorSet descriptor );
@@ -252,8 +250,6 @@ const char *vk_format_string( VkFormat format );
 void VBO_PrepareQueues( void );
 void VBO_RenderIBOItems( void );
 void VBO_ClearQueue( void );
-
-qboolean vk_surface_format_color_depth( VkFormat format, int* r, int* g, int* b );
 
 typedef struct vk_tess_s {
 	VkCommandBuffer command_buffer;
@@ -597,10 +593,3 @@ typedef struct {
 
 extern Vk_Instance	vk;				// shouldn't be cleared during ref re-init
 extern Vk_World		vk_world;		// this data is cleared during ref re-init
-
-// Most of the renderer's code uses Vulkan API via function provides in this file but
-// there are few places outside of vk.c where we use Vulkan commands directly.
-
-extern PFN_vkDestroyImage qvkDestroyImage;
-extern PFN_vkDestroyImageView qvkDestroyImageView;
-extern PFN_vkCmdDrawIndexed qvkCmdDrawIndexed;
