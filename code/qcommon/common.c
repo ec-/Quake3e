@@ -3684,7 +3684,6 @@ void Com_Init( char *commandLine ) {
 #ifndef DEDICATED
     suka_fpsblyatzapomni = Cvar_Get( "suka_fpsblyatzapomni", "250", 0 );
 	com_maxfps = suka_fpsblyatzapomni; // try to force that in some light way
-	com_maxfpsUnfocused = Cvar_Get( "com_maxfpsUnfocused", "60", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( com_maxfps, "0", "1000", CV_INTEGER );
 	Cvar_SetDescription( com_maxfps, "Sets maximum frames per second." );
 	com_maxfpsUnfocused = Cvar_Get( "com_maxfpsUnfocused", "60", CVAR_ARCHIVE_ND );

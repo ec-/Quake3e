@@ -73,7 +73,7 @@ ifeq ($(COMPILE_PLATFORM),cygwin)
 endif
 
 ifndef PLATFORM
-PLATFORM=mingw64
+PLATFORM=$(COMPILE_PLATFORM)
 endif
 export PLATFORM
 
