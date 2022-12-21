@@ -1778,7 +1778,7 @@ we also have to reload the UI and CGame because the renderer
 doesn't know what graphics to reload
 =================
 */
-static void CL_Vid_Restart( qboolean keepWindow ) {
+static void CL_Vid_Restart( refShutdownCode_t shutdownCode ) {
 
 	// Settings may have changed so stop recording now
 	if ( CL_VideoRecording() )
@@ -1794,7 +1794,7 @@ static void CL_Vid_Restart( qboolean keepWindow ) {
 	CL_ShutdownVMs();
 
 	// shutdown the renderer and clear the renderer interface
-	CL_ShutdownRef( keepWindow ? REF_KEEP_WINDOW : REF_DESTROY_WINDOW );
+	CL_ShutdownRef( shutdownCode ); // REF_KEEP_CONTEXT, REF_KEEP_WINDOW, REF_DESTROY_WINDOW
 
 	// client is no longer pure until new checksums are sent
 	CL_ResetPureClientAtServer();
@@ -1837,15 +1837,21 @@ Wrapper for CL_Vid_Restart
 */
 static void CL_Vid_Restart_f( void ) {
 
-	 // hack for OSP mod: do not allow vid restart right after cgame init
-	if ( cls.lastVidRestart )
-		if ( abs( cls.lastVidRestart - Sys_Milliseconds() ) < 500 )
-			return;
-
-	if ( Q_stricmp( Cmd_Argv(1), "keep_window" ) == 0 )
-		CL_Vid_Restart( qtrue );
-	else
-		CL_Vid_Restart( qfalse );
+	if ( Q_stricmp( Cmd_Argv(1), "keep_window" ) == 0 ) {
+		// fast path: keep window
+		CL_Vid_Restart( REF_KEEP_WINDOW );
+	} else if ( Q_stricmp(Cmd_Argv(1), "fast") == 0 ) {
+		// fast path: keep context
+		CL_Vid_Restart( REF_KEEP_CONTEXT );
+	} else {
+		if ( cls.lastVidRestart ) {
+			if ( abs( cls.lastVidRestart - Sys_Milliseconds()) < 500 ) {
+				// hack for OSP mod: do not allow vid restart right after cgame init
+				return;
+			}
+		}
+		CL_Vid_Restart( REF_DESTROY_WINDOW );
+	}
 }
 
 
@@ -1863,7 +1869,7 @@ static void CL_Snd_Restart_f( void )
 	S_Shutdown();
 
 	// sound will be reinitialized by vid_restart
-	CL_Vid_Restart( qtrue );
+	CL_Vid_Restart( REF_KEEP_CONTEXT /*REF_KEEP_WINDOW*/ );
 }
 
 
@@ -3192,6 +3198,11 @@ CL_InitRenderer
 */
 static void CL_InitRenderer( void ) {
 
+	// fixup renderer -EC-
+	if ( !re.BeginRegistration ) {
+		CL_InitRef();
+	}
+
 	// this sets up the renderer and calls R_Init
 	re.BeginRegistration( &cls.glconfig );
 
@@ -3234,11 +3245,6 @@ void CL_StartHunkUsers( void ) {
 
 	if ( !com_cl_running || !com_cl_running->integer ) {
 		return;
-	}
-
-	// fixup renderer -EC-
-	if ( !re.BeginRegistration ) {
-		CL_InitRef();
 	}
 
 	if ( !cls.rendererStarted ) {
