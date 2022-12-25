@@ -1,0 +1,214 @@
+name: build
+
+on:
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - '*.txt'
+      - '.gitignore'
+      - 'docs/*'
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+      - '*.txt'
+      - '.gitignore'
+      - 'docs/*'
+  release:
+    types: [published]
+
+  workflow_dispatch:
+
+jobs:
+  windows-msys:
+    name: ${{ matrix.btype }} Windows-GCC ${{ matrix.arch }}
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86, x86_64]
+        cc: [gcc]
+        btype: [Release, Debug]
+        include:
+          - arch: x86
+            msystem: MINGW32
+            prefix: mingw-w64-i686
+
+          - arch: x86_64
+            msystem: MINGW64
+            prefix: mingw-w64-x86_64
+
+          - btype: Release
+            rule: install
+
+          - btype: Debug
+            rule: debug install
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+
+    - uses: msys2/setup-msys2@v2
+      with:
+        install: ${{ matrix.prefix }}-binutils ${{ matrix.prefix }}-make ${{ matrix.prefix }}-${{ matrix.cc }}
+        msystem: ${{ matrix.msystem }}
+        path-type: minimal
+        release: false
+        update: false
+
+    - uses: actions/checkout@v3.1.0
+      with:
+        submodules: recursive
+
+    - name: Build
+      if: ${{ github.event_name != 'release' || matrix.btype != 'Debug' }} # skip Debug configuration in Release build
+      run: |
+        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=vulkan CNAME=quake3e-vulkan BUILD_SERVER=0
+        make clean ARCH=${{ matrix.arch }}
+        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl
+
+    - uses: actions/upload-artifact@v3.1.1
+      if: matrix.cc == 'gcc' && matrix.btype == 'release'
+      with:
+        name: windows-mingw-${{ matrix.arch }}
+        path: bin
+        if-no-files-found: error
+        retention-days: 5
+
+  windows-msvc:
+    name: ${{ matrix.btype }} Windows-MSVC ${{ matrix.arch }}
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [arm64, x86, x64]
+        btype: [Release, Debug]
+        include:
+          - arch: arm64
+            platform: ARM64
+            suffix: .arm64
+            pkg_suffix: arm64
+
+          - arch: x86
+            platform: Win32
+            pkg_suffix: x86
+
+          - arch: x64
+            platform: x64
+            suffix: .x64
+            pkg_suffix: x86_64
+
+    steps:
+
+    - uses: microsoft/setup-msbuild@v1.1.3
+
+    - uses: actions/checkout@v3.1.0
+      with:
+        submodules: recursive
+
+    - name: Build
+      if: ${{ github.event_name != 'release' || matrix.btype != 'Debug' }} # skip Debug configuration in Release build
+      run: |
+        mkdir bin
+
+        msbuild code\win32\msvc2017\quake3e-ded.vcxproj -p:TargetName=quake3e.ded,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }}
+        copy code\win32\msvc2017\output\quake3e.ded.exe bin\quake3e.ded${{ matrix.suffix }}.exe
+        msbuild code\win32\msvc2017\quake3e-ded.vcxproj -p:TargetName=quake3e.ded,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }} -t:Clean
+
+        msbuild code\win32\msvc2017\renderer.vcxproj -p:Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }}
+        msbuild code\win32\msvc2017\quake3e.vcxproj -p:TargetName=quake3e,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0
+        copy code\win32\msvc2017\output\quake3e.exe bin\quake3e${{ matrix.suffix }}.exe
+        msbuild code\win32\msvc2017\renderer.vcxproj -p:Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }} -t:Clean
+        msbuild code\win32\msvc2017\quake3e.vcxproj -p:TargetName=quake3e,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0 -t:Clean
+
+        msbuild code\win32\msvc2017\renderervk.vcxproj -p:Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }}
+        msbuild code\win32\msvc2017\quake3e.vcxproj -p:TargetName=quake3e,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0
+        copy code\win32\msvc2017\output\quake3e.exe bin\quake3e-vulkan${{ matrix.suffix }}.exe
+        msbuild code\win32\msvc2017\renderervk.vcxproj -p:Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }} -t:Clean
+        msbuild code\win32\msvc2017\quake3e.vcxproj -p:TargetName=quake3e,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0 -t:Clean
+
+    - uses: actions/upload-artifact@v3.1.1
+      if: ${{ matrix.btype == 'release' }}
+      with:
+        name: windows-msvc-${{ matrix.pkg_suffix }}
+        path: bin
+        if-no-files-found: error
+        retention-days: 5
+        
+  create-testing:
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: [windows-msys, windows-msvc]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3.0.1
+
+      - name: Create binary archives
+        run: |
+          7z a -r quake3e-windows-mingw-x86.zip    ./windows-mingw-x86/*
+          7z a -r quake3e-windows-mingw-x86_64.zip ./windows-mingw-x86_64/*
+          7z a -r quake3e-windows-msvc-x86.zip     ./windows-msvc-x86/*
+          7z a -r quake3e-windows-msvc-x86_64.zip  ./windows-msvc-x86_64/*
+          7z a -r quake3e-windows-msvc-arm64.zip   ./windows-msvc-arm64/*
+#         7z a -r quake3e-linux-aarch64.zip  ./linux-aarch64/*
+#         7z a -r quake3e-linux-armv7.zip    ./linux-armv7/*
+
+      - name: Create latest build
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          automatic_release_tag: "latest"
+          prerelease: false
+          title: Latest Build
+          files: |
+            *.zip
+
+  update-release:
+    if: ${{ github.event_name == 'release' }}
+    needs: [windows-msys, windows-msvc]
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          # - artifact_dir: linux-aarch64
+          #   artifact_name: quake3e-linux-aarch64.zip
+
+          # - artifact_dir: linux-armv7
+          #  artifact_name: quake3e-linux-armv7.zip
+
+          - artifact_dir: windows-mingw-x86
+#           artifact_name: quake3e-windows-mingw-x86.zip
+            artifact_name: quake3e-windows-x86.zip 
+
+          - artifact_dir: windows-mingw-x86_64
+#           artifact_name: quake3e-windows-mingw-x86_64.zip
+            artifact_name: quake3e-windows-x86_64.zip
+
+#         - artifact_dir: windows-msvc-x86
+#           artifact_name: quake3e-windows-msvc-x86.zip
+
+#         - artifact_dir: windows-msvc-x86_64
+#           artifact_name: quake3e-windows-msvc-x86_64.zip
+
+          - artifact_dir: windows-msvc-arm64
+#           artifact_name: quake3e-windows-msvc-arm64.zip
+            artifact_name: quake3e-windows-arm64.zip
+
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3.0.1
+
+      - name: Create archive
+        run: 7z a -r ${{ matrix.artifact_name }} ./${{ matrix.artifact_dir }}/*
+
+      - name: Upload archive
+        uses: "svenstaro/upload-release-action@latest"
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          overwrite: true
+          file: ${{ matrix.artifact_name }}
