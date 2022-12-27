@@ -68,8 +68,6 @@ static DEVMODE dm_current;
 static rserr_t	GLW_SetMode( int mode, const char *modeFS, int colorbits,
 							 qboolean cdsFullscreen, qboolean vulkan );
 
-static qboolean s_classRegistered = qfalse;
-
 //
 // function declaration
 //
@@ -615,6 +613,7 @@ static qboolean GLW_InitVulkanDriver( int colorbits )
 */
 static qboolean GLW_CreateWindow( int width, int height, int colorbits, qboolean cdsFullscreen, qboolean vulkan )
 {
+	static qboolean s_classRegistered = qfalse;
 	RECT			r;
 	int				stylebits;
 	int				x, y, w, h;

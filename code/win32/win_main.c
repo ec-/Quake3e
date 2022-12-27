@@ -23,6 +23,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
+#ifndef DEDICATED
+#include "../client/client.h"
+#include "glw_win.h"
+#endif
 #include "win_local.h"
 #include "resource.h"
 #include <sys/types.h>
@@ -30,10 +34,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <direct.h>
 #include <io.h>
 
-#ifndef DEDICATED
-#include "../client/client.h"
-#include "glw_win.h"
-#endif
 
 #define MEM_THRESHOLD (96*1024*1024)
 
