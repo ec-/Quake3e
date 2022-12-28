@@ -266,6 +266,11 @@ static void InitOpenGL( void )
 	{
 		GLint		temp;
 		
+		if ( !ri.GLimp_Init )
+		{
+			ri.Error( ERR_FATAL, "OpenGL interface is not initialized" );
+		}
+
 		ri.GLimp_Init( &glConfig );
 		GLimp_InitExtraExtensions();
 

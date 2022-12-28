@@ -599,14 +599,16 @@ void	CL_SaveJPG( const char *filename, int quality, int image_width, int image_h
 void	CL_LoadJPG( const char *filename, unsigned char **pic, int *width, int *height );
 
 // platform-specific
+void	GLimp_InitGamma(glconfig_t *config);
+void	GLimp_SetGamma(unsigned char red[256], unsigned char green[256], unsigned char blue[256]);
+
+// OpenGL
+#ifdef USE_OPENGL_API
 void	GLimp_Init( glconfig_t *config );
 void	GLimp_Shutdown( qboolean unloadDLL );
 void	GLimp_EndFrame( void );
-
-void	GLimp_InitGamma( glconfig_t *config );
-void	GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned char blue[256] );
-
 void	*GL_GetProcAddress( const char *name );
+#endif
 
 // Vulkan
 #ifdef USE_VULKAN_API

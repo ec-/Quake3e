@@ -3443,14 +3443,16 @@ static void CL_InitRef( void ) {
 	rimp.Sys_LowPhysicalMemory = Sys_LowPhysicalMemory;
 	rimp.Com_RealTime = Com_RealTime;
 
+	rimp.GLimp_InitGamma = GLimp_InitGamma;
+	rimp.GLimp_SetGamma = GLimp_SetGamma;
+
 	// OpenGL API
+#ifdef USE_OPENGL_API
 	rimp.GLimp_Init = GLimp_Init;
 	rimp.GLimp_Shutdown = GLimp_Shutdown;
 	rimp.GL_GetProcAddress = GL_GetProcAddress;
-
 	rimp.GLimp_EndFrame = GLimp_EndFrame;
-	rimp.GLimp_InitGamma = GLimp_InitGamma;
-	rimp.GLimp_SetGamma = GLimp_SetGamma;
+#endif
 
 	// Vulkan API
 #ifdef USE_VULKAN_API

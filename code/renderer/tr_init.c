@@ -564,6 +564,11 @@ static void InitOpenGL( void )
 	{
 		const char *err;
 
+		if ( !ri.GLimp_Init )
+		{
+			ri.Error( ERR_FATAL, "OpenGL interface is not initialized" );
+		}
+
 		ri.GLimp_Init( &glConfig );
 
 		R_ClearSymTables();

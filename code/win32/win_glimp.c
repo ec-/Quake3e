@@ -39,11 +39,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "resource.h"
 #include "win_local.h"
 #include "glw_win.h"
+
+#ifdef USE_OPENGL_API
 #include "../renderer/qgl.h"
 
 // Enable High Performance Graphics while using Integrated Graphics.
 Q_EXPORT DWORD NvOptimusEnablement = 0x00000001;		// Nvidia
 Q_EXPORT int AmdPowerXpressRequestHighPerformance = 1;	// AMD
+#endif
 
 typedef enum {
 	RSERR_OK,
@@ -71,8 +74,10 @@ static rserr_t	GLW_SetMode( int mode, const char *modeFS, int colorbits,
 //
 // function declaration
 //
+#ifdef USE_OPENGL_API
 qboolean	QGL_Init( const char *dllname );
 void		QGL_Shutdown( qboolean unloadDLL );
+#endif
 
 #ifdef USE_VULKAN_API
 qboolean	QVK_Init( void );
@@ -85,9 +90,11 @@ void		QVK_Shutdown( qboolean unloadDLL );
 glwstate_t glw_state;
 
 // GLimp-specific cvars
+#ifdef USE_OPENGL_API
 static cvar_t *r_maskMinidriver;		// allow a different dll name to be treated as if it were opengl32.dll
 static cvar_t *r_stereoEnabled;
 static cvar_t *r_verbose;				// used for verbose debug spew
+#endif
 
 /*
 ** GLW_StartDriverAndSetMode
@@ -115,6 +122,7 @@ static rserr_t GLW_StartDriverAndSetMode( int mode, const char *modeFS, int colo
 }
 
 
+#ifdef USE_OPENGL_API
 /*
 ** GLW_ChoosePFD
 **
@@ -569,6 +577,7 @@ static qboolean GLW_InitOpenGLDriver( int colorbits )
 
 	return qtrue;
 }
+#endif // USE_OPENGL_API
 
 
 /*
@@ -619,7 +628,7 @@ static qboolean GLW_CreateWindow( int width, int height, int colorbits, qboolean
 	int				x, y, w, h;
 	int				exstyle;
 	qboolean		oldFullscreen;
-	qboolean		res;
+	qboolean		res = qfalse;
 
 	//
 	// register the window class if necessary
@@ -755,9 +764,11 @@ static qboolean GLW_CreateWindow( int width, int height, int colorbits, qboolean
 #ifdef USE_VULKAN_API
 	if ( vulkan )
 		res = GLW_InitVulkanDriver( colorbits );
-	else
 #endif
+#ifdef USE_OPENGL_API
+	if ( !vulkan )
 		res = GLW_InitOpenGLDriver( colorbits );
+#endif
 
 	if ( !res )
 	{
@@ -1208,6 +1219,7 @@ static rserr_t GLW_SetMode( int mode, const char *modeFS, int colorbits, qboolea
 }
 
 
+#ifdef USE_OPENGL_API
 /*
 ** GLW_LoadOpenGL
 **
@@ -1446,6 +1458,7 @@ void GLimp_Shutdown( qboolean unloadDLL )
 	// shutdown QGL subsystem
 	QGL_Shutdown( unloadDLL );
 }
+#endif // USE_OPENGL_API
 
 
 #ifdef USE_VULKAN_API
