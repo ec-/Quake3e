@@ -580,7 +580,6 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 	const char *token;
 	int depthMaskBits = GLS_DEPTHMASK_TRUE, blendSrcBits = 0, blendDstBits = 0, atestBits = 0, depthFuncBits = 0;
 	qboolean depthMaskExplicit = qfalse;
-	qboolean blendFunc = qfalse;
 
 	stage->active = qtrue;
 
@@ -844,7 +843,11 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 				blendDstBits = NameToDstBlendMode( token );
 			}
 
-			blendFunc = qtrue;
+			// clear depth mask for blended surfaces
+			if ( !depthMaskExplicit ) {
+				depthMaskBits = 0;
+			}
+
 		}
 		//
 		// rgbGen
@@ -1120,11 +1123,6 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 			depthMaskBits &= ~GLS_DEPTHMASK_TRUE;
 			shader.sort = SS_SEE_THROUGH;
 		}
-	}
-
-	// clear depth mask for blended surfaces
-	if ( !depthMaskExplicit && blendFunc ) {
-		depthMaskBits = 0;
 	}
 
 	//
