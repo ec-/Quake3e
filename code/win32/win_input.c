@@ -1448,7 +1448,7 @@ void IN_JoyMove( void ) {
 	}
 
 	// loop through the joystick buttons
-	// key a joystick event or auxillary event for higher number buttons for each state change
+	// key a joystick event or auxiliary event for higher number buttons for each state change
 	buttonstate = joy.ji.dwButtons;
 	for ( i=0 ; i < joy.jc.wNumButtons ; i++ ) {
 		if ( (buttonstate & (1<<i)) && !(joy.oldbuttonstate & (1<<i)) ) {
@@ -1488,7 +1488,7 @@ void IN_JoyMove( void ) {
 		}
 	}
 
-	// determine which bits have changed and key an auxillary event for each change
+	// determine which bits have changed and key an auxiliary event for each change
 	for (i=0 ; i < 16 ; i++) {
 		if ( (povstate & (1<<i)) && !(joy.oldpovstate & (1<<i)) ) {
 			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, joyDirectionKeys[i], qtrue, 0, NULL );

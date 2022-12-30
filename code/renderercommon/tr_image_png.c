@@ -1967,7 +1967,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 	}           
 
 	/*
-	 *  Read the siganture of the file.
+	 *  Read the signature of the file.
 	 */
 
 	Signature = BufferedFileRead(ThePNG, PNG_Signature_Size);

@@ -1089,7 +1089,7 @@ static void SV_CalcPings( void ) {
 SV_CheckTimeouts
 
 If a packet has not been received from a client for timeout->integer 
-seconds, drop the conneciton.  Server time is used instead of
+seconds, drop the connection.  Server time is used instead of
 realtime to avoid dropping the local client while debugging.
 
 When a client is normally dropped, the client_t goes into a zombie state

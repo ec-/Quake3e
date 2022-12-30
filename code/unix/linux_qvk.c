@@ -135,7 +135,7 @@ qboolean QVK_Init( void )
 		{
 			glw_state.VulkanLib = load_vulkan_library( dllnames[i] );
 
-			Com_Printf( "...loading '%s' : %s\n", dllnames[i], glw_state.VulkanLib ? "succesed" : "failed" );
+			Com_Printf( "...loading '%s' : %s\n", dllnames[i], glw_state.VulkanLib ? "success" : "failed" );
 			if ( glw_state.VulkanLib )
 			{
 				break;
