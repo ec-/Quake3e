@@ -3247,6 +3247,25 @@ void CL_StartHunkUsers( void ) {
 		return;
 	}
 
+	if ( cls.state >= CA_LOADING ) {
+		// try to apply map-depending configuration from cvar cl_mapConfig_<mapname> cvars
+		const char *info = cl.gameState.stringData + cl.gameState.stringOffsets[ CS_SERVERINFO ];
+		const char *mapname = Info_ValueForKey( info, "mapname" );
+		if ( mapname && *mapname != '\0' ) {
+			const char *fmt = "cl_mapConfig_%s";
+			const char *cmd = Cvar_VariableString( va( fmt, mapname ) );
+			if ( cmd && *cmd != '\0' ) {
+				Cbuf_AddText( cmd );
+			} else {
+				// apply mapname "default" if present
+				cmd = Cvar_VariableString( va( fmt, "default" ) );
+				if ( cmd && *cmd != '\0' ) {
+					Cbuf_AddText( cmd );
+				}
+			}
+		}
+	}
+
 	if ( !cls.rendererStarted ) {
 		cls.rendererStarted = qtrue;
 		CL_InitRenderer();
