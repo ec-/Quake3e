@@ -844,10 +844,10 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 			}
 
 			// clear depth mask for blended surfaces
-			if ( !depthMaskExplicit )
-			{
+			if ( !depthMaskExplicit ) {
 				depthMaskBits = 0;
 			}
+
 		}
 		//
 		// rgbGen
@@ -1096,17 +1096,14 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 	//
 	// implicitly assume that a GL_ONE GL_ZERO blend mask disables blending
 	//
-	if ( ( blendSrcBits == GLS_SRCBLEND_ONE ) &&
-		 ( blendDstBits == GLS_DSTBLEND_ZERO ) )
-	{
+	if ( ( blendSrcBits == GLS_SRCBLEND_ONE ) && ( blendDstBits == GLS_DSTBLEND_ZERO ) ) {
 		blendDstBits = blendSrcBits = 0;
 		depthMaskBits = GLS_DEPTHMASK_TRUE;
 	}
 
 	// decide which agens we can skip
 	if ( stage->bundle[0].alphaGen == AGEN_IDENTITY ) {
-		if ( stage->bundle[0].rgbGen == CGEN_IDENTITY
-			|| stage->bundle[0].rgbGen == CGEN_LIGHTING_DIFFUSE ) {
+		if ( stage->bundle[0].rgbGen == CGEN_IDENTITY || stage->bundle[0].rgbGen == CGEN_LIGHTING_DIFFUSE ) {
 			stage->bundle[0].alphaGen = AGEN_SKIP;
 		}
 	}
@@ -1114,7 +1111,13 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 	if ( depthMaskExplicit && shader.sort == SS_BAD ) {
 		// fix decals on q3wcp18 and other maps
 		if ( blendSrcBits == GLS_SRCBLEND_SRC_ALPHA && blendDstBits == GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA /*&& stage->rgbGen == CGEN_VERTEX*/ ) {
-			depthMaskBits &= ~GLS_DEPTHMASK_TRUE;
+			if ( stage->bundle[0].alphaGen != AGEN_SKIP ) {
+				// q3wcp18 @ "textures/ctf_unified/floor_decal_blue" : AGEN_VERTEX, CGEN_VERTEX
+				depthMaskBits &= ~GLS_DEPTHMASK_TRUE;
+			} else {
+				// skip for q3wcp14 jumppads and similar
+				// q3wcp14 @ "textures/ctf_unified/bounce_blue" : AGEN_SKIP, CGEN_IDENTITY
+			}
 			shader.sort = shader.polygonOffset ? SS_DECAL : SS_OPAQUE + 0.01f;
 		} else if ( blendSrcBits == GLS_SRCBLEND_ZERO && blendDstBits == GLS_DSTBLEND_ONE_MINUS_SRC_COLOR && stage->bundle[0].rgbGen == CGEN_EXACT_VERTEX ) {
 			depthMaskBits &= ~GLS_DEPTHMASK_TRUE;

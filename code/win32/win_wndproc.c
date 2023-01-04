@@ -708,7 +708,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		active = (LOWORD( wParam ) != WA_INACTIVE) ? qtrue : qfalse;
 		minimized = (BOOL)HIWORD( wParam ) ? qtrue : qfalse;
 
-		// We can recieve Active & Minimized when restoring from minimized state
+		// We can receive Active & Minimized when restoring from minimized state
 		if ( active && minimized ) {
 			gw_minimized = qtrue;
 			break;

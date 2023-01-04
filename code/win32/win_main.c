@@ -21,14 +21,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 // win_main.c
 
-#include "../client/client.h"
+#include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
-#include "win_local.h"
+#ifndef DEDICATED
+#include "../client/client.h"
 #include "glw_win.h"
+#endif
+#include "win_local.h"
 #include "resource.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <direct.h>
+#include <io.h>
+
 
 #define MEM_THRESHOLD (96*1024*1024)
 

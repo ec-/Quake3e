@@ -151,8 +151,7 @@ float FloatSwap( const float *f );
 #ifdef Q3_VM
 	typedef int intptr_t;
 #else
-	#ifdef _MSC_VER
-		#include <io.h>
+	#if defined (_MSC_VER) && !defined(__clang__)
 		typedef __int64 int64_t;
 		typedef __int32 int32_t;
 		typedef __int16 int16_t;

@@ -1979,7 +1979,7 @@ Com_TouchMemory
 Touch all known used data to make sure it is paged in
 ===============
 */
-void Com_TouchMemory( void ) {
+unsigned int Com_TouchMemory( void ) {
 	const memblock_t *block;
 	const memzone_t *zone;
 	int		start, end;
@@ -2019,6 +2019,8 @@ void Com_TouchMemory( void ) {
 	end = Sys_Milliseconds();
 
 	Com_Printf( "Com_TouchMemory: %i msec\n", end - start );
+
+	return sum; // just to silent compiler warning
 }
 
 

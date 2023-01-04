@@ -29,21 +29,22 @@ BUILD_SERVER     = 1
 USE_SDL          = 1
 USE_CURL         = 1
 USE_LOCAL_HEADERS= 0
+USE_SYSTEM_JPEG  = 0
+
 USE_VULKAN       = 1
 USE_OPENGL       = 1
 USE_OPENGL2      = 0
-USE_SYSTEM_JPEG  = 0
+USE_OPENGL_API   = 1
 USE_VULKAN_API   = 1
-
 USE_RENDERER_DLOPEN = 1
+
+# valid options: opengl, vulkan, opengl2
+RENDERER_DEFAULT = opengl
 
 CNAME            = quake3e
 DNAME            = quake3e.ded
 
 RENDERER_PREFIX  = $(CNAME)
-
-# valid options: opengl, vulkan, opengl2
-RENDERER_DEFAULT = opengl
 
 
 ifeq ($(V),1)
@@ -153,18 +154,21 @@ ifeq ($(USE_RENDERER_DLOPEN),0)
     USE_OPENGL=1
     USE_OPENGL2=0
     USE_VULKAN=0
+    USE_OPENGL_API=1
     USE_VULKAN_API=0
   endif
   ifeq ($(RENDERER_DEFAULT),opengl2)
     USE_OPENGL=0
     USE_OPENGL2=1
     USE_VULKAN=0
+    USE_OPENGL_API=1
     USE_VULKAN_API=0
   endif
   ifeq ($(RENDERER_DEFAULT),vulkan)
     USE_OPENGL=0
     USE_OPENGL2=0
     USE_VULKAN=1
+    USE_OPENGL_API=0
   endif
 endif
 
@@ -277,6 +281,10 @@ endif
 
 ifeq ($(USE_VULKAN_API),1)
   BASE_CFLAGS += -DUSE_VULKAN_API
+endif
+
+ifeq ($(USE_OPENGL_API),1)
+  BASE_CFLAGS += -DUSE_OPENGL_API
 endif
 
 ifeq ($(GENERATE_DEPENDENCIES),1)
@@ -1031,9 +1039,14 @@ else # !USE_SDL
         $(B)/client/win_glimp.o \
         $(B)/client/win_input.o \
         $(B)/client/win_minimize.o \
-        $(B)/client/win_qgl.o \
         $(B)/client/win_snd.o \
         $(B)/client/win_wndproc.o
+
+ifeq ($(USE_OPENGL_API),1)
+    Q3OBJ += \
+        $(B)/client/win_qgl.o
+endif
+
 ifeq ($(USE_VULKAN_API),1)
     Q3OBJ += \
         $(B)/client/win_qvk.o
@@ -1056,11 +1069,14 @@ ifeq ($(USE_SDL),1)
 else # !USE_SDL
     Q3OBJ += \
         $(B)/client/linux_glimp.o \
-        $(B)/client/linux_qgl.o \
         $(B)/client/linux_snd.o \
         $(B)/client/x11_dga.o \
         $(B)/client/x11_randr.o \
         $(B)/client/x11_vidmode.o
+ifeq ($(USE_OPENGL_API),1)
+    Q3OBJ += \
+        $(B)/client/linux_qgl.o
+endif
 ifeq ($(USE_VULKAN_API),1)
     Q3OBJ += \
         $(B)/client/linux_qvk.o

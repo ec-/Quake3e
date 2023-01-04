@@ -23,17 +23,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
-#include "../qcommon/vm_local.h"
 #include "../renderercommon/tr_public.h"
+#include "../qcommon/vm_local.h"
 #include "../ui/ui_public.h"
-#include "keys.h"
-#include "snd_public.h"
 #include "../cgame/cg_public.h"
 #include "../game/bg_public.h"
+#include "snd_public.h"
+#include "keys.h"
 
 #ifdef USE_CURL
 #include "cl_curl.h"
-#endif /* USE_CURL */
+#endif
 
 // file full of random crap that gets used to create cl_guid
 #define QKEY_FILE "qkey"
@@ -599,14 +599,16 @@ void	CL_SaveJPG( const char *filename, int quality, int image_width, int image_h
 void	CL_LoadJPG( const char *filename, unsigned char **pic, int *width, int *height );
 
 // platform-specific
+void	GLimp_InitGamma(glconfig_t *config);
+void	GLimp_SetGamma(unsigned char red[256], unsigned char green[256], unsigned char blue[256]);
+
+// OpenGL
+#ifdef USE_OPENGL_API
 void	GLimp_Init( glconfig_t *config );
 void	GLimp_Shutdown( qboolean unloadDLL );
 void	GLimp_EndFrame( void );
-
-void	GLimp_InitGamma( glconfig_t *config );
-void	GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned char blue[256] );
-
 void	*GL_GetProcAddress( const char *name );
+#endif
 
 // Vulkan
 #ifdef USE_VULKAN_API
