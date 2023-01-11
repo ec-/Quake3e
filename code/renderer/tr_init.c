@@ -350,9 +350,12 @@ static void R_InitExtensions( void )
 
 	ri.Printf( PRINT_ALL, "Initializing OpenGL extensions\n" );
 
-	if ( R_HaveExtension( "GL_EXT_texture_edge_clamp" ) ) {
+	if ( R_HaveExtension( "GL_EXT_texture_edge_clamp" ) || R_HaveExtension( "GL_SGIS_texture_edge_clamp" ) ) {
 		gl_clamp_mode = GL_CLAMP_TO_EDGE;
 		ri.Printf( PRINT_ALL, "...using GL_EXT_texture_edge_clamp\n" );
+	} else {
+		ri.Printf( PRINT_ALL, "...GL_EXT_texture_edge_clamp not found\n" );
+		ri.Printf( PRINT_ALL, S_COLOR_YELLOW "...Degraded texture support likely!\n" );
 	}
 
 	// GL_EXT_texture_compression_s3tc
