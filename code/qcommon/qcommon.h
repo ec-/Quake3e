@@ -455,6 +455,9 @@ void Cbuf_Init( void );
 void Cbuf_AddText( const char *text );
 // Adds command text at the end of the buffer, does NOT add a final \n
 
+int Cbuf_Add( const char *text, int pos );
+// Adds command text at the specified position of the buffer, adds \n when needed
+
 void Cbuf_InsertText( const char *text );
 // Adds command text at the beginning of the buffer, add \n
 
