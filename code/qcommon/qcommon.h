@@ -188,7 +188,7 @@ typedef struct {
 	} ipv;
 	uint16_t	port;
 #ifdef USE_IPV6
-	unsigned long	scope_id;	// Needed for IPv6 link-local addresses
+	uint32_t	scope_id;	// Needed for IPv6 link-local addresses
 #endif
 } netadr_t;
 

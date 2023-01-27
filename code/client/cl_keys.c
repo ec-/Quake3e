@@ -697,7 +697,7 @@ static void CL_KeyUpEvent( int key, unsigned time )
 	// an action started before a mode switch.
 	//
 	if ( cls.state != CA_DISCONNECTED ) {
-		if ( bound ) {
+		if ( bound || ( Key_GetCatcher() & KEYCATCH_CGAME ) ) {
 			Key_ParseBinding( key, qfalse, time );
 		}
 	}
