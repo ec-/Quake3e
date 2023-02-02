@@ -377,7 +377,7 @@ static qboolean isStaticTCgen( shaderStage_t *stage, int bundle )
 		case TCGEN_TEXTURE:
 			return qtrue;
 		case TCGEN_ENVIRONMENT_MAPPED:
-			if ( stage->bundle[bundle].numTexMods == 0 && ( !stage->bundle[bundle].isLightmap || r_mergeLightmaps->integer == 0 ) ) {
+			if ( stage->bundle[bundle].numTexMods == 0 && ( stage->bundle[bundle].lightmap == LIGHTMAP_INDEX_NONE || r_mergeLightmaps->integer == 0 ) ) {
 				stage->tessFlags |= TESS_ENV0 << bundle;
 				stage->tessFlags &= ~( TESS_ST0 << bundle );
 				return qtrue;
@@ -398,12 +398,17 @@ static qboolean isStaticTCgen( shaderStage_t *stage, int bundle )
 
 static qboolean isStaticTCmod( const textureBundle_t *bundle )
 {
-	texMod_t type;
 	int i;
 
 	for ( i = 0; i < bundle->numTexMods; i++ ) {
-		type = bundle->texMods[i].type;
-		if ( type != TMOD_NONE && type != TMOD_SCALE && type != TMOD_TRANSFORM ) {
+		switch ( bundle->texMods[i].type ) {
+		case TMOD_NONE:
+		case TMOD_SCALE:
+		case TMOD_TRANSFORM:
+		case TMOD_OFFSET:
+		case TMOD_SCALE_OFFSET:
+			break;
+		default:
 			return qfalse;
 		}
 	}
