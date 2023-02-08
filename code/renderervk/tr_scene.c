@@ -530,8 +530,15 @@ void RE_RenderScene( const refdef_t *fd ) {
 			for ( i = 0; i < tr.numDrawSurfCmds; i++ )
 			{
 				cmd = R_GetCommandBuffer( sizeof( *cmd ) );
-				src = tr.drawSurfCmd + i;
-				*cmd = *src;
+				if ( cmd )
+				{
+					src = tr.drawSurfCmd + i;
+					*cmd = *src;
+				}
+				else
+				{
+					break;
+				}
 			}
 
 			if ( src )
