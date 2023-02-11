@@ -3390,8 +3390,9 @@ static void Sys_GetProcessorId( char *vendor )
 
 #else // not _WIN32
 
-#if arm32
 #include <sys/auxv.h>
+
+#if arm32
 #include <asm/hwcap.h>
 #endif
 
