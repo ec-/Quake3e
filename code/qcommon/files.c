@@ -3352,7 +3352,7 @@ static char **FS_ListFilteredFiles( const char *path, const char *extension, con
 	}
 
 	pathLength = strlen( path );
-	if ( path[pathLength-1] == '\\' || path[pathLength-1] == '/' ) {
+	if ( pathLength > 0 && ( path[pathLength-1] == '\\' || path[pathLength-1] == '/' ) ) {
 		pathLength--;
 	}
 	nfiles = 0;
