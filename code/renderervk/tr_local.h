@@ -276,7 +276,9 @@ typedef enum {
 	TMOD_SCALE,
 	TMOD_STRETCH,
 	TMOD_ROTATE,
-	TMOD_ENTITY_TRANSLATE
+	TMOD_ENTITY_TRANSLATE,
+	TMOD_OFFSET,
+	TMOD_SCALE_OFFSET,
 } texMod_t;
 
 #define	MAX_SHADER_DEFORMS	3
@@ -296,30 +298,42 @@ typedef struct {
 typedef struct {
 	texMod_t		type;
 
-	// used for TMOD_TURBULENT and TMOD_STRETCH
-	waveForm_t		wave;
+	union {
 
-	// used for TMOD_TRANSFORM
-	float			matrix[2][2];		// s' = s * m[0][0] + t * m[1][0] + trans[0]
-	float			translate[2];		// t' = s * m[0][1] + t * m[0][1] + trans[1]
+		// used for TMOD_TURBULENT and TMOD_STRETCH
+		waveForm_t		wave;
 
-	// used for TMOD_SCALE
-	float			scale[2];			// s *= scale[0]
-	                                    // t *= scale[1]
+		// used for TMOD_TRANSFORM
+		struct {
+			float		matrix[2][2];	// s' = s * m[0][0] + t * m[1][0] + trans[0]
+			float		translate[2];	// t' = s * m[0][1] + t * m[0][1] + trans[1]
+		};
 
-	// used for TMOD_SCROLL
-	float			scroll[2];			// s' = s + scroll[0] * time
+		// used for TMOD_SCALE, TMOD_OFFSET, TMOD_SCALE_OFFSET
+		struct {
+			float		scale[2];		// s' = s * scale[0] + offset[0]
+			float		offset[2];		// t' = t * scale[1] + offset[1]
+		};
+
+		// used for TMOD_SCROLL
+		float			scroll[2];		// s' = s + scroll[0] * time
 										// t' = t + scroll[1] * time
+		// used for TMOD_ROTATE
+		// + = clockwise
+		// - = counterclockwise
+		float			rotateSpeed;
 
-	// + = clockwise
-	// - = counterclockwise
-	float			rotateSpeed;
+	};
 
 } texModInfo_t;
 
 
 #define MAX_IMAGE_ANIMATIONS		24
 #define MAX_IMAGE_ANIMATIONS_VQ3	8
+
+#define LIGHTMAP_INDEX_NONE			0
+#define LIGHTMAP_INDEX_SHADER		1
+#define LIGHTMAP_INDEX_OFFSET		2
 
 typedef struct {
 	image_t			*image[MAX_IMAGE_ANIMATIONS];
@@ -343,7 +357,7 @@ typedef struct {
 	acff_t			adjustColorsForFog;
 
 	int				videoMapHandle;
-	qboolean		isLightmap;
+	int				lightmap;				// LIGHTMAP_INDEX_NONE, LIGHTMAP_INDEX_SHADER, LIGHTMAP_INDEX_OFFSET
 	qboolean		isVideoMap;
 	qboolean		isScreenMap;
 } textureBundle_t;
@@ -477,8 +491,6 @@ typedef struct shader_s {
 #endif
 
 	int			hasScreenMap;
-
-	float		lightmapOffset[2];	// within merged lightmap
 
 	void	(*optimalStageIteratorFunc)( void );
 
@@ -1183,7 +1195,10 @@ typedef struct {
 
 	int						numLightmaps;
 	image_t					**lightmaps;
-	float					lightmapScale[2];
+
+	float					lightmapOffset[2];	// current shader lightmap offset
+	float					lightmapScale[2];	// for lightmap atlases
+	int						lightmapMod;		// for lightmap atlases
 
 	trRefEntity_t			*currentEntity;
 	trRefEntity_t			worldEntity;		// point currentEntity at this when rendering world
@@ -1976,5 +1991,7 @@ extern void VBO_QueueItem( int itemIndex );
 extern void VBO_ClearQueue( void );
 extern void VBO_Flush( void );
 #endif
+
+int R_GetLightmapCoords( const int lightmapIndex, float *x, float *y );
 
 #endif //TR_LOCAL_H

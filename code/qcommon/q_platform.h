@@ -130,6 +130,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define arm64 1
 #endif // __arm64__
 
+#if defined (__PPC64__)
+#if defined (__LITTLE_ENDIAN__)
+#define ARCH_STRING "ppc64le"
+#define Q3_LITTLE_ENDIAN
+#else
+#define ARCH_STRING "ppc64"
+#define Q3_BIG_ENDIAN
+#endif // !__LITTLE_ENDIAN__
+#endif // __PPC64__
+
 #endif // !_WIN32
 
 // ============================== Linux ====================================

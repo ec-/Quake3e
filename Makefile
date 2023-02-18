@@ -351,6 +351,7 @@ ifdef MINGW
   BASE_CFLAGS += -Wall -Wimplicit -Wstrict-prototypes -DUSE_ICON -DMINGW=1
 
   BASE_CFLAGS += -Wno-unused-result -fvisibility=hidden
+  BASE_CFLAGS += -ffunction-sections -flto
 
   ifeq ($(ARCH),x86_64)
     ARCHEXT = .x64
@@ -371,6 +372,7 @@ ifdef MINGW
   LDFLAGS = -mwindows -Wl,--dynamicbase -Wl,--nxcompat
   LDFLAGS += -Wl,--gc-sections -fvisibility=hidden
   LDFLAGS += -lwsock32 -lgdi32 -lwinmm -lole32 -lws2_32 -lpsapi -lcomctl32
+  LDFLAGS += -flto
 
   CLIENT_LDFLAGS=$(LDFLAGS)
 

@@ -327,9 +327,9 @@ void RE_AddLinearLightToScene( const vec3_t start, const vec3_t end, float inten
 	if ( r_dlightSaturation->value != 1.0 )
 	{
 		float luminance = LUMA( r, g, b );
-		r = LERP( luminance, r, r_mapGreyScale->value );
-		g = LERP( luminance, g, r_mapGreyScale->value );
-		b = LERP( luminance, b, r_mapGreyScale->value );
+		r = LERP( luminance, r, r_dlightSaturation->value );
+		g = LERP( luminance, g, r_dlightSaturation->value );
+		b = LERP( luminance, b, r_dlightSaturation->value );
 	}
 
 	dl = &backEndData->dlights[ r_numdlights++ ];
@@ -530,8 +530,15 @@ void RE_RenderScene( const refdef_t *fd ) {
 			for ( i = 0; i < tr.numDrawSurfCmds; i++ )
 			{
 				cmd = R_GetCommandBuffer( sizeof( *cmd ) );
-				src = tr.drawSurfCmd + i;
-				*cmd = *src;
+				if ( cmd )
+				{
+					src = tr.drawSurfCmd + i;
+					*cmd = *src;
+				}
+				else
+				{
+					break;
+				}
 			}
 
 			if ( src )
