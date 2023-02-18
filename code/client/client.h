@@ -598,6 +598,10 @@ size_t	CL_SaveJPGToBuffer( byte *buffer, size_t bufSize, int quality, int image_
 void	CL_SaveJPG( const char *filename, int quality, int image_width, int image_height, byte *image_buffer, int padding );
 void	CL_LoadJPG( const char *filename, unsigned char **pic, int *width, int *height );
 
+
+// base backend functions
+void	HandleEvents( void );
+
 // platform-specific
 void	GLimp_InitGamma(glconfig_t *config);
 void	GLimp_SetGamma(unsigned char red[256], unsigned char green[256], unsigned char blue[256]);

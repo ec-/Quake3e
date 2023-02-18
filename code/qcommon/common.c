@@ -3381,14 +3381,14 @@ static void Sys_GetProcessorId( char *vendor )
 
 #else // non-x86
 
-#ifdef _WIN32
+#ifndef __linux__
 
 static void Sys_GetProcessorId( char *vendor )
 {
 	Com_sprintf( vendor, 100, "%s", ARCH_STRING );
 }
 
-#else // not _WIN32
+#else // __linux__
 
 #include <sys/auxv.h>
 
@@ -3434,17 +3434,17 @@ static void Sys_GetProcessorId( char *vendor )
 			strcat( vendor, " QVM-bytecode" );
 		}
 	}
-#else
+#else // !arm32
 	CPU_Flags = 0;
 #if arm64
-	Com_sprintf( vendor, 100, "ARM %s", ARCH_STRING );
+	Com_sprintf( vendor, 100, "%s", ARCH_STRING );
 #else
 	Com_sprintf( vendor, 128, "%s %s", ARCH_STRING, (const char*)getauxval( AT_PLATFORM ) );
 #endif
-#endif
+#endif // !arm32
 }
 
-#endif // !_WIN32
+#endif // __linux__
 
 #endif // non-x86
 
