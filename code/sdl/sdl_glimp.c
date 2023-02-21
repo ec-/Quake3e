@@ -63,6 +63,9 @@ GLimp_Shutdown
 */
 void GLimp_Shutdown( qboolean unloadDLL )
 {
+	Cvar_SetIntegerValue( "vid_xpos", glw_state.window_width );
+	Cvar_SetIntegerValue( "vid_ypos", glw_state.window_height );
+
 	IN_Shutdown();
 
 	SDL_DestroyWindow( SDL_window );
@@ -778,6 +781,9 @@ VKimp_Shutdown
 */
 void VKimp_Shutdown( qboolean unloadDLL )
 {
+	Cvar_SetIntegerValue( "vid_xpos", glw_state.window_width );
+	Cvar_SetIntegerValue( "vid_ypos", glw_state.window_height );
+
 	IN_Shutdown();
 
 	SDL_DestroyWindow( SDL_window );
