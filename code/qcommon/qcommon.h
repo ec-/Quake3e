@@ -490,6 +490,8 @@ void	Cmd_AddCommand( const char *cmd_name, xcommand_t function );
 // if function is NULL, the command will be forwarded to the server
 // as a clc_clientCommand instead of executed locally
 
+xcommand_t Cmd_ReplaceCommand(const char* cmd_name, xcommand_t function);
+
 void	Cmd_RemoveCommand( const char *cmd_name );
 void	Cmd_RemoveCgameCommands( void );
 
@@ -604,6 +606,9 @@ void 	Cvar_ForceReset(const char *var_name);
 
 void	Cvar_SetCheatState( void );
 // reset all testing vars to a safe value
+
+void    Cvar_ResetXmodProtection( void );
+void    Cvar_RemoveCheatProtected(const char* var_name);
 
 qboolean Cvar_Command( void );
 // called by Cmd_ExecuteString when Cmd_Argv(0) doesn't match a known

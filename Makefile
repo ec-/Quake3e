@@ -975,7 +975,20 @@ Q3OBJ = \
   $(B)/client/l_memory.o \
   $(B)/client/l_precomp.o \
   $(B)/client/l_script.o \
-  $(B)/client/l_struct.o
+  $(B)/client/l_struct.o \
+  \
+  $(B)/client/x_cl_console.o \
+  $(B)/client/x_weapon.o \
+  $(B)/client/x_player.o \
+  $(B)/client/x_net.o \
+  $(B)/client/x_team.o \
+  $(B)/client/x_console.o \
+  $(B)/client/x_ddamage.o \
+  $(B)/client/x_gamestate.o \
+  $(B)/client/x_crosshair.o \
+  $(B)/client/x_misc.o \
+  $(B)/client/x_hud.o \
+  $(B)/client/x_main.o
 
 ifneq ($(USE_SYSTEM_JPEG),1)
   Q3OBJ += $(JPGOBJ)

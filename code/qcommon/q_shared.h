@@ -26,6 +26,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // q_shared.h -- included first by ALL program modules.
 // A user mod should never modify this file
 
+#define XMOD_VERSION "0.2.3"
+
+#if defined(_MSC_VER)
+#ifdef _M_AMD64
+#define XMOD_ARCH "x64"
+#else
+#define XMOD_ARCH "x86"
+#endif
+#else
+#define XMOD_ARCH "Unknown"
+#endif
+
 #define Q3_VERSION            "Q3 1.32e"
 #ifndef SVN_VERSION
   #define SVN_VERSION Q3_VERSION
@@ -920,6 +932,10 @@ default values.
 // These flags are only returned by the Cvar_Flags() function
 #define CVAR_MODIFIED		0x40000000	// Cvar was modified
 #define CVAR_NONEXISTENT	0x80000000	// Cvar doesn't exist.
+
+#define CVAR_XMOD           0x20000 // created by xmod
+#define CVAR_XHCK_ON        0x40000 // created by xmod
+#define CVAR_XHCK_OFF       0x80000 // created by xmod
 
 typedef enum {
 	CV_NONE = 0,

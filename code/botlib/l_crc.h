@@ -26,3 +26,6 @@ unsigned short CRC_ProcessString(unsigned char *data, int length);
 void CRC_ProcessByte(unsigned short *crcvalue, byte data);
 void CRC_ContinueProcessString(unsigned short *crc, char *data, int length);
 #endif
+
+void CRC_Init(unsigned short *crcvalue);
+void CRC_ContinueProcessString(unsigned short *crc, const char *data, size_t length);

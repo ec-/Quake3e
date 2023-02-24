@@ -921,6 +921,28 @@ void Cvar_SetCheatState(void)
 	}
 }
 
+void Cvar_ResetXmodProtection(void)
+{
+    cvar_t* var;
+
+    for (var = cvar_vars; var; var = var->next)
+    {
+        if (var->flags & CVAR_XMOD)
+            var->flags &= ~(CVAR_ROM | CVAR_XHCK_ON | CVAR_XHCK_OFF);
+    }
+}
+
+void Cvar_RemoveCheatProtected(const char* var_name)
+{
+    cvar_t* var;
+
+    var = Cvar_FindVar(var_name);
+    if (!var)
+        return;
+
+    var->flags &= ~(CVAR_CHEAT);
+}
+
 /*
 ============
 Cvar_Command

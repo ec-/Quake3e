@@ -724,6 +724,22 @@ void Cmd_AddCommand( const char *cmd_name, xcommand_t function ) {
 	cmd->next = cmd_functions;
 	cmd_functions = cmd;
 }
+/*
+============
+Cmd_ReplaceCommand
+============
+*/
+xcommand_t Cmd_ReplaceCommand(const char* cmd_name, xcommand_t function)
+{
+    cmd_function_t* cmd = Cmd_FindCommand(cmd_name);
+
+    if (!cmd)
+        return 0;
+
+    xcommand_t old = cmd->function;
+    cmd->function = function;
+    return old;
+}
 
 
 /*

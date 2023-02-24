@@ -90,7 +90,7 @@ static unsigned short crctable[257] =
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-static void CRC_Init(unsigned short *crcvalue)
+void CRC_Init(unsigned short *crcvalue)
 {
 	*crcvalue = CRC_INIT_VALUE;
 } //end of the function CRC_Init
@@ -137,14 +137,14 @@ unsigned short CRC_ProcessString(unsigned char *data, int length)
 	} //end for
 	return CRC_Value(crcvalue);
 } //end of the function CRC_ProcessString
-#if 0
+#if 1
 //===========================================================================
 //
 // Parameter:				-
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void CRC_ContinueProcessString(unsigned short *crc, char *data, int length)
+void CRC_ContinueProcessString(unsigned short *crc, const char *data, size_t length)
 {
 	int i;
 

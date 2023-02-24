@@ -99,6 +99,8 @@ typedef struct {
 					 float frac, const char *tagName );
 	void	(*ModelBounds)( qhandle_t model, vec3_t mins, vec3_t maxs );
 
+    const char* (*GetModelNameByHandle)(qhandle_t index);  // xq3e hack
+    void    (*UpdateShaderColorByHandle)(qhandle_t hShader, const vec3_t color);  // xq3e hack
 #ifdef __USEA3D
 	void    (*A3D_RenderGeometry) (void *pVoidA3D, void *pVoidGeom, void *pVoidMat, void *pVoidGeomStatus);
 #endif
