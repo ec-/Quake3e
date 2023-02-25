@@ -2,7 +2,7 @@
 #include "../qcommon/qcommon.h"
 #include "x_local.h"
 #include "../botlib/l_crc.h"
-#include "x_hud.h"
+#include "x_local2.h"
 
 // ====================
 //   Variables
@@ -492,7 +492,7 @@ void X_Event_OnConfigstringModified(int index)
 	X_GS_UpdateGameStateOnConfigStringModified(index);
 }
 
-qboolean X_Event_OnServerCommand(char* cmd, qboolean* result)
+qboolean X_Event_OnServerCommand(const char* cmd, qboolean* result)
 {
 	*result = qtrue;
     printf(">>>>server command %s \n", cmd);
@@ -636,27 +636,17 @@ void X_Hook_AddLoopingSound(int entityNum, const vec3_t origin, const vec3_t vel
 
 void X_Hook_UpdateEntityPosition(int entityNum, const vec3_t origin)
 {
-	if (!IsXModeActive())
-	{
-		S_UpdateEntityPosition(entityNum, origin);
-		return;
-	}
-
 	X_GS_UpdateEntityPosition(entityNum, origin);
-
-	S_UpdateEntityPosition(entityNum, origin);
 }
 
-void X_Hook_CGame_Cvar_SetSafe(const char* var_name, const char* value)
+qboolean X_Hook_CGame_Cvar_SetSafe(const char* var_name, const char* value)
 {
-	if (!IsXModeActive())
-		Cvar_SetSafe(var_name, value);
-
 	// Prevent reset of max fps
-	if (var_name && strcmp(var_name, "com_maxfps") == 0)
-		return;
-
-	Cvar_SetSafe(var_name, value);
+	if (IsXModeActive() && var_name && strcmp(var_name, "com_maxfps") == 0)
+    {
+        return qfalse;
+    }
+    return qtrue;
 }
 
 int	X_Hook_FS_GetFileList(const char* path, const char* extension, char* listbuf, int bufsize)

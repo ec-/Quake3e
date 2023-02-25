@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "client.h"
 
 #include "../botlib/botlib.h"
+#include "x_local2.h"
 
 extern	botlib_export_t	*botlib_export;
 
@@ -874,7 +875,7 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 
 	case UI_FS_GETFILELIST:
 		VM_CHECKBOUNDS( uivm, args[3], args[4] );
-		return FS_GetFileList( VMA(1), VMA(2), VMA(3), args[4] );
+        return X_Hook_FS_GetFileList( VMA(1), VMA(2), VMA(3), args[4] );
 
 	case UI_R_REGISTERMODEL:
 		return re.RegisterModel( VMA(1) );

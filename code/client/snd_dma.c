@@ -32,6 +32,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "snd_local.h"
 #include "snd_codec.h"
 #include "client.h"
+#include "x_local2.h"
 
 static void S_Update_( int msec );
 static void S_UpdateBackgroundTrack( void );
@@ -471,6 +472,8 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 		Com_Error( ERR_DROP, "S_StartSound: bad entitynum %i", entityNum );
 	}
 
+    sfxHandle = X_Event_ReplaceSoundOnSoundStart(entityNum, sfxHandle);
+
 	if ( sfxHandle < 0 || sfxHandle >= s_numSfx ) {
 		Com_Printf( S_COLOR_YELLOW "S_StartSound: handle %i out of range\n", sfxHandle );
 		return;
@@ -481,6 +484,8 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 	if ( sfx->inMemory == qfalse ) {
 		S_memoryLoad(sfx);
 	}
+
+    X_Event_OnSoundStart(entityNum, origin, sfx->soundName);
 
 	if ( s_show->integer == 1 ) {
 		Com_Printf( "%i : %s\n", s_paintedtime, sfx->soundName );
