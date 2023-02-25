@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "client.h"
 
 #include "../botlib/botlib.h"
+#include "x_main.h"
 
 extern	botlib_export_t	*botlib_export;
 
@@ -394,6 +395,8 @@ void CL_ShutdownCGame( void ) {
 	VM_Free( cgvm );
 	cgvm = NULL;
 	FS_VM_CloseFiles( H_CGAME );
+
+    X_StopAfterCGameVM();
 }
 
 
@@ -863,6 +866,8 @@ void CL_InitCGame( void ) {
 	// use the lastExecutedServerCommand instead of the serverCommandSequence
 	// otherwise server commands sent just before a gamestate are dropped
 	VM_Call( cgvm, 3, CG_INIT, clc.serverMessageSequence, clc.lastExecutedServerCommand, clc.clientNum );
+
+    X_InitAfterCGameVM();
 
 	// reset any CVAR_CHEAT cvars registered by cgame
 	if ( !clc.demoplaying && !cl_connectedToCheatServer )

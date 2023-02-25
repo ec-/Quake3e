@@ -279,7 +279,7 @@ static void ParseXModCommands(const char* cmdset)
 	{
 		unsigned int cvar_flags;
 
-		Info_NextPair(cmdset, key, value);
+		cmdset = Info_NextPair(cmdset, key, value);
 		if (!key[0]) {
 			break;
 		}
