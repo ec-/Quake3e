@@ -235,6 +235,7 @@ typedef enum {
 	TMOD_SCALE,
 	TMOD_STRETCH,
 	TMOD_ROTATE,
+    TMOD_ROTATE2,
 	TMOD_ENTITY_TRANSLATE,
 	TMOD_OFFSET,
 	TMOD_SCALE_OFFSET,
@@ -1735,6 +1736,7 @@ void	RB_CalcFogTexCoords( float *dstTexCoords );
 const fogProgramParms_t *RB_CalcFogProgramParms( void );
 void	RB_CalcScrollTexCoords( const float scroll[2], float *srcTexCoords, float *dstTexCoords );
 void	RB_CalcRotateTexCoords( float rotSpeed, float *srcTexCoords, float *dstTexCoords );
+void    RB_CalcRotateTexCoords2(float degs, float* srcTexCoords, float* dstTexCoords);
 void	RB_CalcScaleTexCoords( const float scale[2], float *srcTexCoords, float *dstTexCoords );
 void	RB_CalcTurbulentTexCoords( const waveForm_t *wf, float *srcTexCoords, float *dstTexCoords );
 void	RB_CalcTransformTexCoords( const texModInfo_t *tmi, float *srcTexCoords, float *dstTexCoords );

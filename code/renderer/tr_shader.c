@@ -556,6 +556,20 @@ static void ParseTexMod( const char *_text, shaderStage_t *stage )
 		tmi->rotateSpeed = Q_atof( token );
 		tmi->type = TMOD_ROTATE;
 	}
+    //
+    // rotate2
+    //
+    else if ( !Q_stricmp(token, "rotate2") )
+    {
+        token = COM_ParseExt(text, qfalse);
+        if (token[0] == 0)
+        {
+            ri.Printf(PRINT_WARNING, "WARNING: missing tcMod rotate parms in shader '%s'\n", shader.name);
+            return;
+        }
+        tmi->rotateSpeed = atof(token);
+        tmi->type = TMOD_ROTATE2;
+    }
 	//
 	// entityTranslate
 	//
