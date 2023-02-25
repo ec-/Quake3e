@@ -13,7 +13,7 @@ qboolean X_Event_OnServerCommand(const char* cmd, qboolean* result);
 void X_Event_OnChatCommand(field_t* field);
 void X_Event_OnDrawScreen(void);
 sfxHandle_t X_Event_ReplaceSoundOnSoundStart(int entity, sfxHandle_t sound);
-void X_Event_OnSoundStart(int entityNum, vec3_t origin, char* soundName);
+void X_Event_OnSoundStart(int entityNum, const vec3_t origin, const char* soundName);
 
 
 qboolean X_Hook_CGame_Cvar_SetSafe(const char* var_name, const char* value);

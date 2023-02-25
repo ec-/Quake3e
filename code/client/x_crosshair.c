@@ -209,7 +209,7 @@ static qhandle_t LoadCrosshairWithoutLimit(qhandle_t shader)
 	return (rs->shaderXCrosshairs[inx] ? rs->shaderXCrosshairs[inx] : shader);
 }
 
-void X_CH_ChangeCrosshairOnSoundTrigger(char* soundName)
+void X_CH_ChangeCrosshairOnSoundTrigger(const char* soundName)
 {
 	if (x_ch_hit_icon->integer || x_ch_action->integer || x_ch_decor_action->integer)
 	{

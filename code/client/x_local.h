@@ -460,7 +460,7 @@ cvar_t* RegisterXModeCmd(char* cmd, char* dfault, char* start, char* stop, char*
 
 void X_CH_Init(void);
 qboolean X_CH_CustomizeCrosshair(float x, float y, float w, float h, qhandle_t shader);
-void X_CH_ChangeCrosshairOnSoundTrigger(char* soundName);
+void X_CH_ChangeCrosshairOnSoundTrigger(const char* soundName);
 void X_CH_CalculateDistance(const refdef_t* fd);
 
 // Draw damage

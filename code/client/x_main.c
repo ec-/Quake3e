@@ -460,7 +460,7 @@ sfxHandle_t X_Event_ReplaceSoundOnSoundStart(int entity, sfxHandle_t sound)
 	return sound;
 }
 
-void X_Event_OnSoundStart(int entityNum, vec3_t origin, char* soundName)
+void X_Event_OnSoundStart(int entityNum, const vec3_t origin, const char* soundName)
 {
 	if (!IsXModeActive())
 		return;
