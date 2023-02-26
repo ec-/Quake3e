@@ -1343,10 +1343,10 @@ static void RB_SurfaceEntity( const surfaceType_t *surfType ) {
 		RB_SurfaceRailRings();
 		break;
 	case RT_LIGHTNING:
-        if (Cvar_VariableIntegerValue("x_wp_mod_lightning") == 1)
-            RB_SurfaceLightningBoltModified();
-        else
-            RB_SurfaceLightningBolt();
+		if (Cvar_VariableIntegerValue("x_wp_mod_lightning") == 1)
+			RB_SurfaceLightningBoltModified();
+		else
+			RB_SurfaceLightningBolt();
 		break;
 	default:
 		RB_SurfaceAxis();

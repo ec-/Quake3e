@@ -2043,8 +2043,8 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.MarkFragments = R_MarkFragments;
 	re.LerpTag = R_LerpTag;
 	re.ModelBounds = R_ModelBounds;
-    re.GetModelNameByHandle = R_GetModelNameByHandle;
-    re.UpdateShaderColorByHandle = R_UpdateShaderColorByHandle;
+	re.GetModelNameByHandle = R_GetModelNameByHandle;
+	re.UpdateShaderColorByHandle = R_UpdateShaderColorByHandle;
 
 	re.ClearScene = RE_ClearScene;
 	re.AddRefEntityToScene = RE_AddRefEntityToScene;
