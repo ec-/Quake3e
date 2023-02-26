@@ -403,7 +403,7 @@ static void Console_Key( int key ) {
 			Com_sprintf( g_consoleField.buffer, sizeof( g_consoleField.buffer ), "\\%s", temp );
 			g_consoleField.cursor++;
 		}
-        X_Event_OnChatCommand(&g_consoleField);
+		X_Event_OnChatCommand(&g_consoleField);
 		Com_Printf( "]%s\n", g_consoleField.buffer );
 
 		// leading slash is an explicit command

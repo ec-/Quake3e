@@ -949,6 +949,7 @@ void		Info_Print( const char *s );
 void		Com_BeginRedirect (char *buffer, int buffersize, void (*flush)(const char *));
 void		Com_EndRedirect( void );
 void 		QDECL Com_Printf( const char *fmt, ... ) __attribute__ ((format (printf, 1, 2)));
+void 		QDECL Com_Printf_Chat( const char *fmt, ... ) __attribute__ ((format (printf, 1, 2)));
 void 		QDECL Com_DPrintf( const char *fmt, ... ) __attribute__ ((format (printf, 1, 2)));
 void 		Com_Quit_f( void );
 void		Com_GameRestart( int checksumFeed, qboolean clientRestart );
@@ -1152,6 +1153,7 @@ void CL_JoystickEvent( int axis, int value, int time );
 void CL_PacketEvent( const netadr_t *from, msg_t *msg );
 
 void CL_ConsolePrint( const char *text );
+void CL_ConsolePrint2( const char *text );
 
 void CL_MapLoading( void );
 // do a screen update before starting to load a map

@@ -47,9 +47,7 @@ void X_Con_PrintToChatSection(const char* fmt, ...)
 	Com_sprintf(timestr, sizeof(timestr), "%02d:%02d:%02d", time.tm_hour, time.tm_min, time.tm_sec);
 	X_MakeStringSymbolic(timestr);
 
-	Com_Printf("^f%s ^l%s\n", timestr, msg);
-    // TODO: fix separated chat
-    //Com_Printf2("^f%s ^l%s\n", timestr, msg);
+    Com_Printf_Chat("^f%s ^l%s\n", timestr, msg);
 }
 
 qboolean X_Con_OnChatMessage(const char* text, int client)
@@ -116,9 +114,7 @@ qboolean X_Con_OnChatMessage(const char* text, int client)
 
 	// Print to chat section
 
-	Com_Printf("^f%s %s^7%s%s^z:^%c%s\n", timestr, scopestr, name, clientid, msgcolor, msg);
-    // TODO: fix separated chat
-    //Com_Printf2("^f%s %s^7%s%s^z:^%c%s\n", timestr, scopestr, name, clientid, msgcolor, msg);
+    Com_Printf_Chat("^f%s %s^7%s%s^z:^%c%s\n", timestr, scopestr, name, clientid, msgcolor, msg);
 
 	if (scope == ScopePublicEncrypted)
 	{
@@ -223,33 +219,33 @@ static void RemoveEffectsFromName(char* name)
 void X_Con_OnPlayerDeath(int target, int attacker, int reason)
 {
 	
-	/*if (target >= MAX_CLIENTS || attacker >= MAX_CLIENTS)
+	if (target >= MAX_CLIENTS || attacker >= MAX_CLIENTS)
 		return;
 
 	switch (reason) {
 	case MOD_SUICIDE:
-		Com_Printf2("^7%s ^fsuicided\n", xmod.gs.ps[target].name);
+		Com_Printf_Chat("^7%s ^fsuicided\n", xmod.gs.ps[target].name);
 		return;
 	case MOD_FALLING:
-		Com_Printf2("^7%s ^fcratered\n", xmod.gs.ps[target].name);
+		Com_Printf_Chat("^7%s ^fcratered\n", xmod.gs.ps[target].name);
 		return;
 	case MOD_CRUSH:
-		Com_Printf2("^7%s ^fwas squished\n", xmod.gs.ps[target].name);
+		Com_Printf_Chat("^7%s ^fwas squished\n", xmod.gs.ps[target].name);
 		return;
 	case MOD_WATER:
-		Com_Printf2("^7%s ^fsank\n", xmod.gs.ps[target].name);
+		Com_Printf_Chat("^7%s ^fsank\n", xmod.gs.ps[target].name);
 		return;
 	case MOD_SLIME:
-		Com_Printf2("^7%s ^fmelted\n", xmod.gs.ps[target].name);
+		Com_Printf_Chat("^7%s ^fmelted\n", xmod.gs.ps[target].name);
 		return;
 	case MOD_LAVA:
-		Com_Printf2("^7%s ^fburned\n", xmod.gs.ps[target].name);
+		Com_Printf_Chat("^7%s ^fburned\n", xmod.gs.ps[target].name);
 		return;
 	case MOD_TARGET_LASER:
-		Com_Printf2("^7%s ^flasered\n", xmod.gs.ps[target].name);
+		Com_Printf_Chat("^7%s ^flasered\n", xmod.gs.ps[target].name);
 		return;
 	case MOD_TRIGGER_HURT:
-		Com_Printf2("^7%s ^ftriggered\n", xmod.gs.ps[target].name);
+		Com_Printf_Chat("^7%s ^ftriggered\n", xmod.gs.ps[target].name);
 		return;
 	default:
 		break;
@@ -259,19 +255,19 @@ void X_Con_OnPlayerDeath(int target, int attacker, int reason)
 	{
 		switch (reason) {
 		case MOD_GRENADE_SPLASH:
-			Com_Printf2("^7%s ^fripped on his own grenade\n", xmod.gs.ps[target].name);
+			Com_Printf_Chat("^7%s ^fripped on his own grenade\n", xmod.gs.ps[target].name);
 			break;
 		case MOD_ROCKET_SPLASH:
-			Com_Printf2("^7%s ^fblew himself up\n", xmod.gs.ps[target].name);
+			Com_Printf_Chat("^7%s ^fblew himself up\n", xmod.gs.ps[target].name);
 			break;
 		case MOD_PLASMA_SPLASH:
-			Com_Printf2("^7%s ^fmelted himself\n", xmod.gs.ps[target].name);
+			Com_Printf_Chat("^7%s ^fmelted himself\n", xmod.gs.ps[target].name);
 			break;
 		case MOD_BFG_SPLASH:
-			Com_Printf2("^7%s ^fbfgered\n", xmod.gs.ps[target].name);
+			Com_Printf_Chat("^7%s ^fbfgered\n", xmod.gs.ps[target].name);
 			break;
 		default:
-			Com_Printf2("^7%s ^fkilled himself\n", xmod.gs.ps[target].name);
+			Com_Printf_Chat("^7%s ^fkilled himself\n", xmod.gs.ps[target].name);
 			break;
 		}
 		return;
@@ -334,5 +330,4 @@ void X_Con_OnPlayerDeath(int target, int attacker, int reason)
 		Com_sprintf(buffer, sizeof(buffer), "^7%s ^f%c ^7%s\n", xmod.gs.ps[attacker].name, kill, xmod.gs.ps[target].name);
 		X_Cl_Con_OverlayPrint(buffer);
 	}
-	*/
 }

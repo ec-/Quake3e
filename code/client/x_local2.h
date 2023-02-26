@@ -31,4 +31,6 @@ qboolean X_Net_ShowCommands(void);
  *********************************/
 void X_Hud_TurnOffForcedTransparency(void);
 void X_Hud_TurnOnForcedTransparency(void);
+
+
 #endif //CODE_X_LOCAL2_H

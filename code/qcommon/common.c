@@ -169,15 +169,9 @@ to the appropriate place.
 A raw string should NEVER be passed as fmt, because of "%f" type crashers.
 =============
 */
-void QDECL Com_Printf( const char *fmt, ... ) {
+static void QDECL Com_Printf_Internal(int section,  int len, const char *msg) {
 	static qboolean opening_qconsole = qfalse;
 	va_list		argptr;
-	char		msg[MAXPRINTMSG];
-	int			len;
-
-	va_start( argptr, fmt );
-	len = Q_vsnprintf( msg, sizeof( msg ), fmt, argptr );
-	va_end( argptr );
 
 	if ( rd_buffer && !rd_flushing ) {
 		if ( len + (int)strlen( rd_buffer ) > ( rd_buffersize - 1 ) ) {
@@ -194,10 +188,13 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 	}
 
 #ifndef DEDICATED
-	// echo to client console if we're not a dedicated server
-	if ( !com_dedicated || !com_dedicated->integer ) {
-		CL_ConsolePrint( msg );
-	}
+    // echo to client console if we're not a dedicated server
+    if ( !com_dedicated || !com_dedicated->integer ) {
+        if (section == CON_SECTION_LEFT)
+            CL_ConsolePrint( msg );
+        else
+            CL_ConsolePrint2(msg);
+    }
 #endif
 
 	// echo to dedicated console and early console
@@ -249,6 +246,29 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 	}
 }
 
+void QDECL Com_Printf( const char *fmt, ... ) {
+    va_list		argptr;
+    char		msg[MAXPRINTMSG];
+    int			len;
+
+    va_start(argptr, fmt);
+    len = Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
+    va_end(argptr);
+
+    Com_Printf_Internal(CON_SECTION_LEFT, len, msg);
+}
+
+void QDECL Com_Printf_Chat( const char *fmt, ... ) {
+    va_list		argptr;
+    char		msg[MAXPRINTMSG];
+    int			len;
+
+    va_start(argptr, fmt);
+    len = Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
+    va_end(argptr);
+
+    Com_Printf_Internal(CON_SECTION_RIGHT, len, msg);
+}
 
 /*
 ================
