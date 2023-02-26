@@ -3129,6 +3129,55 @@ static pack_t *FS_LoadZipFile( const char *zipfile )
 	return pack;
 }
 
+qboolean FS_AnalyzeZipFileForBannedContent(const char* zipfile)
+{
+	unzFile			uf;
+	int				err;
+	unz_global_info gi;
+	char			filename_inzip[MAX_ZPATH];
+	unz_file_info	file_info;
+	unsigned int	i;
+	char* bannedFiles[] = { "q3config.cfg", "default.cfg", "vm/ui.qvm", "vm/game.qvm", "vm/cgame.qvm" };
+
+	uf = unzOpen(zipfile);
+	err = unzGetGlobalInfo(uf, &gi);
+
+	if (err != UNZ_OK) {
+		return qfalse;
+	}
+
+	unzGoToFirstFile(uf);
+	for (i = 0; i < gi.number_entry; i++)
+	{
+		err = unzGetCurrentFileInfo(uf, &file_info, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0);
+		filename_inzip[sizeof(filename_inzip) - 1] = '\0';
+		if (err != UNZ_OK) {
+			break;
+		}
+		if (file_info.compression_method != 0 && file_info.compression_method != 8 /*Z_DEFLATED*/) {
+			Com_Printf(S_COLOR_YELLOW "%s: unsupported compression method %i\n", filename_inzip, (int)file_info.compression_method);
+			unzGoToNextFile(uf);
+			continue;
+		}
+
+		for (int a = 0; a < sizeof(bannedFiles) / sizeof(char*); a++)
+		{
+			if (!FS_FilenameCompare(bannedFiles[a], filename_inzip))
+			{
+				Com_Printf(S_COLOR_RED "Malicious file '%s' has been detected in the donwnloaded package '%s'\n", filename_inzip, zipfile);
+				unzClose(uf);
+				return qtrue;
+			}
+		}
+
+		unzGoToNextFile(uf);
+	}
+
+	unzClose(uf);
+
+	return qfalse;
+}
+
 
 /*
 =================

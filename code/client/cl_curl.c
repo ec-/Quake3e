@@ -388,6 +388,11 @@ void CL_cURL_PerformDownload( void )
 	}
 	CL_cURL_CloseDownload();
 	if ( msg->msg == CURLMSG_DONE && msg->data.result == CURLE_OK ) {
+		if (FS_AnalyzeZipFileForBannedContent(clc.downloadTempName))
+		{
+			FS_Remove(clc.downloadTempName);
+			Com_Error(ERR_DROP, "Malicious PK3 has been rejected '%s'", clc.downloadTempName);
+		}
 		FS_SV_Rename( clc.downloadTempName, clc.downloadName );
 		clc.downloadRestart = qtrue;
 	}

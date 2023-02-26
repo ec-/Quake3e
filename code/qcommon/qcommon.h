@@ -876,6 +876,7 @@ char *FS_CopyString( const char *in );
 fileHandle_t FS_PipeOpenWrite( const char *cmd, const char *filename );
 void FS_PipeClose( fileHandle_t f );
 
+qboolean FS_AnalyzeZipFileForBannedContent(const char* zipfile);
 
 /*
 ==============================================================

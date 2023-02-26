@@ -753,6 +753,12 @@ static void CL_ParseDownload( msg_t *msg ) {
 			FS_FCloseFile( clc.download );
 			clc.download = FS_INVALID_HANDLE;
 
+			if (FS_AnalyzeZipFileForBannedContent(clc.downloadTempName))
+			{
+				FS_Remove(clc.downloadTempName);
+				Com_Error(ERR_DROP, "Malicious PK3 has been rejected '%s'", clc.downloadTempName);
+			}
+
 			// rename the file
 			FS_SV_Rename( clc.downloadTempName, clc.downloadName );
 		}

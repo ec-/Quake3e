@@ -171,7 +171,6 @@ A raw string should NEVER be passed as fmt, because of "%f" type crashers.
 */
 static void QDECL Com_Printf_Internal(int section,  int len, const char *msg) {
 	static qboolean opening_qconsole = qfalse;
-	va_list		argptr;
 
 	if ( rd_buffer && !rd_flushing ) {
 		if ( len + (int)strlen( rd_buffer ) > ( rd_buffersize - 1 ) ) {
@@ -188,13 +187,13 @@ static void QDECL Com_Printf_Internal(int section,  int len, const char *msg) {
 	}
 
 #ifndef DEDICATED
-    // echo to client console if we're not a dedicated server
-    if ( !com_dedicated || !com_dedicated->integer ) {
-        if (section == CON_SECTION_LEFT)
-            CL_ConsolePrint( msg );
-        else
-            CL_ConsolePrint2(msg);
-    }
+	// echo to client console if we're not a dedicated server
+	if (!com_dedicated || !com_dedicated->integer) {
+		if (section == CON_SECTION_LEFT)
+			CL_ConsolePrint(msg);
+		else
+			CL_ConsolePrint2(msg);
+	}
 #endif
 
 	// echo to dedicated console and early console
@@ -246,28 +245,28 @@ static void QDECL Com_Printf_Internal(int section,  int len, const char *msg) {
 	}
 }
 
-void QDECL Com_Printf( const char *fmt, ... ) {
-    va_list		argptr;
-    char		msg[MAXPRINTMSG];
-    int			len;
+void QDECL Com_Printf(const char *fmt, ...) {
+	va_list argptr;
+	char msg[MAXPRINTMSG];
+	int len;
 
-    va_start(argptr, fmt);
-    len = Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
-    va_end(argptr);
+	va_start(argptr, fmt);
+	len = Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
+	va_end(argptr);
 
-    Com_Printf_Internal(CON_SECTION_LEFT, len, msg);
+	Com_Printf_Internal(CON_SECTION_LEFT, len, msg);
 }
 
-void QDECL Com_Printf_Chat( const char *fmt, ... ) {
-    va_list		argptr;
-    char		msg[MAXPRINTMSG];
-    int			len;
+void QDECL Com_Printf_Chat(const char *fmt, ...) {
+	va_list argptr;
+	char msg[MAXPRINTMSG];
+	int len;
 
-    va_start(argptr, fmt);
-    len = Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
-    va_end(argptr);
+	va_start(argptr, fmt);
+	len = Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
+	va_end(argptr);
 
-    Com_Printf_Internal(CON_SECTION_RIGHT, len, msg);
+	Com_Printf_Internal(CON_SECTION_RIGHT, len, msg);
 }
 
 /*
