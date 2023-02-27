@@ -1,8 +1,8 @@
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
-#include "x_local.h"
 #include "../botlib/l_crc.h"
-#include "x_local2.h"
+#include "client.h"
+#include "x_local.h"
 
 // ====================
 //   Variables
@@ -66,7 +66,7 @@ static void Hook_SetColor(const float *rgba);
 // ====================
 //   Implementation
 
-void X_InitXMod(void)
+void X_Main_InitXMod(void)
 {
 	memset(&xmod, 0, sizeof(xmod));
 	memset(&sxmod, 0, sizeof(sxmod));
@@ -80,7 +80,7 @@ void X_InitXMod(void)
 	xmod.state = StateStopped;
 }
 
-void X_InitAfterCGameVM(void)
+void X_Main_InitAfterCGameVM(void)
 {
 	if (xmod.state != StateStopped)
 	{
@@ -140,10 +140,10 @@ void X_InitAfterCGameVM(void)
 
 	MAKERGBA(xmod.currentColor, 1.0, 1.0, 1.0, 1.0);
 
-	RegisterXCommand(x_item_fix_simpleitems_size, "1", "0", "1", X_HELP_ITM_FIX_SIMPLEITEMS_SIZE);
+	X_Main_RegisterXCommand(x_item_fix_simpleitems_size, "1", "0", "1", X_HELP_ITM_FIX_SIMPLEITEMS_SIZE);
 	cg_simpleitems = Cvar_Get("cg_simpleitems", "0", CVAR_ARCHIVE);
 
-	RegisterXCommand(x_snd_fix_unfreeze, "1", "0", "1", X_HELP_SND_FIX_UNFREEZE);
+	X_Main_RegisterXCommand(x_snd_fix_unfreeze, "1", "0", "1", X_HELP_SND_FIX_UNFREEZE);
 
 	Cmd_AddCommand("x_state", Print_State);
 	Cmd_AddCommand("x_userinfo", Print_UserInfo);
@@ -161,13 +161,13 @@ void X_InitAfterCGameVM(void)
 	xmod.state = StateStarted;
 }
 
-void X_StopAfterCGameVM(void)
+void X_Main_StopAfterCGameVM(void)
 {
-	X_Net_Deinit();
+	X_Net_Teardown();
 
 	X_Hud_Destroy();
 
-	XModeDisableOutput(qfalse);
+	X_Main_XModeDisableOutput(qfalse);
 
 	Cvar_ResetXmodProtection();
 
@@ -180,7 +180,7 @@ void X_StopAfterCGameVM(void)
 	xmod.state = StateStopped;
 }
 
-qboolean IsXModeActive(void)
+qboolean X_Main_IsXModeActive(void)
 {
 	if (xmod.state != StateStarted)
 	{
@@ -207,10 +207,10 @@ qboolean IsXModeActive(void)
 
 qboolean X_HckActive(void)
 {
-	return IsXModeActive() && IsXModeHackActive();
+	return X_Main_IsXModeActive() && X_Main_IsXModeHackActive();
 }
 
-qboolean IsXModeHackActive(void)
+qboolean X_Main_IsXModeHackActive(void)
 {
 	if (clc.demoplaying)
 	{
@@ -225,7 +225,7 @@ qboolean IsXModeHackActive(void)
 	return xmod.hack;
 }
 
-qboolean IsXModeHackCommandActive(cvar_t *cmd)
+qboolean X_Main_IsXModeHackCommandActive(cvar_t *cmd)
 {
 	if (clc.demoplaying)
 	{
@@ -257,7 +257,7 @@ qboolean IsXModeHackCommandActive(cvar_t *cmd)
 	return qtrue;
 }
 
-void XModeDisableOutput(qboolean disable)
+void X_Main_XModeDisableOutput(qboolean disable)
 {
 	xmod_disable_output = disable;
 }
@@ -267,7 +267,7 @@ qboolean X_IsPK3PureCompatible(const char *mode, const char *basename)
 	return (!Q_stricmp(mode, "baseq3") && !Q_stricmp(basename, "xq3e") ? qtrue : qfalse);
 }
 
-cvar_t *RegisterXModeCmd(char *cmd, char *dfault, char *start, char *stop, char *description, int flags, int checktype)
+cvar_t *X_Main_RegisterXModeCmd(char *cmd, char *dfault, char *start, char *stop, char *description, int flags, int checktype)
 {
 	cvar_t *cvar = Cvar_Get(cmd, dfault, flags);
 
@@ -465,7 +465,7 @@ static void PrintWelcomeLogo(void)
 	char message[0x1000];
 	Q_strncpyz(message, messages[rand() % countof(messages)], sizeof(message));
 
-	X_MakeStringSymbolic(message);
+	X_Misc_MakeStringSymbolic(message);
 	Com_Printf("%s", message);
 
 	_shown = qtrue;
@@ -474,9 +474,9 @@ static void PrintWelcomeLogo(void)
 // =========================
 //   On events zone
 
-sfxHandle_t X_Event_ReplaceSoundOnSoundStart(int entity, sfxHandle_t sound)
+sfxHandle_t X_Main_Event_ReplaceSoundOnSoundStart(int entity, sfxHandle_t sound)
 {
-	if (!IsXModeActive())
+	if (!X_Main_IsXModeActive())
 	{
 		return sound;
 	}
@@ -492,9 +492,9 @@ sfxHandle_t X_Event_ReplaceSoundOnSoundStart(int entity, sfxHandle_t sound)
 	return sound;
 }
 
-void X_Event_OnSoundStart(int entityNum, const vec3_t origin, const char *soundName)
+void X_Main_Event_OnSoundStart(int entityNum, const vec3_t origin, const char *soundName)
 {
-	if (!IsXModeActive())
+	if (!X_Main_IsXModeActive())
 	{
 		return;
 	}
@@ -502,9 +502,9 @@ void X_Event_OnSoundStart(int entityNum, const vec3_t origin, const char *soundN
 	X_CH_ChangeCrosshairOnSoundTrigger(soundName);
 }
 
-void X_Event_OnGetSnapshot(snapshot_t *snapshot)
+void X_Main_Event_OnGetSnapshot(snapshot_t *snapshot)
 {
-	if (!IsXModeActive())
+	if (!X_Main_IsXModeActive())
 	{
 		return;
 	}
@@ -523,12 +523,12 @@ void X_Event_OnGetSnapshot(snapshot_t *snapshot)
 	X_Hud_HackTurnOffDefaultScores(snapshot);
 }
 
-void X_Event_OnConfigstringModified(int index)
+void X_Main_Event_OnConfigstringModified(int index)
 {
 	X_GS_UpdateGameStateOnConfigStringModified(index);
 }
 
-qboolean X_Event_OnServerCommand(const char *cmd, qboolean *result)
+qboolean X_Main_Event_OnServerCommand(const char *cmd, qboolean *result)
 {
 	*result = qtrue;
 	printf(">>>>server command %s \n", cmd);
@@ -562,11 +562,11 @@ qboolean X_Event_OnServerCommand(const char *cmd, qboolean *result)
 	return qfalse;
 }
 
-void X_Event_OnDrawScreen(void)
+void X_Main_Event_OnDrawScreen(void)
 {
 	X_Hud_ValidateDefaultScores();
 
-	if (!IsXModeActive())
+	if (!X_Main_IsXModeActive())
 	{
 		return;
 	}
@@ -579,9 +579,9 @@ void X_Event_OnDrawScreen(void)
 	X_Hud_TurnOnForcedTransparency();
 }
 
-void X_Event_OnChatCommand(field_t *field)
+void X_Main_Event_OnChatCommand(field_t *field)
 {
-	if (!IsXModeActive())
+	if (!X_Main_IsXModeActive())
 	{
 		return;
 	}
@@ -594,7 +594,7 @@ void X_Event_OnChatCommand(field_t *field)
 
 static void Hook_DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t shader)
 {
-	if (!IsXModeActive())
+	if (!X_Main_IsXModeActive())
 	{
 		Original_DrawStretchPic(x, y, w, h, s1, t1, s2, t2, shader);
 		return;
@@ -617,7 +617,7 @@ static void Hook_DrawStretchPic(float x, float y, float w, float h, float s1, fl
 
 void Hook_RenderScene(const refdef_t *fd)
 {
-	if (!IsXModeActive())
+	if (!X_Main_IsXModeActive())
 	{
 		Original_RenderScene(fd);
 		return;
@@ -626,7 +626,7 @@ void Hook_RenderScene(const refdef_t *fd)
 	X_DMG_DrawDamage(fd);
 	X_CH_CalculateDistance(fd);
 
-	if (!X_IsNoWorldRender(fd) || !X_Hud_HideOnXScore())
+	if (!X_Misc_IsNoWorldRender(fd) || !X_Hud_HideOnXScore())
 	{
 		Original_RenderScene(fd);
 	}
@@ -637,7 +637,7 @@ void Hook_RenderScene(const refdef_t *fd)
 
 void Hook_AddRefEntityToScene(refEntity_t *ref, qboolean intShaderTime)
 {
-	if (!IsXModeActive())
+	if (!X_Main_IsXModeActive())
 	{
 		Original_AddRefEntityToScene(ref, intShaderTime);
 		return;
@@ -656,7 +656,7 @@ void Hook_AddRefEntityToScene(refEntity_t *ref, qboolean intShaderTime)
 
 void Hook_SetColor(const float *rgba)
 {
-	if (!IsXModeActive())
+	if (!X_Main_IsXModeActive())
 	{
 		Original_SetColor(rgba);
 		return;
@@ -677,27 +677,27 @@ void Hook_SetColor(const float *rgba)
 	}
 }
 
-void X_Hook_AddLoopingSound(int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx)
+void X_Main_Hook_AddLoopingSound(int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx)
 {
 	S_AddLoopingSound(entityNum, origin, velocity, sfx);
 }
 
-void X_Hook_UpdateEntityPosition(int entityNum, const vec3_t origin)
+void X_Main_Hook_UpdateEntityPosition(int entityNum, const vec3_t origin)
 {
 	X_GS_UpdateEntityPosition(entityNum, origin);
 }
 
-qboolean X_Hook_CGame_Cvar_SetSafe(const char *var_name, const char *value)
+qboolean X_Main_Hook_CGame_Cvar_SetSafe(const char *var_name, const char *value)
 {
 	// Prevent reset of max fps
-	if (IsXModeActive() && var_name && strcmp(var_name, "com_maxfps") == 0)
+	if (X_Main_IsXModeActive() && var_name && strcmp(var_name, "com_maxfps") == 0)
 	{
 		return qfalse;
 	}
 	return qtrue;
 }
 
-int X_Hook_FS_GetFileList(const char *path, const char *extension, char *listbuf, int bufsize)
+int X_Main_Hook_FS_GetFileList(const char *path, const char *extension, char *listbuf, int bufsize)
 {
 	char buffer[64];
 	if (!strcmp(path, "demos") && !strcmp(extension, "dm_48"))
@@ -790,7 +790,7 @@ static void PrintCommandState(const char *key, qboolean deflt)
 
 static void Print_State(void)
 {
-	qboolean xmod_l = IsXModeActive();
+	qboolean xmod_l = X_Main_IsXModeActive();
 	qboolean xhck_l = X_HckActive();
 
 	Com_Printf("\n^7XQ3E status\n\n");
@@ -1062,5 +1062,5 @@ static void Say_Encrypted(void)
 		return;
 	}
 
-	X_SendEncryptedMessage(Cmd_ArgsFrom(1));
+	X_Misc_SendEncryptedMessage(Cmd_ArgsFrom(1));
 }

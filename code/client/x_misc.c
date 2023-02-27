@@ -1,4 +1,7 @@
+#include "client.h"
 #include "x_local.h"
+
+#define X_MSG_ENCDEC_SIGN "^^x^q^3^e"
 
 static void MakeDefaultCrosshairColor(float *color, int num);
 static qboolean MakeRGBCrosshairColor(float *color, char *rgb);
@@ -25,7 +28,7 @@ char decrypt_table[] = {
 103, 58, 90, 107, 52, 64, 82, 78, 61, 88, 91, 73, 35, 115, 69, 120
 };
 
-void X_MakeStringSymbolic(char *str)
+void X_Misc_MakeStringSymbolic(char *str)
 {
 	int length = strlen(str);
 
@@ -64,14 +67,14 @@ void X_MakeStringSymbolic(char *str)
 	}
 }
 
-void X_InitCustomColor(cvar_t *cvar, XCustomColor *color)
+void X_Misc_InitCustomColor(cvar_t *cvar, XCustomColor *color)
 {
 	color->active = qfalse;
 	color->version = -1;
 	color->cvar = cvar;
 }
 
-qboolean X_IsCustomColorActive(XCustomColor *color)
+qboolean X_Misc_IsCustomColorActive(XCustomColor *color)
 {
 	cvar_t *cvar = color->cvar;
 
@@ -157,19 +160,6 @@ static qboolean MakeRGBCrosshairColor(float *color, char *rgb)
 	return qtrue;
 }
 
-qboolean VectorEqualInRange(vec3_t first, vec3_t second, float range)
-{
-	for (int i = 0; i < 3; i++)
-	{
-		if (second[i] < first[i] - range || first[i] + range < second[i])
-		{
-			return qfalse;
-		}
-	}
-
-	return qtrue;
-}
-
 static qboolean IsHexRGBString(char *str)
 {
 	for (int i = 0; i < 6; i++)
@@ -197,7 +187,7 @@ static qboolean IsHexRGBString(char *str)
 	return qtrue;
 }
 
-void X_RemoveEffectsFromName(char *name)
+void X_Misc_RemoveEffectsFromName(char *name)
 {
 	int i, a;
 
@@ -256,7 +246,7 @@ void X_RemoveEffectsFromName(char *name)
 	name[a] = '\0';
 }
 
-char *X_GetConfigString(int index)
+char *X_Misc_GetConfigString(int index)
 {
 	if (index < 0 || index >= MAX_CONFIGSTRINGS)
 	{
@@ -272,12 +262,12 @@ char *X_GetConfigString(int index)
 	return cl.gameState.stringData + offset;
 }
 
-qboolean X_IsNoWorldRender(const refdef_t *fd)
+qboolean X_Misc_IsNoWorldRender(const refdef_t *fd)
 {
 	return (fd->rdflags & RDF_NOWORLDMODEL);
 }
 
-qboolean X_DecryptMessage(char *text)
+qboolean X_Misc_DecryptMessage(char *text)
 {
 	char prefix[] = " ^2" X_MSG_ENCDEC_SIGN;
 	int a = 1;
@@ -314,7 +304,7 @@ qboolean X_DecryptMessage(char *text)
 	return qtrue;
 }
 
-void X_SendEncryptedMessage(char *text)
+void X_Misc_SendEncryptedMessage(char *text)
 {
 	static char buffer[0x2000];
 

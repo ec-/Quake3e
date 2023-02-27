@@ -1,3 +1,4 @@
+#include "client.h"
 #include "x_local.h"
 
 // ====================
@@ -28,9 +29,9 @@ static void RemoveEffectsFromName(char *name);
 
 void X_Con_Init()
 {
-	RegisterXCommand(x_con_chat_section, "1", "0", "1", 0);
+	X_Main_RegisterXCommand(x_con_chat_section, "1", "0", "1", 0);
 	Cvar_Get("x_con_chat_section", "1", CVAR_LATCH);
-	RegisterXCommand(x_con_overlay_size, "10", "0", "20", 0);
+	X_Main_RegisterXCommand(x_con_overlay_size, "10", "0", "20", 0);
 }
 
 void X_Con_PrintToChatSection(const char *fmt, ...)
@@ -46,7 +47,7 @@ void X_Con_PrintToChatSection(const char *fmt, ...)
 	Com_RealTime(&time);
 	char timestr[64];
 	Com_sprintf(timestr, sizeof(timestr), "%02d:%02d:%02d", time.tm_hour, time.tm_min, time.tm_sec);
-	X_MakeStringSymbolic(timestr);
+	X_Misc_MakeStringSymbolic(timestr);
 
 	Com_Printf_Chat("^f%s ^l%s\n", timestr, msg);
 }
@@ -84,7 +85,7 @@ qboolean X_Con_OnChatMessage(const char *text, int client)
 	MessageScope scope = GetScopeAndNormalizeName(name);
 	RemoveEffectsFromName(name);
 
-	if (scope == ScopePublic && X_DecryptMessage(msg))
+	if (scope == ScopePublic && X_Misc_DecryptMessage(msg))
 	{
 		scope = ScopePublicEncrypted;
 		msgcolor = 'd';
@@ -103,7 +104,7 @@ qboolean X_Con_OnChatMessage(const char *text, int client)
 
 	char timestr[64];
 	Com_sprintf(timestr, sizeof(timestr), "%02d:%02d:%02d", time.tm_hour, time.tm_min, time.tm_sec);
-	X_MakeStringSymbolic(timestr);
+	X_Misc_MakeStringSymbolic(timestr);
 
 	// Make scope tag
 
@@ -129,7 +130,7 @@ qboolean X_Con_OnChatMessage(const char *text, int client)
 		Q_strncpyz(scopestr, "", sizeof(scopestr));
 	}
 
-	X_MakeStringSymbolic(scopestr);
+	X_Misc_MakeStringSymbolic(scopestr);
 
 	// Print to chat section
 
@@ -138,7 +139,7 @@ qboolean X_Con_OnChatMessage(const char *text, int client)
 	if (scope == ScopePublicEncrypted)
 	{
 		char prefix[] = "encrypted";
-		X_MakeStringSymbolic(prefix);
+		X_Misc_MakeStringSymbolic(prefix);
 		Com_Printf("^c%s ^7%s :^%c%s\n", prefix, name, msgcolor, msg);
 		return qfalse;
 	}

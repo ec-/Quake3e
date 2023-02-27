@@ -1,3 +1,4 @@
+#include "client.h"
 #include "x_local.h"
 
 // ====================
@@ -22,7 +23,7 @@ static char X_HELP_WP_MOD_LIGHTNING_WIDTH[] = "\n ^fx_wp_mod_lightning_width^5 0
 
 void X_WP_Init()
 {
-	RegisterXCommand(x_wp_mod_lightning, "0", "0", "1", X_HELP_WP_MOD_LIGHTNING);
+	X_Main_RegisterXCommand(x_wp_mod_lightning, "0", "0", "1", X_HELP_WP_MOD_LIGHTNING);
 
-	RegisterXCommand(x_wp_mod_lightning_width, "0", "0", "50", X_HELP_WP_MOD_LIGHTNING_WIDTH);
+	X_Main_RegisterXCommand(x_wp_mod_lightning_width, "0", "0", "50", X_HELP_WP_MOD_LIGHTNING_WIDTH);
 }

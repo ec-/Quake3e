@@ -1,3 +1,4 @@
+#include "client.h"
 #include "x_local.h"
 
 // ====================
@@ -31,12 +32,12 @@ void X_DMG_Init()
 	dmg->duration = 600; // ms
 	dmg->redirDuration = 200;
 
-	RegisterHackXCommand(x_hck_dmg_draw, "4", "0", "4", X_HELP_DMG_DRAW);
+	X_Main_RegisterHackXCommand(x_hck_dmg_draw, "4", "0", "4", X_HELP_DMG_DRAW);
 }
 
 void X_DMG_ParseSnapshotDamage()
 {
-	if (!IsXModeHackCommandActive(x_hck_dmg_draw))
+	if (!X_Main_IsXModeHackCommandActive(x_hck_dmg_draw))
 	{
 		return;
 	}

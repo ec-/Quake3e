@@ -1,3 +1,4 @@
+#include "client.h"
 #include "x_local.h"
 
 // ====================
@@ -29,8 +30,8 @@ static void CompletePortScan(void);
 
 void X_Net_Init()
 {
-	RegisterXCommand(x_net_port_auto_renew, "1", "0", "1", X_HELP_NET_PORT_AUTO_RENEW);
-	RegisterXCommand(x_net_show_commands, "0", "0", "1", 0);
+	X_Main_RegisterXCommand(x_net_port_auto_renew, "1", "0", "1", X_HELP_NET_PORT_AUTO_RENEW);
+	X_Main_RegisterXCommand(x_net_show_commands, "0", "0", "1", 0);
 
 	Cmd_AddCommand("x_net_port_renew", PortRenewNoisy);
 	Cmd_AddCommand("x_send", SendCommand);
@@ -50,7 +51,7 @@ static void InitNetScanProgressBar(void)
 	X_Hud_InitProgressBar(&xmod.net.scanBar, color1, color2, 320.f, 14.f, 420.f, 15.f, X_MAX_NET_PORTS - 1);
 }
 
-void X_Net_Deinit(void)
+void X_Net_Teardown(void)
 {
 	Cmd_RemoveCommand("x_net_port_renew");
 }
@@ -164,7 +165,7 @@ void X_Net_CheckScanPortTimeout()
 
 qboolean X_Net_ShowCommands(void)
 {
-	if (!IsXModeActive())
+	if (!X_Main_IsXModeActive())
 	{
 		return qfalse;
 	}
@@ -255,7 +256,7 @@ static void SetPortAndRestartNetwork(int port)
 {
 	char cmd[64];
 
-	XModeDisableOutput(qtrue);
+	X_Main_XModeDisableOutput(qtrue);
 
 	Com_sprintf(cmd, sizeof(cmd), "net_port %d", port);
 	Cmd_ExecuteString(cmd);
@@ -265,7 +266,7 @@ static void SetPortAndRestartNetwork(int port)
 
 	Cmd_ExecuteString("net_restart");
 
-	XModeDisableOutput(qfalse);
+	X_Main_XModeDisableOutput(qfalse);
 }
 
 static void CompletePortScan(void)

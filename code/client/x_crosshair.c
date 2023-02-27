@@ -1,3 +1,4 @@
+#include "client.h"
 #include "x_local.h"
 #include <float.h>
 
@@ -117,47 +118,47 @@ void X_CH_Init()
 	cg_crosshairSize = Cvar_Get("cg_crosshairSize", "24", CVAR_ARCHIVE);
 	cg_drawCrosshair = Cvar_Get("cg_drawCrosshair", "4", CVAR_ARCHIVE);
 
-	RegisterXCommand(x_ch_fix_resolution, "1", "0", "1", X_HELP_CH_FIX_RESOLUTION);
+	X_Main_RegisterXCommand(x_ch_fix_resolution, "1", "0", "1", X_HELP_CH_FIX_RESOLUTION);
 
-	RegisterXCommand(x_ch_auto_scale, "0", "0", "1", X_HELP_CH_AUTO_SCALE);
+	X_Main_RegisterXCommand(x_ch_auto_scale, "0", "0", "1", X_HELP_CH_AUTO_SCALE);
 
-	RegisterXCommand(x_ch_hit_icon, "0", "0", "1", X_HELP_CH_HIT_ICON);
+	X_Main_RegisterXCommand(x_ch_hit_icon, "0", "0", "1", X_HELP_CH_HIT_ICON);
 
-	RegisterFloatXCommand(x_ch_hit_icon_scale, "1.0", "0.5", "1.5", X_HELP_CH_HIT_ICON_SCALE);
+	X_Main_RegisterFloatXCommand(x_ch_hit_icon_scale, "1.0", "0.5", "1.5", X_HELP_CH_HIT_ICON_SCALE);
 
-	RegisterXCommand(x_ch_hit_lock_icon, "0", "0", "4", X_HELP_CH_HIT_LOCK_ICON);
+	X_Main_RegisterXCommand(x_ch_hit_lock_icon, "0", "0", "4", X_HELP_CH_HIT_LOCK_ICON);
 
-	RegisterFloatXCommand(x_ch_opaque, "1.0", "0.0", "1.0", X_HELP_CH_OPAQUE);
+	X_Main_RegisterFloatXCommand(x_ch_opaque, "1.0", "0.0", "1.0", X_HELP_CH_OPAQUE);
 
-	RegisterXCommand(x_ch_color, "0", 0, 0, X_HELP_CH_COLOR);
+	X_Main_RegisterXCommand(x_ch_color, "0", 0, 0, X_HELP_CH_COLOR);
 
-	RegisterXCommand(x_ch_rotate45, "0", "0", "1", X_HELP_CH_ROTATE45);
+	X_Main_RegisterXCommand(x_ch_rotate45, "0", "0", "1", X_HELP_CH_ROTATE45);
 
-	RegisterXCommand(x_ch_action, "4", "0", "4", X_HELP_CH_ACTION);
+	X_Main_RegisterXCommand(x_ch_action, "4", "0", "4", X_HELP_CH_ACTION);
 
-	RegisterXCommand(x_ch_action_color, "#C00", 0, 0, X_HELP_CH_ACTION_COLOR);
+	X_Main_RegisterXCommand(x_ch_action_color, "#C00", 0, 0, X_HELP_CH_ACTION_COLOR);
 
-	RegisterXCommand(x_ch_decor, "0", "0", "100", X_HELP_CH_DECOR);
+	X_Main_RegisterXCommand(x_ch_decor, "0", "0", "100", X_HELP_CH_DECOR);
 
-	RegisterXCommand(x_ch_decor_size, "24", "0", "100", X_HELP_CH_DECOR_SIZE);
+	X_Main_RegisterXCommand(x_ch_decor_size, "24", "0", "100", X_HELP_CH_DECOR_SIZE);
 
-	RegisterFloatXCommand(x_ch_decor_opaque, "1.0", "0.0", "1.0", X_HELP_CH_DECOR_OPAQUE);
+	X_Main_RegisterFloatXCommand(x_ch_decor_opaque, "1.0", "0.0", "1.0", X_HELP_CH_DECOR_OPAQUE);
 
-	RegisterXCommand(x_ch_decor_color, "0", 0, 0, X_HELP_CH_DECOR_COLOR);
+	X_Main_RegisterXCommand(x_ch_decor_color, "0", 0, 0, X_HELP_CH_DECOR_COLOR);
 
-	RegisterXCommand(x_ch_decor_rotate45, "0", "0", "1", X_HELP_CH_DECOR_ROTATE45);
+	X_Main_RegisterXCommand(x_ch_decor_rotate45, "0", "0", "1", X_HELP_CH_DECOR_ROTATE45);
 
-	RegisterXCommand(x_ch_decor_action, "0", "0", "4", X_HELP_CH_DECOR_ACTION);
+	X_Main_RegisterXCommand(x_ch_decor_action, "0", "0", "4", X_HELP_CH_DECOR_ACTION);
 
-	RegisterXCommand(x_ch_decor_action_color, "1", 0, 0, X_HELP_CH_DECOR_ACTION_COLOR);
+	X_Main_RegisterXCommand(x_ch_decor_action_color, "1", 0, 0, X_HELP_CH_DECOR_ACTION_COLOR);
 
-	RegisterHackXCommand(x_hck_ch_enemy_aim_fix_lg_range, "0", "0", "1", X_HELP_HCK_ENEMY_AIM_FIX_LG_RANGE);
+	X_Main_RegisterHackXCommand(x_hck_ch_enemy_aim_fix_lg_range, "0", "0", "1", X_HELP_HCK_ENEMY_AIM_FIX_LG_RANGE);
 
-	X_InitCustomColor(x_ch_color, &xmod.ch.front);
-	X_InitCustomColor(x_ch_decor_color, &xmod.ch.decor);
+	X_Misc_InitCustomColor(x_ch_color, &xmod.ch.front);
+	X_Misc_InitCustomColor(x_ch_decor_color, &xmod.ch.decor);
 
-	X_InitCustomColor(x_ch_action_color, &xmod.ch.actionFront);
-	X_InitCustomColor(x_ch_decor_action_color, &xmod.ch.actionDecor);
+	X_Misc_InitCustomColor(x_ch_action_color, &xmod.ch.actionFront);
+	X_Misc_InitCustomColor(x_ch_decor_action_color, &xmod.ch.actionDecor);
 }
 
 qboolean X_CH_CustomizeCrosshair(float x, float y, float w, float h, qhandle_t shader)
@@ -447,11 +448,11 @@ static qboolean IsPulseAction(int action)
 static void ChooseCrosshairColor(float *rgba, qboolean active, XCustomColor *color, XCustomColor *actionColor, float opaque)
 {
 	//TODO: for action 3 and probably other not hidden actions we might make a float color change from actionColor to color
-	if (active && X_IsCustomColorActive(actionColor))
+	if (active && X_Misc_IsCustomColorActive(actionColor))
 	{
 		MAKERGBA(rgba, actionColor->rgb[0], actionColor->rgb[1], actionColor->rgb[2], opaque);
 	}
-	else if (X_IsCustomColorActive(color))
+	else if (X_Misc_IsCustomColorActive(color))
 	{
 		MAKERGBA(rgba, color->rgb[0], color->rgb[1], color->rgb[2], opaque);
 	}
@@ -575,7 +576,7 @@ void X_CH_CalculateDistance(const refdef_t *fd)
 	trace_t trace;
 
 	//Fix: When RDF_NOWORLDMODEL presented a render is a part of hud scene, not a game
-	if (X_IsNoWorldRender(fd))
+	if (X_Misc_IsNoWorldRender(fd))
 	{
 		return;
 	}
@@ -728,7 +729,7 @@ static void ValidateAndSetAimedTarget(int client, float distance, const vec3_t s
 	}
 
 	// Don't aim with lightning gun if a range is higher than lg range
-	if (IsXModeHackCommandActive(x_hck_ch_enemy_aim_fix_lg_range)
+	if (X_Main_IsXModeHackCommandActive(x_hck_ch_enemy_aim_fix_lg_range)
 		&& x_hck_ch_enemy_aim_fix_lg_range->integer
 		&& xmod.snap.ps.weapon == WP_LIGHTNING
 		&& tdistance > LIGHTNING_RANGE + 25)

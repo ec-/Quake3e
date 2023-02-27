@@ -1,10 +1,12 @@
-#include "client.h"
+#ifndef CODE_X_LOCAL_H
+#define CODE_X_LOCAL_H
 
 #define X_CON_MAX_NAME_LENGTH    (MAX_NAME_LENGTH + 5)
 #define MAX_NAME_LEN (X_CON_MAX_NAME_LENGTH * 3)
 
-#define X_MSG_ENCDEC_SIGN "^^x^q^3^e"
-
+/*********************************
+ *  types
+ *********************************/
 typedef struct
 {
 	float x;
@@ -474,29 +476,60 @@ extern void (*Original_RenderScene)(const refdef_t *fd);
 extern void (*Original_DrawStretchPic)(float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader);
 extern void (*Original_AddRefEntityToScene)(const refEntity_t *re, qboolean intShaderTime);
 
-// Init
+/*********************************
+ *  x_main.c
+ *********************************/
+void X_Main_InitAfterCGameVM(void);
+void X_Main_StopAfterCGameVM(void);
 
-qboolean IsXModeActive(void);
-qboolean IsXModeHackActive(void);
-qboolean IsXModeHackCommandActive(cvar_t *cmd);
+void X_Main_Event_OnGetSnapshot(snapshot_t *snapshot);
+void X_Main_Event_OnConfigstringModified(int index);
+qboolean X_Main_Event_OnServerCommand(const char *cmd, qboolean *result);
+void X_Main_Event_OnChatCommand(field_t *field);
+void X_Main_Event_OnDrawScreen(void);
+sfxHandle_t X_Main_Event_ReplaceSoundOnSoundStart(int entity, sfxHandle_t sound);
+void X_Main_Event_OnSoundStart(int entityNum, const vec3_t origin, const char *soundName);
 
-void XModeDisableOutput(qboolean disable);
 
-cvar_t *RegisterXModeCmd(char *cmd, char *dfault, char *start, char *stop, char *description, int flags, int checktype);
+qboolean X_Main_Hook_CGame_Cvar_SetSafe(const char *var_name, const char *value);
+void X_Main_Hook_UpdateEntityPosition(int entityNum, const vec3_t origin);
+int X_Main_Hook_FS_GetFileList(const char *path, const char *extension, char *listbuf, int bufsize);
+void X_Main_Hook_AddLoopingSound(int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx);
 
-#define RegisterXCommand(cvar, dfault, start, stop, description) (cvar)=RegisterXModeCmd((#cvar),(dfault),(start),(stop),(description),CVAR_ARCHIVE,CV_INTEGER)
-#define RegisterFloatXCommand(cvar, dfault, start, stop, description) (cvar)=RegisterXModeCmd((#cvar),(dfault),(start),(stop),(description),CVAR_ARCHIVE,CV_FLOAT)
-#define RegisterHackXCommand(cvar, dfault, start, stop, description) (cvar)=RegisterXModeCmd((#cvar),(dfault),(start),(stop),(description),CVAR_ARCHIVE|CVAR_USERINFO|CVAR_XMOD,CV_INTEGER)
+qboolean X_Main_IsXModeActive(void);
+qboolean X_Main_IsXModeHackActive(void);
+qboolean X_Main_IsXModeHackCommandActive(cvar_t *cmd);
 
-// Hit crosshair
+void X_Main_XModeDisableOutput(qboolean disable);
 
+cvar_t *X_Main_RegisterXModeCmd(char *cmd, char *dfault, char *start, char *stop, char *description, int flags, int checktype);
+
+#define X_Main_RegisterXCommand(cvar, dfault, start, stop, description) (cvar)=X_Main_RegisterXModeCmd((#cvar),(dfault),(start),(stop),(description),CVAR_ARCHIVE,CV_INTEGER)
+#define X_Main_RegisterFloatXCommand(cvar, dfault, start, stop, description) (cvar)=X_Main_RegisterXModeCmd((#cvar),(dfault),(start),(stop),(description),CVAR_ARCHIVE,CV_FLOAT)
+#define X_Main_RegisterHackXCommand(cvar, dfault, start, stop, description) (cvar)=X_Main_RegisterXModeCmd((#cvar),(dfault),(start),(stop),(description),CVAR_ARCHIVE|CVAR_USERINFO|CVAR_XMOD,CV_INTEGER)
+
+/*********************************
+ *  x_net.c
+ *********************************/
+qboolean X_Net_ShowCommands(void);
+
+/*********************************
+ *  x_hud.c
+ *********************************/
+void X_Hud_TurnOffForcedTransparency(void);
+void X_Hud_TurnOnForcedTransparency(void);
+
+/*********************************
+ *  x_crosshair.c
+ *********************************/
 void X_CH_Init(void);
 qboolean X_CH_CustomizeCrosshair(float x, float y, float w, float h, qhandle_t shader);
 void X_CH_ChangeCrosshairOnSoundTrigger(const char *soundName);
 void X_CH_CalculateDistance(const refdef_t *fd);
 
-// Draw damage
-
+/*********************************
+ *  x_ddamage.c
+ *********************************/
 void X_DMG_Init(void);
 void X_DMG_ParseSnapshotDamage(void);
 void X_DMG_DrawDamage(const refdef_t *fd);
@@ -504,10 +537,11 @@ void X_DMG_PushDamageForDirectHit(int clientNum, const vec3_t origin);
 void X_DMG_PushDamageForEntity(refEntity_t *ref);
 void X_DMG_PushSplashDamageForDirectHit(const vec3_t origin);
 
-// Player state
 
+/*********************************
+ *  x_gamestate.c
+ *********************************/
 void X_GS_Init(void);
-
 void X_GS_UpdateGameStateOnConfigStringModified(int index);
 void X_GS_UpdatePlayerStateBySnapshot(snapshot_t *snapshot);
 void X_GS_UpdateEntityPosition(int entity, const vec3_t origin);
@@ -525,8 +559,9 @@ XEntity *X_GS_GetPlayerEntityFromCacheByOrigin(vec3_t origin);
 
 XPlayerState *X_GS_GetStateByClientId(int client);
 
-// Team
-
+/*********************************
+ *  x_team.c
+ *********************************/
 void X_Team_Init(void);
 void X_Team_CustomizeFoe(refEntity_t *ref);
 void X_Team_CustomizeFreezeEffect(refEntity_t *ref);
@@ -534,37 +569,40 @@ PlayerModel X_Team_IsPlayerModel(qhandle_t model);
 qboolean X_Team_ClientIsInSameTeam(int client);
 void X_Team_ValidateFrozenPlayers(const refdef_t *fd);
 
-// Weapon
-
+/*********************************
+ *  x_weapon.c
+ *********************************/
 void X_WP_Init(void);
 
-// Network
-
+/*********************************
+ *  x_net.c
+ *********************************/
 void X_Net_Init(void);
-void X_Net_Deinit(void);
+void X_Net_Teardown(void);
 void X_Net_RenewPortOnSnapshot(snapshot_t *snapshot);
 void X_Net_CheckScanPortTimeout(void);
 void X_Net_DrawScanProgress(void);
 
-// Players
-
+/*********************************
+ *  x_player.c
+ *********************************/
 void X_PS_Init(void);
 void X_PS_CustomizePlayerModel(refEntity_t *ref);
 void X_PS_AutoRevival(snapshot_t *snapshot);
 
-// Console
-
+/*********************************
+ *  x_console.c
+ *********************************/
 void X_Con_Init(void);
 qboolean X_Con_OnChatMessage(const char *text, int client);
 void X_Con_OnPlayerDeath(int client1, int client2, int reason);
 void X_Con_PrintToChatSection(const char *fmt, ...);
-
 void X_Cl_Con_OverlayPrint(const char *txt);
-
 void X_Con_OnLocalChatCommand(field_t *field);
 
-// Hud
-
+/*********************************
+ *  x_hud.c
+ *********************************/
 void X_Hud_Init(void);
 void X_Hud_Destroy(void);
 void X_Hud_ValidateDefaultScores(void);
@@ -583,24 +621,23 @@ void X_Hud_InitFading(XUIFading *fad, int interval, float min, float max);
 void X_Hud_ResetFading(XUIFading *fad);
 float X_Hud_GetFadingAlpha(XUIFading *fad);
 
-// Render
 
-void R_UpdateShaderColorByHandle(qhandle_t hShader, vec3_t color);
+/*********************************
+ *  x_misc.c
+ *********************************/
+void X_Misc_MakeStringSymbolic(char *str);
 
-// Misc
+void X_Misc_InitCustomColor(cvar_t *cvar, XCustomColor *color);
+qboolean X_Misc_IsCustomColorActive(XCustomColor *color);
 
-void X_MakeStringSymbolic(char *str);
+void X_Misc_RemoveEffectsFromName(char *name);
 
-void X_InitCustomColor(cvar_t *cvar, XCustomColor *color);
-qboolean X_IsCustomColorActive(XCustomColor *color);
+char *X_Misc_GetConfigString(int index);
 
-qboolean VectorEqualInRange(vec3_t first, vec3_t second, float range);
+qboolean X_Misc_IsNoWorldRender(const refdef_t *fd);
 
-void X_RemoveEffectsFromName(char *name);
+qboolean X_Misc_DecryptMessage(char *text);
+void X_Misc_SendEncryptedMessage(char *text);
 
-char *X_GetConfigString(int index);
 
-qboolean X_IsNoWorldRender(const refdef_t *fd);
-
-qboolean X_DecryptMessage(char *text);
-void X_SendEncryptedMessage(char *text);
+#endif //CODE_X_LOCAL_H

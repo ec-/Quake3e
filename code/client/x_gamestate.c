@@ -1,3 +1,4 @@
+#include "client.h"
 #include "x_local.h"
 #include "../botlib/l_crc.h"
 
@@ -35,7 +36,7 @@ static void RemoveExpiredEventsFromCache(void);
 
 void X_GS_Init()
 {
-	RegisterXCommand(x_gs_show_events, "0", "0", "1", 0);
+	X_Main_RegisterXCommand(x_gs_show_events, "0", "0", "1", 0);
 
 	UpdateServerInfo();
 	UpdateSystemInfo();
@@ -138,14 +139,14 @@ static void UpdateGameTimer(void)
 
 static void UpdateRoundStartTime(void)
 {
-	xmod.gs.timer.start = atoi(X_GetConfigString(CS_LEVEL_START_TIME));
+	xmod.gs.timer.start = atoi(X_Misc_GetConfigString(CS_LEVEL_START_TIME));
 	UpdateGameTimer();
 	xmod.gs.overtime = 0;
 }
 
 static void UpdateWarmupTime(void)
 {
-	xmod.gs.timer.warmup = atoi(X_GetConfigString(CS_WARMUP));
+	xmod.gs.timer.warmup = atoi(X_Misc_GetConfigString(CS_WARMUP));
 	UpdateGameTimer();
 }
 
@@ -206,7 +207,7 @@ static void ParsePlayerInfo(XPlayerState *ps, char *info)
 	}
 
 	Q_strncpyz(ps->name, Info_ValueForKey(info, "n"), sizeof(ps->name));
-	X_RemoveEffectsFromName(ps->name);
+	X_Misc_RemoveEffectsFromName(ps->name);
 
 	const char *model = Info_ValueForKey(info, "model");
 	if (Q_stricmp(ps->model, model))
@@ -629,6 +630,19 @@ static void UpdatePlayerPositionOnFakeSound(int entityNum, const vec3_t origin)
 			VectorCopy(origin, state->origin);
 		}
 	}
+}
+
+static qboolean VectorEqualInRange(vec3_t first, vec3_t second, float range)
+{
+	for (int i = 0; i < 3; i++)
+	{
+		if (second[i] < first[i] - range || first[i] + range < second[i])
+		{
+			return qfalse;
+		}
+	}
+
+	return qtrue;
 }
 
 int X_GS_GetClientIDByOrigin(vec3_t origin)

@@ -1,3 +1,4 @@
+#include "client.h"
 #include "x_local.h"
 
 // ====================
@@ -169,9 +170,9 @@ void X_Hud_Init()
 	Cmd_AddCommand("+xscore", ShowScoreTable);
 	Cmd_AddCommand("-xscore", HideScoreTable);
 
-	RegisterXCommand(x_hud_fix_font, "1", "0", "1", 0);
-	RegisterXCommand(x_hud_xscore_by_default, "1", "0", "1", 0);
-	RegisterFloatXCommand(x_hud_xscore_opaque, "0.9", "0.0", "1.0", 0);
+	X_Main_RegisterXCommand(x_hud_fix_font, "1", "0", "1", 0);
+	X_Main_RegisterXCommand(x_hud_xscore_by_default, "1", "0", "1", 0);
+	X_Main_RegisterFloatXCommand(x_hud_xscore_opaque, "0.9", "0.0", "1.0", 0);
 
 	X_Hud_ValidateDefaultScores();
 
@@ -188,7 +189,7 @@ void X_Hud_Destroy()
 
 void X_Hud_ValidateDefaultScores()
 {
-	if (!IsXModeActive())
+	if (!X_Main_IsXModeActive())
 	{
 		Cmd_ReplaceCommand("+scores", xmod.scr.scoresShow);
 		Cmd_ReplaceCommand("-scores", xmod.scr.scoresShow);
@@ -261,7 +262,7 @@ void X_Hud_HackTurnOffDefaultScores(snapshot_t *snapshot)
 
 qhandle_t X_Hud_GetConsoleFontShader(void)
 {
-	if (!IsXModeActive())
+	if (!X_Main_IsXModeActive())
 	{
 		return cls.charSetShader;
 	}
@@ -276,7 +277,7 @@ qhandle_t X_Hud_GetConsoleFontShader(void)
 
 qhandle_t X_Hud_GetOverlayFontShader(void)
 {
-	if (!IsXModeActive())
+	if (!X_Main_IsXModeActive())
 	{
 		return cls.charSetShader;
 	}
@@ -334,7 +335,7 @@ void X_Hud_TurnOnForcedTransparency(void)
 
 static void ShowScoreTable(void)
 {
-	if (!IsXModeActive())
+	if (!X_Main_IsXModeActive())
 	{
 		return;
 	}
@@ -354,7 +355,7 @@ static void ShowScoreTable(void)
 
 static void HideScoreTable(void)
 {
-	if (!IsXModeActive())
+	if (!X_Main_IsXModeActive())
 	{
 		return;
 	}
@@ -388,7 +389,7 @@ static void DrawScoreTable(void)
 
 	X_Hud_UpdatePlayerStats();
 
-	xmod.scr.warmup = (atoi(X_GetConfigString(CS_WARMUP)) != 0 ? qtrue : qfalse);
+	xmod.scr.warmup = (atoi(X_Misc_GetConfigString(CS_WARMUP)) != 0 ? qtrue : qfalse);
 
 	DrawTopHud();
 
@@ -444,7 +445,7 @@ static void DrawTopHud(void)
 
 static int GetVoteSFlag(void)
 {
-	int votestart = atoi(X_GetConfigString(CS_VOTE_TIME));
+	int votestart = atoi(X_Misc_GetConfigString(CS_VOTE_TIME));
 	return (votestart && cl.serverTime <= votestart + VOTE_TIME ? SFlagVoteBar : 0);
 }
 
@@ -1247,7 +1248,7 @@ static void DrawVoteBar(Bar *bar, float height)
 {
 	char buffer[256];
 
-	int votetime = atoi(X_GetConfigString(CS_VOTE_TIME));
+	int votetime = atoi(X_Misc_GetConfigString(CS_VOTE_TIME));
 	if (!votetime)
 	{
 		return;
@@ -1258,9 +1259,9 @@ static void DrawVoteBar(Bar *bar, float height)
 	Com_sprintf(buffer, sizeof(buffer),
 				"^7VOTE(%d): ^f%s ^7yes:^2%d^z/^7no:^2%d",
 				sec,
-				X_GetConfigString(CS_VOTE_STRING),
-				atoi(X_GetConfigString(CS_VOTE_YES)),
-				atoi(X_GetConfigString(CS_VOTE_NO))
+				X_Misc_GetConfigString(CS_VOTE_STRING),
+				atoi(X_Misc_GetConfigString(CS_VOTE_YES)),
+				atoi(X_Misc_GetConfigString(CS_VOTE_NO))
 	);
 
 	DrawBarStr(bar, 5, height * 0.1, height * 0.8, 0.8f, buffer);
@@ -1358,7 +1359,7 @@ static void CreateSingleScoreTable(float sectionWidth, TableSection *section1, T
 
 	CalculateChildBar(&score, &bar, 5.f, height - 16.f, sectionWidth, 18.f);
 
-	char *serverInfo = X_GetConfigString(4);
+	char *serverInfo = X_Misc_GetConfigString(4);
 	char buffer[256];
 	if (strlen(serverInfo))
 	{
@@ -1507,7 +1508,7 @@ static void CreateDoubleScoreTable(float sectionWidth, TableSection *section1, T
 
 	CalculateChildBar(&score, &bar, 5.f, height - 16.f, sectionWidth, 18.0f);
 
-	char *serverInfo = X_GetConfigString(4);
+	char *serverInfo = X_Misc_GetConfigString(4);
 	if (strlen(serverInfo))
 	{
 		Com_sprintf(buffer, sizeof(buffer), "^d%s", serverInfo);

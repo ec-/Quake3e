@@ -1,3 +1,4 @@
+#include "client.h"
 #include "x_local.h"
 
 // ====================
@@ -33,9 +34,9 @@ static void MakeDeadBodyBlack(PlayerModel model, refEntity_t *ref);
 
 void X_PS_Init()
 {
-	RegisterHackXCommand(x_hck_ps_enemy_hitbox, "0", "0", "2", X_HELP_HCK_PS_ENEMY_HITBOX);
-	RegisterXCommand(x_ps_dead_body_black, "2", "0", "3", X_HELP_PS_DEAD_BODY_BLACK);
-	RegisterXCommand(x_ps_auto_revival, "1", "0", "1", 0);//TODO:
+	X_Main_RegisterHackXCommand(x_hck_ps_enemy_hitbox, "0", "0", "2", X_HELP_HCK_PS_ENEMY_HITBOX);
+	X_Main_RegisterXCommand(x_ps_dead_body_black, "2", "0", "3", X_HELP_PS_DEAD_BODY_BLACK);
+	X_Main_RegisterXCommand(x_ps_auto_revival, "1", "0", "1", 0);//TODO:
 }
 
 void X_PS_CustomizePlayerModel(refEntity_t *ref)
@@ -89,7 +90,7 @@ static void DrawPlayerHitbox(PlayerModel model, refEntity_t *ref)
 		return;
 	}
 
-	if (!IsXModeHackCommandActive(x_hck_ps_enemy_hitbox))
+	if (!X_Main_IsXModeHackCommandActive(x_hck_ps_enemy_hitbox))
 	{
 		return;
 	}

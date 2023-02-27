@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // cl_scrn.c -- master for refresh, status bar, console, chat, notify, etc
 
 #include "client.h"
-#include "x_local2.h"
+#include "x_local.h"
 
 static qboolean	scr_initialized;		// ready to draw
 
@@ -574,7 +574,7 @@ static void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 #ifdef USE_VOIP
 			SCR_DrawVoipMeter();
 #endif
-			X_Event_OnDrawScreen();
+				X_Main_Event_OnDrawScreen();
 			break;
 		}
 	}

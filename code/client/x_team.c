@@ -1,3 +1,4 @@
+#include "client.h"
 #include "x_local.h"
 
 extern refexport_t re;        // interface to refresh .dll
@@ -38,15 +39,15 @@ static void FreezeFoeEffect(refEntity_t *ref, int client);
 
 void X_Team_Init()
 {
-	RegisterXCommand(x_team_freeze_foe, "0", "0", "2", X_HELP_TEAM_FREEZE_FOE);
-	RegisterXCommand(x_team_lift_foe, "0", "-5", "10", X_HELP_TEAM_LIFT_FOE);
-	RegisterHackXCommand(x_hck_team_unfreezing_foe, "1", "0", "1", X_HELP_TEAM_UNFREEZING_FOE);
+	X_Main_RegisterXCommand(x_team_freeze_foe, "0", "0", "2", X_HELP_TEAM_FREEZE_FOE);
+	X_Main_RegisterXCommand(x_team_lift_foe, "0", "-5", "10", X_HELP_TEAM_LIFT_FOE);
+	X_Main_RegisterHackXCommand(x_hck_team_unfreezing_foe, "1", "0", "1", X_HELP_TEAM_UNFREEZING_FOE);
 
-	RegisterXCommand(x_team_freeze_effect_team_color, "0", 0, 0, X_HELP_TEAM_FREEZE_EFFECT_COLOR1);
-	RegisterXCommand(x_team_freeze_effect_enemy_color, "0", 0, 0, X_HELP_TEAM_FREEZE_EFFECT_COLOR2);
+	X_Main_RegisterXCommand(x_team_freeze_effect_team_color, "0", 0, 0, X_HELP_TEAM_FREEZE_EFFECT_COLOR1);
+	X_Main_RegisterXCommand(x_team_freeze_effect_enemy_color, "0", 0, 0, X_HELP_TEAM_FREEZE_EFFECT_COLOR2);
 
-	X_InitCustomColor(x_team_freeze_effect_team_color, &xmod.frz.team);
-	X_InitCustomColor(x_team_freeze_effect_enemy_color, &xmod.frz.enemy);
+	X_Misc_InitCustomColor(x_team_freeze_effect_team_color, &xmod.frz.team);
+	X_Misc_InitCustomColor(x_team_freeze_effect_enemy_color, &xmod.frz.enemy);
 }
 
 static int GetClientIDByFoeOrigin(vec3_t origin)
@@ -146,7 +147,7 @@ static void MarkUnfreezingTeamMembers(vec3_t origin, int team)
 
 void X_Team_ValidateFrozenPlayers(const refdef_t *fd)
 {
-	if (!IsXModeHackCommandActive(x_hck_team_unfreezing_foe))
+	if (!X_Main_IsXModeHackCommandActive(x_hck_team_unfreezing_foe))
 	{
 		return;
 	}
@@ -161,7 +162,7 @@ void X_Team_ValidateFrozenPlayers(const refdef_t *fd)
 		return;
 	}
 
-	if (X_IsNoWorldRender(fd))
+	if (X_Misc_IsNoWorldRender(fd))
 	{
 		return;
 	}
@@ -315,7 +316,7 @@ void X_Team_CustomizeFreezeEffect(refEntity_t *ref)
 
 		if (xmod.gs.ps[client].team == TEAM_RED)
 		{
-			if (!X_IsCustomColorActive(&xmod.frz.team))
+			if (!X_Misc_IsCustomColorActive(&xmod.frz.team))
 			{
 				return;
 			}
@@ -325,7 +326,7 @@ void X_Team_CustomizeFreezeEffect(refEntity_t *ref)
 		}
 		else
 		{
-			if (!X_IsCustomColorActive(&xmod.frz.enemy))
+			if (!X_Misc_IsCustomColorActive(&xmod.frz.enemy))
 			{
 				return;
 			}
@@ -342,7 +343,7 @@ void X_Team_CustomizeFreezeEffect(refEntity_t *ref)
 
 		if (xmod.snap.ps.persistant[PERS_TEAM] == xmod.gs.ps[client].team)
 		{
-			if (!X_IsCustomColorActive(&xmod.frz.team))
+			if (!X_Misc_IsCustomColorActive(&xmod.frz.team))
 			{
 				return;
 			}
@@ -352,7 +353,7 @@ void X_Team_CustomizeFreezeEffect(refEntity_t *ref)
 		}
 		else
 		{
-			if (!X_IsCustomColorActive(&xmod.frz.enemy))
+			if (!X_Misc_IsCustomColorActive(&xmod.frz.enemy))
 			{
 				return;
 			}

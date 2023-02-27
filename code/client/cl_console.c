@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // console.c
 
 #include "client.h"
-#include "x_local2.h"
+#include "x_local.h"
 #include "x_main.h"
 
 #define  DEFAULT_CONSOLE_WIDTH 78

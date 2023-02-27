@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
 #include "client.h"
-#include "x_local2.h"
+#include "x_local.h"
 
 /*
 
@@ -403,7 +403,7 @@ static void Console_Key( int key ) {
 			Com_sprintf( g_consoleField.buffer, sizeof( g_consoleField.buffer ), "\\%s", temp );
 			g_consoleField.cursor++;
 		}
-		X_Event_OnChatCommand(&g_consoleField);
+		X_Main_Event_OnChatCommand(&g_consoleField);
 		Com_Printf( "]%s\n", g_consoleField.buffer );
 
 		// leading slash is an explicit command

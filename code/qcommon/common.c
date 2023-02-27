@@ -3692,7 +3692,7 @@ void Com_Init( char *commandLine ) {
 	com_dedicated = Cvar_Get( "dedicated", "0", CVAR_LATCH );
 	Cvar_CheckRange( com_dedicated, "0", "2", CV_INTEGER );
 	//!!!!!!!!!
-	X_InitXMod();
+	X_Main_InitXMod();
 #endif
 	Cvar_SetDescription( com_dedicated, "Enables dedicated server mode.\n 0: Listen server\n 1: Unlisted dedicated server \n 2: Listed dedicated server" );
 	// allocate the stack based hunk allocator

@@ -25,7 +25,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "../botlib/botlib.h"
 #include "x_main.h"
-#include "x_local2.h"
+#include "x_local.h"
 
 extern	botlib_export_t	*botlib_export;
 
@@ -151,7 +151,7 @@ static qboolean CL_GetSnapshot( int snapshotNumber, snapshot_t *snapshot ) {
 
 	// FIXME: configstring changes and server commands!!!
 
-	X_Event_OnGetSnapshot(snapshot);
+	X_Main_Event_OnGetSnapshot(snapshot);
 
 	return qtrue;
 }
@@ -236,7 +236,7 @@ static void CL_ConfigstringModified( void ) {
 		// parse serverId and other cvars
 		CL_SystemInfoChanged( qfalse );
 	}
-	X_Event_OnConfigstringModified(index);
+	X_Main_Event_OnConfigstringModified(index);
 }
 
 
@@ -293,7 +293,7 @@ rescan:
 
 	{
 		qboolean result = qtrue;
-		if (X_Event_OnServerCommand(cmd, &result))
+		if (X_Main_Event_OnServerCommand(cmd, &result))
 		{
 			Cmd_TokenizeString(s);
 			return result;
@@ -414,7 +414,7 @@ void CL_ShutdownCGame( void ) {
 	cgvm = NULL;
 	FS_VM_CloseFiles( H_CGAME );
 
-	X_StopAfterCGameVM();
+	X_Main_StopAfterCGameVM();
 }
 
 
@@ -497,7 +497,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		Cvar_Update( VMA(1), cgvm->privateFlag );
 		return 0;
 	case CG_CVAR_SET:
-		if (X_Hook_CGame_Cvar_SetSafe(VMA(1), VMA(2)) == qtrue)
+		if (X_Main_Hook_CGame_Cvar_SetSafe(VMA(1), VMA(2)) == qtrue)
 		{
 			Cvar_SetSafe(VMA(1), VMA(2));
 		}
@@ -594,7 +594,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		S_ClearLoopingSounds(args[1]);
 		return 0;
 	case CG_S_ADDLOOPINGSOUND:
-		X_Hook_AddLoopingSound( args[1], VMA(2), VMA(3), args[4] );
+		X_Main_Hook_AddLoopingSound(args[1], VMA(2), VMA(3), args[4]);
 		return 0;
 	case CG_S_ADDREALLOOPINGSOUND:
 		S_AddRealLoopingSound( args[1], VMA(2), VMA(3), args[4] );
@@ -603,7 +603,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		S_StopLoopingSound( args[1] );
 		return 0;
 	case CG_S_UPDATEENTITYPOSITION:
-		X_Hook_UpdateEntityPosition( args[1], VMA(2) );
+		X_Main_Hook_UpdateEntityPosition(args[1], VMA(2));
 		S_UpdateEntityPosition( args[1], VMA(2) );
 		return 0;
 	case CG_S_RESPATIALIZE:
@@ -894,7 +894,7 @@ void CL_InitCGame( void ) {
 		Cvar_SetIntegerValue("com_maxfps", savefps);
 	}
 
-	X_InitAfterCGameVM();
+	X_Main_InitAfterCGameVM();
 
 	// reset any CVAR_CHEAT cvars registered by cgame
 	if ( !clc.demoplaying && !cl_connectedToCheatServer )
