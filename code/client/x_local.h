@@ -616,11 +616,6 @@ void X_Hud_InitProgressBar(XUIProgressBar *bar, vec4_t color1, vec4_t color2, fl
 void X_Hud_DrawProgressBar(XUIProgressBar *bar, float value);
 void X_Hud_DrawProgressBarInCenter(XUIProgressBar *bar, float value);
 
-void X_Hud_InitFading(XUIFading *fad, int interval, float min, float max);
-void X_Hud_ResetFading(XUIFading *fad);
-float X_Hud_GetFadingAlpha(XUIFading *fad);
-
-
 /*********************************
  *  x_misc.c
  *********************************/

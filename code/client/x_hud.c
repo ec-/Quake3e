@@ -121,6 +121,11 @@ static void DrawSquareIcon(Bar *bar, float x, float y, float sz, float alpha, qh
 
 static const char *CovertTimeToString(int time);
 
+static void InitFading(XUIFading *fad, int interval, float min, float max);
+static void ResetFading(XUIFading *fad);
+static float GetFadingAlpha(XUIFading *fad);
+
+
 // ======================
 //   Score routines
 
@@ -176,7 +181,7 @@ void X_Hud_Init()
 
 	X_Hud_ValidateDefaultScores();
 
-	X_Hud_InitFading(&xmod.scr.fading, 1000, 0.3f, 0.9f);
+	InitFading(&xmod.scr.fading, 1000, 0.3f, 0.9f);
 }
 
 void X_Hud_Destroy()
@@ -254,7 +259,7 @@ void X_Hud_HackTurnOffDefaultScores(snapshot_t *snapshot)
 		return;
 	}
 
-	X_Hud_ResetFading(&xmod.scr.fading);
+	ResetFading(&xmod.scr.fading);
 
 	xmod.scr.show = qtrue;
 	xmod.scr.autoshow = qtrue;
@@ -346,7 +351,7 @@ static void ShowScoreTable(void)
 	}
 
 	X_Hud_UpdatePlayerStats();
-	X_Hud_ResetFading(&xmod.scr.fading);
+	ResetFading(&xmod.scr.fading);
 
 	xmod.scr.show = qtrue;
 
@@ -1578,7 +1583,7 @@ static float DrawPlayerRowFFA(Bar *bar, int pos, int client, int flags)
 	(ps->icons[0] ? ps->icons[0] : xmod.rs.shaderNoModel)
 	);
 
-	if (isready) DrawFatBarStr(bar, 2.f, 6.f, 8.f, X_Hud_GetFadingAlpha(&xmod.scr.fading), "^3READY");
+	if (isready) DrawFatBarStr(bar, 2.f, 6.f, 8.f, GetFadingAlpha(&xmod.scr.fading), "^3READY");
 
 	if (ps->active && sc->ping != -1)
 	{
@@ -2069,7 +2074,7 @@ static float DrawPlayerRowTDM(Bar *bar, int pos, int client, int flags)
 		}
 	}
 
-	if (isready) DrawFatBarStr(bar, 2.f, 6.f, 8.f, X_Hud_GetFadingAlpha(&xmod.scr.fading), "^3READY");
+	if (isready) DrawFatBarStr(bar, 2.f, 6.f, 8.f, GetFadingAlpha(&xmod.scr.fading), "^3READY");
 
 	return 0.f;
 }
@@ -2294,7 +2299,7 @@ static float DrawPlayerRowCTF(Bar *bar, int pos, int client, int flags)
 		}
 	}*/
 
-	if (isready) DrawFatBarStr(bar, 2.f, 6.f, 8.f, X_Hud_GetFadingAlpha(&xmod.scr.fading), "^3READY");
+	if (isready) DrawFatBarStr(bar, 2.f, 6.f, 8.f, GetFadingAlpha(&xmod.scr.fading), "^3READY");
 
 	return 0.f;
 }
@@ -2601,7 +2606,7 @@ void X_Hud_DrawProgressBarInCenter(XUIProgressBar *bar, float value)
 	DrawProgressBar(bar, &b, value);
 }
 
-void X_Hud_InitFading(XUIFading *fad, int interval, float min, float max)
+static void InitFading(XUIFading *fad, int interval, float min, float max)
 {
 	fad->start = Com_Milliseconds();
 	fad->interval = interval;
@@ -2610,12 +2615,12 @@ void X_Hud_InitFading(XUIFading *fad, int interval, float min, float max)
 	fad->step = interval / (max - min);
 }
 
-void X_Hud_ResetFading(XUIFading *fad)
+static void ResetFading(XUIFading *fad)
 {
 	fad->start = Com_Milliseconds();
 }
 
-float X_Hud_GetFadingAlpha(XUIFading *fad)
+static float GetFadingAlpha(XUIFading *fad)
 {
 	int range = fad->interval * 2;
 	int ms = (Com_Milliseconds() - fad->start) % range;
