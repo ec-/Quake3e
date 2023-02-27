@@ -177,7 +177,7 @@ static channel_t* S_ChannelMalloc( int allocTime ) {
 static void S_ChannelSetup( void ) {
 	channel_t *p, *q;
 
-	// clear all the sounds so they don't
+	// clear all the sounds
 	Com_Memset( s_channels, 0, sizeof( s_channels ) );
 
 	p = s_channels;
@@ -1141,24 +1141,21 @@ static void S_GetSoundtime( void )
 	int		samplepos;
 	static	int		buffers;
 	static	int		oldsamplepos;
-	float	fps;
-	float	frameDuration;
-	int		msec;
 
 	if ( CL_VideoRecording() )
 	{
-		fps = MIN( cl_aviFrameRate->value, 1000.0f );
-		frameDuration = MAX( (float) dma.speed / fps, 1.0f ) + clc.aviSoundFrameRemainder;
+		const float duration = MAX( (float)dma.speed / cl_aviFrameRate->value, 1.0f );
+		const float frameDuration = duration + clc.aviSoundFrameRemainder;
+		const int msec = (int)frameDuration;
 
-		msec = (int)frameDuration;
 		s_soundtime += msec;
 		clc.aviSoundFrameRemainder = frameDuration - msec;
 
 		// use same offset as in game
-		s_paintedtime = s_soundtime + s_mixOffset->value * dma.speed;
+		s_paintedtime = s_soundtime + (int)(s_mixOffset->value * (float)dma.speed);
 
 		// render exactly one frame of audio data
-		clc.aviFrameEndTime = s_paintedtime + MAX( (float) dma.speed / fps, 1.0f ) + clc.aviSoundFrameRemainder;
+		clc.aviFrameEndTime = s_paintedtime + (int)(duration + clc.aviSoundFrameRemainder);
 		return;
 	}
 
@@ -1280,7 +1277,7 @@ S_OpenBackgroundStream
 */
 static void S_OpenBackgroundStream( const char *filename ) {
 	// close the background track, but DON'T reset s_rawend
-	// if restarting the same back ground track
+	// if restarting the same background track
 	if( s_backgroundStream )
 	{
 		S_CodecCloseStream( s_backgroundStream );
@@ -1454,7 +1451,7 @@ static void S_Base_Shutdown( void ) {
 	SNDDMA_Shutdown();
 
 	// release sound buffers only when switching to dedicated 
-	// to avoid redundand reallocation at client restart
+	// to avoid redundant reallocation at client restart
 	if ( com_dedicated->integer )
 		SND_shutdown();
 
@@ -1486,6 +1483,7 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 
 	s_khz = Cvar_Get( "s_khz", "22", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	Cvar_CheckRange( s_khz, "0", "48", CV_INTEGER );
+	Cvar_SetDescription( s_khz, "Specifies the sound sampling rate, (11, 22, 44, 48) in kHz. Default value is 22." );
 
 	switch( s_khz->integer ) {
 		case 48:
@@ -1503,12 +1501,15 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 
 	s_mixahead = Cvar_Get( "s_mixAhead", "0.2", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( s_mixahead, "0.001", "0.5", CV_FLOAT );
+	Cvar_SetDescription( s_mixahead, "Amount of time to pre-mix sound data to avoid potential skips/stuttering in case of unstable framerate. Higher values add more CPU usage." );
 
 	s_mixOffset = Cvar_Get( "s_mixOffset", "0", CVAR_ARCHIVE_ND | CVAR_DEVELOPER );
 	Cvar_CheckRange( s_mixOffset, "0", "0.5", CV_FLOAT );
 
 	s_show = Cvar_Get( "s_show", "0", CVAR_CHEAT );
+	Cvar_SetDescription( s_show, "Debugging output (used sound files)." );
 	s_testsound = Cvar_Get( "s_testsound", "0", CVAR_CHEAT );
+	Cvar_SetDescription( s_testsound, "Debugging tool that plays a simple sine wave tone to test the sound system." );
 #if defined(__linux__) && !defined(USE_SDL)
 	s_device = Cvar_Get( "s_device", "default", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	Cvar_SetDescription( s_device, "Set ALSA output device\n"
@@ -1531,7 +1532,7 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 
 		S_Base_StopAllSounds();
 
-		// setup(likely) or allocate (unlikely) buffer for muted painting
+		// setup (likely) or allocate (unlikely) buffer for muted painting
 		if ( dma.samples * dma.samplebits/8 <= sizeof( buffer2 ) ) {
 			dma_buffer2 = buffer2;
 		} else {

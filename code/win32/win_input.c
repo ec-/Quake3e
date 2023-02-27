@@ -1159,17 +1159,23 @@ void IN_Init( void ) {
 	// MIDI input controler variables
 	in_midi = Cvar_Get( "in_midi", "0", CVAR_ARCHIVE );
 	in_midiport = Cvar_Get( "in_midiport", "1", CVAR_ARCHIVE );
+	Cvar_SetDescription( in_midiport, "Toggle the use of a midi port as an input device." );
 	in_midichannel = Cvar_Get( "in_midichannel", "1", CVAR_ARCHIVE );
+	Cvar_SetDescription( in_midichannel, "Toggle the use of a midi channel as an input device." );
 	in_mididevice = Cvar_Get( "in_mididevice", "0", CVAR_ARCHIVE );
+	Cvar_SetDescription( in_mididevice, "Toggle the use of a midi device as an input device." );
 	Cmd_AddCommand( "midiinfo", MidiInfo_f );
 #endif
 
 #ifdef USE_JOYSTICK
 	// joystick variables
 	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE | CVAR_LATCH );
+	Cvar_SetDescription( in_joystick, "Whether or not joystick support is on." );
 	in_joyBallScale = Cvar_Get( "in_joyBallScale", "0.02", CVAR_ARCHIVE );
+	Cvar_SetDescription( in_joyBallScale, "Sets the scale of a joyball rotation to player model rotation." );
 	in_debugJoystick = Cvar_Get( "in_debugjoystick", "0", CVAR_TEMP );
 	joy_threshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE );
+	Cvar_SetDescription( joy_threshold, "Threshold of joystick moving distance." );
 #endif
 
 	// mouse variables
@@ -1182,6 +1188,7 @@ void IN_Init( void ) {
 		" -1 - win32 mouse" );
 		
 	in_nograb = Cvar_Get( "in_nograb", "0", 0 );
+	Cvar_SetDescription( in_nograb, "Do not capture mouse in game, may be useful during online streaming." );
 	in_lagged = Cvar_Get( "in_lagged", "0", 0 );
 	Cvar_SetDescription( in_lagged, 
 		"Mouse movement processing order:\n" \
@@ -1189,8 +1196,10 @@ void IN_Init( void ) {
 		" 1 - before framerate limiter" );
 
 	in_logitechbug = Cvar_Get( "in_logitechbug", "0", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( in_logitechbug, "Toggle the use of special code in the game that addresses a bug in the logitech mouse driver software." );
 
 	in_minimize	= Cvar_Get( "in_minimize", "", CVAR_ARCHIVE | CVAR_LATCH );
+	Cvar_SetDescription( in_minimize, "Hotkey for minimize/restore main window." );
 
 	Cmd_AddCommand( "minimize", IN_Minimize );
 	Cmd_AddCommand( "in_restart", IN_Restart_f );
@@ -1439,7 +1448,7 @@ void IN_JoyMove( void ) {
 	}
 
 	// loop through the joystick buttons
-	// key a joystick event or auxillary event for higher number buttons for each state change
+	// key a joystick event or auxiliary event for higher number buttons for each state change
 	buttonstate = joy.ji.dwButtons;
 	for ( i=0 ; i < joy.jc.wNumButtons ; i++ ) {
 		if ( (buttonstate & (1<<i)) && !(joy.oldbuttonstate & (1<<i)) ) {
@@ -1479,7 +1488,7 @@ void IN_JoyMove( void ) {
 		}
 	}
 
-	// determine which bits have changed and key an auxillary event for each change
+	// determine which bits have changed and key an auxiliary event for each change
 	for (i=0 ; i < 16 ; i++) {
 		if ( (povstate & (1<<i)) && !(joy.oldpovstate & (1<<i)) ) {
 			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, joyDirectionKeys[i], qtrue, 0, NULL );

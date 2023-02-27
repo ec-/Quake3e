@@ -14,116 +14,114 @@ static int vkMaxSamples = VK_SAMPLE_COUNT_1_BIT;
 //
 // Vulkan API functions used by the renderer.
 //
-PFN_vkGetInstanceProcAddr						qvkGetInstanceProcAddr;
+static PFN_vkCreateInstance								qvkCreateInstance;
+static PFN_vkEnumerateInstanceExtensionProperties		qvkEnumerateInstanceExtensionProperties;
 
-PFN_vkCreateInstance							qvkCreateInstance;
-PFN_vkEnumerateInstanceExtensionProperties		qvkEnumerateInstanceExtensionProperties;
-
-PFN_vkCreateDevice								qvkCreateDevice;
-PFN_vkDestroyInstance							qvkDestroyInstance;
-PFN_vkEnumerateDeviceExtensionProperties		qvkEnumerateDeviceExtensionProperties;
-PFN_vkEnumeratePhysicalDevices					qvkEnumeratePhysicalDevices;
-PFN_vkGetDeviceProcAddr							qvkGetDeviceProcAddr;
-PFN_vkGetPhysicalDeviceFeatures					qvkGetPhysicalDeviceFeatures;
-PFN_vkGetPhysicalDeviceFormatProperties			qvkGetPhysicalDeviceFormatProperties;
-PFN_vkGetPhysicalDeviceMemoryProperties			qvkGetPhysicalDeviceMemoryProperties;
-PFN_vkGetPhysicalDeviceProperties				qvkGetPhysicalDeviceProperties;
-PFN_vkGetPhysicalDeviceQueueFamilyProperties	qvkGetPhysicalDeviceQueueFamilyProperties;
-PFN_vkDestroySurfaceKHR							qvkDestroySurfaceKHR;
-PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR	qvkGetPhysicalDeviceSurfaceCapabilitiesKHR;
-PFN_vkGetPhysicalDeviceSurfaceFormatsKHR		qvkGetPhysicalDeviceSurfaceFormatsKHR;
-PFN_vkGetPhysicalDeviceSurfacePresentModesKHR	qvkGetPhysicalDeviceSurfacePresentModesKHR;
-PFN_vkGetPhysicalDeviceSurfaceSupportKHR		qvkGetPhysicalDeviceSurfaceSupportKHR;
+static PFN_vkCreateDevice								qvkCreateDevice;
+static PFN_vkDestroyInstance							qvkDestroyInstance;
+static PFN_vkEnumerateDeviceExtensionProperties			qvkEnumerateDeviceExtensionProperties;
+static PFN_vkEnumeratePhysicalDevices					qvkEnumeratePhysicalDevices;
+static PFN_vkGetDeviceProcAddr							qvkGetDeviceProcAddr;
+static PFN_vkGetPhysicalDeviceFeatures					qvkGetPhysicalDeviceFeatures;
+static PFN_vkGetPhysicalDeviceFormatProperties			qvkGetPhysicalDeviceFormatProperties;
+static PFN_vkGetPhysicalDeviceMemoryProperties			qvkGetPhysicalDeviceMemoryProperties;
+static PFN_vkGetPhysicalDeviceProperties				qvkGetPhysicalDeviceProperties;
+static PFN_vkGetPhysicalDeviceQueueFamilyProperties		qvkGetPhysicalDeviceQueueFamilyProperties;
+static PFN_vkDestroySurfaceKHR							qvkDestroySurfaceKHR;
+static PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR	qvkGetPhysicalDeviceSurfaceCapabilitiesKHR;
+static PFN_vkGetPhysicalDeviceSurfaceFormatsKHR			qvkGetPhysicalDeviceSurfaceFormatsKHR;
+static PFN_vkGetPhysicalDeviceSurfacePresentModesKHR	qvkGetPhysicalDeviceSurfacePresentModesKHR;
+static PFN_vkGetPhysicalDeviceSurfaceSupportKHR			qvkGetPhysicalDeviceSurfaceSupportKHR;
 #ifdef USE_VK_VALIDATION
-PFN_vkCreateDebugReportCallbackEXT				qvkCreateDebugReportCallbackEXT;
-PFN_vkDestroyDebugReportCallbackEXT				qvkDestroyDebugReportCallbackEXT;
+static PFN_vkCreateDebugReportCallbackEXT				qvkCreateDebugReportCallbackEXT;
+static PFN_vkDestroyDebugReportCallbackEXT				qvkDestroyDebugReportCallbackEXT;
 #endif
-PFN_vkAllocateCommandBuffers					qvkAllocateCommandBuffers;
-PFN_vkAllocateDescriptorSets					qvkAllocateDescriptorSets;
-PFN_vkAllocateMemory							qvkAllocateMemory;
-PFN_vkBeginCommandBuffer						qvkBeginCommandBuffer;
-PFN_vkBindBufferMemory							qvkBindBufferMemory;
-PFN_vkBindImageMemory							qvkBindImageMemory;
-PFN_vkCmdBeginRenderPass						qvkCmdBeginRenderPass;
-PFN_vkCmdBindDescriptorSets						qvkCmdBindDescriptorSets;
-PFN_vkCmdBindIndexBuffer						qvkCmdBindIndexBuffer;
-PFN_vkCmdBindPipeline							qvkCmdBindPipeline;
-PFN_vkCmdBindVertexBuffers						qvkCmdBindVertexBuffers;
-PFN_vkCmdBlitImage								qvkCmdBlitImage;
-PFN_vkCmdClearAttachments						qvkCmdClearAttachments;
-PFN_vkCmdCopyBuffer								qvkCmdCopyBuffer;
-PFN_vkCmdCopyBufferToImage						qvkCmdCopyBufferToImage;
-PFN_vkCmdCopyImage								qvkCmdCopyImage;
-PFN_vkCmdDraw									qvkCmdDraw;
-PFN_vkCmdDrawIndexed							qvkCmdDrawIndexed;
-PFN_vkCmdEndRenderPass							qvkCmdEndRenderPass;
-PFN_vkCmdNextSubpass							qvkCmdNextSubpass;
-PFN_vkCmdPipelineBarrier						qvkCmdPipelineBarrier;
-PFN_vkCmdPushConstants							qvkCmdPushConstants;
-PFN_vkCmdSetDepthBias							qvkCmdSetDepthBias;
-PFN_vkCmdSetScissor								qvkCmdSetScissor;
-PFN_vkCmdSetViewport							qvkCmdSetViewport;
-PFN_vkCreateBuffer								qvkCreateBuffer;
-PFN_vkCreateCommandPool							qvkCreateCommandPool;
-PFN_vkCreateDescriptorPool						qvkCreateDescriptorPool;
-PFN_vkCreateDescriptorSetLayout					qvkCreateDescriptorSetLayout;
-PFN_vkCreateFence								qvkCreateFence;
-PFN_vkCreateFramebuffer							qvkCreateFramebuffer;
-PFN_vkCreateGraphicsPipelines					qvkCreateGraphicsPipelines;
-PFN_vkCreateImage								qvkCreateImage;
-PFN_vkCreateImageView							qvkCreateImageView;
-PFN_vkCreatePipelineLayout						qvkCreatePipelineLayout;
-PFN_vkCreatePipelineCache						qvkCreatePipelineCache;
-PFN_vkCreateRenderPass							qvkCreateRenderPass;
-PFN_vkCreateSampler								qvkCreateSampler;
-PFN_vkCreateSemaphore							qvkCreateSemaphore;
-PFN_vkCreateShaderModule						qvkCreateShaderModule;
-PFN_vkDestroyBuffer								qvkDestroyBuffer;
-PFN_vkDestroyCommandPool						qvkDestroyCommandPool;
-PFN_vkDestroyDescriptorPool						qvkDestroyDescriptorPool;
-PFN_vkDestroyDescriptorSetLayout				qvkDestroyDescriptorSetLayout;
-PFN_vkDestroyDevice								qvkDestroyDevice;
-PFN_vkDestroyFence								qvkDestroyFence;
-PFN_vkDestroyFramebuffer						qvkDestroyFramebuffer;
-PFN_vkDestroyImage								qvkDestroyImage;
-PFN_vkDestroyImageView							qvkDestroyImageView;
-PFN_vkDestroyPipeline							qvkDestroyPipeline;
-PFN_vkDestroyPipelineCache						qvkDestroyPipelineCache;
-PFN_vkDestroyPipelineLayout						qvkDestroyPipelineLayout;
-PFN_vkDestroyRenderPass							qvkDestroyRenderPass;
-PFN_vkDestroySampler							qvkDestroySampler;
-PFN_vkDestroySemaphore							qvkDestroySemaphore;
-PFN_vkDestroyShaderModule						qvkDestroyShaderModule;
-PFN_vkDeviceWaitIdle							qvkDeviceWaitIdle;
-PFN_vkEndCommandBuffer							qvkEndCommandBuffer;
-PFN_vkFlushMappedMemoryRanges					qvkFlushMappedMemoryRanges;
-PFN_vkFreeCommandBuffers						qvkFreeCommandBuffers;
-PFN_vkFreeDescriptorSets						qvkFreeDescriptorSets;
-PFN_vkFreeMemory								qvkFreeMemory;
-PFN_vkGetBufferMemoryRequirements				qvkGetBufferMemoryRequirements;
-PFN_vkGetDeviceQueue							qvkGetDeviceQueue;
-PFN_vkGetImageMemoryRequirements				qvkGetImageMemoryRequirements;
-PFN_vkGetImageSubresourceLayout					qvkGetImageSubresourceLayout;
-PFN_vkInvalidateMappedMemoryRanges				qvkInvalidateMappedMemoryRanges;
-PFN_vkMapMemory									qvkMapMemory;
-PFN_vkQueueSubmit								qvkQueueSubmit;
-PFN_vkQueueWaitIdle								qvkQueueWaitIdle;
-PFN_vkResetCommandBuffer						qvkResetCommandBuffer;
-PFN_vkResetDescriptorPool						qvkResetDescriptorPool;
-PFN_vkResetFences								qvkResetFences;
-PFN_vkUnmapMemory								qvkUnmapMemory;
-PFN_vkUpdateDescriptorSets						qvkUpdateDescriptorSets;
-PFN_vkWaitForFences								qvkWaitForFences;
-PFN_vkAcquireNextImageKHR						qvkAcquireNextImageKHR;
-PFN_vkCreateSwapchainKHR						qvkCreateSwapchainKHR;
-PFN_vkDestroySwapchainKHR						qvkDestroySwapchainKHR;
-PFN_vkGetSwapchainImagesKHR						qvkGetSwapchainImagesKHR;
-PFN_vkQueuePresentKHR							qvkQueuePresentKHR;
+static PFN_vkAllocateCommandBuffers						qvkAllocateCommandBuffers;
+static PFN_vkAllocateDescriptorSets						qvkAllocateDescriptorSets;
+static PFN_vkAllocateMemory								qvkAllocateMemory;
+static PFN_vkBeginCommandBuffer							qvkBeginCommandBuffer;
+static PFN_vkBindBufferMemory							qvkBindBufferMemory;
+static PFN_vkBindImageMemory							qvkBindImageMemory;
+static PFN_vkCmdBeginRenderPass							qvkCmdBeginRenderPass;
+static PFN_vkCmdBindDescriptorSets						qvkCmdBindDescriptorSets;
+static PFN_vkCmdBindIndexBuffer							qvkCmdBindIndexBuffer;
+static PFN_vkCmdBindPipeline							qvkCmdBindPipeline;
+static PFN_vkCmdBindVertexBuffers						qvkCmdBindVertexBuffers;
+static PFN_vkCmdBlitImage								qvkCmdBlitImage;
+static PFN_vkCmdClearAttachments						qvkCmdClearAttachments;
+static PFN_vkCmdCopyBuffer								qvkCmdCopyBuffer;
+static PFN_vkCmdCopyBufferToImage						qvkCmdCopyBufferToImage;
+static PFN_vkCmdCopyImage								qvkCmdCopyImage;
+static PFN_vkCmdDraw									qvkCmdDraw;
+static PFN_vkCmdDrawIndexed								qvkCmdDrawIndexed;
+static PFN_vkCmdEndRenderPass							qvkCmdEndRenderPass;
+static PFN_vkCmdNextSubpass								qvkCmdNextSubpass;
+static PFN_vkCmdPipelineBarrier							qvkCmdPipelineBarrier;
+static PFN_vkCmdPushConstants							qvkCmdPushConstants;
+static PFN_vkCmdSetDepthBias							qvkCmdSetDepthBias;
+static PFN_vkCmdSetScissor								qvkCmdSetScissor;
+static PFN_vkCmdSetViewport								qvkCmdSetViewport;
+static PFN_vkCreateBuffer								qvkCreateBuffer;
+static PFN_vkCreateCommandPool							qvkCreateCommandPool;
+static PFN_vkCreateDescriptorPool						qvkCreateDescriptorPool;
+static PFN_vkCreateDescriptorSetLayout					qvkCreateDescriptorSetLayout;
+static PFN_vkCreateFence								qvkCreateFence;
+static PFN_vkCreateFramebuffer							qvkCreateFramebuffer;
+static PFN_vkCreateGraphicsPipelines					qvkCreateGraphicsPipelines;
+static PFN_vkCreateImage								qvkCreateImage;
+static PFN_vkCreateImageView							qvkCreateImageView;
+static PFN_vkCreatePipelineLayout						qvkCreatePipelineLayout;
+static PFN_vkCreatePipelineCache						qvkCreatePipelineCache;
+static PFN_vkCreateRenderPass							qvkCreateRenderPass;
+static PFN_vkCreateSampler								qvkCreateSampler;
+static PFN_vkCreateSemaphore							qvkCreateSemaphore;
+static PFN_vkCreateShaderModule							qvkCreateShaderModule;
+static PFN_vkDestroyBuffer								qvkDestroyBuffer;
+static PFN_vkDestroyCommandPool							qvkDestroyCommandPool;
+static PFN_vkDestroyDescriptorPool						qvkDestroyDescriptorPool;
+static PFN_vkDestroyDescriptorSetLayout					qvkDestroyDescriptorSetLayout;
+static PFN_vkDestroyDevice								qvkDestroyDevice;
+static PFN_vkDestroyFence								qvkDestroyFence;
+static PFN_vkDestroyFramebuffer							qvkDestroyFramebuffer;
+static PFN_vkDestroyImage								qvkDestroyImage;
+static PFN_vkDestroyImageView							qvkDestroyImageView;
+static PFN_vkDestroyPipeline							qvkDestroyPipeline;
+static PFN_vkDestroyPipelineCache						qvkDestroyPipelineCache;
+static PFN_vkDestroyPipelineLayout						qvkDestroyPipelineLayout;
+static PFN_vkDestroyRenderPass							qvkDestroyRenderPass;
+static PFN_vkDestroySampler								qvkDestroySampler;
+static PFN_vkDestroySemaphore							qvkDestroySemaphore;
+static PFN_vkDestroyShaderModule						qvkDestroyShaderModule;
+static PFN_vkDeviceWaitIdle								qvkDeviceWaitIdle;
+static PFN_vkEndCommandBuffer							qvkEndCommandBuffer;
+static PFN_vkFlushMappedMemoryRanges					qvkFlushMappedMemoryRanges;
+static PFN_vkFreeCommandBuffers							qvkFreeCommandBuffers;
+static PFN_vkFreeDescriptorSets							qvkFreeDescriptorSets;
+static PFN_vkFreeMemory									qvkFreeMemory;
+static PFN_vkGetBufferMemoryRequirements				qvkGetBufferMemoryRequirements;
+static PFN_vkGetDeviceQueue								qvkGetDeviceQueue;
+static PFN_vkGetImageMemoryRequirements					qvkGetImageMemoryRequirements;
+static PFN_vkGetImageSubresourceLayout					qvkGetImageSubresourceLayout;
+static PFN_vkInvalidateMappedMemoryRanges				qvkInvalidateMappedMemoryRanges;
+static PFN_vkMapMemory									qvkMapMemory;
+static PFN_vkQueueSubmit								qvkQueueSubmit;
+static PFN_vkQueueWaitIdle								qvkQueueWaitIdle;
+static PFN_vkResetCommandBuffer							qvkResetCommandBuffer;
+static PFN_vkResetDescriptorPool						qvkResetDescriptorPool;
+static PFN_vkResetFences								qvkResetFences;
+static PFN_vkUnmapMemory								qvkUnmapMemory;
+static PFN_vkUpdateDescriptorSets						qvkUpdateDescriptorSets;
+static PFN_vkWaitForFences								qvkWaitForFences;
+static PFN_vkAcquireNextImageKHR						qvkAcquireNextImageKHR;
+static PFN_vkCreateSwapchainKHR							qvkCreateSwapchainKHR;
+static PFN_vkDestroySwapchainKHR						qvkDestroySwapchainKHR;
+static PFN_vkGetSwapchainImagesKHR						qvkGetSwapchainImagesKHR;
+static PFN_vkQueuePresentKHR							qvkQueuePresentKHR;
 
-PFN_vkGetBufferMemoryRequirements2KHR			qvkGetBufferMemoryRequirements2KHR;
-PFN_vkGetImageMemoryRequirements2KHR			qvkGetImageMemoryRequirements2KHR;
+static PFN_vkGetBufferMemoryRequirements2KHR			qvkGetBufferMemoryRequirements2KHR;
+static PFN_vkGetImageMemoryRequirements2KHR				qvkGetImageMemoryRequirements2KHR;
 
-PFN_vkDebugMarkerSetObjectNameEXT				qvkDebugMarkerSetObjectNameEXT;
+static PFN_vkDebugMarkerSetObjectNameEXT				qvkDebugMarkerSetObjectNameEXT;
 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -457,27 +455,30 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 			present_mode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
 		else
 			present_mode = VK_PRESENT_MODE_FIFO_KHR;
-		image_count = MAX(MIN_SWAPCHAIN_IMAGES_FIFO, surface_caps.minImageCount);
+		image_count = MAX( MIN_SWAPCHAIN_IMAGES_FIFO, surface_caps.minImageCount );
 	} else {
 		if ( immediate_supported ) {
 			present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
-			image_count = MAX(MIN_SWAPCHAIN_IMAGES_IMM, surface_caps.minImageCount);
+			image_count = MAX( MIN_SWAPCHAIN_IMAGES_IMM, surface_caps.minImageCount );
 		} else if ( mailbox_supported ) {
 			present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
-			image_count = MAX(MIN_SWAPCHAIN_IMAGES_MAILBOX, surface_caps.minImageCount);
+			image_count = MAX( MIN_SWAPCHAIN_IMAGES_MAILBOX, surface_caps.minImageCount );
 		} else if ( fifo_relaxed_supported ) {
 			present_mode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
-			image_count = MAX(MIN_SWAPCHAIN_IMAGES_FIFO, surface_caps.minImageCount);
+			image_count = MAX( MIN_SWAPCHAIN_IMAGES_FIFO, surface_caps.minImageCount );
 		} else {
 			present_mode = VK_PRESENT_MODE_FIFO_KHR;
-			image_count = MAX(MIN_SWAPCHAIN_IMAGES_FIFO, surface_caps.minImageCount);
-		}
-		if ( image_count < 2 ) {
-			image_count = 2;
+			image_count = MAX( MIN_SWAPCHAIN_IMAGES_FIFO, surface_caps.minImageCount );
 		}
 	}
 
-	if ( surface_caps.maxImageCount > 0 ) {
+	if ( image_count < 2 ) {
+		image_count = 2;
+	}
+
+	if ( surface_caps.maxImageCount == 0 && present_mode == VK_PRESENT_MODE_FIFO_KHR ) {
+		image_count = MAX( MIN_SWAPCHAIN_IMAGES_FIFO_0, surface_caps.minImageCount );
+	} else if ( surface_caps.maxImageCount > 0 ) {
 		image_count = MIN( MIN( image_count, surface_caps.maxImageCount ), MAX_SWAPCHAIN_IMAGES );
 	}
 
@@ -1045,6 +1046,9 @@ static qboolean used_instance_extension( const char *ext )
 	if ( u && Q_stricmp( u + 1, "surface" ) == 0 )
 		return qtrue;
 
+	if ( Q_stricmp( ext, VK_KHR_DISPLAY_EXTENSION_NAME ) == 0 )
+		return qtrue; // needed for KMSDRM instances/devices?
+
 	if ( Q_stricmp( ext, VK_KHR_SWAPCHAIN_EXTENSION_NAME ) == 0 )
 		return qtrue;
 
@@ -1054,6 +1058,12 @@ static qboolean used_instance_extension( const char *ext )
 #endif
 
 	if ( Q_stricmp( ext, VK_EXT_DEBUG_UTILS_EXTENSION_NAME ) == 0 )
+		return qtrue;
+
+	if ( Q_stricmp( ext, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME ) == 0 )
+		return qtrue;
+
+	if ( Q_stricmp( ext, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME ) == 0 )
 		return qtrue;
 
 	return qfalse;
@@ -1067,12 +1077,14 @@ static void create_instance( void )
 	const char* validation_layer_name2 = "VK_LAYER_KHRONOS_validation";
 #endif
 	VkInstanceCreateInfo desc;
+	VkInstanceCreateFlags flags;
 	VkExtensionProperties *extension_properties;
 	VkResult res;
-	const char **extension_names, *ext;
+	const char **extension_names;
 	uint32_t i, n, count, extension_count;
 	VkApplicationInfo appInfo;
 
+	flags = 0;
 	count = 0;
 	extension_count = 0;
 	VK_CHECK(qvkEnumerateInstanceExtensionProperties(NULL, &count, NULL));
@@ -1082,19 +1094,29 @@ static void create_instance( void )
 
 	VK_CHECK( qvkEnumerateInstanceExtensionProperties( NULL, &count, extension_properties ) );
 	for ( i = 0; i < count; i++ ) {
-		ext = extension_properties[i].extensionName;
+		const char *ext = extension_properties[i].extensionName;
+
 		if ( !used_instance_extension( ext ) ) {
 			continue;
 		}
+
+		// search for duplicates
 		for ( n = 0; n < extension_count; n++ ) {
 			if ( Q_stricmp( ext, extension_names[ n ] ) == 0 ) {
 				break;
 			}
 		}
 		if ( n != extension_count ) {
-			continue; // skip duplicate
+			continue;
 		}
+
 		extension_names[ extension_count++ ] = ext;
+
+		if ( Q_stricmp( ext, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME ) == 0 ) {
+			flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+		}
+
+		ri.Printf(PRINT_DEVELOPER, "instance extension: %s\n", ext);
 	}
 
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -1108,7 +1130,7 @@ static void create_instance( void )
 	// create instance
 	desc.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	desc.pNext = NULL;
-	desc.flags = 0;
+	desc.flags = flags;
 	desc.pApplicationInfo = &appInfo;
 	desc.enabledExtensionCount = extension_count;
 	desc.ppEnabledExtensionNames = extension_names;
@@ -2931,7 +2953,7 @@ static void vk_alloc_attachments( void )
 static void vk_add_attachment_desc( VkImage desc, VkImageView *image_view, VkImageUsageFlags usage, VkMemoryRequirements *reqs, VkFormat image_format, VkImageAspectFlags aspect_flags, VkAccessFlags access_flags, VkImageLayout image_layout )
 {
 	if ( num_attachments >= ARRAY_LEN( attachments ) ) {
-		ri.Error( ERR_FATAL, "Attachments array ovrerlow" );
+		ri.Error( ERR_FATAL, "Attachments array overflow" );
 	} else {
 		attachments[ num_attachments ].descriptor = desc;
 		attachments[ num_attachments ].image_view = image_view;
@@ -4081,6 +4103,7 @@ __cleanup:
 		qvkDestroyInstance( vk.instance, NULL );
 
 	Com_Memset( &vk, 0, sizeof( vk ) );
+	Com_Memset( &vk_world, 0, sizeof( vk_world ) );
 
 	deinit_vulkan_library();
 }
@@ -4251,6 +4274,73 @@ void vk_create_image( image_t *image, int width, int height, int mip_levels ) {
 }
 
 
+static byte *resample_image_data( const int target_format, byte *data, const int data_size, int *bytes_per_pixel )
+{
+	byte* buffer;
+	uint16_t* p;
+	int i, n;
+
+	switch ( target_format ) {
+	case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
+		buffer = (byte*)ri.Hunk_AllocateTempMemory( data_size / 2 );
+		p = (uint16_t*)buffer;
+		for ( i = 0; i < data_size; i += 4, p++ ) {
+			byte r = data[i + 0];
+			byte g = data[i + 1];
+			byte b = data[i + 2];
+			byte a = data[i + 3];
+			*p = (uint32_t)((a / 255.0) * 15.0 + 0.5) |
+				((uint32_t)((r / 255.0) * 15.0 + 0.5) << 4) |
+				((uint32_t)((g / 255.0) * 15.0 + 0.5) << 8) |
+				((uint32_t)((b / 255.0) * 15.0 + 0.5) << 12);
+		}
+		*bytes_per_pixel = 2;
+		return buffer; // must be freed after upload!
+
+	case VK_FORMAT_A1R5G5B5_UNORM_PACK16:
+		buffer = (byte*)ri.Hunk_AllocateTempMemory( data_size / 2 );
+		p = (uint16_t*)buffer;
+		for ( i = 0; i < data_size; i += 4, p++ ) {
+			byte r = data[i + 0];
+			byte g = data[i + 1];
+			byte b = data[i + 2];
+			*p = (uint32_t)((b / 255.0) * 31.0 + 0.5) |
+				((uint32_t)((g / 255.0) * 31.0 + 0.5) << 5) |
+				((uint32_t)((r / 255.0) * 31.0 + 0.5) << 10) |
+				(1 << 15);
+		}
+		*bytes_per_pixel = 2;
+		return buffer; // must be freed after upload!
+
+	case VK_FORMAT_B8G8R8A8_UNORM:
+		buffer = (byte*)ri.Hunk_AllocateTempMemory( data_size );
+		for ( i = 0; i < data_size; i += 4 ) {
+			buffer[i + 0] = data[i + 2];
+			buffer[i + 1] = data[i + 1];
+			buffer[i + 2] = data[i + 0];
+			buffer[i + 3] = data[i + 3];
+		}
+		*bytes_per_pixel = 4;
+		return buffer;
+
+	case VK_FORMAT_R8G8B8_UNORM: {
+		buffer = (byte*)ri.Hunk_AllocateTempMemory( (data_size * 3) / 4 );
+		for ( i = 0, n = 0; i < data_size; i += 4, n += 3 ) {
+			buffer[n + 0] = data[i + 0];
+			buffer[n + 1] = data[i + 1];
+			buffer[n + 2] = data[i + 2];
+		}
+		*bytes_per_pixel = 3;
+		return buffer;
+	}
+
+	default:
+		*bytes_per_pixel = 4;
+		return data;
+	}
+}
+
+
 void vk_upload_image_data( image_t *image, int x, int y, int width, int height, int mipmaps, byte *pixels, int size ) {
 
 	VkCommandBuffer command_buffer;
@@ -4262,7 +4352,7 @@ void vk_upload_image_data( image_t *image, int x, int y, int width, int height, 
 	int num_regions = 0;
 	int buffer_size = 0;
 
-	buf = resample_image_data( image, pixels, size, &bpp );
+	buf = resample_image_data( image->internalFormat, pixels, size, &bpp );
 
 	while (qtrue) {
 		Com_Memset(&region, 0, sizeof(region));
@@ -4354,6 +4444,23 @@ void vk_update_descriptor_set( image_t *image, qboolean mipmap ) {
 }
 
 
+void vk_destroy_image_resources( VkImage *image, VkImageView *imageView )
+{
+	if ( image != NULL ) {
+		if ( *image != VK_NULL_HANDLE ) {
+			qvkDestroyImage( vk.device, *image, NULL );
+			*image = VK_NULL_HANDLE;
+		}
+	}
+	if ( imageView != NULL ) {
+		if ( *imageView != VK_NULL_HANDLE ) {
+			qvkDestroyImageView( vk.device, *imageView, NULL );
+			*imageView = VK_NULL_HANDLE;
+		}
+	}
+}
+
+
 static void set_shader_stage_desc(VkPipelineShaderStageCreateInfo *desc, VkShaderStageFlagBits stage, VkShaderModule shader_module, const char *entry) {
 	desc->sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	desc->pNext = NULL;
@@ -4362,6 +4469,36 @@ static void set_shader_stage_desc(VkPipelineShaderStageCreateInfo *desc, VkShade
 	desc->module = shader_module;
 	desc->pName = entry;
 	desc->pSpecializationInfo = NULL;
+}
+
+
+#define FORMAT_DEPTH(format, r_bits, g_bits, b_bits) case(VK_FORMAT_##format): *r = r_bits; *b = b_bits; *g = g_bits; return qtrue;
+static qboolean vk_surface_format_color_depth( VkFormat format, int *r, int *g, int *b ) {
+	switch (format) {
+		// Common formats from https://vulkan.gpuinfo.org/listsurfaceformats.php
+		FORMAT_DEPTH(B8G8R8A8_UNORM, 255, 255, 255)
+			FORMAT_DEPTH(B8G8R8A8_SRGB, 255, 255, 255)
+			FORMAT_DEPTH(A2B10G10R10_UNORM_PACK32, 1023, 1023, 1023)
+			FORMAT_DEPTH(R8G8B8A8_UNORM, 255, 255, 255)
+			FORMAT_DEPTH(R8G8B8A8_SRGB, 255, 255, 255)
+			FORMAT_DEPTH(A2R10G10B10_UNORM_PACK32, 1023, 1023, 1023)
+			FORMAT_DEPTH(R5G6B5_UNORM_PACK16, 31, 63, 31)
+			FORMAT_DEPTH(R8G8B8A8_SNORM, 255, 255, 255)
+			FORMAT_DEPTH(A8B8G8R8_UNORM_PACK32, 255, 255, 255)
+			FORMAT_DEPTH(A8B8G8R8_SNORM_PACK32, 255, 255, 255)
+			FORMAT_DEPTH(A8B8G8R8_SRGB_PACK32, 255, 255, 255)
+			FORMAT_DEPTH(R16G16B16A16_UNORM, 65535, 65535, 65535)
+			FORMAT_DEPTH(R16G16B16A16_SNORM, 65535, 65535, 65535)
+			FORMAT_DEPTH(B5G6R5_UNORM_PACK16, 31, 63, 31)
+			FORMAT_DEPTH(B8G8R8A8_SNORM, 255, 255, 255)
+			FORMAT_DEPTH(R4G4B4A4_UNORM_PACK16, 15, 15, 15)
+			FORMAT_DEPTH(B4G4R4A4_UNORM_PACK16, 15, 15, 15)
+			FORMAT_DEPTH(A1R5G5B5_UNORM_PACK16, 31, 31, 31)
+			FORMAT_DEPTH(R5G5B5A1_UNORM_PACK16, 31, 31, 31)
+			FORMAT_DEPTH(B5G5R5A1_UNORM_PACK16, 31, 31, 31)
+	default:
+		*r = 255; *g = 255; *b = 255; return qfalse;
+	}
 }
 
 
@@ -6016,6 +6153,12 @@ void vk_bind_index_buffer( VkBuffer buffer, uint32_t offset )
 }
 
 
+void vk_draw_indexed( uint32_t indexCount, uint32_t firstIndex )
+{
+	qvkCmdDrawIndexed( vk.cmd->command_buffer, indexCount, 1, firstIndex, 0, 0 );
+}
+
+
 void vk_bind_index( void )
 {
 #ifdef USE_VBO
@@ -6290,7 +6433,7 @@ static void vk_begin_render_pass( VkRenderPass renderPass, VkFramebuffer frameBu
 	render_pass_begin_info.renderArea.extent.height = height;
 
 	if ( clearValues ) {
-		/// attachments layout:
+		// attachments layout:
 		// [0] - resolve/color/presentation
 		// [1] - depth/stencil
 		// [2] - multisampled color, optional
@@ -6379,7 +6522,7 @@ void vk_begin_blur_render_pass( uint32_t index )
 }
 
 
-void vk_begin_screenmap_render_pass( void )
+static void vk_begin_screenmap_render_pass( void )
 {
 	VkFramebuffer frameBuffer = vk.framebuffers.screenmap;
 
@@ -6468,6 +6611,15 @@ void vk_begin_frame( void )
 		//vk.cmd_index %= NUM_COMMAND_BUFFERS;
 
 		vk.cmd->waitForFence = qfalse;
+		res = qvkWaitForFences( vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e10 );
+		if ( res != VK_SUCCESS ) {
+			if ( res == VK_ERROR_DEVICE_LOST ) {
+				// silently discard previous command buffer
+				ri.Printf( PRINT_WARNING, "Vulkan: %s returned %s", "vkWaitForfences", vk_result_string( res ) );
+			} else {
+				ri.Error( ERR_FATAL, "Vulkan: %s returned %s", "vkWaitForfences", vk_result_string( res ) );
+			}
+		}
 		VK_CHECK( qvkWaitForFences( vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e10 ) );
 	} else {
 		// current command buffer has been reset due to geometry buffer overflow/update
@@ -6571,7 +6723,7 @@ static void vk_resize_geometry_buffer( void )
 
 void vk_end_frame( void )
 {
-	VkPipelineStageFlags wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	const VkPipelineStageFlags wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	VkPresentInfoKHR present_info;
 	VkSubmitInfo submit_info;
 	VkResult res;
@@ -7035,33 +7187,4 @@ qboolean vk_bloom( void )
 	backEnd.doneBloom = qtrue;
 
 	return qtrue;
-}
-
-#define FORMAT_DEPTH(format, r_bits, g_bits, b_bits) case(VK_FORMAT_##format): *r = r_bits; *b = b_bits; *g = g_bits; return qtrue;
-qboolean vk_surface_format_color_depth(VkFormat format, int* r, int* g, int* b) {
-	switch (format) {
-		// Common formats from https://vulkan.gpuinfo.org/listsurfaceformats.php
-		FORMAT_DEPTH(B8G8R8A8_UNORM, 255, 255, 255)
-		FORMAT_DEPTH(B8G8R8A8_SRGB, 255, 255, 255)
-		FORMAT_DEPTH(A2B10G10R10_UNORM_PACK32, 1023, 1023, 1023)
-		FORMAT_DEPTH(R8G8B8A8_UNORM, 255, 255, 255)
-		FORMAT_DEPTH(R8G8B8A8_SRGB, 255, 255, 255)
-		FORMAT_DEPTH(A2R10G10B10_UNORM_PACK32, 1023, 1023, 1023)
-		FORMAT_DEPTH(R5G6B5_UNORM_PACK16, 31, 63, 31)
-		FORMAT_DEPTH(R8G8B8A8_SNORM, 255, 255, 255)
-		FORMAT_DEPTH(A8B8G8R8_UNORM_PACK32, 255, 255, 255)
-		FORMAT_DEPTH(A8B8G8R8_SNORM_PACK32, 255, 255, 255)
-		FORMAT_DEPTH(A8B8G8R8_SRGB_PACK32, 255, 255, 255)
-		FORMAT_DEPTH(R16G16B16A16_UNORM, 65535, 65535, 65535)
-		FORMAT_DEPTH(R16G16B16A16_SNORM, 65535, 65535, 65535)
-		FORMAT_DEPTH(B5G6R5_UNORM_PACK16, 31, 63, 31)
-		FORMAT_DEPTH(B8G8R8A8_SNORM, 255, 255, 255)
-		FORMAT_DEPTH(R4G4B4A4_UNORM_PACK16, 15, 15, 15)
-		FORMAT_DEPTH(B4G4R4A4_UNORM_PACK16, 15, 15, 15)
-		FORMAT_DEPTH(A1R5G5B5_UNORM_PACK16, 31, 31, 31)
-		FORMAT_DEPTH(R5G5B5A1_UNORM_PACK16, 31, 31, 31)
-		FORMAT_DEPTH(B5G5R5A1_UNORM_PACK16, 31, 31, 31)
-	default:
-		*r = 255; *g = 255; *b = 255; return qfalse;
-	}
 }

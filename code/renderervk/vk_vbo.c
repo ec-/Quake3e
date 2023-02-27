@@ -39,7 +39,7 @@ instead of tesselation like for regular surfaces. Using items queue also
 eleminates run-time tesselation limits.
 
 When it is time to render - we sort queued items to get longest possible
-index sequence run to check if its long enough i.e. worth issuing a draw call.
+index sequence run to check if it is long enough i.e. worth issuing a draw call.
 So long device-local index runs are rendered via multiple draw calls,
 all remaining short index sequences are grouped together into single
 host-visible index buffer which is finally rendered via single draw call.
@@ -141,13 +141,18 @@ static qboolean isStaticTCgen( const shaderStage_t *stage, int bundle )
 
 static qboolean isStaticTCmod( const textureBundle_t *bundle )
 {
-	texMod_t type;
 	int i;
 
 	for ( i = 0; i < bundle->numTexMods; i++ ) {
-		type = bundle->texMods[i].type;
-		if ( type != TMOD_NONE && type != TMOD_SCALE && type != TMOD_TRANSFORM ) {
-			return qfalse;
+		switch ( bundle->texMods[i].type ) {
+			case TMOD_NONE:
+			case TMOD_SCALE:
+			case TMOD_TRANSFORM:
+			case TMOD_OFFSET:
+			case TMOD_SCALE_OFFSET:
+				break;
+			default:
+				return qfalse;
 		}
 	}
 
@@ -837,7 +842,7 @@ void VBO_RenderIBOItems( void )
 
 		for ( i = 0; i < vbo->ibo_items_count; i++ )
 		{
-			qvkCmdDrawIndexed( vk.cmd->command_buffer, vbo->ibo_items[ i ].length, 1,  vbo->ibo_items[ i ].offset, 0, 0 );
+			vk_draw_indexed( vbo->ibo_items[ i ].length, vbo->ibo_items[ i ].offset );
 		}
 	}
 
@@ -846,7 +851,7 @@ void VBO_RenderIBOItems( void )
 	{
 		vk_bind_index_buffer( vk.cmd->vertex_buffer, vbo->soft_buffer_offset );
 
-		qvkCmdDrawIndexed( vk.cmd->command_buffer, vbo->soft_buffer_indexes, 1, 0, 0, 0 );
+		vk_draw_indexed( vbo->soft_buffer_indexes, 0 );
 	}
 }
 

@@ -88,17 +88,71 @@ Adds command text at the end of the buffer, does NOT add a final \n
 ============
 */
 void Cbuf_AddText( const char *text ) {
-	int l;
 
-	l = strlen (text);
+	const int l = (int)strlen( text );
 
 	if (cmd_text.cursize + l >= cmd_text.maxsize)
 	{
 		Com_Printf ("Cbuf_AddText: overflow\n");
 		return;
 	}
+
 	Com_Memcpy(&cmd_text.data[cmd_text.cursize], text, l);
 	cmd_text.cursize += l;
+}
+
+
+/*
+============
+Cbuf_Add
+
+// Adds command text at the specified position of the buffer, adds \n when needed
+============
+*/
+int Cbuf_Add( const char *text, int pos ) {
+
+	int len = (int)strlen( text );
+	qboolean separate = qfalse;
+	int i;
+
+	if ( len == 0 ) {
+		return cmd_text.cursize;
+	}
+
+	if ( pos > cmd_text.cursize || pos < 0 ) {
+		// insert at the text end
+		pos = cmd_text.cursize;
+	}
+
+	if ( text[len - 1] == '\n' || text[len - 1] == ';' ) {
+		// command already has separator
+	} else {
+		separate = qtrue;
+		len += 1;
+	}
+
+	if ( len + cmd_text.cursize > cmd_text.maxsize ) {
+		Com_Printf( S_COLOR_YELLOW "%s(%i) overflowed\n", __func__, pos );
+		return cmd_text.cursize;
+	}
+
+	// move the existing command text
+	for ( i = cmd_text.cursize - 1; i >= pos; i-- ) {
+		cmd_text.data[i + len] = cmd_text.data[i];
+	}
+
+	if ( separate ) {
+		// copy the new text in + add a \n
+		Com_Memcpy( cmd_text.data + pos, text, len - 1 );
+		cmd_text.data[pos + len - 1] = '\n';
+	} else {
+		// copy the new text in
+		Com_Memcpy( cmd_text.data + pos, text, len );
+	}
+
+	cmd_text.cursize += len;
+
+	return pos + len;
 }
 
 
@@ -110,7 +164,7 @@ Adds command text immediately after the current command
 Adds a \n to the text
 ============
 */
-static void Cbuf_InsertText( const char *text ) {
+void Cbuf_InsertText( const char *text ) {
 	int		len;
 	int		i;
 
@@ -392,7 +446,7 @@ void Cmd_Clear( void ) {
 Cmd_Argv
 ============
 */
-char *Cmd_Argv( int arg ) {
+const char *Cmd_Argv( int arg ) {
 	if ( (unsigned)arg >= cmd_argc ) {
 		return "";
 	}
@@ -726,7 +780,7 @@ Only remove commands with no associated function
 */
 void Cmd_RemoveCommandSafe( const char *cmd_name )
 {
-	cmd_function_t *cmd = Cmd_FindCommand( cmd_name );
+	const cmd_function_t *cmd = Cmd_FindCommand( cmd_name );
 
 	if( !cmd )
 		return;
@@ -750,7 +804,7 @@ Remove cgame-created commands
 */
 void Cmd_RemoveCgameCommands( void )
 {
-	cmd_function_t *cmd;
+	const cmd_function_t *cmd;
 	qboolean removed;
 
 	do {
@@ -785,7 +839,7 @@ void Cmd_CommandCompletion( void(*callback)(const char *s) ) {
 Cmd_CompleteArgument
 ============
 */
-qboolean Cmd_CompleteArgument( const char *command, char *args, int argNum ) {
+qboolean Cmd_CompleteArgument( const char *command, const char *args, int argNum ) {
 	const cmd_function_t *cmd;
 
 	for( cmd = cmd_functions; cmd; cmd = cmd->next ) {
@@ -901,7 +955,7 @@ static void Cmd_List_f( void )
 Cmd_CompleteCfgName
 ==================
 */
-static void Cmd_CompleteCfgName( char *args, int argNum ) {
+static void Cmd_CompleteCfgName( const char *args, int argNum ) {
 	if( argNum == 2 ) {
 		Field_CompleteFilename( "", "cfg", qfalse, FS_MATCH_ANY | FS_MATCH_STICK );
 	}
@@ -913,7 +967,7 @@ static void Cmd_CompleteCfgName( char *args, int argNum ) {
 Cmd_CompleteWriteCfgName
 ==================
 */
-void Cmd_CompleteWriteCfgName( char *args, int argNum ) {
+void Cmd_CompleteWriteCfgName( const char *args, int argNum ) {
 	if( argNum == 2 ) {
 		Field_CompleteFilename( "", "cfg", qfalse, FS_MATCH_EXTERN | FS_MATCH_STICK );
 	}

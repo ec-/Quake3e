@@ -566,9 +566,9 @@ void Key_KeynameCompletion( void(*callback)(const char *s) ) {
 Key_CompleteBind
 ====================
 */
-static void Key_CompleteBind( char *args, int argNum )
+static void Key_CompleteBind( const char *args, int argNum )
 {
-	char *p;
+	const char *p;
 
 	if ( argNum == 2 )
 	{
@@ -597,12 +597,12 @@ static void Key_CompleteBind( char *args, int argNum )
 Key_CompleteUnbind
 ====================
 */
-static void Key_CompleteUnbind( char *args, int argNum )
+static void Key_CompleteUnbind( const char *args, int argNum )
 {
 	if ( argNum == 2 )
 	{
 		// Skip "unbind "
-		char *p = Com_SkipTokens( args, 1, " " );
+		const char *p = Com_SkipTokens( args, 1, " " );
 
 		if ( p > args )
 			Field_CompleteKeyname();
@@ -621,7 +621,7 @@ void Key_ParseBinding( int key, qboolean down, unsigned time )
 {
 	char buf[ MAX_STRING_CHARS ], *p, *end;
 
-	if( !keys[key].binding || !keys[key].binding[0] )
+	if( !keys[key].binding || keys[key].binding[0] == '\0' )
 		return;
 
 	p = buf;
@@ -641,11 +641,12 @@ void Key_ParseBinding( int key, qboolean down, unsigned time )
 			// so that multiple sources can be discriminated and
 			// subframe corrected
 			char cmd[1024];
-			Com_sprintf( cmd, sizeof( cmd ), "%c%s %d %d\n",
-				( down ) ? '+' : '-', p + 1, key, time );
+			Com_sprintf( cmd, sizeof( cmd ), "%c%s %d %d\n", ( down ) ? '+' : '-', p + 1, key, time );
 			Cbuf_AddText( cmd );
+			if ( down )
+				keys[ key ].bound = qtrue;
 		}
-		else if( down )
+		else if ( down )
 		{
 			// normal commands only execute on key press
 			Cbuf_AddText( p );
@@ -665,7 +666,7 @@ Com_InitKeyCommands
 */
 void Com_InitKeyCommands( void )
 {
-	// register our functions
+	// register client functions
 	Cmd_AddCommand( "bind", Key_Bind_f );
 	Cmd_SetCommandCompletionFunc( "bind", Key_CompleteBind );
 	Cmd_AddCommand( "unbind", Key_Unbind_f );

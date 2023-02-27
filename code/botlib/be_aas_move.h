@@ -35,20 +35,20 @@ extern aas_settings_t aassettings;
 
 //movement prediction
 int AAS_PredictClientMovement(struct aas_clientmove_s *move,
-							int entnum, vec3_t origin,
+							int entnum, const vec3_t origin,
 							int presencetype, int onground,
-							vec3_t velocity, vec3_t cmdmove,
+							const vec3_t velocity, const vec3_t cmdmove,
 							int cmdframes,
 							int maxframes, float frametime,
 							int stopevent, int stopareanum, int visualize);
 //predict movement until bounding box is hit
 int AAS_ClientMovementHitBBox(struct aas_clientmove_s *move,
-								int entnum, vec3_t origin,
+								int entnum, const vec3_t origin,
 								int presencetype, int onground,
-								vec3_t velocity, vec3_t cmdmove,
+								const vec3_t velocity, const vec3_t cmdmove,
 								int cmdframes,
 								int maxframes, float frametime,
-								vec3_t mins, vec3_t maxs, int visualize);
+								const vec3_t mins, const vec3_t maxs, int visualize);
 //returns true if on the ground at the given origin
 int AAS_OnGround(vec3_t origin, int presencetype, int passent);
 //returns true if swimming at the given origin

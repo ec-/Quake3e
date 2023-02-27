@@ -629,7 +629,7 @@ static int GLSL_InitGPUShader(shaderProgram_t * program, const char *name,
 	return result;
 }
 
-void GLSL_InitUniforms(shaderProgram_t *program)
+static void GLSL_InitUniforms(shaderProgram_t *program)
 {
 	int i, size;
 
@@ -679,7 +679,7 @@ void GLSL_InitUniforms(shaderProgram_t *program)
 	program->uniformBuffer = ri.Malloc(size);
 }
 
-void GLSL_FinishGPUShader(shaderProgram_t *program)
+static void GLSL_FinishGPUShader(shaderProgram_t *program)
 {
 	GLSL_ShowProgramUniforms(program->program);
 	GL_CheckErrors();
@@ -886,7 +886,7 @@ void GLSL_SetUniformMat4BoneMatrix(shaderProgram_t *program, int uniformNum, /*c
 	qglProgramUniformMatrix4fvEXT(program->program, uniforms[uniformNum], numMatricies, GL_FALSE, &matrix[0][0]);
 }
 
-void GLSL_DeleteGPUShader(shaderProgram_t *program)
+static void GLSL_DeleteGPUShader(shaderProgram_t *program)
 {
 	if(program->program)
 	{
@@ -1506,7 +1506,7 @@ void GLSL_BindProgram(shaderProgram_t * program)
 
 shaderProgram_t *GLSL_GetGenericShaderProgram(int stage)
 {
-	shaderStage_t *pStage = tess.xstages[stage];
+	const shaderStage_t *pStage = tess.xstages[stage];
 	int shaderAttribs = 0;
 
 	if (tess.fogNum && pStage->adjustColorsForFog)

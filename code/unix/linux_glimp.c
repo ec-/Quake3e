@@ -52,10 +52,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../client/client.h"
 #include "linux_local.h"
 #include "unix_glw.h"
+
+#ifdef USE_OPENGL_API
 #include "../renderer/qgl.h"
+#endif
 
-#include <GL/glx.h>
-
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <X11/keysym.h>
 #include <X11/cursorfont.h>
 #include <X11/Xatom.h>
@@ -100,7 +103,9 @@ Display *dpy = NULL;
 int scrnum;
 
 Window win = 0;
+#ifdef USE_OPENGL_API
 static GLXContext ctx = NULL;
+#endif
 static Atom wmDeleteEvent = None;
 static Atom motifWMHints = None;
 
@@ -1087,6 +1092,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 }
 
 
+#ifdef USE_OPENGL_API
 /*
 ** GLimp_Shutdown
 **
@@ -1162,6 +1168,7 @@ void GLimp_Shutdown( qboolean unloadDLL )
 
 	QGL_Shutdown( unloadDLL );
 }
+#endif // USE_OPENGL_API
 
 
 #ifdef USE_VULKAN_API
@@ -1233,7 +1240,7 @@ void VKimp_Shutdown( qboolean unloadDLL )
 /*
 ** GLimp_LogComment
 */
-void GLimp_LogComment( char *comment )
+void GLimp_LogComment( const char *comment )
 {
 	if ( glw_state.log_fp )
 	{
@@ -1285,6 +1292,7 @@ static rserr_t GLW_StartDriverAndSetMode( int mode, const char *modeFS, qboolean
 }
 
 
+#ifdef USE_OPENGL_API
 static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbits, glconfig_t *config )
 {
 	// these match in the array
@@ -1399,6 +1407,7 @@ static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbi
 
 	return visinfo;
 }
+#endif // USE_OPENGL_API
 
 
 #ifdef USE_VULKAN_API
@@ -1465,7 +1474,7 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 {
 	glconfig_t *config = glw_state.config;
 	Window root;
-	XVisualInfo *visinfo;
+	XVisualInfo *visinfo = NULL;
 
 	XSetWindowAttributes attr;
 	XSizeHints sizehints;
@@ -1576,9 +1585,11 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 #ifdef USE_VULKAN_API
 	if ( vulkan )
 		visinfo = VK_SelectVisual( colorbits, depthbits, stencilbits, config );
-	else
 #endif
+#ifdef USE_OPENGL_API
+	if ( !vulkan )
 		visinfo = GL_SelectVisual( colorbits, depthbits, stencilbits, config );
+#endif
 
 	if ( !visinfo )
 	{
@@ -1667,13 +1678,8 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 //	XSync( dpy, False );
 
 	// create rendering context
-#ifdef USE_VULKAN_API
-	if ( vulkan )
-	{
-		// nothing to do
-	}
-	else
-#endif
+#ifdef USE_OPENGL_API
+	if ( !vulkan )
 	{
 		ctx = qglXCreateContext( dpy, visinfo, NULL, True );
 
@@ -1690,6 +1696,11 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 			Com_Error( ERR_FATAL, "Error setting GLX context" );
 		}
 	}
+	else
+	{
+		// nothing to do
+	}
+#endif
 
 	Key_ClearStates();
 
@@ -1728,6 +1739,51 @@ void GLimp_InitGamma( glconfig_t *config )
 }
 
 
+/*
+** XErrorHandler
+**   the default X error handler exits the application
+**   I found out that on some hosts some operations would raise X errors (GLXUnsupportedPrivateRequest)
+**   but those don't seem to be fatal .. so the default would be to just ignore them
+**   our implementation mimics the default handler behaviour (not completely cause I'm lazy)
+*/
+static int qXErrorHandler( Display *dpy, XErrorEvent *ev )
+{
+	static char buf[1024];
+
+	XGetErrorText( dpy, ev->error_code, buf, sizeof( buf ) );
+	Com_Printf( "X Error of failed request: %s\n", buf) ;
+	Com_Printf( "  Major opcode of failed request: %d\n", ev->request_code );
+	Com_Printf( "  Minor opcode of failed request: %d\n", ev->minor_code );
+	Com_Printf( "  Serial number of failed request: %d\n", (int)ev->serial );
+
+#ifdef DEBUG
+	raise( SIGABRT );
+#endif
+
+	return 0;
+}
+
+
+static void InitCvars( void )
+{
+	// referenced in GLW_StartDriverAndSetMode() so must be inited there
+	in_nograb = Cvar_Get( "in_nograb", "0", 0 );
+	Cvar_SetDescription( in_nograb, "Do not capture mouse in game, may be useful during online streaming." );
+
+	// turn on-off sub-frame timing of X events, referenced in Sys_XTimeToSysTime
+	in_subframe = Cvar_Get( "in_subframe", "1", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( in_subframe, "Toggle X sub-frame event handling." );
+
+	in_dgamouse = Cvar_Get( "in_dgamouse", "1", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( in_dgamouse, "DGA Mouse support." );
+	in_shiftedKeys = Cvar_Get( "in_shiftedKeys", "0", CVAR_ARCHIVE_ND );
+
+	in_forceCharset = Cvar_Get( "in_forceCharset", "1", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( in_forceCharset, "Try to translate non-ASCII chars in keyboard input or force EN/US keyboard layout." );
+}
+
+
+#ifdef USE_OPENGL_API
 /*
 ** GLW_LoadOpenGL
 **
@@ -1807,46 +1863,6 @@ static qboolean GLW_StartOpenGL( void )
 
 
 /*
-** XErrorHandler
-**   the default X error handler exits the application
-**   I found out that on some hosts some operations would raise X errors (GLXUnsupportedPrivateRequest)
-**   but those don't seem to be fatal .. so the default would be to just ignore them
-**   our implementation mimics the default handler behaviour (not completely cause I'm lazy)
-*/
-int qXErrorHandler( Display *dpy, XErrorEvent *ev )
-{
-	static char buf[1024];
-
-	XGetErrorText( dpy, ev->error_code, buf, sizeof( buf ) );
-	Com_Printf( "X Error of failed request: %s\n", buf) ;
-	Com_Printf( "  Major opcode of failed request: %d\n", ev->request_code );
-	Com_Printf( "  Minor opcode of failed request: %d\n", ev->minor_code );
-	Com_Printf( "  Serial number of failed request: %d\n", (int)ev->serial );
-
-#ifdef DEBUG
-	raise( SIGABRT );
-#endif
-
-	return 0;
-}
-
-
-static void InitCvars( void )
-{
-	// referenced in GLW_StartDriverAndSetMode() so must be inited there
-	in_nograb = Cvar_Get( "in_nograb", "0", 0 );
-
-	// turn on-off sub-frame timing of X events, referenced in Sys_XTimeToSysTime
-	in_subframe = Cvar_Get( "in_subframe", "1", CVAR_ARCHIVE_ND );
-
-	in_dgamouse = Cvar_Get( "in_dgamouse", "1", CVAR_ARCHIVE_ND );
-	in_shiftedKeys = Cvar_Get( "in_shiftedKeys", "0", CVAR_ARCHIVE_ND );
-
-	in_forceCharset = Cvar_Get( "in_forceCharset", "1", CVAR_ARCHIVE_ND );
-}
-
-
-/*
 ** GLimp_Init
 **
 ** This routine is responsible for initializing the OS specific portions
@@ -1871,7 +1887,7 @@ void GLimp_Init( glconfig_t *config )
 		return;
 	}
 
-	// This values force the UI to disable driver selection
+	// These values force the UI to disable driver selection
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
 
@@ -1894,6 +1910,39 @@ void GLimp_Init( glconfig_t *config )
 
 	IN_Init();
 }
+
+
+/*
+** GLimp_EndFrame
+** 
+** Responsible for doing a swapbuffers and possibly for other stuff
+** as yet to be determined.  Probably better not to make this a GLimp
+** function and instead do a call to GLimp_SwapBuffers.
+*/
+void GLimp_EndFrame( void )
+{
+	//
+	// swapinterval stuff
+	//
+	if ( r_swapInterval->modified ) {
+		r_swapInterval->modified = qfalse;
+
+		if ( qglXSwapIntervalEXT ) {
+			qglXSwapIntervalEXT( dpy, win, r_swapInterval->integer );
+		} else if ( qglXSwapIntervalMESA ) {
+			qglXSwapIntervalMESA( r_swapInterval->integer );
+		} else if ( qglXSwapIntervalSGI ) {
+			qglXSwapIntervalSGI( r_swapInterval->integer );
+		}
+	}
+
+	// don't flip if drawing to front buffer
+	if ( Q_stricmp( cl_drawBuffer->string, "GL_FRONT" ) != 0 )
+	{
+		qglXSwapBuffers( dpy, win );
+	}
+}
+#endif // USE_OPENGL_API
 
 
 #ifdef USE_VULKAN_API
@@ -1967,7 +2016,7 @@ void VKimp_Init( glconfig_t *config )
 		return;
 	}
 
-	// This values force the UI to disable driver selection
+	// These values force the UI to disable driver selection
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
 
@@ -1976,38 +2025,6 @@ void VKimp_Init( glconfig_t *config )
 	IN_Init();
 }
 #endif // USE_VULKAN_API
-
-
-/*
-** GLimp_EndFrame
-** 
-** Responsible for doing a swapbuffers and possibly for other stuff
-** as yet to be determined.  Probably better not to make this a GLimp
-** function and instead do a call to GLimp_SwapBuffers.
-*/
-void GLimp_EndFrame( void )
-{
-	//
-	// swapinterval stuff
-	//
-	if ( r_swapInterval->modified ) {
-		r_swapInterval->modified = qfalse;
-
-		if ( qglXSwapIntervalEXT ) {
-			qglXSwapIntervalEXT( dpy, win, r_swapInterval->integer );
-		} else if ( qglXSwapIntervalMESA ) {
-			qglXSwapIntervalMESA( r_swapInterval->integer );
-		} else if ( qglXSwapIntervalSGI ) {
-			qglXSwapIntervalSGI( r_swapInterval->integer );
-		}
-	}
-
-	// don't flip if drawing to front buffer
-	if ( Q_stricmp( cl_drawBuffer->string, "GL_FRONT" ) != 0 )
-	{
-		qglXSwapBuffers( dpy, win );
-	}
-}
 
 
 /*****************************************************************************/
@@ -2022,6 +2039,10 @@ void IN_Init( void )
 
 	// mouse variables
 	in_mouse = Cvar_Get( "in_mouse", "1", CVAR_ARCHIVE );
+	Cvar_SetDescription( in_mouse,
+		"Mouse data input source:\n" \
+		"  0 - disable mouse input\n" \
+		"  1 - enable mouse input" );
 
 	if ( in_mouse->integer )
 	{
@@ -2035,9 +2056,11 @@ void IN_Init( void )
 #ifdef USE_JOYSTICK
 	// bk001130 - from cvs.17 (mkv), joystick variables
 	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_SetDescription( in_joystick, "Whether or not joystick support is on." );
 	// bk001130 - changed this to match win32
 	in_joystickDebug = Cvar_Get( "in_debugjoystick", "0", CVAR_TEMP );
 	joy_threshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE_ND ); // FIXME: in_joythreshold
+	Cvar_SetDescription( joy_threshold, "Threshold of joystick moving distance." );
 
 	IN_StartupJoystick(); // bk001130 - from cvs1.17 (mkv)
 #endif

@@ -743,73 +743,6 @@ static void generate_image_upload_data( image_t *image, byte *data, Image_Upload
 }
 
 
-byte *resample_image_data( const image_t *image, byte *data, const int data_size, int *bytes_per_pixel )
-{
-	byte *buffer;
-	uint16_t *p;
-	int i, n;
-
-	switch ( image->internalFormat ) {
-		case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
-			buffer = (byte*) ri.Hunk_AllocateTempMemory( data_size / 2 );
-			p = (uint16_t*)buffer;
-			for ( i = 0; i < data_size; i += 4, p++ ) {
-				byte r = data[i+0];
-				byte g = data[i+1];
-				byte b = data[i+2];
-				byte a = data[i+3];
-				*p = (uint32_t)((a/255.0) * 15.0 + 0.5) |
-					((uint32_t)((r/255.0) * 15.0 + 0.5) << 4) |
-					((uint32_t)((g/255.0) * 15.0 + 0.5) << 8) |
-					((uint32_t)((b/255.0) * 15.0 + 0.5) << 12);
-			}
-			*bytes_per_pixel = 2;
-			return buffer; // must be freed after upload!
-
-		case VK_FORMAT_A1R5G5B5_UNORM_PACK16:
-			buffer = (byte*) ri.Hunk_AllocateTempMemory( data_size / 2 );
-			p = (uint16_t*)buffer;
-			for ( i = 0; i < data_size; i += 4, p++ ) {
-				byte r = data[i+0];
-				byte g = data[i+1];
-				byte b = data[i+2];
-				*p = (uint32_t)((b/255.0) * 31.0 + 0.5) |
-					((uint32_t)((g/255.0) * 31.0 + 0.5) << 5) |
-					((uint32_t)((r/255.0) * 31.0 + 0.5) << 10) |
-					(1 << 15);
-			}
-			*bytes_per_pixel = 2;
-			return buffer; // must be freed after upload!
-
-		case VK_FORMAT_B8G8R8A8_UNORM:
-			buffer = (byte*) ri.Hunk_AllocateTempMemory( data_size );
-			for ( i = 0; i < data_size; i += 4 ) {
-				buffer[i+0] = data[i+2];
-				buffer[i+1] = data[i+1];
-				buffer[i+2] = data[i+0];
-				buffer[i+3] = data[i+3];
-			}
-			*bytes_per_pixel = 4;
-			return buffer;
-
-		case VK_FORMAT_R8G8B8_UNORM: {
-			buffer = (byte*)ri.Hunk_AllocateTempMemory( (data_size * 3) / 4 );
-			for ( i = 0, n = 0; i < data_size; i += 4, n += 3 ) {
-				buffer[n + 0] = data[i + 0];
-				buffer[n + 1] = data[i + 1];
-				buffer[n + 2] = data[i + 2];
-			}
-			*bytes_per_pixel = 3;
-			return buffer;
-		}
-
-		default:
-			*bytes_per_pixel = 4;
-			return data;
-	}
-}
-
-
 static void upload_vk_image( image_t *image, byte *pic ) {
 
 	Image_Upload_Data upload_data;
@@ -1224,7 +1157,7 @@ static const int numImageLoaders = ARRAY_LEN( imageLoaders );
 =================
 R_LoadImage
 
-Loads any of the supported image types into a cannonical
+Loads any of the supported image types into a canonical
 32 bit format.
 =================
 */
@@ -1700,12 +1633,6 @@ void R_SetColorMappings( void ) {
 	// setup the overbright lighting
 	// negative value will force gamma in windowed mode
 	tr.overbrightBits = abs( r_overBrightBits->integer );
-#ifdef USE_VULKAN
-	if ( !glConfig.deviceSupportsGamma && !vk.fboActive )
-#else
-	if ( !glConfig.deviceSupportsGamma )
-#endif
-		tr.overbrightBits = 0;		// need hardware gamma for overbright
 
 	// never overbright in windowed mode
 #ifdef USE_VULKAN
@@ -1716,7 +1643,16 @@ void R_SetColorMappings( void ) {
 		tr.overbrightBits = 0;
 		applyGamma = qfalse;
 	} else {
-		applyGamma = qtrue;
+#ifdef USE_VULKAN
+		if ( !glConfig.deviceSupportsGamma && !vk.fboActive ) {
+#else
+		if ( !glConfig.deviceSupportsGamma ) {
+#endif
+			tr.overbrightBits = 0; // need hardware gamma for overbright
+			applyGamma = qfalse;
+		} else {
+			applyGamma = qtrue;
+		}
 	}
 
 	// allow 2 overbright bits in 24 bit, but only 1 in 16 bit
@@ -1826,13 +1762,9 @@ void R_DeleteTextures( void ) {
 
 	for ( i = 0; i < tr.numImages; i++ ) {
 		img = tr.images[ i ];
+		vk_destroy_image_resources( &img->handle, &img->view );
+
 		// img->descriptor will be released with pool reset
-		if ( img->handle != VK_NULL_HANDLE ) {
-			qvkDestroyImage( vk.device, img->handle, NULL );
-			qvkDestroyImageView( vk.device, img->view, NULL );
-		}
-		img->handle = VK_NULL_HANDLE;
-		img->view = VK_NULL_HANDLE;
 	}
 #else
 	for ( i = 0; i < tr.numImages; i++ ) {
@@ -1871,7 +1803,7 @@ SKINS
 CommaParse
 
 This is unfortunate, but the skin files aren't
-compatable with our normal parsing rules.
+compatible with our normal parsing rules.
 ==================
 */
 static char *CommaParse( const char **data_p ) {

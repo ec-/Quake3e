@@ -614,8 +614,8 @@ void Sys_Sleep( int msec ) {
 	fd_set fdset;
 	int res;
 
-	if ( msec == 0 )
-		return;
+	//if ( msec == 0 )
+	//	return;
 
 	if ( msec < 0 ) {
 		// special case: wait for console input or network packet
@@ -637,7 +637,9 @@ void Sys_Sleep( int msec ) {
 		}
 		return;
 	}
-
+#if 1
+	usleep( msec * 1000 );
+#else
 	if ( com_dedicated->integer && stdin_active ) {
 		FD_ZERO( &fdset );
 		FD_SET( STDIN_FILENO, &fdset );
@@ -647,6 +649,7 @@ void Sys_Sleep( int msec ) {
 	} else {
 		usleep( msec * 1000 );
 	}
+#endif
 }
 
 
@@ -922,7 +925,9 @@ int main( int argc, const char* argv[] )
 	// Sys_ConsoleInputInit() might be called in signal handler
 	// so modify/init any cvars here
 	ttycon = Cvar_Get( "ttycon", "1", 0 );
+	Cvar_SetDescription(ttycon, "Enable access to input/output console terminal.");
 	ttycon_ansicolor = Cvar_Get( "ttycon_ansicolor", "0", CVAR_ARCHIVE );
+	Cvar_SetDescription(ttycon_ansicolor, "Convert in-game color codes to ANSI color codes in console terminal.");
 
 	err = Sys_ConsoleInputInit();
 	if ( err == TTY_ENABLED )

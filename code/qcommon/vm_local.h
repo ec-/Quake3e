@@ -36,7 +36,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define	PROGRAM_STACK_EXTRA	(32*1024)
 
 // reserved space for effective LOCAL+LOAD* checks
-// also to avoid runtime range checks for many small agruments/structs in systemcalls
+// also to avoid runtime range checks for many small arguments/structs in systemcalls
 #define	VM_DATA_GUARD_SIZE	1024
 
 // guard size must cover at least function arguments area
@@ -196,13 +196,13 @@ struct vm_s {
 	unsigned int codeSize;			// code + jump targets, needed for proper munmap()
 	unsigned int codeLength;		// just for information
 
-	int			instructionCount;
+	int32_t		instructionCount;
 	intptr_t	*instructionPointers;
 
-	unsigned int dataMask;
-	unsigned int dataLength;			// data segment length
-	unsigned int exactDataLength;	// from qvm header
-	unsigned int dataAlloc;			// actually allocated, for mmap()/munmap()
+	uint32_t	dataMask;
+	uint32_t	dataLength;			// data segment length
+	uint32_t	exactDataLength;	// from qvm header
+	uint32_t	dataAlloc;			// actually allocated, for mmap()/munmap()
 
 	int			numSymbols;
 	vmSymbol_t	*symbols;

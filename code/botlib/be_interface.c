@@ -116,7 +116,7 @@ static qboolean BotLibSetup(const char *str)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int Export_BotLibSetup( void )
+static int Export_BotLibSetup( void )
 {
 	int		errnum;
 	
@@ -160,7 +160,7 @@ int Export_BotLibSetup( void )
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int Export_BotLibShutdown(void)
+static int Export_BotLibShutdown(void)
 {
 	if ( !botlibglobals.botlibsetup )
 		return BLERR_LIBRARYNOTSETUP;
@@ -174,9 +174,9 @@ int Export_BotLibShutdown(void)
 	BotShutdownWeaponAI();		//be_ai_weap.c
 	BotShutdownWeights();		//be_ai_weight.c
 	BotShutdownCharacters();	//be_ai_char.c
-	//shud down aas
+	//shut down AAS
 	AAS_Shutdown();
-	//shut down bot elemantary actions
+	//shut down bot elementary actions
 	EA_Shutdown();
 	//free all libvars
 	LibVarDeAllocAll();
@@ -204,7 +204,7 @@ int Export_BotLibShutdown(void)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int Export_BotLibVarSet( const char *var_name, const char *value )
+static int Export_BotLibVarSet( const char *var_name, const char *value )
 {
 	LibVarSet( var_name, value );
 	return BLERR_NOERROR;
@@ -215,7 +215,7 @@ int Export_BotLibVarSet( const char *var_name, const char *value )
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int Export_BotLibVarGet( const char *var_name, char *value, int size )
+static int Export_BotLibVarGet( const char *var_name, char *value, int size )
 {
 	const char *varvalue;
 
@@ -229,7 +229,7 @@ int Export_BotLibVarGet( const char *var_name, char *value, int size )
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int Export_BotLibStartFrame(float time)
+static int Export_BotLibStartFrame(float time)
 {
 	if (!BotLibSetup("BotStartFrame")) return BLERR_LIBRARYNOTSETUP;
 	return AAS_StartFrame(time);
@@ -240,7 +240,7 @@ int Export_BotLibStartFrame(float time)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-int Export_BotLibLoadMap(const char *mapname)
+static int Export_BotLibLoadMap(const char *mapname)
 {
 #ifdef DEBUG
 	int starttime = Sys_MilliSeconds();
@@ -283,7 +283,9 @@ static int Export_BotLibUpdateEntity(int ent, bot_entitystate_t *state)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
+#if 0
 void AAS_TestMovementPrediction(int entnum, vec3_t origin, vec3_t dir);
+#endif
 void ElevatorBottomCenter(aas_reachability_t *reach, vec3_t bottomcenter);
 int BotGetReachabilityToGoal(vec3_t origin, int areanum,
 									  int lastgoalareanum, int lastareanum,
@@ -313,7 +315,7 @@ int BotExportTest(int parm0, char *parm1, vec3_t parm2, vec3_t parm3)
 	static int line[2];
 	int newarea, i, highlightarea, flood;
 //	int reachnum;
-	vec3_t eye, forward, right, end, origin;
+	vec3_t eye, forward, right, /*end,*/ origin;
 //	vec3_t bottomcenter;
 //	aas_trace_t trace;
 //	aas_face_t *face;
@@ -554,7 +556,7 @@ int BotExportTest(int parm0, char *parm1, vec3_t parm2, vec3_t parm3)
 	//get the eye 24 units up
 	eye[2] += 24;
 	//get the end point for the line to be traced
-	VectorMA(eye, 800, forward, end);
+	//VectorMA(eye, 800, forward, end);
 
 //	AAS_TestMovementPrediction(1, parm2, forward);
 /*

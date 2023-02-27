@@ -23,13 +23,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "client.h"
 
-qboolean	scr_initialized;		// ready to draw
+static qboolean	scr_initialized;		// ready to draw
 
 cvar_t		*cl_timegraph;
-cvar_t		*cl_debuggraph;
-cvar_t		*cl_graphheight;
-cvar_t		*cl_graphscale;
-cvar_t		*cl_graphshift;
+static cvar_t		*cl_debuggraph;
+static cvar_t		*cl_graphheight;
+static cvar_t		*cl_graphscale;
+static cvar_t		*cl_graphshift;
 
 /*
 ================

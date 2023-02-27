@@ -33,7 +33,7 @@ static qboolean R_LoadMDR(model_t *mod, void *buffer, int filesize, const char *
 R_RegisterMD3
 ====================
 */
-qhandle_t R_RegisterMD3(const char *name, model_t *mod)
+static qhandle_t R_RegisterMD3(const char *name, model_t *mod)
 {
 	union {
 		unsigned *u;
@@ -114,7 +114,7 @@ qhandle_t R_RegisterMD3(const char *name, model_t *mod)
 R_RegisterMDR
 ====================
 */
-qhandle_t R_RegisterMDR(const char *name, model_t *mod)
+static qhandle_t R_RegisterMDR(const char *name, model_t *mod)
 {
 	union {
 		unsigned *u;
@@ -152,7 +152,7 @@ qhandle_t R_RegisterMDR(const char *name, model_t *mod)
 R_RegisterIQM
 ====================
 */
-qhandle_t R_RegisterIQM(const char *name, model_t *mod)
+static qhandle_t R_RegisterIQM(const char *name, model_t *mod)
 {
 	union {
 		unsigned *u;
@@ -185,7 +185,7 @@ qhandle_t R_RegisterIQM(const char *name, model_t *mod)
 
 typedef struct
 {
-	char *ext;
+	const char *ext;
 	qhandle_t (*ModelLoader)( const char *, model_t * );
 } modelExtToLoaderMap_t;
 
@@ -208,7 +208,7 @@ static int numModelLoaders = ARRAY_LEN(modelLoaders);
 model_t	*R_GetModelByHandle( qhandle_t index ) {
 	model_t		*mod;
 
-	// out of range gets the defualt model
+	// out of range gets the default model
 	if ( index < 1 || index >= tr.numModels ) {
 		return tr.models[0];
 	}
@@ -1266,7 +1266,7 @@ static mdvTag_t *R_GetTag( mdvModel_t *mod, int frame, const char *_tagName ) {
 	return NULL;
 }
 
-mdvTag_t *R_GetAnimTag( mdrHeader_t *mod, int framenum, const char *tagName, mdvTag_t * dest)
+static mdvTag_t *R_GetAnimTag( mdrHeader_t *mod, int framenum, const char *tagName, mdvTag_t * dest)
 {
 	int				i, j, k;
 	int				frameSize;
@@ -1317,7 +1317,7 @@ int R_LerpTag( orientation_t *tag, qhandle_t handle, int startFrame, int endFram
 	mdvTag_t	start_space, end_space;
 	int		i;
 	float		frontLerp, backLerp;
-	model_t		*model;
+	const model_t		*model;
 
 	model = R_GetModelByHandle( handle );
 	if ( !model->mdv[0] )
@@ -1369,7 +1369,7 @@ R_ModelBounds
 ====================
 */
 void R_ModelBounds( qhandle_t handle, vec3_t mins, vec3_t maxs ) {
-	model_t		*model;
+	const model_t		*model;
 
 	model = R_GetModelByHandle( handle );
 

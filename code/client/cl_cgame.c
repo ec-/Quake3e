@@ -27,6 +27,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 extern	botlib_export_t	*botlib_export;
 
+static int nestedCmdOffset; // nested command buffer offset
+
 //extern qboolean loadCamera(const char *name);
 //extern void startCamera(int time);
 //extern qboolean getCameraInfo(int time, vec3_t *origin, vec3_t *angles);
@@ -507,9 +509,11 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 	case CG_FS_SEEK:
 		return FS_VM_SeekFile( args[1], args[2], args[3], H_CGAME );
 
-	case CG_SENDCONSOLECOMMAND:
-		Cbuf_AddText( VMA(1) );
+	case CG_SENDCONSOLECOMMAND: {
+		const char *cmd = VMA(1);
+		nestedCmdOffset = Cbuf_Add( cmd, nestedCmdOffset );
 		return 0;
+	}
 	case CG_ADDCOMMAND:
 		CL_AddCgameCommand( VMA(1) );
 		return 0;
@@ -825,6 +829,8 @@ void CL_InitCGame( void ) {
 	int					t1, t2;
 	vmInterpret_t		interpret;
 
+	nestedCmdOffset = 0;
+
 	t1 = Sys_Milliseconds();
 
 	// put away the console
@@ -894,12 +900,19 @@ CL_GameCommand
 See if the current console command is claimed by the cgame
 ====================
 */
+
 qboolean CL_GameCommand( void ) {
+	qboolean bRes;
+
 	if ( !cgvm ) {
 		return qfalse;
 	}
 
-	return VM_Call( cgvm, 0, CG_CONSOLE_COMMAND );
+	bRes = (qboolean)VM_Call( cgvm, 0, CG_CONSOLE_COMMAND );
+
+	nestedCmdOffset = 0;
+
+	return bRes;
 }
 
 
@@ -1186,7 +1199,7 @@ void CL_SetCGameTime( void ) {
 
 	//while ( cl.serverTime >= cl.snap.serverTime ) {
 	while ( cl.serverTime - cl.snap.serverTime >= 0 ) {
-		// feed another messag, which should change
+		// feed another message, which should change
 		// the contents of cl.snap
 		CL_ReadDemoMessage();
 		if ( cls.state != CA_ACTIVE ) {

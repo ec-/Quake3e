@@ -100,8 +100,12 @@ static bot_character_t *BotCharacterFromHandle(int handle)
 	} //end if
 	return botcharacters[handle];
 } //end of the function BotCharacterFromHandle
-
-
+//===========================================================================
+//
+// Parameter:			-
+// Returns:				-
+// Changes Globals:		-
+//===========================================================================
 static bot_character_t *BotReferenceHandle( int handle, int refmod )
 {
 	bot_character_t *ch;
@@ -119,8 +123,12 @@ static bot_character_t *BotReferenceHandle( int handle, int refmod )
 
 	return NULL;
 }
-
-
+//===========================================================================
+//
+// Parameter:			-
+// Returns:				-
+// Changes Globals:		-
+//===========================================================================
 static void BotDumpCharacter( const bot_character_t *ch )
 {
 	int i;
@@ -135,12 +143,10 @@ static void BotDumpCharacter( const bot_character_t *ch )
 			case CT_INTEGER: Log_Write(" %4d %d\n", i, ch->c[i].value.integer); break;
 			case CT_FLOAT: Log_Write(" %4d %f\n", i, ch->c[i].value._float); break;
 			case CT_STRING: Log_Write(" %4d %s\n", i, ch->c[i].value.string); break;
-		}
-	}
+		} //end case
+	} //end for
 	Log_Write("}\n");
-}
-
-
+} //end of the function BotDumpCharacter
 //========================================================================
 //
 // Parameter:			-
@@ -180,9 +186,13 @@ static void BotFreeCharacter2(int handle)
 	BotFreeCharacterStrings(botcharacters[handle]);
 	FreeMemory(botcharacters[handle]);
 	botcharacters[handle] = NULL;
-}
-
-
+} //end of the function BotFreeCharacter2
+//========================================================================
+//
+// Parameter:			-
+// Returns:				-
+// Changes Globals:		-
+//========================================================================
 void BotFreeCharacter( int handle )
 {
 	bot_character_t *ch;
@@ -205,9 +215,13 @@ void BotFreeCharacter( int handle )
 		return;
 
 	BotFreeCharacter2( handle );
-}
-
-
+} //end of the function BotFreeCharacter
+//========================================================================
+//
+// Parameter:			-
+// Returns:				-
+// Changes Globals:		-
+//========================================================================
 static int BotReleaseUnreferencedHandle( void )
 {
 	const bot_character_t *ch;
@@ -270,8 +284,6 @@ static void BotDefaultCharacteristics(bot_character_t *ch, bot_character_t *defa
 		} //end else if
 	} //end for
 } //end of the function BotDefaultCharacteristics
-
-
 //===========================================================================
 //
 // Parameter:			-
@@ -450,7 +462,7 @@ static int BotFindCachedCharacter(const char *charfile, float skill)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int BotLoadCachedCharacter(const char *charfile, float skill, int reload)
+static int BotLoadCachedCharacter(const char *charfile, float skill, int reload)
 {
 	int handle, cachedhandle, intskill;
 	bot_character_t *ch = NULL;
@@ -712,7 +724,7 @@ int BotLoadCharacter(const char *charfile, float skill)
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int CheckCharacteristicIndex(int character, int index)
+static int CheckCharacteristicIndex(int character, int index)
 {
 	bot_character_t *ch;
 

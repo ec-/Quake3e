@@ -421,7 +421,7 @@ typedef enum {
 typedef enum {
 	FP_NONE,		// surface is translucent and will just be adjusted properly
 	FP_EQUAL,		// surface is opaque but possibly alpha tested
-	FP_LE			// surface is trnaslucent, but still needs a fog pass (fog surface)
+	FP_LE			// surface is translucent, but still needs a fog pass (fog surface)
 } fogPass_t;
 
 typedef struct {
@@ -772,7 +772,7 @@ typedef struct {
 //=================================================================================
 
 // max surfaces per-skin
-// This is an arbitry limit. Vanilla Q3 only supported 32 surfaces in skins but failed to
+// This is an arbitrary limit. Vanilla Q3 only supported 32 surfaces in skins but failed to
 // enforce the maximum limit when reading skin files. It was possile to use more than 32
 // surfaces which accessed out of bounds memory past end of skin->surfaces hunk block.
 #define MAX_SKIN_SURFACES	256
@@ -1183,7 +1183,7 @@ typedef struct {
 	const byte	*vis;			// may be passed in by CM_LoadMap to save space
 
 	char		*entityString;
-	char		*entityParsePoint;
+	const char		*entityParsePoint;
 } world_t;
 
 
@@ -1459,7 +1459,7 @@ typedef struct {
 	orientationr_t	or;
 	backEndCounters_t	pc;
 	qboolean	isHyperspace;
-	trRefEntity_t *currentEntity;
+	const trRefEntity_t *currentEntity;
 	qboolean	skyRenderedThisView;	// flag for drawing sun
 
 	qboolean	projection2D;	// if qtrue, drawstretchpic doesn't need to change modes
@@ -1836,7 +1836,7 @@ static ID_INLINE qboolean ShaderRequiresCPUDeforms(const shader_t * shader)
 		{
 			case DEFORM_WAVE:
 			case DEFORM_BULGE:
-				// need CPU deforms at high level-times to avoid floating point percision loss
+				// need CPU deforms at high level-times to avoid floating point precision loss
 				return ( backEnd.refdef.floatTime != (float)backEnd.refdef.floatTime );
 
 			default:
@@ -1851,7 +1851,7 @@ static ID_INLINE qboolean ShaderRequiresCPUDeforms(const shader_t * shader)
 
 void R_SwapBuffers( int );
 
-void R_RenderView( viewParms_t *parms );
+void R_RenderView( const viewParms_t *parms );
 void R_RenderDlightCubemaps(const refdef_t *fd);
 void R_RenderPshadowMaps(const refdef_t *fd);
 void R_RenderSunShadowMaps(const refdef_t *fd, int level);
@@ -1879,7 +1879,7 @@ qboolean R_CalcTangentVectors(srfVert_t * dv[3]);
 #define	CULL_IN		0		// completely unclipped
 #define	CULL_CLIP	1		// clipped by one or more planes
 #define	CULL_OUT	2		// completely outside the clipping planes
-void R_LocalNormalToWorld (const vec3_t local, vec3_t world);
+
 void R_LocalPointToWorld (const vec3_t local, vec3_t world);
 int R_CullBox (vec3_t bounds[2]);
 int R_CullLocalBox( const vec3_t bounds[2] );
@@ -1940,8 +1940,8 @@ void	GL_Cull( int cullType );
 
 #define GLS_DEFAULT			GLS_DEPTHMASK_TRUE
 
-void	RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, byte *data, int client, qboolean dirty );
-void	RE_UploadCinematic( int w, int h, int cols, int rows, byte *data, int client, qboolean dirty );
+void	RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty );
+void	RE_UploadCinematic( int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty );
 
 void		RE_BeginFrame( stereoFrame_t stereoFrame );
 void		RE_BeginRegistration( glconfig_t *glconfig );
@@ -1964,7 +1964,6 @@ void	R_ImageList_f( void );
 void	R_SkinList_f( void );
 // https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=516
 const void *RB_TakeScreenshotCmd( const void *data );
-void	R_ScreenShot_f( void );
 
 void	R_InitFogTable( void );
 float	R_FogFactor( float s, float t );
@@ -2065,8 +2064,8 @@ void RB_StageIteratorSky( void );
 void RB_StageIteratorVertexLitTexture( void );
 void RB_StageIteratorLightmappedMultitexture( void );
 
-void RB_AddQuadStamp( vec3_t origin, vec3_t left, vec3_t up, float color[4] );
-void RB_AddQuadStampExt( vec3_t origin, vec3_t left, vec3_t up, float color[4], float s1, float t1, float s2, float t2 );
+void RB_AddQuadStamp( const vec3_t origin, const vec3_t left, const vec3_t up, const float color[4] );
+void RB_AddQuadStampExt( const vec3_t origin, const vec3_t left, const vec3_t up, const float color[4], float s1, float t1, float s2, float t2 );
 void RB_InstantQuad( vec4_t quadVerts[4] );
 //void RB_InstantQuad2(vec4_t quadVerts[4], vec2_t texCoords[4], vec4_t color, shaderProgram_t *sp, vec2_t invTexRes);
 void RB_InstantQuad2(vec4_t quadVerts[4], vec2_t texCoords[4]);
@@ -2137,11 +2136,9 @@ SKIES
 ============================================================
 */
 
-void R_BuildCloudData( shaderCommands_t *shader );
 void R_InitSkyTexCoords( float cloudLayerHeight );
-void R_DrawSkyBox( shaderCommands_t *shader );
+void R_DrawSkyBox( const shaderCommands_t *shader );
 void RB_DrawSun( float scale, shader_t *shader );
-void RB_ClipSkyPolygons( shaderCommands_t *shader );
 
 /*
 ============================================================
@@ -2180,7 +2177,7 @@ VERTEX BUFFER OBJECTS
 
 void R_VaoPackTangent(int16_t *out, vec4_t v);
 void R_VaoPackNormal(int16_t *out, vec3_t v);
-void R_VaoPackColor(uint16_t *out, vec4_t c);
+void R_VaoPackColor(uint16_t *out, const vec4_t c);
 void R_VaoUnpackTangent(vec4_t v, int16_t *pack);
 void R_VaoUnpackNormal(vec3_t v, int16_t *pack);
 
@@ -2281,8 +2278,8 @@ void R_MDRAddAnimSurfaces( trRefEntity_t *ent );
 void RB_MDRSurfaceAnim( mdrSurface_t *surface );
 qboolean R_LoadIQM (model_t *mod, void *buffer, int filesize, const char *name );
 void R_AddIQMSurfaces( trRefEntity_t *ent );
-void RB_IQMSurfaceAnim( surfaceType_t *surface );
-void RB_IQMSurfaceAnimVao( srfVaoIQModel_t *surface );
+void RB_IQMSurfaceAnim( const surfaceType_t *surface );
+void RB_IQMSurfaceAnimVao( const srfVaoIQModel_t *surface );
 int R_IQMLerpTag( orientation_t *tag, iqmData_t *data,
                   int startFrame, int endFrame,
                   float frac, const char *tagName );
@@ -2385,7 +2382,7 @@ typedef struct {
 	int y;
 	int width;
 	int height;
-	char *fileName;
+	const char *fileName;
 	qboolean jpeg;
 } screenshotCommand_t;
 

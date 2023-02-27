@@ -148,7 +148,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //punctuation
 typedef struct punctuation_s
 {
-	char *p;						//punctuation character(s)
+	const char *p;						//punctuation character(s)
 	int n;							//punctuation indication
 	struct punctuation_s *next;		//next punctuation
 } punctuation_t;
@@ -193,44 +193,44 @@ typedef struct script_s
 
 //read a token from the script
 int PS_ReadToken(script_t *script, token_t *token);
-//expect a certain token
-int PS_ExpectTokenString(script_t *script, const char *string);
 //expect a certain token type
 int PS_ExpectTokenType(script_t *script, int type, int subtype, token_t *token);
 //expect a token
 int PS_ExpectAnyToken(script_t *script, token_t *token);
+#if 0
+//expect a certain token
+int PS_ExpectTokenString(script_t *script, const char *string);
 //returns true when the token is available
 int PS_CheckTokenString(script_t *script, const char *string);
 //returns true and reads the token when a token with the given type is available
 int PS_CheckTokenType(script_t *script, int type, int subtype, token_t *token);
 //skip tokens until the given token string is read
 int PS_SkipUntilString(script_t *script, const char *string);
-//unread the last token read from the script
-void PS_UnreadLastToken(script_t *script);
 //unread the given token
 void PS_UnreadToken(script_t *script, token_t *token);
 //returns the next character of the read white space, returns NULL if none
 char PS_NextWhiteSpaceChar(script_t *script);
-//remove any leading and trailing double quotes from the token
-void StripDoubleQuotes(char *string);
-//remove any leading and trailing single quotes from the token
-void StripSingleQuotes(char *string);
 //read a possible signed integer
 signed long int ReadSignedInt(script_t *script);
 //read a possible signed floating point number
 float ReadSignedFloat(script_t *script);
-//set an array with punctuations, NULL restores default C/C++ set
-void SetScriptPunctuations(script_t *script, punctuation_t *p);
-//set script flags
-void SetScriptFlags(script_t *script, int flags);
 //get script flags
 int GetScriptFlags(script_t *script);
 //reset a script
 void ResetScript(script_t *script);
+#endif
+//unread the last token read from the script
+void PS_UnreadLastToken(script_t *script);
+//remove any leading and trailing double quotes from the token
+void StripDoubleQuotes(char *string);
+//remove any leading and trailing single quotes from the token
+void StripSingleQuotes(char *string);
+//set script flags
+void SetScriptFlags(script_t *script, int flags);
 //returns true if at the end of the script
 int EndOfScript(script_t *script);
 //returns a pointer to the punctuation with the given number
-char *PunctuationFromNum(script_t *script, int num);
+const char *PunctuationFromNum(script_t *script, int num);
 //load a script from the given file at the given offset with the given length
 script_t *LoadScriptFile(const char *filename);
 //load a script from the given memory with the given length
@@ -241,7 +241,5 @@ void FreeScript(script_t *script);
 void PS_SetBaseFolder(const char *path);
 //print a script error with filename and line number
 void QDECL ScriptError(script_t *script, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
-//print a script warning with filename and line number
-void QDECL ScriptWarning(script_t *script, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 
 

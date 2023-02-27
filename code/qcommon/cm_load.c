@@ -70,7 +70,7 @@ static cbrush_t *box_brush;
 
 
 
-void	CM_InitBoxHull (void);
+static void	CM_InitBoxHull (void);
 void	CM_FloodAreaConnections (void);
 
 
@@ -613,8 +613,11 @@ void CM_LoadMap( const char *name, qboolean clientload, int *checksum ) {
 
 #ifndef BSPC
 	cm_noAreas = Cvar_Get( "cm_noAreas", "0", CVAR_CHEAT );
+	Cvar_SetDescription( cm_noAreas, "Do not use areaportals, all areas are connected." );
 	cm_noCurves = Cvar_Get( "cm_noCurves", "0", CVAR_CHEAT );
+	Cvar_SetDescription( cm_noCurves, "Do not collide against curves." );
 	cm_playerCurveClip = Cvar_Get( "cm_playerCurveClip", "1", CVAR_ARCHIVE_ND | CVAR_CHEAT );
+	Cvar_SetDescription( cm_playerCurveClip, "Collide player against curves." );
 #endif
 
 	Com_DPrintf( "%s( '%s', %i )\n", __func__, name, clientload );
@@ -795,7 +798,7 @@ Set up the planes and nodes so that the six floats of a bounding box
 can just be stored out and get a proper clipping hull structure.
 ===================
 */
-void CM_InitBoxHull( void )
+static void CM_InitBoxHull( void )
 {
 	int			i;
 	int			side;

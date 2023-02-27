@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "sdl_glw.h"
 
 static cvar_t *in_keyboardDebug;
+static cvar_t *in_forceCharset;
 
 #ifdef USE_JOYSTICK
 static SDL_GameController *gamepad;
@@ -217,12 +218,40 @@ static keyNum_t IN_TranslateSDLToQ3Key( SDL_Keysym *keysym, qboolean down )
 		else
 			key = '1' + keysym->scancode - SDL_SCANCODE_1;
 	}
-	else if( keysym->sym >= SDLK_SPACE && keysym->sym < SDLK_DELETE )
+	else if ( in_forceCharset->integer > 0 )
+	{
+		if ( keysym->scancode >= SDL_SCANCODE_A && keysym->scancode <= SDL_SCANCODE_Z )
+		{
+			key = 'a' + keysym->scancode - SDL_SCANCODE_A;
+		}
+		else
+		{
+			switch ( keysym->scancode )
+			{
+				case SDL_SCANCODE_MINUS:        key = '-';  break;
+				case SDL_SCANCODE_EQUALS:       key = '=';  break;
+				case SDL_SCANCODE_LEFTBRACKET:  key = '[';  break;
+				case SDL_SCANCODE_RIGHTBRACKET: key = ']';  break;
+				case SDL_SCANCODE_NONUSBACKSLASH:
+				case SDL_SCANCODE_BACKSLASH:    key = '\\'; break;
+				case SDL_SCANCODE_SEMICOLON:    key = ';';  break;
+				case SDL_SCANCODE_APOSTROPHE:   key = '\''; break;
+				case SDL_SCANCODE_COMMA:        key = ',';  break;
+				case SDL_SCANCODE_PERIOD:       key = '.';  break;
+				case SDL_SCANCODE_SLASH:        key = '/';  break;
+				default:
+					/* key = 0 */
+					break;
+			}
+		}
+	}
+
+	if( !key && keysym->sym >= SDLK_SPACE && keysym->sym < SDLK_DELETE )
 	{
 		// These happen to match the ASCII chars
 		key = (int)keysym->sym;
 	}
-	else
+	else if( !key )
 	{
 		switch( keysym->sym )
 		{
@@ -550,6 +579,7 @@ static void IN_InitJoystick( void )
 	}
 
 	Cvar_Get( "in_availableJoysticks", buf, CVAR_ROM );
+	Cvar_SetDescription( in_availableJoysticks, "List of available joysticks." );
 
 	if( !in_joystick->integer ) {
 		Com_DPrintf( "Joystick is not active.\n" );
@@ -558,10 +588,12 @@ static void IN_InitJoystick( void )
 	}
 
 	in_joystickNo = Cvar_Get( "in_joystickNo", "0", CVAR_ARCHIVE );
+	Cvar_SetDescription( in_joystickNo, "Select which joystick to use." );
 	if( in_joystickNo->integer < 0 || in_joystickNo->integer >= total )
 		Cvar_Set( "in_joystickNo", "0" );
 
 	in_joystickUseAnalog = Cvar_Get( "in_joystickUseAnalog", "0", CVAR_ARCHIVE );
+	Cvar_SetDescription( in_joystickUseAnalog, "Do not translate joystick axis events to keyboard commands." );
 
 	stick = SDL_JoystickOpen( in_joystickNo->integer );
 
@@ -1099,7 +1131,8 @@ void HandleEvents( void )
 
 					if ( key == K_BACKSPACE )
 						Com_QueueEvent( in_eventTime, SE_CHAR, CTRL('h'), 0, 0, NULL );
-
+					else if ( key == K_ESCAPE )
+						Com_QueueEvent( in_eventTime, SE_CHAR, key, 0, 0, NULL );
 					else if( keys[K_CTRL].down && key >= 'a' && key <= 'z' )
 						Com_QueueEvent( in_eventTime, SE_CHAR, CTRL(key), 0, 0, NULL );
 				}
@@ -1236,7 +1269,11 @@ void HandleEvents( void )
 					case SDL_WINDOWEVENT_MAXIMIZED:		gw_minimized = qfalse; break;
 					// keyboard focus:
 					case SDL_WINDOWEVENT_FOCUS_LOST:	lastKeyDown = 0; Key_ClearStates(); gw_active = qfalse; break;
-					case SDL_WINDOWEVENT_FOCUS_GAINED:	lastKeyDown = 0; Key_ClearStates(); gw_active = qtrue; gw_minimized = qfalse; break;
+					case SDL_WINDOWEVENT_FOCUS_GAINED:	lastKeyDown = 0; Key_ClearStates(); gw_active = qtrue; gw_minimized = qfalse;
+														if ( re.SetColorMappings ) {
+															re.SetColorMappings();
+														}
+														break;
 					// mouse focus:
 					case SDL_WINDOWEVENT_ENTER: mouse_focus = qtrue; break;
 					case SDL_WINDOWEVENT_LEAVE: if ( glw_state.isFullscreen ) mouse_focus = qfalse; break;
@@ -1328,36 +1365,56 @@ void IN_Init( void )
 	Com_DPrintf( "\n------- Input Initialization -------\n" );
 
 	in_keyboardDebug = Cvar_Get( "in_keyboardDebug", "0", CVAR_ARCHIVE );
+	Cvar_SetDescription( in_keyboardDebug, "Print keyboard debug info." );
+	in_forceCharset = Cvar_Get( "in_forceCharset", "1", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( in_forceCharset, "Try to translate non-ASCII chars in keyboard input or force EN/US keyboard layout." );
 
 	// mouse variables
 	in_mouse = Cvar_Get( "in_mouse", "1", CVAR_ARCHIVE );
 	Cvar_CheckRange( in_mouse, "-1", "1", CV_INTEGER );
+	Cvar_SetDescription( in_mouse,
+		"Mouse data input source:\n" \
+		"  0 - disable mouse input\n" \
+		"  1 - di/raw mouse\n" \
+		" -1 - win32 mouse" );
 
 #ifdef USE_JOYSTICK
 	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE|CVAR_LATCH );
+	Cvar_SetDescription( in_joystick, "Whether or not joystick support is on." );
 	in_joystickThreshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE );
+	Cvar_SetDescription( in_joystickThreshold, "Threshold of joystick moving distance." );
 
 	j_pitch =        Cvar_Get( "j_pitch",        "0.022", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( j_pitch, "Joystick pitch rotation speed/direction." );
 	j_yaw =          Cvar_Get( "j_yaw",          "-0.022", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( j_yaw, "Joystick yaw rotation speed/direction." );
 	j_forward =      Cvar_Get( "j_forward",      "-0.25", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( j_forward, "Joystick forward movement speed/direction." );
 	j_side =         Cvar_Get( "j_side",         "0.25", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( j_side, "Joystick side movement speed/direction." );
 	j_up =           Cvar_Get( "j_up",           "0", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( j_up, "Joystick up movement speed/direction." );
 
 	j_pitch_axis =   Cvar_Get( "j_pitch_axis",   "3", CVAR_ARCHIVE_ND );
-	j_yaw_axis =     Cvar_Get( "j_yaw_axis",     "2", CVAR_ARCHIVE_ND );
-	j_forward_axis = Cvar_Get( "j_forward_axis", "1", CVAR_ARCHIVE_ND );
-	j_side_axis =    Cvar_Get( "j_side_axis",    "0", CVAR_ARCHIVE_ND );
-	j_up_axis =      Cvar_Get( "j_up_axis",      "4", CVAR_ARCHIVE_ND );
-
 	Cvar_CheckRange( j_pitch_axis,   "0", va("%i",MAX_JOYSTICK_AXIS-1), CV_INTEGER );
+	Cvar_SetDescription( j_pitch_axis, "Selects which joystick axis controls pitch." );
+	j_yaw_axis =     Cvar_Get( "j_yaw_axis",     "2", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( j_yaw_axis,     "0", va("%i",MAX_JOYSTICK_AXIS-1), CV_INTEGER );
+	Cvar_SetDescription( j_yaw_axis, "Selects which joystick axis controls yaw." );
+	j_forward_axis = Cvar_Get( "j_forward_axis", "1", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( j_forward_axis, "0", va("%i",MAX_JOYSTICK_AXIS-1), CV_INTEGER );
+	Cvar_SetDescription( j_forward_axis, "Selects which joystick axis controls forward/back." );
+	j_side_axis =    Cvar_Get( "j_side_axis",    "0", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( j_side_axis,    "0", va("%i",MAX_JOYSTICK_AXIS-1), CV_INTEGER );
+	Cvar_SetDescription( j_side_axis, "Selects which joystick axis controls left/right." );
+	j_up_axis =      Cvar_Get( "j_up_axis",      "4", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( j_up_axis,      "0", va("%i",MAX_JOYSTICK_AXIS-1), CV_INTEGER );
+	Cvar_SetDescription( j_up_axis, "Selects which joystick axis controls up/down." );
 #endif
 
 	// ~ and `, as keys and characters
 	cl_consoleKeys = Cvar_Get( "cl_consoleKeys", "~ ` 0x7e 0x60", CVAR_ARCHIVE );
+	Cvar_SetDescription( cl_consoleKeys, "Space delimited list of key names or characters that toggle the console." );
 
 	mouseAvailable = ( in_mouse->value != 0 ) ? qtrue : qfalse;
 

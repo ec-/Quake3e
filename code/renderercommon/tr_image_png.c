@@ -572,7 +572,7 @@ static uint32_t DecompressIDATs(struct BufferedFile *BF, uint8_t **Buffer)
 		{
 			/*
 			 *  Rewind to the start of this adventure
-			 *  and return unsuccessfull
+			 *  and return unsuccessful
 			 */
 
 			BufferedFileRewind(BF, BytesToRewind);
@@ -755,7 +755,7 @@ static uint32_t DecompressIDATs(struct BufferedFile *BF, uint8_t **Buffer)
 	ri.Free(CompressedData);
 
 	/*
-	 *  Check if the last puff() was successfull.
+	 *  Check if the last puff() was successful.
 	 */
 
 	if(!((puffResult == 0) && (puffDestLen > 0)))
@@ -1967,7 +1967,7 @@ void R_LoadPNG(const char *name, byte **pic, int *width, int *height)
 	}           
 
 	/*
-	 *  Read the siganture of the file.
+	 *  Read the signature of the file.
 	 */
 
 	Signature = BufferedFileRead(ThePNG, PNG_Signature_Size);

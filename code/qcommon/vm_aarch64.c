@@ -44,7 +44,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // additional integrity checks
 #define DEBUG_VM
 
-// various defintions to enable/disable particular optimization
+// various definitions to enable/disable particular optimization
 
 // use dynamic allocation of integer/scalar registers
 #define DYN_ALLOC_RX
@@ -984,14 +984,15 @@ static void set_rx_var( uint32_t reg, const var_addr_t *v ) {
 #endif
 }
 
+
 static void set_rx_ext( uint32_t reg, ext_t ext ) {
 #ifdef LOAD_OPTIMIZE
 	if ( reg >= ARRAY_LEN( rx_regs ) )
-		DROP( "register value %i s out of range", reg );
-	rx_regs[reg].ext = ext;
+		DROP( "register index %i is out of range", reg );
+	else
+		rx_regs[reg].ext = ext;
 #endif
 }
-
 
 
 static void set_sx_var( uint32_t reg, const var_addr_t *v ) {
@@ -1714,7 +1715,9 @@ static uint32_t alloc_rx( uint32_t pref )
 	reg = pref & RMASK;
 
 #ifdef DEBUG_VM
-	if ( rx_mask[reg] )
+	if ( reg >= ARRAY_LEN( rx_mask ) )
+		DROP( "forced register R%i index overflowed!", reg );
+	else if ( rx_mask[reg] )
 		DROP( "forced register R%i is already masked!", reg );
 #endif
 
@@ -1800,7 +1803,9 @@ static uint32_t alloc_sx( uint32_t pref )
 	reg = pref & RMASK;
 
 #ifdef DEBUG_VM
-	if ( sx_mask[reg] )
+	if ( reg >= ARRAY_LEN( sx_mask ) )
+		DROP( "forced register S%i index overflowed!", reg );
+	else if ( sx_mask[reg] )
 		DROP( "forced register S%i is already masked!", reg );
 #endif
 
@@ -2371,7 +2376,7 @@ savedOffset[ FUNC_SYSF ] = compiledOfs; // to jump from ConstOptimize()
 	emit(SUB32i(R1, rPSTACK, 8)); // r1 = pstack - 8
 	emit(STR32i(R1, rVMBASE, offsetof(vm_t, programStack))); // vm->programStack = r1
 
-	// sign-extend agruments starting from [procBase+8]
+	// sign-extend arguments starting from [procBase+8]
 	// R0 is already zero-extended
 	emit(LDRSWi(R1, rPROCBASE, 8));
 	emit(STP64(R0, R1, SP, 0));
@@ -3042,7 +3047,7 @@ __recompile:
 							case OP_LOAD1:
 								if ( reg->ext != Z_EXT8 ) {
 									emit( UXTB( rx[0], rx[0] ) ); // r0 = (unsigned byte) r0
-									// invalidate any mappings that overlaps with high [8..31] bits 
+									// invalidate any mappings that overlaps with high [8..31] bits
 									//var.addr += 1; var.size = 3;
 									//wipe_reg_range( rx_regs + rx[0], &var );
 									reduce_map_size( reg, 1 );
@@ -3526,7 +3531,7 @@ int32_t VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
 		Com_Error( ERR_DROP, "%s(%s): opStack corrupted in compiled code", __func__, vm->name );
 	}
 
-	if ( vm->programStack != stackOnEntry - ( MAX_VMMAIN_CALL_ARGS + 2 ) * sizeof( int32_t ) ) {
+	if ( vm->programStack != (int32_t)( stackOnEntry - ( MAX_VMMAIN_CALL_ARGS + 2 ) * sizeof( int32_t ) ) ) {
 		Com_Error( ERR_DROP, "%s(%s): programStack corrupted in compiled code", __func__, vm->name );
 	}
 #endif

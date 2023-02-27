@@ -45,9 +45,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define MAX_DEBUGLINES				1024
 #define MAX_DEBUGPOLYGONS			8192
 
-int debuglines[MAX_DEBUGLINES];
-int debuglinevisible[MAX_DEBUGLINES];
-int numdebuglines;
+static int debuglines[MAX_DEBUGLINES];
+static int debuglinevisible[MAX_DEBUGLINES];
+static int numdebuglines;
 
 static int debugpolygons[MAX_DEBUGPOLYGONS];
 
@@ -81,7 +81,7 @@ void AAS_ClearShownPolygons(void)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void AAS_ShowPolygon(int color, int numpoints, vec3_t *points)
+static void AAS_ShowPolygon(int color, int numpoints, vec3_t *points)
 {
 	int i;
 
@@ -346,7 +346,7 @@ void AAS_ShowFace(int facenum)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void AAS_ShowFacePolygon(int facenum, int color, int flip)
+static void AAS_ShowFacePolygon(int facenum, int color, int flip)
 {
 	int i, edgenum, numpoints;
 	vec3_t points[128];
@@ -708,9 +708,9 @@ void AAS_ShowReachableAreas(int areanum)
 		botimport.Print(PRT_MESSAGE, "\n");
 	} //end if
 	AAS_ShowReachability(&reach);
-} //end of the function ShowReachableAreas
+} //end of the function AAS_ShowReachableAreas
 
-void AAS_FloodAreas_r(int areanum, int cluster, int *done)
+static void AAS_FloodAreas_r(int areanum, int cluster, int *done)
 {
 	int nextareanum, i, facenum;
 	aas_area_t *area;

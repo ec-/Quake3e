@@ -151,8 +151,7 @@ float FloatSwap( const float *f );
 #ifdef Q3_VM
 	typedef int intptr_t;
 #else
-	#ifdef _MSC_VER
-		#include <io.h>
+	#if defined (_MSC_VER) && !defined(__clang__)
 		typedef __int64 int64_t;
 		typedef __int32 int32_t;
 		typedef __int16 int16_t;
@@ -462,7 +461,7 @@ extern int ColorIndexFromChar( char ccode );
 
 struct cplane_s;
 
-extern	vec3_t	vec3_origin;
+extern	const vec3_t	vec3_origin;
 extern	vec3_t	axisDefault[3];
 
 #define	nanmask (255<<23)
@@ -628,7 +627,7 @@ void CrossProduct( const vec3_t v1, const vec3_t v2, vec3_t cross );
 vec_t VectorNormalize (vec3_t v);		// returns vector length
 vec_t VectorNormalize2( const vec3_t v, vec3_t out );
 void Vector4Scale( const vec4_t in, vec_t scale, vec4_t out );
-void VectorRotate( vec3_t in, vec3_t matrix[3], vec3_t out );
+void VectorRotate( const vec3_t in, const vec3_t matrix[3], vec3_t out );
 int Q_log2(int val);
 
 float Q_acos(float c);
@@ -702,12 +701,12 @@ unsigned long Com_GenerateHashValue( const char *fname, const unsigned int size 
 
 void	COM_BeginParseSession( const char *name );
 int		COM_GetCurrentParseLine( void );
-char	*COM_Parse( const char **data_p );
-char	*COM_ParseExt( const char **data_p, qboolean allowLineBreak );
+const char	*COM_Parse( const char **data_p );
+const char	*COM_ParseExt( const char **data_p, qboolean allowLineBreak );
 int		COM_Compress( char *data_p );
-void	COM_ParseError( char *format, ... ) __attribute__ ((format (printf, 1, 2)));
-void	COM_ParseWarning( char *format, ... ) __attribute__ ((format (printf, 1, 2)));
-//int		COM_ParseInfos( char *buf, int max, char infos[][MAX_INFO_STRING] );
+void	COM_ParseError( const char *format, ... ) __attribute__ ((format (printf, 1, 2)));
+void	COM_ParseWarning( const char *format, ... ) __attribute__ ((format (printf, 1, 2)));
+//int		COM_ParseInfos( const char *buf, int max, char infos[][MAX_INFO_STRING] );
 
 char	*COM_ParseComplex( const char **data_p, qboolean allowLineBreak );
 
@@ -754,8 +753,6 @@ typedef struct pc_token_s
 
 // data is an in/out parm, returns a parsed out token
 
-void COM_MatchToken( const char**buf_p, const char *match );
-
 qboolean SkipBracedSection( const char **program, int depth );
 void SkipRestOfLine( const char **data );
 
@@ -765,8 +762,8 @@ void Parse3DMatrix( const char **buf_p, int z, int y, int x, float *m);
 
 int QDECL Com_sprintf( char *dest, int size, const char *fmt, ... ) __attribute__ ((format (printf, 3, 4)));
 
-char *Com_SkipTokens( char *s, int numTokens, char *sep );
-char *Com_SkipCharset( char *s, char *sep );
+const char *Com_SkipTokens( const char *s, int numTokens, const char *sep );
+const char *Com_SkipCharset( const char *s, const char *sep );
 
 void Com_RandomBytes( byte *string, int len );
 
@@ -862,7 +859,7 @@ void Com_TruncateLongString( char *buffer, const char *s );
 //
 // key / value info strings
 //
-char *Info_ValueForKey( const char *s, const char *key );
+const char *Info_ValueForKey( const char *s, const char *key );
 void Info_Tokenize( const char *s );
 const char *Info_ValueForKeyToken( const char *key );
 #define Info_SetValueForKey( buf, key, value ) Info_SetValueForKey_s( (buf), MAX_INFO_STRING, (key), (value) )
@@ -1025,7 +1022,7 @@ typedef struct {
 	cplane_t	plane;		// surface normal at impact, transformed to world space
 	int			surfaceFlags;	// surface hit
 	int			contents;	// contents on other side of surface hit
-	int			entityNum;	// entity the contacted sirface is a part of
+	int			entityNum;	// entity the contacted surface is a part of
 } trace_t;
 
 // trace->entityNum can also be 0 to (MAX_GENTITIES-1)
@@ -1058,7 +1055,7 @@ typedef struct {
 
 // sound channels
 // channel 0 never willingly overrides
-// other channels will allways override a playing sound on that channel
+// other channels will always override a playing sound on that channel
 typedef enum {
 	CHAN_AUTO,
 	CHAN_LOCAL,		// menu sounds, etc

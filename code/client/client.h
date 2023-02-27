@@ -23,17 +23,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
-#include "../qcommon/vm_local.h"
 #include "../renderercommon/tr_public.h"
+#include "../qcommon/vm_local.h"
 #include "../ui/ui_public.h"
-#include "keys.h"
-#include "snd_public.h"
 #include "../cgame/cg_public.h"
 #include "../game/bg_public.h"
+#include "snd_public.h"
+#include "keys.h"
 
 #ifdef USE_CURL
 #include "cl_curl.h"
-#endif /* USE_CURL */
+#endif
 
 // file full of random crap that gets used to create cl_guid
 #define QKEY_FILE "qkey"
@@ -118,7 +118,7 @@ typedef struct {
 
 	// cmds[cmdNumber] is the predicted command, [cmdNumber-1] is the last
 	// properly generated command
-	usercmd_t	cmds[CMD_BACKUP];	// each mesage will send several old cmds
+	usercmd_t	cmds[CMD_BACKUP];	// each message will send several old cmds
 	int			cmdNumber;			// incremented each frame, because multiple
 									// frames may need to be packed into a single packet
 
@@ -585,11 +585,11 @@ qboolean CL_Netchan_Process( netchan_t *chan, msg_t *msg );
 //
 // cl_avi.c
 //
-qboolean CL_OpenAVIForWriting( const char *filename, qboolean pipe );
+qboolean CL_OpenAVIForWriting( const char *filename, qboolean pipe, qboolean reopen );
 void CL_TakeVideoFrame( void );
 void CL_WriteAVIVideoFrame( const byte *imageBuffer, int size );
 void CL_WriteAVIAudioFrame( const byte *pcmBuffer, int size );
-qboolean CL_CloseAVI( void );
+qboolean CL_CloseAVI( qboolean reopen );
 qboolean CL_VideoRecording( void );
 
 //
@@ -599,15 +599,21 @@ size_t	CL_SaveJPGToBuffer( byte *buffer, size_t bufSize, int quality, int image_
 void	CL_SaveJPG( const char *filename, int quality, int image_width, int image_height, byte *image_buffer, int padding );
 void	CL_LoadJPG( const char *filename, unsigned char **pic, int *width, int *height );
 
+
+// base backend functions
+void	HandleEvents( void );
+
 // platform-specific
+void	GLimp_InitGamma(glconfig_t *config);
+void	GLimp_SetGamma(unsigned char red[256], unsigned char green[256], unsigned char blue[256]);
+
+// OpenGL
+#ifdef USE_OPENGL_API
 void	GLimp_Init( glconfig_t *config );
 void	GLimp_Shutdown( qboolean unloadDLL );
 void	GLimp_EndFrame( void );
-
-void	GLimp_InitGamma( glconfig_t *config );
-void	GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned char blue[256] );
-
 void	*GL_GetProcAddress( const char *name );
+#endif
 
 // Vulkan
 #ifdef USE_VULKAN_API

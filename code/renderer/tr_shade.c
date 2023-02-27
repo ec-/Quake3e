@@ -102,7 +102,7 @@ DrawTris
 Draws triangle outlines for debugging
 ================
 */
-static void DrawTris( shaderCommands_t *input ) {
+static void DrawTris( const shaderCommands_t *input ) {
 
 	if ( r_showtris->integer == 1 && backEnd.drawConsole )
 		return;
@@ -640,23 +640,16 @@ void R_ComputeColors( const shaderStage_t *pStage )
 		break;
 	case AGEN_PORTAL:
 		{
-			unsigned char alpha;
-
 			for ( i = 0; i < tess.numVertexes; i++ )
 			{
+				unsigned char alpha;
 				float len;
 				vec3_t v;
 
 				VectorSubtract( tess.xyz[i], backEnd.viewParms.or.origin, v );
-				len = VectorLength( v );
+				len = VectorLength( v ) * tess.shader->portalRangeR;
 
-				len /= tess.shader->portalRange;
-
-				if ( len < 0 )
-				{
-					alpha = 0;
-				}
-				else if ( len > 1 )
+				if ( len > 1 )
 				{
 					alpha = 0xff;
 				}
@@ -772,6 +765,22 @@ void R_ComputeTexCoords( const int b, const textureBundle_t *bundle ) {
 			src = dst;
 			break;
 
+		case TMOD_OFFSET:
+			for ( i = 0; i < tess.numVertexes; i++ ) {
+				dst[i][0] = src[i][0] + bundle->texMods[tm].offset[0];
+				dst[i][1] = src[i][1] + bundle->texMods[tm].offset[1];
+			}
+			src = dst;
+			break;
+
+		case TMOD_SCALE_OFFSET:
+			for ( i = 0; i < tess.numVertexes; i++ ) {
+				dst[i][0] = (src[i][0] * bundle->texMods[tm].scale[0] ) + bundle->texMods[tm].offset[0];
+				dst[i][1] = (src[i][1] * bundle->texMods[tm].scale[1] ) + bundle->texMods[tm].offset[1];
+			}
+			src = dst;
+			break;
+
 		case TMOD_STRETCH:
 			RB_CalcStretchTexCoords( &bundle->texMods[tm].wave, (float *)src, (float *) dst );
 			src = dst;
@@ -791,15 +800,6 @@ void R_ComputeTexCoords( const int b, const textureBundle_t *bundle ) {
 			ri.Error( ERR_DROP, "ERROR: unknown texmod '%d' in shader '%s'", bundle->texMods[tm].type, tess.shader->name );
 			break;
 		}
-	}
-
-	if ( r_mergeLightmaps->integer && bundle->isLightmap && bundle->tcGen != TCGEN_LIGHTMAP ) {
-		// adjust texture coordinates to map on proper lightmap
-		for ( i = 0 ; i < tess.numVertexes ; i++ ) {
-			dst[i][0] = (src[i][0] * tr.lightmapScale[0] ) + tess.shader->lightmapOffset[0];
-			dst[i][1] = (src[i][1] * tr.lightmapScale[1] ) + tess.shader->lightmapOffset[1];
-		}
-		src = dst;
 	}
 
 	tess.svars.texcoordPtr[ b ] = src;
@@ -862,7 +862,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 		}
 
 		// allow skipping out to show just lightmaps during development
-		if ( r_lightmap->integer && ( pStage->bundle[0].isLightmap || pStage->bundle[1].isLightmap ) )
+		if ( r_lightmap->integer && ( pStage->bundle[0].lightmap != LIGHTMAP_INDEX_NONE || pStage->bundle[1].lightmap != LIGHTMAP_INDEX_NONE ) )
 			break;
 	}
 }
@@ -873,7 +873,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 */
 void RB_StageIteratorGeneric( void )
 {
-	shaderCommands_t *input;
+	const shaderCommands_t *input;
 	shader_t		*shader;
 
 #ifdef USE_PMLIGHT
@@ -1010,7 +1010,7 @@ void RB_StageIteratorGeneric( void )
 ** RB_EndSurface
 */
 void RB_EndSurface( void ) {
-	shaderCommands_t *input;
+	const shaderCommands_t *input;
 
 	input = &tess;
 

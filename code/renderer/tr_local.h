@@ -235,7 +235,9 @@ typedef enum {
 	TMOD_SCALE,
 	TMOD_STRETCH,
 	TMOD_ROTATE,
-	TMOD_ENTITY_TRANSLATE
+	TMOD_ENTITY_TRANSLATE,
+	TMOD_OFFSET,
+	TMOD_SCALE_OFFSET,
 } texMod_t;
 
 #define	MAX_SHADER_DEFORMS	3
@@ -255,30 +257,42 @@ typedef struct {
 typedef struct {
 	texMod_t		type;
 
-	// used for TMOD_TURBULENT and TMOD_STRETCH
-	waveForm_t		wave;
+	union {
 
-	// used for TMOD_TRANSFORM
-	float			matrix[2][2];		// s' = s * m[0][0] + t * m[1][0] + trans[0]
-	float			translate[2];		// t' = s * m[0][1] + t * m[0][1] + trans[1]
+		// used for TMOD_TURBULENT and TMOD_STRETCH
+		waveForm_t		wave;
 
-	// used for TMOD_SCALE
-	float			scale[2];			// s *= scale[0]
-	                                    // t *= scale[1]
+		// used for TMOD_TRANSFORM
+		struct {
+			float		matrix[2][2];	// s' = s * m[0][0] + t * m[1][0] + trans[0]
+			float		translate[2];	// t' = s * m[0][1] + t * m[0][1] + trans[1]
+		};
 
-	// used for TMOD_SCROLL
-	float			scroll[2];			// s' = s + scroll[0] * time
+		// used for TMOD_SCALE, TMOD_OFFSET, TMOD_SCALE_OFFSET
+		struct {
+			float		scale[2];		// s' = s * scale[0] + offset[0]
+			float		offset[2];		// t' = t * scale[1] + offset[1]
+		};
+
+		// used for TMOD_SCROLL
+		float			scroll[2];		// s' = s + scroll[0] * time
 										// t' = t + scroll[1] * time
+		// used for TMOD_ROTATE
+		// + = clockwise
+		// - = counterclockwise
+		float			rotateSpeed;
 
-	// + = clockwise
-	// - = counterclockwise
-	float			rotateSpeed;
+	};
 
 } texModInfo_t;
 
 
 #define MAX_IMAGE_ANIMATIONS		24
 #define MAX_IMAGE_ANIMATIONS_VQ3	8
+
+#define LIGHTMAP_INDEX_NONE			0
+#define LIGHTMAP_INDEX_SHADER		1
+#define LIGHTMAP_INDEX_OFFSET		2
 
 typedef struct {
 	image_t			*image[MAX_IMAGE_ANIMATIONS];
@@ -292,7 +306,7 @@ typedef struct {
 	texModInfo_t	*texMods;
 
 	int				videoMapHandle;
-	qboolean		isLightmap;
+	int				lightmap;				// LIGHTMAP_INDEX_NONE, LIGHTMAP_INDEX_SHADER, LIGHTMAP_INDEX_OFFSET
 	qboolean		isVideoMap;
 	qboolean		isScreenMap;
 } textureBundle_t;
@@ -340,7 +354,7 @@ struct shaderCommands_s;
 typedef enum {
 	FP_NONE,		// surface is translucent and will just be adjusted properly
 	FP_EQUAL,		// surface is opaque but possibly alpha tested
-	FP_LE			// surface is trnaslucent, but still needs a fog pass (fog surface)
+	FP_LE			// surface is translucent, but still needs a fog pass (fog surface)
 } fogPass_t;
 
 typedef struct {
@@ -381,6 +395,7 @@ typedef struct shader_s {
 	fogParms_t	fogParms;
 
 	float		portalRange;			// distance to fog out at
+	float		portalRangeR;
 
 	qboolean	multitextureEnv;		// if shader has multitexture stage(s)
 
@@ -421,8 +436,6 @@ typedef struct shader_s {
 	int			curIndexes;
 
 	int			hasScreenMap;
-
-	float		lightmapOffset[2];	// within merged lightmap
 
 	void	(*optimalStageIteratorFunc)( void );
 
@@ -496,7 +509,7 @@ typedef struct image_s {
 //=================================================================================
 
 // max surfaces per-skin
-// This is an arbitry limit. Vanilla Q3 only supported 32 surfaces in skins but failed to
+// This is an arbitrary limit. Vanilla Q3 only supported 32 surfaces in skins but failed to
 // enforce the maximum limit when reading skin files. It was possile to use more than 32
 // surfaces which accessed out of bounds memory past end of skin->surfaces hunk block.
 #define MAX_SKIN_SURFACES	256
@@ -1025,7 +1038,7 @@ enum {
 	SCREENSHOT_AVI = 1<<4 // take video frame
 };
 
-// all state modified by the back end is seperated
+// all state modified by the back end is separated
 // from the front end state
 typedef struct {
 	trRefdef_t	refdef;
@@ -1104,7 +1117,10 @@ typedef struct {
 
 	int						numLightmaps;
 	image_t					**lightmaps;
-	float					lightmapScale[2];
+
+	float					lightmapOffset[2];	// current shader lightmap offset
+	float					lightmapScale[2];	// for lightmap atlases
+	int						lightmapMod;		// for lightmap atlases
 
 	trRefEntity_t			*currentEntity;
 	trRefEntity_t			worldEntity;		// point currentEntity at this when rendering world
@@ -1321,7 +1337,7 @@ void R_AddLitSurf( surfaceType_t *surface, shader_t *shader, int fogIndex );
 #define	CULL_IN		0		// completely unclipped
 #define	CULL_CLIP	1		// clipped by one or more planes
 #define	CULL_OUT	2		// completely outside the clipping planes
-void R_LocalNormalToWorld( const vec3_t local, vec3_t world );
+
 void R_LocalPointToWorld( const vec3_t local, vec3_t world );
 int R_CullLocalBox( const vec3_t bounds[2] );
 int R_CullPointAndRadius( const vec3_t origin, float radius );
@@ -1614,11 +1630,9 @@ SKIES
 ============================================================
 */
 
-void R_BuildCloudData( shaderCommands_t *shader );
 void R_InitSkyTexCoords( float cloudLayerHeight );
-void R_DrawSkyBox( shaderCommands_t *shader );
+void R_DrawSkyBox( const shaderCommands_t *shader );
 void RB_DrawSun( float scale, shader_t *shader );
-void RB_ClipSkyPolygons( shaderCommands_t *shader );
 
 /*
 ============================================================
@@ -1698,7 +1712,7 @@ void R_MDRAddAnimSurfaces( trRefEntity_t *ent );
 void RB_MDRSurfaceAnim( mdrSurface_t *surface );
 qboolean R_LoadIQM (model_t *mod, void *buffer, int filesize, const char *name );
 void R_AddIQMSurfaces( trRefEntity_t *ent );
-void RB_IQMSurfaceAnim( surfaceType_t *surface );
+void RB_IQMSurfaceAnim( const surfaceType_t *surface );
 int R_IQMLerpTag( orientation_t *tag, iqmData_t *data,
                   int startFrame, int endFrame,
                   float frac, const char *tagName );
@@ -1974,5 +1988,7 @@ qboolean ARB_CompileProgram( programType ptype, const char *text, GLuint program
 void ARB_ProgramEnableExt( GLuint vertexProgram, GLuint fragmentProgram );
 
 void QGL_SetRenderScale( qboolean verbose );
+
+int R_GetLightmapCoords( const int lightmapIndex, float *x, float *y );
 
 #endif //TR_LOCAL_H

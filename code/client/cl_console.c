@@ -379,7 +379,7 @@ void Con_CheckResize( void )
 Cmd_CompleteTxtName
 ==================
 */
-static void Cmd_CompleteTxtName( char *args, int argNum ) {
+static void Cmd_CompleteTxtName(const char *args, int argNum ) {
 	if ( argNum == 2 ) {
 		Field_CompleteFilename( "", "txt", qfalse, FS_MATCH_EXTERN | FS_MATCH_STICK );
 	}
@@ -394,10 +394,14 @@ Con_Init
 void Con_Init( void ) 
 {
 	con_notifytime = Cvar_Get( "con_notifytime", "3", 0 );
+	Cvar_SetDescription( con_notifytime, "Defines how long messages (from players or the system) are on the screen (in seconds)." );
 	con_conspeed = Cvar_Get( "scr_conspeed", "3", 0 );
+	Cvar_SetDescription( con_conspeed, "Console opening/closing scroll speed." );
 	con_autoclear = Cvar_Get("con_autoclear", "1", CVAR_ARCHIVE_ND);
+	Cvar_SetDescription( con_autoclear, "Enable/disable clearing console input text when console is closed." );
 	con_scale = Cvar_Get( "con_scale", "1", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( con_scale, "0.5", "8", CV_FLOAT );
+	Cvar_SetDescription( con_scale, "Console font size scale." );
 
 	Field_Clear( &g_consoleField );
 	g_consoleField.widthInChars = g_console_field_width;

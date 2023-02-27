@@ -254,7 +254,7 @@ static void RB_SurfaceSprite( void ) {
 RB_SurfacePolychain
 =============
 */
-static void RB_SurfacePolychain( srfPoly_t *p ) {
+static void RB_SurfacePolychain( const srfPoly_t *p ) {
 	int		i;
 	int		numv;
 
@@ -296,9 +296,9 @@ static void RB_SurfacePolychain( srfPoly_t *p ) {
 RB_SurfaceTriangles
 =============
 */
-static void RB_SurfaceTriangles( srfTriangles_t *srf ) {
+static void RB_SurfaceTriangles( const srfTriangles_t *srf ) {
 	int			i;
-	drawVert_t	*dv;
+	const drawVert_t	*dv;
 	float		*xyz, *normal;
 	float		*texCoords0;
 	float		*texCoords1;
@@ -1384,7 +1384,7 @@ RB_SurfaceEntity
 Entities that have a single procedurally generated surface
 ====================
 */
-static void RB_SurfaceEntity( surfaceType_t *surfType ) {
+static void RB_SurfaceEntity( const surfaceType_t *surfType ) {
 #ifdef USE_VBO
 	VBO_Flush();
 #endif
@@ -1414,7 +1414,7 @@ static void RB_SurfaceEntity( surfaceType_t *surfType ) {
 }
 
 
-static void RB_SurfaceBad( surfaceType_t *surfType ) {
+static void RB_SurfaceBad( const surfaceType_t *surfType ) {
 	ri.Printf( PRINT_ALL, "Bad surface tesselated.\n" );
 }
 
