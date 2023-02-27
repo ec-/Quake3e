@@ -3,9 +3,9 @@
 // ====================
 //   CVars
 
-static cvar_t* x_hud_fix_font = 0;
-static cvar_t* x_hud_xscore_by_default = 0;
-static cvar_t* x_hud_xscore_opaque = 0;
+static cvar_t *x_hud_fix_font = 0;
+static cvar_t *x_hud_xscore_by_default = 0;
+static cvar_t *x_hud_xscore_opaque = 0;
 
 // ====================
 //   Const vars
@@ -17,7 +17,8 @@ static cvar_t* x_hud_xscore_opaque = 0;
 // ====================
 //   Static routines
 
-typedef struct {
+typedef struct
+{
 	float scale;
 	float x;
 	float y;
@@ -25,29 +26,34 @@ typedef struct {
 	float h;
 } Bar;
 
-typedef struct {
+typedef struct
+{
 	int count;
 	unsigned char clients[MAX_CLIENTS];
 } PlayersList;
 
-typedef struct {
+typedef struct
+{
 	PlayersList ingame;
 	PlayersList spect;
 } FFAPlayersList;
 
-typedef struct {
+typedef struct
+{
 	PlayersList ingame;
 	PlayersList ingame2;
 	PlayersList spect;
 } SeparatedPlayersList;
 
-typedef struct {
+typedef struct
+{
 	PlayersList red;
 	PlayersList blue;
 	PlayersList spect;
 } TDMPlayersList;
 
-typedef enum {
+typedef enum
+{
 	StringWithShadow = 1,
 	TallString = 2,
 	StringInCenter = 4,
@@ -55,26 +61,26 @@ typedef enum {
 } XStringFlags;
 
 #define prv_DrawStr(xx, yy, sz, alp, fl, chrmap, str) \
-			{\
-				vec4_t color; \
-				MAKERGBA(color, 1.0, 1.0, 1.0, alp); \
-				X_Hud_DrawString(xx, yy, sz, color, fl, chrmap, str); \
-			}
+            {\
+                vec4_t color; \
+                MAKERGBA(color, 1.0, 1.0, 1.0, alp); \
+                X_Hud_DrawString(xx, yy, sz, color, fl, chrmap, str); \
+            }
 
 #define DrawBarStr(bar, xx, yy, sz, alp, str) \
-			 prv_DrawStr((bar)->x + ((bar)->scale * (xx)), (bar)->y + ((bar)->scale * (yy)), (bar)->scale * (sz), alp, StringWithShadow, xmod.rs.shaderXCharmap, str)
+             prv_DrawStr((bar)->x + ((bar)->scale * (xx)), (bar)->y + ((bar)->scale * (yy)), (bar)->scale * (sz), alp, StringWithShadow, xmod.rs.shaderXCharmap, str)
 
 #define DrawBarStrInCenter(bar, xx, yy, sz, alp, str) \
-			prv_DrawStr((bar)->x + ((bar)->scale * (xx)), (bar)->y + ((bar)->scale * (yy)), (bar)->scale * (sz), alp, StringWithShadow|StringInCenter, xmod.rs.shaderXCharmap, str)
+            prv_DrawStr((bar)->x + ((bar)->scale * (xx)), (bar)->y + ((bar)->scale * (yy)), (bar)->scale * (sz), alp, StringWithShadow|StringInCenter, xmod.rs.shaderXCharmap, str)
 
 #define DrawBarStrRightAligned(bar, xx, yy, sz, alp, str) \
-			prv_DrawStr((bar)->x + ((bar)->scale * (xx)), (bar)->y + ((bar)->scale * (yy)), (bar)->scale * (sz), alp, StringWithShadow|StringRightAligned, xmod.rs.shaderXCharmap, str)
+            prv_DrawStr((bar)->x + ((bar)->scale * (xx)), (bar)->y + ((bar)->scale * (yy)), (bar)->scale * (sz), alp, StringWithShadow|StringRightAligned, xmod.rs.shaderXCharmap, str)
 
 #define DrawFatBarStr(bar, xx, yy, sz, alp, str) \
-			prv_DrawStr((bar)->x + ((bar)->scale * (xx)), (bar)->y + ((bar)->scale * (yy)), (bar)->scale * (sz), alp, StringWithShadow, xmod.rs.shaderCharmap[2], str)
+            prv_DrawStr((bar)->x + ((bar)->scale * (xx)), (bar)->y + ((bar)->scale * (yy)), (bar)->scale * (sz), alp, StringWithShadow, xmod.rs.shaderCharmap[2], str)
 
 #define DrawFatBarStrInCenter(bar, xx, yy, sz, alp, str) \
-			prv_DrawStr((bar)->x + ((bar)->scale * (xx)), (bar)->y + ((bar)->scale * (yy)), (bar)->scale * (sz), alp, StringWithShadow|StringInCenter, xmod.rs.shaderCharmap[2], str)
+            prv_DrawStr((bar)->x + ((bar)->scale * (xx)), (bar)->y + ((bar)->scale * (yy)), (bar)->scale * (sz), alp, StringWithShadow|StringInCenter, xmod.rs.shaderCharmap[2], str)
 
 static void ShowScoreTable(void);
 static void HideScoreTable(void);
@@ -90,68 +96,70 @@ static void Draw1v1ScoreTable(void);
 static void DrawTeamScoreTable(void);
 static void DrawCTFScoreTable(void);
 
-static void GetSortedFFAPlayersList(FFAPlayersList* players);
-static void GetSeparatedFFAPlayersList(FFAPlayersList* players, SeparatedPlayersList* separated);
-static void GetSortedTDMPlayersList(TDMPlayersList* players);
-static void GetSortedTourneyPlayersList(SeparatedPlayersList* players);
+static void GetSortedFFAPlayersList(FFAPlayersList *players);
+static void GetSeparatedFFAPlayersList(FFAPlayersList *players, SeparatedPlayersList *separated);
+static void GetSortedTDMPlayersList(TDMPlayersList *players);
+static void GetSortedTourneyPlayersList(SeparatedPlayersList *players);
 
-static const char* GetCurrentModeName(void);
+static const char *GetCurrentModeName(void);
 
-static char* GetColoredMS(int ms);
+static char *GetColoredMS(int ms);
 
-static void CalculateCenterBar(Bar* bar, float w, float h);
-static void CalculateChildBar(Bar* parent, Bar* bar, float x, float y, float w, float h);
+static void CalculateCenterBar(Bar *bar, float w, float h);
+static void CalculateChildBar(Bar *parent, Bar *bar, float x, float y, float w, float h);
 
-static void DrawPlayerName(float x, float y, float size, float alpha, int maxlen, char* name);
+static void DrawPlayerName(float x, float y, float size, float alpha, int maxlen, char *name);
 
-static void DrawBar(Bar* bar, vec4_t rgba, float border);
+static void DrawBar(Bar *bar, vec4_t rgba, float border);
 
 static void DrawCharacter(float x, float y, float size, unsigned char ch, qhandle_t charmap);
 
-static void DrawProgressBar(XUIProgressBar* bar, Bar* b, float value);
+static void DrawProgressBar(XUIProgressBar *bar, Bar *b, float value);
 
-static void DrawSquareIcon(Bar* bar, float x, float y, float sz, float alpha, qhandle_t shader);
+static void DrawSquareIcon(Bar *bar, float x, float y, float sz, float alpha, qhandle_t shader);
 
-static const char* CovertTimeToString(int time);
+static const char *CovertTimeToString(int time);
 
 // ======================
 //   Score routines
 
-enum ScoreFlags {
+enum ScoreFlags
+{
 	SFlagOneTeam = 1,
 	SFlagDrawScore = 2,
 	SFlagVoteBar = 4
 };
 
-typedef struct {
+typedef struct
+{
 	char title[64];
 	char descr[64];
 	vec4_t color;
-	PlayersList* players;
+	PlayersList *players;
 	int score;
-	float(*header)(Bar*);
-	float(*draw)(Bar*, int, int, int);
-	float(*total)(Bar*);
+	float (*header)(Bar *);
+	float (*draw)(Bar *, int, int, int);
+	float (*total)(Bar *);
 } TableSection;
 
-static void CreateSingleScoreTable(float width, TableSection* section1, TableSection* section2, float(*total)(Bar*, int team), int flags);
-static void CreateDoubleScoreTable(float width, TableSection* section1, TableSection* section2, TableSection* section3, float(*total)(Bar*, int team), int flags);
+static void CreateSingleScoreTable(float width, TableSection *section1, TableSection *section2, float(*total)(Bar *, int team), int flags);
+static void CreateDoubleScoreTable(float width, TableSection *section1, TableSection *section2, TableSection *section3, float(*total)(Bar *, int team), int flags);
 
-static float DrawPlayerRowFFA(Bar* bar, int pos, int client, int flags);
-static float DrawPlayerRowHeaderFFA(Bar* bar);
-static float DrawSpectatorRowHeaderFFA(Bar* bar);
-static float DrawPlayerRowTotalFFA(Bar* bar, int team);
+static float DrawPlayerRowFFA(Bar *bar, int pos, int client, int flags);
+static float DrawPlayerRowHeaderFFA(Bar *bar);
+static float DrawSpectatorRowHeaderFFA(Bar *bar);
+static float DrawPlayerRowTotalFFA(Bar *bar, int team);
 
-static float DrawPlayerRowTDM(Bar* bar, int pos, int client, int flags);
-static float DrawPlayerRowCTF(Bar* bar, int pos, int client, int flags);
-static float DrawPlayerRowHeaderTDM(Bar* bar);
-static float DrawPlayerRowTotalTDM(Bar* bar, int team);
+static float DrawPlayerRowTDM(Bar *bar, int pos, int client, int flags);
+static float DrawPlayerRowCTF(Bar *bar, int pos, int client, int flags);
+static float DrawPlayerRowHeaderTDM(Bar *bar);
+static float DrawPlayerRowTotalTDM(Bar *bar, int team);
 
-static void DrawTableSectionTitle(Bar* bar, TableSection* sect);
-static void DrawTableSectionTitleWithScore(Bar* bar, TableSection* sect, int place);
+static void DrawTableSectionTitle(Bar *bar, TableSection *sect);
+static void DrawTableSectionTitleWithScore(Bar *bar, TableSection *sect, int place);
 
-static char* ConvertPlaceToString(int place);
-static void DrawBotLevel(Bar* bar, float x, float y, float skill);
+static char *ConvertPlaceToString(int place);
+static void DrawBotLevel(Bar *bar, float x, float y, float skill);
 
 // ====================
 //   Implementation
@@ -214,7 +222,9 @@ qboolean X_Hud_UpdatePlayerStats()
 	int current = Sys_Milliseconds();
 
 	if (!xmod.scr.show)
+	{
 		return (current >= xmod.scr.lastUpd ? qfalse : qtrue);
+	}
 
 	if (xmod.gs.mode == ModeOSP)
 	{
@@ -231,13 +241,17 @@ qboolean X_Hud_UpdatePlayerStats()
 	return qfalse;
 }
 
-void X_Hud_HackTurnOffDefaultScores(snapshot_t* snapshot)
+void X_Hud_HackTurnOffDefaultScores(snapshot_t *snapshot)
 {
 	if (!x_hud_xscore_by_default->integer)
+	{
 		return;
+	}
 
 	if (snapshot->ps.pm_type != PM_DEAD && snapshot->ps.pm_type != PM_INTERMISSION)
+	{
 		return;
+	}
 
 	X_Hud_ResetFading(&xmod.scr.fading);
 
@@ -248,32 +262,44 @@ void X_Hud_HackTurnOffDefaultScores(snapshot_t* snapshot)
 qhandle_t X_Hud_GetConsoleFontShader(void)
 {
 	if (!IsXModeActive())
+	{
 		return cls.charSetShader;
+	}
 
 	if (x_hud_fix_font->integer)
+	{
 		return xmod.rs.shaderCharmap[0];
-	
+	}
+
 	return cls.charSetShader;
 }
 
 qhandle_t X_Hud_GetOverlayFontShader(void)
 {
 	if (!IsXModeActive())
+	{
 		return cls.charSetShader;
+	}
 
 	return xmod.rs.shaderXOverlayChars;
 }
 
-void X_Hud_CustomizeConsoleFont(qhandle_t* shader)
+void X_Hud_CustomizeConsoleFont(qhandle_t *shader)
 {
 	if (!x_hud_fix_font->integer)
+	{
 		return;
+	}
 
 	if (*shader != cls.charSetShader)
+	{
 		return;
+	}
 
 	if (!xmod.rs.shaderCharmap[2])
+	{
 		return;
+	}
 
 	*shader = xmod.rs.shaderCharmap[2];
 }
@@ -281,10 +307,14 @@ void X_Hud_CustomizeConsoleFont(qhandle_t* shader)
 qboolean X_Hud_HideOnXScore(void)
 {
 	if (!xmod.scr.show)
+	{
 		return qfalse;
+	}
 
 	if (xmod.scr.opaque)
+	{
 		return qfalse;
+	}
 
 	return qtrue;
 }
@@ -305,10 +335,14 @@ void X_Hud_TurnOnForcedTransparency(void)
 static void ShowScoreTable(void)
 {
 	if (!IsXModeActive())
+	{
 		return;
+	}
 
 	if (xmod.scr.show)
+	{
 		return;
+	}
 
 	X_Hud_UpdatePlayerStats();
 	X_Hud_ResetFading(&xmod.scr.fading);
@@ -321,10 +355,14 @@ static void ShowScoreTable(void)
 static void HideScoreTable(void)
 {
 	if (!IsXModeActive())
+	{
 		return;
+	}
 
 	if (!xmod.scr.show)
+	{
 		return;
+	}
 
 	xmod.scr.show = qfalse;
 
@@ -334,7 +372,9 @@ static void HideScoreTable(void)
 static void RedirectScoreCommandToCgame(void)
 {
 	if (com_cl_running && com_cl_running->integer)
+	{
 		CL_GameCommand();
+	}
 }
 
 static void DrawScoreTable(void)
@@ -342,7 +382,9 @@ static void DrawScoreTable(void)
 	CheckAndTurnOfAutoshow();
 
 	if (!xmod.scr.show)
+	{
 		return;
+	}
 
 	X_Hud_UpdatePlayerStats();
 
@@ -351,23 +393,33 @@ static void DrawScoreTable(void)
 	DrawTopHud();
 
 	if (xmod.gs.type == GameFFA)
+	{
 		DrawFFAScoreTable();
+	}
 	else if (xmod.gs.type == Game1v1)
+	{
 		Draw1v1ScoreTable();
+	}
 	else if (xmod.gs.type == GameTDM || xmod.gs.type == GameCA)
+	{
 		DrawTeamScoreTable();
+	}
 	else if (xmod.gs.type == GameCTF)
+	{
 		DrawCTFScoreTable();
+	}
 }
 
 static void CheckAndTurnOfAutoshow(void)
 {
 	if (!xmod.scr.autoshow)
+	{
 		return;
-	
+	}
+
 	if (!x_hud_xscore_by_default->integer
-	 || (xmod.snap.ps.pm_type != PM_DEAD
-	  && xmod.snap.ps.pm_type != PM_INTERMISSION))
+		|| (xmod.snap.ps.pm_type != PM_DEAD
+			&& xmod.snap.ps.pm_type != PM_INTERMISSION))
 	{
 		xmod.scr.show = qfalse;
 		xmod.scr.autoshow = qfalse;
@@ -403,7 +455,7 @@ static void DrawFFAScoreTable(void)
 	FFAPlayersList ffa;
 	GetSortedFFAPlayersList(&ffa);
 
-	float(*total)(Bar*, int) = (ffa.ingame.count > 1 ? DrawPlayerRowTotalFFA : 0);
+	float (*total)(Bar *, int) = (ffa.ingame.count > 1 ? DrawPlayerRowTotalFFA : 0);
 
 	if (ffa.ingame.count > 16 || ffa.spect.count > 16 || ffa.ingame.count + ffa.spect.count > 18)
 	{
@@ -416,16 +468,16 @@ static void DrawFFAScoreTable(void)
 		Q_strncpyz(ingame.descr, text, sizeof(ingame.descr));
 		MAKERGBA(ingame.color, 0.5f, 0.0f, 0.5f, 0.3f);
 		ingame.players = &sep.ingame;
-		ingame.header  = DrawPlayerRowHeaderFFA;
-		ingame.draw    = DrawPlayerRowFFA;
+		ingame.header = DrawPlayerRowHeaderFFA;
+		ingame.draw = DrawPlayerRowFFA;
 
 		TableSection ingame2;
 		*ingame2.title = '\0';
 		*ingame2.descr = '\0';
 		MAKERGBA(ingame2.color, 0.5f, 0.0f, 0.5f, 0.3f);
 		ingame2.players = &sep.ingame2;
-		ingame2.header  = DrawPlayerRowHeaderFFA;
-		ingame2.draw    = DrawPlayerRowFFA;
+		ingame2.header = DrawPlayerRowHeaderFFA;
+		ingame2.draw = DrawPlayerRowFFA;
 
 		TableSection spects;
 		Q_strncpyz(spects.title, "^7SPECTATORS", sizeof(spects.title));
@@ -433,8 +485,8 @@ static void DrawFFAScoreTable(void)
 		Q_strncpyz(spects.descr, text, sizeof(spects.descr));
 		MAKERGBA(spects.color, 0.8f, 0.8f, 0.8f, 0.3f);
 		spects.players = &ffa.spect;
-		spects.header  = DrawSpectatorRowHeaderFFA;
-		spects.draw    = DrawPlayerRowFFA;
+		spects.header = DrawSpectatorRowHeaderFFA;
+		spects.draw = DrawPlayerRowFFA;
 
 		CreateDoubleScoreTable(300.f, &ingame, &ingame2, &spects, total, SFlagOneTeam | GetVoteSFlag());
 	}
@@ -446,8 +498,8 @@ static void DrawFFAScoreTable(void)
 		Q_strncpyz(ingame.descr, text, sizeof(ingame.descr));
 		MAKERGBA(ingame.color, 0.5f, 0.0f, 0.5f, 0.3f);
 		ingame.players = &ffa.ingame;
-		ingame.header  = DrawPlayerRowHeaderFFA;
-		ingame.draw    = DrawPlayerRowFFA;
+		ingame.header = DrawPlayerRowHeaderFFA;
+		ingame.draw = DrawPlayerRowFFA;
 
 		TableSection spects;
 		Q_strncpyz(spects.title, "^7SPECTATORS", sizeof(spects.title));
@@ -455,8 +507,8 @@ static void DrawFFAScoreTable(void)
 		Q_strncpyz(spects.descr, text, sizeof(spects.descr));
 		MAKERGBA(spects.color, 0.8f, 0.8f, 0.8f, 0.3f);
 		spects.players = &ffa.spect;
-		spects.header  = DrawSpectatorRowHeaderFFA;
-		spects.draw    = DrawPlayerRowFFA;
+		spects.header = DrawSpectatorRowHeaderFFA;
+		spects.draw = DrawPlayerRowFFA;
 
 		CreateSingleScoreTable(300.f, &ingame, &spects, total, SFlagOneTeam | GetVoteSFlag());
 	}
@@ -505,17 +557,17 @@ static void DrawTeamScoreTable(void)
 	TDMPlayersList tdm;
 	GetSortedTDMPlayersList(&tdm);
 
-	float(*total)(Bar*, int) = (tdm.red.count > 1 || tdm.blue.count > 1 ? DrawPlayerRowTotalTDM : 0);
+	float (*total)(Bar *, int) = (tdm.red.count > 1 || tdm.blue.count > 1 ? DrawPlayerRowTotalTDM : 0);
 
 	TableSection red;
 	Q_strncpyz(red.title, "^1RED TEAM", sizeof(red.title));
 	Com_sprintf(text, sizeof(text), "^1%d players", tdm.red.count);
 	Q_strncpyz(red.descr, text, sizeof(red.descr));
 	MAKERGBA(red.color, 1.0f, 0.0f, 0.0f, 0.2f);
-	red.score   = xmod.scr.team_red;
+	red.score = xmod.scr.team_red;
 	red.players = &tdm.red;
-	red.header  = DrawPlayerRowHeaderTDM;
-	red.draw    = DrawPlayerRowTDM;
+	red.header = DrawPlayerRowHeaderTDM;
+	red.draw = DrawPlayerRowTDM;
 
 	TableSection blue;
 	Q_strncpyz(blue.title, "^nBLUE TEAM", sizeof(blue.title));
@@ -524,8 +576,8 @@ static void DrawTeamScoreTable(void)
 	MAKERGBA(blue.color, 0.0f, 0.0f, 1.0f, 0.25f);
 	blue.score = xmod.scr.team_blue;
 	blue.players = &tdm.blue;
-	blue.header  = DrawPlayerRowHeaderTDM;
-	blue.draw    = DrawPlayerRowTDM;
+	blue.header = DrawPlayerRowHeaderTDM;
+	blue.draw = DrawPlayerRowTDM;
 
 	TableSection spects;
 	Q_strncpyz(spects.title, "^7SPECTATORS", sizeof(spects.title));
@@ -533,8 +585,8 @@ static void DrawTeamScoreTable(void)
 	Q_strncpyz(spects.descr, text, sizeof(spects.descr));
 	MAKERGBA(spects.color, 0.8f, 0.8f, 0.8f, 0.3f);
 	spects.players = &tdm.spect;
-	spects.header  = DrawPlayerRowHeaderTDM;
-	spects.draw    = DrawPlayerRowTDM;
+	spects.header = DrawPlayerRowHeaderTDM;
+	spects.draw = DrawPlayerRowTDM;
 
 	CreateDoubleScoreTable(300.f, &red, &blue, &spects, total, SFlagDrawScore | GetVoteSFlag());
 }
@@ -545,7 +597,7 @@ static void DrawCTFScoreTable()
 	TDMPlayersList tdm;
 	GetSortedTDMPlayersList(&tdm);
 
-	float(*total)(Bar*, int) = (tdm.red.count > 1 || tdm.blue.count > 1 ? DrawPlayerRowTotalTDM : 0);
+	float (*total)(Bar *, int) = (tdm.red.count > 1 || tdm.blue.count > 1 ? DrawPlayerRowTotalTDM : 0);
 
 	TableSection red;
 	Q_strncpyz(red.title, "^1RED TEAM", sizeof(red.title));
@@ -579,7 +631,7 @@ static void DrawCTFScoreTable()
 	CreateDoubleScoreTable(300.f, &red, &blue, &spects, total, SFlagDrawScore | GetVoteSFlag());
 }
 
-static void CalculateCenterBar(Bar* bar, float w, float h)
+static void CalculateCenterBar(Bar *bar, float w, float h)
 {
 	float width = 640.0f;
 	float height = 480.0f;
@@ -611,7 +663,7 @@ static void CalculateCenterBar(Bar* bar, float w, float h)
 	bar->scale = yscale;
 }
 
-static void CalculateChildBar(Bar* parent, Bar* bar, float x, float y, float w, float h)
+static void CalculateChildBar(Bar *parent, Bar *bar, float x, float y, float w, float h)
 {
 	bar->scale = parent->scale;
 	bar->x = parent->x + (parent->scale * x);
@@ -620,7 +672,7 @@ static void CalculateChildBar(Bar* parent, Bar* bar, float x, float y, float w, 
 	bar->h = h * parent->scale;
 }
 
-static void DrawBar(Bar* bar, vec4_t rgba, float border)
+static void DrawBar(Bar *bar, vec4_t rgba, float border)
 {
 	re.SetColor(rgba);
 
@@ -629,65 +681,75 @@ static void DrawBar(Bar* bar, vec4_t rgba, float border)
 	if (border)
 	{
 		re.DrawStretchPic(
-			bar->x,
-			bar->y,
-			border,
-			bar->h,
-			0, 0, 0, 0, cls.whiteShader
+		bar->x,
+		bar->y,
+		border,
+		bar->h,
+		0, 0, 0, 0, cls.whiteShader
 		);
 		re.DrawStretchPic(
-			bar->x + border,
-			bar->y,
-			bar->w - border,
-			border,
-			0, 0, 0, 0, cls.whiteShader
+		bar->x + border,
+		bar->y,
+		bar->w - border,
+		border,
+		0, 0, 0, 0, cls.whiteShader
 		);
 		re.DrawStretchPic(
-			bar->x + bar->w - border,
-			bar->y + border,
-			border,
-			bar->h - border,
-			0, 0, 0, 0, cls.whiteShader
+		bar->x + bar->w - border,
+		bar->y + border,
+		border,
+		bar->h - border,
+		0, 0, 0, 0, cls.whiteShader
 		);
 		re.DrawStretchPic(
-			bar->x + border, 
-			bar->y + bar->h - border,
-			bar->w - (border * 2),
-			border,
-			0, 0, 0, 0, cls.whiteShader
+		bar->x + border,
+		bar->y + bar->h - border,
+		bar->w - (border * 2),
+		border,
+		0, 0, 0, 0, cls.whiteShader
 		);
 	}
 
 	re.SetColor(0);
 }
 
-static char* GetColoredMS(int ms)
+static char *GetColoredMS(int ms)
 {
 	static char buffer[64];
 	char color = '7';
 
 	if (ms < 20)
+	{
 		color = '7';
+	}
 	else if (ms < 40)
+	{
 		color = '2';
+	}
 	else if (ms < 60)
+	{
 		color = '3';
+	}
 	else if (ms < 80)
+	{
 		color = '8';
+	}
 	else
+	{
 		color = '1';
+	}
 
 	Com_sprintf(buffer, sizeof(buffer), "^%c%d^zms", color, ms);
 
 	return buffer;
 }
 
-static void DrawPlayerName(float x, float y, float size, float alpha, int maxlen, char* name)
+static void DrawPlayerName(float x, float y, float size, float alpha, int maxlen, char *name)
 {
 	int len = 0;
 	char buffer[MAX_NAME_LEN + 1];
 	vec4_t color;
-	
+
 	MAKERGBA(color, 1.0, 1.0, 1.0, alpha);
 
 	for (int i = 0, l = strlen(name); i < l; i++)
@@ -713,23 +775,35 @@ static void DrawPlayerName(float x, float y, float size, float alpha, int maxlen
 	X_Hud_DrawString(x, y, size, color, StringWithShadow, xmod.rs.shaderCharmap[2], buffer);
 }
 
-static const char* GetCurrentModeName()
+static const char *GetCurrentModeName()
 {
 	static char buffer[64];
-	const char* mode = "UNKNWON MODE";
+	const char *mode = "UNKNWON MODE";
 
 	if (xmod.gs.type == GameFFA)
+	{
 		mode = "FREE FOR ALL";
+	}
 	else if (xmod.gs.type == Game1v1)
+	{
 		mode = "TOURNEY";
+	}
 	else if (xmod.gs.type == GameCA)
+	{
 		mode = "CLAN ARENA";
+	}
 	else if (xmod.gs.type == GameTDM && xmod.gs.freezetag)
+	{
 		mode = "FREEZE TAG";
+	}
 	else if (xmod.gs.type == GameTDM)
+	{
 		mode = "TEAM DEATHMATCH";
+	}
 	else if (xmod.gs.type == GameCTF)
+	{
 		mode = "CAPTURE THE FLAG";
+	}
 
 	Com_sprintf(buffer, sizeof(buffer), "^8%s%s", (xmod.gs.promode ? "CPM " : ""), mode);
 	return buffer;
@@ -744,19 +818,25 @@ static const char* GetGameInfo(void)
 }
 #endif
 
-static const char* CovertTimerToString(int start, int current)
+static const char *CovertTimerToString(int start, int current)
 {
 	static char buffer[256];
 
 	if (!start || start < 0)
+	{
 		return "--:--";
+	}
 
 	if (!current || current < 0)
+	{
 		return "--:--";
+	}
 
 	int timer = (current - start) / 1000;
 	if (timer < 0)
+	{
 		timer *= -1;
+	}
 
 	int mins = timer / 60;
 	int secs = timer % 60;
@@ -775,7 +855,7 @@ static const char* CovertTimerToString(int start, int current)
 	return buffer;
 }
 
-static const char* CovertTimeToString(int time)
+static const char *CovertTimeToString(int time)
 {
 	static char buffer[256];
 
@@ -791,7 +871,7 @@ static const char* CovertTimeToString(int time)
 	return buffer;
 }
 
-static const char* CovertMinsToString(int mins)
+static const char *CovertMinsToString(int mins)
 {
 	static char buffer[256];
 
@@ -809,26 +889,34 @@ static const char* CovertMinsToString(int mins)
 	return buffer;
 }
 
-static char* GetGameTimer(void)
+static char *GetGameTimer(void)
 {
 	static char buffer[256];
-	
+
 	if (xmod.gs.timer.type == GTimerRoundTime)
 	{
 		if (xmod.gs.timelimit)
-			Com_sprintf(buffer, sizeof(buffer), "^9ROUND ^7%s^f\xaf^z%s%s", 
-				CovertTimerToString(xmod.gs.timer.start, xmod.gs.timer.current),
-				CovertMinsToString(xmod.gs.timelimit + xmod.gs.overtime),
-				xmod.gs.overtime ? " ^7OVERTIME" : "");
+		{
+			Com_sprintf(buffer, sizeof(buffer), "^9ROUND ^7%s^f\xaf^z%s%s",
+						CovertTimerToString(xmod.gs.timer.start, xmod.gs.timer.current),
+						CovertMinsToString(xmod.gs.timelimit + xmod.gs.overtime),
+						xmod.gs.overtime ? " ^7OVERTIME" : "");
+		}
 		else
+		{
 			Com_sprintf(buffer, sizeof(buffer), "^9ROUND ^7%s", CovertTimerToString(xmod.gs.timer.start, xmod.gs.timer.current));
+		}
 	}
 	else if (xmod.gs.timer.type == GTimerWarmup)
 	{
 		if (xmod.gs.timer.warmup == -1)
+		{
 			Com_sprintf(buffer, sizeof(buffer), "^1WARMUP ^7--:--");
+		}
 		else
+		{
 			Com_sprintf(buffer, sizeof(buffer), "^1WARMUP ^7%s", CovertTimerToString(xmod.gs.timer.current, xmod.gs.timer.warmup));
+		}
 	}
 	else if (xmod.gs.timer.type == GTimerTimeout)
 	{
@@ -842,7 +930,7 @@ static char* GetGameTimer(void)
 	return buffer;
 }
 
-static const char* GetCurrentModeLimits(void)
+static const char *GetCurrentModeLimits(void)
 {
 	static char buffer[256];
 	static char rl[64], tl[64], fl[64], cl[64];
@@ -850,33 +938,43 @@ static const char* GetCurrentModeLimits(void)
 	rl[0] = fl[0] = tl[0] = cl[0] = '\0';
 
 	if (xmod.gs.roundlimit > 0)
+	{
 		Com_sprintf(rl, sizeof(rl), "^7ROUNDS:^2%d ", xmod.gs.roundlimit);
+	}
 
 	if (xmod.gs.fraglimit > 0)
+	{
 		Com_sprintf(fl, sizeof(fl), "^7SCORE:^2%d ", xmod.gs.fraglimit);
+	}
 
 	if (xmod.gs.timelimit > 0)
+	{
 		Com_sprintf(tl, sizeof(tl), "^7TIME:^2%d^zmin ", xmod.gs.timelimit);
+	}
 
 	if (xmod.gs.capturelimit > 0)
+	{
 		Com_sprintf(cl, sizeof(cl), "^7FLAGS:^2%d ", xmod.gs.capturelimit);
+	}
 
 	Com_sprintf(buffer, sizeof(buffer), "%s%s%s%s", rl, fl, cl, tl);
 
 	return buffer;
 }
 
-static void SortPlayersList(PlayersList* list)
+static void SortPlayersList(PlayersList *list)
 {
 	int rating[MAX_CLIENTS];
 
 	if (list->count < 2)
+	{
 		return;
+	}
 
 	for (int i = 0; i < list->count; i++)
 	{
 		int client = list->clients[i];
-		XPlayerState* ps = xmod.gs.ps + list->clients[i];
+		XPlayerState *ps = xmod.gs.ps + list->clients[i];
 
 		if (ps->score.active)
 		{
@@ -900,7 +998,7 @@ static void SortPlayersList(PlayersList* list)
 		for (int a = 1; a < list->count; a++)
 		{
 			int score1 = rating[list->clients[a - 1]];
-			int score2 = rating[ list->clients[a] ];
+			int score2 = rating[list->clients[a]];
 
 			if (score1 < score2)
 			{
@@ -912,7 +1010,7 @@ static void SortPlayersList(PlayersList* list)
 	}
 }
 
-static void GetSortedFFAPlayersList(FFAPlayersList* players)
+static void GetSortedFFAPlayersList(FFAPlayersList *players)
 {
 	players->ingame.count = 0;
 	players->spect.count = 0;
@@ -920,28 +1018,38 @@ static void GetSortedFFAPlayersList(FFAPlayersList* players)
 	for (int i = 0; i < MAX_CLIENTS; i++)
 	{
 		if (!xmod.gs.ps[i].active)
+		{
 			continue;
+		}
 
 		if (xmod.gs.ps[i].team == TEAM_FREE)
+		{
 			players->ingame.clients[players->ingame.count++] = i;
+		}
 		else
+		{
 			players->spect.clients[players->spect.count++] = i;
+		}
 	}
 
 	SortPlayersList(&players->ingame);
 	SortPlayersList(&players->spect);
 }
 
-static void GetSeparatedFFAPlayersList(FFAPlayersList* players, SeparatedPlayersList* separated)
+static void GetSeparatedFFAPlayersList(FFAPlayersList *players, SeparatedPlayersList *separated)
 {
 	int start = (players->ingame.count / 2) + (players->ingame.count % 2);
 
 	for (int i = 0, a = 0; i < players->ingame.count; i++)
 	{
 		if (i >= start)
+		{
 			separated->ingame2.clients[a++] = players->ingame.clients[i];
+		}
 		else
+		{
 			separated->ingame.clients[i] = players->ingame.clients[i];
+		}
 	}
 
 	separated->ingame.count = start;
@@ -949,7 +1057,7 @@ static void GetSeparatedFFAPlayersList(FFAPlayersList* players, SeparatedPlayers
 	separated->spect = players->spect;
 }
 
-static void GetSortedTDMPlayersList(TDMPlayersList* players)
+static void GetSortedTDMPlayersList(TDMPlayersList *players)
 {
 	players->red.count = 0;
 	players->blue.count = 0;
@@ -958,14 +1066,22 @@ static void GetSortedTDMPlayersList(TDMPlayersList* players)
 	for (int i = 0; i < MAX_CLIENTS; i++)
 	{
 		if (!xmod.gs.ps[i].active)
+		{
 			continue;
+		}
 
 		if (xmod.gs.ps[i].team == TEAM_RED)
+		{
 			players->red.clients[players->red.count++] = i;
+		}
 		else if (xmod.gs.ps[i].team == TEAM_BLUE)
+		{
 			players->blue.clients[players->blue.count++] = i;
+		}
 		else
+		{
 			players->spect.clients[players->spect.count++] = i;
+		}
 	}
 
 	SortPlayersList(&players->red);
@@ -973,7 +1089,7 @@ static void GetSortedTDMPlayersList(TDMPlayersList* players)
 	SortPlayersList(&players->spect);
 }
 
-static void GetSortedTourneyPlayersList(SeparatedPlayersList* players)
+static void GetSortedTourneyPlayersList(SeparatedPlayersList *players)
 {
 	players->ingame.count = 0;
 	players->ingame2.count = 0;
@@ -982,11 +1098,13 @@ static void GetSortedTourneyPlayersList(SeparatedPlayersList* players)
 	for (int i = 0; i < MAX_CLIENTS; i++)
 	{
 		if (!xmod.gs.ps[i].active)
+		{
 			continue;
+		}
 
 		if (xmod.gs.ps[i].team == TEAM_FREE)
 		{
-			PlayersList* pl = (!players->ingame.count ? &players->ingame : &players->ingame2);
+			PlayersList *pl = (!players->ingame.count ? &players->ingame : &players->ingame2);
 			pl->clients[pl->count++] = i;
 		}
 		else
@@ -998,10 +1116,10 @@ static void GetSortedTourneyPlayersList(SeparatedPlayersList* players)
 	SortPlayersList(&players->spect);
 }
 
-void X_Hud_DrawString(float x, float y, float size, vec4_t rgba, int flags, qhandle_t shader, const char* string)
+void X_Hud_DrawString(float x, float y, float size, vec4_t rgba, int flags, qhandle_t shader, const char *string)
 {
 	vec4_t color;
-	const char* s;
+	const char *s;
 	float xx;
 
 	if (flags & StringInCenter)
@@ -1065,9 +1183,13 @@ void X_Hud_DrawString(float x, float y, float size, vec4_t rgba, int flags, qhan
 	xx = x;
 
 	if (rgba)
+	{
 		re.SetColor(rgba);
+	}
 	else
+	{
 		re.SetColor(0);
+	}
 
 	while (*s)
 	{
@@ -1097,10 +1219,14 @@ static void DrawCharacter(float x, float y, float size, unsigned char ch, qhandl
 	ch &= 255;
 
 	if (ch == ' ')
+	{
 		return;
+	}
 
 	if (y < -size)
+	{
 		return;
+	}
 
 	ax = x;
 	ay = y;
@@ -1117,24 +1243,26 @@ static void DrawCharacter(float x, float y, float size, unsigned char ch, qhandl
 	re.DrawStretchPic(ax, ay, aw, ah, fcol, frow, fcol + size, frow + size, charmap);
 }
 
-static void DrawVoteBar(Bar* bar, float height)
+static void DrawVoteBar(Bar *bar, float height)
 {
 	char buffer[256];
 
 	int votetime = atoi(X_GetConfigString(CS_VOTE_TIME));
 	if (!votetime)
+	{
 		return;
+	}
 
 	int sec = (votetime + VOTE_TIME - cl.serverTime) / 1000;
 
 	Com_sprintf(buffer, sizeof(buffer),
-		"^7VOTE(%d): ^f%s ^7yes:^2%d^z/^7no:^2%d",
-		sec,
-		X_GetConfigString(CS_VOTE_STRING),
-		atoi(X_GetConfigString(CS_VOTE_YES)),
-		atoi(X_GetConfigString(CS_VOTE_NO))
+				"^7VOTE(%d): ^f%s ^7yes:^2%d^z/^7no:^2%d",
+				sec,
+				X_GetConfigString(CS_VOTE_STRING),
+				atoi(X_GetConfigString(CS_VOTE_YES)),
+				atoi(X_GetConfigString(CS_VOTE_NO))
 	);
-	
+
 	DrawBarStr(bar, 5, height * 0.1, height * 0.8, 0.8f, buffer);
 
 	return;
@@ -1145,10 +1273,10 @@ static void DrawVoteBar(Bar* bar, float height)
 #define XSCORE_PLAYER_TITLE_HEIGHT 14.f
 #define XSCORE_VOTE_BAR_HEIGHT 10.f
 
-static void CreateSingleScoreTable(float sectionWidth, TableSection* section1, TableSection* section2, float(*total)(Bar*, int team), int flags)
+static void CreateSingleScoreTable(float sectionWidth, TableSection *section1, TableSection *section2, float(*total)(Bar *, int team), int flags)
 {
-	PlayersList* ingame = section1->players;
-	PlayersList* spects = section2->players;
+	PlayersList *ingame = section1->players;
+	PlayersList *spects = section2->players;
 	float rowh = section1->draw(0, 0, 0, 0) + 1.f;
 	float headerh = section1->header(0);
 	float totalh = (total ? total(0, 0) : 0.f);
@@ -1170,12 +1298,14 @@ static void CreateSingleScoreTable(float sectionWidth, TableSection* section1, T
 	height += 14.f;
 
 	if (height < XSCORE_CENTER_TABLE_MIN_HEIGHT)
+	{
 		height = XSCORE_CENTER_TABLE_MIN_HEIGHT;
+	}
 
 	Bar score, bar, head;
 
 	CalculateCenterBar(&score, width, height + voteh);
-	
+
 	if (flags & SFlagVoteBar)
 	{
 		DrawVoteBar(&score, voteh);
@@ -1228,7 +1358,7 @@ static void CreateSingleScoreTable(float sectionWidth, TableSection* section1, T
 
 	CalculateChildBar(&score, &bar, 5.f, height - 16.f, sectionWidth, 18.f);
 
-	char* serverInfo = X_GetConfigString(4);
+	char *serverInfo = X_GetConfigString(4);
 	char buffer[256];
 	if (strlen(serverInfo))
 	{
@@ -1241,11 +1371,11 @@ static void CreateSingleScoreTable(float sectionWidth, TableSection* section1, T
 
 }
 
-static void CreateDoubleScoreTable(float sectionWidth, TableSection* section1, TableSection* section2, TableSection* section3, float(*total)(Bar*, int team), int flags)
+static void CreateDoubleScoreTable(float sectionWidth, TableSection *section1, TableSection *section2, TableSection *section3, float(*total)(Bar *, int team), int flags)
 {
-	PlayersList* ingame  = section1->players;
-	PlayersList* ingame2 = section2->players;
-	PlayersList* spects  = section3->players;
+	PlayersList *ingame = section1->players;
+	PlayersList *ingame2 = section2->players;
+	PlayersList *spects = section3->players;
 	float rowh = section1->draw(0, 0, 0, 0) + 1.f;
 	float headerh = section1->header(0);
 	float totalh = (total ? total(0, 0) : 0.f);
@@ -1267,12 +1397,14 @@ static void CreateDoubleScoreTable(float sectionWidth, TableSection* section1, T
 	height += 14.f;
 
 	if (height < XSCORE_CENTER_TABLE_MIN_HEIGHT)
+	{
 		height = XSCORE_CENTER_TABLE_MIN_HEIGHT;
+	}
 
 	// Title
 
 	Bar score, bar, head;
-	
+
 	CalculateCenterBar(&score, width * 2, height + voteh);
 
 	if (flags & SFlagVoteBar)
@@ -1294,9 +1426,13 @@ static void CreateDoubleScoreTable(float sectionWidth, TableSection* section1, T
 	CalculateChildBar(&score, &bar, 5.0f, 18.f, sectionWidth, 14.f);
 
 	if (flags & SFlagDrawScore)
+	{
 		DrawTableSectionTitleWithScore(&bar, section1, 0);
+	}
 	else
+	{
 		DrawTableSectionTitle(&bar, section1);
+	}
 
 	CalculateChildBar(&score, &head, 5.f, 35.f, sectionWidth, headerh);
 	section1->header(&head);
@@ -1318,9 +1454,13 @@ static void CreateDoubleScoreTable(float sectionWidth, TableSection* section1, T
 	CalculateChildBar(&score, &bar, 2.5f + width, 18.0f, sectionWidth, 14.0f);
 
 	if (flags & SFlagDrawScore)
+	{
 		DrawTableSectionTitleWithScore(&bar, section2, 1);
+	}
 	else if (!(flags & SFlagOneTeam))
+	{
 		DrawTableSectionTitle(&bar, section2);
+	}
 
 	CalculateChildBar(&score, &head, 2.5f + width, 35.f, sectionWidth, headerh);
 	section2->header(&head);
@@ -1351,9 +1491,13 @@ static void CreateDoubleScoreTable(float sectionWidth, TableSection* section1, T
 		for (int i = 0, n = 0; i < spects->count; i++)
 		{
 			if (i % 2)
+			{
 				CalculateChildBar(&head, &bar, width, headerh + (n++ * rowh), sectionWidth, rowh - 1.f);
+			}
 			else
+			{
 				CalculateChildBar(&head, &bar, 0.0f, headerh + (n * rowh), sectionWidth, rowh - 1.f);
+			}
 
 			section3->draw(&bar, i, spects->clients[i], 0);
 		}
@@ -1363,7 +1507,7 @@ static void CreateDoubleScoreTable(float sectionWidth, TableSection* section1, T
 
 	CalculateChildBar(&score, &bar, 5.f, height - 16.f, sectionWidth, 18.0f);
 
-	char* serverInfo = X_GetConfigString(4);
+	char *serverInfo = X_GetConfigString(4);
 	if (strlen(serverInfo))
 	{
 		Com_sprintf(buffer, sizeof(buffer), "^d%s", serverInfo);
@@ -1377,7 +1521,7 @@ static void CreateDoubleScoreTable(float sectionWidth, TableSection* section1, T
 
 // ======================
 
-static float DrawPlayerRowFFA(Bar* bar, int pos, int client, int flags)
+static float DrawPlayerRowFFA(Bar *bar, int pos, int client, int flags)
 {
 	vec4_t color;
 	char buffer[512];
@@ -1386,10 +1530,12 @@ static float DrawPlayerRowFFA(Bar* bar, int pos, int client, int flags)
 	float opaque;
 
 	if (!bar)
+	{
 		return XSCORE_PLAYER_ROW_HEIGHT;
-	
-	XPlayerState* ps = xmod.gs.ps + client;
-	XPlayerScore* sc = &ps->score;
+	}
+
+	XPlayerState *ps = xmod.gs.ps + client;
+	XPlayerScore *sc = &ps->score;
 	//XPlayerStats* st = &ps->stats;
 
 	isdark = ps->isdead;
@@ -1399,13 +1545,17 @@ static float DrawPlayerRowFFA(Bar* bar, int pos, int client, int flags)
 	if (client < 32 && xmod.snap.ps.stats[STAT_CLIENTS_READY] & (1 << client))
 	{
 		if (xmod.scr.warmup)
+		{
 			isready = qtrue;
+		}
 
 		isdark = qtrue;
 	}
 
 	if (isdark)
+	{
 		opaque = 0.7f;
+	}
 
 	if (client == clc.clientNum)
 	{
@@ -1417,19 +1567,17 @@ static float DrawPlayerRowFFA(Bar* bar, int pos, int client, int flags)
 	}
 
 	DrawBar(bar, color, 1.0f);
-	
-	if (ps->team == TEAM_FREE)
-		DrawFatBarStrInCenter(bar, 12.f, 6.f, 7.f, 0.8f * opaque, ConvertPlaceToString(pos));
+
+	if (ps->team == TEAM_FREE) DrawFatBarStrInCenter(bar, 12.f, 6.f, 7.f, 0.8f * opaque, ConvertPlaceToString(pos));
 
 	DrawSquareIcon(
-		bar, 
-		30.f, 2.f, 15.f, 
-		(isdark ? 0.4f : 1.f), 
-		(ps->icons[0] ? ps->icons[0] : xmod.rs.shaderNoModel)
+	bar,
+	30.f, 2.f, 15.f,
+	(isdark ? 0.4f : 1.f),
+	(ps->icons[0] ? ps->icons[0] : xmod.rs.shaderNoModel)
 	);
-	
-	if (isready)
-		DrawFatBarStr(bar, 2.f, 6.f, 8.f, X_Hud_GetFadingAlpha(&xmod.scr.fading), "^3READY");
+
+	if (isready) DrawFatBarStr(bar, 2.f, 6.f, 8.f, X_Hud_GetFadingAlpha(&xmod.scr.fading), "^3READY");
 
 	if (ps->active && sc->ping != -1)
 	{
@@ -1457,14 +1605,14 @@ static float DrawPlayerRowFFA(Bar* bar, int pos, int client, int flags)
 	Com_sprintf(buffer, sizeof(buffer), "^7%d", client);
 	DrawBarStrInCenter(bar, 128.f, 3.f, 7.f, 0.8f * opaque, buffer);
 	Com_sprintf(buffer, sizeof(buffer), (ps->isbot ? "^z--" : "^z%04X"), ps->sign);
-	DrawBarStrInCenter(bar, 128.f, 10.f, 6.0f,	0.9f * opaque, buffer);
+	DrawBarStrInCenter(bar, 128.f, 10.f, 6.0f, 0.9f * opaque, buffer);
 
 	DrawPlayerName(bar->x + (bar->scale * 149.f),
-		bar->y + (bar->scale * 1.f),
-		bar->scale * 8.f,
-		0.9f * opaque,
-		19,
-		ps->name
+				   bar->y + (bar->scale * 1.f),
+				   bar->scale * 8.f,
+				   0.9f * opaque,
+				   19,
+				   ps->name
 	);
 
 	if (sc->active)
@@ -1479,32 +1627,34 @@ static float DrawPlayerRowFFA(Bar* bar, int pos, int client, int flags)
 
 			switch (i)
 			{
-			case 0: 
-				medals = sc->guantletCount;
-				shader = xmod.rs.shaderMedalGauntlet;
-				break;
-			case 1: 
-				medals = sc->excellentCount;
-				shader = xmod.rs.shaderMedalExcellent;
-				break;
-			case 2:
-				medals = sc->impressiveCount;
-				shader = xmod.rs.shaderMedalImpressive;
-				break;
-			case 3:
-				medals = sc->defendCount;
-				shader = xmod.rs.shaderMedalDefend;
-				break;
-			case 4:
-				medals = sc->assistCount;
-				shader = xmod.rs.shaderMedalAssist;
-				break;
-			default:
-				break;
+				case 0:
+					medals = sc->guantletCount;
+					shader = xmod.rs.shaderMedalGauntlet;
+					break;
+				case 1:
+					medals = sc->excellentCount;
+					shader = xmod.rs.shaderMedalExcellent;
+					break;
+				case 2:
+					medals = sc->impressiveCount;
+					shader = xmod.rs.shaderMedalImpressive;
+					break;
+				case 3:
+					medals = sc->defendCount;
+					shader = xmod.rs.shaderMedalDefend;
+					break;
+				case 4:
+					medals = sc->assistCount;
+					shader = xmod.rs.shaderMedalAssist;
+					break;
+				default:
+					break;
 			}
 
 			if (!medals)
+			{
 				continue;
+			}
 
 			DrawSquareIcon(bar, (offset + 155.f), 10.f, 8.f, 0.4f * opaque, shader);
 
@@ -1518,10 +1668,12 @@ static float DrawPlayerRowFFA(Bar* bar, int pos, int client, int flags)
 	return 0.f;
 }
 
-static float DrawPlayerRowHeaderFFA(Bar* bar)
+static float DrawPlayerRowHeaderFFA(Bar *bar)
 {
 	if (!bar)
+	{
 		return XSCORE_PLAYER_TITLE_HEIGHT;
+	}
 
 	DrawBarStr(bar, 0.f, 3.0f, 6.0f, 0.6f, "^3PLACE");
 
@@ -1539,10 +1691,12 @@ static float DrawPlayerRowHeaderFFA(Bar* bar)
 	return 0.f;
 }
 
-static float DrawSpectatorRowHeaderFFA(Bar* bar)
+static float DrawSpectatorRowHeaderFFA(Bar *bar)
 {
 	if (!bar)
+	{
 		return XSCORE_PLAYER_TITLE_HEIGHT;
+	}
 
 	DrawBarStr(bar, 45.f, 3.f, 6.f, 0.6f, "^3SCORE");
 
@@ -1558,12 +1712,14 @@ static float DrawSpectatorRowHeaderFFA(Bar* bar)
 	return 0.f;
 }
 
-static float DrawPlayerRowTotalFFA(Bar* bar, int team)
+static float DrawPlayerRowTotalFFA(Bar *bar, int team)
 {
 	char buffer[512];
 
 	if (!bar)
+	{
 		return 17.f;
+	}
 
 	vec4_t color;
 	MAKERGBA(color, 0.3f, 0.3f, 0.6f, 0.3f);
@@ -1575,21 +1731,25 @@ static float DrawPlayerRowTotalFFA(Bar* bar, int team)
 	int impressives = 0, guantlets = 0, excellents = 0;
 	for (int i = 0; i < MAX_CLIENTS; i++)
 	{
-		XPlayerState* ps = xmod.gs.ps + i;
+		XPlayerState *ps = xmod.gs.ps + i;
 
 		if (!ps->active)
+		{
 			continue;
+		}
 
 		if (ps->team != TEAM_FREE)
+		{
 			continue;
+		}
 
 		if (ps->score.active)
 		{
-			score       += ps->score.score;
-			freezes     += ps->score.scoreFlags;
+			score += ps->score.score;
+			freezes += ps->score.scoreFlags;
 			impressives += ps->score.impressiveCount;
-			guantlets   += ps->score.guantletCount;
-			excellents  += ps->score.excellentCount;
+			guantlets += ps->score.guantletCount;
+			excellents += ps->score.excellentCount;
 		}
 	}
 
@@ -1634,14 +1794,16 @@ static float DrawPlayerRowTotalFFA(Bar* bar, int team)
 	return 0.f;
 }
 
-static float DrawPlayerRowTDM(Bar* bar, int pos, int client, int flags)
+static float DrawPlayerRowTDM(Bar *bar, int pos, int client, int flags)
 {
 	if (!bar)
+	{
 		return XSCORE_PLAYER_ROW_HEIGHT;
+	}
 
-	XPlayerState* ps = xmod.gs.ps + client;
-	XPlayerScore* sc = &ps->score;
-	XPlayerStats* st = &ps->stats;
+	XPlayerState *ps = xmod.gs.ps + client;
+	XPlayerScore *sc = &ps->score;
+	XPlayerStats *st = &ps->stats;
 
 	vec4_t color;
 	char buffer[512];
@@ -1649,29 +1811,35 @@ static float DrawPlayerRowTDM(Bar* bar, int pos, int client, int flags)
 	qboolean isfrozen = qfalse;
 	qboolean isready = qfalse;
 	float opaque = 1.f;
-	
+
 	if (client < 32 && xmod.snap.ps.stats[STAT_CLIENTS_READY] & (1 << client))
 	{
 		if (xmod.gs.freezetag && !xmod.scr.warmup)
+		{
 			isfrozen = qtrue;
+		}
 		else
+		{
 			isready = qtrue;
+		}
 
 		isdark = qtrue;
 	}
-	
+
 	// Fix for self freeze on OSP mode
-	if (xmod.gs.freezetag 
-	 && client == clc.clientNum 
-	 && client == xmod.snap.ps.clientNum 
-	 && xmod.snap.ps.pm_type == PM_DEAD)
+	if (xmod.gs.freezetag
+		&& client == clc.clientNum
+		&& client == xmod.snap.ps.clientNum
+		&& xmod.snap.ps.pm_type == PM_DEAD)
 	{
 		isfrozen = qtrue;
 		isdark = qtrue;
 	}
 
 	if (isdark)
+	{
 		opaque = 0.7f;
+	}
 
 	if (client == clc.clientNum)
 	{
@@ -1686,13 +1854,21 @@ static float DrawPlayerRowTDM(Bar* bar, int pos, int client, int flags)
 
 	qhandle_t hmodel = 0;
 	if (ps->team == TEAM_RED)
+	{
 		hmodel = ps->icons[TEAM_RED];
+	}
 	else if (ps->team == TEAM_BLUE)
+	{
 		hmodel = ps->icons[TEAM_BLUE];
+	}
 	else
+	{
 		hmodel = ps->icons[0];
+	}
 	if (!hmodel)
+	{
 		hmodel = xmod.rs.shaderNoModel;
+	}
 
 	DrawSquareIcon(bar, 15.f, 2.f, 15.f, (isdark ? 0.4f : 1.f), hmodel);
 
@@ -1701,43 +1877,61 @@ static float DrawPlayerRowTDM(Bar* bar, int pos, int client, int flags)
 	{
 		if (st->receivedDmg)
 		{
-			float eff = (float)st->givenDmg / (float)st->receivedDmg;
+			float eff = (float) st->givenDmg / (float) st->receivedDmg;
 
 			if (eff >= 2.f && st->givenDmg > 2000)
+			{
 				shader = xmod.rs.shaderSkill[6];
+			}
 			else if (eff >= 1.6f && st->givenDmg > 1000)
+			{
 				shader = xmod.rs.shaderSkill[5];
+			}
 			else if (eff >= 1.2f)
+			{
 				shader = xmod.rs.shaderSkill[4];
+			}
 			else if (eff >= 0.8f)
+			{
 				shader = xmod.rs.shaderSkill[3];
+			}
 			else if (eff >= 0.4f)
+			{
 				shader = xmod.rs.shaderSkill[2];
+			}
 			else
+			{
 				shader = xmod.rs.shaderSkill[1];
+			}
 		}
 	}
 
 	DrawSquareIcon(bar, 2.f, 4.f, 12.f, (isdark ? 0.4f : 1.f), shader);
 
 	if (isfrozen)
+	{
 		DrawSquareIcon(bar, 16.f, 4.f, 12.f, 0.8f, xmod.rs.shaderXFoe[1]);
-	
+	}
+
 	if (sc->active && sc->ping != -1)
 	{
 		if (sc->guantletCount > 0)
+		{
 			re.DrawStretchPic(
-				bar->x + (bar->scale * 28.0f),
-				bar->y + (bar->scale * 3.0f),
-				bar->scale * 8.0f, bar->scale * 8.0f,
-				0, 0, 1, 1, xmod.rs.shaderMedalGauntlet);
+			bar->x + (bar->scale * 28.0f),
+			bar->y + (bar->scale * 3.0f),
+			bar->scale * 8.0f, bar->scale * 8.0f,
+			0, 0, 1, 1, xmod.rs.shaderMedalGauntlet);
+		}
 
 		if (sc->excellentCount > 0)
+		{
 			re.DrawStretchPic(
-				bar->x + (bar->scale * 28.0f),
-				bar->y + (bar->scale * 10.0f),
-				bar->scale * 8.0f, bar->scale * 8.0f,
-				0, 0, 1, 1, xmod.rs.shaderMedalExcellent);
+			bar->x + (bar->scale * 28.0f),
+			bar->y + (bar->scale * 10.0f),
+			bar->scale * 8.0f, bar->scale * 8.0f,
+			0, 0, 1, 1, xmod.rs.shaderMedalExcellent);
+		}
 
 		if (xmod.gs.type == GameTDM && xmod.gs.freezetag)
 		{
@@ -1776,12 +1970,12 @@ static float DrawPlayerRowTDM(Bar* bar, int pos, int client, int flags)
 	DrawBarStrInCenter(bar, 118.f, 10.f, 6.f, 0.9f * opaque, buffer);
 
 	DrawPlayerName(
-		bar->x + (bar->scale * 139.0f),
-		bar->y + (bar->scale * 1.0f),
-		bar->scale * 8.0f,
-		0.9f * opaque,
-		19,
-		ps->name
+	bar->x + (bar->scale * 139.0f),
+	bar->y + (bar->scale * 1.0f),
+	bar->scale * 8.0f,
+	0.9f * opaque,
+	19,
+	ps->name
 	);
 
 	if (xmod.scr.hasstats)
@@ -1792,7 +1986,7 @@ static float DrawPlayerRowTDM(Bar* bar, int pos, int client, int flags)
 			{
 				DrawSquareIcon(bar, 140.f, 10.f, 8.f, 0.9f * opaque, xmod.rs.shaderIconRL);
 
-				int acc = ((float)st->weapons[WP_RAILGUN].hit / (float)st->weapons[WP_RAILGUN].shts) * 100;
+				int acc = ((float) st->weapons[WP_RAILGUN].hit / (float) st->weapons[WP_RAILGUN].shts) * 100;
 				Com_sprintf(buffer, sizeof(buffer), "^z%d%%", acc);
 				DrawBarStr(bar, 150.f, 12.f, 6.0f, 0.9f * opaque, buffer);
 			}
@@ -1801,7 +1995,7 @@ static float DrawPlayerRowTDM(Bar* bar, int pos, int client, int flags)
 			{
 				DrawSquareIcon(bar, 180.f, 10.f, 8.f, 0.9f * opaque, xmod.rs.shaderIconLG);
 
-				int acc = ((float)st->weapons[WP_LIGHTNING].hit / (float)st->weapons[WP_LIGHTNING].shts) * 100;
+				int acc = ((float) st->weapons[WP_LIGHTNING].hit / (float) st->weapons[WP_LIGHTNING].shts) * 100;
 				Com_sprintf(buffer, sizeof(buffer), "^z%d%%", acc);
 				DrawBarStr(bar, 190.f, 12.f, 6.f, 0.9f * opaque, buffer);
 			}
@@ -1835,32 +2029,34 @@ static float DrawPlayerRowTDM(Bar* bar, int pos, int client, int flags)
 
 				switch (i)
 				{
-				case 0:
-					medals = sc->guantletCount;
-					shader = xmod.rs.shaderMedalGauntlet;
-					break;
-				case 1:
-					medals = sc->excellentCount;
-					shader = xmod.rs.shaderMedalExcellent;
-					break;
-				case 2:
-					medals = sc->impressiveCount;
-					shader = xmod.rs.shaderMedalImpressive;
-					break;
-				case 3:
-					medals = sc->defendCount;
-					shader = xmod.rs.shaderMedalDefend;
-					break;
-				case 4:
-					medals = sc->assistCount;
-					shader = xmod.rs.shaderMedalAssist;
-					break;
-				default:
-					break;
+					case 0:
+						medals = sc->guantletCount;
+						shader = xmod.rs.shaderMedalGauntlet;
+						break;
+					case 1:
+						medals = sc->excellentCount;
+						shader = xmod.rs.shaderMedalExcellent;
+						break;
+					case 2:
+						medals = sc->impressiveCount;
+						shader = xmod.rs.shaderMedalImpressive;
+						break;
+					case 3:
+						medals = sc->defendCount;
+						shader = xmod.rs.shaderMedalDefend;
+						break;
+					case 4:
+						medals = sc->assistCount;
+						shader = xmod.rs.shaderMedalAssist;
+						break;
+					default:
+						break;
 				}
 
 				if (!medals)
+				{
 					continue;
+				}
 
 				DrawSquareIcon(bar, (offset + 140.f), 10.f, 8.f, 0.4f * opaque, shader);
 
@@ -1872,37 +2068,42 @@ static float DrawPlayerRowTDM(Bar* bar, int pos, int client, int flags)
 		}
 	}
 
-	if (isready)
-		DrawFatBarStr(bar, 2.f, 6.f, 8.f, X_Hud_GetFadingAlpha(&xmod.scr.fading), "^3READY");
+	if (isready) DrawFatBarStr(bar, 2.f, 6.f, 8.f, X_Hud_GetFadingAlpha(&xmod.scr.fading), "^3READY");
 
 	return 0.f;
 }
 
-static float DrawPlayerRowCTF(Bar* bar, int pos, int client, int flags)
+static float DrawPlayerRowCTF(Bar *bar, int pos, int client, int flags)
 {
 	if (!bar)
+	{
 		return XSCORE_PLAYER_ROW_HEIGHT;
+	}
 
-	XPlayerState* ps = xmod.gs.ps + client;
-	XPlayerScore* sc = &ps->score;
-	XPlayerStats* st = &ps->stats;
+	XPlayerState *ps = xmod.gs.ps + client;
+	XPlayerScore *sc = &ps->score;
+	XPlayerStats *st = &ps->stats;
 
 	vec4_t color;
 	char buffer[512];
 	qboolean isdead = ps->isdead;
 	qboolean isready = qfalse;
 	float opaque = 1.f;
-	
+
 	if (client < 32 && xmod.snap.ps.stats[STAT_CLIENTS_READY] & (1 << client))
 	{
 		if (xmod.scr.warmup)
+		{
 			isready = qtrue;
+		}
 
 		isdead = qtrue;
 	}
-	
+
 	if (isdead)
+	{
 		opaque = 0.7f;
+	}
 
 	if (client == clc.clientNum)
 	{
@@ -1917,13 +2118,21 @@ static float DrawPlayerRowCTF(Bar* bar, int pos, int client, int flags)
 
 	qhandle_t hmodel = 0;
 	if (ps->team == TEAM_RED)
+	{
 		hmodel = ps->icons[TEAM_RED];
+	}
 	else if (ps->team == TEAM_BLUE)
+	{
 		hmodel = ps->icons[TEAM_BLUE];
+	}
 	else
+	{
 		hmodel = ps->icons[0];
+	}
 	if (!hmodel)
+	{
 		hmodel = xmod.rs.shaderNoModel;
+	}
 
 	DrawSquareIcon(bar, 15.f, 2.f, 15.f, (isdead ? 0.4f : 1.f), hmodel);
 
@@ -1932,20 +2141,32 @@ static float DrawPlayerRowCTF(Bar* bar, int pos, int client, int flags)
 	{
 		if (st->receivedDmg)
 		{
-			float eff = (float)st->givenDmg / (float)st->receivedDmg;
+			float eff = (float) st->givenDmg / (float) st->receivedDmg;
 
 			if (eff >= 2.f && st->givenDmg > 2000)
+			{
 				shader = xmod.rs.shaderSkill[6];
+			}
 			else if (eff >= 1.6f && st->givenDmg > 1000)
+			{
 				shader = xmod.rs.shaderSkill[5];
+			}
 			else if (eff >= 1.2f)
+			{
 				shader = xmod.rs.shaderSkill[4];
+			}
 			else if (eff >= 0.8f)
+			{
 				shader = xmod.rs.shaderSkill[3];
+			}
 			else if (eff >= 0.4f)
+			{
 				shader = xmod.rs.shaderSkill[2];
+			}
 			else
+			{
 				shader = xmod.rs.shaderSkill[1];
+			}
 		}
 	}
 
@@ -1954,18 +2175,22 @@ static float DrawPlayerRowCTF(Bar* bar, int pos, int client, int flags)
 	if (sc->active && sc->ping != -1)
 	{
 		if (sc->guantletCount > 0)
+		{
 			re.DrawStretchPic(
-				bar->x + (bar->scale * 28.0f),
-				bar->y + (bar->scale * 3.0f),
-				bar->scale * 8.0f, bar->scale * 8.0f,
-				0, 0, 1, 1, xmod.rs.shaderMedalGauntlet);
+			bar->x + (bar->scale * 28.0f),
+			bar->y + (bar->scale * 3.0f),
+			bar->scale * 8.0f, bar->scale * 8.0f,
+			0, 0, 1, 1, xmod.rs.shaderMedalGauntlet);
+		}
 
 		if (sc->excellentCount > 0)
+		{
 			re.DrawStretchPic(
-				bar->x + (bar->scale * 28.0f),
-				bar->y + (bar->scale * 10.0f),
-				bar->scale * 8.0f, bar->scale * 8.0f,
-				0, 0, 1, 1, xmod.rs.shaderMedalExcellent);
+			bar->x + (bar->scale * 28.0f),
+			bar->y + (bar->scale * 10.0f),
+			bar->scale * 8.0f, bar->scale * 8.0f,
+			0, 0, 1, 1, xmod.rs.shaderMedalExcellent);
+		}
 
 		if (xmod.gs.type == GameTDM && xmod.gs.freezetag)
 		{
@@ -2025,12 +2250,12 @@ static float DrawPlayerRowCTF(Bar* bar, int pos, int client, int flags)
 	DrawBarStrInCenter(bar, 118.f, 10.f, 6.f, 0.9f * opaque, buffer);
 
 	DrawPlayerName(
-		bar->x + (bar->scale * 139.0f),
-		bar->y + (bar->scale * 1.0f),
-		bar->scale * 8.0f,
-		0.9f * opaque,
-		19,
-		ps->name
+	bar->x + (bar->scale * 139.0f),
+	bar->y + (bar->scale * 1.0f),
+	bar->scale * 8.0f,
+	0.9f * opaque,
+	19,
+	ps->name
 	);
 
 	/*if (st->active)
@@ -2068,48 +2293,53 @@ static float DrawPlayerRowCTF(Bar* bar, int pos, int client, int flags)
 		}
 	}*/
 
-	if (isready)
-		DrawFatBarStr(bar, 2.f, 6.f, 8.f, X_Hud_GetFadingAlpha(&xmod.scr.fading), "^3READY");
+	if (isready) DrawFatBarStr(bar, 2.f, 6.f, 8.f, X_Hud_GetFadingAlpha(&xmod.scr.fading), "^3READY");
 
 	return 0.f;
 }
 
 
-static float DrawPlayerRowTotalTDM(Bar* bar, int team)
+static float DrawPlayerRowTotalTDM(Bar *bar, int team)
 {
 	char buffer[512];
 
 	if (!bar)
+	{
 		return 17.f;
+	}
 
 	vec4_t color;
 	MAKERGBA(color, 0.3f, 0.3f, 0.6f, 0.3f);
 	DrawBar(bar, color, 0.f);
 
 	DrawBarStr(bar, 2.f, 3.f, 6.f, 0.7f, "^zTOTAL");
-	
+
 	int score = 0, freezes = 0, given = 0, received = 0;
 	int impressives = 0, guantlets = 0, excellents = 0, defends = 0, assists = 0;
 	int tm = (team ? TEAM_BLUE : TEAM_RED);
 	for (int i = 0; i < MAX_CLIENTS; i++)
 	{
-		XPlayerState* ps = xmod.gs.ps + i;
-		
+		XPlayerState *ps = xmod.gs.ps + i;
+
 		if (!ps->active)
+		{
 			continue;
+		}
 
 		if (ps->team != tm)
+		{
 			continue;
+		}
 
 		if (ps->score.active)
 		{
-			score		+= ps->score.score;
-			freezes		+= ps->score.scoreFlags;
+			score += ps->score.score;
+			freezes += ps->score.scoreFlags;
 			impressives += ps->score.impressiveCount;
-			guantlets	+= ps->score.guantletCount;
-			excellents	+= ps->score.excellentCount;
-			defends		+= ps->score.defendCount;
-			assists		+= ps->score.assistCount;
+			guantlets += ps->score.guantletCount;
+			excellents += ps->score.excellentCount;
+			defends += ps->score.defendCount;
+			assists += ps->score.assistCount;
 		}
 
 		if (ps->stats.active)
@@ -2189,14 +2419,16 @@ static float DrawPlayerRowTotalTDM(Bar* bar, int team)
 		Com_sprintf(buffer, sizeof(buffer), "^z%d", received);
 		DrawBarStr(bar, 262.f, 3.5f, 6.f, 0.7f, buffer);
 	}
-		
+
 	return 0.f;
 }
 
-static float DrawPlayerRowHeaderTDM(Bar* bar)
+static float DrawPlayerRowHeaderTDM(Bar *bar)
 {
 	if (!bar)
+	{
 		return XSCORE_PLAYER_TITLE_HEIGHT;
+	}
 
 	DrawBarStr(bar, 0.f, 3.f, 6.f, 0.6f, "^3SKILL");
 
@@ -2224,7 +2456,7 @@ static float DrawPlayerRowHeaderTDM(Bar* bar)
 
 // ======================
 
-static void DrawTableSectionTitle(Bar* bar, TableSection* sect)
+static void DrawTableSectionTitle(Bar *bar, TableSection *sect)
 {
 	DrawBar(bar, sect->color, 0.f);
 
@@ -2233,7 +2465,7 @@ static void DrawTableSectionTitle(Bar* bar, TableSection* sect)
 	DrawBarStr(bar, 150.f, 4.f, 6.f, 0.4f, sect->descr);
 }
 
-static void DrawTableSectionTitleWithScore(Bar* bar, TableSection* sect, int place)
+static void DrawTableSectionTitleWithScore(Bar *bar, TableSection *sect, int place)
 {
 	char buffer[64];
 
@@ -2262,24 +2494,30 @@ static void DrawTableSectionTitleWithScore(Bar* bar, TableSection* sect, int pla
 
 // ======================
 
-static char* ConvertPlaceToString(int place)
+static char *ConvertPlaceToString(int place)
 {
 	static char buffer[8];
 
 	if (place == 0)
+	{
 		return "^41st";
+	}
 
 	if (place == 1)
+	{
 		return "^12nd";
+	}
 
 	if (place == 2)
+	{
 		return "^33rd";
+	}
 
 	Com_sprintf(buffer, sizeof(buffer), "^7%d", place + 1);
 	return buffer;
 }
 
-static void DrawBotLevel(Bar* bar, float x, float y, float skill)
+static void DrawBotLevel(Bar *bar, float x, float y, float skill)
 {
 	vec4_t neitral;
 	MAKERGBA(neitral, 0.8f, 0.8f, 0.8f, 0.1f);
@@ -2304,22 +2542,22 @@ static void DrawBotLevel(Bar* bar, float x, float y, float skill)
 	}
 }
 
-static void DrawSquareIcon(Bar* bar, float x, float y, float sz, float alpha, qhandle_t shader)
+static void DrawSquareIcon(Bar *bar, float x, float y, float sz, float alpha, qhandle_t shader)
 {
 	vec4_t color;
 	MAKERGBA(color, 1.f, 1.f, 1.f, alpha);
 	re.SetColor(color);
 	re.DrawStretchPic(
-		bar->x + (bar->scale * x),
-		bar->y + (bar->scale * y),
-		bar->scale * sz, bar->scale * sz,
-		0, 0, 1, 1, shader);
+	bar->x + (bar->scale * x),
+	bar->y + (bar->scale * y),
+	bar->scale * sz, bar->scale * sz,
+	0, 0, 1, 1, shader);
 	re.SetColor(0);
 }
 
 // ===========================
 
-void X_Hud_InitProgressBar(XUIProgressBar* bar, vec4_t color1, vec4_t color2, float x, float y, float w, float h, float range)
+void X_Hud_InitProgressBar(XUIProgressBar *bar, vec4_t color1, vec4_t color2, float x, float y, float w, float h, float range)
 {
 	bar->x = x;
 	bar->y = y;
@@ -2331,7 +2569,7 @@ void X_Hud_InitProgressBar(XUIProgressBar* bar, vec4_t color1, vec4_t color2, fl
 	Vector4Copy(color2, bar->color2);
 }
 
-void X_Hud_DrawProgressBar(XUIProgressBar* bar, float value)
+void X_Hud_DrawProgressBar(XUIProgressBar *bar, float value)
 {
 	Bar b;
 
@@ -2346,10 +2584,10 @@ void X_Hud_DrawProgressBar(XUIProgressBar* bar, float value)
 	DrawProgressBar(bar, &b, value);
 }
 
-void X_Hud_DrawProgressBarInCenter(XUIProgressBar* bar, float value)
+void X_Hud_DrawProgressBarInCenter(XUIProgressBar *bar, float value)
 {
 	Bar b;
-	
+
 	b.x = bar->x;
 	b.y = bar->y;
 	b.h = bar->h;
@@ -2362,7 +2600,7 @@ void X_Hud_DrawProgressBarInCenter(XUIProgressBar* bar, float value)
 	DrawProgressBar(bar, &b, value);
 }
 
-void X_Hud_InitFading(XUIFading* fad, int interval, float min, float max)
+void X_Hud_InitFading(XUIFading *fad, int interval, float min, float max)
 {
 	fad->start = Com_Milliseconds();
 	fad->interval = interval;
@@ -2371,12 +2609,12 @@ void X_Hud_InitFading(XUIFading* fad, int interval, float min, float max)
 	fad->step = interval / (max - min);
 }
 
-void X_Hud_ResetFading(XUIFading* fad)
+void X_Hud_ResetFading(XUIFading *fad)
 {
 	fad->start = Com_Milliseconds();
 }
 
-float X_Hud_GetFadingAlpha(XUIFading* fad)
+float X_Hud_GetFadingAlpha(XUIFading *fad)
 {
 	int range = fad->interval * 2;
 	int ms = (Com_Milliseconds() - fad->start) % range;
@@ -2395,7 +2633,7 @@ float X_Hud_GetFadingAlpha(XUIFading* fad)
 	return opaque;
 }
 
-static void DrawProgressBar(XUIProgressBar* bar, Bar* b, float value)
+static void DrawProgressBar(XUIProgressBar *bar, Bar *b, float value)
 {
 	DrawBar(b, bar->color1, 1.f);
 
@@ -2406,7 +2644,9 @@ static void DrawProgressBar(XUIProgressBar* bar, Bar* b, float value)
 	float max = b->w - 6.f;
 	b->w = (value * bar->step);
 	if (b->w > max)
+	{
 		b->w = max;
+	}
 
 	DrawBar(b, bar->color2, 0.f);
 }

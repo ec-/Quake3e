@@ -891,10 +891,10 @@ void R_ComputeTexCoords( const int b, const textureBundle_t *bundle ) {
 			src = dst;
 			break;
 
-        case TMOD_ROTATE2:
-            RB_CalcRotateTexCoords2( bundle->texMods[tm].rotateSpeed, (float *) src, (float *) dst );
-            src = dst;
-            break;
+		case TMOD_ROTATE2:
+			RB_CalcRotateTexCoords2(bundle->texMods[tm].rotateSpeed, (float *) src, (float *) dst);
+			src = dst;
+			break;
 
 		default:
 			ri.Error( ERR_DROP, "ERROR: unknown texmod '%d' in shader '%s'", bundle->texMods[tm].type, tess.shader->name );

@@ -15,24 +15,24 @@ qboolean xmod_disable_output;
 // ====================
 //   CVars
 
-static cvar_t* x_enable = 0;
+static cvar_t *x_enable = 0;
 
-static cvar_t* x_item_fix_simpleitems_size = 0;
-static cvar_t* cg_simpleitems = 0;
+static cvar_t *x_item_fix_simpleitems_size = 0;
+static cvar_t *cg_simpleitems = 0;
 
-static cvar_t* x_snd_fix_unfreeze = 0;
+static cvar_t *x_snd_fix_unfreeze = 0;
 
 // ====================
 //   Const vars
 
-static char X_HELP_ENABLE[] =   "\n ^fx_enable^5 0|1^7\n\n"
-								"   Turn on\\off XQ3E features.\n";
+static char X_HELP_ENABLE[] = "\n ^fx_enable^5 0|1^7\n\n"
+							  "   Turn on\\off XQ3E features.\n";
 
 static char X_HELP_ITM_FIX_SIMPLEITEMS_SIZE[] = "\n ^fx_item_fix_simpleitems_size^5 0|1^7\n\n"
-								"   Increases 2D items size to be similar to 3D items.\n";
+												"   Increases 2D items size to be similar to 3D items.\n";
 
 static char X_HELP_SND_FIX_UNFREEZE[] = "\n ^fx_snd_fix_unfreeze^5 0|1^7\n\n"
-								"   Changes regular OSP unfreezing sound (tankjr jump) to another sound.\n";
+										"   Changes regular OSP unfreezing sound (tankjr jump) to another sound.\n";
 
 // ====================
 //   Static routines
@@ -46,7 +46,7 @@ static void Print_State(void);
 static void Print_UserInfo(void);
 static void Say_Encrypted(void);
 
-static void CustomizeSimpleItems(refEntity_t* ref);
+static void CustomizeSimpleItems(refEntity_t *ref);
 
 // ====================
 //   Hooks
@@ -54,14 +54,14 @@ static void CustomizeSimpleItems(refEntity_t* ref);
 void (*Original_DrawStretchPic)(float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader) = 0;
 static void Hook_DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader);
 
-void (*Original_RenderScene)(const refdef_t* fd) = 0;
-static void Hook_RenderScene(const refdef_t* fd);
+void (*Original_RenderScene)(const refdef_t *fd) = 0;
+static void Hook_RenderScene(const refdef_t *fd);
 
-void (*Original_AddRefEntityToScene)(const refEntity_t* re, qboolean intShaderTime) = 0;
-static void Hook_AddRefEntityToScene(refEntity_t* re, qboolean intShaderTime);
+void (*Original_AddRefEntityToScene)(const refEntity_t *re, qboolean intShaderTime) = 0;
+static void Hook_AddRefEntityToScene(refEntity_t *re, qboolean intShaderTime);
 
-void (*Original_SetColor)(const float* rgba) = 0;
-static void Hook_SetColor(const float* rgba);
+void (*Original_SetColor)(const float *rgba) = 0;
+static void Hook_SetColor(const float *rgba);
 
 // ====================
 //   Implementation
@@ -71,7 +71,7 @@ void X_InitXMod(void)
 	memset(&xmod, 0, sizeof(xmod));
 	memset(&sxmod, 0, sizeof(sxmod));
 
-	x_enable = Cvar_Get("x_enable", "1", CVAR_ARCHIVE|CVAR_USERINFO|CVAR_SYSTEMINFO|CVAR_XMOD);
+	x_enable = Cvar_Get("x_enable", "1", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_SYSTEMINFO | CVAR_XMOD);
 	Cvar_SetDescription(x_enable, X_HELP_ENABLE);
 
 	Cmd_AddCommand("x_version", Print_Version);
@@ -83,7 +83,9 @@ void X_InitXMod(void)
 void X_InitAfterCGameVM(void)
 {
 	if (xmod.state != StateStopped)
+	{
 		Com_Error(ERR_FATAL, "Invalid XMod state %d", xmod.state);
+	}
 
 	// Renew a random generator to avoid same random results on the first client start
 	srand(time(0));
@@ -122,10 +124,10 @@ void X_InitAfterCGameVM(void)
 		re.RenderScene = Hook_RenderScene;
 	}
 
-	if (re.AddRefEntityToScene != (void(*)(const refEntity_t*,qboolean))Hook_AddRefEntityToScene)
+	if (re.AddRefEntityToScene != (void (*)(const refEntity_t *, qboolean)) Hook_AddRefEntityToScene)
 	{
 		Original_AddRefEntityToScene = re.AddRefEntityToScene;
-		re.AddRefEntityToScene = (void(*)(const refEntity_t*, qboolean))Hook_AddRefEntityToScene;
+		re.AddRefEntityToScene = (void (*)(const refEntity_t *, qboolean)) Hook_AddRefEntityToScene;
 	}
 
 	if (re.SetColor != Hook_SetColor)
@@ -181,55 +183,75 @@ void X_StopAfterCGameVM(void)
 qboolean IsXModeActive(void)
 {
 	if (xmod.state != StateStarted)
+	{
 		return qfalse;
+	}
 
 	if (!x_enable->integer)
+	{
 		return qfalse;
+	}
 
 	if (x_enable->flags & CVAR_XHCK_OFF)
+	{
 		return qfalse;
+	}
 
 	if (xmod.gs.mode != ModeBaseQ3 && xmod.gs.mode != ModeOSP)
+	{
 		return qfalse;
+	}
 
 	return qtrue;
 }
 
 qboolean X_HckActive(void)
 {
-    return IsXModeActive() && IsXModeHackActive();
+	return IsXModeActive() && IsXModeHackActive();
 }
 
 qboolean IsXModeHackActive(void)
 {
 	if (clc.demoplaying)
+	{
 		return qtrue;
+	}
 
 	if (xmod.gs.svcheats)
+	{
 		return qtrue;
+	}
 
 	return xmod.hack;
 }
 
-qboolean IsXModeHackCommandActive(cvar_t* cmd)
+qboolean IsXModeHackCommandActive(cvar_t *cmd)
 {
 	if (clc.demoplaying)
+	{
 		return qtrue;
+	}
 
 	if (xmod.gs.svcheats)
+	{
 		return qtrue;
+	}
 
 	if (xmod.hack)
 	{
 		// Enable by default, check for disable by server
 		if (cmd->flags & CVAR_XHCK_OFF)
+		{
 			return qfalse;
+		}
 	}
 	else
 	{
 		// Disable by default, check for enable by server
 		if (!(cmd->flags & CVAR_XHCK_ON))
+		{
 			return qfalse;
+		}
 	}
 
 	return qtrue;
@@ -240,27 +262,31 @@ void XModeDisableOutput(qboolean disable)
 	xmod_disable_output = disable;
 }
 
-qboolean X_IsPK3PureCompatible(const char* mode, const char* basename)
+qboolean X_IsPK3PureCompatible(const char *mode, const char *basename)
 {
 	return (!Q_stricmp(mode, "baseq3") && !Q_stricmp(basename, "xq3e") ? qtrue : qfalse);
 }
 
-cvar_t* RegisterXModeCmd(char* cmd, char* dfault, char* start, char* stop, char* description, int flags , int checktype)
+cvar_t *RegisterXModeCmd(char *cmd, char *dfault, char *start, char *stop, char *description, int flags, int checktype)
 {
-	cvar_t* cvar = Cvar_Get(cmd, dfault, flags);
-	
+	cvar_t *cvar = Cvar_Get(cmd, dfault, flags);
+
 	if (start && stop)
+	{
 		Cvar_CheckRange(cvar, start, stop, checktype);
-	
+	}
+
 	if (description)
+	{
 		Cvar_SetDescription(cvar, description);
+	}
 
 	return cvar;
 }
 
 static void LoadXModeResources(void)
 {
-	XModResources* rs = &xmod.rs;
+	XModResources *rs = &xmod.rs;
 	char shader[32];
 
 	// Foe hack
@@ -324,15 +350,15 @@ static void LoadXModeResources(void)
 	}
 
 	// Misc
-	rs->shaderFreeze       = re.RegisterShader(X_TEAM_FREEZE_SHADER);
-	rs->shaderXFreezeTeam  = re.RegisterShader(X_TEAM_XFREEZE_COLOR1);
+	rs->shaderFreeze = re.RegisterShader(X_TEAM_FREEZE_SHADER);
+	rs->shaderXFreezeTeam = re.RegisterShader(X_TEAM_XFREEZE_COLOR1);
 	rs->shaderXFreezeEnemy = re.RegisterShader(X_TEAM_XFREEZE_COLOR2);
 
 	rs->soundOldUnfreeze = S_RegisterSound(X_SOUND_OLD_UNFREEZE, qfalse);
-	rs->soundUnfreeze    = S_RegisterSound(X_SOUND_UNFREEZE, qfalse);
+	rs->soundUnfreeze = S_RegisterSound(X_SOUND_UNFREEZE, qfalse);
 
 	// Hitboxes
-	rs->modelHitbox  = re.RegisterModel(X_MODEL_HITBOX_3D);
+	rs->modelHitbox = re.RegisterModel(X_MODEL_HITBOX_3D);
 	rs->shaderHitbox = re.RegisterShader(X_SHADER_HITBOX_2D);
 
 	// Pickups
@@ -368,15 +394,15 @@ static void LoadXModeResources(void)
 		rs->shaderSkill[i] = re.RegisterShaderNoMip(shader);
 	}
 
-	rs->shaderMedalGauntlet   = re.RegisterShader(X_MEDAL_GAUNTLET_SHADER);
-	rs->shaderMedalExcellent  = re.RegisterShader(X_MEDAL_EXCELLENT_SHADER);
+	rs->shaderMedalGauntlet = re.RegisterShader(X_MEDAL_GAUNTLET_SHADER);
+	rs->shaderMedalExcellent = re.RegisterShader(X_MEDAL_EXCELLENT_SHADER);
 	rs->shaderMedalImpressive = re.RegisterShader(X_MEDAL_IMPRESSIVE_SHADER);
-	rs->shaderMedalAssist     = re.RegisterShader(X_MEDAL_ASSIST_SHADER);
-	rs->shaderMedalDefend     = re.RegisterShader(X_MEDAL_DEFEND_SHADER);
-	rs->shaderMedalCapture    = re.RegisterShader(X_MEDAL_CAPTURE_SHADER);
-	rs->shaderIconLG          = re.RegisterShader(X_ICON_LIGHTNING_SHADER);
-	rs->shaderIconRL          = re.RegisterShader(X_ICON_RAILGUN_SHADER);
-	rs->shaderNoModel         = re.RegisterShader(X_ICON_NO_MODEL);
+	rs->shaderMedalAssist = re.RegisterShader(X_MEDAL_ASSIST_SHADER);
+	rs->shaderMedalDefend = re.RegisterShader(X_MEDAL_DEFEND_SHADER);
+	rs->shaderMedalCapture = re.RegisterShader(X_MEDAL_CAPTURE_SHADER);
+	rs->shaderIconLG = re.RegisterShader(X_ICON_LIGHTNING_SHADER);
+	rs->shaderIconRL = re.RegisterShader(X_ICON_RAILGUN_SHADER);
+	rs->shaderNoModel = re.RegisterShader(X_ICON_NO_MODEL);
 }
 
 static void PrintWelcomeLogo(void)
@@ -384,54 +410,56 @@ static void PrintWelcomeLogo(void)
 	static qboolean _shown = qfalse;
 
 	if (_shown)
+	{
 		return;
+	}
 
-	char* messages[] = {
-		"\n"
-		"^b  _      _              _           _                  _      \n"
-		"/_/\\    /\\ \\           /\\ \\       /\\ \\                /\\ \\    \n"
-		"\\ \\ \\   \\ \\_\\         /  \\ \\     /  \\ \\              /  \\ \\   \n"
-		" \\ \\ \\__/ / /        / /\\ \\ \\   / /\\ \\ \\            / /\\ \\ \\  \n"
-		"  \\ \\__ \\/_/        / / /\\ \\ \\ / / /\\ \\ \\          / / /\\ \\_\\ \n"
-		"   \\/_/\\__/\\       / / /  \\ \\_\\\\/_//_\\ \\ \\        / /_/_ \\/_/ \n"
-		"    _/\\/__\\ \\     / / / _ / / /  __\\___ \\ \\      / /____/\\    \n"
-		"   / _/_/\\ \\ \\   / / / /\\ \\/ /  / /\\   \\ \\ \\    / /\\____\\/    \n"
-		"  / / /   \\ \\ \\ / / /__\\ \\ \\/  / /_/____\\ \\ \\  / / /______    \n"
-		" / / /    /_/ // / /____\\ \\ \\ /__________\\ \\ \\/ / /_______\\   \n"
-		" \\/_/     \\_\\/ \\/________\\_\\/ \\_____________\\/\\/__________/   \n\n"
-		"                                                  ^dENGINE\n\n",
+	char *messages[] = {
+	"\n"
+	"^b  _      _              _           _                  _      \n"
+	"/_/\\    /\\ \\           /\\ \\       /\\ \\                /\\ \\    \n"
+	"\\ \\ \\   \\ \\_\\         /  \\ \\     /  \\ \\              /  \\ \\   \n"
+	" \\ \\ \\__/ / /        / /\\ \\ \\   / /\\ \\ \\            / /\\ \\ \\  \n"
+	"  \\ \\__ \\/_/        / / /\\ \\ \\ / / /\\ \\ \\          / / /\\ \\_\\ \n"
+	"   \\/_/\\__/\\       / / /  \\ \\_\\\\/_//_\\ \\ \\        / /_/_ \\/_/ \n"
+	"    _/\\/__\\ \\     / / / _ / / /  __\\___ \\ \\      / /____/\\    \n"
+	"   / _/_/\\ \\ \\   / / / /\\ \\/ /  / /\\   \\ \\ \\    / /\\____\\/    \n"
+	"  / / /   \\ \\ \\ / / /__\\ \\ \\/  / /_/____\\ \\ \\  / / /______    \n"
+	" / / /    /_/ // / /____\\ \\ \\ /__________\\ \\ \\/ / /_______\\   \n"
+	" \\/_/     \\_\\/ \\/________\\_\\/ \\_____________\\/\\/__________/   \n\n"
+	"                                                  ^dENGINE\n\n",
 
-		"\n"
-		"^j:::    :::  ::::::::   ::::::::  ::::::::::    :::::::::: ::::    :::  :::::::: ::::::::::: ::::    ::: ::::::::::\n"
-		"^k:+:    :+: :+:    :+: :+:    :+: :+:           :+:        :+:+:   :+: :+:    :+:    :+:     :+:+:   :+: :+:       \n"
-		"^l +:+  +:+  +:+    +:+        +:+ +:+           +:+        :+:+:+  +:+ +:+           +:+     :+:+:+  +:+ +:+       \n"
-		"^m  +#++:+   +#+    +:+     +#++:  +#++:++#      +#++:++#   +#+ +:+ +#+ :#:           +#+     +#+ +:+ +#+ +#++:++#  \n"
-		"^n +#+  +#+  +#+  # +#+        +#+ +#+           +#+        +#+  +#+#+# +#+   +#+#    +#+     +#+  +#+#+# +#+       \n"
-		"^o#+#    #+# #+#   +#+  #+#    #+# #+#           #+#        #+#   #+#+# #+#    #+#    #+#     #+#   #+#+# #+#       \n"
-		"^p###    ###  ###### ### ########  ##########    ########## ###    ####  ######## ########### ###    #### ##########\n\n"
-		"^9       From ^7XQ3E^9 with love, have fun ;)\n\n",
+	"\n"
+	"^j:::    :::  ::::::::   ::::::::  ::::::::::    :::::::::: ::::    :::  :::::::: ::::::::::: ::::    ::: ::::::::::\n"
+	"^k:+:    :+: :+:    :+: :+:    :+: :+:           :+:        :+:+:   :+: :+:    :+:    :+:     :+:+:   :+: :+:       \n"
+	"^l +:+  +:+  +:+    +:+        +:+ +:+           +:+        :+:+:+  +:+ +:+           +:+     :+:+:+  +:+ +:+       \n"
+	"^m  +#++:+   +#+    +:+     +#++:  +#++:++#      +#++:++#   +#+ +:+ +#+ :#:           +#+     +#+ +:+ +#+ +#++:++#  \n"
+	"^n +#+  +#+  +#+  # +#+        +#+ +#+           +#+        +#+  +#+#+# +#+   +#+#    +#+     +#+  +#+#+# +#+       \n"
+	"^o#+#    #+# #+#   +#+  #+#    #+# #+#           #+#        #+#   #+#+# #+#    #+#    #+#     #+#   #+#+# #+#       \n"
+	"^p###    ###  ###### ### ########  ##########    ########## ###    ####  ######## ########### ###    #### ##########\n\n"
+	"^9       From ^7XQ3E^9 with love, have fun ;)\n\n",
 
-		"\n"
-		"^b __    __   ______    ______   ________        ________                      __                     \n"
-		"|  \\  |  \\ /      \\  /      \\ |        \\      |        \\                    |  \\                    \n"
-		"| ^1$$  ^b| ^1$$^b|  ^1$$$$$$^b\\|  ^1$$$$$$^b\\| ^1$$$$$$$$      ^b| ^1$$$$$$$$ ^b_______    ______   \\^1$$ ^b_______    ______  \n"
-		" \\^1$$^b\\/  ^1$$^b| ^1$$  ^b| ^1$$ ^b\\^1$$^b__| ^1$$^b| ^1$$^b__          | ^1$$^b__    |       \\  /      \\ |  \\|       \\  /      \\ \n"
-		"  >^1$$  $$ ^b| ^1$$  ^b| ^1$$  ^b|     ^1$$^b| ^1$$  ^b\\         | ^1$$  ^b\\   | ^1$$$$$$$^b\\|  ^1$$$$$$^b\\| ^1$$^b| ^1$$$$$$$^b\\|  ^1$$$$$$^b\\\n"
-		" /  ^1$$$$^b\\ | ^1$$ ^b_| ^1$$ ^b__\\^1$$$$$^b\\| ^1$$$$$         ^b| ^1$$$$$   ^b| ^1$$  ^b| ^1$$^b| ^1$$  ^b| ^1$$^b| ^1$$^b| ^1$$  ^b| ^1$$^b| ^1$$    $$\n"
-		"^b|  ^1$$ ^b\\^1$$^b\\| ^1$$^b/ \\ ^1$$^b|  \\__| ^1$$^b| ^1$$^b_____       | ^1$$^b_____ | ^1$$  ^b| ^1$$^b| ^1$$^b__| ^1$$^b| ^1$$^b| ^1$$  ^b| ^1$$^b| ^1$$$$$$$$\n"
-		"^b| ^1$$  ^b| ^1$$ ^b\\^1$$ $$ $$ ^b\\^1$$    $$^b| ^1$$     ^b\\      | ^1$$     ^b\\| ^1$$  ^b| ^1$$ ^b\\^1$$    $$^b| ^1$$^b| ^1$$  ^b| ^1$$ ^b\\^1$$     ^b\\\n"
-		" \\^1$$   ^b\\^1$$  ^b\\^1$$$$$$^b\\  \\^1$$$$$$  ^b\\^1$$$$$$$$       ^b\\^1$$$$$$$$ ^b\\^1$$   ^b\\^1$$ ^b_\\^1$$$$$$$ ^b\\^1$$ ^b\\^1$$   ^b\\^1$$  ^b\\^1$$$$$$$\n"
-		"                ^b\\^1$$$                                              ^b|  \\__| ^1$$                        \n"
-		"                                                                   ^b\\^1$$    $$                        \n"
-		"                                                                    ^b\\^1$$$$$$                         \n\n",
+	"\n"
+	"^b __    __   ______    ______   ________        ________                      __                     \n"
+	"|  \\  |  \\ /      \\  /      \\ |        \\      |        \\                    |  \\                    \n"
+	"| ^1$$  ^b| ^1$$^b|  ^1$$$$$$^b\\|  ^1$$$$$$^b\\| ^1$$$$$$$$      ^b| ^1$$$$$$$$ ^b_______    ______   \\^1$$ ^b_______    ______  \n"
+	" \\^1$$^b\\/  ^1$$^b| ^1$$  ^b| ^1$$ ^b\\^1$$^b__| ^1$$^b| ^1$$^b__          | ^1$$^b__    |       \\  /      \\ |  \\|       \\  /      \\ \n"
+	"  >^1$$  $$ ^b| ^1$$  ^b| ^1$$  ^b|     ^1$$^b| ^1$$  ^b\\         | ^1$$  ^b\\   | ^1$$$$$$$^b\\|  ^1$$$$$$^b\\| ^1$$^b| ^1$$$$$$$^b\\|  ^1$$$$$$^b\\\n"
+	" /  ^1$$$$^b\\ | ^1$$ ^b_| ^1$$ ^b__\\^1$$$$$^b\\| ^1$$$$$         ^b| ^1$$$$$   ^b| ^1$$  ^b| ^1$$^b| ^1$$  ^b| ^1$$^b| ^1$$^b| ^1$$  ^b| ^1$$^b| ^1$$    $$\n"
+	"^b|  ^1$$ ^b\\^1$$^b\\| ^1$$^b/ \\ ^1$$^b|  \\__| ^1$$^b| ^1$$^b_____       | ^1$$^b_____ | ^1$$  ^b| ^1$$^b| ^1$$^b__| ^1$$^b| ^1$$^b| ^1$$  ^b| ^1$$^b| ^1$$$$$$$$\n"
+	"^b| ^1$$  ^b| ^1$$ ^b\\^1$$ $$ $$ ^b\\^1$$    $$^b| ^1$$     ^b\\      | ^1$$     ^b\\| ^1$$  ^b| ^1$$ ^b\\^1$$    $$^b| ^1$$^b| ^1$$  ^b| ^1$$ ^b\\^1$$     ^b\\\n"
+	" \\^1$$   ^b\\^1$$  ^b\\^1$$$$$$^b\\  \\^1$$$$$$  ^b\\^1$$$$$$$$       ^b\\^1$$$$$$$$ ^b\\^1$$   ^b\\^1$$ ^b_\\^1$$$$$$$ ^b\\^1$$ ^b\\^1$$   ^b\\^1$$  ^b\\^1$$$$$$$\n"
+	"                ^b\\^1$$$                                              ^b|  \\__| ^1$$                        \n"
+	"                                                                   ^b\\^1$$    $$                        \n"
+	"                                                                    ^b\\^1$$$$$$                         \n\n",
 
-		"\n"
-		"^a __  _____  _____ _____               _                  _                _     __  \n"
-		"^b \\ \\/ / _ \\|___ /| ____|  _ __   ___ | |_    __ _    ___| |__   ___  __ _| |_   \\ \\ \n"
-		"^c  \\  / | | | |_ \\|  _|   | '_ \\ / _ \\| __|  / _` |  / __| '_ \\ / _ \\/ _` | __| (_) |\n"
-		"^d  /  \\ |_| |___) | |___  | | | | (_) | |_  | (_| | | (__| | | |  __/ (_| | |_   _| |\n"
-		"^e /_/\\_\\__\\_\\____/|_____| |_| |_|\\___/ \\__|  \\__,_|  \\___|_| |_|\\___|\\__,_|\\__| ( ) |\n"
-		"^f                                                                               |/_/ \n\n"
+	"\n"
+	"^a __  _____  _____ _____               _                  _                _     __  \n"
+	"^b \\ \\/ / _ \\|___ /| ____|  _ __   ___ | |_    __ _    ___| |__   ___  __ _| |_   \\ \\ \n"
+	"^c  \\  / | | | |_ \\|  _|   | '_ \\ / _ \\| __|  / _` |  / __| '_ \\ / _ \\/ _` | __| (_) |\n"
+	"^d  /  \\ |_| |___) | |___  | | | | (_) | |_  | (_| | | (__| | | |  __/ (_| | |_   _| |\n"
+	"^e /_/\\_\\__\\_\\____/|_____| |_| |_|\\___/ \\__|  \\__,_|  \\___|_| |_|\\___|\\__,_|\\__| ( ) |\n"
+	"^f                                                                               |/_/ \n\n"
 	};
 
 	char message[0x1000];
@@ -439,7 +467,7 @@ static void PrintWelcomeLogo(void)
 
 	X_MakeStringSymbolic(message);
 	Com_Printf("%s", message);
-	
+
 	_shown = qtrue;
 }
 
@@ -449,29 +477,37 @@ static void PrintWelcomeLogo(void)
 sfxHandle_t X_Event_ReplaceSoundOnSoundStart(int entity, sfxHandle_t sound)
 {
 	if (!IsXModeActive())
+	{
 		return sound;
+	}
 
 	if (x_snd_fix_unfreeze->integer)
 	{
 		if (xmod.gs.freezetag && sound == xmod.rs.soundOldUnfreeze && entity > MAX_CLIENTS)
+		{
 			return xmod.rs.soundUnfreeze;
+		}
 	}
 
 	return sound;
 }
 
-void X_Event_OnSoundStart(int entityNum, const vec3_t origin, const char* soundName)
+void X_Event_OnSoundStart(int entityNum, const vec3_t origin, const char *soundName)
 {
 	if (!IsXModeActive())
+	{
 		return;
+	}
 
 	X_CH_ChangeCrosshairOnSoundTrigger(soundName);
 }
 
-void X_Event_OnGetSnapshot(snapshot_t* snapshot)
+void X_Event_OnGetSnapshot(snapshot_t *snapshot)
 {
 	if (!IsXModeActive())
+	{
 		return;
+	}
 
 	xmod.snap = *snapshot;
 	xmod.snapNum++;
@@ -492,15 +528,15 @@ void X_Event_OnConfigstringModified(int index)
 	X_GS_UpdateGameStateOnConfigStringModified(index);
 }
 
-qboolean X_Event_OnServerCommand(const char* cmd, qboolean* result)
+qboolean X_Event_OnServerCommand(const char *cmd, qboolean *result)
 {
 	*result = qtrue;
-    printf(">>>>server command %s \n", cmd);
+	printf(">>>>server command %s \n", cmd);
 
 	if (!strcmp(cmd, "chat") || !strcmp(cmd, "tchat"))
 	{
-		const char* id = Cmd_Argv(2);
-		*result = X_Con_OnChatMessage(Cmd_Argv(1), (strlen(id) > 0 ? atoi(id) : -1 ));
+		const char *id = Cmd_Argv(2);
+		*result = X_Con_OnChatMessage(Cmd_Argv(1), (strlen(id) > 0 ? atoi(id) : -1));
 		return qtrue;
 	}
 
@@ -531,7 +567,9 @@ void X_Event_OnDrawScreen(void)
 	X_Hud_ValidateDefaultScores();
 
 	if (!IsXModeActive())
+	{
 		return;
+	}
 
 	X_Hud_TurnOffForcedTransparency();
 
@@ -541,10 +579,12 @@ void X_Event_OnDrawScreen(void)
 	X_Hud_TurnOnForcedTransparency();
 }
 
-void X_Event_OnChatCommand(field_t* field)
+void X_Event_OnChatCommand(field_t *field)
 {
 	if (!IsXModeActive())
+	{
 		return;
+	}
 
 	X_Con_OnLocalChatCommand(field);
 }
@@ -561,17 +601,21 @@ static void Hook_DrawStretchPic(float x, float y, float w, float h, float s1, fl
 	}
 
 	if (X_Hud_HideOnXScore())
+	{
 		return;
+	}
 
 	if (X_CH_CustomizeCrosshair(x, y, w, h, shader))
+	{
 		return;
-	
+	}
+
 	X_Hud_CustomizeConsoleFont(&shader);
 
 	Original_DrawStretchPic(x, y, w, h, s1, t1, s2, t2, shader);
 }
 
-void Hook_RenderScene(const refdef_t* fd)
+void Hook_RenderScene(const refdef_t *fd)
 {
 	if (!IsXModeActive())
 	{
@@ -583,13 +627,15 @@ void Hook_RenderScene(const refdef_t* fd)
 	X_CH_CalculateDistance(fd);
 
 	if (!X_IsNoWorldRender(fd) || !X_Hud_HideOnXScore())
+	{
 		Original_RenderScene(fd);
+	}
 
 	X_Net_CheckScanPortTimeout();
 	X_Team_ValidateFrozenPlayers(fd);
 }
 
-void Hook_AddRefEntityToScene(refEntity_t* ref, qboolean intShaderTime)
+void Hook_AddRefEntityToScene(refEntity_t *ref, qboolean intShaderTime)
 {
 	if (!IsXModeActive())
 	{
@@ -608,7 +654,7 @@ void Hook_AddRefEntityToScene(refEntity_t* ref, qboolean intShaderTime)
 	X_DMG_PushDamageForEntity(ref);
 }
 
-void Hook_SetColor(const float* rgba)
+void Hook_SetColor(const float *rgba)
 {
 	if (!IsXModeActive())
 	{
@@ -621,7 +667,9 @@ void Hook_SetColor(const float* rgba)
 	if (rgba)
 	{
 		for (int i = 0; i < 4; i++)
+		{
 			xmod.currentColor[i] = rgba[i];
+		}
 	}
 	else
 	{
@@ -639,17 +687,17 @@ void X_Hook_UpdateEntityPosition(int entityNum, const vec3_t origin)
 	X_GS_UpdateEntityPosition(entityNum, origin);
 }
 
-qboolean X_Hook_CGame_Cvar_SetSafe(const char* var_name, const char* value)
+qboolean X_Hook_CGame_Cvar_SetSafe(const char *var_name, const char *value)
 {
 	// Prevent reset of max fps
 	if (IsXModeActive() && var_name && strcmp(var_name, "com_maxfps") == 0)
-    {
-        return qfalse;
-    }
-    return qtrue;
+	{
+		return qfalse;
+	}
+	return qtrue;
 }
 
-int	X_Hook_FS_GetFileList(const char* path, const char* extension, char* listbuf, int bufsize)
+int X_Hook_FS_GetFileList(const char *path, const char *extension, char *listbuf, int bufsize)
 {
 	char buffer[64];
 	if (!strcmp(path, "demos") && !strcmp(extension, "dm_48"))
@@ -684,29 +732,31 @@ static void ChangeName(void)
 	if (Cmd_Argc() != 2)
 	{
 		Com_Printf(
-			"Usage: x_name \"<playername>\"\n\n"
-			"Online nickname generator: ^nhttp://dos.ninja/projects/q3gfx.html\n\n"
+		"Usage: x_name \"<playername>\"\n\n"
+		"Online nickname generator: ^nhttp://dos.ninja/projects/q3gfx.html\n\n"
 		);
 		return;
 	}
 
-	const char* name = Cmd_Argv(1);
+	const char *name = Cmd_Argv(1);
 	char reformated[256] = {0};
 	size_t length = strlen(name);
-	
+
 	Q_strncpyz(reformated, name, countof(reformated));
 
 	for (size_t i = 0; i < length; i++)
 	{
 		if (reformated[i] == '#' && i + 2 < length)
 		{
-			char hex[] = { '0', 'x', reformated[i + 1], reformated[i + 2], 0 };
+			char hex[] = {'0', 'x', reformated[i + 1], reformated[i + 2], 0};
 			int charnum = Com_HexStrToInt(hex);
 			if (charnum > 255 || charnum < 1)
+			{
 				continue;
+			}
 
 			length -= 2;
-			reformated[i] = (char)charnum;
+			reformated[i] = (char) charnum;
 
 			memmove(reformated + i + 1, reformated + i + 3, length - i);
 		}
@@ -715,21 +765,27 @@ static void ChangeName(void)
 	Cvar_Set("name", reformated);
 }
 
-static char* StateToString(qboolean state)
+static char *StateToString(qboolean state)
 {
 	return (state ? "^2ON " : "^1OFF");
 }
 
-static void PrintCommandState(const char* key, qboolean deflt)
+static void PrintCommandState(const char *key, qboolean deflt)
 {
 	unsigned int flags = Cvar_Flags(key);
 
 	if (flags & CVAR_XHCK_OFF)
+	{
 		Com_Printf("  ^f%-32s %s ^7server-forced\n", key, StateToString(qfalse));
+	}
 	else if ((flags & CVAR_XHCK_ON))
+	{
 		Com_Printf("  ^f%-32s %s ^7server-forced\n", key, StateToString(qtrue));
+	}
 	else
+	{
 		Com_Printf("  ^f%-32s %s ^zinherited\n", key, StateToString(deflt));
+	}
 }
 
 static void Print_State(void)
@@ -746,24 +802,30 @@ static void Print_State(void)
 
 	Com_Printf("\n^7Commands:\n\n");
 
-	const char* info = Cvar_InfoString(CVAR_XMOD, 0);
+	const char *info = Cvar_InfoString(CVAR_XMOD, 0);
 	while (info)
 	{
 		Info_NextPair(info, key, value);
 
 		if (!key[0])
+		{
 			break;
+		}
 
 		if (!Q_stricmp(key, "x_enable"))
+		{
 			PrintCommandState(key, xmod_l);
+		}
 		else
+		{
 			PrintCommandState(key, xhck_l);
+		}
 	}
 
 	Com_Printf("\n");
 }
 
-static char* UntokenizeNickname(const char* nickname, char* output, int size)
+static char *UntokenizeNickname(const char *nickname, char *output, int size)
 {
 	int b = 0;
 	Com_Memset(output, 0, size);
@@ -771,7 +833,9 @@ static char* UntokenizeNickname(const char* nickname, char* output, int size)
 	for (int a = 0; nickname[a]; a++)
 	{
 		if (b >= size - 1)
+		{
 			break;
+		}
 
 		if (nickname[a] == '^')
 		{
@@ -790,17 +854,25 @@ static char* UntokenizeNickname(const char* nickname, char* output, int size)
 	return output;
 }
 
-static char* TeamToString(int team)
+static char *TeamToString(int team)
 {
 	if (team == TEAM_FREE)
+	{
 		return "^mfree";
+	}
 	else if (team == TEAM_RED)
+	{
 		return "^1red";
+	}
 	else if (team == TEAM_BLUE)
+	{
 		return "^4blue";
+	}
 	else if (team == TEAM_SPECTATOR)
+	{
 		return "^zspectator";
-	
+	}
+
 	static char msg[64];
 	Com_sprintf(msg, sizeof(msg), "unknown (%d)", team);
 	return msg;
@@ -816,27 +888,33 @@ static void Print_UserInfo(void)
 	{
 		int offset = cl.gameState.stringOffsets[CS_PLAYERS + i];
 		if (!offset)
+		{
 			continue;
+		}
 
 		if (print_id != -1 && print_id != i)
+		{
 			continue;
+		}
 
 		unsigned short sign = 0;
 		CRC_Init(&sign);
 
-		char* cmd = cl.gameState.stringData + offset;
+		char *cmd = cl.gameState.stringData + offset;
 
-		const char* data_c1 = Info_ValueForKey(cmd, "c1");
+		const char *data_c1 = Info_ValueForKey(cmd, "c1");
 		CRC_ContinueProcessString(&sign, data_c1, strlen(data_c1));
 
 		const char *data_c2 = Info_ValueForKey(cmd, "c2");
 		CRC_ContinueProcessString(&sign, data_c2, strlen(data_c2));
 
 		const char *data_model = Info_ValueForKey(cmd, "model");
-		
-		char* skin = strchr(data_model, '/');
+
+		char *skin = strchr(data_model, '/');
 		if (skin)
+		{
 			*skin = '\0';
+		}
 
 		CRC_ContinueProcessString(&sign, data_model, strlen(data_model));
 
@@ -844,7 +922,9 @@ static void Print_UserInfo(void)
 
 		skin = strchr(data_hmodel, '/');
 		if (skin)
+		{
 			*skin = '\0';
+		}
 
 		CRC_ContinueProcessString(&sign, data_hmodel, strlen(data_hmodel));
 
@@ -854,12 +934,14 @@ static void Print_UserInfo(void)
 		while (cmd)
 		{
 			char temp[256];
-			char* v = value;
+			char *v = value;
 
 			Info_NextPair(cmd, key, value);
 
 			if (!key[0])
+			{
 				break;
+			}
 
 			if (!strcmp(key, "n"))
 			{
@@ -913,16 +995,22 @@ static void Print_UserInfo(void)
 	}
 }
 
-static void CustomizeSimpleItems(refEntity_t* ref)
+static void CustomizeSimpleItems(refEntity_t *ref)
 {
 	if (ref->reType != RT_SPRITE)
+	{
 		return;
+	}
 
 	if (!cg_simpleitems || !cg_simpleitems->integer)
+	{
 		return;
+	}
 
 	if (!x_item_fix_simpleitems_size->integer)
+	{
 		return;
+	}
 
 	// Health
 
@@ -937,7 +1025,9 @@ static void CustomizeSimpleItems(refEntity_t* ref)
 	for (int i = 0; i < countof(xmod.rs.shaderPowerups); i++)
 	{
 		if (!xmod.rs.shaderPowerups[i])
+		{
 			continue;
+		}
 
 		if (xmod.rs.shaderPowerups[i] == ref->customShader)
 		{
@@ -952,7 +1042,9 @@ static void CustomizeSimpleItems(refEntity_t* ref)
 	for (int i = 0; i < countof(xmod.rs.shaderArmors); i++)
 	{
 		if (!xmod.rs.shaderArmors[i])
+		{
 			continue;
+		}
 
 		if (xmod.rs.shaderArmors[i] == ref->customShader)
 		{
@@ -966,7 +1058,9 @@ static void CustomizeSimpleItems(refEntity_t* ref)
 static void Say_Encrypted(void)
 {
 	if (Cmd_Argc() < 2)
+	{
 		return;
+	}
 
 	X_SendEncryptedMessage(Cmd_ArgsFrom(1));
 }

@@ -516,7 +516,7 @@ Con_Linefeed
 */
 static void Con_Linefeed( qboolean skipnotify, section_t *section )
 {
-    int times = X_GetMaxOverlay();
+	int times = X_GetMaxOverlay();
 	// mark time for transparent overlay
 	if ( section->current >= 0 )	{
 		if ( skipnotify )
@@ -634,7 +634,7 @@ void CL_ConsolePrintInternal( const char *txt , section_t* section, qboolean mai
 
 	// mark time for transparent overlay
 	if (main && section->current >= 0 ) {
-        int times = X_GetMaxOverlay();
+		int times = X_GetMaxOverlay();
 		if ( skipnotify ) {
 			prev = section->current % times - 1;
 			if ( prev < 0 )

@@ -556,19 +556,19 @@ static void ParseTexMod( const char *_text, shaderStage_t *stage )
 		tmi->rotateSpeed = Q_atof( token );
 		tmi->type = TMOD_ROTATE;
 	}
-    // rotate2
-    //
-    else if ( !Q_stricmp(token, "rotate2") )
-    {
-        token = COM_ParseExt(text, qfalse);
-        if (token[0] == 0)
-        {
-            ri.Printf(PRINT_WARNING, "WARNING: missing tcMod rotate parms in shader '%s'\n", shader.name);
-            return;
-        }
-        tmi->rotateSpeed = atof(token);
-        tmi->type = TMOD_ROTATE2;
-    }
+	// rotate2
+	//
+	else if (!Q_stricmp(token, "rotate2"))
+	{
+		token = COM_ParseExt(text, qfalse);
+		if (token[0] == 0)
+		{
+			ri.Printf(PRINT_WARNING, "WARNING: missing tcMod rotate parms in shader '%s'\n", shader.name);
+			return;
+		}
+		tmi->rotateSpeed = atof(token);
+		tmi->type = TMOD_ROTATE2;
+	}
 	//
 	// entityTranslate
 	//
@@ -4213,15 +4213,17 @@ static void CreateExternalShaders( void ) {
 
 void R_UpdateShaderColorByHandle(qhandle_t hShader, const vec3_t color)
 {
-    shader_t* shader_l = R_GetShaderByHandle(hShader);
-    if (shader_l->defaultShader)
-        return;
+	shader_t *shader_l = R_GetShaderByHandle(hShader);
+	if (shader_l->defaultShader)
+	{
+		return;
+	}
 
-    shader_l->stages[0]->bundle[0].rgbGen = CGEN_CONST;
-    shader_l->stages[0]->bundle[0].constantColor.rgba[0] = color[0] * 255;
-    shader_l->stages[0]->bundle[0].constantColor.rgba[1] = color[1] * 255;
-    shader_l->stages[0]->bundle[0].constantColor.rgba[2] = color[2] * 255;
-    shader_l->stages[0]->bundle[0].constantColor.rgba[3] = 255;
+	shader_l->stages[0]->bundle[0].rgbGen = CGEN_CONST;
+	shader_l->stages[0]->bundle[0].constantColor.rgba[0] = color[0] * 255;
+	shader_l->stages[0]->bundle[0].constantColor.rgba[1] = color[1] * 255;
+	shader_l->stages[0]->bundle[0].constantColor.rgba[2] = color[2] * 255;
+	shader_l->stages[0]->bundle[0].constantColor.rgba[3] = 255;
 }
 
 /*

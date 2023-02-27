@@ -977,7 +977,6 @@ Q3OBJ = \
   $(B)/client/l_script.o \
   $(B)/client/l_struct.o \
   \
-  $(B)/client/x_cl_console.o \
   $(B)/client/x_weapon.o \
   $(B)/client/x_player.o \
   $(B)/client/x_net.o \

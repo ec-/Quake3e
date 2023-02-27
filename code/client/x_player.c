@@ -3,17 +3,17 @@
 // ====================
 //   CVars
 
-static cvar_t* x_hck_ps_enemy_hitbox = 0;
+static cvar_t *x_hck_ps_enemy_hitbox = 0;
 
-static cvar_t* x_ps_dead_body_black = 0;
+static cvar_t *x_ps_dead_body_black = 0;
 
-static cvar_t* x_ps_auto_revival = 0;
+static cvar_t *x_ps_auto_revival = 0;
 
 // ====================
 //   Const vars
 
 static char X_HELP_HCK_PS_ENEMY_HITBOX[] = "\n ^fx_hck_ps_enemy_hitbox_3d^5 0|...|1^7\n\n"
-										      "   Draw hitbox for enemy players.\n";
+										   "   Draw hitbox for enemy players.\n";
 
 static char X_HELP_PS_DEAD_BODY_BLACK[] = "\n ^fx_ps_dead_body_black^5 0|...|3^7\n\n"
 										  "   Make dead and frozen models dark.\n"
@@ -24,9 +24,9 @@ static char X_HELP_PS_DEAD_BODY_BLACK[] = "\n ^fx_ps_dead_body_black^5 0|...|3^7
 // ====================
 //   Static routines
 
-static void DrawPlayerHitbox(PlayerModel model, refEntity_t* ref);
+static void DrawPlayerHitbox(PlayerModel model, refEntity_t *ref);
 
-static void MakeDeadBodyBlack(PlayerModel model, refEntity_t* ref);
+static void MakeDeadBodyBlack(PlayerModel model, refEntity_t *ref);
 
 // ====================
 //   Implementation
@@ -38,33 +38,43 @@ void X_PS_Init()
 	RegisterXCommand(x_ps_auto_revival, "1", "0", "1", 0);//TODO:
 }
 
-void X_PS_CustomizePlayerModel(refEntity_t* ref)
+void X_PS_CustomizePlayerModel(refEntity_t *ref)
 {
 	PlayerModel model = X_Team_IsPlayerModel(ref->hModel);
 
 	if (model == NotPlayer)
+	{
 		return;
+	}
 
 	DrawPlayerHitbox(model, ref);
 	MakeDeadBodyBlack(model, ref);
 }
 
-void X_PS_AutoRevival(snapshot_t* snapshot)
+void X_PS_AutoRevival(snapshot_t *snapshot)
 {
 	if (!x_ps_auto_revival->integer)
+	{
 		return;
+	}
 
 	if (snapshot->ps.clientNum != clc.clientNum)
+	{
 		return;
+	}
 
 	if (snapshot->ps.pm_type != PM_DEAD)
+	{
 		return;
+	}
 
 	if (xmod.snap.ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+	{
 		return;
+	}
 
 	if ((xmod.gs.type == GameTDM && xmod.gs.freezetag) || xmod.gs.type == GameCTF
-	  || xmod.gs.type == Game1v1 || xmod.gs.type == GameFFA)
+		|| xmod.gs.type == Game1v1 || xmod.gs.type == GameFFA)
 	{
 		// Semulate mouse1 click
 		Cmd_ExecuteString("+attack");
@@ -72,35 +82,49 @@ void X_PS_AutoRevival(snapshot_t* snapshot)
 	}
 }
 
-static void DrawPlayerHitbox(PlayerModel model, refEntity_t* ref)
+static void DrawPlayerHitbox(PlayerModel model, refEntity_t *ref)
 {
 	if (!x_hck_ps_enemy_hitbox->integer)
+	{
 		return;
+	}
 
 	if (!IsXModeHackCommandActive(x_hck_ps_enemy_hitbox))
+	{
 		return;
+	}
 
 	if (ref->renderfx & RF_THIRD_PERSON)
+	{
 		return;
+	}
 
 	if (model != LegsModel)
+	{
 		return;
+	}
 
 	int client = X_GS_GetClientIDByOrigin(ref->origin);
 	if (client == -1)
+	{
 		return;
+	}
 
 	int powerups = xmod.gs.ps[client].powerups;
 
 	if (powerups & (1 << PW_INVIS))
+	{
 		return;
+	}
 
 	if (xmod.gs.freezetag && powerups & (1 << PW_BATTLESUIT) && xmod.gs.ps[client].entity >= MAX_CLIENTS)
+	{
 		return;
+	}
 
 	if (xmod.snap.ps.persistant[PERS_TEAM] == TEAM_SPECTATOR
-	 || xmod.snap.ps.persistant[PERS_TEAM] == TEAM_FREE
-	 || xmod.snap.ps.persistant[PERS_TEAM] != xmod.gs.ps[client].team)
+		|| xmod.snap.ps.persistant[PERS_TEAM] == TEAM_FREE
+		|| xmod.snap.ps.persistant[PERS_TEAM] != xmod.gs.ps[client].team)
 	{
 		refEntity_t entity;
 		memset(&entity, 0, sizeof(entity));
@@ -136,18 +160,22 @@ static void DrawPlayerHitbox(PlayerModel model, refEntity_t* ref)
 		{
 			return;
 		}
-		
+
 		Original_AddRefEntityToScene(&entity, qfalse);
 	}
 }
 
-static void MakeDeadBodyBlack(PlayerModel model, refEntity_t* ref)
+static void MakeDeadBodyBlack(PlayerModel model, refEntity_t *ref)
 {
 	if (xmod.gs.mode == ModeCPMA)
+	{
 		return;
+	}
 
 	if (!x_ps_dead_body_black->integer)
+	{
 		return;
+	}
 
 	if (xmod.deadPlayerParts == NotPlayer && model == LegsModel)
 	{
@@ -164,7 +192,9 @@ static void MakeDeadBodyBlack(PlayerModel model, refEntity_t* ref)
 		}
 
 		if (!found && X_GS_IsClientDeadByOrigin(ref->origin))
+		{
 			xmod.deadPlayerParts = model;
+		}
 	}
 
 	if (xmod.deadPlayerParts != NotPlayer)

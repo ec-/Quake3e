@@ -151,7 +151,7 @@ static qboolean CL_GetSnapshot( int snapshotNumber, snapshot_t *snapshot ) {
 
 	// FIXME: configstring changes and server commands!!!
 
-    X_Event_OnGetSnapshot(snapshot);
+	X_Event_OnGetSnapshot(snapshot);
 
 	return qtrue;
 }
@@ -236,7 +236,7 @@ static void CL_ConfigstringModified( void ) {
 		// parse serverId and other cvars
 		CL_SystemInfoChanged( qfalse );
 	}
-    X_Event_OnConfigstringModified(index);
+	X_Event_OnConfigstringModified(index);
 }
 
 
@@ -282,21 +282,23 @@ static qboolean CL_GetServerCommand( int serverCommandNumber ) {
 	}
 
 rescan:
-    if (X_Net_ShowCommands()){
-        Com_Printf("^cRECV: ^7%s\n", s);
-    }
+	if (X_Net_ShowCommands())
+	{
+		Com_Printf("^cRECV: ^7%s\n", s);
+	}
 
-	Cmd_TokenizeString( s );
+	Cmd_TokenizeString(s);
 	cmd = Cmd_Argv(0);
 	argc = Cmd_Argc();
 
-    {
-        qboolean result = qtrue;
-        if (X_Event_OnServerCommand(cmd, &result)) {
-            Cmd_TokenizeString(s);
-            return result;
-        }
-    }
+	{
+		qboolean result = qtrue;
+		if (X_Event_OnServerCommand(cmd, &result))
+		{
+			Cmd_TokenizeString(s);
+			return result;
+		}
+	}
 
 	if ( !strcmp( cmd, "disconnect" ) ) {
 		// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=552
@@ -412,7 +414,7 @@ void CL_ShutdownCGame( void ) {
 	cgvm = NULL;
 	FS_VM_CloseFiles( H_CGAME );
 
-    X_StopAfterCGameVM();
+	X_StopAfterCGameVM();
 }
 
 
@@ -495,10 +497,10 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		Cvar_Update( VMA(1), cgvm->privateFlag );
 		return 0;
 	case CG_CVAR_SET:
-        if (X_Hook_CGame_Cvar_SetSafe( VMA(1), VMA(2) ) == qtrue)
-        {
-            Cvar_SetSafe( VMA(1), VMA(2) );
-        }
+		if (X_Hook_CGame_Cvar_SetSafe(VMA(1), VMA(2)) == qtrue)
+		{
+			Cvar_SetSafe(VMA(1), VMA(2));
+		}
 		return 0;
 	case CG_CVAR_VARIABLESTRINGBUFFER:
 		VM_CHECKBOUNDS( cgvm, args[2], args[3] );
@@ -601,7 +603,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		S_StopLoopingSound( args[1] );
 		return 0;
 	case CG_S_UPDATEENTITYPOSITION:
-        X_Hook_UpdateEntityPosition( args[1], VMA(2) );
+		X_Hook_UpdateEntityPosition( args[1], VMA(2) );
 		S_UpdateEntityPosition( args[1], VMA(2) );
 		return 0;
 	case CG_S_RESPATIALIZE:
@@ -882,17 +884,17 @@ void CL_InitCGame( void ) {
 	}
 	cls.state = CA_LOADING;
 
-    {
-        int savefps = com_maxfps->integer;
-        // init for this gamestate
-        // use the lastExecutedServerCommand instead of the serverCommandSequence
-        // otherwise server commands sent just before a gamestate are dropped
-        VM_Call(cgvm, 3, CG_INIT, clc.serverMessageSequence, clc.lastExecutedServerCommand, clc.clientNum);
+	{
+		int savefps = com_maxfps->integer;
+		// init for this gamestate
+		// use the lastExecutedServerCommand instead of the serverCommandSequence
+		// otherwise server commands sent just before a gamestate are dropped
+		VM_Call(cgvm, 3, CG_INIT, clc.serverMessageSequence, clc.lastExecutedServerCommand, clc.clientNum);
 
-        Cvar_SetIntegerValue("com_maxfps", savefps);
-    }
+		Cvar_SetIntegerValue("com_maxfps", savefps);
+	}
 
-    X_InitAfterCGameVM();
+	X_InitAfterCGameVM();
 
 	// reset any CVAR_CHEAT cvars registered by cgame
 	if ( !clc.demoplaying && !cl_connectedToCheatServer )

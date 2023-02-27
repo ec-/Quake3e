@@ -1167,26 +1167,26 @@ void RB_CalcRotateTexCoords( float degsPerSecond, float *src, float *dst )
 /*
 ** RB_CalcRotateTexCoords2
 */
-void RB_CalcRotateTexCoords2(float degs, float* src, float* dst)
+void RB_CalcRotateTexCoords2(float degs, float *src, float *dst)
 {
-    int64_t index;
-    float sinValue, cosValue;
-    texModInfo_t tmi;
+	int64_t index;
+	float sinValue, cosValue;
+	texModInfo_t tmi;
 
-    index = degs * (FUNCTABLE_SIZE / 360.0f);
+	index = degs * (FUNCTABLE_SIZE / 360.0f);
 
-    sinValue = tr.sinTable[index & FUNCTABLE_MASK];
-    cosValue = tr.sinTable[(index + FUNCTABLE_SIZE / 4) & FUNCTABLE_MASK];
+	sinValue = tr.sinTable[index & FUNCTABLE_MASK];
+	cosValue = tr.sinTable[(index + FUNCTABLE_SIZE / 4) & FUNCTABLE_MASK];
 
-    tmi.matrix[0][0] = cosValue;
-    tmi.matrix[1][0] = -sinValue;
-    tmi.translate[0] = 0.5 - 0.5 * cosValue + 0.5 * sinValue;
+	tmi.matrix[0][0] = cosValue;
+	tmi.matrix[1][0] = -sinValue;
+	tmi.translate[0] = 0.5 - 0.5 * cosValue + 0.5 * sinValue;
 
-    tmi.matrix[0][1] = sinValue;
-    tmi.matrix[1][1] = cosValue;
-    tmi.translate[1] = 0.5 - 0.5 * sinValue - 0.5 * cosValue;
+	tmi.matrix[0][1] = sinValue;
+	tmi.matrix[1][1] = cosValue;
+	tmi.translate[1] = 0.5 - 0.5 * sinValue - 0.5 * cosValue;
 
-    RB_CalcTransformTexCoords(&tmi, src, dst);
+	RB_CalcTransformTexCoords(&tmi, src, dst);
 }
 
 

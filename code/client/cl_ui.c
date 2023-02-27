@@ -875,7 +875,7 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 
 	case UI_FS_GETFILELIST:
 		VM_CHECKBOUNDS( uivm, args[3], args[4] );
-        return X_Hook_FS_GetFileList( VMA(1), VMA(2), VMA(3), args[4] );
+		return X_Hook_FS_GetFileList( VMA(1), VMA(2), VMA(3), args[4] );
 
 	case UI_R_REGISTERMODEL:
 		return re.RegisterModel( VMA(1) );

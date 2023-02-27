@@ -3,9 +3,9 @@
 // ====================
 //   CVars
 
-static cvar_t* x_net_port_auto_renew = 0;
+static cvar_t *x_net_port_auto_renew = 0;
 
-static cvar_t* x_net_show_commands = 0;
+static cvar_t *x_net_show_commands = 0;
 
 // ====================
 //   Const vars
@@ -55,18 +55,24 @@ void X_Net_Deinit(void)
 	Cmd_RemoveCommand("x_net_port_renew");
 }
 
-void X_Net_RenewPortOnSnapshot(snapshot_t* snapshot)
+void X_Net_RenewPortOnSnapshot(snapshot_t *snapshot)
 {
-	Network* net = &xmod.net;
+	Network *net = &xmod.net;
 
 	if (!net->scan)
+	{
 		return;
+	}
 
 	if (clc.clientNum != snapshot->ps.clientNum)
+	{
 		return;
+	}
 
 	if (snapshot->snapFlags & SNAPFLAG_NOT_ACTIVE)
+	{
 		return;
+	}
 
 	if (net->skipSnaps)
 	{
@@ -86,7 +92,9 @@ void X_Net_RenewPortOnSnapshot(snapshot_t* snapshot)
 	{
 		int sum = 0;
 		for (int a = 0; a < countof(net->snapMS); a++)
+		{
 			sum += net->snapMS[a];
+		}
 
 		net->avrgMS[net->currentPort] = sum / countof(net->snapMS);
 
@@ -94,23 +102,29 @@ void X_Net_RenewPortOnSnapshot(snapshot_t* snapshot)
 		net->currentSnap = 0;
 		net->scanTime = Sys_Milliseconds();
 		net->skipSnaps = 5;
-		
+
 		renew = qtrue;
 	}
 
 	// Complete scan
 	if (net->currentPort >= countof(net->ports))
+	{
 		CompletePortScan();
+	}
 	else if (renew)
+	{
 		SetPortAndRestartNetwork(net->ports[net->currentPort]);
+	}
 }
 
 void X_Net_DrawScanProgress()
 {
-	Network* net = &xmod.net;
+	Network *net = &xmod.net;
 
 	if (!net->scan)
+	{
 		return;
+	}
 
 	X_Hud_DrawProgressBarInCenter(&xmod.net.scanBar, net->currentPort);
 
@@ -124,22 +138,26 @@ void X_Net_DrawScanProgress()
 	X_Hud_DrawString(x, y + 16.f, 11.f, 0, 5, xmod.rs.shaderCharmap[2], buffer);
 
 	if (clc.clientNum != xmod.snap.ps.clientNum)
+	{
 		X_Hud_DrawString(x, y + 2.f, 10.f, 0, 5, xmod.rs.shaderCharmap[2], "^9PAUSED");
+	}
 }
 
 void X_Net_CheckScanPortTimeout()
 {
-	Network* net = &xmod.net;
+	Network *net = &xmod.net;
 
 	if (!net->scan)
+	{
 		return;
+	}
 
 	int currentMs = Sys_Milliseconds();
 
 	if (net->scanTime + 2000 < currentMs)
 	{
 		net->scanTime = Sys_Milliseconds();
-		net->ports[net->currentPort] = (rand() % 320)* (rand() % 100) + 10000;
+		net->ports[net->currentPort] = (rand() % 320) * (rand() % 100) + 10000;
 		SetPortAndRestartNetwork(net->ports[net->currentPort]);
 	}
 }
@@ -147,7 +165,9 @@ void X_Net_CheckScanPortTimeout()
 qboolean X_Net_ShowCommands(void)
 {
 	if (!IsXModeActive())
+	{
 		return qfalse;
+	}
 
 	return (x_net_show_commands->integer ? qtrue : qfalse);
 }
@@ -158,7 +178,9 @@ static void UpdateStaticServerInfo(void)
 	qboolean newmap = (newserver || Q_stricmp(cl.mapname, sxmod.lastmap) ? qtrue : qfalse);
 
 	if (clc.demoplaying)
+	{
 		return;
+	}
 
 	if (newserver)
 	{
@@ -167,10 +189,14 @@ static void UpdateStaticServerInfo(void)
 	}
 
 	if (newmap)
+	{
 		Q_strncpyz(sxmod.lastmap, cl.mapname, sizeof(sxmod.lastmap));
+	}
 
 	if (newserver || newmap)
+	{
 		PortRenew(qtrue);
+	}
 }
 
 static void PortRenewNoisy()
@@ -187,14 +213,18 @@ static void PortRenewNoisy()
 static void PortRenew(qboolean silent)
 {
 	if (!x_net_port_auto_renew || !x_net_port_auto_renew->integer)
+	{
 		return;
+	}
 
 	if (xmod.net.scan)
+	{
 		return;
+	}
 
 	Com_Printf("^fPort scan has been started\n");
 
-	Network* net = &xmod.net;
+	Network *net = &xmod.net;
 	net->scan = qtrue;
 	net->currentPort = 0;
 	net->currentSnap = 0;
@@ -207,9 +237,13 @@ static void PortRenew(qboolean silent)
 	for (int i = 0; i < countof(net->ports); i++)
 	{
 		if (i == 0)
+		{
 			net->ports[i] = Cvar_VariableIntegerValue("net_port");//TODO: ipv6 support
+		}
 		else
+		{
 			net->ports[i] = (rand() % 320) * (rand() % 100) + 10000;
+		}
 
 		net->avrgMS[i] = 999;
 	}
@@ -228,15 +262,15 @@ static void SetPortAndRestartNetwork(int port)
 
 	Com_sprintf(cmd, sizeof(cmd), "net_port6 %d", port);
 	Cmd_ExecuteString(cmd);
-	
+
 	Cmd_ExecuteString("net_restart");
-	
+
 	XModeDisableOutput(qfalse);
 }
 
 static void CompletePortScan(void)
 {
-	Network* net = &xmod.net;
+	Network *net = &xmod.net;
 
 	net->scan = qfalse;
 
@@ -245,9 +279,11 @@ static void CompletePortScan(void)
 	Com_Printf("^fPort scan has been completed\n");
 
 	if (!net->silent)
+	{
 		Com_Printf(
-			"\n  ^7Summary\n\n"
+		"\n  ^7Summary\n\n"
 		);
+	}
 
 	for (int i = 0; i < countof(net->avrgMS); i++)
 	{
@@ -258,21 +294,27 @@ static void CompletePortScan(void)
 		}
 
 		if (!net->silent)
+		{
 			Com_Printf("    ^7port %4d -> %d ms\n", net->ports[i], net->avrgMS[i]);
+		}
 	}
 
 	int origPort = net->ports[0], origMs = net->avrgMS[0];
 	Com_Printf(
-		"\n  ^7Selected top port ^f%5d^7 with ^f%d^7 ms\n",
-		port, lowest
+	"\n  ^7Selected top port ^f%5d^7 with ^f%d^7 ms\n",
+	port, lowest
 	);
 
 	if (origPort != port)
+	{
 		Com_Printf(
-			"           ^7old port ^f%5d^7 has ^f%2d^7 ms (^z+^1%d^7^zms)\n\n",
-			origPort, origMs, origMs - lowest);
+		"           ^7old port ^f%5d^7 has ^f%2d^7 ms (^z+^1%d^7^zms)\n\n",
+		origPort, origMs, origMs - lowest);
+	}
 	else
+	{
 		Com_Printf("\n");
+	}
 
 	SetPortAndRestartNetwork(port);
 }
@@ -281,6 +323,8 @@ static void CompletePortScan(void)
 static void SendCommand(void)
 {
 	if (Cmd_Argc() > 1)
+	{
 
-	CL_AddReliableCommand(Cmd_Argv(1), qfalse);
+		CL_AddReliableCommand(Cmd_Argv(1), qfalse);
+	}
 }

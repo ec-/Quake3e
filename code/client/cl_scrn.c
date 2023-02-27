@@ -574,16 +574,16 @@ static void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 #ifdef USE_VOIP
 			SCR_DrawVoipMeter();
 #endif
-            X_Event_OnDrawScreen();
+			X_Event_OnDrawScreen();
 			break;
 		}
 	}
 
 	// the menu draws next
 	if ( Key_GetCatcher( ) & KEYCATCH_UI && uivm ) {
-        X_Hud_TurnOffForcedTransparency();
+		X_Hud_TurnOffForcedTransparency();
 		VM_Call( uivm, 1, UI_REFRESH, cls.realtime );
-        X_Hud_TurnOnForcedTransparency();
+		X_Hud_TurnOnForcedTransparency();
 	}
 
 	// console draws next

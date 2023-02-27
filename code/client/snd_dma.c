@@ -472,7 +472,7 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 		Com_Error( ERR_DROP, "S_StartSound: bad entitynum %i", entityNum );
 	}
 
-    sfxHandle = X_Event_ReplaceSoundOnSoundStart(entityNum, sfxHandle);
+	sfxHandle = X_Event_ReplaceSoundOnSoundStart(entityNum, sfxHandle);
 
 	if ( sfxHandle < 0 || sfxHandle >= s_numSfx ) {
 		Com_Printf( S_COLOR_YELLOW "S_StartSound: handle %i out of range\n", sfxHandle );
@@ -485,7 +485,7 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 		S_memoryLoad(sfx);
 	}
 
-    X_Event_OnSoundStart(entityNum, origin, sfx->soundName);
+	X_Event_OnSoundStart(entityNum, origin, sfx->soundName);
 
 	if ( s_show->integer == 1 ) {
 		Com_Printf( "%i : %s\n", s_paintedtime, sfx->soundName );

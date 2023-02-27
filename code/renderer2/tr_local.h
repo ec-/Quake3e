@@ -1291,8 +1291,8 @@ model_t		*R_GetModelByHandle( qhandle_t hModel );
 int			R_LerpTag( orientation_t *tag, qhandle_t handle, int startFrame, int endFrame, 
 					 float frac, const char *tagName );
 void		R_ModelBounds( qhandle_t handle, vec3_t mins, vec3_t maxs );
-const char  *R_GetModelNameByHandle(qhandle_t index); // xq3e hack
-void        R_UpdateShaderColorByHandle(qhandle_t hShader, const vec3_t color); // xq3e hack
+const char *R_GetModelNameByHandle(qhandle_t index);
+void 		R_UpdateShaderColorByHandle(qhandle_t hShader, const vec3_t color);
 
 void		R_Modellist_f (void);
 

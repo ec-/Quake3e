@@ -4202,15 +4202,17 @@ static void CreateExternalShaders( void ) {
 
 void R_UpdateShaderColorByHandle(qhandle_t hShader, const vec3_t color)
 {
-    shader_t* shader_l = R_GetShaderByHandle(hShader);
-    if (shader_l->defaultShader)
-        return;
+	shader_t *shader_l = R_GetShaderByHandle(hShader);
+	if (shader_l->defaultShader)
+	{
+		return;
+	}
 
-    shader_l->stages[0]->rgbGen = CGEN_CONST;
-    shader_l->stages[0]->constantColor[0] = color[0] * 255;
-    shader_l->stages[0]->constantColor[1] = color[1] * 255;
-    shader_l->stages[0]->constantColor[2] = color[2] * 255;
-    shader_l->stages[0]->constantColor[3] = 255;
+	shader_l->stages[0]->rgbGen = CGEN_CONST;
+	shader_l->stages[0]->constantColor[0] = color[0] * 255;
+	shader_l->stages[0]->constantColor[1] = color[1] * 255;
+	shader_l->stages[0]->constantColor[2] = color[2] * 255;
+	shader_l->stages[0]->constantColor[3] = 255;
 }
 
 /*

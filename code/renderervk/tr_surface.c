@@ -692,31 +692,32 @@ static void RB_SurfaceLightningBolt( void ) {
 	}
 }
 
-static void RB_SurfaceLightningBoltModified( void ) {
-    const refEntity_t *e;
-    int			len;
-    vec3_t		right;
-    vec3_t		vec;
-    vec3_t		start, end;
-    vec3_t		v1, v2;
+static void RB_SurfaceLightningBoltModified(void)
+{
+	const refEntity_t *e;
+	int len;
+	vec3_t right;
+	vec3_t vec;
+	vec3_t start, end;
+	vec3_t v1, v2;
 
-    e = &backEnd.currentEntity->e;
+	e = &backEnd.currentEntity->e;
 
-    VectorCopy( e->oldorigin, start );
-    VectorCopy( e->origin, end );
+	VectorCopy(e->oldorigin, start);
+	VectorCopy(e->origin, end);
 
-    VectorSubtract( end, start, vec );
-    len = VectorNormalize( vec );
+	VectorSubtract(end, start, vec);
+	len = VectorNormalize(vec);
 
-    // compute side vector
-    VectorSubtract( start, backEnd.viewParms.or.origin, v1 );
-    VectorNormalize( v1 );
-    VectorSubtract( end, backEnd.viewParms.or.origin, v2 );
-    VectorNormalize( v2 );
-    CrossProduct( v1, v2, right );
-    VectorNormalize( right );
+	// compute side vector
+	VectorSubtract(start, backEnd.viewParms.or.origin, v1);
+	VectorNormalize(v1);
+	VectorSubtract(end, backEnd.viewParms.or.origin, v2);
+	VectorNormalize(v2);
+	CrossProduct(v1, v2, right);
+	VectorNormalize(right);
 
-    DoRailCore( start, end, right, len, Cvar_VariableIntegerValue("x_wp_mod_lightning_width"));
+	DoRailCore(start, end, right, len, Cvar_VariableIntegerValue("x_wp_mod_lightning_width"));
 }
 
 
@@ -1429,12 +1430,16 @@ static void RB_SurfaceEntity( const surfaceType_t *surfType ) {
 		RB_SurfaceRailRings();
 		break;
 	case RT_LIGHTNING:
-        if (Cvar_VariableIntegerValue("x_wp_mod_lightning") == 1)
-            RB_SurfaceLightningBoltModified();
-        else
-            RB_SurfaceLightningBolt();
+		if (Cvar_VariableIntegerValue("x_wp_mod_lightning") == 1)
+		{
+			RB_SurfaceLightningBoltModified();
+		}
+		else
+		{
+			RB_SurfaceLightningBolt();
+		}
 		break;
-	default:
+		default:
 		RB_SurfaceAxis();
 		break;
 	}
