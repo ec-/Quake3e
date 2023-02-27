@@ -933,7 +933,7 @@ default values.
 #define CVAR_MODIFIED		0x40000000	// Cvar was modified
 #define CVAR_NONEXISTENT	0x80000000	// Cvar doesn't exist.
 
-#define CVAR_XMOD           0x20000 // created by xmod
+#define CVAR_XMOD           0x100000 // created by xmod
 #define CVAR_XHCK_ON        0x40000 // created by xmod
 #define CVAR_XHCK_OFF       0x80000 // created by xmod
 
