@@ -803,7 +803,7 @@ static void Print_State(void)
 	const char *info = Cvar_InfoString(CVAR_XMOD, 0);
 	while (info)
 	{
-		Info_NextPair(info, key, value);
+		info = Info_NextPair(info, key, value);
 
 		if (!key[0])
 		{
