@@ -467,7 +467,6 @@ static const char X_ICON_RAILGUN_SHADER[] = "xgfx/icon/railgun";
 static const char X_ICON_NO_MODEL[] = "gfx/misc/icon_unknown.tga";
 
 extern XModContext xmod;
-extern XModStaticContext sxmod;
 
 // Hooks
 

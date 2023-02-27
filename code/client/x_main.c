@@ -8,7 +8,6 @@
 //   Variables
 
 XModContext xmod;
-XModStaticContext sxmod;
 
 qboolean xmod_disable_output;
 
@@ -69,7 +68,6 @@ static void Hook_SetColor(const float *rgba);
 void X_Main_InitXMod(void)
 {
 	memset(&xmod, 0, sizeof(xmod));
-	memset(&sxmod, 0, sizeof(sxmod));
 
 	x_enable = Cvar_Get("x_enable", "1", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_SYSTEMINFO | CVAR_XMOD);
 	Cvar_SetDescription(x_enable, X_HELP_ENABLE);

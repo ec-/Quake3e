@@ -8,6 +8,8 @@ static cvar_t *x_net_port_auto_renew = 0;
 
 static cvar_t *x_net_show_commands = 0;
 
+static XModStaticContext sxmod;
+
 // ====================
 //   Const vars
 
@@ -30,6 +32,7 @@ static void CompletePortScan(void);
 
 void X_Net_Init()
 {
+	memset(&sxmod, 0, sizeof(sxmod));
 	X_Main_RegisterXCommand(x_net_port_auto_renew, "1", "0", "1", X_HELP_NET_PORT_AUTO_RENEW);
 	X_Main_RegisterXCommand(x_net_show_commands, "0", "0", "1", 0);
 
