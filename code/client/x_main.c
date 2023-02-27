@@ -898,7 +898,7 @@ static void Print_UserInfo(void)
 		unsigned short sign = 0;
 		CRC_Init(&sign);
 
-		char *cmd = cl.gameState.stringData + offset;
+		const char *cmd = cl.gameState.stringData + offset;
 
 		const char *data_c1 = Info_ValueForKey(cmd, "c1");
 		CRC_ContinueProcessString(&sign, data_c1, strlen(data_c1));
@@ -934,7 +934,7 @@ static void Print_UserInfo(void)
 			char temp[256];
 			char *v = value;
 
-			Info_NextPair(cmd, key, value);
+			cmd = Info_NextPair(cmd, key, value);
 
 			if (!key[0])
 			{
