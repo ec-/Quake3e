@@ -258,7 +258,7 @@ static void RemoveEffectsFromName(char *name)
 
 void X_Con_OnPlayerDeath(int target, int attacker, int reason)
 {
-
+/*
 	if (target >= MAX_CLIENTS || attacker >= MAX_CLIENTS)
 	{
 		return;
@@ -376,4 +376,5 @@ void X_Con_OnPlayerDeath(int target, int attacker, int reason)
 		Com_sprintf(buffer, sizeof(buffer), "^7%s ^f%c ^7%s\n", xmod.gs.ps[attacker].name, kill, xmod.gs.ps[target].name);
 		X_Cl_Con_OverlayPrint(buffer);
 	}
+ */
 }
