@@ -4,6 +4,13 @@
 // ====================
 //   CVars
 
+static char X_HELP_CON_CHAT_ANTISPAM_ALL[] = "\n ^fx_con_chat_antispam_all^5 0|1^7\n\n"
+										 "   Turn on\\off antispam filter for common chat\n";
+static char X_HELP_CON_CHAT_ANTISPAM_TEAM[] = "\n ^fx_con_chat_antispam_all^5 0|1^7\n\n"
+											 "   Turn on\\off antispam filter for team chat\n";
+static char X_HELP_CON_CHAT_ANTISPAM_PRIVATE[] = "\n ^fx_con_chat_antispam_all^5 0|1^7\n\n"
+											 "   Turn on\\off antispam filter for private chat\n";
+
 cvar_t *x_con_chat_section = 0;
 cvar_t *x_con_overlay_size = 0;
 
@@ -24,14 +31,43 @@ typedef enum
 static MessageScope GetScopeAndNormalizeName(char *name);
 static void RemoveEffectsFromName(char *name);
 
+#define X_CON_FILTER_TIMEOUT_MS  5000ul
+
+typedef struct
+{
+	cvar_t *filter_variable;
+	int message_time;
+	size_t spam_counter;
+	char player_name[X_CON_MAX_NAME_LENGTH];
+	char player_msg[MAXPRINTMSG];
+} SpamFilter;
+
+typedef enum
+{
+	SPAM_FILTER_TYPE_ALL = 0,
+	SPAM_FILTER_TYPE_TEAM,
+	SPAM_FILTER_TYPE_PRIVATE,
+} SpamFilterTypes;
+
 // ====================
 //   Implementation
 
-void X_Con_Init()
+typedef struct
+{
+	SpamFilter filters[3];
+} XConsolePrivateContext;
+
+static XConsolePrivateContext x_con_context =  {};
+
+void X_Con_Init(void)
 {
 	X_Main_RegisterXCommand(x_con_chat_section, "1", "0", "1", 0);
 	Cvar_Get("x_con_chat_section", "1", CVAR_LATCH);
 	X_Main_RegisterXCommand(x_con_overlay_size, "10", "0", "20", 0);
+
+	x_con_context.filters[SPAM_FILTER_TYPE_ALL].filter_variable = X_Main_RegisterXModeCmd("x_con_chat_antispam_all", "0", "0", "1", X_HELP_CON_CHAT_ANTISPAM_ALL,CVAR_ARCHIVE,CV_INTEGER);
+	x_con_context.filters[SPAM_FILTER_TYPE_TEAM].filter_variable = X_Main_RegisterXModeCmd("x_con_chat_antispam_team", "0", "0", "1", X_HELP_CON_CHAT_ANTISPAM_TEAM,CVAR_ARCHIVE,CV_INTEGER);
+	x_con_context.filters[SPAM_FILTER_TYPE_PRIVATE].filter_variable = X_Main_RegisterXModeCmd("x_con_chat_antispam_private", "0", "0", "1", X_HELP_CON_CHAT_ANTISPAM_PRIVATE,CVAR_ARCHIVE,CV_INTEGER);
 }
 
 void X_Con_PrintToChatSection(const char *fmt, ...)
@@ -52,6 +88,55 @@ void X_Con_PrintToChatSection(const char *fmt, ...)
 	Com_Printf_Chat("^f%s ^l%s\n", timestr, msg);
 }
 
+static void process_filter_message_is_not_spam(SpamFilter *filter, const char *name, const char *msg, const int current_time)
+{
+	if(filter->spam_counter)
+	{
+		Com_Printf_Chat("Last message repeated %zu times.\n", filter->spam_counter);
+	}
+	filter->spam_counter = 0;
+	Q_strncpyz(filter->player_name, name, X_CON_MAX_NAME_LENGTH);
+	Q_strncpyz(filter->player_msg, msg, MAXPRINTMSG);
+	filter->message_time = current_time;
+}
+
+static qboolean process_filter(SpamFilter *filter, const char *name, const char *msg)
+{
+	if (filter->filter_variable->integer == 0)
+	{
+		/* filter is disabled */
+		return qfalse;
+	}
+	const int current_time = Sys_Milliseconds();
+
+	if (filter->message_time == 0)
+	{
+		filter->message_time = current_time;
+	}
+
+	if (filter->spam_counter && (current_time - filter->message_time) > X_CON_FILTER_TIMEOUT_MS)
+	{
+		/* There was spam, but now it is not. */
+		process_filter_message_is_not_spam(filter, name, msg, current_time);
+		return qfalse;
+	}
+
+	if (strncmp(filter->player_name, name, X_CON_MAX_NAME_LENGTH) != 0)
+	{
+		process_filter_message_is_not_spam(filter, name, msg, current_time);
+		return qfalse;
+	}
+
+	if (strncmp(filter->player_msg, msg, X_CON_MAX_NAME_LENGTH) != 0)
+	{
+		process_filter_message_is_not_spam(filter, name, msg, current_time);
+		return qfalse;
+	}
+
+	++filter->spam_counter;
+	return qtrue;
+}
+
 qboolean X_Con_OnChatMessage(const char *text, int client)
 {
 	char msgcolor = '2';
@@ -61,15 +146,13 @@ qboolean X_Con_OnChatMessage(const char *text, int client)
 		return qtrue;
 	}
 
-	int msglen = strlen(msg);
-	int namelen = msg - text;
+	size_t namelen = msg - text;
 
-	if (msglen <= 2)
+	if (strlen(msg) <= 2)
 	{
 		return qtrue;
 	}
 
-	msglen -= 2;
 	msg += 2;
 
 	if (namelen > MAX_NAME_LEN)
@@ -80,15 +163,18 @@ qboolean X_Con_OnChatMessage(const char *text, int client)
 	// Prepare name
 
 	char name[MAX_NAME_LEN + 1];
-	Q_strncpyz(name, text, namelen + 1);
+	Q_strncpyz(name, text, (int)namelen + 1);
 
 	MessageScope scope = GetScopeAndNormalizeName(name);
 	RemoveEffectsFromName(name);
 
-	if (scope == ScopePublic && X_Misc_DecryptMessage(msg))
+	if (scope == ScopePublic)
 	{
-		scope = ScopePublicEncrypted;
-		msgcolor = 'd';
+		if( X_Misc_DecryptMessage(msg) )
+		{
+			scope = ScopePublicEncrypted;
+			msgcolor = 'd';
+		}
 	}
 
 	char clientid[32] = "";
@@ -109,25 +195,30 @@ qboolean X_Con_OnChatMessage(const char *text, int client)
 	// Make scope tag
 
 	char scopestr[64];
-	if (scope == ScopePublic)
+	qboolean is_spam;
+	switch (scope)
 	{
-		Q_strncpyz(scopestr, "^9ALL  ", sizeof(scopestr));
+		case ScopePublic:
+			is_spam = process_filter(&x_con_context.filters[SPAM_FILTER_TYPE_ALL], name, msg);
+			Q_strncpyz(scopestr, "^9ALL  ", sizeof(scopestr));
+			break;
+		case ScopePublicEncrypted:
+			is_spam = process_filter(&x_con_context.filters[SPAM_FILTER_TYPE_ALL], name, msg);
+			Q_strncpyz(scopestr, "^8ENCR ", sizeof(scopestr));
+			break;
+		case ScopeTeam:
+			is_spam = process_filter(&x_con_context.filters[SPAM_FILTER_TYPE_TEAM], name, msg);
+			Q_strncpyz(scopestr, "^5TEAM ", sizeof(scopestr));
+			break;
+		case ScopePrivate:
+			is_spam = process_filter(&x_con_context.filters[SPAM_FILTER_TYPE_PRIVATE], name, msg);
+			Q_strncpyz(scopestr, "^6PRVT ", sizeof(scopestr));
+			break;
 	}
-	else if (scope == ScopePublicEncrypted)
+
+	if (is_spam)
 	{
-		Q_strncpyz(scopestr, "^8ENCR ", sizeof(scopestr));
-	}
-	else if (scope == ScopeTeam)
-	{
-		Q_strncpyz(scopestr, "^5TEAM ", sizeof(scopestr));
-	}
-	else if (scope == ScopePrivate)
-	{
-		Q_strncpyz(scopestr, "^6PRVT ", sizeof(scopestr));
-	}
-	else
-	{
-		Q_strncpyz(scopestr, "", sizeof(scopestr));
+		return qfalse;
 	}
 
 	X_Misc_MakeStringSymbolic(scopestr);
@@ -178,7 +269,7 @@ static MessageScope GetScopeAndNormalizeName(char *name)
 	return ScopePublic;
 }
 
-static qboolean IsHexRGBString(char *str)
+static qboolean IsHexRGBString(const char *str)
 {
 	for (int i = 0; i < 6; i++)
 	{
