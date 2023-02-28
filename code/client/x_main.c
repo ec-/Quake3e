@@ -710,13 +710,10 @@ int X_Main_Hook_FS_GetFileList(const char *path, const char *extension, char *li
 // =========================
 //   Commands zone
 
-const char R_XMOD_RENDER[] = "FIX ME PLEASE";
-
 static void Print_Version(void)
 {
 	Com_Printf("\n  ^1\xd8\xd1\xb3\xc5 ^fengine\n\n");
 	Com_Printf("     ^fVersion : ^7" XMOD_VERSION " ^f" XMOD_ARCH "\n");
-	Com_Printf("     ^fRender  : %s\n", R_XMOD_RENDER);
 	Com_Printf("     ^fBuild   : " __DATE__ " " __TIME__ "\n\n");
 	Com_Printf("  ^fDeveloped by ^7x0ry^f and ^7amRa\n\n"
 			   "  ^fSpecial thanks to\n\n"
