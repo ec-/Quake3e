@@ -3259,11 +3259,13 @@ void CL_StartHunkUsers( void ) {
 			const char *cmd = Cvar_VariableString( va( fmt, mapname ) );
 			if ( cmd && *cmd != '\0' ) {
 				Cbuf_AddText( cmd );
+				Cbuf_AddText( "\n" );
 			} else {
 				// apply mapname "default" if present
 				cmd = Cvar_VariableString( va( fmt, "default" ) );
 				if ( cmd && *cmd != '\0' ) {
 					Cbuf_AddText( cmd );
+					Cbuf_AddText( "\n" );
 				}
 			}
 		}
