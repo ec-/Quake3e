@@ -63,9 +63,9 @@ typedef enum
 
 #define prv_DrawStr(xx, yy, sz, alp, fl, chrmap, str) \
             {\
-                vec4_t color; \
-                MAKERGBA(color, 1.0, 1.0, 1.0, alp); \
-                X_Hud_DrawString(xx, yy, sz, color, fl, chrmap, str); \
+                vec4_t prv_color; \
+                MAKERGBA(prv_color, 1.0, 1.0, 1.0, alp); \
+                X_Hud_DrawString(xx, yy, sz, prv_color, fl, chrmap, str); \
             }
 
 #define DrawBarStr(bar, xx, yy, sz, alp, str) \
@@ -939,31 +939,31 @@ static char *GetGameTimer(void)
 static const char *GetCurrentModeLimits(void)
 {
 	static char buffer[256];
-	static char rl[64], tl[64], fl[64], cl[64];
+	static char round_limit[64], time_limit[64], frag_limit[64], capture_limit[64];
 
-	rl[0] = fl[0] = tl[0] = cl[0] = '\0';
+	round_limit[0] = frag_limit[0] = time_limit[0] = capture_limit[0] = '\0';
 
 	if (xmod.gs.roundlimit > 0)
 	{
-		Com_sprintf(rl, sizeof(rl), "^7ROUNDS:^2%d ", xmod.gs.roundlimit);
+		Com_sprintf(round_limit, sizeof(round_limit), "^7ROUNDS:^2%d ", xmod.gs.roundlimit);
 	}
 
 	if (xmod.gs.fraglimit > 0)
 	{
-		Com_sprintf(fl, sizeof(fl), "^7SCORE:^2%d ", xmod.gs.fraglimit);
+		Com_sprintf(frag_limit, sizeof(frag_limit), "^7SCORE:^2%d ", xmod.gs.fraglimit);
 	}
 
 	if (xmod.gs.timelimit > 0)
 	{
-		Com_sprintf(tl, sizeof(tl), "^7TIME:^2%d^zmin ", xmod.gs.timelimit);
+		Com_sprintf(time_limit, sizeof(time_limit), "^7TIME:^2%d^zmin ", xmod.gs.timelimit);
 	}
 
 	if (xmod.gs.capturelimit > 0)
 	{
-		Com_sprintf(cl, sizeof(cl), "^7FLAGS:^2%d ", xmod.gs.capturelimit);
+		Com_sprintf(capture_limit, sizeof(capture_limit), "^7FLAGS:^2%d ", xmod.gs.capturelimit);
 	}
 
-	Com_sprintf(buffer, sizeof(buffer), "%s%s%s%s", rl, fl, cl, tl);
+	Com_sprintf(buffer, sizeof(buffer), "%s%s%s%s", round_limit, frag_limit, capture_limit, time_limit);
 
 	return buffer;
 }
