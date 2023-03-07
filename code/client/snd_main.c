@@ -472,7 +472,7 @@ void S_Shutdown( void )
 		si.StopAllSounds();
 	}
 
-	if( si.Shutdown ) {
+	if ( si.Shutdown ) {
 		si.Shutdown();
 	}
 

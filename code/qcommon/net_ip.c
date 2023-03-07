@@ -320,12 +320,11 @@ static void SockadrToNetadr( const sockaddr_t *s, netadr_t *a ) {
 		a->port = s->v4.sin_port;
 	}
 #ifdef USE_IPV6
-	else if ( s->ss.ss_family == AF_INET6 )
-	{
+	else if ( s->ss.ss_family == AF_INET6 ) {
 		a->type = NA_IP6;
 		memcpy( a->ipv._6, &s->v6.sin6_addr, sizeof( a->ipv._6 ) );
 		a->port = s->v6.sin6_port;
-		a->scope_id = s->v6.sin6_scope_id;
+		a->scope_id = (uint32_t)s->v6.sin6_scope_id;
 	}
 #endif
 }

@@ -621,7 +621,7 @@ void Key_ParseBinding( int key, qboolean down, unsigned time )
 {
 	char buf[ MAX_STRING_CHARS ], *p, *end;
 
-	if( !keys[key].binding || !keys[key].binding[0] )
+	if( !keys[key].binding || keys[key].binding[0] == '\0' )
 		return;
 
 	p = buf;
@@ -641,11 +641,12 @@ void Key_ParseBinding( int key, qboolean down, unsigned time )
 			// so that multiple sources can be discriminated and
 			// subframe corrected
 			char cmd[1024];
-			Com_sprintf( cmd, sizeof( cmd ), "%c%s %d %d\n",
-				( down ) ? '+' : '-', p + 1, key, time );
+			Com_sprintf( cmd, sizeof( cmd ), "%c%s %d %d\n", ( down ) ? '+' : '-', p + 1, key, time );
 			Cbuf_AddText( cmd );
+			if ( down )
+				keys[ key ].bound = qtrue;
 		}
-		else if( down )
+		else if ( down )
 		{
 			// normal commands only execute on key press
 			Cbuf_AddText( p );

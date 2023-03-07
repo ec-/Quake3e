@@ -213,12 +213,13 @@ typedef struct {
 	int		(*Com_RealTime)( qtime_t *qtime );
 
 	// platform-dependent functions
+	void(*GLimp_InitGamma)(glconfig_t *config);
+	void(*GLimp_SetGamma)(unsigned char red[256], unsigned char green[256], unsigned char blue[256]);
+
+	// OpenGL
 	void	(*GLimp_Init)( glconfig_t *config );
 	void	(*GLimp_Shutdown)( qboolean unloadDLL );
 	void	(*GLimp_EndFrame)( void );
-	void	(*GLimp_InitGamma)( glconfig_t *config );
-	void	(*GLimp_SetGamma)( unsigned char red[256], unsigned char green[256], unsigned char blue[256] );
-
 	void*	(*GL_GetProcAddress)( const char *name );
 
 	// Vulkan

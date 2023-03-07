@@ -207,36 +207,36 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 		// TTimo: only open the qconsole.log if the filesystem is in an initialized state
 		//   also, avoid recursing in the qconsole.log opening (i.e. if fs_debug is on)
 		if ( logfile == FS_INVALID_HANDLE && FS_Initialized() && !opening_qconsole ) {
-			struct tm *newtime;
-			time_t aclock;
+			const char *logName = "qconsole.log";
 			int mode;
 
 			opening_qconsole = qtrue;
 
-			time( &aclock );
-			newtime = localtime( &aclock );
-
 			mode = com_logfile->integer - 1;
 
 			if ( mode & 2 )
-				logfile = FS_FOpenFileAppend( "qconsole.log" );
+				logfile = FS_FOpenFileAppend( logName );
 			else
-				logfile = FS_FOpenFileWrite( "qconsole.log" );
+				logfile = FS_FOpenFileWrite( logName );
 
-			if ( logfile != FS_INVALID_HANDLE )
-			{
-				Com_Printf( "logfile opened on %s\n", asctime( newtime ) );
+			if ( logfile != FS_INVALID_HANDLE ) {
+				struct tm *newtime;
+				time_t aclock;
+				char timestr[32];
 
-				if ( mode & 1 )
-				{
+				time( &aclock );
+				newtime = localtime( &aclock );
+				strftime( timestr, sizeof( timestr ), "%a %b %d %X %Y", newtime );
+
+				Com_Printf( "logfile opened on %s\n", timestr );
+
+				if ( mode & 1 ) {
 					// force it to not buffer so we get valid
 					// data even if we are crashing
 					FS_ForceFlush( logfile );
 				}
-			}
-			else
-			{
-				Com_Printf( "Opening qconsole.log failed!\n" );
+			} else {
+				Com_Printf( S_COLOR_YELLOW "Opening %s failed!\n", logName );
 				Cvar_Set( "logfile", "0" );
 			}
 
@@ -1979,7 +1979,7 @@ Com_TouchMemory
 Touch all known used data to make sure it is paged in
 ===============
 */
-void Com_TouchMemory( void ) {
+unsigned int Com_TouchMemory( void ) {
 	const memblock_t *block;
 	const memzone_t *zone;
 	int		start, end;
@@ -2019,6 +2019,8 @@ void Com_TouchMemory( void ) {
 	end = Sys_Milliseconds();
 
 	Com_Printf( "Com_TouchMemory: %i msec\n", end - start );
+
+	return sum; // just to silent compiler warning
 }
 
 
@@ -3379,17 +3381,18 @@ static void Sys_GetProcessorId( char *vendor )
 
 #else // non-x86
 
-#ifdef _WIN32
+#ifndef __linux__
 
 static void Sys_GetProcessorId( char *vendor )
 {
 	Com_sprintf( vendor, 100, "%s", ARCH_STRING );
 }
 
-#else // not _WIN32
+#else // __linux__
+
+#include <sys/auxv.h>
 
 #if arm32
-#include <sys/auxv.h>
 #include <asm/hwcap.h>
 #endif
 
@@ -3431,17 +3434,17 @@ static void Sys_GetProcessorId( char *vendor )
 			strcat( vendor, " QVM-bytecode" );
 		}
 	}
-#else
+#else // !arm32
 	CPU_Flags = 0;
 #if arm64
-	Com_sprintf( vendor, 100, "ARM %s", ARCH_STRING );
+	Com_sprintf( vendor, 100, "%s", ARCH_STRING );
 #else
 	Com_sprintf( vendor, 128, "%s %s", ARCH_STRING, (const char*)getauxval( AT_PLATFORM ) );
 #endif
-#endif
+#endif // !arm32
 }
 
-#endif // !_WIN32
+#endif // __linux__
 
 #endif // non-x86
 

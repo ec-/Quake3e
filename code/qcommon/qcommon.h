@@ -188,7 +188,7 @@ typedef struct {
 	} ipv;
 	uint16_t	port;
 #ifdef USE_IPV6
-	unsigned long	scope_id;	// Needed for IPv6 link-local addresses
+	uint32_t	scope_id;	// Needed for IPv6 link-local addresses
 #endif
 } netadr_t;
 
@@ -454,6 +454,9 @@ void Cbuf_Init( void );
 
 void Cbuf_AddText( const char *text );
 // Adds command text at the end of the buffer, does NOT add a final \n
+
+int Cbuf_Add( const char *text, int pos );
+// Adds command text at the specified position of the buffer, adds \n when needed
 
 void Cbuf_InsertText( const char *text );
 // Adds command text at the beginning of the buffer, add \n
@@ -1110,7 +1113,7 @@ void Hunk_FreeTempMemory( void *buf );
 int	Hunk_MemoryRemaining( void );
 void Hunk_Log( void);
 
-void Com_TouchMemory( void );
+unsigned int Com_TouchMemory( void );
 
 // commandLine should not include the executable name (argv[0])
 void Com_Init( char *commandLine );

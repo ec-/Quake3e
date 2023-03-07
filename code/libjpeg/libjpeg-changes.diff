@@ -2,6 +2,24 @@ List of changes applied over original jpegsrc.v9d.tar.gz distribution files
 
 ------
 
+--- code/libjpeg-orig/jdatasrc.c
++++ code/libjpeg/jdatasrc.c
+@@ -12,14 +12,15 @@
+  * some will want to use a different source manager.
+  * IMPORTANT: we assume that fread() will correctly transcribe an array of
+  * JOCTETs from 8-bit-wide elements on external storage.  If char is wider
+  * than 8 bits on your machine, you may need to do some tweaking.
+  */
+ 
+ /* this is not a core library module, so it doesn't define JPEG_INTERNALS */
++#define JPEG_INTERNALS
+ #include "jinclude.h"
+ #include "jpeglib.h"
+ #include "jerror.h"
+ 
+ 
+ /* Expanded data source object for stdio input */
+ 
 --- code/libjpeg-orig/jerror.c
 +++ code/libjpeg/jerror.c
 @@ -25,14 +25,16 @@

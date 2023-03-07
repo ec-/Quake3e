@@ -1836,7 +1836,7 @@ static ID_INLINE qboolean ShaderRequiresCPUDeforms(const shader_t * shader)
 		{
 			case DEFORM_WAVE:
 			case DEFORM_BULGE:
-				// need CPU deforms at high level-times to avoid floating point percision loss
+				// need CPU deforms at high level-times to avoid floating point precision loss
 				return ( backEnd.refdef.floatTime != (float)backEnd.refdef.floatTime );
 
 			default:

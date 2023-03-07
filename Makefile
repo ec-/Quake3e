@@ -30,21 +30,22 @@ USE_SDL          = 1
 USE_CURL         = 1
 USE_PCRE         = 1
 USE_LOCAL_HEADERS= 0
+USE_SYSTEM_JPEG  = 0
+
 USE_VULKAN       = 1
 USE_OPENGL       = 1
 USE_OPENGL2      = 0
-USE_SYSTEM_JPEG  = 0
+USE_OPENGL_API   = 1
 USE_VULKAN_API   = 1
-
 USE_RENDERER_DLOPEN = 1
+
+# valid options: opengl, vulkan, opengl2
+RENDERER_DEFAULT = opengl
 
 CNAME            = oDFe
 DNAME            = oDFe.ded
 
 RENDERER_PREFIX  = $(CNAME)
-
-# valid options: opengl, vulkan, opengl2
-RENDERER_DEFAULT = opengl
 
 
 ifeq ($(V),1)
@@ -158,18 +159,21 @@ ifeq ($(USE_RENDERER_DLOPEN),0)
     USE_OPENGL=1
     USE_OPENGL2=0
     USE_VULKAN=0
+    USE_OPENGL_API=1
     USE_VULKAN_API=0
   endif
   ifeq ($(RENDERER_DEFAULT),opengl2)
     USE_OPENGL=0
     USE_OPENGL2=1
     USE_VULKAN=0
+    USE_OPENGL_API=1
     USE_VULKAN_API=0
   endif
   ifeq ($(RENDERER_DEFAULT),vulkan)
     USE_OPENGL=0
     USE_OPENGL2=0
     USE_VULKAN=1
+    USE_OPENGL_API=0
   endif
 endif
 
@@ -203,7 +207,7 @@ bin_path=$(shell which $(1) 2> /dev/null)
 STRIP ?= strip
 PKG_CONFIG ?= pkg-config
 INSTALL=install
-MKDIR=mkdir
+MKDIR=mkdir -p
 
 ifneq ($(call bin_path, $(PKG_CONFIG)),)
   SDL_INCLUDE ?= $(shell $(PKG_CONFIG) --silence-errors --cflags-only-I sdl2)
@@ -288,6 +292,10 @@ ifeq ($(USE_VULKAN_API),1)
   BASE_CFLAGS += -DUSE_VULKAN_API
 endif
 
+ifeq ($(USE_OPENGL_API),1)
+  BASE_CFLAGS += -DUSE_OPENGL_API
+endif
+
 ifeq ($(GENERATE_DEPENDENCIES),1)
   BASE_CFLAGS += -MMD
 endif
@@ -352,6 +360,7 @@ ifdef MINGW
   BASE_CFLAGS += -Wall -Wimplicit -Wstrict-prototypes -DUSE_ICON -DMINGW=1
 
   BASE_CFLAGS += -Wno-unused-result -fvisibility=hidden
+  BASE_CFLAGS += -ffunction-sections -flto
 
   ifeq ($(ARCH),x86_64)
     ARCHEXT = .x64
@@ -372,6 +381,7 @@ ifdef MINGW
   LDFLAGS = -mwindows -Wl,--dynamicbase -Wl,--nxcompat
   LDFLAGS += -Wl,--gc-sections -fvisibility=hidden
   LDFLAGS += -lwsock32 -lgdi32 -lwinmm -lole32 -lws2_32 -lpsapi -lcomctl32
+  LDFLAGS += -flto
 
   CLIENT_LDFLAGS=$(LDFLAGS)
 
@@ -1061,9 +1071,14 @@ else # !USE_SDL
         $(B)/client/win_glimp.o \
         $(B)/client/win_input.o \
         $(B)/client/win_minimize.o \
-        $(B)/client/win_qgl.o \
         $(B)/client/win_snd.o \
         $(B)/client/win_wndproc.o
+
+ifeq ($(USE_OPENGL_API),1)
+    Q3OBJ += \
+        $(B)/client/win_qgl.o
+endif
+
 ifeq ($(USE_VULKAN_API),1)
     Q3OBJ += \
         $(B)/client/win_qvk.o
@@ -1086,11 +1101,14 @@ ifeq ($(USE_SDL),1)
 else # !USE_SDL
     Q3OBJ += \
         $(B)/client/linux_glimp.o \
-        $(B)/client/linux_qgl.o \
         $(B)/client/linux_snd.o \
         $(B)/client/x11_dga.o \
         $(B)/client/x11_randr.o \
         $(B)/client/x11_vidmode.o
+ifeq ($(USE_OPENGL_API),1)
+    Q3OBJ += \
+        $(B)/client/linux_qgl.o
+endif
 ifeq ($(USE_VULKAN_API),1)
     Q3OBJ += \
         $(B)/client/linux_qvk.o

@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 typedef struct {
 	qboolean	down;
+	qboolean	bound;
 	int			repeats;		// if > 1, it is autorepeating
 	char		*binding;
 } qkey_t;

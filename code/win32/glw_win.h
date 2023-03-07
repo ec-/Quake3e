@@ -26,6 +26,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef __GLW_WIN_H__
 #define __GLW_WIN_H__
 
+#include <windows.h>
+
 typedef struct
 {
 	HDC     hDC;			// handle to device context
@@ -59,9 +61,5 @@ typedef struct
 } glwstate_t;
 
 extern glwstate_t glw_state;
-
-void GLW_RestoreGamma( void );
-
-void HandleEvents( void );
 
 #endif

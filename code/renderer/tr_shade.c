@@ -765,6 +765,22 @@ void R_ComputeTexCoords( const int b, const textureBundle_t *bundle ) {
 			src = dst;
 			break;
 
+		case TMOD_OFFSET:
+			for ( i = 0; i < tess.numVertexes; i++ ) {
+				dst[i][0] = src[i][0] + bundle->texMods[tm].offset[0];
+				dst[i][1] = src[i][1] + bundle->texMods[tm].offset[1];
+			}
+			src = dst;
+			break;
+
+		case TMOD_SCALE_OFFSET:
+			for ( i = 0; i < tess.numVertexes; i++ ) {
+				dst[i][0] = (src[i][0] * bundle->texMods[tm].scale[0] ) + bundle->texMods[tm].offset[0];
+				dst[i][1] = (src[i][1] * bundle->texMods[tm].scale[1] ) + bundle->texMods[tm].offset[1];
+			}
+			src = dst;
+			break;
+
 		case TMOD_STRETCH:
 			RB_CalcStretchTexCoords( &bundle->texMods[tm].wave, (float *)src, (float *) dst );
 			src = dst;
@@ -784,15 +800,6 @@ void R_ComputeTexCoords( const int b, const textureBundle_t *bundle ) {
 			ri.Error( ERR_DROP, "ERROR: unknown texmod '%d' in shader '%s'", bundle->texMods[tm].type, tess.shader->name );
 			break;
 		}
-	}
-
-	if ( r_mergeLightmaps->integer && bundle->isLightmap && bundle->tcGen != TCGEN_LIGHTMAP ) {
-		// adjust texture coordinates to map on proper lightmap
-		for ( i = 0 ; i < tess.numVertexes ; i++ ) {
-			dst[i][0] = (src[i][0] * tr.lightmapScale[0] ) + tess.shader->lightmapOffset[0];
-			dst[i][1] = (src[i][1] * tr.lightmapScale[1] ) + tess.shader->lightmapOffset[1];
-		}
-		src = dst;
 	}
 
 	tess.svars.texcoordPtr[ b ] = src;
@@ -855,7 +862,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 		}
 
 		// allow skipping out to show just lightmaps during development
-		if ( r_lightmap->integer && ( pStage->bundle[0].isLightmap || pStage->bundle[1].isLightmap ) )
+		if ( r_lightmap->integer && ( pStage->bundle[0].lightmap != LIGHTMAP_INDEX_NONE || pStage->bundle[1].lightmap != LIGHTMAP_INDEX_NONE ) )
 			break;
 	}
 }

@@ -771,14 +771,15 @@ static void set_rx_var( uint32_t reg, const var_addr_t *v ) {
 #endif
 }
 
+
 static void set_rx_ext( uint32_t reg, ext_t ext ) {
 #ifdef LOAD_OPTIMIZE
 	if ( reg >= ARRAY_LEN( rx_regs ) )
-		DROP( "register value %i s out of range", reg );
-	rx_regs[reg].ext = ext;
+		DROP( "register index %i is out of range", reg );
+	else
+		rx_regs[reg].ext = ext;
 #endif
 }
-
 
 
 static void set_sx_var( uint32_t reg, const var_addr_t *v ) {
@@ -1956,7 +1957,7 @@ static void load_sx_opstack2( uint32_t *dst, uint32_t dst_pref, uint32_t *src, u
 	*dst = *src = load_sx_opstack( src_pref | RCONST ); // source, target = *opstack
 	if ( search_opstack( TYPE_SX, *src ) || find_free_sx() ) {
 		// *src is duplicated on opStack or there is a free register
-		*dst = alloc_sx( dst_pref &= ~RCONST ); // allocate new register for the target
+		*dst = alloc_sx( dst_pref & ~RCONST ); // allocate new register for the target
 	} else {
 		// will be overwritten, wipe metadata
 		wipe_sx_meta( *dst );
@@ -3251,7 +3252,7 @@ int32_t VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
 		Com_Error( ERR_DROP, "%s(%s): opStack corrupted in compiled code", __func__, vm->name );
 	}
 
-	if ( vm->programStack != stackOnEntry - ( MAX_VMMAIN_CALL_ARGS + 2 ) * sizeof( int32_t ) ) {
+	if ( vm->programStack != (int32_t)( stackOnEntry - ( MAX_VMMAIN_CALL_ARGS + 2 ) * sizeof( int32_t ) ) ) {
 		Com_Error( ERR_DROP, "%s(%s): programStack corrupted in compiled code", __func__, vm->name );
 	}
 #endif
