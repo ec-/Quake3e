@@ -42,6 +42,7 @@ cvar_t	*cl_showTimeDelta;
 
 cvar_t	*cl_shownet;
 cvar_t	*cl_autoRecordDemo;
+cvar_t	*cl_drawRecording;
 
 cvar_t	*cl_aviFrameRate;
 cvar_t	*cl_aviMotionJpeg;
@@ -3258,11 +3259,13 @@ void CL_StartHunkUsers( void ) {
 			const char *cmd = Cvar_VariableString( va( fmt, mapname ) );
 			if ( cmd && *cmd != '\0' ) {
 				Cbuf_AddText( cmd );
+				Cbuf_AddText( "\n" );
 			} else {
 				// apply mapname "default" if present
 				cmd = Cvar_VariableString( va( fmt, "default" ) );
 				if ( cmd && *cmd != '\0' ) {
 					Cbuf_AddText( cmd );
+					Cbuf_AddText( "\n" );
 				}
 			}
 		}
@@ -3896,6 +3899,8 @@ void CL_Init( void ) {
 
 	cl_autoRecordDemo = Cvar_Get ("cl_autoRecordDemo", "0", CVAR_ARCHIVE);
 	Cvar_SetDescription( cl_autoRecordDemo, "Auto-record demos when starting or joining a game." );
+	cl_drawRecording = Cvar_Get("cl_drawRecording", "1", CVAR_ARCHIVE);
+	Cvar_SetDescription( cl_drawRecording, "Hide (0) or shorten (1) \"RECORDING\" HUD message when recording demo." );
 
 	cl_aviFrameRate = Cvar_Get ("cl_aviFrameRate", "25", CVAR_ARCHIVE);
 	Cvar_CheckRange( cl_aviFrameRate, "1", "1000", CV_INTEGER );

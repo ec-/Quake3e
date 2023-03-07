@@ -202,7 +202,7 @@ bin_path=$(shell which $(1) 2> /dev/null)
 STRIP ?= strip
 PKG_CONFIG ?= pkg-config
 INSTALL=install
-MKDIR=mkdir
+MKDIR=mkdir -p
 
 ifneq ($(call bin_path, $(PKG_CONFIG)),)
   SDL_INCLUDE ?= $(shell $(PKG_CONFIG) --silence-errors --cflags-only-I sdl2)
