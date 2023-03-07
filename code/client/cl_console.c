@@ -656,9 +656,6 @@ void CL_ConsolePrint2(const char* txt) {
 	CL_ConsolePrintInternal(txt, con.section + 1, qfalse);
 }
 
-void X_Cl_Con_OverlayPrint(const char* txt) {
-	CL_ConsolePrintInternal(txt, &con.overlay, qfalse);
-}
 /*
 ==============================================================================
 

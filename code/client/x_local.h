@@ -333,6 +333,7 @@ typedef struct
 	qhandle_t shaderXFreeze;
 	sfxHandle_t soundOldUnfreeze;
 	sfxHandle_t soundUnfreeze;
+	sfxHandle_t soundKill;
 	// Hitboxes
 	qhandle_t modelHitbox;
 	qhandle_t shaderHitbox;
@@ -449,6 +450,7 @@ static const char X_MEGA_SHADER[] = "icons/iconh_mega";
 
 static const char X_SOUND_OLD_UNFREEZE[] = "sound/player/tankjr/jump1.wav";
 static const char X_SOUND_UNFREEZE[] = "sound/xunfreeze.wav";
+static const char X_SOUND_KILL[] = "sound/x_snd_kill.wav";
 
 static const char X_CHARMAP_SHADER[] = "xmod/gfx/bigchars_%d";
 static const char X_XCHARMAP_SHADER[] = "xmod/gfx/xbigchars";
@@ -489,6 +491,7 @@ void X_Main_Event_OnDrawScreen(void);
 sfxHandle_t X_Main_Event_ReplaceSoundOnSoundStart(int entity, sfxHandle_t sound);
 void X_Main_Event_OnSoundStart(int entityNum, const vec3_t origin, const char *soundName);
 
+void X_Main_OnDeathSound(int target, int attacker);
 
 qboolean X_Main_Hook_CGame_Cvar_SetSafe(const char *var_name, const char *value);
 void X_Main_Hook_UpdateEntityPosition(int entityNum, const vec3_t origin);
@@ -594,9 +597,7 @@ void X_PS_AutoRevival(snapshot_t *snapshot);
  *********************************/
 void X_Con_Init(void);
 qboolean X_Con_OnChatMessage(const char *text, int client);
-void X_Con_OnPlayerDeath(int client1, int client2, int reason);
 void X_Con_PrintToChatSection(const char *fmt, ...);
-void X_Cl_Con_OverlayPrint(const char *txt);
 void X_Con_OnLocalChatCommand(field_t *field);
 
 /*********************************

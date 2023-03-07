@@ -726,11 +726,7 @@ static void InterceptEvents(snapshot_t *snapshot)
 
 		if (entity->eType > ET_EVENTS)
 		{
-			event = entity->eType - ET_EVENTS;
-		}
-		else if (entity->event & EV_EVENT_BITS)
-		{
-			event = entity->event & EV_EVENT_BITS;
+			event = (entity->eType - ET_EVENTS) & ~EV_EVENT_BITS;
 		}
 
 		if (!event)
@@ -751,7 +747,7 @@ static void InterceptEvents(snapshot_t *snapshot)
 
 		if (event == EV_OBITUARY)
 		{
-			X_Con_OnPlayerDeath(entity->otherEntityNum, entity->otherEntityNum2, entity->eventParm);
+			X_Main_OnDeathSound(entity->otherEntityNum, entity->otherEntityNum2);
 		}
 	}
 

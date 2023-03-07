@@ -1,0 +1,1 @@
+"c:\Program Files\7-Zip\7z.exe" a -tzip xq3e.pk3 gfx/ scripts/ sprites/ textures/ models/ sound/ xinit.cfg

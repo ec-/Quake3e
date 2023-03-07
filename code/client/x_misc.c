@@ -334,3 +334,4 @@ void X_Misc_SendEncryptedMessage(char *text)
 	Q_strcat(buffer, sizeof(buffer), "\"");
 	CL_AddReliableCommand(buffer, qfalse);
 }
+
