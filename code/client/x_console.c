@@ -6,9 +6,9 @@
 
 static char X_HELP_CON_CHAT_ANTISPAM_ALL[] = "\n ^fx_con_chat_antispam_all^5 0|1^7\n\n"
 										 "   Turn on\\off antispam filter for common chat\n";
-static char X_HELP_CON_CHAT_ANTISPAM_TEAM[] = "\n ^fx_con_chat_antispam_all^5 0|1^7\n\n"
+static char X_HELP_CON_CHAT_ANTISPAM_TEAM[] = "\n ^fx_con_chat_antispam_team^5 0|1^7\n\n"
 											 "   Turn on\\off antispam filter for team chat\n";
-static char X_HELP_CON_CHAT_ANTISPAM_PRIVATE[] = "\n ^fx_con_chat_antispam_all^5 0|1^7\n\n"
+static char X_HELP_CON_CHAT_ANTISPAM_PRIVATE[] = "\n ^fx_con_chat_antispam_private^5 0|1^7\n\n"
 											 "   Turn on\\off antispam filter for private chat\n";
 
 cvar_t *x_con_chat_section = 0;
