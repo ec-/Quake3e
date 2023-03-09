@@ -158,6 +158,7 @@ void X_Main_InitAfterCGameVM(void)
 		Cvar_RemoveCheatProtected("cg_gunX");
 		Cvar_RemoveCheatProtected("cg_gunY");
 		Cvar_RemoveCheatProtected("cg_gunZ");
+		Cvar_RemoveCheatProtected("cg_centertime");
 	}
 
 	PrintWelcomeLogo();
