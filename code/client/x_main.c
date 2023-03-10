@@ -9,7 +9,7 @@
 
 XModContext xmod;
 
-qboolean xmod_disable_output;
+static qboolean xmod_disable_output;
 
 // ====================
 //   CVars
@@ -1074,4 +1074,9 @@ void X_Main_OnDeathSound(int target, int attacker)
 	{
 		S_StartLocalSound(xmod.rs.soundKill, CHAN_LOCAL_SOUND);
 	}
+}
+
+qboolean X_Main_IsOutputDisabled(void)
+{
+	return xmod_disable_output;
 }

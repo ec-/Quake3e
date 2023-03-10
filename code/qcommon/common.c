@@ -33,7 +33,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 
 #include "../client/keys.h"
-#include "../client/x_main.h"
+#include "../client/x_public.h"
 
 const int demo_protocols[] = { 66, 67, OLD_PROTOCOL_VERSION, NEW_PROTOCOL_VERSION, 0 };
 
@@ -171,6 +171,11 @@ A raw string should NEVER be passed as fmt, because of "%f" type crashers.
 */
 static void QDECL Com_Printf_Internal(int section,  int len, const char *msg) {
 	static qboolean opening_qconsole = qfalse;
+
+#ifndef DEDICATED
+	if (X_Main_IsOutputDisabled())
+		return;
+#endif
 
 	if ( rd_buffer && !rd_flushing ) {
 		if ( len + (int)strlen( rd_buffer ) > ( rd_buffersize - 1 ) ) {
