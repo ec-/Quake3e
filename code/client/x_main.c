@@ -34,7 +34,7 @@ static char X_HELP_ITM_FIX_SIMPLEITEMS_SIZE[] = "\n ^fx_item_fix_simpleitems_siz
 static char X_HELP_SND_FIX_UNFREEZE[] = "\n ^fx_snd_fix_unfreeze^5 0|1^7\n\n"
 										"   Changes regular OSP unfreezing sound (tankjr jump) to another sound.\n";
 
-static char X_HELP_SND_KILL[] = "\n ^fx_snd_kill^5 0|1^7\n\n"
+static char X_HELP_SND_KILL[] = "\n ^fx_snd_kill^5 0|4^7\n\n"
 										"   Play sound each time player gets a frag.\n";
 
 // ====================
@@ -147,7 +147,7 @@ void X_Main_InitAfterCGameVM(void)
 
 	X_Main_RegisterXCommand(x_snd_fix_unfreeze, "1", "0", "1", X_HELP_SND_FIX_UNFREEZE);
 
-	X_Main_RegisterXCommand(x_snd_kill, "1", "0", "1", X_HELP_SND_KILL);
+	X_Main_RegisterXCommand(x_snd_kill, "1", "0", "4", X_HELP_SND_KILL);
 
 	Cmd_AddCommand("x_state", Print_State);
 	Cmd_AddCommand("x_userinfo", Print_UserInfo);
@@ -361,7 +361,10 @@ static void LoadXModeResources(void)
 
 	rs->soundOldUnfreeze = S_RegisterSound(X_SOUND_OLD_UNFREEZE, qfalse);
 	rs->soundUnfreeze = S_RegisterSound(X_SOUND_UNFREEZE, qfalse);
-	rs->soundKill = S_RegisterSound(X_SOUND_KILL, qfalse);
+	rs->soundKill[0] = S_RegisterSound(X_SOUND_KILL_1, qfalse);
+	rs->soundKill[1] = S_RegisterSound(X_SOUND_KILL_2, qfalse);
+	rs->soundKill[2] = S_RegisterSound(X_SOUND_KILL_3, qfalse);
+	rs->soundKill[3] = S_RegisterSound(X_SOUND_KILL_4, qfalse);
 
 	// Hitboxes
 	rs->modelHitbox = re.RegisterModel(X_MODEL_HITBOX_3D);
@@ -1068,11 +1071,16 @@ static void Say_Encrypted(void)
 	X_Misc_SendEncryptedMessage(Cmd_ArgsFrom(1));
 }
 
+static sfxHandle_t X_Main_GetSndKill(unsigned int variant)
+{
+	return (variant > X_SND_KILL_MAX) ? xmod.rs.soundKill[0] : xmod.rs.soundKill[variant - 1];
+}
+
 void X_Main_OnDeathSound(int target, int attacker)
 {
 	if (attacker == clc.clientNum && attacker != target && X_Main_IsXModeActive() && x_snd_kill && x_snd_kill->integer)
 	{
-		S_StartLocalSound(xmod.rs.soundKill, CHAN_LOCAL_SOUND);
+		S_StartLocalSound(X_Main_GetSndKill(x_snd_kill->integer), CHAN_LOCAL_SOUND);
 	}
 }
 

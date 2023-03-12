@@ -3,7 +3,7 @@
 
 #define X_CON_MAX_NAME_LENGTH    (MAX_NAME_LENGTH + 5)
 #define MAX_NAME_LEN (X_CON_MAX_NAME_LENGTH * 3)
-
+#define X_SND_KILL_MAX 4
 /*********************************
  *  types
  *********************************/
@@ -333,7 +333,7 @@ typedef struct
 	qhandle_t shaderXFreeze;
 	sfxHandle_t soundOldUnfreeze;
 	sfxHandle_t soundUnfreeze;
-	sfxHandle_t soundKill;
+	sfxHandle_t soundKill[X_SND_KILL_MAX];
 	// Hitboxes
 	qhandle_t modelHitbox;
 	qhandle_t shaderHitbox;
@@ -450,7 +450,10 @@ static const char X_MEGA_SHADER[] = "icons/iconh_mega";
 
 static const char X_SOUND_OLD_UNFREEZE[] = "sound/player/tankjr/jump1.wav";
 static const char X_SOUND_UNFREEZE[] = "sound/xunfreeze.wav";
-static const char X_SOUND_KILL[] = "sound/x_snd_kill.wav";
+static const char X_SOUND_KILL_1[] = "sound/x_snd_kill_1.wav";
+static const char X_SOUND_KILL_2[] = "sound/x_snd_kill_2.wav";
+static const char X_SOUND_KILL_3[] = "sound/x_snd_kill_3.wav";
+static const char X_SOUND_KILL_4[] = "sound/x_snd_kill_4.wav";
 
 static const char X_CHARMAP_SHADER[] = "xmod/gfx/bigchars_%d";
 static const char X_XCHARMAP_SHADER[] = "xmod/gfx/xbigchars";
