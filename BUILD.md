@@ -2,15 +2,23 @@
 
 ### windows/msvc
 
-Install Visual Studio Community Edition 2022 or later and open `quake3` project from solution
+Install Visual Studio Community Edition 2017 or later and compile `quake3e` project from solution
 
-`code/win32/msvc2022/quake3.sln`
+`code/win32/msvc2017/quake3e.sln`
 
-To do it, select stage: ReleaseOpenGL or ReleaseVulkan.
+Copy resulting exe from `code/win32/msvc2017/output` directory
 
-Copy resulting exe from `code/win32/msvc2022/x64/ReleaseOpenGL` or `code/win32/msvc2022/x64/ReleaseVulkan` directory
+To compile with Vulkan backend - clean solution, right click on `quake3e` project, find `Project Dependencies` and select `renderervk` instead of `renderer`
 
-Change dir to xq3e_pak, run pack.cmd (7z is required) and copy xq3e.pak into baseq3 directory.
+---
+
+### windows/mingw
+
+All build dependencies (libraries, headers) are bundled-in
+
+Build with either `make ARCH=x86` or `make ARCH=x86_64` commands depending on your target system, then copy resulting binaries from created `build` directory or use command:
+
+`make install DESTDIR=<path_to_game_files>`
 
 ---
 
@@ -21,15 +29,12 @@ You may need to run the following commands to install packages (using fresh ubun
 * sudo apt install make gcc libcurl4-openssl-dev mesa-common-dev
 * sudo apt install libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev
 * sudo apt install libsdl2-dev
-* sudo apt install 7z
 
 Build with: `make`
 
 Copy the resulting binaries from created `build` directory or use command:
 
 `make install DESTDIR=<path_to_game_files>`
-
-Change dir to xq3e_pak, run pack.cmd and copy xq3e.pak into baseq3 directory.
 
 ---
 
