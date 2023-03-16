@@ -301,7 +301,7 @@ If the line width has changed, reformat the buffer.
 */
 void Con_CheckResize( void )
 {
-	int		i = 0, j = 0, width, oldwidth, oldtotallines, oldcurrent, numlines, numchars;
+	int		i, j, width, oldwidth, oldtotallines, oldcurrent, numlines, numchars;
 	short	tbuf[CON_TEXTSIZE], *src, *dst;
 	static int old_width, old_vispage, old_sections;
 	int		vispage;
@@ -391,11 +391,8 @@ void Con_CheckResize( void )
 		}
 	}
 
-	// dellphee: 
-	//				error "the variable 'i' is being used without being initialized" 
-	//				fixed for MSVC Build Tools 2022 - amd64
-	for (int s = 0; i < CON_SECTIONS; ++i) {
-		con.section[s].display = con.section[s].current;
+	for (i = 0; i < CON_SECTIONS; ++i) {
+		con.section[i].display = con.section[i].current;
 	}
 
 	con_scale->modified = qfalse;

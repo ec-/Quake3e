@@ -472,6 +472,9 @@ static void CL_ForceFixedDlights( void ) {
 	}
 }
 
+void CL_SendConsoleCommand( const char* cmd ) {
+	nestedCmdOffset = Cbuf_Add( cmd, nestedCmdOffset );
+}
 
 /*
 ====================
@@ -534,8 +537,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return FS_VM_SeekFile( args[1], args[2], args[3], H_CGAME );
 
 	case CG_SENDCONSOLECOMMAND: {
-		const char *cmd = VMA(1);
-		nestedCmdOffset = Cbuf_Add( cmd, nestedCmdOffset );
+		CL_SendConsoleCommand(VMA(1));
 		return 0;
 	}
 	case CG_ADDCOMMAND:

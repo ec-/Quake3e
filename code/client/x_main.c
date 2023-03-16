@@ -586,6 +586,8 @@ void X_Main_Event_OnDrawScreen(void)
 	X_Hud_DrawHud();
 
 	X_Hud_TurnOnForcedTransparency();
+
+	X_WP_CheckAutoswitchRequirement();
 }
 
 void X_Main_Event_OnChatCommand(field_t *field)

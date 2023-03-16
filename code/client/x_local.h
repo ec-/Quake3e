@@ -578,6 +578,7 @@ void X_Team_ValidateFrozenPlayers(const refdef_t *fd);
  *  x_weapon.c
  *********************************/
 void X_WP_Init(void);
+void X_WP_CheckAutoswitchRequirement(void);
 
 /*********************************
  *  x_net.c
