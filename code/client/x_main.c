@@ -1081,7 +1081,6 @@ static sfxHandle_t X_Main_GetSndKill(unsigned int variant)
 void X_Main_OnDeathSound(int target, int attacker)
 {
 	sfxHandle_t killSound = 0;
-	sfxHandle_t defreezeSound = 0;
 
 	// ignore suicide and kills from other players
 	if (attacker != clc.clientNum || attacker == target)
