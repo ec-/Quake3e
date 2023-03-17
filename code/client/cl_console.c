@@ -391,8 +391,8 @@ void Con_CheckResize( void )
 		}
 	}
 
-	for (int s = 0; i < CON_SECTIONS; ++i) {
-		con.section[s].display = con.section[s].current;
+	for (i = 0; i < CON_SECTIONS; ++i) {
+		con.section[i].display = con.section[i].current;
 	}
 
 	con_scale->modified = qfalse;

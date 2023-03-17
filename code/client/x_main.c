@@ -586,6 +586,8 @@ void X_Main_Event_OnDrawScreen(void)
 	X_Hud_DrawHud();
 
 	X_Hud_TurnOnForcedTransparency();
+
+	X_WP_CheckAutoswitchRequirement();
 }
 
 void X_Main_Event_OnChatCommand(field_t *field)
@@ -1078,9 +1080,42 @@ static sfxHandle_t X_Main_GetSndKill(unsigned int variant)
 
 void X_Main_OnDeathSound(int target, int attacker)
 {
-	if (attacker == clc.clientNum && attacker != target && X_Main_IsXModeActive() && x_snd_kill && x_snd_kill->integer)
+	sfxHandle_t killSound = 0;
+
+	// ignore suicide and kills from other players
+	if (attacker != clc.clientNum || attacker == target)
+		return;
+
+	if (xmod.gs.freezetag && X_Team_ClientIsInSameTeam(target))
 	{
-		S_StartLocalSound(X_Main_GetSndKill(x_snd_kill->integer), CHAN_LOCAL_SOUND);
+
+		// defreezing teammates could be detected as normal kill,
+		// which means killsound will be played every time after defreezing
+
+		/*
+			NOTE:
+			in future here can be implemented customizble defreeze sound
+			throw convar with name, for example, "x_snd_defreeze"
+
+
+
+		// check if defreeze sound is enabled
+		if (x_snd_defreeze->integer)
+		{
+			defreezeSound = X_Main_GetSndDefreeze(x_snd_defreeze->integer);
+			S_StartLocalSound(defreezeSound, CHAN_LOCAL_SOUND);
+		}
+
+		*/
+
+		return;
+	}
+
+	// check if kill sound is enabled
+	if (x_snd_kill->integer)
+	{
+		killSound = X_Main_GetSndKill(x_snd_kill->integer);
+		S_StartLocalSound(killSound, CHAN_LOCAL_SOUND);
 	}
 }
 
