@@ -307,6 +307,17 @@
     <ClCompile Include="..\..\client\snd_mem.c" />
     <ClCompile Include="..\..\client\snd_mix.c" />
     <ClCompile Include="..\..\client\snd_wavelet.c" />
+    <ClCompile Include="..\..\client\x_console.c" />
+    <ClCompile Include="..\..\client\x_crosshair.c" />
+    <ClCompile Include="..\..\client\x_ddamage.c" />
+    <ClCompile Include="..\..\client\x_gamestate.c" />
+    <ClCompile Include="..\..\client\x_hud.c" />
+    <ClCompile Include="..\..\client\x_main.c" />
+    <ClCompile Include="..\..\client\x_misc.c" />
+    <ClCompile Include="..\..\client\x_net.c" />
+    <ClCompile Include="..\..\client\x_player.c" />
+    <ClCompile Include="..\..\client\x_team.c" />
+    <ClCompile Include="..\..\client\x_weapon.c" />
     <ClCompile Include="..\..\qcommon\cmd.c" />
     <ClCompile Include="..\..\qcommon\cm_load.c" />
     <ClCompile Include="..\..\qcommon\cm_patch.c" />
