@@ -170,6 +170,16 @@ static void DrawBotLevel(Bar *bar, float x, float y, float skill);
 // ====================
 //   Implementation
 
+void X_Hud_On_CG_PRINT(const char *message)
+{
+	/* Disable statsall for meat q3msk.ru */
+	const char *pattern = "^1\'^3statsall^1\' is currently disabled^7.";
+	if (Q_strncmp(message, pattern, strlen(pattern)) == 0 )
+	{
+		xmod.x_mod_hud_context.statsall_disabled = qtrue;
+	}
+}
+
 void X_Hud_Init()
 {
 	Cmd_AddCommand("+xscore", ShowScoreTable);
@@ -180,6 +190,7 @@ void X_Hud_Init()
 	X_Main_RegisterFloatXCommand(x_hud_xscore_opaque, "0.9", "0.0", "1.0", 0);
 
 	X_Hud_ValidateDefaultScores();
+	Com_Memset(&xmod.x_mod_hud_context, 0, sizeof(xmod.x_mod_hud_context));
 
 	InitFading(&xmod.scr.fading, 1000, 0.3f, 0.9f);
 }
@@ -237,7 +248,10 @@ qboolean X_Hud_UpdatePlayerStats()
 		if (current >= xmod.scr.lastUpd)
 		{
 			CL_AddReliableCommand("score", qfalse);
-			CL_AddReliableCommand("statsall", qfalse);
+			if (!xmod.x_mod_hud_context.statsall_disabled)
+			{
+				CL_AddReliableCommand("statsall", qfalse);
+			}
 			xmod.scr.lastUpd = Sys_Milliseconds() + XSCORE_UPDATE_INTERVAL;
 		}
 

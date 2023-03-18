@@ -540,7 +540,6 @@ void X_Main_Event_OnConfigstringModified(int index)
 qboolean X_Main_Event_OnServerCommand(const char *cmd, qboolean *result)
 {
 	*result = qtrue;
-	printf(">>>>server command %s \n", cmd);
 
 	if (!strcmp(cmd, "chat") || !strcmp(cmd, "tchat"))
 	{
@@ -686,6 +685,11 @@ void Hook_SetColor(const float *rgba)
 	{
 		MAKERGBA(xmod.currentColor, 1.0, 1.0, 1.0, 1.0);
 	}
+}
+
+void X_Main_Hook_CG_PRINT(const char *message)
+{
+	X_Hud_On_CG_PRINT(message);
 }
 
 void X_Main_Hook_AddLoopingSound(int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx)
