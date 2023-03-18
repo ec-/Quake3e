@@ -706,26 +706,40 @@ static LONG WINAPI ExceptionFilter( struct _EXCEPTION_POINTERS *ExceptionInfo )
 
 	if ( ExceptionInfo->ExceptionRecord->ExceptionCode != EXCEPTION_BREAKPOINT )
 	{
-		char msg[128];
-		byte *addr, *base;
-		qboolean vma;
+		char msg[128], name[MAX_OSPATH];
+		const char *basename;
+		HMODULE hModule;
+		byte *addr;
 
+		hModule = NULL;
+		name[0] = '\0';
+		basename = name;
 		addr = (byte*)ExceptionInfo->ExceptionRecord->ExceptionAddress;
-		base = (byte*)GetModuleHandle( NULL );
 
-		if ( addr >= base )
-		{
-			addr = (byte*)(addr - base);
-			vma = qtrue;
-		}
-		else
-		{
-			vma = qfalse;
+		if ( GetModuleHandleEx( GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCTSTR)addr, &hModule ) ) {
+			if ( GetModuleFileNameA( hModule, name, ARRAY_LEN( name ) - 1 ) != 0 ) {
+				name[ARRAY_LEN( name ) - 1] = '\0';
+				basename = strrchr( name, '\\' );
+				if ( basename ) {
+					basename = basename + 1;
+				} else {
+					basename = strrchr( name, '/' );
+					if ( basename ) {
+						basename = basename + 1;
+					}
+				}
+			}
 		}
 
-		sprintf( msg, "Exception Code: %s\nException Address: %p%s",
-			GetExceptionName( ExceptionInfo->ExceptionRecord->ExceptionCode ),
-			addr, vma ? " (VMA)" : "" );
+		if ( *basename ) {
+			Com_sprintf( msg, sizeof( msg ), "Exception Code: %s\nException Address: %s@%x",
+				GetExceptionName( ExceptionInfo->ExceptionRecord->ExceptionCode ),
+				basename, addr - (byte*)hModule );
+		} else {
+			Com_sprintf( msg, sizeof( msg ), "Exception Code: %s\nException Address: %p",
+				GetExceptionName( ExceptionInfo->ExceptionRecord->ExceptionCode ),
+				addr );
+		}
 
 		Com_Error( ERR_DROP, "Unhandled exception caught\n%s", msg );
 	}
@@ -790,7 +804,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	}
 
 	// main game loop
-	while( 1 ) {
+	while ( 1 ) {
 		// set low precision every frame, because some system calls
 		// reset it arbitrarily
 		// _controlfp( _PC_24, _MCW_PC );
