@@ -11,8 +11,12 @@ Block messages for common, team or private chat. Messages will be blocked if use
 
 - **\x_snd_kill_sound 0..4**
 
-Play sound if you get a frag. 0 - sound is disbled, 1-4 different variants of the sound.
+Play sound if got a frag. 0 - sound is disbled, 1-4 different variants of the sound.
 **\cg_centertime** command is cheat unprotected now (osp mode only) so you can disable frag text messages by set it to zero.
+
+- **\x_wp_autoswitch 0..9**
+
+Automatically switch to the specified weapon if the player was dead. 0 - disabled, 1-9 weapon number. 
 
 For **Quake3e** information see [README.q3e.md](README.q3e.md).
 

@@ -71,8 +71,7 @@ void X_WP_CheckAutoswitchRequirement()
 			return;
 
 		// send weapon switch command
-		CL_SendConsoleCommand(va("weapon %d", pendingWeapon));
-
+		Cmd_ExecuteString(va("weapon %d", pendingWeapon));
 		return;
 	}
 }
