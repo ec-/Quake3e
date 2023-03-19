@@ -483,6 +483,7 @@ The cgame module is making a system call
 static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 	switch( args[0] ) {
 	case CG_PRINT:
+		X_Main_Hook_CG_PRINT((const char*)VMA(1));
 		Com_Printf( "%s", (const char*)VMA(1) );
 		return 0;
 	case CG_ERROR:

@@ -367,6 +367,11 @@ typedef enum
 
 typedef struct
 {
+	qboolean statsall_disabled;
+} XModHudContext;
+
+typedef struct
+{
 	XModState state;
 	qboolean hack;
 	snapshot_t snap;
@@ -388,6 +393,7 @@ typedef struct
 	Network net;
 
 	XScore scr;
+	XModHudContext x_mod_hud_context;
 
 } XModContext;
 
@@ -500,6 +506,7 @@ qboolean X_Main_Hook_CGame_Cvar_SetSafe(const char *var_name, const char *value)
 void X_Main_Hook_UpdateEntityPosition(int entityNum, const vec3_t origin);
 int X_Main_Hook_FS_GetFileList(const char *path, const char *extension, char *listbuf, int bufsize);
 void X_Main_Hook_AddLoopingSound(int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx);
+void X_Main_Hook_CG_PRINT(const char *message);
 
 qboolean X_Main_IsXModeActive(void);
 qboolean X_Main_IsXModeHackActive(void);
@@ -523,6 +530,7 @@ qboolean X_Net_ShowCommands(void);
  *********************************/
 void X_Hud_TurnOffForcedTransparency(void);
 void X_Hud_TurnOnForcedTransparency(void);
+void X_Hud_On_CG_PRINT(const char *message);
 
 /*********************************
  *  x_crosshair.c
