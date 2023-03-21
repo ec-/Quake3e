@@ -717,7 +717,7 @@ static void RB_SurfaceLightningBoltModified(void)
 	CrossProduct(v1, v2, right);
 	VectorNormalize(right);
 
-	DoRailCore(start, end, right, len, Cvar_VariableIntegerValue("x_wp_mod_lightning_width"));
+	DoRailCore(start, end, right, len, ri.Cvar_VariableIntegerValue("x_wp_mod_lightning_width"));
 }
 
 
@@ -1430,7 +1430,7 @@ static void RB_SurfaceEntity( const surfaceType_t *surfType ) {
 		RB_SurfaceRailRings();
 		break;
 	case RT_LIGHTNING:
-		if (Cvar_VariableIntegerValue("x_wp_mod_lightning") == 1)
+		if (ri.Cvar_VariableIntegerValue("x_wp_mod_lightning") == 1)
 		{
 			RB_SurfaceLightningBoltModified();
 		}
