@@ -1958,8 +1958,6 @@ void RB_TakeScreenshot( int x, int y, int width, int height, const char *fileNam
 void RB_TakeScreenshotJPEG( int x, int y, int width, int height, const char *fileName );
 void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *fileName, int clipboard );
 
-void R_IssuePendingRenderCommands( void );
-
 void R_AddDrawSurfCmd( drawSurf_t *drawSurfs, int numDrawSurfs );
 
 void RE_SetColor( const float *rgba );

@@ -6607,9 +6607,6 @@ void vk_begin_frame( void )
 			vk.swapchain_image_index %= vk.swapchain_image_count;
 		}
 
-		//vk.cmd = &vk.tess[ vk.cmd_index++ ];
-		//vk.cmd_index %= NUM_COMMAND_BUFFERS;
-
 		vk.cmd->waitForFence = qfalse;
 		res = qvkWaitForFences( vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e10 );
 		if ( res != VK_SUCCESS ) {
@@ -6620,7 +6617,6 @@ void vk_begin_frame( void )
 				ri.Error( ERR_FATAL, "Vulkan: %s returned %s", "vkWaitForfences", vk_result_string( res ) );
 			}
 		}
-		VK_CHECK( qvkWaitForFences( vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e10 ) );
 	} else {
 		// current command buffer has been reset due to geometry buffer overflow/update
 		// so we will reuse it with current swapchain image as well

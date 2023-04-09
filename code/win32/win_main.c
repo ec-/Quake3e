@@ -734,7 +734,7 @@ static LONG WINAPI ExceptionFilter( struct _EXCEPTION_POINTERS *ExceptionInfo )
 		if ( *basename ) {
 			Com_sprintf( msg, sizeof( msg ), "Exception Code: %s\nException Address: %s@%x",
 				GetExceptionName( ExceptionInfo->ExceptionRecord->ExceptionCode ),
-				basename, addr - (byte*)hModule );
+				basename, (uint32_t)(addr - (byte*)hModule) );
 		} else {
 			Com_sprintf( msg, sizeof( msg ), "Exception Code: %s\nException Address: %p",
 				GetExceptionName( ExceptionInfo->ExceptionRecord->ExceptionCode ),
