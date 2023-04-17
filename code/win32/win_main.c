@@ -708,7 +708,7 @@ static LONG WINAPI ExceptionFilter( struct _EXCEPTION_POINTERS *ExceptionInfo )
 	{
 		char msg[128], name[MAX_OSPATH];
 		const char *basename;
-		HMODULE hModule;
+		HMODULE hModule, hKernel32;
 		byte *addr;
 
 		hModule = NULL;
@@ -716,16 +716,26 @@ static LONG WINAPI ExceptionFilter( struct _EXCEPTION_POINTERS *ExceptionInfo )
 		basename = name;
 		addr = (byte*)ExceptionInfo->ExceptionRecord->ExceptionAddress;
 
-		if ( GetModuleHandleEx( GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCTSTR)addr, &hModule ) ) {
-			if ( GetModuleFileNameA( hModule, name, ARRAY_LEN( name ) - 1 ) != 0 ) {
-				name[ARRAY_LEN( name ) - 1] = '\0';
-				basename = strrchr( name, '\\' );
-				if ( basename ) {
-					basename = basename + 1;
-				} else {
-					basename = strrchr( name, '/' );
-					if ( basename ) {
-						basename = basename + 1;
+		hKernel32 = GetModuleHandleA( "kernel32" );
+		if ( hKernel32 != NULL ) {
+			typedef BOOL (WINAPI *PFN_GetModuleHandleExA)( DWORD dwFlags, LPCSTR lpModuleName, HMODULE *phModule );
+			PFN_GetModuleHandleExA pGetModuleHandleExA;
+
+			pGetModuleHandleExA = (PFN_GetModuleHandleExA) GetProcAddress( hKernel32, "GetModuleHandleExA" );
+			if ( pGetModuleHandleExA != NULL ) {
+				if ( pGetModuleHandleExA( GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCTSTR)addr, &hModule ) ) {
+					if (GetModuleFileNameA( hModule, name, ARRAY_LEN(name) - 1) != 0 ) {
+						name[ARRAY_LEN(name) - 1] = '\0';
+						basename = strrchr( name, '\\' );
+						if ( basename ) {
+							basename = basename + 1;
+						}
+						else {
+							basename = strrchr( name, '/' );
+							if ( basename ) {
+								basename = basename + 1;
+							}
+						}
 					}
 				}
 			}

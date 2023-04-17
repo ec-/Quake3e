@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *****************************************************************************/
 
 #include "../qcommon/q_shared.h"
+#include "../qcommon/qcommon.h"
 #include "l_memory.h"
 #include "l_libvar.h"
 #include "l_script.h"
@@ -2819,8 +2820,8 @@ int BotReplyChat(int chatstate, const char *message, int mcontext, int vcontext,
 	} //end for
 	if (bestchatmessage)
 	{
-		index = strlen( bestmatch.string );
 		int len;
+		index = strlen( bestmatch.string );
 		if ( var0 ) {
 			len = (int) strlen( var0 );
 			bestmatch.variables[0].offset = index;
