@@ -262,7 +262,7 @@ jobs:
     steps:
 
     - name: Install tools
-      run: brew install coreutils sdl2
+      run: brew install coreutils pkg-config sdl2
 
     - uses: actions/checkout@v3.1.0
       with:

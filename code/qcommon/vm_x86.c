@@ -3175,10 +3175,6 @@ static void EmitCallFunc( vm_t *vm )
 	emit_CheckJump( vm, R_EAX, -1, 0 );
 	unmask_rx( R_EAX );
 
-	// save procBase and programStack
-	//emit_push( R_PROCBASE );			// procBase
-	//emit_push( R_PSTACK );			// programStack
-
 	// calling another vm function
 #if idx64
 	emit_call_index( R_INSPOINTERS, R_EAX ); // call qword ptr [instructionPointers+rax*8]
@@ -3186,12 +3182,7 @@ static void EmitCallFunc( vm_t *vm )
 	emit_call_index_offset( (intptr_t)instructionPointers, R_EAX ); // call dword ptr [vm->instructionPointers + eax*8]
 #endif
 
-	// restore proc base and programStack so there is
-	// no need to validate programStack anymore
-	//emit_pop( R_PSTACK );				// pop rsi // programStack
-	//emit_pop( R_PROCBASE );			// pop rbp // procBase
-
-	emit_ret();							// ret
+	emit_ret();	// ret
 
 	sysCallOffset = compiledOfs - sysCallOffset;
 
@@ -4297,7 +4288,6 @@ __compile:
 									// invalidate any mappings that overlaps with high [8..31] bits 
 									//var.addr += 1; var.size = 3;
 									//wipe_reg_range( rx_regs + rx[0], &var );
-									// TODO: just reduce mapping size?
 									reduce_map_size( reg, 1 );
 									// modify constant
 									reg->cnst.value &= 0xFF;
@@ -4403,6 +4393,7 @@ __compile:
 						wipe_var_range( &var );
 						set_rx_var( rx[0], &var ); // update metadata
 					} else {
+						// address specified by register
 						rx[1] = load_rx_opstack( R_EDX | RCONST ); dec_opstack();	// edx = *opstack; opstack -= 4
 						emit_CheckReg( vm, rx[1], FUNC_DATW );
 						switch ( ci->op ) {
@@ -4756,7 +4747,7 @@ __compile:
 		// remove write permissions.
 		if ( !VirtualProtect( vm->codeBase.ptr, vm->codeSize, PAGE_EXECUTE_READ, &oldProtect ) ) {
 			VM_Destroy_Compiled( vm );
-			Com_Printf( S_COLOR_YELLOW "VM_CompileX86: VirtualProtect failed\n" );
+			Com_Printf( S_COLOR_YELLOW "%s(%s): VirtualProtect failed\n", __func__, vm->name );
 			return qfalse;
 		}
 	}
@@ -4860,8 +4851,8 @@ int32_t VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
 	}
 
 	// these only needed for interpreter:
-	// image[1] =  0;	// return stack
-	// image[0] = -1;	// will terminate loop on return
+	// image[1] =  0; // return stack
+	// image[0] = -1; // will terminate loop on return
 
 #ifdef DEBUG_VM
 	opStack[0] = 0xDEADC0DE;

@@ -57,11 +57,22 @@ static BOOL IsCurrentSessionRemoteable( void )
 
 			if ( lResult == ERROR_SUCCESS )
 			{
+				typedef BOOL (WINAPI *PFN_ProcessIdToSessionId)( DWORD dwProcessId, DWORD *pSessionId );
+				PFN_ProcessIdToSessionId pProcessIdToSessionId;
 				DWORD dwCurrentSessionId;
+				HANDLE hKernel32;
 
-				if ( ProcessIdToSessionId( GetCurrentProcessId(), &dwCurrentSessionId  ) )
+				hKernel32 = GetModuleHandleA( "kernel32" );
+				if ( hKernel32 != NULL )
 				{
-					fIsRemoteable = ( dwCurrentSessionId != dwGlassSessionId );
+					pProcessIdToSessionId = (PFN_ProcessIdToSessionId) GetProcAddress( hKernel32, "ProcessIdToSessionId" );
+					if ( pProcessIdToSessionId != NULL )
+					{
+						if ( pProcessIdToSessionId( GetCurrentProcessId(), &dwCurrentSessionId  ) )
+						{
+							fIsRemoteable = ( dwCurrentSessionId != dwGlassSessionId );
+						}
+					}
 				}
 			}
 		}

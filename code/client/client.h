@@ -411,6 +411,7 @@ extern	cvar_t	*cl_inGameVideo;
 
 extern	cvar_t	*cl_lanForcePackets;
 extern	cvar_t	*cl_autoRecordDemo;
+extern	cvar_t	*cl_drawRecording;
 
 extern	cvar_t	*com_maxfps;
 
@@ -597,6 +598,10 @@ qboolean CL_VideoRecording( void );
 size_t	CL_SaveJPGToBuffer( byte *buffer, size_t bufSize, int quality, int image_width, int image_height, byte *image_buffer, int padding );
 void	CL_SaveJPG( const char *filename, int quality, int image_width, int image_height, byte *image_buffer, int padding );
 void	CL_LoadJPG( const char *filename, unsigned char **pic, int *width, int *height );
+
+
+// base backend functions
+void	HandleEvents( void );
 
 // platform-specific
 void	GLimp_InitGamma(glconfig_t *config);
