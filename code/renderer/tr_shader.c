@@ -1695,7 +1695,7 @@ static void FinishStage( shaderStage_t *stage )
 {
 	int i;
 
-	if ( r_mergeLightmaps->integer == 0 ) {
+	if ( !tr.mergeLightmaps ) {
 		return;
 	}
 
