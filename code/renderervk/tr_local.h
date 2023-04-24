@@ -1199,6 +1199,7 @@ typedef struct {
 	int						numLightmaps;
 	image_t					**lightmaps;
 
+	qboolean				mergeLightmaps;
 	float					lightmapOffset[2];	// current shader lightmap offset
 	float					lightmapScale[2];	// for lightmap atlases
 	int						lightmapMod;		// for lightmap atlases

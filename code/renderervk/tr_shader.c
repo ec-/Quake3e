@@ -1707,7 +1707,7 @@ static void FinishStage( shaderStage_t *stage )
 {
 	int i;
 
-	if ( r_mergeLightmaps->integer == 0 ) {
+	if ( !tr.mergeLightmaps ) {
 		return;
 	}
 
@@ -3311,7 +3311,7 @@ static shader_t *FinishShader( void ) {
 				if ( pStage->bundle[n].numTexMods ) {
 					continue;
 				}
-				if ( pStage->bundle[n].tcGen == TCGEN_ENVIRONMENT_MAPPED && ( pStage->bundle[n].lightmap == LIGHTMAP_INDEX_NONE || r_mergeLightmaps->integer == 0 ) ) {
+				if ( pStage->bundle[n].tcGen == TCGEN_ENVIRONMENT_MAPPED && ( pStage->bundle[n].lightmap == LIGHTMAP_INDEX_NONE || !tr.mergeLightmaps ) ) {
 					env_mask |= (1 << n);
 				}
 			}
