@@ -303,11 +303,12 @@ CL_WriteServerCommands
 static void CL_WriteServerCommands( msg_t *msg ) {
 	int i;
 
-	if ( clc.demoCommandSequence < clc.serverCommandSequence ) {
+	if ( clc.serverCommandSequence - clc.demoCommandSequence > 0 ) {
 
 		// do not write more than MAX_RELIABLE_COMMANDS
-		if ( clc.serverCommandSequence - clc.demoCommandSequence > MAX_RELIABLE_COMMANDS )
+		if ( clc.serverCommandSequence - clc.demoCommandSequence > MAX_RELIABLE_COMMANDS ) {
 			clc.demoCommandSequence = clc.serverCommandSequence - MAX_RELIABLE_COMMANDS;
+		}
 
 		for ( i = clc.demoCommandSequence + 1 ; i <= clc.serverCommandSequence; i++ ) {
 			MSG_WriteByte( msg, svc_serverCommand );

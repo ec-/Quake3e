@@ -1294,7 +1294,7 @@ qboolean	Sys_StringToAdr( const char *s, netadr_t *a, netadrtype_t family );
 qboolean	Sys_IsLANAddress(const netadr_t *adr);
 void		Sys_ShowIP(void);
 
-void	Sys_Mkdir( const char *path );
+qboolean	Sys_Mkdir( const char *path );
 FILE	*Sys_FOpen( const char *ospath, const char *mode );
 qboolean Sys_ResetReadOnlyAttribute( const char *ospath );
 

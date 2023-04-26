@@ -134,9 +134,17 @@ void Sys_Print( const char *msg )
 Sys_Mkdir
 ==============
 */
-void Sys_Mkdir( const char *path )
+qboolean Sys_Mkdir( const char *path )
 {
-	_mkdir( path );
+	if ( _mkdir( path ) == 0 ) {
+		return qtrue;
+	} else {
+		if ( errno == EEXIST ) {
+			return qtrue;
+		} else {
+			return qfalse;
+		}
+	}
 }
 
 
