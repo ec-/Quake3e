@@ -846,9 +846,10 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 				blendSrcBits = NameToSrcBlendMode( token );
 
 				token = COM_ParseExt( text, qfalse );
-				if ( token[0] == 0 )
+				if ( token[0] == '\0' )
 				{
 					ri.Printf( PRINT_WARNING, "WARNING: missing parm for blendFunc in shader '%s'\n", shader.name );
+					blendDstBits = GLS_DSTBLEND_ONE; // by default
 					continue;
 				}
 				blendDstBits = NameToDstBlendMode( token );
