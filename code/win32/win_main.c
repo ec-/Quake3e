@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "resource.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include <direct.h>
 #include <io.h>
 
