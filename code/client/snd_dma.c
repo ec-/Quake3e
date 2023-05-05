@@ -1488,18 +1488,19 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 
 	s_khz = Cvar_Get( "s_khz", "22", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	Cvar_CheckRange( s_khz, "0", "48", CV_INTEGER );
-	Cvar_SetDescription( s_khz, "Specifies the sound sampling rate, (11, 22, 44, 48) in kHz. Default value is 22." );
+	Cvar_SetDescription( s_khz, "Specifies the sound sampling rate, (8, 11, 22, 44, 48) in kHz. Default value is 22." );
 
 	switch( s_khz->integer ) {
 		case 48:
 		case 44:
 		case 22:
 		case 11:
+		case 8:
 			// these are legal values
 			break;
 		default:
 			// anything else is illegal
-			Com_Printf( "WARNING: cvar 's_khz' must be one of (11, 22, 44, 48), setting to '%s'\n", s_khz->resetString );
+			Com_Printf( "WARNING: cvar 's_khz' must be one of (8, 11, 22, 44, 48), setting to '%s'\n", s_khz->resetString );
 			Cvar_ForceReset( "s_khz" );
 			break;
 	}

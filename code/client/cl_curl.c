@@ -728,12 +728,18 @@ static int Com_DL_CallbackProgress( void *data, curl_off_t dltotal, curl_off_t d
 static int Com_DL_CallbackProgress( void *data, double dltotal, double dlnow, double ultotal, double ulnow )
 #endif
 {
-	double percentage;
 #if CURL_AT_LEAST_VERSION(7, 55, 0)
 	curl_off_t speed;
 #else
 	double speed;
 #endif
+
+#if CURL_AT_LEAST_VERSION(7, 32, 0)
+	curl_off_t percentage;
+#else
+	double percentage;
+#endif
+
 	download_t *dl = (download_t *)data;
 
 	dl->Size = (int)dltotal;
@@ -751,7 +757,11 @@ static int Com_DL_CallbackProgress( void *data, double dltotal, double dlnow, do
 	}
 
 	if ( dl->Size ) {
+#if CURL_AT_LEAST_VERSION(7, 32, 0)
+		percentage = ( dlnow * 100 ) / dltotal;
+#else
 		percentage = ( dlnow / dltotal ) * 100.0;
+#endif
 		sprintf( dl->progress, " downloading %s: %s (%i%%)", dl->Name, sizeToString( dl->Count ), (int)percentage );
 	} else {
 		sprintf( dl->progress, " downloading %s: %s", dl->Name, sizeToString( dl->Count ) );

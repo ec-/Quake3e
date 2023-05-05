@@ -1757,19 +1757,17 @@ CopyString
 ========================
 */
 char *CopyString( const char *in ) {
-	char	*out;
+	char *out;
 #ifdef USE_STATIC_TAGS
-	if (!in[0]) {
+	if ( in[0] == '\0' ) {
 		return ((char *)&emptystring) + sizeof(memblock_t);
 	}
-	else if (!in[1]) {
-		if (in[0] >= '0' && in[0] <= '9') {
-			return ((char *)&numberstring[in[0]-'0']) + sizeof(memblock_t);
-		}
+	else if ( in[0] >= '0' && in[0] <= '9' && in[1] == '\0' ) {
+		return ((char *)&numberstring[in[0]-'0']) + sizeof(memblock_t);
 	}
 #endif
-	out = S_Malloc (strlen(in)+1);
-	strcpy (out, in);
+	out = S_Malloc( strlen( in ) + 1 );
+	strcpy( out, in );
 	return out;
 }
 
