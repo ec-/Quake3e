@@ -433,9 +433,9 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 	present_modes = (VkPresentModeKHR *) ri.Malloc( present_mode_count * sizeof( VkPresentModeKHR ) );
 	VK_CHECK(qvkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_mode_count, present_modes));
 
-	ri.Printf( PRINT_ALL, "...presentation modes:" );
+	ri.Printf( PRINT_DEVELOPER, "...presentation modes:" );
 	for ( i = 0; i < present_mode_count; i++ ) {
-		ri.Printf( PRINT_ALL, " %s", pmode_to_str( present_modes[i] ) );
+		ri.Printf( PRINT_DEVELOPER, " %s", pmode_to_str( present_modes[i] ) );
 		if ( present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR )
 			mailbox_supported = qtrue;
 		else if ( present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR )
@@ -444,7 +444,7 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 			fifo_relaxed_supported = qtrue;
 
 	}
-	ri.Printf( PRINT_ALL, "\n" );
+	ri.Printf( PRINT_DEVELOPER, "\n" );
 
 	ri.Free( present_modes );
 
@@ -482,7 +482,7 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 		image_count = MIN( MIN( image_count, surface_caps.maxImageCount ), MAX_SWAPCHAIN_IMAGES );
 	}
 
-	ri.Printf( PRINT_ALL, "...selected presentation mode: %s, image count: %i\n", pmode_to_str( present_mode ), image_count );
+	ri.Printf( PRINT_DEVELOPER, "...selected presentation mode: %s, image count: %i\n", pmode_to_str( present_mode ), image_count );
 
 	// create swap chain
 	desc.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -3405,7 +3405,7 @@ static void vk_destroy_pipelines( qboolean resetCount );
 static void vk_restart_swapchain( const char *funcname )
 {
 	uint32_t i;
-	ri.Printf( PRINT_WARNING, "%s(): restarting swapchain...\n", funcname );
+	ri.Printf( PRINT_DEVELOPER, "%s(): restarting swapchain...\n", funcname );
 
 	vk_wait_idle();
 
