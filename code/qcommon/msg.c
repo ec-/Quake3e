@@ -152,7 +152,7 @@ void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 }
 
 
-int MSG_ReadBits( msg_t *msg, int bits ) {
+static int MSG_ReadBits( msg_t *msg, int bits ) {
 	int		value;
 	qboolean	sgn;
 	int		i;
@@ -485,6 +485,17 @@ void MSG_ReadData( msg_t *msg, void *data, int len ) {
 	for (i=0 ; i<len ; i++) {
 		((byte *)data)[i] = MSG_ReadByte (msg);
 	}
+}
+
+
+int MSG_ReadEntitynum( msg_t *msg ) {
+	const int num = MSG_ReadBits( msg, GENTITYNUM_BITS );
+	if ( msg->readcount > msg->cursize ) {
+		return -1;
+	} else {
+		return num;
+	}
+	
 }
 
 

@@ -134,7 +134,7 @@ static client_t *SV_GetPlayerByNum( void ) {
 	}
 
 	cl = &svs.clients[idnum];
-	if ( !cl->state ) {
+	if ( cl->state < CS_CONNECTED ) {
 		Com_Printf( "Client %i is not active\n", idnum );
 		return NULL;
 	}
@@ -1268,11 +1268,11 @@ static void SV_Status_f( void ) {
 
 		// ping/status
 		if ( cl->state == CS_PRIMED )
-			Com_Printf( "PRM " );
+			Com_Printf( " PRM " );
 		else if ( cl->state == CS_CONNECTED )
-			Com_Printf( "CON " );
+			Com_Printf( " CON " );
 		else if ( cl->state == CS_ZOMBIE )
-			Com_Printf( "ZMB " );
+			Com_Printf( " ZMB " );
 		else
 			Com_Printf( "%4i ", cl->ping < 999 ? cl->ping : 999 );
 	
@@ -1305,7 +1305,8 @@ SV_ConSay_f
 */
 static void SV_ConSay_f( void ) {
 	char	*p;
-	char	text[1024];
+	char	text[MAX_STRING_CHARS];
+	int		len;
 
 	// make sure server is running
 	if ( !com_sv_running->integer ) {
@@ -1317,18 +1318,19 @@ static void SV_ConSay_f( void ) {
 		return;
 	}
 
-	strcpy( text, "console: " );
 	p = Cmd_ArgsFrom( 1 );
+	len = (int)strlen( p );
 
-	if ( strlen( p ) > 1000 ) {
+	if ( len > 1000 ) {
 		return;
 	}
 
 	if ( *p == '"' ) {
+		p[len-1] = '\0';
 		p++;
-		p[strlen(p)-1] = '\0';
 	}
 
+	strcpy( text, "console: " );
 	strcat( text, p );
 
 	SV_SendServerCommand( NULL, "chat \"%s\"", text );
@@ -1342,8 +1344,9 @@ SV_ConTell_f
 */
 static void SV_ConTell_f( void ) {
 	char	*p;
-	char	text[1024];
+	char	text[MAX_STRING_CHARS];
 	client_t	*cl;
+	int		len;
 
 	// make sure server is running
 	if ( !com_sv_running->integer ) {
@@ -1361,18 +1364,19 @@ static void SV_ConTell_f( void ) {
 		return;
 	}
 
-	strcpy( text, S_COLOR_MAGENTA "console: " );
 	p = Cmd_ArgsFrom( 2 );
+	len = (int)strlen( p );
 
-	if ( strlen( p ) > 1000 ) {
+	if ( len > 1000 ) {
 		return;
 	}
 
 	if ( *p == '"' ) {
+		p[len-1] = '\0';
 		p++;
-		p[strlen(p)-1] = '\0';
 	}
 
+	strcpy( text, S_COLOR_MAGENTA "console: " );
 	strcat( text, p );
 
 	Com_Printf( "%s\n", text );

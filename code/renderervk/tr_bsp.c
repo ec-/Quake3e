@@ -257,7 +257,7 @@ static float R_ProcessLightmap( byte *image, const byte *buf_p, float maxIntensi
 			image[j*4+3] = 255;
 		}
 	} else {
-		if ( r_mergeLightmaps->integer ) {
+		if ( tr.mergeLightmaps ) {
 			for ( y = 0 ; y < LIGHTMAP_SIZE; y++ ) {
 				for ( x = 0 ; x < LIGHTMAP_SIZE; x++ ) {
 					byte *dst = &image[((y + LIGHTMAP_BORDER) * LIGHTMAP_LEN + x + LIGHTMAP_BORDER) * 4];
@@ -400,6 +400,7 @@ static void R_LoadLightmaps( const lump_t *l ) {
 	float		maxIntensity = 0;
 
 	tr.numLightmaps = 0;
+	tr.mergeLightmaps = qfalse;
 	tr.lightmapScale[0] = 1.0f;
 	tr.lightmapScale[1] = 1.0f;
 	tr.lightmapOffset[0] = 0.0f;
@@ -420,8 +421,12 @@ static void R_LoadLightmaps( const lump_t *l ) {
 	}
 
 	if ( r_mergeLightmaps->integer ) {
-		R_LoadMergedLightmaps( l, image ); // reuse stack space
-		return;
+		// check for low texture sizes
+		if ( glConfig.maxTextureSize >= LIGHTMAP_LEN * 2 ) {
+			tr.mergeLightmaps = qtrue;
+			R_LoadMergedLightmaps( l, image ); // reuse stack space
+			return;
+		}
 	}
 
 	buf = fileBase + l->fileofs;
@@ -622,7 +627,7 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 	surf->fogIndex = LittleLong( ds->fogNum ) + 1;
 
 	lightmapNum = LittleLong( ds->lightmapNum );
-	if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
+	if ( lightmapNum >= 0 && tr.mergeLightmaps ) {
 		lightmapNum = R_GetLightmapCoords( lightmapNum, &lightmapX, &lightmapY );
 	} else {
 		lightmapX = lightmapY = 0.0f;
@@ -664,7 +669,7 @@ static void ParseFace( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 			cv->points[i][5+j] = LittleFloat( verts[i].lightmap[j] );
 		}
 		R_ColorShiftLightingBytes( verts[i].color.rgba, (byte *)&cv->points[i][7], qtrue );
-		if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
+		if ( lightmapNum >= 0 && tr.mergeLightmaps ) {
 			// adjust lightmap coords
 			cv->points[i][5] = cv->points[i][5] * tr.lightmapScale[0] + lightmapX;
 			cv->points[i][6] = cv->points[i][6] * tr.lightmapScale[1] + lightmapY;
@@ -738,7 +743,7 @@ static void ParseMesh( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 	surf->fogIndex = LittleLong( ds->fogNum ) + 1;
 
 	lightmapNum = LittleLong( ds->lightmapNum );
-	if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
+	if ( lightmapNum >= 0 && tr.mergeLightmaps ) {
 		lightmapNum = R_GetLightmapCoords( lightmapNum, &lightmapX, &lightmapY );
 	} else {
 		lightmapX = lightmapY = 0.0f;
@@ -772,7 +777,7 @@ static void ParseMesh( const dsurface_t *ds, const drawVert_t *verts, msurface_t
 			points[i].lightmap[j] = LittleFloat( verts[i].lightmap[j] );
 		}
 		R_ColorShiftLightingBytes( verts[i].color.rgba, points[i].color.rgba, qtrue );
-		if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
+		if ( lightmapNum >= 0 && tr.mergeLightmaps ) {
 			// adjust lightmap coords
 			points[i].lightmap[0] = points[i].lightmap[0] * tr.lightmapScale[0] + lightmapX;
 			points[i].lightmap[1] = points[i].lightmap[1] * tr.lightmapScale[1] + lightmapY;
@@ -813,7 +818,7 @@ static void ParseTriSurf( const dsurface_t *ds, const drawVert_t *verts, msurfac
 	surf->fogIndex = LittleLong( ds->fogNum ) + 1;
 
 	lightmapNum = LittleLong( ds->lightmapNum );
-	if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
+	if ( lightmapNum >= 0 && tr.mergeLightmaps ) {
 		lightmapNum = R_GetLightmapCoords( lightmapNum, &lightmapX, &lightmapY );
 	} else {
 		lightmapX = lightmapY = 0;
@@ -853,7 +858,7 @@ static void ParseTriSurf( const dsurface_t *ds, const drawVert_t *verts, msurfac
 		}
 
 		R_ColorShiftLightingBytes( verts[i].color.rgba, tri->verts[i].color.rgba, qtrue );
-		if ( lightmapNum >= 0 && r_mergeLightmaps->integer ) {
+		if ( lightmapNum >= 0 && tr.mergeLightmaps ) {
 			// adjust lightmap coords
 			tri->verts[i].lightmap[0] = tri->verts[i].lightmap[0] * tr.lightmapScale[0] + lightmapX;
 			tri->verts[i].lightmap[1] = tri->verts[i].lightmap[1] * tr.lightmapScale[1] + lightmapY;

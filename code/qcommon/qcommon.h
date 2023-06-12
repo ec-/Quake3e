@@ -101,8 +101,6 @@ int MSG_HashKey(const char *string, int maxlen);
 void	MSG_BeginReading (msg_t *sb);
 void	MSG_BeginReadingOOB(msg_t *sb);
 
-int		MSG_ReadBits( msg_t *msg, int bits );
-
 int		MSG_ReadChar (msg_t *sb);
 int		MSG_ReadByte (msg_t *sb);
 int		MSG_ReadShort (msg_t *sb);
@@ -111,8 +109,9 @@ float	MSG_ReadFloat (msg_t *sb);
 const char *MSG_ReadString (msg_t *sb);
 const char *MSG_ReadBigString (msg_t *sb);
 const char *MSG_ReadStringLine (msg_t *sb);
-float	MSG_ReadAngle16 (msg_t *sb);
-void	MSG_ReadData (msg_t *sb, void *buffer, int size);
+float MSG_ReadAngle16 (msg_t *sb);
+void  MSG_ReadData(msg_t *sb, void *buffer, int size);
+int   MSG_ReadEntitynum(msg_t *sb);
 
 void MSG_WriteDeltaUsercmdKey( msg_t *msg, int key, const usercmd_t *from, const usercmd_t *to );
 void MSG_ReadDeltaUsercmdKey( msg_t *msg, int key, const usercmd_t *from, usercmd_t *to );
@@ -1294,7 +1293,7 @@ qboolean	Sys_StringToAdr( const char *s, netadr_t *a, netadrtype_t family );
 qboolean	Sys_IsLANAddress(const netadr_t *adr);
 void		Sys_ShowIP(void);
 
-void	Sys_Mkdir( const char *path );
+qboolean	Sys_Mkdir( const char *path );
 FILE	*Sys_FOpen( const char *ospath, const char *mode );
 qboolean Sys_ResetReadOnlyAttribute( const char *ospath );
 

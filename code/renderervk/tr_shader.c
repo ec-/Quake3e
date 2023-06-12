@@ -846,9 +846,10 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 				blendSrcBits = NameToSrcBlendMode( token );
 
 				token = COM_ParseExt( text, qfalse );
-				if ( token[0] == 0 )
+				if ( token[0] == '\0' )
 				{
 					ri.Printf( PRINT_WARNING, "WARNING: missing parm for blendFunc in shader '%s'\n", shader.name );
+					blendDstBits = GLS_DSTBLEND_ONE; // by default
 					continue;
 				}
 				blendDstBits = NameToDstBlendMode( token );
@@ -1694,7 +1695,7 @@ static void FinishStage( shaderStage_t *stage )
 {
 	int i;
 
-	if ( r_mergeLightmaps->integer == 0 ) {
+	if ( !tr.mergeLightmaps ) {
 		return;
 	}
 
@@ -2319,7 +2320,7 @@ static int tcmodWeight( const textureBundle_t *bundle )
 	return 0;
 }
 
-
+#if 0
 static int rgbWeight( const textureBundle_t *bundle ) {
 
 	switch ( bundle->rgbGen ) {
@@ -2331,6 +2332,7 @@ static int rgbWeight( const textureBundle_t *bundle ) {
 		default: return 0;
 	}
 }
+#endif
 
 static const textureBundle_t *lightingBundle( int stageIndex, const textureBundle_t *selected ) {
 	const shaderStage_t *stage = &stages[ stageIndex ];
@@ -2355,9 +2357,10 @@ static const textureBundle_t *lightingBundle( int stageIndex, const textureBundl
 			if ( tcmodWeight( selected ) > tcmodWeight( bundle ) ) {
 				continue;
 			}
-			if ( rgbWeight( selected ) > rgbWeight( bundle ) ) {
-				continue;
-			}
+			// commented because causes regression in q3dm1' Mouth area
+			//if ( rgbWeight( selected ) > rgbWeight( bundle ) ) {
+				//continue;
+			//}
 		}
 		shader.lightingStage = stageIndex;
 		shader.lightingBundle = i;
@@ -3298,7 +3301,7 @@ static shader_t *FinishShader( void ) {
 				if ( pStage->bundle[n].numTexMods ) {
 					continue;
 				}
-				if ( pStage->bundle[n].tcGen == TCGEN_ENVIRONMENT_MAPPED && ( pStage->bundle[n].lightmap == LIGHTMAP_INDEX_NONE || r_mergeLightmaps->integer == 0 ) ) {
+				if ( pStage->bundle[n].tcGen == TCGEN_ENVIRONMENT_MAPPED && ( pStage->bundle[n].lightmap == LIGHTMAP_INDEX_NONE || !tr.mergeLightmaps ) ) {
 					env_mask |= (1 << n);
 				}
 			}
