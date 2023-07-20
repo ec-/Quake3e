@@ -703,7 +703,7 @@ void SetPlaneSignbits (cplane_t *out) {
 
 
 // Looks like that's MSVC exclusive, MinGW doesn't even allow 
-// because uses GAS (GNU Assembly) syntax. That code was based on Kenny Edition
+// because uses GAS (GNU Assembly) syntax. That code was based on XreaL
 #if defined _MSC_VER
 
 /*
