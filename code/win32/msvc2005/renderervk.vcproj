@@ -18,8 +18,8 @@
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\build\renderervk_release"
-			IntermediateDirectory=".\build\renderervk_release"
+			OutputDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
+			IntermediateDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
 			ConfigurationType="4"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -44,10 +44,7 @@
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="NDEBUG;_CRT_SECURE_NO_DEPRECATE"
 				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
 				WarningLevel="4"
-				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -62,7 +59,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\renderervk.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -82,8 +78,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory=".\build\renderervk_release_x64"
-			IntermediateDirectory=".\build\renderervk_release_x64"
+			OutputDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
+			IntermediateDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
 			ConfigurationType="4"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -109,10 +105,7 @@
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="NDEBUG;_CRT_SECURE_NO_DEPRECATE"
 				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
 				WarningLevel="4"
-				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -127,7 +120,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\renderervk.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -147,8 +139,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\build\renderervk_debug"
-			IntermediateDirectory=".\build\renderervk_debug"
+			OutputDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
+			IntermediateDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
 			ConfigurationType="4"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -176,11 +168,10 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -196,7 +187,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\renderervk.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -216,8 +206,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory=".\build\renderervk_debug_x64"
-			IntermediateDirectory=".\build\renderervk_debug_x64"
+			OutputDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
+			IntermediateDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
 			ConfigurationType="4"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -246,8 +236,6 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
@@ -266,7 +254,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\renderervk.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -313,11 +300,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderervk\tr_image.c"
+				RelativePath="..\..\renderercommon\tr_font.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\renderercommon\tr_font.c"
+				RelativePath="..\..\renderervk\tr_image.c"
 				>
 			</File>
 			<File

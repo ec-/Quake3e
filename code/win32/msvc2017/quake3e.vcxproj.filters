@@ -112,6 +112,9 @@
     <ClCompile Include="..\..\client\snd_codec_wav.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\client\snd_codec_ogg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\client\snd_dma.c">
       <Filter>Source Files</Filter>
     </ClCompile>
