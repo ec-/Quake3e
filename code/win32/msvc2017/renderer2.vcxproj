@@ -190,9 +190,6 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_fp.glsl .\bu
 cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\build\dynamic\renderer2\tonemap_vp.c
 </Command>
     </PreBuildEvent>
-    <Midl>
-      <TargetEnvironment>X64</TargetEnvironment>
-    </Midl>
     <ClCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;USE_RENDERER2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
@@ -241,7 +238,6 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_fp.glsl .\bu
 cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\build\dynamic\renderer2\tonemap_vp.c
 </Command>
     </PreBuildEvent>
-    <Midl />
     <ClCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;USE_RENDERER2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
@@ -342,9 +338,6 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_fp.glsl .\bu
 cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\build\dynamic\renderer2\tonemap_vp.c
 </Command>
     </PreBuildEvent>
-    <Midl>
-      <TargetEnvironment>X64</TargetEnvironment>
-    </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;USE_RENDERER2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -396,7 +389,6 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_fp.glsl .\bu
 cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\build\dynamic\renderer2\tonemap_vp.c
 </Command>
     </PreBuildEvent>
-    <Midl />
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;USE_RENDERER2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
