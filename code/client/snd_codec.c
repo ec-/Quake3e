@@ -127,6 +127,10 @@ void S_CodecInit( void )
 {
 	codecs = NULL;
 
+#ifdef USE_OGG_VORBIS
+	S_CodecRegister( &ogg_codec );
+#endif
+
 	// Register wav codec last so that it is always tried first when a file extension was not found
 	S_CodecRegister( &wav_codec );
 }
