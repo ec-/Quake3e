@@ -51,7 +51,6 @@
 				BrowseInformation="1"
 				BrowseInformationFile="$(IntDir)\"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
 			/>
 			<Tool

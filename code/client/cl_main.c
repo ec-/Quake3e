@@ -2987,8 +2987,6 @@ CL_Frame
 ==================
 */
 void CL_Frame( int msec, int realMsec ) {
-	float fps;
-	float frameDuration;
 
 #ifdef USE_CURL
 	if ( download.cURL ) {
@@ -3036,6 +3034,7 @@ void CL_Frame( int msec, int realMsec ) {
 	if ( CL_VideoRecording() && msec ) {
 		// save the current screen
 		if ( cls.state == CA_ACTIVE || cl_forceavidemo->integer ) {
+			float fps, frameDuration;
 
 			if ( com_timescale->value > 0.0001f )
 				fps = MIN( cl_aviFrameRate->value / com_timescale->value, 1000.0f );
@@ -3075,7 +3074,7 @@ void CL_Frame( int msec, int realMsec ) {
 			// Replace the ":" in the address as it is not a valid
 			// file name character
 			p = strchr( serverName, ':' );
-			if( p ) {
+			if ( p ) {
 				*p = '.';
 			}
 
@@ -3085,9 +3084,9 @@ void CL_Frame( int msec, int realMsec ) {
 			Cbuf_ExecuteText( EXEC_NOW,
 					va( "record %s-%s-%s", nowString, serverName, mapName ) );
 		}
-		else if( cls.state != CA_ACTIVE && clc.demorecording ) {
+		else if ( cls.state != CA_ACTIVE && clc.demorecording ) {
 			// Recording, but not CA_ACTIVE, so stop recording
-			CL_StopRecord_f( );
+			CL_StopRecord_f();
 		}
 	}
 

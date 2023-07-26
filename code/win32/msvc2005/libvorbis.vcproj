@@ -106,7 +106,7 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;$(NOINHERIT)"
 				RuntimeLibrary="1"
 				AssemblerListingLocation="$(IntDir)\"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
