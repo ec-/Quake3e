@@ -9,7 +9,7 @@ This is a [Quake3e](https://github.com/ec-/Quake3e) client with [xq3e](https://g
 
 Block messages for common, team or private chat. Messages will be blocked if user and text same as in the previous message.
 
-- **\x_snd_kill_sound 0..4**
+- **\x_snd_kill 0..4**
 
 Play sound if got a frag. 0 - sound is disbled, 1-4 different variants of the sound.
 **\cg_centertime** command is cheat unprotected now (osp mode only) so you can disable frag text messages by set it to zero.

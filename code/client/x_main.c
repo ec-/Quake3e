@@ -147,7 +147,7 @@ void X_Main_InitAfterCGameVM(void)
 
 	X_Main_RegisterXCommand(x_snd_fix_unfreeze, "1", "0", "1", X_HELP_SND_FIX_UNFREEZE);
 
-	X_Main_RegisterXCommand(x_snd_kill, "1", "0", "4", X_HELP_SND_KILL);
+	X_Main_RegisterXCommand(x_snd_kill, "0", "0", "4", X_HELP_SND_KILL);
 
 	Cmd_AddCommand("x_state", Print_State);
 	Cmd_AddCommand("x_userinfo", Print_UserInfo);
