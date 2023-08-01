@@ -31,6 +31,10 @@ USE_CURL         = 1
 USE_LOCAL_HEADERS= 0
 USE_SYSTEM_JPEG  = 0
 
+USE_OGG_VORBIS    = 1
+USE_SYSTEM_OGG    = 0
+USE_SYSTEM_VORBIS = 0
+
 USE_VULKAN       = 1
 USE_OPENGL       = 1
 USE_OPENGL2      = 0
@@ -149,6 +153,18 @@ ifndef USE_CURL_DLOPEN
   endif
 endif
 
+ifndef USE_OGG_VORBIS
+  USE_OGG_VORBIS=1
+endif
+
+ifndef USE_SYSTEM_OGG
+  USE_SYSTEM_OGG=1
+endif
+
+ifndef USE_SYSTEM_VORBIS
+  USE_SYSTEM_VORBIS=1
+endif
+
 ifeq ($(USE_RENDERER_DLOPEN),0)
   ifeq ($(RENDERER_DEFAULT),opengl)
     USE_OPENGL=1
@@ -194,8 +210,9 @@ CMDIR=$(MOUNT_DIR)/qcommon
 UDIR=$(MOUNT_DIR)/unix
 W32DIR=$(MOUNT_DIR)/win32
 BLIBDIR=$(MOUNT_DIR)/botlib
-UIDIR=$(MOUNT_DIR)/ui
 JPDIR=$(MOUNT_DIR)/libjpeg
+OGGDIR=$(MOUNT_DIR)/libogg
+VORBISDIR=$(MOUNT_DIR)/libvorbis
 
 bin_path=$(shell which $(1) 2> /dev/null)
 
@@ -205,21 +222,50 @@ INSTALL=install
 MKDIR=mkdir -p
 
 ifneq ($(call bin_path, $(PKG_CONFIG)),)
-  SDL_INCLUDE ?= $(shell $(PKG_CONFIG) --silence-errors --cflags-only-I sdl2)
-  SDL_LIBS ?= $(shell $(PKG_CONFIG) --silence-errors --libs sdl2)
-  X11_INCLUDE ?= $(shell $(PKG_CONFIG) --silence-errors --cflags-only-I x11)
-  X11_LIBS ?= $(shell $(PKG_CONFIG) --silence-errors --libs x11)
+  ifneq ($(USE_SDL),0)
+    SDL_INCLUDE ?= $(shell $(PKG_CONFIG) --silence-errors --cflags-only-I sdl2)
+    SDL_LIBS ?= $(shell $(PKG_CONFIG) --silence-errors --libs sdl2)
+  else
+    X11_INCLUDE ?= $(shell $(PKG_CONFIG) --silence-errors --cflags-only-I x11)
+    X11_LIBS ?= $(shell $(PKG_CONFIG) --silence-errors --libs x11)
+  endif
+  ifeq ($(USE_SYSTEM_OGG),1)
+    OGG_CFLAGS ?= $(shell $(PKG_CONFIG) --silence-errors --cflags ogg || true)
+    OGG_LIBS ?= $(shell $(PKG_CONFIG) --silence-errors --libs ogg || echo -logg)
+  endif
+  ifeq ($(USE_SYSTEM_VORBIS),1)
+    VORBIS_CFLAGS ?= $(shell $(PKG_CONFIG) --silence-errors --cflags vorbis || true)
+    VORBIS_LIBS ?= $(shell $(PKG_CONFIG) --silence-errors --libs vorbis || echo -lvorbis)
+  endif
 endif
 
-# supply some reasonable defaults for SDL/X11?
+# supply some reasonable defaults for SDL/X11
 ifeq ($(X11_INCLUDE),)
-X11_INCLUDE = -I/usr/X11R6/include
+  X11_INCLUDE = -I/usr/X11R6/include
 endif
 ifeq ($(X11_LIBS),)
-X11_LIBS = -lX11
+  X11_LIBS = -lX11
 endif
 ifeq ($(SDL_LIBS),)
-SDL_LIBS = -lSDL2
+  SDL_LIBS = -lSDL2
+endif
+
+# supply some reasonable defaults for ogg/vorbis
+ifeq ($(OGG_FLAGS),)
+  OGG_FLAGS = -I$(OGGDIR)/include
+endif
+ifeq ($(VORBIS_FLAGS),)
+  VORBIS_FLAGS = -I$(VORBISDIR)/include -I$(VORBISDIR)/lib
+endif
+ifeq ($(USE_SYSTEM_OGG),1)
+  ifeq ($(OGG_LIBS),)
+    OGG_LIBS = -logg
+  endif
+endif
+ifeq ($(USE_SYSTEM_VORBIS),1)
+  ifeq ($(VORBIS_LIBS),)
+    VORBIS_LIBS = -lvorbis
+  endif
 endif
 
 # extract version info
@@ -400,6 +446,11 @@ ifdef MINGW
     CLIENT_LDFLAGS += -lcurl -lwldap32 -lcrypt32
   endif
 
+  ifeq ($(USE_OGG_VORBIS),1)
+    BASE_CFLAGS += -DUSE_OGG_VORBIS $(OGG_FLAGS) $(VORBIS_FLAGS)
+    CLIENT_LDFLAGS += $(OGG_LIBS) $(VORBIS_LIBS)
+  endif
+
   DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -g -O0
   RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
 
@@ -433,6 +484,11 @@ ifeq ($(COMPILE_PLATFORM),darwin)
 
   ifeq ($(USE_SYSTEM_JPEG),1)
     CLIENT_LDFLAGS += -ljpeg
+  endif
+
+  ifeq ($(USE_OGG_VORBIS),1)
+    BASE_CFLAGS += -DUSE_OGG_VORBIS $(OGG_FLAGS) $(VORBIS_FLAGS)
+    CLIENT_LDFLAGS += $(OGG_LIBS) $(VORBIS_LIBS)
   endif
 
   DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -g -O0
@@ -494,6 +550,11 @@ else
     ifeq ($(USE_CURL_DLOPEN),0)
       CLIENT_LDFLAGS += -lcurl
     endif
+  endif
+
+  ifeq ($(USE_OGG_VORBIS),1)
+    BASE_CFLAGS += -DUSE_OGG_VORBIS $(OGG_FLAGS) $(VORBIS_FLAGS)
+    CLIENT_LDFLAGS += $(OGG_LIBS) $(VORBIS_LIBS)
   endif
 
   ifeq ($(PLATFORM),linux)
@@ -671,11 +732,20 @@ makedirs:
 	@if [ ! -d $(BUILD_DIR) ];then $(MKDIR) $(BUILD_DIR);fi
 	@if [ ! -d $(B) ];then $(MKDIR) $(B);fi
 	@if [ ! -d $(B)/client ];then $(MKDIR) $(B)/client;fi
+	@if [ ! -d $(B)/client/jpeg ];then $(MKDIR) $(B)/client/jpeg;fi
+ifeq ($(USE_SYSTEM_OGG),0)
+	@if [ ! -d $(B)/client/ogg ];then $(MKDIR) $(B)/client/ogg;fi
+endif
+ifeq ($(USE_SYSTEM_VORBIS),0)
+	@if [ ! -d $(B)/client/vorbis ];then $(MKDIR) $(B)/client/vorbis;fi
+endif
 	@if [ ! -d $(B)/rend1 ];then $(MKDIR) $(B)/rend1;fi
 	@if [ ! -d $(B)/rend2 ];then $(MKDIR) $(B)/rend2;fi
 	@if [ ! -d $(B)/rend2/glsl ];then $(MKDIR) $(B)/rend2/glsl;fi
 	@if [ ! -d $(B)/rendv ];then $(MKDIR) $(B)/rendv;fi
+ifneq ($(BUILD_SERVER),0)
 	@if [ ! -d $(B)/ded ];then $(MKDIR) $(B)/ded;fi
+endif
 
 #############################################################################
 # CLIENT/SERVER
@@ -838,52 +908,85 @@ ifneq ($(USE_RENDERER_DLOPEN), 0)
 endif
 
 JPGOBJ = \
-  $(B)/client/jaricom.o \
-  $(B)/client/jcapimin.o \
-  $(B)/client/jcapistd.o \
-  $(B)/client/jcarith.o \
-  $(B)/client/jccoefct.o  \
-  $(B)/client/jccolor.o \
-  $(B)/client/jcdctmgr.o \
-  $(B)/client/jchuff.o   \
-  $(B)/client/jcinit.o \
-  $(B)/client/jcmainct.o \
-  $(B)/client/jcmarker.o \
-  $(B)/client/jcmaster.o \
-  $(B)/client/jcomapi.o \
-  $(B)/client/jcparam.o \
-  $(B)/client/jcprepct.o \
-  $(B)/client/jcsample.o \
-  $(B)/client/jctrans.o \
-  $(B)/client/jdapimin.o \
-  $(B)/client/jdapistd.o \
-  $(B)/client/jdarith.o \
-  $(B)/client/jdatadst.o \
-  $(B)/client/jdatasrc.o \
-  $(B)/client/jdcoefct.o \
-  $(B)/client/jdcolor.o \
-  $(B)/client/jddctmgr.o \
-  $(B)/client/jdhuff.o \
-  $(B)/client/jdinput.o \
-  $(B)/client/jdmainct.o \
-  $(B)/client/jdmarker.o \
-  $(B)/client/jdmaster.o \
-  $(B)/client/jdmerge.o \
-  $(B)/client/jdpostct.o \
-  $(B)/client/jdsample.o \
-  $(B)/client/jdtrans.o \
-  $(B)/client/jerror.o \
-  $(B)/client/jfdctflt.o \
-  $(B)/client/jfdctfst.o \
-  $(B)/client/jfdctint.o \
-  $(B)/client/jidctflt.o \
-  $(B)/client/jidctfst.o \
-  $(B)/client/jidctint.o \
-  $(B)/client/jmemmgr.o \
-  $(B)/client/jmemnobs.o \
-  $(B)/client/jquant1.o \
-  $(B)/client/jquant2.o \
-  $(B)/client/jutils.o
+  $(B)/client/jpeg/jaricom.o \
+  $(B)/client/jpeg/jcapimin.o \
+  $(B)/client/jpeg/jcapistd.o \
+  $(B)/client/jpeg/jcarith.o \
+  $(B)/client/jpeg/jccoefct.o  \
+  $(B)/client/jpeg/jccolor.o \
+  $(B)/client/jpeg/jcdctmgr.o \
+  $(B)/client/jpeg/jchuff.o   \
+  $(B)/client/jpeg/jcinit.o \
+  $(B)/client/jpeg/jcmainct.o \
+  $(B)/client/jpeg/jcmarker.o \
+  $(B)/client/jpeg/jcmaster.o \
+  $(B)/client/jpeg/jcomapi.o \
+  $(B)/client/jpeg/jcparam.o \
+  $(B)/client/jpeg/jcprepct.o \
+  $(B)/client/jpeg/jcsample.o \
+  $(B)/client/jpeg/jctrans.o \
+  $(B)/client/jpeg/jdapimin.o \
+  $(B)/client/jpeg/jdapistd.o \
+  $(B)/client/jpeg/jdarith.o \
+  $(B)/client/jpeg/jdatadst.o \
+  $(B)/client/jpeg/jdatasrc.o \
+  $(B)/client/jpeg/jdcoefct.o \
+  $(B)/client/jpeg/jdcolor.o \
+  $(B)/client/jpeg/jddctmgr.o \
+  $(B)/client/jpeg/jdhuff.o \
+  $(B)/client/jpeg/jdinput.o \
+  $(B)/client/jpeg/jdmainct.o \
+  $(B)/client/jpeg/jdmarker.o \
+  $(B)/client/jpeg/jdmaster.o \
+  $(B)/client/jpeg/jdmerge.o \
+  $(B)/client/jpeg/jdpostct.o \
+  $(B)/client/jpeg/jdsample.o \
+  $(B)/client/jpeg/jdtrans.o \
+  $(B)/client/jpeg/jerror.o \
+  $(B)/client/jpeg/jfdctflt.o \
+  $(B)/client/jpeg/jfdctfst.o \
+  $(B)/client/jpeg/jfdctint.o \
+  $(B)/client/jpeg/jidctflt.o \
+  $(B)/client/jpeg/jidctfst.o \
+  $(B)/client/jpeg/jidctint.o \
+  $(B)/client/jpeg/jmemmgr.o \
+  $(B)/client/jpeg/jmemnobs.o \
+  $(B)/client/jpeg/jquant1.o \
+  $(B)/client/jpeg/jquant2.o \
+  $(B)/client/jpeg/jutils.o
+
+ifeq ($(USE_OGG_VORBIS),1)
+ifeq ($(USE_SYSTEM_OGG),0)
+OGGOBJ = \
+  $(B)/client/ogg/bitwise.o \
+  $(B)/client/ogg/framing.o
+endif
+
+ifeq ($(USE_SYSTEM_VORBIS),0)
+VORBISOBJ = \
+  $(B)/client/vorbis/analysis.o \
+  $(B)/client/vorbis/bitrate.o \
+  $(B)/client/vorbis/block.o \
+  $(B)/client/vorbis/codebook.o \
+  $(B)/client/vorbis/envelope.o \
+  $(B)/client/vorbis/floor0.o \
+  $(B)/client/vorbis/floor1.o \
+  $(B)/client/vorbis/info.o \
+  $(B)/client/vorbis/lookup.o \
+  $(B)/client/vorbis/lpc.o \
+  $(B)/client/vorbis/lsp.o \
+  $(B)/client/vorbis/mapping0.o \
+  $(B)/client/vorbis/mdct.o \
+  $(B)/client/vorbis/psy.o \
+  $(B)/client/vorbis/registry.o \
+  $(B)/client/vorbis/res0.o \
+  $(B)/client/vorbis/smallft.o \
+  $(B)/client/vorbis/sharedbook.o \
+  $(B)/client/vorbis/synthesis.o \
+  $(B)/client/vorbis/vorbisfile.o \
+  $(B)/client/vorbis/window.o
+endif
+endif
 
 Q3OBJ = \
   $(B)/client/cl_cgame.o \
@@ -991,6 +1094,11 @@ Q3OBJ = \
 
 ifneq ($(USE_SYSTEM_JPEG),1)
   Q3OBJ += $(JPGOBJ)
+endif
+
+ifeq ($(USE_OGG_VORBIS),1)
+  Q3OBJ += $(OGGOBJ) $(VORBISOBJ) \
+    $(B)/client/snd_codec_ogg.o
 endif
 
 ifneq ($(USE_RENDERER_DLOPEN),1)
@@ -1246,7 +1354,13 @@ $(B)/client/%.o: $(CMDIR)/%.c
 $(B)/client/%.o: $(BLIBDIR)/%.c
 	$(DO_BOT_CC)
 
-$(B)/client/%.o: $(JPDIR)/%.c
+$(B)/client/jpeg/%.o: $(JPDIR)/%.c
+	$(DO_CC)
+
+$(B)/client/ogg/%.o: $(OGGDIR)/src/%.c
+	$(DO_CC)
+
+$(B)/client/vorbis/%.o: $(VORBISDIR)/lib/%.c
 	$(DO_CC)
 
 $(B)/client/%.o: $(SDLDIR)/%.c

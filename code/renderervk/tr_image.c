@@ -897,7 +897,7 @@ static void Upload32( byte *data, int x, int y, int width, int height, image_t *
 		byte *p = data;
 		int i, n = width * height;
 		for ( i = 0; i < n; i++, p+=4 ) {
-			R_ColorShiftLightingBytes( p, p );
+			R_ColorShiftLightingBytes( p, p, qfalse );
 		}
 	}
 
