@@ -27,20 +27,6 @@ For **xq3e** information see [README.xq3e.md](README.xq3e.md).
 
 ### windows/msvc
 
-#### msvc2022
-
-Install Visual Studio Community Edition 2022 or later and open `quake3` project from solution
-
-`code/win32/msvc2022/quake3.sln`
-
-Select stage: ReleaseOpenGL or ReleaseVulkan and build it.
-
-Copy resulting exe from `code/win32/msvc2022/x64/ReleaseOpenGL` or `code/win32/msvc2022/x64/ReleaseVulkan` directory
-
-Change dir to `xq3e_pak`, run `pack.cmd` (7z is required) and copy `xq3e.pak` into your `baseq3` directory.
-
-**NOTE**: Some stupid antiviruses detects a treat in exe file built with msvc2022. It is not true of course.
-
 #### msvc2017
 
 Build is similar to q3e:
