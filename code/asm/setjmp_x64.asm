@@ -3,10 +3,10 @@
 
 ; params :  RCX - void *jmp_buf[10], RSP[0] = callee addr, RSP[8] - callee stack pointer
 Q_setjmp_c PROC
-    ; store RIP in jmp_buf[0]
+	; store RIP in jmp_buf[0]
 	mov rax, [rsp+0]
 	mov [rcx+ 0], rax
-	; store RSP in jmp_buf[1] 
+	; store RSP in jmp_buf[1]
 	lea rax, [rsp+8]
 	mov [rcx+ 8], rax
 	; store all remaining regs
@@ -27,9 +27,9 @@ Q_setjmp_c ENDP
 ; params :  RCX - void *jmp_buf[10], RDX - return code
 Q_longjmp_c PROC
 	; restore registers
-	mov r15, [rcx+72] 
+	mov r15, [rcx+72]
 	mov r14, [rcx+64]
-	mov r13, [rcx+56] 
+	mov r13, [rcx+56]
 	mov r12, [rcx+48]
 	mov rdi, [rcx+40]
 	mov rsi, [rcx+32] 

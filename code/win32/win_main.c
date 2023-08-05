@@ -68,7 +68,7 @@ Sys_Error
 Show the early console as an error dialog
 =============
 */
-void QDECL Sys_Error( const char *error, ... ) {
+void NORETURN FORMAT_PRINTF(1, 2) QDECL Sys_Error( const char *error, ... ) {
 	va_list	argptr;
 	char	text[4096];
 	MSG		msg;
@@ -110,7 +110,7 @@ void QDECL Sys_Error( const char *error, ... ) {
 Sys_Quit
 ==============
 */
-void Sys_Quit( void ) {
+void NORETURN Sys_Quit( void ) {
 
 	timeEndPeriod( 1 );
 

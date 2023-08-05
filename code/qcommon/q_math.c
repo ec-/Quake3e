@@ -554,12 +554,20 @@ void VectorRotate( const vec3_t in, const vec3_t matrix[3], vec3_t out )
 }
 
 //============================================================================
+#ifdef _MSC_SSE2
+#include <intrin.h>
+#endif
 
 /*
 ** float q_rsqrt( float number )
 */
 float Q_rsqrt( float number )
 {
+#ifdef _MSC_SSE2
+	float ret;
+	_mm_store_ss( &ret, _mm_rsqrt_ss( _mm_load_ss( &number ) ) );
+	return ret;
+#else
 	floatint_t t;
 	float x2, y;
 	const float threehalfs = 1.5F;
@@ -572,6 +580,7 @@ float Q_rsqrt( float number )
 //	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
 
 	return y;
+#endif
 }
 
 
@@ -613,7 +622,7 @@ AngleSubtract
 Always returns a value from -180 to 180
 =================
 */
-float	AngleSubtract( float a1, float a2 ) {
+float AngleSubtract( float a1, float a2 ) {
 	float	a;
 
 	a = a1 - a2;
