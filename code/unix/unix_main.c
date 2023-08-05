@@ -271,7 +271,7 @@ void CON_SigTStp( int signum )
 // =============================================================
 
 // single exit point (regular exit or in case of signal fault)
-static void NORETURN Sys_Exit( int code )
+void NORETURN Sys_Exit( int code )
 {
 	Sys_ConsoleInputShutdown();
 
