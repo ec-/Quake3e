@@ -3267,11 +3267,13 @@ out:
 ** --------------------------------------------------------------------------------
 */
 
-#if (idx64 || id386)
-
+#ifdef USE_AFFINITY_MASK
 static uint64_t eCoreMask;
 static uint64_t pCoreMask;
 static uint64_t affinityMask; // saved at startup
+#endif
+
+#if (idx64 || id386)
 
 #if defined _MSC_VER
 #include <intrin.h>
@@ -3412,6 +3414,7 @@ static void Sys_GetProcessorId( char *vendor )
 }
 
 
+#ifdef USE_AFFINITY_MASK
 static void DetectCPUCoresConfig( void )
 {
 	uint32_t regs[4];
@@ -3450,7 +3453,7 @@ static void DetectCPUCoresConfig( void )
 		eCoreMask = pCoreMask = affinityMask;
 	}
 }
-
+#endif // USE_AFFINITY_MASK
 
 #else // non-x86
 
