@@ -353,7 +353,10 @@ void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 #else
 	qcurl_easy_setopt_warn(clc.downloadCURL, CURLOPT_PROTOCOLS, ALLOWED_PROTOCOLS);
 #endif
+
+#ifdef CURL_MAX_READ_SIZE
 	qcurl_easy_setopt_warn(clc.downloadCURL, CURLOPT_BUFFERSIZE, CURL_MAX_READ_SIZE);
+#endif
 
 	clc.downloadCURLM = qcurl_multi_init();	
 	if( !clc.downloadCURLM ) {
@@ -1014,7 +1017,10 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 #else
 	dl->func.easy_setopt( dl->cURL, CURLOPT_PROTOCOLS, ALLOWED_PROTOCOLS );
 #endif
+
+#ifdef CURL_MAX_READ_SIZE
 	dl->func.easy_setopt( dl->cURL, CURLOPT_BUFFERSIZE, CURL_MAX_READ_SIZE );
+#endif
 
 	dl->cURLM = dl->func.multi_init();
 

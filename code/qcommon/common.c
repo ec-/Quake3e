@@ -3269,12 +3269,35 @@ out:
 
 #if (idx64 || id386)
 
+static uint64_t eCoreMask;
+static uint64_t pCoreMask;
+static uint64_t affinityMask; // saved at startup
+
 #if defined _MSC_VER
 #include <intrin.h>
 static void CPUID( int func, unsigned int *regs )
 {
 	__cpuid( (int*)regs, func );
 }
+#if idx64
+extern void CPUID_EX( int func, int param, unsigned int *regs );
+#else
+void CPUID_EX( int func, int param, unsigned int *regs )
+{
+	__asm {
+		push edi
+		mov eax, func
+		mov ecx, param
+		cpuid
+		mov edi, regs
+		mov [edi +0], eax
+		mov [edi +4], ebx
+		mov [edi +8], ecx
+		mov [edi+12], edx
+		pop edi
+	}
+}
+#endif
 
 #else // clang/gcc/mingw
 
@@ -3286,6 +3309,17 @@ static void CPUID( int func, unsigned int *regs )
 		"=c"(regs[2]),
 		"=d"(regs[3]) :
 		"a"(func) );
+}
+
+static void CPUID_EX( int func, int param, unsigned int *regs )
+{
+	__asm__ __volatile__( "cpuid" :
+		"=a"(regs[0]),
+		"=b"(regs[1]),
+		"=c"(regs[2]),
+		"=d"(regs[3]) :
+		"a"(func),
+		"c"(param) );
 }
 
 #endif  // clang/gcc/mingw
@@ -3376,6 +3410,47 @@ static void Sys_GetProcessorId( char *vendor )
 		}
 	}
 }
+
+
+static void DetectCPUCoresConfig( void )
+{
+	uint32_t regs[4];
+	uint32_t i;
+
+	// get highest function parameter and vendor id
+	CPUID( 0x0, regs );
+	if ( regs[1] != 0x756E6547 || regs[2] != 0x6C65746E || regs[3] != 0x49656E69 || regs[0] < 0x1A ) {
+		// non-intel signature or too low cpuid level - unsupported
+		eCoreMask = pCoreMask = affinityMask;
+		return;
+	}
+
+	eCoreMask = 0;
+	pCoreMask = 0;
+
+	for ( i = 0; i < sizeof( affinityMask ) * 8; i++ ) {
+		const uint64_t mask = 1ULL << i;
+		if ( (mask & affinityMask) && Sys_SetAffinityMask( mask ) ) {
+			CPUID_EX( 0x1A, 0x0, regs );
+			switch ( (regs[0] >> 24) & 0xFF ) {
+				case 0x20: eCoreMask |= mask; break;
+				case 0x40: pCoreMask |= mask; break;
+				default: // non-existing leaf
+					eCoreMask = pCoreMask = 0;
+					break;
+			}
+		}
+	}
+
+	// restore original affinity
+	Sys_SetAffinityMask( affinityMask );
+
+	if ( pCoreMask == 0 || eCoreMask == 0 ) {
+		// if either mask is empty - assume non-hybrid configuration
+		eCoreMask = pCoreMask = affinityMask;
+	}
+}
+
 
 #else // non-x86
 
@@ -3559,6 +3634,99 @@ void Sys_SnapVector( float *vector )
 
 #endif // clang/gcc/mingw
 
+#ifdef USE_AFFINITY_MASK
+
+static int hex_code( const int code ) {
+	if ( code >= '0' && code <= '9' ) {
+		return code - '0';
+	}
+	if ( code >= 'A' && code <= 'F' ) {
+		return code - 'A' + 10;
+	}
+	if ( code >= 'a' && code <= 'f' ) {
+		return code - 'a' + 10;
+	}
+	return -1;
+}
+
+
+static const char *parseAffinityMask( const char *str, uint64_t *outv, int level ) {
+	uint64_t v, mask = 0;
+
+	while ( *str != '\0' ) {
+		if ( *str == 'A' || *str == 'a' ) {
+			mask = affinityMask;
+			++str;
+			continue;
+		}
+		else if ( *str == 'P' || *str == 'p' ) {
+			mask = pCoreMask;
+			++str;
+			continue;
+		}
+		else if ( *str == 'E' || *str == 'e' ) {
+			mask = eCoreMask;
+			++str;
+			continue;
+		}
+		else if ( *str == '0' && (str[1] == 'x' || str[1] == 'X') && (v = hex_code( str[2] )) >= 0 ) {
+			int hex;
+			str += 3; // 0xH
+			while ( (hex = hex_code( *str )) >= 0 ) {
+				v = v * 16 + hex;
+				str++;
+			}
+			mask = v;
+			continue;
+		}
+		else if ( *str >= '0' && *str <= '9' ) {
+			mask = *str++ - '0';
+			while ( *str >= '0' && *str <= '9' ) {
+				mask = mask * 10 + *str - '0';
+				++str;
+			}
+			continue;
+		}
+
+		if ( level == 0 ) {
+			while ( *str == '+' || *str == '-' ) {
+				str = parseAffinityMask( str + 1, &v, level + 1 );
+				switch ( *str ) {
+					case '+': mask |= v; break;
+					case '-': mask &= ~v; break;
+					default: str = ""; break;
+				}
+			}
+			if ( *str != '\0' ) {
+				++str; // skip unknown characters
+			}
+		} else {
+			break;
+		}
+	}
+
+	*outv = mask;
+	return str;
+}
+
+
+// parse and set affinity mask
+static void Com_SetAffinityMask( const char *str )
+{
+	uint64_t mask = 0;
+
+	parseAffinityMask( str, &mask, 0 );
+
+	if ( ( mask & affinityMask ) == 0 ) {
+		mask = affinityMask; // reset to default
+	}
+
+	if ( mask != 0 ) {
+		Sys_SetAffinityMask( mask );
+	}
+}
+#endif // USE_AFFINITY_MASK
+
 
 /*
 =================
@@ -3694,8 +3862,8 @@ void Com_Init( char *commandLine ) {
 #endif
 
 #ifdef USE_AFFINITY_MASK
-	com_affinityMask = Cvar_Get( "com_affinityMask", "0", CVAR_ARCHIVE_ND );
-	Cvar_SetDescription( com_affinityMask, "Bind Quake3e process to bitmask-specified CPU core(s)." );
+	com_affinityMask = Cvar_Get( "com_affinityMask", "", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( com_affinityMask, "Bind game process to bitmask-specified CPU core(s), special characters:\n A or a - all default cores\n P or p - performance cores\n E or e - efficiency cores\n 0x<value> - use hexadecimal notation\n + or - can be used to add or exclude particular cores" );
 	com_affinityMask->modified = qfalse;
 #endif
 
@@ -3776,8 +3944,7 @@ void Com_Init( char *commandLine ) {
 
 	// CPU detection
 	Cvar_Get( "sys_cpustring", "detect", CVAR_PROTECTED | CVAR_ROM | CVAR_NORESTART );
-	if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "detect" ) )
-	{
+	if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "detect" ) ) {
 		char vendor[128];
 		Com_Printf( "...detecting CPU, found " );
 		Sys_GetProcessorId( vendor );
@@ -3786,8 +3953,15 @@ void Com_Init( char *commandLine ) {
 	Com_Printf( "%s\n", Cvar_VariableString( "sys_cpustring" ) );
 
 #ifdef USE_AFFINITY_MASK
-	if ( com_affinityMask->integer )
-		Sys_SetAffinityMask( com_affinityMask->integer );
+	// get initial process affinity - we will respect it when setting custom affinity masks
+	eCoreMask = pCoreMask = affinityMask = Sys_GetAffinityMask();
+#if (idx64 || id386)
+	DetectCPUCoresConfig();
+#endif
+	if ( com_affinityMask->string[0] != '\0' ) {
+		Com_SetAffinityMask( com_affinityMask->string );
+		com_affinityMask->modified = qfalse;
+	}
 #endif
 
 	// Pick a random port value
@@ -4054,9 +4228,8 @@ void Com_Frame( qboolean noDelay ) {
 
 #ifdef USE_AFFINITY_MASK
 	if ( com_affinityMask->modified ) {
-		Cvar_Get( "com_affinityMask", "0", CVAR_ARCHIVE );
+		Com_SetAffinityMask( com_affinityMask->string );
 		com_affinityMask->modified = qfalse;
-		Sys_SetAffinityMask( com_affinityMask->integer );
 	}
 #endif
 

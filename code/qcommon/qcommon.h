@@ -1267,7 +1267,8 @@ void	Sys_Print( const char *msg );
 void	QDECL Sys_SetStatus( const char *format, ...) __attribute__ ((format (printf, 1, 2)));
 
 #ifdef USE_AFFINITY_MASK
-void	Sys_SetAffinityMask( int mask );
+uint64_t Sys_GetAffinityMask( void );
+qboolean Sys_SetAffinityMask( const uint64_t mask );
 #endif
 
 // Sys_Milliseconds should only be used for profiling purposes,

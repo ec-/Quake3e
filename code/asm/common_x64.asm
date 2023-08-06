@@ -1,3 +1,4 @@
+; common x86_64 assembler code form MSVC
 
 .code
 
@@ -41,5 +42,20 @@ Q_longjmp_c PROC
 	; jump to RIP
 	jmp qword ptr [rcx+ 0]
 Q_longjmp_c ENDP
+
+
+; input: RCX=eax, RDX=ecx, R8=out, R9=unused/scratch
+CPUID_EX PROC
+	mov r9, rbx ; push rbx
+	mov eax, ecx
+	mov ecx, edx
+	cpuid
+	mov dword ptr [r8+0], eax
+	mov dword ptr [r8+4], ebx
+	mov dword ptr [r8+8], ecx
+	mov dword ptr [r8+12], edx
+	mov rbx, r9 ; pop rbx
+	ret
+CPUID_EX ENDP
 
 END
