@@ -273,5 +273,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define PLATFORM_STRING OS_STRING "-" ARCH_STRING "-debug"
 #endif
 
+#if idx64
+#ifdef _MSC_VER
+#define _MSC_SSE2
+#endif // _MSC_VER
+#endif // idx64
 
-#endif
+#endif // __Q_PLATFORM_H
