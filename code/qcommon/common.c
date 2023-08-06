@@ -3281,6 +3281,8 @@ static void CPUID( int func, unsigned int *regs )
 {
 	__cpuid( (int*)regs, func );
 }
+
+#ifdef USE_AFFINITY_MASK
 #if idx64
 extern void CPUID_EX( int func, int param, unsigned int *regs );
 #else
@@ -3299,7 +3301,8 @@ void CPUID_EX( int func, int param, unsigned int *regs )
 		pop edi
 	}
 }
-#endif
+#endif // !idx64
+#endif // USE_AFFINITY_MASK
 
 #else // clang/gcc/mingw
 
@@ -3313,6 +3316,7 @@ static void CPUID( int func, unsigned int *regs )
 		"a"(func) );
 }
 
+#ifdef USE_AFFINITY_MASK
 static void CPUID_EX( int func, int param, unsigned int *regs )
 {
 	__asm__ __volatile__( "cpuid" :
@@ -3323,6 +3327,7 @@ static void CPUID_EX( int func, int param, unsigned int *regs )
 		"a"(func),
 		"c"(param) );
 }
+#endif // USE_AFFINITY_MASK
 
 #endif  // clang/gcc/mingw
 
