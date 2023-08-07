@@ -271,8 +271,7 @@ void CON_SigTStp( int signum )
 // =============================================================
 
 // single exit point (regular exit or in case of signal fault)
-void Sys_Exit( int code ) __attribute((noreturn));
-void Sys_Exit( int code )
+void NORETURN Sys_Exit( int code )
 {
 	Sys_ConsoleInputShutdown();
 
@@ -289,7 +288,7 @@ void Sys_Exit( int code )
 }
 
 
-void Sys_Quit( void )
+void NORETURN Sys_Quit( void )
 {
 #ifndef DEDICATED
 	CL_Shutdown( "", qtrue );
@@ -306,7 +305,7 @@ void Sys_Init( void )
 }
 
 
-void Sys_Error( const char *format, ... )
+void NORETURN FORMAT_PRINTF(1, 2) QDECL Sys_Error( const char *format, ... )
 {
 	va_list argptr;
 	char text[1024];

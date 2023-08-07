@@ -203,6 +203,8 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\asm\setjmp_x64.asm" />
+    <CustomBuild Include="..\..\asm\common_x64.asm">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>
