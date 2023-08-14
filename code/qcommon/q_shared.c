@@ -1956,45 +1956,51 @@ const char *Info_NextPair( const char *s, char *key, char *value ) {
 /*
 ===================
 Info_RemoveKey
+
+return removed character count
 ===================
 */
 int Info_RemoveKey( char *s, const char *key )
 {
-	char	*start;
-	const char 	*pkey;
-	int		key_len, len;
+	char *start;
+	const char *pkey;
+	int	key_len, len, ret;
 
-	key_len = (int) strlen( key );
+	key_len = (int)strlen( key );
+	ret = 0;
 
-	while (1)
-	{
+	while ( 1 ) {
 		start = s;
-		if ( *s == '\\' )
-			s++;
+		if ( *s == '\\' ) {
+			++s;
+		}
 		pkey = s;
-		while ( *s != '\\' )
-		{
-			if ( *s == '\0' )
-				return 0;
+		while ( *s != '\\' ) {
+			if ( *s == '\0' ) {
+				return ret;
+			}
 			++s;
 		}
 		len = (int)(s - pkey);
 		++s; // skip '\\'
 
-		while ( *s != '\\' && *s != '\0' )
+		while ( *s != '\\' && *s != '\0' ) {
 			++s;
-
-		if ( len == key_len && Q_strkey( pkey, key, key_len ) )
-		{
-			memmove( start, s, strlen( s ) + 1 ); // remove this part
-			return (int)(s - start);
 		}
 
-		if ( *s == '\0' )
+		if ( len == key_len && Q_strkey( pkey, key, key_len ) ) {
+			memmove( start, s, strlen( s ) + 1 ); // remove this part
+			ret += (int)(s - start);
+			s = start;
+		}
+
+		if ( *s == '\0' ) {
 			break;
+		}
+
 	}
 
-	return 0;
+	return ret;
 }
 
 
@@ -2080,13 +2086,13 @@ qboolean Info_SetValueForKey_s( char *s, int slen, const char *key, const char *
 	}
 
 	len1 -= Info_RemoveKey( s, key );
-	if ( !value || !*value )
+	if ( value == NULL || *value == '\0' ) {
 		return qtrue;
+	}
 
 	len2 = Com_sprintf( newi, sizeof( newi ), "\\%s\\%s", key, value );
 
-	if ( len1 + len2 >= slen )
-	{
+	if ( len1 + len2 >= slen ) {
 		Com_Printf( S_COLOR_YELLOW "Info string length exceeded for key '%s'\n", key );
 		return qfalse;
 	}
