@@ -147,6 +147,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
@@ -192,6 +193,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <WarningLevel>Level4</WarningLevel>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
@@ -237,6 +239,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <WarningLevel>Level4</WarningLevel>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
@@ -286,6 +289,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <WarningLevel>Level3</WarningLevel>
       <FloatingPointExceptions>true</FloatingPointExceptions>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
@@ -334,6 +338,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <BrowseInformation>true</BrowseInformation>
       <WarningLevel>Level3</WarningLevel>
       <FloatingPointExceptions>true</FloatingPointExceptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
@@ -382,6 +387,7 @@ cscript.exe /nologo glsl_stringify.vbs ..\..\renderer2\glsl\tonemap_vp.glsl .\bu
       <BrowseInformation>true</BrowseInformation>
       <WarningLevel>Level3</WarningLevel>
       <FloatingPointExceptions>true</FloatingPointExceptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(ConfigurationName)-$(PlatformName)-$(TargetName).lib</OutputFile>
