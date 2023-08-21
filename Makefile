@@ -1117,6 +1117,11 @@ ifndef MINGW
 endif
 endif
 
+ifeq ($(ARCH),x86_64)
+  Q3OBJ += \
+    $(B)/client/snd_mix_x86_64.o
+endif
+
 ifeq ($(HAVE_VM_COMPILED),true)
   ifeq ($(ARCH),x86)
     Q3OBJ += $(B)/client/vm_x86.o
