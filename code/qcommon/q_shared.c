@@ -1977,6 +1977,11 @@ int Info_RemoveKey( char *s, const char *key )
 		pkey = s;
 		while ( *s != '\\' ) {
 			if ( *s == '\0' ) {
+				if ( s != start ) {
+					// remove any trailing empty keys
+					*start = '\0';
+					ret += (int)(s - start);
+				}
 				return ret;
 			}
 			++s;
