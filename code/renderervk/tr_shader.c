@@ -3207,7 +3207,7 @@ static shader_t *FinishShader( void ) {
 						break;
 					case GL_ADD:
 						pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1 | TESS_ST2;
-						def.shader_type = TYPE_MULTI_TEXTURE_ADD3_IDENTITY;
+						def.shader_type = TYPE_MULTI_TEXTURE_ADD3_1_1;
 						break;
 					case GL_ADD_NONIDENTITY:
 						pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1 | TESS_ST2;
@@ -3247,21 +3247,60 @@ static shader_t *FinishShader( void ) {
 						break;
 				}
 			}
-			else
-			switch ( pStage->mtEnv ) {
+			else {
+				switch ( pStage->mtEnv ) {
 				case GL_MODULATE:
 					pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1;
 					def.shader_type = TYPE_MULTI_TEXTURE_MUL2;
+					if ( pStage->bundle[0].rgbGen == CGEN_IDENTITY && pStage->bundle[1].rgbGen == CGEN_IDENTITY ) {
+						if ( pStage->bundle[1].alphaGen == AGEN_SKIP && pStage->bundle[0].alphaGen == AGEN_SKIP ) {
+							pStage->tessFlags = TESS_ST0 | TESS_ST1;
+							def.shader_type = TYPE_MULTI_TEXTURE_MUL2_IDENTITY;
+						}
+					} else if ( pStage->bundle[0].rgbGen == CGEN_IDENTITY_LIGHTING && pStage->bundle[1].rgbGen == CGEN_IDENTITY_LIGHTING && pStage->bundle[0].alphaGen == pStage->bundle[1].alphaGen ) {
+						if ( pStage->bundle[0].alphaGen == AGEN_SKIP || pStage->bundle[0].alphaGen == AGEN_IDENTITY ) {
+							pStage->tessFlags = TESS_ST0 | TESS_ST1;
+							def.shader_type = TYPE_MULTI_TEXTURE_MUL2_FIXED_COLOR;
+							def.color.rgb = tr.identityLightByte;
+							def.color.alpha = pStage->bundle[0].alphaGen == AGEN_IDENTITY ? 255 : tr.identityLightByte;
+						}
+					}
 					break;
 				case GL_ADD:
 					pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1;
-					def.shader_type = TYPE_MULTI_TEXTURE_ADD2_IDENTITY;
+					def.shader_type = TYPE_MULTI_TEXTURE_ADD2_1_1;
+					if ( pStage->bundle[0].rgbGen == CGEN_IDENTITY && pStage->bundle[1].rgbGen == CGEN_IDENTITY ) {
+						if ( pStage->bundle[0].alphaGen == AGEN_SKIP && pStage->bundle[1].alphaGen == AGEN_SKIP ) {
+							pStage->tessFlags = TESS_ST0 | TESS_ST1;
+							def.shader_type = TYPE_MULTI_TEXTURE_ADD2_IDENTITY;
+						}
+					} else if ( pStage->bundle[0].rgbGen == CGEN_IDENTITY_LIGHTING && pStage->bundle[1].rgbGen == CGEN_IDENTITY_LIGHTING && pStage->bundle[0].alphaGen == pStage->bundle[1].alphaGen ) {
+						if ( pStage->bundle[0].alphaGen == AGEN_SKIP || pStage->bundle[0].alphaGen == AGEN_IDENTITY ) {
+							pStage->tessFlags = TESS_ST0 | TESS_ST1;
+							def.shader_type = TYPE_MULTI_TEXTURE_ADD2_FIXED_COLOR;
+							def.color.rgb = tr.identityLightByte;
+							def.color.alpha = pStage->bundle[0].alphaGen == AGEN_IDENTITY ? 255 : tr.identityLightByte;
+						}
+					}
 					break;
 				case GL_ADD_NONIDENTITY:
 					pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | TESS_ST1;
 					def.shader_type = TYPE_MULTI_TEXTURE_ADD2;
+					if ( pStage->bundle[0].rgbGen == CGEN_IDENTITY && pStage->bundle[1].rgbGen == CGEN_IDENTITY ) {
+						if ( pStage->bundle[0].alphaGen == AGEN_SKIP && pStage->bundle[1].alphaGen == AGEN_SKIP ) {
+							pStage->tessFlags = TESS_ST0 | TESS_ST1;
+							def.shader_type = TYPE_MULTI_TEXTURE_ADD2_IDENTITY;
+						}
+					} else if ( pStage->bundle[0].rgbGen == CGEN_IDENTITY_LIGHTING && pStage->bundle[1].rgbGen == CGEN_IDENTITY_LIGHTING && pStage->bundle[0].alphaGen == pStage->bundle[1].alphaGen ) {
+						if ( pStage->bundle[0].alphaGen == AGEN_SKIP || pStage->bundle[0].alphaGen == AGEN_IDENTITY ) {
+							pStage->tessFlags = TESS_ST0 | TESS_ST1;
+							def.shader_type = TYPE_MULTI_TEXTURE_ADD2_FIXED_COLOR;
+							def.color.rgb = tr.identityLightByte;
+							def.color.alpha = pStage->bundle[0].alphaGen == AGEN_IDENTITY ? 255 : tr.identityLightByte;
+						}
+					}
 					break;
-
+				// extended blending modes
 				case GL_BLEND_MODULATE:
 					pStage->tessFlags = TESS_RGBA0 | TESS_RGBA1 | TESS_ST0 | TESS_ST1;
 					def.shader_type = TYPE_BLEND2_MUL;
@@ -3294,7 +3333,21 @@ static shader_t *FinishShader( void ) {
 				default:
 					pStage->tessFlags = TESS_RGBA0 | TESS_ST0;
 					def.shader_type = TYPE_SIGNLE_TEXTURE;
+					if ( pStage->bundle[0].rgbGen == CGEN_IDENTITY ) {
+						if ( pStage->bundle[0].alphaGen == AGEN_SKIP ) {
+							pStage->tessFlags = TESS_ST0;
+							def.shader_type = TYPE_SIGNLE_TEXTURE_IDENTITY;
+						}
+					} else if ( pStage->bundle[0].rgbGen == CGEN_IDENTITY_LIGHTING ) {
+						if ( pStage->bundle[0].alphaGen == AGEN_SKIP || pStage->bundle[0].alphaGen == AGEN_IDENTITY ) {
+							pStage->tessFlags = TESS_ST0;
+							def.shader_type = TYPE_SIGNLE_TEXTURE_FIXED_COLOR;
+							def.color.rgb = tr.identityLightByte;
+							def.color.alpha = pStage->bundle[0].alphaGen == AGEN_IDENTITY ? 255 : tr.identityLightByte;
+						}
+					}
 					break;
+				}
 			}
 
 			for ( env_mask = 0, n = 0; n < pStage->numTexBundles; n++ ) {

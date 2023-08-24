@@ -291,7 +291,7 @@ for each RE_EndFrame
 ====================
 */
 void RE_BeginFrame( stereoFrame_t stereoFrame ) {
-	drawBufferCommand_t	*cmd = NULL;
+	drawBufferCommand_t *cmd;
 
 	if ( !tr.registered ) {
 		return;
@@ -304,6 +304,8 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 #ifdef USE_VULKAN
 	backEnd.doneBloom = qfalse;
 #endif
+
+	backEnd.color2D.u32 = 0;
 
 	tr.frameCount++;
 	tr.frameSceneNum = 0;
