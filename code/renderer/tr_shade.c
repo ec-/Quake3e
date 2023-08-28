@@ -327,7 +327,7 @@ ProjectDlightTexture
 Perform dynamic lighting with another rendering pass
 ===================
 */
-static void ProjectDlightTexture_scalar( void ) {
+static void ProjectDlightTexture( void ) {
 	int		i, l;
 	vec3_t	origin;
 	float	*texCoords;
@@ -456,11 +456,6 @@ static void ProjectDlightTexture_scalar( void ) {
 		backEnd.pc.c_dlightIndexes += numIndexes;
 	}
 }
-
-
-static void ProjectDlightTexture( void ) {
-	ProjectDlightTexture_scalar();
-}
 #endif // USE_LEGACY_DLIGHTS
 
 
@@ -472,13 +467,11 @@ Blends a fog texture on top of everything else
 ===================
 */
 static void RB_FogPass( void ) {
-	const fog_t	*fog;
-	int			i;
-
-	fog = tr.world->fogs + tess.fogNum;
+	const fog_t *fog = tr.world->fogs + tess.fogNum;
+	int i;
 
 	for ( i = 0; i < tess.numVertexes; i++ ) {
-		tess.svars.colors[i].u32 = fog->colorInt.u32;
+		tess.svars.colors[i] = fog->colorInt;
 	}
 
 	RB_CalcFogTexCoords( ( float * ) tess.svars.texcoords[0] );
@@ -511,7 +504,7 @@ void R_ComputeColors( const shaderStage_t *pStage )
 {
 	int		i;
 
-	if ( !tess.numVertexes )
+	if ( tess.numVertexes == 0 )
 		return;
 
 	//
@@ -534,7 +527,7 @@ void R_ComputeColors( const shaderStage_t *pStage )
 			break;
 		case CGEN_CONST:
 			for ( i = 0; i < tess.numVertexes; i++ ) {
-				tess.svars.colors[i].u32 = pStage->constantColor.u32;
+				tess.svars.colors[i] = pStage->constantColor;
 			}
 			break;
 		case CGEN_VERTEX:
@@ -580,7 +573,7 @@ void R_ComputeColors( const shaderStage_t *pStage )
 				fog = tr.world->fogs + tess.fogNum;
 
 				for ( i = 0; i < tess.numVertexes; i++ ) {
-					tess.svars.colors[i].u32 = fog->colorInt.u32;
+					tess.svars.colors[i] = fog->colorInt;
 				}
 			}
 			break;

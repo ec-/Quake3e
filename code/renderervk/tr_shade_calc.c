@@ -306,7 +306,7 @@ static void DeformText( const char *text ) {
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
 
-	color.u32 = 0xFFFFFFFF;
+	color.u32 = ~0U;
 
 	// draw each character
 	for ( i = 0 ; i < len ; i++ ) {

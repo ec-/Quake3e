@@ -65,7 +65,7 @@ You can also use '$' prefix in <value> to dereference any server-side cvar, for 
 		drop "raize your \snaps"
 	}
 
-Example of custom password cvar fltering:
+Example of custom password cvar filtering:
 
 	xxpassword != "12345678" {
 		drop "sorry, this is a private server"

@@ -769,7 +769,7 @@ void RB_DrawSun( float scale, shader_t *shader ) {
 	if ( !backEnd.skyRenderedThisView )
 		return;
 
-	sunColor.u32 = 0xFFFFFFFF;
+	sunColor.u32 = ~0U;
 
 	qglLoadMatrixf( backEnd.viewParms.world.modelMatrix );
 

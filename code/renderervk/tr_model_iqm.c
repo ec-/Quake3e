@@ -139,14 +139,16 @@ static void QuatSlerp(const quat_t from, const quat_t _to, float fraction, quat_
 	out[2] = from[2] * backlerp + to[2] * lerp;
 	out[3] = from[3] * backlerp + to[3] * lerp;
 }
+
+
 static vec_t QuatNormalize2( const quat_t v, quat_t out) {
-	float	length, ilength;
+	float	length;
 
 	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2] + v[3]*v[3];
 
 	if (length) {
-		/* writing it this way allows gcc to recognize that rsqrt can be used */
-		ilength = 1/(float)sqrt (length);
+		/* writing it this way allows gcc to recognize that rsqrt can be used with -ffast-math */
+		const float ilength = 1.0f / sqrtf( length );
 		/* sqrt(length) = length * (1 / sqrt(length)) */
 		length *= ilength;
 		out[0] = v[0]*ilength;

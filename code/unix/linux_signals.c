@@ -36,7 +36,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 static qboolean signalcaught = qfalse;
 
-extern void Sys_Exit( int code );
+extern void NORETURN Sys_Exit( int code );
 
 static void signal_handler( int sig )
 {
