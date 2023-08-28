@@ -374,7 +374,11 @@ ProjectDlightTexture
 Perform dynamic lighting with another rendering pass
 ===================
 */
-static void ProjectDlightTexture_scalar( void ) {
+#ifdef USE_VULKAN
+static qboolean ProjectDlightTexture( void ) {
+#else
+static void ProjectDlightTexture( void ) {
+#endif
 	int		i, l;
 	vec3_t	origin;
 	float	*texCoords;
@@ -382,6 +386,7 @@ static void ProjectDlightTexture_scalar( void ) {
 	byte	clipBits[SHADER_MAX_VERTEXES];
 #ifdef USE_VULKAN
 	uint32_t pipeline;
+	qboolean rebindIndex = qfalse;
 #else
 	float	texCoordsArray[SHADER_MAX_VERTEXES][2];
 	byte	colorArray[SHADER_MAX_VERTEXES][4];
@@ -394,7 +399,11 @@ static void ProjectDlightTexture_scalar( void ) {
 	const dlight_t *dl;
 
 	if ( !backEnd.refdef.num_dlights ) {
+#ifdef USE_VULKAN
+		return rebindIndex;
+#else
 		return;
+#endif
 	}
 
 	for ( l = 0 ; l < backEnd.refdef.num_dlights ; l++ ) {
@@ -487,7 +496,7 @@ static void ProjectDlightTexture_scalar( void ) {
 			numIndexes += 3;
 		}
 
-		if ( !numIndexes ) {
+		if ( numIndexes == 0 ) {
 			continue;
 		}
 
@@ -502,6 +511,10 @@ static void ProjectDlightTexture_scalar( void ) {
 		GL_Bind( tr.dlightImage );
 
 #ifdef USE_VULKAN
+		if ( numIndexes != tess.numIndexes ) {
+			// re-bind index buffer for later fog pass
+			rebindIndex = qtrue;
+		}
 		pipeline = vk.dlight_pipelines[dl->additive > 0 ? 1 : 0][tess.shader->cullType][tess.shader->polygonOffset];
 		vk_bind_pipeline( pipeline );
 		vk_bind_index_ext( numIndexes, hitIndexes );
@@ -522,12 +535,12 @@ static void ProjectDlightTexture_scalar( void ) {
 		backEnd.pc.c_totalIndexes += numIndexes;
 		backEnd.pc.c_dlightIndexes += numIndexes;
 	}
+
+#ifdef USE_VULKAN
+	return rebindIndex;
+#endif
 }
 
-
-static void ProjectDlightTexture( void ) {
-	ProjectDlightTexture_scalar();
-}
 #endif // USE_LEGACY_DLIGHTS
 
 uint32_t VK_PushUniform( const vkUniform_t *uniform );
@@ -541,26 +554,27 @@ RB_FogPass
 Blends a fog texture on top of everything else
 ===================
 */
-static void RB_FogPass( void ) {
 #ifdef USE_VULKAN
+static void RB_FogPass( qboolean rebindIndex ) {
 	uint32_t pipeline = vk.fog_pipelines[tess.shader->fogPass - 1][tess.shader->cullType][tess.shader->polygonOffset];
 #ifdef USE_FOG_ONLY
 	int fog_stage;
 
 	// fog parameters
 	vk_bind_pipeline( pipeline );
+	if ( rebindIndex ) {
+		vk_bind_index();
+	}
 	VK_SetFogParams( &uniform, &fog_stage );
 	VK_PushUniform( &uniform );
 	vk_update_descriptor( 3, tr.fogImage->descriptor );
 	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 #else
-	const fog_t	*fog;
-	int			i;
-
-	fog = tr.world->fogs + tess.fogNum;
+	const fog_t	*fog = tr.world->fogs + tess.fogNum;
+	int	i;
 
 	for ( i = 0; i < tess.numVertexes; i++ ) {
-		tess.svars.colors[0][i].u32 = fog->colorInt.u32;
+		tess.svars.colors[0][i] = fog->colorInt;
 	}
 
 	RB_CalcFogTexCoords( ( float * ) tess.svars.texcoords[0] );
@@ -568,10 +582,14 @@ static void RB_FogPass( void ) {
 	GL_Bind( tr.fogImage );
 
 	vk_bind_pipeline( pipeline );
+	if ( rebindIndex ) {
+		vk_bind_index();
+	}
 	vk_bind_geometry( TESS_ST0 | TESS_RGBA0 );
 	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 #endif
 #else
+static void RB_FogPass( void ) {
 	const fog_t	*fog;
 	int			i;
 
@@ -606,7 +624,7 @@ void R_ComputeColors( const int b, color4ub_t *dest, const shaderStage_t *pStage
 {
 	int		i;
 
-	if ( !tess.numVertexes )
+	if ( tess.numVertexes == 0 )
 		return;
 
 	//
@@ -629,7 +647,7 @@ void R_ComputeColors( const int b, color4ub_t *dest, const shaderStage_t *pStage
 			break;
 		case CGEN_CONST:
 			for ( i = 0; i < tess.numVertexes; i++ ) {
-				dest[i].u32 = pStage->bundle[b].constantColor.u32;
+				dest[i] = pStage->bundle[b].constantColor;
 			}
 			break;
 		case CGEN_VERTEX:
@@ -670,12 +688,10 @@ void R_ComputeColors( const int b, color4ub_t *dest, const shaderStage_t *pStage
 			break;
 		case CGEN_FOG:
 			{
-				const fog_t *fog;
-
-				fog = tr.world->fogs + tess.fogNum;
+				const fog_t *fog = tr.world->fogs + tess.fogNum;
 
 				for ( i = 0; i < tess.numVertexes; i++ ) {
-					dest[i].u32 = fog->colorInt.u32;
+					dest[i] = fog->colorInt;
 				}
 			}
 			break;
@@ -1194,6 +1210,9 @@ void VK_LightingPass( void )
 
 void RB_StageIteratorGeneric( void )
 {
+#ifdef USE_VULKAN
+	qboolean rebindIndex = qfalse;
+#endif
 	qboolean fogCollapse = qfalse;
 
 #ifdef USE_VBO
@@ -1225,14 +1244,22 @@ void RB_StageIteratorGeneric( void )
 #endif
 	if ( tess.dlightBits && tess.shader->sort <= SS_OPAQUE && !(tess.shader->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) ) {
 		if ( !fogCollapse ) {
+#ifdef USE_VULKAN
+			rebindIndex = ProjectDlightTexture();
+#else	
 			ProjectDlightTexture();
+#endif
 		}
 	}
 #endif // USE_LEGACY_DLIGHTS
 
 	// now do fog
 	if ( tess.fogNum && tess.shader->fogPass && !fogCollapse ) {
+#ifdef USE_VULKAN
+		RB_FogPass( rebindIndex );
+#else
 		RB_FogPass();
+#endif
 	}
 }
 
