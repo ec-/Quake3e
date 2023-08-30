@@ -200,7 +200,7 @@ for %%f in (*.frag) do (
 
 @rem single-texture fragment, depth-fragment
 
-"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_ATEST -DUSE_DF
+"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_CLX_IDENT -DUSE_ATEST -DUSE_DF
 "%bh%" "%tmpf%" %outf% frag_tx0_df
 
 @rem double-texture fragment
