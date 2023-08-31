@@ -5061,8 +5061,8 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassI
 	VkShaderModule *vs_module = NULL;
 	VkShaderModule *fs_module = NULL;
 	//int32_t vert_spec_data[1]; // clippping
-	floatint_t frag_spec_data[10]; // 0:alpha-test-func, 1:alpha-test-value, 2:depth-fragment, 3:alpha-to-coverage, 4:color_mode, 5:abs_light, 6:multitexture mode, 7:discard mode, 8: ident.color, 9 - ident.alpha
-	VkSpecializationMapEntry spec_entries[11];
+	floatint_t frag_spec_data[11]; // 0:alpha-test-func, 1:alpha-test-value, 2:depth-fragment, 3:alpha-to-coverage, 4:color_mode, 5:abs_light, 6:multitexture mode, 7:discard mode, 8: ident.color, 9 - ident.alpha, 10 - acff
+	VkSpecializationMapEntry spec_entries[12];
 	//VkSpecializationInfo vert_spec_info;
 	VkSpecializationInfo frag_spec_info;
 	VkPipelineVertexInputStateCreateInfo vertex_input_state;
@@ -5096,7 +5096,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassI
 
 		case TYPE_SIGNLE_TEXTURE_DF:
 			state_bits |= GLS_DEPTHMASK_TRUE;
-			vs_module = &vk.modules.vert.gen[0][0][0][0];
+			vs_module = &vk.modules.vert.ident1[0][0][0];
 			fs_module = &vk.modules.frag.gen0_df;
 			break;
 
@@ -5402,6 +5402,12 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassI
 	frag_spec_data[8].f = ((float)def->color.rgb) / 255.0;
 	frag_spec_data[9].f = ((float)def->color.alpha) / 255.0;
 
+	if ( def->fog_stage ) {
+		frag_spec_data[10].i = def->acff;
+	} else {
+		frag_spec_data[10].i = 0;
+	}
+
 	//
 	// vertex module specialization data
 	//
@@ -5462,9 +5468,13 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassI
 	spec_entries[10].offset = 9 * sizeof( int32_t );
 	spec_entries[10].size = sizeof( float );
 
-	frag_spec_info.mapEntryCount = 10;
+	spec_entries[11].constantID = 10; // acff
+	spec_entries[11].offset = 10 * sizeof( int32_t );
+	spec_entries[11].size = sizeof( int32_t );
+
+	frag_spec_info.mapEntryCount = 11;
 	frag_spec_info.pMapEntries = spec_entries + 1;
-	frag_spec_info.dataSize = sizeof( int32_t ) * 10;
+	frag_spec_info.dataSize = sizeof( int32_t ) * 11;
 	frag_spec_info.pData = &frag_spec_data[0];
 	shader_stages[1].pSpecializationInfo = &frag_spec_info;
 
@@ -5488,6 +5498,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassI
 			push_attr( 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT );
 			break;
 
+		case TYPE_SIGNLE_TEXTURE_DF:
 		case TYPE_SIGNLE_TEXTURE_IDENTITY:
 		case TYPE_SIGNLE_TEXTURE_FIXED_COLOR:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
@@ -5497,7 +5508,6 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassI
 			break;
 
 		case TYPE_SIGNLE_TEXTURE:
-		case TYPE_SIGNLE_TEXTURE_DF:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_bind( 1, sizeof( color4ub_t ) );				// color array
 			push_bind( 2, sizeof( vec2_t ) );					// st0 array

@@ -156,10 +156,11 @@ typedef struct {
 	qboolean mirror;
 	Vk_Shadow_Phase shadow_phase;
 	Vk_Primitive_Topology primitives;
-	int fog_stage; // off, fog-in / fog-out
 	int line_width;
+	int fog_stage; // off, fog-in / fog-out
 	int abs_light;
 	int allow_discard;
+	int acff; // none, rgb, rgba, alpha
 	struct {
 		byte rgb;
 		byte alpha;

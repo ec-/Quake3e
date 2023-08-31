@@ -91,6 +91,10 @@ layout (constant_id = 8) const float identity_color = 1.0;
 layout (constant_id = 9) const float identity_alpha = 1.0;
 #endif
 
+#ifdef USE_FOG
+layout (constant_id = 10) const int acff = 0; // NONE, RGB, RGBA, ALPHA
+#endif
+
 #ifdef USE_ATEST
 float CorrectAlpha(float threshold, float alpha, vec2 tc)
 {
@@ -456,7 +460,19 @@ void main() {
 #endif
 
 #ifdef USE_FOG
-	base = mix( base, fog * fogColor, fog.a );
+	if ( acff == 1 ) {
+		// ACFF_RGB
+		base.rgb = base.rgb * (1.0 - fog.w);
+	} else if ( acff == 2 ) {
+		// ACFF_RGBA
+		base = base * (1.0 - fog.w);
+	} else if ( acff == 3 ) {
+		// ACFF_ALPHA
+		base.a = base.a * (1.0 - fog.w);
+	} else {
+		// default: ACFF_NONE
+		base = mix( base, fog * fogColor, fog.a );
+	}
 #endif
 
 	if ( discard_mode == 1 ) {
