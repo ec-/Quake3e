@@ -1264,6 +1264,7 @@ typedef struct {
 	drawSurfsCommand_t		*drawSurfCmd;
 	int						numDrawSurfCmds;
 	int						lastRenderCommand;
+	int						numFogs; // read before parsing shaders
 #endif
 
 	qboolean				vertexLightingAllowed;
