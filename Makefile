@@ -466,6 +466,8 @@ ifeq ($(COMPILE_PLATFORM),darwin)
 
   BASE_CFLAGS += -Wno-unused-result
 
+  BASE_CFLAGS += -DMACOS_X
+
   OPTIMIZE = -O2 -fvisibility=hidden
 
   SHLIBEXT = dylib
