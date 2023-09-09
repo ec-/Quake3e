@@ -67,10 +67,12 @@ void R_BindAnimatedImage( const textureBundle_t *bundle ) {
 		return;
 	}
 
+#ifdef USE_FBO
 	if ( bundle->isScreenMap && backEnd.viewParms.frameSceneNum == 1 ) {
 		GL_BindTexNum( FBO_ScreenTexture() );
 		return;
 	}
+#endif
 
 	if ( bundle->numImageAnimations <= 1 ) {
 		GL_Bind( bundle->image[0] );
@@ -111,7 +113,10 @@ static void DrawTris( const shaderCommands_t *input ) {
 		return;
 
 	GL_ProgramDisable();
+
+#ifdef USE_PMLIGHT
 	tess.dlightUpdateParams = qtrue;
+#endif
 
 	GL_ClientState( 0, CLS_NONE );
 	qglDisable( GL_TEXTURE_2D );
@@ -304,6 +309,7 @@ static void DrawMultitextured( const shaderCommands_t *input, int stage ) {
 	//
 	// disable texturing on TEXTURE1, then select TEXTURE0
 	//
+#ifdef USE_VBO
 	if ( r_vbo->integer ) {
 		// some drivers may try to load texcoord[1] data even with multi-texturing disabled
 		// (and actually gpu shaders doesn't care about conventional GL_TEXTURE_2D states)
@@ -312,6 +318,7 @@ static void DrawMultitextured( const shaderCommands_t *input, int stage ) {
 		// or smaller set - which will cause out-of-bounds index access/crash during non-multitexture rendering
 		// GL_ClientState( 1, GLS_NONE );
 	}
+#endif // USE_VBO
 
 	qglDisable( GL_TEXTURE_2D );
 
@@ -879,6 +886,7 @@ void RB_StageIteratorGeneric( void )
 	GL_ProgramDisable();
 #endif // USE_PMLIGHT
 
+#ifdef USE_VBO
 	if ( tess.vboIndex )
 	{
 		RB_StageIteratorVBO();
@@ -886,6 +894,7 @@ void RB_StageIteratorGeneric( void )
 	}
 
 	VBO_UnBind();
+#endif
 
 	input = &tess;
 	shader = input->shader;
@@ -1008,7 +1017,9 @@ void RB_EndSurface( void ) {
 	input = &tess;
 
 	if ( input->numIndexes == 0 ) {
+#ifdef USE_VBO
 		VBO_UnBind();
+#endif
 		return;
 	}
 
@@ -1027,7 +1038,9 @@ void RB_EndSurface( void ) {
 
 	// for debugging of sort order issues, stop rendering after a given sort value
 	if ( r_debugSort->integer && r_debugSort->integer < tess.shader->sort && !backEnd.doneSurfaces ) {
+#ifdef USE_VBO
 		VBO_UnBind();
+#endif
 		return;
 	}
 
@@ -1056,7 +1069,11 @@ void RB_EndSurface( void ) {
 	//
 	// draw debugging stuff
 	//
+#ifdef USE_VBO
 	if ( !VBO_Active() ) {
+#else
+	{
+#endif
 		if ( r_showtris->integer ) {
 			DrawTris( input );
 		}

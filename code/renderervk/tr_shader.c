@@ -2063,7 +2063,7 @@ typedef struct {
 	int		multitextureBlend;
 } collapse_t;
 
-static collapse_t	collapse[] = {
+static const collapse_t collapse[] = {
 	{ 0, GLS_DSTBLEND_SRC_COLOR | GLS_SRCBLEND_ZERO,
 		GL_MODULATE, 0 },
 
