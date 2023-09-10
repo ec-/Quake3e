@@ -1,4 +1,4 @@
-#if defined(MACOS_X)
+#if defined(__APPLE__)
 #undef ELF
 #endif
 
