@@ -4136,10 +4136,10 @@ void vk_shutdown( void )
 		for ( j = 0; j < 2; j++ ) {
 			for ( k = 0; k < 2; k++ ) {
 				qvkDestroyShaderModule( vk.device, vk.modules.vert.ident1[i][j][k], NULL );
-				vk.modules.vert.ident1[i][j][k] = NULL;
+				vk.modules.vert.ident1[i][j][k] = VK_NULL_HANDLE;
 			}
 			qvkDestroyShaderModule( vk.device, vk.modules.frag.ident1[i][j], NULL );
-			vk.modules.frag.ident1[i][j] = NULL;
+			vk.modules.frag.ident1[i][j] = VK_NULL_HANDLE;
 		}
 	}
 
@@ -4147,10 +4147,10 @@ void vk_shutdown( void )
 		for ( j = 0; j < 2; j++ ) {
 			for ( k = 0; k < 2; k++ ) {
 				qvkDestroyShaderModule( vk.device, vk.modules.vert.fixed[i][j][k], NULL );
-				vk.modules.vert.fixed[i][j][k] = NULL;
+				vk.modules.vert.fixed[i][j][k] = VK_NULL_HANDLE;
 			}
 			qvkDestroyShaderModule( vk.device, vk.modules.frag.fixed[i][j], NULL );
-			vk.modules.frag.fixed[i][j] = NULL;
+			vk.modules.frag.fixed[i][j] = VK_NULL_HANDLE;
 		}
 	}
 

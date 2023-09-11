@@ -679,11 +679,13 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 
 			if ( !Q_stricmp( token, "screenMap" ) ) {
 				flags = IMGFLAG_NONE;
+#ifdef USE_FBO
 				if ( fboEnabled ) {
 					stage->bundle[0].isScreenMap = qtrue;
 					shader.hasScreenMap = qtrue;
 					tr.needScreenMap = qtrue;
 				}
+#endif
 			} else {
 				flags = IMGFLAG_CLAMPTOEDGE;
 			}
@@ -2075,7 +2077,7 @@ typedef struct {
 	int		multitextureBlend;
 } collapse_t;
 
-static collapse_t	collapse[] = {
+static const collapse_t collapse[] = {
 	{ 0, GLS_DSTBLEND_SRC_COLOR | GLS_SRCBLEND_ZERO,
 		GL_MODULATE, 0 },
 
@@ -2391,12 +2393,14 @@ static void FixRenderCommandList( int newShader ) {
 				curCmd = (const void *)(sb_cmd + 1);
 				break;
 				}
+#ifdef USE_FBO
 			case RC_FINISHBLOOM:
 				{
 				const finishBloomCommand_t *fb_cmd = (const finishBloomCommand_t *)curCmd;
 				curCmd = (const void *)(fb_cmd + 1);
 				break;
 				}
+#endif // USE_FBO
 			case RC_COLORMASK:
 				{
 				const colorMaskCommand_t *cm_cmd = (const colorMaskCommand_t *)curCmd;

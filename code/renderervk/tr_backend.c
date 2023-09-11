@@ -589,7 +589,9 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	int				i;
 	drawSurf_t		*drawSurf;
 	unsigned int	oldSort;
+#ifdef USE_PMLIGHT
 	float			oldShaderSort;
+#endif
 	double			originalTime; // -EC-
 
 	// save original time for entity shader offsets
@@ -604,7 +606,9 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	wasCrosshair = qfalse;
 #endif
 	oldSort = MAX_UINT;
+#ifdef USE_PMLIGHT
 	oldShaderSort = -1;
+#endif
 	depthRange = qfalse;
 
 	backEnd.pc.c_surfaces += numDrawSurfs;

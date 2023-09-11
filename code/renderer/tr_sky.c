@@ -821,7 +821,9 @@ void RB_StageIteratorSky( void ) {
 		return;
 	}
 
+#ifdef USE_VBO
 	VBO_UnBind();
+#endif
 
 	// go through all the polygons and project them onto
 	// the sky box to see which blocks on each side need
