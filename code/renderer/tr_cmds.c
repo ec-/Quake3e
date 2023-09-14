@@ -302,7 +302,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 
 	backEnd.doneBloom = qfalse;
 
-	backEnd.color2D.u32 = 0;
+	backEnd.color2D.u32 = ~0U;
 
 	// check for errors
 	GL_CheckErrors();
