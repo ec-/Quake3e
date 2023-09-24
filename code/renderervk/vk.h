@@ -50,6 +50,9 @@ typedef enum {
 	TYPE_SIGNLE_TEXTURE_FIXED_COLOR,
 	TYPE_SIGNLE_TEXTURE_FIXED_COLOR_ENV,
 
+	TYPE_SIGNLE_TEXTURE_ENT_COLOR,
+	TYPE_SIGNLE_TEXTURE_ENT_COLOR_ENV,
+
 	TYPE_MULTI_TEXTURE_ADD2_IDENTITY,
 	TYPE_MULTI_TEXTURE_ADD2_IDENTITY_ENV,
 	TYPE_MULTI_TEXTURE_MUL2_IDENTITY,
@@ -126,18 +129,18 @@ typedef enum {
 } Vk_Primitive_Topology;
 
 typedef enum {
-	DEPTH_RANGE_NORMAL, // [0..1]
-	DEPTH_RANGE_ZERO, // [0..0]
-	DEPTH_RANGE_ONE, // [1..1]
-	DEPTH_RANGE_WEAPON, // [0..0.3]
+	DEPTH_RANGE_NORMAL,		// [0..1]
+	DEPTH_RANGE_ZERO,		// [0..0]
+	DEPTH_RANGE_ONE,		// [1..1]
+	DEPTH_RANGE_WEAPON,		// [0..0.3]
 	DEPTH_RANGE_COUNT
 }  Vk_Depth_Range;
 
 typedef struct {
 	VkSamplerAddressMode address_mode; // clamp/repeat texture addressing mode
-	int gl_mag_filter; // GL_XXX mag filter
-	int gl_min_filter; // GL_XXX min filter
-	qboolean max_lod_1_0; // fixed 1.0 lod
+	int gl_mag_filter;		// GL_XXX mag filter
+	int gl_min_filter;		// GL_XXX min filter
+	qboolean max_lod_1_0;	// fixed 1.0 lod
 	qboolean noAnisotropy;
 } Vk_Sampler_Def;
 
@@ -174,18 +177,23 @@ typedef struct VK_Pipeline {
 
 // this structure must be in sync with shader uniforms!
 typedef struct vkUniform_s {
-	// vertex shader reference
-	vec4_t eyePos;
-	vec4_t lightPos;
-	// vertex - fog parameters
-	vec4_t fogDistanceVector;
-	vec4_t fogDepthVector;
-	vec4_t fogEyeT;
-	// fragment shader reference
-	vec4_t lightColor; // rgb + 1/(r*r)
-	vec4_t fogColor;
-	// fragment - linear dynamic light
-	vec4_t lightVector;
+	// light/env parameters:
+	vec4_t eyePos;				// vertex
+	union {
+		struct {
+			vec4_t pos;			// vertex: light origin
+			vec4_t color;		// fragment: rgb + 1/(r*r)
+			vec4_t vector;		// fragment: linear dynamic light
+		} light;
+		struct {
+			vec4_t color[3];	// ent.color[3]
+		} ent;
+	};
+	// fog parameters:
+	vec4_t fogDistanceVector;	// vertex
+	vec4_t fogDepthVector;		// vertex
+	vec4_t fogEyeT;				// vertex
+	vec4_t fogColor;			// fragment
 } vkUniform_t;
 
 #define TESS_XYZ   (1)
@@ -197,7 +205,10 @@ typedef struct vkUniform_s {
 #define TESS_ST2   (64)
 #define TESS_NNN   (128)
 #define TESS_VPOS  (256)  // uniform with eyePos
-#define TESS_ENV   (512) // mark shader stage with environment mapping
+#define TESS_ENV   (512)  // mark shader stage with environment mapping
+#define TESS_ENT0  (1024) // uniform with ent.color[0]
+#define TESS_ENT1  (2048) // uniform with ent.color[1]
+#define TESS_ENT2  (4096) // uniform with ent.color[2]
 //
 // Initialization.
 //
@@ -442,6 +453,7 @@ typedef struct {
 			VkShaderModule gen[3][2][2]; // tx[0,1,2] cl[0,1] fog[0,1]
 			VkShaderModule ident1[2][2]; // tx[0,1], fog[0,1]
 			VkShaderModule fixed[2][2];  // tx[0,1], fog[0,1]
+			VkShaderModule ent[1][2];    // tx[0], fog[0,1]
 			VkShaderModule light[2][2];  // linear[0,1] fog[0,1]
 		} frag;
 
