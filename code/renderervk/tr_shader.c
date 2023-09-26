@@ -3422,6 +3422,12 @@ static shader_t *FinishShader( void ) {
 								def.color.alpha = pStage->bundle[0].alphaGen == AGEN_IDENTITY ? 255 : tr.identityLightByte;
 							}
 						}
+						else if ( pStage->bundle[0].rgbGen == CGEN_ENTITY ) {
+							if ( pStage->bundle[0].alphaGen == AGEN_ENTITY || pStage->bundle[0].alphaGen == AGEN_SKIP || pStage->bundle[0].alphaGen == AGEN_IDENTITY ) {
+								pStage->tessFlags = TESS_ST0 | TESS_ENT0;
+								def.shader_type = TYPE_SIGNLE_TEXTURE_ENT_COLOR;
+							}
+						}
 					}
 					break;
 				}

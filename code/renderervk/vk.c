@@ -2532,6 +2532,19 @@ static void vk_create_shader_modules( void )
 		}
 	}
 
+	vk.modules.frag.ent[0][0] = SHADER_MODULE( frag_tx0_ent );
+	vk.modules.frag.ent[0][1] = SHADER_MODULE( frag_tx0_ent_fog );
+	//vk.modules.frag.ent[1][0] = SHADER_MODULE( frag_tx1_ent );
+	//vk.modules.frag.ent[1][1] = SHADER_MODULE( frag_tx1_ent_fog );
+	for ( i = 0; i < 1; i++ ) {
+		const char *tx[] = { "single" /*, "double" */};
+		const char *fog[] = { "", "+fog" };
+		for ( j = 0; j < 2; j++ ) {
+			const char *s = va( "%s-texture entity-color%s fragment module", tx[i], fog[j] );
+			SET_OBJECT_NAME( vk.modules.frag.ent[i][j], s, VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT );
+		}
+	}
+
 	vk.modules.frag.gen[0][0][0] = SHADER_MODULE( frag_tx0 );
 	vk.modules.frag.gen[0][0][1] = SHADER_MODULE( frag_tx0_fog );
 
@@ -4154,6 +4167,13 @@ void vk_shutdown( void )
 		}
 	}
 
+	for ( i = 0; i < 1; i++ ) {
+		for ( j = 0; j < 2; j++ ) {
+			qvkDestroyShaderModule( vk.device, vk.modules.frag.ent[i][j], NULL );
+			vk.modules.frag.ent[i][j] = VK_NULL_HANDLE;
+		}
+	}
+
 	qvkDestroyShaderModule( vk.device, vk.modules.frag.gen0_df, NULL );
 
 	qvkDestroyShaderModule( vk.device, vk.modules.color_fs, NULL );
@@ -5110,6 +5130,16 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassI
 			fs_module = &vk.modules.frag.fixed[0][0];
 			break;
 
+		case TYPE_SIGNLE_TEXTURE_ENT_COLOR:
+			vs_module = &vk.modules.vert.fixed[0][0][0];
+			fs_module = &vk.modules.frag.ent[0][0];
+			break;
+
+		case TYPE_SIGNLE_TEXTURE_ENT_COLOR_ENV:
+			vs_module = &vk.modules.vert.fixed[0][1][0];
+			fs_module = &vk.modules.frag.ent[0][0];
+			break;
+
 		case TYPE_SIGNLE_TEXTURE:
 			vs_module = &vk.modules.vert.gen[0][0][0][0];
 			fs_module = &vk.modules.frag.gen[0][0][0];
@@ -5501,6 +5531,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassI
 		case TYPE_SIGNLE_TEXTURE_DF:
 		case TYPE_SIGNLE_TEXTURE_IDENTITY:
 		case TYPE_SIGNLE_TEXTURE_FIXED_COLOR:
+		case TYPE_SIGNLE_TEXTURE_ENT_COLOR:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_bind( 2, sizeof( vec2_t ) );					// st0 array
 			push_attr( 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT );
@@ -5529,6 +5560,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassI
 
 		case TYPE_SIGNLE_TEXTURE_IDENTITY_ENV:
 		case TYPE_SIGNLE_TEXTURE_FIXED_COLOR_ENV:
+		case TYPE_SIGNLE_TEXTURE_ENT_COLOR_ENV:
 			push_bind( 0, sizeof( vec4_t ) );					// xyz array
 			push_bind( 5, sizeof( vec4_t ) );					// normals
 			push_attr( 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT );

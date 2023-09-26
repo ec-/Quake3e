@@ -938,25 +938,28 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 #ifdef USE_VULKAN
 	uint32_t pipeline;
 	int fog_stage;
+	qboolean pushUniform;
 
 	vk_bind_index();
 
 	tess_flags = input->shader->tessFlags;
 
+	pushUniform = qfalse;
+
 #ifdef USE_FOG_COLLAPSE
 	if ( fogCollapse ) {
 		VK_SetFogParams( &uniform, &fog_stage );
 		VectorCopy( backEnd.or.viewOrigin, uniform.eyePos );
-		VK_PushUniform( &uniform );
 		vk_update_descriptor( 5, tr.fogImage->descriptor );
+		pushUniform = qtrue;
 	} else
 #endif
 	{
 		fog_stage = 0;
 		if ( tess_flags & TESS_VPOS ) {
 			VectorCopy( backEnd.or.viewOrigin, uniform.eyePos );
-			VK_PushUniform( &uniform );
 			tess_flags &= ~TESS_VPOS;
+			pushUniform = qtrue;
 		}
 	}
 #endif // USE_VULKAN
@@ -984,19 +987,32 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 				if ( tess_flags & ( TESS_RGBA0 << i ) ) {
 					R_ComputeColors( i, tess.svars.colors[i], pStage );
 				}
+				if ( tess_flags & (TESS_ENT0 << i) && backEnd.currentEntity ) {
+					uniform.ent.color[i][0] = backEnd.currentEntity->e.shader.rgba[0] / 255.0;
+					uniform.ent.color[i][1] = backEnd.currentEntity->e.shader.rgba[1] / 255.0;
+					uniform.ent.color[i][2] = backEnd.currentEntity->e.shader.rgba[2] / 255.0;
+					uniform.ent.color[i][3] = pStage->bundle[i].alphaGen == AGEN_IDENTITY ? 1.0 : (backEnd.currentEntity->e.shader.rgba[3] / 255.0);
+					pushUniform = qtrue;
+				}
 			}
+		}
+
+		if ( pushUniform ) {
+			pushUniform = qfalse;
+			VK_PushUniform( &uniform );
 		}
 
 		GL_SelectTexture( 0 );
 
-		if ( backEnd.viewParms.portalView == PV_MIRROR )
-			pipeline = pStage->vk_mirror_pipeline[ fog_stage ];
-		else
-			pipeline = pStage->vk_pipeline[ fog_stage ];
-
 		if ( r_lightmap->integer && pStage->bundle[1].lightmap != LIGHTMAP_INDEX_NONE ) {
 			//GL_SelectTexture( 0 );
 			GL_Bind( tr.whiteImage ); // replace diffuse texture with a white one thus effectively render only lightmap
+		}
+
+		if ( backEnd.viewParms.portalView == PV_MIRROR ) {
+			pipeline = pStage->vk_mirror_pipeline[fog_stage];
+		} else {
+			pipeline = pStage->vk_pipeline[fog_stage];
 		}
 
 		vk_bind_pipeline( pipeline );
@@ -1059,6 +1075,9 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 	}
 
 #ifdef USE_VULKAN
+	if ( pushUniform ) {
+		VK_PushUniform( &uniform );
+	}
 	if ( tess_flags ) // fog-only shaders?
 		vk_bind_geometry( tess_flags );
 #endif
@@ -1098,25 +1117,25 @@ static void VK_SetLightParams( vkUniform_t *uniform, const dlight_t *dl ) {
 #else
 	if ( !glConfig.deviceSupportsGamma )
 #endif
-		VectorScale( dl->color, 2 * powf( r_intensity->value, r_gamma->value ), uniform->lightColor);
+		VectorScale( dl->color, 2 * powf( r_intensity->value, r_gamma->value ), uniform->light.color);
 	else
-		VectorCopy( dl->color, uniform->lightColor );
+		VectorCopy( dl->color, uniform->light.color );
 
 	radius = dl->radius;
 
 	// vertex data
 	VectorCopy( backEnd.or.viewOrigin, uniform->eyePos ); uniform->eyePos[3] = 0.0f;
-	VectorCopy( dl->transformed, uniform->lightPos ); uniform->lightPos[3] = 0.0f;
+	VectorCopy( dl->transformed, uniform->light.pos ); uniform->light.pos[3] = 0.0f;
 
 	// fragment data
-	uniform->lightColor[3] = 1.0f / Square( radius );
+	uniform->light.color[3] = 1.0f / Square( radius );
 
 	if ( dl->linear )
 	{
 		vec4_t ab;
 		VectorSubtract( dl->transformed2, dl->transformed, ab );
 		ab[3] = 1.0f / DotProduct( ab, ab );
-		Vector4Copy( ab, uniform->lightVector );
+		Vector4Copy( ab, uniform->light.vector );
 	}
 }
 #endif
