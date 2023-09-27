@@ -40,7 +40,7 @@ USE_OPENGL       = 1
 USE_OPENGL2      = 0
 USE_OPENGL_API   = 1
 USE_VULKAN_API   = 1
-USE_RENDERER_DLOPEN = 0
+USE_RENDERER_DLOPEN = 1
 
 # valid options: opengl, vulkan, opengl2
 RENDERER_DEFAULT = opengl
@@ -72,6 +72,7 @@ endif
 ifeq ($(COMPILE_PLATFORM),darwin)
   USE_SDL=1
   USE_LOCAL_HEADERS=1
+  USE_RENDERER_DLOPEN = 0
 endif
 
 ifeq ($(COMPILE_PLATFORM),cygwin)
