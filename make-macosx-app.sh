@@ -311,39 +311,6 @@ PLIST="<?xml version=\"1.0\" encoding=\"UTF-8\"?>
     <key>LSMinimumSystemVersion</key>
     <string>${MACOSX_DEPLOYMENT_TARGET}</string>"
 
-if [ -n "${MACOSX_DEPLOYMENT_TARGET_PPC}" ] || [ -n "${MACOSX_DEPLOYMENT_TARGET_X86}" ] || [ -n "${MACOSX_DEPLOYMENT_TARGET_X86_64}" ] || [ -n "${MACOSX_DEPLOYMENT_TARGET_AARCH64}" ]; then
-	PLIST="${PLIST}
-    <key>LSMinimumSystemVersionByArchitecture</key>
-    <dict>"
-
-	if [ -n "${MACOSX_DEPLOYMENT_TARGET_PPC}" ]; then
-	PLIST="${PLIST}
-        <key>ppc</key>
-        <string>${MACOSX_DEPLOYMENT_TARGET_PPC}</string>"
-	fi
-
-	if [ -n "${MACOSX_DEPLOYMENT_TARGET_X86}" ]; then
-	PLIST="${PLIST}
-        <key>i386</key>
-        <string>${MACOSX_DEPLOYMENT_TARGET_X86}</string>"
-	fi
-
-	if [ -n "${MACOSX_DEPLOYMENT_TARGET_X86_64}" ]; then
-	PLIST="${PLIST}
-        <key>x86_64</key>
-        <string>${MACOSX_DEPLOYMENT_TARGET_X86_64}</string>"
-	fi
-	
-	if [ -n "${MACOSX_DEPLOYMENT_TARGET_AARCH64}" ]; then
-	PLIST="${PLIST}
-        <key>aarch64</key>
-        <string>${MACOSX_DEPLOYMENT_TARGET_AARCH64}</string>"
-	fi
-
-	PLIST="${PLIST}
-    </dict>"
-fi
-
 PLIST="${PLIST}
     <key>NSHumanReadableCopyright</key>
     <string>QUAKE III ARENA Copyright © 1999-2000 id Software, Inc. All rights reserved.</string>
