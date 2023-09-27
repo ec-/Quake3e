@@ -71,7 +71,7 @@ endif
 
 ifeq ($(COMPILE_PLATFORM),darwin)
   USE_SDL=1
-USE_LOCAL_HEADERS=1
+  USE_LOCAL_HEADERS=1
 endif
 
 ifeq ($(COMPILE_PLATFORM),cygwin)
@@ -596,7 +596,7 @@ endif # *NIX platforms
 endif # !MINGW
 
 
-TARGET_CLIENT = $(CNAME)$(ARCHEXT)$(BINEXT)
+TARGET_CLIENT = $(CNAME)$(FULLBINEXT)
 
 TARGET_REND1 = $(RENDERER_PREFIX)_opengl_$(SHLIBNAME)
 TARGET_REND2 = $(RENDERER_PREFIX)_opengl2_$(SHLIBNAME)
@@ -672,6 +672,10 @@ define DO_WINDRES
 $(echo_cmd) "WINDRES $<"
 $(Q)$(WINDRES) -i $< -o $@
 endef
+
+ifndef FULLBINEXT
+  FULLBINEXT=.$(ARCH)$(BINEXT)
+endif
 
 ifndef SHLIBNAME
   SHLIBNAME=$(ARCH).$(SHLIBEXT)

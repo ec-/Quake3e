@@ -146,8 +146,6 @@ AVAILABLE_ARCHS=""
 Q3E_VERSION=`grep '^VERSION=' Makefile | sed -e 's/.*=\(.*\)/\1/'`
 Q3E_CLIENT_ARCHS=""
 Q3E_SERVER_ARCHS=""
-Q3E_RENDERER_GL1_ARCHS=""
-Q3E_RENDERER_GL2_ARCHS=""
 Q3E_CGAME_ARCHS=""
 Q3E_GAME_ARCHS=""
 Q3E_UI_ARCHS=""
@@ -162,20 +160,13 @@ CGAME="cgame"
 GAME="qagame"
 UI="ui"
 
-RENDERER_OPENGL="quake3e_opengl_renderer"
-RENDERER_VULKAN="quake3e_vulkan_renderer"
-
 DEDICATED_NAME="quake3e.ded"
 
 CGAME_NAME="${CGAME}.dylib"
 GAME_NAME="${GAME}.dylib"
 UI_NAME="${UI}.dylib"
 
-RENDERER_OPENGL1_NAME="${RENDERER_OPENGL}1.dylib"
-RENDERER_OPENGL2_NAME="${RENDERER_OPENGL}2.dylib"
-RENDERER_VULKAN_NAME="${RENDERER_VULKAN}.dylib"
-
-ICNSDIR="misc"
+ICNSDIR="code/unix"
 ICNS="quake3_flat.icns"
 PKGINFO="APPLQ3E"
 
@@ -188,17 +179,13 @@ CONTENTS_FOLDER_PATH="${WRAPPER_NAME}/Contents"
 UNLOCALIZED_RESOURCES_FOLDER_PATH="${CONTENTS_FOLDER_PATH}/Resources"
 EXECUTABLE_FOLDER_PATH="${CONTENTS_FOLDER_PATH}/MacOS"
 EXECUTABLE_NAME="${PRODUCT_NAME}"
-PROTOCOL_HANDLER="quake3"
 
 # loop through the architectures to build string lists for each universal binary
 for ARCH in $SEARCH_ARCHS; do
 	CURRENT_ARCH=${ARCH}
 	BUILT_PRODUCTS_DIR="${OBJROOT}/${TARGET_NAME}-darwin-${CURRENT_ARCH}"
 	Q3E_CLIENT="${EXECUTABLE_NAME}.${CURRENT_ARCH}"
-	Q3E_SERVER="${DEDICATED_NAME}.${CURRENT_ARCH}"
-	Q3E_RENDERER_GL1="${RENDERER_OPENGL}1_${CURRENT_ARCH}.dylib"
-	Q3E_RENDERER_GL2="${RENDERER_OPENGL}2_${CURRENT_ARCH}.dylib"
-	Q3E_RENDERER_VK="${RENDERER_VULKAN}_${CURRENT_ARCH}.dylib"
+	Q3E_SERVER="${DEDICATED_NAME}"
 	Q3E_CGAME="${CGAME}${CURRENT_ARCH}.dylib"
 	Q3E_GAME="${GAME}${CURRENT_ARCH}.dylib"
 	Q3E_UI="${UI}${CURRENT_ARCH}.dylib"
@@ -218,14 +205,6 @@ for ARCH in $SEARCH_ARCHS; do
 	fi
 	if [ -e ${BUILT_PRODUCTS_DIR}/${Q3E_SERVER} ]; then
 		Q3E_SERVER_ARCHS="${BUILT_PRODUCTS_DIR}/${Q3E_SERVER} ${Q3E_SERVER_ARCHS}"
-	fi
-
-	# renderers
-	if [ -e ${BUILT_PRODUCTS_DIR}/${Q3E_RENDERER_GL1} ]; then
-		Q3E_RENDERER_GL1_ARCHS="${BUILT_PRODUCTS_DIR}/${Q3E_RENDERER_GL1} ${Q3E_RENDERER_GL1_ARCHS}"
-	fi
-	if [ -e ${BUILT_PRODUCTS_DIR}/${Q3E_RENDERER_GL2} ]; then
-		Q3E_RENDERER_GL2_ARCHS="${BUILT_PRODUCTS_DIR}/${Q3E_RENDERER_GL2} ${Q3E_RENDERER_GL2_ARCHS}"
 	fi
 
 	# game
@@ -365,21 +344,6 @@ if [ -n "${MACOSX_DEPLOYMENT_TARGET_PPC}" ] || [ -n "${MACOSX_DEPLOYMENT_TARGET_
     </dict>"
 fi
 
-	if [ -n "${PROTOCOL_HANDLER}" ]; then
-	PLIST="${PLIST}
-    <key>CFBundleURLTypes</key>
-    <array>
-      <dict>
-        <key>CFBundleURLName</key>
-        <string>${PRODUCT_NAME}</string>
-        <key>CFBundleURLSchemes</key>
-        <array>
-          <string>${PROTOCOL_HANDLER}</string>
-        </array>
-      </dict>
-    </array>"
-	fi
-
 PLIST="${PLIST}
     <key>NSHumanReadableCopyright</key>
     <string>QUAKE III ARENA Copyright © 1999-2000 id Software, Inc. All rights reserved.</string>
@@ -426,14 +390,6 @@ function action()
 # executables
 action "${BUNDLEBINDIR}/${EXECUTABLE_NAME}"				"${Q3E_CLIENT_ARCHS}"
 action "${BUNDLEBINDIR}/${DEDICATED_NAME}"				"${Q3E_SERVER_ARCHS}"
-
-# renderers
-action "${BUNDLEBINDIR}/${RENDERER_OPENGL1_NAME}"		"${Q3E_RENDERER_GL1_ARCHS}"
-action "${BUNDLEBINDIR}/${RENDERER_OPENGL2_NAME}"		"${Q3E_RENDERER_GL2_ARCHS}"
-action "${BUNDLEBINDIR}/${RENDERER_VULKAN_NAME}"		"${Q3E_RENDERER_VK_ARCHS}"
-symlinkArch "${RENDERER_OPENGL}1" "${RENDERER_OPENGL}1" "_" "${BUNDLEBINDIR}"
-symlinkArch "${RENDERER_OPENGL}2" "${RENDERER_OPENGL}2" "_" "${BUNDLEBINDIR}"
-symlinkArch "${RENDERER_VULKAN}" "${RENDERER_VULKAN}" "_" "${BUNDLEBINDIR}"
 
 # game
 action "${BUNDLEBINDIR}/${BASEDIR}/${CGAME_NAME}"		"${Q3E_CGAME_ARCHS}"
