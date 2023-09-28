@@ -391,7 +391,7 @@ qboolean Sys_ResetReadOnlyAttribute( const char *ospath )
 Sys_Pwd
 =================
 */
-char *Sys_Pwd( void ) 
+const char *Sys_Pwd( void ) 
 {
 	static char pwd[ MAX_OSPATH ];
 
@@ -424,7 +424,7 @@ static char homePath[ MAX_OSPATH ] = { 0 };
 Sys_DefaultHomePath
 =================
 */
-char *Sys_DefaultHomePath(void)
+const char *Sys_DefaultHomePath(void)
 {
 	char *p;
 
