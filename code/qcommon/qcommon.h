@@ -1299,7 +1299,7 @@ qboolean	Sys_Mkdir( const char *path );
 FILE	*Sys_FOpen( const char *ospath, const char *mode );
 qboolean Sys_ResetReadOnlyAttribute( const char *ospath );
 
-char *Sys_Pwd( void );
+const char *Sys_Pwd( void );
 void Sys_SetDefaultBasePath(const char *path);
 const char *Sys_DefaultBasePath( void );
 const char *Sys_SteamPath( void );
@@ -1308,7 +1308,7 @@ const char *Sys_SteamPath( void );
 char    *Sys_DefaultAppPath(void);
 #endif
 
-char *Sys_DefaultHomePath( void );
+const char *Sys_DefaultHomePath( void );
 const char *Sys_Dirname( char *path );
 
 char **Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, qboolean wantsubs );
