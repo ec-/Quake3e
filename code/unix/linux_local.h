@@ -49,4 +49,8 @@ char *strlwr (char *s);
 // signals.c
 void InitSig(void);
 
+#ifdef __APPLE__
+char *Sys_StripAppBundle( char *pwd );
+#endif
+
 #endif // __LINUX_LOCAL_H__

@@ -41,6 +41,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define BASETA					"missionpack"
 #define STEAMPATH_NAME			"Quake 3 Arena"
 #define STEAMPATH_APPID			"2200"
+#define HOMEPATH_NAME_UNIX        		".q3a"
+#define HOMEPATH_NAME_WIN         		"Quake3"
+#define HOMEPATH_NAME_MACOSX			HOMEPATH_NAME_WIN
 
 #define MAX_TEAMNAME            32
 #define MAX_MASTER_SERVERS      5	// number of supported master servers

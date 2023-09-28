@@ -816,6 +816,68 @@ void Sys_PrintBinVersion( const char* name )
 }
 
 
+static char binaryPath[ MAX_OSPATH ] = { 0 };
+static char installPath[ MAX_OSPATH ] = { 0 };
+
+
+/*
+=================
+Sys_SetBinaryPath
+=================
+*/
+void Sys_SetBinaryPath(const char *path)
+{
+	Q_strncpyz(binaryPath, path, sizeof(binaryPath));
+}
+
+
+/*
+=================
+Sys_BinaryPath
+=================
+*/
+char *Sys_BinaryPath(void)
+{
+	return binaryPath;
+}
+
+
+/*
+=================
+Sys_SetDefaultBasePath
+=================
+*/
+void Sys_SetDefaultBasePath(const char *path)
+{
+	Q_strncpyz(installPath, path, sizeof(installPath));
+}
+
+
+/*
+=================
+Sys_DefaultBasePath
+=================
+*/
+const char *Sys_DefaultBasePath(void)
+{
+	if (*installPath)
+		return installPath;
+	else
+		return Sys_Pwd();
+}
+
+
+/*
+=================
+Sys_DefaultAppPath
+=================
+*/
+char *Sys_DefaultAppPath(void)
+{
+	return Sys_BinaryPath();
+}
+
+
 /*
 =================
 Sys_BinName
@@ -876,6 +938,15 @@ int Sys_ParseArgs( int argc, const char* argv[] )
 }
 
 
+#ifndef DEFAULT_BASEDIR
+#	ifdef __APPLE__
+#		define DEFAULT_BASEDIR Sys_StripAppBundle(Sys_BinaryPath())
+#	else
+#		define DEFAULT_BASEDIR Sys_BinaryPath()
+#	endif
+#endif
+
+
 int main( int argc, const char* argv[] )
 {
 	char con_title[ MAX_CVAR_VALUE_STRING ];
@@ -893,6 +964,8 @@ int main( int argc, const char* argv[] )
 
 	if ( Sys_ParseArgs( argc, argv ) ) // added this for support
 		return 0;
+	Sys_SetBinaryPath( Sys_Dirname( argv[ 0 ] ) );
+	Sys_SetDefaultBasePath( DEFAULT_BASEDIR );
 
 	// merge the command line, this is kinda silly
 	for ( len = 1, i = 1; i < argc; i++ )

@@ -69,6 +69,7 @@ static cvar_t *com_fixedtime;
 cvar_t	*com_journal;
 cvar_t	*com_protocol;
 qboolean com_protocolCompat;
+cvar_t *com_homepath;
 #ifndef DEDICATED
 cvar_t	*com_maxfps;
 cvar_t	*com_maxfpsUnfocused;
@@ -3812,6 +3813,8 @@ void Com_Init( char *commandLine ) {
 	} else {
 		com_protocolCompat = qfalse;
 	}
+
+	com_homepath = Cvar_Get("com_homepath", "", CVAR_INIT|CVAR_PROTECTED);
 
 	Cvar_CheckRange( com_protocol, "0", NULL, CV_INTEGER );
 	com_protocol->flags &= ~CVAR_USER_CREATED;

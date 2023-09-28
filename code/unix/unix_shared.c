@@ -317,6 +317,28 @@ qboolean Sys_GetFileStats( const char *filename, fileOffset_t *size, fileTime_t 
 
 
 /*
+==================
+Sys_Basename
+==================
+*/
+const char *Sys_Basename( char *path )
+{
+	return basename( path );
+}
+
+
+/*
+==================
+Sys_Dirname
+==================
+*/
+const char *Sys_Dirname( char *path )
+{
+	return dirname( path );
+}
+
+
+/*
 =================
 Sys_Mkdir
 =================
@@ -369,7 +391,7 @@ qboolean Sys_ResetReadOnlyAttribute( const char *ospath )
 Sys_Pwd
 =================
 */
-const char *Sys_Pwd( void ) 
+char *Sys_Pwd( void ) 
 {
 	static char pwd[ MAX_OSPATH ];
 
@@ -393,15 +415,8 @@ const char *Sys_Pwd( void )
 }
 
 
-/*
-=================
-Sys_DefaultBasePath
-=================
-*/
-const char *Sys_DefaultBasePath( void )
-{
-	return Sys_Pwd();
-}
+// Used to determine where to store user-specific files
+static char homePath[ MAX_OSPATH ] = { 0 };
 
 
 /*
@@ -409,33 +424,33 @@ const char *Sys_DefaultBasePath( void )
 Sys_DefaultHomePath
 =================
 */
-const char *Sys_DefaultHomePath( void )
+char *Sys_DefaultHomePath(void)
 {
-	// Used to determine where to store user-specific files
-	static char homePath[ MAX_OSPATH ];
+	char *p;
 
-	const char *p;
-
-	if ( *homePath )
-		return homePath;
-            
-	if ( (p = getenv("HOME")) != NULL ) 
+	if( !*homePath && com_homepath != NULL )
 	{
-		Q_strncpyz( homePath, p, sizeof( homePath ) );
-#ifdef MACOS_X
-		Q_strcat( homePath, sizeof(homePath), "/Library/Application Support/Quake3" );
-#else
-		Q_strcat( homePath, sizeof( homePath ), "/.q3a" );
-#endif
-		if ( mkdir( homePath, 0750 ) ) 
+		if( ( p = getenv( "HOME" ) ) != NULL )
 		{
-			if ( errno != EEXIST ) 
-				Sys_Error( "Unable to create directory \"%s\", error is %s(%d)\n", 
-					homePath, strerror( errno ), errno );
+			Com_sprintf(homePath, sizeof(homePath), "%s%c", p, PATH_SEP);
+#ifdef __APPLE__
+			Q_strcat(homePath, sizeof(homePath),
+				"Library/Application Support/");
+
+			if(com_homepath->string[0])
+				Q_strcat(homePath, sizeof(homePath), com_homepath->string);
+			else
+				Q_strcat(homePath, sizeof(homePath), HOMEPATH_NAME_MACOSX);
+#else
+			if(com_homepath->string[0])
+				Q_strcat(homePath, sizeof(homePath), com_homepath->string);
+			else
+				Q_strcat(homePath, sizeof(homePath), HOMEPATH_NAME_UNIX);
+#endif
 		}
-		return homePath;
 	}
-	return ""; // assume current dir
+
+	return homePath;
 }
 
 
@@ -621,3 +636,29 @@ qboolean Sys_SetAffinityMask( const uint64_t mask )
 	}
 }
 #endif // USE_AFFINITY_MASK
+
+
+/*
+=================
+Sys_StripAppBundle
+Discovers if passed dir is suffixed with the directory structure of a Mac OS X
+.app bundle. If it is, the .app directory structure is stripped off the end and
+the result is returned. If not, dir is returned untouched.
+=================
+*/
+char *Sys_StripAppBundle( char *dir )
+{
+	static char cwd[MAX_OSPATH];
+
+	Q_strncpyz(cwd, dir, sizeof(cwd));
+	if(strcmp(Sys_Basename(cwd), "MacOS"))
+		return dir;
+	Q_strncpyz(cwd, Sys_Dirname(cwd), sizeof(cwd));
+	if(strcmp(Sys_Basename(cwd), "Contents"))
+		return dir;
+	Q_strncpyz(cwd, Sys_Dirname(cwd), sizeof(cwd));
+	if(!strstr(Sys_Basename(cwd), ".app"))
+		return dir;
+	Q_strncpyz(cwd, Sys_Dirname(cwd), sizeof(cwd));
+	return cwd;
+}
