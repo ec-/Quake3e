@@ -143,7 +143,7 @@ fi
 
 AVAILABLE_ARCHS=""
 
-Q3E_VERSION=`grep '^VERSION=' Makefile | sed -e 's/.*=\(.*\)/\1/'`
+Q3E_VERSION="1.32e"
 Q3E_CLIENT_ARCHS=""
 Q3E_SERVER_ARCHS=""
 Q3E_CGAME_ARCHS=""

@@ -426,31 +426,31 @@ Sys_DefaultHomePath
 */
 const char *Sys_DefaultHomePath(void)
 {
-	char *p;
+	// Used to determine where to store user-specific files
+	static char homePath[ MAX_OSPATH ];
 
-	if( !*homePath && com_homepath != NULL )
+	const char *p;
+
+	if ( *homePath )
+		return homePath;
+            
+	if ( (p = getenv("HOME")) != NULL ) 
 	{
-		if( ( p = getenv( "HOME" ) ) != NULL )
-		{
-			Com_sprintf(homePath, sizeof(homePath), "%s%c", p, PATH_SEP);
-#ifdef __APPLE__
-			Q_strcat(homePath, sizeof(homePath),
-				"Library/Application Support/");
-
-			if(com_homepath->string[0])
-				Q_strcat(homePath, sizeof(homePath), com_homepath->string);
-			else
-				Q_strcat(homePath, sizeof(homePath), HOMEPATH_NAME_MACOSX);
+		Q_strncpyz( homePath, p, sizeof( homePath ) );
+#ifdef MACOS_X
+		Q_strcat( homePath, sizeof(homePath), "/Library/Application Support/Quake3" );
 #else
-			if(com_homepath->string[0])
-				Q_strcat(homePath, sizeof(homePath), com_homepath->string);
-			else
-				Q_strcat(homePath, sizeof(homePath), HOMEPATH_NAME_UNIX);
+		Q_strcat( homePath, sizeof( homePath ), "/.q3a" );
 #endif
+		if ( mkdir( homePath, 0750 ) ) 
+		{
+			if ( errno != EEXIST ) 
+				Sys_Error( "Unable to create directory \"%s\", error is %s(%d)\n", 
+					homePath, strerror( errno ), errno );
 		}
+		return homePath;
 	}
-
-	return homePath;
+	return ""; // assume current dir
 }
 
 
