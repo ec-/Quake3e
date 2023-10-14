@@ -847,7 +847,7 @@ char *Sys_BinaryPath(void)
 Sys_SetDefaultBasePath
 =================
 */
-void Sys_SetDefaultBasePath(const char *path)
+static void Sys_SetDefaultBasePath(const char *path)
 {
 	Q_strncpyz(installPath, path, sizeof(installPath));
 }

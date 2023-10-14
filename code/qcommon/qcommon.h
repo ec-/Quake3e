@@ -1299,7 +1299,6 @@ FILE	*Sys_FOpen( const char *ospath, const char *mode );
 qboolean Sys_ResetReadOnlyAttribute( const char *ospath );
 
 const char *Sys_Pwd( void );
-void Sys_SetDefaultBasePath(const char *path);
 const char *Sys_DefaultBasePath( void );
 const char *Sys_SteamPath( void );
 
