@@ -305,7 +305,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	backEnd.doneBloom = qfalse;
 #endif
 
-	backEnd.color2D.u32 = 0;
+	backEnd.color2D.u32 = ~0U;
 
 	tr.frameCount++;
 	tr.frameSceneNum = 0;

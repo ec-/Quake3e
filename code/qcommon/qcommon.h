@@ -133,7 +133,9 @@ NET
 
 ==============================================================
 */
+#ifndef DISABLE_IPV6
 #define USE_IPV6
+#endif
 
 #define NET_ENABLEV4            0x01
 #define NET_ENABLEV6            0x02

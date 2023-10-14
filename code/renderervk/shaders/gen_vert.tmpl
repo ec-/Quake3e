@@ -15,18 +15,24 @@ layout(push_constant) uniform Transform {
 
 #if defined(USE_FOG) || defined(USE_ENV)
 layout(set = 1, binding = 0) uniform UBO {
-	// VERTEX
-	vec4 eyePos;
-	vec4 lightPos;
-	//  VERTEX-FOG
-	vec4 fogDistanceVector;
-	vec4 fogDepthVector;
-	vec4 fogEyeT;
-	// FRAGMENT
-	vec4 lightColor;
-	vec4 fogColor;
-	// linear dynamic light
-	vec4 lightVector;
+	// light/env parameters:
+	vec4 eyePos;				// vertex
+#ifdef USE_ENT_COLOR
+	vec4 entColor0;				// fragment: ent.color[0]
+	vec4 entColor1;				// fragment: ent.color[1]
+	vec4 entColor2;				// fragment: ent.color[2]
+#else
+	vec4 lightPos;				// vertex: light origin
+	vec4 lightColor;			// fragment: rgb + 1/(r*r)
+	vec4 lightVector;			// fragment: linear dynamic light
+#endif
+#ifdef USE_FOG
+	// fog parameters:
+	vec4 fogDistanceVector;		// vertex
+	vec4 fogDepthVector;		// vertex
+	vec4 fogEyeT;				// vertex
+	vec4 fogColor;				// fragment
+#endif
 };
 #endif
 

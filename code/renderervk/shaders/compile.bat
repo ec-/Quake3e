@@ -198,9 +198,17 @@ for %%f in (*.frag) do (
 "%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_FIXED_COLOR -DUSE_ATEST -DUSE_FOG
 "%bh%" "%tmpf%" %outf% frag_tx0_fixed_fog
 
+@rem single-texture fragment, entity color
+
+"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_ENT_COLOR -DUSE_ATEST
+"%bh%" "%tmpf%" %outf% frag_tx0_ent
+
+"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_ENT_COLOR -DUSE_ATEST -DUSE_FOG
+"%bh%" "%tmpf%" %outf% frag_tx0_ent_fog
+
 @rem single-texture fragment, depth-fragment
 
-"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_ATEST -DUSE_DF
+"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_CLX_IDENT -DUSE_ATEST -DUSE_DF
 "%bh%" "%tmpf%" %outf% frag_tx0_df
 
 @rem double-texture fragment
@@ -226,6 +234,14 @@ for %%f in (*.frag) do (
 
 "%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_FIXED_COLOR -DUSE_TX1 -DUSE_FOG
 "%bh%" "%tmpf%" %outf% frag_tx1_fixed_fog
+
+@rem double-texture fragment, entity colors
+
+@rem "%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_ENT_COLOR -DUSE_TX1
+@rem "%bh%" "%tmpf%" %outf% frag_tx1_ent
+
+@rem "%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_ENT_COLOR -DUSE_TX1 -DUSE_FOG
+@rem "%bh%" "%tmpf%" %outf% frag_tx1_ent_fog
 
 @rem double-texture fragment, non-identical colors
 

@@ -45,6 +45,8 @@ No performance differences from 'Array of Structures' were observed.
 
 */
 
+#ifdef USE_VBO
+
 #define MAX_VBO_STAGES MAX_SHADER_STAGES
 
 #define MIN_IBO_RUN 320
@@ -1538,3 +1540,5 @@ void RB_StageIteratorVBO( void )
 	tess.vboIndex = 0;
 	VBO_ClearQueue();
 }
+
+#endif // USE_VBO

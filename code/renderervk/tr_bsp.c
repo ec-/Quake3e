@@ -537,6 +537,7 @@ static shader_t *ShaderForShaderNum( const int shaderNum, int lightmapNum ) {
 }
 
 
+#ifdef USE_PMLIGHT
 static void GenerateNormals( srfSurfaceFace_t *face )
 {
 	vec3_t ba, ca, cross;
@@ -573,6 +574,7 @@ static void GenerateNormals( srfSurfaceFace_t *face )
 		VectorNormalize2( n1, n1 );
 	}
 }
+#endif // USE_PMLIGHT
 
 
 /*
@@ -1934,6 +1936,20 @@ static	void R_LoadPlanes( const lump_t *l ) {
 
 /*
 =================
+R_PreLoadFogs
+=================
+*/
+static void R_PreLoadFogs( const lump_t *l ) {
+	if ( l->filelen % sizeof( dfog_t ) ) {
+		tr.numFogs = 0;
+	} else {
+		tr.numFogs = l->filelen / sizeof( dfog_t );
+	}
+}
+
+
+/*
+=================
 R_LoadFogs
 =================
 */
@@ -2294,6 +2310,7 @@ void RE_LoadWorldMap( const char *name ) {
 
 	// load into heap
 	R_LoadLightmaps( &header->lumps[LUMP_LIGHTMAPS] );
+	R_PreLoadFogs( &header->lumps[LUMP_FOGS] );
 	R_LoadShaders( &header->lumps[LUMP_SHADERS] );
 	R_LoadPlanes( &header->lumps[LUMP_PLANES] );
 	R_LoadFogs( &header->lumps[LUMP_FOGS], &header->lumps[LUMP_BRUSHES], &header->lumps[LUMP_BRUSHSIDES] );

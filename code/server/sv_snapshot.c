@@ -277,12 +277,14 @@ static void SV_SortEntityNumbers( entityNum_t *num, const int size ) {
 			d--;
 		}
 	}
+#ifdef _DEBUG
 	// consistency check for delta encoding
 	for ( i = 1 ; i < size; i++ ) {
 		if ( num[i-1] >= num[i] ) {
 			Com_Error( ERR_DROP, "%s: invalid entity number %i", __func__, num[ i ] );
 		}
 	}
+#endif
 }
 
 
@@ -434,7 +436,7 @@ static void SV_AddEntitiesVisibleFromPoint( const vec3_t origin, clientSnapshot_
 	}
 
 	ent = SV_GentityNum( frame->ps.clientNum );
-	// merge second PVS at ent->r.s.origin2
+	// extension: merge second PVS at ent->r.s.origin2
 	if ( ent->r.svFlags & SVF_SELF_PORTAL2 && !portal ) {
 		SV_AddEntitiesVisibleFromPoint( ent->r.s.origin2, frame, eNums, qtrue );
 		eNums->unordered = qtrue;

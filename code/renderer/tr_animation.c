@@ -322,7 +322,9 @@ void RB_MDRSurfaceAnim( mdrSurface_t *surface )
 
 	int			frameSize;
 
+#ifdef USE_VBO
 	VBO_Flush();
+#endif
 
 	tess.surfType = SF_MDR;
 

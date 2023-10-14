@@ -71,6 +71,8 @@ endif
 
 ifeq ($(COMPILE_PLATFORM),darwin)
   USE_SDL=1
+  USE_LOCAL_HEADERS=1
+  USE_RENDERER_DLOPEN = 0
 endif
 
 ifeq ($(COMPILE_PLATFORM),cygwin)
@@ -205,6 +207,7 @@ R1DIR=$(MOUNT_DIR)/renderer
 R2DIR=$(MOUNT_DIR)/renderer2
 RVDIR=$(MOUNT_DIR)/renderervk
 SDLDIR=$(MOUNT_DIR)/sdl
+SDLHDIR=$(MOUNT_DIR)/SDL2
 
 CMDIR=$(MOUNT_DIR)/qcommon
 UDIR=$(MOUNT_DIR)/unix
@@ -466,6 +469,8 @@ ifeq ($(COMPILE_PLATFORM),darwin)
 
   BASE_CFLAGS += -Wno-unused-result
 
+  BASE_CFLAGS += -DMACOS_X
+
   OPTIMIZE = -O2 -fvisibility=hidden
 
   SHLIBEXT = dylib
@@ -474,12 +479,28 @@ ifeq ($(COMPILE_PLATFORM),darwin)
 
   LDFLAGS = -F/System/Library/Frameworks -framework IOKIT -framework CoreFoundation
 
+  ifeq ($(ARCH),x86_64)
+    BASE_CFLAGS += -arch x86_64
+    LDFLAGS = -arch x86_64
+  endif
+  ifeq ($(ARCH),aarch64)
+    BASE_CFLAGS += -arch arm64
+    LDFLAGS = -arch arm64
+  endif
+
+  ifeq ($(USE_LOCAL_HEADERS),1)
+    MACLIBSDIR=$(MOUNT_DIR)/libsdl/macosx
+    BASE_CFLAGS += -I$(SDLHDIR)/include
+    CLIENT_LDFLAGS += $(MACLIBSDIR)/libSDL2-2.0.0.dylib
+    CLIENT_EXTRA_FILES += $(MACLIBSDIR)/libSDL2-2.0.0.dylib
+  else
   ifneq ($(SDL_INCLUDE),)
     BASE_CFLAGS += $(SDL_INCLUDE)
     CLIENT_LDFLAGS = $(SDL_LIBS)
   else
     BASE_CFLAGS += -I/Library/Frameworks/SDL2.framework/Headers
-    CLIENT_LDFLAGS = -F/Library/Frameworks -framework SDL2
+    CLIENT_LDFLAGS += -F/Library/Frameworks -framework SDL2
+  endif
   endif
 
   ifeq ($(USE_SYSTEM_JPEG),1)
