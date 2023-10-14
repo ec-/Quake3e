@@ -36,14 +36,14 @@ USE_SYSTEM_OGG    = 0
 USE_SYSTEM_VORBIS = 0
 
 USE_VULKAN       = 1
-USE_OPENGL       = 1
+USE_OPENGL       = 0
 USE_OPENGL2      = 0
-USE_OPENGL_API   = 1
+USE_OPENGL_API   = 0
 USE_VULKAN_API   = 1
 USE_RENDERER_DLOPEN = 1
 
 # valid options: opengl, vulkan, opengl2
-RENDERER_DEFAULT = opengl
+RENDERER_DEFAULT = vulkan
 
 CNAME            = quake3e
 DNAME            = quake3e.ded
@@ -477,15 +477,13 @@ ifeq ($(COMPILE_PLATFORM),darwin)
   SHLIBCFLAGS = -fPIC -fvisibility=hidden
   SHLIBLDFLAGS = -dynamiclib $(LDFLAGS)
 
-  LDFLAGS = -F/System/Library/Frameworks -framework IOKIT -framework CoreFoundation
-
   ifeq ($(ARCH),x86_64)
     BASE_CFLAGS += -arch x86_64
-    LDFLAGS = -arch x86_64
+    LDFLAGS = -arch x86_64 -F/System/Library/Frameworks -framework IOKit -framework CoreFoundation
   endif
   ifeq ($(ARCH),aarch64)
     BASE_CFLAGS += -arch arm64
-    LDFLAGS = -arch arm64
+    LDFLAGS = -arch arm64 -F/System/Library/Frameworks -framework IOKit -framework CoreFoundation
   endif
 
   ifeq ($(USE_LOCAL_HEADERS),1)
