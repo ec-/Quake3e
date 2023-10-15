@@ -477,6 +477,8 @@ ifeq ($(COMPILE_PLATFORM),darwin)
   SHLIBCFLAGS = -fPIC -fvisibility=hidden
   SHLIBLDFLAGS = -dynamiclib $(LDFLAGS)
 
+  ARCHEXT = .$(ARCH)
+
   LDFLAGS =
 
   ifeq ($(ARCH),x86_64)
@@ -596,11 +598,7 @@ endif # *NIX platforms
 
 endif # !MINGW
 
-ifeq ($(COMPILE_PLATFORM),darwin)
-  TARGET_CLIENT = $(CNAME).$(ARCH)$(BINEXT)
-else
-  TARGET_CLIENT = $(CNAME)$(ARCHEXT)$(BINEXT)
-endif
+TARGET_CLIENT = $(CNAME)$(ARCHEXT)$(BINEXT)
 
 TARGET_REND1 = $(RENDERER_PREFIX)_opengl_$(SHLIBNAME)
 TARGET_REND2 = $(RENDERER_PREFIX)_opengl2_$(SHLIBNAME)
