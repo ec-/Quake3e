@@ -3207,7 +3207,7 @@ static shader_t *FinishShader( void ) {
 				if ( fogCollapse ) {
 					for ( i = 1; i < stage; i++ ) {
 						const uint32_t blendBits = stages[i].stateBits & GLS_BLEND_BITS;
-						if ( blendBits == (GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA) || blendBits == (GLS_SRCBLEND_ONE || GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA) ) {
+						if ( blendBits == (GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA) || blendBits == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA) ) {
 							if ( stages[i].bundle[0].adjustColorsForFog == ACFF_NONE ) {
 								fogCollapse = qfalse;
 								break;

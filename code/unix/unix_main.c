@@ -816,6 +816,7 @@ void Sys_PrintBinVersion( const char* name )
 }
 
 
+#ifdef __APPLE__
 static char binaryPath[ MAX_OSPATH ] = { 0 };
 static char installPath[ MAX_OSPATH ] = { 0 };
 
@@ -825,20 +826,16 @@ static char installPath[ MAX_OSPATH ] = { 0 };
 Sys_SetBinaryPath
 =================
 */
-void Sys_SetBinaryPath(const char *path)
+static void Sys_SetBinaryPath( const char *path )
 {
-	Q_strncpyz(binaryPath, path, sizeof(binaryPath));
-}
+	char *d;
+	Q_strncpyz( binaryPath, path, sizeof( binaryPath ) );
 
-
-/*
-=================
-Sys_BinaryPath
-=================
-*/
-char *Sys_BinaryPath(void)
-{
-	return binaryPath;
+	d = dirname( binaryPath );
+	if ( d != NULL && d != binaryPath )
+	{
+		Q_strncpyz( binaryPath, d, sizeof( binaryPath ) );
+	}
 }
 
 
@@ -847,23 +844,46 @@ char *Sys_BinaryPath(void)
 Sys_SetDefaultBasePath
 =================
 */
-static void Sys_SetDefaultBasePath(const char *path)
+static void Sys_SetDefaultBasePath( const char *path )
 {
-	Q_strncpyz(installPath, path, sizeof(installPath));
+	Q_strncpyz( installPath, path, sizeof( installPath ) );
 }
 
 
 /*
 =================
-Sys_DefaultBasePath
+Sys_StripAppBundle
+Discovers if passed dir is suffixed with the directory structure of a Mac OS X
+.app bundle. If it is, the .app directory structure is stripped off the end and
+the result is returned. If not, dir is returned untouched.
 =================
 */
-const char *Sys_DefaultBasePath(void)
+// Used to determine where to store user-specific files
+static char *Sys_StripAppBundle( char *dir )
 {
-	if (*installPath)
-		return installPath;
-	else
-		return Sys_Pwd();
+	static char cwd[MAX_OSPATH];
+
+	Q_strncpyz( cwd, dir, sizeof( cwd ) );
+	if ( strcmp( basename( cwd ), "MacOS" ) != 0 )
+	{ 
+		return dir;
+	}
+
+	Q_strncpyz( cwd, dirname( cwd ), sizeof( cwd ) );
+	if ( strcmp( basename( cwd ), "Contents" ) != 0 )
+	{
+		return dir;
+	}
+
+	Q_strncpyz( cwd, dirname( cwd ), sizeof( cwd ) ); 
+	if ( strstr( basename( cwd ), ".app") == NULL )
+	{
+		return dir;
+	}
+
+	Q_strncpyz(cwd, dirname( cwd ), sizeof( cwd ) );
+
+	return cwd;
 }
 
 
@@ -872,9 +892,26 @@ const char *Sys_DefaultBasePath(void)
 Sys_DefaultAppPath
 =================
 */
-char *Sys_DefaultAppPath(void)
+char *Sys_DefaultAppPath( void )
 {
-	return Sys_BinaryPath();
+	return binaryPath;
+}
+#endif // __APPLE__
+
+
+/*
+=================
+Sys_DefaultBasePath
+=================
+*/
+const char *Sys_DefaultBasePath( void )
+{
+#ifdef __APPLE__
+	if ( installPath[0] != '\0' )
+		return installPath;
+	else
+#endif
+		return Sys_Pwd();
 }
 
 
@@ -923,7 +960,7 @@ const char *Sys_BinName( const char *arg0 )
 }
 
 
-int Sys_ParseArgs( int argc, const char* argv[] )
+static int Sys_ParseArgs( int argc, const char* argv[] )
 {
 	if ( argc == 2 )
 	{
@@ -938,15 +975,6 @@ int Sys_ParseArgs( int argc, const char* argv[] )
 }
 
 
-#ifndef DEFAULT_BASEDIR
-#	ifdef __APPLE__
-#		define DEFAULT_BASEDIR Sys_StripAppBundle(Sys_BinaryPath())
-#	else
-#		define DEFAULT_BASEDIR Sys_BinaryPath()
-#	endif
-#endif
-
-
 int main( int argc, const char* argv[] )
 {
 	char con_title[ MAX_CVAR_VALUE_STRING ];
@@ -958,14 +986,20 @@ int main( int argc, const char* argv[] )
 
 #ifdef __APPLE__
 	// This is passed if we are launched by double-clicking
-	if ( argc >= 2 && Q_strncmp( argv[1], "-psn", 4 ) == 0 )
+	if ( argc >= 2 && Q_strncmp( argv[1], "-psn", 4 ) == 0 ) {
 		argc = 1;
+	}
 #endif
 
-	if ( Sys_ParseArgs( argc, argv ) ) // added this for support
-		return 0;
-	Sys_SetBinaryPath( Sys_Dirname( argv[ 0 ] ) );
-	Sys_SetDefaultBasePath( DEFAULT_BASEDIR );
+	if ( Sys_ParseArgs( argc, argv ) )
+	{
+		return 0; // print version and exit
+	}
+
+#ifdef __APPLE__
+	Sys_SetBinaryPath( argv[ 0 ] );
+	Sys_SetDefaultBasePath( Sys_StripAppBundle( binaryPath ) );
+#endif
 
 	// merge the command line, this is kinda silly
 	for ( len = 1, i = 1; i < argc; i++ )
