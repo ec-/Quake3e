@@ -596,8 +596,11 @@ endif # *NIX platforms
 
 endif # !MINGW
 
-
-TARGET_CLIENT = $(CNAME)$(FULLBINEXT)
+ifeq ($(COMPILE_PLATFORM),darwin)
+  TARGET_CLIENT = $(CNAME).$(ARCH)$(BINEXT)
+else
+  TARGET_CLIENT = $(CNAME)$(ARCHEXT)$(BINEXT)
+endif
 
 TARGET_REND1 = $(RENDERER_PREFIX)_opengl_$(SHLIBNAME)
 TARGET_REND2 = $(RENDERER_PREFIX)_opengl2_$(SHLIBNAME)
@@ -673,10 +676,6 @@ define DO_WINDRES
 $(echo_cmd) "WINDRES $<"
 $(Q)$(WINDRES) -i $< -o $@
 endef
-
-ifndef FULLBINEXT
-  FULLBINEXT=.$(ARCH)$(BINEXT)
-endif
 
 ifndef SHLIBNAME
   SHLIBNAME=$(ARCH).$(SHLIBEXT)
