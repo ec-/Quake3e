@@ -598,6 +598,7 @@ endif # *NIX platforms
 
 endif # !MINGW
 
+
 TARGET_CLIENT = $(CNAME)$(ARCHEXT)$(BINEXT)
 
 TARGET_REND1 = $(RENDERER_PREFIX)_opengl_$(SHLIBNAME)
