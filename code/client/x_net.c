@@ -8,7 +8,7 @@ static cvar_t *x_net_port_auto_renew = 0;
 
 static cvar_t *x_net_show_commands = 0;
 
-static char x_net_lastserver[MAX_OSPATH];
+static char x_net_last_renewed_server[MAX_OSPATH];
 
 // ====================
 //   Const vars
@@ -177,18 +177,26 @@ qboolean X_Net_ShowCommands(void)
 
 static void UpdateStaticServerInfo(void)
 {
-
 	if (clc.demoplaying)
 	{
 		return;
 	}
 
-	if (Q_stricmp(cls.servername, x_net_lastserver))
+	X_Con_PrintToChatSection("connected to ^7%s", cls.servername);
+
+	if (x_net_port_auto_renew && x_net_port_auto_renew->integer)
 	{
-		Q_strncpyz(x_net_lastserver, cls.servername, sizeof(x_net_lastserver));
-		X_Con_PrintToChatSection("connected to ^7%s", cls.servername);
-		PortRenew(qtrue);
+		if (Q_stricmp(cls.servername, x_net_last_renewed_server))
+		{
+			Q_strncpyz(x_net_last_renewed_server, cls.servername, sizeof(x_net_last_renewed_server));
+			PortRenew(qtrue);
+		}
 	}
+	else
+	{
+		x_net_last_renewed_server[0] = 0;
+	}
+
 }
 
 static void PortRenewNoisy()
@@ -204,11 +212,6 @@ static void PortRenewNoisy()
 
 static void PortRenew(qboolean silent)
 {
-	if (!x_net_port_auto_renew || !x_net_port_auto_renew->integer)
-	{
-		return;
-	}
-
 	if (xmod.net.scan)
 	{
 		return;
