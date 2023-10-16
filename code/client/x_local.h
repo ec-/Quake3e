@@ -397,12 +397,6 @@ typedef struct
 
 } XModContext;
 
-typedef struct
-{
-	char lastserver[MAX_OSPATH];
-	char lastmap[MAX_QPATH];
-} XModStaticContext;
-
 #if defined( _MSC_VER )
 #define countof _countof
 #else

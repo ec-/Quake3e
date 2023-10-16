@@ -8,7 +8,7 @@ static cvar_t *x_net_port_auto_renew = 0;
 
 static cvar_t *x_net_show_commands = 0;
 
-static XModStaticContext sxmod;
+static char x_net_lastserver[MAX_OSPATH];
 
 // ====================
 //   Const vars
@@ -32,7 +32,6 @@ static void CompletePortScan(void);
 
 void X_Net_Init()
 {
-	memset(&sxmod, 0, sizeof(sxmod));
 	X_Main_RegisterXCommand(x_net_port_auto_renew, "1", "0", "1", X_HELP_NET_PORT_AUTO_RENEW);
 	X_Main_RegisterXCommand(x_net_show_commands, "0", "0", "1", 0);
 
@@ -178,27 +177,16 @@ qboolean X_Net_ShowCommands(void)
 
 static void UpdateStaticServerInfo(void)
 {
-	qboolean newserver = (Q_stricmp(cls.servername, sxmod.lastserver) ? qtrue : qfalse);
-	qboolean newmap = (newserver || Q_stricmp(cl.mapname, sxmod.lastmap) ? qtrue : qfalse);
 
 	if (clc.demoplaying)
 	{
 		return;
 	}
 
-	if (newserver)
+	if (Q_stricmp(cls.servername, x_net_lastserver))
 	{
-		Q_strncpyz(sxmod.lastserver, cls.servername, sizeof(sxmod.lastserver));
+		Q_strncpyz(x_net_lastserver, cls.servername, sizeof(x_net_lastserver));
 		X_Con_PrintToChatSection("connected to ^7%s", cls.servername);
-	}
-
-	if (newmap)
-	{
-		Q_strncpyz(sxmod.lastmap, cl.mapname, sizeof(sxmod.lastmap));
-	}
-
-	if (newserver || newmap)
-	{
 		PortRenew(qtrue);
 	}
 }
