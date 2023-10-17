@@ -237,8 +237,8 @@ ifneq ($(call bin_path, $(PKG_CONFIG)),)
     OGG_LIBS ?= $(shell $(PKG_CONFIG) --silence-errors --libs ogg || echo -logg)
   endif
   ifeq ($(USE_SYSTEM_VORBIS),1)
-    VORBIS_CFLAGS ?= $(shell $(PKG_CONFIG) --silence-errors --cflags vorbis || true)
-    VORBIS_LIBS ?= $(shell $(PKG_CONFIG) --silence-errors --libs vorbis || echo -lvorbis)
+    VORBIS_CFLAGS ?= $(shell $(PKG_CONFIG) --silence-errors --cflags vorbisfile || true)
+    VORBIS_LIBS ?= $(shell $(PKG_CONFIG) --silence-errors --libs vorbisfile || echo -lvorbisfile)
   endif
 endif
 
@@ -267,7 +267,7 @@ ifeq ($(USE_SYSTEM_OGG),1)
 endif
 ifeq ($(USE_SYSTEM_VORBIS),1)
   ifeq ($(VORBIS_LIBS),)
-    VORBIS_LIBS = -lvorbis
+    VORBIS_LIBS = -lvorbisfile
   endif
 endif
 
