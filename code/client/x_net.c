@@ -8,7 +8,7 @@ static cvar_t *x_net_port_auto_renew = 0;
 
 static cvar_t *x_net_show_commands = 0;
 
-static char x_net_last_renewed_server[MAX_OSPATH];
+static char x_net_last_visited_server[MAX_OSPATH];
 
 // ====================
 //   Const vars
@@ -182,19 +182,13 @@ static void UpdateStaticServerInfo(void)
 		return;
 	}
 
-	X_Con_PrintToChatSection("connected to ^7%s", cls.servername);
+	if (Q_stricmp(cls.servername, x_net_last_visited_server))
+	{
+		X_Con_PrintToChatSection("connected to ^7%s", cls.servername);
 
-	if (x_net_port_auto_renew && x_net_port_auto_renew->integer)
-	{
-		if (Q_stricmp(cls.servername, x_net_last_renewed_server))
-		{
-			Q_strncpyz(x_net_last_renewed_server, cls.servername, sizeof(x_net_last_renewed_server));
-			PortRenew(qtrue);
-		}
-	}
-	else
-	{
-		x_net_last_renewed_server[0] = 0;
+		if (x_net_port_auto_renew && x_net_port_auto_renew->integer) PortRenew(qtrue);
+
+		Q_strncpyz(x_net_last_visited_server, cls.servername, sizeof(x_net_last_visited_server));
 	}
 
 }
