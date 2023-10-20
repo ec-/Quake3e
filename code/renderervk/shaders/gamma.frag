@@ -9,10 +9,11 @@ layout(location = 0) out vec4 out_color;
 layout(constant_id = 0) const float gamma = 1.0;
 layout(constant_id = 1) const float obScale = 2.0;
 layout(constant_id = 2) const float greyscale = 0.0;
-layout(constant_id = 5) const int ditherMode = 0; // 0 - disabled, 1 - ordered
-layout(constant_id = 6) const int depth_r = 255;
-layout(constant_id = 7) const int depth_g = 255;
-layout(constant_id = 8) const int depth_b = 255;
+//
+layout(constant_id = 7) const int ditherMode = 0; // 0 - disabled, 1 - ordered
+layout(constant_id = 8) const int depth_r = 255;
+layout(constant_id = 9) const int depth_g = 255;
+layout(constant_id = 10) const int depth_b = 255;
 
 const vec3 sRGB = { 0.2126, 0.7152, 0.0722 };
 
