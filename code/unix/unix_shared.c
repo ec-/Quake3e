@@ -398,7 +398,7 @@ const char *Sys_Pwd( void )
 Sys_DefaultHomePath
 =================
 */
-const char *Sys_DefaultHomePath(void)
+const char *Sys_DefaultHomePath( void )
 {
 	// Used to determine where to store user-specific files
 	static char homePath[ MAX_OSPATH ];

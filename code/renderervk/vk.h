@@ -221,7 +221,7 @@ void vk_initialize( void );
 void vk_init_descriptors( void );
 
 // Shutdown vulkan subsystem by releasing resources acquired by Vk_Instance.
-void vk_shutdown( void );
+void vk_shutdown( refShutdownCode_t code );
 
 // Releases vulkan resources allocated during program execution.
 // This effectively puts vulkan subsystem into initial state (the state we have after vk_initialize call).
@@ -322,9 +322,7 @@ typedef struct vk_tess_s {
 // Vk_Instance contains engine-specific vulkan resources that persist entire renderer lifetime.
 // This structure is initialized/deinitialized by vk_initialize/vk_shutdown functions correspondingly.
 typedef struct {
-	VkInstance instance;
 	VkPhysicalDevice physical_device;
-	VkSurfaceKHR surface;
 	VkSurfaceFormatKHR base_format;
 	VkSurfaceFormatKHR present_format;
 
@@ -532,10 +530,6 @@ typedef struct {
 	VkPipeline bloom_extract_pipeline;
 	VkPipeline blur_pipeline[VK_NUM_BLOOM_PASSES*2]; // horizontal & vertical pairs
 	VkPipeline bloom_blend_pipeline;
-
-#ifndef NDEBUG
-	VkDebugReportCallbackEXT debug_callback;
-#endif
 
 	uint32_t frame_count;
 	qboolean active;
