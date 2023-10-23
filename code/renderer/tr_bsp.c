@@ -532,6 +532,7 @@ static shader_t *ShaderForShaderNum( const int shaderNum, int lightmapNum ) {
 }
 
 
+#ifdef USE_PMLIGHT
 static void GenerateNormals( srfSurfaceFace_t *face )
 {
 	vec3_t ba, ca, cross;
@@ -568,6 +569,7 @@ static void GenerateNormals( srfSurfaceFace_t *face )
 		VectorNormalize2( n1, n1 );
 	}
 }
+#endif // USE_PMLIGHT
 
 
 /*
@@ -2252,7 +2254,9 @@ void RE_LoadWorldMap( const char *name ) {
 	R_LoadEntities( &header->lumps[LUMP_ENTITIES] );
 	R_LoadLightGrid( &header->lumps[LUMP_LIGHTGRID] );
 
+#ifdef USE_VBO
 	R_BuildWorldVBO( s_worldData.surfaces, s_worldData.numsurfaces );
+#endif
 
 	tr.mapLoading = qfalse;
 

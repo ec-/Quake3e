@@ -212,31 +212,38 @@ Sys_SetAffinityMask
 ================
 */
 #ifdef USE_AFFINITY_MASK
-void Sys_SetAffinityMask( int mask )
+static HANDLE hCurrentProcess = 0;
+
+uint64_t Sys_GetAffinityMask( void )
 {
-	static DWORD_PTR dwOldProcessMask;
-	static DWORD_PTR dwSystemMask;
+	DWORD_PTR dwProcessAffinityMask;
+	DWORD_PTR dwSystemAffinityMask;
 
-	// initialize
-	if ( !dwOldProcessMask ) {
-		dwSystemMask = 0x1;
-		dwOldProcessMask = 0x1;
-		GetProcessAffinityMask( GetCurrentProcess(), &dwOldProcessMask, &dwSystemMask );
+	if ( hCurrentProcess == 0 )	{
+		hCurrentProcess = GetCurrentProcess();
 	}
 
-	 // set default mask
-	if ( !mask ) {
-		if ( dwOldProcessMask )
-			mask = dwOldProcessMask;
-		else
-			mask = dwSystemMask;
+	if ( GetProcessAffinityMask( hCurrentProcess, &dwProcessAffinityMask, &dwSystemAffinityMask ) )	{
+		return (uint64_t)dwProcessAffinityMask;
 	}
 
-	if ( SetProcessAffinityMask( GetCurrentProcess(), mask ) ) {
-		Sleep( 0 );
-		Com_Printf( "setting CPU affinity mask to %i\n", mask );
-	} else {
-		Com_Printf( S_COLOR_YELLOW "error setting CPU affinity mask %i\n", mask );
+	return 0;
+}
+
+
+qboolean Sys_SetAffinityMask( const uint64_t mask )
+{
+	DWORD_PTR dwProcessAffinityMask = (DWORD_PTR)mask;
+
+	if ( hCurrentProcess == 0 ) {
+		hCurrentProcess = GetCurrentProcess();
 	}
+
+	if ( SetProcessAffinityMask( hCurrentProcess, dwProcessAffinityMask ) )	{
+		//Sleep( 0 );
+		return qtrue;
+	}
+
+	return qfalse;
 }
 #endif // USE_AFFINITY_MASK

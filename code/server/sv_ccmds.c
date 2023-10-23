@@ -260,7 +260,7 @@ static void SV_MapRestart_f( void ) {
 		return;
 	}
 
-	if ( sv.restartTime ) {
+	if ( sv.restartTime != 0 ) {
 		return;
 	}
 
@@ -270,7 +270,7 @@ static void SV_MapRestart_f( void ) {
 		delay = 5;
 	}
 
-	if ( delay && !Cvar_VariableIntegerValue( "g_doWarmup" ) ) {
+	if ( delay != 0 && Cvar_VariableIntegerValue( "g_doWarmup" ) == 0 ) {
 		sv.restartTime = sv.time + delay * 1000;
 		if ( sv.restartTime == 0 ) {
 			sv.restartTime = 1;

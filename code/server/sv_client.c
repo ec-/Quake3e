@@ -2098,6 +2098,14 @@ static void SV_UserMove( client_t *cl, msg_t *msg, qboolean delta ) {
 
 	// a bad cp command was sent, drop the client
 	if ( sv_pure->integer != 0 && !cl->pureAuthentic ) {
+#ifndef DEDICATED
+		if ( !cl->gotCP && cl->state == CS_ACTIVE && cl->netchan.remoteAddress.type == NA_LOOPBACK ) {
+			// fix host player being dropped with ZTM' FlexibleHud at level end in TA SP
+			// FIXME: exact reason how cl->pureAuthentic being reset is unclear, should be investigated later
+			Com_DPrintf( "%s: didn't get cp command, resending gamestate\n", cl->name );
+			SV_SendClientGameState( cl );
+		} else
+#endif
 		SV_DropClient( cl, "Cannot validate pure client!" );
 		return;
 	}

@@ -495,8 +495,10 @@ static intptr_t SV_GameSystemCalls( intptr_t *args ) {
 			{
 				char *dst = (char*)VMA(1);
 				const int size = args[2]-1;
-				strncpy( dst, s, size );
-				dst[ size ] = '\0';
+				if ( size >= 0 ) {
+					Q_strncpy( dst, s, size );
+					dst[size] = '\0';
+				}
 			}
 			if ( !sv.entityParsePoint && s[0] == '\0' ) {
 				return qfalse;
@@ -909,7 +911,7 @@ static intptr_t SV_GameSystemCalls( intptr_t *args ) {
 
 	case TRAP_STRNCPY:
 		VM_CHECKBOUNDS( gvm, args[1], args[3] );
-		strncpy( VMA(1), VMA(2), args[3] );
+		Q_strncpy( VMA(1), VMA(2), args[3] );
 		return args[1];
 
 	case TRAP_SIN:

@@ -13,31 +13,30 @@ layout(push_constant) uniform Transform {
 	mat4 mvp;
 };
 
-
 #if defined(USE_FOG) || defined(USE_ENV)
 layout(set = 1, binding = 0) uniform UBO {
-	// VERTEX
-	vec4 eyePos;
-	vec4 lightPos;
-	//  VERTEX-FOG
-	vec4 fogDistanceVector;
-	vec4 fogDepthVector;
-	vec4 fogEyeT;
-	// FRAGMENT
-	vec4 lightColor;
-	vec4 fogColor;
-	// linear dynamic light
-	vec4 lightVector;
+	// light/env parameters:
+	vec4 eyePos;				// vertex
+#ifdef USE_ENT_COLOR
+	vec4 entColor0;				// fragment: ent.color[0]
+	vec4 entColor1;				// fragment: ent.color[1]
+	vec4 entColor2;				// fragment: ent.color[2]
+#else
+	vec4 lightPos;				// vertex: light origin
+	vec4 lightColor;			// fragment: rgb + 1/(r*r)
+	vec4 lightVector;			// fragment: linear dynamic light
+#endif
+#ifdef USE_FOG
+	// fog parameters:
+	vec4 fogDistanceVector;		// vertex
+	vec4 fogDepthVector;		// vertex
+	vec4 fogEyeT;				// vertex
+	vec4 fogColor;				// fragment
+#endif
 };
 #endif
 
 layout(location = 0) in vec3 in_position;
-
-#ifdef USE_CL0_IDENT
-// use fixed color from frag.spec.constant.8
-#else
-layout(location = 1) in vec4 in_color0;
-#endif
 
 #ifndef USE_ENV
 layout(location = 2) in vec2 in_tex_coord0;
@@ -54,6 +53,10 @@ layout(location = 4) in vec2 in_tex_coord2;
 layout(location = 5) in vec3 in_normal;
 #endif
 
+#if defined (USE_CLX_IDENT) || defined (USE_FIXED_COLOR)
+// use either 1.0 or fixed (rgb+a) color from spec.constants
+#else
+layout(location = 1) in vec4 in_color0;
 #ifdef USE_CL1
 layout(location = 6) in vec4 in_color1;
 #endif
@@ -61,18 +64,13 @@ layout(location = 6) in vec4 in_color1;
 layout(location = 7) in vec4 in_color2;
 #endif
 
-
-#ifdef USE_CL0_IDENT
-// use fixed color from frag.spec.constant.8
-#else
 layout(location = 0) out vec4 frag_color0;
-#endif
-
 #ifdef USE_CL1
 layout(location = 5) out vec4 frag_color1;
 #endif
 #ifdef USE_CL2
 layout(location = 6) out vec4 frag_color2;
+#endif
 #endif
 
 layout(location = 1) out vec2 frag_tex_coord0;
@@ -87,7 +85,6 @@ layout(location = 3) out vec2 frag_tex_coord2;
 layout(location = 4) out vec2 fog_tex_coord;
 #endif
 
-
 out gl_PerVertex {
 	vec4 gl_Position;
 };
@@ -95,17 +92,17 @@ out gl_PerVertex {
 void main() {
 	gl_Position = mvp * vec4(in_position, 1.0);
 
-#ifdef USE_CL0_IDENT
-// use fixed color from frag.spec.constant.8
+
+#if defined (USE_CLX_IDENT) || defined (USE_FIXED_COLOR)
+	// use either 1.0 or fixed (rgb+a) color from spec.constants
 #else
 	frag_color0 = in_color0;
-#endif
-
 #ifdef USE_CL1
 	frag_color1 = in_color1;
 #endif
 #ifdef USE_CL2
 	frag_color2 = in_color2;
+#endif
 #endif
 
 #ifdef USE_ENV
@@ -145,5 +142,5 @@ void main() {
 	}
 
 	fog_tex_coord = vec2(s, t);
-#endif
+#endif // USE_FOG
 }

@@ -1,3 +1,53 @@
+14-Oct-2023:
+* Added many CVAR descriptions
+* Added "\vid_restart fast" - to perform fast \vid_restart in current gfx context
+* x86: print CPU brand string if available
+* Fixed spurious bound action on +vstr key releases
+* Fix stuck binds in some cases
+* misc: try to apply map-depending configuration from cvar \cl_mapConfig_\<mapname\> cvars
+* com_affinityMask: allow handy binding of P/E cores on Intel's x86, added support for hexadecimal notation and '+'/'-' operators
+* Sound: added ogg-vorbis support
+* Sound: Use more precise conversion for fp32le sound buffers
+* Sound: re-enable sound-mixing asm in MSVC solutions
+* Renderers: Fix jumppads shaders on q3wcp14
+* Renderers: fix incorrect ovebright bits displayed at startup
+* Renderers: Fix clamp to edge detection
+* Renderers: allow using *lightmap<num> images in shaders
+* Renderers: fix potential crash in FixRenderCommandList()
+* Renderers: make sure that merged lighmaps fits well into reported max. texture dimensions
+* Renderers: make sure that we always configure dst blend bits
+* Renderers: fix bloom latch state when switching back to opengl from vulkan
+* Renderers: use more reasonable default backend color
+* Also fix \\screenshot levelshot taking not factoring scaled capture screen sizes.
+* Vulkan: fix dlight regression on q3dm1
+* Vulkan: added some color-input optimized shaders, should improve FPS by up to 10% in bandwidth-limited cases (iGPUs)
+* Vulkan: rebind indexes after legacy dlight pass before fog pass
+* Vulkan: skip color/tex gen only if previous stage was not optimized and really calculated color/tex data
+* Vulkan: fix depthFragment shaders in fog, allow fog-collapse for non-world shaders
+* Vulkan: allow more color optimizations, with and without fog
+* Vulkan: added entity-color optimization for single-stage shaders
+* Added support for ppc64/ppc64le platforms
+* Fix buffer overflow with fdir cmd and file argument command completion
+* Added \cl_drawRecording cvar to disable or make "RECORDING" demo message shorter
+* github-actions: run linux builds on Ubuntu-20.04 for binary compatibility reason
+* Win32: fixed crash on win11-x64/msvc during longjmp()
+* Win32: fix potential null-pointer dereference in ExceptionFilter()
+* Msg: check for error before checking value to avoid false-positive results
+* Network: Use uint32_t as scope_id for ipv6 connections
+* Server: fix formatting for some connection states in \status output
+* Server: fix host player being dropped in TA SP
+* cURL: updated prebuilt libraries and headers to version 8.4.0
+* cURL: increase maximum buffer size
+* cURL: fix deprecated warnings on modern versions
+* vm_x86: convert "add reg, 128" to "sub reg, -128" to use 1-byte immediate value
+* Fix & backport recent joystick code from ioq3
+* Fix Info_RemoveKey() deleting only first key
+* Fix info string trailing key issue
+* Made rsqrt optimization hint really work
+* common: try to init logfile cvar as early as possible
+* Stop using acstime for logfile date/time
+* Cleanup Makefile
+
 14-Oct-2022:
 * preserve \cl_reconnectAgrs between online mod changes
 * fixed nested cgame command execution

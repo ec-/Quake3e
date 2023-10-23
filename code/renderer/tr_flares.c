@@ -412,10 +412,12 @@ void RB_RenderFlares (void) {
 	backEnd.currentEntity = &tr.worldEntity;
 	backEnd.or = backEnd.viewParms.world;
 
+#ifdef USE_FBO
 	// we can't read from multisampled renderbuffer storage
 	if ( blitMSfbo ) {
 		FBO_BlitMS( qtrue );
 	}
+#endif
 
 	// RB_AddDlightFlares();
 
@@ -449,10 +451,12 @@ void RB_RenderFlares (void) {
 		prev = &f->next;
 	}
 
+#ifdef USE_FBO
 	// bind primary framebuffer again
 	if ( blitMSfbo ) {
 		FBO_BindMain();
 	}
+#endif
 
 	if ( !draw ) {
 		return;		// none visible

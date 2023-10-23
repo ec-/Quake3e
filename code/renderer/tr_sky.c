@@ -769,7 +769,7 @@ void RB_DrawSun( float scale, shader_t *shader ) {
 	if ( !backEnd.skyRenderedThisView )
 		return;
 
-	sunColor.u32 = 0xFFFFFFFF;
+	sunColor.u32 = ~0U;
 
 	qglLoadMatrixf( backEnd.viewParms.world.modelMatrix );
 
@@ -821,7 +821,9 @@ void RB_StageIteratorSky( void ) {
 		return;
 	}
 
+#ifdef USE_VBO
 	VBO_UnBind();
+#endif
 
 	// go through all the polygons and project them onto
 	// the sky box to see which blocks on each side need

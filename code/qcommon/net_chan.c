@@ -425,7 +425,7 @@ typedef struct {
 	int			get, send;
 } loopback_t;
 
-loopback_t	loopbacks[2];
+static loopback_t loopbacks[2]; // NS_CLIENT, NS_SERVER
 
 
 qboolean NET_GetLoopPacket( netsrc_t sock, netadr_t *net_from, msg_t *net_message )
