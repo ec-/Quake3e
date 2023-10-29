@@ -1965,13 +1965,13 @@ static void RE_Shutdown( refShutdownCode_t code ) {
 	if ( r_device->modified ) {
 		code = REF_UNLOAD_DLL;
 	}
-
-	vk_shutdown( code );
 #endif
 
 	// shut down platform specific OpenGL/Vulkan stuff
 	if ( code != REF_KEEP_CONTEXT ) {
 #ifdef USE_VULKAN
+		vk_shutdown( code );
+
 		Com_Memset( &glState, 0, sizeof( glState ) );
 
 		if ( code != REF_KEEP_WINDOW ) {
