@@ -1058,6 +1058,11 @@ Q3OBJ = \
   $(B)/client/sv_init.o \
   $(B)/client/sv_main.o \
   $(B)/client/sv_net_chan.o \
+  $(B)/client/sv_record_common.o \
+  $(B)/client/sv_record_convert.o \
+  $(B)/client/sv_record_main.o \
+  $(B)/client/sv_record_spectator.o \
+  $(B)/client/sv_record_writer.o \
   $(B)/client/sv_snapshot.o \
   $(B)/client/sv_world.o \
   \
@@ -1256,6 +1261,11 @@ Q3DOBJ = \
   $(B)/ded/sv_init.o \
   $(B)/ded/sv_main.o \
   $(B)/ded/sv_net_chan.o \
+  $(B)/ded/sv_record_common.o \
+  $(B)/ded/sv_record_convert.o \
+  $(B)/ded/sv_record_main.o \
+  $(B)/ded/sv_record_spectator.o \
+  $(B)/ded/sv_record_writer.o \
   $(B)/ded/sv_snapshot.o \
   $(B)/ded/sv_world.o \
   \

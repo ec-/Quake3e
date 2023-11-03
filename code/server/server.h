@@ -489,3 +489,16 @@ void SV_LoadFilters( const char *filename );
 const char *SV_RunFilters( const char *userinfo, const netadr_t *addr );
 void SV_AddFilter_f( void );
 void SV_AddFilterCmd_f( void );
+
+//
+// sv_record_main.c
+//
+void Record_Initialize( void );
+void Record_ProcessUsercmd( int clientNum, usercmd_t *usercmd );
+void Record_ProcessConfigstring( int index, const char *value );
+void Record_ProcessServercmd( int clientNum, const char *value );
+void Record_ProcessMapLoaded( void );
+void Record_ProcessSnapshot( void );
+void Record_ProcessGameShutdown( void );
+qboolean Record_ProcessClientConnect( const netadr_t *address, const char *userinfo, int challenge, int qport, qboolean compat );
+qboolean Record_ProcessPacketEvent( const netadr_t *address, msg_t *msg, int qport );

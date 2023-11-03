@@ -628,6 +628,26 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\server\sv_record_common.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\server\sv_record_convert.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\server\sv_record_main.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\server\sv_record_spectator.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\server\sv_record_writer.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\server\sv_snapshot.c"
 				>
 			</File>
@@ -782,6 +802,10 @@
 			</File>
 			<File
 				RelativePath="..\..\server\server.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\server\sv_record_local.h"
 				>
 			</File>
 			<File

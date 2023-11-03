@@ -595,6 +595,10 @@ void SV_DirectConnect( const netadr_t *from ) {
 		return;
 	}
 
+	if ( Record_ProcessClientConnect( from, userinfo, challenge, qport, compat ) ) {
+		return;
+	}
+
 	// run userinfo filter
 	SV_SetTLD( tld, from, Sys_IsLANAddress( from ) );
 	Info_SetValueForKey( userinfo, "tld", tld );
@@ -2020,6 +2024,8 @@ void SV_ClientThink (client_t *cl, usercmd_t *cmd) {
 	if ( cl->state != CS_ACTIVE ) {
 		return;		// may have been kicked during the last usercmd
 	}
+
+	Record_ProcessUsercmd( cl - svs.clients, cmd );
 
 	VM_Call( gvm, 1, GAME_CLIENT_THINK, cl - svs.clients );
 }

@@ -72,6 +72,18 @@ Performance is usually greater or equal to other opengl1 renderers
 
 Original ioquake3 renderer, performance is very poor on non-nvidia systems, unmaintained
 
+## Server Side Recording
+
+Enabled by `sv_recordAutoRecording 1` to record all matches on the server to records directory.
+
+To convert recorded file to demo format for playback, use `record_convert <filename> <clientnum> <instance>` command, where filename is the path to the .rec file within the records directory, clientnum is the client perspective to view, and instance differentiates multiple clients or reconnections with the same client number.
+
+To view available clients and instances for a record file, use `record_scan <filename>` command.
+
+## Admin Spectator
+
+Allows admins to spectate players on the server without joining (useful to monitor for cheating). To enable, set `sv_adminSpectatorPassword` on the server to a password of your choosing. To join the server in spectator mode, set password on the client to `spect_` plus the server password.
+
 ## [Build Instructions](BUILD.md)
 
 ## Contacts

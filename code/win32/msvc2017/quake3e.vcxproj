@@ -331,6 +331,11 @@
     <ClCompile Include="..\..\server\sv_init.c" />
     <ClCompile Include="..\..\server\sv_main.c" />
     <ClCompile Include="..\..\server\sv_net_chan.c" />
+    <ClCompile Include="..\..\server\sv_record_common.c" />
+    <ClCompile Include="..\..\server\sv_record_convert.c" />
+    <ClCompile Include="..\..\server\sv_record_main.c" />
+    <ClCompile Include="..\..\server\sv_record_spectator.c" />
+    <ClCompile Include="..\..\server\sv_record_writer.c" />
     <ClCompile Include="..\..\server\sv_snapshot.c" />
     <ClCompile Include="..\..\server\sv_world.c" />
     <ClCompile Include="..\win_input.c" />
@@ -387,6 +392,7 @@
     <ClInclude Include="..\..\renderercommon\tr_public.h" />
     <ClInclude Include="..\..\renderercommon\tr_types.h" />
     <ClInclude Include="..\..\server\server.h" />
+    <ClInclude Include="..\..\server\sv_record_local.h" />
     <ClInclude Include="..\..\ui\ui_public.h" />
     <ClInclude Include="..\resource.h" />
     <ClInclude Include="..\glw_win.h" />
