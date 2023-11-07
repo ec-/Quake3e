@@ -70,6 +70,16 @@ void X_Con_Init(void)
 	x_con_context.filters[SPAM_FILTER_TYPE_PRIVATE].filter_variable = X_Main_RegisterXModeCmd("x_con_chat_antispam_private", "0", "0", "1", X_HELP_CON_CHAT_ANTISPAM_PRIVATE,CVAR_ARCHIVE,CV_INTEGER);
 }
 
+static void X_SprintfGametime(char* dest, int size, const char *template)
+{
+	int seconds = (xmod.gs.timer.current - xmod.gs.timer.start)/1000;
+	int hours = seconds / 360;
+	seconds -= hours * 360;
+	int minutes = seconds / 60;
+	seconds -= minutes * 60;
+	Com_sprintf(dest, size, template, hours, minutes, seconds);
+}
+
 void X_Con_PrintToChatSection(const char *fmt, ...)
 {
 	va_list argptr;
@@ -79,10 +89,8 @@ void X_Con_PrintToChatSection(const char *fmt, ...)
 	(void) Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
 	va_end(argptr);
 
-	qtime_t time;
-	Com_RealTime(&time);
 	char timestr[64];
-	Com_sprintf(timestr, sizeof(timestr), "%02d:%02d:%02d", time.tm_hour, time.tm_min, time.tm_sec);
+	X_SprintfGametime(timestr, sizeof(timestr), "%02d:%02d:%02d");
 	X_Misc_MakeStringSymbolic(timestr);
 
 	Com_Printf_Chat("^f%s ^l%s\n", timestr, msg);
@@ -184,12 +192,8 @@ qboolean X_Con_OnChatMessage(const char *text, int client)
 	}
 
 	// Make time tag
-
-	qtime_t time;
-	Com_RealTime(&time);
-
 	char timestr[64];
-	Com_sprintf(timestr, sizeof(timestr), "%02d:%02d:%02d", time.tm_hour, time.tm_min, time.tm_sec);
+	X_SprintfGametime(timestr, sizeof(timestr), "%02d:%02d:%02d");
 	X_Misc_MakeStringSymbolic(timestr);
 
 	// Make scope tag
