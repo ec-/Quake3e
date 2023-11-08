@@ -133,6 +133,12 @@ static int	rd_buffersize;
 static qboolean rd_flushing = qfalse;
 static void	(*rd_flush)( const char *buffer );
 
+static struct 
+{
+	qboolean is_initialized;
+	time_t offset;
+} realtime;
+
 void Com_BeginRedirect( char *buffer, int buffersize, void (*flush)(const char *) )
 {
 	if (!buffer || !buffersize || !flush)
@@ -903,10 +909,17 @@ Com_RealTime
 ================
 */
 int Com_RealTime(qtime_t *qtime) {
-	time_t t;
 	struct tm *tms;
+	time_t t = (time_t)Sys_Milliseconds()/1000;
 
-	t = time(NULL);
+	if (realtime.is_initialized == qfalse)
+	{
+		realtime.offset = time(NULL) - t;
+		realtime.is_initialized = qtrue;
+	}
+
+	t += realtime.offset; 
+
 	if (!qtime)
 		return t;
 	tms = localtime(&t);
