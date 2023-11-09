@@ -52,6 +52,16 @@ int Sys_Milliseconds( void )
 	return sys_curtime;
 }
 
+/*
+==================
+Sys_Timezone
+==================
+*/
+long int Sys_Timezone( void )
+{
+	return _timezone;
+}
+
 
 /*
 ================

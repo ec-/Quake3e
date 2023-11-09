@@ -811,6 +811,8 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	// get the initial time base
 	Sys_Milliseconds();
 
+	_tzset();
+
 	Com_Init( sys_cmdline );
 	NET_Init();
 

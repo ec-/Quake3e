@@ -1023,6 +1023,8 @@ int main( int argc, const char* argv[] )
 	// get the initial time base
 	Sys_Milliseconds();
 
+	tzset();
+
 	Com_Init( cmdline );
 	NET_Init();
 

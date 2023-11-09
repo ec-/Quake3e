@@ -1286,6 +1286,8 @@ qboolean Sys_SetAffinityMask( const uint64_t mask );
 int		Sys_Milliseconds( void );
 int64_t	Sys_Microseconds( void );
 
+long int Sys_Timezone( void );
+
 void	Sys_SnapVector( float *vector );
 
 qboolean Sys_RandomBytes( byte *string, int len );
