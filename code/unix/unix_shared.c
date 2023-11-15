@@ -84,15 +84,6 @@ char *strlwr( char *s ) {
   return s; // bk001204 - duh
 }
 
-/*
-==================
-Sys_Timezone
-==================
-*/
-long int Sys_Timezone( void )
-{
-	return timezone;
-}
 
 /*
 ==================

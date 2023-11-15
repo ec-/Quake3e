@@ -909,8 +909,7 @@ int Com_RealTime(qtime_t *qtime) {
 	t = time(NULL);
 	if (!qtime)
 		return t;
-	t -= Sys_Timezone();
-	tms = gmtime(&t);
+	tms = localtime(&t);
 	if (tms) {
 		qtime->tm_sec = tms->tm_sec;
 		qtime->tm_min = tms->tm_min;
