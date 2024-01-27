@@ -310,24 +310,6 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	tr.frameCount++;
 	tr.frameSceneNum = 0;
 
-	//
-	// texturemode stuff
-	//
-	if ( r_textureMode->modified ) {
-		GL_TextureMode( r_textureMode->string );
-		r_textureMode->modified = qfalse;
-	}
-
-	//
-	// gamma stuff
-	//
-	if ( r_gamma->modified || r_greyscale->modified || r_dither->modified ) {
-		r_gamma->modified = qfalse;
-		r_greyscale->modified = qfalse;
-		r_dither->modified = qfalse;
-		R_SetColorMappings();
-	}
-
 	if ( ( cmd = R_GetCommandBuffer( sizeof( *cmd ) ) ) == NULL )
 		return;
 
@@ -408,11 +390,33 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 		*frontEndMsec = tr.frontEndMsec;
 	}
 	tr.frontEndMsec = 0;
+
 	if ( backEndMsec ) {
 		*backEndMsec = backEnd.pc.msec;
 	}
 	backEnd.pc.msec = 0;
+
 	backEnd.throttle = qfalse;
+
+	// recompile GPU shaders if needed
+	if ( ri.Cvar_CheckGroup( CVG_RENDERER ) ) {
+
+		// texturemode stuff
+		if ( r_textureMode->modified ) {
+			GL_TextureMode( r_textureMode->string );
+		}
+
+		// gamma stuff
+		if ( r_gamma->modified ) {
+			R_SetColorMappings();
+		}
+
+#ifdef USE_VULKAN
+		vk_update_post_process_pipelines();
+#endif
+
+		ri.Cvar_ResetGroup( CVG_RENDERER, qtrue /* reset modified flags */ );
+	}
 }
 
 

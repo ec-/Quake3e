@@ -395,17 +395,6 @@ const char *Sys_Pwd( void )
 
 /*
 =================
-Sys_DefaultBasePath
-=================
-*/
-const char *Sys_DefaultBasePath( void )
-{
-	return Sys_Pwd();
-}
-
-
-/*
-=================
 Sys_DefaultHomePath
 =================
 */

@@ -1701,8 +1701,6 @@ void R_SetColorMappings( void ) {
 	}
 
 #ifdef USE_VULKAN
-	vk_update_post_process_pipelines();
-
 	if ( gls.deviceSupportsGamma ) {
 		if ( vk.fboActive )
 			ri.GLimp_SetGamma( s_gammatable_linear, s_gammatable_linear, s_gammatable_linear );
@@ -1744,6 +1742,10 @@ void R_InitImages( void ) {
 
 	// create default texture and white texture
 	R_CreateBuiltinImages();
+
+#ifdef USE_VULKAN
+	vk_update_post_process_pipelines();
+#endif
 }
 
 
