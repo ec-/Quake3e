@@ -3967,7 +3967,7 @@ void CL_Init( void ) {
 	Cvar_CheckRange( cl_dlDirectory, "0", "1", CV_INTEGER );
 	s = va( "Save downloads initiated by \\dlmap and \\download commands in:\n"
 		" 0 - current game directory\n"
-		" 1 - fs_basegame (%s) directory\n", FS_GetBaseGameDir() );
+		" 1 - basegame (%s) directory\n", FS_GetBaseGameDir() );
 	Cvar_SetDescription( cl_dlDirectory, s );
 
 	cl_reconnectArgs = Cvar_Get( "cl_reconnectArgs", "", CVAR_ARCHIVE_ND | CVAR_NOTABCOMPLETE );

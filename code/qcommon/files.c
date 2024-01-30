@@ -290,6 +290,11 @@ typedef struct searchpath_s {
 	dirPolicy_t	policy;
 } searchpath_t;
 
+#define MAX_BASEGAMES 4
+static  char		basegame_str[MAX_OSPATH], *basegames[MAX_BASEGAMES];
+static  int			basegame_cnt;
+static  const char  *basegame = ""; /* last value in array */
+
 static	char		fs_gamedir[MAX_OSPATH];	// this will be a single file name with no separators
 static	cvar_t		*fs_debug;
 static	cvar_t		*fs_homepath;
@@ -3644,6 +3649,29 @@ static void FS_GetModDescription( const char *modDir, char *description, int des
 
 /*
 ================
+FS_IsBaseGame
+================
+*/
+static qboolean FS_IsBaseGame( const char *game )
+{
+	int i;
+
+	if ( game == NULL || *game == '\0' ) {
+		return qtrue;
+	}
+
+	for ( i = 0; i < basegame_cnt; i++ ) {
+		if ( Q_stricmp( basegames[i], game ) == 0 ) {
+			return qtrue;
+		}
+	}
+
+	return qfalse;
+}
+
+
+/*
+================
 FS_GetModList
 
 Returns a list of mod directory names
@@ -3697,10 +3725,11 @@ static int FS_GetModList( char *listbuf, int bufsize ) {
 		}
 
 		// we also drop BASEGAME, "." and ".."
-		if ( bDrop || Q_stricmp( name, fs_basegame->string ) == 0 ) {
+		if ( bDrop || strcmp(name, "." ) == 0 || strcmp( name, ".." ) == 0 ) {
 			continue;
 		}
-		if ( strcmp( name, "." ) == 0 || strcmp( name, ".." ) == 0 ) {
+
+		if ( FS_IsBaseGame( name ) ) {
 			continue;
 		}
 
@@ -4639,7 +4668,7 @@ FS_Startup
 */
 static void FS_Startup( void ) {
 	const char *homePath;
-	int start, end;
+	int i, start, end;
 
 	Com_Printf( "----- FS_Startup -----\n" );
 
@@ -4650,8 +4679,24 @@ static void FS_Startup( void ) {
 	fs_basepath = Cvar_Get( "fs_basepath", Sys_DefaultBasePath(), CVAR_INIT | CVAR_PROTECTED | CVAR_PRIVATE );
 	Cvar_SetDescription( fs_basepath, "Write-protected CVAR specifying the path to the installation folder of the game." );
 	fs_basegame = Cvar_Get( "fs_basegame", BASEGAME, CVAR_INIT | CVAR_PROTECTED );
-	Cvar_SetDescription( fs_basegame, "Write-protected CVAR specifying the path to the base game folder." );
+	Cvar_SetDescription( fs_basegame, "Write-protected CVAR specifying the path to the base game(s) folder(s), separated by '/'." );
 	fs_steampath = Cvar_Get( "fs_steampath", Sys_SteamPath(), CVAR_INIT | CVAR_PROTECTED | CVAR_PRIVATE );
+
+	/* parse fs_basegame cvar */
+	Q_strncpyz( basegame_str, fs_basegame->string, sizeof( basegame_str ) );
+	basegame_cnt = Com_Split( basegame_str, basegames, ARRAY_LEN( basegames ), '/' );
+	/* set up basegame on last item from the list */
+	basegame = basegames[0];
+	for (i = 1; i < basegame_cnt; i++) {
+		if ( basegames[i] != '\0' ) {
+			basegame = basegames[i];
+		}
+	}
+
+	if ( fs_basegame->string[0] == '\0' || *basegame == '\0' || basegame_cnt == 0 )
+		Com_Error( ERR_FATAL, "* fs_basegame is not set *" );
+
+	Com_Printf( S_COLOR_YELLOW "basegame set to '%s'\n", basegame );
 
 #ifndef USE_HANDLE_CACHE
 	fs_locked = Cvar_Get( "fs_locked", "0", CVAR_INIT );
@@ -4660,11 +4705,8 @@ static void FS_Startup( void ) {
 		" 1 - keep file handle locked, more consistent, total pk3 files count limited to ~1k-4k\n" );
 #endif
 
-	if ( !fs_basegame->string[0] )
-		Com_Error( ERR_FATAL, "* fs_basegame is not set *" );
-	
 	homePath = Sys_DefaultHomePath();
-	if ( !homePath || !homePath[0] ) {
+	if ( homePath == NULL || homePath[0] == '\0' ) {
 		homePath = fs_basepath->string;
 	}
 
@@ -4675,7 +4717,7 @@ static void FS_Startup( void ) {
 	Cvar_CheckRange( fs_gamedirvar, NULL, NULL, CV_FSPATH );
 	Cvar_SetDescription( fs_gamedirvar, "Specify an alternate mod directory and run the game with this mod." );
 
-	if ( !Q_stricmp( fs_basegame->string, fs_gamedirvar->string ) ) {
+	if ( FS_IsBaseGame( fs_gamedirvar->string ) ) {
 		Cvar_ForceReset( "fs_game" );
 	}
 
@@ -4693,36 +4735,49 @@ static void FS_Startup( void ) {
 #endif
 
 	// add search path elements in reverse priority order
-	if ( fs_steampath->string[0] ) {
-		FS_AddGameDirectory( fs_steampath->string, fs_basegame->string );
+	if (fs_steampath->string[0]) {
+		// handle multiple basegames:
+		for (i = 0; i < basegame_cnt; i++) {
+			FS_AddGameDirectory( fs_steampath->string, basegames[i] );
+		}
 	}
 
-	if ( fs_basepath->string[0] ) {
-		FS_AddGameDirectory( fs_basepath->string, fs_basegame->string );
+	if (fs_basepath->string[0]) {
+		// handle multiple basegames:
+		for (i = 0; i < basegame_cnt; i++) {
+			FS_AddGameDirectory( fs_basepath->string, basegames[i] );
+		}
 	}
 
 #ifdef __APPLE__
-	fs_apppath = Cvar_Get ("fs_apppath", Sys_DefaultAppPath(), CVAR_INIT|CVAR_PROTECTED );
+	fs_apppath = Cvar_Get( "fs_apppath", Sys_DefaultAppPath(), CVAR_INIT | CVAR_PROTECTED );
 	// Make MacOSX also include the base path included with the .app bundle
-	if (fs_apppath->string[0])
-		FS_AddGameDirectory(fs_apppath->string, fs_basegame->string);
+	if ( fs_apppath->string[0] ) {
+		// handle multiple basegames:
+		for ( i = 0; i < basegame_cnt; i++ ) {
+			FS_AddGameDirectory( fs_apppath->string, basegames[i] );
+		}
+	}
 #endif
 
 	// fs_homepath is somewhat particular to *nix systems, only add if relevant
 	// NOTE: same filtering below for mods and basegame
 	if ( fs_homepath->string[0] && Q_stricmp( fs_homepath->string, fs_basepath->string ) ) {
-		FS_AddGameDirectory( fs_homepath->string, fs_basegame->string );
+		// handle multiple basegames:
+		for ( i = 0; i < basegame_cnt; i++ ) {
+			FS_AddGameDirectory( fs_homepath->string, basegames[i] );
+		}
 	}
 
 	// check for additional game folder for mods
-	if ( fs_gamedirvar->string[0] && Q_stricmp( fs_gamedirvar->string, fs_basegame->string ) ) {
-		if ( fs_steampath->string[0] ) {
+	if ( fs_gamedirvar->string[0] != '\0' && !FS_IsBaseGame( fs_gamedirvar->string ) ) {
+		if ( fs_steampath->string[0] != '\0' ) {
 			FS_AddGameDirectory( fs_steampath->string, fs_gamedirvar->string );
 		}
-		if ( fs_basepath->string[0] ) {
+		if ( fs_basepath->string[0] != '\0' ) {
 			FS_AddGameDirectory( fs_basepath->string, fs_gamedirvar->string );
 		}
-		if ( fs_homepath->string[0] && Q_stricmp( fs_homepath->string, fs_basepath->string ) ) {
+		if ( fs_homepath->string[0] != '\0' && Q_stricmp( fs_homepath->string, fs_basepath->string ) ) {
 			FS_AddGameDirectory( fs_homepath->string, fs_gamedirvar->string );
 		}
 	}
@@ -4739,9 +4794,8 @@ static void FS_Startup( void ) {
 
 	end = Sys_Milliseconds();
 
-	Com_ReadCDKey( fs_basegame->string );
-
-	if ( fs_gamedirvar->string[0] && Q_stricmp( fs_gamedirvar->string, fs_basegame->string ) ) {
+	Com_ReadCDKey( basegame );
+	if ( !FS_IsBaseGame( fs_gamedirvar->string ) ) {
 		Com_AppendCDKey( fs_gamedirvar->string );
 	}
 
@@ -4765,8 +4819,9 @@ static void FS_Startup( void ) {
 	fs_gamedirvar->modified = qfalse; // We just loaded, it's not modified
 
 	// check original q3a files
-	if ( !Q_stricmp( fs_basegame->string, BASEGAME ) || !Q_stricmp( fs_basegame->string, BASEDEMO ) )
+	if ( FS_IsBaseGame( BASEGAME ) || FS_IsBaseGame( BASEDEMO ) ) {
 		FS_CheckIdPaks();
+	}
 
 #ifdef FS_MISSING
 	if (missingFiles == NULL) {
@@ -5014,7 +5069,7 @@ const char *FS_ReferencedPakChecksums( void ) {
 			if ( search->pack->exclude ) {
 				continue;
 			}
-			if ( search->pack->referenced || Q_stricmp( search->pack->pakGamename, fs_basegame->string ) ) {
+			if ( search->pack->referenced || !FS_IsBaseGame( search->pack->pakGamename ) ) {
 				Q_strcat( info, sizeof( info ), va( "%i ", search->pack->checksum ) );
 			}
 		}
@@ -5141,7 +5196,7 @@ const char *FS_ReferencedPakNames( void ) {
 			if ( search->pack->exclude ) {
 				continue;
 			}
-			if ( search->pack->referenced || Q_stricmp( search->pack->pakGamename, fs_basegame->string ) ) {
+			if ( search->pack->referenced || !FS_IsBaseGame( search->pack->pakGamename ) ) {
 				pakName = va( "%s/%s", search->pack->pakGamename, search->pack->pakBasename );
 				if ( *info != '\0' ) {
 					Q_strcat( info, sizeof( info ), " " );
@@ -5624,22 +5679,22 @@ void FS_VM_CloseFiles( handleOwner_t owner )
 
 const char *FS_GetCurrentGameDir( void )
 {
-	if ( fs_gamedirvar->string[0] )
+	if ( fs_gamedirvar->string[0] != '\0' )
 		return fs_gamedirvar->string;
 
-	return fs_basegame->string;
+	return basegame; // last basegame
 }
 
 
 const char *FS_GetBaseGameDir( void )
 {
-	return fs_basegame->string;
+	return basegame; // last basegame
 }
 
 
-const char *FS_GetBasePath( void )
+static const char *FS_GetBasePath( void )
 {
-	if ( fs_basepath && fs_basepath->string[0] )
+	if ( fs_basepath && fs_basepath->string[0] != '\0' )
 		return fs_basepath->string;
 	else
 		return "";
@@ -5648,24 +5703,10 @@ const char *FS_GetBasePath( void )
 
 const char *FS_GetHomePath( void )
 {
-	if ( fs_homepath && fs_homepath->string[0] )
+	if ( fs_homepath && fs_homepath->string[0] != '\0' )
 		return fs_homepath->string;
 	else
 		return FS_GetBasePath();
-}
-
-
-const char *FS_GetGamePath( void )
-{
-	static char buffer[ MAX_OSPATH + MAX_CVAR_VALUE_STRING + 1 ];
-	if ( fs_gamedirvar && fs_gamedirvar->string[0] ) {
-		Com_sprintf( buffer, sizeof( buffer ), "%s%c%s", FS_GetHomePath(), 
-			PATH_SEP, fs_gamedirvar->string );
-		return buffer;
-	} else {
-		buffer[0] = '\0';
-		return buffer;
-	}
 }
 
 
