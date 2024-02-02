@@ -4155,8 +4155,8 @@ void Com_WriteConfiguration( void ) {
 	Com_WriteConfigToFile( Q3CONFIG_CFG );
 
 #ifndef DEDICATED
-	gamedir = Cvar_VariableString( "fs_game" );
-	basegame = Cvar_VariableString( "fs_basegame" );
+	gamedir = FS_GetCurrentGameDir();
+	basegame = FS_GetBaseGameDir();
 	if ( UI_usesUniqueCDKey() && gamedir[0] && Q_stricmp( basegame, gamedir ) ) {
 		Com_WriteCDKey( gamedir, &cl_cdkey[16] );
 	} else {
