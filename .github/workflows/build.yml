@@ -59,7 +59,7 @@ jobs:
         release: false
         update: false
 
-    - uses: actions/checkout@v3.1.0
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
 
@@ -71,7 +71,7 @@ jobs:
         make clean ARCH=${{ matrix.arch }}
         make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl
 
-    - uses: actions/upload-artifact@v3.1.1
+    - uses: actions/upload-artifact@v4
       if: matrix.cc == 'gcc' && matrix.btype == 'release'
       with:
         name: windows-mingw-${{ matrix.arch }}
@@ -104,9 +104,9 @@ jobs:
 
     steps:
 
-    - uses: microsoft/setup-msbuild@v1.1.3
+    - uses: microsoft/setup-msbuild@v2
 
-    - uses: actions/checkout@v3.1.0
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
 
@@ -131,7 +131,7 @@ jobs:
         msbuild code\win32\msvc2017\renderervk.vcxproj -p:Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }} -t:Clean
         msbuild code\win32\msvc2017\quake3e.vcxproj -p:TargetName=quake3e,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0 -t:Clean
 
-    - uses: actions/upload-artifact@v3.1.1
+    - uses: actions/upload-artifact@v4
       if: ${{ matrix.btype == 'release' }}
       with:
         name: windows-msvc-${{ matrix.pkg_suffix }}
@@ -175,7 +175,7 @@ jobs:
           sudo apt-get -y install libcurl4-openssl-dev mesa-common-dev libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev libsdl2-dev
         fi
 
-    - uses: actions/checkout@v3.1.0
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
 
@@ -186,7 +186,7 @@ jobs:
         make clean ARCH=${{ matrix.arch }} 
         make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin ${{ matrix.use_sdl }} USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl
 
-    - uses: actions/upload-artifact@v3.1.1
+    - uses: actions/upload-artifact@v4
       if: matrix.cc == 'gcc' && matrix.btype == 'release'
       with:
         name: linux-${{ matrix.arch }}
@@ -212,7 +212,7 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v3.1.0
+    - uses: actions/checkout@v4
       if: false
       with:
         submodules: recursive
@@ -220,7 +220,7 @@ jobs:
     - name: Build ${{ matrix.arch }}
       #if: ${{ github.event_name != 'release' || matrix.btype != 'Debug' }} # skip Debug configuration in Release build
       if: false
-      uses: uraimo/run-on-arch-action@v2.0.5
+      uses: uraimo/run-on-arch-action@v2
       with:
         arch: ${{ matrix.arch }}
         distro: ubuntu20.04
@@ -234,7 +234,7 @@ jobs:
           make clean ARCH=${{ matrix.arch }} 
           make ${{ matrix.rule }} -j 4 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl
 
-    - uses: actions/upload-artifact@v3.1.1
+    - uses: actions/upload-artifact@v4
       if: false
       #if: matrix.cc == 'gcc' && matrix.btype == 'Release'
       with:
@@ -264,7 +264,7 @@ jobs:
     - name: Install tools
       run: brew install coreutils pkg-config sdl2
 
-    - uses: actions/checkout@v3.1.0
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
 
@@ -275,7 +275,7 @@ jobs:
         make clean ARCH=${{ matrix.arch }} 
         make ${{ matrix.rule }} -j 4 CC=${{ matrix.cc }} DESTDIR=bin INSTALL=ginstall USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl STRIP=echo
 
-    - uses: actions/upload-artifact@v3.1.1
+    - uses: actions/upload-artifact@v4
       if: matrix.cc == 'clang' && matrix.btype == 'release'
       with:
         name: macos-${{ matrix.arch }}
@@ -289,7 +289,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download Artifacts
-        uses: actions/download-artifact@v3.0.1
+        uses: actions/download-artifact@v4
 
       - name: Create binary archives
         run: |
@@ -357,7 +357,7 @@ jobs:
 
     steps:
       - name: Download Artifacts
-        uses: actions/download-artifact@v3.0.1
+        uses: actions/download-artifact@v4
 
       - name: Create archive
         run: 7z a -r ${{ matrix.artifact_name }} ./${{ matrix.artifact_dir }}/*
