@@ -389,7 +389,7 @@ R_LoadLightmaps
 static void R_LoadLightmaps( const lump_t *l ) {
 	const byte	*buf;
 	byte		image[LIGHTMAP_LEN*LIGHTMAP_LEN*4];
-	int			i;
+	int			i, numLightmaps;
 	float		maxIntensity = 0;
 
 	tr.numLightmaps = 0;
@@ -413,7 +413,9 @@ static void R_LoadLightmaps( const lump_t *l ) {
 		return;
 	}
 
-	if ( r_mergeLightmaps->integer ) {
+	numLightmaps = l->filelen / (LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3);
+
+	if ( r_mergeLightmaps->integer && numLightmaps > 1 ) {
 		// check for low texture sizes
 		if ( glConfig.maxTextureSize >= LIGHTMAP_LEN*2 ) {
 			tr.mergeLightmaps = qtrue;
@@ -425,7 +427,7 @@ static void R_LoadLightmaps( const lump_t *l ) {
 	buf = fileBase + l->fileofs;
 
 	// create all the lightmaps
-	tr.numLightmaps = l->filelen / (LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3);
+	tr.numLightmaps = numLightmaps;
 
 	// we are about to upload textures
 	//R_IssuePendingRenderCommands();
