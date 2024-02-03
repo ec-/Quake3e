@@ -352,13 +352,75 @@ static void end_command_buffer( VkCommandBuffer command_buffer )
 }
 
 
-static void record_image_layout_transition(VkCommandBuffer command_buffer, VkImage image, VkImageAspectFlags image_aspect_flags, VkAccessFlags src_access_flags, VkImageLayout old_layout, VkAccessFlags dst_access_flags, VkImageLayout new_layout) {
+static void record_image_layout_transition( VkCommandBuffer command_buffer, VkImage image, VkImageAspectFlags image_aspect_flags, VkImageLayout old_layout, VkImageLayout new_layout ) {
 	VkImageMemoryBarrier barrier;
+	uint32_t src_stage, dst_stage;
+
+	switch ( old_layout ) {
+		case VK_IMAGE_LAYOUT_UNDEFINED:
+			src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+			barrier.srcAccessMask = VK_ACCESS_NONE;
+			break;
+		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+			src_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			break;
+		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+			src_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			break;
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+			src_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			break;
+		case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
+			src_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+			barrier.srcAccessMask = VK_ACCESS_NONE;
+			break;
+		default:
+			ri.Error( ERR_DROP, "unsupported old layout %i", old_layout );
+			src_stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+			barrier.srcAccessMask = VK_ACCESS_NONE;
+			break;
+	}
+
+	switch ( new_layout ) {
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+			dst_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			break;
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+			dst_stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+			barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			break;
+		case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
+			dst_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+			barrier.dstAccessMask = VK_ACCESS_NONE;
+			break;
+		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+			dst_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			break;
+		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+			dst_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			break;
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+			dst_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+			break;
+		default:
+			ri.Error( ERR_DROP, "unsupported new layout %i", new_layout);
+			dst_stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+			barrier.dstAccessMask = VK_ACCESS_NONE;
+			break;
+	}
+
 
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	barrier.pNext = NULL;
-	barrier.srcAccessMask = src_access_flags;
-	barrier.dstAccessMask = dst_access_flags;
+	//barrier.srcAccessMask = src_access_flags;
+	//barrier.dstAccessMask = dst_access_flags;
 	barrier.oldLayout = old_layout;
 	barrier.newLayout = new_layout;
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -370,7 +432,7 @@ static void record_image_layout_transition(VkCommandBuffer command_buffer, VkIma
 	barrier.subresourceRange.baseArrayLayer = 0;
 	barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
-	qvkCmdPipelineBarrier( command_buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0, NULL, 1, &barrier );
+	qvkCmdPipelineBarrier( command_buffer, src_stage, dst_stage, 0, 0, NULL, 0, NULL, 1, &barrier );
 }
 
 
@@ -546,8 +608,7 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 		for ( i = 0; i < vk.swapchain_image_count; i++ ) {
 			record_image_layout_transition( command_buffer, vk.swapchain_images[i],
 				VK_IMAGE_ASPECT_COLOR_BIT,
-				0, VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_ACCESS_MEMORY_READ_BIT, vk.initSwapchainLayout );
+				VK_IMAGE_LAYOUT_UNDEFINED, vk.initSwapchainLayout );
 		}
 
 		end_command_buffer( command_buffer );
@@ -562,7 +623,7 @@ static void vk_create_render_passes( void )
 	VkAttachmentReference colorRef0;
 	VkAttachmentReference depthRef0;
 	VkSubpassDescription subpass;
-	VkSubpassDependency deps[2];
+	VkSubpassDependency deps[3];
 	VkRenderPassCreateInfo desc;
 	VkFormat depth_format;
 	VkDevice device;
@@ -684,18 +745,18 @@ static void vk_create_render_passes( void )
 
 	Com_Memset( &deps, 0, sizeof( deps ) );
 
+	deps[2].srcSubpass = VK_SUBPASS_EXTERNAL;
+	deps[2].dstSubpass = 0;
+	deps[2].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;	// What pipeline stage is waiting on the dependency
+	deps[2].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;	// What pipeline stage is waiting on the dependency
+	deps[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;			// What access scopes are influence the dependency
+	deps[2].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;			// What access scopes are waiting on the dependency
+	deps[2].dependencyFlags = 0;
+
 	if ( r_fbo->integer == 0 )
 	{
 		desc.dependencyCount = 1;
-		desc.pDependencies = deps;
-
-		deps[ 0 ].srcSubpass = VK_SUBPASS_EXTERNAL;
-		deps[ 0 ].dstSubpass = 0;
-		deps[ 0 ].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;	// What pipeline stage is waiting on the dependency
-		deps[ 0 ].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;	// What pipeline stage is waiting on the dependency
-		deps[ 0 ].srcAccessMask = 0;											// What access scopes are influence the dependency
-		deps[ 0 ].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // What access scopes are waiting on the dependency
-		deps[ 0 ].dependencyFlags = 0;
+		desc.pDependencies = &deps[2];
 
 		VK_CHECK( qvkCreateRenderPass( device, &desc, NULL, &vk.render_pass.main ) );
 		SET_OBJECT_NAME( vk.render_pass.main, "render pass - main", VK_DEBUG_REPORT_OBJECT_TYPE_RENDER_PASS_EXT );
@@ -704,7 +765,7 @@ static void vk_create_render_passes( void )
 	}
 
 	desc.dependencyCount = 2;
-	desc.pDependencies = deps;
+	desc.pDependencies = &deps[0];
 
 	deps[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 	deps[0].dstSubpass = 0;
@@ -829,11 +890,15 @@ static void vk_create_render_passes( void )
 	attachments[0].initialLayout = vk.initSwapchainLayout;
 	attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-	VK_CHECK( qvkCreateRenderPass( device, &desc, NULL, &vk.render_pass.gamma ) );
+	desc.dependencyCount = 1;
+	desc.pDependencies = &deps[2];
 
+	VK_CHECK( qvkCreateRenderPass( device, &desc, NULL, &vk.render_pass.gamma ) );
 	SET_OBJECT_NAME( vk.render_pass.gamma, "render pass - gamma", VK_DEBUG_REPORT_OBJECT_TYPE_RENDER_PASS_EXT );
 
 	// screenmap
+	desc.dependencyCount = 2;
+	desc.pDependencies = &deps[0];
 
 	// resolve/color buffer
 	attachments[0].flags = 0;
@@ -993,12 +1058,12 @@ static void ensure_staging_buffer_allocation(VkDeviceSize size) {
 	if (vk_world.staging_buffer_memory != VK_NULL_HANDLE)
 		qvkFreeMemory(vk.device, vk_world.staging_buffer_memory, NULL);
 
-	vk_world.staging_buffer_size = size;
+	vk_world.staging_buffer_size = MAX( size, 1024 * 1024 );
 
 	buffer_desc.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	buffer_desc.pNext = NULL;
 	buffer_desc.flags = 0;
-	buffer_desc.size = size;
+	buffer_desc.size = vk_world.staging_buffer_size;
 	buffer_desc.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	buffer_desc.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	buffer_desc.queueFamilyIndexCount = 0;
@@ -2088,8 +2153,8 @@ static VkSampler vk_find_sampler( const Vk_Sampler_Def *def ) {
 	desc.compareEnable = VK_FALSE;
 	desc.compareOp = VK_COMPARE_OP_ALWAYS;
 	desc.minLod = 0.0f;
-	desc.maxLod = maxLod;
-	desc.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	desc.maxLod = (maxLod == vk.maxLod) ? VK_LOD_CLAMP_NONE : maxLod;
+	desc.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 	desc.unnormalizedCoordinates = VK_FALSE;
 
 	VK_CHECK( qvkCreateSampler( vk.device, &desc, NULL, &sampler ) );
@@ -2924,7 +2989,6 @@ typedef struct vk_attach_desc_s  {
 	VkDeviceSize  memory_offset;
 	// for layout transition:
 	VkImageAspectFlags aspect_flags;
-	VkAccessFlags access_flags;
 	VkImageLayout image_layout;
 	VkFormat image_format;
 } vk_attach_desc_t;
@@ -3045,9 +3109,7 @@ static void vk_alloc_attachments( void )
 		record_image_layout_transition( command_buffer,
 			attachments[i].descriptor,
 			attachments[i].aspect_flags,
-			0, // src_access_flags
 			VK_IMAGE_LAYOUT_UNDEFINED, // old_layout
-			attachments[i].access_flags,
 			attachments[i].image_layout
 		);
 	}
@@ -3057,7 +3119,7 @@ static void vk_alloc_attachments( void )
 }
 
 
-static void vk_add_attachment_desc( VkImage desc, VkImageView *image_view, VkImageUsageFlags usage, VkMemoryRequirements *reqs, VkFormat image_format, VkImageAspectFlags aspect_flags, VkAccessFlags access_flags, VkImageLayout image_layout )
+static void vk_add_attachment_desc( VkImage desc, VkImageView *image_view, VkImageUsageFlags usage, VkMemoryRequirements *reqs, VkFormat image_format, VkImageAspectFlags aspect_flags, VkImageLayout image_layout )
 {
 	if ( num_attachments >= ARRAY_LEN( attachments ) ) {
 		ri.Error( ERR_FATAL, "Attachments array overflow" );
@@ -3067,7 +3129,6 @@ static void vk_add_attachment_desc( VkImage desc, VkImageView *image_view, VkIma
 		attachments[ num_attachments ].usage = usage;
 		attachments[ num_attachments ].reqs = *reqs;
 		attachments[ num_attachments ].aspect_flags = aspect_flags;
-		attachments[ num_attachments ].access_flags = access_flags;
 		attachments[ num_attachments ].image_layout = image_layout;
 		attachments[ num_attachments ].image_format = image_format;
 		attachments[ num_attachments ].memory_offset = 0;
@@ -3134,10 +3195,7 @@ static void create_color_attachment( uint32_t width, uint32_t height, VkSampleCo
 
 	vk_get_image_memory_erquirements( *image, &memory_requirements );
 
-	if ( multisample )
-		vk_add_attachment_desc( *image, image_view, usage, &memory_requirements, format, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, image_layout );
-	else
-		vk_add_attachment_desc( *image, image_view, usage, &memory_requirements, format, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_SHADER_READ_BIT, image_layout );
+	vk_add_attachment_desc( *image, image_view, usage, &memory_requirements, format, VK_IMAGE_ASPECT_COLOR_BIT, image_layout );
 }
 
 
@@ -3174,7 +3232,7 @@ static void create_depth_attachment( uint32_t width, uint32_t height, VkSampleCo
 
 	vk_get_image_memory_erquirements( *image, &memory_requirements );
 
-	vk_add_attachment_desc( *image, image_view, create_desc.usage, &memory_requirements, vk.depth_format, image_aspect_flags, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL );
+	vk_add_attachment_desc( *image, image_view, create_desc.usage, &memory_requirements, vk.depth_format, image_aspect_flags, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL );
 }
 
 
@@ -3616,13 +3674,13 @@ void vk_initialize( void )
 
 	vk_set_render_scale();
 
-	if ( r_fbo->integer )
-	{
+	if ( r_fbo->integer ) {
 		vk.fboActive = qtrue;
-		if ( r_ext_multisample->integer )
-		{
+		if ( r_ext_multisample->integer ) {
 			vk.msaaActive = qtrue;
 		}
+	} else {
+		vk.fboActive = qfalse;
 	}
 
 	// multisampling
@@ -4322,10 +4380,12 @@ void vk_create_image( image_t *image, int width, int height, int mip_levels ) {
 
 	if ( image->handle ) {
 		qvkDestroyImage( vk.device, image->handle, NULL );
+		image->handle = VK_NULL_HANDLE;
 	}
 
 	if ( image->view ) {
 		qvkDestroyImageView( vk.device, image->view, NULL );
+		image->view = VK_NULL_HANDLE;
 	}
 
 	// create image
@@ -4379,8 +4439,7 @@ void vk_create_image( image_t *image, int width, int height, int mip_levels ) {
 	}
 
 	// create associated descriptor set
-	if ( image->descriptor == VK_NULL_HANDLE )
-	{
+	if ( image->descriptor == VK_NULL_HANDLE ) {
 		VkDescriptorSetAllocateInfo desc;
 
 		desc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -4467,7 +4526,7 @@ static byte *resample_image_data( const int target_format, byte *data, const int
 }
 
 
-void vk_upload_image_data( image_t *image, int x, int y, int width, int height, int mipmaps, byte *pixels, int size ) {
+void vk_upload_image_data( image_t *image, int x, int y, int width, int height, int mipmaps, byte *pixels, int size, qboolean update ) {
 
 	VkCommandBuffer command_buffer;
 	VkBufferImageCopy regions[16];
@@ -4520,9 +4579,14 @@ void vk_upload_image_data( image_t *image, int x, int y, int width, int height, 
 	command_buffer = begin_command_buffer();
 
 	record_buffer_memory_barrier( command_buffer, vk_world.staging_buffer, VK_WHOLE_SIZE, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT );
-	record_image_layout_transition( command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_IMAGE_LAYOUT_UNDEFINED, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
+	
+	if ( update ) {
+		record_image_layout_transition( command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
+	} else {
+		record_image_layout_transition( command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
+	}
 	qvkCmdCopyBufferToImage( command_buffer, vk_world.staging_buffer, image->handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, num_regions, regions );
-	record_image_layout_transition( command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
+	record_image_layout_transition( command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
 
 	end_command_buffer( command_buffer );
 
@@ -6777,7 +6841,7 @@ static void vk_begin_screenmap_render_pass( void )
 	VkFramebuffer frameBuffer = vk.framebuffers.screenmap;
 
 	record_image_layout_transition( vk.cmd->command_buffer, vk.screenMap.color_image, VK_IMAGE_ASPECT_COLOR_BIT,
-		0, VK_IMAGE_LAYOUT_UNDEFINED, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
+		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
 
 	vk.renderPassIndex = RENDER_PASS_SCREENMAP;
 
@@ -6840,6 +6904,18 @@ void vk_begin_frame( void )
 		vk.cmd = &vk.tess[ vk.cmd_index++ ];
 		vk.cmd_index %= NUM_COMMAND_BUFFERS;
 
+		vk.cmd->waitForFence = qfalse;
+		res = qvkWaitForFences(vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e10);
+		if (res != VK_SUCCESS) {
+			if (res == VK_ERROR_DEVICE_LOST) {
+				// silently discard previous command buffer
+				ri.Printf(PRINT_WARNING, "Vulkan: %s returned %s", "vkWaitForfences", vk_result_string(res));
+			}
+			else {
+				ri.Error(ERR_FATAL, "Vulkan: %s returned %s", "vkWaitForfences", vk_result_string(res));
+			}
+		}
+
 		if ( !ri.CL_IsMinimized() ) {
 			res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, 5 * 1000000000ULL, vk.cmd->image_acquired, VK_NULL_HANDLE, &vk.swapchain_image_index );
 			// when running via RDP: "Application has already acquired the maximum number of images (0x2)"
@@ -6857,16 +6933,6 @@ void vk_begin_frame( void )
 			vk.swapchain_image_index %= vk.swapchain_image_count;
 		}
 
-		vk.cmd->waitForFence = qfalse;
-		res = qvkWaitForFences( vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e10 );
-		if ( res != VK_SUCCESS ) {
-			if ( res == VK_ERROR_DEVICE_LOST ) {
-				// silently discard previous command buffer
-				ri.Printf( PRINT_WARNING, "Vulkan: %s returned %s", "vkWaitForfences", vk_result_string( res ) );
-			} else {
-				ri.Error( ERR_FATAL, "Vulkan: %s returned %s", "vkWaitForfences", vk_result_string( res ) );
-			}
-		}
 	} else {
 		// current command buffer has been reset due to geometry buffer overflow/update
 		// so we will reuse it with current swapchain image as well
@@ -6970,9 +7036,7 @@ static void vk_resize_geometry_buffer( void )
 void vk_end_frame( void )
 {
 	const VkPipelineStageFlags wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	VkPresentInfoKHR present_info;
 	VkSubmitInfo submit_info;
-	VkResult res;
 
 	if ( vk.frame_count == 0 )
 		return;
@@ -7052,7 +7116,18 @@ void vk_end_frame( void )
 	// presentation may take undefined time to complete, we can't measure it in a reliable way
 	backEnd.pc.msec = ri.Milliseconds() - backEnd.pc.msec;
 
+	// vk_present_frame();
+}
+
+void vk_present_frame( void )
+{
+	VkPresentInfoKHR present_info;
+	VkResult res;
+
 	if ( ri.CL_IsMinimized() )
+		return;
+
+	if ( !vk.cmd->waitForFence )
 		return;
 
 	present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -7067,7 +7142,7 @@ void vk_end_frame( void )
 	res = qvkQueuePresentKHR( vk.queue, &present_info );
 	if ( res < 0 ) {
 		if ( res == VK_ERROR_DEVICE_LOST ) {
-			 // we can ignore that
+			// we can ignore that
 			ri.Printf( PRINT_DEVELOPER, "vkQueuePresentKHR: device lost\n" );
 		} else if ( res == VK_ERROR_OUT_OF_DATE_KHR ) {
 			// swapchain re-creation needed
@@ -7108,7 +7183,6 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 	VkImageCreateInfo desc;
 	VkImage srcImage;
 	VkImageLayout srcImageLayout;
-	VkAccessFlagBits srcImageAccess;
 	VkImage dstImage;
 	byte *buffer_ptr;
 	byte *data;
@@ -7119,7 +7193,6 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 	VK_CHECK( qvkWaitForFences( vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e12 ) );
 
 	if ( vk.fboActive ) {
-		srcImageAccess = VK_ACCESS_SHADER_READ_BIT;
 		if ( vk.capture.image ) {
 			// dedicated capture buffer
 			srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -7129,7 +7202,6 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 			srcImage = vk.color_image;
 		}
 	} else {
-		srcImageAccess = VK_ACCESS_MEMORY_READ_BIT;
 		srcImageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		srcImage = vk.swapchain_images[ vk.swapchain_image_index ];
 	}
@@ -7195,14 +7267,14 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 	if ( srcImageLayout != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL ) {
 		record_image_layout_transition( command_buffer, srcImage,
 			VK_IMAGE_ASPECT_COLOR_BIT,
-			srcImageAccess, srcImageLayout,
-			VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL );
+			srcImageLayout,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL );
 	}
 
 	record_image_layout_transition( command_buffer, dstImage,
 		VK_IMAGE_ASPECT_COLOR_BIT,
-		0, VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
 
 	// end_command_buffer( command_buffer );
 
@@ -7324,13 +7396,13 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 	qvkFreeMemory( vk.device, memory, NULL );
 
 	// restore previous layout
-	if ( srcImage == vk.color_image ) {
+	if ( srcImageLayout != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL ) {
 		command_buffer = begin_command_buffer();
 
 		record_image_layout_transition( command_buffer, srcImage,
 			VK_IMAGE_ASPECT_COLOR_BIT,
-			VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			srcImageAccess, srcImageLayout );
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			srcImageLayout );
 
 		end_command_buffer( command_buffer );
 	}

@@ -4688,15 +4688,13 @@ static void FS_Startup( void ) {
 	/* set up basegame on last item from the list */
 	basegame = basegames[0];
 	for (i = 1; i < basegame_cnt; i++) {
-		if ( basegames[i] != '\0' ) {
+		if ( *basegames[i] != '\0' ) {
 			basegame = basegames[i];
 		}
 	}
 
 	if ( fs_basegame->string[0] == '\0' || *basegame == '\0' || basegame_cnt == 0 )
 		Com_Error( ERR_FATAL, "* fs_basegame is not set *" );
-
-	Com_Printf( S_COLOR_YELLOW "basegame set to '%s'\n", basegame );
 
 #ifndef USE_HANDLE_CACHE
 	fs_locked = Cvar_Get( "fs_locked", "0", CVAR_INIT );
