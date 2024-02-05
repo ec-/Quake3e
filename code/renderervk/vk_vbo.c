@@ -150,6 +150,7 @@ static qboolean isStaticTCmod( const textureBundle_t *bundle )
 			case TMOD_TRANSFORM:
 			case TMOD_OFFSET:
 			case TMOD_SCALE_OFFSET:
+			case TMOD_OFFSET_SCALE:
 				break;
 			default:
 				return qfalse;

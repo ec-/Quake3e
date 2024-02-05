@@ -825,7 +825,7 @@ static void ParseTriSurf( const dsurface_t *ds, const drawVert_t *verts, msurfac
 	if ( lightmapNum >= 0 && tr.mergeLightmaps ) {
 		lightmapNum = R_GetLightmapCoords( lightmapNum, &lightmapX, &lightmapY );
 	} else {
-		lightmapX = lightmapY = 0;
+		lightmapX = lightmapY = 0.0f;
 	}
 
 	tr.lightmapOffset[0] = lightmapX;
