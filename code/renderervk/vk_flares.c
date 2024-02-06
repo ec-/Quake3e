@@ -323,13 +323,13 @@ static void RB_TestFlare( flare_t *f ) {
 		else
 			visible = qfalse;
 
-		f->testCount &= 0xFFFF;
+		f->testCount = 1;
 	} else {
 		visible = qfalse;
 	}
 
 	// reset test result in storage buffer
-	Com_Memset( vk.storage.buffer_ptr + offset, 0x0, sizeof( uint32_t ) );
+	// *((uint32_t*)(vk.storage.buffer_ptr + offset)) = 0x00;
 
 	m = vk_ortho( backEnd.viewParms.viewportX, backEnd.viewParms.viewportX + backEnd.viewParms.viewportWidth,
 		backEnd.viewParms.viewportY, backEnd.viewParms.viewportY + backEnd.viewParms.viewportHeight, 0, 1 );
@@ -505,7 +505,7 @@ void RB_RenderFlares( void ) {
 	prev = &r_activeFlares;
 	while ( ( f = *prev ) != NULL ) {
 		// throw out any flares that weren't added last frame
-		if ( backEnd.viewParms.frameCount - f->addedFrame > 1 ) {
+		if ( backEnd.viewParms.frameCount - f->addedFrame > 0 && f->portalView == backEnd.viewParms.portalView ) {
 			*prev = f->next;
 			f->next = r_inactiveFlares;
 			r_inactiveFlares = f;
