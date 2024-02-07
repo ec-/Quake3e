@@ -4683,14 +4683,18 @@ static void FS_Startup( void ) {
 	fs_steampath = Cvar_Get( "fs_steampath", Sys_SteamPath(), CVAR_INIT | CVAR_PROTECTED | CVAR_PRIVATE );
 
 	/* parse fs_basegame cvar */
-	Q_strncpyz( basegame_str, fs_basegame->string, sizeof( basegame_str ) );
-	basegame_cnt = Com_Split( basegame_str, basegames, ARRAY_LEN( basegames ), '/' );
-	/* set up basegame on last item from the list */
-	basegame = basegames[0];
-	for (i = 1; i < basegame_cnt; i++) {
-		if ( *basegames[i] != '\0' ) {
-			basegame = basegames[i];
+	if ( basegame_cnt == 0 || Q_stricmp( basegame, fs_basegame->string ) ) {
+		Q_strncpyz( basegame_str, fs_basegame->string, sizeof( basegame_str ) );
+		basegame_cnt = Com_Split( basegame_str, basegames, ARRAY_LEN( basegames ), '/' );
+		/* set up basegame on last item from the list */
+		basegame = basegames[0];
+		for ( i = 1; i < basegame_cnt; i++ ) {
+			if ( *basegames[i] != '\0' ) {
+				basegame = basegames[i];
+			}
 		}
+		/* change fs_basegame cvar to last item */
+		Cvar_Set( "fs_basegame", basegame );
 	}
 
 	if ( fs_basegame->string[0] == '\0' || *basegame == '\0' || basegame_cnt == 0 )
