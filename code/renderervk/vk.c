@@ -3898,7 +3898,7 @@ void vk_initialize( void )
 		desc.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		desc.pNext = NULL;
 		desc.flags = 0;
-		desc.setLayoutCount = (vk.maxBoundDescriptorSets >= 6) ? 6 : 4;
+		desc.setLayoutCount = (vk.maxBoundDescriptorSets >= VK_DESC_COUNT) ? VK_DESC_COUNT : 4;
 		desc.pSetLayouts = set_layouts;
 		desc.pushConstantRangeCount = 1;
 		desc.pPushConstantRanges = &push_range;
@@ -3917,7 +3917,7 @@ void vk_initialize( void )
 		desc.pushConstantRangeCount = 1;
 		desc.pPushConstantRanges = &push_range;
 
-		VK_CHECK(qvkCreatePipelineLayout(vk.device, &desc, NULL, &vk.pipeline_layout_storage));
+		VK_CHECK( qvkCreatePipelineLayout( vk.device, &desc, NULL, &vk.pipeline_layout_storage ) );
 #endif
 
 		// post-processing pipeline
@@ -6663,7 +6663,7 @@ void vk_bind_descriptor_sets( void )
 	end = vk.cmd->descriptor_set.end;
 
 	offset_count = 0;
-	if ( start <= 1 ) { // uniform offset or storage offset
+	if ( start == VK_DESC_STORAGE || start == VK_DESC_UNIFORM ) { // uniform offset or storage offset
 		offsets[ offset_count++ ] = vk.cmd->descriptor_set.offset[ start ];
 	}
 
@@ -6998,10 +6998,10 @@ void vk_begin_frame( void )
 
 	Com_Memset( &vk.cmd->scissor_rect, 0, sizeof( vk.cmd->scissor_rect ) );
 
-	vk_update_descriptor( 2, tr.whiteImage->descriptor );
-	vk_update_descriptor( 3, tr.whiteImage->descriptor );
-	if ( vk.maxBoundDescriptorSets >= 6 ) {
-		vk_update_descriptor( 4, tr.whiteImage->descriptor );
+	vk_update_descriptor( VK_DESC_TEXTURE0, tr.whiteImage->descriptor );
+	vk_update_descriptor( VK_DESC_TEXTURE1, tr.whiteImage->descriptor );
+	if ( vk.maxBoundDescriptorSets >= VK_DESC_COUNT ) {
+		vk_update_descriptor( VK_DESC_TEXTURE2, tr.whiteImage->descriptor );
 	}
 
 	// other stats
@@ -7494,7 +7494,7 @@ qboolean vk_bloom( void )
 		// restore clobbered descriptor sets
 		for ( i = 0; i < VK_NUM_BLOOM_PASSES; i++ ) {
 			if ( vk.cmd->descriptor_set.current[i] != VK_NULL_HANDLE ) {
-				if ( i == 0 || i == 1 )
+				if ( i == VK_DESC_UNIFORM || i == VK_DESC_STORAGE )
 					qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, i, 1, &vk.cmd->descriptor_set.current[i], 1, &vk.cmd->descriptor_set.offset[i] );
 				else
 					qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, i, 1, &vk.cmd->descriptor_set.current[i], 0, NULL );
