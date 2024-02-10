@@ -900,7 +900,7 @@ static void vk_create_render_passes( void )
 	desc.dependencyCount = 2;
 	desc.pDependencies = &deps[0];
 
-	// resolve/color buffer
+	// screenmap resolve/color buffer
 	attachments[0].flags = 0;
 	attachments[0].format = vk.color_format;
 	attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
@@ -915,10 +915,10 @@ static void vk_create_render_passes( void )
 	attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;   // needed for next render pass
 	attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	attachments[0].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	attachments[0].initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	attachments[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-	// depth buffer
+	// screenmap depth buffer
 	attachments[1].flags = 0;
 	attachments[1].format = depth_format;
 	attachments[1].samples = vk.screenMapSamples;
@@ -970,10 +970,10 @@ static void vk_create_render_passes( void )
 
 		desc.attachmentCount = 3;
 
-		colorRef0.attachment = 2; // msaa image attachment
+		colorRef0.attachment = 2; // screenmap msaa image attachment
 		colorRef0.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		colorResolveRef.attachment = 0; // resolve image attachment
+		colorResolveRef.attachment = 0; // screenmap resolve image attachment
 		colorResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		subpass.pResolveAttachments = &colorResolveRef;
@@ -3250,7 +3250,7 @@ static void vk_create_attachments( void )
 	// TODO: preallocate first image chunk in attachment' memory pool?
 	if ( vk.fboActive ) {
 
-		VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 		// bloom
 		if ( r_bloom->integer ) {
@@ -3273,16 +3273,15 @@ static void vk_create_attachments( void )
 
 		// post-processing/msaa-resolve
 		create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, VK_SAMPLE_COUNT_1_BIT, vk.color_format,
-			usage, &vk.color_image, &vk.color_image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
+			usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, &vk.color_image, &vk.color_image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
 
-		// screenmap
-		usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-
+		// screenmap-msaa
 		if ( vk.screenMapSamples > VK_SAMPLE_COUNT_1_BIT ) {
 			create_color_attachment( vk.screenMapWidth, vk.screenMapHeight, vk.screenMapSamples, vk.color_format,
-				usage, &vk.screenMap.color_image_msaa, &vk.screenMap.color_image_view_msaa, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, qtrue );
+				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &vk.screenMap.color_image_msaa, &vk.screenMap.color_image_view_msaa, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, qtrue );
 		}
 
+		// screenmap/msaa-resolve
 		create_color_attachment( vk.screenMapWidth, vk.screenMapHeight, VK_SAMPLE_COUNT_1_BIT, vk.color_format,
 			usage, &vk.screenMap.color_image, &vk.screenMap.color_image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
 
@@ -6840,9 +6839,6 @@ static void vk_begin_screenmap_render_pass( void )
 {
 	VkFramebuffer frameBuffer = vk.framebuffers.screenmap;
 
-	record_image_layout_transition( vk.cmd->command_buffer, vk.screenMap.color_image, VK_IMAGE_ASPECT_COLOR_BIT,
-		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
-
 	vk.renderPassIndex = RENDER_PASS_SCREENMAP;
 
 	vk.renderWidth = vk.screenMapWidth;
@@ -7140,17 +7136,21 @@ void vk_present_frame( void )
 	present_info.pResults = NULL;
 
 	res = qvkQueuePresentKHR( vk.queue, &present_info );
-	if ( res < 0 ) {
-		if ( res == VK_ERROR_DEVICE_LOST ) {
-			// we can ignore that
-			ri.Printf( PRINT_DEVELOPER, "vkQueuePresentKHR: device lost\n" );
-		} else if ( res == VK_ERROR_OUT_OF_DATE_KHR ) {
+	switch ( res ) {
+		case VK_SUCCESS:
+			break;
+		case VK_SUBOPTIMAL_KHR:
+		case VK_ERROR_OUT_OF_DATE_KHR:
 			// swapchain re-creation needed
 			vk_restart_swapchain( __func__ );
-		} else {
+			break;
+		case VK_ERROR_DEVICE_LOST:
+			// we can ignore that
+			ri.Printf( PRINT_DEVELOPER, "vkQueuePresentKHR: device lost\n" );
+			break;
+		default:
 			// or we don't
 			ri.Error( ERR_FATAL, "vkQueuePresentKHR returned %s", vk_result_string( res ) );
-		}
 	}
 }
 
