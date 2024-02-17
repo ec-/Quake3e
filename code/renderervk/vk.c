@@ -5429,10 +5429,12 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassI
 	// depth fragment threshold
 	frag_spec_data[2].f = 0.85f;
 
+#if 0
 	if ( r_ext_alpha_to_coverage->integer && vkSamples != VK_SAMPLE_COUNT_1_BIT && frag_spec_data[0].i ) {
 		frag_spec_data[3].i = 1;
 		alphaToCoverage = VK_TRUE;
 	}
+#endif
 
 	// constant color
 	switch ( def->shader_type ) {

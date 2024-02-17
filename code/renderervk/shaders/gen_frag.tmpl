@@ -102,6 +102,7 @@ layout (constant_id = 10) const int acff = 0; // NONE, RGB, RGBA, ALPHA
 #endif
 
 #ifdef USE_ATEST
+#if 0
 float CorrectAlpha(float threshold, float alpha, vec2 tc)
 {
 	ivec2 ts = textureSize(texture0, 0);
@@ -112,6 +113,7 @@ float CorrectAlpha(float threshold, float alpha, vec2 tc)
 	float ac = threshold + (alpha - threshold) * scale;
 	return ac;
 }
+#endif
 #endif
 
 void main() {
@@ -451,6 +453,7 @@ void main() {
 #endif // !USE_TX1
 
 #ifdef USE_ATEST
+#if 0
 	if (alpha_to_coverage != 0) {
 		if (alpha_test_func == 1) {
 			base.a =  base.a > 0.0 ? 1.0 : 0.0;
@@ -460,6 +463,7 @@ void main() {
 			base.a = CorrectAlpha(alpha_test_value, base.a, frag_tex_coord0);
 		}
 	} else
+#endif
 	// specialization: alpha-test function
 	if (alpha_test_func == 1) {
 		if (color0.a == alpha_test_value) discard;
