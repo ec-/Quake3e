@@ -97,27 +97,17 @@ static void R_CalcShadowEdges( void ) {
 					i = tess.numVertexes;
 					break;
 				}
-#ifdef USE_VULKAN
 				tess.indexes[ tess.numIndexes + 0 ] = i;
 				tess.indexes[ tess.numIndexes + 1 ] = i2;
 				tess.indexes[ tess.numIndexes + 2 ] = i + tess.numVertexes;
 				tess.indexes[ tess.numIndexes + 3 ] = i2;
 				tess.indexes[ tess.numIndexes + 4 ] = i2 + tess.numVertexes;
 				tess.indexes[ tess.numIndexes + 5 ] = i + tess.numVertexes;
-#else
-				tess.indexes[ tess.numIndexes + 0 ] = i;
-				tess.indexes[ tess.numIndexes + 1 ] = i + tess.numVertexes;
-				tess.indexes[ tess.numIndexes + 2 ] = i2;
-				tess.indexes[ tess.numIndexes + 3 ] = i2;
-				tess.indexes[ tess.numIndexes + 4 ] = i + tess.numVertexes;
-				tess.indexes[ tess.numIndexes + 5 ] = i2 + tess.numVertexes;
-#endif
 				tess.numIndexes += 6;
 			}
 		}
 	}
 
-#ifdef USE_VULKAN
 	tess.numVertexes *= 2;
 
 	colors = &tess.svars.colors[0][0]; // we need at least 2x SHADER_MAX_VERTEXES there
@@ -125,7 +115,6 @@ static void R_CalcShadowEdges( void ) {
 	for ( i = 0; i < tess.numVertexes; i++ ) {
 		Vector4Set( colors[i].rgba, 50, 50, 50, 255 );
 	}
-#endif
 }
 
 
@@ -145,11 +134,7 @@ void RB_ShadowTessEnd( void ) {
 	int		i;
 	int		numTris;
 	vec3_t	lightDir;
-#ifdef USE_VULKAN
 	uint32_t pipeline[2];
-#else
-	GLboolean rgba[4];
-#endif
 
 	if ( glConfig.stencilBits < 4 ) {
 		return;
@@ -211,8 +196,7 @@ void RB_ShadowTessEnd( void ) {
 	R_CalcShadowEdges();
 
 	// draw the silhouette edges
-#ifdef USE_VULKAN
-	GL_Bind( tr.whiteImage );
+	Bind( tr.whiteImage );
 
 	// mirrors have the culling order reversed
 	if ( backEnd.viewParms.portalView == PV_MIRROR ) {
@@ -231,47 +215,6 @@ void RB_ShadowTessEnd( void ) {
 	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 
 	tess.numVertexes /= 2;
-#else
-	GL_ClientState( 1, CLS_NONE );
-	GL_ClientState( 0, CLS_NONE );
-
-	qglVertexPointer( 3, GL_FLOAT, sizeof( tess.xyz[0] ), tess.xyz );
-
-	if ( qglLockArraysEXT )
-		qglLockArraysEXT( 0, tess.numVertexes*2 );
-
-	// draw the silhouette edges
-
-	qglDisable( GL_TEXTURE_2D );
-	//GL_Bind( tr.whiteImage );
-	GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
-	qglColor4f( 0.2f, 0.2f, 0.2f, 1.0f );
-
-	// don't write to the color buffer
-	qglGetBooleanv( GL_COLOR_WRITEMASK, rgba );
-	qglColorMask( GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE );
-
-	qglEnable( GL_STENCIL_TEST );
-	qglStencilFunc( GL_ALWAYS, 1, 255 );
-
-	GL_Cull( CT_BACK_SIDED );
-	qglStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
-
-	R_DrawElements( tess.numIndexes, tess.indexes );
-
-	GL_Cull( CT_FRONT_SIDED );
-	qglStencilOp( GL_KEEP, GL_KEEP, GL_DECR );
-
-	R_DrawElements( tess.numIndexes, tess.indexes );
-
-	if ( qglUnlockArraysEXT )
-		qglUnlockArraysEXT();
-
-	// re-enable writing to the color buffer
-	qglColorMask(rgba[0], rgba[1], rgba[2], rgba[3]);
-
-	qglEnable( GL_TEXTURE_2D );
-#endif
 
 	backEnd.doneShadows = qtrue;
 
@@ -290,10 +233,8 @@ overlap and double darken.
 =================
 */
 void RB_ShadowFinish( void ) {
-#ifdef USE_VULKAN
 	float tmp[16];
 	int i;
-#endif
 	static const vec3_t verts[4] = {
 		{ -100, 100, -10 },
 		{  100, 100, -10 },
@@ -314,8 +255,7 @@ void RB_ShadowFinish( void ) {
 		return;
 	}
 
-#ifdef USE_VULKAN
-	GL_Bind( tr.whiteImage );
+	Bind( tr.whiteImage );
 
 	for ( i = 0; i < 4; i++ )
 	{
@@ -344,33 +284,6 @@ void RB_ShadowFinish( void ) {
 
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
-
-#else
-	qglEnable( GL_STENCIL_TEST );
-	qglStencilFunc( GL_NOTEQUAL, 0, 255 );
-
-	qglDisable( GL_CLIP_PLANE0 );
-	GL_Cull( CT_TWO_SIDED );
-
-	qglDisable( GL_TEXTURE_2D );
-
-	qglLoadIdentity();
-
-	qglColor4f( 0.6f, 0.6f, 0.6f, 1 );
-	GL_State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO );
-
-	//qglColor4f( 1, 0, 0, 1 );
-	//GL_State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
-
-	GL_ClientState( 0, CLS_NONE );
-	qglVertexPointer( 3, GL_FLOAT, 0, verts );
-	qglDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
-
-	qglColor4f( 1, 1, 1, 1 );
-	qglDisable( GL_STENCIL_TEST );
-
-	qglEnable( GL_TEXTURE_2D );
-#endif
 }
 
 

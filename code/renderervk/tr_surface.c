@@ -435,11 +435,10 @@ static void RB_SurfaceBeam( void )
 		VectorAdd( points[i][0], direction, points[i][1] );
 	}
 
-#ifdef USE_VULKAN
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
 
-	GL_Bind( tr.whiteImage );
+	Bind( tr.whiteImage );
 
 	for ( i = 0; i < (NUM_BEAM_SEGS+1)*2; i++ ) {
 		Vector4Set( tess.svars.colors[0][i].rgba, 255, 0, 0, 255 );
@@ -457,20 +456,6 @@ static void RB_SurfaceBeam( void )
 
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
-#else
-	qglDisable( GL_TEXTURE_2D );
-
-	GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE );
-
-	qglColor4f( 1, 0, 0, 1 );
-
-	GL_ClientState( 0, CLS_NONE );
-
-	qglVertexPointer( 3, GL_FLOAT, 0, &points[0][0] );
-	qglDrawArrays( GL_TRIANGLE_STRIP, 0, (NUM_BEAM_SEGS+1)*2 );
-
-	qglEnable( GL_TEXTURE_2D );
-#endif
 }
 
 //================================================================================
@@ -1305,12 +1290,11 @@ Draws x/y/z lines from the origin for orientation debugging
 ===================
 */
 static void RB_SurfaceAxis( void ) {
-#ifdef USE_VULKAN
 	int i;
 
 	RB_EndSurface();
 
-	GL_Bind( tr.whiteImage );
+	Bind( tr.whiteImage );
 	Com_Memset( tess.xyz, 0, 6 * sizeof( tess.xyz[0] ) );
 	tess.xyz[1][0] = 16.0;
 	tess.xyz[3][1] = 16.0;
@@ -1335,44 +1319,6 @@ static void RB_SurfaceAxis( void ) {
 	vk_draw_geometry( DEPTH_RANGE_NORMAL, qfalse );
 
 	tess.numVertexes = 0;
-#else
-	vec3_t xyz[6];
-	color4ub_t colors[6];
-	int i;
-
-	GL_ClientState( 0, CLS_COLOR_ARRAY );
-
-	qglDisable( GL_TEXTURE_2D );
-	GL_State( GLS_DEFAULT );
-
-	qglLineWidth( 3 );
-
-	Com_Memset( xyz, 0, sizeof( xyz ) );
-	xyz[1][0] = 16.0;
-	xyz[3][1] = 16.0;
-	xyz[5][2] = 16.0;
-
-	Com_Memset( colors, 0, sizeof( colors ) );
-	for ( i = 0; i < 6; i++ ) {
-		colors[i].rgba[3] = 255;
-	}
-
-	colors[0].rgba[0] = 255;
-	colors[1].rgba[0] = 255;
-	colors[2].rgba[1] = 255;
-	colors[3].rgba[1] = 255;
-	colors[4].rgba[2] = 255;
-	colors[5].rgba[2] = 255;
-
-	qglVertexPointer( 3, GL_FLOAT, 0, xyz );
-	qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, colors[0].rgba );
-
-	qglDrawArrays( GL_LINES, 0, 6 );
-
-	qglLineWidth( 1 );
-
-	qglEnable( GL_TEXTURE_2D );
-#endif
 }
 
 //===========================================================================

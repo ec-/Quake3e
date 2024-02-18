@@ -22,10 +22,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // tr_map.c
 
 #include "tr_local.h"
-#ifdef USE_VULKAN
 #include "vk.h"
-#endif
-
 /*
 
 Loads and prepares a map file for scene rendering.
@@ -366,20 +363,11 @@ static void R_LoadMergedLightmaps( const lump_t *l, byte *image )
 
 				R_ProcessLightmap( image, buf + offs, maxIntensity );
 				
-#ifdef USE_VULKAN
 				vk_upload_image_data( tr.lightmaps[ i ], x * LIGHTMAP_LEN, y * LIGHTMAP_LEN, LIGHTMAP_LEN, LIGHTMAP_LEN, 1, image, LIGHTMAP_LEN * LIGHTMAP_LEN * 4, qtrue );
-#else
-				R_UploadSubImage( image, x * LIGHTMAP_LEN, y * LIGHTMAP_LEN, LIGHTMAP_LEN, LIGHTMAP_LEN, tr.lightmaps[ i ] );
-#endif
 
 				offs += LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3;
 			}
 		}
-#ifdef USE_VULKAN
-		//
-#else
-		ri.Printf( PRINT_DEVELOPER, "lightmaps[%i]=%i\n", i, tr.lightmaps[i]->texnum );
-#endif
 	}
 
 	//if ( r_lightmap->integer == 2 )	{
