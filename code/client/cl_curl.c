@@ -89,11 +89,11 @@ static void *GPA(const char *str)
 CL_cURL_Init
 =================
 */
-qboolean CL_cURL_Init( void )
+bool CL_cURL_Init( void )
 {
 #ifdef USE_CURL_DLOPEN
 	if(cURLLib)
-		return qtrue;
+		return true;
 
 
 	Com_Printf("Loading \"%s\"...", cl_cURLLib->string);
@@ -123,7 +123,7 @@ qboolean CL_cURL_Init( void )
 #endif /* _WIN32 */
 	}
 
-	clc.cURLEnabled = qtrue;
+	clc.cURLEnabled = true;
 
 	qcurl_version = GPA("curl_version");
 
@@ -153,10 +153,10 @@ qboolean CL_cURL_Init( void )
 	}
 	Com_Printf("OK\n");
 
-	return qtrue;
+	return true;
 #else
-	clc.cURLEnabled = qtrue;
-	return qtrue;
+	clc.cURLEnabled = true;
+	return true;
 #endif /* USE_CURL_DLOPEN */
 }
 
@@ -295,7 +295,7 @@ void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 {
 	CURLMcode result;
 
-	clc.cURLUsed = qtrue;
+	clc.cURLUsed = true;
 	Com_Printf("URL: %s\n", remoteURL);
 	Com_DPrintf("***** CL_cURL_BeginDownload *****\n"
 		"Localname: %s\n"
@@ -379,11 +379,11 @@ void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 	if(!(clc.sv_allowDownload & DLF_NO_DISCONNECT) &&
 		!clc.cURLDisconnected) {
 
-		CL_AddReliableCommand("disconnect", qtrue);
+		CL_AddReliableCommand("disconnect", true);
 		CL_WritePacket();
 		CL_WritePacket();
 		CL_WritePacket();
-		clc.cURLDisconnected = qtrue;
+		clc.cURLDisconnected = true;
 	}
 }
 
@@ -409,7 +409,7 @@ void CL_cURL_PerformDownload( void )
 	CL_cURL_CloseDownload();
 	if ( msg->msg == CURLMSG_DONE && msg->data.result == CURLE_OK ) {
 		FS_SV_Rename( clc.downloadTempName, clc.downloadName );
-		clc.downloadRestart = qtrue;
+		clc.downloadRestart = true;
 	}
 	else {
 		long code;
@@ -543,7 +543,7 @@ void Com_DL_Done( download_t *dl )
 Com_DL_Init
 =================
 */
-qboolean Com_DL_Init( download_t *dl )
+bool Com_DL_Init( download_t *dl )
 {
 #ifdef USE_CURL_DLOPEN
 	Com_Printf( "Loading \"%s\"...", cl_cURLLib->string );
@@ -603,7 +603,7 @@ qboolean Com_DL_Init( download_t *dl )
 
 	Com_Printf( "OK\n" );
 
-	return qtrue;
+	return true;
 #else
 
 	dl->func.lib = NULL;
@@ -627,7 +627,7 @@ qboolean Com_DL_Init( download_t *dl )
 	dl->func.multi_info_read = curl_multi_info_read;
 	dl->func.multi_strerror = curl_multi_strerror;
 
-	return qtrue;
+	return true;
 #endif /* USE_CURL_DLOPEN */
 }
 
@@ -637,12 +637,12 @@ qboolean Com_DL_Init( download_t *dl )
 Com_DL_Cleanup
 =================
 */
-qboolean Com_DL_InProgress( const download_t *dl )
+bool Com_DL_InProgress( const download_t *dl )
 {
 	if ( dl->cURL && dl->URL[0] )
-		return qtrue;
+		return true;
 	else
-		return qfalse;
+		return false;
 }
 
 
@@ -816,7 +816,7 @@ static size_t Com_DL_CallbackWrite( void *ptr, size_t size, size_t nmemb, void *
 Com_DL_ValidFileName
 =================
 */
-qboolean Com_DL_ValidFileName( const char *fileName )
+bool Com_DL_ValidFileName( const char *fileName )
 {
 	int c;
 	while ( (c = *fileName++) != '\0' )
@@ -826,7 +826,7 @@ qboolean Com_DL_ValidFileName( const char *fileName )
 		if ( c < ' ' || c > '~' )
 			return qfalse;
 	}
-	return qtrue;
+	return true;
 }
 
 
@@ -909,7 +909,7 @@ Com_DL_Begin()
 Start downloading file from remoteURL and save it under fs_game/localName
 ==============================================================
 */
-qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean autoDownload )
+bool Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, bool autoDownload )
 {
 	char *s;
 
@@ -955,7 +955,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 		}
 		else
 		{
-			dl->headerCheck = qtrue;
+			dl->headerCheck = true;
 		}
 		dl->func.free( escapedName );
 	}
@@ -1048,11 +1048,11 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 		Cvar_Set( "cl_downloadTime", va( "%i", cls.realtime ) );
 	}
 
-	return qtrue;
+	return true;
 }
 
 
-qboolean Com_DL_Perform( download_t *dl )
+bool Com_DL_Perform( download_t *dl )
 {
 	char name[ sizeof( dl->TempName ) ];
 	CURLMcode res;
@@ -1073,13 +1073,13 @@ qboolean Com_DL_Perform( download_t *dl )
 	}
 	if( res == CURLM_CALL_MULTI_PERFORM )
 	{
-		return qtrue;
+		return true;
 	}
 
 	msg = dl->func.multi_info_read( dl->cURLM, &c );
 	if( msg == NULL )
 	{
-		return qtrue;
+		return true;
 	}
 
 	if ( dl->fHandle != FS_INVALID_HANDLE )
@@ -1090,7 +1090,7 @@ qboolean Com_DL_Perform( download_t *dl )
 
 	if ( msg->msg == CURLMSG_DONE && msg->data.result == CURLE_OK )
 	{
-		qboolean autoDownload = dl->mapAutoDownload;
+		bool autoDownload = dl->mapAutoDownload;
 
 		Com_sprintf( name, sizeof( name ), "%s%c%s.pk3", dl->gameDir, PATH_SEP, dl->Name );
 
@@ -1110,7 +1110,7 @@ qboolean Com_DL_Perform( download_t *dl )
 		}
 
 		Com_DL_Cleanup( dl );
-		FS_Reload(); //clc.downloadRestart = qtrue;
+		FS_Reload(); //clc.downloadRestart = true;
 		Com_Printf( S_COLOR_GREEN "%s downloaded\n", name );
 		if ( autoDownload )
 		{
@@ -1121,7 +1121,7 @@ qboolean Com_DL_Perform( download_t *dl )
 			else if ( clc.demoplaying )
 			{
 				// FIXME: there might be better solution than vid_restart
-				cls.startCgame = qtrue;
+				cls.startCgame = true;
 				Cbuf_ExecuteText( EXEC_APPEND, "vid_restart\n" );
 			}
 		}
@@ -1129,7 +1129,7 @@ qboolean Com_DL_Perform( download_t *dl )
 	}
 	else
 	{
-		qboolean autoDownload = dl->mapAutoDownload;
+		bool autoDownload = dl->mapAutoDownload;
 		dl->func.easy_getinfo( msg->easy_handle, CURLINFO_RESPONSE_CODE, &code );
 		Com_Printf( S_COLOR_RED "Download Error: %s Code: %ld\n",
 			dl->func.easy_strerror( msg->data.result ), code );
@@ -1145,7 +1145,7 @@ qboolean Com_DL_Perform( download_t *dl )
 		}
 	}
 
-	return qtrue;
+	return true;
 }
 
 #endif /* USE_CURL */

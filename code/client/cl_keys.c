@@ -29,7 +29,7 @@ key up events are sent even if in console mode
 
 field_t		g_consoleField;
 field_t		chatField;
-qboolean	chat_team;
+bool	chat_team;
 
 int			chat_playerNum;
 
@@ -52,8 +52,8 @@ Handles horizontal scrolling and cursor blinking
 x, y, and width are in pixels
 ===================
 */
-static void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, qboolean showCursor,
-		qboolean noColorEscape ) {
+static void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int size, bool showCursor,
+		bool noColorEscape ) {
 	int		len;
 	int		drawLen;
 	int		prestep;
@@ -151,13 +151,13 @@ static void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int 
 }
 
 
-void Field_Draw( field_t *edit, int x, int y, int width, qboolean showCursor, qboolean noColorEscape )
+void Field_Draw( field_t *edit, int x, int y, int width, bool showCursor, bool noColorEscape )
 {
 	Field_VariableSizeDraw( edit, x, y, width, smallchar_width, showCursor, noColorEscape );
 }
 
 
-void Field_BigDraw( field_t *edit, int x, int y, int width, qboolean showCursor, qboolean noColorEscape )
+void Field_BigDraw( field_t *edit, int x, int y, int width, bool showCursor, bool noColorEscape )
 {
 	Field_VariableSizeDraw( edit, x, y, width, bigchar_width, showCursor, noColorEscape );
 }
@@ -545,7 +545,7 @@ Called by CL_KeyEvent to handle a keypress
 */
 static void CL_KeyDownEvent( int key, unsigned time )
 {
-	keys[key].down = qtrue;
+	keys[key].down = true;
 	keys[key].bound = qfalse;
 	keys[key].repeats++;
 
@@ -635,7 +635,7 @@ static void CL_KeyDownEvent( int key, unsigned time )
 			return;
 		}
 
-		VM_Call( uivm, 2, UI_KEY_EVENT, key, qtrue );
+		VM_Call( uivm, 2, UI_KEY_EVENT, key, true );
 		return;
 	}
 
@@ -644,11 +644,11 @@ static void CL_KeyDownEvent( int key, unsigned time )
 		Console_Key( key );
 	} else if ( Key_GetCatcher( ) & KEYCATCH_UI ) {
 		if ( uivm ) {
-			VM_Call( uivm, 2, UI_KEY_EVENT, key, qtrue );
+			VM_Call( uivm, 2, UI_KEY_EVENT, key, true );
 		}
 	} else if ( Key_GetCatcher( ) & KEYCATCH_CGAME ) {
 		if ( cgvm ) {
-			VM_Call( cgvm, 2, CG_KEY_EVENT, key, qtrue );
+			VM_Call( cgvm, 2, CG_KEY_EVENT, key, true );
 		}
 	} else if ( Key_GetCatcher( ) & KEYCATCH_MESSAGE ) {
 		Message_Key( key );
@@ -656,7 +656,7 @@ static void CL_KeyDownEvent( int key, unsigned time )
 		Console_Key( key );
 	} else {
 		// send the bound action
-		Key_ParseBinding( key, qtrue, time );
+		Key_ParseBinding( key, true, time );
 	}
 }
 
@@ -670,7 +670,7 @@ Called by CL_KeyEvent to handle a keyrelease
 */
 static void CL_KeyUpEvent( int key, unsigned time )
 {
-	const qboolean bound = keys[key].bound;
+	const bool bound = keys[key].bound;
 
 	keys[key].repeats = 0;
 	keys[key].down = qfalse;
@@ -721,7 +721,7 @@ CL_KeyEvent
 Called by the system for both key up and key down events
 ===================
 */
-void CL_KeyEvent( int key, qboolean down, unsigned time )
+void CL_KeyEvent( int key, bool down, unsigned time )
 {
 	if ( down )
 		CL_KeyDownEvent( key, time );
@@ -751,7 +751,7 @@ void CL_CharEvent( int key )
 	}
 	else if ( Key_GetCatcher( ) & KEYCATCH_UI )
 	{
-		VM_Call( uivm, 2, UI_KEY_EVENT, key | K_CHAR_FLAG, qtrue );
+		VM_Call( uivm, 2, UI_KEY_EVENT, key | K_CHAR_FLAG, true );
 	}
 	else if ( Key_GetCatcher( ) & KEYCATCH_MESSAGE )
 	{
@@ -778,9 +778,9 @@ void Key_ClearStates( void )
 	for ( i = 0 ; i < MAX_KEYS ; i++ )
 	{
 		if ( keys[i].down )
-			CL_KeyEvent( i, qfalse, 0 );
+			CL_KeyEvent( i, false, 0 );
 
-		keys[i].down = qfalse;
+		keys[i].down = false;
 		keys[i].repeats = 0;
 	}
 }

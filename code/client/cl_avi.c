@@ -329,7 +329,7 @@ static void CL_WriteAVIHeader( void )
 }
 
 
-static qboolean CL_ValidatePipeFormat( const char *s )
+static bool CL_ValidatePipeFormat( const char *s )
 {
 	while ( *s != '\0' ) 
 	{
@@ -341,7 +341,7 @@ static qboolean CL_ValidatePipeFormat( const char *s )
 			return qfalse;
 		s++;
 	}
-	return qtrue;
+	return true;
 }
 
 
@@ -409,7 +409,7 @@ bool CL_OpenAVIForWriting( const char *fileName, bool pipe, bool reopen )
 	afd.height = cls.captureHeight;
 
 	if ( cl_aviMotionJpeg->integer && !pipe )
-		afd.motionJpeg = qtrue;
+		afd.motionJpeg = true;
 	else
 		afd.motionJpeg = qfalse;
 
@@ -439,7 +439,7 @@ bool CL_OpenAVIForWriting( const char *fileName, bool pipe, bool reopen )
 	}
 	else
 	{
-		afd.audio = qtrue;
+		afd.audio = true;
 	}
 
 	// This doesn't write a real header, but allocates the
@@ -448,7 +448,7 @@ bool CL_OpenAVIForWriting( const char *fileName, bool pipe, bool reopen )
 
 	if ( pipe )
 	{
-		afd.pipe = qtrue;
+		afd.pipe = true;
 		SafeFS_Write( buffer, bufIndex, afd.f );
 		bufIndex = 0;
 	}
@@ -464,9 +464,9 @@ bool CL_OpenAVIForWriting( const char *fileName, bool pipe, bool reopen )
 		afd.moviSize = 4; // For the "movi"
 	}
 
-	afd.fileOpen = qtrue;
+	afd.fileOpen = true;
 
-	return qtrue;
+	return true;
 }
 
 
@@ -477,7 +477,7 @@ bool CL_OpenAVIForWriting( const char *fileName, bool pipe, bool reopen )
 CL_CheckFileSize
 ===============
 */
-static qboolean CL_CheckFileSize( int bytesToAdd )
+static bool CL_CheckFileSize( int bytesToAdd )
 {
 	unsigned int newFileSize;
 
@@ -498,12 +498,12 @@ static qboolean CL_CheckFileSize( int bytesToAdd )
 	if ( newFileSize >= AVI_SEGMENT_SIZE || newFileSize < afd.fileSize )
 	{
 		// Close the current file...
-		CL_CloseAVI( qtrue );
+		CL_CloseAVI( true );
 
 		// ...And open a new one
-		CL_OpenAVIForWriting( va( "%s-%02d.avi", clc.videoName, ++clc.videoIndex ), qfalse, qtrue );
+		CL_OpenAVIForWriting( va( "%s-%02d.avi", clc.videoName, ++clc.videoIndex ), qfalse, true );
 
-		return qtrue;
+		return true;
 	}
 
 	return qfalse;
@@ -669,7 +669,7 @@ CL_CloseAVI
 Closes the AVI file and writes an index chunk
 ===============
 */
-qboolean CL_CloseAVI( qboolean reopen )
+bool CL_CloseAVI( bool reopen )
 {
 	int indexRemainder;
 	int indexSize;
@@ -696,7 +696,7 @@ qboolean CL_CloseAVI( qboolean reopen )
 		afd.f = FS_INVALID_HANDLE;
 		afd.fileOpen = qfalse;
 		afd.pipe = qfalse;
-		return qtrue;
+		return true;
 	}
 
 	idxFileName = va( "%s" INDEX_FILE_EXTENSION, afd.fileName );
@@ -759,7 +759,7 @@ qboolean CL_CloseAVI( qboolean reopen )
 
 	Com_DPrintf( "Wrote %d:%d frames to %s\n", afd.numVideoFrames, afd.numAudioFrames, afd.fileName );
 
-	return qtrue;
+	return true;
 }
 
 
@@ -768,7 +768,7 @@ qboolean CL_CloseAVI( qboolean reopen )
 CL_VideoRecording
 ===============
 */
-qboolean CL_VideoRecording( void )
+bool CL_VideoRecording( void )
 {
 	return afd.fileOpen;
 }

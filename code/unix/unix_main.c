@@ -291,7 +291,7 @@ void NORETURN Sys_Exit( int code )
 void NORETURN Sys_Quit( void )
 {
 #ifndef DEDICATED
-	CL_Shutdown( "", qtrue );
+	CL_Shutdown( "", true );
 #endif
 
 	Sys_Exit( 0 );
@@ -329,7 +329,7 @@ void NORETURN FORMAT_PRINTF(1, 2) QDECL Sys_Error( const char *format, ... )
 	va_end( argptr );
 
 #ifndef DEDICATED
-	CL_Shutdown( text, qtrue );
+	CL_Shutdown( text, true );
 #endif
 
 	fprintf( stderr, "Sys_Error: %s\n", text );

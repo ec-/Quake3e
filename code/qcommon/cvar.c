@@ -1742,7 +1742,7 @@ static void Cvar_Trim_f( void )
 Cvar_InfoString
 =====================
 */
-const char *Cvar_InfoString( int bit, qboolean *truncated )
+const char *Cvar_InfoString( int bit, bool *truncated )
 {
 	static char	info[ MAX_INFO_STRING ];
 	const cvar_t *user_vars[ MAX_CVARS ];
@@ -1751,7 +1751,7 @@ const char *Cvar_InfoString( int bit, qboolean *truncated )
 	int user_count;
 	int vm_count;
 	int i;
-	qboolean allSet;
+	bool allSet;
 
 	// sort to get more predictable output
 	if ( cvar_sort )

@@ -78,7 +78,7 @@ void NORETURN FORMAT_PRINTF(1, 2) QDECL Sys_Error( const char *error, ... ) {
 	va_end( argptr );
 
 #ifndef DEDICATED
-	CL_Shutdown( text, qtrue );
+	CL_Shutdown( text, true );
 #endif
 
 	Conbuf_AppendText( text );

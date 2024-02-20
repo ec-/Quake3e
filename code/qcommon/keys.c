@@ -24,10 +24,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qcommon/qcommon.h"
 #include "../client/keys.h"
 
-int		 anykeydown;
-qkey_t	 keys[MAX_KEYS];
+int 	anykeydown;
+qkey_t 	keys[MAX_KEYS];
 
-qboolean key_overstrikeMode;
+bool 	key_overstrikeMode;
 
 typedef struct {
 	const char *name;
@@ -255,7 +255,7 @@ static const keyname_t keynames[] =
 Key_SetOverstrikeMode
 ===================
 */
-qboolean Key_GetOverstrikeMode( void )
+bool Key_GetOverstrikeMode( void )
 {
 	return key_overstrikeMode;
 }
@@ -266,7 +266,7 @@ qboolean Key_GetOverstrikeMode( void )
 Key_SetOverstrikeMode
 ===================
 */
-void Key_SetOverstrikeMode( qboolean state )
+void Key_SetOverstrikeMode( bool state )
 {
 	key_overstrikeMode = state;
 }
@@ -277,7 +277,7 @@ void Key_SetOverstrikeMode( qboolean state )
 Key_IsDown
 ===================
 */
-qboolean Key_IsDown( int keynum )
+bool Key_IsDown( int keynum )
 {
 	if ( keynum < 0 || keynum >= MAX_KEYS )
 	{
@@ -624,7 +624,7 @@ Key_ParseBinding
 Execute the commands in the bind string
 ===================
 */
-void Key_ParseBinding( int key, qboolean down, unsigned time )
+void Key_ParseBinding( int key, bool down, unsigned time )
 {
 	char buf[ MAX_STRING_CHARS ], *p, *end;
 

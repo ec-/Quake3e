@@ -898,7 +898,7 @@ const char *Info_ValueForKey( const char *s, const char *key );
 void Info_Tokenize( const char *s );
 const char *Info_ValueForKeyToken( const char *key );
 #define Info_SetValueForKey( buf, key, value ) Info_SetValueForKey_s( (buf), MAX_INFO_STRING, (key), (value) )
-qboolean Info_SetValueForKey_s( char *s, int slen, const char *key, const char *value );
+bool Info_SetValueForKey_s( char *s, int slen, const char *key, const char *value );
 qboolean Info_Validate( const char *s );
 qboolean Info_ValidateKeyValue( const char *s );
 const char *Info_NextPair( const char *s, char *key, char *value );

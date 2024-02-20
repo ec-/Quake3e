@@ -2095,7 +2095,7 @@ Info_SetValueForKey_s
 Changes or adds a key/value pair
 ==================
 */
-qboolean Info_SetValueForKey_s( char *s, int slen, const char *key, const char *value ) {
+bool Info_SetValueForKey_s( char *s, int slen, const char *key, const char *value ) {
 	char	newi[BIG_INFO_STRING+2];
 	int		len1, len2;
 

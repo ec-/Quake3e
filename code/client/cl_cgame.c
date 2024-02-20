@@ -29,9 +29,9 @@ extern	botlib_export_t	*botlib_export;
 
 static int nestedCmdOffset; // nested command buffer offset
 
-//extern qboolean loadCamera(const char *name);
+//extern bool loadCamera(const char *name);
 //extern void startCamera(int time);
-//extern qboolean getCameraInfo(int time, vec3_t *origin, vec3_t *angles);
+//extern bool getCameraInfo(int time, vec3_t *origin, vec3_t *angles);
 
 /*
 ====================
@@ -58,7 +58,7 @@ static void CL_GetGlconfig( glconfig_t *glconfig ) {
 CL_GetUserCmd
 ====================
 */
-static qboolean CL_GetUserCmd( int cmdNumber, usercmd_t *ucmd ) {
+static bool CL_GetUserCmd( int cmdNumber, usercmd_t *ucmd ) {
 	// cmds[cmdNumber] is the last properly generated command
 
 	// can't return anything that we haven't created yet
@@ -69,12 +69,12 @@ static qboolean CL_GetUserCmd( int cmdNumber, usercmd_t *ucmd ) {
 	// the usercmd has been overwritten in the wrapping
 	// buffer because it is too far out of date
 	if ( cl.cmdNumber - cmdNumber >= CMD_BACKUP ) {
-		return qfalse;
+		return false;
 	}
 
 	*ucmd = cl.cmds[ cmdNumber & CMD_MASK ];
 
-	return qtrue;
+	return true;
 }
 
 
@@ -104,7 +104,7 @@ static void CL_GetCurrentSnapshotNumber( int *snapshotNumber, int *serverTime ) 
 CL_GetSnapshot
 ====================
 */
-static qboolean CL_GetSnapshot( int snapshotNumber, snapshot_t *snapshot ) {
+static bool CL_GetSnapshot( int snapshotNumber, snapshot_t *snapshot ) {
 	clSnapshot_t	*clSnap;
 	int				i, count;
 
@@ -149,7 +149,7 @@ static qboolean CL_GetSnapshot( int snapshotNumber, snapshot_t *snapshot ) {
 
 	// FIXME: configstring changes and server commands!!!
 
-	return qtrue;
+	return true;
 }
 
 
@@ -242,7 +242,7 @@ CL_GetServerCommand
 Set up argc/argv for the given command
 ===================
 */
-static qboolean CL_GetServerCommand( int serverCommandNumber ) {
+static bool CL_GetServerCommand( int serverCommandNumber ) {
 	const char *s;
 	const char *cmd;
 	static char bigConfigString[BIG_INFO_STRING];
@@ -319,7 +319,7 @@ rescan:
 		CL_ConfigstringModified();
 		// reparse the string, because CL_ConfigstringModified may have done another Cmd_TokenizeString()
 		Cmd_TokenizeString( s );
-		return qtrue;
+		return true;
 	}
 
 	if ( !strcmp( cmd, "map_restart" ) ) {
@@ -330,7 +330,7 @@ rescan:
 		Cmd_TokenizeString( s );
 		Com_Memset( cl.cmds, 0, sizeof( cl.cmds ) );
 		cls.lastVidRestart = Sys_Milliseconds(); // hack for OSP mod
-		return qtrue;
+		return true;
 	}
 
 	// the clientLevelShot command is used during development
@@ -349,13 +349,13 @@ rescan:
 		Con_Close();
 		// take a special screenshot next frame
 		Cbuf_AddText( "wait ; wait ; wait ; wait ; screenshot levelshot\n" );
-		return qtrue;
+		return true;
 	}
 
 	// we may want to put a "connect to other server" command here
 
 	// cgame can now act on the command
-	return qtrue;
+	return true;
 }
 
 
@@ -369,7 +369,7 @@ Just adds default parameters that cgame doesn't need to know about
 static void CL_CM_LoadMap( const char *mapname ) {
 	int		checksum;
 
-	CM_LoadMap( mapname, qtrue, &checksum );
+	CM_LoadMap( mapname, true, &checksum );
 }
 
 
@@ -416,26 +416,26 @@ static void *VM_ArgPtr( intptr_t intValue ) {
 }
 
 
-static qboolean CL_GetValue( char* value, int valueSize, const char* key ) {
+static bool CL_GetValue( char* value, int valueSize, const char* key ) {
 
 	if ( !Q_stricmp( key, "trap_R_AddRefEntityToScene2" ) ) {
 		Com_sprintf( value, valueSize, "%i", CG_R_ADDREFENTITYTOSCENE2 );
-		return qtrue;
+		return true;
 	}
 
 	if ( !Q_stricmp( key, "trap_R_ForceFixedDLights" ) ) {
 		Com_sprintf( value, valueSize, "%i", CG_R_FORCEFIXEDDLIGHTS );
-		return qtrue;
+		return true;
 	}
 
 	if ( !Q_stricmp( key, "trap_R_AddLinearLightToScene_Q3E" ) && re.AddLinearLightToScene ) {
 		Com_sprintf( value, valueSize, "%i", CG_R_ADDLINEARLIGHTTOSCENE );
-		return qtrue;
+		return true;
 	}
 
 	if ( !Q_stricmp( key, "trap_IsRecordingDemo" ) ) {
 		Com_sprintf( value, valueSize, "%i", CG_IS_RECORDING_DEMO );
-		return qtrue;
+		return true;
 	}
 
 	return qfalse;
@@ -541,7 +541,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 	case CG_CM_TEMPBOXMODEL:
 		return CM_TempBoxModel( VMA(1), VMA(2), /*int capsule*/ qfalse );
 	case CG_CM_TEMPCAPSULEMODEL:
-		return CM_TempBoxModel( VMA(1), VMA(2), /*int capsule*/ qtrue );
+		return CM_TempBoxModel( VMA(1), VMA(2), /*int capsule*/ true );
 	case CG_CM_POINTCONTENTS:
 		return CM_PointContents( VMA(1), args[2] );
 	case CG_CM_TRANSFORMEDPOINTCONTENTS:
@@ -550,13 +550,13 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		CM_BoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], /*int capsule*/ qfalse );
 		return 0;
 	case CG_CM_CAPSULETRACE:
-		CM_BoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], /*int capsule*/ qtrue );
+		CM_BoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], /*int capsule*/ true );
 		return 0;
 	case CG_CM_TRANSFORMEDBOXTRACE:
 		CM_TransformedBoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], VMA(8), VMA(9), /*int capsule*/ qfalse );
 		return 0;
 	case CG_CM_TRANSFORMEDCAPSULETRACE:
-		CM_TransformedBoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], VMA(8), VMA(9), /*int capsule*/ qtrue );
+		CM_TransformedBoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], VMA(8), VMA(9), /*int capsule*/ true );
 		return 0;
 	case CG_CM_MARKFRAGMENTS:
 		return re.MarkFragments( args[1], VMA(2), VMA(3), args[4], VMA(5), args[6], VMA(7) );
@@ -767,7 +767,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 
 	// engine extensions
 	case CG_R_ADDREFENTITYTOSCENE2:
-		re.AddRefEntityToScene( VMA(1), qtrue );
+		re.AddRefEntityToScene( VMA(1), true );
 		return 0;
 
 	case CG_R_ADDLINEARLIGHTTOSCENE:
@@ -842,7 +842,7 @@ void CL_InitCGame( void ) {
 	Com_sprintf( cl.mapname, sizeof( cl.mapname ), "maps/%s.bsp", mapname );
 
 	// allow vertex lighting for in-game elements
-	re.VertexLighting( qtrue );
+	re.VertexLighting( true );
 
 	// load the dll or bytecode
 	interpret = Cvar_VariableIntegerValue( "vm_cgame" );
@@ -1101,7 +1101,7 @@ CL_SetCGameTime
 ==================
 */
 void CL_SetCGameTime( void ) {
-	qboolean demoFreezed;
+	bool demoFreezed;
 
 	// getting a valid frame message ends the connection process
 	if ( cls.state != CA_ACTIVE ) {
@@ -1112,7 +1112,7 @@ void CL_SetCGameTime( void ) {
 			// we shouldn't get the first snapshot on the same frame
 			// as the gamestate, because it causes a bad time skip
 			if ( !clc.firstDemoFrameSkipped ) {
-				clc.firstDemoFrameSkipped = qtrue;
+				clc.firstDemoFrameSkipped = true;
 				return;
 			}
 			CL_ReadDemoMessage();
@@ -1164,7 +1164,7 @@ void CL_SetCGameTime( void ) {
 		// so we will try and adjust back a bit when the next snapshot arrives
 		//if ( cls.realtime + cl.serverTimeDelta >= cl.snap.serverTime - 5 ) {
 		if ( cls.realtime + cl.serverTimeDelta - cl.snap.serverTime >= -5 ) {
-			cl.extrapolatedSnapshot = qtrue;
+			cl.extrapolatedSnapshot = true;
 		}
 	}
 

@@ -907,7 +907,7 @@ void SV_Shutdown( const char *finalmsg ) {
 #ifndef DEDICATED
 	// disconnect any local clients
 	if ( sv_killserver->integer != 2 )
-		CL_Disconnect( qfalse );
+		CL_Disconnect( false );
 #endif
 
 	// clean some server cvars

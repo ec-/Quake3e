@@ -617,7 +617,7 @@ void 	Cvar_WriteVariables( fileHandle_t f );
 
 void	Cvar_Init( void );
 
-const char *Cvar_InfoString( int bit, qboolean *truncated );
+const char *Cvar_InfoString( int bit, bool *truncated );
 const char *Cvar_InfoString_Big( int bit, qboolean *truncated );
 // returns an info string containing all the cvars that have the given bit set
 // in their flags ( CVAR_USERINFO, CVAR_SERVERINFO, CVAR_SYSTEMINFO, etc )
@@ -858,7 +858,7 @@ qboolean FS_AllowedExtension( const char *fileName, qboolean allowPk3s, const ch
 
 void *FS_LoadLibrary( const char *name );
 
-typedef qboolean ( *fnamecallback_f )( const char *filename, int length );
+typedef bool ( *fnamecallback_f )( const char *filename, int length );
 
 void FS_SetFilenameCallback( fnamecallback_f func ); 
 
@@ -1129,12 +1129,12 @@ CLIENT / SERVER SYSTEMS
 // client interface
 //
 void CL_Init( void );
-qboolean CL_Disconnect( qboolean showMainMenu );
+bool CL_Disconnect( bool showMainMenu );
 void CL_ResetOldGame( void );
-void CL_Shutdown( const char *finalmsg, qboolean quit );
+void CL_Shutdown( const char *finalmsg, bool quit );
 void CL_Frame( int msec, int realMsec );
 bool CL_GameCommand( void );
-void CL_KeyEvent (int key, qboolean down, unsigned time);
+void CL_KeyEvent (int key, bool down, unsigned time);
 
 void CL_CharEvent( int key );
 // char events are for field typing, not game control
@@ -1185,8 +1185,8 @@ void Key_WriteBindings( fileHandle_t f );
 void S_ClearSoundBuffer( void );
 // call before filesystem access
 
-void CL_SystemInfoChanged( qboolean onlyGame );
-qboolean CL_GameSwitch( void );
+void CL_SystemInfoChanged( bool onlyGame );
+bool CL_GameSwitch( void );
 
 // AVI files have the start of pixel lines 4 byte-aligned
 #define AVI_LINE_PADDING 4
@@ -1210,8 +1210,8 @@ void SV_RemoveDedicatedCommands( void );
 //
 // UI interface
 //
-qboolean UI_GameCommand( void );
-qboolean UI_usesUniqueCDKey(void);
+bool UI_GameCommand( void );
+bool UI_usesUniqueCDKey(void);
 
 /*
 ==============================================================

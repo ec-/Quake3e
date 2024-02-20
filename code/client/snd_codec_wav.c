@@ -133,7 +133,7 @@ static void S_ByteSwapRawSamples( int samples, int width, int s_channels, const 
 S_ReadRIFFHeader
 =================
 */
-static qboolean S_ReadRIFFHeader(fileHandle_t file, snd_info_t *info)
+static bool S_ReadRIFFHeader(fileHandle_t file, snd_info_t *info)
 {
 	char dump[16];
 	int bits;
@@ -181,7 +181,7 @@ static qboolean S_ReadRIFFHeader(fileHandle_t file, snd_info_t *info)
 	}
 	info->samples = (info->size / info->width) / info->channels;
 
-	return qtrue;
+	return true;
 }
 
 // WAV codec
@@ -206,7 +206,7 @@ void *S_WAV_CodecLoad(const char *filename, snd_info_t *info)
 	void *buffer;
 
 	// Try to open the file
-	FS_FOpenFileRead(filename, &file, qtrue);
+	FS_FOpenFileRead(filename, &file, true);
 	if ( file == FS_INVALID_HANDLE )
 	{
 		return NULL;

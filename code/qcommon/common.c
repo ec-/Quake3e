@@ -343,7 +343,7 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 		SV_Shutdown( "Server disconnected" );
 		Com_EndRedirect();
 #ifndef DEDICATED
-		CL_Disconnect( qfalse );
+		CL_Disconnect( false );
 		CL_FlushMemory();
 #endif
 		VM_Forced_Unload_Done();
@@ -360,7 +360,7 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 		SV_Shutdown( va( "Server crashed: %s",  com_errorMessage ) );
 		Com_EndRedirect();
 #ifndef DEDICATED
-		CL_Disconnect( qfalse );
+		CL_Disconnect( false );
 		CL_FlushMemory();
 #endif
 		VM_Forced_Unload_Done();
@@ -374,7 +374,7 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 		Com_EndRedirect();
 #ifndef DEDICATED
 		if ( com_cl_running && com_cl_running->integer ) {
-			CL_Disconnect( qfalse );
+			CL_Disconnect( false );
 			VM_Forced_Unload_Start();
 			CL_FlushMemory();
 			VM_Forced_Unload_Done();
@@ -390,7 +390,7 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 	} else {
 		VM_Forced_Unload_Start();
 #ifndef DEDICATED
-		CL_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ), qtrue );
+		CL_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ), true );
 #endif
 		SV_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ) );
 		Com_EndRedirect();
@@ -423,7 +423,7 @@ void Com_Quit_f( void ) {
 		VM_Forced_Unload_Start();
 		SV_Shutdown( p[0] ? p : "Server quit" );
 #ifndef DEDICATED
-		CL_Shutdown( p[0] ? p : "Client quit", qtrue );
+		CL_Shutdown( p[0] ? p : "Client quit", true );
 #endif
 		VM_Forced_Unload_Done();
 		Com_Shutdown();
@@ -3016,7 +3016,7 @@ void Com_GameRestart( int checksumFeed, qboolean clientRestart )
 #ifndef DEDICATED
 		if ( clientRestart )
 		{
-			CL_Disconnect( qfalse );
+			CL_Disconnect( false );
 			CL_ShutdownAll();
 			CL_ClearMemory(); // Hunk_Clear(); // -EC-
 		}
@@ -4341,7 +4341,7 @@ void Com_Frame( qboolean noDelay ) {
 #endif
 		} else {
 #ifndef DEDICATED
-			CL_Shutdown( "", qfalse );
+			CL_Shutdown( "", false );
 			CL_ClearMemory();
 #endif
 			Sys_ShowConsole( 1, qtrue );
