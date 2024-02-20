@@ -70,7 +70,7 @@ typedef struct flare_s {
 
 	int			fadeTime;
 
-	qboolean	visible;			// state of last test
+	bool	visible;			// state of last test
 	float		drawIntensity;		// may be non 0 even if !visible due to fading
 
 	int			windowX, windowY;
@@ -181,7 +181,7 @@ void RB_AddFlare( void *surface, int fogNum, vec3_t point, vec3_t color, vec3_t 
 		f->surface = surface;
 		f->frameSceneNum = backEnd.viewParms.frameSceneNum;
 		f->portalView = backEnd.viewParms.portalView;
-		f->visible = qfalse;
+		f->visible = false;
 		f->fadeTime = backEnd.refdef.time - 2000;
 		f->testCount = 0;
 	} else {
@@ -292,7 +292,7 @@ RB_TestFlare
 ==================
 */
 static void RB_TestFlare( flare_t *f ) {
-	qboolean		visible;
+	bool		visible;
 	float			fade;
 	float			*m;
 	uint32_t		offset;
@@ -319,13 +319,13 @@ static void RB_TestFlare( flare_t *f ) {
 	if ( f->testCount ) {
 		uint32_t *cnt = (uint32_t*)(vk.storage.buffer_ptr + offset);
 		if ( *cnt )
-			visible = qtrue;
+			visible = true;
 		else
-			visible = qfalse;
+			visible = false;
 
 		f->testCount = 1;
 	} else {
-		visible = qfalse;
+		visible = false;
 	}
 
 	// reset test result in storage buffer
@@ -350,20 +350,20 @@ static void RB_TestFlare( flare_t *f ) {
 
 	vk_bind_pipeline( vk.dot_pipeline );
 	vk_bind_geometry( TESS_XYZ );
-	vk_draw_geometry( DEPTH_RANGE_NORMAL, qfalse );
+	vk_draw_geometry( DEPTH_RANGE_NORMAL, false );
 
 	//Com_Memcpy( vk_world.modelview_transform, modelMatrix_original, sizeof( modelMatrix_original ) );
 	//vk_update_mvp( NULL );
 
 	if ( visible ) {
 		if ( !f->visible ) {
-			f->visible = qtrue;
+			f->visible = true;
 			f->fadeTime = backEnd.refdef.time - 1;
 		}
 		fade = ( ( backEnd.refdef.time - f->fadeTime ) /1000.0f ) * r_flareFade->value;
 	} else {
 		if ( f->visible ) {
-			f->visible = qfalse;
+			f->visible = false;
 			f->fadeTime = backEnd.refdef.time - 1;
 		}
 		fade = 1.0f - ( ( backEnd.refdef.time - f->fadeTime ) / 1000.0f ) * r_flareFade->value;
@@ -478,7 +478,7 @@ extend past the portal edge will be overwritten.
 void RB_RenderFlares( void ) {
 	flare_t		*f;
 	flare_t		**prev;
-	qboolean	draw;
+	bool	draw;
 	float		*m;
 
 	if ( !r_flares->integer ) {
@@ -501,7 +501,7 @@ void RB_RenderFlares( void ) {
 	//RB_AddDlightFlares();
 
 	// perform z buffer readback on each flare in this view
-	draw = qfalse;
+	draw = false;
 	prev = &r_activeFlares;
 	while ( ( f = *prev ) != NULL ) {
 		// throw out any flares that weren't added last frame
@@ -519,7 +519,7 @@ void RB_RenderFlares( void ) {
 			if ( f->testCount == 0 ) {
 				// recently added, wait 1 frame for test result
 			} else if ( f->drawIntensity ) {
-				draw = qtrue;
+				draw = true;
 			} else {
 				// this flare has completely faded out, so remove it from the chain
 				*prev = f->next;

@@ -125,7 +125,7 @@ static void DrawTris( const shaderCommands_t *input ) {
 	}
 
 	vk_bind_pipeline( pipeline );
-	vk_draw_geometry( DEPTH_RANGE_ZERO, qtrue );
+	vk_draw_geometry( DEPTH_RANGE_ZERO, true );
 }
 
 
@@ -158,7 +158,7 @@ static void DrawNormals( const shaderCommands_t *input ) {
 	vk_bind_pipeline( vk.normals_debug_pipeline );
 	vk_bind_index();
 	vk_bind_geometry( TESS_XYZ | TESS_RGBA0 );
-	vk_draw_geometry( DEPTH_RANGE_ZERO, qtrue );
+	vk_draw_geometry( DEPTH_RANGE_ZERO, true );
 }
 
 
@@ -177,9 +177,9 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 
 #ifdef USE_VBO
 	if ( shader->isStaticShader && !shader->remappedShader ) {
-		tess.allowVBO = qtrue;
+		tess.allowVBO = true;
 	} else {
-		tess.allowVBO = qfalse;
+		tess.allowVBO = false;
 	}
 #endif
 
@@ -191,7 +191,7 @@ void RB_BeginSurface( shader_t *shader, int fogNum ) {
 
 #ifdef USE_PMLIGHT
 	if ( tess.fogNum != fogNum ) {
-		tess.dlightUpdateParams = qtrue;
+		tess.dlightUpdateParams = true;
 	}
 #endif
 
@@ -244,14 +244,14 @@ ProjectDlightTexture
 Perform dynamic lighting with another rendering pass
 ===================
 */
-static qboolean ProjectDlightTexture( void ) {
+static bool ProjectDlightTexture( void ) {
 	int		i, l;
 	vec3_t	origin;
 	float	*texCoords;
 	byte	*colors;
 	byte	clipBits[SHADER_MAX_VERTEXES];
 	uint32_t pipeline;
-	qboolean rebindIndex = qfalse;
+	bool rebindIndex = false;
 	glIndex_t hitIndexes[SHADER_MAX_INDEXES];
 	int		numIndexes;
 	float	scale;
@@ -354,13 +354,13 @@ static qboolean ProjectDlightTexture( void ) {
 		Bind( tr.dlightImage );
 		if ( numIndexes != tess.numIndexes ) {
 			// re-bind index buffer for later fog pass
-			rebindIndex = qtrue;
+			rebindIndex = true;
 		}
 		pipeline = vk.dlight_pipelines[dl->additive > 0 ? 1 : 0][tess.shader->cullType][tess.shader->polygonOffset];
 		vk_bind_pipeline( pipeline );
 		vk_bind_index_ext( numIndexes, hitIndexes );
 		vk_bind_geometry( TESS_RGBA0 | TESS_ST0 );
-		vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
+		vk_draw_geometry( DEPTH_RANGE_NORMAL, true );
 		backEnd.pc.c_totalIndexes += numIndexes;
 		backEnd.pc.c_dlightIndexes += numIndexes;
 	}
@@ -381,7 +381,7 @@ RB_FogPass
 Blends a fog texture on top of everything else
 ===================
 */
-static void RB_FogPass( qboolean rebindIndex ) {
+static void RB_FogPass( bool rebindIndex ) {
 	uint32_t pipeline = vk.fog_pipelines[tess.shader->fogPass - 1][tess.shader->cullType][tess.shader->polygonOffset];
 #ifdef USE_FOG_ONLY
 	int fog_stage;
@@ -394,7 +394,7 @@ static void RB_FogPass( qboolean rebindIndex ) {
 	VK_SetFogParams( &uniform, &fog_stage );
 	VK_PushUniform( &uniform );
 	vk_update_descriptor( VK_DESC_FOG_ONLY, tr.fogImage->descriptor );
-	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
+	vk_draw_geometry( DEPTH_RANGE_NORMAL, true );
 #else
 	const fog_t	*fog = tr.world->fogs + tess.fogNum;
 	int	i;
@@ -412,7 +412,7 @@ static void RB_FogPass( qboolean rebindIndex ) {
 		vk_bind_index();
 	}
 	vk_bind_geometry( TESS_ST0 | TESS_RGBA0 );
-	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
+	vk_draw_geometry( DEPTH_RANGE_NORMAL, true );
 #endif
 }
 
@@ -730,27 +730,27 @@ void R_ComputeTexCoords( const int b, const textureBundle_t *bundle ) {
 /*
 ** RB_IterateStagesGeneric
 */
-static void RB_IterateStagesGeneric( const shaderCommands_t *input, qboolean fogCollapse )
+static void RB_IterateStagesGeneric( const shaderCommands_t *input, bool fogCollapse )
 {
 	const shaderStage_t *pStage;
 	int tess_flags;
 	int stage, i;
 	uint32_t pipeline;
 	int fog_stage;
-	qboolean pushUniform;
+	bool pushUniform;
 
 	vk_bind_index();
 
 	tess_flags = input->shader->tessFlags;
 
-	pushUniform = qfalse;
+	pushUniform = false;
 
 #ifdef USE_FOG_COLLAPSE
 	if ( fogCollapse ) {
 		VK_SetFogParams( &uniform, &fog_stage );
 		VectorCopy( backEnd.or.viewOrigin, uniform.eyePos );
 		vk_update_descriptor( VK_DESC_FOG_COLLAPSE, tr.fogImage->descriptor );
-		pushUniform = qtrue;
+		pushUniform = true;
 	} else
 #endif
 	{
@@ -758,7 +758,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input, qboolean fog
 		if ( tess_flags & TESS_VPOS ) {
 			VectorCopy( backEnd.or.viewOrigin, uniform.eyePos );
 			tess_flags &= ~TESS_VPOS;
-			pushUniform = qtrue;
+			pushUniform = true;
 		}
 	}
 
@@ -789,13 +789,13 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input, qboolean fog
 					uniform.ent.color[i][1] = backEnd.currentEntity->e.shader.rgba[1] / 255.0;
 					uniform.ent.color[i][2] = backEnd.currentEntity->e.shader.rgba[2] / 255.0;
 					uniform.ent.color[i][3] = pStage->bundle[i].alphaGen == AGEN_IDENTITY ? 1.0 : (backEnd.currentEntity->e.shader.rgba[3] / 255.0);
-					pushUniform = qtrue;
+					pushUniform = true;
 				}
 			}
 		}
 
 		if ( pushUniform ) {
-			pushUniform = qfalse;
+			pushUniform = false;
 			VK_PushUniform( &uniform );
 		}
 
@@ -814,7 +814,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input, qboolean fog
 
 		vk_bind_pipeline( pipeline );
 		vk_bind_geometry( tess_flags );
-		vk_draw_geometry( tess.depthRange, qtrue );
+		vk_draw_geometry( tess.depthRange, true );
 
 		if ( pStage->depthFragment ) {
 			if ( backEnd.viewParms.portalView == PV_MIRROR )
@@ -822,7 +822,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input, qboolean fog
 			else
 				pipeline = pStage->vk_pipeline_df;
 			vk_bind_pipeline( pipeline );
-			vk_draw_geometry( tess.depthRange, qtrue );
+			vk_draw_geometry( tess.depthRange, true );
 		}
 
 		// allow skipping out to show just lightmaps during development
@@ -931,7 +931,7 @@ void VK_LightingPass( void )
 
 		uniform_offset = VK_PushUniform( &uniform );
 
-		tess.dlightUpdateParams = qfalse;
+		tess.dlightUpdateParams = false;
 	}
 
 	if ( uniform_offset == ~0 )
@@ -969,15 +969,15 @@ void VK_LightingPass( void )
 	vk_bind_pipeline( pipeline );
 	vk_bind_index();
 	vk_bind_lighting( tess.shader->lightingStage, tess.shader->lightingBundle );
-	vk_draw_geometry( tess.depthRange, qtrue );
+	vk_draw_geometry( tess.depthRange, true );
 }
 #endif // USE_PMLIGHT
 
 
 void RB_StageIteratorGeneric( void )
 {
-	qboolean rebindIndex = qfalse;
-	qboolean fogCollapse = qfalse;
+	bool rebindIndex = false;
+	bool fogCollapse = false;
 
 #ifdef USE_VBO
 	if ( tess.vboIndex != 0 ) {

@@ -463,9 +463,9 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 	VkPresentModeKHR *present_modes;
 	uint32_t image_count;
 	VkSwapchainCreateInfoKHR desc;
-	qboolean mailbox_supported = qfalse;
-	qboolean immediate_supported = qfalse;
-	qboolean fifo_relaxed_supported = qfalse;
+	bool mailbox_supported = false;
+	bool immediate_supported = false;
+	bool fifo_relaxed_supported = false;
 	int v;
 
 	VK_CHECK( qvkGetPhysicalDeviceSurfaceCapabilitiesKHR( physical_device, surface, &surface_caps ) );
@@ -476,12 +476,12 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 		image_extent.height = MIN( surface_caps.maxImageExtent.height, MAX( surface_caps.minImageExtent.height, (uint32_t) glConfig.vidHeight ) );
 	}
 
-	vk.fastSky = qtrue;
+	vk.fastSky = true;
 
 	if ( !vk.fboActive ) {
 		// VK_IMAGE_USAGE_TRANSFER_DST_BIT is required by image clear operations.
 		if ( ( surface_caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT ) == 0 ) {
-			vk.fastSky = qfalse;
+			vk.fastSky = false;
 			ri.Printf( PRINT_WARNING, "VK_IMAGE_USAGE_TRANSFER_DST_BIT is not supported by the swapchain\n" );
 		}
 
@@ -501,11 +501,11 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 	for ( i = 0; i < present_mode_count; i++ ) {
 		ri.Printf( PRINT_ALL, " %s", pmode_to_str( present_modes[i] ) );
 		if ( present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR )
-			mailbox_supported = qtrue;
+			mailbox_supported = true;
 		else if ( present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR )
-			immediate_supported = qtrue;
+			immediate_supported = true;
 		else if ( present_modes[i] ==  VK_PRESENT_MODE_FIFO_RELAXED_KHR )
-			fifo_relaxed_supported = qtrue;
+			fifo_relaxed_supported = true;
 
 	}
 	ri.Printf( PRINT_ALL, "\n" );
@@ -1104,36 +1104,36 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugReportFlagsEXT flags
 #endif
 
 
-static qboolean used_instance_extension( const char *ext )
+static bool used_instance_extension( const char *ext )
 {
 	const char *u;
 
 	// allow all VK_*_surface extensions
 	u = strrchr( ext, '_' );
 	if ( u && Q_stricmp( u + 1, "surface" ) == 0 )
-		return qtrue;
+		return true;
 
 	if ( Q_stricmp( ext, VK_KHR_DISPLAY_EXTENSION_NAME ) == 0 )
-		return qtrue; // needed for KMSDRM instances/devices?
+		return true; // needed for KMSDRM instances/devices?
 
 	if ( Q_stricmp( ext, VK_KHR_SWAPCHAIN_EXTENSION_NAME ) == 0 )
-		return qtrue;
+		return true;
 
 #ifdef USE_VK_VALIDATION
 	if ( Q_stricmp( ext, VK_EXT_DEBUG_REPORT_EXTENSION_NAME ) == 0 )
-		return qtrue;
+		return true;
 #endif
 
 	if ( Q_stricmp( ext, VK_EXT_DEBUG_UTILS_EXTENSION_NAME ) == 0 )
-		return qtrue;
+		return true;
 
 	if ( Q_stricmp( ext, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME ) == 0 )
-		return qtrue;
+		return true;
 
 	if ( Q_stricmp( ext, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME ) == 0 )
-		return qtrue;
+		return true;
 
-	return qfalse;
+	return false;
 }
 
 
@@ -1269,21 +1269,21 @@ static VkFormat get_depth_format( VkPhysicalDevice physical_device ) {
 
 
 // Check if we can use vkCmdBlitImage for the given source and destination image formats.
-static qboolean vk_blit_enabled( VkPhysicalDevice physical_device, const VkFormat srcFormat, const VkFormat dstFormat )
+static bool vk_blit_enabled( VkPhysicalDevice physical_device, const VkFormat srcFormat, const VkFormat dstFormat )
 {
 	VkFormatProperties formatProps;
 
 	qvkGetPhysicalDeviceFormatProperties( physical_device, srcFormat, &formatProps );
 	if ( ( formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT ) == 0 ) {
-		return qfalse;
+		return false;
 	}
 
 	qvkGetPhysicalDeviceFormatProperties( physical_device, dstFormat, &formatProps );
 	if ( ( formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT ) == 0 ) {
-		return qfalse;
+		return false;
 	}
 
-	return qtrue;
+	return true;
 }
 
 
@@ -1336,7 +1336,7 @@ static void get_present_format( int present_bits, VkFormat *bgr, VkFormat *rgb )
 }
 
 
-static qboolean vk_select_surface_format( VkPhysicalDevice physical_device, VkSurfaceKHR surface )
+static bool vk_select_surface_format( VkPhysicalDevice physical_device, VkSurfaceKHR surface )
 {
 	VkFormat base_bgr, base_rgb;
 	VkFormat ext_bgr, ext_rgb;
@@ -1347,12 +1347,12 @@ static qboolean vk_select_surface_format( VkPhysicalDevice physical_device, VkSu
 	res = qvkGetPhysicalDeviceSurfaceFormatsKHR( physical_device, surface, &format_count, NULL );
 	if ( res < 0 ) {
 		ri.Printf( PRINT_ERROR, "vkGetPhysicalDeviceSurfaceFormatsKHR returned %s\n", vk_result_string( res ) );
-		return qfalse;
+		return false;
 	}
 
 	if ( format_count == 0 ) {
 		ri.Printf( PRINT_ERROR, "...no surface formats found\n" );
-		return qfalse;
+		return false;
 	}
 
 	candidates = (VkSurfaceFormatKHR*)ri.Malloc( format_count * sizeof(VkSurfaceFormatKHR) );
@@ -1403,7 +1403,7 @@ static qboolean vk_select_surface_format( VkPhysicalDevice physical_device, VkSu
 
 	ri.Free( candidates );
 
-	return qtrue;
+	return true;
 }
 
 
@@ -1445,13 +1445,13 @@ static const char *renderer_name( const VkPhysicalDeviceProperties *props ) {
 }
 
 
-static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_index ) {
+static bool vk_create_device( VkPhysicalDevice physical_device, int device_index ) {
 
 	ri.Printf( PRINT_ALL, "...selected physical device: %i\n", device_index );
 
 	// select surface format
 	if ( !vk_select_surface_format( physical_device, vk_surface ) ) {
-		return qfalse;
+		return false;
 	}
 
 	setup_surface_formats( physical_device );
@@ -1483,7 +1483,7 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 		if ( vk.queue_family_index == ~0U ) {
 			ri.Printf( PRINT_ERROR, "...failed to find graphics queue family\n" );
 
-			return qfalse;
+			return false;
 		}
 	}
 
@@ -1500,10 +1500,10 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 		VkPhysicalDeviceFeatures features;
 		VkDeviceCreateInfo device_desc;
 		VkResult res;
-		qboolean swapchainSupported = qfalse;
-		qboolean dedicatedAllocation = qfalse;
-		qboolean memoryRequirements2 = qfalse;
-		qboolean debugMarker = qfalse;
+		bool swapchainSupported = false;
+		bool dedicatedAllocation = false;
+		bool memoryRequirements2 = false;
+		bool debugMarker = false;
 		uint32_t i, len, count = 0;
 
 		VK_CHECK( qvkEnumerateDeviceExtensionProperties( physical_device, NULL, &count, NULL ) );
@@ -1517,13 +1517,13 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 		for ( i = 0; i < count; i++ ) {
 			ext = extension_properties[i].extensionName;
 			if ( strcmp( ext, VK_KHR_SWAPCHAIN_EXTENSION_NAME ) == 0 ) {
-				swapchainSupported = qtrue;
+				swapchainSupported = true;
 			} else if ( strcmp( ext, VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME ) == 0 ) {
-				dedicatedAllocation = qtrue;
+				dedicatedAllocation = true;
 			} else if ( strcmp( ext, VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME ) == 0 ) {
-				memoryRequirements2 = qtrue;
+				memoryRequirements2 = true;
 			} else if ( strcmp( ext, VK_EXT_DEBUG_MARKER_EXTENSION_NAME ) == 0 ) {
-				debugMarker = qtrue;
+				debugMarker = true;
 			}
 			// add this device extension to glConfig
 			if ( i != 0 ) {
@@ -1543,16 +1543,16 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 
 		if ( !swapchainSupported ) {
 			ri.Printf( PRINT_ERROR, "...required device extension is not available: %s\n", VK_KHR_SWAPCHAIN_EXTENSION_NAME );
-			return qfalse;
+			return false;
 		}
 
 		if ( !memoryRequirements2 )
-			dedicatedAllocation = qfalse;
+			dedicatedAllocation = false;
 		else
 			vk.dedicatedAllocation = dedicatedAllocation;
 
 #ifndef USE_DEDICATED_ALLOCATION
-		vk.dedicatedAllocation = qfalse;
+		vk.dedicatedAllocation = false;
 #endif
 
 		device_extension_list[ device_extension_count++ ] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
@@ -1564,14 +1564,14 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 
 		if ( debugMarker ) {
 			device_extension_list[ device_extension_count++ ] = VK_EXT_DEBUG_MARKER_EXTENSION_NAME;
-			vk.debugMarkers = qtrue;
+			vk.debugMarkers = true;
 		}
 
 		qvkGetPhysicalDeviceFeatures( physical_device, &device_features );
 
 		if ( device_features.fillModeNonSolid == VK_FALSE ) {
 			ri.Printf( PRINT_ERROR, "...fillModeNonSolid feature is not supported\n" );
-			return qfalse;
+			return false;
 		}
 
 		queue_desc.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -1586,17 +1586,17 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 
 		if ( device_features.wideLines ) { // needed for RB_SurfaceAxis
 			features.wideLines = VK_TRUE;
-			vk.wideLines = qtrue;
+			vk.wideLines = true;
 		}
 
 		if ( device_features.fragmentStoresAndAtomics ) {
 			features.fragmentStoresAndAtomics = VK_TRUE;
-			vk.fragmentStores = qtrue;
+			vk.fragmentStores = true;
 		}
 
 		if ( r_ext_texture_filter_anisotropic->integer && device_features.samplerAnisotropy ) {
 			features.samplerAnisotropy = VK_TRUE;
-			vk.samplerAnisotropy = qtrue;
+			vk.samplerAnisotropy = true;
 		}
 
 		device_desc.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -1613,11 +1613,11 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 		res = qvkCreateDevice( physical_device, &device_desc, NULL, &vk.device );
 		if ( res < 0 ) {
 			ri.Printf( PRINT_ERROR, "vkCreateDevice returned %s\n", vk_result_string( res ) );
-			return qfalse;
+			return false;
 		}
 	}
 
-	return qtrue;
+	return true;
 }
 
 
@@ -1866,7 +1866,7 @@ static void init_vulkan_library( void )
 		INIT_DEVICE_FUNCTION_EXT(vkGetBufferMemoryRequirements2KHR);
 		INIT_DEVICE_FUNCTION_EXT(vkGetImageMemoryRequirements2KHR);
 		if ( !qvkGetBufferMemoryRequirements2KHR || !qvkGetImageMemoryRequirements2KHR ) {
-			vk.dedicatedAllocation = qfalse;
+			vk.dedicatedAllocation = false;
 		}
 	}
 
@@ -2180,8 +2180,8 @@ static void vk_update_attachment_descriptors( void ) {
 		Com_Memset( &sd, 0, sizeof( sd ) );
 		sd.gl_mag_filter = sd.gl_min_filter = vk.blitFilter;
 		sd.address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		sd.max_lod_1_0 = qtrue;
-		sd.noAnisotropy = qtrue;
+		sd.max_lod_1_0 = true;
+		sd.noAnisotropy = true;
 
 		info.sampler = vk_find_sampler( &sd );
 		info.imageView = vk.color_image_view;
@@ -2201,8 +2201,8 @@ static void vk_update_attachment_descriptors( void ) {
 
 		// screenmap
 		sd.gl_mag_filter = sd.gl_min_filter = GL_LINEAR;
-		sd.max_lod_1_0 = qfalse;
-		sd.noAnisotropy = qtrue;
+		sd.max_lod_1_0 = false;
+		sd.noAnisotropy = true;
 
 		info.sampler = vk_find_sampler( &sd );
 
@@ -2430,7 +2430,7 @@ void vk_release_vbo( void )
 }
 
 
-qboolean vk_alloc_vbo( const byte *vbo_data, int vbo_size )
+bool vk_alloc_vbo( const byte *vbo_data, int vbo_size )
 {
 	VkMemoryRequirements vb_mem_reqs;
 	VkMemoryAllocateInfo alloc_info;
@@ -2509,7 +2509,7 @@ qboolean vk_alloc_vbo( const byte *vbo_data, int vbo_size )
 	SET_OBJECT_NAME( vk.vbo.vertex_buffer, "static VBO", VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT );
 	SET_OBJECT_NAME( vk.vbo.buffer_memory, "static VBO memory", VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT );
 
-	return qtrue;
+	return true;
 }
 #endif
 
@@ -2732,19 +2732,19 @@ static void vk_alloc_persistent_pipelines( void )
 		def.color.rgb = tr.identityLightByte;
 		def.color.alpha = tr.identityLightByte;
 		def.face_culling = CT_FRONT_SIDED;
-		def.polygon_offset = qfalse;
-		def.mirror = qfalse;
-		vk.skybox_pipeline = vk_find_pipeline_ext( 0, &def, qtrue );
+		def.polygon_offset = false;
+		def.mirror = false;
+		vk.skybox_pipeline = vk_find_pipeline_ext( 0, &def, true );
 	}
 
 	// stencil shadows
 	{
 		cullType_t cull_types[2] = { CT_FRONT_SIDED, CT_BACK_SIDED };
-		qboolean mirror_flags[2] = { qfalse, qtrue };
+		bool mirror_flags[2] = { false, true };
 		int i, j;
 
 		Com_Memset(&def, 0, sizeof(def));
-		def.polygon_offset = qfalse;
+		def.polygon_offset = false;
 		def.state_bits = 0;
 		def.shader_type = TYPE_SIGNLE_TEXTURE;
 		def.shadow_phase = SHADOW_EDGES;
@@ -2753,20 +2753,20 @@ static void vk_alloc_persistent_pipelines( void )
 			def.face_culling = cull_types[i];
 			for (j = 0; j < 2; j++) {
 				def.mirror = mirror_flags[j];
-				vk.shadow_volume_pipelines[i][j] = vk_find_pipeline_ext( 0, &def, r_shadows->integer ? qtrue: qfalse );
+				vk.shadow_volume_pipelines[i][j] = vk_find_pipeline_ext( 0, &def, r_shadows->integer ? true: false );
 			}
 		}
 	}
 	{
 		Com_Memset( &def, 0, sizeof( def ) );
 		def.face_culling = CT_FRONT_SIDED;
-		def.polygon_offset = qfalse;
+		def.polygon_offset = false;
 		def.state_bits = GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO;
 		def.shader_type = TYPE_SIGNLE_TEXTURE;
-		def.mirror = qfalse;
+		def.mirror = false;
 		def.shadow_phase = SHADOW_FS_QUAD;
 		def.primitives = TRIANGLE_STRIP;
-		vk.shadow_finish_pipeline = vk_find_pipeline_ext( 0, &def, r_shadows->integer ? qtrue: qfalse );
+		vk.shadow_finish_pipeline = vk_find_pipeline_ext( 0, &def, r_shadows->integer ? true: false );
 	}
 
 	// fog and dlights
@@ -2779,12 +2779,12 @@ static void vk_alloc_persistent_pipelines( void )
 			GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL,	// modulated
 			GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL			// additive
 		};
-		qboolean polygon_offset[2] = { qfalse, qtrue };
+		bool polygon_offset[2] = { false, true };
 		int i, j, k, l;
 
 		Com_Memset(&def, 0, sizeof(def));
 		def.shader_type = TYPE_SIGNLE_TEXTURE;
-		def.mirror = qfalse;
+		def.mirror = false;
 
 		for ( i = 0; i < 2; i++ ) {
 			unsigned fog_state = fog_state_bits[ i ];
@@ -2801,15 +2801,15 @@ static void vk_alloc_persistent_pipelines( void )
 					def.shader_type = TYPE_SIGNLE_TEXTURE;
 #endif
 					def.state_bits = fog_state;
-					vk.fog_pipelines[ i ][ j ][ k ] = vk_find_pipeline_ext( 0, &def, qtrue );
+					vk.fog_pipelines[ i ][ j ][ k ] = vk_find_pipeline_ext( 0, &def, true );
 
 					def.shader_type = TYPE_SIGNLE_TEXTURE;
 					def.state_bits = dlight_state;
 #ifdef USE_LEGACY_DLIGHTS
 #ifdef USE_PMLIGHT
-					vk.dlight_pipelines[ i ][ j ][ k ] = vk_find_pipeline_ext( 0, &def, r_dlightMode->integer == 0 ? qtrue : qfalse );
+					vk.dlight_pipelines[ i ][ j ][ k ] = vk_find_pipeline_ext( 0, &def, r_dlightMode->integer == 0 ? true : false );
 #else
-					vk.dlight_pipelines[ i ][ j ][ k ] = vk_find_pipeline_ext( 0, &def, qtrue );
+					vk.dlight_pipelines[ i ][ j ][ k ] = vk_find_pipeline_ext( 0, &def, true );
 #endif
 #endif
 				}
@@ -2828,9 +2828,9 @@ static void vk_alloc_persistent_pipelines( void )
 					for ( l = 0; l < 2; l++ ) {
 						def.abs_light = l;
 						def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING;
-						vk.dlight_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, qfalse );
+						vk.dlight_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, false );
 						def.shader_type = TYPE_SIGNLE_TEXTURE_LIGHTING_LINEAR;
-						vk.dlight1_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, qfalse );
+						vk.dlight1_pipelines_x[i][j][k][l] = vk_find_pipeline_ext( 0, &def, false );
 					}
 				}
 			}
@@ -2844,7 +2844,7 @@ static void vk_alloc_persistent_pipelines( void )
 		def.state_bits = GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE;
 		def.face_culling = CT_FRONT_SIDED;
 		def.primitives = TRIANGLE_STRIP;
-		vk.surface_beam_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		vk.surface_beam_pipeline = vk_find_pipeline_ext( 0, &def, false );
 	}
 
 	// axis for missing models
@@ -2856,7 +2856,7 @@ static void vk_alloc_persistent_pipelines( void )
 		def.primitives = LINE_LIST;
 		if ( vk.wideLines )
 			def.line_width = 3;
-		vk.surface_axis_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		vk.surface_axis_pipeline = vk_find_pipeline_ext( 0, &def, false );
 	}
 
 	// flare visibility test dot
@@ -2866,7 +2866,7 @@ static void vk_alloc_persistent_pipelines( void )
 		def.face_culling = CT_TWO_SIDED;
 		def.shader_type = TYPE_DOT;
 		def.primitives = POINT_LIST;
-		vk.dot_pipeline = vk_find_pipeline_ext( 0, &def, qtrue );
+		vk.dot_pipeline = vk_find_pipeline_ext( 0, &def, true );
 	}
 
 	// DrawTris()
@@ -2876,42 +2876,42 @@ static void vk_alloc_persistent_pipelines( void )
 		def.state_bits = state_bits;
 		def.shader_type = TYPE_COLOR_WHITE;
 		def.face_culling = CT_FRONT_SIDED;
-		vk.tris_debug_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		vk.tris_debug_pipeline = vk_find_pipeline_ext( 0, &def, false );
 	}
 	{
 		Com_Memset(&def, 0, sizeof(def));
 		def.state_bits = state_bits;
 		def.shader_type = TYPE_COLOR_WHITE;
 		def.face_culling = CT_BACK_SIDED;
-		vk.tris_mirror_debug_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		vk.tris_mirror_debug_pipeline = vk_find_pipeline_ext( 0, &def, false );
 	}
 	{
 		Com_Memset(&def, 0, sizeof(def));
 		def.state_bits = state_bits;
 		def.shader_type = TYPE_COLOR_GREEN;
 		def.face_culling = CT_FRONT_SIDED;
-		vk.tris_debug_green_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		vk.tris_debug_green_pipeline = vk_find_pipeline_ext( 0, &def, false );
 	}
 	{
 		Com_Memset(&def, 0, sizeof(def));
 		def.state_bits = state_bits;
 		def.shader_type = TYPE_COLOR_GREEN;
 		def.face_culling = CT_BACK_SIDED;
-		vk.tris_mirror_debug_green_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		vk.tris_mirror_debug_green_pipeline = vk_find_pipeline_ext( 0, &def, false );
 	}
 	{
 		Com_Memset(&def, 0, sizeof(def));
 		def.state_bits = state_bits;
 		def.shader_type = TYPE_COLOR_RED;
 		def.face_culling = CT_FRONT_SIDED;
-		vk.tris_debug_red_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		vk.tris_debug_red_pipeline = vk_find_pipeline_ext( 0, &def, false );
 	}
 	{
 		Com_Memset(&def, 0, sizeof(def));
 		def.state_bits = state_bits;
 		def.shader_type = TYPE_COLOR_RED;
 		def.face_culling = CT_BACK_SIDED;
-		vk.tris_mirror_debug_red_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		vk.tris_mirror_debug_red_pipeline = vk_find_pipeline_ext( 0, &def, false );
 	}
 
 	// DrawNormals()
@@ -2920,7 +2920,7 @@ static void vk_alloc_persistent_pipelines( void )
 		def.state_bits = GLS_DEPTHMASK_TRUE;
 		def.shader_type = TYPE_SIGNLE_TEXTURE;
 		def.primitives = LINE_LIST;
-		vk.normals_debug_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		vk.normals_debug_pipeline = vk_find_pipeline_ext( 0, &def, false );
 	}
 
 	// RB_DebugPolygon()
@@ -2928,14 +2928,14 @@ static void vk_alloc_persistent_pipelines( void )
 		Com_Memset(&def, 0, sizeof(def));
 		def.state_bits = GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE;
 		def.shader_type = TYPE_SIGNLE_TEXTURE;
-		vk.surface_debug_pipeline_solid = vk_find_pipeline_ext( 0, &def, qfalse );
+		vk.surface_debug_pipeline_solid = vk_find_pipeline_ext( 0, &def, false );
 	}
 	{
 		Com_Memset(&def, 0, sizeof(def));
 		def.state_bits = GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE;
 		def.shader_type = TYPE_SIGNLE_TEXTURE;
 		def.primitives = LINE_LIST;
-		vk.surface_debug_pipeline_outline = vk_find_pipeline_ext( 0, &def, qfalse );
+		vk.surface_debug_pipeline_outline = vk_find_pipeline_ext( 0, &def, false );
 	}
 
 	// RB_ShowImages
@@ -2944,11 +2944,11 @@ static void vk_alloc_persistent_pipelines( void )
 		def.state_bits = GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA;
 		def.shader_type = TYPE_SIGNLE_TEXTURE;
 		def.primitives = TRIANGLE_STRIP;
-		vk.images_debug_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		vk.images_debug_pipeline = vk_find_pipeline_ext( 0, &def, false );
 	}
 }
 
-void vk_create_blur_pipeline( uint32_t index, uint32_t width, uint32_t height, qboolean horizontal_pass );
+void vk_create_blur_pipeline( uint32_t index, uint32_t width, uint32_t height, bool horizontal_pass );
 
 void vk_update_post_process_pipelines( void )
 {
@@ -2970,8 +2970,8 @@ void vk_update_post_process_pipelines( void )
 			for ( i = 0; i < ARRAY_LEN( vk.blur_pipeline ); i += 2 ) {
 				width /= 2;
 				height /= 2;
-				vk_create_blur_pipeline( i + 0, width, height, qtrue ); // horizontal
-				vk_create_blur_pipeline( i + 1, width, height, qfalse ); // vertical
+				vk_create_blur_pipeline( i + 0, width, height, true ); // horizontal
+				vk_create_blur_pipeline( i + 1, width, height, false ); // vertical
 			}
 
 			vk_create_post_process_pipeline( 2, glConfig.vidWidth, glConfig.vidHeight ); // bloom blending
@@ -3165,7 +3165,7 @@ static void vk_get_image_memory_erquirements( VkImage image, VkMemoryRequirement
 
 
 static void create_color_attachment( uint32_t width, uint32_t height, VkSampleCountFlagBits samples, VkFormat format,
-	VkImageUsageFlags usage, VkImage *image, VkImageView *image_view, VkImageLayout image_layout, qboolean multisample )
+	VkImageUsageFlags usage, VkImage *image, VkImageView *image_view, VkImageLayout image_layout, bool multisample )
 {
 	VkImageCreateInfo create_desc;
 	VkMemoryRequirements memory_requirements;
@@ -3199,7 +3199,7 @@ static void create_color_attachment( uint32_t width, uint32_t height, VkSampleCo
 }
 
 
-static void create_depth_attachment( uint32_t width, uint32_t height, VkSampleCountFlagBits samples, VkImage *image, VkImageView *image_view, qboolean allowTransient )
+static void create_depth_attachment( uint32_t width, uint32_t height, VkSampleCountFlagBits samples, VkImage *image, VkImageView *image_view, bool allowTransient )
 {
 	VkImageCreateInfo create_desc;
 	VkMemoryRequirements memory_requirements;
@@ -3261,53 +3261,53 @@ static void vk_create_attachments( void )
 			uint32_t height = gls.captureHeight;
 
 			create_color_attachment( width, height, VK_SAMPLE_COUNT_1_BIT, vk.bloom_format,
-				usage, &vk.bloom_image[0], &vk.bloom_image_view[0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
+				usage, &vk.bloom_image[0], &vk.bloom_image_view[0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, false );
 
 			for ( i = 1; i < ARRAY_LEN( vk.bloom_image ); i += 2 ) {
 				width /= 2;
 				height /= 2;
 				create_color_attachment( width, height, VK_SAMPLE_COUNT_1_BIT, vk.bloom_format,
-					usage, &vk.bloom_image[i+0], &vk.bloom_image_view[i+0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
+					usage, &vk.bloom_image[i+0], &vk.bloom_image_view[i+0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, false );
 
 				create_color_attachment( width, height, VK_SAMPLE_COUNT_1_BIT, vk.bloom_format,
-					usage, &vk.bloom_image[i+1], &vk.bloom_image_view[i+1], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
+					usage, &vk.bloom_image[i+1], &vk.bloom_image_view[i+1], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, false );
 			}
 		}
 
 		// post-processing/msaa-resolve
 		create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, VK_SAMPLE_COUNT_1_BIT, vk.color_format,
-			usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, &vk.color_image, &vk.color_image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
+			usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, &vk.color_image, &vk.color_image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, false );
 
 		// screenmap-msaa
 		if ( vk.screenMapSamples > VK_SAMPLE_COUNT_1_BIT ) {
 			create_color_attachment( vk.screenMapWidth, vk.screenMapHeight, vk.screenMapSamples, vk.color_format,
-				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &vk.screenMap.color_image_msaa, &vk.screenMap.color_image_view_msaa, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, qtrue );
+				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &vk.screenMap.color_image_msaa, &vk.screenMap.color_image_view_msaa, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, true );
 		}
 
 		// screenmap/msaa-resolve
 		create_color_attachment( vk.screenMapWidth, vk.screenMapHeight, VK_SAMPLE_COUNT_1_BIT, vk.color_format,
-			usage, &vk.screenMap.color_image, &vk.screenMap.color_image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
+			usage, &vk.screenMap.color_image, &vk.screenMap.color_image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, false );
 
 		// screenmap depth
-		create_depth_attachment( vk.screenMapWidth, vk.screenMapHeight, vk.screenMapSamples, &vk.screenMap.depth_image, &vk.screenMap.depth_image_view, qtrue );
+		create_depth_attachment( vk.screenMapWidth, vk.screenMapHeight, vk.screenMapSamples, &vk.screenMap.depth_image, &vk.screenMap.depth_image_view, true );
 
 		if ( vk.msaaActive ) {
 			create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, vkSamples, vk.color_format,
-				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &vk.msaa_image, &vk.msaa_image_view, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, qtrue );
+				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &vk.msaa_image, &vk.msaa_image_view, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, true );
 		}
 
 		if ( r_ext_supersample->integer ) {
 			// capture buffer
 			usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 			create_color_attachment( gls.captureWidth, gls.captureHeight, VK_SAMPLE_COUNT_1_BIT, vk.capture_format,
-				usage, &vk.capture.image, &vk.capture.image_view, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, qfalse );
+				usage, &vk.capture.image, &vk.capture.image_view, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, false );
 		}
 	} // if ( vk.fboActive )
 
 	//vk_alloc_attachments();
 
 	create_depth_attachment( glConfig.vidWidth, glConfig.vidHeight, vkSamples, &vk.depth_image, &vk.depth_image_view,
-		(vk.fboActive && r_bloom->integer) ? qfalse : qtrue );
+		(vk.fboActive && r_bloom->integer) ? false : true );
 
 	vk_alloc_attachments();
 
@@ -3492,7 +3492,7 @@ static void vk_create_sync_primitives( void ) {
 		fence_desc.flags = VK_FENCE_CREATE_SIGNALED_BIT; // so it can be used to start rendering
 
 		VK_CHECK( qvkCreateFence( vk.device, &fence_desc, NULL, &vk.tess[i].rendering_finished_fence ) );
-		vk.tess[i].waitForFence = qtrue;
+		vk.tess[i].waitForFence = true;
 
 		SET_OBJECT_NAME( vk.tess[i].image_acquired, va( "image_acquired semaphore %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT);
 		SET_OBJECT_NAME( vk.tess[i].rendering_finished, va( "rendering_finished semaphore %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT );
@@ -3508,7 +3508,7 @@ static void vk_destroy_sync_primitives( void  ) {
 		qvkDestroySemaphore( vk.device, vk.tess[i].image_acquired, NULL );
 		qvkDestroySemaphore( vk.device, vk.tess[i].rendering_finished, NULL );
 		qvkDestroyFence( vk.device, vk.tess[i].rendering_finished_fence, NULL );
-		vk.tess[i].waitForFence = qfalse;
+		vk.tess[i].waitForFence = false;
 	}
 }
 
@@ -3568,7 +3568,7 @@ static void vk_destroy_swapchain( void ) {
 
 static void vk_destroy_attachments( void );
 static void vk_destroy_render_passes( void );
-static void vk_destroy_pipelines( qboolean resetCount );
+static void vk_destroy_pipelines( bool resetCount );
 
 static void vk_restart_swapchain( const char *funcname )
 {
@@ -3581,7 +3581,7 @@ static void vk_restart_swapchain( const char *funcname )
 		qvkResetCommandBuffer( vk.tess[i].command_buffer, 0 );
 	}
 
-	vk_destroy_pipelines( qfalse );
+	vk_destroy_pipelines( false );
 	vk_destroy_framebuffers();
 	vk_destroy_render_passes();
 	vk_destroy_attachments();
@@ -3635,7 +3635,7 @@ static void vk_set_render_scale( void )
 				vk.blitFilter = GL_NEAREST;
 		}
 
-		vk.windowAdjusted = qtrue;
+		vk.windowAdjusted = true;
 	}
 
 	if ( r_fbo->integer && r_ext_supersample->integer && !r_renderScale->integer )
@@ -3672,18 +3672,18 @@ void vk_initialize( void )
 	vk.maxAnisotropy = props.limits.maxSamplerAnisotropy;
 
 	vk.blitFilter = GL_NEAREST;
-	vk.windowAdjusted = qfalse;
+	vk.windowAdjusted = false;
 	vk.blitX0 = vk.blitY0 = 0;
 
 	vk_set_render_scale();
 
 	if ( r_fbo->integer ) {
-		vk.fboActive = qtrue;
+		vk.fboActive = true;
 		if ( r_ext_multisample->integer ) {
-			vk.msaaActive = qtrue;
+			vk.msaaActive = true;
 		}
 	} else {
-		vk.fboActive = qfalse;
+		vk.fboActive = false;
 	}
 
 	// multisampling
@@ -3734,7 +3734,7 @@ void vk_initialize( void )
 
 	vk.maxBoundDescriptorSets = props.limits.maxBoundDescriptorSets;
 
-	glConfig.textureEnvAddAvailable = qtrue;
+	glConfig.textureEnvAddAvailable = true;
 	glConfig.textureCompression = TC_NONE;
 
 	major = VK_VERSION_MAJOR(props.apiVersion);
@@ -3767,7 +3767,7 @@ void vk_initialize( void )
 	Com_sprintf( glConfig.version_string, sizeof( glConfig.version_string ), "API: %i.%i.%i, Driver: %s",
 		major, minor, patch, driver_version );
 
-	vk.offscreenRender = qtrue;
+	vk.offscreenRender = true;
 
 	if ( props.vendorID == 0x1002 ) {
 		vendor_name = "Advanced Micro Devices, Inc.";
@@ -3776,7 +3776,7 @@ void vk_initialize( void )
 	} else if ( props.vendorID == 0x10DE ) {
 		// https://github.com/SaschaWillems/Vulkan/issues/493
 		// we can't render to offscreen presentation surfaces on nvidia
-		vk.offscreenRender = qfalse;
+		vk.offscreenRender = false;
 		vendor_name = "NVIDIA";
 	} else if ( props.vendorID == 0x14E4 ) {
 		vendor_name = "Broadcom Inc.";
@@ -3979,7 +3979,7 @@ void vk_initialize( void )
 	// framebuffers for each swapchain image
 	vk_create_framebuffers();
 
-	vk.active = qtrue;
+	vk.active = true;
 }
 
 
@@ -4102,7 +4102,7 @@ static void vk_destroy_render_passes( void )
 }
 
 
-static void vk_destroy_pipelines( qboolean resetCounter )
+static void vk_destroy_pipelines( bool resetCounter )
 {
 	uint32_t i, j;
 
@@ -4160,7 +4160,7 @@ void vk_shutdown( refShutdownCode_t code )
 
 	vk_destroy_framebuffers();
 
-	vk_destroy_pipelines( qtrue ); // reset counter
+	vk_destroy_pipelines( true ); // reset counter
 
 	vk_destroy_render_passes();
 
@@ -4454,7 +4454,7 @@ void vk_create_image( image_t *image, int width, int height, int mip_levels ) {
 		VK_CHECK( qvkAllocateDescriptorSets( vk.device, &desc, &image->descriptor ) );
 	}
 
-	vk_update_descriptor_set( image, mip_levels > 1 ? qtrue : qfalse );
+	vk_update_descriptor_set( image, mip_levels > 1 ? true : false );
 
 	SET_OBJECT_NAME( image->handle, image->imgName, VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT );
 	SET_OBJECT_NAME( image->view, image->imgName, VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_VIEW_EXT );
@@ -4529,7 +4529,7 @@ static byte *resample_image_data( const int target_format, byte *data, const int
 }
 
 
-void vk_upload_image_data( image_t *image, int x, int y, int width, int height, int mipmaps, byte *pixels, int size, qboolean update ) {
+void vk_upload_image_data( image_t *image, int x, int y, int width, int height, int mipmaps, byte *pixels, int size, bool update ) {
 
 	VkCommandBuffer command_buffer;
 	VkBufferImageCopy regions[16];
@@ -4542,7 +4542,7 @@ void vk_upload_image_data( image_t *image, int x, int y, int width, int height, 
 
 	buf = resample_image_data( image->internalFormat, pixels, size, &bpp );
 
-	while (qtrue) {
+	while (true) {
 		Com_Memset(&region, 0, sizeof(region));
 		region.bufferOffset = buffer_size;
 		region.bufferRowLength = 0;
@@ -4599,7 +4599,7 @@ void vk_upload_image_data( image_t *image, int x, int y, int width, int height, 
 }
 
 
-void vk_update_descriptor_set( image_t *image, qboolean mipmap ) {
+void vk_update_descriptor_set( image_t *image, bool mipmap ) {
 	Vk_Sampler_Def sampler_def;
 	VkDescriptorImageInfo image_info;
 	VkWriteDescriptorSet descriptor_write;
@@ -4615,7 +4615,7 @@ void vk_update_descriptor_set( image_t *image, qboolean mipmap ) {
 		sampler_def.gl_mag_filter = GL_LINEAR;
 		sampler_def.gl_min_filter = GL_LINEAR;
 		// no anisotropy without mipmaps
-		sampler_def.noAnisotropy = qtrue;
+		sampler_def.noAnisotropy = true;
 	}
 
 	image_info.sampler = vk_find_sampler( &sampler_def );
@@ -4665,8 +4665,8 @@ static void set_shader_stage_desc(VkPipelineShaderStageCreateInfo *desc, VkShade
 }
 
 
-#define FORMAT_DEPTH(format, r_bits, g_bits, b_bits) case(VK_FORMAT_##format): *r = r_bits; *b = b_bits; *g = g_bits; return qtrue;
-static qboolean vk_surface_format_color_depth( VkFormat format, int *r, int *g, int *b ) {
+#define FORMAT_DEPTH(format, r_bits, g_bits, b_bits) case(VK_FORMAT_##format): *r = r_bits; *b = b_bits; *g = g_bits; return true;
+static bool vk_surface_format_color_depth( VkFormat format, int *r, int *g, int *b ) {
 	switch (format) {
 		// Common formats from https://vulkan.gpuinfo.org/listsurfaceformats.php
 		FORMAT_DEPTH(B8G8R8A8_UNORM, 255, 255, 255)
@@ -4690,7 +4690,7 @@ static qboolean vk_surface_format_color_depth( VkFormat format, int *r, int *g, 
 			FORMAT_DEPTH(R5G5B5A1_UNORM_PACK16, 31, 31, 31)
 			FORMAT_DEPTH(B5G5R5A1_UNORM_PACK16, 31, 31, 31)
 	default:
-		*r = 255; *g = 255; *b = 255; return qfalse;
+		*r = 255; *g = 255; *b = 255; return false;
 	}
 }
 
@@ -4717,7 +4717,7 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 	VkPipelineLayout layout;
 	VkSampleCountFlagBits samples;
 	const char *pipeline_name;
-	qboolean blend;
+	bool blend;
 
 	struct FragSpecData {
 		float gamma;
@@ -4741,7 +4741,7 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 			layout = vk.pipeline_layout_post_process;
 			samples = VK_SAMPLE_COUNT_1_BIT;
 			pipeline_name = "bloom extraction pipeline";
-			blend = qfalse;
+			blend = false;
 			break;
 		case 2: // final bloom blend
 			pipeline = &vk.bloom_blend_pipeline;
@@ -4750,7 +4750,7 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 			layout = vk.pipeline_layout_blend;
 			samples = vkSamples;
 			pipeline_name = "bloom blend pipeline";
-			blend = qtrue;
+			blend = true;
 			break;
 		case 3: // capture buffer extraction
 			pipeline = &vk.capture_pipeline;
@@ -4759,7 +4759,7 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 			layout = vk.pipeline_layout_post_process;
 			samples = VK_SAMPLE_COUNT_1_BIT;
 			pipeline_name = "capture buffer pipeline";
-			blend = qfalse;
+			blend = false;
 			break;
 		default: // gamma correction
 			pipeline = &vk.gamma_pipeline;
@@ -4768,7 +4768,7 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 			layout = vk.pipeline_layout_post_process;
 			samples = VK_SAMPLE_COUNT_1_BIT;
 			pipeline_name = "gamma-correction pipeline";
-			blend = qfalse;
+			blend = false;
 			break;
 	}
 
@@ -4985,7 +4985,7 @@ void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_
 }
 
 
-void vk_create_blur_pipeline( uint32_t index, uint32_t width, uint32_t height, qboolean horizontal_pass )
+void vk_create_blur_pipeline( uint32_t index, uint32_t width, uint32_t height, bool horizontal_pass )
 {
 	VkPipelineShaderStageCreateInfo shader_stages[2];
 	VkPipelineVertexInputStateCreateInfo vertex_input_state;
@@ -6167,7 +6167,7 @@ VkPipeline vk_gen_pipeline( uint32_t index ) {
 }
 
 
-uint32_t vk_find_pipeline_ext( uint32_t base, const Vk_Pipeline_Def *def, qboolean use ) {
+uint32_t vk_find_pipeline_ext( uint32_t base, const Vk_Pipeline_Def *def, bool use ) {
 	const Vk_Pipeline_Def *cur_def;
 	uint32_t index;
 
@@ -6365,7 +6365,7 @@ void vk_clear_color( const vec4_t color ) {
 }
 
 
-void vk_clear_depth( qboolean clear_stencil ) {
+void vk_clear_depth( bool clear_stencil ) {
 
 	VkClearAttachment attachment;
 	VkClearRect clear_rect[1];
@@ -6695,7 +6695,7 @@ void vk_bind_pipeline( uint32_t pipeline ) {
 }
 
 
-void vk_draw_geometry( Vk_Depth_Range depth_range, qboolean indexed ) {
+void vk_draw_geometry( Vk_Depth_Range depth_range, bool indexed ) {
 	VkRect2D scissor_rect;
 	VkViewport viewport;
 
@@ -6735,7 +6735,7 @@ void vk_draw_geometry( Vk_Depth_Range depth_range, qboolean indexed ) {
 }
 
 
-static void vk_begin_render_pass( VkRenderPass renderPass, VkFramebuffer frameBuffer, qboolean clearValues, uint32_t width, uint32_t height )
+static void vk_begin_render_pass( VkRenderPass renderPass, VkFramebuffer frameBuffer, bool clearValues, uint32_t width, uint32_t height )
 {
 	VkRenderPassBeginInfo render_pass_begin_info;
 	VkClearValue clear_values[3];
@@ -6786,7 +6786,7 @@ void vk_begin_main_render_pass( void )
 	//vk.renderScaleY = (float)vk.renderHeight / (float)glConfig.vidHeight;
 	vk.renderScaleX = vk.renderScaleY = 1.0f;
 
-	vk_begin_render_pass( vk.render_pass.main, frameBuffer, qtrue, vk.renderWidth, vk.renderHeight );
+	vk_begin_render_pass( vk.render_pass.main, frameBuffer, true, vk.renderWidth, vk.renderHeight );
 }
 
 
@@ -6803,7 +6803,7 @@ void vk_begin_post_bloom_render_pass( void )
 	//vk.renderScaleY = (float)vk.renderHeight / (float)glConfig.vidHeight;
 	vk.renderScaleX = vk.renderScaleY = 1.0f;
 
-	vk_begin_render_pass( vk.render_pass.post_bloom, frameBuffer, qfalse, vk.renderWidth, vk.renderHeight );
+	vk_begin_render_pass( vk.render_pass.post_bloom, frameBuffer, false, vk.renderWidth, vk.renderHeight );
 }
 
 
@@ -6820,7 +6820,7 @@ void vk_begin_bloom_extract_render_pass( void )
 	//vk.renderScaleY = (float)vk.renderHeight / (float)glConfig.vidHeight;
 	vk.renderScaleX = vk.renderScaleY = 1.0f;
 
-	vk_begin_render_pass( vk.render_pass.bloom_extract, frameBuffer, qfalse, vk.renderWidth, vk.renderHeight );
+	vk_begin_render_pass( vk.render_pass.bloom_extract, frameBuffer, false, vk.renderWidth, vk.renderHeight );
 }
 
 
@@ -6837,7 +6837,7 @@ void vk_begin_blur_render_pass( uint32_t index )
 	//vk.renderScaleY = (float)vk.renderHeight / (float)glConfig.vidHeight;
 	vk.renderScaleX = vk.renderScaleY = 1.0f;
 
-	vk_begin_render_pass( vk.render_pass.blur[ index ], frameBuffer, qfalse, vk.renderWidth, vk.renderHeight );
+	vk_begin_render_pass( vk.render_pass.blur[ index ], frameBuffer, false, vk.renderWidth, vk.renderHeight );
 }
 
 
@@ -6853,7 +6853,7 @@ static void vk_begin_screenmap_render_pass( void )
 	vk.renderScaleX = (float)vk.renderWidth / (float)glConfig.vidWidth;
 	vk.renderScaleY = (float)vk.renderHeight / (float)glConfig.vidHeight;
 
-	vk_begin_render_pass( vk.render_pass.screenmap, frameBuffer, qtrue, vk.renderWidth, vk.renderHeight );
+	vk_begin_render_pass( vk.render_pass.screenmap, frameBuffer, true, vk.renderWidth, vk.renderHeight );
 }
 
 
@@ -6865,7 +6865,7 @@ void vk_end_render_pass( void )
 }
 
 
-static qboolean vk_find_screenmap_drawsurfs( void )
+static bool vk_find_screenmap_drawsurfs( void )
 {
 	const void *curCmd = &backEndData->commands.cmds;
 	const drawBufferCommand_t *db_cmd;
@@ -6882,7 +6882,7 @@ static qboolean vk_find_screenmap_drawsurfs( void )
 				ds_cmd = (const drawSurfsCommand_t *)curCmd;
 				return ds_cmd->refdef.needScreenMap;
 			default:
-				return qfalse;
+				return false;
 		}
 	}
 }
@@ -6906,7 +6906,7 @@ void vk_begin_frame( void )
 		vk.cmd = &vk.tess[ vk.cmd_index++ ];
 		vk.cmd_index %= NUM_COMMAND_BUFFERS;
 
-		vk.cmd->waitForFence = qfalse;
+		vk.cmd->waitForFence = false;
 		res = qvkWaitForFences(vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e10);
 		if (res != VK_SUCCESS) {
 			if (res == VK_ERROR_DEVICE_LOST) {
@@ -6978,7 +6978,7 @@ void vk_begin_frame( void )
 
 	vk.cmd->last_pipeline = VK_NULL_HANDLE;
 
-	backEnd.screenMapDone = qfalse;
+	backEnd.screenMapDone = false;
 
 	if ( vk_find_screenmap_drawsurfs() ) {
 		vk_begin_screenmap_render_pass();
@@ -7065,7 +7065,7 @@ void vk_end_frame( void )
 			vk_end_render_pass();
 
 			// render to capture FBO
-			vk_begin_render_pass( vk.render_pass.capture, vk.framebuffers.capture, qfalse, gls.captureWidth, gls.captureHeight );
+			vk_begin_render_pass( vk.render_pass.capture, vk.framebuffers.capture, false, gls.captureWidth, gls.captureHeight );
 			qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.capture_pipeline );
 			qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout_post_process, 0, 1, &vk.color_descriptor, 0, NULL );
 
@@ -7082,7 +7082,7 @@ void vk_end_frame( void )
 			vk.renderScaleX = 1.0;
 			vk.renderScaleY = 1.0;
 
-			vk_begin_render_pass( vk.render_pass.gamma, vk.framebuffers.gamma[ vk.swapchain_image_index ], qfalse, vk.renderWidth, vk.renderHeight );
+			vk_begin_render_pass( vk.render_pass.gamma, vk.framebuffers.gamma[ vk.swapchain_image_index ], false, vk.renderWidth, vk.renderHeight );
 			qvkCmdBindPipeline( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.gamma_pipeline );
 			qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout_post_process, 0, 1, &vk.color_descriptor, 0, NULL );
 
@@ -7113,7 +7113,7 @@ void vk_end_frame( void )
 	}
 
 	VK_CHECK( qvkQueueSubmit( vk.queue, 1, &submit_info, vk.cmd->rendering_finished_fence ) );
-	vk.cmd->waitForFence = qtrue;
+	vk.cmd->waitForFence = true;
 
 	// presentation may take undefined time to complete, we can't measure it in a reliable way
 	backEnd.pc.msec = ri.Milliseconds() - backEnd.pc.msec;
@@ -7161,7 +7161,7 @@ void vk_present_frame( void )
 }
 
 
-static qboolean is_bgr( VkFormat format ) {
+static bool is_bgr( VkFormat format ) {
 	switch ( format ) {
 		case VK_FORMAT_B8G8R8A8_UNORM:
 		case VK_FORMAT_B8G8R8A8_SNORM:
@@ -7169,9 +7169,9 @@ static qboolean is_bgr( VkFormat format ) {
 		case VK_FORMAT_B8G8R8A8_SINT:
 		case VK_FORMAT_B8G8R8A8_SRGB:
 		case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
-			return qtrue;
+			return true;
 		default:
-			return qfalse;
+			return false;
 	}
 }
 
@@ -7194,7 +7194,7 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 	byte *data;
 	uint32_t pixel_width;
 	uint32_t i, n;
-	qboolean invalidate_ptr;
+	bool invalidate_ptr;
 
 	VK_CHECK( qvkWaitForFences( vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e12 ) );
 
@@ -7259,10 +7259,10 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 	}
 
 	if ( memory_flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT ) {
-		invalidate_ptr = qfalse;
+		invalidate_ptr = false;
 	} else {
 		 // according to specification - must be performed if host_coherent is not set
-		invalidate_ptr = qtrue;
+		invalidate_ptr = true;
 	}
 
 	VK_CHECK(qvkAllocateMemory(vk.device, &alloc_info, NULL, &memory));
@@ -7415,18 +7415,18 @@ void vk_read_pixels( byte *buffer, uint32_t width, uint32_t height )
 }
 
 
-qboolean vk_bloom( void )
+bool vk_bloom( void )
 {
 	uint32_t i;
 
 	if ( vk.renderPassIndex == RENDER_PASS_SCREENMAP )
 	{
-		return qfalse;
+		return false;
 	}
 
 	if ( backEnd.doneBloom || !backEnd.doneSurfaces || !vk.fboActive )
 	{
-		return qfalse;
+		return false;
 	}
 
 	vk_end_render_pass(); // end main
@@ -7508,7 +7508,7 @@ qboolean vk_bloom( void )
 		}
 	}
 
-	backEnd.doneBloom = qtrue;
+	backEnd.doneBloom = true;
 
-	return qtrue;
+	return true;
 }

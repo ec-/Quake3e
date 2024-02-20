@@ -215,6 +215,10 @@ typedef unsigned char byte;
 
 typedef enum { qfalse = 0, qtrue } qboolean;
 
+typedef unsigned char bool;
+#define true 	1
+#define false 	0
+
 typedef union floatint_u
 {
 	int32_t i;

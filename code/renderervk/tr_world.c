@@ -31,15 +31,15 @@ Returns true if the grid is completely culled away.
 Also sets the clipped hint bit in tess
 =================
 */
-static qboolean	R_CullTriSurf( srfTriangles_t *cv ) {
+static bool	R_CullTriSurf( srfTriangles_t *cv ) {
 	int 	boxCull;
 
 	boxCull = R_CullLocalBox( cv->bounds );
 
 	if ( boxCull == CULL_OUT ) {
-		return qtrue;
+		return true;
 	}
-	return qfalse;
+	return false;
 }
 
 /*
@@ -50,12 +50,12 @@ Returns true if the grid is completely culled away.
 Also sets the clipped hint bit in tess
 =================
 */
-static qboolean	R_CullGrid( srfGridMesh_t *cv ) {
+static bool	R_CullGrid( srfGridMesh_t *cv ) {
 	int 	boxCull;
 	int 	sphereCull;
 
 	if ( r_nocurves->integer ) {
-		return qtrue;
+		return true;
 	}
 
 	if ( tr.currentEntityNum != REFENTITYNUM_WORLD ) {
@@ -68,7 +68,7 @@ static qboolean	R_CullGrid( srfGridMesh_t *cv ) {
 	if ( sphereCull == CULL_OUT )
 	{
 		tr.pc.c_sphere_cull_patch_out++;
-		return qtrue;
+		return true;
 	}
 	// check bounding box if necessary
 	else if ( sphereCull == CULL_CLIP )
@@ -80,7 +80,7 @@ static qboolean	R_CullGrid( srfGridMesh_t *cv ) {
 		if ( boxCull == CULL_OUT ) 
 		{
 			tr.pc.c_box_cull_patch_out++;
-			return qtrue;
+			return true;
 		}
 		else if ( boxCull == CULL_IN )
 		{
@@ -96,7 +96,7 @@ static qboolean	R_CullGrid( srfGridMesh_t *cv ) {
 		tr.pc.c_sphere_cull_patch_in++;
 	}
 
-	return qfalse;
+	return false;
 }
 
 
@@ -110,12 +110,12 @@ added to the sorting list.
 This will also allow mirrors on both sides of a model without recursion.
 ================
 */
-static qboolean	R_CullSurface( const surfaceType_t *surface, shader_t *shader ) {
+static bool	R_CullSurface( const surfaceType_t *surface, shader_t *shader ) {
 	srfSurfaceFace_t *sface;
 	float			d;
 
 	if ( r_nocull->integer ) {
-		return qfalse;
+		return false;
 	}
 
 	if ( *surface == SF_GRID ) {
@@ -127,16 +127,16 @@ static qboolean	R_CullSurface( const surfaceType_t *surface, shader_t *shader ) 
 	}
 
 	if ( *surface != SF_FACE ) {
-		return qfalse;
+		return false;
 	}
 
 	if ( shader->cullType == CT_TWO_SIDED ) {
-		return qfalse;
+		return false;
 	}
 
 	// face culling
 	if ( !r_facePlaneCull->integer ) {
-		return qfalse;
+		return false;
 	}
 
 	sface = ( srfSurfaceFace_t * ) surface;
@@ -147,81 +147,81 @@ static qboolean	R_CullSurface( const surfaceType_t *surface, shader_t *shader ) 
 	// epsilon isn't allowed here 
 	if ( shader->cullType == CT_FRONT_SIDED ) {
 		if ( d < sface->plane.dist - 8 ) {
-			return qtrue;
+			return true;
 		}
 	} else {
 		if ( d > sface->plane.dist + 8 ) {
-			return qtrue;
+			return true;
 		}
 	}
 
-	return qfalse;
+	return false;
 }
 
 
 #ifdef USE_PMLIGHT
-qboolean R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t maxs )
+bool R_LightCullBounds( const dlight_t* dl, const vec3_t mins, const vec3_t maxs )
 {
 	if ( dl->linear ) {
 		if (dl->transformed[0] - dl->radius > maxs[0] && dl->transformed2[0] - dl->radius > maxs[0] )
-			return qtrue;
+			return true;
 		if (dl->transformed[0] + dl->radius < mins[0] && dl->transformed2[0] + dl->radius < mins[0] )
-			return qtrue;
+			return true;
 
 		if (dl->transformed[1] - dl->radius > maxs[1] && dl->transformed2[1] - dl->radius > maxs[1] )
-			return qtrue;
+			return true;
 		if (dl->transformed[1] + dl->radius < mins[1] && dl->transformed2[1] + dl->radius < mins[1] )
-			return qtrue;
+			return true;
 
 		if (dl->transformed[2] - dl->radius > maxs[2] && dl->transformed2[2] - dl->radius > maxs[2] )
-			return qtrue;
+			return true;
 		if (dl->transformed[2] + dl->radius < mins[2] && dl->transformed2[2] + dl->radius < mins[2] )
-			return qtrue;
+			return true;
 
-		return qfalse;
+		return false;
 	}
 
 	if (dl->transformed[0] - dl->radius > maxs[0])
-		return qtrue;
+		return true;
 	if (dl->transformed[0] + dl->radius < mins[0])
-		return qtrue;
+		return true;
 
 	if (dl->transformed[1] - dl->radius > maxs[1])
-		return qtrue;
+		return true;
 	if (dl->transformed[1] + dl->radius < mins[1])
-		return qtrue;
+		return true;
 
 	if (dl->transformed[2] - dl->radius > maxs[2])
-		return qtrue;
+		return true;
 	if (dl->transformed[2] + dl->radius < mins[2])
-		return qtrue;
+		return true;
 
-	return qfalse;
+	return false;
 }
 
 
-static qboolean R_LightCullFace( const srfSurfaceFace_t* face, const dlight_t* dl )
+static bool R_LightCullFace( const srfSurfaceFace_t* face, const dlight_t* dl )
 {
 	float d = DotProduct( dl->transformed, face->plane.normal ) - face->plane.dist;
 	if ( dl->linear )
 	{
 		float d2 = DotProduct( dl->transformed2, face->plane.normal ) - face->plane.dist;
 		if ( (d < -dl->radius) && (d2 < -dl->radius) )
-			return qtrue;
+			return true;
 		if ( (d > dl->radius) && (d2 > dl->radius) ) 
-			return qtrue;
+			return true;
 	} 
 	else 
 	{
 		if ( (d < -dl->radius) || (d > dl->radius) )
-			return qtrue;
+			return true;
 	}
 
-	return qfalse;
+	return false;
 }
 
 
-static qboolean R_LightCullSurface( const surfaceType_t* surface, const dlight_t* dl )
+static bool R_LightCullSurface( const surfaceType_t* surface, const dlight_t* dl )
 {
 	switch (*surface) {
 	case SF_FACE:
@@ -235,7 +235,7 @@ static qboolean R_LightCullSurface( const surfaceType_t* surface, const dlight_t
 		return R_LightCullBounds( dl, tris->bounds[0], tris->bounds[1] );
 		}
 	default:
-		return qfalse;
+		return false;
 	};
 }
 #endif // USE_PMLIGHT
@@ -442,7 +442,7 @@ static void R_AddLitSurface( msurface_t *surf, const dlight_t *light )
 
 static void R_RecursiveLightNode( const mnode_t* node )
 {
-	qboolean children[2];
+	bool children[2];
 	msurface_t** mark;
 	msurface_t* surf;
 	float d;
@@ -455,23 +455,23 @@ static void R_RecursiveLightNode( const mnode_t* node )
 		if ( node->contents != CONTENTS_NODE )
 			break;
 
-		children[0] = children[1] = qfalse;
+		children[0] = children[1] = false;
 
 		d = DotProduct( tr.light->origin, node->plane->normal ) - node->plane->dist;
 		if ( d > -tr.light->radius ) {
-			children[0] = qtrue;
+			children[0] = true;
 		}
 		if ( d < tr.light->radius ) {
-			children[1] = qtrue;
+			children[1] = true;
 		}
 
 		if ( tr.light->linear ) {
 			d = DotProduct( tr.light->origin2, node->plane->normal ) - node->plane->dist;
 			if ( d > -tr.light->radius ) {
-				children[0] = qtrue;
+				children[0] = true;
 			}
 			if ( d < tr.light->radius ) {
-				children[1] = qtrue;
+				children[1] = true;
 			}
 		}
 
@@ -784,7 +784,7 @@ static const byte *R_ClusterPVS (int cluster) {
 R_inPVS
 =================
 */
-qboolean R_inPVS( const vec3_t p1, const vec3_t p2 ) {
+bool R_inPVS( const vec3_t p1, const vec3_t p2 ) {
 	const mnode_t *leaf;
 	const byte	*vis;
 
@@ -793,9 +793,9 @@ qboolean R_inPVS( const vec3_t p1, const vec3_t p2 ) {
 	leaf = R_PointInLeaf( p2 );
 
 	if ( !(vis[leaf->cluster>>3] & (1<<(leaf->cluster&7))) ) {
-		return qfalse;
+		return false;
 	}
-	return qtrue;
+	return true;
 }
 
 /*
@@ -832,7 +832,7 @@ static void R_MarkLeaves (void) {
 	}
 
 	if ( r_showcluster->modified || r_showcluster->integer ) {
-		r_showcluster->modified = qfalse;
+		r_showcluster->modified = false;
 		if ( r_showcluster->integer ) {
 			ri.Printf( PRINT_ALL, "cluster:%i  area:%i\n", cluster, leaf->area );
 		}

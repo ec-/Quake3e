@@ -70,7 +70,7 @@ typedef struct {
 	// a scene is built up by calls to R_ClearScene and the various R_Add functions.
 	// Nothing is drawn until R_RenderScene is called.
 	void	(*ClearScene)( void );
-	void	(*AddRefEntityToScene)( const refEntity_t *re, qboolean intShaderTime );
+	void	(*AddRefEntityToScene)( const refEntity_t *re, bool intShaderTime );
 	void	(*AddPolyToScene)( qhandle_t hShader , int numVerts, const polyVert_t *verts, int num );
 	int		(*LightForPoint)( vec3_t point, vec3_t ambientLight, vec3_t directedLight, vec3_t lightDir );
 	void	(*AddLightToScene)( const vec3_t org, float intensity, float r, float g, float b );
@@ -83,8 +83,8 @@ typedef struct {
 		float s1, float t1, float s2, float t2, qhandle_t hShader );	// 0 = white
 
 	// Draw images for cinematic rendering, pass as 32 bit rgba
-	void	(*DrawStretchRaw)( int x, int y, int w, int h, int cols, int rows, byte *data, int client, qboolean dirty );
-	void	(*UploadCinematic)( int w, int h, int cols, int rows, byte *data, int client, qboolean dirty );
+	void	(*DrawStretchRaw)( int x, int y, int w, int h, int cols, int rows, byte *data, int client, bool dirty );
+	void	(*UploadCinematic)( int w, int h, int cols, int rows, byte *data, int client, bool dirty );
 
 	void	(*BeginFrame)( stereoFrame_t stereoFrame );
 
@@ -104,21 +104,21 @@ typedef struct {
 #endif
 	void	(*RegisterFont)(const char *fontName, int pointSize, fontInfo_t *font);
 	void	(*RemapShader)(const char *oldShader, const char *newShader, const char *offsetTime);
-	qboolean (*GetEntityToken)( char *buffer, int size );
-	qboolean (*inPVS)( const vec3_t p1, const vec3_t p2 );
+	bool (*GetEntityToken)( char *buffer, int size );
+	bool (*inPVS)( const vec3_t p1, const vec3_t p2 );
 
-	void	(*TakeVideoFrame)( int h, int w, byte* captureBuffer, byte *encodeBuffer, qboolean motionJpeg );
+	void	(*TakeVideoFrame)( int h, int w, byte* captureBuffer, byte *encodeBuffer, bool motionJpeg );
 
 	void	(*ThrottleBackend)( void );
 	void	(*FinishBloom)( void );
 
 	void	(*SetColorMappings)( void );
 
-	qboolean (*CanMinimize)( void ); // == fbo enabled
+	bool (*CanMinimize)( void ); // == fbo enabled
 
 	const glconfig_t *(*GetConfig)( void );
 
-	void	(*VertexLighting)( qboolean allowed );
+	void	(*VertexLighting)( bool allowed );
 	void	(*SyncRender)( void );
 
 

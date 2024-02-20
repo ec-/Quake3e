@@ -152,8 +152,8 @@ typedef struct {
 	VkSamplerAddressMode address_mode; // clamp/repeat texture addressing mode
 	int gl_mag_filter;		// GL_XXX mag filter
 	int gl_min_filter;		// GL_XXX min filter
-	qboolean max_lod_1_0;	// fixed 1.0 lod
-	qboolean noAnisotropy;
+	bool max_lod_1_0;	// fixed 1.0 lod
+	bool noAnisotropy;
 } Vk_Sampler_Def;
 
 typedef enum {
@@ -167,8 +167,8 @@ typedef struct {
 	Vk_Shader_Type shader_type;
 	unsigned int state_bits; // GLS_XXX flags
 	cullType_t face_culling;
-	qboolean polygon_offset;
-	qboolean mirror;
+	bool polygon_offset;
+	bool mirror;
 	Vk_Shadow_Phase shadow_phase;
 	Vk_Primitive_Topology primitives;
 	int line_width;
@@ -245,11 +245,11 @@ void vk_wait_idle( void );
 // Resources allocation.
 //
 void vk_create_image( image_t *image, int width, int height, int mip_levels );
-void vk_upload_image_data( image_t *image, int x, int y, int width, int height, int miplevels, byte *pixels, int size, qboolean update );
-void vk_update_descriptor_set( image_t *image, qboolean mipmap );
+void vk_upload_image_data( image_t *image, int x, int y, int width, int height, int miplevels, byte *pixels, int size, bool update );
+void vk_update_descriptor_set( image_t *image, bool mipmap );
 void vk_destroy_image_resources( VkImage *image, VkImageView *imageView );
 
-uint32_t vk_find_pipeline_ext( uint32_t base, const Vk_Pipeline_Def *def, qboolean use );
+uint32_t vk_find_pipeline_ext( uint32_t base, const Vk_Pipeline_Def *def, bool use );
 void vk_get_pipeline_def( uint32_t pipeline, Vk_Pipeline_Def *def );
 
 void vk_create_post_process_pipeline( int program_index, uint32_t width, uint32_t height );
@@ -260,7 +260,7 @@ void vk_create_pipelines( void );
 //
 
 void vk_clear_color( const vec4_t color );
-void vk_clear_depth( qboolean clear_stencil );
+void vk_clear_depth( bool clear_stencil );
 void vk_begin_frame( void );
 void vk_end_frame( void );
 void vk_present_frame( void );
@@ -273,12 +273,12 @@ void vk_bind_index( void );
 void vk_bind_index_ext( const int numIndexes, const uint32_t*indexes );
 void vk_bind_geometry( uint32_t flags );
 void vk_bind_lighting( int stage, int bundle );
-void vk_draw_geometry( Vk_Depth_Range depth_range, qboolean indexed );
+void vk_draw_geometry( Vk_Depth_Range depth_range, bool indexed );
 
 void vk_read_pixels( byte* buffer, uint32_t width, uint32_t height ); // screenshots
-qboolean vk_bloom( void );
+bool vk_bloom( void );
 
-qboolean vk_alloc_vbo( const byte *vbo_data, int vbo_size );
+bool vk_alloc_vbo( const byte *vbo_data, int vbo_size );
 void vk_update_mvp( const float *m );
 
 uint32_t vk_tess_index( uint32_t numIndexes, const void *src );
@@ -303,7 +303,7 @@ typedef struct vk_tess_s {
 	VkSemaphore image_acquired;
 	VkSemaphore rendering_finished;
 	VkFence rendering_finished_fence;
-	qboolean waitForFence;
+	bool waitForFence;
 
 	VkBuffer vertex_buffer;
 	byte *vertex_buffer_ptr; // pointer to mapped vertex buffer
@@ -545,12 +545,12 @@ typedef struct {
 	VkPipeline bloom_blend_pipeline;
 
 	uint32_t frame_count;
-	qboolean active;
-	qboolean wideLines;
-	qboolean samplerAnisotropy;
-	qboolean fragmentStores;
-	qboolean dedicatedAllocation;
-	qboolean debugMarkers;
+	bool active;
+	bool wideLines;
+	bool samplerAnisotropy;
+	bool fragmentStores;
+	bool dedicatedAllocation;
+	bool debugMarkers;
 
 	float maxAnisotropy;
 	float maxLod;
@@ -562,14 +562,14 @@ typedef struct {
 
 	VkImageLayout initSwapchainLayout;
 
-	qboolean fastSky;		// requires VK_IMAGE_USAGE_TRANSFER_DST_BIT
-	qboolean fboActive;
-	qboolean blitEnabled;
-	qboolean msaaActive;
+	bool fastSky;		// requires VK_IMAGE_USAGE_TRANSFER_DST_BIT
+	bool fboActive;
+	bool blitEnabled;
+	bool msaaActive;
 
-	qboolean offscreenRender;
+	bool offscreenRender;
 
-	qboolean windowAdjusted;
+	bool windowAdjusted;
 	int		blitX0;
 	int		blitY0;
 	int		blitFilter;

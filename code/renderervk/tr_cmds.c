@@ -251,7 +251,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 		return;
 	}
 
-	backEnd.doneBloom = qfalse;
+	backEnd.doneBloom = false;
 	backEnd.color2D.u32 = ~0U;
 
 	tr.frameCount++;
@@ -330,7 +330,7 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 	}
 	backEnd.pc.msec = 0;
 
-	backEnd.throttle = qfalse;
+	backEnd.throttle = false;
 
 	// recompile GPU shaders if needed
 	if ( ri.Cvar_CheckGroup( CVG_RENDERER ) ) {
@@ -347,7 +347,7 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 
 		vk_update_post_process_pipelines();
 
-		ri.Cvar_ResetGroup( CVG_RENDERER, qtrue /* reset modified flags */ );
+		ri.Cvar_ResetGroup( CVG_RENDERER, true /* reset modified flags */ );
 	}
 }
 
@@ -358,7 +358,7 @@ RE_TakeVideoFrame
 =============
 */
 void RE_TakeVideoFrame( int width, int height,
-		byte *captureBuffer, byte *encodeBuffer, qboolean motionJpeg )
+		byte *captureBuffer, byte *encodeBuffer, bool motionJpeg )
 {
 	videoFrameCommand_t	*cmd;
 
@@ -382,7 +382,7 @@ void RE_TakeVideoFrame( int width, int height,
 
 void RE_ThrottleBackend( void )
 {
-	backEnd.throttle = qtrue;
+	backEnd.throttle = true;
 }
 
 
@@ -403,11 +403,11 @@ void RE_FinishBloom( void )
 }
 
 
-qboolean RE_CanMinimize( void )
+bool RE_CanMinimize( void )
 {
 	if ( vk.fboActive || vk.offscreenRender )
-		return qtrue;
-	return qfalse;
+		return true;
+	return false;
 }
 
 
@@ -417,7 +417,7 @@ const glconfig_t *RE_GetConfig( void )
 }
 
 
-void RE_VertexLighting( qboolean allowed )
+void RE_VertexLighting( bool allowed )
 {
 	tr.vertexLightingAllowed = allowed;
 }

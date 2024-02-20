@@ -65,7 +65,7 @@ extern glconfig_t	glConfig;		// outside of TR since it shouldn't be cleared duri
 // compatibility issues to the original ID vms.  If you release a stand-alone
 // game and your mod uses tr_types.h from this build you can safely move them
 // to the glconfig_t struct.
-extern qboolean  textureFilterAnisotropic;
+extern bool  textureFilterAnisotropic;
 extern int       maxAnisotropy;
 
 //
@@ -99,7 +99,7 @@ void R_UploadSubImage( byte *data, int x, int y, int width, int height, image_t 
 qhandle_t RE_RegisterShaderLightMap( const char *name, int lightmapIndex );
 qhandle_t RE_RegisterShader( const char *name );
 qhandle_t RE_RegisterShaderNoMip( const char *name );
-qhandle_t RE_RegisterShaderFromImage(const char *name, int lightmapIndex, image_t *image, qboolean mipRawImage);
+qhandle_t RE_RegisterShaderFromImage(const char *name, int lightmapIndex, image_t *image, bool mipRawImage);
 
 // font stuff
 void R_InitFreeType( void );
