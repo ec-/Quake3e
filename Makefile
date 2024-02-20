@@ -1058,17 +1058,9 @@ $(B)/$(TARGET_CLIENT): $(Q3OBJ)
 
 # modular renderers
 
-$(B)/$(TARGET_REND1): $(Q3REND1OBJ)
-	$(echo_cmd) "LD $@"
-	$(Q)$(CC) -o $@ $(Q3REND1OBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
-
 $(STRINGIFY): $(MOUNT_DIR)/renderer2/stringify.c
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) -o $@ $(MOUNT_DIR)/renderer2/stringify.c $(LDFLAGS)
-
-$(B)/$(TARGET_REND2): $(Q3REND2OBJ) $(Q3REND2STROBJ)
-	$(echo_cmd) "LD $@"
-	$(Q)$(CC) -o $@ $(Q3REND2OBJ) $(Q3REND2STROBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
 
 $(B)/$(TARGET_RENDV): $(Q3RENDVOBJ)
 	$(echo_cmd) "LD $@"
