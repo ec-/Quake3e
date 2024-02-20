@@ -255,12 +255,7 @@ static void RE_AddDynamicLightToScene( const vec3_t org, float intensity, float 
 	if ( intensity <= 0 ) {
 		return;
 	}
-#ifndef USE_VULKAN
-	// these cards don't have the correct blend mode
-	if ( glConfig.hardwareType == GLHW_RIVA128 || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
-		return;
-	}
-#endif
+
 #ifdef USE_PMLIGHT
 #ifdef USE_LEGACY_DLIGHTS
 	if ( r_dlightMode->integer )
@@ -381,9 +376,7 @@ to handle mirrors,
 @@@@@@@@@@@@@@@@@@@@@
 */
 void RE_RenderScene( const refdef_t *fd ) {
-#ifdef USE_VULKAN
 	renderCommand_t	lastRenderCommand;
-#endif
 	viewParms_t		parms;
 	int				startTime;
 
@@ -510,15 +503,12 @@ void RE_RenderScene( const refdef_t *fd ) {
 
 	VectorCopy( fd->vieworg, parms.pvsOrigin );
 
-#ifdef USE_VULKAN
 	lastRenderCommand = tr.lastRenderCommand;
 	tr.drawSurfCmd = NULL;
 	tr.numDrawSurfCmds = 0;
-#endif
 
 	R_RenderView( &parms );
 
-#ifdef USE_VULKAN
 	if ( tr.needScreenMap )
 	{
 		if ( lastRenderCommand == RC_DRAW_BUFFER )
@@ -552,7 +542,6 @@ void RE_RenderScene( const refdef_t *fd ) {
 
 		tr.needScreenMap = 0;
 	}
-#endif
 
 	// the next scene rendered in this frame will tack on after this one
 	r_firstSceneDrawSurf = tr.refdef.numDrawSurfs;

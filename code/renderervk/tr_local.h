@@ -47,8 +47,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "tr_common.h"
 #include "iqm.h"
 
-
-#ifdef USE_VULKAN
 #include "vk.h"
 // GL constants substitutions
 typedef enum {
@@ -80,9 +78,6 @@ typedef enum {
 #define GLint				int
 #define GLuint				unsigned int
 #define GLboolean			VkBool32
-#else
-#define GL_INDEX_TYPE		GL_UNSIGNED_INT
-#endif
 
 typedef uint32_t glIndex_t;
 
@@ -363,11 +358,7 @@ typedef struct {
 	qboolean		isScreenMap;
 } textureBundle_t;
 
-#ifdef USE_VULKAN
 #define NUM_TEXTURE_BUNDLES 3
-#else
-#define NUM_TEXTURE_BUNDLES 2
-#endif
 
 typedef struct {
 	qboolean		active;
@@ -381,7 +372,6 @@ typedef struct {
 	qboolean		isDetail;
 	qboolean		depthFragment;
 
-#ifdef USE_VULKAN
 	uint32_t		tessFlags;
 	uint32_t		numTexBundles;
 
@@ -390,7 +380,6 @@ typedef struct {
 
 	uint32_t		vk_pipeline_df; // depthFragment
 	uint32_t		vk_mirror_pipeline_df;
-#endif
 
 #ifdef USE_VBO
 	uint32_t		rgb_offset[NUM_TEXTURE_BUNDLES]; // within current shader
@@ -541,10 +530,8 @@ typedef struct {
 	int			numLitSurfs;
 	struct litSurf_s	*litSurfs;
 #endif
-#ifdef USE_VULKAN
 	qboolean	switchRenderPass;
 	qboolean	needScreenMap;
-#endif
 } trRefdef_t;
 
 
@@ -558,7 +545,6 @@ typedef struct image_s {
 	imgFlags_t	flags;
 	int			frameUsed;			// for texture usage in frame statistics
 
-#ifdef USE_VULKAN
 	int			internalFormat;
 
 	VkSamplerAddressMode wrapClampMode;
@@ -567,12 +553,6 @@ typedef struct image_s {
 	// Descriptor set that contains single descriptor used to access the given image.
 	// It is updated only once during image initialization.
 	VkDescriptorSet descriptor;
-#else
-	GLuint		texnum;				// gl texture binding
-	GLint		internalFormat;
-	int			TMU;				// only needed for voodoo2
-#endif
-
 } image_t;
 
 
@@ -1258,12 +1238,10 @@ typedef struct {
 	qboolean				mapLoading;
 
 	int						needScreenMap;
-#ifdef USE_VULKAN
 	drawSurfsCommand_t		*drawSurfCmd;
 	int						numDrawSurfCmds;
 	int						lastRenderCommand;
 	int						numFogs; // read before parsing shaders
-#endif
 
 	qboolean				vertexLightingAllowed;
 } trGlobals_t;
@@ -1280,10 +1258,8 @@ extern glstatic_t gls;
 
 extern void myGlMultMatrix(const float *a, const float *b, float *out);
 
-#ifdef USE_VULKAN
 extern Vk_Instance	vk;				// shouldn't be cleared during ref re-init
 extern Vk_World		vk_world;		// this data is cleared during ref re-init
-#endif
 
 //
 // cvars
@@ -1316,7 +1292,7 @@ extern cvar_t	*r_dlightScale;			// 0.1 - 1.0
 extern cvar_t	*r_dlightIntensity;		// 0.1 - 1.0
 #endif
 extern cvar_t	*r_dlightSaturation;	// 0.0 - 1.0
-#ifdef USE_VULKAN
+
 extern cvar_t	*r_device;
 #ifdef USE_VBO
 extern cvar_t	*r_vbo;
@@ -1334,7 +1310,6 @@ extern cvar_t	*r_ext_supersample;
 extern cvar_t	*r_renderWidth;
 extern cvar_t	*r_renderHeight;
 extern cvar_t	*r_renderScale;
-#endif
 
 extern cvar_t	*r_dlightBacks;			// dlight non-facing surfaces for continuity
 
@@ -1444,17 +1419,10 @@ void R_RotateForEntity( const trRefEntity_t *ent, const viewParms_t *viewParms, 
 /*
 ** GL wrapper/helper functions
 */
-const float *GL_Ortho( const float left, const float right, const float bottom, const float top, const float znear, const float zfar );
-void	GL_Bind( image_t *image );
-void	GL_SelectTexture( int unit );
-void	GL_TextureMode( const char *string );
-void	GL_CheckErrors( void );
-void	GL_State( unsigned stateVector );
-void	GL_ClientState( int unit, unsigned stateVector );
-#ifndef USE_VULKAN
-void	GL_TexEnv( GLint env );
-void	GL_Cull( cullType_t cullType );
-#endif
+void	Bind( image_t *image );
+void	SelectTexture( int unit );
+void	TextureMode( const char *string );
+void	CheckErrors( void );
 
 #define GLS_SRCBLEND_ZERO						0x00000001
 #define GLS_SRCBLEND_ONE						0x00000002
@@ -1606,9 +1574,7 @@ typedef struct shaderCommands_s
 	qboolean	dlightUpdateParams;
 #endif
 
-#ifdef USE_VULKAN
 	Vk_Depth_Range depthRange;
-#endif
 
 	// info extracted from current shader
 #ifdef USE_TESS_NEEDS_NORMAL
@@ -1974,13 +1940,6 @@ void RE_ThrottleBackend( void );
 qboolean RE_CanMinimize( void );
 const glconfig_t *RE_GetConfig( void );
 void RE_VertexLighting( qboolean allowed );
-
-#ifndef USE_VULKAN
-#define GLE( ret, name, ... ) extern ret ( APIENTRY * q##name )( __VA_ARGS__ );
-	QGL_Core_PROCS;
-	QGL_Ext_PROCS;
-#undef GLE
-#endif
 
 #ifdef USE_VBO
 // VBO functions

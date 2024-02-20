@@ -133,17 +133,16 @@ R_MDRComputeFogNum
 =================
 */
 static int R_MDRComputeFogNum( mdrHeader_t *header, const trRefEntity_t *ent ) {
-	int				i, j;
-	const fog_t			*fog;
-	mdrFrame_t		*mdrFrame;
-	vec3_t			localOrigin;
-	int frameSize;
-
 	if ( tr.refdef.rdflags & RDF_NOWORLDMODEL ) {
 		return 0;
 	}
 	
-	frameSize = (size_t)( &((mdrFrame_t *)0)->bones[ header->numBones ] );
+	int				i, j;
+	const fog_t		*fog;
+	mdrFrame_t		*mdrFrame;
+	vec3_t			localOrigin;
+	
+	int frameSize = (size_t)( &((mdrFrame_t *)0)->bones[ header->numBones ] );
 
 	// FIXME: non-normalized axis issues
 	mdrFrame = ( mdrFrame_t * ) ( ( byte * ) header + header->ofsFrames + frameSize * ent->e.frame);

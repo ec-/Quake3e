@@ -24,10 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 static byte			 s_intensitytable[256];
 static unsigned char s_gammatable[256];
-
-#ifdef USE_VULKAN
 static unsigned char s_gammatable_linear[256];
-#endif
 
 GLint	gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
 GLint	gl_filter_max = GL_LINEAR;
@@ -48,12 +45,10 @@ return a hash value for the filename
 */
 void R_GammaCorrect( byte *buffer, int bufSize ) {
 	int i;
-#ifdef USE_VULKAN
 	if ( vk.capture.image != VK_NULL_HANDLE )
 		return;
 	if ( !gls.deviceSupportsGamma )
 		return;
-#endif
 	for ( i = 0; i < bufSize; i++ ) {
 		buffer[i] = s_gammatable[buffer[i]];
 	}
@@ -78,7 +73,7 @@ static const textureMode_t modes[] = {
 GL_TextureMode
 ===============
 */
-void GL_TextureMode( const char *string ) {
+void TextureMode( const char *string ) {
 	const textureMode_t *mode;
 	image_t	*img;
 	int		i;
@@ -99,7 +94,6 @@ void GL_TextureMode( const char *string ) {
 	gl_filter_min = mode->minimize;
 	gl_filter_max = mode->maximize;
 
-#ifdef USE_VULKAN
 	vk_wait_idle();
 	for ( i = 0 ; i < tr.numImages ; i++ ) {
 		img = tr.images[i];
@@ -107,25 +101,6 @@ void GL_TextureMode( const char *string ) {
 			vk_update_descriptor_set( img, qtrue );
 		}
 	}
-#else
-	// hack to prevent trilinear from being set on voodoo,
-	// because their driver freaks...
-	if ( glConfig.hardwareType == GLHW_3DFX_2D3D && gl_filter_max == GL_LINEAR &&
-		gl_filter_min == GL_LINEAR_MIPMAP_LINEAR ) {
-		gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
-		ri.Printf( PRINT_ALL, "Refusing to set trilinear on a voodoo.\n" );
-	}
-
-	// change all the existing mipmap texture objects
-	for ( i = 0; i < tr.numImages; i++ ) {
-		img = tr.images[ i ];
-		if ( img->flags & IMGFLAG_MIPMAP ) {
-			GL_Bind( img );
-			qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min );
-			qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max );
-		}
-	}
-#endif
 }
 
 
@@ -173,7 +148,6 @@ void R_ImageList_f( void ) {
 
 		switch ( image->internalFormat )
 		{
-#ifdef USE_VULKAN
 			case VK_FORMAT_B8G8R8A8_UNORM:
 				format = "BGRA ";
 				estSize *= 4;
@@ -194,33 +168,6 @@ void R_ImageList_f( void ) {
 				format = "RGB  ";
 				estSize *= 2;
 				break;
-#else
-			case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
-			case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
-				format = "DXT1 ";
-				// 64 bits per 16 pixels, so 4 bits per pixel
-				estSize /= 2;
-				break;
-			case GL_RGB4_S3TC:
-				format = "S3TC ";
-				// same as DXT1?
-				estSize /= 2;
-				break;
-			case GL_RGBA4:
-			case GL_RGBA8:
-			case GL_RGBA:
-				format = "RGBA ";
-				// 4 bytes per pixel
-				estSize *= 4;
-				break;
-			case GL_RGB5:
-			case GL_RGB8:
-			case GL_RGB:
-				format = "RGB  ";
-				// 3 bytes per pixel?
-				estSize *= 3;
-				break;
-#endif
 		}
 
 		// mipmap adds about 50%
@@ -337,11 +284,7 @@ static void R_LightScaleTexture( byte *in, int inwidth, int inheight, qboolean o
 
 	if ( only_gamma )
 	{
-#ifdef USE_VULKAN
 		if ( !glConfig.deviceSupportsGamma && !vk.fboActive )
-#else
-		if ( !glConfig.deviceSupportsGamma )
-#endif
 		{
 			int		i, c;
 			byte	*p;
@@ -366,11 +309,7 @@ static void R_LightScaleTexture( byte *in, int inwidth, int inheight, qboolean o
 
 		c = inwidth*inheight;
 
-#ifdef USE_VULKAN
 		if ( glConfig.deviceSupportsGamma || vk.fboActive )
-#else
-		if ( glConfig.deviceSupportsGamma )
-#endif
 		{
 			for (i=0 ; i<c ; i++, p+=4)
 			{
@@ -565,8 +504,6 @@ static qboolean RawImage_HasAlpha( const byte *scan, const int numPixels )
 
 	return qfalse;
 }
-
-#ifdef USE_VULKAN
 
 typedef struct {
 	byte *buffer;
@@ -774,229 +711,6 @@ static void upload_vk_image( image_t *image, byte *pic ) {
 	ri.Hunk_FreeTempMemory( upload_data.buffer );
 }
 
-#else // !USE_VULKAN
-
-static GLint RawImage_GetInternalFormat( const byte *scan, int numPixels, qboolean lightMap, qboolean allowCompression )
-{
-	GLint internalFormat;
-
-	if ( lightMap )
-		return GL_RGB;
-
-	if ( RawImage_HasAlpha( scan, numPixels ) )
-	{
-		if ( r_texturebits->integer == 16 )
-		{
-			internalFormat = GL_RGBA4;
-		}
-		else if ( r_texturebits->integer == 32 )
-		{
-			internalFormat = GL_RGBA8;
-		}
-		else
-		{
-			internalFormat = GL_RGBA;
-		}
-	}
-	else
-	{
-		if ( allowCompression && glConfig.textureCompression == TC_S3TC_ARB )
-		{
-			internalFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-		}
-		else if ( allowCompression && glConfig.textureCompression == TC_S3TC )
-		{
-			internalFormat = GL_RGB4_S3TC;
-		}
-		else if ( r_texturebits->integer == 16 )
-		{
-			internalFormat = GL_RGB5;
-		}
-		else if ( r_texturebits->integer == 32 )
-		{
-			internalFormat = GL_RGB8;
-		}
-		else
-		{
-			internalFormat = GL_RGB;
-		}
-	}
-
-	return internalFormat;
-}
-
-
-static void LoadTexture( int miplevel, int x, int y, int width, int height, const byte *data, qboolean subImage, image_t *image )
-{
-	if ( subImage )
-		qglTexSubImage2D( GL_TEXTURE_2D, miplevel, x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data );
-	else
-		qglTexImage2D( GL_TEXTURE_2D, miplevel, image->internalFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
-}
-
-
-/*
-===============
-Upload32
-===============
-*/
-static void Upload32( byte *data, int x, int y, int width, int height, image_t *image, qboolean subImage )
-{
-	qboolean allowCompression = !(image->flags & IMGFLAG_NO_COMPRESSION);
-	qboolean lightMap = image->flags & IMGFLAG_LIGHTMAP;
-	qboolean mipmap = image->flags & IMGFLAG_MIPMAP;
-	qboolean picmip = image->flags & IMGFLAG_PICMIP;
-	byte		*resampledBuffer = NULL;
-	int			scaled_width, scaled_height;
-
-	if ( image->flags & IMGFLAG_NOSCALE ) {
-		//
-		// keep original dimensions
-		//
-		scaled_width = width;
-		scaled_height = height;
-	} else {
-		//
-		// convert to exact power of 2 sizes
-		//
-		for (scaled_width = 1 ; scaled_width < width ; scaled_width<<=1)
-			;
-		for (scaled_height = 1 ; scaled_height < height ; scaled_height<<=1)
-			;
-
-		if ( r_roundImagesDown->integer && scaled_width > width )
-			scaled_width >>= 1;
-		if ( r_roundImagesDown->integer && scaled_height > height )
-			scaled_height >>= 1;
-	}
-
-	//
-	// clamp to the current texture size limit
-	// scale both axis down equally so we don't have to
-	// deal with a half mip resampling
-	//
-	while ( scaled_width > glConfig.maxTextureSize
-		|| scaled_height > glConfig.maxTextureSize ) {
-		scaled_width >>= 1;
-		scaled_height >>= 1;
-		x >>= 1;
-		y >>= 1;
-	}
-
-	if ( scaled_width != width || scaled_height != height ) {
-		if ( data ) {
-			resampledBuffer = ri.Hunk_AllocateTempMemory( scaled_width * scaled_height * 4 );
-			ResampleTexture( (unsigned*)data, width, height, (unsigned*)resampledBuffer, scaled_width, scaled_height );
-			data = resampledBuffer;
-		}
-		width = scaled_width;
-		height = scaled_height;
-	}
-
-	if ( image->flags & IMGFLAG_COLORSHIFT ) {
-		byte *p = data;
-		int i, n = width * height;
-		for ( i = 0; i < n; i++, p+=4 ) {
-			R_ColorShiftLightingBytes( p, p, qfalse );
-		}
-	}
-
-	//
-	// perform optional picmip operation
-	//
-	if ( picmip && ( tr.mapLoading || r_nomip->integer == 0 ) ) {
-		scaled_width >>= r_picmip->integer;
-		scaled_height >>= r_picmip->integer;
-		x >>= r_picmip->integer;
-		y >>= r_picmip->integer;
-	}
-
-	//
-	// clamp to minimum size
-	//
-	if (scaled_width < 1) {
-		scaled_width = 1;
-	}
-	if (scaled_height < 1) {
-		scaled_height = 1;
-	}
-
-	if ( !subImage ) {
-		// verify if the alpha channel is being used or not
-		if ( image->internalFormat == 0 ) {
-			image->internalFormat = RawImage_GetInternalFormat( data, width*height, lightMap, allowCompression );
-		}
-		image->uploadWidth = scaled_width;
-		image->uploadHeight = scaled_height;
-	}
-
-	// copy or resample data as appropriate for first MIP level
-	if ( ( scaled_width == width ) && ( scaled_height == height ) )
-	{
-		if ( !mipmap )
-		{
-			LoadTexture( 0, x, y, scaled_width, scaled_height, data, subImage, image );
-			goto done;
-		}
-	}
-	else
-	{
-		// use the normal mip-mapping function to go down from here
-		while ( width > scaled_width || height > scaled_height ) {
-			R_MipMap( data, data, width, height );
-			width = MAX( 1, width >> 1 );
-			height = MAX( 1, height >> 1 );
-		}
-	}
-
-	if ( !(image->flags & IMGFLAG_NOLIGHTSCALE) )
-		R_LightScaleTexture( data, scaled_width, scaled_height, !mipmap );
-
-	LoadTexture( 0, x, y, scaled_width, scaled_height, data, subImage, image );
-
-	if ( mipmap )
-	{
-		int	miplevel = 0;
-		while (scaled_width > 1 || scaled_height > 1)
-		{
-			R_MipMap( data, data, scaled_width, scaled_height );
-			scaled_width = MAX( 1, scaled_width >> 1 );
-			scaled_height = MAX( 1, scaled_height >> 1 );
-			x >>= 1;
-			y >>= 1;
-			miplevel++;
-
-			if ( r_colorMipLevels->integer ) {
-				R_BlendOverTexture( data, scaled_width * scaled_height, miplevel );
-			}
-
-			LoadTexture( miplevel, x, y, scaled_width, scaled_height, data, subImage, image );
-		}
-	}
-done:
-	if ( resampledBuffer != NULL )
-		ri.Hunk_FreeTempMemory( resampledBuffer );
-
-	GL_CheckErrors();
-}
-
-
-/*
-================
-R_UploadSubImage
-================
-*/
-void R_UploadSubImage( byte *data, int x, int y, int width, int height, image_t *image )
-{
-	if ( image )
-	{
-		GL_Bind( image );
-		Upload32( data, x, y, width, height, image, qtrue ); // subImage = qtrue
-	}
-}
-#endif // !USE_VULKAN
-
-
 /*
 ================
 R_CreateImage
@@ -1008,11 +722,6 @@ Picture data may be modified in-place during mipmap processing
 image_t *R_CreateImage( const char *name, const char *name2, byte *pic, int width, int height, imgFlags_t flags ) {
 	image_t		*image;
 	long		hash;
-#ifndef USE_VULKAN
-	GLint		glWrapClampMode;
-	GLuint		currTexture;
-	int			currTMU;
-#endif
 	int			namelen, namelen2;
 	const char	*slash;
 
@@ -1059,7 +768,6 @@ image_t *R_CreateImage( const char *name, const char *name2, byte *pic, int widt
 		image->flags |= IMGFLAG_NO_COMPRESSION | IMGFLAG_NOSCALE;
 	}
 
-#ifdef USE_VULKAN
 	if ( flags & IMGFLAG_CLAMPTOBORDER )
 		image->wrapClampMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
 	else if ( flags & IMGFLAG_CLAMPTOEDGE )
@@ -1068,66 +776,6 @@ image_t *R_CreateImage( const char *name, const char *name2, byte *pic, int widt
 		image->wrapClampMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
 	upload_vk_image( image, pic );
-#else
-	if ( flags & IMGFLAG_RGB )
-		image->internalFormat = GL_RGB;
-	else
-		image->internalFormat = 0; // autodetect
-
-	if ( flags & IMGFLAG_CLAMPTOBORDER )
-		glWrapClampMode = GL_CLAMP_TO_BORDER;
-	else if ( flags & IMGFLAG_CLAMPTOEDGE )
-		glWrapClampMode = gl_clamp_mode;
-	else
-		glWrapClampMode = GL_REPEAT;
-
-	// save current state
-	currTMU = glState.currenttmu;
-	currTexture = glState.currenttextures[ glState.currenttmu ];
-
-	qglGenTextures( 1, &image->texnum );
-
-	// lightmaps are always allocated on TMU 1
-	if ( qglActiveTextureARB && (flags & IMGFLAG_LIGHTMAP) ) {
-		image->TMU = 1;
-	} else {
-		image->TMU = 0;
-	}
-
-	if ( qglActiveTextureARB ) {
-		GL_SelectTexture( image->TMU );
-	}
-
-	GL_Bind( image );
-	Upload32( pic, 0, 0, image->width, image->height, image, qfalse ); // subImage = qfalse
-
-	if ( image->flags & IMGFLAG_MIPMAP )
-	{
-		if ( textureFilterAnisotropic ) {
-			qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, (GLint) maxAnisotropy );
-		}
-
-		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min );
-		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max );
-	}
-	else
-	{
-		if ( textureFilterAnisotropic )
-			qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1 );
-
-		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-	}
-
-	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, glWrapClampMode );
-	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, glWrapClampMode );
-
-	// restore original state
-	GL_SelectTexture( currTMU );
-	glState.currenttextures[ glState.currenttmu ] = currTexture;
-	qglBindTexture( GL_TEXTURE_2D, currTexture );
-
-#endif
 	return image;
 }
 
@@ -1635,19 +1283,11 @@ void R_SetColorMappings( void ) {
 	tr.overbrightBits = abs( r_overBrightBits->integer );
 
 	// never overbright in windowed mode
-#ifdef USE_VULKAN
 	if ( !glConfig.isFullscreen && r_overBrightBits->integer >= 0 && !vk.fboActive ) {
-#else
-	if ( !glConfig.isFullscreen && r_overBrightBits->integer >= 0 ) {
-#endif
 		tr.overbrightBits = 0;
 		applyGamma = qfalse;
 	} else {
-#ifdef USE_VULKAN
 		if ( !glConfig.deviceSupportsGamma && !vk.fboActive ) {
-#else
-		if ( !glConfig.deviceSupportsGamma ) {
-#endif
 			tr.overbrightBits = 0; // need hardware gamma for overbright
 			applyGamma = qfalse;
 		} else {
@@ -1700,7 +1340,6 @@ void R_SetColorMappings( void ) {
 		s_intensitytable[i] = j;
 	}
 
-#ifdef USE_VULKAN
 	if ( gls.deviceSupportsGamma ) {
 		if ( vk.fboActive )
 			ri.GLimp_SetGamma( s_gammatable_linear, s_gammatable_linear, s_gammatable_linear );
@@ -1710,13 +1349,6 @@ void R_SetColorMappings( void ) {
 			}
 		}
 	}
-#else
-	if ( gls.deviceSupportsGamma ) {
-		if ( applyGamma ) {
-			ri.GLimp_SetGamma( s_gammatable, s_gammatable, s_gammatable );
-		}
-	}
-#endif
 }
 
 
@@ -1726,14 +1358,11 @@ R_InitImages
 ===============
 */
 void R_InitImages( void ) {
-
-#ifdef USE_VULKAN
 	// initialize linear gamma table before setting color mappings for the first time
 	int i;
 
 	for ( i = 0; i < 256; i++ )
 		s_gammatable_linear[i] = (unsigned char)i;
-#endif
 
 	Com_Memset( hashTable, 0, sizeof( hashTable ) );
 
@@ -1743,9 +1372,7 @@ void R_InitImages( void ) {
 	// create default texture and white texture
 	R_CreateBuiltinImages();
 
-#ifdef USE_VULKAN
 	vk_update_post_process_pipelines();
-#endif
 }
 
 
@@ -1759,7 +1386,6 @@ void R_DeleteTextures( void ) {
 	image_t *img;
 	int i;
 
-#ifdef USE_VULKAN
 	vk_wait_idle();
 
 	for ( i = 0; i < tr.numImages; i++ ) {
@@ -1768,21 +1394,6 @@ void R_DeleteTextures( void ) {
 
 		// img->descriptor will be released with pool reset
 	}
-#else
-	for ( i = 0; i < tr.numImages; i++ ) {
-		img = tr.images[ i ];
-		qglDeleteTextures( 1, &img->texnum );
-	}
-
-	if ( qglActiveTextureARB ) {
-		for ( i = glConfig.numTextureUnits - 1; i >= 0; i-- ) {
-			qglActiveTextureARB( GL_TEXTURE0_ARB + i );
-			qglBindTexture( GL_TEXTURE_2D, 0 );
-		}
-	} else {
-		qglBindTexture( GL_TEXTURE_2D, 0 );
-	}
-#endif
 
 	Com_Memset( tr.images, 0, sizeof( tr.images ) );
 	Com_Memset( tr.scratchImage, 0, sizeof( tr.scratchImage ) );
