@@ -84,7 +84,7 @@ static int c_totalPatchBlocks;
 
 static const patchCollide_t	*debugPatchCollide;
 static const facet_t		*debugFacet;
-static qboolean		debugBlock;
+static bool			debugBlock;
 static vec3_t		debugBlockPoints[4];
 
 /*
@@ -124,17 +124,17 @@ Returns false if the triangle is degenerate.
 The normal will point out of the clock for clockwise ordered points
 =====================
 */
-static qboolean CM_PlaneFromPoints( vec4_t plane, const vec3_t a, const vec3_t b, const vec3_t c ) {
+static bool CM_PlaneFromPoints( vec4_t plane, const vec3_t a, const vec3_t b, const vec3_t c ) {
 	vec3_t	d1, d2;
 
 	VectorSubtract( b, a, d1 );
 	VectorSubtract( c, a, d2 );
 	CrossProductDP( d2, d1, plane );
 	if ( VectorNormalizeDP( plane ) == 0.0 )
-		return qfalse;
+		return false;
 
 	plane[3] = DotProductDPf( a, plane );
-	return qtrue;
+	return true;
 }
 
 
@@ -154,7 +154,7 @@ Returns true if the given quadratic curve is not flat enough for our
 collision detection purposes
 =================
 */
-static qboolean	CM_NeedsSubdivision( const vec3_t a, const vec3_t b, const vec3_t c ) {
+static bool	CM_NeedsSubdivision( const vec3_t a, const vec3_t b, const vec3_t c ) {
 	vec3_t		cmid;
 	vec3_t		lmid;
 	vec3_t		delta;
@@ -208,7 +208,7 @@ Swaps the rows and columns in place
 static void CM_TransposeGrid( cGrid_t *grid ) {
 	int			i, j, l;
 	vec3_t		temp;
-	qboolean	tempWrap;
+	bool		tempWrap;
 
 	if ( grid->width > grid->height ) {
 		for ( i = 0 ; i < grid->height ; i++ ) {
@@ -273,9 +273,9 @@ static void CM_SetGridWrapWidth( cGrid_t *grid ) {
 		}
 	}
 	if ( i == grid->height ) {
-		grid->wrapWidth = qtrue;
+		grid->wrapWidth = true;
 	} else {
-		grid->wrapWidth = qfalse;
+		grid->wrapWidth = false;
 	}
 }
 
@@ -1212,8 +1212,8 @@ struct patchCollide_s *CM_GeneratePatchCollide( int width, int height, vec3_t *p
 	// build a grid
 	grid.width = width;
 	grid.height = height;
-	grid.wrapWidth = qfalse;
-	grid.wrapHeight = qfalse;
+	grid.wrapWidth = false;
+	grid.wrapHeight = false;
 	for ( i = 0 ; i < width ; i++ ) {
 		for ( j = 0 ; j < height ; j++ ) {
 			VectorCopy( points[j*width + i], grid.points[i][j] );
@@ -1565,7 +1565,7 @@ POSITION TEST
 CM_PositionTestInPatchCollide
 ====================
 */
-qboolean CM_PositionTestInPatchCollide( traceWork_t *tw, const struct patchCollide_s *pc ) {
+bool CM_PositionTestInPatchCollide( traceWork_t *tw, const struct patchCollide_s *pc ) {
 	int i, j;
 	float offset, t;
 	patchPlane_t *pp;

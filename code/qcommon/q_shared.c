@@ -2043,17 +2043,17 @@ Some characters are illegal in info strings because they
 can mess up the server's parsing
 ==================
 */
-qboolean Info_Validate( const char *s )
+bool Info_Validate( const char *s )
 {
 	for ( ;; )
 	{
 		switch ( *s++ )
 		{
 		case '\0':
-			return qtrue;
+			return true;
 		case '\"':
 		case ';':
-			return qfalse;
+			return false;
 		default:
 			break;
 		}
@@ -2069,18 +2069,18 @@ Some characters are illegal in key values because they
 can mess up the server's parsing
 ==================
 */
-qboolean Info_ValidateKeyValue( const char *s )
+bool Info_ValidateKeyValue( const char *s )
 {
 	for ( ;; )
 	{
 		switch ( *s++ )
 		{
 		case '\0':
-			return qtrue;
+			return true;
 		case '\\':
 		case '\"':
 		case ';':
-			return qfalse;
+			return false;
 		default:
 			break;
 		}

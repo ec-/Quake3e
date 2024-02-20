@@ -421,7 +421,7 @@ static void CM_PositionTest( traceWork_t *tw ) {
 	ll.list = leafs;
 	ll.storeLeafs = CM_StoreLeafs;
 	ll.lastLeaf = 0;
-	ll.overflowed = qfalse;
+	ll.overflowed = false;
 
 	cm.checkcount++;
 
@@ -1295,10 +1295,10 @@ static void CM_Trace( trace_t *results, const vec3_t start, const vec3_t end, co
 		// check for point special case
 		//
 		if ( tw.size[0][0] == 0 && tw.size[0][1] == 0 && tw.size[0][2] == 0 ) {
-			tw.isPoint = qtrue;
+			tw.isPoint = true;
 			VectorClear( tw.extents );
 		} else {
-			tw.isPoint = qfalse;
+			tw.isPoint = false;
 			tw.extents[0] = tw.size[1][0];
 			tw.extents[1] = tw.size[1][1];
 			tw.extents[2] = tw.size[1][2];
@@ -1378,7 +1378,7 @@ rotating entities
 void CM_TransformedBoxTrace( trace_t *results, const vec3_t start, const vec3_t end,
 						const vec3_t mins, const vec3_t maxs,
 						clipHandle_t model, int brushmask,
-						const vec3_t origin, const vec3_t angles, qboolean capsule ) {
+						const vec3_t origin, const vec3_t angles, bool capsule ) {
 	trace_t		trace;
 	vec3_t		start_l, end_l;
 	qboolean	rotated;
