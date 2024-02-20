@@ -1814,14 +1814,13 @@ Cvar_InfoString_Big
   handles large info strings ( CS_SYSTEMINFO )
 =====================
 */
-const char *Cvar_InfoString_Big( int bit, qboolean *truncated )
+const char *Cvar_InfoString_Big( int bit, bool *truncated )
 {
 	static char	info[BIG_INFO_STRING];
 	const cvar_t *var;
-	qboolean allSet;
 
 	info[0] = '\0';
-	allSet = qtrue;
+	bool allSet = true;
 
 	for ( var = cvar_vars; var; var = var->next )
 	{

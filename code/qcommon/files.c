@@ -4969,7 +4969,7 @@ Returns a space separated string containing the checksums of all loaded pk3 file
 Servers with sv_pure set will get this string and pass it to clients.
 =====================
 */
-const char *FS_LoadedPakChecksums( qboolean *overflowed ) {
+const char *FS_LoadedPakChecksums( bool *overflowed ) {
 	static char	info[BIG_INFO_STRING];
 	const searchpath_t *search;
 	char buf[ 32 ];
@@ -4979,7 +4979,7 @@ const char *FS_LoadedPakChecksums( qboolean *overflowed ) {
 	s = info;
 	info[0] = '\0';
 	max = &info[sizeof(info)-1];
-	*overflowed = qfalse;
+	*overflowed = false;
 
 	for ( search = fs_searchpaths ; search ; search = search->next ) {
 		// is the element a pak file?
@@ -4995,7 +4995,7 @@ const char *FS_LoadedPakChecksums( qboolean *overflowed ) {
 			len = sprintf( buf, "%i", search->pack->checksum );
 
 		if ( s + len > max ) {
-			*overflowed = qtrue;
+			*overflowed = true;
 			break;
 		}
 

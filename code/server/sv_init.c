@@ -93,7 +93,7 @@ void SV_UpdateConfigstrings(client_t *client)
 		}
 
 		SV_SendConfigstring(client, index);
-		client->csUpdated[index] = qfalse;
+		client->csUpdated[index] = false;
 	}
 }
 
@@ -132,7 +132,7 @@ void SV_SetConfigstring (int index, const char *val) {
 		for (i = 0, client = svs.clients; i < sv_maxclients->integer ; i++, client++) {
 			if ( client->state < CS_ACTIVE ) {
 				if ( client->state == CS_PRIMED )
-					client->csUpdated[ index ] = qtrue;
+					client->csUpdated[ index ] = true;
 				continue;
 			}
 			// do not always send server info to all clients
@@ -243,7 +243,7 @@ static void SV_BoundMaxClients( int minimum ) {
 	// get the current maxclients value
 	Cvar_Get( "sv_maxclients", "8", 0 );
 
-	sv_maxclients->modified = qfalse;
+	sv_maxclients->modified = false;
 
 	if ( sv_maxclients->integer < minimum ) {
 		Cvar_Set( "sv_maxclients", va("%i", minimum) );
@@ -282,7 +282,7 @@ static void SV_Startup( void ) {
 	svs.clients = Z_TagMalloc( sv_maxclients->integer * sizeof( client_t ), TAG_CLIENTS );
 	Com_Memset( svs.clients, 0, sv_maxclients->integer * sizeof( client_t ) );
 	SV_SetSnapshotParams();
-	svs.initialized = qtrue;
+	svs.initialized = true;
 
 	// Don't respect sv_killserver unless a server is actually running
 	if ( sv_killserver->integer ) {
@@ -392,10 +392,10 @@ clients along with it.
 This is NOT called for map_restart
 ================
 */
-void SV_SpawnServer( const char *mapname, qboolean killBots ) {
+void SV_SpawnServer( const char *mapname, bool killBots ) {
 	int			i;
 	int			checksum;
-	qboolean	isBot;
+	bool	isBot;
 	const char	*p;
 
 	// shut down the existing game if it is running
@@ -502,7 +502,7 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	FS_Restart( sv.checksumFeed );
 
 	Sys_SetStatus( "Loading map %s", mapname );
-	CM_LoadMap( va( "maps/%s.bsp", mapname ), qfalse, &checksum );
+	CM_LoadMap( va( "maps/%s.bsp", mapname ), false, &checksum );
 
 	// set serverinfo visible name
 	Cvar_Set( "mapname", mapname );
@@ -530,9 +530,9 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	SV_InitGameProgs();
 
 	// don't allow a map_restart if game is modified
-	sv_gametype->modified = qfalse;
+	sv_gametype->modified = false;
 
-	sv_pure->modified = qfalse;
+	sv_pure->modified = false;
 
 	// run a few frames to allow everything to settle
 	for ( i = 0; i < 3; i++ )
@@ -555,14 +555,14 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 					SV_DropClient( &svs.clients[i], "was kicked" );
 					continue;
 				}
-				isBot = qtrue;
+				isBot = true;
 			}
 			else {
-				isBot = qfalse;
+				isBot = false;
 			}
 
 			// connect the client again
-			denied = GVM_ArgPtr( VM_Call( gvm, 3, GAME_CLIENT_CONNECT, i, qfalse, isBot ) );	// firstTime = qfalse
+			denied = GVM_ArgPtr( VM_Call( gvm, 3, GAME_CLIENT_CONNECT, i, false, isBot ) );	// firstTime = false
 			if ( denied ) {
 				// this generally shouldn't happen, because the client
 				// was connected before the level change
@@ -624,8 +624,8 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 
 	if ( sv_pure->integer ) {
 		int freespace, pakslen, infolen;
-		qboolean overflowed = qfalse;
-		qboolean infoTruncated = qfalse;
+		bool overflowed = false;
+		bool infoTruncated = false;
 
 		p = FS_LoadedPakChecksums( &overflowed );
 

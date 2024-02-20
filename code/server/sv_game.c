@@ -131,7 +131,7 @@ static void SV_SetBrushModel( sharedEntity_t *ent, const char *name ) {
 	CM_ModelBounds( h, mins, maxs );
 	VectorCopy (mins, ent->r.mins);
 	VectorCopy (maxs, ent->r.maxs);
-	ent->r.bmodel = qtrue;
+	ent->r.bmodel = true;
 
 	ent->r.contents = -1;		// we don't know exactly what is in the brushes
 
@@ -146,7 +146,7 @@ SV_inPVS
 Also checks portalareas so that doors block sight
 =================
 */
-qboolean SV_inPVS( const vec3_t p1, const vec3_t p2 )
+bool SV_inPVS( const vec3_t p1, const vec3_t p2 )
 {
 	int		leafnum;
 	int		cluster;
@@ -162,10 +162,10 @@ qboolean SV_inPVS( const vec3_t p1, const vec3_t p2 )
 	cluster = CM_LeafCluster (leafnum);
 	area2 = CM_LeafArea (leafnum);
 	if ( mask && (!(mask[cluster>>3] & (1<<(cluster&7)) ) ) )
-		return qfalse;
+		return false;
 	if (!CM_AreasConnected (area1, area2))
-		return qfalse;		// a door blocks sight
-	return qtrue;
+		return false;		// a door blocks sight
+	return true;
 }
 
 
@@ -176,7 +176,7 @@ SV_inPVSIgnorePortals
 Does NOT check portalareas
 =================
 */
-static qboolean SV_inPVSIgnorePortals( const vec3_t p1, const vec3_t p2 )
+static bool SV_inPVSIgnorePortals( const vec3_t p1, const vec3_t p2 )
 {
 	int		leafnum;
 	int		cluster;
@@ -190,9 +190,9 @@ static qboolean SV_inPVSIgnorePortals( const vec3_t p1, const vec3_t p2 )
 	cluster = CM_LeafCluster (leafnum);
 
 	if ( mask && (!(mask[cluster>>3] & (1<<(cluster&7)) ) ) )
-		return qfalse;
+		return false;
 
-	return qtrue;
+	return true;
 }
 
 
@@ -201,7 +201,7 @@ static qboolean SV_inPVSIgnorePortals( const vec3_t p1, const vec3_t p2 )
 SV_AdjustAreaPortalState
 ========================
 */
-static void SV_AdjustAreaPortalState( sharedEntity_t *ent, qboolean open ) {
+static void SV_AdjustAreaPortalState( sharedEntity_t *ent, bool open ) {
 	svEntity_t	*svEnt;
 
 	svEnt = SV_SvEntityForGentity( ent );
@@ -217,7 +217,7 @@ static void SV_AdjustAreaPortalState( sharedEntity_t *ent, qboolean open ) {
 SV_EntityContact
 ==================
 */
-static qboolean SV_EntityContact( const vec3_t mins, const vec3_t maxs, const sharedEntity_t *gEnt, const int capsule ) {
+static bool SV_EntityContact( const vec3_t mins, const vec3_t maxs, const sharedEntity_t *gEnt, const int capsule ) {
 	const float	*origin, *angles;
 	clipHandle_t	ch;
 	trace_t			trace;
@@ -339,15 +339,15 @@ void *GVM_ArgPtr( intptr_t intValue )
 }
 
 
-static qboolean SV_GetValue( char* value, int valueSize, const char* key )
+static bool SV_GetValue( char* value, int valueSize, const char* key )
 {
 	if ( !Q_stricmp( key, "SVF_SELF_PORTAL2_Q3E" ) )
 	{
 		Com_sprintf( value, valueSize, "%i", SVF_SELF_PORTAL2 );
-		return qtrue;
+		return true;
 	}
 
-	return qfalse;
+	return false;
 }
 
 
@@ -433,14 +433,14 @@ static intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		VM_CHECKBOUNDS( gvm, args[3], args[4] * sizeof( int ) );
 		return SV_AreaEntities( VMA(1), VMA(2), VMA(3), args[4] );
 	case G_ENTITY_CONTACT:
-		return SV_EntityContact( VMA(1), VMA(2), VMA(3), /*int capsule*/ qfalse );
+		return SV_EntityContact( VMA(1), VMA(2), VMA(3), /*int capsule*/ false );
 	case G_ENTITY_CONTACTCAPSULE:
-		return SV_EntityContact( VMA(1), VMA(2), VMA(3), /*int capsule*/ qtrue );
+		return SV_EntityContact( VMA(1), VMA(2), VMA(3), /*int capsule*/ true );
 	case G_TRACE:
-		SV_Trace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], /*int capsule*/ qfalse );
+		SV_Trace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], /*int capsule*/ false );
 		return 0;
 	case G_TRACECAPSULE:
-		SV_Trace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], /*int capsule*/ qtrue );
+		SV_Trace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], /*int capsule*/ true );
 		return 0;
 	case G_POINT_CONTENTS:
 		return SV_PointContents( VMA(1), args[2] );
@@ -501,9 +501,9 @@ static intptr_t SV_GameSystemCalls( intptr_t *args ) {
 				}
 			}
 			if ( !sv.entityParsePoint && s[0] == '\0' ) {
-				return qfalse;
+				return false;
 			} else {
-				return qtrue;
+				return true;
 			}
 		}
 
@@ -996,7 +996,7 @@ void SV_ShutdownGameProgs( void ) {
 	if ( !gvm ) {
 		return;
 	}
-	VM_Call( gvm, 1, GAME_SHUTDOWN, qfalse );
+	VM_Call( gvm, 1, GAME_SHUTDOWN, false );
 	VM_Free( gvm );
 	gvm = NULL;
 	FS_VM_CloseFiles( H_QAGAME );
@@ -1010,7 +1010,7 @@ SV_InitGameVM
 Called for both a full init and a restart
 ==================
 */
-static void SV_InitGameVM( qboolean restart ) {
+static void SV_InitGameVM( bool restart ) {
 	int		i;
 
 	// start the entity parsing at the beginning
@@ -1041,7 +1041,7 @@ void SV_RestartGameProgs( void ) {
 	if ( !gvm ) {
 		return;
 	}
-	VM_Call( gvm, 1, GAME_SHUTDOWN, qtrue );
+	VM_Call( gvm, 1, GAME_SHUTDOWN, true );
 
 	// do a restart instead of a free
 	gvm = VM_Restart( gvm );
@@ -1049,7 +1049,7 @@ void SV_RestartGameProgs( void ) {
 		Com_Error( ERR_DROP, "VM_Restart on game failed" );
 	}
 
-	SV_InitGameVM( qtrue );
+	SV_InitGameVM( true );
 
 	// load userinfo filters
 	SV_LoadFilters( sv_filter->string );
@@ -1082,7 +1082,7 @@ void SV_InitGameProgs( void ) {
 		Com_Error( ERR_DROP, "VM_Create on game failed" );
 	}
 
-	SV_InitGameVM( qfalse );
+	SV_InitGameVM( false );
 
 	// load userinfo filters
 	SV_LoadFilters( sv_filter->string );
@@ -1096,9 +1096,9 @@ SV_GameCommand
 See if the current console command is claimed by the game
 ====================
 */
-qboolean SV_GameCommand( void ) {
+bool SV_GameCommand( void ) {
 	if ( sv.state != SS_GAME ) {
-		return qfalse;
+		return false;
 	}
 
 	return VM_Call( gvm, 0, GAME_CONSOLE_COMMAND );

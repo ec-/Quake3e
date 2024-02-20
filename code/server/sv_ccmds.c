@@ -154,7 +154,7 @@ Restart the server on a different map
 static void SV_Map_f( void ) {
 	const char		*cmd;
 	const char		*map;
-	qboolean	killBots, cheat;
+	bool	killBots, cheat;
 	char		expanded[MAX_QPATH];
 	char		mapname[MAX_QPATH];
 	int			len;
@@ -169,7 +169,7 @@ static void SV_Map_f( void ) {
 	Com_sprintf( expanded, sizeof( expanded ), "maps/%s.bsp", map );
 	// bypass pure check so we can open downloaded map
 	FS_BypassPure();
-	len = FS_FOpenFileRead( expanded, NULL, qfalse );
+	len = FS_FOpenFileRead( expanded, NULL, false );
 	FS_RestorePure();
 	if ( len == -1 ) {
 		Com_Printf( "Can't find map %s\n", expanded );
@@ -187,23 +187,23 @@ static void SV_Map_f( void ) {
 		Cvar_SetLatched( "sv_maxclients", "8" );
 		cmd += 2;
 		if (!Q_stricmp( cmd, "devmap" ) ) {
-			cheat = qtrue;
+			cheat = true;
 		} else {
-			cheat = qfalse;
+			cheat = false;
 		}
-		killBots = qtrue;
+		killBots = true;
 	}
 	else {
 		if ( !Q_stricmp( cmd, "devmap" ) ) {
-			cheat = qtrue;
+			cheat = true;
 		} else {
-			cheat = qfalse;
+			cheat = false;
 		}
 		if( sv_gametype->integer == GT_SINGLE_PLAYER ) {
 			Cvar_SetIntegerValue( "g_gametype", GT_FFA );
-			killBots = qtrue;
+			killBots = true;
 		} else {
-			killBots = qfalse;
+			killBots = false;
 		}
 	}
 
@@ -238,7 +238,7 @@ static void SV_MapRestart_f( void ) {
 	int			i;
 	client_t	*client;
 	const char		*denied;
-	qboolean	isBot;
+	bool	isBot;
 	int			delay;
 
 	// make sure we aren't restarting twice in the same frame
@@ -280,7 +280,7 @@ static void SV_MapRestart_f( void ) {
 		// restart the map the slow way
 		Q_strncpyz( mapname, Cvar_VariableString( "mapname" ), sizeof( mapname ) );
 
-		SV_SpawnServer( mapname, qfalse );
+		SV_SpawnServer( mapname, false );
 		return;
 	}
 
@@ -306,7 +306,7 @@ static void SV_MapRestart_f( void ) {
 	// note that we do NOT set sv.state = SS_LOADING, so configstrings that
 	// had been changed from their default values will generate broadcast updates
 	sv.state = SS_LOADING;
-	sv.restarting = qtrue;
+	sv.restarting = true;
 
 	// make sure that level time is not zero
 	//sv.time = sv.time ? sv.time : 8;
@@ -321,7 +321,7 @@ static void SV_MapRestart_f( void ) {
 	}
 
 	sv.state = SS_GAME;
-	sv.restarting = qfalse;
+	sv.restarting = false;
 
 	// connect and begin all the clients
 	for ( i = 0 ; i < sv_maxclients->integer ; i++ ) {
@@ -333,16 +333,16 @@ static void SV_MapRestart_f( void ) {
 		}
 
 		if ( client->netchan.remoteAddress.type == NA_BOT ) {
-			isBot = qtrue;
+			isBot = true;
 		} else {
-			isBot = qfalse;
+			isBot = false;
 		}
 
 		// add the map_restart command
 		SV_AddServerCommand( client, "map_restart\n" );
 
 		// connect the client again, without the firstTime flag
-		denied = GVM_ArgPtr( VM_Call( gvm, 3, GAME_CLIENT_CONNECT, i, qfalse, isBot ) );
+		denied = GVM_ArgPtr( VM_Call( gvm, 3, GAME_CLIENT_CONNECT, i, false, isBot ) );
 		if ( denied ) {
 			// this generally shouldn't happen, because the client
 			// was connected before the level change
@@ -772,7 +772,7 @@ Remove a ban or an exception from the list.
 ==================
 */
 
-static qboolean SV_DelBanEntryFromList(int index)
+static bool SV_DelBanEntryFromList(int index)
 {
 	if(index == serverBansCount - 1)
 		serverBansCount--;
@@ -782,9 +782,9 @@ static qboolean SV_DelBanEntryFromList(int index)
 		serverBansCount--;
 	}
 	else
-		return qtrue;
+		return true;
 
-	return qfalse;
+	return false;
 }
 
 /*
@@ -795,7 +795,7 @@ Parse a CIDR notation type string and return a netadr_t and suffix by reference
 ==================
 */
 
-static qboolean SV_ParseCIDRNotation(netadr_t *dest, int *mask, const char *adrstr)
+static bool SV_ParseCIDRNotation(netadr_t *dest, int *mask, const char *adrstr)
 {
 	char *suffix;
 	
@@ -807,7 +807,7 @@ static qboolean SV_ParseCIDRNotation(netadr_t *dest, int *mask, const char *adrs
 	}
 
 	if(!NET_StringToAdr(adrstr, dest, NA_UNSPEC))
-		return qtrue;
+		return true;
 
 	if(suffix)
 	{
@@ -829,7 +829,7 @@ static qboolean SV_ParseCIDRNotation(netadr_t *dest, int *mask, const char *adrs
 	else
 		*mask = 128;
 	
-	return qfalse;
+	return false;
 }
 
 /*
@@ -840,7 +840,7 @@ Ban a user from being able to play on this server based on his ip address.
 ==================
 */
 
-static void SV_AddBanToList(qboolean isexception)
+static void SV_AddBanToList(bool isexception)
 {
 	const char *banstring;
 	char addy2[NET_ADDRSTRMAXLEN];
@@ -984,7 +984,7 @@ Remove a ban or an exception from the list.
 ==================
 */
 
-static void SV_DelBanFromList(qboolean isexception)
+static void SV_DelBanFromList(bool isexception)
 {
 	int index, count = 0, todel, mask;
 	netadr_t ip;
@@ -1139,22 +1139,22 @@ static void SV_FlushBans_f(void)
 
 static void SV_BanAddr_f(void)
 {
-	SV_AddBanToList(qfalse);
+	SV_AddBanToList(false);
 }
 
 static void SV_ExceptAddr_f(void)
 {
-	SV_AddBanToList(qtrue);
+	SV_AddBanToList(true);
 }
 
 static void SV_BanDel_f(void)
 {
-	SV_DelBanFromList(qfalse);
+	SV_DelBanFromList(false);
 }
 
 static void SV_ExceptDel_f(void)
 {
-	SV_DelBanFromList(qtrue);
+	SV_DelBanFromList(true);
 }
 
 #endif // USE_BANS
@@ -1515,9 +1515,9 @@ SV_CompleteMapName
 static void SV_CompleteMapName( const char *args, int argNum ) {
 	if ( argNum == 2 ) 	{
 		if ( sv_pure->integer ) {
-			Field_CompleteFilename( "maps", "bsp", qtrue, FS_MATCH_PK3s | FS_MATCH_STICK );
+			Field_CompleteFilename( "maps", "bsp", true, FS_MATCH_PK3s | FS_MATCH_STICK );
 		} else {
-			Field_CompleteFilename( "maps", "bsp", qtrue, FS_MATCH_ANY | FS_MATCH_STICK );
+			Field_CompleteFilename( "maps", "bsp", true, FS_MATCH_ANY | FS_MATCH_STICK );
 		}
 	}
 }
@@ -1529,12 +1529,12 @@ SV_AddOperatorCommands
 ==================
 */
 void SV_AddOperatorCommands( void ) {
-	static qboolean	initialized;
+	static bool	initialized;
 
 	if ( initialized ) {
 		return;
 	}
-	initialized = qtrue;
+	initialized = true;
 
 	Cmd_AddCommand ("heartbeat", SV_Heartbeat_f);
 	Cmd_AddCommand ("kick", SV_Kick_f);

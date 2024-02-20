@@ -929,10 +929,10 @@ int BotGetMapLocationGoal(const char *name, bot_goal_t *goal)
 			goal->number = 0;
 			goal->flags = 0;
 			goal->iteminfo = 0;
-			return qtrue;
+			return true;
 		} //end if
 	} //end for
-	return qfalse;
+	return false;
 } //end of the function BotGetMapLocationGoal
 //===========================================================================
 //
@@ -1264,10 +1264,10 @@ int BotGetTopGoal(int goalstate, bot_goal_t *goal)
 	bot_goalstate_t *gs;
 
 	gs = BotGoalStateFromHandle(goalstate);
-	if (!gs) return qfalse;
-	if (!gs->goalstacktop) return qfalse;
+	if (!gs) return false;
+	if (!gs->goalstacktop) return false;
 	Com_Memcpy(goal, &gs->goalstack[gs->goalstacktop], sizeof(bot_goal_t));
-	return qtrue;
+	return true;
 } //end of the function BotGetTopGoal
 //===========================================================================
 //
@@ -1280,10 +1280,10 @@ int BotGetSecondGoal(int goalstate, bot_goal_t *goal)
 	bot_goalstate_t *gs;
 
 	gs = BotGoalStateFromHandle(goalstate);
-	if (!gs) return qfalse;
-	if (gs->goalstacktop <= 1) return qfalse;
+	if (!gs) return false;
+	if (gs->goalstacktop <= 1) return false;
 	Com_Memcpy(goal, &gs->goalstack[gs->goalstacktop-1], sizeof(bot_goal_t));
-	return qtrue;
+	return true;
 } //end of the function BotGetSecondGoal
 //===========================================================================
 // pops a new long term goal on the goal stack in the goalstate
@@ -1304,9 +1304,9 @@ int BotChooseLTGItem(int goalstate, vec3_t origin, int *inventory, int travelfla
 
 	gs = BotGoalStateFromHandle(goalstate);
 	if (!gs)
-		return qfalse;
+		return false;
 	if (!gs->itemweightconfig)
-		return qfalse;
+		return false;
 	//get the area the bot is in
 	areanum = BotReachabilityArea(origin, gs->client);
 	//if the bot is in solid or if the area the bot is in has no reachability links
@@ -1319,11 +1319,11 @@ int BotChooseLTGItem(int goalstate, vec3_t origin, int *inventory, int travelfla
 	gs->lastreachabilityarea = areanum;
 	//if still in solid
 	if (!areanum)
-		return qfalse;
+		return false;
 	//the item configuration
 	ic = itemconfig;
 	if (!itemconfig)
-		return qfalse;
+		return false;
 	//best weight and item so far
 	bestweight = 0;
 	bestitem = NULL;
@@ -1413,11 +1413,11 @@ int BotChooseLTGItem(int goalstate, vec3_t origin, int *inventory, int travelfla
 #ifdef DEBUG
 				botimport.Print(PRT_MESSAGE, "chosen roam goal area %d\n", goal.areanum);
 #endif //DEBUG
-				return qtrue;
+				return true;
 			} //end if
 		} //end if
 		*/
-		return qfalse;
+		return false;
 	} //end if
 	//create a bot goal for this item
 	iteminfo = &ic->iteminfo[bestitem->iteminfo];
@@ -1451,7 +1451,7 @@ int BotChooseLTGItem(int goalstate, vec3_t origin, int *inventory, int travelfla
 	//push the goal on the stack
 	BotPushGoal(goalstate, &goal);
 	//
-	return qtrue;
+	return true;
 } //end of the function BotChooseLTGItem
 //===========================================================================
 //
@@ -1472,9 +1472,9 @@ int BotChooseNBGItem(int goalstate, vec3_t origin, int *inventory, int travelfla
 
 	gs = BotGoalStateFromHandle(goalstate);
 	if (!gs)
-		return qfalse;
+		return false;
 	if (!gs->itemweightconfig)
-		return qfalse;
+		return false;
 	//get the area the bot is in
 	areanum = BotReachabilityArea(origin, gs->client);
 	//if the bot is in solid or if the area the bot is in has no reachability links
@@ -1487,14 +1487,14 @@ int BotChooseNBGItem(int goalstate, vec3_t origin, int *inventory, int travelfla
 	gs->lastreachabilityarea = areanum;
 	//if still in solid
 	if (!areanum)
-		return qfalse;
+		return false;
 	//
 	if (ltg) ltg_time = AAS_AreaTravelTimeToGoalArea(areanum, origin, ltg->areanum, travelflags);
 	else ltg_time = 99999;
 	//the item configuration
 	ic = itemconfig;
 	if (!itemconfig)
-		return qfalse;
+		return false;
 	//best weight and item so far
 	bestweight = 0;
 	bestitem = NULL;
@@ -1575,7 +1575,7 @@ int BotChooseNBGItem(int goalstate, vec3_t origin, int *inventory, int travelfla
 	} //end for
 	//if no goal item found
 	if (!bestitem)
-		return qfalse;
+		return false;
 	//create a bot goal for this item
 	iteminfo = &ic->iteminfo[bestitem->iteminfo];
 	VectorCopy(bestitem->goalorigin, goal.origin);
@@ -1608,7 +1608,7 @@ int BotChooseNBGItem(int goalstate, vec3_t origin, int *inventory, int travelfla
 	//push the goal on the stack
 	BotPushGoal(goalstate, &goal);
 	//
-	return qtrue;
+	return true;
 } //end of the function BotChooseNBGItem
 //===========================================================================
 //
@@ -1635,9 +1635,9 @@ int BotTouchingGoal(const vec3_t origin, const bot_goal_t *goal)
 
 	for (i = 0; i < 3; i++)
 	{
-		if (origin[i] < absmins[i] || origin[i] > absmaxs[i]) return qfalse;
+		if (origin[i] < absmins[i] || origin[i] > absmaxs[i]) return false;
 	} //end for
-	return qtrue;
+	return true;
 } //end of the function BotTouchingGoal
 //===========================================================================
 //
@@ -1651,7 +1651,7 @@ int BotItemGoalInVisButNotVisible(int viewer, vec3_t eye, vec3_t viewangles, bot
 	bsp_trace_t trace;
 	vec3_t middle;
 
-	if (!(goal->flags & GFL_ITEM)) return qfalse;
+	if (!(goal->flags & GFL_ITEM)) return false;
 	//
 	VectorAdd(goal->mins, goal->mins, middle);
 	VectorScale(middle, 0.5, middle);
@@ -1664,17 +1664,17 @@ int BotItemGoalInVisButNotVisible(int viewer, vec3_t eye, vec3_t viewangles, bot
 		//the goal entity number doesn't have to be valid
 		//just assume it's valid
 		if (goal->entitynum <= 0)
-			return qfalse;
+			return false;
 		//
 		//if the entity data isn't valid
 		AAS_EntityInfo(goal->entitynum, &entinfo);
 		//NOTE: for some wacko reason entities are sometimes
 		// not updated
-		//if (!entinfo.valid) return qtrue;
+		//if (!entinfo.valid) return true;
 		if (entinfo.ltime < AAS_Time() - 0.5)
-			return qtrue;
+			return true;
 	} //end if
-	return qfalse;
+	return false;
 } //end of the function BotItemGoalInVisButNotVisible
 //===========================================================================
 //

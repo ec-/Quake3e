@@ -513,7 +513,7 @@ static filter_node_t *new_node( const char *p1, const char *p2, filter_op fop, i
 }
 
 
-static const char *parse_section( const char *text, int level, filter_node_t **root, qboolean in_scope )
+static const char *parse_section( const char *text, int level, filter_node_t **root, bool in_scope )
 {
 	filter_node_t *curr, *ch;
 	filter_op fop;
@@ -555,7 +555,7 @@ static const char *parse_section( const char *text, int level, filter_node_t **r
 		{
 			fop = FOP_DROP;
 			back = text; // backup
-			v0 = COM_ParseComplex( &text, qfalse );
+			v0 = COM_ParseComplex( &text, false );
 			if ( com_tokentype != TK_QUOTED )
 			{
 				// "drop" action can have empty message (defaults to "Banned.")
@@ -578,12 +578,12 @@ static const char *parse_section( const char *text, int level, filter_node_t **r
 			// save key
 			Q_strncpyz( lvalue, v0, sizeof( lvalue ) );
 			// expect operator or value
-			v0 = COM_ParseComplex( &text, qfalse );
+			v0 = COM_ParseComplex( &text, false );
 			// override default op
 			if ( com_tokentype >= TK_EQ && com_tokentype <= TK_MATCH )
 			{
 				op = com_tokentype;
-				v0 = COM_ParseComplex( &text, qfalse ); // get rvalue
+				v0 = COM_ParseComplex( &text, false ); // get rvalue
 			}
 			else
 			{
@@ -622,21 +622,21 @@ static const char *parse_section( const char *text, int level, filter_node_t **r
 				return NULL;
 
 			back = text;
-			v0 = COM_ParseComplex( &text, qfalse ); // check current line
+			v0 = COM_ParseComplex( &text, false ); // check current line
 			if ( *v0 == '{' ) // open new section
 			{
-				text = parse_section( text, level + 1, &ch->child, qtrue );
+				text = parse_section( text, level + 1, &ch->child, true );
 			}
 			else if ( com_tokentype == TK_STRING ) // new key/action on the same line, open new section
 			{
-				text = parse_section( back, level + 1, &ch->child, qfalse );
+				text = parse_section( back, level + 1, &ch->child, false );
 			} 
 			else if ( com_tokentype == TK_NEWLINE || com_tokentype == TK_EOF )  // expect new section
 			{
-				v0 = COM_ParseComplex( &text, qtrue );
+				v0 = COM_ParseComplex( &text, true );
 				if ( *v0 == '{' )
 				{ 
-					text = parse_section( text, level + 1, &ch->child, qtrue );
+					text = parse_section( text, level + 1, &ch->child, true );
 				}
 				else
 				{
@@ -662,7 +662,7 @@ static const char *parse_section( const char *text, int level, filter_node_t **r
 }
 
 
-static qboolean parse_file( const char *filename )
+static bool parse_file( const char *filename )
 {
 	const char *text;
 	char *data;
@@ -678,11 +678,11 @@ static qboolean parse_file( const char *filename )
 	tempCount = 0;
 
 	if ( !filename || !*filename )
-		return qfalse;
+		return false;
 
 	f = fopen( filename, "rb" );
 	if ( f == NULL )
-		return qfalse;
+		return false;
 
 	//Com_Printf( "...loading userinfo filters form '%s'\n", filename );
 
@@ -695,7 +695,7 @@ static qboolean parse_file( const char *filename )
 	{
 		Z_Free( data );
 		fclose( f );
-		return qfalse;
+		return false;
 	}
 
 	data[ size ] = '\0';
@@ -703,7 +703,7 @@ static qboolean parse_file( const char *filename )
 
 	COM_BeginParseSession( filename );
 
-	text = parse_section( data, 0, &nodes, qtrue );
+	text = parse_section( data, 0, &nodes, true );
 
 	if ( text == NULL ) // error
 	{
@@ -714,7 +714,7 @@ static qboolean parse_file( const char *filename )
 	Z_Free( data );
 
 	if ( text == NULL )
-		return qfalse;
+		return false;
 
 	// initialize date string
 	Com_RealTime( &t );
@@ -724,7 +724,7 @@ static qboolean parse_file( const char *filename )
 
 	filterDateMsec = Sys_Milliseconds();
 
-	return qtrue;
+	return true;
 }
 
 
@@ -740,18 +740,18 @@ static void SV_ReloadFilters( const char *filename, filter_node_t *new_node )
 	{
 		fileTime_t curr_ctime, curr_mtime;
 		fileOffset_t curr_fsize;
-		qboolean reload;
-		qboolean dump;
+		bool reload;
+		bool dump;
 
 		ospath = FS_BuildOSPath( FS_GetHomePath(), FS_GetCurrentGameDir(), filename );
 		if ( strcmp( ospath, loaded_name ) )
-			reload = qtrue;
+			reload = true;
 		else if ( !Sys_GetFileStats( loaded_name, &curr_fsize, &curr_mtime, &curr_ctime ) )
-			reload = qtrue;
+			reload = true;
 		else if ( curr_fsize != loaded_fsize || curr_mtime != loaded_mtime || curr_ctime != loaded_ctime )
-			reload = qtrue;
+			reload = true;
 		else
-			reload = qfalse;
+			reload = false;
 
 		if ( reload )
 		{
@@ -763,7 +763,7 @@ static void SV_ReloadFilters( const char *filename, filter_node_t *new_node )
 			}
 		}
 
-		dump = qfalse;
+		dump = false;
 
 		// add new nodes(s)
 		if ( new_node )
@@ -772,7 +772,7 @@ static void SV_ReloadFilters( const char *filename, filter_node_t *new_node )
 			// link new new node
 			new_node->next = nodes;
 			nodes = new_node;
-			dump = qtrue;
+			dump = true;
 		}
 
 		// tag expired nodes
@@ -784,7 +784,7 @@ static void SV_ReloadFilters( const char *filename, filter_node_t *new_node )
 			if ( expiredCount ) 
 			{
 				tag_parents( nodes );
-				dump = qtrue;
+				dump = true;
 			}
 		}
 
@@ -1081,7 +1081,7 @@ void SV_AddFilter_f( void )
 
 	node = NULL;
 	COM_BeginParseSession( "command" );
-	s = parse_section( cmd, 0, &node, qtrue ); // level=0,in_scope=qtrue
+	s = parse_section( cmd, 0, &node, true ); // level=0,in_scope=true
 	if ( s == NULL ) // syntax error
 	{
 		free_nodes( node );
@@ -1132,7 +1132,7 @@ void SV_AddFilterCmd_f( void )
 
 	node = NULL;
 	COM_BeginParseSession( "command" );
-	s = parse_section( cmd, 0, &node, qtrue ); // level=0,in_scope=qtrue
+	s = parse_section( cmd, 0, &node, true ); // level=0,in_scope=true
 	if ( s == NULL ) // syntax error
 	{
 		free_nodes( node );

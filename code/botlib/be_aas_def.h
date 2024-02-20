@@ -151,7 +151,7 @@ typedef struct aas_routingupdate_s
 	vec3_t start;								//start point the area was entered
 	unsigned short int tmptraveltime;			//temporary travel time
 	unsigned short int *areatraveltimes;		//travel times within the area
-	qboolean inlist;							//true if the update is in the list
+	bool inlist;							//true if the update is in the list
 	struct aas_routingupdate_s *next;
 	struct aas_routingupdate_s *prev;
 } aas_routingupdate_t;

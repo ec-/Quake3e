@@ -618,7 +618,7 @@ void 	Cvar_WriteVariables( fileHandle_t f );
 void	Cvar_Init( void );
 
 const char *Cvar_InfoString( int bit, bool *truncated );
-const char *Cvar_InfoString_Big( int bit, qboolean *truncated );
+const char *Cvar_InfoString_Big( int bit, bool *truncated );
 // returns an info string containing all the cvars that have the given bit set
 // in their flags ( CVAR_USERINFO, CVAR_SERVERINFO, CVAR_SYSTEMINFO, etc )
 void	Cvar_InfoStringBuffer( int bit, char *buff, int buffsize );
@@ -805,7 +805,7 @@ int		FS_Seek( fileHandle_t f, long offset, fsOrigin_t origin );
 qboolean FS_FilenameCompare( const char *s1, const char *s2 );
 
 const char *FS_LoadedPakNames( void );
-const char *FS_LoadedPakChecksums( qboolean *overflowed );
+const char *FS_LoadedPakChecksums( bool *overflowed );
 // Returns a space separated string containing the checksums of all loaded pk3 files.
 // Servers with sv_pure set will get this string and pass it to clients.
 
@@ -1200,7 +1200,7 @@ void SV_Frame( int msec );
 void SV_TrackCvarChanges( void );
 void SV_PacketEvent( const netadr_t *from, msg_t *msg );
 int SV_FrameMsec( void );
-qboolean SV_GameCommand( void );
+bool SV_GameCommand( void );
 int SV_SendQueuedPackets( void );
 
 void SV_AddDedicatedCommands( void );

@@ -73,7 +73,7 @@ static void AAS_AltRoutingFloodCluster_r(int areanum)
 	clusterareas[numclusterareas] = areanum;
 	numclusterareas++;
 	//remove the area from the mid range areas
-	midrangeareas[areanum].valid = qfalse;
+	midrangeareas[areanum].valid = false;
 	//flood to other areas through the faces of this area
 	area = &aasworld.areas[areanum];
 	for (i = 0; i < area->numfaces; i++)
@@ -150,7 +150,7 @@ int AAS_AlternativeRouteGoals(vec3_t start, int startareanum, vec3_t goal, int g
 		//if the travel time from the area to the goal is greater than the shortest goal travel time
 		if (goaltime > (float) 0.8 * goaltraveltime) continue;
 		//this is a mid range area
-		midrangeareas[i].valid = qtrue;
+		midrangeareas[i].valid = true;
 		midrangeareas[i].starttime = starttime;
 		midrangeareas[i].goaltime = goaltime;
 		Log_Write("%d midrange area %d", nummidrangeareas, i);
@@ -196,7 +196,7 @@ int AAS_AlternativeRouteGoals(vec3_t start, int startareanum, vec3_t goal, int g
 		numaltroutegoals++;
 		//
 #ifdef ALTROUTE_DEBUG
-		AAS_ShowAreaPolygons(bestareanum, 1, qtrue);
+		AAS_ShowAreaPolygons(bestareanum, 1, true);
 #endif
 		//don't return more than the maximum alternative route goals
 		if (numaltroutegoals >= maxaltroutegoals) break;
