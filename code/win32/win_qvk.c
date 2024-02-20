@@ -50,7 +50,7 @@ static PFN_vkCreateWin32SurfaceKHR qvkCreateWin32SurfaceKHR;
 ** Unloads the specified DLL then nulls out all the proc pointers.  This
 ** is only called during a hard shutdown of the Vulkan subsystem (e.g. vid_restart).
 */
-void QVK_Shutdown( qboolean unloadDLL )
+void QVK_Shutdown( bool unloadDLL )
 {
 	Com_Printf( "...shutting down QVK\n" );
 

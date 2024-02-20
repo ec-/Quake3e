@@ -810,7 +810,7 @@ search the paths.  This is to determine if opening a file to write
 NOTE TTimo: this goes with FS_FOpenFileWrite for opening the file afterwards
 ================
 */
-qboolean FS_FileExists( const char *file )
+bool FS_FileExists( const char *file )
 {
 	FILE *f;
 	char *testpath;
@@ -833,7 +833,7 @@ FS_SV_FileExists
 Tests if the file exists 
 ================
 */
-qboolean FS_SV_FileExists( const char *file )
+bool FS_SV_FileExists( const char *file )
 {
 	FILE *f;
 	char *testpath;

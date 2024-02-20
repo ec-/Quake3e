@@ -1936,7 +1936,7 @@ int Cvar_CheckGroup( cvarGroup_t group ) {
 Cvar_ResetGroup
 =====================
 */
-void Cvar_ResetGroup( cvarGroup_t group, qboolean resetModifiedFlags ) {
+void Cvar_ResetGroup( cvarGroup_t group, bool resetModifiedFlags ) {
 	if ( group < CVG_MAX ) {
 		cvar_group[ group ] = 0;
 		if ( resetModifiedFlags ) {

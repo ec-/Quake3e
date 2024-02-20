@@ -117,12 +117,12 @@ tty_err Sys_ConsoleInputInit( void );
 Sys_LowPhysicalMemory()
 ==================
 */
-qboolean Sys_LowPhysicalMemory( void )
+bool Sys_LowPhysicalMemory( void )
 {
 	//MEMORYSTATUS stat;
 	//GlobalMemoryStatus (&stat);
 	//return (stat.dwTotalPhys <= MEM_THRESHOLD) ? qtrue : qfalse;
-	return qfalse; // bk001207 - FIXME
+	return false; // bk001207 - FIXME
 }
 
 

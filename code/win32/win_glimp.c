@@ -1537,7 +1537,7 @@ void VKimp_Init( glconfig_t *config )
 ** This routine does all OS specific shutdown procedures for the Vulkan
 ** subsystem.
 */
-void VKimp_Shutdown( qboolean unloadDLL )
+void VKimp_Shutdown( bool unloadDLL )
 {
 	IN_Shutdown();
 

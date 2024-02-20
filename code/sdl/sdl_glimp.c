@@ -762,12 +762,12 @@ void *VK_GetInstanceProcAddr( VkInstance instance, const char *name )
 VK_CreateSurface
 ===============
 */
-qboolean VK_CreateSurface( VkInstance instance, VkSurfaceKHR *surface )
+bool VK_CreateSurface( VkInstance instance, VkSurfaceKHR *surface )
 {
 	if ( SDL_Vulkan_CreateSurface( SDL_window, instance, surface ) == SDL_TRUE )
-		return qtrue;
+		return true;
 	else
-		return qfalse;
+		return false;
 }
 
 

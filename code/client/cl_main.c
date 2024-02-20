@@ -3325,7 +3325,7 @@ int CL_ScaledMilliseconds( void ) {
 CL_IsMinimized
 ============
 */
-static qboolean CL_IsMininized( void ) {
+static bool CL_IsMininized( void ) {
 	return gw_minimized;
 }
 
@@ -3466,14 +3466,6 @@ static void CL_InitRef( void ) {
 
 	rimp.GLimp_InitGamma = GLimp_InitGamma;
 	rimp.GLimp_SetGamma = GLimp_SetGamma;
-
-	// OpenGL API
-#ifdef USE_OPENGL_API
-	rimp.GLimp_Init = GLimp_Init;
-	rimp.GLimp_Shutdown = GLimp_Shutdown;
-	rimp.GL_GetProcAddress = GL_GetProcAddress;
-	rimp.GLimp_EndFrame = GLimp_EndFrame;
-#endif
 
 	// Vulkan API
 #ifdef USE_VULKAN_API
