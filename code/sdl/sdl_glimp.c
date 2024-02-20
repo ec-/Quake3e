@@ -61,7 +61,7 @@ cvar_t *in_nograb;
 GLimp_Shutdown
 ===============
 */
-void GLimp_Shutdown( qboolean unloadDLL )
+void GLimp_Shutdown( bool unloadDLL )
 {
 	IN_Shutdown();
 
@@ -184,7 +184,7 @@ static SDL_HitTestResult SDL_HitTestFunc( SDL_Window *win, const SDL_Point *area
 GLimp_SetMode
 ===============
 */
-static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vulkan )
+static int GLW_SetMode( int mode, const char *modeFS, bool fullscreen, bool vulkan )
 {
 	glconfig_t *config = glw_state.config;
 	int perChannelColorBits;
@@ -776,7 +776,7 @@ bool VK_CreateSurface( VkInstance instance, VkSurfaceKHR *surface )
 VKimp_Shutdown
 ===============
 */
-void VKimp_Shutdown( qboolean unloadDLL )
+void VKimp_Shutdown( bool unloadDLL )
 {
 	IN_Shutdown();
 

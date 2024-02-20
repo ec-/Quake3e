@@ -190,7 +190,7 @@ typedef struct {
 	char **	(*FS_ListFiles)( const char *name, const char *extension, int *numfilesfound );
 	void	(*FS_FreeFileList)( char **filelist );
 	void	(*FS_WriteFile)( const char *qpath, const void *buffer, int size );
-	bool (*FS_FileExists)( const char *file );
+	bool 	(*FS_FileExists)( const char *file );
 
 	// cinematic stuff
 	void	(*CIN_UploadCinematic)( int handle );
@@ -203,11 +203,11 @@ typedef struct {
 	void	(*CL_SaveJPG)( const char *filename, int quality, int image_width, int image_height, byte *image_buffer, int padding );
 	void	(*CL_LoadJPG)( const char *filename, unsigned char **pic, int *width, int *height );
 
-	bool (*CL_IsMinimized)( void );
+	bool 	(*CL_IsMinimized)( void );
 	void	(*CL_SetScaling)( float factor, int captureWidth, int captureHeight );
 
 	void	(*Sys_SetClipboardBitmap)( const byte *bitmap, int size );
-	bool(*Sys_LowPhysicalMemory)( void );
+	bool	(*Sys_LowPhysicalMemory)( void );
 
 	int		(*Com_RealTime)( qtime_t *qtime );
 
@@ -225,7 +225,7 @@ typedef struct {
 	void	(*VKimp_Init)( glconfig_t *config );
 	void	(*VKimp_Shutdown)( bool unloadDLL );
 	void*	(*VK_GetInstanceProcAddr)( VkInstance instance, const char *name );
-	bool (*VK_CreateSurface)( VkInstance instance, VkSurfaceKHR *pSurface );
+	bool 	(*VK_CreateSurface)( VkInstance instance, VkSurfaceKHR *pSurface );
 
 } refimport_t;
 

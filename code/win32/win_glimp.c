@@ -817,7 +817,7 @@ static void PrintCDSError( int value )
 }
 
 
-static void ResetDisplaySettings( qboolean verbose )
+static void ResetDisplaySettings( bool verbose )
 {
 	if ( verbose )
 		Com_Printf( "...restoring display settings\n" );
@@ -1558,7 +1558,7 @@ void VKimp_Shutdown( bool unloadDLL )
 	// reset display settings
 	if ( glw_state.cdsFullscreen )
 	{
-		ResetDisplaySettings( qtrue );
+		ResetDisplaySettings( true );
 		glw_state.cdsFullscreen = qfalse;
 	}
 

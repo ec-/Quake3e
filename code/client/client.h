@@ -585,7 +585,7 @@ qboolean CL_Netchan_Process( netchan_t *chan, msg_t *msg );
 //
 // cl_avi.c
 //
-qboolean CL_OpenAVIForWriting( const char *filename, qboolean pipe, qboolean reopen );
+bool CL_OpenAVIForWriting( const char *filename, bool pipe, bool reopen );
 void CL_TakeVideoFrame( void );
 void CL_WriteAVIVideoFrame( const byte *imageBuffer, int size );
 void CL_WriteAVIAudioFrame( const byte *pcmBuffer, int size );
@@ -618,7 +618,7 @@ void	*GL_GetProcAddress( const char *name );
 // Vulkan
 #ifdef USE_VULKAN_API
 void	VKimp_Init( glconfig_t *config );
-void	VKimp_Shutdown( qboolean unloadDLL );
+void	VKimp_Shutdown( bool unloadDLL );
 void	*VK_GetInstanceProcAddr( VkInstance instance, const char *name );
 bool 	VK_CreateSurface( VkInstance instance, VkSurfaceKHR* pSurface );
 #endif

@@ -35,7 +35,7 @@ typedef struct
 {
 	FILE *log_fp;
 
-	qboolean isFullscreen;
+	bool isFullscreen;
 
 	glconfig_t *config; // feedback to renderer module
 

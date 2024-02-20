@@ -40,8 +40,8 @@ typedef struct audioFormat_s
 
 typedef struct aviFileData_s
 {
-  qboolean      fileOpen;
-  qboolean      pipe;
+  bool      	fileOpen;
+  bool      	pipe;
   fileHandle_t  f;
   char          fileName[ MAX_QPATH ];
   unsigned int  fileSize;
@@ -56,9 +56,9 @@ typedef struct aviFileData_s
   int           width, height;
   int           numVideoFrames;
   int           maxRecordSize;
-  qboolean      motionJpeg;
+  bool      	motionJpeg;
 
-  qboolean      audio;
+  bool      	audio;
   audioFormat_t a;
   int           numAudioFrames;
   int           audioFrameSize;
@@ -353,7 +353,7 @@ Creates an AVI file and gets it into a state where
 writing the actual data can begin
 ===============
 */
-qboolean CL_OpenAVIForWriting( const char *fileName, qboolean pipe, qboolean reopen )
+bool CL_OpenAVIForWriting( const char *fileName, bool pipe, bool reopen )
 {
 	if ( afd.fileOpen )
 		return qfalse;

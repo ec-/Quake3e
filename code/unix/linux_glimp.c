@@ -1175,7 +1175,7 @@ void GLimp_Shutdown( qboolean unloadDLL )
 /*
 ** VKimp_Shutdown
 */
-void VKimp_Shutdown( qboolean unloadDLL )
+void VKimp_Shutdown( bool unloadDLL )
 {
 	IN_DeactivateMouse();
 
