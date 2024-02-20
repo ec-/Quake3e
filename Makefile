@@ -36,14 +36,11 @@ USE_SYSTEM_OGG    = 0
 USE_SYSTEM_VORBIS = 0
 
 USE_VULKAN       = 1
-USE_OPENGL       = 1
-USE_OPENGL2      = 0
-USE_OPENGL_API   = 1
 USE_VULKAN_API   = 1
 USE_RENDERER_DLOPEN = 1
 
-# valid options: opengl, vulkan, opengl2
-RENDERER_DEFAULT = opengl
+# valid options: vulkan
+RENDERER_DEFAULT = vulkan
 
 CNAME            = quake3e
 DNAME            = quake3e.ded
@@ -168,25 +165,8 @@ ifndef USE_SYSTEM_VORBIS
 endif
 
 ifeq ($(USE_RENDERER_DLOPEN),0)
-  ifeq ($(RENDERER_DEFAULT),opengl)
-    USE_OPENGL=1
-    USE_OPENGL2=0
-    USE_VULKAN=0
-    USE_OPENGL_API=1
-    USE_VULKAN_API=0
-  endif
-  ifeq ($(RENDERER_DEFAULT),opengl2)
-    USE_OPENGL=0
-    USE_OPENGL2=1
-    USE_VULKAN=0
-    USE_OPENGL_API=1
-    USE_VULKAN_API=0
-  endif
   ifeq ($(RENDERER_DEFAULT),vulkan)
-    USE_OPENGL=0
-    USE_OPENGL2=0
     USE_VULKAN=1
-    USE_OPENGL_API=0
   endif
 endif
 
@@ -203,8 +183,6 @@ ADIR=$(MOUNT_DIR)/asm
 CDIR=$(MOUNT_DIR)/client
 SDIR=$(MOUNT_DIR)/server
 RCDIR=$(MOUNT_DIR)/renderercommon
-R1DIR=$(MOUNT_DIR)/renderer
-R2DIR=$(MOUNT_DIR)/renderer2
 RVDIR=$(MOUNT_DIR)/renderervk
 SDLDIR=$(MOUNT_DIR)/sdl
 SDLHDIR=$(MOUNT_DIR)/libsdl/include/SDL2
@@ -330,10 +308,6 @@ endif
 
 ifeq ($(USE_VULKAN_API),1)
   BASE_CFLAGS += -DUSE_VULKAN_API
-endif
-
-ifeq ($(USE_OPENGL_API),1)
-  BASE_CFLAGS += -DUSE_OPENGL_API
 endif
 
 ifeq ($(GENERATE_DEPENDENCIES),1)
@@ -601,8 +575,6 @@ endif # !MINGW
 
 TARGET_CLIENT = $(CNAME)$(ARCHEXT)$(BINEXT)
 
-TARGET_REND1 = $(RENDERER_PREFIX)_opengl_$(SHLIBNAME)
-TARGET_REND2 = $(RENDERER_PREFIX)_opengl2_$(SHLIBNAME)
 TARGET_RENDV = $(RENDERER_PREFIX)_vulkan_$(SHLIBNAME)
 
 TARGET_SERVER = $(DNAME)$(ARCHEXT)$(BINEXT)
@@ -618,12 +590,6 @@ endif
 ifneq ($(BUILD_CLIENT),0)
   TARGETS += $(B)/$(TARGET_CLIENT)
   ifneq ($(USE_RENDERER_DLOPEN),0)
-    ifeq ($(USE_OPENGL),1)
-      TARGETS += $(B)/$(TARGET_REND1)
-    endif
-    ifeq ($(USE_OPENGL2),1)
-      TARGETS += $(B)/$(TARGET_REND2)
-    endif
     ifeq ($(USE_VULKAN),1)
       TARGETS += $(B)/$(TARGET_RENDV)
     endif
@@ -757,9 +723,6 @@ endif
 ifeq ($(USE_SYSTEM_VORBIS),0)
 	@if [ ! -d $(B)/client/vorbis ];then $(MKDIR) $(B)/client/vorbis;fi
 endif
-	@if [ ! -d $(B)/rend1 ];then $(MKDIR) $(B)/rend1;fi
-	@if [ ! -d $(B)/rend2 ];then $(MKDIR) $(B)/rend2;fi
-	@if [ ! -d $(B)/rend2/glsl ];then $(MKDIR) $(B)/rend2/glsl;fi
 	@if [ ! -d $(B)/rendv ];then $(MKDIR) $(B)/rendv;fi
 ifneq ($(BUILD_SERVER),0)
 	@if [ ! -d $(B)/ded ];then $(MKDIR) $(B)/ded;fi
@@ -768,122 +731,6 @@ endif
 #############################################################################
 # CLIENT/SERVER
 #############################################################################
-
-Q3REND1OBJ = \
-  $(B)/rend1/tr_animation.o \
-  $(B)/rend1/tr_arb.o \
-  $(B)/rend1/tr_backend.o \
-  $(B)/rend1/tr_bsp.o \
-  $(B)/rend1/tr_cmds.o \
-  $(B)/rend1/tr_curve.o \
-  $(B)/rend1/tr_flares.o \
-  $(B)/rend1/tr_font.o \
-  $(B)/rend1/tr_image.o \
-  $(B)/rend1/tr_image_png.o \
-  $(B)/rend1/tr_image_jpg.o \
-  $(B)/rend1/tr_image_bmp.o \
-  $(B)/rend1/tr_image_tga.o \
-  $(B)/rend1/tr_image_pcx.o \
-  $(B)/rend1/tr_init.o \
-  $(B)/rend1/tr_light.o \
-  $(B)/rend1/tr_main.o \
-  $(B)/rend1/tr_marks.o \
-  $(B)/rend1/tr_mesh.o \
-  $(B)/rend1/tr_model.o \
-  $(B)/rend1/tr_model_iqm.o \
-  $(B)/rend1/tr_noise.o \
-  $(B)/rend1/tr_scene.o \
-  $(B)/rend1/tr_shade.o \
-  $(B)/rend1/tr_shade_calc.o \
-  $(B)/rend1/tr_shader.o \
-  $(B)/rend1/tr_shadows.o \
-  $(B)/rend1/tr_sky.o \
-  $(B)/rend1/tr_surface.o \
-  $(B)/rend1/tr_vbo.o \
-  $(B)/rend1/tr_world.o
-
-ifneq ($(USE_RENDERER_DLOPEN), 0)
-  Q3REND1OBJ += \
-    $(B)/rend1/q_shared.o \
-    $(B)/rend1/puff.o \
-    $(B)/rend1/q_math.o
-endif
-
-Q3REND2OBJ = \
-  $(B)/rend2/tr_animation.o \
-  $(B)/rend2/tr_backend.o \
-  $(B)/rend2/tr_bsp.o \
-  $(B)/rend2/tr_cmds.o \
-  $(B)/rend2/tr_curve.o \
-  $(B)/rend2/tr_dsa.o \
-  $(B)/rend2/tr_extramath.o \
-  $(B)/rend2/tr_extensions.o \
-  $(B)/rend2/tr_fbo.o \
-  $(B)/rend2/tr_flares.o \
-  $(B)/rend2/tr_font.o \
-  $(B)/rend2/tr_glsl.o \
-  $(B)/rend2/tr_image.o \
-  $(B)/rend2/tr_image_bmp.o \
-  $(B)/rend2/tr_image_jpg.o \
-  $(B)/rend2/tr_image_pcx.o \
-  $(B)/rend2/tr_image_png.o \
-  $(B)/rend2/tr_image_tga.o \
-  $(B)/rend2/tr_image_dds.o \
-  $(B)/rend2/tr_init.o \
-  $(B)/rend2/tr_light.o \
-  $(B)/rend2/tr_main.o \
-  $(B)/rend2/tr_marks.o \
-  $(B)/rend2/tr_mesh.o \
-  $(B)/rend2/tr_model.o \
-  $(B)/rend2/tr_model_iqm.o \
-  $(B)/rend2/tr_noise.o \
-  $(B)/rend2/tr_postprocess.o \
-  $(B)/rend2/tr_scene.o \
-  $(B)/rend2/tr_shade.o \
-  $(B)/rend2/tr_shade_calc.o \
-  $(B)/rend2/tr_shader.o \
-  $(B)/rend2/tr_shadows.o \
-  $(B)/rend2/tr_sky.o \
-  $(B)/rend2/tr_surface.o \
-  $(B)/rend2/tr_vbo.o \
-  $(B)/rend2/tr_world.o
-
-ifneq ($(USE_RENDERER_DLOPEN), 0)
-  Q3REND2OBJ += \
-    $(B)/rend2/q_shared.o \
-    $(B)/rend2/puff.o \
-    $(B)/rend2/q_math.o
-endif
-
-Q3REND2STROBJ = \
-  $(B)/rend2/glsl/bokeh_fp.o \
-  $(B)/rend2/glsl/bokeh_vp.o \
-  $(B)/rend2/glsl/calclevels4x_fp.o \
-  $(B)/rend2/glsl/calclevels4x_vp.o \
-  $(B)/rend2/glsl/depthblur_fp.o \
-  $(B)/rend2/glsl/depthblur_vp.o \
-  $(B)/rend2/glsl/dlight_fp.o \
-  $(B)/rend2/glsl/dlight_vp.o \
-  $(B)/rend2/glsl/down4x_fp.o \
-  $(B)/rend2/glsl/down4x_vp.o \
-  $(B)/rend2/glsl/fogpass_fp.o \
-  $(B)/rend2/glsl/fogpass_vp.o \
-  $(B)/rend2/glsl/generic_fp.o \
-  $(B)/rend2/glsl/generic_vp.o \
-  $(B)/rend2/glsl/lightall_fp.o \
-  $(B)/rend2/glsl/lightall_vp.o \
-  $(B)/rend2/glsl/pshadow_fp.o \
-  $(B)/rend2/glsl/pshadow_vp.o \
-  $(B)/rend2/glsl/shadowfill_fp.o \
-  $(B)/rend2/glsl/shadowfill_vp.o \
-  $(B)/rend2/glsl/shadowmask_fp.o \
-  $(B)/rend2/glsl/shadowmask_vp.o \
-  $(B)/rend2/glsl/ssao_fp.o \
-  $(B)/rend2/glsl/ssao_vp.o \
-  $(B)/rend2/glsl/texturecolor_fp.o \
-  $(B)/rend2/glsl/texturecolor_vp.o \
-  $(B)/rend2/glsl/tonemap_fp.o \
-  $(B)/rend2/glsl/tonemap_vp.o
 
 Q3RENDVOBJ = \
   $(B)/rendv/tr_animation.o \
@@ -1110,13 +957,6 @@ endif
 ifneq ($(USE_RENDERER_DLOPEN),1)
   ifeq ($(USE_VULKAN),1)
     Q3OBJ += $(Q3RENDVOBJ)
-  else
-    ifeq ($(USE_OPENGL2),1)
-      Q3OBJ += $(Q3REND2OBJ)
-      Q3OBJ += $(Q3REND2STROBJ)
-    else
-      Q3OBJ += $(Q3REND1OBJ)
-    endif
   endif
 endif
 
@@ -1175,11 +1015,6 @@ else # !USE_SDL
         $(B)/client/win_snd.o \
         $(B)/client/win_wndproc.o
 
-ifeq ($(USE_OPENGL_API),1)
-    Q3OBJ += \
-        $(B)/client/win_qgl.o
-endif
-
 ifeq ($(USE_VULKAN_API),1)
     Q3OBJ += \
         $(B)/client/win_qvk.o
@@ -1206,10 +1041,6 @@ else # !USE_SDL
         $(B)/client/x11_dga.o \
         $(B)/client/x11_randr.o \
         $(B)/client/x11_vidmode.o
-ifeq ($(USE_OPENGL_API),1)
-    Q3OBJ += \
-        $(B)/client/linux_qgl.o
-endif
 ifeq ($(USE_VULKAN_API),1)
     Q3OBJ += \
         $(B)/client/linux_qvk.o
@@ -1227,17 +1058,9 @@ $(B)/$(TARGET_CLIENT): $(Q3OBJ)
 
 # modular renderers
 
-$(B)/$(TARGET_REND1): $(Q3REND1OBJ)
-	$(echo_cmd) "LD $@"
-	$(Q)$(CC) -o $@ $(Q3REND1OBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
-
 $(STRINGIFY): $(MOUNT_DIR)/renderer2/stringify.c
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) -o $@ $(MOUNT_DIR)/renderer2/stringify.c $(LDFLAGS)
-
-$(B)/$(TARGET_REND2): $(Q3REND2OBJ) $(Q3REND2STROBJ)
-	$(echo_cmd) "LD $@"
-	$(Q)$(CC) -o $@ $(Q3REND2OBJ) $(Q3REND2STROBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
 
 $(B)/$(TARGET_RENDV): $(Q3RENDVOBJ)
 	$(echo_cmd) "LD $@"
