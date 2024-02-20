@@ -901,14 +901,12 @@ See if the current console command is claimed by the cgame
 ====================
 */
 
-qboolean CL_GameCommand( void ) {
-	qboolean bRes;
-
+bool CL_GameCommand( void ) {
 	if ( !cgvm ) {
 		return qfalse;
 	}
 
-	bRes = (qboolean)VM_Call( cgvm, 0, CG_CONSOLE_COMMAND );
+	bool bRes = (bool)VM_Call( cgvm, 0, CG_CONSOLE_COMMAND );
 
 	nestedCmdOffset = 0;
 
