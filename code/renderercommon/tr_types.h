@@ -89,7 +89,7 @@ typedef struct {
 	float		shadowPlane;		// projection shadows go here, stencils go slightly lower
 
 	vec3_t		axis[3];			// rotation vectors
-	qboolean	nonNormalizedAxes;	// axis are not normalized, i.e. they have scale
+	bool		nonNormalizedAxes;	// axis are not normalized, i.e. they have scale
 	float		origin[3];			// also used as MODEL_BEAM's "from"
 	int			frame;				// also used as MODEL_BEAM's diameter
 

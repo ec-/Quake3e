@@ -627,7 +627,7 @@ void	Cvar_SetDescription( cvar_t *var, const char *var_description );
 
 void	Cvar_SetGroup( cvar_t *var, cvarGroup_t group );
 int		Cvar_CheckGroup( cvarGroup_t group );
-void	Cvar_ResetGroup( cvarGroup_t group, qboolean resetModifiedFlags );
+void	Cvar_ResetGroup( cvarGroup_t group, bool resetModifiedFlags );
 
 void	Cvar_Restart( qboolean unsetVM );
 
@@ -714,7 +714,7 @@ char	**FS_ListFiles( const char *directory, const char *extension, int *numfiles
 
 void	FS_FreeFileList( char **list );
 
-qboolean FS_FileExists( const char *file );
+bool 	FS_FileExists( const char *file );
 
 char   *FS_BuildOSPath( const char *base, const char *game, const char *qpath );
 
@@ -731,7 +731,7 @@ fileHandle_t	FS_FOpenFileAppend( const char *filename );
 
 qboolean FS_ResetReadOnlyAttribute( const char *filename );
 
-qboolean FS_SV_FileExists( const char *file );
+bool 	FS_SV_FileExists( const char *file );
 
 fileHandle_t FS_SV_FOpenFileWrite( const char *filename );
 int		FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp );
@@ -1315,7 +1315,7 @@ qboolean Sys_GetFileStats( const char *filename, fileOffset_t *size, fileTime_t 
 void Sys_BeginProfiling( void );
 void Sys_EndProfiling( void );
 
-qboolean Sys_LowPhysicalMemory( void );
+bool Sys_LowPhysicalMemory( void );
 
 int Sys_MonkeyShouldBeSpanked( void );
 
