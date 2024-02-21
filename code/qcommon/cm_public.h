@@ -40,7 +40,7 @@ int			CM_TransformedPointContents( const vec3_t p, clipHandle_t model, const vec
 
 void		CM_BoxTrace( trace_t *results, const vec3_t start, const vec3_t end,
 						const vec3_t mins, const vec3_t maxs,
-						clipHandle_t model, int brushmask, qboolean capsule );
+						clipHandle_t model, int brushmask, bool capsule );
 void		CM_TransformedBoxTrace( trace_t *results, const vec3_t start, const vec3_t end,
 						const vec3_t mins, const vec3_t maxs,
 						clipHandle_t model, int brushmask,
@@ -58,8 +58,8 @@ int			CM_BoxLeafnums( const vec3_t mins, const vec3_t maxs, int *list,
 int			CM_LeafCluster (int leafnum);
 int			CM_LeafArea (int leafnum);
 
-void		CM_AdjustAreaPortalState( int area1, int area2, qboolean open );
-qboolean	CM_AreasConnected( int area1, int area2 );
+void		CM_AdjustAreaPortalState( int area1, int area2, bool open );
+bool		CM_AreasConnected( int area1, int area2 );
 
 int			CM_WriteAreaBits( byte *buffer, int area );
 

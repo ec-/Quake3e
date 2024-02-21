@@ -386,7 +386,7 @@ CM_AdjustAreaPortalState
 
 ====================
 */
-void	CM_AdjustAreaPortalState( int area1, int area2, qboolean open ) {
+void	CM_AdjustAreaPortalState( int area1, int area2, bool open ) {
 	if ( area1 < 0 || area2 < 0 ) {
 		return;
 	}
@@ -415,15 +415,15 @@ CM_AreasConnected
 
 ====================
 */
-qboolean	CM_AreasConnected( int area1, int area2 ) {
+bool	CM_AreasConnected( int area1, int area2 ) {
 #ifndef BSPC
 	if ( cm_noAreas->integer ) {
-		return qtrue;
+		return true;
 	}
 #endif
 
 	if ( area1 < 0 || area2 < 0 ) {
-		return qfalse;
+		return false;
 	}
 
 	if (area1 >= cm.numAreas || area2 >= cm.numAreas) {
@@ -431,9 +431,9 @@ qboolean	CM_AreasConnected( int area1, int area2 ) {
 	}
 
 	if (cm.areas[area1].floodnum == cm.areas[area2].floodnum) {
-		return qtrue;
+		return true;
 	}
-	return qfalse;
+	return false;
 }
 
 
