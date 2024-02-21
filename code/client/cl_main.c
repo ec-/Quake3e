@@ -1786,7 +1786,7 @@ static void CL_Vid_Restart( refShutdownCode_t shutdownCode ) {
 
 	// Settings may have changed so stop recording now
 	if ( CL_VideoRecording() )
-		CL_CloseAVI( qfalse );
+		CL_CloseAVI( false );
 
 	if ( clc.demorecording )
 		CL_StopRecord_f();
@@ -1810,7 +1810,7 @@ static void CL_Vid_Restart( refShutdownCode_t shutdownCode ) {
 	if ( !clc.demoplaying ) // -EC-
 		FS_ConditionalRestart( clc.checksumFeed, false );
 
-	cls.soundRegistered = qfalse;
+	cls.soundRegistered = false;
 
 	// unpause so the cgame definitely gets a snapshot and renders a frame
 	Cvar_Set( "cl_paused", "0" );
@@ -1828,7 +1828,7 @@ static void CL_Vid_Restart( refShutdownCode_t shutdownCode ) {
 		CL_SendPureChecksums();
 	}
 
-	cls.startCgame = qfalse;
+	cls.startCgame = false;
 }
 
 
