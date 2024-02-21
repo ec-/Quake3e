@@ -586,7 +586,7 @@ static int Load_JTS( vm_t *vm, uint32_t crc32, void *data, int vmPakIndex ) {
 	if ( data )
 		Com_Printf( "Loading jts file %s...\n", filename );
 
-	length = FS_FOpenFileRead( filename, &fh, qtrue );
+	length = FS_FOpenFileRead( filename, &fh, true );
 
 	if ( fh == FS_INVALID_HANDLE ) {
 		if ( data )
@@ -744,14 +744,14 @@ else
 
 =================
 */
-static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
+static vmHeader_t *VM_LoadQVM( vm_t *vm, bool alloc ) {
 	int					length;
 	unsigned int		dataLength;
 	unsigned int		dataAlloc;
 	int					i;
 	char				filename[MAX_QPATH], *errorMsg;
 	unsigned int		crc32sum;
-	qboolean			tryjts;
+	bool			tryjts;
 	vmHeader_t			*header;
 	int					vmPakIndex;
 
@@ -779,12 +779,12 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 	}
 
 	vm->crc32sum = crc32sum;
-	tryjts = qfalse;
+	tryjts = false;
 
 	if( header->vmMagic == VM_MAGIC_VER2 ) {
 		Com_Printf( "...which has vmMagic VM_MAGIC_VER2\n" );
 	} else {
-		tryjts = qtrue;
+		tryjts = true;
 	}
 
 	vm->exactDataLength = header->dataLength + header->litLength + header->bssLength;
@@ -864,16 +864,16 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 		VM_SwapLongs( vm->jumpTableTargets, header->jtrgLength );
 	}
 
-	if ( tryjts == qtrue && (length = Load_JTS( vm, crc32sum, NULL, vmPakIndex )) >= 0 ) {
+	if ( tryjts == true && (length = Load_JTS( vm, crc32sum, NULL, vmPakIndex )) >= 0 ) {
 		// we are trying to load newer file?
 		if ( vm->jumpTableTargets && vm->numJumpTableTargets != length >> 2 ) {
 			Com_Printf( S_COLOR_YELLOW "Reload jts file\n" );
 			vm->jumpTableTargets = NULL;
-			alloc = qtrue;
+			alloc = true;
 		}
 		vm->numJumpTableTargets = length >> 2;
 		Com_Printf( "Loading %d external jump table targets\n", vm->numJumpTableTargets );
-		if ( alloc == qtrue ) {
+		if ( alloc == true ) {
 			vm->jumpTableTargets = (int32_t *) Hunk_Alloc( length, h_high );
 		} else {
 			Com_Memset( vm->jumpTableTargets, 0, length );
@@ -935,12 +935,12 @@ VM_FindLocal
 search for specified local variable until end of function
 =================
 */
-static qboolean VM_FindLocal( int32_t addr, const instruction_t *buf, const instruction_t *end, int32_t *back_addr ) {
+static bool VM_FindLocal( int32_t addr, const instruction_t *buf, const instruction_t *end, int32_t *back_addr ) {
 	int32_t curr_addr = *back_addr;
 	while ( buf < end ) {
 		if ( buf->op == OP_LOCAL ) {
 			if ( buf->value == addr ) {
-				return qtrue;
+				return true;
 			}
 			++buf; continue;
 		}
@@ -962,7 +962,7 @@ static qboolean VM_FindLocal( int32_t addr, const instruction_t *buf, const inst
 		++buf;
 	}
 	*back_addr = curr_addr;
-	return qfalse;
+	return false;
 }
 
 
@@ -999,7 +999,7 @@ static void VM_Fixup( instruction_t *buf, int instructionCount )
 					if ( (i+5)->op == OP_LOCAL && (i+5)->value == (i+0)->value && (i+6)->op == OP_LOAD4 && (i+7)->op == OP_STORE4 ) {
 						int32_t back_addr = n;
 						int32_t curr_addr = n;
-						qboolean do_break = qfalse;
+						bool do_break = false;
 
 						// make sure that address of (potentially) temporary variable is not referenced further in this function
 						if ( VM_FindLocal( i->value, i + 8, buf + instructionCount, &back_addr ) ) {
@@ -1011,7 +1011,7 @@ static void VM_Fixup( instruction_t *buf, int instructionCount )
 						while ( back_addr < curr_addr ) {
 							curr_addr = back_addr;
 							if ( VM_FindLocal( i->value, buf + back_addr, i, &back_addr ) ) {
-								do_break = qtrue;
+								do_break = true;
 								break;
 							}
 						}
@@ -1126,23 +1126,23 @@ const char *VM_LoadInstructions( const byte *code_pos, int codeLength, int instr
 }
 
 
-static qboolean safe_address( instruction_t *ci, instruction_t *proc, int dataLength )
+static bool safe_address( instruction_t *ci, instruction_t *proc, int dataLength )
 {
 	if ( ci->op == OP_LOCAL ) {
 		// local address can't exceed programStack frame plus 256 bytes of passed arguments
 		if ( ci->value < 8 || ( proc && ci->value >= proc->value + 256 ) )
-			return qfalse;
-		return qtrue;
+			return false;
+		return true;
 	}
 
 	if ( ci->op == OP_CONST ) {
 		// constant address can't exceed data segment
 		if ( ci->value >= dataLength || ci->value < 0 )
-			return qfalse;
-		return qtrue;
+			return false;
+		return true;
 	}
 
-	return qfalse;
+	return false;
 }
 
 
@@ -1607,9 +1607,9 @@ void VM_ReplaceInstructions( vm_t *vm, instruction_t *buf ) {
 
 	if ( vm->index == VM_GAME ) {
 		if ( vm->crc32sum == 0x5AAE0ACC && vm->instructionCount == 251521 && vm->exactDataLength == 1872720 ) {
-			vm->forceDataMask = qtrue; // OSP server doing some bad things with memory
+			vm->forceDataMask = true; // OSP server doing some bad things with memory
 		} else {
-			vm->forceDataMask = qfalse;
+			vm->forceDataMask = false;
 		}
 	}
 
@@ -1664,7 +1664,7 @@ vm_t *VM_Restart( vm_t *vm ) {
 	}
 
 	// load the image
-	if( ( header = VM_LoadQVM( vm, qfalse ) ) == NULL ) {
+	if( ( header = VM_LoadQVM( vm, false ) ) == NULL ) {
 		Com_Printf( S_COLOR_RED "VM_Restart() failed\n" );
 		return NULL;
 	}
@@ -1787,7 +1787,7 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 	}
 
 	// load the image
-	if( ( header = VM_LoadQVM( vm, qtrue ) ) == NULL ) {
+	if( ( header = VM_LoadQVM( vm, true ) ) == NULL ) {
 		return NULL;
 	}
 
@@ -1803,7 +1803,7 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 	vm->programStack = vm->dataMask + 1;
 	vm->stackBottom = vm->programStack - PROGRAM_STACK_SIZE - PROGRAM_STACK_EXTRA;
 
-	vm->compiled = qfalse;
+	vm->compiled = false;
 
 #ifdef NO_VM_COMPILED
 	if ( interpret >= VMI_COMPILED ) {
@@ -1813,7 +1813,7 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 #else
 	if ( interpret >= VMI_COMPILED ) {
 		if ( VM_Compile( vm, header ) ) {
-			vm->compiled = qtrue;
+			vm->compiled = true;
 		}
 	}
 #endif
