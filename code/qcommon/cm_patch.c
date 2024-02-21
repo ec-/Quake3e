@@ -1276,11 +1276,11 @@ CM_TracePointThroughPatchCollide
 ====================
 */
 static void CM_TracePointThroughPatchCollide( traceWork_t *tw, const struct patchCollide_s *pc ) {
-	qboolean	frontFacing[MAX_PATCH_PLANES];
+	bool		frontFacing[MAX_PATCH_PLANES];
 	float		intersection[MAX_PATCH_PLANES];
 	float		intersect;
-	const patchPlane_t	*pp;
-	const facet_t	*facet;
+	const 		patchPlane_t	*pp;
+	const 		facet_t	*facet;
 	int			i, j, k;
 	float		offset;
 	float		d1, d2;
@@ -1301,9 +1301,9 @@ static void CM_TracePointThroughPatchCollide( traceWork_t *tw, const struct patc
 		d1 = DotProduct( tw->start, pp->plane ) - pp->plane[3] + offset;
 		d2 = DotProduct( tw->end, pp->plane ) - pp->plane[3] + offset;
 		if ( d1 <= 0 ) {
-			frontFacing[i] = qfalse;
+			frontFacing[i] = false;
 		} else {
-			frontFacing[i] = qtrue;
+			frontFacing[i] = true;
 		}
 		if ( d1 == d2 ) {
 			intersection[i] = 99999;
