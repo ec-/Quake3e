@@ -2244,11 +2244,11 @@ void Hunk_ClearToMark( void ) {
 Hunk_CheckMark
 =================
 */
-qboolean Hunk_CheckMark( void ) {
+bool Hunk_CheckMark( void ) {
 	if( hunk_low.mark || hunk_high.mark ) {
-		return qtrue;
+		return true;
 	}
-	return qfalse;
+	return false;
 }
 
 void CL_ShutdownCGame( void );
