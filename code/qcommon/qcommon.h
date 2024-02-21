@@ -1009,7 +1009,7 @@ extern	cvar_t	*com_version;
 extern	cvar_t	*com_journal;
 extern	cvar_t	*com_cameraMode;
 extern	cvar_t	*com_protocol;
-extern	qboolean com_protocolCompat;
+extern	bool 	com_protocolCompat;
 
 // both client and server must agree to pause
 extern	cvar_t	*sv_paused;
@@ -1036,11 +1036,11 @@ extern	int		time_backend;		// renderer backend time
 extern	int		com_frameTime;
 
 #ifndef DEDICATED
-extern	qboolean	gw_minimized;
+extern	bool		gw_minimized;
 extern	qboolean	gw_active;
 #endif
 
-extern	qboolean	com_errorEntered;
+extern	bool		com_errorEntered;
 
 extern	fileHandle_t	com_journalDataFile;
 

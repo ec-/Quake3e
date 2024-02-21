@@ -1560,7 +1560,7 @@ Used for streaming data out of either a
 separate file or a ZIP file.
 ===========
 */
-extern qboolean		com_fullyInitialized;
+extern bool			com_fullyInitialized;
 
 int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueFILE ) {
 	const searchpath_t	*search;

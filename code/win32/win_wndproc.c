@@ -612,7 +612,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		g_wv.hWnd = hWnd;
 		GetWindowRect( hWnd, &g_wv.winRect );
 		g_wv.winRectValid = qtrue;
-		gw_minimized = qfalse;
+		gw_minimized = false;
 		uTimerM = 0;
 		uTimerT = 0;
 
@@ -648,7 +648,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		hWinEventHook = NULL;
 		g_wv.hWnd = NULL;
 		g_wv.winRectValid = qfalse;
-		//gw_minimized = qfalse;
+		//gw_minimized = false;
 		gw_active = qfalse;
 		//WIN_EnableAltTab();
 		return 0;
@@ -710,7 +710,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 		// We can receive Active & Minimized when restoring from minimized state
 		if ( active && minimized ) {
-			gw_minimized = qtrue;
+			gw_minimized = true;
 			break;
 		}
 
@@ -826,7 +826,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			Com_Memset( &wp, 0, sizeof( wp ) );
 			wp.length = sizeof( WINDOWPLACEMENT );
 			if ( GetWindowPlacement( hWnd, &wp ) && wp.showCmd == SW_SHOWMINIMIZED )
-				gw_minimized = qtrue;
+				gw_minimized = true;
 
 			if ( g_wv.borderless )
 			{

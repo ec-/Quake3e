@@ -268,7 +268,7 @@ static int GLW_SetMode( int mode, const char *modeFS, bool fullscreen, bool vulk
 	}
 
 	gw_active = qfalse;
-	gw_minimized = qtrue;
+	gw_minimized = true;
 
 	if ( fullscreen )
 	{

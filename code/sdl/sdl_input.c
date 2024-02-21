@@ -1271,13 +1271,13 @@ void HandleEvents( void )
 						break;
 					// window states:
 					case SDL_WINDOWEVENT_HIDDEN:
-					case SDL_WINDOWEVENT_MINIMIZED:		gw_active = qfalse; gw_minimized = qtrue; break;
+					case SDL_WINDOWEVENT_MINIMIZED:		gw_active = qfalse; gw_minimized = true; break;
 					case SDL_WINDOWEVENT_SHOWN:
 					case SDL_WINDOWEVENT_RESTORED:
-					case SDL_WINDOWEVENT_MAXIMIZED:		gw_minimized = qfalse; break;
+					case SDL_WINDOWEVENT_MAXIMIZED:		gw_minimized = false; break;
 					// keyboard focus:
 					case SDL_WINDOWEVENT_FOCUS_LOST:	lastKeyDown = 0; Key_ClearStates(); gw_active = qfalse; break;
-					case SDL_WINDOWEVENT_FOCUS_GAINED:	lastKeyDown = 0; Key_ClearStates(); gw_active = qtrue; gw_minimized = qfalse;
+					case SDL_WINDOWEVENT_FOCUS_GAINED:	lastKeyDown = 0; Key_ClearStates(); gw_active = qtrue; gw_minimized = false;
 														if ( re.SetColorMappings ) {
 															re.SetColorMappings();
 														}

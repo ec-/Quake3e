@@ -68,7 +68,7 @@ cvar_t	*com_timescale;
 static cvar_t *com_fixedtime;
 cvar_t	*com_journal;
 cvar_t	*com_protocol;
-qboolean com_protocolCompat;
+bool 	com_protocolCompat;
 #ifndef DEDICATED
 cvar_t	*com_maxfps;
 cvar_t	*com_maxfpsUnfocused;
@@ -110,11 +110,11 @@ static int	lastTime;
 int			com_frameTime;
 static int	com_frameNumber;
 
-qboolean	com_errorEntered = qfalse;
-qboolean	com_fullyInitialized = qfalse;
+bool		com_errorEntered = false;
+bool		com_fullyInitialized = false;
 
 // renderer window states
-qboolean	gw_minimized = qfalse; // this will be always true for dedicated servers
+bool		gw_minimized = false; // this will be always true for dedicated servers
 #ifndef DEDICATED
 qboolean	gw_active = qtrue;
 #endif
@@ -302,7 +302,7 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 		}
 	}
 
-	com_errorEntered = qtrue;
+	com_errorEntered = true;
 
 	Cvar_Set( "com_errorCode", va( "%i", code ) );
 
@@ -350,7 +350,7 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 
 		// make sure we can get at our local stuff
 		FS_PureServerSetLoadedPaks( "", "" );
-		com_errorEntered = qfalse;
+		com_errorEntered = false;
 
 		Q_longjmp( abortframe, 1 );
 	} else if ( code == ERR_DROP ) {
@@ -366,7 +366,7 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 		VM_Forced_Unload_Done();
 
 		FS_PureServerSetLoadedPaks( "", "" );
-		com_errorEntered = qfalse;
+		com_errorEntered = false;
 
 		Q_longjmp( abortframe, 1 );
 	} else if ( code == ERR_NEED_CD ) {
@@ -384,7 +384,7 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 		}
 #endif
 		FS_PureServerSetLoadedPaks( "", "" );
-		com_errorEntered = qfalse;
+		com_errorEntered = false;
 
 		Q_longjmp( abortframe, 1 );
 	} else {
@@ -3808,9 +3808,9 @@ void Com_Init( char *commandLine ) {
 		// strip -compat suffix
 		Cvar_Set2( "protocol", va( "%i", com_protocol->integer ), qtrue );
 		// enforce legacy stream encoding but with new challenge format
-		com_protocolCompat = qtrue;
+		com_protocolCompat = true;
 	} else {
-		com_protocolCompat = qfalse;
+		com_protocolCompat = false;
 	}
 
 	Cvar_CheckRange( com_protocol, "0", NULL, CV_INTEGER );
@@ -3924,9 +3924,9 @@ void Com_Init( char *commandLine ) {
 		if ( !com_viewlog->integer ) {
 			Cvar_Set( "viewlog", "1" );
 		}
-		gw_minimized = qtrue;
+		gw_minimized = true;
 	} else {
-		gw_minimized = qfalse;
+		gw_minimized = false;
 	}
 
 	if ( com_developer->integer ) {
@@ -4020,7 +4020,7 @@ void Com_Init( char *commandLine ) {
 	Cvar_Set( "ui_singlePlayerActive", "0" );
 #endif
 
-	com_fullyInitialized = qtrue;
+	com_fullyInitialized = true;
 
 	Com_Printf( "--- Common Initialization Complete ---\n" );
 }
@@ -4336,7 +4336,7 @@ void Com_Frame( qboolean noDelay ) {
 #endif
 			Sys_ShowConsole( com_viewlog->integer, qfalse );
 #ifndef DEDICATED
-			gw_minimized = qfalse;
+			gw_minimized = false;
 			CL_StartHunkUsers();
 #endif
 		} else {
@@ -4346,7 +4346,7 @@ void Com_Frame( qboolean noDelay ) {
 #endif
 			Sys_ShowConsole( 1, qtrue );
 			SV_AddDedicatedCommands();
-			gw_minimized = qtrue;
+			gw_minimized = true;
 		}
 	}
 

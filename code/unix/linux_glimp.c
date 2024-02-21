@@ -1626,7 +1626,7 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 	window_created = qfalse;
 
 	gw_active = qfalse;
-	gw_minimized = qfalse; /* safe default */
+	gw_minimized = false; /* safe default */
 
 	win = XCreateWindow( dpy, root, 0, 0, actualWidth, actualHeight,
 		0, visinfo->depth, InputOutput, visinfo->visual, mask, &attr );
