@@ -112,7 +112,7 @@ Cbuf_Add
 int Cbuf_Add( const char *text, int pos ) {
 
 	int len = (int)strlen( text );
-	qboolean separate = qfalse;
+	bool separate = false;
 	int i;
 
 	if ( len == 0 ) {
@@ -127,7 +127,7 @@ int Cbuf_Add( const char *text, int pos ) {
 	if ( text[len - 1] == '\n' || text[len - 1] == ';' ) {
 		// command already has separator
 	} else {
-		separate = qtrue;
+		separate = true;
 		len += 1;
 	}
 
@@ -235,8 +235,8 @@ void Cbuf_Execute( void )
 	// This will keep // style comments all on one line by not breaking on
 	// a semicolon.  It will keep /* ... */ style comments all on one line by not
 	// breaking it for semicolon or newline.
-	qboolean in_star_comment = qfalse;
-	qboolean in_slash_comment = qfalse;
+	bool in_star_comment = false;
+	bool in_slash_comment = false;
 	while ( cmd_text.cursize > 0 )
 	{
 		if ( cmd_wait > 0 ) {
@@ -258,11 +258,11 @@ void Cbuf_Execute( void )
 			if ( !(quotes&1)) {
 				if ( i < cmd_text.cursize - 1 ) {
 					if ( !in_star_comment && text[i] == '/' && text[i+1] == '/' )
-						in_slash_comment = qtrue;
+						in_slash_comment = true;
 					else if ( !in_slash_comment && text[i] == '/' && text[i+1] == '*' )
-						in_star_comment = qtrue;
+						in_star_comment = true;
 					else if ( in_star_comment && text[i] == '*' && text[i+1] == '/' ) {
-						in_star_comment = qfalse;
+						in_star_comment = false;
 						// If we are in a star comment, then the part after it is valid
 						// Note: This will cause it to NUL out the terminating '/'
 						// but ExecuteString doesn't require it anyway.
@@ -274,7 +274,7 @@ void Cbuf_Execute( void )
 					break;
 			}
 			if ( !in_star_comment && (text[i] == '\n' || text[i] == '\r') ) {
-				in_slash_comment = qfalse;
+				in_slash_comment = false;
 				break;
 			}
 		}
@@ -555,7 +555,7 @@ will point into this temporary buffer.
 */
 // NOTE TTimo define that to track tokenization issues
 //#define TKN_DBG
-static void Cmd_TokenizeString2( const char *text_in, qboolean ignoreQuotes ) {
+static void Cmd_TokenizeString2( const char *text_in, bool ignoreQuotes ) {
 	const char *text;
 	char *textOut;
 
@@ -670,7 +670,7 @@ Cmd_TokenizeString
 ============
 */
 void Cmd_TokenizeString( const char *text_in ) {
-	Cmd_TokenizeString2( text_in, qfalse );
+	Cmd_TokenizeString2( text_in, false );
 }
 
 
@@ -680,7 +680,7 @@ Cmd_TokenizeStringIgnoreQuotes
 ============
 */
 void Cmd_TokenizeStringIgnoreQuotes( const char *text_in ) {
-	Cmd_TokenizeString2( text_in, qtrue );
+	Cmd_TokenizeString2( text_in, true );
 }
 
 
@@ -805,14 +805,14 @@ Remove cgame-created commands
 void Cmd_RemoveCgameCommands( void )
 {
 	const cmd_function_t *cmd;
-	qboolean removed;
+	bool removed;
 
 	do {
-		removed = qfalse;
+		removed = false;
 		for ( cmd = cmd_functions ; cmd ; cmd = cmd->next ) {
 			if ( cmd->function == NULL ) {
 				Cmd_RemoveCommand( cmd->name );
-				removed = qtrue;
+				removed = true;
 				break;
 			}
 		}
@@ -839,7 +839,7 @@ void Cmd_CommandCompletion( void(*callback)(const char *s) ) {
 Cmd_CompleteArgument
 ============
 */
-qboolean Cmd_CompleteArgument( const char *command, const char *args, int argNum ) {
+bool Cmd_CompleteArgument( const char *command, const char *args, int argNum ) {
 	const cmd_function_t *cmd;
 
 	for( cmd = cmd_functions; cmd; cmd = cmd->next ) {
@@ -847,11 +847,11 @@ qboolean Cmd_CompleteArgument( const char *command, const char *args, int argNum
 			if ( cmd->complete ) {
 				cmd->complete( args, argNum );
 			}
-			return qtrue;
+			return true;
 		}
 	}
 
-	return qfalse;
+	return false;
 }
 
 

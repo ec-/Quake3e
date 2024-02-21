@@ -4782,7 +4782,7 @@ void Field_CompleteCommand( const char *cmd, qboolean doCommands, qboolean doCva
 		}
 		else
 		{
-			qboolean argumentCompleted = Cmd_CompleteArgument( baseCmd, cmd, completionArgument );
+			bool argumentCompleted = Cmd_CompleteArgument( baseCmd, cmd, completionArgument );
 			if ( ( matchCount == 1 || argumentCompleted ) && doCvars )
 			{
 				if ( cmd[0] == '/' || cmd[0] == '\\' )
