@@ -1841,11 +1841,11 @@ typedef struct zone_stats_s {
 } zone_stats_t;
 
 
-static void Zone_Stats( const char *name, const memzone_t *z, qboolean printDetails, zone_stats_t *stats )
+static void Zone_Stats( const char *name, const memzone_t *z, bool printDetails, zone_stats_t *stats )
 {
-	const memblock_t *block;
-	const memzone_t *zone;
-	zone_stats_t st;
+	const memblock_t 	*block;
+	const memzone_t 	*zone;
+	zone_stats_t 		st;
 
 	memset( &st, 0, sizeof( st ) );
 	zone = z;
