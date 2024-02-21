@@ -1278,7 +1278,7 @@ int64_t	Sys_Microseconds( void );
 
 void	Sys_SnapVector( float *vector );
 
-qboolean Sys_RandomBytes( byte *string, int len );
+bool 	Sys_RandomBytes( byte *string, int len );
 
 // the system console is shown when a dedicated server is running
 void	Sys_DisplaySystemConsole( qboolean show );

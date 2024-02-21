@@ -38,13 +38,13 @@ Sys_Milliseconds
 */
 int Sys_Milliseconds( void )
 {
-	static qboolean	initialized = qfalse;
+	static bool	initialized = false;
 	static DWORD sys_timeBase;
 	int	sys_curtime;
 
 	if ( !initialized ) {
 		sys_timeBase = timeGetTime();
-		initialized = qtrue;
+		initialized = true;
 	}
 
 	sys_curtime = timeGetTime() - sys_timeBase;
@@ -58,22 +58,22 @@ int Sys_Milliseconds( void )
 Sys_RandomBytes
 ================
 */
-qboolean Sys_RandomBytes( byte *string, int len )
+bool Sys_RandomBytes( byte *string, int len )
 {
 	HCRYPTPROV  prov;
 
 	if( !CryptAcquireContext( &prov, NULL, NULL,
 		PROV_RSA_FULL, CRYPT_VERIFYCONTEXT ) )  {
 
-		return qfalse;
+		return false;
 	}
 
 	if( !CryptGenRandom( prov, len, (BYTE *)string ) )  {
 		CryptReleaseContext( prov, 0 );
-		return qfalse;
+		return false;
 	}
 	CryptReleaseContext( prov, 0 );
-	return qtrue;
+	return true;
 }
 
 
