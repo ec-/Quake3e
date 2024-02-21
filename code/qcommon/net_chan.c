@@ -83,7 +83,7 @@ Netchan_Setup
 called to open a channel to a remote system
 ==============
 */
-void Netchan_Setup( netsrc_t sock, netchan_t *chan, const netadr_t *adr, int port, int challenge, qboolean compat )
+void Netchan_Setup( netsrc_t sock, netchan_t *chan, const netadr_t *adr, int port, int challenge, bool compat )
 {
 	Com_Memset (chan, 0, sizeof(*chan));
 	
@@ -158,7 +158,7 @@ void Netchan_TransmitNextFragment( netchan_t *chan ) {
 	// can tell there aren't more to follow
 	if ( chan->unsentFragmentStart == chan->unsentLength && fragmentLength != FRAGMENT_SIZE ) {
 		chan->outgoingSequence++;
-		chan->unsentFragments = qfalse;
+		chan->unsentFragments = false;
 	}
 }
 
@@ -182,7 +182,7 @@ void Netchan_Transmit( netchan_t *chan, int length, const byte *data ) {
 
 	// fragment large reliable messages
 	if ( length >= FRAGMENT_SIZE ) {
-		chan->unsentFragments = qtrue;
+		chan->unsentFragments = true;
 		chan->unsentLength = length;
 		Com_Memcpy( chan->unsentBuffer, data, length );
 
@@ -228,7 +228,7 @@ void Netchan_Transmit( netchan_t *chan, int length, const byte *data ) {
 =================
 Netchan_Process
 
-Returns qfalse if the message should not be processed due to being
+Returns false if the message should not be processed due to being
 out of order or a fragment.
 
 Msg must be large enough to hold MAX_MSGLEN, because if this is the
@@ -236,10 +236,10 @@ final fragment of a multi-part message, the entire thing will be
 copied out.
 =================
 */
-qboolean Netchan_Process( netchan_t *chan, msg_t *msg ) {
+bool Netchan_Process( netchan_t *chan, msg_t *msg ) {
 	int			sequence;
 	int			fragmentStart, fragmentLength;
-	qboolean	fragmented;
+	bool	fragmented;
 
 	// XOR unscramble all data in the packet after the header
 //	Netchan_UnScramblePacket( msg );
@@ -251,9 +251,9 @@ qboolean Netchan_Process( netchan_t *chan, msg_t *msg ) {
 	// check for fragment information
 	if ( sequence & FRAGMENT_BIT ) {
 		sequence &= ~FRAGMENT_BIT;
-		fragmented = qtrue;
+		fragmented = true;
 	} else {
-		fragmented = qfalse;
+		fragmented = false;
 	}
 
 	// read the qport if we are a server
@@ -266,7 +266,7 @@ qboolean Netchan_Process( netchan_t *chan, msg_t *msg ) {
 
 		// UDP spoofing protection
 		if (NETCHAN_GENCHECKSUM( chan->challenge, sequence ) != checksum )
-			return qfalse;
+			return false;
 	}
 
 	// read the fragment information
@@ -303,7 +303,7 @@ qboolean Netchan_Process( netchan_t *chan, msg_t *msg ) {
 				,  sequence
 				, chan->incomingSequence );
 		}
-		return qfalse;
+		return false;
 	}
 
 	//
@@ -343,7 +343,7 @@ qboolean Netchan_Process( netchan_t *chan, msg_t *msg ) {
 			}
 			// we can still keep the part that we have so far,
 			// so we don't need to clear chan->fragmentLength
-			return qfalse;
+			return false;
 		}
 
 		// copy the fragment to the fragment buffer
@@ -353,7 +353,7 @@ qboolean Netchan_Process( netchan_t *chan, msg_t *msg ) {
 				Com_Printf ("%s:illegal fragment length\n"
 				, NET_AdrToString( &chan->remoteAddress ) );
 			}
-			return qfalse;
+			return false;
 		}
 
 		Com_Memcpy( chan->fragmentBuffer + chan->fragmentLength, 
@@ -363,14 +363,14 @@ qboolean Netchan_Process( netchan_t *chan, msg_t *msg ) {
 
 		// if this wasn't the last fragment, don't process anything
 		if ( fragmentLength == FRAGMENT_SIZE ) {
-			return qfalse;
+			return false;
 		}
 
 		if ( chan->fragmentLength > msg->maxsize ) {
 			Com_Printf( "%s:fragmentLength %i > msg->maxsize\n"
 				, NET_AdrToString( &chan->remoteAddress ),
 				chan->fragmentLength );
-			return qfalse;
+			return false;
 		}
 
 		// copy the full message over the partial fragment
@@ -388,7 +388,7 @@ qboolean Netchan_Process( netchan_t *chan, msg_t *msg ) {
 		// clients were not acking fragmented messages
 		chan->incomingSequence = sequence;
 		
-		return qtrue;
+		return true;
 	}
 
 	//
@@ -396,7 +396,7 @@ qboolean Netchan_Process( netchan_t *chan, msg_t *msg ) {
 	//
 	chan->incomingSequence = sequence;
 
-	return qtrue;
+	return true;
 }
 
 
@@ -428,7 +428,7 @@ typedef struct {
 static loopback_t loopbacks[2]; // NS_CLIENT, NS_SERVER
 
 
-qboolean NET_GetLoopPacket( netsrc_t sock, netadr_t *net_from, msg_t *net_message )
+bool NET_GetLoopPacket( netsrc_t sock, netadr_t *net_from, msg_t *net_message )
 {
 	int		i;
 	loopback_t	*loop;
@@ -439,7 +439,7 @@ qboolean NET_GetLoopPacket( netsrc_t sock, netadr_t *net_from, msg_t *net_messag
 		loop->get = loop->send - MAX_LOOPBACK;
 
 	if ( loop->send - loop->get <= 0 )
-		return qfalse;
+		return false;
 
 	i = loop->get & (MAX_LOOPBACK-1);
 	loop->get++;
@@ -448,7 +448,7 @@ qboolean NET_GetLoopPacket( netsrc_t sock, netadr_t *net_from, msg_t *net_messag
 	net_message->cursize = loop->msgs[i].datalen;
 	Com_Memset (net_from, 0, sizeof(*net_from));
 	net_from->type = NA_LOOPBACK;
-	return qtrue;
+	return true;
 }
 
 

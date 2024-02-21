@@ -59,9 +59,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // msg.c
 //
 typedef struct {
-	qboolean	allowoverflow;	// if false, do a Com_Error
-	qboolean	overflowed;		// set to true if the buffer size failed (with allowoverflow set)
-	qboolean	oob;			// raw out-of-band operation, no static huffman encoding/decoding
+	bool	allowoverflow;	// if false, do a Com_Error
+	bool	overflowed;		// set to true if the buffer size failed (with allowoverflow set)
+	bool	oob;			// raw out-of-band operation, no static huffman encoding/decoding
 	byte	*data;
 	int		maxsize;
 	int		maxbits;			// maxsize in bits, for overflow checks
@@ -200,19 +200,19 @@ void		NET_SendPacket( netsrc_t sock, int length, const void *data, const netadr_
 void		QDECL NET_OutOfBandPrint( netsrc_t net_socket, const netadr_t *adr, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
 void		NET_OutOfBandCompress( netsrc_t sock, const netadr_t *adr, const byte *data, int len );
 
-qboolean	NET_CompareAdr( const netadr_t *a, const netadr_t *b );
-qboolean	NET_CompareBaseAdrMask( const netadr_t *a, const netadr_t *b, unsigned int netmask );
-qboolean	NET_CompareBaseAdr( const netadr_t *a, const netadr_t *b );
-qboolean	NET_IsLocalAddress( const netadr_t *adr );
+bool	NET_CompareAdr( const netadr_t *a, const netadr_t *b );
+bool	NET_CompareBaseAdrMask( const netadr_t *a, const netadr_t *b, unsigned int netmask );
+bool	NET_CompareBaseAdr( const netadr_t *a, const netadr_t *b );
+bool	NET_IsLocalAddress( const netadr_t *adr );
 const char	*NET_AdrToString( const netadr_t *a );
 const char	*NET_AdrToStringwPort( const netadr_t *a );
 int         NET_StringToAdr( const char *s, netadr_t *a, netadrtype_t family );
-qboolean	NET_GetLoopPacket( netsrc_t sock, netadr_t *net_from, msg_t *net_message );
+bool	NET_GetLoopPacket( netsrc_t sock, netadr_t *net_from, msg_t *net_message );
 #ifdef USE_IPV6
 void		NET_JoinMulticast6( void );
 void		NET_LeaveMulticast6( void );
 #endif
-qboolean	NET_Sleep( int timeout );
+bool	NET_Sleep( int timeout );
 
 #define	MAX_PACKETLEN	1400	// max size of a network packet
 
@@ -251,7 +251,7 @@ typedef struct {
 
 	// outgoing fragment buffer
 	// we need to space out the sending of large fragmented messages
-	qboolean	unsentFragments;
+	bool	unsentFragments;
 	int			unsentFragmentStart;
 	int			unsentLength;
 	byte		unsentBuffer[MAX_MSGLEN];
@@ -260,18 +260,18 @@ typedef struct {
 	int			lastSentTime;
 	int			lastSentSize;
 
-	qboolean	compat; // ioq3 extension
-	qboolean	isLANAddress;
+	bool	compat; // ioq3 extension
+	bool	isLANAddress;
 
 } netchan_t;
 
 void Netchan_Init( int qport );
-void Netchan_Setup( netsrc_t sock, netchan_t *chan, const netadr_t *adr, int port, int challenge, qboolean compat );
+void Netchan_Setup( netsrc_t sock, netchan_t *chan, const netadr_t *adr, int port, int challenge, bool compat );
 
 void Netchan_Transmit( netchan_t *chan, int length, const byte *data );
 void Netchan_TransmitNextFragment( netchan_t *chan );
 
-qboolean Netchan_Process( netchan_t *chan, msg_t *msg );
+bool Netchan_Process( netchan_t *chan, msg_t *msg );
 
 
 /*
@@ -751,7 +751,7 @@ void FS_RestorePure( void );
 int FS_Home_FOpenFileRead( const char *filename, fileHandle_t *file );
 
 bool FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName );
-// returns qtrue if a file is in the PAK file, otherwise qfalse
+// returns true if a file is in the PAK file, otherwise false
 
 int		FS_PakIndexForHandle( fileHandle_t f );
 
@@ -899,8 +899,8 @@ void Field_CompleteCommand( const char *cmd, bool doCommands, bool doCvars );
 
 void Con_ResetHistory( void );
 void Con_SaveField( const field_t *field );
-qboolean Con_HistoryGetPrev( field_t *field );
-qboolean Con_HistoryGetNext( field_t *field );
+bool Con_HistoryGetPrev( field_t *field );
+bool Con_HistoryGetNext( field_t *field );
 
 /*
 ==============================================================
@@ -981,7 +981,7 @@ void		Com_StartupVariable( const char *match );
 
 void		Com_WriteConfiguration( void );
 int			Com_HexStrToInt( const char *str );
-qboolean	Com_GetHashColor( const char *str, byte *color );
+bool	Com_GetHashColor( const char *str, byte *color );
 
 
 static ID_INLINE unsigned int log2pad( unsigned int v, int roundup )
@@ -1281,17 +1281,17 @@ void	Sys_SnapVector( float *vector );
 bool 	Sys_RandomBytes( byte *string, int len );
 
 // the system console is shown when a dedicated server is running
-void	Sys_DisplaySystemConsole( qboolean show );
+void	Sys_DisplaySystemConsole( bool show );
 
 void	Sys_ShowConsole( int level, bool quitOnClose );
 void	Sys_SetErrorText( const char *text );
 
 void	Sys_SendPacket( int length, const void *data, const netadr_t *to );
 
-qboolean	Sys_StringToAdr( const char *s, netadr_t *a, netadrtype_t family );
+bool	Sys_StringToAdr( const char *s, netadr_t *a, netadrtype_t family );
 //Does NOT parse port numbers, only base addresses.
 
-qboolean	Sys_IsLANAddress(const netadr_t *adr);
+bool	Sys_IsLANAddress(const netadr_t *adr);
 void		Sys_ShowIP(void);
 
 bool	Sys_Mkdir( const char *path );
