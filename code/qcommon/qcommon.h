@@ -116,7 +116,7 @@ int   MSG_ReadEntitynum(msg_t *sb);
 void MSG_WriteDeltaUsercmdKey( msg_t *msg, int key, const usercmd_t *from, const usercmd_t *to );
 void MSG_ReadDeltaUsercmdKey( msg_t *msg, int key, const usercmd_t *from, usercmd_t *to );
 
-void MSG_WriteDeltaEntity( msg_t *msg, const entityState_t *from, const entityState_t *to, qboolean force );
+void MSG_WriteDeltaEntity( msg_t *msg, const entityState_t *from, const entityState_t *to, bool force );
 void MSG_ReadDeltaEntity( msg_t *msg, const entityState_t *from, entityState_t *to, int number );
 
 void MSG_WriteDeltaPlayerstate( msg_t *msg, const playerState_t *from, const playerState_t *to );
@@ -569,7 +569,7 @@ void	Cvar_Update( vmCvar_t *vmCvar, int privateFlag );
 void 	Cvar_Set( const char *var_name, const char *value );
 // will create the variable with no flags if it doesn't exist
 
-cvar_t	*Cvar_Set2(const char *var_name, const char *value, qboolean force);
+cvar_t	*Cvar_Set2(const char *var_name, const char *value, bool force);
 // same as Cvar_Set, but allows more control over setting of cvar
 
 void	Cvar_SetSafe( const char *var_name, const char *value );
@@ -583,7 +583,7 @@ void	Cvar_SetIntegerValue( const char *var_name, int value );
 void	Cvar_SetValueSafe( const char *var_name, float value );
 // expands value to a string and calls Cvar_Set/Cvar_SetSafe
 
-qboolean Cvar_SetModified( const char *var_name, qboolean modified );
+bool 	Cvar_SetModified( const char *var_name, bool modified );
 
 float	Cvar_VariableValue( const char *var_name );
 int		Cvar_VariableIntegerValue( const char *var_name );
@@ -606,7 +606,7 @@ void 	Cvar_ForceReset(const char *var_name);
 void	Cvar_SetCheatState( void );
 // reset all testing vars to a safe value
 
-qboolean Cvar_Command( void );
+bool Cvar_Command( void );
 // called by Cmd_ExecuteString when Cmd_Argv(0) doesn't match a known
 // command.  Returns true if the command was a variable reference that
 // was handled. (print or change)
@@ -629,7 +629,7 @@ void	Cvar_SetGroup( cvar_t *var, cvarGroup_t group );
 int		Cvar_CheckGroup( cvarGroup_t group );
 void	Cvar_ResetGroup( cvarGroup_t group, bool resetModifiedFlags );
 
-void	Cvar_Restart( qboolean unsetVM );
+void	Cvar_Restart( bool unsetVM );
 
 void	Cvar_CompleteCvarName( const char *args, int argNum );
 

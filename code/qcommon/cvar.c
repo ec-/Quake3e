@@ -37,7 +37,7 @@ static int	cvar_group[ CVG_MAX ];
 
 #define FILE_HASH_SIZE		256
 static	cvar_t	*hashTable[FILE_HASH_SIZE];
-static	qboolean cvar_sort = qfalse;
+static	bool cvar_sort = false;
 
 /*
 ================
@@ -66,25 +66,25 @@ static long generateHashValue( const char *fname ) {
 Cvar_ValidateName
 ============
 */
-static qboolean Cvar_ValidateName( const char *name ) {
+static bool Cvar_ValidateName( const char *name ) {
 	const char *s;
 	int c;
 	
 	if ( !name ) {
-		return qfalse;
+		return false;
 	}
 
 	s = name;
 	while ( (c = *s++) != '\0' ) {
 		if ( c == '\\' || c == '\"' || c == ';' || c == '%' || c <= ' ' || c >= '~' )
-			return qfalse;
+			return false;
 	}
 
 	if ( (s - name) >= MAX_STRING_CHARS ) {
-		return qfalse;
+		return false;
 	}
 
-	return qtrue;
+	return true;
 }
 
 
@@ -231,19 +231,19 @@ void Cvar_CommandCompletion( void (*callback)(const char *s) )
 }
 
 
-static qboolean Cvar_IsIntegral( const char *s ) {
+static bool Cvar_IsIntegral( const char *s ) {
 
 	if ( *s == '-' && *(s+1) != '\0' )
 		s++;
 
 	while ( *s != '\0' ) {
 		if ( *s < '0' || *s > '9' ) {
-			return qfalse;
+			return false;
 		}
 		s++;
 	}
 
-	return qtrue;
+	return true;
 }
 
 
@@ -252,7 +252,7 @@ static qboolean Cvar_IsIntegral( const char *s ) {
 Cvar_Validate
 ============
 */
-static const char *Cvar_Validate( cvar_t *var, const char *value, qboolean warn )
+static const char *Cvar_Validate( cvar_t *var, const char *value, bool warn )
 {
 	static char intbuf[ 32 ];
 	const char *limit;
@@ -371,7 +371,7 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 	if(var)
 	{
 		int vm_created = (flags & CVAR_VM_CREATED);
-		var_value = Cvar_Validate(var, var_value, qfalse);
+		var_value = Cvar_Validate(var, var_value, false);
 
 		// Make sure the game code cannot mark engine-added variables as gamecode vars
 		if(var->flags & CVAR_VM_CREATED)
@@ -446,7 +446,7 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 
 			s = var->latchedString;
 			var->latchedString = NULL;	// otherwise cvar_set2 would free it
-			Cvar_Set2( var_name, s, qtrue );
+			Cvar_Set2( var_name, s, true );
 			Z_Free( s );
 		}
 
@@ -483,7 +483,7 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 		
 	var->name = CopyString( var_name );
 	var->string = CopyString( var_value );
-	var->modified = qtrue;
+	var->modified = true;
 	var->modificationCount = 1;
 	var->value = Q_atof( var->string );
 	var->integer = atoi( var->string );
@@ -516,7 +516,7 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 	hashTable[hash] = var;
 
 	 // sort on write
-	cvar_sort = qtrue;
+	cvar_sort = true;
 
 	return var;
 }
@@ -620,7 +620,7 @@ static void Cvar_Print( const cvar_t *v ) {
 Cvar_Set2
 ============
 */
-cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
+cvar_t *Cvar_Set2( const char *var_name, const char *value, bool force ) {
 	cvar_t	*var;
 
 //	Com_DPrintf( "Cvar_Set2: %s %s\n", var_name, value );
@@ -680,7 +680,7 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 	if ( !value )
 		value = var->resetString;
 
-	value = Cvar_Validate( var, value, qtrue );
+	value = Cvar_Validate( var, value, true );
 
 	if ( (var->flags & CVAR_LATCH) && var->latchedString )
 	{
@@ -718,7 +718,7 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 
 			Com_Printf( "%s will be changed upon restarting.\n", var_name );
 			var->latchedString = CopyString( value );
-			var->modified = qtrue;
+			var->modified = true;
 			var->modificationCount++;
 			cvar_group[ var->group ] = 1;
 			return var;
@@ -736,7 +736,7 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 	if ( strcmp( value, var->string ) == 0 )
 		return var; // not changed
 
-	var->modified = qtrue;
+	var->modified = true;
 	var->modificationCount++;
 	cvar_group[ var->group ] = 1;
 	
@@ -756,7 +756,7 @@ Cvar_Set
 ============
 */
 void Cvar_Set( const char *var_name, const char *value) {
-	Cvar_Set2 (var_name, value, qtrue);
+	Cvar_Set2 (var_name, value, true);
 }
 
 
@@ -768,7 +768,7 @@ Cvar_SetSafe
 void Cvar_SetSafe( const char *var_name, const char *value )
 {
 	unsigned flags = Cvar_Flags( var_name );
-	qboolean force = qtrue;
+	bool force = true;
 
 	if ( flags != CVAR_NONEXISTENT )
 	{
@@ -786,7 +786,7 @@ void Cvar_SetSafe( const char *var_name, const char *value )
 		// don't let VMs or server change engine latched cvars instantly
 		//if ( ( flags & CVAR_LATCH ) && !( flags & CVAR_VM_CREATED ) )
 		//{
-		//	force = qfalse;
+		//	force = false;
 		//}
 	}
 
@@ -800,7 +800,7 @@ Cvar_SetLatched
 ============
 */
 void Cvar_SetLatched( const char *var_name, const char *value) {
-	Cvar_Set2 (var_name, value, qfalse);
+	Cvar_Set2 (var_name, value, false);
 }
 
 
@@ -856,7 +856,7 @@ void Cvar_SetValueSafe( const char *var_name, float value )
 Cvar_SetModified
 ============
 */
-qboolean Cvar_SetModified( const char *var_name, qboolean modified )
+bool Cvar_SetModified( const char *var_name, bool modified )
 {
 	cvar_t	*var;
 
@@ -864,11 +864,11 @@ qboolean Cvar_SetModified( const char *var_name, qboolean modified )
 	if ( var ) 
 	{
 		var->modified = modified;
-		return qtrue;
+		return true;
 	}
 	else 
 	{
-		return qfalse;
+		return false;
 	}
 }
 
@@ -879,7 +879,7 @@ Cvar_Reset
 ============
 */
 void Cvar_Reset( const char *var_name ) {
-	Cvar_Set2( var_name, NULL, qfalse );
+	Cvar_Set2( var_name, NULL, false );
 }
 
 /*
@@ -889,7 +889,7 @@ Cvar_ForceReset
 */
 void Cvar_ForceReset(const char *var_name)
 {
-	Cvar_Set2(var_name, NULL, qtrue);
+	Cvar_Set2(var_name, NULL, true);
 }
 
 /*
@@ -928,24 +928,24 @@ Cvar_Command
 Handles variable inspection and changing from the console
 ============
 */
-qboolean Cvar_Command( void ) {
+bool Cvar_Command( void ) {
 	cvar_t	*v;
 
 	// check variables
 	v = Cvar_FindVar (Cmd_Argv(0));
 	if (!v) {
-		return qfalse;
+		return false;
 	}
 
 	// perform a variable print or set
 	if ( Cmd_Argc() == 1 ) {
 		Cvar_Print( v );
-		return qtrue;
+		return true;
 	}
 
 	// set the value if forcing isn't required
-	Cvar_Set2( v->name, Cmd_ArgsFrom( 1 ), qfalse );
-	return qtrue;
+	Cvar_Set2( v->name, Cmd_ArgsFrom( 1 ), false );
+	return true;
 }
 
 
@@ -999,7 +999,7 @@ static void Cvar_Toggle_f( void ) {
 
 	if ( c == 2 ) {
 		Cvar_Set2( Cmd_Argv( 1 ), va( "%d", !Cvar_VariableValue( Cmd_Argv( 1 ) ) ), 
-			qfalse );
+			false );
 		return;
 	}
 
@@ -1014,13 +1014,13 @@ static void Cvar_Toggle_f( void ) {
 	// behaviour is the same as no match (set to the first argument)
 	for ( i = 2; i + 1 < c; i++ ) {
 		if ( strcmp( curval, Cmd_Argv( i ) ) == 0 ) {
-			Cvar_Set2( Cmd_Argv( 1 ), Cmd_Argv(i + 1), qfalse );
+			Cvar_Set2( Cmd_Argv( 1 ), Cmd_Argv(i + 1), false );
 			return;
 		}
 	}
 
 	// fallback
-	Cvar_Set2( Cmd_Argv( 1 ), Cmd_Argv( 2 ), qfalse );
+	Cvar_Set2( Cmd_Argv( 1 ), Cmd_Argv( 2 ), false );
 }
 
 
@@ -1049,7 +1049,7 @@ static void Cvar_Set_f( void ) {
 		return;
 	}
 
-	v = Cvar_Set2 (Cmd_Argv(1), Cmd_ArgsFrom(2), qfalse);
+	v = Cvar_Set2 (Cmd_Argv(1), Cmd_ArgsFrom(2), false);
 	if( !v ) {
 		return;
 	}
@@ -1162,7 +1162,7 @@ static funcType_t GetFuncType( void )
 }
 
 
-static qboolean AllowEmptyCvar( funcType_t ftype ) 
+static bool AllowEmptyCvar( funcType_t ftype ) 
 {
 	switch ( ftype ) {
 		case FT_ADD:
@@ -1170,9 +1170,9 @@ static qboolean AllowEmptyCvar( funcType_t ftype )
 		case FT_MUL:
 		case FT_DIV:
 		case FT_MOD:
-			return qfalse;
+			return false;
 		default:
-			return qtrue;
+			return true;
 	};
 }
 
@@ -1324,7 +1324,7 @@ static void Cvar_Func_f( void ) {
 			sprintf( value, "%f", fval );
 	}
 
-	Cvar_Set2( cvar_name, value, qfalse );
+	Cvar_Set2( cvar_name, value, false );
 }
 
 
@@ -1333,7 +1333,7 @@ static void Cvar_Func_f( void ) {
 Cvar_WriteVariables
 
 Appends lines containing "set variable value" for all variables
-with the archive flag set to qtrue.
+with the archive flag set to true.
 ============
 */
 void Cvar_WriteVariables( fileHandle_t f )
@@ -1343,7 +1343,7 @@ void Cvar_WriteVariables( fileHandle_t f )
 	const char	*value;
 
 	if ( cvar_sort ) {
-		cvar_sort = qfalse;
+		cvar_sort = false;
 		Cvar_Sort();
 	}
 
@@ -1384,7 +1384,7 @@ static void Cvar_List_f( void ) {
 
 	// sort to get more predictable output
 	if ( cvar_sort ) {
-		cvar_sort = qfalse;
+		cvar_sort = false;
 		Cvar_Sort();
 	}
 
@@ -1627,7 +1627,7 @@ and variables added via the VMs if requested.
 ============
 */
 
-void Cvar_Restart( qboolean unsetVM )
+void Cvar_Restart( bool unsetVM )
 {
 	cvar_t *curvar = cvar_vars;
 
@@ -1644,7 +1644,7 @@ void Cvar_Restart( qboolean unsetVM )
 		if(!(curvar->flags & (CVAR_ROM | CVAR_INIT | CVAR_NORESTART)))
 		{
 			// Just reset the rest to their default values.
-			Cvar_Set2(curvar->name, curvar->resetString, qfalse);
+			Cvar_Set2(curvar->name, curvar->resetString, false);
 		}
 		
 		curvar = curvar->next;
@@ -1652,7 +1652,7 @@ void Cvar_Restart( qboolean unsetVM )
 }
 
 
-static void Cvar_Trim( qboolean verbose )
+static void Cvar_Trim( bool verbose )
 {
 	cvar_t *curvar = cvar_vars;
 	while ( curvar )
@@ -1681,7 +1681,7 @@ Resets all cvars to their hardcoded values
 */
 static void Cvar_Restart_f( void )
 {
-	Cvar_Restart( qfalse );
+	Cvar_Restart( false );
 }
 
 
@@ -1695,8 +1695,8 @@ This will only accept to run when both the server and client are running unless 
 */
 static void Cvar_Trim_f( void )
 {
-	qboolean forced = qfalse;
-	qboolean verbose = qtrue;
+	bool forced = false;
+	bool verbose = true;
 	int i;
 
 	for ( i = 1; i < Cmd_Argc(); i++ )
@@ -1708,9 +1708,9 @@ static void Cvar_Trim_f( void )
 			while ( *s != '\0' )
 			{
 				if ( *s == 'f' ) // force cleanup
-					forced = qtrue;
+					forced = true;
 				else if ( *s == 's' ) // silent mode
-					verbose = qfalse;
+					verbose = false;
 				s++;
 			}
 		}
@@ -1756,14 +1756,14 @@ const char *Cvar_InfoString( int bit, bool *truncated )
 	// sort to get more predictable output
 	if ( cvar_sort )
 	{
-		cvar_sort = qfalse;
+		cvar_sort = false;
 		Cvar_Sort();
 	}
 
 	info[0] = '\0';
 	user_count = 0;
 	vm_count = 0;
-	allSet = qtrue; // this will be qfalse on overflow
+	allSet = true; // this will be false on overflow
 
 	for ( var = cvar_vars; var; var = var->next )
 	{
@@ -1942,7 +1942,7 @@ void Cvar_ResetGroup( cvarGroup_t group, bool resetModifiedFlags ) {
 			int i;
 			for ( i = 0; i < cvar_numIndexes; i++ ) {
 				if ( cvar_indexes[ i ].group == group && cvar_indexes[ i ].name ) {
-					cvar_indexes[ i ].modified = qfalse;
+					cvar_indexes[ i ].modified = false;
 				}
 			}
 		}
