@@ -35,7 +35,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../renderervk/tr_local.h"
 #endif
 
-static qboolean signalcaught = qfalse;
+static bool signalcaught = false;
 
 extern void NORETURN Sys_Exit( int code );
 
@@ -43,7 +43,7 @@ static void signal_handler( int sig )
 {
 	char msg[32];
 
-	if ( signalcaught == qtrue )
+	if ( signalcaught == true )
 	{
 		printf( "DOUBLE SIGNAL FAULT: Received signal %d, exiting...\n", sig );
 		Sys_Exit( 1 ); // abstraction
@@ -60,7 +60,7 @@ static void signal_handler( int sig )
 	}
 #endif
 
-	signalcaught = qtrue;
+	signalcaught = true;
 	sprintf( msg, "Signal caught (%d)", sig );
 	VM_Forced_Unload_Start();
 #ifndef DEDICATED

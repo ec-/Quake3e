@@ -194,11 +194,11 @@ void IN_JoyMove( void )
   for( i = 0; i < 16; i++ ) {
 
     if( ( axes & ( 1 << i ) ) && !( old_axes & ( 1 << i ) ) ) {
-      Sys_QueEvent( 0, SE_KEY, joy_keys[i], qtrue, 0, NULL );
+      Sys_QueEvent( 0, SE_KEY, joy_keys[i], true, 0, NULL );
     }
 
     if( !( axes & ( 1 << i ) ) && ( old_axes & ( 1 << i ) ) ) {
-      Sys_QueEvent( 0, SE_KEY, joy_keys[i], qfalse, 0, NULL );
+      Sys_QueEvent( 0, SE_KEY, joy_keys[i], false, 0, NULL );
     }
   }
 

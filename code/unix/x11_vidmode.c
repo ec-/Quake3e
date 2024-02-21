@@ -39,18 +39,18 @@ static sym_t v_list[] =
 	{ (void**)&_XF86VidModeSetGammaRamp, "XF86VidModeSetGammaRamp" }
 };
 
-qboolean VidMode_Init( void )
+bool VidMode_Init( void )
 {
 	int ver_major = 0;
 	int ver_minor = 0;
 	int event_base, error_base;
 	int i;
 
-	glw_state.vidmode_ext = qfalse;
-	glw_state.vidmode_gamma = qfalse;
+	glw_state.vidmode_ext = false;
+	glw_state.vidmode_gamma = false;
 
 	if ( !dpy )
-		return qfalse;
+		return false;
 
 	if ( v_lib == NULL )
 	{
@@ -84,9 +84,9 @@ qboolean VidMode_Init( void )
 
 	Com_Printf( "...VidMode extension version %i.%i detected.\n", ver_major, ver_minor );
 
-	glw_state.vidmode_ext = qtrue;
+	glw_state.vidmode_ext = true;
 	
-	if ( glw_state.desktop_ok == qfalse )
+	if ( glw_state.desktop_ok == false )
 	{
 		XF86VidModeModeLine c;
 		int n;
@@ -94,7 +94,7 @@ qboolean VidMode_Init( void )
 		{
 			glw_state.desktop_width = c.hdisplay;
 			glw_state.desktop_height = c.vdisplay;
-			glw_state.desktop_ok = qtrue;
+			glw_state.desktop_ok = true;
 		}
 		else
 		{
@@ -117,14 +117,14 @@ qboolean VidMode_Init( void )
 	{
 		_XF86VidModeGetGamma( dpy, scrnum, &vidmode_InitialGamma );
 		Com_Printf( "...using VidMode gamma extension.\n" );
-		glw_state.vidmode_gamma = qtrue;
+		glw_state.vidmode_gamma = true;
 	}
 
-	return qtrue;
+	return true;
 
 __fail:
 	VidMode_Done();
-	return qfalse;
+	return false;
 }
 
 
@@ -136,8 +136,8 @@ void VidMode_Done( void )
 		v_lib = NULL;
 	}
 
-	glw_state.vidmode_ext = qfalse;
-	glw_state.vidmode_gamma = qfalse;
+	glw_state.vidmode_ext = false;
+	glw_state.vidmode_gamma = false;
 }
 
 
@@ -154,7 +154,7 @@ void VidMode_SetGamma( unsigned char red[256], unsigned char green[256], unsigne
 	if ( BuildGammaRampTable( red, green, blue, size, table ) )
 	{
 		_XF86VidModeSetGammaRamp( dpy, scrnum, size, table[0], table[1], table[2] );
-		glw_state.gammaSet = qtrue;
+		glw_state.gammaSet = true;
 	}
 }
 
@@ -171,7 +171,7 @@ void VidMode_RestoreGamma( void )
 }
 
 
-qboolean VidMode_SetMode( int *width, int *height, int *rate )
+bool VidMode_SetMode( int *width, int *height, int *rate )
 {
 	int best_fit, best_dist;
 	int dist;
@@ -180,7 +180,7 @@ qboolean VidMode_SetMode( int *width, int *height, int *rate )
 	int i;
 	
 	if ( !glw_state.vidmode_ext )
-		return qfalse;
+		return false;
 
 	if ( vidmodes )
 	{
@@ -218,7 +218,7 @@ qboolean VidMode_SetMode( int *width, int *height, int *rate )
 		// change to the mode
 		_XF86VidModeSwitchToMode( dpy, scrnum, vidmodes[ best_fit ] );
 		XFlush( dpy );  // drakkar - man 3 XF86VidModeSwitchToMode
-		glw_state.vidmode_active = qtrue;
+		glw_state.vidmode_active = true;
 
 		// Move the viewport to top left
 		_XF86VidModeSetViewPort( dpy, scrnum, 0, 0 );
@@ -226,12 +226,12 @@ qboolean VidMode_SetMode( int *width, int *height, int *rate )
 		Com_Printf( "XFree86-VidModeExtension Activated at %dx%d\n",
 			*width, *height );
 
-		return qtrue;
+		return true;
 	}
 	else
 	{
 		Com_Printf( "XFree86-VidModeExtension: No acceptable modes found\n" );
-		return qfalse;
+		return false;
 	}
 }
 

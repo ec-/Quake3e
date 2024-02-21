@@ -43,23 +43,23 @@ typedef struct
 
 	int	monitorCount;
 
-	qboolean gammaSet;
+	bool gammaSet;
 
-	qboolean cdsFullscreen;
+	bool cdsFullscreen;
 
 	glconfig_t *config; // feedback to renderer module
 
-	qboolean dga_ext;
+	bool dga_ext;
 
-	qboolean vidmode_ext;
-	qboolean vidmode_active;
-	qboolean vidmode_gamma;
+	bool vidmode_ext;
+	bool vidmode_active;
+	bool vidmode_gamma;
 
-	qboolean randr_ext;
-	qboolean randr_active;
-	qboolean randr_gamma;
+	bool randr_ext;
+	bool randr_active;
+	bool randr_gamma;
 
-	qboolean desktop_ok;
+	bool desktop_ok;
 	int desktop_width;
 	int desktop_height;
 	int desktop_x;
@@ -72,26 +72,26 @@ extern Display *dpy;
 extern Window win;
 extern int scrnum;
 
-qboolean BuildGammaRampTable( unsigned char *red, unsigned char *green, unsigned char *blue, int gammaRampSize, unsigned short table[3][4096] );
+bool BuildGammaRampTable( unsigned char *red, unsigned char *green, unsigned char *blue, int gammaRampSize, unsigned short table[3][4096] );
 
 // DGA extension
-qboolean DGA_Init( Display *_dpy );
-void DGA_Mouse( qboolean enable );
+bool DGA_Init( Display *_dpy );
+void DGA_Mouse( bool enable );
 void DGA_Done( void );
 
 // VidMode extension
-qboolean VidMode_Init( void );
+bool VidMode_Init( void );
 void VidMode_Done( void );
-qboolean VidMode_SetMode( int *width, int *height, int *rate );
+bool VidMode_SetMode( int *width, int *height, int *rate );
 void VidMode_RestoreMode( void );
 void VidMode_SetGamma( unsigned char red[256], unsigned char green[256], unsigned char blue[256] );
 void VidMode_RestoreGamma( void );
 
 // XRandR extension
-qboolean RandR_Init( int x, int y, int w, int h );
+bool RandR_Init( int x, int y, int w, int h );
 void RandR_Done( void );
 void RandR_UpdateMonitor( int x, int y, int w, int h );
-qboolean RandR_SetMode( int *width, int *height, int *rate );
+bool RandR_SetMode( int *width, int *height, int *rate );
 void RandR_RestoreMode( void );
 void RandR_SetGamma( unsigned char red[256], unsigned char green[256], unsigned char blue[256] );
 void RandR_RestoreGamma( void );

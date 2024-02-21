@@ -66,7 +66,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 unsigned sys_frame_time;
 
-qboolean stdin_active = qfalse;
+bool stdin_active = false;
 int      stdin_flags = 0;
 
 // =============================================================
@@ -84,7 +84,7 @@ typedef enum {
 static cvar_t *ttycon = NULL;
 
 // general flag to tell about tty console mode
-static qboolean ttycon_on = qfalse;
+static bool ttycon_on = false;
 
 // when printing general stuff to stdout stderr (Sys_Printf)
 //   we need to disable the tty console stuff
@@ -101,7 +101,7 @@ static struct termios tty_tc;
 static field_t tty_con;
 
 static cvar_t *ttycon_ansicolor = NULL;
-static qboolean ttycon_color_on = qfalse;
+static bool ttycon_color_on = false;
 
 tty_err Sys_ConsoleInputInit( void );
 
@@ -121,7 +121,7 @@ bool Sys_LowPhysicalMemory( void )
 {
 	//MEMORYSTATUS stat;
 	//GlobalMemoryStatus (&stat);
-	//return (stat.dwTotalPhys <= MEM_THRESHOLD) ? qtrue : qfalse;
+	//return (stat.dwTotalPhys <= MEM_THRESHOLD) ? true : false;
 	return false; // bk001207 - FIXME
 }
 
@@ -230,8 +230,8 @@ void Sys_ConsoleInputShutdown( void )
 
 	Com_Memset( &tty_con, 0, sizeof( tty_con ) );
 
-	stdin_active = qfalse;
-	ttycon_on = qfalse;
+	stdin_active = false;
+	ttycon_on = false;
 
 	ttycon_hide = 0;
 }
@@ -369,25 +369,25 @@ tty_err Sys_ConsoleInputInit( void )
 	stdin_flags = fcntl( STDIN_FILENO, F_GETFL, 0 );
 	if ( stdin_flags == -1 )
 	{
-		stdin_active = qfalse;
+		stdin_active = false;
 		return TTY_ERROR;
 	}
 
 	// set non-blocking mode
 	fcntl( STDIN_FILENO, F_SETFL, stdin_flags | O_NONBLOCK );
-	stdin_active = qtrue;
+	stdin_active = true;
 
 	// FIXME TTimo initialize this in Sys_Init or something?
 	if ( !ttycon || !ttycon->integer )
 	{
-		ttycon_on = qfalse;
+		ttycon_on = false;
 		return TTY_DISABLED;
 
 	}
 	term = getenv( "TERM" );
 	if ( isatty( STDIN_FILENO ) != 1 || !term || !strcmp( term, "dumb" ) || !strcmp( term, "raw" ) )
 	{
-		ttycon_on = qfalse;
+		ttycon_on = false;
 		return TTY_ERROR;
 	}
 
@@ -417,10 +417,10 @@ tty_err Sys_ConsoleInputInit( void )
 
 	if ( ttycon_ansicolor && ttycon_ansicolor->integer )
 	{
-		ttycon_color_on = qtrue;
+		ttycon_color_on = true;
 	}
 
-	ttycon_on = qtrue;
+	ttycon_on = true;
 
 	tty_Hide();
 	tty_Show();
@@ -566,7 +566,7 @@ char *Sys_ConsoleInput( void )
 		if ( len == 0 ) // eof!
 		{
 			fcntl( STDIN_FILENO, F_SETFL, stdin_flags );
-			stdin_active = qfalse;
+			stdin_active = false;
 			return NULL;
 		}
 
@@ -680,11 +680,11 @@ static const char *getANSIcolor( char Q3color ) {
 }
 
 
-static qboolean printableChar( char c ) {
+static bool printableChar( char c ) {
 	if ( ( c >= ' ' && c <= '~' ) || c == '\n' || c == '\r' || c == '\t' )
-		return qtrue;
+		return true;
 	else
-		return qfalse;
+		return false;
 }
 
 
@@ -979,7 +979,7 @@ int main( int argc, const char* argv[] )
 {
 	char con_title[ MAX_CVAR_VALUE_STRING ];
 	int xpos, ypos;
-	//qboolean useXYpos;
+	//bool useXYpos;
 	char  *cmdline;
 	int   len, i;
 	tty_err	err;

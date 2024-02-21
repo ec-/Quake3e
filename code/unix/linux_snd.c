@@ -202,7 +202,7 @@ sym_t a_list[] = {
 
 #endif
 
-qboolean alsa_used = qfalse; /* will be checked in oss engine */
+bool alsa_used = false; /* will be checked in oss engine */
 
 static pthread_t thread;
 #ifdef USE_SPINLOCK
@@ -211,7 +211,7 @@ static pthread_spinlock_t lock;
 static pthread_mutex_t mutex;
 #endif
 
-static qboolean snd_inited = qfalse;
+static bool snd_inited = false;
 
 /* we will use static dma buffer */
 static unsigned char buffer[ BUFFER_SIZE ];
@@ -220,8 +220,8 @@ static unsigned int period_time;  // wishable latency
 static snd_pcm_t *handle;
 
 
-static volatile qboolean snd_loop;
-static volatile qboolean snd_async;
+static volatile bool snd_loop;
+static volatile bool snd_async;
 
 static snd_pcm_uframes_t period_size;
 static snd_pcm_sframes_t buffer_pos;	// buffer position, in mono samples
@@ -267,24 +267,24 @@ typedef enum {
 	SND_MODE_DIRECT
 } smode_t;
 
-static qboolean setup_ALSA( smode_t mode )
+static bool setup_ALSA( smode_t mode )
 {
 	snd_async_handler_t *ahandler;
 	snd_pcm_hw_params_t *hwparams;
 	snd_pcm_sw_params_t *swparams;
 	unsigned int speed, rrate;
 	int err, dir, bps, channels;
-	qboolean use_mmap;
+	bool use_mmap;
 	int i;
 
-	if ( snd_inited == qtrue )
+	if ( snd_inited == true )
 	{
-		return qtrue;
+		return true;
 	}
 
-	alsa_used = qfalse;
-	snd_async = qfalse;
-	use_mmap = qfalse;
+	alsa_used = false;
+	snd_async = false;
+	use_mmap = false;
 
 #ifndef USE_ALSA_STATIC
 	if ( t_lib == NULL )
@@ -297,7 +297,7 @@ static qboolean setup_ALSA( smode_t mode )
 		if ( t_lib == NULL )
 		{
 			Com_Printf( "Error loading pthread library, disabling ALSA support.\n" );
-			return qfalse;
+			return false;
 		}
 	}
 
@@ -309,7 +309,7 @@ static qboolean setup_ALSA( smode_t mode )
 			Com_Printf( "Couldn't find '%s' symbol, disabling ALSA support.\n",
 				t_list[i].name );
 			UnloadLibs();
-			return qfalse;
+			return false;
 		}
 	}
 
@@ -376,11 +376,11 @@ static qboolean setup_ALSA( smode_t mode )
 						goto __fail;
 					/* set the interleaved read/write format */
 					err = _snd_pcm_hw_params_set_access( handle, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED );
-					snd_async = qtrue;
+					snd_async = true;
 					break;
 		case SND_MODE_MMAP:
 					err = _snd_pcm_hw_params_set_access( handle, hwparams, SND_PCM_ACCESS_MMAP_INTERLEAVED );
-					use_mmap = qtrue;
+					use_mmap = true;
 					break;
 		case SND_MODE_DIRECT:
 					err = _snd_pcm_hw_params_set_access( handle, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED );
@@ -544,7 +544,7 @@ static qboolean setup_ALSA( smode_t mode )
 	Com_Printf( "period_size=%i\n", (int)period_size );
 #endif
 
-	dma.isfloat = qfalse;
+	dma.isfloat = false;
 	dma.channels = channels;
 	dma.speed = speed;
 	dma.samples = sizeof( buffer ) * 8 / bps;
@@ -559,7 +559,7 @@ static qboolean setup_ALSA( smode_t mode )
 
 	memset( buffer, 0, sizeof( buffer ) );
 
-	snd_inited = qtrue;
+	snd_inited = true;
 
 #ifdef USE_SPINLOCK
 	_pthread_spin_init( &lock, 0 );
@@ -593,7 +593,7 @@ static qboolean setup_ALSA( smode_t mode )
 	}
 	else
 	{
-		snd_loop = qtrue;
+		snd_loop = true;
 
 		 /* will be unlocked after thread creation */
 #ifdef USE_SPINLOCK
@@ -628,18 +628,18 @@ static qboolean setup_ALSA( smode_t mode )
 #endif
 	}
 
-	alsa_used = qtrue;
-	return qtrue;
+	alsa_used = true;
+	return true;
 
 __fail:
 	_snd_pcm_close( handle );
 	UnloadLibs();
-	alsa_used = qfalse;
-	return qfalse;
+	alsa_used = false;
+	return false;
 }
 
 
-qboolean SNDDMA_Init( void )
+bool SNDDMA_Init( void )
 {
 	//Com_Printf( "...trying ASYNC mode\n" );
 	//if ( !setup_ALSA( SND_MODE_ASYNC ) )
@@ -651,22 +651,22 @@ qboolean SNDDMA_Init( void )
 			if ( !setup_ALSA( SND_MODE_DIRECT ) )
 			{
 				Com_Printf( "...ALSA setup failed\n" );
-				return qfalse;
+				return false;
 			}
 		}
 	}
-	return qtrue;
+	return true;
 }
 
 
 void SNDDMA_Shutdown( void )
 {
-	if ( snd_inited == qfalse )
+	if ( snd_inited == false )
 		return;
 
 	if ( !snd_async )
 	{
-		snd_loop = qfalse;
+		snd_loop = false;
 
 		/* wait for thread loop exit */
 		_pthread_join( thread, NULL );
@@ -676,8 +676,8 @@ void SNDDMA_Shutdown( void )
 		_snd_pcm_drain( handle );
 	}
 
-	snd_async = qfalse;
-	snd_inited = qfalse;
+	snd_async = false;
+	snd_inited = false;
 
 	_snd_pcm_close( handle );
 
@@ -802,7 +802,7 @@ int SNDDMA_GetDMAPos( void )
 {
 	int samples;
 
-	if ( snd_inited == qfalse )
+	if ( snd_inited == false )
 		return 0;
 
 #ifdef USE_SPINLOCK
@@ -975,7 +975,7 @@ static void thread_proc_direct( void )
 		if ( avail < 0 )
 			continue;
 
-		if ( snd_loop == qfalse )
+		if ( snd_loop == false )
 			break;
 
 		state = __snd_pcm_state( handle );
@@ -1109,7 +1109,7 @@ static void async_proc( snd_async_handler_t *ahandler )
 #include "../client/snd_local.h"
 #include "../qcommon/q_shared.h"
 
-static qboolean snd_inited = qfalse;
+static bool snd_inited = false;
 static int audio_fd;
 static int map_size;
 
@@ -1123,7 +1123,7 @@ void Snd_Memset( void* dest, const int val, const size_t count )
 	Com_Memset( dest, val, count );
 }
 
-qboolean SNDDMA_Init( void )
+bool SNDDMA_Init( void )
 {
 	cvar_t *sndbits;
 	cvar_t *sndspeed;
@@ -1137,7 +1137,7 @@ qboolean SNDDMA_Init( void )
 	int caps;
 
 	if (snd_inited)
-		return qtrue;
+		return true;
 
 	sndbits = Cvar_Get("sndbits", "16", CVAR_ARCHIVE_ND | CVAR_LATCH);
 	Cvar_SetDescription( sndbits, "Bit resolution." );
@@ -1155,7 +1155,7 @@ qboolean SNDDMA_Init( void )
 		if (audio_fd < 0) {
 			perror(snddevice->string);
 			Com_Printf("Could not open %s\n", snddevice->string);
-			return qfalse;
+			return false;
 		}
 	}
 
@@ -1163,13 +1163,13 @@ qboolean SNDDMA_Init( void )
 		perror(snddevice->string);
 		Com_Printf("Sound driver too old\n");
 		close(audio_fd);
-		return qfalse;
+		return false;
 	}
 
 	if (!(caps & DSP_CAP_TRIGGER) || !(caps & DSP_CAP_MMAP)) {
 		Com_Printf("Sorry but your soundcard can't do this\n");
 		close(audio_fd);
-		return qfalse;
+		return false;
 	}
 
 	/* SNDCTL_DSP_GETOSPACE moved to be called later */
@@ -1206,7 +1206,7 @@ qboolean SNDDMA_Init( void )
 		perror(snddevice->string);
 		Com_Printf("Could not set %s to stereo=%d", snddevice->string, dma.channels);
 		close(audio_fd);
-		return qfalse;
+		return false;
 	}
 
 	if (tmp)
@@ -1219,7 +1219,7 @@ qboolean SNDDMA_Init( void )
 		perror(snddevice->string);
 		Com_Printf("Could not set %s speed to %d", snddevice->string, dma.speed);
 		close(audio_fd);
-		return qfalse;
+		return false;
 	}
 
 	if (dma.samplebits == 16) {
@@ -1229,7 +1229,7 @@ qboolean SNDDMA_Init( void )
 			perror(snddevice->string);
 			Com_Printf("Could not support 16-bit data.  Try 8-bit.\n");
 			close(audio_fd);
-			return qfalse;
+			return false;
 		}
 	} else if (dma.samplebits == 8) {
 		rc = AFMT_U8;
@@ -1238,20 +1238,20 @@ qboolean SNDDMA_Init( void )
 			perror(snddevice->string);
 			Com_Printf("Could not support 8-bit data.\n");
 			close(audio_fd);
-			return qfalse;
+			return false;
 		}
 	} else {
 		perror(snddevice->string);
 		Com_Printf("%d-bit sound not supported.", dma.samplebits);
 		close(audio_fd);
-		return qfalse;
+		return false;
 	}
 
 	if (ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info)==-1) {
 		perror("GETOSPACE");
 		Com_Printf("Um, can't do GETOSPACE?\n");
 		close(audio_fd);
-		return qfalse;
+		return false;
 	}
 
 	dma.samples = info.fragstotal * info.fragsize / (dma.samplebits/8);
@@ -1282,7 +1282,7 @@ qboolean SNDDMA_Init( void )
 		Com_Printf("Could not mmap %s\n", snddevice->string);
 		dma.buffer = NULL;
 		close(audio_fd);
-		return qfalse;
+		return false;
 	}
 
 	// toggle the trigger & start her up
@@ -1293,7 +1293,7 @@ qboolean SNDDMA_Init( void )
 		Com_Printf("Could not toggle.\n");
 		munmap(dma.buffer, map_size);
 		close(audio_fd);
-		return qfalse;
+		return false;
 	}
 
 	tmp = PCM_ENABLE_OUTPUT;
@@ -1303,11 +1303,11 @@ qboolean SNDDMA_Init( void )
 		Com_Printf("Could not toggle.\n");
 		munmap(dma.buffer, map_size);
 		close(audio_fd);
-		return qfalse;
+		return false;
 	}
 
-	snd_inited = qtrue;
-	return qtrue;
+	snd_inited = true;
+	return true;
 }
 
 
@@ -1323,7 +1323,7 @@ int SNDDMA_GetDMAPos( void )
 		perror(snddevice->string);
 		Com_Printf("Uh, sound dead.\n");
 		close(audio_fd);
-		snd_inited = qfalse;
+		snd_inited = false;
 		return 0;
 	}
 
@@ -1345,7 +1345,7 @@ void SNDDMA_Shutdown( void )
 		audio_fd = 0;
 	}
 
-	snd_inited = qfalse;
+	snd_inited = false;
 }
 
 

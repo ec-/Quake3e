@@ -145,7 +145,7 @@ bool QGL_Init( const char *dllname )
 				{
 					Com_Printf( "failed\n" );
 					Com_Printf( "QGL_Init: Can't load %s from /etc/ld.so.conf or current dir: %s\n", dllname, do_dlerror() );
-					return qfalse;
+					return false;
 				}
 			}
 			else
@@ -162,7 +162,7 @@ bool QGL_Init( const char *dllname )
 
 	glErrorCount = 0;
 
-#define GLE( ret, name, ... ) q##name = GL_GetProcAddress( XSTRING( name ) ); if ( !q##name ) { Com_Printf( "Error resolving core X11 functions\n" ); return qfalse; }
+#define GLE( ret, name, ... ) q##name = GL_GetProcAddress( XSTRING( name ) ); if ( !q##name ) { Com_Printf( "Error resolving core X11 functions\n" ); return false; }
 	QGL_LinX11_PROCS;
 #undef GLE
 

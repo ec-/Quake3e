@@ -28,7 +28,7 @@ monitor_t desktop_monitor;
 unsigned short old_gamma[3][4096]; // backup
 int old_gamma_size;
 
-static qboolean BackupMonitorGamma( void );
+static bool BackupMonitorGamma( void );
 
 // we resolve all functions dynamically
 
@@ -70,7 +70,7 @@ static sym_t r_list[] =
 };
 
 
-static qboolean monitor_in_list( int x, int y, int w, int h, RROutput outputn, RRCrtc crtcn )
+static bool monitor_in_list( int x, int y, int w, int h, RROutput outputn, RRCrtc crtcn )
 {
 	int i;
 
@@ -85,10 +85,10 @@ static qboolean monitor_in_list( int x, int y, int w, int h, RROutput outputn, R
 		if ( monitors[i].crtcn != crtcn )
 			continue;
 
-		return qtrue;
+		return true;
 	}
 
-	return qfalse;
+	return false;
 }
 
 
@@ -140,7 +140,7 @@ static const XRRModeInfo* getModeInfo( const XRRScreenResources* sr, RRMode id )
 }
 
 
-qboolean RandR_SetMode( int *width, int *height, int *rate )
+bool RandR_SetMode( int *width, int *height, int *rate )
 {
 	monitor_t *m = &desktop_monitor;
 	XRRScreenResources *sr;
@@ -153,7 +153,7 @@ qboolean RandR_SetMode( int *width, int *height, int *rate )
 	int x, y, w, h;
 	int n;
 
-	glw_state.randr_active = qfalse;
+	glw_state.randr_active = false;
 
 	if ( !glw_state.randr_ext )
 		return glw_state.randr_active;
@@ -161,7 +161,7 @@ qboolean RandR_SetMode( int *width, int *height, int *rate )
 	if ( *width == m->w && *height == m->h )
 	{
 		Com_Printf( "...using desktop display mode\n" );
-		glw_state.randr_active = qtrue;
+		glw_state.randr_active = true;
 		return glw_state.randr_active;
 	}
 	
@@ -218,7 +218,7 @@ qboolean RandR_SetMode( int *width, int *height, int *rate )
 			newMode, crtc_info->rotation, crtc_info->outputs, crtc_info->noutput );
 
 		m->curMode = newMode;
-		glw_state.randr_active = qtrue;
+		glw_state.randr_active = true;
 		*width = w;
 		*height = h;
 		*rate = rr;
@@ -242,7 +242,7 @@ void RandR_RestoreMode( void )
 	if ( !glw_state.randr_ext || !glw_state.randr_active || !dpy )
 		return;
 
-	glw_state.randr_active = qfalse;
+	glw_state.randr_active = false;
 
 	if ( m->curMode == m->oldMode )
 		return;
@@ -394,7 +394,7 @@ void RandR_UpdateMonitor( int x, int y, int w, int h )
 
 	if ( cm != current_monitor )
 	{
-		qboolean gammaSet = glw_state.gammaSet;
+		bool gammaSet = glw_state.gammaSet;
 
 		if ( glw_state.randr_gamma && gammaSet )
 		{
@@ -410,7 +410,7 @@ void RandR_UpdateMonitor( int x, int y, int w, int h )
 		glw_state.desktop_width = cm->w;
 		glw_state.desktop_height = cm->h;
 
-		glw_state.desktop_ok = qtrue;
+		glw_state.desktop_ok = true;
 
 		Com_Printf( "...current monitor: %ix%i@%i,%i %s\n",
 			glw_state.desktop_width, glw_state.desktop_height,
@@ -427,22 +427,22 @@ void RandR_UpdateMonitor( int x, int y, int w, int h )
 }
 
 
-static qboolean BackupMonitorGamma( void )
+static bool BackupMonitorGamma( void )
 {
 	XRRCrtcGamma* gamma;
 	int gammaRampSize;
 
 	if ( !glw_state.monitorCount || !glw_state.randr_gamma )
 	{
-		return qfalse;
+		return false;
 	}
 
 	gammaRampSize = _XRRGetCrtcGammaSize( dpy, desktop_monitor.crtcn );
 	if ( gammaRampSize < 256 || gammaRampSize > 4096 )
 	{
-		glw_state.randr_gamma = qfalse;
+		glw_state.randr_gamma = false;
 		fprintf( stderr, "...unsupported gamma ramp size: %i\n", gammaRampSize );
-		return qfalse;
+		return false;
 	}
 
 	gamma = _XRRGetCrtcGamma( dpy, desktop_monitor.crtcn );
@@ -456,10 +456,10 @@ static qboolean BackupMonitorGamma( void )
 
 		_XRRFreeGamma( gamma );
 		
-		return qtrue;
+		return true;
 	}
 
-	return qfalse;
+	return false;
 }
 
 
@@ -494,20 +494,20 @@ void RandR_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	if ( BuildGammaRampTable( red, green, blue, old_gamma_size, table ) )
 	{
 		SetMonitorGamma( table[0], table[1], table[2], old_gamma_size );
-		glw_state.gammaSet = qtrue;
+		glw_state.gammaSet = true;
 	}
 }
 
 
-qboolean RandR_Init( int x, int y, int w, int h )
+bool RandR_Init( int x, int y, int w, int h )
 {
 	int event_base, error_base;
 	int ver_major = 1, ver_minor = 2;
 	int i;
 
-	glw_state.randr_ext = qfalse;
-	glw_state.randr_active = qfalse;
-	glw_state.randr_gamma = qfalse;
+	glw_state.randr_ext = false;
+	glw_state.randr_active = false;
+	glw_state.randr_gamma = false;
 
 	glw_state.monitorCount = 0;
 	current_monitor = NULL;
@@ -546,19 +546,19 @@ qboolean RandR_Init( int x, int y, int w, int h )
 
 	Com_Printf( "...RandR extension version %i.%i detected.\n", ver_major, ver_minor );
 
-	glw_state.randr_ext = qtrue;
+	glw_state.randr_ext = true;
 
-	glw_state.randr_gamma = qtrue; // this will be reset by BackupMonitorGamma() if gamma is not available
+	glw_state.randr_gamma = true; // this will be reset by BackupMonitorGamma() if gamma is not available
 
 	BuildMonitorList();
 
 	RandR_UpdateMonitor( x, y, w, h );
 
-	return qtrue;
+	return true;
 
 __fail:
 	RandR_Done();
-	return qfalse;
+	return false;
 }
 
 
@@ -569,6 +569,6 @@ void RandR_Done( void )
 		Sys_UnloadLibrary( r_lib );
 		r_lib = NULL;
 	}
-	glw_state.randr_ext = qfalse;
-	glw_state.randr_gamma = qfalse;
+	glw_state.randr_ext = false;
+	glw_state.randr_gamma = false;
 }

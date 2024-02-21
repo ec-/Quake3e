@@ -167,12 +167,12 @@ void Sys_ListFilteredFiles( const char *basedir, const char *subdirs, const char
 
 
 // bk001129 - in 1.17 this used to be
-// char **Sys_ListFiles( const char *directory, const char *extension, int *numfiles, qboolean wantsubs )
-char **Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, qboolean wantsubs )
+// char **Sys_ListFiles( const char *directory, const char *extension, int *numfiles, bool wantsubs )
+char **Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, bool wantsubs )
 {
 	struct dirent *d;
 	DIR		*fdir;
-	qboolean dironly = wantsubs;
+	bool dironly = wantsubs;
 	char		search[MAX_OSPATH*2+MAX_QPATH+1];
 	int			nfiles;
 	int			extLen;
@@ -181,7 +181,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 	char		*list[MAX_FOUND_FILES];
 	int			i;
 	struct stat st;
-	qboolean	hasPatterns;
+	bool	hasPatterns;
 	const char	*x;
 
 	if ( filter ) {
@@ -209,7 +209,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 
 	if ( extension[0] == '/' && extension[1] == 0 ) {
 		extension = "";
-		dironly = qtrue;
+		dironly = true;
 	}
 
 	if ((fdir = opendir(directory)) == NULL) {
@@ -300,18 +300,18 @@ void Sys_FreeFileList( char **list ) {
 Sys_GetFileStats
 =============
 */
-qboolean Sys_GetFileStats( const char *filename, fileOffset_t *size, fileTime_t *mtime, fileTime_t *ctime ) {
+bool Sys_GetFileStats( const char *filename, fileOffset_t *size, fileTime_t *mtime, fileTime_t *ctime ) {
 	struct stat s;
 
 	if ( stat( filename, &s ) == 0 ) {
 		*size = (fileOffset_t)s.st_size;
 		*mtime = (fileTime_t)s.st_mtime;
 		*ctime = (fileTime_t)s.st_ctime;
-		return qtrue;
+		return true;
 	} else {
 		*size = 0;
 		*mtime = *ctime = 0;
-		return qfalse;
+		return false;
 	}
 }
 
@@ -321,16 +321,16 @@ qboolean Sys_GetFileStats( const char *filename, fileOffset_t *size, fileTime_t 
 Sys_Mkdir
 =================
 */
-qboolean Sys_Mkdir( const char *path )
+bool Sys_Mkdir( const char *path )
 {
 
 	if ( mkdir( path, 0750 ) == 0 ) {
-		return qtrue;
+		return true;
 	} else {
 		if ( errno == EEXIST ) {
-			return qtrue;
+			return true;
 		} else {
-			return qfalse;
+			return false;
 		}
 	}
 }
@@ -358,9 +358,9 @@ FILE *Sys_FOpen( const char *ospath, const char *mode )
 Sys_ResetReadOnlyAttribute
 ==============
 */
-qboolean Sys_ResetReadOnlyAttribute( const char *ospath )
+bool Sys_ResetReadOnlyAttribute( const char *ospath )
 {
-	return qfalse;
+	return false;
 }
 
 
@@ -459,7 +459,7 @@ const char *Sys_SteamPath( void )
 Sys_ShowConsole
 =================
 */
-void Sys_ShowConsole( int visLevel, qboolean quitOnClose )
+void Sys_ShowConsole( int visLevel, bool quitOnClose )
 {
 	// not implemented
 }
@@ -487,7 +487,7 @@ void *Sys_LoadLibrary( const char *name )
 	const char *ext;
 	void *handle;
 
-	if ( FS_AllowedExtension( name, qfalse, &ext ) )
+	if ( FS_AllowedExtension( name, false, &ext ) )
 	{
 		Com_Error( ERR_FATAL, "Sys_LoadLibrary: Unable to load library with '%s' extension", ext );
 	}

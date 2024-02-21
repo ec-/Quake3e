@@ -1283,7 +1283,7 @@ bool 	Sys_RandomBytes( byte *string, int len );
 // the system console is shown when a dedicated server is running
 void	Sys_DisplaySystemConsole( qboolean show );
 
-void	Sys_ShowConsole( int level, qboolean quitOnClose );
+void	Sys_ShowConsole( int level, bool quitOnClose );
 void	Sys_SetErrorText( const char *text );
 
 void	Sys_SendPacket( int length, const void *data, const netadr_t *to );
@@ -1294,9 +1294,9 @@ qboolean	Sys_StringToAdr( const char *s, netadr_t *a, netadrtype_t family );
 qboolean	Sys_IsLANAddress(const netadr_t *adr);
 void		Sys_ShowIP(void);
 
-qboolean	Sys_Mkdir( const char *path );
+bool	Sys_Mkdir( const char *path );
 FILE	*Sys_FOpen( const char *ospath, const char *mode );
-qboolean Sys_ResetReadOnlyAttribute( const char *ospath );
+bool 	Sys_ResetReadOnlyAttribute( const char *ospath );
 
 const char *Sys_Pwd( void );
 const char *Sys_DefaultBasePath( void );
@@ -1307,10 +1307,10 @@ const char *Sys_SteamPath( void );
 char    *Sys_DefaultAppPath( void );
 #endif
 
-char **Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, qboolean wantsubs );
+char **Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, bool wantsubs );
 void Sys_FreeFileList( char **list );
 
-qboolean Sys_GetFileStats( const char *filename, fileOffset_t *size, fileTime_t *mtime, fileTime_t *ctime );
+bool Sys_GetFileStats( const char *filename, fileOffset_t *size, fileTime_t *mtime, fileTime_t *ctime );
 
 void Sys_BeginProfiling( void );
 void Sys_EndProfiling( void );
