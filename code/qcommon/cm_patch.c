@@ -30,7 +30,7 @@ This file does not reference any globals, and has these entry points:
 void CM_ClearLevelPatches( void );
 struct patchCollide_s	*CM_GeneratePatchCollide( int width, int height, const vec3_t *points );
 void CM_TraceThroughPatchCollide( traceWork_t *tw, const struct patchCollide_s *pc );
-qboolean CM_PositionTestInPatchCollide( traceWork_t *tw, const struct patchCollide_s *pc );
+bool CM_PositionTestInPatchCollide( traceWork_t *tw, const struct patchCollide_s *pc );
 void CM_DrawDebugSurface( void (*drawPoly)(int color, int numPoints, flaot *points) );
 
 
@@ -53,7 +53,7 @@ typedef struct {
 	int			numBorders;		// 3 or four + 6 axial bevels + 4 or 3 * 4 edge bevels
 	int			borderPlanes[4+6+16];
 	int			borderInward[4+6+16];
-	qboolean	borderNoAdjust[4+6+16];
+	bool	borderNoAdjust[4+6+16];
 } facet_t;
 
 typedef struct patchCollide_s {
@@ -70,8 +70,8 @@ typedef struct patchCollide_s {
 typedef struct {
 	int			width;
 	int			height;
-	qboolean	wrapWidth;
-	qboolean	wrapHeight;
+	bool	wrapWidth;
+	bool	wrapHeight;
 	vec3_t	points[MAX_GRID_SIZE][MAX_GRID_SIZE];	// [width][height]
 } cGrid_t;
 
@@ -254,7 +254,7 @@ static void CM_TransposeGrid( cGrid_t *grid ) {
 ===================
 CM_SetGridWrapWidth
 
-If the left and right columns are exactly equal, set grid->wrapWidth qtrue
+If the left and right columns are exactly equal, set grid->wrapWidth true
 ===================
 */
 static void CM_SetGridWrapWidth( cGrid_t *grid ) {
@@ -755,18 +755,18 @@ static void CM_SetBorderInward( facet_t *facet, const cGrid_t *grid, int gridPla
 		}
 
 		if ( front && !back ) {
-			facet->borderInward[k] = qtrue;
+			facet->borderInward[k] = true;
 		} else if ( back && !front ) {
-			facet->borderInward[k] = qfalse;
+			facet->borderInward[k] = false;
 		} else if ( !front && !back ) {
 			// flat side border
 			facet->borderPlanes[k] = -1;
 		} else {
 			// bisecting side border
 			Com_DPrintf( "WARNING: CM_SetBorderInward: mixed plane sides\n" );
-			facet->borderInward[k] = qfalse;
+			facet->borderInward[k] = false;
 			if ( !debugBlock ) {
-				debugBlock = qtrue;
+				debugBlock = true;
 				VectorCopy( grid->points[i][j], debugBlockPoints[0] );
 				VectorCopy( grid->points[i+1][j], debugBlockPoints[1] );
 				VectorCopy( grid->points[i+1][j+1], debugBlockPoints[2] );
@@ -1006,7 +1006,7 @@ static void CM_AddFacetBevels( facet_t *facet ) {
 	}
 	facet->borderPlanes[facet->numBorders] = facet->surfacePlane;
 	facet->borderNoAdjust[facet->numBorders] = 0;
-	facet->borderInward[facet->numBorders] = qtrue;
+	facet->borderInward[facet->numBorders] = true;
 	facet->numBorders++;
 #endif //BSPC
 
@@ -1379,19 +1379,19 @@ CM_CheckFacetPlane
 static int CM_CheckFacetPlane( const float *plane, const vec3_t start, const vec3_t end, float *enterFrac, float *leaveFrac, int *hit ) {
 	float d1, d2, f;
 
-	*hit = qfalse;
+	*hit = false;
 
 	d1 = DotProduct( start, plane ) - plane[3];
 	d2 = DotProduct( end, plane ) - plane[3];
 
 	// if completely in front of face, no intersection with the entire facet
 	if (d1 > 0 && ( d2 >= SURFACE_CLIP_EPSILON || d2 >= d1 )  ) {
-		return qfalse;
+		return false;
 	}
 
 	// if it doesn't cross the plane, the plane isn't relevant
 	if (d1 <= 0 && d2 <= 0 ) {
-		return qtrue;
+		return true;
 	}
 
 	// crosses face
@@ -1403,7 +1403,7 @@ static int CM_CheckFacetPlane( const float *plane, const vec3_t start, const vec
 		//always favor previous plane hits and thus also the surface plane hit
 		if (f > *enterFrac) {
 			*enterFrac = f;
-			*hit = qtrue;
+			*hit = true;
 		}
 	} else {	// leave
 		f = (d1+SURFACE_CLIP_EPSILON) / (d1-d2);
@@ -1414,7 +1414,7 @@ static int CM_CheckFacetPlane( const float *plane, const vec3_t start, const vec
 			*leaveFrac = f;
 		}
 	}
-	return qtrue;
+	return true;
 }
 
 
@@ -1575,7 +1575,7 @@ bool CM_PositionTestInPatchCollide( traceWork_t *tw, const struct patchCollide_s
 	vec3_t startp;
 
 	if (tw->isPoint) {
-		return qfalse;
+		return false;
 	}
 	//
 	facet = pc->facets;
@@ -1644,9 +1644,9 @@ bool CM_PositionTestInPatchCollide( traceWork_t *tw, const struct patchCollide_s
 			continue;
 		}
 		// inside this patch facet
-		return qtrue;
+		return true;
 	}
-	return qfalse;
+	return false;
 }
 
 /*
@@ -1718,7 +1718,7 @@ void CM_DrawDebugSurface( void (*drawPoly)(int color, int numPoints, float *poin
 			}
 			else {
 				planenum = facet->surfacePlane;
-				inward = qfalse;
+				inward = false;
 				//continue;
 			}
 
@@ -1750,7 +1750,7 @@ void CM_DrawDebugSurface( void (*drawPoly)(int color, int numPoints, float *poin
 				}
 				else {
 					curplanenum = facet->surfacePlane;
-					curinward = qfalse;
+					curinward = false;
 					//continue;
 				}
 				//
