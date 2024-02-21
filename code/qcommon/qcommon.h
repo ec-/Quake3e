@@ -967,7 +967,7 @@ bool		Com_EarlyParseCmdLine( char *commandLine, char *con_title, int title_size,
 int			Com_Split( char *in, char **out, int outsz, int delim );
 
 int			Com_Filter( const char *filter, const char *name );
-qboolean	Com_FilterExt( const char *filter, const char *name );
+bool		Com_FilterExt( const char *filter, const char *name );
 bool		Com_HasPatterns( const char *str );
 int			Com_FilterPath( const char *filter, const char *name );
 int			Com_RealTime(qtime_t *qtime);

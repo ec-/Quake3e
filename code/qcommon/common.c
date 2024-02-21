@@ -774,7 +774,7 @@ int Com_Filter( const char *filter, const char *name )
 Com_FilterExt
 ============
 */
-qboolean Com_FilterExt( const char *filter, const char *name )
+bool Com_FilterExt( const char *filter, const char *name )
 {
 	char buf[ MAX_TOKEN_CHARS ];
 	const char *ptr;
@@ -792,29 +792,29 @@ qboolean Com_FilterExt( const char *filter, const char *name )
 			if ( i ) {
 				ptr = Com_StringContains( name, buf, i );
 				if ( !ptr )
-					return qfalse;
+					return false;
 				name = ptr + i;
 			} else if ( *filter == '\0' ) {
-				return qtrue;
+				return true;
 			}
 		}
 		else if ( *filter == '?' ) {
 			if ( *name == '\0' )
-				return qfalse;
+				return false;
 			filter++;
 			name++;
 		}
 		else {
 			if ( locase[(byte)*filter] != locase[(byte)*name] )
-				return qfalse;
+				return false;
 			filter++;
 			name++;
 		}
 	}
 	if ( *name ) {
-		return qfalse;
+		return false;
 	}
-	return qtrue;
+	return true;
 }
 
 
