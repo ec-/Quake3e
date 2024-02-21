@@ -96,24 +96,24 @@ void GLimp_InitGamma( glconfig_t *config )
 {
 	HDC		hDC;
 
-	config->deviceSupportsGamma = qfalse;
+	config->deviceSupportsGamma = false;
 
 	if ( IsCurrentSessionRemoteable() )
 	{
-		glw_state.deviceSupportsGamma = qfalse;
+		glw_state.deviceSupportsGamma = false;
 		return; // no hardware gamma control via RDP
 	}
 
 	if ( glw_state.displayName[0] )
 	{
 		hDC = CreateDC( TEXT( "DISPLAY" ), glw_state.displayName, NULL, NULL );
-		config->deviceSupportsGamma = ( GetDeviceGammaRamp( hDC, s_oldHardwareGamma ) == FALSE ) ? qfalse : qtrue;
+		config->deviceSupportsGamma = ( GetDeviceGammaRamp( hDC, s_oldHardwareGamma ) == FALSE ) ? false : true;
 		if ( config->deviceSupportsGamma )
 		{
 			// do test setup
 			if ( SetDeviceGammaRamp( hDC, s_oldHardwareGamma ) == FALSE )
 			{
-				config->deviceSupportsGamma = qfalse;
+				config->deviceSupportsGamma = false;
 			}
 		}
 		DeleteDC( hDC );
@@ -121,12 +121,12 @@ void GLimp_InitGamma( glconfig_t *config )
 	else
 	{
 		hDC = GetDC( GetDesktopWindow() );
-		config->deviceSupportsGamma = ( GetDeviceGammaRamp( hDC, s_oldHardwareGamma ) == FALSE ) ? qfalse : qtrue;
+		config->deviceSupportsGamma = ( GetDeviceGammaRamp( hDC, s_oldHardwareGamma ) == FALSE ) ? false : true;
 		if ( config->deviceSupportsGamma )
 		{
 			if ( SetDeviceGammaRamp( hDC, s_oldHardwareGamma ) == FALSE )
 			{
-				config->deviceSupportsGamma = qfalse;
+				config->deviceSupportsGamma = false;
 			}
 		}
 		ReleaseDC( GetDesktopWindow(), hDC );
@@ -141,7 +141,7 @@ void GLimp_InitGamma( glconfig_t *config )
 			 ( HIBYTE( s_oldHardwareGamma[1][255] ) <= HIBYTE( s_oldHardwareGamma[1][0] ) ) ||
 			 ( HIBYTE( s_oldHardwareGamma[2][255] ) <= HIBYTE( s_oldHardwareGamma[2][0] ) ) )
 		{
-			config->deviceSupportsGamma = qfalse;
+			config->deviceSupportsGamma = false;
 			Com_Printf( S_COLOR_YELLOW "WARNING: device has broken gamma support\n" );
 		}
 
@@ -253,7 +253,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	if ( !ret ) {
 		Com_Printf( S_COLOR_YELLOW "SetDeviceGammaRamp failed.\n" );
 	} else {
-		glw_state.gammaSet = qtrue;
+		glw_state.gammaSet = true;
 	}
 }
 
@@ -285,6 +285,6 @@ void GLW_RestoreGamma( void )
 	}
 
 	if ( ret ) {
-		glw_state.gammaSet = qfalse;
+		glw_state.gammaSet = false;
 	}
 }

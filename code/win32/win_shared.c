@@ -157,7 +157,7 @@ const char *Sys_SteamPath( void )
 #if defined(STEAMPATH_NAME) || defined(STEAMPATH_APPID)
 	HKEY steamRegKey;
 	DWORD pathLen = MAX_OSPATH;
-	qboolean finishPath = qfalse;
+	bool finishPath = false;
 #endif
 
 #ifdef STEAMPATH_APPID
@@ -182,7 +182,7 @@ const char *Sys_SteamPath( void )
 		}
 
 		if ( steamPath[ 0 ] )
-			finishPath = qtrue;
+			finishPath = true;
 
 		RegCloseKey( steamRegKey );
 	}

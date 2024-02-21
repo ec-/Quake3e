@@ -145,7 +145,7 @@ bool QGL_Init( const char *dllname )
 
 	Sys_LoadFunctionErrors(); // reset error count
 
-#define GLE( ret, name, ... ) q##name = GL_GetProcAddress( XSTRING( name ) ); if ( !q##name ) { Com_Printf( "Error resolving core Win32 functions\n" ); return qfalse; }
+#define GLE( ret, name, ... ) q##name = GL_GetProcAddress( XSTRING( name ) ); if ( !q##name ) { Com_Printf( "Error resolving core Win32 functions\n" ); return false; }
 	QGL_Win32_PROCS;
 #undef GLE
 
