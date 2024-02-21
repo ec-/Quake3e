@@ -1037,7 +1037,7 @@ extern	int		com_frameTime;
 
 #ifndef DEDICATED
 extern	bool		gw_minimized;
-extern	qboolean	gw_active;
+extern	bool		gw_active;
 #endif
 
 extern	bool		com_errorEntered;
