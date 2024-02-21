@@ -358,22 +358,22 @@ CM_ComparePoints
 ======================
 */
 #define	POINT_EPSILON	0.1
-static qboolean CM_ComparePoints( const float *a, const float *b ) {
+static bool CM_ComparePoints( const float *a, const float *b ) {
 	float		d;
 
 	d = a[0] - b[0];
 	if ( d < -POINT_EPSILON || d > POINT_EPSILON ) {
-		return qfalse;
+		return false;
 	}
 	d = a[1] - b[1];
 	if ( d < -POINT_EPSILON || d > POINT_EPSILON ) {
-		return qfalse;
+		return false;
 	}
 	d = a[2] - b[2];
 	if ( d < -POINT_EPSILON || d > POINT_EPSILON ) {
-		return qfalse;
+		return false;
 	}
-	return qtrue;
+	return true;
 }
 
 
@@ -433,7 +433,7 @@ static	facet_t			facets[MAX_FACETS];
 CM_PlaneEqual
 ==================
 */
-static qboolean CM_PlaneEqual( const patchPlane_t *p, const float plane[4], int *flipped ) {
+static bool CM_PlaneEqual( const patchPlane_t *p, const float plane[4], bool *flipped ) {
 	float invplane[4];
 
 	if (
@@ -442,8 +442,8 @@ static qboolean CM_PlaneEqual( const patchPlane_t *p, const float plane[4], int 
 	&& fabs(p->plane[2] - plane[2]) < NORMAL_EPSILON
 	&& fabs(p->plane[3] - plane[3]) < DIST_EPSILON )
 	{
-		*flipped = qfalse;
-		return qtrue;
+		*flipped = false;
+		return true;
 	}
 
 	VectorNegate(plane, invplane);
@@ -455,11 +455,11 @@ static qboolean CM_PlaneEqual( const patchPlane_t *p, const float plane[4], int 
 	&& fabs(p->plane[2] - invplane[2]) < NORMAL_EPSILON
 	&& fabs(p->plane[3] - invplane[3]) < DIST_EPSILON )
 	{
-		*flipped = qtrue;
-		return qtrue;
+		*flipped = true;
+		return true;
 	}
 
-	return qfalse;
+	return false;
 }
 
 
@@ -494,7 +494,7 @@ static void CM_SnapVector( vec3_t normal ) {
 CM_FindPlane2
 ==================
 */
-static int CM_FindPlane2( const float plane[4], int *flipped ) {
+static int CM_FindPlane2( const float plane[4], bool *flipped ) {
 	int i;
 
 	// see if the points are close enough to an existing plane
@@ -512,7 +512,7 @@ static int CM_FindPlane2( const float plane[4], int *flipped ) {
 
 	numPlanes++;
 
-	*flipped = qfalse;
+	*flipped = false;
 
 	return numPlanes-1;
 }
@@ -840,7 +840,8 @@ CM_AddFacetBevels
 static void CM_AddFacetBevels( facet_t *facet ) {
 
 	int i, j, k, l;
-	int axis, dir, order, flipped;
+	int axis, dir, order;
+	bool flipped;
 	float plane[4], newplane[4];
 	winding_t *w, *w2;
 	vec3_t mins, maxs, vec, vec2;
@@ -1029,7 +1030,7 @@ static void CM_PatchCollideFromGrid( const cGrid_t *grid, patchCollide_t *pf ) {
 	int				gridPlanes[MAX_GRID_SIZE][MAX_GRID_SIZE][2];
 	facet_t			*facet;
 	int				borders[4];
-	qboolean		noAdjust[4];
+	bool			noAdjust[4];
 
 	numPlanes = 0;
 	numFacets = 0;
