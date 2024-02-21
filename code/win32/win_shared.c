@@ -205,12 +205,6 @@ const char *Sys_SteamPath( void )
 	return (const char*)steamPath;
 }
 
-
-/*
-================
-Sys_SetAffinityMask
-================
-*/
 #ifdef USE_AFFINITY_MASK
 static HANDLE hCurrentProcess = 0;
 
@@ -231,7 +225,12 @@ uint64_t Sys_GetAffinityMask( void )
 }
 
 
-qboolean Sys_SetAffinityMask( const uint64_t mask )
+/*
+================
+Sys_SetAffinityMask
+================
+*/
+bool Sys_SetAffinityMask( const uint64_t mask )
 {
 	DWORD_PTR dwProcessAffinityMask = (DWORD_PTR)mask;
 
@@ -241,9 +240,9 @@ qboolean Sys_SetAffinityMask( const uint64_t mask )
 
 	if ( SetProcessAffinityMask( hCurrentProcess, dwProcessAffinityMask ) )	{
 		//Sleep( 0 );
-		return qtrue;
+		return true;
 	}
 
-	return qfalse;
+	return false;
 }
 #endif // USE_AFFINITY_MASK

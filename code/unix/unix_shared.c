@@ -591,7 +591,7 @@ uint64_t Sys_GetAffinityMask( void )
 Sys_SetAffinityMask
 =================
 */
-qboolean Sys_SetAffinityMask( const uint64_t mask )
+bool Sys_SetAffinityMask( const uint64_t mask )
 {
 	cpu_set_t cpu_set;
 	int cpu;
@@ -604,9 +604,9 @@ qboolean Sys_SetAffinityMask( const uint64_t mask )
 	}
 
 	if ( sched_setaffinity( getpid(), sizeof( cpu_set ), &cpu_set ) == 0 ) {
-		return qtrue;
-	} else {
-		return qfalse;
-	}
+		return true;
+	} 
+	
+	return false;
 }
 #endif // USE_AFFINITY_MASK
