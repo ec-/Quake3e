@@ -775,11 +775,12 @@ WinMain
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow ) 
 {
 	static char	sys_cmdline[ MAX_STRING_CHARS ];
-	char con_title[ MAX_CVAR_VALUE_STRING ];
-	int xpos, ypos;
-	qboolean useXYpos;
-	HANDLE hProcess;
-	DWORD dwPriority;
+	
+	char 	con_title[ MAX_CVAR_VALUE_STRING ];
+	int 	xpos, ypos;
+	bool 	useXYpos;
+	HANDLE 	hProcess;
+	DWORD 	dwPriority;
 
 	// should never get a previous instance in Win32
 	if ( hPrevInstance ) {

@@ -169,7 +169,7 @@ A raw string should NEVER be passed as fmt, because of "%f" type crashers.
 =============
 */
 void FORMAT_PRINTF(1, 2) QDECL Com_Printf( const char *fmt, ... ) {
-	static qboolean opening_qconsole = qfalse;
+	static bool opening_qconsole = false;
 	va_list		argptr;
 	char		msg[MAXPRINTMSG];
 	int			len;
@@ -210,7 +210,7 @@ void FORMAT_PRINTF(1, 2) QDECL Com_Printf( const char *fmt, ... ) {
 			const char *logName = "qconsole.log";
 			int mode;
 
-			opening_qconsole = qtrue;
+			opening_qconsole = true;
 
 			mode = com_logfile->integer - 1;
 
@@ -240,7 +240,7 @@ void FORMAT_PRINTF(1, 2) QDECL Com_Printf( const char *fmt, ... ) {
 				Cvar_Set( "logfile", "0" );
 			}
 
-			opening_qconsole = qfalse;
+			opening_qconsole = false;
 		}
 		if ( logfile != FS_INVALID_HANDLE && FS_Initialized() ) {
 			FS_Write( msg, len, logfile );
@@ -284,7 +284,7 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 	va_list		argptr;
 	static int	lastErrorTime;
 	static int	errorCount;
-	static qboolean	calledSysError = qfalse;
+	static bool	calledSysError = false;
 	int			currentTime;
 
 #if defined(_WIN32) && defined(_DEBUG)
@@ -297,7 +297,7 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 
 	if ( com_errorEntered ) {
 		if ( !calledSysError ) {
-			calledSysError = qtrue;
+			calledSysError = true;
 			Sys_Error( "recursive error after: %s", com_errorMessage );
 		}
 	}
@@ -399,7 +399,7 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 
 	Com_Shutdown();
 
-	calledSysError = qtrue;
+	calledSysError = true;
 	Sys_Error( "%s", com_errorMessage );
 }
 
@@ -503,7 +503,7 @@ Com_EarlyParseCmdLine
 returns qtrue if both vid_xpos and vid_ypos was set
 ===================
 */
-qboolean Com_EarlyParseCmdLine( char *commandLine, char *con_title, int title_size, int *vid_xpos, int *vid_ypos )
+bool Com_EarlyParseCmdLine( char *commandLine, char *con_title, int title_size, int *vid_xpos, int *vid_ypos )
 {
 	int		flags = 0;
 	int		i;
@@ -560,7 +560,7 @@ qboolean Com_EarlyParseCmdLine( char *commandLine, char *con_title, int title_si
 		}
 	}
 
-	return (flags == 3) ? qtrue : qfalse ;
+	return (flags == 3) ? true : false ;
 }
 
 

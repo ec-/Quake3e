@@ -681,7 +681,7 @@ static LRESULT WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 /*
 ** Sys_CreateConsole
 */
-void Sys_CreateConsole( const char *title, int xPos, int yPos, qboolean useXYpos )
+void Sys_CreateConsole( const char *title, int xPos, int yPos, bool useXYpos )
 {
 	HDC hDC;
 	WNDCLASS wc;
