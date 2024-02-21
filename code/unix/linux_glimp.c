@@ -916,10 +916,10 @@ void HandleEvents( void )
 		case FocusIn:
 		case FocusOut:
 			if ( event.type == FocusIn ) {
-				gw_active = qtrue;
+				gw_active = true;
 				Com_DPrintf( "FocusIn\n" );
 			} else {
-				gw_active = qfalse;
+				gw_active = false;
 				Com_DPrintf( "FocusOut\n" );
 			}
 			Key_ClearStates();
@@ -1625,7 +1625,7 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 	window_exposed = qfalse;
 	window_created = qfalse;
 
-	gw_active = qfalse;
+	gw_active = false;
 	gw_minimized = false; /* safe default */
 
 	win = XCreateWindow( dpy, root, 0, 0, actualWidth, actualHeight,

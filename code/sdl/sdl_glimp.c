@@ -267,7 +267,7 @@ static int GLW_SetMode( int mode, const char *modeFS, bool fullscreen, bool vulk
 		SDL_window = NULL;
 	}
 
-	gw_active = qfalse;
+	gw_active = false;
 	gw_minimized = true;
 
 	if ( fullscreen )

@@ -649,7 +649,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		g_wv.hWnd = NULL;
 		g_wv.winRectValid = qfalse;
 		//gw_minimized = false;
-		gw_active = qfalse;
+		gw_active = false;
 		//WIN_EnableAltTab();
 		return 0;
 

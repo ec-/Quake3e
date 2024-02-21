@@ -116,7 +116,7 @@ bool		com_fullyInitialized = false;
 // renderer window states
 bool		gw_minimized = false; // this will be always true for dedicated servers
 #ifndef DEDICATED
-qboolean	gw_active = qtrue;
+bool		gw_active = true;
 #endif
 
 static char com_errorMessage[ MAXPRINTMSG ];

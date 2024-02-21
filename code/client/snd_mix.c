@@ -673,7 +673,7 @@ S_PaintChannels
 ===================
 */
 void S_PaintChannels( int endtime ) {
-	static bool muted = qfalse;
+	static bool muted = false;
 	int 	i;
 	int 	end;
 	channel_t *ch;
@@ -698,7 +698,7 @@ void S_PaintChannels( int endtime ) {
 			Com_Memset( dma.buffer, 0, dma.samples * dma.samplebits/8 );
 			Com_Memset( dma_buffer2, 0, dma.samples * dma.samplebits/8 );
 		}
-		muted = qfalse;
+		muted = false;
 	}
 
 	//Com_Printf ("%i to %i\n", s_paintedtime, endtime);
