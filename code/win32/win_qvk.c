@@ -73,13 +73,13 @@ void *VK_GetInstanceProcAddr( VkInstance instance, const char *name )
 }
 
 
-qboolean VK_CreateSurface( VkInstance instance, VkSurfaceKHR *pSurface )
+bool VK_CreateSurface( VkInstance instance, VkSurfaceKHR *pSurface )
 {
 	VkWin32SurfaceCreateInfoKHR desc;
 
 	qvkCreateWin32SurfaceKHR = /*(PFN_vkCreateWin32SurfaceKHR)*/ VK_GetInstanceProcAddr( instance, "vkCreateWin32SurfaceKHR" );
 	if ( !qvkCreateWin32SurfaceKHR )
-		return qfalse;
+		return false;
 
 	desc.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
 	desc.pNext = NULL;
@@ -88,9 +88,9 @@ qboolean VK_CreateSurface( VkInstance instance, VkSurfaceKHR *pSurface )
 	desc.hwnd = g_wv.hWnd;
 
 	if ( qvkCreateWin32SurfaceKHR( instance, &desc, NULL, pSurface ) == VK_SUCCESS )
-		return qtrue;
+		return true;
 	else
-		return qfalse;
+		return false;
 }
 
 
