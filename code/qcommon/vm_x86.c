@@ -1429,17 +1429,17 @@ static int32_t rx_mask[NUM_RX_REGS];
 static int32_t sx_mask[NUM_SX_REGS];
 
 
-static qboolean find_free_rx( void ) {
+static bool find_free_rx( void ) {
 	uint32_t i, n;
 #if 1
 	for ( i = 0; i < ARRAY_LEN( rx_list_alloc ); i++ ) {
 		n = rx_list_alloc[i];
 		if ( rx_regs[n].type_mask == RTYPE_UNUSED ) {
-			return qtrue;
+			return true;
 		}
 	}
 #endif
-	return qfalse;
+	return false;
 }
 
 
@@ -1568,7 +1568,7 @@ static reg_t *find_rx_var( uint32_t *reg, const var_addr_t *v ) {
 }
 
 
-static qboolean find_sx_var( uint32_t *reg, const var_addr_t *v ) {
+static bool find_sx_var( uint32_t *reg, const var_addr_t *v ) {
 #ifdef LOAD_OPTIMIZE
 	uint32_t i;
 	for ( i = 0; i < ARRAY_LEN( sx_regs ); i++ ) {
@@ -1580,13 +1580,13 @@ static qboolean find_sx_var( uint32_t *reg, const var_addr_t *v ) {
 					r->refcnt++;
 					r->ip = ip;
 					*reg = i;
-					return qtrue;
+					return true;
 				}
 			}
 		}
 	}
 #endif // LOAD_OPTIMIZE
-	return qfalse;
+	return false;
 }
 
 
@@ -1632,14 +1632,14 @@ static void wipe_vars( void )
 }
 
 
-static qboolean search_opstack( opstack_value_t type, uint32_t value ) {
+static bool search_opstack( opstack_value_t type, uint32_t value ) {
 	int i;
 	for ( i = 1; i <= opstack; i++ ) {
 		if ( opstackv[i].type == type && opstackv[i].value == value ) {
-			return qtrue;
+			return true;
 		}
 	}
-	return qfalse;
+	return false;
 }
 
 
@@ -1782,7 +1782,7 @@ static void init_opstack( void )
 }
 
 
-static qboolean scalar_on_top( void )
+static bool scalar_on_top( void )
 {
 #ifdef DEBUG_VM
 	if ( opstack >= PROC_OPSTACK_SIZE || opstack <= 0 )
@@ -1790,13 +1790,13 @@ static qboolean scalar_on_top( void )
 #endif
 #ifdef FPU_OPTIMIZE
 	if ( opstackv[ opstack ].type == TYPE_SX )
-		return qtrue;
+		return true;
 #endif
-	return qfalse;
+	return false;
 }
 
 
-static qboolean addr_on_top( var_addr_t *addr )
+static bool addr_on_top( var_addr_t *addr )
 {
 #ifdef DEBUG_VM
 	if ( opstack >= PROC_OPSTACK_SIZE || opstack <= 0 )
@@ -1807,20 +1807,20 @@ static qboolean addr_on_top( var_addr_t *addr )
 		addr->addr = opstackv[opstack].value;
 		addr->base = R_DATABASE;
 		addr->size = 0;
-		return qtrue;
+		return true;
 	}
 	if ( opstackv[ opstack ].type == TYPE_LOCAL ) {
 		addr->addr = opstackv[opstack].value;
 		addr->base = R_PROCBASE;
 		addr->size = 0;
-		return qtrue;
+		return true;
 	}
 #endif
-	return qfalse;
+	return false;
 }
 
 
-static qboolean const_on_top( void )
+static bool const_on_top( void )
 {
 #ifdef DEBUG_VM
 	if ( opstack >= PROC_OPSTACK_SIZE || opstack <= 0 )
@@ -1828,9 +1828,9 @@ static qboolean const_on_top( void )
 #endif
 #ifdef ADDR_OPTIMIZE
 	if ( opstackv[ opstack ].type == TYPE_CONST )
-		return qtrue;
+		return true;
 #endif
-	return qfalse;
+	return false;
 }
 
 
@@ -1960,7 +1960,7 @@ static uint32_t alloc_rx_local( uint32_t pref, uint32_t imm )
 }
 
 
-// returns qtrue if specified constant is found
+// returns true if specified constant is found
 static reg_t *find_rx_const( uint32_t imm, uint32_t mask )
 {
 #ifdef CONST_CACHE_RX
@@ -2782,22 +2782,22 @@ static void VM_FreeBuffers( void )
 }
 
 
-static const ID_INLINE qboolean HasFCOM( void )
+static const ID_INLINE bool HasFCOM( void )
 {
 #if id386
 	return ( CPU_Flags & CPU_FCOM );
 #else
-	return qtrue; // assume idx64
+	return true; // assume idx64
 #endif
 }
 
 
-static const ID_INLINE qboolean HasSSEFP( void )
+static const ID_INLINE bool HasSSEFP( void )
 {
 #if id386
 	return ( CPU_Flags & CPU_SSE );
 #else
-	return qtrue; // assume idx64
+	return true; // assume idx64
 #endif
 }
 
@@ -2966,7 +2966,7 @@ static void EmitJump( instruction_t *i, int op, int addr )
 {
 	const char *str;
 	int v, jump_size = 0;
-	qboolean shouldNaNCheck = qfalse;
+	bool shouldNaNCheck = false;
 
 	v = instructionOffsets[addr] - compiledOfs;
 
@@ -2978,7 +2978,7 @@ static void EmitJump( instruction_t *i, int op, int addr )
 		// the result must be false. So, we emit `jp` before je/jb/jbe to skip
 		// the branch if the result is NaN.
 		if ( op == OP_EQF || op == OP_LTF || op == OP_LEF ) {
-			shouldNaNCheck = qtrue;
+			shouldNaNCheck = true;
 		}
 	} else {
 		// Similar to above, NaN needs to be accounted for. When HasFCOM() is false,
@@ -2987,7 +2987,7 @@ static void EmitJump( instruction_t *i, int op, int addr )
 		// are NaN, C2 and C0/C3 (whichever was also masked) will be set. So like the previous
 		// case, we can use PF to skip the branch if the result is NaN.
 		if ( op == OP_EQF || op == OP_LTF || op == OP_LEF ) {
-			shouldNaNCheck = qtrue;
+			shouldNaNCheck = true;
 		}
 	}
 
@@ -3419,58 +3419,58 @@ static void EmitDATWFunc( vm_t *vm )
 
 #ifdef CONST_OPTIMIZE
 
-static qboolean IsFloorTrap( const vm_t *vm, const int trap )
+static bool IsFloorTrap( const vm_t *vm, const int trap )
 {
 	if ( trap == ~CG_FLOOR && vm->index == VM_CGAME )
-		return qtrue;
+		return true;
 
 	if ( trap == ~UI_FLOOR && vm->index == VM_UI )
-		return qtrue;
+		return true;
 
 	if ( trap == ~G_FLOOR && vm->index == VM_GAME )
-		return qtrue;
+		return true;
 
-	return qfalse;
+	return false;
 }
 
 
-static qboolean IsCeilTrap( const vm_t *vm, const int trap )
+static bool IsCeilTrap( const vm_t *vm, const int trap )
 {
 	if ( trap == ~CG_CEIL && vm->index == VM_CGAME )
-		return qtrue;
+		return true;
 
 	if ( trap == ~UI_CEIL && vm->index == VM_UI )
-		return qtrue;
+		return true;
 
 	if ( trap == ~G_CEIL && vm->index == VM_GAME )
-		return qtrue;
+		return true;
 
-	return qfalse;
+	return false;
 }
 
 
-static qboolean NextLoad( const var_addr_t *v, const instruction_t *i, int op )
+static bool NextLoad( const var_addr_t *v, const instruction_t *i, int op )
 {
 	if ( i->jused ) {
-		return qfalse;
+		return false;
 	}
 	if ( v->addr == i->value ) {
 		if ( i->op == OP_CONST ) {
 			if ( v->base == R_DATABASE && (i+1)->op == op ) {
-				return qtrue;
+				return true;
 			}
 		}
 		if ( i->op == OP_LOCAL ) {
 			if ( v->base == R_PROCBASE && (i+1)->op == op ) {
-				return qtrue;
+				return true;
 			}
 		}
 	}
-	return qfalse;
+	return false;
 }
 
 
-static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
+static bool ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 {
 	var_addr_t var;
 
@@ -3479,11 +3479,11 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 		case OP_STORE4:	{
 			if ( ci->value == 0 ) {
 				// "xor eax, eax" + non-const path is shorter
-				return qfalse;
+				return false;
 			}
 			if ( addr_on_top( &var ) ) {
 				if ( NextLoad( &var, ni + 1, OP_LOAD4 ) ) {
-					return qfalse; // store value in a register
+					return false; // store value in a register
 				}
 				discard_top(); dec_opstack();						// v = *opstack; opstack -= 4
 				emit_store_imm32( ci->value, var.base, var.addr );	// (dword*)base_reg[ v ] = 0x12345678
@@ -3497,13 +3497,13 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				wipe_vars();
 			}
 			ip += 1; // OP_STORE4
-			return qtrue;
+			return true;
 		}
 
 		case OP_STORE2:	{
 			if ( addr_on_top( &var ) ) {
 				if ( NextLoad( &var, ni + 1, OP_LOAD2 ) || find_rx_const( ci->value, 0xFFFF ) ) {
-					return qfalse; // store value in a register
+					return false; // store value in a register
 				}
 				discard_top(); dec_opstack();						// v = *opstack; opstack -= 4
 				emit_store2_imm16( ci->value, var.base, var.addr );	// (short*)var.base[ v ] = 0x1234
@@ -3517,13 +3517,13 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				wipe_vars();
 			}
 			ip += 1; // OP_STORE2
-			return qtrue;
+			return true;
 		}
 
 		case OP_STORE1: {
 			if ( addr_on_top( &var ) ) {
 				if ( NextLoad( &var, ni + 1, OP_LOAD1 ) || find_rx_const( ci->value, 0xFF ) ) {
-					return qfalse; // store value in a register
+					return false; // store value in a register
 				}
 				discard_top(); dec_opstack();						// v = *opstack; opstack -= 4
 				emit_store1_imm8( ci->value, var.base, var.addr );	// (byte*)base_reg[ v ] = 0x12
@@ -3537,7 +3537,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				wipe_vars();
 			}
 			ip += 1; // OP_STORE1
-			return qtrue;
+			return true;
 		}
 
 		case OP_ADD: {
@@ -3550,7 +3550,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			}
 			store_rx_opstack( rx );							// *opstack = eax
 			ip += 1; // OP_ADD
-			return qtrue;
+			return true;
 		}
 
 		case OP_SUB: {
@@ -3558,7 +3558,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			emit_op_rx_imm32( X_SUB, rx, ci->value );	// sub eax, 0x12345678
 			store_rx_opstack( rx );						// *opstack = eax
 			ip += 1; // OP_SUB
-			return qtrue;
+			return true;
 		}
 
 		case OP_MULI:
@@ -3567,7 +3567,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			emit_mul_rx_imm( rx, ci->value );		// imul eax, eax, 0x12345678
 			store_rx_opstack( rx );					// *opstack = eax
 			ip += 1; // OP_MUL
-			return qtrue;
+			return true;
 		}
 
 		case OP_BAND: {
@@ -3579,13 +3579,13 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 					EmitJump( ni+2, (ni+2)->op, (ni+2)->value ); // jcc
 					unmask_rx( rx );
 					ip += 3; // OP_BAND + OP_CONST + OP_EQ/OP_NE
-					return qtrue;
+					return true;
 				}
 			}
 			emit_op_rx_imm32( X_AND, rx, ci->value );	// and eax, 0x12345678
 			store_rx_opstack( rx );						// *opstack = eax
 			ip += 1; // OP_BAND
-			return qtrue;
+			return true;
 		}
 
 		case OP_BOR: {
@@ -3593,7 +3593,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			emit_op_rx_imm32( X_OR, rx, ci->value );	// or eax, 0x12345678
 			store_rx_opstack( rx );						// *opstack = eax
 			ip += 1; // OP_BOR
-			return qtrue;
+			return true;
 		}
 
 		case OP_BXOR: {
@@ -3601,7 +3601,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			emit_op_rx_imm32( X_XOR, rx, ci->value );	// xor eax, 0x12345678
 			store_rx_opstack( rx );						// *opstack = eax
 			ip += 1; // OP_BXOR
-			return qtrue;
+			return true;
 		}
 
 		case OP_LSH:
@@ -3613,7 +3613,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				store_rx_opstack( rx );					// *opstack = eax
 			}
 			ip += 1; // OP_LSH
-			return qtrue;
+			return true;
 
 		case OP_RSHI:
 			if ( ci->value < 0 || ci->value > 31 )
@@ -3624,7 +3624,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				store_rx_opstack( rx );					// *opstack = eax
 			}
 			ip += 1; // OP_RSHI
-			return qtrue;
+			return true;
 
 		case OP_RSHU:
 			if ( ci->value < 0 || ci->value > 31 )
@@ -3635,7 +3635,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				store_rx_opstack( rx );					// *opstack = eax
 			}
 			ip += 1; // OP_RSHU
-			return qtrue;
+			return true;
 
 		case OP_CALL: {
 			inc_opstack(); // opstack += 4
@@ -3646,7 +3646,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 					emit_sqrt( sx, R_PROCBASE, 8 );		// sqrtss xmm0, dword ptr [ebp + 8]
 					store_sx_opstack( sx );				// *opstack = xmm0
 					ip += 1; // OP_CALL
-					return qtrue;
+					return true;
 				}
 
 				if ( IsFloorTrap( vm, ci->value ) && ( CPU_Flags & CPU_SSE41 ) ) {
@@ -3654,7 +3654,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 					emit_floor( sx, R_PROCBASE, 8 );	// roundss xmm0, dword ptr [ebp + 8], 1
 					store_sx_opstack( sx );				// *opstack = xmm0
 					ip += 1; // OP_CALL
-					return qtrue;
+					return true;
 				}
 
 				if ( IsCeilTrap( vm, ci->value ) && ( CPU_Flags & CPU_SSE41 ) ) {
@@ -3662,7 +3662,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 					emit_ceil( sx, R_PROCBASE, 8 );		// roundss xmm0, dword ptr [ebp + 8], 2
 					store_sx_opstack( sx );				// *opstack = xmm0
 					ip += 1; // OP_CALL
-					return qtrue;
+					return true;
 				}
 			} else {
 				// legacy x87 path
@@ -3682,7 +3682,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				}
 				ip += 1; // OP_CALL
 				store_syscall_opstack();
-				return qtrue;
+				return true;
 			}
 			emit_push( R_OPSTACK );	// push edi
 			if ( opstack != 1 ) {
@@ -3691,14 +3691,14 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			EmitCallAddr( vm, ci->value );	// call +addr
 			emit_pop( R_OPSTACK );	// pop edi
 			ip += 1; // OP_CALL
-			return qtrue;
+			return true;
 		}	
 
 		case OP_JUMP:
 			flush_volatile();
 			EmitJump( ni, ni->op, ci->value );
 			ip += 1; // OP_JUMP
-			return qtrue;
+			return true;
 
 		case OP_EQ:
 		case OP_NE:
@@ -3719,11 +3719,11 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			unmask_rx( rx );
 			EmitJump( ni, ni->op, ni->value );			// jcc
 			ip += 1; // OP_cond
-			return qtrue;
+			return true;
 		}
 
 	}
-	return qfalse;
+	return false;
 }
 #endif
 
@@ -3801,7 +3801,7 @@ static void VM_FindMOps( instruction_t *buf, int instructionCount )
 EmitMOPs
 =================
 */
-static qboolean EmitMOPs( vm_t *vm, instruction_t *ci, macro_op_t op )
+static bool EmitMOPs( vm_t *vm, instruction_t *ci, macro_op_t op )
 {
 	uint32_t reg_base;
 	int n;
@@ -3818,38 +3818,38 @@ static qboolean EmitMOPs( vm_t *vm, instruction_t *ci, macro_op_t op )
 			n = inst[ ip + 2 ].value;
 			emit_op_mem_imm( X_ADD, R_PROCBASE, ci->value, n );
 			ip += 5;
-			return qtrue;
+			return true;
 
 		//[local] -= CONST
 		case MOP_SUB:
 			n = inst[ ip + 2 ].value;
 			emit_op_mem_imm( X_SUB, R_PROCBASE, ci->value, n );
 			ip += 5;
-			return qtrue;
+			return true;
 
 		//[local] &= CONST
 		case MOP_BAND:
 			n = inst[ ip + 2 ].value;
 			emit_op_mem_imm( X_AND, R_PROCBASE, ci->value, n );
 			ip += 5;
-			return qtrue;
+			return true;
 
 		//[local] |= CONST
 		case MOP_BOR:
 			n = inst[ ip + 2 ].value;
 			emit_op_mem_imm( X_OR, R_PROCBASE, ci->value, n );
 			ip += 5;
-			return qtrue;
+			return true;
 
 		//[local] ^= CONST
 		case MOP_BXOR:
 			n = inst[ ip + 2 ].value;
 			emit_op_mem_imm( X_XOR, R_PROCBASE, ci->value, n );
 			ip += 5;
-			return qtrue;
+			return true;
 	}
 
-	return qfalse;
+	return false;
 }
 #endif // MACRO_OPTIMIZE
 
@@ -3883,7 +3883,7 @@ static void dump_code( const char *vmname, uint8_t *c, int32_t code_len )
 VM_Compile
 =================
 */
-qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
+bool VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	const char	*errMsg;
 	int		instructionCount;
 	instruction_t *ci;
@@ -3913,7 +3913,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	if ( errMsg ) {
 		VM_FreeBuffers();
 		Com_Printf( "VM_CompileX86 error: %s\n", errMsg );
-		return qfalse;
+		return false;
 	}
 
 	VM_ReplaceInstructions( vm, inst );
@@ -4641,7 +4641,7 @@ __compile:
 			default:
 				Com_Error( ERR_FATAL, "VM_CompileX86: bad opcode %02X", ci->op );
 				VM_FreeBuffers();
-				return qfalse;
+				return false;
 			}
 		}
 
@@ -4711,7 +4711,7 @@ __compile:
 	if ( code == NULL ) {
 		code = (byte*)VM_Alloc_Compiled( vm, PAD(compiledOfs,8), n );
 		if ( code == NULL ) {
-			return qfalse;
+			return false;
 		}
 		instructionPointers = (intptr_t*)(byte*)(code + PAD(compiledOfs,8));
 		//vm->instructionPointers = instructionPointers; // for debug purposes?
@@ -4738,7 +4738,7 @@ __compile:
 	if ( mprotect( vm->codeBase.ptr, vm->codeSize, PROT_READ|PROT_EXEC ) ) {
 		VM_Destroy_Compiled( vm );
 		Com_Printf( S_COLOR_YELLOW "VM_CompileX86: mprotect failed\n" );
-		return qfalse;
+		return false;
 	}
 #elif _WIN32
 	{
@@ -4748,7 +4748,7 @@ __compile:
 		if ( !VirtualProtect( vm->codeBase.ptr, vm->codeSize, PAGE_EXECUTE_READ, &oldProtect ) ) {
 			VM_Destroy_Compiled( vm );
 			Com_Printf( S_COLOR_YELLOW "%s(%s): VirtualProtect failed\n", __func__, vm->name );
-			return qfalse;
+			return false;
 		}
 	}
 #endif
@@ -4757,7 +4757,7 @@ __compile:
 
 	Com_Printf( "VM file %s compiled to %i bytes of code\n", vm->name, compiledOfs );
 
-	return qtrue;
+	return true;
 }
 
 

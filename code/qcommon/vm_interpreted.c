@@ -107,7 +107,7 @@ static void VM_FindMOps( instruction_t *buf, int instructionCount )
 VM_PrepareInterpreter2
 ====================
 */
-qboolean VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header )
+bool VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header )
 {
 	const char *errMsg;
 	instruction_t *buf;
@@ -119,7 +119,7 @@ qboolean VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header )
 	}
 	if ( errMsg ) {
 		Com_Printf( "VM_PrepareInterpreter2 error: %s\n", errMsg );
-		return qfalse;
+		return false;
 	}
 
 	VM_ReplaceInstructions( vm, buf );
@@ -127,7 +127,7 @@ qboolean VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header )
 	VM_FindMOps( buf, vm->instructionCount );
 
 	vm->codeBase.ptr = (void*)buf;
-	return qtrue;
+	return true;
 }
 
 
