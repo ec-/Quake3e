@@ -784,14 +784,14 @@ CM_ValidateFacet
 If the facet isn't bounded by its borders, we screwed up.
 ==================
 */
-static qboolean CM_ValidateFacet( const facet_t *facet ) {
+static bool CM_ValidateFacet( const facet_t *facet ) {
 	float		plane[4];
 	int			j;
 	winding_t	*w;
 	vec3_t		bounds[2];
 
 	if ( facet->surfacePlane == -1 ) {
-		return qfalse;
+		return false;
 	}
 
 	Vector4Copy( planes[ facet->surfacePlane ].plane, plane );
@@ -799,7 +799,7 @@ static qboolean CM_ValidateFacet( const facet_t *facet ) {
 	for ( j = 0 ; j < facet->numBorders && w ; j++ ) {
 		if ( facet->borderPlanes[j] == -1 ) {
 			FreeWinding( w );
-			return qfalse;
+			return false;
 		}
 		Vector4Copy( planes[ facet->borderPlanes[j] ].plane, plane );
 		if ( !facet->borderInward[j] ) {
@@ -810,7 +810,7 @@ static qboolean CM_ValidateFacet( const facet_t *facet ) {
 	}
 
 	if ( !w ) {
-		return qfalse;		// winding was completely chopped away
+		return false;		// winding was completely chopped away
 	}
 
 	// see if the facet is unreasonably large
@@ -819,16 +819,16 @@ static qboolean CM_ValidateFacet( const facet_t *facet ) {
 
 	for ( j = 0 ; j < 3 ; j++ ) {
 		if ( bounds[1][j] - bounds[0][j] > MAX_MAP_BOUNDS ) {
-			return qfalse;		// we must be missing a plane
+			return false;		// we must be missing a plane
 		}
 		if ( bounds[0][j] >= MAX_MAP_BOUNDS ) {
-			return qfalse;
+			return false;
 		}
 		if ( bounds[1][j] <= -MAX_MAP_BOUNDS ) {
-			return qfalse;
+			return false;
 		}
 	}
-	return qtrue;		// winding is fine
+	return true;		// winding is fine
 }
 
 
