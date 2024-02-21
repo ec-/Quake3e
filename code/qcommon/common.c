@@ -630,11 +630,11 @@ Returns qtrue if any late commands were added, which
 will keep the demoloop from immediately starting
 =================
 */
-static qboolean Com_AddStartupCommands( void ) {
+static bool Com_AddStartupCommands( void ) {
 	int		i;
-	qboolean	added;
+	bool	added;
 
-	added = qfalse;
+	added = false;
 	// quote every token, so args with semicolons can work
 	for (i=0 ; i < com_numConsoleLines ; i++) {
 		if ( !com_consoleLines[i] || !com_consoleLines[i][0] ) {
@@ -646,7 +646,7 @@ static qboolean Com_AddStartupCommands( void ) {
 			continue;
 		}
 
-		added = qtrue;
+		added = true;
 		Cbuf_AddText( com_consoleLines[i] );
 		Cbuf_AddText( "\n" );
 	}
