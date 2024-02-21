@@ -129,7 +129,7 @@ void CIN_CloseAllVideos( void );
 
 static char	*rd_buffer;
 static int	rd_buffersize;
-static qboolean rd_flushing = qfalse;
+static bool rd_flushing = false;
 static void	(*rd_flush)( const char *buffer );
 
 void Com_BeginRedirect( char *buffer, int buffersize, void (*flush)(const char *) )
@@ -147,9 +147,9 @@ void Com_BeginRedirect( char *buffer, int buffersize, void (*flush)(const char *
 void Com_EndRedirect( void )
 {
 	if ( rd_flush ) {
-		rd_flushing = qtrue;
+		rd_flushing = true;
 		rd_flush( rd_buffer );
-		rd_flushing = qfalse;
+		rd_flushing = false;
 	}
 
 	rd_buffer = NULL;
@@ -180,9 +180,9 @@ void FORMAT_PRINTF(1, 2) QDECL Com_Printf( const char *fmt, ... ) {
 
 	if ( rd_buffer && !rd_flushing ) {
 		if ( len + (int)strlen( rd_buffer ) > ( rd_buffersize - 1 ) ) {
-			rd_flushing = qtrue;
+			rd_flushing = true;
 			rd_flush( rd_buffer );
-			rd_flushing = qfalse;
+			rd_flushing = false;
 			*rd_buffer = '\0';
 		}
 		Q_strcat( rd_buffer, rd_buffersize, msg );
