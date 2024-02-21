@@ -3,7 +3,7 @@
 #include "q_shared.h"
 #include "qcommon.h"
 
-static      qboolean historyLoaded = qfalse;
+static      bool historyLoaded = false;
 
 #define     COMMAND_HISTORY 32
 
@@ -26,7 +26,7 @@ Con_ResetHistory
 */
 void Con_ResetHistory( void )
 {
-	historyLoaded = qfalse;
+	historyLoaded = false;
 	nextHistoryLine = 0;
 	historyLine = 0;
 }
@@ -44,8 +44,8 @@ void Con_SaveField( const field_t *field )
 	if ( !field || field->buffer[0] == '\0' )
 		return;
 
-	if ( historyLoaded == qfalse ) {
-		historyLoaded = qtrue;
+	if ( historyLoaded == false ) {
+		historyLoaded = true;
 		Con_LoadHistory();
 	}
 
@@ -77,8 +77,8 @@ qboolean Con_HistoryGetPrev( field_t *field )
 {
 	qboolean bresult;
 
-	if ( historyLoaded == qfalse ) {
-		historyLoaded = qtrue;
+	if ( historyLoaded == false ) {
+		historyLoaded = true;
 		Con_LoadHistory();
 	}
 
@@ -106,8 +106,8 @@ qboolean Con_HistoryGetNext( field_t *field )
 {
 	qboolean bresult;
 
-	if ( historyLoaded == qfalse ) {
-		historyLoaded = qtrue;
+	if ( historyLoaded == false ) {
+		historyLoaded = true;
 		Con_LoadHistory();
 	}
 
