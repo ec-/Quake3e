@@ -728,7 +728,7 @@ float Com_Clamp( float min, float max, float value );
 char	*COM_SkipPath( char *pathname );
 const char	*COM_GetExtension( const char *name );
 void	COM_StripExtension(const char *in, char *out, int destsize);
-qboolean COM_CompareExtension(const char *in, const char *ext);
+bool COM_CompareExtension(const char *in, const char *ext);
 void	COM_DefaultExtension( char *path, int maxSize, const char *extension );
 
 unsigned long Com_GenerateHashValue( const char *fname, const unsigned int size );
@@ -736,13 +736,13 @@ unsigned long Com_GenerateHashValue( const char *fname, const unsigned int size 
 void	COM_BeginParseSession( const char *name );
 int		COM_GetCurrentParseLine( void );
 const char	*COM_Parse( const char **data_p );
-const char	*COM_ParseExt( const char **data_p, qboolean allowLineBreak );
+const char	*COM_ParseExt( const char **data_p, bool allowLineBreak );
 int		COM_Compress( char *data_p );
 void	COM_ParseError( const char *format, ... ) __attribute__ ((format (printf, 1, 2)));
 void	COM_ParseWarning( const char *format, ... ) __attribute__ ((format (printf, 1, 2)));
 //int		COM_ParseInfos( const char *buf, int max, char infos[][MAX_INFO_STRING] );
 
-char	*COM_ParseComplex( const char **data_p, qboolean allowLineBreak );
+char	*COM_ParseComplex( const char **data_p, bool allowLineBreak );
 
 typedef enum {
 	TK_GENEGIC = 0, // for single-char tokens
@@ -787,7 +787,7 @@ typedef struct pc_token_s
 
 // data is an in/out parm, returns a parsed out token
 
-qboolean SkipBracedSection( const char **program, int depth );
+bool SkipBracedSection( const char **program, int depth );
 void SkipRestOfLine( const char **data );
 
 void Parse1DMatrix( const char **buf_p, int x, float *m);
@@ -826,7 +826,7 @@ int Q_islower( int c );
 int Q_isupper( int c );
 int Q_isalpha( int c );
 
-qboolean Q_streq( const char *s1, const char *s2 );
+bool Q_streq( const char *s1, const char *s2 );
 
 // portable case insensitive compare
 int		Q_stricmp (const char *s1, const char *s2);
@@ -836,8 +836,8 @@ char	*Q_strlwr( char *s1 );
 char	*Q_strupr( char *s1 );
 const char	*Q_stristr( const char *s, const char *find);
 
-qboolean Q_isanumber( const char *s );
-qboolean Q_isintegral( float f );
+bool Q_isanumber( const char *s );
+bool Q_isintegral( float f );
 
 // buffer size safe library replacements
 void	Q_strncpyz( char *dest, const char *src, int destsize );
@@ -980,7 +980,7 @@ struct cvar_s {
 	char		*resetString;		// cvar_restart will reset to this value
 	char		*latchedString;		// for CVAR_LATCH vars
 	int			flags;
-	qboolean	modified;			// set each time the cvar is changed
+	bool		modified;			// set each time the cvar is changed
 	int			modificationCount;	// incremented each time the cvar is changed
 	float		value;				// Q_atof( string )
 	int			integer;			// atoi( string )
@@ -1050,8 +1050,8 @@ typedef struct cplane_s {
 
 // a trace is returned when a box is swept through the world
 typedef struct {
-	qboolean	allsolid;	// if true, plane is not valid
-	qboolean	startsolid;	// if true, the initial point was in a solid area
+	bool	allsolid;	// if true, plane is not valid
+	qboolean	startsolid;	// if true, the initial point was in a solid area // !!! cuses game flick when changed to bool
 	float		fraction;	// time completed, 1.0 = didn't hit anything
 	vec3_t		endpos;		// final position
 	cplane_t	plane;		// surface normal at impact, transformed to world space

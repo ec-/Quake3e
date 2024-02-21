@@ -95,7 +95,7 @@ COM_CompareExtension
 string compare the end of the strings and return qtrue if strings match
 ============
 */
-qboolean COM_CompareExtension(const char *in, const char *ext)
+bool COM_CompareExtension(const char *in, const char *ext)
 {
 	int inlen, extlen;
 	
@@ -107,10 +107,10 @@ qboolean COM_CompareExtension(const char *in, const char *ext)
 		in += inlen - extlen;
 		
 		if(!Q_stricmp(in, ext))
-			return qtrue;
+			return true;
 	}
 	
-	return qfalse;
+	return false;
 }
 
 
@@ -249,7 +249,7 @@ crc32_buffer
 */
 unsigned int crc32_buffer( const byte *buf, unsigned int len ) {
 	static unsigned int crc32_table[256];
-	static qboolean crc32_inited = qfalse;
+	static bool crc32_inited = false;
 
 	unsigned int crc = 0xFFFFFFFFUL;
 
@@ -265,7 +265,7 @@ unsigned int crc32_buffer( const byte *buf, unsigned int len ) {
 				c = (c & 1) ? (c >> 1) ^ 0xEDB88320UL : c >> 1;
 			crc32_table[i] = c;
 		}
-		crc32_inited = qtrue;
+		crc32_inited = true;
 	}
 
 	while ( len-- )
@@ -508,7 +508,7 @@ string will be returned if the next token is
 a newline.
 ==============
 */
-static const char *SkipWhitespace( const char *data, qboolean *hasNewLines ) {
+static const char *SkipWhitespace( const char *data, bool *hasNewLines ) {
 	int c;
 
 	while( (c = *data) <= ' ') {
@@ -517,7 +517,7 @@ static const char *SkipWhitespace( const char *data, qboolean *hasNewLines ) {
 		}
 		if( c == '\n' ) {
 			com_lines++;
-			*hasNewLines = qtrue;
+			*hasNewLines = true;
 		}
 		data++;
 	}
@@ -530,7 +530,7 @@ int COM_Compress( char *data_p ) {
 	const char *in;
 	char *out;
 	int c;
-	qboolean newline = qfalse, whitespace = qfalse;
+	bool newline = false, whitespace = false;
 
 	in = out = data_p;
 	while ((c = *in) != '\0') {
@@ -547,22 +547,22 @@ int COM_Compress( char *data_p ) {
 				in += 2;
 			// record when we hit a newline
 		} else if ( c == '\n' || c == '\r' ) {
-			newline = qtrue;
+			newline = true;
 			in++;
 			// record when we hit whitespace
 		} else if ( c == ' ' || c == '\t') {
-			whitespace = qtrue;
+			whitespace = true;
 			in++;
 			// an actual token
 		} else {
 			// if we have a pending newline, emit it (and it counts as whitespace)
 			if (newline) {
 				*out++ = '\n';
-				newline = qfalse;
-				whitespace = qfalse;
+				newline = false;
+				whitespace = false;
 			} else if (whitespace) {
 				*out++ = ' ';
-				whitespace = qfalse;
+				whitespace = false;
 			}
 			// copy quoted strings unmolested
 			if (c == '"') {
@@ -594,10 +594,10 @@ int COM_Compress( char *data_p ) {
 }
 
 
-const char *COM_ParseExt( const char **data_p, qboolean allowLineBreaks )
+const char *COM_ParseExt( const char **data_p, bool allowLineBreaks )
 {
 	int c = 0, len;
-	qboolean hasNewLines = qfalse;
+	bool hasNewLines = false;
 	const char *data;
 
 	data = *data_p;
@@ -715,7 +715,7 @@ const char *COM_ParseExt( const char **data_p, qboolean allowLineBreaks )
 COM_ParseComplex
 ==============
 */
-char *COM_ParseComplex( const char **data_p, qboolean allowLineBreaks )
+char *COM_ParseComplex( const char **data_p, bool allowLineBreaks )
 {
 	static const byte is_separator[ 256 ] =
 	{
@@ -956,7 +956,7 @@ Skips until a matching close brace is found.
 Internal brace depths are properly skipped.
 =================
 */
-qboolean SkipBracedSection( const char **program, int depth ) {
+bool SkipBracedSection( const char **program, int depth ) {
 	const char			*token;
 
 	do {
@@ -1094,25 +1094,25 @@ int Com_HexStrToInt( const char *str )
 }
 
 
-qboolean Com_GetHashColor( const char *str, byte *color )
+bool Com_GetHashColor( const char *str, byte *color )
 {
 	int i, len, hex[6];
 
 	color[0] = color[1] = color[2] = 0;
 
 	if ( *str++ != '#' ) {
-		return qfalse;
+		return false;
 	}
 
 	len = (int)strlen( str );
 	if ( len <= 0 || len > 6 ) {
-		return qfalse;
+		return false;
 	}
 
 	for ( i = 0; i < len; i++ ) {
 		hex[i] = Hex( str[i] );
 		if ( hex[i] < 0 ) {
-			return qfalse;
+			return false;
 		}
 	}
 
@@ -1128,10 +1128,10 @@ qboolean Com_GetHashColor( const char *str, byte *color )
 			color[2] = hex[4] << 4 | hex[5];
 			break;
 		default: // unsupported format
-			return qfalse;
+			return false;
 	}
 
-	return qtrue;
+	return true;
 }
 
 
@@ -1211,16 +1211,16 @@ int Q_isalpha( int c )
 }
 
 
-qboolean Q_isanumber( const char *s )
+bool Q_isanumber( const char *s )
 {
 #ifdef Q3_VM
     //FIXME: implement
-    return qfalse;
+    return false;
 #else
     char *p;
 
 	if( *s == '\0' )
-        return qfalse;
+        return false;
 
 	strtod( s, &p );
 
@@ -1229,7 +1229,7 @@ qboolean Q_isanumber( const char *s )
 }
 
 
-qboolean Q_isintegral( float f )
+bool Q_isintegral( float f )
 {
     return (int)f == f;
 }
@@ -1392,18 +1392,18 @@ int Q_strncmp( const char *s1, const char *s2, int n ) {
 }
 
 
-qboolean Q_streq( const char *s1, const char *s2 ) {
+bool Q_streq( const char *s1, const char *s2 ) {
 	int	c1, c2;
 
 	do {
 		c1 = *s1++;
 		c2 = *s2++;
 		if ( c1 != c2 ) {
-			return qfalse;
+			return false;
 		}
 	} while ( c1 != '\0' );
 
-	return qtrue;
+	return true;
 }
 
 
@@ -1781,7 +1781,7 @@ void Com_TruncateLongString( char *buffer, const char *s )
 =====================================================================
 */
 
-static qboolean Q_strkey( const char *str, const char *key, int key_len )
+static bool Q_strkey( const char *str, const char *key, int key_len )
 {
 	int i;
 
@@ -1789,11 +1789,11 @@ static qboolean Q_strkey( const char *str, const char *key, int key_len )
 	{
 		if ( locase[ (byte)str[i] ] != locase[ (byte)key[i] ] )
 		{
-			return qfalse;
+			return false;
 		}
 	}
 
-	return qtrue;
+	return true;
 }
 
 
@@ -2140,17 +2140,17 @@ bool Info_SetValueForKey_s( char *s, int slen, const char *key, const char *valu
 Com_CharIsOneOfCharset
 ==================
 */
-static qboolean Com_CharIsOneOfCharset( char c, const char *set )
+static bool Com_CharIsOneOfCharset( char c, const char *set )
 {
 	int i, n = (int)(strlen(set));
 
 	for( i = 0; i < n; i++ )
 	{
 		if( set[ i ] == c )
-			return qtrue;
+			return true;
 	}
 
-	return qfalse;
+	return false;
 }
 
 
