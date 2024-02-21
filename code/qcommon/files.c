@@ -4433,7 +4433,7 @@ FS_Shutdown
 Frees all resources.
 ================
 */
-void FS_Shutdown( qboolean closemfp )
+void FS_Shutdown( bool closemfp )
 {
 	searchpath_t	*p, *next;
 	int i;
@@ -5416,7 +5416,7 @@ void FS_Restart( int checksumFeed ) {
 	static qboolean execConfig = qfalse;
 
 	// free anything we currently have loaded
-	FS_Shutdown( qfalse );
+	FS_Shutdown( false );
 
 	// set the checksum feed
 	fs_checksumFeed = checksumFeed;
@@ -5476,24 +5476,24 @@ FS_ConditionalRestart
 restart if necessary
 =================
 */
-qboolean FS_ConditionalRestart( int checksumFeed, qboolean clientRestart )
+bool FS_ConditionalRestart( int checksumFeed, bool clientRestart )
 {
 	if ( fs_gamedirvar->modified )
 	{
 		Com_GameRestart( checksumFeed, clientRestart );
-		return qtrue;
+		return true;
 	}
 	else if ( checksumFeed != fs_checksumFeed )
 	{
 		FS_Restart( checksumFeed );
-		return qtrue;
+		return true;
 	}
 	else if( fs_numServerPaks && !fs_reordered ) 
 	{
 		FS_ReorderPurePaks();
 	}
 	
-	return qfalse;
+	return false;
 }
 
 

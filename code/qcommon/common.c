@@ -427,7 +427,7 @@ void Com_Quit_f( void ) {
 #endif
 		VM_Forced_Unload_Done();
 		Com_Shutdown();
-		FS_Shutdown( qtrue );
+		FS_Shutdown( true );
 	}
 	Sys_Quit();
 }
@@ -3005,14 +3005,14 @@ Com_GameRestart
 Change to a new mod properly with cleaning up cvars before switching.
 ==================
 */
-void Com_GameRestart( int checksumFeed, qboolean clientRestart )
+void Com_GameRestart( int checksumFeed, bool clientRestart )
 {
-	static qboolean com_gameRestarting = qfalse;
+	static bool com_gameRestarting = false;
 
 	// make sure no recursion can be triggered
 	if ( !com_gameRestarting && com_fullyInitialized )
 	{
-		com_gameRestarting = qtrue;
+		com_gameRestarting = true;
 #ifndef DEDICATED
 		if ( clientRestart )
 		{
@@ -3030,15 +3030,15 @@ void Com_GameRestart( int checksumFeed, qboolean clientRestart )
 		Con_ResetHistory();
 
 		// Shutdown FS early so Cvar_Restart will not reset old game cvars
-		FS_Shutdown( qtrue );
+		FS_Shutdown( true );
 
 		// Clean out any user and VM created cvars
-		Cvar_Restart( qtrue );
+		Cvar_Restart( true );
 
 #ifndef DEDICATED
 		// Reparse pure paks and update cvars before FS startup
 		if ( CL_GameSwitch() )
-			CL_SystemInfoChanged( qfalse );
+			CL_SystemInfoChanged( false );
 #endif
 
 		FS_Restart( checksumFeed );
@@ -3051,7 +3051,7 @@ void Com_GameRestart( int checksumFeed, qboolean clientRestart )
 			CL_StartHunkUsers();
 #endif
 
-		com_gameRestarting = qfalse;
+		com_gameRestarting = false;
 	}
 }
 
@@ -3067,7 +3067,7 @@ static void Com_GameRestart_f( void )
 {
 	Cvar_Set( "fs_game", Cmd_Argv( 1 ) );
 
-	Com_GameRestart( 0, qtrue );
+	Com_GameRestart( 0, true );
 }
 
 

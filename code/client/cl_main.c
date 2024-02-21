@@ -1019,8 +1019,8 @@ void CL_ShutdownAll( void ) {
 		}
 	}
 
-	cls.rendererStarted = qfalse;
-	cls.soundRegistered = qfalse;
+	cls.rendererStarted = false;
+	cls.soundRegistered = false;
 
 	SCR_Done();
 }

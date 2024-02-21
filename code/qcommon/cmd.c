@@ -324,7 +324,7 @@ Cmd_Exec_f
 ===============
 */
 static void Cmd_Exec_f( void ) {
-	qboolean quiet;
+	bool quiet;
 	union {
 		char *c;
 		void *v;
