@@ -1102,7 +1102,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 ** for the window.  The state structure is also nulled out.
 **
 */
-void GLimp_Shutdown( qboolean unloadDLL )
+void GLimp_Shutdown( bool unloadDLL )
 {
 	IN_DeactivateMouse();
 
@@ -1790,9 +1790,9 @@ static void InitCvars( void )
 ** GLimp_win.c internal function that that attempts to load and use 
 ** a specific OpenGL DLL.
 */
-static qboolean GLW_LoadOpenGL( const char *name )
+static bool GLW_LoadOpenGL( const char *name )
 {
-	qboolean fullscreen;
+	bool fullscreen;
 
 	if ( r_swapInterval->integer )
 		setenv( "vblank_mode", "2", 1 );
@@ -1826,13 +1826,13 @@ static qboolean GLW_LoadOpenGL( const char *name )
 				goto fail;
 			}
 		}
-		return qtrue;
+		return true;
 	}
 	fail:
 
-	QGL_Shutdown( qtrue );
+	QGL_Shutdown( true );
 
-	return qfalse;
+	return false;
 }
 
 
@@ -1949,7 +1949,7 @@ void GLimp_EndFrame( void )
 /*
 ** GLW_LoadVulkan
 */
-static qboolean GLW_LoadVulkan( void )
+static bool GLW_LoadVulkan( void )
 {
 	if ( r_swapInterval->integer )
 		setenv( "vblank_mode", "2", 1 );
@@ -1960,23 +1960,23 @@ static qboolean GLW_LoadVulkan( void )
 	if ( QVK_Init() )
 	{
 		rserr_t err;
-		qboolean fullscreen = (r_fullscreen->integer != 0);
+		bool fullscreen = (r_fullscreen->integer != 0);
 
 		// create the window and set up the context
 		err = GLW_StartDriverAndSetMode( r_mode->integer, r_modeFullscreen->string, fullscreen, qtrue /* vulkan */ );
 		if ( err == RSERR_OK )
 		{
-			return qtrue;
+			return true;
 		}
 	}
 
-	QVK_Shutdown( qtrue );
+	QVK_Shutdown( true );
 
-	return qfalse;
+	return false;
 }
 
 
-static qboolean GLW_StartVulkan( void )
+static bool GLW_StartVulkan( void )
 {
 	//
 	// load and initialize the specific Vulkan driver
@@ -1984,10 +1984,10 @@ static qboolean GLW_StartVulkan( void )
 	if ( !GLW_LoadVulkan() )
 	{
 		Com_Error( ERR_FATAL, "GLW_StartVulkan() - could not load Vulkan subsystem\n" );
-		return qfalse;
+		return false;
 	}
 
-	return qtrue;
+	return true;
 }
 
 

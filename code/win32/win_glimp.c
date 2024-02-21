@@ -75,13 +75,13 @@ static rserr_t	GLW_SetMode( int mode, const char *modeFS, int colorbits,
 // function declaration
 //
 #ifdef USE_OPENGL_API
-qboolean	QGL_Init( const char *dllname );
-void		QGL_Shutdown( qboolean unloadDLL );
+bool		QGL_Init( const char *dllname );
+void		QGL_Shutdown( bool unloadDLL );
 #endif
 
 #ifdef USE_VULKAN_API
-qboolean	QVK_Init( void );
-void		QVK_Shutdown( qboolean unloadDLL );
+bool		QVK_Init( void );
+void		QVK_Shutdown( bool unloadDLL );
 #endif
 
 //
@@ -1269,7 +1269,7 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 	}
 fail:
 
-	QGL_Shutdown( qtrue );
+	QGL_Shutdown( true );
 
 	return qfalse;
 }
@@ -1397,7 +1397,7 @@ void GLimp_Init( glconfig_t *config )
 ** This routine does all OS specific shutdown procedures for the OpenGL
 ** subsystem.
 */
-void GLimp_Shutdown( qboolean unloadDLL )
+void GLimp_Shutdown( bool unloadDLL )
 {
 	const char *success[] = { "failed", "success" };
 	int retVal;
@@ -1462,37 +1462,37 @@ void GLimp_Shutdown( qboolean unloadDLL )
 
 
 #ifdef USE_VULKAN_API
-static qboolean GLW_LoadVulkan( void )
+static bool GLW_LoadVulkan( void )
 {
 	//
 	// load the driver and bind our function pointers to it
 	//
 	if ( QVK_Init() )
 	{
-		qboolean cdsFullscreen = (r_fullscreen->integer != 0);
+		bool cdsFullscreen = (r_fullscreen->integer != 0);
 
 		// create the window and set up the context
 		if ( GLW_StartDriverAndSetMode( r_mode->integer, r_modeFullscreen->string, r_colorbits->integer, cdsFullscreen, qtrue ) == RSERR_OK )
-			return qtrue;
+			return true;
 	}
 
-	QVK_Shutdown( qtrue );
+	QVK_Shutdown( true );
 
-	return qfalse;
+	return false;
 }
 
 
-static qboolean GLW_StartVulkan( void )
+static bool GLW_StartVulkan( void )
 {
 	//
 	// load and initialize Vulkan driver
 	//
 	if ( !GLW_LoadVulkan() ) {
 		Com_Error( ERR_FATAL, "GLW_StartVulkan() - could not load Vulkan subsystem\n" );
-		return qfalse;
+		return false;
 	}
 
-	return qtrue;
+	return true;
 }
 
 

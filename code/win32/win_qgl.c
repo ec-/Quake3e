@@ -50,7 +50,7 @@ QGL_Swp_PROCS;
 ** Unloads the specified DLL then nulls out all the proc pointers.  This
 ** is only called during a hard shutdown of the OGL subsystem (e.g. vid_restart).
 */
-void QGL_Shutdown( qboolean unloadDLL )
+void QGL_Shutdown( bool unloadDLL )
 {
 	Com_Printf( "...shutting down QGL\n" );
 
@@ -91,7 +91,7 @@ void *GL_GetProcAddress( const char *name )
 ** operating systems we need to do the right thing, whatever that
 ** might be.
 */
-qboolean QGL_Init( const char *dllname )
+bool QGL_Init( const char *dllname )
 {
 	char libName[1024];
 #ifdef UNICODE
@@ -128,7 +128,7 @@ qboolean QGL_Init( const char *dllname )
 		if ( glw_state.OpenGLLib == NULL )
 		{
 			Com_Printf( "...loading '%s' : " S_COLOR_YELLOW "failed\n", libName );
-			return qfalse;
+			return false;
 		}
 
 		// get exact loaded module name
@@ -149,7 +149,7 @@ qboolean QGL_Init( const char *dllname )
 	QGL_Win32_PROCS;
 #undef GLE
 
-	return qtrue;
+	return true;
 }
 
 #endif // USE_OPENGL_API

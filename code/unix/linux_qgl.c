@@ -50,7 +50,7 @@ QGL_Swp_PROCS;
 **
 ** Unloads the specified DLL then nulls out all the proc pointers.
 */
-void QGL_Shutdown( qboolean unloadDLL )
+void QGL_Shutdown( bool unloadDLL )
 {
 	Com_Printf( "...shutting down QGL\n" );
 
@@ -115,7 +115,7 @@ void *GL_GetProcAddress( const char *symbol )
 ** might be.
 **
 */
-qboolean QGL_Init( const char *dllname )
+bool QGL_Init( const char *dllname )
 {
 	Com_Printf( "...initializing QGL\n" );
 
@@ -153,7 +153,7 @@ qboolean QGL_Init( const char *dllname )
 			{
 				Com_Printf( "failed\n" );
 				//Com_Printf( "QGL_Init: Can't load %s from /etc/ld.so.conf: %s\n", dllname, do_dlerror() );
-				return qfalse;
+				return false;
 			}
 		}
 
@@ -166,5 +166,5 @@ qboolean QGL_Init( const char *dllname )
 	QGL_LinX11_PROCS;
 #undef GLE
 
-	return qtrue;
+	return true;
 }

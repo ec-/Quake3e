@@ -54,7 +54,7 @@ static PFN_vkCreateXlibSurfaceKHR qvkCreateXlibSurfaceKHR;
 **
 ** Unloads the specified DLL then nulls out all the proc pointers.
 */
-void QVK_Shutdown( qboolean unloadDLL )
+void QVK_Shutdown( bool unloadDLL )
 {
 	Com_Printf( "...shutting down QVK\n" );
 
@@ -121,7 +121,7 @@ static void *load_vulkan_library( const char *dllname )
 ** QVK_Init
 **
 */
-qboolean QVK_Init( void )
+bool QVK_Init( void )
 {
 
 	Com_Printf( "...initializing QVK\n" );
@@ -144,11 +144,11 @@ qboolean QVK_Init( void )
 
 		if ( !glw_state.VulkanLib )
 		{
-			return qfalse;
+			return false;
 		}
 	}
 
 	Sys_LoadFunctionErrors(); // reset error counter
 
-	return qtrue;
+	return true;
 }

@@ -123,7 +123,7 @@ static HINSTANCE load_vulkan_library( const char *dllname )
 ** operating systems we need to do the right thing, whatever that
 ** might be.
 */
-qboolean QVK_Init( void )
+bool QVK_Init( void )
 {
 	Com_Printf( "...initializing QVK\n" );
 
@@ -168,12 +168,12 @@ qboolean QVK_Init( void )
 
 		if ( !glw_state.VulkanLib )
 		{
-			return qfalse;
+			return false;
 		}
 	}
 
 	Sys_LoadFunctionErrors(); // reset error counter
 
-	return qtrue;
+	return true;
 }
 #endif // USE_VULKAN_API
