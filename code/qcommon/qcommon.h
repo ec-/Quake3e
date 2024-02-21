@@ -968,10 +968,10 @@ int			Com_Split( char *in, char **out, int outsz, int delim );
 
 int			Com_Filter( const char *filter, const char *name );
 qboolean	Com_FilterExt( const char *filter, const char *name );
-qboolean	Com_HasPatterns( const char *str );
+bool		Com_HasPatterns( const char *str );
 int			Com_FilterPath( const char *filter, const char *name );
 int			Com_RealTime(qtime_t *qtime);
-qboolean	Com_SafeMode( void );
+bool		Com_SafeMode( void );
 void		Com_RunAndTimeServerPacket( const netadr_t *evFrom, msg_t *buf );
 
 void		Com_StartupVariable( const char *match );

@@ -332,7 +332,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 	int			length;
 	int			i;
 	const char	*x;
-	qboolean	hasPatterns;
+	bool		hasPatterns;
 
 	if ( filter ) {
 

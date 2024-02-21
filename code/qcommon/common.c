@@ -572,7 +572,7 @@ Check for "safe" on the command line, which will
 skip loading of q3config.cfg
 ===================
 */
-qboolean Com_SafeMode( void ) {
+bool Com_SafeMode( void ) {
 	int		i;
 
 	for ( i = 0 ; i < com_numConsoleLines ; i++ ) {
@@ -580,10 +580,10 @@ qboolean Com_SafeMode( void ) {
 		if ( !Q_stricmp( Cmd_Argv(0), "safe" )
 			|| !Q_stricmp( Cmd_Argv(0), "cvar_restart" ) ) {
 			com_consoleLines[i][0] = '\0';
-			return qtrue;
+			return true;
 		}
 	}
-	return qfalse;
+	return false;
 }
 
 
@@ -823,7 +823,7 @@ qboolean Com_FilterExt( const char *filter, const char *name )
 Com_HasPatterns
 ============
 */
-qboolean Com_HasPatterns( const char *str )
+bool Com_HasPatterns( const char *str )
 {
 	int c;
 
@@ -831,11 +831,11 @@ qboolean Com_HasPatterns( const char *str )
 	{
 		if ( c == '*' || c == '?' )
 		{
-			return qtrue;
+			return true;
 		}
 	}
 
-	return qfalse;
+	return false;
 }
 
 

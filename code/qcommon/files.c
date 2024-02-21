@@ -3332,7 +3332,7 @@ static char **FS_ListFilteredFiles( const char *path, const char *extension, con
 	pack_t			*pak;
 	fileInPack_t	*buildBuffer;
 	char			zpath[MAX_ZPATH];
-	qboolean		hasPatterns;
+	bool			hasPatterns;
 	const char		*x;
 
 	if ( !fs_searchpaths ) {
