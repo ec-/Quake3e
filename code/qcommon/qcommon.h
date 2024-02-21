@@ -695,7 +695,7 @@ typedef	_off_t  fileOffset_t;
 typedef	off_t  fileOffset_t;
 #endif
 
-qboolean FS_Initialized( void );
+bool	FS_Initialized( void );
 
 void	FS_InitFilesystem ( void );
 void	FS_Shutdown( bool closemfp );
@@ -718,7 +718,7 @@ bool 	FS_FileExists( const char *file );
 
 char   *FS_BuildOSPath( const char *base, const char *game, const char *qpath );
 
-qboolean FS_CompareZipChecksum( const char *zipfile );
+bool 	FS_CompareZipChecksum( const char *zipfile );
 int		FS_GetZipChecksum( const char *zipfile );
 
 int		FS_LoadStack( void );
@@ -729,14 +729,14 @@ fileHandle_t	FS_FOpenFileWrite( const char *qpath );
 fileHandle_t	FS_FOpenFileAppend( const char *filename );
 // will properly create any needed paths and deal with separator character issues
 
-qboolean FS_ResetReadOnlyAttribute( const char *filename );
+bool 	FS_ResetReadOnlyAttribute( const char *filename );
 
 bool 	FS_SV_FileExists( const char *file );
 
 fileHandle_t FS_SV_FOpenFileWrite( const char *filename );
 int		FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp );
 void	FS_SV_Rename( const char *from, const char *to );
-int		FS_FOpenFileRead( const char *qpath, fileHandle_t *file, qboolean uniqueFILE );
+int		FS_FOpenFileRead( const char *qpath, fileHandle_t *file, bool uniqueFILE );
 // if uniqueFILE is true, then a new FILE will be fopened even if the file
 // is found in an already open pak file.  If uniqueFILE is false, you must call
 // FS_FCloseFile instead of fclose, otherwise the pak FILE would be improperly closed
@@ -750,7 +750,7 @@ void FS_RestorePure( void );
 
 int FS_Home_FOpenFileRead( const char *filename, fileHandle_t *file );
 
-qboolean FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName );
+bool FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName );
 // returns qtrue if a file is in the PAK file, otherwise qfalse
 
 int		FS_PakIndexForHandle( fileHandle_t f );
@@ -758,7 +758,7 @@ int		FS_PakIndexForHandle( fileHandle_t f );
 // returns pak index or -1 if file is not in pak
 extern int fs_lastPakIndex;
 
-extern qboolean fs_reordered;
+extern bool fs_reordered;
 
 int		FS_Write( const void *buffer, int len, fileHandle_t f );
 
@@ -802,14 +802,14 @@ int		FS_FOpenFileByMode( const char *qpath, fileHandle_t *f, fsMode_t mode );
 int		FS_Seek( fileHandle_t f, long offset, fsOrigin_t origin );
 // seek on a file
 
-qboolean FS_FilenameCompare( const char *s1, const char *s2 );
+bool 	FS_FilenameCompare( const char *s1, const char *s2 );
 
 const char *FS_LoadedPakNames( void );
 const char *FS_LoadedPakChecksums( bool *overflowed );
 // Returns a space separated string containing the checksums of all loaded pk3 files.
 // Servers with sv_pure set will get this string and pass it to clients.
 
-qboolean FS_ExcludeReference( void );
+bool 		FS_ExcludeReference( void );
 const char *FS_ReferencedPakNames( void );
 const char *FS_ReferencedPakChecksums( void );
 const char *FS_ReferencedPakPureChecksums( int maxlen );
@@ -827,11 +827,11 @@ void FS_PureServerSetLoadedPaks( const char *pakSums, const char *pakNames );
 // separated checksums will be checked for files, with the
 // sole exception of .cfg files.
 
-qboolean FS_IsPureChecksum( int sum );
+bool FS_IsPureChecksum( int sum );
 
-qboolean FS_InvalidGameDir( const char *gamedir );
-qboolean FS_idPak( const char *pak, const char *base, int numPaks );
-qboolean FS_ComparePaks( char *neededpaks, int len, qboolean dlstring );
+bool FS_InvalidGameDir( const char *gamedir );
+bool FS_idPak( const char *pak, const char *base, int numPaks );
+bool FS_ComparePaks( char *neededpaks, int len, bool dlstring );
 
 void FS_Rename( const char *from, const char *to );
 
@@ -839,7 +839,7 @@ void FS_Remove( const char *osPath );
 void FS_HomeRemove( const char *homePath );
 
 void	FS_FilenameCompletion( const char *dir, const char *ext,
-		qboolean stripExt, void(*callback)(const char *s), int flags );
+		bool stripExt, void(*callback)(const char *s), int flags );
 
 int FS_VM_OpenFile( const char *qpath, fileHandle_t *f, fsMode_t mode, handleOwner_t owner );
 int FS_VM_ReadFile( void *buffer, int len, fileHandle_t f, handleOwner_t owner );
@@ -853,8 +853,8 @@ const char *FS_GetBaseGameDir( void );
 
 const char *FS_GetHomePath( void );
 
-qboolean FS_StripExt( char *filename, const char *ext );
-qboolean FS_AllowedExtension( const char *fileName, qboolean allowPk3s, const char **ext );
+bool FS_StripExt( char *filename, const char *ext );
+bool FS_AllowedExtension( const char *fileName, bool allowPk3s, const char **ext );
 
 void *FS_LoadLibrary( const char *name );
 
