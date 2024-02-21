@@ -3085,22 +3085,22 @@ char	cl_cdkey[34] = "123456789";
 bool CL_CDKeyValidate
 =================
 */
-qboolean Com_CDKeyValidate( const char *key, const char *checksum ) {
+bool Com_CDKeyValidate( const char *key, const char *checksum ) {
 #ifdef STANDALONE
-	return qtrue;
+	return true;
 #else
 	char	ch;
 	byte	sum;
 	char	chs[10];
-	int i, len;
+	int 	i, len;
 
 	len = strlen(key);
 	if( len != CDKEY_LEN ) {
-		return qfalse;
+		return false;
 	}
 
 	if( checksum && strlen( checksum ) != CDCHKSUM_LEN ) {
-		return qfalse;
+		return false;
 	}
 
 	sum = 0;
@@ -3130,21 +3130,21 @@ qboolean Com_CDKeyValidate( const char *key, const char *checksum ) {
 			sum += ch;
 			continue;
 		default:
-			return qfalse;
+			return false;
 		}
 	}
 
 	sprintf(chs, "%02x", sum);
 
 	if (checksum && !Q_stricmp(chs, checksum)) {
-		return qtrue;
+		return true;
 	}
 
 	if (!checksum) {
-		return qtrue;
+		return true;
 	}
 
-	return qfalse;
+	return false;
 #endif
 }
 
