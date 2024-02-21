@@ -700,7 +700,7 @@ qboolean FS_Initialized( void );
 void	FS_InitFilesystem ( void );
 void	FS_Shutdown( bool closemfp );
 
-qboolean	FS_ConditionalRestart( int checksumFeed, qboolean clientRestart );
+bool	FS_ConditionalRestart( int checksumFeed, bool clientRestart );
 
 void	FS_Restart( int checksumFeed );
 // shutdown and restart the filesystem so changes to fs_gamedir can take effect

@@ -1808,7 +1808,7 @@ static void CL_Vid_Restart( refShutdownCode_t shutdownCode ) {
 
 	// reinitialize the filesystem if the game directory or checksum has changed
 	if ( !clc.demoplaying ) // -EC-
-		FS_ConditionalRestart( clc.checksumFeed, qfalse );
+		FS_ConditionalRestart( clc.checksumFeed, false );
 
 	cls.soundRegistered = qfalse;
 
