@@ -327,18 +327,18 @@ Returns false if the triangle is degenerate.
 The normal will point out of the clock for clockwise ordered points
 =====================
 */
-qboolean PlaneFromPoints( vec4_t plane, const vec3_t a, const vec3_t b, const vec3_t c ) {
+bool PlaneFromPoints( vec4_t plane, const vec3_t a, const vec3_t b, const vec3_t c ) {
 	vec3_t	d1, d2;
 
 	VectorSubtract( b, a, d1 );
 	VectorSubtract( c, a, d2 );
 	CrossProduct( d2, d1, plane );
 	if ( VectorNormalize( plane ) == 0 ) {
-		return qfalse;
+		return false;
 	}
 
 	plane[3] = DotProduct( a, plane );
-	return qtrue;
+	return true;
 }
 
 /*
@@ -806,7 +806,7 @@ void AddPointToBounds( const vec3_t v, vec3_t mins, vec3_t maxs ) {
 	}
 }
 
-qboolean BoundsIntersect(const vec3_t mins, const vec3_t maxs,
+bool BoundsIntersect(const vec3_t mins, const vec3_t maxs,
 		const vec3_t mins2, const vec3_t maxs2)
 {
 	if ( maxs[0] < mins2[0] ||
@@ -816,13 +816,13 @@ qboolean BoundsIntersect(const vec3_t mins, const vec3_t maxs,
 		mins[1] > maxs2[1] ||
 		mins[2] > maxs2[2])
 	{
-		return qfalse;
+		return false;
 	}
 
-	return qtrue;
+	return true;
 }
 
-qboolean BoundsIntersectSphere(const vec3_t mins, const vec3_t maxs,
+bool BoundsIntersectSphere(const vec3_t mins, const vec3_t maxs,
 		const vec3_t origin, vec_t radius)
 {
 	if ( origin[0] - radius > maxs[0] ||
@@ -832,13 +832,13 @@ qboolean BoundsIntersectSphere(const vec3_t mins, const vec3_t maxs,
 		origin[2] - radius > maxs[2] ||
 		origin[2] + radius < mins[2])
 	{
-		return qfalse;
+		return false;
 	}
 
-	return qtrue;
+	return true;
 }
 
-qboolean BoundsIntersectPoint(const vec3_t mins, const vec3_t maxs,
+bool BoundsIntersectPoint(const vec3_t mins, const vec3_t maxs,
 		const vec3_t origin)
 {
 	if ( origin[0] > maxs[0] ||
@@ -848,10 +848,10 @@ qboolean BoundsIntersectPoint(const vec3_t mins, const vec3_t maxs,
 		origin[2] > maxs[2] ||
 		origin[2] < mins[2])
 	{
-		return qfalse;
+		return false;
 	}
 
-	return qtrue;
+	return true;
 }
 
 vec_t VectorNormalize( vec3_t v ) {
