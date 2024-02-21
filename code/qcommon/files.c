@@ -5413,7 +5413,7 @@ void FS_Restart( int checksumFeed ) {
 	static char lastValidBase[MAX_OSPATH];
 	static char lastValidGame[MAX_OSPATH];
 
-	static qboolean execConfig = qfalse;
+	static bool execConfig = false;
 
 	// free anything we currently have loaded
 	FS_Shutdown( false );
@@ -5437,7 +5437,7 @@ void FS_Restart( int checksumFeed ) {
 			lastValidBase[0] = '\0';
 			lastValidGame[0] = '\0';
 			Cvar_Set( "fs_restrict", "0" );
-			execConfig = qtrue;
+			execConfig = true;
 			FS_Restart( checksumFeed );
 			Com_Error( ERR_DROP, "Invalid game folder" );
 			return;
@@ -5452,7 +5452,7 @@ void FS_Restart( int checksumFeed ) {
 			Cbuf_AddText( "exec " Q3CONFIG_CFG "\n" );
 		}
 	}
-	execConfig = qfalse;
+	execConfig = false;
 
 	Q_strncpyz( lastValidBase, fs_basepath->string, sizeof( lastValidBase ) );
 	Q_strncpyz( lastValidGame, fs_gamedirvar->string, sizeof( lastValidGame ) );
