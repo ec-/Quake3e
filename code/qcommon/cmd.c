@@ -957,7 +957,7 @@ Cmd_CompleteCfgName
 */
 static void Cmd_CompleteCfgName( const char *args, int argNum ) {
 	if( argNum == 2 ) {
-		Field_CompleteFilename( "", "cfg", qfalse, FS_MATCH_ANY | FS_MATCH_STICK );
+		Field_CompleteFilename( "", "cfg", false, FS_MATCH_ANY | FS_MATCH_STICK );
 	}
 }
 
@@ -969,7 +969,7 @@ Cmd_CompleteWriteCfgName
 */
 void Cmd_CompleteWriteCfgName( const char *args, int argNum ) {
 	if( argNum == 2 ) {
-		Field_CompleteFilename( "", "cfg", qfalse, FS_MATCH_EXTERN | FS_MATCH_STICK );
+		Field_CompleteFilename( "", "cfg", false, FS_MATCH_EXTERN | FS_MATCH_STICK );
 	}
 }
 

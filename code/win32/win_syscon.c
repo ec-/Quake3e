@@ -359,7 +359,7 @@ static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 		else if ( wParam == CON_TIMER_ID && conTimerID != 0 && !com_errorEntered )
 		{
 #ifdef DEDICATED
-			Com_Frame( qfalse );
+			Com_Frame( false );
 #else
 			//Com_Frame( CL_NoDelay() );
 #endif
@@ -450,7 +450,7 @@ static LRESULT WINAPI BufferWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 		if ( wParam == BUF_TIMER_ID && bufTimerID != 0 && !com_errorEntered )
 		{
 #ifdef DEDICATED
-			Com_Frame( qfalse );
+			Com_Frame( false );
 #else
 			//Com_Frame( CL_NoDelay() );
 #endif

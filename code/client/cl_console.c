@@ -381,7 +381,7 @@ Cmd_CompleteTxtName
 */
 static void Cmd_CompleteTxtName(const char *args, int argNum ) {
 	if ( argNum == 2 ) {
-		Field_CompleteFilename( "", "txt", qfalse, FS_MATCH_EXTERN | FS_MATCH_STICK );
+		Field_CompleteFilename( "", "txt", false, FS_MATCH_EXTERN | FS_MATCH_STICK );
 	}
 }
 

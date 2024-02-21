@@ -2060,7 +2060,7 @@ void Cvar_CompleteCvarName( const char *args, int argNum )
 		const char *p = Com_SkipTokens( args, 1, " " );
 
 		if( p > args )
-			Field_CompleteCommand( p, qfalse, qtrue );
+			Field_CompleteCommand( p, false, true );
 	}
 }
 

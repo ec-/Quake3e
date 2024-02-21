@@ -829,7 +829,7 @@ static void CL_CompleteDemoName(const char *args, int argNum )
 	if ( argNum == 2 )
 	{
 		FS_SetFilenameCallback( CL_DemoNameCallback_f );
-		Field_CompleteFilename( "demos", "." DEMOEXT "??", qfalse, FS_MATCH_ANY | FS_MATCH_STICK );
+		Field_CompleteFilename( "demos", "." DEMOEXT "??", false, FS_MATCH_ANY | FS_MATCH_STICK );
 		FS_SetFilenameCallback( NULL );
 	}
 }

@@ -894,8 +894,8 @@ void Field_Clear( field_t *edit );
 void Field_AutoComplete( field_t *edit );
 void Field_CompleteKeyname( void );
 void Field_CompleteKeyBind( int key );
-void Field_CompleteFilename( const char *dir, const char *ext, qboolean stripExt, int flags );
-void Field_CompleteCommand( const char *cmd, qboolean doCommands, qboolean doCvars );
+void Field_CompleteFilename( const char *dir, const char *ext, bool stripExt, int flags );
+void Field_CompleteCommand( const char *cmd, bool doCommands, bool doCvars );
 
 void Con_ResetHistory( void );
 void Con_SaveField( const field_t *field );
@@ -966,10 +966,10 @@ bool		Com_CDKeyValidate( const char *key, const char *checksum );
 bool		Com_EarlyParseCmdLine( char *commandLine, char *con_title, int title_size, int *vid_xpos, int *vid_ypos );
 int			Com_Split( char *in, char **out, int outsz, int delim );
 
-int			Com_Filter( const char *filter, const char *name );
+bool		Com_Filter( const char *filter, const char *name );
 bool		Com_FilterExt( const char *filter, const char *name );
 bool		Com_HasPatterns( const char *str );
-int			Com_FilterPath( const char *filter, const char *name );
+bool		Com_FilterPath( const char *filter, const char *name );
 int			Com_RealTime(qtime_t *qtime);
 bool		Com_SafeMode( void );
 void		Com_RunAndTimeServerPacket( const netadr_t *evFrom, msg_t *buf );
@@ -1115,7 +1115,7 @@ unsigned int Com_TouchMemory( void );
 
 // commandLine should not include the executable name (argv[0])
 void Com_Init( char *commandLine );
-void Com_Frame( qboolean noDelay );
+void Com_Frame( bool noDelay );
 
 /*
 ==============================================================

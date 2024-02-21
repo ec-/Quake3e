@@ -500,7 +500,7 @@ char cl_title[ MAX_CVAR_VALUE_STRING ] = CLIENT_WINDOW_TITLE;
 ===================
 Com_EarlyParseCmdLine
 
-returns qtrue if both vid_xpos and vid_ypos was set
+returns true if both vid_xpos and vid_ypos was set
 ===================
 */
 bool Com_EarlyParseCmdLine( char *commandLine, char *con_title, int title_size, int *vid_xpos, int *vid_ypos )
@@ -613,7 +613,7 @@ void Com_StartupVariable( const char *match ) {
 			if ( Cvar_Flags( name ) == CVAR_NONEXISTENT )
 				Cvar_Get( name, Cmd_ArgsFrom( 2 ), CVAR_USER_CREATED );
 			else
-				Cvar_Set2( name, Cmd_ArgsFrom( 2 ), qfalse );
+				Cvar_Set2( name, Cmd_ArgsFrom( 2 ), false );
 		}
 	}
 }
@@ -626,7 +626,7 @@ Com_AddStartupCommands
 Adds command line parameters as script statements
 Commands are separated by + signs
 
-Returns qtrue if any late commands were added, which
+Returns true if any late commands were added, which
 will keep the demoloop from immediately starting
 =================
 */
@@ -703,11 +703,12 @@ static const char *Com_StringContains( const char *str1, const char *str2, int l
 Com_Filter
 ============
 */
-int Com_Filter( const char *filter, const char *name )
+bool Com_Filter( const char *filter, const char *name )
 {
 	char buf[ MAX_TOKEN_CHARS ];
 	const char *ptr;
-	int i, found;
+	int i; 
+	bool found = false;
 
 	while(*filter) {
 		if (*filter == '*') {
@@ -722,7 +723,7 @@ int Com_Filter( const char *filter, const char *name )
 			if ( i ) {
 				ptr = Com_StringContains( name, buf, i );
 				if ( !ptr )
-					return qfalse;
+					return false;
 				name = ptr + i;
 			}
 		}
@@ -735,22 +736,22 @@ int Com_Filter( const char *filter, const char *name )
 		}
 		else if (*filter == '[') {
 			filter++;
-			found = qfalse;
+			found = false;
 			while(*filter && !found) {
 				if (*filter == ']' && *(filter+1) != ']') break;
 				if (*(filter+1) == '-' && *(filter+2) && (*(filter+2) != ']' || *(filter+3) == ']')) {
 					if (locase[(byte)*name] >= locase[(byte)*filter] &&
 						locase[(byte)*name] <= locase[(byte)*(filter+2)])
-							found = qtrue;
+							found = true;
 					filter += 3;
 				}
 				else {
 					if (locase[(byte)*filter] == locase[(byte)*name])
-						found = qtrue;
+						found = true;
 					filter++;
 				}
 			}
-			if (!found) return qfalse;
+			if (!found) return false;
 			while(*filter) {
 				if (*filter == ']' && *(filter+1) != ']') break;
 				filter++;
@@ -760,12 +761,12 @@ int Com_Filter( const char *filter, const char *name )
 		}
 		else {
 			if (locase[(byte)*filter] != locase[(byte)*name])
-				return qfalse;
+				return false;
 			filter++;
 			name++;
 		}
 	}
-	return qtrue;
+	return true;
 }
 
 
@@ -844,7 +845,7 @@ bool Com_HasPatterns( const char *str )
 Com_FilterPath
 ============
 */
-int Com_FilterPath( const char *filter, const char *name )
+bool Com_FilterPath( const char *filter, const char *name )
 {
 	int i;
 	char new_filter[MAX_QPATH];
@@ -908,7 +909,7 @@ Sys_Microseconds
 int64_t Sys_Microseconds( void )
 {
 #ifdef _WIN32
-	static qboolean inited = qfalse;
+	static bool inited = false;
 	static LARGE_INTEGER base;
 	static LARGE_INTEGER freq;
 	LARGE_INTEGER curr;
@@ -921,7 +922,7 @@ int64_t Sys_Microseconds( void )
 		{
 			return (int64_t)Sys_Milliseconds() * 1000LL; // fallback
 		}
-		inited = qtrue;
+		inited = true;
 		return 0;
 	}
 
@@ -2120,7 +2121,7 @@ void Hunk_SmallLog( void ) {
 		return;
 
 	for (block = hunkblocks ; block; block = block->next) {
-		block->printed = qfalse;
+		block->printed = false;
 	}
 	size = 0;
 	numBlocks = 0;
@@ -2140,7 +2141,7 @@ void Hunk_SmallLog( void ) {
 			}
 			size += block2->size;
 			locsize += block2->size;
-			block2->printed = qtrue;
+			block2->printed = true;
 		}
 		Com_sprintf(buf, sizeof(buf), "size = %8d: %s, line: %d (%s)\r\n", locsize, block->file, block->line, block->label);
 		FS_Write(buf, strlen(buf), logfile);
@@ -2533,8 +2534,8 @@ static void Com_InitJournaling( void ) {
 		com_journalDataFile = FS_FOpenFileWrite( "journaldata.dat" );
 	} else if ( com_journal->integer == 2 ) {
 		Com_Printf( "Replaying journaled events\n" );
-		FS_FOpenFileRead( "journal.dat", &com_journalFile, qtrue );
-		FS_FOpenFileRead( "journaldata.dat", &com_journalDataFile, qtrue );
+		FS_FOpenFileRead( "journal.dat", &com_journalFile, true );
+		FS_FOpenFileRead( "journaldata.dat", &com_journalDataFile, true );
 	}
 
 	if ( com_journalFile == FS_INVALID_HANDLE || com_journalDataFile == FS_INVALID_HANDLE ) {
@@ -2765,7 +2766,7 @@ static void Com_PushEvent( const sysEvent_t *event ) {
 
 		// don't print the warning constantly, or it can give time for more...
 		if ( !printedWarning ) {
-			printedWarning = qtrue;
+			printedWarning = true;
 			Com_Printf( "WARNING: Com_PushEvent overflow\n" );
 		}
 
@@ -2774,7 +2775,7 @@ static void Com_PushEvent( const sysEvent_t *event ) {
 		}
 		com_pushedEventsTail++;
 	} else {
-		printedWarning = qfalse;
+		printedWarning = false;
 	}
 
 	*ev = *event;
@@ -3806,7 +3807,7 @@ void Com_Init( char *commandLine ) {
 	Cvar_SetDescription( com_protocol, "Specify network protocol version number, use -compat suffix for OpenArena compatibility.");
 	if ( Q_stristr( com_protocol->string, "-compat" ) > com_protocol->string ) {
 		// strip -compat suffix
-		Cvar_Set2( "protocol", va( "%i", com_protocol->integer ), qtrue );
+		Cvar_Set2( "protocol", va( "%i", com_protocol->integer ), true );
 		// enforce legacy stream encoding but with new challenge format
 		com_protocolCompat = true;
 	} else {
@@ -3872,7 +3873,7 @@ void Com_Init( char *commandLine ) {
 #ifdef USE_AFFINITY_MASK
 	com_affinityMask = Cvar_Get( "com_affinityMask", "", CVAR_ARCHIVE_ND );
 	Cvar_SetDescription( com_affinityMask, "Bind game process to bitmask-specified CPU core(s), special characters:\n A or a - all default cores\n P or p - performance cores\n E or e - efficiency cores\n 0x<value> - use hexadecimal notation\n + or - can be used to add or exclude particular cores" );
-	com_affinityMask->modified = qfalse;
+	com_affinityMask->modified = false;
 #endif
 
 	// com_blood = Cvar_Get( "com_blood", "1", CVAR_ARCHIVE_ND );
@@ -3968,7 +3969,7 @@ void Com_Init( char *commandLine ) {
 #endif
 	if ( com_affinityMask->string[0] != '\0' ) {
 		Com_SetAffinityMask( com_affinityMask->string );
-		com_affinityMask->modified = qfalse;
+		com_affinityMask->modified = false;
 	}
 #endif
 
@@ -3979,12 +3980,12 @@ void Com_Init( char *commandLine ) {
 	VM_Init();
 	SV_Init();
 
-	com_dedicated->modified = qfalse;
+	com_dedicated->modified = false;
 
 #ifndef DEDICATED
 	if ( !com_dedicated->integer ) {
 		CL_Init();
-		// Sys_ShowConsole( com_viewlog->integer, qfalse ); // moved down
+		// Sys_ShowConsole( com_viewlog->integer, false ); // moved down
 	}
 #endif
 
@@ -4013,7 +4014,7 @@ void Com_Init( char *commandLine ) {
 	lastTime = com_frameTime = Com_Milliseconds();
 
 	if ( !com_errorEntered )
-		Sys_ShowConsole( com_viewlog->integer, qfalse );
+		Sys_ShowConsole( com_viewlog->integer, false );
 
 #ifndef DEDICATED
 	// make sure single player is off by default
@@ -4104,7 +4105,7 @@ static void Com_WriteConfig_f( void ) {
 	Q_strncpyz( filename, Cmd_Argv(1), sizeof( filename ) );
 	COM_DefaultExtension( filename, sizeof( filename ), ".cfg" );
 
-	if ( !FS_AllowedExtension( filename, qfalse, &ext ) ) {
+	if ( !FS_AllowedExtension( filename, false, &ext ) ) {
 		Com_Printf( "%s: Invalid filename extension: '%s'.\n", __func__, ext );
 		return;
 	}
@@ -4191,7 +4192,7 @@ static int Com_TimeVal( int minMsec )
 Com_Frame
 =================
 */
-void Com_Frame( qboolean noDelay ) {
+void Com_Frame( bool noDelay ) {
 
 #ifndef DEDICATED
 	static int bias = 0;
@@ -4229,15 +4230,15 @@ void Com_Frame( qboolean noDelay ) {
 	// if "viewlog" has been modified, show or hide the log console
 	if ( com_viewlog->modified ) {
 		if ( !com_dedicated->integer ) {
-			Sys_ShowConsole( com_viewlog->integer, qfalse );
+			Sys_ShowConsole( com_viewlog->integer, false );
 		}
-		com_viewlog->modified = qfalse;
+		com_viewlog->modified = false;
 	}
 
 #ifdef USE_AFFINITY_MASK
 	if ( com_affinityMask->modified ) {
 		Com_SetAffinityMask( com_affinityMask->string );
-		com_affinityMask->modified = qfalse;
+		com_affinityMask->modified = false;
 	}
 #endif
 
@@ -4282,7 +4283,7 @@ void Com_Frame( qboolean noDelay ) {
 	}
 
 	// waiting for incoming packets
-	if ( noDelay == qfalse )
+	if ( noDelay == false )
 	do {
 		if ( com_sv_running->integer ) {
 			timeValSV = SV_SendQueuedPackets();
@@ -4327,14 +4328,14 @@ void Com_Frame( qboolean noDelay ) {
 	if ( com_dedicated->modified ) {
 		// get the latched value
 		Cvar_Get( "dedicated", "0", 0 );
-		com_dedicated->modified = qfalse;
+		com_dedicated->modified = false;
 		if ( !com_dedicated->integer ) {
 			SV_Shutdown( "dedicated set to 0" );
 			SV_RemoveDedicatedCommands();
 #ifndef DEDICATED
 			CL_Init();
 #endif
-			Sys_ShowConsole( com_viewlog->integer, qfalse );
+			Sys_ShowConsole( com_viewlog->integer, false );
 #ifndef DEDICATED
 			gw_minimized = false;
 			CL_StartHunkUsers();
@@ -4344,7 +4345,7 @@ void Com_Frame( qboolean noDelay ) {
 			CL_Shutdown( "", false );
 			CL_ClearMemory();
 #endif
-			Sys_ShowConsole( 1, qtrue );
+			Sys_ShowConsole( 1, true );
 			SV_AddDedicatedCommands();
 			gw_minimized = true;
 		}
@@ -4570,12 +4571,12 @@ static void Field_AddSpace( void )
 Field_Complete
 ===============
 */
-static qboolean Field_Complete( void )
+static bool Field_Complete( void )
 {
 	int completionOffset;
 
 	if( matchCount == 0 )
-		return qtrue;
+		return true;
 
 	completionOffset = strlen( completionField->buffer ) - strlen( completionString );
 
@@ -4587,12 +4588,12 @@ static qboolean Field_Complete( void )
 	if( matchCount == 1 )
 	{
 		Field_AddSpace();
-		return qtrue;
+		return true;
 	}
 
 	Com_Printf( "]%s\n", completionField->buffer );
 
-	return qfalse;
+	return false;
 }
 
 
@@ -4709,7 +4710,7 @@ static void Field_CompleteCvarValue( const char *value, const char *current )
 Field_CompleteFilename
 ===============
 */
-void Field_CompleteFilename( const char *dir, const char *ext, qboolean stripExt, int flags )
+void Field_CompleteFilename( const char *dir, const char *ext, bool stripExt, int flags )
 {
 	matchCount = 0;
 	shortestMatch[ 0 ] = '\0';
@@ -4726,7 +4727,7 @@ void Field_CompleteFilename( const char *dir, const char *ext, qboolean stripExt
 Field_CompleteCommand
 ===============
 */
-void Field_CompleteCommand( const char *cmd, qboolean doCommands, qboolean doCvars )
+void Field_CompleteCommand( const char *cmd, bool doCommands, bool doCvars )
 {
 	int	completionArgument;
 
@@ -4778,7 +4779,7 @@ void Field_CompleteCommand( const char *cmd, qboolean doCommands, qboolean doCva
 
 		if( ( p = Field_FindFirstSeparator( cmd ) ) != NULL )
 		{
- 			Field_CompleteCommand( p + 1, qtrue, qtrue ); // Compound command
+ 			Field_CompleteCommand( p + 1, true, true ); // Compound command
 		}
 		else
 		{
@@ -4834,7 +4835,7 @@ void Field_AutoComplete( field_t *field )
 {
 	completionField = field;
 
-	Field_CompleteCommand( completionField->buffer, qtrue, qtrue );
+	Field_CompleteCommand( completionField->buffer, true, true );
 }
 
 
@@ -4859,7 +4860,7 @@ void Com_RandomBytes( byte *string, int len )
 }
 
 
-static qboolean strgtr(const char *s0, const char *s1) {
+static bool strgtr(const char *s0, const char *s1) {
 	int l0, l1, i;
 
 	l0 = strlen( s0 );
@@ -4871,13 +4872,13 @@ static qboolean strgtr(const char *s0, const char *s1) {
 
 	for( i = 0; i < l0; i++ ) {
 		if ( s1[i] > s0[i] ) {
-			return qtrue;
+			return true;
 		}
 		if ( s1[i] < s0[i] ) {
-			return qfalse;
+			return false;
 		}
 	}
-	return qfalse;
+	return false;
 }
 
 

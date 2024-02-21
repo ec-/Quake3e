@@ -593,7 +593,7 @@ static void Key_CompleteBind( const char *args, int argNum )
 		if ( *p == '\0' && ( key = Key_StringToKeynum( Cmd_Argv( 1 ) ) ) >= 0 ) {
 			Field_CompleteKeyBind( key );
 		} else if ( p > args ) {
-			Field_CompleteCommand( p, qtrue, qtrue );
+			Field_CompleteCommand( p, true, true );
 		}
 	}
 }
