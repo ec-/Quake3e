@@ -75,7 +75,7 @@ static void R_BindAnimatedImage( const textureBundle_t *bundle ) {
 		if ( !backEnd.screenMapDone )
 			GL_Bind( tr.blackImage );
 		else
-			vk_update_descriptor( glState.currenttmu + 2, vk.screenMap.color_descriptor );
+			vk_update_descriptor( glState.currenttmu + VK_DESC_TEXTURE_BASE, vk.screenMap.color_descriptor );
 		return;
 	}
 
@@ -567,7 +567,7 @@ static void RB_FogPass( qboolean rebindIndex ) {
 	}
 	VK_SetFogParams( &uniform, &fog_stage );
 	VK_PushUniform( &uniform );
-	vk_update_descriptor( 3, tr.fogImage->descriptor );
+	vk_update_descriptor( VK_DESC_FOG_ONLY, tr.fogImage->descriptor );
 	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
 #else
 	const fog_t	*fog = tr.world->fogs + tess.fogNum;
@@ -892,6 +892,14 @@ void R_ComputeTexCoords( const int b, const textureBundle_t *bundle ) {
 			src = dst;
 			break;
 
+		case TMOD_OFFSET_SCALE:
+			for ( i = 0; i < tess.numVertexes; i++ ) {
+				dst[i][0] = (src[i][0] + bundle->texMods[tm].offset[0]) * bundle->texMods[tm].scale[0];
+				dst[i][1] = (src[i][1] + bundle->texMods[tm].offset[1]) * bundle->texMods[tm].scale[1];
+			}
+			src = dst;
+			break;
+
 		case TMOD_STRETCH:
 			RB_CalcStretchTexCoords( &bundle->texMods[tm].wave, (float *)src, (float *) dst );
 			src = dst;
@@ -945,7 +953,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 	if ( fogCollapse ) {
 		VK_SetFogParams( &uniform, &fog_stage );
 		VectorCopy( backEnd.or.viewOrigin, uniform.eyePos );
-		vk_update_descriptor( 5, tr.fogImage->descriptor );
+		vk_update_descriptor( VK_DESC_FOG_COLLAPSE, tr.fogImage->descriptor );
 		pushUniform = qtrue;
 	} else
 #endif
@@ -1146,9 +1154,9 @@ uint32_t VK_PushUniform( const vkUniform_t *uniform ) {
 	Com_Memcpy( vk.cmd->vertex_buffer_ptr + offset, uniform, sizeof( *uniform ) );
 	vk.cmd->vertex_buffer_offset = offset + vk.uniform_item_size;
 
-	vk_reset_descriptor( 1 );
-	vk_update_descriptor( 1,  vk.cmd->uniform_descriptor );
-	vk_update_descriptor_offset( 1, vk.cmd->uniform_read_offset );
+	vk_reset_descriptor( VK_DESC_UNIFORM );
+	vk_update_descriptor( VK_DESC_UNIFORM, vk.cmd->uniform_descriptor );
+	vk_update_descriptor_offset( VK_DESC_UNIFORM, vk.cmd->uniform_read_offset );
 
 	return offset;
 }
@@ -1197,7 +1205,7 @@ void VK_LightingPass( void )
 	abs_light = /* (pStage->stateBits & GLS_ATEST_BITS) && */ (cull == CT_TWO_SIDED) ? 1 : 0;
 
 	if ( fog_stage )
-		vk_update_descriptor( 3, tr.fogImage->descriptor );
+		vk_update_descriptor( VK_DESC_FOG_DLIGHT, tr.fogImage->descriptor );
 
 	if ( tess.light->linear )
 		pipeline = vk.dlight1_pipelines_x[cull][tess.shader->polygonOffset][fog_stage][abs_light];
