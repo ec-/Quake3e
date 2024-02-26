@@ -159,7 +159,10 @@ static void add_triggers(void) {
 static void add_clips(void) {
 	for (int i = 0; i < cm.numBrushes; i++) {
 		cbrush_t *brush = &cm.brushes[i];
-		if (brush->contents & CONTENTS_PLAYERCLIP) {
+		if (
+			brush->contents & CONTENTS_PLAYERCLIP ||
+			!Q_stricmp(cm.shaders[brush->shaderNum].shader, "textures/common/weapclip")
+		) {
 			gen_visible_brush(i, vec3_origin, CLIP_BRUSH, clip_color);
 		}
 	}
