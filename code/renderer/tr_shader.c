@@ -1758,7 +1758,7 @@ static void FinishStage( shaderStage_t *stage )
 		}
 		// revert lightmap texcoord correction if needed
 		if ( bundle->lightmap == LIGHTMAP_INDEX_NONE ) {
-			if ( bundle->tcGen == TCGEN_LIGHTMAP ) {
+			if ( bundle->tcGen == TCGEN_LIGHTMAP && shader.lightmapIndex >= 0 ) {
 				texModInfo_t *tmi;
 				for ( n = bundle->numTexMods; n > 0; --n ) {
 					bundle->texMods[n] = bundle->texMods[n - 1];

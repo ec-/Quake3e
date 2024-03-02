@@ -27,6 +27,18 @@
 //#define MIN_IMAGE_ALIGN (128*1024)
 #define MAX_ATTACHMENTS_IN_POOL (8+VK_NUM_BLOOM_PASSES*2) // depth + msaa + msaa-resolve + depth-resolve + screenmap.msaa + screenmap.resolve + screenmap.depth + bloom_extract + blur pairs
 
+#define VK_DESC_STORAGE      0
+#define VK_DESC_UNIFORM      1
+#define VK_DESC_TEXTURE0     2
+#define VK_DESC_TEXTURE1     3
+#define VK_DESC_TEXTURE2     4
+#define VK_DESC_FOG_COLLAPSE 5
+#define VK_DESC_COUNT        6
+
+#define VK_DESC_TEXTURE_BASE VK_DESC_TEXTURE0
+#define VK_DESC_FOG_ONLY     VK_DESC_TEXTURE1
+#define VK_DESC_FOG_DLIGHT   VK_DESC_TEXTURE1
+
 typedef enum {
 	TYPE_COLOR_BLACK,
 	TYPE_COLOR_WHITE,
@@ -311,8 +323,8 @@ typedef struct vk_tess_s {
 		uint32_t		offset[2]; // 0 (uniform) and 5 (storage)
 	} descriptor_set;
 
-	Vk_Depth_Range depth_range;
-	VkPipeline last_pipeline;
+	Vk_Depth_Range		depth_range;
+	VkPipeline			last_pipeline;
 
 	uint32_t num_indexes; // value from most recent vk_bind_index() call
 

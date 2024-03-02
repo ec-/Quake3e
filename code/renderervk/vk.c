@@ -779,7 +779,7 @@ static void vk_create_render_passes( void )
 	deps[1].dstSubpass = VK_SUBPASS_EXTERNAL;
 	deps[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;	// Fragment data has been written
 	deps[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;			// Don't start shading until data is available
-	deps[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // Waiting for color data to be written
+	deps[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;			// Waiting for color data to be written
 	deps[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;						// Don't read things from the shader before ready
 	deps[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;					// Only need the current fragment (or tile) synchronized, not the whole framebuffer
 
@@ -900,7 +900,7 @@ static void vk_create_render_passes( void )
 	desc.dependencyCount = 2;
 	desc.pDependencies = &deps[0];
 
-	// resolve/color buffer
+	// screenmap resolve/color buffer
 	attachments[0].flags = 0;
 	attachments[0].format = vk.color_format;
 	attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
@@ -915,10 +915,10 @@ static void vk_create_render_passes( void )
 	attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;   // needed for next render pass
 	attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	attachments[0].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	attachments[0].initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	attachments[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-	// depth buffer
+	// screenmap depth buffer
 	attachments[1].flags = 0;
 	attachments[1].format = depth_format;
 	attachments[1].samples = vk.screenMapSamples;
@@ -970,10 +970,10 @@ static void vk_create_render_passes( void )
 
 		desc.attachmentCount = 3;
 
-		colorRef0.attachment = 2; // msaa image attachment
+		colorRef0.attachment = 2; // screenmap msaa image attachment
 		colorRef0.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		colorResolveRef.attachment = 0; // resolve image attachment
+		colorResolveRef.attachment = 0; // screenmap resolve image attachment
 		colorResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		subpass.pResolveAttachments = &colorResolveRef;
@@ -3199,7 +3199,7 @@ static void create_color_attachment( uint32_t width, uint32_t height, VkSampleCo
 }
 
 
-static void create_depth_attachment( uint32_t width, uint32_t height, VkSampleCountFlagBits samples, VkImage *image, VkImageView *image_view )
+static void create_depth_attachment( uint32_t width, uint32_t height, VkSampleCountFlagBits samples, VkImage *image, VkImageView *image_view, qboolean allowTransient )
 {
 	VkImageCreateInfo create_desc;
 	VkMemoryRequirements memory_requirements;
@@ -3218,7 +3218,10 @@ static void create_depth_attachment( uint32_t width, uint32_t height, VkSampleCo
 	create_desc.arrayLayers = 1;
 	create_desc.samples = samples;
 	create_desc.tiling = VK_IMAGE_TILING_OPTIMAL;
-	create_desc.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+	create_desc.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	if ( allowTransient ) {
+		create_desc.usage |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+	}
 	create_desc.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	create_desc.queueFamilyIndexCount = 0;
 	create_desc.pQueueFamilyIndices = NULL;
@@ -3250,7 +3253,7 @@ static void vk_create_attachments( void )
 	// TODO: preallocate first image chunk in attachment' memory pool?
 	if ( vk.fboActive ) {
 
-		VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 		// bloom
 		if ( r_bloom->integer ) {
@@ -3273,21 +3276,20 @@ static void vk_create_attachments( void )
 
 		// post-processing/msaa-resolve
 		create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, VK_SAMPLE_COUNT_1_BIT, vk.color_format,
-			usage, &vk.color_image, &vk.color_image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
+			usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, &vk.color_image, &vk.color_image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
 
-		// screenmap
-		usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-
+		// screenmap-msaa
 		if ( vk.screenMapSamples > VK_SAMPLE_COUNT_1_BIT ) {
 			create_color_attachment( vk.screenMapWidth, vk.screenMapHeight, vk.screenMapSamples, vk.color_format,
-				usage, &vk.screenMap.color_image_msaa, &vk.screenMap.color_image_view_msaa, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, qtrue );
+				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &vk.screenMap.color_image_msaa, &vk.screenMap.color_image_view_msaa, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, qtrue );
 		}
 
+		// screenmap/msaa-resolve
 		create_color_attachment( vk.screenMapWidth, vk.screenMapHeight, VK_SAMPLE_COUNT_1_BIT, vk.color_format,
 			usage, &vk.screenMap.color_image, &vk.screenMap.color_image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, qfalse );
 
 		// screenmap depth
-		create_depth_attachment( vk.screenMapWidth, vk.screenMapHeight, vk.screenMapSamples, &vk.screenMap.depth_image, &vk.screenMap.depth_image_view );
+		create_depth_attachment( vk.screenMapWidth, vk.screenMapHeight, vk.screenMapSamples, &vk.screenMap.depth_image, &vk.screenMap.depth_image_view, qtrue );
 
 		if ( vk.msaaActive ) {
 			create_color_attachment( glConfig.vidWidth, glConfig.vidHeight, vkSamples, vk.color_format,
@@ -3304,7 +3306,8 @@ static void vk_create_attachments( void )
 
 	//vk_alloc_attachments();
 
-	create_depth_attachment( glConfig.vidWidth, glConfig.vidHeight, vkSamples, &vk.depth_image, &vk.depth_image_view );
+	create_depth_attachment( glConfig.vidWidth, glConfig.vidHeight, vkSamples, &vk.depth_image, &vk.depth_image_view,
+		(vk.fboActive && r_bloom->integer) ? qfalse : qtrue );
 
 	vk_alloc_attachments();
 
@@ -3898,7 +3901,7 @@ void vk_initialize( void )
 		desc.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		desc.pNext = NULL;
 		desc.flags = 0;
-		desc.setLayoutCount = (vk.maxBoundDescriptorSets >= 6) ? 6 : 4;
+		desc.setLayoutCount = (vk.maxBoundDescriptorSets >= VK_DESC_COUNT) ? VK_DESC_COUNT : 4;
 		desc.pSetLayouts = set_layouts;
 		desc.pushConstantRangeCount = 1;
 		desc.pPushConstantRanges = &push_range;
@@ -3917,7 +3920,7 @@ void vk_initialize( void )
 		desc.pushConstantRangeCount = 1;
 		desc.pPushConstantRanges = &push_range;
 
-		VK_CHECK(qvkCreatePipelineLayout(vk.device, &desc, NULL, &vk.pipeline_layout_storage));
+		VK_CHECK( qvkCreatePipelineLayout( vk.device, &desc, NULL, &vk.pipeline_layout_storage ) );
 #endif
 
 		// post-processing pipeline
@@ -5426,10 +5429,12 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassI
 	// depth fragment threshold
 	frag_spec_data[2].f = 0.85f;
 
+#if 0
 	if ( r_ext_alpha_to_coverage->integer && vkSamples != VK_SAMPLE_COUNT_1_BIT && frag_spec_data[0].i ) {
 		frag_spec_data[3].i = 1;
 		alphaToCoverage = VK_TRUE;
 	}
+#endif
 
 	// constant color
 	switch ( def->shader_type ) {
@@ -6663,7 +6668,7 @@ void vk_bind_descriptor_sets( void )
 	end = vk.cmd->descriptor_set.end;
 
 	offset_count = 0;
-	if ( start <= 1 ) { // uniform offset or storage offset
+	if ( start == VK_DESC_STORAGE || start == VK_DESC_UNIFORM ) { // uniform offset or storage offset
 		offsets[ offset_count++ ] = vk.cmd->descriptor_set.offset[ start ];
 	}
 
@@ -6840,9 +6845,6 @@ static void vk_begin_screenmap_render_pass( void )
 {
 	VkFramebuffer frameBuffer = vk.framebuffers.screenmap;
 
-	record_image_layout_transition( vk.cmd->command_buffer, vk.screenMap.color_image, VK_IMAGE_ASPECT_COLOR_BIT,
-		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
-
 	vk.renderPassIndex = RENDER_PASS_SCREENMAP;
 
 	vk.renderWidth = vk.screenMapWidth;
@@ -6998,10 +7000,10 @@ void vk_begin_frame( void )
 
 	Com_Memset( &vk.cmd->scissor_rect, 0, sizeof( vk.cmd->scissor_rect ) );
 
-	vk_update_descriptor( 2, tr.whiteImage->descriptor );
-	vk_update_descriptor( 3, tr.whiteImage->descriptor );
-	if ( vk.maxBoundDescriptorSets >= 6 ) {
-		vk_update_descriptor( 4, tr.whiteImage->descriptor );
+	vk_update_descriptor( VK_DESC_TEXTURE0, tr.whiteImage->descriptor );
+	vk_update_descriptor( VK_DESC_TEXTURE1, tr.whiteImage->descriptor );
+	if ( vk.maxBoundDescriptorSets >= VK_DESC_COUNT ) {
+		vk_update_descriptor( VK_DESC_TEXTURE2, tr.whiteImage->descriptor );
 	}
 
 	// other stats
@@ -7140,17 +7142,21 @@ void vk_present_frame( void )
 	present_info.pResults = NULL;
 
 	res = qvkQueuePresentKHR( vk.queue, &present_info );
-	if ( res < 0 ) {
-		if ( res == VK_ERROR_DEVICE_LOST ) {
-			// we can ignore that
-			ri.Printf( PRINT_DEVELOPER, "vkQueuePresentKHR: device lost\n" );
-		} else if ( res == VK_ERROR_OUT_OF_DATE_KHR ) {
+	switch ( res ) {
+		case VK_SUCCESS:
+			break;
+		case VK_SUBOPTIMAL_KHR:
+		case VK_ERROR_OUT_OF_DATE_KHR:
 			// swapchain re-creation needed
 			vk_restart_swapchain( __func__ );
-		} else {
+			break;
+		case VK_ERROR_DEVICE_LOST:
+			// we can ignore that
+			ri.Printf( PRINT_DEVELOPER, "vkQueuePresentKHR: device lost\n" );
+			break;
+		default:
 			// or we don't
 			ri.Error( ERR_FATAL, "vkQueuePresentKHR returned %s", vk_result_string( res ) );
-		}
 	}
 }
 
@@ -7494,7 +7500,7 @@ qboolean vk_bloom( void )
 		// restore clobbered descriptor sets
 		for ( i = 0; i < VK_NUM_BLOOM_PASSES; i++ ) {
 			if ( vk.cmd->descriptor_set.current[i] != VK_NULL_HANDLE ) {
-				if ( i == 0 || i == 1 )
+				if ( i == VK_DESC_UNIFORM || i == VK_DESC_STORAGE )
 					qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, i, 1, &vk.cmd->descriptor_set.current[i], 1, &vk.cmd->descriptor_set.offset[i] );
 				else
 					qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, i, 1, &vk.cmd->descriptor_set.current[i], 0, NULL );

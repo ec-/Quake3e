@@ -369,35 +369,6 @@ static qboolean isStaticRGBgen( colorGen_t cgen )
 }
 
 
-static qboolean isStaticTCgen( shaderStage_t *stage, int bundle )
-{
-	switch ( stage->bundle[bundle].tcGen )
-	{
-		case TCGEN_BAD:
-		case TCGEN_IDENTITY:	// clear to 0,0
-		case TCGEN_LIGHTMAP:
-		case TCGEN_TEXTURE:
-			return qtrue;
-		case TCGEN_ENVIRONMENT_MAPPED:
-			if ( stage->bundle[bundle].numTexMods == 0 && ( stage->bundle[bundle].lightmap == LIGHTMAP_INDEX_NONE || !tr.mergeLightmaps ) ) {
-				stage->tessFlags |= TESS_ENV0 << bundle;
-				stage->tessFlags &= ~( TESS_ST0 << bundle );
-				return qtrue;
-			} else {
-				stage->tessFlags |= TESS_ST0 << bundle;
-				stage->tessFlags &= ~( TESS_ENV0 << bundle );
-				return qfalse;
-			}
-		//case TCGEN_ENVIRONMENT_MAPPED_FP:
-		//case TCGEN_FOG:
-		case TCGEN_VECTOR:		// S and T from world coordinates
-			return qtrue;
-		default:
-			return qfalse;
-	}
-}
-
-
 static qboolean isStaticTCmod( const textureBundle_t *bundle )
 {
 	int i;
@@ -417,6 +388,35 @@ static qboolean isStaticTCmod( const textureBundle_t *bundle )
 	}
 
 	return qtrue;
+}
+
+
+static qboolean isStaticTCgen( shaderStage_t *stage, int bundle )
+{
+	switch ( stage->bundle[bundle].tcGen )
+	{
+		case TCGEN_BAD:
+		case TCGEN_IDENTITY:	// clear to 0,0
+		case TCGEN_LIGHTMAP:
+		case TCGEN_TEXTURE:
+			return qtrue;
+		case TCGEN_ENVIRONMENT_MAPPED:
+			if ( bundle == 0 && isStaticTCmod( &stage->bundle[bundle] ) ) {
+				stage->tessFlags |= TESS_ENV0 << bundle;
+				stage->tessFlags &= ~( TESS_ST0 << bundle );
+				return qtrue;
+			} else {
+				stage->tessFlags |= TESS_ST0 << bundle;
+				stage->tessFlags &= ~( TESS_ENV0 << bundle );
+				return qfalse;
+			}
+		//case TCGEN_ENVIRONMENT_MAPPED_FP:
+		//case TCGEN_FOG:
+		case TCGEN_VECTOR:		// S and T from world coordinates
+			return qtrue;
+		default:
+			return qfalse;
+	}
 }
 
 
